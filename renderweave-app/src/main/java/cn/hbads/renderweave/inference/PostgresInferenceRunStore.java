@@ -1,5 +1,7 @@
 package cn.hbads.renderweave.inference;
 
+import cn.hbads.renderweave.inference.candidate.CandidateBundle;
+import cn.hbads.renderweave.inference.candidate.InferenceCandidateSnapshot;
 import cn.hbads.renderweave.inference.input.InferenceMode;
 import cn.hbads.renderweave.inference.input.NormalizedArtifact;
 import cn.hbads.renderweave.inference.run.InferenceArtifactDeletion;
@@ -15,6 +17,9 @@ import cn.hbads.renderweave.inference.run.InferenceRunStore;
 import cn.hbads.renderweave.inference.run.InferenceStage;
 import cn.hbads.renderweave.inference.run.InvalidInferenceRunTransitionException;
 import cn.hbads.renderweave.inference.run.NewInferenceRun;
+import cn.hbads.renderweave.inference.replay.InferenceAttempt;
+import cn.hbads.renderweave.inference.replay.InferenceAttemptStatus;
+import cn.hbads.renderweave.inference.replay.InferenceReplayStore;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,7 +39,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Repository
-public class PostgresInferenceRunStore implements InferenceRunStore {
+public class PostgresInferenceRunStore implements InferenceRunStore, InferenceReplayStore {
     private static final int MAX_EVENT_PAGE = 1000;
 
     private final JdbcClient jdbcClient;
@@ -481,6 +486,131 @@ public class PostgresInferenceRunStore implements InferenceRunStore {
                 .list();
     }
 
+    @Override
+    @Transactional
+    public InferenceRunSnapshot checkpointAttempt(
+            UUID runId,
+            UUID leaseToken,
+            InferenceStage expectedStage,
+            InferenceStage nextStage,
+            String checkpointJson,
+            InferenceAttempt attempt,
+            Instant now
+    ) {
+        Objects.requireNonNull(attempt, "attempt");
+        if (!runId.equals(attempt.runId()) || expectedStage != attempt.stage()) {
+            throw new IllegalArgumentException("Attempt identity and expected run stage must agree");
+        }
+        jdbcClient.sql("""
+                        insert into inference_attempt (
+                            run_id, attempt_ordinal, stage, status, outcome_code, completed_at
+                        ) values (
+                            :runId, :attemptOrdinal, :stage, :status, :outcomeCode, :completedAt
+                        )
+                        """)
+                .param("runId", attempt.runId())
+                .param("attemptOrdinal", attempt.attemptOrdinal())
+                .param("stage", attempt.stage().name())
+                .param("status", attempt.status().name())
+                .param("outcomeCode", attempt.outcomeCode())
+                .param("completedAt", offset(attempt.completedAt()))
+                .update();
+        return checkpoint(runId, leaseToken, expectedStage, nextStage, checkpointJson, now);
+    }
+
+    @Override
+    @Transactional
+    public InferenceRunSnapshot completeForReview(
+            UUID runId,
+            UUID leaseToken,
+            String candidateJson,
+            String validationProblemsJson,
+            Instant now
+    ) {
+        Objects.requireNonNull(runId, "runId");
+        Objects.requireNonNull(leaseToken, "leaseToken");
+        Objects.requireNonNull(now, "now");
+        if (candidateJson == null || candidateJson.isBlank()
+                || validationProblemsJson == null || validationProblemsJson.isBlank()) {
+            throw new IllegalArgumentException("Candidate and validation problems are required");
+        }
+        var sequence = jdbcClient.sql("""
+                        update inference_run
+                        set state = 'REVIEW_REQUIRED',
+                            stage = 'USER_APPROVAL',
+                            sequence = sequence + 1,
+                            lease_owner = null,
+                            lease_token = null,
+                            lease_expires_at = null,
+                            updated_at = :now
+                        where run_id = :runId
+                          and state = 'RUNNING'
+                          and stage = 'CRITIQUE'
+                          and lease_token = :leaseToken
+                          and lease_expires_at > :now
+                          and not cancellation_requested
+                        returning sequence
+                        """)
+                .param("now", offset(now))
+                .param("runId", runId)
+                .param("leaseToken", leaseToken)
+                .query(Long.class)
+                .optional();
+        if (sequence.isEmpty()) throw new InferenceLeaseLostException(runId);
+
+        jdbcClient.sql("""
+                        insert into inference_candidate (
+                            run_id, revision, contract_version, original_json, current_json,
+                            validation_problems, created_at, updated_at
+                        ) values (
+                            :runId, 0, :contractVersion, cast(:candidateJson as jsonb),
+                            cast(:candidateJson as jsonb), cast(:validationProblemsJson as jsonb),
+                            :now, :now
+                        )
+                        """)
+                .param("runId", runId)
+                .param("contractVersion", CandidateBundle.CONTRACT_VERSION)
+                .param("candidateJson", candidateJson)
+                .param("validationProblemsJson", validationProblemsJson)
+                .param("now", offset(now))
+                .update();
+        insertEvent(
+                runId, sequence.orElseThrow(), "REVIEW_REQUIRED",
+                InferenceRunState.REVIEW_REQUIRED, InferenceStage.USER_APPROVAL,
+                "{\"candidateRevision\":0}", now
+        );
+        return require(runId);
+    }
+
+    @Override
+    public Optional<InferenceCandidateSnapshot> findCandidate(UUID runId) {
+        return jdbcClient.sql("""
+                        select run_id, revision, contract_version,
+                               original_json::text as original_json,
+                               current_json::text as current_json,
+                               validation_problems::text as validation_problems,
+                               created_at, updated_at
+                        from inference_candidate
+                        where run_id = :runId
+                        """)
+                .param("runId", runId)
+                .query(PostgresInferenceRunStore::mapCandidate)
+                .optional();
+    }
+
+    @Override
+    public List<InferenceAttempt> attempts(UUID runId) {
+        return jdbcClient.sql("""
+                        select run_id, attempt_ordinal, stage, status, outcome_code, completed_at
+                        from inference_attempt
+                        where run_id = :runId
+                        order by attempt_ordinal
+                        """)
+                .param("runId", runId)
+                .query(PostgresInferenceRunStore::mapAttempt)
+                .list();
+    }
+
     private void upsertAndVerifyArtifact(NormalizedArtifact artifact, Instant createdAt) {
         jdbcClient.sql("""
                         insert into inference_artifact (
@@ -681,6 +811,30 @@ public class PostgresInferenceRunStore implements InferenceRunStore {
                 InferenceStage.valueOf(resultSet.getString("stage")),
                 resultSet.getString("data_json"),
                 instant(resultSet, "occurred_at").orElseThrow()
+        );
+    }
+
+    private static InferenceCandidateSnapshot mapCandidate(ResultSet resultSet, int rowNumber) throws SQLException {
+        return new InferenceCandidateSnapshot(
+                resultSet.getObject("run_id", UUID.class),
+                resultSet.getLong("revision"),
+                resultSet.getString("contract_version"),
+                resultSet.getString("original_json"),
+                resultSet.getString("current_json"),
+                resultSet.getString("validation_problems"),
+                instant(resultSet, "created_at").orElseThrow(),
+                instant(resultSet, "updated_at").orElseThrow()
+        );
+    }
+
+    private static InferenceAttempt mapAttempt(ResultSet resultSet, int rowNumber) throws SQLException {
+        return new InferenceAttempt(
+                resultSet.getObject("run_id", UUID.class),
+                resultSet.getInt("attempt_ordinal"),
+                InferenceStage.valueOf(resultSet.getString("stage")),
+                InferenceAttemptStatus.valueOf(resultSet.getString("status")),
+                resultSet.getString("outcome_code"),
+                instant(resultSet, "completed_at").orElseThrow()
         );
     }
 

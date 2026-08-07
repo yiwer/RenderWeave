@@ -1,0 +1,16 @@
+{
+  "profileVersion": "renderweave-inference-profile/1.0",
+  "profileId": "replay-v1",
+  "provider": "REPLAY",
+  "model": "deterministic-synthetic-replay-v1",
+  "networkAllowed": false,
+  "pipelineVersion": "renderweave-inference-pipeline/1.0",
+  "candidateContractVersion": "renderweave-candidate/1.0",
+  "supportedModes": ["IMAGE_ONLY", "JSON_ONLY", "COMBINED"],
+  "lowConfidenceThresholdBps": 8000,
+  "maximumRepairRounds": 2,
+  "maximumTotalCalls": 6,
+  "stageTimeoutSeconds": 10,
+  "maximumOutputBytes": 2097152,
+  "certification": "REPLAY_ONLY"
+}

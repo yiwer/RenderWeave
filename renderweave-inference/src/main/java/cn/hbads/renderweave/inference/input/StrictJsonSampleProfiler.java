@@ -12,6 +12,9 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.TreeMap;
+import java.util.TreeSet;
 
 /** Produces bounded structural context; sample values are deliberately not retained. */
 public final class StrictJsonSampleProfiler {
@@ -31,7 +34,7 @@ public final class StrictJsonSampleProfiler {
     public byte[] profile(List<InferenceInput.BinaryInput> samples) {
         try {
             var root = JSON.createObjectNode();
-            root.put("profileVersion", "renderweave-json-profile/1.0");
+            root.put("profileVersion", "renderweave-json-profile/1.1");
             root.put("sampleCount", samples.size());
             var sampleArray = root.putArray("samples");
             for (var index = 0; index < samples.size(); index++) {
@@ -44,17 +47,20 @@ public final class StrictJsonSampleProfiler {
                 }
                 var sample = sampleArray.addObject();
                 sample.put("index", index);
-                var nodes = new ArrayList<NodeProfile>();
-                collect(parsed, "", 1, nodes);
+                var nodes = new TreeMap<String, NodeProfile>();
+                collect(parsed, "", "", 1, nodes);
                 var outputNodes = sample.putArray("nodes");
-                for (var node : nodes) {
+                for (var node : nodes.values()) {
                     var output = outputNodes.addObject();
                     output.put("pointer", node.pointer());
-                    output.put("kind", node.kind());
+                    var kinds = output.putArray("kinds");
+                    node.kinds().forEach(kinds::add);
                     if (!node.itemKinds().isEmpty()) {
-                        var kinds = output.putArray("itemKinds");
-                        node.itemKinds().forEach(kinds::add);
+                        var itemKinds = output.putArray("itemKinds");
+                        node.itemKinds().forEach(itemKinds::add);
                     }
+                    output.put("occurrences", node.occurrences());
+                    output.put("evidencePointer", node.evidencePointer());
                 }
             }
             return JSON.writeValueAsBytes(root);
@@ -74,7 +80,13 @@ public final class StrictJsonSampleProfiler {
         }
     }
 
-    private static void collect(JsonNode node, String pointer, int depth, List<NodeProfile> output) {
+    private static void collect(
+            JsonNode node,
+            String normalizedPointer,
+            String evidencePointer,
+            int depth,
+            Map<String, NodeProfile> output
+    ) {
         if (depth > MAX_DEPTH) {
             throw new InvalidInferenceInputException(
                     "INFERENCE_JSON_DEPTH_EXCEEDED", "/jsonSamples",
@@ -83,33 +95,55 @@ public final class StrictJsonSampleProfiler {
             );
         }
         if (node.isObject()) {
-            output.add(new NodeProfile(pointer, "object", List.of()));
-            var fields = new ArrayList<String>();
-            fields.addAll(node.propertyNames());
-            fields.sort(Comparator.naturalOrder());
+            record(output, normalizedPointer, "object", List.of(), evidencePointer);
+            var fields = new ArrayList<>(node.properties());
+            fields.sort(Map.Entry.comparingByKey());
             for (var field : fields) {
-                collect(node.get(field), pointer + "/" + escape(field), depth + 1, output);
+                var segment = escape(field.getKey());
+                collect(field.getValue(), normalizedPointer + "/" + segment,
+                        evidencePointer + "/" + segment, depth + 1, output);
             }
         } else if (node.isArray()) {
-            var kinds = new ArrayList<String>();
-            for (var item : node) {
-                var kind = kind(item);
-                if (!kinds.contains(kind)) kinds.add(kind);
-            }
-            kinds.sort(Comparator.naturalOrder());
-            output.add(new NodeProfile(pointer, "array", List.copyOf(kinds)));
-            for (var index = 0; index < node.size(); index++) {
-                collect(node.get(index), pointer + "/" + index, depth + 1, output);
+            var itemKinds = new TreeSet<String>();
+            node.values().forEach(item -> itemKinds.add(kind(item)));
+            record(output, normalizedPointer, "array", List.copyOf(itemKinds), evidencePointer);
+            var index = 0;
+            for (var item : node.values()) {
+                collect(item, normalizedPointer + "/*", evidencePointer + "/" + index,
+                        depth + 1, output);
+                index++;
             }
         } else {
-            output.add(new NodeProfile(pointer, kind(node), List.of()));
+            record(output, normalizedPointer, kind(node), List.of(), evidencePointer);
         }
+    }
+
+    private static void record(
+            Map<String, NodeProfile> output,
+            String pointer,
+            String kind,
+            List<String> itemKinds,
+            String evidencePointer
+    ) {
+        var existing = output.get(pointer);
+        if (existing == null) {
+            output.put(pointer, new NodeProfile(
+                    pointer, new TreeSet<>(List.of(kind)), new TreeSet<>(itemKinds), 1, evidencePointer
+            ));
+            return;
+        }
+        existing.kinds().add(kind);
+        existing.itemKinds().addAll(itemKinds);
+        output.put(pointer, new NodeProfile(
+                pointer, existing.kinds(), existing.itemKinds(), existing.occurrences() + 1,
+                existing.evidencePointer()
+        ));
     }
 
     private static String kind(JsonNode node) {
         if (node.isObject()) return "object";
         if (node.isArray()) return "array";
-        if (node.isTextual()) return "text";
+        if (node.isString()) return "text";
         if (node.isNumber()) return "decimal";
         if (node.isBoolean()) return "boolean";
         if (node.isNull()) return "null";
@@ -120,5 +154,11 @@ public final class StrictJsonSampleProfiler {
         return value.replace("~", "~0").replace("/", "~1");
     }
 
-    private record NodeProfile(String pointer, String kind, List<String> itemKinds) { }
+    private record NodeProfile(
+            String pointer,
+            TreeSet<String> kinds,
+            TreeSet<String> itemKinds,
+            int occurrences,
+            String evidencePointer
+    ) { }
 }

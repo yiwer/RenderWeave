@@ -175,8 +175,8 @@ class InputNormalizerTest {
         var profile = new String(store.read(artifact.locator()), StandardCharsets.UTF_8);
         assertEquals(NormalizedArtifact.Kind.JSON_PROFILE, artifact.kind());
         assertTrue(profile.contains("\"pointer\":\"/displayName\""));
-        assertTrue(profile.contains("\"pointer\":\"/items/0/price\""));
-        assertTrue(profile.contains("\"kind\":\"decimal\""));
+        assertTrue(profile.contains("\"pointer\":\"/items/*/price\""));
+        assertTrue(profile.contains("\"kinds\":[\"decimal\"]"));
         assertFalse(profile.contains("top-secret-value"));
         assertFalse(profile.contains("12.50"));
     }
@@ -246,6 +246,22 @@ class InputNormalizerTest {
                 .map(NormalizedInputReference::ordinal).toList());
         assertEquals(1, normalized.references().stream()
                 .map(NormalizedInputReference::artifactId).distinct().count());
+    }
+
+    @Test
+    void largeArraysProduceWildcardStructuralNodesInsteadOfOneNodePerIndex() {
+        var values = java.util.stream.IntStream.range(0, 10_000)
+                .mapToObj(Integer::toString).collect(java.util.stream.Collectors.joining(","));
+        var store = new MemoryBlobStore();
+        var normalized = new InputNormalizer(store).normalize(input(
+                InferenceMode.JSON_ONLY, true, List.of(), List.of(json("{\"items\":[" + values + "]}"))
+        ));
+        var profile = new String(store.read(normalized.artifacts().getFirst().locator()), StandardCharsets.UTF_8);
+
+        assertTrue(profile.contains("\"pointer\":\"/items/*\""));
+        assertTrue(profile.contains("\"occurrences\":10000"));
+        assertFalse(profile.contains("/items/9999"));
+        assertTrue(profile.length() < 2_000);
     }
 
     private static void assertJsonError(String value, String expectedCode) {
