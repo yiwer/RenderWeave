@@ -1,9 +1,9 @@
 # NOTES.md
 
 ## 当前目标与进度
-- Goal 已于 2026-08-08 激活：连续实现并验证 P1–P4；P5 live AI、真实数据和付费调用不在当前自动执行边界内。
+- 2026-08-08 授权的 P1–P4 Goal 实施范围已完成并通过本地 A1 自动验证；P5 live AI、真实数据和付费调用不在当前自动执行边界内。
 - 需求访谈已收束，v1 产品语义以 `specs/renderweave-v1.md` 为准。
-- 生命周期状态：P0 `accepted`；P1–P3、P4/T4-1–T4-3 `automated_verified`；P4/T4-4 已进入实现。
+- 生命周期状态：P0 `accepted`；P1–P4 `automated_verified`；P5 `planned_guarded`。
 
 ## 下一步
 - [x] Java / React / PostgreSQL / OpenAPI 最小 canary 与 A1 full gate 通过。
@@ -22,12 +22,13 @@
 - [x] T4-1：零网络 replay inference 输入归一化、BlobStore、durable run 与 lease/checkpoint/cancel/retry；Java 79 tests 与 V005 fresh migration 全绿。
 - [x] T4-2：`replay-v1` Profile、deterministic profiler、Candidate contracts、60-case synthetic corpus 与零网络 durable workflow；Java 99 tests 与 V006 fresh migration 全绿。
 - [x] T4-3：Candidate 查询/逐项 revision autosave API、Form/Map review editor、image/JSON evidence overlay 与真实 PG/browser 闭环（无 confirm-all）。
-- [ ] T4-4：deterministic create-only materializer、原子 bundle apply、SSE 与 crash/replay recovery。
+- [x] T4-4：deterministic create-only materializer、原子 bundle apply、SSE 与 crash/replay recovery；冲突/故障/并发零部分写，真实 PG/browser 证明 StaticSchema 数量不变。
 - [ ] live AI Phase 前补齐 independent verify（A2）与当次付费/数据授权。
 
 ## 重要发现或局部阻塞
 - 本机全局 Node 为 20.20.2；正式 gate 已使用 checksum 固定的仓库局部 Node 24.19.0，不依赖或修改系统 Node。
 - 已建立真实 Git 节点边界：`main@93cdefb` 固化 P0–P3，P4 在 `phase/p4-replay-inference`；仍无 CI、issue tracker 或独立 verifier，因此整体计划不宣称 A2/A3。
+- T4-4 首次 server gate 由于外层命令时限过短中断，其不完整 evidence 不作为结论；随后的完整 server/web/e2e 与 real inference journey 均为绿色。
 - UI 设计数据库把本项目误路由到 hero-centric/mobile/dark SaaS；已在 page override 中拒绝，采用已确认的 dense warm editorial workbench。
 - Docker registry 代理不可用；Compose config 与等价 API/PG runtime canary 已绿，`docker compose up --build` 仍 pending。
 
@@ -46,4 +47,5 @@
 - `plans/logs/P4-T4-1.md`；A1 server evidence：`.sdlc/evidence/20260808-041051-server/metadata.json`。
 - `plans/logs/P4-T4-2.md`；A1 server evidence：`.sdlc/evidence/20260808-044819-server/metadata.json`。
 - `plans/logs/P4-T4-3.md`；A1 server/web/real-browser evidence：`.sdlc/evidence/20260808-052825-server/metadata.json`、`.sdlc/evidence/20260808-052917-web/metadata.json`、`.sdlc/evidence/inference-e2e-9372/metadata.json`。
-- 当前恢复点：P4 / T4-4；从 Candidate→strict DSL deterministic materializer 与 create-only bundle transaction 开始，继续固定为零网络 synthetic replay，严禁 merge/update/publish。
+- `plans/logs/P4-T4-4.md`；G-P4 A1 server/web/mocked-browser/real-browser evidence：`.sdlc/evidence/20260808-060743-server/metadata.json`、`.sdlc/evidence/20260808-061010-web/metadata.json`、`.sdlc/evidence/20260808-061225-e2e/metadata.json`、`.sdlc/evidence/inference-e2e-36108/metadata.json`。
+- 当前恢复点：P4 已 automated-verified；如继续则进入 P5 guarded 授权门，在获得 independent A2 与当次 provider/cost/data J1 前不执行 live 调用。

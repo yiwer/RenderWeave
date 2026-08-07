@@ -1,10 +1,13 @@
 import {
+  applyInferenceCandidate,
   createReplayInferenceRun,
   getInferenceCandidate,
   listReplayFixtures,
   saveInferenceCandidate,
   type CandidateBundle,
+  type CandidateApplyResponse,
   type CandidateReviewResponse,
+  type InferenceEvent,
   type InferenceRunResponse,
   type Problem,
   type ReplayFixtureListResponse,
@@ -42,6 +45,61 @@ export async function saveCandidateReviewRequest(
     body: { expectedCandidateRevision, candidate },
   });
   return unwrap(result.data, result.error, '自动保存 Candidate');
+}
+
+export async function applyCandidateRequest(
+  runId: string,
+  expectedCandidateRevision: number,
+): Promise<CandidateApplyResponse> {
+  const result = await applyInferenceCandidate({
+    path: { runId },
+    body: { expectedCandidateRevision },
+  });
+  return unwrap(result.data, result.error, '原子创建 Draft Bundle');
+}
+
+const inferenceEventTypes = [
+  'QUEUED',
+  'LEASE_ACQUIRED',
+  'LEASE_RECLAIMED',
+  'CHECKPOINT_ADVANCED',
+  'REVIEW_REQUIRED',
+  'CANDIDATE_UPDATED',
+  'CANCELLATION_REQUESTED',
+  'CANCELLED',
+  'FAILED',
+  'RETRIED',
+  'APPLYING',
+  'CANDIDATE_APPLIED',
+] as const;
+
+export function subscribeInferenceRunEvents(
+  runId: string,
+  afterSequence: number,
+  onEvent: (event: InferenceEvent) => void,
+  onError?: () => void,
+): () => void {
+  const source = new EventSource(
+    `/api/v1/inference-runs/${encodeURIComponent(runId)}/events?afterSequence=${afterSequence}`,
+  );
+  let lastSequence = afterSequence;
+  const handle = (message: Event) => {
+    if (!(message instanceof MessageEvent) || typeof message.data !== 'string') return;
+    try {
+      const event = JSON.parse(message.data) as InferenceEvent;
+      if (event.sequence <= lastSequence) return;
+      lastSequence = event.sequence;
+      onEvent(event);
+    } catch {
+      onError?.();
+    }
+  };
+  inferenceEventTypes.forEach((type) => source.addEventListener(type, handle));
+  source.onerror = () => onError?.();
+  return () => {
+    inferenceEventTypes.forEach((type) => source.removeEventListener(type, handle));
+    source.close();
+  };
 }
 
 function unwrap<T>(data: T | undefined, error: Problem | undefined, operation: string): T {

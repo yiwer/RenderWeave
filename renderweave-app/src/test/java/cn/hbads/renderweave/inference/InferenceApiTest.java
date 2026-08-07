@@ -18,12 +18,14 @@ import tools.jackson.databind.node.ObjectNode;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.asyncDispatch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
 
 @Testcontainers
 @SpringBootTest(properties = "renderweave.inference.blob-root=target/test-inference-api-blobs")
@@ -169,6 +171,124 @@ class InferenceApiTest {
                                 """))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
+    }
+
+    @Test
+    void applyEndpointCreatesOnlyDraftsIsIdempotentAndExposesTheFrozenFinalCandidate() throws Exception {
+        var staticCount = count("static_schema");
+        var created = mockMvc.perform(post("/api/v1/inference-runs")
+                        .header("Idempotency-Key", "api-apply-clean")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"fixtureId":"json-01-scalars","externalTransferConfirmed":true}
+                                """))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        var runId = json.readTree(created).path("runId").asText();
+        var reviewSequence = json.readTree(created).path("sequence").asLong();
+
+        var applied = mockMvc.perform(post("/api/v1/inference-runs/{runId}/apply", runId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"expectedCandidateRevision\":0}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.run.state").value("COMPLETED"))
+                .andExpect(jsonPath("$.run.stage").value("ATOMIC_CREATE"))
+                .andExpect(jsonPath("$.candidateRevision").value(0))
+                .andExpect(jsonPath("$.createdDrafts.length()").value(1))
+                .andExpect(jsonPath("$.createdDrafts[0].revision").value(0))
+                .andReturn().getResponse().getContentAsString();
+        var draftHref = json.readTree(applied).path("createdDrafts").get(0).path("href").asText();
+
+        mockMvc.perform(post("/api/v1/inference-runs/{runId}/apply", runId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"expectedCandidateRevision\":0}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.run.state").value("COMPLETED"));
+        mockMvc.perform(get(draftHref))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.creationSource").value("AI"))
+                .andExpect(jsonPath("$.revision").value(0));
+        mockMvc.perform(get("/api/v1/inference-runs/{runId}/candidate", runId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.finalCandidate").isMap())
+                .andExpect(jsonPath("$.appliedAt").isNotEmpty());
+
+        var stream = mockMvc.perform(get("/api/v1/inference-runs/{runId}/events", runId)
+                        .header("Last-Event-ID", Long.toString(reviewSequence))
+                        .accept(MediaType.TEXT_EVENT_STREAM))
+                .andExpect(request().asyncStarted())
+                .andReturn();
+        stream.getAsyncResult(5_000);
+        mockMvc.perform(asyncDispatch(stream))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.TEXT_EVENT_STREAM))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("event:APPLYING")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("event:CANDIDATE_APPLIED")))
+                .andExpect(content().string(org.hamcrest.Matchers.not(
+                        org.hamcrest.Matchers.containsString("event:REVIEW_REQUIRED")
+                )));
+
+        assertThat(count("schema_draft")).isEqualTo(1);
+        assertThat(count("schema_draft_revision")).isEqualTo(1);
+        assertThat(count("static_schema")).isEqualTo(staticCount);
+    }
+
+    @Test
+    void applyEndpointKeepsBlockingCandidateInReviewWithZeroDraftWrites() throws Exception {
+        var created = mockMvc.perform(post("/api/v1/inference-runs")
+                        .header("Idempotency-Key", "api-apply-blocked")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"fixtureId":"image-08-low-information","externalTransferConfirmed":true}
+                                """))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        var runId = json.readTree(created).path("runId").asText();
+
+        mockMvc.perform(post("/api/v1/inference-runs/{runId}/apply", runId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"expectedCandidateRevision\":0}"))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.code").value("CANDIDATE_APPLY_BLOCKED"))
+                .andExpect(jsonPath("$.violations").isArray());
+
+        mockMvc.perform(get("/api/v1/inference-runs/{runId}", runId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.state").value("REVIEW_REQUIRED"));
+        assertThat(count("schema_draft")).isZero();
+    }
+
+    @Test
+    void reviewCancellationAndManualRetryCreateANewAuditableRunWithoutDrafts() throws Exception {
+        var created = mockMvc.perform(post("/api/v1/inference-runs")
+                        .header("Idempotency-Key", "api-cancel-source")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"fixtureId":"json-01-scalars","externalTransferConfirmed":true}
+                                """))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        var sourceRunId = json.readTree(created).path("runId").asText();
+
+        mockMvc.perform(post("/api/v1/inference-runs/{runId}/cancel", sourceRunId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.state").value("CANCELLED"));
+
+        var retried = mockMvc.perform(post("/api/v1/inference-runs/{runId}/retries", sourceRunId)
+                        .header("Idempotency-Key", "api-cancel-retry"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.state").value("REVIEW_REQUIRED"))
+                .andExpect(jsonPath("$.retryOfRunId").value(sourceRunId))
+                .andReturn().getResponse().getContentAsString();
+        var retryRunId = json.readTree(retried).path("runId").asText();
+
+        mockMvc.perform(post("/api/v1/inference-runs/{runId}/retries", sourceRunId)
+                        .header("Idempotency-Key", "api-cancel-retry"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.runId").value(retryRunId));
+        assertThat(jdbcClient.sql("select count(*) from inference_attempt")
+                .query(Long.class).single()).isEqualTo(2);
+        assertThat(count("schema_draft")).isZero();
     }
 
     private String saveBody(long revision, JsonNode candidate) throws Exception {

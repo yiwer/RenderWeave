@@ -1,6 +1,9 @@
 package cn.hbads.renderweave.inference;
 
 import cn.hbads.renderweave.inference.candidate.InferenceCandidateNotFoundException;
+import cn.hbads.renderweave.inference.candidate.CandidateApplyBlockedException;
+import cn.hbads.renderweave.inference.candidate.CandidateApplyConflictException;
+import cn.hbads.renderweave.inference.candidate.CandidateMaterializationException;
 import cn.hbads.renderweave.inference.candidate.InferenceCandidateRevisionConflictException;
 import cn.hbads.renderweave.inference.candidate.InvalidCandidateContractException;
 import cn.hbads.renderweave.inference.candidate.InvalidCandidateEditException;
@@ -47,6 +50,40 @@ final class InferenceProblemHandler {
         var code = exception instanceof InvalidCandidateContractException contract
                 ? contract.code() : ((InvalidCandidateEditException) exception).code();
         return problem(HttpStatus.UNPROCESSABLE_CONTENT, "Candidate edit invalid", code,
+                exception.getMessage(), request, null, null);
+    }
+
+    @ExceptionHandler(CandidateMaterializationException.class)
+    ResponseEntity<ApiProblem> materialization(
+            CandidateMaterializationException exception,
+            HttpServletRequest request
+    ) {
+        return problem(HttpStatus.UNPROCESSABLE_CONTENT, "Candidate materialization invalid",
+                exception.code(), exception.getMessage(), request, null, null);
+    }
+
+    @ExceptionHandler(CandidateApplyBlockedException.class)
+    ResponseEntity<ApiProblem> applyBlocked(
+            CandidateApplyBlockedException exception,
+            HttpServletRequest request
+    ) {
+        var violations = exception.problems().stream()
+                .map(item -> new ApiProblem.ApiViolation(
+                        item.code(), item.pointer(),
+                        new java.util.LinkedHashMap<String, Object>(item.args()),
+                        "Candidate review blocker"
+                ))
+                .toList();
+        return problem(HttpStatus.UNPROCESSABLE_CONTENT, "Candidate apply blocked",
+                "CANDIDATE_APPLY_BLOCKED", exception.getMessage(), request, violations, null);
+    }
+
+    @ExceptionHandler(CandidateApplyConflictException.class)
+    ResponseEntity<ApiProblem> applyConflict(
+            CandidateApplyConflictException exception,
+            HttpServletRequest request
+    ) {
+        return problem(HttpStatus.CONFLICT, "Candidate apply conflict", exception.code(),
                 exception.getMessage(), request, null, null);
     }
 

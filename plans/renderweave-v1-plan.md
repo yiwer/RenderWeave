@@ -1,10 +1,10 @@
 # RenderWeave v1 Phase 计划
 
-- 状态：Goal active；P0 accepted，P1–P3、P4/T4-1–T4-3 automated-verified，P4/T4-4 in progress
+- 状态：P1–P4 Goal implementation complete；P0 accepted，P1–P4 automated-verified（A1），P5 guarded / not authorized
 - 日期：2026-08-08
 - Spec：[`specs/renderweave-v1.md`](../specs/renderweave-v1.md)
 - 原型：`/prototype/schema-studio?variant=A|B|C`
-- 当前 lifecycle：P0 `accepted`；P1–P3、P4/T4-1–T4-3 `automated_verified`；P4/T4-4 `in_progress`
+- 当前 lifecycle：P0 `accepted`；P1–P4 `automated_verified`；P5 `planned_guarded`
 
 ## 1. 四维执行配置
 
@@ -237,13 +237,13 @@ Phase 内任务只在真实前置依赖满足时并行。当前没有 atomic cla
 - 完成信号：无 confirm-all，key rename 后 evidence 仍稳定关联
 
 #### T4-4：create-only materializer、atomic apply、SSE/recovery
-- 执行状态：`in_progress`
+- 执行状态：`automated_verified`（A1，`plans/logs/P4-T4-4.md`）
 - AC：AC-018, AC-019, AC-020
 - 依赖：T4-2, T4-3
 - 影响区域：inference→schema application boundary、transactions、SSE
 - 局部验证：tool manifest + conflict/fault/crash/replay integration
 - 回归升级：权限/transaction/SSE changes run Phase E2E
-- 证据保证：A2
+- 证据保证：A2 target（当前为本地同 Agent A1）
 - 完成信号：成功全包创建；所有失败零写；published rows 恒不变
 
 ### P5 — Guarded provider and quality certification
@@ -343,10 +343,11 @@ Phase 内任务只在真实前置依赖满足时并行。当前没有 atomic cla
 
 ## 7. Goal / Auto-ready 结论
 
-当前为 **Goal active**：用户于 2026-08-08 接受原型推荐并授权按本计划推动实际落地。
+当前 **P1–P4 Goal 实施范围已完成**：用户于 2026-08-08 接受原型推荐并授权按本计划推动实际落地。
 
 1. P0 full gate 已由项目工具以 A1 通过；证据见 `plans/logs/ENV-001.md`。原型方向另有用户 J1，因此 P0 可报告 `accepted`，但这仍不是 A2/CI。
-2. P1–P4 的 standard、可逆任务连续自动执行；P1–P3 与 P4/T4-1–T4-3 已通过各自 affected gate（A1），当前恢复点为 P4/T4-4。
+2. P1–P4 的 standard、可逆任务已连续执行完成；T4-4 通过 server/web/mocked-browser/real-PG-browser affected gates（A1），P4 恢复点为已验证节点提交。
 3. 生产 UI 锁定为 A 默认 Form + B Map，共享 EditorSession；吸收 C 的 compiled preview、搜索、密度与可读性特征，不保留 C 为第三模式。
 4. P5 guarded live AI 仍需要独立 A2 verifier 与每次 J1 provider/cost/data authorization，不因本 Goal 自动获权。
 5. release hard gate 尚无外部 CI/branch protection，因此不存在 A3。
+6. 下一个可执行 Phase 是 P5，但 live provider、真实数据、费用与 quality certification 仍必须经独立 A2 和当次 J1 授权；本 Goal 没有进入该范围。

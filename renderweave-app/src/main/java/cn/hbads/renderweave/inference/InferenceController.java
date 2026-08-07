@@ -1,6 +1,8 @@
 package cn.hbads.renderweave.inference;
 
 import cn.hbads.renderweave.inference.candidate.CandidateBundle;
+import cn.hbads.renderweave.inference.candidate.CandidateApplyResult;
+import cn.hbads.renderweave.inference.candidate.CandidateApplyService;
 import cn.hbads.renderweave.inference.candidate.CandidateJsonCodec;
 import cn.hbads.renderweave.inference.candidate.CandidateProblem;
 import cn.hbads.renderweave.inference.candidate.CandidateReviewService;
@@ -23,12 +25,16 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
 import java.net.URI;
+import java.io.IOException;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -42,6 +48,7 @@ final class InferenceController {
     private final InferenceReplayStore replayStore;
     private final ReplayInferenceWorker worker;
     private final CandidateReviewService reviews;
+    private final CandidateApplyService applies;
     private final ReplayFixtureInputFactory fixtureInputs;
     private final BlobStore blobStore;
     private final ObjectMapper json;
@@ -54,6 +61,7 @@ final class InferenceController {
             InferenceReplayStore replayStore,
             ReplayInferenceWorker worker,
             CandidateReviewService reviews,
+            CandidateApplyService applies,
             ReplayFixtureInputFactory fixtureInputs,
             BlobStore blobStore,
             ObjectMapper json
@@ -63,6 +71,7 @@ final class InferenceController {
         this.replayStore = replayStore;
         this.worker = worker;
         this.reviews = reviews;
+        this.applies = applies;
         this.fixtureInputs = fixtureInputs;
         this.blobStore = blobStore;
         this.json = json;
@@ -121,6 +130,45 @@ final class InferenceController {
                 .orElseThrow(() -> new cn.hbads.renderweave.inference.run.InferenceRunNotFoundException(runId)));
     }
 
+    @PostMapping("/{runId}/cancel")
+    InferenceRunResponse cancel(@PathVariable UUID runId) {
+        return toRunResponse(runService.cancel(runId));
+    }
+
+    @PostMapping("/{runId}/retries")
+    ResponseEntity<InferenceRunResponse> retry(
+            @PathVariable UUID runId,
+            @RequestHeader(name = "Idempotency-Key", required = false) String idempotencyKey
+    ) {
+        if (idempotencyKey == null || idempotencyKey.isBlank()) {
+            throw new InvalidInferenceApiRequestException("Idempotency-Key is required");
+        }
+        var retried = runService.retry(runId, idempotencyKey);
+        var run = retried.run();
+        if (retried.created()) {
+            run = worker.process(run.runId(), "http-retry-" + run.runId()).orElse(run);
+        }
+        return ResponseEntity
+                .status(retried.created() ? 201 : 200)
+                .location(URI.create("/api/v1/inference-runs/" + run.runId()))
+                .body(toRunResponse(run));
+    }
+
+    @GetMapping(path = "/{runId}/events", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    SseEmitter events(
+            @PathVariable UUID runId,
+            @RequestHeader(name = "Last-Event-ID", required = false) String lastEventId,
+            @RequestParam(name = "afterSequence", required = false) Long afterSequence
+    ) {
+        runStore.find(runId).orElseThrow(
+                () -> new cn.hbads.renderweave.inference.run.InferenceRunNotFoundException(runId)
+        );
+        var cursor = eventCursor(lastEventId, afterSequence);
+        var emitter = new SseEmitter(30_000L);
+        Thread.startVirtualThread(() -> streamEvents(runId, cursor, emitter));
+        return emitter;
+    }
+
     @GetMapping("/{runId}/candidate")
     CandidateReviewResponse candidate(@PathVariable UUID runId) {
         return toReviewResponse(reviews.get(runId));
@@ -142,6 +190,19 @@ final class InferenceController {
         return toReviewResponse(reviews.save(
                 runId, request.expectedCandidateRevision(), parseCandidate(request.candidate())
         ));
+    }
+
+    @PostMapping("/{runId}/apply")
+    CandidateApplyResponse applyCandidate(
+            @PathVariable UUID runId,
+            @RequestBody ApplyCandidateRequest request
+    ) {
+        if (request.expectedCandidateRevision() == null || request.expectedCandidateRevision() < 0) {
+            throw new InvalidInferenceApiRequestException(
+                    "expectedCandidateRevision must be a non-negative integer"
+            );
+        }
+        return toApplyResponse(applies.apply(runId, request.expectedCandidateRevision()));
     }
 
     @GetMapping("/{runId}/artifacts/{artifactId}")
@@ -171,6 +232,56 @@ final class InferenceController {
         }
     }
 
+    private void streamEvents(UUID runId, long initialCursor, SseEmitter emitter) {
+        var cursor = initialCursor;
+        var deadline = Instant.now().plus(Duration.ofSeconds(25));
+        try {
+            while (Instant.now().isBefore(deadline)) {
+                var events = runStore.eventsAfter(runId, cursor, 100);
+                for (var event : events) {
+                    emitter.send(SseEmitter.event()
+                            .id(Long.toString(event.sequence()))
+                            .name(event.type())
+                            .data(new InferenceEventResponse(
+                                    event.sequence(), event.type(), event.state().name(),
+                                    event.stage().name(), tree(event.dataJson()), event.occurredAt()
+                            ), MediaType.APPLICATION_JSON));
+                    cursor = event.sequence();
+                }
+                var snapshot = runStore.find(runId).orElseThrow(
+                        () -> new cn.hbads.renderweave.inference.run.InferenceRunNotFoundException(runId)
+                );
+                if (snapshot.state().terminal() && cursor >= snapshot.sequence()) {
+                    emitter.complete();
+                    return;
+                }
+                Thread.sleep(250);
+            }
+            emitter.send(SseEmitter.event().comment("reconnect"));
+            emitter.complete();
+        } catch (InterruptedException interrupted) {
+            Thread.currentThread().interrupt();
+            emitter.complete();
+        } catch (IOException | RuntimeException failure) {
+            emitter.completeWithError(failure);
+        }
+    }
+
+    private static long eventCursor(String lastEventId, Long afterSequence) {
+        long cursor = afterSequence == null ? 0 : afterSequence;
+        if (cursor < 0) {
+            throw new InvalidInferenceApiRequestException("afterSequence must not be negative");
+        }
+        if (lastEventId == null || lastEventId.isBlank()) return cursor;
+        try {
+            var headerCursor = Long.parseLong(lastEventId);
+            if (headerCursor < 0) throw new NumberFormatException("negative");
+            return Math.max(cursor, headerCursor);
+        } catch (NumberFormatException invalid) {
+            throw new InvalidInferenceApiRequestException("Last-Event-ID must be a non-negative integer", invalid);
+        }
+    }
+
     private CandidateReviewResponse toReviewResponse(CandidateReviewSnapshot review) {
         return new CandidateReviewResponse(
                 toRunResponse(review.run()),
@@ -178,6 +289,8 @@ final class InferenceController {
                 tree(candidateCodec.write(review.original())),
                 tree(candidateCodec.write(review.current())),
                 review.problems().stream().map(InferenceController::toProblem).toList(),
+                review.finalCandidate().map(candidate -> tree(candidateCodec.write(candidate))).orElse(null),
+                review.appliedAt().orElse(null),
                 review.run().inputs().stream()
                         .filter(input -> input.kind() == NormalizedArtifact.Kind.IMAGE)
                         .map(input -> new InferenceImageResponse(
@@ -193,10 +306,25 @@ final class InferenceController {
         );
     }
 
+    private CandidateApplyResponse toApplyResponse(CandidateApplyResult result) {
+        return new CandidateApplyResponse(
+                toRunResponse(result.run()), result.candidateRevision(),
+                result.rootSchemaKey().value(),
+                result.createdSchemaKeys().stream()
+                        .map(schemaKey -> new CreatedDraftResponse(
+                                schemaKey.value(), 0,
+                                "/api/v1/schema-drafts/" + schemaKey.value()
+                        ))
+                        .toList(),
+                result.appliedAt()
+        );
+    }
+
     private InferenceRunResponse toRunResponse(InferenceRunSnapshot run) {
         return new InferenceRunResponse(
                 run.runId(), run.mode().name(), run.state().name(), run.stage().name(), run.sequence(),
                 run.profileId(), run.replayFixtureId(), run.cancellationRequested(),
+                run.retryOfRunId().orElse(null),
                 run.failureCode().orElse(null),
                 replayStore.findCandidate(run.runId()).map(snapshot -> snapshot.revision()).orElse(null),
                 run.createdAt(), run.updatedAt(), run.finishedAt().orElse(null)
@@ -220,6 +348,8 @@ final class InferenceController {
     record CreateReplayRunRequest(String fixtureId, Boolean externalTransferConfirmed) { }
 
     record SaveCandidateRequest(Long expectedCandidateRevision, JsonNode candidate) { }
+
+    record ApplyCandidateRequest(Long expectedCandidateRevision) { }
 
     record ReplayFixtureListResponse(
             String profileId,
@@ -248,6 +378,7 @@ final class InferenceController {
             String profileId,
             String replayFixtureId,
             boolean cancellationRequested,
+            UUID retryOfRunId,
             String failureCode,
             Long candidateRevision,
             Instant createdAt,
@@ -261,9 +392,21 @@ final class InferenceController {
             JsonNode original,
             JsonNode current,
             List<CandidateProblemResponse> problems,
+            JsonNode finalCandidate,
+            Instant appliedAt,
             List<InferenceImageResponse> images,
             int jsonSampleCount
     ) { }
+
+    record CandidateApplyResponse(
+            InferenceRunResponse run,
+            long candidateRevision,
+            String rootSchemaKey,
+            List<CreatedDraftResponse> createdDrafts,
+            Instant appliedAt
+    ) { }
+
+    record CreatedDraftResponse(String schemaKey, long revision, String href) { }
 
     record CandidateProblemResponse(
             String code,
@@ -279,5 +422,14 @@ final class InferenceController {
             Integer width,
             Integer height,
             String contentUrl
+    ) { }
+
+    record InferenceEventResponse(
+            long sequence,
+            String type,
+            String state,
+            String stage,
+            JsonNode data,
+            Instant occurredAt
     ) { }
 }

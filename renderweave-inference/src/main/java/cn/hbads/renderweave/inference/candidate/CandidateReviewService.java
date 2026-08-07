@@ -106,8 +106,16 @@ public final class CandidateReviewService {
                 stored.revision(),
                 candidateCodec.parse(stored.originalJson()),
                 candidateCodec.parse(stored.currentJson()),
-                problemCodec.parse(stored.validationProblemsJson())
+                problemCodec.parse(stored.validationProblemsJson()),
+                stored.finalJson().map(candidateCodec::parse),
+                stored.appliedAt()
         );
+    }
+
+    /** Re-runs deterministic Candidate validation immediately before materialization. */
+    public List<CandidateProblem> validateForApply(CandidateReviewSnapshot review) {
+        Objects.requireNonNull(review, "review");
+        return validator.validate(review.current(), validationContext(review.run()));
     }
 
     private CandidateValidationContext validationContext(

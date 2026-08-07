@@ -1,4 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
+import * as Dialog from '@radix-ui/react-dialog';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   AlertCircle,
   ArrowLeft,
@@ -11,13 +12,19 @@ import {
   ShieldCheck,
   TriangleAlert,
 } from 'lucide-react';
-import { useEffect, useReducer } from 'react';
+import { useCallback, useEffect, useReducer, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 
 import { StudioRequestError } from '../schema-studio/lossless-api';
 import { ResourceError, ResourceLoading } from '../resources/DraftListPage';
 import { ResourceFrame } from '../resources/ResourceFrame';
-import { getCandidateReviewRequest, saveCandidateReviewRequest } from './candidate-api';
+import {
+  applyCandidateRequest,
+  getCandidateReviewRequest,
+  saveCandidateReviewRequest,
+  subscribeInferenceRunEvents,
+} from './candidate-api';
+import type { CandidateApplyResponse } from '../../api/generated';
 import { CandidateInspector } from './CandidateInspector';
 import { CandidateBundleNav, CandidateSurface } from './CandidateSurfaces';
 import { problemLabel } from './candidate-format';
@@ -35,6 +42,11 @@ export function CandidateReviewPage() {
     queryFn: () => getCandidateReviewRequest(runId),
     enabled: Boolean(runId),
   });
+  const refetch = query.refetch;
+  const reload = useCallback(
+    () => refetch().then((result) => result.data),
+    [refetch],
+  );
 
   return (
     <ResourceFrame
@@ -45,7 +57,7 @@ export function CandidateReviewPage() {
     >
       {query.isPending && <ResourceLoading label="正在读取 Candidate 与证据" />}
       {query.isError && <ResourceError error={query.error} onRetry={() => void query.refetch()} />}
-      {query.data && <CandidateReviewWorkspace key={runId} initial={query.data} onReload={() => query.refetch().then((result) => result.data)} />}
+      {query.data && <CandidateReviewWorkspace key={runId} initial={query.data} onReload={reload} />}
     </ResourceFrame>
   );
 }
@@ -58,9 +70,29 @@ function CandidateReviewWorkspace({
   onReload: () => Promise<Parameters<typeof createCandidateReviewState>[0] | undefined>;
 }) {
   const [state, dispatch] = useReducer(candidateReviewReducer, initial, createCandidateReviewState);
+  const queryClient = useQueryClient();
+  const [applyResult, setApplyResult] = useState<CandidateApplyResponse | null>(null);
   const selected = findSelected(state);
   const blockerCount = state.snapshot.problems.filter((problem) => problem.severity === 'BLOCKER').length;
   const warningCount = state.snapshot.problems.length - blockerCount;
+  const completed = state.snapshot.run.state === 'COMPLETED';
+  const activeSchemas = (state.snapshot.finalCandidate ?? state.snapshot.current).schemas
+    .filter((schema) => schema.assessment.resolution !== 'REMOVED');
+  const canApply = blockerCount === 0
+    && !state.dirty
+    && !state.saving
+    && !state.saveBlocked
+    && state.snapshot.run.state === 'REVIEW_REQUIRED';
+  const applyMutation = useMutation({
+    mutationFn: () => applyCandidateRequest(state.snapshot.run.runId, state.snapshot.candidateRevision),
+    retry: false,
+    onSuccess: async (result) => {
+      setApplyResult(result);
+      void queryClient.invalidateQueries({ queryKey: ['schema-drafts'] });
+      const snapshot = await onReload();
+      if (snapshot) dispatch({ type: 'hydrate', snapshot });
+    },
+  });
 
   useEffect(() => {
     if (!state.dirty || state.saving || state.saveBlocked) return;
@@ -75,6 +107,24 @@ function CandidateReviewWorkspace({
     }, 0);
     return () => window.clearTimeout(timer);
   }, [state.dirty, state.draft, state.generation, state.saveBlocked, state.saving, state.snapshot.candidateRevision, state.snapshot.run.runId]);
+
+  useEffect(() => {
+    if (state.snapshot.run.state === 'COMPLETED'
+      || state.snapshot.run.state === 'FAILED'
+      || state.snapshot.run.state === 'CANCELLED') return;
+    let refreshing = false;
+    return subscribeInferenceRunEvents(
+      state.snapshot.run.runId,
+      state.snapshot.run.sequence,
+      () => {
+        if (refreshing) return;
+        refreshing = true;
+        void onReload()
+          .then((snapshot) => { if (snapshot) dispatch({ type: 'hydrate', snapshot }); })
+          .finally(() => { refreshing = false; });
+      },
+    );
+  }, [onReload, state.snapshot.run.runId, state.snapshot.run.sequence, state.snapshot.run.state]);
 
   if (!selected.schema) return <div className="resource-state resource-state-error" role="alert">Candidate 包中没有可读取的 Schema。</div>;
   return (
@@ -98,8 +148,24 @@ function CandidateReviewWorkspace({
 
       <section className={`candidate-gate-summary ${blockerCount === 0 ? 'ready' : ''}`}>
         {blockerCount === 0 ? <ShieldCheck aria-hidden="true" size={20} /> : <TriangleAlert aria-hidden="true" size={20} />}
-        <div><strong>{blockerCount === 0 ? 'Candidate 审核门已通过' : `${blockerCount} 个 blocker 阻止落库`}</strong><span>{warningCount} warning · 诊断来自服务端确定性验证</span></div>
-        <p>{blockerCount === 0 ? '当前节点只完成审核；原子创建 Draft 将在 T4-4 开放。' : '选择问题对应的 Schema/字段，逐项处理后会自动保存并重新验证。'}</p>
+        <div>
+          <strong>{completed ? 'Draft Bundle 已原子创建' : blockerCount === 0 ? 'Candidate 审核门已通过' : `${blockerCount} 个 blocker 阻止落库`}</strong>
+          <span>{completed ? `${activeSchemas.length} 个 Draft · revision 0 · 来源 AI` : `${warningCount} warning · 诊断来自服务端确定性验证`}</span>
+        </div>
+        <p>{completed
+          ? 'final Candidate 已冻结；本次操作没有发布、更新或删除任何既有 Schema。'
+          : blockerCount === 0
+            ? `自动保存稳定后，可一次创建 ${activeSchemas.length} 个 Draft；任一 key、引用或事务冲突都会整包回滚。`
+            : '选择问题对应的 Schema/字段，逐项处理后会自动保存并重新验证。'}</p>
+        {completed
+          ? <CreatedDraftLinks result={applyResult} schemaKeys={activeSchemas.map((schema) => schema.proposedSchemaKey).filter((key): key is string => Boolean(key))} />
+          : <CandidateApplyDialog
+              canApply={canApply}
+              schemaKeys={activeSchemas.map((schema) => schema.proposedSchemaKey).filter((key): key is string => Boolean(key))}
+              pending={applyMutation.isPending}
+              error={applyMutation.error}
+              onApply={() => applyMutation.mutate()}
+            />}
       </section>
 
       {state.snapshot.problems.length > 0 && (
@@ -113,9 +179,10 @@ function CandidateReviewWorkspace({
         </div>
       )}
 
-      <div className="candidate-review-grid">
-        <CandidateBundleNav state={state} dispatch={dispatch} />
-        <section className="candidate-center">
+      <fieldset className="candidate-review-fieldset" disabled={completed} aria-label={completed ? '已冻结的 final Candidate' : 'Candidate 编辑工作区'}>
+        <div className="candidate-review-grid">
+          <CandidateBundleNav state={state} dispatch={dispatch} />
+          <section className="candidate-center">
           <header className="candidate-surface-toolbar">
             <div>
               <span>当前 Schema</span>
@@ -129,10 +196,70 @@ function CandidateReviewWorkspace({
             </div>
           </header>
           <CandidateSurface state={state} schema={selected.schema} dispatch={dispatch} />
-        </section>
-        <CandidateInspector state={state} schema={selected.schema} field={selected.field} dispatch={dispatch} />
-      </div>
+          </section>
+          <CandidateInspector state={state} schema={selected.schema} field={selected.field} dispatch={dispatch} />
+        </div>
+      </fieldset>
     </>
+  );
+}
+
+function CandidateApplyDialog({
+  canApply,
+  schemaKeys,
+  pending,
+  error,
+  onApply,
+}: {
+  canApply: boolean;
+  schemaKeys: string[];
+  pending: boolean;
+  error: Error | null;
+  onApply: () => void;
+}) {
+  return (
+    <Dialog.Root>
+      <Dialog.Trigger asChild>
+        <button className="button primary-button candidate-apply-trigger" type="button" disabled={!canApply || pending}>
+          {pending ? <LoaderCircle className="spin" aria-hidden="true" size={15} /> : <ShieldCheck aria-hidden="true" size={15} />}
+          原子创建 {schemaKeys.length} 个 Draft
+        </button>
+      </Dialog.Trigger>
+      <Dialog.Portal>
+        <Dialog.Overlay className="dialog-overlay" />
+        <Dialog.Content className="dialog-content candidate-apply-dialog" aria-describedby="candidate-apply-description">
+          <Dialog.Title>确认创建完整 Draft Bundle</Dialog.Title>
+          <Dialog.Description id="candidate-apply-description">
+            这会冻结当前 Candidate，并以 AI 来源创建以下 revision 0。它不会发布、覆盖或合并既有 Schema。
+          </Dialog.Description>
+          <ol className="candidate-apply-list">
+            {schemaKeys.map((schemaKey) => <li key={schemaKey}><code>{schemaKey}</code><span>revision 0</span></li>)}
+          </ol>
+          <ul className="candidate-apply-contract">
+            <li>任一 active key 或 tombstone 冲突：整包零写</li>
+            <li>任一引用、DAG 或约束失败：整包零写</li>
+            <li>成功后 final Candidate 只读，Draft 仍可进入普通生命周期</li>
+          </ul>
+          {error && <div className="candidate-apply-error" role="alert"><AlertCircle aria-hidden="true" size={16} /><span>{applyErrorMessage(error)}</span></div>}
+          <div className="dialog-actions">
+            <Dialog.Close asChild><button className="button ghost-button" type="button" disabled={pending}>继续审核</button></Dialog.Close>
+            <button className="button primary-button" type="button" disabled={!canApply || pending} onClick={onApply}>
+              {pending ? <LoaderCircle className="spin" aria-hidden="true" size={15} /> : <ShieldCheck aria-hidden="true" size={15} />}
+              确认原子创建
+            </button>
+          </div>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
+  );
+}
+
+function CreatedDraftLinks({ result, schemaKeys }: { result: CandidateApplyResponse | null; schemaKeys: string[] }) {
+  const keys = result?.createdDrafts.map((draft) => draft.schemaKey) ?? schemaKeys;
+  return (
+    <div className="candidate-created-links" aria-label="已创建 Draft">
+      {keys.map((schemaKey) => <Link key={schemaKey} to={`/schemas/${schemaKey}`}>{schemaKey}<span>r0</span></Link>)}
+    </div>
   );
 }
 
@@ -148,6 +275,16 @@ function saveErrorMessage(error: unknown) {
     return 'Candidate revision 已变化。你的本地修改仍保留；请重载后重新审核，或确认没有其他窗口后再试。';
   }
   return error instanceof Error ? error.message : '自动保存失败。';
+}
+
+function applyErrorMessage(error: unknown) {
+  if (error instanceof StudioRequestError && error.problem.status === 409) {
+    return '创建期间发现 key、tombstone 或引用冲突。整包没有写入，Candidate 仍保留在审核态。';
+  }
+  if (error instanceof StudioRequestError && error.problem.status === 422) {
+    return '服务端重新验证发现 blocker。整包没有写入，请关闭窗口并继续逐项处理。';
+  }
+  return error instanceof Error ? error.message : '原子创建失败；整包没有写入。';
 }
 
 function selectProblem(

@@ -253,6 +253,28 @@ class PostgresInferenceRunStoreTest {
         assertThat(runs.claimNext("worker", T0.plusSeconds(3), Duration.ofSeconds(10))).isEmpty();
     }
 
+    @Test
+    void applyingRunRejectsCancellationWithoutChangingItsAtomicSection() {
+        var created = runs.create(command("applying-cancel", "applying-input", "applying-artifact")).run();
+        jdbcClient.sql("""
+                        update inference_run
+                        set state = 'APPLYING', stage = 'ATOMIC_CREATE'
+                        where run_id = :runId
+                        """)
+                .param("runId", created.runId())
+                .update();
+
+        assertThatThrownBy(() -> runs.requestCancellation(created.runId(), T0.plusSeconds(1)))
+                .isInstanceOf(InvalidInferenceRunTransitionException.class)
+                .hasMessageContaining("APPLYING cannot be cancelled");
+
+        var unchanged = runs.find(created.runId()).orElseThrow();
+        assertThat(unchanged.state()).isEqualTo(InferenceRunState.APPLYING);
+        assertThat(unchanged.stage()).isEqualTo(InferenceStage.ATOMIC_CREATE);
+        assertThat(unchanged.cancellationRequested()).isFalse();
+        assertThat(unchanged.sequence()).isEqualTo(1);
+    }
+
     private NewInferenceRun command(String idempotencyKey, String inputSeed, String artifactSeed) {
         return NewInferenceRun.initial(
                 UUID.randomUUID(), idempotencyKey, normalized(inputSeed, artifactSeed), profile(), T0

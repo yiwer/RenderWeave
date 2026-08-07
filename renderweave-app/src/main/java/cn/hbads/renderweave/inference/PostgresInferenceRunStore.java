@@ -647,6 +647,7 @@ public class PostgresInferenceRunStore implements InferenceRunStore, InferenceRe
                                original_json::text as original_json,
                                current_json::text as current_json,
                                validation_problems::text as validation_problems,
+                               final_json::text as final_json, applied_at,
                                created_at, updated_at
                         from inference_candidate
                         where run_id = :runId
@@ -944,6 +945,8 @@ public class PostgresInferenceRunStore implements InferenceRunStore, InferenceRe
                 resultSet.getString("original_json"),
                 resultSet.getString("current_json"),
                 resultSet.getString("validation_problems"),
+                Optional.ofNullable(resultSet.getString("final_json")),
+                instant(resultSet, "applied_at"),
                 instant(resultSet, "created_at").orElseThrow(),
                 instant(resultSet, "updated_at").orElseThrow()
         );

@@ -1,11 +1,11 @@
 openapi: 3.1.2
 info:
   title: RenderWeave API
-  version: 0.7.0
+  version: 0.8.0
   description: >-
     Contract-first API for RenderWeave Schema Drafts, immutable StaticSchemas,
     exact compiled artifacts, authoritative RootDocument validation and zero-network
-    evidence-backed inference Candidate review.
+    evidence-backed inference Candidate review and create-only atomic Draft application.
 servers:
   - url: /
 tags:
@@ -562,6 +562,130 @@ paths:
           $ref: '#/components/responses/ConflictProblem'
         '422':
           $ref: '#/components/responses/ValidationProblem'
+        '500':
+          $ref: '#/components/responses/InternalProblem'
+  /api/v1/inference-runs/{runId}/apply:
+    parameters:
+      - $ref: '#/components/parameters/InferenceRunId'
+    post:
+      operationId: applyInferenceCandidate
+      tags: [Inference Runs]
+      summary: Atomically create every Draft in a fully reviewed Candidate bundle
+      description: >-
+        Create-only and idempotent for the frozen Candidate revision. Any active key,
+        tombstone, missing reference, graph conflict or transaction fault leaves the
+        entire bundle unwritten and the run in REVIEW_REQUIRED.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApplyCandidateRequest'
+      responses:
+        '200':
+          description: The complete Draft bundle exists at revision zero with creationSource AI.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CandidateApplyResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestProblem'
+        '404':
+          $ref: '#/components/responses/NotFoundProblem'
+        '409':
+          $ref: '#/components/responses/ConflictProblem'
+        '422':
+          $ref: '#/components/responses/ValidationProblem'
+        '500':
+          $ref: '#/components/responses/InternalProblem'
+  /api/v1/inference-runs/{runId}/cancel:
+    parameters:
+      - $ref: '#/components/parameters/InferenceRunId'
+    post:
+      operationId: cancelInferenceRun
+      tags: [Inference Runs]
+      summary: Request cancellation under the durable run state machine
+      description: Applying transactions cannot be cancelled.
+      responses:
+        '200':
+          description: Authoritative run state after the cancellation request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InferenceRunResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundProblem'
+        '409':
+          $ref: '#/components/responses/ConflictProblem'
+        '500':
+          $ref: '#/components/responses/InternalProblem'
+  /api/v1/inference-runs/{runId}/retries:
+    parameters:
+      - $ref: '#/components/parameters/InferenceRunId'
+      - $ref: '#/components/parameters/IdempotencyKey'
+    post:
+      operationId: retryInferenceRun
+      tags: [Inference Runs]
+      summary: Create a new run from retained normalized inputs of a failed or cancelled run
+      responses:
+        '201':
+          description: A new auditable retry run was created.
+          headers:
+            Location:
+              description: Canonical URL of the new inference run.
+              schema:
+                type: string
+                format: uri-reference
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InferenceRunResponse'
+        '200':
+          description: Idempotent replay of the same retry request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InferenceRunResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestProblem'
+        '404':
+          $ref: '#/components/responses/NotFoundProblem'
+        '409':
+          $ref: '#/components/responses/ConflictProblem'
+        '500':
+          $ref: '#/components/responses/InternalProblem'
+  /api/v1/inference-runs/{runId}/events:
+    parameters:
+      - $ref: '#/components/parameters/InferenceRunId'
+      - name: Last-Event-ID
+        in: header
+        required: false
+        schema:
+          type: string
+          pattern: '^[0-9]+$'
+      - name: afterSequence
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int64
+          minimum: 0
+    get:
+      operationId: streamInferenceRunEvents
+      tags: [Inference Runs]
+      summary: Stream at-least-once run notifications after a monotonic sequence
+      description: Clients deduplicate by SSE id and then GET the authoritative run or Candidate snapshot.
+      responses:
+        '200':
+          description: SSE notifications; each data payload conforms to InferenceEvent.
+          content:
+            text/event-stream:
+              schema:
+                type: string
+        '400':
+          $ref: '#/components/responses/BadRequestProblem'
+        '404':
+          $ref: '#/components/responses/NotFoundProblem'
         '500':
           $ref: '#/components/responses/InternalProblem'
   /api/v1/inference-runs/{runId}/artifacts/{artifactId}:
@@ -1458,7 +1582,7 @@ components:
       type: object
       additionalProperties: false
       required:
-        [runId, mode, state, stage, sequence, profileId, replayFixtureId, cancellationRequested, createdAt, updatedAt]
+        [runId, mode, state, stage, sequence, profileId, replayFixtureId, cancellationRequested, retryOfRunId, failureCode, candidateRevision, createdAt, updatedAt, finishedAt]
       properties:
         runId:
           type: string
@@ -1479,6 +1603,9 @@ components:
           type: string
         cancellationRequested:
           type: boolean
+        retryOfRunId:
+          type: [string, 'null']
+          format: uuid
         failureCode:
           type: [string, 'null']
         candidateRevision:
@@ -1505,10 +1632,56 @@ components:
           minimum: 0
         candidate:
           $ref: '#/components/schemas/CandidateBundle'
+    ApplyCandidateRequest:
+      type: object
+      additionalProperties: false
+      required: [expectedCandidateRevision]
+      properties:
+        expectedCandidateRevision:
+          type: integer
+          format: int64
+          minimum: 0
+    CandidateApplyResponse:
+      type: object
+      additionalProperties: false
+      required: [run, candidateRevision, rootSchemaKey, createdDrafts, appliedAt]
+      properties:
+        run:
+          $ref: '#/components/schemas/InferenceRunResponse'
+        candidateRevision:
+          type: integer
+          format: int64
+          minimum: 0
+        rootSchemaKey:
+          type: string
+          pattern: '^[a-z0-9][a-z0-9-]{0,62}$'
+        createdDrafts:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/CreatedDraft'
+        appliedAt:
+          type: string
+          format: date-time
+    CreatedDraft:
+      type: object
+      additionalProperties: false
+      required: [schemaKey, revision, href]
+      properties:
+        schemaKey:
+          type: string
+          pattern: '^[a-z0-9][a-z0-9-]{0,62}$'
+        revision:
+          type: integer
+          format: int64
+          const: 0
+        href:
+          type: string
+          format: uri-reference
     CandidateReviewResponse:
       type: object
       additionalProperties: false
-      required: [run, candidateRevision, original, current, problems, images, jsonSampleCount]
+      required: [run, candidateRevision, original, current, problems, finalCandidate, appliedAt, images, jsonSampleCount]
       properties:
         run:
           $ref: '#/components/schemas/InferenceRunResponse'
@@ -1524,6 +1697,13 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/CandidateProblem'
+        finalCandidate:
+          anyOf:
+            - $ref: '#/components/schemas/CandidateBundle'
+            - type: 'null'
+        appliedAt:
+          type: [string, 'null']
+          format: date-time
         images:
           type: array
           items:
@@ -1532,6 +1712,27 @@ components:
           type: integer
           minimum: 0
           maximum: 20
+    InferenceEvent:
+      type: object
+      additionalProperties: false
+      required: [sequence, type, state, stage, data, occurredAt]
+      properties:
+        sequence:
+          type: integer
+          format: int64
+          minimum: 1
+        type:
+          type: string
+        state:
+          $ref: '#/components/schemas/InferenceRunState'
+        stage:
+          $ref: '#/components/schemas/InferenceStage'
+        data:
+          type: object
+          additionalProperties: true
+        occurredAt:
+          type: string
+          format: date-time
     CandidateBundle:
       type: object
       additionalProperties: false

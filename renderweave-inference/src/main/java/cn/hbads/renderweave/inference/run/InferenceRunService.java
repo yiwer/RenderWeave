@@ -52,6 +52,10 @@ public final class InferenceRunService {
         return runStore.retry(sourceRunId, runIds.get(), idempotencyKey, clock.instant());
     }
 
+    public synchronized InferenceRunSnapshot cancel(UUID runId) {
+        return runStore.requestCancellation(runId, clock.instant());
+    }
+
     public synchronized void delete(UUID runId) {
         deleteArtifacts(runStore.delete(runId));
     }

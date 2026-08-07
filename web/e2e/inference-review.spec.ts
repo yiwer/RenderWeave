@@ -10,13 +10,16 @@ test('launches zero-network replay and reviews one evidence-backed Candidate ite
   let current = candidateBundle('UNRESOLVED', 'UNRESOLVED');
   let revision = 0;
   let problems = [candidateProblem()];
+  let applied = false;
   await page.route('**/api/v1/inference-runs/**', async (route) => {
     const request = route.request();
     const url = new URL(request.url());
-    if (request.method() === 'GET' && url.pathname.endsWith(`/artifacts/${artifactId}`)) {
+    if (request.method() === 'GET' && url.pathname.endsWith('/events')) {
+      await route.fulfill({ status: 200, contentType: 'text/event-stream', body: 'retry: 60000\n\n' });
+    } else if (request.method() === 'GET' && url.pathname.endsWith(`/artifacts/${artifactId}`)) {
       await route.fulfill({ status: 200, contentType: 'image/svg+xml', body: evidenceSvg() });
     } else if (request.method() === 'GET' && url.pathname === `/api/v1/inference-runs/${runId}/candidate`) {
-      await json(route, reviewResponse(current, revision, problems));
+      await json(route, reviewResponse(current, revision, problems, applied));
     } else if (request.method() === 'PUT' && url.pathname === `/api/v1/inference-runs/${runId}/candidate`) {
       const body = JSON.parse(request.postData() ?? '{}') as { expectedCandidateRevision: number; candidate: ReturnType<typeof candidateBundle> };
       expect(body.expectedCandidateRevision).toBe(revision);
@@ -26,7 +29,15 @@ test('launches zero-network replay and reviews one evidence-backed Candidate ite
       current = body.candidate;
       revision += 1;
       problems = [];
-      await json(route, reviewResponse(current, revision, problems));
+      await json(route, reviewResponse(current, revision, problems, applied));
+    } else if (request.method() === 'POST' && url.pathname === `/api/v1/inference-runs/${runId}/apply`) {
+      expect(request.postDataJSON()).toEqual({ expectedCandidateRevision: revision });
+      applied = true;
+      await json(route, {
+        run: runResponse(revision, true), candidateRevision: revision, rootSchemaKey: 'order',
+        createdDrafts: [{ schemaKey: 'order', revision: 0, href: '/api/v1/schema-drafts/order' }],
+        appliedAt: '2026-08-08T00:00:02Z',
+      });
     } else {
       await route.abort('failed');
     }
@@ -34,7 +45,7 @@ test('launches zero-network replay and reviews one evidence-backed Candidate ite
   await page.route('**/api/v1/inference-runs', async (route) => {
     expect(route.request().headers()['idempotency-key']).toBeTruthy();
     expect(route.request().postDataJSON()).toEqual({ fixtureId: 'combined-08-low-information', externalTransferConfirmed: true });
-    await json(route, runResponse(revision), 201);
+    await json(route, runResponse(revision, false), 201);
   });
   await page.route('**/api/v1/inference-runs/replay-fixtures', async (route) => {
     await json(route, {
@@ -67,7 +78,13 @@ test('launches zero-network replay and reviews one evidence-backed Candidate ite
   await expect(page.getByText('已保存', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: '树图' }).click();
   await expect(page.locator('.candidate-map-surface')).toBeVisible();
-  await page.screenshot({ path: testInfo.outputPath('candidate-review-map-1280x720.png'), fullPage: true });
+  await page.getByRole('button', { name: '原子创建 1 个 Draft' }).click();
+  await expect(page.getByText('任一 active key 或 tombstone 冲突：整包零写')).toBeVisible();
+  await page.getByRole('button', { name: '确认原子创建' }).click();
+  await expect(page.getByText('Draft Bundle 已原子创建')).toBeVisible();
+  await expect(page.getByRole('link', { name: /order/ })).toHaveAttribute('href', '/schemas/order');
+  await expect(page.getByText('final Candidate 已冻结；本次操作没有发布、更新或删除任何既有 Schema。')).toBeVisible();
+  await page.screenshot({ path: testInfo.outputPath('candidate-atomic-created-1280x720.png'), fullPage: true });
 
   const accessibility = await new AxeBuilder({ page })
     .include('.resource-shell')
@@ -108,20 +125,24 @@ function candidateProblem() {
   return { code: 'LOW_CONFIDENCE_UNRESOLVED', severity: 'BLOCKER' as const, itemId: fieldId, pointer: '/schemas/0/fields/0/assessment/resolution', args: { confidenceBps: '4200' } };
 }
 
-function reviewResponse(current: ReturnType<typeof candidateBundle>, candidateRevision: number, currentProblems: ReturnType<typeof candidateProblem>[]) {
+function reviewResponse(current: ReturnType<typeof candidateBundle>, candidateRevision: number, currentProblems: ReturnType<typeof candidateProblem>[], applied: boolean) {
   return {
-    run: runResponse(candidateRevision), candidateRevision,
+    run: runResponse(candidateRevision, applied), candidateRevision,
     original: candidateBundle('UNRESOLVED', 'UNRESOLVED'), current, problems: currentProblems,
+    finalCandidate: applied ? current : null,
+    appliedAt: applied ? '2026-08-08T00:00:02Z' : null,
     images: [{ artifactId, ordinal: 0, width: 1200, height: 800, contentUrl: `/api/v1/inference-runs/${runId}/artifacts/${artifactId}` }],
     jsonSampleCount: 1,
   };
 }
 
-function runResponse(candidateRevision: number) {
+function runResponse(candidateRevision: number, applied: boolean) {
   return {
-    runId, mode: 'COMBINED', state: 'REVIEW_REQUIRED', stage: 'USER_APPROVAL', sequence: 7 + candidateRevision,
+    runId, mode: 'COMBINED', state: applied ? 'COMPLETED' : 'REVIEW_REQUIRED', stage: applied ? 'ATOMIC_CREATE' : 'USER_APPROVAL', sequence: 7 + candidateRevision + (applied ? 2 : 0),
     profileId: 'replay-v1', replayFixtureId: 'combined-08-low-information', cancellationRequested: false,
-    candidateRevision, createdAt: '2026-08-08T00:00:00Z', updatedAt: '2026-08-08T00:00:01Z',
+    retryOfRunId: null, failureCode: null, candidateRevision,
+    createdAt: '2026-08-08T00:00:00Z', updatedAt: applied ? '2026-08-08T00:00:02Z' : '2026-08-08T00:00:01Z',
+    finishedAt: applied ? '2026-08-08T00:00:02Z' : null,
   };
 }
 

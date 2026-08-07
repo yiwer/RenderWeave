@@ -423,16 +423,35 @@ export type InferenceRunResponse = {
     profileId: string;
     replayFixtureId: string;
     cancellationRequested: boolean;
-    failureCode?: string | null;
-    candidateRevision?: number | null;
+    retryOfRunId: string | null;
+    failureCode: string | null;
+    candidateRevision: number | null;
     createdAt: string;
     updatedAt: string;
-    finishedAt?: string | null;
+    finishedAt: string | null;
 };
 
 export type SaveCandidateRequest = {
     expectedCandidateRevision: number;
     candidate: CandidateBundle;
+};
+
+export type ApplyCandidateRequest = {
+    expectedCandidateRevision: number;
+};
+
+export type CandidateApplyResponse = {
+    run: InferenceRunResponse;
+    candidateRevision: number;
+    rootSchemaKey: string;
+    createdDrafts: Array<CreatedDraft>;
+    appliedAt: string;
+};
+
+export type CreatedDraft = {
+    schemaKey: string;
+    revision: 0;
+    href: string;
 };
 
 export type CandidateReviewResponse = {
@@ -441,8 +460,21 @@ export type CandidateReviewResponse = {
     original: CandidateBundle;
     current: CandidateBundle;
     problems: Array<CandidateProblem>;
+    finalCandidate: CandidateBundle | null;
+    appliedAt: string | null;
     images: Array<InferenceImage>;
     jsonSampleCount: number;
+};
+
+export type InferenceEvent = {
+    sequence: number;
+    type: string;
+    state: InferenceRunState;
+    stage: InferenceStage;
+    data: {
+        [key: string]: unknown;
+    };
+    occurredAt: string;
 };
 
 export type CandidateBundle = {
@@ -1425,6 +1457,170 @@ export type SaveInferenceCandidateResponses = {
 };
 
 export type SaveInferenceCandidateResponse = SaveInferenceCandidateResponses[keyof SaveInferenceCandidateResponses];
+
+export type ApplyInferenceCandidateData = {
+    body: ApplyCandidateRequest;
+    path: {
+        runId: string;
+    };
+    query?: never;
+    url: '/api/v1/inference-runs/{runId}/apply';
+};
+
+export type ApplyInferenceCandidateErrors = {
+    /**
+     * Request JSON, key syntax or envelope is invalid.
+     */
+    400: Problem;
+    /**
+     * The requested Draft does not exist.
+     */
+    404: Problem;
+    /**
+     * Natural identity or expected revision conflicts with current state.
+     */
+    409: Problem;
+    /**
+     * The complete RenderWeave definition is not valid and nothing was written.
+     */
+    422: Problem;
+    /**
+     * RFC 9457 problem response.
+     */
+    500: Problem;
+};
+
+export type ApplyInferenceCandidateError = ApplyInferenceCandidateErrors[keyof ApplyInferenceCandidateErrors];
+
+export type ApplyInferenceCandidateResponses = {
+    /**
+     * The complete Draft bundle exists at revision zero with creationSource AI.
+     */
+    200: CandidateApplyResponse;
+};
+
+export type ApplyInferenceCandidateResponse = ApplyInferenceCandidateResponses[keyof ApplyInferenceCandidateResponses];
+
+export type CancelInferenceRunData = {
+    body?: never;
+    path: {
+        runId: string;
+    };
+    query?: never;
+    url: '/api/v1/inference-runs/{runId}/cancel';
+};
+
+export type CancelInferenceRunErrors = {
+    /**
+     * The requested Draft does not exist.
+     */
+    404: Problem;
+    /**
+     * Natural identity or expected revision conflicts with current state.
+     */
+    409: Problem;
+    /**
+     * RFC 9457 problem response.
+     */
+    500: Problem;
+};
+
+export type CancelInferenceRunError = CancelInferenceRunErrors[keyof CancelInferenceRunErrors];
+
+export type CancelInferenceRunResponses = {
+    /**
+     * Authoritative run state after the cancellation request.
+     */
+    200: InferenceRunResponse;
+};
+
+export type CancelInferenceRunResponse = CancelInferenceRunResponses[keyof CancelInferenceRunResponses];
+
+export type RetryInferenceRunData = {
+    body?: never;
+    headers: {
+        'Idempotency-Key': string;
+    };
+    path: {
+        runId: string;
+    };
+    query?: never;
+    url: '/api/v1/inference-runs/{runId}/retries';
+};
+
+export type RetryInferenceRunErrors = {
+    /**
+     * Request JSON, key syntax or envelope is invalid.
+     */
+    400: Problem;
+    /**
+     * The requested Draft does not exist.
+     */
+    404: Problem;
+    /**
+     * Natural identity or expected revision conflicts with current state.
+     */
+    409: Problem;
+    /**
+     * RFC 9457 problem response.
+     */
+    500: Problem;
+};
+
+export type RetryInferenceRunError = RetryInferenceRunErrors[keyof RetryInferenceRunErrors];
+
+export type RetryInferenceRunResponses = {
+    /**
+     * Idempotent replay of the same retry request.
+     */
+    200: InferenceRunResponse;
+    /**
+     * A new auditable retry run was created.
+     */
+    201: InferenceRunResponse;
+};
+
+export type RetryInferenceRunResponse = RetryInferenceRunResponses[keyof RetryInferenceRunResponses];
+
+export type StreamInferenceRunEventsData = {
+    body?: never;
+    headers?: {
+        'Last-Event-ID'?: string;
+    };
+    path: {
+        runId: string;
+    };
+    query?: {
+        afterSequence?: number;
+    };
+    url: '/api/v1/inference-runs/{runId}/events';
+};
+
+export type StreamInferenceRunEventsErrors = {
+    /**
+     * Request JSON, key syntax or envelope is invalid.
+     */
+    400: Problem;
+    /**
+     * The requested Draft does not exist.
+     */
+    404: Problem;
+    /**
+     * RFC 9457 problem response.
+     */
+    500: Problem;
+};
+
+export type StreamInferenceRunEventsError = StreamInferenceRunEventsErrors[keyof StreamInferenceRunEventsErrors];
+
+export type StreamInferenceRunEventsResponses = {
+    /**
+     * SSE notifications; each data payload conforms to InferenceEvent.
+     */
+    200: string;
+};
+
+export type StreamInferenceRunEventsResponse = StreamInferenceRunEventsResponses[keyof StreamInferenceRunEventsResponses];
 
 export type GetInferenceImageArtifactData = {
     body?: never;

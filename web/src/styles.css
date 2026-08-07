@@ -4155,7 +4155,7 @@ button.required-toggle.active,
 
 .candidate-gate-summary {
   display: grid;
-  grid-template-columns: 24px minmax(190px, auto) minmax(280px, 1fr);
+  grid-template-columns: 24px minmax(190px, auto) minmax(250px, 1fr) auto;
   align-items: center;
   gap: 10px;
   margin-bottom: 10px;
@@ -4172,6 +4172,21 @@ button.required-toggle.active,
 .candidate-gate-summary span,
 .candidate-gate-summary p { margin: 0; font-size: 9px; line-height: 1.45; }
 .candidate-gate-summary p { color: var(--body); text-align: right; }
+.candidate-apply-trigger { min-width: 174px; white-space: nowrap; }
+.candidate-created-links { display: flex !important; flex-flow: row wrap !important; justify-content: flex-end; gap: 5px !important; }
+.candidate-created-links a { display: inline-flex; min-height: 29px; align-items: center; gap: 7px; padding: 0 9px; border: 1px solid #a9c2ae; border-radius: 6px; background: white; color: var(--success); font-family: "JetBrains Mono", Consolas, monospace; font-size: 8px; text-decoration: none; }
+.candidate-created-links a:hover { border-color: var(--success); box-shadow: 0 3px 9px rgb(48 100 61 / 10%); }
+.candidate-created-links a span { padding-left: 7px; border-left: 1px solid #d9e4db; color: var(--muted); }
+
+.candidate-apply-dialog { width: min(520px, calc(100vw - 32px)); }
+.candidate-apply-dialog > p { color: var(--muted); font-size: 10px; line-height: 1.55; }
+.candidate-apply-list { display: grid; max-height: 210px; gap: 5px; margin: 14px 0 10px; padding: 0; overflow-y: auto; list-style: none; counter-reset: apply-schema; }
+.candidate-apply-list li { display: grid; grid-template-columns: 24px minmax(0, 1fr) auto; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid var(--hairline); border-radius: 7px; background: #faf8f3; counter-increment: apply-schema; }
+.candidate-apply-list li::before { content: counter(apply-schema, decimal-leading-zero); color: var(--muted); font-size: 8px; }
+.candidate-apply-list code { overflow: hidden; color: var(--ink); font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
+.candidate-apply-list span { color: var(--success); font-size: 8px; font-weight: 750; }
+.candidate-apply-contract { display: grid; gap: 5px; margin: 0 0 14px; padding: 10px 10px 10px 27px; border-radius: 7px; background: #eef5ee; color: #3d6747; font-size: 9px; line-height: 1.45; }
+.candidate-apply-error { display: flex; align-items: flex-start; gap: 7px; margin-bottom: 12px; padding: 9px; border-radius: 7px; background: #f9e7e5; color: var(--error); font-size: 9px; line-height: 1.45; }
 
 .candidate-problem-ribbon {
   display: flex;
@@ -4211,6 +4226,14 @@ button.required-toggle.active,
   background: var(--surface);
   box-shadow: 0 10px 30px rgb(28 27 25 / 6%);
 }
+
+.candidate-review-fieldset { min-width: 0; margin: 0; padding: 0; border: 0; }
+.candidate-review-fieldset:disabled .candidate-review-grid { box-shadow: 0 8px 22px rgb(28 27 25 / 4%); }
+.candidate-review-fieldset:disabled button,
+.candidate-review-fieldset:disabled input,
+.candidate-review-fieldset:disabled select { cursor: not-allowed; }
+.candidate-review-fieldset:disabled .candidate-add-field,
+.candidate-review-fieldset:disabled .candidate-resolution-actions { display: none; }
 
 .candidate-bundle-nav {
   min-width: 0;
@@ -4349,6 +4372,7 @@ button.required-toggle.active,
 .candidate-map-legend { position: absolute; z-index: 5; right: 9px; bottom: 9px; display: flex; align-items: center; gap: 5px; padding: 6px 8px; border: 1px solid var(--hairline); border-radius: 6px; background: rgb(255 253 249 / 92%); color: var(--muted); font-size: 7px; }
 
 .candidate-inspector { min-width: 0; max-height: 720px; overflow-y: auto; background: #fffdf9; }
+.candidate-review-fieldset:disabled .candidate-inspector { max-height: none; overflow-y: visible; }
 .candidate-inspector > header { display: flex; min-height: 61px; align-items: center; justify-content: space-between; gap: 8px; padding: 9px 12px; border-bottom: 1px solid var(--hairline); }
 .candidate-inspector > header > div { display: flex; min-width: 0; flex-direction: column; gap: 3px; }
 .candidate-inspector > header h2 { overflow: hidden; margin: 0; color: var(--ink); font-family: Georgia, "Times New Roman", serif; font-size: 15px; font-weight: 400; text-overflow: ellipsis; white-space: nowrap; }
@@ -4523,6 +4547,16 @@ button.required-toggle.active,
   .candidate-gate-summary p {
     grid-column: 2;
     text-align: left;
+  }
+
+  .candidate-apply-trigger,
+  .candidate-created-links {
+    grid-column: 2;
+    justify-self: start;
+  }
+
+  .candidate-created-links {
+    justify-content: flex-start;
   }
 }
 
