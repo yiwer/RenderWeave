@@ -1,10 +1,10 @@
 # RenderWeave v1 Phase 计划
 
-- 状态：Goal active；P0 accepted，P1–P3 automated-verified，P4/T4-1 in progress
+- 状态：Goal active；P0 accepted，P1–P3、P4/T4-1 automated-verified，P4/T4-2 in progress
 - 日期：2026-08-08
 - Spec：[`specs/renderweave-v1.md`](../specs/renderweave-v1.md)
 - 原型：`/prototype/schema-studio?variant=A|B|C`
-- 当前 lifecycle：P0 `accepted`；P1–P3 `automated_verified`；P4/T4-1 `in_progress`
+- 当前 lifecycle：P0 `accepted`；P1–P3、P4/T4-1 `automated_verified`；P4/T4-2 `in_progress`
 
 ## 1. 四维执行配置
 
@@ -207,7 +207,7 @@ Phase 内任务只在真实前置依赖满足时并行。当前没有 atomic cla
 ### P4 — Replay inference vertical slice
 
 #### T4-1：输入归一化、BlobStore、durable job 与 lease
-- 执行状态：`in_progress`
+- 执行状态：`automated_verified`（A1，`plans/logs/P4-T4-1.md`）
 - AC：AC-015, AC-019, AC-024
 - 依赖：P2
 - 影响区域：inference input/job、app adapters/migrations
@@ -217,6 +217,7 @@ Phase 内任务只在真实前置依赖满足时并行。当前没有 atomic cla
 - 完成信号：raw bytes 不保留，restart/cancel 不产生 partial state
 
 #### T4-2：deterministic profiler、Candidate contracts 与 replay workflow
+- 执行状态：`in_progress`
 - AC：AC-015, AC-016
 - 依赖：T4-1
 - 影响区域：inference domain/profile/replay fixtures
@@ -343,7 +344,7 @@ Phase 内任务只在真实前置依赖满足时并行。当前没有 atomic cla
 当前为 **Goal active**：用户于 2026-08-08 接受原型推荐并授权按本计划推动实际落地。
 
 1. P0 full gate 已由项目工具以 A1 通过；证据见 `plans/logs/ENV-001.md`。原型方向另有用户 J1，因此 P0 可报告 `accepted`，但这仍不是 A2/CI。
-2. P1–P4 的 standard、可逆任务进入连续自动执行；P1 已通过 G-P1-DRAFT（A1），当前恢复点为 P2/T2-1。
+2. P1–P4 的 standard、可逆任务连续自动执行；P1–P3 与 P4/T4-1 已通过各自 affected gate（A1），当前恢复点为 P4/T4-2。
 3. 生产 UI 锁定为 A 默认 Form + B Map，共享 EditorSession；吸收 C 的 compiled preview、搜索、密度与可读性特征，不保留 C 为第三模式。
 4. P5 guarded live AI 仍需要独立 A2 verifier 与每次 J1 provider/cost/data authorization，不因本 Goal 自动获权。
 5. release hard gate 尚无外部 CI/branch protection，因此不存在 A3。

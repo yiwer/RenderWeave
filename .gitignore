@@ -17,6 +17,7 @@ web/coverage/
 .sdlc/draft-e2e/
 .agent-sdlc-backups/
 renderweave-blob-store/
+var/
 *.log
 __pycache__/
 *.py[cod]

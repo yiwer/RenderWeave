@@ -3,7 +3,7 @@
 ## 当前目标与进度
 - Goal 已于 2026-08-08 激活：连续实现并验证 P1–P4；P5 live AI、真实数据和付费调用不在当前自动执行边界内。
 - 需求访谈已收束，v1 产品语义以 `specs/renderweave-v1.md` 为准。
-- 生命周期状态：P0 `accepted`；P1–P3 `automated_verified`；P4/T4-1 已进入实现。
+- 生命周期状态：P0 `accepted`；P1–P3、P4/T4-1 `automated_verified`；P4/T4-2 已进入实现。
 
 ## 下一步
 - [x] Java / React / PostgreSQL / OpenAPI 最小 canary 与 A1 full gate 通过。
@@ -19,12 +19,13 @@
 - [x] T3-1：共享 EditorSession semantic action/reducer（七类型、100-step undo/redo、typing coalescing、save/reload/restore 边界）。
 - [x] T3-2：完整 Form/Map/Inspector、reference/publish-prep、无损 decimal 边界、dirty/history、256-field 与高密度可读性生产交互。
 - [x] T3-3：Draft/Static 生命周期页面、冲突 diff 与 RootDocument sample validator；真实 PG 浏览器旅程覆盖 restore/delete/publish/copy/validate。
-- [ ] T4-1：零网络 replay inference 输入归一化、BlobStore、durable run 与 lease/checkpoint/cancel/retry。
+- [x] T4-1：零网络 replay inference 输入归一化、BlobStore、durable run 与 lease/checkpoint/cancel/retry；Java 79 tests 与 V005 fresh migration 全绿。
+- [ ] T4-2：`replay-v1` Profile、deterministic profiler、Candidate contracts、60-case synthetic corpus 与零网络 workflow。
 - [ ] live AI Phase 前补齐 independent verify（A2）与当次付费/数据授权。
 
 ## 重要发现或局部阻塞
 - 本机全局 Node 为 20.20.2；正式 gate 已使用 checksum 固定的仓库局部 Node 24.19.0，不依赖或修改系统 Node。
-- 当前仓库无 commit、CI、issue tracker 或独立 verifier；版本控制保持 record-only，整体计划暂不宣称 A2/A3。
+- 已建立真实 Git 节点边界：`main@93cdefb` 固化 P0–P3，P4 在 `phase/p4-replay-inference`；仍无 CI、issue tracker 或独立 verifier，因此整体计划不宣称 A2/A3。
 - UI 设计数据库把本项目误路由到 hero-centric/mobile/dark SaaS；已在 page override 中拒绝，采用已确认的 dense warm editorial workbench。
 - Docker registry 代理不可用；Compose config 与等价 API/PG runtime canary 已绿，`docker compose up --build` 仍 pending。
 
@@ -40,4 +41,5 @@
 - `plans/logs/P3-T3-1.md`；A1 web evidence：`.sdlc/evidence/20260808-023127-web/metadata.json`。
 - `plans/logs/P3-T3-2.md`；A1 web/e2e/real-browser evidence：`.sdlc/evidence/20260808-030732-web/metadata.json`、`.sdlc/evidence/20260808-030709-e2e/metadata.json`、`.sdlc/evidence/20260808-030319-draft-e2e/metadata.json`。
 - `plans/logs/P3-T3-3.md`；G-P3 evidence：`.sdlc/evidence/20260808-033646-draft-e2e/metadata.json`，浏览器/axe：`.sdlc/evidence/20260808-033128-e2e/metadata.json`。
-- 当前恢复点：P4 / T4-1；从 inference 模块的 domain contract 与 failure-first tests 开始，所有执行固定为零网络 replay。
+- `plans/logs/P4-T4-1.md`；A1 server evidence：`.sdlc/evidence/20260808-041051-server/metadata.json`。
+- 当前恢复点：P4 / T4-2；从 versioned replay Profile、deterministic profiler 与 Candidate contract 的 failure-first tests 开始，所有执行固定为零网络 synthetic replay。
