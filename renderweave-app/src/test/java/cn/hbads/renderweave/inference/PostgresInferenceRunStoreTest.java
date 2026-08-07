@@ -135,6 +135,22 @@ class PostgresInferenceRunStoreTest {
     }
 
     @Test
+    void exactClaimLeasesOnlyTheRequestedRun() {
+        var first = runs.create(command("exact-first", "exact-input-a", "exact-artifact-a")).run();
+        var second = runs.create(command("exact-second", "exact-input-b", "exact-artifact-b")).run();
+
+        var claimed = runs.claim(second.runId(), "http-worker", T0, Duration.ofSeconds(30)).orElseThrow();
+
+        assertThat(claimed.runId()).isEqualTo(second.runId());
+        assertThat(claimed.state()).isEqualTo(InferenceRunState.RUNNING);
+        assertThat(runs.find(first.runId()).orElseThrow().state()).isEqualTo(InferenceRunState.QUEUED);
+        assertThat(runs.claim(UUID.randomUUID(), "http-worker", T0, Duration.ofSeconds(30))).isEmpty();
+        assertThat(runs.eventsAfter(second.runId(), 0, 10))
+                .extracting(event -> event.type())
+                .containsExactly("QUEUED", "LEASE_ACQUIRED");
+    }
+
+    @Test
     void leaseRenewalCheckpointAndExpiryResumeFromTheLastSafeStage() {
         var created = runs.create(command("lease-run", "lease-input", "lease-artifact")).run();
         var firstLease = runs.claimNext("worker-a", T0, Duration.ofSeconds(10)).orElseThrow();

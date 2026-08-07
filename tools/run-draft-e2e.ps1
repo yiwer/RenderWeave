@@ -1,19 +1,25 @@
 [CmdletBinding()]
-param()
+param(
+    [ValidateSet('draft', 'inference')]
+    [string]$Journey = 'draft'
+)
 
 $ErrorActionPreference = 'Stop'
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $webRoot = Join-Path $repoRoot 'web'
 $jarPath = Join-Path $repoRoot 'renderweave-app\target\renderweave-app-1.0-SNAPSHOT.jar'
-$runDir = Join-Path $repoRoot ".sdlc\draft-e2e\$PID"
-$evidenceDir = Join-Path $repoRoot ".sdlc\evidence\draft-e2e-$PID"
+$runDir = Join-Path $repoRoot ".sdlc\$Journey-e2e\$PID"
+$evidenceDir = Join-Path $repoRoot ".sdlc\evidence\$Journey-e2e-$PID"
 $null = New-Item -ItemType Directory -Path $runDir -Force
 $null = New-Item -ItemType Directory -Path $evidenceDir -Force
-$containerName = "renderweave-draft-e2e-$PID"
+$containerName = "renderweave-$Journey-e2e-$PID"
 $containerId = $null
 $apiProcess = $null
 $webProcess = $null
 $oldEnvironment = @{}
+$journeyStarted = Get-Date
+$journeyResult = 'failed'
+$journeyFailure = $null
 
 function Get-FreeTcpPort {
     $listener = New-Object System.Net.Sockets.TcpListener([System.Net.IPAddress]::Loopback, 0)
@@ -93,12 +99,17 @@ try {
     $apiPort = Get-FreeTcpPort
     $webPort = Get-FreeTcpPort
 
-    foreach ($name in @('RENDERWEAVE_DB_URL', 'RENDERWEAVE_DB_USERNAME', 'RENDERWEAVE_DB_PASSWORD', 'RENDERWEAVE_API_URL')) {
+    foreach ($name in @(
+        'RENDERWEAVE_DB_URL', 'RENDERWEAVE_DB_USERNAME', 'RENDERWEAVE_DB_PASSWORD',
+        'RENDERWEAVE_API_URL', 'RENDERWEAVE_BLOB_ROOT', 'RENDERWEAVE_LIVE_E2E',
+        'RENDERWEAVE_WEB_PORT', 'RENDERWEAVE_EVIDENCE_DIR'
+    )) {
         $oldEnvironment[$name] = [Environment]::GetEnvironmentVariable($name, 'Process')
     }
     $env:RENDERWEAVE_DB_URL = "jdbc:postgresql://127.0.0.1:$databasePort/renderweave"
     $env:RENDERWEAVE_DB_USERNAME = 'renderweave'
     $env:RENDERWEAVE_DB_PASSWORD = 'renderweave-e2e'
+    $env:RENDERWEAVE_BLOB_ROOT = Join-Path $runDir 'blobs'
 
     $apiProcess = Start-Process -FilePath 'java' `
         -ArgumentList @('-jar', $jarPath, "--server.port=$apiPort") `
@@ -117,18 +128,39 @@ try {
         -RedirectStandardOutput (Join-Path $runDir 'web.stdout.log') `
         -RedirectStandardError (Join-Path $runDir 'web.stderr.log') `
         -PassThru
-    Wait-ForHttp -Uri "http://127.0.0.1:$webPort/schemas/new" -Process $webProcess -Name 'RenderWeave web'
+    $readinessPath = if ($Journey -eq 'inference') { 'inference' } else { 'schemas/new' }
+    Wait-ForHttp -Uri "http://127.0.0.1:$webPort/$readinessPath" -Process $webProcess -Name 'RenderWeave web'
 
-    $schemaKey = "browser-card-$PID"
-    & python tools\draft_journey_audit.py `
-        --base-url "http://127.0.0.1:$webPort" `
-        --schema-key $schemaKey `
-        --output $evidenceDir
-    if ($LASTEXITCODE -ne 0) {
-        throw "Draft browser audit failed with exit code $LASTEXITCODE."
+    if ($Journey -eq 'inference') {
+        $npmCommand = Join-Path $nodeDir 'npm.cmd'
+        $env:RENDERWEAVE_LIVE_E2E = '1'
+        $env:RENDERWEAVE_WEB_PORT = "$webPort"
+        $env:RENDERWEAVE_EVIDENCE_DIR = $evidenceDir
+        Push-Location $webRoot
+        try {
+            & $npmCommand run test:e2e -- inference-live.spec.ts
+        }
+        finally {
+            Pop-Location
+        }
+        if ($LASTEXITCODE -ne 0) {
+            throw "Inference browser audit failed with exit code $LASTEXITCODE."
+        }
     }
+    else {
+        $schemaKey = "browser-card-$PID"
+        & python tools\draft_journey_audit.py `
+            --base-url "http://127.0.0.1:$webPort" `
+            --schema-key $schemaKey `
+            --output $evidenceDir
+        if ($LASTEXITCODE -ne 0) {
+            throw "Draft browser audit failed with exit code $LASTEXITCODE."
+        }
+    }
+    $journeyResult = 'passed'
 }
 catch {
+    $journeyFailure = $_.Exception.Message
     foreach ($path in @(
         (Join-Path $runDir 'api.stdout.log'),
         (Join-Path $runDir 'api.stderr.log'),
@@ -153,4 +185,20 @@ finally {
     foreach ($name in $oldEnvironment.Keys) {
         [Environment]::SetEnvironmentVariable($name, $oldEnvironment[$name], 'Process')
     }
+    $metadata = [ordered]@{
+        journey = $Journey
+        result = $journeyResult
+        assurance = 'A1'
+        capturedBy = 'tools/run-draft-e2e.ps1'
+        revision = (& git -C $repoRoot rev-parse --verify HEAD)
+        startedAt = $journeyStarted.ToString('o')
+        finishedAt = (Get-Date).ToString('o')
+        failure = $journeyFailure
+    }
+    $encoding = New-Object System.Text.UTF8Encoding($false)
+    [System.IO.File]::WriteAllText(
+        (Join-Path $evidenceDir 'metadata.json'),
+        ($metadata | ConvertTo-Json -Depth 4),
+        $encoding
+    )
 }

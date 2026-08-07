@@ -2,6 +2,8 @@ package cn.hbads.renderweave.inference;
 
 import cn.hbads.renderweave.inference.candidate.CandidateBundle;
 import cn.hbads.renderweave.inference.candidate.InferenceCandidateSnapshot;
+import cn.hbads.renderweave.inference.candidate.InferenceCandidateNotFoundException;
+import cn.hbads.renderweave.inference.candidate.InferenceCandidateRevisionConflictException;
 import cn.hbads.renderweave.inference.input.InferenceMode;
 import cn.hbads.renderweave.inference.input.NormalizedArtifact;
 import cn.hbads.renderweave.inference.run.InferenceArtifactDeletion;
@@ -157,6 +159,62 @@ public class PostgresInferenceRunStore implements InferenceRunStore, InferenceRe
         insertEvent(selected.runId(), updated.sequence(), eventType, InferenceRunState.RUNNING,
                 updated.stage(), "{}", now);
         return Optional.of(require(selected.runId()));
+    }
+
+    @Override
+    @Transactional
+    public Optional<InferenceRunSnapshot> claim(
+            UUID runId,
+            String workerId,
+            Instant now,
+            Duration leaseDuration
+    ) {
+        Objects.requireNonNull(runId, "runId");
+        workerId = requireWorkerId(workerId);
+        var selected = jdbcClient.sql("""
+                        select run_id, state
+                        from inference_run
+                        where run_id = :runId
+                          and (state = 'QUEUED' or (state = 'RUNNING' and lease_expires_at <= :now))
+                        for update
+                        """)
+                .param("runId", runId)
+                .param("now", offset(now))
+                .query((resultSet, rowNumber) -> new ClaimCandidate(
+                        resultSet.getObject("run_id", UUID.class),
+                        InferenceRunState.valueOf(resultSet.getString("state"))
+                ))
+                .optional();
+        if (selected.isEmpty()) return Optional.empty();
+
+        var candidate = selected.orElseThrow();
+        var leaseToken = UUID.randomUUID();
+        var expiresAt = leaseExpiry(now, leaseDuration);
+        var updated = jdbcClient.sql("""
+                        update inference_run
+                        set state = 'RUNNING',
+                            lease_owner = :workerId,
+                            lease_token = :leaseToken,
+                            lease_expires_at = :expiresAt,
+                            sequence = sequence + 1,
+                            updated_at = :now
+                        where run_id = :runId
+                        returning sequence, stage
+                        """)
+                .param("workerId", workerId)
+                .param("leaseToken", leaseToken)
+                .param("expiresAt", offset(expiresAt))
+                .param("now", offset(now))
+                .param("runId", runId)
+                .query((resultSet, rowNumber) -> new SequenceAndStage(
+                        resultSet.getLong("sequence"),
+                        InferenceStage.valueOf(resultSet.getString("stage"))
+                ))
+                .single();
+        var eventType = candidate.state() == InferenceRunState.QUEUED ? "LEASE_ACQUIRED" : "LEASE_RECLAIMED";
+        insertEvent(runId, updated.sequence(), eventType, InferenceRunState.RUNNING,
+                updated.stage(), "{}", now);
+        return Optional.of(require(runId));
     }
 
     @Override
@@ -596,6 +654,70 @@ public class PostgresInferenceRunStore implements InferenceRunStore, InferenceRe
                 .param("runId", runId)
                 .query(PostgresInferenceRunStore::mapCandidate)
                 .optional();
+    }
+
+    @Override
+    @Transactional
+    public InferenceCandidateSnapshot saveCandidate(
+            UUID runId,
+            long expectedRevision,
+            String candidateJson,
+            String validationProblemsJson,
+            Instant now
+    ) {
+        Objects.requireNonNull(runId, "runId");
+        Objects.requireNonNull(now, "now");
+        if (expectedRevision < 0) throw new IllegalArgumentException("expectedRevision must not be negative");
+        if (candidateJson == null || candidateJson.isBlank()
+                || validationProblemsJson == null || validationProblemsJson.isBlank()) {
+            throw new IllegalArgumentException("Candidate and validation problems are required");
+        }
+        var currentRevision = jdbcClient.sql("""
+                        select revision from inference_candidate where run_id = :runId for update
+                        """)
+                .param("runId", runId)
+                .query(Long.class)
+                .optional()
+                .orElseThrow(() -> new InferenceCandidateNotFoundException(runId));
+        if (currentRevision != expectedRevision) {
+            throw new InferenceCandidateRevisionConflictException(runId, expectedRevision, currentRevision);
+        }
+        var run = lockAndRequire(runId);
+        if (run.state() != InferenceRunState.REVIEW_REQUIRED || run.stage() != InferenceStage.USER_APPROVAL) {
+            throw new InvalidInferenceRunTransitionException(runId, "candidate is not reviewable");
+        }
+        var nextRevision = expectedRevision + 1;
+        jdbcClient.sql("""
+                        update inference_candidate
+                        set revision = :nextRevision,
+                            current_json = cast(:candidateJson as jsonb),
+                            validation_problems = cast(:validationProblemsJson as jsonb),
+                            updated_at = :now
+                        where run_id = :runId and revision = :expectedRevision
+                        """)
+                .param("nextRevision", nextRevision)
+                .param("candidateJson", candidateJson)
+                .param("validationProblemsJson", validationProblemsJson)
+                .param("now", offset(now))
+                .param("runId", runId)
+                .param("expectedRevision", expectedRevision)
+                .update();
+        var sequence = jdbcClient.sql("""
+                        update inference_run
+                        set sequence = sequence + 1, updated_at = :now
+                        where run_id = :runId
+                        returning sequence
+                        """)
+                .param("now", offset(now))
+                .param("runId", runId)
+                .query(Long.class)
+                .single();
+        insertEvent(
+                runId, sequence, "CANDIDATE_UPDATED",
+                InferenceRunState.REVIEW_REQUIRED, InferenceStage.USER_APPROVAL,
+                "{\"candidateRevision\":" + nextRevision + "}", now
+        );
+        return findCandidate(runId).orElseThrow(() -> new InferenceCandidateNotFoundException(runId));
     }
 
     @Override

@@ -1,10 +1,11 @@
 openapi: 3.1.2
 info:
   title: RenderWeave API
-  version: 0.6.0
+  version: 0.7.0
   description: >-
     Contract-first API for RenderWeave Schema Drafts, immutable StaticSchemas,
-    exact compiled artifacts and authoritative RootDocument validation.
+    exact compiled artifacts, authoritative RootDocument validation and zero-network
+    evidence-backed inference Candidate review.
 servers:
   - url: /
 tags:
@@ -16,6 +17,8 @@ tags:
     description: Immutable, exact-version publication artifacts and system presets.
   - name: RootDocument Validation
     description: Strict, deterministic batch validation against one frozen Schema graph.
+  - name: Inference Runs
+    description: Durable zero-network replay runs and optimistic Candidate review.
 paths:
   /api/v1/system/status:
     get:
@@ -438,8 +441,177 @@ paths:
           $ref: '#/components/responses/PayloadTooLargeProblem'
         '500':
           $ref: '#/components/responses/InternalProblem'
+  /api/v1/inference-runs/replay-fixtures:
+    get:
+      operationId: listReplayFixtures
+      tags: [Inference Runs]
+      summary: List the versioned synthetic fixtures available to replay-v1
+      responses:
+        '200':
+          description: Exactly 60 synthetic cases, balanced across the three modes.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReplayFixtureListResponse'
+        '500':
+          $ref: '#/components/responses/InternalProblem'
+  /api/v1/inference-runs:
+    post:
+      operationId: createReplayInferenceRun
+      tags: [Inference Runs]
+      summary: Create and deterministically execute a durable synthetic replay run
+      description: >-
+        P4 exposes only replay-v1. The selected fixture is synthetic and the profile has
+        networkAllowed=false. Idempotent replays return the original run.
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateReplayRunRequest'
+      responses:
+        '201':
+          description: Durable replay run created and executed.
+          headers:
+            Location:
+              description: Canonical URL of the inference run.
+              schema:
+                type: string
+                format: uri-reference
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InferenceRunResponse'
+        '200':
+          description: Idempotent replay of the same request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InferenceRunResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestProblem'
+        '409':
+          $ref: '#/components/responses/ConflictProblem'
+        '422':
+          $ref: '#/components/responses/ValidationProblem'
+        '500':
+          $ref: '#/components/responses/InternalProblem'
+  /api/v1/inference-runs/{runId}:
+    parameters:
+      - $ref: '#/components/parameters/InferenceRunId'
+    get:
+      operationId: getInferenceRun
+      tags: [Inference Runs]
+      summary: Read the authoritative durable run snapshot
+      responses:
+        '200':
+          description: Current run state and monotonic sequence.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InferenceRunResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundProblem'
+        '500':
+          $ref: '#/components/responses/InternalProblem'
+  /api/v1/inference-runs/{runId}/candidate:
+    parameters:
+      - $ref: '#/components/parameters/InferenceRunId'
+    get:
+      operationId: getInferenceCandidate
+      tags: [Inference Runs]
+      summary: Read original and current Candidate review snapshots
+      responses:
+        '200':
+          description: Candidate, evidence inputs and deterministic review problems.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CandidateReviewResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundProblem'
+        '500':
+          $ref: '#/components/responses/InternalProblem'
+    put:
+      operationId: saveInferenceCandidate
+      tags: [Inference Runs]
+      summary: Autosave one optimistic Candidate review action
+      description: >-
+        AI provenance is immutable. A request may change at most one item resolution;
+        there is deliberately no confirm-all operation.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaveCandidateRequest'
+      responses:
+        '200':
+          description: Current snapshot saved at the next Candidate revision.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CandidateReviewResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestProblem'
+        '404':
+          $ref: '#/components/responses/NotFoundProblem'
+        '409':
+          $ref: '#/components/responses/ConflictProblem'
+        '422':
+          $ref: '#/components/responses/ValidationProblem'
+        '500':
+          $ref: '#/components/responses/InternalProblem'
+  /api/v1/inference-runs/{runId}/artifacts/{artifactId}:
+    parameters:
+      - $ref: '#/components/parameters/InferenceRunId'
+      - $ref: '#/components/parameters/InferenceArtifactId'
+    get:
+      operationId: getInferenceImageArtifact
+      tags: [Inference Runs]
+      summary: Read a normalized image that belongs to this run for evidence review
+      responses:
+        '200':
+          description: Metadata-free normalized PNG.
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+          content:
+            image/png:
+              schema:
+                type: string
+                format: binary
+        '404':
+          $ref: '#/components/responses/NotFoundProblem'
+        '500':
+          $ref: '#/components/responses/InternalProblem'
 components:
   parameters:
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 128
+    InferenceRunId:
+      name: runId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    InferenceArtifactId:
+      name: artifactId
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: '^[a-f0-9]{64}$'
     SchemaKey:
       name: schemaKey
       in: path
@@ -1209,6 +1381,356 @@ components:
           type: object
           additionalProperties: true
           description: Language-neutral arguments; clients localize by code.
+    CreateReplayRunRequest:
+      type: object
+      additionalProperties: false
+      required: [fixtureId, externalTransferConfirmed]
+      properties:
+        fixtureId:
+          type: string
+          minLength: 1
+          maxLength: 128
+        externalTransferConfirmed:
+          type: boolean
+          const: true
+          description: Explicit acknowledgement of the displayed profile and input scope.
+    ReplayFixtureListResponse:
+      type: object
+      additionalProperties: false
+      required: [profileId, provider, networkAllowed, certification, items]
+      properties:
+        profileId:
+          type: string
+          const: replay-v1
+        provider:
+          type: string
+          const: REPLAY
+        networkAllowed:
+          type: boolean
+          const: false
+        certification:
+          type: string
+          const: REPLAY_ONLY
+        items:
+          type: array
+          minItems: 60
+          maxItems: 60
+          items:
+            $ref: '#/components/schemas/ReplayFixtureResponse'
+    ReplayFixtureResponse:
+      type: object
+      additionalProperties: false
+      required:
+        [fixtureId, mode, scenario, imageCount, jsonSampleCount, expectedSchemaCount, expectedProblemCodes]
+      properties:
+        fixtureId:
+          type: string
+        mode:
+          $ref: '#/components/schemas/InferenceMode'
+        scenario:
+          type: string
+        imageCount:
+          type: integer
+          minimum: 0
+          maximum: 10
+        jsonSampleCount:
+          type: integer
+          minimum: 0
+          maximum: 20
+        expectedSchemaCount:
+          type: integer
+          minimum: 1
+        expectedProblemCodes:
+          type: array
+          items:
+            type: string
+    InferenceMode:
+      type: string
+      enum: [IMAGE_ONLY, JSON_ONLY, COMBINED]
+    InferenceRunState:
+      type: string
+      enum: [QUEUED, RUNNING, REVIEW_REQUIRED, APPLYING, COMPLETED, FAILED, CANCELLED]
+    InferenceStage:
+      type: string
+      enum:
+        [NORMALIZE, OBSERVE, STRUCTURE, DETERMINISTIC_VALIDATE, CRITIQUE, REPAIR, USER_APPROVAL, ATOMIC_CREATE]
+    InferenceRunResponse:
+      type: object
+      additionalProperties: false
+      required:
+        [runId, mode, state, stage, sequence, profileId, replayFixtureId, cancellationRequested, createdAt, updatedAt]
+      properties:
+        runId:
+          type: string
+          format: uuid
+        mode:
+          $ref: '#/components/schemas/InferenceMode'
+        state:
+          $ref: '#/components/schemas/InferenceRunState'
+        stage:
+          $ref: '#/components/schemas/InferenceStage'
+        sequence:
+          type: integer
+          format: int64
+          minimum: 1
+        profileId:
+          type: string
+        replayFixtureId:
+          type: string
+        cancellationRequested:
+          type: boolean
+        failureCode:
+          type: [string, 'null']
+        candidateRevision:
+          type: [integer, 'null']
+          format: int64
+          minimum: 0
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        finishedAt:
+          type: [string, 'null']
+          format: date-time
+    SaveCandidateRequest:
+      type: object
+      additionalProperties: false
+      required: [expectedCandidateRevision, candidate]
+      properties:
+        expectedCandidateRevision:
+          type: integer
+          format: int64
+          minimum: 0
+        candidate:
+          $ref: '#/components/schemas/CandidateBundle'
+    CandidateReviewResponse:
+      type: object
+      additionalProperties: false
+      required: [run, candidateRevision, original, current, problems, images, jsonSampleCount]
+      properties:
+        run:
+          $ref: '#/components/schemas/InferenceRunResponse'
+        candidateRevision:
+          type: integer
+          format: int64
+          minimum: 0
+        original:
+          $ref: '#/components/schemas/CandidateBundle'
+        current:
+          $ref: '#/components/schemas/CandidateBundle'
+        problems:
+          type: array
+          items:
+            $ref: '#/components/schemas/CandidateProblem'
+        images:
+          type: array
+          items:
+            $ref: '#/components/schemas/InferenceImage'
+        jsonSampleCount:
+          type: integer
+          minimum: 0
+          maximum: 20
+    CandidateBundle:
+      type: object
+      additionalProperties: false
+      required: [contractVersion, rootCandidateSchemaId, schemas]
+      properties:
+        contractVersion:
+          type: string
+          const: renderweave-candidate/1.0
+        rootCandidateSchemaId:
+          type: string
+          format: uuid
+        schemas:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/CandidateSchema'
+    CandidateSchema:
+      type: object
+      additionalProperties: false
+      required: [candidateSchemaId, proposedSchemaKey, displayName, source, assessment, fields]
+      properties:
+        candidateSchemaId:
+          type: string
+          format: uuid
+        proposedSchemaKey:
+          type: [string, 'null']
+        displayName:
+          type: [string, 'null']
+        source:
+          $ref: '#/components/schemas/CandidateSource'
+        assessment:
+          $ref: '#/components/schemas/CandidateAssessment'
+        fields:
+          type: array
+          items:
+            $ref: '#/components/schemas/CandidateField'
+    CandidateField:
+      type: object
+      additionalProperties: false
+      required: [candidateFieldId, proposedFieldKey, displayName, required, value, source, assessment]
+      properties:
+        candidateFieldId:
+          type: string
+          format: uuid
+        proposedFieldKey:
+          type: [string, 'null']
+        displayName:
+          type: [string, 'null']
+        required:
+          type: boolean
+        value:
+          $ref: '#/components/schemas/CandidateValue'
+        source:
+          $ref: '#/components/schemas/CandidateSource'
+        assessment:
+          $ref: '#/components/schemas/CandidateAssessment'
+    CandidateValue:
+      type: object
+      additionalProperties: false
+      required: [kind, items, reference, observedKinds, constraints]
+      properties:
+        kind:
+          type: string
+          enum: [TEXT, DECIMAL, DATE, TIME, BOOLEAN, REFERENCE, ARRAY, UNRESOLVED, CONFLICT]
+        items:
+          anyOf:
+            - $ref: '#/components/schemas/CandidateValue'
+            - type: 'null'
+        reference:
+          anyOf:
+            - $ref: '#/components/schemas/CandidateReference'
+            - type: 'null'
+        observedKinds:
+          type: array
+          items:
+            type: string
+        constraints:
+          type: object
+          additionalProperties:
+            type: string
+    CandidateReference:
+      type: object
+      additionalProperties: false
+      required: [kind, candidateSchemaId, schemaKey, versionTag]
+      properties:
+        kind:
+          type: [string, 'null']
+          enum: [CANDIDATE_SCHEMA, DRAFT, STATIC, null]
+        candidateSchemaId:
+          type: [string, 'null']
+          format: uuid
+        schemaKey:
+          type: [string, 'null']
+        versionTag:
+          type: [string, 'null']
+    CandidateSource:
+      type: string
+      enum: [AI, USER]
+    CandidateResolution:
+      type: string
+      enum: [NOT_REQUIRED, UNRESOLVED, CONFIRMED, RESOLVED_BY_EDIT, REMOVED]
+    CandidateAssessment:
+      type: object
+      additionalProperties: false
+      required: [confidenceBps, inferred, resolution, evidence]
+      properties:
+        confidenceBps:
+          type: [integer, 'null']
+          minimum: 0
+          maximum: 10000
+        inferred:
+          type: boolean
+        resolution:
+          $ref: '#/components/schemas/CandidateResolution'
+        evidence:
+          type: array
+          items:
+            $ref: '#/components/schemas/CandidateEvidence'
+    CandidateEvidence:
+      type: object
+      additionalProperties: false
+      required: [kind, artifactId, boundingBox, sampleIndex, jsonPointer]
+      properties:
+        kind:
+          type: string
+          enum: [IMAGE, JSON]
+        artifactId:
+          type: [string, 'null']
+        boundingBox:
+          anyOf:
+            - $ref: '#/components/schemas/CandidateBoundingBox'
+            - type: 'null'
+        sampleIndex:
+          type: [integer, 'null']
+          minimum: 0
+          maximum: 19
+        jsonPointer:
+          type: [string, 'null']
+    CandidateBoundingBox:
+      type: object
+      additionalProperties: false
+      required: [left, top, right, bottom]
+      properties:
+        left:
+          type: integer
+          minimum: 0
+          maximum: 10000
+        top:
+          type: integer
+          minimum: 0
+          maximum: 10000
+        right:
+          type: integer
+          minimum: 0
+          maximum: 10000
+        bottom:
+          type: integer
+          minimum: 0
+          maximum: 10000
+    CandidateProblem:
+      type: object
+      additionalProperties: false
+      required: [code, severity, itemId, pointer, args]
+      properties:
+        code:
+          type: string
+        severity:
+          type: string
+          enum: [BLOCKER, WARNING]
+        itemId:
+          type: [string, 'null']
+          format: uuid
+        pointer:
+          type: string
+        args:
+          type: object
+          additionalProperties:
+            type: string
+    InferenceImage:
+      type: object
+      additionalProperties: false
+      required: [artifactId, ordinal, width, height, contentUrl]
+      properties:
+        artifactId:
+          type: string
+          pattern: '^[a-f0-9]{64}$'
+        ordinal:
+          type: integer
+          minimum: 0
+          maximum: 9
+        width:
+          type: integer
+          minimum: 1
+        height:
+          type: integer
+          minimum: 1
+        contentUrl:
+          type: string
+          format: uri-reference
     Violation:
       type: object
       additionalProperties: false

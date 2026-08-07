@@ -1,5 +1,6 @@
 import {
   Braces,
+  BrainCircuit,
   Database,
   FileCheck2,
   Layers3,
@@ -28,7 +29,7 @@ export function ResourceFrame({
         <Link className="product-mark" to="/schemas" aria-label="RenderWeave Draft 列表">
           <span className="weave-mark" aria-hidden="true">RW</span><span>RenderWeave</span>
         </Link>
-        <span className="resource-chrome-context">Schema foundation · v1</span>
+        <span className="resource-chrome-context">Schema foundation + replay review · v1</span>
         <div className="chrome-actions">{actions}</div>
       </header>
       <div className="resource-body">
@@ -65,14 +66,19 @@ export function ResourceRail() {
         <FileCheck2 aria-hidden="true" size={17} />样本验证器
       </NavLink>
       <div className="rail-divider" />
+      <div className="rail-section-label">AI ASSIST</div>
+      <NavLink className={({ isActive }) => `rail-link ${isActive ? 'active' : ''}`} to="/inference">
+        <BrainCircuit aria-hidden="true" size={17} />Replay 推断
+      </NavLink>
+      <div className="rail-divider" />
       <div className="rail-context-card system-contract-card">
         <span>API CONTRACT</span>
-        <strong>0.6.0</strong>
+        <strong>0.7.0</strong>
         <small><Database aria-hidden="true" size={12} /> PostgreSQL · strict DSL</small>
       </div>
       <div className="rail-note">
         <strong>当前 v1 范围</strong>
-        <span>Draft、StaticSchema 与 RootDocument 验证；不展示尚未实现的 Template/Render。</span>
+        <span>Draft、StaticSchema、RootDocument 验证与零网络 Candidate 审核；不展示 Template/Render。</span>
       </div>
     </nav>
   );

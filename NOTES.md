@@ -3,7 +3,7 @@
 ## 当前目标与进度
 - Goal 已于 2026-08-08 激活：连续实现并验证 P1–P4；P5 live AI、真实数据和付费调用不在当前自动执行边界内。
 - 需求访谈已收束，v1 产品语义以 `specs/renderweave-v1.md` 为准。
-- 生命周期状态：P0 `accepted`；P1–P3、P4/T4-1–T4-2 `automated_verified`；P4/T4-3 已进入实现。
+- 生命周期状态：P0 `accepted`；P1–P3、P4/T4-1–T4-3 `automated_verified`；P4/T4-4 已进入实现。
 
 ## 下一步
 - [x] Java / React / PostgreSQL / OpenAPI 最小 canary 与 A1 full gate 通过。
@@ -21,7 +21,8 @@
 - [x] T3-3：Draft/Static 生命周期页面、冲突 diff 与 RootDocument sample validator；真实 PG 浏览器旅程覆盖 restore/delete/publish/copy/validate。
 - [x] T4-1：零网络 replay inference 输入归一化、BlobStore、durable run 与 lease/checkpoint/cancel/retry；Java 79 tests 与 V005 fresh migration 全绿。
 - [x] T4-2：`replay-v1` Profile、deterministic profiler、Candidate contracts、60-case synthetic corpus 与零网络 durable workflow；Java 99 tests 与 V006 fresh migration 全绿。
-- [ ] T4-3：Candidate 查询/逐项 revision API、Form/Map review editor 与 image/JSON evidence overlay（无 confirm-all）。
+- [x] T4-3：Candidate 查询/逐项 revision autosave API、Form/Map review editor、image/JSON evidence overlay 与真实 PG/browser 闭环（无 confirm-all）。
+- [ ] T4-4：deterministic create-only materializer、原子 bundle apply、SSE 与 crash/replay recovery。
 - [ ] live AI Phase 前补齐 independent verify（A2）与当次付费/数据授权。
 
 ## 重要发现或局部阻塞
@@ -44,4 +45,5 @@
 - `plans/logs/P3-T3-3.md`；G-P3 evidence：`.sdlc/evidence/20260808-033646-draft-e2e/metadata.json`，浏览器/axe：`.sdlc/evidence/20260808-033128-e2e/metadata.json`。
 - `plans/logs/P4-T4-1.md`；A1 server evidence：`.sdlc/evidence/20260808-041051-server/metadata.json`。
 - `plans/logs/P4-T4-2.md`；A1 server evidence：`.sdlc/evidence/20260808-044819-server/metadata.json`。
-- 当前恢复点：P4 / T4-3；从 Candidate revision/query API 和逐项审核 reducer 开始，所有执行继续固定为零网络 synthetic replay，严禁 confirm-all。
+- `plans/logs/P4-T4-3.md`；A1 server/web/real-browser evidence：`.sdlc/evidence/20260808-052825-server/metadata.json`、`.sdlc/evidence/20260808-052917-web/metadata.json`、`.sdlc/evidence/inference-e2e-9372/metadata.json`。
+- 当前恢复点：P4 / T4-4；从 Candidate→strict DSL deterministic materializer 与 create-only bundle transaction 开始，继续固定为零网络 synthetic replay，严禁 merge/update/publish。

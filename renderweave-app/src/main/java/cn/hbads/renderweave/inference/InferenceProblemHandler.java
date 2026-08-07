@@ -1,0 +1,104 @@
+package cn.hbads.renderweave.inference;
+
+import cn.hbads.renderweave.inference.candidate.InferenceCandidateNotFoundException;
+import cn.hbads.renderweave.inference.candidate.InferenceCandidateRevisionConflictException;
+import cn.hbads.renderweave.inference.candidate.InvalidCandidateContractException;
+import cn.hbads.renderweave.inference.candidate.InvalidCandidateEditException;
+import cn.hbads.renderweave.inference.input.InvalidInferenceInputException;
+import cn.hbads.renderweave.inference.run.InferenceIdempotencyConflictException;
+import cn.hbads.renderweave.inference.run.InferenceRunNotFoundException;
+import cn.hbads.renderweave.inference.run.InvalidInferenceRunTransitionException;
+import cn.hbads.renderweave.schema.ApiProblem;
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+import java.util.List;
+import java.util.UUID;
+
+@RestControllerAdvice
+final class InferenceProblemHandler {
+    @ExceptionHandler(InvalidInferenceApiRequestException.class)
+    ResponseEntity<ApiProblem> invalidRequest(
+            InvalidInferenceApiRequestException exception,
+            HttpServletRequest request
+    ) {
+        return problem(HttpStatus.BAD_REQUEST, "Inference request invalid", "INVALID_REQUEST",
+                exception.getMessage(), request, null, null);
+    }
+
+    @ExceptionHandler(InvalidInferenceInputException.class)
+    ResponseEntity<ApiProblem> invalidInput(
+            InvalidInferenceInputException exception,
+            HttpServletRequest request
+    ) {
+        var violation = new ApiProblem.ApiViolation(
+                exception.code(), exception.pointer(), exception.args(), exception.getMessage()
+        );
+        return problem(HttpStatus.UNPROCESSABLE_CONTENT, "Inference input invalid", exception.code(),
+                exception.getMessage(), request, List.of(violation), null);
+    }
+
+    @ExceptionHandler({InvalidCandidateContractException.class, InvalidCandidateEditException.class})
+    ResponseEntity<ApiProblem> invalidCandidate(RuntimeException exception, HttpServletRequest request) {
+        var code = exception instanceof InvalidCandidateContractException contract
+                ? contract.code() : ((InvalidCandidateEditException) exception).code();
+        return problem(HttpStatus.UNPROCESSABLE_CONTENT, "Candidate edit invalid", code,
+                exception.getMessage(), request, null, null);
+    }
+
+    @ExceptionHandler(InferenceCandidateRevisionConflictException.class)
+    ResponseEntity<ApiProblem> candidateConflict(
+            InferenceCandidateRevisionConflictException exception,
+            HttpServletRequest request
+    ) {
+        return problem(HttpStatus.CONFLICT, "Candidate revision conflict", "CANDIDATE_REVISION_CONFLICT",
+                "The Candidate changed after this review loaded. Local changes were not written.",
+                request, null, exception.currentRevision());
+    }
+
+    @ExceptionHandler(InferenceIdempotencyConflictException.class)
+    ResponseEntity<ApiProblem> idempotencyConflict(
+            InferenceIdempotencyConflictException exception,
+            HttpServletRequest request
+    ) {
+        return problem(HttpStatus.CONFLICT, "Idempotency conflict", "INFERENCE_IDEMPOTENCY_CONFLICT",
+                exception.getMessage(), request, null, null);
+    }
+
+    @ExceptionHandler({InferenceRunNotFoundException.class, InferenceCandidateNotFoundException.class})
+    ResponseEntity<ApiProblem> notFound(RuntimeException exception, HttpServletRequest request) {
+        return problem(HttpStatus.NOT_FOUND, "Inference run not found", "INFERENCE_RUN_NOT_FOUND",
+                "No inference run or review candidate exists for this identifier.", request, null, null);
+    }
+
+    @ExceptionHandler(InvalidInferenceRunTransitionException.class)
+    ResponseEntity<ApiProblem> transition(
+            InvalidInferenceRunTransitionException exception,
+            HttpServletRequest request
+    ) {
+        return problem(HttpStatus.CONFLICT, "Inference state conflict", "INFERENCE_STATE_CONFLICT",
+                exception.getMessage(), request, null, null);
+    }
+
+    private static ResponseEntity<ApiProblem> problem(
+            HttpStatus status,
+            String title,
+            String code,
+            String detail,
+            HttpServletRequest request,
+            List<ApiProblem.ApiViolation> violations,
+            Long revision
+    ) {
+        return ResponseEntity.status(status)
+                .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .body(new ApiProblem(
+                        "https://renderweave.local/problems/" + code.toLowerCase().replace('_', '-'),
+                        title, status.value(), detail, request.getRequestURI(), code,
+                        UUID.randomUUID().toString(), violations, revision
+                ));
+    }
+}

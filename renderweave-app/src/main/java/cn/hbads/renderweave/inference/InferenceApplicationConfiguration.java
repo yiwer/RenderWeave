@@ -2,6 +2,7 @@ package cn.hbads.renderweave.inference;
 
 import cn.hbads.renderweave.inference.input.BlobStore;
 import cn.hbads.renderweave.inference.input.InputNormalizer;
+import cn.hbads.renderweave.inference.candidate.CandidateReviewService;
 import cn.hbads.renderweave.inference.run.InferenceRunService;
 import cn.hbads.renderweave.inference.run.InferenceRunStore;
 import cn.hbads.renderweave.inference.replay.InferenceReplayStore;
@@ -52,5 +53,14 @@ class InferenceApplicationConfiguration {
         return new ReplayInferenceWorker(
                 runStore, replayStore, blobStore, inferenceClock, Duration.ofSeconds(leaseSeconds)
         );
+    }
+
+    @Bean
+    CandidateReviewService candidateReviewService(
+            InferenceRunStore runStore,
+            InferenceReplayStore replayStore,
+            Clock inferenceClock
+    ) {
+        return new CandidateReviewService(runStore, replayStore, inferenceClock);
     }
 }

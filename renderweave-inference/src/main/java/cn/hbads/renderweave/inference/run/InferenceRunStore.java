@@ -13,6 +13,8 @@ public interface InferenceRunStore {
 
     Optional<InferenceRunSnapshot> claimNext(String workerId, Instant now, Duration leaseDuration);
 
+    Optional<InferenceRunSnapshot> claim(UUID runId, String workerId, Instant now, Duration leaseDuration);
+
     boolean renewLease(UUID runId, UUID leaseToken, Instant now, Duration leaseDuration);
 
     InferenceRunSnapshot checkpoint(

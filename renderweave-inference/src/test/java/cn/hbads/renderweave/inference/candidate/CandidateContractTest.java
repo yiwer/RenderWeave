@@ -158,6 +158,49 @@ class CandidateContractTest {
                 "AI_REQUIRED_UNCONFIRMED", "AI_CONSTRAINT_UNCONFIRMED");
     }
 
+    @Test
+    void removedFieldRetainsAuditDataWithoutBlockingOnItsUnresolvedTypeOrConfidence() {
+        var root = UUID.randomUUID();
+        var fieldId = UUID.randomUUID();
+        var removed = CandidateAssessment.ai(
+                2_100, true, CandidateResolution.REMOVED,
+                List.of(CandidateEvidence.json(0, "/ambiguous"))
+        );
+        var bundle = new CandidateBundle(CandidateBundle.CONTRACT_VERSION, root, List.of(
+                new CandidateSchema(root, "removal-review", "移除审核", CandidateSource.AI,
+                        assessment(""), List.of(new CandidateField(
+                                fieldId, "ambiguous", "歧义字段", false,
+                                CandidateValue.unresolved("null", "empty-array"), CandidateSource.AI, removed
+                        )))
+        ));
+
+        var problems = validator.validate(bundle, context(1));
+        assertFalse(problems.stream().anyMatch(problem -> fieldId.equals(problem.itemId())),
+                () -> "Removed field must not retain semantic blockers: " + problems);
+    }
+
+    @Test
+    void activeReferenceToRemovedSchemaRemainsAMissingTargetBlocker() {
+        var root = UUID.randomUUID();
+        var removedTarget = UUID.randomUUID();
+        var removed = CandidateAssessment.ai(
+                9_000, true, CandidateResolution.REMOVED,
+                List.of(CandidateEvidence.json(0, "/child"))
+        );
+        var bundle = new CandidateBundle(CandidateBundle.CONTRACT_VERSION, root, List.of(
+                schema(root, "root", "Root", List.of(
+                        field(UUID.randomUUID(), "child",
+                                CandidateValue.reference(CandidateReference.candidate(removedTarget)), "/child")
+                ), ""),
+                new CandidateSchema(removedTarget, null, null, CandidateSource.AI, removed, List.of())
+        ));
+
+        var problems = validator.validate(bundle, context(1));
+        assertCodes(problems, "CANDIDATE_REFERENCE_TARGET_MISSING");
+        assertFalse(problems.stream().anyMatch(problem -> problem.code().equals("CANDIDATE_SCHEMA_KEY_UNRESOLVED")
+                && removedTarget.equals(problem.itemId())));
+    }
+
     private static CandidateBundle simpleBundle() {
         var root = UUID.fromString("00000000-0000-0000-0000-000000000001");
         return new CandidateBundle(CandidateBundle.CONTRACT_VERSION, root, List.of(

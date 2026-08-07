@@ -321,6 +321,216 @@ export type RootDocumentValidationProblem = {
     };
 };
 
+export type CreateReplayRunRequest = {
+    fixtureId: string;
+    /**
+     * Explicit acknowledgement of the displayed profile and input scope.
+     */
+    externalTransferConfirmed: true;
+};
+
+export type ReplayFixtureListResponse = {
+    profileId: 'replay-v1';
+    provider: 'REPLAY';
+    networkAllowed: false;
+    certification: 'REPLAY_ONLY';
+    items: [
+        ReplayFixtureResponse,
+        ReplayFixtureResponse,
+        ReplayFixtureResponse,
+        ReplayFixtureResponse,
+        ReplayFixtureResponse,
+        ReplayFixtureResponse,
+        ReplayFixtureResponse,
+        ReplayFixtureResponse,
+        ReplayFixtureResponse,
+        ReplayFixtureResponse,
+        ReplayFixtureResponse,
+        ReplayFixtureResponse,
+        ReplayFixtureResponse,
+        ReplayFixtureResponse,
+        ReplayFixtureResponse,
+        ReplayFixtureResponse,
+        ReplayFixtureResponse,
+        ReplayFixtureResponse,
+        ReplayFixtureResponse,
+        ReplayFixtureResponse,
+        ReplayFixtureResponse,
+        ReplayFixtureResponse,
+        ReplayFixtureResponse,
+        ReplayFixtureResponse,
+        ReplayFixtureResponse,
+        ReplayFixtureResponse,
+        ReplayFixtureResponse,
+        ReplayFixtureResponse,
+        ReplayFixtureResponse,
+        ReplayFixtureResponse,
+        ReplayFixtureResponse,
+        ReplayFixtureResponse,
+        ReplayFixtureResponse,
+        ReplayFixtureResponse,
+        ReplayFixtureResponse,
+        ReplayFixtureResponse,
+        ReplayFixtureResponse,
+        ReplayFixtureResponse,
+        ReplayFixtureResponse,
+        ReplayFixtureResponse,
+        ReplayFixtureResponse,
+        ReplayFixtureResponse,
+        ReplayFixtureResponse,
+        ReplayFixtureResponse,
+        ReplayFixtureResponse,
+        ReplayFixtureResponse,
+        ReplayFixtureResponse,
+        ReplayFixtureResponse,
+        ReplayFixtureResponse,
+        ReplayFixtureResponse,
+        ReplayFixtureResponse,
+        ReplayFixtureResponse,
+        ReplayFixtureResponse,
+        ReplayFixtureResponse,
+        ReplayFixtureResponse,
+        ReplayFixtureResponse,
+        ReplayFixtureResponse,
+        ReplayFixtureResponse,
+        ReplayFixtureResponse,
+        ReplayFixtureResponse
+    ];
+};
+
+export type ReplayFixtureResponse = {
+    fixtureId: string;
+    mode: InferenceMode;
+    scenario: string;
+    imageCount: number;
+    jsonSampleCount: number;
+    expectedSchemaCount: number;
+    expectedProblemCodes: Array<string>;
+};
+
+export type InferenceMode = 'IMAGE_ONLY' | 'JSON_ONLY' | 'COMBINED';
+
+export type InferenceRunState = 'QUEUED' | 'RUNNING' | 'REVIEW_REQUIRED' | 'APPLYING' | 'COMPLETED' | 'FAILED' | 'CANCELLED';
+
+export type InferenceStage = 'NORMALIZE' | 'OBSERVE' | 'STRUCTURE' | 'DETERMINISTIC_VALIDATE' | 'CRITIQUE' | 'REPAIR' | 'USER_APPROVAL' | 'ATOMIC_CREATE';
+
+export type InferenceRunResponse = {
+    runId: string;
+    mode: InferenceMode;
+    state: InferenceRunState;
+    stage: InferenceStage;
+    sequence: number;
+    profileId: string;
+    replayFixtureId: string;
+    cancellationRequested: boolean;
+    failureCode?: string | null;
+    candidateRevision?: number | null;
+    createdAt: string;
+    updatedAt: string;
+    finishedAt?: string | null;
+};
+
+export type SaveCandidateRequest = {
+    expectedCandidateRevision: number;
+    candidate: CandidateBundle;
+};
+
+export type CandidateReviewResponse = {
+    run: InferenceRunResponse;
+    candidateRevision: number;
+    original: CandidateBundle;
+    current: CandidateBundle;
+    problems: Array<CandidateProblem>;
+    images: Array<InferenceImage>;
+    jsonSampleCount: number;
+};
+
+export type CandidateBundle = {
+    contractVersion: 'renderweave-candidate/1.0';
+    rootCandidateSchemaId: string;
+    schemas: Array<CandidateSchema>;
+};
+
+export type CandidateSchema = {
+    candidateSchemaId: string;
+    proposedSchemaKey: string | null;
+    displayName: string | null;
+    source: CandidateSource;
+    assessment: CandidateAssessment;
+    fields: Array<CandidateField>;
+};
+
+export type CandidateField = {
+    candidateFieldId: string;
+    proposedFieldKey: string | null;
+    displayName: string | null;
+    required: boolean;
+    value: CandidateValue;
+    source: CandidateSource;
+    assessment: CandidateAssessment;
+};
+
+export type CandidateValue = {
+    kind: 'TEXT' | 'DECIMAL' | 'DATE' | 'TIME' | 'BOOLEAN' | 'REFERENCE' | 'ARRAY' | 'UNRESOLVED' | 'CONFLICT';
+    items: CandidateValue | null;
+    reference: CandidateReference | null;
+    observedKinds: Array<string>;
+    constraints: {
+        [key: string]: string;
+    };
+};
+
+export type CandidateReference = {
+    kind: 'CANDIDATE_SCHEMA' | 'DRAFT' | 'STATIC' | null;
+    candidateSchemaId: string | null;
+    schemaKey: string | null;
+    versionTag: string | null;
+};
+
+export type CandidateSource = 'AI' | 'USER';
+
+export type CandidateResolution = 'NOT_REQUIRED' | 'UNRESOLVED' | 'CONFIRMED' | 'RESOLVED_BY_EDIT' | 'REMOVED';
+
+export type CandidateAssessment = {
+    confidenceBps: number | null;
+    inferred: boolean;
+    resolution: CandidateResolution;
+    evidence: Array<CandidateEvidence>;
+};
+
+export type CandidateEvidence = {
+    kind: 'IMAGE' | 'JSON';
+    artifactId: string | null;
+    boundingBox: CandidateBoundingBox | null;
+    sampleIndex: number | null;
+    jsonPointer: string | null;
+};
+
+export type CandidateBoundingBox = {
+    left: number;
+    top: number;
+    right: number;
+    bottom: number;
+};
+
+export type CandidateProblem = {
+    code: string;
+    severity: 'BLOCKER' | 'WARNING';
+    itemId: string | null;
+    pointer: string;
+    args: {
+        [key: string]: string;
+    };
+};
+
+export type InferenceImage = {
+    artifactId: string;
+    ordinal: number;
+    width: number;
+    height: number;
+    contentUrl: string;
+};
+
 export type Violation = {
     code: string;
     /**
@@ -345,6 +555,12 @@ export type Problem = {
     revision?: number;
     [key: string]: unknown;
 };
+
+export type IdempotencyKey = string;
+
+export type InferenceRunId = string;
+
+export type InferenceArtifactId = string;
 
 /**
  * Stable Draft identity. The reserved system- prefix is not valid for user Drafts.
@@ -1035,3 +1251,209 @@ export type ValidateRootDocumentsResponses = {
 };
 
 export type ValidateRootDocumentsResponse = ValidateRootDocumentsResponses[keyof ValidateRootDocumentsResponses];
+
+export type ListReplayFixturesData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/inference-runs/replay-fixtures';
+};
+
+export type ListReplayFixturesErrors = {
+    /**
+     * RFC 9457 problem response.
+     */
+    500: Problem;
+};
+
+export type ListReplayFixturesError = ListReplayFixturesErrors[keyof ListReplayFixturesErrors];
+
+export type ListReplayFixturesResponses = {
+    /**
+     * Exactly 60 synthetic cases, balanced across the three modes.
+     */
+    200: ReplayFixtureListResponse;
+};
+
+export type ListReplayFixturesResponse = ListReplayFixturesResponses[keyof ListReplayFixturesResponses];
+
+export type CreateReplayInferenceRunData = {
+    body: CreateReplayRunRequest;
+    headers: {
+        'Idempotency-Key': string;
+    };
+    path?: never;
+    query?: never;
+    url: '/api/v1/inference-runs';
+};
+
+export type CreateReplayInferenceRunErrors = {
+    /**
+     * Request JSON, key syntax or envelope is invalid.
+     */
+    400: Problem;
+    /**
+     * Natural identity or expected revision conflicts with current state.
+     */
+    409: Problem;
+    /**
+     * The complete RenderWeave definition is not valid and nothing was written.
+     */
+    422: Problem;
+    /**
+     * RFC 9457 problem response.
+     */
+    500: Problem;
+};
+
+export type CreateReplayInferenceRunError = CreateReplayInferenceRunErrors[keyof CreateReplayInferenceRunErrors];
+
+export type CreateReplayInferenceRunResponses = {
+    /**
+     * Idempotent replay of the same request.
+     */
+    200: InferenceRunResponse;
+    /**
+     * Durable replay run created and executed.
+     */
+    201: InferenceRunResponse;
+};
+
+export type CreateReplayInferenceRunResponse = CreateReplayInferenceRunResponses[keyof CreateReplayInferenceRunResponses];
+
+export type GetInferenceRunData = {
+    body?: never;
+    path: {
+        runId: string;
+    };
+    query?: never;
+    url: '/api/v1/inference-runs/{runId}';
+};
+
+export type GetInferenceRunErrors = {
+    /**
+     * The requested Draft does not exist.
+     */
+    404: Problem;
+    /**
+     * RFC 9457 problem response.
+     */
+    500: Problem;
+};
+
+export type GetInferenceRunError = GetInferenceRunErrors[keyof GetInferenceRunErrors];
+
+export type GetInferenceRunResponses = {
+    /**
+     * Current run state and monotonic sequence.
+     */
+    200: InferenceRunResponse;
+};
+
+export type GetInferenceRunResponse = GetInferenceRunResponses[keyof GetInferenceRunResponses];
+
+export type GetInferenceCandidateData = {
+    body?: never;
+    path: {
+        runId: string;
+    };
+    query?: never;
+    url: '/api/v1/inference-runs/{runId}/candidate';
+};
+
+export type GetInferenceCandidateErrors = {
+    /**
+     * The requested Draft does not exist.
+     */
+    404: Problem;
+    /**
+     * RFC 9457 problem response.
+     */
+    500: Problem;
+};
+
+export type GetInferenceCandidateError = GetInferenceCandidateErrors[keyof GetInferenceCandidateErrors];
+
+export type GetInferenceCandidateResponses = {
+    /**
+     * Candidate, evidence inputs and deterministic review problems.
+     */
+    200: CandidateReviewResponse;
+};
+
+export type GetInferenceCandidateResponse = GetInferenceCandidateResponses[keyof GetInferenceCandidateResponses];
+
+export type SaveInferenceCandidateData = {
+    body: SaveCandidateRequest;
+    path: {
+        runId: string;
+    };
+    query?: never;
+    url: '/api/v1/inference-runs/{runId}/candidate';
+};
+
+export type SaveInferenceCandidateErrors = {
+    /**
+     * Request JSON, key syntax or envelope is invalid.
+     */
+    400: Problem;
+    /**
+     * The requested Draft does not exist.
+     */
+    404: Problem;
+    /**
+     * Natural identity or expected revision conflicts with current state.
+     */
+    409: Problem;
+    /**
+     * The complete RenderWeave definition is not valid and nothing was written.
+     */
+    422: Problem;
+    /**
+     * RFC 9457 problem response.
+     */
+    500: Problem;
+};
+
+export type SaveInferenceCandidateError = SaveInferenceCandidateErrors[keyof SaveInferenceCandidateErrors];
+
+export type SaveInferenceCandidateResponses = {
+    /**
+     * Current snapshot saved at the next Candidate revision.
+     */
+    200: CandidateReviewResponse;
+};
+
+export type SaveInferenceCandidateResponse = SaveInferenceCandidateResponses[keyof SaveInferenceCandidateResponses];
+
+export type GetInferenceImageArtifactData = {
+    body?: never;
+    path: {
+        runId: string;
+        artifactId: string;
+    };
+    query?: never;
+    url: '/api/v1/inference-runs/{runId}/artifacts/{artifactId}';
+};
+
+export type GetInferenceImageArtifactErrors = {
+    /**
+     * The requested Draft does not exist.
+     */
+    404: Problem;
+    /**
+     * RFC 9457 problem response.
+     */
+    500: Problem;
+};
+
+export type GetInferenceImageArtifactError = GetInferenceImageArtifactErrors[keyof GetInferenceImageArtifactErrors];
+
+export type GetInferenceImageArtifactResponses = {
+    /**
+     * Metadata-free normalized PNG.
+     */
+    200: Blob | File;
+};
+
+export type GetInferenceImageArtifactResponse = GetInferenceImageArtifactResponses[keyof GetInferenceImageArtifactResponses];

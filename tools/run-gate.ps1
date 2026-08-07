@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-    [ValidateSet('fast', 'server', 'web', 'e2e', 'draft-e2e', 'compose', 'runtime', 'full')]
+    [ValidateSet('fast', 'server', 'web', 'e2e', 'draft-e2e', 'inference-e2e', 'compose', 'runtime', 'full')]
     [string]$Gate = 'fast'
 )
 
@@ -92,9 +92,10 @@ try {
         'web' { @('web-node24') }
         'e2e' { @('prototype-e2e') }
         'draft-e2e' { @('server-verify', 'web-node24', 'draft-browser-e2e') }
+        'inference-e2e' { @('server-verify', 'web-node24', 'inference-browser-e2e') }
         'compose' { @('compose-config') }
         'runtime' { @('runtime-canary') }
-        'full' { @('repository-diff', 'server-verify', 'web-node24', 'compose-config', 'runtime-canary', 'prototype-e2e', 'draft-browser-e2e') }
+        'full' { @('repository-diff', 'server-verify', 'web-node24', 'compose-config', 'runtime-canary', 'prototype-e2e', 'draft-browser-e2e', 'inference-browser-e2e') }
     }
 
     foreach ($step in $requestedSteps) {
@@ -155,6 +156,11 @@ try {
             'draft-browser-e2e' {
                 Invoke-GateStep $step {
                     & powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools\run-draft-e2e.ps1
+                }
+            }
+            'inference-browser-e2e' {
+                Invoke-GateStep $step {
+                    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools\run-inference-e2e.ps1
                 }
             }
         }

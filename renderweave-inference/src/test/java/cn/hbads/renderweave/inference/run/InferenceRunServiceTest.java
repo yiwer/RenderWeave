@@ -119,6 +119,16 @@ class InferenceRunServiceTest {
         }
 
         @Override
+        public Optional<InferenceRunSnapshot> claim(
+                UUID runId,
+                String workerId,
+                Instant now,
+                Duration leaseDuration
+        ) {
+            throw unsupported();
+        }
+
+        @Override
         public boolean renewLease(UUID runId, UUID leaseToken, Instant now, Duration leaseDuration) {
             throw unsupported();
         }

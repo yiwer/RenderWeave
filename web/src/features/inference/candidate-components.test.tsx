@@ -1,0 +1,39 @@
+// @vitest-environment happy-dom
+
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { useReducer } from 'react';
+import { afterEach, describe, expect, it } from 'vitest';
+
+import { CandidateInspector } from './CandidateInspector';
+import { candidateReviewReducer, createCandidateReviewState, findSelected } from './candidate-session';
+import { snapshot } from './candidate-session.test';
+
+afterEach(cleanup);
+
+describe('Candidate review components', () => {
+  it('resolves an unresolved AI field by editing its type and keeps evidence visible', () => {
+    const { container } = render(<InspectorHarness />);
+    fireEvent.change(screen.getByLabelText('Candidate 字段类型'), { target: { value: 'ARRAY' } });
+
+    expect(screen.getByLabelText('Candidate 数组元素类型')).toBeTruthy();
+    const itemType = screen.getByLabelText('Candidate 数组元素类型') as HTMLSelectElement;
+    expect([...itemType.options].map((option) => option.value)).not.toContain('ARRAY');
+    expect(screen.getByText('编辑解决')).toBeTruthy();
+    expect(container.querySelectorAll('[data-evidence-box]')).toHaveLength(1);
+    expect(screen.getByText('/total')).toBeTruthy();
+  });
+
+  it('exposes only an item-level confirmation action', () => {
+    render(<InspectorHarness />);
+    expect((screen.getByRole('button', { name: '确认当前项' }) as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.queryByRole('button', { name: /全部确认/ })).toBeNull();
+  });
+});
+
+function InspectorHarness() {
+  const [state, dispatch] = useReducer(candidateReviewReducer, snapshot(), createCandidateReviewState);
+  const selectedSchema = state.draft.schemas[0]!;
+  const selectedField = selectedSchema.fields[0]!;
+  const selected = findSelected({ ...state, selectedFieldId: selectedField.candidateFieldId });
+  return <CandidateInspector state={state} schema={selected.schema!} field={selected.field} dispatch={dispatch} />;
+}

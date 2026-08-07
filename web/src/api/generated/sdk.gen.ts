@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { CopyDraftData, CopyDraftErrors, CopyDraftResponses, CopyStaticSchemaToDraftData, CopyStaticSchemaToDraftErrors, CopyStaticSchemaToDraftResponses, CreateDraftData, CreateDraftErrors, CreateDraftResponses, DeleteDraftData, DeleteDraftErrors, DeleteDraftResponses, DownloadCompiledJsonSchemaData, DownloadCompiledJsonSchemaErrors, DownloadCompiledJsonSchemaResponses, DownloadStaticSchemaDefinitionData, DownloadStaticSchemaDefinitionErrors, DownloadStaticSchemaDefinitionResponses, GetDraftData, GetDraftErrors, GetDraftResponses, GetDraftRevisionData, GetDraftRevisionErrors, GetDraftRevisionResponses, GetStaticSchemaData, GetStaticSchemaErrors, GetStaticSchemaResponses, GetSystemStatusData, GetSystemStatusErrors, GetSystemStatusResponses, ListDraftRevisionsData, ListDraftRevisionsErrors, ListDraftRevisionsResponses, ListDraftsData, ListDraftsErrors, ListDraftsResponses, ListStaticSchemasData, ListStaticSchemasErrors, ListStaticSchemasResponses, PublishStaticSchemaData, PublishStaticSchemaErrors, PublishStaticSchemaResponses, RestoreDraftRevisionData, RestoreDraftRevisionErrors, RestoreDraftRevisionResponses, SaveDraftData, SaveDraftErrors, SaveDraftResponses, ValidateRootDocumentsData, ValidateRootDocumentsErrors, ValidateRootDocumentsResponses } from './types.gen';
+import type { CopyDraftData, CopyDraftErrors, CopyDraftResponses, CopyStaticSchemaToDraftData, CopyStaticSchemaToDraftErrors, CopyStaticSchemaToDraftResponses, CreateDraftData, CreateDraftErrors, CreateDraftResponses, CreateReplayInferenceRunData, CreateReplayInferenceRunErrors, CreateReplayInferenceRunResponses, DeleteDraftData, DeleteDraftErrors, DeleteDraftResponses, DownloadCompiledJsonSchemaData, DownloadCompiledJsonSchemaErrors, DownloadCompiledJsonSchemaResponses, DownloadStaticSchemaDefinitionData, DownloadStaticSchemaDefinitionErrors, DownloadStaticSchemaDefinitionResponses, GetDraftData, GetDraftErrors, GetDraftResponses, GetDraftRevisionData, GetDraftRevisionErrors, GetDraftRevisionResponses, GetInferenceCandidateData, GetInferenceCandidateErrors, GetInferenceCandidateResponses, GetInferenceImageArtifactData, GetInferenceImageArtifactErrors, GetInferenceImageArtifactResponses, GetInferenceRunData, GetInferenceRunErrors, GetInferenceRunResponses, GetStaticSchemaData, GetStaticSchemaErrors, GetStaticSchemaResponses, GetSystemStatusData, GetSystemStatusErrors, GetSystemStatusResponses, ListDraftRevisionsData, ListDraftRevisionsErrors, ListDraftRevisionsResponses, ListDraftsData, ListDraftsErrors, ListDraftsResponses, ListReplayFixturesData, ListReplayFixturesErrors, ListReplayFixturesResponses, ListStaticSchemasData, ListStaticSchemasErrors, ListStaticSchemasResponses, PublishStaticSchemaData, PublishStaticSchemaErrors, PublishStaticSchemaResponses, RestoreDraftRevisionData, RestoreDraftRevisionErrors, RestoreDraftRevisionResponses, SaveDraftData, SaveDraftErrors, SaveDraftResponses, SaveInferenceCandidateData, SaveInferenceCandidateErrors, SaveInferenceCandidateResponses, ValidateRootDocumentsData, ValidateRootDocumentsErrors, ValidateRootDocumentsResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -153,3 +153,51 @@ export const validateRootDocuments = <ThrowOnError extends boolean = false>(opti
         ...options.headers
     }
 });
+
+/**
+ * List the versioned synthetic fixtures available to replay-v1
+ */
+export const listReplayFixtures = <ThrowOnError extends boolean = false>(options?: Options<ListReplayFixturesData, ThrowOnError>): RequestResult<ListReplayFixturesResponses, ListReplayFixturesErrors, ThrowOnError> => (options?.client ?? client).get<ListReplayFixturesResponses, ListReplayFixturesErrors, ThrowOnError>({ url: '/api/v1/inference-runs/replay-fixtures', ...options });
+
+/**
+ * Create and deterministically execute a durable synthetic replay run
+ *
+ * P4 exposes only replay-v1. The selected fixture is synthetic and the profile has networkAllowed=false. Idempotent replays return the original run.
+ */
+export const createReplayInferenceRun = <ThrowOnError extends boolean = false>(options: Options<CreateReplayInferenceRunData, ThrowOnError>): RequestResult<CreateReplayInferenceRunResponses, CreateReplayInferenceRunErrors, ThrowOnError> => (options.client ?? client).post<CreateReplayInferenceRunResponses, CreateReplayInferenceRunErrors, ThrowOnError>({
+    url: '/api/v1/inference-runs',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Read the authoritative durable run snapshot
+ */
+export const getInferenceRun = <ThrowOnError extends boolean = false>(options: Options<GetInferenceRunData, ThrowOnError>): RequestResult<GetInferenceRunResponses, GetInferenceRunErrors, ThrowOnError> => (options.client ?? client).get<GetInferenceRunResponses, GetInferenceRunErrors, ThrowOnError>({ url: '/api/v1/inference-runs/{runId}', ...options });
+
+/**
+ * Read original and current Candidate review snapshots
+ */
+export const getInferenceCandidate = <ThrowOnError extends boolean = false>(options: Options<GetInferenceCandidateData, ThrowOnError>): RequestResult<GetInferenceCandidateResponses, GetInferenceCandidateErrors, ThrowOnError> => (options.client ?? client).get<GetInferenceCandidateResponses, GetInferenceCandidateErrors, ThrowOnError>({ url: '/api/v1/inference-runs/{runId}/candidate', ...options });
+
+/**
+ * Autosave one optimistic Candidate review action
+ *
+ * AI provenance is immutable. A request may change at most one item resolution; there is deliberately no confirm-all operation.
+ */
+export const saveInferenceCandidate = <ThrowOnError extends boolean = false>(options: Options<SaveInferenceCandidateData, ThrowOnError>): RequestResult<SaveInferenceCandidateResponses, SaveInferenceCandidateErrors, ThrowOnError> => (options.client ?? client).put<SaveInferenceCandidateResponses, SaveInferenceCandidateErrors, ThrowOnError>({
+    url: '/api/v1/inference-runs/{runId}/candidate',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Read a normalized image that belongs to this run for evidence review
+ */
+export const getInferenceImageArtifact = <ThrowOnError extends boolean = false>(options: Options<GetInferenceImageArtifactData, ThrowOnError>): RequestResult<GetInferenceImageArtifactResponses, GetInferenceImageArtifactErrors, ThrowOnError> => (options.client ?? client).get<GetInferenceImageArtifactResponses, GetInferenceImageArtifactErrors, ThrowOnError>({ url: '/api/v1/inference-runs/{runId}/artifacts/{artifactId}', ...options });

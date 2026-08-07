@@ -33,6 +33,7 @@ public final class CandidateValidator {
         }
 
         var schemas = new LinkedHashMap<UUID, CandidateSchema>();
+        var activeSchemas = new LinkedHashMap<UUID, CandidateSchema>();
         var allItemIds = new HashSet<UUID>();
         var proposedKeys = new HashMap<String, UUID>();
         for (var schemaIndex = 0; schemaIndex < bundle.schemas().size(); schemaIndex++) {
@@ -43,6 +44,22 @@ public final class CandidateValidator {
                         schema.candidateSchemaId(), pointer + "/candidateSchemaId", Map.of());
             }
             validateItemId(schema.candidateSchemaId(), pointer + "/candidateSchemaId", allItemIds, problems);
+            var schemaRemoved = schema.assessment().resolution() == CandidateResolution.REMOVED;
+            if (!schemaRemoved) activeSchemas.putIfAbsent(schema.candidateSchemaId(), schema);
+            if (schemaRemoved && schema.candidateSchemaId().equals(bundle.rootCandidateSchemaId())) {
+                add(problems, "CANDIDATE_ROOT_REMOVED", CandidateProblemSeverity.BLOCKER,
+                        schema.candidateSchemaId(), pointer + "/assessment/resolution", Map.of());
+            }
+            if (schemaRemoved) {
+                validateAssessment(schema.source(), schema.assessment(), schema.candidateSchemaId(),
+                        pointer + "/assessment", context, problems);
+                for (var fieldIndex = 0; fieldIndex < schema.fields().size(); fieldIndex++) {
+                    var field = schema.fields().get(fieldIndex);
+                    validateItemId(field.candidateFieldId(), pointer + "/fields/" + fieldIndex
+                            + "/candidateFieldId", allItemIds, problems);
+                }
+                continue;
+            }
             validateSchemaKey(schema, pointer, proposedKeys, problems);
             validateAssessment(schema.source(), schema.assessment(), schema.candidateSchemaId(),
                     pointer + "/assessment", context, problems);
@@ -59,6 +76,7 @@ public final class CandidateValidator {
                 validateFieldKey(field, fieldPointer, fieldKeys, problems);
                 validateAssessment(field.source(), field.assessment(), field.candidateFieldId(),
                         fieldPointer + "/assessment", context, problems);
+                if (field.assessment().resolution() == CandidateResolution.REMOVED) continue;
                 if (field.required() && field.source() == CandidateSource.AI
                         && !userResolved(field.assessment().resolution())) {
                     add(problems, "AI_REQUIRED_UNCONFIRMED", CandidateProblemSeverity.BLOCKER,
@@ -74,7 +92,7 @@ public final class CandidateValidator {
                     bundle.rootCandidateSchemaId(), "/rootCandidateSchemaId", Map.of());
             return List.copyOf(problems);
         }
-        validateGraph(bundle, schemas, problems);
+        validateGraph(bundle.rootCandidateSchemaId(), activeSchemas, problems);
         return List.copyOf(problems);
     }
 
@@ -332,12 +350,12 @@ public final class CandidateValidator {
     }
 
     private static void validateGraph(
-            CandidateBundle bundle,
+            UUID rootCandidateSchemaId,
             Map<UUID, CandidateSchema> schemas,
             List<CandidateProblem> problems
     ) {
         var edges = new LinkedHashMap<UUID, List<UUID>>();
-        for (var schema : bundle.schemas()) {
+        for (var schema : schemas.values()) {
             var targets = new ArrayList<UUID>();
             for (var field : schema.fields()) {
                 if (field.assessment().resolution() == CandidateResolution.REMOVED) continue;
@@ -354,7 +372,7 @@ public final class CandidateValidator {
 
         var reachable = new LinkedHashSet<UUID>();
         var queue = new ArrayDeque<UUID>();
-        queue.add(bundle.rootCandidateSchemaId());
+        queue.add(rootCandidateSchemaId);
         while (!queue.isEmpty()) {
             var current = queue.removeFirst();
             if (!reachable.add(current)) continue;
@@ -362,7 +380,7 @@ public final class CandidateValidator {
                 if (schemas.containsKey(target)) queue.addLast(target);
             }
         }
-        for (var schema : bundle.schemas()) {
+        for (var schema : schemas.values()) {
             if (!reachable.contains(schema.candidateSchemaId())) {
                 add(problems, "CANDIDATE_SCHEMA_ORPHAN", CandidateProblemSeverity.BLOCKER,
                         schema.candidateSchemaId(), "/schemas", Map.of());
@@ -370,7 +388,7 @@ public final class CandidateValidator {
         }
 
         var colors = new HashMap<UUID, Integer>();
-        detectCycles(bundle.rootCandidateSchemaId(), edges, colors, problems);
+        detectCycles(rootCandidateSchemaId, edges, colors, problems);
     }
 
     private static void collectCandidateTargets(CandidateValue value, List<UUID> targets) {

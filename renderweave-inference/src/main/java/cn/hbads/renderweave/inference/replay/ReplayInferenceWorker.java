@@ -92,6 +92,15 @@ public final class ReplayInferenceWorker {
 
     public Optional<InferenceRunSnapshot> processNext(String workerId) {
         var claimed = runStore.claimNext(workerId, clock.instant(), leaseDuration);
+        return processClaimed(claimed);
+    }
+
+    public Optional<InferenceRunSnapshot> process(UUID runId, String workerId) {
+        Objects.requireNonNull(runId, "runId");
+        return processClaimed(runStore.claim(runId, workerId, clock.instant(), leaseDuration));
+    }
+
+    private Optional<InferenceRunSnapshot> processClaimed(Optional<InferenceRunSnapshot> claimed) {
         if (claimed.isEmpty()) return Optional.empty();
         var initial = claimed.orElseThrow();
         try {

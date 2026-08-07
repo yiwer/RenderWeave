@@ -31,5 +31,13 @@ public interface InferenceReplayStore {
 
     Optional<InferenceCandidateSnapshot> findCandidate(UUID runId);
 
+    InferenceCandidateSnapshot saveCandidate(
+            UUID runId,
+            long expectedRevision,
+            String candidateJson,
+            String validationProblemsJson,
+            Instant now
+    );
+
     List<InferenceAttempt> attempts(UUID runId);
 }

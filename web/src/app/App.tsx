@@ -19,6 +19,12 @@ const StaticSchemaDetailPage = lazy(async () => ({
 const RootDocumentValidatorPage = lazy(async () => ({
   default: (await import('../features/resources/RootDocumentValidatorPage')).RootDocumentValidatorPage,
 }));
+const InferenceStartPage = lazy(async () => ({
+  default: (await import('../features/inference/InferenceStartPage')).InferenceStartPage,
+}));
+const CandidateReviewPage = lazy(async () => ({
+  default: (await import('../features/inference/CandidateReviewPage')).CandidateReviewPage,
+}));
 
 export function App() {
   return (
@@ -30,6 +36,8 @@ export function App() {
         <Route path="/static-schemas" element={<StaticSchemaListPage />} />
         <Route path="/static-schemas/:schemaKey/:versionTag" element={<StaticSchemaDetailPage />} />
         <Route path="/validator" element={<RootDocumentValidatorPage />} />
+        <Route path="/inference" element={<InferenceStartPage />} />
+        <Route path="/inference-runs/:runId/review" element={<CandidateReviewPage />} />
         <Route path="/prototype/schema-studio" element={<SchemaStudioPrototype />} />
         <Route path="*" element={<Navigate replace to="/schemas" />} />
       </Routes>
