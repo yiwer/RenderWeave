@@ -1,0 +1,45 @@
+name: renderweave
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: renderweave
+      POSTGRES_USER: renderweave
+      POSTGRES_PASSWORD: renderweave-local-only
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U renderweave -d renderweave"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    volumes:
+      - renderweave-postgres:/var/lib/postgresql/data
+
+  api:
+    build:
+      context: .
+      dockerfile: docker/api.Dockerfile
+    environment:
+      RENDERWEAVE_DB_URL: jdbc:postgresql://postgres:5432/renderweave
+      RENDERWEAVE_DB_USERNAME: renderweave
+      RENDERWEAVE_DB_PASSWORD: renderweave-local-only
+      RENDERWEAVE_BLOB_ROOT: /var/lib/renderweave/blobs
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - renderweave-blobs:/var/lib/renderweave/blobs
+
+  web:
+    build:
+      context: .
+      dockerfile: docker/web.Dockerfile
+    depends_on:
+      - api
+    ports:
+      - "3000:80"
+
+volumes:
+  renderweave-postgres:
+  renderweave-blobs:
+

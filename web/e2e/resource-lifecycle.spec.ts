@@ -1,0 +1,252 @@
+import AxeBuilder from '@axe-core/playwright';
+import { expect, test, type Page, type Route } from '@playwright/test';
+
+const savedAt = '2026-08-08T02:30:00Z';
+const exactDecimal = '12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678';
+
+test.describe('Schema resource lifecycle', () => {
+  test('lists Drafts, previews immutable history, restores and copies a saved revision', async ({ page }, testInfo) => {
+    let current = draftSnapshot('catalog-card', 2, '商品目录卡');
+    await page.route('**/api/v1/**', async (route) => {
+      const url = new URL(route.request().url());
+      const method = route.request().method();
+      if (method === 'GET' && url.pathname === '/api/v1/schema-drafts') {
+        await json(route, { items: [draftSummary(current)], page: 1, size: 50, total: 1 });
+      } else if (method === 'GET' && url.pathname === '/api/v1/schema-drafts/catalog-card') {
+        await json(route, current);
+      } else if (method === 'GET' && url.pathname === '/api/v1/schema-drafts/catalog-card/revisions') {
+        await json(route, {
+          items: [
+            { revision: 2, displayName: '商品目录卡', fieldCount: 1, savedAt },
+            { revision: 0, displayName: '最初目录卡', fieldCount: 1, savedAt: '2026-08-07T02:30:00Z' },
+          ],
+          page: 1, size: 100, total: 2,
+        });
+      } else if (method === 'GET' && url.pathname === '/api/v1/schema-drafts/catalog-card/revisions/0') {
+        await json(route, {
+          schemaKey: 'catalog-card', revision: 0, savedAt: '2026-08-07T02:30:00Z',
+          definition: definition('最初目录卡'),
+        });
+      } else if (method === 'POST' && url.pathname === '/api/v1/schema-drafts/catalog-card/restore') {
+        expect(route.request().postData()).toBe('{"expectedRevision":2,"sourceRevision":0}');
+        current = draftSnapshot('catalog-card', 3, '最初目录卡');
+        await json(route, current);
+      } else if (method === 'POST' && url.pathname === '/api/v1/schema-drafts/catalog-card/copies') {
+        const body = JSON.parse(route.request().postData() ?? '{}') as { schemaKey: string; displayName: string };
+        current = draftSnapshot(body.schemaKey, 0, body.displayName);
+        await json(route, current, 201);
+      } else if (method === 'GET' && url.pathname === '/api/v1/schema-drafts/catalog-card-copy') {
+        await json(route, current);
+      } else {
+        await route.abort('failed');
+      }
+    });
+
+    await page.goto('/schemas');
+    await expect(page.getByRole('heading', { name: '可变数据定义' })).toBeVisible();
+    await expect(page.getByRole('row', { name: /商品目录卡/ })).toBeVisible();
+    await page.screenshot({ path: testInfo.outputPath('draft-list-1280x720.png'), fullPage: true });
+    await page.getByRole('row', { name: /商品目录卡/ }).click();
+
+    await page.getByRole('button', { name: '历史', exact: true }).click();
+    await expect(page.getByRole('heading', { name: '不可变 revision 历史' })).toBeVisible();
+    await page.getByRole('button', { name: /revision 0/ }).click();
+    await expect(page.locator('.history-preview')).toContainText('最初目录卡');
+    await page.getByRole('button', { name: '恢复为新 revision' }).click();
+    await expect(page.locator('.studio-revision-card strong')).toHaveText('3');
+    await expect(page.locator('#schema-display-name')).toHaveValue('最初目录卡');
+
+    await page.getByRole('button', { name: '复制', exact: true }).click();
+    await page.getByLabel('新 schemaKey').fill('catalog-card-copy');
+    await page.getByRole('dialog').getByLabel('显示名称', { exact: true }).fill('目录卡副本');
+    await page.getByRole('button', { name: '创建副本' }).click();
+    await expect(page).toHaveURL(/\/schemas\/catalog-card-copy$/);
+    await expect(page.locator('#schema-display-name')).toHaveValue('目录卡副本');
+  });
+
+  test('keeps local conflict edits, shows a structural diff and reloads only on command', async ({ page }) => {
+    const local = draftSnapshot('conflict-card', 2, '本地前的名称');
+    const server = draftSnapshot('conflict-card', 3, '服务端名称');
+    let conflicted = false;
+    await page.route('**/api/v1/schema-drafts/conflict-card', async (route) => {
+      if (route.request().method() === 'PUT') {
+        conflicted = true;
+        await json(route, {
+          type: 'https://renderweave.dev/problems/revision-conflict', title: 'Revision conflict', status: 409,
+          code: 'REVISION_CONFLICT', traceId: 'test-conflict', detail: 'current revision is 3', revision: 3,
+        }, 409);
+      } else {
+        await json(route, conflicted ? server : local);
+      }
+    });
+
+    await page.goto('/schemas/conflict-card');
+    await page.locator('#schema-display-name').fill('我的本地名称');
+    await page.getByRole('button', { name: '保存 revision' }).click();
+    await expect(page.getByText('检测到 revision 冲突，本地内容已保留')).toBeVisible();
+    await expect(page.locator('#schema-display-name')).toHaveValue('我的本地名称');
+    await expect(page.locator('.conflict-diff')).toContainText('服务端 revision 3');
+    await expect(page.locator('.conflict-diff')).toContainText('我的本地名称');
+    await expect(page.locator('.conflict-diff')).toContainText('服务端名称');
+
+    await page.getByRole('button', { name: '载入服务端' }).click();
+    await expect(page.locator('#schema-display-name')).toHaveValue('服务端名称');
+    await expect(page.locator('.studio-revision-card strong')).toHaveText('3');
+  });
+
+  test('publishes an exact StaticSchema and preserves a 128-digit decimal in readable artifacts', async ({ page }, testInfo) => {
+    const draft = draftSnapshot('price-card', 4, '价格卡');
+    const staticSnapshot = {
+      schemaKey: 'price-card', versionTag: 'v1', origin: 'DRAFT', sourceDraftRevision: 4,
+      definition: definition('价格卡'), compilerVersion: 'renderweave-schema/1.0',
+      releaseNote: '首个稳定版本', referenceDepth: 1, publishedAt: savedAt,
+    };
+    await page.route('**/api/v1/**', async (route) => {
+      const url = new URL(route.request().url());
+      const method = route.request().method();
+      if (method === 'GET' && url.pathname === '/api/v1/schema-drafts/price-card') {
+        await json(route, draft);
+      } else if (method === 'POST' && url.pathname === '/api/v1/static-schemas') {
+        expect(route.request().postData()).toContain('"expectedRevision":4');
+        await json(route, staticSnapshot, 201);
+      } else if (method === 'GET' && url.pathname === '/api/v1/static-schemas/price-card/v1') {
+        await json(route, staticSnapshot);
+      } else if (method === 'GET' && url.pathname.endsWith('/definition')) {
+        await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(staticSnapshot.definition) });
+      } else if (method === 'GET' && url.pathname.endsWith('/compiled-json-schema')) {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/schema+json',
+          body: `{"type":"object","properties":{"price":{"type":"number","maximum":${exactDecimal}}},"additionalProperties":true}`,
+        });
+      } else {
+        await route.abort('failed');
+      }
+    });
+
+    await page.goto('/schemas/price-card');
+    await page.getByRole('button', { name: '发布', exact: true }).click();
+    await page.getByLabel('versionTag').fill('v1');
+    await page.getByLabel('release note（可选）').fill('首个稳定版本');
+    await page.getByRole('button', { name: '原子发布' }).click();
+
+    await expect(page).toHaveURL(/\/static-schemas\/price-card\/v1$/);
+    await expect(page.getByText('不可变边界已建立')).toBeVisible();
+    await expect(page.locator('.artifact-panel pre')).toContainText(exactDecimal);
+    await expect(page.locator('.artifact-panel pre')).toContainText('\n  "type"');
+    await page.screenshot({ path: testInfo.outputPath('static-detail-1280x720.png'), fullPage: true });
+  });
+
+  test('soft deletes with immediate restore and validates raw-number RootDocument batches accessibly', async ({ page }, testInfo) => {
+    let current = draftSnapshot('restore-card', 5, '可恢复卡片');
+    let deleted = false;
+    await page.route('**/api/v1/**', async (route) => {
+      const url = new URL(route.request().url());
+      const method = route.request().method();
+      if (method === 'GET' && url.pathname === '/api/v1/schema-drafts/restore-card') {
+        await json(route, current);
+      } else if (method === 'DELETE' && url.pathname === '/api/v1/schema-drafts/restore-card') {
+        expect(url.searchParams.get('expectedRevision')).toBe('5');
+        deleted = true;
+        await route.fulfill({ status: 204 });
+      } else if (method === 'GET' && url.pathname === '/api/v1/schema-drafts') {
+        await json(route, { items: deleted ? [] : [draftSummary(current)], page: 1, size: url.searchParams.get('size') === '100' ? 100 : 50, total: deleted ? 0 : 1 });
+      } else if (method === 'POST' && url.pathname === '/api/v1/schema-drafts/restore-card/restore') {
+        expect(route.request().postData()).toBe('{"expectedRevision":5,"sourceRevision":5}');
+        deleted = false;
+        current = draftSnapshot('restore-card', 6, '可恢复卡片');
+        await json(route, current);
+      } else if (method === 'GET' && url.pathname === '/api/v1/static-schemas') {
+        await json(route, { items: [], page: 1, size: 100, total: 0 });
+      } else if (method === 'POST' && url.pathname === '/api/v1/root-document-validations') {
+        const rawBody = route.request().postData() ?? '';
+        expect(rawBody).toContain(`"amount": ${exactDecimal}`);
+        await json(route, {
+          target: { kind: 'draft', schemaKey: 'restore-card', revision: 6 },
+          resolvedSchemas: [{ kind: 'draft', schemaKey: 'restore-card', revision: 6 }],
+          summary: { total: 1, valid: 1, invalid: 0 },
+          documents: [{ index: 0, valid: true, problems: [], truncated: false }],
+        });
+      } else {
+        await route.abort('failed');
+      }
+    });
+
+    await page.goto('/schemas/restore-card');
+    await page.getByRole('button', { name: '删除', exact: true }).click();
+    await page.getByRole('button', { name: '确认软删除' }).click();
+    await expect(page).toHaveURL(/\/schemas$/);
+    await expect(page.getByText('可恢复卡片 已软删除')).toBeVisible();
+    await page.getByRole('button', { name: '撤销删除' }).click();
+    await expect(page).toHaveURL(/\/schemas\/restore-card$/);
+    await expect(page.locator('.studio-revision-card strong')).toHaveText('6');
+
+    await page.goto('/validator');
+    await page.getByLabel('schemaKey').fill('restore-card');
+    await page.getByLabel('Document 1 JSON').fill(`{\n  "amount": ${exactDecimal},\n  "unknown": {"accepted": true}\n}`);
+    await page.getByRole('button', { name: '验证 1 份样本' }).click();
+    await expect(page.getByText('全部样本有效')).toBeVisible();
+    await expect(page.locator('.resolved-target')).toContainText('restore-card@revision:6');
+
+    const accessibility = await new AxeBuilder({ page })
+      .include('.resource-shell')
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa'])
+      .analyze();
+    expect(accessibility.violations.filter((violation) =>
+      violation.impact === 'serious' || violation.impact === 'critical')).toEqual([]);
+
+    await expectNoHorizontalOverflow(page);
+    await page.screenshot({ path: testInfo.outputPath('validator-result-1280x720.png'), fullPage: true });
+    await page.setViewportSize({ width: 1024, height: 768 });
+    await expect(page.locator('.resource-body')).toBeVisible();
+    await expectNoHorizontalOverflow(page);
+    await page.setViewportSize({ width: 1000, height: 768 });
+    await expect(page.getByText('RenderWeave v1 需要至少 1024px 宽度')).toBeVisible();
+  });
+});
+
+function definition(displayName: string) {
+  return {
+    dslVersion: 'renderweave-schema/1.0',
+    displayName,
+    fields: [{ fieldKey: 'title', displayName: '标题', required: true, value: { type: 'text' } }],
+  };
+}
+
+function draftSnapshot(schemaKey: string, revision: number, displayName: string) {
+  return {
+    schemaKey,
+    revision,
+    definition: definition(displayName),
+    creationSource: 'USER',
+    createdAt: '2026-08-07T01:00:00Z',
+    updatedAt: savedAt,
+    savedAt,
+    resolvedRevisions: { [schemaKey]: revision },
+  };
+}
+
+function draftSummary(snapshot: ReturnType<typeof draftSnapshot>) {
+  return {
+    schemaKey: snapshot.schemaKey,
+    revision: snapshot.revision,
+    creationSource: snapshot.creationSource,
+    displayName: snapshot.definition.displayName,
+    fieldCount: snapshot.definition.fields.length,
+    createdAt: snapshot.createdAt,
+    updatedAt: snapshot.updatedAt,
+    savedAt: snapshot.savedAt,
+  };
+}
+
+async function json(route: Route, body: unknown, status = 200) {
+  await route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
+}
+
+async function expectNoHorizontalOverflow(page: Page) {
+  const dimensions = await page.evaluate(() => ({
+    clientWidth: document.documentElement.clientWidth,
+    scrollWidth: document.documentElement.scrollWidth,
+  }));
+  expect(dimensions.scrollWidth).toBeLessThanOrEqual(dimensions.clientWidth);
+}

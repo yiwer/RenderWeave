@@ -1,0 +1,1294 @@
+openapi: 3.1.2
+info:
+  title: RenderWeave API
+  version: 0.6.0
+  description: >-
+    Contract-first API for RenderWeave Schema Drafts, immutable StaticSchemas,
+    exact compiled artifacts and authoritative RootDocument validation.
+servers:
+  - url: /
+tags:
+  - name: System
+    description: Operational endpoints used by local and deployment canaries.
+  - name: Schema Drafts
+    description: Mutable Schema definitions with append-only revisions.
+  - name: Static Schemas
+    description: Immutable, exact-version publication artifacts and system presets.
+  - name: RootDocument Validation
+    description: Strict, deterministic batch validation against one frozen Schema graph.
+paths:
+  /api/v1/system/status:
+    get:
+      operationId: getSystemStatus
+      tags: [System]
+      summary: Verify API and PostgreSQL readiness
+      responses:
+        '200':
+          description: API and database are ready.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemStatus'
+        '500':
+          $ref: '#/components/responses/InternalProblem'
+  /api/v1/schema-drafts:
+    get:
+      operationId: listDrafts
+      tags: [Schema Drafts]
+      summary: Page through active Schema Drafts, most recently updated first
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: Active Draft summary page.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DraftListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestProblem'
+        '500':
+          $ref: '#/components/responses/InternalProblem'
+    post:
+      operationId: createDraft
+      tags: [Schema Drafts]
+      summary: Create a valid Schema Draft at revision 0
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateDraftRequest'
+      responses:
+        '201':
+          description: Draft created.
+          headers:
+            Location:
+              description: Canonical URL of the created Draft.
+              schema:
+                type: string
+                format: uri-reference
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DraftResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestProblem'
+        '409':
+          $ref: '#/components/responses/ConflictProblem'
+        '422':
+          $ref: '#/components/responses/ValidationProblem'
+        '500':
+          $ref: '#/components/responses/InternalProblem'
+  /api/v1/schema-drafts/{schemaKey}:
+    parameters:
+      - $ref: '#/components/parameters/SchemaKey'
+    get:
+      operationId: getDraft
+      tags: [Schema Drafts]
+      summary: Read the current saved revision of a Draft
+      responses:
+        '200':
+          description: Current Draft snapshot.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DraftResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestProblem'
+        '404':
+          $ref: '#/components/responses/NotFoundProblem'
+        '500':
+          $ref: '#/components/responses/InternalProblem'
+    put:
+      operationId: saveDraft
+      tags: [Schema Drafts]
+      summary: Append a complete Draft revision when expectedRevision is current
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaveDraftRequest'
+      responses:
+        '200':
+          description: New current Draft snapshot.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DraftResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestProblem'
+        '404':
+          $ref: '#/components/responses/NotFoundProblem'
+        '409':
+          $ref: '#/components/responses/ConflictProblem'
+        '422':
+          $ref: '#/components/responses/ValidationProblem'
+        '500':
+          $ref: '#/components/responses/InternalProblem'
+    delete:
+      operationId: deleteDraft
+      tags: [Schema Drafts]
+      summary: Soft-delete an unreferenced Draft at the expected revision
+      parameters:
+        - $ref: '#/components/parameters/ExpectedRevision'
+      responses:
+        '204':
+          description: Draft soft-deleted and its outgoing projection deactivated.
+        '400':
+          $ref: '#/components/responses/BadRequestProblem'
+        '404':
+          $ref: '#/components/responses/NotFoundProblem'
+        '409':
+          $ref: '#/components/responses/ConflictProblem'
+        '500':
+          $ref: '#/components/responses/InternalProblem'
+  /api/v1/schema-drafts/{schemaKey}/revisions:
+    parameters:
+      - $ref: '#/components/parameters/SchemaKey'
+    get:
+      operationId: listDraftRevisions
+      tags: [Schema Drafts]
+      summary: Page through immutable Draft revision summaries, newest first
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: Revision summary page.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DraftHistoryResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestProblem'
+        '404':
+          $ref: '#/components/responses/NotFoundProblem'
+        '500':
+          $ref: '#/components/responses/InternalProblem'
+  /api/v1/schema-drafts/{schemaKey}/revisions/{revision}:
+    parameters:
+      - $ref: '#/components/parameters/SchemaKey'
+      - $ref: '#/components/parameters/Revision'
+    get:
+      operationId: getDraftRevision
+      tags: [Schema Drafts]
+      summary: Read one immutable Draft revision, including for a deleted Draft
+      responses:
+        '200':
+          description: Exact historical revision.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DraftRevisionResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestProblem'
+        '404':
+          $ref: '#/components/responses/NotFoundProblem'
+        '500':
+          $ref: '#/components/responses/InternalProblem'
+  /api/v1/schema-drafts/{schemaKey}/restore:
+    parameters:
+      - $ref: '#/components/parameters/SchemaKey'
+    post:
+      operationId: restoreDraftRevision
+      tags: [Schema Drafts]
+      summary: Copy an old revision into a new active current revision
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RestoreDraftRequest'
+      responses:
+        '200':
+          description: New current Draft snapshot.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DraftResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestProblem'
+        '404':
+          $ref: '#/components/responses/NotFoundProblem'
+        '409':
+          $ref: '#/components/responses/ConflictProblem'
+        '422':
+          $ref: '#/components/responses/ValidationProblem'
+        '500':
+          $ref: '#/components/responses/InternalProblem'
+  /api/v1/schema-drafts/{schemaKey}/copies:
+    parameters:
+      - $ref: '#/components/parameters/SchemaKey'
+    post:
+      operationId: copyDraft
+      tags: [Schema Drafts]
+      summary: Copy the observed current Draft into a new user Draft at revision 0
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CopyDraftRequest'
+      responses:
+        '201':
+          description: Draft copy created.
+          headers:
+            Location:
+              description: Canonical URL of the new Draft.
+              schema:
+                type: string
+                format: uri-reference
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DraftResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestProblem'
+        '404':
+          $ref: '#/components/responses/NotFoundProblem'
+        '409':
+          $ref: '#/components/responses/ConflictProblem'
+        '422':
+          $ref: '#/components/responses/ValidationProblem'
+        '500':
+          $ref: '#/components/responses/InternalProblem'
+  /api/v1/static-schemas:
+    get:
+      operationId: listStaticSchemas
+      tags: [Static Schemas]
+      summary: List immutable StaticSchemas, including system presets
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: StaticSchema summary page.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StaticSchemaListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestProblem'
+        '500':
+          $ref: '#/components/responses/InternalProblem'
+    post:
+      operationId: publishStaticSchema
+      tags: [Static Schemas]
+      summary: Publish the exact current Draft revision as an immutable StaticSchema
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PublishStaticSchemaRequest'
+      responses:
+        '201':
+          description: StaticSchema published with a stored compiled artifact.
+          headers:
+            Location:
+              description: Canonical URL of the StaticSchema.
+              schema:
+                type: string
+                format: uri-reference
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StaticSchemaResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestProblem'
+        '404':
+          $ref: '#/components/responses/NotFoundProblem'
+        '409':
+          $ref: '#/components/responses/ConflictProblem'
+        '422':
+          $ref: '#/components/responses/ValidationProblem'
+        '500':
+          $ref: '#/components/responses/InternalProblem'
+  /api/v1/static-schemas/{schemaKey}/{versionTag}:
+    parameters:
+      - $ref: '#/components/parameters/StaticSchemaKey'
+      - $ref: '#/components/parameters/VersionTag'
+    get:
+      operationId: getStaticSchema
+      tags: [Static Schemas]
+      summary: Read immutable StaticSchema metadata and DSL snapshot
+      responses:
+        '200':
+          description: StaticSchema detail.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StaticSchemaResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestProblem'
+        '404':
+          $ref: '#/components/responses/NotFoundProblem'
+        '500':
+          $ref: '#/components/responses/InternalProblem'
+  /api/v1/static-schemas/{schemaKey}/{versionTag}/definition:
+    parameters:
+      - $ref: '#/components/parameters/StaticSchemaKey'
+      - $ref: '#/components/parameters/VersionTag'
+    get:
+      operationId: downloadStaticSchemaDefinition
+      tags: [Static Schemas]
+      summary: Download the immutable RenderWeave DSL snapshot
+      responses:
+        '200':
+          description: Normalized RenderWeave DSL JSON.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaDefinition'
+        '400':
+          $ref: '#/components/responses/BadRequestProblem'
+        '404':
+          $ref: '#/components/responses/NotFoundProblem'
+        '500':
+          $ref: '#/components/responses/InternalProblem'
+  /api/v1/static-schemas/{schemaKey}/{versionTag}/compiled-json-schema:
+    parameters:
+      - $ref: '#/components/parameters/StaticSchemaKey'
+      - $ref: '#/components/parameters/VersionTag'
+    get:
+      operationId: downloadCompiledJsonSchema
+      tags: [Static Schemas]
+      summary: Download the exact stored JSON Schema 2020-12 artifact bytes
+      responses:
+        '200':
+          description: Fully inlined immutable JSON Schema artifact.
+          content:
+            application/schema+json:
+              schema:
+                type: object
+                additionalProperties: true
+        '400':
+          $ref: '#/components/responses/BadRequestProblem'
+        '404':
+          $ref: '#/components/responses/NotFoundProblem'
+        '500':
+          $ref: '#/components/responses/InternalProblem'
+  /api/v1/static-schemas/{schemaKey}/{versionTag}/copies:
+    parameters:
+      - $ref: '#/components/parameters/StaticSchemaKey'
+      - $ref: '#/components/parameters/VersionTag'
+    post:
+      operationId: copyStaticSchemaToDraft
+      tags: [Static Schemas]
+      summary: Copy one exact StaticSchema definition into a new user Draft
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CopyDraftRequest'
+      responses:
+        '201':
+          description: New Draft at revision 0.
+          headers:
+            Location:
+              description: Canonical URL of the new Draft.
+              schema:
+                type: string
+                format: uri-reference
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DraftResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestProblem'
+        '404':
+          $ref: '#/components/responses/NotFoundProblem'
+        '409':
+          $ref: '#/components/responses/ConflictProblem'
+        '422':
+          $ref: '#/components/responses/ValidationProblem'
+        '500':
+          $ref: '#/components/responses/InternalProblem'
+  /api/v1/root-document-validations:
+    post:
+      operationId: validateRootDocuments
+      tags: [RootDocument Validation]
+      summary: Validate 1–20 RootDocuments against one frozen Draft or exact StaticSchema graph
+      description: >-
+        The raw body is parsed as strict JSON with duplicate-name detection before
+        Schema validation. Unknown RootDocument fields are accepted. The response
+        includes the root-inclusive exact resolution snapshot used for every document.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RootDocumentValidationRequest'
+      responses:
+        '200':
+          description: Deterministic per-document results in request order.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationBatchResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestProblem'
+        '404':
+          $ref: '#/components/responses/NotFoundProblem'
+        '413':
+          $ref: '#/components/responses/PayloadTooLargeProblem'
+        '500':
+          $ref: '#/components/responses/InternalProblem'
+components:
+  parameters:
+    SchemaKey:
+      name: schemaKey
+      in: path
+      required: true
+      description: Stable Draft identity. The reserved system- prefix is not valid for user Drafts.
+      schema:
+        type: string
+        pattern: '^[a-z0-9][a-z0-9-]{0,62}$'
+    ExpectedRevision:
+      name: expectedRevision
+      in: query
+      required: true
+      schema:
+        type: integer
+        format: int64
+        minimum: 0
+    Revision:
+      name: revision
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+        minimum: 0
+    Page:
+      name: page
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    PageSize:
+      name: size
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+    StaticSchemaKey:
+      name: schemaKey
+      in: path
+      required: true
+      description: User or reserved system StaticSchema key.
+      schema:
+        type: string
+        pattern: '^[a-z0-9][a-z0-9-]{0,62}$'
+    VersionTag:
+      name: versionTag
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: '^[a-z0-9][a-z0-9._-]{0,63}$'
+  schemas:
+    SystemStatus:
+      type: object
+      additionalProperties: false
+      required: [service, status, database, contractVersion]
+      properties:
+        service:
+          type: string
+          const: renderweave-api
+        status:
+          type: string
+          enum: [ready]
+        database:
+          type: string
+          enum: [ready]
+        contractVersion:
+          type: string
+          const: 0.6.0
+    CreateDraftRequest:
+      type: object
+      additionalProperties: false
+      required: [schemaKey, definition]
+      properties:
+        schemaKey:
+          type: string
+          pattern: '^[a-z0-9][a-z0-9-]{0,62}$'
+        definition:
+          $ref: '#/components/schemas/SchemaDefinition'
+    SaveDraftRequest:
+      type: object
+      additionalProperties: false
+      required: [expectedRevision, definition]
+      properties:
+        expectedRevision:
+          type: integer
+          format: int64
+          minimum: 0
+        definition:
+          $ref: '#/components/schemas/SchemaDefinition'
+    RestoreDraftRequest:
+      type: object
+      additionalProperties: false
+      required: [expectedRevision, sourceRevision]
+      properties:
+        expectedRevision:
+          type: integer
+          format: int64
+          minimum: 0
+        sourceRevision:
+          type: integer
+          format: int64
+          minimum: 0
+    CopyDraftRequest:
+      type: object
+      additionalProperties: false
+      required: [schemaKey, displayName]
+      properties:
+        schemaKey:
+          type: string
+          pattern: '^[a-z0-9][a-z0-9-]{0,62}$'
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 128
+    PublishStaticSchemaRequest:
+      type: object
+      additionalProperties: false
+      required: [schemaKey, expectedRevision, versionTag]
+      properties:
+        schemaKey:
+          type: string
+          pattern: '^[a-z0-9][a-z0-9-]{0,62}$'
+        expectedRevision:
+          type: integer
+          format: int64
+          minimum: 0
+        versionTag:
+          type: string
+          pattern: '^[a-z0-9][a-z0-9._-]{0,63}$'
+        releaseNote:
+          type: string
+    DraftResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - schemaKey
+        - revision
+        - definition
+        - creationSource
+        - createdAt
+        - updatedAt
+        - savedAt
+        - resolvedRevisions
+      properties:
+        schemaKey:
+          type: string
+        revision:
+          type: integer
+          format: int64
+          minimum: 0
+        definition:
+          $ref: '#/components/schemas/SchemaDefinition'
+        creationSource:
+          type: string
+          enum: [USER, AI]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        savedAt:
+          type: string
+          format: date-time
+        resolvedRevisions:
+          type: object
+          description: Root-inclusive request snapshot of live Draft revisions.
+          additionalProperties:
+            type: integer
+            format: int64
+            minimum: 0
+    DraftListResponse:
+      type: object
+      additionalProperties: false
+      required: [items, page, size, total]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/DraftSummary'
+        page:
+          type: integer
+          minimum: 1
+        size:
+          type: integer
+          minimum: 1
+          maximum: 100
+        total:
+          type: integer
+          format: int64
+          minimum: 0
+    DraftSummary:
+      type: object
+      additionalProperties: false
+      required: [schemaKey, revision, creationSource, displayName, fieldCount, createdAt, updatedAt, savedAt]
+      properties:
+        schemaKey:
+          type: string
+        revision:
+          type: integer
+          format: int64
+          minimum: 0
+        creationSource:
+          type: string
+          enum: [USER, AI]
+        displayName:
+          type: string
+        fieldCount:
+          type: integer
+          minimum: 0
+          maximum: 256
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        savedAt:
+          type: string
+          format: date-time
+    DraftHistoryResponse:
+      type: object
+      additionalProperties: false
+      required: [items, page, size, total]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/DraftRevisionSummary'
+        page:
+          type: integer
+          minimum: 1
+        size:
+          type: integer
+          minimum: 1
+          maximum: 100
+        total:
+          type: integer
+          format: int64
+          minimum: 0
+    DraftRevisionSummary:
+      type: object
+      additionalProperties: false
+      required: [revision, displayName, fieldCount, savedAt]
+      properties:
+        revision:
+          type: integer
+          format: int64
+          minimum: 0
+        displayName:
+          type: string
+        fieldCount:
+          type: integer
+          minimum: 0
+          maximum: 256
+        savedAt:
+          type: string
+          format: date-time
+    DraftRevisionResponse:
+      type: object
+      additionalProperties: false
+      required: [schemaKey, revision, definition, savedAt]
+      properties:
+        schemaKey:
+          type: string
+        revision:
+          type: integer
+          format: int64
+          minimum: 0
+        definition:
+          $ref: '#/components/schemas/SchemaDefinition'
+        savedAt:
+          type: string
+          format: date-time
+    StaticSchemaResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - schemaKey
+        - versionTag
+        - origin
+        - sourceDraftRevision
+        - definition
+        - compilerVersion
+        - releaseNote
+        - referenceDepth
+        - publishedAt
+      properties:
+        schemaKey:
+          type: string
+        versionTag:
+          type: string
+        origin:
+          type: string
+          enum: [DRAFT, SYSTEM]
+        sourceDraftRevision:
+          type: [integer, 'null']
+          format: int64
+          minimum: 0
+        definition:
+          $ref: '#/components/schemas/SchemaDefinition'
+        compilerVersion:
+          type: string
+        releaseNote:
+          type: [string, 'null']
+        referenceDepth:
+          type: integer
+          minimum: 1
+          maximum: 16
+        publishedAt:
+          type: string
+          format: date-time
+    StaticSchemaListResponse:
+      type: object
+      additionalProperties: false
+      required: [items, page, size, total]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/StaticSchemaSummaryResponse'
+        page:
+          type: integer
+          minimum: 1
+        size:
+          type: integer
+          minimum: 1
+          maximum: 100
+        total:
+          type: integer
+          format: int64
+          minimum: 0
+    StaticSchemaSummaryResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - schemaKey
+        - versionTag
+        - origin
+        - displayName
+        - fieldCount
+        - referenceDepth
+        - publishedAt
+      properties:
+        schemaKey: { type: string }
+        versionTag: { type: string }
+        origin:
+          type: string
+          enum: [DRAFT, SYSTEM]
+        displayName: { type: string }
+        fieldCount:
+          type: integer
+          minimum: 0
+          maximum: 256
+        referenceDepth:
+          type: integer
+          minimum: 1
+          maximum: 16
+        publishedAt:
+          type: string
+          format: date-time
+    SchemaDefinition:
+      type: object
+      additionalProperties: false
+      required: [dslVersion, displayName, fields]
+      properties:
+        dslVersion:
+          type: string
+          const: renderweave-schema/1.0
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 128
+        description:
+          type: string
+          maxLength: 2048
+        fields:
+          type: array
+          maxItems: 256
+          items:
+            $ref: '#/components/schemas/SchemaField'
+    SchemaField:
+      type: object
+      additionalProperties: false
+      required: [fieldKey, required, value]
+      properties:
+        fieldKey:
+          type: string
+          minLength: 1
+          x-renderweave-max-utf8-bytes: 128
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 128
+        description:
+          type: string
+          maxLength: 2048
+        required:
+          type: boolean
+        value:
+          $ref: '#/components/schemas/ValueDescriptor'
+    ValueDescriptor:
+      oneOf:
+        - $ref: '#/components/schemas/TextValue'
+        - $ref: '#/components/schemas/DecimalValue'
+        - $ref: '#/components/schemas/DateValue'
+        - $ref: '#/components/schemas/TimeValue'
+        - $ref: '#/components/schemas/BooleanValue'
+        - $ref: '#/components/schemas/ReferenceValue'
+        - $ref: '#/components/schemas/ArrayValue'
+    TextValue:
+      type: object
+      additionalProperties: false
+      required: [type]
+      properties:
+        type:
+          type: string
+          const: text
+        constraints:
+          $ref: '#/components/schemas/TextConstraints'
+    TextConstraints:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        minLength:
+          type: integer
+          minimum: 0
+          maximum: 65536
+        maxLength:
+          type: integer
+          minimum: 0
+          maximum: 65536
+        pattern:
+          type: string
+          maxLength: 1024
+        enum:
+          type: array
+          minItems: 1
+          maxItems: 256
+          uniqueItems: true
+          items:
+            type: string
+        const:
+          type: string
+    DecimalValue:
+      type: object
+      additionalProperties: false
+      required: [type]
+      properties:
+        type:
+          type: string
+          const: decimal
+        constraints:
+          $ref: '#/components/schemas/DecimalConstraints'
+    DecimalConstraints:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        min: { type: number }
+        exclusiveMin: { type: number }
+        max: { type: number }
+        exclusiveMax: { type: number }
+        multipleOf: { type: number, exclusiveMinimum: 0 }
+        enum:
+          type: array
+          minItems: 1
+          maxItems: 256
+          uniqueItems: true
+          items: { type: number }
+        const: { type: number }
+    DateValue:
+      type: object
+      additionalProperties: false
+      required: [type]
+      properties:
+        type: { type: string, const: date }
+        constraints:
+          $ref: '#/components/schemas/DateConstraints'
+    DateConstraints:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        min: { $ref: '#/components/schemas/DateLiteral' }
+        exclusiveMin: { $ref: '#/components/schemas/DateLiteral' }
+        max: { $ref: '#/components/schemas/DateLiteral' }
+        exclusiveMax: { $ref: '#/components/schemas/DateLiteral' }
+        enum:
+          type: array
+          minItems: 1
+          maxItems: 256
+          uniqueItems: true
+          items: { $ref: '#/components/schemas/DateLiteral' }
+        const: { $ref: '#/components/schemas/DateLiteral' }
+    DateLiteral:
+      type: string
+      pattern: '^[0-9]{4}-[0-9]{2}-[0-9]{2}$'
+    TimeValue:
+      type: object
+      additionalProperties: false
+      required: [type]
+      properties:
+        type: { type: string, const: time }
+        constraints:
+          $ref: '#/components/schemas/TimeConstraints'
+    TimeConstraints:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        min: { $ref: '#/components/schemas/TimeLiteral' }
+        exclusiveMin: { $ref: '#/components/schemas/TimeLiteral' }
+        max: { $ref: '#/components/schemas/TimeLiteral' }
+        exclusiveMax: { $ref: '#/components/schemas/TimeLiteral' }
+        enum:
+          type: array
+          minItems: 1
+          maxItems: 256
+          uniqueItems: true
+          items: { $ref: '#/components/schemas/TimeLiteral' }
+        const: { $ref: '#/components/schemas/TimeLiteral' }
+    TimeLiteral:
+      type: string
+      pattern: '^(?:[01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$'
+    BooleanValue:
+      type: object
+      additionalProperties: false
+      required: [type]
+      properties:
+        type: { type: string, const: boolean }
+        constraints:
+          $ref: '#/components/schemas/BooleanConstraints'
+    BooleanConstraints:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        const: { type: boolean }
+    ReferenceValue:
+      type: object
+      additionalProperties: false
+      required: [type, ref]
+      properties:
+        type: { type: string, const: reference }
+        ref:
+          $ref: '#/components/schemas/SchemaReference'
+    SchemaReference:
+      oneOf:
+        - $ref: '#/components/schemas/SchemaRef'
+        - $ref: '#/components/schemas/StaticSchemaRef'
+    SchemaRef:
+      type: object
+      additionalProperties: false
+      required: [schemaKey]
+      properties:
+        schemaKey:
+          type: string
+          pattern: '^[a-z0-9][a-z0-9-]{0,62}$'
+    StaticSchemaRef:
+      type: object
+      additionalProperties: false
+      required: [schemaKey, versionTag]
+      properties:
+        schemaKey:
+          type: string
+          pattern: '^[a-z0-9][a-z0-9-]{0,62}$'
+        versionTag:
+          type: string
+          pattern: '^[a-z0-9][a-z0-9._-]{0,63}$'
+    ArrayValue:
+      type: object
+      additionalProperties: false
+      required: [type, items]
+      properties:
+        type: { type: string, const: array }
+        constraints:
+          $ref: '#/components/schemas/ArrayConstraints'
+        items:
+          oneOf:
+            - $ref: '#/components/schemas/TextValue'
+            - $ref: '#/components/schemas/DecimalValue'
+            - $ref: '#/components/schemas/DateValue'
+            - $ref: '#/components/schemas/TimeValue'
+            - $ref: '#/components/schemas/BooleanValue'
+            - $ref: '#/components/schemas/ReferenceValue'
+    ArrayConstraints:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        minItems:
+          type: integer
+          minimum: 0
+          maximum: 10000
+        maxItems:
+          type: integer
+          minimum: 0
+          maximum: 10000
+        uniqueItems:
+          type: boolean
+    RootDocumentValidationRequest:
+      type: object
+      additionalProperties: false
+      required: [target, documents]
+      properties:
+        target:
+          $ref: '#/components/schemas/ValidationTarget'
+        documents:
+          type: array
+          minItems: 1
+          maxItems: 20
+          items:
+            $ref: '#/components/schemas/RootDocumentEnvelope'
+    ValidationTarget:
+      oneOf:
+        - $ref: '#/components/schemas/DraftValidationTarget'
+        - $ref: '#/components/schemas/StaticValidationTarget'
+      discriminator:
+        propertyName: kind
+        mapping:
+          draft: '#/components/schemas/DraftValidationTarget'
+          static: '#/components/schemas/StaticValidationTarget'
+    DraftValidationTarget:
+      type: object
+      additionalProperties: false
+      required: [kind, schemaKey]
+      properties:
+        kind:
+          type: string
+          enum: [draft]
+        schemaKey:
+          type: string
+          pattern: '^[a-z0-9][a-z0-9-]{0,62}$'
+    StaticValidationTarget:
+      type: object
+      additionalProperties: false
+      required: [kind, schemaKey, versionTag]
+      properties:
+        kind:
+          type: string
+          enum: [static]
+        schemaKey:
+          type: string
+          pattern: '^[a-z0-9][a-z0-9-]{0,62}$'
+        versionTag:
+          type: string
+          pattern: '^[a-z0-9][a-z0-9._-]{0,63}$'
+    RootDocumentEnvelope:
+      type: object
+      additionalProperties: false
+      required: [document]
+      properties:
+        document: {}
+    ValidationBatchResponse:
+      type: object
+      additionalProperties: false
+      required: [target, resolvedSchemas, summary, documents]
+      properties:
+        target:
+          $ref: '#/components/schemas/ResolvedSchema'
+        resolvedSchemas:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/ResolvedSchema'
+          description: Root-first, first-occurrence depth-first exact resolution snapshot.
+        summary:
+          $ref: '#/components/schemas/ValidationSummary'
+        documents:
+          type: array
+          minItems: 1
+          maxItems: 20
+          items:
+            $ref: '#/components/schemas/DocumentValidationResult'
+    ResolvedSchema:
+      oneOf:
+        - $ref: '#/components/schemas/ResolvedDraftSchema'
+        - $ref: '#/components/schemas/ResolvedStaticSchema'
+      discriminator:
+        propertyName: kind
+        mapping:
+          draft: '#/components/schemas/ResolvedDraftSchema'
+          static: '#/components/schemas/ResolvedStaticSchema'
+    ResolvedDraftSchema:
+      type: object
+      additionalProperties: false
+      required: [kind, schemaKey, revision]
+      properties:
+        kind:
+          type: string
+          enum: [draft]
+        schemaKey:
+          type: string
+        revision:
+          type: integer
+          format: int64
+          minimum: 0
+    ResolvedStaticSchema:
+      type: object
+      additionalProperties: false
+      required: [kind, schemaKey, versionTag]
+      properties:
+        kind:
+          type: string
+          enum: [static]
+        schemaKey:
+          type: string
+        versionTag:
+          type: string
+    ValidationSummary:
+      type: object
+      additionalProperties: false
+      required: [total, valid, invalid]
+      properties:
+        total:
+          type: integer
+          minimum: 1
+          maximum: 20
+        valid:
+          type: integer
+          minimum: 0
+          maximum: 20
+        invalid:
+          type: integer
+          minimum: 0
+          maximum: 20
+    DocumentValidationResult:
+      type: object
+      additionalProperties: false
+      required: [index, valid, problems, truncated]
+      properties:
+        index:
+          type: integer
+          minimum: 0
+          maximum: 19
+        valid:
+          type: boolean
+        problems:
+          type: array
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/RootDocumentValidationProblem'
+        truncated:
+          type: boolean
+    RootDocumentValidationProblem:
+      type: object
+      additionalProperties: false
+      required: [code, instancePath, schemaPath, messageArgs]
+      properties:
+        code:
+          type: string
+        instancePath:
+          type: string
+          description: RFC 6901 pointer from the RootDocument root.
+        schemaPath:
+          type: string
+          description: Pointer containing the exact resolved Schema identity and DSL location.
+        messageArgs:
+          type: object
+          additionalProperties: true
+          description: Language-neutral arguments; clients localize by code.
+    Violation:
+      type: object
+      additionalProperties: false
+      required: [code, pointer, args]
+      properties:
+        code:
+          type: string
+        pointer:
+          type: string
+          description: RFC 6901 JSON Pointer relative to the invalid request object.
+        args:
+          type: object
+          additionalProperties: true
+        message:
+          type: string
+    Problem:
+      type: object
+      additionalProperties: true
+      required: [type, title, status, code, traceId]
+      properties:
+        type:
+          type: string
+          format: uri-reference
+        title:
+          type: string
+        status:
+          type: integer
+          minimum: 400
+          maximum: 599
+        detail:
+          type: string
+        instance:
+          type: string
+          format: uri-reference
+        code:
+          type: string
+        traceId:
+          type: string
+        violations:
+          type: array
+          items:
+            $ref: '#/components/schemas/Violation'
+        revision:
+          type: integer
+          format: int64
+          minimum: 0
+  responses:
+    BadRequestProblem:
+      description: Request JSON, key syntax or envelope is invalid.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    NotFoundProblem:
+      description: The requested Draft does not exist.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    ConflictProblem:
+      description: Natural identity or expected revision conflicts with current state.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    ValidationProblem:
+      description: The complete RenderWeave definition is not valid and nothing was written.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    PayloadTooLargeProblem:
+      description: One RootDocument, the aggregate batch or the transport body exceeds its byte budget.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    InternalProblem:
+      description: RFC 9457 problem response.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'

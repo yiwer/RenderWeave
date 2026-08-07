@@ -1,0 +1,26 @@
+spring:
+  application:
+    name: renderweave-api
+  datasource:
+    url: ${RENDERWEAVE_DB_URL:jdbc:postgresql://localhost:5432/renderweave}
+    username: ${RENDERWEAVE_DB_USERNAME:renderweave}
+    password: ${RENDERWEAVE_DB_PASSWORD:renderweave}
+  flyway:
+    enabled: true
+    placeholder-replacement: false
+  threads:
+    virtual:
+      enabled: true
+
+server:
+  shutdown: graceful
+
+management:
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: health,info

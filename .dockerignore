@@ -1,0 +1,11 @@
+.git
+.idea
+.sdlc
+**/target
+web/node_modules
+web/dist
+web/playwright-report
+web/test-results
+renderweave-blob-store
+*.log
+

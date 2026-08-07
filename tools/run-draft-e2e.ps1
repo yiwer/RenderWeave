@@ -1,0 +1,156 @@
+[CmdletBinding()]
+param()
+
+$ErrorActionPreference = 'Stop'
+$repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
+$webRoot = Join-Path $repoRoot 'web'
+$jarPath = Join-Path $repoRoot 'renderweave-app\target\renderweave-app-1.0-SNAPSHOT.jar'
+$runDir = Join-Path $repoRoot ".sdlc\draft-e2e\$PID"
+$evidenceDir = Join-Path $repoRoot ".sdlc\evidence\draft-e2e-$PID"
+$null = New-Item -ItemType Directory -Path $runDir -Force
+$null = New-Item -ItemType Directory -Path $evidenceDir -Force
+$containerName = "renderweave-draft-e2e-$PID"
+$containerId = $null
+$apiProcess = $null
+$webProcess = $null
+$oldEnvironment = @{}
+
+function Get-FreeTcpPort {
+    $listener = New-Object System.Net.Sockets.TcpListener([System.Net.IPAddress]::Loopback, 0)
+    $listener.Start()
+    try {
+        return ([System.Net.IPEndPoint]$listener.LocalEndpoint).Port
+    }
+    finally {
+        $listener.Stop()
+    }
+}
+
+function Wait-ForHttp {
+    param(
+        [string]$Uri,
+        [System.Diagnostics.Process]$Process,
+        [string]$Name
+    )
+    foreach ($attempt in 1..120) {
+        if ($Process.HasExited) {
+            throw "$Name exited before becoming ready (exit $($Process.ExitCode))."
+        }
+        try {
+            $response = Invoke-WebRequest -Uri $Uri -UseBasicParsing -TimeoutSec 2
+            if ($response.StatusCode -ge 200 -and $response.StatusCode -lt 500) {
+                return
+            }
+        }
+        catch {
+            Start-Sleep -Milliseconds 250
+        }
+    }
+    throw "$Name did not become ready within 30 seconds."
+}
+
+try {
+    if (-not (Test-Path -LiteralPath $jarPath)) {
+        throw "Application jar is missing: $jarPath. Run the server gate first."
+    }
+
+    $nodeDir = (& powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'ensure-node24.ps1') | Select-Object -Last 1)
+    if ($LASTEXITCODE -ne 0 -or -not $nodeDir) {
+        throw 'Unable to provision the pinned Node 24 toolchain.'
+    }
+    $nodeExe = Join-Path $nodeDir 'node.exe'
+    $viteCli = Join-Path $webRoot 'node_modules\vite\bin\vite.js'
+    if (-not (Test-Path -LiteralPath $viteCli)) {
+        throw 'Vite is not installed. Run the web gate first.'
+    }
+
+    $containerId = (& docker run --detach --rm `
+        --name $containerName `
+        --env POSTGRES_DB=renderweave `
+        --env POSTGRES_USER=renderweave `
+        --env POSTGRES_PASSWORD=renderweave-e2e `
+        --publish '127.0.0.1::5432' `
+        postgres:16-alpine).Trim()
+    if ($LASTEXITCODE -ne 0 -or -not $containerId) {
+        throw 'Unable to start the PostgreSQL E2E container.'
+    }
+
+    $databaseReady = $false
+    foreach ($attempt in 1..60) {
+        & docker exec $containerName pg_isready -U renderweave -d renderweave *> $null
+        if ($LASTEXITCODE -eq 0) {
+            $databaseReady = $true
+            break
+        }
+        Start-Sleep -Milliseconds 250
+    }
+    if (-not $databaseReady) {
+        throw 'PostgreSQL E2E container did not become ready within 15 seconds.'
+    }
+
+    $portBinding = (& docker port $containerName '5432/tcp' | Select-Object -First 1).Trim()
+    $databasePort = [int]($portBinding -replace '^.*:', '')
+    $apiPort = Get-FreeTcpPort
+    $webPort = Get-FreeTcpPort
+
+    foreach ($name in @('RENDERWEAVE_DB_URL', 'RENDERWEAVE_DB_USERNAME', 'RENDERWEAVE_DB_PASSWORD', 'RENDERWEAVE_API_URL')) {
+        $oldEnvironment[$name] = [Environment]::GetEnvironmentVariable($name, 'Process')
+    }
+    $env:RENDERWEAVE_DB_URL = "jdbc:postgresql://127.0.0.1:$databasePort/renderweave"
+    $env:RENDERWEAVE_DB_USERNAME = 'renderweave'
+    $env:RENDERWEAVE_DB_PASSWORD = 'renderweave-e2e'
+
+    $apiProcess = Start-Process -FilePath 'java' `
+        -ArgumentList @('-jar', $jarPath, "--server.port=$apiPort") `
+        -WorkingDirectory $repoRoot `
+        -WindowStyle Hidden `
+        -RedirectStandardOutput (Join-Path $runDir 'api.stdout.log') `
+        -RedirectStandardError (Join-Path $runDir 'api.stderr.log') `
+        -PassThru
+    Wait-ForHttp -Uri "http://127.0.0.1:$apiPort/api/v1/system/status" -Process $apiProcess -Name 'RenderWeave API'
+
+    $env:RENDERWEAVE_API_URL = "http://127.0.0.1:$apiPort"
+    $webProcess = Start-Process -FilePath $nodeExe `
+        -ArgumentList @($viteCli, '--host', '127.0.0.1', '--port', "$webPort", '--strictPort') `
+        -WorkingDirectory $webRoot `
+        -WindowStyle Hidden `
+        -RedirectStandardOutput (Join-Path $runDir 'web.stdout.log') `
+        -RedirectStandardError (Join-Path $runDir 'web.stderr.log') `
+        -PassThru
+    Wait-ForHttp -Uri "http://127.0.0.1:$webPort/schemas/new" -Process $webProcess -Name 'RenderWeave web'
+
+    $schemaKey = "browser-card-$PID"
+    & python tools\draft_journey_audit.py `
+        --base-url "http://127.0.0.1:$webPort" `
+        --schema-key $schemaKey `
+        --output $evidenceDir
+    if ($LASTEXITCODE -ne 0) {
+        throw "Draft browser audit failed with exit code $LASTEXITCODE."
+    }
+}
+catch {
+    foreach ($path in @(
+        (Join-Path $runDir 'api.stdout.log'),
+        (Join-Path $runDir 'api.stderr.log'),
+        (Join-Path $runDir 'web.stdout.log'),
+        (Join-Path $runDir 'web.stderr.log')
+    )) {
+        if (Test-Path -LiteralPath $path) {
+            Get-Content -Encoding UTF8 $path | Select-Object -Last 80 | Write-Error
+        }
+    }
+    throw
+}
+finally {
+    foreach ($process in @($webProcess, $apiProcess)) {
+        if ($process -and -not $process.HasExited) {
+            Stop-Process -Id $process.Id -Force
+        }
+    }
+    if ($containerId) {
+        & docker stop $containerName *> $null
+    }
+    foreach ($name in $oldEnvironment.Keys) {
+        [Environment]::SetEnvironmentVariable($name, $oldEnvironment[$name], 'Process')
+    }
+}
