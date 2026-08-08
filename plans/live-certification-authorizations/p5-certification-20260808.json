@@ -1,7 +1,7 @@
 {
   "authorizationVersion": "renderweave-live-certification-authorization/1.1",
   "authorizationId": "p5-certification-20260809-flash-v2",
-  "status": "PROPOSED",
+  "status": "OPEN",
   "inputClassification": "REPOSITORY_SYNTHETIC_ONLY",
   "corpusVersion": "renderweave-live-eval/2.0",
   "evaluationIdentity": "renderweave-repository-tree-sha256/1:da26f40ccee907a9e1e650008f1c46de0e7bb30f098dd6932d66ec2fd5e595e1",
@@ -9,8 +9,8 @@
   "maximumProviderAttempts": 180,
   "maximumCostMicrosCny": 3600000,
   "maximumCasesPerBatch": 5,
-  "approvedBy": null,
-  "approvedAt": null,
-  "expiresAt": null,
-  "approvalScope": null
+  "approvedBy": "workspace-user",
+  "approvedAt": "2026-08-08T18:26:41Z",
+  "expiresAt": "2026-08-08T22:26:41Z",
+  "approvalScope": "User approved a ceiling of 1000 provider attempts, 12 hours, and real business data; execution is deliberately narrowed to dashscope-qwen37-flash-v1/qwen3.7-flash, renderweave-live-eval/2.0 repository-synthetic-only 60 cases, maximum 180 provider attempts, maximum CNY 3.60, maximum 5 cases per batch, a 4-hour window, no real business data, redacted evidence, and immediate CLOSED on completion, stop, or expiry."
 }
