@@ -42,6 +42,8 @@ paths:
       parameters:
         - $ref: '#/components/parameters/Page'
         - $ref: '#/components/parameters/PageSize'
+        - $ref: '#/components/parameters/ResourceSearch'
+        - $ref: '#/components/parameters/DraftListSort'
       responses:
         '200':
           description: Active Draft summary page.
@@ -266,6 +268,9 @@ paths:
       parameters:
         - $ref: '#/components/parameters/Page'
         - $ref: '#/components/parameters/PageSize'
+        - $ref: '#/components/parameters/ResourceSearch'
+        - $ref: '#/components/parameters/StaticSchemaListSort'
+        - $ref: '#/components/parameters/StaticSchemaOriginFilter'
       responses:
         '200':
           description: StaticSchema summary page.
@@ -777,6 +782,39 @@ components:
         minimum: 1
         maximum: 100
         default: 20
+    ResourceSearch:
+      name: search
+      in: query
+      required: false
+      description: Case-insensitive substring matched against the resource identity and display name.
+      schema:
+        type: string
+        maxLength: 128
+        default: ''
+    DraftListSort:
+      name: sort
+      in: query
+      required: false
+      schema:
+        type: string
+        enum: [UPDATED_DESC, UPDATED_ASC, NAME_ASC, NAME_DESC]
+        default: UPDATED_DESC
+    StaticSchemaListSort:
+      name: sort
+      in: query
+      required: false
+      schema:
+        type: string
+        enum: [PUBLISHED_DESC, PUBLISHED_ASC, NAME_ASC, NAME_DESC]
+        default: PUBLISHED_DESC
+    StaticSchemaOriginFilter:
+      name: origin
+      in: query
+      required: false
+      schema:
+        type: string
+        enum: [ALL, DRAFT, SYSTEM]
+        default: ALL
     StaticSchemaKey:
       name: schemaKey
       in: path

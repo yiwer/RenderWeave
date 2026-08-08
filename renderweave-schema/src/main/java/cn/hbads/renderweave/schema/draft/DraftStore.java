@@ -26,9 +26,9 @@ public interface DraftStore {
 
     Optional<ResolvedStoredDraft> findCurrent(SchemaKey schemaKey);
 
-    List<StoredDraft> findActivePage(int offset, int limit);
+    List<StoredDraft> findActivePage(int offset, int limit, String search, DraftListSort sort);
 
-    long countActive();
+    long countActive(String search);
 
     Optional<StoredDraftRevision> findRevision(SchemaKey schemaKey, long revision);
 

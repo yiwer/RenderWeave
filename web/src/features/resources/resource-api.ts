@@ -4,6 +4,8 @@ import {
   listStaticSchemas,
   type DraftHistoryResponse,
   type DraftListResponse,
+  type ListDraftsData,
+  type ListStaticSchemasData,
   type Problem,
   type StaticSchemaListResponse,
   type ValidationBatchResponse,
@@ -14,8 +16,20 @@ export type ValidationTargetInput =
   | { kind: 'draft'; schemaKey: string }
   | { kind: 'static'; schemaKey: string; versionTag: string };
 
-export async function listDraftsRequest(page = 1, size = 50): Promise<DraftListResponse> {
-  const result = await listDrafts({ query: { page, size } });
+type DraftListQuery = NonNullable<ListDraftsData['query']>;
+type StaticSchemaListQuery = NonNullable<ListStaticSchemasData['query']>;
+
+export type DraftListSort = NonNullable<DraftListQuery['sort']>;
+export type StaticSchemaListSort = NonNullable<StaticSchemaListQuery['sort']>;
+export type StaticSchemaOriginFilter = NonNullable<StaticSchemaListQuery['origin']>;
+
+export async function listDraftsRequest(
+  page = 1,
+  size = 50,
+  search = '',
+  sort: DraftListSort = 'UPDATED_DESC',
+): Promise<DraftListResponse> {
+  const result = await listDrafts({ query: { page, size, search, sort } });
   return unwrap(result.data, result.error, '读取 Draft 列表');
 }
 
@@ -28,8 +42,14 @@ export async function listDraftHistoryRequest(
   return unwrap(result.data, result.error, '读取 revision 历史');
 }
 
-export async function listStaticSchemasRequest(page = 1, size = 50): Promise<StaticSchemaListResponse> {
-  const result = await listStaticSchemas({ query: { page, size } });
+export async function listStaticSchemasRequest(
+  page = 1,
+  size = 50,
+  search = '',
+  sort: StaticSchemaListSort = 'PUBLISHED_DESC',
+  origin: StaticSchemaOriginFilter = 'ALL',
+): Promise<StaticSchemaListResponse> {
+  const result = await listStaticSchemas({ query: { page, size, search, sort, origin } });
   return unwrap(result.data, result.error, '读取 StaticSchema 列表');
 }
 

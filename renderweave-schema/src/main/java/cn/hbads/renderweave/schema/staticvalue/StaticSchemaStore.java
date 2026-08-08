@@ -14,4 +14,14 @@ public interface StaticSchemaStore {
     List<StoredStaticSchema> findPage(int offset, int limit);
 
     long count();
+
+    List<StoredStaticSchema> findPage(
+            int offset,
+            int limit,
+            String search,
+            StaticSchemaListSort sort,
+            StaticSchemaOriginFilter origin
+    );
+
+    long count(String search, StaticSchemaOriginFilter origin);
 }

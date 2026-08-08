@@ -4,6 +4,7 @@ import cn.hbads.renderweave.schema.definition.SchemaDefinitionJsonWriter;
 import cn.hbads.renderweave.schema.draft.DraftService;
 import cn.hbads.renderweave.schema.draft.DraftPage;
 import cn.hbads.renderweave.schema.draft.DraftHistoryPage;
+import cn.hbads.renderweave.schema.draft.DraftListSort;
 import cn.hbads.renderweave.schema.draft.DraftRevisionSnapshot;
 import cn.hbads.renderweave.schema.draft.DraftSnapshot;
 import org.springframework.http.ResponseEntity;
@@ -57,7 +58,9 @@ final class DraftController {
     @GetMapping
     DraftListResponse list(
             @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "20") int size
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "") String search,
+            @RequestParam(defaultValue = "UPDATED_DESC") String sort
     ) {
         if (page < 1) {
             throw new InvalidApiRequestException("page must be at least 1");
@@ -65,7 +68,7 @@ final class DraftController {
         if (size < 1 || size > 100) {
             throw new InvalidApiRequestException("size must be between 1 and 100");
         }
-        return toListResponse(drafts.list(page, size));
+        return toListResponse(drafts.list(page, size, search, parseDraftSort(sort)));
     }
 
     @GetMapping("/{schemaKey}")
@@ -169,6 +172,14 @@ final class DraftController {
             return json.writeValueAsString(definition);
         } catch (JacksonException exception) {
             throw new InvalidApiRequestException("definition cannot be encoded", exception);
+        }
+    }
+
+    private static DraftListSort parseDraftSort(String value) {
+        try {
+            return DraftListSort.valueOf(value);
+        } catch (IllegalArgumentException exception) {
+            throw new InvalidApiRequestException("unsupported Draft list sort: " + value, exception);
         }
     }
 

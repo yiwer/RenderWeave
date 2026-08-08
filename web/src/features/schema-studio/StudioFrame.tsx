@@ -47,12 +47,12 @@ export function StudioChrome({
       : `revision ${session.revision ?? 0} 已保存`;
   return (
     <header className="studio-chrome">
-      <Link className="product-mark" to="/schemas" aria-label="RenderWeave DraftSchema">
+      <Link className="product-mark" to="/schemas" aria-label="RenderWeave 数据结构设计">
         <span className="weave-mark" aria-hidden="true">RW</span>
         <span>RenderWeave</span>
       </Link>
       <nav className="studio-breadcrumb" aria-label="面包屑">
-        <Link to="/schemas">DraftSchema</Link>
+        <Link to="/schemas">数据结构设计</Link>
         <ChevronRight aria-hidden="true" size={14} />
         <strong aria-current="page">{session.revision === null ? '新建' : session.displayName.trim() || session.schemaKey}</strong>
         <span
@@ -108,14 +108,14 @@ export function StudioRail({ session }: { session: EditorSession }) {
     <nav className="resource-rail studio-rail" aria-label="Schema 工作区导航">
       <Link className="rail-link" to="/schemas">
         <ListTree aria-hidden="true" size={17} />
-        DraftSchema
+        数据结构设计
       </Link>
       <Link className="rail-link active" to={session.revision === null ? '/schemas/new' : `/schemas/${session.schemaKey}`} aria-current="page">
         <Braces aria-hidden="true" size={17} />
         当前 Draft
       </Link>
       <Link className="rail-link rail-secondary-link" to="/static-schemas">
-        <Layers3 aria-hidden="true" size={17} />StaticSchema
+        <Layers3 aria-hidden="true" size={17} />数据结构资产
       </Link>
       <Link className="rail-link rail-secondary-link" to="/validator">
         <FileCheck2 aria-hidden="true" size={17} />样本验证器

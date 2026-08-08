@@ -93,6 +93,37 @@ class DraftApiTest {
     }
 
     @Test
+    void listSearchesSortsAndPaginatesBeforeReturningCards() throws Exception {
+        mockMvc.perform(post("/api/v1/schema-drafts")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(createRequest("gamma-card", "Gamma", "title")))
+                .andExpect(status().isCreated());
+        mockMvc.perform(post("/api/v1/schema-drafts")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(createRequest("alpha-card", "Alpha", "title")))
+                .andExpect(status().isCreated());
+        mockMvc.perform(post("/api/v1/schema-drafts")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(createRequest("beta-card", "Beta", "title")))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(get("/api/v1/schema-drafts")
+                        .queryParam("page", "2")
+                        .queryParam("size", "1")
+                        .queryParam("sort", "NAME_ASC"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.total").value(3))
+                .andExpect(jsonPath("$.items[0].schemaKey").value("beta-card"));
+
+        mockMvc.perform(get("/api/v1/schema-drafts")
+                        .queryParam("search", "GAMMA")
+                        .queryParam("sort", "NAME_DESC"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.total").value(1))
+                .andExpect(jsonPath("$.items[0].displayName").value("Gamma"));
+    }
+
+    @Test
     void validationConflictAndNotFoundUseStableRfc9457Problems() throws Exception {
         mockMvc.perform(post("/api/v1/schema-drafts")
                         .contentType(MediaType.APPLICATION_JSON)

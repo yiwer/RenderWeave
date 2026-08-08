@@ -3,6 +3,8 @@ package cn.hbads.renderweave.schema;
 import cn.hbads.renderweave.schema.definition.SchemaDefinitionJsonWriter;
 import cn.hbads.renderweave.schema.draft.DraftSnapshot;
 import cn.hbads.renderweave.schema.staticvalue.StaticSchemaPage;
+import cn.hbads.renderweave.schema.staticvalue.StaticSchemaListSort;
+import cn.hbads.renderweave.schema.staticvalue.StaticSchemaOriginFilter;
 import cn.hbads.renderweave.schema.staticvalue.StaticSchemaService;
 import cn.hbads.renderweave.schema.staticvalue.StaticSchemaSnapshot;
 import org.springframework.http.MediaType;
@@ -64,7 +66,10 @@ final class StaticSchemaController {
     @GetMapping
     StaticSchemaListResponse list(
             @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "20") int size
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "") String search,
+            @RequestParam(defaultValue = "PUBLISHED_DESC") String sort,
+            @RequestParam(defaultValue = "ALL") String origin
     ) {
         if (page < 1) {
             throw new InvalidApiRequestException("page must be at least 1");
@@ -72,7 +77,13 @@ final class StaticSchemaController {
         if (size < 1 || size > 100) {
             throw new InvalidApiRequestException("size must be between 1 and 100");
         }
-        return toListResponse(statics.list(page, size));
+        return toListResponse(statics.list(
+                page,
+                size,
+                search,
+                parseStaticSort(sort),
+                parseOriginFilter(origin)
+        ));
     }
 
     @GetMapping("/{schemaKey}/{versionTag}")
@@ -140,6 +151,22 @@ final class StaticSchemaController {
                 snapshot.referenceDepth(),
                 snapshot.publishedAt()
         );
+    }
+
+    private static StaticSchemaListSort parseStaticSort(String value) {
+        try {
+            return StaticSchemaListSort.valueOf(value);
+        } catch (IllegalArgumentException exception) {
+            throw new InvalidApiRequestException("unsupported StaticSchema list sort: " + value, exception);
+        }
+    }
+
+    private static StaticSchemaOriginFilter parseOriginFilter(String value) {
+        try {
+            return StaticSchemaOriginFilter.valueOf(value);
+        } catch (IllegalArgumentException exception) {
+            throw new InvalidApiRequestException("unsupported StaticSchema origin filter: " + value, exception);
+        }
     }
 
     private StaticSchemaListResponse toListResponse(StaticSchemaPage page) {

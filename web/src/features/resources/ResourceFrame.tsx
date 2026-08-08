@@ -28,7 +28,7 @@ export function ResourceFrame({
     <div className="resource-shell">
       <a className="skip-link" href="#main-content">跳到主要内容</a>
       <header className="resource-chrome">
-        <Link className="product-mark" to="/schemas" aria-label="RenderWeave DraftSchema">
+        <Link className="product-mark" to="/schemas" aria-label="RenderWeave 数据结构设计">
           <span className="weave-mark" aria-hidden="true">RW</span><span>RenderWeave</span>
         </Link>
         {breadcrumbs ? (
@@ -66,10 +66,10 @@ export function ResourceRail() {
     <nav className="resource-rail app-resource-rail" aria-label="RenderWeave 资源导航">
       <div className="rail-section-label">结构定义</div>
       <NavLink className={({ isActive }) => `rail-link ${isActive ? 'active' : ''}`} to="/schemas" end>
-        <Braces aria-hidden="true" size={17} />DraftSchema
+        <Braces aria-hidden="true" size={17} />数据结构设计
       </NavLink>
       <NavLink className={({ isActive }) => `rail-link ${isActive ? 'active' : ''}`} to="/static-schemas">
-        <Layers3 aria-hidden="true" size={17} />StaticSchema
+        <Layers3 aria-hidden="true" size={17} />数据结构资产
       </NavLink>
       <NavLink className={({ isActive }) => `rail-link ${isActive ? 'active' : ''}`} to="/validator">
         <FileCheck2 aria-hidden="true" size={17} />样本验证器

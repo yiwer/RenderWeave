@@ -71,19 +71,25 @@ public final class DraftService {
     }
 
     public DraftPage list(int page, int size) {
+        return list(page, size, "", DraftListSort.UPDATED_DESC);
+    }
+
+    public DraftPage list(int page, int size, String rawSearch, DraftListSort sort) {
         if (page < 1) {
             throw new IllegalArgumentException("page must be at least 1");
         }
         if (size < 1 || size > 100) {
             throw new IllegalArgumentException("size must be between 1 and 100");
         }
+        var search = normalizeSearch(rawSearch);
+        Objects.requireNonNull(sort, "sort");
         final int offset;
         try {
             offset = Math.multiplyExact(page - 1, size);
         } catch (ArithmeticException overflow) {
             throw new IllegalArgumentException("page is too large", overflow);
         }
-        var items = store.findActivePage(offset, size).stream()
+        var items = store.findActivePage(offset, size, search, sort).stream()
                 .map(stored -> {
                     var definition = parser.parse(stored.definitionJson());
                     return new DraftSummary(
@@ -98,7 +104,7 @@ public final class DraftService {
                     );
                 })
                 .toList();
-        return new DraftPage(items, page, size, store.countActive());
+        return new DraftPage(items, page, size, store.countActive(search));
     }
 
     public DraftRevisionSnapshot getRevision(String rawSchemaKey, long revision) {
@@ -235,6 +241,14 @@ public final class DraftService {
         if (revision < 0) {
             throw new IllegalArgumentException(name + " must not be negative");
         }
+    }
+
+    private static String normalizeSearch(String rawSearch) {
+        var search = rawSearch == null ? "" : rawSearch.strip();
+        if (search.length() > 128) {
+            throw new IllegalArgumentException("search must not exceed 128 characters");
+        }
+        return search;
     }
 
     private record ReferenceProjection(

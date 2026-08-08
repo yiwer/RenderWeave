@@ -127,19 +127,37 @@ public final class StaticSchemaService {
     }
 
     public StaticSchemaPage list(int page, int size) {
-        if (page < 1) {
-            throw new IllegalArgumentException("page must be at least 1");
-        }
-        if (size < 1 || size > 100) {
-            throw new IllegalArgumentException("size must be between 1 and 100");
-        }
-        final int offset;
-        try {
-            offset = Math.multiplyExact(page - 1, size);
-        } catch (ArithmeticException overflow) {
-            throw new IllegalArgumentException("page is too large", overflow);
-        }
-        var items = statics.findPage(offset, size).stream()
+        validatePage(page, size);
+        var offset = offset(page, size);
+        return page(statics.findPage(offset, size), page, size, statics.count());
+    }
+
+    public StaticSchemaPage list(
+            int page,
+            int size,
+            String rawSearch,
+            StaticSchemaListSort sort,
+            StaticSchemaOriginFilter origin
+    ) {
+        validatePage(page, size);
+        var search = normalizeSearch(rawSearch);
+        Objects.requireNonNull(sort, "sort");
+        Objects.requireNonNull(origin, "origin");
+        return page(
+                statics.findPage(offset(page, size), size, search, sort, origin),
+                page,
+                size,
+                statics.count(search, origin)
+        );
+    }
+
+    private StaticSchemaPage page(
+            List<StoredStaticSchema> storedSchemas,
+            int page,
+            int size,
+            long total
+    ) {
+        var items = storedSchemas.stream()
                 .map(stored -> {
                     var definition = parser.parse(stored.definitionJson());
                     return new StaticSchemaSummary(
@@ -152,7 +170,7 @@ public final class StaticSchemaService {
                     );
                 })
                 .toList();
-        return new StaticSchemaPage(items, page, size, statics.count());
+        return new StaticSchemaPage(items, page, size, total);
     }
 
     public DraftSnapshot copyToDraft(
@@ -294,6 +312,31 @@ public final class StaticSchemaService {
     private static void requireRevision(long revision) {
         if (revision < 0) {
             throw new IllegalArgumentException("expectedRevision must not be negative");
+        }
+    }
+
+    private static String normalizeSearch(String rawSearch) {
+        var search = rawSearch == null ? "" : rawSearch.strip();
+        if (search.length() > 128) {
+            throw new IllegalArgumentException("search must not exceed 128 characters");
+        }
+        return search;
+    }
+
+    private static void validatePage(int page, int size) {
+        if (page < 1) {
+            throw new IllegalArgumentException("page must be at least 1");
+        }
+        if (size < 1 || size > 100) {
+            throw new IllegalArgumentException("size must be between 1 and 100");
+        }
+    }
+
+    private static int offset(int page, int size) {
+        try {
+            return Math.multiplyExact(page - 1, size);
+        } catch (ArithmeticException overflow) {
+            throw new IllegalArgumentException("page is too large", overflow);
         }
     }
 

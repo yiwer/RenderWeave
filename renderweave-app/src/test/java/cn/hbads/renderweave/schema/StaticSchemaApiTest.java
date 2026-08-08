@@ -1,6 +1,7 @@
 package cn.hbads.renderweave.schema;
 
 import cn.hbads.renderweave.schema.draft.DraftService;
+import cn.hbads.renderweave.schema.staticvalue.StaticSchemaService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,6 +38,9 @@ class StaticSchemaApiTest {
 
     @Autowired
     private DraftService drafts;
+
+    @Autowired
+    private StaticSchemaService statics;
 
     @Autowired
     private JdbcClient jdbcClient;
@@ -101,6 +105,40 @@ class StaticSchemaApiTest {
                 .andExpect(header().string("Location", "/api/v1/schema-drafts/api-static-copy"))
                 .andExpect(jsonPath("$.definition.displayName").value("API 副本"))
                 .andExpect(jsonPath("$.revision").value(0));
+    }
+
+    @Test
+    void listFiltersOriginThenSearchesSortsAndPaginates() throws Exception {
+        drafts.create("zeta-asset", """
+                {"dslVersion":"renderweave-schema/1.0","displayName":"Zeta asset","fields":[]}
+                """);
+        statics.publish("zeta-asset", 0, "v1", null);
+        drafts.create("alpha-asset", """
+                {"dslVersion":"renderweave-schema/1.0","displayName":"Alpha asset","fields":[]}
+                """);
+        statics.publish("alpha-asset", 0, "v2", null);
+
+        mockMvc.perform(get("/api/v1/static-schemas")
+                        .queryParam("origin", "DRAFT")
+                        .queryParam("sort", "NAME_ASC")
+                        .queryParam("page", "2")
+                        .queryParam("size", "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.total").value(2))
+                .andExpect(jsonPath("$.items[0].schemaKey").value("zeta-asset"));
+
+        mockMvc.perform(get("/api/v1/static-schemas")
+                        .queryParam("origin", "DRAFT")
+                        .queryParam("search", "V2"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.total").value(1))
+                .andExpect(jsonPath("$.items[0].schemaKey").value("alpha-asset"));
+
+        mockMvc.perform(get("/api/v1/static-schemas")
+                        .queryParam("origin", "SYSTEM"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.total").value(6))
+                .andExpect(jsonPath("$.items[0].origin").value("SYSTEM"));
     }
 
     @Test

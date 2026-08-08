@@ -48,7 +48,7 @@ test.describe('Schema resource lifecycle', () => {
     });
 
     await page.goto('/schemas');
-    await expect(page.getByRole('heading', { name: 'DraftSchema' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: '数据结构设计' })).toBeVisible();
     await expect(page.locator('.app-resource-rail').getByRole('link', { name: '新建 Draft' })).toHaveCount(0);
     await expect(page.getByRole('link', { name: '打开 商品目录卡' })).toBeVisible();
     await page.getByRole('button', { name: '查看 商品目录卡 的历史' }).click();

@@ -608,6 +608,17 @@ export type Page = number;
 export type PageSize = number;
 
 /**
+ * Case-insensitive substring matched against the resource identity and display name.
+ */
+export type ResourceSearch = string;
+
+export type DraftListSort = 'UPDATED_DESC' | 'UPDATED_ASC' | 'NAME_ASC' | 'NAME_DESC';
+
+export type StaticSchemaListSort = 'PUBLISHED_DESC' | 'PUBLISHED_ASC' | 'NAME_ASC' | 'NAME_DESC';
+
+export type StaticSchemaOriginFilter = 'ALL' | 'DRAFT' | 'SYSTEM';
+
+/**
  * User or reserved system StaticSchema key.
  */
 export type StaticSchemaKey = string;
@@ -645,6 +656,11 @@ export type ListDraftsData = {
     query?: {
         page?: number;
         size?: number;
+        /**
+         * Case-insensitive substring matched against the resource identity and display name.
+         */
+        search?: string;
+        sort?: 'UPDATED_DESC' | 'UPDATED_ASC' | 'NAME_ASC' | 'NAME_DESC';
     };
     url: '/api/v1/schema-drafts';
 };
@@ -1014,6 +1030,12 @@ export type ListStaticSchemasData = {
     query?: {
         page?: number;
         size?: number;
+        /**
+         * Case-insensitive substring matched against the resource identity and display name.
+         */
+        search?: string;
+        sort?: 'PUBLISHED_DESC' | 'PUBLISHED_ASC' | 'NAME_ASC' | 'NAME_DESC';
+        origin?: 'ALL' | 'DRAFT' | 'SYSTEM';
     };
     url: '/api/v1/static-schemas';
 };

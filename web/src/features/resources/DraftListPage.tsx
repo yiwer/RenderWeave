@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   AlertCircle,
   Braces,
@@ -9,17 +9,22 @@ import {
   RefreshCw,
   Rocket,
   RotateCcw,
-  Search,
   Trash2,
   X,
 } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 import { DeleteDraftDialog, DraftHistoryDialog } from '../schema-studio/DraftLifecyclePanel';
 import { PublishStaticSchemaDialog } from '../schema-studio/PublishStaticSchemaDialog';
 import { StudioRequestError, restoreDraftSnapshotRequest } from '../schema-studio/lossless-api';
-import { listDraftsRequest } from './resource-api';
+import {
+  ResourcePagination,
+  ResourceSearchInput,
+  ResourceSortSelect,
+} from './ResourceListControls';
+import { useDebouncedValue } from './resource-list-hooks';
+import { listDraftsRequest, type DraftListSort } from './resource-api';
 import { formatDateTime } from './resource-format';
 import { ResourceFrame } from './ResourceFrame';
 
@@ -28,20 +33,17 @@ export function DraftListPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(9);
   const [search, setSearch] = useState('');
+  const [sort, setSort] = useState<DraftListSort>('UPDATED_DESC');
+  const debouncedSearch = useDebouncedValue(search);
   const deletedDraft = deletedDraftFromState(location.state);
   const query = useQuery({
-    queryKey: ['schema-drafts', page],
-    queryFn: () => listDraftsRequest(page, 50),
+    queryKey: ['schema-drafts', 'list', page, pageSize, debouncedSearch, sort],
+    queryFn: () => listDraftsRequest(page, pageSize, debouncedSearch, sort),
+    placeholderData: keepPreviousData,
   });
-  const items = useMemo(() => {
-    const normalized = search.trim().toLocaleLowerCase('zh-CN');
-    if (!normalized) return query.data?.items ?? [];
-    return (query.data?.items ?? []).filter((item) =>
-      `${item.schemaKey} ${item.displayName} ${item.creationSource}`
-        .toLocaleLowerCase('zh-CN')
-        .includes(normalized));
-  }, [query.data?.items, search]);
+  const items = query.data?.items ?? [];
   const dismissDeleted = () => navigate('/schemas', { replace: true, state: null });
   const restoreDeleted = useMutation({
     mutationFn: () => restoreDraftSnapshotRequest(
@@ -58,7 +60,7 @@ export function DraftListPage() {
 
   return (
     <ResourceFrame
-      title="DraftSchema"
+      title="数据结构设计"
       description="设计可变 Schema 定义；每次显式保存都会追加一个不可修改的 revision。"
       actions={<Link className="button primary-button" to="/schemas/new"><Plus aria-hidden="true" size={16} />新建 Draft</Link>}
     >
@@ -70,29 +72,34 @@ export function DraftListPage() {
           {restoreDeleted.isError && <span className="deleted-restore-error" role="alert">{restoreDeleted.error instanceof Error ? restoreDeleted.error.message : '恢复失败'}</span>}
         </section>
       )}
-      <section className="resource-toolbar" aria-label="DraftSchema 工具">
-        <label className="resource-search">
-          <Search aria-hidden="true" size={16} /><span className="sr-only">搜索 Draft</span>
-          <input value={search} type="search" placeholder="搜索 schemaKey 或显示名称" onChange={(event) => setSearch(event.target.value)} />
-        </label>
+      <section className="resource-toolbar resource-list-toolbar" aria-label="数据结构设计工具">
+        <ResourceSearchInput id="draft-resource-search" value={search} label="搜索数据结构设计" placeholder="搜索 schemaKey 或显示名称" onChange={(value) => { setSearch(value); setPage(1); }} />
+        <div className="resource-toolbar-controls">
+          <ResourceSortSelect
+            value={sort}
+            options={draftSortOptions}
+            onChange={(value) => { setSort(value); setPage(1); }}
+          />
+        </div>
         <div className="resource-summary">
-          <span>{query.data?.total ?? 0} 个有效 DraftSchema</span>
+          {query.isFetching && !query.isPending && <LoaderCircle className="spin" aria-hidden="true" size={13} />}
+          <span>{query.data?.total ?? 0} 个设计</span>
           <span>第 {page} 页</span>
         </div>
       </section>
 
-      {query.isPending && <ResourceLoading label="正在读取 DraftSchema" />}
+      {query.isPending && <ResourceLoading label="正在读取数据结构设计" />}
       {query.isError && <ResourceError error={query.error} onRetry={() => void query.refetch()} />}
       {query.data && items.length === 0 && (
         <section className="resource-empty" role="status">
           <Braces aria-hidden="true" size={25} />
-          <strong>{query.data.total === 0 ? '还没有 DraftSchema' : '当前页没有匹配项'}</strong>
-          <span>{query.data.total === 0 ? '从一个空定义或第一个字段开始。' : '清除搜索词，或切换分页。'}</span>
-          {query.data.total === 0 && <Link className="button primary-button" to="/schemas/new"><Plus aria-hidden="true" size={16} />创建第一个 Draft</Link>}
+          <strong>{debouncedSearch ? '没有匹配的数据结构设计' : '还没有数据结构设计'}</strong>
+          <span>{debouncedSearch ? '尝试缩短关键词，或搜索 schemaKey。' : '从一个空定义或第一个字段开始。'}</span>
+          {!debouncedSearch && <Link className="button primary-button" to="/schemas/new"><Plus aria-hidden="true" size={16} />创建第一个 Draft</Link>}
         </section>
       )}
       {items.length > 0 && (
-        <div className="draft-card-grid" aria-label="DraftSchema 卡片列表">
+        <div className="draft-card-grid" aria-label="数据结构设计卡片列表">
           {items.map((item) => (
             <article className="draft-schema-card" key={item.schemaKey}>
               <Link className="draft-card-main" to={`/schemas/${item.schemaKey}`} aria-label={`打开 ${item.displayName}`}>
@@ -129,16 +136,26 @@ export function DraftListPage() {
           ))}
         </div>
       )}
-      {query.data && query.data.total > query.data.size && (
-        <div className="pagination">
-          <button type="button" className="button ghost-button" disabled={page === 1} onClick={() => setPage((value) => value - 1)}>上一页</button>
-          <span>{page} / {Math.ceil(query.data.total / query.data.size)}</span>
-          <button type="button" className="button ghost-button" disabled={page * query.data.size >= query.data.total} onClick={() => setPage((value) => value + 1)}>下一页</button>
-        </div>
+      {query.data && (
+        <ResourcePagination
+          label="数据结构设计"
+          page={page}
+          size={pageSize}
+          total={query.data.total}
+          onPageChange={setPage}
+          onSizeChange={(size) => { setPageSize(size); setPage(1); }}
+        />
       )}
     </ResourceFrame>
   );
 }
+
+const draftSortOptions: Array<{ value: DraftListSort; label: string }> = [
+  { value: 'UPDATED_DESC', label: '最近更新' },
+  { value: 'UPDATED_ASC', label: '最早更新' },
+  { value: 'NAME_ASC', label: '名称 A–Z' },
+  { value: 'NAME_DESC', label: '名称 Z–A' },
+];
 
 export function ResourceLoading({ label }: { label: string }) {
   return <div className="resource-state" role="status"><LoaderCircle className="spin" aria-hidden="true" size={21} /><strong>{label}</strong></div>;

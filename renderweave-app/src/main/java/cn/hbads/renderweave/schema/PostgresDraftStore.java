@@ -3,6 +3,7 @@ package cn.hbads.renderweave.schema;
 import cn.hbads.renderweave.schema.draft.CreationSource;
 import cn.hbads.renderweave.schema.draft.DraftAlreadyExistsException;
 import cn.hbads.renderweave.schema.draft.DraftDeleteBlockedException;
+import cn.hbads.renderweave.schema.draft.DraftListSort;
 import cn.hbads.renderweave.schema.draft.DraftNotFoundException;
 import cn.hbads.renderweave.schema.draft.DraftReferenceGraph;
 import cn.hbads.renderweave.schema.draft.DraftReferenceTarget;
@@ -112,8 +113,8 @@ public class PostgresDraftStore implements DraftStore {
     }
 
     @Override
-    public List<StoredDraft> findActivePage(int offset, int limit) {
-        return jdbcClient.sql("""
+    public List<StoredDraft> findActivePage(int offset, int limit, String search, DraftListSort sort) {
+        var sql = """
                         select d.schema_key,
                                d.current_revision,
                                d.creation_source,
@@ -126,9 +127,16 @@ public class PostgresDraftStore implements DraftStore {
                           on r.schema_key = d.schema_key
                          and r.revision = d.current_revision
                         where d.deleted_at is null
-                        order by d.updated_at desc, d.schema_key
+                          and (
+                            :search = ''
+                            or position(lower(:search) in lower(d.schema_key)) > 0
+                            or position(lower(:search) in lower(coalesce(r.definition_json ->> 'displayName', ''))) > 0
+                          )
+                        """ + draftOrderBy(sort) + """
                         offset :offset rows fetch first :limit rows only
-                        """)
+                        """;
+        return jdbcClient.sql(sql)
+                .param("search", search)
                 .param("offset", offset)
                 .param("limit", limit)
                 .query(PostgresDraftStore::mapStoredDraft)
@@ -136,10 +144,32 @@ public class PostgresDraftStore implements DraftStore {
     }
 
     @Override
-    public long countActive() {
-        return jdbcClient.sql("select count(*) from schema_draft where deleted_at is null")
+    public long countActive(String search) {
+        return jdbcClient.sql("""
+                        select count(*)
+                        from schema_draft d
+                        join schema_draft_revision r
+                          on r.schema_key = d.schema_key
+                         and r.revision = d.current_revision
+                        where d.deleted_at is null
+                          and (
+                            :search = ''
+                            or position(lower(:search) in lower(d.schema_key)) > 0
+                            or position(lower(:search) in lower(coalesce(r.definition_json ->> 'displayName', ''))) > 0
+                          )
+                        """)
+                .param("search", search)
                 .query(Long.class)
                 .single();
+    }
+
+    private static String draftOrderBy(DraftListSort sort) {
+        return switch (sort) {
+            case UPDATED_DESC -> " order by d.updated_at desc, d.schema_key asc ";
+            case UPDATED_ASC -> " order by d.updated_at asc, d.schema_key asc ";
+            case NAME_ASC -> " order by lower(r.definition_json ->> 'displayName') asc, d.schema_key asc ";
+            case NAME_DESC -> " order by lower(r.definition_json ->> 'displayName') desc, d.schema_key asc ";
+        };
     }
 
     @Override

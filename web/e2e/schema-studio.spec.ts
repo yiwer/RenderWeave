@@ -73,7 +73,7 @@ test.describe('production Schema Studio', () => {
     expect(accessibility.violations.filter((violation) =>
       violation.impact === 'serious' || violation.impact === 'critical')).toEqual([]);
 
-    await page.locator('.studio-breadcrumb').getByRole('link', { name: 'DraftSchema' }).click();
+    await page.locator('.studio-breadcrumb').getByRole('link', { name: '数据结构设计' }).click();
     await expect(page.getByRole('dialog')).toBeVisible();
     await expect(page.getByRole('heading', { name: '离开前保存更改？' })).toBeVisible();
     await page.getByRole('button', { name: '继续编辑' }).click();

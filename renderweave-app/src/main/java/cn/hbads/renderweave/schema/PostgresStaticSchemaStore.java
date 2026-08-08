@@ -9,7 +9,9 @@ import cn.hbads.renderweave.schema.identity.SchemaKey;
 import cn.hbads.renderweave.schema.identity.VersionTag;
 import cn.hbads.renderweave.schema.staticvalue.PublishStaticSchema;
 import cn.hbads.renderweave.schema.staticvalue.StaticSchemaAlreadyExistsException;
+import cn.hbads.renderweave.schema.staticvalue.StaticSchemaListSort;
 import cn.hbads.renderweave.schema.staticvalue.StaticSchemaOrigin;
+import cn.hbads.renderweave.schema.staticvalue.StaticSchemaOriginFilter;
 import cn.hbads.renderweave.schema.staticvalue.StaticSchemaStore;
 import cn.hbads.renderweave.schema.staticvalue.StoredStaticSchema;
 import org.springframework.dao.DuplicateKeyException;
@@ -168,6 +170,73 @@ public class PostgresStaticSchemaStore implements StaticSchemaStore {
         return jdbcClient.sql("select count(*) from static_schema")
                 .query(Long.class)
                 .single();
+    }
+
+    @Override
+    public List<StoredStaticSchema> findPage(
+            int offset,
+            int limit,
+            String search,
+            StaticSchemaListSort sort,
+            StaticSchemaOriginFilter origin
+    ) {
+        var sql = """
+                        select schema_key,
+                               version_tag,
+                               origin,
+                               source_draft_revision,
+                               definition_json::text as definition_json,
+                               compiled_json_schema::text as compiled_json_schema,
+                               compiler_version,
+                               release_note,
+                               reference_depth,
+                               published_at
+                        from static_schema
+                        where (:origin = 'ALL' or origin = :origin)
+                          and (
+                            :search = ''
+                            or position(lower(:search) in lower(schema_key)) > 0
+                            or position(lower(:search) in lower(version_tag)) > 0
+                            or position(lower(:search) in lower(coalesce(definition_json ->> 'displayName', ''))) > 0
+                          )
+                        """ + staticOrderBy(sort) + """
+                        offset :offset rows fetch first :limit rows only
+                        """;
+        return jdbcClient.sql(sql)
+                .param("origin", origin.name())
+                .param("search", search)
+                .param("offset", offset)
+                .param("limit", limit)
+                .query(PostgresStaticSchemaStore::mapStoredStaticSchema)
+                .list();
+    }
+
+    @Override
+    public long count(String search, StaticSchemaOriginFilter origin) {
+        return jdbcClient.sql("""
+                        select count(*)
+                        from static_schema
+                        where (:origin = 'ALL' or origin = :origin)
+                          and (
+                            :search = ''
+                            or position(lower(:search) in lower(schema_key)) > 0
+                            or position(lower(:search) in lower(version_tag)) > 0
+                            or position(lower(:search) in lower(coalesce(definition_json ->> 'displayName', ''))) > 0
+                          )
+                        """)
+                .param("origin", origin.name())
+                .param("search", search)
+                .query(Long.class)
+                .single();
+    }
+
+    private static String staticOrderBy(StaticSchemaListSort sort) {
+        return switch (sort) {
+            case PUBLISHED_DESC -> " order by published_at desc, schema_key asc, version_tag asc ";
+            case PUBLISHED_ASC -> " order by published_at asc, schema_key asc, version_tag asc ";
+            case NAME_ASC -> " order by lower(definition_json ->> 'displayName') asc, schema_key asc, version_tag asc ";
+            case NAME_DESC -> " order by lower(definition_json ->> 'displayName') desc, schema_key asc, version_tag asc ";
+        };
     }
 
     private void acquireGraphLock() {
