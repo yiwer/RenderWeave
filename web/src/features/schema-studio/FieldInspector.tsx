@@ -137,70 +137,73 @@ export function FieldInspector({
         </div>
       )}
 
-      <div className="control-group">
-        <div className="control-label-row">
-          <label htmlFor={`field-key-${field.rowKey}`}>fieldKey</label>
-          <span className={byteLength > 128 ? 'count-error' : ''}>{byteLength}/128 bytes</span>
-        </div>
-        <input
-          id={`field-key-${field.rowKey}`}
-          className="mono-input"
-          data-pointer={keyPointer}
-          value={field.fieldKey}
-          aria-invalid={showProblem(keyPointer)}
-          onChange={(event) => update({ fieldKey: event.target.value }, `${field.rowKey}:fieldKey`)}
-          onBlur={() => finish(keyPointer)}
-        />
-        <p className="control-help">大小写敏感；允许中文、/ 与 ~，不会执行 Unicode normalization。</p>
-      </div>
-
-      <div className="control-group">
-        <label htmlFor={`field-name-${field.rowKey}`}>显示名称（可选）</label>
-        <input
-          id={`field-name-${field.rowKey}`}
-          data-pointer={displayNamePointer}
-          value={field.displayName}
-          aria-invalid={showProblem(displayNamePointer)}
-          onChange={(event) => update({ displayName: event.target.value }, `${field.rowKey}:displayName`)}
-          onBlur={() => finish(displayNamePointer)}
-        />
-      </div>
-
-      <div className="control-group">
-        <label htmlFor={`field-description-${field.rowKey}`}>字段说明（可选）</label>
-        <textarea
-          id={`field-description-${field.rowKey}`}
-          rows={3}
-          data-pointer={descriptionPointer}
-          value={field.description}
-          aria-invalid={showProblem(descriptionPointer)}
-          onChange={(event) => update({ description: event.target.value }, `${field.rowKey}:description`)}
-          onBlur={() => finish(descriptionPointer)}
-        />
-      </div>
-
-      <div className="inspector-two-col inspector-field-kind">
-        <div className="control-group compact">
-          <label htmlFor={`field-type-${field.rowKey}`}>字段类型</label>
-          <select
-            id={`field-type-${field.rowKey}`}
-            value={field.value.type}
-            onChange={(event) => dispatch({
-              type: 'set-field-type', rowKey: field.rowKey, valueType: event.target.value as EditorValueType,
-            })}
-          >
-            {valueTypes.map((type) => <option key={type} value={type}>{editorTypeLabels[type]}</option>)}
-          </select>
-        </div>
-        <label className="required-control compact-required-control">
+      <section className="inspector-form-card" aria-labelledby={`field-basics-${field.rowKey}`}>
+        <h3 id={`field-basics-${field.rowKey}`}>字段定义</h3>
+        <div className="control-group">
+          <div className="control-label-row">
+            <label htmlFor={`field-key-${field.rowKey}`}>fieldKey</label>
+            <span className={byteLength > 128 ? 'count-error' : ''}>{byteLength}/128 bytes</span>
+          </div>
           <input
-            type="checkbox"
-            checked={field.required}
-            onChange={(event) => update({ required: event.target.checked })}
+            id={`field-key-${field.rowKey}`}
+            className="mono-input"
+            data-pointer={keyPointer}
+            value={field.fieldKey}
+            aria-invalid={showProblem(keyPointer)}
+            onChange={(event) => update({ fieldKey: event.target.value }, `${field.rowKey}:fieldKey`)}
+            onBlur={() => finish(keyPointer)}
           />
-          <span><strong>必填字段</strong><small>RootDocument 必须出现</small></span>
-        </label>
-      </div>
+          <p className="control-help">大小写敏感；允许中文、/ 与 ~，不会执行 Unicode normalization。</p>
+        </div>
+
+        <div className="control-group">
+          <label htmlFor={`field-name-${field.rowKey}`}>显示名称（可选）</label>
+          <input
+            id={`field-name-${field.rowKey}`}
+            data-pointer={displayNamePointer}
+            value={field.displayName}
+            aria-invalid={showProblem(displayNamePointer)}
+            onChange={(event) => update({ displayName: event.target.value }, `${field.rowKey}:displayName`)}
+            onBlur={() => finish(displayNamePointer)}
+          />
+        </div>
+
+        <div className="inspector-two-col inspector-field-kind">
+          <div className="control-group compact">
+            <label htmlFor={`field-type-${field.rowKey}`}>字段类型</label>
+            <select
+              id={`field-type-${field.rowKey}`}
+              value={field.value.type}
+              onChange={(event) => dispatch({
+                type: 'set-field-type', rowKey: field.rowKey, valueType: event.target.value as EditorValueType,
+              })}
+            >
+              {valueTypes.map((type) => <option key={type} value={type}>{editorTypeLabels[type]}</option>)}
+            </select>
+          </div>
+          <label className="required-control compact-required-control">
+            <input
+              type="checkbox"
+              checked={field.required}
+              onChange={(event) => update({ required: event.target.checked })}
+            />
+            <span><strong>必填字段</strong><small>RootDocument 必须出现</small></span>
+          </label>
+        </div>
+
+        <div className="control-group inspector-description-control">
+          <label htmlFor={`field-description-${field.rowKey}`}>字段说明（可选）</label>
+          <textarea
+            id={`field-description-${field.rowKey}`}
+            rows={3}
+            data-pointer={descriptionPointer}
+            value={field.description}
+            aria-invalid={showProblem(descriptionPointer)}
+            onChange={(event) => update({ description: event.target.value }, `${field.rowKey}:description`)}
+            onBlur={() => finish(descriptionPointer)}
+          />
+        </div>
+      </section>
 
       <ValueEditor
         value={field.value}

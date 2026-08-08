@@ -1,6 +1,7 @@
 import {
   Braces,
   BrainCircuit,
+  ChevronRight,
   Database,
   FileCheck2,
   Layers3,
@@ -12,11 +13,15 @@ export function ResourceFrame({
   title,
   description,
   actions,
+  breadcrumbs,
+  detail = false,
   children,
 }: {
   title: string;
   description: string;
   actions?: ReactNode;
+  breadcrumbs?: Array<{ label: string; to?: string }>;
+  detail?: boolean;
   children: ReactNode;
 }) {
   return (
@@ -26,13 +31,22 @@ export function ResourceFrame({
         <Link className="product-mark" to="/schemas" aria-label="RenderWeave DraftSchema">
           <span className="weave-mark" aria-hidden="true">RW</span><span>RenderWeave</span>
         </Link>
-        <span className="resource-chrome-context">结构定义与推断审核 · v1</span>
+        {breadcrumbs ? (
+          <nav className="resource-breadcrumb" aria-label="面包屑">
+            {breadcrumbs.map((item, index) => (
+              <span key={`${item.label}-${index}`}>
+                {index > 0 && <ChevronRight aria-hidden="true" size={14} />}
+                {item.to ? <Link to={item.to}>{item.label}</Link> : <strong aria-current="page">{item.label}</strong>}
+              </span>
+            ))}
+          </nav>
+        ) : <span className="resource-chrome-context">结构定义与推断审核 · v1</span>}
         <div className="chrome-actions">{actions}</div>
       </header>
       <div className="resource-body">
         <ResourceRail />
-        <main className="resource-main" id="main-content" tabIndex={-1}>
-          <header className="resource-page-heading">
+        <main className={`resource-main ${detail ? 'resource-main-detail' : ''}`} id="main-content" tabIndex={-1}>
+          <header className={`resource-page-heading ${detail ? 'is-detail' : ''}`}>
             <h1>{title}</h1>
             <p>{description}</p>
           </header>

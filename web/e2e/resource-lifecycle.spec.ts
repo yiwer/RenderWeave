@@ -22,6 +22,11 @@ test.describe('Schema resource lifecycle', () => {
           ],
           page: 1, size: 100, total: 2,
         });
+      } else if (method === 'GET' && url.pathname === '/api/v1/schema-drafts/catalog-card/revisions/2') {
+        await json(route, {
+          schemaKey: 'catalog-card', revision: 2, savedAt,
+          definition: definition('商品目录卡'),
+        });
       } else if (method === 'GET' && url.pathname === '/api/v1/schema-drafts/catalog-card/revisions/0') {
         await json(route, {
           schemaKey: 'catalog-card', revision: 0, savedAt: '2026-08-07T02:30:00Z',
@@ -48,6 +53,8 @@ test.describe('Schema resource lifecycle', () => {
     await expect(page.getByRole('link', { name: '打开 商品目录卡' })).toBeVisible();
     await page.getByRole('button', { name: '查看 商品目录卡 的历史' }).click();
     await expect(page.getByRole('heading', { name: '不可变 revision 历史' })).toBeVisible();
+    await expect(page.getByRole('button', { name: /revision 2/ })).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('.history-preview')).toContainText('商品目录卡');
     await page.getByRole('button', { name: '关闭' }).click();
     await expect(page.getByRole('button', { name: '发布 商品目录卡 为 StaticSchema' })).toBeVisible();
     await expect(page.getByRole('button', { name: '删除 商品目录卡' })).toBeVisible();
@@ -56,6 +63,7 @@ test.describe('Schema resource lifecycle', () => {
 
     await page.getByRole('button', { name: '历史', exact: true }).click();
     await expect(page.getByRole('heading', { name: '不可变 revision 历史' })).toBeVisible();
+    await expect(page.getByRole('button', { name: /revision 2/ })).toHaveAttribute('aria-pressed', 'true');
     await page.getByRole('button', { name: /revision 0/ }).click();
     await expect(page.locator('.history-preview')).toContainText('最初目录卡');
     await page.getByRole('button', { name: '恢复为新 revision' }).click();
@@ -102,6 +110,8 @@ test.describe('Schema resource lifecycle', () => {
 
   test('publishes an exact StaticSchema and preserves a 128-digit decimal in readable artifacts', async ({ page }, testInfo) => {
     let draft = draftSnapshot('price-card', 4, '价格卡');
+    let definitionRequests = 0;
+    let compiledRequests = 0;
     let staticSnapshot = {
       schemaKey: 'price-card', versionTag: 'v1', origin: 'DRAFT', sourceDraftRevision: 5,
       definition: definition('价格卡'), compilerVersion: 'renderweave-schema/1.0',
@@ -123,8 +133,10 @@ test.describe('Schema resource lifecycle', () => {
       } else if (method === 'GET' && url.pathname === '/api/v1/static-schemas/price-card/v1') {
         await json(route, staticSnapshot);
       } else if (method === 'GET' && url.pathname.endsWith('/definition')) {
+        definitionRequests += 1;
         await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(staticSnapshot.definition) });
       } else if (method === 'GET' && url.pathname.endsWith('/compiled-json-schema')) {
+        compiledRequests += 1;
         await route.fulfill({
           status: 200,
           contentType: 'application/schema+json',
@@ -145,8 +157,20 @@ test.describe('Schema resource lifecycle', () => {
 
     await expect(page).toHaveURL(/\/static-schemas\/price-card\/v1$/);
     await expect(page.getByText('不可变边界已建立')).toBeVisible();
+    await expect(page.getByRole('tab', { name: '字段表单' })).toHaveAttribute('aria-selected', 'true');
+    await expect(page.locator('.static-definition-form')).toContainText('标题');
+    expect(definitionRequests).toBe(0);
+    expect(compiledRequests).toBe(0);
+    await page.screenshot({ path: testInfo.outputPath('static-detail-form-1280x720.png'), fullPage: true });
+
+    await page.getByRole('tab', { name: 'Compiled JSON Schema' }).click();
     await expect(page.locator('.artifact-panel pre')).toContainText(exactDecimal);
     await expect(page.locator('.artifact-panel pre')).toContainText('\n  "type"');
+    expect(compiledRequests).toBe(1);
+
+    await page.getByRole('tab', { name: 'Definition DSL' }).click();
+    await expect(page.locator('.artifact-panel pre')).toContainText('价格卡发布版');
+    expect(definitionRequests).toBe(1);
     await page.screenshot({ path: testInfo.outputPath('static-detail-1280x720.png'), fullPage: true });
   });
 

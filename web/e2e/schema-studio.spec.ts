@@ -25,8 +25,11 @@ test.describe('production Schema Studio', () => {
     await page.goto('/schemas/new');
     await expect(page).toHaveURL(/\/schemas\/new$/);
     await expect(page.locator('[data-product="schema-studio"]')).toBeVisible();
+    await expect(page.getByRole('button', { name: '树状图', exact: true })).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.getByRole('heading', { name: '未命名 DraftSchema' })).toBeVisible();
     await page.locator('#schema-key').fill('catalog-card');
     await page.locator('#schema-display-name').fill('商品目录卡');
+    await expect(page.getByRole('heading', { name: '商品目录卡' })).toBeVisible();
     await page.getByLabel('fieldKey', { exact: true }).fill('products');
     await page.getByLabel('显示名称（可选）', { exact: true }).fill('商品列表');
     await page.getByLabel('字段类型').selectOption('array');
@@ -35,7 +38,15 @@ test.describe('production Schema Studio', () => {
     await page.getByRole('button', { name: 'StaticSchemaRef' }).click();
     await page.getByLabel('versionTag').fill('v1');
 
-    await page.getByRole('button', { name: '树状图', exact: true }).click();
+    const inspectorLabels = await page.locator('.inspector-form-card label').allTextContents();
+    const typeLabelIndex = inspectorLabels.findIndex((label) => label.includes('字段类型'));
+    const requiredLabelIndex = inspectorLabels.findIndex((label) => label.includes('必填字段'));
+    const descriptionLabelIndex = inspectorLabels.findIndex((label) => label.includes('字段说明'));
+    expect(typeLabelIndex).toBeGreaterThan(-1);
+    expect(requiredLabelIndex).toBeGreaterThan(-1);
+    expect(typeLabelIndex).toBeLessThan(descriptionLabelIndex);
+    expect(requiredLabelIndex).toBeLessThan(descriptionLabelIndex);
+
     await expect(page.locator('.react-flow__node')).toHaveCount(3);
     await expect(page.locator('.map-detail-node')).toContainText('product-item@v1');
     await page.screenshot({ path: testInfo.outputPath('schema-studio-map-1280x720.png'), fullPage: true });
@@ -97,6 +108,11 @@ test.describe('production Schema Studio', () => {
     });
 
     await page.goto('/schemas/large-schema');
+    await expect(page.getByRole('button', { name: '树状图', exact: true })).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('.react-flow__node')).toHaveCount(299);
+    await expect(page.locator('.studio-map-status')).toContainText('256 个字段');
+
+    await page.getByRole('button', { name: '表单', exact: true }).click();
     await expect(page.locator('.studio-field-row')).toHaveCount(256);
     await expect(page.getByRole('button', { name: '已达到 256 个字段上限' })).toBeDisabled();
     await page.getByPlaceholder('搜索字段、说明或类型').fill('field-255');

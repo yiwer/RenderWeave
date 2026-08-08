@@ -1,13 +1,18 @@
 import * as Dialog from '@radix-ui/react-dialog';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import * as Tabs from '@radix-ui/react-tabs';
+import { useMutation, useQuery, useQueryClient, type UseQueryResult } from '@tanstack/react-query';
 import { parse, stringify } from 'lossless-json';
 import {
   ArrowRight,
+  Braces,
   Check,
   Copy,
   Download,
+  FileCode2,
   Layers3,
+  ListTree,
   LockKeyhole,
+  LoaderCircle,
   Plus,
   Search,
 } from 'lucide-react';
@@ -19,6 +24,12 @@ import {
   getStaticArtifactRequest,
   getStaticSnapshotRequest,
 } from '../schema-studio/lossless-api';
+import {
+  editorTypeLabels,
+  editorValueFromPersisted,
+  summarizeEditorValue,
+  type PersistedDefinition,
+} from '../schema-studio/editor-types';
 import { listStaticSchemasRequest } from './resource-api';
 import { ResourceError, ResourceLoading } from './DraftListPage';
 import { formatDateTime } from './resource-format';
@@ -65,66 +76,140 @@ export function StaticSchemaListPage() {
 
 export function StaticSchemaDetailPage() {
   const { schemaKey = '', versionTag = '' } = useParams<{ schemaKey: string; versionTag: string }>();
-  const [activeArtifact, setActiveArtifact] = useState<'definition' | 'compiled'>('compiled');
+  return <StaticSchemaDetailContent key={`${schemaKey}@${versionTag}`} schemaKey={schemaKey} versionTag={versionTag} />;
+}
+
+function StaticSchemaDetailContent({ schemaKey, versionTag }: { schemaKey: string; versionTag: string }) {
+  const [activeView, setActiveView] = useState<StaticDetailView>('form');
   const [copied, setCopied] = useState(false);
-  const query = useQuery({
+  const snapshot = useQuery({
     queryKey: ['static-schema', schemaKey, versionTag],
-    queryFn: async () => {
-      const [snapshot, definition, compiled] = await Promise.all([
-        getStaticSnapshotRequest(schemaKey, versionTag),
-        getStaticArtifactRequest(schemaKey, versionTag, 'definition'),
-        getStaticArtifactRequest(schemaKey, versionTag, 'compiled-json-schema'),
-      ]);
-      return { snapshot, definition, compiled };
-    },
+    queryFn: () => getStaticSnapshotRequest(schemaKey, versionTag),
   });
-  const content = activeArtifact === 'compiled' ? query.data?.compiled ?? '' : query.data?.definition ?? '';
+  const artifactKind = activeView === 'compiled'
+    ? 'compiled-json-schema'
+    : activeView === 'definition' ? 'definition' : null;
+  const artifact = useQuery({
+    queryKey: ['static-schema-artifact', schemaKey, versionTag, artifactKind],
+    queryFn: () => getStaticArtifactRequest(schemaKey, versionTag, artifactKind!),
+    enabled: artifactKind !== null,
+  });
+  const content = artifact.data ?? '';
+
   const copy = async () => {
+    if (!content) return;
     await navigator.clipboard.writeText(content);
     setCopied(true);
     window.setTimeout(() => setCopied(false), 1_600);
   };
   const download = () => {
-    if (!query.data) return;
+    if (!content || artifactKind === null) return;
     downloadText(
-      `${schemaKey}-${versionTag}-${activeArtifact === 'compiled' ? 'json-schema' : 'definition'}.json`,
+      `${schemaKey}-${versionTag}-${activeView === 'compiled' ? 'json-schema' : 'definition'}.json`,
       content,
-      activeArtifact === 'compiled' ? 'application/schema+json' : 'application/json',
+      activeView === 'compiled' ? 'application/schema+json' : 'application/json',
     );
   };
   return (
     <ResourceFrame
-      title={query.data?.snapshot.definition.displayName ?? `${schemaKey}@${versionTag}`}
+      title={snapshot.data?.definition.displayName ?? `${schemaKey}@${versionTag}`}
       description="只读、不可变、不可删除；编译 JSON Schema 是发布时保存的精确产物，不会自动重算。"
-      actions={<CopyStaticDialog sourceSchemaKey={schemaKey} versionTag={versionTag} defaultName={query.data?.snapshot.definition.displayName ?? ''} />}
+      detail
+      breadcrumbs={[
+        { label: 'StaticSchema', to: '/static-schemas' },
+        { label: snapshot.data?.definition.displayName ?? `${schemaKey}@${versionTag}` },
+      ]}
+      actions={snapshot.data ? <CopyStaticDialog sourceSchemaKey={schemaKey} versionTag={versionTag} defaultName={snapshot.data.definition.displayName} /> : undefined}
     >
-      {query.isPending && <ResourceLoading label="正在读取不可变产物" />}
-      {query.isError && <ResourceError error={query.error} onRetry={() => void query.refetch()} />}
-      {query.data && (
+      {snapshot.isPending && <ResourceLoading label="正在读取不可变产物" />}
+      {snapshot.isError && <ResourceError error={snapshot.error} onRetry={() => void snapshot.refetch()} />}
+      {snapshot.data && (
         <>
-          <section className="immutable-banner"><LockKeyhole aria-hidden="true" size={19} /><div><strong>不可变边界已建立</strong><span>{schemaKey}@{versionTag} · {query.data.snapshot.origin === 'SYSTEM' ? '系统预置' : `源 Draft revision ${query.data.snapshot.sourceDraftRevision}`}</span></div><code>{query.data.snapshot.compilerVersion}</code></section>
+          <section className="immutable-banner"><LockKeyhole aria-hidden="true" size={19} /><div><strong>不可变边界已建立</strong><span>{schemaKey}@{versionTag} · {snapshot.data.origin === 'SYSTEM' ? '系统预置' : `源 Draft revision ${snapshot.data.sourceDraftRevision}`}</span></div><code>{snapshot.data.compilerVersion}</code></section>
           <dl className="static-metadata">
             <div><dt>schemaKey</dt><dd><code>{schemaKey}</code></dd></div>
             <div><dt>versionTag</dt><dd><code>{versionTag}</code></dd></div>
-            <div><dt>字段</dt><dd>{query.data.snapshot.definition.fields.length}</dd></div>
-            <div><dt>引用深度</dt><dd>{query.data.snapshot.referenceDepth}</dd></div>
-            <div><dt>发布时间</dt><dd>{formatDateTime(query.data.snapshot.publishedAt)}</dd></div>
+            <div><dt>字段</dt><dd>{snapshot.data.definition.fields.length}</dd></div>
+            <div><dt>引用深度</dt><dd>{snapshot.data.referenceDepth}</dd></div>
+            <div><dt>发布时间</dt><dd>{formatDateTime(snapshot.data.publishedAt)}</dd></div>
           </dl>
-          {query.data.snapshot.releaseNote && <section className="release-note"><span>发布说明</span><p>{query.data.snapshot.releaseNote}</p></section>}
-          <section className="artifact-panel">
-            <header>
-              <div className="artifact-tabs" aria-label="产物类型">
-                <button type="button" className={activeArtifact === 'compiled' ? 'active' : ''} onClick={() => setActiveArtifact('compiled')}>Compiled JSON Schema</button>
-                <button type="button" className={activeArtifact === 'definition' ? 'active' : ''} onClick={() => setActiveArtifact('definition')}>Definition DSL</button>
+          {snapshot.data.releaseNote && <section className="release-note"><span>发布说明</span><p>{snapshot.data.releaseNote}</p></section>}
+
+          <Tabs.Root className="static-detail-views" value={activeView} onValueChange={(value) => { setActiveView(value as StaticDetailView); setCopied(false); }}>
+            <div className="static-view-toolbar">
+              <Tabs.List className="static-view-tabs" aria-label="StaticSchema 查看方式">
+                <Tabs.Trigger value="form"><ListTree aria-hidden="true" size={15} />字段表单</Tabs.Trigger>
+                <Tabs.Trigger value="compiled"><Braces aria-hidden="true" size={15} />Compiled JSON Schema</Tabs.Trigger>
+                <Tabs.Trigger value="definition"><FileCode2 aria-hidden="true" size={15} />Definition DSL</Tabs.Trigger>
+              </Tabs.List>
+              <div className="static-view-tools">
+                {activeView === 'form' ? (
+                  <><span>{snapshot.data.definition.fields.length} 个字段</span><span>additionalProperties=true</span></>
+                ) : (
+                  <>
+                    <button type="button" disabled={!content || artifact.isPending} onClick={() => void copy()}>{copied ? <Check aria-hidden="true" size={15} /> : <Copy aria-hidden="true" size={15} />}{copied ? '已复制' : '复制'}</button>
+                    <button type="button" disabled={!content || artifact.isPending} onClick={download}><Download aria-hidden="true" size={15} />下载</button>
+                  </>
+                )}
               </div>
-              <div><button type="button" onClick={() => void copy()}>{copied ? <Check aria-hidden="true" size={15} /> : <Copy aria-hidden="true" size={15} />}{copied ? '已复制' : '复制'}</button><button type="button" onClick={download}><Download aria-hidden="true" size={15} />下载</button></div>
-            </header>
-            <pre>{prettyJson(content)}</pre>
-          </section>
+            </div>
+            <Tabs.Content className="static-view-panel" value="form">
+              <StaticDefinitionForm definition={snapshot.data.definition} />
+            </Tabs.Content>
+            <Tabs.Content className="static-view-panel" value="compiled">
+              <StaticArtifactView artifact={artifact} content={content} label="Compiled JSON Schema" />
+            </Tabs.Content>
+            <Tabs.Content className="static-view-panel" value="definition">
+              <StaticArtifactView artifact={artifact} content={content} label="Definition DSL" />
+            </Tabs.Content>
+          </Tabs.Root>
         </>
       )}
     </ResourceFrame>
   );
+}
+
+type StaticDetailView = 'form' | 'compiled' | 'definition';
+
+function StaticDefinitionForm({ definition }: { definition: PersistedDefinition }) {
+  if (definition.fields.length === 0) {
+    return <section className="resource-empty static-definition-empty" role="status"><ListTree aria-hidden="true" size={23} /><strong>这是一个空 StaticSchema</strong><span>定义中没有字段；未知字段仍由 additionalProperties=true 接受。</span></section>;
+  }
+  return (
+    <section className="static-definition-form" aria-label="StaticSchema 字段表单">
+      {definition.fields.map((field, index) => {
+        const value = editorValueFromPersisted(field.value);
+        const label = field.displayName?.trim() || field.fieldKey || `字段 ${index + 1}`;
+        return (
+          <article className="static-definition-field" key={`${field.fieldKey}-${index}`}>
+            <div className="static-field-main">
+              <span className={`type-dot type-${value.type}`} aria-hidden="true" />
+              <span className="field-identity"><strong>{label}</strong><code>{field.fieldKey}</code></span>
+              <span className="type-chip">{editorTypeLabels[value.type]}</span>
+              <span className="field-detail">{summarizeEditorValue(value)}</span>
+              <span className="static-readonly-chip"><LockKeyhole aria-hidden="true" size={12} />只读</span>
+            </div>
+            <span className={`required-toggle ${field.required ? 'active' : ''}`}>{field.required ? '必填' : '可选'}</span>
+            {field.description && <p className="static-field-description">{field.description}</p>}
+          </article>
+        );
+      })}
+    </section>
+  );
+}
+
+function StaticArtifactView({
+  artifact,
+  content,
+  label,
+}: {
+  artifact: UseQueryResult<string, Error>;
+  content: string;
+  label: string;
+}) {
+  if (artifact.isPending) return <div className="static-view-state" role="status"><LoaderCircle className="spin" aria-hidden="true" size={19} /><span>正在读取 {label}…</span></div>;
+  if (artifact.isError) return <ResourceError error={artifact.error} onRetry={() => void artifact.refetch()} />;
+  return <section className="artifact-panel static-artifact-panel" aria-label={label}><pre>{prettyJson(content)}</pre></section>;
 }
 
 function CopyStaticDialog({ sourceSchemaKey, versionTag, defaultName }: { sourceSchemaKey: string; versionTag: string; defaultName: string }) {

@@ -335,8 +335,12 @@ function SchemaStudioWorkspace({ initialDraft }: { initialDraft?: DraftSnapshot 
         <main className="studio-workspace" id="main-content" tabIndex={-1}>
           {feedback && <FeedbackBanner feedback={feedback} reloading={reloading} conflictRevision={conflictServer?.revision} conflictDiffs={conflictDiffs} onReload={() => void reloadServer()} onExport={() => exportDefinition(session)} />}
 
-          <section className={`schema-identity-card ${session.revision === null ? '' : 'is-compact'}`} aria-labelledby="schema-identity-heading">
-            <h1 id="schema-identity-heading" className="sr-only">DraftSchema 基本信息</h1>
+          <header className="schema-detail-heading">
+            <h1>{session.displayName.trim() || (session.revision === null ? '未命名 DraftSchema' : session.schemaKey)}</h1>
+            <code>{session.schemaKey || '尚未填写 schemaKey'}{session.revision === null ? '' : `@revision:${session.revision}`}</code>
+          </header>
+
+          <section className={`schema-identity-card ${session.revision === null ? '' : 'is-compact'}`} aria-label="DraftSchema 基本信息">
             <div className="identity-grid">
               <div className="control-group">
                 <label htmlFor="schema-key">schemaKey</label>
@@ -371,7 +375,7 @@ function SchemaStudioWorkspace({ initialDraft }: { initialDraft?: DraftSnapshot 
                 <label htmlFor="schema-description">用途说明（可选）</label>
                 <textarea
                   id="schema-description"
-                  rows={session.revision === null ? 2 : 1}
+                  rows={2}
                   data-pointer="/definition/description"
                   value={session.description}
                   aria-invalid={showProblem('/definition/description')}

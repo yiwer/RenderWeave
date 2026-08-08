@@ -58,7 +58,13 @@ export function DraftHistoryDialog({
     },
   });
   return (
-    <Dialog.Root open={open} onOpenChange={(value) => { setOpen(value); if (!value) setSelectedRevision(null); }}>
+    <Dialog.Root
+      open={open}
+      onOpenChange={(value) => {
+        setOpen(value);
+        setSelectedRevision(value ? currentRevision : null);
+      }}
+    >
       <Dialog.Trigger asChild>{trigger}</Dialog.Trigger>
       <Dialog.Portal><Dialog.Overlay className="dialog-overlay" /><Dialog.Content className="dialog-content lifecycle-dialog history-dialog">
         <Dialog.Title>不可变 revision 历史</Dialog.Title>
@@ -69,7 +75,13 @@ export function DraftHistoryDialog({
           <div className="history-layout">
             <div className="history-list">
               {history.data.items.map((item) => (
-                <button type="button" key={item.revision} className={selectedRevision === item.revision ? 'active' : ''} onClick={() => setSelectedRevision(item.revision)}>
+                <button
+                  type="button"
+                  key={item.revision}
+                  className={selectedRevision === item.revision ? 'active' : ''}
+                  aria-pressed={selectedRevision === item.revision}
+                  onClick={() => setSelectedRevision(item.revision)}
+                >
                   <span><strong>revision {item.revision}</strong>{item.revision === currentRevision && <i>当前</i>}</span>
                   <span>{item.displayName}</span><small>{item.fieldCount} 个字段 · {formatDateTime(item.savedAt)}</small>
                 </button>
