@@ -275,7 +275,7 @@ function EvidencePanel({ state, assessment }: { state: CandidateReviewState; ass
   const selectedImage = state.snapshot.images.find((image) => image.artifactId === imageEvidence[0]?.artifactId);
   return (
     <section className="candidate-evidence">
-      <header><span>EVIDENCE</span><strong>{assessment.evidence.length}</strong></header>
+      <header><span>证据</span><strong>{assessment.evidence.length}</strong></header>
       {selectedImage && (
         <figure>
           <div className="evidence-image-stage">

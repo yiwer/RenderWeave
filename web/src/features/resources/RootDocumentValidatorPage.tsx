@@ -46,13 +46,12 @@ export function RootDocumentValidatorPage() {
   const canSubmit = schemaKey.trim() && (kind === 'draft' || versionTag.trim()) && samples.length > 0;
   return (
     <ResourceFrame
-      eyebrow="ROOTDOCUMENT VALIDATION"
       title="用真实样本检查 Schema"
       description="一次冻结目标 Schema 图并批量验证一组 RootDocument；未知字段默认允许，诊断顺序稳定且最多返回 100 项。"
       actions={<button type="button" className="button primary-button" disabled={!canSubmit || mutation.isPending} onClick={() => mutation.mutate()}><Play aria-hidden="true" size={16} />{mutation.isPending ? '验证中…' : `验证 ${samples.length} 份样本`}</button>}
     >
       <section className="validator-target-card">
-        <div className="section-heading"><div><span>FROZEN TARGET</span><h2>验证目标</h2></div><span>一次请求只解析一次依赖图</span></div>
+        <div className="section-heading"><div><h2>验证目标</h2></div><span>一次请求只解析一次依赖图</span></div>
         <div className="target-kind" role="group" aria-label="Schema 目标类型">
           <button type="button" className={kind === 'draft' ? 'active' : ''} aria-pressed={kind === 'draft'} onClick={() => { setKind('draft'); setVersionTag(''); mutation.reset(); }}>Draft · current</button>
           <button type="button" className={kind === 'static' ? 'active' : ''} aria-pressed={kind === 'static'} onClick={() => { setKind('static'); mutation.reset(); }}>StaticSchema · exact</button>
@@ -68,7 +67,7 @@ export function RootDocumentValidatorPage() {
 
       <div className="validator-layout">
         <section className="sample-editor-panel" aria-labelledby="sample-input-heading">
-          <header><div><span>INPUT BATCH</span><h2 id="sample-input-heading">RootDocument 样本</h2></div><button type="button" className="button ghost-button" onClick={addSample}><Plus aria-hidden="true" size={15} />添加样本</button></header>
+          <header><div><h2 id="sample-input-heading">RootDocument 样本</h2></div><button type="button" className="button ghost-button" onClick={addSample}><Plus aria-hidden="true" size={15} />添加样本</button></header>
           <p>输入保留原始 JSON number token，不经 JavaScript 浮点解析；每份文档最大 2 MiB，整批最大 10 MiB。</p>
           <div className="sample-stack">
             {samples.map((sample, index) => (
@@ -81,20 +80,20 @@ export function RootDocumentValidatorPage() {
         </section>
 
         <section className="validation-results" aria-labelledby="validation-result-heading">
-          <header><span>RESULT</span><h2 id="validation-result-heading">验证结果</h2></header>
+          <header><h2 id="validation-result-heading">验证结果</h2></header>
           {!mutation.data && !mutation.isError && <div className="validation-empty"><FileCheck2 aria-hidden="true" size={28} /><strong>等待显式验证</strong><span>编辑样本不会发送请求；点击“验证”后才读取并冻结目标。</span></div>}
           {mutation.isError && <ValidationRequestError error={mutation.error} />}
           {mutation.data && (
             <>
               <div className={`validation-summary-card ${mutation.data.summary.invalid === 0 ? 'is-valid' : 'is-invalid'}`}>
                 {mutation.data.summary.invalid === 0 ? <CheckCircle2 aria-hidden="true" size={23} /> : <XCircle aria-hidden="true" size={23} />}
-                <div><strong>{mutation.data.summary.invalid === 0 ? '全部样本有效' : `${mutation.data.summary.invalid} 份样本无效`}</strong><span>{mutation.data.summary.valid} valid · {mutation.data.summary.total} total</span></div>
+                <div><strong>{mutation.data.summary.invalid === 0 ? '全部样本有效' : `${mutation.data.summary.invalid} 份样本无效`}</strong><span>{mutation.data.summary.valid} 份有效 · 共 ${mutation.data.summary.total} 份</span></div>
               </div>
-              <div className="resolved-target"><span>RESOLVED TARGET</span><code>{formatResolved(mutation.data.target)}</code><small>{mutation.data.resolvedSchemas.length} resolved schemas</small></div>
+              <div className="resolved-target"><span>解析目标</span><code>{formatResolved(mutation.data.target)}</code><small>{mutation.data.resolvedSchemas.length} 个已解析 Schema</small></div>
               <div className="document-results">
                 {mutation.data.documents.map((document) => (
                   <article key={document.index} className={document.valid ? 'is-valid' : 'is-invalid'}>
-                    <header>{document.valid ? <CheckCircle2 aria-hidden="true" size={16} /> : <AlertCircle aria-hidden="true" size={16} />}<strong>Document {document.index + 1}</strong><span>{document.valid ? 'VALID' : `${document.problems.length} PROBLEMS`}</span></header>
+                    <header>{document.valid ? <CheckCircle2 aria-hidden="true" size={16} /> : <AlertCircle aria-hidden="true" size={16} />}<strong>文档 {document.index + 1}</strong><span>{document.valid ? '有效' : `${document.problems.length} 个问题`}</span></header>
                     {document.problems.length > 0 && <ul>{document.problems.map((problem, problemIndex) => <li key={`${problem.code}-${problem.instancePath}-${problemIndex}`}><strong>{problem.code}</strong><code>{problem.instancePath || '/'}</code><span>schema: {problem.schemaPath}</span></li>)}</ul>}
                     {document.truncated && <p>该文档的问题已被 100 项全局上限截断。</p>}
                   </article>

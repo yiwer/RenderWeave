@@ -35,27 +35,26 @@ export function StaticSchemaListPage() {
   }, [query.data?.items, search]);
   return (
     <ResourceFrame
-      eyebrow="STATIC SCHEMAS"
       title="不可变发布物"
       description="Template 只绑定精确 {schemaKey, versionTag}；定义与编译产物创建后永不改变。"
     >
       <section className="resource-toolbar">
         <label className="resource-search"><Search aria-hidden="true" size={16} /><span className="sr-only">搜索 StaticSchema</span><input type="search" value={search} placeholder="搜索 schemaKey、versionTag 或名称" onChange={(event) => setSearch(event.target.value)} /></label>
-        <div className="resource-summary"><span>{query.data?.total ?? 0} immutable versions</span><span>system presets included</span></div>
+        <div className="resource-summary"><span>{query.data?.total ?? 0} 个不可变版本</span><span>包含系统预置</span></div>
       </section>
       {query.isPending && <ResourceLoading label="正在读取 StaticSchema" />}
       {query.isError && <ResourceError error={query.error} onRetry={() => void query.refetch()} />}
       {query.data && items.length === 0 && (
-        <section className="resource-empty"><Layers3 aria-hidden="true" size={25} /><strong>没有匹配的 StaticSchema</strong><span>先保存一个只含 StaticSchemaRef 的 Draft，再从编辑器发布。</span></section>
+        <section className="resource-empty"><Layers3 aria-hidden="true" size={25} /><strong>没有匹配的 StaticSchema</strong><span>先保存一个只含 StaticSchemaRef 的 Draft，再从 DraftSchema 卡片或详情页发布。</span></section>
       )}
       {items.length > 0 && (
         <div className="static-card-grid">
           {items.map((item) => (
             <Link key={`${item.schemaKey}@${item.versionTag}`} className={`static-card ${item.origin === 'SYSTEM' ? 'system-static-card' : ''}`} to={`/static-schemas/${item.schemaKey}/${item.versionTag}`}>
-              <div className="static-card-top"><span className="immutable-chip"><LockKeyhole aria-hidden="true" size={12} />{item.origin === 'SYSTEM' ? 'SYSTEM' : 'IMMUTABLE'}</span><ArrowRight aria-hidden="true" size={16} /></div>
+              <div className="static-card-top"><span className="immutable-chip"><LockKeyhole aria-hidden="true" size={12} />{item.origin === 'SYSTEM' ? '系统预置' : '不可变'}</span><ArrowRight aria-hidden="true" size={16} /></div>
               <strong>{item.displayName}</strong>
               <code>{item.schemaKey}@{item.versionTag}</code>
-              <div><span>{item.fieldCount} fields</span><span>depth {item.referenceDepth}</span><span>{formatDateTime(item.publishedAt)}</span></div>
+              <div><span>{item.fieldCount} 个字段</span><span>深度 {item.referenceDepth}</span><span>{formatDateTime(item.publishedAt)}</span></div>
             </Link>
           ))}
         </div>
@@ -95,7 +94,6 @@ export function StaticSchemaDetailPage() {
   };
   return (
     <ResourceFrame
-      eyebrow="STATIC SCHEMA · EXACT VERSION"
       title={query.data?.snapshot.definition.displayName ?? `${schemaKey}@${versionTag}`}
       description="只读、不可变、不可删除；编译 JSON Schema 是发布时保存的精确产物，不会自动重算。"
       actions={<CopyStaticDialog sourceSchemaKey={schemaKey} versionTag={versionTag} defaultName={query.data?.snapshot.definition.displayName ?? ''} />}
@@ -112,7 +110,7 @@ export function StaticSchemaDetailPage() {
             <div><dt>引用深度</dt><dd>{query.data.snapshot.referenceDepth}</dd></div>
             <div><dt>发布时间</dt><dd>{formatDateTime(query.data.snapshot.publishedAt)}</dd></div>
           </dl>
-          {query.data.snapshot.releaseNote && <section className="release-note"><span>RELEASE NOTE</span><p>{query.data.snapshot.releaseNote}</p></section>}
+          {query.data.snapshot.releaseNote && <section className="release-note"><span>发布说明</span><p>{query.data.snapshot.releaseNote}</p></section>}
           <section className="artifact-panel">
             <header>
               <div className="artifact-tabs" aria-label="产物类型">

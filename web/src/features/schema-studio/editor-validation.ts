@@ -66,6 +66,13 @@ export function localDiagnostics(session: EditorSession): EditorDiagnostic[] {
   return diagnostics;
 }
 
+export function countDraftReferences(session: EditorSession): number {
+  return session.fields.filter((field) => {
+    const value = field.value.type === 'array' ? field.value.items : field.value;
+    return value.type === 'reference' && value.referenceKind === 'draft';
+  }).length;
+}
+
 function validateValue(
   value: EditorValue,
   pointer: string,

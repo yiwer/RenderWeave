@@ -21,7 +21,8 @@ test.describe('production Schema Studio', () => {
       });
     });
     await page.goto('/schemas/seed-schema');
-    await page.locator('.rail-create').click();
+    await expect(page.locator('.studio-rail').getByRole('link', { name: '新建 Draft' })).toHaveCount(0);
+    await page.goto('/schemas/new');
     await expect(page).toHaveURL(/\/schemas\/new$/);
     await expect(page.locator('[data-product="schema-studio"]')).toBeVisible();
     await page.locator('#schema-key').fill('catalog-card');
@@ -54,7 +55,7 @@ test.describe('production Schema Studio', () => {
     expect(accessibility.violations.filter((violation) =>
       violation.impact === 'serious' || violation.impact === 'critical')).toEqual([]);
 
-    await page.goBack();
+    await page.locator('.studio-breadcrumb').getByRole('link', { name: 'DraftSchema' }).click();
     await expect(page.getByRole('dialog')).toBeVisible();
     await expect(page.getByRole('heading', { name: '离开前保存更改？' })).toBeVisible();
     await page.getByRole('button', { name: '继续编辑' }).click();

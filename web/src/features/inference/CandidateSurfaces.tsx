@@ -36,7 +36,7 @@ export function CandidateBundleNav({
 }) {
   return (
     <aside className="candidate-bundle-nav" aria-label="Candidate Schema 包">
-      <header><span>SCHEMA BUNDLE</span><strong>{state.draft.schemas.length}</strong></header>
+      <header><span>候选集合</span><strong>{state.draft.schemas.length}</strong></header>
       <div className="bundle-schema-list">
         {state.draft.schemas.map((schema, index) => {
           const problems = problemsForSchema(schema, state.snapshot.problems);
@@ -50,7 +50,7 @@ export function CandidateBundleNav({
             >
               <span className="bundle-index">{String(index + 1).padStart(2, '0')}</span>
               <span><strong>{schema.displayName || schema.proposedSchemaKey || '未命名 Schema'}</strong><code>{schema.proposedSchemaKey || 'schemaKey 待填写'}</code></span>
-              {isRoot && <i>ROOT</i>}
+              {isRoot && <i>根</i>}
               {problems > 0 ? <b>{problems}</b> : <CheckCircle2 aria-hidden="true" size={14} />}
             </button>
           );
@@ -171,7 +171,7 @@ function CandidateMap({
     return [{
       id: 'root',
       position: { x: 28, y: rootY },
-      data: { label: <div className="candidate-map-node-content"><span>SCHEMA ROOT</span><strong>{schema.displayName || '未命名 Schema'}</strong><code>{schema.proposedSchemaKey || 'schemaKey 待填写'}</code></div> },
+      data: { label: <div className="candidate-map-node-content"><span>根节点</span><strong>{schema.displayName || '未命名 Schema'}</strong><code>{schema.proposedSchemaKey || 'schemaKey 待填写'}</code></div> },
       className: 'candidate-map-node root',
       draggable: false,
       sourcePosition: Position.Right,

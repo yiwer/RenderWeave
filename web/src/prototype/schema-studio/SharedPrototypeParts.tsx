@@ -32,7 +32,7 @@ export function ProductChrome({ state, dispatch, layoutName }: ChromeProps) {
         <span>RenderWeave</span>
       </div>
       <div className="chrome-context">
-        <span className="prototype-kicker">PROTOTYPE</span>
+        <span className="prototype-kicker">原型</span>
         <span>{layoutName}</span>
       </div>
       <div className="chrome-actions">
@@ -55,7 +55,7 @@ export function ProductChrome({ state, dispatch, layoutName }: ChromeProps) {
 export function ResourceRail() {
   return (
     <nav className="resource-rail" aria-label="v1 主导航">
-      <div className="rail-section-label">DEFINE</div>
+      <div className="rail-section-label">定义</div>
       <a className="rail-link active" href="#drafts" aria-current="page">
         <Braces aria-hidden="true" size={17} />
         Schema Draft
@@ -182,7 +182,7 @@ export function FieldInspector({ field }: { field: SchemaField }) {
   return (
     <aside className="field-inspector" aria-label="字段检查器">
       <div className="inspector-heading">
-        <span>FIELD INSPECTOR</span>
+        <span>字段检查器</span>
         <span className="path-chip">/{field.key}</span>
       </div>
       <label className="control-label" htmlFor="field-key">fieldKey</label>

@@ -111,7 +111,7 @@ export function VariantC({ state, selectedField, dispatch }: VariantProps) {
             </button>
           </div>
           <section className="ledger-inline-inspector" aria-label="选中字段摘要">
-            <div><span>SELECTED</span><strong>{selectedField.label}</strong><code>/{selectedField.key}</code></div>
+            <div><span>已选择</span><strong>{selectedField.label}</strong><code>/{selectedField.key}</code></div>
             <div><span>类型</span><strong>{fieldTypeLabels[selectedField.type]}</strong></div>
             <div><span>约束</span><strong>{selectedField.detail}</strong></div>
             <button type="button" className="button ghost-button">打开完整检查器</button>
@@ -119,7 +119,7 @@ export function VariantC({ state, selectedField, dispatch }: VariantProps) {
         </section>
         <aside className="compiled-preview" aria-label="编译后 JSON Schema 预览">
           <div className="preview-heading">
-            <div><span>COMPILED PREVIEW</span><strong>JSON Schema 2020-12</strong></div>
+            <div><span>编译预览</span><strong>JSON Schema 2020-12</strong></div>
             <span>只读</span>
           </div>
           <pre>{compiledPreview(state)}</pre>

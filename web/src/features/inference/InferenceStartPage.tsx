@@ -45,7 +45,6 @@ export function InferenceStartPage() {
 
   return (
     <ResourceFrame
-      eyebrow="REPLAY INFERENCE"
       title="从合成样本生成 Schema Candidate"
       description="选择固定样本，运行可复现、零网络的 replay-v1 流程；结果先进入逐项审核，不会直接创建 Draft。"
     >
@@ -60,7 +59,6 @@ export function InferenceStartPage() {
         <section className="replay-catalog" aria-label="Replay 样本目录">
           <header>
             <div>
-              <span className="section-kicker">SYNTHETIC CORPUS</span>
               <h2>选择推断场景</h2>
             </div>
             <span>{fixtures.length} / 60</span>
@@ -103,7 +101,6 @@ export function InferenceStartPage() {
         </section>
 
         <aside className="replay-launch-panel" aria-label="运行确认">
-          <span className="section-kicker">RUN PREVIEW</span>
           <h2>{selected ? humanScenario(selected.scenario) : '选择一个场景'}</h2>
           {selected && (
             <>

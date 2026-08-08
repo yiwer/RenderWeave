@@ -218,7 +218,7 @@ export function MapSurface({
         data: {
           label: (
             <div className="map-node-content">
-              <span>SCHEMA ROOT</span>
+              <span>根节点</span>
               <strong>{session.displayName || '未命名 Schema'}</strong>
               <code>{session.schemaKey || '等待填写 schemaKey'}</code>
             </div>

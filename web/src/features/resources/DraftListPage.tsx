@@ -1,19 +1,23 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   AlertCircle,
-  ArrowRight,
   Braces,
   Clock3,
+  History,
   LoaderCircle,
   Plus,
   RefreshCw,
+  Rocket,
   RotateCcw,
   Search,
+  Trash2,
   X,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
+import { DeleteDraftDialog, DraftHistoryDialog } from '../schema-studio/DraftLifecyclePanel';
+import { PublishStaticSchemaDialog } from '../schema-studio/PublishStaticSchemaDialog';
 import { StudioRequestError, restoreDraftSnapshotRequest } from '../schema-studio/lossless-api';
 import { listDraftsRequest } from './resource-api';
 import { formatDateTime } from './resource-format';
@@ -54,9 +58,8 @@ export function DraftListPage() {
 
   return (
     <ResourceFrame
-      eyebrow="SCHEMA DRAFTS"
-      title="可变数据定义"
-      description="每次显式保存都追加一个完整、不可修改的 revision；列表只显示 active Draft。"
+      title="DraftSchema"
+      description="设计可变 Schema 定义；每次显式保存都会追加一个不可修改的 revision。"
       actions={<Link className="button primary-button" to="/schemas/new"><Plus aria-hidden="true" size={16} />新建 Draft</Link>}
     >
       {deletedDraft && (
@@ -67,41 +70,62 @@ export function DraftListPage() {
           {restoreDeleted.isError && <span className="deleted-restore-error" role="alert">{restoreDeleted.error instanceof Error ? restoreDeleted.error.message : '恢复失败'}</span>}
         </section>
       )}
-      <section className="resource-toolbar" aria-label="Draft 列表工具">
+      <section className="resource-toolbar" aria-label="DraftSchema 工具">
         <label className="resource-search">
           <Search aria-hidden="true" size={16} /><span className="sr-only">搜索 Draft</span>
           <input value={search} type="search" placeholder="搜索 schemaKey 或显示名称" onChange={(event) => setSearch(event.target.value)} />
         </label>
         <div className="resource-summary">
-          <span>{query.data?.total ?? 0} active Drafts</span>
-          <span>page {page}</span>
+          <span>{query.data?.total ?? 0} 个有效 DraftSchema</span>
+          <span>第 {page} 页</span>
         </div>
       </section>
 
-      {query.isPending && <ResourceLoading label="正在读取 Draft 列表" />}
+      {query.isPending && <ResourceLoading label="正在读取 DraftSchema" />}
       {query.isError && <ResourceError error={query.error} onRetry={() => void query.refetch()} />}
       {query.data && items.length === 0 && (
         <section className="resource-empty" role="status">
           <Braces aria-hidden="true" size={25} />
-          <strong>{query.data.total === 0 ? '还没有 Schema Draft' : '当前页没有匹配项'}</strong>
+          <strong>{query.data.total === 0 ? '还没有 DraftSchema' : '当前页没有匹配项'}</strong>
           <span>{query.data.total === 0 ? '从一个空定义或第一个字段开始。' : '清除搜索词，或切换分页。'}</span>
           {query.data.total === 0 && <Link className="button primary-button" to="/schemas/new"><Plus aria-hidden="true" size={16} />创建第一个 Draft</Link>}
         </section>
       )}
       {items.length > 0 && (
-        <div className="resource-table" role="table" aria-label="Active Schema Drafts">
-          <div className="resource-table-head draft-grid" role="row">
-            <span role="columnheader">Schema</span><span role="columnheader">来源</span><span role="columnheader">字段</span><span role="columnheader">Revision</span><span role="columnheader">最近保存</span><span aria-hidden="true" />
-          </div>
+        <div className="draft-card-grid" aria-label="DraftSchema 卡片列表">
           {items.map((item) => (
-            <Link className="resource-table-row draft-grid" role="row" key={item.schemaKey} to={`/schemas/${item.schemaKey}`}>
-              <span className="resource-identity" role="cell"><strong>{item.displayName}</strong><code>{item.schemaKey}</code></span>
-              <span role="cell"><i className={`source-dot source-${item.creationSource.toLocaleLowerCase()}`} />{item.creationSource === 'AI' ? 'AI 候选落库' : '用户创建'}</span>
-              <span role="cell">{item.fieldCount}</span>
-              <span role="cell"><code>r{item.revision}</code></span>
-              <span role="cell" title={formatDateTime(item.savedAt)}><Clock3 aria-hidden="true" size={13} />{formatDateTime(item.savedAt)}</span>
-              <span role="cell"><ArrowRight aria-hidden="true" size={16} /></span>
-            </Link>
+            <article className="draft-schema-card" key={item.schemaKey}>
+              <Link className="draft-card-main" to={`/schemas/${item.schemaKey}`} aria-label={`打开 ${item.displayName}`}>
+                <header>
+                  <div><strong>{item.displayName}</strong><code>{item.schemaKey}</code></div>
+                  <span><i className={`source-dot source-${item.creationSource.toLocaleLowerCase()}`} />{item.creationSource === 'AI' ? 'AI 创建' : '用户创建'}</span>
+                </header>
+                <dl>
+                  <div><dt>字段</dt><dd>{item.fieldCount}</dd></div>
+                  <div><dt>Revision</dt><dd><code>r{item.revision}</code></dd></div>
+                  <div><dt>最近保存</dt><dd title={formatDateTime(item.savedAt)}><Clock3 aria-hidden="true" size={13} />{formatDateTime(item.savedAt)}</dd></div>
+                </dl>
+              </Link>
+              <footer className="draft-card-actions" aria-label={`${item.displayName} 操作`}>
+                <DraftHistoryDialog
+                  schemaKey={item.schemaKey}
+                  currentRevision={item.revision}
+                  trigger={<button type="button" className="card-action-button" aria-label={`查看 ${item.displayName} 的历史`}><History aria-hidden="true" size={15} />历史</button>}
+                />
+                <PublishStaticSchemaDialog
+                  schemaKey={item.schemaKey}
+                  revision={item.revision}
+                  intent="publish"
+                  trigger={<button type="button" className="card-action-button card-publish-button" aria-label={`发布 ${item.displayName} 为 StaticSchema`}><Rocket aria-hidden="true" size={15} />发布</button>}
+                />
+                <DeleteDraftDialog
+                  schemaKey={item.schemaKey}
+                  revision={item.revision}
+                  displayName={item.displayName}
+                  trigger={<button type="button" className="card-action-button card-delete-button" aria-label={`删除 ${item.displayName}`}><Trash2 aria-hidden="true" size={15} />删除</button>}
+                />
+              </footer>
+            </article>
           ))}
         </div>
       )}

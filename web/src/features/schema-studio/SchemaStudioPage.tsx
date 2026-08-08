@@ -3,11 +3,15 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import {
   AlertCircle,
   CheckCircle2,
+  CopyPlus,
   Download,
+  History,
   LoaderCircle,
-  PanelRightOpen,
   RefreshCw,
+  Rocket,
+  Save,
   Search,
+  Trash2,
 } from 'lucide-react';
 import {
   useEffect,
@@ -21,8 +25,9 @@ import { Link, useBlocker, useNavigate, useParams } from 'react-router-dom';
 
 import type { Problem } from '../../api/generated';
 import { FormSurface, MapSurface } from './EditorSurfaces';
-import { DraftLifecyclePanel } from './DraftLifecyclePanel';
+import { CopyDraftDialog, DeleteDraftDialog, DraftHistoryDialog } from './DraftLifecyclePanel';
 import { FieldInspector } from './FieldInspector';
+import { PublishStaticSchemaDialog } from './PublishStaticSchemaDialog';
 import { diffDraftDefinitions } from './definition-diff';
 import {
   StudioRequestError,
@@ -38,8 +43,8 @@ import {
   type EditorSession,
 } from './editor-session';
 import { editorTypeLabels, serializeDefinition, type DraftSnapshot } from './editor-types';
-import { localDiagnostics, type EditorDiagnostic } from './editor-validation';
-import { StudioChrome, StudioRail, StudioViewToggle } from './StudioFrame';
+import { countDraftReferences, localDiagnostics, type EditorDiagnostic } from './editor-validation';
+import { StudioChrome, StudioEditTools, StudioRail, StudioViewToggle } from './StudioFrame';
 
 type Feedback = {
   tone: 'success' | 'error' | 'conflict';
@@ -197,7 +202,7 @@ function SchemaStudioWorkspace({ initialDraft }: { initialDraft?: DraftSnapshot 
     },
   });
 
-  const save = () => {
+  const persistDraft = async (): Promise<DraftSnapshot | null> => {
     setSubmitAttempted(true);
     setFeedback(undefined);
     if (diagnostics.length > 0) {
@@ -212,18 +217,29 @@ function SchemaStudioWorkspace({ initialDraft }: { initialDraft?: DraftSnapshot 
         detail: first?.message ?? '修正本地规则后再保存。',
       });
       focusProblem(first);
-      return;
+      return null;
     }
     try {
       serializeDefinition(session.displayName, session.description, session.fields);
-      saveMutation.mutate();
     } catch (error) {
       setFeedback({
         tone: 'error',
         title: 'Definition 暂时无法序列化',
         detail: error instanceof Error ? error.message : '请检查约束输入。',
       });
+      return null;
     }
+    try {
+      return await saveMutation.mutateAsync();
+    } catch {
+      return null;
+    }
+  };
+
+  const save = () => { void persistDraft(); };
+  const preparePublishRevision = async (): Promise<number | null> => {
+    if (!session.dirty) return session.revision;
+    return (await persistDraft())?.revision ?? null;
   };
 
   const reloadServer = async () => {
@@ -262,6 +278,48 @@ function SchemaStudioWorkspace({ initialDraft }: { initialDraft?: DraftSnapshot 
     setInspectorOpen(true);
   };
   const typeCounts = countTypes(session);
+  const draftRefs = countDraftReferences(session);
+  const headerActions = session.revision === null ? (
+    <button type="button" className="button primary-button" disabled={saveMutation.isPending || !session.dirty} onClick={save}>
+      {saveMutation.isPending ? <LoaderCircle className="spin" aria-hidden="true" size={16} /> : <Save aria-hidden="true" size={16} />}
+      创建 Draft
+    </button>
+  ) : (
+    <>
+      <DraftHistoryDialog
+        schemaKey={session.schemaKey}
+        currentRevision={session.revision}
+        dirty={session.dirty}
+        onRestored={(draft) => dispatch({ type: 'reload-draft', draft })}
+        trigger={<button type="button" className="button ghost-button header-secondary-action"><History aria-hidden="true" size={15} />历史</button>}
+      />
+      <CopyDraftDialog
+        schemaKey={session.schemaKey}
+        displayName={session.displayName}
+        trigger={<button type="button" className="button ghost-button header-secondary-action"><CopyPlus aria-hidden="true" size={15} />复制</button>}
+      />
+      <DeleteDraftDialog
+        schemaKey={session.schemaKey}
+        revision={session.revision}
+        displayName={session.displayName}
+        trigger={<button type="button" className="button ghost-button header-secondary-action header-delete-action" disabled={session.dirty}><Trash2 aria-hidden="true" size={15} />删除</button>}
+      />
+      <button type="button" className="button ghost-button header-save-action" disabled={saveMutation.isPending || !session.dirty} onClick={save}>
+        {saveMutation.isPending ? <LoaderCircle className="spin" aria-hidden="true" size={15} /> : <Save aria-hidden="true" size={15} />}
+        保存 revision
+      </button>
+      <PublishStaticSchemaDialog
+        schemaKey={session.schemaKey}
+        revision={session.revision}
+        intent="save-and-publish"
+        dirty={session.dirty}
+        blockerCount={diagnostics.length}
+        draftRefs={draftRefs}
+        onPrepareRevision={preparePublishRevision}
+        trigger={<button type="button" className="button primary-button header-publish-action" disabled={saveMutation.isPending}><Rocket aria-hidden="true" size={16} />保存并发布</button>}
+      />
+    </>
+  );
 
   return (
     <div data-product="schema-studio" className="studio-shell">
@@ -270,31 +328,15 @@ function SchemaStudioWorkspace({ initialDraft }: { initialDraft?: DraftSnapshot 
         session={session}
         saving={saveMutation.isPending}
         blockerCount={diagnostics.length}
-        onSave={save}
-        onUndo={() => dispatch({ type: 'undo' })}
-        onRedo={() => dispatch({ type: 'redo' })}
-        onRestore={() => dispatch({ type: 'restore-saved' })}
-        onOpenInspector={() => setInspectorOpen(true)}
+        actions={headerActions}
       />
       <div className="studio-body">
         <StudioRail session={session} />
         <main className="studio-workspace" id="main-content" tabIndex={-1}>
-          <div className="studio-title-row">
-            <div>
-              <span className="eyebrow">SCHEMA DRAFT · {session.revision === null ? 'NEW' : `REVISION ${session.revision}`}</span>
-              <h1>{session.displayName.trim() || '新建 Schema Draft'}</h1>
-              <p>定义字段、约束与引用关系；本地即时检查可读规则，服务端在显式保存时校验完整引用图。</p>
-            </div>
-            <div className="studio-revision-card"><span>revision</span><strong>{session.revision ?? '—'}</strong></div>
-          </div>
-
           {feedback && <FeedbackBanner feedback={feedback} reloading={reloading} conflictRevision={conflictServer?.revision} conflictDiffs={conflictDiffs} onReload={() => void reloadServer()} onExport={() => exportDefinition(session)} />}
 
-          <section className="schema-identity-card" aria-labelledby="schema-identity-heading">
-            <div className="section-heading">
-              <div><span>IDENTITY & METADATA</span><h2 id="schema-identity-heading">Schema 基本信息</h2></div>
-              <span>{session.revision === null ? 'schemaKey 创建后不可修改' : 'schemaKey 已锁定'}</span>
-            </div>
+          <section className={`schema-identity-card ${session.revision === null ? '' : 'is-compact'}`} aria-labelledby="schema-identity-heading">
+            <h1 id="schema-identity-heading" className="sr-only">DraftSchema 基本信息</h1>
             <div className="identity-grid">
               <div className="control-group">
                 <label htmlFor="schema-key">schemaKey</label>
@@ -310,7 +352,7 @@ function SchemaStudioWorkspace({ initialDraft }: { initialDraft?: DraftSnapshot 
                   onBlur={() => { touch('/schemaKey'); dispatch({ type: 'commit-history-group' }); }}
                 />
                 {showProblem('/schemaKey') && <ProblemText diagnostics={diagnostics} pointer="/schemaKey" />}
-                <p className="control-help">小写字母、数字和连字符；永久稳定，不是显示名称。</p>
+                {session.revision === null && <p className="control-help">小写字母、数字和连字符；创建后永久锁定。</p>}
               </div>
               <div className="control-group">
                 <label htmlFor="schema-display-name">显示名称</label>
@@ -323,13 +365,13 @@ function SchemaStudioWorkspace({ initialDraft }: { initialDraft?: DraftSnapshot 
                   onBlur={() => { touch('/definition/displayName'); dispatch({ type: 'commit-history-group' }); }}
                 />
                 {showProblem('/definition/displayName') && <ProblemText diagnostics={diagnostics} pointer="/definition/displayName" />}
-                <p className="control-help">面向人的名称，保存时去除首尾空白。</p>
+                {session.revision === null && <p className="control-help">面向人的名称，保存时去除首尾空白。</p>}
               </div>
               <div className="control-group identity-description">
                 <label htmlFor="schema-description">用途说明（可选）</label>
                 <textarea
                   id="schema-description"
-                  rows={2}
+                  rows={session.revision === null ? 2 : 1}
                   data-pointer="/definition/description"
                   value={session.description}
                   aria-invalid={showProblem('/definition/description')}
@@ -342,22 +384,24 @@ function SchemaStudioWorkspace({ initialDraft }: { initialDraft?: DraftSnapshot 
 
           <div className="studio-toolbar">
             <StudioViewToggle view={session.view} onChange={(view) => dispatch({ type: 'set-view', view })} />
+            <StudioEditTools
+              session={session}
+              onUndo={() => dispatch({ type: 'undo' })}
+              onRedo={() => dispatch({ type: 'redo' })}
+              onRestore={() => dispatch({ type: 'restore-saved' })}
+              onOpenInspector={() => setInspectorOpen(true)}
+            />
             <label className="studio-search">
               <Search aria-hidden="true" size={16} />
               <span className="sr-only">搜索 fieldKey、显示名称、说明或类型</span>
               <input type="search" value={search} placeholder="搜索字段、说明或类型" onChange={(event) => setSearch(event.target.value)} />
             </label>
             <div className="studio-density-summary">
-              <span>{session.fields.length} fields</span>
+              <span>{session.fields.length} 个字段</span>
               <span>{typeCounts}</span>
               <span>additionalProperties=true</span>
             </div>
-            <button type="button" className="button ghost-button inspector-trigger" onClick={() => setInspectorOpen(true)}>
-              <PanelRightOpen aria-hidden="true" size={16} />检查器
-            </button>
           </div>
-
-          <DraftLifecyclePanel session={session} diagnostics={diagnostics} dispatch={dispatch} />
 
           {submitAttempted && diagnostics.length > 0 && <LocalProblemSummary diagnostics={diagnostics} onSelect={selectField} />}
 

@@ -43,17 +43,23 @@ test.describe('Schema resource lifecycle', () => {
     });
 
     await page.goto('/schemas');
-    await expect(page.getByRole('heading', { name: '可变数据定义' })).toBeVisible();
-    await expect(page.getByRole('row', { name: /商品目录卡/ })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'DraftSchema' })).toBeVisible();
+    await expect(page.locator('.app-resource-rail').getByRole('link', { name: '新建 Draft' })).toHaveCount(0);
+    await expect(page.getByRole('link', { name: '打开 商品目录卡' })).toBeVisible();
+    await page.getByRole('button', { name: '查看 商品目录卡 的历史' }).click();
+    await expect(page.getByRole('heading', { name: '不可变 revision 历史' })).toBeVisible();
+    await page.getByRole('button', { name: '关闭' }).click();
+    await expect(page.getByRole('button', { name: '发布 商品目录卡 为 StaticSchema' })).toBeVisible();
+    await expect(page.getByRole('button', { name: '删除 商品目录卡' })).toBeVisible();
     await page.screenshot({ path: testInfo.outputPath('draft-list-1280x720.png'), fullPage: true });
-    await page.getByRole('row', { name: /商品目录卡/ }).click();
+    await page.getByRole('link', { name: '打开 商品目录卡' }).click();
 
     await page.getByRole('button', { name: '历史', exact: true }).click();
     await expect(page.getByRole('heading', { name: '不可变 revision 历史' })).toBeVisible();
     await page.getByRole('button', { name: /revision 0/ }).click();
     await expect(page.locator('.history-preview')).toContainText('最初目录卡');
     await page.getByRole('button', { name: '恢复为新 revision' }).click();
-    await expect(page.locator('.studio-revision-card strong')).toHaveText('3');
+    await expect(page.locator('.rail-context-card small')).toContainText('revision 3');
     await expect(page.locator('#schema-display-name')).toHaveValue('最初目录卡');
 
     await page.getByRole('button', { name: '复制', exact: true }).click();
@@ -91,13 +97,13 @@ test.describe('Schema resource lifecycle', () => {
 
     await page.getByRole('button', { name: '载入服务端' }).click();
     await expect(page.locator('#schema-display-name')).toHaveValue('服务端名称');
-    await expect(page.locator('.studio-revision-card strong')).toHaveText('3');
+    await expect(page.locator('.rail-context-card small')).toContainText('revision 3');
   });
 
   test('publishes an exact StaticSchema and preserves a 128-digit decimal in readable artifacts', async ({ page }, testInfo) => {
-    const draft = draftSnapshot('price-card', 4, '价格卡');
-    const staticSnapshot = {
-      schemaKey: 'price-card', versionTag: 'v1', origin: 'DRAFT', sourceDraftRevision: 4,
+    let draft = draftSnapshot('price-card', 4, '价格卡');
+    let staticSnapshot = {
+      schemaKey: 'price-card', versionTag: 'v1', origin: 'DRAFT', sourceDraftRevision: 5,
       definition: definition('价格卡'), compilerVersion: 'renderweave-schema/1.0',
       releaseNote: '首个稳定版本', referenceDepth: 1, publishedAt: savedAt,
     };
@@ -106,8 +112,13 @@ test.describe('Schema resource lifecycle', () => {
       const method = route.request().method();
       if (method === 'GET' && url.pathname === '/api/v1/schema-drafts/price-card') {
         await json(route, draft);
-      } else if (method === 'POST' && url.pathname === '/api/v1/static-schemas') {
+      } else if (method === 'PUT' && url.pathname === '/api/v1/schema-drafts/price-card') {
         expect(route.request().postData()).toContain('"expectedRevision":4');
+        draft = draftSnapshot('price-card', 5, '价格卡发布版');
+        await json(route, draft);
+      } else if (method === 'POST' && url.pathname === '/api/v1/static-schemas') {
+        expect(route.request().postData()).toContain('"expectedRevision":5');
+        staticSnapshot = { ...staticSnapshot, definition: draft.definition };
         await json(route, staticSnapshot, 201);
       } else if (method === 'GET' && url.pathname === '/api/v1/static-schemas/price-card/v1') {
         await json(route, staticSnapshot);
@@ -125,10 +136,12 @@ test.describe('Schema resource lifecycle', () => {
     });
 
     await page.goto('/schemas/price-card');
-    await page.getByRole('button', { name: '发布', exact: true }).click();
+    await page.locator('#schema-display-name').fill('价格卡发布版');
+    await page.getByRole('button', { name: '保存并发布' }).click();
+    await expect(page.getByRole('heading', { name: '保存并发布 StaticSchema' })).toBeVisible();
     await page.getByLabel('versionTag').fill('v1');
-    await page.getByLabel('release note（可选）').fill('首个稳定版本');
-    await page.getByRole('button', { name: '原子发布' }).click();
+    await page.getByLabel('发布说明（可选）').fill('首个稳定版本');
+    await page.getByRole('button', { name: '保存并原子发布' }).click();
 
     await expect(page).toHaveURL(/\/static-schemas\/price-card\/v1$/);
     await expect(page.getByText('不可变边界已建立')).toBeVisible();
@@ -179,7 +192,7 @@ test.describe('Schema resource lifecycle', () => {
     await expect(page.getByText('可恢复卡片 已软删除')).toBeVisible();
     await page.getByRole('button', { name: '撤销删除' }).click();
     await expect(page).toHaveURL(/\/schemas\/restore-card$/);
-    await expect(page.locator('.studio-revision-card strong')).toHaveText('6');
+    await expect(page.locator('.rail-context-card small')).toContainText('revision 6');
 
     await page.goto('/validator');
     await page.getByLabel('schemaKey').fill('restore-card');

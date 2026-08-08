@@ -50,7 +50,6 @@ export function CandidateReviewPage() {
 
   return (
     <ResourceFrame
-      eyebrow="CANDIDATE REVIEW"
       title="逐项审核 AI Schema Candidate"
       description="表单与一层树图共享同一份候选状态；置信度和证据只读，每个低置信度项必须单独确认、编辑解决或移除。"
       actions={<Link className="button ghost-button" to="/inference"><ArrowLeft aria-hidden="true" size={15} />返回样本</Link>}
@@ -130,10 +129,10 @@ function CandidateReviewWorkspace({
   return (
     <>
       <section className="candidate-run-strip" aria-label="推断运行状态">
-        <div><span>RUN</span><code>{state.snapshot.run.runId}</code></div>
-        <div><span>PROFILE</span><strong>{state.snapshot.run.profileId}</strong></div>
-        <div><span>STATE / STAGE</span><strong>{state.snapshot.run.state} · {state.snapshot.run.stage}</strong></div>
-        <div><span>REVISION</span><strong>c{state.snapshot.candidateRevision}</strong></div>
+        <div><span>运行编号</span><code>{state.snapshot.run.runId}</code></div>
+        <div><span>执行配置</span><strong>{state.snapshot.run.profileId}</strong></div>
+        <div><span>状态 / 阶段</span><strong>{state.snapshot.run.state} · {state.snapshot.run.stage}</strong></div>
+        <div><span>候选版本</span><strong>c{state.snapshot.candidateRevision}</strong></div>
         <SaveIndicator state={state} />
       </section>
 
@@ -265,9 +264,9 @@ function CreatedDraftLinks({ result, schemaKeys }: { result: CandidateApplyRespo
 
 function SaveIndicator({ state }: { state: CandidateReviewState }) {
   if (state.saving) return <div className="candidate-save-state saving"><LoaderCircle className="spin" aria-hidden="true" size={15} /><span>逐项自动保存</span><strong>保存中</strong></div>;
-  if (state.saveBlocked) return <div className="candidate-save-state error"><AlertCircle aria-hidden="true" size={15} /><span>AUTOSAVE</span><strong>需处理</strong></div>;
-  if (state.dirty) return <div className="candidate-save-state"><LoaderCircle className="spin" aria-hidden="true" size={15} /><span>AUTOSAVE</span><strong>排队中</strong></div>;
-  return <div className="candidate-save-state saved"><CheckCircle2 aria-hidden="true" size={15} /><span>AUTOSAVE</span><strong>已保存</strong></div>;
+  if (state.saveBlocked) return <div className="candidate-save-state error"><AlertCircle aria-hidden="true" size={15} /><span>自动保存</span><strong>需处理</strong></div>;
+  if (state.dirty) return <div className="candidate-save-state"><LoaderCircle className="spin" aria-hidden="true" size={15} /><span>自动保存</span><strong>排队中</strong></div>;
+  return <div className="candidate-save-state saved"><CheckCircle2 aria-hidden="true" size={15} /><span>自动保存</span><strong>已保存</strong></div>;
 }
 
 function saveErrorMessage(error: unknown) {

@@ -232,7 +232,7 @@ export function FieldInspector({
 function InspectorHeading({ title, onClose }: { title: string; onClose: () => void }) {
   return (
     <div className="studio-inspector-heading">
-      <div><span>FIELD INSPECTOR</span><h2>{title}</h2></div>
+      <div><h2>{title}</h2></div>
       <button type="button" className="icon-button inspector-close" onClick={onClose} aria-label="关闭字段检查器">
         <X aria-hidden="true" size={17} />
       </button>
@@ -277,7 +277,7 @@ type ScalarEditorProps<T extends EditorScalarValue> = Omit<ValueEditorProps, 'va
 function TextConstraints(props: ScalarEditorProps<TextEditorValue>) {
   const { value, pointer, rowKey, onChange } = props;
   return (
-    <ConstraintSection title="文本约束" eyebrow="TEXT CONSTRAINTS">
+    <ConstraintSection title="文本约束">
       <ConstraintGrid>
         <OptionalConstraint label="最小长度" value={value.minLength} pointer={`${pointer}/constraints/minLength`} inputMode="numeric" onChange={(next, group) => onChange({ ...value, minLength: next }, group)} {...controlProps(props, rowKey, 'minLength')} />
         <OptionalConstraint label="最大长度" value={value.maxLength} pointer={`${pointer}/constraints/maxLength`} inputMode="numeric" onChange={(next, group) => onChange({ ...value, maxLength: next }, group)} {...controlProps(props, rowKey, 'maxLength')} />
@@ -297,7 +297,7 @@ function DecimalConstraints(props: ScalarEditorProps<DecimalEditorValue>) {
     ['exclusiveMax', '最大值（不含）'], ['multipleOf', '倍数 multipleOf'],
   ];
   return (
-    <ConstraintSection title="精确数值约束" eyebrow="DECIMAL CONSTRAINTS">
+    <ConstraintSection title="精确数值约束">
       <p className="constraint-note">以 JSON number 保存，最多 128 位精度；编辑器不会转为 JavaScript 浮点数。</p>
       <ConstraintGrid>
         {entries.map(([key, label]) => (
@@ -327,7 +327,7 @@ function OrderedConstraints(props: ScalarEditorProps<OrderedEditorValue>) {
     ['min', '最小值（含）'], ['exclusiveMin', '最小值（不含）'], ['max', '最大值（含）'], ['exclusiveMax', '最大值（不含）'],
   ];
   return (
-    <ConstraintSection title={`${editorTypeLabels[value.type]}约束`} eyebrow={`${value.type.toUpperCase()} CONSTRAINTS`}>
+    <ConstraintSection title={`${editorTypeLabels[value.type]}约束`}>
       <p className="constraint-note">标准格式：<code>{format}</code></p>
       <ConstraintGrid>
         {entries.map(([key, label]) => (
@@ -345,7 +345,7 @@ function BooleanConstraints(props: ScalarEditorProps<Extract<EditorScalarValue, 
   const { value, pointer, rowKey, onChange, onFinish, showProblem } = props;
   const constPointer = `${pointer}/constraints/const`;
   return (
-    <ConstraintSection title="布尔约束" eyebrow="BOOLEAN CONSTRAINTS">
+    <ConstraintSection title="布尔约束">
       <div className="constraint-toggle-card boolean-constraint">
         <label className="constraint-toggle-heading">
           <input type="checkbox" checked={value.constValue.enabled} onChange={(event) => onChange({ ...value, constValue: { ...value.constValue, enabled: event.target.checked } })} />
@@ -373,7 +373,7 @@ function ReferenceEditor(props: ScalarEditorProps<Extract<EditorScalarValue, { t
   const schemaPointer = `${pointer}/ref/schemaKey`;
   const versionPointer = `${pointer}/ref/versionTag`;
   return (
-    <ConstraintSection title="引用目标" eyebrow="REFERENCE">
+    <ConstraintSection title="引用目标">
       <div className="reference-kind" role="group" aria-label="引用类型">
         <button type="button" className={value.referenceKind === 'draft' ? 'active' : ''} aria-pressed={value.referenceKind === 'draft'} onClick={() => onChange({ ...value, referenceKind: 'draft', versionTag: '' })}>SchemaRef · Draft</button>
         <button type="button" className={value.referenceKind === 'static' ? 'active' : ''} aria-pressed={value.referenceKind === 'static'} onClick={() => onChange({ ...value, referenceKind: 'static' })}>StaticSchemaRef</button>
@@ -398,7 +398,7 @@ function ArrayEditor(props: ValueEditorProps & { value: ArrayEditorValue }) {
   const { value, pointer, rowKey, onChange } = props;
   const setArray = (next: ArrayEditorValue, group?: string) => onChange(next, group);
   return (
-    <ConstraintSection title="数组与元素" eyebrow="ARRAY">
+    <ConstraintSection title="数组与元素">
       <p className="constraint-note">数组元素可为任一标量或引用类型；不允许嵌套数组。</p>
       <ConstraintGrid>
         <OptionalConstraint label="最少元素" value={value.minItems} pointer={`${pointer}/constraints/minItems`} inputMode="numeric" onChange={(next, group) => setArray({ ...value, minItems: next }, group)} {...controlProps(props, rowKey, 'minItems')} />
@@ -410,7 +410,7 @@ function ArrayEditor(props: ValueEditorProps & { value: ArrayEditorValue }) {
       </label>
       <div className="array-item-editor">
         <div className="array-item-heading">
-          <div><span>ITEM DESCRIPTOR</span><strong>数组元素</strong></div>
+          <div><strong>数组元素</strong></div>
           <select
             aria-label="数组元素类型"
             value={value.items.type}
@@ -544,10 +544,10 @@ function EnumConstraint({
   );
 }
 
-function ConstraintSection({ title, eyebrow, children }: { title: string; eyebrow: string; children: ReactNode }) {
+function ConstraintSection({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="inspector-section">
-      <div className="inspector-section-heading"><div><span>{eyebrow}</span><h3>{title}</h3></div><span>0..n</span></div>
+      <div className="inspector-section-heading"><div><h3>{title}</h3></div><span>可选约束</span></div>
       {children}
     </section>
   );
@@ -595,11 +595,11 @@ function PublishPreparation({
         <strong>{ready ? '可发布' : '尚未就绪'}</strong>
       </summary>
       <ul>
-        <li className={revision !== null && !dirty ? 'is-done' : ''}>{revision === null ? '先创建并保存 Draft' : dirty ? '保存当前未提交更改' : `exact revision ${revision} 已保存`}</li>
+        <li className={revision !== null && !dirty ? 'is-done' : ''}>{revision === null ? '先创建并保存 Draft' : dirty ? '保存当前未提交更改' : `精确 revision ${revision} 已保存`}</li>
         <li className={diagnostics.length === 0 ? 'is-done' : ''}>{diagnostics.length === 0 ? '本地定义规则通过' : `${diagnostics.length} 项本地规则待修正`}</li>
         <li className={draftRefs === 0 ? 'is-done' : ''}>{draftRefs === 0 ? '所有引用均为 StaticSchemaRef' : `${draftRefs} 个 SchemaRef 必须选择 versionTag`}</li>
       </ul>
-      <p>发布不会隐式保存，也不会自动选择 latest；最终服务端会重新校验引用并自底向上编译。</p>
+      <p>单独发布只使用已保存的 revision；顶部“保存并发布”会先显式保存，再发布服务端返回的精确 revision。服务端仍会重新校验引用并自底向上编译。</p>
     </details>
   );
 }
