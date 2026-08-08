@@ -449,13 +449,17 @@ QUEUED → RUNNING → REVIEW_REQUIRED → APPLYING → COMPLETED
 
 ### 8.7 Provider/Profile 安全边界
 
-- v1 首个 adapter 是 OpenAI Responses API，使用固定版本官方 `openai-java` SDK，只存在于 adapter。
+- v1 首个 live adapter 是 DashScope 的 OpenAI-compatible Chat Completions HTTP endpoint；领域层只依赖 provider-neutral port，协议 DTO、HTTP client 与 `DASHSCOPE_API_KEY` 只存在于 application adapter。
+- 首批模型 Profile 为 `dashscope-qwen37-flash-v1`（`qwen3.7-flash`）和 `dashscope-qwen38-max-v1`（`qwen3.8-max`），均先保持 `EXPERIMENTAL`；同一金标集分别评测后才能决定默认或升级路由。
 - Profile 是 repo-versioned resource，保存 provider/model/prompt/structured output/budgets/evaluation identity；run 保存完整 snapshot。
 - API Key 只来自外部 secret，不进入 DB、Profile、UI、日志或错误。
-- 每次 call `store:false`，不使用 `previous_response_id`；每个 stage 显式携带最小所需上下文。
+- 每次 call 使用 `response_format={"type":"json_object"}`、关闭 thinking、禁用 provider tools/search；prompt 必须明确要求 JSON。合法 JSON 仍须经过 Candidate codec、确定性 validator 和 bounded repair。
+- 图片只从服务端规范化 artifact 编码为 Base64 Data URL；adapter 不接受用户提供的远程 URL。每个 stage 显式携带最小所需上下文。
+- 不伪造 `store:false` 等跨 provider 语义；只有 DashScope 官方协议明确支持且合同测试覆盖的 retention 参数才发送。应用自身不持久化完整 provider request/response。
 - 不保存 chain-of-thought。完整 provider I/O 只在受控 Run storage 政策允许时保存，常规日志永不包含。
 - 应用可在无 API Key/无 certified Profile 时启动；确定性功能正常，AI 创建返回稳定 NOT_CONFIGURED/NOT_CERTIFIED problem。
 - 上传/预览不调用模型。每次开始前明确展示 provider/model/profile、输入范围、费用上界和外部传输提示，由用户点击启动。
+- 当前 P5 live 授权只覆盖仓库合成数据、全局最多 6 次 provider attempt、累计费用上限 ¥1；retry/repair 也计 attempt 和费用，耗尽即安全停止。真实业务数据需要新的逐次 J1。
 
 ### 8.8 AI 质量发布门槛
 
@@ -624,4 +628,3 @@ v1 只有在以下五条端到端 journey 全部通过后才可进入人工验�
 5. worker restart/cancel/failure/concurrent apply 不留下部分 Schema、重复调用或重复费用记录。
 
 自动 gate 全绿但 J1 UI/业务判断待确认时，生命周期状态只能是 `human_acceptance_pending`，不能报告 `accepted`。
-

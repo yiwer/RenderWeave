@@ -39,8 +39,8 @@ binding: generic + project-local tools/run-gate.ps1
 
 | 策略 | 含义 | 本项目选择 |
 |---|---|---|
-| `record-only` | Agent 只记录 commit/diff，不自行 commit/tag | **采用** |
-| `agent-commit` | 用户已授权按任务/Phase 提交 | 未授权 |
+| `record-only` | Agent 只记录 commit/diff，不自行 commit/tag | P1–P4 采用 |
+| `agent-commit` | 用户已授权按任务/Phase 提交 | **P5 采用：每个节点独立 `phase/p5-*` 分支和提交** |
 | `branch-per-agent` | 多写入者各在 branch/worktree，集成者合并 | N/A：当前 single writer |
 
 未授权时不默认创建 tag/branch/commit。
@@ -76,7 +76,7 @@ binding: generic + project-local tools/run-gate.ps1
 - 服务端是 Java 21 / Spring Boot 4.1 modular monolith；客户端是 React 19 + TypeScript strict + Vite 8.1。
 - PostgreSQL 是全部环境的唯一数据库语义来源；生产代码不依赖 H2/SQLite。
 - OpenAPI 3.1.2 是 HTTP 合同源；Java 服务端手写并做合同验证，TypeScript SDK 由固定版本生成。
-- 所有 live 模型调用都显式启动、预算受限、`store:false`、可审计且默认关闭。
+- 所有 live 模型调用都显式启动、预算受限、可审计且默认关闭；provider-specific retention 参数只有在官方协议可证明支持时才发送。
 - 源码、数据库和外部模型副作用分别恢复；Git 回退绝不冒充数据或费用恢复。
 
 ## 修订
@@ -84,4 +84,4 @@ binding: generic + project-local tools/run-gate.ps1
 宪章变化记录动机和日期，由人确认；不要把一次性例外永久写入。
 
 ---
-版本：1.0 ｜ 采用日期：2026-08-07
+版本：1.1 ｜ 采用日期：2026-08-07 ｜ P5 节点提交与 DashScope guarded delta：2026-08-08

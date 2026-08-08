@@ -17,7 +17,7 @@
 - 核心规则见下方受管区块；完整语义见 skill 内 references/core-rules.md（rule ID 对齐）
 - fast-track 零落盘；Project Mode 才创建流程文件（RULE-FAST-001）
 - 局部阻塞时继续其他安全任务；只有无安全路径时才合并请求用户（RULE-USER-001）
-- 不默认创建 commit、tag 或 branch；当前版本控制策略是 record-only
+- 不默认创建 tag；P1–P4 保持 record-only，P5 已获用户 J1，按节点创建 `phase/p5-*` 分支并提交
 
 ## 项目特有禁区
 - v1 不实现 Template、数据适配、Workspace 或图片渲染，也不创建占位页面/表/接口。
@@ -25,7 +25,7 @@
 - StaticSchema 内容和已编译 JSON Schema 永不 UPDATE/DELETE/重编译。
 - 正式 Schema 不引入 fieldId；Candidate 的局部 ID 不允许泄漏进 Draft/Static/编译产物。
 - AI 不能获得发布、删除、任意 SQL、任意文件或任意 HTTP 能力；默认测试禁止外部模型调用。
-- 未获当次人工授权时，不运行付费 live AI、不发送真实数据、不读取或输出 API Key。
+- 未获当次人工授权时，不运行付费 live AI、不发送真实数据、不读取或输出 API Key。P5 当前授权仅允许 DashScope、仓库合成数据、最多 6 次 provider attempt、累计费用上限 ¥1；真实业务数据仍禁止。
 - 不使用 H2/SQLite 模拟 PostgreSQL 语义；数据库测试使用 Testcontainers PostgreSQL。
 - 不记录原始图片、完整 RootDocument、完整模型输入输出或 chain-of-thought 到常规日志/证据。
 - `D:\Yiwer\code\hbads-design-v2` 仅作历史参考；冲突时以本仓库 spec 和已批准 delta 为准。

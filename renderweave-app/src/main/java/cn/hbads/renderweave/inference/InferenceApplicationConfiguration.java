@@ -9,6 +9,10 @@ import cn.hbads.renderweave.inference.run.InferenceRunService;
 import cn.hbads.renderweave.inference.run.InferenceRunStore;
 import cn.hbads.renderweave.inference.replay.InferenceReplayStore;
 import cn.hbads.renderweave.inference.replay.ReplayInferenceWorker;
+import cn.hbads.renderweave.inference.dashscope.DashScopeInferenceProvider;
+import cn.hbads.renderweave.inference.profile.InferenceProfileRegistry;
+import cn.hbads.renderweave.inference.profile.InferencePromptRegistry;
+import cn.hbads.renderweave.inference.provider.InferenceProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -17,9 +21,29 @@ import java.nio.file.Path;
 import java.time.Clock;
 import java.time.Duration;
 import java.util.UUID;
+import tools.jackson.databind.ObjectMapper;
 
 @Configuration(proxyBeanMethods = false)
 class InferenceApplicationConfiguration {
+
+    @Bean
+    InferenceProfileRegistry inferenceProfileRegistry() {
+        return new InferenceProfileRegistry();
+    }
+
+    @Bean
+    InferencePromptRegistry inferencePromptRegistry() {
+        return new InferencePromptRegistry();
+    }
+
+    @Bean
+    InferenceProvider dashScopeInferenceProvider(
+            ObjectMapper json,
+            @Value("${DASHSCOPE_API_KEY:}") String directApiKey,
+            @Value("${DASHSCOPE_API_KEY_FILE:}") String apiKeyFile
+    ) {
+        return DashScopeInferenceProvider.fromConfiguration(directApiKey, apiKeyFile, json);
+    }
 
     @Bean
     BlobStore inferenceBlobStore(

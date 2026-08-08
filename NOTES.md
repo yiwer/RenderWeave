@@ -1,9 +1,10 @@
 # NOTES.md
 
 ## 当前目标与进度
-- 2026-08-08 授权的 P1–P4 Goal 实施范围已完成并通过本地 A1 自动验证；P5 live AI、真实数据和付费调用不在当前自动执行边界内。
+- 2026-08-08 授权的 P1–P4 Goal 实施范围已完成并通过本地 A1 自动验证。
+- 2026-08-08 用户批准 P5 DashScope Goal：`qwen3.7-flash` / `qwen3.8-max` 双 Profile；仅仓库合成数据，最多 6 次 provider attempt，累计费用上限 ¥1；真实业务数据仍禁止（J1）。
 - 需求访谈已收束，v1 产品语义以 `specs/renderweave-v1.md` 为准。
-- 生命周期状态：P0 `accepted`；P1–P4 `automated_verified`；P5 `planned_guarded`。
+- 生命周期状态：P0 `accepted`；P1–P4 `automated_verified`；P5 `planned_guarded`，T5-1 automated-verified（A1），T5-2 next。
 
 ## 下一步
 - [x] Java / React / PostgreSQL / OpenAPI 最小 canary 与 A1 full gate 通过。
@@ -23,7 +24,10 @@
 - [x] T4-2：`replay-v1` Profile、deterministic profiler、Candidate contracts、60-case synthetic corpus 与零网络 durable workflow；Java 99 tests 与 V006 fresh migration 全绿。
 - [x] T4-3：Candidate 查询/逐项 revision autosave API、Form/Map review editor、image/JSON evidence overlay 与真实 PG/browser 闭环（无 confirm-all）。
 - [x] T4-4：deterministic create-only materializer、原子 bundle apply、SSE 与 crash/replay recovery；冲突/故障/并发零部分写，真实 PG/browser 证明 StaticSchema 数量不变。
-- [ ] live AI Phase 前补齐 independent verify（A2）与当次付费/数据授权。
+- [x] P5 当次 provider/cost/data J1：DashScope、synthetic-only、≤6 attempts、≤¥1。
+- [x] T5-1：DashScope provider-neutral contract、双模型 versioned Profile、Prompt/费用快照、环境变量/Compose secret 与零网络 adapter contract tests（A1 server gate）。
+- [ ] T5-2：真实上传、durable live worker、safe attempt telemetry、API/UI 与 replay 共存闭环。
+- [ ] live canary 前完成受影响门控；canary 后补独立 A2 review/replay。
 
 ## 重要发现或局部阻塞
 - 本机全局 Node 为 20.20.2；正式 gate 已使用 checksum 固定的仓库局部 Node 24.19.0，不依赖或修改系统 Node。
@@ -48,4 +52,4 @@
 - `plans/logs/P4-T4-2.md`；A1 server evidence：`.sdlc/evidence/20260808-044819-server/metadata.json`。
 - `plans/logs/P4-T4-3.md`；A1 server/web/real-browser evidence：`.sdlc/evidence/20260808-052825-server/metadata.json`、`.sdlc/evidence/20260808-052917-web/metadata.json`、`.sdlc/evidence/inference-e2e-9372/metadata.json`。
 - `plans/logs/P4-T4-4.md`；G-P4 A1 server/web/mocked-browser/real-browser evidence：`.sdlc/evidence/20260808-060743-server/metadata.json`、`.sdlc/evidence/20260808-061010-web/metadata.json`、`.sdlc/evidence/20260808-061225-e2e/metadata.json`、`.sdlc/evidence/inference-e2e-36108/metadata.json`。
-- 当前恢复点：P4 已 automated-verified；如继续则进入 P5 guarded 授权门，在获得 independent A2 与当次 provider/cost/data J1 前不执行 live 调用。
+- 当前恢复点：`phase/p5-dashscope-contract` 已通过 A1 server gate，提交后进入 `phase/p5-live-inference`；live canary 仍须等 T5-2/T5-3 与相关门控完成。

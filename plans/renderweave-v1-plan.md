@@ -1,10 +1,10 @@
 # RenderWeave v1 Phase 计划
 
-- 状态：P1–P4 Goal implementation complete；P0 accepted，P1–P4 automated-verified（A1），P5 guarded / not authorized
+- 状态：P1–P4 Goal implementation complete；P0 accepted，P1–P4 automated-verified（A1）；P5 guarded 已获限定 J1，T5-1 in progress
 - 日期：2026-08-08
 - Spec：[`specs/renderweave-v1.md`](../specs/renderweave-v1.md)
 - 原型：`/prototype/schema-studio?variant=A|B|C`
-- 当前 lifecycle：P0 `accepted`；P1–P4 `automated_verified`；P5 `planned_guarded`
+- 当前 lifecycle：P0 `accepted`；P1–P4 `automated_verified`；P5 `planned_guarded` / T5-1 implementation in progress
 
 ## 1. 四维执行配置
 
@@ -248,36 +248,45 @@ Phase 内任务只在真实前置依赖满足时并行。当前没有 atomic cla
 
 ### P5 — Guarded provider and quality certification
 
-#### T5-1：官方 OpenAI Responses adapter 与 versioned Profile
+#### T5-1：DashScope provider-neutral port、Chat Completions adapter contract 与 versioned Profile
 - AC：AC-020
 - 依赖：P4
 - 影响区域：provider adapter/profile resources/config
-- 局部验证：fake transport proves store:false/no previous_response_id/budgets/retries/safe logs
+- 局部验证：fake transport proves JSON mode/thinking off/no tools/no remote URL/budgets/retries/safe logs
 - 回归升级：provider/model/prompt/SDK changes run adapter+eval
 - 证据保证：A2
 - 完成信号：默认无 key/网络仍全绿，tool surface 不扩张
 
-#### T5-2：60-case corpus、metrics 与 holdout runner
+#### T5-2：真实上传、durable live worker 与审核 UI 纵切
+- AC：AC-015, AC-018, AC-019, AC-020
+- 依赖：T5-1
+- 影响区域：input API、provider worker、attempt telemetry、OpenAPI/SDK、Inference UI
+- 局部验证：fake provider drives image/json/combined through durable review；missing key/budget/retry/cancel/repair fail safely
+- 回归升级：OpenAPI、job state、migration 或 provider request changes run server+web+real PG/browser
+- 证据保证：A1 implementation；A2 target before live certification
+- 完成信号：上传不触网；显式 synthetic/external-transfer confirmation 才启动；Candidate 进入既有逐项审核/create-only 路径
+
+#### T5-3：60-case gold corpus、metrics 与 holdout runner
 - AC：AC-016, AC-021
-- 依赖：T4-2
+- 依赖：T4-2, T5-1
 - 影响区域：eval fixtures/runner/reports
 - 局部验证：metric unit goldens + replay full corpus
 - 回归升级：Profile/eval/gold change always full eval
 - 证据保证：A2 independent
 - 完成信号：global/mode/holdout results reproducible and version-bound
 
-#### T5-3：一次性 synthetic live canary
+#### T5-4：限定预算的双模型 synthetic live canary
 - AC：AC-015, AC-020
-- 依赖：T5-1；J1 provider/cost/data authorization
-- 影响区域：external OpenAI side effect only
-- 局部验证：exact profile, synthetic input, capped calls/cost, safe evidence
+- 依赖：T5-2, T5-3；J1 provider/cost/data authorization
+- 影响区域：external DashScope side effect only
+- 局部验证：exact profiles；只用仓库 synthetic input；两个模型合计最多 6 次 provider attempt、累计费用上限 ¥1；safe evidence
 - 回归升级：任何 endpoint/model/profile/budget/input scope drift 需重新 J1
 - 证据保证：A2 + J1
 - 完成信号：只证明通路；不把 canary PASS 冒充 model quality PASS
 
-#### T5-4：Profile certification decision
+#### T5-5：Profile certification decision
 - AC：AC-021
-- 依赖：T5-2, T5-3
+- 依赖：T5-3, T5-4
 - 影响区域：profile registry/release evidence
 - 局部验证：independent full + holdout evaluation
 - 回归升级：任何 profile identity change invalidates evidence

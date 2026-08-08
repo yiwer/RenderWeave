@@ -1,0 +1,10 @@
+services:
+  api:
+    environment:
+      DASHSCOPE_API_KEY_FILE: /run/secrets/dashscope_api_key
+    secrets:
+      - dashscope_api_key
+
+secrets:
+  dashscope_api_key:
+    environment: DASHSCOPE_API_KEY
