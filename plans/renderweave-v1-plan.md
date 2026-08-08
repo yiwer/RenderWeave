@@ -1,10 +1,10 @@
 # RenderWeave v1 Phase 计划
 
-- 状态：P1–P4 Goal implementation complete；P0 accepted，P1–P4 automated-verified（A1）；P5 guarded 已获限定 J1，T5-1 in progress
+- 状态：P1–P4 implementation complete；P5 T5-1/T5-2/T5-3 评测合同 automated-verified（A1），T5-4 限定 synthetic live canary 已通过；Profile certification 未完成
 - 日期：2026-08-08
 - Spec：[`specs/renderweave-v1.md`](../specs/renderweave-v1.md)
 - 原型：`/prototype/schema-studio?variant=A|B|C`
-- 当前 lifecycle：P0 `accepted`；P1–P4 `automated_verified`；P5 `planned_guarded` / T5-1 implementation in progress
+- 当前 lifecycle：P0 `accepted`；P1–P4 `automated_verified`；P5 `live_canary_verified` / `certification_incomplete`
 
 ## 1. 四维执行配置
 
@@ -26,7 +26,7 @@
 | P2 不可变发布与验证 | 嵌套 Draft→Static 发布、下载内联 artifact、批量验证样本 | graph concurrency、compiler、decimal/time、snapshot immutability | property + fault + contract + E2E | G-P2-STATIC |
 | P3 完整 Schema Studio | 完整类型/约束、历史/恢复/复制/删除、Form/Map/冲突/发布准备 | shared reducer、可访问性、256-field 性能 | reducer/component + browser E2E + axe | G-P3-STUDIO；UI J1 |
 | P4 Replay AI 闭环 | 用固定 synthetic replay 完成 durable job、evidence review、create-only atomic Draft Bundle | Candidate/DSL 边界、lease、取消/恢复、zero partial write | replay eval + PG fault + tool manifest + E2E | G-P4-REPLAY |
-| P5 Provider 与认证 | 经显式授权运行 OpenAI adapter；60-case 分模式评测决定 Profile certified/experimental | 外部费用、隐私、prompt injection、模型漂移 | independent eval + safe live canary | G-P5-QUALITY（A2 + J1） |
+| P5 Provider 与认证 | 经显式授权运行 DashScope adapter；60-case 分模式评测决定 Profile certified/experimental | 外部费用、隐私、prompt injection、模型漂移 | independent eval + safe live canary | G-P5-QUALITY（A2 + J1） |
 | P6 发布候选 | 10-user/large dataset、浏览器/无障碍、Compose、备份恢复和全部主路径完成 | 性能、运维、恢复、scope drift | full + independent replay + human acceptance | G-V1-RELEASE |
 
 每个 Phase 门控后执行 `RULE-ANCHOR-001`：对照 approved spec/delta、AC、非目标，确认没有引入 Template/Workspace/Renderer 或扩大 AI 权限。
@@ -357,6 +357,6 @@ Phase 内任务只在真实前置依赖满足时并行。当前没有 atomic cla
 1. P0 full gate 已由项目工具以 A1 通过；证据见 `plans/logs/ENV-001.md`。原型方向另有用户 J1，因此 P0 可报告 `accepted`，但这仍不是 A2/CI。
 2. P1–P4 的 standard、可逆任务已连续执行完成；T4-4 通过 server/web/mocked-browser/real-PG-browser affected gates（A1），P4 恢复点为已验证节点提交。
 3. 生产 UI 锁定为 A 默认 Form + B Map，共享 EditorSession；吸收 C 的 compiled preview、搜索、密度与可读性特征，不保留 C 为第三模式。
-4. P5 guarded live AI 仍需要独立 A2 verifier 与每次 J1 provider/cost/data authorization，不因本 Goal 自动获权。
+4. P5 获得的一次限定 J1 已用于仓库 synthetic 双模型 canary：2 次 attempt、¥0.054017、无真实业务数据；unused budget 不自动扩展为后续调用授权。
 5. release hard gate 尚无外部 CI/branch protection，因此不存在 A3。
-6. 下一个可执行 Phase 是 P5，但 live provider、真实数据、费用与 quality certification 仍必须经独立 A2 和当次 J1 授权；本 Goal 没有进入该范围。
+6. P5 真实通路已证明，但 2/60 小样本不是质量认证；两个 Profile 继续为 experimental、默认关闭。完整 60-case live 评测、真实业务数据、扩大费用或生产启用仍需新的 J1 与独立 A2。

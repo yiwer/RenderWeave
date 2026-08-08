@@ -82,4 +82,6 @@ docker compose -f compose.yaml -f compose.live.yaml up --build
 
 overlay 通过 Compose secret 向 API 容器只读挂载 Key，并显式设置 `RENDERWEAVE_LIVE_AI_ENABLED=true`。浏览器端不会接触 Key。当前 P5 Profile 只允许合成数据，页面还会要求用户分别确认外部传输与实验性结果审核。
 
-当前机器的 Docker registry 代理不可用，因此本轮只验证了 Compose 结构，并用 `runtime` gate 完成等价的 API/PostgreSQL live canary；镜像构建与整套 Compose 启动仍需在 registry 可用后执行，不能记为已通过。
+2026-08-08 的受控 synthetic canary 已实际连通两个 Profile：各 1 次调用、合计 2 次、估算费用 ¥0.054017；两条 Candidate 均进入 `REVIEW_REQUIRED` 并通过对应结构金标。该结果只证明真实闭环，不是 60-case 质量认证；两个 Profile 仍保持 `EXPERIMENTAL` 和默认关闭。
+
+当前机器此前受 Docker registry/npm 代理配置影响，因此本轮只验证了 Compose 结构，并通过 Testcontainers + 实际 DashScope endpoint 完成受控 canary；镜像构建与整套 Compose 启动仍需在代理可用后单独验证，不能记为已通过。
