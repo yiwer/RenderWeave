@@ -13,8 +13,10 @@ import {
   ListTree,
   LockKeyhole,
   LoaderCircle,
+  PanelRightOpen,
   Plus,
   Search,
+  X,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
@@ -29,6 +31,8 @@ import {
   editorValueFromPersisted,
   summarizeEditorValue,
   type PersistedDefinition,
+  type PersistedField,
+  type EditorValue,
 } from '../schema-studio/editor-types';
 import { listStaticSchemasRequest } from './resource-api';
 import { ResourceError, ResourceLoading } from './DraftListPage';
@@ -63,8 +67,8 @@ export function StaticSchemaListPage() {
           {items.map((item) => (
             <Link key={`${item.schemaKey}@${item.versionTag}`} className={`static-card ${item.origin === 'SYSTEM' ? 'system-static-card' : ''}`} to={`/static-schemas/${item.schemaKey}/${item.versionTag}`}>
               <div className="static-card-top"><span className="immutable-chip"><LockKeyhole aria-hidden="true" size={12} />{item.origin === 'SYSTEM' ? '系统预置' : '不可变'}</span><ArrowRight aria-hidden="true" size={16} /></div>
-              <strong>{item.displayName}</strong>
-              <code>{item.schemaKey}@{item.versionTag}</code>
+              <div className="static-card-title"><strong>{item.displayName}</strong><span className="static-version-badge" aria-label={`版本 ${item.versionTag}`}>{item.versionTag}</span></div>
+              <code>{item.schemaKey}</code>
               <div><span>{item.fieldCount} 个字段</span><span>深度 {item.referenceDepth}</span><span>{formatDateTime(item.publishedAt)}</span></div>
             </Link>
           ))}
@@ -82,6 +86,8 @@ export function StaticSchemaDetailPage() {
 function StaticSchemaDetailContent({ schemaKey, versionTag }: { schemaKey: string; versionTag: string }) {
   const [activeView, setActiveView] = useState<StaticDetailView>('form');
   const [copied, setCopied] = useState(false);
+  const [selectedFieldIndex, setSelectedFieldIndex] = useState(0);
+  const [inspectorOpen, setInspectorOpen] = useState(false);
   const snapshot = useQuery({
     queryKey: ['static-schema', schemaKey, versionTag],
     queryFn: () => getStaticSnapshotRequest(schemaKey, versionTag),
@@ -135,7 +141,7 @@ function StaticSchemaDetailContent({ schemaKey, versionTag }: { schemaKey: strin
           </dl>
           {snapshot.data.releaseNote && <section className="release-note"><span>发布说明</span><p>{snapshot.data.releaseNote}</p></section>}
 
-          <Tabs.Root className="static-detail-views" value={activeView} onValueChange={(value) => { setActiveView(value as StaticDetailView); setCopied(false); }}>
+          <Tabs.Root className="static-detail-views" value={activeView} onValueChange={(value) => { setActiveView(value as StaticDetailView); setCopied(false); setInspectorOpen(false); }}>
             <div className="static-view-toolbar">
               <Tabs.List className="static-view-tabs" aria-label="StaticSchema 查看方式">
                 <Tabs.Trigger value="form"><ListTree aria-hidden="true" size={15} />字段表单</Tabs.Trigger>
@@ -144,7 +150,12 @@ function StaticSchemaDetailContent({ schemaKey, versionTag }: { schemaKey: strin
               </Tabs.List>
               <div className="static-view-tools">
                 {activeView === 'form' ? (
-                  <><span>{snapshot.data.definition.fields.length} 个字段</span><span>additionalProperties=true</span></>
+                  <>
+                    <span>{snapshot.data.definition.fields.length} 个字段</span><span>additionalProperties=true</span>
+                    {snapshot.data.definition.fields.length > 0 && (
+                      <button type="button" className="static-inspector-trigger" onClick={() => setInspectorOpen(true)}><PanelRightOpen aria-hidden="true" size={15} />字段信息</button>
+                    )}
+                  </>
                 ) : (
                   <>
                     <button type="button" disabled={!content || artifact.isPending} onClick={() => void copy()}>{copied ? <Check aria-hidden="true" size={15} /> : <Copy aria-hidden="true" size={15} />}{copied ? '已复制' : '复制'}</button>
@@ -154,7 +165,13 @@ function StaticSchemaDetailContent({ schemaKey, versionTag }: { schemaKey: strin
               </div>
             </div>
             <Tabs.Content className="static-view-panel" value="form">
-              <StaticDefinitionForm definition={snapshot.data.definition} />
+              <StaticDefinitionForm
+                definition={snapshot.data.definition}
+                selectedIndex={selectedFieldIndex}
+                inspectorOpen={inspectorOpen}
+                onSelect={(index) => { setSelectedFieldIndex(index); setInspectorOpen(true); }}
+                onCloseInspector={() => setInspectorOpen(false)}
+              />
             </Tabs.Content>
             <Tabs.Content className="static-view-panel" value="compiled">
               <StaticArtifactView artifact={artifact} content={content} label="Compiled JSON Schema" />
@@ -171,31 +188,153 @@ function StaticSchemaDetailContent({ schemaKey, versionTag }: { schemaKey: strin
 
 type StaticDetailView = 'form' | 'compiled' | 'definition';
 
-function StaticDefinitionForm({ definition }: { definition: PersistedDefinition }) {
+function StaticDefinitionForm({
+  definition,
+  selectedIndex,
+  inspectorOpen,
+  onSelect,
+  onCloseInspector,
+}: {
+  definition: PersistedDefinition;
+  selectedIndex: number;
+  inspectorOpen: boolean;
+  onSelect: (index: number) => void;
+  onCloseInspector: () => void;
+}) {
   if (definition.fields.length === 0) {
     return <section className="resource-empty static-definition-empty" role="status"><ListTree aria-hidden="true" size={23} /><strong>这是一个空 StaticSchema</strong><span>定义中没有字段；未知字段仍由 additionalProperties=true 接受。</span></section>;
   }
+  const selectedField = definition.fields[selectedIndex] ?? definition.fields[0]!;
+  const resolvedIndex = definition.fields[selectedIndex] ? selectedIndex : 0;
   return (
-    <section className="static-definition-form" aria-label="StaticSchema 字段表单">
-      {definition.fields.map((field, index) => {
-        const value = editorValueFromPersisted(field.value);
-        const label = field.displayName?.trim() || field.fieldKey || `字段 ${index + 1}`;
-        return (
-          <article className="static-definition-field" key={`${field.fieldKey}-${index}`}>
-            <div className="static-field-main">
-              <span className={`type-dot type-${value.type}`} aria-hidden="true" />
-              <span className="field-identity"><strong>{label}</strong><code>{field.fieldKey}</code></span>
-              <span className="type-chip">{editorTypeLabels[value.type]}</span>
-              <span className="field-detail">{summarizeEditorValue(value)}</span>
-              <span className="static-readonly-chip"><LockKeyhole aria-hidden="true" size={12} />只读</span>
-            </div>
-            <span className={`required-toggle ${field.required ? 'active' : ''}`}>{field.required ? '必填' : '可选'}</span>
-            {field.description && <p className="static-field-description">{field.description}</p>}
-          </article>
-        );
-      })}
-    </section>
+    <div className="static-form-workbench">
+      <section className="static-definition-form" aria-label="StaticSchema 字段表单">
+        {definition.fields.map((field, index) => {
+          const value = editorValueFromPersisted(field.value);
+          const label = field.displayName?.trim() || field.fieldKey || `字段 ${index + 1}`;
+          return (
+            <button
+              type="button"
+              className={`static-definition-field ${index === resolvedIndex ? 'is-selected' : ''}`}
+              key={`${field.fieldKey}-${index}`}
+              aria-pressed={index === resolvedIndex}
+              aria-label={`查看字段 ${label}，${editorTypeLabels[value.type]}，${field.required ? '必填' : '可选'}`}
+              onClick={() => onSelect(index)}
+            >
+              <span className="static-field-main">
+                <span className={`type-dot type-${value.type}`} aria-hidden="true" />
+                <span className="field-identity"><strong>{label}</strong><code>{field.fieldKey}</code></span>
+                <span className="type-chip">{editorTypeLabels[value.type]}</span>
+                <span className="field-detail">{summarizeEditorValue(value)}</span>
+                <span className={`required-toggle ${field.required ? 'active' : ''}`}>{field.required ? '必填' : '可选'}</span>
+              </span>
+              {field.description && <span className="static-field-description">{field.description}</span>}
+            </button>
+          );
+        })}
+      </section>
+      <StaticFieldInspector field={selectedField} index={resolvedIndex} open={inspectorOpen} onClose={onCloseInspector} />
+    </div>
   );
+}
+
+function StaticFieldInspector({
+  field,
+  index,
+  open,
+  onClose,
+}: {
+  field: PersistedField;
+  index: number;
+  open: boolean;
+  onClose: () => void;
+}) {
+  const value = editorValueFromPersisted(field.value);
+  const label = field.displayName?.trim() || field.fieldKey || `字段 ${index + 1}`;
+  const details = staticValueDetails(value);
+  return (
+    <aside className={`static-field-inspector ${open ? 'is-open' : ''}`} aria-label="StaticSchema 字段信息">
+      <div className="static-inspector-heading">
+        <div><span>字段信息</span><h2>{label}</h2></div>
+        <button type="button" className="icon-button static-inspector-close" onClick={onClose} aria-label="关闭字段信息"><X aria-hidden="true" size={17} /></button>
+      </div>
+      <div className="static-inspector-context">
+        <code>/{field.fieldKey || '未命名'}</code>
+        <span><LockKeyhole aria-hidden="true" size={12} />只读</span>
+      </div>
+
+      <section className="static-inspector-card" aria-labelledby={`static-basics-${index}`}>
+        <h3 id={`static-basics-${index}`}>基础信息</h3>
+        <div className="static-readonly-form">
+          <div className="static-readonly-control"><span>fieldKey</span><p><code>{field.fieldKey}</code></p></div>
+          <div className="static-readonly-control"><span>显示名称</span><p>{field.displayName?.trim() || '未设置'}</p></div>
+          <div className="static-readonly-pair">
+            <div className="static-readonly-control"><span>字段类型</span><p>{editorTypeLabels[value.type]}</p></div>
+            <div className="static-readonly-control"><span>必填状态</span><p className={field.required ? 'is-required' : ''}>{field.required ? '必填' : '可选'}</p></div>
+          </div>
+          <div className="static-readonly-control"><span>字段说明</span><p className="static-readonly-description">{field.description?.trim() || '未填写说明'}</p></div>
+        </div>
+      </section>
+
+      <section className="static-inspector-card static-value-card" aria-labelledby={`static-value-${index}`}>
+        <h3 id={`static-value-${index}`}>约束与引用</h3>
+        {details.length > 0 ? (
+          <dl className="static-value-details">
+            {details.map((detail) => <div key={detail.label}><dt>{detail.label}</dt><dd>{detail.value}</dd></div>)}
+          </dl>
+        ) : <p className="static-no-constraints">未设置约束</p>}
+      </section>
+    </aside>
+  );
+}
+
+function staticValueDetails(value: EditorValue): Array<{ label: string; value: string }> {
+  switch (value.type) {
+    case 'text':
+      return compactStaticDetails([
+        ['最小长度', value.minLength.enabled ? value.minLength.value : ''],
+        ['最大长度', value.maxLength.enabled ? value.maxLength.value : ''],
+        ['正则表达式', value.pattern.enabled ? value.pattern.value : ''],
+        ['枚举值', value.enumValues.enabled ? value.enumValues.values.join('、') : ''],
+        ['固定值', value.constValue.enabled ? value.constValue.value : ''],
+      ]);
+    case 'decimal':
+      return compactStaticDetails([
+        ['最小值', value.min.enabled ? value.min.value : ''],
+        ['大于', value.exclusiveMin.enabled ? value.exclusiveMin.value : ''],
+        ['最大值', value.max.enabled ? value.max.value : ''],
+        ['小于', value.exclusiveMax.enabled ? value.exclusiveMax.value : ''],
+        ['倍数', value.multipleOf.enabled ? value.multipleOf.value : ''],
+        ['枚举值', value.enumValues.enabled ? value.enumValues.values.join('、') : ''],
+        ['固定值', value.constValue.enabled ? value.constValue.value : ''],
+      ]);
+    case 'date':
+    case 'time':
+      return compactStaticDetails([
+        ['最小值', value.min.enabled ? value.min.value : ''],
+        ['大于', value.exclusiveMin.enabled ? value.exclusiveMin.value : ''],
+        ['最大值', value.max.enabled ? value.max.value : ''],
+        ['小于', value.exclusiveMax.enabled ? value.exclusiveMax.value : ''],
+        ['枚举值', value.enumValues.enabled ? value.enumValues.values.join('、') : ''],
+        ['固定值', value.constValue.enabled ? value.constValue.value : ''],
+      ]);
+    case 'boolean':
+      return compactStaticDetails([['固定值', value.constValue.enabled ? value.constValue.value : '']]);
+    case 'reference':
+      return [{ label: '引用目标', value: `${value.schemaKey}@${value.versionTag}` }];
+    case 'array':
+      return compactStaticDetails([
+        ['元素类型', editorTypeLabels[value.items.type]],
+        ['最少元素', value.minItems.enabled ? value.minItems.value : ''],
+        ['最多元素', value.maxItems.enabled ? value.maxItems.value : ''],
+        ['元素唯一', value.uniqueItems ? '是' : ''],
+        ['元素配置', summarizeEditorValue(value.items)],
+      ]);
+  }
+}
+
+function compactStaticDetails(entries: Array<[string, string]>): Array<{ label: string; value: string }> {
+  return entries.filter(([, value]) => value !== '').map(([label, value]) => ({ label, value }));
 }
 
 function StaticArtifactView({

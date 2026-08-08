@@ -181,14 +181,13 @@ export function FieldInspector({
               {valueTypes.map((type) => <option key={type} value={type}>{editorTypeLabels[type]}</option>)}
             </select>
           </div>
-          <label className="required-control compact-required-control">
-            <input
-              type="checkbox"
-              checked={field.required}
-              onChange={(event) => update({ required: event.target.checked })}
-            />
-            <span><strong>必填字段</strong><small>RootDocument 必须出现</small></span>
-          </label>
+          <div className="control-group compact inspector-required-group">
+            <span className="control-label" id={`field-required-${field.rowKey}`}>必填状态</span>
+            <div className="required-segmented-control" role="group" aria-labelledby={`field-required-${field.rowKey}`}>
+              <button type="button" aria-pressed={!field.required} onClick={() => update({ required: false })}>可选</button>
+              <button type="button" aria-pressed={field.required} onClick={() => update({ required: true })}>必填</button>
+            </div>
+          </div>
         </div>
 
         <div className="control-group inspector-description-control">

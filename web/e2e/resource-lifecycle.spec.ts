@@ -132,6 +132,19 @@ test.describe('Schema resource lifecycle', () => {
         await json(route, staticSnapshot, 201);
       } else if (method === 'GET' && url.pathname === '/api/v1/static-schemas/price-card/v1') {
         await json(route, staticSnapshot);
+      } else if (method === 'GET' && url.pathname === '/api/v1/static-schemas') {
+        await json(route, {
+          items: [{
+            schemaKey: staticSnapshot.schemaKey,
+            versionTag: staticSnapshot.versionTag,
+            displayName: staticSnapshot.definition.displayName,
+            origin: staticSnapshot.origin,
+            fieldCount: staticSnapshot.definition.fields.length,
+            referenceDepth: staticSnapshot.referenceDepth,
+            publishedAt: staticSnapshot.publishedAt,
+          }],
+          page: 1, size: 100, total: 1,
+        });
       } else if (method === 'GET' && url.pathname.endsWith('/definition')) {
         definitionRequests += 1;
         await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(staticSnapshot.definition) });
@@ -159,9 +172,24 @@ test.describe('Schema resource lifecycle', () => {
     await expect(page.getByText('不可变边界已建立')).toBeVisible();
     await expect(page.getByRole('tab', { name: '字段表单' })).toHaveAttribute('aria-selected', 'true');
     await expect(page.locator('.static-definition-form')).toContainText('标题');
+    await expect(page.getByRole('button', { name: '查看字段 标题' })).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('.static-field-inspector')).toBeVisible();
+    await expect(page.locator('.static-field-inspector')).toContainText('fieldKey');
+    await expect(page.locator('.static-field-inspector')).toContainText('title');
+    await expect(page.locator('.static-field-inspector')).toContainText('字段类型');
+    await expect(page.locator('.static-field-inspector')).toContainText('文本');
+    await expect(page.locator('.static-field-inspector')).toContainText('必填');
     expect(definitionRequests).toBe(0);
     expect(compiledRequests).toBe(0);
     await page.screenshot({ path: testInfo.outputPath('static-detail-form-1280x720.png'), fullPage: true });
+
+    await page.setViewportSize({ width: 1024, height: 768 });
+    await expect(page.locator('.static-field-inspector')).toBeHidden();
+    await page.getByRole('button', { name: '字段信息' }).click();
+    await expect(page.locator('.static-field-inspector')).toBeVisible();
+    await expectNoHorizontalOverflow(page);
+    await page.getByRole('button', { name: '关闭字段信息' }).click();
+    await page.setViewportSize({ width: 1280, height: 720 });
 
     await page.getByRole('tab', { name: 'Compiled JSON Schema' }).click();
     await expect(page.locator('.artifact-panel pre')).toContainText(exactDecimal);
@@ -172,6 +200,12 @@ test.describe('Schema resource lifecycle', () => {
     await expect(page.locator('.artifact-panel pre')).toContainText('价格卡发布版');
     expect(definitionRequests).toBe(1);
     await page.screenshot({ path: testInfo.outputPath('static-detail-1280x720.png'), fullPage: true });
+
+    await page.goto('/static-schemas');
+    const staticCard = page.locator('.static-card').filter({ hasText: '价格卡发布版' });
+    await expect(staticCard.locator('.static-card-title > strong')).toHaveText('价格卡发布版');
+    await expect(staticCard.locator('.static-version-badge')).toHaveText('v1');
+    await page.screenshot({ path: testInfo.outputPath('static-list-version-1280x720.png'), fullPage: true });
   });
 
   test('soft deletes with immediate restore and validates raw-number RootDocument batches accessibly', async ({ page }, testInfo) => {

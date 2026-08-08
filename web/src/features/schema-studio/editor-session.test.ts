@@ -6,7 +6,7 @@ import { createNewEditorSession, editorReducer, sessionFromDraft } from './edito
 describe('full Schema Studio EditorSession', () => {
   it('projects one semantic state through form and map without history noise', () => {
     let state = createNewEditorSession();
-    expect(state.view).toBe('map');
+    expect(state.view).toBe('form');
     state = editorReducer(state, { type: 'set-schema-key', value: 'campaign-card' });
     state = editorReducer(state, { type: 'set-display-name', value: '商品推广卡' });
     const rowKey = state.fields[0]!.rowKey;
@@ -18,9 +18,9 @@ describe('full Schema Studio EditorSession', () => {
     const before = serializeDefinition(state.displayName, state.description, state.fields);
     const undoCount = state.undoStack.length;
 
-    state = editorReducer(state, { type: 'set-view', view: 'form' });
-    state = editorReducer(state, { type: 'select-field', rowKey });
     state = editorReducer(state, { type: 'set-view', view: 'map' });
+    state = editorReducer(state, { type: 'select-field', rowKey });
+    state = editorReducer(state, { type: 'set-view', view: 'form' });
 
     expect(serializeDefinition(state.displayName, state.description, state.fields)).toBe(before);
     expect(state.undoStack).toHaveLength(undoCount);
@@ -111,7 +111,7 @@ describe('full Schema Studio EditorSession', () => {
       },
     };
     const state = sessionFromDraft(draft);
-    expect(state.view).toBe('map');
+    expect(state.view).toBe('form');
     const serialized = serializeDefinition(state.displayName, state.description, state.fields);
 
     expect(state.fields.map((field) => field.value.type)).toEqual([

@@ -25,28 +25,35 @@ test.describe('production Schema Studio', () => {
     await page.goto('/schemas/new');
     await expect(page).toHaveURL(/\/schemas\/new$/);
     await expect(page.locator('[data-product="schema-studio"]')).toBeVisible();
-    await expect(page.getByRole('button', { name: '树状图', exact: true })).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.getByRole('button', { name: '表单', exact: true })).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('.studio-field-row')).toHaveCount(1);
     await expect(page.getByRole('heading', { name: '未命名 DraftSchema' })).toBeVisible();
     await page.locator('#schema-key').fill('catalog-card');
     await page.locator('#schema-display-name').fill('商品目录卡');
     await expect(page.getByRole('heading', { name: '商品目录卡' })).toBeVisible();
     await page.getByLabel('fieldKey', { exact: true }).fill('products');
     await page.getByLabel('显示名称（可选）', { exact: true }).fill('商品列表');
+    const requiredGroup = page.locator('.inspector-required-group');
+    await expect(requiredGroup.getByRole('button', { name: '可选' })).toHaveAttribute('aria-pressed', 'true');
+    await requiredGroup.getByRole('button', { name: '必填' }).click();
+    await expect(requiredGroup.getByRole('button', { name: '必填' })).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.getByText('RootDocument 必须出现')).toHaveCount(0);
     await page.getByLabel('字段类型').selectOption('array');
     await page.getByLabel('数组元素类型').selectOption('reference');
     await page.getByLabel('目标 schemaKey').fill('product-item');
     await page.getByRole('button', { name: 'StaticSchemaRef' }).click();
     await page.getByLabel('versionTag').fill('v1');
 
-    const inspectorLabels = await page.locator('.inspector-form-card label').allTextContents();
-    const typeLabelIndex = inspectorLabels.findIndex((label) => label.includes('字段类型'));
-    const requiredLabelIndex = inspectorLabels.findIndex((label) => label.includes('必填字段'));
-    const descriptionLabelIndex = inspectorLabels.findIndex((label) => label.includes('字段说明'));
-    expect(typeLabelIndex).toBeGreaterThan(-1);
-    expect(requiredLabelIndex).toBeGreaterThan(-1);
-    expect(typeLabelIndex).toBeLessThan(descriptionLabelIndex);
-    expect(requiredLabelIndex).toBeLessThan(descriptionLabelIndex);
+    const typeBox = await page.getByLabel('字段类型').boundingBox();
+    const requiredBox = await requiredGroup.boundingBox();
+    const descriptionBox = await page.getByLabel('字段说明（可选）').boundingBox();
+    expect(typeBox).not.toBeNull();
+    expect(requiredBox).not.toBeNull();
+    expect(descriptionBox).not.toBeNull();
+    expect(typeBox!.y).toBeLessThan(descriptionBox!.y);
+    expect(requiredBox!.y).toBeLessThan(descriptionBox!.y);
 
+    await page.getByRole('button', { name: '树状图', exact: true }).click();
     await expect(page.locator('.react-flow__node')).toHaveCount(3);
     await expect(page.locator('.map-detail-node')).toContainText('product-item@v1');
     await page.screenshot({ path: testInfo.outputPath('schema-studio-map-1280x720.png'), fullPage: true });
@@ -73,6 +80,7 @@ test.describe('production Schema Studio', () => {
     await expect(page).toHaveURL(/\/schemas\/new$/);
 
     await expectNoHorizontalOverflow(page);
+    await page.locator('.studio-inspector-heading').scrollIntoViewIfNeeded();
     await page.screenshot({ path: testInfo.outputPath('schema-studio-form-1280x720.png'), fullPage: true });
 
     await page.setViewportSize({ width: 1024, height: 768 });
@@ -108,11 +116,7 @@ test.describe('production Schema Studio', () => {
     });
 
     await page.goto('/schemas/large-schema');
-    await expect(page.getByRole('button', { name: '树状图', exact: true })).toHaveAttribute('aria-pressed', 'true');
-    await expect(page.locator('.react-flow__node')).toHaveCount(299);
-    await expect(page.locator('.studio-map-status')).toContainText('256 个字段');
-
-    await page.getByRole('button', { name: '表单', exact: true }).click();
+    await expect(page.getByRole('button', { name: '表单', exact: true })).toHaveAttribute('aria-pressed', 'true');
     await expect(page.locator('.studio-field-row')).toHaveCount(256);
     await expect(page.getByRole('button', { name: '已达到 256 个字段上限' })).toBeDisabled();
     await page.getByPlaceholder('搜索字段、说明或类型').fill('field-255');
