@@ -38,12 +38,22 @@ class EnvironmentCanaryTest {
                 .andExpect(jsonPath("$.service").value("renderweave-api"))
                 .andExpect(jsonPath("$.status").value("ready"))
                 .andExpect(jsonPath("$.database").value("ready"))
-                .andExpect(jsonPath("$.contractVersion").value("0.6.0"));
+                .andExpect(jsonPath("$.contractVersion").value("0.9.0"));
 
         Integer appliedMigrations = jdbcClient
                 .sql("select count(*) from flyway_schema_history where success = true")
                 .query(Integer.class)
                 .single();
-        assertThat(appliedMigrations).isGreaterThanOrEqualTo(1);
+        assertThat(appliedMigrations).isEqualTo(9);
+
+        Integer destructiveReservationLinks = jdbcClient
+                .sql("""
+                        select count(*)
+                        from pg_constraint
+                        where conname = 'inference_provider_reservation_run_id_fkey'
+                        """)
+                .query(Integer.class)
+                .single();
+        assertThat(destructiveReservationLinks).isZero();
     }
 }

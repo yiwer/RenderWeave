@@ -21,7 +21,7 @@ final class SystemStatusController {
         if (probe != 1) {
             throw new IllegalStateException("PostgreSQL readiness probe returned an unexpected value");
         }
-        return new SystemStatusResponse("renderweave-api", "ready", "ready", "0.6.0");
+        return new SystemStatusResponse("renderweave-api", "ready", "ready", "0.9.0");
     }
 
     record SystemStatusResponse(

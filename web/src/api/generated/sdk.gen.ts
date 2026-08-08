@@ -167,7 +167,7 @@ export const getLiveInferenceAvailability = <ThrowOnError extends boolean = fals
 /**
  * Queue a synthetic-only DashScope inference run
  *
- * Disabled by default. Enabling is a deployment authorization. Each external call first consumes one durable global reservation from the six-call and one-yuan canary budget.
+ * Disabled by default. Worker execution and arbitrary multipart upload require separate deployment authorizations. Each external call has a conservative pre-call cost bound and then consumes one durable global reservation from the six-call and one-yuan canary budget.
  */
 export const createLiveInferenceRun = <ThrowOnError extends boolean = false>(options: Options<CreateLiveInferenceRunData, ThrowOnError>): RequestResult<CreateLiveInferenceRunResponses, CreateLiveInferenceRunErrors, ThrowOnError> => (options.client ?? client).post<CreateLiveInferenceRunResponses, CreateLiveInferenceRunErrors, ThrowOnError>({
     ...formDataBodySerializer,
@@ -240,6 +240,8 @@ export const cancelInferenceRun = <ThrowOnError extends boolean = false>(options
 
 /**
  * Create a new run from retained normalized inputs of a failed or cancelled run
+ *
+ * Replay retries remain local. A retry of a live Profile requires the same independently enabled worker, multipart data-transfer authorization and provider credential as a new live run.
  */
 export const retryInferenceRun = <ThrowOnError extends boolean = false>(options: Options<RetryInferenceRunData, ThrowOnError>): RequestResult<RetryInferenceRunResponses, RetryInferenceRunErrors, ThrowOnError> => (options.client ?? client).post<RetryInferenceRunResponses, RetryInferenceRunErrors, ThrowOnError>({ url: '/api/v1/inference-runs/{runId}/retries', ...options });
 

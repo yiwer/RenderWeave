@@ -10,6 +10,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ProviderContractTest {
     private final InferenceProfileRegistry profiles = new InferenceProfileRegistry();
@@ -49,6 +50,48 @@ class ProviderContractTest {
         assertEquals(600L, ProviderCostEstimator.estimateMicrosCny(flash, new ProviderUsage(1_000, 500)));
         assertEquals(30_000L, ProviderCostEstimator.estimateMicrosCny(max, new ProviderUsage(1_000, 500)));
         assertEquals(0L, ProviderCostEstimator.estimateMicrosCny(max, new ProviderUsage(0, 0)));
+    }
+
+    @Test
+    void flashCostUsesTheOfficialInputLengthPricingTiers() {
+        var flash = profiles.require("dashscope-qwen37-flash-v1").profile();
+
+        assertEquals(6_480L,
+                ProviderCostEstimator.estimateMicrosCny(flash, new ProviderUsage(32_000, 100)));
+        assertEquals(19_441L,
+                ProviderCostEstimator.estimateMicrosCny(flash, new ProviderUsage(32_001, 100)));
+        assertEquals(307_682L,
+                ProviderCostEstimator.estimateMicrosCny(flash, new ProviderUsage(256_001, 100)));
+    }
+
+    @Test
+    void preCallCostBoundIncludesPromptTaskOutputAndConservativeVisionTokens() {
+        var max = profiles.require("dashscope-qwen38-max-v1").profile();
+        var bounded = new ProviderInferenceRequest(
+                UUID.fromString("00000000-0000-0000-0000-000000000002"),
+                0, InferenceStage.STRUCTURE, max, "Return JSON only.",
+                "{\"mode\":\"IMAGE_ONLY\"}",
+                List.of(new ProviderImage("b".repeat(64), "image/png", new byte[] {1}))
+        );
+        var oversized = new ProviderInferenceRequest(
+                UUID.fromString("00000000-0000-0000-0000-000000000003"),
+                0, InferenceStage.STRUCTURE, max, "Return JSON only.",
+                "x".repeat(100_000), List.of()
+        );
+
+        var boundedCost = ProviderCostEstimator.maximumRequestCostMicrosCny(bounded);
+        assertTrue(boundedCost > 0 && boundedCost <= max.maximumEstimatedCostMicrosCny());
+        assertTrue(ProviderCostEstimator.maximumRequestCostMicrosCny(oversized)
+                > max.maximumEstimatedCostMicrosCny());
+
+        var flash = profiles.require("dashscope-qwen37-flash-v1").profile();
+        var tieredFlash = new ProviderInferenceRequest(
+                UUID.fromString("00000000-0000-0000-0000-000000000004"),
+                0, InferenceStage.STRUCTURE, flash, "Return JSON only.",
+                "x".repeat(40_000), List.of()
+        );
+        assertTrue(ProviderCostEstimator.maximumRequestCostMicrosCny(tieredFlash)
+                > flash.maximumEstimatedCostMicrosCny());
     }
 
     @Test

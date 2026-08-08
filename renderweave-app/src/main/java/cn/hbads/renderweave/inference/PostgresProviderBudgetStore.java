@@ -31,6 +31,15 @@ public class PostgresProviderBudgetStore implements ProviderBudgetStore {
             Instant now
     ) {
         validateReservation(budgetKey, runId, attemptOrdinal, maximumCostMicrosCny, now);
+        jdbcClient.sql("""
+                        select run_id from inference_run
+                        where run_id = :runId
+                        for key share
+                        """)
+                .param("runId", runId)
+                .query(UUID.class)
+                .optional()
+                .orElseThrow(() -> new IllegalArgumentException("Unknown inference run"));
         var budget = jdbcClient.sql("""
                         select maximum_attempts, maximum_cost_micros_cny
                         from inference_provider_budget

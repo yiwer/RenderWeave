@@ -21,6 +21,10 @@ P4 只有零网络 `replay-v1`。旧规格预设 OpenAI Responses API 与 `store
 - Provider 页面只公开浮动模型 ID、未证明不可变 snapshot 时，评测结论绑定 Profile 版本、执行日期及 provider 返回的可用模型标识；模型行为变化使旧认证失效。
 - API Key 只读取 `DASHSCOPE_API_KEY`，不进入 Profile、数据库、UI、日志、异常或证据。
 - 当前 live J1 只允许仓库合成数据，最多 6 次 provider attempt、累计费用上限 ¥1。真实业务数据、扩大调用或预算均需新 J1。
+- worker 与任意 multipart 外传使用两个默认关闭的部署门；Provider credential 已配置不等于获得执行或数据外传权限。新建 live run、复制保留输入的 live retry 和 queued recovery 复用同一组 worker/upload/credential 门。已关闭授权下 Compose overlay 同时保持两个门为 false，避免领取历史队列。
+- 调用前使用 UTF-8 文本字节 + 2,048 framing tokens + 每图 1,024 visual tokens + Profile 最大输出 tokens 形成费用上界。千问默认视觉预算约 326 tokens/图，应用不启用最高 16,384 tokens/图的 `vl_high_resolution_images`，因此 1,024 是当前协议下的保守边界；Flash 再按官方 32K/256K 输入长度档使用 1x/3x/6x 输入与输出单价。计算结果超过 Profile 或全局剩余预算则不调用。依据：<https://platform.qianwenai.com/docs/developer-guides/run-and-scale/token-counting>、<https://platform.qianwenai.com/docs/developer-guides/getting-started/pricing>。
+- provider reservation 是不可由 run 删除级联抹除的账本；V009 以追加迁移移除 destructive FK，保留 immutable run UUID 审计值。reservation 事务先以 `FOR KEY SHARE` 验证 run 存在，提交后仍允许用户删除 run 与素材而不擦除费用。授权账本在实际 2 attempts / ¥0.054017 后标记 `CLOSED`，旧 canary 即使重新设置环境 gate 也会在网络前失败。
+- `Retry-After` 不再被忽略：当前策略是终止 run 并保留一次已预留 attempt，不做即时重试。以后若实现延迟重排，必须先有持久 `not-before` 状态及恢复测试。
 
 ## 备选方案
 

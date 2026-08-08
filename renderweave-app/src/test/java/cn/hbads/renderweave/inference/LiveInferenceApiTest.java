@@ -22,6 +22,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
+import org.springframework.boot.servlet.autoconfigure.MultipartProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
@@ -34,8 +35,12 @@ import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Random;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -47,6 +52,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Testcontainers
 @SpringBootTest(properties = {
         "renderweave.inference.live-enabled=true",
+        "renderweave.inference.live-upload-enabled=true",
         "renderweave.inference.live-poll-millis=60000",
         "renderweave.inference.blob-root=target/test-live-inference-api-blobs",
         "DASHSCOPE_API_KEY=",
@@ -69,20 +75,30 @@ class LiveInferenceApiTest {
     private InferenceRunStore runs;
 
     @Autowired
-    private ReplayFixtureInputFactory fixtures;
+    private MultipartProperties multipartProperties;
 
     @Autowired
     private tools.jackson.databind.ObjectMapper json;
 
     @BeforeEach
     void clearData() {
+        jdbcClient.sql("delete from inference_provider_reservation").update();
         jdbcClient.sql("delete from inference_run").update();
         jdbcClient.sql("delete from inference_artifact").update();
     }
 
     @Test
     void multipartSyntheticUploadQueuesRunsAndBackgroundWorkerProducesReview() throws Exception {
-        var imageBytes = fixtures.create("image-01-product-card", true).images().getFirst().bytes();
+        mockMvc.perform(get("/api/v1/inference-runs/live-availability"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.enabled").value(true))
+                .andExpect(jsonPath("$.configured").value(true))
+                .andExpect(jsonPath("$.uploadEnabled").value(true));
+
+        assertThat(multipartProperties.getMaxFileSize().toBytes()).isEqualTo(11L * 1024 * 1024);
+        assertThat(multipartProperties.getMaxRequestSize().toBytes()).isEqualTo(34L * 1024 * 1024);
+        var imageBytes = largeValidPng();
+        assertThat(imageBytes.length).isBetween(1024 * 1024 + 1, 10 * 1024 * 1024);
         var metadata = new MockMultipartFile(
                 "metadata", "metadata.json", MediaType.APPLICATION_JSON_VALUE,
                 """
@@ -115,6 +131,18 @@ class LiveInferenceApiTest {
                 .andExpect(jsonPath("$.jsonSampleCount").value(0));
         assertThat(jdbcClient.sql("select count(*) from inference_provider_reservation")
                 .query(Long.class).single()).isEqualTo(1);
+    }
+
+    private static byte[] largeValidPng() throws Exception {
+        var image = new BufferedImage(900, 900, BufferedImage.TYPE_INT_RGB);
+        var random = new Random(42L);
+        for (var y = 0; y < image.getHeight(); y++) {
+            for (var x = 0; x < image.getWidth(); x++) image.setRGB(x, y, random.nextInt());
+        }
+        try (var output = new ByteArrayOutputStream()) {
+            if (!ImageIO.write(image, "png", output)) throw new IllegalStateException("PNG writer unavailable");
+            return output.toByteArray();
+        }
     }
 
     @TestConfiguration(proxyBeanMethods = false)

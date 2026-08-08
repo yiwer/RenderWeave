@@ -93,7 +93,7 @@ class InferenceApplicationConfiguration {
             InferenceProvider provider,
             BlobStore blobStore,
             Clock inferenceClock,
-            @Value("${renderweave.inference.live-lease-seconds:300}") long leaseSeconds
+            @Value("${renderweave.inference.live-lease-seconds:600}") long leaseSeconds
     ) {
         return new LiveInferenceWorker(
                 runStore, replayStore, budgetStore, provider, blobStore,
@@ -104,9 +104,10 @@ class InferenceApplicationConfiguration {
     @Bean
     LiveInferenceCoordinator liveInferenceCoordinator(
             LiveInferenceWorker worker,
-            @Value("${renderweave.inference.live-enabled:false}") boolean enabled
+            @Value("${renderweave.inference.live-enabled:false}") boolean enabled,
+            @Value("${renderweave.inference.live-upload-enabled:false}") boolean uploadEnabled
     ) {
-        return new LiveInferenceCoordinator(worker, enabled);
+        return new LiveInferenceCoordinator(worker, enabled, uploadEnabled);
     }
 
     @Bean

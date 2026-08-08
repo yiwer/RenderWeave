@@ -8,6 +8,11 @@ spring:
   flyway:
     enabled: true
     placeholder-replacement: false
+  servlet:
+    multipart:
+      # Keep transport slightly above the authoritative 10 MiB item / 32 MiB batch limits.
+      max-file-size: 11MB
+      max-request-size: 34MB
   threads:
     virtual:
       enabled: true
@@ -29,5 +34,6 @@ renderweave:
   inference:
     blob-root: ${RENDERWEAVE_BLOB_ROOT:./var/renderweave/blobs}
     live-enabled: ${RENDERWEAVE_LIVE_AI_ENABLED:false}
-    live-lease-seconds: 300
+    live-upload-enabled: ${RENDERWEAVE_LIVE_UPLOAD_ENABLED:false}
+    live-lease-seconds: 600
     live-poll-millis: 2000

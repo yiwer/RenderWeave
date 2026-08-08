@@ -82,7 +82,7 @@ export function ResourceRail() {
       <div className="rail-divider" />
       <div className="rail-context-card system-contract-card">
         <span>接口版本</span>
-        <strong>0.8.0</strong>
+        <strong>0.9.0</strong>
         <small><Database aria-hidden="true" size={12} /> PostgreSQL · strict DSL</small>
       </div>
       <div className="rail-note">

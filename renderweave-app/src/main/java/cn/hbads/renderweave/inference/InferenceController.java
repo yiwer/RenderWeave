@@ -21,6 +21,7 @@ import cn.hbads.renderweave.inference.replay.ReplayInferenceWorker;
 import cn.hbads.renderweave.inference.run.InferenceRunService;
 import cn.hbads.renderweave.inference.run.InferenceRunSnapshot;
 import cn.hbads.renderweave.inference.run.InferenceRunStore;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.CacheControl;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -63,6 +64,7 @@ final class InferenceController {
     private final ReplayFixtureInputFactory fixtureInputs;
     private final BlobStore blobStore;
     private final ObjectMapper json;
+    private final boolean liveUploadsEnabled;
     private final CandidateJsonCodec candidateCodec = new CandidateJsonCodec();
     private final InferenceProfileRegistry profiles = new InferenceProfileRegistry();
     private final JsonStructuralProfiler structuralProfiler = new JsonStructuralProfiler();
@@ -79,7 +81,8 @@ final class InferenceController {
             CandidateApplyService applies,
             ReplayFixtureInputFactory fixtureInputs,
             BlobStore blobStore,
-            ObjectMapper json
+            ObjectMapper json,
+            @Value("${renderweave.inference.live-upload-enabled:false}") boolean liveUploadsEnabled
     ) {
         this.runService = runService;
         this.runStore = runStore;
@@ -93,6 +96,7 @@ final class InferenceController {
         this.fixtureInputs = fixtureInputs;
         this.blobStore = blobStore;
         this.json = json;
+        this.liveUploadsEnabled = liveUploadsEnabled;
     }
 
     @GetMapping("/replay-fixtures")
@@ -157,7 +161,7 @@ final class InferenceController {
                 ))
                 .toList();
         return new LiveAvailabilityResponse(
-                liveCoordinator.enabled(), provider.configured(), "SYNTHETIC_ONLY",
+                liveCoordinator.enabled(), provider.configured(), liveUploadsEnabled, "SYNTHETIC_ONLY",
                 budget.maximumAttempts(), budget.consumedAttempts(), budget.remainingAttempts(),
                 budget.maximumCostMicrosCny(), budget.consumedCostMicrosCny(),
                 budget.remainingCostMicrosCny(), items
@@ -174,12 +178,7 @@ final class InferenceController {
         if (idempotencyKey == null || idempotencyKey.isBlank()) {
             throw new InvalidInferenceApiRequestException("Idempotency-Key is required");
         }
-        if (!liveCoordinator.enabled()) {
-            throw new InvalidInferenceApiRequestException("Live inference is disabled by deployment policy");
-        }
-        if (!provider.configured()) {
-            throw new InvalidInferenceApiRequestException("DashScope credential is not configured");
-        }
+        requireLiveAuthorization();
         if (!"SYNTHETIC".equals(request.inputClassification())) {
             throw new InvalidInferenceApiRequestException("Only repository synthetic inputs are authorized");
         }
@@ -240,9 +239,7 @@ final class InferenceController {
         var source = runStore.find(runId)
                 .orElseThrow(() -> new cn.hbads.renderweave.inference.run.InferenceRunNotFoundException(runId));
         var live = profiles.parseSnapshot(source.profileSnapshotJson()).networkAllowed();
-        if (live && (!liveCoordinator.enabled() || !provider.configured())) {
-            throw new InvalidInferenceApiRequestException("Live inference is not currently available");
-        }
+        if (live) requireLiveAuthorization();
         var retried = runService.retry(runId, idempotencyKey);
         var run = retried.run();
         if (retried.created()) {
@@ -256,6 +253,25 @@ final class InferenceController {
                 .status(retried.created() ? 201 : 200)
                 .location(URI.create("/api/v1/inference-runs/" + run.runId()))
                 .body(toRunResponse(run));
+    }
+
+    private void requireLiveAuthorization() {
+        if (!liveCoordinator.enabled()) {
+            throw new LiveInferenceUnavailableException(
+                    "LIVE_INFERENCE_DISABLED", "Live inference is disabled by deployment policy"
+            );
+        }
+        if (!liveUploadsEnabled) {
+            throw new LiveInferenceUnavailableException(
+                    "LIVE_UPLOAD_NOT_AUTHORIZED",
+                    "Arbitrary live uploads require a separate data-transfer authorization"
+            );
+        }
+        if (!provider.configured()) {
+            throw new LiveInferenceUnavailableException(
+                    "DASHSCOPE_NOT_CONFIGURED", "DashScope credential is not configured"
+            );
+        }
     }
 
     @GetMapping(path = "/{runId}/events", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
@@ -500,6 +516,7 @@ final class InferenceController {
     record LiveAvailabilityResponse(
             boolean enabled,
             boolean configured,
+            boolean uploadEnabled,
             String inputClassification,
             int maximumAttempts,
             int consumedAttempts,

@@ -56,6 +56,7 @@ class PostgresProviderBudgetStoreTest {
 
     @BeforeEach
     void clearData() {
+        jdbcClient.sql("delete from inference_provider_reservation").update();
         jdbcClient.sql("delete from inference_run").update();
         jdbcClient.sql("delete from inference_artifact").update();
         jdbcClient.sql("""
@@ -142,6 +143,27 @@ class PostgresProviderBudgetStoreTest {
         assertThat(outcomes).filteredOn(ProviderBudgetReservation.class::isInstance).hasSize(1);
         assertThat(outcomes).filteredOn(ProviderBudgetExceededException.class::isInstance).hasSize(1);
         assertThat(budgets.snapshot(BUDGET).consumedAttempts()).isEqualTo(1);
+    }
+
+    @Test
+    void consumedAuthorizationCannotBeErasedByDeletingItsRun() {
+        var runId = createRun("dashscope-qwen37-flash-v1", "monotonic-budget");
+        budgets.reserve(BUDGET, runId, 0, 20_000, T0);
+
+        runs.delete(runId);
+
+        assertThat(runs.find(runId)).isEmpty();
+        assertThat(budgets.snapshot(BUDGET).consumedAttempts()).isEqualTo(1);
+        assertThat(budgets.snapshot(BUDGET).consumedCostMicrosCny()).isEqualTo(20_000);
+    }
+
+    @Test
+    void reservationRequiresAnExistingRun() {
+        assertThatThrownBy(() -> budgets.reserve(
+                BUDGET, UUID.fromString("00000000-0000-0000-0000-000000000099"), 0, 20_000, T0
+        )).isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Unknown inference run");
+        assertThat(budgets.snapshot(BUDGET).consumedAttempts()).isZero();
     }
 
     private UUID createRun(String profileId, String seed) {

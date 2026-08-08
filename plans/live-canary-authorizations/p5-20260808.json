@@ -1,0 +1,12 @@
+{
+  "authorizationId": "p5-20260808-dashscope-synthetic",
+  "status": "CLOSED",
+  "provider": "DASHSCOPE",
+  "maximumAttempts": 6,
+  "maximumCostMicrosCny": 1000000,
+  "consumedAttempts": 2,
+  "consumedCostMicrosCny": 54017,
+  "inputClassification": "REPOSITORY_SYNTHETIC_ONLY",
+  "closedAt": "2026-08-08T11:42:57.809202600Z",
+  "evidence": ".sdlc/evidence/20260808-114257-p5-live-canary/summary.json"
+}

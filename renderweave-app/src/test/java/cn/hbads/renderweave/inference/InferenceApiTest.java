@@ -185,6 +185,7 @@ class InferenceApiTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.enabled").value(false))
                 .andExpect(jsonPath("$.configured").value(false))
+                .andExpect(jsonPath("$.uploadEnabled").value(false))
                 .andExpect(jsonPath("$.maximumAttempts").value(6))
                 .andExpect(jsonPath("$.maximumCostMicrosCny").value(1_000_000))
                 .andExpect(jsonPath("$.profiles.length()").value(2))
@@ -208,8 +209,8 @@ class InferenceApiTest {
         mockMvc.perform(multipart("/api/v1/inference-runs/live")
                         .file(metadata).file(image)
                         .header("Idempotency-Key", "disabled-live-upload"))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(jsonPath("$.code").value("LIVE_INFERENCE_DISABLED"));
         assertThat(count("inference_run")).isZero();
         assertThat(count("inference_provider_reservation")).isZero();
     }

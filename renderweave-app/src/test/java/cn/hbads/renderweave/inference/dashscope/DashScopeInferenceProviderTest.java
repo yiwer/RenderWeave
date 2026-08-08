@@ -1,5 +1,6 @@
 package cn.hbads.renderweave.inference.dashscope;
 
+import com.sun.net.httpserver.HttpServer;
 import cn.hbads.renderweave.inference.profile.InferenceProfileRegistry;
 import cn.hbads.renderweave.inference.profile.InferencePromptRegistry;
 import cn.hbads.renderweave.inference.provider.ProviderCallException;
@@ -11,6 +12,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import tools.jackson.databind.json.JsonMapper;
 
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -26,7 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class DashScopeInferenceProviderTest {
-    private static final String TEST_KEY = "sk-ws-contract-test-value";
+    private static final String TEST_KEY = "sk-test-renderweave-placeholder";
     private final InferenceProfileRegistry profiles = new InferenceProfileRegistry();
     private final InferencePromptRegistry prompts = new InferencePromptRegistry();
 
@@ -112,6 +116,59 @@ class DashScopeInferenceProviderTest {
         assertEquals(Duration.ofSeconds(2), failure.retryAfter().orElseThrow());
         assertFalse(failure.getMessage().contains(TEST_KEY));
         assertFalse(failure.getMessage().contains("upstream body"));
+    }
+
+    @Test
+    void httpDateRetryAfterStillProducesAFailClosedPresenceSignal() {
+        var transport = new CapturingTransport(new DashScopeHttpResponse(
+                429, Map.of("Retry-After", List.of("Sat, 08 Aug 2026 12:00:00 GMT")),
+                new byte[0]
+        ));
+        var provider = new DashScopeInferenceProvider(
+                Optional.of(DashScopeApiKey.fromValue(TEST_KEY)), transport, JsonMapper.builder().build()
+        );
+        var profile = profiles.require("dashscope-qwen37-flash-v1").profile();
+
+        var failure = assertThrows(ProviderCallException.class, () -> provider.complete(
+                new ProviderInferenceRequest(
+                        UUID.randomUUID(), 0, InferenceStage.STRUCTURE, profile,
+                        prompts.require(profile.promptVersion()).text(), "{}", List.of()
+                )
+        ));
+
+        assertTrue(failure.retryAfter().isPresent());
+        assertEquals(Duration.ofMinutes(5), failure.retryAfter().orElseThrow());
+    }
+
+    @Test
+    void jdkTransportBoundsTheResponseWhileItIsBeingRead() throws Exception {
+        var responseBytes = 3 * 1024 * 1024 + 2;
+        var server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        server.createContext("/", exchange -> {
+            exchange.sendResponseHeaders(200, responseBytes);
+            try (var output = exchange.getResponseBody()) {
+                var chunk = new byte[16 * 1024];
+                var remaining = responseBytes;
+                while (remaining > 0) {
+                    var length = Math.min(remaining, chunk.length);
+                    output.write(chunk, 0, length);
+                    remaining -= length;
+                }
+            } catch (IOException ignored) {
+                // Expected when the bounded client closes before the oversized body is exhausted.
+            }
+        });
+        server.start();
+        try {
+            var failure = assertThrows(ProviderCallException.class, () ->
+                    new JdkDashScopeHttpTransport().exchange(
+                            URI.create("http://127.0.0.1:" + server.getAddress().getPort() + "/"),
+                            Map.of(), new byte[0], Duration.ofSeconds(5)
+                    ));
+            assertEquals("DASHSCOPE_RESPONSE_TOO_LARGE", failure.code());
+        } finally {
+            server.stop(0);
+        }
     }
 
     @Test

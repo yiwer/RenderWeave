@@ -178,12 +178,15 @@ public final class DashScopeInferenceProvider implements InferenceProvider {
                 .flatMap(entry -> entry.getValue().stream())
                 .findFirst()
                 .flatMap(value -> {
+                    if (value == null || value.isBlank()) return Optional.empty();
                     try {
-                        var seconds = Long.parseLong(value);
-                        if (seconds < 0 || seconds > 300) return Optional.empty();
-                        return Optional.of(Duration.ofSeconds(seconds));
+                        var seconds = Long.parseLong(value.trim());
+                        if (seconds < 0) return Optional.of(Duration.ofMinutes(5));
+                        return Optional.of(Duration.ofSeconds(Math.min(seconds, 300)));
                     } catch (NumberFormatException ignored) {
-                        return Optional.empty();
+                        // HTTP-date is also valid Retry-After. The worker only needs a durable
+                        // presence signal and fails closed instead of performing an immediate retry.
+                        return Optional.of(Duration.ofMinutes(5));
                     }
                 });
     }

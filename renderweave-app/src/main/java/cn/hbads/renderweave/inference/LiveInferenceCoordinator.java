@@ -11,20 +11,26 @@ import java.util.concurrent.atomic.AtomicLong;
 final class LiveInferenceCoordinator {
     private final LiveInferenceWorker worker;
     private final boolean enabled;
+    private final boolean uploadEnabled;
     private final Semaphore lanes = new Semaphore(2);
     private final AtomicLong workerSequence = new AtomicLong();
 
-    LiveInferenceCoordinator(LiveInferenceWorker worker, boolean enabled) {
+    LiveInferenceCoordinator(LiveInferenceWorker worker, boolean enabled, boolean uploadEnabled) {
         this.worker = Objects.requireNonNull(worker, "worker");
         this.enabled = enabled;
+        this.uploadEnabled = uploadEnabled;
     }
 
     boolean enabled() {
         return enabled;
     }
 
+    boolean dispatchEnabled() {
+        return enabled && uploadEnabled;
+    }
+
     void kick() {
-        if (!enabled || !lanes.tryAcquire()) return;
+        if (!dispatchEnabled() || !lanes.tryAcquire()) return;
         Thread.startVirtualThread(() -> {
             try {
                 var workerId = "live-worker-" + workerSequence.incrementAndGet();

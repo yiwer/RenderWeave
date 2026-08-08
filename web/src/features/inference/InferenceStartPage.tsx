@@ -203,7 +203,8 @@ function LiveLauncher({
   const [experimentalConfirmed, setExperimentalConfirmed] = useState(false);
   const profile = query.data?.profiles.find((item) => item.profileId === profileId);
   const modeReady = (mode === 'JSON_ONLY' || images.length > 0) && (mode === 'IMAGE_ONLY' || jsonSamples.length > 0);
-  const available = Boolean(query.data?.enabled && query.data.configured
+  const uploadAuthorized = Boolean(query.data?.uploadEnabled);
+  const available = Boolean(query.data?.enabled && query.data.configured && uploadAuthorized
     && query.data.remainingAttempts > 0 && query.data.remainingCostMicrosCny > 0);
   const createRun = useMutation({
     mutationFn: () => createLiveRunRequest(profileId, mode, images, jsonSamples, crypto.randomUUID()),
@@ -226,7 +227,12 @@ function LiveLauncher({
           {!available && (
             <section className="live-policy-notice" role="status">
               <ShieldCheck aria-hidden="true" size={18} />
-              <div><strong>部署策略尚未开放真实调用</strong><span>需要同时配置密钥并设置 RENDERWEAVE_LIVE_AI_ENABLED=true；上传与预览本身不会触发模型。</span></div>
+              <div>
+                <strong>{!uploadAuthorized ? '当前授权未开放任意文件外传' : '部署策略尚未开放真实调用'}</strong>
+                <span>{!uploadAuthorized
+                  ? '真实通路已由仓库合成 canary 验证；任意 multipart 上传需要新的数据范围授权。选择文件不会上传或触发模型。'
+                  : '需要同时配置密钥并设置 RENDERWEAVE_LIVE_AI_ENABLED=true；上传与预览本身不会触发模型。'}</span>
+              </div>
             </section>
           )}
 
@@ -255,7 +261,7 @@ function LiveLauncher({
                     title="设计图"
                     description="PNG / JPEG，最多 10 张"
                     accept="image/png,image/jpeg"
-                    disabled={mode === 'JSON_ONLY'}
+                    disabled={!uploadAuthorized || mode === 'JSON_ONLY'}
                     files={images}
                     onFiles={(files) => { setImages(files.slice(0, 10)); setTransferConfirmed(false); }}
                   />
@@ -263,7 +269,7 @@ function LiveLauncher({
                     title="JSON 样本"
                     description="仅用于生成无值结构摘要，最多 20 份"
                     accept="application/json,.json"
-                    disabled={mode === 'IMAGE_ONLY'}
+                    disabled={!uploadAuthorized || mode === 'IMAGE_ONLY'}
                     files={jsonSamples}
                     onFiles={(files) => { setJsonSamples(files.slice(0, 20)); setTransferConfirmed(false); }}
                   />

@@ -80,7 +80,7 @@ $env:DASHSCOPE_API_KEY = '<仅设置在当前终端，不写入仓库>'
 docker compose -f compose.yaml -f compose.live.yaml up --build
 ```
 
-overlay 通过 Compose secret 向 API 容器只读挂载 Key，并显式设置 `RENDERWEAVE_LIVE_AI_ENABLED=true`。浏览器端不会接触 Key。当前 P5 Profile 只允许合成数据，页面还会要求用户分别确认外部传输与实验性结果审核。
+overlay 仅通过 Compose secret 向 API 容器只读挂载 Key，浏览器端不会接触 Key。当前限定授权已关闭，因此 overlay 明确保持 `RENDERWEAVE_LIVE_AI_ENABLED=false` 与 `RENDERWEAVE_LIVE_UPLOAD_ENABLED=false`：不会领取历史队列，也不会外传任意 multipart 文件；页面仍可查看 Provider/Profile 与安全状态。以后恢复 worker 或开放上传必须获得新的调用及数据范围授权，并分别变更两个策略开关。
 
 2026-08-08 的受控 synthetic canary 已实际连通两个 Profile：各 1 次调用、合计 2 次、估算费用 ¥0.054017；两条 Candidate 均进入 `REVIEW_REQUIRED` 并通过对应结构金标。该结果只证明真实闭环，不是 60-case 质量认证；两个 Profile 仍保持 `EXPERIMENTAL` 和默认关闭。
 

@@ -202,11 +202,15 @@ public final class LiveInferenceWorker {
         }
         if (!provider.configured()) throw new ProviderNotConfiguredException("DASHSCOPE_NOT_CONFIGURED");
 
+        var request = request(current, profile, checkpoint, attemptOrdinal);
+        var maximumRequestCost = ProviderCostEstimator.maximumRequestCostMicrosCny(request);
+        if (maximumRequestCost > profile.maximumEstimatedCostMicrosCny()) {
+            throw new ProviderBudgetExceededException("PROVIDER_REQUEST_COST_BOUND_EXCEEDED");
+        }
         var reservation = budgetStore.reserve(
                 CANARY_BUDGET_KEY, current.runId(), attemptOrdinal,
-                profile.maximumEstimatedCostMicrosCny(), clock.instant()
+                maximumRequestCost, clock.instant()
         );
-        var request = request(current, profile, checkpoint, attemptOrdinal);
         var started = System.nanoTime();
         final ProviderInferenceResponse response;
         try {
@@ -222,6 +226,11 @@ public final class LiveInferenceWorker {
                     ),
                     now
             );
+            if (failure.retryable() && failure.retryAfter().isPresent()) {
+                return runStore.fail(
+                        current.runId(), token(recorded), "DASHSCOPE_RETRY_AFTER", clock.instant()
+                );
+            }
             if (failure.retryable() && attemptOrdinal + 1 < profile.maximumTotalCalls()) return recorded;
             return runStore.fail(current.runId(), token(recorded), failure.code(), clock.instant());
         }

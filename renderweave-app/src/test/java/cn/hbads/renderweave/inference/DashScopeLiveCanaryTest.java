@@ -82,6 +82,7 @@ class DashScopeLiveCanaryTest {
 
     @Test
     void twoModelsRunAgainstRepositorySyntheticGoldWithinTheAuthorizedGlobalBudget() throws Exception {
+        requireOpenAuthorization();
         jdbcClient.sql("delete from inference_run").update();
         jdbcClient.sql("delete from inference_artifact").update();
         var cases = List.of(
@@ -158,6 +159,22 @@ class DashScopeLiveCanaryTest {
         Files.createDirectories(directory);
         Files.writeString(directory.resolve("summary.json"),
                 json.writerWithDefaultPrettyPrinter().writeValueAsString(summary));
+    }
+
+    private void requireOpenAuthorization() throws Exception {
+        var ledger = repositoryRoot().resolve("plans").resolve("live-canary-authorizations")
+                .resolve("p5-20260808.json");
+        var authorization = json.readTree(Files.readString(ledger));
+        if (!"OPEN".equals(authorization.path("status").asText())) {
+            throw new IllegalStateException("LIVE_CANARY_AUTHORIZATION_CLOSED");
+        }
+        if (authorization.path("maximumAttempts").asInt() > 6
+                || authorization.path("maximumCostMicrosCny").asLong() > 1_000_000L
+                || !"REPOSITORY_SYNTHETIC_ONLY".equals(
+                        authorization.path("inputClassification").asText()
+                )) {
+            throw new IllegalStateException("LIVE_CANARY_AUTHORIZATION_INVALID");
+        }
     }
 
     private static Path repositoryRoot() {

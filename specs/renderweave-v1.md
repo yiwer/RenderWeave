@@ -458,8 +458,10 @@ QUEUED → RUNNING → REVIEW_REQUIRED → APPLYING → COMPLETED
 - 不伪造 `store:false` 等跨 provider 语义；只有 DashScope 官方协议明确支持且合同测试覆盖的 retention 参数才发送。应用自身不持久化完整 provider request/response。
 - 不保存 chain-of-thought。完整 provider I/O 只在受控 Run storage 政策允许时保存，常规日志永不包含。
 - 应用可在无 API Key/无 certified Profile 时启动；确定性功能正常，AI 创建返回稳定 NOT_CONFIGURED/NOT_CERTIFIED problem。
-- 上传/预览不调用模型。每次开始前明确展示 provider/model/profile、输入范围、费用上界和外部传输提示，由用户点击启动。
-- 当前 P5 live 授权只覆盖仓库合成数据、全局最多 6 次 provider attempt、累计费用上限 ¥1；retry/repair 也计 attempt 和费用，耗尽即安全停止。真实业务数据需要新的逐次 J1。
+- 上传授权与 live worker 授权是两个独立的部署门，均默认关闭；配置 Key 或选择/预览文件都不会调用模型。新建 live run、复制历史输入的 live retry 以及 queued recovery 必须经过同一组 worker/upload/credential 门。每次开始前明确展示 provider/model/profile、输入范围、费用上界和外部传输提示，由用户点击启动。
+- 每个不可逆 provider call 之前，按 UTF-8 文本字节、消息 framing、默认非高分辨率视觉 token 上界及 Profile 最大输出 token 计算保守费用上界，并按 Flash 的 32K/256K 输入长度阶梯同步提高输入与输出单价；超过单 Profile 或全局剩余预算时零调用失败。reservation 是追加式费用账本：创建时以行锁验证 run 存在，此后保留 immutable run UUID 审计值且不随 run 删除；provider 返回实际 usage 后只允许向不超过预留的值结算。
+- 当前 P5 live 授权只覆盖仓库合成数据、全局最多 6 次 provider attempt、累计费用上限 ¥1；retry/repair 也计 attempt 和费用，耗尽即安全停止。该授权在 2 次 canary 后已关闭，versioned authorization ledger 阻止旧测试被再次运行；真实业务数据、重新启用 worker/upload 或任何新增调用都需要新的逐次 J1。
+- Provider 返回 `Retry-After` 时本次 run 安全失败，不做无视服务端窗口的即时重试；人工或调度恢复必须形成新的明确授权边界。
 
 ### 8.8 AI 质量发布门槛
 

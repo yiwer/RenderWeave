@@ -8,7 +8,7 @@ export type SystemStatus = {
     service: 'renderweave-api';
     status: 'ready';
     database: 'ready';
-    contractVersion: '0.6.0';
+    contractVersion: '0.9.0';
 };
 
 export type CreateDraftRequest = {
@@ -340,6 +340,10 @@ export type CreateLiveRunRequest = {
 export type LiveAvailabilityResponse = {
     enabled: boolean;
     configured: boolean;
+    /**
+     * False until arbitrary synthetic multipart transfer receives separate deployment authorization.
+     */
+    uploadEnabled: boolean;
     inputClassification: 'SYNTHETIC_ONLY';
     maximumAttempts: 6;
     consumedAttempts: number;
@@ -1322,7 +1326,7 @@ export type ValidateRootDocumentsErrors = {
      */
     404: Problem;
     /**
-     * One RootDocument, the aggregate batch or the transport body exceeds its byte budget.
+     * A RootDocument batch or inference multipart body exceeds its transport byte budget.
      */
     413: Problem;
     /**
@@ -1412,9 +1416,17 @@ export type CreateLiveInferenceRunErrors = {
      */
     400: Problem;
     /**
+     * The deployment policy has not authorized this external-data operation.
+     */
+    403: Problem;
+    /**
      * Natural identity or expected revision conflicts with current state.
      */
     409: Problem;
+    /**
+     * A RootDocument batch or inference multipart body exceeds its transport byte budget.
+     */
+    413: Problem;
     /**
      * The complete RenderWeave definition is not valid and nothing was written.
      */
@@ -1423,6 +1435,10 @@ export type CreateLiveInferenceRunErrors = {
      * RFC 9457 problem response.
      */
     500: Problem;
+    /**
+     * Live inference is disabled or its provider credential is not configured.
+     */
+    503: Problem;
 };
 
 export type CreateLiveInferenceRunError = CreateLiveInferenceRunErrors[keyof CreateLiveInferenceRunErrors];
@@ -1685,6 +1701,10 @@ export type RetryInferenceRunErrors = {
      */
     400: Problem;
     /**
+     * The deployment policy has not authorized this external-data operation.
+     */
+    403: Problem;
+    /**
      * The requested Draft does not exist.
      */
     404: Problem;
@@ -1696,6 +1716,10 @@ export type RetryInferenceRunErrors = {
      * RFC 9457 problem response.
      */
     500: Problem;
+    /**
+     * Live inference is disabled or its provider credential is not configured.
+     */
+    503: Problem;
 };
 
 export type RetryInferenceRunError = RetryInferenceRunErrors[keyof RetryInferenceRunErrors];

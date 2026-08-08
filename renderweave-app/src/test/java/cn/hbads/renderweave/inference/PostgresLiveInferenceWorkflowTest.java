@@ -21,6 +21,7 @@ import cn.hbads.renderweave.inference.profile.InferenceProfileRegistry;
 import cn.hbads.renderweave.inference.provider.InferenceProvider;
 import cn.hbads.renderweave.inference.provider.ProviderBudgetStore;
 import cn.hbads.renderweave.inference.provider.ProviderCallException;
+import cn.hbads.renderweave.inference.provider.ProviderCostEstimator;
 import cn.hbads.renderweave.inference.provider.ProviderInferenceRequest;
 import cn.hbads.renderweave.inference.provider.ProviderInferenceResponse;
 import cn.hbads.renderweave.inference.provider.ProviderUsage;
@@ -83,6 +84,7 @@ class PostgresLiveInferenceWorkflowTest {
 
     @BeforeEach
     void clearData() {
+        jdbcClient.sql("delete from inference_provider_reservation").update();
         jdbcClient.sql("delete from inference_run").update();
         jdbcClient.sql("delete from inference_artifact").update();
     }
@@ -160,7 +162,29 @@ class PostgresLiveInferenceWorkflowTest {
                 .isEqualTo("DASHSCOPE_NETWORK_ERROR");
         var budget = budgets.snapshot(LiveInferenceWorker.CANARY_BUDGET_KEY);
         assertThat(budget.consumedAttempts()).isEqualTo(2);
-        assertThat(budget.consumedCostMicrosCny()).isEqualTo(20_600);
+        assertThat(budget.consumedCostMicrosCny()).isEqualTo(
+                ProviderCostEstimator.maximumRequestCostMicrosCny(provider.requests.getFirst()) + 600
+        );
+    }
+
+    @Test
+    void retryAfterFailsSafelyWithoutAnImmediateSecondProviderCall() {
+        var blobs = new MemoryBlobStore();
+        var created = create(blobs, "live-retry-after");
+        var provider = new ScriptedProvider(request -> {
+            throw new ProviderCallException(
+                    "DASHSCOPE_HTTP_429", true, 429,
+                    Optional.of(Duration.ofSeconds(30)), null
+            );
+        });
+
+        var finished = worker(provider, blobs).processNext("live-retry-after-worker").orElseThrow();
+
+        assertThat(finished.state()).isEqualTo(InferenceRunState.FAILED);
+        assertThat(finished.failureCode()).contains("DASHSCOPE_RETRY_AFTER");
+        assertThat(provider.requests).hasSize(1);
+        assertThat(workflowStore.attempts(created)).hasSize(1);
+        assertThat(budgets.snapshot(LiveInferenceWorker.CANARY_BUDGET_KEY).consumedAttempts()).isEqualTo(1);
     }
 
     @Test

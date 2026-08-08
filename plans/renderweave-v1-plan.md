@@ -1,10 +1,10 @@
 # RenderWeave v1 Phase 计划
 
-- 状态：P1–P4 implementation complete；P5 T5-1/T5-2/T5-3 评测合同 automated-verified（A1），T5-4 限定 synthetic live canary 已通过；Profile certification 未完成
+- 状态：P1–P4 implementation complete；P5 T5-1–T5-4 已完成实现、限定 live canary 与安全硬化，P5 safety 独立复核通过（A2）；T5-5 已决定两个 Profile 继续 `EXPERIMENTAL`，质量认证未完成
 - 日期：2026-08-08
 - Spec：[`specs/renderweave-v1.md`](../specs/renderweave-v1.md)
 - 原型：`/prototype/schema-studio?variant=A|B|C`
-- 当前 lifecycle：P0 `accepted`；P1–P4 `automated_verified`；P5 `live_canary_verified` / `certification_incomplete`
+- 当前 lifecycle：P0 `accepted`；P1–P4 `automated_verified`；P5 `live_canary_verified` / `safety_independently_reviewed` / `certification_incomplete`
 
 ## 1. 四维执行配置
 
@@ -12,10 +12,10 @@
 规模：project
 自主：auto（P1–P4 确定性、可逆任务）；P5 guarded
 风险：standard；P5 live AI、真实数据、恢复/发布操作局部 guarded
-协作：single
+协作：single-writer；P5 safety 使用独立只读 reviewer
 ```
 
-理由：v1 是多里程碑产品，需要跨会话维护 DSL、API、数据库和 Web 一致性。当前本地 gate 可提供 A1，但没有独立 verifier/CI A2、外部 hard gate A3 或 production permission。单写入者避免无 atomic claim 的伪并发。
+理由：v1 是多里程碑产品，需要跨会话维护 DSL、API、数据库和 Web 一致性。本地 gate 提供 A1；P5 live safety 已获得一次范围明确的独立 A2，但完整质量评测仍没有 A2，仓库也没有外部 CI hard gate A3 或 production permission。单写入者维护代码，独立 reviewer 只读复核高风险边界。
 
 ## 2. Phase 增量
 
@@ -249,6 +249,7 @@ Phase 内任务只在真实前置依赖满足时并行。当前没有 atomic cla
 ### P5 — Guarded provider and quality certification
 
 #### T5-1：DashScope provider-neutral port、Chat Completions adapter contract 与 versioned Profile
+- 执行状态：`automated_verified`（A1；纳入 P5 safety A2 复核）
 - AC：AC-020
 - 依赖：P4
 - 影响区域：provider adapter/profile resources/config
@@ -258,6 +259,7 @@ Phase 内任务只在真实前置依赖满足时并行。当前没有 atomic cla
 - 完成信号：默认无 key/网络仍全绿，tool surface 不扩张
 
 #### T5-2：真实上传、durable live worker 与审核 UI 纵切
+- 执行状态：`automated_verified`（A1；纳入 P5 safety A2 复核）
 - AC：AC-015, AC-018, AC-019, AC-020
 - 依赖：T5-1
 - 影响区域：input API、provider worker、attempt telemetry、OpenAPI/SDK、Inference UI
@@ -267,6 +269,7 @@ Phase 内任务只在真实前置依赖满足时并行。当前没有 atomic cla
 - 完成信号：上传不触网；显式 synthetic/external-transfer confirmation 才启动；Candidate 进入既有逐项审核/create-only 路径
 
 #### T5-3：60-case gold corpus、metrics 与 holdout runner
+- 执行状态：`automated_verified`（A1；仅评测合同与 replay，未完成 60-case live quality A2）
 - AC：AC-016, AC-021
 - 依赖：T4-2, T5-1
 - 影响区域：eval fixtures/runner/reports
@@ -276,6 +279,7 @@ Phase 内任务只在真实前置依赖满足时并行。当前没有 atomic cla
 - 完成信号：global/mode/holdout results reproducible and version-bound
 
 #### T5-4：限定预算的双模型 synthetic live canary
+- 执行状态：`live_canary_verified`（J1 + A1；2 attempts / ¥0.054017，授权账本已关闭）
 - AC：AC-015, AC-020
 - 依赖：T5-2, T5-3；J1 provider/cost/data authorization
 - 影响区域：external DashScope side effect only
@@ -285,13 +289,14 @@ Phase 内任务只在真实前置依赖满足时并行。当前没有 atomic cla
 - 完成信号：只证明通路；不把 canary PASS 冒充 model quality PASS
 
 #### T5-5：Profile certification decision
+- 执行状态：`decision_recorded`（P5 safety A2 PASS；quality certification incomplete；`plans/logs/P5-T5-5.md`）
 - AC：AC-021
 - 依赖：T5-3, T5-4
 - 影响区域：profile registry/release evidence
 - 局部验证：independent full + holdout evaluation
 - 回归升级：任何 profile identity change invalidates evidence
 - 证据保证：A2 + policy J1
-- 完成信号：明确 certified 或 experimental，失败时 AI default remains disabled
+- 完成信号：已明确两个 Profile 均为 `EXPERIMENTAL`，AI default remains disabled；后续认证需新的 J1 与独立 60-case/holdout A2
 
 ### P6 — Release candidate
 
@@ -358,5 +363,6 @@ Phase 内任务只在真实前置依赖满足时并行。当前没有 atomic cla
 2. P1–P4 的 standard、可逆任务已连续执行完成；T4-4 通过 server/web/mocked-browser/real-PG-browser affected gates（A1），P4 恢复点为已验证节点提交。
 3. 生产 UI 锁定为 A 默认 Form + B Map，共享 EditorSession；吸收 C 的 compiled preview、搜索、密度与可读性特征，不保留 C 为第三模式。
 4. P5 获得的一次限定 J1 已用于仓库 synthetic 双模型 canary：2 次 attempt、¥0.054017、无真实业务数据；unused budget 不自动扩展为后续调用授权。
-5. release hard gate 尚无外部 CI/branch protection，因此不存在 A3。
-6. P5 真实通路已证明，但 2/60 小样本不是质量认证；两个 Profile 继续为 experimental、默认关闭。完整 60-case live 评测、真实业务数据、扩大费用或生产启用仍需新的 J1 与独立 A2。
+5. P5 live safety hardening 已由独立只读 reviewer 复核为 A2 PASS；范围只包括本节点授权、预算、重试、上传/响应上限、迁移账本和合同闭环，不涵盖完整质量认证。release hard gate 尚无外部 CI/branch protection，因此不存在 A3。
+6. 授权账本已关闭，Compose live overlay 的 worker/upload 两门均保持 false；任何新增调用不得继承未使用的 attempt 或预算。
+7. P5 真实通路已证明，但 2/60 小样本不是质量认证；两个 Profile 继续为 `EXPERIMENTAL`、默认关闭。完整 60-case live 评测、真实业务数据、扩大费用或生产启用仍需新的 J1 与独立 A2。

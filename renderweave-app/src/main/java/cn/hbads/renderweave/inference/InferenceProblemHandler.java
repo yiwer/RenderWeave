@@ -18,12 +18,35 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 import java.util.List;
 import java.util.UUID;
 
 @RestControllerAdvice
 final class InferenceProblemHandler {
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    ResponseEntity<ApiProblem> payloadTooLarge(
+            MaxUploadSizeExceededException exception,
+            HttpServletRequest request
+    ) {
+        return problem(HttpStatus.PAYLOAD_TOO_LARGE, "Inference payload too large",
+                "INFERENCE_PAYLOAD_TOO_LARGE",
+                "The multipart payload exceeds the bounded inference transport limit.",
+                request, null, null);
+    }
+
+    @ExceptionHandler(LiveInferenceUnavailableException.class)
+    ResponseEntity<ApiProblem> liveUnavailable(
+            LiveInferenceUnavailableException exception,
+            HttpServletRequest request
+    ) {
+        var status = "LIVE_UPLOAD_NOT_AUTHORIZED".equals(exception.code())
+                ? HttpStatus.FORBIDDEN : HttpStatus.SERVICE_UNAVAILABLE;
+        return problem(status, "Live inference unavailable", exception.code(),
+                exception.getMessage(), request, null, null);
+    }
+
     @ExceptionHandler(InvalidInferenceApiRequestException.class)
     ResponseEntity<ApiProblem> invalidRequest(
             InvalidInferenceApiRequestException exception,

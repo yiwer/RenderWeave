@@ -1,11 +1,11 @@
 openapi: 3.1.2
 info:
   title: RenderWeave API
-  version: 0.8.0
+  version: 0.9.0
   description: >-
     Contract-first API for RenderWeave Schema Drafts, immutable StaticSchemas,
-    exact compiled artifacts, authoritative RootDocument validation and zero-network
-    evidence-backed inference Candidate review and create-only atomic Draft application.
+    exact compiled artifacts, authoritative RootDocument validation, deterministic replay,
+    guarded live inference Candidate review and create-only atomic Draft application.
 servers:
   - url: /
 tags:
@@ -18,7 +18,7 @@ tags:
   - name: RootDocument Validation
     description: Strict, deterministic batch validation against one frozen Schema graph.
   - name: Inference Runs
-    description: Durable zero-network replay runs and optimistic Candidate review.
+    description: Durable replay/live runs and optimistic Candidate review.
 paths:
   /api/v1/system/status:
     get:
@@ -480,8 +480,9 @@ paths:
       tags: [Inference Runs]
       summary: Queue a synthetic-only DashScope inference run
       description: >-
-        Disabled by default. Enabling is a deployment authorization. Each external call first
-        consumes one durable global reservation from the six-call and one-yuan canary budget.
+        Disabled by default. Worker execution and arbitrary multipart upload require separate
+        deployment authorizations. Each external call has a conservative pre-call cost bound and
+        then consumes one durable global reservation from the six-call and one-yuan canary budget.
       parameters:
         - $ref: '#/components/parameters/IdempotencyKey'
       requestBody:
@@ -531,10 +532,16 @@ paths:
                 $ref: '#/components/schemas/InferenceRunResponse'
         '400':
           $ref: '#/components/responses/BadRequestProblem'
+        '403':
+          $ref: '#/components/responses/ForbiddenProblem'
         '409':
           $ref: '#/components/responses/ConflictProblem'
+        '413':
+          $ref: '#/components/responses/PayloadTooLargeProblem'
         '422':
           $ref: '#/components/responses/ValidationProblem'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailableProblem'
         '500':
           $ref: '#/components/responses/InternalProblem'
   /api/v1/inference-runs:
@@ -709,6 +716,9 @@ paths:
       operationId: retryInferenceRun
       tags: [Inference Runs]
       summary: Create a new run from retained normalized inputs of a failed or cancelled run
+      description: >-
+        Replay retries remain local. A retry of a live Profile requires the same independently
+        enabled worker, multipart data-transfer authorization and provider credential as a new live run.
       responses:
         '201':
           description: A new auditable retry run was created.
@@ -730,10 +740,14 @@ paths:
                 $ref: '#/components/schemas/InferenceRunResponse'
         '400':
           $ref: '#/components/responses/BadRequestProblem'
+        '403':
+          $ref: '#/components/responses/ForbiddenProblem'
         '404':
           $ref: '#/components/responses/NotFoundProblem'
         '409':
           $ref: '#/components/responses/ConflictProblem'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailableProblem'
         '500':
           $ref: '#/components/responses/InternalProblem'
   /api/v1/inference-runs/{runId}/events:
@@ -924,7 +938,7 @@ components:
           enum: [ready]
         contractVersion:
           type: string
-          const: 0.6.0
+          const: 0.9.0
     CreateDraftRequest:
       type: object
       additionalProperties: false
@@ -1657,7 +1671,7 @@ components:
       type: object
       additionalProperties: false
       required:
-        [enabled, configured, inputClassification, maximumAttempts, consumedAttempts,
+        [enabled, configured, uploadEnabled, inputClassification, maximumAttempts, consumedAttempts,
          remainingAttempts, maximumCostMicrosCny, consumedCostMicrosCny,
          remainingCostMicrosCny, profiles]
       properties:
@@ -1665,6 +1679,9 @@ components:
           type: boolean
         configured:
           type: boolean
+        uploadEnabled:
+          type: boolean
+          description: False until arbitrary synthetic multipart transfer receives separate deployment authorization.
         inputClassification:
           type: string
           const: SYNTHETIC_ONLY
@@ -2221,7 +2238,19 @@ components:
           schema:
             $ref: '#/components/schemas/Problem'
     PayloadTooLargeProblem:
-      description: One RootDocument, the aggregate batch or the transport body exceeds its byte budget.
+      description: A RootDocument batch or inference multipart body exceeds its transport byte budget.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    ForbiddenProblem:
+      description: The deployment policy has not authorized this external-data operation.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    ServiceUnavailableProblem:
+      description: Live inference is disabled or its provider credential is not configured.
       content:
         application/problem+json:
           schema:
