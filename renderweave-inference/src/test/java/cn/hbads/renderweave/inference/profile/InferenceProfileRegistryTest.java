@@ -12,7 +12,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class InferenceProfileRegistryTest {
     @Test
-    void p5ExposesReplayAndTwoGuardedDashScopeProfiles() {
+    void p5ExposesReplayAndThreeGuardedDashScopeProfiles() {
         var registry = new InferenceProfileRegistry();
         var resource = registry.require("replay-v1");
         var profile = resource.profile();
@@ -20,6 +20,7 @@ class InferenceProfileRegistryTest {
         assertEquals(Set.of(
                 "replay-v1",
                 "dashscope-qwen37-flash-v1",
+                "dashscope-qwen37-plus-20260526-v1",
                 "dashscope-qwen38-max-v1"
         ), registry.profileIds());
         assertEquals("renderweave-inference-profile/1.0", profile.profileVersion());
@@ -35,11 +36,16 @@ class InferenceProfileRegistryTest {
 
         assertDashScopeProfile(
                 registry.require("dashscope-qwen37-flash-v1").profile(),
-                "qwen3.7-flash", 200_000L, 800_000L, 20_000L
+                "qwen3.7-flash", 200_000L, 800_000L, 20_000L, "2026-08-08"
+        );
+        assertDashScopeProfile(
+                registry.require("dashscope-qwen37-plus-20260526-v1").profile(),
+                "qwen3.7-plus-2026-05-26", 2_000_000L, 8_000_000L, 200_000L,
+                "2026-08-09"
         );
         assertDashScopeProfile(
                 registry.require("dashscope-qwen38-max-v1").profile(),
-                "qwen3.8-max", 12_000_000L, 36_000_000L, 280_000L
+                "qwen3.8-max", 12_000_000L, 36_000_000L, 280_000L, "2026-08-08"
         );
         assertThrows(IllegalArgumentException.class, () -> registry.require("live-provider"));
     }
@@ -49,7 +55,8 @@ class InferenceProfileRegistryTest {
             String model,
             long inputPrice,
             long outputPrice,
-            long maximumCost
+            long maximumCost,
+            String pricingEffectiveDate
     ) {
         assertEquals("DASHSCOPE", profile.provider());
         assertEquals(model, profile.model());
@@ -71,7 +78,7 @@ class InferenceProfileRegistryTest {
         assertEquals(maximumCost, profile.maximumEstimatedCostMicrosCny());
         assertEquals(inputPrice, profile.inputMicrosCnyPerMillionTokens());
         assertEquals(outputPrice, profile.outputMicrosCnyPerMillionTokens());
-        assertEquals("2026-08-08", profile.pricingEffectiveDate());
+        assertEquals(pricingEffectiveDate, profile.pricingEffectiveDate());
         assertEquals("EXPERIMENTAL", profile.certification());
     }
 }

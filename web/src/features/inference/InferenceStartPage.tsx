@@ -18,6 +18,7 @@ import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import type {
+  CreateLiveRunRequest,
   InferenceMode,
   InferenceRunResponse,
   LiveAvailabilityResponse,
@@ -34,7 +35,7 @@ import {
 } from './candidate-api';
 
 type Launcher = 'REPLAY' | 'LIVE';
-type LiveProfileId = 'dashscope-qwen37-flash-v1' | 'dashscope-qwen38-max-v1';
+type LiveProfileId = CreateLiveRunRequest['profileId'];
 
 const modeLabels: Record<InferenceMode, string> = {
   IMAGE_ONLY: '仅图片',
@@ -245,7 +246,7 @@ function LiveLauncher({
                 <span className="section-kicker">选择模型配置</span>
                 <div className="live-profile-grid">
                   {query.data.profiles.map((item) => (
-                    <button key={item.profileId} type="button" className={profileId === item.profileId ? 'active' : ''} onClick={() => { setProfileId(item.profileId as LiveProfileId); setExperimentalConfirmed(false); }}>
+                    <button key={item.profileId} type="button" className={profileId === item.profileId ? 'active' : ''} onClick={() => { setProfileId(item.profileId); setExperimentalConfirmed(false); }}>
                       <Bot aria-hidden="true" size={17} />
                       <span><strong>{item.model}</strong><small>{item.model.includes('flash') ? '低成本快速识别' : '复杂结构复核'}</small></span>
                       <em>单次上限 ¥{formatYuan(item.maximumEstimatedCostMicrosCny)}</em>

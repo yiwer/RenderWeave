@@ -1,6 +1,7 @@
 # ADR-0008：DashScope Chat Completions 首适配，双视觉 Profile 独立评测后再路由
 
 - 状态：accepted
+- 说明：模型能力与后续矩阵已由 ADR-0009 部分修正；本 ADR 保留首轮 canary 的历史决策。
 - 日期：2026-08-08
 - 关联：AC-015、AC-016、AC-020、AC-021
 - 决策来源：用户批准千问 AI 平台、`qwen3.7-flash` / `qwen3.8-max`、synthetic-only ≤6 attempts / ≤¥1 live canary（J1）

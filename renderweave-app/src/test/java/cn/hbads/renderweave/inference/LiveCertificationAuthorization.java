@@ -36,9 +36,11 @@ record LiveCertificationAuthorization(
     static final String INPUT_CLASSIFICATION = "REPOSITORY_SYNTHETIC_ONLY";
     static final String PENDING_EVALUATION_IDENTITY = "PENDING_PRELIVE_COMMIT";
     static final String FLASH_PROFILE = "dashscope-qwen37-flash-v1";
+    static final String PLUS_PROFILE = "dashscope-qwen37-plus-20260526-v1";
     static final String MAX_PROFILE = "dashscope-qwen38-max-v1";
     private static final int ABSOLUTE_MAXIMUM_ATTEMPTS = 360;
     private static final long ABSOLUTE_MAXIMUM_COST_MICROS_CNY = 54_000_000L;
+    private static final long PLUS_MAXIMUM_AUTHORIZED_COST_MICROS_CNY = 10_000_000L;
     private static final Duration MAXIMUM_AUTHORIZATION_WINDOW = Duration.ofHours(4);
 
     LiveCertificationAuthorization {
@@ -63,7 +65,8 @@ record LiveCertificationAuthorization(
         }
         if (profileIds.isEmpty() || profileIds.size() > 2
                 || new HashSet<>(profileIds).size() != profileIds.size()
-                || profileIds.stream().anyMatch(id -> !List.of(FLASH_PROFILE, MAX_PROFILE).contains(id))) {
+                || profileIds.stream().anyMatch(
+                        id -> !List.of(FLASH_PROFILE, PLUS_PROFILE, MAX_PROFILE).contains(id))) {
             throw new IllegalArgumentException("Certification authorization profiles are invalid");
         }
         if (maximumProviderAttempts < 1 || maximumProviderAttempts > designedMaximumAttempts(profileIds)
@@ -134,13 +137,18 @@ record LiveCertificationAuthorization(
 
     private static long designedMaximumCost(List<String> profileIds) {
         var profiles = new InferenceProfileRegistry();
-        return profileIds.stream().map(profiles::require).mapToLong(item -> Math.multiplyExact(
-                60L,
-                Math.multiplyExact(
-                        item.profile().maximumTotalCalls(),
-                        item.profile().maximumEstimatedCostMicrosCny()
-                )
-        )).sum();
+        return profileIds.stream().map(profiles::require).mapToLong(item -> {
+            var designed = Math.multiplyExact(
+                    60L,
+                    Math.multiplyExact(
+                            item.profile().maximumTotalCalls(),
+                            item.profile().maximumEstimatedCostMicrosCny()
+                    )
+            );
+            return PLUS_PROFILE.equals(item.profile().profileId())
+                    ? Math.min(designed, PLUS_MAXIMUM_AUTHORIZED_COST_MICROS_CNY)
+                    : designed;
+        }).sum();
     }
 
     record Assignment(String profileId, LiveEvaluationCase evaluationCase) {

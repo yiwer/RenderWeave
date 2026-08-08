@@ -108,7 +108,9 @@ public record InferenceProfile(
             String certification
     ) {
         if (!"DASHSCOPE".equals(provider)
-                || !("qwen3.7-flash".equals(model) || "qwen3.8-max".equals(model))) {
+                || !("qwen3.7-flash".equals(model)
+                || "qwen3.7-plus-2026-05-26".equals(model)
+                || "qwen3.8-max".equals(model))) {
             throw new IllegalArgumentException("P5 live profiles must use an approved DashScope model");
         }
         if (!"OPENAI_CHAT_COMPLETIONS".equals(providerProtocol)

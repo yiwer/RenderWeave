@@ -9,6 +9,7 @@ import {
   type CandidateBundle,
   type CandidateApplyResponse,
   type CandidateReviewResponse,
+  type CreateLiveRunRequest,
   type InferenceEvent,
   type InferenceRunResponse,
   type InferenceMode,
@@ -40,7 +41,7 @@ export async function getLiveAvailabilityRequest(): Promise<LiveAvailabilityResp
 }
 
 export async function createLiveRunRequest(
-  profileId: 'dashscope-qwen37-flash-v1' | 'dashscope-qwen38-max-v1',
+  profileId: CreateLiveRunRequest['profileId'],
   mode: InferenceMode,
   images: File[],
   jsonSamples: File[],

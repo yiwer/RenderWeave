@@ -327,8 +327,7 @@ class DashScopeLiveCertificationTest {
     }
 
     private static Path authorizationFile() {
-        return repositoryRoot().resolve("plans").resolve("live-certification-authorizations")
-                .resolve("p5-certification-20260808.json");
+        return LiveCertificationAuthorizationLocator.resolve(repositoryRoot());
     }
 
     private static String harnessFailureCode(RuntimeException failure) {

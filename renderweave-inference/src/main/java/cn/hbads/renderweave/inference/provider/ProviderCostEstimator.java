@@ -1,6 +1,7 @@
 package cn.hbads.renderweave.inference.provider;
 
 import cn.hbads.renderweave.inference.profile.InferenceProfile;
+import cn.hbads.renderweave.inference.input.ImageNormalizer;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
@@ -9,11 +10,23 @@ public final class ProviderCostEstimator {
     private static final long TOKENS_PER_PRICE_UNIT = 1_000_000L;
     /** Covers chat/message framing and remains deliberately larger than current provider overhead. */
     private static final long TEXT_MESSAGE_OVERHEAD_TOKENS = 2_048L;
+    private static final long VISUAL_PATCH_PIXELS = 32L * 32L;
+    private static final long VISUAL_TOKEN_OVERHEAD = 2L;
     /**
-     * DashScope's documented default visual conversion is below 400 tokens per image. We do not
-     * enable high-resolution mode; 1,024 is a conservative per-image billing bound.
+     * DashScope documents visual tokens as height * width / (32 * 32) + 2. ProviderImage is
+     * reached only after ImageNormalizer, so reserving the normalized 4,096-square maximum for
+     * every image is deliberately conservative and closes cost before the irreversible call.
      */
-    private static final long IMAGE_INPUT_TOKEN_UPPER_BOUND = 1_024L;
+    private static final long IMAGE_INPUT_TOKEN_UPPER_BOUND = Math.addExact(
+            Math.ceilDiv(
+                    Math.multiplyExact(
+                            (long) ImageNormalizer.MAX_LONG_EDGE,
+                            ImageNormalizer.MAX_LONG_EDGE
+                    ),
+                    VISUAL_PATCH_PIXELS
+            ),
+            VISUAL_TOKEN_OVERHEAD
+    );
 
     private ProviderCostEstimator() { }
 
@@ -47,14 +60,20 @@ public final class ProviderCostEstimator {
 
     /**
      * qwen3.7-flash uses 1x/3x/6x input and output prices at the documented
-     * 32K and 256K input-token boundaries. Other approved P5 models use the
-     * snapshot rate throughout the request sizes that can pass their Profile cost gate.
+     * 32K and 256K input-token boundaries. qwen3.7-plus uses 1x/3x at 256K.
+     * Other approved P5 models use the snapshot rate throughout request sizes
+     * that can pass their Profile cost gate.
      */
     private static long pricingMultiplier(InferenceProfile profile, long inputTokens) {
-        if (!"qwen3.7-flash".equals(profile.model())) return 1L;
-        if (inputTokens <= 32_000L) return 1L;
-        if (inputTokens <= 256_000L) return 3L;
-        return 6L;
+        if ("qwen3.7-flash".equals(profile.model())) {
+            if (inputTokens <= 32_000L) return 1L;
+            if (inputTokens <= 256_000L) return 3L;
+            return 6L;
+        }
+        if ("qwen3.7-plus-2026-05-26".equals(profile.model())) {
+            return inputTokens <= 256_000L ? 1L : 3L;
+        }
+        return 1L;
     }
 
     private static long price(long tokens, long microsPerMillionTokens) {

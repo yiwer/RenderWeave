@@ -1,0 +1,16 @@
+{
+  "authorizationVersion": "renderweave-live-certification-authorization/1.1",
+  "authorizationId": "p5-certification-20260809-plus-20260526-v1",
+  "status": "PROPOSED",
+  "inputClassification": "REPOSITORY_SYNTHETIC_ONLY",
+  "corpusVersion": "renderweave-live-eval/2.0",
+  "evaluationIdentity": "renderweave-repository-tree-sha256/1:8e37b8c75cbb0932b8af2f53f0fd8f97dabd40beda80781248690bfb7f609968",
+  "profileIds": ["dashscope-qwen37-plus-20260526-v1"],
+  "maximumProviderAttempts": 180,
+  "maximumCostMicrosCny": 10000000,
+  "maximumCasesPerBatch": 5,
+  "approvedBy": null,
+  "approvedAt": null,
+  "expiresAt": null,
+  "approvalScope": null
+}

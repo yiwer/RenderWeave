@@ -330,7 +330,7 @@ export type CreateReplayRunRequest = {
 };
 
 export type CreateLiveRunRequest = {
-    profileId: 'dashscope-qwen37-flash-v1' | 'dashscope-qwen38-max-v1';
+    profileId: 'dashscope-qwen37-flash-v1' | 'dashscope-qwen37-plus-20260526-v1' | 'dashscope-qwen38-max-v1';
     mode: InferenceMode;
     inputClassification: 'SYNTHETIC';
     externalTransferConfirmed: true;
@@ -353,14 +353,15 @@ export type LiveAvailabilityResponse = {
     remainingCostMicrosCny: number;
     profiles: [
         LiveProfileResponse,
+        LiveProfileResponse,
         LiveProfileResponse
     ];
 };
 
 export type LiveProfileResponse = {
-    profileId: string;
+    profileId: 'dashscope-qwen37-flash-v1' | 'dashscope-qwen37-plus-20260526-v1' | 'dashscope-qwen38-max-v1';
     provider: 'DASHSCOPE';
-    model: 'qwen3.7-flash' | 'qwen3.8-max';
+    model: 'qwen3.7-flash' | 'qwen3.7-plus-2026-05-26' | 'qwen3.8-max';
     certification: 'EXPERIMENTAL';
     supportedModes: Array<InferenceMode>;
     maximumTotalCalls: number;

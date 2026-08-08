@@ -3,9 +3,10 @@
 ## 当前目标与进度
 - 2026-08-08 授权的 P1–P4 Goal 实施范围已完成并通过本地 A1 自动验证。
 - 2026-08-08 的 P5 canary J1 已关闭：双 Profile 各 1 次，共 2 attempts / ¥0.054017；只证明通路，不构成质量认证。
-- 2026-08-09 T5-6 pre-live 闭环已完成：60-case v2 whole-graph eval、认证 policy、可恢复预算账本与 repository evaluation identity 通过 A1 + 独立 A2；新增 DashScope 调用 0。
+- 2026-08-09 Flash 60-case live 已完成并经独立 A2：112 attempts / ¥0.122980，2/60 exact pass，policy=`EXPERIMENTAL`，authorization 已 CLOSED。
+- 用户已将候选模型扩大到 Qwen3.7 dated/alias 与 Qwen3.8 Max，其他模型费用硬上限 ¥10；按协议能力优先评测 pinned `qwen3.7-plus-2026-05-26`。
 - 需求访谈已收束，v1 产品语义以 `specs/renderweave-v1.md` 为准。
-- 生命周期状态：P0 `accepted`；P1–P4 `automated_verified`；P5 `awaiting_live_j1`。两个 DashScope Profile 均仍为 `EXPERIMENTAL`、默认关闭。
+- 生命周期状态：P0 `accepted`；P1–P4 `automated_verified`；P5 Flash `live_independently_reviewed`，Plus `prelive_in_progress`。所有 DashScope Profile 仍为 `EXPERIMENTAL`、默认关闭。
 
 ## 下一步
 - [x] Java / React / PostgreSQL / OpenAPI 最小 canary 与 A1 full gate 通过。
@@ -30,8 +31,10 @@
 - [x] T5-2–T5-5：live upload/worker/UI、限定 canary、安全 A2 与“不认证”决定；旧授权 CLOSED。
 - [x] T5-6 pre-live：60-case v2 corpus、完整图指标、fail-closed policy、每批 5 case 的 journal harness、12×5 重载闭环、evaluation identity 与独立 A2 PASS。
 - [x] 将最终 tracked tree digest 写入新 `PROPOSED` 账本并创建 pre-live 节点提交。
-- [ ] 请求 flash-only 60-case / ≤180 attempts / ≤¥3.60 / synthetic-only 的新精确 J1。
-- [ ] 只有获得该 J1 后才可逐批运行；完成/停止/到期立即 CLOSED，并对最终报告再做独立结果审查。
+- [x] 获得 Flash 60-case / ≤180 attempts / ≤¥3.60 / synthetic-only J1，逐批完成后立即 CLOSED。
+- [x] Flash live 结果经独立 A2 重建：60 unique cases、112 settled attempts、¥0.122980、policy=`EXPERIMENTAL`。
+- [ ] 完成 pinned Plus Profile、独立 ledger selector、≤180 attempts / ≤¥10 / 4h J1 的 pre-live 门禁与 A2。
+- [ ] 逐批运行 Plus 60-case，CLOSED 后独立复核；Max/强制思考模型先补协议与 credit/CNY 双预算。
 
 ## 重要发现或局部阻塞
 - 本机全局 Node 为 20.20.2；正式 gate 已使用 checksum 固定的仓库局部 Node 24.19.0，不依赖或修改系统 Node。

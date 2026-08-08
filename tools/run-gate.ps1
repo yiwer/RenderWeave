@@ -27,6 +27,7 @@ function Invoke-ZeroPaidAiCommand {
     # certification deliberately does not go through this project-gate helper.
     $environmentPrefix = 'set "DASHSCOPE_API_KEY=" && set "DASHSCOPE_API_KEY_FILE=" && ' +
         'set "RENDERWEAVE_RUN_LIVE_CANARY=" && set "RENDERWEAVE_RUN_LIVE_CERTIFICATION=" && ' +
+        'set "RENDERWEAVE_LIVE_CERTIFICATION_AUTHORIZATION=" && ' +
         'set "RENDERWEAVE_LIVE_AI_ENABLED=false" && set "RENDERWEAVE_LIVE_UPLOAD_ENABLED=false" && '
     & cmd.exe /d /s /c ($environmentPrefix + $CommandLine)
 }

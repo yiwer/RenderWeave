@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -25,6 +26,7 @@ final class LiveCertificationEvaluationIdentity {
             "DASHSCOPE_API_KEY_FILE",
             "RENDERWEAVE_RUN_LIVE_CANARY",
             "RENDERWEAVE_RUN_LIVE_CERTIFICATION",
+            LiveCertificationAuthorizationLocator.SELECTOR_ENVIRONMENT_VARIABLE,
             "RENDERWEAVE_LIVE_AI_ENABLED",
             "RENDERWEAVE_LIVE_UPLOAD_ENABLED"
     );
@@ -64,7 +66,7 @@ final class LiveCertificationEvaluationIdentity {
                 .toList();
         var authorizationFile = repositoryRoot.resolve(excludedAuthorizationPath).normalize();
         if (!tracked.contains(excludedAuthorizationPath)
-                || !Files.isRegularFile(authorizationFile)) {
+                || !Files.isRegularFile(authorizationFile, LinkOption.NOFOLLOW_LINKS)) {
             throw new IllegalStateException("LIVE_CERTIFICATION_AUTHORIZATION_NOT_TRACKED");
         }
         var untracked = gitPaths("ls-files", "-z", "--others", "--exclude-standard").stream()

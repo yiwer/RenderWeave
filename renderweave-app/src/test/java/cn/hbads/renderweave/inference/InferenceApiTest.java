@@ -188,8 +188,9 @@ class InferenceApiTest {
                 .andExpect(jsonPath("$.uploadEnabled").value(false))
                 .andExpect(jsonPath("$.maximumAttempts").value(6))
                 .andExpect(jsonPath("$.maximumCostMicrosCny").value(1_000_000))
-                .andExpect(jsonPath("$.profiles.length()").value(2))
+                .andExpect(jsonPath("$.profiles.length()").value(3))
                 .andExpect(jsonPath("$.profiles[?(@.model == 'qwen3.7-flash')]").exists())
+                .andExpect(jsonPath("$.profiles[?(@.model == 'qwen3.7-plus-2026-05-26')]").exists())
                 .andExpect(jsonPath("$.profiles[?(@.model == 'qwen3.8-max')]").exists())
                 .andExpect(content().string(org.hamcrest.Matchers.not(
                         org.hamcrest.Matchers.containsString("DASHSCOPE_API_KEY")
