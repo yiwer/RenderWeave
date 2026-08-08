@@ -329,6 +329,42 @@ export type CreateReplayRunRequest = {
     externalTransferConfirmed: true;
 };
 
+export type CreateLiveRunRequest = {
+    profileId: 'dashscope-qwen37-flash-v1' | 'dashscope-qwen38-max-v1';
+    mode: InferenceMode;
+    inputClassification: 'SYNTHETIC';
+    externalTransferConfirmed: true;
+    experimentalProfileConfirmed: true;
+};
+
+export type LiveAvailabilityResponse = {
+    enabled: boolean;
+    configured: boolean;
+    inputClassification: 'SYNTHETIC_ONLY';
+    maximumAttempts: 6;
+    consumedAttempts: number;
+    remainingAttempts: number;
+    maximumCostMicrosCny: 1000000;
+    consumedCostMicrosCny: number;
+    remainingCostMicrosCny: number;
+    profiles: [
+        LiveProfileResponse,
+        LiveProfileResponse
+    ];
+};
+
+export type LiveProfileResponse = {
+    profileId: string;
+    provider: 'DASHSCOPE';
+    model: 'qwen3.7-flash' | 'qwen3.8-max';
+    certification: 'EXPERIMENTAL';
+    supportedModes: Array<InferenceMode>;
+    maximumTotalCalls: number;
+    maximumOutputTokens: number;
+    maximumEstimatedCostMicrosCny: number;
+    pricingEffectiveDate: string;
+};
+
 export type ReplayFixtureListResponse = {
     profileId: 'replay-v1';
     provider: 'REPLAY';
@@ -421,7 +457,7 @@ export type InferenceRunResponse = {
     stage: InferenceStage;
     sequence: number;
     profileId: string;
-    replayFixtureId: string;
+    sourceReference: string;
     cancellationRequested: boolean;
     retryOfRunId: string | null;
     failureCode: string | null;
@@ -1330,6 +1366,79 @@ export type ListReplayFixturesResponses = {
 };
 
 export type ListReplayFixturesResponse = ListReplayFixturesResponses[keyof ListReplayFixturesResponses];
+
+export type GetLiveInferenceAvailabilityData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/inference-runs/live-availability';
+};
+
+export type GetLiveInferenceAvailabilityErrors = {
+    /**
+     * RFC 9457 problem response.
+     */
+    500: Problem;
+};
+
+export type GetLiveInferenceAvailabilityError = GetLiveInferenceAvailabilityErrors[keyof GetLiveInferenceAvailabilityErrors];
+
+export type GetLiveInferenceAvailabilityResponses = {
+    /**
+     * Safe availability metadata; credentials are never returned.
+     */
+    200: LiveAvailabilityResponse;
+};
+
+export type GetLiveInferenceAvailabilityResponse = GetLiveInferenceAvailabilityResponses[keyof GetLiveInferenceAvailabilityResponses];
+
+export type CreateLiveInferenceRunData = {
+    body: {
+        metadata: CreateLiveRunRequest;
+        images?: Array<Blob | File>;
+        jsonSamples?: Array<Blob | File>;
+    };
+    headers: {
+        'Idempotency-Key': string;
+    };
+    path?: never;
+    query?: never;
+    url: '/api/v1/inference-runs/live';
+};
+
+export type CreateLiveInferenceRunErrors = {
+    /**
+     * Request JSON, key syntax or envelope is invalid.
+     */
+    400: Problem;
+    /**
+     * Natural identity or expected revision conflicts with current state.
+     */
+    409: Problem;
+    /**
+     * The complete RenderWeave definition is not valid and nothing was written.
+     */
+    422: Problem;
+    /**
+     * RFC 9457 problem response.
+     */
+    500: Problem;
+};
+
+export type CreateLiveInferenceRunError = CreateLiveInferenceRunErrors[keyof CreateLiveInferenceRunErrors];
+
+export type CreateLiveInferenceRunResponses = {
+    /**
+     * Idempotent replay of the same upload request.
+     */
+    200: InferenceRunResponse;
+    /**
+     * Durable live run queued.
+     */
+    201: InferenceRunResponse;
+};
+
+export type CreateLiveInferenceRunResponse = CreateLiveInferenceRunResponses[keyof CreateLiveInferenceRunResponses];
 
 export type CreateReplayInferenceRunData = {
     body: CreateReplayRunRequest;

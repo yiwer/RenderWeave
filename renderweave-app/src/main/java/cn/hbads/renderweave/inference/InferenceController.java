@@ -8,8 +8,14 @@ import cn.hbads.renderweave.inference.candidate.CandidateProblem;
 import cn.hbads.renderweave.inference.candidate.CandidateReviewService;
 import cn.hbads.renderweave.inference.candidate.CandidateReviewSnapshot;
 import cn.hbads.renderweave.inference.input.BlobStore;
+import cn.hbads.renderweave.inference.input.InferenceInput;
+import cn.hbads.renderweave.inference.input.InferenceMode;
 import cn.hbads.renderweave.inference.input.NormalizedArtifact;
+import cn.hbads.renderweave.inference.live.LiveInferenceWorker;
 import cn.hbads.renderweave.inference.profile.InferenceProfileRegistry;
+import cn.hbads.renderweave.inference.profile.JsonStructuralProfiler;
+import cn.hbads.renderweave.inference.provider.InferenceProvider;
+import cn.hbads.renderweave.inference.provider.ProviderBudgetStore;
 import cn.hbads.renderweave.inference.replay.InferenceReplayStore;
 import cn.hbads.renderweave.inference.replay.ReplayInferenceWorker;
 import cn.hbads.renderweave.inference.run.InferenceRunService;
@@ -26,7 +32,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.JsonNode;
@@ -47,6 +55,9 @@ final class InferenceController {
     private final InferenceRunStore runStore;
     private final InferenceReplayStore replayStore;
     private final ReplayInferenceWorker worker;
+    private final LiveInferenceCoordinator liveCoordinator;
+    private final InferenceProvider provider;
+    private final ProviderBudgetStore budgets;
     private final CandidateReviewService reviews;
     private final CandidateApplyService applies;
     private final ReplayFixtureInputFactory fixtureInputs;
@@ -54,12 +65,16 @@ final class InferenceController {
     private final ObjectMapper json;
     private final CandidateJsonCodec candidateCodec = new CandidateJsonCodec();
     private final InferenceProfileRegistry profiles = new InferenceProfileRegistry();
+    private final JsonStructuralProfiler structuralProfiler = new JsonStructuralProfiler();
 
     InferenceController(
             InferenceRunService runService,
             InferenceRunStore runStore,
             InferenceReplayStore replayStore,
             ReplayInferenceWorker worker,
+            LiveInferenceCoordinator liveCoordinator,
+            InferenceProvider provider,
+            ProviderBudgetStore budgets,
             CandidateReviewService reviews,
             CandidateApplyService applies,
             ReplayFixtureInputFactory fixtureInputs,
@@ -70,6 +85,9 @@ final class InferenceController {
         this.runStore = runStore;
         this.replayStore = replayStore;
         this.worker = worker;
+        this.liveCoordinator = liveCoordinator;
+        this.provider = provider;
+        this.budgets = budgets;
         this.reviews = reviews;
         this.applies = applies;
         this.fixtureInputs = fixtureInputs;
@@ -124,6 +142,82 @@ final class InferenceController {
                 .body(response);
     }
 
+    @GetMapping("/live-availability")
+    LiveAvailabilityResponse liveAvailability() {
+        var budget = budgets.snapshot(LiveInferenceWorker.CANARY_BUDGET_KEY);
+        var items = profiles.profileIds().stream()
+                .map(profiles::require)
+                .map(InferenceProfileRegistry.ProfileResource::profile)
+                .filter(profile -> profile.networkAllowed())
+                .map(profile -> new LiveProfileResponse(
+                        profile.profileId(), profile.provider(), profile.model(), profile.certification(),
+                        profile.supportedModes().stream().map(Enum::name).toList(),
+                        profile.maximumTotalCalls(), profile.maximumOutputTokens(),
+                        profile.maximumEstimatedCostMicrosCny(), profile.pricingEffectiveDate()
+                ))
+                .toList();
+        return new LiveAvailabilityResponse(
+                liveCoordinator.enabled(), provider.configured(), "SYNTHETIC_ONLY",
+                budget.maximumAttempts(), budget.consumedAttempts(), budget.remainingAttempts(),
+                budget.maximumCostMicrosCny(), budget.consumedCostMicrosCny(),
+                budget.remainingCostMicrosCny(), items
+        );
+    }
+
+    @PostMapping(path = "/live", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    ResponseEntity<InferenceRunResponse> createLive(
+            @RequestHeader(name = "Idempotency-Key", required = false) String idempotencyKey,
+            @RequestPart("metadata") CreateLiveRunRequest request,
+            @RequestPart(name = "images", required = false) List<MultipartFile> images,
+            @RequestPart(name = "jsonSamples", required = false) List<MultipartFile> jsonSamples
+    ) {
+        if (idempotencyKey == null || idempotencyKey.isBlank()) {
+            throw new InvalidInferenceApiRequestException("Idempotency-Key is required");
+        }
+        if (!liveCoordinator.enabled()) {
+            throw new InvalidInferenceApiRequestException("Live inference is disabled by deployment policy");
+        }
+        if (!provider.configured()) {
+            throw new InvalidInferenceApiRequestException("DashScope credential is not configured");
+        }
+        if (!"SYNTHETIC".equals(request.inputClassification())) {
+            throw new InvalidInferenceApiRequestException("Only repository synthetic inputs are authorized");
+        }
+        if (!Boolean.TRUE.equals(request.externalTransferConfirmed())
+                || !Boolean.TRUE.equals(request.experimentalProfileConfirmed())) {
+            throw new InvalidInferenceApiRequestException(
+                    "External transfer and experimental profile confirmations are required"
+            );
+        }
+        final InferenceMode mode;
+        try {
+            mode = parseMode(request.mode());
+        } catch (IllegalArgumentException exception) {
+            throw new InvalidInferenceApiRequestException("Unsupported inference mode", exception);
+        }
+        final InferenceProfileRegistry.ProfileResource profile;
+        try {
+            profile = profiles.require(request.profileId());
+        } catch (IllegalArgumentException exception) {
+            throw new InvalidInferenceApiRequestException("Unknown inference profile", exception);
+        }
+        if (!profile.profile().networkAllowed()
+                || !"EXPERIMENTAL".equals(profile.profile().certification())
+                || !profile.profile().supportedModes().contains(mode)) {
+            throw new InvalidInferenceApiRequestException("Profile is not authorized for this live mode");
+        }
+        var input = new InferenceInput(
+                mode, profile.profile().profileId(), "synthetic-upload", true,
+                binaryInputs(images, false), binaryInputs(jsonSamples, true)
+        );
+        var created = runService.create(idempotencyKey, input, profile.snapshotJson());
+        if (created.created()) liveCoordinator.kick();
+        return ResponseEntity
+                .status(created.created() ? 201 : 200)
+                .location(URI.create("/api/v1/inference-runs/" + created.run().runId()))
+                .body(toRunResponse(created.run()));
+    }
+
     @GetMapping("/{runId}")
     InferenceRunResponse get(@PathVariable UUID runId) {
         return toRunResponse(runStore.find(runId)
@@ -143,10 +237,20 @@ final class InferenceController {
         if (idempotencyKey == null || idempotencyKey.isBlank()) {
             throw new InvalidInferenceApiRequestException("Idempotency-Key is required");
         }
+        var source = runStore.find(runId)
+                .orElseThrow(() -> new cn.hbads.renderweave.inference.run.InferenceRunNotFoundException(runId));
+        var live = profiles.parseSnapshot(source.profileSnapshotJson()).networkAllowed();
+        if (live && (!liveCoordinator.enabled() || !provider.configured())) {
+            throw new InvalidInferenceApiRequestException("Live inference is not currently available");
+        }
         var retried = runService.retry(runId, idempotencyKey);
         var run = retried.run();
         if (retried.created()) {
-            run = worker.process(run.runId(), "http-retry-" + run.runId()).orElse(run);
+            if (live) {
+                liveCoordinator.kick();
+            } else {
+                run = worker.process(run.runId(), "http-retry-" + run.runId()).orElse(run);
+            }
         }
         return ResponseEntity
                 .status(retried.created() ? 201 : 200)
@@ -282,6 +386,35 @@ final class InferenceController {
         }
     }
 
+    private static InferenceMode parseMode(String value) {
+        if (value == null || value.isBlank()) throw new IllegalArgumentException("mode is required");
+        try {
+            return InferenceMode.valueOf(value);
+        } catch (IllegalArgumentException ignored) {
+            return InferenceMode.fromWireName(value);
+        }
+    }
+
+    private static List<InferenceInput.BinaryInput> binaryInputs(
+            List<MultipartFile> files,
+            boolean jsonInput
+    ) {
+        if (files == null) return List.of();
+        return files.stream().map(file -> {
+            try {
+                var name = file.getOriginalFilename();
+                if (name == null || name.isBlank()) name = jsonInput ? "sample.json" : "image";
+                var mediaType = file.getContentType();
+                if (mediaType == null || mediaType.isBlank()) {
+                    mediaType = jsonInput ? MediaType.APPLICATION_JSON_VALUE : MediaType.APPLICATION_OCTET_STREAM_VALUE;
+                }
+                return new InferenceInput.BinaryInput(name, mediaType, file.getBytes());
+            } catch (IOException exception) {
+                throw new InvalidInferenceApiRequestException("Uploaded input could not be read", exception);
+            }
+        }).toList();
+    }
+
     private CandidateReviewResponse toReviewResponse(CandidateReviewSnapshot review) {
         return new CandidateReviewResponse(
                 toRunResponse(review.run()),
@@ -300,10 +433,19 @@ final class InferenceController {
                                         + "/artifacts/" + input.artifact().artifactId()
                         ))
                         .toList(),
-                fixtureInputs.fixtures().stream()
-                        .filter(fixture -> fixture.fixtureId().equals(review.run().replayFixtureId()))
-                        .findFirst().map(fixture -> fixture.jsonSamples().size()).orElse(0)
+                jsonSampleCount(review.run())
         );
+    }
+
+    private int jsonSampleCount(InferenceRunSnapshot run) {
+        var jsonInputs = run.inputs().stream()
+                .filter(input -> input.kind() == NormalizedArtifact.Kind.JSON_PROFILE)
+                .toList();
+        if (jsonInputs.isEmpty()) return 0;
+        if (jsonInputs.size() > 1) throw new IllegalStateException("A run may contain one JSON profile artifact");
+        return structuralProfiler.profile(
+                blobStore.read(jsonInputs.getFirst().artifact().locator())
+        ).sampleCount();
     }
 
     private CandidateApplyResponse toApplyResponse(CandidateApplyResult result) {
@@ -323,7 +465,7 @@ final class InferenceController {
     private InferenceRunResponse toRunResponse(InferenceRunSnapshot run) {
         return new InferenceRunResponse(
                 run.runId(), run.mode().name(), run.state().name(), run.stage().name(), run.sequence(),
-                run.profileId(), run.replayFixtureId(), run.cancellationRequested(),
+                run.profileId(), run.sourceReference(), run.cancellationRequested(),
                 run.retryOfRunId().orElse(null),
                 run.failureCode().orElse(null),
                 replayStore.findCandidate(run.runId()).map(snapshot -> snapshot.revision()).orElse(null),
@@ -346,6 +488,39 @@ final class InferenceController {
     }
 
     record CreateReplayRunRequest(String fixtureId, Boolean externalTransferConfirmed) { }
+
+    record CreateLiveRunRequest(
+            String profileId,
+            String mode,
+            String inputClassification,
+            Boolean externalTransferConfirmed,
+            Boolean experimentalProfileConfirmed
+    ) { }
+
+    record LiveAvailabilityResponse(
+            boolean enabled,
+            boolean configured,
+            String inputClassification,
+            int maximumAttempts,
+            int consumedAttempts,
+            int remainingAttempts,
+            long maximumCostMicrosCny,
+            long consumedCostMicrosCny,
+            long remainingCostMicrosCny,
+            List<LiveProfileResponse> profiles
+    ) { }
+
+    record LiveProfileResponse(
+            String profileId,
+            String provider,
+            String model,
+            String certification,
+            List<String> supportedModes,
+            int maximumTotalCalls,
+            int maximumOutputTokens,
+            long maximumEstimatedCostMicrosCny,
+            String pricingEffectiveDate
+    ) { }
 
     record SaveCandidateRequest(Long expectedCandidateRevision, JsonNode candidate) { }
 
@@ -376,7 +551,7 @@ final class InferenceController {
             String stage,
             long sequence,
             String profileId,
-            String replayFixtureId,
+            String sourceReference,
             boolean cancellationRequested,
             UUID retryOfRunId,
             String failureCode,

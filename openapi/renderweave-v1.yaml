@@ -460,6 +460,83 @@ paths:
                 $ref: '#/components/schemas/ReplayFixtureListResponse'
         '500':
           $ref: '#/components/responses/InternalProblem'
+  /api/v1/inference-runs/live-availability:
+    get:
+      operationId: getLiveInferenceAvailability
+      tags: [Inference Runs]
+      summary: Read the guarded DashScope profile and global canary budget state
+      responses:
+        '200':
+          description: Safe availability metadata; credentials are never returned.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LiveAvailabilityResponse'
+        '500':
+          $ref: '#/components/responses/InternalProblem'
+  /api/v1/inference-runs/live:
+    post:
+      operationId: createLiveInferenceRun
+      tags: [Inference Runs]
+      summary: Queue a synthetic-only DashScope inference run
+      description: >-
+        Disabled by default. Enabling is a deployment authorization. Each external call first
+        consumes one durable global reservation from the six-call and one-yuan canary budget.
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [metadata]
+              properties:
+                metadata:
+                  $ref: '#/components/schemas/CreateLiveRunRequest'
+                images:
+                  type: array
+                  maxItems: 10
+                  items:
+                    type: string
+                    format: binary
+                jsonSamples:
+                  type: array
+                  maxItems: 20
+                  items:
+                    type: string
+                    format: binary
+            encoding:
+              metadata:
+                contentType: application/json
+      responses:
+        '201':
+          description: Durable live run queued.
+          headers:
+            Location:
+              description: Canonical URL of the inference run.
+              schema:
+                type: string
+                format: uri-reference
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InferenceRunResponse'
+        '200':
+          description: Idempotent replay of the same upload request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InferenceRunResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestProblem'
+        '409':
+          $ref: '#/components/responses/ConflictProblem'
+        '422':
+          $ref: '#/components/responses/ValidationProblem'
+        '500':
+          $ref: '#/components/responses/InternalProblem'
   /api/v1/inference-runs:
     post:
       operationId: createReplayInferenceRun
@@ -1556,6 +1633,108 @@ components:
           type: boolean
           const: true
           description: Explicit acknowledgement of the displayed profile and input scope.
+    CreateLiveRunRequest:
+      type: object
+      additionalProperties: false
+      required:
+        [profileId, mode, inputClassification, externalTransferConfirmed, experimentalProfileConfirmed]
+      properties:
+        profileId:
+          type: string
+          enum: [dashscope-qwen37-flash-v1, dashscope-qwen38-max-v1]
+        mode:
+          $ref: '#/components/schemas/InferenceMode'
+        inputClassification:
+          type: string
+          const: SYNTHETIC
+        externalTransferConfirmed:
+          type: boolean
+          const: true
+        experimentalProfileConfirmed:
+          type: boolean
+          const: true
+    LiveAvailabilityResponse:
+      type: object
+      additionalProperties: false
+      required:
+        [enabled, configured, inputClassification, maximumAttempts, consumedAttempts,
+         remainingAttempts, maximumCostMicrosCny, consumedCostMicrosCny,
+         remainingCostMicrosCny, profiles]
+      properties:
+        enabled:
+          type: boolean
+        configured:
+          type: boolean
+        inputClassification:
+          type: string
+          const: SYNTHETIC_ONLY
+        maximumAttempts:
+          type: integer
+          const: 6
+        consumedAttempts:
+          type: integer
+          minimum: 0
+          maximum: 6
+        remainingAttempts:
+          type: integer
+          minimum: 0
+          maximum: 6
+        maximumCostMicrosCny:
+          type: integer
+          format: int64
+          const: 1000000
+        consumedCostMicrosCny:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 1000000
+        remainingCostMicrosCny:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 1000000
+        profiles:
+          type: array
+          minItems: 2
+          maxItems: 2
+          items:
+            $ref: '#/components/schemas/LiveProfileResponse'
+    LiveProfileResponse:
+      type: object
+      additionalProperties: false
+      required:
+        [profileId, provider, model, certification, supportedModes, maximumTotalCalls,
+         maximumOutputTokens, maximumEstimatedCostMicrosCny, pricingEffectiveDate]
+      properties:
+        profileId:
+          type: string
+        provider:
+          type: string
+          const: DASHSCOPE
+        model:
+          type: string
+          enum: [qwen3.7-flash, qwen3.8-max]
+        certification:
+          type: string
+          const: EXPERIMENTAL
+        supportedModes:
+          type: array
+          items:
+            $ref: '#/components/schemas/InferenceMode'
+        maximumTotalCalls:
+          type: integer
+          minimum: 1
+          maximum: 3
+        maximumOutputTokens:
+          type: integer
+          minimum: 1
+        maximumEstimatedCostMicrosCny:
+          type: integer
+          format: int64
+          minimum: 1
+        pricingEffectiveDate:
+          type: string
+          format: date
     ReplayFixtureListResponse:
       type: object
       additionalProperties: false
@@ -1620,7 +1799,7 @@ components:
       type: object
       additionalProperties: false
       required:
-        [runId, mode, state, stage, sequence, profileId, replayFixtureId, cancellationRequested, retryOfRunId, failureCode, candidateRevision, createdAt, updatedAt, finishedAt]
+        [runId, mode, state, stage, sequence, profileId, sourceReference, cancellationRequested, retryOfRunId, failureCode, candidateRevision, createdAt, updatedAt, finishedAt]
       properties:
         runId:
           type: string
@@ -1637,7 +1816,7 @@ components:
           minimum: 1
         profileId:
           type: string
-        replayFixtureId:
+        sourceReference:
           type: string
         cancellationRequested:
           type: boolean

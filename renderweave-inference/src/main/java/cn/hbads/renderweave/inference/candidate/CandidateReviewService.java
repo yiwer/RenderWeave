@@ -1,9 +1,10 @@
 package cn.hbads.renderweave.inference.candidate;
 
 import cn.hbads.renderweave.inference.input.NormalizedArtifact;
+import cn.hbads.renderweave.inference.input.BlobStore;
 import cn.hbads.renderweave.inference.profile.InferenceProfileRegistry;
+import cn.hbads.renderweave.inference.profile.JsonStructuralProfiler;
 import cn.hbads.renderweave.inference.replay.InferenceReplayStore;
-import cn.hbads.renderweave.inference.replay.ReplayCorpus;
 import cn.hbads.renderweave.inference.run.InferenceRunState;
 import cn.hbads.renderweave.inference.run.InferenceRunStore;
 
@@ -24,16 +25,18 @@ public final class CandidateReviewService {
     private final CandidateProblemJsonCodec problemCodec;
     private final CandidateValidator validator;
     private final InferenceProfileRegistry profiles;
-    private final ReplayCorpus corpus;
+    private final BlobStore blobStore;
+    private final JsonStructuralProfiler structuralProfiler;
 
     public CandidateReviewService(
             InferenceRunStore runStore,
             InferenceReplayStore replayStore,
-            Clock clock
+            Clock clock,
+            BlobStore blobStore
     ) {
         this(
                 runStore, replayStore, clock, new CandidateJsonCodec(), new CandidateProblemJsonCodec(),
-                new CandidateValidator(), new InferenceProfileRegistry(), new ReplayCorpus()
+                new CandidateValidator(), new InferenceProfileRegistry(), blobStore, new JsonStructuralProfiler()
         );
     }
 
@@ -45,7 +48,8 @@ public final class CandidateReviewService {
             CandidateProblemJsonCodec problemCodec,
             CandidateValidator validator,
             InferenceProfileRegistry profiles,
-            ReplayCorpus corpus
+            BlobStore blobStore,
+            JsonStructuralProfiler structuralProfiler
     ) {
         this.runStore = Objects.requireNonNull(runStore, "runStore");
         this.replayStore = Objects.requireNonNull(replayStore, "replayStore");
@@ -54,7 +58,8 @@ public final class CandidateReviewService {
         this.problemCodec = Objects.requireNonNull(problemCodec, "problemCodec");
         this.validator = Objects.requireNonNull(validator, "validator");
         this.profiles = Objects.requireNonNull(profiles, "profiles");
-        this.corpus = Objects.requireNonNull(corpus, "corpus");
+        this.blobStore = Objects.requireNonNull(blobStore, "blobStore");
+        this.structuralProfiler = Objects.requireNonNull(structuralProfiler, "structuralProfiler");
     }
 
     public CandidateReviewSnapshot get(UUID runId) {
@@ -125,11 +130,17 @@ public final class CandidateReviewService {
                 .filter(input -> input.kind() == NormalizedArtifact.Kind.IMAGE)
                 .map(input -> input.artifact().artifactId())
                 .collect(java.util.stream.Collectors.toSet());
-        var fixture = corpus.require(run.replayFixtureId());
+        var jsonInputs = run.inputs().stream()
+                .filter(input -> input.kind() == NormalizedArtifact.Kind.JSON_PROFILE)
+                .toList();
+        if (jsonInputs.size() > 1) throw new IllegalStateException("A run may contain one JSON profile artifact");
+        var sampleCount = jsonInputs.isEmpty() ? 0 : structuralProfiler.profile(
+                blobStore.read(jsonInputs.getFirst().artifact().locator())
+        ).sampleCount();
         return new CandidateValidationContext(
                 imageIds,
-                fixture.jsonSamples().size(),
-                profiles.require(run.profileId()).profile().lowConfidenceThresholdBps()
+                sampleCount,
+                profiles.parseSnapshot(run.profileSnapshotJson()).lowConfidenceThresholdBps()
         );
     }
 

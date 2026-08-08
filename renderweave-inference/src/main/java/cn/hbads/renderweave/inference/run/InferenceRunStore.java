@@ -13,6 +13,15 @@ public interface InferenceRunStore {
 
     Optional<InferenceRunSnapshot> claimNext(String workerId, Instant now, Duration leaseDuration);
 
+    /** Claims only a network-enabled run. Replay workers must continue to use {@link #claimNext}. */
+    default Optional<InferenceRunSnapshot> claimNextLive(
+            String workerId,
+            Instant now,
+            Duration leaseDuration
+    ) {
+        throw new UnsupportedOperationException("Live inference claiming is not supported");
+    }
+
     Optional<InferenceRunSnapshot> claim(UUID runId, String workerId, Instant now, Duration leaseDuration);
 
     boolean renewLease(UUID runId, UUID leaseToken, Instant now, Duration leaseDuration);

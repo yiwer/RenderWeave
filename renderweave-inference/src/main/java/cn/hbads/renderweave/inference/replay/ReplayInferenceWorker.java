@@ -304,7 +304,7 @@ public final class ReplayInferenceWorker {
                 || !profile.supportedModes().contains(current.mode())) {
             throw new IllegalStateException("Run does not use an allowed zero-network replay profile");
         }
-        var fixture = corpus.require(current.replayFixtureId());
+        var fixture = corpus.require(current.sourceReference());
         if (fixture.mode() != current.mode()) {
             throw new IllegalStateException("Replay fixture mode does not match the run");
         }

@@ -102,7 +102,7 @@ export function snapshot(): CandidateReviewResponse {
       stage: 'USER_APPROVAL',
       sequence: 7,
       profileId: 'replay-v1',
-      replayFixtureId: 'combined-01',
+      sourceReference: 'combined-01',
       cancellationRequested: false,
       retryOfRunId: null,
       failureCode: null,

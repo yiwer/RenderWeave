@@ -77,7 +77,7 @@ export function ResourceRail() {
       <div className="rail-divider" />
       <div className="rail-section-label">智能辅助</div>
       <NavLink className={({ isActive }) => `rail-link ${isActive ? 'active' : ''}`} to="/inference">
-        <BrainCircuit aria-hidden="true" size={17} />Replay 推断
+        <BrainCircuit aria-hidden="true" size={17} />智能识别
       </NavLink>
       <div className="rail-divider" />
       <div className="rail-context-card system-contract-card">
@@ -87,7 +87,7 @@ export function ResourceRail() {
       </div>
       <div className="rail-note">
         <strong>当前 v1 范围</strong>
-        <span>Draft、StaticSchema、RootDocument 验证与零网络 Candidate 审核；不展示 Template/Render。</span>
+        <span>Draft、StaticSchema、RootDocument 验证与可审核的 Candidate；不展示 Template/Render。</span>
       </div>
     </nav>
   );

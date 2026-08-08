@@ -74,6 +74,11 @@ public final class DashScopeInferenceProvider implements InferenceProvider {
         return decodeResponse(request, response.body());
     }
 
+    @Override
+    public boolean configured() {
+        return apiKey.isPresent();
+    }
+
     private byte[] encodeRequest(ProviderInferenceRequest request) {
         try {
             var root = json.createObjectNode();

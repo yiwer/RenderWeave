@@ -9,6 +9,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.mock.web.MockMultipartFile;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -18,6 +19,7 @@ import tools.jackson.databind.node.ObjectNode;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.asyncDispatch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -28,7 +30,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
 
 @Testcontainers
-@SpringBootTest(properties = "renderweave.inference.blob-root=target/test-inference-api-blobs")
+@SpringBootTest(properties = {
+        "renderweave.inference.blob-root=target/test-inference-api-blobs",
+        "DASHSCOPE_API_KEY=",
+        "DASHSCOPE_API_KEY_FILE="
+})
 @AutoConfigureMockMvc
 class InferenceApiTest {
     @Container
@@ -171,6 +177,41 @@ class InferenceApiTest {
                                 """))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
+    }
+
+    @Test
+    void liveAvailabilityIsSafeAndDisabledPolicyPreventsUploadsBeforeNormalization() throws Exception {
+        mockMvc.perform(get("/api/v1/inference-runs/live-availability"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.enabled").value(false))
+                .andExpect(jsonPath("$.configured").value(false))
+                .andExpect(jsonPath("$.maximumAttempts").value(6))
+                .andExpect(jsonPath("$.maximumCostMicrosCny").value(1_000_000))
+                .andExpect(jsonPath("$.profiles.length()").value(2))
+                .andExpect(jsonPath("$.profiles[?(@.model == 'qwen3.7-flash')]").exists())
+                .andExpect(jsonPath("$.profiles[?(@.model == 'qwen3.8-max')]").exists())
+                .andExpect(content().string(org.hamcrest.Matchers.not(
+                        org.hamcrest.Matchers.containsString("DASHSCOPE_API_KEY")
+                )));
+
+        var metadata = new MockMultipartFile(
+                "metadata", "metadata.json", MediaType.APPLICATION_JSON_VALUE,
+                """
+                        {"profileId":"dashscope-qwen37-flash-v1","mode":"IMAGE_ONLY",
+                         "inputClassification":"SYNTHETIC","externalTransferConfirmed":true,
+                         "experimentalProfileConfirmed":true}
+                        """.getBytes(java.nio.charset.StandardCharsets.UTF_8)
+        );
+        var image = new MockMultipartFile(
+                "images", "synthetic.png", MediaType.IMAGE_PNG_VALUE, new byte[]{1, 2, 3}
+        );
+        mockMvc.perform(multipart("/api/v1/inference-runs/live")
+                        .file(metadata).file(image)
+                        .header("Idempotency-Key", "disabled-live-upload"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
+        assertThat(count("inference_run")).isZero();
+        assertThat(count("inference_provider_reservation")).isZero();
     }
 
     @Test

@@ -4,6 +4,7 @@ import cn.hbads.renderweave.inference.run.InferenceStage;
 
 import java.time.Instant;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 
 /** Safe attempt metadata: no prompt, input value, model output, or chain-of-thought is retained. */
@@ -13,6 +14,12 @@ public record InferenceAttempt(
         InferenceStage stage,
         InferenceAttemptStatus status,
         String outcomeCode,
+        Optional<String> providerRequestId,
+        Optional<String> providerModel,
+        long inputTokens,
+        long outputTokens,
+        long estimatedCostMicrosCny,
+        long durationMillis,
         Instant completedAt
 ) {
     public InferenceAttempt {
@@ -28,6 +35,38 @@ public record InferenceAttempt(
         if (outcomeCode == null || !outcomeCode.matches("[A-Z][A-Z0-9_]{0,127}")) {
             throw new IllegalArgumentException("outcomeCode must be a stable uppercase identifier");
         }
+        providerRequestId = Objects.requireNonNull(providerRequestId, "providerRequestId");
+        providerModel = Objects.requireNonNull(providerModel, "providerModel");
+        if (providerRequestId.isPresent() != providerModel.isPresent()) {
+            throw new IllegalArgumentException("Provider request id and model must be paired");
+        }
+        providerRequestId.ifPresent(value -> {
+            if (!value.matches("[A-Za-z0-9._/-]{1,200}")) {
+                throw new IllegalArgumentException("providerRequestId contains unsafe characters");
+            }
+        });
+        providerModel.ifPresent(value -> {
+            if (!value.matches("[A-Za-z0-9._/-]{1,128}")) {
+                throw new IllegalArgumentException("providerModel contains unsafe characters");
+            }
+        });
+        if (inputTokens < 0 || outputTokens < 0 || estimatedCostMicrosCny < 0 || durationMillis < 0) {
+            throw new IllegalArgumentException("Attempt telemetry must not be negative");
+        }
         Objects.requireNonNull(completedAt, "completedAt");
+    }
+
+    public InferenceAttempt(
+            UUID runId,
+            int attemptOrdinal,
+            InferenceStage stage,
+            InferenceAttemptStatus status,
+            String outcomeCode,
+            Instant completedAt
+    ) {
+        this(
+                runId, attemptOrdinal, stage, status, outcomeCode,
+                Optional.empty(), Optional.empty(), 0, 0, 0, 0, completedAt
+        );
     }
 }

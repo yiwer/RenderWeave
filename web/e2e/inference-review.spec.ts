@@ -139,7 +139,7 @@ function reviewResponse(current: ReturnType<typeof candidateBundle>, candidateRe
 function runResponse(candidateRevision: number, applied: boolean) {
   return {
     runId, mode: 'COMBINED', state: applied ? 'COMPLETED' : 'REVIEW_REQUIRED', stage: applied ? 'ATOMIC_CREATE' : 'USER_APPROVAL', sequence: 7 + candidateRevision + (applied ? 2 : 0),
-    profileId: 'replay-v1', replayFixtureId: 'combined-08-low-information', cancellationRequested: false,
+    profileId: 'replay-v1', sourceReference: 'combined-08-low-information', cancellationRequested: false,
     retryOfRunId: null, failureCode: null, candidateRevision,
     createdAt: '2026-08-08T00:00:00Z', updatedAt: applied ? '2026-08-08T00:00:02Z' : '2026-08-08T00:00:01Z',
     finishedAt: applied ? '2026-08-08T00:00:02Z' : null,

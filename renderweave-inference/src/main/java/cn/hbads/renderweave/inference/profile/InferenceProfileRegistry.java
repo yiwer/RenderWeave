@@ -54,6 +54,18 @@ public final class InferenceProfileRegistry {
         return profiles.keySet();
     }
 
+    /** Parses the immutable snapshot stored with a run instead of silently substituting the latest registry entry. */
+    public InferenceProfile parseSnapshot(String snapshotJson) {
+        if (snapshotJson == null || snapshotJson.isBlank()) {
+            throw new IllegalArgumentException("Inference profile snapshot is required");
+        }
+        try {
+            return JSON.readValue(snapshotJson, InferenceProfile.class);
+        } catch (Exception exception) {
+            throw new IllegalArgumentException("Inference profile snapshot is invalid", exception);
+        }
+    }
+
     private static ProfileResource load(ClassLoader classLoader, String path) {
         try (var input = classLoader.getResourceAsStream(path)) {
             if (input == null) throw new IllegalStateException("Missing inference profile resource " + path);

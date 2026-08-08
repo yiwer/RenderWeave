@@ -11,6 +11,16 @@ import java.util.UUID;
 
 /** Transactional persistence boundary for replay attempts and the first review snapshot. */
 public interface InferenceReplayStore {
+    /** Persists a safe failed-call record while retaining the current durable stage. */
+    default InferenceRunSnapshot recordAttempt(
+            UUID runId,
+            UUID leaseToken,
+            InferenceAttempt attempt,
+            Instant now
+    ) {
+        throw new UnsupportedOperationException("Attempt-only checkpoints are not supported");
+    }
+
     InferenceRunSnapshot checkpointAttempt(
             UUID runId,
             UUID leaseToken,

@@ -16,7 +16,7 @@ public record InferenceRunSnapshot(
         long sequence,
         String profileId,
         String profileSnapshotJson,
-        String replayFixtureId,
+        String sourceReference,
         String inputFingerprint,
         Optional<UUID> retryOfRunId,
         boolean cancellationRequested,
@@ -36,7 +36,7 @@ public record InferenceRunSnapshot(
         if (sequence < 1) throw new IllegalArgumentException("sequence must be positive");
         profileId = requireText(profileId, "profileId");
         profileSnapshotJson = requireText(profileSnapshotJson, "profileSnapshotJson");
-        replayFixtureId = requireText(replayFixtureId, "replayFixtureId");
+        sourceReference = requireText(sourceReference, "sourceReference");
         if (inputFingerprint == null || !inputFingerprint.matches("[a-f0-9]{64}")) {
             throw new IllegalArgumentException("inputFingerprint must be a SHA-256 hex digest");
         }

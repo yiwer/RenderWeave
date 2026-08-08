@@ -74,7 +74,7 @@ public final class InputNormalizer {
                 ));
             }
             return new NormalizedInput(
-                    input.mode(), input.profileId(), input.replayFixtureId(), fingerprint,
+                    input.mode(), input.profileId(), input.sourceReference(), fingerprint,
                     List.copyOf(artifacts.values()), references,
                     receipts.stream().filter(BlobStore.WriteReceipt::created)
                             .map(BlobStore.WriteReceipt::locator).toList()
@@ -171,7 +171,7 @@ public final class InputNormalizer {
         var digest = sha256Digest();
         update(digest, input.mode().wireName().getBytes(StandardCharsets.UTF_8));
         update(digest, input.profileId().getBytes(StandardCharsets.UTF_8));
-        update(digest, input.replayFixtureId().getBytes(StandardCharsets.UTF_8));
+        update(digest, input.sourceReference().getBytes(StandardCharsets.UTF_8));
         for (var image : input.images()) {
             update(digest, image.mediaType().getBytes(StandardCharsets.UTF_8));
             update(digest, image.bytes());

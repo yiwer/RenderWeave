@@ -10,6 +10,7 @@ import { CandidateReviewPage } from './CandidateReviewPage';
 import { snapshot } from './candidate-session.test';
 
 const api = vi.hoisted(() => ({
+  getInferenceRunRequest: vi.fn(),
   getCandidateReviewRequest: vi.fn(),
   saveCandidateReviewRequest: vi.fn(),
   applyCandidateRequest: vi.fn(),
@@ -23,11 +24,13 @@ afterEach(cleanup);
 describe('Candidate atomic apply workspace', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    api.getInferenceRunRequest.mockResolvedValue(structuredClone(snapshot().run));
     api.subscribeInferenceRunEvents.mockReturnValue(() => undefined);
   });
 
   it('requires an explicit bundle confirmation and renders the created Draft handoff', async () => {
     let server = cleanReview();
+    api.getInferenceRunRequest.mockImplementation(async () => structuredClone(server.run));
     api.getCandidateReviewRequest.mockImplementation(async () => structuredClone(server));
     api.applyCandidateRequest.mockImplementation(async () => {
       const result = applyResult(server);

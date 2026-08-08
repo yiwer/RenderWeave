@@ -2,6 +2,8 @@ import {
   applyInferenceCandidate,
   createReplayInferenceRun,
   getInferenceCandidate,
+  getInferenceRun,
+  getLiveInferenceAvailability,
   listReplayFixtures,
   saveInferenceCandidate,
   type CandidateBundle,
@@ -9,6 +11,8 @@ import {
   type CandidateReviewResponse,
   type InferenceEvent,
   type InferenceRunResponse,
+  type InferenceMode,
+  type LiveAvailabilityResponse,
   type Problem,
   type ReplayFixtureListResponse,
 } from '../../api/generated';
@@ -28,6 +32,43 @@ export async function createReplayRunRequest(
     body: { fixtureId, externalTransferConfirmed: true },
   });
   return unwrap(result.data, result.error, '创建 replay 推断任务');
+}
+
+export async function getLiveAvailabilityRequest(): Promise<LiveAvailabilityResponse> {
+  const result = await getLiveInferenceAvailability();
+  return unwrap(result.data, result.error, '读取 live 推断配置');
+}
+
+export async function createLiveRunRequest(
+  profileId: 'dashscope-qwen37-flash-v1' | 'dashscope-qwen38-max-v1',
+  mode: InferenceMode,
+  images: File[],
+  jsonSamples: File[],
+  idempotencyKey: string,
+): Promise<InferenceRunResponse> {
+  const body = new FormData();
+  body.append('metadata', new Blob([JSON.stringify({
+    profileId,
+    mode,
+    inputClassification: 'SYNTHETIC',
+    externalTransferConfirmed: true,
+    experimentalProfileConfirmed: true,
+  })], { type: 'application/json' }));
+  images.forEach((image) => body.append('images', image));
+  jsonSamples.forEach((sample) => body.append('jsonSamples', sample));
+  const response = await fetch('/api/v1/inference-runs/live', {
+    method: 'POST',
+    headers: { 'Idempotency-Key': idempotencyKey },
+    body,
+  });
+  const value = await response.json() as InferenceRunResponse | Problem;
+  if (!response.ok) throw new StudioRequestError(value as Problem);
+  return value as InferenceRunResponse;
+}
+
+export async function getInferenceRunRequest(runId: string): Promise<InferenceRunResponse> {
+  const result = await getInferenceRun({ path: { runId } });
+  return unwrap(result.data, result.error, '读取推断任务');
 }
 
 export async function getCandidateReviewRequest(runId: string): Promise<CandidateReviewResponse> {

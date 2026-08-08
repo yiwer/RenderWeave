@@ -24,3 +24,10 @@ management:
     web:
       exposure:
         include: health,info
+
+renderweave:
+  inference:
+    blob-root: ${RENDERWEAVE_BLOB_ROOT:./var/renderweave/blobs}
+    live-enabled: ${RENDERWEAVE_LIVE_AI_ENABLED:false}
+    live-lease-seconds: 300
+    live-poll-millis: 2000

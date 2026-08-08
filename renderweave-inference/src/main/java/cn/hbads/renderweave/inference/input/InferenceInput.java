@@ -6,7 +6,7 @@ import java.util.Objects;
 public record InferenceInput(
         InferenceMode mode,
         String profileId,
-        String replayFixtureId,
+        String sourceReference,
         boolean externalTransferConfirmed,
         List<BinaryInput> images,
         List<BinaryInput> jsonSamples
@@ -14,7 +14,7 @@ public record InferenceInput(
     public InferenceInput {
         Objects.requireNonNull(mode, "mode");
         profileId = requireText(profileId, "profileId");
-        replayFixtureId = requireText(replayFixtureId, "replayFixtureId");
+        sourceReference = requireText(sourceReference, "sourceReference");
         images = List.copyOf(Objects.requireNonNull(images, "images"));
         jsonSamples = List.copyOf(Objects.requireNonNull(jsonSamples, "jsonSamples"));
     }

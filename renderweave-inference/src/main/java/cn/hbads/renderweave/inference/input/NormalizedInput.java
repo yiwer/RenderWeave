@@ -6,7 +6,7 @@ import java.util.Objects;
 public record NormalizedInput(
         InferenceMode mode,
         String profileId,
-        String replayFixtureId,
+        String sourceReference,
         String inputFingerprint,
         List<NormalizedArtifact> artifacts,
         List<NormalizedInputReference> references,
@@ -15,8 +15,8 @@ public record NormalizedInput(
     public NormalizedInput {
         Objects.requireNonNull(mode, "mode");
         if (profileId == null || profileId.isBlank()) throw new IllegalArgumentException("profileId is required");
-        if (replayFixtureId == null || replayFixtureId.isBlank()) {
-            throw new IllegalArgumentException("replayFixtureId is required");
+        if (sourceReference == null || sourceReference.isBlank()) {
+            throw new IllegalArgumentException("sourceReference is required");
         }
         if (inputFingerprint == null || !inputFingerprint.matches("[a-f0-9]{64}")) {
             throw new IllegalArgumentException("inputFingerprint must be a SHA-256 hex digest");

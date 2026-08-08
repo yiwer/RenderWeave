@@ -21,6 +21,7 @@ import { ResourceFrame } from '../resources/ResourceFrame';
 import {
   applyCandidateRequest,
   getCandidateReviewRequest,
+  getInferenceRunRequest,
   saveCandidateReviewRequest,
   subscribeInferenceRunEvents,
 } from './candidate-api';
@@ -37,10 +38,22 @@ import {
 
 export function CandidateReviewPage() {
   const { runId = '' } = useParams();
+  const runQuery = useQuery({
+    queryKey: ['inference-run', runId],
+    queryFn: () => getInferenceRunRequest(runId),
+    enabled: Boolean(runId),
+    refetchInterval: (current) => {
+      const state = current.state.data?.state;
+      return state === 'QUEUED' || state === 'RUNNING' ? 1_000 : false;
+    },
+  });
+  const reviewReady = runQuery.data?.state === 'REVIEW_REQUIRED'
+    || runQuery.data?.state === 'APPLYING'
+    || runQuery.data?.state === 'COMPLETED';
   const query = useQuery({
     queryKey: ['inference-candidate', runId],
     queryFn: () => getCandidateReviewRequest(runId),
-    enabled: Boolean(runId),
+    enabled: Boolean(runId) && reviewReady,
   });
   const refetch = query.refetch;
   const reload = useCallback(
@@ -54,10 +67,30 @@ export function CandidateReviewPage() {
       description="表单与一层树图共享同一份候选状态；置信度和证据只读，每个低置信度项必须单独确认、编辑解决或移除。"
       actions={<Link className="button ghost-button" to="/inference"><ArrowLeft aria-hidden="true" size={15} />返回样本</Link>}
     >
-      {query.isPending && <ResourceLoading label="正在读取 Candidate 与证据" />}
+      {runQuery.isPending && <ResourceLoading label="正在读取推断任务" />}
+      {runQuery.isError && <ResourceError error={runQuery.error} onRetry={() => void runQuery.refetch()} />}
+      {runQuery.data && !reviewReady && <InferenceRunProgress run={runQuery.data} />}
+      {reviewReady && query.isPending && <ResourceLoading label="正在读取 Candidate 与证据" />}
       {query.isError && <ResourceError error={query.error} onRetry={() => void query.refetch()} />}
       {query.data && <CandidateReviewWorkspace key={runId} initial={query.data} onReload={reload} />}
     </ResourceFrame>
+  );
+}
+
+function InferenceRunProgress({ run }: { run: import('../../api/generated').InferenceRunResponse }) {
+  const terminalFailure = run.state === 'FAILED' || run.state === 'CANCELLED';
+  return (
+    <section className={`inference-run-progress ${terminalFailure ? 'failed' : ''}`} role="status">
+      {terminalFailure
+        ? <AlertCircle aria-hidden="true" size={22} />
+        : <LoaderCircle className="spin" aria-hidden="true" size={22} />}
+      <div>
+        <strong>{terminalFailure ? '推断任务未生成 Candidate' : '正在执行受控推断流程'}</strong>
+        <span>{run.state} · {run.stage} · {run.profileId}</span>
+        {run.failureCode && <code>{run.failureCode}</code>}
+      </div>
+      <small>运行编号 {run.runId}</small>
+    </section>
   );
 }
 

@@ -13,9 +13,9 @@ RenderWeave 是一个 AI-native 设计出图系统。本仓库当前固定的是
 - Java 21 / Spring Boot 4.1 / PostgreSQL 与 React 19 / Vite 8 可运行产品纵切
 - strict Schema DSL、Draft revision/history/restore/copy、不可变 StaticSchema 与自底向上 JSON Schema 编译
 - Form + 一层 Map 共享状态的 Schema Studio，以及 RootDocument 批量验证
-- 零网络 synthetic replay：durable run → evidence review → create-only 原子 Draft Bundle
+- synthetic replay 与受控 DashScope live 识别：durable run → evidence review → create-only 原子 Draft Bundle
 
-当前实现已完成计划中 P1–P4，并以本地 A1 证据验证。它不包含 live AI/provider adapter；真实数据外传、付费调用与 Profile 认证仍属于需要独立 A2 和显式 J1 授权的 P5。
+当前实现已完成计划中 P1–P4，并进入 P5 的受控验证阶段。DashScope adapter 默认关闭，只接受显式标记并确认外传的合成数据；`qwen3.7-flash` 与 `qwen3.8-max` Profile 仍为 `EXPERIMENTAL`，不能直接发布或修改 Schema。真实业务数据、扩大调用预算与 Profile 认证仍需要新的授权和独立质量证据。
 
 ## 运行原型
 
@@ -72,5 +72,14 @@ powershell -ExecutionPolicy Bypass -File tools\run-gate.ps1 -Gate full
 docker compose config --quiet
 docker compose up --build
 ```
+
+基础 Compose 不启用外部模型。仅在明确允许传输的数据上启用 DashScope overlay：
+
+```powershell
+$env:DASHSCOPE_API_KEY = '<仅设置在当前终端，不写入仓库>'
+docker compose -f compose.yaml -f compose.live.yaml up --build
+```
+
+overlay 通过 Compose secret 向 API 容器只读挂载 Key，并显式设置 `RENDERWEAVE_LIVE_AI_ENABLED=true`。浏览器端不会接触 Key。当前 P5 Profile 只允许合成数据，页面还会要求用户分别确认外部传输与实验性结果审核。
 
 当前机器的 Docker registry 代理不可用，因此本轮只验证了 Compose 结构，并用 `runtime` gate 完成等价的 API/PostgreSQL live canary；镜像构建与整套 Compose 启动仍需在 registry 可用后执行，不能记为已通过。

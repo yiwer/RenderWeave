@@ -296,7 +296,7 @@ class PostgresInferenceRunStoreTest {
     }
 
     private static String profile() {
-        return "{\"profileId\":\"replay-v1\",\"provider\":\"replay\",\"network\":false}";
+        return "{\"profileId\":\"replay-v1\",\"provider\":\"replay\",\"networkAllowed\":false}";
     }
 
     private long count(String table) {

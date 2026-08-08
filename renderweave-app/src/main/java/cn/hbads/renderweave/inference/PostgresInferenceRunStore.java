@@ -67,12 +67,12 @@ public class PostgresInferenceRunStore implements InferenceRunStore, InferenceRe
                         insert into inference_run (
                             run_id, idempotency_key, request_fingerprint, input_fingerprint,
                             mode, state, stage, sequence, profile_id, profile_snapshot,
-                            replay_fixture_id, retry_of_run_id, checkpoint_json,
+                            source_reference, retry_of_run_id, checkpoint_json,
                             created_at, updated_at
                         ) values (
                             :runId, :idempotencyKey, :requestFingerprint, :inputFingerprint,
                             :mode, 'QUEUED', 'OBSERVE', 1, :profileId, cast(:profileSnapshot as jsonb),
-                            :replayFixtureId, :retryOfRunId, cast(:checkpointJson as jsonb),
+                            :sourceReference, :retryOfRunId, cast(:checkpointJson as jsonb),
                             :createdAt, :createdAt
                         )
                         """)
@@ -83,7 +83,7 @@ public class PostgresInferenceRunStore implements InferenceRunStore, InferenceRe
                 .param("mode", command.normalizedInput().mode().name())
                 .param("profileId", command.normalizedInput().profileId())
                 .param("profileSnapshot", command.profileSnapshotJson())
-                .param("replayFixtureId", command.normalizedInput().replayFixtureId())
+                .param("sourceReference", command.normalizedInput().sourceReference())
                 .param("retryOfRunId", command.retryOfRunId().orElse(null))
                 .param("checkpointJson", initialCheckpoint(command.normalizedInput().inputFingerprint()))
                 .param("createdAt", OffsetDateTime.ofInstant(command.createdAt(), java.time.ZoneOffset.UTC))
@@ -113,18 +113,35 @@ public class PostgresInferenceRunStore implements InferenceRunStore, InferenceRe
     @Override
     @Transactional
     public Optional<InferenceRunSnapshot> claimNext(String workerId, Instant now, Duration leaseDuration) {
+        return claimNextByNetwork(false, workerId, now, leaseDuration);
+    }
+
+    @Override
+    @Transactional
+    public Optional<InferenceRunSnapshot> claimNextLive(String workerId, Instant now, Duration leaseDuration) {
+        return claimNextByNetwork(true, workerId, now, leaseDuration);
+    }
+
+    private Optional<InferenceRunSnapshot> claimNextByNetwork(
+            boolean networkAllowed,
+            String workerId,
+            Instant now,
+            Duration leaseDuration
+    ) {
         workerId = requireWorkerId(workerId);
         var expiresAt = leaseExpiry(now, leaseDuration);
         var candidate = jdbcClient.sql("""
                         select run_id, state
                         from inference_run
-                        where state = 'QUEUED'
-                           or (state = 'RUNNING' and lease_expires_at <= :now)
+                        where (profile_snapshot ->> 'networkAllowed')::boolean = :networkAllowed
+                          and (state = 'QUEUED'
+                           or (state = 'RUNNING' and lease_expires_at <= :now))
                         order by created_at, run_id
                         for update skip locked
                         fetch first 1 row only
                         """)
                 .param("now", offset(now))
+                .param("networkAllowed", networkAllowed)
                 .query((resultSet, rowNumber) -> new ClaimCandidate(
                         resultSet.getObject("run_id", UUID.class),
                         InferenceRunState.valueOf(resultSet.getString("state"))
@@ -422,12 +439,12 @@ public class PostgresInferenceRunStore implements InferenceRunStore, InferenceRe
                         insert into inference_run (
                             run_id, idempotency_key, request_fingerprint, input_fingerprint,
                             mode, state, stage, sequence, profile_id, profile_snapshot,
-                            replay_fixture_id, retry_of_run_id, checkpoint_json,
+                            source_reference, retry_of_run_id, checkpoint_json,
                             created_at, updated_at
                         )
                         select :newRunId, :idempotencyKey, :requestFingerprint, input_fingerprint,
                                mode, 'QUEUED', 'OBSERVE', 1, profile_id, profile_snapshot,
-                               replay_fixture_id, run_id, cast(:checkpointJson as jsonb),
+                               source_reference, run_id, cast(:checkpointJson as jsonb),
                                :now, :now
                         from inference_run
                         where run_id = :sourceRunId
@@ -546,6 +563,51 @@ public class PostgresInferenceRunStore implements InferenceRunStore, InferenceRe
 
     @Override
     @Transactional
+    public InferenceRunSnapshot recordAttempt(
+            UUID runId,
+            UUID leaseToken,
+            InferenceAttempt attempt,
+            Instant now
+    ) {
+        Objects.requireNonNull(attempt, "attempt");
+        if (!runId.equals(attempt.runId()) || attempt.status() != InferenceAttemptStatus.FAILED) {
+            throw new IllegalArgumentException("Attempt-only checkpoints require a matching FAILED attempt");
+        }
+        var updated = jdbcClient.sql("""
+                        update inference_run
+                        set sequence = sequence + 1, updated_at = :now
+                        where run_id = :runId
+                          and state = 'RUNNING'
+                          and stage = :stage
+                          and lease_token = :leaseToken
+                          and lease_expires_at > :now
+                          and not cancellation_requested
+                        returning sequence, stage
+                        """)
+                .param("now", offset(now))
+                .param("runId", runId)
+                .param("stage", attempt.stage().name())
+                .param("leaseToken", leaseToken)
+                .query((resultSet, rowNumber) -> new SequenceAndStage(
+                        resultSet.getLong("sequence"),
+                        InferenceStage.valueOf(resultSet.getString("stage"))
+                ))
+                .optional();
+        if (updated.isEmpty()) throw new InferenceLeaseLostException(runId);
+        insertAttempt(attempt);
+        var result = updated.orElseThrow();
+        insertEvent(
+                runId, result.sequence(), "PROVIDER_ATTEMPT_FAILED",
+                InferenceRunState.RUNNING, result.stage(),
+                "{\"attemptOrdinal\":" + attempt.attemptOrdinal()
+                        + ",\"outcomeCode\":\"" + attempt.outcomeCode() + "\"}",
+                now
+        );
+        return require(runId);
+    }
+
+    @Override
+    @Transactional
     public InferenceRunSnapshot checkpointAttempt(
             UUID runId,
             UUID leaseToken,
@@ -559,20 +621,7 @@ public class PostgresInferenceRunStore implements InferenceRunStore, InferenceRe
         if (!runId.equals(attempt.runId()) || expectedStage != attempt.stage()) {
             throw new IllegalArgumentException("Attempt identity and expected run stage must agree");
         }
-        jdbcClient.sql("""
-                        insert into inference_attempt (
-                            run_id, attempt_ordinal, stage, status, outcome_code, completed_at
-                        ) values (
-                            :runId, :attemptOrdinal, :stage, :status, :outcomeCode, :completedAt
-                        )
-                        """)
-                .param("runId", attempt.runId())
-                .param("attemptOrdinal", attempt.attemptOrdinal())
-                .param("stage", attempt.stage().name())
-                .param("status", attempt.status().name())
-                .param("outcomeCode", attempt.outcomeCode())
-                .param("completedAt", offset(attempt.completedAt()))
-                .update();
+        insertAttempt(attempt);
         return checkpoint(runId, leaseToken, expectedStage, nextStage, checkpointJson, now);
     }
 
@@ -724,7 +773,9 @@ public class PostgresInferenceRunStore implements InferenceRunStore, InferenceRe
     @Override
     public List<InferenceAttempt> attempts(UUID runId) {
         return jdbcClient.sql("""
-                        select run_id, attempt_ordinal, stage, status, outcome_code, completed_at
+                        select run_id, attempt_ordinal, stage, status, outcome_code,
+                               provider_request_id, provider_model, input_tokens, output_tokens,
+                               estimated_cost_micros_cny, duration_millis, completed_at
                         from inference_attempt
                         where run_id = :runId
                         order by attempt_ordinal
@@ -732,6 +783,33 @@ public class PostgresInferenceRunStore implements InferenceRunStore, InferenceRe
                 .param("runId", runId)
                 .query(PostgresInferenceRunStore::mapAttempt)
                 .list();
+    }
+
+    private void insertAttempt(InferenceAttempt attempt) {
+        jdbcClient.sql("""
+                        insert into inference_attempt (
+                            run_id, attempt_ordinal, stage, status, outcome_code,
+                            provider_request_id, provider_model, input_tokens, output_tokens,
+                            estimated_cost_micros_cny, duration_millis, completed_at
+                        ) values (
+                            :runId, :attemptOrdinal, :stage, :status, :outcomeCode,
+                            :providerRequestId, :providerModel, :inputTokens, :outputTokens,
+                            :estimatedCostMicrosCny, :durationMillis, :completedAt
+                        )
+                        """)
+                .param("runId", attempt.runId())
+                .param("attemptOrdinal", attempt.attemptOrdinal())
+                .param("stage", attempt.stage().name())
+                .param("status", attempt.status().name())
+                .param("outcomeCode", attempt.outcomeCode())
+                .param("providerRequestId", attempt.providerRequestId().orElse(null))
+                .param("providerModel", attempt.providerModel().orElse(null))
+                .param("inputTokens", attempt.inputTokens())
+                .param("outputTokens", attempt.outputTokens())
+                .param("estimatedCostMicrosCny", attempt.estimatedCostMicrosCny())
+                .param("durationMillis", attempt.durationMillis())
+                .param("completedAt", offset(attempt.completedAt()))
+                .update();
     }
 
     private void upsertAndVerifyArtifact(NormalizedArtifact artifact, Instant createdAt) {
@@ -789,7 +867,7 @@ public class PostgresInferenceRunStore implements InferenceRunStore, InferenceRe
         return jdbcClient.sql("""
                         select run_id, mode, state, stage, sequence, profile_id,
                                profile_snapshot::text as profile_snapshot,
-                               replay_fixture_id, input_fingerprint, retry_of_run_id,
+                               source_reference, input_fingerprint, retry_of_run_id,
                                cancellation_requested, lease_owner, lease_token, lease_expires_at,
                                failure_code, checkpoint_json::text as checkpoint_json,
                                created_at, updated_at, finished_at
@@ -894,7 +972,7 @@ public class PostgresInferenceRunStore implements InferenceRunStore, InferenceRe
                 resultSet.getLong("sequence"),
                 resultSet.getString("profile_id"),
                 resultSet.getString("profile_snapshot"),
-                resultSet.getString("replay_fixture_id"),
+                resultSet.getString("source_reference"),
                 resultSet.getString("input_fingerprint"),
                 Optional.ofNullable(resultSet.getObject("retry_of_run_id", UUID.class)),
                 resultSet.getBoolean("cancellation_requested"),
@@ -959,6 +1037,12 @@ public class PostgresInferenceRunStore implements InferenceRunStore, InferenceRe
                 InferenceStage.valueOf(resultSet.getString("stage")),
                 InferenceAttemptStatus.valueOf(resultSet.getString("status")),
                 resultSet.getString("outcome_code"),
+                Optional.ofNullable(resultSet.getString("provider_request_id")),
+                Optional.ofNullable(resultSet.getString("provider_model")),
+                resultSet.getLong("input_tokens"),
+                resultSet.getLong("output_tokens"),
+                resultSet.getLong("estimated_cost_micros_cny"),
+                resultSet.getLong("duration_millis"),
                 instant(resultSet, "completed_at").orElseThrow()
         );
     }
@@ -1028,7 +1112,7 @@ public class PostgresInferenceRunStore implements InferenceRunStore, InferenceRe
             long sequence,
             String profileId,
             String profileSnapshotJson,
-            String replayFixtureId,
+            String sourceReference,
             String inputFingerprint,
             Optional<UUID> retryOfRunId,
             boolean cancellationRequested,
@@ -1042,7 +1126,7 @@ public class PostgresInferenceRunStore implements InferenceRunStore, InferenceRe
         InferenceRunSnapshot toSnapshot(List<InferenceRunInput> inputs) {
             return new InferenceRunSnapshot(
                     runId, mode, state, stage, sequence, profileId, profileSnapshotJson,
-                    replayFixtureId, inputFingerprint, retryOfRunId, cancellationRequested,
+                    sourceReference, inputFingerprint, retryOfRunId, cancellationRequested,
                     lease, failureCode, checkpointJson, createdAt, updatedAt, finishedAt, inputs
             );
         }

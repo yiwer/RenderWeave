@@ -4,4 +4,8 @@ package cn.hbads.renderweave.inference.provider;
 @FunctionalInterface
 public interface InferenceProvider {
     ProviderInferenceResponse complete(ProviderInferenceRequest request);
+
+    default boolean configured() {
+        return true;
+    }
 }

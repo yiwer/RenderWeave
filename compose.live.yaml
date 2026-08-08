@@ -2,6 +2,7 @@ services:
   api:
     environment:
       DASHSCOPE_API_KEY_FILE: /run/secrets/dashscope_api_key
+      RENDERWEAVE_LIVE_AI_ENABLED: "true"
     secrets:
       - dashscope_api_key
 

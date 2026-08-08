@@ -13,9 +13,12 @@ import cn.hbads.renderweave.inference.dashscope.DashScopeInferenceProvider;
 import cn.hbads.renderweave.inference.profile.InferenceProfileRegistry;
 import cn.hbads.renderweave.inference.profile.InferencePromptRegistry;
 import cn.hbads.renderweave.inference.provider.InferenceProvider;
+import cn.hbads.renderweave.inference.provider.ProviderBudgetStore;
+import cn.hbads.renderweave.inference.live.LiveInferenceWorker;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 import java.nio.file.Path;
 import java.time.Clock;
@@ -24,6 +27,7 @@ import java.util.UUID;
 import tools.jackson.databind.ObjectMapper;
 
 @Configuration(proxyBeanMethods = false)
+@EnableScheduling
 class InferenceApplicationConfiguration {
 
     @Bean
@@ -82,12 +86,37 @@ class InferenceApplicationConfiguration {
     }
 
     @Bean
+    LiveInferenceWorker liveInferenceWorker(
+            InferenceRunStore runStore,
+            InferenceReplayStore replayStore,
+            ProviderBudgetStore budgetStore,
+            InferenceProvider provider,
+            BlobStore blobStore,
+            Clock inferenceClock,
+            @Value("${renderweave.inference.live-lease-seconds:300}") long leaseSeconds
+    ) {
+        return new LiveInferenceWorker(
+                runStore, replayStore, budgetStore, provider, blobStore,
+                inferenceClock, Duration.ofSeconds(leaseSeconds)
+        );
+    }
+
+    @Bean
+    LiveInferenceCoordinator liveInferenceCoordinator(
+            LiveInferenceWorker worker,
+            @Value("${renderweave.inference.live-enabled:false}") boolean enabled
+    ) {
+        return new LiveInferenceCoordinator(worker, enabled);
+    }
+
+    @Bean
     CandidateReviewService candidateReviewService(
             InferenceRunStore runStore,
             InferenceReplayStore replayStore,
-            Clock inferenceClock
+            Clock inferenceClock,
+            BlobStore blobStore
     ) {
-        return new CandidateReviewService(runStore, replayStore, inferenceClock);
+        return new CandidateReviewService(runStore, replayStore, inferenceClock, blobStore);
     }
 
     @Bean
