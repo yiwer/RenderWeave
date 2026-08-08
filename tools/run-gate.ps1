@@ -21,6 +21,16 @@ function Write-Utf8File {
     [System.IO.File]::WriteAllText($Path, $Content, $encoding)
 }
 
+function Invoke-ZeroPaidAiCommand {
+    param([Parameter(Mandatory = $true)][string]$CommandLine)
+    # Use a child process so the caller's secret is neither read nor mutated. Dedicated live
+    # certification deliberately does not go through this project-gate helper.
+    $environmentPrefix = 'set "DASHSCOPE_API_KEY=" && set "DASHSCOPE_API_KEY_FILE=" && ' +
+        'set "RENDERWEAVE_RUN_LIVE_CANARY=" && set "RENDERWEAVE_RUN_LIVE_CERTIFICATION=" && ' +
+        'set "RENDERWEAVE_LIVE_AI_ENABLED=false" && set "RENDERWEAVE_LIVE_UPLOAD_ENABLED=false" && '
+    & cmd.exe /d /s /c ($environmentPrefix + $CommandLine)
+}
+
 function Get-RepositoryManifest {
     Push-Location $repoRoot
     try {
@@ -104,63 +114,49 @@ try {
                 Invoke-GateStep $step { & git -c core.autocrlf=false diff --check }
             }
             'server-package' {
-                Invoke-GateStep $step { & mvn.cmd -B -ntp -DskipTests package }
+                Invoke-GateStep $step { Invoke-ZeroPaidAiCommand 'mvn.cmd -B -ntp -DskipTests package' }
             }
             'server-verify' {
-                Invoke-GateStep $step { & mvn.cmd -B -ntp verify }
+                Invoke-GateStep $step { Invoke-ZeroPaidAiCommand 'mvn.cmd -B -ntp verify' }
             }
             'web-typecheck' {
-                Invoke-GateStep $step { & npm.cmd --prefix web run typecheck }
+                Invoke-GateStep $step {
+                    Invoke-ZeroPaidAiCommand 'npm.cmd --prefix web run typecheck'
+                }
             }
             'web-node24' {
                 Invoke-GateStep $step {
-                    $nodeDir = (& powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools\ensure-node24.ps1 | Select-Object -Last 1)
-                    if ($LASTEXITCODE -ne 0 -or -not $nodeDir) {
-                        throw 'Unable to provision the pinned Node 24 toolchain.'
-                    }
-                    $npmCommand = Join-Path $nodeDir 'npm.cmd'
-                    $previousUserConfig = $env:NPM_CONFIG_USERCONFIG
-                    $env:NPM_CONFIG_USERCONFIG = Join-Path $repoRoot 'web\.npmrc'
-                    Push-Location (Join-Path $repoRoot 'web')
-                    try {
-                        & $npmCommand ci
-                        if ($LASTEXITCODE -ne 0) { return }
-                        & $npmCommand run check
-                        if ($LASTEXITCODE -ne 0) { return }
-                        & $npmCommand run build
-                    }
-                    finally {
-                        Pop-Location
-                        if ($null -eq $previousUserConfig) {
-                            Remove-Item Env:NPM_CONFIG_USERCONFIG -ErrorAction SilentlyContinue
-                        }
-                        else {
-                            $env:NPM_CONFIG_USERCONFIG = $previousUserConfig
-                        }
-                    }
+                    Invoke-ZeroPaidAiCommand `
+                        'powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools\run-web-gate.ps1'
                 }
             }
             'compose-config' {
-                Invoke-GateStep $step { & docker compose -f compose.yaml config --quiet }
+                Invoke-GateStep $step {
+                    Invoke-ZeroPaidAiCommand 'docker compose -f compose.yaml config --quiet'
+                }
             }
             'prototype-e2e' {
                 Invoke-GateStep $step {
-                    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools\run-prototype-audit.ps1
+                    Invoke-ZeroPaidAiCommand `
+                        'powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools\run-prototype-audit.ps1'
                 }
             }
             'runtime-canary' {
                 Invoke-GateStep $step {
-                    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools\runtime-canary.ps1
+                    Invoke-ZeroPaidAiCommand `
+                        'powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools\runtime-canary.ps1'
                 }
             }
             'draft-browser-e2e' {
                 Invoke-GateStep $step {
-                    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools\run-draft-e2e.ps1
+                    Invoke-ZeroPaidAiCommand `
+                        'powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools\run-draft-e2e.ps1'
                 }
             }
             'inference-browser-e2e' {
                 Invoke-GateStep $step {
-                    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools\run-inference-e2e.ps1
+                    Invoke-ZeroPaidAiCommand `
+                        'powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools\run-inference-e2e.ps1'
                 }
             }
         }

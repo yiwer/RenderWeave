@@ -1,0 +1,16 @@
+{
+  "authorizationVersion": "renderweave-live-certification-authorization/1.1",
+  "authorizationId": "p5-certification-20260809-flash-v2",
+  "status": "PROPOSED",
+  "inputClassification": "REPOSITORY_SYNTHETIC_ONLY",
+  "corpusVersion": "renderweave-live-eval/2.0",
+  "evaluationIdentity": "renderweave-repository-tree-sha256/1:3c9277db6296c965f312d8e113f1c59eb3b193f55dc9a149a22053563192fd54",
+  "profileIds": ["dashscope-qwen37-flash-v1"],
+  "maximumProviderAttempts": 180,
+  "maximumCostMicrosCny": 3600000,
+  "maximumCasesPerBatch": 5,
+  "approvedBy": null,
+  "approvedAt": null,
+  "expiresAt": null,
+  "approvalScope": null
+}

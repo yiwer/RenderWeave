@@ -16,8 +16,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 public final class LiveEvaluationCorpus {
-    public static final String VERSION = "renderweave-live-eval/1.0";
-    private static final String RESOURCE = "live-eval/v1/gold.json";
+    public static final String VERSION = "renderweave-live-eval/2.0";
+    private static final String RESOURCE = "live-eval/v2/gold.json";
     private static final ObjectMapper JSON = JsonMapper.builder(
                     JsonFactory.builder().enable(StreamReadFeature.STRICT_DUPLICATE_DETECTION).build())
             .enable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS)

@@ -1,10 +1,10 @@
 # RenderWeave v1 Phase 计划
 
-- 状态：P1–P4 implementation complete；P5 T5-1–T5-4 已完成实现、限定 live canary 与安全硬化，P5 safety 独立复核通过（A2）；T5-5 已决定两个 Profile 继续 `EXPERIMENTAL`，质量认证未完成
-- 日期：2026-08-08
+- 状态：P1–P4 implementation complete；P5 T5-1–T5-5 已完成通路、安全硬化与“不认证”决定；T5-6 的 60-case 认证 harness/评测合同已通过 A1 + 独立 A2，等待新的精确 live J1
+- 日期：2026-08-09
 - Spec：[`specs/renderweave-v1.md`](../specs/renderweave-v1.md)
 - 原型：`/prototype/schema-studio?variant=A|B|C`
-- 当前 lifecycle：P0 `accepted`；P1–P4 `automated_verified`；P5 `live_canary_verified` / `safety_independently_reviewed` / `certification_incomplete`
+- 当前 lifecycle：P0 `accepted`；P1–P4 `automated_verified`；P5 `live_canary_verified` / `certification_prelive_independently_reviewed` / `awaiting_live_j1`
 
 ## 1. 四维执行配置
 
@@ -269,7 +269,7 @@ Phase 内任务只在真实前置依赖满足时并行。当前没有 atomic cla
 - 完成信号：上传不触网；显式 synthetic/external-transfer confirmation 才启动；Candidate 进入既有逐项审核/create-only 路径
 
 #### T5-3：60-case gold corpus、metrics 与 holdout runner
-- 执行状态：`automated_verified`（A1；仅评测合同与 replay，未完成 60-case live quality A2）
+- 执行状态：`prelive_independently_reviewed`（v2 完整图 gold/metric/policy 为 A1 + A2；尚未执行 60-case live quality）
 - AC：AC-016, AC-021
 - 依赖：T4-2, T5-1
 - 影响区域：eval fixtures/runner/reports
@@ -297,6 +297,16 @@ Phase 内任务只在真实前置依赖满足时并行。当前没有 atomic cla
 - 回归升级：任何 profile identity change invalidates evidence
 - 证据保证：A2 + policy J1
 - 完成信号：已明确两个 Profile 均为 `EXPERIMENTAL`，AI default remains disabled；后续认证需新的 J1 与独立 60-case/holdout A2
+
+#### T5-6：可恢复、身份绑定的 60-case live quality certification
+- 执行状态：`awaiting_live_j1`（pre-live implementation A1 + independent A2 PASS；`plans/logs/P5-T5-6.md`）
+- AC：AC-016, AC-021
+- 依赖：T5-3, T5-5；新的 provider/cost/data J1
+- 影响区域：v2 eval gold/whole-graph scorer/certification policy、test-only live harness、authorization/guard/journal、project gate
+- 局部验证：60-case envelope 正反例、UNRESOLVED/CONFLICT 误断言负例、budget/recovery/identity drift tests、PROPOSED zero-write probe
+- 回归升级：Profile/prompt/gold/evaluator/workflow/build 任一变化都会改变 evaluation identity，现有授权 fail-closed，必须重新提案/J1
+- 证据保证：pre-live A1 + A2；真实执行为 J1 + A1，结果完成后再做独立审查
+- 完成信号：精确授权下全量完成，每个 Profile 单独产出 global/mode/HOLDOUT 报告；按 policy 如实保持 `EXPERIMENTAL` 或决定 `CERTIFIED`，授权立即 CLOSED
 
 ### P6 — Release candidate
 
@@ -366,3 +376,4 @@ Phase 内任务只在真实前置依赖满足时并行。当前没有 atomic cla
 5. P5 live safety hardening 已由独立只读 reviewer 复核为 A2 PASS；范围只包括本节点授权、预算、重试、上传/响应上限、迁移账本和合同闭环，不涵盖完整质量认证。release hard gate 尚无外部 CI/branch protection，因此不存在 A3。
 6. 授权账本已关闭，Compose live overlay 的 worker/upload 两门均保持 false；任何新增调用不得继承未使用的 attempt 或预算。
 7. P5 真实通路已证明，但 2/60 小样本不是质量认证；两个 Profile 继续为 `EXPERIMENTAL`、默认关闭。完整 60-case live 评测、真实业务数据、扩大费用或生产启用仍需新的 J1 与独立 A2。
+8. T5-6 已把 60-case v2 whole-graph 评测、fail-closed policy、每批最多 5 case 的恢复账本与完整 repository evaluation identity 做成可执行闭环，并通过独立 A2；当前新账本仍为 `PROPOSED`，新增 provider call 为 0。

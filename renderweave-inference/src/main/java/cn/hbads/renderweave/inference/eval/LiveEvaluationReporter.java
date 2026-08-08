@@ -57,17 +57,48 @@ public final class LiveEvaluationReporter {
     }
 
     private static LiveEvaluationSlice slice(List<LiveEvaluationResult> results) {
-        if (results.isEmpty()) return new LiveEvaluationSlice(0, 0, 0, 0, 0, 0, 0, 0, 0);
+        if (results.isEmpty()) return new LiveEvaluationSlice(
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+        );
+        var expectedEntities = sum(results, LiveEvaluationResult::expectedEntityCount);
+        var actualEntities = sum(results, LiveEvaluationResult::actualEntityCount);
+        var matchedEntities = sum(results, LiveEvaluationResult::matchedEntityCount);
+        var expectedFields = sum(results, LiveEvaluationResult::expectedFieldCount);
+        var actualFields = sum(results, LiveEvaluationResult::actualFieldCount);
+        var matchedFields = sum(results, LiveEvaluationResult::matchedFieldCount);
+        var expectedTypes = sum(results, LiveEvaluationResult::supportedTypeExpectedCount);
+        var matchedTypes = sum(results, LiveEvaluationResult::supportedTypeMatchedCount);
+        var expectedEdges = sum(results, LiveEvaluationResult::expectedEdgeCount);
+        var actualEdges = sum(results, LiveEvaluationResult::actualEdgeCount);
+        var matchedEdges = sum(results, LiveEvaluationResult::matchedEdgeCount);
+        var expectedEvidence = sum(results, LiveEvaluationResult::evidenceExpectedCount);
+        var presentEvidence = sum(results, LiveEvaluationResult::evidencePresentCount);
         return new LiveEvaluationSlice(
                 results.size(), (int) results.stream().filter(LiveEvaluationResult::passed).count(),
                 ratio(results.stream().filter(LiveEvaluationResult::passed).count(), results.size()),
-                average(results, LiveEvaluationResult::rootFieldPrecisionBps),
-                average(results, LiveEvaluationResult::rootFieldRecallBps),
-                average(results, LiveEvaluationResult::rootShapeAccuracyBps),
-                average(results, LiveEvaluationResult::evidenceCoverageBps),
-                average(results, LiveEvaluationResult::optionalitySafetyBps),
+                average(results, LiveEvaluationResult::bundleContractBps),
+                LiveEvaluationResult.precision(matchedEntities, actualEntities, expectedEntities),
+                LiveEvaluationResult.recall(matchedEntities, expectedEntities),
+                LiveEvaluationResult.f1(matchedEntities, expectedEntities, actualEntities),
+                LiveEvaluationResult.precision(matchedFields, actualFields, expectedFields),
+                LiveEvaluationResult.recall(matchedFields, expectedFields),
+                LiveEvaluationResult.f1(matchedFields, expectedFields, actualFields),
+                LiveEvaluationResult.ratioOrPerfect(matchedTypes, expectedTypes),
+                LiveEvaluationResult.precision(matchedEdges, actualEdges, expectedEdges),
+                LiveEvaluationResult.recall(matchedEdges, expectedEdges),
+                LiveEvaluationResult.f1(matchedEdges, expectedEdges, actualEdges),
+                LiveEvaluationResult.ratioOrPerfect(presentEvidence, expectedEvidence),
+                average(results, LiveEvaluationResult::dagValidityBps),
+                results.stream().mapToInt(LiveEvaluationResult::criticalHallucinationCount).sum(),
                 results.stream().mapToInt(LiveEvaluationResult::blockerCount).sum()
         );
+    }
+
+    private static long sum(
+            List<LiveEvaluationResult> results,
+            java.util.function.ToIntFunction<LiveEvaluationResult> metric
+    ) {
+        return results.stream().mapToLong(metric::applyAsInt).sum();
     }
 
     private static int average(
