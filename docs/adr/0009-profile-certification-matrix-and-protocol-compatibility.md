@@ -25,6 +25,13 @@
 - <https://platform.qianwenai.com/docs/developer-guides/text-generation/thinking>
 - <https://platform.qianwenai.com/docs/developer-guides/getting-started/pricing>
 
+## 验证结果
+
+- pinned Plus 在 14 个串行批次中完成 60/60 case，共 75 attempts；113,094 input tokens、74,970 output tokens，独立重算费用为 ¥0.825948。账本生命周期为 `PROPOSED → OPEN → CLOSED`，结束时没有活跃 execution 或未结算 reservation。
+- exact pass 为 18/60；global entity F1 90.90%、field F1 73.29%、supported type 72.15%、edge F1 66.66%、evidence 92.97%、DAG 93.33%，critical hallucination 51、blocker 44。
+- fail-closed policy 独立重建出 31 条违规，因此结果为 `EXPERIMENTAL`。该 Profile 不改为 `CERTIFIED`，也不把本次结果外推给浮动 Plus、dated Flash 或 Max 系列。
+- 本地 A2 对 case/run/reservation、逐 attempt 费用、global/mode/partition 共 108 个 scalar、policy 与 payload-free 证据全部复核一致；证据仍不是外部不可篡改 A3。
+
 ## 后果
 
 - 正向：评测身份绑定稳定模型版本；不会向强制思考或不支持 JSON mode 的模型发送已知不兼容请求；各 Profile 的授权与证据互不污染。
