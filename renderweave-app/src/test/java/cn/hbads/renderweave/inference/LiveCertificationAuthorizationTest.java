@@ -39,6 +39,21 @@ class LiveCertificationAuthorizationTest {
     }
 
     @Test
+    void openAuthorizationWindowCannotExceedFourHours() {
+        var exactWindow = authorization("OPEN", List.of(LiveCertificationAuthorization.FLASH_PROFILE),
+                180, 3_600_000, "user", "2026-08-08T07:00:00Z",
+                "2026-08-08T11:00:00Z", "60 synthetic flash cases");
+        var oversizedWindow = authorization("OPEN", List.of(LiveCertificationAuthorization.FLASH_PROFILE),
+                180, 3_600_000, "user", "2026-08-08T07:00:00Z",
+                "2026-08-08T11:00:01Z", "60 synthetic flash cases");
+
+        exactWindow.requireOpen(NOW);
+        assertThatThrownBy(() -> oversizedWindow.requireOpen(NOW))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("LIVE_CERTIFICATION_AUTHORIZATION_WINDOW_EXCEEDED");
+    }
+
+    @Test
     void everyAuthorizedProfileReceivesTheWholeCorpus() {
         var authorization = authorization("PROPOSED", List.of(
                         LiveCertificationAuthorization.FLASH_PROFILE,

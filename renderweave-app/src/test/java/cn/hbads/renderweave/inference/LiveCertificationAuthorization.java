@@ -8,6 +8,7 @@ import tools.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -38,6 +39,7 @@ record LiveCertificationAuthorization(
     static final String MAX_PROFILE = "dashscope-qwen38-max-v1";
     private static final int ABSOLUTE_MAXIMUM_ATTEMPTS = 360;
     private static final long ABSOLUTE_MAXIMUM_COST_MICROS_CNY = 54_000_000L;
+    private static final Duration MAXIMUM_AUTHORIZATION_WINDOW = Duration.ofHours(4);
 
     LiveCertificationAuthorization {
         profileIds = List.copyOf(Objects.requireNonNull(profileIds, "profileIds"));
@@ -100,6 +102,9 @@ record LiveCertificationAuthorization(
         }
         if (approved.isAfter(now) || !expires.isAfter(now) || !expires.isAfter(approved)) {
             throw new IllegalStateException("LIVE_CERTIFICATION_AUTHORIZATION_EXPIRED");
+        }
+        if (Duration.between(approved, expires).compareTo(MAXIMUM_AUTHORIZATION_WINDOW) > 0) {
+            throw new IllegalStateException("LIVE_CERTIFICATION_AUTHORIZATION_WINDOW_EXCEEDED");
         }
     }
 
