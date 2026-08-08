@@ -28,7 +28,7 @@
 - [x] P5 当次 provider/cost/data J1：DashScope、synthetic-only、≤6 attempts、≤¥1。
 - [x] T5-1：DashScope provider-neutral contract、双模型 versioned Profile、Prompt/费用快照、环境变量/Compose secret 与零网络 adapter contract tests（A1 server gate）。
 - [x] T5-2–T5-5：live upload/worker/UI、限定 canary、安全 A2 与“不认证”决定；旧授权 CLOSED。
-- [x] T5-6 pre-live：60-case v2 corpus、完整图指标、fail-closed certification policy、每批 5 case 的 journal harness、evaluation identity 与独立 A2 PASS。
+- [x] T5-6 pre-live：60-case v2 corpus、完整图指标、fail-closed policy、每批 5 case 的 journal harness、12×5 重载闭环、evaluation identity 与独立 A2 PASS。
 - [x] 将最终 tracked tree digest 写入新 `PROPOSED` 账本并创建 pre-live 节点提交。
 - [ ] 请求 flash-only 60-case / ≤180 attempts / ≤¥3.60 / synthetic-only 的新精确 J1。
 - [ ] 只有获得该 J1 后才可逐批运行；完成/停止/到期立即 CLOSED，并对最终报告再做独立结果审查。

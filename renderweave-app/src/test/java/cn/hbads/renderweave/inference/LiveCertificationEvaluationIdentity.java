@@ -105,22 +105,28 @@ final class LiveCertificationEvaluationIdentity {
         var command = new String[arguments.length + 1];
         command[0] = "git";
         System.arraycopy(arguments, 0, command, 1, arguments.length);
+        Path outputFile = null;
+        Process process = null;
         try {
+            outputFile = Files.createTempFile("renderweave-certification-git-", ".out");
             var builder = new ProcessBuilder(command)
                     .directory(repositoryRoot.toFile())
-                    .redirectErrorStream(true);
+                    .redirectErrorStream(true)
+                    .redirectOutput(outputFile.toFile());
             PAID_ENVIRONMENT_KEYS.forEach(key -> builder.environment().remove(key));
             builder.environment().put("RENDERWEAVE_LIVE_AI_ENABLED", "false");
             builder.environment().put("RENDERWEAVE_LIVE_UPLOAD_ENABLED", "false");
-            var process = builder.start();
-            var output = process.getInputStream().readAllBytes();
+            process = builder.start();
             if (!process.waitFor(10, TimeUnit.SECONDS)) {
+                process.toHandle().descendants().forEach(ProcessHandle::destroyForcibly);
                 process.destroyForcibly();
+                process.waitFor(5, TimeUnit.SECONDS);
                 throw new IllegalStateException("LIVE_CERTIFICATION_GIT_IDENTITY_TIMEOUT");
             }
             if (process.exitValue() != 0) {
                 throw new IllegalStateException("LIVE_CERTIFICATION_GIT_IDENTITY_FAILED");
             }
+            var output = Files.readAllBytes(outputFile);
             return Arrays.stream(new String(output, StandardCharsets.UTF_8).split("\\x00", -1))
                     .filter(value -> !value.isEmpty())
                     .map(LiveCertificationEvaluationIdentity::normalize)
@@ -130,6 +136,15 @@ final class LiveCertificationEvaluationIdentity {
         } catch (InterruptedException interrupted) {
             Thread.currentThread().interrupt();
             throw new IllegalStateException("LIVE_CERTIFICATION_GIT_IDENTITY_INTERRUPTED", interrupted);
+        } finally {
+            if (process != null && process.isAlive()) process.destroyForcibly();
+            if (outputFile != null) {
+                try {
+                    Files.deleteIfExists(outputFile);
+                } catch (IOException cleanupFailure) {
+                    outputFile.toFile().deleteOnExit();
+                }
+            }
         }
     }
 

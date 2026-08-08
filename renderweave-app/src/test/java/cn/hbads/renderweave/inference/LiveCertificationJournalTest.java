@@ -1,7 +1,10 @@
 package cn.hbads.renderweave.inference;
 
 import cn.hbads.renderweave.inference.eval.LiveEvaluationCorpus;
+import cn.hbads.renderweave.inference.eval.LiveEvaluationCase;
 import cn.hbads.renderweave.inference.eval.LiveEvaluationResult;
+import cn.hbads.renderweave.inference.eval.LiveCertificationPolicy;
+import cn.hbads.renderweave.inference.eval.LiveCertificationStatus;
 import cn.hbads.renderweave.inference.provider.ProviderBudgetReservation;
 import cn.hbads.renderweave.inference.provider.ProviderBudgetSnapshot;
 import cn.hbads.renderweave.inference.provider.ProviderBudgetStore;
@@ -68,6 +71,59 @@ class LiveCertificationJournalTest {
         assertThat(serialized).doesNotContain(
                 "providerRequestId", "candidateJson", "prompt", "apiKey", "/field"
         );
+    }
+
+    @Test
+    void sixtyCasesCompleteExactlyOnceAcrossTwelveFiveCaseJournalReloadBatches() {
+        var authorization = openAuthorization("full-corpus-batches");
+        var corpus = new LiveEvaluationCorpus();
+        var assignments = authorization.assignments(corpus);
+
+        for (var batch = 0; batch < 12; batch++) {
+            var now = NOW.plusSeconds(batch);
+            var journal = new LiveCertificationJournal(
+                    temporaryDirectory, authorization, new ObjectMapper(), now
+            );
+            try (var ignored = journal.acquireBatchLease(now)) {
+                var completed = journal.completedAssignmentKeys();
+                var pending = assignments.stream()
+                        .filter(item -> !completed.contains(item.key()))
+                        .limit(authorization.maximumCasesPerBatch())
+                        .toList();
+                assertThat(pending).hasSize(5);
+                for (var assignment : pending) {
+                    journal.beginAssignment(
+                            assignment.key(), assignment.profileId(),
+                            assignment.evaluationCase().caseId(), now
+                    );
+                    journal.bindRun(assignment.key(), UUID.randomUUID(), now);
+                    journal.completeCase(new LiveCertificationJournal.CaseResult(
+                            assignment.key(), assignment.profileId(),
+                            assignment.evaluationCase().caseId(), "REVIEW_REQUIRED", null,
+                            LiveCertificationJournal.EvaluationMetrics.from(
+                                    exactResult(assignment.evaluationCase())
+                            ),
+                            List.of(), now.toString()
+                    ), now);
+                }
+            }
+        }
+
+        var completed = new LiveCertificationJournal(
+                temporaryDirectory, authorization, new ObjectMapper(), NOW.plusSeconds(12)
+        );
+        assertThat(completed.completedAssignmentKeys())
+                .containsExactlyElementsOf(assignments.stream()
+                        .map(LiveCertificationAuthorization.Assignment::key).toList());
+        assertThat(completed.completedAssignmentKeys()).doesNotHaveDuplicates();
+        var results = completed.resultsFor(LiveCertificationAuthorization.FLASH_PROFILE).stream()
+                .map(LiveCertificationJournal.CaseResult::evaluation)
+                .map(LiveCertificationJournal.EvaluationMetrics::toResult)
+                .toList();
+        assertThat(results).hasSize(60);
+        assertThat(new LiveCertificationPolicy().decide(
+                LiveCertificationAuthorization.FLASH_PROFILE, corpus, results
+        ).status()).isEqualTo(LiveCertificationStatus.CERTIFIED);
     }
 
     @Test
@@ -250,6 +306,29 @@ class LiveCertificationJournalTest {
                 1, 0, 0, 0, 0,
                 1, 0, 0, 0, 1,
                 List.of("/"), List.of(), List.of("/field"), List.of(), List.of(), List.of()
+        );
+    }
+
+    private static LiveEvaluationResult exactResult(LiveEvaluationCase gold) {
+        var entityCount = gold.expectedSchemas().size();
+        var shapes = gold.expectedSchemas().values().stream()
+                .flatMap(fields -> fields.values().stream()).toList();
+        var fieldCount = shapes.size();
+        var supportedTypeCount = (int) shapes.stream()
+                .filter(shape -> !shape.endsWith("UNRESOLVED") && !shape.endsWith("CONFLICT"))
+                .count();
+        var edgeCount = (int) shapes.stream()
+                .filter(shape -> shape.equals("REFERENCE") || shape.equals("ARRAY:REFERENCE"))
+                .count();
+        var evidenceCount = entityCount + fieldCount;
+        return new LiveEvaluationResult(
+                gold.caseId(), "EVALUATED", true, 10_000,
+                entityCount, entityCount, entityCount,
+                fieldCount, fieldCount, fieldCount,
+                supportedTypeCount, supportedTypeCount,
+                edgeCount, edgeCount, edgeCount,
+                evidenceCount, evidenceCount, 10_000, 0, 0,
+                List.of(), List.of(), List.of(), List.of(), List.of(), List.of()
         );
     }
 
