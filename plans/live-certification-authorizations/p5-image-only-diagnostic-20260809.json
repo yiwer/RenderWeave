@@ -1,7 +1,7 @@
 {
   "authorizationVersion": "renderweave-live-image-diagnostic-authorization/1.0",
   "authorizationId": "p5-image-only-diagnostic-20260809",
-  "status": "PROPOSED",
+  "status": "OPEN",
   "inputClassification": "REPOSITORY_SYNTHETIC_ONLY",
   "corpusVersion": "renderweave-live-eval/2.0",
   "evaluationIdentity": "renderweave-repository-tree-sha256/1:dae53e807c08b2b0b59b07329fe1af69d5862d534b4eb2e71eafa9deaefdb17f",
@@ -9,8 +9,8 @@
   "maximumProviderAttempts": 60,
   "maximumCostMicrosCny": 2000000,
   "maximumCasesPerBatch": 5,
-  "approvedBy": null,
-  "approvedAt": null,
-  "expiresAt": null,
-  "approvalScope": "PROPOSED only: qwen3.7-plus-2026-05-26 through the immutable dashscope-qwen37-plus-20260526-grounded-v1 Profile; exactly the 20 IMAGE_ONLY cases in renderweave-live-eval/2.0; repository synthetic data only; diagnostic-only and never certification; maximum 60 provider attempts, CNY 2, 1,000,000 total input-and-output tokens by the CNY bound, 5 cases per batch, and a future OPEN window no longer than 4 hours; payload-free evidence; immediate CLOSED on completion, stop, budget exhaustion, provider unavailability, or expiry."
+  "approvedBy": "yiwer",
+  "approvedAt": "2026-08-09T14:06:58Z",
+  "expiresAt": "2026-08-09T18:06:58Z",
+  "approvalScope": "Exact J1 approved by yiwer for qwen3.7-plus-2026-05-26 through the immutable dashscope-qwen37-plus-20260526-grounded-v1 Profile; exactly the 20 IMAGE_ONLY cases in renderweave-live-eval/2.0; repository synthetic data only; diagnostic-only and never certification; maximum 60 provider attempts, CNY 2, 1,000,000 total input-and-output tokens by the CNY bound, 5 cases per batch, and this 4-hour OPEN window; payload-free evidence; immediate CLOSED on completion, stop, budget exhaustion, provider unavailability, or expiry."
 }
