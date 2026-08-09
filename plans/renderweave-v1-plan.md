@@ -1,6 +1,6 @@
 # RenderWeave v1 Phase 计划
 
-- 状态：P1–P4 implementation complete；P5 T5-1–T5-8 已完成通路、安全硬化与四轮 60-case 质量实测；T5-9 payload-free taxonomy 与 T5-10 IMAGE_ONLY 诊断 pre-live 均已完成 clean A1 与独立 A2；所有既有 live 结论仍为 `EXPERIMENTAL`，新诊断 authorization 保持 `PROPOSED`
+- 状态：P1–P4 implementation complete；P5 T5-1–T5-8 已完成通路、安全硬化与四轮 60-case 质量实测；T5-9 payload-free taxonomy 与 T5-10 IMAGE_ONLY live 归因均已完成 A1/独立 A2；所有 Profile 仍为 `EXPERIMENTAL`，全部 live authorization 均为 `CLOSED`
 - 日期：2026-08-09
 - Spec：[`specs/renderweave-v1.md`](../specs/renderweave-v1.md)
 - 原型：`/prototype/schema-studio?variant=A|B|C`
@@ -339,14 +339,24 @@ Phase 内任务只在真实前置依赖满足时并行。当前没有 atomic cla
 - 完成信号：稳定 code/count 可在 attempt、PostgreSQL 与 report 中无损重放，历史行默认为空；`ec53b3d` 的 clean server A1 与独立 A2 已通过，所有 live gate 仍关闭；该结论不等于新的 Profile certification
 
 #### T5-10：同一 Grounded Profile 的 IMAGE_ONLY 诊断评测方案
-- 执行状态：`prelive_independently_reviewed`（identity、clean pre-live A1、独立 A2 与 PROPOSED 负探针均通过；精确 J1 待批准；`plans/logs/P5-T5-10.md`）
+- 执行状态：`live_independently_reviewed`（20-case live、CLOSED、clean A1 与独立 A2 PASS；`plans/logs/P5-T5-10.md`）
 - AC：AC-016, AC-020, AC-021
 - 依赖：T5-8 CLOSED Grounded evidence；T5-9 payload-free taxonomy；ADR-0013
-- 影响区域：live authorization assignment slice、journal assignment guard、certification/diagnostic report envelope、PROPOSED ledger
-- 局部验证：单一 Profile、20 IMAGE_ONLY、≤60 attempts、代码级 ¥2 硬上限、非 certification、跨 slice assignment 拒绝、strict authorization loader、paid test default-off
-- 回归升级：authorization/harness/journal/report 变化跑 server；最终 tracked tree 冻结 evaluation identity 后做 pre-live A1/A2
-- 证据保证：PROPOSED 阶段离线 A1 + 独立 A2；真实调用另需精确 J1，且完成/停止后立即 CLOSED
-- 完成信号：精确 PROPOSED ledger、negative probe 与 A1/A2 已全部通过；获 J1 前 provider attempts 保持 0
+- 影响区域：live authorization assignment slice、journal assignment guard、certification/diagnostic report envelope、versioned ledger
+- 局部验证：20 unique IMAGE_ONLY、60 settled attempts、197,321 tokens / ¥0.642106、时序预算重建、strict taxonomy、payload-free scan、CLOSED probe
+- 回归升级：authorization/harness/journal/report 变化跑 server；任何未来 live 必须使用新的 evaluation identity、ledger、pre-live A1/A2 与 J1
+- 证据保证：pre-live A1 + 独立 A2 + 精确 J1 + live 独立 A2；本地证据不是 A3
+- 完成信号：J1 范围内执行并立即 CLOSED；独立重建确认 `CANDIDATE_DECODE_VALUE_INVALID=60`、`INCOMPLETE/DIAGNOSTIC_ONLY`，0 Blocker / 0 High / 0 Medium
+
+#### T5-11：值级解码失败的 payload-free 细分归因
+- 执行状态：`planned`（不得调用 Provider）
+- AC：AC-016, AC-021
+- 依赖：T5-10 CLOSED evidence；ADR-0012、ADR-0013
+- 影响区域：Candidate strict codec diagnostic taxonomy、attempt telemetry、journal/report 与 adversarial contract tests
+- 局部验证：将 enum/constructor/有限 contract-slot 分开且不保存原始值或动态路径；STRUCTURE/REPAIR 离线 fixtures 与泄露负例
+- 回归升级：codec/taxonomy/journal/report 变化跑 server；Profile/Prompt 不在本任务中修改
+- 证据保证：离线 A1 + 独立 A2；任何真实复验另建 identity/ledger/J1
+- 完成信号：`VALUE_INVALID` 可被稳定、bounded、payload-free 地细分，历史证据保持只读，Provider attempt 为 0
 
 ### P6 — Release candidate
 
