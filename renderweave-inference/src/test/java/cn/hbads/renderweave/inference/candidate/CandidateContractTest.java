@@ -157,6 +157,140 @@ class CandidateContractTest {
     }
 
     @Test
+    void constructorInvariantUsesABoundedBundleMemberSlot() {
+        var invalid = """
+                {"contractVersion":"renderweave-candidate/1.0",
+                 "rootCandidateSchemaId":"00000000-0000-0000-0000-000000000001",
+                 "schemas":null}
+                """;
+
+        assertDecodeDiagnostic(
+                invalid, "CANDIDATE_DECODE_CONSTRUCTOR_INVALID_BUNDLE_SCHEMAS"
+        );
+    }
+
+    @Test
+    void constructorInvariantsUseOnlyFiniteRecordMemberSlots() {
+        var simple = codec.write(simpleBundle());
+        var root = UUID.fromString("00000000-0000-0000-0000-000000000001");
+        var fieldId = UUID.fromString("00000000-0000-0000-0000-000000000011");
+        var withField = codec.write(new CandidateBundle(
+                CandidateBundle.CONTRACT_VERSION, root, List.of(
+                        schema(root, "root", "Root", List.of(
+                                field(fieldId, "title",
+                                        CandidateValue.scalar(CandidateValueKind.TEXT), "/title")
+                        ), "")
+                )
+        ));
+
+        assertDecodeDiagnostic(
+                simple.replace("\"contractVersion\":\"renderweave-candidate/1.0\"",
+                        "\"contractVersion\":null"),
+                "CANDIDATE_DECODE_CONSTRUCTOR_INVALID_BUNDLE_CONTRACT_VERSION"
+        );
+        assertDecodeDiagnostic(
+                simple.replace("\"rootCandidateSchemaId\":\"00000000-0000-0000-0000-000000000001\"",
+                        "\"rootCandidateSchemaId\":null"),
+                "CANDIDATE_DECODE_CONSTRUCTOR_INVALID_BUNDLE_ROOT_SCHEMA_ID"
+        );
+        assertDecodeDiagnostic(
+                simple.replace("\"candidateSchemaId\":\"00000000-0000-0000-0000-000000000001\"",
+                        "\"candidateSchemaId\":null"),
+                "CANDIDATE_DECODE_CONSTRUCTOR_INVALID_SCHEMA_ID"
+        );
+        assertDecodeDiagnostic(
+                simple.replace("\"source\":\"AI\"", "\"source\":null"),
+                "CANDIDATE_DECODE_CONSTRUCTOR_INVALID_SCHEMA_SOURCE"
+        );
+        assertDecodeDiagnostic(
+                simple.replace("\"fields\":[]", "\"fields\":null"),
+                "CANDIDATE_DECODE_CONSTRUCTOR_INVALID_SCHEMA_FIELDS"
+        );
+        assertDecodeDiagnostic(
+                withField.replace("\"candidateFieldId\":\"00000000-0000-0000-0000-000000000011\"",
+                        "\"candidateFieldId\":null"),
+                "CANDIDATE_DECODE_CONSTRUCTOR_INVALID_FIELD_ID"
+        );
+        assertDecodeDiagnostic(
+                withField.replace("\"kind\":\"TEXT\"", "\"kind\":null"),
+                "CANDIDATE_DECODE_CONSTRUCTOR_INVALID_VALUE_KIND"
+        );
+        assertDecodeDiagnostic(
+                withField.replace("\"observedKinds\":[]", "\"observedKinds\":null"),
+                "CANDIDATE_DECODE_CONSTRUCTOR_INVALID_VALUE_OBSERVED_KINDS"
+        );
+        assertDecodeDiagnostic(
+                withField.replace("\"constraints\":{}", "\"constraints\":null"),
+                "CANDIDATE_DECODE_CONSTRUCTOR_INVALID_VALUE_CONSTRAINTS"
+        );
+        assertDecodeDiagnostic(
+                simple.replace("\"resolution\":\"NOT_REQUIRED\"", "\"resolution\":null"),
+                "CANDIDATE_DECODE_CONSTRUCTOR_INVALID_ASSESSMENT_RESOLUTION"
+        );
+        assertDecodeDiagnostic(
+                simple.replaceFirst("\"evidence\":\\[[^]]*]", "\"evidence\":null"),
+                "CANDIDATE_DECODE_CONSTRUCTOR_INVALID_ASSESSMENT_EVIDENCE"
+        );
+    }
+
+    @Test
+    void nonEnumFormatsUseFiniteContractSlotsWithoutProviderValuesOrPaths() {
+        var simple = codec.write(simpleBundle());
+        var root = UUID.fromString("00000000-0000-0000-0000-000000000001");
+        var fieldId = UUID.fromString("00000000-0000-0000-0000-000000000011");
+        var withField = codec.write(new CandidateBundle(
+                CandidateBundle.CONTRACT_VERSION, root, List.of(
+                        schema(root, "root", "Root", List.of(
+                                field(fieldId, "title",
+                                        CandidateValue.scalar(CandidateValueKind.TEXT), "/title")
+                        ), "")
+                )
+        ));
+        var providerValue = "SENSITIVE_FORMAT_VALUE!";
+
+        assertDecodeDiagnostic(
+                simple.replaceFirst(
+                        "00000000-0000-0000-0000-000000000001", providerValue
+                ),
+                "CANDIDATE_DECODE_FORMAT_INVALID_ROOT_SCHEMA_ID"
+        );
+        assertDecodeDiagnostic(
+                simple.replace(
+                        "\"candidateSchemaId\":\"00000000-0000-0000-0000-000000000001\"",
+                        "\"candidateSchemaId\":\"" + providerValue + "\""
+                ),
+                "CANDIDATE_DECODE_FORMAT_INVALID_SCHEMA_ID"
+        );
+        assertDecodeDiagnostic(
+                withField.replace(
+                        "\"candidateFieldId\":\"00000000-0000-0000-0000-000000000011\"",
+                        "\"candidateFieldId\":\"" + providerValue + "\""
+                ),
+                "CANDIDATE_DECODE_FORMAT_INVALID_FIELD_ID"
+        );
+        assertDecodeDiagnostic(
+                simple.replace("\"confidenceBps\":9200",
+                        "\"confidenceBps\":\"" + providerValue + "\""),
+                "CANDIDATE_DECODE_FORMAT_INVALID_ASSESSMENT_CONFIDENCE"
+        );
+        assertDecodeDiagnostic(
+                simple.replace("\"sampleIndex\":0",
+                        "\"sampleIndex\":\"" + providerValue + "\""),
+                "CANDIDATE_DECODE_FORMAT_INVALID_EVIDENCE_SAMPLE_INDEX"
+        );
+
+        var diagnostic = assertThrows(
+                InvalidCandidateContractException.class,
+                () -> codec.parse(simple.replaceFirst(
+                        "00000000-0000-0000-0000-000000000001", providerValue
+                ))
+        ).diagnosticCode();
+        assertTrue(diagnostic.matches("[A-Z][A-Z0-9_]{0,127}"));
+        assertFalse(diagnostic.contains(providerValue));
+        assertFalse(diagnostic.contains("/"));
+    }
+
+    @Test
     void unresolvedAndLowConfidenceItemsRemainReviewBlockers() {
         var rootId = UUID.randomUUID();
         var fieldId = UUID.randomUUID();

@@ -7,6 +7,7 @@ import tools.jackson.databind.MapperFeature;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.SerializationFeature;
 import tools.jackson.databind.exc.InvalidFormatException;
+import tools.jackson.databind.exc.ValueInstantiationException;
 import tools.jackson.databind.json.JsonMapper;
 
 public final class CandidateJsonCodec {
@@ -81,9 +82,11 @@ public final class CandidateJsonCodec {
         if (invalidFormat != null) {
             var enumDiagnostic = enumInvalidDiagnostic(invalidFormat.getTargetType());
             if (enumDiagnostic != null) return enumDiagnostic;
+            return formatInvalidDiagnostic(invalidFormat);
         }
-        if (containsType(failure, "ValueInstantiationException") || invalidFormat != null) {
-            return "CANDIDATE_DECODE_VALUE_INVALID";
+        var valueInstantiation = findCause(failure, ValueInstantiationException.class);
+        if (valueInstantiation != null) {
+            return constructorInvalidDiagnostic(valueInstantiation);
         }
         if (containsType(failure, "MismatchedInputException")) {
             if (messageStartsWithForType(
@@ -126,6 +129,82 @@ public final class CandidateJsonCodec {
             return "CANDIDATE_DECODE_ENUM_INVALID_OTHER";
         }
         return null;
+    }
+
+    private static String formatInvalidDiagnostic(InvalidFormatException failure) {
+        for (var index = failure.getPath().size() - 1; index >= 0; index--) {
+            var slot = formatSlot(failure.getPath().get(index).getPropertyName());
+            if (slot != null) return "CANDIDATE_DECODE_FORMAT_INVALID_" + slot;
+        }
+        return "CANDIDATE_DECODE_FORMAT_INVALID_OTHER";
+    }
+
+    private static String formatSlot(String propertyName) {
+        if ("contractVersion".equals(propertyName)) return "CONTRACT_VERSION";
+        if ("rootCandidateSchemaId".equals(propertyName)) return "ROOT_SCHEMA_ID";
+        if ("candidateSchemaId".equals(propertyName)) return "SCHEMA_ID";
+        if ("candidateFieldId".equals(propertyName)) return "FIELD_ID";
+        if ("proposedSchemaKey".equals(propertyName)) return "SCHEMA_KEY";
+        if ("proposedFieldKey".equals(propertyName)) return "FIELD_KEY";
+        if ("displayName".equals(propertyName)) return "DISPLAY_NAME";
+        if ("required".equals(propertyName)) return "FIELD_REQUIRED";
+        if ("confidenceBps".equals(propertyName)) return "ASSESSMENT_CONFIDENCE";
+        if ("inferred".equals(propertyName)) return "ASSESSMENT_INFERRED";
+        if ("sampleIndex".equals(propertyName)) return "EVIDENCE_SAMPLE_INDEX";
+        if ("artifactId".equals(propertyName)) return "EVIDENCE_ARTIFACT_ID";
+        if ("jsonPointer".equals(propertyName)) return "EVIDENCE_JSON_POINTER";
+        if ("left".equals(propertyName) || "top".equals(propertyName)
+                || "right".equals(propertyName) || "bottom".equals(propertyName)) {
+            return "BOUNDING_BOX_COORDINATE";
+        }
+        if ("schemaKey".equals(propertyName)) return "REFERENCE_SCHEMA_KEY";
+        if ("versionTag".equals(propertyName)) return "REFERENCE_VERSION_TAG";
+        return null;
+    }
+
+    private static String constructorInvalidDiagnostic(ValueInstantiationException failure) {
+        var rawType = failure.getType() == null ? null : failure.getType().getRawClass();
+        var cause = failure.getCause();
+        var member = cause instanceof NullPointerException ? cause.getMessage() : null;
+        return "CANDIDATE_DECODE_CONSTRUCTOR_INVALID_" + constructorSlot(rawType, member);
+    }
+
+    private static String constructorSlot(Class<?> rawType, String member) {
+        if (rawType == CandidateBundle.class) {
+            if ("contractVersion".equals(member)) return "BUNDLE_CONTRACT_VERSION";
+            if ("rootCandidateSchemaId".equals(member)) return "BUNDLE_ROOT_SCHEMA_ID";
+            if ("schemas".equals(member)) return "BUNDLE_SCHEMAS";
+            return "BUNDLE";
+        }
+        if (rawType == CandidateSchema.class) {
+            if ("candidateSchemaId".equals(member)) return "SCHEMA_ID";
+            if ("source".equals(member)) return "SCHEMA_SOURCE";
+            if ("assessment".equals(member)) return "SCHEMA_ASSESSMENT";
+            if ("fields".equals(member)) return "SCHEMA_FIELDS";
+            return "SCHEMA";
+        }
+        if (rawType == CandidateField.class) {
+            if ("candidateFieldId".equals(member)) return "FIELD_ID";
+            if ("value".equals(member)) return "FIELD_VALUE";
+            if ("source".equals(member)) return "FIELD_SOURCE";
+            if ("assessment".equals(member)) return "FIELD_ASSESSMENT";
+            return "FIELD";
+        }
+        if (rawType == CandidateValue.class) {
+            if ("kind".equals(member)) return "VALUE_KIND";
+            if ("observedKinds".equals(member)) return "VALUE_OBSERVED_KINDS";
+            if ("constraints".equals(member)) return "VALUE_CONSTRAINTS";
+            return "VALUE";
+        }
+        if (rawType == CandidateAssessment.class) {
+            if ("resolution".equals(member)) return "ASSESSMENT_RESOLUTION";
+            if ("evidence".equals(member)) return "ASSESSMENT_EVIDENCE";
+            return "ASSESSMENT";
+        }
+        if (rawType == CandidateReference.class) return "REFERENCE";
+        if (rawType == CandidateEvidence.class) return "EVIDENCE";
+        if (rawType == CandidateBoundingBox.class) return "BOUNDING_BOX";
+        return "OTHER";
     }
 
     private static boolean containsType(Throwable failure, String simpleName) {
