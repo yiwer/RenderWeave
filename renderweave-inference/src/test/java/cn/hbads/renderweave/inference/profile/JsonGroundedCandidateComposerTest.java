@@ -6,6 +6,7 @@ import cn.hbads.renderweave.inference.candidate.CandidateBundle;
 import cn.hbads.renderweave.inference.candidate.CandidateEvidence;
 import cn.hbads.renderweave.inference.candidate.CandidateField;
 import cn.hbads.renderweave.inference.candidate.CandidateReference;
+import cn.hbads.renderweave.inference.candidate.CandidateReferenceKind;
 import cn.hbads.renderweave.inference.candidate.CandidateResolution;
 import cn.hbads.renderweave.inference.candidate.CandidateSchema;
 import cn.hbads.renderweave.inference.candidate.CandidateSource;
@@ -212,6 +213,48 @@ class JsonGroundedCandidateComposerTest {
         assertAmbiguousProviderGraphIgnored(profile, proposal);
     }
 
+    @Test
+    void nestedArrayReferenceCannotSelectAProviderChildForOverlay() {
+        var childId = UUID.fromString("81000000-0000-0000-0000-000000000002");
+        assertInvalidReferenceShapeIgnored(
+                UUID.fromString("81000000-0000-0000-0000-000000000001"),
+                childId,
+                CandidateValue.array(CandidateValue.array(
+                        CandidateValue.reference(CandidateReference.candidate(childId))
+                ))
+        );
+    }
+
+    @Test
+    void referenceValueWithItemsCannotSelectAProviderChildForOverlay() {
+        var childId = UUID.fromString("82000000-0000-0000-0000-000000000002");
+        assertInvalidReferenceShapeIgnored(
+                UUID.fromString("82000000-0000-0000-0000-000000000001"),
+                childId,
+                new CandidateValue(
+                        CandidateValueKind.REFERENCE,
+                        scalar(CandidateValueKind.TEXT),
+                        CandidateReference.candidate(childId),
+                        List.of(), Map.of()
+                )
+        );
+    }
+
+    @Test
+    void candidateReferenceWithExtraIdentityCannotSelectAProviderChildForOverlay() {
+        var childId = UUID.fromString("83000000-0000-0000-0000-000000000002");
+        assertInvalidReferenceShapeIgnored(
+                UUID.fromString("83000000-0000-0000-0000-000000000001"),
+                childId,
+                CandidateValue.reference(new CandidateReference(
+                        CandidateReferenceKind.CANDIDATE_SCHEMA,
+                        childId,
+                        "forged-schema-key",
+                        "v1"
+                ))
+        );
+    }
+
     private JsonStructuralProfile profile(String... samples) {
         var inputs = java.util.Arrays.stream(samples).map(sample -> new InferenceInput.BinaryInput(
                 "sample.json", "application/json", sample.getBytes(StandardCharsets.UTF_8)
@@ -259,6 +302,28 @@ class JsonGroundedCandidateComposerTest {
                 .noneMatch(field -> "poison".equals(field.proposedFieldKey())));
         assertTrue(result.semanticProblems().stream().anyMatch(problem ->
                 problem.code().equals("VISUAL_GRAPH_AMBIGUOUS_IGNORED")));
+    }
+
+    private void assertInvalidReferenceShapeIgnored(
+            UUID rootId,
+            UUID childId,
+            CandidateValue referenceValue
+    ) {
+        var profile = profile("{\"group\":{\"name\":\"A\"}}");
+        var proposal = new CandidateBundle(
+                CandidateBundle.CONTRACT_VERSION,
+                rootId,
+                List.of(
+                        schema(rootId, "root", List.of(field(
+                                "group", referenceValue, 9_000, false, IMAGE_ID
+                        ))),
+                        schema(childId, "child", List.of(
+                                field("poison", scalar(CandidateValueKind.TEXT), 9_000, false, IMAGE_ID)
+                        ))
+                )
+        );
+
+        assertAmbiguousProviderGraphIgnored(profile, proposal);
     }
 
     private static CandidateAssessment assessment(int confidence, String imageId) {

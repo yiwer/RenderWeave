@@ -31,7 +31,7 @@ Prompt v2 将 pinned Plus 的 exact pass 从 18/60 提升到 47/60，critical ha
 ### 3. COMBINED 采用 JSON base + 受限视觉 overlay
 
 - 系统先构建与 JSON_ONLY 相同的 deterministic base，并把不含样本值的 grounded Candidate 放入 task，帮助模型只处理视觉语义。
-- Provider 返回仍按 Candidate 1.0 严格解析，但只作为不可信 visual proposal。composer 只接受 fieldKey 唯一、单一入边、无环且目标存在的 canonical reference path；重复键、共享目标、cycle、悬空引用或重复 UUID 会使整张 visual graph 被稳定忽略。composer 不信任或持久化 provider UUID、SchemaKey、JSON evidence 或图拓扑。
+- Provider 返回仍按 Candidate 1.0 严格解析，但只作为不可信 visual proposal。composer 只接受 fieldKey 唯一、单一入边、无环且目标存在的 canonical reference path；edge value 只能是字段互斥关系完整的 `REFERENCE(CANDIDATE_SCHEMA)` 或单层 `ARRAY(REFERENCE(CANDIDATE_SCHEMA))`。重复键、共享目标、cycle、悬空引用、重复 UUID、多层数组或带多余身份字段的 reference 会使整张 visual graph 被稳定忽略。composer 不信任或持久化 provider UUID、SchemaKey、JSON evidence 或图拓扑。
 - JSON-backed Schema/field 不能被删除、改名、移动或改变 reference/array/uncertainty topology；JSON DECIMAL/BOOLEAN 不得被视觉覆盖。
 - 唯一 concrete refinement 是：JSON TEXT 在 provider 给出合法、直接 IMAGE evidence 且 confidence 达阈值时精化为 DATE 或 TIME。
 - 合法 IMAGE evidence 可以补充 matched Schema/field 的 displayName/evidence。JSON evidence 始终由 deterministic base 保留，图片不能替代。

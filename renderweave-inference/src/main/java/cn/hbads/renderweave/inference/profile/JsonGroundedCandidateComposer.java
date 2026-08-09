@@ -398,12 +398,27 @@ public final class JsonGroundedCandidateComposer {
 
     private static UUID target(CandidateValue value) {
         if (value == null) return null;
-        if (value.kind() == CandidateValueKind.ARRAY) return target(value.items());
-        if (value.kind() != CandidateValueKind.REFERENCE || value.reference() == null
-                || value.reference().kind() != CandidateReferenceKind.CANDIDATE_SCHEMA) {
+        if (!value.observedKinds().isEmpty() || !value.constraints().isEmpty()) return null;
+        if (value.kind() == CandidateValueKind.ARRAY) {
+            if (value.reference() != null || value.items() == null) return null;
+            return directCandidateTarget(value.items());
+        }
+        return directCandidateTarget(value);
+    }
+
+    private static UUID directCandidateTarget(CandidateValue value) {
+        if (value == null || value.kind() != CandidateValueKind.REFERENCE
+                || value.items() != null || value.reference() == null
+                || !value.observedKinds().isEmpty() || !value.constraints().isEmpty()) {
             return null;
         }
-        return value.reference().candidateSchemaId();
+        var reference = value.reference();
+        if (reference.kind() != CandidateReferenceKind.CANDIDATE_SCHEMA
+                || reference.candidateSchemaId() == null
+                || reference.schemaKey() != null || reference.versionTag() != null) {
+            return null;
+        }
+        return reference.candidateSchemaId();
     }
 
     private static String childPath(String parent, String fieldKey) {
@@ -534,10 +549,8 @@ public final class JsonGroundedCandidateComposer {
 
     private static boolean referenceShaped(CandidateValue value) {
         if (value == null) return false;
-        if (value.kind() == CandidateValueKind.REFERENCE) return true;
-        return value.kind() == CandidateValueKind.ARRAY
-                && value.items() != null
-                && referenceShaped(value.items());
+        if (value.kind() == CandidateValueKind.REFERENCE || value.reference() != null) return true;
+        return value.items() != null && referenceShaped(value.items());
     }
 
     private record PathNode(String path, CandidateSchema schema) { }
