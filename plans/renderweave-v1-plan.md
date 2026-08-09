@@ -1,6 +1,6 @@
 # RenderWeave v1 Phase 计划
 
-- 状态：P1–P4 implementation complete；P5 T5-1–T5-6 已完成通路、安全硬化、质量实测与“不认证”决定；T5-7 正在构建 evidence-anchored Prompt/Profile v2，等待最终 A1/A2 后形成新的 PROPOSED live 方案
+- 状态：P1–P4 implementation complete；P5 T5-1–T5-6 已完成通路、安全硬化、质量实测与“不认证”决定；T5-7 的 evidence-anchored Prompt/Profile v2 已完成 pre-live A1/A2，并以精确 PROPOSED 方案等待新的 J1
 - 日期：2026-08-09
 - Spec：[`specs/renderweave-v1.md`](../specs/renderweave-v1.md)
 - 原型：`/prototype/schema-studio?variant=A|B|C`
@@ -309,13 +309,13 @@ Phase 内任务只在真实前置依赖满足时并行。当前没有 atomic cla
 - 完成信号：精确授权下全量完成，每个 Profile 单独产出 global/mode/HOLDOUT 报告；按 policy 如实保持 `EXPERIMENTAL` 或决定 `CERTIFIED`，授权立即 CLOSED
 
 #### T5-7：Evidence-anchored Prompt/Profile v2 与独立认证方案
-- 执行状态：`implementation_review_remediation`（`plans/logs/P5-T5-7.md`）
+- 执行状态：`awaiting_live_j1`（pre-live A1 + independent A2 PASS；`plans/logs/P5-T5-7.md`）
 - AC：AC-016, AC-021
 - 依赖：T5-6 的 CLOSED Flash/Plus evidence
 - 影响区域：不可变 prompt/profile、Candidate provider trust boundary、JSON evidence catalog、repair routing、evaluator diagnostics、OpenAPI/Web profile surface
 - 局部验证：字段身份/JSON truth table golden、forged provenance 与 invented evidence 负例、parseable blocker repair workflow、旧 prompt/profile byte identity 回归
 - 回归升级：prompt/profile/candidate/evaluator/workflow/OpenAPI 任一变化跑 server+web，并改变新的 certification evaluation identity
-- 证据保证：实现 A1；独立 A2 复审 pending；任何新 live 为独立 J1
+- 证据保证：pre-live A1 + 独立 A2；任何新 live 为独立 J1，live 结果完成后再做独立复核
 - 完成信号：最终 tracked tree 与 synthetic-only PROPOSED ledger identity 一致；ledger 不 OPEN、provider calls=0；真实收益只由后续 60-case J1 证明
 
 ### P6 — Release candidate
@@ -387,4 +387,4 @@ Phase 内任务只在真实前置依赖满足时并行。当前没有 atomic cla
 6. 授权账本已关闭，Compose live overlay 的 worker/upload 两门均保持 false；任何新增调用不得继承未使用的 attempt 或预算。
 7. P5 真实通路已证明，但 2/60 小样本不是质量认证；两个 Profile 继续为 `EXPERIMENTAL`、默认关闭。完整 60-case live 评测、真实业务数据、扩大费用或生产启用仍需新的 J1 与独立 A2。
 8. T5-6 已把 60-case v2 whole-graph 评测、fail-closed policy、每批最多 5 case 的恢复账本与完整 repository evaluation identity 做成可执行闭环，并通过独立 A2；当前新账本仍为 `PROPOSED`，新增 provider call 为 0。
-9. T5-7 不复用旧质量结果：Prompt/Profile v2 修正 exact FieldKey、最小证据图、provider provenance、JSON evidence catalog 与 deterministic repair 路由；完成最终 A1/A2 前不创建可 OPEN 的授权，新增 provider call 为 0。
+9. T5-7 不复用旧质量结果：Prompt/Profile v2 修正 exact FieldKey、最小证据图、provider provenance、JSON evidence catalog 与三态 repair 路由；pre-live A1/A2 已完成，新 ledger 仅为 synthetic-only `PROPOSED`，新增 provider call 为 0，真实收益仍等待新的精确 J1。
