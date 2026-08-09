@@ -6,10 +6,10 @@
 - 2026-08-09 Flash 60-case live 已完成并经独立 A2：112 attempts / ¥0.122980，2/60 exact pass，policy=`EXPERIMENTAL`，authorization 已 CLOSED。
 - 2026-08-09 pinned Plus 60-case live 已完成并经独立 A2：75 attempts / ¥0.825948，18/60 exact pass，policy=`EXPERIMENTAL`，authorization 已 CLOSED。
 - 2026-08-09 Prompt v2 60-case live 已完成并经独立 A2：70 attempts / 256,153 tokens / ¥0.868772，47/60 exact pass，policy=`EXPERIMENTAL`，authorization 已 CLOSED。
-- 2026-08-09 Grounded Pipeline v2 60-case live 已完成并 CLOSED：80 attempts / 278,740 tokens / ¥0.908984；JSON_ONLY 20/20 零调用、COMBINED 20/20 单次调用，IMAGE_ONLY 0/20，policy=`EXPERIMENTAL`；最终独立 A2 进行中。
+- 2026-08-09 Grounded Pipeline v2 60-case live 已完成并经独立 A2：80 attempts / 278,740 tokens / ¥0.908984；JSON_ONLY 20/20 零调用、COMBINED 20/20 单次调用，IMAGE_ONLY 0/20，policy=`EXPERIMENTAL`，authorization 已 CLOSED。
 - 用户已将候选模型扩大到 Qwen3.7 dated/alias 与 Qwen3.8 Max，其他模型费用硬上限 ¥10；按协议能力优先评测 pinned `qwen3.7-plus-2026-05-26`。
 - 需求访谈已收束，v1 产品语义以 `specs/renderweave-v1.md` 为准。
-- 生命周期状态：P0 `accepted`；P1–P4 `automated_verified`；P5 Flash / Plus / Prompt v2 均为 `live_independently_reviewed`；Grounded v2 为 `live_closed_pending_independent_review`。所有 DashScope Profile 仍为 `EXPERIMENTAL`、默认关闭；所有已用授权账本均为 CLOSED。
+- 生命周期状态：P0 `accepted`；P1–P4 `automated_verified`；P5 Flash / Plus / Prompt v2 / Grounded v2 均为 `live_independently_reviewed`。所有 DashScope Profile 仍为 `EXPERIMENTAL`、默认关闭；所有已用授权账本均为 CLOSED。
 
 ## 下一步
 - [x] Java / React / PostgreSQL / OpenAPI 最小 canary 与 A1 full gate 通过。
@@ -46,7 +46,7 @@
 - [x] 以 Prompt v2 失败归因构建 Grounded Pipeline v2；JSON_ONLY 确定性零调用、COMBINED 受限视觉 overlay、Prompt/Profile v3、OpenAPI/Web 与 adversarial trust-boundary tests 完成，pre-live A2 PASS。
 - [x] 将 Grounded 最终 staged tree digest 写入单一 Profile、synthetic-only、≤120 attempts / ≤¥2 / ≤5 case 每批的 PROPOSED ledger。
 - [x] 在用户 12h / 每模型 1M-token J1 内，以独立 OPEN 提交执行 Grounded 60-case；60/60 完成后立即 CLOSED，CLOSED 负探针零写入。
-- [ ] 完成 Grounded live journal、预算、指标、policy 与泄露面的最终独立 A2；PASS 后才升级为 `live_independently_reviewed`。
+- [x] 完成 Grounded live journal、预算、指标、policy 与泄露面的最终独立 A2：PASS，0 Blocker / 0 High / 0 Medium。
 
 ## 重要发现或局部阻塞
 - 本机全局 Node 为 20.20.2；正式 gate 已使用 checksum 固定的仓库局部 Node 24.19.0，不依赖或修改系统 Node。
@@ -74,5 +74,5 @@
 - `plans/logs/P5-T5-5.md`：旧 canary 与 safety A2 已收束，两个 Profile 保持 `EXPERIMENTAL`。
 - `plans/logs/P5-T5-6.md`：Flash / pinned Plus 的 60-case live 均经独立 A2，决定均为 `EXPERIMENTAL`，authorization 均 CLOSED。
 - `plans/logs/P5-T5-7.md`：Prompt/Profile v2 pre-live A1/A2 与 60-case live A2 PASS；live evidence：`.sdlc/evidence/p5-certification-20260809-plus-prompt-v2/summary.json`；决定为 `EXPERIMENTAL`。
-- `plans/logs/P5-T5-8.md`：Grounded Pipeline v2 clean A1 + pre-live A2 PASS；60-case live evidence 已 CLOSED，decision=`EXPERIMENTAL`，最终 live A2 进行中。
-- 当前恢复点：`phase/p5-grounded-pipeline-v2` CLOSED 节点；禁止继续调用 Provider，先完成 payload-free evidence 的最终独立 A2。
+- `plans/logs/P5-T5-8.md`：Grounded Pipeline v2 clean A1 + pre-live/live A2 PASS；60-case live evidence 已 CLOSED，decision=`EXPERIMENTAL`。
+- 当前恢复点：`phase/p5-grounded-pipeline-v2` 的 `live_independently_reviewed` CLOSED 节点；禁止继续调用 Provider，下一节点先处理 IMAGE_ONLY Candidate contract 系统性失败的 payload-free 归因设计。

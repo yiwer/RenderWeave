@@ -64,3 +64,10 @@ Prompt v2 将 pinned Plus 的 exact pass 从 18/60 提升到 47/60，critical ha
 - 正向：JSON contract/evidence/DAG 从概率性提示转为确定性不变量；JSON_ONLY 消除外传和费用；COMBINED 将模型能力集中在视觉语义。
 - 代价：pipeline 增加一个可独立测试的 composer；visual-only reference 暂不由 COMBINED 自动创建，需用户审核或未来独立协议版本支持。
 - 恢复：代码、Prompt/Profile 与 OpenAPI 通过本节点提交 revert；PROPOSED 前零 provider side effect。未来调用一旦发生不可撤销，只能以精确 J1、预算预留、批次 journal 和立即 CLOSED 限制后续影响。
+
+## 实际验证结果（2026-08-09）
+
+- 精确 ledger 经 `b454b14` PROPOSED → `7ee817c` OPEN → `6733260` CLOSED，完成 `renderweave-live-eval/2.0` 的 60/60；80 attempts、278,740 tokens、¥0.908984，最终独立 A2 为 PASS，0 Blocker / 0 High / 0 Medium。
+- JSON_ONLY 20/20 whole-graph exact，且 0 attempt / reservation / token / cost；COMBINED 20/20 whole-graph exact，每例恰好 1 次视觉调用，结构指标均为 100%。这验证了本 ADR 的 deterministic base 与受限 overlay 主张。
+- IMAGE_ONLY 20/20 均在两轮 repair 后仍违反 Candidate contract，whole-graph exact 为 0/20；全局因此仅 40/60，17 项 policy violation，决定为 `EXPERIMENTAL`。该结果阻止把 Grounding 的局部收益误报为完整 Profile 已认证。
+- Profile 保持默认关闭，authorization 不可重新打开。下一版本应先增加 payload-free validation-problem taxonomy 对 IMAGE_ONLY 做归因，不降低 contract/证据/DAG 门槛。
