@@ -141,6 +141,10 @@ class LiveCertificationAuthorizationTest {
         )).isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Certification authorization budget is invalid");
         assertThatThrownBy(() -> imageDiagnosticAuthorization(
+                LiveCertificationAuthorization.PLUS_GROUNDED_PROFILE, 60, 2_000_001
+        )).isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Certification authorization budget is invalid");
+        assertThatThrownBy(() -> imageDiagnosticAuthorization(
                 LiveCertificationAuthorization.PLUS_PROFILE, 60, 2_000_000
         )).isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Certification authorization profiles are invalid");
@@ -166,6 +170,9 @@ class LiveCertificationAuthorizationTest {
         assertThat(authorization.maximumCasesPerBatch()).isEqualTo(5);
         assertThat(authorization.assignmentCount()).isEqualTo(20);
         assertThat(authorization.certificationEligible()).isFalse();
+        assertThatThrownBy(() -> authorization.requireOpen(NOW))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("LIVE_CERTIFICATION_AUTHORIZATION_NOT_OPEN");
     }
 
     @Test
@@ -192,6 +199,9 @@ class LiveCertificationAuthorizationTest {
         Files.writeString(target, source.replaceFirst(
                 "(\"maximumCostMicrosCny\"\\s*:\\s*)2000000", "$1 2000000.5"
         ));
+        assertInvalidLedger(target);
+
+        Files.writeString(target, source + System.lineSeparator() + "{}");
         assertInvalidLedger(target);
     }
 

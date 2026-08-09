@@ -33,6 +33,11 @@ Grounded v2 的 20 个 IMAGE_ONLY case 共发生 60 次 Provider attempt，全�
 - 结果继续只保存 scalar evaluation 与 problem taxonomy；所有历史 authorization 保持 CLOSED。
 - ledger 先保持 `PROPOSED`。只有最终 tracked tree identity、pre-live A1/A2 和精确 J1 同时满足后才可 OPEN。
 
+价格与能力在 2026-08-09 依据阿里云百炼官方文档重新核对：
+
+- [模型价格](https://platform.qianwenai.com/docs/developer-guides/getting-started/pricing)
+- [视觉模型能力与图片 token 公式](https://platform.qianwenai.com/docs/developer-guides/getting-started/vision-models)
+
 ## 验证要求
 
 - authorization 单元测试证明只允许 Grounded Profile、20 个 IMAGE_ONLY assignment、≤60 attempts，且 certification eligibility 为 false。

@@ -48,6 +48,7 @@ record LiveCertificationAuthorization(
     static final String MAX_PROFILE = "dashscope-qwen38-max-v1";
     private static final int ABSOLUTE_MAXIMUM_ATTEMPTS = 360;
     private static final long ABSOLUTE_MAXIMUM_COST_MICROS_CNY = 54_000_000L;
+    private static final long IMAGE_DIAGNOSTIC_MAXIMUM_COST_MICROS_CNY = 2_000_000L;
     private static final long PLUS_MAXIMUM_AUTHORIZED_COST_MICROS_CNY = 10_000_000L;
     private static final Duration MAXIMUM_AUTHORIZATION_WINDOW = Duration.ofHours(4);
 
@@ -100,6 +101,7 @@ record LiveCertificationAuthorization(
             var strictJson = Objects.requireNonNull(json, "json").rebuild()
                     .enable(StreamReadFeature.STRICT_DUPLICATE_DETECTION)
                     .enable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                    .enable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS)
                     .disable(DeserializationFeature.ACCEPT_FLOAT_AS_INT)
                     .disable(MapperFeature.ALLOW_COERCION_OF_SCALARS)
                     .build();
@@ -185,10 +187,13 @@ record LiveCertificationAuthorization(
             String authorizationVersion,
             List<String> profileIds
     ) {
+        if (IMAGE_DIAGNOSTIC_VERSION.equals(authorizationVersion)) {
+            return IMAGE_DIAGNOSTIC_MAXIMUM_COST_MICROS_CNY;
+        }
         var profiles = new InferenceProfileRegistry();
         return profileIds.stream().map(profiles::require).mapToLong(item -> {
             var designed = Math.multiplyExact(
-                    IMAGE_DIAGNOSTIC_VERSION.equals(authorizationVersion) ? 20L : 60L,
+                    60L,
                     Math.multiplyExact(
                             item.profile().maximumTotalCalls(),
                             item.profile().maximumEstimatedCostMicrosCny()
