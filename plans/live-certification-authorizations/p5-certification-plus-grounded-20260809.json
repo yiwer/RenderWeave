@@ -1,7 +1,7 @@
 {
   "authorizationVersion": "renderweave-live-certification-authorization/1.1",
   "authorizationId": "p5-certification-20260809-plus-grounded",
-  "status": "PROPOSED",
+  "status": "OPEN",
   "inputClassification": "REPOSITORY_SYNTHETIC_ONLY",
   "corpusVersion": "renderweave-live-eval/2.0",
   "evaluationIdentity": "renderweave-repository-tree-sha256/1:67328db2cfe66b8753398108452d5e22715ab942c558fe47db5117ea4bc499a8",
@@ -9,8 +9,8 @@
   "maximumProviderAttempts": 120,
   "maximumCostMicrosCny": 2000000,
   "maximumCasesPerBatch": 5,
-  "approvedBy": null,
-  "approvedAt": null,
-  "expiresAt": null,
-  "approvalScope": null
+  "approvedBy": "workspace-user",
+  "approvedAt": "2026-08-09T07:39:25Z",
+  "expiresAt": "2026-08-09T11:39:25Z",
+  "approvalScope": "User approved continued real LLM calls within 12 hours and a 1,000,000-token allowance for every model. Execution is deliberately narrowed to dashscope-qwen37-plus-20260526-grounded-v1/qwen3.7-plus-2026-05-26, renderweave-live-eval/2.0 repository-synthetic-only 60 cases, maximum 120 provider attempts, maximum CNY 2 whose pre-call reservation and minimum CNY 2 per million token rate enforce at most 1,000,000 total input and output tokens, maximum 5 cases per batch, a 4-hour window, no real business data, payload-free evidence, and immediate CLOSED on completion, stop, budget exhaustion, provider unavailability, or expiry."
 }
