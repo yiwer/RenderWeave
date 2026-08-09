@@ -41,6 +41,7 @@ Evidence objects have exactly kind, artifactId, boundingBox, sampleIndex, jsonPo
 - IMAGE evidence: kind="IMAGE", artifactId from artifactCatalog, boundingBox set, sampleIndex=null, jsonPointer=null.
 - boundingBox has exactly left, top, right, bottom as integers in normalized 0..10000 coordinates, with left<right and top<bottom.
 - JSON evidence: kind="JSON", artifactId=null, boundingBox=null, sampleIndex and jsonPointer copied from a jsonStructuralProfile node evidence location.
+- In COMBINED mode, IMAGE evidence may supplement but never replace the matching JSON evidence required for every jsonStructuralProfile-derived Schema and field.
 - Never invent an artifactId, sampleIndex, jsonPointer, or bounding box.
 
 Every value has exactly kind, items, reference, observedKinds, constraints. Use these canonical shapes:

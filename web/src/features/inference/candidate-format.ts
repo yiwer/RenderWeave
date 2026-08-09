@@ -39,6 +39,8 @@ export function summarizeValue(value: CandidateValue, schemas: CandidateSchema[]
 export function problemLabel(code: string) {
   const labels: Record<string, string> = {
     LOW_CONFIDENCE_UNRESOLVED: '低置信度项需要逐项决定',
+    LOW_CONFIDENCE_STATE_INVALID: '低置信度断言不能标记为无需确认',
+    CANDIDATE_ITEM_UNRESOLVED: '候选项仍需逐项确认',
     CANDIDATE_TYPE_UNRESOLVED: '字段类型尚未判定',
     CANDIDATE_TYPE_CONFLICT: '多个样本的字段类型冲突',
     AI_REQUIRED_UNCONFIRMED: 'AI 推断的必填关系尚未确认',
@@ -52,6 +54,7 @@ export function problemLabel(code: string) {
     INFERENCE_RESOLUTION_INVALID: '模型不能代替用户确认或移除',
     JSON_EVIDENCE_LOCATION_UNKNOWN: 'JSON 证据位置不存在',
     JSON_EVIDENCE_ITEM_MISMATCH: 'JSON 证据与当前字段不匹配',
+    JSON_EVIDENCE_ITEM_MISSING: 'JSON 派生项缺少对应的 JSON 证据',
     CANDIDATE_REFERENCE_TARGET_MISSING: '引用目标不在有效 Candidate 包中',
     CANDIDATE_SCHEMA_ORPHAN: 'Schema 无法从 Root 到达',
     CANDIDATE_REFERENCE_CYCLE: 'Candidate 引用形成循环',

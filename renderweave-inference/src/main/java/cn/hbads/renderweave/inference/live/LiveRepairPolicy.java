@@ -19,8 +19,6 @@ final class LiveRepairPolicy {
             "CANDIDATE_SCHEMA_KEY_INVALID",
             "CANDIDATE_SCHEMA_KEY_DUPLICATE",
             "CANDIDATE_DISPLAY_NAME_MISSING",
-            "CANDIDATE_FIELD_KEY_UNRESOLVED",
-            "CANDIDATE_FIELD_KEY_INVALID",
             "CANDIDATE_FIELD_KEY_DUPLICATE",
             "INFERENCE_SOURCE_INVALID",
             "INFERENCE_PROVENANCE_INVALID",
@@ -35,6 +33,7 @@ final class LiveRepairPolicy {
             "JSON_EVIDENCE_POINTER_INVALID",
             "JSON_EVIDENCE_LOCATION_UNKNOWN",
             "JSON_EVIDENCE_ITEM_MISMATCH",
+            "JSON_EVIDENCE_ITEM_MISSING",
             "EVIDENCE_KIND_INVALID",
             "CANDIDATE_ARRAY_SHAPE_INVALID",
             "NESTED_ARRAY_UNSUPPORTED",
@@ -50,11 +49,35 @@ final class LiveRepairPolicy {
             "AI_CONSTRAINT_UNCONFIRMED"
     );
 
+    private static final Set<String> HUMAN_REVIEW_BLOCKERS = Set.of(
+            "CANDIDATE_FIELD_KEY_UNRESOLVED",
+            "CANDIDATE_FIELD_KEY_INVALID",
+            "CANDIDATE_ITEM_UNRESOLVED",
+            "LOW_CONFIDENCE_STATE_INVALID",
+            "LOW_CONFIDENCE_UNRESOLVED",
+            "CANDIDATE_TYPE_UNRESOLVED",
+            "CANDIDATE_TYPE_CONFLICT"
+    );
+
     private LiveRepairPolicy() { }
 
-    static boolean requiresRepair(List<CandidateProblem> problems) {
-        return problems.stream().anyMatch(problem ->
-                problem.severity() == CandidateProblemSeverity.BLOCKER
-                        && REPAIRABLE_BLOCKERS.contains(problem.code()));
+    static Decision decide(List<CandidateProblem> problems) {
+        var blockers = problems.stream()
+                .filter(problem -> problem.severity() == CandidateProblemSeverity.BLOCKER)
+                .toList();
+        if (blockers.isEmpty()) return Decision.REVIEW;
+        if (blockers.stream().allMatch(problem -> REPAIRABLE_BLOCKERS.contains(problem.code()))) {
+            return Decision.REPAIR;
+        }
+        if (blockers.stream().allMatch(problem -> HUMAN_REVIEW_BLOCKERS.contains(problem.code()))) {
+            return Decision.REVIEW;
+        }
+        return Decision.REJECT;
+    }
+
+    enum Decision {
+        REPAIR,
+        REVIEW,
+        REJECT
     }
 }

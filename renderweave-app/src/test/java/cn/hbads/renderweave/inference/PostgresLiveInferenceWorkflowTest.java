@@ -13,9 +13,11 @@ import cn.hbads.renderweave.inference.candidate.CandidateValue;
 import cn.hbads.renderweave.inference.candidate.CandidateValueKind;
 import cn.hbads.renderweave.inference.input.BlobStore;
 import cn.hbads.renderweave.inference.input.InferenceMode;
+import cn.hbads.renderweave.inference.input.InferenceInput;
 import cn.hbads.renderweave.inference.input.NormalizedArtifact;
 import cn.hbads.renderweave.inference.input.NormalizedInput;
 import cn.hbads.renderweave.inference.input.NormalizedInputReference;
+import cn.hbads.renderweave.inference.input.StrictJsonSampleProfiler;
 import cn.hbads.renderweave.inference.live.LiveInferenceWorker;
 import cn.hbads.renderweave.inference.profile.InferenceProfileRegistry;
 import cn.hbads.renderweave.inference.provider.InferenceProvider;
@@ -160,6 +162,82 @@ class PostgresLiveInferenceWorkflowTest {
     }
 
     @Test
+    void missingJsonEvidenceTriggersOneRepairWithTheStableProblemCode() {
+        var blobs = new MemoryBlobStore();
+        var created = createCombined(blobs, "live-json-evidence-repair");
+        var provider = new ScriptedProvider(
+                request -> response(request, candidate(request)),
+                request -> response(request, jsonCandidate(request))
+        );
+
+        var finished = worker(provider, blobs).processNext("live-json-evidence-worker").orElseThrow();
+
+        assertThat(finished.state()).isEqualTo(InferenceRunState.REVIEW_REQUIRED);
+        assertThat(provider.requests).hasSize(2);
+        assertThat(provider.requests.get(1).stage().name()).isEqualTo("REPAIR");
+        assertThat(provider.requests.get(1).taskJson()).contains("JSON_EVIDENCE_ITEM_MISSING");
+        assertThat(workflowStore.attempts(created))
+                .extracting(attempt -> attempt.status())
+                .containsExactly(InferenceAttemptStatus.SUCCEEDED, InferenceAttemptStatus.SUCCEEDED);
+    }
+
+    @Test
+    void humanOnlySemanticBlockerGoesDirectlyToReview() {
+        var blobs = new MemoryBlobStore();
+        var created = create(blobs, "live-human-only-review");
+        var provider = new ScriptedProvider(
+                request -> response(request, candidateWithHumanBlocker(request))
+        );
+
+        var finished = worker(provider, blobs).processNext("live-human-only-worker").orElseThrow();
+
+        assertThat(finished.state()).isEqualTo(InferenceRunState.REVIEW_REQUIRED);
+        assertThat(provider.requests).hasSize(1);
+        assertThat(workflowStore.findCandidate(created).orElseThrow().validationProblemsJson())
+                .contains("CANDIDATE_TYPE_UNRESOLVED");
+    }
+
+    @Test
+    void unrepresentableExactJsonFieldKeyIsPreservedForHumanReviewWithoutRepair() {
+        var blobs = new MemoryBlobStore();
+        var fieldKey = "x".repeat(129);
+        var created = createCombined(
+                blobs, "live-unrepresentable-field-key",
+                "{\"" + fieldKey + "\":\"hello\"}"
+        );
+        var provider = new ScriptedProvider(
+                request -> response(request, jsonCandidate(request, fieldKey))
+        );
+
+        var finished = worker(provider, blobs).processNext("live-field-key-review-worker").orElseThrow();
+
+        assertThat(finished.state()).isEqualTo(InferenceRunState.REVIEW_REQUIRED);
+        assertThat(provider.requests).hasSize(1);
+        var review = workflowStore.findCandidate(created).orElseThrow();
+        assertThat(review.currentJson()).contains(fieldKey);
+        assertThat(review.validationProblemsJson()).contains("CANDIDATE_FIELD_KEY_INVALID");
+    }
+
+    @Test
+    void mixedDeterministicAndHumanBlockersFailWithoutAnotherCallOrReviewCandidate() {
+        var blobs = new MemoryBlobStore();
+        var created = create(blobs, "live-human-review-boundary");
+        var provider = new ScriptedProvider(
+                request -> response(request, candidateWithMixedBlockers(request))
+        );
+
+        var finished = worker(provider, blobs).processNext("live-human-review-worker").orElseThrow();
+
+        assertThat(finished.state()).isEqualTo(InferenceRunState.FAILED);
+        assertThat(finished.failureCode()).contains("LIVE_UNSAFE_BLOCKER_SET");
+        assertThat(provider.requests).hasSize(1);
+        assertThat(workflowStore.attempts(created))
+                .extracting(attempt -> attempt.status())
+                .containsExactly(InferenceAttemptStatus.SUCCEEDED);
+        assertThat(workflowStore.findCandidate(created)).isEmpty();
+    }
+
+    @Test
     void retryableProviderFailureConsumesAReservationAndProducesAnAuditedRetry() {
         var blobs = new MemoryBlobStore();
         var created = create(blobs, "live-network-retry");
@@ -258,6 +336,43 @@ class PostgresLiveInferenceWorkflowTest {
         )).run().runId();
     }
 
+    private UUID createCombined(MemoryBlobStore blobs, String seed) {
+        return createCombined(blobs, seed, "{\"title\":\"hello\"}");
+    }
+
+    private UUID createCombined(MemoryBlobStore blobs, String seed, String jsonSample) {
+        var profile = profiles.require(PROFILE);
+        var imageBytes = ("synthetic-image:" + seed).getBytes(StandardCharsets.UTF_8);
+        var imageId = sha256(imageBytes);
+        blobs.values.put(imageId, imageBytes);
+        var image = new NormalizedArtifact(
+                imageId, NormalizedArtifact.Kind.IMAGE, imageId,
+                "image/png", imageBytes.length, 32, 16
+        );
+        var sample = new InferenceInput.BinaryInput(
+                "sample.json", "application/json", jsonSample.getBytes(StandardCharsets.UTF_8)
+        );
+        var profileBytes = new StrictJsonSampleProfiler().profile(List.of(sample));
+        var jsonId = sha256(profileBytes);
+        blobs.values.put(jsonId, profileBytes);
+        var jsonProfile = new NormalizedArtifact(
+                jsonId, NormalizedArtifact.Kind.JSON_PROFILE, jsonId,
+                "application/vnd.renderweave.json-profile+json", profileBytes.length, null, null
+        );
+        var normalized = new NormalizedInput(
+                InferenceMode.COMBINED, PROFILE, seed, sha256(seed.getBytes(StandardCharsets.UTF_8)),
+                List.of(image, jsonProfile),
+                List.of(
+                        new NormalizedInputReference(NormalizedArtifact.Kind.IMAGE, 0, imageId),
+                        new NormalizedInputReference(NormalizedArtifact.Kind.JSON_PROFILE, 0, jsonId)
+                ),
+                List.of()
+        );
+        return runs.create(NewInferenceRun.initial(
+                UUID.randomUUID(), "idem-" + seed, normalized, profile.snapshotJson(), T0
+        )).run().runId();
+    }
+
     private String candidate(ProviderInferenceRequest request) {
         return candidate(request, false);
     }
@@ -278,6 +393,78 @@ class PostgresLiveInferenceWorkflowTest {
                         List.of(new CandidateField(
                                 fieldId, "title", "标题", required,
                                 CandidateValue.scalar(CandidateValueKind.TEXT), CandidateSource.AI, assessment
+                        ))
+                ))
+        ));
+    }
+
+    private String candidateWithMixedBlockers(ProviderInferenceRequest request) {
+        var schemaId = UUID.nameUUIDFromBytes((request.runId() + ":schema").getBytes(StandardCharsets.UTF_8));
+        var fieldId = UUID.nameUUIDFromBytes((request.runId() + ":field").getBytes(StandardCharsets.UTF_8));
+        var evidence = CandidateEvidence.image(
+                request.images().getFirst().artifactId(), new CandidateBoundingBox(500, 500, 9_500, 2_500)
+        );
+        var assessment = CandidateAssessment.ai(
+                9_000, true, CandidateResolution.NOT_REQUIRED, List.of(evidence)
+        );
+        return candidateCodec.write(new CandidateBundle(
+                CandidateBundle.CONTRACT_VERSION, schemaId,
+                List.of(new CandidateSchema(
+                        schemaId, "synthetic-card", "合成卡片", CandidateSource.AI, assessment,
+                        List.of(new CandidateField(
+                                fieldId, "title", "标题", true,
+                                CandidateValue.unresolved("null"), CandidateSource.AI, assessment
+                        ))
+                ))
+        ));
+    }
+
+    private String candidateWithHumanBlocker(ProviderInferenceRequest request) {
+        var schemaId = UUID.nameUUIDFromBytes((request.runId() + ":schema").getBytes(StandardCharsets.UTF_8));
+        var fieldId = UUID.nameUUIDFromBytes((request.runId() + ":field").getBytes(StandardCharsets.UTF_8));
+        var evidence = CandidateEvidence.image(
+                request.images().getFirst().artifactId(), new CandidateBoundingBox(500, 500, 9_500, 2_500)
+        );
+        var schemaAssessment = CandidateAssessment.ai(
+                9_000, true, CandidateResolution.NOT_REQUIRED, List.of(evidence)
+        );
+        var fieldAssessment = CandidateAssessment.ai(
+                3_000, true, CandidateResolution.UNRESOLVED, List.of(evidence)
+        );
+        return candidateCodec.write(new CandidateBundle(
+                CandidateBundle.CONTRACT_VERSION, schemaId,
+                List.of(new CandidateSchema(
+                        schemaId, "synthetic-card", "合成卡片", CandidateSource.AI, schemaAssessment,
+                        List.of(new CandidateField(
+                                fieldId, "title", "标题", false,
+                                CandidateValue.unresolved("null"), CandidateSource.AI, fieldAssessment
+                        ))
+                ))
+        ));
+    }
+
+    private String jsonCandidate(ProviderInferenceRequest request) {
+        return jsonCandidate(request, "title");
+    }
+
+    private String jsonCandidate(ProviderInferenceRequest request, String fieldKey) {
+        var schemaId = UUID.nameUUIDFromBytes((request.runId() + ":schema").getBytes(StandardCharsets.UTF_8));
+        var fieldId = UUID.nameUUIDFromBytes((request.runId() + ":field").getBytes(StandardCharsets.UTF_8));
+        var schemaAssessment = CandidateAssessment.ai(
+                9_000, true, CandidateResolution.NOT_REQUIRED,
+                List.of(CandidateEvidence.json(0, ""))
+        );
+        var fieldAssessment = CandidateAssessment.ai(
+                9_000, true, CandidateResolution.NOT_REQUIRED,
+                List.of(CandidateEvidence.json(0, "/" + fieldKey))
+        );
+        return candidateCodec.write(new CandidateBundle(
+                CandidateBundle.CONTRACT_VERSION, schemaId,
+                List.of(new CandidateSchema(
+                        schemaId, "synthetic-card", "合成卡片", CandidateSource.AI, schemaAssessment,
+                        List.of(new CandidateField(
+                                fieldId, fieldKey, "标题", false,
+                                CandidateValue.scalar(CandidateValueKind.TEXT), CandidateSource.AI, fieldAssessment
                         ))
                 ))
         ));

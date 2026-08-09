@@ -306,7 +306,15 @@ public final class LiveInferenceWorker {
         if (checkpoint.completedStage() != InferenceStage.DETERMINISTIC_VALIDATE) {
             throw new IllegalStateException("CRITIQUE requires deterministic validation");
         }
-        if (requiresRepair(checkpoint)) {
+        var repairDecision = checkpoint.outputValid()
+                ? LiveRepairPolicy.decide(checkpoint.validationProblems())
+                : LiveRepairPolicy.Decision.REPAIR;
+        if (repairDecision == LiveRepairPolicy.Decision.REJECT) {
+            return runStore.fail(
+                    current.runId(), token(current), "LIVE_UNSAFE_BLOCKER_SET", clock.instant()
+            );
+        }
+        if (repairDecision == LiveRepairPolicy.Decision.REPAIR) {
             if (checkpoint.repairRounds() >= profile.maximumRepairRounds()
                     || checkpoint.structureCalls() >= profile.maximumTotalCalls()) {
                 return runStore.fail(
@@ -326,7 +334,8 @@ public final class LiveInferenceWorker {
 
     private static boolean requiresRepair(LiveWorkflowCheckpoint checkpoint) {
         return !checkpoint.outputValid()
-                || LiveRepairPolicy.requiresRepair(checkpoint.validationProblems());
+                || LiveRepairPolicy.decide(checkpoint.validationProblems())
+                == LiveRepairPolicy.Decision.REPAIR;
     }
 
     private ProviderInferenceRequest request(

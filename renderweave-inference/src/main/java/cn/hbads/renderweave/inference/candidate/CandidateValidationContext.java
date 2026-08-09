@@ -3,19 +3,27 @@ package cn.hbads.renderweave.inference.candidate;
 import cn.hbads.renderweave.inference.profile.JsonStructuralProfile;
 
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-public record CandidateValidationContext(
-        Set<String> imageArtifactIds,
-        int jsonSampleCount,
-        Map<String, Set<CandidateEvidence>> jsonEvidenceByNodePointer,
-        int lowConfidenceThresholdBps,
-        CandidateValidationOrigin origin
-) {
-    public CandidateValidationContext {
-        imageArtifactIds = Set.copyOf(Objects.requireNonNull(imageArtifactIds, "imageArtifactIds"));
+public final class CandidateValidationContext {
+    private final Set<String> imageArtifactIds;
+    private final int jsonSampleCount;
+    private final Map<String, Set<CandidateEvidence>> jsonEvidenceByNodePointer;
+    private final Set<CandidateEvidence> knownJsonEvidence;
+    private final int lowConfidenceThresholdBps;
+    private final CandidateValidationOrigin origin;
+
+    public CandidateValidationContext(
+            Set<String> imageArtifactIds,
+            int jsonSampleCount,
+            Map<String, Set<CandidateEvidence>> jsonEvidenceByNodePointer,
+            int lowConfidenceThresholdBps,
+            CandidateValidationOrigin origin
+    ) {
+        this.imageArtifactIds = Set.copyOf(Objects.requireNonNull(imageArtifactIds, "imageArtifactIds"));
         if (jsonSampleCount < 0 || jsonSampleCount > 20) {
             throw new IllegalArgumentException("jsonSampleCount must be 0..20");
         }
@@ -24,6 +32,7 @@ public record CandidateValidationContext(
         }
         Objects.requireNonNull(jsonEvidenceByNodePointer, "jsonEvidenceByNodePointer");
         var catalog = new LinkedHashMap<String, Set<CandidateEvidence>>();
+        var reverseCatalog = new LinkedHashSet<CandidateEvidence>();
         jsonEvidenceByNodePointer.forEach((nodePointer, locations) -> {
             Objects.requireNonNull(nodePointer, "jsonEvidence nodePointer");
             var safeLocations = Set.copyOf(Objects.requireNonNull(locations, "jsonEvidence locations"));
@@ -36,9 +45,33 @@ public record CandidateValidationContext(
                 }
             }
             catalog.put(nodePointer, safeLocations);
+            reverseCatalog.addAll(safeLocations);
         });
-        jsonEvidenceByNodePointer = Map.copyOf(catalog);
-        Objects.requireNonNull(origin, "origin");
+        this.jsonSampleCount = jsonSampleCount;
+        this.jsonEvidenceByNodePointer = Map.copyOf(catalog);
+        this.knownJsonEvidence = Set.copyOf(reverseCatalog);
+        this.lowConfidenceThresholdBps = lowConfidenceThresholdBps;
+        this.origin = Objects.requireNonNull(origin, "origin");
+    }
+
+    public Set<String> imageArtifactIds() {
+        return imageArtifactIds;
+    }
+
+    public int jsonSampleCount() {
+        return jsonSampleCount;
+    }
+
+    public Map<String, Set<CandidateEvidence>> jsonEvidenceByNodePointer() {
+        return jsonEvidenceByNodePointer;
+    }
+
+    public int lowConfidenceThresholdBps() {
+        return lowConfidenceThresholdBps;
+    }
+
+    public CandidateValidationOrigin origin() {
+        return origin;
     }
 
     public static CandidateValidationContext liveProviderOutput(
@@ -75,11 +108,15 @@ public record CandidateValidationContext(
     }
 
     boolean jsonEvidenceKnown(CandidateEvidence evidence) {
-        return jsonEvidenceByNodePointer.values().stream().anyMatch(locations -> locations.contains(evidence));
+        return knownJsonEvidence.contains(evidence);
     }
 
     boolean jsonEvidenceMatches(String nodePointer, CandidateEvidence evidence) {
         return jsonEvidenceByNodePointer.getOrDefault(nodePointer, Set.of()).contains(evidence);
+    }
+
+    boolean jsonNodeKnown(String nodePointer) {
+        return jsonEvidenceByNodePointer.containsKey(nodePointer);
     }
 
     private static CandidateValidationContext fromProfile(

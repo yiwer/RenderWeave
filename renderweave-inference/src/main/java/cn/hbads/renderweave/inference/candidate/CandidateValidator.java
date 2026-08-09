@@ -224,6 +224,9 @@ public final class CandidateValidator {
                         itemId, pointer + "/resolution",
                         Map.of("confidenceBps", Integer.toString(confidence)));
             }
+        } else if (assessment.resolution() == CandidateResolution.UNRESOLVED) {
+            add(problems, "CANDIDATE_ITEM_UNRESOLVED", CandidateProblemSeverity.BLOCKER,
+                    itemId, pointer + "/resolution", Map.of());
         }
     }
 
@@ -475,13 +478,21 @@ public final class CandidateValidator {
             CandidateValidationContext context,
             List<CandidateProblem> problems
     ) {
+        var matchingEvidence = false;
         for (var evidence : assessment.evidence()) {
-            if (evidence.kind() == CandidateEvidenceKind.JSON
-                    && context.jsonEvidenceKnown(evidence)
-                    && !context.jsonEvidenceMatches(expectedNodePointer, evidence)) {
-                add(problems, "JSON_EVIDENCE_ITEM_MISMATCH", CandidateProblemSeverity.BLOCKER,
-                        itemId, problemPointer, Map.of("expectedNodePointer", expectedNodePointer));
+            if (evidence.kind() == CandidateEvidenceKind.JSON && context.jsonEvidenceKnown(evidence)) {
+                if (context.jsonEvidenceMatches(expectedNodePointer, evidence)) {
+                    matchingEvidence = true;
+                } else {
+                    add(problems, "JSON_EVIDENCE_ITEM_MISMATCH", CandidateProblemSeverity.BLOCKER,
+                            itemId, problemPointer, Map.of("expectedNodePointer", expectedNodePointer));
+                }
             }
+        }
+        if (context.jsonNodeKnown(expectedNodePointer) && !matchingEvidence) {
+            add(problems, "JSON_EVIDENCE_ITEM_MISSING", CandidateProblemSeverity.BLOCKER,
+                    itemId, problemPointer + "/evidence",
+                    Map.of("expectedNodePointer", expectedNodePointer));
         }
     }
 

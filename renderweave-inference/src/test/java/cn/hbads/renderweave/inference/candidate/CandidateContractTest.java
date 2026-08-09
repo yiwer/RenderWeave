@@ -2,6 +2,7 @@ package cn.hbads.renderweave.inference.candidate;
 
 import org.junit.jupiter.api.Test;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -11,6 +12,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
 class CandidateContractTest {
     private static final int LOW_CONFIDENCE_THRESHOLD = 8_000;
@@ -156,6 +158,94 @@ class CandidateContractTest {
         assertCodes(validator.validate(bundle, context(1)),
                 "JSON_EVIDENCE_ITEM_MISMATCH",
                 "JSON_EVIDENCE_LOCATION_UNKNOWN");
+    }
+
+    @Test
+    void combinedJsonDerivedItemsCannotSubstituteImageOnlyEvidence() {
+        var artifactId = "b".repeat(64);
+        var rootId = UUID.randomUUID();
+        var imageOnly = CandidateAssessment.ai(
+                9_000, true, CandidateResolution.NOT_REQUIRED,
+                List.of(CandidateEvidence.image(
+                        artifactId, new CandidateBoundingBox(100, 100, 9_000, 2_000)
+                ))
+        );
+        var bundle = new CandidateBundle(CandidateBundle.CONTRACT_VERSION, rootId, List.of(
+                new CandidateSchema(
+                        rootId, "combined-root", "Combined", CandidateSource.AI, imageOnly,
+                        List.of(new CandidateField(
+                                UUID.randomUUID(), "title", "Title", false,
+                                CandidateValue.scalar(CandidateValueKind.TEXT), CandidateSource.AI, imageOnly
+                        ))
+                )
+        ));
+        var initial = context(1);
+        var combined = new CandidateValidationContext(
+                Set.of(artifactId), initial.jsonSampleCount(), initial.jsonEvidenceByNodePointer(),
+                initial.lowConfidenceThresholdBps(), CandidateValidationOrigin.LIVE_PROVIDER_OUTPUT
+        );
+
+        assertCodes(validator.validate(bundle, combined), "JSON_EVIDENCE_ITEM_MISSING");
+    }
+
+    @Test
+    void lowConfidenceConcreteAssertionCannotClaimNotRequired() {
+        var rootId = UUID.randomUUID();
+        var low = CandidateAssessment.ai(
+                1, true, CandidateResolution.NOT_REQUIRED,
+                List.of(CandidateEvidence.json(0, "/title"))
+        );
+        var bundle = new CandidateBundle(CandidateBundle.CONTRACT_VERSION, rootId, List.of(
+                new CandidateSchema(
+                        rootId, "low-confidence", "Low confidence", CandidateSource.AI, assessment(""),
+                        List.of(new CandidateField(
+                                UUID.randomUUID(), "title", "Title", false,
+                                CandidateValue.scalar(CandidateValueKind.TEXT), CandidateSource.AI, low
+                        ))
+                )
+        ));
+
+        assertCodes(validator.validate(bundle, context(1)), "LOW_CONFIDENCE_STATE_INVALID");
+    }
+
+    @Test
+    void highConfidenceUnresolvedDispositionRemainsAnExplicitReviewBlocker() {
+        var rootId = UUID.randomUUID();
+        var unresolved = CandidateAssessment.ai(
+                9_000, true, CandidateResolution.UNRESOLVED,
+                List.of(CandidateEvidence.json(0, "/title"))
+        );
+        var bundle = new CandidateBundle(CandidateBundle.CONTRACT_VERSION, rootId, List.of(
+                new CandidateSchema(
+                        rootId, "review-boundary", "Review boundary", CandidateSource.AI, assessment(""),
+                        List.of(new CandidateField(
+                                UUID.randomUUID(), "title", "Title", false,
+                                CandidateValue.scalar(CandidateValueKind.TEXT), CandidateSource.AI, unresolved
+                        ))
+                )
+        ));
+
+        assertCodes(validator.validate(bundle, context(1)), "CANDIDATE_ITEM_UNRESOLVED");
+    }
+
+    @Test
+    void largeJsonEvidenceCatalogSupportsRepeatedConstantTimeMembershipChecks() {
+        var catalog = new java.util.LinkedHashMap<String, Set<CandidateEvidence>>();
+        for (var index = 0; index < 4_096; index++) {
+            var pointer = "/field-" + index;
+            catalog.put(pointer, Set.of(CandidateEvidence.json(0, pointer)));
+        }
+        var context = new CandidateValidationContext(
+                Set.of(), 1, catalog, LOW_CONFIDENCE_THRESHOLD,
+                CandidateValidationOrigin.LIVE_PROVIDER_OUTPUT
+        );
+        var target = CandidateEvidence.json(0, "/field-4095");
+
+        assertTimeoutPreemptively(Duration.ofSeconds(2), () -> {
+            for (var lookup = 0; lookup < 100_000; lookup++) {
+                assertTrue(context.jsonEvidenceKnown(target));
+            }
+        });
     }
 
     @Test

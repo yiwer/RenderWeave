@@ -38,12 +38,14 @@ Prompt v1 还有一个直接的身份错误：它要求所有 `proposedFieldKey`
 `jsonStructuralProfile` 决定 JSON_ONLY 与 COMBINED 的字段身份和对象/数组拓扑：
 
 - JSON 属性名按 Unicode code point 原样成为 `proposedFieldKey`；只对 evidence `jsonPointer` 使用 RFC 6901 转义。
+- 空字符串、控制字符或 UTF-8 超过 128 bytes 的 JSON exact key 不能静默改名；它必须保持 unresolved/invalid 并交给人工处置，不能进入模型 REPAIR。
 - object → `REFERENCE` + 独立 CandidateSchema；object array → `ARRAY:REFERENCE` + 独立 CandidateSchema。
 - empty array 与 nested array → `ARRAY:UNRESOLVED`，不生成嵌套 ARRAY。
 - heterogeneous array → `ARRAY:CONFLICT`；object/scalar 或 object/array 混合 → `CONFLICT`。
 - all-null → `UNRESOLVED`；普通 scalar 混合按现有 deterministic profiler 降级为 `TEXT`；单一 concrete scalar 保持 `TEXT` / `DECIMAL` / `BOOLEAN`。
 - JSON 节点自带的 sampleIndex/jsonPointer 是 evidence 的权威位置，不猜测不存在的位置。
-- 运行时从 `jsonStructuralProfile` 构造允许的 `(sampleIndex, jsonPointer)` catalog；provider 输出的每条 JSON evidence 必须既存在于 catalog，又与该 CandidateSchema/CandidateField 的确定性节点路径一致。只有语法合法但位置不存在或错配，仍是 blocker。
+- 运行时从 `jsonStructuralProfile` 构造允许的 `(sampleIndex, jsonPointer)` catalog；provider 输出的每条 JSON evidence 必须既存在于 catalog，又与该 CandidateSchema/CandidateField 的确定性节点路径一致。catalog 中存在该节点时，IMAGE evidence 只能补充、不能替代至少一条匹配的 JSON evidence。只有语法合法但位置不存在、错配或缺失，仍是 blocker。
+- context 在构造时同时冻结正向 node map 与反向 evidence set，membership 为 O(1)；不会按 Candidate evidence 数量重复扫描全部 structural nodes。
 
 COMBINED 中 JSON 仍拥有结构和 concrete 数值/布尔类型；视觉只补充 displayName、直接支持的视觉字段与 evidence。唯一允许的 concrete refinement 是：JSON `TEXT` 在清晰标签与标准值格式共同支持时精化为 `DATE(yyyy-MM-dd)` 或 `TIME(HH:mm:ss)`。视觉不能把 conflict、all-null、empty array、nested array 或 heterogeneous array 武断具体化。
 
@@ -52,10 +54,11 @@ COMBINED 中 JSON 仍拥有结构和 concrete 数值/布尔类型；视觉只补
 - live provider 初始输出的 Schema/Field 必须是 `source=AI`、`inferred=true`，resolution 只能是 `NOT_REQUIRED` 或 `UNRESOLVED`；`USER`、`CONFIRMED`、`RESOLVED_BY_EDIT`、`REMOVED` 只允许由 Candidate review service 产生。
 - live provider、可信 deterministic replay 和用户审核分别携带显式 validation origin。严格的初始 provenance/disposition 约束只作用于不可信 live provider；JSON evidence catalog 对 provider/replay 都生效；用户审核继续执行通用 evidence existence 和 Candidate 合约校验。
 - evaluator 独立把 provider 伪造的 provenance/disposition 计为 contract failure 与 critical unsupported assertion，不能依靠模型自报人工确认而获得认证。
+- 低于 Profile threshold 却标记 `NOT_REQUIRED` 的断言也是 contract failure 与 critical unsupported assertion；合法的低置信 `UNRESOLVED` 仍保留为人工审核边界。高置信但 disposition 仍为 `UNRESOLVED` 时，validator 显式产生 review blocker，与 materializer 的 apply 前置条件保持一致。
 
 ### 5. Repair 是完整重建，不是局部补丁
 
-REPAIR 阶段根据稳定 `repairProblemCodes` 重新输出完整 Candidate。可解析但包含 exact-key、UUID、provider provenance、evidence、array/reference graph、required/constraint 等确定性 blocker 的 Candidate 也会进入 REPAIR；不再只有 JSON parse failure 才可达。`LOW_CONFIDENCE_UNRESOLVED`、`CANDIDATE_TYPE_UNRESOLVED` 与 `CANDIDATE_TYPE_CONFLICT` 等需要人工判断的 blocker 不进入模型自决。Repair 不依赖上一份被拒 Candidate，也不把 model payload 写入 evidence。
+REPAIR 阶段根据稳定 `repairProblemCodes` 重新输出完整 Candidate。可解析且只包含 UUID、provider provenance、evidence、array/reference graph、required/constraint 等可无损确定性修复的 blocker 时也会进入 REPAIR；不再只有 JSON parse failure 才可达。只包含 exact FieldKey 不可表示、`LOW_CONFIDENCE_*`、`CANDIDATE_ITEM_UNRESOLVED`、`CANDIDATE_TYPE_UNRESOLVED/CONFLICT` 等人工 blocker 时直接进入逐项审核。确定性与人工 blocker 混合，或出现未分类 blocker 时，整包以 `LIVE_UNSAFE_BLOCKER_SET` 失败：不追加 provider call，也不创建可审核 Candidate snapshot，从而不能通过 review autosave 丢弃初始 trust blocker。Repair 不依赖上一份被拒 Candidate，也不把 model payload 写入 evidence。
 
 ### 6. 诊断新增派生标量，不改旧 journal schema
 

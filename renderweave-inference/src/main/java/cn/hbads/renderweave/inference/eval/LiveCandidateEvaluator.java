@@ -228,6 +228,9 @@ public final class LiveCandidateEvaluator {
                             ) ? 0 : 1)
                             .sum()
             );
+            var unsafeProblemAssertions = (int) problems.stream()
+                    .filter(problem -> problem.code().equals("LOW_CONFIDENCE_STATE_INVALID"))
+                    .count();
             var active = candidate.schemas().stream()
                     .filter(schema -> schema.assessment().resolution() != CandidateResolution.REMOVED)
                     .toList();
@@ -253,7 +256,9 @@ public final class LiveCandidateEvaluator {
             var edgeCount = 0;
             var evidenceExpected = 0;
             var evidencePresent = 0;
-            var unsafeAssertions = initialProvenanceViolations;
+            var unsafeAssertions = Math.addExact(
+                    initialProvenanceViolations, unsafeProblemAssertions
+            );
             var allItemIds = new HashSet<UUID>();
             var duplicateItemIds = false;
             var allAi = true;
@@ -388,6 +393,7 @@ public final class LiveCandidateEvaluator {
                         "IMAGE_EVIDENCE_BOUNDS_INVALID", "JSON_EVIDENCE_SHAPE_INVALID",
                         "JSON_EVIDENCE_SAMPLE_UNKNOWN", "JSON_EVIDENCE_POINTER_INVALID",
                         "JSON_EVIDENCE_LOCATION_UNKNOWN", "JSON_EVIDENCE_ITEM_MISMATCH",
+                        "JSON_EVIDENCE_ITEM_MISSING", "LOW_CONFIDENCE_STATE_INVALID",
                         "EVIDENCE_KIND_INVALID", "CANDIDATE_ARRAY_SHAPE_INVALID",
                         "NESTED_ARRAY_UNSUPPORTED", "CANDIDATE_REFERENCE_SHAPE_INVALID",
                         "UNRESOLVED_TYPE_EVIDENCE_MISSING", "CONFLICT_TYPE_EVIDENCE_INCOMPLETE",

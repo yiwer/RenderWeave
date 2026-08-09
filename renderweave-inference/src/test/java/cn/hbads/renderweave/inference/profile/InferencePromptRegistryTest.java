@@ -40,7 +40,7 @@ class InferencePromptRegistryTest {
                 .text();
 
         assertEquals(
-                "167dd098592e7fb794ce95ea49d9c32aab8094df1c210de6b1baa309eca5c079",
+                "0a97da2c71b1429704b93ced8fdcb96a7eb2b8dc1f56d88e487dea09e5d8df52",
                 sha256(prompt)
         );
         assertTrue(prompt.contains("renderweave-candidate/1.0"));
@@ -50,6 +50,7 @@ class InferencePromptRegistryTest {
         assertTrue(prompt.contains("128 UTF-8 bytes"));
         assertTrue(prompt.contains("proposedFieldKey=null"));
         assertTrue(prompt.contains("must never use source=\"USER\""));
+        assertTrue(prompt.contains("supplement but never replace the matching JSON evidence"));
         assertTrue(prompt.contains("required=false"));
         assertTrue(prompt.contains("constraints={}"));
         assertTrue(prompt.contains("ARRAY:UNRESOLVED"));
