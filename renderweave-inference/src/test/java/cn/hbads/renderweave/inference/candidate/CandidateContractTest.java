@@ -77,13 +77,21 @@ class CandidateContractTest {
                 "\"contractVersion\":\"renderweave-candidate/1.0\",\"contractVersion\":\"other\""
         );
         var invalidValue = valid.replace("\"source\":\"AI\"", "\"source\":\"ALIEN\"");
+        var adversarialUnknown = valid.replaceFirst(
+                "\\{", "{\"duplicate trailing token\":\"must-not-steer-taxonomy\","
+        );
+        var adversarialValue = valid.replace(
+                "\"source\":\"AI\"", "\"source\":\"trailing token\""
+        );
 
         assertDecodeDiagnostic(unknown, "CANDIDATE_DECODE_UNKNOWN_MEMBER");
+        assertDecodeDiagnostic(adversarialUnknown, "CANDIDATE_DECODE_UNKNOWN_MEMBER");
         assertDecodeDiagnostic(duplicate, "CANDIDATE_DECODE_DUPLICATE_MEMBER");
         assertDecodeDiagnostic(valid + "{}", "CANDIDATE_DECODE_TRAILING_CONTENT");
         assertDecodeDiagnostic("{", "CANDIDATE_DECODE_SYNTAX_INVALID");
         assertDecodeDiagnostic("[]", "CANDIDATE_DECODE_SHAPE_INVALID");
         assertDecodeDiagnostic(invalidValue, "CANDIDATE_DECODE_VALUE_INVALID");
+        assertDecodeDiagnostic(adversarialValue, "CANDIDATE_DECODE_VALUE_INVALID");
         assertDecodeDiagnostic(" ", "CANDIDATE_DECODE_REQUIRED");
         assertDecodeDiagnostic(
                 " ".repeat(CandidateJsonCodec.MAX_CANDIDATE_BYTES + 1),

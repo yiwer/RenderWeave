@@ -73,44 +73,56 @@ public final class CandidateJsonCodec {
     }
 
     private static String classifyDecodeFailure(Throwable failure) {
-        if (containsMessage(failure, "duplicate")) {
-            return "CANDIDATE_DECODE_DUPLICATE_MEMBER";
-        }
-        if (containsMessage(failure, "trailing token")
-                || containsMessage(failure, "trailing content")) {
-            return "CANDIDATE_DECODE_TRAILING_CONTENT";
-        }
-        if (containsCause(failure, "UnrecognizedPropertyException")) {
+        if (containsType(failure, "UnrecognizedPropertyException")) {
             return "CANDIDATE_DECODE_UNKNOWN_MEMBER";
         }
-        if (containsCause(failure, "ValueInstantiationException")
-                || containsCause(failure, "InvalidFormatException")) {
+        if (containsType(failure, "ValueInstantiationException")
+                || containsType(failure, "InvalidFormatException")) {
             return "CANDIDATE_DECODE_VALUE_INVALID";
         }
-        if (containsCause(failure, "MismatchedInputException")) {
+        if (containsType(failure, "MismatchedInputException")) {
+            if (containsMessageForType(failure, "MismatchedInputException", "trailing token")
+                    || containsMessageForType(failure, "MismatchedInputException", "trailing content")) {
+                return "CANDIDATE_DECODE_TRAILING_CONTENT";
+            }
             return "CANDIDATE_DECODE_SHAPE_INVALID";
         }
-        if (containsCause(failure, "StreamReadException")
-                || containsCause(failure, "UnexpectedEndOfInputException")) {
+        if (containsType(failure, "StreamReadException")
+                || containsType(failure, "UnexpectedEndOfInputException")) {
+            if (containsMessageForType(failure, "StreamReadException", "duplicate")) {
+                return "CANDIDATE_DECODE_DUPLICATE_MEMBER";
+            }
             return "CANDIDATE_DECODE_SYNTAX_INVALID";
         }
         return "CANDIDATE_DECODE_OTHER";
     }
 
-    private static boolean containsCause(Throwable failure, String simpleName) {
+    private static boolean containsType(Throwable failure, String simpleName) {
         for (var cause = failure; cause != null; cause = cause.getCause()) {
-            if (cause.getClass().getSimpleName().equals(simpleName)) return true;
+            if (isType(cause, simpleName)) return true;
         }
         return false;
     }
 
-    private static boolean containsMessage(Throwable failure, String fragment) {
+    private static boolean containsMessageForType(
+            Throwable failure,
+            String simpleName,
+            String fragment
+    ) {
         var expected = fragment.toLowerCase(java.util.Locale.ROOT);
         for (var cause = failure; cause != null; cause = cause.getCause()) {
+            if (!isType(cause, simpleName)) continue;
             var message = cause.getMessage();
             if (message != null && message.toLowerCase(java.util.Locale.ROOT).contains(expected)) {
                 return true;
             }
+        }
+        return false;
+    }
+
+    private static boolean isType(Throwable failure, String simpleName) {
+        for (Class<?> type = failure.getClass(); type != null; type = type.getSuperclass()) {
+            if (type.getSimpleName().equals(simpleName)) return true;
         }
         return false;
     }
