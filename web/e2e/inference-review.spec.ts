@@ -183,6 +183,28 @@ test('completes the four-step Candidate workflow with keyboard authoring and dur
     await page.setViewportSize(viewport);
     await page.evaluate(() => window.scrollTo(0, 0));
     await expect(page.locator('.resource-body')).toBeVisible();
+    if (viewport.width === 1024) {
+      const formButton = page.getByRole('button', { name: '表单' });
+      await formButton.focus();
+      await page.keyboard.press('Enter');
+      const inspectorTrigger = page.getByRole('button', { name: '属性与证据' });
+      await inspectorTrigger.focus();
+      await page.keyboard.press('Enter');
+      const inspector = page.getByRole('dialog', { name: 'Candidate 属性与证据' });
+      await expect(inspector).toBeVisible();
+      await page.screenshot({ path: testInfo.outputPath('candidate-inspector-drawer-1024x768.png'), fullPage: true });
+      await inspector.getByLabel('显示名称', { exact: true }).fill('客户关联');
+      await expect.poll(() => current.schemas
+        .find((schema) => schema.proposedSchemaKey === 'order')?.fields
+        .some((field) => field.displayName === '客户关联')).toBe(true);
+      const closeInspector = inspector.getByRole('button', { name: '关闭属性与证据' });
+      await closeInspector.focus();
+      await page.keyboard.press('Enter');
+      await expect(inspector).toBeHidden();
+      await expect(inspectorTrigger).toBeFocused();
+      await mapButton.focus();
+      await page.keyboard.press('Enter');
+    }
     await expectNoHorizontalOverflow(page);
     await page.screenshot({
       path: testInfo.outputPath(`candidate-review-${viewport.width}x${viewport.height}.png`),

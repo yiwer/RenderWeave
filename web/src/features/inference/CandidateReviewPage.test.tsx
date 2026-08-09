@@ -1,11 +1,11 @@
 // @vitest-environment happy-dom
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { CandidateApplyResponse, CandidateReviewResponse } from '../../api/generated';
+import type { CandidateApplyResponse, CandidateReviewResponse, InferenceEvent } from '../../api/generated';
 import { CandidateReviewPage } from './CandidateReviewPage';
 import { snapshot } from './candidate-session.test';
 
@@ -16,7 +16,11 @@ const api = vi.hoisted(() => ({
   applyCandidateRequest: vi.fn(),
   cancelInferenceRunRequest: vi.fn(),
   retryInferenceRunRequest: vi.fn(),
-  subscribeInferenceRunEvents: vi.fn(() => () => undefined),
+  subscribeInferenceRunEvents: vi.fn<(
+    runId: string,
+    afterSequence: number,
+    onEvent: (event: InferenceEvent) => void,
+  ) => () => void>(() => () => undefined),
 }));
 
 vi.mock('./candidate-api', () => api);
@@ -93,6 +97,51 @@ describe('Candidate atomic apply workspace', () => {
     fireEvent.click(await screen.findByRole('button', { name: '重新运行' }));
     await waitFor(() => expect(api.retryInferenceRunRequest).toHaveBeenCalledWith(failed.runId));
   });
+
+  it('synchronizes an externally completed Candidate snapshot into the run flow', async () => {
+    let server = cleanReview();
+    api.getCandidateReviewRequest.mockImplementation(async () => structuredClone(server));
+    renderPage();
+
+    await screen.findByRole('button', { name: '原子创建 1 个 Draft' });
+    await waitFor(() => expect(api.subscribeInferenceRunEvents).toHaveBeenCalled());
+    server = {
+      ...server,
+      run: { ...server.run, state: 'COMPLETED', stage: 'ATOMIC_CREATE', sequence: server.run.sequence + 1 },
+      finalCandidate: structuredClone(server.current),
+      appliedAt: '2026-08-08T00:00:02Z',
+    };
+
+    await act(async () => {
+      api.subscribeInferenceRunEvents.mock.calls[0]![2](inferenceEvent(server));
+    });
+
+    expect(await screen.findByText('Draft Bundle 已原子创建')).toBeTruthy();
+    const flow = screen.getByRole('navigation', { name: '数据结构识别进度' });
+    expect(flow.querySelector('[aria-current="step"]')?.textContent).toContain('原子创建');
+    expect(screen.queryByRole('button', { name: '原子创建 1 个 Draft' })).toBeNull();
+  });
+
+  it('leaves the editor when another tab cancels the run', async () => {
+    let server = cleanReview();
+    api.getCandidateReviewRequest.mockImplementation(async () => structuredClone(server));
+    renderPage();
+
+    await screen.findByLabelText('Candidate 编辑工作区');
+    await waitFor(() => expect(api.subscribeInferenceRunEvents).toHaveBeenCalled());
+    server = {
+      ...server,
+      run: { ...server.run, state: 'CANCELLED', stage: 'USER_APPROVAL', sequence: server.run.sequence + 1 },
+    };
+
+    await act(async () => {
+      api.subscribeInferenceRunEvents.mock.calls[0]![2](inferenceEvent(server));
+    });
+
+    expect(await screen.findByText('推断任务未生成 Candidate')).toBeTruthy();
+    expect(screen.queryByLabelText('Candidate 编辑工作区')).toBeNull();
+    expect(screen.getByRole('button', { name: '重新运行' })).toBeTruthy();
+  });
 });
 
 function renderPage() {
@@ -135,5 +184,16 @@ function applyResult(review: CandidateReviewResponse): CandidateApplyResponse {
     rootSchemaKey: 'order',
     createdDrafts: [{ schemaKey: 'order', revision: 0, href: '/api/v1/schema-drafts/order' }],
     appliedAt: '2026-08-08T00:00:02Z',
+  };
+}
+
+function inferenceEvent(review: CandidateReviewResponse): InferenceEvent {
+  return {
+    sequence: review.run.sequence,
+    type: review.run.state,
+    state: review.run.state,
+    stage: review.run.stage,
+    data: {},
+    occurredAt: '2026-08-08T00:00:02Z',
   };
 }

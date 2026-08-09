@@ -1,5 +1,7 @@
 [CmdletBinding()]
-param()
+param(
+    [string]$EvidenceDir
+)
 
 $ErrorActionPreference = 'Stop'
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
@@ -13,6 +15,36 @@ $npmCommand = Join-Path $nodeDir 'npm.cmd'
 $viteCli = Join-Path $webRoot 'node_modules\vite\bin\vite.js'
 $startedProcess = $null
 $previousWebPort = $env:RENDERWEAVE_WEB_PORT
+$previousPlaywrightOutput = $env:RENDERWEAVE_PLAYWRIGHT_OUTPUT_DIR
+$previousPlaywrightHtml = $env:RENDERWEAVE_PLAYWRIGHT_HTML_DIR
+$timestamp = Get-Date -Format 'yyyyMMdd-HHmmss'
+if ($EvidenceDir) {
+    $artifactRoot = Join-Path $EvidenceDir 'browser-artifacts'
+}
+else {
+    $artifactRoot = Join-Path $repoRoot ".sdlc\evidence\$timestamp-prototype-audit\browser-artifacts"
+}
+$playwrightOutput = Join-Path $artifactRoot 'playwright-results'
+$playwrightHtml = Join-Path $artifactRoot 'playwright-report'
+$prototypeOutput = Join-Path $artifactRoot 'prototype-audit'
+$null = New-Item -ItemType Directory -Path $artifactRoot -Force
+
+function Write-BrowserArtifactManifest {
+    $rows = foreach ($file in Get-ChildItem -LiteralPath $artifactRoot -Recurse -File | Sort-Object FullName) {
+        if ($file.Name -eq 'manifest.sha256') {
+            continue
+        }
+        $relativePath = $file.FullName.Substring($artifactRoot.Length).TrimStart('\').Replace('\', '/')
+        $hash = (Get-FileHash -LiteralPath $file.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+        "$hash  $relativePath"
+    }
+    $encoding = New-Object System.Text.UTF8Encoding($false)
+    [System.IO.File]::WriteAllText(
+        (Join-Path $artifactRoot 'manifest.sha256'),
+        ($rows -join "`n"),
+        $encoding
+    )
+}
 
 function Get-FreeTcpPort {
     $listener = New-Object System.Net.Sockets.TcpListener([System.Net.IPAddress]::Loopback, 0)
@@ -31,6 +63,8 @@ try {
     }
     $webPort = Get-FreeTcpPort
     $env:RENDERWEAVE_WEB_PORT = "$webPort"
+    $env:RENDERWEAVE_PLAYWRIGHT_OUTPUT_DIR = $playwrightOutput
+    $env:RENDERWEAVE_PLAYWRIGHT_HTML_DIR = $playwrightHtml
     $startedProcess = Start-Process -FilePath $nodeExe `
         -ArgumentList @($viteCli, '--host', '127.0.0.1', '--port', "$webPort", '--strictPort') `
         -WorkingDirectory $webRoot `
@@ -71,7 +105,7 @@ try {
 
     Push-Location $repoRoot
     try {
-        & python tools\prototype_audit.py --base-url "http://127.0.0.1:$webPort"
+        & python tools\prototype_audit.py --base-url "http://127.0.0.1:$webPort" --output $prototypeOutput
         if ($LASTEXITCODE -ne 0) {
             throw "Prototype browser audit failed with exit code $LASTEXITCODE."
         }
@@ -81,6 +115,7 @@ try {
     }
 }
 finally {
+    Write-BrowserArtifactManifest
     if ($startedProcess -and -not $startedProcess.HasExited) {
         Stop-Process -Id $startedProcess.Id -Force
     }
@@ -89,5 +124,17 @@ finally {
     }
     else {
         $env:RENDERWEAVE_WEB_PORT = $previousWebPort
+    }
+    if ($null -eq $previousPlaywrightOutput) {
+        Remove-Item Env:RENDERWEAVE_PLAYWRIGHT_OUTPUT_DIR -ErrorAction SilentlyContinue
+    }
+    else {
+        $env:RENDERWEAVE_PLAYWRIGHT_OUTPUT_DIR = $previousPlaywrightOutput
+    }
+    if ($null -eq $previousPlaywrightHtml) {
+        Remove-Item Env:RENDERWEAVE_PLAYWRIGHT_HTML_DIR -ErrorAction SilentlyContinue
+    }
+    else {
+        $env:RENDERWEAVE_PLAYWRIGHT_HTML_DIR = $previousPlaywrightHtml
     }
 }

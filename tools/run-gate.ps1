@@ -151,8 +151,9 @@ try {
             }
             'prototype-e2e' {
                 Invoke-GateStep $step {
-                    Invoke-ZeroPaidAiCommand `
-                        'powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools\run-prototype-audit.ps1'
+                    $command = 'powershell.exe -NoProfile -ExecutionPolicy Bypass ' +
+                        '-File tools\run-prototype-audit.ps1 -EvidenceDir "' + $evidenceDir + '"'
+                    Invoke-ZeroPaidAiCommand $command
                 }
             }
             'runtime-canary' {

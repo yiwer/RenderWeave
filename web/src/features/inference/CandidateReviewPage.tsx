@@ -7,6 +7,7 @@ import {
   GitBranch,
   List,
   LoaderCircle,
+  PanelRightOpen,
   RefreshCw,
   RotateCcw,
   Search,
@@ -37,6 +38,7 @@ import {
   candidateReviewReducer,
   createCandidateReviewState,
   findSelected,
+  type CandidateReviewAction,
   type CandidateReviewState,
 } from './candidate-session';
 import { InferenceFlowSteps } from './InferenceFlowSteps';
@@ -65,8 +67,11 @@ export function CandidateReviewPage() {
   });
   const refetch = query.refetch;
   const reload = useCallback(
-    () => refetch().then((result) => result.data),
-    [refetch],
+    () => refetch().then((result) => {
+      if (result.data) queryClient.setQueryData(['inference-run', runId], result.data.run);
+      return result.data;
+    }),
+    [queryClient, refetch, runId],
   );
   const cancelRun = useMutation({
     mutationFn: () => cancelInferenceRunRequest(runId),
@@ -169,10 +174,22 @@ function CandidateReviewWorkspace({
   const [state, dispatch] = useReducer(candidateReviewReducer, initial, createCandidateReviewState);
   const queryClient = useQueryClient();
   const [applyResult, setApplyResult] = useState<CandidateApplyResponse | null>(null);
+  const compactInspector = useMediaQuery('(max-width: 1260px)');
+  const [inspectorOpen, setInspectorOpen] = useState(false);
   const selected = findSelected(state);
   const blockerCount = state.snapshot.problems.filter((problem) => problem.severity === 'BLOCKER').length;
   const warningCount = state.snapshot.problems.length - blockerCount;
   const completed = state.snapshot.run.state === 'COMPLETED';
+  const terminal = completed
+    || state.snapshot.run.state === 'FAILED'
+    || state.snapshot.run.state === 'CANCELLED';
+  const reviewDispatch = useCallback((action: CandidateReviewAction) => {
+    dispatch(action);
+    if (compactInspector && (action.type === 'select-schema'
+      || action.type === 'select-field'
+      || action.type === 'add-schema'
+      || action.type === 'add-field')) setInspectorOpen(true);
+  }, [compactInspector]);
   const activeSchemas = (state.snapshot.finalCandidate ?? state.snapshot.current).schemas
     .filter((schema) => schema.assessment.resolution !== 'REMOVED');
   const reviewItems = state.draft.schemas.flatMap((schema) => [schema, ...schema.fields])
@@ -287,7 +304,7 @@ function CandidateReviewWorkspace({
       {state.snapshot.problems.length > 0 && (
         <div className="candidate-problem-ribbon" aria-label="Candidate 全局诊断">
           {state.snapshot.problems.slice(0, 6).map((problem, index) => (
-            <button key={`${problem.code}:${problem.pointer}:${index}`} type="button" onClick={() => selectProblem(state, problem.itemId, dispatch)}>
+            <button key={`${problem.code}:${problem.pointer}:${index}`} type="button" onClick={() => selectProblem(state, problem.itemId, reviewDispatch)}>
               <span className={problem.severity.toLocaleLowerCase()}>{problem.severity}</span><strong>{problemLabel(problem.code)}</strong><code>{problem.code}</code>
             </button>
           ))}
@@ -296,8 +313,9 @@ function CandidateReviewWorkspace({
       )}
 
       <section className={`candidate-review-fieldset ${completed ? 'is-frozen' : ''}`} aria-label={completed ? '已冻结的 final Candidate' : 'Candidate 编辑工作区'}>
+        <Dialog.Root open={compactInspector ? inspectorOpen : false} onOpenChange={setInspectorOpen}>
         <div className="candidate-review-grid">
-          <CandidateBundleNav state={state} dispatch={dispatch} readOnly={completed} />
+          <CandidateBundleNav state={state} dispatch={reviewDispatch} readOnly={terminal} />
           <section className="candidate-center">
           <header className="candidate-surface-toolbar">
             <div>
@@ -310,11 +328,26 @@ function CandidateReviewWorkspace({
               <button type="button" className={state.view === 'form' ? 'active' : ''} aria-pressed={state.view === 'form'} onClick={() => dispatch({ type: 'set-view', view: 'form' })}><List aria-hidden="true" size={14} />表单</button>
               <button type="button" className={state.view === 'map' ? 'active' : ''} aria-pressed={state.view === 'map'} onClick={() => dispatch({ type: 'set-view', view: 'map' })}><GitBranch aria-hidden="true" size={14} />树图</button>
             </div>
+            {compactInspector && (
+              <Dialog.Trigger asChild>
+                <button type="button" className="button ghost-button candidate-inspector-trigger"><PanelRightOpen aria-hidden="true" size={15} />属性与证据</button>
+              </Dialog.Trigger>
+            )}
           </header>
-          <CandidateSurface state={state} schema={selected.schema} dispatch={dispatch} readOnly={completed} />
+          <CandidateSurface state={state} schema={selected.schema} dispatch={reviewDispatch} readOnly={terminal} />
           </section>
-          <CandidateInspector state={state} schema={selected.schema} field={selected.field} dispatch={dispatch} readOnly={completed} />
+          {!compactInspector && <CandidateInspector state={state} schema={selected.schema} field={selected.field} dispatch={dispatch} readOnly={terminal} />}
         </div>
+        {compactInspector && (
+          <Dialog.Portal>
+            <Dialog.Overlay className="candidate-inspector-overlay" />
+            <Dialog.Content className="candidate-inspector-drawer" aria-describedby={undefined}>
+              <Dialog.Title className="sr-only">Candidate 属性与证据</Dialog.Title>
+              <CandidateInspector state={state} schema={selected.schema} field={selected.field} dispatch={dispatch} readOnly={terminal} onClose={() => setInspectorOpen(false)} />
+            </Dialog.Content>
+          </Dialog.Portal>
+        )}
+        </Dialog.Root>
       </section>
     </>
   );
@@ -486,4 +519,21 @@ function selectProblem(
       return;
     }
   }
+}
+
+function useMediaQuery(query: string) {
+  const [matches, setMatches] = useState(() => typeof window !== 'undefined'
+    && typeof window.matchMedia === 'function'
+    && window.matchMedia(query).matches);
+
+  useEffect(() => {
+    if (typeof window.matchMedia !== 'function') return;
+    const media = window.matchMedia(query);
+    const update = () => setMatches(media.matches);
+    update();
+    media.addEventListener('change', update);
+    return () => media.removeEventListener('change', update);
+  }, [query]);
+
+  return matches;
 }

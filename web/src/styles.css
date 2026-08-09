@@ -5423,7 +5423,34 @@ button.required-toggle.active,
 .candidate-review-fieldset.is-frozen .candidate-inspector { max-height: none; overflow-y: visible; }
 .candidate-inspector > header { display: flex; min-height: 61px; align-items: center; justify-content: space-between; gap: 8px; padding: 9px 12px; border-bottom: 1px solid var(--hairline); }
 .candidate-inspector > header > div { display: flex; min-width: 0; flex-direction: column; gap: 3px; }
+.candidate-inspector > header > .candidate-inspector-heading-actions { flex-direction: row; align-items: center; }
 .candidate-inspector > header h2 { overflow: hidden; margin: 0; color: var(--ink); font-family: Georgia, "Times New Roman", serif; font-size: 15px; font-weight: 400; text-overflow: ellipsis; white-space: nowrap; }
+.candidate-inspector-trigger { display: none; }
+.candidate-inspector-overlay {
+  position: fixed;
+  z-index: 70;
+  inset: 0;
+  background: rgb(26 23 20 / 38%);
+  backdrop-filter: blur(1px);
+  animation: dialog-overlay-in 120ms ease-out;
+}
+.candidate-inspector-drawer {
+  position: fixed;
+  z-index: 71;
+  top: 0;
+  right: 0;
+  width: min(440px, calc(100vw - 72px));
+  height: 100dvh;
+  overflow: hidden;
+  border-left: 1px solid var(--hairline);
+  background: var(--surface);
+  box-shadow: -18px 0 48px rgb(28 27 25 / 18%);
+  animation: candidate-drawer-in 160ms ease-out;
+}
+.candidate-inspector-drawer .candidate-inspector { height: 100%; max-height: 100%; overflow-y: auto; }
+.candidate-review-fieldset.is-frozen .candidate-inspector-drawer .candidate-inspector { max-height: 100%; overflow-y: auto; }
+.candidate-inspector-close { display: grid; flex: 0 0 auto; }
+@keyframes candidate-drawer-in { from { transform: translateX(20px); opacity: .72; } to { transform: translateX(0); opacity: 1; } }
 .candidate-edit-section,
 .assessment-panel,
 .candidate-resolution-actions,
@@ -5999,34 +6026,15 @@ button.required-toggle.active,
     grid-template-columns: 150px minmax(0, 1fr);
   }
 
+  .candidate-surface-toolbar {
+    grid-template-columns: minmax(120px, 1fr) minmax(100px, 150px) auto auto;
+  }
+
   .candidate-center {
     border-right: 0;
   }
 
-  .candidate-inspector {
-    display: grid;
-    grid-column: 1 / -1;
-    grid-template-columns: minmax(0, 1fr);
-    max-height: none;
-    border-top: 1px solid var(--hairline);
-  }
-
-  .candidate-inspector > header,
-  .candidate-edit-section,
-  .assessment-panel,
-  .candidate-resolution-actions,
-  .candidate-evidence,
-  .candidate-item-problems {
-    grid-column: 1 / -1;
-  }
-
-  .candidate-edit-section,
-  .assessment-panel,
-  .candidate-resolution-actions,
-  .candidate-evidence,
-  .candidate-item-problems {
-    border-right: 0;
-  }
+  .candidate-inspector-trigger { display: inline-flex; min-height: 44px; }
 
   .candidate-editor-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .candidate-field-order,

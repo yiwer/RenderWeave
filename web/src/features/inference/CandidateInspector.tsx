@@ -10,6 +10,7 @@ import {
   ShieldAlert,
   Trash2,
   UserRound,
+  X,
 } from 'lucide-react';
 import { useId, useState, type Dispatch } from 'react';
 
@@ -57,12 +58,14 @@ export function CandidateInspector({
   field,
   dispatch,
   readOnly = false,
+  onClose,
 }: {
   state: CandidateReviewState;
   schema: CandidateSchema;
   field: CandidateField | null;
   dispatch: Dispatch<CandidateReviewAction>;
   readOnly?: boolean;
+  onClose?: () => void;
 }) {
   const item = field ?? schema;
   const itemId = field?.candidateFieldId ?? schema.candidateSchemaId;
@@ -76,9 +79,12 @@ export function CandidateInspector({
           <span>{field ? '字段审核' : '数据结构审核'}</span>
           <h2>{field?.displayName || field?.proposedFieldKey || schema.displayName || schema.proposedSchemaKey || '未命名项'}</h2>
         </div>
-        <span className={`candidate-source source-${item.source.toLocaleLowerCase()}`}>
-          {item.source === 'AI' ? <Bot aria-hidden="true" size={13} /> : <UserRound aria-hidden="true" size={13} />}{item.source}
-        </span>
+        <div className="candidate-inspector-heading-actions">
+          <span className={`candidate-source source-${item.source.toLocaleLowerCase()}`}>
+            {item.source === 'AI' ? <Bot aria-hidden="true" size={13} /> : <UserRound aria-hidden="true" size={13} />}{item.source}
+          </span>
+          {onClose && <button type="button" className="icon-button candidate-inspector-close" onClick={onClose} aria-label="关闭属性与证据"><X aria-hidden="true" size={17} /></button>}
+        </div>
       </header>
 
       <section className="candidate-edit-section">
