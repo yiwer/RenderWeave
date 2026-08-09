@@ -291,6 +291,37 @@ class CandidateContractTest {
     }
 
     @Test
+    void scalarCoercionsCannotBypassFiniteValueAttribution() {
+        var root = UUID.fromString("00000000-0000-0000-0000-000000000001");
+        var fieldId = UUID.fromString("00000000-0000-0000-0000-000000000011");
+        var valid = codec.write(new CandidateBundle(
+                CandidateBundle.CONTRACT_VERSION, root, List.of(
+                        schema(root, "root", "Root", List.of(
+                                field(fieldId, "title",
+                                        CandidateValue.scalar(CandidateValueKind.TEXT), "/title")
+                        ), "")
+                )
+        ));
+
+        assertDecodeDiagnostic(
+                valid.replaceFirst("\"source\":\"AI\"", "\"source\":0"),
+                "CANDIDATE_DECODE_ENUM_INVALID_SOURCE"
+        );
+        assertDecodeDiagnostic(
+                valid.replaceFirst("\"confidenceBps\":9200", "\"confidenceBps\":\"9200\""),
+                "CANDIDATE_DECODE_FORMAT_INVALID_ASSESSMENT_CONFIDENCE"
+        );
+        assertDecodeDiagnostic(
+                valid.replace("\"required\":false", "\"required\":\"false\""),
+                "CANDIDATE_DECODE_FORMAT_INVALID_FIELD_REQUIRED"
+        );
+        assertDecodeDiagnostic(
+                valid.replaceFirst("\"sampleIndex\":0", "\"sampleIndex\":\"0\""),
+                "CANDIDATE_DECODE_FORMAT_INVALID_EVIDENCE_SAMPLE_INDEX"
+        );
+    }
+
+    @Test
     void unresolvedAndLowConfidenceItemsRemainReviewBlockers() {
         var rootId = UUID.randomUUID();
         var fieldId = UUID.randomUUID();
