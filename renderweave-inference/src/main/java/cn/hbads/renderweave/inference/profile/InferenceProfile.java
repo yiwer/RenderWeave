@@ -76,7 +76,8 @@ public record InferenceProfile(
         if (networkAllowed) {
             validateDashScopeLive(
                     provider, model, providerProtocol, providerEndpoint, apiKeyEnvironmentVariable,
-                    promptVersion, responseFormat, thinkingEnabled, toolsAllowed, remoteMediaAllowed,
+                    pipelineVersion, promptVersion, responseFormat,
+                    thinkingEnabled, toolsAllowed, remoteMediaAllowed,
                     inputClassification, maximumTotalCalls, maximumEstimatedCostMicrosCny,
                     inputMicrosCnyPerMillionTokens, outputMicrosCnyPerMillionTokens,
                     pricingEffectiveDate, certification
@@ -94,6 +95,7 @@ public record InferenceProfile(
             String providerProtocol,
             String providerEndpoint,
             String apiKeyEnvironmentVariable,
+            String pipelineVersion,
             String promptVersion,
             String responseFormat,
             boolean thinkingEnabled,
@@ -120,9 +122,13 @@ public record InferenceProfile(
         if (!"DASHSCOPE_API_KEY".equals(apiKeyEnvironmentVariable)) {
             throw new IllegalArgumentException("P5 API key source is fixed");
         }
-        var promptAllowed = InferencePromptRegistry.SCHEMA_CANDIDATE_V1.equals(promptVersion)
+        var promptAllowed = "renderweave-inference-pipeline/1.0".equals(pipelineVersion)
+                && (InferencePromptRegistry.SCHEMA_CANDIDATE_V1.equals(promptVersion)
                 || ("qwen3.7-plus-2026-05-26".equals(model)
-                && InferencePromptRegistry.SCHEMA_CANDIDATE_V2.equals(promptVersion));
+                && InferencePromptRegistry.SCHEMA_CANDIDATE_V2.equals(promptVersion)))
+                || "renderweave-inference-pipeline/2.0".equals(pipelineVersion)
+                && "qwen3.7-plus-2026-05-26".equals(model)
+                && InferencePromptRegistry.SCHEMA_CANDIDATE_V3.equals(promptVersion);
         if (!promptAllowed
                 || !"JSON_OBJECT".equals(responseFormat)
                 || thinkingEnabled || toolsAllowed || remoteMediaAllowed) {

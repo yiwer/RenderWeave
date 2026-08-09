@@ -1,5 +1,6 @@
 package cn.hbads.renderweave.inference.live;
 
+import cn.hbads.renderweave.inference.candidate.CandidateBundle;
 import cn.hbads.renderweave.inference.input.NormalizedArtifact;
 import cn.hbads.renderweave.inference.profile.JsonStructuralProfile;
 import cn.hbads.renderweave.inference.run.InferenceRunSnapshot;
@@ -18,7 +19,7 @@ final class LiveTaskJsonCodec {
             .enable(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS)
             .build();
 
-    String write(
+    String writeV1(
             InferenceRunSnapshot run,
             InferenceStage stage,
             JsonStructuralProfile jsonProfile,
@@ -33,7 +34,7 @@ final class LiveTaskJsonCodec {
                             input.artifact().width(), input.artifact().height()
                     ))
                     .toList();
-            return JSON.writeValueAsString(new Task(
+            return JSON.writeValueAsString(new TaskV1(
                     "renderweave-live-task/1.0", run.mode().name(), stage.name(), catalog,
                     jsonProfile, List.copyOf(repairProblemCodes)
             ));
@@ -42,12 +43,55 @@ final class LiveTaskJsonCodec {
         }
     }
 
-    private record Task(
+    String writeV2(
+            InferenceRunSnapshot run,
+            InferenceStage stage,
+            JsonStructuralProfile jsonProfile,
+            CandidateBundle groundedCandidate,
+            List<String> repairProblemCodes
+    ) {
+        try {
+            return JSON.writeValueAsString(new TaskV2(
+                    "renderweave-live-task/2.0",
+                    run.mode().name(),
+                    stage.name(),
+                    artifacts(run),
+                    jsonProfile,
+                    groundedCandidate,
+                    List.copyOf(repairProblemCodes)
+            ));
+        } catch (Exception exception) {
+            throw new IllegalStateException("Live inference task could not be encoded", exception);
+        }
+    }
+
+    private static List<Artifact> artifacts(InferenceRunSnapshot run) {
+        return run.inputs().stream()
+                .sorted(Comparator.comparing((cn.hbads.renderweave.inference.run.InferenceRunInput input) ->
+                        input.kind().name()).thenComparingInt(input -> input.ordinal()))
+                .map(input -> new Artifact(
+                        input.artifact().artifactId(), input.kind().name(), input.ordinal(),
+                        input.artifact().width(), input.artifact().height()
+                ))
+                .toList();
+    }
+
+    private record TaskV1(
             String taskVersion,
             String mode,
             String stage,
             List<Artifact> artifactCatalog,
             JsonStructuralProfile jsonStructuralProfile,
+            List<String> repairProblemCodes
+    ) { }
+
+    private record TaskV2(
+            String taskVersion,
+            String mode,
+            String stage,
+            List<Artifact> artifactCatalog,
+            JsonStructuralProfile jsonStructuralProfile,
+            CandidateBundle groundedCandidate,
             List<String> repairProblemCodes
     ) { }
 

@@ -42,9 +42,19 @@ record LiveWorkflowCheckpoint(
             int repairs,
             CandidateBundle producedCandidate
     ) {
+        return callResult(completed, calls, repairs, producedCandidate, List.of());
+    }
+
+    LiveWorkflowCheckpoint callResult(
+            InferenceStage completed,
+            int calls,
+            int repairs,
+            CandidateBundle producedCandidate,
+            List<CandidateProblem> prevalidationProblems
+    ) {
         return new LiveWorkflowCheckpoint(
                 VERSION, completed, calls, repairs, producedCandidate != null,
-                producedCandidate, List.of()
+                producedCandidate, prevalidationProblems
         );
     }
 

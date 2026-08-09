@@ -64,6 +64,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 class PostgresLiveInferenceWorkflowTest {
     private static final Instant T0 = Instant.parse("2026-08-08T00:00:00Z");
     private static final String PROFILE = "dashscope-qwen37-flash-v1";
+    private static final String GROUNDED_PROFILE =
+            "dashscope-qwen37-plus-20260526-grounded-v1";
 
     @Container
     @ServiceConnection
@@ -118,6 +120,69 @@ class PostgresLiveInferenceWorkflowTest {
         var budget = budgets.snapshot(LiveInferenceWorker.CANARY_BUDGET_KEY);
         assertThat(budget.consumedAttempts()).isEqualTo(1);
         assertThat(budget.consumedCostMicrosCny()).isEqualTo(600);
+    }
+
+    @Test
+    void groundedJsonOnlyCompletesForReviewWithoutProviderAttemptOrReservation() {
+        var blobs = new MemoryBlobStore();
+        var created = createJsonOnlyGrounded(blobs, "grounded-json", "{\"title\":\"hello\"}");
+        var provider = new ScriptedProvider();
+
+        var finished = worker(provider, blobs).processNext("grounded-json-worker").orElseThrow();
+
+        assertThat(finished.state()).isEqualTo(InferenceRunState.REVIEW_REQUIRED);
+        assertThat(provider.requests).isEmpty();
+        assertThat(workflowStore.attempts(created)).isEmpty();
+        assertThat(budgets.snapshot(LiveInferenceWorker.CANARY_BUDGET_KEY).consumedAttempts()).isZero();
+        var candidate = candidateCodec.parse(
+                workflowStore.findCandidate(created).orElseThrow().currentJson()
+        );
+        assertThat(candidate.schemas()).singleElement().satisfies(schema -> {
+            assertThat(schema.proposedSchemaKey()).startsWith("inferred-");
+            assertThat(schema.assessment().inferred()).isTrue();
+            assertThat(schema.fields()).singleElement().satisfies(field -> {
+                assertThat(field.proposedFieldKey()).isEqualTo("title");
+                assertThat(field.value().kind()).isEqualTo(CandidateValueKind.TEXT);
+                assertThat(field.assessment().evidence()).allMatch(evidence ->
+                        evidence.jsonPointer() != null && evidence.artifactId() == null);
+            });
+        });
+    }
+
+    @Test
+    void groundedCombinedPersistsJsonTruthAndOnlySafeVisualOverlay() {
+        var blobs = new MemoryBlobStore();
+        var created = createCombined(
+                blobs, "grounded-combined", "{\"title\":\"hello\"}", GROUNDED_PROFILE
+        );
+        var provider = new ScriptedProvider(
+                request -> response(request, groundedCombinedProposal(request))
+        );
+
+        var finished = worker(provider, blobs).processNext("grounded-combined-worker").orElseThrow();
+
+        assertThat(finished.state()).isEqualTo(InferenceRunState.REVIEW_REQUIRED);
+        assertThat(provider.requests).singleElement().satisfies(request -> {
+            assertThat(request.taskJson()).contains("renderweave-live-task/2.0");
+            assertThat(request.taskJson()).contains("groundedCandidate");
+            assertThat(request.taskJson()).contains("\"proposedFieldKey\":\"title\"");
+        });
+        assertThat(workflowStore.attempts(created)).hasSize(1);
+        var candidate = candidateCodec.parse(
+                workflowStore.findCandidate(created).orElseThrow().currentJson()
+        );
+        var root = candidate.schemas().stream()
+                .filter(schema -> schema.candidateSchemaId().equals(candidate.rootCandidateSchemaId()))
+                .findFirst().orElseThrow();
+        assertThat(root.fields()).extracting(CandidateField::proposedFieldKey)
+                .containsExactly("subtitle", "title");
+        assertThat(root.fields().stream().filter(field -> field.proposedFieldKey().equals("title"))
+                .findFirst().orElseThrow().value().kind()).isEqualTo(CandidateValueKind.TEXT);
+        var subtitle = root.fields().stream().filter(field -> field.proposedFieldKey().equals("subtitle"))
+                .findFirst().orElseThrow();
+        assertThat(subtitle.required()).isFalse();
+        assertThat(subtitle.value().constraints()).isEmpty();
+        assertThat(subtitle.assessment().resolution()).isEqualTo(CandidateResolution.UNRESOLVED);
     }
 
     @Test
@@ -341,7 +406,16 @@ class PostgresLiveInferenceWorkflowTest {
     }
 
     private UUID createCombined(MemoryBlobStore blobs, String seed, String jsonSample) {
-        var profile = profiles.require(PROFILE);
+        return createCombined(blobs, seed, jsonSample, PROFILE);
+    }
+
+    private UUID createCombined(
+            MemoryBlobStore blobs,
+            String seed,
+            String jsonSample,
+            String profileId
+    ) {
+        var profile = profiles.require(profileId);
         var imageBytes = ("synthetic-image:" + seed).getBytes(StandardCharsets.UTF_8);
         var imageId = sha256(imageBytes);
         blobs.values.put(imageId, imageBytes);
@@ -360,12 +434,40 @@ class PostgresLiveInferenceWorkflowTest {
                 "application/vnd.renderweave.json-profile+json", profileBytes.length, null, null
         );
         var normalized = new NormalizedInput(
-                InferenceMode.COMBINED, PROFILE, seed, sha256(seed.getBytes(StandardCharsets.UTF_8)),
+                InferenceMode.COMBINED, profileId, seed, sha256(seed.getBytes(StandardCharsets.UTF_8)),
                 List.of(image, jsonProfile),
                 List.of(
                         new NormalizedInputReference(NormalizedArtifact.Kind.IMAGE, 0, imageId),
                         new NormalizedInputReference(NormalizedArtifact.Kind.JSON_PROFILE, 0, jsonId)
                 ),
+                List.of()
+        );
+        return runs.create(NewInferenceRun.initial(
+                UUID.randomUUID(), "idem-" + seed, normalized, profile.snapshotJson(), T0
+        )).run().runId();
+    }
+
+    private UUID createJsonOnlyGrounded(MemoryBlobStore blobs, String seed, String jsonSample) {
+        var profile = profiles.require(GROUNDED_PROFILE);
+        var sample = new InferenceInput.BinaryInput(
+                "sample.json", "application/json", jsonSample.getBytes(StandardCharsets.UTF_8)
+        );
+        var profileBytes = new StrictJsonSampleProfiler().profile(List.of(sample));
+        var jsonId = sha256(profileBytes);
+        blobs.values.put(jsonId, profileBytes);
+        var jsonProfile = new NormalizedArtifact(
+                jsonId, NormalizedArtifact.Kind.JSON_PROFILE, jsonId,
+                "application/vnd.renderweave.json-profile+json", profileBytes.length, null, null
+        );
+        var normalized = new NormalizedInput(
+                InferenceMode.JSON_ONLY,
+                GROUNDED_PROFILE,
+                seed,
+                sha256(seed.getBytes(StandardCharsets.UTF_8)),
+                List.of(jsonProfile),
+                List.of(new NormalizedInputReference(
+                        NormalizedArtifact.Kind.JSON_PROFILE, 0, jsonId
+                )),
                 List.of()
         );
         return runs.create(NewInferenceRun.initial(
@@ -466,6 +568,51 @@ class PostgresLiveInferenceWorkflowTest {
                                 fieldId, fieldKey, "标题", false,
                                 CandidateValue.scalar(CandidateValueKind.TEXT), CandidateSource.AI, fieldAssessment
                         ))
+                ))
+        ));
+    }
+
+    private String groundedCombinedProposal(ProviderInferenceRequest request) {
+        var schemaId = UUID.nameUUIDFromBytes(
+                (request.runId() + ":grounded-schema").getBytes(StandardCharsets.UTF_8)
+        );
+        var imageEvidence = CandidateEvidence.image(
+                request.images().getFirst().artifactId(),
+                new CandidateBoundingBox(500, 500, 9_500, 2_500)
+        );
+        var schemaAssessment = CandidateAssessment.ai(
+                9_000, true, CandidateResolution.NOT_REQUIRED, List.of(imageEvidence)
+        );
+        var titleAssessment = CandidateAssessment.ai(
+                9_000, true, CandidateResolution.NOT_REQUIRED, List.of(imageEvidence)
+        );
+        var subtitleAssessment = CandidateAssessment.ai(
+                6_500, true, CandidateResolution.UNRESOLVED, List.of(imageEvidence)
+        );
+        return candidateCodec.write(new CandidateBundle(
+                CandidateBundle.CONTRACT_VERSION,
+                schemaId,
+                List.of(new CandidateSchema(
+                        schemaId,
+                        "grounded-card",
+                        "组合卡片",
+                        CandidateSource.AI,
+                        schemaAssessment,
+                        List.of(
+                                new CandidateField(
+                                        UUID.randomUUID(), "title", "标题", true,
+                                        CandidateValue.scalar(CandidateValueKind.DECIMAL),
+                                        CandidateSource.AI, titleAssessment
+                                ),
+                                new CandidateField(
+                                        UUID.randomUUID(), "subtitle", "副标题", true,
+                                        new CandidateValue(
+                                                CandidateValueKind.TEXT, null, null, List.of(),
+                                                Map.of("minLength", "1")
+                                        ),
+                                        CandidateSource.AI, subtitleAssessment
+                                )
+                        )
                 ))
         ));
     }

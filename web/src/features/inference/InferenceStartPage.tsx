@@ -365,10 +365,12 @@ function formatYuan(micros: number) {
 }
 
 function liveProfileShortVersion(profile: LiveProfileResponse) {
+  if (profile.profileId.endsWith('-grounded-v1')) return 'Grounded v1';
   return profile.profileId.endsWith('-prompt-v2') ? 'Prompt v2' : 'Prompt v1';
 }
 
 function liveProfileDescription(profile: LiveProfileResponse) {
+  if (profile.profileId.endsWith('-grounded-v1')) return '确定性 JSON Grounding · 受限视觉覆盖';
   if (profile.profileId.endsWith('-prompt-v2')) return '证据锚定 · 最小结构 Prompt v2';
   return profile.model.includes('flash') ? '低成本快速识别 · Prompt v1' : '复杂结构复核 · Prompt v1';
 }

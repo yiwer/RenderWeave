@@ -12,7 +12,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class InferenceProfileRegistryTest {
     @Test
-    void p5ExposesReplayAndFourGuardedDashScopeProfiles() {
+    void p5ExposesReplayAndFiveGuardedDashScopeProfiles() {
         var registry = new InferenceProfileRegistry();
         var resource = registry.require("replay-v1");
         var profile = resource.profile();
@@ -22,6 +22,7 @@ class InferenceProfileRegistryTest {
                 "dashscope-qwen37-flash-v1",
                 "dashscope-qwen37-plus-20260526-v1",
                 "dashscope-qwen37-plus-20260526-prompt-v2",
+                "dashscope-qwen37-plus-20260526-grounded-v1",
                 "dashscope-qwen38-max-v1"
         ), registry.profileIds());
         assertEquals("renderweave-inference-profile/1.0", profile.profileVersion());
@@ -52,6 +53,16 @@ class InferenceProfileRegistryTest {
                 2_000_000L, 8_000_000L, 200_000L,
                 "2026-08-09"
         );
+        var grounded = registry.require(
+                "dashscope-qwen37-plus-20260526-grounded-v1"
+        ).profile();
+        assertDashScopeProfile(
+                grounded,
+                "qwen3.7-plus-2026-05-26", "renderweave-schema-candidate-prompt/3.0",
+                2_000_000L, 8_000_000L, 200_000L,
+                "2026-08-09"
+        );
+        assertEquals("renderweave-inference-pipeline/2.0", grounded.pipelineVersion());
         assertDashScopeProfile(
                 registry.require("dashscope-qwen38-max-v1").profile(),
                 "qwen3.8-max", "renderweave-schema-candidate-prompt/1.0",

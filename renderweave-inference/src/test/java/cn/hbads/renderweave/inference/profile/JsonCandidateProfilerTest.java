@@ -16,6 +16,7 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class JsonCandidateProfilerTest {
@@ -114,6 +115,27 @@ class JsonCandidateProfilerTest {
                 field(result.candidate().schemas().getFirst(), "detail").value().kind());
         assertCodes(allProblems(result), "STRUCTURAL_TYPE_CONFLICT", "CANDIDATE_TYPE_CONFLICT");
         assertFalse(allProblems(result).stream().anyMatch(problem -> problem.code().equals("CANDIDATE_SCHEMA_ORPHAN")));
+    }
+
+    @Test
+    void liveProfilePreservesAnUnrepresentableExactJsonKeyForHumanResolution() {
+        var input = new InferenceInput.BinaryInput(
+                "sample.json", "application/json", "{\"\":1}".getBytes(StandardCharsets.UTF_8)
+        );
+        var profile = structuralProfiler.profile(reducer.profile(List.of(input)));
+        lastProfile = profile;
+
+        var result = candidateProfiler.inferLive(RUN_ID, "json-card", "JSON 卡片", profile);
+        var field = result.candidate().schemas().getFirst().fields().getFirst();
+
+        assertNull(field.proposedFieldKey());
+        assertEquals("/", field.displayName());
+        assertEquals(cn.hbads.renderweave.inference.candidate.CandidateResolution.UNRESOLVED,
+                field.assessment().resolution());
+        assertCodes(allProblems(result),
+                "CANDIDATE_FIELD_KEY_UNRESOLVED",
+                "CANDIDATE_ITEM_UNRESOLVED"
+        );
     }
 
     private CandidateProfileResult infer(String... samples) {

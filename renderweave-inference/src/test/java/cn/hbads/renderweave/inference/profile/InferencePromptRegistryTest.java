@@ -63,6 +63,31 @@ class InferencePromptRegistryTest {
         assertFalse(prompt.contains("DASHSCOPE_API_KEY"));
     }
 
+    @Test
+    void promptV3PinsModeRoutingGroundedPrecedenceAndVisualGraphRules() {
+        var prompt = new InferencePromptRegistry()
+                .require(InferencePromptRegistry.SCHEMA_CANDIDATE_V3)
+                .text();
+
+        assertEquals(
+                "7c06ced666f63ccc0c92141464941d4b4ac62f0c2499ce8883d5a9c34a15d2e0",
+                sha256(prompt)
+        );
+        assertTrue(prompt.contains("renderweave-candidate/1.0"));
+        assertTrue(prompt.contains("IMAGE_ONLY"));
+        assertTrue(prompt.contains("COMBINED"));
+        assertTrue(prompt.contains("groundedCandidate is the authoritative JSON graph"));
+        assertTrue(prompt.contains("JSON_ONLY: copy groundedCandidate"));
+        assertTrue(prompt.contains("Repeated rows with multiple stable columns"));
+        assertTrue(prompt.contains("sender and receiver"));
+        assertTrue(prompt.contains("required=false"));
+        assertTrue(prompt.contains("constraints={}"));
+        assertTrue(prompt.contains("yyyy-MM-dd"));
+        assertTrue(prompt.contains("HH:mm:ss"));
+        assertFalse(prompt.contains("\r"));
+        assertFalse(prompt.contains("DASHSCOPE_API_KEY"));
+    }
+
     private static String sha256(String value) {
         try {
             return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(

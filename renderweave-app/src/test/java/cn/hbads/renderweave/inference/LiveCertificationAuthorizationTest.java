@@ -96,6 +96,23 @@ class LiveCertificationAuthorizationTest {
     }
 
     @Test
+    void groundedProfileExcludesTwentyDeterministicJsonCasesFromProviderAttemptCeiling() {
+        var profileId = LiveCertificationAuthorization.PLUS_GROUNDED_PROFILE;
+        var authorization = authorization(
+                "PROPOSED", List.of(profileId),
+                120, 10_000_000, null, null, null, null
+        );
+
+        assertThat(authorization.assignmentCount()).isEqualTo(60);
+        assertThat(authorization.maximumProviderAttempts()).isEqualTo(120);
+        assertThatThrownBy(() -> authorization(
+                "PROPOSED", List.of(profileId),
+                121, 10_000_000, null, null, null, null
+        )).isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Certification authorization budget is invalid");
+    }
+
+    @Test
     void authorizationCannotExpandBeyondDesignedOrAbsoluteCaps() {
         assertThatThrownBy(() -> authorization(
                 "PROPOSED", List.of(LiveCertificationAuthorization.FLASH_PROFILE),

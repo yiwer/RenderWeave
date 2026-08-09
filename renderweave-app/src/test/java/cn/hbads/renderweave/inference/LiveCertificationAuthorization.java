@@ -38,6 +38,7 @@ record LiveCertificationAuthorization(
     static final String FLASH_PROFILE = "dashscope-qwen37-flash-v1";
     static final String PLUS_PROFILE = "dashscope-qwen37-plus-20260526-v1";
     static final String PLUS_PROMPT_V2_PROFILE = "dashscope-qwen37-plus-20260526-prompt-v2";
+    static final String PLUS_GROUNDED_PROFILE = "dashscope-qwen37-plus-20260526-grounded-v1";
     static final String MAX_PROFILE = "dashscope-qwen38-max-v1";
     private static final int ABSOLUTE_MAXIMUM_ATTEMPTS = 360;
     private static final long ABSOLUTE_MAXIMUM_COST_MICROS_CNY = 54_000_000L;
@@ -68,7 +69,8 @@ record LiveCertificationAuthorization(
                 || new HashSet<>(profileIds).size() != profileIds.size()
                 || profileIds.stream().anyMatch(
                         id -> !List.of(
-                                FLASH_PROFILE, PLUS_PROFILE, PLUS_PROMPT_V2_PROFILE, MAX_PROFILE
+                                FLASH_PROFILE, PLUS_PROFILE, PLUS_PROMPT_V2_PROFILE,
+                                PLUS_GROUNDED_PROFILE, MAX_PROFILE
                         ).contains(id))) {
             throw new IllegalArgumentException("Certification authorization profiles are invalid");
         }
@@ -135,7 +137,10 @@ record LiveCertificationAuthorization(
     private static int designedMaximumAttempts(List<String> profileIds) {
         var profiles = new InferenceProfileRegistry();
         return profileIds.stream().map(profiles::require)
-                .mapToInt(item -> Math.multiplyExact(60, item.profile().maximumTotalCalls())).sum();
+                .mapToInt(item -> Math.multiplyExact(
+                        PLUS_GROUNDED_PROFILE.equals(item.profile().profileId()) ? 40 : 60,
+                        item.profile().maximumTotalCalls()
+                )).sum();
     }
 
     private static long designedMaximumCost(List<String> profileIds) {
@@ -155,7 +160,8 @@ record LiveCertificationAuthorization(
     }
 
     private static boolean isPlusProfile(String profileId) {
-        return PLUS_PROFILE.equals(profileId) || PLUS_PROMPT_V2_PROFILE.equals(profileId);
+        return PLUS_PROFILE.equals(profileId) || PLUS_PROMPT_V2_PROFILE.equals(profileId)
+                || PLUS_GROUNDED_PROFILE.equals(profileId);
     }
 
     record Assignment(String profileId, LiveEvaluationCase evaluationCase) {

@@ -13,6 +13,8 @@ import cn.hbads.renderweave.inference.input.NormalizedArtifact;
 import cn.hbads.renderweave.inference.profile.InferenceProfile;
 import cn.hbads.renderweave.inference.profile.InferenceProfileRegistry;
 import cn.hbads.renderweave.inference.profile.InferencePromptRegistry;
+import cn.hbads.renderweave.inference.profile.JsonCandidateProfiler;
+import cn.hbads.renderweave.inference.profile.JsonGroundedCandidateComposer;
 import cn.hbads.renderweave.inference.profile.JsonStructuralProfile;
 import cn.hbads.renderweave.inference.profile.JsonStructuralProfiler;
 import cn.hbads.renderweave.inference.provider.InferenceProvider;
@@ -35,6 +37,7 @@ import cn.hbads.renderweave.inference.run.InferenceStage;
 
 import java.time.Clock;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
@@ -48,6 +51,7 @@ import java.util.UUID;
  */
 public final class LiveInferenceWorker {
     public static final String CANARY_BUDGET_KEY = "p5-synthetic-canary";
+    private static final String GROUNDED_PIPELINE = "renderweave-inference-pipeline/2.0";
     private static final int MAX_STAGE_ADVANCES = 24;
 
     private final InferenceRunStore runStore;
@@ -60,6 +64,8 @@ public final class LiveInferenceWorker {
     private final InferenceProfileRegistry profiles;
     private final InferencePromptRegistry prompts;
     private final JsonStructuralProfiler structuralProfiler;
+    private final JsonCandidateProfiler jsonCandidateProfiler;
+    private final JsonGroundedCandidateComposer groundedComposer;
     private final CandidateValidator candidateValidator;
     private final CandidateJsonCodec candidateCodec;
     private final CandidateProblemJsonCodec problemCodec;
@@ -78,6 +84,7 @@ public final class LiveInferenceWorker {
         this(
                 runStore, workflowStore, budgetStore, provider, blobStore, clock, leaseDuration,
                 new InferenceProfileRegistry(), new InferencePromptRegistry(), new JsonStructuralProfiler(),
+                new JsonCandidateProfiler(), new JsonGroundedCandidateComposer(),
                 new CandidateValidator(), new CandidateJsonCodec(), new CandidateProblemJsonCodec(),
                 new LiveWorkflowJsonCodec(), new LiveTaskJsonCodec()
         );
@@ -94,6 +101,8 @@ public final class LiveInferenceWorker {
             InferenceProfileRegistry profiles,
             InferencePromptRegistry prompts,
             JsonStructuralProfiler structuralProfiler,
+            JsonCandidateProfiler jsonCandidateProfiler,
+            JsonGroundedCandidateComposer groundedComposer,
             CandidateValidator candidateValidator,
             CandidateJsonCodec candidateCodec,
             CandidateProblemJsonCodec problemCodec,
@@ -110,6 +119,8 @@ public final class LiveInferenceWorker {
         this.profiles = Objects.requireNonNull(profiles, "profiles");
         this.prompts = Objects.requireNonNull(prompts, "prompts");
         this.structuralProfiler = Objects.requireNonNull(structuralProfiler, "structuralProfiler");
+        this.jsonCandidateProfiler = Objects.requireNonNull(jsonCandidateProfiler, "jsonCandidateProfiler");
+        this.groundedComposer = Objects.requireNonNull(groundedComposer, "groundedComposer");
         this.candidateValidator = Objects.requireNonNull(candidateValidator, "candidateValidator");
         this.candidateCodec = Objects.requireNonNull(candidateCodec, "candidateCodec");
         this.problemCodec = Objects.requireNonNull(problemCodec, "problemCodec");
@@ -167,7 +178,7 @@ public final class LiveInferenceWorker {
         var profile = validateRun(current);
         return switch (current.stage()) {
             case OBSERVE -> observe(current);
-            case STRUCTURE -> invoke(current, profile, false);
+            case STRUCTURE -> structure(current, profile);
             case DETERMINISTIC_VALIDATE -> deterministicValidate(current, profile);
             case CRITIQUE -> critique(current, profile);
             case REPAIR -> invoke(current, profile, true);
@@ -175,6 +186,29 @@ public final class LiveInferenceWorker {
                     "Live worker cannot execute stage " + current.stage()
             );
         };
+    }
+
+    private InferenceRunSnapshot structure(InferenceRunSnapshot current, InferenceProfile profile) {
+        if (grounded(profile) && current.mode() == cn.hbads.renderweave.inference.input.InferenceMode.JSON_ONLY) {
+            var checkpoint = workflowCodec.parse(current.checkpointJson());
+            if (checkpoint.completedStage() != InferenceStage.OBSERVE) {
+                throw new IllegalStateException("STRUCTURE requires the OBSERVE checkpoint");
+            }
+            var grounded = groundedBase(current);
+            var next = checkpoint.callResult(
+                    InferenceStage.STRUCTURE,
+                    checkpoint.structureCalls(),
+                    checkpoint.repairRounds(),
+                    grounded.candidate(),
+                    grounded.semanticProblems()
+            );
+            return runStore.checkpoint(
+                    current.runId(), token(current), InferenceStage.STRUCTURE,
+                    InferenceStage.DETERMINISTIC_VALIDATE,
+                    workflowCodec.write(next), clock.instant()
+            );
+        }
+        return invoke(current, profile, false);
     }
 
     private InferenceRunSnapshot observe(InferenceRunSnapshot current) {
@@ -253,16 +287,30 @@ public final class LiveInferenceWorker {
         }
 
         CandidateBundle candidate = null;
+        List<CandidateProblem> prevalidationProblems = List.of();
         var status = InferenceAttemptStatus.SUCCEEDED;
         var outcomeCode = "LIVE_OUTPUT_ACCEPTED";
         try {
             candidate = candidateCodec.parse(response.candidateJson());
+            if (grounded(profile)
+                    && current.mode() == cn.hbads.renderweave.inference.input.InferenceMode.COMBINED) {
+                var composed = groundedComposer.compose(
+                        current.runId(), groundedRootKey(current), "推断数据结构",
+                        jsonProfile(current), Set.copyOf(imageArtifactIds(current)),
+                        candidate, profile.lowConfidenceThresholdBps()
+                );
+                candidate = composed.candidate();
+                prevalidationProblems = composed.semanticProblems();
+            }
         } catch (InvalidCandidateContractException invalid) {
             status = InferenceAttemptStatus.REJECTED;
             outcomeCode = "LIVE_OUTPUT_REJECTED";
         }
         var repairRounds = checkpoint.repairRounds() + (repair ? 1 : 0);
-        var next = checkpoint.callResult(current.stage(), attemptOrdinal + 1, repairRounds, candidate);
+        var next = checkpoint.callResult(
+                current.stage(), attemptOrdinal + 1, repairRounds,
+                candidate, prevalidationProblems
+        );
         var now = clock.instant();
         return workflowStore.checkpointAttempt(
                 current.runId(), token(current), current.stage(), InferenceStage.DETERMINISTIC_VALIDATE,
@@ -293,7 +341,11 @@ public final class LiveInferenceWorker {
                     )
             ));
         } else {
-            problems = candidateValidator.validate(checkpoint.candidate(), validationContext(current, profile));
+            var combined = new ArrayList<>(checkpoint.validationProblems());
+            combined.addAll(candidateValidator.validate(
+                    checkpoint.candidate(), validationContext(current, profile)
+            ));
+            problems = List.copyOf(combined);
         }
         return runStore.checkpoint(
                 current.runId(), token(current), InferenceStage.DETERMINISTIC_VALIDATE, InferenceStage.CRITIQUE,
@@ -347,12 +399,37 @@ public final class LiveInferenceWorker {
         var problemCodes = current.stage() == InferenceStage.REPAIR
                 ? checkpoint.validationProblems().stream().map(CandidateProblem::code).distinct().sorted().toList()
                 : List.<String>of();
+        var jsonProfile = jsonProfile(current);
+        var groundedCandidate = grounded(profile) && jsonProfile != null
+                ? groundedBase(current).candidate()
+                : null;
+        var taskJson = grounded(profile)
+                ? taskCodec.writeV2(
+                        current, current.stage(), jsonProfile, groundedCandidate, problemCodes
+                )
+                : taskCodec.writeV1(current, current.stage(), jsonProfile, problemCodes);
         return new ProviderInferenceRequest(
                 current.runId(), attemptOrdinal, current.stage(), profile,
                 prompts.require(profile.promptVersion()).text(),
-                taskCodec.write(current, current.stage(), jsonProfile(current), problemCodes),
+                taskJson,
                 providerImages(current)
         );
+    }
+
+    private cn.hbads.renderweave.inference.profile.CandidateProfileResult groundedBase(
+            InferenceRunSnapshot current
+    ) {
+        return jsonCandidateProfiler.inferLive(
+                current.runId(), groundedRootKey(current), "推断数据结构", jsonProfile(current)
+        );
+    }
+
+    private static String groundedRootKey(InferenceRunSnapshot current) {
+        return "inferred-" + current.inputFingerprint().substring(0, 16);
+    }
+
+    private static boolean grounded(InferenceProfile profile) {
+        return GROUNDED_PIPELINE.equals(profile.pipelineVersion());
     }
 
     private CandidateValidationContext validationContext(

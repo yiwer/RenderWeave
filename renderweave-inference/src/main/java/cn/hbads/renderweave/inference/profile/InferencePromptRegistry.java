@@ -7,9 +7,11 @@ import java.util.Map;
 public final class InferencePromptRegistry {
     public static final String SCHEMA_CANDIDATE_V1 = "renderweave-schema-candidate-prompt/1.0";
     public static final String SCHEMA_CANDIDATE_V2 = "renderweave-schema-candidate-prompt/2.0";
+    public static final String SCHEMA_CANDIDATE_V3 = "renderweave-schema-candidate-prompt/3.0";
     private static final Map<String, String> RESOURCES = Map.of(
             SCHEMA_CANDIDATE_V1, "inference-prompts/schema-candidate-v1.txt",
-            SCHEMA_CANDIDATE_V2, "inference-prompts/schema-candidate-v2.txt"
+            SCHEMA_CANDIDATE_V2, "inference-prompts/schema-candidate-v2.txt",
+            SCHEMA_CANDIDATE_V3, "inference-prompts/schema-candidate-v3.txt"
     );
 
     private final ClassLoader classLoader;

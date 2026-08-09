@@ -13,6 +13,7 @@ import cn.hbads.renderweave.inference.candidate.CandidateSchema;
 import cn.hbads.renderweave.inference.candidate.CandidateSource;
 import cn.hbads.renderweave.inference.candidate.CandidateValue;
 import cn.hbads.renderweave.inference.candidate.CandidateValueKind;
+import cn.hbads.renderweave.schema.identity.FieldKey;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -39,6 +40,38 @@ public final class JsonCandidateProfiler {
             String rootDisplayName,
             JsonStructuralProfile profile
     ) {
+        return infer(runId, proposedRootSchemaKey, rootDisplayName, profile, false);
+    }
+
+    /** Builds the deterministic JSON base for a live AI workflow. */
+    public CandidateProfileResult inferLive(
+            UUID runId,
+            String proposedRootSchemaKey,
+            String rootDisplayName,
+            JsonStructuralProfile profile
+    ) {
+        var result = infer(runId, proposedRootSchemaKey, rootDisplayName, profile, true);
+        var liveProblems = result.semanticProblems().stream().map(problem ->
+                "NESTED_ARRAY_UNSUPPORTED".equals(problem.code())
+                        ? new CandidateProblem(
+                                "JSON_NESTED_ARRAY_OBSERVED",
+                                CandidateProblemSeverity.WARNING,
+                                problem.itemId(),
+                                problem.pointer(),
+                                problem.args()
+                        )
+                        : problem
+        ).toList();
+        return new CandidateProfileResult(result.candidate(), liveProblems);
+    }
+
+    private CandidateProfileResult infer(
+            UUID runId,
+            String proposedRootSchemaKey,
+            String rootDisplayName,
+            JsonStructuralProfile profile,
+            boolean inferred
+    ) {
         var nodes = new LinkedHashMap<String, JsonObservedNode>();
         profile.nodes().forEach(node -> nodes.put(node.pointer(), node));
         var schemaPaths = reachableSchemaPaths(nodes);
@@ -52,7 +85,7 @@ public final class JsonCandidateProfiler {
             var schemaNode = nodes.get(schemaPath);
             var schemaId = schemaIds.get(schemaPath);
             var fields = immediateChildren(schemaPath, nodes).stream()
-                    .map(node -> field(runId, schemaPath, node, nodes, schemaIds, problems))
+                    .map(node -> field(runId, schemaPath, node, nodes, schemaIds, problems, inferred))
                     .toList();
             var proposedKey = schemaPath.isEmpty()
                     ? proposedRootSchemaKey
@@ -64,7 +97,7 @@ public final class JsonCandidateProfiler {
                     proposedKey,
                     displayName,
                     CandidateSource.AI,
-                    assessment(9_400, evidence(schemaNode), false),
+                    assessment(9_400, evidence(schemaNode), inferred),
                     fields
             ));
         }
@@ -115,25 +148,36 @@ public final class JsonCandidateProfiler {
             JsonObservedNode node,
             Map<String, JsonObservedNode> nodes,
             Map<String, UUID> schemaIds,
-            List<CandidateProblem> problems
+            List<CandidateProblem> problems,
+            boolean inferredAssessment
     ) {
-        var fieldKey = unescape(lastSegment(node.pointer()));
-        var fieldId = CandidateIds.field(runId, schemaPath, fieldKey);
+        var exactFieldKey = unescape(lastSegment(node.pointer()));
+        var fieldId = CandidateIds.field(runId, schemaPath, exactFieldKey);
         var inferred = inferValue(node, nodes, schemaIds, fieldId, problems);
-        var resolution = inferred.confidenceBps() < 8_000
+        var fieldKey = representable(exactFieldKey) ? exactFieldKey : null;
+        var resolution = fieldKey == null || inferred.confidenceBps() < 8_000
                 ? CandidateResolution.UNRESOLVED
                 : CandidateResolution.NOT_REQUIRED;
         return new CandidateField(
                 fieldId,
                 fieldKey,
-                fieldKey,
+                fieldKey == null ? node.pointer() : fieldKey,
                 false,
                 inferred.value(),
                 CandidateSource.AI,
                 new CandidateAssessment(
-                        inferred.confidenceBps(), false, resolution, evidence(node)
+                        inferred.confidenceBps(), inferredAssessment, resolution, evidence(node)
                 )
         );
+    }
+
+    private static boolean representable(String fieldKey) {
+        try {
+            FieldKey.of(fieldKey);
+            return true;
+        } catch (IllegalArgumentException invalid) {
+            return false;
+        }
     }
 
     private static InferredValue inferValue(
