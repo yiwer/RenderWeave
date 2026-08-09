@@ -62,7 +62,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Import(DashScopeLiveCertificationTest.CertificationConfiguration.class)
 @EnabledIfEnvironmentVariable(named = "RENDERWEAVE_RUN_LIVE_CERTIFICATION", matches = "true")
 class DashScopeLiveCertificationTest {
-    private static final String REPORT_VERSION = "renderweave-live-certification-report/1.0";
+    private static final String REPORT_VERSION = "renderweave-live-certification-report/1.1";
 
     @Container
     @ServiceConnection

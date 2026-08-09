@@ -6,8 +6,10 @@ import java.util.Map;
 
 public final class InferencePromptRegistry {
     public static final String SCHEMA_CANDIDATE_V1 = "renderweave-schema-candidate-prompt/1.0";
+    public static final String SCHEMA_CANDIDATE_V2 = "renderweave-schema-candidate-prompt/2.0";
     private static final Map<String, String> RESOURCES = Map.of(
-            SCHEMA_CANDIDATE_V1, "inference-prompts/schema-candidate-v1.txt"
+            SCHEMA_CANDIDATE_V1, "inference-prompts/schema-candidate-v1.txt",
+            SCHEMA_CANDIDATE_V2, "inference-prompts/schema-candidate-v2.txt"
     );
 
     private final ClassLoader classLoader;
@@ -25,7 +27,8 @@ public final class InferencePromptRegistry {
         if (path == null) throw new IllegalArgumentException("Unknown inference prompt: " + promptVersion);
         try (var input = classLoader.getResourceAsStream(path)) {
             if (input == null) throw new IllegalStateException("Missing inference prompt resource " + path);
-            var prompt = new String(input.readAllBytes(), StandardCharsets.UTF_8);
+            var prompt = new String(input.readAllBytes(), StandardCharsets.UTF_8)
+                    .replace("\r\n", "\n").replace('\r', '\n');
             if (prompt.isBlank() || !prompt.contains("JSON") || prompt.contains("DASHSCOPE_API_KEY")) {
                 throw new IllegalStateException("Inference prompt violates the safe prompt contract");
             }

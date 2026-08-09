@@ -18,5 +18,10 @@ public record LiveEvaluationSlice(
         int evidenceCoverageBps,
         int dagValidityBps,
         int criticalHallucinationCount,
-        int blockerCount
-) { }
+        int blockerCount,
+        LiveEvaluationDiagnostics diagnostics
+) {
+    public LiveEvaluationSlice {
+        java.util.Objects.requireNonNull(diagnostics, "diagnostics");
+    }
+}

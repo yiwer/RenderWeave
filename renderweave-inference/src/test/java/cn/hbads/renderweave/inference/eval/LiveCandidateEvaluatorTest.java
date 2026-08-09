@@ -23,6 +23,7 @@ import java.util.stream.Collectors;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertIterableEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class LiveCandidateEvaluatorTest {
@@ -78,10 +79,13 @@ class LiveCandidateEvaluatorTest {
         assertEquals(6_666, result.supportedTypeAccuracyBps());
         assertEquals(10_000, result.fieldF1Bps());
         assertEquals(1, result.criticalHallucinationCount());
+        assertEquals(1, result.supportedTypeMismatchCount());
+        assertEquals(1, result.unsupportedAssertionCount());
+        assertEquals(0, result.unexpectedFieldCount());
     }
 
     @Test
-    void uncertainScalarGoldCannotBeConcretizedWithoutAcriticalHallucination() {
+    void uncertainScalarGoldCannotBeConcretizedWithoutACriticalHallucination() {
         var gold = corpus.require("live-image-08-low-information");
         var result = evaluator.evaluate(
                 gold,
@@ -95,6 +99,21 @@ class LiveCandidateEvaluatorTest {
         assertIterableEquals(List.of("/#value:UNRESOLVED!=TEXT"), result.typeMismatches());
         assertEquals(0, result.supportedTypeExpectedCount());
         assertEquals(1, result.criticalHallucinationCount());
+        assertEquals(1, result.unsupportedAssertionCount());
+    }
+
+    @Test
+    void resultRejectsCriticalCountBelowStructuralHallucinations() {
+        assertThrows(IllegalArgumentException.class, () -> new LiveEvaluationResult(
+                "invalid-decomposition", "EVALUATED", false, 10_000,
+                0, 1, 0,
+                0, 0, 0,
+                0, 0,
+                0, 0, 0,
+                0, 0, 10_000,
+                0, 0,
+                List.of(), List.of("/#unexpected"), List.of(), List.of(), List.of(), List.of()
+        ));
     }
 
     @Test
@@ -174,6 +193,10 @@ class LiveCandidateEvaluatorTest {
         var degraded = new ArrayList<>(exact);
         var gold = corpus.cases().getFirst();
         degraded.set(0, evaluator.evaluate(gold, withUnexpectedField(exactCandidate(gold)), List.of()));
+        var degradedReport = reporter.report("dashscope-qwen37-flash-v1", corpus, degraded);
+        assertEquals(1, degradedReport.global().diagnostics().unexpectedFieldCount());
+        assertEquals(0, degradedReport.global().diagnostics().unsupportedAssertionCount());
+        assertEquals(1, degradedReport.global().criticalHallucinationCount());
         var decision = policy.decide("dashscope-qwen37-flash-v1", corpus, degraded);
         assertEquals(LiveCertificationStatus.EXPERIMENTAL, decision.status());
         assertTrue(decision.violations().stream().anyMatch(value ->

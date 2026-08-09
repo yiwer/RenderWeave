@@ -58,7 +58,8 @@ public final class LiveEvaluationReporter {
 
     private static LiveEvaluationSlice slice(List<LiveEvaluationResult> results) {
         if (results.isEmpty()) return new LiveEvaluationSlice(
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                LiveEvaluationDiagnostics.empty()
         );
         var expectedEntities = sum(results, LiveEvaluationResult::expectedEntityCount);
         var actualEntities = sum(results, LiveEvaluationResult::actualEntityCount);
@@ -90,7 +91,24 @@ public final class LiveEvaluationReporter {
                 LiveEvaluationResult.ratioOrPerfect(presentEvidence, expectedEvidence),
                 average(results, LiveEvaluationResult::dagValidityBps),
                 results.stream().mapToInt(LiveEvaluationResult::criticalHallucinationCount).sum(),
-                results.stream().mapToInt(LiveEvaluationResult::blockerCount).sum()
+                results.stream().mapToInt(LiveEvaluationResult::blockerCount).sum(),
+                diagnostics(results)
+        );
+    }
+
+    private static LiveEvaluationDiagnostics diagnostics(List<LiveEvaluationResult> results) {
+        return new LiveEvaluationDiagnostics(
+                (int) results.stream().filter(result -> !"EVALUATED".equals(result.outcomeCode())).count(),
+                (int) results.stream().filter(result -> result.bundleContractBps() != 10_000).count(),
+                (int) results.stream().filter(result -> result.dagValidityBps() != 10_000).count(),
+                Math.toIntExact(sum(results, LiveEvaluationResult::missingEntityCount)),
+                Math.toIntExact(sum(results, LiveEvaluationResult::unexpectedEntityCount)),
+                Math.toIntExact(sum(results, LiveEvaluationResult::missingFieldCount)),
+                Math.toIntExact(sum(results, LiveEvaluationResult::unexpectedFieldCount)),
+                Math.toIntExact(sum(results, LiveEvaluationResult::supportedTypeMismatchCount)),
+                Math.toIntExact(sum(results, LiveEvaluationResult::missingEdgeCount)),
+                Math.toIntExact(sum(results, LiveEvaluationResult::unexpectedEdgeCount)),
+                Math.toIntExact(sum(results, LiveEvaluationResult::unsupportedAssertionCount))
         );
     }
 

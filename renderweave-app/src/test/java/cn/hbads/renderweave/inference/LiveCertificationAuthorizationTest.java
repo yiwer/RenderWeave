@@ -72,22 +72,27 @@ class LiveCertificationAuthorizationTest {
     }
 
     @Test
-    void pinnedPlusUsesItsOwnWholeCorpusAndTenYuanCeiling() {
-        var authorization = authorization(
-                "PROPOSED", List.of(LiveCertificationAuthorization.PLUS_PROFILE),
-                180, 10_000_000, null, null, null, null
-        );
+    void pinnedPlusPromptVersionsUseSeparateWholeCorpusAndTenYuanCeilings() {
+        for (var profileId : List.of(
+                LiveCertificationAuthorization.PLUS_PROFILE,
+                LiveCertificationAuthorization.PLUS_PROMPT_V2_PROFILE
+        )) {
+            var authorization = authorization(
+                    "PROPOSED", List.of(profileId),
+                    180, 10_000_000, null, null, null, null
+            );
 
-        assertThat(authorization.assignmentCount()).isEqualTo(60);
-        assertThat(authorization.maximumProviderAttempts()).isEqualTo(180);
-        assertThat(authorization.maximumCostMicrosCny()).isEqualTo(10_000_000);
-        assertThat(authorization.assignments(new LiveEvaluationCorpus()))
-                .allMatch(item -> item.profileId().equals(LiveCertificationAuthorization.PLUS_PROFILE));
-        assertThatThrownBy(() -> authorization(
-                "PROPOSED", List.of(LiveCertificationAuthorization.PLUS_PROFILE),
-                180, 10_000_001, null, null, null, null
-        )).isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("Certification authorization budget is invalid");
+            assertThat(authorization.assignmentCount()).isEqualTo(60);
+            assertThat(authorization.maximumProviderAttempts()).isEqualTo(180);
+            assertThat(authorization.maximumCostMicrosCny()).isEqualTo(10_000_000);
+            assertThat(authorization.assignments(new LiveEvaluationCorpus()))
+                    .allMatch(item -> item.profileId().equals(profileId));
+            assertThatThrownBy(() -> authorization(
+                    "PROPOSED", List.of(profileId),
+                    180, 10_000_001, null, null, null, null
+            )).isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("Certification authorization budget is invalid");
+        }
     }
 
     @Test

@@ -120,7 +120,10 @@ public record InferenceProfile(
         if (!"DASHSCOPE_API_KEY".equals(apiKeyEnvironmentVariable)) {
             throw new IllegalArgumentException("P5 API key source is fixed");
         }
-        if (!"renderweave-schema-candidate-prompt/1.0".equals(promptVersion)
+        var promptAllowed = InferencePromptRegistry.SCHEMA_CANDIDATE_V1.equals(promptVersion)
+                || ("qwen3.7-plus-2026-05-26".equals(model)
+                && InferencePromptRegistry.SCHEMA_CANDIDATE_V2.equals(promptVersion));
+        if (!promptAllowed
                 || !"JSON_OBJECT".equals(responseFormat)
                 || thinkingEnabled || toolsAllowed || remoteMediaAllowed) {
             throw new IllegalArgumentException("P5 structured-output and least-capability policy is fixed");

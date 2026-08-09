@@ -12,7 +12,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class InferenceProfileRegistryTest {
     @Test
-    void p5ExposesReplayAndThreeGuardedDashScopeProfiles() {
+    void p5ExposesReplayAndFourGuardedDashScopeProfiles() {
         var registry = new InferenceProfileRegistry();
         var resource = registry.require("replay-v1");
         var profile = resource.profile();
@@ -21,6 +21,7 @@ class InferenceProfileRegistryTest {
                 "replay-v1",
                 "dashscope-qwen37-flash-v1",
                 "dashscope-qwen37-plus-20260526-v1",
+                "dashscope-qwen37-plus-20260526-prompt-v2",
                 "dashscope-qwen38-max-v1"
         ), registry.profileIds());
         assertEquals("renderweave-inference-profile/1.0", profile.profileVersion());
@@ -36,16 +37,25 @@ class InferenceProfileRegistryTest {
 
         assertDashScopeProfile(
                 registry.require("dashscope-qwen37-flash-v1").profile(),
-                "qwen3.7-flash", 200_000L, 800_000L, 20_000L, "2026-08-08"
+                "qwen3.7-flash", "renderweave-schema-candidate-prompt/1.0",
+                200_000L, 800_000L, 20_000L, "2026-08-08"
         );
         assertDashScopeProfile(
                 registry.require("dashscope-qwen37-plus-20260526-v1").profile(),
-                "qwen3.7-plus-2026-05-26", 2_000_000L, 8_000_000L, 200_000L,
+                "qwen3.7-plus-2026-05-26", "renderweave-schema-candidate-prompt/1.0",
+                2_000_000L, 8_000_000L, 200_000L,
+                "2026-08-09"
+        );
+        assertDashScopeProfile(
+                registry.require("dashscope-qwen37-plus-20260526-prompt-v2").profile(),
+                "qwen3.7-plus-2026-05-26", "renderweave-schema-candidate-prompt/2.0",
+                2_000_000L, 8_000_000L, 200_000L,
                 "2026-08-09"
         );
         assertDashScopeProfile(
                 registry.require("dashscope-qwen38-max-v1").profile(),
-                "qwen3.8-max", 12_000_000L, 36_000_000L, 280_000L, "2026-08-08"
+                "qwen3.8-max", "renderweave-schema-candidate-prompt/1.0",
+                12_000_000L, 36_000_000L, 280_000L, "2026-08-08"
         );
         assertThrows(IllegalArgumentException.class, () -> registry.require("live-provider"));
     }
@@ -53,6 +63,7 @@ class InferenceProfileRegistryTest {
     private static void assertDashScopeProfile(
             InferenceProfile profile,
             String model,
+            String promptVersion,
             long inputPrice,
             long outputPrice,
             long maximumCost,
@@ -67,7 +78,7 @@ class InferenceProfileRegistryTest {
                 profile.providerEndpoint()
         );
         assertEquals("DASHSCOPE_API_KEY", profile.apiKeyEnvironmentVariable());
-        assertEquals("renderweave-schema-candidate-prompt/1.0", profile.promptVersion());
+        assertEquals(promptVersion, profile.promptVersion());
         assertEquals("JSON_OBJECT", profile.responseFormat());
         assertFalse(profile.thinkingEnabled());
         assertFalse(profile.toolsAllowed());

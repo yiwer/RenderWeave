@@ -22,6 +22,7 @@ import type {
   InferenceMode,
   InferenceRunResponse,
   LiveAvailabilityResponse,
+  LiveProfileResponse,
   ReplayFixtureListResponse,
   ReplayFixtureResponse,
 } from '../../api/generated';
@@ -248,7 +249,7 @@ function LiveLauncher({
                   {query.data.profiles.map((item) => (
                     <button key={item.profileId} type="button" className={profileId === item.profileId ? 'active' : ''} onClick={() => { setProfileId(item.profileId); setExperimentalConfirmed(false); }}>
                       <Bot aria-hidden="true" size={17} />
-                      <span><strong>{item.model}</strong><small>{item.model.includes('flash') ? '低成本快速识别' : '复杂结构复核'}</small></span>
+                      <span><strong>{item.model}</strong><small>{liveProfileDescription(item)}</small></span>
                       <em>单次上限 ¥{formatYuan(item.maximumEstimatedCostMicrosCny)}</em>
                     </button>
                   ))}
@@ -280,7 +281,7 @@ function LiveLauncher({
 
             <aside className="replay-launch-panel live-launch-panel" aria-label="AI 调用确认">
               <span className="section-kicker">调用摘要</span>
-              <h2>{profile?.model ?? '选择模型'}</h2>
+              <h2>{profile ? `${profile.model} · ${liveProfileShortVersion(profile)}` : '选择模型'}</h2>
               <dl className="fixture-metrics">
                 <div><dt>输入模式</dt><dd>{modeLabels[mode]}</dd></div>
                 <div><dt>本次文件</dt><dd>{images.length + jsonSamples.length}</dd></div>
@@ -361,6 +362,15 @@ function humanScenario(scenario: string) {
 
 function formatYuan(micros: number) {
   return (micros / 1_000_000).toFixed(micros >= 100_000 ? 2 : 3);
+}
+
+function liveProfileShortVersion(profile: LiveProfileResponse) {
+  return profile.profileId.endsWith('-prompt-v2') ? 'Prompt v2' : 'Prompt v1';
+}
+
+function liveProfileDescription(profile: LiveProfileResponse) {
+  if (profile.profileId.endsWith('-prompt-v2')) return '证据锚定 · 最小结构 Prompt v2';
+  return profile.model.includes('flash') ? '低成本快速识别 · Prompt v1' : '复杂结构复核 · Prompt v1';
 }
 
 function errorMessage(error: unknown) {

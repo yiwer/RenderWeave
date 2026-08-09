@@ -1,6 +1,7 @@
 package cn.hbads.renderweave.inference.provider;
 
 import cn.hbads.renderweave.inference.profile.InferenceProfileRegistry;
+import cn.hbads.renderweave.inference.profile.InferencePromptRegistry;
 import cn.hbads.renderweave.inference.run.InferenceStage;
 import org.junit.jupiter.api.Test;
 
@@ -14,6 +15,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ProviderContractTest {
     private final InferenceProfileRegistry profiles = new InferenceProfileRegistry();
+    private final InferencePromptRegistry prompts = new InferencePromptRegistry();
 
     @Test
     void requestCarriesOnlyBoundedPromptJsonAndNormalizedMediaBytes() {
@@ -131,6 +133,23 @@ class ProviderContractTest {
 
         assertTrue(ProviderCostEstimator.maximumRequestCostMicrosCny(request)
                 > plus.maximumEstimatedCostMicrosCny());
+    }
+
+    @Test
+    void promptV2StillFitsThePinnedTwoImagePerAttemptCostEnvelope() {
+        var plusV2 = profiles.require("dashscope-qwen37-plus-20260526-prompt-v2").profile();
+        var image = new ProviderImage("d".repeat(64), "image/png", new byte[] {1});
+        var request = new ProviderInferenceRequest(
+                UUID.fromString("00000000-0000-0000-0000-000000000008"),
+                0, InferenceStage.STRUCTURE, plusV2,
+                prompts.require(plusV2.promptVersion()).text(),
+                "{\"mode\":\"COMBINED\",\"jsonStructuralProfile\":" + "x".repeat(16_000) + "}",
+                List.of(image, image)
+        );
+
+        assertTrue(ProviderCostEstimator.maximumRequestCostMicrosCny(request) > 0);
+        assertTrue(ProviderCostEstimator.maximumRequestCostMicrosCny(request)
+                <= plusV2.maximumEstimatedCostMicrosCny());
     }
 
     @Test

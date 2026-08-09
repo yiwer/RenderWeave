@@ -18,6 +18,7 @@ public final class InferenceProfileRegistry {
     private static final java.util.List<String> LIVE_RESOURCES = java.util.List.of(
             "inference-profiles/dashscope-qwen37-flash-v1.json",
             "inference-profiles/dashscope-qwen37-plus-20260526-v1.json",
+            "inference-profiles/dashscope-qwen37-plus-20260526-prompt-v2.json",
             "inference-profiles/dashscope-qwen38-max-v1.json"
     );
     private static final ObjectMapper JSON = JsonMapper.builder(

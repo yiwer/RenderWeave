@@ -5,6 +5,7 @@
 - 2026-08-08 的 P5 canary J1 已关闭：双 Profile 各 1 次，共 2 attempts / ¥0.054017；只证明通路，不构成质量认证。
 - 2026-08-09 Flash 60-case live 已完成并经独立 A2：112 attempts / ¥0.122980，2/60 exact pass，policy=`EXPERIMENTAL`，authorization 已 CLOSED。
 - 2026-08-09 pinned Plus 60-case live 已完成并经独立 A2：75 attempts / ¥0.825948，18/60 exact pass，policy=`EXPERIMENTAL`，authorization 已 CLOSED。
+- 2026-08-09 已基于两轮 CLOSED sufficient statistics 开始 Prompt v2：修复 exact FieldKey、最小证据图与 JSON truth table；当前仅离线实现，新增 provider 调用 0。
 - 用户已将候选模型扩大到 Qwen3.7 dated/alias 与 Qwen3.8 Max，其他模型费用硬上限 ¥10；按协议能力优先评测 pinned `qwen3.7-plus-2026-05-26`。
 - 需求访谈已收束，v1 产品语义以 `specs/renderweave-v1.md` 为准。
 - 生命周期状态：P0 `accepted`；P1–P4 `automated_verified`；P5 Flash / Plus 均为 `live_independently_reviewed`。所有 DashScope Profile 仍为 `EXPERIMENTAL`、默认关闭。
@@ -37,11 +38,12 @@
 - [x] 完成 pinned Plus Profile、独立 ledger selector、≤180 attempts / ≤¥10 / 4h J1 的 pre-live 门禁与 A2。
 - [x] 逐批运行 Plus 60-case，立即 CLOSED 并独立复核；结论为 `EXPERIMENTAL`，没有自动晋级。
 - [x] 记录 Max / dated 模型协议矩阵：强制思考或无 JSON mode 保证的模型先补协议与 credit/CNY 双预算，不用当前 harness 盲调。
-- [ ] 以 Plus 的 field/type/edge 与 critical hallucination 缺口驱动 prompt/evaluator v2；任何复验使用新 Profile、identity 与 ledger。
+- [x] 以 Plus 的 field/type/edge 与 critical hallucination 缺口驱动不可变 Prompt/Profile v2，并新增 payload-free failure taxonomy。
+- [ ] 为 Prompt v2 冻结 synthetic-only `PROPOSED` ledger；任何复验使用新 Profile、identity 与新的精确 J1。
 
 ## 重要发现或局部阻塞
 - 本机全局 Node 为 20.20.2；正式 gate 已使用 checksum 固定的仓库局部 Node 24.19.0，不依赖或修改系统 Node。
-- 已建立真实 Git 节点边界；当前工作分支为 `phase/p5-quality-certification`。T5-6 有独立只读 A2，但仍无外部 CI/branch protection 的 A3。
+- 已建立真实 Git 节点边界；当前工作分支为 `phase/p5-prompt-v2`。T5-6 有独立只读 A2，但仍无外部 CI/branch protection 的 A3。
 - T4-4 首次 server gate 由于外层命令时限过短中断，其不完整 evidence 不作为结论；随后的完整 server/web/e2e 与 real inference journey 均为绿色。
 - UI 设计数据库把本项目误路由到 hero-centric/mobile/dark SaaS；已在 page override 中拒绝，采用已确认的 dense warm editorial workbench。
 - Docker registry 代理不可用；Compose config 与等价 API/PG runtime canary 已绿，`docker compose up --build` 仍 pending。
@@ -64,4 +66,5 @@
 - `plans/logs/P4-T4-4.md`；G-P4 A1 server/web/mocked-browser/real-browser evidence：`.sdlc/evidence/20260808-060743-server/metadata.json`、`.sdlc/evidence/20260808-061010-web/metadata.json`、`.sdlc/evidence/20260808-061225-e2e/metadata.json`、`.sdlc/evidence/inference-e2e-36108/metadata.json`。
 - `plans/logs/P5-T5-5.md`：旧 canary 与 safety A2 已收束，两个 Profile 保持 `EXPERIMENTAL`。
 - `plans/logs/P5-T5-6.md`：pre-live A1 server/web、PROPOSED zero-write probe 与独立 A2 PASS；新增 provider 调用 0。
-- 当前恢复点：`phase/p5-quality-certification` pre-live 节点；新授权已绑定 evaluation identity，但仍为 `PROPOSED`，等待用户精确 J1。
+- `plans/logs/P5-T5-7.md`：Prompt/Profile v2 离线实现；A1 server/web evidence：`.sdlc/evidence/20260809-093724-server/metadata.json`、`.sdlc/evidence/20260809-093853-web/metadata.json`；新增 provider 调用 0。
+- 当前恢复点：`phase/p5-prompt-v2` 离线实现节点；Prompt v2 尚未 live 复验，所有既有 live 授权均已 CLOSED。

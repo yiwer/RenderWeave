@@ -47,6 +47,16 @@ public record LiveEvaluationResult(
                 || criticalHallucinationCount < 0 || blockerCount < 0) {
             throw new IllegalArgumentException("Evaluation counts are invalid");
         }
+        var structuralHallucinations = Math.addExact(
+                Math.subtractExact(actualEntityCount, matchedEntityCount),
+                Math.addExact(
+                        Math.subtractExact(actualFieldCount, matchedFieldCount),
+                        Math.subtractExact(actualEdgeCount, matchedEdgeCount)
+                )
+        );
+        if (criticalHallucinationCount < structuralHallucinations) {
+            throw new IllegalArgumentException("Critical hallucination decomposition is invalid");
+        }
         missingEntities = List.copyOf(missingEntities);
         unexpectedEntities = List.copyOf(unexpectedEntities);
         missingFields = List.copyOf(missingFields);
@@ -97,6 +107,40 @@ public record LiveEvaluationResult(
 
     public int evidenceCoverageBps() {
         return ratioOrPerfect(evidencePresentCount, evidenceExpectedCount);
+    }
+
+    public int missingEntityCount() {
+        return expectedEntityCount - matchedEntityCount;
+    }
+
+    public int unexpectedEntityCount() {
+        return actualEntityCount - matchedEntityCount;
+    }
+
+    public int missingFieldCount() {
+        return expectedFieldCount - matchedFieldCount;
+    }
+
+    public int unexpectedFieldCount() {
+        return actualFieldCount - matchedFieldCount;
+    }
+
+    public int supportedTypeMismatchCount() {
+        return supportedTypeExpectedCount - supportedTypeMatchedCount;
+    }
+
+    public int missingEdgeCount() {
+        return expectedEdgeCount - matchedEdgeCount;
+    }
+
+    public int unexpectedEdgeCount() {
+        return actualEdgeCount - matchedEdgeCount;
+    }
+
+    /** Required/constraint/provenance violations and unsupported concretization of uncertain gold. */
+    public int unsupportedAssertionCount() {
+        return criticalHallucinationCount
+                - unexpectedEntityCount() - unexpectedFieldCount() - unexpectedEdgeCount();
     }
 
     static int precision(long matched, long actual, long expected) {

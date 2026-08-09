@@ -1657,6 +1657,7 @@ components:
           type: string
           enum:
             [dashscope-qwen37-flash-v1, dashscope-qwen37-plus-20260526-v1,
+             dashscope-qwen37-plus-20260526-prompt-v2,
              dashscope-qwen38-max-v1]
         mode:
           $ref: '#/components/schemas/InferenceMode'
@@ -1714,8 +1715,8 @@ components:
           maximum: 1000000
         profiles:
           type: array
-          minItems: 3
-          maxItems: 3
+          minItems: 4
+          maxItems: 4
           items:
             $ref: '#/components/schemas/LiveProfileResponse'
     LiveProfileResponse:
@@ -1729,6 +1730,7 @@ components:
           type: string
           enum:
             [dashscope-qwen37-flash-v1, dashscope-qwen37-plus-20260526-v1,
+             dashscope-qwen37-plus-20260526-prompt-v2,
              dashscope-qwen38-max-v1]
         provider:
           type: string
