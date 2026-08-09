@@ -29,6 +29,7 @@ import cn.hbads.renderweave.inference.provider.ProviderInferenceResponse;
 import cn.hbads.renderweave.inference.provider.ProviderUsage;
 import cn.hbads.renderweave.inference.replay.InferenceAttemptStatus;
 import cn.hbads.renderweave.inference.replay.InferenceReplayStore;
+import cn.hbads.renderweave.inference.replay.ReplayCorpus;
 import cn.hbads.renderweave.inference.run.InferenceRunState;
 import cn.hbads.renderweave.inference.run.InferenceRunStore;
 import cn.hbads.renderweave.inference.run.NewInferenceRun;
@@ -147,6 +148,85 @@ class PostgresLiveInferenceWorkflowTest {
                         evidence.jsonPointer() != null && evidence.artifactId() == null);
             });
         });
+    }
+
+    @Test
+    void everyGroundedJsonCorpusCaseReachesReviewWithZeroProviderSideEffects() {
+        var blobs = new MemoryBlobStore();
+        var provider = new ScriptedProvider();
+        var worker = worker(provider, blobs);
+        var evaluated = 0;
+
+        for (var fixture : new ReplayCorpus().cases()) {
+            if (fixture.mode() != InferenceMode.JSON_ONLY) continue;
+            evaluated++;
+            var created = createJsonOnlyGrounded(
+                    blobs, "grounded-" + fixture.fixtureId(), fixture.jsonSamples()
+            );
+
+            var finished = worker.processNext("grounded-corpus-worker").orElseThrow();
+
+            assertThat(finished.runId()).isEqualTo(created);
+            assertThat(finished.state())
+                    .as(fixture.fixtureId())
+                    .isEqualTo(InferenceRunState.REVIEW_REQUIRED);
+            assertThat(workflowStore.attempts(created)).as(fixture.fixtureId()).isEmpty();
+        }
+
+        assertThat(evaluated).isEqualTo(20);
+        assertThat(provider.requests).isEmpty();
+        var budget = budgets.snapshot(LiveInferenceWorker.CANARY_BUDGET_KEY);
+        assertThat(budget.consumedAttempts()).isZero();
+        assertThat(budget.consumedCostMicrosCny()).isZero();
+    }
+
+    @Test
+    void recoveredGroundedJsonRepairStageFailsBeforeAnyProviderSideEffect() {
+        var blobs = new MemoryBlobStore();
+        var provider = new ScriptedProvider();
+        var created = createJsonOnlyGrounded(
+                blobs, "grounded-json-repair-recovery", "{\"title\":\"hello\"}"
+        );
+        var repairCheckpoint = """
+                {
+                  "checkpointVersion": "renderweave-live-checkpoint/1.0",
+                  "completedStage": "CRITIQUE",
+                  "structureCalls": 1,
+                  "repairRounds": 0,
+                  "outputValid": false,
+                  "candidate": null,
+                  "validationProblems": [
+                    {
+                      "code": "LIVE_STRUCTURE_OUTPUT_INVALID",
+                      "severity": "BLOCKER",
+                      "itemId": null,
+                      "pointer": "/candidate",
+                      "args": {}
+                    }
+                  ]
+                }
+                """;
+        jdbcClient.sql("""
+                        update inference_run
+                        set stage = 'REPAIR', checkpoint_json = cast(:checkpoint as jsonb)
+                        where run_id = :runId
+                        """)
+                .param("checkpoint", repairCheckpoint)
+                .param("runId", created)
+                .update();
+
+        var finished = worker(provider, blobs)
+                .processNext("grounded-json-repair-recovery-worker")
+                .orElseThrow();
+
+        assertThat(finished.state()).isEqualTo(InferenceRunState.FAILED);
+        assertThat(finished.failureCode())
+                .contains("LIVE_GROUNDED_JSON_EXTERNAL_CALL_BLOCKED");
+        assertThat(provider.requests).isEmpty();
+        assertThat(workflowStore.attempts(created)).isEmpty();
+        var budget = budgets.snapshot(LiveInferenceWorker.CANARY_BUDGET_KEY);
+        assertThat(budget.consumedAttempts()).isZero();
+        assertThat(budget.consumedCostMicrosCny()).isZero();
     }
 
     @Test
@@ -448,11 +528,19 @@ class PostgresLiveInferenceWorkflowTest {
     }
 
     private UUID createJsonOnlyGrounded(MemoryBlobStore blobs, String seed, String jsonSample) {
+        return createJsonOnlyGrounded(blobs, seed, List.of(jsonSample));
+    }
+
+    private UUID createJsonOnlyGrounded(
+            MemoryBlobStore blobs,
+            String seed,
+            List<String> jsonSamples
+    ) {
         var profile = profiles.require(GROUNDED_PROFILE);
-        var sample = new InferenceInput.BinaryInput(
+        var samples = jsonSamples.stream().map(jsonSample -> new InferenceInput.BinaryInput(
                 "sample.json", "application/json", jsonSample.getBytes(StandardCharsets.UTF_8)
-        );
-        var profileBytes = new StrictJsonSampleProfiler().profile(List.of(sample));
+        )).toList();
+        var profileBytes = new StrictJsonSampleProfiler().profile(samples);
         var jsonId = sha256(profileBytes);
         blobs.values.put(jsonId, profileBytes);
         var jsonProfile = new NormalizedArtifact(

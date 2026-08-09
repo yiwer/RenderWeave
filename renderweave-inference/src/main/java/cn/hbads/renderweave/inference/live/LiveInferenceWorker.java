@@ -9,6 +9,7 @@ import cn.hbads.renderweave.inference.candidate.CandidateValidationContext;
 import cn.hbads.renderweave.inference.candidate.CandidateValidator;
 import cn.hbads.renderweave.inference.candidate.InvalidCandidateContractException;
 import cn.hbads.renderweave.inference.input.BlobStore;
+import cn.hbads.renderweave.inference.input.InferenceMode;
 import cn.hbads.renderweave.inference.input.NormalizedArtifact;
 import cn.hbads.renderweave.inference.profile.InferenceProfile;
 import cn.hbads.renderweave.inference.profile.InferenceProfileRegistry;
@@ -189,7 +190,7 @@ public final class LiveInferenceWorker {
     }
 
     private InferenceRunSnapshot structure(InferenceRunSnapshot current, InferenceProfile profile) {
-        if (grounded(profile) && current.mode() == cn.hbads.renderweave.inference.input.InferenceMode.JSON_ONLY) {
+        if (grounded(profile) && current.mode() == InferenceMode.JSON_ONLY) {
             var checkpoint = workflowCodec.parse(current.checkpointJson());
             if (checkpoint.completedStage() != InferenceStage.OBSERVE) {
                 throw new IllegalStateException("STRUCTURE requires the OBSERVE checkpoint");
@@ -230,6 +231,12 @@ public final class LiveInferenceWorker {
         if (repair && (checkpoint.completedStage() != InferenceStage.CRITIQUE
                 || !requiresRepair(checkpoint))) {
             throw new IllegalStateException("REPAIR requires a rejected CRITIQUE checkpoint");
+        }
+        if (grounded(profile) && current.mode() == InferenceMode.JSON_ONLY) {
+            return runStore.fail(
+                    current.runId(), token(current),
+                    "LIVE_GROUNDED_JSON_EXTERNAL_CALL_BLOCKED", clock.instant()
+            );
         }
         var attemptOrdinal = workflowStore.attempts(current.runId()).size();
         if (attemptOrdinal >= profile.maximumTotalCalls()) {
@@ -292,8 +299,7 @@ public final class LiveInferenceWorker {
         var outcomeCode = "LIVE_OUTPUT_ACCEPTED";
         try {
             candidate = candidateCodec.parse(response.candidateJson());
-            if (grounded(profile)
-                    && current.mode() == cn.hbads.renderweave.inference.input.InferenceMode.COMBINED) {
+            if (grounded(profile) && current.mode() == InferenceMode.COMBINED) {
                 var composed = groundedComposer.compose(
                         current.runId(), groundedRootKey(current), "推断数据结构",
                         jsonProfile(current), Set.copyOf(imageArtifactIds(current)),
@@ -367,6 +373,12 @@ public final class LiveInferenceWorker {
             );
         }
         if (repairDecision == LiveRepairPolicy.Decision.REPAIR) {
+            if (grounded(profile) && current.mode() == InferenceMode.JSON_ONLY) {
+                return runStore.fail(
+                        current.runId(), token(current),
+                        "LIVE_GROUNDED_JSON_EXTERNAL_CALL_BLOCKED", clock.instant()
+                );
+            }
             if (checkpoint.repairRounds() >= profile.maximumRepairRounds()
                     || checkpoint.structureCalls() >= profile.maximumTotalCalls()) {
                 return runStore.fail(

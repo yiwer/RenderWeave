@@ -22,14 +22,16 @@ Prompt v2 将 pinned Plus 的 exact pass 从 18/60 提升到 47/60，critical ha
 ### 2. JSON_ONLY 不调用 Provider
 
 - `JsonStructuralProfile` 直接交给 `JsonCandidateProfiler` 生成完整 Candidate；不发送 JSON profile、图片或任务给外部模型，provider attempt 为 0。
+- 零调用是全阶段硬边界：包括异常 checkpoint 与 repair 路径在内，JSON_ONLY 都不得创建 attempt、reservation 或 provider request；确定性观察到的 all-null、空数组、异构数组、嵌套数组和结构类型冲突保留为人工审核信息，而不是交给模型消解。
 - 根 SchemaKey 从 run 的输入 fingerprint 确定性生成，避免全局固定 key；displayName 使用明确的系统默认值并允许后续逐项审核修改。
 - JSON 字段身份、对象/数组拓扑、scalar 类型、UNRESOLVED/CONFLICT、JSON evidence、required=false 与空 constraints 全部由确定性实现产生。
+- structural profile 1.2 在内部路径中保留裸 `*` 作为数组元素段，并以可逆 `~2` 编码对象的字面量 `*` 字段；evidence 仍使用标准 RFC 6901。读取端继续兼容既有 1.1 artifact，避免破坏历史 replay。
 - Candidate 仍是推断工作流产物，item 使用 `source=AI`、`inferred=true`；低置信和不确定类型继续进入人工审核，不因零调用而绕过 Candidate 边界。
 
 ### 3. COMBINED 采用 JSON base + 受限视觉 overlay
 
 - 系统先构建与 JSON_ONLY 相同的 deterministic base，并把不含样本值的 grounded Candidate 放入 task，帮助模型只处理视觉语义。
-- Provider 返回仍按 Candidate 1.0 严格解析，但只作为不可信 visual proposal。composer 以 canonical reference path 匹配 deterministic Schema，不信任 provider UUID、SchemaKey、JSON evidence 或图拓扑。
+- Provider 返回仍按 Candidate 1.0 严格解析，但只作为不可信 visual proposal。composer 只接受 fieldKey 唯一、单一入边、无环且目标存在的 canonical reference path；重复键、共享目标、cycle、悬空引用或重复 UUID 会使整张 visual graph 被稳定忽略。composer 不信任或持久化 provider UUID、SchemaKey、JSON evidence 或图拓扑。
 - JSON-backed Schema/field 不能被删除、改名、移动或改变 reference/array/uncertainty topology；JSON DECIMAL/BOOLEAN 不得被视觉覆盖。
 - 唯一 concrete refinement 是：JSON TEXT 在 provider 给出合法、直接 IMAGE evidence 且 confidence 达阈值时精化为 DATE 或 TIME。
 - 合法 IMAGE evidence 可以补充 matched Schema/field 的 displayName/evidence。JSON evidence 始终由 deterministic base 保留，图片不能替代。
@@ -53,7 +55,8 @@ Prompt v2 将 pinned Plus 的 exact pass 从 18/60 提升到 47/60，critical ha
 - 20 个 JSON_ONLY corpus case 在零 provider fake 下全部生成确定性 Candidate，并由 whole-graph evaluator exact 匹配。
 - 20 个 COMBINED replay visual proposal 经 composer 后保持 JSON truth、允许日期/时间精化与 visual-only scalar，且 whole-graph evaluator exact 匹配。
 - adversarial tests 证明 provider 不能删除/改名 JSON 字段、替换 JSON evidence、具体化 uncertainty、引入 required/constraints、额外 Schema、reference/cycle 或未知图片位置。
-- live workflow tests 证明 JSON_ONLY provider calls=0；COMBINED request 带 grounded Candidate，持久 Candidate 为 composed 结果；旧 pipeline 行为不变。
+- adversarial tests 还覆盖字面量 `*`、内部转义前缀、child SchemaKey digest collision、重复引用键、共享目标、cycle 与 provider UUID 污染。
+- live workflow tests 逐个回放 20 个 JSON_ONLY corpus case，证明它们全部进入 REVIEW_REQUIRED 且 provider calls/attempts/reservations/cost 均为 0；COMBINED request 带 grounded Candidate，持久 Candidate 为 composed 结果；旧 pipeline 行为不变。
 - Prompt/Profile/OpenAPI/生成 SDK 字节与枚举同步，最终 tracked tree 形成新的 evaluation identity；真实调用前另建 synthetic-only PROPOSED ledger。
 
 ## 后果

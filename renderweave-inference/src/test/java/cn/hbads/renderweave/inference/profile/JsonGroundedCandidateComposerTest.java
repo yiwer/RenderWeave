@@ -40,6 +40,7 @@ class JsonGroundedCandidateComposerTest {
         var profile = profile("{\"title\":\"A\",\"amount\":12,\"items\":[]}");
         var proposalRootId = UUID.fromString("30000000-0000-0000-0000-000000000001");
         var extraSchemaId = UUID.fromString("30000000-0000-0000-0000-000000000002");
+        var untrustedFieldId = UUID.fromString("30000000-0000-0000-0000-000000000003");
         var root = schema(
                 proposalRootId,
                 "visual-card",
@@ -50,7 +51,7 @@ class JsonGroundedCandidateComposerTest {
                         field("subtitle", valueWithConstraint(CandidateValueKind.TEXT), 6_500, true, IMAGE_ID),
                         field("unknown", scalar(CandidateValueKind.TEXT), 9_000, false, UNKNOWN_IMAGE_ID),
                         new CandidateField(
-                                UUID.randomUUID(), "group", "分组", false,
+                                untrustedFieldId, "group", "分组", false,
                                 CandidateValue.reference(CandidateReference.candidate(extraSchemaId)),
                                 CandidateSource.AI, assessment(9_000, IMAGE_ID)
                         )
@@ -92,6 +93,10 @@ class JsonGroundedCandidateComposerTest {
                 problem.code().equals("VISUAL_TYPE_CONFLICT_IGNORED")));
         assertTrue(result.semanticProblems().stream().anyMatch(problem ->
                 problem.code().equals("VISUAL_SCHEMA_ADDITION_IGNORED")));
+        assertTrue(result.candidate().schemas().stream().flatMap(schema -> schema.fields().stream())
+                .noneMatch(field -> field.candidateFieldId().equals(untrustedFieldId)));
+        assertTrue(result.semanticProblems().stream()
+                .noneMatch(problem -> untrustedFieldId.equals(problem.itemId())));
     }
 
     @Test
@@ -123,7 +128,7 @@ class JsonGroundedCandidateComposerTest {
 
     @Test
     void unrepresentableJsonKeyRemainsUnresolvedAfterVisualComposition() {
-        var profile = profile("{\"\":1}");
+        var profile = profile("{\"\":{\"value\":1}}");
         var rootId = UUID.fromString("50000000-0000-0000-0000-000000000001");
         var proposal = new CandidateBundle(
                 CandidateBundle.CONTRACT_VERSION,
@@ -139,7 +144,72 @@ class JsonGroundedCandidateComposerTest {
         var unresolved = result.candidate().schemas().getFirst().fields().getFirst();
         assertNull(unresolved.proposedFieldKey());
         assertEquals(CandidateResolution.UNRESOLVED, unresolved.assessment().resolution());
-        assertEquals(CandidateValueKind.DECIMAL, unresolved.value().kind());
+        assertEquals(CandidateValueKind.REFERENCE, unresolved.value().kind());
+        assertEquals(2, result.candidate().schemas().size());
+    }
+
+    @Test
+    void duplicateReferenceKeyCannotSelectOneProviderChildForOverlay() {
+        var profile = profile("{\"group\":{\"name\":\"A\"}}");
+        var rootId = UUID.fromString("60000000-0000-0000-0000-000000000001");
+        var firstId = UUID.fromString("60000000-0000-0000-0000-000000000002");
+        var secondId = UUID.fromString("60000000-0000-0000-0000-000000000003");
+        var proposal = new CandidateBundle(
+                CandidateBundle.CONTRACT_VERSION,
+                rootId,
+                List.of(
+                        schema(rootId, "root", List.of(
+                                referenceField("group", firstId), referenceField("group", secondId)
+                        )),
+                        schema(firstId, "first", List.of()),
+                        schema(secondId, "second", List.of(
+                                field("poison", scalar(CandidateValueKind.TEXT), 9_000, false, IMAGE_ID)
+                        ))
+                )
+        );
+
+        assertAmbiguousProviderGraphIgnored(profile, proposal);
+    }
+
+    @Test
+    void sharedProviderTargetCannotCreateAnAmbiguousCanonicalPath() {
+        var profile = profile("{\"left\":{\"a\":1},\"right\":{\"b\":2}}");
+        var rootId = UUID.fromString("70000000-0000-0000-0000-000000000001");
+        var sharedId = UUID.fromString("70000000-0000-0000-0000-000000000002");
+        var proposal = new CandidateBundle(
+                CandidateBundle.CONTRACT_VERSION,
+                rootId,
+                List.of(
+                        schema(rootId, "root", List.of(
+                                referenceField("left", sharedId), referenceField("right", sharedId)
+                        )),
+                        schema(sharedId, "shared", List.of(
+                                field("poison", scalar(CandidateValueKind.TEXT), 9_000, false, IMAGE_ID)
+                        ))
+                )
+        );
+
+        assertAmbiguousProviderGraphIgnored(profile, proposal);
+    }
+
+    @Test
+    void providerCycleCannotBeLaunderedIntoAValidGroundedGraph() {
+        var profile = profile("{\"group\":{\"name\":\"A\"}}");
+        var rootId = UUID.fromString("80000000-0000-0000-0000-000000000001");
+        var childId = UUID.fromString("80000000-0000-0000-0000-000000000002");
+        var proposal = new CandidateBundle(
+                CandidateBundle.CONTRACT_VERSION,
+                rootId,
+                List.of(
+                        schema(rootId, "root", List.of(referenceField("group", childId))),
+                        schema(childId, "child", List.of(
+                                referenceField("back", rootId),
+                                field("poison", scalar(CandidateValueKind.TEXT), 9_000, false, IMAGE_ID)
+                        ))
+                )
+        );
+
+        assertAmbiguousProviderGraphIgnored(profile, proposal);
     }
 
     private JsonStructuralProfile profile(String... samples) {
@@ -166,6 +236,29 @@ class JsonGroundedCandidateComposerTest {
                 UUID.randomUUID(), key, key, required, value, CandidateSource.AI,
                 assessment(confidence, imageId)
         );
+    }
+
+    private static CandidateField referenceField(String key, UUID targetId) {
+        return new CandidateField(
+                UUID.randomUUID(), key, key, false,
+                CandidateValue.reference(CandidateReference.candidate(targetId)),
+                CandidateSource.AI, assessment(9_000, IMAGE_ID)
+        );
+    }
+
+    private void assertAmbiguousProviderGraphIgnored(
+            JsonStructuralProfile profile,
+            CandidateBundle proposal
+    ) {
+        var result = composer.compose(
+                RUN_ID, "fallback-root", "推断数据结构", profile,
+                Set.of(IMAGE_ID), proposal, 8_000
+        );
+
+        assertTrue(result.candidate().schemas().stream().flatMap(schema -> schema.fields().stream())
+                .noneMatch(field -> "poison".equals(field.proposedFieldKey())));
+        assertTrue(result.semanticProblems().stream().anyMatch(problem ->
+                problem.code().equals("VISUAL_GRAPH_AMBIGUOUS_IGNORED")));
     }
 
     private static CandidateAssessment assessment(int confidence, String imageId) {

@@ -1,5 +1,6 @@
 package cn.hbads.renderweave.inference.candidate;
 
+import cn.hbads.renderweave.inference.input.JsonStructuralPointer;
 import cn.hbads.renderweave.schema.identity.FieldKey;
 import cn.hbads.renderweave.schema.identity.SchemaKey;
 import cn.hbads.renderweave.schema.identity.VersionTag;
@@ -440,7 +441,7 @@ public final class CandidateValidator {
             var schemaPath = paths.get(schemaId);
             for (var field : schema.fields()) {
                 if (field.assessment().resolution() == CandidateResolution.REMOVED) continue;
-                var fieldPath = fieldJsonPointer(schemaPath, field.proposedFieldKey());
+                var fieldPath = fieldStructuralPointer(schemaPath, field.proposedFieldKey());
                 if (fieldPath == null) continue;
                 var targets = new ArrayList<UUID>();
                 collectCandidateTargets(field.value(), targets);
@@ -460,7 +461,7 @@ public final class CandidateValidator {
             );
             for (var field : schema.fields()) {
                 if (field.assessment().resolution() == CandidateResolution.REMOVED) continue;
-                var fieldPath = fieldJsonPointer(schemaPath, field.proposedFieldKey());
+                var fieldPath = fieldStructuralPointer(schemaPath, field.proposedFieldKey());
                 if (fieldPath == null) continue;
                 validateJsonEvidenceForItem(
                         field.assessment(), fieldPath, field.candidateFieldId(),
@@ -496,9 +497,10 @@ public final class CandidateValidator {
         }
     }
 
-    private static String fieldJsonPointer(String schemaPath, String fieldKey) {
+    private static String fieldStructuralPointer(String schemaPath, String fieldKey) {
         try {
-            return schemaPath + "/" + FieldKey.of(fieldKey).jsonPointerSegment();
+            var exactKey = FieldKey.of(fieldKey).value();
+            return schemaPath + "/" + JsonStructuralPointer.objectSegment(exactKey);
         } catch (RuntimeException invalid) {
             return null;
         }

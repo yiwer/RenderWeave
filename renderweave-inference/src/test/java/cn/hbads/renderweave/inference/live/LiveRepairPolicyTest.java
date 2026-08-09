@@ -26,6 +26,9 @@ class LiveRepairPolicyTest {
                 problem("ADVISORY", CandidateProblemSeverity.WARNING)
         )));
         assertEquals(LiveRepairPolicy.Decision.REVIEW, LiveRepairPolicy.decide(List.of(
+                problem("CANDIDATE_FIELD_KEY_INVALID", CandidateProblemSeverity.BLOCKER)
+        )));
+        assertEquals(LiveRepairPolicy.Decision.REVIEW, LiveRepairPolicy.decide(List.of(
                 problem("CANDIDATE_FIELD_KEY_INVALID", CandidateProblemSeverity.BLOCKER),
                 problem("CANDIDATE_TYPE_UNRESOLVED", CandidateProblemSeverity.BLOCKER),
                 problem("LOW_CONFIDENCE_UNRESOLVED", CandidateProblemSeverity.BLOCKER)

@@ -1,5 +1,6 @@
 package cn.hbads.renderweave.inference.profile;
 
+import cn.hbads.renderweave.inference.input.StrictJsonSampleProfiler;
 import tools.jackson.core.StreamReadFeature;
 import tools.jackson.core.json.JsonFactory;
 import tools.jackson.databind.DeserializationFeature;
@@ -24,7 +25,10 @@ public final class JsonStructuralProfiler {
         Objects.requireNonNull(artifactBytes, "artifactBytes");
         try {
             var stored = JSON.readValue(artifactBytes, StoredProfile.class);
-            if (!"renderweave-json-profile/1.1".equals(stored.profileVersion())) {
+            if (!java.util.Set.of(
+                    "renderweave-json-profile/1.1",
+                    StrictJsonSampleProfiler.PROFILE_VERSION
+            ).contains(stored.profileVersion())) {
                 throw new InvalidJsonStructuralProfileException(
                         "Unsupported JSON structural profile version: " + stored.profileVersion(), null
                 );

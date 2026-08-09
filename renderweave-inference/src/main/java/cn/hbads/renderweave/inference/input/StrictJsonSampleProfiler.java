@@ -19,6 +19,7 @@ import java.util.TreeSet;
 /** Produces bounded structural context; sample values are deliberately not retained. */
 public final class StrictJsonSampleProfiler {
     public static final int MAX_DEPTH = 32;
+    public static final String PROFILE_VERSION = "renderweave-json-profile/1.2";
     private static final ObjectMapper JSON = JsonMapper.builder(
                     JsonFactory.builder()
                             .streamReadConstraints(StreamReadConstraints.builder()
@@ -34,7 +35,7 @@ public final class StrictJsonSampleProfiler {
     public byte[] profile(List<InferenceInput.BinaryInput> samples) {
         try {
             var root = JSON.createObjectNode();
-            root.put("profileVersion", "renderweave-json-profile/1.1");
+            root.put("profileVersion", PROFILE_VERSION);
             root.put("sampleCount", samples.size());
             var sampleArray = root.putArray("samples");
             for (var index = 0; index < samples.size(); index++) {
@@ -99,9 +100,10 @@ public final class StrictJsonSampleProfiler {
             var fields = new ArrayList<>(node.properties());
             fields.sort(Map.Entry.comparingByKey());
             for (var field : fields) {
-                var segment = escape(field.getKey());
-                collect(field.getValue(), normalizedPointer + "/" + segment,
-                        evidencePointer + "/" + segment, depth + 1, output);
+                var structuralSegment = JsonStructuralPointer.objectSegment(field.getKey());
+                var evidenceSegment = escapeEvidenceSegment(field.getKey());
+                collect(field.getValue(), normalizedPointer + "/" + structuralSegment,
+                        evidencePointer + "/" + evidenceSegment, depth + 1, output);
             }
         } else if (node.isArray()) {
             var itemKinds = new TreeSet<String>();
@@ -150,7 +152,7 @@ public final class StrictJsonSampleProfiler {
         return "unknown";
     }
 
-    private static String escape(String value) {
+    private static String escapeEvidenceSegment(String value) {
         return value.replace("~", "~0").replace("/", "~1");
     }
 

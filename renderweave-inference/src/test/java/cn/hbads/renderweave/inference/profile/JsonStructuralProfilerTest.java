@@ -24,7 +24,7 @@ class JsonStructuralProfilerTest {
 
         var leftText = new String(left, StandardCharsets.UTF_8);
         assertFalse(leftText.contains("secret-value"));
-        assertTrue(leftText.contains("renderweave-json-profile/1.1"));
+        assertTrue(leftText.contains("renderweave-json-profile/1.2"));
 
         var leftProfile = profiler.profile(left);
         var rightProfile = profiler.profile(right);
@@ -54,6 +54,34 @@ class JsonStructuralProfilerTest {
         assertEquals(3, itemName.occurrences());
         assertEquals("/items/0/name", itemName.evidence().getFirst().jsonPointer());
         assertFalse(profile.nodes().stream().anyMatch(node -> node.pointer().contains("/items/1")));
+    }
+
+    @Test
+    void literalAsteriskUsesAReversibleStructuralSegmentDistinctFromArrayWildcard() {
+        var artifact = reducer.profile(List.of(json(
+                "{\"*\":{\"*\":\"root\"},\"items\":[{\"*\":\"row\"}],\"~2\":true}"
+        )));
+
+        var profile = profiler.profile(artifact);
+
+        assertEquals("/*", node(profile, "/~2").evidence().getFirst().jsonPointer());
+        assertEquals("/*/*", node(profile, "/~2/~2").evidence().getFirst().jsonPointer());
+        assertEquals("/items/0/*", node(profile, "/items/*/~2").evidence().getFirst().jsonPointer());
+        assertEquals("/~02", node(profile, "/~02").evidence().getFirst().jsonPointer());
+    }
+
+    @Test
+    void readsLegacyProfilesThatDoNotUseTheLiteralAsteriskEscape() {
+        var current = new String(
+                reducer.profile(List.of(json("{\"name\":\"A\"}"))), StandardCharsets.UTF_8
+        );
+        var legacy = current.replace(
+                StrictJsonSampleProfiler.PROFILE_VERSION, "renderweave-json-profile/1.1"
+        );
+
+        var profile = profiler.profile(legacy.getBytes(StandardCharsets.UTF_8));
+
+        assertEquals(java.util.Set.of("text"), node(profile, "/name").kinds());
     }
 
     private static JsonObservedNode node(JsonStructuralProfile profile, String pointer) {

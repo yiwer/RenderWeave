@@ -76,10 +76,19 @@ public final class JsonGroundedCandidateComposer {
         var schemas = new ArrayList<CandidateSchema>();
         for (var baseSchema : base.candidate().schemas()) {
             var path = basePaths.get(baseSchema.candidateSchemaId());
-            var proposalSchema = providerGraph.byPath().get(path);
+            var proposalSchema = path == null ? null : providerGraph.byPath().get(path);
             schemas.add(composeSchema(
-                    runId, path, baseSchema, proposalSchema, imageArtifactIds,
+                    runId,
+                    path == null ? "/@unmatched-" + baseSchema.candidateSchemaId() : path,
+                    baseSchema, proposalSchema, imageArtifactIds,
                     lowConfidenceThresholdBps, problems
+            ));
+        }
+
+        if (providerGraph.ambiguous()) {
+            problems.add(problem(
+                    "VISUAL_GRAPH_AMBIGUOUS_IGNORED", null, "/schemas",
+                    Map.of("count", Integer.toString(visualProposal.schemas().size()))
             ));
         }
 
@@ -145,7 +154,7 @@ public final class JsonGroundedCandidateComposer {
                 if (addition == null) {
                     problems.add(problem(
                             "VISUAL_FIELD_ADDITION_UNSUPPORTED",
-                            proposalField.candidateFieldId(),
+                            null,
                             fieldPointer(schemaPath, proposalField.proposedFieldKey()),
                             Map.of()
                     ));
@@ -457,7 +466,11 @@ public final class JsonGroundedCandidateComposer {
         return new CandidateProblem(code, CandidateProblemSeverity.WARNING, itemId, pointer, details);
     }
 
-    private record ProviderGraph(Map<String, CandidateSchema> byPath, long unreachableSchemaCount) {
+    private record ProviderGraph(
+            Map<String, CandidateSchema> byPath,
+            long unreachableSchemaCount,
+            boolean ambiguous
+    ) {
         private ProviderGraph {
             byPath = Map.copyOf(byPath);
             if (unreachableSchemaCount < 0) throw new IllegalArgumentException("count is invalid");
@@ -473,29 +486,58 @@ public final class JsonGroundedCandidateComposer {
             }
             duplicateIds.forEach(unique::remove);
             var root = unique.get(candidate.rootCandidateSchemaId());
-            if (root == null) return new ProviderGraph(Map.of(), candidate.schemas().size());
+            if (root == null || !duplicateIds.isEmpty()) {
+                return ambiguous(candidate);
+            }
             var byPath = new LinkedHashMap<String, CandidateSchema>();
+            var parentByTarget = new LinkedHashMap<UUID, String>();
             var visited = new LinkedHashSet<UUID>();
             var queue = new ArrayDeque<PathNode>();
+            parentByTarget.put(root.candidateSchemaId(), "@root");
             queue.add(new PathNode("/", root));
             while (!queue.isEmpty()) {
                 var current = queue.removeFirst();
-                if (!visited.add(current.schema().candidateSchemaId())) continue;
+                if (!visited.add(current.schema().candidateSchemaId())) return ambiguous(candidate);
                 byPath.put(current.path(), current.schema());
-                for (var field : current.schema().fields()) {
-                    if (field.assessment().resolution() == CandidateResolution.REMOVED
-                            || !validFieldKey(field.proposedFieldKey())) {
-                        continue;
+                var activeFields = current.schema().fields().stream()
+                        .filter(field -> field.assessment().resolution() != CandidateResolution.REMOVED)
+                        .toList();
+                var fieldKeys = new LinkedHashSet<String>();
+                for (var field : activeFields) {
+                    if (!validFieldKey(field.proposedFieldKey())
+                            || !fieldKeys.add(field.proposedFieldKey())) {
+                        return ambiguous(candidate);
                     }
                     var targetId = target(field.value());
-                    var target = targetId == null ? null : unique.get(targetId);
-                    if (target != null && !visited.contains(targetId)) {
-                        queue.add(new PathNode(childPath(current.path(), field.proposedFieldKey()), target));
+                    if (targetId == null) {
+                        if (referenceShaped(field.value())) return ambiguous(candidate);
+                        continue;
                     }
+                    var target = unique.get(targetId);
+                    if (target == null) return ambiguous(candidate);
+                    var edge = current.schema().candidateSchemaId() + "|" + field.proposedFieldKey();
+                    if (parentByTarget.putIfAbsent(targetId, edge) != null) {
+                        return ambiguous(candidate);
+                    }
+                    queue.add(new PathNode(childPath(current.path(), field.proposedFieldKey()), target));
                 }
             }
-            return new ProviderGraph(byPath, candidate.schemas().size() - visited.size());
+            return new ProviderGraph(
+                    byPath, candidate.schemas().size() - visited.size(), false
+            );
         }
+
+        private static ProviderGraph ambiguous(CandidateBundle candidate) {
+            return new ProviderGraph(Map.of(), candidate.schemas().size(), true);
+        }
+    }
+
+    private static boolean referenceShaped(CandidateValue value) {
+        if (value == null) return false;
+        if (value.kind() == CandidateValueKind.REFERENCE) return true;
+        return value.kind() == CandidateValueKind.ARRAY
+                && value.items() != null
+                && referenceShaped(value.items());
     }
 
     private record PathNode(String path, CandidateSchema schema) { }

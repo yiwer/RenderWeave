@@ -138,6 +138,32 @@ class JsonCandidateProfilerTest {
         );
     }
 
+    @Test
+    void literalAsteriskFieldsSurviveAtRootAndInsideObjectArrays() {
+        var result = infer("{\"*\":\"root\",\"items\":[{\"*\":12}],\"~2\":true}");
+
+        var root = result.candidate().schemas().getFirst();
+        assertEquals(List.of("*", "items", "~2"),
+                root.fields().stream().map(field -> field.proposedFieldKey()).toList());
+        var item = result.candidate().schemas().get(1);
+        assertEquals(List.of("*"),
+                item.fields().stream().map(field -> field.proposedFieldKey()).toList());
+        assertTrue(allProblems(result).isEmpty(), () -> "Unexpected problems: " + allProblems(result));
+    }
+
+    @Test
+    void hashedChildSchemaKeysStayUniqueAfterAnEightHexDigestCollision() {
+        var prefix = "a".repeat(80);
+        var result = infer("{\"" + prefix + "6931\":{},\"" + prefix + "19689\":{}}");
+        var keys = result.candidate().schemas().stream()
+                .map(schema -> schema.proposedSchemaKey())
+                .toList();
+
+        assertEquals(keys.size(), keys.stream().distinct().count());
+        assertFalse(allProblems(result).stream().anyMatch(problem ->
+                problem.code().equals("CANDIDATE_SCHEMA_KEY_DUPLICATE")));
+    }
+
     private CandidateProfileResult infer(String... samples) {
         var inputs = java.util.Arrays.stream(samples).map(sample -> new InferenceInput.BinaryInput(
                 "sample.json", "application/json", sample.getBytes(StandardCharsets.UTF_8)

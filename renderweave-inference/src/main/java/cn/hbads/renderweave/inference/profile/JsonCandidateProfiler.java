@@ -13,6 +13,7 @@ import cn.hbads.renderweave.inference.candidate.CandidateSchema;
 import cn.hbads.renderweave.inference.candidate.CandidateSource;
 import cn.hbads.renderweave.inference.candidate.CandidateValue;
 import cn.hbads.renderweave.inference.candidate.CandidateValueKind;
+import cn.hbads.renderweave.inference.input.JsonStructuralPointer;
 import cn.hbads.renderweave.schema.identity.FieldKey;
 
 import java.nio.charset.StandardCharsets;
@@ -51,17 +52,9 @@ public final class JsonCandidateProfiler {
             JsonStructuralProfile profile
     ) {
         var result = infer(runId, proposedRootSchemaKey, rootDisplayName, profile, true);
-        var liveProblems = result.semanticProblems().stream().map(problem ->
-                "NESTED_ARRAY_UNSUPPORTED".equals(problem.code())
-                        ? new CandidateProblem(
-                                "JSON_NESTED_ARRAY_OBSERVED",
-                                CandidateProblemSeverity.WARNING,
-                                problem.itemId(),
-                                problem.pointer(),
-                                problem.args()
-                        )
-                        : problem
-        ).toList();
+        var liveProblems = result.semanticProblems().stream()
+                .map(JsonCandidateProfiler::liveProblem)
+                .toList();
         return new CandidateProfileResult(result.candidate(), liveProblems);
     }
 
@@ -137,8 +130,9 @@ public final class JsonCandidateProfiler {
         return nodes.values().stream()
                 .filter(node -> !node.pointer().isEmpty())
                 .filter(node -> parent(node.pointer()).equals(schemaPath))
-                .filter(node -> !lastSegment(node.pointer()).equals("*"))
-                .sorted(Comparator.comparing(JsonObservedNode::pointer))
+                .sorted(Comparator
+                        .comparing((JsonObservedNode node) -> unescape(lastSegment(node.pointer())))
+                        .thenComparing(JsonObservedNode::pointer))
                 .toList();
     }
 
@@ -307,7 +301,7 @@ public final class JsonCandidateProfiler {
             Map<String, String> usedKeys
     ) {
         var pathSlug = schemaPath.substring(1).replace("/*", "")
-                .replaceAll("~[01]", "-")
+                .replaceAll("~[012]", "-")
                 .toLowerCase(Locale.ROOT)
                 .replaceAll("[^a-z0-9]+", "-")
                 .replaceAll("^-|-$", "");
@@ -315,9 +309,16 @@ public final class JsonCandidateProfiler {
         var candidate = rootKey + "-" + pathSlug;
         if (candidate.length() <= 63 && !usedKeys.containsKey(candidate)) return candidate;
         var suffix = sha256(schemaPath).substring(0, 8);
-        var prefixLength = Math.max(1, 63 - suffix.length() - 1);
-        var prefix = candidate.substring(0, Math.min(candidate.length(), prefixLength)).replaceAll("-$", "");
-        return prefix + "-" + suffix;
+        for (var ordinal = 1; ordinal < Integer.MAX_VALUE; ordinal++) {
+            var token = ordinal == 1 ? suffix : suffix + "-" + ordinal;
+            var prefixLength = 63 - token.length() - 1;
+            if (prefixLength < 1) break;
+            var prefix = candidate.substring(0, Math.min(candidate.length(), prefixLength))
+                    .replaceAll("-+$", "");
+            var resolved = prefix + "-" + token;
+            if (!usedKeys.containsKey(resolved)) return resolved;
+        }
+        throw new IllegalStateException("Unable to allocate a unique child SchemaKey");
     }
 
     private static String sha256(String value) {
@@ -340,7 +341,23 @@ public final class JsonCandidateProfiler {
     }
 
     private static String unescape(String segment) {
-        return segment.replace("~1", "/").replace("~0", "~");
+        return JsonStructuralPointer.decodeObjectSegment(segment);
+    }
+
+    private static CandidateProblem liveProblem(CandidateProblem problem) {
+        var code = switch (problem.code()) {
+            case "ALL_NULL_TYPE_UNRESOLVED" -> "JSON_ALL_NULL_TYPE_OBSERVED";
+            case "EMPTY_ARRAY_ITEM_UNRESOLVED" -> "JSON_EMPTY_ARRAY_ITEM_OBSERVED";
+            case "NESTED_ARRAY_UNSUPPORTED" -> "JSON_NESTED_ARRAY_OBSERVED";
+            case "HETEROGENEOUS_ARRAY" -> "JSON_HETEROGENEOUS_ARRAY_OBSERVED";
+            case "STRUCTURAL_TYPE_CONFLICT" -> "JSON_STRUCTURAL_TYPE_CONFLICT_OBSERVED";
+            default -> null;
+        };
+        if (code == null) return problem;
+        return new CandidateProblem(
+                code, CandidateProblemSeverity.WARNING, problem.itemId(),
+                problem.pointer(), problem.args()
+        );
     }
 
     private static String[] sorted(Set<String> values) {
