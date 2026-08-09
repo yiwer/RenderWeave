@@ -319,14 +319,14 @@ Phase 内任务只在真实前置依赖满足时并行。当前没有 atomic cla
 - 完成信号：Prompt v2 完成 60/60，70 attempts / 256,153 tokens / ¥0.868772；exact pass 18→47、critical 51→10，但 policy 仍为 `EXPERIMENTAL`，ledger 已立即 CLOSED
 
 #### T5-8：Grounded Pipeline v2 与受限视觉 Overlay 认证
-- 执行状态：`pre_live_independently_reviewed`（clean A1 + 独立 A2 PASS；synthetic-only authorization=`PROPOSED`；`plans/logs/P5-T5-8.md`）
+- 执行状态：`live_closed_pending_independent_review`（clean A1 + pre-live A2 PASS；60-case J1/A1 完成；decision=`EXPERIMENTAL`；authorization=`CLOSED`；最终 live A2 进行中；`plans/logs/P5-T5-8.md`）
 - AC：AC-016, AC-020, AC-021
 - 依赖：T5-7 的 CLOSED Prompt v2 evidence；ADR-0011；新的 provider/cost/data J1
 - 影响区域：JSON structural profile、deterministic Candidate、COMBINED visual composer、Prompt/Profile v3、live worker、OpenAPI/Web profile surface
 - 局部验证：20 个 JSON_ONLY corpus case 全部 REVIEW_REQUIRED 且 provider/attempt/reservation/cost 为零；COMBINED overlay truth-preservation 与恶意图边界；旧 pipeline 回归
 - 回归升级：grounding/composer/prompt/profile/evaluator/workflow/OpenAPI 任一变化均需 server+web clean A1，并产生新的 certification evaluation identity
 - 证据保证：pre-live A1 + 独立 A2；真实 60-case 执行为精确 J1 + A1，完成后独立 A2 重建 journal、费用与指标；本地 evidence 未签名，非 A3
-- 完成信号：实现与 trust boundary 获独立 A2 PASS；精确 tracked PROPOSED ledger 经 OPEN 生命周期执行 60/60；立即 CLOSED 并记录 global/mode/HOLDOUT 认证决策
+- 完成信号：精确 tracked ledger 已按 `b454b14` PROPOSED → `7ee817c` OPEN → `6733260` CLOSED 执行 60/60；80 attempts / 278,740 tokens / ¥0.908984，JSON_ONLY 与 COMBINED 各 20/20、IMAGE_ONLY 0/20，policy=`EXPERIMENTAL`；待最终独立 A2 重建通过后关闭本节点
 
 ### P6 — Release candidate
 
