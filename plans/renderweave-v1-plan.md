@@ -1,10 +1,10 @@
 # RenderWeave v1 Phase 计划
 
-- 状态：P1–P4 implementation complete；P5 T5-1–T5-11 已完成通路、质量实测与安全硬化；P6 T6-1 容量、性能和稳定性基线已完成 clean A1/独立 A2；所有 Profile 仍为 `EXPERIMENTAL`，全部 live authorization 均为 `CLOSED`
+- 状态：P1–P4 implementation complete；P5 T5-1–T5-11 已完成通路、质量实测与安全硬化；P6 T6-1 已独立复核，T6-2 四步 AI Schema 识别工作台已完成 clean A1/独立 A2、最终成品 J1 待确认；所有 Profile 仍为 `EXPERIMENTAL`，全部 live authorization 均为 `CLOSED`
 - 日期：2026-08-10
 - Spec：[`specs/renderweave-v1.md`](../specs/renderweave-v1.md)
 - 原型：`/prototype/schema-studio?variant=A|B|C`
-- 当前 lifecycle：P0 `accepted`；P1–P4 `automated_verified`；P5 `live_canary_verified` / `live_independently_reviewed` / `decision_recorded`
+- 当前 lifecycle：P0 `accepted`；P1–P4 `automated_verified`；P5 `live_canary_verified` / `live_independently_reviewed` / `decision_recorded`；P6 T6-1 `independently_reviewed`、T6-2 `human_acceptance_pending`
 
 ## 1. 四维执行配置
 
@@ -371,14 +371,14 @@ Phase 内任务只在真实前置依赖满足时并行。当前没有 atomic cla
 - 完成信号：结果记录而非无依据 SLA；关键退化已修复或批准 delta
 
 #### T6-2：browser/accessibility/visual acceptance
-- 执行状态：`in_progress`（ADR-0014；先闭环 inference Candidate 产品旅程，再扩展浏览器矩阵）
-- AC：AC-013, AC-014, AC-017
+- 执行状态：`human_acceptance_pending`（实现已完成 clean A1 + 独立 A2 PASS，0 Blocker / 0 High / 0 Medium；最终成品视觉 J1 待用户确认；`plans/logs/P6-T6-2.md`）
+- AC：AC-013–AC-019, AC-022
 - 依赖：P3, P4
-- 影响区域：web UI
-- 局部验证：Chrome/Edge latest two、axe、keyboard、1024/1280/1440
+- 影响区域：inference Web UI、recent-run summary API/index、offline eval 与 browser evidence harness
+- 局部验证：Chromium、axe、keyboard、1024/1280/1440、1180 breakpoint、real PostgreSQL replay→atomic create、60-case offline eval
 - 回归升级：global tokens/router/components changes run all UI journeys
-- 证据保证：A2 + J1
-- 完成信号：无 serious/critical，核心键盘路径和视觉层级获批
+- 证据保证：A1 + A2 已完成；Chrome/Edge 矩阵与最终视觉接受 J1 pending
+- 完成信号：自动实现与独立复核已达成；用户确认最终成品后从 `human_acceptance_pending` 转 `accepted`
 
 执行切片：
 

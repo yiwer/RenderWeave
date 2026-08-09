@@ -1,7 +1,7 @@
 # NOTES.md
 
 ## 当前目标与进度
-- 2026-08-10 T6-2 已按 ADR-0014 开始收口四步 AI Schema 识别工作台；当前基线 E2E 有过期断言，先补 Candidate 完整编辑、多证据、运行恢复与 offline eval/browser matrix，再进行 clean A1/A2/J1 验收。
+- 2026-08-10 T6-2 四步 AI Schema 识别工作台已完成：Candidate 完整编辑、多证据、运行恢复、1024 drawer、最近任务、offline eval 与浏览器/真实 PG 旅程均已闭环；clean A1 与独立 A2 PASS（0 Blocker / 0 High / 0 Medium），最终成品视觉 J1 待用户确认。
 - 2026-08-08 授权的 P1–P4 Goal 实施范围已完成并通过本地 A1 自动验证。
 - 2026-08-08 的 P5 canary J1 已关闭：双 Profile 各 1 次，共 2 attempts / ¥0.054017；只证明通路，不构成质量认证。
 - 2026-08-09 Flash 60-case live 已完成并经独立 A2：112 attempts / ¥0.122980，2/60 exact pass，policy=`EXPERIMENTAL`，authorization 已 CLOSED。
@@ -14,7 +14,7 @@
 - 2026-08-10 T6-1 容量基线已完成：10k Draft / 100k revision / 10k Static / 10k run、10 条并发生产 Controller 旅程、共享 2 worker lanes；clean server/capacity A1 与独立 A2 PASS，Provider attempts/reservations=0，不宣称生产 SLA。
 - 用户已将候选模型扩大到 Qwen3.7 dated/alias 与 Qwen3.8 Max，其他模型费用硬上限 ¥10；按协议能力优先评测 pinned `qwen3.7-plus-2026-05-26`。
 - 需求访谈已收束，v1 产品语义以 `specs/renderweave-v1.md` 为准。
-- 生命周期状态：P0 `accepted`；P1–P4 `automated_verified`；P5 Flash / Plus / Prompt v2 / Grounded v2 / T5-10 诊断均为 `live_independently_reviewed`，T5-9/T5-11 为 `independently_reviewed`。所有 DashScope Profile 仍为 `EXPERIMENTAL`、默认关闭；全部已用授权账本均为 CLOSED。
+- 生命周期状态：P0 `accepted`；P1–P4 `automated_verified`；P5 Flash / Plus / Prompt v2 / Grounded v2 / T5-10 诊断均为 `live_independently_reviewed`，T5-9/T5-11 与 P6/T6-1 为 `independently_reviewed`；P6/T6-2 为 `human_acceptance_pending`。所有 DashScope Profile 仍为 `EXPERIMENTAL`、默认关闭；全部已用授权账本均为 CLOSED。
 
 ## 下一步
 - [x] Java / React / PostgreSQL / OpenAPI 最小 canary 与 A1 full gate 通过。
@@ -57,10 +57,11 @@
 - [x] 取得 T5-10 exact J1，完成 20-case IMAGE_ONLY 诊断并立即 CLOSED；独立 A2 为 0 Blocker / 0 High / 0 Medium。
 - [x] T5-11：离线细分 `CANDIDATE_DECODE_VALUE_INVALID` 的 enum/constructor/format owner-bound 有限 contract-slot 归因；clean server A1 与独立 A2 PASS，保持零 Provider 调用。
 - [x] T6-1：建立可复跑的 10k/100k/10k/10k 容量夹具、列表/图查询收敛、Replay/Live 统一两 lane 与重启恢复；clean server/capacity A1 和独立 A2 PASS。
+- [x] T6-2：完成四步 AI Schema 识别产品旅程、Candidate 完整编辑、多证据、恢复/重试、1024 drawer、60-case offline eval、mocked/real-PG browser gates 与独立 A2；最终成品 J1 单独 pending。
 
 ## 重要发现或局部阻塞
 - 本机全局 Node 为 20.20.2；正式 gate 已使用 checksum 固定的仓库局部 Node 24.19.0，不依赖或修改系统 Node。
-- 已建立真实 Git 节点边界；当前工作分支为 `phase/p5-image-only-attribution-v1`。T5-6/T5-7/T5-8/T5-10 live 均有独立只读 A2，但仍无外部 CI/branch protection 的 A3。
+- 已建立真实 Git 节点边界；当前工作分支为 `phase/p6-inference-product-acceptance-v1`。T5-6/T5-7/T5-8/T5-10 live 与 P6/T6-1/T6-2 均有独立只读 A2，但仍无外部 CI/branch protection 的 A3。
 - T4-4 首次 server gate 由于外层命令时限过短中断，其不完整 evidence 不作为结论；随后的完整 server/web/e2e 与 real inference journey 均为绿色。
 - UI 设计数据库把本项目误路由到 hero-centric/mobile/dark SaaS；已在 page override 中拒绝，采用已确认的 dense warm editorial workbench。
 - Docker registry 代理不可用；Compose config 与等价 API/PG runtime canary 已绿，`docker compose up --build` 仍 pending。
@@ -89,4 +90,5 @@
 - `plans/logs/P5-T5-10.md`：20-case IMAGE_ONLY live 诊断已完成并 CLOSED；60 attempts / 197,321 tokens / ¥0.642106，独立 A2 PASS，0 Blocker / 0 High / 0 Medium。
 - `plans/logs/P5-T5-11.md`：值级失败已完成 owner-bound 有限槽位细分、clean server A1 与独立 A2；0 Blocker / 0 High / 0 Medium，Provider attempts=0。
 - `plans/logs/P6-T6-1.md`：10k/100k/10k/10k 容量基线、摘要投影、targeted graph 与统一两 lane 已完成 clean A1/独立 A2；Provider attempts/reservations=0。
-- 当前恢复点：`phase/p6-capacity-baseline-v1` 的 T6-1 `independently_reviewed` 节点；全部 live ledger 永久 CLOSED，下一计划节点为 P6/T6-2 browser/accessibility/visual acceptance。
+- `plans/logs/P6-T6-2.md`：四步 AI Schema 识别工作台、完整 Candidate 审核、offline eval 与 browser/real-PG acceptance 已完成 clean A1/独立 A2；最终视觉 J1 pending，Provider attempts/reservations=0。
+- 当前恢复点：`phase/p6-inference-product-acceptance-v1` 的 T6-2 `human_acceptance_pending` 节点；全部 live ledger 永久 CLOSED，下一自动计划节点为 P6/T6-3 Compose/ops/recovery。

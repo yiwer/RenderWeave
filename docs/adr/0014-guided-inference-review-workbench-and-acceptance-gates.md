@@ -61,3 +61,16 @@
 - 代价：审核 reducer、Inspector、启动页和 Playwright fixture 增加复杂度；必须通过 focused component/reducer tests 控制。
 - 不变：AI 不 publish/update/delete；Candidate ID 不进入 Draft；默认 live 关闭；原始 payload、Prompt 和 Provider response 不进入常规证据。
 - 验证：Web unit + contract generation + mocked Playwright matrix + real PostgreSQL replay journey + offline 60-case eval + independent A2 review。
+
+## 实施结果（2026-08-10）
+
+- 实现锚点为 `4243dd40ce95a9ec5bdb957570a8ef447873d9e4`；四步入口/审核、完整
+  Candidate 编辑、多图片/JSON evidence、运行恢复、recent-run resume、1024 drawer 与原子创建均已落地。
+- clean A1：`.sdlc/evidence/20260810-050750-inference-e2e`、
+  `.sdlc/evidence/20260810-051119-e2e`、`.sdlc/evidence/20260810-051119-eval`。
+  Server 126 passed / 3 gated skip；Web 52 tests；browser 13 passed + real PostgreSQL journey 1 passed；
+  offline eval 37/37、60 cases=20/20/20、Provider attempts/reservations=0。
+- 独立只读 A2 对三份 493 项 input manifest、21 项 browser artifact 与 4 项 real-journey artifact
+  逐项重算一致，结论为 PASS、0 Blocker / 0 High / 0 Medium。
+- 自动证据不替代人工视觉接受。用户此前接受的是原型方向；最终实现仍为
+  `human_acceptance_pending`，也没有因离线 eval 产生新的 live Profile certification。
