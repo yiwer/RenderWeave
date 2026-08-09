@@ -71,13 +71,16 @@ Grounded Pipeline v2 的 IMAGE_ONLY 20 个 case 共发生 60 次 Provider attemp
 - `ValueInstantiationException` 只按已知 Candidate record 与其固定非空成员生成
   `CANDIDATE_DECODE_CONSTRUCTOR_INVALID_*`；未知情形只能进入固定 `OTHER`
   或 record 级 fallback，不能拼接异常内容。
-- contract slot 只能来自代码内封闭映射。Jackson 数组索引、动态 map key、字段值、
-  JSON path、异常消息与类型名都不会进入 code。
+- contract slot 只能来自代码内封闭映射，且 path segment 必须同时匹配对应 Candidate record
+  owner。Jackson 数组索引、动态 map key、字段值、JSON path、异常消息与类型名都不会进入 code；
+  与固定成员同名的 constraint key 也只能落入固定 shape fallback。
 - Candidate codec 同时关闭 scalar coercion、float-to-int 与 enum ordinal 读取；否则违规值
-  可能被静默接受，无法形成可信归因。
+  可能被静默接受，无法形成可信归因；primitive 的 `null`/缺失拒绝由显式配置与回归锁定。
 - 外部错误仍为 `CANDIDATE_JSON_INVALID`；journal/report 的稳定 Map 信封与版本不变。
   历史 `CANDIDATE_DECODE_VALUE_INVALID` 继续只读可聚合，但新解码不会再产生该合并类别。
 
 本补充不修改 Prompt、Profile、corpus、repair routing 或质量阈值，不产生新的 live 权限。
 验证仅使用合成离线 fixture 与真实 PostgreSQL，覆盖 `STRUCTURE → REPAIR → REPAIR` 三阶段、
-旧新 taxonomy 共存、动态值泄露负例及 coercion 旁路。
+旧新 taxonomy 共存、动态值泄露、primitive null/缺失、map-key collision 及 coercion 旁路。
+归因依赖当前 Jackson 3.1.2 的异常 subtype、path owner 与固定 message prefix；依赖升级时必须
+重跑完整 adversarial codec suite。
