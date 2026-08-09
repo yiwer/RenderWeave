@@ -5,7 +5,7 @@ target/
 .kotlin
 
 ### RenderWeave generated/local ###
-web/node_modules/
+node_modules/
 web/dist/
 web/playwright-report/
 web/test-results/
@@ -15,6 +15,7 @@ web/coverage/
 .sdlc/toolchains/
 .sdlc/runtime-canary/
 .sdlc/draft-e2e/
+.sdlc/inference-e2e/
 .agent-sdlc-backups/
 renderweave-blob-store/
 var/

@@ -51,7 +51,7 @@ export function CandidateBundleNav({
           })}
         ><Plus aria-hidden="true" size={14} />新增</button>
       </header>
-      <div className="bundle-schema-list">
+      <div className="bundle-schema-list" role="region" aria-label="候选数据结构列表" tabIndex={0}>
         {state.draft.schemas.map((schema, index) => {
           const problems = problemsForSchema(schema, state.snapshot.problems);
           const isRoot = schema.candidateSchemaId === state.draft.rootCandidateSchemaId;

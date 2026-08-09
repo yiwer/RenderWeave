@@ -5,12 +5,19 @@ import { useReducer } from 'react';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { CandidateInspector } from './CandidateInspector';
+import { CandidateBundleNav } from './CandidateSurfaces';
 import { candidateReviewReducer, createCandidateReviewState, findSelected } from './candidate-session';
 import { snapshot } from './candidate-session.test';
 
 afterEach(cleanup);
 
 describe('Candidate review components', () => {
+  it('makes the scrollable Candidate Schema list keyboard reachable', () => {
+    render(<BundleNavHarness />);
+
+    expect(screen.getByRole('region', { name: '候选数据结构列表' }).tabIndex).toBe(0);
+  });
+
   it('resolves an unresolved AI field by editing its type and keeps evidence visible', () => {
     const { container } = render(<InspectorHarness />);
     fireEvent.change(screen.getByLabelText('Candidate 字段类型'), { target: { value: 'ARRAY' } });
@@ -59,4 +66,9 @@ function InspectorHarness() {
   const selectedField = selectedSchema.fields[0]!;
   const selected = findSelected({ ...state, selectedFieldId: selectedField.candidateFieldId });
   return <CandidateInspector state={state} schema={selected.schema!} field={selected.field} dispatch={dispatch} />;
+}
+
+function BundleNavHarness() {
+  const [state, dispatch] = useReducer(candidateReviewReducer, snapshot(), createCandidateReviewState);
+  return <CandidateBundleNav state={state} dispatch={dispatch} />;
 }
