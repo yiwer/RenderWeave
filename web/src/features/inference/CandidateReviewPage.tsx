@@ -174,7 +174,7 @@ function CandidateReviewWorkspace({
   const [state, dispatch] = useReducer(candidateReviewReducer, initial, createCandidateReviewState);
   const queryClient = useQueryClient();
   const [applyResult, setApplyResult] = useState<CandidateApplyResponse | null>(null);
-  const compactInspector = useMediaQuery('(max-width: 1260px)');
+  const compactInspector = useMediaQuery('(max-width: 1180px)');
   const [inspectorOpen, setInspectorOpen] = useState(false);
   const selected = findSelected(state);
   const blockerCount = state.snapshot.problems.filter((problem) => problem.severity === 'BLOCKER').length;

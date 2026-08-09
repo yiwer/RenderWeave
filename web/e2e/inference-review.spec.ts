@@ -175,6 +175,17 @@ test('completes the four-step Candidate workflow with keyboard authoring and dur
   await expectMinimumTarget(mapButton, 44);
   await expectMinimumTarget(moveCustomerUp, 44);
 
+  for (const width of [1260, 1200, 1181]) {
+    await page.setViewportSize({ width, height: 768 });
+    await expect(page.getByLabel('Candidate 属性与证据')).toBeVisible();
+    await expect(page.getByRole('button', { name: '属性与证据' })).toHaveCount(0);
+    await expectNoHorizontalOverflow(page);
+  }
+  await page.setViewportSize({ width: 1180, height: 768 });
+  await expect(page.getByRole('button', { name: '属性与证据' })).toBeVisible();
+  await expect(page.getByLabel('Candidate 属性与证据')).toHaveCount(0);
+  await expectNoHorizontalOverflow(page);
+
   for (const viewport of [
     { width: 1440, height: 900 },
     { width: 1024, height: 768 },
