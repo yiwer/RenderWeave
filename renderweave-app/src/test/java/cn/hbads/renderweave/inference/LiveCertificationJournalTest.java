@@ -240,6 +240,35 @@ class LiveCertificationJournalTest {
     }
 
     @Test
+    void imageOnlyDiagnosticJournalRejectsAssignmentsOutsideItsAuthorizedSlice() {
+        var authorization = openImageDiagnosticAuthorization("image-only-scope");
+        var corpus = new LiveEvaluationCorpus();
+        var journal = new LiveCertificationJournal(
+                temporaryDirectory, authorization, new ObjectMapper(), NOW
+        );
+
+        var assignments = authorization.assignments(corpus);
+        assertThat(assignments).hasSize(20)
+                .allMatch(item -> item.evaluationCase().mode()
+                        == cn.hbads.renderweave.inference.input.InferenceMode.IMAGE_ONLY);
+        assertThat(new LiveCertificationPolicy().decide(
+                LiveCertificationAuthorization.PLUS_GROUNDED_PROFILE,
+                corpus,
+                assignments.stream().map(item -> exactResult(item.evaluationCase())).toList()
+        ).status()).isEqualTo(LiveCertificationStatus.INCOMPLETE);
+        try (var ignored = journal.acquireBatchLease(NOW)) {
+            assertThatThrownBy(() -> journal.beginAssignment(
+                    LiveCertificationAuthorization.PLUS_GROUNDED_PROFILE
+                            + "|live-json-01-scalars",
+                    LiveCertificationAuthorization.PLUS_GROUNDED_PROFILE,
+                    "live-json-01-scalars",
+                    NOW
+            )).isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("Certification assignment identity is invalid");
+        }
+    }
+
+    @Test
     void preparedReservationConsumesWorstCaseBudgetWhenDelegateFails() {
         var authorization = openAuthorization("delegate-failure");
         var delegate = new FakeBudgetStore();
@@ -467,6 +496,25 @@ class LiveCertificationJournalTest {
         return authorization(
                 id, "CLOSED", "user", "2026-08-08T07:00:00Z",
                 "2026-08-08T09:00:00Z", "60 synthetic flash cases"
+        );
+    }
+
+    private static LiveCertificationAuthorization openImageDiagnosticAuthorization(String id) {
+        return new LiveCertificationAuthorization(
+                LiveCertificationAuthorization.IMAGE_DIAGNOSTIC_VERSION,
+                "p5-image-only-diagnostic-" + id,
+                "OPEN",
+                LiveCertificationAuthorization.INPUT_CLASSIFICATION,
+                LiveEvaluationCorpus.VERSION,
+                EVALUATION_IDENTITY,
+                List.of(LiveCertificationAuthorization.PLUS_GROUNDED_PROFILE),
+                60,
+                2_000_000,
+                5,
+                "user",
+                "2026-08-08T07:00:00Z",
+                "2026-08-08T09:00:00Z",
+                "20 repository synthetic IMAGE_ONLY diagnostic cases"
         );
     }
 

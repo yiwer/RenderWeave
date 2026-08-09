@@ -338,6 +338,16 @@ Phase 内任务只在真实前置依赖满足时并行。当前没有 atomic cla
 - 证据保证：离线 A1 + 独立只读 A2；本节点无 Provider side effect，不宣称 A3
 - 完成信号：稳定 code/count 可在 attempt、PostgreSQL 与 report 中无损重放，历史行默认为空；`ec53b3d` 的 clean server A1 与独立 A2 已通过，所有 live gate 仍关闭；该结论不等于新的 Profile certification
 
+#### T5-10：同一 Grounded Profile 的 IMAGE_ONLY 诊断评测方案
+- 执行状态：`implementation_complete`（诊断授权合同与离线测试已绿；identity freeze / clean pre-live A1 / 独立 A2 待完成；`plans/logs/P5-T5-10.md`）
+- AC：AC-016, AC-020, AC-021
+- 依赖：T5-8 CLOSED Grounded evidence；T5-9 payload-free taxonomy；ADR-0013
+- 影响区域：live authorization assignment slice、journal assignment guard、certification/diagnostic report envelope、PROPOSED ledger
+- 局部验证：单一 Profile、20 IMAGE_ONLY、≤60 attempts、非 certification、跨 slice assignment 拒绝、paid test default-off
+- 回归升级：authorization/harness/journal/report 变化跑 server；最终 tracked tree 冻结 evaluation identity 后做 pre-live A1/A2
+- 证据保证：PROPOSED 阶段离线 A1 + 独立 A2；真实调用另需精确 J1，且完成/停止后立即 CLOSED
+- 完成信号：精确 PROPOSED ledger、negative probe 与 A1/A2 全部通过；获 J1 前 provider attempts 保持 0
+
 ### P6 — Release candidate
 
 #### T6-1：容量、性能和稳定性基线

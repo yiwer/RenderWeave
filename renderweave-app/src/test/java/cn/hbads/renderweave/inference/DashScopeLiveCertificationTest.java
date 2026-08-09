@@ -5,6 +5,7 @@ import cn.hbads.renderweave.inference.candidate.CandidateProblemJsonCodec;
 import cn.hbads.renderweave.inference.eval.LiveCandidateEvaluator;
 import cn.hbads.renderweave.inference.eval.LiveCertificationDecision;
 import cn.hbads.renderweave.inference.eval.LiveCertificationPolicy;
+import cn.hbads.renderweave.inference.eval.LiveCertificationStatus;
 import cn.hbads.renderweave.inference.eval.LiveEvaluationCorpus;
 import cn.hbads.renderweave.inference.eval.LiveEvaluationReport;
 import cn.hbads.renderweave.inference.eval.LiveEvaluationReporter;
@@ -51,8 +52,9 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Explicitly opt-in paid certification batch. Normal builds skip it even when a credential exists.
- * A repository authorization must also be OPEN, current and synthetic-only before the first test action.
+ * Explicitly opt-in paid certification or diagnostic batch. Normal builds skip it even when a
+ * credential exists. A repository authorization must also be OPEN, current and synthetic-only
+ * before the first test action.
  */
 @Testcontainers
 @SpringBootTest(properties = {
@@ -64,7 +66,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Import(DashScopeLiveCertificationTest.CertificationConfiguration.class)
 @EnabledIfEnvironmentVariable(named = "RENDERWEAVE_RUN_LIVE_CERTIFICATION", matches = "true")
 class DashScopeLiveCertificationTest {
-    private static final String REPORT_VERSION = "renderweave-live-certification-report/1.2";
+    private static final String REPORT_VERSION = "renderweave-live-certification-report/1.3";
 
     @Container
     @ServiceConnection
@@ -279,7 +281,12 @@ class DashScopeLiveCertificationTest {
                     profileId,
                     profiles.require(profileId).profile().model(),
                     report,
-                    policy.decide(profileId, corpus, results),
+                    authorization.certificationEligible()
+                            ? policy.decide(profileId, corpus, results)
+                            : new LiveCertificationDecision(
+                                    LiveCertificationStatus.INCOMPLETE,
+                                    List.of("DIAGNOSTIC_ONLY")
+                            ),
                     InferenceAttemptProblemTaxonomy.merge(
                             caseResults.stream()
                                     .flatMap(result -> result.attempts().stream())
@@ -297,6 +304,9 @@ class DashScopeLiveCertificationTest {
                 authorization.inputClassification(),
                 authorization.corpusVersion(),
                 authorization.evaluationIdentity(),
+                authorization.evaluationPurpose(),
+                authorization.certificationEligible(),
+                authorization.assignmentCount(),
                 corpus.cases().size(),
                 authorization.maximumCasesPerBatch(),
                 processedInBatch,
@@ -373,6 +383,9 @@ class DashScopeLiveCertificationTest {
             String inputClassification,
             String evaluationCorpusVersion,
             String evaluationIdentity,
+            String evaluationPurpose,
+            boolean certificationEligible,
+            int authorizedAssignmentCount,
             int evaluationCorpusCaseCount,
             int maximumCasesPerBatch,
             int processedCasesInBatch,

@@ -8,6 +8,7 @@
 - 2026-08-09 Prompt v2 60-case live 已完成并经独立 A2：70 attempts / 256,153 tokens / ¥0.868772，47/60 exact pass，policy=`EXPERIMENTAL`，authorization 已 CLOSED。
 - 2026-08-09 Grounded Pipeline v2 60-case live 已完成并经独立 A2：80 attempts / 278,740 tokens / ¥0.908984；JSON_ONLY 20/20 零调用、COMBINED 20/20 单次调用，IMAGE_ONLY 0/20，policy=`EXPERIMENTAL`，authorization 已 CLOSED。
 - 2026-08-09 T5-9 payload-free attempt taxonomy 已完成 clean server A1 与独立 A2（0 Blocker / 0 High / 0 Medium）；未调用 Provider，不构成新的 Profile 认证。
+- 2026-08-09 T5-10 已建立复用同一 Grounded Profile 的 20-case IMAGE_ONLY 诊断方案；ledger 仍为 `PROPOSED`，identity/pre-live A1/A2 待完成，0 Provider 调用。
 - 用户已将候选模型扩大到 Qwen3.7 dated/alias 与 Qwen3.8 Max，其他模型费用硬上限 ¥10；按协议能力优先评测 pinned `qwen3.7-plus-2026-05-26`。
 - 需求访谈已收束，v1 产品语义以 `specs/renderweave-v1.md` 为准。
 - 生命周期状态：P0 `accepted`；P1–P4 `automated_verified`；P5 Flash / Plus / Prompt v2 / Grounded v2 均为 `live_independently_reviewed`，T5-9 为 `independently_reviewed`。所有 DashScope Profile 仍为 `EXPERIMENTAL`、默认关闭；所有已用授权账本均为 CLOSED。
@@ -49,6 +50,7 @@
 - [x] 在用户 12h / 每模型 1M-token J1 内，以独立 OPEN 提交执行 Grounded 60-case；60/60 完成后立即 CLOSED，CLOSED 负探针零写入。
 - [x] 完成 Grounded live journal、预算、指标、policy 与泄露面的最终独立 A2：PASS，0 Blocker / 0 High / 0 Medium。
 - [x] 完成 T5-9 payload-free IMAGE_ONLY attempt taxonomy 的 clean server A1 与独立 A2；所有 live gate 保持关闭。
+- [ ] 冻结 T5-10 IMAGE_ONLY 诊断 ledger identity，完成 clean pre-live A1/A2 与 PROPOSED 负探针；精确 J1 前保持零调用。
 
 ## 重要发现或局部阻塞
 - 本机全局 Node 为 20.20.2；正式 gate 已使用 checksum 固定的仓库局部 Node 24.19.0，不依赖或修改系统 Node。

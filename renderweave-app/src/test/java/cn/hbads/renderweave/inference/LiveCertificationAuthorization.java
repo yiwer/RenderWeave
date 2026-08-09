@@ -2,6 +2,7 @@ package cn.hbads.renderweave.inference;
 
 import cn.hbads.renderweave.inference.eval.LiveEvaluationCase;
 import cn.hbads.renderweave.inference.eval.LiveEvaluationCorpus;
+import cn.hbads.renderweave.inference.input.InferenceMode;
 import cn.hbads.renderweave.inference.profile.InferenceProfileRegistry;
 import tools.jackson.databind.ObjectMapper;
 
@@ -33,6 +34,8 @@ record LiveCertificationAuthorization(
         String approvalScope
 ) {
     static final String VERSION = "renderweave-live-certification-authorization/1.1";
+    static final String IMAGE_DIAGNOSTIC_VERSION =
+            "renderweave-live-image-diagnostic-authorization/1.0";
     static final String INPUT_CLASSIFICATION = "REPOSITORY_SYNTHETIC_ONLY";
     static final String PENDING_EVALUATION_IDENTITY = "PENDING_PRELIVE_COMMIT";
     static final String FLASH_PROFILE = "dashscope-qwen37-flash-v1";
@@ -47,7 +50,7 @@ record LiveCertificationAuthorization(
 
     LiveCertificationAuthorization {
         profileIds = List.copyOf(Objects.requireNonNull(profileIds, "profileIds"));
-        if (!VERSION.equals(authorizationVersion)
+        if (!List.of(VERSION, IMAGE_DIAGNOSTIC_VERSION).contains(authorizationVersion)
                 || authorizationId == null
                 || !authorizationId.matches("[a-z0-9][a-z0-9-]{0,95}")) {
             throw new IllegalArgumentException("Certification authorization identity is invalid");
@@ -74,9 +77,15 @@ record LiveCertificationAuthorization(
                         ).contains(id))) {
             throw new IllegalArgumentException("Certification authorization profiles are invalid");
         }
-        if (maximumProviderAttempts < 1 || maximumProviderAttempts > designedMaximumAttempts(profileIds)
+        if (IMAGE_DIAGNOSTIC_VERSION.equals(authorizationVersion)
+                && !profileIds.equals(List.of(PLUS_GROUNDED_PROFILE))) {
+            throw new IllegalArgumentException("Certification authorization profiles are invalid");
+        }
+        if (maximumProviderAttempts < 1
+                || maximumProviderAttempts > designedMaximumAttempts(authorizationVersion, profileIds)
                 || maximumProviderAttempts > ABSOLUTE_MAXIMUM_ATTEMPTS
-                || maximumCostMicrosCny < 1 || maximumCostMicrosCny > designedMaximumCost(profileIds)
+                || maximumCostMicrosCny < 1
+                || maximumCostMicrosCny > designedMaximumCost(authorizationVersion, profileIds)
                 || maximumCostMicrosCny > ABSOLUTE_MAXIMUM_COST_MICROS_CNY
                 || maximumCasesPerBatch < 1 || maximumCasesPerBatch > 5) {
             throw new IllegalArgumentException("Certification authorization budget is invalid");
@@ -125,29 +134,49 @@ record LiveCertificationAuthorization(
     List<Assignment> assignments(LiveEvaluationCorpus corpus) {
         var result = new ArrayList<Assignment>();
         for (var profileId : profileIds) {
-            for (var item : corpus.cases()) result.add(new Assignment(profileId, item));
+            for (var item : corpus.cases()) {
+                if (certificationEligible() || item.mode() == InferenceMode.IMAGE_ONLY) {
+                    result.add(new Assignment(profileId, item));
+                }
+            }
         }
         return List.copyOf(result);
     }
 
     int assignmentCount() {
-        return Math.multiplyExact(profileIds.size(), 60);
+        return Math.multiplyExact(profileIds.size(), certificationEligible() ? 60 : 20);
     }
 
-    private static int designedMaximumAttempts(List<String> profileIds) {
+    String evaluationPurpose() {
+        return certificationEligible() ? "CERTIFICATION" : "IMAGE_ONLY_DIAGNOSTIC";
+    }
+
+    boolean certificationEligible() {
+        return VERSION.equals(authorizationVersion);
+    }
+
+    private static int designedMaximumAttempts(
+            String authorizationVersion,
+            List<String> profileIds
+    ) {
         var profiles = new InferenceProfileRegistry();
         return profileIds.stream().map(profiles::require)
                 .mapToInt(item -> Math.multiplyExact(
-                        PLUS_GROUNDED_PROFILE.equals(item.profile().profileId()) ? 40 : 60,
+                        IMAGE_DIAGNOSTIC_VERSION.equals(authorizationVersion)
+                                ? 20
+                                : PLUS_GROUNDED_PROFILE.equals(item.profile().profileId()) ? 40 : 60,
                         item.profile().maximumTotalCalls()
                 )).sum();
     }
 
-    private static long designedMaximumCost(List<String> profileIds) {
+    private static long designedMaximumCost(
+            String authorizationVersion,
+            List<String> profileIds
+    ) {
         var profiles = new InferenceProfileRegistry();
         return profileIds.stream().map(profiles::require).mapToLong(item -> {
             var designed = Math.multiplyExact(
-                    60L,
+                    IMAGE_DIAGNOSTIC_VERSION.equals(authorizationVersion) ? 20L : 60L,
                     Math.multiplyExact(
                             item.profile().maximumTotalCalls(),
                             item.profile().maximumEstimatedCostMicrosCny()

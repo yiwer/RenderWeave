@@ -1,7 +1,9 @@
 package cn.hbads.renderweave.inference;
 
 import cn.hbads.renderweave.inference.eval.LiveEvaluationCorpus;
+import cn.hbads.renderweave.inference.input.InferenceMode;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.ObjectMapper;
 
 import java.time.Instant;
 import java.util.List;
@@ -113,6 +115,54 @@ class LiveCertificationAuthorizationTest {
     }
 
     @Test
+    void imageOnlyDiagnosticPlanIsNotCertificationAndSelectsExactlyTwentyGroundedCases() {
+        var authorization = imageDiagnosticAuthorization(
+                LiveCertificationAuthorization.PLUS_GROUNDED_PROFILE, 60, 2_000_000
+        );
+        var assignments = authorization.assignments(new LiveEvaluationCorpus());
+
+        assertThat(authorization.evaluationPurpose()).isEqualTo("IMAGE_ONLY_DIAGNOSTIC");
+        assertThat(authorization.certificationEligible()).isFalse();
+        assertThat(authorization.assignmentCount()).isEqualTo(20);
+        assertThat(assignments).hasSize(20)
+                .allMatch(item -> item.profileId().equals(
+                        LiveCertificationAuthorization.PLUS_GROUNDED_PROFILE
+                ))
+                .allMatch(item -> item.evaluationCase().mode() == InferenceMode.IMAGE_ONLY);
+
+        assertThatThrownBy(() -> imageDiagnosticAuthorization(
+                LiveCertificationAuthorization.PLUS_GROUNDED_PROFILE, 61, 2_000_000
+        )).isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Certification authorization budget is invalid");
+        assertThatThrownBy(() -> imageDiagnosticAuthorization(
+                LiveCertificationAuthorization.PLUS_PROFILE, 60, 2_000_000
+        )).isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Certification authorization profiles are invalid");
+    }
+
+    @Test
+    void repositoryImageDiagnosticLedgerCannotDriftBeyondTheHardDiagnosticEnvelope() {
+        var ledger = LiveCertificationAuthorizationLocator.resolve(
+                DashScopeLiveCertificationTest.repositoryRoot(),
+                "p5-image-only-diagnostic-20260809"
+        );
+        var authorization = LiveCertificationAuthorization.load(ledger, new ObjectMapper());
+
+        assertThat(authorization.authorizationVersion())
+                .isEqualTo(LiveCertificationAuthorization.IMAGE_DIAGNOSTIC_VERSION);
+        assertThat(authorization.authorizationId()).isEqualTo("p5-image-only-diagnostic-20260809");
+        assertThat(authorization.inputClassification())
+                .isEqualTo(LiveCertificationAuthorization.INPUT_CLASSIFICATION);
+        assertThat(authorization.profileIds())
+                .containsExactly(LiveCertificationAuthorization.PLUS_GROUNDED_PROFILE);
+        assertThat(authorization.maximumProviderAttempts()).isEqualTo(60);
+        assertThat(authorization.maximumCostMicrosCny()).isEqualTo(2_000_000);
+        assertThat(authorization.maximumCasesPerBatch()).isEqualTo(5);
+        assertThat(authorization.assignmentCount()).isEqualTo(20);
+        assertThat(authorization.certificationEligible()).isFalse();
+    }
+
+    @Test
     void authorizationCannotExpandBeyondDesignedOrAbsoluteCaps() {
         assertThatThrownBy(() -> authorization(
                 "PROPOSED", List.of(LiveCertificationAuthorization.FLASH_PROFILE),
@@ -192,6 +242,26 @@ class LiveCertificationAuthorizationTest {
                 approvedAt,
                 expiresAt,
                 approvalScope
+        );
+    }
+
+    private static LiveCertificationAuthorization imageDiagnosticAuthorization(
+            String profileId,
+            int maximumAttempts,
+            long maximumCost
+    ) {
+        return new LiveCertificationAuthorization(
+                LiveCertificationAuthorization.IMAGE_DIAGNOSTIC_VERSION,
+                "p5-image-only-diagnostic-test",
+                "PROPOSED",
+                LiveCertificationAuthorization.INPUT_CLASSIFICATION,
+                LiveEvaluationCorpus.VERSION,
+                EVALUATION_IDENTITY,
+                List.of(profileId),
+                maximumAttempts,
+                maximumCost,
+                5,
+                null, null, null, null
         );
     }
 }
