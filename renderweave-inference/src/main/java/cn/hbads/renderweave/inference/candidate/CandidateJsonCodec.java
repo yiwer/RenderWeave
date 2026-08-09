@@ -147,33 +147,52 @@ public final class CandidateJsonCodec {
 
     private static String formatInvalidSlot(MismatchedInputException failure) {
         for (var index = failure.getPath().size() - 1; index >= 0; index--) {
-            var slot = formatSlot(failure.getPath().get(index).getPropertyName());
+            var reference = failure.getPath().get(index);
+            var slot = formatSlot(reference.from(), reference.getPropertyName());
             if (slot != null) return slot;
         }
         return null;
     }
 
-    private static String formatSlot(String propertyName) {
-        if ("contractVersion".equals(propertyName)) return "CONTRACT_VERSION";
-        if ("rootCandidateSchemaId".equals(propertyName)) return "ROOT_SCHEMA_ID";
-        if ("candidateSchemaId".equals(propertyName)) return "SCHEMA_ID";
-        if ("candidateFieldId".equals(propertyName)) return "FIELD_ID";
-        if ("proposedSchemaKey".equals(propertyName)) return "SCHEMA_KEY";
-        if ("proposedFieldKey".equals(propertyName)) return "FIELD_KEY";
-        if ("displayName".equals(propertyName)) return "DISPLAY_NAME";
-        if ("required".equals(propertyName)) return "FIELD_REQUIRED";
-        if ("confidenceBps".equals(propertyName)) return "ASSESSMENT_CONFIDENCE";
-        if ("inferred".equals(propertyName)) return "ASSESSMENT_INFERRED";
-        if ("sampleIndex".equals(propertyName)) return "EVIDENCE_SAMPLE_INDEX";
-        if ("artifactId".equals(propertyName)) return "EVIDENCE_ARTIFACT_ID";
-        if ("jsonPointer".equals(propertyName)) return "EVIDENCE_JSON_POINTER";
-        if ("left".equals(propertyName) || "top".equals(propertyName)
-                || "right".equals(propertyName) || "bottom".equals(propertyName)) {
+    private static String formatSlot(Object owner, String propertyName) {
+        if (ownerIs(owner, CandidateBundle.class)) {
+            if ("contractVersion".equals(propertyName)) return "CONTRACT_VERSION";
+            if ("rootCandidateSchemaId".equals(propertyName)) return "ROOT_SCHEMA_ID";
+        }
+        if (ownerIs(owner, CandidateSchema.class)) {
+            if ("candidateSchemaId".equals(propertyName)) return "SCHEMA_ID";
+            if ("proposedSchemaKey".equals(propertyName)) return "SCHEMA_KEY";
+            if ("displayName".equals(propertyName)) return "DISPLAY_NAME";
+        }
+        if (ownerIs(owner, CandidateField.class)) {
+            if ("candidateFieldId".equals(propertyName)) return "FIELD_ID";
+            if ("proposedFieldKey".equals(propertyName)) return "FIELD_KEY";
+            if ("displayName".equals(propertyName)) return "DISPLAY_NAME";
+            if ("required".equals(propertyName)) return "FIELD_REQUIRED";
+        }
+        if (ownerIs(owner, CandidateAssessment.class)) {
+            if ("confidenceBps".equals(propertyName)) return "ASSESSMENT_CONFIDENCE";
+            if ("inferred".equals(propertyName)) return "ASSESSMENT_INFERRED";
+        }
+        if (ownerIs(owner, CandidateEvidence.class)) {
+            if ("sampleIndex".equals(propertyName)) return "EVIDENCE_SAMPLE_INDEX";
+            if ("artifactId".equals(propertyName)) return "EVIDENCE_ARTIFACT_ID";
+            if ("jsonPointer".equals(propertyName)) return "EVIDENCE_JSON_POINTER";
+        }
+        if (ownerIs(owner, CandidateBoundingBox.class)
+                && ("left".equals(propertyName) || "top".equals(propertyName)
+                || "right".equals(propertyName) || "bottom".equals(propertyName))) {
             return "BOUNDING_BOX_COORDINATE";
         }
-        if ("schemaKey".equals(propertyName)) return "REFERENCE_SCHEMA_KEY";
-        if ("versionTag".equals(propertyName)) return "REFERENCE_VERSION_TAG";
+        if (ownerIs(owner, CandidateReference.class)) {
+            if ("schemaKey".equals(propertyName)) return "REFERENCE_SCHEMA_KEY";
+            if ("versionTag".equals(propertyName)) return "REFERENCE_VERSION_TAG";
+        }
         return null;
+    }
+
+    private static boolean ownerIs(Object owner, Class<?> expectedType) {
+        return owner == expectedType || expectedType.isInstance(owner);
     }
 
     private static String constructorInvalidDiagnostic(ValueInstantiationException failure) {

@@ -376,6 +376,29 @@ class CandidateContractTest {
     }
 
     @Test
+    void dynamicConstraintKeysCannotMasqueradeAsCandidateContractSlots() {
+        var root = UUID.fromString("00000000-0000-0000-0000-000000000001");
+        var fieldId = UUID.fromString("00000000-0000-0000-0000-000000000011");
+        var constrained = new CandidateValue(
+                CandidateValueKind.TEXT, null, null, List.of(), Map.of("required", "80")
+        );
+        var valid = codec.write(new CandidateBundle(
+                CandidateBundle.CONTRACT_VERSION, root, List.of(
+                        schema(root, "root", "Root", List.of(
+                                field(fieldId, "title", constrained, "/title")
+                        ), "")
+                )
+        ));
+        var invalid = valid.replace(
+                "\"constraints\":{\"required\":\"80\"}",
+                "\"constraints\":{\"required\":{}}"
+        );
+        assertFalse(invalid.equals(valid));
+
+        assertDecodeDiagnostic(invalid, "CANDIDATE_DECODE_SHAPE_INVALID");
+    }
+
+    @Test
     void unresolvedAndLowConfidenceItemsRemainReviewBlockers() {
         var rootId = UUID.randomUUID();
         var fieldId = UUID.randomUUID();
