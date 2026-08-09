@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-    [ValidateSet('fast', 'server', 'web', 'e2e', 'draft-e2e', 'inference-e2e', 'compose', 'runtime', 'capacity', 'full')]
+    [ValidateSet('fast', 'server', 'web', 'eval', 'e2e', 'draft-e2e', 'inference-e2e', 'compose', 'runtime', 'capacity', 'full')]
     [string]$Gate = 'fast'
 )
 
@@ -101,13 +101,14 @@ try {
         'fast' { @('repository-diff', 'server-package', 'web-typecheck') }
         'server' { @('server-verify') }
         'web' { @('web-node24') }
+        'eval' { @('offline-eval') }
         'e2e' { @('prototype-e2e') }
         'draft-e2e' { @('server-verify', 'web-node24', 'draft-browser-e2e') }
         'inference-e2e' { @('server-verify', 'web-node24', 'inference-browser-e2e') }
         'compose' { @('compose-config') }
         'runtime' { @('runtime-canary') }
         'capacity' { @('capacity-baseline') }
-        'full' { @('repository-diff', 'server-verify', 'web-node24', 'compose-config', 'runtime-canary', 'prototype-e2e', 'draft-browser-e2e', 'inference-browser-e2e') }
+        'full' { @('repository-diff', 'server-verify', 'web-node24', 'offline-eval', 'compose-config', 'runtime-canary', 'prototype-e2e', 'draft-browser-e2e', 'inference-browser-e2e') }
     }
 
     foreach ($step in $requestedSteps) {
@@ -130,6 +131,17 @@ try {
                 Invoke-GateStep $step {
                     Invoke-ZeroPaidAiCommand `
                         'powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools\run-web-gate.ps1'
+                }
+            }
+            'offline-eval' {
+                Invoke-GateStep $step {
+                    $reportPath = Join-Path $evidenceDir 'offline-eval-summary.json'
+                    $command = 'powershell.exe -NoProfile -ExecutionPolicy Bypass ' +
+                        '-File tools\run-offline-eval.ps1 -ReportPath "' + $reportPath + '"'
+                    Invoke-ZeroPaidAiCommand $command
+                    if ($LASTEXITCODE -eq 0 -and -not (Test-Path -LiteralPath $reportPath -PathType Leaf)) {
+                        throw 'Offline evaluation completed without producing its machine-readable report.'
+                    }
                 }
             }
             'compose-config' {
