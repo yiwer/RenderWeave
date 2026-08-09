@@ -371,6 +371,7 @@ Phase 内任务只在真实前置依赖满足时并行。当前没有 atomic cla
 - 完成信号：结果记录而非无依据 SLA；关键退化已修复或批准 delta
 
 #### T6-2：browser/accessibility/visual acceptance
+- 执行状态：`in_progress`（ADR-0014；先闭环 inference Candidate 产品旅程，再扩展浏览器矩阵）
 - AC：AC-013, AC-014, AC-017
 - 依赖：P3, P4
 - 影响区域：web UI
@@ -378,6 +379,13 @@ Phase 内任务只在真实前置依赖满足时并行。当前没有 atomic cla
 - 回归升级：global tokens/router/components changes run all UI journeys
 - 证据保证：A2 + J1
 - 完成信号：无 serious/critical，核心键盘路径和视觉层级获批
+
+执行切片：
+
+1. T6-2a：Candidate reducer/表单补齐新增、删除、重排、类型约束与多图片 evidence，focused unit/component tests 先行。
+2. T6-2b：启动与运行恢复体验补齐文件队列、四步进度、cancel/retry 和 readiness 呈现。
+3. T6-2c：新增零 Provider 的 60-case offline eval gate，并重建 Playwright 1024/1280/1440、axe、键盘与 real PostgreSQL replay 旅程。
+4. T6-2d：clean Web/E2E/eval/full A1、独立 A2 与人工 J1 结果分级记录。
 
 #### T6-3：Compose、观测、备份/恢复与 storage failure drill
 - AC：AC-024

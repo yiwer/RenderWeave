@@ -1,6 +1,7 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-10 T6-2 已按 ADR-0014 开始收口四步 AI Schema 识别工作台；当前基线 E2E 有过期断言，先补 Candidate 完整编辑、多证据、运行恢复与 offline eval/browser matrix，再进行 clean A1/A2/J1 验收。
 - 2026-08-08 授权的 P1–P4 Goal 实施范围已完成并通过本地 A1 自动验证。
 - 2026-08-08 的 P5 canary J1 已关闭：双 Profile 各 1 次，共 2 attempts / ¥0.054017；只证明通路，不构成质量认证。
 - 2026-08-09 Flash 60-case live 已完成并经独立 A2：112 attempts / ¥0.122980，2/60 exact pass，policy=`EXPERIMENTAL`，authorization 已 CLOSED。

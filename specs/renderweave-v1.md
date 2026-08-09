@@ -515,6 +515,12 @@ v1 只有：
 
 复用相同 form/map editor，加 bundle navigation、evidence overlay、confidence、blocker 和 item resolution；不出现“保存 Draft”或“发布”按钮，唯一写入动作是全部门通过后的原子创建。
 
+推断入口和审核详情使用一致的四步进度：准备输入 → 受控识别 → 逐项校对 → 原子创建。运行中展示人类可读 stage；状态机许可时可取消，FAILED/CANCELLED 只允许显式 retry 创建新 run。上传选择必须提供逐文件检查和移除，但选择、预览或切换 Profile 均不得触发 Provider。
+
+Candidate form 是完整键盘路径：支持新增、删除、上移/下移 Schema 与 field，编辑合法类型对应的 constraints，并在一项具有多张图片 evidence 时逐张切换和查看各自 bbox。map 与 form 共享相同顺序和选择；不要求拖拽，不提供 confirm-all。
+
+审核页显示已处理 AI item 数、仍待处理项、blocker/warning 和原子创建 readiness checklist；自动保存稳定、服务端 blocker 为零且 run 仍为 REVIEW_REQUIRED 时才可提交。
+
 ### 9.5 视觉和响应
 
 - light-only warm editorial workbench；cream/coral/dark contextual panel。
