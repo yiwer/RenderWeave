@@ -3,6 +3,7 @@ package cn.hbads.renderweave.inference.replay;
 import cn.hbads.renderweave.inference.run.InferenceStage;
 
 import java.time.Instant;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
@@ -20,6 +21,7 @@ public record InferenceAttempt(
         long outputTokens,
         long estimatedCostMicrosCny,
         long durationMillis,
+        Map<String, Integer> problemCodeCounts,
         Instant completedAt
 ) {
     public InferenceAttempt {
@@ -53,7 +55,29 @@ public record InferenceAttempt(
         if (inputTokens < 0 || outputTokens < 0 || estimatedCostMicrosCny < 0 || durationMillis < 0) {
             throw new IllegalArgumentException("Attempt telemetry must not be negative");
         }
+        problemCodeCounts = InferenceAttemptProblemTaxonomy.normalize(problemCodeCounts);
         Objects.requireNonNull(completedAt, "completedAt");
+    }
+
+    public InferenceAttempt(
+            UUID runId,
+            int attemptOrdinal,
+            InferenceStage stage,
+            InferenceAttemptStatus status,
+            String outcomeCode,
+            Optional<String> providerRequestId,
+            Optional<String> providerModel,
+            long inputTokens,
+            long outputTokens,
+            long estimatedCostMicrosCny,
+            long durationMillis,
+            Instant completedAt
+    ) {
+        this(
+                runId, attemptOrdinal, stage, status, outcomeCode,
+                providerRequestId, providerModel, inputTokens, outputTokens,
+                estimatedCostMicrosCny, durationMillis, Map.of(), completedAt
+        );
     }
 
     public InferenceAttempt(
@@ -66,7 +90,7 @@ public record InferenceAttempt(
     ) {
         this(
                 runId, attemptOrdinal, stage, status, outcomeCode,
-                Optional.empty(), Optional.empty(), 0, 0, 0, 0, completedAt
+                Optional.empty(), Optional.empty(), 0, 0, 0, 0, Map.of(), completedAt
         );
     }
 }

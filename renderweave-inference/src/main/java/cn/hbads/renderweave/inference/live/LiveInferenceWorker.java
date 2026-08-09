@@ -28,6 +28,7 @@ import cn.hbads.renderweave.inference.provider.ProviderInferenceRequest;
 import cn.hbads.renderweave.inference.provider.ProviderInferenceResponse;
 import cn.hbads.renderweave.inference.provider.ProviderNotConfiguredException;
 import cn.hbads.renderweave.inference.replay.InferenceAttempt;
+import cn.hbads.renderweave.inference.replay.InferenceAttemptProblemTaxonomy;
 import cn.hbads.renderweave.inference.replay.InferenceAttemptStatus;
 import cn.hbads.renderweave.inference.replay.InferenceReplayStore;
 import cn.hbads.renderweave.inference.run.InferenceLeaseLostException;
@@ -41,6 +42,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -286,7 +288,7 @@ public final class LiveInferenceWorker {
                     attempt(
                             current, attemptOrdinal, InferenceAttemptStatus.FAILED,
                             "DASHSCOPE_MODEL_MISMATCH", response, estimatedCost,
-                            elapsedMillis(started), now
+                            elapsedMillis(started), Map.of(), now
                     ),
                     now
             );
@@ -295,6 +297,7 @@ public final class LiveInferenceWorker {
 
         CandidateBundle candidate = null;
         List<CandidateProblem> prevalidationProblems = List.of();
+        Map<String, Integer> problemCodeCounts = Map.of();
         var status = InferenceAttemptStatus.SUCCEEDED;
         var outcomeCode = "LIVE_OUTPUT_ACCEPTED";
         try {
@@ -311,6 +314,16 @@ public final class LiveInferenceWorker {
         } catch (InvalidCandidateContractException invalid) {
             status = InferenceAttemptStatus.REJECTED;
             outcomeCode = "LIVE_OUTPUT_REJECTED";
+            problemCodeCounts = InferenceAttemptProblemTaxonomy.count(
+                    List.of(invalid.diagnosticCode())
+            );
+        }
+        if (candidate != null) {
+            problemCodeCounts = InferenceAttemptProblemTaxonomy.count(
+                    validateCandidate(current, profile, candidate, prevalidationProblems).stream()
+                            .map(CandidateProblem::code)
+                            .toList()
+            );
         }
         var repairRounds = checkpoint.repairRounds() + (repair ? 1 : 0);
         var next = checkpoint.callResult(
@@ -323,7 +336,7 @@ public final class LiveInferenceWorker {
                 workflowCodec.write(next),
                 attempt(
                         current, attemptOrdinal, status, outcomeCode, response, estimatedCost,
-                        elapsedMillis(started), now
+                        elapsedMillis(started), problemCodeCounts, now
                 ),
                 now
         );
@@ -347,11 +360,9 @@ public final class LiveInferenceWorker {
                     )
             ));
         } else {
-            var combined = new ArrayList<>(checkpoint.validationProblems());
-            combined.addAll(candidateValidator.validate(
-                    checkpoint.candidate(), validationContext(current, profile)
-            ));
-            problems = List.copyOf(combined);
+            problems = validateCandidate(
+                    current, profile, checkpoint.candidate(), checkpoint.validationProblems()
+            );
         }
         return runStore.checkpoint(
                 current.runId(), token(current), InferenceStage.DETERMINISTIC_VALIDATE, InferenceStage.CRITIQUE,
@@ -456,6 +467,17 @@ public final class LiveInferenceWorker {
         );
     }
 
+    private List<CandidateProblem> validateCandidate(
+            InferenceRunSnapshot current,
+            InferenceProfile profile,
+            CandidateBundle candidate,
+            List<CandidateProblem> prevalidationProblems
+    ) {
+        var combined = new ArrayList<>(prevalidationProblems);
+        combined.addAll(candidateValidator.validate(candidate, validationContext(current, profile)));
+        return List.copyOf(combined);
+    }
+
     private JsonStructuralProfile jsonProfile(InferenceRunSnapshot current) {
         var jsonInputs = current.inputs().stream()
                 .filter(input -> input.kind() == NormalizedArtifact.Kind.JSON_PROFILE)
@@ -511,13 +533,14 @@ public final class LiveInferenceWorker {
             ProviderInferenceResponse response,
             long estimatedCost,
             long durationMillis,
+            Map<String, Integer> problemCodeCounts,
             java.time.Instant now
     ) {
         return new InferenceAttempt(
                 current.runId(), attemptOrdinal, current.stage(), status, outcomeCode,
                 Optional.of(response.providerRequestId()), Optional.of(response.model()),
                 response.usage().inputTokens(), response.usage().outputTokens(),
-                estimatedCost, durationMillis, now
+                estimatedCost, durationMillis, problemCodeCounts, now
         );
     }
 

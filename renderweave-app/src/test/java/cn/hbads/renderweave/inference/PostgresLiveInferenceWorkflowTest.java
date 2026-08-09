@@ -117,6 +117,7 @@ class PostgresLiveInferenceWorkflowTest {
             assertThat(attempt.inputTokens()).isEqualTo(1_000);
             assertThat(attempt.outputTokens()).isEqualTo(500);
             assertThat(attempt.estimatedCostMicrosCny()).isEqualTo(600);
+            assertThat(attempt.problemCodeCounts()).isEmpty();
         });
         var budget = budgets.snapshot(LiveInferenceWorker.CANARY_BUDGET_KEY);
         assertThat(budget.consumedAttempts()).isEqualTo(1);
@@ -282,6 +283,9 @@ class PostgresLiveInferenceWorkflowTest {
         assertThat(workflowStore.attempts(created))
                 .extracting(attempt -> attempt.status())
                 .containsExactly(InferenceAttemptStatus.REJECTED, InferenceAttemptStatus.SUCCEEDED);
+        assertThat(workflowStore.attempts(created).getFirst().problemCodeCounts())
+                .containsExactlyEntriesOf(Map.of("CANDIDATE_DECODE_VALUE_INVALID", 1));
+        assertThat(workflowStore.attempts(created).get(1).problemCodeCounts()).isEmpty();
         assertThat(workflowStore.findCandidate(created).orElseThrow().currentJson())
                 .doesNotContain("\"contractVersion\":null");
     }
@@ -304,6 +308,9 @@ class PostgresLiveInferenceWorkflowTest {
         assertThat(workflowStore.attempts(created))
                 .extracting(attempt -> attempt.status())
                 .containsExactly(InferenceAttemptStatus.SUCCEEDED, InferenceAttemptStatus.SUCCEEDED);
+        assertThat(workflowStore.attempts(created).getFirst().problemCodeCounts())
+                .containsEntry("AI_REQUIRED_UNCONFIRMED", 1);
+        assertThat(workflowStore.attempts(created).get(1).problemCodeCounts()).isEmpty();
     }
 
     @Test
@@ -324,6 +331,8 @@ class PostgresLiveInferenceWorkflowTest {
         assertThat(workflowStore.attempts(created))
                 .extracting(attempt -> attempt.status())
                 .containsExactly(InferenceAttemptStatus.SUCCEEDED, InferenceAttemptStatus.SUCCEEDED);
+        assertThat(workflowStore.attempts(created).getFirst().problemCodeCounts())
+                .containsEntry("JSON_EVIDENCE_ITEM_MISSING", 2);
     }
 
     @Test

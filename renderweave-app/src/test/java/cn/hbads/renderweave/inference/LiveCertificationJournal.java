@@ -3,6 +3,7 @@ package cn.hbads.renderweave.inference;
 import cn.hbads.renderweave.inference.eval.LiveEvaluationResult;
 import cn.hbads.renderweave.inference.provider.ProviderBudgetExceededException;
 import cn.hbads.renderweave.inference.provider.ProviderBudgetSnapshot;
+import cn.hbads.renderweave.inference.replay.InferenceAttemptProblemTaxonomy;
 import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
@@ -18,6 +19,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
@@ -28,7 +30,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * and replaced atomically so completed batches and worst-case reservations survive process restarts.
  */
 final class LiveCertificationJournal {
-    static final String VERSION = "renderweave-live-certification-journal/1.1";
+    static final String VERSION = "renderweave-live-certification-journal/1.2";
+    private static final String LEGACY_VERSION = "renderweave-live-certification-journal/1.1";
     private static final String REQUIRED_BUDGET_KEY = "p5-synthetic-canary";
 
     private final Path stateFile;
@@ -464,7 +467,7 @@ final class LiveCertificationJournal {
     }
 
     private void validateIdentity(State state) {
-        if (!VERSION.equals(state.journalVersion())
+        if (!Set.of(VERSION, LEGACY_VERSION).contains(state.journalVersion())
                 || !authorization.authorizationId().equals(state.authorizationId())
                 || !authorization.authorizationVersion().equals(state.authorizationVersion())
                 || !authorization.corpusVersion().equals(state.corpusVersion())
@@ -876,7 +879,8 @@ final class LiveCertificationJournal {
             long inputTokens,
             long outputTokens,
             long estimatedCostMicrosCny,
-            long durationMillis
+            long durationMillis,
+            Map<String, Integer> problemCodeCounts
     ) {
         AttemptResult {
             if (ordinal < 0 || ordinal > 2
@@ -888,6 +892,9 @@ final class LiveCertificationJournal {
                     || durationMillis < 0) {
                 throw new IllegalArgumentException("Certification attempt telemetry is invalid");
             }
+            problemCodeCounts = InferenceAttemptProblemTaxonomy.normalize(
+                    problemCodeCounts == null ? Map.of() : problemCodeCounts
+            );
         }
     }
 

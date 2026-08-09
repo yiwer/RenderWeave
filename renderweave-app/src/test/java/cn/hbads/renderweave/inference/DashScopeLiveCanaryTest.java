@@ -122,7 +122,8 @@ class DashScopeLiveCanaryTest {
                                 attempt.attemptOrdinal(), attempt.stage().name(), attempt.status().name(),
                                 attempt.outcomeCode(), attempt.providerRequestId().orElse(null),
                                 attempt.providerModel().orElse(null), attempt.inputTokens(), attempt.outputTokens(),
-                                attempt.estimatedCostMicrosCny(), attempt.durationMillis()
+                                attempt.estimatedCostMicrosCny(), attempt.durationMillis(),
+                                attempt.problemCodeCounts()
                         )).toList()
                 ));
             }
@@ -132,7 +133,7 @@ class DashScopeLiveCanaryTest {
 
         var budget = budgets.snapshot(LiveInferenceWorker.CANARY_BUDGET_KEY);
         var summary = new CanarySummary(
-                "renderweave-dashscope-canary/1.0", Instant.now().toString(),
+                "renderweave-dashscope-canary/1.1", Instant.now().toString(),
                 "REPOSITORY_SYNTHETIC_ONLY", LiveEvaluationCorpus.VERSION, corpus.cases().size(),
                 false, harnessFailureCode, budget.maximumAttempts(), budget.consumedAttempts(),
                 budget.maximumCostMicrosCny(), budget.consumedCostMicrosCny(), List.copyOf(results)
@@ -227,6 +228,7 @@ class DashScopeLiveCanaryTest {
             long inputTokens,
             long outputTokens,
             long estimatedCostMicrosCny,
-            long durationMillis
+            long durationMillis,
+            java.util.Map<String, Integer> problemCodeCounts
     ) { }
 }

@@ -39,20 +39,79 @@ public final class CandidateJsonCodec {
 
     public CandidateBundle parse(String value) {
         if (value == null) {
-            throw new InvalidCandidateContractException("CANDIDATE_JSON_INVALID", "Candidate JSON is required", null);
+            throw decodeFailure(
+                    "CANDIDATE_DECODE_REQUIRED", "Candidate JSON is required", null
+            );
         }
         if (value.getBytes(java.nio.charset.StandardCharsets.UTF_8).length > MAX_CANDIDATE_BYTES) {
-            throw new InvalidCandidateContractException("CANDIDATE_TOO_LARGE", "Candidate exceeds 2 MiB", null);
+            throw new InvalidCandidateContractException(
+                    "CANDIDATE_TOO_LARGE", "CANDIDATE_DECODE_TOO_LARGE",
+                    "Candidate exceeds 2 MiB", null
+            );
         }
         if (value.isBlank()) {
-            throw new InvalidCandidateContractException("CANDIDATE_JSON_INVALID", "Candidate JSON is required", null);
+            throw decodeFailure(
+                    "CANDIDATE_DECODE_REQUIRED", "Candidate JSON is required", null
+            );
         }
         try {
             return JSON.readValue(value, CandidateBundle.class);
         } catch (Exception exception) {
-            throw new InvalidCandidateContractException(
-                    "CANDIDATE_JSON_INVALID", "Candidate JSON does not match the strict contract", exception
-            );
+            throw decodeFailure(classifyDecodeFailure(exception),
+                    "Candidate JSON does not match the strict contract", exception);
         }
+    }
+
+    private static InvalidCandidateContractException decodeFailure(
+            String diagnosticCode,
+            String message,
+            Throwable cause
+    ) {
+        return new InvalidCandidateContractException(
+                "CANDIDATE_JSON_INVALID", diagnosticCode, message, cause
+        );
+    }
+
+    private static String classifyDecodeFailure(Throwable failure) {
+        if (containsMessage(failure, "duplicate")) {
+            return "CANDIDATE_DECODE_DUPLICATE_MEMBER";
+        }
+        if (containsMessage(failure, "trailing token")
+                || containsMessage(failure, "trailing content")) {
+            return "CANDIDATE_DECODE_TRAILING_CONTENT";
+        }
+        if (containsCause(failure, "UnrecognizedPropertyException")) {
+            return "CANDIDATE_DECODE_UNKNOWN_MEMBER";
+        }
+        if (containsCause(failure, "ValueInstantiationException")
+                || containsCause(failure, "InvalidFormatException")) {
+            return "CANDIDATE_DECODE_VALUE_INVALID";
+        }
+        if (containsCause(failure, "MismatchedInputException")) {
+            return "CANDIDATE_DECODE_SHAPE_INVALID";
+        }
+        if (containsCause(failure, "StreamReadException")
+                || containsCause(failure, "UnexpectedEndOfInputException")) {
+            return "CANDIDATE_DECODE_SYNTAX_INVALID";
+        }
+        return "CANDIDATE_DECODE_OTHER";
+    }
+
+    private static boolean containsCause(Throwable failure, String simpleName) {
+        for (var cause = failure; cause != null; cause = cause.getCause()) {
+            if (cause.getClass().getSimpleName().equals(simpleName)) return true;
+        }
+        return false;
+    }
+
+    private static boolean containsMessage(Throwable failure, String fragment) {
+        var expected = fragment.toLowerCase(java.util.Locale.ROOT);
+        for (var cause = failure; cause != null; cause = cause.getCause()) {
+            var message = cause.getMessage();
+            if (message != null && message.toLowerCase(java.util.Locale.ROOT).contains(expected)) {
+                return true;
+            }
+        }
+        return false;
     }
 }

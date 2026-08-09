@@ -52,7 +52,8 @@ class LiveCertificationJournalTest {
                     ),
                     List.of(new LiveCertificationJournal.AttemptResult(
                             0, "STRUCTURE", "SUCCEEDED", "LIVE_OUTPUT_ACCEPTED",
-                            "qwen3.7-flash", 100, 50, 5_000, 120
+                            "qwen3.7-flash", 100, 50, 5_000, 120,
+                            java.util.Map.of("AI_REQUIRED_UNCONFIRMED", 2)
                     )), NOW.plusSeconds(2).toString()
             ), NOW.plusSeconds(2));
         }
@@ -67,10 +68,48 @@ class LiveCertificationJournalTest {
         assertThat(reloaded.completedAssignmentKeys())
                 .containsExactly("dashscope-qwen37-flash-v1|live-json-01-scalars");
         assertThat(reloaded.resultsFor("dashscope-qwen37-flash-v1")).hasSize(1);
+        assertThat(reloaded.resultsFor("dashscope-qwen37-flash-v1").getFirst()
+                .attempts().getFirst().problemCodeCounts())
+                .containsExactlyEntriesOf(java.util.Map.of("AI_REQUIRED_UNCONFIRMED", 2));
         var serialized = Files.readString(temporaryDirectory.resolve("state.json"));
         assertThat(serialized).doesNotContain(
                 "providerRequestId", "candidateJson", "prompt", "apiKey", "/field"
         );
+        assertThat(serialized).contains("AI_REQUIRED_UNCONFIRMED");
+    }
+
+    @Test
+    void legacyJournalWithoutAttemptProblemCountsRemainsReadableAsEmptyTaxonomy() throws Exception {
+        var authorization = openAuthorization("legacy-journal-reload");
+        var journal = new LiveCertificationJournal(temporaryDirectory, authorization, new ObjectMapper(), NOW);
+        try (var ignored = journal.acquireBatchLease(NOW)) {
+            var assignment = "dashscope-qwen37-flash-v1|live-json-01-scalars";
+            journal.beginAssignment(assignment, "dashscope-qwen37-flash-v1", "live-json-01-scalars", NOW);
+            journal.bindRun(assignment, UUID.randomUUID(), NOW);
+            journal.completeCase(new LiveCertificationJournal.CaseResult(
+                    assignment, "dashscope-qwen37-flash-v1", "live-json-01-scalars",
+                    "REVIEW_REQUIRED", null,
+                    LiveCertificationJournal.EvaluationMetrics.from(failureResult("live-json-01-scalars")),
+                    List.of(new LiveCertificationJournal.AttemptResult(
+                            0, "STRUCTURE", "REJECTED", "LIVE_OUTPUT_REJECTED",
+                            "qwen3.7-flash", 100, 50, 5_000, 120,
+                            java.util.Map.of("CANDIDATE_DECODE_VALUE_INVALID", 1)
+                    )), NOW.plusSeconds(1).toString()
+            ), NOW.plusSeconds(1));
+        }
+
+        var stateFile = temporaryDirectory.resolve("state.json");
+        var legacy = Files.readString(stateFile)
+                .replace(LiveCertificationJournal.VERSION,
+                        "renderweave-live-certification-journal/1.1")
+                .replaceFirst(",\\s*\"problemCodeCounts\"\\s*:\\s*\\{[^{}]*}", "");
+        Files.writeString(stateFile, legacy);
+
+        var reloaded = new LiveCertificationJournal(
+                temporaryDirectory, authorization, new ObjectMapper(), NOW.plusSeconds(2)
+        );
+        assertThat(reloaded.resultsFor("dashscope-qwen37-flash-v1").getFirst()
+                .attempts().getFirst().problemCodeCounts()).isEmpty();
     }
 
     @Test

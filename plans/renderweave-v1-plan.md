@@ -1,6 +1,6 @@
 # RenderWeave v1 Phase 计划
 
-- 状态：P1–P4 implementation complete；P5 T5-1–T5-7 已完成通路、安全硬化与三轮 60-case 质量实测；Prompt v2 live A2 结论仍为 `EXPERIMENTAL`，authorization 已 `CLOSED`
+- 状态：P1–P4 implementation complete；P5 T5-1–T5-8 已完成通路、安全硬化与四轮 60-case 质量实测；T5-9 payload-free IMAGE_ONLY 归因正在离线验证；所有 live 结论仍为 `EXPERIMENTAL`，authorization 已 `CLOSED`
 - 日期：2026-08-09
 - Spec：[`specs/renderweave-v1.md`](../specs/renderweave-v1.md)
 - 原型：`/prototype/schema-studio?variant=A|B|C`
@@ -327,6 +327,16 @@ Phase 内任务只在真实前置依赖满足时并行。当前没有 atomic cla
 - 回归升级：grounding/composer/prompt/profile/evaluator/workflow/OpenAPI 任一变化均需 server+web clean A1，并产生新的 certification evaluation identity
 - 证据保证：pre-live A1 + 独立 A2；真实 60-case 执行为精确 J1 + A1，完成后独立 A2 重建 journal、费用与指标；本地 evidence 未签名，非 A3
 - 完成信号：精确 tracked ledger 已按 `b454b14` PROPOSED → `7ee817c` OPEN → `6733260` CLOSED 执行 60/60；80 attempts / 278,740 tokens / ¥0.908984，JSON_ONLY 与 COMBINED 各 20/20、IMAGE_ONLY 0/20，policy=`EXPERIMENTAL`；最终独立 A2 重建 PASS，0 Blocker / 0 High / 0 Medium
+
+#### T5-9：不含载荷的 IMAGE_ONLY 尝试级问题分类
+- 执行状态：`implementation_complete`（定向 TDD 与真实 PostgreSQL V010 回归已绿；clean server A1 / 独立 A2 待完成；`plans/logs/P5-T5-9.md`）
+- AC：AC-016, AC-021
+- 依赖：T5-8 的 CLOSED Grounded evidence；ADR-0012
+- 影响区域：Candidate strict codec、live worker attempt telemetry、replay attempt model、PostgreSQL V010、certification journal/report
+- 局部验证：八类解码诊断、bounded taxonomy、parsed Candidate validator code、V010 fresh migration、journal 1.1/1.2 兼容与 payload 排除
+- 回归升级：codec/validator/worker/attempt store/journal/report 任一变化跑 server；未来真实归因必须形成新的 evaluation identity、PROPOSED ledger 与 J1
+- 证据保证：离线 A1 + 独立只读 A2；本节点无 Provider side effect，不宣称 A3
+- 完成信号：稳定 code/count 可在 attempt、PostgreSQL 与 report 中无损重放，历史行默认为空；server A1 与独立 A2 通过，所有 live gate 仍关闭
 
 ### P6 — Release candidate
 

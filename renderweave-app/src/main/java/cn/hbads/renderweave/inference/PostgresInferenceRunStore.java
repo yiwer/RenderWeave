@@ -20,6 +20,7 @@ import cn.hbads.renderweave.inference.run.InferenceStage;
 import cn.hbads.renderweave.inference.run.InvalidInferenceRunTransitionException;
 import cn.hbads.renderweave.inference.run.NewInferenceRun;
 import cn.hbads.renderweave.inference.replay.InferenceAttempt;
+import cn.hbads.renderweave.inference.replay.InferenceAttemptProblemTaxonomyJsonCodec;
 import cn.hbads.renderweave.inference.replay.InferenceAttemptStatus;
 import cn.hbads.renderweave.inference.replay.InferenceReplayStore;
 import org.springframework.jdbc.core.simple.JdbcClient;
@@ -43,6 +44,8 @@ import java.util.UUID;
 @Repository
 public class PostgresInferenceRunStore implements InferenceRunStore, InferenceReplayStore {
     private static final int MAX_EVENT_PAGE = 1000;
+    private static final InferenceAttemptProblemTaxonomyJsonCodec ATTEMPT_PROBLEM_CODEC =
+            new InferenceAttemptProblemTaxonomyJsonCodec();
 
     private final JdbcClient jdbcClient;
 
@@ -775,7 +778,8 @@ public class PostgresInferenceRunStore implements InferenceRunStore, InferenceRe
         return jdbcClient.sql("""
                         select run_id, attempt_ordinal, stage, status, outcome_code,
                                provider_request_id, provider_model, input_tokens, output_tokens,
-                               estimated_cost_micros_cny, duration_millis, completed_at
+                               estimated_cost_micros_cny, duration_millis,
+                               problem_code_counts, completed_at
                         from inference_attempt
                         where run_id = :runId
                         order by attempt_ordinal
@@ -790,11 +794,13 @@ public class PostgresInferenceRunStore implements InferenceRunStore, InferenceRe
                         insert into inference_attempt (
                             run_id, attempt_ordinal, stage, status, outcome_code,
                             provider_request_id, provider_model, input_tokens, output_tokens,
-                            estimated_cost_micros_cny, duration_millis, completed_at
+                            estimated_cost_micros_cny, duration_millis,
+                            problem_code_counts, completed_at
                         ) values (
                             :runId, :attemptOrdinal, :stage, :status, :outcomeCode,
                             :providerRequestId, :providerModel, :inputTokens, :outputTokens,
-                            :estimatedCostMicrosCny, :durationMillis, :completedAt
+                            :estimatedCostMicrosCny, :durationMillis,
+                            cast(:problemCodeCounts as jsonb), :completedAt
                         )
                         """)
                 .param("runId", attempt.runId())
@@ -808,6 +814,7 @@ public class PostgresInferenceRunStore implements InferenceRunStore, InferenceRe
                 .param("outputTokens", attempt.outputTokens())
                 .param("estimatedCostMicrosCny", attempt.estimatedCostMicrosCny())
                 .param("durationMillis", attempt.durationMillis())
+                .param("problemCodeCounts", ATTEMPT_PROBLEM_CODEC.write(attempt.problemCodeCounts()))
                 .param("completedAt", offset(attempt.completedAt()))
                 .update();
     }
@@ -1043,6 +1050,7 @@ public class PostgresInferenceRunStore implements InferenceRunStore, InferenceRe
                 resultSet.getLong("output_tokens"),
                 resultSet.getLong("estimated_cost_micros_cny"),
                 resultSet.getLong("duration_millis"),
+                ATTEMPT_PROBLEM_CODEC.parse(resultSet.getString("problem_code_counts")),
                 instant(resultSet, "completed_at").orElseThrow()
         );
     }

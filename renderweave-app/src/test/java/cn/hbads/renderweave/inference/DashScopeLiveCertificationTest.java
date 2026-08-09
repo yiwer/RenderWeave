@@ -13,6 +13,7 @@ import cn.hbads.renderweave.inference.live.LiveInferenceWorker;
 import cn.hbads.renderweave.inference.profile.InferenceProfileRegistry;
 import cn.hbads.renderweave.inference.provider.ProviderBudgetStore;
 import cn.hbads.renderweave.inference.replay.InferenceReplayStore;
+import cn.hbads.renderweave.inference.replay.InferenceAttemptProblemTaxonomy;
 import cn.hbads.renderweave.inference.run.InferenceRunService;
 import cn.hbads.renderweave.inference.run.InferenceRunState;
 import cn.hbads.renderweave.inference.run.InferenceRunStore;
@@ -43,6 +44,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -62,7 +64,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Import(DashScopeLiveCertificationTest.CertificationConfiguration.class)
 @EnabledIfEnvironmentVariable(named = "RENDERWEAVE_RUN_LIVE_CERTIFICATION", matches = "true")
 class DashScopeLiveCertificationTest {
-    private static final String REPORT_VERSION = "renderweave-live-certification-report/1.1";
+    private static final String REPORT_VERSION = "renderweave-live-certification-report/1.2";
 
     @Container
     @ServiceConnection
@@ -199,7 +201,8 @@ class DashScopeLiveCertificationTest {
                         attempt.attemptOrdinal(), attempt.stage().name(), attempt.status().name(),
                         attempt.outcomeCode(), attempt.providerModel().orElse(null),
                         attempt.inputTokens(), attempt.outputTokens(),
-                        attempt.estimatedCostMicrosCny(), attempt.durationMillis()
+                        attempt.estimatedCostMicrosCny(), attempt.durationMillis(),
+                        attempt.problemCodeCounts()
                 )).toList(), clock.instant().toString()
         );
         journal.completeCase(result, clock.instant());
@@ -266,7 +269,8 @@ class DashScopeLiveCertificationTest {
     ) throws IOException {
         var profileReports = new ArrayList<ProfileSummary>();
         for (var profileId : authorization.profileIds()) {
-            var results = journal.resultsFor(profileId).stream()
+            var caseResults = journal.resultsFor(profileId);
+            var results = caseResults.stream()
                     .map(LiveCertificationJournal.CaseResult::evaluation)
                     .map(LiveCertificationJournal.EvaluationMetrics::toResult)
                     .toList();
@@ -275,7 +279,13 @@ class DashScopeLiveCertificationTest {
                     profileId,
                     profiles.require(profileId).profile().model(),
                     report,
-                    policy.decide(profileId, corpus, results)
+                    policy.decide(profileId, corpus, results),
+                    InferenceAttemptProblemTaxonomy.merge(
+                            caseResults.stream()
+                                    .flatMap(result -> result.attempts().stream())
+                                    .map(LiveCertificationJournal.AttemptResult::problemCodeCounts)
+                                    .toList()
+                    )
             ));
         }
         var budget = budgets.snapshot(LiveInferenceWorker.CANARY_BUDGET_KEY);
@@ -375,7 +385,8 @@ class DashScopeLiveCertificationTest {
             String profileId,
             String model,
             LiveEvaluationReport report,
-            LiveCertificationDecision decision
+            LiveCertificationDecision decision,
+            Map<String, Integer> attemptProblemCodeCounts
     ) { }
 
     @TestConfiguration(proxyBeanMethods = false)

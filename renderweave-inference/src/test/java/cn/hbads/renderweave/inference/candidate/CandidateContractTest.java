@@ -69,6 +69,35 @@ class CandidateContractTest {
     }
 
     @Test
+    void strictCodecClassifiesDecodeFailuresWithoutRetainingProviderMembersOrValues() {
+        var valid = codec.write(simpleBundle());
+        var unknown = valid.replaceFirst("\\{", "{\"sensitiveCustomerValue\":\"must-not-survive\",");
+        var duplicate = valid.replaceFirst(
+                "\"contractVersion\":\"renderweave-candidate/1.0\"",
+                "\"contractVersion\":\"renderweave-candidate/1.0\",\"contractVersion\":\"other\""
+        );
+        var invalidValue = valid.replace("\"source\":\"AI\"", "\"source\":\"ALIEN\"");
+
+        assertDecodeDiagnostic(unknown, "CANDIDATE_DECODE_UNKNOWN_MEMBER");
+        assertDecodeDiagnostic(duplicate, "CANDIDATE_DECODE_DUPLICATE_MEMBER");
+        assertDecodeDiagnostic(valid + "{}", "CANDIDATE_DECODE_TRAILING_CONTENT");
+        assertDecodeDiagnostic("{", "CANDIDATE_DECODE_SYNTAX_INVALID");
+        assertDecodeDiagnostic("[]", "CANDIDATE_DECODE_SHAPE_INVALID");
+        assertDecodeDiagnostic(invalidValue, "CANDIDATE_DECODE_VALUE_INVALID");
+        assertDecodeDiagnostic(" ", "CANDIDATE_DECODE_REQUIRED");
+        assertDecodeDiagnostic(
+                " ".repeat(CandidateJsonCodec.MAX_CANDIDATE_BYTES + 1),
+                "CANDIDATE_DECODE_TOO_LARGE"
+        );
+
+        var diagnostic = assertThrows(
+                InvalidCandidateContractException.class, () -> codec.parse(unknown)
+        ).diagnosticCode();
+        assertFalse(diagnostic.contains("sensitiveCustomerValue"));
+        assertFalse(diagnostic.contains("must-not-survive"));
+    }
+
+    @Test
     void unresolvedAndLowConfidenceItemsRemainReviewBlockers() {
         var rootId = UUID.randomUUID();
         var fieldId = UUID.randomUUID();
@@ -414,5 +443,11 @@ class CandidateContractTest {
             assertTrue(problems.stream().anyMatch(problem -> problem.code().equals(code)),
                     () -> "Expected " + code + ", got " + problems);
         }
+    }
+
+    private void assertDecodeDiagnostic(String json, String expectedCode) {
+        assertEquals(expectedCode,
+                assertThrows(InvalidCandidateContractException.class, () -> codec.parse(json))
+                        .diagnosticCode());
     }
 }
