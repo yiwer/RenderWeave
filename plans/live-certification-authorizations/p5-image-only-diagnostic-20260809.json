@@ -1,7 +1,7 @@
 {
   "authorizationVersion": "renderweave-live-image-diagnostic-authorization/1.0",
   "authorizationId": "p5-image-only-diagnostic-20260809",
-  "status": "OPEN",
+  "status": "CLOSED",
   "inputClassification": "REPOSITORY_SYNTHETIC_ONLY",
   "corpusVersion": "renderweave-live-eval/2.0",
   "evaluationIdentity": "renderweave-repository-tree-sha256/1:dae53e807c08b2b0b59b07329fe1af69d5862d534b4eb2e71eafa9deaefdb17f",
