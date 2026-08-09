@@ -78,6 +78,25 @@ class InferenceAttemptProblemTaxonomyTest {
                 () -> codec.parse("{\"VALID_CODE\":2147483648}"));
     }
 
+    @Test
+    void legacyAndRefinedDecodeCodesAggregateWithoutRewritingEitherCategory() {
+        var merged = InferenceAttemptProblemTaxonomy.merge(List.of(
+                Map.of("CANDIDATE_DECODE_VALUE_INVALID", 60),
+                Map.of(
+                        "CANDIDATE_DECODE_ENUM_INVALID_SOURCE", 20,
+                        "CANDIDATE_DECODE_CONSTRUCTOR_INVALID_BUNDLE_CONTRACT_VERSION", 20,
+                        "CANDIDATE_DECODE_FORMAT_INVALID_ROOT_SCHEMA_ID", 20
+                )
+        ));
+
+        assertEquals(Map.of(
+                "CANDIDATE_DECODE_VALUE_INVALID", 60,
+                "CANDIDATE_DECODE_ENUM_INVALID_SOURCE", 20,
+                "CANDIDATE_DECODE_CONSTRUCTOR_INVALID_BUNDLE_CONTRACT_VERSION", 20,
+                "CANDIDATE_DECODE_FORMAT_INVALID_ROOT_SCHEMA_ID", 20
+        ), merged);
+    }
+
     private static InferenceAttempt attempt(Map<String, Integer> counts) {
         return new InferenceAttempt(
                 UUID.randomUUID(), 0, cn.hbads.renderweave.inference.run.InferenceStage.STRUCTURE,

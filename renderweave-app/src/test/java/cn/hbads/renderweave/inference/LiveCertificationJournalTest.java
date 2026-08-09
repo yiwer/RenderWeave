@@ -53,7 +53,11 @@ class LiveCertificationJournalTest {
                     List.of(new LiveCertificationJournal.AttemptResult(
                             0, "STRUCTURE", "SUCCEEDED", "LIVE_OUTPUT_ACCEPTED",
                             "qwen3.7-flash", 100, 50, 5_000, 120,
-                            java.util.Map.of("AI_REQUIRED_UNCONFIRMED", 2)
+                            java.util.Map.of(
+                                    "AI_REQUIRED_UNCONFIRMED", 2,
+                                    "CANDIDATE_DECODE_ENUM_INVALID_SOURCE", 1,
+                                    "CANDIDATE_DECODE_VALUE_INVALID", 1
+                            )
                     )), NOW.plusSeconds(2).toString()
             ), NOW.plusSeconds(2));
         }
@@ -70,12 +74,20 @@ class LiveCertificationJournalTest {
         assertThat(reloaded.resultsFor("dashscope-qwen37-flash-v1")).hasSize(1);
         assertThat(reloaded.resultsFor("dashscope-qwen37-flash-v1").getFirst()
                 .attempts().getFirst().problemCodeCounts())
-                .containsExactlyEntriesOf(java.util.Map.of("AI_REQUIRED_UNCONFIRMED", 2));
+                .containsExactly(
+                        java.util.Map.entry("AI_REQUIRED_UNCONFIRMED", 2),
+                        java.util.Map.entry("CANDIDATE_DECODE_ENUM_INVALID_SOURCE", 1),
+                        java.util.Map.entry("CANDIDATE_DECODE_VALUE_INVALID", 1)
+                );
         var serialized = Files.readString(temporaryDirectory.resolve("state.json"));
         assertThat(serialized).doesNotContain(
                 "providerRequestId", "candidateJson", "prompt", "apiKey", "/field"
         );
-        assertThat(serialized).contains("AI_REQUIRED_UNCONFIRMED");
+        assertThat(serialized).contains(
+                "AI_REQUIRED_UNCONFIRMED",
+                "CANDIDATE_DECODE_ENUM_INVALID_SOURCE",
+                "CANDIDATE_DECODE_VALUE_INVALID"
+        );
     }
 
     @Test

@@ -284,10 +284,49 @@ class PostgresLiveInferenceWorkflowTest {
                 .extracting(attempt -> attempt.status())
                 .containsExactly(InferenceAttemptStatus.REJECTED, InferenceAttemptStatus.SUCCEEDED);
         assertThat(workflowStore.attempts(created).getFirst().problemCodeCounts())
-                .containsExactlyEntriesOf(Map.of("CANDIDATE_DECODE_VALUE_INVALID", 1));
+                .containsExactlyEntriesOf(Map.of(
+                        "CANDIDATE_DECODE_CONSTRUCTOR_INVALID_BUNDLE_CONTRACT_VERSION", 1
+                ));
         assertThat(workflowStore.attempts(created).get(1).problemCodeCounts()).isEmpty();
         assertThat(workflowStore.findCandidate(created).orElseThrow().currentJson())
                 .doesNotContain("\"contractVersion\":null");
+    }
+
+    @Test
+    void structureAndRepairAttemptsPersistRefinedPayloadFreeDecodeSlots() {
+        var blobs = new MemoryBlobStore();
+        var created = create(blobs, "live-refined-decode-taxonomy");
+        var provider = new ScriptedProvider(
+                request -> response(request, candidate(request).replace(
+                        "\"source\":\"AI\"", "\"source\":\"SENSITIVE_ENUM_VALUE\""
+                )),
+                request -> response(request, candidate(request).replace(
+                        "\"contractVersion\":\"renderweave-candidate/1.0\"",
+                        "\"contractVersion\":null"
+                )),
+                request -> response(request, candidate(request).replaceFirst(
+                        "\"rootCandidateSchemaId\":\"[^\"]+\"",
+                        "\"rootCandidateSchemaId\":\"SENSITIVE_FORMAT_VALUE!\""
+                ))
+        );
+
+        var finished = worker(provider, blobs)
+                .processNext("live-refined-decode-worker").orElseThrow();
+
+        assertThat(finished.state()).isEqualTo(InferenceRunState.FAILED);
+        assertThat(finished.failureCode()).contains("LIVE_REPAIR_BUDGET_EXHAUSTED");
+        assertThat(provider.requests).extracting(request -> request.stage().name())
+                .containsExactly("STRUCTURE", "REPAIR", "REPAIR");
+        assertThat(workflowStore.attempts(created))
+                .extracting(attempt -> attempt.problemCodeCounts())
+                .containsExactly(
+                        Map.of("CANDIDATE_DECODE_ENUM_INVALID_SOURCE", 1),
+                        Map.of("CANDIDATE_DECODE_CONSTRUCTOR_INVALID_BUNDLE_CONTRACT_VERSION", 1),
+                        Map.of("CANDIDATE_DECODE_FORMAT_INVALID_ROOT_SCHEMA_ID", 1)
+                );
+        assertThat(workflowStore.attempts(created).toString()).doesNotContain(
+                "SENSITIVE_ENUM_VALUE", "SENSITIVE_FORMAT_VALUE"
+        );
     }
 
     @Test
