@@ -308,8 +308,12 @@ class DashScopeLiveCertificationTest {
                 budget.consumedCostMicrosCny(),
                 List.copyOf(profileReports)
         );
-        writeAtomically(evidenceDirectory().resolve("summary.json"),
-                json.writerWithDefaultPrettyPrinter().writeValueAsString(summary));
+        writeAtomically(
+                evidenceDirectory().resolve("summary.json"),
+                PayloadFreeLiveEvidenceGuard.requirePayloadFree(
+                        json.writerWithDefaultPrettyPrinter().writeValueAsString(summary)
+                )
+        );
     }
 
     private static void writeAtomically(Path destination, String content) throws IOException {

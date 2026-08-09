@@ -79,7 +79,7 @@ class LiveCertificationJournalTest {
     }
 
     @Test
-    void legacyJournalWithoutAttemptProblemCountsRemainsReadableAsEmptyTaxonomy() throws Exception {
+    void legacyJournalIsReadOnlyAndMissingAttemptProblemCountsRemainReadableAsEmptyTaxonomy() throws Exception {
         var authorization = openAuthorization("legacy-journal-reload");
         var journal = new LiveCertificationJournal(temporaryDirectory, authorization, new ObjectMapper(), NOW);
         try (var ignored = journal.acquireBatchLease(NOW)) {
@@ -105,11 +105,85 @@ class LiveCertificationJournalTest {
                 .replaceFirst(",\\s*\"problemCodeCounts\"\\s*:\\s*\\{[^{}]*}", "");
         Files.writeString(stateFile, legacy);
 
-        var reloaded = new LiveCertificationJournal(
+        assertThatThrownBy(() -> new LiveCertificationJournal(
                 temporaryDirectory, authorization, new ObjectMapper(), NOW.plusSeconds(2)
+        )).isInstanceOf(IllegalStateException.class)
+                .hasMessage("LIVE_CERTIFICATION_JOURNAL_LEGACY_READ_ONLY");
+
+        var reloaded = new LiveCertificationJournal(
+                temporaryDirectory, closedAuthorization("legacy-journal-reload"),
+                new ObjectMapper(), NOW.plusSeconds(2)
         );
         assertThat(reloaded.resultsFor("dashscope-qwen37-flash-v1").getFirst()
                 .attempts().getFirst().problemCodeCounts()).isEmpty();
+    }
+
+    @Test
+    void currentJournalRejectsCoercedMissingNullOrDuplicateAttemptProblemCounts() throws Exception {
+        var authorization = openAuthorization("strict-problem-counts");
+        var journal = new LiveCertificationJournal(temporaryDirectory, authorization, new ObjectMapper(), NOW);
+        try (var ignored = journal.acquireBatchLease(NOW)) {
+            var assignment = "dashscope-qwen37-flash-v1|live-json-01-scalars";
+            journal.beginAssignment(assignment, "dashscope-qwen37-flash-v1", "live-json-01-scalars", NOW);
+            journal.bindRun(assignment, UUID.randomUUID(), NOW);
+            journal.completeCase(new LiveCertificationJournal.CaseResult(
+                    assignment, "dashscope-qwen37-flash-v1", "live-json-01-scalars",
+                    "REVIEW_REQUIRED", null,
+                    LiveCertificationJournal.EvaluationMetrics.from(failureResult("live-json-01-scalars")),
+                    List.of(new LiveCertificationJournal.AttemptResult(
+                            0, "STRUCTURE", "REJECTED", "LIVE_OUTPUT_REJECTED",
+                            "qwen3.7-flash", 100, 50, 5_000, 120,
+                            java.util.Map.of("CANDIDATE_DECODE_VALUE_INVALID", 1)
+                    )), NOW.plusSeconds(1).toString()
+            ), NOW.plusSeconds(1));
+        }
+
+        var stateFile = temporaryDirectory.resolve("state.json");
+        var original = Files.readString(stateFile);
+        var coerced = original.replaceFirst(
+                "(\"CANDIDATE_DECODE_VALUE_INVALID\"\\s*:\\s*)1", "$1\"1\""
+        );
+        Files.writeString(stateFile, coerced);
+
+        assertInvalidJournal(authorization);
+
+        var missing = original.replaceFirst(
+                ",\\s*\"problemCodeCounts\"\\s*:\\s*\\{[^{}]*}", ""
+        );
+        Files.writeString(stateFile, missing);
+        assertInvalidJournal(authorization);
+
+        var explicitNull = original.replaceFirst(
+                "\"problemCodeCounts\"\\s*:\\s*\\{[^{}]*}",
+                "\"problemCodeCounts\":null"
+        );
+        Files.writeString(stateFile, explicitNull);
+        assertInvalidJournal(authorization);
+
+        var duplicateCount = original.replaceFirst(
+                "(\"CANDIDATE_DECODE_VALUE_INVALID\"\\s*:\\s*1)",
+                "$1,\"CANDIDATE_DECODE_VALUE_INVALID\":2"
+        );
+        Files.writeString(stateFile, duplicateCount);
+        assertInvalidJournal(authorization);
+
+        var duplicateEnvelope = original.replaceFirst(
+                "(\"journalVersion\"\\s*:\\s*\"[^\"]+\")", "$1,$1"
+        );
+        Files.writeString(stateFile, duplicateEnvelope);
+        assertInvalidJournal(authorization);
+
+        var forbiddenPayload = original.replaceFirst(
+                "\\{", "{\"candidateJson\":\"must-not-survive\","
+        );
+        Files.writeString(stateFile, forbiddenPayload);
+        assertInvalidJournal(authorization);
+
+        var unknownEnvelope = original.replaceFirst(
+                "\\{", "{\"unknownEnvelopeField\":\"value\","
+        );
+        Files.writeString(stateFile, unknownEnvelope);
+        assertInvalidJournal(authorization);
     }
 
     @Test
@@ -387,6 +461,20 @@ class LiveCertificationJournalTest {
                 id, "OPEN", "user", "2026-08-08T07:00:00Z",
                 "2026-08-08T09:00:00Z", "60 synthetic flash cases"
         );
+    }
+
+    private static LiveCertificationAuthorization closedAuthorization(String id) {
+        return authorization(
+                id, "CLOSED", "user", "2026-08-08T07:00:00Z",
+                "2026-08-08T09:00:00Z", "60 synthetic flash cases"
+        );
+    }
+
+    private void assertInvalidJournal(LiveCertificationAuthorization authorization) {
+        assertThatThrownBy(() -> new LiveCertificationJournal(
+                temporaryDirectory, authorization, new ObjectMapper(), NOW.plusSeconds(2)
+        )).isInstanceOf(IllegalStateException.class)
+                .hasMessage("LIVE_CERTIFICATION_JOURNAL_INVALID");
     }
 
     private static LiveCertificationAuthorization authorization(

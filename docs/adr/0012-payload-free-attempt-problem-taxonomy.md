@@ -9,7 +9,7 @@
 
 Grounded Pipeline v2 的 IMAGE_ONLY 20 个 case 共发生 60 次 Provider attempt，全部以 `REJECTED` 结束。既有持久化只记录统一的 `LIVE_OUTPUT_REJECTED`，解析失败又在 workflow 中折叠为 `LIVE_STRUCTURE_OUTPUT_INVALID`，因此无法区分严格 JSON 解码、Candidate envelope、provenance、evidence、图结构或置信度状态等系统性失败。
 
-历史 evidence 刻意不保存 Candidate、Prompt、图片、原始 JSON、异常消息或 Provider request id。这个隐私边界是正确的，也意味着 CLOSED 结果不能在事后重新分类。下一轮必须先让系统在尝试发生时生成足够但不含业务载荷的诊断，不能靠保存原始模型输出换取可观测性。
+四轮 60-case certification journal/report 已刻意不保存 Candidate、Prompt、图片、原始 JSON、异常消息或 Provider request id。更早的 canary 1.0 evidence 曾保留 Provider request id 与完整 per-case mismatch 列表，因此只按较低的历史保证处理，不归入本 ADR 的 payload-free A1/A2 证据。无论哪一种历史文件都不能在事后重新分类；下一轮必须先让系统在尝试发生时生成足够但不含业务载荷的诊断，不能靠保存原始模型输出换取可观测性。
 
 ## 决策
 
@@ -29,7 +29,7 @@ Grounded Pipeline v2 的 IMAGE_ONLY 20 个 case 共发生 60 次 Provider attemp
 
 ### 3. 明确禁止进入诊断的数据
 
-尝试分类不得包含 Candidate JSON、Prompt、图片/base64、RootDocument、字段名、字段值、JSON Pointer、item id、problem args、异常消息、Provider response 或 request id。问题 code 必须来自严格 codec、composer 或 validator 的系统定义结果；Provider 文本不会成为 code。
+尝试分类与新版 live evidence 不得包含 Candidate JSON、Prompt、图片/base64、RootDocument、字段名、字段值、JSON Pointer、item id、problem args、异常消息、完整 mismatch 列表、Provider response 或 request id。问题 code 必须来自严格 codec、composer 或 validator 的系统定义结果；Provider 文本不会成为 code。canary/certification/journal 在最终写入前共享 fail-closed payload guard。
 
 这是一项 payload-free A1/A2 证据能力，不是防本地管理员篡改的 A3 机制。产品数据库已有的其他 attempt telemetry 不因本 ADR 扩权或改变。
 
@@ -37,12 +37,12 @@ Grounded Pipeline v2 的 IMAGE_ONLY 20 个 case 共发生 60 次 Provider attemp
 
 - Flyway `V010` 为 `inference_attempt` 追加非空 JSONB 列，默认 `{}`；既有记录升级后保持可读。
 - 数据库要求 JSON object 且文本表示不超过 16 KiB；Java codec继续执行键、值、重复项和上限校验。
-- live certification journal 升级为 1.2，report 升级为 1.2，canary summary 升级为 1.1；journal 1.1 可只读加载，缺失的新字段解释为空 Map。
+- live certification journal 升级为 1.2，report 升级为 1.2，canary summary 升级为 1.1；canary 1.1 移除 request id 并只保留 scalar evaluation metrics。journal 1.1 可只读加载，缺失的新字段解释为空 Map；OPEN 状态不得恢复旧格式。
 - 新 report 按 Profile 聚合所有 attempt 的 code/count，仍不保存单条 Provider payload。
 
 ### 5. 不重写历史结论，不隐式获得 live 权限
 
-- Grounded v2 的 CLOSED evidence 保持原样；其 60 次 IMAGE_ONLY 拒绝不能被本实现追溯分类。
+- Grounded v2 的 CLOSED certification evidence 与 legacy canary 1.0 evidence 均保持原样；其既有 IMAGE_ONLY 拒绝不能被本实现追溯分类，legacy canary 也不会被追认成 payload-free evidence。
 - 本节点只做离线假 Provider、严格 codec 与真实 PostgreSQL 验证，不读取 API key、不打开 ledger、不调用 DashScope。
 - 任何新的真实归因运行都会改变 evaluation identity，必须新建不可变 Profile/方案与精确 `PROPOSED` ledger，并重新取得 J1；历史 CLOSED authorization 不得复用。
 

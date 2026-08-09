@@ -4,7 +4,12 @@ import cn.hbads.renderweave.inference.eval.LiveEvaluationResult;
 import cn.hbads.renderweave.inference.provider.ProviderBudgetExceededException;
 import cn.hbads.renderweave.inference.provider.ProviderBudgetSnapshot;
 import cn.hbads.renderweave.inference.replay.InferenceAttemptProblemTaxonomy;
+import tools.jackson.core.StreamReadFeature;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.MapperFeature;
 import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ObjectNode;
 
 import java.io.IOException;
 import java.nio.channels.FileChannel;
@@ -51,7 +56,12 @@ final class LiveCertificationJournal {
     ) {
         Objects.requireNonNull(evidenceDirectory, "evidenceDirectory");
         this.authorization = Objects.requireNonNull(authorization, "authorization");
-        this.json = Objects.requireNonNull(json, "json");
+        this.json = Objects.requireNonNull(json, "json").rebuild()
+                .enable(StreamReadFeature.STRICT_DUPLICATE_DETECTION)
+                .enable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                .disable(DeserializationFeature.ACCEPT_FLOAT_AS_INT)
+                .disable(MapperFeature.ALLOW_COERCION_OF_SCALARS)
+                .build();
         authorizedAssignmentKeys = authorization.assignments(
                 new cn.hbads.renderweave.inference.eval.LiveEvaluationCorpus()
         ).stream().map(LiveCertificationAuthorization.Assignment::key)
@@ -405,18 +415,46 @@ final class LiveCertificationJournal {
 
     private State read() throws IOException {
         try {
-            return json.readValue(Files.readString(stateFile, StandardCharsets.UTF_8), State.class);
+            var raw = PayloadFreeLiveEvidenceGuard.requirePayloadFree(
+                    Files.readString(stateFile, StandardCharsets.UTF_8)
+            );
+            var tree = json.readTree(raw);
+            prepareAttemptProblemCounts(tree);
+            return json.treeToValue(tree, State.class);
         } catch (IOException | RuntimeException invalid) {
             throw new IllegalStateException("LIVE_CERTIFICATION_JOURNAL_INVALID", invalid);
+        }
+    }
+
+    private void prepareAttemptProblemCounts(JsonNode root) {
+        var legacy = LEGACY_VERSION.equals(root.path("journalVersion").asText());
+        var executions = root.path("executions");
+        if (!executions.isArray()) return;
+        for (var execution : executions) {
+            var result = execution.get("result");
+            if (result == null || result.isNull()) continue;
+            var attempts = result.path("attempts");
+            if (!attempts.isArray()) continue;
+            for (var attempt : attempts) {
+                var counts = attempt.get("problemCodeCounts");
+                if (counts != null && !counts.isNull()) continue;
+                if (!legacy || !(attempt instanceof ObjectNode objectAttempt)) {
+                    throw new IllegalArgumentException("Attempt problem taxonomy is required");
+                }
+                objectAttempt.set("problemCodeCounts", json.createObjectNode());
+            }
         }
     }
 
     private void write(State state) throws IOException {
         var temporary = stateFile.resolveSibling(stateFile.getFileName() + ".tmp-" + UUID.randomUUID());
         try {
+            var content = PayloadFreeLiveEvidenceGuard.requirePayloadFree(
+                    json.writerWithDefaultPrettyPrinter().writeValueAsString(state)
+            );
             Files.writeString(
                     temporary,
-                    json.writerWithDefaultPrettyPrinter().writeValueAsString(state),
+                    content,
                     StandardCharsets.UTF_8,
                     StandardOpenOption.CREATE_NEW,
                     StandardOpenOption.WRITE
@@ -477,6 +515,10 @@ final class LiveCertificationJournal {
                 || authorization.maximumCostMicrosCny() != state.maximumCostMicrosCny()
                 || authorization.maximumCasesPerBatch() != state.maximumCasesPerBatch()) {
             throw new IllegalStateException("LIVE_CERTIFICATION_JOURNAL_AUTHORIZATION_MISMATCH");
+        }
+        if (LEGACY_VERSION.equals(state.journalVersion())
+                && "OPEN".equals(authorization.status())) {
+            throw new IllegalStateException("LIVE_CERTIFICATION_JOURNAL_LEGACY_READ_ONLY");
         }
         if (state.reservations().size() > state.maximumProviderAttempts()
                 || consumedCost(state) > state.maximumCostMicrosCny()) {
@@ -893,7 +935,7 @@ final class LiveCertificationJournal {
                 throw new IllegalArgumentException("Certification attempt telemetry is invalid");
             }
             problemCodeCounts = InferenceAttemptProblemTaxonomy.normalize(
-                    problemCodeCounts == null ? Map.of() : problemCodeCounts
+                    Objects.requireNonNull(problemCodeCounts, "problemCodeCounts")
             );
         }
     }

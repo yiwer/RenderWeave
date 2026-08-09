@@ -68,6 +68,14 @@ class InferenceAttemptProblemTaxonomyTest {
                 () -> codec.parse("{\"VALID_CODE\":1,\"VALID_CODE\":2}"));
         assertThrows(IllegalArgumentException.class,
                 () -> codec.parse("{\"raw field name\":1}"));
+        assertThrows(IllegalArgumentException.class,
+                () -> codec.parse("{\"VALID_CODE\":\"1\"}"));
+        assertThrows(IllegalArgumentException.class,
+                () -> codec.parse("{\"VALID_CODE\":1.5}"));
+        assertThrows(IllegalArgumentException.class,
+                () -> codec.parse("{\"VALID_CODE\":1e0}"));
+        assertThrows(IllegalArgumentException.class,
+                () -> codec.parse("{\"VALID_CODE\":2147483648}"));
     }
 
     private static InferenceAttempt attempt(Map<String, Integer> counts) {

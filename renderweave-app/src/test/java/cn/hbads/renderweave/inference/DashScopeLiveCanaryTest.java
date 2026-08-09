@@ -4,7 +4,6 @@ import cn.hbads.renderweave.inference.candidate.CandidateJsonCodec;
 import cn.hbads.renderweave.inference.candidate.CandidateProblemJsonCodec;
 import cn.hbads.renderweave.inference.eval.LiveCandidateEvaluator;
 import cn.hbads.renderweave.inference.eval.LiveEvaluationCorpus;
-import cn.hbads.renderweave.inference.eval.LiveEvaluationResult;
 import cn.hbads.renderweave.inference.input.InferenceInput;
 import cn.hbads.renderweave.inference.live.LiveInferenceWorker;
 import cn.hbads.renderweave.inference.profile.InferenceProfileRegistry;
@@ -106,13 +105,15 @@ class DashScopeLiveCanaryTest {
                 ).run();
                 var finished = worker.processNext("canary-worker-" + selected.profileId()).orElseThrow();
                 var attempts = workflowStore.attempts(created.runId());
-                LiveEvaluationResult evaluation = null;
+                LiveCertificationJournal.EvaluationMetrics evaluation = null;
                 var stored = workflowStore.findCandidate(created.runId());
                 if (stored.isPresent()) {
-                    evaluation = evaluator.evaluate(
-                            gold,
-                            candidateCodec.parse(stored.orElseThrow().currentJson()),
-                            problemCodec.parse(stored.orElseThrow().validationProblemsJson())
+                    evaluation = LiveCertificationJournal.EvaluationMetrics.from(
+                            evaluator.evaluate(
+                                    gold,
+                                    candidateCodec.parse(stored.orElseThrow().currentJson()),
+                                    problemCodec.parse(stored.orElseThrow().validationProblemsJson())
+                            )
                     );
                 }
                 results.add(new CanaryResult(
@@ -120,8 +121,8 @@ class DashScopeLiveCanaryTest {
                         finished.state().name(), finished.failureCode().orElse(null), evaluation,
                         attempts.stream().map(attempt -> new AttemptResult(
                                 attempt.attemptOrdinal(), attempt.stage().name(), attempt.status().name(),
-                                attempt.outcomeCode(), attempt.providerRequestId().orElse(null),
-                                attempt.providerModel().orElse(null), attempt.inputTokens(), attempt.outputTokens(),
+                                attempt.outcomeCode(), attempt.providerModel().orElse(null),
+                                attempt.inputTokens(), attempt.outputTokens(),
                                 attempt.estimatedCostMicrosCny(), attempt.durationMillis(),
                                 attempt.problemCodeCounts()
                         )).toList()
@@ -158,8 +159,10 @@ class DashScopeLiveCanaryTest {
         var directory = repositoryRoot().resolve(".sdlc").resolve("evidence")
                 .resolve(timestamp + "-p5-live-canary");
         Files.createDirectories(directory);
-        Files.writeString(directory.resolve("summary.json"),
-                json.writerWithDefaultPrettyPrinter().writeValueAsString(summary));
+        var content = PayloadFreeLiveEvidenceGuard.requirePayloadFree(
+                json.writerWithDefaultPrettyPrinter().writeValueAsString(summary)
+        );
+        Files.writeString(directory.resolve("summary.json"), content);
     }
 
     private void requireOpenAuthorization() throws Exception {
@@ -214,7 +217,7 @@ class DashScopeLiveCanaryTest {
             String model,
             String state,
             String failureCode,
-            LiveEvaluationResult evaluation,
+            LiveCertificationJournal.EvaluationMetrics evaluation,
             List<AttemptResult> attempts
     ) { }
 
@@ -223,7 +226,6 @@ class DashScopeLiveCanaryTest {
             String stage,
             String status,
             String outcomeCode,
-            String providerRequestId,
             String providerModel,
             long inputTokens,
             long outputTokens,

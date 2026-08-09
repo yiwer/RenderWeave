@@ -81,15 +81,19 @@ public final class CandidateJsonCodec {
             return "CANDIDATE_DECODE_VALUE_INVALID";
         }
         if (containsType(failure, "MismatchedInputException")) {
-            if (containsMessageForType(failure, "MismatchedInputException", "trailing token")
-                    || containsMessageForType(failure, "MismatchedInputException", "trailing content")) {
+            if (messageStartsWithForType(
+                    failure, "MismatchedInputException", "trailing token (`jsontoken."
+            )) {
                 return "CANDIDATE_DECODE_TRAILING_CONTENT";
             }
             return "CANDIDATE_DECODE_SHAPE_INVALID";
         }
         if (containsType(failure, "StreamReadException")
                 || containsType(failure, "UnexpectedEndOfInputException")) {
-            if (containsMessageForType(failure, "StreamReadException", "duplicate")) {
+            if (messageStartsWithForType(failure, "StreamReadException", "duplicate field")
+                    || messageStartsWithForType(
+                            failure, "StreamReadException", "duplicate object property"
+                    )) {
                 return "CANDIDATE_DECODE_DUPLICATE_MEMBER";
             }
             return "CANDIDATE_DECODE_SYNTAX_INVALID";
@@ -104,16 +108,16 @@ public final class CandidateJsonCodec {
         return false;
     }
 
-    private static boolean containsMessageForType(
+    private static boolean messageStartsWithForType(
             Throwable failure,
             String simpleName,
-            String fragment
+            String prefix
     ) {
-        var expected = fragment.toLowerCase(java.util.Locale.ROOT);
+        var expected = prefix.toLowerCase(java.util.Locale.ROOT);
         for (var cause = failure; cause != null; cause = cause.getCause()) {
             if (!isType(cause, simpleName)) continue;
             var message = cause.getMessage();
-            if (message != null && message.toLowerCase(java.util.Locale.ROOT).contains(expected)) {
+            if (message != null && message.toLowerCase(java.util.Locale.ROOT).startsWith(expected)) {
                 return true;
             }
         }

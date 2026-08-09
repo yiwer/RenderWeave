@@ -89,7 +89,10 @@ class CandidateContractTest {
         assertDecodeDiagnostic(duplicate, "CANDIDATE_DECODE_DUPLICATE_MEMBER");
         assertDecodeDiagnostic(valid + "{}", "CANDIDATE_DECODE_TRAILING_CONTENT");
         assertDecodeDiagnostic("{", "CANDIDATE_DECODE_SYNTAX_INVALID");
+        assertDecodeDiagnostic("duplicate", "CANDIDATE_DECODE_SYNTAX_INVALID");
         assertDecodeDiagnostic("[]", "CANDIDATE_DECODE_SHAPE_INVALID");
+        assertDecodeDiagnostic("\"trailing token\"", "CANDIDATE_DECODE_SHAPE_INVALID");
+        assertDecodeDiagnostic("\"trailing content\"", "CANDIDATE_DECODE_SHAPE_INVALID");
         assertDecodeDiagnostic(invalidValue, "CANDIDATE_DECODE_VALUE_INVALID");
         assertDecodeDiagnostic(adversarialValue, "CANDIDATE_DECODE_VALUE_INVALID");
         assertDecodeDiagnostic(" ", "CANDIDATE_DECODE_REQUIRED");

@@ -18,6 +18,8 @@ public final class InferenceAttemptProblemTaxonomyJsonCodec {
     private static final ObjectMapper JSON = JsonMapper.builder(
                     JsonFactory.builder().enable(StreamReadFeature.STRICT_DUPLICATE_DETECTION).build())
             .enable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS)
+            .disable(DeserializationFeature.ACCEPT_FLOAT_AS_INT)
+            .disable(MapperFeature.ALLOW_COERCION_OF_SCALARS)
             .enable(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY)
             .enable(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS)
             .build();
