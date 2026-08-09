@@ -118,7 +118,12 @@ public class PostgresInferenceRunStore implements InferenceRunStore, InferenceRe
         if (page < 1 || size < 1 || size > 20) {
             throw new IllegalArgumentException("page must be >= 1 and size must be 1..20");
         }
-        var offset = Math.multiplyExact(page - 1, size);
+        final int offset;
+        try {
+            offset = Math.multiplyExact(page - 1, size);
+        } catch (ArithmeticException overflow) {
+            throw new IllegalArgumentException("page is too large", overflow);
+        }
         var total = jdbcClient.sql("select count(*) from inference_run")
                 .query(Long.class)
                 .single();

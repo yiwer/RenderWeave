@@ -299,6 +299,9 @@ class PostgresInferenceRunStoreTest {
         assertThat(second.items()).extracting(InferenceRunStore.RunSummary::runId)
                 .containsExactly(older.runId());
         assertThatThrownBy(() -> runs.list(1, 21)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> runs.list(Integer.MAX_VALUE, 20))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("page is too large");
     }
 
     private NewInferenceRun command(String idempotencyKey, String inputSeed, String artifactSeed) {

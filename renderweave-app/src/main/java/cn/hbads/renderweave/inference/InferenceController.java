@@ -152,6 +152,11 @@ final class InferenceController {
         if (page < 1 || size < 1 || size > 20) {
             throw new InvalidInferenceApiRequestException("page must be >= 1 and size must be 1..20");
         }
+        try {
+            Math.multiplyExact(page - 1, size);
+        } catch (ArithmeticException overflow) {
+            throw new InvalidInferenceApiRequestException("page is too large", overflow);
+        }
         var result = runStore.list(page, size);
         return new InferenceRunPageResponse(
                 result.page(), result.size(), result.total(),

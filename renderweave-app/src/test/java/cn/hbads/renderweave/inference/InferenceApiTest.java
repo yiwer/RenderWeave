@@ -255,6 +255,13 @@ class InferenceApiTest {
         mockMvc.perform(get("/api/v1/inference-runs").queryParam("size", "21"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
+
+        mockMvc.perform(get("/api/v1/inference-runs")
+                        .queryParam("page", Integer.toString(Integer.MAX_VALUE))
+                        .queryParam("size", "20"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_REQUEST"))
+                .andExpect(jsonPath("$.detail").value("page is too large"));
     }
 
     @Test
