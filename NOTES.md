@@ -9,9 +9,10 @@
 - 2026-08-09 Grounded Pipeline v2 60-case live 已完成并经独立 A2：80 attempts / 278,740 tokens / ¥0.908984；JSON_ONLY 20/20 零调用、COMBINED 20/20 单次调用，IMAGE_ONLY 0/20，policy=`EXPERIMENTAL`，authorization 已 CLOSED。
 - 2026-08-09 T5-9 payload-free attempt taxonomy 已完成 clean server A1 与独立 A2（0 Blocker / 0 High / 0 Medium）；未调用 Provider，不构成新的 Profile 认证。
 - 2026-08-09 T5-10 IMAGE_ONLY live 诊断已完成并独立 A2 PASS：20/20 case 均 `LIVE_REPAIR_BUDGET_EXHAUSTED`，60/60 attempts 均为 `CANDIDATE_DECODE_VALUE_INVALID`；197,321 tokens / ¥0.642106，ledger 已 CLOSED。
+- 2026-08-10 T5-11 已离线细分值级解码 taxonomy：enum / constructor / format 均使用有限 contract slot，关闭 scalar coercion；server A1 PASS，独立 A2 待执行，Provider attempts=0。
 - 用户已将候选模型扩大到 Qwen3.7 dated/alias 与 Qwen3.8 Max，其他模型费用硬上限 ¥10；按协议能力优先评测 pinned `qwen3.7-plus-2026-05-26`。
 - 需求访谈已收束，v1 产品语义以 `specs/renderweave-v1.md` 为准。
-- 生命周期状态：P0 `accepted`；P1–P4 `automated_verified`；P5 Flash / Plus / Prompt v2 / Grounded v2 / T5-10 诊断均为 `live_independently_reviewed`，T5-9 为 `independently_reviewed`。所有 DashScope Profile 仍为 `EXPERIMENTAL`、默认关闭；全部已用授权账本均为 CLOSED。
+- 生命周期状态：P0 `accepted`；P1–P4 `automated_verified`；P5 Flash / Plus / Prompt v2 / Grounded v2 / T5-10 诊断均为 `live_independently_reviewed`，T5-9 为 `independently_reviewed`，T5-11 为 `automated_verified`（A2 pending）。所有 DashScope Profile 仍为 `EXPERIMENTAL`、默认关闭；全部已用授权账本均为 CLOSED。
 
 ## 下一步
 - [x] Java / React / PostgreSQL / OpenAPI 最小 canary 与 A1 full gate 通过。
@@ -52,7 +53,7 @@
 - [x] 完成 T5-9 payload-free IMAGE_ONLY attempt taxonomy 的 clean server A1 与独立 A2；所有 live gate 保持关闭。
 - [x] 冻结 T5-10 IMAGE_ONLY 诊断 ledger identity，完成 clean pre-live A1/A2 与 PROPOSED 负探针；全程零调用。
 - [x] 取得 T5-10 exact J1，完成 20-case IMAGE_ONLY 诊断并立即 CLOSED；独立 A2 为 0 Blocker / 0 High / 0 Medium。
-- [ ] T5-11：离线细分 `CANDIDATE_DECODE_VALUE_INVALID` 的 enum/constructor/有限 contract-slot 归因；保持零 Provider 调用。
+- [x] T5-11：离线细分 `CANDIDATE_DECODE_VALUE_INVALID` 的 enum/constructor/format 有限 contract-slot 归因；关闭 scalar coercion，保持零 Provider 调用。
 
 ## 重要发现或局部阻塞
 - 本机全局 Node 为 20.20.2；正式 gate 已使用 checksum 固定的仓库局部 Node 24.19.0，不依赖或修改系统 Node。
@@ -83,4 +84,5 @@
 - `plans/logs/P5-T5-8.md`：Grounded Pipeline v2 clean A1 + pre-live/live A2 PASS；60-case live evidence 已 CLOSED，decision=`EXPERIMENTAL`。
 - `plans/logs/P5-T5-9.md`：payload-free attempt taxonomy 已在 `ec53b3d` 完成 clean server A1 与独立 A2；0 Blocker / 0 High / 0 Medium。
 - `plans/logs/P5-T5-10.md`：20-case IMAGE_ONLY live 诊断已完成并 CLOSED；60 attempts / 197,321 tokens / ¥0.642106，独立 A2 PASS，0 Blocker / 0 High / 0 Medium。
-- 当前恢复点：`phase/p5-image-only-attribution-v1` 的 T5-10 `live_independently_reviewed` 节点；该 ledger 永久 CLOSED，下一步为零调用的 T5-11 taxonomy 细分。
+- `plans/logs/P5-T5-11.md`：值级失败已完成有限槽位细分与 clean server A1；独立 A2 pending，Provider attempts=0。
+- 当前恢复点：`phase/p5-image-only-attribution-v1` 的 T5-11 `automated_verified` 节点；全部 live ledger 永久 CLOSED，下一步为只读独立 A2。

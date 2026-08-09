@@ -59,3 +59,25 @@ Grounded Pipeline v2 的 IMAGE_ONLY 20 个 case 共发生 60 次 Provider attemp
 - 正向：下一次受控 IMAGE_ONLY 实验可回答“失败发生在哪类合同边界”，不再只有统一 REJECTED；同一统计同时可用于 repair 轮次比较。
 - 代价：每个成功解析的 Provider Candidate 在 attempt checkpoint 前执行一次确定性 validation，后续 workflow 再执行一次相同纯函数以形成审核 checkpoint；共享 helper 保证两处规则一致。
 - 非目标：本节点不修改 Prompt/Profile、不降低 contract/evidence/DAG 门槛、不认证任何模型，也不提供原始模型输出调试仓库。
+
+## T5-11 决策补充：值级失败的有限槽位归因
+
+2026-08-10 的 T5-11 根据已关闭 IMAGE_ONLY 诊断中 60/60 次
+`CANDIDATE_DECODE_VALUE_INVALID`，在不读取历史原始输出的前提下细化新 attempt：
+
+- `InvalidFormatException` 中的 Candidate 枚举按固定语义槽位生成
+  `CANDIDATE_DECODE_ENUM_INVALID_*`；非枚举格式错误生成
+  `CANDIDATE_DECODE_FORMAT_INVALID_*`。
+- `ValueInstantiationException` 只按已知 Candidate record 与其固定非空成员生成
+  `CANDIDATE_DECODE_CONSTRUCTOR_INVALID_*`；未知情形只能进入固定 `OTHER`
+  或 record 级 fallback，不能拼接异常内容。
+- contract slot 只能来自代码内封闭映射。Jackson 数组索引、动态 map key、字段值、
+  JSON path、异常消息与类型名都不会进入 code。
+- Candidate codec 同时关闭 scalar coercion、float-to-int 与 enum ordinal 读取；否则违规值
+  可能被静默接受，无法形成可信归因。
+- 外部错误仍为 `CANDIDATE_JSON_INVALID`；journal/report 的稳定 Map 信封与版本不变。
+  历史 `CANDIDATE_DECODE_VALUE_INVALID` 继续只读可聚合，但新解码不会再产生该合并类别。
+
+本补充不修改 Prompt、Profile、corpus、repair routing 或质量阈值，不产生新的 live 权限。
+验证仅使用合成离线 fixture 与真实 PostgreSQL，覆盖 `STRUCTURE → REPAIR → REPAIR` 三阶段、
+旧新 taxonomy 共存、动态值泄露负例及 coercion 旁路。

@@ -1,7 +1,7 @@
 # RenderWeave v1 Phase 计划
 
-- 状态：P1–P4 implementation complete；P5 T5-1–T5-8 已完成通路、安全硬化与四轮 60-case 质量实测；T5-9 payload-free taxonomy 与 T5-10 IMAGE_ONLY live 归因均已完成 A1/独立 A2；所有 Profile 仍为 `EXPERIMENTAL`，全部 live authorization 均为 `CLOSED`
-- 日期：2026-08-09
+- 状态：P1–P4 implementation complete；P5 T5-1–T5-8 已完成通路、安全硬化与四轮 60-case 质量实测；T5-9 payload-free taxonomy、T5-10 IMAGE_ONLY live 归因已完成 A1/独立 A2；T5-11 值级细分已完成离线 A1、独立 A2 待执行；所有 Profile 仍为 `EXPERIMENTAL`，全部 live authorization 均为 `CLOSED`
+- 日期：2026-08-10
 - Spec：[`specs/renderweave-v1.md`](../specs/renderweave-v1.md)
 - 原型：`/prototype/schema-studio?variant=A|B|C`
 - 当前 lifecycle：P0 `accepted`；P1–P4 `automated_verified`；P5 `live_canary_verified` / `live_independently_reviewed` / `decision_recorded`
@@ -349,7 +349,7 @@ Phase 内任务只在真实前置依赖满足时并行。当前没有 atomic cla
 - 完成信号：J1 范围内执行并立即 CLOSED；独立重建确认 `CANDIDATE_DECODE_VALUE_INVALID=60`、`INCOMPLETE/DIAGNOSTIC_ONLY`，0 Blocker / 0 High / 0 Medium
 
 #### T5-11：值级解码失败的 payload-free 细分归因
-- 执行状态：`planned`（不得调用 Provider）
+- 执行状态：`automated_verified`（离线 A1；独立 A2 pending；Provider attempts=0）
 - AC：AC-016, AC-021
 - 依赖：T5-10 CLOSED evidence；ADR-0012、ADR-0013
 - 影响区域：Candidate strict codec diagnostic taxonomy、attempt telemetry、journal/report 与 adversarial contract tests
