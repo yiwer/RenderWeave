@@ -1,7 +1,7 @@
 {
   "authorizationVersion": "renderweave-live-certification-authorization/1.1",
   "authorizationId": "p5-certification-20260809-plus-prompt-v2",
-  "status": "OPEN",
+  "status": "CLOSED",
   "inputClassification": "REPOSITORY_SYNTHETIC_ONLY",
   "corpusVersion": "renderweave-live-eval/2.0",
   "evaluationIdentity": "renderweave-repository-tree-sha256/1:fac4720cfbe28894d3d65d5ed7ecd5e89e29c3380a8bbd43d362b08ca525d95c",
