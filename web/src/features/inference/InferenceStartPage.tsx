@@ -42,7 +42,7 @@ import {
 } from './candidate-api';
 import { InferenceFlowSteps } from './InferenceFlowSteps';
 import { inferenceStageLabel, inferenceStateLabel } from './inference-format';
-import { formatFileSize, mergeLiveFiles, validateLiveFiles, type LiveFileIssue, type LiveFileKind } from './live-input';
+import { filesForLiveMode, formatFileSize, mergeLiveFiles, validateLiveFiles, type LiveFileIssue, type LiveFileKind } from './live-input';
 
 type Launcher = 'REPLAY' | 'LIVE';
 type LiveProfileId = CreateLiveRunRequest['profileId'];
@@ -268,20 +268,21 @@ function LiveLauncher({
   const profile = query.data?.profiles.find((item) => item.profileId === profileId);
   const imageIssues = validateLiveFiles('IMAGE', images);
   const jsonIssues = validateLiveFiles('JSON', jsonSamples);
+  const activeFiles = filesForLiveMode(mode, images, jsonSamples);
   const activeIssues = [
     ...(mode === 'JSON_ONLY' ? [] : imageIssues),
     ...(mode === 'IMAGE_ONLY' ? [] : jsonIssues),
   ];
   const profileSupportsMode = Boolean(profile?.supportedModes.includes(mode));
-  const modeReady = (mode === 'JSON_ONLY' || images.length > 0)
-    && (mode === 'IMAGE_ONLY' || jsonSamples.length > 0)
+  const modeReady = (mode === 'JSON_ONLY' || activeFiles.images.length > 0)
+    && (mode === 'IMAGE_ONLY' || activeFiles.jsonSamples.length > 0)
     && activeIssues.length === 0
     && profileSupportsMode;
   const uploadAuthorized = Boolean(query.data?.uploadEnabled);
   const available = Boolean(query.data?.enabled && query.data.configured && uploadAuthorized
     && query.data.remainingAttempts > 0 && query.data.remainingCostMicrosCny > 0);
   const createRun = useMutation({
-    mutationFn: () => createLiveRunRequest(profileId, mode, images, jsonSamples, crypto.randomUUID()),
+    mutationFn: () => createLiveRunRequest(profileId, mode, activeFiles.images, activeFiles.jsonSamples, crypto.randomUUID()),
     onSuccess: (run) => onCreated(run.runId),
   });
 
@@ -338,7 +339,7 @@ function LiveLauncher({
                     accept="image/png,image/jpeg"
                     disabled={mode === 'JSON_ONLY'}
                     files={images}
-                    issues={imageIssues}
+                    issues={mode === 'JSON_ONLY' ? [] : imageIssues}
                     onFiles={(files) => { setImages(mergeLiveFiles(images, files)); setTransferConfirmed(false); }}
                     onRemove={(index) => { setImages(images.filter((_, current) => current !== index)); setTransferConfirmed(false); }}
                   />
@@ -349,7 +350,7 @@ function LiveLauncher({
                     accept="application/json,.json"
                     disabled={mode === 'IMAGE_ONLY'}
                     files={jsonSamples}
-                    issues={jsonIssues}
+                    issues={mode === 'IMAGE_ONLY' ? [] : jsonIssues}
                     onFiles={(files) => { setJsonSamples(mergeLiveFiles(jsonSamples, files)); setTransferConfirmed(false); }}
                     onRemove={(index) => { setJsonSamples(jsonSamples.filter((_, current) => current !== index)); setTransferConfirmed(false); }}
                   />
@@ -363,6 +364,9 @@ function LiveLauncher({
                 {!uploadAuthorized && (images.length > 0 || jsonSamples.length > 0) && (
                   <p className="live-local-only-note"><ShieldCheck aria-hidden="true" size={15} />文件只保留在当前浏览器页面；部署上传门关闭，启动按钮不会开放。</p>
                 )}
+                {((mode === 'JSON_ONLY' && images.length > 0) || (mode === 'IMAGE_ONLY' && jsonSamples.length > 0)) && (
+                  <p className="live-local-only-note"><ShieldCheck aria-hidden="true" size={15} />非当前模式文件仅在本页保留，本次不会发送；切回对应模式后可继续使用。</p>
+                )}
               </div>
             </section>
 
@@ -371,7 +375,7 @@ function LiveLauncher({
               <h2>{profile ? `${profile.model} · ${liveProfileShortVersion(profile)}` : '选择模型'}</h2>
               <dl className="fixture-metrics">
                 <div><dt>输入模式</dt><dd>{modeLabels[mode]}</dd></div>
-                <div><dt>本次文件</dt><dd>{images.length + jsonSamples.length}</dd></div>
+                <div><dt>本次文件</dt><dd>{activeFiles.images.length + activeFiles.jsonSamples.length}</dd></div>
                 <div><dt>最多调用</dt><dd>{profile?.maximumTotalCalls ?? 0}</dd></div>
                 <div><dt>成本预留上限</dt><dd>¥{formatYuan(profile?.maximumEstimatedCostMicrosCny ?? 0)}</dd></div>
               </dl>

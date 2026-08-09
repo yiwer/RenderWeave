@@ -248,6 +248,12 @@ test('preflights a local upload queue while the deployment transfer gate is clos
   await expect(page.getByRole('button', { name: '排队识别并进入审核' })).toBeDisabled();
   await page.getByRole('button', { name: '移除文件 notes.txt' }).click();
   await expect(page.getByText('notes.txt', { exact: true })).toHaveCount(0);
+  await page.getByRole('tab', { name: '仅 JSON' }).click();
+  await expect(page.getByText('非当前模式文件仅在本页保留，本次不会发送；切回对应模式后可继续使用。')).toBeVisible();
+  await expect(page.locator('.fixture-metrics div').filter({ hasText: '本次文件' })).toContainText('1');
+  await expect(page.getByText('design.png', { exact: true })).toBeVisible();
+  await page.getByRole('tab', { name: '图片 + JSON' }).click();
+  await expect(page.locator('.fixture-metrics div').filter({ hasText: '本次文件' })).toContainText('2');
   expect(livePosts).toBe(0);
 });
 

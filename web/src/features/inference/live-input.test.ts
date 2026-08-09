@@ -2,7 +2,7 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { formatFileSize, mergeLiveFiles, validateLiveFiles } from './live-input';
+import { filesForLiveMode, formatFileSize, mergeLiveFiles, validateLiveFiles } from './live-input';
 
 describe('live inference local file checks', () => {
   it('rejects unsupported and over-limit files before any request is created', () => {
@@ -29,6 +29,21 @@ describe('live inference local file checks', () => {
     expect(mergeLiveFiles([first], [duplicate, second])).toEqual([first, second]);
     expect(formatFileSize(first.size)).toBe('1.5 KiB');
     expect(formatFileSize(second.size)).toBe('256 KiB');
+  });
+
+  it('matches the server media-type boundary', () => {
+    expect(validateLiveFiles('IMAGE', [file('poster.png', 10, '')]).map((issue) => issue.code)).toEqual(['TYPE_UNSUPPORTED']);
+    expect(validateLiveFiles('JSON', [file('sample.json', 10, 'text/json')]).map((issue) => issue.code)).toEqual(['TYPE_UNSUPPORTED']);
+    expect(validateLiveFiles('JSON', [file('sample.json', 10, '')])).toEqual([]);
+  });
+
+  it('excludes retained files that do not belong to the selected mode', () => {
+    const image = file('poster.png', 10, 'image/png');
+    const json = file('sample.json', 10, 'application/json');
+
+    expect(filesForLiveMode('JSON_ONLY', [image], [json])).toEqual({ images: [], jsonSamples: [json] });
+    expect(filesForLiveMode('IMAGE_ONLY', [image], [json])).toEqual({ images: [image], jsonSamples: [] });
+    expect(filesForLiveMode('COMBINED', [image], [json])).toEqual({ images: [image], jsonSamples: [json] });
   });
 });
 

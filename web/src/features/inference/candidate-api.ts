@@ -22,6 +22,7 @@ import {
   type ReplayFixtureListResponse,
 } from '../../api/generated';
 import { StudioRequestError } from '../schema-studio/lossless-api';
+import { filesForLiveMode } from './live-input';
 
 export async function listReplayFixturesRequest(): Promise<ReplayFixtureListResponse> {
   const result = await listReplayFixtures();
@@ -59,8 +60,9 @@ export async function createLiveRunRequest(
     externalTransferConfirmed: true,
     experimentalProfileConfirmed: true,
   })], { type: 'application/json' }));
-  images.forEach((image) => body.append('images', image));
-  jsonSamples.forEach((sample) => body.append('jsonSamples', sample));
+  const active = filesForLiveMode(mode, images, jsonSamples);
+  active.images.forEach((image) => body.append('images', image));
+  active.jsonSamples.forEach((sample) => body.append('jsonSamples', sample));
   const response = await fetch('/api/v1/inference-runs/live', {
     method: 'POST',
     headers: { 'Idempotency-Key': idempotencyKey },

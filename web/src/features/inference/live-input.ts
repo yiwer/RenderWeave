@@ -64,14 +64,21 @@ export function formatFileSize(bytes: number) {
   return `${(bytes / MIB).toFixed(bytes < 10 * MIB ? 1 : 0)} MiB`;
 }
 
+export function filesForLiveMode<T>(mode: 'IMAGE_ONLY' | 'JSON_ONLY' | 'COMBINED', images: T[], jsonSamples: T[]) {
+  return {
+    images: mode === 'JSON_ONLY' ? [] : images,
+    jsonSamples: mode === 'IMAGE_ONLY' ? [] : jsonSamples,
+  };
+}
+
 function supported(kind: LiveFileKind, file: File) {
   const name = file.name.toLocaleLowerCase('en-US');
   const mime = file.type.toLocaleLowerCase('en-US');
   if (kind === 'IMAGE') {
     return (name.endsWith('.png') || name.endsWith('.jpg') || name.endsWith('.jpeg'))
-      && (!mime || mime === 'image/png' || mime === 'image/jpeg');
+      && (mime === 'image/png' || mime === 'image/jpeg');
   }
-  return name.endsWith('.json') && (!mime || mime === 'application/json' || mime === 'text/json');
+  return name.endsWith('.json') && (!mime || mime === 'application/json');
 }
 
 function fileIdentity(file: File) {
