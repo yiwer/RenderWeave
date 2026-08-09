@@ -3,7 +3,7 @@ package cn.hbads.renderweave.schema.draft;
 import java.util.List;
 
 public record DraftHistoryPage(
-        List<DraftRevisionSnapshot> items,
+        List<DraftRevisionSummary> items,
         int page,
         int size,
         long total

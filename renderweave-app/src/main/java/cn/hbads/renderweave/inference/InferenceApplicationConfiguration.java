@@ -16,6 +16,7 @@ import cn.hbads.renderweave.inference.provider.InferenceProvider;
 import cn.hbads.renderweave.inference.provider.ProviderBudgetStore;
 import cn.hbads.renderweave.inference.live.LiveInferenceWorker;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableScheduling;
@@ -102,12 +103,24 @@ class InferenceApplicationConfiguration {
     }
 
     @Bean
-    LiveInferenceCoordinator liveInferenceCoordinator(
-            LiveInferenceWorker worker,
+    InferenceCoordinator inferenceCoordinator(
+            ReplayInferenceWorker replayWorker,
+            LiveInferenceWorker liveWorker,
             @Value("${renderweave.inference.live-enabled:false}") boolean enabled,
             @Value("${renderweave.inference.live-upload-enabled:false}") boolean uploadEnabled
     ) {
-        return new LiveInferenceCoordinator(worker, enabled, uploadEnabled);
+        return new InferenceCoordinator(replayWorker, liveWorker, enabled, uploadEnabled);
+    }
+
+    @Bean
+    @ConditionalOnProperty(
+            prefix = "renderweave.inference",
+            name = "recovery-enabled",
+            havingValue = "true",
+            matchIfMissing = true
+    )
+    InferenceRecoveryScheduler inferenceRecoveryScheduler(InferenceCoordinator coordinator) {
+        return new InferenceRecoveryScheduler(coordinator);
     }
 
     @Bean

@@ -18,6 +18,8 @@ import tools.jackson.databind.ObjectMapper;
 
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -43,15 +45,26 @@ class InferenceControllerPolicyTest {
     }
 
     @Test
-    void coordinatorCannotRecoverRetainedLiveInputsWhileUploadAuthorizationIsClosed() {
-        var worker = mock(cn.hbads.renderweave.inference.live.LiveInferenceWorker.class);
-        var coordinator = new LiveInferenceCoordinator(worker, true, false);
+    void coordinatorCannotRecoverRetainedLiveInputsWhileUploadAuthorizationIsClosed() throws Exception {
+        var replay = mock(ReplayInferenceWorker.class);
+        var live = mock(cn.hbads.renderweave.inference.live.LiveInferenceWorker.class);
+        var replayChecked = new CountDownLatch(2);
+        when(replay.processNext(org.mockito.ArgumentMatchers.anyString())).thenAnswer(ignored -> {
+            replayChecked.countDown();
+            return Optional.empty();
+        });
+        var coordinator = new InferenceCoordinator(replay, live, true, false);
 
-        assertThat(coordinator.enabled()).isTrue();
-        assertThat(coordinator.dispatchEnabled()).isFalse();
-        coordinator.kick();
+        try {
+            assertThat(coordinator.liveEnabled()).isTrue();
+            assertThat(coordinator.liveDispatchEnabled()).isFalse();
+            coordinator.kick();
 
-        org.mockito.Mockito.verifyNoInteractions(worker);
+            assertThat(replayChecked.await(10, TimeUnit.SECONDS)).isTrue();
+            org.mockito.Mockito.verifyNoInteractions(live);
+        } finally {
+            coordinator.close();
+        }
     }
 
     private static void assertGate(InferenceController controller, String expectedCode) {
@@ -96,8 +109,8 @@ class InferenceControllerPolicyTest {
             boolean providerConfigured,
             InferenceRunStore runStore
     ) {
-        var coordinator = mock(LiveInferenceCoordinator.class);
-        when(coordinator.enabled()).thenReturn(workerEnabled);
+        var coordinator = mock(InferenceCoordinator.class);
+        when(coordinator.liveEnabled()).thenReturn(workerEnabled);
         var provider = new InferenceProvider() {
             @Override
             public ProviderInferenceResponse complete(ProviderInferenceRequest request) {
@@ -113,7 +126,6 @@ class InferenceControllerPolicyTest {
                 mock(InferenceRunService.class),
                 runStore,
                 mock(InferenceReplayStore.class),
-                mock(ReplayInferenceWorker.class),
                 coordinator,
                 provider,
                 mock(ProviderBudgetStore.class),

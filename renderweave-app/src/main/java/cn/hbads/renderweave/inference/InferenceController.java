@@ -17,7 +17,6 @@ import cn.hbads.renderweave.inference.profile.JsonStructuralProfiler;
 import cn.hbads.renderweave.inference.provider.InferenceProvider;
 import cn.hbads.renderweave.inference.provider.ProviderBudgetStore;
 import cn.hbads.renderweave.inference.replay.InferenceReplayStore;
-import cn.hbads.renderweave.inference.replay.ReplayInferenceWorker;
 import cn.hbads.renderweave.inference.run.InferenceRunService;
 import cn.hbads.renderweave.inference.run.InferenceRunSnapshot;
 import cn.hbads.renderweave.inference.run.InferenceRunStore;
@@ -55,8 +54,7 @@ final class InferenceController {
     private final InferenceRunService runService;
     private final InferenceRunStore runStore;
     private final InferenceReplayStore replayStore;
-    private final ReplayInferenceWorker worker;
-    private final LiveInferenceCoordinator liveCoordinator;
+    private final InferenceCoordinator coordinator;
     private final InferenceProvider provider;
     private final ProviderBudgetStore budgets;
     private final CandidateReviewService reviews;
@@ -73,8 +71,7 @@ final class InferenceController {
             InferenceRunService runService,
             InferenceRunStore runStore,
             InferenceReplayStore replayStore,
-            ReplayInferenceWorker worker,
-            LiveInferenceCoordinator liveCoordinator,
+            InferenceCoordinator coordinator,
             InferenceProvider provider,
             ProviderBudgetStore budgets,
             CandidateReviewService reviews,
@@ -87,8 +84,7 @@ final class InferenceController {
         this.runService = runService;
         this.runStore = runStore;
         this.replayStore = replayStore;
-        this.worker = worker;
-        this.liveCoordinator = liveCoordinator;
+        this.coordinator = coordinator;
         this.provider = provider;
         this.budgets = budgets;
         this.reviews = reviews;
@@ -137,7 +133,9 @@ final class InferenceController {
         var created = runService.create(idempotencyKey, input, profile.snapshotJson());
         var run = created.run();
         if (created.created()) {
-            run = worker.process(run.runId(), "http-replay-" + run.runId()).orElse(run);
+            run = coordinator.processReplay(
+                    run.runId(), "http-replay-" + run.runId()
+            ).orElse(run);
         }
         var response = toRunResponse(run);
         return ResponseEntity
@@ -161,7 +159,7 @@ final class InferenceController {
                 ))
                 .toList();
         return new LiveAvailabilityResponse(
-                liveCoordinator.enabled(), provider.configured(), liveUploadsEnabled, "SYNTHETIC_ONLY",
+                coordinator.liveEnabled(), provider.configured(), liveUploadsEnabled, "SYNTHETIC_ONLY",
                 budget.maximumAttempts(), budget.consumedAttempts(), budget.remainingAttempts(),
                 budget.maximumCostMicrosCny(), budget.consumedCostMicrosCny(),
                 budget.remainingCostMicrosCny(), items
@@ -210,7 +208,7 @@ final class InferenceController {
                 binaryInputs(images, false), binaryInputs(jsonSamples, true)
         );
         var created = runService.create(idempotencyKey, input, profile.snapshotJson());
-        if (created.created()) liveCoordinator.kick();
+        if (created.created()) coordinator.kick();
         return ResponseEntity
                 .status(created.created() ? 201 : 200)
                 .location(URI.create("/api/v1/inference-runs/" + created.run().runId()))
@@ -244,9 +242,11 @@ final class InferenceController {
         var run = retried.run();
         if (retried.created()) {
             if (live) {
-                liveCoordinator.kick();
+                coordinator.kick();
             } else {
-                run = worker.process(run.runId(), "http-retry-" + run.runId()).orElse(run);
+                run = coordinator.processReplay(
+                        run.runId(), "http-retry-" + run.runId()
+                ).orElse(run);
             }
         }
         return ResponseEntity
@@ -256,7 +256,7 @@ final class InferenceController {
     }
 
     private void requireLiveAuthorization() {
-        if (!liveCoordinator.enabled()) {
+        if (!coordinator.liveEnabled()) {
             throw new LiveInferenceUnavailableException(
                     "LIVE_INFERENCE_DISABLED", "Live inference is disabled by deployment policy"
             );

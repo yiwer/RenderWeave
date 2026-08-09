@@ -14,6 +14,7 @@ import cn.hbads.renderweave.schema.staticvalue.StaticSchemaOrigin;
 import cn.hbads.renderweave.schema.staticvalue.StaticSchemaOriginFilter;
 import cn.hbads.renderweave.schema.staticvalue.StaticSchemaStore;
 import cn.hbads.renderweave.schema.staticvalue.StoredStaticSchema;
+import cn.hbads.renderweave.schema.staticvalue.StoredStaticSchemaSummary;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
@@ -140,16 +141,13 @@ public class PostgresStaticSchemaStore implements StaticSchemaStore {
     }
 
     @Override
-    public List<StoredStaticSchema> findPage(int offset, int limit) {
+    public List<StoredStaticSchemaSummary> findPage(int offset, int limit) {
         return jdbcClient.sql("""
                         select schema_key,
                                version_tag,
                                origin,
-                               source_draft_revision,
-                               definition_json::text as definition_json,
-                               compiled_json_schema::text as compiled_json_schema,
-                               compiler_version,
-                               release_note,
+                               definition_json ->> 'displayName' as display_name,
+                               jsonb_array_length(definition_json -> 'fields') as field_count,
                                reference_depth,
                                published_at
                         from static_schema
@@ -161,7 +159,7 @@ public class PostgresStaticSchemaStore implements StaticSchemaStore {
                         """)
                 .param("offset", offset)
                 .param("limit", limit)
-                .query(PostgresStaticSchemaStore::mapStoredStaticSchema)
+                .query(PostgresStaticSchemaStore::mapStoredStaticSchemaSummary)
                 .list();
     }
 
@@ -173,7 +171,7 @@ public class PostgresStaticSchemaStore implements StaticSchemaStore {
     }
 
     @Override
-    public List<StoredStaticSchema> findPage(
+    public List<StoredStaticSchemaSummary> findPage(
             int offset,
             int limit,
             String search,
@@ -184,11 +182,8 @@ public class PostgresStaticSchemaStore implements StaticSchemaStore {
                         select schema_key,
                                version_tag,
                                origin,
-                               source_draft_revision,
-                               definition_json::text as definition_json,
-                               compiled_json_schema::text as compiled_json_schema,
-                               compiler_version,
-                               release_note,
+                               definition_json ->> 'displayName' as display_name,
+                               jsonb_array_length(definition_json -> 'fields') as field_count,
                                reference_depth,
                                published_at
                         from static_schema
@@ -207,7 +202,7 @@ public class PostgresStaticSchemaStore implements StaticSchemaStore {
                 .param("search", search)
                 .param("offset", offset)
                 .param("limit", limit)
-                .query(PostgresStaticSchemaStore::mapStoredStaticSchema)
+                .query(PostgresStaticSchemaStore::mapStoredStaticSchemaSummary)
                 .list();
     }
 
@@ -325,6 +320,29 @@ public class PostgresStaticSchemaStore implements StaticSchemaStore {
                 resultSet.getInt("reference_depth"),
                 resultSet.getObject("published_at", OffsetDateTime.class).toInstant()
         );
+    }
+
+    private static StoredStaticSchemaSummary mapStoredStaticSchemaSummary(
+            ResultSet resultSet,
+            int rowNumber
+    ) throws SQLException {
+        return new StoredStaticSchemaSummary(
+                new StaticSchemaRef(
+                        schemaKey(resultSet.getString("schema_key")),
+                        VersionTag.of(resultSet.getString("version_tag"))
+                ),
+                StaticSchemaOrigin.valueOf(resultSet.getString("origin")),
+                resultSet.getString("display_name"),
+                resultSet.getInt("field_count"),
+                resultSet.getInt("reference_depth"),
+                resultSet.getObject("published_at", OffsetDateTime.class).toInstant()
+        );
+    }
+
+    private static SchemaKey schemaKey(String rawSchemaKey) {
+        return rawSchemaKey.startsWith("system-")
+                ? SchemaKey.systemProvided(rawSchemaKey)
+                : SchemaKey.userProvided(rawSchemaKey);
     }
 
     private record DraftState(long currentRevision) {

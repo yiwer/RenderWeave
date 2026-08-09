@@ -75,6 +75,36 @@ class DraftPersistenceTest {
     }
 
     @Test
+    void listAndHistoryUseSummaryProjectionsWithoutMaterializingLargeDefinitions() {
+        drafts.create("large-draft-list", largeDefinition("大定义 v1", 256, 2_000));
+        drafts.save("large-draft-list", 0, largeDefinition("大定义 v2", 256, 2_000));
+
+        var page = drafts.list(1, 100, "large-draft-list",
+                cn.hbads.renderweave.schema.draft.DraftListSort.UPDATED_DESC);
+        var history = drafts.history("large-draft-list", 1, 100);
+
+        assertThat(page.items()).singleElement().satisfies(summary -> {
+            assertThat(summary.displayName()).isEqualTo("大定义 v2");
+            assertThat(summary.fieldCount()).isEqualTo(256);
+            assertThat(summary.revision()).isEqualTo(1);
+        });
+        assertThat(history.items())
+                .extracting(
+                        cn.hbads.renderweave.schema.draft.DraftRevisionSummary::displayName,
+                        cn.hbads.renderweave.schema.draft.DraftRevisionSummary::fieldCount
+                )
+                .containsExactly(
+                        org.assertj.core.groups.Tuple.tuple("大定义 v2", 256),
+                        org.assertj.core.groups.Tuple.tuple("大定义 v1", 256)
+                );
+        assertThat(jdbcClient.sql("""
+                        select min(octet_length(definition_json::text))
+                        from schema_draft_revision
+                        where schema_key = 'large-draft-list'
+                        """).query(Integer.class).single()).isGreaterThan(500_000);
+    }
+
+    @Test
     void staleWriterCannotOverwriteTheWinnerOrAppendHistory() {
         drafts.create("product-card", definition("原始", "title"));
         drafts.save("product-card", 0, definition("先到的写入", "winner"));
@@ -156,6 +186,18 @@ class DraftPersistenceTest {
     }
 
     @Test
+    void createSelfReferenceKeepsThePreciseCycleDiagnostic() {
+        assertThatThrownBy(() -> drafts.create(
+                "self-cycle",
+                referenceDefinition("自引用", "self-cycle")
+        ))
+                .isInstanceOf(InvalidSchemaDefinitionException.class)
+                .satisfies(error -> assertThat(((InvalidSchemaDefinitionException) error).problems())
+                        .anyMatch(problem -> problem.code().equals("SCHEMA_REFERENCE_CYCLE")));
+        assertThat(draftCount()).isZero();
+    }
+
+    @Test
     void liveReferencesPersistAsRevisionProjectionAndResolveTransitively() {
         drafts.create("leaf", emptyDefinition("叶节点"));
         drafts.create("child", referenceDefinition("子节点", "leaf"));
@@ -233,6 +275,32 @@ class DraftPersistenceTest {
                 .satisfies(error -> assertThat(((InvalidSchemaDefinitionException) error).problems())
                         .anyMatch(problem -> problem.code().equals("SCHEMA_REFERENCE_DEPTH_EXCEEDED")));
         assertThat(draftCount()).isEqualTo(16);
+        assertThat(activeEdgeCount()).isEqualTo(15);
+    }
+
+    @Test
+    void replacingALeafCannotPushAnExistingAncestorPastDepthSixteen() {
+        drafts.create("extension", emptyDefinition("Extension"));
+        drafts.create("impact-leaf", emptyDefinition("Leaf"));
+        var target = "impact-leaf";
+        for (int index = 15; index >= 1; index--) {
+            var source = "impact-node-" + index;
+            drafts.create(source, referenceDefinition("Impact " + index, target));
+            target = source;
+        }
+        assertThat(drafts.get("impact-node-1").resolvedRevisions()).hasSize(16);
+
+        assertThatThrownBy(() -> drafts.save(
+                "impact-leaf",
+                0,
+                referenceDefinition("Leaf extended", "extension")
+        ))
+                .isInstanceOf(InvalidSchemaDefinitionException.class)
+                .satisfies(error -> assertThat(((InvalidSchemaDefinitionException) error).problems())
+                        .anyMatch(problem -> problem.code()
+                                .equals("SCHEMA_REFERENCE_DEPTH_EXCEEDED")));
+
+        assertThat(drafts.get("impact-leaf").revision()).isZero();
         assertThat(activeEdgeCount()).isEqualTo(15);
     }
 
@@ -411,5 +479,24 @@ class DraftPersistenceTest {
                   ]
                 }
                 """.formatted(displayName, targetSchemaKey);
+    }
+
+    private static String largeDefinition(
+            String displayName,
+            int fieldCount,
+            int descriptionLength
+    ) {
+        var description = "x".repeat(descriptionLength);
+        var fields = new StringBuilder();
+        for (var index = 0; index < fieldCount; index++) {
+            if (index > 0) fields.append(',');
+            fields.append("""
+                    {"fieldKey":"field-%d","displayName":"字段 %d","description":"%s",
+                     "required":false,"value":{"type":"text"}}
+                    """.formatted(index, index, description));
+        }
+        return """
+                {"dslVersion":"renderweave-schema/1.0","displayName":"%s","fields":[%s]}
+                """.formatted(displayName, fields);
     }
 }

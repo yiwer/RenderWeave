@@ -202,10 +202,10 @@ final class DraftController {
 
     private DraftHistoryResponse toHistoryResponse(DraftHistoryPage history) {
         var items = history.items().stream()
-                .map(item -> new DraftRevisionSummary(
+                .map(item -> new DraftRevisionSummaryResponse(
                         item.revision(),
-                        item.definition().displayName(),
-                        item.definition().fields().size(),
+                        item.displayName(),
+                        item.fieldCount(),
                         item.savedAt()
                 ))
                 .toList();
@@ -298,14 +298,14 @@ final class DraftController {
     }
 
     record DraftHistoryResponse(
-            List<DraftRevisionSummary> items,
+            List<DraftRevisionSummaryResponse> items,
             int page,
             int size,
             long total
     ) {
     }
 
-    record DraftRevisionSummary(
+    record DraftRevisionSummaryResponse(
             long revision,
             String displayName,
             int fieldCount,

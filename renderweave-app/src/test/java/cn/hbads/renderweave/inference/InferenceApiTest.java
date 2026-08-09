@@ -1,5 +1,9 @@
 package cn.hbads.renderweave.inference;
 
+import cn.hbads.renderweave.inference.profile.InferenceProfileRegistry;
+import cn.hbads.renderweave.inference.run.InferenceRunService;
+import cn.hbads.renderweave.inference.run.InferenceRunState;
+import cn.hbads.renderweave.inference.run.InferenceRunStore;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +21,9 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.node.ObjectNode;
 
+import java.time.Duration;
+import java.time.Instant;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
@@ -32,6 +39,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Testcontainers
 @SpringBootTest(properties = {
         "renderweave.inference.blob-root=target/test-inference-api-blobs",
+        "renderweave.inference.recovery-enabled=true",
+        "renderweave.inference.poll-initial-delay-millis=60000",
         "DASHSCOPE_API_KEY=",
         "DASHSCOPE_API_KEY_FILE="
 })
@@ -49,6 +58,21 @@ class InferenceApiTest {
 
     @Autowired
     private JdbcClient jdbcClient;
+
+    @Autowired
+    private InferenceRunService runService;
+
+    @Autowired
+    private InferenceRunStore runStore;
+
+    @Autowired
+    private ReplayFixtureInputFactory fixtureInputs;
+
+    @Autowired
+    private InferenceProfileRegistry profiles;
+
+    @Autowired
+    private InferenceRecoveryScheduler recoveryScheduler;
 
     @BeforeEach
     void clearData() {
@@ -157,6 +181,36 @@ class InferenceApiTest {
         assertThat(count("schema_draft")).isZero();
         assertThat(count("schema_draft_revision")).isZero();
         assertThat(count("inference_candidate")).isEqualTo(1);
+    }
+
+    @Test
+    void productionCoordinatorReclaimsAnExpiredReplayLeaseAfterRestartSignal() throws Exception {
+        var input = fixtureInputs.create("json-01-scalars", true);
+        var profile = profiles.require(input.profileId());
+        var queued = runService.create(
+                "api-restart-recovery", input, profile.snapshotJson()
+        ).run();
+        var abandoned = runStore.claim(
+                queued.runId(),
+                "crashed-process",
+                Instant.now().minusSeconds(60),
+                Duration.ofSeconds(1)
+        ).orElseThrow();
+        assertThat(abandoned.state()).isEqualTo(InferenceRunState.RUNNING);
+
+        recoveryScheduler.recoverQueuedWork();
+
+        var deadline = Instant.now().plusSeconds(10);
+        InferenceRunState state;
+        do {
+            state = runStore.find(queued.runId()).orElseThrow().state();
+            if (state == InferenceRunState.REVIEW_REQUIRED) break;
+            Thread.sleep(25);
+        } while (Instant.now().isBefore(deadline));
+        assertThat(state).isEqualTo(InferenceRunState.REVIEW_REQUIRED);
+        assertThat(runStore.eventsAfter(queued.runId(), 0, 100))
+                .extracting(event -> event.type())
+                .contains("LEASE_RECLAIMED", "REVIEW_REQUIRED");
     }
 
     @Test

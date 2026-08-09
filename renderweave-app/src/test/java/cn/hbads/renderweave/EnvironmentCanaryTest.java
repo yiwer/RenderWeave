@@ -44,7 +44,23 @@ class EnvironmentCanaryTest {
                 .sql("select count(*) from flyway_schema_history where success = true")
                 .query(Integer.class)
                 .single();
-        assertThat(appliedMigrations).isEqualTo(10);
+        assertThat(appliedMigrations).isEqualTo(11);
+
+        Integer capacityIndexes = jdbcClient.sql("""
+                        select count(*)
+                        from pg_indexes
+                        where schemaname = 'public'
+                          and indexname in (
+                            'schema_draft_active_updated_desc_idx',
+                            'schema_draft_active_updated_asc_idx',
+                            'static_schema_origin_published_desc_idx',
+                            'static_schema_origin_published_asc_idx',
+                            'inference_run_network_claim_idx'
+                          )
+                        """)
+                .query(Integer.class)
+                .single();
+        assertThat(capacityIndexes).isEqualTo(5);
 
         Integer destructiveReservationLinks = jdbcClient
                 .sql("""

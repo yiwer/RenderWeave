@@ -14,6 +14,8 @@ import cn.hbads.renderweave.schema.identity.VersionTag;
 import cn.hbads.renderweave.schema.staticvalue.PublishStaticSchema;
 import cn.hbads.renderweave.schema.staticvalue.StaticSchemaAlreadyExistsException;
 import cn.hbads.renderweave.schema.staticvalue.StaticSchemaOrigin;
+import cn.hbads.renderweave.schema.staticvalue.StaticSchemaListSort;
+import cn.hbads.renderweave.schema.staticvalue.StaticSchemaOriginFilter;
 import cn.hbads.renderweave.schema.staticvalue.StaticSchemaService;
 import cn.hbads.renderweave.schema.staticvalue.StaticSchemaStore;
 import org.junit.jupiter.api.BeforeEach;
@@ -105,6 +107,38 @@ class StaticSchemaPersistenceTest {
                 .noneMatch(name -> name.equals("update")
                         || name.equals("delete")
                         || name.equals("recompile"));
+    }
+
+    @Test
+    void listUsesSummaryProjectionWithoutMaterializingCompiledArtifactBytes() {
+        drafts.create("large-list-artifact", textDefinition("大产物列表项", "value"));
+        statics.publish("large-list-artifact", 0, "v1", null);
+        jdbcClient.sql("""
+                        update static_schema
+                        set compiled_json_schema = cast(
+                            json_build_object('padding', repeat('x', 1900000)) as json
+                        )
+                        where schema_key = 'large-list-artifact' and version_tag = 'v1'
+                        """).update();
+
+        var summaries = staticStore.findPage(
+                0,
+                100,
+                "large-list-artifact",
+                StaticSchemaListSort.PUBLISHED_DESC,
+                StaticSchemaOriginFilter.DRAFT
+        );
+
+        assertThat(summaries).singleElement().satisfies(summary -> {
+            assertThat(summary.reference().schemaKey().value()).isEqualTo("large-list-artifact");
+            assertThat(summary.displayName()).isEqualTo("大产物列表项");
+            assertThat(summary.fieldCount()).isEqualTo(1);
+        });
+        assertThat(jdbcClient.sql("""
+                        select octet_length(compiled_json_schema::text)
+                        from static_schema
+                        where schema_key = 'large-list-artifact' and version_tag = 'v1'
+                        """).query(Integer.class).single()).isGreaterThan(1_800_000);
     }
 
     @Test

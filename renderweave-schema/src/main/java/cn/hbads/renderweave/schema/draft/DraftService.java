@@ -90,19 +90,16 @@ public final class DraftService {
             throw new IllegalArgumentException("page is too large", overflow);
         }
         var items = store.findActivePage(offset, size, search, sort).stream()
-                .map(stored -> {
-                    var definition = parser.parse(stored.definitionJson());
-                    return new DraftSummary(
-                            stored.schemaKey(),
-                            stored.revision(),
-                            stored.creationSource(),
-                            definition.displayName(),
-                            definition.fields().size(),
-                            stored.createdAt(),
-                            stored.updatedAt(),
-                            stored.savedAt()
-                    );
-                })
+                .map(stored -> new DraftSummary(
+                        stored.schemaKey(),
+                        stored.revision(),
+                        stored.creationSource(),
+                        stored.displayName(),
+                        stored.fieldCount(),
+                        stored.createdAt(),
+                        stored.updatedAt(),
+                        stored.savedAt()
+                ))
                 .toList();
         return new DraftPage(items, page, size, store.countActive(search));
     }
@@ -136,7 +133,12 @@ public final class DraftService {
             throw new IllegalArgumentException("page is too large", overflow);
         }
         var items = store.findHistory(schemaKey, offset, size).stream()
-                .map(this::toRevisionSnapshot)
+                .map(stored -> new DraftRevisionSummary(
+                        stored.revision(),
+                        stored.displayName(),
+                        stored.fieldCount(),
+                        stored.savedAt()
+                ))
                 .toList();
         return new DraftHistoryPage(items, page, size, total);
     }

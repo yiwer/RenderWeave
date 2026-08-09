@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-    [ValidateSet('fast', 'server', 'web', 'e2e', 'draft-e2e', 'inference-e2e', 'compose', 'runtime', 'full')]
+    [ValidateSet('fast', 'server', 'web', 'e2e', 'draft-e2e', 'inference-e2e', 'compose', 'runtime', 'capacity', 'full')]
     [string]$Gate = 'fast'
 )
 
@@ -106,6 +106,7 @@ try {
         'inference-e2e' { @('server-verify', 'web-node24', 'inference-browser-e2e') }
         'compose' { @('compose-config') }
         'runtime' { @('runtime-canary') }
+        'capacity' { @('capacity-baseline') }
         'full' { @('repository-diff', 'server-verify', 'web-node24', 'compose-config', 'runtime-canary', 'prototype-e2e', 'draft-browser-e2e', 'inference-browser-e2e') }
     }
 
@@ -158,6 +159,19 @@ try {
                 Invoke-GateStep $step {
                     Invoke-ZeroPaidAiCommand `
                         'powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools\run-inference-e2e.ps1'
+                }
+            }
+            'capacity-baseline' {
+                Invoke-GateStep $step {
+                    $reportPath = Join-Path $evidenceDir 'capacity-baseline.json'
+                    $command = 'set "RENDERWEAVE_RUN_CAPACITY_BASELINE=true" && ' +
+                        'set "RENDERWEAVE_CAPACITY_REPORT=' + $reportPath + '" && ' +
+                        'mvn.cmd -B -ntp -pl renderweave-app -am ' +
+                        '-Dtest=CapacityBaselineTest -Dsurefire.failIfNoSpecifiedTests=false test'
+                    Invoke-ZeroPaidAiCommand $command
+                    if ($LASTEXITCODE -eq 0 -and -not (Test-Path -LiteralPath $reportPath -PathType Leaf)) {
+                        throw 'Capacity baseline completed without producing its machine-readable report.'
+                    }
                 }
             }
         }

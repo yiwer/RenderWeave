@@ -152,23 +152,20 @@ public final class StaticSchemaService {
     }
 
     private StaticSchemaPage page(
-            List<StoredStaticSchema> storedSchemas,
+            List<StoredStaticSchemaSummary> storedSchemas,
             int page,
             int size,
             long total
     ) {
         var items = storedSchemas.stream()
-                .map(stored -> {
-                    var definition = parser.parse(stored.definitionJson());
-                    return new StaticSchemaSummary(
-                            stored.reference(),
-                            stored.origin(),
-                            definition.displayName(),
-                            definition.fields().size(),
-                            stored.referenceDepth(),
-                            stored.publishedAt()
-                    );
-                })
+                .map(stored -> new StaticSchemaSummary(
+                        stored.reference(),
+                        stored.origin(),
+                        stored.displayName(),
+                        stored.fieldCount(),
+                        stored.referenceDepth(),
+                        stored.publishedAt()
+                ))
                 .toList();
         return new StaticSchemaPage(items, page, size, total);
     }

@@ -14,7 +14,11 @@ import cn.hbads.renderweave.schema.draft.IncomingDraftReference;
 import cn.hbads.renderweave.schema.draft.ResolvedStoredDraft;
 import cn.hbads.renderweave.schema.draft.StoredDraft;
 import cn.hbads.renderweave.schema.draft.StoredDraftRevision;
+import cn.hbads.renderweave.schema.draft.StoredDraftRevisionSummary;
+import cn.hbads.renderweave.schema.draft.StoredDraftSummary;
 import cn.hbads.renderweave.schema.draft.StaticReferenceTarget;
+import cn.hbads.renderweave.schema.definition.InvalidSchemaDefinitionException;
+import cn.hbads.renderweave.schema.definition.SchemaProblem;
 import cn.hbads.renderweave.schema.definition.StaticSchemaRef;
 import cn.hbads.renderweave.schema.identity.SchemaKey;
 import cn.hbads.renderweave.schema.identity.VersionTag;
@@ -26,8 +30,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.OffsetDateTime;
-import java.util.ArrayDeque;
-import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -35,12 +37,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.TreeSet;
 
 @Repository
 public class PostgresDraftStore implements DraftStore {
 
-    /** ASCII "RenderWe" as one fixed lock domain for every active Draft graph mutation/read snapshot. */
+    /** ASCII "RenderWe" as one fixed lock domain for active Draft graph writes/shared snapshots. */
     private static final long GRAPH_LOCK_KEY = 0x52656e6465725765L;
     private static final int INCOMING_REFERENCE_SUMMARY_LIMIT = 20;
 
@@ -108,19 +109,25 @@ public class PostgresDraftStore implements DraftStore {
     @Override
     @Transactional
     public Optional<ResolvedStoredDraft> findCurrent(SchemaKey schemaKey) {
-        acquireGraphLock();
-        return findStoredCurrent(schemaKey).map(stored -> resolve(stored, loadActiveGraph()));
+        acquireGraphReadLock();
+        return findStoredCurrent(schemaKey).map(this::resolveCurrent);
     }
 
     @Override
-    public List<StoredDraft> findActivePage(int offset, int limit, String search, DraftListSort sort) {
+    public List<StoredDraftSummary> findActivePage(
+            int offset,
+            int limit,
+            String search,
+            DraftListSort sort
+    ) {
         var sql = """
                         select d.schema_key,
                                d.current_revision,
                                d.creation_source,
                                d.created_at,
                                d.updated_at,
-                               r.definition_json::text as definition_json,
+                               r.definition_json ->> 'displayName' as display_name,
+                               jsonb_array_length(r.definition_json -> 'fields') as field_count,
                                r.saved_at
                         from schema_draft d
                         join schema_draft_revision r
@@ -139,7 +146,7 @@ public class PostgresDraftStore implements DraftStore {
                 .param("search", search)
                 .param("offset", offset)
                 .param("limit", limit)
-                .query(PostgresDraftStore::mapStoredDraft)
+                .query(PostgresDraftStore::mapStoredDraftSummary)
                 .list();
     }
 
@@ -186,9 +193,16 @@ public class PostgresDraftStore implements DraftStore {
     }
 
     @Override
-    public List<StoredDraftRevision> findHistory(SchemaKey schemaKey, int offset, int limit) {
+    public List<StoredDraftRevisionSummary> findHistory(
+            SchemaKey schemaKey,
+            int offset,
+            int limit
+    ) {
         return jdbcClient.sql("""
-                        select schema_key, revision, definition_json::text as definition_json, saved_at
+                        select revision,
+                               definition_json ->> 'displayName' as display_name,
+                               jsonb_array_length(definition_json -> 'fields') as field_count,
+                               saved_at
                         from schema_draft_revision
                         where schema_key = :schemaKey
                         order by revision desc
@@ -197,7 +211,7 @@ public class PostgresDraftStore implements DraftStore {
                 .param("schemaKey", schemaKey.value())
                 .param("offset", offset)
                 .param("limit", limit)
-                .query(PostgresDraftStore::mapStoredRevision)
+                .query(PostgresDraftStore::mapStoredRevisionSummary)
                 .list();
     }
 
@@ -304,6 +318,13 @@ public class PostgresDraftStore implements DraftStore {
 
     private void acquireGraphLock() {
         jdbcClient.sql("select pg_advisory_xact_lock(:lockKey)")
+                .param("lockKey", GRAPH_LOCK_KEY)
+                .query((resultSet, rowNumber) -> Boolean.TRUE)
+                .single();
+    }
+
+    private void acquireGraphReadLock() {
+        jdbcClient.sql("select pg_advisory_xact_lock_shared(:lockKey)")
                 .param("lockKey", GRAPH_LOCK_KEY)
                 .query((resultSet, rowNumber) -> Boolean.TRUE)
                 .single();
@@ -517,16 +538,204 @@ public class PostgresDraftStore implements DraftStore {
             List<DraftReferenceTarget> draftReferences,
             List<StaticReferenceTarget> staticReferences
     ) {
-        var graph = loadActiveGraph();
-        DraftReferenceGraph.validateReplacement(
-                sourceSchemaKey,
-                draftReferences,
-                staticReferences,
-                graph.revisions().keySet(),
-                graph.draftEdges(),
-                graph.staticEdges(),
-                graph.staticDepths()
-        );
+        var draftTargets = draftReferences.stream()
+                .map(DraftReferenceTarget::schemaKey)
+                .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
+        var staticTargets = staticReferences.stream()
+                .map(StaticReferenceTarget::reference)
+                .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
+
+        var missingDrafts = missingActiveDrafts(draftTargets);
+        // A create may propose a self-reference before its row exists; preserve the domain's
+        // more precise cycle diagnostic instead of misclassifying it as a missing target.
+        missingDrafts.remove(sourceSchemaKey);
+        var staticDepths = loadStaticDepths(staticTargets);
+        var missingStatics = new LinkedHashSet<>(staticTargets);
+        missingStatics.removeAll(staticDepths.keySet());
+        var missing = new java.util.ArrayList<SchemaProblem>();
+        draftReferences.stream()
+                .filter(reference -> missingDrafts.contains(reference.schemaKey()))
+                .map(reference -> new SchemaProblem(
+                        "SCHEMA_REFERENCE_NOT_FOUND",
+                        reference.pointer(),
+                        "Referenced active Draft does not exist: "
+                                + reference.schemaKey().value()
+                ))
+                .forEach(missing::add);
+        staticReferences.stream()
+                .filter(reference -> missingStatics.contains(reference.reference()))
+                .map(reference -> new SchemaProblem(
+                        "STATIC_SCHEMA_REFERENCE_NOT_FOUND",
+                        reference.pointer(),
+                        "Referenced StaticSchema does not exist: "
+                                + reference.reference().schemaKey().value()
+                                + "@" + reference.reference().versionTag().value()
+                ))
+                .forEach(missing::add);
+        if (!missing.isEmpty()) throw new InvalidSchemaDefinitionException(missing);
+
+        var ancestorDistances = ancestorDistances(sourceSchemaKey);
+        var cycles = draftReferences.stream()
+                .filter(reference -> ancestorDistances.containsKey(reference.schemaKey()))
+                .map(reference -> new SchemaProblem(
+                        "SCHEMA_REFERENCE_CYCLE",
+                        reference.pointer(),
+                        "Reference would create a cycle through "
+                                + reference.schemaKey().value()
+                ))
+                .toList();
+        if (!cycles.isEmpty()) throw new InvalidSchemaDefinitionException(cycles);
+
+        var maximumChildDepth = maximumDraftTargetDepth(draftTargets);
+        var maximumStaticDepth = staticDepths.values().stream()
+                .mapToInt(Integer::intValue)
+                .max()
+                .orElse(0);
+        var sourceDepth = Math.max(1, 1 + Math.max(maximumChildDepth, maximumStaticDepth));
+        var maximumAncestorDistance = ancestorDistances.values().stream()
+                .mapToInt(Integer::intValue)
+                .max()
+                .orElse(0);
+        var prospectiveDepth = maximumAncestorDistance + sourceDepth;
+        if (prospectiveDepth > DraftReferenceGraph.MAX_DEPTH) {
+            var pointer = !draftReferences.isEmpty()
+                    ? draftReferences.getFirst().pointer()
+                    : staticReferences.isEmpty() ? "" : staticReferences.getFirst().pointer();
+            throw new InvalidSchemaDefinitionException(List.of(new SchemaProblem(
+                    "SCHEMA_REFERENCE_DEPTH_EXCEEDED",
+                    pointer,
+                    "Reference graph depth " + prospectiveDepth + " exceeds maximum "
+                            + DraftReferenceGraph.MAX_DEPTH
+            )));
+        }
+    }
+
+    private Set<SchemaKey> missingActiveDrafts(Set<SchemaKey> targets) {
+        if (targets.isEmpty()) return new LinkedHashSet<>();
+        var encoded = targets.stream().map(SchemaKey::value).collect(java.util.stream.Collectors.joining(","));
+        return new LinkedHashSet<>(jdbcClient.sql("""
+                        with proposed(schema_key) as (
+                            select unnest(string_to_array(:targets, ','))
+                        )
+                        select proposed.schema_key
+                        from proposed
+                        left join schema_draft draft
+                          on draft.schema_key = proposed.schema_key
+                         and draft.deleted_at is null
+                        where draft.schema_key is null
+                        order by proposed.schema_key
+                        """)
+                .param("targets", encoded)
+                .query((resultSet, rowNumber) ->
+                        SchemaKey.userProvided(resultSet.getString("schema_key")))
+                .list());
+    }
+
+    private Map<StaticSchemaRef, Integer> loadStaticDepths(Set<StaticSchemaRef> targets) {
+        if (targets.isEmpty()) return Map.of();
+        var encoded = targets.stream()
+                .map(reference -> reference.schemaKey().value() + "@" + reference.versionTag().value())
+                .collect(java.util.stream.Collectors.joining(","));
+        var result = new LinkedHashMap<StaticSchemaRef, Integer>();
+        jdbcClient.sql("""
+                        with proposed(token) as (
+                            select unnest(string_to_array(:targets, ','))
+                        )
+                        select static.schema_key, static.version_tag, static.reference_depth
+                        from proposed
+                        join static_schema static
+                          on static.schema_key = split_part(proposed.token, '@', 1)
+                         and static.version_tag = split_part(proposed.token, '@', 2)
+                        order by static.schema_key, static.version_tag
+                        """)
+                .param("targets", encoded)
+                .query((resultSet, rowNumber) -> new GraphStaticDepth(
+                        staticReference(
+                                resultSet.getString("schema_key"),
+                                resultSet.getString("version_tag")
+                        ),
+                        resultSet.getInt("reference_depth")
+                ))
+                .list()
+                .forEach(entry -> result.put(entry.reference(), entry.depth()));
+        return result;
+    }
+
+    /**
+     * Only ancestors of the replaced source can have their depth changed. The reverse active-edge
+     * index bounds this snapshot to that impact set instead of materializing every active edge.
+     */
+    private Map<SchemaKey, Integer> ancestorDistances(SchemaKey sourceSchemaKey) {
+        var result = new LinkedHashMap<SchemaKey, Integer>();
+        jdbcClient.sql("""
+                        with recursive ancestors(schema_key, distance) as (
+                            select cast(:schemaKey as varchar(63)), 0
+                            union
+                            select edge.source_schema_key, ancestors.distance + 1
+                            from ancestors
+                            join schema_reference_edge edge
+                              on edge.target_schema_key = ancestors.schema_key
+                             and edge.active
+                             and edge.target_kind = 'DRAFT'
+                            join schema_draft source
+                              on source.schema_key = edge.source_schema_key
+                             and source.deleted_at is null
+                            where ancestors.distance < :maximumDepth
+                        )
+                        select schema_key, max(distance) as distance
+                        from ancestors
+                        group by schema_key
+                        order by schema_key
+                        """)
+                .param("schemaKey", sourceSchemaKey.value())
+                .param("maximumDepth", DraftReferenceGraph.MAX_DEPTH)
+                .query((resultSet, rowNumber) -> new GraphDistance(
+                        SchemaKey.userProvided(resultSet.getString("schema_key")),
+                        resultSet.getInt("distance")
+                ))
+                .list()
+                .forEach(entry -> result.put(entry.schemaKey(), entry.distance()));
+        return result;
+    }
+
+    /** Maximum existing depth below any proposed Draft target, including nested Static depth. */
+    private int maximumDraftTargetDepth(Set<SchemaKey> targets) {
+        if (targets.isEmpty()) return 0;
+        var encoded = targets.stream().map(SchemaKey::value).collect(java.util.stream.Collectors.joining(","));
+        return jdbcClient.sql("""
+                        with recursive descendants(schema_key, draft_depth) as (
+                            select unnest(string_to_array(:targets, ',')), 1
+                            union
+                            select edge.target_schema_key, descendants.draft_depth + 1
+                            from descendants
+                            join schema_reference_edge edge
+                              on edge.source_schema_key = descendants.schema_key
+                             and edge.active
+                             and edge.target_kind = 'DRAFT'
+                            join schema_draft target
+                              on target.schema_key = edge.target_schema_key
+                             and target.deleted_at is null
+                            where descendants.draft_depth <= :maximumDepth
+                        )
+                        select greatest(
+                            coalesce((select max(draft_depth) from descendants), 0),
+                            coalesce((
+                                select max(descendants.draft_depth + static.reference_depth)
+                                from descendants
+                                join schema_reference_edge edge
+                                  on edge.source_schema_key = descendants.schema_key
+                                 and edge.active
+                                 and edge.target_kind = 'STATIC'
+                                join static_schema static
+                                  on static.schema_key = edge.target_schema_key
+                                 and static.version_tag = edge.target_version_tag
+                            ), 0)
+                        )
+                        """)
+                .param("targets", encoded)
+                .param("maximumDepth", DraftReferenceGraph.MAX_DEPTH)
+                .query(Integer.class)
+                .single();
     }
 
     private long countIncomingReferences(SchemaKey schemaKey) {
@@ -565,7 +774,7 @@ public class PostgresDraftStore implements DraftStore {
     private ResolvedStoredDraft requireResolvedCurrent(SchemaKey schemaKey) {
         var stored = findStoredCurrent(schemaKey)
                 .orElseThrow(() -> new DraftNotFoundException(schemaKey));
-        return resolve(stored, loadActiveGraph());
+        return resolveCurrent(stored);
     }
 
     private Optional<StoredDraft> findStoredCurrent(SchemaKey schemaKey) {
@@ -589,98 +798,49 @@ public class PostgresDraftStore implements DraftStore {
                 .optional();
     }
 
-    private ActiveGraph loadActiveGraph() {
+    /**
+     * Freeze only the root's reachable live-Draft closure while the caller holds the graph lock.
+     * Reads take the shared form of that lock, so ten detail/validation requests do not serialize;
+     * graph mutations retain the exclusive form and cannot interleave this multi-row snapshot.
+     */
+    private ResolvedStoredDraft resolveCurrent(StoredDraft root) {
         var revisions = new LinkedHashMap<SchemaKey, Long>();
         jdbcClient.sql("""
-                        select schema_key, current_revision
-                        from schema_draft
-                        where deleted_at is null
-                        order by schema_key
+                        with recursive reachable(schema_key, current_revision, distance) as (
+                            select schema_key, current_revision, 0
+                            from schema_draft
+                            where schema_key = :schemaKey and deleted_at is null
+                            union
+                            select target.schema_key,
+                                   target.current_revision,
+                                   current_node.distance + 1
+                            from reachable current_node
+                            join schema_reference_edge edge
+                              on edge.source_schema_key = current_node.schema_key
+                             and edge.active
+                             and edge.target_kind = 'DRAFT'
+                            join schema_draft target
+                              on target.schema_key = edge.target_schema_key
+                             and target.deleted_at is null
+                            where current_node.distance < :maximumDepth
+                        )
+                        select schema_key, current_revision, min(distance) as distance
+                        from reachable
+                        group by schema_key, current_revision
+                        order by distance, schema_key
                         """)
+                .param("schemaKey", root.schemaKey().value())
+                .param("maximumDepth", DraftReferenceGraph.MAX_DEPTH)
                 .query((resultSet, rowNumber) -> new GraphRevision(
                         SchemaKey.userProvided(resultSet.getString("schema_key")),
                         resultSet.getLong("current_revision")
                 ))
                 .list()
                 .forEach(entry -> revisions.put(entry.schemaKey(), entry.revision()));
-
-        var draftEdges = new LinkedHashMap<SchemaKey, Set<SchemaKey>>();
-        jdbcClient.sql("""
-                        select source_schema_key, target_schema_key
-                        from schema_reference_edge
-                        where active and target_kind = 'DRAFT'
-                        order by source_schema_key, target_schema_key, source_pointer
-                        """)
-                .query((resultSet, rowNumber) -> new GraphEdge(
-                        SchemaKey.userProvided(resultSet.getString("source_schema_key")),
-                        SchemaKey.userProvided(resultSet.getString("target_schema_key"))
-                ))
-                .list()
-                .forEach(edge -> draftEdges
-                        .computeIfAbsent(edge.source(), ignored -> new LinkedHashSet<>())
-                        .add(edge.target()));
-
-        var staticEdges = new LinkedHashMap<SchemaKey, Set<StaticSchemaRef>>();
-        jdbcClient.sql("""
-                        select source_schema_key, target_schema_key, target_version_tag
-                        from schema_reference_edge
-                        where active and target_kind = 'STATIC'
-                        order by source_schema_key, target_schema_key, target_version_tag, source_pointer
-                        """)
-                .query((resultSet, rowNumber) -> new GraphStaticEdge(
-                        SchemaKey.userProvided(resultSet.getString("source_schema_key")),
-                        staticReference(
-                                resultSet.getString("target_schema_key"),
-                                resultSet.getString("target_version_tag")
-                        )
-                ))
-                .list()
-                .forEach(edge -> staticEdges
-                        .computeIfAbsent(edge.source(), ignored -> new LinkedHashSet<>())
-                        .add(edge.target()));
-
-        var staticDepths = new LinkedHashMap<StaticSchemaRef, Integer>();
-        jdbcClient.sql("""
-                        select schema_key, version_tag, reference_depth
-                        from static_schema
-                        order by schema_key, version_tag
-                        """)
-                .query((resultSet, rowNumber) -> new GraphStaticDepth(
-                        staticReference(
-                                resultSet.getString("schema_key"),
-                                resultSet.getString("version_tag")
-                        ),
-                        resultSet.getInt("reference_depth")
-                ))
-                .list()
-                .forEach(entry -> staticDepths.put(entry.reference(), entry.depth()));
-        return new ActiveGraph(revisions, draftEdges, staticEdges, staticDepths);
-    }
-
-    private static ResolvedStoredDraft resolve(StoredDraft root, ActiveGraph graph) {
-        var resolved = new LinkedHashMap<SchemaKey, Long>();
-        var queued = new HashSet<SchemaKey>();
-        var queue = new ArrayDeque<SchemaKey>();
-        queue.add(root.schemaKey());
-        queued.add(root.schemaKey());
-
-        while (!queue.isEmpty()) {
-            var current = queue.removeFirst();
-            var revision = graph.revisions().get(current);
-            if (revision == null) {
-                throw new IllegalStateException("Active reference target disappeared: " + current.value());
-            }
-            resolved.put(current, revision);
-
-            var targets = new TreeSet<>(Comparator.comparing(SchemaKey::value));
-            targets.addAll(graph.draftEdges().getOrDefault(current, Set.of()));
-            for (var target : targets) {
-                if (queued.add(target)) {
-                    queue.addLast(target);
-                }
-            }
+        if (!revisions.containsKey(root.schemaKey())) {
+            throw new IllegalStateException("Active Draft disappeared inside graph snapshot");
         }
-        return new ResolvedStoredDraft(root, resolved);
+        return new ResolvedStoredDraft(root, revisions);
     }
 
     private static StoredDraft mapStoredDraft(ResultSet resultSet, int rowNumber) throws SQLException {
@@ -695,12 +855,38 @@ public class PostgresDraftStore implements DraftStore {
         );
     }
 
+    private static StoredDraftSummary mapStoredDraftSummary(ResultSet resultSet, int rowNumber)
+            throws SQLException {
+        return new StoredDraftSummary(
+                SchemaKey.userProvided(resultSet.getString("schema_key")),
+                resultSet.getLong("current_revision"),
+                CreationSource.valueOf(resultSet.getString("creation_source")),
+                resultSet.getString("display_name"),
+                resultSet.getInt("field_count"),
+                resultSet.getObject("created_at", OffsetDateTime.class).toInstant(),
+                resultSet.getObject("updated_at", OffsetDateTime.class).toInstant(),
+                resultSet.getObject("saved_at", OffsetDateTime.class).toInstant()
+        );
+    }
+
     private static StoredDraftRevision mapStoredRevision(ResultSet resultSet, int rowNumber)
             throws SQLException {
         return new StoredDraftRevision(
                 SchemaKey.userProvided(resultSet.getString("schema_key")),
                 resultSet.getLong("revision"),
                 resultSet.getString("definition_json"),
+                resultSet.getObject("saved_at", OffsetDateTime.class).toInstant()
+        );
+    }
+
+    private static StoredDraftRevisionSummary mapStoredRevisionSummary(
+            ResultSet resultSet,
+            int rowNumber
+    ) throws SQLException {
+        return new StoredDraftRevisionSummary(
+                resultSet.getLong("revision"),
+                resultSet.getString("display_name"),
+                resultSet.getInt("field_count"),
                 resultSet.getObject("saved_at", OffsetDateTime.class).toInstant()
         );
     }
@@ -718,20 +904,9 @@ public class PostgresDraftStore implements DraftStore {
     private record GraphRevision(SchemaKey schemaKey, long revision) {
     }
 
-    private record GraphEdge(SchemaKey source, SchemaKey target) {
-    }
-
-    private record GraphStaticEdge(SchemaKey source, StaticSchemaRef target) {
-    }
-
     private record GraphStaticDepth(StaticSchemaRef reference, int depth) {
     }
 
-    private record ActiveGraph(
-            Map<SchemaKey, Long> revisions,
-            Map<SchemaKey, Set<SchemaKey>> draftEdges,
-            Map<SchemaKey, Set<StaticSchemaRef>> staticEdges,
-            Map<StaticSchemaRef, Integer> staticDepths
-    ) {
+    private record GraphDistance(SchemaKey schemaKey, int distance) {
     }
 }

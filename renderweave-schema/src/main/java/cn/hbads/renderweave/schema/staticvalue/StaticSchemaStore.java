@@ -11,11 +11,11 @@ public interface StaticSchemaStore {
 
     Optional<StoredStaticSchema> find(StaticSchemaRef reference);
 
-    List<StoredStaticSchema> findPage(int offset, int limit);
+    List<StoredStaticSchemaSummary> findPage(int offset, int limit);
 
     long count();
 
-    List<StoredStaticSchema> findPage(
+    List<StoredStaticSchemaSummary> findPage(
             int offset,
             int limit,
             String search,
