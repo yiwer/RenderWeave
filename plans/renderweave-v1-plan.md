@@ -1,6 +1,6 @@
 # RenderWeave v1 Phase 计划
 
-- 状态：P1–P4 implementation complete；P5 T5-1–T5-8 已完成通路、安全硬化与四轮 60-case 质量实测；T5-9 payload-free taxonomy、T5-10 IMAGE_ONLY live 归因与 T5-11 值级细分均已完成 A1/独立 A2；所有 Profile 仍为 `EXPERIMENTAL`，全部 live authorization 均为 `CLOSED`
+- 状态：P1–P4 implementation complete；P5 T5-1–T5-11 已完成通路、质量实测与安全硬化；P6 T6-1 容量、性能和稳定性基线已完成 clean A1/独立 A2；所有 Profile 仍为 `EXPERIMENTAL`，全部 live authorization 均为 `CLOSED`
 - 日期：2026-08-10
 - Spec：[`specs/renderweave-v1.md`](../specs/renderweave-v1.md)
 - 原型：`/prototype/schema-studio?variant=A|B|C`
@@ -361,6 +361,7 @@ Phase 内任务只在真实前置依赖满足时并行。当前没有 atomic cla
 ### P6 — Release candidate
 
 #### T6-1：容量、性能和稳定性基线
+- 执行状态：`independently_reviewed`（clean server/capacity A1 + 独立 A2 PASS；Provider attempts=0；`plans/logs/P6-T6-1.md`）
 - AC：AC-012, AC-019, AC-023, AC-024
 - 依赖：P2, P4
 - 影响区域：queries/indexes/concurrency config/measurement fixtures
