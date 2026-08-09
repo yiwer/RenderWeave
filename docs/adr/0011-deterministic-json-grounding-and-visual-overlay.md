@@ -25,7 +25,7 @@ Prompt v2 将 pinned Plus 的 exact pass 从 18/60 提升到 47/60，critical ha
 - 零调用是全阶段硬边界：包括异常 checkpoint 与 repair 路径在内，JSON_ONLY 都不得创建 attempt、reservation 或 provider request；确定性观察到的 all-null、空数组、异构数组、嵌套数组和结构类型冲突保留为人工审核信息，而不是交给模型消解。
 - 根 SchemaKey 从 run 的输入 fingerprint 确定性生成，避免全局固定 key；displayName 使用明确的系统默认值并允许后续逐项审核修改。
 - JSON 字段身份、对象/数组拓扑、scalar 类型、UNRESOLVED/CONFLICT、JSON evidence、required=false 与空 constraints 全部由确定性实现产生。
-- structural profile 1.2 在内部路径中保留裸 `*` 作为数组元素段，并以可逆 `~2` 编码对象的字面量 `*` 字段；evidence 仍使用标准 RFC 6901。读取端继续兼容既有 1.1 artifact，避免破坏历史 replay。
+- structural profile 1.2 在内部路径中保留裸 `*` 作为数组元素段，并以可逆 `~2` 编码对象的字面量 `*` 字段；evidence 仍使用标准 RFC 6901。读取既有 1.1 artifact 时按父节点的 array/object kind 区分 wildcard 与对象键，并先规范化为 1.2 内部路径，避免历史 replay 的 evidence 对齐漂移。
 - Candidate 仍是推断工作流产物，item 使用 `source=AI`、`inferred=true`；低置信和不确定类型继续进入人工审核，不因零调用而绕过 Candidate 边界。
 
 ### 3. COMBINED 采用 JSON base + 受限视觉 overlay

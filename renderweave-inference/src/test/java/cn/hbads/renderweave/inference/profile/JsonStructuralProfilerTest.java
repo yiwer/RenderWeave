@@ -1,5 +1,7 @@
 package cn.hbads.renderweave.inference.profile;
 
+import cn.hbads.renderweave.inference.candidate.CandidateValidationContext;
+import cn.hbads.renderweave.inference.candidate.CandidateValidator;
 import cn.hbads.renderweave.inference.input.InferenceInput;
 import cn.hbads.renderweave.inference.input.StrictJsonSampleProfiler;
 import org.junit.jupiter.api.Test;
@@ -72,16 +74,43 @@ class JsonStructuralProfilerTest {
 
     @Test
     void readsLegacyProfilesThatDoNotUseTheLiteralAsteriskEscape() {
-        var current = new String(
-                reducer.profile(List.of(json("{\"name\":\"A\"}"))), StandardCharsets.UTF_8
-        );
-        var legacy = current.replace(
-                StrictJsonSampleProfiler.PROFILE_VERSION, "renderweave-json-profile/1.1"
-        );
+        var legacy = """
+                {
+                  "profileVersion": "renderweave-json-profile/1.1",
+                  "sampleCount": 1,
+                  "samples": [
+                    {
+                      "index": 0,
+                      "nodes": [
+                        {"pointer":"","kinds":["object"],"itemKinds":[],"occurrences":1,"evidencePointer":""},
+                        {"pointer":"/a*b","kinds":["text"],"itemKinds":[],"occurrences":1,"evidencePointer":"/a*b"},
+                        {"pointer":"/items","kinds":["array"],"itemKinds":["object"],"occurrences":1,"evidencePointer":"/items"},
+                        {"pointer":"/items/*","kinds":["object"],"itemKinds":[],"occurrences":1,"evidencePointer":"/items/0"},
+                        {"pointer":"/items/*/*","kinds":["decimal"],"itemKinds":[],"occurrences":1,"evidencePointer":"/items/0/*"}
+                      ]
+                    }
+                  ]
+                }
+                """;
 
         var profile = profiler.profile(legacy.getBytes(StandardCharsets.UTF_8));
+        var candidate = new JsonCandidateProfiler().infer(
+                java.util.UUID.fromString("90000000-0000-0000-0000-000000000001"),
+                "legacy-json", "Legacy JSON", profile
+        ).candidate();
+        var problems = new CandidateValidator().validate(
+                candidate,
+                CandidateValidationContext.trustedReplayOutput(java.util.Set.of(), profile, 8_000)
+        );
 
-        assertEquals(java.util.Set.of("text"), node(profile, "/name").kinds());
+        assertEquals(java.util.Set.of("text"), node(profile, "/a~2b").kinds());
+        assertEquals(java.util.Set.of("object"), node(profile, "/items/*").kinds());
+        assertEquals(java.util.Set.of("decimal"), node(profile, "/items/*/~2").kinds());
+        assertEquals(List.of("a*b", "items"), candidate.schemas().getFirst().fields().stream()
+                .map(field -> field.proposedFieldKey()).toList());
+        assertEquals(List.of("*"), candidate.schemas().get(1).fields().stream()
+                .map(field -> field.proposedFieldKey()).toList());
+        assertTrue(problems.isEmpty(), () -> "Unexpected legacy alignment problems: " + problems);
     }
 
     private static JsonObservedNode node(JsonStructuralProfile profile, String pointer) {

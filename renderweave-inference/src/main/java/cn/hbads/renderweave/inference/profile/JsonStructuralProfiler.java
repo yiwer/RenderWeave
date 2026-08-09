@@ -44,14 +44,21 @@ public final class JsonStructuralProfiler {
                 if (sample.index() != expectedIndex || sample.nodes() == null) {
                     throw new InvalidJsonStructuralProfileException("Stored sample ordering is invalid", null);
                 }
-                var seenInSample = new java.util.HashSet<String>();
+                var sampleNodes = new LinkedHashMap<String, StoredNode>();
                 for (var node : sample.nodes()) {
                     validateNode(node);
-                    var target = merged.computeIfAbsent(node.pointer(), MutableNode::new);
+                    sampleNodes.putIfAbsent(node.pointer(), node);
+                }
+                var seenInSample = new java.util.HashSet<String>();
+                for (var node : sample.nodes()) {
+                    var pointer = "renderweave-json-profile/1.1".equals(stored.profileVersion())
+                            ? canonicalizeLegacyPointer(node.pointer(), sampleNodes)
+                            : node.pointer();
+                    var target = merged.computeIfAbsent(pointer, MutableNode::new);
                     target.kinds.addAll(node.kinds());
                     if (node.itemKinds() != null) target.itemKinds.addAll(node.itemKinds());
                     target.occurrences += node.occurrences();
-                    if (seenInSample.add(node.pointer())) target.samplesPresent++;
+                    if (seenInSample.add(pointer)) target.samplesPresent++;
                     target.evidence.add(new JsonEvidenceLocation(sample.index(), node.evidencePointer()));
                 }
             }
@@ -81,6 +88,45 @@ public final class JsonStructuralProfiler {
                 || node.itemKinds() != null && !allowed.containsAll(node.itemKinds())) {
             throw new InvalidJsonStructuralProfileException("Stored structural node kind is invalid", null);
         }
+    }
+
+    private static String canonicalizeLegacyPointer(
+            String pointer,
+            java.util.Map<String, StoredNode> nodes
+    ) {
+        if (pointer.isEmpty()) return pointer;
+        if (!pointer.startsWith("/")) {
+            throw new InvalidJsonStructuralProfileException("Stored structural pointer is invalid", null);
+        }
+        var canonical = new StringBuilder();
+        var rawParent = "";
+        for (var segment : pointer.substring(1).split("/", -1)) {
+            var parent = nodes.get(rawParent);
+            if (parent == null) {
+                throw new InvalidJsonStructuralProfileException(
+                        "Stored structural pointer parent is missing", null
+                );
+            }
+            var objectParent = parent.kinds().contains("object");
+            var arrayParent = parent.kinds().contains("array");
+            if ("*".equals(segment)) {
+                if (arrayParent == objectParent) {
+                    throw new InvalidJsonStructuralProfileException(
+                            "Stored structural pointer parent kind is ambiguous", null
+                    );
+                }
+                canonical.append(arrayParent ? "/*" : "/~2");
+            } else {
+                if (!objectParent) {
+                    throw new InvalidJsonStructuralProfileException(
+                            "Stored object member pointer is invalid", null
+                    );
+                }
+                canonical.append('/').append(segment.replace("*", "~2"));
+            }
+            rawParent = rawParent + "/" + segment;
+        }
+        return canonical.toString();
     }
 
     private record StoredProfile(
