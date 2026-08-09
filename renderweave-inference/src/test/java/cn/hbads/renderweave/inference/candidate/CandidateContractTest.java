@@ -93,8 +93,8 @@ class CandidateContractTest {
         assertDecodeDiagnostic("[]", "CANDIDATE_DECODE_SHAPE_INVALID");
         assertDecodeDiagnostic("\"trailing token\"", "CANDIDATE_DECODE_SHAPE_INVALID");
         assertDecodeDiagnostic("\"trailing content\"", "CANDIDATE_DECODE_SHAPE_INVALID");
-        assertDecodeDiagnostic(invalidValue, "CANDIDATE_DECODE_VALUE_INVALID");
-        assertDecodeDiagnostic(adversarialValue, "CANDIDATE_DECODE_VALUE_INVALID");
+        assertDecodeDiagnostic(invalidValue, "CANDIDATE_DECODE_ENUM_INVALID_SOURCE");
+        assertDecodeDiagnostic(adversarialValue, "CANDIDATE_DECODE_ENUM_INVALID_SOURCE");
         assertDecodeDiagnostic(" ", "CANDIDATE_DECODE_REQUIRED");
         assertDecodeDiagnostic(
                 " ".repeat(CandidateJsonCodec.MAX_CANDIDATE_BYTES + 1),
@@ -106,6 +106,54 @@ class CandidateContractTest {
         ).diagnosticCode();
         assertFalse(diagnostic.contains("sensitiveCustomerValue"));
         assertFalse(diagnostic.contains("must-not-survive"));
+    }
+
+    @Test
+    void invalidCandidateEnumUsesABoundedPayloadFreeContractSlot() {
+        var providerValue = "SENSITIVE_CUSTOM_SOURCE_VALUE";
+        var invalid = codec.write(simpleBundle()).replace(
+                "\"source\":\"AI\"", "\"source\":\"" + providerValue + "\""
+        );
+
+        var diagnostic = assertThrows(
+                InvalidCandidateContractException.class, () -> codec.parse(invalid)
+        ).diagnosticCode();
+
+        assertEquals("CANDIDATE_DECODE_ENUM_INVALID_SOURCE", diagnostic);
+        assertTrue(diagnostic.matches("[A-Z][A-Z0-9_]{0,127}"));
+        assertFalse(diagnostic.contains(providerValue));
+    }
+
+    @Test
+    void everyCandidateEnumUsesItsFiniteContractSlot() {
+        var root = UUID.fromString("00000000-0000-0000-0000-000000000001");
+        var child = UUID.fromString("00000000-0000-0000-0000-000000000002");
+        var fieldId = UUID.fromString("00000000-0000-0000-0000-000000000011");
+        var bundle = new CandidateBundle(CandidateBundle.CONTRACT_VERSION, root, List.of(
+                schema(root, "root", "Root", List.of(
+                        field(fieldId, "child",
+                                CandidateValue.reference(CandidateReference.candidate(child)), "/child")
+                ), ""),
+                schema(child, "child", "Child", List.of(), "/child")
+        ));
+        var valid = codec.write(bundle);
+
+        assertDecodeDiagnostic(
+                valid.replaceFirst("\"resolution\":\"NOT_REQUIRED\"", "\"resolution\":\"ALIEN\""),
+                "CANDIDATE_DECODE_ENUM_INVALID_RESOLUTION"
+        );
+        assertDecodeDiagnostic(
+                valid.replaceFirst("\"kind\":\"JSON\"", "\"kind\":\"ALIEN\""),
+                "CANDIDATE_DECODE_ENUM_INVALID_EVIDENCE_KIND"
+        );
+        assertDecodeDiagnostic(
+                valid.replaceFirst("\"kind\":\"REFERENCE\"", "\"kind\":\"ALIEN\""),
+                "CANDIDATE_DECODE_ENUM_INVALID_VALUE_KIND"
+        );
+        assertDecodeDiagnostic(
+                valid.replaceFirst("\"kind\":\"CANDIDATE_SCHEMA\"", "\"kind\":\"ALIEN\""),
+                "CANDIDATE_DECODE_ENUM_INVALID_REFERENCE_KIND"
+        );
     }
 
     @Test

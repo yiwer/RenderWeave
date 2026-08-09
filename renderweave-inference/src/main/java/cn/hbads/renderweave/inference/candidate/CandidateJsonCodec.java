@@ -6,6 +6,7 @@ import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.MapperFeature;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.SerializationFeature;
+import tools.jackson.databind.exc.InvalidFormatException;
 import tools.jackson.databind.json.JsonMapper;
 
 public final class CandidateJsonCodec {
@@ -76,8 +77,12 @@ public final class CandidateJsonCodec {
         if (containsType(failure, "UnrecognizedPropertyException")) {
             return "CANDIDATE_DECODE_UNKNOWN_MEMBER";
         }
-        if (containsType(failure, "ValueInstantiationException")
-                || containsType(failure, "InvalidFormatException")) {
+        var invalidFormat = findCause(failure, InvalidFormatException.class);
+        if (invalidFormat != null) {
+            var enumDiagnostic = enumInvalidDiagnostic(invalidFormat.getTargetType());
+            if (enumDiagnostic != null) return enumDiagnostic;
+        }
+        if (containsType(failure, "ValueInstantiationException") || invalidFormat != null) {
             return "CANDIDATE_DECODE_VALUE_INVALID";
         }
         if (containsType(failure, "MismatchedInputException")) {
@@ -101,11 +106,40 @@ public final class CandidateJsonCodec {
         return "CANDIDATE_DECODE_OTHER";
     }
 
+    private static String enumInvalidDiagnostic(Class<?> targetType) {
+        if (targetType == CandidateSource.class) {
+            return "CANDIDATE_DECODE_ENUM_INVALID_SOURCE";
+        }
+        if (targetType == CandidateResolution.class) {
+            return "CANDIDATE_DECODE_ENUM_INVALID_RESOLUTION";
+        }
+        if (targetType == CandidateEvidenceKind.class) {
+            return "CANDIDATE_DECODE_ENUM_INVALID_EVIDENCE_KIND";
+        }
+        if (targetType == CandidateValueKind.class) {
+            return "CANDIDATE_DECODE_ENUM_INVALID_VALUE_KIND";
+        }
+        if (targetType == CandidateReferenceKind.class) {
+            return "CANDIDATE_DECODE_ENUM_INVALID_REFERENCE_KIND";
+        }
+        if (targetType != null && targetType.isEnum()) {
+            return "CANDIDATE_DECODE_ENUM_INVALID_OTHER";
+        }
+        return null;
+    }
+
     private static boolean containsType(Throwable failure, String simpleName) {
         for (var cause = failure; cause != null; cause = cause.getCause()) {
             if (isType(cause, simpleName)) return true;
         }
         return false;
+    }
+
+    private static <T extends Throwable> T findCause(Throwable failure, Class<T> expectedType) {
+        for (var cause = failure; cause != null; cause = cause.getCause()) {
+            if (expectedType.isInstance(cause)) return expectedType.cast(cause);
+        }
+        return null;
     }
 
     private static boolean messageStartsWithForType(
