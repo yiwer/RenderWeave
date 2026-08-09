@@ -319,6 +319,60 @@ class CandidateContractTest {
                 valid.replaceFirst("\"sampleIndex\":0", "\"sampleIndex\":\"0\""),
                 "CANDIDATE_DECODE_FORMAT_INVALID_EVIDENCE_SAMPLE_INDEX"
         );
+        assertDecodeDiagnostic(
+                valid.replaceFirst("\"confidenceBps\":9200", "\"confidenceBps\":9200.5"),
+                "CANDIDATE_DECODE_FORMAT_INVALID_ASSESSMENT_CONFIDENCE"
+        );
+    }
+
+    @Test
+    void primitiveNullAndMissingMembersCannotDefaultToFalseOrZero() {
+        var root = UUID.fromString("00000000-0000-0000-0000-000000000001");
+        var fieldId = UUID.fromString("00000000-0000-0000-0000-000000000011");
+        var artifactId = "a".repeat(64);
+        var imageAssessment = CandidateAssessment.ai(
+                9_200, true, CandidateResolution.NOT_REQUIRED,
+                List.of(CandidateEvidence.image(
+                        artifactId, new CandidateBoundingBox(100, 200, 9_000, 8_000)
+                ))
+        );
+        var valid = codec.write(new CandidateBundle(
+                CandidateBundle.CONTRACT_VERSION, root, List.of(
+                        new CandidateSchema(
+                                root, "root", "Root", CandidateSource.AI, imageAssessment,
+                                List.of(new CandidateField(
+                                        fieldId, "title", "Title", false,
+                                        CandidateValue.scalar(CandidateValueKind.TEXT),
+                                        CandidateSource.AI, imageAssessment
+                                ))
+                        )
+                )
+        ));
+
+        assertDecodeDiagnostic(
+                valid.replaceFirst("\"required\":false", "\"required\":null"),
+                "CANDIDATE_DECODE_FORMAT_INVALID_FIELD_REQUIRED"
+        );
+        assertDecodeDiagnostic(
+                valid.replaceFirst("\"required\":false,", ""),
+                "CANDIDATE_DECODE_FORMAT_INVALID_FIELD_REQUIRED"
+        );
+        assertDecodeDiagnostic(
+                valid.replaceFirst("\"inferred\":true", "\"inferred\":null"),
+                "CANDIDATE_DECODE_FORMAT_INVALID_ASSESSMENT_INFERRED"
+        );
+        assertDecodeDiagnostic(
+                valid.replaceFirst("\"inferred\":true,", ""),
+                "CANDIDATE_DECODE_FORMAT_INVALID_ASSESSMENT_INFERRED"
+        );
+        assertDecodeDiagnostic(
+                valid.replaceFirst("\"left\":100", "\"left\":null"),
+                "CANDIDATE_DECODE_FORMAT_INVALID_BOUNDING_BOX_COORDINATE"
+        );
+        assertDecodeDiagnostic(
+                valid.replaceFirst("\"left\":100,", ""),
+                "CANDIDATE_DECODE_FORMAT_INVALID_BOUNDING_BOX_COORDINATE"
+        );
     }
 
     @Test

@@ -19,6 +19,7 @@ public final class CandidateJsonCodec {
                     JsonFactory.builder().enable(StreamReadFeature.STRICT_DUPLICATE_DETECTION).build())
             .enable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS)
             .enable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+            .enable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES)
             .disable(DeserializationFeature.ACCEPT_FLOAT_AS_INT)
             .disable(MapperFeature.ALLOW_COERCION_OF_SCALARS)
             .enable(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY)
