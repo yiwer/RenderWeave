@@ -10,7 +10,7 @@ test('executes a real replay run and atomically creates its reviewed Draft bundl
   const staticBefore = await staticBeforeResponse.json() as { total: number };
 
   await page.goto('/inference');
-  await expect(page.getByRole('heading', { name: '从合成样本生成 Schema Candidate' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '数据结构智能识别' })).toBeVisible();
   await expect(page.locator('.fixture-row')).toHaveCount(20);
   await page.locator('.fixture-row').filter({ hasText: 'combined-17-all-null' }).click();
   await page.getByRole('checkbox').check();

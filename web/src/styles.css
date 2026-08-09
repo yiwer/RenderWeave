@@ -5686,7 +5686,7 @@ button.required-toggle.active,
 
 .candidate-run-strip { grid-template-columns: minmax(130px, 1.25fr) .8fr 1.1fr 64px 116px 118px; }
 .candidate-run-cancel { align-items: center; }
-.candidate-run-cancel button { width: 100%; min-height: 38px; justify-content: center; }
+.candidate-run-cancel button { width: 100%; min-height: 44px; justify-content: center; }
 
 .candidate-review-overview {
   display: grid;
@@ -5743,7 +5743,7 @@ button.required-toggle.active,
 .bundle-schema-list { max-height: 620px; }
 .bundle-schema-entry {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 40px;
+  grid-template-columns: minmax(0, 1fr) 44px;
   border-bottom: 1px solid var(--hairline);
 }
 .bundle-schema-list .bundle-schema-select {
@@ -5763,8 +5763,8 @@ button.required-toggle.active,
 }
 .bundle-order-actions button {
   display: grid;
-  width: 40px;
-  min-height: 38px;
+  width: 44px;
+  min-height: 44px;
   place-items: center;
   border: 0;
   background: transparent;
@@ -5780,7 +5780,7 @@ button.required-toggle.active,
 .candidate-surface-toolbar > div:first-child code { font-size: 11px; }
 .candidate-search { min-height: 44px; }
 .candidate-search input { font-size: 13px; }
-.candidate-view-toggle button { min-height: 40px; font-size: 12px; }
+.candidate-view-toggle button { min-height: 44px; font-size: 12px; }
 
 .candidate-field-row {
   min-height: 82px;
@@ -5859,7 +5859,7 @@ button.required-toggle.active,
 .candidate-field-order > span strong { color: var(--ink); }
 .candidate-field-order button {
   display: inline-flex;
-  min-height: 40px;
+  min-height: 44px;
   align-items: center;
   gap: 4px;
   padding: 0 8px;
@@ -5900,7 +5900,7 @@ button.required-toggle.active,
 .candidate-unknown-constraints > span { color: var(--warning); font-size: 11px; font-weight: 800; }
 .candidate-unknown-constraints > div { display: grid; grid-template-columns: 72px minmax(0, 1fr) 40px; align-items: center; gap: 5px; }
 .candidate-unknown-constraints code { overflow: hidden; font-size: 10px; text-overflow: ellipsis; }
-.candidate-unknown-constraints button { min-height: 40px; border: 1px solid #d8aaa4; border-radius: 6px; background: white; color: var(--error); }
+.candidate-unknown-constraints button { min-height: 44px; border: 1px solid #d8aaa4; border-radius: 6px; background: white; color: var(--error); }
 
 .removed-note { font-size: 11px; }
 .assessment-panel span { font-size: 10px; }
@@ -6006,12 +6006,17 @@ button.required-toggle.active,
   .candidate-inspector {
     display: grid;
     grid-column: 1 / -1;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1fr);
     max-height: none;
     border-top: 1px solid var(--hairline);
   }
 
-  .candidate-inspector > header {
+  .candidate-inspector > header,
+  .candidate-edit-section,
+  .assessment-panel,
+  .candidate-resolution-actions,
+  .candidate-evidence,
+  .candidate-item-problems {
     grid-column: 1 / -1;
   }
 
@@ -6020,8 +6025,15 @@ button.required-toggle.active,
   .candidate-resolution-actions,
   .candidate-evidence,
   .candidate-item-problems {
-    border-right: 1px solid var(--hairline);
+    border-right: 0;
   }
+
+  .candidate-editor-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .candidate-field-order,
+  .candidate-constraint-editor,
+  .array-item-editor,
+  .candidate-reference-editor { grid-column: 1 / -1; }
+  .candidate-reference-editor { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 
   .candidate-evidence,
   .candidate-item-problems {
