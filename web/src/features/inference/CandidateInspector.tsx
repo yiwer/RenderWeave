@@ -56,11 +56,13 @@ export function CandidateInspector({
   schema,
   field,
   dispatch,
+  readOnly = false,
 }: {
   state: CandidateReviewState;
   schema: CandidateSchema;
   field: CandidateField | null;
   dispatch: Dispatch<CandidateReviewAction>;
+  readOnly?: boolean;
 }) {
   const item = field ?? schema;
   const itemId = field?.candidateFieldId ?? schema.candidateSchemaId;
@@ -82,14 +84,14 @@ export function CandidateInspector({
         <span className="inspector-kicker">最终定义</span>
         {removed && <p className="removed-note"><Trash2 aria-hidden="true" size={14} />此项已标记移除，仍保留在 Candidate 审计记录中。</p>}
         {field ? (
-          <FieldEditor state={state} schema={schema} field={field} disabled={removed} dispatch={dispatch} />
+          <FieldEditor state={state} schema={schema} field={field} disabled={removed || readOnly} dispatch={dispatch} />
         ) : (
-          <SchemaEditor schema={schema} disabled={removed} dispatch={dispatch} />
+          <SchemaEditor schema={schema} disabled={removed || readOnly} dispatch={dispatch} />
         )}
       </section>
 
       <AssessmentPanel assessment={item.assessment} source={item.source} />
-      {item.source === 'AI' && !removed && (
+      {!readOnly && item.source === 'AI' && !removed && (
         <section className="candidate-resolution-actions" aria-label="逐项审核操作">
           <span>只处理当前项</span>
           <button
@@ -114,7 +116,7 @@ export function CandidateInspector({
           <small>没有“全部确认”；每次保存最多改变一个既有项的 resolution。</small>
         </section>
       )}
-      {item.source === 'USER' && !removed && (
+      {!readOnly && item.source === 'USER' && !removed && (
         <section className="candidate-resolution-actions">
           <button
             type="button"
@@ -125,7 +127,7 @@ export function CandidateInspector({
           ><Trash2 aria-hidden="true" size={14} />移除人工项</button>
         </section>
       )}
-      {removed && (
+      {!readOnly && removed && (
         <section className="candidate-resolution-actions single-action" aria-label="恢复已移除项">
           <button
             type="button"

@@ -18,6 +18,22 @@ describe('Candidate review components', () => {
     expect(screen.getByRole('region', { name: '候选数据结构列表' }).tabIndex).toBe(0);
   });
 
+  it('keeps frozen Candidate navigation inspectable while disabling mutations', () => {
+    const { container } = render(<BundleNavHarness readOnly />);
+
+    expect((screen.getByRole('button', { name: '新增' }) as HTMLButtonElement).disabled).toBe(true);
+    expect((container.querySelector('.bundle-schema-select') as HTMLButtonElement).disabled).toBe(false);
+    expect([...container.querySelectorAll<HTMLButtonElement>('.bundle-order-actions button')].every((button) => button.disabled)).toBe(true);
+  });
+
+  it('keeps frozen Candidate evidence navigable while disabling definition edits', () => {
+    render(<InspectorHarness readOnly />);
+
+    expect((screen.getByLabelText('Candidate 字段类型') as HTMLSelectElement).disabled).toBe(true);
+    expect((screen.getByRole('tab', { name: '查看证据图片 2' }) as HTMLButtonElement).disabled).toBe(false);
+    expect(screen.queryByRole('button', { name: '确认当前项' })).toBeNull();
+  });
+
   it('resolves an unresolved AI field by editing its type and keeps evidence visible', () => {
     const { container } = render(<InspectorHarness />);
     fireEvent.change(screen.getByLabelText('Candidate 字段类型'), { target: { value: 'ARRAY' } });
@@ -60,15 +76,15 @@ describe('Candidate review components', () => {
   });
 });
 
-function InspectorHarness() {
+function InspectorHarness({ readOnly = false }: { readOnly?: boolean }) {
   const [state, dispatch] = useReducer(candidateReviewReducer, snapshot(), createCandidateReviewState);
   const selectedSchema = state.draft.schemas[0]!;
   const selectedField = selectedSchema.fields[0]!;
   const selected = findSelected({ ...state, selectedFieldId: selectedField.candidateFieldId });
-  return <CandidateInspector state={state} schema={selected.schema!} field={selected.field} dispatch={dispatch} />;
+  return <CandidateInspector state={state} schema={selected.schema!} field={selected.field} dispatch={dispatch} readOnly={readOnly} />;
 }
 
-function BundleNavHarness() {
+function BundleNavHarness({ readOnly = false }: { readOnly?: boolean }) {
   const [state, dispatch] = useReducer(candidateReviewReducer, snapshot(), createCandidateReviewState);
-  return <CandidateBundleNav state={state} dispatch={dispatch} />;
+  return <CandidateBundleNav state={state} dispatch={dispatch} readOnly={readOnly} />;
 }

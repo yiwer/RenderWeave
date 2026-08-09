@@ -34,9 +34,11 @@ import { candidateTypeLabels, resolutionLabels, summarizeValue } from './candida
 export function CandidateBundleNav({
   state,
   dispatch,
+  readOnly = false,
 }: {
   state: CandidateReviewState;
   dispatch: Dispatch<CandidateReviewAction>;
+  readOnly?: boolean;
 }) {
   return (
     <aside className="candidate-bundle-nav" aria-label="Candidate Schema 包">
@@ -45,6 +47,7 @@ export function CandidateBundleNav({
         <button
           type="button"
           className="candidate-add-schema"
+          disabled={readOnly}
           onClick={() => dispatch({
             type: 'add-schema',
             schema: newUserSchema(nextCandidateKey('new-schema', state.draft.schemas.map((item) => item.proposedSchemaKey))),
@@ -69,8 +72,8 @@ export function CandidateBundleNav({
                 {problems > 0 ? <b>{problems}</b> : <CheckCircle2 aria-hidden="true" size={14} />}
               </button>
               <div className="bundle-order-actions" aria-label={`${label} 排序`}>
-                <button type="button" aria-label={`上移 ${label}`} disabled={index === 0} onClick={() => dispatch({ type: 'move-schema', schemaId: schema.candidateSchemaId, direction: -1 })}><ArrowUp aria-hidden="true" size={13} /></button>
-                <button type="button" aria-label={`下移 ${label}`} disabled={index === state.draft.schemas.length - 1} onClick={() => dispatch({ type: 'move-schema', schemaId: schema.candidateSchemaId, direction: 1 })}><ArrowDown aria-hidden="true" size={13} /></button>
+                <button type="button" aria-label={`上移 ${label}`} disabled={readOnly || index === 0} onClick={() => dispatch({ type: 'move-schema', schemaId: schema.candidateSchemaId, direction: -1 })}><ArrowUp aria-hidden="true" size={13} /></button>
+                <button type="button" aria-label={`下移 ${label}`} disabled={readOnly || index === state.draft.schemas.length - 1} onClick={() => dispatch({ type: 'move-schema', schemaId: schema.candidateSchemaId, direction: 1 })}><ArrowDown aria-hidden="true" size={13} /></button>
               </div>
             </div>
           );
@@ -88,10 +91,12 @@ export function CandidateSurface({
   state,
   schema,
   dispatch,
+  readOnly = false,
 }: {
   state: CandidateReviewState;
   schema: CandidateSchema;
   dispatch: Dispatch<CandidateReviewAction>;
+  readOnly?: boolean;
 }) {
   if (state.view === 'map') {
     return <CandidateMap state={state} schema={schema} dispatch={dispatch} />;
@@ -147,6 +152,7 @@ export function CandidateSurface({
       <button
         type="button"
         className="candidate-add-field"
+        disabled={readOnly}
         onClick={() => dispatch({
           type: 'add-field',
           schemaId: schema.candidateSchemaId,

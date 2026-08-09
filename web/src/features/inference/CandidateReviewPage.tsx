@@ -294,9 +294,9 @@ function CandidateReviewWorkspace({
         </div>
       )}
 
-      <fieldset className="candidate-review-fieldset" disabled={completed} aria-label={completed ? '已冻结的 final Candidate' : 'Candidate 编辑工作区'}>
+      <section className={`candidate-review-fieldset ${completed ? 'is-frozen' : ''}`} aria-label={completed ? '已冻结的 final Candidate' : 'Candidate 编辑工作区'}>
         <div className="candidate-review-grid">
-          <CandidateBundleNav state={state} dispatch={dispatch} />
+          <CandidateBundleNav state={state} dispatch={dispatch} readOnly={completed} />
           <section className="candidate-center">
           <header className="candidate-surface-toolbar">
             <div>
@@ -310,11 +310,11 @@ function CandidateReviewWorkspace({
               <button type="button" className={state.view === 'map' ? 'active' : ''} aria-pressed={state.view === 'map'} onClick={() => dispatch({ type: 'set-view', view: 'map' })}><GitBranch aria-hidden="true" size={14} />树图</button>
             </div>
           </header>
-          <CandidateSurface state={state} schema={selected.schema} dispatch={dispatch} />
+          <CandidateSurface state={state} schema={selected.schema} dispatch={dispatch} readOnly={completed} />
           </section>
-          <CandidateInspector state={state} schema={selected.schema} field={selected.field} dispatch={dispatch} />
+          <CandidateInspector state={state} schema={selected.schema} field={selected.field} dispatch={dispatch} readOnly={completed} />
         </div>
-      </fieldset>
+      </section>
     </>
   );
 }

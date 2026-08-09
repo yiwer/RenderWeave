@@ -5276,12 +5276,12 @@ button.required-toggle.active,
 }
 
 .candidate-review-fieldset { min-width: 0; margin: 0; padding: 0; border: 0; }
-.candidate-review-fieldset:disabled .candidate-review-grid { box-shadow: 0 8px 22px rgb(28 27 25 / 4%); }
-.candidate-review-fieldset:disabled button,
-.candidate-review-fieldset:disabled input,
-.candidate-review-fieldset:disabled select { cursor: not-allowed; }
-.candidate-review-fieldset:disabled .candidate-add-field,
-.candidate-review-fieldset:disabled .candidate-resolution-actions { display: none; }
+.candidate-review-fieldset.is-frozen .candidate-review-grid { box-shadow: 0 8px 22px rgb(28 27 25 / 4%); }
+.candidate-review-fieldset.is-frozen button:disabled,
+.candidate-review-fieldset.is-frozen input:disabled,
+.candidate-review-fieldset.is-frozen select:disabled { cursor: not-allowed; }
+.candidate-review-fieldset.is-frozen .candidate-add-field,
+.candidate-review-fieldset.is-frozen .candidate-resolution-actions { display: none; }
 
 .candidate-bundle-nav {
   min-width: 0;
@@ -5420,7 +5420,7 @@ button.required-toggle.active,
 .candidate-map-legend { position: absolute; z-index: 5; right: 9px; bottom: 9px; display: flex; align-items: center; gap: 5px; padding: 6px 8px; border: 1px solid var(--hairline); border-radius: 6px; background: rgb(255 253 249 / 92%); color: var(--muted); font-size: 7px; }
 
 .candidate-inspector { min-width: 0; max-height: 720px; overflow-y: auto; background: #fffdf9; }
-.candidate-review-fieldset:disabled .candidate-inspector { max-height: none; overflow-y: visible; }
+.candidate-review-fieldset.is-frozen .candidate-inspector { max-height: none; overflow-y: visible; }
 .candidate-inspector > header { display: flex; min-height: 61px; align-items: center; justify-content: space-between; gap: 8px; padding: 9px 12px; border-bottom: 1px solid var(--hairline); }
 .candidate-inspector > header > div { display: flex; min-width: 0; flex-direction: column; gap: 3px; }
 .candidate-inspector > header h2 { overflow: hidden; margin: 0; color: var(--ink); font-family: Georgia, "Times New Roman", serif; font-size: 15px; font-weight: 400; text-overflow: ellipsis; white-space: nowrap; }
@@ -5739,7 +5739,7 @@ button.required-toggle.active,
 }
 
 .candidate-add-schema:hover { border-color: var(--primary); background: var(--primary-soft); }
-.candidate-review-fieldset:disabled .candidate-add-schema { display: none; }
+.candidate-review-fieldset.is-frozen .candidate-add-schema { display: none; }
 .bundle-schema-list { max-height: 620px; }
 .bundle-schema-entry {
   display: grid;
