@@ -6,9 +6,10 @@
 - 2026-08-09 Flash 60-case live 已完成并经独立 A2：112 attempts / ¥0.122980，2/60 exact pass，policy=`EXPERIMENTAL`，authorization 已 CLOSED。
 - 2026-08-09 pinned Plus 60-case live 已完成并经独立 A2：75 attempts / ¥0.825948，18/60 exact pass，policy=`EXPERIMENTAL`，authorization 已 CLOSED。
 - 2026-08-09 Prompt v2 60-case live 已完成并经独立 A2：70 attempts / 256,153 tokens / ¥0.868772，47/60 exact pass，policy=`EXPERIMENTAL`，authorization 已 CLOSED。
+- 2026-08-09 Grounded Pipeline v2 已完成 clean A1 与独立 pre-live A2：JSON_ONLY 20-case 零 provider side effect，COMBINED trust boundary 通过；专属 synthetic-only authorization 已进入 PROPOSED，尚未 live。
 - 用户已将候选模型扩大到 Qwen3.7 dated/alias 与 Qwen3.8 Max，其他模型费用硬上限 ¥10；按协议能力优先评测 pinned `qwen3.7-plus-2026-05-26`。
 - 需求访谈已收束，v1 产品语义以 `specs/renderweave-v1.md` 为准。
-- 生命周期状态：P0 `accepted`；P1–P4 `automated_verified`；P5 Flash / Plus / Prompt v2 均为 `live_independently_reviewed`。所有 DashScope Profile 仍为 `EXPERIMENTAL`、默认关闭，所有已用授权均为 CLOSED。
+- 生命周期状态：P0 `accepted`；P1–P4 `automated_verified`；P5 Flash / Plus / Prompt v2 均为 `live_independently_reviewed`；Grounded v2 为 `pre_live_independently_reviewed`。所有 DashScope Profile 仍为 `EXPERIMENTAL`、默认关闭；Grounded 新账本仅为 PROPOSED，其余已用授权均为 CLOSED。
 
 ## 下一步
 - [x] Java / React / PostgreSQL / OpenAPI 最小 canary 与 A1 full gate 通过。
@@ -42,11 +43,13 @@
 - [x] 为 Prompt v2 冻结 synthetic-only `PROPOSED` ledger；任何复验使用新 Profile、identity 与新的精确 J1。
 - [x] 在用户 12h / 每模型 1M-token J1 内，将本轮执行收窄为单一 pinned Plus Prompt v2 Profile、4h、¥2、≤180 attempts、≤5 case/批；完成 60/60 后立即 CLOSED。
 - [x] 独立 A2 重建 Prompt v2 的 60 case、70 settled attempts、256,153 tokens、¥0.868772、全部 slice metrics 与泄露扫描；无 Blocker / High / Medium。
-- [ ] 以 IMAGE_ONLY 的字段/type/edge hallucination、COMBINED 的 evidence/DAG 退化为下一轮工程靶点；任何新的 provider 调用先冻结新 Profile/evaluation identity 与独立 OPEN 账本。
+- [x] 以 Prompt v2 失败归因构建 Grounded Pipeline v2；JSON_ONLY 确定性零调用、COMBINED 受限视觉 overlay、Prompt/Profile v3、OpenAPI/Web 与 adversarial trust-boundary tests 完成，pre-live A2 PASS。
+- [x] 将 Grounded 最终 staged tree digest 写入单一 Profile、synthetic-only、≤120 attempts / ≤¥2 / ≤5 case 每批的 PROPOSED ledger。
+- [ ] 在用户 12h / 每模型 1M-token J1 内，以独立 OPEN 提交执行 Grounded 60-case；完成或停止后立即 CLOSED 并独立复核。
 
 ## 重要发现或局部阻塞
 - 本机全局 Node 为 20.20.2；正式 gate 已使用 checksum 固定的仓库局部 Node 24.19.0，不依赖或修改系统 Node。
-- 已建立真实 Git 节点边界；当前工作分支为 `phase/p5-prompt-v2`。T5-6 与 T5-7 的 pre-live/live 结果均有独立只读 A2，但仍无外部 CI/branch protection 的 A3。
+- 已建立真实 Git 节点边界；当前工作分支为 `phase/p5-grounded-pipeline-v2`。T5-6/T5-7 live 与 T5-8 pre-live 均有独立只读 A2，但仍无外部 CI/branch protection 的 A3。
 - T4-4 首次 server gate 由于外层命令时限过短中断，其不完整 evidence 不作为结论；随后的完整 server/web/e2e 与 real inference journey 均为绿色。
 - UI 设计数据库把本项目误路由到 hero-centric/mobile/dark SaaS；已在 page override 中拒绝，采用已确认的 dense warm editorial workbench。
 - Docker registry 代理不可用；Compose config 与等价 API/PG runtime canary 已绿，`docker compose up --build` 仍 pending。
@@ -70,4 +73,5 @@
 - `plans/logs/P5-T5-5.md`：旧 canary 与 safety A2 已收束，两个 Profile 保持 `EXPERIMENTAL`。
 - `plans/logs/P5-T5-6.md`：Flash / pinned Plus 的 60-case live 均经独立 A2，决定均为 `EXPERIMENTAL`，authorization 均 CLOSED。
 - `plans/logs/P5-T5-7.md`：Prompt/Profile v2 pre-live A1/A2 与 60-case live A2 PASS；live evidence：`.sdlc/evidence/p5-certification-20260809-plus-prompt-v2/summary.json`；决定为 `EXPERIMENTAL`。
-- 当前恢复点：`phase/p5-prompt-v2` live 认证结果节点；Prompt v2 authorization 已 CLOSED，后续从 IMAGE_ONLY 与 COMBINED 定向改进开始，不能复用本轮授权。
+- `plans/logs/P5-T5-8.md`：Grounded Pipeline v2 clean A1 + pre-live A2 PASS；专属 authorization 为 PROPOSED，provider attempt 仍为 0。
+- 当前恢复点：`phase/p5-grounded-pipeline-v2` PROPOSED 节点；先验证 evaluation identity 与 fail-closed 负向探针，只有独立 OPEN 提交后才能开始 60-case live。

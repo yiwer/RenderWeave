@@ -319,7 +319,7 @@ Phase 内任务只在真实前置依赖满足时并行。当前没有 atomic cla
 - 完成信号：Prompt v2 完成 60/60，70 attempts / 256,153 tokens / ¥0.868772；exact pass 18→47、critical 51→10，但 policy 仍为 `EXPERIMENTAL`，ledger 已立即 CLOSED
 
 #### T5-8：Grounded Pipeline v2 与受限视觉 Overlay 认证
-- 执行状态：`implementation_hardening`（JSON_ONLY 20-case 零调用工作流已通过；等待最终 clean A1 与独立 A2）
+- 执行状态：`pre_live_independently_reviewed`（clean A1 + 独立 A2 PASS；synthetic-only authorization=`PROPOSED`；`plans/logs/P5-T5-8.md`）
 - AC：AC-016, AC-020, AC-021
 - 依赖：T5-7 的 CLOSED Prompt v2 evidence；ADR-0011；新的 provider/cost/data J1
 - 影响区域：JSON structural profile、deterministic Candidate、COMBINED visual composer、Prompt/Profile v3、live worker、OpenAPI/Web profile surface
