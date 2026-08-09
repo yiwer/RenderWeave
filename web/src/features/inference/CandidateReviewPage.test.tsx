@@ -59,6 +59,8 @@ describe('Candidate atomic apply workspace', () => {
     expect(await screen.findByText('Draft Bundle 已原子创建')).toBeTruthy();
     expect(screen.getByRole('link', { name: /order/ }).getAttribute('href')).toBe('/schemas/order');
     expect(screen.getByText('final Candidate 已冻结；本次操作没有发布、更新或删除任何既有 Schema。')).toBeTruthy();
+    const flow = screen.getByRole('navigation', { name: '数据结构识别进度' });
+    expect(flow.querySelector('[aria-current="step"]')?.textContent).toContain('原子创建');
   });
 
   it('keeps atomic apply disabled while a deterministic blocker remains', async () => {

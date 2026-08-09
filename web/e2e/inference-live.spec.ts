@@ -34,6 +34,7 @@ test('executes a real replay run and atomically creates its reviewed Draft bundl
   await page.getByRole('button', { name: '确认原子创建' }).click();
   await expect(page.getByText('Draft Bundle 已原子创建')).toBeVisible();
   await expect(page.getByText('final Candidate 已冻结；本次操作没有发布、更新或删除任何既有 Schema。')).toBeVisible();
+  await expect(page.getByRole('navigation', { name: '数据结构识别进度' }).locator('[aria-current="step"]')).toContainText('原子创建');
   const createdDraftLink = page.getByRole('link', { name: /combined-all-null/ });
   await expect(createdDraftLink).toHaveAttribute('href', '/schemas/combined-all-null');
 

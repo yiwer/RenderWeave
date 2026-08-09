@@ -78,6 +78,19 @@ describe('Candidate review session', () => {
     expect(moved.selectedSchemaId).toBe(child.candidateSchemaId);
   });
 
+  it('rejects removing the immutable root Schema in the client reducer', () => {
+    const initial = createCandidateReviewState(snapshot());
+    const result = candidateReviewReducer(initial, {
+      type: 'resolve-schema',
+      schemaId: initial.draft.rootCandidateSchemaId,
+      resolution: 'REMOVED',
+    });
+
+    expect(result).toBe(initial);
+    expect(result.dirty).toBe(false);
+    expect(result.draft.schemas.find((schema) => schema.candidateSchemaId === result.draft.rootCandidateSchemaId)?.assessment.resolution).not.toBe('REMOVED');
+  });
+
   it('reorders fields while retaining AI evidence and constraint literals', () => {
     const initial = createCandidateReviewState(snapshot());
     const schemaId = initial.selectedSchemaId;

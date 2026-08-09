@@ -189,6 +189,7 @@ function CandidateReviewWorkspace({
     retry: false,
     onSuccess: async (result) => {
       setApplyResult(result);
+      queryClient.setQueryData(['inference-run', result.run.runId], result.run);
       void queryClient.invalidateQueries({ queryKey: ['schema-drafts'] });
       const snapshot = await onReload();
       if (snapshot) dispatch({ type: 'hydrate', snapshot });

@@ -105,8 +105,11 @@ test('completes the four-step Candidate workflow with keyboard authoring and dur
 
   await expect(page).toHaveURL(new RegExp(`/inference-runs/${runId}/review$`));
   await expect(page.getByRole('heading', { name: '校对识别结果' })).toBeVisible();
+  await expect(page.getByRole('navigation', { name: '数据结构识别进度' }).locator('[aria-current="step"]')).toContainText('逐项校对');
   await expect(page.getByText('1 个 blocker 阻止落库')).toBeVisible();
   await expect(page.getByRole('progressbar', { name: '逐项校对完成度' })).toHaveAttribute('aria-valuenow', '50');
+  await expect(page.getByRole('button', { name: '移除当前项' })).toHaveCount(0);
+  await expect(page.getByText('根数据结构不可移除；可继续修改名称与 schemaKey。')).toBeVisible();
 
   await page.locator('.candidate-field-row').filter({ hasText: 'total' }).click();
   const secondImage = page.getByRole('tab', { name: '查看证据图片 2' });
@@ -201,6 +204,7 @@ test('completes the four-step Candidate workflow with keyboard authoring and dur
   await expect(page.getByRole('link', { name: /order/ })).toHaveAttribute('href', '/schemas/order');
   await expect(page.getByRole('link', { name: /customer/ })).toHaveAttribute('href', '/schemas/customer');
   await expect(page.getByText('final Candidate 已冻结；本次操作没有发布、更新或删除任何既有 Schema。')).toBeVisible();
+  await expect(page.getByRole('navigation', { name: '数据结构识别进度' }).locator('[aria-current="step"]')).toContainText('原子创建');
   await page.screenshot({ path: testInfo.outputPath('candidate-atomic-created-1280x720.png'), fullPage: true });
   expect(consoleErrors).toEqual([]);
 });

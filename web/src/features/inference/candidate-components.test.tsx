@@ -34,6 +34,13 @@ describe('Candidate review components', () => {
     expect(screen.queryByRole('button', { name: '确认当前项' })).toBeNull();
   });
 
+  it('does not offer removal for the immutable root Schema', () => {
+    render(<SchemaInspectorHarness />);
+
+    expect(screen.queryByRole('button', { name: '移除当前项' })).toBeNull();
+    expect(screen.getByText('根数据结构不可移除；可继续修改名称与 schemaKey。')).toBeTruthy();
+  });
+
   it('resolves an unresolved AI field by editing its type and keeps evidence visible', () => {
     const { container } = render(<InspectorHarness />);
     fireEvent.change(screen.getByLabelText('Candidate 字段类型'), { target: { value: 'ARRAY' } });
@@ -87,4 +94,10 @@ function InspectorHarness({ readOnly = false }: { readOnly?: boolean }) {
 function BundleNavHarness({ readOnly = false }: { readOnly?: boolean }) {
   const [state, dispatch] = useReducer(candidateReviewReducer, snapshot(), createCandidateReviewState);
   return <CandidateBundleNav state={state} dispatch={dispatch} readOnly={readOnly} />;
+}
+
+function SchemaInspectorHarness() {
+  const [state, dispatch] = useReducer(candidateReviewReducer, snapshot(), createCandidateReviewState);
+  const schema = state.draft.schemas.find((item) => item.candidateSchemaId === state.draft.rootCandidateSchemaId)!;
+  return <CandidateInspector state={state} schema={schema} field={null} dispatch={dispatch} />;
 }

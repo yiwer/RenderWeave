@@ -117,6 +117,7 @@ export function candidateReviewReducer(
         fields: moveById(schema.fields, 'candidateFieldId', action.fieldId, action.direction),
       })), action.fieldId);
     case 'resolve-schema':
+      if (action.schemaId === state.draft.rootCandidateSchemaId && action.resolution === 'REMOVED') return state;
       return change(state, updateSchema(state.draft, action.schemaId, (schema) => ({
         ...schema,
         assessment: { ...schema.assessment, resolution: action.resolution },

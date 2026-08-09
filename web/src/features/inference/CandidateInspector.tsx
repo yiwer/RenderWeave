@@ -68,6 +68,7 @@ export function CandidateInspector({
   const itemId = field?.candidateFieldId ?? schema.candidateSchemaId;
   const itemProblems = state.snapshot.problems.filter((problem) => problem.itemId === itemId);
   const removed = item.assessment.resolution === 'REMOVED';
+  const rootSchema = field === null && schema.candidateSchemaId === state.draft.rootCandidateSchemaId;
   return (
     <aside className="candidate-inspector" aria-label="Candidate 属性与证据">
       <header>
@@ -104,27 +105,31 @@ export function CandidateInspector({
           >
             <Check aria-hidden="true" size={14} />确认当前项
           </button>
-          <button
-            type="button"
-            className="remove-candidate"
-            onClick={() => field
-              ? dispatch({ type: 'resolve-field', schemaId: schema.candidateSchemaId, fieldId: field.candidateFieldId, resolution: 'REMOVED' })
-              : dispatch({ type: 'resolve-schema', schemaId: schema.candidateSchemaId, resolution: 'REMOVED' })}
-          >
-            <Trash2 aria-hidden="true" size={14} />移除当前项
-          </button>
-          <small>没有“全部确认”；每次保存最多改变一个既有项的 resolution。</small>
+          {!rootSchema && (
+            <button
+              type="button"
+              className="remove-candidate"
+              onClick={() => field
+                ? dispatch({ type: 'resolve-field', schemaId: schema.candidateSchemaId, fieldId: field.candidateFieldId, resolution: 'REMOVED' })
+                : dispatch({ type: 'resolve-schema', schemaId: schema.candidateSchemaId, resolution: 'REMOVED' })}
+            >
+              <Trash2 aria-hidden="true" size={14} />移除当前项
+            </button>
+          )}
+          <small>{rootSchema ? '根数据结构不可移除；可继续修改名称与 schemaKey。' : '没有“全部确认”；每次保存最多改变一个既有项的 resolution。'}</small>
         </section>
       )}
       {!readOnly && item.source === 'USER' && !removed && (
         <section className="candidate-resolution-actions">
-          <button
-            type="button"
-            className="remove-candidate"
-            onClick={() => field
-              ? dispatch({ type: 'resolve-field', schemaId: schema.candidateSchemaId, fieldId: field.candidateFieldId, resolution: 'REMOVED' })
-              : dispatch({ type: 'resolve-schema', schemaId: schema.candidateSchemaId, resolution: 'REMOVED' })}
-          ><Trash2 aria-hidden="true" size={14} />移除人工项</button>
+          {rootSchema ? <small>根数据结构不可移除；可继续修改名称与 schemaKey。</small> : (
+            <button
+              type="button"
+              className="remove-candidate"
+              onClick={() => field
+                ? dispatch({ type: 'resolve-field', schemaId: schema.candidateSchemaId, fieldId: field.candidateFieldId, resolution: 'REMOVED' })
+                : dispatch({ type: 'resolve-schema', schemaId: schema.candidateSchemaId, resolution: 'REMOVED' })}
+            ><Trash2 aria-hidden="true" size={14} />移除人工项</button>
+          )}
         </section>
       )}
       {!readOnly && removed && (
