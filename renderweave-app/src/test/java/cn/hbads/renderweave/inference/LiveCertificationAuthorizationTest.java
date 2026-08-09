@@ -184,7 +184,8 @@ class LiveCertificationAuthorizationTest {
         var target = temporaryDirectory.resolve("authorization.json");
 
         Files.writeString(target, source.replaceFirst(
-                "(\"status\"\\s*:\\s*\"PROPOSED\")", "$1,\"status\":\"OPEN\""
+                "(\"status\"\\s*:\\s*\"(?:PROPOSED|OPEN|CLOSED)\")",
+                "$1,\"status\":\"OPEN\""
         ));
         assertInvalidLedger(target);
 
