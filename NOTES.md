@@ -5,10 +5,10 @@
 - 2026-08-08 的 P5 canary J1 已关闭：双 Profile 各 1 次，共 2 attempts / ¥0.054017；只证明通路，不构成质量认证。
 - 2026-08-09 Flash 60-case live 已完成并经独立 A2：112 attempts / ¥0.122980，2/60 exact pass，policy=`EXPERIMENTAL`，authorization 已 CLOSED。
 - 2026-08-09 pinned Plus 60-case live 已完成并经独立 A2：75 attempts / ¥0.825948，18/60 exact pass，policy=`EXPERIMENTAL`，authorization 已 CLOSED。
-- 2026-08-09 已基于两轮 CLOSED sufficient statistics 完成 Prompt v2 pre-live：修复 exact FieldKey、最小证据图、JSON truth table 与 provider/review 信任边界；A1/A2 通过，新增 provider 调用 0。
+- 2026-08-09 Prompt v2 60-case live 已完成并经独立 A2：70 attempts / 256,153 tokens / ¥0.868772，47/60 exact pass，policy=`EXPERIMENTAL`，authorization 已 CLOSED。
 - 用户已将候选模型扩大到 Qwen3.7 dated/alias 与 Qwen3.8 Max，其他模型费用硬上限 ¥10；按协议能力优先评测 pinned `qwen3.7-plus-2026-05-26`。
 - 需求访谈已收束，v1 产品语义以 `specs/renderweave-v1.md` 为准。
-- 生命周期状态：P0 `accepted`；P1–P4 `automated_verified`；P5 Flash / Plus 均为 `live_independently_reviewed`，Prompt v2 为 `awaiting_live_j1`。所有 DashScope Profile 仍为 `EXPERIMENTAL`、默认关闭。
+- 生命周期状态：P0 `accepted`；P1–P4 `automated_verified`；P5 Flash / Plus / Prompt v2 均为 `live_independently_reviewed`。所有 DashScope Profile 仍为 `EXPERIMENTAL`、默认关闭，所有已用授权均为 CLOSED。
 
 ## 下一步
 - [x] Java / React / PostgreSQL / OpenAPI 最小 canary 与 A1 full gate 通过。
@@ -40,10 +40,13 @@
 - [x] 记录 Max / dated 模型协议矩阵：强制思考或无 JSON mode 保证的模型先补协议与 credit/CNY 双预算，不用当前 harness 盲调。
 - [x] 以 Plus 的 field/type/edge 与 critical hallucination 缺口驱动不可变 Prompt/Profile v2，并新增 payload-free failure taxonomy。
 - [x] 为 Prompt v2 冻结 synthetic-only `PROPOSED` ledger；任何复验使用新 Profile、identity 与新的精确 J1。
+- [x] 在用户 12h / 每模型 1M-token J1 内，将本轮执行收窄为单一 pinned Plus Prompt v2 Profile、4h、¥2、≤180 attempts、≤5 case/批；完成 60/60 后立即 CLOSED。
+- [x] 独立 A2 重建 Prompt v2 的 60 case、70 settled attempts、256,153 tokens、¥0.868772、全部 slice metrics 与泄露扫描；无 Blocker / High / Medium。
+- [ ] 以 IMAGE_ONLY 的字段/type/edge hallucination、COMBINED 的 evidence/DAG 退化为下一轮工程靶点；任何新的 provider 调用先冻结新 Profile/evaluation identity 与独立 OPEN 账本。
 
 ## 重要发现或局部阻塞
 - 本机全局 Node 为 20.20.2；正式 gate 已使用 checksum 固定的仓库局部 Node 24.19.0，不依赖或修改系统 Node。
-- 已建立真实 Git 节点边界；当前工作分支为 `phase/p5-prompt-v2`。T5-6 与 T5-7 pre-live 均有独立只读 A2，但仍无外部 CI/branch protection 的 A3。
+- 已建立真实 Git 节点边界；当前工作分支为 `phase/p5-prompt-v2`。T5-6 与 T5-7 的 pre-live/live 结果均有独立只读 A2，但仍无外部 CI/branch protection 的 A3。
 - T4-4 首次 server gate 由于外层命令时限过短中断，其不完整 evidence 不作为结论；随后的完整 server/web/e2e 与 real inference journey 均为绿色。
 - UI 设计数据库把本项目误路由到 hero-centric/mobile/dark SaaS；已在 page override 中拒绝，采用已确认的 dense warm editorial workbench。
 - Docker registry 代理不可用；Compose config 与等价 API/PG runtime canary 已绿，`docker compose up --build` 仍 pending。
@@ -65,6 +68,6 @@
 - `plans/logs/P4-T4-3.md`；A1 server/web/real-browser evidence：`.sdlc/evidence/20260808-052825-server/metadata.json`、`.sdlc/evidence/20260808-052917-web/metadata.json`、`.sdlc/evidence/inference-e2e-9372/metadata.json`。
 - `plans/logs/P4-T4-4.md`；G-P4 A1 server/web/mocked-browser/real-browser evidence：`.sdlc/evidence/20260808-060743-server/metadata.json`、`.sdlc/evidence/20260808-061010-web/metadata.json`、`.sdlc/evidence/20260808-061225-e2e/metadata.json`、`.sdlc/evidence/inference-e2e-36108/metadata.json`。
 - `plans/logs/P5-T5-5.md`：旧 canary 与 safety A2 已收束，两个 Profile 保持 `EXPERIMENTAL`。
-- `plans/logs/P5-T5-6.md`：pre-live A1 server/web、PROPOSED zero-write probe 与独立 A2 PASS；新增 provider 调用 0。
-- `plans/logs/P5-T5-7.md`：Prompt/Profile v2 pre-live A1/A2 PASS；最终实现 A1 server/web evidence：`.sdlc/evidence/20260809-104133-server/metadata.json`、`.sdlc/evidence/20260809-104133-web/metadata.json`；新增 provider 调用 0。
-- 当前恢复点：`phase/p5-prompt-v2` pre-live 治理节点；Prompt v2 尚未 live 复验，新账本仅为 `PROPOSED`，所有既有 live 授权均已 CLOSED。
+- `plans/logs/P5-T5-6.md`：Flash / pinned Plus 的 60-case live 均经独立 A2，决定均为 `EXPERIMENTAL`，authorization 均 CLOSED。
+- `plans/logs/P5-T5-7.md`：Prompt/Profile v2 pre-live A1/A2 与 60-case live A2 PASS；live evidence：`.sdlc/evidence/p5-certification-20260809-plus-prompt-v2/summary.json`；决定为 `EXPERIMENTAL`。
+- 当前恢复点：`phase/p5-prompt-v2` live 认证结果节点；Prompt v2 authorization 已 CLOSED，后续从 IMAGE_ONLY 与 COMBINED 定向改进开始，不能复用本轮授权。

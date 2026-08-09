@@ -1,10 +1,10 @@
 # RenderWeave v1 Phase 计划
 
-- 状态：P1–P4 implementation complete；P5 T5-1–T5-6 已完成通路、安全硬化、质量实测与“不认证”决定；T5-7 的 evidence-anchored Prompt/Profile v2 已完成 pre-live A1/A2，并以精确 PROPOSED 方案等待新的 J1
+- 状态：P1–P4 implementation complete；P5 T5-1–T5-7 已完成通路、安全硬化与三轮 60-case 质量实测；Prompt v2 live A2 结论仍为 `EXPERIMENTAL`，authorization 已 `CLOSED`
 - 日期：2026-08-09
 - Spec：[`specs/renderweave-v1.md`](../specs/renderweave-v1.md)
 - 原型：`/prototype/schema-studio?variant=A|B|C`
-- 当前 lifecycle：P0 `accepted`；P1–P4 `automated_verified`；P5 `live_canary_verified` / `certification_prelive_independently_reviewed` / `awaiting_live_j1`
+- 当前 lifecycle：P0 `accepted`；P1–P4 `automated_verified`；P5 `live_canary_verified` / `live_independently_reviewed` / `decision_recorded`
 
 ## 1. 四维执行配置
 
@@ -269,7 +269,7 @@ Phase 内任务只在真实前置依赖满足时并行。当前没有 atomic cla
 - 完成信号：上传不触网；显式 synthetic/external-transfer confirmation 才启动；Candidate 进入既有逐项审核/create-only 路径
 
 #### T5-3：60-case gold corpus、metrics 与 holdout runner
-- 执行状态：`prelive_independently_reviewed`（v2 完整图 gold/metric/policy 为 A1 + A2；尚未执行 60-case live quality）
+- 执行状态：`live_independently_reviewed`（v2 完整图 gold/metric/policy 为 A1 + A2；Flash、旧 Plus、Prompt v2 三轮 live 结果均已独立重建）
 - AC：AC-016, AC-021
 - 依赖：T4-2, T5-1
 - 影响区域：eval fixtures/runner/reports
@@ -299,24 +299,24 @@ Phase 内任务只在真实前置依赖满足时并行。当前没有 atomic cla
 - 完成信号：已明确两个 Profile 均为 `EXPERIMENTAL`，AI default remains disabled；后续认证需新的 J1 与独立 60-case/holdout A2
 
 #### T5-6：可恢复、身份绑定的 60-case live quality certification
-- 执行状态：`awaiting_live_j1`（pre-live implementation A1 + independent A2 PASS；`plans/logs/P5-T5-6.md`）
+- 执行状态：`live_independently_reviewed`（Flash / pinned Plus 均完成 J1 + A1 + independent A2；decision=`EXPERIMENTAL`；authorization=`CLOSED`；`plans/logs/P5-T5-6.md`）
 - AC：AC-016, AC-021
 - 依赖：T5-3, T5-5；新的 provider/cost/data J1
 - 影响区域：v2 eval gold/whole-graph scorer/certification policy、test-only live harness、authorization/guard/journal、project gate
 - 局部验证：60-case envelope 正反例、UNRESOLVED/CONFLICT 误断言负例、budget/recovery/identity drift tests、PROPOSED zero-write probe
 - 回归升级：Profile/prompt/gold/evaluator/workflow/build 任一变化都会改变 evaluation identity，现有授权 fail-closed，必须重新提案/J1
-- 证据保证：pre-live A1 + A2；真实执行为 J1 + A1，结果完成后再做独立审查
-- 完成信号：精确授权下全量完成，每个 Profile 单独产出 global/mode/HOLDOUT 报告；按 policy 如实保持 `EXPERIMENTAL` 或决定 `CERTIFIED`，授权立即 CLOSED
+- 证据保证：pre-live A1 + A2；真实执行为 J1 + A1，完成后由独立 A2 重建 journal、预算和全部指标
+- 完成信号：Flash 与 pinned Plus 均在精确授权下完成 60/60，分别产出 global/mode/HOLDOUT 报告；policy 均为 `EXPERIMENTAL`，授权均立即 CLOSED
 
 #### T5-7：Evidence-anchored Prompt/Profile v2 与独立认证方案
-- 执行状态：`awaiting_live_j1`（pre-live A1 + independent A2 PASS；`plans/logs/P5-T5-7.md`）
+- 执行状态：`live_independently_reviewed`（J1 + A1 + independent A2 PASS；decision=`EXPERIMENTAL`；authorization=`CLOSED`；`plans/logs/P5-T5-7.md`）
 - AC：AC-016, AC-021
 - 依赖：T5-6 的 CLOSED Flash/Plus evidence
 - 影响区域：不可变 prompt/profile、Candidate provider trust boundary、JSON evidence catalog、repair routing、evaluator diagnostics、OpenAPI/Web profile surface
 - 局部验证：字段身份/JSON truth table golden、forged provenance 与 invented evidence 负例、parseable blocker repair workflow、旧 prompt/profile byte identity 回归
 - 回归升级：prompt/profile/candidate/evaluator/workflow/OpenAPI 任一变化跑 server+web，并改变新的 certification evaluation identity
-- 证据保证：pre-live A1 + 独立 A2；任何新 live 为独立 J1，live 结果完成后再做独立复核
-- 完成信号：最终 tracked tree 与 synthetic-only PROPOSED ledger identity 一致；ledger 不 OPEN、provider calls=0；真实收益只由后续 60-case J1 证明
+- 证据保证：pre-live A1 + 独立 A2；live 为 J1 + A1，结果经独立 A2 重建；本地 evidence 未签名，非 A3
+- 完成信号：Prompt v2 完成 60/60，70 attempts / 256,153 tokens / ¥0.868772；exact pass 18→47、critical 51→10，但 policy 仍为 `EXPERIMENTAL`，ledger 已立即 CLOSED
 
 ### P6 — Release candidate
 
@@ -385,6 +385,6 @@ Phase 内任务只在真实前置依赖满足时并行。当前没有 atomic cla
 4. P5 获得的一次限定 J1 已用于仓库 synthetic 双模型 canary：2 次 attempt、¥0.054017、无真实业务数据；unused budget 不自动扩展为后续调用授权。
 5. P5 live safety hardening 已由独立只读 reviewer 复核为 A2 PASS；范围只包括本节点授权、预算、重试、上传/响应上限、迁移账本和合同闭环，不涵盖完整质量认证。release hard gate 尚无外部 CI/branch protection，因此不存在 A3。
 6. 授权账本已关闭，Compose live overlay 的 worker/upload 两门均保持 false；任何新增调用不得继承未使用的 attempt 或预算。
-7. P5 真实通路已证明，但 2/60 小样本不是质量认证；两个 Profile 继续为 `EXPERIMENTAL`、默认关闭。完整 60-case live 评测、真实业务数据、扩大费用或生产启用仍需新的 J1 与独立 A2。
-8. T5-6 已把 60-case v2 whole-graph 评测、fail-closed policy、每批最多 5 case 的恢复账本与完整 repository evaluation identity 做成可执行闭环，并通过独立 A2；当前新账本仍为 `PROPOSED`，新增 provider call 为 0。
-9. T5-7 不复用旧质量结果：Prompt/Profile v2 修正 exact FieldKey、最小证据图、provider provenance、JSON evidence catalog 与三态 repair 路由；pre-live A1/A2 已完成，新 ledger 仅为 synthetic-only `PROPOSED`，新增 provider call 为 0，真实收益仍等待新的精确 J1。
+7. P5 已完成 Flash、旧 Plus 与 Prompt v2 三轮独立 60-case live 评测；三者均为 `EXPERIMENTAL`、默认关闭。新增 Profile/identity、真实业务数据、扩大费用或生产启用仍需新的精确 J1 与独立 A2。
+8. T5-6 已把 60-case v2 whole-graph 评测、fail-closed policy、每批最多 5 case 的恢复账本与完整 repository evaluation identity 做成可执行闭环，并通过独立 A2；Flash/旧 Plus 授权均已 CLOSED，决定均为 `EXPERIMENTAL`。
+9. T5-7 不复用旧质量结果：Prompt/Profile v2 修正 exact FieldKey、最小证据图、provider provenance、JSON evidence catalog 与三态 repair 路由；随后完成新的 60-case J1 与独立 A2。结果从旧 Plus 18/60 提升到 47/60、critical 51 降至 10，但 Evidence/DAG 退化且 IMAGE_ONLY 薄弱，故仍为 `EXPERIMENTAL`、默认关闭，授权已 CLOSED。
