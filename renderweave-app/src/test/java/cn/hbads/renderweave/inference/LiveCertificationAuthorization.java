@@ -4,6 +4,9 @@ import cn.hbads.renderweave.inference.eval.LiveEvaluationCase;
 import cn.hbads.renderweave.inference.eval.LiveEvaluationCorpus;
 import cn.hbads.renderweave.inference.input.InferenceMode;
 import cn.hbads.renderweave.inference.profile.InferenceProfileRegistry;
+import tools.jackson.core.StreamReadFeature;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.MapperFeature;
 import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
@@ -94,8 +97,17 @@ record LiveCertificationAuthorization(
 
     static LiveCertificationAuthorization load(Path path, ObjectMapper json) {
         try {
-            return json.readValue(Files.readString(path), LiveCertificationAuthorization.class);
-        } catch (IOException failure) {
+            var strictJson = Objects.requireNonNull(json, "json").rebuild()
+                    .enable(StreamReadFeature.STRICT_DUPLICATE_DETECTION)
+                    .enable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                    .disable(DeserializationFeature.ACCEPT_FLOAT_AS_INT)
+                    .disable(MapperFeature.ALLOW_COERCION_OF_SCALARS)
+                    .build();
+            return strictJson.readValue(
+                    Files.readString(path, java.nio.charset.StandardCharsets.UTF_8),
+                    LiveCertificationAuthorization.class
+            );
+        } catch (IOException | RuntimeException failure) {
             throw new IllegalStateException("Certification authorization cannot be loaded", failure);
         }
     }

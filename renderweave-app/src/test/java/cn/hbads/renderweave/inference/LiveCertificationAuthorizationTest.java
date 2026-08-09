@@ -3,8 +3,11 @@ package cn.hbads.renderweave.inference;
 import cn.hbads.renderweave.inference.eval.LiveEvaluationCorpus;
 import cn.hbads.renderweave.inference.input.InferenceMode;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import tools.jackson.databind.ObjectMapper;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Instant;
 import java.util.List;
 
@@ -15,6 +18,9 @@ class LiveCertificationAuthorizationTest {
     private static final Instant NOW = Instant.parse("2026-08-08T08:00:00Z");
     private static final String EVALUATION_IDENTITY =
             "renderweave-repository-tree-sha256/1:" + "a".repeat(64);
+
+    @TempDir
+    Path temporaryDirectory;
 
     @Test
     void proposedAuthorizationCannotExecute() {
@@ -163,6 +169,33 @@ class LiveCertificationAuthorizationTest {
     }
 
     @Test
+    void authorizationLedgerRejectsDuplicateUnknownAndCoercedControlFields() throws Exception {
+        var source = Files.readString(LiveCertificationAuthorizationLocator.resolve(
+                DashScopeLiveCertificationTest.repositoryRoot(),
+                "p5-image-only-diagnostic-20260809"
+        ));
+        var target = temporaryDirectory.resolve("authorization.json");
+
+        Files.writeString(target, source.replaceFirst(
+                "(\"status\"\\s*:\\s*\"PROPOSED\")", "$1,\"status\":\"OPEN\""
+        ));
+        assertInvalidLedger(target);
+
+        Files.writeString(target, source.replaceFirst("\\{", "{\"unknownControl\":true,"));
+        assertInvalidLedger(target);
+
+        Files.writeString(target, source.replaceFirst(
+                "(\"maximumProviderAttempts\"\\s*:\\s*)60", "$1\"60\""
+        ));
+        assertInvalidLedger(target);
+
+        Files.writeString(target, source.replaceFirst(
+                "(\"maximumCostMicrosCny\"\\s*:\\s*)2000000", "$1 2000000.5"
+        ));
+        assertInvalidLedger(target);
+    }
+
+    @Test
     void authorizationCannotExpandBeyondDesignedOrAbsoluteCaps() {
         assertThatThrownBy(() -> authorization(
                 "PROPOSED", List.of(LiveCertificationAuthorization.FLASH_PROFILE),
@@ -263,5 +296,11 @@ class LiveCertificationAuthorizationTest {
                 5,
                 null, null, null, null
         );
+    }
+
+    private static void assertInvalidLedger(Path path) {
+        assertThatThrownBy(() -> LiveCertificationAuthorization.load(path, new ObjectMapper()))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("Certification authorization cannot be loaded");
     }
 }
