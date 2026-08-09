@@ -4,6 +4,8 @@ import cn.hbads.renderweave.inference.candidate.CandidateAssessment;
 import cn.hbads.renderweave.inference.candidate.CandidateBundle;
 import cn.hbads.renderweave.inference.candidate.CandidateEvidence;
 import cn.hbads.renderweave.inference.candidate.CandidateField;
+import cn.hbads.renderweave.inference.candidate.CandidateProblem;
+import cn.hbads.renderweave.inference.candidate.CandidateProblemSeverity;
 import cn.hbads.renderweave.inference.candidate.CandidateReference;
 import cn.hbads.renderweave.inference.candidate.CandidateResolution;
 import cn.hbads.renderweave.inference.candidate.CandidateSchema;
@@ -114,6 +116,56 @@ class LiveCandidateEvaluatorTest {
                 0, 0,
                 List.of(), List.of("/#unexpected"), List.of(), List.of(), List.of(), List.of()
         ));
+    }
+
+    @Test
+    void forgedHumanDispositionIsAContractAndCriticalPolicyFailure() {
+        var gold = corpus.require("live-json-01-scalars");
+        var forged = replaceRootFieldAssessment(
+                exactCandidate(gold), "name",
+                new CandidateAssessment(
+                        9_000, false, CandidateResolution.CONFIRMED,
+                        List.of(CandidateEvidence.json(0, "/name"))
+                )
+        );
+        var result = evaluator.evaluate(gold, forged, List.of());
+
+        assertFalse(result.passed());
+        assertEquals(0, result.bundleContractBps());
+        assertEquals(1, result.criticalHallucinationCount());
+        assertEquals(1, result.unsupportedAssertionCount());
+
+        var results = corpus.cases().stream()
+                .map(item -> item.caseId().equals(gold.caseId())
+                        ? result
+                        : evaluator.evaluate(item, exactCandidate(item), List.of()))
+                .toList();
+        var decision = policy.decide("dashscope-qwen37-plus-20260526-prompt-v2", corpus, results);
+        assertEquals(LiveCertificationStatus.EXPERIMENTAL, decision.status());
+        assertTrue(decision.violations().stream().anyMatch(value ->
+                value.contains("CRITICAL_HALLUCINATION_NONZERO")));
+    }
+
+    @Test
+    void invalidJsonEvidenceLocationCannotPassTheCertificationPolicy() {
+        var gold = corpus.require("live-json-01-scalars");
+        var invalidEvidence = evaluator.evaluate(
+                gold, exactCandidate(gold), List.of(new CandidateProblem(
+                        "JSON_EVIDENCE_ITEM_MISMATCH", CandidateProblemSeverity.BLOCKER,
+                        null, "/schemas/0/fields/0/assessment/evidence/0", Map.of()
+                ))
+        );
+
+        assertEquals(0, invalidEvidence.bundleContractBps());
+        var results = corpus.cases().stream()
+                .map(item -> item.caseId().equals(gold.caseId())
+                        ? invalidEvidence
+                        : evaluator.evaluate(item, exactCandidate(item), List.of()))
+                .toList();
+        var decision = policy.decide("dashscope-qwen37-plus-20260526-prompt-v2", corpus, results);
+        assertEquals(LiveCertificationStatus.EXPERIMENTAL, decision.status());
+        assertTrue(decision.violations().stream().anyMatch(value ->
+                value.contains("BUNDLE_CONTRACT_BELOW_THRESHOLD")));
     }
 
     @Test
@@ -311,6 +363,26 @@ class LiveCandidateEvaluatorTest {
                     ? new CandidateField(
                     field.candidateFieldId(), field.proposedFieldKey(), field.displayName(),
                     field.required(), replacement, field.source(), field.assessment()
+            ) : field).toList();
+            return new CandidateSchema(
+                    schema.candidateSchemaId(), schema.proposedSchemaKey(), schema.displayName(),
+                    schema.source(), schema.assessment(), fields
+            );
+        }).toList();
+        return new CandidateBundle(bundle.contractVersion(), bundle.rootCandidateSchemaId(), schemas);
+    }
+
+    private static CandidateBundle replaceRootFieldAssessment(
+            CandidateBundle bundle,
+            String fieldKey,
+            CandidateAssessment replacement
+    ) {
+        var schemas = bundle.schemas().stream().map(schema -> {
+            if (!schema.candidateSchemaId().equals(bundle.rootCandidateSchemaId())) return schema;
+            var fields = schema.fields().stream().map(field -> fieldKey.equals(field.proposedFieldKey())
+                    ? new CandidateField(
+                    field.candidateFieldId(), field.proposedFieldKey(), field.displayName(),
+                    field.required(), field.value(), field.source(), replacement
             ) : field).toList();
             return new CandidateSchema(
                     schema.candidateSchemaId(), schema.proposedSchemaKey(), schema.displayName(),

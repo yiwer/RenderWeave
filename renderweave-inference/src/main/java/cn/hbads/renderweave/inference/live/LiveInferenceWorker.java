@@ -193,7 +193,8 @@ public final class LiveInferenceWorker {
         if (!repair && checkpoint.completedStage() != InferenceStage.OBSERVE) {
             throw new IllegalStateException("STRUCTURE requires the OBSERVE checkpoint");
         }
-        if (repair && (checkpoint.completedStage() != InferenceStage.CRITIQUE || checkpoint.outputValid())) {
+        if (repair && (checkpoint.completedStage() != InferenceStage.CRITIQUE
+                || !requiresRepair(checkpoint))) {
             throw new IllegalStateException("REPAIR requires a rejected CRITIQUE checkpoint");
         }
         var attemptOrdinal = workflowStore.attempts(current.runId()).size();
@@ -305,7 +306,7 @@ public final class LiveInferenceWorker {
         if (checkpoint.completedStage() != InferenceStage.DETERMINISTIC_VALIDATE) {
             throw new IllegalStateException("CRITIQUE requires deterministic validation");
         }
-        if (!checkpoint.outputValid()) {
+        if (requiresRepair(checkpoint)) {
             if (checkpoint.repairRounds() >= profile.maximumRepairRounds()
                     || checkpoint.structureCalls() >= profile.maximumTotalCalls()) {
                 return runStore.fail(
@@ -321,6 +322,11 @@ public final class LiveInferenceWorker {
                 current.runId(), token(current), candidateCodec.write(checkpoint.candidate()),
                 problemCodec.write(checkpoint.validationProblems()), clock.instant()
         );
+    }
+
+    private static boolean requiresRepair(LiveWorkflowCheckpoint checkpoint) {
+        return !checkpoint.outputValid()
+                || LiveRepairPolicy.requiresRepair(checkpoint.validationProblems());
     }
 
     private ProviderInferenceRequest request(
@@ -345,9 +351,9 @@ public final class LiveInferenceWorker {
             InferenceProfile profile
     ) {
         var jsonProfile = jsonProfile(current);
-        return new CandidateValidationContext(
+        return CandidateValidationContext.liveProviderOutput(
                 Set.copyOf(imageArtifactIds(current)),
-                jsonProfile == null ? 0 : jsonProfile.sampleCount(),
+                jsonProfile,
                 profile.lowConfidenceThresholdBps()
         );
     }

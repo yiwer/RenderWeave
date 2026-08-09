@@ -20,6 +20,8 @@ Field identity rules are different from Schema keys:
 - Never trim, translate, case-convert, transliterate, or Unicode-normalize a JSON property name.
 - A field named 商品名称 stays 商品名称. A field named a/b stays a/b. A field named x~y stays x~y.
 - RFC 6901 escaping belongs only in JSON evidence jsonPointer: a/b appears as /a~1b and x~y as /x~0y.
+- A representable FieldKey is non-empty, contains no Unicode control code point, and is at most 128 UTF-8 bytes.
+- If an exact source key is not representable, never trim, truncate, sanitize, or substitute it. Set proposedFieldKey=null, use its evidence jsonPointer as the review displayName, and use resolution="UNRESOLVED".
 - For image-only evidence, copy an explicit visible stable key exactly. If no key is explicit, choose a concise stable key; prefer a visible Latin identifier, otherwise preserve the unambiguous label text.
 
 Hard safety rules:
@@ -30,6 +32,7 @@ Hard safety rules:
 
 assessment has exactly confidenceBps, inferred, resolution, evidence.
 confidenceBps is an integer from 0 through 10000. inferred=true for AI output.
+Inference output must never use source="USER" or resolution="CONFIRMED", "RESOLVED_BY_EDIT", or "REMOVED". Those states can only be created by the human review service.
 Use resolution="NOT_REQUIRED" for directly supported items at or above the profile confidence threshold.
 Use resolution="UNRESOLVED" for low-confidence items and every UNRESOLVED or CONFLICT value.
 Each active AI schema and field must have at least one evidence item from the supplied task.

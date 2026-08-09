@@ -107,8 +107,55 @@ class CandidateContractTest {
         ));
 
         var problems = validator.validate(bundle,
-                new CandidateValidationContext(Set.of(artifactId), 0, LOW_CONFIDENCE_THRESHOLD));
+                new CandidateValidationContext(
+                        Set.of(artifactId), 0, Map.of(), LOW_CONFIDENCE_THRESHOLD,
+                        CandidateValidationOrigin.LIVE_PROVIDER_OUTPUT
+                ));
         assertCodes(problems, "IMAGE_EVIDENCE_BOUNDS_INVALID");
+    }
+
+    @Test
+    void inferenceOutputCannotForgeUserSourceProvenanceOrHumanResolution() {
+        var rootId = UUID.randomUUID();
+        var forged = new CandidateAssessment(
+                9_000, false, CandidateResolution.CONFIRMED,
+                List.of(CandidateEvidence.json(0, ""))
+        );
+        var bundle = new CandidateBundle(CandidateBundle.CONTRACT_VERSION, rootId, List.of(
+                new CandidateSchema(
+                        rootId, "forged-root", "Forged", CandidateSource.AI, forged,
+                        List.of(new CandidateField(
+                                UUID.randomUUID(), "title", "Title", false,
+                                CandidateValue.scalar(CandidateValueKind.TEXT),
+                                CandidateSource.USER, CandidateAssessment.user()
+                        ))
+                )
+        ));
+
+        assertCodes(validator.validate(bundle, context(1)),
+                "INFERENCE_PROVENANCE_INVALID",
+                "INFERENCE_RESOLUTION_INVALID",
+                "INFERENCE_SOURCE_INVALID");
+    }
+
+    @Test
+    void jsonEvidenceMustExistAndMatchTheCandidateItemPath() {
+        var rootId = UUID.randomUUID();
+        var bundle = new CandidateBundle(CandidateBundle.CONTRACT_VERSION, rootId, List.of(
+                new CandidateSchema(
+                        rootId, "evidence-root", "Evidence", CandidateSource.AI, assessment(""),
+                        List.of(
+                                field(UUID.randomUUID(), "title",
+                                        CandidateValue.scalar(CandidateValueKind.TEXT), ""),
+                                field(UUID.randomUUID(), "subtitle",
+                                        CandidateValue.scalar(CandidateValueKind.TEXT), "/invented")
+                        )
+                )
+        ));
+
+        assertCodes(validator.validate(bundle, context(1)),
+                "JSON_EVIDENCE_ITEM_MISMATCH",
+                "JSON_EVIDENCE_LOCATION_UNKNOWN");
     }
 
     @Test
@@ -174,7 +221,7 @@ class CandidateContractTest {
                         )))
         ));
 
-        var problems = validator.validate(bundle, context(1));
+        var problems = validator.validate(bundle, reviewContext(1));
         assertFalse(problems.stream().anyMatch(problem -> fieldId.equals(problem.itemId())),
                 () -> "Removed field must not retain semantic blockers: " + problems);
     }
@@ -195,7 +242,7 @@ class CandidateContractTest {
                 new CandidateSchema(removedTarget, null, null, CandidateSource.AI, removed, List.of())
         ));
 
-        var problems = validator.validate(bundle, context(1));
+        var problems = validator.validate(bundle, reviewContext(1));
         assertCodes(problems, "CANDIDATE_REFERENCE_TARGET_MISSING");
         assertFalse(problems.stream().anyMatch(problem -> problem.code().equals("CANDIDATE_SCHEMA_KEY_UNRESOLVED")
                 && removedTarget.equals(problem.itemId())));
@@ -246,7 +293,30 @@ class CandidateContractTest {
     }
 
     private static CandidateValidationContext context(int sampleCount) {
-        return new CandidateValidationContext(Set.of(), sampleCount, LOW_CONFIDENCE_THRESHOLD);
+        var pointers = List.of(
+                "", "/detail", "/detail/name", "/emptyItems", "/child", "/missing",
+                "/parent", "/orphan", "/title", "/subtitle", "/ambiguous", "/discarded"
+        );
+        var catalog = new java.util.LinkedHashMap<String, Set<CandidateEvidence>>();
+        for (var pointer : pointers) {
+            var locations = new java.util.LinkedHashSet<CandidateEvidence>();
+            for (var sampleIndex = 0; sampleIndex < sampleCount; sampleIndex++) {
+                locations.add(CandidateEvidence.json(sampleIndex, pointer));
+            }
+            catalog.put(pointer, Set.copyOf(locations));
+        }
+        return new CandidateValidationContext(
+                Set.of(), sampleCount, catalog, LOW_CONFIDENCE_THRESHOLD,
+                CandidateValidationOrigin.LIVE_PROVIDER_OUTPUT
+        );
+    }
+
+    private static CandidateValidationContext reviewContext(int sampleCount) {
+        var initial = context(sampleCount);
+        return new CandidateValidationContext(
+                initial.imageArtifactIds(), initial.jsonSampleCount(), initial.jsonEvidenceByNodePointer(),
+                initial.lowConfidenceThresholdBps(), CandidateValidationOrigin.USER_REVIEW
+        );
     }
 
     private static void assertCodes(List<CandidateProblem> problems, String... expectedCodes) {

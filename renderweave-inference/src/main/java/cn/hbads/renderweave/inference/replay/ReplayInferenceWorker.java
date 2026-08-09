@@ -234,9 +234,9 @@ public final class ReplayInferenceWorker {
         } else {
             problems = candidateValidator.validate(
                     checkpoint.candidate(),
-                    new CandidateValidationContext(
+                    CandidateValidationContext.trustedReplayOutput(
                             Set.copyOf(imageArtifactIds(current)),
-                            fixture.jsonSamples().size(),
+                            jsonProfile(current),
                             profiles.require(current.profileId()).profile().lowConfidenceThresholdBps()
                     )
             );

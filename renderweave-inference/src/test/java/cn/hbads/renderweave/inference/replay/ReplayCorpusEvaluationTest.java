@@ -72,8 +72,8 @@ class ReplayCorpusEvaluationTest {
             );
 
             var problems = new ArrayList<>(result.semanticProblems());
-            problems.addAll(validator.validate(candidate, new CandidateValidationContext(
-                    Set.copyOf(artifactIds), fixture.jsonSamples().size(), 8_000
+            problems.addAll(validator.validate(candidate, CandidateValidationContext.trustedReplayOutput(
+                    Set.copyOf(artifactIds), jsonProfile, 8_000
             )));
             for (var code : fixture.expectedProblemCodes()) {
                 assertTrue(problems.stream().map(CandidateProblem::code).anyMatch(code::equals),

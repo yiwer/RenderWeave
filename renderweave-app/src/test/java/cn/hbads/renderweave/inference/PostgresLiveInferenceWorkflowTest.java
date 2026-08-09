@@ -140,6 +140,26 @@ class PostgresLiveInferenceWorkflowTest {
     }
 
     @Test
+    void deterministicBlockerTriggersRepairWithStableProblemCodes() {
+        var blobs = new MemoryBlobStore();
+        var created = create(blobs, "live-deterministic-repair");
+        var provider = new ScriptedProvider(
+                request -> response(request, candidate(request, true)),
+                request -> response(request, candidate(request, false))
+        );
+
+        var finished = worker(provider, blobs).processNext("live-deterministic-repair-worker").orElseThrow();
+
+        assertThat(finished.state()).isEqualTo(InferenceRunState.REVIEW_REQUIRED);
+        assertThat(provider.requests).hasSize(2);
+        assertThat(provider.requests.get(1).stage().name()).isEqualTo("REPAIR");
+        assertThat(provider.requests.get(1).taskJson()).contains("AI_REQUIRED_UNCONFIRMED");
+        assertThat(workflowStore.attempts(created))
+                .extracting(attempt -> attempt.status())
+                .containsExactly(InferenceAttemptStatus.SUCCEEDED, InferenceAttemptStatus.SUCCEEDED);
+    }
+
+    @Test
     void retryableProviderFailureConsumesAReservationAndProducesAnAuditedRetry() {
         var blobs = new MemoryBlobStore();
         var created = create(blobs, "live-network-retry");
@@ -239,6 +259,10 @@ class PostgresLiveInferenceWorkflowTest {
     }
 
     private String candidate(ProviderInferenceRequest request) {
+        return candidate(request, false);
+    }
+
+    private String candidate(ProviderInferenceRequest request, boolean required) {
         var schemaId = UUID.nameUUIDFromBytes((request.runId() + ":schema").getBytes(StandardCharsets.UTF_8));
         var fieldId = UUID.nameUUIDFromBytes((request.runId() + ":field").getBytes(StandardCharsets.UTF_8));
         var evidence = CandidateEvidence.image(
@@ -252,7 +276,7 @@ class PostgresLiveInferenceWorkflowTest {
                 List.of(new CandidateSchema(
                         schemaId, "synthetic-card", "合成卡片", CandidateSource.AI, assessment,
                         List.of(new CandidateField(
-                                fieldId, "title", "标题", false,
+                                fieldId, "title", "标题", required,
                                 CandidateValue.scalar(CandidateValueKind.TEXT), CandidateSource.AI, assessment
                         ))
                 ))

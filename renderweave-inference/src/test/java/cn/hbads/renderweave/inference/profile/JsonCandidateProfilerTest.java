@@ -25,6 +25,7 @@ class JsonCandidateProfilerTest {
     private final JsonStructuralProfiler structuralProfiler = new JsonStructuralProfiler();
     private final JsonCandidateProfiler candidateProfiler = new JsonCandidateProfiler();
     private final CandidateValidator validator = new CandidateValidator();
+    private JsonStructuralProfile lastProfile;
 
     @Test
     void concreteJsonBuildsSeparateNestedSchemasAndNeverInfersRequiredOrConstraints() {
@@ -120,6 +121,7 @@ class JsonCandidateProfilerTest {
                 "sample.json", "application/json", sample.getBytes(StandardCharsets.UTF_8)
         )).toList();
         var profile = structuralProfiler.profile(reducer.profile(inputs));
+        lastProfile = profile;
         return candidateProfiler.infer(RUN_ID, "json-card", "JSON 卡片", profile);
     }
 
@@ -127,16 +129,9 @@ class JsonCandidateProfilerTest {
         var problems = new ArrayList<>(result.semanticProblems());
         problems.addAll(validator.validate(
                 result.candidate(),
-                new CandidateValidationContext(Set.of(), inferSampleCount(result), 8_000)
+                CandidateValidationContext.trustedReplayOutput(Set.of(), lastProfile, 8_000)
         ));
         return problems;
-    }
-
-    private static int inferSampleCount(CandidateProfileResult result) {
-        return result.candidate().schemas().stream()
-                .flatMap(schema -> schema.assessment().evidence().stream())
-                .mapToInt(evidence -> evidence.sampleIndex() + 1)
-                .max().orElse(1);
     }
 
     private static cn.hbads.renderweave.inference.candidate.CandidateField field(

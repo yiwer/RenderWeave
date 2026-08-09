@@ -43,14 +43,21 @@ Prompt v1 还有一个直接的身份错误：它要求所有 `proposedFieldKey`
 - heterogeneous array → `ARRAY:CONFLICT`；object/scalar 或 object/array 混合 → `CONFLICT`。
 - all-null → `UNRESOLVED`；普通 scalar 混合按现有 deterministic profiler 降级为 `TEXT`；单一 concrete scalar 保持 `TEXT` / `DECIMAL` / `BOOLEAN`。
 - JSON 节点自带的 sampleIndex/jsonPointer 是 evidence 的权威位置，不猜测不存在的位置。
+- 运行时从 `jsonStructuralProfile` 构造允许的 `(sampleIndex, jsonPointer)` catalog；provider 输出的每条 JSON evidence 必须既存在于 catalog，又与该 CandidateSchema/CandidateField 的确定性节点路径一致。只有语法合法但位置不存在或错配，仍是 blocker。
 
 COMBINED 中 JSON 仍拥有结构和 concrete 数值/布尔类型；视觉只补充 displayName、直接支持的视觉字段与 evidence。唯一允许的 concrete refinement 是：JSON `TEXT` 在清晰标签与标准值格式共同支持时精化为 `DATE(yyyy-MM-dd)` 或 `TIME(HH:mm:ss)`。视觉不能把 conflict、all-null、empty array、nested array 或 heterogeneous array 武断具体化。
 
-### 4. Repair 是完整重建，不是局部补丁
+### 4. Provider 输出与人工审核使用不同信任边界
 
-REPAIR 阶段根据稳定 `repairProblemCodes` 重新输出完整 Candidate。它优先修复 exact-key、UUID 唯一性、evidence shape、array shape、reference 可达性以及 required/constraint 越界；不依赖上一份被拒 Candidate，也不把 model payload写入 evidence。
+- live provider 初始输出的 Schema/Field 必须是 `source=AI`、`inferred=true`，resolution 只能是 `NOT_REQUIRED` 或 `UNRESOLVED`；`USER`、`CONFIRMED`、`RESOLVED_BY_EDIT`、`REMOVED` 只允许由 Candidate review service 产生。
+- live provider、可信 deterministic replay 和用户审核分别携带显式 validation origin。严格的初始 provenance/disposition 约束只作用于不可信 live provider；JSON evidence catalog 对 provider/replay 都生效；用户审核继续执行通用 evidence existence 和 Candidate 合约校验。
+- evaluator 独立把 provider 伪造的 provenance/disposition 计为 contract failure 与 critical unsupported assertion，不能依靠模型自报人工确认而获得认证。
 
-### 5. 诊断新增派生标量，不改旧 journal schema
+### 5. Repair 是完整重建，不是局部补丁
+
+REPAIR 阶段根据稳定 `repairProblemCodes` 重新输出完整 Candidate。可解析但包含 exact-key、UUID、provider provenance、evidence、array/reference graph、required/constraint 等确定性 blocker 的 Candidate 也会进入 REPAIR；不再只有 JSON parse failure 才可达。`LOW_CONFIDENCE_UNRESOLVED`、`CANDIDATE_TYPE_UNRESOLVED` 与 `CANDIDATE_TYPE_CONFLICT` 等需要人工判断的 blocker 不进入模型自决。Repair 不依赖上一份被拒 Candidate，也不把 model payload 写入 evidence。
+
+### 6. 诊断新增派生标量，不改旧 journal schema
 
 `LiveEvaluationResult` 暴露缺失/额外 entity、field、edge、支持类型未命中和 unsupported assertion 的确定性派生值；`LiveEvaluationReporter` 在每个 global/mode/partition slice 汇总这些诊断，并将 certification summary 版本提升到 `1.1`。
 

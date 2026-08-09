@@ -217,6 +217,17 @@ public final class LiveCandidateEvaluator {
             int unsafeAssertionCount
     ) {
         private static ActualGraph from(CandidateBundle candidate, List<CandidateProblem> problems) {
+            var initialProvenanceViolations = candidate.schemas().stream()
+                    .mapToInt(schema -> initialInferenceItemValid(schema.source(), schema.assessment()) ? 0 : 1)
+                    .sum();
+            initialProvenanceViolations = Math.addExact(
+                    initialProvenanceViolations,
+                    candidate.schemas().stream().flatMap(schema -> schema.fields().stream())
+                            .mapToInt(field -> initialInferenceItemValid(
+                                    field.source(), field.assessment()
+                            ) ? 0 : 1)
+                            .sum()
+            );
             var active = candidate.schemas().stream()
                     .filter(schema -> schema.assessment().resolution() != CandidateResolution.REMOVED)
                     .toList();
@@ -242,7 +253,7 @@ public final class LiveCandidateEvaluator {
             var edgeCount = 0;
             var evidenceExpected = 0;
             var evidencePresent = 0;
-            var unsafeAssertions = 0;
+            var unsafeAssertions = initialProvenanceViolations;
             var allItemIds = new HashSet<UUID>();
             var duplicateItemIds = false;
             var allAi = true;
@@ -252,7 +263,6 @@ public final class LiveCandidateEvaluator {
                 if (!allItemIds.add(schema.candidateSchemaId())) duplicateItemIds = true;
                 if (schema.source() != CandidateSource.AI) {
                     allAi = false;
-                    unsafeAssertions++;
                 }
                 if (schema.proposedSchemaKey() == null || !schemaKeys.add(schema.proposedSchemaKey())) {
                     duplicateSchemaKeys = true;
@@ -268,7 +278,6 @@ public final class LiveCandidateEvaluator {
                     if (!allItemIds.add(field.candidateFieldId())) duplicateItemIds = true;
                     if (field.source() != CandidateSource.AI) {
                         allAi = false;
-                        unsafeAssertions++;
                     }
                     if (field.required()) unsafeAssertions++;
                     if (field.value() != null && !field.value().constraints().isEmpty()) unsafeAssertions++;
@@ -293,7 +302,8 @@ public final class LiveCandidateEvaluator {
             var contractProblems = problems.stream().anyMatch(ActualGraph::contractProblem);
             var contractValid = CandidateBundle.CONTRACT_VERSION.equals(candidate.contractVersion())
                     && root != null && !active.isEmpty() && !duplicateSchemaIds && !duplicateItemIds
-                    && !duplicateSchemaKeys && allAi && !contractProblems;
+                    && !duplicateSchemaKeys && allAi && initialProvenanceViolations == 0
+                    && !contractProblems;
             var dagValid = root != null && !duplicateSchemaIds
                     && reachable.size() == schemas.size() && graphIsDag(root.candidateSchemaId(), schemas);
             return new ActualGraph(
@@ -301,6 +311,16 @@ public final class LiveCandidateEvaluator {
                     Set.copyOf(edges), edgeCount, evidenceExpected, evidencePresent,
                     contractValid, dagValid, unsafeAssertions
             );
+        }
+
+        private static boolean initialInferenceItemValid(
+                CandidateSource source,
+                cn.hbads.renderweave.inference.candidate.CandidateAssessment assessment
+        ) {
+            return source == CandidateSource.AI
+                    && assessment.inferred()
+                    && (assessment.resolution() == CandidateResolution.NOT_REQUIRED
+                    || assessment.resolution() == CandidateResolution.UNRESOLVED);
         }
 
         private static Map<UUID, String> canonicalPaths(
@@ -362,9 +382,12 @@ public final class LiveCandidateEvaluator {
                         "CANDIDATE_FIELD_KEY_UNRESOLVED", "CANDIDATE_FIELD_KEY_INVALID",
                         "CANDIDATE_FIELD_KEY_DUPLICATE", "USER_ITEM_HAS_AI_PROVENANCE",
                         "USER_ITEM_RESOLUTION_INVALID", "AI_CONFIDENCE_INVALID",
+                        "INFERENCE_SOURCE_INVALID", "INFERENCE_PROVENANCE_INVALID",
+                        "INFERENCE_RESOLUTION_INVALID",
                         "IMAGE_EVIDENCE_SHAPE_INVALID", "IMAGE_EVIDENCE_ARTIFACT_UNKNOWN",
                         "IMAGE_EVIDENCE_BOUNDS_INVALID", "JSON_EVIDENCE_SHAPE_INVALID",
                         "JSON_EVIDENCE_SAMPLE_UNKNOWN", "JSON_EVIDENCE_POINTER_INVALID",
+                        "JSON_EVIDENCE_LOCATION_UNKNOWN", "JSON_EVIDENCE_ITEM_MISMATCH",
                         "EVIDENCE_KIND_INVALID", "CANDIDATE_ARRAY_SHAPE_INVALID",
                         "NESTED_ARRAY_UNSUPPORTED", "CANDIDATE_REFERENCE_SHAPE_INVALID",
                         "UNRESOLVED_TYPE_EVIDENCE_MISSING", "CONFLICT_TYPE_EVIDENCE_INCOMPLETE",

@@ -134,12 +134,12 @@ public final class CandidateReviewService {
                 .filter(input -> input.kind() == NormalizedArtifact.Kind.JSON_PROFILE)
                 .toList();
         if (jsonInputs.size() > 1) throw new IllegalStateException("A run may contain one JSON profile artifact");
-        var sampleCount = jsonInputs.isEmpty() ? 0 : structuralProfiler.profile(
+        var jsonProfile = jsonInputs.isEmpty() ? null : structuralProfiler.profile(
                 blobStore.read(jsonInputs.getFirst().artifact().locator())
-        ).sampleCount();
-        return new CandidateValidationContext(
+        );
+        return CandidateValidationContext.userReview(
                 imageIds,
-                sampleCount,
+                jsonProfile,
                 profiles.parseSnapshot(run.profileSnapshotJson()).lowConfidenceThresholdBps()
         );
     }

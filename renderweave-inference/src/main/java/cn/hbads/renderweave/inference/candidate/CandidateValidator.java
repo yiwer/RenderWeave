@@ -93,6 +93,11 @@ public final class CandidateValidator {
             return List.copyOf(problems);
         }
         validateGraph(bundle.rootCandidateSchemaId(), activeSchemas, problems);
+        if (context.origin() != CandidateValidationOrigin.USER_REVIEW) {
+            validateJsonEvidenceAlignment(
+                    bundle.rootCandidateSchemaId(), activeSchemas, context, problems
+            );
+        }
         return List.copyOf(problems);
     }
 
@@ -168,6 +173,22 @@ public final class CandidateValidator {
             CandidateValidationContext context,
             List<CandidateProblem> problems
     ) {
+        if (context.origin() == CandidateValidationOrigin.LIVE_PROVIDER_OUTPUT) {
+            if (source != CandidateSource.AI) {
+                add(problems, "INFERENCE_SOURCE_INVALID", CandidateProblemSeverity.BLOCKER,
+                        itemId, pointer, Map.of());
+            } else {
+                if (!assessment.inferred()) {
+                    add(problems, "INFERENCE_PROVENANCE_INVALID", CandidateProblemSeverity.BLOCKER,
+                            itemId, pointer + "/inferred", Map.of());
+                }
+                if (assessment.resolution() != CandidateResolution.NOT_REQUIRED
+                        && assessment.resolution() != CandidateResolution.UNRESOLVED) {
+                    add(problems, "INFERENCE_RESOLUTION_INVALID", CandidateProblemSeverity.BLOCKER,
+                            itemId, pointer + "/resolution", Map.of());
+                }
+            }
+        }
         if (source == CandidateSource.USER) {
             if (assessment.confidenceBps() != null || assessment.inferred() || !assessment.evidence().isEmpty()) {
                 add(problems, "USER_ITEM_HAS_AI_PROVENANCE", CandidateProblemSeverity.BLOCKER,
@@ -239,13 +260,20 @@ public final class CandidateValidator {
                         itemId, pointer, Map.of());
                 return;
             }
-            if (evidence.sampleIndex() < 0 || evidence.sampleIndex() >= context.jsonSampleCount()) {
+            var sampleKnown = evidence.sampleIndex() >= 0
+                    && evidence.sampleIndex() < context.jsonSampleCount();
+            if (!sampleKnown) {
                 add(problems, "JSON_EVIDENCE_SAMPLE_UNKNOWN", CandidateProblemSeverity.BLOCKER,
                         itemId, pointer + "/sampleIndex", Map.of());
             }
-            if (!validJsonPointer(evidence.jsonPointer())) {
+            var pointerValid = validJsonPointer(evidence.jsonPointer());
+            if (!pointerValid) {
                 add(problems, "JSON_EVIDENCE_POINTER_INVALID", CandidateProblemSeverity.BLOCKER,
                         itemId, pointer + "/jsonPointer", Map.of());
+            }
+            if (sampleKnown && pointerValid && !context.jsonEvidenceKnown(evidence)) {
+                add(problems, "JSON_EVIDENCE_LOCATION_UNKNOWN", CandidateProblemSeverity.BLOCKER,
+                        itemId, pointer, Map.of());
             }
             return;
         }
@@ -389,6 +417,80 @@ public final class CandidateValidator {
 
         var colors = new HashMap<UUID, Integer>();
         detectCycles(rootCandidateSchemaId, edges, colors, problems);
+    }
+
+    private static void validateJsonEvidenceAlignment(
+            UUID rootCandidateSchemaId,
+            Map<UUID, CandidateSchema> schemas,
+            CandidateValidationContext context,
+            List<CandidateProblem> problems
+    ) {
+        var root = schemas.get(rootCandidateSchemaId);
+        if (root == null) return;
+        var paths = new LinkedHashMap<UUID, String>();
+        paths.put(rootCandidateSchemaId, "");
+        var queue = new ArrayDeque<UUID>();
+        queue.add(rootCandidateSchemaId);
+        while (!queue.isEmpty()) {
+            var schemaId = queue.removeFirst();
+            var schema = schemas.get(schemaId);
+            var schemaPath = paths.get(schemaId);
+            for (var field : schema.fields()) {
+                if (field.assessment().resolution() == CandidateResolution.REMOVED) continue;
+                var fieldPath = fieldJsonPointer(schemaPath, field.proposedFieldKey());
+                if (fieldPath == null) continue;
+                var targets = new ArrayList<UUID>();
+                collectCandidateTargets(field.value(), targets);
+                for (var target : targets) {
+                    if (!schemas.containsKey(target) || paths.containsKey(target)) continue;
+                    paths.put(target, fieldPath + (field.value().kind() == CandidateValueKind.ARRAY ? "/*" : ""));
+                    queue.addLast(target);
+                }
+            }
+        }
+        for (var schema : schemas.values()) {
+            var schemaPath = paths.get(schema.candidateSchemaId());
+            if (schemaPath == null) continue;
+            validateJsonEvidenceForItem(
+                    schema.assessment(), schemaPath, schema.candidateSchemaId(),
+                    "/schemas/assessment", context, problems
+            );
+            for (var field : schema.fields()) {
+                if (field.assessment().resolution() == CandidateResolution.REMOVED) continue;
+                var fieldPath = fieldJsonPointer(schemaPath, field.proposedFieldKey());
+                if (fieldPath == null) continue;
+                validateJsonEvidenceForItem(
+                        field.assessment(), fieldPath, field.candidateFieldId(),
+                        "/schemas/fields/assessment", context, problems
+                );
+            }
+        }
+    }
+
+    private static void validateJsonEvidenceForItem(
+            CandidateAssessment assessment,
+            String expectedNodePointer,
+            UUID itemId,
+            String problemPointer,
+            CandidateValidationContext context,
+            List<CandidateProblem> problems
+    ) {
+        for (var evidence : assessment.evidence()) {
+            if (evidence.kind() == CandidateEvidenceKind.JSON
+                    && context.jsonEvidenceKnown(evidence)
+                    && !context.jsonEvidenceMatches(expectedNodePointer, evidence)) {
+                add(problems, "JSON_EVIDENCE_ITEM_MISMATCH", CandidateProblemSeverity.BLOCKER,
+                        itemId, problemPointer, Map.of("expectedNodePointer", expectedNodePointer));
+            }
+        }
+    }
+
+    private static String fieldJsonPointer(String schemaPath, String fieldKey) {
+        try {
+            return schemaPath + "/" + FieldKey.of(fieldKey).jsonPointerSegment();
+        } catch (RuntimeException invalid) {
+            return null;
+        }
     }
 
     private static void collectCandidateTargets(CandidateValue value, List<UUID> targets) {
