@@ -1,7 +1,8 @@
 [CmdletBinding()]
 param(
     [ValidateSet('draft', 'inference')]
-    [string]$Journey = 'draft'
+    [string]$Journey = 'draft',
+    [string]$EvidenceDir
 )
 
 $ErrorActionPreference = 'Stop'
@@ -9,7 +10,12 @@ $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $webRoot = Join-Path $repoRoot 'web'
 $jarPath = Join-Path $repoRoot 'renderweave-app\target\renderweave-app-1.0-SNAPSHOT.jar'
 $runDir = Join-Path $repoRoot ".sdlc\$Journey-e2e\$PID"
-$evidenceDir = Join-Path $repoRoot ".sdlc\evidence\$Journey-e2e-$PID"
+$evidenceDir = if ($EvidenceDir) {
+    Join-Path $EvidenceDir "$Journey-journey"
+}
+else {
+    Join-Path $repoRoot ".sdlc\evidence\$Journey-e2e-$PID"
+}
 $null = New-Item -ItemType Directory -Path $runDir -Force
 $null = New-Item -ItemType Directory -Path $evidenceDir -Force
 $containerName = "renderweave-$Journey-e2e-$PID"
@@ -20,6 +26,25 @@ $oldEnvironment = @{}
 $journeyStarted = Get-Date
 $journeyResult = 'failed'
 $journeyFailure = $null
+$revision = (& git -C $repoRoot rev-parse --verify HEAD)
+$status = (& git -C $repoRoot status --porcelain=v1 2>&1) -join "`n"
+
+function Write-ArtifactManifest {
+    $rows = foreach ($file in Get-ChildItem -LiteralPath $evidenceDir -Recurse -File | Sort-Object FullName) {
+        if ($file.Name -eq 'artifact-manifest.sha256') {
+            continue
+        }
+        $relativePath = $file.FullName.Substring($evidenceDir.Length).TrimStart('\').Replace('\', '/')
+        $hash = (Get-FileHash -LiteralPath $file.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+        "$hash  $relativePath"
+    }
+    $encoding = New-Object System.Text.UTF8Encoding($false)
+    [System.IO.File]::WriteAllText(
+        (Join-Path $evidenceDir 'artifact-manifest.sha256'),
+        ($rows -join "`n"),
+        $encoding
+    )
+}
 
 function Get-FreeTcpPort {
     $listener = New-Object System.Net.Sockets.TcpListener([System.Net.IPAddress]::Loopback, 0)
@@ -102,7 +127,8 @@ try {
     foreach ($name in @(
         'RENDERWEAVE_DB_URL', 'RENDERWEAVE_DB_USERNAME', 'RENDERWEAVE_DB_PASSWORD',
         'RENDERWEAVE_API_URL', 'RENDERWEAVE_BLOB_ROOT', 'RENDERWEAVE_LIVE_E2E',
-        'RENDERWEAVE_WEB_PORT', 'RENDERWEAVE_EVIDENCE_DIR'
+        'RENDERWEAVE_WEB_PORT', 'RENDERWEAVE_EVIDENCE_DIR',
+        'RENDERWEAVE_PLAYWRIGHT_OUTPUT_DIR', 'RENDERWEAVE_PLAYWRIGHT_HTML_DIR'
     )) {
         $oldEnvironment[$name] = [Environment]::GetEnvironmentVariable($name, 'Process')
     }
@@ -136,6 +162,8 @@ try {
         $env:RENDERWEAVE_LIVE_E2E = '1'
         $env:RENDERWEAVE_WEB_PORT = "$webPort"
         $env:RENDERWEAVE_EVIDENCE_DIR = $evidenceDir
+        $env:RENDERWEAVE_PLAYWRIGHT_OUTPUT_DIR = Join-Path $evidenceDir 'playwright-results'
+        $env:RENDERWEAVE_PLAYWRIGHT_HTML_DIR = Join-Path $evidenceDir 'playwright-report'
         Push-Location $webRoot
         try {
             & $npmCommand run test:e2e -- inference-live.spec.ts
@@ -190,7 +218,8 @@ finally {
         result = $journeyResult
         assurance = 'A1'
         capturedBy = 'tools/run-draft-e2e.ps1'
-        revision = (& git -C $repoRoot rev-parse --verify HEAD)
+        revision = $revision
+        workingTreeDirty = [bool]$status
         startedAt = $journeyStarted.ToString('o')
         finishedAt = (Get-Date).ToString('o')
         failure = $journeyFailure
@@ -201,4 +230,5 @@ finally {
         ($metadata | ConvertTo-Json -Depth 4),
         $encoding
     )
+    Write-ArtifactManifest
 }

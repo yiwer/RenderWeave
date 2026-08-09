@@ -164,14 +164,16 @@ try {
             }
             'draft-browser-e2e' {
                 Invoke-GateStep $step {
-                    Invoke-ZeroPaidAiCommand `
-                        'powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools\run-draft-e2e.ps1'
+                    $command = 'powershell.exe -NoProfile -ExecutionPolicy Bypass ' +
+                        '-File tools\run-draft-e2e.ps1 -EvidenceDir "' + $evidenceDir + '"'
+                    Invoke-ZeroPaidAiCommand $command
                 }
             }
             'inference-browser-e2e' {
                 Invoke-GateStep $step {
-                    Invoke-ZeroPaidAiCommand `
-                        'powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools\run-inference-e2e.ps1'
+                    $command = 'powershell.exe -NoProfile -ExecutionPolicy Bypass ' +
+                        '-File tools\run-inference-e2e.ps1 -EvidenceDir "' + $evidenceDir + '"'
+                    Invoke-ZeroPaidAiCommand $command
                 }
             }
             'capacity-baseline' {
