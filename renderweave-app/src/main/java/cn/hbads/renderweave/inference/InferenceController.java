@@ -144,6 +144,21 @@ final class InferenceController {
                 .body(response);
     }
 
+    @GetMapping
+    InferenceRunPageResponse list(
+            @RequestParam(name = "page", defaultValue = "1") int page,
+            @RequestParam(name = "size", defaultValue = "10") int size
+    ) {
+        if (page < 1 || size < 1 || size > 20) {
+            throw new InvalidInferenceApiRequestException("page must be >= 1 and size must be 1..20");
+        }
+        var result = runStore.list(page, size);
+        return new InferenceRunPageResponse(
+                result.page(), result.size(), result.total(),
+                result.items().stream().map(InferenceController::toRunResponse).toList()
+        );
+    }
+
     @GetMapping("/live-availability")
     LiveAvailabilityResponse liveAvailability() {
         var budget = budgets.snapshot(LiveInferenceWorker.CANARY_BUDGET_KEY);
@@ -489,6 +504,15 @@ final class InferenceController {
         );
     }
 
+    private static InferenceRunResponse toRunResponse(InferenceRunStore.RunSummary run) {
+        return new InferenceRunResponse(
+                run.runId(), run.mode(), run.state(), run.stage(), run.sequence(),
+                run.profileId(), run.sourceReference(), run.cancellationRequested(),
+                run.retryOfRunId(), run.failureCode(), run.candidateRevision(),
+                run.createdAt(), run.updatedAt(), run.finishedAt()
+        );
+    }
+
     private JsonNode tree(String value) {
         try {
             return json.readTree(value);
@@ -576,6 +600,13 @@ final class InferenceController {
             Instant createdAt,
             Instant updatedAt,
             Instant finishedAt
+    ) { }
+
+    record InferenceRunPageResponse(
+            int page,
+            int size,
+            long total,
+            List<InferenceRunResponse> items
     ) { }
 
     record CandidateReviewResponse(

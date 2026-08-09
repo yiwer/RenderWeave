@@ -114,6 +114,32 @@ public class PostgresInferenceRunStore implements InferenceRunStore, InferenceRe
     }
 
     @Override
+    public RunPage list(int page, int size) {
+        if (page < 1 || size < 1 || size > 20) {
+            throw new IllegalArgumentException("page must be >= 1 and size must be 1..20");
+        }
+        var offset = Math.multiplyExact(page - 1, size);
+        var total = jdbcClient.sql("select count(*) from inference_run")
+                .query(Long.class)
+                .single();
+        var items = jdbcClient.sql("""
+                        select run.run_id, run.mode, run.state, run.stage, run.sequence,
+                               run.profile_id, run.source_reference, run.cancellation_requested,
+                               run.retry_of_run_id, run.failure_code, candidate.revision as candidate_revision,
+                               run.created_at, run.updated_at, run.finished_at
+                        from inference_run run
+                        left join inference_candidate candidate on candidate.run_id = run.run_id
+                        order by run.created_at desc, run.run_id desc
+                        limit :size offset :offset
+                        """)
+                .param("size", size)
+                .param("offset", offset)
+                .query(PostgresInferenceRunStore::mapRunSummary)
+                .list();
+        return new RunPage(page, size, total, items);
+    }
+
+    @Override
     @Transactional
     public Optional<InferenceRunSnapshot> claimNext(String workerId, Instant now, Duration leaseDuration) {
         return claimNextByNetwork(false, workerId, now, leaseDuration);
@@ -1019,6 +1045,25 @@ public class PostgresInferenceRunStore implements InferenceRunStore, InferenceRe
                 InferenceStage.valueOf(resultSet.getString("stage")),
                 resultSet.getString("data_json"),
                 instant(resultSet, "occurred_at").orElseThrow()
+        );
+    }
+
+    private static RunSummary mapRunSummary(ResultSet resultSet, int rowNumber) throws SQLException {
+        return new RunSummary(
+                resultSet.getObject("run_id", UUID.class),
+                resultSet.getString("mode"),
+                resultSet.getString("state"),
+                resultSet.getString("stage"),
+                resultSet.getLong("sequence"),
+                resultSet.getString("profile_id"),
+                resultSet.getString("source_reference"),
+                resultSet.getBoolean("cancellation_requested"),
+                resultSet.getObject("retry_of_run_id", UUID.class),
+                resultSet.getString("failure_code"),
+                resultSet.getObject("candidate_revision", Long.class),
+                instant(resultSet, "created_at").orElseThrow(),
+                instant(resultSet, "updated_at").orElseThrow(),
+                instant(resultSet, "finished_at").orElse(null)
         );
     }
 

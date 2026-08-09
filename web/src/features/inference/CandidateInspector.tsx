@@ -1,5 +1,7 @@
 import {
   AlertTriangle,
+  ArrowDown,
+  ArrowUp,
   Bot,
   Check,
   FileJson2,
@@ -9,7 +11,7 @@ import {
   Trash2,
   UserRound,
 } from 'lucide-react';
-import type { Dispatch } from 'react';
+import { useId, useState, type Dispatch } from 'react';
 
 import type {
   CandidateAssessment,
@@ -31,6 +33,24 @@ import { candidateTypeLabels, problemLabel, resolutionLabels } from './candidate
 const finalKinds: FinalCandidateKind[] = ['TEXT', 'DECIMAL', 'DATE', 'TIME', 'BOOLEAN', 'REFERENCE', 'ARRAY'];
 const arrayItemKinds: ArrayItemCandidateKind[] = ['TEXT', 'DECIMAL', 'DATE', 'TIME', 'BOOLEAN', 'REFERENCE'];
 
+interface ConstraintDefinition {
+  key: string;
+  label: string;
+  help: string;
+  placeholder?: string;
+  inputMode?: 'text' | 'numeric' | 'decimal';
+  control?: 'input' | 'textarea' | 'boolean';
+}
+
+const orderedRangeConstraints: ConstraintDefinition[] = [
+  { key: 'min', label: '最小值', help: '包含边界。', placeholder: '2026-01-01' },
+  { key: 'exclusiveMin', label: '大于', help: '不包含边界。', placeholder: '2026-01-01' },
+  { key: 'max', label: '最大值', help: '包含边界。', placeholder: '2026-12-31' },
+  { key: 'exclusiveMax', label: '小于', help: '不包含边界。', placeholder: '2026-12-31' },
+  { key: 'enum', label: '允许值', help: '使用 JSON 数组，例如 ["A","B"]。', control: 'textarea' },
+  { key: 'const', label: '固定值', help: '只允许一个确定值。' },
+];
+
 export function CandidateInspector({
   state,
   schema,
@@ -50,7 +70,7 @@ export function CandidateInspector({
     <aside className="candidate-inspector" aria-label="Candidate 属性与证据">
       <header>
         <div>
-          <span>{field ? 'FIELD REVIEW' : 'SCHEMA REVIEW'}</span>
+          <span>{field ? '字段审核' : '数据结构审核'}</span>
           <h2>{field?.displayName || field?.proposedFieldKey || schema.displayName || schema.proposedSchemaKey || '未命名项'}</h2>
         </div>
         <span className={`candidate-source source-${item.source.toLocaleLowerCase()}`}>
@@ -105,6 +125,19 @@ export function CandidateInspector({
           ><Trash2 aria-hidden="true" size={14} />移除人工项</button>
         </section>
       )}
+      {removed && (
+        <section className="candidate-resolution-actions single-action" aria-label="恢复已移除项">
+          <button
+            type="button"
+            className="confirm-candidate"
+            onClick={() => {
+              const resolution = originalResolution(state, itemId, item.source);
+              if (field) dispatch({ type: 'resolve-field', schemaId: schema.candidateSchemaId, fieldId: field.candidateFieldId, resolution });
+              else dispatch({ type: 'resolve-schema', schemaId: schema.candidateSchemaId, resolution });
+            }}
+          >恢复此项</button>
+        </section>
+      )}
       <EvidencePanel state={state} assessment={item.assessment} />
       <ProblemPanel problems={itemProblems} />
     </aside>
@@ -144,8 +177,14 @@ function FieldEditor({
   const change = (patch: Partial<Pick<CandidateField, 'proposedFieldKey' | 'displayName' | 'required' | 'value'>>) =>
     dispatch({ type: 'edit-field', schemaId: schema.candidateSchemaId, fieldId: field.candidateFieldId, patch });
   const selectedKind = finalKinds.includes(field.value.kind as FinalCandidateKind) ? field.value.kind : '';
+  const fieldIndex = schema.fields.findIndex((item) => item.candidateFieldId === field.candidateFieldId);
   return (
     <div className="candidate-editor-fields">
+      <div className="candidate-field-order" role="group" aria-label={`${field.displayName || field.proposedFieldKey || '当前字段'} 排序`}>
+        <span>字段顺序 <strong>{fieldIndex + 1} / {schema.fields.length}</strong></span>
+        <button type="button" aria-label="上移当前字段" disabled={disabled || fieldIndex <= 0} onClick={() => dispatch({ type: 'move-field', schemaId: schema.candidateSchemaId, fieldId: field.candidateFieldId, direction: -1 })}><ArrowUp aria-hidden="true" size={14} />上移</button>
+        <button type="button" aria-label="下移当前字段" disabled={disabled || fieldIndex < 0 || fieldIndex >= schema.fields.length - 1} onClick={() => dispatch({ type: 'move-field', schemaId: schema.candidateSchemaId, fieldId: field.candidateFieldId, direction: 1 })}><ArrowDown aria-hidden="true" size={14} />下移</button>
+      </div>
       <label>显示名称<input disabled={disabled} value={field.displayName ?? ''} onChange={(event) => change({ displayName: event.target.value || null })} /></label>
       <label>fieldKey<input disabled={disabled} value={field.proposedFieldKey ?? ''} spellCheck={false} onChange={(event) => change({ proposedFieldKey: event.target.value || null })} /></label>
       <label>字段类型
@@ -160,14 +199,12 @@ function FieldEditor({
         </select>
       </label>
       <label className="candidate-checkbox"><input disabled={disabled} type="checkbox" checked={field.required} onChange={(event) => change({ required: event.target.checked })} /><span>RootDocument 中必填</span></label>
+      <CandidateConstraintEditor value={field.value} disabled={disabled} onChange={(value) => change({ value })} />
       {field.value.kind === 'ARRAY' && field.value.items && (
         <ArrayItemEditor state={state} schema={schema} field={field} disabled={disabled} change={change} />
       )}
       {field.value.kind === 'REFERENCE' && field.value.reference && (
         <ReferenceEditor state={state} schema={schema} value={field.value} disabled={disabled} onChange={(value) => change({ value })} />
-      )}
-      {Object.keys(field.value.constraints).length > 0 && (
-        <div className="candidate-constraints"><span>推断约束</span>{Object.entries(field.value.constraints).map(([key, value]) => <code key={key}>{key}: {value}</code>)}</div>
       )}
     </div>
   );
@@ -188,7 +225,11 @@ function ArrayItemEditor({
 }) {
   const items = field.value.items!;
   const selectedKind = arrayItemKinds.includes(items.kind as ArrayItemCandidateKind) ? items.kind : '';
-  const setItems = (nextItems: CandidateValue) => change({ value: { ...field.value, items: nextItems } });
+  const setItems = (nextItems: CandidateValue) => {
+    const constraints = { ...field.value.constraints };
+    if (nextItems.kind === 'REFERENCE') delete constraints.uniqueItems;
+    change({ value: { ...field.value, items: nextItems, constraints } });
+  };
   return (
     <div className="array-item-editor">
       <span>数组元素（禁止 Array&lt;Array&lt;T&gt;&gt;）</span>
@@ -206,6 +247,7 @@ function ArrayItemEditor({
       {items.kind === 'REFERENCE' && items.reference && (
         <ReferenceEditor state={state} schema={schema} value={items} disabled={disabled} onChange={setItems} />
       )}
+      <CandidateConstraintEditor value={items} disabled={disabled} compact onChange={setItems} />
     </div>
   );
 }
@@ -257,6 +299,163 @@ function ReferenceEditor({
   );
 }
 
+function CandidateConstraintEditor({
+  value,
+  disabled,
+  compact = false,
+  onChange,
+}: {
+  value: CandidateValue;
+  disabled: boolean;
+  compact?: boolean;
+  onChange: (value: CandidateValue) => void;
+}) {
+  const idPrefix = useId();
+  const definitions = constraintsFor(value);
+  const known = new Set(definitions.map((definition) => definition.key));
+  const unknown = Object.entries(value.constraints).filter(([key]) => !known.has(key));
+  if (definitions.length === 0 && unknown.length === 0) return null;
+
+  const setConstraint = (key: string, raw: string | null) => {
+    const constraints = { ...value.constraints };
+    if (raw === null) delete constraints[key];
+    else constraints[key] = raw;
+    onChange({ ...value, constraints });
+  };
+
+  return (
+    <section className={`candidate-constraint-editor ${compact ? 'compact' : ''}`} aria-label={`${candidateTypeLabels[value.kind]}约束`}>
+      <header>
+        <div><strong>{compact ? '元素约束' : '字段约束'}</strong><span>仅启用需要固化到 Draft 的规则</span></div>
+        <em>{Object.keys(value.constraints).length} 项</em>
+      </header>
+      <div className="candidate-constraint-grid">
+        {definitions.map((definition) => {
+          const enabled = Object.hasOwn(value.constraints, definition.key);
+          const inputId = `${idPrefix}-${definition.key}`;
+          return (
+            <div className={`candidate-constraint-control ${enabled ? 'enabled' : ''}`} key={definition.key}>
+              <label className="candidate-constraint-toggle">
+                <input
+                  type="checkbox"
+                  aria-label={`启用${definition.label}`}
+                  checked={enabled}
+                  disabled={disabled}
+                  onChange={(event) => setConstraint(
+                    definition.key,
+                    event.target.checked ? defaultConstraintLiteral(value.kind, definition.key) : null,
+                  )}
+                />
+                <span><strong>{definition.label}</strong><small>{definition.help}</small></span>
+              </label>
+              {enabled && definition.control === 'textarea' && (
+                <textarea
+                  id={inputId}
+                  aria-label={definition.label}
+                  disabled={disabled}
+                  rows={2}
+                  spellCheck={false}
+                  value={value.constraints[definition.key] ?? ''}
+                  placeholder={definition.placeholder}
+                  onChange={(event) => setConstraint(definition.key, event.target.value)}
+                />
+              )}
+              {enabled && definition.control === 'boolean' && (
+                <select
+                  id={inputId}
+                  aria-label={definition.label}
+                  disabled={disabled}
+                  value={value.constraints[definition.key] ?? 'true'}
+                  onChange={(event) => setConstraint(definition.key, event.target.value)}
+                ><option value="true">true</option><option value="false">false</option></select>
+              )}
+              {enabled && (!definition.control || definition.control === 'input') && (
+                <input
+                  id={inputId}
+                  aria-label={definition.label}
+                  disabled={disabled}
+                  inputMode={definition.inputMode}
+                  spellCheck={false}
+                  value={value.constraints[definition.key] ?? ''}
+                  placeholder={definition.placeholder}
+                  onChange={(event) => setConstraint(definition.key, event.target.value)}
+                />
+              )}
+            </div>
+          );
+        })}
+      </div>
+      {value.kind === 'ARRAY' && value.items?.kind === 'REFERENCE' && (
+        <p className="candidate-constraint-note">对象数组不支持 uniqueItems；切换为引用元素时会自动移除该约束。</p>
+      )}
+      {unknown.length > 0 && (
+        <div className="candidate-unknown-constraints" role="group" aria-label="未识别约束">
+          <span>模型返回的未识别约束</span>
+          {unknown.map(([key, raw]) => (
+            <div key={key}><code>{key}</code><input aria-label={`约束 ${key}`} disabled={disabled} value={raw} onChange={(event) => setConstraint(key, event.target.value)} /><button type="button" disabled={disabled} aria-label={`移除约束 ${key}`} onClick={() => setConstraint(key, null)}><Trash2 aria-hidden="true" size={13} /></button></div>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function constraintsFor(value: CandidateValue): ConstraintDefinition[] {
+  switch (value.kind) {
+    case 'TEXT':
+      return [
+        { key: 'minLength', label: '最小长度', help: '允许 0–65536。', inputMode: 'numeric' },
+        { key: 'maxLength', label: '最大长度', help: '允许 0–65536。', inputMode: 'numeric' },
+        { key: 'pattern', label: '正则表达式', help: '使用受支持的安全正则语法。', placeholder: '^[A-Z0-9]+$' },
+        { key: 'enum', label: '允许值', help: '使用 JSON 字符串数组。', control: 'textarea', placeholder: '["A","B"]' },
+        { key: 'const', label: '固定值', help: '只允许一个确定文本。' },
+      ];
+    case 'DECIMAL':
+      return [
+        { key: 'min', label: '最小值', help: '包含边界。', inputMode: 'decimal' },
+        { key: 'exclusiveMin', label: '大于', help: '不包含边界。', inputMode: 'decimal' },
+        { key: 'max', label: '最大值', help: '包含边界。', inputMode: 'decimal' },
+        { key: 'exclusiveMax', label: '小于', help: '不包含边界。', inputMode: 'decimal' },
+        { key: 'multipleOf', label: '倍数', help: '必须是大于 0 的精确数值。', inputMode: 'decimal' },
+        { key: 'enum', label: '允许值', help: '使用 JSON number 数组。', control: 'textarea', placeholder: '[0,1]' },
+        { key: 'const', label: '固定值', help: '只允许一个精确数值。', inputMode: 'decimal' },
+      ];
+    case 'DATE':
+      return orderedRangeConstraints;
+    case 'TIME':
+      return orderedRangeConstraints.map((definition) => ({
+        ...definition,
+        placeholder: definition.key === 'enum' ? '["08:30:00","17:30:00"]' : '16:32:00',
+      }));
+    case 'BOOLEAN':
+      return [{ key: 'const', label: '固定值', help: '固定为 true 或 false。', control: 'boolean' }];
+    case 'ARRAY':
+      return [
+        { key: 'minItems', label: '最少元素', help: '允许 0–10000。', inputMode: 'numeric' },
+        { key: 'maxItems', label: '最多元素', help: '允许 0–10000。', inputMode: 'numeric' },
+        ...(value.items?.kind !== 'REFERENCE' ? [{ key: 'uniqueItems', label: '元素唯一', help: '标量数组可启用。', control: 'boolean' as const }] : []),
+      ];
+    default:
+      return [];
+  }
+}
+
+function defaultConstraintLiteral(kind: CandidateValue['kind'], key: string): string {
+  if (key === 'enum') {
+    if (kind === 'DECIMAL') return '[0]';
+    if (kind === 'DATE') return '["2026-01-01"]';
+    if (kind === 'TIME') return '["00:00:00"]';
+    return '["value"]';
+  }
+  if (key === 'uniqueItems' || (kind === 'BOOLEAN' && key === 'const')) return 'true';
+  if (key === 'multipleOf') return '1';
+  if (key === 'minLength' || key === 'maxLength' || key === 'minItems' || key === 'maxItems') return '0';
+  if (kind === 'DECIMAL') return '0';
+  if (kind === 'DATE') return '2026-01-01';
+  if (kind === 'TIME') return '00:00:00';
+  return key === 'pattern' ? '' : 'value';
+}
+
 function AssessmentPanel({ assessment, source }: { assessment: CandidateAssessment; source: 'AI' | 'USER' }) {
   const confidence = assessment.confidenceBps;
   return (
@@ -272,10 +471,27 @@ function AssessmentPanel({ assessment, source }: { assessment: CandidateAssessme
 function EvidencePanel({ state, assessment }: { state: CandidateReviewState; assessment: CandidateAssessment }) {
   const imageEvidence = assessment.evidence.filter((entry) => entry.kind === 'IMAGE' && entry.artifactId);
   const jsonEvidence = assessment.evidence.filter((entry) => entry.kind === 'JSON');
-  const selectedImage = state.snapshot.images.find((image) => image.artifactId === imageEvidence[0]?.artifactId);
+  const linkedImageIds = new Set(imageEvidence.map((entry) => entry.artifactId));
+  const linkedImages = state.snapshot.images.filter((image) => linkedImageIds.has(image.artifactId));
+  const [selectedImageId, setSelectedImageId] = useState<string | null>(linkedImages[0]?.artifactId ?? null);
+  const selectedImage = linkedImages.find((image) => image.artifactId === selectedImageId) ?? linkedImages[0];
   return (
     <section className="candidate-evidence">
       <header><span>证据</span><strong>{assessment.evidence.length}</strong></header>
+      {linkedImages.length > 1 && (
+        <div className="evidence-image-tabs" role="tablist" aria-label="图片证据">
+          {linkedImages.map((image) => (
+            <button
+              key={image.artifactId}
+              type="button"
+              role="tab"
+              aria-selected={image.artifactId === selectedImage?.artifactId}
+              aria-label={`查看证据图片 ${image.ordinal + 1}`}
+              onClick={() => setSelectedImageId(image.artifactId)}
+            >图片 {image.ordinal + 1}</button>
+          ))}
+        </div>
+      )}
       {selectedImage && (
         <figure>
           <div className="evidence-image-stage">
@@ -285,7 +501,7 @@ function EvidencePanel({ state, assessment }: { state: CandidateReviewState; ass
               return <i key={`${entry.artifactId}:${index}`} aria-hidden="true" data-evidence-box style={{ left: `${box.left / 100}%`, top: `${box.top / 100}%`, width: `${(box.right - box.left) / 100}%`, height: `${(box.bottom - box.top) / 100}%` }} />;
             })}
           </div>
-          <figcaption><ImageIcon aria-hidden="true" size={13} />image {selectedImage.ordinal + 1} · {selectedImage.width}×{selectedImage.height}</figcaption>
+          <figcaption><ImageIcon aria-hidden="true" size={13} />图片 {selectedImage.ordinal + 1} · {selectedImage.width}×{selectedImage.height}</figcaption>
         </figure>
       )}
       {jsonEvidence.length > 0 && <div className="json-evidence-list">{jsonEvidence.map((entry, index) => <div key={`${entry.sampleIndex}:${entry.jsonPointer}:${index}`}><FileJson2 aria-hidden="true" size={14} /><span>sample #{(entry.sampleIndex ?? 0) + 1}</span><code>{entry.jsonPointer || '/'}</code></div>)}</div>}
@@ -308,6 +524,19 @@ function ProblemPanel({ problems }: { problems: CandidateProblem[] }) {
 function defaultCandidateTarget(state: CandidateReviewState, currentSchemaId: string) {
   return state.draft.schemas.find((item) => item.candidateSchemaId !== currentSchemaId && item.assessment.resolution !== 'REMOVED')?.candidateSchemaId
     ?? state.draft.schemas.find((item) => item.assessment.resolution !== 'REMOVED')?.candidateSchemaId;
+}
+
+function originalResolution(
+  state: CandidateReviewState,
+  itemId: string,
+  source: 'AI' | 'USER',
+): import('../../api/generated').CandidateResolution {
+  for (const schema of state.snapshot.original.schemas) {
+    if (schema.candidateSchemaId === itemId) return schema.assessment.resolution;
+    const field = schema.fields.find((candidate) => candidate.candidateFieldId === itemId);
+    if (field) return field.assessment.resolution;
+  }
+  return source === 'USER' ? 'NOT_REQUIRED' : 'UNRESOLVED';
 }
 
 function referenceForKind(

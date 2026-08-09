@@ -1,25 +1,30 @@
 import { useMutation, useQuery, type UseMutationResult, type UseQueryResult } from '@tanstack/react-query';
 import {
   ArrowRight,
+  AlertTriangle,
   Bot,
   Braces,
   CheckCircle2,
   CircleDollarSign,
   Cloud,
   FileJson2,
+  History,
   Image,
   Images,
   Network,
   Play,
+  RefreshCw,
   ShieldCheck,
+  Trash2,
   Upload,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 import type {
   CreateLiveRunRequest,
   InferenceMode,
+  InferenceRunPageResponse,
   InferenceRunResponse,
   LiveAvailabilityResponse,
   LiveProfileResponse,
@@ -32,8 +37,12 @@ import {
   createLiveRunRequest,
   createReplayRunRequest,
   getLiveAvailabilityRequest,
+  listInferenceRunsRequest,
   listReplayFixturesRequest,
 } from './candidate-api';
+import { InferenceFlowSteps } from './InferenceFlowSteps';
+import { inferenceStageLabel, inferenceStateLabel } from './inference-format';
+import { formatFileSize, mergeLiveFiles, validateLiveFiles, type LiveFileIssue, type LiveFileKind } from './live-input';
 
 type Launcher = 'REPLAY' | 'LIVE';
 type LiveProfileId = CreateLiveRunRequest['profileId'];
@@ -58,6 +67,10 @@ export function InferenceStartPage() {
   const [confirmed, setConfirmed] = useState(false);
   const replayQuery = useQuery({ queryKey: ['replay-fixtures'], queryFn: listReplayFixturesRequest });
   const liveQuery = useQuery({ queryKey: ['live-inference-availability'], queryFn: getLiveAvailabilityRequest });
+  const recentRunsQuery = useQuery({
+    queryKey: ['inference-runs', 1, 6],
+    queryFn: () => listInferenceRunsRequest(1, 6),
+  });
   const fixtures = useMemo(
     () => Array.from(replayQuery.data?.items ?? []).filter((item) => item.mode === mode),
     [mode, replayQuery.data],
@@ -73,6 +86,7 @@ export function InferenceStartPage() {
       title="数据结构智能识别"
       description="先形成可审计的 Schema Candidate，再由用户逐项确认并创建 Draft；推断流程不会直接发布数据结构资产。"
     >
+      <InferenceFlowSteps current={1} />
       <div className="inference-kind-tabs" role="tablist" aria-label="推断方式">
         <button type="button" role="tab" aria-selected={launcher === 'REPLAY'} className={launcher === 'REPLAY' ? 'active' : ''} onClick={() => setLauncher('REPLAY')}>
           <Braces aria-hidden="true" size={16} /><span><strong>确定性样本</strong><small>零网络 · 可复现</small></span>
@@ -95,7 +109,55 @@ export function InferenceStartPage() {
             createRun={createReplay}
           />
         : <LiveLauncher mode={mode} setMode={setMode} query={liveQuery} onCreated={(runId) => navigate(`/inference-runs/${runId}/review`)} />}
+      <RecentInferenceRuns query={recentRunsQuery} />
     </ResourceFrame>
+  );
+}
+
+function RecentInferenceRuns({ query }: { query: UseQueryResult<InferenceRunPageResponse, Error> }) {
+  return (
+    <section className="recent-inference-runs" aria-labelledby="recent-inference-title">
+      <header>
+        <div>
+          <span className="recent-inference-icon"><History aria-hidden="true" size={18} /></span>
+          <span>
+            <h2 id="recent-inference-title">最近识别任务</h2>
+            <p>任务记录由服务端持久化，可随时返回继续校对或查看结果。</p>
+          </span>
+        </div>
+        <button type="button" className="button ghost-button" disabled={query.isFetching} onClick={() => void query.refetch()}>
+          <RefreshCw aria-hidden="true" size={15} />{query.isFetching ? '正在刷新' : '刷新'}
+        </button>
+      </header>
+      {query.isPending && <ResourceLoading label="正在读取最近识别任务" />}
+      {query.isError && <ResourceError error={query.error} onRetry={() => void query.refetch()} />}
+      {query.data && query.data.items.length === 0 && (
+        <div className="recent-inference-empty">
+          <History aria-hidden="true" size={22} />
+          <strong>还没有识别任务</strong>
+          <span>从上方选择一个确定性样本，即可体验完整的识别与校对流程。</span>
+        </div>
+      )}
+      {query.data && query.data.items.length > 0 && (
+        <div className="recent-inference-list">
+          {query.data.items.map((run) => (
+            <Link key={run.runId} to={`/inference-runs/${run.runId}/review`} className="recent-inference-row">
+              <span className={`recent-inference-state state-${run.state.toLowerCase()}`}>{inferenceStateLabel(run.state)}</span>
+              <span className="recent-inference-main">
+                <strong>{modeLabels[run.mode]} · {inferenceStageLabel(run.stage)}</strong>
+                <small>{run.sourceReference} · {formatRunTime(run.updatedAt)}</small>
+              </span>
+              <span className="recent-inference-profile">{humanProfile(run.profileId)}</span>
+              {run.retryOfRunId && <span className="recent-inference-retry">重试任务</span>}
+              <span className="recent-inference-action">{runActionLabel(run.state)}<ArrowRight aria-hidden="true" size={15} /></span>
+            </Link>
+          ))}
+        </div>
+      )}
+      {query.data && query.data.total > query.data.items.length && (
+        <p className="recent-inference-total">共 {query.data.total} 个任务，当前展示最近 {query.data.items.length} 个。</p>
+      )}
+    </section>
   );
 }
 
@@ -204,7 +266,17 @@ function LiveLauncher({
   const [transferConfirmed, setTransferConfirmed] = useState(false);
   const [experimentalConfirmed, setExperimentalConfirmed] = useState(false);
   const profile = query.data?.profiles.find((item) => item.profileId === profileId);
-  const modeReady = (mode === 'JSON_ONLY' || images.length > 0) && (mode === 'IMAGE_ONLY' || jsonSamples.length > 0);
+  const imageIssues = validateLiveFiles('IMAGE', images);
+  const jsonIssues = validateLiveFiles('JSON', jsonSamples);
+  const activeIssues = [
+    ...(mode === 'JSON_ONLY' ? [] : imageIssues),
+    ...(mode === 'IMAGE_ONLY' ? [] : jsonIssues),
+  ];
+  const profileSupportsMode = Boolean(profile?.supportedModes.includes(mode));
+  const modeReady = (mode === 'JSON_ONLY' || images.length > 0)
+    && (mode === 'IMAGE_ONLY' || jsonSamples.length > 0)
+    && activeIssues.length === 0
+    && profileSupportsMode;
   const uploadAuthorized = Boolean(query.data?.uploadEnabled);
   const available = Boolean(query.data?.enabled && query.data.configured && uploadAuthorized
     && query.data.remainingAttempts > 0 && query.data.remainingCostMicrosCny > 0);
@@ -240,7 +312,7 @@ function LiveLauncher({
 
           <div className="replay-layout live-layout">
             <section className="replay-catalog live-input-panel" aria-label="AI 推断输入">
-              <header><div><h2>准备合成输入</h2></div><span>最多 10 图 · 20 JSON</span></header>
+              <header><div><h2>准备识别输入</h2></div><span>最多 10 图 · 20 JSON</span></header>
               <ModeTabs mode={mode} onChange={(value) => { setMode(value); setTransferConfirmed(false); }} />
 
               <div className="live-form-section">
@@ -260,22 +332,37 @@ function LiveLauncher({
                 <span className="section-kicker">添加输入文件</span>
                 <div className="live-upload-grid">
                   <UploadField
+                    kind="IMAGE"
                     title="设计图"
                     description="PNG / JPEG，最多 10 张"
                     accept="image/png,image/jpeg"
-                    disabled={!uploadAuthorized || mode === 'JSON_ONLY'}
+                    disabled={mode === 'JSON_ONLY'}
                     files={images}
-                    onFiles={(files) => { setImages(files.slice(0, 10)); setTransferConfirmed(false); }}
+                    issues={imageIssues}
+                    onFiles={(files) => { setImages(mergeLiveFiles(images, files)); setTransferConfirmed(false); }}
+                    onRemove={(index) => { setImages(images.filter((_, current) => current !== index)); setTransferConfirmed(false); }}
                   />
                   <UploadField
+                    kind="JSON"
                     title="JSON 样本"
                     description="仅用于生成无值结构摘要，最多 20 份"
                     accept="application/json,.json"
-                    disabled={!uploadAuthorized || mode === 'IMAGE_ONLY'}
+                    disabled={mode === 'IMAGE_ONLY'}
                     files={jsonSamples}
-                    onFiles={(files) => { setJsonSamples(files.slice(0, 20)); setTransferConfirmed(false); }}
+                    issues={jsonIssues}
+                    onFiles={(files) => { setJsonSamples(mergeLiveFiles(jsonSamples, files)); setTransferConfirmed(false); }}
+                    onRemove={(index) => { setJsonSamples(jsonSamples.filter((_, current) => current !== index)); setTransferConfirmed(false); }}
                   />
                 </div>
+                {activeIssues.some((issue) => issue.fileIndex === null) && (
+                  <div className="live-input-errors" role="alert">
+                    <AlertTriangle aria-hidden="true" size={16} />
+                    <ul>{activeIssues.filter((issue) => issue.fileIndex === null).map((issue) => <li key={`${issue.code}:${issue.message}`}>{issue.message}</li>)}</ul>
+                  </div>
+                )}
+                {!uploadAuthorized && (images.length > 0 || jsonSamples.length > 0) && (
+                  <p className="live-local-only-note"><ShieldCheck aria-hidden="true" size={15} />文件只保留在当前浏览器页面；部署上传门关闭，启动按钮不会开放。</p>
+                )}
               </div>
             </section>
 
@@ -304,7 +391,9 @@ function LiveLauncher({
               >
                 <Upload aria-hidden="true" size={16} />{createRun.isPending ? '正在创建任务…' : '排队识别并进入审核'}
               </button>
-              {!modeReady && <p className="live-input-hint">请按当前模式添加必需文件。</p>}
+              {!profileSupportsMode
+                ? <p className="live-input-hint">所选模型配置不支持当前输入模式，请切换模型或模式。</p>
+                : !modeReady && <p className="live-input-hint">请按当前模式添加必需文件。</p>}
               {createRun.isError && <p className="replay-error" role="alert">{errorMessage(createRun.error)}</p>}
               <p className="replay-footnote">每次 provider 尝试先进行持久化预算预留；失败、修复和重试都会计入 6 次全局上限。</p>
             </aside>
@@ -331,28 +420,58 @@ function ModeTabs({ mode, onChange }: { mode: InferenceMode; onChange: (mode: In
 }
 
 function UploadField({
+  kind,
   title,
   description,
   accept,
   disabled,
   files,
+  issues,
   onFiles,
+  onRemove,
 }: {
+  kind: LiveFileKind;
   title: string;
   description: string;
   accept: string;
   disabled: boolean;
   files: File[];
+  issues: LiveFileIssue[];
   onFiles: (files: File[]) => void;
+  onRemove: (index: number) => void;
 }) {
   return (
-    <label className={`live-upload-field ${disabled ? 'disabled' : ''}`}>
-      <input type="file" multiple accept={accept} disabled={disabled} onChange={(event) => onFiles(Array.from(event.target.files ?? []))} />
-      <Upload aria-hidden="true" size={20} />
-      <span><strong>{title}</strong><small>{disabled ? '当前模式不使用此输入' : description}</small></span>
-      <em>{files.length > 0 ? `${files.length} 个文件` : '选择文件'}</em>
-      {files.length > 0 && <code title={files.map((file) => file.name).join('\n')}>{files.map((file) => file.name).join('、')}</code>}
-    </label>
+    <div className={`live-upload-group ${disabled ? 'disabled' : ''}`}>
+      <label className={`live-upload-field ${disabled ? 'disabled' : ''}`}>
+        <input
+          type="file"
+          multiple
+          accept={accept}
+          disabled={disabled}
+          onChange={(event) => {
+            onFiles(Array.from(event.target.files ?? []));
+            event.currentTarget.value = '';
+          }}
+        />
+        <Upload aria-hidden="true" size={20} />
+        <span><strong>{title}</strong><small>{disabled ? '当前模式不使用此输入' : description}</small></span>
+        <em>{files.length > 0 ? '继续添加' : '选择文件'}</em>
+      </label>
+      {files.length > 0 && (
+        <ul className="live-file-queue" aria-label={`${title}文件队列`}>
+          {files.map((file, index) => {
+            const fileIssues = issues.filter((issue) => issue.fileIndex === index);
+            return (
+              <li key={`${file.name}:${file.size}:${file.lastModified}`} className={fileIssues.length > 0 ? 'invalid' : ''}>
+                <span className="live-file-status">{fileIssues.length > 0 ? <AlertTriangle aria-hidden="true" size={15} /> : <CheckCircle2 aria-hidden="true" size={15} />}</span>
+                <span><strong>{file.name}</strong><small>{formatFileSize(file.size)} · {kind === 'IMAGE' ? '图片' : 'JSON'}</small>{fileIssues.map((issue) => <em key={issue.code}>{issue.message}</em>)}</span>
+                <button type="button" aria-label={`移除文件 ${file.name}`} onClick={() => onRemove(index)}><Trash2 aria-hidden="true" size={15} /></button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
   );
 }
 
@@ -373,6 +492,30 @@ function liveProfileDescription(profile: LiveProfileResponse) {
   if (profile.profileId.endsWith('-grounded-v1')) return '确定性 JSON Grounding · 受限视觉覆盖';
   if (profile.profileId.endsWith('-prompt-v2')) return '证据锚定 · 最小结构 Prompt v2';
   return profile.model.includes('flash') ? '低成本快速识别 · Prompt v1' : '复杂结构复核 · Prompt v1';
+}
+
+function humanProfile(profileId: string) {
+  if (profileId === 'replay-v1') return '确定性回放';
+  if (profileId.includes('qwen37-plus')) return 'Qwen3.7 Plus';
+  if (profileId.includes('qwen37-flash')) return 'Qwen3.7 Flash';
+  if (profileId.includes('qwen38-max')) return 'Qwen3.8 Max';
+  return profileId;
+}
+
+function runActionLabel(state: InferenceRunResponse['state']) {
+  if (state === 'REVIEW_REQUIRED') return '继续校对';
+  if (state === 'COMPLETED') return '查看结果';
+  if (state === 'FAILED' || state === 'CANCELLED') return '查看并重试';
+  return '查看进度';
+}
+
+function formatRunTime(value: string) {
+  return new Intl.DateTimeFormat('zh-CN', {
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(new Date(value));
 }
 
 function errorMessage(error: unknown) {

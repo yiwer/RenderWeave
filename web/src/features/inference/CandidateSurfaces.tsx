@@ -9,6 +9,8 @@ import {
 } from '@xyflow/react';
 import {
   AlertCircle,
+  ArrowDown,
+  ArrowUp,
   Bot,
   CheckCircle2,
   ChevronRight,
@@ -22,6 +24,8 @@ import { useMemo, type Dispatch } from 'react';
 import type { CandidateField, CandidateProblem, CandidateSchema } from '../../api/generated';
 import {
   newUserField,
+  newUserSchema,
+  nextCandidateKey,
   type CandidateReviewAction,
   type CandidateReviewState,
 } from './candidate-session';
@@ -36,23 +40,39 @@ export function CandidateBundleNav({
 }) {
   return (
     <aside className="candidate-bundle-nav" aria-label="Candidate Schema 包">
-      <header><span>候选集合</span><strong>{state.draft.schemas.length}</strong></header>
+      <header>
+        <span>候选数据结构</span><strong>{state.draft.schemas.length}</strong>
+        <button
+          type="button"
+          className="candidate-add-schema"
+          onClick={() => dispatch({
+            type: 'add-schema',
+            schema: newUserSchema(nextCandidateKey('new-schema', state.draft.schemas.map((item) => item.proposedSchemaKey))),
+          })}
+        ><Plus aria-hidden="true" size={14} />新增</button>
+      </header>
       <div className="bundle-schema-list">
         {state.draft.schemas.map((schema, index) => {
           const problems = problemsForSchema(schema, state.snapshot.problems);
           const isRoot = schema.candidateSchemaId === state.draft.rootCandidateSchemaId;
+          const label = schema.displayName || schema.proposedSchemaKey || '未命名 Schema';
           return (
-            <button
-              type="button"
-              key={schema.candidateSchemaId}
-              className={`${schema.candidateSchemaId === state.selectedSchemaId ? 'active' : ''} ${schema.assessment.resolution === 'REMOVED' ? 'removed' : ''}`}
-              onClick={() => dispatch({ type: 'select-schema', schemaId: schema.candidateSchemaId })}
-            >
-              <span className="bundle-index">{String(index + 1).padStart(2, '0')}</span>
-              <span><strong>{schema.displayName || schema.proposedSchemaKey || '未命名 Schema'}</strong><code>{schema.proposedSchemaKey || 'schemaKey 待填写'}</code></span>
-              {isRoot && <i>根</i>}
-              {problems > 0 ? <b>{problems}</b> : <CheckCircle2 aria-hidden="true" size={14} />}
-            </button>
+            <div className="bundle-schema-entry" key={schema.candidateSchemaId}>
+              <button
+                type="button"
+                className={`bundle-schema-select ${schema.candidateSchemaId === state.selectedSchemaId ? 'active' : ''} ${schema.assessment.resolution === 'REMOVED' ? 'removed' : ''}`}
+                onClick={() => dispatch({ type: 'select-schema', schemaId: schema.candidateSchemaId })}
+              >
+                <span className="bundle-index">{String(index + 1).padStart(2, '0')}</span>
+                <span><strong>{label}</strong><code>{schema.proposedSchemaKey || 'schemaKey 待填写'}</code></span>
+                {isRoot && <i>根</i>}
+                {problems > 0 ? <b>{problems}</b> : <CheckCircle2 aria-hidden="true" size={14} />}
+              </button>
+              <div className="bundle-order-actions" aria-label={`${label} 排序`}>
+                <button type="button" aria-label={`上移 ${label}`} disabled={index === 0} onClick={() => dispatch({ type: 'move-schema', schemaId: schema.candidateSchemaId, direction: -1 })}><ArrowUp aria-hidden="true" size={13} /></button>
+                <button type="button" aria-label={`下移 ${label}`} disabled={index === state.draft.schemas.length - 1} onClick={() => dispatch({ type: 'move-schema', schemaId: schema.candidateSchemaId, direction: 1 })}><ArrowDown aria-hidden="true" size={13} /></button>
+              </div>
+            </div>
           );
         })}
       </div>
@@ -127,7 +147,11 @@ export function CandidateSurface({
       <button
         type="button"
         className="candidate-add-field"
-        onClick={() => dispatch({ type: 'add-field', schemaId: schema.candidateSchemaId, field: newUserField() })}
+        onClick={() => dispatch({
+          type: 'add-field',
+          schemaId: schema.candidateSchemaId,
+          field: newUserField(nextCandidateKey('new-field', schema.fields.map((item) => item.proposedFieldKey))),
+        })}
       >
         <Plus aria-hidden="true" size={15} />新增人工字段
       </button>
@@ -213,7 +237,7 @@ function CandidateMap({
         <Background color="#ded7cd" gap={22} size={1} />
         <Controls showInteractive={false} position="bottom-left" />
       </ReactFlow>
-      <div className="candidate-map-legend"><GitBranch aria-hidden="true" size={14} />表单与树图共享选择和编辑状态；Candidate 顺序只读。</div>
+      <div className="candidate-map-legend"><GitBranch aria-hidden="true" size={14} />树图与表单共享顺序；使用上移、下移完成键盘排序。</div>
     </section>
   );
 }

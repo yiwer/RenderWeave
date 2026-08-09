@@ -1,10 +1,13 @@
 import {
   applyInferenceCandidate,
+  cancelInferenceRun,
   createReplayInferenceRun,
   getInferenceCandidate,
   getInferenceRun,
   getLiveInferenceAvailability,
+  listInferenceRuns,
   listReplayFixtures,
+  retryInferenceRun,
   saveInferenceCandidate,
   type CandidateBundle,
   type CandidateApplyResponse,
@@ -12,6 +15,7 @@ import {
   type CreateLiveRunRequest,
   type InferenceEvent,
   type InferenceRunResponse,
+  type InferenceRunPageResponse,
   type InferenceMode,
   type LiveAvailabilityResponse,
   type Problem,
@@ -70,6 +74,27 @@ export async function createLiveRunRequest(
 export async function getInferenceRunRequest(runId: string): Promise<InferenceRunResponse> {
   const result = await getInferenceRun({ path: { runId } });
   return unwrap(result.data, result.error, '读取推断任务');
+}
+
+export async function listInferenceRunsRequest(
+  page = 1,
+  size = 6,
+): Promise<InferenceRunPageResponse> {
+  const result = await listInferenceRuns({ query: { page, size } });
+  return unwrap(result.data, result.error, '读取最近识别任务');
+}
+
+export async function cancelInferenceRunRequest(runId: string): Promise<InferenceRunResponse> {
+  const result = await cancelInferenceRun({ path: { runId } });
+  return unwrap(result.data, result.error, '取消推断任务');
+}
+
+export async function retryInferenceRunRequest(runId: string): Promise<InferenceRunResponse> {
+  const result = await retryInferenceRun({
+    path: { runId },
+    headers: { 'Idempotency-Key': crypto.randomUUID() },
+  });
+  return unwrap(result.data, result.error, '重试推断任务');
 }
 
 export async function getCandidateReviewRequest(runId: string): Promise<CandidateReviewResponse> {

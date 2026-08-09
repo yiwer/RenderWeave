@@ -14,6 +14,8 @@ const api = vi.hoisted(() => ({
   getCandidateReviewRequest: vi.fn(),
   saveCandidateReviewRequest: vi.fn(),
   applyCandidateRequest: vi.fn(),
+  cancelInferenceRunRequest: vi.fn(),
+  retryInferenceRunRequest: vi.fn(),
   subscribeInferenceRunEvents: vi.fn(() => () => undefined),
 }));
 
@@ -66,6 +68,28 @@ describe('Candidate atomic apply workspace', () => {
     const trigger = await screen.findByRole('button', { name: '原子创建 1 个 Draft' });
     expect((trigger as HTMLButtonElement).disabled).toBe(true);
     expect(api.applyCandidateRequest).not.toHaveBeenCalled();
+  });
+
+  it('cancels a queued run only after explicit confirmation', async () => {
+    const queued = { ...snapshot().run, state: 'QUEUED' as const, stage: 'NORMALIZE' as const };
+    api.getInferenceRunRequest.mockResolvedValue(queued);
+    api.cancelInferenceRunRequest.mockResolvedValue({ ...queued, state: 'CANCELLED' as const });
+    renderPage();
+
+    fireEvent.click(await screen.findByRole('button', { name: '取消任务' }));
+    expect(api.cancelInferenceRunRequest).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: '确认取消' }));
+    await waitFor(() => expect(api.cancelInferenceRunRequest).toHaveBeenCalledWith(queued.runId));
+  });
+
+  it('creates a new auditable run when a failed run is retried', async () => {
+    const failed = { ...snapshot().run, state: 'FAILED' as const, stage: 'REPAIR' as const, failureCode: 'LIVE_REPAIR_BUDGET_EXHAUSTED' };
+    api.getInferenceRunRequest.mockResolvedValue(failed);
+    api.retryInferenceRunRequest.mockResolvedValue({ ...failed, runId: '66666666-6666-4666-8666-666666666666', state: 'QUEUED' as const, retryOfRunId: failed.runId });
+    renderPage();
+
+    fireEvent.click(await screen.findByRole('button', { name: '重新运行' }));
+    await waitFor(() => expect(api.retryInferenceRunRequest).toHaveBeenCalledWith(failed.runId));
   });
 });
 

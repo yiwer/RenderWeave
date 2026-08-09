@@ -23,6 +23,29 @@ describe('Candidate review components', () => {
     expect(screen.getByText('/total')).toBeTruthy();
   });
 
+  it('edits type-specific constraints using Candidate string literals', () => {
+    render(<InspectorHarness />);
+    fireEvent.change(screen.getByLabelText('Candidate 字段类型'), { target: { value: 'TEXT' } });
+    fireEvent.click(screen.getByRole('checkbox', { name: '启用最小长度' }));
+    fireEvent.change(screen.getByLabelText('最小长度'), { target: { value: '3' } });
+    fireEvent.click(screen.getByRole('checkbox', { name: '启用允许值' }));
+    fireEvent.change(screen.getByLabelText('允许值'), { target: { value: '["CNY","USD"]' } });
+
+    expect((screen.getByLabelText('最小长度') as HTMLInputElement).value).toBe('3');
+    expect((screen.getByLabelText('允许值') as HTMLTextAreaElement).value).toBe('["CNY","USD"]');
+    expect(screen.getByText('编辑解决')).toBeTruthy();
+  });
+
+  it('lets reviewers inspect every linked image and only draws that image boxes', () => {
+    const { container } = render(<InspectorHarness />);
+    expect(screen.getByRole('img', { name: '证据图片 1' })).toBeTruthy();
+    expect(screen.getByRole('tab', { name: '查看证据图片 2' })).toBeTruthy();
+    fireEvent.click(screen.getByRole('tab', { name: '查看证据图片 2' }));
+
+    expect(screen.getByRole('img', { name: '证据图片 2' })).toBeTruthy();
+    expect(container.querySelectorAll('[data-evidence-box]')).toHaveLength(1);
+  });
+
   it('exposes only an item-level confirmation action', () => {
     render(<InspectorHarness />);
     expect((screen.getByRole('button', { name: '确认当前项' }) as HTMLButtonElement).disabled).toBe(true);

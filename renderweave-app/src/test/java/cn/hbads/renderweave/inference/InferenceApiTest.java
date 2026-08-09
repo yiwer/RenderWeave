@@ -214,6 +214,50 @@ class InferenceApiTest {
     }
 
     @Test
+    void recentRunListIsBoundedNewestFirstAndResumable() throws Exception {
+        var first = json.readTree(mockMvc.perform(post("/api/v1/inference-runs")
+                        .header("Idempotency-Key", "api-recent-first")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"fixtureId":"json-01-scalars","externalTransferConfirmed":true}
+                                """))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString());
+        var second = json.readTree(mockMvc.perform(post("/api/v1/inference-runs")
+                        .header("Idempotency-Key", "api-recent-second")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"fixtureId":"json-02-nested-object","externalTransferConfirmed":true}
+                                """))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString());
+
+        mockMvc.perform(get("/api/v1/inference-runs")
+                        .queryParam("page", "1")
+                        .queryParam("size", "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.page").value(1))
+                .andExpect(jsonPath("$.size").value(1))
+                .andExpect(jsonPath("$.total").value(2))
+                .andExpect(jsonPath("$.items.length()").value(1))
+                .andExpect(jsonPath("$.items[0].runId").value(second.path("runId").asText()))
+                .andExpect(jsonPath("$.items[0].state").value("REVIEW_REQUIRED"))
+                .andExpect(jsonPath("$.items[0].candidateRevision").value(0))
+                .andExpect(jsonPath("$.items[0].inputs").doesNotExist())
+                .andExpect(jsonPath("$.items[0].candidate").doesNotExist());
+
+        mockMvc.perform(get("/api/v1/inference-runs")
+                        .queryParam("page", "2")
+                        .queryParam("size", "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].runId").value(first.path("runId").asText()));
+
+        mockMvc.perform(get("/api/v1/inference-runs").queryParam("size", "21"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
+    }
+
+    @Test
     void createRequiresExplicitConfirmationAndIdempotencyKey() throws Exception {
         mockMvc.perform(post("/api/v1/inference-runs")
                         .contentType(MediaType.APPLICATION_JSON)

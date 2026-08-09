@@ -31,7 +31,10 @@ export type CandidateReviewAction =
   | { type: 'set-search'; search: string }
   | { type: 'edit-schema'; schemaId: string; patch: Partial<Pick<CandidateSchema, 'proposedSchemaKey' | 'displayName'>> }
   | { type: 'edit-field'; schemaId: string; fieldId: string; patch: Partial<Pick<CandidateField, 'proposedFieldKey' | 'displayName' | 'required' | 'value'>> }
+  | { type: 'add-schema'; schema: CandidateSchema }
   | { type: 'add-field'; schemaId: string; field: CandidateField }
+  | { type: 'move-schema'; schemaId: string; direction: -1 | 1 }
+  | { type: 'move-field'; schemaId: string; fieldId: string; direction: -1 | 1 }
   | { type: 'resolve-schema'; schemaId: string; resolution: CandidateResolution }
   | { type: 'resolve-field'; schemaId: string; fieldId: string; resolution: CandidateResolution }
   | { type: 'save-start' }
@@ -93,11 +96,26 @@ export function candidateReviewReducer(
         ...action.patch,
         assessment: editedAssessment(field),
       })));
+    case 'add-schema':
+      return {
+        ...change(state, { ...state.draft, schemas: [...state.draft.schemas, action.schema] }, null),
+        selectedSchemaId: action.schema.candidateSchemaId,
+      };
     case 'add-field':
       return change(state, updateSchema(state.draft, action.schemaId, (schema) => ({
         ...schema,
         fields: [...schema.fields, action.field],
       })), action.field.candidateFieldId);
+    case 'move-schema':
+      return change(state, {
+        ...state.draft,
+        schemas: moveById(state.draft.schemas, 'candidateSchemaId', action.schemaId, action.direction),
+      });
+    case 'move-field':
+      return change(state, updateSchema(state.draft, action.schemaId, (schema) => ({
+        ...schema,
+        fields: moveById(schema.fields, 'candidateFieldId', action.fieldId, action.direction),
+      })), action.fieldId);
     case 'resolve-schema':
       return change(state, updateSchema(state.draft, action.schemaId, (schema) => ({
         ...schema,
@@ -169,16 +187,37 @@ function updateField(
   }));
 }
 
-export function newUserField(): CandidateField {
+export function newUserField(proposedFieldKey = 'new-field', displayName = '新字段'): CandidateField {
   return {
     candidateFieldId: crypto.randomUUID(),
-    proposedFieldKey: 'new-field',
-    displayName: '新字段',
+    proposedFieldKey,
+    displayName,
     required: false,
     value: candidateValue('TEXT'),
     source: 'USER',
     assessment: { confidenceBps: null, inferred: false, resolution: 'NOT_REQUIRED', evidence: [] },
   };
+}
+
+export function newUserSchema(proposedSchemaKey = 'new-schema', displayName = '新数据结构'): CandidateSchema {
+  return {
+    candidateSchemaId: crypto.randomUUID(),
+    proposedSchemaKey,
+    displayName,
+    source: 'USER',
+    assessment: { confidenceBps: null, inferred: false, resolution: 'NOT_REQUIRED', evidence: [] },
+    fields: [],
+  };
+}
+
+export function nextCandidateKey(base: string, existing: Array<string | null>): string {
+  const keys = new Set(existing.filter((value): value is string => Boolean(value)));
+  if (!keys.has(base)) return base;
+  for (let suffix = 2; suffix <= keys.size + 2; suffix += 1) {
+    const candidate = `${base}-${suffix}`;
+    if (!keys.has(candidate)) return candidate;
+  }
+  return `${base}-${crypto.randomUUID().slice(0, 8)}`;
 }
 
 export type FinalCandidateKind = Exclude<CandidateValue['kind'], 'UNRESOLVED' | 'CONFLICT'>;
@@ -216,4 +255,13 @@ export function findSelected(state: CandidateReviewState) {
     ?? state.draft.schemas[0];
   const field = schema?.fields.find((item) => item.candidateFieldId === state.selectedFieldId) ?? null;
   return { schema, field };
+}
+
+function moveById<T, K extends keyof T>(items: T[], key: K, id: T[K], direction: -1 | 1): T[] {
+  const index = items.findIndex((item) => item[key] === id);
+  const target = index + direction;
+  if (index < 0 || target < 0 || target >= items.length) return items;
+  const moved = [...items];
+  [moved[index], moved[target]] = [moved[target]!, moved[index]!];
+  return moved;
 }

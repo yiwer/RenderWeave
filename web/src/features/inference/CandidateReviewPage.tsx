@@ -8,22 +8,26 @@ import {
   List,
   LoaderCircle,
   RefreshCw,
+  RotateCcw,
   Search,
   ShieldCheck,
   TriangleAlert,
+  XCircle,
 } from 'lucide-react';
 import { useCallback, useEffect, useReducer, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 
 import { StudioRequestError } from '../schema-studio/lossless-api';
 import { ResourceError, ResourceLoading } from '../resources/DraftListPage';
 import { ResourceFrame } from '../resources/ResourceFrame';
 import {
   applyCandidateRequest,
+  cancelInferenceRunRequest,
   getCandidateReviewRequest,
   getInferenceRunRequest,
   saveCandidateReviewRequest,
   subscribeInferenceRunEvents,
+  retryInferenceRunRequest,
 } from './candidate-api';
 import type { CandidateApplyResponse } from '../../api/generated';
 import { CandidateInspector } from './CandidateInspector';
@@ -35,9 +39,13 @@ import {
   findSelected,
   type CandidateReviewState,
 } from './candidate-session';
+import { InferenceFlowSteps } from './InferenceFlowSteps';
+import { inferenceStageLabel, inferenceStateLabel } from './inference-format';
 
 export function CandidateReviewPage() {
   const { runId = '' } = useParams();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const runQuery = useQuery({
     queryKey: ['inference-run', runId],
     queryFn: () => getInferenceRunRequest(runId),
@@ -60,36 +68,87 @@ export function CandidateReviewPage() {
     () => refetch().then((result) => result.data),
     [refetch],
   );
+  const cancelRun = useMutation({
+    mutationFn: () => cancelInferenceRunRequest(runId),
+    onSuccess: (run) => queryClient.setQueryData(['inference-run', runId], run),
+  });
+  const retryRun = useMutation({
+    mutationFn: () => retryInferenceRunRequest(runId),
+    onSuccess: (run) => navigate(`/inference-runs/${run.runId}/review`, { replace: true }),
+  });
+  const flowStep = runQuery.data?.state === 'COMPLETED' || runQuery.data?.state === 'APPLYING'
+    ? 4
+    : reviewReady ? 3 : 2;
 
   return (
     <ResourceFrame
-      title="逐项审核 AI Schema Candidate"
-      description="表单与一层树图共享同一份候选状态；置信度和证据只读，每个低置信度项必须单独确认、编辑解决或移除。"
-      actions={<Link className="button ghost-button" to="/inference"><ArrowLeft aria-hidden="true" size={15} />返回样本</Link>}
+      title="校对识别结果"
+      description="逐项核对字段、类型、约束、引用与证据；AI 来源保持只读，只有全部门通过后才能原子创建 Draft。"
+      actions={<Link className="button ghost-button" to="/inference"><ArrowLeft aria-hidden="true" size={15} />返回识别入口</Link>}
     >
+      <InferenceFlowSteps current={flowStep} />
       {runQuery.isPending && <ResourceLoading label="正在读取推断任务" />}
       {runQuery.isError && <ResourceError error={runQuery.error} onRetry={() => void runQuery.refetch()} />}
-      {runQuery.data && !reviewReady && <InferenceRunProgress run={runQuery.data} />}
+      {runQuery.data && !reviewReady && (
+        <InferenceRunProgress
+          run={runQuery.data}
+          cancelPending={cancelRun.isPending}
+          retryPending={retryRun.isPending}
+          error={cancelRun.error ?? retryRun.error}
+          onCancel={() => cancelRun.mutate()}
+          onRetry={() => retryRun.mutate()}
+        />
+      )}
       {reviewReady && query.isPending && <ResourceLoading label="正在读取 Candidate 与证据" />}
       {query.isError && <ResourceError error={query.error} onRetry={() => void query.refetch()} />}
-      {query.data && <CandidateReviewWorkspace key={runId} initial={query.data} onReload={reload} />}
+      {reviewReady && query.data && (
+        <CandidateReviewWorkspace
+          key={runId}
+          initial={query.data}
+          onReload={reload}
+          cancelPending={cancelRun.isPending}
+          cancelError={cancelRun.error}
+          onCancel={() => cancelRun.mutate()}
+        />
+      )}
     </ResourceFrame>
   );
 }
 
-function InferenceRunProgress({ run }: { run: import('../../api/generated').InferenceRunResponse }) {
+function InferenceRunProgress({
+  run,
+  cancelPending,
+  retryPending,
+  error,
+  onCancel,
+  onRetry,
+}: {
+  run: import('../../api/generated').InferenceRunResponse;
+  cancelPending: boolean;
+  retryPending: boolean;
+  error: Error | null;
+  onCancel: () => void;
+  onRetry: () => void;
+}) {
   const terminalFailure = run.state === 'FAILED' || run.state === 'CANCELLED';
   return (
-    <section className={`inference-run-progress ${terminalFailure ? 'failed' : ''}`} role="status">
+    <section className={`inference-run-progress ${terminalFailure ? 'failed' : ''}`} aria-live="polite">
       {terminalFailure
         ? <AlertCircle aria-hidden="true" size={22} />
         : <LoaderCircle className="spin" aria-hidden="true" size={22} />}
       <div>
         <strong>{terminalFailure ? '推断任务未生成 Candidate' : '正在执行受控推断流程'}</strong>
-        <span>{run.state} · {run.stage} · {run.profileId}</span>
+        <span>{inferenceStateLabel(run.state)} · {inferenceStageLabel(run.stage)} · {run.profileId}</span>
         {run.failureCode && <code>{run.failureCode}</code>}
       </div>
-      <small>运行编号 {run.runId}</small>
+      <div className="inference-run-progress-actions">
+        <small>运行编号 {run.runId}</small>
+        {terminalFailure
+          ? <button type="button" className="button primary-button" disabled={retryPending} onClick={onRetry}><RotateCcw aria-hidden="true" size={15} />{retryPending ? '正在创建新任务…' : '重新运行'}</button>
+          : <RunCancelButton pending={cancelPending} onCancel={onCancel} />}
+        <Link className="button ghost-button" to="/inference">返回识别入口</Link>
+        {error && <p role="alert">{error instanceof Error ? error.message : '操作失败，请稍后重试。'}</p>}
+      </div>
     </section>
   );
 }
@@ -97,9 +156,15 @@ function InferenceRunProgress({ run }: { run: import('../../api/generated').Infe
 function CandidateReviewWorkspace({
   initial,
   onReload,
+  cancelPending,
+  cancelError,
+  onCancel,
 }: {
   initial: Parameters<typeof createCandidateReviewState>[0];
   onReload: () => Promise<Parameters<typeof createCandidateReviewState>[0] | undefined>;
+  cancelPending: boolean;
+  cancelError: Error | null;
+  onCancel: () => void;
 }) {
   const [state, dispatch] = useReducer(candidateReviewReducer, initial, createCandidateReviewState);
   const queryClient = useQueryClient();
@@ -110,6 +175,10 @@ function CandidateReviewWorkspace({
   const completed = state.snapshot.run.state === 'COMPLETED';
   const activeSchemas = (state.snapshot.finalCandidate ?? state.snapshot.current).schemas
     .filter((schema) => schema.assessment.resolution !== 'REMOVED');
+  const reviewItems = state.draft.schemas.flatMap((schema) => [schema, ...schema.fields])
+    .filter((item) => item.source === 'AI');
+  const pendingReviewCount = reviewItems.filter((item) => item.assessment.resolution === 'UNRESOLVED').length;
+  const reviewedCount = reviewItems.length - pendingReviewCount;
   const canApply = blockerCount === 0
     && !state.dirty
     && !state.saving
@@ -164,10 +233,13 @@ function CandidateReviewWorkspace({
       <section className="candidate-run-strip" aria-label="推断运行状态">
         <div><span>运行编号</span><code>{state.snapshot.run.runId}</code></div>
         <div><span>执行配置</span><strong>{state.snapshot.run.profileId}</strong></div>
-        <div><span>状态 / 阶段</span><strong>{state.snapshot.run.state} · {state.snapshot.run.stage}</strong></div>
+        <div><span>状态 / 阶段</span><strong>{inferenceStateLabel(state.snapshot.run.state)} · {inferenceStageLabel(state.snapshot.run.stage)}</strong></div>
         <div><span>候选版本</span><strong>c{state.snapshot.candidateRevision}</strong></div>
         <SaveIndicator state={state} />
+        {state.snapshot.run.state === 'REVIEW_REQUIRED' && <div className="candidate-run-cancel"><RunCancelButton pending={cancelPending} onCancel={onCancel} /></div>}
       </section>
+
+      {cancelError && <p className="candidate-operation-error" role="alert">{cancelError.message}</p>}
 
       {state.saveMessage && (
         <section className="candidate-save-error" role="alert">
@@ -177,6 +249,17 @@ function CandidateReviewWorkspace({
           <button type="button" className="button ghost-button" onClick={() => void onReload().then((snapshot) => { if (snapshot) dispatch({ type: 'hydrate', snapshot }); })}><RefreshCw aria-hidden="true" size={14} />舍弃本地并重载</button>
         </section>
       )}
+
+      <CandidateReviewOverview
+        reviewed={reviewedCount}
+        total={reviewItems.length}
+        pending={pendingReviewCount}
+        blockers={blockerCount}
+        warnings={warningCount}
+        autosaveReady={!state.dirty && !state.saving && !state.saveBlocked}
+        keysReady={activeSchemas.length > 0 && activeSchemas.every((schema) => Boolean(schema.proposedSchemaKey))}
+        completed={completed}
+      />
 
       <section className={`candidate-gate-summary ${blockerCount === 0 ? 'ready' : ''}`}>
         {blockerCount === 0 ? <ShieldCheck aria-hidden="true" size={20} /> : <TriangleAlert aria-hidden="true" size={20} />}
@@ -233,6 +316,73 @@ function CandidateReviewWorkspace({
         </div>
       </fieldset>
     </>
+  );
+}
+
+function CandidateReviewOverview({
+  reviewed,
+  total,
+  pending,
+  blockers,
+  warnings,
+  autosaveReady,
+  keysReady,
+  completed,
+}: {
+  reviewed: number;
+  total: number;
+  pending: number;
+  blockers: number;
+  warnings: number;
+  autosaveReady: boolean;
+  keysReady: boolean;
+  completed: boolean;
+}) {
+  const percentage = total === 0 ? 100 : Math.round((reviewed / total) * 100);
+  const checks = [
+    { label: '逐项处置完成', ready: pending === 0, detail: pending === 0 ? '没有待决定 AI 项' : `仍有 ${pending} 项待决定` },
+    { label: '确定性校验', ready: blockers === 0, detail: blockers === 0 ? `${warnings} 项提示不阻止创建` : `${blockers} 个 blocker` },
+    { label: '数据结构标识', ready: keysReady, detail: keysReady ? '所有活动 Schema 已填写 key' : '仍有 key 待填写' },
+    { label: '自动保存', ready: autosaveReady, detail: autosaveReady ? '服务端版本已同步' : '等待保存稳定' },
+  ];
+  return (
+    <section className={`candidate-review-overview ${completed ? 'completed' : ''}`} aria-label="审核完成度">
+      <div className="candidate-review-progress">
+        <span>逐项校对</span>
+        <strong>{completed ? '已创建' : `${reviewed} / ${total}`}</strong>
+        <div role="progressbar" aria-label="逐项校对完成度" aria-valuemin={0} aria-valuemax={100} aria-valuenow={completed ? 100 : percentage}><i style={{ width: `${completed ? 100 : percentage}%` }} /></div>
+        <small>{completed ? 'final Candidate 已冻结' : `${percentage}% 已检查；没有批量确认入口`}</small>
+      </div>
+      <ul>
+        {checks.map((check) => (
+          <li key={check.label} className={check.ready ? 'ready' : ''}>
+            {check.ready ? <CheckCircle2 aria-hidden="true" size={16} /> : <XCircle aria-hidden="true" size={16} />}
+            <span><strong>{check.label}</strong><small>{check.detail}</small></span>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+function RunCancelButton({ pending, onCancel }: { pending: boolean; onCancel: () => void }) {
+  return (
+    <Dialog.Root>
+      <Dialog.Trigger asChild>
+        <button type="button" className="button ghost-button inference-cancel-trigger" disabled={pending}><XCircle aria-hidden="true" size={15} />{pending ? '正在取消…' : '取消任务'}</button>
+      </Dialog.Trigger>
+      <Dialog.Portal>
+        <Dialog.Overlay className="dialog-overlay" />
+        <Dialog.Content className="dialog-content inference-cancel-dialog" aria-describedby="inference-cancel-description">
+          <Dialog.Title>取消这次识别任务？</Dialog.Title>
+          <Dialog.Description id="inference-cancel-description">已发生的模型费用仍会计入预算；任务取消后不能继续，只能显式创建一个可审计的新重试任务。</Dialog.Description>
+          <div className="dialog-actions">
+            <Dialog.Close asChild><button type="button" className="button ghost-button" disabled={pending}>继续当前任务</button></Dialog.Close>
+            <Dialog.Close asChild><button type="button" className="button danger-button" disabled={pending} onClick={onCancel}>确认取消</button></Dialog.Close>
+          </div>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
   );
 }
 

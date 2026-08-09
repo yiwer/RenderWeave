@@ -474,6 +474,13 @@ export type InferenceRunResponse = {
     finishedAt: string | null;
 };
 
+export type InferenceRunPageResponse = {
+    page: number;
+    size: number;
+    total: number;
+    items: Array<InferenceRunResponse>;
+};
+
 export type SaveCandidateRequest = {
     expectedCandidateRevision: number;
     candidate: CandidateBundle;
@@ -1458,6 +1465,38 @@ export type CreateLiveInferenceRunResponses = {
 };
 
 export type CreateLiveInferenceRunResponse = CreateLiveInferenceRunResponses[keyof CreateLiveInferenceRunResponses];
+
+export type ListInferenceRunsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        page?: number;
+        size?: number;
+    };
+    url: '/api/v1/inference-runs';
+};
+
+export type ListInferenceRunsErrors = {
+    /**
+     * Request JSON, key syntax or envelope is invalid.
+     */
+    400: Problem;
+    /**
+     * RFC 9457 problem response.
+     */
+    500: Problem;
+};
+
+export type ListInferenceRunsError = ListInferenceRunsErrors[keyof ListInferenceRunsErrors];
+
+export type ListInferenceRunsResponses = {
+    /**
+     * A bounded page of resumable inference run summaries.
+     */
+    200: InferenceRunPageResponse;
+};
+
+export type ListInferenceRunsResponse = ListInferenceRunsResponses[keyof ListInferenceRunsResponses];
 
 export type CreateReplayInferenceRunData = {
     body: CreateReplayRunRequest;

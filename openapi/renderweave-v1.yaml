@@ -545,6 +545,28 @@ paths:
         '500':
           $ref: '#/components/responses/InternalProblem'
   /api/v1/inference-runs:
+    get:
+      operationId: listInferenceRuns
+      tags: [Inference Runs]
+      summary: List durable inference runs newest first without loading input or Candidate payloads
+      parameters:
+        - name: page
+          in: query
+          schema: { type: integer, minimum: 1, default: 1 }
+        - name: size
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 20, default: 10 }
+      responses:
+        '200':
+          description: A bounded page of resumable inference run summaries.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InferenceRunPageResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestProblem'
+        '500':
+          $ref: '#/components/responses/InternalProblem'
     post:
       operationId: createReplayInferenceRun
       tags: [Inference Runs]
@@ -1864,6 +1886,27 @@ components:
         finishedAt:
           type: [string, 'null']
           format: date-time
+    InferenceRunPageResponse:
+      type: object
+      additionalProperties: false
+      required: [page, size, total, items]
+      properties:
+        page:
+          type: integer
+          minimum: 1
+        size:
+          type: integer
+          minimum: 1
+          maximum: 20
+        total:
+          type: integer
+          format: int64
+          minimum: 0
+        items:
+          type: array
+          maxItems: 20
+          items:
+            $ref: '#/components/schemas/InferenceRunResponse'
     SaveCandidateRequest:
       type: object
       additionalProperties: false

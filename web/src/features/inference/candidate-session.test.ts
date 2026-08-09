@@ -6,6 +6,7 @@ import {
   candidateValue,
   createCandidateReviewState,
   newUserField,
+  newUserSchema,
 } from './candidate-session';
 
 describe('Candidate review session', () => {
@@ -56,6 +57,50 @@ describe('Candidate review session', () => {
     expect(field.assessment).toEqual({ confidenceBps: null, inferred: false, resolution: 'NOT_REQUIRED', evidence: [] });
     expect(candidateValue('ARRAY').items?.kind).toBe('TEXT');
   });
+
+  it('adds and reorders user schemas without changing the immutable root identity', () => {
+    const initial = createCandidateReviewState(snapshot());
+    const child = newUserSchema('customer', '客户');
+    const added = candidateReviewReducer(initial, { type: 'add-schema', schema: child });
+    const moved = candidateReviewReducer(added, {
+      type: 'move-schema', schemaId: child.candidateSchemaId, direction: -1,
+    });
+
+    expect(moved.draft.rootCandidateSchemaId).toBe(initial.draft.rootCandidateSchemaId);
+    expect(moved.draft.schemas.map((schema) => schema.candidateSchemaId)).toEqual([
+      child.candidateSchemaId,
+      initial.draft.rootCandidateSchemaId,
+    ]);
+    expect(moved.draft.schemas[0]).toMatchObject({
+      proposedSchemaKey: 'customer', displayName: '客户', source: 'USER',
+      assessment: { confidenceBps: null, inferred: false, resolution: 'NOT_REQUIRED', evidence: [] },
+    });
+    expect(moved.selectedSchemaId).toBe(child.candidateSchemaId);
+  });
+
+  it('reorders fields while retaining AI evidence and constraint literals', () => {
+    const initial = createCandidateReviewState(snapshot());
+    const schemaId = initial.selectedSchemaId;
+    const aiField = initial.draft.schemas[0]!.fields[0]!;
+    const userField = { ...newUserField('currency', '币种'), value: candidateValue('TEXT') };
+    const added = candidateReviewReducer(initial, { type: 'add-field', schemaId, field: userField });
+    const constrained = candidateReviewReducer(added, {
+      type: 'edit-field', schemaId, fieldId: userField.candidateFieldId,
+      patch: { value: { ...userField.value, constraints: { minLength: '3', enum: '["CNY","USD"]' } } },
+    });
+    const moved = candidateReviewReducer(constrained, {
+      type: 'move-field', schemaId, fieldId: userField.candidateFieldId, direction: -1,
+    });
+
+    expect(moved.draft.schemas[0]!.fields.map((field) => field.candidateFieldId)).toEqual([
+      userField.candidateFieldId,
+      aiField.candidateFieldId,
+    ]);
+    expect(moved.draft.schemas[0]!.fields[0]!.value.constraints).toEqual({
+      minLength: '3', enum: '["CNY","USD"]',
+    });
+    expect(moved.draft.schemas[0]!.fields[1]!.assessment.evidence).toEqual(aiField.assessment.evidence);
+  });
 });
 
 export function snapshot(): CandidateReviewResponse {
@@ -89,6 +134,7 @@ export function snapshot(): CandidateReviewResponse {
           evidence: [
             { kind: 'JSON' as const, artifactId: null, boundingBox: null, sampleIndex: 0, jsonPointer: '/total' },
             { kind: 'IMAGE' as const, artifactId: '33333333-3333-4333-8333-333333333333', boundingBox: { left: 1200, top: 2300, right: 6000, bottom: 4100 }, sampleIndex: null, jsonPointer: null },
+            { kind: 'IMAGE' as const, artifactId: '55555555-5555-4555-8555-555555555555', boundingBox: { left: 1800, top: 1900, right: 7200, bottom: 4700 }, sampleIndex: null, jsonPointer: null },
           ],
         },
       }],
@@ -117,7 +163,10 @@ export function snapshot(): CandidateReviewResponse {
     problems: [{ code: 'LOW_CONFIDENCE_UNRESOLVED', severity: 'BLOCKER', itemId: fieldId, pointer: '/schemas/0/fields/0/assessment/resolution', args: {} }],
     finalCandidate: null,
     appliedAt: null,
-    images: [{ artifactId: '33333333-3333-4333-8333-333333333333', ordinal: 0, width: 1200, height: 800, contentUrl: '/api/v1/inference-runs/run/artifacts/image' }],
+    images: [
+      { artifactId: '33333333-3333-4333-8333-333333333333', ordinal: 0, width: 1200, height: 800, contentUrl: '/api/v1/inference-runs/run/artifacts/image-1' },
+      { artifactId: '55555555-5555-4555-8555-555555555555', ordinal: 1, width: 960, height: 720, contentUrl: '/api/v1/inference-runs/run/artifacts/image-2' },
+    ],
     jsonSampleCount: 1,
   };
 }

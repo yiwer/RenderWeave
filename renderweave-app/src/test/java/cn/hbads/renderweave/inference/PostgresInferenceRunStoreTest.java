@@ -275,6 +275,32 @@ class PostgresInferenceRunStoreTest {
         assertThat(unchanged.sequence()).isEqualTo(1);
     }
 
+    @Test
+    void recentRunPagesUseBoundedSummaryProjectionNewestFirst() {
+        var older = runs.create(NewInferenceRun.initial(
+                UUID.randomUUID(), "list-older", normalized("list-input-a", "list-artifact-a"),
+                profile(), T0
+        )).run();
+        var newer = runs.create(NewInferenceRun.initial(
+                UUID.randomUUID(), "list-newer", normalized("list-input-b", "list-artifact-b"),
+                profile(), T0.plusSeconds(1)
+        )).run();
+
+        var first = runs.list(1, 1);
+        var second = runs.list(2, 1);
+
+        assertThat(first.total()).isEqualTo(2);
+        assertThat(first.items()).singleElement().satisfies(summary -> {
+            assertThat(summary.runId()).isEqualTo(newer.runId());
+            assertThat(summary.profileId()).isEqualTo("replay-v1");
+            assertThat(summary.sourceReference()).isEqualTo("fixture-01");
+            assertThat(summary.candidateRevision()).isNull();
+        });
+        assertThat(second.items()).extracting(InferenceRunStore.RunSummary::runId)
+                .containsExactly(older.runId());
+        assertThatThrownBy(() -> runs.list(1, 21)).isInstanceOf(IllegalArgumentException.class);
+    }
+
     private NewInferenceRun command(String idempotencyKey, String inputSeed, String artifactSeed) {
         return NewInferenceRun.initial(
                 UUID.randomUUID(), idempotencyKey, normalized(inputSeed, artifactSeed), profile(), T0
