@@ -119,8 +119,8 @@ class DashScopeVisualEvaluationTest {
             assertThat(budget.goal().tokens())
                     .isLessThanOrEqualTo(VisualEvaluationAuthorization.GOAL_MAXIMUM_TOKENS_PER_MODEL);
             assertThat(budget.goal().costMicrosCny())
-                    .isLessThanOrEqualTo(VisualEvaluationAuthorization.GOAL_MAXIMUM_COST_MICROS_CNY
-                            .get(authorization.model()));
+                    .isLessThanOrEqualTo(VisualEvaluationAuthorization
+                            .goalMaximumCostMicrosCny(authorization.model()));
             assertThat(budget.breached()).isFalse();
         }
     }
