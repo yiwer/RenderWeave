@@ -11,7 +11,7 @@
 真实 run 的唯一成功 Provider 响应包含一个需人工判断的未解析项，同时包含无业务语义的技术格式偏差：
 非法 `proposedSchemaKey`，以及六个标量值携带冗余 `observedKinds`。既有 mixed-blocker 策略必须阻止模型
 在第二次完整重建中顺带删除人工不确定项，因此该响应被安全拒绝；但这些技术偏差可以在不改变字段、
-类型、证据或拓扑的前提下由本地确定性处理。
+类型、证据语义或拓扑的前提下由本地确定性处理。
 
 任务页原先只显示最终 failure code，无法回答每轮调用的阶段、Token、费用、耗时与有限问题分类。直接
 展示原始请求、响应或事件 data 又会违反载荷与凭据边界。
@@ -23,8 +23,9 @@
    `CANDIDATE_SCHEMA_KEY_NORMALIZED` WARNING。
 3. TEXT/DECIMAL/DATE/TIME/BOOLEAN 标量仅在 `items=null`、`reference=null` 时清空冗余
    `observedKinds`，记录 `CANDIDATE_SCALAR_OBSERVED_KINDS_NORMALIZED` WARNING。
-4. 不修改 fieldKey、显示名称、required、推断类型、约束、证据、置信度、resolution、引用目标或图拓扑；
-   scalar 同时带 items/reference 等真实结构冲突继续由 validator 阻断。
+4. 除 ADR-0019 允许的证据坐标表示换算外，不修改 fieldKey、显示名称、required、推断类型、约束、
+   证据语义、置信度、resolution、引用目标或图拓扑；scalar 同时带 items/reference 等真实结构冲突继续
+   由 validator 阻断。
 5. 规范化后若只剩人工 blocker，Candidate 进入 `REVIEW_REQUIRED`；仍存在 trust/未知 blocker 的组合继续
    fail-closed，不降低 ADR-0010 的 mixed-blocker 边界。
 6. 新增只读 `GET /api/v1/inference-runs/{runId}/execution-log`：返回 authoritative run、最多 1000 条

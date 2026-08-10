@@ -415,6 +415,9 @@ NORMALIZE
 - 每个 candidate schema/field 有 run-local opaque ID，支持 key 改名后 evidence、confidence 和状态仍能关联。
 - 每个 AI item 包含 evidence、`inferred` 和 confidence。
 - 图片 evidence 可有多个 bbox；坐标为规范化后图片、左上原点、整数 0..10000，越界/反向不 clamp，直接 blocker/repair。
+- IMAGE_ONLY 若同一 artifact 的至少两个 bbox 全部位于像素边界、并集横纵覆盖至少 50% 画布且到达右侧或
+  底部 98% 边界，可在 validator 前按 artifact 尺寸确定性换算为 0..10000，并保留 WARNING；单框或其他
+  歧义集合不猜测。Web 对历史 Candidate 使用相同规则只修正显示，不改写既有 revision。
 - JSON evidence 使用 sample index + JSON Pointer；模型值匹配仍标 inferred。
 
 低置信 AI item 必须逐项结束为 `CONFIRMED`、`RESOLVED_BY_EDIT` 或 `REMOVED`，不提供 confirm-all。
@@ -556,6 +559,9 @@ v1 只有：
 推断入口和审核详情使用一致的四步进度：准备输入 → 受控识别 → 逐项校对 → 原子创建。运行中展示人类可读 stage；状态机许可时可取消，FAILED/CANCELLED 只允许显式 retry 创建新 run。上传选择必须提供逐文件检查和移除，但选择、预览或切换 Profile 均不得触发 Provider。产品模型选择器只展示四个产品 Profile；用户可设置本次任务累计成本硬上限或留空，按钮是否可用不再依赖历史 canary 账本剩余额度。
 
 Candidate form 是完整键盘路径：支持新增、删除、上移/下移 Schema 与 field，编辑合法类型对应的 constraints，并在一项具有多张图片 evidence 时逐张切换和查看各自 bbox。map 与 form 共享相同顺序和选择；不要求拖拽，不提供 confirm-all。
+
+审核页把重复诊断按 severity + code 聚合并换行展示；单 Schema 不显示排序列。字段表单以字段、类型与约束、
+来源与置信度、审核状态四区对齐，证据面板明确提示历史像素坐标换算，不以横向滚动隐藏诊断或结构导航。
 
 审核页显示已处理 AI item 数、仍待处理项、blocker/warning 和原子创建 readiness checklist；自动保存稳定、服务端 blocker 为零且 run 仍为 REVIEW_REQUIRED 时才可提交。
 
