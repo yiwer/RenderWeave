@@ -5,9 +5,9 @@
 - 基线 revision：`eed1ab6ce2eb800b1b6bf0496b052fc3b9bd28d2`
 - 分支：`phase/p6-visual-recognition-vnext`
 - Spec delta：`specs/changes/20260810-visual-recognition-vnext.md`
-- ADR：ADR-0022、ADR-0023
+- ADR：ADR-0022、ADR-0023、ADR-0024
 - 用户 J1：yiwer，2026-08-10；三模型各 500,000 total tokens，精确约束见 spec delta
-- 当前节点：N0–N1 `automated_verified`；N2 `live_verified_mixed_a1_a2`；N3 next；全部 live ledger `CLOSED`
+- 当前节点：N0–N1、N3 `automated_verified`；N2 `live_verified_mixed_a1_a2`；N4 next；全部 live ledger `CLOSED`
 
 ## 四维执行配置
 
@@ -76,16 +76,18 @@ ledger 描述成外部强制门。
 
 ### N3：确定性 Candidate Materializer 与 capability matrix
 
-- 状态：next；N2 已 CLOSED，节点内零外部调用。
+- 状态：`automated_verified`；checkpoint：`plans/logs/P6-T6-5-N3.md`；实现 `3d56c51`，节点内零外部调用。
 - AC：AC-VR-003、008。
 - 依赖：N2 CLOSED。
 - 实现：pipeline 4、local materializer、保守 assessment、STRUCTURE zero-call invariant；三个 vNext Profile
   独立冻结 JSON mode/output/timeout/pricing/sampling；旧 v1..v4 资源字节不变。
 - 局部验证：property/byte golden、malicious plan、UUID/reference/array/evidence、PG crash/recovery、adapter contract。
-- 完成信号：validated plan 的 Candidate 不依赖 Provider；相同语义输入可稳定比较；baseline calls 4→3。
+- 完成信号：已达成。validated plan 的 Candidate 不依赖 Provider；相同语义输入 byte-stable；正常路径
+  calls 4→3；三份 v5 capability/Profile 保持内部 `EXPERIMENTAL`，未进入产品选择器。
 
 ### N4：多尺度 Region Grounding 与 Prompt 去偏
 
+- 状态：next；N3 clean server A1 已通过，节点内零外部调用。
 - AC：AC-VR-004、006。
 - 依赖：N3。
 - 实现：overview/tile/crop transform、region graph、containment/repeat/order invariants；visual contracts v2；
