@@ -189,6 +189,47 @@ class VisualGroundingContractTest {
     }
 
     @Test
+    void versionedDerivedCardinalityUsesOnlyUniqueGroupEvidence() throws Exception {
+        var observed = codec.parseElements(elementsJson(), views(), List.of(IMAGE_ID));
+        var mismatched = hierarchyJson().replace(
+                "\"cardinality\":\"MANY\"", "\"cardinality\":\"ONE\""
+        );
+
+        assertEquals("VISUAL_HIERARCHY_V2_SUPPORT_CARDINALITY_MISMATCH", assertThrows(
+                InvalidVisualAnalysisException.class, () -> codec.parseHierarchy(
+                        mismatched, observed.inventory(), observed.grounding()
+                )
+        ).diagnosticCode());
+
+        var derived = codec.parseHierarchy(
+                mismatched, observed.inventory(), observed.grounding(),
+                VisualRelationshipCardinalityPolicy.SUPPORT_GROUP_DERIVED
+        );
+        assertEquals(VisualMultiplicity.MANY,
+                derived.hierarchy().relationships().getFirst().cardinality());
+        assertEquals(1, derived.derivedRelationshipCardinalities());
+
+        assertDerivedHierarchyDiagnostic(
+                hierarchyJson().replace(
+                        "\"regionId\":\"repeat\",\"supportingElementIds\":[\"row-group\"]}",
+                        "\"regionId\":\"repeat\",\"supportingElementIds\":[\"row-group\",\"title\"]}"
+                ), observed, "VISUAL_HIERARCHY_V2_RELATIONSHIP_SUPPORT_COUNT_INVALID"
+        );
+        assertDerivedHierarchyDiagnostic(
+                hierarchyJson().replace(
+                        "\"regionId\":\"repeat\",\"supportingElementIds\":[\"row-group\"]}",
+                        "\"regionId\":\"repeat\",\"supportingElementIds\":[\"unknown-element\"]}"
+                ), observed, "VISUAL_HIERARCHY_V2_SUPPORT_ELEMENT_UNKNOWN"
+        );
+        assertDerivedHierarchyDiagnostic(
+                hierarchyJson().replace(
+                        "\"regionId\":\"repeat\",\"supportingElementIds\":[\"row-group\"]}",
+                        "\"regionId\":\"repeat\",\"supportingElementIds\":[\"title\"]}"
+                ), observed, "VISUAL_HIERARCHY_V2_SUPPORT_NOT_GROUP"
+        );
+    }
+
+    @Test
     void classifiesHierarchyEntityAndRelationshipFieldsWithoutPersistingProviderValues() throws Exception {
         var observed = codec.parseElements(elementsJson(), views(), List.of(IMAGE_ID));
 
@@ -351,6 +392,18 @@ class VisualGroundingContractTest {
         assertEquals(expectedCode, assertThrows(InvalidVisualAnalysisException.class,
                 () -> codec.parseHierarchy(
                         json, observed.inventory(), observed.grounding()
+                )).diagnosticCode());
+    }
+
+    private void assertDerivedHierarchyDiagnostic(
+            String json,
+            GroundedElementInventory observed,
+            String expectedCode
+    ) {
+        assertEquals(expectedCode, assertThrows(InvalidVisualAnalysisException.class,
+                () -> codec.parseHierarchy(
+                        json, observed.inventory(), observed.grounding(),
+                        VisualRelationshipCardinalityPolicy.SUPPORT_GROUP_DERIVED
                 )).diagnosticCode());
     }
 

@@ -277,7 +277,10 @@ def validate_profile(path: Path, authorization: dict[str, Any]) -> None:
     pipeline = profile.get("pipelineVersion")
     if pipeline == "renderweave-inference-pipeline/4.2":
         required_optional = OPTIONAL_PROFILE_FIELDS
-    elif pipeline == "renderweave-inference-pipeline/4.1":
+    elif pipeline in (
+            "renderweave-inference-pipeline/4.1",
+            "renderweave-inference-pipeline/4.3",
+    ):
         required_optional = {"visualHintPackVersion"}
     else:
         required_optional = set()

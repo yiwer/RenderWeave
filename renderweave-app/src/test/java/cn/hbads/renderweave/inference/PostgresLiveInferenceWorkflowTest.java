@@ -83,6 +83,8 @@ class PostgresLiveInferenceWorkflowTest {
             "dashscope-qwen37-flash-product-v5";
     private static final String GROUNDED_VISUAL_PROFILE =
             "dashscope-qwen37-flash-product-v6-transit-board";
+    private static final String EVIDENCE_DERIVED_HIERARCHY_PROFILE =
+            "dashscope-qwen37-flash-20260715-product-v16-generic";
     private static final String HYBRID_VISUAL_PROFILE =
             "dashscope-qwen37-flash-product-v7-hybrid-generic";
     private static final String DOCUMENT_VISION_CAPABILITY =
@@ -432,6 +434,51 @@ class PostgresLiveInferenceWorkflowTest {
                 .flatMap(field -> field.assessment().evidence().stream()))
                 .allSatisfy(evidence -> assertThat(evidence.artifactId())
                         .isEqualTo(finished.inputs().getFirst().artifact().artifactId()));
+    }
+
+    @Test
+    void pipelineFourPointThreeDerivesRelationshipCardinalityFromUniqueGroupEvidence() {
+        var blobs = new MemoryBlobStore();
+        var created = createGroundedVisual(
+                blobs, "evidence-derived-hierarchy-cardinality",
+                EVIDENCE_DERIVED_HIERARCHY_PROFILE
+        );
+        var mismatchedHierarchy = groundedStationHierarchy().replaceFirst(
+                "\"cardinality\":\"MANY\"", "\"cardinality\":\"ONE\""
+        );
+        var provider = new ScriptedProvider(
+                request -> response(request, groundedStationElements()),
+                request -> response(request, mismatchedHierarchy),
+                request -> response(request, groundedStationBindings())
+        );
+
+        var finished = worker(provider, blobs)
+                .processNext("evidence-derived-hierarchy-worker").orElseThrow();
+
+        assertThat(finished.state())
+                .as("failure=%s attempts=%s", finished.failureCode(), workflowStore.attempts(created))
+                .isEqualTo(InferenceRunState.REVIEW_REQUIRED);
+        assertThat(provider.requests).extracting(ProviderInferenceRequest::stage)
+                .containsExactly(
+                        InferenceStage.OBSERVE,
+                        InferenceStage.HIERARCHY,
+                        InferenceStage.ELEMENT_BINDING
+                );
+        assertThat(provider.requests).allSatisfy(request ->
+                assertThat(request.profile().pipelineVersion())
+                        .isEqualTo("renderweave-inference-pipeline/4.3")
+        );
+        assertThat(workflowStore.attempts(created)).hasSize(3)
+                .allSatisfy(attempt -> assertThat(attempt.status())
+                        .isEqualTo(InferenceAttemptStatus.SUCCEEDED));
+        assertThat(workflowStore.attempts(created).get(1).problemCodeCounts())
+                .containsExactlyEntriesOf(Map.of(
+                        "VISUAL_HIERARCHY_RELATIONSHIP_CARDINALITY_DERIVED", 3
+                ));
+        assertThat(candidateCodec.parse(
+                workflowStore.findCandidate(created).orElseThrow().currentJson()
+        ).schemas()).extracting(CandidateSchema::proposedSchemaKey)
+                .containsExactly("bus-stop-board", "bus-route", "warm-notice", "bus-stop");
     }
 
     @Test

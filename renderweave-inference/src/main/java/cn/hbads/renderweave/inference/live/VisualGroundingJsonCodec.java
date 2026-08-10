@@ -94,7 +94,19 @@ final class VisualGroundingJsonCodec {
             VisualElementInventory inventory,
             VisualGroundingPlan grounding
     ) {
+        return parseHierarchy(
+                value, inventory, grounding, VisualRelationshipCardinalityPolicy.MODEL_ASSERTED
+        );
+    }
+
+    GroundedHierarchyPlan parseHierarchy(
+            String value,
+            VisualElementInventory inventory,
+            VisualGroundingPlan grounding,
+            VisualRelationshipCardinalityPolicy cardinalityPolicy
+    ) {
         try {
+            Objects.requireNonNull(cardinalityPolicy, "cardinalityPolicy");
             var response = decode(value, HierarchyOutput.class, "VISUAL_HIERARCHY_V2");
             if (!VisualHierarchyPlan.VERSION_V2.equals(response.contractVersion())) {
                 throw invalid("VISUAL_HIERARCHY_V2_VERSION_INVALID", null);
@@ -103,7 +115,9 @@ final class VisualGroundingJsonCodec {
                     .map(VisualGroundingJsonCodec::classifiedEntity)
                     .toList();
             var relationships = response.relationships().stream()
-                    .map(VisualGroundingJsonCodec::classifiedRelationship)
+                    .map(relationship -> classifiedRelationship(
+                            relationship, inventory, cardinalityPolicy
+                    ))
                     .toList();
             var hierarchy = classifiedHierarchyShape(() -> new VisualHierarchyPlan(
                     VisualHierarchyPlan.VERSION_V2, response.rootEntityId(), entities, relationships
@@ -136,7 +150,11 @@ final class VisualGroundingJsonCodec {
             if (!semanticIssues.isEmpty()) {
                 throw invalid(semanticIssues.getFirst(), null);
             }
-            return new GroundedHierarchyPlan(hierarchy, entityRegions);
+            return new GroundedHierarchyPlan(
+                    hierarchy, entityRegions,
+                    cardinalityPolicy == VisualRelationshipCardinalityPolicy.SUPPORT_GROUP_DERIVED
+                            ? relationships.size() : 0
+            );
         } catch (InvalidVisualAnalysisException failure) {
             throw failure;
         } catch (Exception failure) {
@@ -394,7 +412,11 @@ final class VisualGroundingJsonCodec {
         ));
     }
 
-    private static VisualRelationshipPlan classifiedRelationship(RelationshipOutput relationship) {
+    private static VisualRelationshipPlan classifiedRelationship(
+            RelationshipOutput relationship,
+            VisualElementInventory inventory,
+            VisualRelationshipCardinalityPolicy cardinalityPolicy
+    ) {
         var relationshipId = classified("VISUAL_HIERARCHY_V2_RELATIONSHIP_ID_INVALID", () ->
                 VisualAnalysisValidation.localId(relationship.relationshipId(), "relationshipId")
         );
@@ -410,18 +432,39 @@ final class VisualGroundingJsonCodec {
         var displayName = classified("VISUAL_HIERARCHY_V2_RELATIONSHIP_DISPLAY_NAME_INVALID", () ->
                 VisualAnalysisValidation.displayName(relationship.displayName(), "displayName")
         );
-        var cardinality = classified("VISUAL_HIERARCHY_V2_RELATIONSHIP_CARDINALITY_INVALID", () ->
-                Objects.requireNonNull(relationship.cardinality(), "cardinality")
-        );
         var supportingElementIds = classified("VISUAL_HIERARCHY_V2_RELATIONSHIP_SUPPORT_IDS_INVALID", () ->
                 VisualAnalysisValidation.localIds(
                         relationship.supportingElementIds(), "supportingElementIds", 16
                 )
         );
+        var cardinality = cardinalityPolicy == VisualRelationshipCardinalityPolicy.SUPPORT_GROUP_DERIVED
+                ? derivedCardinality(inventory, supportingElementIds)
+                : classified("VISUAL_HIERARCHY_V2_RELATIONSHIP_CARDINALITY_INVALID", () ->
+                        Objects.requireNonNull(relationship.cardinality(), "cardinality")
+                );
         return classified("VISUAL_HIERARCHY_V2_RELATIONSHIP_INVALID", () -> new VisualRelationshipPlan(
                 relationshipId, parentEntityId, childEntityId, fieldKey, displayName,
                 cardinality, supportingElementIds
         ));
+    }
+
+    private static VisualMultiplicity derivedCardinality(
+            VisualElementInventory inventory,
+            List<String> supportingElementIds
+    ) {
+        if (supportingElementIds.size() != 1) {
+            throw invalid("VISUAL_HIERARCHY_V2_RELATIONSHIP_SUPPORT_COUNT_INVALID", null);
+        }
+        final VisualElement supporting;
+        try {
+            supporting = inventory.requireElement(supportingElementIds.getFirst());
+        } catch (IllegalArgumentException failure) {
+            throw invalid("VISUAL_HIERARCHY_V2_SUPPORT_ELEMENT_UNKNOWN", failure);
+        }
+        if (supporting.kind() != VisualElementKind.GROUP) {
+            throw invalid("VISUAL_HIERARCHY_V2_SUPPORT_NOT_GROUP", null);
+        }
+        return supporting.multiplicity();
     }
 
     private static <T> T classifiedHierarchyShape(CheckedSupplier<T> supplier) {
@@ -698,10 +741,20 @@ record GroundedElementInventory(
 
 record GroundedHierarchyPlan(
         VisualHierarchyPlan hierarchy,
-        VisualEntityRegionPlan entityRegions
+        VisualEntityRegionPlan entityRegions,
+        int derivedRelationshipCardinalities
 ) {
     GroundedHierarchyPlan {
         Objects.requireNonNull(hierarchy, "hierarchy");
         Objects.requireNonNull(entityRegions, "entityRegions");
+        if (derivedRelationshipCardinalities < 0
+                || derivedRelationshipCardinalities > hierarchy.relationships().size()) {
+            throw new IllegalArgumentException("Derived relationship cardinality count is invalid");
+        }
     }
+}
+
+enum VisualRelationshipCardinalityPolicy {
+    MODEL_ASSERTED,
+    SUPPORT_GROUP_DERIVED
 }

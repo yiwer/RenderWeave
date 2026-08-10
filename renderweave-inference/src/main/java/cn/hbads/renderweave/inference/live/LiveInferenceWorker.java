@@ -64,6 +64,8 @@ public final class LiveInferenceWorker {
     private static final String LOCAL_MATERIALIZER_PIPELINE = "renderweave-inference-pipeline/4.0";
     private static final String GROUNDED_VISUAL_PIPELINE = "renderweave-inference-pipeline/4.1";
     private static final String HYBRID_VISUAL_PIPELINE = "renderweave-inference-pipeline/4.2";
+    private static final String EVIDENCE_DERIVED_HIERARCHY_PIPELINE =
+            "renderweave-inference-pipeline/4.3";
     private static final int MAX_STAGE_ADVANCES = 24;
     private static final int MAX_RETRY_PROBLEM_CODES = 16;
 
@@ -648,6 +650,7 @@ public final class LiveInferenceWorker {
         final LiveWorkflowCheckpoint nextCheckpoint;
         final InferenceStage nextStage;
         final String outcomeCode;
+        final Map<String, Integer> problemCodeCounts;
         try {
             requireCompleteGroundedResponse(current.stage(), response);
             switch (current.stage()) {
@@ -663,18 +666,26 @@ public final class LiveInferenceWorker {
                     );
                     nextStage = InferenceStage.HIERARCHY;
                     outcomeCode = "LIVE_VISUAL_GROUNDING_ACCEPTED";
+                    problemCodeCounts = Map.of();
                 }
                 case HIERARCHY -> {
                     var grounded = visualGroundingCodec.parseHierarchy(
                             response.candidateJson(),
                             Objects.requireNonNull(checkpoint.elementInventory(), "elementInventory"),
-                            Objects.requireNonNull(checkpoint.groundingPlan(), "groundingPlan")
+                            Objects.requireNonNull(checkpoint.groundingPlan(), "groundingPlan"),
+                            relationshipCardinalityPolicy(profile)
                     );
                     nextCheckpoint = checkpoint.hierarchyGrounded(
                             grounded.hierarchy(), grounded.entityRegions(), attemptOrdinal + 1
                     );
                     nextStage = InferenceStage.ELEMENT_BINDING;
                     outcomeCode = "LIVE_VISUAL_HIERARCHY_V2_ACCEPTED";
+                    problemCodeCounts = grounded.derivedRelationshipCardinalities() == 0
+                            ? Map.of()
+                            : Map.of(
+                                    "VISUAL_HIERARCHY_RELATIONSHIP_CARDINALITY_DERIVED",
+                                    grounded.derivedRelationshipCardinalities()
+                            );
                 }
                 case ELEMENT_BINDING -> {
                     var bindings = visualGroundingCodec.parseBindings(
@@ -687,6 +698,7 @@ public final class LiveInferenceWorker {
                     nextCheckpoint = checkpoint.elementsBound(bindings, attemptOrdinal + 1);
                     nextStage = InferenceStage.STRUCTURE;
                     outcomeCode = "LIVE_VISUAL_BINDINGS_V2_ACCEPTED";
+                    problemCodeCounts = Map.of();
                 }
                 default -> throw new IllegalStateException("Not a grounded visual analysis stage");
             }
@@ -727,7 +739,7 @@ public final class LiveInferenceWorker {
                 workflowCodec.write(nextCheckpoint),
                 attempt(
                         current, attemptOrdinal, InferenceAttemptStatus.SUCCEEDED,
-                        outcomeCode, response, estimatedCost, durationMillis, Map.of(), now
+                        outcomeCode, response, estimatedCost, durationMillis, problemCodeCounts, now
                 ),
                 now
         );
@@ -913,26 +925,38 @@ public final class LiveInferenceWorker {
                 || SERIAL_VISUAL_PIPELINE.equals(profile.pipelineVersion())
                 || LOCAL_MATERIALIZER_PIPELINE.equals(profile.pipelineVersion())
                 || GROUNDED_VISUAL_PIPELINE.equals(profile.pipelineVersion())
-                || HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion());
+                || HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || EVIDENCE_DERIVED_HIERARCHY_PIPELINE.equals(profile.pipelineVersion());
     }
 
     private static boolean serialVisual(InferenceRunSnapshot current, InferenceProfile profile) {
         return (SERIAL_VISUAL_PIPELINE.equals(profile.pipelineVersion())
                 || LOCAL_MATERIALIZER_PIPELINE.equals(profile.pipelineVersion())
                 || GROUNDED_VISUAL_PIPELINE.equals(profile.pipelineVersion())
-                || HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion()))
+                || HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || EVIDENCE_DERIVED_HIERARCHY_PIPELINE.equals(profile.pipelineVersion()))
                 && current.mode() == InferenceMode.IMAGE_ONLY;
     }
 
     private static boolean localMaterializer(InferenceProfile profile) {
         return LOCAL_MATERIALIZER_PIPELINE.equals(profile.pipelineVersion())
                 || GROUNDED_VISUAL_PIPELINE.equals(profile.pipelineVersion())
-                || HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion());
+                || HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || EVIDENCE_DERIVED_HIERARCHY_PIPELINE.equals(profile.pipelineVersion());
     }
 
     private static boolean groundedVisual(InferenceProfile profile) {
         return GROUNDED_VISUAL_PIPELINE.equals(profile.pipelineVersion())
-                || HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion());
+                || HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || EVIDENCE_DERIVED_HIERARCHY_PIPELINE.equals(profile.pipelineVersion());
+    }
+
+    private static VisualRelationshipCardinalityPolicy relationshipCardinalityPolicy(
+            InferenceProfile profile
+    ) {
+        return EVIDENCE_DERIVED_HIERARCHY_PIPELINE.equals(profile.pipelineVersion())
+                ? VisualRelationshipCardinalityPolicy.SUPPORT_GROUP_DERIVED
+                : VisualRelationshipCardinalityPolicy.MODEL_ASSERTED;
     }
 
     private static boolean hybridVisual(InferenceProfile profile) {
