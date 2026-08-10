@@ -20,6 +20,7 @@ $inferenceTestClasses = @(
     'VisualStageCheckpointReaderTest'
 )
 $applicationTestClasses = @(
+    'DashScopeVisualEvaluationBatchLimitTest',
     'VisualEvaluationGoalBudgetTest',
     'VisualEvaluationJournalTest',
     'VisualEvaluationIdentityTest',
@@ -125,6 +126,7 @@ try {
             'repair policy and ambiguous provider graph fail-closed behavior',
             'deterministic 60-case visual raster corpus with stage-separated metrics',
             'cross-ledger model token and cost reservation before delegation',
+            'operator can narrow but never widen the authorized live batch',
             'durable interruption-safe visual journal with payload-free evidence',
             'independent Python aggregate and tamper verifier'
         )
@@ -145,4 +147,3 @@ try {
 finally {
     Pop-Location
 }
-
