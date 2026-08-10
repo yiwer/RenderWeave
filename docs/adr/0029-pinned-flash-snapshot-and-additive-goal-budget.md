@@ -24,8 +24,24 @@ N6 的 `qwen3.7-flash` v10/v11/v12 单 case smoke 共 15 attempts，全部停在
    lock、验证 v1 guard 与 state 一致后，原子替换 guard；reservation state 不重写、不删除、不重算。
 4. attempts 仍为每槽位 180；费用仍为 Max ¥18、Plus ¥4、Flash ¥0.40。Authorization 的 ledger 级 token、
    attempts、cost 继续显式收窄，追加 token 不自动变成追加费用或调用次数。
-5. N7 先运行 pinned Flash 单 case canary。只有三阶段合同 live 可达、identity/Profile snapshot 精确、J1
-   费用/次数/时限仍有效时才考虑 Max；Plus 虽重新获得 token 空间，也不能绕过同一停止条件。
+5. N7 先运行 pinned Flash 单 case canary。用户随后明确重新允许 Plus，因此 Plus 可在独立精确授权下执行
+   单 case reachability；只有 OBSERVE→HIERARCHY→BINDING 三阶段合同 live 可达、identity/Profile snapshot
+   精确、J1 费用/次数/时限仍有效时才考虑 Max。
+
+## 实施与受控实证
+
+- `252dc00` 新增 pinned Flash capability/Profile、Goal guard v2 原子迁移、旧/新 Flash alias 聚合及独立
+  verifier v1/v2 兼容；`0d7b73c` 修正 runner 对 pinned Flash 的稳定槽位费用上限查询。v1 的 reservations
+  未清零，首次 live preflight 在锁内迁移为 v2。
+- pinned Flash v13 与 Plus v12 各执行一次仓库合成 `transit-board-v3` 单 case、最多 5 attempts 的
+  PROPOSED→负探针→OPEN→CLOSED smoke。两份独立 verifier 均 PASS、0 abandoned、payload scan PASS；所有
+  ledger 在检查 evidence 前已 CLOSED。
+- pinned Flash 的 5 attempts 全部停在 OBSERVE；Plus 的第三次 attempt 通过 OBSERVE，第四次在 HIERARCHY
+  以 `VISUAL_HIERARCHY_V2_ENTITY_INVALID` 拒绝，第五次收到 `DASHSCOPE_HTTP_400`，未到 BINDING。该 400
+  对应 reservation 保留为 RESERVED，不释放、不伪造 usage。
+- 三阶段入口门仍未满足，因此 Max 没有调用。Goal 累计为 Flash 76 attempts / 428,373 tokens / ¥0.190286，
+  Plus 91 / 530,579 / ¥2.227000，Max 73 / 428,816 / ¥9.204720；guard 中 235 SETTLED、5 RESERVED，均继续
+  按保守上界计入。
 
 ## 后果
 

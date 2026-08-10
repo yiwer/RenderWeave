@@ -149,6 +149,8 @@
   HTTP failure 硬停与未晋级决策；全部 ledger CLOSED。
 - `plans/logs/P6-T6-5-N6.md`：bounded semantic verifier、stage-local repair、selected crops、payload-free UI、
   Flash v10–v12 A2 诊断与 exact-clean full；三阶段仍不可达，未晋级。
-- 当前恢复点：`phase/p6-visual-recognition-vnext` 的 N6 `automated_verified` 节点；N7 已获 pinned Flash 与
-  每槽位追加 500k-token J1，下一安全切片为 immutable capability/Profile 和 alias-normalized Goal guard v2。
-  编排层 `get_goal` 仍为空，未创建 replacement Goal；仓库 checkpoint 继续作为恢复事实源。
+- `plans/logs/P6-T6-5-N7.md`：pinned Flash/Goal guard v2、Flash 与 Plus 单 case CLOSED/A2 reachability、
+  hierarchy v14 payload-free taxonomy 与结构重试不扩图；三阶段仍不可达，Max 未调用。
+- 当前恢复点：`phase/p6-visual-recognition-vnext` 的 `98ba3d0` clean 节点；编排 Goal
+  `019fec8e-a851-7952-b49b-8be76a281a57` 为 active，未创建 replacement Goal。下一安全切片是 v14 精确
+  identity/Profile snapshot/预算复算后的单 case reachability；满足 BINDING 前禁止 Max。

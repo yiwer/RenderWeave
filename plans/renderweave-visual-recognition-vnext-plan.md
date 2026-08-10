@@ -1,6 +1,6 @@
 # RenderWeave 图片识别数据结构 vNext Goal 计划
 
-- 状态：active（仓库生命周期；2026-08-11 `get_goal` 返回空，按用户要求未创建 replacement Goal）
+- 状态：active（编排 Goal `019fec8e-a851-7952-b49b-8be76a281a57` 已恢复；未创建 replacement Goal）
 - 日期：2026-08-10
 - 基线 revision：`eed1ab6ce2eb800b1b6bf0496b052fc3b9bd28d2`
 - 分支：`phase/p6-visual-recognition-vnext`
@@ -9,7 +9,8 @@
 - 用户 J1：yiwer，2026-08-10；2026-08-11 delta 将 Flash 改为 `qwen3.7-flash-2026-07-15` 并给三个
   预算槽位各追加 500,000 tokens，累计 cap 1,000,000；attempt/CNY/time 边界不变，精确约束见 spec delta
 - 当前节点：N0–N1、N3–N4、N6 `automated_verified`；N2 `live_verified_mixed_a1_a2`；N5
-  `live_verified_not_promoted`；N7 `in_progress`（Profile/guard freeze）；全部 live ledger `CLOSED`
+  `live_verified_not_promoted`；N7 `in_progress`（pinned Flash/Plus reachability 已 A2、三阶段仍不可达，
+  hierarchy v14 bounded repair 已 A1）；全部 live ledger `CLOSED`
 
 ## 四维执行配置
 
@@ -129,17 +130,19 @@ ledger 描述成外部强制门。
 ### N7：Final Live Eval 与验收
 
 - 状态：`in_progress`。2026-08-11 J1 delta 指定 pinned Flash，并把三个模型槽位的累计 token cap 提到
-  1,000,000；当前先冻结 immutable capability/Profile 与 v2 aggregate guard。历史用量继续计入，attempt 与
-  CNY cap 不变。
+  1,000,000；immutable capability/Profile 与 v2 aggregate guard 已冻结。pinned Flash v13 与用户重新允许的
+  Plus v12 单 case reachability 均已 CLOSED/A2，但仍未触达 BINDING；hierarchy v14 bounded repair 已 A1。
 - AC：AC-VR-001..010、既有 AC-015..021。
 - 依赖：N6 clean gates；final exact identities 和新的 ledger；N2 用量已进入 aggregate guard。
-- 执行：先以 `qwen3.7-flash-2026-07-15` 单 case canary 证明三阶段合同可达；满足入口后，三个模型跑同一
+- 执行：已先以 `qwen3.7-flash-2026-07-15`、再以 `qwen3.7-plus` 各做单 case reachability；Flash 停在
+  OBSERVE，Plus 到 HIERARCHY 后停止。先验证 v14 是否可达 BINDING；只有入口成立后才可考虑 Max 和同一
   20-case comparison，再按剩余额度优先让最佳模型完成 60-case/15 HOLDOUT；每批≤5。旧 Flash 不再创建
   新 assignment，Plus/Max model ID 不变。
 - policy：只有满足既有 AC-021 和 stage 门槛的 Profile 可成为默认；其他保持 EXPERIMENTAL。
 - 门控：server/web/e2e/runtime/full A1；独立 verifier A2；费用/Token/secret/payload scan；用户业务/视觉 J1。
-- 当前证据：N6 implementation revision `de97131` 的 exact-clean full A1 已通过，但不能替代 final eval、
-  final identity A2 或用户业务/视觉 J1。
+- 当前证据：guard/Profile `252dc00`、runner slot 修复 `0d7b73c`；两份单 case live 独立 verifier PASS；
+  hierarchy repair `98ba3d0` 的 exact-clean server/fast A1 已通过。它们不能替代 final eval、final identity
+  A2 或用户业务/视觉 J1。
 - 完成信号：所有 ledger CLOSED、Goal guard 不超额、每条 AC 有结果和证据、最终 revision clean。目前未达成。
 
 ## Live 预算与停止条件
@@ -147,8 +150,8 @@ ledger 描述成外部强制门。
 | 模型 | Goal cap | Goal exposed tokens | 剩余 tokens | attempts | list-price CNY cap | Goal cost |
 |---|---:|---:|---:|---:|---:|---:|
 | qwen3.8-max | 1,000,000 | 428,816 | 571,184 | 73 / 180 | 18.00 | 9.204720 |
-| qwen3.7-plus | 1,000,000 | 485,886 | 514,114 | 86 / 180 | 4.00 | 2.040696 |
-| Flash slot（旧 alias + `qwen3.7-flash-2026-07-15`） | 1,000,000 | 393,034 | 606,966 | 71 / 180 | 0.40 | 0.169035 |
+| qwen3.7-plus | 1,000,000 | 530,579 | 469,421 | 91 / 180 | 4.00 | 2.227000 |
+| Flash slot（旧 alias + `qwen3.7-flash-2026-07-15`） | 1,000,000 | 428,373 | 571,627 | 76 / 180 | 0.40 | 0.190286 |
 
 停止条件：任一 token/attempt/CNY cap、168h ledger expiry、Goal 完成、Provider refusal/Retry-After、identity
 drift、journal/guard 不一致、payload 边界失败或同一无新假设失败再次出现。停止只关闭后续调用；已结算费用
@@ -159,7 +162,8 @@ drift、journal/guard 不一致、payload 边界失败或同一无新假设失�
 - 源码：优先 revert 当前独立节点 commit；不 reset，不覆盖 main 或用户成果。
 - 数据：migration forward-only；历史 run/Profile/checkpoint 不 UPDATE；新版本读取失败必须保留旧路径。
 - 外部副作用：OPEN→CLOSED 原子停止；Goal aggregate guard 永不因新 ledger 清零；费用不声称可回滚。
-- 编排状态：2026-08-11 接管时 `get_goal` 返回空，与 handoff 的 paused Goal 描述漂移；没有创建新 Goal，
-  以本计划、不可变 ledger/evidence、git history 和 checkpoint 为恢复事实源。
+- 编排状态：2026-08-11 接管后的初次 `get_goal` 曾与 handoff 漂移；当前编排 Goal
+  `019fec8e-a851-7952-b49b-8be76a281a57` 已恢复为 active。没有创建 replacement Goal，仍以本计划、
+  不可变 ledger/evidence、git history 和 checkpoint 共同再锚定。
 - 每个 N0..N7 结束后，对照 approved spec delta、AC、非目标和用户原始意图执行再锚定；Template、
   Workspace、Renderer、多租户、任意工具能力仍是非目标。
