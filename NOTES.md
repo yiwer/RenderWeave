@@ -1,7 +1,7 @@
 # NOTES.md
 
 ## 当前目标与进度
-- 2026-08-10 T6-3a.8 已发布 Product v3 串行视觉识别协议：元素盘点 → 层级规划 → 元素归属 → 数据定义；严格中间契约与最终拓扑校验防止把站牌 → 线路[] → 停靠站点[] 压扁为标量数组，并把站点中英文名和温馨提示子 Schema 纳入合成回归。`ea763cb` clean Server 138 / Web 66 / E2E 16 A1；未调用 Provider，真实模型质量验证待独立授权。
+- 2026-08-10 T6-3a.8 已发布 Product v3 串行视觉识别协议：元素盘点 → 层级规划 → 元素归属 → 数据定义；严格中间契约与最终拓扑校验防止把站牌 → 线路[] → 停靠站点[] 压扁为标量数组，并把站点中英文名和温馨提示子 Schema 纳入合成回归。`ea763cb` clean Server 138 / Web 66 / E2E 16 A1；本机 live overlay 已升级到 V014/四个 Product v3 Profile，部署前后 attempts=10、reservations=6，未新增 Provider 调用；真实模型质量验证待独立授权。
 - 2026-08-10 T6-3a.7 已将历史任务固定为智能识别默认页，右上角分别进入新增识别与确定性样本；`/inference/new` 只加载 DashScope Live 输入，`/inference/samples` 独立承载零网络 Replay，并移除跨页面卡片导航。`378046e` clean Web 66 / E2E 16 A1；未调用 Provider。
 - 2026-08-10 T6-3a.6 已把智能识别拆成历史任务、新增输入、识别监控、识别结果四个可深链版面；创建/重试先进入监控，结果页只承载 Candidate。Candidate save 同时兼容旧页面，把已编辑 AI 项安全归一为 `RESOLVED_BY_EDIT`。`fe9ce0d` clean Server 134 / Web 66 / E2E 16，`0375c86` clean Web 66 / E2E 16 A1；未调用 Provider。
 - 2026-08-10 T6-3a.5 已修复真实 IMAGE_ONLY 证据框坐标空间错判：服务端对明确的像素坐标族换算为 0..10000 并保留 WARNING，Web 同规则兼容历史 Candidate；审核页聚合重复诊断、隐藏单 Schema 排序列并重排字段信息层级。`6fde235` clean Server 134 tests / Web 60 tests / E2E 16 passed A1，未调用 Provider。
