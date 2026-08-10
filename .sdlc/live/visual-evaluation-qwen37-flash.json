@@ -1,7 +1,7 @@
 {
   "authorizationVersion": "renderweave-visual-evaluation-authorization/1.0",
   "authorizationId": "visual-v4-baseline-qwen37-flash-continuation-20260810",
-  "status": "OPEN",
+  "status": "CLOSED",
   "phase": "BASELINE",
   "inputClassification": "REPOSITORY_SYNTHETIC_ONLY",
   "corpusVersion": "renderweave-visual-stage-corpus/1.0",
