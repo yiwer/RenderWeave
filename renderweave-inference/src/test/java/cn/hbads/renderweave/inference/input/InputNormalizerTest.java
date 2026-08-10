@@ -167,6 +167,13 @@ class InputNormalizerTest {
     }
 
     @Test
+    void normalizedDimensionsHonorBothTheLongEdgeAndProviderPixelBoundary() {
+        assertArrayEquals(new int[]{4096, 2048}, ImageNormalizer.targetDimensions(4096, 2048));
+        assertArrayEquals(new int[]{4000, 4000}, ImageNormalizer.targetDimensions(4096, 4096));
+        assertArrayEquals(new int[]{4096, 1}, ImageNormalizer.targetDimensions(4097, 1));
+    }
+
+    @Test
     void rejectsDuplicateMembersNonObjectRootsAndDepthAboveThirtyTwo() {
         assertJsonError("{\"name\":1,\"name\":2}", "INFERENCE_JSON_DUPLICATE_MEMBER");
         assertJsonError("[1,2,3]", "INFERENCE_JSON_ROOT_INVALID");

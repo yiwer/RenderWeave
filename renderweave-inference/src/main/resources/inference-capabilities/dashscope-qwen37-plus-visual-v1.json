@@ -1,0 +1,27 @@
+{
+  "capabilityVersion": "renderweave-visual-model-capability/1.0",
+  "capabilityId": "dashscope-qwen37-plus-visual-v1",
+  "provider": "DASHSCOPE",
+  "model": "qwen3.7-plus",
+  "providerProtocol": "OPENAI_CHAT_COMPLETIONS",
+  "visionInputSupported": true,
+  "jsonObjectOutputSupported": true,
+  "nonStreamingSupported": true,
+  "thinkingCanBeDisabled": true,
+  "exactModelResponseRequired": true,
+  "productMaximumImagesPerRequest": 10,
+  "productMaximumNormalizedImageEdge": 4096,
+  "productMaximumNormalizedImagePixels": 16000000,
+  "productMaximumOutputTokens": 8192,
+  "productStageTimeoutSeconds": 240,
+  "advertisedMaximumBase64Images": 250,
+  "advertisedMaximumImagePixels": 16000000,
+  "advertisedMaximumOutputTokens": 64000,
+  "verificationBasis": "OFFICIAL_DOCS_AND_N2_LIVE",
+  "verifiedAt": "2026-08-10",
+  "sourceReferences": [
+    "https://platform.qianwenai.com/docs/developer-guides/getting-started/vision-models",
+    "https://platform.qianwenai.com/docs/developer-guides/text-generation/structured-output",
+    "repository:.sdlc/evidence/visual-v4-baseline-qwen37-plus-continuation-20260810"
+  ]
+}

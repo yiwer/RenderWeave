@@ -57,6 +57,7 @@ public final class LiveInferenceWorker {
     public static final String PRODUCT_BUDGET_KEY = "product-live";
     private static final String GROUNDED_PIPELINE = "renderweave-inference-pipeline/2.0";
     private static final String SERIAL_VISUAL_PIPELINE = "renderweave-inference-pipeline/3.0";
+    private static final String LOCAL_MATERIALIZER_PIPELINE = "renderweave-inference-pipeline/4.0";
     private static final int MAX_STAGE_ADVANCES = 24;
 
     private final InferenceRunStore runStore;
@@ -79,6 +80,7 @@ public final class LiveInferenceWorker {
     private final LiveTaskJsonCodec taskCodec;
     private final VisualAnalysisJsonCodec visualAnalysisCodec;
     private final VisualPlanCandidateValidator visualPlanValidator;
+    private final VisualPlanCandidateMaterializer visualPlanMaterializer;
 
     public LiveInferenceWorker(
             InferenceRunStore runStore,
@@ -137,6 +139,7 @@ public final class LiveInferenceWorker {
         this.taskCodec = Objects.requireNonNull(taskCodec, "taskCodec");
         this.visualAnalysisCodec = new VisualAnalysisJsonCodec();
         this.visualPlanValidator = new VisualPlanCandidateValidator();
+        this.visualPlanMaterializer = new VisualPlanCandidateMaterializer();
         if (leaseDuration.isZero() || leaseDuration.isNegative()
                 || leaseDuration.compareTo(Duration.ofMinutes(15)) > 0) {
             throw new IllegalArgumentException("leaseDuration must be positive and no longer than 15 minutes");
@@ -201,6 +204,41 @@ public final class LiveInferenceWorker {
     }
 
     private InferenceRunSnapshot structure(InferenceRunSnapshot current, InferenceProfile profile) {
+        if (localMaterializer(profile)) {
+            if (current.mode() != InferenceMode.IMAGE_ONLY) {
+                throw new IllegalStateException("Pipeline 4 is restricted to IMAGE_ONLY");
+            }
+            var checkpoint = workflowCodec.parse(current.checkpointJson());
+            if (checkpoint.completedStage() != InferenceStage.ELEMENT_BINDING
+                    || checkpoint.elementInventory() == null
+                    || checkpoint.hierarchyPlan() == null
+                    || checkpoint.bindingPlan() == null) {
+                throw new IllegalStateException("Local STRUCTURE requires the complete validated visual plan");
+            }
+            final CandidateBundle candidate;
+            try {
+                candidate = visualPlanMaterializer.materialize(
+                        current.runId(), checkpoint.elementInventory(), checkpoint.hierarchyPlan(),
+                        checkpoint.bindingPlan(), profile.lowConfidenceThresholdBps()
+                );
+            } catch (IllegalArgumentException | IllegalStateException invalidPlan) {
+                return runStore.fail(
+                        current.runId(), token(current),
+                        "LIVE_LOCAL_MATERIALIZER_INVALID", clock.instant()
+                );
+            }
+            var next = checkpoint.callResult(
+                    InferenceStage.STRUCTURE,
+                    checkpoint.providerCalls(),
+                    checkpoint.repairRounds(),
+                    candidate
+            );
+            return runStore.checkpoint(
+                    current.runId(), token(current), InferenceStage.STRUCTURE,
+                    InferenceStage.DETERMINISTIC_VALIDATE,
+                    workflowCodec.write(next), clock.instant()
+            );
+        }
         if (grounded(profile) && current.mode() == InferenceMode.JSON_ONLY) {
             var checkpoint = workflowCodec.parse(current.checkpointJson());
             if (checkpoint.completedStage() != InferenceStage.OBSERVE) {
@@ -240,6 +278,11 @@ public final class LiveInferenceWorker {
                 ? LiveWorkflowCheckpoint.started()
                 : workflowCodec.parse(current.checkpointJson());
         requireInvocationCheckpoint(current, checkpoint, repair, profile);
+        if (localMaterializer(profile)
+                && (current.stage() == InferenceStage.STRUCTURE
+                || current.stage() == InferenceStage.REPAIR)) {
+            throw new IllegalStateException("Pipeline 4 STRUCTURE and REPAIR must not call the Provider");
+        }
         if (grounded(profile) && current.mode() == InferenceMode.JSON_ONLY) {
             return runStore.fail(
                     current.runId(), token(current),
@@ -418,6 +461,9 @@ public final class LiveInferenceWorker {
                 }
             }
             case STRUCTURE -> {
+                if (localMaterializer(profile)) {
+                    throw new IllegalStateException("Pipeline 4 STRUCTURE is a local stage");
+                }
                 var expected = serialVisual(current, profile)
                         ? InferenceStage.ELEMENT_BINDING : InferenceStage.OBSERVE;
                 if (checkpoint.completedStage() != expected
@@ -520,7 +566,7 @@ public final class LiveInferenceWorker {
         var checkpoint = workflowCodec.parse(current.checkpointJson());
         if (checkpoint.completedStage() != InferenceStage.STRUCTURE
                 && checkpoint.completedStage() != InferenceStage.REPAIR) {
-            throw new IllegalStateException("DETERMINISTIC_VALIDATE requires a provider attempt checkpoint");
+            throw new IllegalStateException("DETERMINISTIC_VALIDATE requires a STRUCTURE or REPAIR checkpoint");
         }
         final List<CandidateProblem> problems;
         if (!checkpoint.outputValid()) {
@@ -557,6 +603,12 @@ public final class LiveInferenceWorker {
             );
         }
         if (repairDecision == LiveRepairPolicy.Decision.REPAIR) {
+            if (localMaterializer(profile)) {
+                return runStore.fail(
+                        current.runId(), token(current),
+                        "LIVE_LOCAL_MATERIALIZER_INVALID", clock.instant()
+                );
+            }
             if (grounded(profile) && current.mode() == InferenceMode.JSON_ONLY) {
                 return runStore.fail(
                         current.runId(), token(current),
@@ -644,12 +696,18 @@ public final class LiveInferenceWorker {
 
     private static boolean grounded(InferenceProfile profile) {
         return GROUNDED_PIPELINE.equals(profile.pipelineVersion())
-                || SERIAL_VISUAL_PIPELINE.equals(profile.pipelineVersion());
+                || SERIAL_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || LOCAL_MATERIALIZER_PIPELINE.equals(profile.pipelineVersion());
     }
 
     private static boolean serialVisual(InferenceRunSnapshot current, InferenceProfile profile) {
-        return SERIAL_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+        return (SERIAL_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || LOCAL_MATERIALIZER_PIPELINE.equals(profile.pipelineVersion()))
                 && current.mode() == InferenceMode.IMAGE_ONLY;
+    }
+
+    private static boolean localMaterializer(InferenceProfile profile) {
+        return LOCAL_MATERIALIZER_PIPELINE.equals(profile.pipelineVersion());
     }
 
     private static String promptVersion(InferenceProfile profile, InferenceStage stage) {
@@ -657,7 +715,12 @@ public final class LiveInferenceWorker {
             case OBSERVE -> Objects.requireNonNull(profile.elementPromptVersion(), "elementPromptVersion");
             case HIERARCHY -> Objects.requireNonNull(profile.hierarchyPromptVersion(), "hierarchyPromptVersion");
             case ELEMENT_BINDING -> Objects.requireNonNull(profile.bindingPromptVersion(), "bindingPromptVersion");
-            case STRUCTURE, REPAIR -> profile.promptVersion();
+            case STRUCTURE, REPAIR -> {
+                if (localMaterializer(profile)) {
+                    throw new IllegalArgumentException("Pipeline 4 local stages have no Provider prompt");
+                }
+                yield profile.promptVersion();
+            }
             case NORMALIZE, DETERMINISTIC_VALIDATE, CRITIQUE, USER_APPROVAL, ATOMIC_CREATE ->
                     throw new IllegalArgumentException("Stage does not call the provider");
         };

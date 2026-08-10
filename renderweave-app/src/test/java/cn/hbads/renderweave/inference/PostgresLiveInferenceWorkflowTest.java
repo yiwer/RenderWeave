@@ -71,6 +71,8 @@ class PostgresLiveInferenceWorkflowTest {
             "dashscope-qwen37-plus-20260526-grounded-v1";
     private static final String SERIAL_PRODUCT_PROFILE =
             "dashscope-qwen37-flash-product-v4";
+    private static final String LOCAL_MATERIALIZER_PROFILE =
+            "dashscope-qwen37-flash-product-v5";
 
     @Container
     @ServiceConnection
@@ -281,6 +283,94 @@ class PostgresLiveInferenceWorkflowTest {
         assertThat(provider.requests).extracting(request -> request.stage().name())
                 .containsExactly("OBSERVE", "HIERARCHY", "ELEMENT_BINDING", "STRUCTURE");
         assertThat(workflowStore.attempts(created)).hasSize(4);
+    }
+
+    @Test
+    void pipelineFourMaterializesTheStationTreeLocallyWithExactlyThreeProviderAttempts() {
+        var blobs = new MemoryBlobStore();
+        var created = create(
+                blobs, "local-materializer-station", 1_050, 1_660, LOCAL_MATERIALIZER_PROFILE
+        );
+        var provider = new ScriptedProvider(
+                request -> response(request, stationElements(request)),
+                request -> response(request, stationHierarchy()),
+                request -> response(request, stationBindings())
+        );
+
+        var finished = worker(provider, blobs).processNext("local-materializer-worker").orElseThrow();
+
+        assertThat(finished.state())
+                .as("failure=%s attempts=%s", finished.failureCode(), workflowStore.attempts(created))
+                .isEqualTo(InferenceRunState.REVIEW_REQUIRED);
+        assertThat(provider.requests).extracting(request -> request.stage().name())
+                .containsExactly("OBSERVE", "HIERARCHY", "ELEMENT_BINDING");
+        assertThat(workflowStore.attempts(created)).hasSize(3)
+                .allSatisfy(attempt -> {
+                    assertThat(attempt.stage()).isNotEqualTo(InferenceStage.STRUCTURE);
+                    assertThat(attempt.status()).isEqualTo(InferenceAttemptStatus.SUCCEEDED);
+                });
+        assertThat(jdbcClient.sql("""
+                        select count(*) from inference_provider_reservation
+                        where run_id = :runId
+                        """)
+                .param("runId", created)
+                .query(Long.class).single()).isEqualTo(3L);
+        assertThat(budgets.snapshot(LiveInferenceWorker.PRODUCT_BUDGET_KEY).consumedAttempts())
+                .isEqualTo(3);
+
+        var candidate = candidateCodec.parse(
+                workflowStore.findCandidate(created).orElseThrow().currentJson()
+        );
+        assertThat(candidate.schemas()).extracting(CandidateSchema::proposedSchemaKey)
+                .containsExactly("bus-stop-board", "bus-route", "warm-notice", "bus-stop");
+        assertThat(candidate.schemas()).allSatisfy(schema -> {
+            assertThat(schema.assessment().resolution()).isEqualTo(CandidateResolution.UNRESOLVED);
+            assertThat(schema.assessment().confidenceBps()).isEqualTo(7_999);
+            assertThat(schema.fields()).allSatisfy(field -> {
+                assertThat(field.required()).isFalse();
+                assertThat(field.assessment().resolution()).isEqualTo(CandidateResolution.UNRESOLVED);
+                assertThat(field.assessment().confidenceBps()).isEqualTo(7_999);
+            });
+        });
+        var route = candidate.schemas().stream()
+                .filter(schema -> "bus-route".equals(schema.proposedSchemaKey()))
+                .findFirst().orElseThrow();
+        assertThat(route.fields().stream().filter(field -> "stops".equals(field.proposedFieldKey()))
+                .findFirst().orElseThrow().value().items().kind())
+                .isEqualTo(CandidateValueKind.REFERENCE);
+    }
+
+    @Test
+    void pipelineFourRecoversAtStructureWithoutRepeatingAProviderStage() {
+        var blobs = new MemoryBlobStore();
+        var created = create(
+                blobs, "local-materializer-recovery", 1_050, 1_660, LOCAL_MATERIALIZER_PROFILE
+        );
+        var firstProvider = new ScriptedProvider(
+                request -> response(request, stationElements(request)),
+                request -> response(request, stationHierarchy()),
+                request -> response(request, stationBindings())
+        );
+        var firstWorker = worker(firstProvider, blobs, T0.plusSeconds(1));
+        var current = runs.claimNextLive(
+                "local-materializer-first", T0.plusSeconds(1), Duration.ofMinutes(5)
+        ).orElseThrow();
+
+        current = firstWorker.advance(current);
+        current = firstWorker.advance(current);
+        current = firstWorker.advance(current);
+        assertThat(current.stage()).isEqualTo(InferenceStage.STRUCTURE);
+
+        var recoveryProvider = new ScriptedProvider();
+        var finished = worker(recoveryProvider, blobs, T0.plus(Duration.ofMinutes(7)))
+                .processNext("local-materializer-recovery").orElseThrow();
+
+        assertThat(finished.state()).isEqualTo(InferenceRunState.REVIEW_REQUIRED);
+        assertThat(firstProvider.requests).extracting(request -> request.stage().name())
+                .containsExactly("OBSERVE", "HIERARCHY", "ELEMENT_BINDING");
+        assertThat(recoveryProvider.requests).isEmpty();
+        assertThat(workflowStore.attempts(created)).hasSize(3);
+        assertThat(workflowStore.findCandidate(created)).isPresent();
     }
 
     @Test

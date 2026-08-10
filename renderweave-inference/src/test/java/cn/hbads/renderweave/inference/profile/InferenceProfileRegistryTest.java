@@ -12,7 +12,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class InferenceProfileRegistryTest {
     @Test
-    void exposesHistoricalProfilesAndFourSerialProductModelChoices() {
+    void exposesHistoricalProfilesFourCurrentChoicesAndThreeWithheldVisualNextProfiles() {
         var registry = new InferenceProfileRegistry();
         var resource = registry.require("replay-v1");
         var profile = resource.profile();
@@ -39,7 +39,10 @@ class InferenceProfileRegistryTest {
                 "dashscope-qwen37-flash-product-v4",
                 "dashscope-qwen37-plus-product-v4",
                 "dashscope-qwen38-max-product-v4",
-                "dashscope-qwen37-max-20260608-product-v4"
+                "dashscope-qwen37-max-20260608-product-v4",
+                "dashscope-qwen37-flash-product-v5",
+                "dashscope-qwen37-plus-product-v5",
+                "dashscope-qwen38-max-product-v5"
         ), registry.profileIds());
         assertEquals(java.util.List.of(
                 "dashscope-qwen37-flash-product-v4",
@@ -50,6 +53,16 @@ class InferenceProfileRegistryTest {
         assertEquals(java.util.List.of(
                 "qwen3.7-flash", "qwen3.7-plus", "qwen3.8-max", "qwen3.7-max-2026-06-08"
         ), registry.productLiveProfiles().stream().map(item -> item.profile().model()).toList());
+        assertEquals(java.util.List.of(
+                "dashscope-qwen37-flash-product-v5",
+                "dashscope-qwen37-plus-product-v5",
+                "dashscope-qwen38-max-product-v5"
+        ), registry.visualNextProfiles().stream()
+                .map(item -> item.profile().profile().profileId()).toList());
+        assertEquals(java.util.List.of(
+                "qwen3.7-flash", "qwen3.7-plus", "qwen3.8-max"
+        ), registry.visualNextProfiles().stream()
+                .map(item -> item.capability().capability().model()).toList());
         assertEquals("renderweave-inference-profile/1.0", profile.profileVersion());
         assertEquals("REPLAY", profile.provider());
         assertEquals("deterministic-synthetic-replay-v1", profile.model());
@@ -120,7 +133,28 @@ class InferenceProfileRegistryTest {
                 registry, "dashscope-qwen37-max-20260608-product-v4",
                 "qwen3.7-max-2026-06-08", 2_000_000L
         );
+        assertVisualNextProfile(registry, "dashscope-qwen37-flash-product-v5", "qwen3.7-flash");
+        assertVisualNextProfile(registry, "dashscope-qwen37-plus-product-v5", "qwen3.7-plus");
+        assertVisualNextProfile(registry, "dashscope-qwen38-max-product-v5", "qwen3.8-max");
         assertThrows(IllegalArgumentException.class, () -> registry.require("live-provider"));
+    }
+
+    private static void assertVisualNextProfile(
+            InferenceProfileRegistry registry,
+            String profileId,
+            String model
+    ) {
+        var profile = registry.require(profileId).profile();
+        assertTrue(registry.isVisualNextProfile(profileId));
+        assertFalse(registry.isProductLiveProfile(profileId));
+        assertEquals(model, profile.model());
+        assertEquals("renderweave-inference-pipeline/4.0", profile.pipelineVersion());
+        assertEquals(java.util.List.of(InferenceMode.IMAGE_ONLY), profile.supportedModes());
+        assertEquals(0, profile.maximumRepairRounds());
+        assertEquals(5, profile.maximumTotalCalls());
+        assertEquals(240, profile.stageTimeoutSeconds());
+        assertEquals(8_192, profile.maximumOutputTokens());
+        assertEquals("EXPERIMENTAL", profile.certification());
     }
 
     private static void assertProductProfile(

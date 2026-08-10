@@ -15,6 +15,7 @@ import java.nio.charset.StandardCharsets;
 /** Decodes bounded PNG/JPEG input and emits metadata-free sRGB PNG bytes. */
 public final class ImageNormalizer {
     public static final int MAX_LONG_EDGE = 4096;
+    public static final long MAX_NORMALIZED_PIXELS = 16_000_000L;
     public static final int MAX_SOURCE_LONG_EDGE = 65_535;
     public static final long MAX_SOURCE_PIXELS = 268_435_456L;
     private static final long MAX_DECODE_PIXELS = 20_000_000L;
@@ -156,10 +157,9 @@ public final class ImageNormalizer {
     }
 
     private static BufferedImage drawIntoSrgbAndFit(BufferedImage source, boolean alpha) {
-        var longEdge = Math.max(source.getWidth(), source.getHeight());
-        var scale = longEdge <= MAX_LONG_EDGE ? 1.0 : MAX_LONG_EDGE / (double) longEdge;
-        var targetWidth = Math.max(1, (int) Math.round(source.getWidth() * scale));
-        var targetHeight = Math.max(1, (int) Math.round(source.getHeight() * scale));
+        var dimensions = targetDimensions(source.getWidth(), source.getHeight());
+        var targetWidth = dimensions[0];
+        var targetHeight = dimensions[1];
         var target = new BufferedImage(
                 targetWidth, targetHeight,
                 alpha ? BufferedImage.TYPE_INT_ARGB : BufferedImage.TYPE_INT_RGB
@@ -180,6 +180,19 @@ public final class ImageNormalizer {
             graphics.dispose();
         }
         return target;
+    }
+
+    static int[] targetDimensions(int width, int height) {
+        if (width < 1 || height < 1) {
+            throw new IllegalArgumentException("Image dimensions must be positive");
+        }
+        var longEdgeScale = MAX_LONG_EDGE / (double) Math.max(width, height);
+        var pixelScale = Math.sqrt(MAX_NORMALIZED_PIXELS / ((double) width * height));
+        var scale = Math.min(1.0, Math.min(longEdgeScale, pixelScale));
+        return new int[]{
+                Math.max(1, (int) Math.floor(width * scale)),
+                Math.max(1, (int) Math.floor(height * scale))
+        };
     }
 
     private static BufferedImage orient(BufferedImage source, int orientation) {
