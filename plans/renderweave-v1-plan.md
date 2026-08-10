@@ -5,7 +5,7 @@
 - Spec：[`specs/renderweave-v1.md`](../specs/renderweave-v1.md)
 - 原型：`/prototype/schema-studio?variant=A|B|C`
 - 当前 lifecycle：P0 `accepted`；P1–P4 `automated_verified`；P5 `live_canary_verified` / `live_independently_reviewed` / `decision_recorded`；P6 T6-1 `independently_reviewed`、T6-2 `human_acceptance_pending`、T6-3a `automated_verified`
-- 当前扩展 Goal：P6/T6-5 图片识别 vNext 为 `in_progress`；N0 已 `automated_verified`、N1 active，批准 delta、ADR、任务 DAG 与三模型 500k-token J1 信封见 `plans/renderweave-visual-recognition-vnext-plan.md`。
+- 当前扩展 Goal：P6/T6-5 图片识别 vNext 为 `in_progress`；N0–N1 已 `automated_verified`、N2 next，批准 delta、ADR、任务 DAG 与三模型 500k-token J1 信封见 `plans/renderweave-visual-recognition-vnext-plan.md`。
 
 ## 1. 四维执行配置
 
@@ -425,7 +425,7 @@ Phase 内任务只在真实前置依赖满足时并行。当前没有 atomic cla
 
 #### T6-5：图片识别数据结构 vNext 质量升级
 
-- 执行状态：`in_progress`（用户 J1 + approved spec delta；N0 `automated_verified`，N1 active）
+- 执行状态：`in_progress`（用户 J1 + approved spec delta；N0–N1 `automated_verified`，N2 next）
 - AC：AC-015..021、AC-VR-001..010
 - 依赖：T6-3a.8/9、ADR-0020/0021；N2 live 依赖新的 stage-gold/harness/identity
 - 影响区域：IMAGE_ONLY eval、visual contracts、worker/Profile/Prompt、OCR/layout adapter、review/monitor UI

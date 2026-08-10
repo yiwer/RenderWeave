@@ -5,9 +5,9 @@
 - 基线 revision：`eed1ab6ce2eb800b1b6bf0496b052fc3b9bd28d2`
 - 分支：`phase/p6-visual-recognition-vnext`
 - Spec delta：`specs/changes/20260810-visual-recognition-vnext.md`
-- ADR：ADR-0022
+- ADR：ADR-0022、ADR-0023
 - 用户 J1：yiwer，2026-08-10；三模型各 500,000 total tokens，精确约束见 spec delta
-- 当前节点：N0 `automated_verified`；N1 active；所有 live ledger 均未 OPEN，Provider attempts=0
+- 当前节点：N0–N1 `automated_verified`；N2 next；所有 live ledger 均未 OPEN，Provider attempts=0
 
 ## 四维执行配置
 
@@ -50,7 +50,7 @@ ledger 描述成外部强制门。
 
 ### N1：Stage-gold 与身份绑定评测底座
 
-- 状态：active。
+- 状态：`automated_verified`；checkpoint：`plans/logs/P6-T6-5-N1.md`。独立 verifier 已通过跨语言重算和篡改负例，真实 live evidence 的 A2 重算从 N2 开始。
 - AC：AC-VR-001、002、010。
 - 依赖：N0。
 - 实现：
@@ -65,6 +65,7 @@ ledger 描述成外部强制门。
 
 ### N2：旧 v4 基线
 
+- 状态：next；尚无 OPEN ledger，Provider attempts=0。
 - AC：AC-VR-002、008、010。
 - 依赖：N1；exact clean revision、Profile/corpus/evaluator identity；三份 PROPOSED ledger。
 - 执行：三个模型使用同一 12-case sentinel（含 4 HOLDOUT），每批≤5；总用量计入 Goal 500k/model。

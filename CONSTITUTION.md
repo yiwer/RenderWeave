@@ -9,7 +9,7 @@
 |---|---|---|
 | SDD/spec-first | `specs/renderweave-v1.md` 是 v1 意图与 AC 的权威源；实现发现冲突先提交 spec delta。 | 采用 |
 | 风险驱动测试 | 领域不变量先建立失败测试；DSL/编译/验证用 unit + golden + property，PostgreSQL 并发用 Testcontainers。 | 采用 |
-| 独立 Review | Phase 退出前要求不同上下文 Agent、CI 或人工复核；当前 harness 未提供独立 verifier，因此先标 pending。 | 采用，能力待补 |
+| 独立 Review | Phase 退出前要求不同上下文 Agent、CI 或人工复核；视觉评测已有独立 Python 重算器，其他范围仍需独立 Agent/CI/人工。 | 分范围采用 |
 | ADR | 只记录身份、不可变发布、编译权威、模块边界、AI 权限和编辑器状态等真实取舍。 | 采用 |
 | 自动验收 | API 契约、关键业务路径和桌面 Web 路径使用自动 gate；体验与视觉选择保留 J1。 | 采用 |
 | 本地运行/部署 | PowerShell gate + Docker Compose + Maven/Node lockfile 构成可复现入口。 | 采用 |
@@ -25,12 +25,12 @@ capabilities:
   evidence_capture: tool       # 项目本地 gate 捕获 revision、diff hash、exit 与原始输出；上限 A1
   atomic_claim: none           # 当前 single writer，不伪造 claim
   blocking_permission: human  # live AI、真实数据、生产/难恢复动作需人工批准
-  independent_verify: unavailable
+  independent_verify: available # 仅视觉评测 raw evidence 可由独立 Python 算法重算；其余范围不可推导
   isolated_workspace: unavailable
 binding: generic + project-local tools/run-gate.ps1
 ```
 
-- 本地 gate 只能产生 A1，不是独立复跑或外部硬门控。
+- 本地 gate 只能产生 A1；视觉 evidence verifier 可在其严格输入范围内形成 A2，但不是外部硬门控。
 - 确定性、可逆的标准风险 Phase 在 canary 通过后可达到 Auto-ready。
 - live AI、真实数据、生产发布和恢复演练属于 guarded；没有 A2 与当次 human permission 时保持 copilot。
 - 当前没有 CI/分支保护，因此不存在 A3 hard gate。

@@ -23,11 +23,13 @@ function Write-Utf8File {
 
 function Invoke-ZeroPaidAiCommand {
     param([Parameter(Mandatory = $true)][string]$CommandLine)
-    # Use a child process so the caller's secret is neither read nor mutated. Dedicated live
+    # Use a child process so the caller's secret is neither read nor mutated. Dedicated paid
     # certification deliberately does not go through this project-gate helper.
     $environmentPrefix = 'set "DASHSCOPE_API_KEY=" && set "DASHSCOPE_API_KEY_FILE=" && ' +
         'set "RENDERWEAVE_RUN_LIVE_CANARY=" && set "RENDERWEAVE_RUN_LIVE_CERTIFICATION=" && ' +
         'set "RENDERWEAVE_LIVE_CERTIFICATION_AUTHORIZATION=" && ' +
+        'set "RENDERWEAVE_RUN_VISUAL_EVALUATION=" && ' +
+        'set "RENDERWEAVE_VISUAL_EVALUATION_AUTHORIZATION=" && ' +
         'set "RENDERWEAVE_LIVE_AI_ENABLED=false" && set "RENDERWEAVE_LIVE_UPLOAD_ENABLED=false" && '
     & cmd.exe /d /s /c ($environmentPrefix + $CommandLine)
 }

@@ -1,6 +1,7 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-10 图片识别数据结构 vNext Goal 的 N1 已完成：新增 60-case / 45 DEV + 15 HOLDOUT 的 IMAGE_ONLY stage-gold 与确定性 raster、element/region/hierarchy/binding/Candidate 分阶段指标、校准与切片报告；新增三模型跨 ledger Goal 预算守卫、可恢复 journal、严格 identity、固定授权路径、默认关闭 runner 和独立 Python 证据重算器。dirty-tree Server 316 tests（4 gated skip）与 Eval 63 tests A1 通过，Provider attempts/reservations=0；当前进入 N2 exact-identity baseline 前置，所有 live ledger 仍未 OPEN。
 - 2026-08-10 图片识别数据结构 vNext Goal 的 N0 已完成：批准 spec delta、ADR-0022、N0–N7 DAG、恢复策略与三模型各 500k-token J1 总信封均已落盘；分支 `phase/p6-visual-recognition-vnext`，fast A1 通过，Provider attempts=0。当前进入 N1：先建立 60-case IMAGE_ONLY stage-gold、阶段指标、可恢复 journal、跨账本预算守卫与独立 verifier；任何 live ledger 仍保持非 OPEN。
 - 2026-08-10 T6-2e 已统一不可变数据定义的阅读体验：Draft revision 历史和 StaticSchema 详情默认展示字段树，并可切换字段表单、DSL JSON / compiled artifact；Draft 深链侧栏不再动态增加“当前 Draft”，资源与智能识别面包屑左对齐，原生下拉框使用统一系统样式。`9ea35e9` clean Web 71 / E2E 17 A1；未调用 Provider。
 - 2026-08-10 T6-3a.10 已闭环运行中任务的协作式取消：监控页和历史页在服务端受理后立即显示“正在取消”，说明当前 Provider 调用结束后才进入安全检查点并禁止重复取消；attempt、费用结算与最终 CANCELLED 现由同一 PostgreSQL 事务保存，避免取消竞态回滚真实调用日志。`3fb66e2` clean Server 142 / Web 69 / E2E 17 A1；本机 live overlay 已部署，部署前后 active=0、attempts=15、reservations=12，未新增 Provider 调用。

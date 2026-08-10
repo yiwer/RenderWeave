@@ -46,16 +46,26 @@ public final class ProviderCostEstimator {
 
     /** Pre-call upper bound used for the irreversible external-cost gate. */
     public static long maximumRequestCostMicrosCny(ProviderInferenceRequest request) {
+        return estimateMicrosCny(
+                Objects.requireNonNull(request, "request").profile(),
+                maximumRequestUsage(request)
+        );
+    }
+
+    /** Pre-call total token upper bound used by cross-ledger Goal authorization. */
+    public static long maximumRequestTokens(ProviderInferenceRequest request) {
+        var usage = maximumRequestUsage(Objects.requireNonNull(request, "request"));
+        return Math.addExact(usage.inputTokens(), usage.outputTokens());
+    }
+
+    private static ProviderUsage maximumRequestUsage(ProviderInferenceRequest request) {
         Objects.requireNonNull(request, "request");
         var promptBytes = request.systemPrompt().getBytes(StandardCharsets.UTF_8).length;
         var taskBytes = request.taskJson().getBytes(StandardCharsets.UTF_8).length;
         var textTokens = Math.addExact(TEXT_MESSAGE_OVERHEAD_TOKENS, Math.addExact(promptBytes, taskBytes));
         var imageTokens = Math.multiplyExact((long) request.images().size(), IMAGE_INPUT_TOKEN_UPPER_BOUND);
         var maximumInputTokens = Math.addExact(textTokens, imageTokens);
-        return estimateMicrosCny(
-                request.profile(),
-                new ProviderUsage(maximumInputTokens, request.profile().maximumOutputTokens())
-        );
+        return new ProviderUsage(maximumInputTokens, request.profile().maximumOutputTokens());
     }
 
     /**

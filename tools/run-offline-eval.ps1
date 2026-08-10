@@ -7,36 +7,65 @@ param(
 $ErrorActionPreference = 'Stop'
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $mvn = (Get-Command mvn.cmd -ErrorAction Stop).Source
-$testClasses = @(
+$inferenceTestClasses = @(
     'ReplayCorpusEvaluationTest',
     'GroundedPipelineEvaluationTest',
     'LiveCandidateEvaluatorTest',
     'JsonCandidateProfilerTest',
     'JsonGroundedCandidateComposerTest',
-    'LiveRepairPolicyTest'
+    'LiveRepairPolicyTest',
+    'VisualStageCorpusTest',
+    'VisualStageEvaluatorTest',
+    'VisualStageReporterTest',
+    'VisualStageCheckpointReaderTest'
+)
+$applicationTestClasses = @(
+    'VisualEvaluationGoalBudgetTest',
+    'VisualEvaluationJournalTest',
+    'VisualEvaluationIdentityTest',
+    'VisualEvaluationEvidenceVerifierTest',
+    'VisualEvaluationAuthorizationLocatorTest'
 )
 
-# This gate is deliberately offline. Assigning empty values in this child PowerShell process
+# This gate remains deliberately offline. Assigning empty values in this child PowerShell process
 # neither reads nor mutates the operator's parent-process secrets.
 $env:DASHSCOPE_API_KEY = ''
 $env:DASHSCOPE_API_KEY_FILE = ''
 $env:RENDERWEAVE_RUN_LIVE_CANARY = ''
 $env:RENDERWEAVE_RUN_LIVE_CERTIFICATION = ''
 $env:RENDERWEAVE_LIVE_CERTIFICATION_AUTHORIZATION = ''
+$env:RENDERWEAVE_RUN_VISUAL_EVALUATION = ''
+$env:RENDERWEAVE_VISUAL_EVALUATION_AUTHORIZATION = ''
 $env:RENDERWEAVE_LIVE_AI_ENABLED = 'false'
 $env:RENDERWEAVE_LIVE_UPLOAD_ENABLED = 'false'
 
 Push-Location $repoRoot
 try {
-    $selector = $testClasses -join ','
+    $selector = $inferenceTestClasses -join ','
     & $mvn -B -ntp -pl renderweave-inference -am `
         "-Dtest=$selector" '-Dsurefire.failIfNoSpecifiedTests=false' test
     if ($LASTEXITCODE -ne 0) {
-        throw "Offline evaluation tests failed with exit code $LASTEXITCODE."
+        throw "Offline inference evaluation tests failed with exit code $LASTEXITCODE."
     }
 
-    $reports = foreach ($className in $testClasses) {
-        $path = Get-ChildItem -Path (Join-Path $repoRoot 'renderweave-inference\target\surefire-reports') `
+    $selector = $applicationTestClasses -join ','
+    & $mvn -B -ntp -pl renderweave-app -am `
+        "-Dtest=$selector" '-Dsurefire.failIfNoSpecifiedTests=false' test
+    if ($LASTEXITCODE -ne 0) {
+        throw "Offline visual evidence tests failed with exit code $LASTEXITCODE."
+    }
+
+    $testTargets = @(
+        $inferenceTestClasses | ForEach-Object {
+            [pscustomobject]@{ className = $_; module = 'renderweave-inference' }
+        }
+        $applicationTestClasses | ForEach-Object {
+            [pscustomobject]@{ className = $_; module = 'renderweave-app' }
+        }
+    )
+    $reports = foreach ($target in $testTargets) {
+        $className = $target.className
+        $path = Get-ChildItem -Path (Join-Path $repoRoot "$($target.module)\target\surefire-reports") `
             -Filter "TEST-*.$className.xml" -File | Select-Object -First 1
         if ($null -eq $path) {
             throw "Missing Surefire report for $className."
@@ -66,11 +95,23 @@ try {
     }
 
     $summary = [ordered]@{
-        schemaVersion = 'renderweave-offline-eval/1'
+        schemaVersion = 'renderweave-offline-eval/2'
         result = 'PASS'
         evaluationMode = 'OFFLINE_DETERMINISTIC'
-        corpusVersion = 'renderweave-live-eval-v2'
-        corpusCases = 60
+        corpora = @(
+            [ordered]@{
+                corpusVersion = 'renderweave-live-eval-v2'
+                corpusCases = 60
+                modeDistribution = [ordered]@{ IMAGE_ONLY = 20; JSON_ONLY = 20; COMBINED = 20 }
+            },
+            [ordered]@{
+                corpusVersion = 'renderweave-visual-stage-corpus/1.0'
+                corpusCases = 60
+                partitionDistribution = [ordered]@{ DEV = 45; HOLDOUT = 15 }
+                visualStyles = 5
+                minimumHierarchyDepth = 3
+            }
+        )
         modeDistribution = [ordered]@{ IMAGE_ONLY = 20; JSON_ONLY = 20; COMBINED = 20 }
         groundedPipelineCases = [ordered]@{ JSON_ONLY = 20; COMBINED = 20 }
         providerAttempts = 0
@@ -81,7 +122,11 @@ try {
             'strict evidence-backed replay candidates',
             'whole-graph evaluator and certification policy adversarial negatives',
             'deterministic JSON grounding and safe visual overlay',
-            'repair policy and ambiguous provider graph fail-closed behavior'
+            'repair policy and ambiguous provider graph fail-closed behavior',
+            'deterministic 60-case visual raster corpus with stage-separated metrics',
+            'cross-ledger model token and cost reservation before delegation',
+            'durable interruption-safe visual journal with payload-free evidence',
+            'independent Python aggregate and tamper verifier'
         )
         testClasses = @($reports)
         totalTests = [int](($reports | Measure-Object -Property tests -Sum).Sum)

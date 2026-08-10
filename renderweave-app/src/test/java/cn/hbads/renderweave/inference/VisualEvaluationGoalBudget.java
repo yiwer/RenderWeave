@@ -1,0 +1,461 @@
+package cn.hbads.renderweave.inference;
+
+import cn.hbads.renderweave.inference.provider.ProviderCostEstimator;
+import cn.hbads.renderweave.inference.provider.ProviderInferenceRequest;
+import cn.hbads.renderweave.inference.provider.ProviderUsage;
+import tools.jackson.core.StreamReadFeature;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.MapperFeature;
+import tools.jackson.databind.ObjectMapper;
+
+import java.io.IOException;
+import java.nio.channels.FileChannel;
+import java.nio.channels.OverlappingFileLockException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.AtomicMoveNotSupportedException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.UUID;
+
+/**
+ * Cross-authorization, cross-process Goal token/cost/attempt guard. Unsettled reservations retain
+ * their conservative upper bound; there is deliberately no release operation after a possible call.
+ */
+final class VisualEvaluationGoalBudget {
+    static final String VERSION = "renderweave-visual-evaluation-goal-budget/1.0";
+    static final String GOAL_ID = "renderweave-visual-recognition-vnext-20260810";
+    private final Path stateFile;
+    private final Path guardFile;
+    private final Path lockFile;
+    private final ObjectMapper json;
+
+    VisualEvaluationGoalBudget(Path directory, ObjectMapper objectMapper, Instant now) {
+        Objects.requireNonNull(directory, "directory");
+        Objects.requireNonNull(now, "now");
+        json = Objects.requireNonNull(objectMapper, "objectMapper").rebuild()
+                .enable(StreamReadFeature.STRICT_DUPLICATE_DETECTION)
+                .enable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                .enable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS)
+                .enable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES)
+                .disable(DeserializationFeature.ACCEPT_FLOAT_AS_INT)
+                .disable(MapperFeature.ALLOW_COERCION_OF_SCALARS)
+                .build();
+        stateFile = directory.resolve("goal-budget.json");
+        guardFile = directory.resolve("goal-budget.guard.json");
+        lockFile = directory.resolve("goal-budget.lock");
+        withLock(() -> {
+            var stateExists = Files.exists(stateFile);
+            var guardExists = Files.exists(guardFile);
+            if (stateExists != guardExists) {
+                throw new IllegalStateException("VISUAL_EVALUATION_GOAL_BUDGET_PARTIAL_STATE");
+            }
+            if (stateExists) {
+                validateGuard(readGuard());
+                validateState(readState());
+            } else {
+                writeAtomically(guardFile, json.writeValueAsString(Guard.expected()));
+                writeState(State.initial(now));
+            }
+            return null;
+        });
+    }
+
+    Reservation reserve(
+            VisualEvaluationAuthorization authorization,
+            ProviderInferenceRequest request,
+            Instant now
+    ) {
+        Objects.requireNonNull(authorization, "authorization").requireOpen(now);
+        Objects.requireNonNull(request, "request");
+        if (!authorization.profileId().equals(request.profile().profileId())
+                || !authorization.model().equals(request.profile().model())) {
+            throw new IllegalStateException("VISUAL_EVALUATION_REQUEST_PROFILE_MISMATCH");
+        }
+        var reservedTokens = ProviderCostEstimator.maximumRequestTokens(request);
+        var reservedCost = ProviderCostEstimator.maximumRequestCostMicrosCny(request);
+        return withLock(() -> {
+            var state = readState();
+            validateState(state);
+            if (state.reservations().stream().anyMatch(item -> item.runId().equals(request.runId().toString())
+                    && item.attemptOrdinal() == request.attemptOrdinal())) {
+                throw new IllegalStateException("VISUAL_EVALUATION_DUPLICATE_PROVIDER_ATTEMPT");
+            }
+            requireCapacity(state, authorization, reservedTokens, reservedCost);
+            var reservation = Reservation.reserved(
+                    authorization, request, reservedTokens, reservedCost, now
+            );
+            var reservations = new ArrayList<>(state.reservations());
+            reservations.add(reservation);
+            writeState(state.withReservations(reservations, now));
+            return reservation;
+        });
+    }
+
+    void settle(UUID reservationId, ProviderUsage usage, long actualCostMicrosCny, Instant now) {
+        Objects.requireNonNull(reservationId, "reservationId");
+        Objects.requireNonNull(usage, "usage");
+        if (actualCostMicrosCny < 0) throw new IllegalArgumentException("actualCostMicrosCny is invalid");
+        var actualTokens = Math.addExact(usage.inputTokens(), usage.outputTokens());
+        var underestimated = new boolean[1];
+        withLock(() -> {
+            var state = readState();
+            validateState(state);
+            var reservations = new ArrayList<Reservation>();
+            var found = false;
+            for (var item : state.reservations()) {
+                if (!item.reservationId().equals(reservationId.toString())) {
+                    reservations.add(item);
+                    continue;
+                }
+                if (!"RESERVED".equals(item.state())) {
+                    throw new IllegalStateException("VISUAL_EVALUATION_RESERVATION_ALREADY_FINAL");
+                }
+                found = true;
+                underestimated[0] = actualTokens > item.reservedTokens()
+                        || actualCostMicrosCny > item.reservedCostMicrosCny();
+                reservations.add(item.settle(usage, actualCostMicrosCny, underestimated[0], now));
+            }
+            if (!found) throw new IllegalStateException("VISUAL_EVALUATION_RESERVATION_NOT_FOUND");
+            var updated = state.withReservations(reservations, now);
+            writeState(updated);
+            validateState(updated);
+            return null;
+        });
+        if (underestimated[0]) {
+            throw new IllegalStateException("VISUAL_EVALUATION_RESERVATION_UNDERESTIMATED");
+        }
+    }
+
+    Snapshot snapshot(String model, String authorizationId) {
+        requireModel(model);
+        return withLock(() -> {
+            var state = readState();
+            validateState(state);
+            return new Snapshot(
+                    aggregate(state, model, null), aggregate(state, model, authorizationId),
+                    state.reservations().stream().anyMatch(item -> item.model().equals(model)
+                            && "BREACHED".equals(item.state()))
+            );
+        });
+    }
+
+    List<Reservation> reservations() {
+        return withLock(() -> readState().reservations());
+    }
+
+    Reservation reservation(UUID reservationId) {
+        Objects.requireNonNull(reservationId, "reservationId");
+        return withLock(() -> readState().reservations().stream()
+                .filter(item -> item.reservationId().equals(reservationId.toString()))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "VISUAL_EVALUATION_RESERVATION_NOT_FOUND")));
+    }
+
+    List<Reservation> reservationsForRun(UUID runId) {
+        Objects.requireNonNull(runId, "runId");
+        return withLock(() -> readState().reservations().stream()
+                .filter(item -> item.runId().equals(runId.toString()))
+                .toList());
+    }
+
+    private static void requireCapacity(
+            State state,
+            VisualEvaluationAuthorization authorization,
+            long reservedTokens,
+            long reservedCost
+    ) {
+        var goal = aggregate(state, authorization.model(), null);
+        var ledger = aggregate(state, authorization.model(), authorization.authorizationId());
+        if (goal.breached() || ledger.breached()
+                || Math.addExact(goal.attempts(), 1) > VisualEvaluationAuthorization.GOAL_MAXIMUM_ATTEMPTS_PER_MODEL
+                || Math.addExact(goal.tokens(), reservedTokens)
+                > VisualEvaluationAuthorization.GOAL_MAXIMUM_TOKENS_PER_MODEL
+                || Math.addExact(goal.costMicrosCny(), reservedCost)
+                > VisualEvaluationAuthorization.GOAL_MAXIMUM_COST_MICROS_CNY.get(authorization.model())
+                || Math.addExact(ledger.attempts(), 1) > authorization.maximumProviderAttempts()
+                || Math.addExact(ledger.tokens(), reservedTokens) > authorization.maximumTotalTokens()
+                || Math.addExact(ledger.costMicrosCny(), reservedCost) > authorization.maximumCostMicrosCny()) {
+            throw new IllegalStateException("VISUAL_EVALUATION_GOAL_BUDGET_EXCEEDED");
+        }
+    }
+
+    private static UsageAggregate aggregate(State state, String model, String authorizationId) {
+        long tokens = 0;
+        long cost = 0;
+        var attempts = 0;
+        var breached = false;
+        for (var item : state.reservations()) {
+            if (!item.model().equals(model)
+                    || authorizationId != null && !item.authorizationId().equals(authorizationId)) continue;
+            attempts = Math.addExact(attempts, 1);
+            tokens = Math.addExact(tokens, item.exposedTokens());
+            cost = Math.addExact(cost, item.exposedCost());
+            breached |= "BREACHED".equals(item.state());
+        }
+        return new UsageAggregate(attempts, tokens, cost, breached);
+    }
+
+    private State readState() {
+        try {
+            validateGuard(readGuard());
+            var raw = Files.readString(stateFile, StandardCharsets.UTF_8);
+            PayloadFreeLiveEvidenceGuard.requirePayloadFree(raw);
+            var state = json.readValue(raw, State.class);
+            validateState(state);
+            return state;
+        } catch (IOException | RuntimeException invalid) {
+            throw new IllegalStateException("VISUAL_EVALUATION_GOAL_BUDGET_INVALID", invalid);
+        }
+    }
+
+    private Guard readGuard() {
+        try {
+            var raw = Files.readString(guardFile, StandardCharsets.UTF_8);
+            PayloadFreeLiveEvidenceGuard.requirePayloadFree(raw);
+            return json.readValue(raw, Guard.class);
+        } catch (IOException | RuntimeException invalid) {
+            throw new IllegalStateException("VISUAL_EVALUATION_GOAL_BUDGET_GUARD_INVALID", invalid);
+        }
+    }
+
+    private void writeState(State state) throws IOException {
+        validateGuard(readGuard());
+        validateState(state);
+        writeAtomically(stateFile, json.writerWithDefaultPrettyPrinter().writeValueAsString(state));
+    }
+
+    private void writeAtomically(Path destination, String content) throws IOException {
+        PayloadFreeLiveEvidenceGuard.requirePayloadFree(content);
+        Files.createDirectories(destination.getParent());
+        var temporary = destination.resolveSibling(destination.getFileName() + ".tmp-" + UUID.randomUUID());
+        try {
+            try (var channel = FileChannel.open(temporary, StandardOpenOption.CREATE_NEW,
+                    StandardOpenOption.WRITE)) {
+                var bytes = StandardCharsets.UTF_8.encode(content);
+                while (bytes.hasRemaining()) channel.write(bytes);
+                channel.force(true);
+            }
+            try {
+                Files.move(temporary, destination, StandardCopyOption.ATOMIC_MOVE,
+                        StandardCopyOption.REPLACE_EXISTING);
+            } catch (AtomicMoveNotSupportedException unsupported) {
+                throw new IllegalStateException("VISUAL_EVALUATION_ATOMIC_MOVE_REQUIRED", unsupported);
+            }
+        } finally {
+            Files.deleteIfExists(temporary);
+        }
+    }
+
+    private static void validateGuard(Guard guard) {
+        if (!Guard.expected().equals(guard)) {
+            throw new IllegalStateException("VISUAL_EVALUATION_GOAL_BUDGET_GUARD_MISMATCH");
+        }
+    }
+
+    private static void validateState(State state) {
+        if (!VERSION.equals(state.stateVersion()) || !GOAL_ID.equals(state.goalId())) {
+            throw new IllegalStateException("VISUAL_EVALUATION_GOAL_BUDGET_IDENTITY_MISMATCH");
+        }
+        var ids = new HashSet<String>();
+        var attempts = new HashSet<String>();
+        for (var item : state.reservations()) {
+            if (!ids.add(item.reservationId())
+                    || !attempts.add(item.runId() + "|" + item.attemptOrdinal())) {
+                throw new IllegalStateException("VISUAL_EVALUATION_GOAL_BUDGET_DUPLICATE");
+            }
+        }
+        for (var model : VisualEvaluationAuthorization.GOAL_MAXIMUM_COST_MICROS_CNY.keySet()) {
+            var usage = aggregate(state, model, null);
+            if (!usage.breached() && (usage.attempts()
+                    > VisualEvaluationAuthorization.GOAL_MAXIMUM_ATTEMPTS_PER_MODEL
+                    || usage.tokens() > VisualEvaluationAuthorization.GOAL_MAXIMUM_TOKENS_PER_MODEL
+                    || usage.costMicrosCny()
+                    > VisualEvaluationAuthorization.GOAL_MAXIMUM_COST_MICROS_CNY.get(model))) {
+                throw new IllegalStateException("VISUAL_EVALUATION_GOAL_BUDGET_INVALID");
+            }
+        }
+    }
+
+    private <T> T withLock(LockedOperation<T> operation) {
+        try {
+            Files.createDirectories(lockFile.getParent());
+            try (var channel = FileChannel.open(lockFile, StandardOpenOption.CREATE, StandardOpenOption.WRITE);
+                 var ignored = channel.lock()) {
+                return operation.run();
+            }
+        } catch (OverlappingFileLockException busy) {
+            throw new IllegalStateException("VISUAL_EVALUATION_GOAL_BUDGET_BUSY", busy);
+        } catch (IOException failure) {
+            throw new IllegalStateException("VISUAL_EVALUATION_GOAL_BUDGET_IO_FAILED", failure);
+        }
+    }
+
+    @FunctionalInterface
+    private interface LockedOperation<T> {
+        T run() throws IOException;
+    }
+
+    record Guard(
+            String guardVersion,
+            String goalId,
+            long maximumTokensPerModel,
+            int maximumAttemptsPerModel,
+            Map<String, Long> maximumCostMicrosCnyByModel
+    ) {
+        private static final String VERSION = "renderweave-visual-evaluation-goal-guard/1.0";
+
+        Guard {
+            maximumCostMicrosCnyByModel = Map.copyOf(maximumCostMicrosCnyByModel);
+        }
+
+        static Guard expected() {
+            return new Guard(
+                    VERSION, GOAL_ID,
+                    VisualEvaluationAuthorization.GOAL_MAXIMUM_TOKENS_PER_MODEL,
+                    VisualEvaluationAuthorization.GOAL_MAXIMUM_ATTEMPTS_PER_MODEL,
+                    VisualEvaluationAuthorization.GOAL_MAXIMUM_COST_MICROS_CNY
+            );
+        }
+    }
+
+    record State(
+            String stateVersion,
+            String goalId,
+            List<Reservation> reservations,
+            String createdAt,
+            String updatedAt
+    ) {
+        State {
+            reservations = List.copyOf(Objects.requireNonNull(reservations, "reservations"));
+            requireTime(createdAt);
+            requireTime(updatedAt);
+            if (Instant.parse(updatedAt).isBefore(Instant.parse(createdAt))) {
+                throw new IllegalArgumentException("Visual goal budget timestamps are invalid");
+            }
+        }
+
+        static State initial(Instant now) {
+            return new State(VERSION, GOAL_ID, List.of(), now.toString(), now.toString());
+        }
+
+        State withReservations(List<Reservation> value, Instant now) {
+            return new State(stateVersion, goalId, value, createdAt, now.toString());
+        }
+    }
+
+    record Reservation(
+            String reservationId,
+            String authorizationId,
+            String profileId,
+            String model,
+            String runId,
+            int attemptOrdinal,
+            String stage,
+            long reservedTokens,
+            long reservedCostMicrosCny,
+            Long actualInputTokens,
+            Long actualOutputTokens,
+            Long actualCostMicrosCny,
+            String state,
+            String createdAt,
+            String updatedAt
+    ) {
+        Reservation {
+            requireUuid(reservationId, "reservationId");
+            if (authorizationId == null || !authorizationId.matches("[a-z0-9][a-z0-9-]{0,95}")
+                    || profileId == null || !profileId.matches("[a-z0-9][a-z0-9-]{0,127}")) {
+                throw new IllegalArgumentException("Visual reservation authorization is invalid");
+            }
+            requireModel(model);
+            requireUuid(runId, "runId");
+            if (attemptOrdinal < 0 || attemptOrdinal > 7 || stage == null
+                    || !stage.matches("[A-Z][A-Z0-9_]{0,63}")
+                    || reservedTokens < 1 || reservedCostMicrosCny < 1) {
+                throw new IllegalArgumentException("Visual reservation bound is invalid");
+            }
+            var reserved = "RESERVED".equals(state) && actualInputTokens == null
+                    && actualOutputTokens == null && actualCostMicrosCny == null;
+            var finalState = List.of("SETTLED", "BREACHED").contains(state)
+                    && actualInputTokens != null && actualInputTokens >= 0
+                    && actualOutputTokens != null && actualOutputTokens >= 0
+                    && actualCostMicrosCny != null && actualCostMicrosCny >= 0;
+            if (!reserved && !finalState) throw new IllegalArgumentException("Visual reservation state is invalid");
+            if ("SETTLED".equals(state) && (Math.addExact(actualInputTokens, actualOutputTokens) > reservedTokens
+                    || actualCostMicrosCny > reservedCostMicrosCny)) {
+                throw new IllegalArgumentException("Settled visual reservation exceeds its bound");
+            }
+            requireTime(createdAt);
+            requireTime(updatedAt);
+        }
+
+        static Reservation reserved(
+                VisualEvaluationAuthorization authorization,
+                ProviderInferenceRequest request,
+                long tokens,
+                long cost,
+                Instant now
+        ) {
+            return new Reservation(
+                    UUID.randomUUID().toString(), authorization.authorizationId(),
+                    authorization.profileId(), authorization.model(), request.runId().toString(),
+                    request.attemptOrdinal(), request.stage().name(), tokens, cost,
+                    null, null, null, "RESERVED", now.toString(), now.toString()
+            );
+        }
+
+        Reservation settle(ProviderUsage usage, long actualCost, boolean breached, Instant now) {
+            return new Reservation(
+                    reservationId, authorizationId, profileId, model, runId, attemptOrdinal, stage,
+                    reservedTokens, reservedCostMicrosCny, usage.inputTokens(), usage.outputTokens(),
+                    actualCost, breached ? "BREACHED" : "SETTLED", createdAt, now.toString()
+            );
+        }
+
+        long exposedTokens() {
+            if (actualInputTokens == null) return reservedTokens;
+            var actual = Math.addExact(actualInputTokens, actualOutputTokens);
+            return "BREACHED".equals(state) ? Math.max(reservedTokens, actual) : actual;
+        }
+
+        long exposedCost() {
+            if (actualCostMicrosCny == null) return reservedCostMicrosCny;
+            return "BREACHED".equals(state) ? Math.max(reservedCostMicrosCny, actualCostMicrosCny)
+                    : actualCostMicrosCny;
+        }
+    }
+
+    record UsageAggregate(int attempts, long tokens, long costMicrosCny, boolean breached) { }
+
+    record Snapshot(UsageAggregate goal, UsageAggregate authorization, boolean breached) { }
+
+    private static void requireModel(String model) {
+        if (!VisualEvaluationAuthorization.GOAL_MAXIMUM_COST_MICROS_CNY.containsKey(model)) {
+            throw new IllegalArgumentException("Visual evaluation model is invalid");
+        }
+    }
+
+    private static void requireUuid(String value, String name) {
+        try {
+            UUID.fromString(value);
+        } catch (RuntimeException invalid) {
+            throw new IllegalArgumentException(name + " is invalid", invalid);
+        }
+    }
+
+    private static void requireTime(String value) {
+        try {
+            Instant.parse(value);
+        } catch (RuntimeException invalid) {
+            throw new IllegalArgumentException("Visual goal budget timestamp is invalid", invalid);
+        }
+    }
+}

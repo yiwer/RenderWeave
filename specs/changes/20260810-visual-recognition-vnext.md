@@ -3,7 +3,7 @@
 - 状态：approved
 - 触发任务：P6/T6-5
 - 触发证据：Product v2 真实站牌结果发生层级压扁；Product v3 真实运行虽完成 OBSERVE/HIERARCHY/ELEMENT_BINDING，但 STRUCTURE 两次超时；Product v4 尚无绑定当前流水线的真实分阶段质量报告
-- 影响 AC/规则：AC-015、AC-016、AC-017、AC-019、AC-020、AC-021、AC-022；新增 AC-VR-001..010；ADR-0020、ADR-0021、ADR-0022
+- 影响 AC/规则：AC-015、AC-016、AC-017、AC-019、AC-020、AC-021、AC-022；新增 AC-VR-001..010；ADR-0020、ADR-0021、ADR-0022、ADR-0023
 - 再锚定关系：用户于 2026-08-10 接受图片识别串行流程审查结论，并明确批准按推荐建立 Goal、自动采用决策并落 ADR；本 delta 成为后续实现和验收基准。
 
 ## 冲突或新事实
