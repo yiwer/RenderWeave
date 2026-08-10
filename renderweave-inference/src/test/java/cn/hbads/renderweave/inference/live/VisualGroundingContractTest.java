@@ -341,6 +341,62 @@ class VisualGroundingContractTest {
     }
 
     @Test
+    void relationshipRegionOwnerPolicyRewindsOnlyEvidenceBackedGroupOmissions() throws Exception {
+        var omitted = codec.parseElements(
+                relationshipRegionElementsJson("owner", 1200, 3600), views(), List.of(IMAGE_ID)
+        );
+
+        var legacyFailure = assertThrows(InvalidVisualAnalysisException.class, () ->
+                codec.parseHierarchy(
+                        relationshipRegionHierarchyJson(), omitted.inventory(), omitted.grounding(),
+                        VisualRelationshipCardinalityPolicy.SUPPORT_GROUP_DERIVED
+                )
+        );
+        assertEquals("VISUAL_SEMANTIC_HIERARCHY_EDGE_REGION_INVALID",
+                legacyFailure.diagnosticCode());
+        assertEquals(InferenceStage.HIERARCHY, legacyFailure.earliestStage().orElseThrow());
+
+        var rewind = assertThrows(InvalidVisualAnalysisException.class, () ->
+                codec.parseHierarchy(
+                        relationshipRegionHierarchyJson(), omitted.inventory(), omitted.grounding(),
+                        VisualRelationshipCardinalityPolicy.SUPPORT_GROUP_DERIVED,
+                        VisualHierarchyPrerequisitePolicy.RELATIONSHIP_REGION_GROUP_OWNER_REQUIRED
+                )
+        );
+        assertEquals("VISUAL_SEMANTIC_OBSERVE_RELATIONSHIP_REGION_GROUP_MISSING",
+                rewind.diagnosticCode());
+        assertEquals(InferenceStage.OBSERVE, rewind.earliestStage().orElseThrow());
+
+        var repaired = codec.parseElements(
+                relationshipRegionElementsJson("orphan", 5200, 8600), views(), List.of(IMAGE_ID)
+        );
+        var accepted = codec.parseHierarchy(
+                relationshipRegionHierarchyJson(), repaired.inventory(), repaired.grounding(),
+                VisualRelationshipCardinalityPolicy.SUPPORT_GROUP_DERIVED,
+                VisualHierarchyPrerequisitePolicy.RELATIONSHIP_REGION_GROUP_OWNER_REQUIRED
+        );
+        assertEquals(1, accepted.hierarchy().relationships().size());
+    }
+
+    @Test
+    void relationshipRegionOwnerPolicyKeepsOwnedGroupReuseAtHierarchy() throws Exception {
+        var observed = codec.parseElements(
+                relationshipRegionElementsJson("owner", 1200, 3600), views(), List.of(IMAGE_ID)
+        );
+
+        var failure = assertThrows(InvalidVisualAnalysisException.class, () ->
+                codec.parseHierarchy(
+                        reusedRelationshipGroupHierarchyJson(),
+                        observed.inventory(), observed.grounding(),
+                        VisualRelationshipCardinalityPolicy.SUPPORT_GROUP_DERIVED,
+                        VisualHierarchyPrerequisitePolicy.RELATIONSHIP_REGION_GROUP_OWNER_REQUIRED
+                )
+        );
+        assertEquals("VISUAL_HIERARCHY_V2_SUPPORT_GROUP_REUSED", failure.diagnosticCode());
+        assertTrue(failure.earliestStage().isEmpty());
+    }
+
+    @Test
     void derivesStageLocalCropsOnlyFromTheVerifiedPlan() throws Exception {
         var observed = codec.parseElements(elementsJson(), views(), List.of(IMAGE_ID));
         var hierarchy = codec.parseHierarchy(
@@ -465,6 +521,28 @@ class VisualGroundingContractTest {
                 """;
     }
 
+    private static String relationshipRegionElementsJson(
+            String groupRegionId,
+            int groupEvidenceTop,
+            int groupEvidenceBottom
+    ) {
+        return """
+                {
+                  "contractVersion":"renderweave-visual-grounding/2.0",
+                  "regions":[
+                    {"regionId":"root","parentRegionId":null,"kind":"ROOT","multiplicity":"ONE","readingOrder":0,"repeatGroupId":null,"evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":0,"top":0,"right":10000,"bottom":10000}}]},
+                    {"regionId":"owner","parentRegionId":"root","kind":"GROUP","multiplicity":"ONE","readingOrder":0,"repeatGroupId":null,"evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":500,"top":1000,"right":9500,"bottom":4000}}]},
+                    {"regionId":"orphan","parentRegionId":"root","kind":"GROUP","multiplicity":"ONE","readingOrder":1,"repeatGroupId":null,"evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":500,"top":5000,"right":9500,"bottom":9000}}]}
+                  ],
+                  "elements":[
+                    {"elementId":"title","kind":"SLOT","proposedKey":"title","displayName":"标题","multiplicity":"ONE","valueHint":"TEXT","regionIds":["root"],"evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":100,"top":100,"right":3000,"bottom":700}}]},
+                    {"elementId":"owner-group","kind":"GROUP","proposedKey":"owner","displayName":"容器","multiplicity":"ONE","valueHint":null,"regionIds":["%s"],"evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":1000,"top":%d,"right":9000,"bottom":%d}}]},
+                    {"elementId":"orphan-label","kind":"SLOT","proposedKey":"label","displayName":"标签","multiplicity":"ONE","valueHint":"TEXT","regionIds":["orphan"],"evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":1000,"top":5500,"right":4000,"bottom":6200}}]}
+                  ]
+                }
+                """.formatted(groupRegionId, groupEvidenceTop, groupEvidenceBottom);
+    }
+
     private static String hierarchyJson() {
         return """
                 {
@@ -476,6 +554,40 @@ class VisualGroundingContractTest {
                   ],
                   "relationships":[
                     {"relationshipId":"document-items","parentEntityId":"document","childEntityId":"item","fieldKey":"items","displayName":"项目","cardinality":"MANY","regionId":"repeat","supportingElementIds":["row-group"]}
+                  ]
+                }
+                """;
+    }
+
+    private static String relationshipRegionHierarchyJson() {
+        return """
+                {
+                  "contractVersion":"renderweave-visual-hierarchy/2.0",
+                  "rootEntityId":"document",
+                  "entities":[
+                    {"entityId":"document","schemaKey":"document","displayName":"文档","regionIds":["root"],"supportingElementIds":["title"]},
+                    {"entityId":"child","schemaKey":"child","displayName":"子项","regionIds":["orphan"],"supportingElementIds":["orphan-label"]}
+                  ],
+                  "relationships":[
+                    {"relationshipId":"document-child","parentEntityId":"document","childEntityId":"child","fieldKey":"child","displayName":"子项","cardinality":"ONE","regionId":"orphan","supportingElementIds":["owner-group"]}
+                  ]
+                }
+                """;
+    }
+
+    private static String reusedRelationshipGroupHierarchyJson() {
+        return """
+                {
+                  "contractVersion":"renderweave-visual-hierarchy/2.0",
+                  "rootEntityId":"document",
+                  "entities":[
+                    {"entityId":"document","schemaKey":"document","displayName":"文档","regionIds":["root"],"supportingElementIds":["title"]},
+                    {"entityId":"first","schemaKey":"first","displayName":"第一项","regionIds":["owner"],"supportingElementIds":["owner-group"]},
+                    {"entityId":"second","schemaKey":"second","displayName":"第二项","regionIds":["owner"],"supportingElementIds":["owner-group"]}
+                  ],
+                  "relationships":[
+                    {"relationshipId":"document-first","parentEntityId":"document","childEntityId":"first","fieldKey":"first","displayName":"第一项","cardinality":"ONE","regionId":"owner","supportingElementIds":["owner-group"]},
+                    {"relationshipId":"document-second","parentEntityId":"document","childEntityId":"second","fieldKey":"second","displayName":"第二项","cardinality":"ONE","regionId":"owner","supportingElementIds":["owner-group"]}
                   ]
                 }
                 """;

@@ -100,7 +100,9 @@ describe('Inference monitor workspace', () => {
     expect(screen.getByText('区域树')).toBeTruthy();
     expect(screen.getByText('重复区域')).toBeTruthy();
     expect(screen.getAllByText('VISUAL_GROUNDING_PARENT_KIND_INVALID').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('VISUAL_SEMANTIC_OBSERVE_RELATIONSHIP_GROUP_MISSING').length)
+    expect(screen.getAllByText('VISUAL_SEMANTIC_OBSERVE_RELATIONSHIP_REGION_GROUP_MISSING').length)
+      .toBeGreaterThan(0);
+    expect(screen.getAllByText('层级关系区域缺少对应的 GROUP 元素 owner').length)
       .toBeGreaterThan(0);
     expect(screen.getByText('已从持久检查点恢复')).toBeTruthy();
     expect(screen.getByText(/0\.005716/)).toBeTruthy();
@@ -278,7 +280,7 @@ function visualExecutionLog(runSnapshot: InferenceRunResponse): InferenceExecuti
         outputTokens: 0,
         costMicrosCny: 0,
         durationMillis: 12,
-        problemCodeCounts: { VISUAL_SEMANTIC_OBSERVE_RELATIONSHIP_GROUP_MISSING: 1 },
+        problemCodeCounts: { VISUAL_SEMANTIC_OBSERVE_RELATIONSHIP_REGION_GROUP_MISSING: 1 },
         completedAt: '2026-08-10T04:03:12Z',
       },
     ],

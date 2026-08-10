@@ -685,9 +685,11 @@ public class PostgresInferenceRunStore implements InferenceRunStore, InferenceRe
         var semanticObservationRewind = expectedStage == InferenceStage.HIERARCHY
                 && nextStage == InferenceStage.OBSERVE
                 && attempt.status() == InferenceAttemptStatus.REJECTED
-                && attempt.problemCodeCounts().equals(Map.of(
+                && (attempt.problemCodeCounts().equals(Map.of(
                         "VISUAL_SEMANTIC_OBSERVE_RELATIONSHIP_GROUP_MISSING", 1
-                ));
+                )) || attempt.problemCodeCounts().equals(Map.of(
+                        "VISUAL_SEMANTIC_OBSERVE_RELATIONSHIP_REGION_GROUP_MISSING", 1
+                )));
         if (!expectedStage.canTransitionTo(nextStage) && !semanticObservationRewind) {
             throw new InvalidInferenceRunTransitionException(
                     runId, "stage " + expectedStage + " cannot advance to " + nextStage

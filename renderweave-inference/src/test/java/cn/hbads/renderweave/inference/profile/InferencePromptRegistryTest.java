@@ -297,6 +297,26 @@ class InferencePromptRegistryTest {
     }
 
     @Test
+    void visualV17PinsRelationshipRegionOwnerRepairWithoutDomainBias() {
+        var prompt = new InferencePromptRegistry().requireVisualStage(
+                InferencePromptRegistry.VISUAL_ELEMENTS_V8,
+                InferencePromptRegistry.VISUAL_HINT_GENERIC_V1
+        ).text();
+
+        assertTrue(prompt.contains(
+                "VISUAL_SEMANTIC_OBSERVE_RELATIONSHIP_REGION_GROUP_MISSING"
+        ));
+        assertTrue(prompt.contains("GROUP or REPEATED_GROUP region"));
+        assertTrue(prompt.contains("emit one"));
+        assertTrue(prompt.contains("evidence-backed GROUP owner for its exact region"));
+        assertTrue(prompt.contains("Do not copy a prior hierarchy"));
+        assertTrue(prompt.contains("duplicate a GROUP that already owns the relationship region"));
+        assertFalse(prompt.matches("(?is).*\\b(bus|station|route|stop|fare)\\b.*"));
+        assertFalse(prompt.contains("公交"));
+        assertFalse(prompt.contains("站牌"));
+    }
+
+    @Test
     void hybridPromptTreatsLocalOcrAsUntrustedEphemeralSecondaryEvidence() {
         var registry = new InferencePromptRegistry();
         var prompt = registry.requireHybridVisualStage(

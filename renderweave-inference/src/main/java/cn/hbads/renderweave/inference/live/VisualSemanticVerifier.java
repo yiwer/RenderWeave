@@ -117,6 +117,35 @@ final class VisualSemanticVerifier {
         return List.of();
     }
 
+    List<VisualSemanticIssue> verifyRelationshipRegionGroupOwners(
+            VisualElementInventory inventory,
+            VisualGroundingPlan grounding,
+            VisualHierarchyPlan hierarchy,
+            VisualEntityRegionPlan entityRegions
+    ) {
+        Objects.requireNonNull(inventory, "inventory");
+        Objects.requireNonNull(grounding, "grounding");
+        Objects.requireNonNull(hierarchy, "hierarchy");
+        Objects.requireNonNull(entityRegions, "entityRegions");
+        var groups = inventory.elements().stream()
+                .filter(element -> element.kind() == VisualElementKind.GROUP)
+                .toList();
+        var issues = new ArrayList<VisualSemanticIssue>();
+        for (var relationship : hierarchy.relationships()) {
+            var relationshipRegionId = entityRegions.requireRelationship(
+                    relationship.relationshipId()
+            ).regionId();
+            var relationshipRegion = grounding.requireRegion(relationshipRegionId);
+            if ((relationshipRegion.kind() == VisualRegionKind.GROUP
+                    || relationshipRegion.kind() == VisualRegionKind.REPEATED_GROUP)
+                    && groups.stream().noneMatch(group -> grounding
+                    .regionIdsForElement(group.elementId()).contains(relationshipRegionId))) {
+                issues.add(VisualSemanticIssue.OBSERVE_RELATIONSHIP_REGION_GROUP_MISSING);
+            }
+        }
+        return canonical(issues);
+    }
+
     List<VisualSemanticIssue> verifyBindings(
             VisualElementInventory inventory,
             VisualGroundingPlan grounding,
@@ -191,6 +220,9 @@ enum VisualSemanticIssue {
     ),
     OBSERVE_RELATIONSHIP_GROUP_MISSING(
             "VISUAL_SEMANTIC_OBSERVE_RELATIONSHIP_GROUP_MISSING", InferenceStage.OBSERVE
+    ),
+    OBSERVE_RELATIONSHIP_REGION_GROUP_MISSING(
+            "VISUAL_SEMANTIC_OBSERVE_RELATIONSHIP_REGION_GROUP_MISSING", InferenceStage.OBSERVE
     ),
     HIERARCHY_GROUP_EDGE_MISSING(
             "VISUAL_SEMANTIC_HIERARCHY_GROUP_EDGE_MISSING", InferenceStage.HIERARCHY

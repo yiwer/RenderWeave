@@ -85,6 +85,8 @@ class PostgresLiveInferenceWorkflowTest {
             "dashscope-qwen37-flash-product-v6-transit-board";
     private static final String EVIDENCE_DERIVED_HIERARCHY_PROFILE =
             "dashscope-qwen37-flash-20260715-product-v16-generic";
+    private static final String REGION_OWNED_HIERARCHY_PROFILE =
+            "dashscope-qwen37-flash-20260715-product-v17-generic";
     private static final String HYBRID_VISUAL_PROFILE =
             "dashscope-qwen37-flash-product-v7-hybrid-generic";
     private static final String DOCUMENT_VISION_CAPABILITY =
@@ -700,6 +702,66 @@ class PostgresLiveInferenceWorkflowTest {
                 );
         assertThat(recoveryProvider.requests.getFirst().taskJson())
                 .contains("VISUAL_SEMANTIC_OBSERVE_RELATIONSHIP_GROUP_MISSING")
+                .doesNotContain("TARGETED_CROP")
+                .contains("\"elementInventory\":null")
+                .contains("\"groundingPlan\":null");
+        assertThat(workflowStore.attempts(created)).extracting(attempt -> attempt.status())
+                .containsExactly(
+                        InferenceAttemptStatus.SUCCEEDED, InferenceAttemptStatus.REJECTED,
+                        InferenceAttemptStatus.SUCCEEDED, InferenceAttemptStatus.SUCCEEDED,
+                        InferenceAttemptStatus.SUCCEEDED
+                );
+    }
+
+    @Test
+    void relationshipRegionWithoutGroupOwnerRewindsAndRecoversObservationAfterLeaseExpiry() {
+        var blobs = new MemoryBlobStore();
+        var created = createGroundedVisual(
+                blobs, "relationship-region-owner-rewind", REGION_OWNED_HIERARCHY_PROFILE
+        );
+        var firstProvider = new ScriptedProvider(
+                request -> response(request, groundedStationElementsWithoutNoticeRegionOwner()),
+                request -> response(request, groundedStationHierarchy())
+        );
+        var firstWorker = worker(firstProvider, blobs, T0.plusSeconds(1));
+        var current = runs.claimNextLive(
+                "relationship-region-owner-first", T0.plusSeconds(1), Duration.ofMinutes(5)
+        ).orElseThrow();
+
+        current = firstWorker.advance(current);
+        current = firstWorker.advance(current);
+
+        assertThat(current.stage()).isEqualTo(InferenceStage.OBSERVE);
+        assertThat(current.checkpointJson())
+                .contains("\"completedStage\": \"NORMALIZE\"")
+                .contains("\"providerCalls\": 2")
+                .doesNotContain("renderweave-visual-grounding/2.0")
+                .doesNotContain("renderweave-visual-hierarchy/2.0");
+        assertThat(firstProvider.requests).extracting(ProviderInferenceRequest::stage)
+                .containsExactly(InferenceStage.OBSERVE, InferenceStage.HIERARCHY);
+        assertThat(workflowStore.attempts(created).get(1).problemCodeCounts())
+                .containsExactlyEntriesOf(Map.of(
+                        "VISUAL_SEMANTIC_OBSERVE_RELATIONSHIP_REGION_GROUP_MISSING", 1
+                ));
+
+        var recoveryProvider = new ScriptedProvider(
+                request -> response(request, groundedStationElements()),
+                request -> response(request, groundedStationHierarchy()),
+                request -> response(request, groundedStationBindings())
+        );
+        var finished = worker(recoveryProvider, blobs, T0.plus(Duration.ofMinutes(7)))
+                .processNext("relationship-region-owner-recovery").orElseThrow();
+
+        assertThat(finished.state())
+                .as("failure=%s attempts=%s", finished.failureCode(), workflowStore.attempts(created))
+                .isEqualTo(InferenceRunState.REVIEW_REQUIRED);
+        assertThat(recoveryProvider.requests).extracting(ProviderInferenceRequest::stage)
+                .containsExactly(
+                        InferenceStage.OBSERVE, InferenceStage.HIERARCHY,
+                        InferenceStage.ELEMENT_BINDING
+                );
+        assertThat(recoveryProvider.requests.getFirst().taskJson())
+                .contains("VISUAL_SEMANTIC_OBSERVE_RELATIONSHIP_REGION_GROUP_MISSING")
                 .doesNotContain("TARGETED_CROP")
                 .contains("\"elementInventory\":null")
                 .contains("\"groundingPlan\":null");
@@ -1585,6 +1647,18 @@ class PostgresLiveInferenceWorkflowTest {
                   {"elementId":"stop-name","kind":"SLOT","proposedKey":"name","displayName":"站点名称","multiplicity":"ONE","valueHint":"TEXT","regionIds":["stop-item"],"evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":500,"top":4300,"right":3000,"bottom":4800}}]}
                 ]}
                 """;
+    }
+
+    private static String groundedStationElementsWithoutNoticeRegionOwner() {
+        return groundedStationElements()
+                .replace(
+                        "{\"regionId\":\"routes\",\"parentRegionId\":\"root\",\"kind\":\"REPEATED_GROUP\",\"multiplicity\":\"MANY\",\"readingOrder\":2",
+                        "{\"regionId\":\"notice-owner\",\"parentRegionId\":\"notice\",\"kind\":\"GROUP\",\"multiplicity\":\"ONE\",\"readingOrder\":0,\"repeatGroupId\":null,\"evidence\":[{\"viewId\":\"view-00-overview-00\",\"boundingBox\":{\"left\":0,\"top\":1000,\"right\":10000,\"bottom\":2200}}]},\n                  {\"regionId\":\"routes\",\"parentRegionId\":\"root\",\"kind\":\"REPEATED_GROUP\",\"multiplicity\":\"MANY\",\"readingOrder\":2"
+                )
+                .replace(
+                        "\"elementId\":\"notice-group\",\"kind\":\"GROUP\",\"proposedKey\":\"warmNotice\",\"displayName\":\"温馨提示\",\"multiplicity\":\"ONE\",\"valueHint\":null,\"regionIds\":[\"notice\"]",
+                        "\"elementId\":\"notice-group\",\"kind\":\"GROUP\",\"proposedKey\":\"warmNotice\",\"displayName\":\"温馨提示\",\"multiplicity\":\"ONE\",\"valueHint\":null,\"regionIds\":[\"notice-owner\"]"
+                );
     }
 
     private static String flatGroundedStationElements() {
