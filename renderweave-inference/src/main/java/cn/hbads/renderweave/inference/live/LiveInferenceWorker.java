@@ -306,7 +306,9 @@ public final class LiveInferenceWorker {
         try {
             candidate = candidateCodec.parse(response.candidateJson());
             if (current.mode() == InferenceMode.IMAGE_ONLY) {
-                var canonical = imageOnlyCanonicalizer.canonicalize(candidate);
+                var canonical = imageOnlyCanonicalizer.canonicalize(
+                        candidate, imageArtifactDimensions(current)
+                );
                 candidate = canonical.candidate();
                 prevalidationProblems = canonical.problems();
             } else if (grounded(profile) && current.mode() == InferenceMode.COMBINED) {
@@ -517,6 +519,23 @@ public final class LiveInferenceWorker {
                 .sorted(Comparator.comparingInt(input -> input.ordinal()))
                 .map(input -> input.artifact().artifactId())
                 .toList();
+    }
+
+    private static Map<String, ImageOnlyCandidateCanonicalizer.ImageDimensions> imageArtifactDimensions(
+            InferenceRunSnapshot current
+    ) {
+        var result = new java.util.HashMap<String, ImageOnlyCandidateCanonicalizer.ImageDimensions>();
+        current.inputs().stream()
+                .filter(input -> input.kind() == NormalizedArtifact.Kind.IMAGE
+                        && input.artifact().width() != null
+                        && input.artifact().height() != null)
+                .forEach(input -> result.put(
+                        input.artifact().artifactId(),
+                        new ImageOnlyCandidateCanonicalizer.ImageDimensions(
+                                input.artifact().width(), input.artifact().height()
+                        )
+                ));
+        return Map.copyOf(result);
     }
 
     private InferenceProfile validateRun(InferenceRunSnapshot current) {

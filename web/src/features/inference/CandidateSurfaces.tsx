@@ -60,10 +60,11 @@ export function CandidateBundleNav({
           const isRoot = schema.candidateSchemaId === state.draft.rootCandidateSchemaId;
           const label = schema.displayName || schema.proposedSchemaKey || '未命名 Schema';
           return (
-            <div className="bundle-schema-entry" key={schema.candidateSchemaId}>
+            <div className={`bundle-schema-entry ${state.draft.schemas.length > 1 ? 'sortable' : ''}`} key={schema.candidateSchemaId}>
               <button
                 type="button"
                 className={`bundle-schema-select ${schema.candidateSchemaId === state.selectedSchemaId ? 'active' : ''} ${schema.assessment.resolution === 'REMOVED' ? 'removed' : ''}`}
+                title={`${label} · ${schema.proposedSchemaKey || 'schemaKey 待填写'}`}
                 onClick={() => dispatch({ type: 'select-schema', schemaId: schema.candidateSchemaId })}
               >
                 <span className="bundle-index">{String(index + 1).padStart(2, '0')}</span>
@@ -71,10 +72,12 @@ export function CandidateBundleNav({
                 {isRoot && <i>根</i>}
                 {problems > 0 ? <b>{problems}</b> : <CheckCircle2 aria-hidden="true" size={14} />}
               </button>
-              <div className="bundle-order-actions" aria-label={`${label} 排序`}>
-                <button type="button" aria-label={`上移 ${label}`} disabled={readOnly || index === 0} onClick={() => dispatch({ type: 'move-schema', schemaId: schema.candidateSchemaId, direction: -1 })}><ArrowUp aria-hidden="true" size={13} /></button>
-                <button type="button" aria-label={`下移 ${label}`} disabled={readOnly || index === state.draft.schemas.length - 1} onClick={() => dispatch({ type: 'move-schema', schemaId: schema.candidateSchemaId, direction: 1 })}><ArrowDown aria-hidden="true" size={13} /></button>
-              </div>
+              {state.draft.schemas.length > 1 && (
+                <div className="bundle-order-actions" aria-label={`${label} 排序`}>
+                  <button type="button" aria-label={`上移 ${label}`} disabled={readOnly || index === 0} onClick={() => dispatch({ type: 'move-schema', schemaId: schema.candidateSchemaId, direction: -1 })}><ArrowUp aria-hidden="true" size={13} /></button>
+                  <button type="button" aria-label={`下移 ${label}`} disabled={readOnly || index === state.draft.schemas.length - 1} onClick={() => dispatch({ type: 'move-schema', schemaId: schema.candidateSchemaId, direction: 1 })}><ArrowDown aria-hidden="true" size={13} /></button>
+                </div>
+              )}
             </div>
           );
         })}
@@ -105,6 +108,16 @@ export function CandidateSurface({
   const fields = schema.fields.filter((field) => matches(field, search));
   return (
     <section className="candidate-form-surface" aria-label={`${schema.displayName ?? 'Schema'} 字段表单`}>
+      {fields.length > 0 && (
+        <div className="candidate-field-list-head" aria-hidden="true">
+          <span />
+          <span>字段</span>
+          <span>类型与约束</span>
+          <span>来源与置信度</span>
+          <span>审核</span>
+          <span />
+        </div>
+      )}
       {fields.map((field, index) => {
         const problemCount = state.snapshot.problems.filter((problem) => problem.itemId === field.candidateFieldId).length;
         const confidence = field.assessment.confidenceBps;
@@ -124,19 +137,23 @@ export function CandidateSurface({
               <b>{candidateTypeLabels[field.value.kind]}</b>
               <small>{summarizeValue(field.value, state.draft.schemas)}</small>
             </span>
-            <span className={`candidate-source source-${field.source.toLocaleLowerCase()}`}>
-              {field.source === 'AI' ? <Bot aria-hidden="true" size={13} /> : <UserRound aria-hidden="true" size={13} />}
-              {field.source}
+            <span className="candidate-field-provenance">
+              <span className={`candidate-source source-${field.source.toLocaleLowerCase()}`}>
+                {field.source === 'AI' ? <Bot aria-hidden="true" size={13} /> : <UserRound aria-hidden="true" size={13} />}
+                {field.source}
+              </span>
+              <span className="candidate-confidence">
+                <i><em style={{ width: `${confidence === null ? 0 : confidence / 100}%` }} /></i>
+                <small>{confidence === null ? '人工录入' : `置信度 ${(confidence / 100).toFixed(0)}%`}</small>
+              </span>
             </span>
-            <span className="candidate-confidence">
-              <i><em style={{ width: `${confidence === null ? 0 : confidence / 100}%` }} /></i>
-              <small>{confidence === null ? '人工' : `${(confidence / 100).toFixed(0)}%`}</small>
-            </span>
-            <span className={`candidate-resolution resolution-${field.assessment.resolution.toLocaleLowerCase()}`}>
-              {resolutionLabels[field.assessment.resolution]}
-            </span>
-            <span className={problemCount > 0 ? 'candidate-problem-count' : 'candidate-ok'}>
-              {problemCount > 0 ? <><AlertCircle aria-hidden="true" size={13} />{problemCount}</> : <CheckCircle2 aria-hidden="true" size={14} />}
+            <span className="candidate-field-review-state">
+              <span className={`candidate-resolution resolution-${field.assessment.resolution.toLocaleLowerCase()}`}>
+                {resolutionLabels[field.assessment.resolution]}
+              </span>
+              <span className={problemCount > 0 ? 'candidate-problem-count' : 'candidate-ok'}>
+                {problemCount > 0 ? <><AlertCircle aria-hidden="true" size={13} />{problemCount} 项</> : <><CheckCircle2 aria-hidden="true" size={14} />通过</>}
+              </span>
             </span>
             <ChevronRight aria-hidden="true" size={15} />
           </button>

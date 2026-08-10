@@ -30,7 +30,7 @@ import {
   subscribeInferenceRunEvents,
   retryInferenceRunRequest,
 } from './candidate-api';
-import type { CandidateApplyResponse } from '../../api/generated';
+import type { CandidateApplyResponse, CandidateProblem } from '../../api/generated';
 import { CandidateInspector } from './CandidateInspector';
 import { CandidateBundleNav, CandidateSurface } from './CandidateSurfaces';
 import { problemLabel } from './candidate-format';
@@ -187,6 +187,7 @@ function CandidateReviewWorkspace({
   const selected = findSelected(state);
   const blockerCount = state.snapshot.problems.filter((problem) => problem.severity === 'BLOCKER').length;
   const warningCount = state.snapshot.problems.length - blockerCount;
+  const problemGroups = groupCandidateProblems(state.snapshot.problems);
   const completed = state.snapshot.run.state === 'COMPLETED';
   const terminal = completed
     || state.snapshot.run.state === 'FAILED'
@@ -310,14 +311,23 @@ function CandidateReviewWorkspace({
       </section>
 
       {state.snapshot.problems.length > 0 && (
-        <div className="candidate-problem-ribbon" aria-label="Candidate 全局诊断">
-          {state.snapshot.problems.slice(0, 6).map((problem, index) => (
-            <button key={`${problem.code}:${problem.pointer}:${index}`} type="button" onClick={() => selectProblem(state, problem.itemId, reviewDispatch)}>
-              <span className={problem.severity.toLocaleLowerCase()}>{problem.severity}</span><strong>{problemLabel(problem.code)}</strong><code>{problem.code}</code>
-            </button>
-          ))}
-          {state.snapshot.problems.length > 6 && <span>另有 {state.snapshot.problems.length - 6} 项，可在各字段检查器中查看</span>}
-        </div>
+        <section className="candidate-problem-summary" aria-label="Candidate 全局诊断">
+          <header>
+            <div><TriangleAlert aria-hidden="true" size={17} /><span><strong>诊断汇总</strong><small>{state.snapshot.problems.length} 项 · {problemGroups.length} 类</small></span></div>
+            <p>同类诊断已合并；选择一类可定位到首个相关字段。</p>
+          </header>
+          <ul>
+            {problemGroups.map((group) => (
+              <li key={`${group.severity}:${group.code}`}>
+                <button type="button" onClick={() => selectProblem(state, group.first.itemId, reviewDispatch)}>
+                  <span className={group.severity.toLocaleLowerCase()}>{group.severity === 'BLOCKER' ? '阻断' : '提示'}</span>
+                  <span><strong>{problemLabel(group.code)}</strong><code>{group.code}</code></span>
+                  <b aria-label={`${group.count} 项`}>×{group.count}</b>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
 
       <section className={`candidate-review-fieldset ${completed ? 'is-frozen' : ''}`} aria-label={completed ? '已冻结的 final Candidate' : 'Candidate 编辑工作区'}>
@@ -527,6 +537,30 @@ function selectProblem(
       return;
     }
   }
+}
+
+function groupCandidateProblems(problems: CandidateProblem[]) {
+  const groups = new Map<string, {
+    code: string;
+    severity: CandidateProblem['severity'];
+    count: number;
+    first: CandidateProblem;
+  }>();
+  for (const problem of problems) {
+    const key = `${problem.severity}:${problem.code}`;
+    const current = groups.get(key);
+    if (current) current.count += 1;
+    else groups.set(key, {
+      code: problem.code,
+      severity: problem.severity,
+      count: 1,
+      first: problem,
+    });
+  }
+  return [...groups.values()].sort((left, right) => {
+    if (left.severity !== right.severity) return left.severity === 'BLOCKER' ? -1 : 1;
+    return right.count - left.count || left.code.localeCompare(right.code);
+  });
 }
 
 function useMediaQuery(query: string) {

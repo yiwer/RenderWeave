@@ -49,6 +49,7 @@ export function problemLabel(code: string) {
     CANDIDATE_FIELD_KEY_UNRESOLVED: 'fieldKey 尚未填写',
     CANDIDATE_SCHEMA_KEY_INVALID: 'schemaKey 不符合规则',
     CANDIDATE_SCHEMA_KEY_NORMALIZED: '已生成安全的候选 schemaKey',
+    IMAGE_EVIDENCE_PIXEL_COORDINATES_NORMALIZED: '已将像素证据框换算为规范坐标',
     CANDIDATE_FIELD_KEY_INVALID: 'fieldKey 不符合规则',
     CANDIDATE_SCALAR_SHAPE_INVALID: '标量类型包含互斥的结构成员',
     CANDIDATE_SCALAR_OBSERVED_KINDS_NORMALIZED: '已移除标量类型中的冗余观察值',

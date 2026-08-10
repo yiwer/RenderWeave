@@ -23,7 +23,13 @@ describe('Candidate review components', () => {
 
     expect((screen.getByRole('button', { name: '新增' }) as HTMLButtonElement).disabled).toBe(true);
     expect((container.querySelector('.bundle-schema-select') as HTMLButtonElement).disabled).toBe(false);
-    expect([...container.querySelectorAll<HTMLButtonElement>('.bundle-order-actions button')].every((button) => button.disabled)).toBe(true);
+  });
+
+  it('does not allocate an order-control column for a single Schema', () => {
+    const { container } = render(<BundleNavHarness />);
+
+    expect(container.querySelectorAll('.bundle-order-actions')).toHaveLength(0);
+    expect(container.querySelector('.bundle-schema-entry.sortable')).toBeNull();
   });
 
   it('keeps frozen Candidate evidence navigable while disabling definition edits', () => {

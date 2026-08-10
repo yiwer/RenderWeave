@@ -450,6 +450,25 @@ class PostgresLiveInferenceWorkflowTest {
     }
 
     @Test
+    void imageOnlyPixelCoordinateFamilyIsNormalizedUsingArtifactDimensions() {
+        var blobs = new MemoryBlobStore();
+        var created = create(blobs, "live-image-only-pixel-evidence", 1_510, 4_096);
+        var provider = new ScriptedProvider(
+                request -> response(request, candidateWithPixelCoordinateEvidence(request))
+        );
+
+        var finished = worker(provider, blobs).processNext("live-image-only-pixel-worker").orElseThrow();
+
+        assertThat(finished.state()).isEqualTo(InferenceRunState.REVIEW_REQUIRED);
+        assertThat(provider.requests).hasSize(1);
+        assertThat(workflowStore.attempts(created).getFirst().problemCodeCounts())
+                .containsEntry("IMAGE_EVIDENCE_PIXEL_COORDINATES_NORMALIZED", 8);
+        var candidate = candidateCodec.parse(workflowStore.findCandidate(created).orElseThrow().currentJson());
+        assertThat(candidate.schemas().getFirst().fields().get(5).assessment().evidence().getFirst().boundingBox())
+                .isEqualTo(new CandidateBoundingBox(1_324, 2_197, 8_610, 9_278));
+    }
+
+    @Test
     void unrepresentableExactJsonFieldKeyIsPreservedForHumanReviewWithoutRepair() {
         var blobs = new MemoryBlobStore();
         var fieldKey = "x".repeat(129);
@@ -569,13 +588,17 @@ class PostgresLiveInferenceWorkflowTest {
     }
 
     private UUID create(MemoryBlobStore blobs, String seed) {
+        return create(blobs, seed, 32, 16);
+    }
+
+    private UUID create(MemoryBlobStore blobs, String seed, int width, int height) {
         var profile = profiles.require(PROFILE);
         var bytes = ("synthetic-image:" + seed).getBytes(StandardCharsets.UTF_8);
         var artifactId = sha256(bytes);
         blobs.values.put(artifactId, bytes);
         var artifact = new NormalizedArtifact(
                 artifactId, NormalizedArtifact.Kind.IMAGE, artifactId,
-                "image/png", bytes.length, 32, 16
+                "image/png", bytes.length, width, height
         );
         var normalized = new NormalizedInput(
                 InferenceMode.IMAGE_ONLY, PROFILE, seed, sha256(seed.getBytes(StandardCharsets.UTF_8)),
@@ -768,6 +791,47 @@ class PostgresLiveInferenceWorkflowTest {
                 CandidateBundle.CONTRACT_VERSION, schemaId,
                 List.of(new CandidateSchema(
                         schemaId, "商品卡片", "商品卡片", CandidateSource.AI, schemaAssessment, fields
+                ))
+        ));
+    }
+
+    private String candidateWithPixelCoordinateEvidence(ProviderInferenceRequest request) {
+        var schemaId = UUID.nameUUIDFromBytes((request.runId() + ":schema").getBytes(StandardCharsets.UTF_8));
+        var boxes = new int[][]{
+                {200, 200, 1_300, 500},
+                {200, 500, 1_300, 700},
+                {200, 700, 800, 800},
+                {800, 700, 1_300, 800},
+                {200, 800, 1_300, 900},
+                {200, 900, 1_300, 3_800},
+                {200, 3_900, 1_300, 4_096}
+        };
+        var fields = new ArrayList<CandidateField>();
+        for (var index = 0; index < boxes.length; index++) {
+            var box = boxes[index];
+            var evidence = CandidateEvidence.image(
+                    request.images().getFirst().artifactId(),
+                    new CandidateBoundingBox(box[0], box[1], box[2], box[3])
+            );
+            fields.add(new CandidateField(
+                    UUID.nameUUIDFromBytes((request.runId() + ":field:" + index).getBytes(StandardCharsets.UTF_8)),
+                    "field" + index, "字段 " + (index + 1), false,
+                    CandidateValue.scalar(CandidateValueKind.TEXT), CandidateSource.AI,
+                    CandidateAssessment.ai(9_000, true, CandidateResolution.NOT_REQUIRED, List.of(evidence))
+            ));
+        }
+        var schemaEvidence = CandidateEvidence.image(
+                request.images().getFirst().artifactId(),
+                new CandidateBoundingBox(boxes[0][0], boxes[0][1], boxes[0][2], boxes[0][3])
+        );
+        return candidateCodec.write(new CandidateBundle(
+                CandidateBundle.CONTRACT_VERSION, schemaId,
+                List.of(new CandidateSchema(
+                        schemaId, "route-card", "线路卡", CandidateSource.AI,
+                        CandidateAssessment.ai(
+                                9_000, true, CandidateResolution.NOT_REQUIRED, List.of(schemaEvidence)
+                        ),
+                        fields
                 ))
         ));
     }

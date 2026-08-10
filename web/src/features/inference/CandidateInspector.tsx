@@ -30,6 +30,7 @@ import {
   type FinalCandidateKind,
 } from './candidate-session';
 import { candidateTypeLabels, problemLabel, resolutionLabels } from './candidate-format';
+import { evidenceBoxPresentation, inferEvidenceCoordinateSpace } from './evidence-coordinates';
 
 const finalKinds: FinalCandidateKind[] = ['TEXT', 'DECIMAL', 'DATE', 'TIME', 'BOOLEAN', 'REFERENCE', 'ARRAY'];
 const arrayItemKinds: ArrayItemCandidateKind[] = ['TEXT', 'DECIMAL', 'DATE', 'TIME', 'BOOLEAN', 'REFERENCE'];
@@ -488,6 +489,9 @@ function EvidencePanel({ state, assessment }: { state: CandidateReviewState; ass
   const linkedImages = state.snapshot.images.filter((image) => linkedImageIds.has(image.artifactId));
   const [selectedImageId, setSelectedImageId] = useState<string | null>(linkedImages[0]?.artifactId ?? null);
   const selectedImage = linkedImages.find((image) => image.artifactId === selectedImageId) ?? linkedImages[0];
+  const coordinateSpace = selectedImage
+    ? inferEvidenceCoordinateSpace(state.draft, selectedImage)
+    : 'NORMALIZED_10000';
   return (
     <section className="candidate-evidence">
       <header><span>证据</span><strong>{assessment.evidence.length}</strong></header>
@@ -511,10 +515,14 @@ function EvidencePanel({ state, assessment }: { state: CandidateReviewState; ass
             <img src={selectedImage.contentUrl} alt={`证据图片 ${selectedImage.ordinal + 1}`} />
             {imageEvidence.filter((entry) => entry.artifactId === selectedImage.artifactId && entry.boundingBox).map((entry, index) => {
               const box = entry.boundingBox!;
-              return <i key={`${entry.artifactId}:${index}`} aria-hidden="true" data-evidence-box style={{ left: `${box.left / 100}%`, top: `${box.top / 100}%`, width: `${(box.right - box.left) / 100}%`, height: `${(box.bottom - box.top) / 100}%` }} />;
+              const presentation = evidenceBoxPresentation(box, selectedImage, coordinateSpace);
+              return <i key={`${entry.artifactId}:${index}`} aria-hidden="true" data-evidence-box data-box-label={`证据 ${index + 1}`} data-coordinate-corrected={presentation.corrected || undefined} style={presentation.style} />;
             })}
           </div>
-          <figcaption><ImageIcon aria-hidden="true" size={13} />图片 {selectedImage.ordinal + 1} · {selectedImage.width}×{selectedImage.height}</figcaption>
+          <figcaption>
+            <span><ImageIcon aria-hidden="true" size={13} />图片 {selectedImage.ordinal + 1} · {selectedImage.width}×{selectedImage.height}</span>
+            {coordinateSpace === 'PIXEL' && <strong><Info aria-hidden="true" size={12} />像素坐标已换算</strong>}
+          </figcaption>
         </figure>
       )}
       {jsonEvidence.length > 0 && <div className="json-evidence-list">{jsonEvidence.map((entry, index) => <div key={`${entry.sampleIndex}:${entry.jsonPointer}:${index}`}><FileJson2 aria-hidden="true" size={14} /><span>sample #{(entry.sampleIndex ?? 0) + 1}</span><code>{entry.jsonPointer || '/'}</code></div>)}</div>}
