@@ -99,19 +99,12 @@ final class VisualGroundingJsonCodec {
             if (!VisualHierarchyPlan.VERSION_V2.equals(response.contractVersion())) {
                 throw invalid("VISUAL_HIERARCHY_V2_VERSION_INVALID", null);
             }
-            var entities = response.entities().stream().map(entity -> classified(
-                    "VISUAL_HIERARCHY_V2_ENTITY_INVALID", () -> new VisualEntityPlan(
-                            entity.entityId(), entity.schemaKey(), entity.displayName(),
-                            entity.supportingElementIds()
-                    )
-            )).toList();
-            var relationships = response.relationships().stream().map(relationship -> classified(
-                    "VISUAL_HIERARCHY_V2_RELATIONSHIP_INVALID", () -> new VisualRelationshipPlan(
-                            relationship.relationshipId(), relationship.parentEntityId(),
-                            relationship.childEntityId(), relationship.fieldKey(), relationship.displayName(),
-                            relationship.cardinality(), relationship.supportingElementIds()
-                    )
-            )).toList();
+            var entities = response.entities().stream()
+                    .map(VisualGroundingJsonCodec::classifiedEntity)
+                    .toList();
+            var relationships = response.relationships().stream()
+                    .map(VisualGroundingJsonCodec::classifiedRelationship)
+                    .toList();
             var hierarchy = classifiedHierarchyShape(() -> new VisualHierarchyPlan(
                     VisualHierarchyPlan.VERSION_V2, response.rootEntityId(), entities, relationships
             ));
@@ -373,6 +366,56 @@ final class VisualGroundingJsonCodec {
         } catch (Exception failure) {
             throw invalid(code, failure);
         }
+    }
+
+    private static VisualEntityPlan classifiedEntity(EntityOutput entity) {
+        var entityId = classified("VISUAL_HIERARCHY_V2_ENTITY_ID_INVALID", () ->
+                VisualAnalysisValidation.localId(entity.entityId(), "entityId")
+        );
+        var schemaKey = classified("VISUAL_HIERARCHY_V2_ENTITY_SCHEMA_KEY_INVALID", () ->
+                VisualAnalysisValidation.schemaKey(entity.schemaKey())
+        );
+        var displayName = classified("VISUAL_HIERARCHY_V2_ENTITY_DISPLAY_NAME_INVALID", () ->
+                VisualAnalysisValidation.displayName(entity.displayName(), "displayName")
+        );
+        var supportingElementIds = classified("VISUAL_HIERARCHY_V2_ENTITY_SUPPORT_IDS_INVALID", () ->
+                VisualAnalysisValidation.localIds(
+                        entity.supportingElementIds(), "supportingElementIds", 32
+                )
+        );
+        return classified("VISUAL_HIERARCHY_V2_ENTITY_INVALID", () -> new VisualEntityPlan(
+                entityId, schemaKey, displayName, supportingElementIds
+        ));
+    }
+
+    private static VisualRelationshipPlan classifiedRelationship(RelationshipOutput relationship) {
+        var relationshipId = classified("VISUAL_HIERARCHY_V2_RELATIONSHIP_ID_INVALID", () ->
+                VisualAnalysisValidation.localId(relationship.relationshipId(), "relationshipId")
+        );
+        var parentEntityId = classified("VISUAL_HIERARCHY_V2_RELATIONSHIP_PARENT_ID_INVALID", () ->
+                VisualAnalysisValidation.localId(relationship.parentEntityId(), "parentEntityId")
+        );
+        var childEntityId = classified("VISUAL_HIERARCHY_V2_RELATIONSHIP_CHILD_ID_INVALID", () ->
+                VisualAnalysisValidation.localId(relationship.childEntityId(), "childEntityId")
+        );
+        var fieldKey = classified("VISUAL_HIERARCHY_V2_RELATIONSHIP_FIELD_KEY_INVALID", () ->
+                VisualAnalysisValidation.fieldKey(relationship.fieldKey())
+        );
+        var displayName = classified("VISUAL_HIERARCHY_V2_RELATIONSHIP_DISPLAY_NAME_INVALID", () ->
+                VisualAnalysisValidation.displayName(relationship.displayName(), "displayName")
+        );
+        var cardinality = classified("VISUAL_HIERARCHY_V2_RELATIONSHIP_CARDINALITY_INVALID", () ->
+                Objects.requireNonNull(relationship.cardinality(), "cardinality")
+        );
+        var supportingElementIds = classified("VISUAL_HIERARCHY_V2_RELATIONSHIP_SUPPORT_IDS_INVALID", () ->
+                VisualAnalysisValidation.localIds(
+                        relationship.supportingElementIds(), "supportingElementIds", 16
+                )
+        );
+        return classified("VISUAL_HIERARCHY_V2_RELATIONSHIP_INVALID", () -> new VisualRelationshipPlan(
+                relationshipId, parentEntityId, childEntityId, fieldKey, displayName,
+                cardinality, supportingElementIds
+        ));
     }
 
     private static <T> T classifiedHierarchyShape(CheckedSupplier<T> supplier) {

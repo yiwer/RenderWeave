@@ -37,13 +37,10 @@ final class VisualRepairCropSelector {
         final java.util.function.Predicate<String> relevantCode;
         if (stage == InferenceStage.HIERARCHY) {
             selectedKind = VisualElementKind.GROUP;
-            relevantCode = code -> code.startsWith("VISUAL_HIERARCHY")
-                    || code.startsWith("VISUAL_SEMANTIC_HIERARCHY");
+            relevantCode = code -> code.startsWith("VISUAL_SEMANTIC_HIERARCHY_");
         } else if (stage == InferenceStage.ELEMENT_BINDING) {
             selectedKind = VisualElementKind.SLOT;
-            relevantCode = code -> code.startsWith("VISUAL_BINDING")
-                    || code.startsWith("VISUAL_BINDINGS")
-                    || code.startsWith("VISUAL_SEMANTIC_BINDING");
+            relevantCode = code -> code.startsWith("VISUAL_SEMANTIC_BINDING_");
         } else {
             return List.of();
         }

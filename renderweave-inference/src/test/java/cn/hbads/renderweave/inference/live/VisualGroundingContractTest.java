@@ -189,6 +189,49 @@ class VisualGroundingContractTest {
     }
 
     @Test
+    void classifiesHierarchyEntityAndRelationshipFieldsWithoutPersistingProviderValues() throws Exception {
+        var observed = codec.parseElements(elementsJson(), views(), List.of(IMAGE_ID));
+
+        assertHierarchyDiagnostic(
+                hierarchyJson().replace("\"entityId\":\"item\"", "\"entityId\":\"Item\""),
+                observed, "VISUAL_HIERARCHY_V2_ENTITY_ID_INVALID"
+        );
+        assertHierarchyDiagnostic(
+                hierarchyJson().replace("\"schemaKey\":\"item\"", "\"schemaKey\":\"system-item\""),
+                observed, "VISUAL_HIERARCHY_V2_ENTITY_SCHEMA_KEY_INVALID"
+        );
+        assertHierarchyDiagnostic(
+                hierarchyJson().replace("\"displayName\":\"项目\"", "\"displayName\":\"\""),
+                observed, "VISUAL_HIERARCHY_V2_ENTITY_DISPLAY_NAME_INVALID"
+        );
+        assertHierarchyDiagnostic(
+                hierarchyJson().replace(
+                        "\"supportingElementIds\":[\"title\"]",
+                        "\"supportingElementIds\":[\"title\",\"title\"]"
+                ),
+                observed, "VISUAL_HIERARCHY_V2_ENTITY_SUPPORT_IDS_INVALID"
+        );
+        assertHierarchyDiagnostic(
+                hierarchyJson().replace(
+                        "\"relationshipId\":\"document-items\"",
+                        "\"relationshipId\":\"Document Items\""
+                ),
+                observed, "VISUAL_HIERARCHY_V2_RELATIONSHIP_ID_INVALID"
+        );
+        assertHierarchyDiagnostic(
+                hierarchyJson().replace("\"fieldKey\":\"items\"", "\"fieldKey\":\"\""),
+                observed, "VISUAL_HIERARCHY_V2_RELATIONSHIP_FIELD_KEY_INVALID"
+        );
+        assertHierarchyDiagnostic(
+                hierarchyJson().replace(
+                        "\"regionId\":\"repeat\",\"supportingElementIds\":[\"row-group\"]}",
+                        "\"regionId\":\"repeat\",\"supportingElementIds\":[\"row-group\",\"row-group\"]}"
+                ),
+                observed, "VISUAL_HIERARCHY_V2_RELATIONSHIP_SUPPORT_IDS_INVALID"
+        );
+    }
+
+    @Test
     void routesObservationSemanticOmissionsBackToObservation() throws Exception {
         var flattened = elementsJson().replace(
                 "\"kind\":\"GROUP\",\"proposedKey\":\"items\",\"displayName\":\"重复项目\",\"multiplicity\":\"MANY\",\"valueHint\":null",
@@ -247,6 +290,12 @@ class VisualGroundingContractTest {
 
         assertEquals(List.of(), selector.select(
                 InferenceStage.HIERARCHY, List.of(), List.of(IMAGE_ID),
+                observed.inventory(), observed.grounding(), hierarchy.hierarchy(),
+                hierarchy.entityRegions()
+        ));
+        assertEquals(List.of(), selector.select(
+                InferenceStage.HIERARCHY,
+                List.of("VISUAL_HIERARCHY_V2_ENTITY_ID_INVALID"), List.of(IMAGE_ID),
                 observed.inventory(), observed.grounding(), hierarchy.hierarchy(),
                 hierarchy.entityRegions()
         ));

@@ -262,6 +262,25 @@ class InferencePromptRegistryTest {
     }
 
     @Test
+    void visualV14PinsFieldSpecificHierarchyRepairWithoutStructuralCrops() {
+        var prompt = new InferencePromptRegistry().requireVisualStage(
+                InferencePromptRegistry.VISUAL_HIERARCHY_V5,
+                InferencePromptRegistry.VISUAL_HINT_GENERIC_V1
+        ).text();
+
+        assertTrue(prompt.contains("VISUAL_HIERARCHY_V2_ENTITY_ID_INVALID"));
+        assertTrue(prompt.contains("VISUAL_HIERARCHY_V2_ENTITY_SCHEMA_KEY_INVALID"));
+        assertTrue(prompt.contains("VISUAL_HIERARCHY_V2_ENTITY_DISPLAY_NAME_INVALID"));
+        assertTrue(prompt.contains("VISUAL_HIERARCHY_V2_ENTITY_SUPPORT_IDS_INVALID"));
+        assertTrue(prompt.contains("VISUAL_HIERARCHY_V2_RELATIONSHIP_FIELD_KEY_INVALID"));
+        assertTrue(prompt.contains("Structural repair codes do not require a TARGETED_CROP"));
+        assertTrue(prompt.contains("returning the complete hierarchy JSON object"));
+        assertFalse(prompt.matches("(?is).*\\b(bus|station|route|stop|fare)\\b.*"));
+        assertFalse(prompt.contains("公交"));
+        assertFalse(prompt.contains("站牌"));
+    }
+
+    @Test
     void hybridPromptTreatsLocalOcrAsUntrustedEphemeralSecondaryEvidence() {
         var registry = new InferencePromptRegistry();
         var prompt = registry.requireHybridVisualStage(

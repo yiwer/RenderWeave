@@ -564,6 +564,48 @@ class PostgresLiveInferenceWorkflowTest {
     }
 
     @Test
+    void groundedHierarchyStructuralRepairPreservesUpstreamStageWithoutAddingACrop() {
+        var blobs = new MemoryBlobStore();
+        var created = createGroundedVisual(blobs, "grounded-hierarchy-structural-repair");
+        var invalidEntityId = groundedStationHierarchy().replace(
+                "\"entityId\":\"route\"", "\"entityId\":\"Route\""
+        );
+        var provider = new ScriptedProvider(
+                request -> response(request, groundedStationElements()),
+                request -> response(request, invalidEntityId),
+                request -> response(request, groundedStationHierarchy()),
+                request -> response(request, groundedStationBindings())
+        );
+
+        var finished = worker(provider, blobs).processNext("grounded-structural-repair-worker")
+                .orElseThrow();
+
+        assertThat(finished.state())
+                .as("failure=%s attempts=%s", finished.failureCode(), workflowStore.attempts(created))
+                .isEqualTo(InferenceRunState.REVIEW_REQUIRED);
+        assertThat(provider.requests).extracting(ProviderInferenceRequest::stage)
+                .containsExactly(
+                        InferenceStage.OBSERVE,
+                        InferenceStage.HIERARCHY, InferenceStage.HIERARCHY,
+                        InferenceStage.ELEMENT_BINDING
+                );
+        assertThat(provider.requests.get(2).taskJson())
+                .contains("VISUAL_HIERARCHY_V2_ENTITY_ID_INVALID")
+                .doesNotContain("TARGETED_CROP")
+                .contains("\"groundingPlan\":{");
+        assertThat(workflowStore.attempts(created)).extracting(attempt -> attempt.status())
+                .containsExactly(
+                        InferenceAttemptStatus.SUCCEEDED,
+                        InferenceAttemptStatus.REJECTED, InferenceAttemptStatus.SUCCEEDED,
+                        InferenceAttemptStatus.SUCCEEDED
+                );
+        assertThat(workflowStore.attempts(created).get(1).problemCodeCounts())
+                .containsExactlyEntriesOf(Map.of(
+                        "VISUAL_HIERARCHY_V2_ENTITY_ID_INVALID", 1
+                ));
+    }
+
+    @Test
     void groundedStageLocalRepairResumesAfterLeaseExpiryWithoutReobserving() {
         var blobs = new MemoryBlobStore();
         var created = createGroundedVisual(blobs, "grounded-semantic-lease-recovery");
