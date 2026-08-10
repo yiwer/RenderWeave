@@ -25,8 +25,8 @@
     "low-information-poster-v1"
   ],
   "maximumProviderAttempts": 60,
-  "maximumTotalTokens": 200000,
-  "maximumCostMicrosCny": 160000,
+  "maximumTotalTokens": 300000,
+  "maximumCostMicrosCny": 300000,
   "maximumCasesPerBatch": 5,
   "approvedBy": null,
   "approvedAt": null,
