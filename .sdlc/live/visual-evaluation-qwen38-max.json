@@ -1,7 +1,7 @@
 {
   "authorizationVersion": "renderweave-visual-evaluation-authorization/1.0",
-  "authorizationId": "visual-v4-baseline-qwen38-max-20260810",
-  "status": "CLOSED",
+  "authorizationId": "visual-v4-baseline-qwen38-max-continuation-20260810",
+  "status": "PROPOSED",
   "phase": "BASELINE",
   "inputClassification": "REPOSITORY_SYNTHETIC_ONLY",
   "corpusVersion": "renderweave-visual-stage-corpus/1.0",
@@ -11,14 +11,24 @@
   "profileSnapshotSha256": "c4f0f2796952e59ab943e9f227a436dda61baab310bb7f943ed7811f0b987a49",
   "model": "qwen3.8-max",
   "caseIds": [
-    "transit-board-v3"
+    "transit-board-v4",
+    "transit-board-v5",
+    "restaurant-menu-v5",
+    "hospital-schedule-v5",
+    "invoice-lines-v3",
+    "product-catalog-v1",
+    "event-agenda-v2",
+    "warehouse-inventory-v4",
+    "school-timetable-v3",
+    "building-directory-v2",
+    "low-information-poster-v1"
   ],
-  "maximumProviderAttempts": 5,
-  "maximumTotalTokens": 100000,
-  "maximumCostMicrosCny": 3600000,
-  "maximumCasesPerBatch": 1,
-  "approvedBy": "yiwer",
-  "approvedAt": "2026-08-10T12:33:00Z",
-  "expiresAt": "2026-08-11T12:33:00Z",
-  "approvalScope": "Goal J1 capability canary: one repository-synthetic transit case; exact qwen3.8-max product-v4; at most 5 attempts, 100000 tokens, CNY 3.60 and 1 case per batch; no alias substitution"
+  "maximumProviderAttempts": 55,
+  "maximumTotalTokens": 350000,
+  "maximumCostMicrosCny": 12600000,
+  "maximumCasesPerBatch": 5,
+  "approvedBy": null,
+  "approvedAt": null,
+  "expiresAt": null,
+  "approvalScope": null
 }
