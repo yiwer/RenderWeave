@@ -253,3 +253,26 @@ relationship-region-connection-invalid、support-IDs-empty，未进入 BINDING�
 telemetry。Plus Goal 累计为 126 attempts、729,270 tokens、¥2.910558。该结果把下一本地切片收窄到已验证
 GROUP-owned region 与 parent/child entity ownership 的 connection 合同；三阶段仍不可达，Max 入口继续关闭，
 product-v20 不晋级。
+
+## N7 unique connected relationship region normalization 增量
+
+v20 live 两次稳定暴露 `VISUAL_HIERARCHY_V2_RELATIONSHIP_REGION_CONNECTION_INVALID`，说明 cardinality-compatible
+还不足以证明 relationship region 连接 parent/child entity ownership。`dda763c` 新增 pipeline 4.8/product-v21；
+v20 与更早 Profile 语义保持不变。新 policy 仅在当前已知 relationship region 的 cardinality 或 connection
+不成立时，检查该 relationship 唯一有效支撑 GROUP 在 OBSERVE checkpoint 中已验证的 owned regions，并同时过滤
+cardinality compatibility 与 parent/child connection。恰有一个 combined-compatible region 才确定性替换；零个或
+多个不择一，继续由既有 detailed HIERARCHY fixed code fail-closed；若连 cardinality-compatible region 都不存在，
+仍输出 `VISUAL_SEMANTIC_GROUP_REGION_INVALID` 并回到 OBSERVE。
+
+该增量不处理未知 region，不跨 GROUP，不按距离或模型顺序排名，不合成/删除 region、element、entity 或
+relationship，也不修改 endpoint、field key 或 topology。成功归一化复用 payload-free
+`VISUAL_HIERARCHY_RELATIONSHIP_REGION_NORMALIZED`，accepted OBSERVE checkpoint 与 no-crop 结构诊断保持不变。
+三模型 product-v21 Profile 复用 immutable elements-v8/hierarchy-v7/bindings-v3 prompts，继续隐藏
+`EXPERIMENTAL`。
+
+inference 定向 35/35、独立 verifier 2/2、真实 PostgreSQL lease-expiry 恢复 1/1 通过；server
+`.sdlc/evidence/20260811-064835-server`、Node 24 web `.sdlc/evidence/20260811-065005-web`、E2E
+`.sdlc/evidence/20260811-065038-e2e` 与提交后 clean fast `.sdlc/evidence/20260811-065134-fast` 均为 A1 PASS。
+实现与门控期间 Provider attempts=0，三份 ledger 保持 CLOSED。该证据只证明 repository synthetic 合同可达；
+下一步必须重新计算 evaluation identity/Profile snapshot，并以独立精确 J1 ledger 执行 Plus product-v21 单 case。
+只有 live 实际触达 BINDING 才可考虑 Max。
