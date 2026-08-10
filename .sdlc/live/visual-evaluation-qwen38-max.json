@@ -1,24 +1,24 @@
 {
   "authorizationVersion": "renderweave-visual-evaluation-authorization/1.0",
-  "authorizationId": "visual-v6-slot-diagnostic-qwen38-max-transit-20260810",
-  "status": "CLOSED",
-  "phase": "CANARY",
+  "authorizationId": "visual-v8-array-remediation-qwen38-max-transit-20260811",
+  "status": "PROPOSED",
+  "phase": "ABLATION",
   "inputClassification": "REPOSITORY_SYNTHETIC_ONLY",
   "corpusVersion": "renderweave-visual-stage-corpus/1.0",
   "corpusSourceSha256": "bf0db7bf0ac5c4e2b357cdd96c49ff70a7b30a5bc59f322a915020dc29fc605e",
-  "evaluationIdentity": "renderweave-visual-evaluation-tree-sha256/1:1e36d8cfcfba422bcae25de3b15f066db0ed31baeea5c4ee28b3315fcf4f3697",
-  "profileId": "dashscope-qwen38-max-product-v6-generic",
-  "profileSnapshotSha256": "ebc821cd82f16e8a3c403a0b41d7422fd141ac8c179ca401bd7b6ff324ff3e85",
+  "evaluationIdentity": "renderweave-visual-evaluation-tree-sha256/1:99d8f0fb7f63a4d0b054c5a4405c48a7dbeaba0699d36aa4f3b9ea2d6e41a4de",
+  "profileId": "dashscope-qwen38-max-product-v8-generic",
+  "profileSnapshotSha256": "e9342b2636d15ad35ddd361d7957d772755de2d7776e820c7b7ec23a41e74e5b",
   "model": "qwen3.8-max",
   "caseIds": [
     "transit-board-v3"
   ],
-  "maximumProviderAttempts": 2,
-  "maximumTotalTokens": 35000,
-  "maximumCostMicrosCny": 1500000,
+  "maximumProviderAttempts": 5,
+  "maximumTotalTokens": 100000,
+  "maximumCostMicrosCny": 4000000,
   "maximumCasesPerBatch": 1,
   "approvedBy": "yiwer",
-  "approvedAt": "2026-08-10T15:58:00Z",
+  "approvedAt": "2026-08-10T16:07:00Z",
   "expiresAt": "2026-08-11T15:00:17Z",
-  "approvalScope": "Goal J1 CANARY slot diagnostic: one repository-synthetic transit-board-v3 case; exact qwen3.8-max product-v6-generic; at most 2 attempts, 35000 exposed tokens, CNY 1.50 and one case per batch within the active per-model 500000-token Goal cap"
+  "approvalScope": "Goal J1 ABLATION: one repository-synthetic transit-board-v3 case; exact qwen3.8-max product-v8-generic with visual evidence array prompt v3; at most 5 attempts, 100000 exposed tokens, CNY 4.00 and one case per batch within the active per-model 500000-token Goal cap"
 }
