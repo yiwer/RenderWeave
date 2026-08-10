@@ -89,6 +89,8 @@ class PostgresLiveInferenceWorkflowTest {
             "dashscope-qwen37-flash-20260715-product-v17-generic";
     private static final String DIAGNOSTIC_HIERARCHY_PROFILE =
             "dashscope-qwen37-flash-20260715-product-v18-generic";
+    private static final String SUPPORT_NORMALIZED_HIERARCHY_PROFILE =
+            "dashscope-qwen37-flash-20260715-product-v19-generic";
     private static final String HYBRID_VISUAL_PROFILE =
             "dashscope-qwen37-flash-product-v7-hybrid-generic";
     private static final String DOCUMENT_VISION_CAPABILITY =
@@ -826,6 +828,56 @@ class PostgresLiveInferenceWorkflowTest {
                 .containsExactly(
                         InferenceAttemptStatus.SUCCEEDED, InferenceAttemptStatus.REJECTED,
                         InferenceAttemptStatus.SUCCEEDED, InferenceAttemptStatus.SUCCEEDED
+                );
+    }
+
+    @Test
+    void exactDuplicateRelationshipSupportIdsNormalizeAndResumeAtBindingAfterLeaseExpiry() {
+        var blobs = new MemoryBlobStore();
+        var created = createGroundedVisual(
+                blobs, "support-id-normalization", SUPPORT_NORMALIZED_HIERARCHY_PROFILE
+        );
+        var duplicateSupport = groundedStationHierarchy().replace(
+                "\"regionId\":\"routes\",\"supportingElementIds\":[\"route-group\"]",
+                "\"regionId\":\"routes\",\"supportingElementIds\":[\"route-group\",\"route-group\"]"
+        );
+        var firstProvider = new ScriptedProvider(
+                request -> response(request, groundedStationElements()),
+                request -> response(request, duplicateSupport)
+        );
+        var firstWorker = worker(firstProvider, blobs, T0.plusSeconds(1));
+        var current = runs.claimNextLive(
+                "support-id-normalization-first", T0.plusSeconds(1), Duration.ofMinutes(5)
+        ).orElseThrow();
+
+        current = firstWorker.advance(current);
+        current = firstWorker.advance(current);
+
+        assertThat(current.stage()).isEqualTo(InferenceStage.ELEMENT_BINDING);
+        assertThat(current.checkpointJson()).contains("renderweave-visual-hierarchy/2.0");
+        assertThat(firstProvider.requests).extracting(ProviderInferenceRequest::stage)
+                .containsExactly(InferenceStage.OBSERVE, InferenceStage.HIERARCHY);
+        assertThat(workflowStore.attempts(created).get(1).problemCodeCounts())
+                .containsExactlyInAnyOrderEntriesOf(Map.of(
+                        "VISUAL_HIERARCHY_RELATIONSHIP_CARDINALITY_DERIVED", 3,
+                        "VISUAL_HIERARCHY_RELATIONSHIP_SUPPORT_IDS_NORMALIZED", 1
+                ));
+
+        var recoveryProvider = new ScriptedProvider(
+                request -> response(request, groundedStationBindings())
+        );
+        var finished = worker(recoveryProvider, blobs, T0.plus(Duration.ofMinutes(7)))
+                .processNext("support-id-normalization-recovery").orElseThrow();
+
+        assertThat(finished.state())
+                .as("failure=%s attempts=%s", finished.failureCode(), workflowStore.attempts(created))
+                .isEqualTo(InferenceRunState.REVIEW_REQUIRED);
+        assertThat(recoveryProvider.requests).extracting(ProviderInferenceRequest::stage)
+                .containsExactly(InferenceStage.ELEMENT_BINDING);
+        assertThat(workflowStore.attempts(created)).extracting(attempt -> attempt.status())
+                .containsExactly(
+                        InferenceAttemptStatus.SUCCEEDED, InferenceAttemptStatus.SUCCEEDED,
+                        InferenceAttemptStatus.SUCCEEDED
                 );
     }
 

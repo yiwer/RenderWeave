@@ -284,9 +284,9 @@ test('keeps bounded visual diagnostics keyboard-accessible at 1024 without paylo
     mode: 'IMAGE_ONLY',
     stage: 'HIERARCHY',
     sequence: 8,
-    profileId: 'dashscope-qwen37-flash-20260715-product-v18-generic',
+    profileId: 'dashscope-qwen37-flash-20260715-product-v19-generic',
     sourceReference: 'repository-synthetic-transit-board-v3',
-    failureCode: 'VISUAL_HIERARCHY_V2_RELATIONSHIP_REGION_CONNECTION_INVALID',
+    failureCode: 'VISUAL_HIERARCHY_V2_RELATIONSHIP_SUPPORT_IDS_EMPTY',
   };
   const log: InferenceExecutionLogResponse = {
     run: failedRun,
@@ -333,7 +333,7 @@ test('keeps bounded visual diagnostics keyboard-accessible at 1024 without paylo
         outputTokens: 2_800,
         costMicrosCny: 1_900,
         durationMillis: 16_000,
-        problemCodeCounts: { VISUAL_HIERARCHY_V2_RELATIONSHIP_REGION_CONNECTION_INVALID: 1 },
+        problemCodeCounts: { VISUAL_HIERARCHY_V2_RELATIONSHIP_SUPPORT_IDS_EMPTY: 1 },
         completedAt: '2026-08-10T00:00:17Z',
       },
     ],
@@ -359,8 +359,8 @@ test('keeps bounded visual diagnostics keyboard-accessible at 1024 without paylo
   await expect(page.getByRole('heading', { name: '有限问题定位' })).toBeVisible();
   await expect(page.getByText('区域树')).toBeVisible();
   await expect(page.getByText('VISUAL_GROUNDING_PARENT_KIND_INVALID').first()).toBeVisible();
-  await expect(page.getByText('VISUAL_HIERARCHY_V2_RELATIONSHIP_REGION_CONNECTION_INVALID').first()).toBeVisible();
-  await expect(page.getByText('层级关系区域未连接父子实体区域').first()).toBeVisible();
+  await expect(page.getByText('VISUAL_HIERARCHY_V2_RELATIONSHIP_SUPPORT_IDS_EMPTY').first()).toBeVisible();
+  await expect(page.getByText('层级关系支撑 ID 列表不能为空').first()).toBeVisible();
   await expect(page.getByText('从检查点恢复后仍失败')).toBeVisible();
   await expect(page.getByText('raw-ocr-secret')).toHaveCount(0);
   await expect(page.getByText('provider-response-secret')).toHaveCount(0);

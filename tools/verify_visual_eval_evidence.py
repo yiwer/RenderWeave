@@ -282,6 +282,7 @@ def validate_profile(path: Path, authorization: dict[str, Any]) -> None:
             "renderweave-inference-pipeline/4.3",
             "renderweave-inference-pipeline/4.4",
             "renderweave-inference-pipeline/4.5",
+            "renderweave-inference-pipeline/4.6",
     ):
         required_optional = {"visualHintPackVersion"}
     else:

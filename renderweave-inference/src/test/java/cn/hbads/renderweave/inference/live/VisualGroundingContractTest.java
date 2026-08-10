@@ -230,6 +230,60 @@ class VisualGroundingContractTest {
     }
 
     @Test
+    void supportIdPolicyNormalizesOnlyExactDuplicatesAndClassifiesOtherListFailures() throws Exception {
+        var observed = codec.parseElements(elementsJson(), views(), List.of(IMAGE_ID));
+        var exactDuplicate = hierarchyJson().replace(
+                "\"regionId\":\"repeat\",\"supportingElementIds\":[\"row-group\"]}",
+                "\"regionId\":\"repeat\",\"supportingElementIds\":[\"row-group\",\"row-group\"]}"
+        );
+
+        var normalized = codec.parseHierarchy(
+                exactDuplicate, observed.inventory(), observed.grounding(),
+                VisualRelationshipCardinalityPolicy.SUPPORT_GROUP_DERIVED,
+                VisualHierarchyPrerequisitePolicy.RELATIONSHIP_REGION_GROUP_OWNER_REQUIRED,
+                VisualHierarchyRegionDiagnosticPolicy.DETAILED_FIXED_CODES,
+                VisualRelationshipSupportIdPolicy.CANONICALIZE_EXACT_DUPLICATES
+        );
+
+        assertEquals(List.of("row-group"),
+                normalized.hierarchy().relationships().getFirst().supportingElementIds());
+        assertEquals(1, normalized.normalizedRelationshipSupportIdReferences());
+
+        assertSupportIdDiagnostic(
+                hierarchyJson().replace(
+                        "\"regionId\":\"repeat\",\"supportingElementIds\":[\"row-group\"]}",
+                        "\"regionId\":\"repeat\",\"supportingElementIds\":null}"
+                ), observed, "VISUAL_HIERARCHY_V2_RELATIONSHIP_SUPPORT_IDS_MISSING"
+        );
+        assertSupportIdDiagnostic(
+                hierarchyJson().replace(
+                        "\"regionId\":\"repeat\",\"supportingElementIds\":[\"row-group\"]}",
+                        "\"regionId\":\"repeat\",\"supportingElementIds\":[]}"
+                ), observed, "VISUAL_HIERARCHY_V2_RELATIONSHIP_SUPPORT_IDS_EMPTY"
+        );
+        assertSupportIdDiagnostic(
+                hierarchyJson().replace(
+                        "\"regionId\":\"repeat\",\"supportingElementIds\":[\"row-group\"]}",
+                        "\"regionId\":\"repeat\",\"supportingElementIds\":[\"Row Group\"]}"
+                ), observed, "VISUAL_HIERARCHY_V2_RELATIONSHIP_SUPPORT_ID_INVALID"
+        );
+        var tooMany = "\"" + String.join("\",\"",
+                java.util.Collections.nCopies(17, "row-group")) + "\"";
+        assertSupportIdDiagnostic(
+                hierarchyJson().replace(
+                        "\"regionId\":\"repeat\",\"supportingElementIds\":[\"row-group\"]}",
+                        "\"regionId\":\"repeat\",\"supportingElementIds\":[" + tooMany + "]}"
+                ), observed, "VISUAL_HIERARCHY_V2_RELATIONSHIP_SUPPORT_IDS_LIMIT_EXCEEDED"
+        );
+        assertSupportIdDiagnostic(
+                hierarchyJson().replace(
+                        "\"regionId\":\"repeat\",\"supportingElementIds\":[\"row-group\"]}",
+                        "\"regionId\":\"repeat\",\"supportingElementIds\":[\"row-group\",\"title\"]}"
+                ), observed, "VISUAL_HIERARCHY_V2_RELATIONSHIP_SUPPORT_COUNT_INVALID"
+        );
+    }
+
+    @Test
     void classifiesHierarchyEntityAndRelationshipFieldsWithoutPersistingProviderValues() throws Exception {
         var observed = codec.parseElements(elementsJson(), views(), List.of(IMAGE_ID));
 
@@ -464,6 +518,12 @@ class VisualGroundingContractTest {
                 observed.inventory(), observed.grounding(), hierarchy.hierarchy(),
                 hierarchy.entityRegions()
         ));
+        assertEquals(List.of(), selector.select(
+                InferenceStage.HIERARCHY,
+                List.of("VISUAL_HIERARCHY_V2_RELATIONSHIP_SUPPORT_IDS_EMPTY"), List.of(IMAGE_ID),
+                observed.inventory(), observed.grounding(), hierarchy.hierarchy(),
+                hierarchy.entityRegions()
+        ));
         assertEquals(List.of(new VisualTargetCrop(
                 0, new CandidateBoundingBox(0, 2000, 10_000, 10_000)
         )), selector.select(
@@ -523,6 +583,21 @@ class VisualGroundingContractTest {
                         json, observed.inventory(), observed.grounding(), cardinalityPolicy,
                         VisualHierarchyPrerequisitePolicy.RELATIONSHIP_REGION_GROUP_OWNER_REQUIRED,
                         VisualHierarchyRegionDiagnosticPolicy.DETAILED_FIXED_CODES
+                )).diagnosticCode());
+    }
+
+    private void assertSupportIdDiagnostic(
+            String json,
+            GroundedElementInventory observed,
+            String expectedCode
+    ) {
+        assertEquals(expectedCode, assertThrows(InvalidVisualAnalysisException.class,
+                () -> codec.parseHierarchy(
+                        json, observed.inventory(), observed.grounding(),
+                        VisualRelationshipCardinalityPolicy.SUPPORT_GROUP_DERIVED,
+                        VisualHierarchyPrerequisitePolicy.RELATIONSHIP_REGION_GROUP_OWNER_REQUIRED,
+                        VisualHierarchyRegionDiagnosticPolicy.DETAILED_FIXED_CODES,
+                        VisualRelationshipSupportIdPolicy.CANONICALIZE_EXACT_DUPLICATES
                 )).diagnosticCode());
     }
 

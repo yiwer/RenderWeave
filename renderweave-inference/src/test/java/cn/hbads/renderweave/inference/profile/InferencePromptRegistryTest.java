@@ -302,6 +302,25 @@ class InferencePromptRegistryTest {
     }
 
     @Test
+    void visualV19PinsBoundedSupportIdNormalizationWithoutStructuralGuessing() {
+        var prompt = new InferencePromptRegistry().requireVisualStage(
+                InferencePromptRegistry.VISUAL_HIERARCHY_V7,
+                InferencePromptRegistry.VISUAL_HINT_GENERIC_V1
+        ).text();
+
+        assertTrue(prompt.contains("VISUAL_HIERARCHY_RELATIONSHIP_SUPPORT_IDS_NORMALIZED"));
+        assertTrue(prompt.contains("VISUAL_HIERARCHY_V2_RELATIONSHIP_SUPPORT_IDS_MISSING"));
+        assertTrue(prompt.contains("VISUAL_HIERARCHY_V2_RELATIONSHIP_SUPPORT_IDS_EMPTY"));
+        assertTrue(prompt.contains("VISUAL_HIERARCHY_V2_RELATIONSHIP_SUPPORT_IDS_LIMIT_EXCEEDED"));
+        assertTrue(prompt.contains("VISUAL_HIERARCHY_V2_RELATIONSHIP_SUPPORT_ID_INVALID"));
+        assertTrue(prompt.contains("never chooses between different ids"));
+        assertTrue(prompt.contains("Do not rely on canonicalization"));
+        assertFalse(prompt.matches("(?is).*\\b(bus|station|route|stop|fare)\\b.*"));
+        assertFalse(prompt.contains("公交"));
+        assertFalse(prompt.contains("站牌"));
+    }
+
+    @Test
     void visualV15PinsBoundedHierarchyToObservationRewindWithoutDomainBias() {
         var prompt = new InferencePromptRegistry().requireVisualStage(
                 InferencePromptRegistry.VISUAL_ELEMENTS_V7,

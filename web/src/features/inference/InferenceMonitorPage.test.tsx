@@ -99,9 +99,9 @@ describe('Inference monitor workspace', () => {
     expect(screen.getByRole('heading', { name: '有限问题定位' })).toBeTruthy();
     expect(screen.getByText('区域树')).toBeTruthy();
     expect(screen.getAllByText('VISUAL_GROUNDING_PARENT_KIND_INVALID').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('VISUAL_HIERARCHY_V2_RELATIONSHIP_REGION_CONNECTION_INVALID').length)
+    expect(screen.getAllByText('VISUAL_HIERARCHY_V2_RELATIONSHIP_SUPPORT_IDS_EMPTY').length)
       .toBeGreaterThan(0);
-    expect(screen.getAllByText('层级关系区域未连接父子实体区域').length)
+    expect(screen.getAllByText('层级关系支撑 ID 列表不能为空').length)
       .toBeGreaterThan(0);
     expect(screen.getByText('已从持久检查点恢复')).toBeTruthy();
     expect(screen.getByText(/0\.005716/)).toBeTruthy();
@@ -279,7 +279,7 @@ function visualExecutionLog(runSnapshot: InferenceRunResponse): InferenceExecuti
         outputTokens: 0,
         costMicrosCny: 0,
         durationMillis: 12,
-        problemCodeCounts: { VISUAL_HIERARCHY_V2_RELATIONSHIP_REGION_CONNECTION_INVALID: 1 },
+        problemCodeCounts: { VISUAL_HIERARCHY_V2_RELATIONSHIP_SUPPORT_IDS_EMPTY: 1 },
         completedAt: '2026-08-10T04:03:12Z',
       },
     ],
