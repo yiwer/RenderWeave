@@ -1,6 +1,7 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-10 T6-3a.2 已修复产品上传的 Nginx 1 MiB 默认上限：`/api/` 现在允许 35 MiB，由 Spring 保持 34 MiB multipart 合同；网关 413 返回 JSON Problem，前端也能把非 JSON 错误转成可读问题。clean Web A1 PASS；真实容器 1.25 MiB/36 MiB 合成探针通过且任务/预留计数均未变化。
 - 2026-08-10 T6-3a.1 已修复 Product live 的 `assessment.evidence` 结构失败：decoder 的精确有限诊断现在会进入 repair，而不再退化成通用 `LIVE_STRUCTURE_OUTPUT_INVALID`；四个新建任务 Profile 已升级到 Prompt 4 / Product v2，单次保守预留上界统一为 ¥2。clean server/web/e2e A1 PASS，部署后 readiness 正常且 Agent 新增 Provider reservations=0。
 - 2026-08-10 T6-3a 产品 live 运行切片已完成：固定四个产品 DashScope Profile、可选 per-run 累计成本限额、隔离的 product-live reservation、V013 与显式 Compose live overlay；clean full A1 PASS，部署 readiness 为 enabled/configured/uploadEnabled=true，Agent 未调用 Provider且 product reservations=0。
 - 2026-08-10 T6-2 四步 AI Schema 识别工作台已完成：Candidate 完整编辑、多证据、运行恢复、1024 drawer、最近任务、offline eval 与浏览器/真实 PG 旅程均已闭环；clean A1 与独立 A2 PASS（0 Blocker / 0 High / 0 Medium），最终成品视觉 J1 待用户确认。
@@ -62,6 +63,7 @@
 - [x] T6-2：完成四步 AI Schema 识别产品旅程、Candidate 完整编辑、多证据、恢复/重试、1024 drawer、60-case offline eval、mocked/real-PG browser gates 与独立 A2；最终成品 J1 单独 pending。
 - [x] T6-3a：开放四个产品 Profile，支持可选任务成本限额与独立 product-live 预算账本；完成 V013、Compose live overlay、无 Provider clean full A1 与本机 readiness 验证。
 - [x] T6-3a.1：修复 `assessment.evidence=null` 时精确 decode diagnostic 丢失的问题；发布 Prompt 4 / Product Profile v2，统一 ¥2 单次预留上界，并完成零 Provider server/web/e2e A1 与重新部署。
+- [x] T6-3a.2：修复 Nginx 1 MiB multipart 截断与前端 HTML 413 JSON 解析崩溃；完成 clean Web A1、`nginx -t` 和两档真实网关零任务探针。
 - [ ] T6-3b：完成数据库/Blob 备份恢复、missing artifact、storage full 与操作员观测演练。
 
 ## 重要发现或局部阻塞
@@ -96,5 +98,5 @@
 - `plans/logs/P5-T5-11.md`：值级失败已完成 owner-bound 有限槽位细分、clean server A1 与独立 A2；0 Blocker / 0 High / 0 Medium，Provider attempts=0。
 - `plans/logs/P6-T6-1.md`：10k/100k/10k/10k 容量基线、摘要投影、targeted graph 与统一两 lane 已完成 clean A1/独立 A2；Provider attempts/reservations=0。
 - `plans/logs/P6-T6-2.md`：四步 AI Schema 识别工作台、完整 Candidate 审核、offline eval 与 browser/real-PG acceptance 已完成 clean A1/独立 A2；最终视觉 J1 pending，Provider attempts/reservations=0。
-- `plans/logs/P6-T6-3.md`：T6-3a 四产品 Profile、可选成本限额、V013 与 product-live overlay 已完成 clean full A1；T6-3a.1 的 evidence repair、Product v2 与 ¥2 上界完成 clean server/web/e2e A1；修复验证未新增 Provider reservation；T6-3b recovery drill pending。
-- 当前恢复点：`phase/p6-inference-product-acceptance-v1` 的 T6-3a.1 `automated_verified` 节点；历史评测 ledger 永久 CLOSED，显式 product-live overlay 已开放，下一自动计划切片为 T6-3b Compose/ops/recovery drill。
+- `plans/logs/P6-T6-3.md`：T6-3a 四产品 Profile、可选成本限额、V013 与 product-live overlay 已完成 clean full A1；T6-3a.1 的 evidence repair、Product v2 与 ¥2 上界完成 clean server/web/e2e A1；T6-3a.2 的网关上传边界完成 clean Web A1 与真实容器探针；修复验证未新增 Provider reservation；T6-3b recovery drill pending。
+- 当前恢复点：`phase/p6-inference-product-acceptance-v1` 的 T6-3a.2 `automated_verified` 节点；历史评测 ledger 永久 CLOSED，显式 product-live overlay 已开放，下一自动计划切片为 T6-3b Compose/ops/recovery drill。
