@@ -6,12 +6,15 @@ import javax.imageio.ImageIO;
 import java.awt.Color;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.zip.CRC32;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -54,7 +57,7 @@ class InputNormalizerTest {
     }
 
     @Test
-    void acceptsOnlyDecodedPngOrJpegMagicAndRejectsAnimationAndOversizedDimensions() throws Exception {
+    void acceptsOnlyDecodedPngOrJpegMagicRejectsAnimationAndDownscalesOversizedDimensions() throws Exception {
         var unsupported = assertThrows(InvalidInferenceInputException.class,
                 () -> normalizeImage(new InferenceInput.BinaryInput(
                         "fake.png", "image/png", "not-a-png".getBytes(StandardCharsets.UTF_8)
@@ -73,10 +76,18 @@ class InputNormalizerTest {
                 ))));
         assertEquals("INFERENCE_IMAGE_ANIMATED", apng.code());
 
-        var tooWide = assertThrows(InvalidInferenceInputException.class,
-                () -> normalizeImage(image(4097, 1, Color.BLUE, "png")));
-        assertEquals("INFERENCE_IMAGE_DIMENSIONS_INVALID", tooWide.code());
-        assertEquals(4097, tooWide.args().get("width"));
+        var tooWide = normalizeImage(image(4097, 1, Color.BLUE, "png"));
+        var normalized = tooWide.artifacts().getFirst();
+        assertEquals(4096, normalized.width());
+        assertEquals(1, normalized.height());
+
+        var extreme = assertThrows(InvalidInferenceInputException.class, () -> normalizeImage(binary(
+                "extreme.png", "image/png", withPngDimensions(
+                        imageBytes(1, 1, Color.BLUE, "png"), ImageNormalizer.MAX_SOURCE_LONG_EDGE + 1, 1
+                )
+        )));
+        assertEquals("INFERENCE_IMAGE_DIMENSIONS_INVALID", extreme.code());
+        assertEquals(ImageNormalizer.MAX_SOURCE_LONG_EDGE + 1, extreme.args().get("width"));
     }
 
     @Test
@@ -147,6 +158,12 @@ class InputNormalizerTest {
         assertEquals(2, artifact.height());
         assertArrayEquals(new byte[]{(byte) 0x89, 'P', 'N', 'G'}, Arrays.copyOf(stored, 4));
         assertFalse(new String(stored, StandardCharsets.ISO_8859_1).contains("Exif"));
+    }
+
+    @Test
+    void boundsTheDecoderWorkingSetForVeryLargeSourceDimensions() {
+        assertEquals(1, ImageNormalizer.sourceSubsampling(4097, 4097));
+        assertEquals(3, ImageNormalizer.sourceSubsampling(10_000, 10_000));
     }
 
     @Test
@@ -320,6 +337,17 @@ class InputNormalizerTest {
         var typeBytes = type.getBytes(StandardCharsets.US_ASCII);
         System.arraycopy(typeBytes, 0, result, 12, 4);
         System.arraycopy(png, 8, result, 20, png.length - 8);
+        return result;
+    }
+
+    private static byte[] withPngDimensions(byte[] png, int width, int height) {
+        var result = png.clone();
+        var buffer = ByteBuffer.wrap(result).order(ByteOrder.BIG_ENDIAN);
+        buffer.putInt(16, width);
+        buffer.putInt(20, height);
+        var crc = new CRC32();
+        crc.update(result, 12, 17);
+        buffer.putInt(29, (int) crc.getValue());
         return result;
     }
 

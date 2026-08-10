@@ -346,7 +346,7 @@ function LiveLauncher({
                   <UploadField
                     kind="IMAGE"
                     title="设计图"
-                    description="PNG / JPEG，最多 10 张"
+                    description="PNG / JPEG，最多 10 张；超大图自动适配至 4096 像素"
                     accept="image/png,image/jpeg"
                     disabled={mode === 'JSON_ONLY'}
                     files={images}

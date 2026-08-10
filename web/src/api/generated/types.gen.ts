@@ -1412,6 +1412,9 @@ export type GetLiveInferenceAvailabilityResponse = GetLiveInferenceAvailabilityR
 export type CreateLiveInferenceRunData = {
     body: {
         metadata: CreateLiveRunRequest;
+        /**
+         * PNG/JPEG source images; each source is at most 10 MiB, 65535 pixels on its long edge and 268435456 total pixels, then normalized to a maximum 4096-pixel long edge.
+         */
         images?: Array<Blob | File>;
         jsonSamples?: Array<Blob | File>;
     };

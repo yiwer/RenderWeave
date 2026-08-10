@@ -167,7 +167,7 @@ export const getLiveInferenceAvailability = <ThrowOnError extends boolean = fals
 /**
  * Queue an explicitly confirmed DashScope inference run
  *
- * Worker execution, multipart upload and provider credentials are independent deployment gates. A nullable run cost limit is cumulative across all attempts; null means no additional per-run limit. Every call still has a conservative Profile bound, a three-call ceiling and a durable pre-call reservation.
+ * Worker execution, multipart upload and provider credentials are independent deployment gates. A nullable run cost limit is cumulative across all attempts; null means no additional per-run limit. Every call still has a conservative Profile bound, a three-call ceiling and a durable pre-call reservation. Bounded PNG/JPEG source images are normalized to a maximum 4096-pixel long edge before the durable run is queued.
  */
 export const createLiveInferenceRun = <ThrowOnError extends boolean = false>(options: Options<CreateLiveInferenceRunData, ThrowOnError>): RequestResult<CreateLiveInferenceRunResponses, CreateLiveInferenceRunErrors, ThrowOnError> => (options.client ?? client).post<CreateLiveInferenceRunResponses, CreateLiveInferenceRunErrors, ThrowOnError>({
     ...formDataBodySerializer,

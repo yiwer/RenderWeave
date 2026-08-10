@@ -483,7 +483,8 @@ paths:
         Worker execution, multipart upload and provider credentials are independent deployment
         gates. A nullable run cost limit is cumulative across all attempts; null means no additional
         per-run limit. Every call still has a conservative Profile bound, a three-call ceiling and a
-        durable pre-call reservation.
+        durable pre-call reservation. Bounded PNG/JPEG source images are normalized to a maximum
+        4096-pixel long edge before the durable run is queued.
       parameters:
         - $ref: '#/components/parameters/IdempotencyKey'
       requestBody:
@@ -500,6 +501,9 @@ paths:
                 images:
                   type: array
                   maxItems: 10
+                  description: >-
+                    PNG/JPEG source images; each source is at most 10 MiB, 65535 pixels on its long
+                    edge and 268435456 total pixels, then normalized to a maximum 4096-pixel long edge.
                   items:
                     type: string
                     format: binary

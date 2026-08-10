@@ -135,6 +135,51 @@ class LiveInferenceApiTest {
     }
 
     @Test
+    void multipartProductUploadDownscalesAnOversizedDesignImageBeforeQueuing() throws Exception {
+        var metadata = new MockMultipartFile(
+                "metadata", "metadata.json", MediaType.APPLICATION_JSON_VALUE,
+                """
+                        {"profileId":"dashscope-qwen37-flash-product-v2","mode":"IMAGE_ONLY",
+                         "inputClassification":"USER_PROVIDED","externalTransferConfirmed":true,
+                         "experimentalProfileConfirmed":true}
+                        """.getBytes(StandardCharsets.UTF_8)
+        );
+        var image = new MockMultipartFile(
+                "images", "wide-design.png", MediaType.IMAGE_PNG_VALUE, wideValidPng()
+        );
+        var response = mockMvc.perform(multipart("/api/v1/inference-runs/live")
+                        .file(metadata).file(image)
+                        .header("Idempotency-Key", "live-api-wide-design"))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        var runId = UUID.fromString(json.readTree(response).path("runId").asText());
+
+        assertThat(jdbcClient.sql("""
+                        select artifact.width
+                        from inference_run_input input
+                        join inference_artifact artifact on artifact.artifact_id = input.artifact_id
+                        where input.run_id = :runId and input.input_kind = 'IMAGE'
+                        """)
+                .param("runId", runId)
+                .query(Integer.class).single()).isEqualTo(4096);
+        assertThat(jdbcClient.sql("""
+                        select artifact.height
+                        from inference_run_input input
+                        join inference_artifact artifact on artifact.artifact_id = input.artifact_id
+                        where input.run_id = :runId and input.input_kind = 'IMAGE'
+                        """)
+                .param("runId", runId)
+                .query(Integer.class).single()).isEqualTo(1);
+
+        var deadline = System.nanoTime() + java.time.Duration.ofSeconds(5).toNanos();
+        while (System.nanoTime() < deadline
+                && runs.find(runId).orElseThrow().state() != InferenceRunState.REVIEW_REQUIRED) {
+            Thread.sleep(20);
+        }
+        assertThat(runs.find(runId).orElseThrow().state()).isEqualTo(InferenceRunState.REVIEW_REQUIRED);
+    }
+
+    @Test
     void productUploadRejectsCostLimitAboveProductBoundaryBeforeCreatingRun() throws Exception {
         var metadata = new MockMultipartFile(
                 "metadata", "metadata.json", MediaType.APPLICATION_JSON_VALUE,
@@ -202,6 +247,14 @@ class LiveInferenceApiTest {
 
     private static byte[] smallValidPng() throws Exception {
         var image = new BufferedImage(2, 2, BufferedImage.TYPE_INT_RGB);
+        try (var output = new ByteArrayOutputStream()) {
+            if (!ImageIO.write(image, "png", output)) throw new IllegalStateException("PNG writer unavailable");
+            return output.toByteArray();
+        }
+    }
+
+    private static byte[] wideValidPng() throws Exception {
+        var image = new BufferedImage(4097, 1, BufferedImage.TYPE_INT_RGB);
         try (var output = new ByteArrayOutputStream()) {
             if (!ImageIO.write(image, "png", output)) throw new IllegalStateException("PNG writer unavailable");
             return output.toByteArray();

@@ -373,7 +373,7 @@ HTTP 层外包 RFC 9457 problem details，并可增加 `traceId`, `violations`, 
 | json-only | 1–20 同根 object samples | concrete JSON 结构与类型 |
 | combined | 图片 + 同根 samples，无 1:1 映射要求 | JSON 决定 concrete 结构/类型，图片补名称/语义；不可调和冲突阻断 |
 
-图片每张 ≤10 MiB、总计 ≤30 MiB、最长边 ≤4096；拒绝动画和非 PNG/JPEG。服务端校验 magic/header、EXIF orientation，解码后转换为 sRGB、去 metadata 的规范化图片；原始 bytes 随 staging 成功结束即删除，只持久化规范化产物。
+图片每张 ≤10 MiB、总计 ≤30 MiB；拒绝动画和非 PNG/JPEG。服务端先校验 magic/header 与源尺寸安全边界（最长边 ≤65535、总像素 ≤268435456），超出规范化目标的图片由有界 subsampling + 高质量缩放归一到最长边 ≤4096；随后应用 EXIF orientation、转换为 sRGB 并去 metadata。原始 bytes 随 staging 成功结束即删除，只持久化规范化产物，所有图片证据坐标均以规范化产物为准。
 
 JSON inference samples 每份 ≤256 KiB、总计 ≤2 MiB、depth ≤32；模型只接收确定性统计与有界片段，不默认发送全部样本正文。
 

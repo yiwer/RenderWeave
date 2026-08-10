@@ -3,6 +3,7 @@ package cn.hbads.renderweave.inference.input;
 import javax.imageio.ImageIO;
 import javax.imageio.stream.MemoryCacheImageInputStream;
 import javax.imageio.stream.MemoryCacheImageOutputStream;
+import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -14,6 +15,9 @@ import java.nio.charset.StandardCharsets;
 /** Decodes bounded PNG/JPEG input and emits metadata-free sRGB PNG bytes. */
 public final class ImageNormalizer {
     public static final int MAX_LONG_EDGE = 4096;
+    public static final int MAX_SOURCE_LONG_EDGE = 65_535;
+    public static final long MAX_SOURCE_PIXELS = 268_435_456L;
+    private static final long MAX_DECODE_PIXELS = 20_000_000L;
     private static final int PNG_SIGNATURE_BYTES = 8;
 
     public NormalizedImage normalize(InferenceInput.BinaryInput input) {
@@ -39,21 +43,37 @@ public final class ImageNormalizer {
                 reader.setInput(stream, false, true);
                 var width = reader.getWidth(0);
                 var height = reader.getHeight(0);
-                if (width < 1 || height < 1 || Math.max(width, height) > MAX_LONG_EDGE) {
+                var sourcePixels = (long) width * height;
+                if (width < 1 || height < 1
+                        || Math.max(width, height) > MAX_SOURCE_LONG_EDGE
+                        || sourcePixels > MAX_SOURCE_PIXELS) {
                     throw new InvalidInferenceInputException(
                             "INFERENCE_IMAGE_DIMENSIONS_INVALID",
                             "/images",
-                            java.util.Map.of("width", width, "height", height, "maximumLongEdge", MAX_LONG_EDGE),
+                            java.util.Map.of(
+                                    "width", width,
+                                    "height", height,
+                                    "maximumSourceLongEdge", MAX_SOURCE_LONG_EDGE,
+                                    "maximumSourcePixels", MAX_SOURCE_PIXELS,
+                                    "normalizedMaximumLongEdge", MAX_LONG_EDGE
+                            ),
                             "Image dimensions exceed the supported boundary",
                             null
                     );
                 }
                 rejectMultipleFrames(reader);
-                var decoded = reader.read(0);
+                var readParameters = reader.getDefaultReadParam();
+                var subsampling = sourceSubsampling(width, height);
+                if (subsampling > 1) {
+                    readParameters.setSourceSubsampling(subsampling, subsampling, 0, 0);
+                }
+                var decoded = reader.read(0, readParameters);
                 if (decoded == null) throw invalid("INFERENCE_IMAGE_DECODE_FAILED", "Image decoder returned no pixels");
                 var orientation = format == Format.JPEG ? jpegExifOrientation(bytes) : 1;
                 var oriented = orient(decoded, orientation);
-                var normalized = drawIntoSrgb(oriented, format == Format.PNG && oriented.getColorModel().hasAlpha());
+                var normalized = drawIntoSrgbAndFit(
+                        oriented, format == Format.PNG && oriented.getColorModel().hasAlpha()
+                );
                 return new NormalizedImage(
                         encodePngInMemory(normalized), normalized.getWidth(), normalized.getHeight()
                 );
@@ -129,14 +149,33 @@ public final class ImageNormalizer {
         return ByteBuffer.wrap(bytes, offset, 4).order(ByteOrder.BIG_ENDIAN).getInt();
     }
 
-    private static BufferedImage drawIntoSrgb(BufferedImage source, boolean alpha) {
+    static int sourceSubsampling(int width, int height) {
+        var pixels = (long) width * height;
+        if (pixels <= MAX_DECODE_PIXELS) return 1;
+        return Math.max(1, (int) Math.ceil(Math.sqrt(pixels / (double) MAX_DECODE_PIXELS)));
+    }
+
+    private static BufferedImage drawIntoSrgbAndFit(BufferedImage source, boolean alpha) {
+        var longEdge = Math.max(source.getWidth(), source.getHeight());
+        var scale = longEdge <= MAX_LONG_EDGE ? 1.0 : MAX_LONG_EDGE / (double) longEdge;
+        var targetWidth = Math.max(1, (int) Math.round(source.getWidth() * scale));
+        var targetHeight = Math.max(1, (int) Math.round(source.getHeight() * scale));
         var target = new BufferedImage(
-                source.getWidth(), source.getHeight(),
+                targetWidth, targetHeight,
                 alpha ? BufferedImage.TYPE_INT_ARGB : BufferedImage.TYPE_INT_RGB
         );
         var graphics = target.createGraphics();
         try {
-            graphics.drawImage(source, 0, 0, null);
+            graphics.setRenderingHint(
+                    RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC
+            );
+            graphics.setRenderingHint(
+                    RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY
+            );
+            graphics.setRenderingHint(
+                    RenderingHints.KEY_COLOR_RENDERING, RenderingHints.VALUE_COLOR_RENDER_QUALITY
+            );
+            graphics.drawImage(source, 0, 0, targetWidth, targetHeight, null);
         } finally {
             graphics.dispose();
         }
