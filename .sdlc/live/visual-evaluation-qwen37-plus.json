@@ -1,7 +1,7 @@
 {
   "authorizationVersion": "renderweave-visual-evaluation-authorization/1.0",
   "authorizationId": "visual-v4-baseline-qwen37-plus-20260810",
-  "status": "PROPOSED",
+  "status": "OPEN",
   "phase": "BASELINE",
   "inputClassification": "REPOSITORY_SYNTHETIC_ONLY",
   "corpusVersion": "renderweave-visual-stage-corpus/1.0",
@@ -28,8 +28,8 @@
   "maximumTotalTokens": 200000,
   "maximumCostMicrosCny": 1600000,
   "maximumCasesPerBatch": 5,
-  "approvedBy": null,
-  "approvedAt": null,
-  "expiresAt": null,
-  "approvalScope": null
+  "approvedBy": "yiwer",
+  "approvedAt": "2026-08-10T11:29:10Z",
+  "expiresAt": "2026-08-11T10:59:10Z",
+  "approvalScope": "Goal J1 BASELINE: repository-synthetic 12-case sentinel; qwen3.7-plus product-v4; at most 60 attempts, 200000 tokens, CNY 1.60 and 5 cases per batch"
 }
