@@ -177,6 +177,23 @@ class InferencePromptRegistryTest {
     }
 
     @Test
+    void hierarchyV3MakesTreeAndGroupSupportInvariantsMechanical() {
+        var prompt = new InferencePromptRegistry().requireVisualStage(
+                InferencePromptRegistry.VISUAL_HIERARCHY_V3,
+                InferencePromptRegistry.VISUAL_HINT_GENERIC_V1
+        ).text();
+
+        assertTrue(prompt.contains("emit exactly N-1 relationships"));
+        assertTrue(prompt.contains("rootEntityId never occurs as childEntityId"));
+        assertTrue(prompt.contains("has exactly one supporting GROUP"));
+        assertTrue(prompt.contains("not reused by another relationship"));
+        assertTrue(prompt.contains("renderweave-visual-hierarchy/2.0"));
+        assertFalse(prompt.matches("(?is).*\\b(bus|station|route|stop|fare)\\b.*"));
+        assertFalse(prompt.contains("公交"));
+        assertFalse(prompt.contains("站牌"));
+    }
+
+    @Test
     void hybridPromptTreatsLocalOcrAsUntrustedEphemeralSecondaryEvidence() {
         var registry = new InferencePromptRegistry();
         var prompt = registry.requireHybridVisualStage(

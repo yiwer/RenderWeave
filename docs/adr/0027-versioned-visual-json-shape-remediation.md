@@ -38,6 +38,11 @@ payload-free 固定码，再在精确 OPEN ledger 下对仓库合成 `transit-bo
 5. **先恢复合同可达性，再增加 semantic verifier。** v8 必须先在相同合成 case 上通过 OBSERVE strict decode；
    若进入 hierarchy/binding，则按新的最早失败阶段继续有限修复。只有三阶段合同可达后，N6 才增加语义 verifier
    与 targeted repair，避免 verifier 掩盖基础序列化错误。
+6. **层级修复继续使用新版本，不改写 v8。** v8 live canary 首次通过 OBSERVE，随后 4 次 HIERARCHY
+   均被既有综合拓扑校验拒绝。服务端先把拓扑、支持元素和空间归属拆成有限固定码；随后新增 immutable
+   visual-hierarchy prompt v3，把 `N entities => N-1 relationships`、每个非根实体恰好一次作为 child、根绝不作为
+   child、父先于子，以及 GROUP 对 relationship 一对一且 cardinality 一致写成机械自检步骤。新增 Flash、Plus、
+   Max 三份隐藏 product-v9-generic Profile，绑定 elements v3 + hierarchy v3 + bindings v2；历史 v8 保持不变。
 
 ## 备选方案
 
@@ -54,7 +59,8 @@ payload-free 固定码，再在精确 OPEN ledger 下对仓库合成 `transit-bo
 - 正向后果：基础合同错误可直接定位到固定槽位；Prompt/Profile 历史保持可复现；模型仍必须生成精确结构，
   服务端不会把错误输出“修成成功”。
 - 负向后果/债务：v3 增加少量输入 token；JSON path 分类依赖当前 Jackson record path 语义，依赖升级时必须重跑
-  adversarial tests；明确数组不保证语义正确，仍需后续 verifier/eval。
+  adversarial tests；elements v3 与 hierarchy v3 都增加少量输入 token；明确数组与树恒等式仍不保证语义正确，
+  仍需后续 verifier/eval。
 - 验证或观测方式：strict decoder 单元矩阵、PostgreSQL attempt taxonomy/finish-reason 回归、Profile/Prompt
   registry 合同；精确 PROPOSED→OPEN→CLOSED 单 case live canary；独立 payload-free evidence verifier。
 - 回退/替代条件：v8 默认隐藏，停止新建 v8 run 即可回退；历史 snapshot 继续按其精确 prompt reader 执行。
