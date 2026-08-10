@@ -51,7 +51,10 @@ class InferenceProfileRegistryTest {
                 "dashscope-qwen38-max-product-v6-transit-board",
                 "dashscope-qwen37-flash-product-v7-hybrid-generic",
                 "dashscope-qwen37-plus-product-v7-hybrid-generic",
-                "dashscope-qwen38-max-product-v7-hybrid-generic"
+                "dashscope-qwen38-max-product-v7-hybrid-generic",
+                "dashscope-qwen37-flash-product-v8-generic",
+                "dashscope-qwen37-plus-product-v8-generic",
+                "dashscope-qwen38-max-product-v8-generic"
         ), registry.profileIds());
         assertEquals(java.util.List.of(
                 "dashscope-qwen37-flash-product-v4",
@@ -72,7 +75,7 @@ class InferenceProfileRegistryTest {
                 "qwen3.7-flash", "qwen3.7-plus", "qwen3.8-max"
         ), registry.visualNextProfiles().stream()
                 .map(item -> item.capability().capability().model()).toList());
-        assertEquals(6, registry.visualGroundingProfiles().size());
+        assertEquals(9, registry.visualGroundingProfiles().size());
         assertEquals(java.util.List.of(
                 "dashscope-qwen37-flash-product-v7-hybrid-generic",
                 "dashscope-qwen37-plus-product-v7-hybrid-generic",
@@ -163,15 +166,33 @@ class InferenceProfileRegistryTest {
         assertVisualNextProfile(registry, "dashscope-qwen38-max-product-v5", "qwen3.8-max");
         assertGroundedVisualProfile(
                 registry, "dashscope-qwen37-flash-product-v6-generic", "qwen3.7-flash",
-                InferencePromptRegistry.VISUAL_HINT_GENERIC_V1
+                InferencePromptRegistry.VISUAL_HINT_GENERIC_V1,
+                InferencePromptRegistry.VISUAL_ELEMENTS_V2
         );
         assertGroundedVisualProfile(
                 registry, "dashscope-qwen37-plus-product-v6-transit-board", "qwen3.7-plus",
-                InferencePromptRegistry.VISUAL_HINT_TRANSIT_BOARD_V1
+                InferencePromptRegistry.VISUAL_HINT_TRANSIT_BOARD_V1,
+                InferencePromptRegistry.VISUAL_ELEMENTS_V2
         );
         assertGroundedVisualProfile(
                 registry, "dashscope-qwen38-max-product-v6-generic", "qwen3.8-max",
-                InferencePromptRegistry.VISUAL_HINT_GENERIC_V1
+                InferencePromptRegistry.VISUAL_HINT_GENERIC_V1,
+                InferencePromptRegistry.VISUAL_ELEMENTS_V2
+        );
+        assertGroundedVisualProfile(
+                registry, "dashscope-qwen37-flash-product-v8-generic", "qwen3.7-flash",
+                InferencePromptRegistry.VISUAL_HINT_GENERIC_V1,
+                InferencePromptRegistry.VISUAL_ELEMENTS_V3
+        );
+        assertGroundedVisualProfile(
+                registry, "dashscope-qwen37-plus-product-v8-generic", "qwen3.7-plus",
+                InferencePromptRegistry.VISUAL_HINT_GENERIC_V1,
+                InferencePromptRegistry.VISUAL_ELEMENTS_V3
+        );
+        assertGroundedVisualProfile(
+                registry, "dashscope-qwen38-max-product-v8-generic", "qwen3.8-max",
+                InferencePromptRegistry.VISUAL_HINT_GENERIC_V1,
+                InferencePromptRegistry.VISUAL_ELEMENTS_V3
         );
         assertHybridVisualProfile(
                 registry, "dashscope-qwen37-flash-product-v7-hybrid-generic", "qwen3.7-flash"
@@ -215,14 +236,15 @@ class InferenceProfileRegistryTest {
             InferenceProfileRegistry registry,
             String profileId,
             String model,
-            String hintPack
+            String hintPack,
+            String elementPromptVersion
     ) {
         var profile = registry.require(profileId).profile();
         assertTrue(registry.isVisualGroundingProfile(profileId));
         assertFalse(registry.isProductLiveProfile(profileId));
         assertEquals(model, profile.model());
         assertEquals("renderweave-inference-pipeline/4.1", profile.pipelineVersion());
-        assertEquals(InferencePromptRegistry.VISUAL_ELEMENTS_V2, profile.elementPromptVersion());
+        assertEquals(elementPromptVersion, profile.elementPromptVersion());
         assertEquals(InferencePromptRegistry.VISUAL_HIERARCHY_V2, profile.hierarchyPromptVersion());
         assertEquals(InferencePromptRegistry.VISUAL_BINDINGS_V2, profile.bindingPromptVersion());
         assertEquals(hintPack, profile.visualHintPackVersion());

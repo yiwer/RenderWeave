@@ -192,6 +192,12 @@ public record InferenceProfile(
                 && documentVisionCapabilityId != null
                 && documentVisionCapabilityId.matches("[a-z0-9][a-z0-9._:-]{0,190}")
                 && profileId.endsWith("-product-v7-hybrid-generic");
+        var productPromptV8 = InferencePromptRegistry.SCHEMA_CANDIDATE_V5.equals(promptVersion)
+                && InferencePromptRegistry.VISUAL_ELEMENTS_V3.equals(elementPromptVersion)
+                && InferencePromptRegistry.VISUAL_HIERARCHY_V2.equals(hierarchyPromptVersion)
+                && InferencePromptRegistry.VISUAL_BINDINGS_V2.equals(bindingPromptVersion)
+                && InferencePromptRegistry.VISUAL_HINT_GENERIC_V1.equals(visualHintPackVersion)
+                && profileId.endsWith("-product-v8-generic");
         var serialVisualPipeline = "renderweave-inference-pipeline/3.0".equals(pipelineVersion)
                 || "renderweave-inference-pipeline/4.0".equals(pipelineVersion)
                 || "renderweave-inference-pipeline/4.1".equals(pipelineVersion)
@@ -217,7 +223,7 @@ public record InferenceProfile(
                 || ("renderweave-inference-pipeline/4.0".equals(pipelineVersion)
                 && productPromptV5)
                 || ("renderweave-inference-pipeline/4.1".equals(pipelineVersion)
-                && productPromptV6)
+                && (productPromptV6 || productPromptV8))
                 || ("renderweave-inference-pipeline/4.2".equals(pipelineVersion)
                 && productPromptV7));
         if (!(legacySyntheticPrompt || productPrompt)
@@ -238,7 +244,8 @@ public record InferenceProfile(
                 || productPromptV4 && stageTimeoutSeconds != 240
                 || productPromptV5 && stageTimeoutSeconds != 240
                 || productPromptV6 && stageTimeoutSeconds != 240
-                || productPromptV7 && stageTimeoutSeconds != 240) {
+                || productPromptV7 && stageTimeoutSeconds != 240
+                || productPromptV8 && stageTimeoutSeconds != 240) {
             throw new IllegalArgumentException("Product serial profile timeout must match its immutable version");
         }
         if (!pricingEffectiveDate.matches("\\d{4}-\\d{2}-\\d{2}")) {

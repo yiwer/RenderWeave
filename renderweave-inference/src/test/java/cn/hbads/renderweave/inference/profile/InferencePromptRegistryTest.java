@@ -161,6 +161,22 @@ class InferencePromptRegistryTest {
     }
 
     @Test
+    void visualV3PinsSingletonEvidenceToJsonArraysWithoutChangingDomainPolicy() {
+        var prompt = new InferencePromptRegistry().requireVisualStage(
+                InferencePromptRegistry.VISUAL_ELEMENTS_V3,
+                InferencePromptRegistry.VISUAL_HINT_GENERIC_V1
+        ).text();
+
+        assertTrue(prompt.contains("every region evidence member is exactly an array"));
+        assertTrue(prompt.contains("evidence=[{\"viewId\":string"));
+        assertTrue(prompt.contains("Never collapse a one-item array to its item"));
+        assertTrue(prompt.contains("renderweave-visual-grounding/2.0"));
+        assertFalse(prompt.matches("(?is).*\\b(bus|station|route|stop|fare)\\b.*"));
+        assertFalse(prompt.contains("公交"));
+        assertFalse(prompt.contains("站牌"));
+    }
+
+    @Test
     void hybridPromptTreatsLocalOcrAsUntrustedEphemeralSecondaryEvidence() {
         var registry = new InferencePromptRegistry();
         var prompt = registry.requireHybridVisualStage(
