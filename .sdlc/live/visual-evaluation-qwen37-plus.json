@@ -1,14 +1,14 @@
 {
   "authorizationVersion": "renderweave-visual-evaluation-authorization/1.0",
-  "authorizationId": "visual-v6-ablation-qwen37-plus-transit-20260810",
-  "status": "CLOSED",
+  "authorizationId": "visual-v7-hybrid-qwen37-plus-transit-20260810",
+  "status": "PROPOSED",
   "phase": "ABLATION",
   "inputClassification": "REPOSITORY_SYNTHETIC_ONLY",
   "corpusVersion": "renderweave-visual-stage-corpus/1.0",
   "corpusSourceSha256": "bf0db7bf0ac5c4e2b357cdd96c49ff70a7b30a5bc59f322a915020dc29fc605e",
   "evaluationIdentity": "renderweave-visual-evaluation-tree-sha256/1:30d98c8c1f5755bcd009f7e4749a3e78a7c90b3ae96546e6aafba1b003649eaf",
-  "profileId": "dashscope-qwen37-plus-product-v6-generic",
-  "profileSnapshotSha256": "0615bad1a54531afc583c2421437ac63d0ed3365b07796f83d7735be8c653202",
+  "profileId": "dashscope-qwen37-plus-product-v7-hybrid-generic",
+  "profileSnapshotSha256": "a98b0bb5038e9998503ad7354408e0d7cfa4d9d090fe2f5ff126ffd2c0c0bae1",
   "model": "qwen3.7-plus",
   "caseIds": [
     "transit-board-v3",
@@ -16,11 +16,11 @@
     "transit-board-v5"
   ],
   "maximumProviderAttempts": 15,
-  "maximumTotalTokens": 100000,
+  "maximumTotalTokens": 98000,
   "maximumCostMicrosCny": 1000000,
   "maximumCasesPerBatch": 3,
   "approvedBy": "yiwer",
-  "approvedAt": "2026-08-10T15:00:17Z",
+  "approvedAt": "2026-08-10T15:17:33Z",
   "expiresAt": "2026-08-11T15:00:17Z",
-  "approvalScope": "Goal J1 ABLATION: repository-synthetic transit-board v3-v5; qwen3.7-plus product-v6-generic; at most 15 attempts, 100000 tokens, CNY 1.00 and 3 cases per batch within the active 500000-token Goal cap"
+  "approvalScope": "Goal J1 ABLATION: repository-synthetic transit-board v3-v5; qwen3.7-plus product-v7-hybrid-generic with exact local document-vision capability; at most 15 attempts, 98000 tokens, CNY 1.00 and 3 cases per batch within the remaining 500000-token Goal cap"
 }
