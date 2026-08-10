@@ -341,7 +341,7 @@ test('offers four product models and an optional cumulative run cost ceiling', a
       multipartBody = request.postDataBuffer()?.toString('utf8') ?? '';
       await json(route, {
         ...runResponse(0, 'QUEUED'),
-        profileId: 'dashscope-qwen37-flash-product-v3',
+        profileId: 'dashscope-qwen37-flash-product-v4',
         sourceReference: 'user-upload',
         costLimitMicrosCny: 250000,
       }, 201);
@@ -672,10 +672,10 @@ function liveAvailability(enabled = false) {
     runCostLimitRequired: false,
     maximumRunCostLimitMicrosCny: 100000000,
     profiles: [
-      profile('dashscope-qwen37-flash-product-v3', 'qwen3.7-flash', ['IMAGE_ONLY', 'JSON_ONLY', 'COMBINED']),
-      profile('dashscope-qwen37-plus-product-v3', 'qwen3.7-plus', ['IMAGE_ONLY', 'JSON_ONLY', 'COMBINED']),
-      profile('dashscope-qwen38-max-product-v3', 'qwen3.8-max', ['IMAGE_ONLY', 'JSON_ONLY', 'COMBINED']),
-      profile('dashscope-qwen37-max-20260608-product-v3', 'qwen3.7-max-2026-06-08', ['IMAGE_ONLY', 'JSON_ONLY', 'COMBINED']),
+      profile('dashscope-qwen37-flash-product-v4', 'qwen3.7-flash', ['IMAGE_ONLY', 'JSON_ONLY', 'COMBINED']),
+      profile('dashscope-qwen37-plus-product-v4', 'qwen3.7-plus', ['IMAGE_ONLY', 'JSON_ONLY', 'COMBINED']),
+      profile('dashscope-qwen38-max-product-v4', 'qwen3.8-max', ['IMAGE_ONLY', 'JSON_ONLY', 'COMBINED']),
+      profile('dashscope-qwen37-max-20260608-product-v4', 'qwen3.7-max-2026-06-08', ['IMAGE_ONLY', 'JSON_ONLY', 'COMBINED']),
     ],
   };
 }

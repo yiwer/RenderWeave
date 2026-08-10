@@ -5945,6 +5945,7 @@ button.required-toggle.active,
 .inference-run-progress span { font-size: 12px; }
 .inference-run-progress code,
 .inference-run-progress small { font-size: 10px; }
+.inference-run-progress .inference-failure-guidance { margin: 2px 0 0; color: var(--body); font-size: 11px; line-height: 1.45; }
 .inference-run-progress-actions { display: grid !important; grid-template-columns: repeat(2, auto); align-items: center; justify-content: end; gap: 6px !important; }
 .inference-run-progress-actions small,
 .inference-run-progress-actions p { grid-column: 1 / -1; margin: 0; text-align: right; }

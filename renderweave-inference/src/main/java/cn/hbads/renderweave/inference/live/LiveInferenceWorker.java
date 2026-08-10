@@ -257,9 +257,15 @@ public final class LiveInferenceWorker {
         if (maximumRequestCost > profile.maximumEstimatedCostMicrosCny()) {
             throw new ProviderBudgetExceededException("PROVIDER_REQUEST_COST_BOUND_EXCEEDED");
         }
+        var invocationNow = clock.instant();
+        if (!runStore.renewLease(
+                current.runId(), token(current), invocationNow, leaseDuration
+        )) {
+            throw new InferenceLeaseLostException(current.runId());
+        }
         var reservation = budgetStore.reserve(
                 budgetKey(profile), current.runId(), attemptOrdinal,
-                maximumRequestCost, current.costLimitMicrosCny(), clock.instant()
+                maximumRequestCost, current.costLimitMicrosCny(), invocationNow
         );
         var started = System.nanoTime();
         final ProviderInferenceResponse response;

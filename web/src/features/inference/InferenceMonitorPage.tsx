@@ -10,6 +10,7 @@ import { InferenceFlowSteps } from './InferenceFlowSteps';
 import { RunCancelButton } from './InferenceRunActions';
 import {
   formatInferenceTime,
+  inferenceFailureMessage,
   inferenceModeLabel,
   inferenceProfileLabel,
   inferenceRunHasResult,
@@ -97,6 +98,8 @@ function InferenceMonitorStatus({
 }) {
   const failed = run.state === 'FAILED' || run.state === 'CANCELLED';
   const ready = inferenceRunHasResult(run.state);
+  const historicalProductProfile = /-product-v[1-3]$/.test(run.profileId);
+  const failureMessage = run.failureCode ? inferenceFailureMessage(run.failureCode) : null;
   return (
     <section className={`inference-run-progress inference-monitor-status ${failed ? 'failed' : ready ? 'ready' : ''}`} aria-live="polite">
       {failed
@@ -107,12 +110,22 @@ function InferenceMonitorStatus({
       <div>
         <strong>{failed ? '识别任务未生成 Candidate' : ready ? 'Candidate 已生成' : '正在执行受控识别流程'}</strong>
         <span>{inferenceStateLabel(run.state)} · {inferenceStageLabel(run.stage)} · {inferenceProfileLabel(run.profileId)}</span>
-        {run.failureCode && <code>{run.failureCode}</code>}
+        {run.failureCode && (
+          <>
+            <code>{run.failureCode}</code>
+            {failureMessage && <p className="inference-failure-guidance">{failureMessage}</p>}
+            {historicalProductProfile && (
+              <p className="inference-failure-guidance">该任务保存的是历史执行配置，直接重试仍会沿用旧时限。</p>
+            )}
+          </>
+        )}
       </div>
       <div className="inference-run-progress-actions">
         {ready && <Link className="button primary-button" to={`/inference-runs/${run.runId}/review`}>查看识别结果<ArrowRight aria-hidden="true" size={15} /></Link>}
         {failed
-          ? <button type="button" className="button primary-button" disabled={retryPending} onClick={onRetry}><RotateCcw aria-hidden="true" size={15} />{retryPending ? '正在创建新任务…' : '重新运行'}</button>
+          ? historicalProductProfile
+            ? <Link className="button primary-button" to="/inference/new"><RotateCcw aria-hidden="true" size={15} />用新配置重新识别</Link>
+            : <button type="button" className="button primary-button" disabled={retryPending} onClick={onRetry}><RotateCcw aria-hidden="true" size={15} />{retryPending ? '正在创建新任务…' : '重新运行'}</button>
           : !ready && <RunCancelButton pending={cancelPending} onCancel={onCancel} />}
         <Link className="button ghost-button" to="/inference"><History aria-hidden="true" size={15} />历史任务</Link>
         {error && <p role="alert">{error.message}</p>}

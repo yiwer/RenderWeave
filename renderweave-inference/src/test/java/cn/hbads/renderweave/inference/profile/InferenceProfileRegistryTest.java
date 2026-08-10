@@ -35,8 +35,18 @@ class InferenceProfileRegistryTest {
                 "dashscope-qwen37-flash-product-v3",
                 "dashscope-qwen37-plus-product-v3",
                 "dashscope-qwen38-max-product-v3",
-                "dashscope-qwen37-max-20260608-product-v3"
+                "dashscope-qwen37-max-20260608-product-v3",
+                "dashscope-qwen37-flash-product-v4",
+                "dashscope-qwen37-plus-product-v4",
+                "dashscope-qwen38-max-product-v4",
+                "dashscope-qwen37-max-20260608-product-v4"
         ), registry.profileIds());
+        assertEquals(java.util.List.of(
+                "dashscope-qwen37-flash-product-v4",
+                "dashscope-qwen37-plus-product-v4",
+                "dashscope-qwen38-max-product-v4",
+                "dashscope-qwen37-max-20260608-product-v4"
+        ), registry.productLiveProfiles().stream().map(item -> item.profile().profileId()).toList());
         assertEquals(java.util.List.of(
                 "qwen3.7-flash", "qwen3.7-plus", "qwen3.8-max", "qwen3.7-max-2026-06-08"
         ), registry.productLiveProfiles().stream().map(item -> item.profile().model()).toList());
@@ -99,17 +109,15 @@ class InferenceProfileRegistryTest {
         assertHistoricalProductV2(registry, "dashscope-qwen37-plus-product-v2");
         assertHistoricalProductV2(registry, "dashscope-qwen38-max-product-v2");
         assertHistoricalProductV2(registry, "dashscope-qwen37-max-20260608-product-v2");
+        assertHistoricalProductV3(registry, "dashscope-qwen37-flash-product-v3");
+        assertHistoricalProductV3(registry, "dashscope-qwen37-plus-product-v3");
+        assertHistoricalProductV3(registry, "dashscope-qwen38-max-product-v3");
+        assertHistoricalProductV3(registry, "dashscope-qwen37-max-20260608-product-v3");
+        assertProductProfile(registry, "dashscope-qwen37-flash-product-v4", "qwen3.7-flash", 2_000_000L);
+        assertProductProfile(registry, "dashscope-qwen37-plus-product-v4", "qwen3.7-plus", 2_000_000L);
+        assertProductProfile(registry, "dashscope-qwen38-max-product-v4", "qwen3.8-max", 2_000_000L);
         assertProductProfile(
-                registry, "dashscope-qwen37-flash-product-v3", "qwen3.7-flash", 2_000_000L
-        );
-        assertProductProfile(
-                registry, "dashscope-qwen37-plus-product-v3", "qwen3.7-plus", 2_000_000L
-        );
-        assertProductProfile(
-                registry, "dashscope-qwen38-max-product-v3", "qwen3.8-max", 2_000_000L
-        );
-        assertProductProfile(
-                registry, "dashscope-qwen37-max-20260608-product-v3",
+                registry, "dashscope-qwen37-max-20260608-product-v4",
                 "qwen3.7-max-2026-06-08", 2_000_000L
         );
         assertThrows(IllegalArgumentException.class, () -> registry.require("live-provider"));
@@ -132,9 +140,18 @@ class InferenceProfileRegistryTest {
         assertEquals("renderweave-visual-bindings-prompt/1.0", profile.bindingPromptVersion());
         assertEquals(5, profile.maximumTotalCalls());
         assertEquals(1, profile.maximumRepairRounds());
+        assertEquals(240, profile.stageTimeoutSeconds());
         assertEquals(8_192, profile.maximumOutputTokens());
         assertEquals(maximumCost, profile.maximumEstimatedCostMicrosCny());
         assertEquals("EXPERIMENTAL", profile.certification());
+    }
+
+    private static void assertHistoricalProductV3(InferenceProfileRegistry registry, String profileId) {
+        var profile = registry.require(profileId).profile();
+        assertFalse(registry.isProductLiveProfile(profileId));
+        assertEquals("renderweave-inference-pipeline/3.0", profile.pipelineVersion());
+        assertEquals("renderweave-schema-candidate-prompt/5.0", profile.promptVersion());
+        assertEquals(90, profile.stageTimeoutSeconds());
     }
 
     private static void assertHistoricalProductV2(InferenceProfileRegistry registry, String profileId) {

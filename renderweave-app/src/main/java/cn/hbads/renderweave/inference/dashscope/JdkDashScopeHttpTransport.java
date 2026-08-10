@@ -8,6 +8,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.net.http.HttpTimeoutException;
 import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.List;
@@ -60,6 +61,10 @@ final class JdkDashScopeHttpTransport implements DashScopeHttpTransport {
             Thread.currentThread().interrupt();
             throw new ProviderCallException(
                     "DASHSCOPE_INTERRUPTED", false, null, Optional.empty(), exception
+            );
+        } catch (HttpTimeoutException exception) {
+            throw new ProviderCallException(
+                    "DASHSCOPE_TIMEOUT", true, null, Optional.empty(), exception
             );
         } catch (IOException exception) {
             throw new ProviderCallException(

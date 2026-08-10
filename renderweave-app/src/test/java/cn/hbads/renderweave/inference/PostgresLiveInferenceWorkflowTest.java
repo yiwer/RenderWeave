@@ -31,6 +31,7 @@ import cn.hbads.renderweave.inference.provider.ProviderUsage;
 import cn.hbads.renderweave.inference.replay.InferenceAttemptStatus;
 import cn.hbads.renderweave.inference.replay.InferenceReplayStore;
 import cn.hbads.renderweave.inference.replay.ReplayCorpus;
+import cn.hbads.renderweave.inference.run.InferenceStage;
 import cn.hbads.renderweave.inference.run.InferenceRunState;
 import cn.hbads.renderweave.inference.run.InferenceRunStore;
 import cn.hbads.renderweave.inference.run.NewInferenceRun;
@@ -69,7 +70,7 @@ class PostgresLiveInferenceWorkflowTest {
     private static final String GROUNDED_PROFILE =
             "dashscope-qwen37-plus-20260526-grounded-v1";
     private static final String SERIAL_PRODUCT_PROFILE =
-            "dashscope-qwen37-flash-product-v3";
+            "dashscope-qwen37-flash-product-v4";
 
     @Container
     @ServiceConnection
@@ -229,6 +230,22 @@ class PostgresLiveInferenceWorkflowTest {
         assertThat(provider.requests).extracting(request -> request.stage().name())
                 .containsExactly("OBSERVE", "HIERARCHY", "ELEMENT_BINDING", "STRUCTURE");
         assertThat(workflowStore.attempts(created)).hasSize(4);
+    }
+
+    @Test
+    void serialProviderCallRenewsItsLeaseBeforeEnteringTheNetworkWait() {
+        var blobs = new MemoryBlobStore();
+        create(blobs, "serial-lease-renewal", 1_050, 1_660, SERIAL_PRODUCT_PROFILE);
+        var provider = new ScriptedProvider(request -> response(request, stationElements(request)));
+        var claimed = runs.claimNextLive(
+                "serial-short-lease-worker", T0.plusSeconds(1), Duration.ofSeconds(30)
+        ).orElseThrow();
+
+        var afterObserve = worker(provider, blobs, T0.plusSeconds(20)).advance(claimed);
+
+        assertThat(afterObserve.stage()).isEqualTo(InferenceStage.HIERARCHY);
+        assertThat(afterObserve.lease().orElseThrow().expiresAt())
+                .isEqualTo(T0.plusSeconds(20).plus(Duration.ofMinutes(5)));
     }
 
     @Test

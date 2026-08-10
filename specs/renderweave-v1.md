@@ -381,19 +381,19 @@ JSON inference samples 每份 ≤256 KiB、总计 ≤2 MiB、depth ≤32；模�
 
 ```text
 NORMALIZE
-→ OBSERVE (IMAGE_ONLY product-v3: bounded visual element inventory)
-→ HIERARCHY (IMAGE_ONLY product-v3: rooted entity/relation tree)
-→ ELEMENT_BINDING (IMAGE_ONLY product-v3: bind every data slot to one entity)
+→ OBSERVE (IMAGE_ONLY product-v4: bounded visual element inventory)
+→ HIERARCHY (IMAGE_ONLY product-v4: rooted entity/relation tree)
+→ ELEMENT_BINDING (IMAGE_ONLY product-v4: bind every data slot to one entity)
 → STRUCTURE (construct Candidate while preserving the validated plan)
 → DETERMINISTIC_VALIDATE
 → CRITIQUE
-→ REPAIR (Profile bounded; product-v3 max 1 round)
+→ REPAIR (Profile bounded; product-v4 max 1 round)
 → USER_APPROVAL
 → ATOMIC_CREATE
 ```
 
 JSON_ONLY 继续由确定性 profiler 产生 grounded Candidate 且零 Provider 调用；COMBINED 继续以 JSON
-grounding 为结构事实源。`HIERARCHY` 与 `ELEMENT_BINDING` 首先只用于 IMAGE_ONLY product-v3。
+grounding 为结构事实源。`HIERARCHY` 与 `ELEMENT_BINDING` 首先只用于 IMAGE_ONLY product-v4。
 
 - 各 stage 有 Profile 固定的 output token、timeout、tool call、total call 和单次费用预留上界；产品
   run 可另设覆盖首次识别与 repair 的累计成本硬上限，留空时仍保留 Profile 的全部固定边界。
@@ -409,9 +409,9 @@ grounding 为结构事实源。`HIERARCHY` 与 `ELEMENT_BINDING` 首先只用于
 - scalar 类型冲突可降级为 text 并产生 warning；object/array/scalar 冲突和 heterogeneous array 阻断。
 - concrete + null：用 concrete 类型并记录 null adaptation warning；all-null 阻断；DSL 永不 nullable。
 - 每个 nested object 生成独立 CandidateSchema，通过 reference 连接；不产生 inline object。
-- IMAGE_ONLY product-v3 对独立可寻址/有序的重复项建立 child CandidateSchema；即使主值是文本，已有
+- IMAGE_ONLY product-v4 对独立可寻址/有序的重复项建立 child CandidateSchema；即使主值是文本，已有
   顺序、当前状态、换乘标记等 item-level 属性或明确重复组时也不得降级为 `Array<TEXT>`。
-- IMAGE_ONLY product-v3 的最终 Candidate 必须完整保持已验证计划中的根、实体、关系基数、字段归属和
+- IMAGE_ONLY product-v4 的最终 Candidate 必须完整保持已验证计划中的根、实体、关系基数、字段归属和
   direct evidence；遗漏、增加或改变拓扑产生可修复 blocker，不能以合同形式合法为由静默接受。
 - object array 对字段取并集，缺失字段 optional；结构冲突阻断，不产生 union。
 - 所有观察数组为空时 item type 未解析并阻断；combined 模式只有明确视觉重复证据且逐项确认才可提出 item 候选。
@@ -436,7 +436,7 @@ Web 将智能识别拆成职责单一、可深链的版面；模块默认页是�
 - 每个 AI item 包含 evidence、`inferred` 和 confidence。
 - 图片 evidence 可有多个 bbox；坐标为规范化后图片、左上原点、整数 0..10000，越界/反向不 clamp，直接 blocker/repair。
 - IMAGE_ONLY 若同一 artifact 的至少两个 bbox 全部位于像素边界、并集横纵覆盖至少 50% 画布且到达右侧或
-  底部 98% 边界，可在 validator 前按 artifact 尺寸确定性换算为 0..10000，并保留 WARNING；product-v3
+  底部 98% 边界，可在 validator 前按 artifact 尺寸确定性换算为 0..10000，并保留 WARNING；product-v4
   元素盘点在持久化并交给后续层级步骤前应用同一规则。单框或其他歧义集合不猜测。Web 对历史 Candidate
   使用相同规则只修正显示，不改写既有 revision。
 - JSON evidence 使用 sample index + JSON Pointer；模型值匹配仍标 inferred。
@@ -479,10 +479,10 @@ QUEUED → RUNNING → REVIEW_REQUIRED → APPLYING → COMPLETED
 ### 8.7 Provider/Profile 安全边界
 
 - v1 首个 live adapter 是 DashScope 的 OpenAI-compatible Chat Completions HTTP endpoint；领域层只依赖 provider-neutral port，协议 DTO、HTTP client 与 `DASHSCOPE_API_KEY` 只存在于 application adapter。
-- 产品入口只提供 `dashscope-qwen37-flash-product-v3`（`qwen3.7-flash`）、
-  `dashscope-qwen37-plus-product-v3`（`qwen3.7-plus`）、`dashscope-qwen38-max-product-v3`
-  （`qwen3.8-max`）和 `dashscope-qwen37-max-20260608-product-v3`
-  （`qwen3.7-max-2026-06-08`）四个 Profile；历史 canary/certification 及 product-v1/v2 Profile 保持
+- 产品入口只提供 `dashscope-qwen37-flash-product-v4`（`qwen3.7-flash`）、
+  `dashscope-qwen37-plus-product-v4`（`qwen3.7-plus`）、`dashscope-qwen38-max-product-v4`
+  （`qwen3.8-max`）和 `dashscope-qwen37-max-20260608-product-v4`
+  （`qwen3.7-max-2026-06-08`）四个 Profile；历史 canary/certification 及 product-v1/v2/v3 Profile 保持
   不可变但不进入产品选择器。四个产品 Profile 均为 `EXPERIMENTAL`，不继承历史质量认证，也不做
   自动升级路由。
 - Profile 是 repo-versioned resource，保存 provider/model/prompt/structured output/budgets/evaluation identity；run 保存完整 snapshot。
@@ -506,11 +506,15 @@ QUEUED → RUNNING → REVIEW_REQUIRED → APPLYING → COMPLETED
   输出 token 计算保守费用上界，并按模型价格阶梯提高输入与输出单价；超过 Profile 单次上界时零
   调用失败。reservation 是追加式费用账本：创建时以行锁验证 run 存在，此后保留 immutable run
   UUID 审计值且不随 run 删除；provider 返回实际 usage 后只允许向不超过预留的值结算。
-- product-v3 的四个 Profile 将 `maximumEstimatedCostMicrosCny` 统一固定为 2,000,000（¥2）。这是
+- product-v4 的四个 Profile 将 `maximumEstimatedCostMicrosCny` 统一固定为 2,000,000（¥2）。这是
   每次调用的保守预留上界而非实际收费；若高分辨率/多图请求的保守估值超过 ¥2，必须在零 Provider
   调用处拒绝，不能靠任务累计限额绕过。
-- product-v3 的单步输出上限为 8192 tokens、输出合同仍不超过 262144 bytes；这只为多实体 Candidate
+- product-v4 的单步输出上限为 8192 tokens、输出合同仍不超过 262144 bytes；这只为多实体 Candidate
   提供表达空间，不放宽 ¥2 单次预留门或五次总调用上限。
+- product-v4 将每个 Provider stage 的请求时限从历史 product-v3 的 90 秒提升为 240 秒；
+  每次调用前必须续租 durable run lease，保证单次最长请求仍位于当前 600 秒 lease 内。
+  `HttpTimeoutException` 必须记为可重试的 `DASHSCOPE_TIMEOUT`，不得混同为
+  `DASHSCOPE_NETWORK_ERROR`。历史 run 保留 v3 snapshot；需要新时限时必须新建 v4 run。
 - 严格 Candidate 解码失败时，attempt telemetry 与下一次 repair 必须使用同一个 bounded diagnostic。
   不得把 `CANDIDATE_DECODE_CONSTRUCTOR_INVALID_ASSESSMENT_EVIDENCE` 等精确合同错误降级为通用
   `LIVE_STRUCTURE_OUTPUT_INVALID`；Prompt 明确要求每个 `assessment.evidence` 都存在且为非 null 数组。

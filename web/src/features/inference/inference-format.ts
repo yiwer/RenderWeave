@@ -29,6 +29,14 @@ export function inferenceStateLabel(state: string) {
   return labels[state] ?? state;
 }
 
+export function inferenceFailureMessage(code: string) {
+  const messages: Record<string, string> = {
+    DASHSCOPE_TIMEOUT: '模型响应超过当前步骤时限，系统已安全停止；可重新运行。',
+    DASHSCOPE_NETWORK_ERROR: '未收到模型服务响应，请检查服务网络后重新运行。',
+  };
+  return messages[code] ?? null;
+}
+
 export function inferenceModeLabel(mode: InferenceMode) {
   const labels: Record<InferenceMode, string> = {
     IMAGE_ONLY: '仅图片',

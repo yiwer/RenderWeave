@@ -74,6 +74,35 @@ describe('Inference monitor workspace', () => {
       .toBe(`/inference-runs/${ready.runId}/review`);
     expect(screen.queryByRole('navigation', { name: '智能识别版面' })).toBeNull();
   });
+
+  it('explains a provider deadline separately from a generic network failure', async () => {
+    const failed = {
+      ...run('FAILED'),
+      failureCode: 'DASHSCOPE_TIMEOUT',
+    };
+    api.getInferenceRunRequest.mockResolvedValue(failed);
+    api.getInferenceExecutionLogRequest.mockResolvedValue(executionLog(failed));
+    renderPage();
+
+    expect(await screen.findByText('DASHSCOPE_TIMEOUT')).toBeTruthy();
+    expect(screen.getByText(/模型响应超过当前步骤时限/)).toBeTruthy();
+  });
+
+  it('does not retry a historical immutable product profile with its old timeout', async () => {
+    const failed = {
+      ...run('FAILED'),
+      profileId: 'dashscope-qwen38-max-product-v3' as const,
+      failureCode: 'DASHSCOPE_NETWORK_ERROR',
+    };
+    api.getInferenceRunRequest.mockResolvedValue(failed);
+    api.getInferenceExecutionLogRequest.mockResolvedValue(executionLog(failed));
+    renderPage();
+
+    expect(await screen.findByText(/直接重试仍会沿用旧时限/)).toBeTruthy();
+    expect(screen.queryByRole('button', { name: '重新运行' })).toBeNull();
+    expect(screen.getByRole('link', { name: /用新配置重新识别/ }).getAttribute('href'))
+      .toBe('/inference/new');
+  });
 });
 
 function renderPage() {
@@ -98,7 +127,7 @@ function run(state: InferenceRunResponse['state'], runId = '44444444-4444-4444-8
     state,
     stage: state === 'REVIEW_REQUIRED' ? 'USER_APPROVAL' : 'STRUCTURE',
     sequence: 3,
-    profileId: 'dashscope-qwen37-flash-product-v3',
+    profileId: 'dashscope-qwen37-flash-product-v4',
     sourceReference: 'product-upload',
     costLimitMicrosCny: 2_000_000,
     cancellationRequested: false,

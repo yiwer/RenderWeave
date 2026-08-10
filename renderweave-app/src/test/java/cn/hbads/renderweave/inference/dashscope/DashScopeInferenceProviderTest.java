@@ -172,6 +172,33 @@ class DashScopeInferenceProviderTest {
     }
 
     @Test
+    void jdkTransportClassifiesTheRequestDeadlineAsATimeout() throws Exception {
+        var server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        server.createContext("/", exchange -> {
+            try {
+                Thread.sleep(250);
+                exchange.sendResponseHeaders(204, -1);
+            } catch (InterruptedException interrupted) {
+                Thread.currentThread().interrupt();
+            } finally {
+                exchange.close();
+            }
+        });
+        server.start();
+        try {
+            var failure = assertThrows(ProviderCallException.class, () ->
+                    new JdkDashScopeHttpTransport().exchange(
+                            URI.create("http://127.0.0.1:" + server.getAddress().getPort() + "/"),
+                            Map.of(), new byte[0], Duration.ofMillis(50)
+                    ));
+            assertEquals("DASHSCOPE_TIMEOUT", failure.code());
+            assertTrue(failure.retryable());
+        } finally {
+            server.stop(0);
+        }
+    }
+
+    @Test
     void secretCanComeFromEnvironmentValueOrMountedFileWithoutAppearingInToString(@TempDir Path temp) throws Exception {
         var file = temp.resolve("dashscope_api_key");
         Files.writeString(file, TEST_KEY + "\n", StandardCharsets.UTF_8);
