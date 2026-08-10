@@ -287,3 +287,25 @@ support-not-group，未进入 BINDING，也未命中 region normalization teleme
 该结果没有建立 Max 入口，也不支持重复相同 v21。下一本地诊断只检查：当 relationship support ID 指向非 GROUP
 时，relationship 的 exact known region 是否恰有一个已验证 GROUP owner，可在不依赖距离、顺序、模型原文或
 跨 GROUP 猜测的前提下提供唯一替换；若零个或多个，必须保持既有 fixed code fail-closed。
+
+## N7 unique exact-region GROUP-owner support normalization 增量
+
+`edc0c28` 新增 pipeline 4.9/product-v22；4.8 与更早 Profile 保持原语义。新 policy 只在 relationship 的
+support list 经逐项验证、去重后恰有一个已知但非 GROUP 的 element 时继续；relationship 的原始 `regionId`
+还必须是已验证的 `GROUP` 或 `REPEATED_GROUP` region，并且 inventory 中恰有一个 GROUP element 精确拥有该
+region。只有这三个条件同时成立，codec 才把 support ID 替换为该 owner，再从其 multiplicity 派生 cardinality。
+
+未知 support 保留 `VISUAL_HIERARCHY_V2_SUPPORT_ELEMENT_UNKNOWN`；非容器/未知/非法 region、零 owner 或多个
+owner 均不归一化，继续由既有固定码 fail-closed。实现不按距离、reading order 或模型文本排名，不跨 region/GROUP，
+不新增或删除 element/entity/relationship，不修改 endpoint、field key、topology 或 Candidate。成功路径只记录
+payload-free `VISUAL_HIERARCHY_RELATIONSHIP_SUPPORT_OWNER_NORMALIZED` 计数；旧 exact-duplicate support 与 v21
+connection-aware region normalization 继续复用。
+
+合同/Profile/prompt 定向 36/36、独立 evidence verifier 2/2 与真实 PostgreSQL lease-expiry 恢复 1/1 通过；
+后者证明唯一 owner 替换后可进入 ELEMENT_BINDING，恢复时只重做 BINDING。server
+`.sdlc/evidence/20260811-071714-server`（191 tests、6 gated skip）、Node 24 web
+`.sdlc/evidence/20260811-071856-web`（73 tests + type/lint/build）、E2E
+`.sdlc/evidence/20260811-071927-e2e`（18 passed、1 gated skip、无 console/page error）与提交后 clean fast
+`.sdlc/evidence/20260811-072030-fast` 均为 A1 PASS。实现与门控期间 Provider attempts=0、三份 ledger CLOSED；
+product-v22 仍隐藏 `EXPERIMENTAL`。这些 repository synthetic 证据不构成 live 三阶段、Max 入口、final eval 或
+用户验收，下一步只能在重新计算 identity/Profile snapshot 且精确 J1/额度/时限仍有效时做 Plus v22 单 case。
