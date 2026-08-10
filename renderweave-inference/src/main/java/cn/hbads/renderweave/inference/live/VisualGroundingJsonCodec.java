@@ -38,29 +38,42 @@ final class VisualGroundingJsonCodec {
             List<String> sourceArtifactIds
     ) {
         try {
-            var response = read(value, GroundingOutput.class);
+            var response = decode(value, GroundingOutput.class, "VISUAL_GROUNDING");
             if (!VisualGroundingPlan.VERSION.equals(response.contractVersion())) {
-                throw new IllegalArgumentException("Visual grounding version is invalid");
+                throw invalid("VISUAL_GROUNDING_VERSION_INVALID", null);
             }
-            var regions = response.regions().stream().map(region -> new VisualRegion(
-                    region.regionId(), region.parentRegionId(), region.kind(), region.multiplicity(),
-                    region.readingOrder(), region.repeatGroupId(),
-                    originalEvidence(region.evidence(), views)
-            )).toList();
-            var elements = response.elements().stream().map(element -> new VisualElement(
-                    element.elementId(), element.kind(), element.proposedKey(), element.displayName(),
-                    element.multiplicity(), element.valueHint(), originalEvidence(element.evidence(), views)
-            )).toList();
-            var inventory = new VisualElementInventory(VisualElementInventory.VERSION, elements);
-            var grounding = new VisualGroundingPlan(
+            var regions = classified("VISUAL_GROUNDING_REGION_INVALID", () ->
+                    response.regions().stream().map(region -> new VisualRegion(
+                            region.regionId(), region.parentRegionId(), region.kind(), region.multiplicity(),
+                            region.readingOrder(), region.repeatGroupId(),
+                            originalEvidence(region.evidence(), views)
+                    )).toList()
+            );
+            var elements = classified("VISUAL_GROUNDING_ELEMENT_INVALID", () ->
+                    response.elements().stream().map(element -> new VisualElement(
+                            element.elementId(), element.kind(), element.proposedKey(), element.displayName(),
+                            element.multiplicity(), element.valueHint(),
+                            originalEvidence(element.evidence(), views)
+                    )).toList()
+            );
+            var inventory = classified("VISUAL_GROUNDING_ELEMENT_INVALID", () ->
+                    new VisualElementInventory(VisualElementInventory.VERSION, elements)
+            );
+            var grounding = classified("VISUAL_GROUNDING_REGION_FOREST_INVALID", () ->
+                    new VisualGroundingPlan(
                     VisualGroundingPlan.VERSION, regions,
                     response.elements().stream().map(element -> new VisualElementRegionOwnership(
                             element.elementId(), element.regionIds()
                     )).toList()
+                    )
             );
-            inventory.requireKnownArtifacts(Set.copyOf(sourceArtifactIds));
-            grounding.requireKnownArtifacts(sourceArtifactIds);
-            grounding.requireConsistentWith(inventory);
+            classified("VISUAL_GROUNDING_ARTIFACT_COVERAGE_INVALID", () -> {
+                inventory.requireKnownArtifacts(Set.copyOf(sourceArtifactIds));
+                grounding.requireKnownArtifacts(sourceArtifactIds);
+            });
+            classified("VISUAL_GROUNDING_ELEMENT_OWNERSHIP_INVALID", () ->
+                    grounding.requireConsistentWith(inventory)
+            );
             return new GroundedElementInventory(inventory, grounding);
         } catch (InvalidVisualAnalysisException failure) {
             throw failure;
@@ -75,11 +88,12 @@ final class VisualGroundingJsonCodec {
             VisualGroundingPlan grounding
     ) {
         try {
-            var response = read(value, HierarchyOutput.class);
+            var response = decode(value, HierarchyOutput.class, "VISUAL_HIERARCHY_V2");
             if (!VisualHierarchyPlan.VERSION_V2.equals(response.contractVersion())) {
-                throw new IllegalArgumentException("Visual hierarchy v2 version is invalid");
+                throw invalid("VISUAL_HIERARCHY_V2_VERSION_INVALID", null);
             }
-            var hierarchy = new VisualHierarchyPlan(
+            var hierarchy = classified("VISUAL_HIERARCHY_V2_TOPOLOGY_INVALID", () ->
+                    new VisualHierarchyPlan(
                     VisualHierarchyPlan.VERSION_V2, response.rootEntityId(),
                     response.entities().stream().map(entity -> new VisualEntityPlan(
                             entity.entityId(), entity.schemaKey(), entity.displayName(),
@@ -90,9 +104,13 @@ final class VisualGroundingJsonCodec {
                             relationship.childEntityId(), relationship.fieldKey(), relationship.displayName(),
                             relationship.cardinality(), relationship.supportingElementIds()
                     )).toList()
+                    )
             );
-            hierarchy.requireConsistentWith(inventory);
-            var entityRegions = new VisualEntityRegionPlan(
+            classified("VISUAL_HIERARCHY_V2_TOPOLOGY_INVALID", () ->
+                    hierarchy.requireConsistentWith(inventory)
+            );
+            var entityRegions = classified("VISUAL_HIERARCHY_V2_REGION_OWNERSHIP_INVALID", () ->
+                    new VisualEntityRegionPlan(
                     VisualEntityRegionPlan.VERSION,
                     response.entities().stream().map(entity -> new VisualEntityRegionOwnership(
                             entity.entityId(), entity.regionIds()
@@ -101,8 +119,11 @@ final class VisualGroundingJsonCodec {
                             new VisualRelationshipRegionOwnership(
                                     relationship.relationshipId(), relationship.regionId()
                             )).toList()
+                    )
             );
-            entityRegions.requireConsistentWith(hierarchy, grounding);
+            classified("VISUAL_HIERARCHY_V2_REGION_OWNERSHIP_INVALID", () ->
+                    entityRegions.requireConsistentWith(hierarchy, grounding)
+            );
             return new GroundedHierarchyPlan(hierarchy, entityRegions);
         } catch (InvalidVisualAnalysisException failure) {
             throw failure;
@@ -119,18 +140,24 @@ final class VisualGroundingJsonCodec {
             VisualEntityRegionPlan entityRegions
     ) {
         try {
-            var response = read(value, BindingOutput.class);
+            var response = decode(value, BindingOutput.class, "VISUAL_BINDINGS_V2");
             if (!VisualElementBindingPlan.VERSION_V2.equals(response.contractVersion())) {
-                throw new IllegalArgumentException("Visual bindings v2 version is invalid");
+                throw invalid("VISUAL_BINDINGS_V2_VERSION_INVALID", null);
             }
-            var result = new VisualElementBindingPlan(
+            var result = classified("VISUAL_BINDINGS_V2_COVERAGE_INVALID", () ->
+                    new VisualElementBindingPlan(
                     VisualElementBindingPlan.VERSION_V2,
                     response.bindings().stream().map(binding ->
                             new VisualElementBinding(binding.elementId(), binding.entityId())
                     ).toList()
+                    )
             );
-            result.requireConsistentWith(inventory, hierarchy);
-            entityRegions.requireBindingsConsistent(result, grounding);
+            classified("VISUAL_BINDINGS_V2_COVERAGE_INVALID", () ->
+                    result.requireConsistentWith(inventory, hierarchy)
+            );
+            classified("VISUAL_BINDINGS_V2_REGION_OWNERSHIP_INVALID", () ->
+                    entityRegions.requireBindingsConsistent(result, grounding)
+            );
             return result;
         } catch (InvalidVisualAnalysisException failure) {
             throw failure;
@@ -149,9 +176,34 @@ final class VisualGroundingJsonCodec {
         }
     }
 
-    private static <T> T read(String value, Class<T> type) throws Exception {
-        requireBounded(value);
-        return JSON.readValue(value, type);
+    private static <T> T decode(String value, Class<T> type, String prefix) {
+        try {
+            requireBounded(value);
+        } catch (Exception failure) {
+            throw invalid(prefix + "_OUTPUT_BOUNDS_INVALID", failure);
+        }
+        try {
+            return JSON.readValue(value, type);
+        } catch (Exception failure) {
+            throw invalid(prefix + "_JSON_INVALID", failure);
+        }
+    }
+
+    private static <T> T classified(String code, CheckedSupplier<T> supplier) {
+        try {
+            return supplier.get();
+        } catch (InvalidVisualAnalysisException failure) {
+            throw failure;
+        } catch (Exception failure) {
+            throw invalid(code, failure);
+        }
+    }
+
+    private static void classified(String code, CheckedRunnable runnable) {
+        classified(code, () -> {
+            runnable.run();
+            return null;
+        });
     }
 
     private static List<CandidateEvidence> originalEvidence(
@@ -176,6 +228,16 @@ final class VisualGroundingJsonCodec {
 
     private static InvalidVisualAnalysisException invalid(String code, Throwable cause) {
         return new InvalidVisualAnalysisException(code, "Visual grounding output is invalid", cause);
+    }
+
+    @FunctionalInterface
+    private interface CheckedSupplier<T> {
+        T get() throws Exception;
+    }
+
+    @FunctionalInterface
+    private interface CheckedRunnable {
+        void run() throws Exception;
     }
 
     private record GroundingOutput(

@@ -50,24 +50,26 @@ class VisualGroundingContractTest {
     @Test
     void rejectsUnknownViewsSpatialEscapesOverlapCyclesAndRepeatDrift() throws Exception {
         var views = views();
-        assertInvalid(elementsJson().replace("view-00-overview-00", "unknown-view"), views);
-        assertInvalid(elementsJson().replaceFirst("\"left\":0", "\"left\":-1"), views);
-        assertInvalid(elementsJson().replace(
+        assertDiagnostic(elementsJson().replace("view-00-overview-00", "unknown-view"), views,
+                "VISUAL_GROUNDING_REGION_INVALID");
+        assertDiagnostic(elementsJson().replaceFirst("\"left\":0", "\"left\":-1"), views,
+                "VISUAL_GROUNDING_JSON_INVALID");
+        assertDiagnostic(elementsJson().replace(
                 "\"left\":100,\"top\":100,\"right\":3000,\"bottom\":700",
                 "\"left\":100,\"top\":2500,\"right\":3000,\"bottom\":2700"
-        ), views);
-        assertInvalid(elementsJson().replace(
+        ), views, "VISUAL_GROUNDING_ELEMENT_OWNERSHIP_INVALID");
+        assertDiagnostic(elementsJson().replace(
                 "\"left\":0,\"top\":6000,\"right\":10000,\"bottom\":10000",
                 "\"left\":0,\"top\":5000,\"right\":10000,\"bottom\":10000"
-        ), views);
-        assertInvalid(elementsJson().replace(
+        ), views, "VISUAL_GROUNDING_REGION_FOREST_INVALID");
+        assertDiagnostic(elementsJson().replace(
                 "\"regionId\":\"repeat\",\"parentRegionId\":\"root\"",
                 "\"regionId\":\"repeat\",\"parentRegionId\":\"item-a\""
-        ), views);
-        assertInvalid(elementsJson().replace(
+        ), views, "VISUAL_GROUNDING_REGION_FOREST_INVALID");
+        assertDiagnostic(elementsJson().replace(
                 "\"repeatGroupId\":\"rows\",\"evidence\":[{\"viewId\":\"view-00-overview-00\",\"boundingBox\":{\"left\":0,\"top\":6000",
                 "\"repeatGroupId\":\"other\",\"evidence\":[{\"viewId\":\"view-00-overview-00\",\"boundingBox\":{\"left\":0,\"top\":6000"
-        ), views);
+        ), views, "VISUAL_GROUNDING_REGION_FOREST_INVALID");
     }
 
     @Test
@@ -75,39 +77,48 @@ class VisualGroundingContractTest {
         var views = views();
         var observed = codec.parseElements(elementsJson(), views, List.of(IMAGE_ID));
 
-        assertThrows(InvalidVisualAnalysisException.class, () -> codec.parseElements(
+        assertEquals("VISUAL_GROUNDING_JSON_INVALID", assertThrows(
+                InvalidVisualAnalysisException.class, () -> codec.parseElements(
                 elementsJson().replaceFirst("\\{", "{\"unexpected\":true,"), views, List.of(IMAGE_ID)
-        ));
-        assertThrows(InvalidVisualAnalysisException.class, () -> codec.parseElements(
+        )).diagnosticCode());
+        assertEquals("VISUAL_GROUNDING_JSON_INVALID", assertThrows(
+                InvalidVisualAnalysisException.class, () -> codec.parseElements(
                 elementsJson().replaceFirst("\"contractVersion\":", "\"contractVersion\":\"bad\",\"contractVersion\":"),
                 views, List.of(IMAGE_ID)
-        ));
-        assertThrows(InvalidVisualAnalysisException.class, () -> codec.parseElements(
+        )).diagnosticCode());
+        assertEquals("VISUAL_GROUNDING_JSON_INVALID", assertThrows(
+                InvalidVisualAnalysisException.class, () -> codec.parseElements(
                 elementsJson() + "{}", views, List.of(IMAGE_ID)
-        ));
-        assertThrows(InvalidVisualAnalysisException.class, () -> codec.parseElements(
+        )).diagnosticCode());
+        assertEquals("VISUAL_GROUNDING_JSON_INVALID", assertThrows(
+                InvalidVisualAnalysisException.class, () -> codec.parseElements(
                 elementsJson().replace("\"readingOrder\":0", "\"readingOrder\":\"0\""),
                 views, List.of(IMAGE_ID)
-        ));
+        )).diagnosticCode());
+        assertDiagnostic(elementsJson().replace(
+                "renderweave-visual-grounding/2.0", "renderweave-visual-grounding/9.0"
+        ), views, "VISUAL_GROUNDING_VERSION_INVALID");
 
-        assertThrows(InvalidVisualAnalysisException.class, () -> codec.parseHierarchy(
+        assertEquals("VISUAL_HIERARCHY_V2_REGION_OWNERSHIP_INVALID", assertThrows(
+                InvalidVisualAnalysisException.class, () -> codec.parseHierarchy(
                 hierarchyJson().replace(
                         "\"regionIds\":[\"item-a\",\"item-b\"]",
                         "\"regionIds\":[\"header\"]"
                 ), observed.inventory(), observed.grounding()
-        ));
+        )).diagnosticCode());
         var hierarchy = codec.parseHierarchy(hierarchyJson(), observed.inventory(), observed.grounding());
-        assertThrows(InvalidVisualAnalysisException.class, () -> codec.parseBindings(
+        assertEquals("VISUAL_BINDINGS_V2_REGION_OWNERSHIP_INVALID", assertThrows(
+                InvalidVisualAnalysisException.class, () -> codec.parseBindings(
                 bindingsJson().replace(
                         "{\"elementId\":\"title\",\"entityId\":\"document\"}",
                         "{\"elementId\":\"title\",\"entityId\":\"item\"}"
                 ), observed.inventory(), hierarchy.hierarchy(), observed.grounding(), hierarchy.entityRegions()
-        ));
+        )).diagnosticCode());
     }
 
-    private void assertInvalid(String json, VisualViewPlan views) {
-        assertThrows(InvalidVisualAnalysisException.class,
-                () -> codec.parseElements(json, views, List.of(IMAGE_ID)));
+    private void assertDiagnostic(String json, VisualViewPlan views, String expectedCode) {
+        assertEquals(expectedCode, assertThrows(InvalidVisualAnalysisException.class,
+                () -> codec.parseElements(json, views, List.of(IMAGE_ID))).diagnosticCode());
     }
 
     private static VisualViewPlan views() throws Exception {

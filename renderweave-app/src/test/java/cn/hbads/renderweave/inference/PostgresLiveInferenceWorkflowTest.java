@@ -435,6 +435,36 @@ class PostgresLiveInferenceWorkflowTest {
     }
 
     @Test
+    void groundedContractRetriesOnlyCurrentStageAndPersistsBoundedDiagnostic() {
+        var blobs = new MemoryBlobStore();
+        var created = createGroundedVisual(blobs, "grounded-version-diagnostic");
+        var invalid = groundedStationElements().replace(
+                "renderweave-visual-grounding/2.0", "renderweave-visual-grounding/9.0"
+        );
+        var provider = new ScriptedProvider(
+                request -> response(request, invalid),
+                request -> response(request, invalid),
+                request -> response(request, invalid),
+                request -> response(request, invalid),
+                request -> response(request, invalid)
+        );
+
+        var finished = worker(provider, blobs).processNext("grounded-diagnostic-worker").orElseThrow();
+
+        assertThat(finished.state()).isEqualTo(InferenceRunState.FAILED);
+        assertThat(finished.failureCode()).contains("VISUAL_GROUNDING_VERSION_INVALID");
+        assertThat(provider.requests).hasSize(5).allSatisfy(request ->
+                assertThat(request.stage()).isEqualTo(InferenceStage.OBSERVE)
+        );
+        assertThat(workflowStore.attempts(created)).hasSize(5).allSatisfy(attempt -> {
+            assertThat(attempt.status()).isEqualTo(InferenceAttemptStatus.REJECTED);
+            assertThat(attempt.problemCodeCounts())
+                    .containsExactlyEntriesOf(java.util.Map.of("VISUAL_GROUNDING_VERSION_INVALID", 1));
+        });
+        assertThat(workflowStore.findCandidate(created)).isEmpty();
+    }
+
+    @Test
     void pipelineFourPointTwoUsesOneEphemeralOcrObservationAcrossAllVisualStages() {
         var blobs = new MemoryBlobStore();
         var created = createGroundedVisual(blobs, "hybrid-visual-station", HYBRID_VISUAL_PROFILE);
