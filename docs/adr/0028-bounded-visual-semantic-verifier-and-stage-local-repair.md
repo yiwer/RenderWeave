@@ -111,3 +111,22 @@ Plus product-v15 的后续单 case smoke 同样完成完整 ledger lifecycle 与
 `VISUAL_HIERARCHY_V2_SUPPORT_CARDINALITY_MISMATCH` 被拒绝，仍未进入 BINDING。该结果保留了 verifier 的
 “只拒绝、不改写”边界，同时暴露出 model-owned relationship cardinality 与 evidence-owned GROUP multiplicity
 之间的冗余冲突；在形成新的版本化、可离线验证假设前，不再用同一 Profile 重复 live。
+
+## N7 evidence-owned relationship cardinality 增量
+
+`bb15096` 新增 `renderweave-inference-pipeline/4.3` 与三模型 immutable product-v16 Profile。模型仍负责提出
+entity、relationship endpoint、field key、region 和 supporting element；只有 relationship `cardinality` 不再
+作为第二事实源。4.3 要求每条 relationship 恰好引用一个已知 GROUP，并从该 GROUP 已验证的 `multiplicity`
+确定内部 cardinality。多支撑、未知元素或非 GROUP 支撑分别以固定码 fail-closed；旧 4.1/v15 入口仍保留
+model-asserted cardinality 与 mismatch 拒绝语义，历史 snapshot 可原样重放。
+
+这不是 semantic verifier 自动改写模型 plan：verifier 继续只拒绝；确定性 codec 在构造受验证 hierarchy 前消除
+一个可由上游证据唯一推导的冗余字段。成功的 HIERARCHY attempt 只记录 payload-free
+`VISUAL_HIERARCHY_RELATIONSHIP_CARDINALITY_DERIVED` 计数，监控 UI 不展示模型值或局部 ID。独立 evidence
+verifier 同步识别 4.3 Profile snapshot。合同单测覆盖旧严格模式、派生模式和三类 fail-closed 负例；真实
+PostgreSQL 脚本 provider 证明一个矛盾的 model cardinality 可由三个唯一 GROUP 证据确定，并继续完成
+OBSERVE→HIERARCHY→BINDING 与 Candidate materialization。
+
+该增量仅为 clean A1 离线假设。fast/server/web/E2E 均通过且没有 Provider 调用；三份 ledger 保持 CLOSED，
+Profile 保持 `EXPERIMENTAL`。只有新的精确 identity/snapshot 单 case live 实证触达 BINDING 后，才能讨论 Max
+或 final eval；本 ADR 不把离线可达性写成 live 模型质量。

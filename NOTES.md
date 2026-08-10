@@ -1,6 +1,12 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-11 `bb15096` 新增 pipeline 4.3/product-v16：relationship cardinality 只从唯一已验证 GROUP 的
+  multiplicity 派生，旧 4.1/v15 仍严格拒绝 mismatch；多支撑、未知与非 GROUP 均 fail-closed，accepted
+  HIERARCHY 只写 payload-free 派生计数。codec/Profile 定向 12/12、真实 PostgreSQL 纵向切片 1/1、server
+  379 tests（6 gated skip）、Web 73、E2E 18 passed/1 gated skip 与 exact-clean fast A1 全绿；没有 Provider
+  调用，三份 ledger CLOSED。N7 仍 `in_progress`，下一步须以新 identity/snapshot 对 Plus v16 做单 case、最多
+  5 attempts 的完整 CLOSED lifecycle；未实证到 BINDING 前不调用 Max。
 - 2026-08-11 Plus product-v15 单 case lifecycle 已 CLOSED/A2：5 attempts、15,823 input + 9,945 output tokens、
   payload scan PASS。第三次 OBSERVE accepted 并得到 8 SLOT/1 GROUP，因此 0-GROUP rewind 未触发；后两次
   HIERARCHY 均为 `VISUAL_HIERARCHY_V2_SUPPORT_CARDINALITY_MISMATCH`，仍未到 BINDING。Plus Goal 现为
@@ -60,8 +66,8 @@
 - 生命周期状态：P0 `accepted`；P1–P4 `automated_verified`；P5 Flash / Plus / Prompt v2 / Grounded v2 / T5-10 诊断均为 `live_independently_reviewed`，T5-9/T5-11 与 P6/T6-1 为 `independently_reviewed`；P6/T6-2 为 `human_acceptance_pending`；T6-3a 与 T6-5 N6 为 `automated_verified`、T6-3b pending。T6-5 整体仍 active，N7 `in_progress`。所有 DashScope Profile 仍为 `EXPERIMENTAL`；历史评测授权均 CLOSED，基础 Compose 默认关闭，显式 product-live overlay 已按用户授权开放。
 
 ## 下一步
-- [ ] P6/T6-5 图片识别 vNext：N0–N6 已形成独立 checkpoint；按 2026-08-11 J1 delta 推进 N7 pinned Flash、
-  Goal guard v2、三阶段 canary 与有界 final eval。
+- [ ] P6/T6-5 图片识别 vNext：N0–N6 已形成独立 checkpoint；按 2026-08-11 J1 delta 先执行 Plus v16
+  evidence-derived cardinality 单 case 三阶段 canary，再决定是否满足 Max/有界 final eval 入口。
 - [x] Java / React / PostgreSQL / OpenAPI 最小 canary 与 A1 full gate 通过。
 - [x] 用户接受“A 默认表单 + B Map + 吸收 C 的 preview/密度”的编辑器方向（J1，2026-08-08）。
 - [x] 创建 P1–P4 implementation Goal。
