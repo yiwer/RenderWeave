@@ -9,13 +9,16 @@ test('executes a real replay run and atomically creates its reviewed Draft bundl
   expect(staticBeforeResponse.ok()).toBeTruthy();
   const staticBefore = await staticBeforeResponse.json() as { total: number };
 
-  await page.goto('/inference');
-  await expect(page.getByRole('heading', { name: '数据结构智能识别' })).toBeVisible();
+  await page.goto('/inference/new');
+  await expect(page.getByRole('heading', { name: '新增识别输入' })).toBeVisible();
   await expect(page.locator('.fixture-row')).toHaveCount(20);
   await page.locator('.fixture-row').filter({ hasText: 'combined-17-all-null' }).click();
   await page.getByRole('checkbox').check();
-  await page.getByRole('button', { name: '运行并进入审核' }).click();
+  await page.getByRole('button', { name: '运行并查看监控' }).click();
 
+  await expect(page).toHaveURL(/\/inference-runs\/[0-9a-f-]+\/monitor$/);
+  await expect(page.getByText('Candidate 已生成')).toBeVisible();
+  await page.getByRole('link', { name: /查看识别结果/ }).first().click();
   await expect(page).toHaveURL(/\/inference-runs\/[0-9a-f-]+\/review$/);
   await expect(page.getByText(/blocker 阻止落库/)).toBeVisible();
   await page.locator('.candidate-field-row').filter({ hasText: 'value' }).click();

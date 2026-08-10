@@ -94,21 +94,33 @@ test('completes the four-step Candidate workflow with keyboard authoring and dur
 
   await page.goto('/inference');
   await page.waitForLoadState('networkidle');
-  await expect(page.getByRole('heading', { name: '数据结构智能识别' })).toBeVisible();
-  await expect(page.getByRole('navigation', { name: '数据结构识别进度' })).toContainText('准备输入');
-  await expect(page.getByRole('heading', { name: '最近识别任务' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '历史识别任务' })).toBeVisible();
+  await expect(page.getByRole('navigation', { name: '智能识别版面' })).toContainText('历史任务');
+  await expect(page.getByRole('heading', { name: '全部识别记录' })).toBeVisible();
   await expect(page.getByRole('link', { name: /查看结果/ })).toHaveAttribute(
     'href',
     `/inference-runs/${recentRunId}/review`,
   );
+  await page.screenshot({ path: testInfo.outputPath('inference-history-1280x720.png'), fullPage: true });
+  await page.locator('.chrome-actions').getByRole('link', { name: '新增识别' }).click();
+  await expect(page).toHaveURL(/\/inference\/new$/);
+  await expect(page.getByRole('heading', { name: '新增识别输入' })).toBeVisible();
+  await expect(page.getByRole('navigation', { name: '数据结构识别进度' })).toContainText('准备输入');
   await expect(page.getByText('零网络 · 可复现')).toBeVisible();
+  await page.screenshot({ path: testInfo.outputPath('inference-new-1280x720.png'), fullPage: true });
   await page.getByRole('checkbox', { name: /确认使用 replay-v1/ }).check();
-  await page.getByRole('button', { name: '运行并进入审核' }).click();
+  await page.getByRole('button', { name: '运行并查看监控' }).click();
 
-  await expect(page).toHaveURL(new RegExp(`/inference-runs/${runId}/review$`));
-  await expect(page.getByRole('heading', { name: '校对识别结果' })).toBeVisible();
+  await expect(page).toHaveURL(new RegExp(`/inference-runs/${runId}/monitor$`));
+  await expect(page.getByRole('heading', { name: '识别监控' })).toBeVisible();
+  await expect(page.getByText('Candidate 已生成')).toBeVisible();
   await expect(page.getByRole('heading', { name: '执行日志' })).toBeVisible();
   await expect(page.getByText('模型调用 #1 · 结构识别')).toBeVisible();
+  await page.screenshot({ path: testInfo.outputPath('inference-monitor-1280x720.png'), fullPage: true });
+  await page.getByRole('link', { name: /查看识别结果/ }).first().click();
+
+  await expect(page).toHaveURL(new RegExp(`/inference-runs/${runId}/review$`));
+  await expect(page.getByRole('heading', { name: '识别结果' })).toBeVisible();
   await expect(page.getByRole('navigation', { name: '数据结构识别进度' }).locator('[aria-current="step"]')).toContainText('逐项校对');
   await expect(page.getByText('1 个 blocker 阻止落库')).toBeVisible();
   await expect(page.getByRole('progressbar', { name: '逐项校对完成度' })).toHaveAttribute('aria-valuenow', '50');
@@ -266,7 +278,7 @@ test('preflights a local upload queue while the deployment transfer gate is clos
     }
   });
 
-  await page.goto('/inference');
+  await page.goto('/inference/new');
   await page.waitForLoadState('networkidle');
   await page.getByRole('tab', { name: /AI 识别/ }).click();
   const fileInputs = page.locator('.live-upload-field input[type="file"]');
@@ -284,7 +296,7 @@ test('preflights a local upload queue while the deployment transfer gate is clos
   await expect(page.getByText('sample.json', { exact: true })).toBeVisible();
   await expect(page.getByText('仅支持 PNG 或 JPEG。')).toBeVisible();
   await expect(page.getByText(/文件只保留在当前浏览器页面/)).toBeVisible();
-  await expect(page.getByRole('button', { name: '排队识别并进入审核' })).toBeDisabled();
+  await expect(page.getByRole('button', { name: '排队识别并查看监控' })).toBeDisabled();
   await page.getByRole('button', { name: '移除文件 notes.txt' }).click();
   await expect(page.getByText('notes.txt', { exact: true })).toHaveCount(0);
   await page.getByRole('tab', { name: '仅 JSON' }).click();
@@ -322,7 +334,7 @@ test('offers four product models and an optional cumulative run cost ceiling', a
     }
   });
 
-  await page.goto('/inference');
+  await page.goto('/inference/new');
   await page.getByRole('tab', { name: /AI 识别/ }).click();
   await expect(page.getByText('可用', { exact: true })).toBeVisible();
   await expect(page.locator('.live-profile-grid button')).toHaveCount(4);
@@ -339,12 +351,12 @@ test('offers four product models and an optional cumulative run cost ceiling', a
   await page.getByRole('checkbox', { name: /设置本次任务成本上限/ }).check();
   const costInput = page.getByRole('spinbutton', { name: '本次任务成本上限' });
   await costInput.fill('0');
-  await expect(page.getByRole('button', { name: '排队识别并进入审核' })).toBeDisabled();
+  await expect(page.getByRole('button', { name: '排队识别并查看监控' })).toBeDisabled();
   await costInput.fill('0.25');
   await page.getByRole('checkbox', { name: /确认数据可外发/ }).check();
   await page.getByRole('checkbox', { name: /接受实验配置/ }).check();
-  await expect(page.getByRole('button', { name: '排队识别并进入审核' })).toBeEnabled();
-  await page.getByRole('button', { name: '排队识别并进入审核' }).click();
+  await expect(page.getByRole('button', { name: '排队识别并查看监控' })).toBeEnabled();
+  await page.getByRole('button', { name: '排队识别并查看监控' }).click();
 
   await expect.poll(() => livePosts).toBe(1);
   expect(multipartBody).toContain('"inputClassification":"USER_PROVIDED"');
@@ -379,20 +391,20 @@ test('requires confirmation to cancel and creates a new auditable retry run', as
     }
   });
 
-  await page.goto(`/inference-runs/${runId}/review`);
+  await page.goto(`/inference-runs/${runId}/monitor`);
   await page.waitForLoadState('networkidle');
   const cancel = page.getByRole('button', { name: '取消任务' });
   await cancel.focus();
   await page.keyboard.press('Enter');
   expect(cancelCalls).toBe(0);
   await page.getByRole('button', { name: '确认取消' }).click();
-  await expect(page.getByText('推断任务未生成 Candidate')).toBeVisible();
-  expect(cancelCalls).toBe(1);
+  await expect.poll(() => cancelCalls).toBe(1);
+  await expect(page.getByText('识别任务未生成 Candidate')).toBeVisible({ timeout: 10_000 });
 
   const retry = page.getByRole('button', { name: '重新运行' });
   await retry.focus();
   await page.keyboard.press('Enter');
-  await expect(page).toHaveURL(new RegExp(`/inference-runs/${retryRunId}/review$`));
+  await expect(page).toHaveURL(new RegExp(`/inference-runs/${retryRunId}/monitor$`));
   expect(retryCalls).toBe(1);
 });
 

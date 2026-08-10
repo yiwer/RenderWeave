@@ -8,12 +8,10 @@ import {
   CircleDollarSign,
   Cloud,
   FileJson2,
-  History,
   Image,
   Images,
   Network,
   Play,
-  RefreshCw,
   ShieldCheck,
   Trash2,
   Upload,
@@ -24,7 +22,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import type {
   CreateLiveRunRequest,
   InferenceMode,
-  InferenceRunPageResponse,
   InferenceRunResponse,
   LiveAvailabilityResponse,
   LiveProfileResponse,
@@ -37,11 +34,10 @@ import {
   createLiveRunRequest,
   createReplayRunRequest,
   getLiveAvailabilityRequest,
-  listInferenceRunsRequest,
   listReplayFixturesRequest,
 } from './candidate-api';
 import { InferenceFlowSteps } from './InferenceFlowSteps';
-import { inferenceStageLabel, inferenceStateLabel } from './inference-format';
+import { InferenceModuleNav } from './InferenceModuleNav';
 import { filesForLiveMode, formatFileSize, mergeLiveFiles, validateLiveFiles, type LiveFileIssue, type LiveFileKind } from './live-input';
 
 type Launcher = 'REPLAY' | 'LIVE';
@@ -67,10 +63,6 @@ export function InferenceStartPage() {
   const [confirmed, setConfirmed] = useState(false);
   const replayQuery = useQuery({ queryKey: ['replay-fixtures'], queryFn: listReplayFixturesRequest });
   const liveQuery = useQuery({ queryKey: ['live-inference-availability'], queryFn: getLiveAvailabilityRequest });
-  const recentRunsQuery = useQuery({
-    queryKey: ['inference-runs', 1, 6],
-    queryFn: () => listInferenceRunsRequest(1, 6),
-  });
   const fixtures = useMemo(
     () => Array.from(replayQuery.data?.items ?? []).filter((item) => item.mode === mode),
     [mode, replayQuery.data],
@@ -78,14 +70,17 @@ export function InferenceStartPage() {
   const selected = fixtures.find((item) => item.fixtureId === selectedId) ?? fixtures[0];
   const createReplay = useMutation({
     mutationFn: (fixture: ReplayFixtureResponse) => createReplayRunRequest(fixture.fixtureId, crypto.randomUUID()),
-    onSuccess: (run) => navigate(`/inference-runs/${run.runId}/review`),
+    onSuccess: (run) => navigate(`/inference-runs/${run.runId}/monitor`),
   });
 
   return (
     <ResourceFrame
-      title="数据结构智能识别"
-      description="先形成可审计的 Schema Candidate，再由用户逐项确认并创建 Draft；推断流程不会直接发布数据结构资产。"
+      title="新增识别输入"
+      description="选择识别方式、输入文件、模型与费用边界；提交后进入独立监控版面，不会直接发布或写入正式数据结构。"
+      actions={<Link className="button ghost-button" to="/inference">查看历史任务</Link>}
+      breadcrumbs={[{ label: '智能识别', to: '/inference' }, { label: '新增识别' }]}
     >
+      <InferenceModuleNav />
       <InferenceFlowSteps current={1} />
       <div className="inference-kind-tabs" role="tablist" aria-label="推断方式">
         <button type="button" role="tab" aria-selected={launcher === 'REPLAY'} className={launcher === 'REPLAY' ? 'active' : ''} onClick={() => setLauncher('REPLAY')}>
@@ -108,56 +103,8 @@ export function InferenceStartPage() {
             selected={selected}
             createRun={createReplay}
           />
-        : <LiveLauncher mode={mode} setMode={setMode} query={liveQuery} onCreated={(runId) => navigate(`/inference-runs/${runId}/review`)} />}
-      <RecentInferenceRuns query={recentRunsQuery} />
+        : <LiveLauncher mode={mode} setMode={setMode} query={liveQuery} onCreated={(runId) => navigate(`/inference-runs/${runId}/monitor`)} />}
     </ResourceFrame>
-  );
-}
-
-function RecentInferenceRuns({ query }: { query: UseQueryResult<InferenceRunPageResponse, Error> }) {
-  return (
-    <section className="recent-inference-runs" aria-labelledby="recent-inference-title">
-      <header>
-        <div>
-          <span className="recent-inference-icon"><History aria-hidden="true" size={18} /></span>
-          <span>
-            <h2 id="recent-inference-title">最近识别任务</h2>
-            <p>任务记录由服务端持久化，可随时返回继续校对或查看结果。</p>
-          </span>
-        </div>
-        <button type="button" className="button ghost-button" disabled={query.isFetching} onClick={() => void query.refetch()}>
-          <RefreshCw aria-hidden="true" size={15} />{query.isFetching ? '正在刷新' : '刷新'}
-        </button>
-      </header>
-      {query.isPending && <ResourceLoading label="正在读取最近识别任务" />}
-      {query.isError && <ResourceError error={query.error} onRetry={() => void query.refetch()} />}
-      {query.data && query.data.items.length === 0 && (
-        <div className="recent-inference-empty">
-          <History aria-hidden="true" size={22} />
-          <strong>还没有识别任务</strong>
-          <span>从上方选择一个确定性样本，即可体验完整的识别与校对流程。</span>
-        </div>
-      )}
-      {query.data && query.data.items.length > 0 && (
-        <div className="recent-inference-list">
-          {query.data.items.map((run) => (
-            <Link key={run.runId} to={`/inference-runs/${run.runId}/review`} className="recent-inference-row">
-              <span className={`recent-inference-state state-${run.state.toLowerCase()}`}>{inferenceStateLabel(run.state)}</span>
-              <span className="recent-inference-main">
-                <strong>{modeLabels[run.mode]} · {inferenceStageLabel(run.stage)}</strong>
-                <small>{run.sourceReference} · {formatRunTime(run.updatedAt)}</small>
-              </span>
-              <span className="recent-inference-profile">{humanProfile(run.profileId)}</span>
-              {run.retryOfRunId && <span className="recent-inference-retry">重试任务</span>}
-              <span className="recent-inference-action">{runActionLabel(run.state)}<ArrowRight aria-hidden="true" size={15} /></span>
-            </Link>
-          ))}
-        </div>
-      )}
-      {query.data && query.data.total > query.data.items.length && (
-        <p className="recent-inference-total">共 {query.data.total} 个任务，当前展示最近 {query.data.items.length} 个。</p>
-      )}
-    </section>
   );
 }
 
@@ -237,7 +184,7 @@ function ReplayLauncher({
                 <span><strong>确认使用 replay-v1</strong>仅处理当前合成样本，外部传输关闭。</span>
               </label>
               <button type="button" className="button primary-button replay-launch" disabled={!confirmed || createRun.isPending} onClick={() => createRun.mutate(selected)}>
-                <Play aria-hidden="true" size={16} />{createRun.isPending ? '正在执行确定性流程…' : '运行并进入审核'}
+                <Play aria-hidden="true" size={16} />{createRun.isPending ? '正在创建任务…' : '运行并查看监控'}
               </button>
               {createRun.isError && <p className="replay-error" role="alert">{errorMessage(createRun.error)}</p>}
             </>
@@ -432,7 +379,7 @@ function LiveLauncher({
                 disabled={!available || !modeReady || !costLimitValid || !transferConfirmed || !experimentalConfirmed || createRun.isPending}
                 onClick={() => createRun.mutate()}
               >
-                <Upload aria-hidden="true" size={16} />{createRun.isPending ? '正在创建任务…' : '排队识别并进入审核'}
+                <Upload aria-hidden="true" size={16} />{createRun.isPending ? '正在创建任务…' : '排队识别并查看监控'}
               </button>
               {!profileSupportsMode
                 ? <p className="live-input-hint">所选模型配置不支持当前输入模式，请切换模型或模式。</p>
@@ -531,31 +478,6 @@ function liveProfileDescription(profile: LiveProfileResponse) {
   if (profile.model === 'qwen3.7-plus') return '质量、速度与成本均衡';
   if (profile.model === 'qwen3.7-max-2026-06-08') return '固定版本 · 复杂视觉结构';
   return '高能力实验模型';
-}
-
-function humanProfile(profileId: string) {
-  if (profileId === 'replay-v1') return '确定性回放';
-  if (profileId.includes('qwen37-plus')) return 'Qwen3.7 Plus';
-  if (profileId.includes('qwen37-flash')) return 'Qwen3.7 Flash';
-  if (profileId.includes('qwen37-max')) return 'Qwen3.7 Max 2026-06-08';
-  if (profileId.includes('qwen38-max')) return 'Qwen3.8 Max';
-  return profileId;
-}
-
-function runActionLabel(state: InferenceRunResponse['state']) {
-  if (state === 'REVIEW_REQUIRED') return '继续校对';
-  if (state === 'COMPLETED') return '查看结果';
-  if (state === 'FAILED' || state === 'CANCELLED') return '查看并重试';
-  return '查看进度';
-}
-
-function formatRunTime(value: string) {
-  return new Intl.DateTimeFormat('zh-CN', {
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(new Date(value));
 }
 
 function parseYuanMicros(value: string): number | null {

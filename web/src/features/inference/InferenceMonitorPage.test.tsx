@@ -1,0 +1,142 @@
+// @vitest-environment happy-dom
+
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+import type { InferenceExecutionLogResponse, InferenceRunResponse } from '../../api/generated';
+import { InferenceMonitorPage } from './InferenceMonitorPage';
+
+const api = vi.hoisted(() => ({
+  getInferenceRunRequest: vi.fn(),
+  getInferenceExecutionLogRequest: vi.fn(),
+  cancelInferenceRunRequest: vi.fn(),
+  retryInferenceRunRequest: vi.fn(),
+}));
+
+vi.mock('./candidate-api', () => api);
+
+afterEach(cleanup);
+
+describe('Inference monitor workspace', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    api.getInferenceExecutionLogRequest.mockImplementation(async (runId: string) => executionLog(run('RUNNING', runId)));
+  });
+
+  it('keeps cancellation behind explicit confirmation on the monitor page', async () => {
+    const queued = run('QUEUED');
+    api.getInferenceRunRequest.mockResolvedValue(queued);
+    api.cancelInferenceRunRequest.mockResolvedValue({ ...queued, state: 'CANCELLED' as const });
+    renderPage();
+
+    expect(await screen.findByRole('heading', { name: '识别监控' })).toBeTruthy();
+    fireEvent.click(await screen.findByRole('button', { name: '取消任务' }));
+    expect(api.cancelInferenceRunRequest).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: '确认取消' }));
+    await waitFor(() => expect(api.cancelInferenceRunRequest).toHaveBeenCalledWith(queued.runId));
+  });
+
+  it('shows payload-free failure diagnostics and creates an auditable retry', async () => {
+    const failed = {
+      ...run('FAILED'),
+      stage: 'CRITIQUE' as const,
+      failureCode: 'LIVE_UNSAFE_BLOCKER_SET',
+      sequence: 6,
+    };
+    api.getInferenceRunRequest.mockResolvedValue(failed);
+    api.getInferenceExecutionLogRequest.mockResolvedValue(executionLog(failed, true));
+    api.retryInferenceRunRequest.mockResolvedValue({
+      ...failed,
+      runId: '66666666-6666-4666-8666-666666666666',
+      state: 'QUEUED' as const,
+      retryOfRunId: failed.runId,
+    });
+    renderPage();
+
+    expect(await screen.findByText('识别任务未生成 Candidate')).toBeTruthy();
+    expect(await screen.findByText('CANDIDATE_SCHEMA_KEY_INVALID')).toBeTruthy();
+    expect(screen.getByText('CANDIDATE_SCALAR_SHAPE_INVALID')).toBeTruthy();
+    expect(screen.queryByText('req-private-provider-id')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: '重新运行' }));
+    await waitFor(() => expect(api.retryInferenceRunRequest).toHaveBeenCalledWith(failed.runId));
+  });
+
+  it('opens the result workspace only after Candidate generation', async () => {
+    const ready = run('REVIEW_REQUIRED');
+    api.getInferenceRunRequest.mockResolvedValue(ready);
+    api.getInferenceExecutionLogRequest.mockResolvedValue(executionLog(ready));
+    renderPage();
+
+    expect(await screen.findByText('Candidate 已生成')).toBeTruthy();
+    expect(screen.getByRole('link', { name: /查看识别结果/ }).getAttribute('href'))
+      .toBe(`/inference-runs/${ready.runId}/review`);
+    expect(screen.getByRole('navigation', { name: '智能识别版面' }).textContent).toContain('识别结果');
+  });
+});
+
+function renderPage() {
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  });
+  render(
+    <QueryClientProvider client={client}>
+      <MemoryRouter initialEntries={['/inference-runs/44444444-4444-4444-8444-444444444444/monitor']}>
+        <Routes>
+          <Route path="/inference-runs/:runId/monitor" element={<InferenceMonitorPage />} />
+        </Routes>
+      </MemoryRouter>
+    </QueryClientProvider>,
+  );
+}
+
+function run(state: InferenceRunResponse['state'], runId = '44444444-4444-4444-8444-444444444444'): InferenceRunResponse {
+  return {
+    runId,
+    mode: 'COMBINED',
+    state,
+    stage: state === 'REVIEW_REQUIRED' ? 'USER_APPROVAL' : 'STRUCTURE',
+    sequence: 3,
+    profileId: 'dashscope-qwen37-flash-product-v2',
+    sourceReference: 'product-upload',
+    costLimitMicrosCny: 2_000_000,
+    cancellationRequested: false,
+    retryOfRunId: null,
+    failureCode: null,
+    candidateRevision: state === 'REVIEW_REQUIRED' ? 0 : null,
+    createdAt: '2026-08-10T04:02:49Z',
+    updatedAt: '2026-08-10T04:03:12Z',
+    finishedAt: state === 'FAILED' ? '2026-08-10T04:03:12Z' : null,
+  };
+}
+
+function executionLog(runSnapshot: InferenceRunResponse, failed = false): InferenceExecutionLogResponse {
+  return {
+    run: runSnapshot,
+    events: [{
+      sequence: runSnapshot.sequence,
+      type: runSnapshot.state,
+      state: runSnapshot.state,
+      stage: runSnapshot.stage,
+      occurredAt: runSnapshot.updatedAt,
+    }],
+    attempts: failed ? [{
+      attemptOrdinal: 0,
+      stage: 'STRUCTURE',
+      status: 'SUCCEEDED',
+      outcomeCode: 'LIVE_OUTPUT_ACCEPTED',
+      providerModel: 'qwen3.7-flash',
+      inputTokens: 4_196,
+      outputTokens: 2_343,
+      costMicrosCny: 2_715,
+      durationMillis: 22_083,
+      problemCodeCounts: {
+        CANDIDATE_SCHEMA_KEY_INVALID: 1,
+        CANDIDATE_SCALAR_SHAPE_INVALID: 6,
+      },
+      completedAt: '2026-08-10T04:03:11Z',
+    }] : [],
+    truncated: false,
+  };
+}

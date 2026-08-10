@@ -84,50 +84,6 @@ describe('Candidate atomic apply workspace', () => {
     expect(api.applyCandidateRequest).not.toHaveBeenCalled();
   });
 
-  it('cancels a queued run only after explicit confirmation', async () => {
-    const queued = { ...snapshot().run, state: 'QUEUED' as const, stage: 'NORMALIZE' as const };
-    api.getInferenceRunRequest.mockResolvedValue(queued);
-    api.cancelInferenceRunRequest.mockResolvedValue({ ...queued, state: 'CANCELLED' as const });
-    renderPage();
-
-    fireEvent.click(await screen.findByRole('button', { name: '取消任务' }));
-    expect(api.cancelInferenceRunRequest).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole('button', { name: '确认取消' }));
-    await waitFor(() => expect(api.cancelInferenceRunRequest).toHaveBeenCalledWith(queued.runId));
-  });
-
-  it('creates a new auditable run when a failed run is retried', async () => {
-    const failed = { ...snapshot().run, state: 'FAILED' as const, stage: 'REPAIR' as const, failureCode: 'LIVE_REPAIR_BUDGET_EXHAUSTED' };
-    api.getInferenceRunRequest.mockResolvedValue(failed);
-    api.retryInferenceRunRequest.mockResolvedValue({ ...failed, runId: '66666666-6666-4666-8666-666666666666', state: 'QUEUED' as const, retryOfRunId: failed.runId });
-    renderPage();
-
-    fireEvent.click(await screen.findByRole('button', { name: '重新运行' }));
-    await waitFor(() => expect(api.retryInferenceRunRequest).toHaveBeenCalledWith(failed.runId));
-  });
-
-  it('renders payload-free stage and attempt diagnostics for a failed live run', async () => {
-    const failed = {
-      ...snapshot().run,
-      state: 'FAILED' as const,
-      stage: 'CRITIQUE' as const,
-      sequence: 6,
-      failureCode: 'LIVE_UNSAFE_BLOCKER_SET',
-      finishedAt: '2026-08-10T04:03:12Z',
-    };
-    api.getInferenceRunRequest.mockResolvedValue(failed);
-    api.getInferenceExecutionLogRequest.mockResolvedValue(executionLog(failed, true));
-    renderPage();
-
-    expect(await screen.findByRole('heading', { name: '执行日志' })).toBeTruthy();
-    expect(await screen.findByText('模型调用 #1 · 结构识别')).toBeTruthy();
-    expect(screen.getByText('CANDIDATE_SCHEMA_KEY_INVALID')).toBeTruthy();
-    expect(screen.getByText('CANDIDATE_SCALAR_SHAPE_INVALID')).toBeTruthy();
-    expect(screen.getByText('× 6')).toBeTruthy();
-    expect(screen.getAllByText(/0\.002715/).length).toBeGreaterThan(0);
-    expect(screen.queryByText('req-private-provider-id')).toBeNull();
-  });
-
   it('synchronizes an externally completed Candidate snapshot into the run flow', async () => {
     let server = cleanReview();
     api.getCandidateReviewRequest.mockImplementation(async () => structuredClone(server));
@@ -152,7 +108,7 @@ describe('Candidate atomic apply workspace', () => {
     expect(screen.queryByRole('button', { name: '原子创建 1 个 Draft' })).toBeNull();
   });
 
-  it('leaves the editor when another tab cancels the run', async () => {
+  it('returns to the monitor workspace when another tab cancels the run', async () => {
     let server = cleanReview();
     api.getCandidateReviewRequest.mockImplementation(async () => structuredClone(server));
     renderPage();
@@ -168,9 +124,8 @@ describe('Candidate atomic apply workspace', () => {
       api.subscribeInferenceRunEvents.mock.calls[0]![2](inferenceEvent(server));
     });
 
-    expect(await screen.findByText('推断任务未生成 Candidate')).toBeTruthy();
+    expect(await screen.findByText('已切换到识别监控')).toBeTruthy();
     expect(screen.queryByLabelText('Candidate 编辑工作区')).toBeNull();
-    expect(screen.getByRole('button', { name: '重新运行' })).toBeTruthy();
   });
 });
 
@@ -183,6 +138,7 @@ function renderPage() {
       <MemoryRouter initialEntries={['/inference-runs/44444444-4444-4444-8444-444444444444/review']}>
         <Routes>
           <Route path="/inference-runs/:runId/review" element={<CandidateReviewPage />} />
+          <Route path="/inference-runs/:runId/monitor" element={<div>已切换到识别监控</div>} />
         </Routes>
       </MemoryRouter>
     </QueryClientProvider>,

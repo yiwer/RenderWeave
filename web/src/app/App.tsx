@@ -24,6 +24,12 @@ const RootDocumentValidatorPage = lazyRoute(async () => ({
 const InferenceStartPage = lazyRoute(async () => ({
   default: (await import('../features/inference/InferenceStartPage')).InferenceStartPage,
 }));
+const InferenceHistoryPage = lazyRoute(async () => ({
+  default: (await import('../features/inference/InferenceHistoryPage')).InferenceHistoryPage,
+}));
+const InferenceMonitorPage = lazyRoute(async () => ({
+  default: (await import('../features/inference/InferenceMonitorPage')).InferenceMonitorPage,
+}));
 const CandidateReviewPage = lazyRoute(async () => ({
   default: (await import('../features/inference/CandidateReviewPage')).CandidateReviewPage,
 }));
@@ -38,7 +44,9 @@ export function App() {
         <Route path="/static-schemas" element={<StaticSchemaListPage />} />
         <Route path="/static-schemas/:schemaKey/:versionTag" element={<StaticSchemaDetailPage />} />
         <Route path="/validator" element={<RootDocumentValidatorPage />} />
-        <Route path="/inference" element={<InferenceStartPage />} />
+        <Route path="/inference" element={<InferenceHistoryPage />} />
+        <Route path="/inference/new" element={<InferenceStartPage />} />
+        <Route path="/inference-runs/:runId/monitor" element={<InferenceMonitorPage />} />
         <Route path="/inference-runs/:runId/review" element={<CandidateReviewPage />} />
         <Route path="/prototype/schema-studio" element={<SchemaStudioPrototype />} />
         <Route path="*" element={<Navigate replace to="/schemas" />} />

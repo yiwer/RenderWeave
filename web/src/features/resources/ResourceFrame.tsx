@@ -6,7 +6,7 @@ import {
   FileCheck2,
   Layers3,
 } from 'lucide-react';
-import { Link, NavLink } from 'react-router-dom';
+import { Link, NavLink, useLocation } from 'react-router-dom';
 import type { ReactNode } from 'react';
 
 export function ResourceFrame({
@@ -62,6 +62,8 @@ export function ResourceFrame({
 }
 
 export function ResourceRail() {
+  const { pathname } = useLocation();
+  const inferenceActive = pathname.startsWith('/inference') || pathname.startsWith('/inference-runs/');
   return (
     <nav className="resource-rail app-resource-rail" aria-label="RenderWeave 资源导航">
       <div className="rail-section-label">结构定义</div>
@@ -76,7 +78,11 @@ export function ResourceRail() {
       </NavLink>
       <div className="rail-divider" />
       <div className="rail-section-label">智能辅助</div>
-      <NavLink className={({ isActive }) => `rail-link ${isActive ? 'active' : ''}`} to="/inference">
+      <NavLink
+        className={({ isActive }) => `rail-link ${isActive || inferenceActive ? 'active' : ''}`}
+        aria-current={inferenceActive ? 'page' : undefined}
+        to="/inference"
+      >
         <BrainCircuit aria-hidden="true" size={17} />智能识别
       </NavLink>
       <div className="rail-divider" />

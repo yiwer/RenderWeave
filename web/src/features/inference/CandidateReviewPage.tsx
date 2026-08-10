@@ -2,21 +2,20 @@ import * as Dialog from '@radix-ui/react-dialog';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   AlertCircle,
-  ArrowLeft,
+  Activity,
   CheckCircle2,
   GitBranch,
   List,
   LoaderCircle,
   PanelRightOpen,
   RefreshCw,
-  RotateCcw,
   Search,
   ShieldCheck,
   TriangleAlert,
   XCircle,
 } from 'lucide-react';
 import { useCallback, useEffect, useReducer, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, Navigate, useParams } from 'react-router-dom';
 
 import { StudioRequestError } from '../schema-studio/lossless-api';
 import { ResourceError, ResourceLoading } from '../resources/DraftListPage';
@@ -28,7 +27,6 @@ import {
   getInferenceRunRequest,
   saveCandidateReviewRequest,
   subscribeInferenceRunEvents,
-  retryInferenceRunRequest,
 } from './candidate-api';
 import type { CandidateApplyResponse, CandidateProblem } from '../../api/generated';
 import { CandidateInspector } from './CandidateInspector';
@@ -43,11 +41,12 @@ import {
 } from './candidate-session';
 import { InferenceFlowSteps } from './InferenceFlowSteps';
 import { InferenceExecutionLogPanel } from './InferenceExecutionLogPanel';
-import { inferenceStageLabel, inferenceStateLabel } from './inference-format';
+import { inferenceRunHasResult, inferenceStageLabel, inferenceStateLabel } from './inference-format';
+import { InferenceModuleNav } from './InferenceModuleNav';
+import { RunCancelButton } from './InferenceRunActions';
 
 export function CandidateReviewPage() {
   const { runId = '' } = useParams();
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const runQuery = useQuery({
     queryKey: ['inference-run', runId],
@@ -58,9 +57,7 @@ export function CandidateReviewPage() {
       return state === 'QUEUED' || state === 'RUNNING' ? 1_000 : false;
     },
   });
-  const reviewReady = runQuery.data?.state === 'REVIEW_REQUIRED'
-    || runQuery.data?.state === 'APPLYING'
-    || runQuery.data?.state === 'COMPLETED';
+  const reviewReady = Boolean(runQuery.data && inferenceRunHasResult(runQuery.data.state));
   const query = useQuery({
     queryKey: ['inference-candidate', runId],
     queryFn: () => getCandidateReviewRequest(runId),
@@ -78,33 +75,25 @@ export function CandidateReviewPage() {
     mutationFn: () => cancelInferenceRunRequest(runId),
     onSuccess: (run) => queryClient.setQueryData(['inference-run', runId], run),
   });
-  const retryRun = useMutation({
-    mutationFn: () => retryInferenceRunRequest(runId),
-    onSuccess: (run) => navigate(`/inference-runs/${run.runId}/review`, { replace: true }),
-  });
   const flowStep = runQuery.data?.state === 'COMPLETED' || runQuery.data?.state === 'APPLYING'
     ? 4
     : reviewReady ? 3 : 2;
 
+  if (runQuery.data && !reviewReady) {
+    return <Navigate replace to={`/inference-runs/${runId}/monitor`} />;
+  }
+
   return (
     <ResourceFrame
-      title="校对识别结果"
+      title="识别结果"
       description="逐项核对字段、类型、约束、引用与证据；AI 来源保持只读，只有全部门通过后才能原子创建 Draft。"
-      actions={<Link className="button ghost-button" to="/inference"><ArrowLeft aria-hidden="true" size={15} />返回识别入口</Link>}
+      actions={<Link className="button ghost-button" to={`/inference-runs/${runId}/monitor`}><Activity aria-hidden="true" size={15} />查看识别监控</Link>}
+      breadcrumbs={[{ label: '智能识别', to: '/inference' }, { label: '识别结果' }]}
     >
+      <InferenceModuleNav runId={runId} resultAvailable={reviewReady} />
       <InferenceFlowSteps current={flowStep} />
       {runQuery.isPending && <ResourceLoading label="正在读取推断任务" />}
       {runQuery.isError && <ResourceError error={runQuery.error} onRetry={() => void runQuery.refetch()} />}
-      {runQuery.data && !reviewReady && (
-        <InferenceRunProgress
-          run={runQuery.data}
-          cancelPending={cancelRun.isPending}
-          retryPending={retryRun.isPending}
-          error={cancelRun.error ?? retryRun.error}
-          onCancel={() => cancelRun.mutate()}
-          onRetry={() => retryRun.mutate()}
-        />
-      )}
       {runQuery.data && (
         <InferenceExecutionLogPanel
           runId={runQuery.data.runId}
@@ -125,44 +114,6 @@ export function CandidateReviewPage() {
         />
       )}
     </ResourceFrame>
-  );
-}
-
-function InferenceRunProgress({
-  run,
-  cancelPending,
-  retryPending,
-  error,
-  onCancel,
-  onRetry,
-}: {
-  run: import('../../api/generated').InferenceRunResponse;
-  cancelPending: boolean;
-  retryPending: boolean;
-  error: Error | null;
-  onCancel: () => void;
-  onRetry: () => void;
-}) {
-  const terminalFailure = run.state === 'FAILED' || run.state === 'CANCELLED';
-  return (
-    <section className={`inference-run-progress ${terminalFailure ? 'failed' : ''}`} aria-live="polite">
-      {terminalFailure
-        ? <AlertCircle aria-hidden="true" size={22} />
-        : <LoaderCircle className="spin" aria-hidden="true" size={22} />}
-      <div>
-        <strong>{terminalFailure ? '推断任务未生成 Candidate' : '正在执行受控推断流程'}</strong>
-        <span>{inferenceStateLabel(run.state)} · {inferenceStageLabel(run.stage)} · {run.profileId}</span>
-        {run.failureCode && <code>{run.failureCode}</code>}
-      </div>
-      <div className="inference-run-progress-actions">
-        <small>运行编号 {run.runId}</small>
-        {terminalFailure
-          ? <button type="button" className="button primary-button" disabled={retryPending} onClick={onRetry}><RotateCcw aria-hidden="true" size={15} />{retryPending ? '正在创建新任务…' : '重新运行'}</button>
-          : <RunCancelButton pending={cancelPending} onCancel={onCancel} />}
-        <Link className="button ghost-button" to="/inference">返回识别入口</Link>
-        {error && <p role="alert">{error instanceof Error ? error.message : '操作失败，请稍后重试。'}</p>}
-      </div>
-    </section>
   );
 }
 
@@ -414,27 +365,6 @@ function CandidateReviewOverview({
         ))}
       </ul>
     </section>
-  );
-}
-
-function RunCancelButton({ pending, onCancel }: { pending: boolean; onCancel: () => void }) {
-  return (
-    <Dialog.Root>
-      <Dialog.Trigger asChild>
-        <button type="button" className="button ghost-button inference-cancel-trigger" disabled={pending}><XCircle aria-hidden="true" size={15} />{pending ? '正在取消…' : '取消任务'}</button>
-      </Dialog.Trigger>
-      <Dialog.Portal>
-        <Dialog.Overlay className="dialog-overlay" />
-        <Dialog.Content className="dialog-content inference-cancel-dialog" aria-describedby="inference-cancel-description">
-          <Dialog.Title>取消这次识别任务？</Dialog.Title>
-          <Dialog.Description id="inference-cancel-description">已发生的模型费用仍会计入预算；任务取消后不能继续，只能显式创建一个可审计的新重试任务。</Dialog.Description>
-          <div className="dialog-actions">
-            <Dialog.Close asChild><button type="button" className="button ghost-button" disabled={pending}>继续当前任务</button></Dialog.Close>
-            <Dialog.Close asChild><button type="button" className="button danger-button" disabled={pending} onClick={onCancel}>确认取消</button></Dialog.Close>
-          </div>
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog.Root>
   );
 }
 
