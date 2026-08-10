@@ -5,10 +5,11 @@
 - 基线 revision：`eed1ab6ce2eb800b1b6bf0496b052fc3b9bd28d2`
 - 分支：`phase/p6-visual-recognition-vnext`
 - Spec delta：`specs/changes/20260810-visual-recognition-vnext.md`
-- ADR：ADR-0022、ADR-0023、ADR-0024、ADR-0025、ADR-0026、ADR-0027、ADR-0028
-- 用户 J1：yiwer，2026-08-10；三模型各 500,000 total tokens，精确约束见 spec delta
+- ADR：ADR-0022、ADR-0023、ADR-0024、ADR-0025、ADR-0026、ADR-0027、ADR-0028、ADR-0029
+- 用户 J1：yiwer，2026-08-10；2026-08-11 delta 将 Flash 改为 `qwen3.7-flash-2026-07-15` 并给三个
+  预算槽位各追加 500,000 tokens，累计 cap 1,000,000；attempt/CNY/time 边界不变，精确约束见 spec delta
 - 当前节点：N0–N1、N3–N4、N6 `automated_verified`；N2 `live_verified_mixed_a1_a2`；N5
-  `live_verified_not_promoted`；N7 `entry_gates_unmet`；全部 live ledger `CLOSED`
+  `live_verified_not_promoted`；N7 `in_progress`（Profile/guard freeze）；全部 live ledger `CLOSED`
 
 ## 四维执行配置
 
@@ -107,7 +108,8 @@ ledger 描述成外部强制门。
 - 选择门：dense/small-text field recall +0.05、critical hallucination 不增加；否则 adapter 不成为默认。
 - 局部验证：missing binary/model、timeout、malformed output、payload scan、坐标 transform、runtime canary。
 - 完成信号：已达成。v4/v6/v7 同 case 报告判定 Hybrid 不晋级；v7 继续默认关闭、产品隐藏和
-  `EXPERIMENTAL`。Plus Goal 暴露量 485,886/500,000 tokens，本 Goal 不再调用 Plus。
+  `EXPERIMENTAL`。Plus Goal 暴露量 485,886/500,000 tokens，N5 当时停止调用；2026-08-11 J1 delta
+  为 N7 追加 token 空间，但不改变该消融结论。
 
 ### N6：Semantic Verifier、Targeted Repair 与 UI
 
@@ -126,12 +128,14 @@ ledger 描述成外部强制门。
 
 ### N7：Final Live Eval 与验收
 
-- 状态：`entry_gates_unmet`，未启动。N6 Flash v10–v12 均未到达 HIERARCHY/BINDING；Plus 按 N5 决策
-  不再调用且仅余 14,114 tokens；Max 只有三阶段合同可达时才允许考虑，因此本轮未调用。当前剩余额度也
-  无法为三模型各 20-case comparison 建立 fail-closed 最坏预留，不能通过新 ledger 绕过 Goal cap。
+- 状态：`in_progress`。2026-08-11 J1 delta 指定 pinned Flash，并把三个模型槽位的累计 token cap 提到
+  1,000,000；当前先冻结 immutable capability/Profile 与 v2 aggregate guard。历史用量继续计入，attempt 与
+  CNY cap 不变。
 - AC：AC-VR-001..010、既有 AC-015..021。
 - 依赖：N6 clean gates；final exact identities 和新的 ledger；N2 用量已进入 aggregate guard。
-- 执行：三个模型先跑同一 20-case comparison；按剩余额度优先让最佳模型完成 60-case/15 HOLDOUT；每批≤5。
+- 执行：先以 `qwen3.7-flash-2026-07-15` 单 case canary 证明三阶段合同可达；满足入口后，三个模型跑同一
+  20-case comparison，再按剩余额度优先让最佳模型完成 60-case/15 HOLDOUT；每批≤5。旧 Flash 不再创建
+  新 assignment，Plus/Max model ID 不变。
 - policy：只有满足既有 AC-021 和 stage 门槛的 Profile 可成为默认；其他保持 EXPERIMENTAL。
 - 门控：server/web/e2e/runtime/full A1；独立 verifier A2；费用/Token/secret/payload scan；用户业务/视觉 J1。
 - 当前证据：N6 implementation revision `de97131` 的 exact-clean full A1 已通过，但不能替代 final eval、
@@ -142,9 +146,9 @@ ledger 描述成外部强制门。
 
 | 模型 | Goal cap | Goal exposed tokens | 剩余 tokens | attempts | list-price CNY cap | Goal cost |
 |---|---:|---:|---:|---:|---:|---:|
-| qwen3.8-max | 500,000 | 428,816 | 71,184 | 73 / 180 | 18.00 | 9.204720 |
-| qwen3.7-plus | 500,000 | 485,886 | 14,114 | 86 / 180 | 4.00 | 2.040696 |
-| qwen3.7-flash | 500,000 | 393,034 | 106,966 | 71 / 180 | 0.40 | 0.169035 |
+| qwen3.8-max | 1,000,000 | 428,816 | 571,184 | 73 / 180 | 18.00 | 9.204720 |
+| qwen3.7-plus | 1,000,000 | 485,886 | 514,114 | 86 / 180 | 4.00 | 2.040696 |
+| Flash slot（旧 alias + `qwen3.7-flash-2026-07-15`） | 1,000,000 | 393,034 | 606,966 | 71 / 180 | 0.40 | 0.169035 |
 
 停止条件：任一 token/attempt/CNY cap、168h ledger expiry、Goal 完成、Provider refusal/Retry-After、identity
 drift、journal/guard 不一致、payload 边界失败或同一无新假设失败再次出现。停止只关闭后续调用；已结算费用

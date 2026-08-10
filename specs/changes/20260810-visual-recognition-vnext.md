@@ -3,7 +3,7 @@
 - 状态：approved
 - 触发任务：P6/T6-5
 - 触发证据：Product v2 真实站牌结果发生层级压扁；Product v3 真实运行虽完成 OBSERVE/HIERARCHY/ELEMENT_BINDING，但 STRUCTURE 两次超时；Product v4 尚无绑定当前流水线的真实分阶段质量报告
-- 影响 AC/规则：AC-015、AC-016、AC-017、AC-019、AC-020、AC-021、AC-022；新增 AC-VR-001..010；ADR-0020、ADR-0021、ADR-0022、ADR-0023
+- 影响 AC/规则：AC-015、AC-016、AC-017、AC-019、AC-020、AC-021、AC-022；新增 AC-VR-001..010；ADR-0020、ADR-0021、ADR-0022、ADR-0023、ADR-0029
 - 再锚定关系：用户于 2026-08-10 接受图片识别串行流程审查结论，并明确批准按推荐建立 Goal、自动采用决策并落 ADR；本 delta 成为后续实现和验收基准。
 
 ## 冲突或新事实
@@ -53,8 +53,9 @@ UUID 与未校准 confidence 外，该步骤本质是确定性编译，却仍重
 3. OCR/layout 是否进入最终默认路径由版本化消融门决定：在 dense/small-text slice 上 field recall
    绝对提升至少 0.05、critical hallucination 不增加且成本/延迟有完整记录时启用；否则保持可插拔但
    不成为默认生产依赖。
-4. 产品 vNext 模型目录只包含经 capability contract 验证的 `qwen3.8-max`、`qwen3.7-plus`、
-   `qwen3.7-flash`。不支持结构化输出或未完成 canary 的模型不得复用同一请求模板进入目录。
+4. 产品 vNext 当前评测模型目录只包含经 capability contract 验证的 `qwen3.8-max`、`qwen3.7-plus`、
+   `qwen3.7-flash-2026-07-15`。历史 `qwen3.7-flash` Profile/ledger 保持不可变，但不再用于新的 N7
+   assignment。不支持结构化输出或未完成 canary 的模型不得复用同一请求模板进入目录。
 5. JSON Object 仍只被视为语法边界；所有中间合同继续严格 decode/validate。输出 token 设置必须按
    stage 评测，任何截断都以稳定 taxonomy 失败，不能交给宽松 JSON repair 猜测。
 6. 审核/监控页展示新的 perception/region/verifier/targeted-repair 阶段、有限 issue code 和 stage-level
@@ -99,6 +100,29 @@ UUID 与未校准 confidence 外，该步骤本质是确定性编译，却仍重
 本信封不是立即 OPEN 的 ledger。只有实现树和 evaluation identity 冻结、负探针与受影响 gate 通过后，
 才由受跟踪的精确 ledger 打开；不满足前置时 Provider attempts 必须为 0。
 
+### 2026-08-11 J1 Delta：Pinned Flash 与追加 Goal Token
+
+用户 yiwer 于 2026-08-11 明确要求把本 Goal 的 Flash 模型从浮动 `qwen3.7-flash` 改为精确快照
+`qwen3.7-flash-2026-07-15`，Plus 与 Max 的模型 ID 不变，并给三个模型预算槽位各追加 500,000 total
+tokens。该 delta 只覆盖原信封的 Flash 模型身份和 Goal token cap：
+
+- 三个预算槽位的新累计上限均为 1,000,000 tokens；历史用量继续计入，不能因 Profile、ledger 或 Flash
+  精确模型 ID 变化而重置；`qwen3.7-flash` 与 `qwen3.7-flash-2026-07-15` 共享同一 Flash 槽位；
+- attempts 上限仍为每槽位 180，费用硬上限仍为 Max ¥18、Plus ¥4、Flash ¥0.40；本 delta 没有追加费用；
+- 每批最多 5 cases、每个 OPEN ledger 最长 168 小时、repository-synthetic/CC0-only、payload-free evidence、
+  exact identity 与立即 CLOSED 条件全部不变；
+- 新 Flash 必须使用新的 immutable capability/Profile snapshot。官方资料确认该精确快照支持图像输入、
+  JSON structured output、可关闭 thinking、1M context 与 64K advertised output；产品 Profile 仍收窄为
+  10 images、8,192 output tokens、thinking/tools/remote media 全关；
+- 新假设先以 Flash 单 case canary 证明 OBSERVE→HIERARCHY→ELEMENT_BINDING 三阶段合同可达。只有该门、
+  exact J1、费用、次数和时限仍满足时才进入 Max；Plus 可重新参与 N7，但仍受相同阶段与预算停止条件。
+
+官方 capability/pricing 事实源：
+
+- `https://platform.qianwenai.com/docs/developer-guides/getting-started/vision-models`
+- `https://platform.qianwenai.com/docs/developer-guides/text-generation/thinking`
+- `https://www.qianwenai.com/models/qwen3.7-flash-2026-07-15`
+
 ## 影响面
 
 - 用户价值/范围：提升复杂、密集、重复和多层视觉数据定义的召回与可解释性；仍不进入 Template、
@@ -115,4 +139,5 @@ UUID 与未校准 confidence 外，该步骤本质是确定性编译，却仍重
 - 批准人：yiwer
 - 日期：2026-08-10
 - 结论与理由：采用审查推荐的“先度量、再替换编译、再增强感知、最后认证”路径；普通实现取舍由 Agent
-  选择并写 ADR，不逐项等待批准；真实调用严格受上述三模型 500k-token 总信封和精确账本约束。
+  选择并写 ADR，不逐项等待批准；真实调用严格受原信封及 2026-08-11 J1 delta 的三槽位累计
+  1M-token cap、未增加的 attempts/CNY 上限和精确账本约束。

@@ -1,6 +1,11 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-11 用户批准 T6-5 N7 J1 delta：当前 Flash 改为 pinned
+  `qwen3.7-flash-2026-07-15`，Plus/Max model ID 不变，三个预算槽位各追加 500,000 tokens，累计 cap
+  1,000,000。历史用量继续计入；180 attempts、Max ¥18 / Plus ¥4 / Flash ¥0.40、batch≤5、168h、
+  synthetic/CC0-only 与 payload-free 边界不变。N7 已恢复到 capability/Profile 与 Goal guard v2 freeze，
+  所有旧 ledger 仍 CLOSED，尚未新增 Provider 调用。
 - 2026-08-11 图片识别 vNext N6 已 `automated_verified`：新增 observation/hierarchy/binding bounded semantic
   verifier、最早阶段 repair、最多 4 个 verified selected crops、最多 16 个累计诊断，以及监控/审核共用的
   payload-free checkpoint telemetry。Flash v10/v11/v12 在同一个 repository-synthetic case 上共 15 attempts /
@@ -41,10 +46,11 @@
 - 2026-08-10 T6-1 容量基线已完成：10k Draft / 100k revision / 10k Static / 10k run、10 条并发生产 Controller 旅程、共享 2 worker lanes；clean server/capacity A1 与独立 A2 PASS，Provider attempts/reservations=0，不宣称生产 SLA。
 - 产品模型目录固定为 `qwen3.7-flash`、`qwen3.7-plus`、`qwen3.8-max`、`qwen3.7-max-2026-06-08`；当前可见目录使用 Product Profile v3，IMAGE_ONLY 依次绑定元素/层级/归属 Prompt 1 与 Candidate Prompt 5，单次预留上界仍为 ¥2。历史 product-v1/v2 与 pinned/评测 Profile 保持不可变并从产品选择器隐藏。
 - 需求访谈已收束，v1 产品语义以 `specs/renderweave-v1.md` 为准。
-- 生命周期状态：P0 `accepted`；P1–P4 `automated_verified`；P5 Flash / Plus / Prompt v2 / Grounded v2 / T5-10 诊断均为 `live_independently_reviewed`，T5-9/T5-11 与 P6/T6-1 为 `independently_reviewed`；P6/T6-2 为 `human_acceptance_pending`；T6-3a 与 T6-5 N6 为 `automated_verified`、T6-3b pending。T6-5 整体仍 active，N7 `entry_gates_unmet`。所有 DashScope Profile 仍为 `EXPERIMENTAL`；历史评测授权均 CLOSED，基础 Compose 默认关闭，显式 product-live overlay 已按用户授权开放。
+- 生命周期状态：P0 `accepted`；P1–P4 `automated_verified`；P5 Flash / Plus / Prompt v2 / Grounded v2 / T5-10 诊断均为 `live_independently_reviewed`，T5-9/T5-11 与 P6/T6-1 为 `independently_reviewed`；P6/T6-2 为 `human_acceptance_pending`；T6-3a 与 T6-5 N6 为 `automated_verified`、T6-3b pending。T6-5 整体仍 active，N7 `in_progress`。所有 DashScope Profile 仍为 `EXPERIMENTAL`；历史评测授权均 CLOSED，基础 Compose 默认关闭，显式 product-live overlay 已按用户授权开放。
 
 ## 下一步
-- [ ] P6/T6-5 图片识别 vNext：N0–N6 已形成独立 checkpoint；N7 因三阶段合同与现有 Goal 预算入口未满足而未启动。
+- [ ] P6/T6-5 图片识别 vNext：N0–N6 已形成独立 checkpoint；按 2026-08-11 J1 delta 推进 N7 pinned Flash、
+  Goal guard v2、三阶段 canary 与有界 final eval。
 - [x] Java / React / PostgreSQL / OpenAPI 最小 canary 与 A1 full gate 通过。
 - [x] 用户接受“A 默认表单 + B Map + 吸收 C 的 preview/密度”的编辑器方向（J1，2026-08-08）。
 - [x] 创建 P1–P4 implementation Goal。
@@ -143,5 +149,6 @@
   HTTP failure 硬停与未晋级决策；全部 ledger CLOSED。
 - `plans/logs/P6-T6-5-N6.md`：bounded semantic verifier、stage-local repair、selected crops、payload-free UI、
   Flash v10–v12 A2 诊断与 exact-clean full；三阶段仍不可达，未晋级。
-- 当前恢复点：`phase/p6-visual-recognition-vnext` 的 N6 `automated_verified` 节点。N7 在现有 J1/Goal cap 下
-  无可达入口；除非出现新的已批准预算/合同假设，否则不再 live，Goal 如实保持未完成。
+- 当前恢复点：`phase/p6-visual-recognition-vnext` 的 N6 `automated_verified` 节点；N7 已获 pinned Flash 与
+  每槽位追加 500k-token J1，下一安全切片为 immutable capability/Profile 和 alias-normalized Goal guard v2。
+  编排层 `get_goal` 仍为空，未创建 replacement Goal；仓库 checkpoint 继续作为恢复事实源。
