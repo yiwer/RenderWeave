@@ -51,12 +51,12 @@ def main() -> None:
         page.goto(f"{args.base_url}/schemas/new")
         page.wait_for_load_state("networkidle")
         assert page.locator('[data-product="schema-studio"]').is_visible()
-        assert page.get_by_role("heading", name="新建 Schema Draft").is_visible()
+        assert page.get_by_role("heading", name="未命名 DraftSchema").is_visible()
         assert_no_horizontal_overflow(page)
 
         # Invalid local state must never be sent to the server.
         page.get_by_role("button", name="创建 Draft", exact=True).click()
-        assert page.get_by_text("保存前请处理", exact=False).is_visible()
+        assert page.get_by_text("项需要处理", exact=False).is_visible()
         assert page.url.endswith("/schemas/new")
 
         page.locator("#schema-key").fill(args.schema_key)
@@ -70,7 +70,9 @@ def main() -> None:
         max_length = page.locator('[data-pointer="/definition/fields/0/value/constraints/maxLength"]')
         max_length.locator("xpath=..").get_by_role("checkbox").check()
         max_length.fill("80")
-        page.locator('.compact-required-control input[type="checkbox"]').check()
+        page.locator(".required-segmented-control").get_by_role(
+            "button", name="必填", exact=True
+        ).click()
 
         # Exercise the lossless decimal boundary through the real browser/API path.
         huge_decimal = "12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678"
@@ -85,13 +87,12 @@ def main() -> None:
         page.get_by_role("button", name="创建 Draft", exact=True).click()
         page.wait_for_url(f"**/schemas/{args.schema_key}")
         page.wait_for_load_state("networkidle")
-        page.locator(".studio-revision-card strong").wait_for()
-        assert page.locator(".studio-revision-card strong").text_content() == "0"
+        page.locator(".rail-context-card small").filter(has_text="revision 0").wait_for()
         assert page.locator("#schema-key").is_editable() is False
 
         page.locator("#schema-display-name").fill("商品展示卡 · 已复核")
         page.get_by_role("button", name="保存 revision", exact=True).click()
-        page.locator(".studio-revision-card strong").filter(has_text="1").wait_for()
+        page.locator(".rail-context-card small").filter(has_text="revision 1").wait_for()
         assert page.locator(".studio-feedback").get_by_text("revision 1 已保存", exact=True).is_visible()
 
         page.get_by_role("button", name="树状图", exact=True).click()
@@ -130,14 +131,14 @@ def main() -> None:
         page.wait_for_load_state("networkidle")
         assert page.locator("#schema-display-name").input_value() == "商品展示卡 · 已复核"
         assert page.get_by_label("fieldKey", exact=True).input_value() == "title"
-        assert page.locator(".studio-revision-card strong").text_content() == "1"
+        assert "revision 1" in (page.locator(".rail-context-card small").text_content() or "")
         assert_no_horizontal_overflow(page)
         page.screenshot(path=str(output_dir / "schema-studio-draft-1440x900.png"), full_page=True)
 
         # Exercise the production resource lifecycle against PostgreSQL, not route mocks.
         page.goto(f"{args.base_url}/schemas")
         page.wait_for_load_state("networkidle")
-        assert page.get_by_role("heading", name="可变数据定义").is_visible()
+        assert page.get_by_role("heading", name="数据结构设计").is_visible()
         assert page.get_by_text(args.schema_key, exact=True).is_visible()
         page.screenshot(path=str(output_dir / "schema-draft-list-1440x900.png"), full_page=True)
 
@@ -149,7 +150,7 @@ def main() -> None:
         page.locator(".history-preview pre").wait_for()
         assert "商品展示卡" in (page.locator(".history-preview").text_content() or "")
         page.get_by_role("button", name="恢复为新 revision").click()
-        page.locator(".studio-revision-card strong").filter(has_text="2").wait_for()
+        page.locator(".rail-context-card small").filter(has_text="revision 2").wait_for()
         assert page.locator("#schema-display-name").input_value() == "商品展示卡"
 
         page.get_by_role("button", name="删除", exact=True).click()
@@ -160,15 +161,17 @@ def main() -> None:
         assert page.get_by_text(args.schema_key, exact=True).count() == 1  # restore banner only
         page.get_by_role("button", name="撤销删除").click()
         page.wait_for_url(f"**/schemas/{args.schema_key}")
-        page.locator(".studio-revision-card strong").filter(has_text="3").wait_for()
+        page.locator(".rail-context-card small").filter(has_text="revision 3").wait_for()
 
         version_tag = "browser-v1"
-        page.get_by_role("button", name="发布", exact=True).click()
+        page.get_by_role("button", name="保存并发布", exact=True).click()
         page.get_by_label("versionTag").fill(version_tag)
-        page.get_by_label("release note（可选）").fill("真实 PostgreSQL 浏览器闭环")
+        page.get_by_label("发布说明（可选）").fill("真实 PostgreSQL 浏览器闭环")
         page.get_by_role("button", name="原子发布").click()
         page.wait_for_url(f"**/static-schemas/{args.schema_key}/{version_tag}")
         page.get_by_text("不可变边界已建立", exact=True).wait_for()
+        page.get_by_role("tab", name="Definition DSL", exact=True).click()
+        page.locator(".artifact-panel pre").wait_for()
         assert huge_decimal in (page.locator(".artifact-panel pre").text_content() or "")
         page.screenshot(path=str(output_dir / "static-schema-detail-1440x900.png"), full_page=True)
 
@@ -179,12 +182,14 @@ def main() -> None:
         dialog.get_by_label("显示名称", exact=True).fill("商品展示卡 · Static 副本")
         dialog.get_by_role("button", name="创建 Draft").click()
         page.wait_for_url(f"**/schemas/{copy_key}")
-        assert page.locator(".studio-revision-card strong").text_content() == "0"
+        page.locator(".rail-context-card small").filter(has_text="revision 0").wait_for()
         assert page.locator("#schema-display-name").input_value() == "商品展示卡 · Static 副本"
 
         page.goto(f"{args.base_url}/static-schemas")
         page.wait_for_load_state("networkidle")
-        assert page.get_by_text(f"{args.schema_key}@{version_tag}", exact=True).is_visible()
+        static_card = page.locator(".static-card").filter(has_text=args.schema_key)
+        assert static_card.is_visible()
+        assert static_card.get_by_label(f"版本 {version_tag}").is_visible()
 
         page.goto(f"{args.base_url}/validator")
         page.wait_for_load_state("networkidle")
@@ -206,7 +211,7 @@ def main() -> None:
 
         page.goto(f"{args.base_url}/schemas/{args.schema_key}")
         page.wait_for_load_state("networkidle")
-        assert page.locator(".studio-revision-card strong").text_content() == "3"
+        assert "revision 3" in (page.locator(".rail-context-card small").text_content() or "")
 
         page.set_viewport_size({"width": 1024, "height": 768})
         page.reload()
