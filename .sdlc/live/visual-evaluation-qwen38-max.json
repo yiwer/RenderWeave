@@ -1,7 +1,7 @@
 {
   "authorizationVersion": "renderweave-visual-evaluation-authorization/1.0",
   "authorizationId": "visual-v8-array-remediation-qwen38-max-transit-20260811",
-  "status": "OPEN",
+  "status": "CLOSED",
   "phase": "ABLATION",
   "inputClassification": "REPOSITORY_SYNTHETIC_ONLY",
   "corpusVersion": "renderweave-visual-stage-corpus/1.0",
