@@ -1,14 +1,14 @@
 {
   "authorizationVersion": "renderweave-visual-evaluation-authorization/1.0",
-  "authorizationId": "visual-v11-stage-local-smoke-qwen37-flash-transit-20260811",
-  "status": "CLOSED",
+  "authorizationId": "visual-v12-accumulated-repair-qwen37-flash-transit-20260811",
+  "status": "PROPOSED",
   "phase": "ABLATION",
   "inputClassification": "REPOSITORY_SYNTHETIC_ONLY",
   "corpusVersion": "renderweave-visual-stage-corpus/1.0",
   "corpusSourceSha256": "bf0db7bf0ac5c4e2b357cdd96c49ff70a7b30a5bc59f322a915020dc29fc605e",
-  "evaluationIdentity": "renderweave-visual-evaluation-tree-sha256/1:60332d1e110d148c6e6f02d80d737bab679ecf7e2362dd8ea356f357a1291889",
-  "profileId": "dashscope-qwen37-flash-product-v11-generic",
-  "profileSnapshotSha256": "4a6b3032fcc53dd56eaacf1c23abc9028ef3dc96a6b03fe97c325362ff18fcce",
+  "evaluationIdentity": "renderweave-visual-evaluation-tree-sha256/1:edb9f9cd7609f7afe7bb44a980e009b1cea8cab87d4157237863a1d7c8cf898f",
+  "profileId": "dashscope-qwen37-flash-product-v12-generic",
+  "profileSnapshotSha256": "7e75544006a749235943276902ca81a405087cef03b626dc58b3ae744a9a8bd8",
   "model": "qwen3.7-flash",
   "caseIds": [
     "transit-board-v3"
@@ -18,7 +18,7 @@
   "maximumCostMicrosCny": 100000,
   "maximumCasesPerBatch": 1,
   "approvedBy": "yiwer",
-  "approvedAt": "2026-08-10T17:15:07Z",
+  "approvedAt": "2026-08-10T17:31:22Z",
   "expiresAt": "2026-08-11T15:00:17Z",
-  "approvalScope": "Goal J1 ABLATION: one repository-synthetic transit-board-v3 case; exact qwen3.7-flash product-v11-generic with bounded region diagnostics, hierarchy and binding semantic verifier, stage-local repair and verified targeted crops; at most 5 attempts, 60000 exposed tokens, CNY 0.10 and one case per batch within the active per-model 500000-token Goal cap"
+  "approvalScope": "Goal J1 ABLATION: one repository-synthetic transit-board-v3 case; exact qwen3.7-flash product-v12-generic with bounded accumulated retry diagnostics, hierarchy and binding semantic verifier, stage-local repair and verified targeted crops; at most 5 attempts, 60000 exposed tokens, CNY 0.10 and one case per batch within the active per-model 500000-token Goal cap"
 }
