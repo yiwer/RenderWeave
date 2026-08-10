@@ -1,14 +1,14 @@
 {
   "authorizationVersion": "renderweave-visual-evaluation-authorization/1.0",
-  "authorizationId": "visual-v9-hierarchy-remediation-qwen38-max-transit-20260811",
-  "status": "CLOSED",
-  "phase": "ABLATION",
+  "authorizationId": "visual-n7-max-v22-qwen38-max-transit-20260811",
+  "status": "PROPOSED",
+  "phase": "CANARY",
   "inputClassification": "REPOSITORY_SYNTHETIC_ONLY",
   "corpusVersion": "renderweave-visual-stage-corpus/1.0",
   "corpusSourceSha256": "bf0db7bf0ac5c4e2b357cdd96c49ff70a7b30a5bc59f322a915020dc29fc605e",
-  "evaluationIdentity": "renderweave-visual-evaluation-tree-sha256/1:a45ef0506cf5e72090902eabd01ba9dab1dcf4dce22f8eb275ea8968d3471590",
-  "profileId": "dashscope-qwen38-max-product-v9-generic",
-  "profileSnapshotSha256": "b18660728a3f8db0a79b5e51eff0485baeac65177e8338ee968933f2952c9b71",
+  "evaluationIdentity": "renderweave-visual-evaluation-tree-sha256/1:dea18ba69e298421a14ae3ce15ea528aa5b955451d29967897b985790855f974",
+  "profileId": "dashscope-qwen38-max-product-v22-generic",
+  "profileSnapshotSha256": "74fe609a962d7d1b5057c7b1048a3b7e2f354ca15f03c6594676f2c37a924e6d",
   "model": "qwen3.8-max",
   "caseIds": [
     "transit-board-v3"
@@ -18,7 +18,7 @@
   "maximumCostMicrosCny": 4000000,
   "maximumCasesPerBatch": 1,
   "approvedBy": "yiwer",
-  "approvedAt": "2026-08-10T16:22:00Z",
-  "expiresAt": "2026-08-11T15:00:17Z",
-  "approvalScope": "Goal J1 ABLATION: one repository-synthetic transit-board-v3 case; exact qwen3.8-max product-v9-generic with visual evidence array prompt v3 and hierarchy tree prompt v3; at most 5 attempts, 80000 exposed tokens, CNY 4.00 and one case per batch within the active per-model 500000-token Goal cap"
+  "approvedAt": "2026-08-10T23:38:24Z",
+  "expiresAt": "2026-08-11T11:38:24Z",
+  "approvalScope": "Goal J1 CANARY: user granted the unchanged qwen3.8-max slot an additional 500000 exposed tokens and requested continued Goal progression; Plus product-v22 has now independently verified live OBSERVE, HIERARCHY and ELEMENT_BINDING reachability, satisfying the explicit Max stage precondition; one repository-synthetic transit-board-v3 case through immutable qwen3.8-max product-v22-generic pipeline 4.9; deterministic support-owner normalization remains bounded to one validated known non-GROUP support, an exact known GROUP or REPEATED_GROUP region and exactly one validated observed GROUP owner, with all ambiguous or invalid cases fail-closed; at most 5 attempts, 80000 exposed tokens, CNY 4.00 and one case per batch within the 1000000-token Max Goal slot; payload-free evidence and immediate CLOSED after this smoke"
 }
