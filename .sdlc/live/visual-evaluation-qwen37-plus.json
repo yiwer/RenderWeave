@@ -1,14 +1,14 @@
 {
   "authorizationVersion": "renderweave-visual-evaluation-authorization/1.0",
-  "authorizationId": "visual-n7-reachability-qwen37-plus-transit-20260811",
-  "status": "CLOSED",
+  "authorizationId": "visual-n7-hierarchy-v14-qwen37-plus-transit-20260811",
+  "status": "PROPOSED",
   "phase": "CANARY",
   "inputClassification": "REPOSITORY_SYNTHETIC_ONLY",
   "corpusVersion": "renderweave-visual-stage-corpus/1.0",
   "corpusSourceSha256": "bf0db7bf0ac5c4e2b357cdd96c49ff70a7b30a5bc59f322a915020dc29fc605e",
-  "evaluationIdentity": "renderweave-visual-evaluation-tree-sha256/1:d33c5dcacf2a742d6652c9baf5caffcd4817ee459673d17bfaae3e5f2bea8619",
-  "profileId": "dashscope-qwen37-plus-product-v12-generic",
-  "profileSnapshotSha256": "3ffbcb35447617723ce0b6dae0ea82e0269fa9814b0df3c11cf1ad1f142dbca7",
+  "evaluationIdentity": "renderweave-visual-evaluation-tree-sha256/1:ff3eb6543f2d2e96be8f49c97fc236ae75d12f1e1284c922cc4e920fbffe4985",
+  "profileId": "dashscope-qwen37-plus-product-v14-generic",
+  "profileSnapshotSha256": "1d28f90776fa914cbcba6ef5748bbf6316e37a92d78272230cdef05a0a97b846",
   "model": "qwen3.7-plus",
   "caseIds": [
     "transit-board-v3"
@@ -18,7 +18,7 @@
   "maximumCostMicrosCny": 600000,
   "maximumCasesPerBatch": 1,
   "approvedBy": "yiwer",
-  "approvedAt": "2026-08-10T19:05:06Z",
-  "expiresAt": "2026-08-11T07:05:06Z",
-  "approvalScope": "Goal J1 CANARY: one repository-synthetic transit-board-v3 case; unchanged qwen3.7-plus through immutable product-v12-generic to probe OBSERVE-HIERARCHY-BINDING reachability after the pinned Flash smoke; at most 5 attempts, 60000 exposed tokens, CNY 0.60 and one case per batch within the 1000000-token Plus Goal slot; payload-free evidence and immediate CLOSED after this smoke"
+  "approvedAt": "2026-08-10T19:28:01Z",
+  "expiresAt": "2026-08-11T07:28:01Z",
+  "approvalScope": "Goal J1 CANARY: user explicitly allowed qwen3.7-plus; one repository-synthetic transit-board-v3 case through immutable product-v14-generic with field-specific hierarchy repair and no structural-only targeted crop; at most 5 attempts, 60000 exposed tokens, CNY 0.60 and one case per batch within the 1000000-token Plus Goal slot; payload-free evidence and immediate CLOSED after this smoke"
 }
