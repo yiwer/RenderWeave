@@ -25,7 +25,8 @@ Schema 的 GROUP element。若直接在 materializer 中猜测或补建 GROUP，
    checkpoint，只记录固定 taxonomy，并在 OBSERVE 原地重试。
 3. HIERARCHY 边界要求每个 GROUP 恰好支撑一条 relationship、每条 relationship 恰好由一个 GROUP 支撑，
    且 relationship region 与该 GROUP 的 owned region 一致；ELEMENT_BINDING 要求字段绑定到能够覆盖其区域的
-   最近实体。两类失败分别路由到 HIERARCHY 与 ELEMENT_BINDING，不回退重做已验证的 OBSERVE。
+   最近实体。通常两类失败分别路由到 HIERARCHY 与 ELEMENT_BINDING；若 HIERARCHY 已提出 relationship、但
+   上游 inventory 根本没有可支撑关系的 GROUP，则这是 OBSERVE omission，必须回到 OBSERVE，而不是让下游补造。
 4. 重试请求继续使用既有 `retryProblemCodes`，只重做最早失败阶段；已成功的更早 checkpoint 保留。问题码按
    stage 有界累积、去重、排序且最多 16 个，避免后一次修复遗忘前一次约束。selected crop 只从已验证
    grounding checkpoint 派生，最多 4 个，不把派生图片或局部 ID 持久化。
@@ -61,6 +62,8 @@ Schema 的 GROUP element。若直接在 materializer 中猜测或补建 GROUP，
 - Flash Goal 累计 71 attempts、393,034/500,000 exposed tokens、¥0.169035；Plus 保持
   485,886/500,000 且不再调用，Max 保持 428,816/500,000。三阶段入口门未满足，因此没有调用 Max；三份
   ledger 终态均为 `CLOSED`。
+- 上述额度与 Plus 决策是 N6 freeze 时的历史快照。后续 2026-08-11 J1 delta 把三个稳定预算槽位的累计 cap
+  提高到 1,000,000 tokens，并重新允许 Plus；历史用量仍完整计入，没有重开或改写任何 CLOSED ledger。
 - exact-clean `de97131` full gate A1 全绿，证据为 `.sdlc/evidence/20260811-020246-full`；不存在 A3，最终
   业务/视觉 J1 与 N7 final eval 仍未满足。
 
@@ -87,3 +90,17 @@ Plus v12 的单 case reachability 首次通过 OBSERVE 后暴露两个新事实�
 视觉 crop。immutable hierarchy prompt v5 与三模型 product-v14 Profile 固化相同修复合同，仍全部隐藏且
 `EXPERIMENTAL`。单元、worker/real-PG 集成、exact-clean server 与 fast A1 已通过；该增量没有 Provider
 调用，也不改变 Max 的三阶段入口门。
+
+Plus product-v14 随后以仓库合成 `transit-board-v3` 完成单 case、5 attempts 的
+PROPOSED → 负探针 → OPEN → CLOSED smoke。独立 verifier A2 重建出 18,992 input + 4,628 output tokens、
+84,107 ms、0 abandoned、payload scan PASS。首个 OBSERVE accepted，但 inventory 为 9 SLOT、0 GROUP；后续
+四个 HIERARCHY attempts 分别因 support unknown、parent count 与 relationship support IDs 被拒绝，仍未触达
+BINDING。该实证说明“合法但扁平的 OBSERVE”能够把不可修复的上游 omission 推迟到 HIERARCHY。
+
+`195894b` 因此新增唯一的 bounded cross-stage rewind：当且仅当 HIERARCHY response 含 relationship、上游
+inventory 为 0 GROUP 时，verifier 输出固定码 `VISUAL_SEMANTIC_OBSERVE_RELATIONSHIP_GROUP_MISSING` 与最早阶段
+OBSERVE。持久层只允许 REJECTED HIERARCHY + 该精确单码事务性写入 NORMALIZE checkpoint，保留调用计数并清空
+下游 plan/Candidate；通用 `InferenceStage` 仍是严格前向状态机。恢复后的 worker 只重做 OBSERVE，携带固定问题码，
+不携带 crop 或旧 plan。immutable element prompt v7 与 product-v15 Profile 固化该合同；UI 将问题归到 OBSERVE，
+但不显示局部 ID、坐标或 payload。clean fast/server/web/E2E A1 全绿，且本增量 Provider attempts=0。v15 Profile
+继续隐藏 `EXPERIMENTAL`，其存在不构成 live 授权或 Max 入口成立。
