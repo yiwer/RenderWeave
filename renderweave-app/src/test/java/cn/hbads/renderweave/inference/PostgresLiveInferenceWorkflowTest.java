@@ -87,6 +87,8 @@ class PostgresLiveInferenceWorkflowTest {
             "dashscope-qwen37-flash-20260715-product-v16-generic";
     private static final String REGION_OWNED_HIERARCHY_PROFILE =
             "dashscope-qwen37-flash-20260715-product-v17-generic";
+    private static final String DIAGNOSTIC_HIERARCHY_PROFILE =
+            "dashscope-qwen37-flash-20260715-product-v18-generic";
     private static final String HYBRID_VISUAL_PROFILE =
             "dashscope-qwen37-flash-product-v7-hybrid-generic";
     private static final String DOCUMENT_VISION_CAPABILITY =
@@ -770,6 +772,60 @@ class PostgresLiveInferenceWorkflowTest {
                         InferenceAttemptStatus.SUCCEEDED, InferenceAttemptStatus.REJECTED,
                         InferenceAttemptStatus.SUCCEEDED, InferenceAttemptStatus.SUCCEEDED,
                         InferenceAttemptStatus.SUCCEEDED
+                );
+    }
+
+    @Test
+    void detailedHierarchyRegionRepairStaysLocalAndRecoversAfterLeaseExpiry() {
+        var blobs = new MemoryBlobStore();
+        var created = createGroundedVisual(
+                blobs, "detailed-hierarchy-region-repair", DIAGNOSTIC_HIERARCHY_PROFILE
+        );
+        var firstProvider = new ScriptedProvider(
+                request -> response(request, groundedStationElements()),
+                request -> response(request, groundedStationHierarchy().replace(
+                        "\"regionIds\":[\"root\"]", "\"regionIds\":[\"header\"]"
+                ))
+        );
+        var firstWorker = worker(firstProvider, blobs, T0.plusSeconds(1));
+        var current = runs.claimNextLive(
+                "detailed-hierarchy-region-first", T0.plusSeconds(1), Duration.ofMinutes(5)
+        ).orElseThrow();
+
+        current = firstWorker.advance(current);
+        current = firstWorker.advance(current);
+
+        assertThat(current.stage()).isEqualTo(InferenceStage.HIERARCHY);
+        assertThat(current.checkpointJson())
+                .contains("renderweave-visual-grounding/2.0")
+                .doesNotContain("renderweave-visual-hierarchy/2.0");
+        assertThat(workflowStore.attempts(created)).hasSize(2);
+        assertThat(firstProvider.requests).extracting(ProviderInferenceRequest::stage)
+                .containsExactly(InferenceStage.OBSERVE, InferenceStage.HIERARCHY);
+        assertThat(workflowStore.attempts(created).get(1).problemCodeCounts())
+                .containsExactlyEntriesOf(Map.of(
+                        "VISUAL_HIERARCHY_V2_ROOT_REGION_OWNERSHIP_INVALID", 1
+                ));
+
+        var recoveryProvider = new ScriptedProvider(
+                request -> response(request, groundedStationHierarchy()),
+                request -> response(request, groundedStationBindings())
+        );
+        var finished = worker(recoveryProvider, blobs, T0.plus(Duration.ofMinutes(7)))
+                .processNext("detailed-hierarchy-region-recovery").orElseThrow();
+
+        assertThat(finished.state())
+                .as("failure=%s attempts=%s", finished.failureCode(), workflowStore.attempts(created))
+                .isEqualTo(InferenceRunState.REVIEW_REQUIRED);
+        assertThat(recoveryProvider.requests).extracting(ProviderInferenceRequest::stage)
+                .containsExactly(InferenceStage.HIERARCHY, InferenceStage.ELEMENT_BINDING);
+        assertThat(recoveryProvider.requests.getFirst().taskJson())
+                .contains("VISUAL_HIERARCHY_V2_ROOT_REGION_OWNERSHIP_INVALID")
+                .doesNotContain("TARGETED_CROP");
+        assertThat(workflowStore.attempts(created)).extracting(attempt -> attempt.status())
+                .containsExactly(
+                        InferenceAttemptStatus.SUCCEEDED, InferenceAttemptStatus.REJECTED,
+                        InferenceAttemptStatus.SUCCEEDED, InferenceAttemptStatus.SUCCEEDED
                 );
     }
 

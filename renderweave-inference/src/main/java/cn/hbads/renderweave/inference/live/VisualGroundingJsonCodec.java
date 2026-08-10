@@ -107,7 +107,8 @@ final class VisualGroundingJsonCodec {
     ) {
         return parseHierarchy(
                 value, inventory, grounding, cardinalityPolicy,
-                VisualHierarchyPrerequisitePolicy.GROUP_EXISTENCE_ONLY
+                VisualHierarchyPrerequisitePolicy.GROUP_EXISTENCE_ONLY,
+                VisualHierarchyRegionDiagnosticPolicy.LEGACY_GENERIC
         );
     }
 
@@ -118,9 +119,24 @@ final class VisualGroundingJsonCodec {
             VisualRelationshipCardinalityPolicy cardinalityPolicy,
             VisualHierarchyPrerequisitePolicy prerequisitePolicy
     ) {
+        return parseHierarchy(
+                value, inventory, grounding, cardinalityPolicy, prerequisitePolicy,
+                VisualHierarchyRegionDiagnosticPolicy.LEGACY_GENERIC
+        );
+    }
+
+    GroundedHierarchyPlan parseHierarchy(
+            String value,
+            VisualElementInventory inventory,
+            VisualGroundingPlan grounding,
+            VisualRelationshipCardinalityPolicy cardinalityPolicy,
+            VisualHierarchyPrerequisitePolicy prerequisitePolicy,
+            VisualHierarchyRegionDiagnosticPolicy regionDiagnosticPolicy
+    ) {
         try {
             Objects.requireNonNull(cardinalityPolicy, "cardinalityPolicy");
             Objects.requireNonNull(prerequisitePolicy, "prerequisitePolicy");
+            Objects.requireNonNull(regionDiagnosticPolicy, "regionDiagnosticPolicy");
             var response = decode(value, HierarchyOutput.class, "VISUAL_HIERARCHY_V2");
             if (!VisualHierarchyPlan.VERSION_V2.equals(response.contractVersion())) {
                 throw invalid("VISUAL_HIERARCHY_V2_VERSION_INVALID", null);
@@ -145,8 +161,10 @@ final class VisualGroundingJsonCodec {
             final VisualEntityRegionPlan entityRegions;
             if (prerequisitePolicy
                     == VisualHierarchyPrerequisitePolicy.RELATIONSHIP_REGION_GROUP_OWNER_REQUIRED) {
-                entityRegions = classifiedEntityRegions(response);
-                classifiedEntityRegionConsistency(entityRegions, hierarchy, grounding);
+                entityRegions = classifiedEntityRegions(response, regionDiagnosticPolicy);
+                classifiedEntityRegionConsistency(
+                        entityRegions, hierarchy, grounding, regionDiagnosticPolicy
+                );
                 var regionOwnerIssues = SEMANTIC_VERIFIER.verifyRelationshipRegionGroupOwners(
                         inventory, grounding, hierarchy, entityRegions
                 );
@@ -157,8 +175,10 @@ final class VisualGroundingJsonCodec {
             } else {
                 // Preserve historical diagnostic precedence for immutable pre-4.4 profiles.
                 classifiedHierarchySupport(() -> hierarchy.requireConsistentWith(inventory));
-                entityRegions = classifiedEntityRegions(response);
-                classifiedEntityRegionConsistency(entityRegions, hierarchy, grounding);
+                entityRegions = classifiedEntityRegions(response, regionDiagnosticPolicy);
+                classifiedEntityRegionConsistency(
+                        entityRegions, hierarchy, grounding, regionDiagnosticPolicy
+                );
             }
             var semanticIssues = SEMANTIC_VERIFIER.verifyHierarchy(
                     inventory, grounding, hierarchy, entityRegions
@@ -178,29 +198,70 @@ final class VisualGroundingJsonCodec {
         }
     }
 
-    private static VisualEntityRegionPlan classifiedEntityRegions(HierarchyOutput response) {
+    private static VisualEntityRegionPlan classifiedEntityRegions(
+            HierarchyOutput response,
+            VisualHierarchyRegionDiagnosticPolicy diagnosticPolicy
+    ) {
+        if (diagnosticPolicy == VisualHierarchyRegionDiagnosticPolicy.LEGACY_GENERIC) {
+            return classified("VISUAL_HIERARCHY_V2_REGION_OWNERSHIP_INVALID", () ->
+                    entityRegionPlan(response, false)
+            );
+        }
         return classified("VISUAL_HIERARCHY_V2_REGION_OWNERSHIP_INVALID", () ->
-                new VisualEntityRegionPlan(
-                        VisualEntityRegionPlan.VERSION,
-                        response.entities().stream().map(entity -> new VisualEntityRegionOwnership(
-                                entity.entityId(), entity.regionIds()
-                        )).toList(),
-                        response.relationships().stream().map(relationship ->
-                                new VisualRelationshipRegionOwnership(
-                                        relationship.relationshipId(), relationship.regionId()
-                                )).toList()
-                )
+                entityRegionPlan(response, true)
         );
+    }
+
+    private static VisualEntityRegionPlan entityRegionPlan(
+            HierarchyOutput response,
+            boolean detailed
+    ) {
+        return new VisualEntityRegionPlan(
+                VisualEntityRegionPlan.VERSION,
+                response.entities().stream()
+                        .map(entity -> entityRegionOwnership(entity, detailed)).toList(),
+                response.relationships().stream()
+                        .map(relationship -> relationshipRegionOwnership(relationship, detailed)).toList()
+        );
+    }
+
+    private static VisualEntityRegionOwnership entityRegionOwnership(
+            EntityOutput entity,
+            boolean detailed
+    ) {
+        if (!detailed) return new VisualEntityRegionOwnership(entity.entityId(), entity.regionIds());
+        return classified("VISUAL_HIERARCHY_V2_ENTITY_REGION_IDS_INVALID", () ->
+                new VisualEntityRegionOwnership(entity.entityId(), entity.regionIds()));
+    }
+
+    private static VisualRelationshipRegionOwnership relationshipRegionOwnership(
+            RelationshipOutput relationship,
+            boolean detailed
+    ) {
+        if (!detailed) {
+            return new VisualRelationshipRegionOwnership(
+                    relationship.relationshipId(), relationship.regionId()
+            );
+        }
+        return classified("VISUAL_HIERARCHY_V2_RELATIONSHIP_REGION_ID_INVALID", () ->
+                new VisualRelationshipRegionOwnership(
+                        relationship.relationshipId(), relationship.regionId()
+                ));
     }
 
     private static void classifiedEntityRegionConsistency(
             VisualEntityRegionPlan entityRegions,
             VisualHierarchyPlan hierarchy,
-            VisualGroundingPlan grounding
+            VisualGroundingPlan grounding,
+            VisualHierarchyRegionDiagnosticPolicy diagnosticPolicy
     ) {
-        classified("VISUAL_HIERARCHY_V2_REGION_OWNERSHIP_INVALID", () ->
-                entityRegions.requireConsistentWith(hierarchy, grounding)
-        );
+        if (diagnosticPolicy == VisualHierarchyRegionDiagnosticPolicy.LEGACY_GENERIC) {
+            classified("VISUAL_HIERARCHY_V2_REGION_OWNERSHIP_INVALID", () ->
+                    entityRegions.requireConsistentWith(hierarchy, grounding));
+            return;
+        }
+        classifiedHierarchyRegionConsistency(() ->
+                entityRegions.requireConsistentWith(hierarchy, grounding));
     }
 
     VisualElementBindingPlan parseBindings(
@@ -528,6 +589,32 @@ final class VisualGroundingJsonCodec {
         }
     }
 
+    private static void classifiedHierarchyRegionConsistency(CheckedRunnable runnable) {
+        try {
+            runnable.run();
+        } catch (InvalidVisualAnalysisException failure) {
+            throw failure;
+        } catch (Exception failure) {
+            throw invalid(hierarchyRegionConsistencyCode(failure), failure);
+        }
+    }
+
+    private static String hierarchyRegionConsistencyCode(Throwable failure) {
+        return switch (controlledMessage(failure)) {
+            case "Entity-region ownership must cover the complete hierarchy" ->
+                    "VISUAL_HIERARCHY_V2_REGION_COVERAGE_INVALID";
+            case "Visual plan references an unknown region" ->
+                    "VISUAL_HIERARCHY_V2_REGION_REFERENCE_UNKNOWN";
+            case "Root entity must own every artifact root region" ->
+                    "VISUAL_HIERARCHY_V2_ROOT_REGION_OWNERSHIP_INVALID";
+            case "Relationship region must connect parent and child ownership" ->
+                    "VISUAL_HIERARCHY_V2_RELATIONSHIP_REGION_CONNECTION_INVALID";
+            case "Relationship cardinality conflicts with its owned region" ->
+                    "VISUAL_HIERARCHY_V2_RELATIONSHIP_REGION_CARDINALITY_INVALID";
+            default -> "VISUAL_HIERARCHY_V2_REGION_OWNERSHIP_INVALID";
+        };
+    }
+
     private static <T> T classifiedGroundingShape(CheckedSupplier<T> supplier) {
         try {
             return supplier.get();
@@ -803,4 +890,9 @@ enum VisualRelationshipCardinalityPolicy {
 enum VisualHierarchyPrerequisitePolicy {
     GROUP_EXISTENCE_ONLY,
     RELATIONSHIP_REGION_GROUP_OWNER_REQUIRED
+}
+
+enum VisualHierarchyRegionDiagnosticPolicy {
+    LEGACY_GENERIC,
+    DETAILED_FIXED_CODES
 }

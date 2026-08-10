@@ -24,6 +24,7 @@ public final class InferencePromptRegistry {
     public static final String VISUAL_HIERARCHY_V3 = "renderweave-visual-hierarchy-prompt/3.0";
     public static final String VISUAL_HIERARCHY_V4 = "renderweave-visual-hierarchy-prompt/4.0";
     public static final String VISUAL_HIERARCHY_V5 = "renderweave-visual-hierarchy-prompt/5.0";
+    public static final String VISUAL_HIERARCHY_V6 = "renderweave-visual-hierarchy-prompt/6.0";
     public static final String VISUAL_BINDINGS_V2 = "renderweave-visual-bindings-prompt/2.0";
     public static final String VISUAL_BINDINGS_V3 = "renderweave-visual-bindings-prompt/3.0";
     public static final String VISUAL_HINT_GENERIC_V1 = "renderweave-visual-hint-pack/generic/1.0";
@@ -51,6 +52,7 @@ public final class InferencePromptRegistry {
             Map.entry(VISUAL_HIERARCHY_V3, "inference-prompts/visual-hierarchy-v3.txt"),
             Map.entry(VISUAL_HIERARCHY_V4, "inference-prompts/visual-hierarchy-v4.txt"),
             Map.entry(VISUAL_HIERARCHY_V5, "inference-prompts/visual-hierarchy-v5.txt"),
+            Map.entry(VISUAL_HIERARCHY_V6, "inference-prompts/visual-hierarchy-v6.txt"),
             Map.entry(VISUAL_BINDINGS_V2, "inference-prompts/visual-bindings-v2.txt"),
             Map.entry(VISUAL_BINDINGS_V3, "inference-prompts/visual-bindings-v3.txt")
     );
@@ -96,6 +98,7 @@ public final class InferencePromptRegistry {
                 VISUAL_HIERARCHY_V3,
                 VISUAL_HIERARCHY_V4,
                 VISUAL_HIERARCHY_V5,
+                VISUAL_HIERARCHY_V6,
                 VISUAL_BINDINGS_V2,
                 VISUAL_BINDINGS_V3
         ).contains(promptVersion)) {

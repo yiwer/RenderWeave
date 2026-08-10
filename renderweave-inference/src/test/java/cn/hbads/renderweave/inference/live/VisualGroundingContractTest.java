@@ -397,6 +397,55 @@ class VisualGroundingContractTest {
     }
 
     @Test
+    void keepsV17RegionDiagnosticsStableAndClassifiesV18RepairCauses() throws Exception {
+        var observed = codec.parseElements(elementsJson(), views(), List.of(IMAGE_ID));
+        var disconnected = hierarchyJson().replace(
+                "\"regionIds\":[\"item-a\",\"item-b\"]",
+                "\"regionIds\":[\"header\"]"
+        );
+
+        assertEquals("VISUAL_HIERARCHY_V2_REGION_OWNERSHIP_INVALID", assertThrows(
+                InvalidVisualAnalysisException.class, () -> codec.parseHierarchy(
+                        disconnected, observed.inventory(), observed.grounding(),
+                        VisualRelationshipCardinalityPolicy.SUPPORT_GROUP_DERIVED,
+                        VisualHierarchyPrerequisitePolicy.RELATIONSHIP_REGION_GROUP_OWNER_REQUIRED
+                )
+        ).diagnosticCode());
+        assertDetailedRegionDiagnostic(
+                hierarchyJson().replace("\"regionIds\":[\"root\"]", "\"regionIds\":[]"),
+                observed, VisualRelationshipCardinalityPolicy.SUPPORT_GROUP_DERIVED,
+                "VISUAL_HIERARCHY_V2_ENTITY_REGION_IDS_INVALID"
+        );
+        assertDetailedRegionDiagnostic(
+                hierarchyJson().replace("\"regionId\":\"repeat\"", "\"regionId\":\"Repeat\""),
+                observed, VisualRelationshipCardinalityPolicy.SUPPORT_GROUP_DERIVED,
+                "VISUAL_HIERARCHY_V2_RELATIONSHIP_REGION_ID_INVALID"
+        );
+        assertDetailedRegionDiagnostic(
+                hierarchyJson().replace(
+                        "\"regionIds\":[\"item-a\",\"item-b\"]",
+                        "\"regionIds\":[\"unknown\"]"
+                ),
+                observed, VisualRelationshipCardinalityPolicy.SUPPORT_GROUP_DERIVED,
+                "VISUAL_HIERARCHY_V2_REGION_REFERENCE_UNKNOWN"
+        );
+        assertDetailedRegionDiagnostic(
+                hierarchyJson().replace("\"regionIds\":[\"root\"]", "\"regionIds\":[\"header\"]"),
+                observed, VisualRelationshipCardinalityPolicy.SUPPORT_GROUP_DERIVED,
+                "VISUAL_HIERARCHY_V2_ROOT_REGION_OWNERSHIP_INVALID"
+        );
+        assertDetailedRegionDiagnostic(
+                disconnected, observed, VisualRelationshipCardinalityPolicy.SUPPORT_GROUP_DERIVED,
+                "VISUAL_HIERARCHY_V2_RELATIONSHIP_REGION_CONNECTION_INVALID"
+        );
+        assertDetailedRegionDiagnostic(
+                hierarchyJson().replace("\"cardinality\":\"MANY\"", "\"cardinality\":\"ONE\""),
+                observed, VisualRelationshipCardinalityPolicy.MODEL_ASSERTED,
+                "VISUAL_HIERARCHY_V2_RELATIONSHIP_REGION_CARDINALITY_INVALID"
+        );
+    }
+
+    @Test
     void derivesStageLocalCropsOnlyFromTheVerifiedPlan() throws Exception {
         var observed = codec.parseElements(elementsJson(), views(), List.of(IMAGE_ID));
         var hierarchy = codec.parseHierarchy(
@@ -460,6 +509,20 @@ class VisualGroundingContractTest {
                 () -> codec.parseHierarchy(
                         json, observed.inventory(), observed.grounding(),
                         VisualRelationshipCardinalityPolicy.SUPPORT_GROUP_DERIVED
+                )).diagnosticCode());
+    }
+
+    private void assertDetailedRegionDiagnostic(
+            String json,
+            GroundedElementInventory observed,
+            VisualRelationshipCardinalityPolicy cardinalityPolicy,
+            String expectedCode
+    ) {
+        assertEquals(expectedCode, assertThrows(InvalidVisualAnalysisException.class,
+                () -> codec.parseHierarchy(
+                        json, observed.inventory(), observed.grounding(), cardinalityPolicy,
+                        VisualHierarchyPrerequisitePolicy.RELATIONSHIP_REGION_GROUP_OWNER_REQUIRED,
+                        VisualHierarchyRegionDiagnosticPolicy.DETAILED_FIXED_CODES
                 )).diagnosticCode());
     }
 

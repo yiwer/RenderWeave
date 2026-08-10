@@ -281,6 +281,27 @@ class InferencePromptRegistryTest {
     }
 
     @Test
+    void visualV18PinsPayloadFreeRegionOwnershipRepairTaxonomy() {
+        var prompt = new InferencePromptRegistry().requireVisualStage(
+                InferencePromptRegistry.VISUAL_HIERARCHY_V6,
+                InferencePromptRegistry.VISUAL_HINT_GENERIC_V1
+        ).text();
+
+        assertTrue(prompt.contains("VISUAL_HIERARCHY_V2_ENTITY_REGION_IDS_INVALID"));
+        assertTrue(prompt.contains("VISUAL_HIERARCHY_V2_RELATIONSHIP_REGION_ID_INVALID"));
+        assertTrue(prompt.contains("VISUAL_HIERARCHY_V2_REGION_REFERENCE_UNKNOWN"));
+        assertTrue(prompt.contains("VISUAL_HIERARCHY_V2_ROOT_REGION_OWNERSHIP_INVALID"));
+        assertTrue(prompt.contains("VISUAL_HIERARCHY_V2_RELATIONSHIP_REGION_CONNECTION_INVALID"));
+        assertTrue(prompt.contains("VISUAL_HIERARCHY_V2_RELATIONSHIP_REGION_CARDINALITY_INVALID"));
+        assertTrue(prompt.contains("VISUAL_HIERARCHY_V2_SUPPORT_NOT_GROUP"));
+        assertTrue(prompt.contains("VISUAL_HIERARCHY_V2_SUPPORT_GROUP_REUSED"));
+        assertTrue(prompt.contains("Structural repair codes do not require a TARGETED_CROP"));
+        assertFalse(prompt.matches("(?is).*\\b(bus|station|route|stop|fare)\\b.*"));
+        assertFalse(prompt.contains("公交"));
+        assertFalse(prompt.contains("站牌"));
+    }
+
+    @Test
     void visualV15PinsBoundedHierarchyToObservationRewindWithoutDomainBias() {
         var prompt = new InferencePromptRegistry().requireVisualStage(
                 InferencePromptRegistry.VISUAL_ELEMENTS_V7,
