@@ -275,7 +275,10 @@ def validate_profile(path: Path, authorization: dict[str, Any]) -> None:
     # contains the key value and is repository identity input rather than runtime evidence.
     profile, _ = read_json(path, payload_free=False)
     pipeline = profile.get("pipelineVersion")
-    if pipeline == "renderweave-inference-pipeline/4.2":
+    if pipeline in (
+            "renderweave-inference-pipeline/4.2",
+            "renderweave-inference-pipeline/4.10",
+    ):
         required_optional = OPTIONAL_PROFILE_FIELDS
     elif pipeline in (
             "renderweave-inference-pipeline/4.1",

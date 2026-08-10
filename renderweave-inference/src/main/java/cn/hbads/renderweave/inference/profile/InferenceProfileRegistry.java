@@ -91,7 +91,10 @@ public final class InferenceProfileRegistry {
             "inference-profiles/dashscope-qwen38-max-product-v21-generic.json",
             "inference-profiles/dashscope-qwen37-flash-20260715-product-v22-generic.json",
             "inference-profiles/dashscope-qwen37-plus-product-v22-generic.json",
-            "inference-profiles/dashscope-qwen38-max-product-v22-generic.json"
+            "inference-profiles/dashscope-qwen38-max-product-v22-generic.json",
+            "inference-profiles/dashscope-qwen37-flash-20260715-product-v23-hybrid-generic.json",
+            "inference-profiles/dashscope-qwen37-plus-product-v23-hybrid-generic.json",
+            "inference-profiles/dashscope-qwen38-max-product-v23-hybrid-generic.json"
     );
     private static final java.util.List<String> PRODUCT_LIVE_PROFILE_IDS = java.util.List.of(
             "dashscope-qwen37-flash-product-v4",
@@ -153,12 +156,18 @@ public final class InferenceProfileRegistry {
             "dashscope-qwen38-max-product-v21-generic",
             "dashscope-qwen37-flash-20260715-product-v22-generic",
             "dashscope-qwen37-plus-product-v22-generic",
-            "dashscope-qwen38-max-product-v22-generic"
+            "dashscope-qwen38-max-product-v22-generic",
+            "dashscope-qwen37-flash-20260715-product-v23-hybrid-generic",
+            "dashscope-qwen37-plus-product-v23-hybrid-generic",
+            "dashscope-qwen38-max-product-v23-hybrid-generic"
     );
     private static final java.util.List<String> VISUAL_HYBRID_PROFILE_IDS = java.util.List.of(
             "dashscope-qwen37-flash-product-v7-hybrid-generic",
             "dashscope-qwen37-plus-product-v7-hybrid-generic",
-            "dashscope-qwen38-max-product-v7-hybrid-generic"
+            "dashscope-qwen38-max-product-v7-hybrid-generic",
+            "dashscope-qwen37-flash-20260715-product-v23-hybrid-generic",
+            "dashscope-qwen37-plus-product-v23-hybrid-generic",
+            "dashscope-qwen38-max-product-v23-hybrid-generic"
     );
     private static final ObjectMapper JSON = JsonMapper.builder(
                     JsonFactory.builder().enable(StreamReadFeature.STRICT_DUPLICATE_DETECTION).build())
@@ -226,7 +235,7 @@ public final class InferenceProfileRegistry {
         return VISUAL_NEXT_PROFILE_IDS.contains(profileId);
     }
 
-    /** Pipeline-4.1 profiles keep generic and explicit domain-hint identities separate. */
+    /** Grounded visual profiles keep immutable policy and hint identities separate. */
     public java.util.List<VisualNextProfileResource> visualGroundingProfiles() {
         return VISUAL_GROUNDING_PROFILE_IDS.stream().map(this::require).map(profile ->
                 new VisualNextProfileResource(
@@ -240,7 +249,7 @@ public final class InferenceProfileRegistry {
         return VISUAL_GROUNDING_PROFILE_IDS.contains(profileId);
     }
 
-    /** Pipeline-4.2 profiles bind one exact local OCR/layout capability to the generic visual policy. */
+    /** Hybrid profiles bind one exact local OCR/layout capability to an immutable visual policy. */
     public java.util.List<VisualNextProfileResource> visualHybridProfiles() {
         return VISUAL_HYBRID_PROFILE_IDS.stream().map(this::require).map(profile ->
                 new VisualNextProfileResource(

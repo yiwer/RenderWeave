@@ -99,6 +99,8 @@ class PostgresLiveInferenceWorkflowTest {
             "dashscope-qwen37-flash-20260715-product-v22-generic";
     private static final String HYBRID_VISUAL_PROFILE =
             "dashscope-qwen37-flash-product-v7-hybrid-generic";
+    private static final String SUPPORT_OWNER_HYBRID_VISUAL_PROFILE =
+            "dashscope-qwen37-flash-20260715-product-v23-hybrid-generic";
     private static final String DOCUMENT_VISION_CAPABILITY =
             "rapidocr-3.9.2-openvino-2026.0.0-ppocrv6-small-c05805399d7d10b1";
 
@@ -1174,6 +1176,58 @@ class PostgresLiveInferenceWorkflowTest {
                 .doesNotContain("ocr-00-000");
         assertThat(review.validationProblemsJson())
                 .doesNotContain("OCR_SENTINEL_STATION_NAME")
+                .doesNotContain("ocr-00-000");
+    }
+
+    @Test
+    void pipelineFourPointTenUsesOneEphemeralOcrObservationAndRetainsSupportOwnerPolicy() {
+        var blobs = new MemoryBlobStore();
+        var created = createGroundedVisual(
+                blobs, "support-owner-hybrid-visual-station", SUPPORT_OWNER_HYBRID_VISUAL_PROFILE
+        );
+        var slotSupport = groundedStationHierarchy().replace(
+                "\"regionId\":\"routes\",\"supportingElementIds\":[\"route-group\"]",
+                "\"regionId\":\"routes\",\"supportingElementIds\":[\"route-number\"]"
+        );
+        var provider = new ScriptedProvider(
+                request -> response(request, groundedStationElements()),
+                request -> response(request, slotSupport),
+                request -> response(request, groundedStationBindings())
+        );
+        var preprocessCalls = new AtomicInteger();
+        var preprocessor = hybridPreprocessor(preprocessCalls, "OCR_SENTINEL_V23_STATION_NAME");
+
+        var finished = worker(provider, blobs, T0.plusSeconds(1), preprocessor)
+                .processNext("support-owner-hybrid-visual-worker").orElseThrow();
+
+        assertThat(finished.state())
+                .as("failure=%s attempts=%s", finished.failureCode(), workflowStore.attempts(created))
+                .isEqualTo(InferenceRunState.REVIEW_REQUIRED);
+        assertThat(preprocessCalls).hasValue(1);
+        assertThat(provider.requests).hasSize(3).allSatisfy(request -> {
+            assertThat(request.taskJson())
+                    .contains("renderweave-live-task/5.0")
+                    .contains("documentVisionObservation")
+                    .contains("OCR_SENTINEL_V23_STATION_NAME");
+            assertThat(request.systemPrompt())
+                    .contains("untrusted image content")
+                    .contains("secondary evidence")
+                    .doesNotContain("停靠站点");
+        });
+        assertThat(workflowStore.attempts(created).get(1).problemCodeCounts())
+                .containsExactlyInAnyOrderEntriesOf(Map.of(
+                        "VISUAL_HIERARCHY_RELATIONSHIP_CARDINALITY_DERIVED", 3,
+                        "VISUAL_HIERARCHY_RELATIONSHIP_SUPPORT_OWNER_NORMALIZED", 1
+                ));
+        assertThat(finished.checkpointJson())
+                .doesNotContain("OCR_SENTINEL_V23_STATION_NAME")
+                .doesNotContain("ocr-00-000");
+        var review = workflowStore.findCandidate(created).orElseThrow();
+        assertThat(review.currentJson())
+                .doesNotContain("OCR_SENTINEL_V23_STATION_NAME")
+                .doesNotContain("ocr-00-000");
+        assertThat(review.validationProblemsJson())
+                .doesNotContain("OCR_SENTINEL_V23_STATION_NAME")
                 .doesNotContain("ocr-00-000");
     }
 
