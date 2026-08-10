@@ -204,6 +204,12 @@ public record InferenceProfile(
                 && InferencePromptRegistry.VISUAL_BINDINGS_V2.equals(bindingPromptVersion)
                 && InferencePromptRegistry.VISUAL_HINT_GENERIC_V1.equals(visualHintPackVersion)
                 && profileId.endsWith("-product-v9-generic");
+        var productPromptV10 = InferencePromptRegistry.SCHEMA_CANDIDATE_V5.equals(promptVersion)
+                && InferencePromptRegistry.VISUAL_ELEMENTS_V4.equals(elementPromptVersion)
+                && InferencePromptRegistry.VISUAL_HIERARCHY_V3.equals(hierarchyPromptVersion)
+                && InferencePromptRegistry.VISUAL_BINDINGS_V2.equals(bindingPromptVersion)
+                && InferencePromptRegistry.VISUAL_HINT_GENERIC_V1.equals(visualHintPackVersion)
+                && profileId.endsWith("-product-v10-generic");
         var serialVisualPipeline = "renderweave-inference-pipeline/3.0".equals(pipelineVersion)
                 || "renderweave-inference-pipeline/4.0".equals(pipelineVersion)
                 || "renderweave-inference-pipeline/4.1".equals(pipelineVersion)
@@ -229,7 +235,7 @@ public record InferenceProfile(
                 || ("renderweave-inference-pipeline/4.0".equals(pipelineVersion)
                 && productPromptV5)
                 || ("renderweave-inference-pipeline/4.1".equals(pipelineVersion)
-                && (productPromptV6 || productPromptV8 || productPromptV9))
+                && (productPromptV6 || productPromptV8 || productPromptV9 || productPromptV10))
                 || ("renderweave-inference-pipeline/4.2".equals(pipelineVersion)
                 && productPromptV7));
         if (!(legacySyntheticPrompt || productPrompt)

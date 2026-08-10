@@ -465,6 +465,41 @@ class PostgresLiveInferenceWorkflowTest {
     }
 
     @Test
+    void groundedSemanticVerifierRetriesObservationBeforeHierarchy() {
+        var blobs = new MemoryBlobStore();
+        var created = createGroundedVisual(blobs, "grounded-semantic-observation-retry");
+        var flattened = groundedStationElements().replace(
+                "\"elementId\":\"route-group\",\"kind\":\"GROUP\",\"proposedKey\":\"routes\",\"displayName\":\"线路\",\"multiplicity\":\"MANY\",\"valueHint\":null",
+                "\"elementId\":\"route-group\",\"kind\":\"SLOT\",\"proposedKey\":\"routes\",\"displayName\":\"线路\",\"multiplicity\":\"MANY\",\"valueHint\":\"TEXT\""
+        );
+        var provider = new ScriptedProvider(
+                request -> response(request, flattened),
+                request -> response(request, groundedStationElements()),
+                request -> response(request, groundedStationHierarchy()),
+                request -> response(request, groundedStationBindings())
+        );
+
+        var finished = worker(provider, blobs).processNext("grounded-semantic-retry-worker").orElseThrow();
+
+        assertThat(finished.state())
+                .as("failure=%s attempts=%s", finished.failureCode(), workflowStore.attempts(created))
+                .isEqualTo(InferenceRunState.REVIEW_REQUIRED);
+        assertThat(provider.requests).extracting(request -> request.stage().name())
+                .containsExactly("OBSERVE", "OBSERVE", "HIERARCHY", "ELEMENT_BINDING");
+        assertThat(provider.requests.get(1).taskJson())
+                .contains("VISUAL_SEMANTIC_REPEATED_GROUP_ELEMENT_MISSING");
+        assertThat(workflowStore.attempts(created).getFirst().status())
+                .isEqualTo(InferenceAttemptStatus.REJECTED);
+        assertThat(workflowStore.attempts(created).getFirst().problemCodeCounts())
+                .containsExactlyEntriesOf(Map.of(
+                        "VISUAL_SEMANTIC_REPEATED_GROUP_ELEMENT_MISSING", 1
+                ));
+        assertThat(workflowStore.attempts(created).subList(1, 4))
+                .allSatisfy(attempt -> assertThat(attempt.status())
+                        .isEqualTo(InferenceAttemptStatus.SUCCEEDED));
+    }
+
+    @Test
     void groundedLengthStopPersistsTruncationWithoutParsingPartialPayload() {
         var blobs = new MemoryBlobStore();
         var created = createGroundedVisual(blobs, "grounded-length-diagnostic");

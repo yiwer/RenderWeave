@@ -23,6 +23,7 @@ import java.util.Set;
 /** Strict decoders for region-grounded visual contracts; view evidence is canonicalized before persistence. */
 final class VisualGroundingJsonCodec {
     private static final int MAX_BYTES = 256 * 1024;
+    private static final VisualSemanticVerifier SEMANTIC_VERIFIER = new VisualSemanticVerifier();
     private static final ObjectMapper JSON = JsonMapper.builder(
                     JsonFactory.builder().enable(StreamReadFeature.STRICT_DUPLICATE_DETECTION).build())
             .enable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS)
@@ -78,6 +79,10 @@ final class VisualGroundingJsonCodec {
             classified("VISUAL_GROUNDING_ELEMENT_OWNERSHIP_INVALID", () ->
                     grounding.requireConsistentWith(inventory)
             );
+            var semanticIssues = SEMANTIC_VERIFIER.verifyObservation(inventory, grounding);
+            if (!semanticIssues.isEmpty()) {
+                throw invalid(semanticIssues.getFirst().code(), null);
+            }
             return new GroundedElementInventory(inventory, grounding);
         } catch (InvalidVisualAnalysisException failure) {
             throw failure;

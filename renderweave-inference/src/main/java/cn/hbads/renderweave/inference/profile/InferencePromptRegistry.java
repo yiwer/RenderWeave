@@ -15,6 +15,7 @@ public final class InferencePromptRegistry {
     public static final String VISUAL_BINDINGS_V1 = "renderweave-visual-bindings-prompt/1.0";
     public static final String VISUAL_ELEMENTS_V2 = "renderweave-visual-elements-prompt/2.0";
     public static final String VISUAL_ELEMENTS_V3 = "renderweave-visual-elements-prompt/3.0";
+    public static final String VISUAL_ELEMENTS_V4 = "renderweave-visual-elements-prompt/4.0";
     public static final String VISUAL_HIERARCHY_V2 = "renderweave-visual-hierarchy-prompt/2.0";
     public static final String VISUAL_HIERARCHY_V3 = "renderweave-visual-hierarchy-prompt/3.0";
     public static final String VISUAL_BINDINGS_V2 = "renderweave-visual-bindings-prompt/2.0";
@@ -34,6 +35,7 @@ public final class InferencePromptRegistry {
             Map.entry(VISUAL_BINDINGS_V1, "inference-prompts/visual-bindings-v1.txt"),
             Map.entry(VISUAL_ELEMENTS_V2, "inference-prompts/visual-elements-v2.txt"),
             Map.entry(VISUAL_ELEMENTS_V3, "inference-prompts/visual-elements-v3.txt"),
+            Map.entry(VISUAL_ELEMENTS_V4, "inference-prompts/visual-elements-v4.txt"),
             Map.entry(VISUAL_HIERARCHY_V2, "inference-prompts/visual-hierarchy-v2.txt"),
             Map.entry(VISUAL_HIERARCHY_V3, "inference-prompts/visual-hierarchy-v3.txt"),
             Map.entry(VISUAL_BINDINGS_V2, "inference-prompts/visual-bindings-v2.txt")
@@ -71,6 +73,7 @@ public final class InferencePromptRegistry {
         if (!Map.of(
                 VISUAL_ELEMENTS_V2, true,
                 VISUAL_ELEMENTS_V3, true,
+                VISUAL_ELEMENTS_V4, true,
                 VISUAL_HIERARCHY_V2, true,
                 VISUAL_HIERARCHY_V3, true,
                 VISUAL_BINDINGS_V2, true

@@ -172,6 +172,32 @@ class VisualGroundingContractTest {
         );
     }
 
+    @Test
+    void routesObservationSemanticOmissionsBackToObservation() throws Exception {
+        var flattened = elementsJson().replace(
+                "\"kind\":\"GROUP\",\"proposedKey\":\"items\",\"displayName\":\"重复项目\",\"multiplicity\":\"MANY\",\"valueHint\":null",
+                "\"kind\":\"SLOT\",\"proposedKey\":\"items\",\"displayName\":\"重复项目\",\"multiplicity\":\"MANY\",\"valueHint\":\"TEXT\""
+        );
+
+        assertDiagnostic(
+                flattened, views(), "VISUAL_SEMANTIC_REPEATED_GROUP_ELEMENT_MISSING"
+        );
+        assertDiagnostic(
+                elementsJson().replace(
+                        "\"elementId\":\"row-group\",\"kind\":\"GROUP\",\"proposedKey\":\"items\",\"displayName\":\"重复项目\",\"multiplicity\":\"MANY\"",
+                        "\"elementId\":\"row-group\",\"kind\":\"GROUP\",\"proposedKey\":\"items\",\"displayName\":\"重复项目\",\"multiplicity\":\"ONE\""
+                ),
+                views(), "VISUAL_SEMANTIC_REPEATED_GROUP_CARDINALITY_INVALID"
+        );
+        assertDiagnostic(
+                elementsJson().replace(
+                        "\"regionIds\":[\"item-a\",\"item-b\"],\"evidence\":[{\"viewId\":\"view-00-overview-00\",\"boundingBox\":{\"left\":100,\"top\":2300,\"right\":3000,\"bottom\":2800}},{\"viewId\":\"view-00-overview-00\",\"boundingBox\":{\"left\":100,\"top\":6300,\"right\":3000,\"bottom\":6800}}]",
+                        "\"regionIds\":[\"header\"],\"evidence\":[{\"viewId\":\"view-00-overview-00\",\"boundingBox\":{\"left\":100,\"top\":100,\"right\":3000,\"bottom\":700}}]"
+                ),
+                views(), "VISUAL_SEMANTIC_REPEATED_ITEM_FIELD_MISSING"
+        );
+    }
+
     private void assertDiagnostic(String json, VisualViewPlan views, String expectedCode) {
         assertEquals(expectedCode, assertThrows(InvalidVisualAnalysisException.class,
                 () -> codec.parseElements(json, views, List.of(IMAGE_ID))).diagnosticCode());

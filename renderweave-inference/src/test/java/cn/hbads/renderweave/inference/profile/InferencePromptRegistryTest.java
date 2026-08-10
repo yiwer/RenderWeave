@@ -194,6 +194,24 @@ class InferencePromptRegistryTest {
     }
 
     @Test
+    void visualV4MakesRepeatedContainersAndRetryRoutingExplicit() {
+        var prompt = new InferencePromptRegistry().requireVisualStage(
+                InferencePromptRegistry.VISUAL_ELEMENTS_V4,
+                InferencePromptRegistry.VISUAL_HINT_GENERIC_V1
+        ).text();
+        var normalized = prompt.replaceAll("\\s+", " ");
+
+        assertTrue(normalized.contains("For every REPEATED_GROUP region emit at least one GROUP element"));
+        assertTrue(normalized.contains("Never encode a repeated container as kind=SLOT"));
+        assertTrue(prompt.contains("VISUAL_SEMANTIC_REPEATED_GROUP_ELEMENT_MISSING"));
+        assertTrue(prompt.contains("Do not merely repeat the previous invalid shape"));
+        assertTrue(prompt.contains("renderweave-visual-grounding/2.0"));
+        assertFalse(prompt.matches("(?is).*\\b(bus|station|route|stop|fare)\\b.*"));
+        assertFalse(prompt.contains("公交"));
+        assertFalse(prompt.contains("站牌"));
+    }
+
+    @Test
     void hybridPromptTreatsLocalOcrAsUntrustedEphemeralSecondaryEvidence() {
         var registry = new InferencePromptRegistry();
         var prompt = registry.requireHybridVisualStage(
