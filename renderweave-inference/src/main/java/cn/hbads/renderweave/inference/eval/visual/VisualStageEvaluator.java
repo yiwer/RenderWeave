@@ -202,6 +202,7 @@ public final class VisualStageEvaluator {
         for (var match : elementMatches) {
             if (match.gold().kind() != VisualStageCorpus.ElementKind.SLOT) continue;
             var actualEntityId = bindingByElement.get(match.actual().elementId());
+            if (actualEntityId == null) continue;
             var actualPath = actualPaths.get(actualEntityId);
             if (Objects.equals(gold.scene().bindingEntityPaths().get(match.gold().elementId()), actualPath)) {
                 result.add(match.gold().elementId());

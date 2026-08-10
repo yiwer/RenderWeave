@@ -69,6 +69,24 @@ class VisualStageEvaluatorTest {
     }
 
     @Test
+    void observedSlotWithoutHierarchyOrBindingScoresZeroInsteadOfCrashing() {
+        var gold = corpus.require("hospital-schedule-v5");
+        var observedSlot = perfectSnapshot(gold).elements().stream()
+                .filter(item -> item.kind() == VisualStageCorpus.ElementKind.SLOT)
+                .findFirst().orElseThrow();
+        var actual = new VisualStageSnapshot(
+                InferenceStage.DETERMINISTIC_VALIDATE, 5, 1, List.of(observedSlot), null,
+                List.of(), List.of(), List.of(), null, List.of()
+        );
+
+        var result = evaluator.evaluate(gold, actual);
+
+        assertEquals(0, result.bindings().matched());
+        assertEquals(0, result.survival().correctlyBoundSlots());
+        assertEquals("VISUAL_STAGE_CANDIDATE_MISSING", result.outcomeCode());
+    }
+
+    @Test
     void wrongGroundingAndBindingCannotBeHiddenByExactFinalCandidate() {
         var gold = corpus.require("transit-board-v3");
         var perfect = perfectSnapshot(gold);
