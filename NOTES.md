@@ -76,6 +76,7 @@
 - [x] T6-3a.6：兼容旧客户端 AI item 编辑状态，并拆分历史、新增、监控、结果四个深链版面；完成 clean Server/Web/E2E A1。
 - [x] T6-3a.7：历史任务成为默认入口，Live 新增识别与确定性 Replay 样本彻底拆分；完成 clean Web/E2E A1。
 - [x] T6-3a.8：发布 Product v3 串行视觉分析、四类严格契约、V014 与站牌三层拓扑回归；完成零 Provider clean Server/Web/E2E A1。真实 DashScope 质量验证仍需绑定 Product v3 identity 的新 J1。
+- [x] T6-3a.9：定位真实 v3 run 的两次 90 秒 `STRUCTURE` deadline；发布 Product v4 240 秒 stage timeout、调用前 lease 续租与精确 `DASHSCOPE_TIMEOUT`；clean Server/Web/E2E A1 和部署前后 15 attempts / 11 reservations 零增量探针通过。
 - [ ] T6-3b：完成数据库/Blob 备份恢复、missing artifact、storage full 与操作员观测演练。
 
 ## 重要发现或局部阻塞
@@ -84,6 +85,7 @@
 - T4-4 首次 server gate 由于外层命令时限过短中断，其不完整 evidence 不作为结论；随后的完整 server/web/e2e 与 real inference journey 均为绿色。
 - UI 设计数据库把本项目误路由到 hero-centric/mobile/dark SaaS；已在 page override 中拒绝，采用已确认的 dense warm editorial workbench。
 - Docker product-live overlay 已成功构建并运行；readiness 已确认四个产品模型与可选成本限额。`qwen3.8-max` 精确别名尚缺当前官方目录的同等明确确认，首次用户触发若被供应商拒绝必须可读失败且不得静默降级。
+- 用户 run `ea18b4f8-7910-405d-aadd-a7120e836902` 已证明 qwen3.8-max 的 OBSERVE/HIERARCHY/ELEMENT_BINDING 可达；失败是 v3 的固定 90 秒请求时限，不是模型别名拒绝。v4 已部署，旧 v3 retry 仍不可升级快照。
 
 ## 最近 checkpoint
 - `plans/logs/ENV-001.md`；A1 full evidence：`.sdlc/evidence/20260807-231218-full/metadata.json`。
@@ -111,4 +113,5 @@
 - `plans/logs/P6-T6-1.md`：10k/100k/10k/10k 容量基线、摘要投影、targeted graph 与统一两 lane 已完成 clean A1/独立 A2；Provider attempts/reservations=0。
 - `plans/logs/P6-T6-2.md`：四步 AI Schema 识别工作台、完整 Candidate 审核、offline eval 与 browser/real-PG acceptance 已完成 clean A1/独立 A2；最终视觉 J1 pending，Provider attempts/reservations=0。
 - `plans/logs/P6-T6-3.md`：T6-3a 四产品 Profile、Product v3 串行视觉分析、¥2 单次上界、上传/图像规范化、Candidate 审核与四版面均已完成 clean A1；真实 Product v3 质量验证与 T6-3b recovery drill 分别 pending。
-- 当前恢复点：`phase/p6-inference-product-acceptance-v1` 的 T6-3a.8 `automated_verified` 节点；历史评测 ledger 永久 CLOSED，显式 product-live overlay 已开放。下一安全自动切片为 T6-3b Compose/ops/recovery drill；真实 Product v3 调用前必须建立绑定精确 Profile/evaluation identity/数据分类/次数/费用/时限的新 J1。
+- `plans/logs/P6-T6-3a.9.md`：Product v4 timeout/lease 诊断、clean A1 与部署零新调用探针。
+- 当前恢复点：`phase/p6-inference-product-acceptance-v1` 的 T6-3a.9 `automated_verified` 节点；历史评测 ledger 永久 CLOSED，显式 product-live overlay 已开放。下一安全自动切片为用户主动新建 v4 识别的真实结果诊断，或 T6-3b Compose/ops/recovery drill；Agent 本节点不自动发起 Provider 调用。
