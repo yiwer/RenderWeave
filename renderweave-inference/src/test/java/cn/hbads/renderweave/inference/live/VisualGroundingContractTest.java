@@ -284,6 +284,75 @@ class VisualGroundingContractTest {
     }
 
     @Test
+    void relationshipRegionPolicyNormalizesOnlyUniqueCardinalityCompatibleGroupOwnership() throws Exception {
+        var observed = codec.parseElements(elementsJson(), views(), List.of(IMAGE_ID));
+        var wrongSingularRegion = hierarchyJson().replace(
+                "\"regionId\":\"repeat\",\"supportingElementIds\":[\"row-group\"]}",
+                "\"regionId\":\"root\",\"supportingElementIds\":[\"row-group\"]}"
+        );
+
+        assertDetailedRegionDiagnostic(
+                wrongSingularRegion, observed,
+                VisualRelationshipCardinalityPolicy.SUPPORT_GROUP_DERIVED,
+                "VISUAL_HIERARCHY_V2_RELATIONSHIP_REGION_CARDINALITY_INVALID"
+        );
+
+        var normalized = codec.parseHierarchy(
+                wrongSingularRegion, observed.inventory(), observed.grounding(),
+                VisualRelationshipCardinalityPolicy.SUPPORT_GROUP_DERIVED,
+                VisualHierarchyPrerequisitePolicy.RELATIONSHIP_REGION_GROUP_OWNER_REQUIRED,
+                VisualHierarchyRegionDiagnosticPolicy.DETAILED_FIXED_CODES,
+                VisualRelationshipSupportIdPolicy.CANONICALIZE_EXACT_DUPLICATES,
+                VisualRelationshipRegionPolicy.UNIQUE_CARDINALITY_COMPATIBLE_GROUP_REGION
+        );
+
+        assertEquals("repeat", normalized.entityRegions().relationships().getFirst().regionId());
+        assertEquals(1, normalized.normalizedRelationshipRegions());
+        assertEquals(0, normalized.normalizedRelationshipSupportIdReferences());
+
+        var ambiguousObservation = codec.parseElements(
+                ambiguousRelationshipRegionElementsJson(), views(), List.of(IMAGE_ID)
+        );
+        var ambiguous = assertThrows(InvalidVisualAnalysisException.class, () ->
+                codec.parseHierarchy(
+                        hierarchyJson().replace(
+                                "\"regionId\":\"repeat\",\"supportingElementIds\":[\"row-group\"]}",
+                                "\"regionId\":\"repeat\",\"supportingElementIds\":[\"owner-group\"]}"
+                        ), ambiguousObservation.inventory(), ambiguousObservation.grounding(),
+                        VisualRelationshipCardinalityPolicy.SUPPORT_GROUP_DERIVED,
+                        VisualHierarchyPrerequisitePolicy.RELATIONSHIP_REGION_GROUP_OWNER_REQUIRED,
+                        VisualHierarchyRegionDiagnosticPolicy.DETAILED_FIXED_CODES,
+                        VisualRelationshipSupportIdPolicy.CANONICALIZE_EXACT_DUPLICATES,
+                        VisualRelationshipRegionPolicy.UNIQUE_CARDINALITY_COMPATIBLE_GROUP_REGION
+                )
+        );
+        assertEquals(
+                "VISUAL_HIERARCHY_V2_RELATIONSHIP_REGION_CARDINALITY_INVALID",
+                ambiguous.diagnosticCode()
+        );
+
+        var incompatibleObservation = codec.parseElements(
+                relationshipRegionElementsJson("owner", 1200, 3600).replace(
+                        "\"elementId\":\"owner-group\",\"kind\":\"GROUP\",\"proposedKey\":\"owner\",\"displayName\":\"容器\",\"multiplicity\":\"ONE\"",
+                        "\"elementId\":\"owner-group\",\"kind\":\"GROUP\",\"proposedKey\":\"owner\",\"displayName\":\"容器\",\"multiplicity\":\"MANY\""
+                ), views(), List.of(IMAGE_ID)
+        );
+        var missingSource = assertThrows(InvalidVisualAnalysisException.class, () ->
+                codec.parseHierarchy(
+                        relationshipRegionHierarchyJson(), incompatibleObservation.inventory(),
+                        incompatibleObservation.grounding(),
+                        VisualRelationshipCardinalityPolicy.SUPPORT_GROUP_DERIVED,
+                        VisualHierarchyPrerequisitePolicy.RELATIONSHIP_REGION_GROUP_OWNER_REQUIRED,
+                        VisualHierarchyRegionDiagnosticPolicy.DETAILED_FIXED_CODES,
+                        VisualRelationshipSupportIdPolicy.CANONICALIZE_EXACT_DUPLICATES,
+                        VisualRelationshipRegionPolicy.UNIQUE_CARDINALITY_COMPATIBLE_GROUP_REGION
+                )
+        );
+        assertEquals("VISUAL_SEMANTIC_GROUP_REGION_INVALID", missingSource.diagnosticCode());
+        assertEquals(InferenceStage.OBSERVE, missingSource.earliestStage().orElseThrow());
+    }
+
+    @Test
     void classifiesHierarchyEntityAndRelationshipFieldsWithoutPersistingProviderValues() throws Exception {
         var observed = codec.parseElements(elementsJson(), views(), List.of(IMAGE_ID));
 
@@ -654,6 +723,28 @@ class VisualGroundingContractTest {
                   "elements":[
                     {"elementId":"title","kind":"SLOT","proposedKey":"title","displayName":"标题","multiplicity":"ONE","valueHint":"TEXT","regionIds":["content"],"evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":100,"top":100,"right":3000,"bottom":700}}]},
                     {"elementId":"item-label","kind":"SLOT","proposedKey":"label","displayName":"项目名称","multiplicity":"ONE","valueHint":"TEXT","regionIds":["content"],"evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":100,"top":2300,"right":3000,"bottom":2800}}]}
+                  ]
+                }
+                """;
+    }
+
+    private static String ambiguousRelationshipRegionElementsJson() {
+        return """
+                {
+                  "contractVersion":"renderweave-visual-grounding/2.0",
+                  "regions":[
+                    {"regionId":"root","parentRegionId":null,"kind":"ROOT","multiplicity":"ONE","readingOrder":0,"repeatGroupId":null,"evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":0,"top":0,"right":10000,"bottom":10000}}]},
+                    {"regionId":"header","parentRegionId":"root","kind":"GROUP","multiplicity":"ONE","readingOrder":0,"repeatGroupId":null,"evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":0,"top":0,"right":10000,"bottom":2000}}]},
+                    {"regionId":"header-inner","parentRegionId":"header","kind":"GROUP","multiplicity":"ONE","readingOrder":0,"repeatGroupId":null,"evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":100,"top":100,"right":9900,"bottom":1900}}]},
+                    {"regionId":"repeat","parentRegionId":"root","kind":"REPEATED_GROUP","multiplicity":"MANY","readingOrder":1,"repeatGroupId":"rows","evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":0,"top":2000,"right":10000,"bottom":10000}}]},
+                    {"regionId":"item-a","parentRegionId":"repeat","kind":"ITEM","multiplicity":"ONE","readingOrder":0,"repeatGroupId":"rows","evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":0,"top":2000,"right":10000,"bottom":6000}}]},
+                    {"regionId":"item-b","parentRegionId":"repeat","kind":"ITEM","multiplicity":"ONE","readingOrder":1,"repeatGroupId":"rows","evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":0,"top":6000,"right":10000,"bottom":10000}}]}
+                  ],
+                  "elements":[
+                    {"elementId":"title","kind":"SLOT","proposedKey":"title","displayName":"标题","multiplicity":"ONE","valueHint":"TEXT","regionIds":["header"],"evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":200,"top":200,"right":3000,"bottom":700}}]},
+                    {"elementId":"owner-group","kind":"GROUP","proposedKey":"owner","displayName":"容器","multiplicity":"ONE","valueHint":null,"regionIds":["header","header-inner"],"evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":300,"top":300,"right":3000,"bottom":800}}]},
+                    {"elementId":"row-group","kind":"GROUP","proposedKey":"items","displayName":"重复项目","multiplicity":"MANY","valueHint":null,"regionIds":["repeat"],"evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":0,"top":2000,"right":10000,"bottom":10000}}]},
+                    {"elementId":"item-label","kind":"SLOT","proposedKey":"label","displayName":"项目名称","multiplicity":"ONE","valueHint":"TEXT","regionIds":["item-a","item-b"],"evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":100,"top":2300,"right":3000,"bottom":2800}},{"viewId":"view-00-overview-00","boundingBox":{"left":100,"top":6300,"right":3000,"bottom":6800}}]}
                   ]
                 }
                 """;

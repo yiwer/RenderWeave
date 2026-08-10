@@ -136,7 +136,8 @@ final class VisualGroundingJsonCodec {
     ) {
         return parseHierarchy(
                 value, inventory, grounding, cardinalityPolicy, prerequisitePolicy,
-                regionDiagnosticPolicy, VisualRelationshipSupportIdPolicy.STRICT
+                regionDiagnosticPolicy, VisualRelationshipSupportIdPolicy.STRICT,
+                VisualRelationshipRegionPolicy.STRICT
         );
     }
 
@@ -149,11 +150,28 @@ final class VisualGroundingJsonCodec {
             VisualHierarchyRegionDiagnosticPolicy regionDiagnosticPolicy,
             VisualRelationshipSupportIdPolicy supportIdPolicy
     ) {
+        return parseHierarchy(
+                value, inventory, grounding, cardinalityPolicy, prerequisitePolicy,
+                regionDiagnosticPolicy, supportIdPolicy, VisualRelationshipRegionPolicy.STRICT
+        );
+    }
+
+    GroundedHierarchyPlan parseHierarchy(
+            String value,
+            VisualElementInventory inventory,
+            VisualGroundingPlan grounding,
+            VisualRelationshipCardinalityPolicy cardinalityPolicy,
+            VisualHierarchyPrerequisitePolicy prerequisitePolicy,
+            VisualHierarchyRegionDiagnosticPolicy regionDiagnosticPolicy,
+            VisualRelationshipSupportIdPolicy supportIdPolicy,
+            VisualRelationshipRegionPolicy relationshipRegionPolicy
+    ) {
         try {
             Objects.requireNonNull(cardinalityPolicy, "cardinalityPolicy");
             Objects.requireNonNull(prerequisitePolicy, "prerequisitePolicy");
             Objects.requireNonNull(regionDiagnosticPolicy, "regionDiagnosticPolicy");
             Objects.requireNonNull(supportIdPolicy, "supportIdPolicy");
+            Objects.requireNonNull(relationshipRegionPolicy, "relationshipRegionPolicy");
             var response = decode(value, HierarchyOutput.class, "VISUAL_HIERARCHY_V2");
             if (!VisualHierarchyPlan.VERSION_V2.equals(response.contractVersion())) {
                 throw invalid("VISUAL_HIERARCHY_V2_VERSION_INVALID", null);
@@ -178,15 +196,18 @@ final class VisualGroundingJsonCodec {
             if (!prerequisiteIssues.isEmpty()) {
                 throw invalid(prerequisiteIssues.getFirst(), null);
             }
-            final VisualEntityRegionPlan entityRegions;
+            final ClassifiedEntityRegions classifiedEntityRegions;
             if (prerequisitePolicy
                     == VisualHierarchyPrerequisitePolicy.RELATIONSHIP_REGION_GROUP_OWNER_REQUIRED) {
-                entityRegions = classifiedEntityRegions(response, regionDiagnosticPolicy);
+                classifiedEntityRegions = normalizeRelationshipRegions(
+                        classifiedEntityRegions(response, regionDiagnosticPolicy), hierarchy,
+                        inventory, grounding, relationshipRegionPolicy
+                );
                 classifiedEntityRegionConsistency(
-                        entityRegions, hierarchy, grounding, regionDiagnosticPolicy
+                        classifiedEntityRegions.plan(), hierarchy, grounding, regionDiagnosticPolicy
                 );
                 var regionOwnerIssues = SEMANTIC_VERIFIER.verifyRelationshipRegionGroupOwners(
-                        inventory, grounding, hierarchy, entityRegions
+                        inventory, grounding, hierarchy, classifiedEntityRegions.plan()
                 );
                 if (!regionOwnerIssues.isEmpty()) {
                     throw invalid(regionOwnerIssues.getFirst(), null);
@@ -195,11 +216,15 @@ final class VisualGroundingJsonCodec {
             } else {
                 // Preserve historical diagnostic precedence for immutable pre-4.4 profiles.
                 classifiedHierarchySupport(() -> hierarchy.requireConsistentWith(inventory));
-                entityRegions = classifiedEntityRegions(response, regionDiagnosticPolicy);
+                classifiedEntityRegions = normalizeRelationshipRegions(
+                        classifiedEntityRegions(response, regionDiagnosticPolicy), hierarchy,
+                        inventory, grounding, relationshipRegionPolicy
+                );
                 classifiedEntityRegionConsistency(
-                        entityRegions, hierarchy, grounding, regionDiagnosticPolicy
+                        classifiedEntityRegions.plan(), hierarchy, grounding, regionDiagnosticPolicy
                 );
             }
+            var entityRegions = classifiedEntityRegions.plan();
             var semanticIssues = SEMANTIC_VERIFIER.verifyHierarchy(
                     inventory, grounding, hierarchy, entityRegions
             );
@@ -212,7 +237,8 @@ final class VisualGroundingJsonCodec {
                             ? relationships.size() : 0,
                     classifiedRelationships.stream()
                             .mapToInt(ClassifiedRelationship::normalizedSupportIdReferences)
-                            .sum()
+                            .sum(),
+                    classifiedEntityRegions.normalizedRelationshipRegions()
             );
         } catch (InvalidVisualAnalysisException failure) {
             throw failure;
@@ -247,6 +273,78 @@ final class VisualGroundingJsonCodec {
                         .map(relationship -> relationshipRegionOwnership(relationship, detailed)).toList()
         );
     }
+
+    private static ClassifiedEntityRegions normalizeRelationshipRegions(
+            VisualEntityRegionPlan entityRegions,
+            VisualHierarchyPlan hierarchy,
+            VisualElementInventory inventory,
+            VisualGroundingPlan grounding,
+            VisualRelationshipRegionPolicy policy
+    ) {
+        if (policy == VisualRelationshipRegionPolicy.STRICT) {
+            return new ClassifiedEntityRegions(entityRegions, 0);
+        }
+        var normalized = new ArrayList<VisualRelationshipRegionOwnership>();
+        var normalizedCount = 0;
+        for (var ownership : entityRegions.relationships()) {
+            var relationship = hierarchy.relationships().stream()
+                    .filter(item -> item.relationshipId().equals(ownership.relationshipId()))
+                    .findFirst().orElseThrow(() -> new IllegalArgumentException(
+                            "Unknown relationship region ownership"
+                    ));
+            final VisualRegion currentRegion;
+            try {
+                currentRegion = grounding.requireRegion(ownership.regionId());
+            } catch (IllegalArgumentException unknownRegion) {
+                normalized.add(ownership);
+                continue;
+            }
+            if (relationshipRegionCardinalityCompatible(
+                    relationship.cardinality(), currentRegion
+            )) {
+                normalized.add(ownership);
+                continue;
+            }
+            var supportingGroup = inventory.requireElement(
+                    relationship.supportingElementIds().getFirst()
+            );
+            var compatibleRegions = grounding.regionIdsForElement(supportingGroup.elementId()).stream()
+                    .map(grounding::requireRegion)
+                    .filter(region -> relationshipRegionCardinalityCompatible(
+                            relationship.cardinality(), region
+                    ))
+                    .map(VisualRegion::regionId)
+                    .distinct().toList();
+            if (compatibleRegions.isEmpty()) {
+                throw invalid(VisualSemanticIssue.OBSERVE_GROUP_REGION_INVALID, null);
+            }
+            if (compatibleRegions.size() == 1) {
+                normalized.add(new VisualRelationshipRegionOwnership(
+                        ownership.relationshipId(), compatibleRegions.getFirst()
+                ));
+                normalizedCount++;
+            } else {
+                normalized.add(ownership);
+            }
+        }
+        return new ClassifiedEntityRegions(new VisualEntityRegionPlan(
+                VisualEntityRegionPlan.VERSION, entityRegions.entities(), normalized
+        ), normalizedCount);
+    }
+
+    private static boolean relationshipRegionCardinalityCompatible(
+            VisualMultiplicity cardinality,
+            VisualRegion region
+    ) {
+        return cardinality == VisualMultiplicity.MANY
+                ? region.kind() == VisualRegionKind.REPEATED_GROUP
+                : region.multiplicity() == VisualMultiplicity.ONE;
+    }
+
+    private record ClassifiedEntityRegions(
+            VisualEntityRegionPlan plan,
+            int normalizedRelationshipRegions
+    ) { }
 
     private static VisualEntityRegionOwnership entityRegionOwnership(
             EntityOutput entity,
@@ -931,7 +1029,8 @@ record GroundedHierarchyPlan(
         VisualHierarchyPlan hierarchy,
         VisualEntityRegionPlan entityRegions,
         int derivedRelationshipCardinalities,
-        int normalizedRelationshipSupportIdReferences
+        int normalizedRelationshipSupportIdReferences,
+        int normalizedRelationshipRegions
 ) {
     GroundedHierarchyPlan {
         Objects.requireNonNull(hierarchy, "hierarchy");
@@ -944,6 +1043,10 @@ record GroundedHierarchyPlan(
                 || normalizedRelationshipSupportIdReferences
                 > hierarchy.relationships().size() * 15) {
             throw new IllegalArgumentException("Normalized relationship support id count is invalid");
+        }
+        if (normalizedRelationshipRegions < 0
+                || normalizedRelationshipRegions > hierarchy.relationships().size()) {
+            throw new IllegalArgumentException("Normalized relationship region count is invalid");
         }
     }
 }
@@ -966,4 +1069,9 @@ enum VisualHierarchyRegionDiagnosticPolicy {
 enum VisualRelationshipSupportIdPolicy {
     STRICT,
     CANONICALIZE_EXACT_DUPLICATES
+}
+
+enum VisualRelationshipRegionPolicy {
+    STRICT,
+    UNIQUE_CARDINALITY_COMPATIBLE_GROUP_REGION
 }

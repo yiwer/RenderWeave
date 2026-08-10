@@ -103,8 +103,10 @@ describe('Inference monitor workspace', () => {
       .toBeGreaterThan(0);
     expect(screen.getAllByText('层级关系支撑 ID 列表不能为空').length)
       .toBeGreaterThan(0);
+    expect(screen.getAllByText('已按唯一 GROUP 证据归一化层级关系区域').length)
+      .toBeGreaterThan(0);
     expect(screen.getByText('已从持久检查点恢复')).toBeTruthy();
-    expect(screen.getByText(/0\.005716/)).toBeTruthy();
+    expect(screen.getByText(/0\.007346/)).toBeTruthy();
     expect(screen.queryByText('raw-ocr-secret')).toBeNull();
     expect(screen.queryByText('provider-response-secret')).toBeNull();
   });
@@ -281,6 +283,19 @@ function visualExecutionLog(runSnapshot: InferenceRunResponse): InferenceExecuti
         durationMillis: 12,
         problemCodeCounts: { VISUAL_HIERARCHY_V2_RELATIONSHIP_SUPPORT_IDS_EMPTY: 1 },
         completedAt: '2026-08-10T04:03:12Z',
+      },
+      {
+        attemptOrdinal: 3,
+        stage: 'HIERARCHY',
+        status: 'SUCCEEDED',
+        outcomeCode: 'LIVE_VISUAL_HIERARCHY_V2_ACCEPTED',
+        providerModel: 'qwen3.7-flash-2026-07-15',
+        inputTokens: 1_950,
+        outputTokens: 2_400,
+        costMicrosCny: 1_630,
+        durationMillis: 15_200,
+        problemCodeCounts: { VISUAL_HIERARCHY_RELATIONSHIP_REGION_NORMALIZED: 1 },
+        completedAt: '2026-08-10T04:03:14Z',
       },
     ],
     truncated: false,
