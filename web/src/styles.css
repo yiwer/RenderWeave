@@ -5654,6 +5654,127 @@ button.readonly-tree-field:focus-visible {
 .inference-log-summary strong { color: var(--ink); font-size: 15px; font-variant-numeric: tabular-nums; }
 .inference-log-summary em { overflow: hidden; color: var(--muted); font-size: 9px; font-style: normal; text-overflow: ellipsis; white-space: nowrap; }
 
+.inference-stage-telemetry,
+.inference-issue-telemetry {
+  overflow: hidden;
+  border: 1px solid var(--hairline);
+  border-radius: 9px;
+  background: #fff;
+}
+
+.inference-stage-telemetry > header,
+.inference-issue-telemetry > header {
+  display: flex;
+  min-height: 48px;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 11px;
+  border-bottom: 1px solid var(--hairline);
+  background: #fcfaf6;
+}
+
+.inference-stage-telemetry > header > span:first-child,
+.inference-issue-telemetry > header > span:first-child,
+.inference-recovery-icon {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 7px;
+  background: #eee7dc;
+  color: var(--primary);
+}
+
+.inference-stage-telemetry > header > span:last-child,
+.inference-issue-telemetry > header > span:last-child {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.inference-stage-telemetry header h3,
+.inference-issue-telemetry header h3 { margin: 0; color: var(--ink); font-size: 11px; }
+.inference-stage-telemetry header small,
+.inference-issue-telemetry header small { color: var(--muted); font-size: 10px; line-height: 1.4; }
+
+.inference-stage-telemetry ol {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.inference-stage-telemetry li {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  min-height: 112px;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 10px 10px;
+  border-top: 3px solid var(--hairline-strong);
+  border-right: 1px solid var(--hairline);
+}
+
+.inference-stage-telemetry li:last-child { border-right: 0; }
+.inference-stage-telemetry li.active { border-top-color: #555979; background: #f8f8fb; }
+.inference-stage-telemetry li.repairing { border-top-color: var(--warning); background: #fffaf0; }
+.inference-stage-telemetry li.verified { border-top-color: var(--success); background: #f8fbf8; }
+.inference-stage-telemetry li.blocked { border-top-color: var(--error); background: #fff8f7; }
+.inference-stage-state { align-self: flex-start; padding: 3px 6px; border-radius: 99px; background: #efede8; color: var(--muted); font-size: 9px; font-weight: 800; }
+.inference-stage-telemetry li.active .inference-stage-state { background: #e6e6ef; color: #555979; }
+.inference-stage-telemetry li.repairing .inference-stage-state { background: #f9ebca; color: #7f5b18; }
+.inference-stage-telemetry li.verified .inference-stage-state { background: #e3efe5; color: var(--success); }
+.inference-stage-telemetry li.blocked .inference-stage-state { background: #f6dfdc; color: var(--error); }
+.inference-stage-telemetry li > strong { margin-top: 2px; color: var(--ink); font-size: 11px; }
+.inference-stage-telemetry li > small { flex: 1; color: var(--muted); font-size: 9px; line-height: 1.45; }
+.inference-stage-counts { color: var(--body); font-size: 9px; font-variant-numeric: tabular-nums; }
+
+.inference-recovery-summary {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 9px;
+  min-height: 50px;
+  padding: 9px 11px;
+  border: 1px solid var(--hairline);
+  border-radius: 9px;
+  background: #f8f7f3;
+}
+
+.inference-recovery-summary > span:nth-child(2) { display: flex; min-width: 0; flex-direction: column; gap: 2px; }
+.inference-recovery-summary strong { color: var(--ink); font-size: 11px; }
+.inference-recovery-summary small { color: var(--muted); font-size: 10px; line-height: 1.4; }
+.inference-recovery-summary em { color: var(--muted); font-size: 9px; font-style: normal; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.inference-recovery-summary.active { border-color: #c8c9dc; background: #f8f8fb; }
+.inference-recovery-summary.warning { border-color: #d9c59a; background: #fffaf0; }
+.inference-recovery-summary.success { border-color: #c9d8cc; background: #f5faf5; }
+.inference-recovery-summary.error { border-color: #e0b8b3; background: #fff3f1; }
+.inference-recovery-summary.success .inference-recovery-icon { background: #e3efe5; color: var(--success); }
+.inference-recovery-summary.warning .inference-recovery-icon { background: #f9ebca; color: #7f5b18; }
+.inference-recovery-summary.error .inference-recovery-icon { background: #f6dfdc; color: var(--error); }
+
+.inference-issue-telemetry ul { display: grid; gap: 0; margin: 0; padding: 0; list-style: none; }
+.inference-issue-telemetry li {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: 86px minmax(150px, .9fr) minmax(190px, 1.25fr) auto;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--hairline);
+}
+.inference-issue-telemetry li:last-child { border-bottom: 0; }
+.inference-issue-scope { justify-self: start; padding: 3px 7px; border-radius: 99px; background: #eee7dc; color: var(--body); font-size: 9px; font-weight: 800; }
+.inference-issue-telemetry li > span:nth-child(2) { display: flex; min-width: 0; flex-direction: column; gap: 2px; }
+.inference-issue-telemetry li strong { color: var(--body); font-size: 10px; }
+.inference-issue-telemetry li small { color: var(--muted); font-size: 9px; }
+.inference-issue-telemetry li code { min-width: 0; overflow-wrap: anywhere; color: var(--muted); font-size: 9px; }
+.inference-issue-telemetry li b { color: var(--error); font-size: 10px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
 .inference-log-state,
 .inference-log-empty,
 .inference-log-truncated {
@@ -6777,6 +6898,14 @@ button.readonly-tree-field:focus-visible {
   .candidate-run-strip > div:nth-child(n + 4) { border-top: 1px solid var(--hairline); }
 
   .inference-log-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .inference-stage-telemetry ol { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .inference-stage-telemetry li { min-height: 104px; border-bottom: 1px solid var(--hairline); }
+  .inference-stage-telemetry li:nth-child(2n) { border-right: 0; }
+  .inference-stage-telemetry li:last-child { grid-column: 1 / -1; min-height: 94px; border-bottom: 0; }
+  .inference-recovery-summary { grid-template-columns: 30px minmax(0, 1fr); }
+  .inference-recovery-summary em { grid-column: 2; }
+  .inference-issue-telemetry li { grid-template-columns: 86px minmax(0, 1fr) auto; }
+  .inference-issue-telemetry li code { grid-column: 2 / -1; }
   .inference-attempt-problems li { grid-template-columns: minmax(0, 1fr) auto; }
   .inference-attempt-problems code { grid-column: 1 / -1; }
 

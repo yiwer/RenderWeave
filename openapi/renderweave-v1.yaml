@@ -1940,7 +1940,7 @@ components:
             $ref: '#/components/schemas/InferenceExecutionEvent'
         attempts:
           type: array
-          maxItems: 3
+          maxItems: 5
           items:
             $ref: '#/components/schemas/InferenceAttempt'
         truncated:

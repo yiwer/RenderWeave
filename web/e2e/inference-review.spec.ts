@@ -4,6 +4,7 @@ import { expect, test, type Locator, type Page, type Route } from '@playwright/t
 import type {
   CandidateBundle,
   CandidateProblem,
+  InferenceExecutionLogResponse,
   InferenceRunResponse,
   InferenceRunState,
 } from '../src/api/generated';
@@ -275,6 +276,111 @@ test('completes the four-step Candidate workflow with keyboard authoring and dur
   await expect(page.getByRole('navigation', { name: '数据结构识别进度' }).locator('[aria-current="step"]')).toContainText('原子创建');
   await page.screenshot({ path: testInfo.outputPath('candidate-atomic-created-1280x720.png'), fullPage: true });
   expect(consoleErrors).toEqual([]);
+});
+
+test('keeps bounded visual diagnostics keyboard-accessible at 1024 without payload leakage', async ({ page }, testInfo) => {
+  const failedRun: InferenceRunResponse = {
+    ...runResponse(0, 'FAILED'),
+    mode: 'IMAGE_ONLY',
+    stage: 'HIERARCHY',
+    sequence: 8,
+    profileId: 'dashscope-qwen37-flash-product-v12-generic',
+    sourceReference: 'repository-synthetic-transit-board-v3',
+    failureCode: 'VISUAL_SEMANTIC_HIERARCHY_EDGE_REGION_INVALID',
+  };
+  const log: InferenceExecutionLogResponse = {
+    run: failedRun,
+    events: [
+      { sequence: 1, type: 'QUEUED', state: 'QUEUED', stage: 'OBSERVE', occurredAt: '2026-08-10T00:00:00Z' },
+      { sequence: 4, type: 'CHECKPOINT_ADVANCED', state: 'RUNNING', stage: 'HIERARCHY', occurredAt: '2026-08-10T00:00:08Z' },
+      { sequence: 6, type: 'LEASE_RECLAIMED', state: 'RUNNING', stage: 'HIERARCHY', occurredAt: '2026-08-10T00:00:12Z' },
+      { sequence: 8, type: 'FAILED', state: 'FAILED', stage: 'HIERARCHY', occurredAt: '2026-08-10T00:00:18Z' },
+    ],
+    attempts: [
+      {
+        attemptOrdinal: 0,
+        stage: 'OBSERVE',
+        status: 'REJECTED',
+        outcomeCode: 'LIVE_VISUAL_ANALYSIS_REJECTED',
+        providerModel: 'qwen3.7-flash',
+        inputTokens: 2_300,
+        outputTokens: 4_100,
+        costMicrosCny: 2_715,
+        durationMillis: 22_083,
+        problemCodeCounts: { VISUAL_GROUNDING_PARENT_KIND_INVALID: 1 },
+        completedAt: '2026-08-10T00:00:05Z',
+      },
+      {
+        attemptOrdinal: 1,
+        stage: 'OBSERVE',
+        status: 'SUCCEEDED',
+        outcomeCode: 'LIVE_VISUAL_GROUNDING_ACCEPTED',
+        providerModel: 'qwen3.7-flash',
+        inputTokens: 2_340,
+        outputTokens: 4_220,
+        costMicrosCny: 3_001,
+        durationMillis: 24_012,
+        problemCodeCounts: {},
+        completedAt: '2026-08-10T00:00:08Z',
+      },
+      {
+        attemptOrdinal: 2,
+        stage: 'HIERARCHY',
+        status: 'REJECTED',
+        outcomeCode: 'LIVE_VISUAL_ANALYSIS_REJECTED',
+        providerModel: 'qwen3.7-flash',
+        inputTokens: 1_900,
+        outputTokens: 2_800,
+        costMicrosCny: 1_900,
+        durationMillis: 16_000,
+        problemCodeCounts: { VISUAL_SEMANTIC_HIERARCHY_EDGE_REGION_INVALID: 1 },
+        completedAt: '2026-08-10T00:00:17Z',
+      },
+    ],
+    truncated: false,
+  };
+
+  await page.route('**/api/v1/inference-runs/**', async (route) => {
+    const url = new URL(route.request().url());
+    if (route.request().method() === 'GET' && url.pathname === `/api/v1/inference-runs/${runId}/execution-log`) {
+      await json(route, log);
+    } else if (route.request().method() === 'GET' && url.pathname === `/api/v1/inference-runs/${runId}`) {
+      await json(route, failedRun);
+    } else {
+      await route.abort('failed');
+    }
+  });
+
+  await page.setViewportSize({ width: 1024, height: 768 });
+  await page.goto(`/inference-runs/${runId}/monitor`);
+  await page.waitForLoadState('networkidle');
+
+  await expect(page.getByRole('heading', { name: '阶段与检查点' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '有限问题定位' })).toBeVisible();
+  await expect(page.getByText('区域树')).toBeVisible();
+  await expect(page.getByText('层级边')).toBeVisible();
+  await expect(page.getByText('VISUAL_GROUNDING_PARENT_KIND_INVALID').first()).toBeVisible();
+  await expect(page.getByText('VISUAL_SEMANTIC_HIERARCHY_EDGE_REGION_INVALID').first()).toBeVisible();
+  await expect(page.getByText('从检查点恢复后仍失败')).toBeVisible();
+  await expect(page.getByText('raw-ocr-secret')).toHaveCount(0);
+  await expect(page.getByText('provider-response-secret')).toHaveCount(0);
+
+  const toggle = page.getByRole('button', { name: '收起' });
+  await toggle.focus();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('#inference-execution-log-body')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: '展开' })).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('heading', { name: '阶段与检查点' })).toBeVisible();
+  await expectNoHorizontalOverflow(page);
+
+  const accessibility = await new AxeBuilder({ page })
+    .include('.resource-shell')
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa'])
+    .analyze();
+  expect(accessibility.violations.filter((violation) =>
+    violation.impact === 'serious' || violation.impact === 'critical')).toEqual([]);
+  await page.screenshot({ path: testInfo.outputPath('visual-telemetry-1024x768.png'), fullPage: true });
 });
 
 test('preflights a local upload queue while the deployment transfer gate is closed', async ({ page }) => {

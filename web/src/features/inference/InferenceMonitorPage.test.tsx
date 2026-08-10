@@ -74,11 +74,37 @@ describe('Inference monitor workspace', () => {
     renderPage();
 
     expect(await screen.findByText('识别任务未生成 Candidate')).toBeTruthy();
-    expect(await screen.findByText('CANDIDATE_SCHEMA_KEY_INVALID')).toBeTruthy();
-    expect(screen.getByText('CANDIDATE_SCALAR_SHAPE_INVALID')).toBeTruthy();
+    expect((await screen.findAllByText('CANDIDATE_SCHEMA_KEY_INVALID')).length).toBeGreaterThan(0);
+    expect(screen.getAllByText('CANDIDATE_SCALAR_SHAPE_INVALID').length).toBeGreaterThan(0);
     expect(screen.queryByText('req-private-provider-id')).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: '重新运行' }));
     await waitFor(() => expect(api.retryInferenceRunRequest).toHaveBeenCalledWith(failed.runId));
+  });
+
+  it('summarizes vNext stage, region, issue, cost and recovery telemetry without payloads', async () => {
+    const running = {
+      ...run('RUNNING'),
+      stage: 'HIERARCHY' as const,
+      sequence: 8,
+    };
+    api.getInferenceRunRequest.mockResolvedValue(running);
+    api.getInferenceExecutionLogRequest.mockResolvedValue(visualExecutionLog(running));
+    renderPage();
+
+    expect(await screen.findByRole('heading', { name: '阶段与检查点' })).toBeTruthy();
+    expect(screen.getByText('感知与区域')).toBeTruthy();
+    expect(screen.getByText('层级语义')).toBeTruthy();
+    expect(screen.getAllByText('检查点已验证').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('正在修复').length).toBeGreaterThan(0);
+    expect(screen.getByRole('heading', { name: '有限问题定位' })).toBeTruthy();
+    expect(screen.getByText('区域树')).toBeTruthy();
+    expect(screen.getByText('层级边')).toBeTruthy();
+    expect(screen.getAllByText('VISUAL_GROUNDING_PARENT_KIND_INVALID').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('VISUAL_SEMANTIC_HIERARCHY_EDGE_REGION_INVALID').length).toBeGreaterThan(0);
+    expect(screen.getByText('已从持久检查点恢复')).toBeTruthy();
+    expect(screen.getByText(/0\.005716/)).toBeTruthy();
+    expect(screen.queryByText('raw-ocr-secret')).toBeNull();
+    expect(screen.queryByText('provider-response-secret')).toBeNull();
   });
 
   it('opens the result workspace only after Candidate generation', async () => {
@@ -184,6 +210,77 @@ function executionLog(runSnapshot: InferenceRunResponse, failed = false): Infere
       },
       completedAt: '2026-08-10T04:03:11Z',
     }] : [],
+    truncated: false,
+  };
+}
+
+function visualExecutionLog(runSnapshot: InferenceRunResponse): InferenceExecutionLogResponse {
+  return {
+    run: runSnapshot,
+    events: [
+      {
+        sequence: 1,
+        type: 'QUEUED',
+        state: 'QUEUED',
+        stage: 'OBSERVE',
+        occurredAt: '2026-08-10T04:02:49Z',
+      },
+      {
+        sequence: 6,
+        type: 'CHECKPOINT_ADVANCED',
+        state: 'RUNNING',
+        stage: 'HIERARCHY',
+        occurredAt: '2026-08-10T04:03:10Z',
+      },
+      {
+        sequence: 7,
+        type: 'LEASE_RECLAIMED',
+        state: 'RUNNING',
+        stage: 'HIERARCHY',
+        occurredAt: '2026-08-10T04:03:11Z',
+      },
+    ],
+    attempts: [
+      {
+        attemptOrdinal: 0,
+        stage: 'OBSERVE',
+        status: 'REJECTED',
+        outcomeCode: 'LIVE_VISUAL_ANALYSIS_REJECTED',
+        providerModel: 'qwen3.7-flash',
+        inputTokens: 2_300,
+        outputTokens: 4_100,
+        costMicrosCny: 2_715,
+        durationMillis: 22_083,
+        problemCodeCounts: { VISUAL_GROUNDING_PARENT_KIND_INVALID: 1 },
+        completedAt: '2026-08-10T04:03:08Z',
+      },
+      {
+        attemptOrdinal: 1,
+        stage: 'OBSERVE',
+        status: 'SUCCEEDED',
+        outcomeCode: 'LIVE_VISUAL_GROUNDING_ACCEPTED',
+        providerModel: 'qwen3.7-flash',
+        inputTokens: 2_340,
+        outputTokens: 4_220,
+        costMicrosCny: 3_001,
+        durationMillis: 24_012,
+        problemCodeCounts: {},
+        completedAt: '2026-08-10T04:03:10Z',
+      },
+      {
+        attemptOrdinal: 2,
+        stage: 'HIERARCHY',
+        status: 'REJECTED',
+        outcomeCode: 'LIVE_VISUAL_ANALYSIS_REJECTED',
+        providerModel: 'qwen3.7-flash',
+        inputTokens: 0,
+        outputTokens: 0,
+        costMicrosCny: 0,
+        durationMillis: 12,
+        problemCodeCounts: { VISUAL_SEMANTIC_HIERARCHY_EDGE_REGION_INVALID: 1 },
+        completedAt: '2026-08-10T04:03:12Z',
+      },
+    ],
     truncated: false,
   };
 }
