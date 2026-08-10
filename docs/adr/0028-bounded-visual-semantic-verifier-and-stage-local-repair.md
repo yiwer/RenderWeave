@@ -167,3 +167,19 @@ evidence 均未变化。唯一 live wrapper exit 0 后先 CLOSED 再读取 evide
 20 SLOT/1 GROUP；四次 HIERARCHY 依次为三次 `VISUAL_HIERARCHY_V2_REGION_OWNERSHIP_INVALID` 和一次
 `VISUAL_HIERARCHY_V2_SUPPORT_NOT_GROUP`，没有触发 exact-owner rewind，也没有进入 BINDING。该结果说明 4.4
 仍只改变可证明的失败边界，不构成 Profile 晋级；Max 的三阶段前置条件仍未成立。
+
+## N7 hierarchy region repair taxonomy 增量
+
+v17 live 的连续三次 `VISUAL_HIERARCHY_V2_REGION_OWNERSHIP_INVALID` 合并了 entity region 字段、relationship
+region 字段、未知引用、root coverage、parent/child connection 与 region/cardinality 六类固定失败，stage-local retry
+无法知道应修哪一项。`4d2cc46` 新增 pipeline 4.5/product-v18：只有新 Profile 启用
+`DETAILED_FIXED_CODES`，把上述原因拆成固定、payload-free code；v17 与更早 Profile 继续使用
+`LEGACY_GENERIC`，历史诊断顺序和 snapshot 不变。
+
+hierarchy prompt v6 只为这些 code 与既有 support-not-group/group-reused 增加定界修复说明；它仍要求从已验证
+groundingPlan/elementInventory 精确复制 ID，不允许本地代码补 GROUP、猜层级或读取模型原文。结构码不触发 crop，
+checkpoint 保留成功 OBSERVE 并在 HIERARCHY 原地重试。合同/Profile/prompt 31/31、独立 verifier 2/2 与真实
+PostgreSQL lease-expiry 恢复 1/1 通过；server `.sdlc/evidence/20260811-052610-server`、web
+`.sdlc/evidence/20260811-052610-web`、E2E `.sdlc/evidence/20260811-052745-e2e`、clean fast
+`.sdlc/evidence/20260811-052853-fast` 均为 A1 PASS。实现期间三份 ledger 均 CLOSED、Provider attempts=0；
+product-v18 保持 `EXPERIMENTAL`，仍需新的 identity/snapshot 单 case live 验证。

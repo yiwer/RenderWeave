@@ -1,12 +1,19 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-11 `4d2cc46` 新增 pipeline 4.5/product-v18：只对新 Profile 将 generic hierarchy region ownership
+  failure 拆成 entity/relationship region 字段、未知引用、root coverage、parent-child connection 与
+  region/cardinality 六类固定码；v17 继续 legacy generic。hierarchy prompt v6 同步 support-not-group/reuse 的
+  stage-local 指令，不补 GROUP、不猜结构、不触发结构 crop。合同/Profile/prompt 31/31、独立 verifier 2/2、
+  real-PG lease recovery 1/1、server 187 app tests（6 gated skip）、Web 73、E2E 18/1 与 clean fast A1 全绿；
+  实现期间 Provider attempts=0，三份 ledger CLOSED。下一安全切片是重算 identity/snapshot/Goal 后的 Plus v18
+  单 case；实证 BINDING 前禁止 Max。
 - 2026-08-11 Plus product-v17 单 case 已按 `178bafb` PROPOSED → `8e0c31e` OPEN → `7107303` CLOSED 完成；
   负探针精确 NOT_OPEN 且 Goal/evidence 零变化。独立 verifier A2 PASS：5 attempts、27,498 input + 7,733
   output tokens、142,447 ms、payload scan PASS。OBSERVE 接受 20 SLOT/1 GROUP，随后 HIERARCHY 三次
   region ownership invalid、一次 support not group，未进 BINDING。Plus Goal 现为 111/180 attempts、
   642,680/1,000,000 tokens、¥2.634724；260 reservations 中 255 SETTLED、5 历史 RESERVED，三份 ledger CLOSED。
-  Max 入口未成立；下一安全切片是本地 bounded HIERARCHY region ownership/support repair。
+  Max 入口未成立；该结果随后驱动了 product-v18 的 bounded HIERARCHY region ownership/support repair。
 - 2026-08-11 `31a8c6f` 新增 pipeline 4.4/product-v17：只在 relationship 的 exact GROUP/REPEATED_GROUP region
   缺 observed GROUP element owner 时从 HIERARCHY 回退 OBSERVE；已有 owner 的 GROUP reuse 仍在 HIERARCHY。
   count-based capacity 假设因无法区分上游遗漏与多余 relationship 已否决。合同/Profile 29/29、独立 verifier
@@ -82,8 +89,8 @@
 
 ## 下一步
 - [ ] P6/T6-5 图片识别 vNext：N0–N6 已形成独立 checkpoint；v17 exact relationship-region owner rewind 已
-  clean A1 且单 case lifecycle 已 CLOSED/A2，但仍停在 HIERARCHY。先推进本地 bounded region ownership/support
-  repair；实证 BINDING 前禁止 Max。
+  clean A1 且单 case lifecycle 已 CLOSED/A2，但仍停在 HIERARCHY；v18 detailed repair taxonomy 已 clean A1。
+  重算 identity/Profile snapshot/Goal 后执行 Plus v18 单 case；实证 BINDING 前禁止 Max。
 - [x] Java / React / PostgreSQL / OpenAPI 最小 canary 与 A1 full gate 通过。
 - [x] 用户接受“A 默认表单 + B Map + 吸收 C 的 preview/密度”的编辑器方向（J1，2026-08-08）。
 - [x] 创建 P1–P4 implementation Goal。
@@ -184,6 +191,6 @@
   Flash v10–v12 A2 诊断与 exact-clean full；三阶段仍不可达，未晋级。
 - `plans/logs/P6-T6-5-N7.md`：pinned Flash/Goal guard v2、六份单 case CLOSED/A2 reachability、v15/v16/v17
   bounded verifier 增量与 payload-free UI；三阶段仍不可达，Max 未调用。
-- 当前恢复点：`phase/p6-visual-recognition-vnext` 的 `31a8c6f` clean implementation；最近 live lifecycle 为
+- 当前恢复点：`phase/p6-visual-recognition-vnext` 的 `4d2cc46` clean implementation；最近 live lifecycle 为
   `7107303` CLOSED。编排 Goal `019fec8e-a851-7952-b49b-8be76a281a57` 为 active，未创建 replacement Goal。
-  下一安全切片是本地 bounded HIERARCHY region ownership/support repair；满足 BINDING 前禁止 Max。
+  下一安全切片是 Plus product-v18 单 case lifecycle；满足 BINDING 前禁止 Max。
