@@ -1,28 +1,30 @@
-import { lazy, Suspense } from 'react';
+import { Suspense } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 
-const SchemaStudioPage = lazy(async () => ({
+import { lazyRoute } from './lazy-route';
+
+const SchemaStudioPage = lazyRoute(async () => ({
   default: (await import('../features/schema-studio/SchemaStudioPage')).SchemaStudioPage,
 }));
-const SchemaStudioPrototype = lazy(async () => ({
+const SchemaStudioPrototype = lazyRoute(async () => ({
   default: (await import('../prototype/schema-studio/SchemaStudioPrototype')).SchemaStudioPrototype,
 }));
-const DraftListPage = lazy(async () => ({
+const DraftListPage = lazyRoute(async () => ({
   default: (await import('../features/resources/DraftListPage')).DraftListPage,
 }));
-const StaticSchemaListPage = lazy(async () => ({
+const StaticSchemaListPage = lazyRoute(async () => ({
   default: (await import('../features/resources/StaticSchemaPages')).StaticSchemaListPage,
 }));
-const StaticSchemaDetailPage = lazy(async () => ({
+const StaticSchemaDetailPage = lazyRoute(async () => ({
   default: (await import('../features/resources/StaticSchemaPages')).StaticSchemaDetailPage,
 }));
-const RootDocumentValidatorPage = lazy(async () => ({
+const RootDocumentValidatorPage = lazyRoute(async () => ({
   default: (await import('../features/resources/RootDocumentValidatorPage')).RootDocumentValidatorPage,
 }));
-const InferenceStartPage = lazy(async () => ({
+const InferenceStartPage = lazyRoute(async () => ({
   default: (await import('../features/inference/InferenceStartPage')).InferenceStartPage,
 }));
-const CandidateReviewPage = lazy(async () => ({
+const CandidateReviewPage = lazyRoute(async () => ({
   default: (await import('../features/inference/CandidateReviewPage')).CandidateReviewPage,
 }));
 
