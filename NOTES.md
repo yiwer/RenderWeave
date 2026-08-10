@@ -1,6 +1,13 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-11 `391bd52` 新增 pipeline 4.7/product-v20：旧 Profile 保持 strict；仅当模型给出的已知
+  relationship region 与 evidence-derived cardinality 不兼容，且唯一支撑 GROUP 恰有一个 compatible owned
+  region 时才确定性归一化。零候选回到 OBSERVE，多个候选继续固定码 fail-closed；不跨 GROUP 选择、不补元素、
+  不删边、不改 topology。payload-free telemetry、stage-local checkpoint、监控 UI 与 1024 E2E 已覆盖。inference
+  定向 34/34、独立 verifier 2/2、real-PG lease recovery 1/1、server app 189（6 gated skip）、Web 73、E2E
+  18/1 与 clean fast `.sdlc/evidence/20260811-062623-fast` 全绿；Provider attempts=0，三份 ledger CLOSED。
+  product-v20 仍为隐藏 `EXPERIMENTAL`；下一步是 fresh identity/snapshot/J1 下的 Plus v20 单 case lifecycle。
 - 2026-08-11 Plus product-v19 已按 `09c3c16` PROPOSED → `7e1b98b` OPEN → `aa92ae2` CLOSED 完成单 case；
   负探针精确 NOT_OPEN，Goal/evidence 零变化。独立 verifier A2 PASS：5 attempts、24,956 input + 6,103 output
   tokens、109,700 ms、payload scan PASS。OBSERVE 首次接受 13 SLOT/1 GROUP，随后四次 HIERARCHY 均为
@@ -12,7 +19,7 @@
   之间不择一，不补 GROUP、不删边、不猜结构。归一化 telemetry、结构码 no-crop、最早阶段恢复与 UI/E2E 已覆盖。
   定向 33/33、独立 verifier 2/2、real-PG lease recovery 1/1、server 188（6 gated skip）、Web 73、E2E
   18/1 与 clean fast `.sdlc/evidence/20260811-055541-fast` 全绿；Provider attempts=0，三份 ledger CLOSED。
-  product-v19 仍为 `EXPERIMENTAL`，下一步是 fresh identity/snapshot 下的 Plus v19 单 case lifecycle。
+  product-v19 仍为 `EXPERIMENTAL`；其 live 结果见上，下一本地切片已由 product-v20 承接。
 - 2026-08-11 Plus product-v18 已按 `df166df` PROPOSED → `dca738c` OPEN → `2ee5691` CLOSED 完成单 case；
   负探针精确 NOT_OPEN，Goal/evidence 零变化。独立 verifier A2 PASS：5 attempts、20,274 input + 4,920 output
   tokens、89,402 ms、payload scan PASS。OBSERVE 首次接受 9 SLOT/0 GROUP，随后四次 HIERARCHY 均为
@@ -109,8 +116,9 @@
 - [ ] P6/T6-5 图片识别 vNext：N0–N6 已形成独立 checkpoint；v17 exact relationship-region owner rewind 已
   clean A1 且单 case lifecycle 已 CLOSED/A2，但仍停在 HIERARCHY；v18 detailed repair taxonomy 已 clean A1。
   Plus v18 单 case 已 CLOSED/A2 并稳定暴露 relationship support IDs invalid；v19 bounded exact-duplicate
-  normalization 已 clean A1，Plus v19 已 CLOSED/A2 并稳定暴露 relationship region/cardinality invalid。下一步
-  先做本地 bounded 合同诊断与 stage-local repair；实证 BINDING 前禁止 Max。
+  normalization 已 clean A1，Plus v19 已 CLOSED/A2 并稳定暴露 relationship region/cardinality invalid。v20
+  unique evidence-owned relationship region normalization 已 clean A1；下一步在 fresh identity/snapshot/J1 下执行
+  Plus v20 单 case。实证 BINDING 前禁止 Max。
 - [x] Java / React / PostgreSQL / OpenAPI 最小 canary 与 A1 full gate 通过。
 - [x] 用户接受“A 默认表单 + B Map + 吸收 C 的 preview/密度”的编辑器方向（J1，2026-08-08）。
 - [x] 创建 P1–P4 implementation Goal。
@@ -208,9 +216,9 @@
 - `plans/logs/P6-T6-5-N5.md`：有界本地 Document Vision、v4/v6/v7 同 case live 消融、Plus Goal 用量、
   HTTP failure 硬停与未晋级决策；全部 ledger CLOSED。
 - `plans/logs/P6-T6-5-N6.md`：bounded semantic verifier、stage-local repair、selected crops、payload-free UI、
-  Flash v10–v12 A2 诊断与 exact-clean full；三阶段仍不可达，未晋级。
-- `plans/logs/P6-T6-5-N7.md`：pinned Flash/Goal guard v2、七份单 case CLOSED/A2 reachability、v15/v16/v17/v18
+  Flash v10–v12 A2 诊断、v15–v20 bounded verifier 增量与 exact-clean gates；三阶段 live 仍不可达，未晋级。
+- `plans/logs/P6-T6-5-N7.md`：pinned Flash/Goal guard v2、八份单 case CLOSED/A2 reachability、v15–v20
   bounded verifier 增量与 payload-free UI；三阶段仍不可达，Max 未调用。
-- 当前恢复点：`phase/p6-visual-recognition-vnext` 的 `4d2cc46` clean implementation；最近 live lifecycle 为
-  `2ee5691` CLOSED。编排 Goal `019fec8e-a851-7952-b49b-8be76a281a57` 为 active，未创建 replacement Goal。
-  下一安全切片是本地 bounded relationship support-ID 合同诊断与 repair；满足 BINDING 前禁止 Max。
+- 当前恢复点：`phase/p6-visual-recognition-vnext` 的 `391bd52` clean implementation；最近 live lifecycle 为
+  `aa92ae2` CLOSED。编排 Goal `019fec8e-a851-7952-b49b-8be76a281a57` 为 active，未创建 replacement Goal。
+  下一安全切片是 fresh identity/snapshot/J1 下的 Plus product-v20 单 case；满足 BINDING 前禁止 Max。

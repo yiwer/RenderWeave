@@ -220,3 +220,26 @@ target evidence 均未变化。唯一 wrapper exit 0 后先 CLOSED 再读取 evi
 `VISUAL_HIERARCHY_V2_RELATIONSHIP_REGION_CARDINALITY_INVALID`，没有进入 BINDING，也没有命中 support-ID
 normalization telemetry。该结果把下一本地切片收窄到 relationship region/cardinality 合同；不得重复相同 v19，
 在三阶段实证可达前仍禁止 Max，product-v19 不晋级。
+
+## N7 unique evidence-owned relationship region normalization 增量
+
+v19 已证明 relationship cardinality 可由唯一支撑 GROUP 的已验证 multiplicity 决定，但模型连续把 relationship
+绑定到与该 cardinality 不兼容的已知 region。`391bd52` 新增 pipeline 4.7/product-v20；v19 与更早 Profile 继续
+`STRICT`。新 policy 只在当前 relationship region 已知但 cardinality 不兼容时，检查该 relationship 唯一有效
+支撑 GROUP 已在 OBSERVE checkpoint 中验证的 owned regions：恰有一个 cardinality-compatible region 才确定性
+替换；零个时输出 `VISUAL_SEMANTIC_GROUP_REGION_INVALID` 并把最早修复阶段路由到 OBSERVE；多个时拒绝选择，
+继续由既有 `VISUAL_HIERARCHY_V2_RELATIONSHIP_REGION_CARDINALITY_INVALID` fail-closed。
+
+该 policy 不处理未知 region，不跨 GROUP 选择，不合成/删除 element、entity 或 relationship，不修改 endpoint、
+field key、topology 或已验证 OBSERVE。成功替换只记录 payload-free
+`VISUAL_HIERARCHY_RELATIONSHIP_REGION_NORMALIZED`；结构诊断仍不请求 crop，accepted OBSERVE/grounding checkpoint
+继续保留。三模型 product-v20 Profile 复用 immutable elements-v8/hierarchy-v7/bindings-v3 prompts，保持隐藏
+`EXPERIMENTAL`。
+
+inference 定向 34/34、独立 verifier 2/2、真实 PostgreSQL lease-expiry 恢复 1/1 通过；后者同时覆盖 exact
+support-ID 去重与 unique region normalization，证明 HIERARCHY 可进入 BINDING，崩溃恢复只重做 BINDING。
+server `.sdlc/evidence/20260811-062224-server`、Node 24 web `.sdlc/evidence/20260811-062433-web`、E2E
+`.sdlc/evidence/20260811-062513-e2e` 与提交后 clean fast `.sdlc/evidence/20260811-062623-fast` 均为 A1 PASS。
+实现和门控期间 Provider attempts=0，三份 ledger 保持 CLOSED。以上仍只是 repository synthetic 输入的本地合同
+证据；下一步必须在 fresh evaluation identity/Profile snapshot 与独立 J1 ledger 下执行 Plus product-v20 单 case，
+只有 live 实际触达 BINDING 才可考虑 Max。
