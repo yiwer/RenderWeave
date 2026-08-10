@@ -7,7 +7,8 @@
 - Spec delta：`specs/changes/20260810-visual-recognition-vnext.md`
 - ADR：ADR-0022、ADR-0023、ADR-0024、ADR-0025、ADR-0026
 - 用户 J1：yiwer，2026-08-10；三模型各 500,000 total tokens，精确约束见 spec delta
-- 当前节点：N0–N1、N3–N4 `automated_verified`；N2 `live_verified_mixed_a1_a2`；N5 in progress；全部 live ledger `CLOSED`
+- 当前节点：N0–N1、N3–N4 `automated_verified`；N2 `live_verified_mixed_a1_a2`；N5
+  `live_verified_not_promoted`；N6 in progress；全部 live ledger `CLOSED`
 
 ## 四维执行配置
 
@@ -97,17 +98,20 @@ ledger 描述成外部强制门。
 
 ### N5：OCR/Layout Grounding 与消融
 
-- 状态：in progress；N4 exact-clean server A1 已通过；live 消融前仍需冻结实现、identity 与新 ledger。
+- 状态：`live_verified_not_promoted`；checkpoint：`plans/logs/P6-T6-5-N5.md`。实现、runtime、v6/v7
+  repository-synthetic live evidence 与独立 verifier 已完成，选择门未通过，全部 ledger `CLOSED`。
 - AC：AC-VR-005、010。
 - 依赖：N4。
 - 实现：`DocumentVisionPreprocessor` port、严格 bounded local adapter、启动 capability；原始文字内存使用并
   在 checkpoint/log/evidence 前消除；pure/full-image、multiscale、hybrid 三方案同 corpus 对比。
 - 选择门：dense/small-text field recall +0.05、critical hallucination 不增加；否则 adapter 不成为默认。
 - 局部验证：missing binary/model、timeout、malformed output、payload scan、坐标 transform、runtime canary。
-- 完成信号：默认路径由报告而非偏好决定；不可用时 fail-readable 且不静默改变 Profile。
+- 完成信号：已达成。v4/v6/v7 同 case 报告判定 Hybrid 不晋级；v7 继续默认关闭、产品隐藏和
+  `EXPERIMENTAL`。Plus Goal 暴露量 485,886/500,000 tokens，本 Goal 不再调用 Plus。
 
 ### N6：Semantic Verifier、Targeted Repair 与 UI
 
+- 状态：in progress；N5 显示当前首要缺口是 14 次笼统 `VISUAL_GROUNDING_CONTRACT_INVALID` 无法定位。
 - AC：AC-VR-007、009。
 - 依赖：N5。
 - 实现：bounded verifier contract、issue→earliest-stage routing、selected crop request、successful-stage
@@ -130,7 +134,7 @@ ledger 描述成外部强制门。
 | 模型 | Goal cap | N2 consumed | 剩余 tokens | attempts | list-price CNY cap | N2 cost |
 |---|---:|---:|---:|---:|---:|---:|
 | qwen3.8-max | 500,000 | 304,043 | 195,957 | 54 / 180 | 18.00 | 6.406980 |
-| qwen3.7-plus | 500,000 | 317,619 | 182,381 | 64 / 180 | 4.00 | 1.229322 |
+| qwen3.7-plus | 500,000 | 485,886（N5 后暴露量） | 14,114 | 86 / 180 | 4.00 | 2.040696 |
 | qwen3.7-flash | 500,000 | 291,784 | 208,216 | 56 / 180 | 0.40 | 0.106318 |
 
 停止条件：任一 token/attempt/CNY cap、168h ledger expiry、Goal 完成、Provider refusal/Retry-After、identity

@@ -53,6 +53,17 @@ ONNX Runtime 1.22.1 与 1.28.0 均发生 Windows native DLL 加载失败，OpenV
    至少 0.05 且 critical hallucination 不增加，且 token/费用/延迟完整时，Hybrid 才有资格进入 N7
    默认候选；否则保持可插拔、`EXPERIMENTAL` 和产品隐藏。
 
+## 2026-08-10 实际消融结论
+
+选择门未通过，v7 不晋级。qwen3.7-plus 在相同 `transit-board-v3/v4/v5` 上的 v4 pure 基线为
+4/39 fields（10.26%）且有 41 个 critical hallucinations；v6 multiscale 为 0/39，14 个已返回结果均被
+`VISUAL_GROUNDING_CONTRACT_INVALID` 拒绝；v7 hybrid 的前四个响应也被同一合同拒绝，随后 Provider
+返回 HTTP 403。v6/v7 的 critical=0 来自没有 Candidate，不能解释为质量改善。
+
+因此保持 v7 默认关闭、产品隐藏和 `EXPERIMENTAL`，也不因一次 OCR runtime canary 成功而宣称 Hybrid
+有效。后续 N6 先引入 bounded grounding diagnostics、semantic verifier 与 earliest-stage targeted repair；
+只有形成新的、可证伪假设后才允许新的 Max/Flash live 对比，不重复当前失败合同。
+
 ## 备选方案
 
 | 方案 | 优点 | 代价/风险 | 未选择原因 |
