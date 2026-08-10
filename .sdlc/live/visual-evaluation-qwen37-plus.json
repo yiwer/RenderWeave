@@ -6,7 +6,7 @@
   "inputClassification": "REPOSITORY_SYNTHETIC_ONLY",
   "corpusVersion": "renderweave-visual-stage-corpus/1.0",
   "corpusSourceSha256": "bf0db7bf0ac5c4e2b357cdd96c49ff70a7b30a5bc59f322a915020dc29fc605e",
-  "evaluationIdentity": "renderweave-visual-evaluation-tree-sha256/1:49aca8c6192b5eebeb4b1db652881d1fc8f5a6553ebc962f144f5991b00e18c0",
+  "evaluationIdentity": "renderweave-visual-evaluation-tree-sha256/1:411c8175f65137dffc8797c11d9a5fd4cafa393a594369728ac3e0fcc8e09d78",
   "profileId": "dashscope-qwen37-plus-product-v4",
   "profileSnapshotSha256": "a84f321cac229644d3e346c9007ac9cd510c86167ab820102aae7699cd7ec08a",
   "model": "qwen3.7-plus",
