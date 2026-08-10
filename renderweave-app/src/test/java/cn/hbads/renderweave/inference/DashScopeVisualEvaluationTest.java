@@ -166,9 +166,10 @@ class DashScopeVisualEvaluationTest {
         }
         var attempts = workflowStore.attempts(created.runId());
         var finalRun = runs.find(created.runId()).orElseThrow();
-        var stageResult = evaluator.evaluate(
-                evaluationCase, checkpointReader.read(finalRun.checkpointJson(), attempts.size())
-        );
+        var snapshot = checkpointReader.read(finalRun.checkpointJson(), attempts.size());
+        var stageResult = finalRun.failureCode()
+                .map(code -> evaluator.evaluateFailure(evaluationCase, snapshot, code))
+                .orElseGet(() -> evaluator.evaluate(evaluationCase, snapshot));
         var reservations = goalBudget.reservationsForRun(created.runId()).stream()
                 .collect(java.util.stream.Collectors.toMap(
                         VisualEvaluationGoalBudget.Reservation::attemptOrdinal, item -> item

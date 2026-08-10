@@ -16,6 +16,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.UUID;
 
 final class LiveWorkflowJsonCodec {
     private static final ObjectMapper JSON = JsonMapper.builder(
@@ -59,11 +60,33 @@ final class LiveWorkflowJsonCodec {
                         legacy.outputValid(), legacy.candidate(), legacy.validationProblems()
                 );
             }
+            if (version == null && runStoreNormalizeEnvelope(tree)) {
+                return LiveWorkflowCheckpoint.started();
+            }
             throw new IllegalArgumentException("Unsupported live checkpoint version");
         } catch (InvalidCandidateContractException exception) {
             throw exception;
         } catch (Exception exception) {
             throw invalid(exception);
+        }
+    }
+
+    private static boolean runStoreNormalizeEnvelope(tools.jackson.databind.JsonNode tree) {
+        if (!tree.isObject() || tree.size() != 2
+                || !"NORMALIZE".equals(tree.path("completedStage").asText())) {
+            return false;
+        }
+        var fingerprint = tree.path("inputFingerprint");
+        if (fingerprint.isString() && fingerprint.asText().matches("[a-f0-9]{64}")) {
+            return true;
+        }
+        var retry = tree.path("retryOfRunId");
+        if (!retry.isString()) return false;
+        try {
+            UUID.fromString(retry.asText());
+            return true;
+        } catch (IllegalArgumentException invalid) {
+            return false;
         }
     }
 

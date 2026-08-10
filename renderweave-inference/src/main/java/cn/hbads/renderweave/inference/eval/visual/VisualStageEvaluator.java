@@ -101,6 +101,32 @@ public final class VisualStageEvaluator {
         );
     }
 
+    /** Scores every durable stage while preserving a terminal run failure as the case outcome. */
+    public VisualStageEvaluationResult evaluateFailure(
+            VisualStageCorpus.EvaluationCase gold,
+            VisualStageSnapshot actual,
+            String outcomeCode
+    ) {
+        if (outcomeCode == null || !outcomeCode.matches("[A-Z][A-Z0-9_]{0,127}")) {
+            throw new IllegalArgumentException("Visual terminal outcome code is invalid");
+        }
+        var result = evaluate(gold, actual);
+        var candidate = result.finalCandidate();
+        var failedCandidate = new VisualStageEvaluationResult.FinalCandidateMetrics(
+                outcomeCode, false, candidate.bundleContractBps(), candidate.entities(), candidate.fields(),
+                candidate.relationships(), candidate.supportedTypeExpected(),
+                candidate.supportedTypeMatched(), candidate.evidenceExpected(), candidate.evidencePresent(),
+                candidate.dagValidityBps(), candidate.criticalHallucinations(), candidate.blockers()
+        );
+        return new VisualStageEvaluationResult(
+                result.caseId(), result.partition(), result.domainPack(), result.style(), outcomeCode,
+                result.providerCalls(), result.repairRounds(), result.slots(), result.groups(),
+                result.grounding(), result.entities(), result.relationships(), result.bindings(),
+                result.survival(), result.treeEditDistance(), result.treeEditDenominator(),
+                result.calibrationBins(), failedCandidate
+        );
+    }
+
     private static List<ElementMatch> matchElements(
             List<VisualStageCorpus.Element> gold,
             List<VisualStageSnapshot.ObservedElement> actual

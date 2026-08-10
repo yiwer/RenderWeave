@@ -15,7 +15,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @EnabledIfSystemProperty(named = "renderweave.visual-evaluation.closed-recovery", matches = "true")
 class VisualEvaluationClosedRecoveryTest {
     @Test
-    void archivesInterruptedReservedExecutionsWithoutOpeningProviderPath() {
+    void archivesReservedExecutionsAndDropsUnreservedExecutionsWithoutOpeningProviderPath() {
         var root = repositoryRoot();
         var json = JsonMapper.builder().build();
         var authorization = VisualEvaluationAuthorization.load(
@@ -32,7 +32,10 @@ class VisualEvaluationClosedRecoveryTest {
         );
         try (var ignored = journal.acquireClosedRecoveryLease()) {
             var recovery = journal.recoverInterruptedAfterClosure(goalBudget, now);
-            assertThat(recovery.retriableCaseIds()).isEmpty();
+            assertThat(recovery.retriableCaseIds())
+                    .allMatch(authorization.caseIds()::contains);
+            assertThat(recovery.abandonedCaseIds())
+                    .allMatch(authorization.caseIds()::contains);
         }
         assertThat(journal.snapshot().executions())
                 .noneMatch(item -> "IN_PROGRESS".equals(item.status()));

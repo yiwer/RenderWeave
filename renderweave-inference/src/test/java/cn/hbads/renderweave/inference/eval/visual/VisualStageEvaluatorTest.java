@@ -69,6 +69,25 @@ class VisualStageEvaluatorTest {
     }
 
     @Test
+    void terminalRunFailureIsPreservedWithoutLosingGoldDenominators() {
+        var gold = corpus.require("low-information-poster-v1");
+
+        var result = evaluator.evaluateFailure(
+                gold,
+                VisualStageSnapshot.empty(InferenceStage.NORMALIZE),
+                "VISUAL_EVALUATION_GOAL_BUDGET_EXCEEDED"
+        );
+
+        assertEquals("VISUAL_EVALUATION_GOAL_BUDGET_EXCEEDED", result.outcomeCode());
+        assertEquals("VISUAL_EVALUATION_GOAL_BUDGET_EXCEEDED", result.finalCandidate().outcomeCode());
+        assertEquals(gold.scene().elements().stream()
+                .filter(item -> item.kind() == VisualStageCorpus.ElementKind.SLOT).count(),
+                result.slots().expected());
+        assertFalse(result.finalCandidate().passed());
+    }
+
+
+    @Test
     void observedSlotWithoutHierarchyOrBindingScoresZeroInsteadOfCrashing() {
         var gold = corpus.require("hospital-schedule-v5");
         var observedSlot = perfectSnapshot(gold).elements().stream()
