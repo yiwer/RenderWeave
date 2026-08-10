@@ -70,7 +70,10 @@ class InferenceProfileRegistryTest {
                 "dashscope-qwen37-flash-20260715-product-v13-generic",
                 "dashscope-qwen37-flash-20260715-product-v14-generic",
                 "dashscope-qwen37-plus-product-v14-generic",
-                "dashscope-qwen38-max-product-v14-generic"
+                "dashscope-qwen38-max-product-v14-generic",
+                "dashscope-qwen37-flash-20260715-product-v15-generic",
+                "dashscope-qwen37-plus-product-v15-generic",
+                "dashscope-qwen38-max-product-v15-generic"
         ), registry.profileIds());
         assertEquals(java.util.List.of(
                 "dashscope-qwen37-flash-product-v4",
@@ -91,7 +94,7 @@ class InferenceProfileRegistryTest {
                 "qwen3.7-flash", "qwen3.7-plus", "qwen3.8-max"
         ), registry.visualNextProfiles().stream()
                 .map(item -> item.capability().capability().model()).toList());
-        assertEquals(25, registry.visualGroundingProfiles().size());
+        assertEquals(28, registry.visualGroundingProfiles().size());
         assertEquals(java.util.List.of(
                 "dashscope-qwen37-flash-product-v7-hybrid-generic",
                 "dashscope-qwen37-plus-product-v7-hybrid-generic",

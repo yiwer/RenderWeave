@@ -235,6 +235,12 @@ public record InferenceProfile(
                 && InferencePromptRegistry.VISUAL_BINDINGS_V3.equals(bindingPromptVersion)
                 && InferencePromptRegistry.VISUAL_HINT_GENERIC_V1.equals(visualHintPackVersion)
                 && profileId.endsWith("-product-v14-generic");
+        var productPromptV15 = InferencePromptRegistry.SCHEMA_CANDIDATE_V5.equals(promptVersion)
+                && InferencePromptRegistry.VISUAL_ELEMENTS_V7.equals(elementPromptVersion)
+                && InferencePromptRegistry.VISUAL_HIERARCHY_V5.equals(hierarchyPromptVersion)
+                && InferencePromptRegistry.VISUAL_BINDINGS_V3.equals(bindingPromptVersion)
+                && InferencePromptRegistry.VISUAL_HINT_GENERIC_V1.equals(visualHintPackVersion)
+                && profileId.endsWith("-product-v15-generic");
         var serialVisualPipeline = "renderweave-inference-pipeline/3.0".equals(pipelineVersion)
                 || "renderweave-inference-pipeline/4.0".equals(pipelineVersion)
                 || "renderweave-inference-pipeline/4.1".equals(pipelineVersion)
@@ -262,7 +268,7 @@ public record InferenceProfile(
                 || ("renderweave-inference-pipeline/4.1".equals(pipelineVersion)
                 && (productPromptV6 || productPromptV8 || productPromptV9
                 || productPromptV10 || productPromptV11 || productPromptV12 || productPromptV13
-                || productPromptV14))
+                || productPromptV14 || productPromptV15))
                 || ("renderweave-inference-pipeline/4.2".equals(pipelineVersion)
                 && productPromptV7));
         if (!(legacySyntheticPrompt || productPrompt)
@@ -284,7 +290,8 @@ public record InferenceProfile(
                 || productPromptV5 && stageTimeoutSeconds != 240
                 || productPromptV6 && stageTimeoutSeconds != 240
                 || productPromptV7 && stageTimeoutSeconds != 240
-                || productPromptV8 && stageTimeoutSeconds != 240) {
+                || productPromptV8 && stageTimeoutSeconds != 240
+                || productPromptV15 && stageTimeoutSeconds != 240) {
             throw new IllegalArgumentException("Product serial profile timeout must match its immutable version");
         }
         if (!pricingEffectiveDate.matches("\\d{4}-\\d{2}-\\d{2}")) {

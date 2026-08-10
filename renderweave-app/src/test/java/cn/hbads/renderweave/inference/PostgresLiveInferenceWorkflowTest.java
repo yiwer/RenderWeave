@@ -606,6 +606,65 @@ class PostgresLiveInferenceWorkflowTest {
     }
 
     @Test
+    void hierarchyWithoutObservedGroupsRewindsAndRecoversObservationAfterLeaseExpiry() {
+        assertThat(InferenceStage.HIERARCHY.canTransitionTo(InferenceStage.OBSERVE)).isFalse();
+        var blobs = new MemoryBlobStore();
+        var created = createGroundedVisual(blobs, "grounded-observation-rewind");
+        var firstProvider = new ScriptedProvider(
+                request -> response(request, flatGroundedStationElements()),
+                request -> response(request, groundedStationHierarchy())
+        );
+        var firstWorker = worker(firstProvider, blobs, T0.plusSeconds(1));
+        var current = runs.claimNextLive(
+                "grounded-observation-rewind-first", T0.plusSeconds(1), Duration.ofMinutes(5)
+        ).orElseThrow();
+
+        current = firstWorker.advance(current);
+        current = firstWorker.advance(current);
+
+        assertThat(current.stage()).isEqualTo(InferenceStage.OBSERVE);
+        assertThat(current.checkpointJson())
+                .contains("\"completedStage\": \"NORMALIZE\"")
+                .contains("\"providerCalls\": 2")
+                .doesNotContain("renderweave-visual-grounding/2.0")
+                .doesNotContain("renderweave-visual-hierarchy/2.0");
+        assertThat(firstProvider.requests).extracting(ProviderInferenceRequest::stage)
+                .containsExactly(InferenceStage.OBSERVE, InferenceStage.HIERARCHY);
+        assertThat(workflowStore.attempts(created).get(1).problemCodeCounts())
+                .containsExactlyEntriesOf(Map.of(
+                        "VISUAL_SEMANTIC_OBSERVE_RELATIONSHIP_GROUP_MISSING", 1
+                ));
+
+        var recoveryProvider = new ScriptedProvider(
+                request -> response(request, groundedStationElements()),
+                request -> response(request, groundedStationHierarchy()),
+                request -> response(request, groundedStationBindings())
+        );
+        var finished = worker(recoveryProvider, blobs, T0.plus(Duration.ofMinutes(7)))
+                .processNext("grounded-observation-rewind-recovery").orElseThrow();
+
+        assertThat(finished.state())
+                .as("failure=%s attempts=%s", finished.failureCode(), workflowStore.attempts(created))
+                .isEqualTo(InferenceRunState.REVIEW_REQUIRED);
+        assertThat(recoveryProvider.requests).extracting(ProviderInferenceRequest::stage)
+                .containsExactly(
+                        InferenceStage.OBSERVE, InferenceStage.HIERARCHY,
+                        InferenceStage.ELEMENT_BINDING
+                );
+        assertThat(recoveryProvider.requests.getFirst().taskJson())
+                .contains("VISUAL_SEMANTIC_OBSERVE_RELATIONSHIP_GROUP_MISSING")
+                .doesNotContain("TARGETED_CROP")
+                .contains("\"elementInventory\":null")
+                .contains("\"groundingPlan\":null");
+        assertThat(workflowStore.attempts(created)).extracting(attempt -> attempt.status())
+                .containsExactly(
+                        InferenceAttemptStatus.SUCCEEDED, InferenceAttemptStatus.REJECTED,
+                        InferenceAttemptStatus.SUCCEEDED, InferenceAttemptStatus.SUCCEEDED,
+                        InferenceAttemptStatus.SUCCEEDED
+                );
+    }
+
+    @Test
     void groundedStageLocalRepairResumesAfterLeaseExpiryWithoutReobserving() {
         var blobs = new MemoryBlobStore();
         var created = createGroundedVisual(blobs, "grounded-semantic-lease-recovery");
@@ -1477,6 +1536,19 @@ class PostgresLiveInferenceWorkflowTest {
                   {"elementId":"route-number","kind":"SLOT","proposedKey":"routeNumber","displayName":"线路编号","multiplicity":"ONE","valueHint":"TEXT","regionIds":["route-item"],"evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":500,"top":2400,"right":2500,"bottom":2900}}]},
                   {"elementId":"stop-group","kind":"GROUP","proposedKey":"stops","displayName":"停靠站点","multiplicity":"MANY","valueHint":null,"regionIds":["stops"],"evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":0,"top":4000,"right":10000,"bottom":10000}}]},
                   {"elementId":"stop-name","kind":"SLOT","proposedKey":"name","displayName":"站点名称","multiplicity":"ONE","valueHint":"TEXT","regionIds":["stop-item"],"evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":500,"top":4300,"right":3000,"bottom":4800}}]}
+                ]}
+                """;
+    }
+
+    private static String flatGroundedStationElements() {
+        return """
+                {"contractVersion":"renderweave-visual-grounding/2.0","regions":[
+                  {"regionId":"root","parentRegionId":null,"kind":"ROOT","multiplicity":"ONE","readingOrder":0,"repeatGroupId":null,"evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":0,"top":0,"right":10000,"bottom":10000}}]},
+                  {"regionId":"content","parentRegionId":"root","kind":"SECTION","multiplicity":"ONE","readingOrder":0,"repeatGroupId":null,"evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":0,"top":0,"right":10000,"bottom":10000}}]}
+                ],"elements":[
+                  {"elementId":"station-name","kind":"SLOT","proposedKey":"stationName","displayName":"站点名称","multiplicity":"ONE","valueHint":"TEXT","regionIds":["content"],"evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":500,"top":100,"right":5000,"bottom":400}}]},
+                  {"elementId":"route-number","kind":"SLOT","proposedKey":"routeNumber","displayName":"线路编号","multiplicity":"ONE","valueHint":"TEXT","regionIds":["content"],"evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":500,"top":2400,"right":2500,"bottom":2900}}]},
+                  {"elementId":"stop-name","kind":"SLOT","proposedKey":"name","displayName":"站点名称","multiplicity":"ONE","valueHint":"TEXT","regionIds":["content"],"evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":500,"top":4300,"right":3000,"bottom":4800}}]}
                 ]}
                 """;
     }

@@ -98,9 +98,10 @@ describe('Inference monitor workspace', () => {
     expect(screen.getAllByText('正在修复').length).toBeGreaterThan(0);
     expect(screen.getByRole('heading', { name: '有限问题定位' })).toBeTruthy();
     expect(screen.getByText('区域树')).toBeTruthy();
-    expect(screen.getByText('层级边')).toBeTruthy();
+    expect(screen.getByText('重复区域')).toBeTruthy();
     expect(screen.getAllByText('VISUAL_GROUNDING_PARENT_KIND_INVALID').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('VISUAL_SEMANTIC_HIERARCHY_EDGE_REGION_INVALID').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('VISUAL_SEMANTIC_OBSERVE_RELATIONSHIP_GROUP_MISSING').length)
+      .toBeGreaterThan(0);
     expect(screen.getByText('已从持久检查点恢复')).toBeTruthy();
     expect(screen.getByText(/0\.005716/)).toBeTruthy();
     expect(screen.queryByText('raw-ocr-secret')).toBeNull();
@@ -277,7 +278,7 @@ function visualExecutionLog(runSnapshot: InferenceRunResponse): InferenceExecuti
         outputTokens: 0,
         costMicrosCny: 0,
         durationMillis: 12,
-        problemCodeCounts: { VISUAL_SEMANTIC_HIERARCHY_EDGE_REGION_INVALID: 1 },
+        problemCodeCounts: { VISUAL_SEMANTIC_OBSERVE_RELATIONSHIP_GROUP_MISSING: 1 },
         completedAt: '2026-08-10T04:03:12Z',
       },
     ],

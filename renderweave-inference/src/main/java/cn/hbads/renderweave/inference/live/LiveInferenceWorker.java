@@ -693,13 +693,27 @@ public final class LiveInferenceWorker {
         } catch (InvalidVisualAnalysisException invalid) {
             var now = clock.instant();
             var counts = InferenceAttemptProblemTaxonomy.count(List.of(invalid.diagnosticCode()));
+            var rejectedAttempt = attempt(
+                    current, attemptOrdinal, InferenceAttemptStatus.REJECTED,
+                    "LIVE_VISUAL_ANALYSIS_REJECTED", response, estimatedCost,
+                    durationMillis, counts, now
+            );
+            var earliestStage = invalid.earliestStage().orElse(current.stage());
+            if (attemptOrdinal + 1 < profile.maximumTotalCalls()
+                    && earliestStage != current.stage()) {
+                if (current.stage() != InferenceStage.HIERARCHY
+                        || earliestStage != InferenceStage.OBSERVE) {
+                    throw new IllegalStateException("Unsupported visual semantic rewind");
+                }
+                return workflowStore.checkpointAttempt(
+                        current.runId(), token(current), current.stage(), earliestStage,
+                        workflowCodec.write(checkpoint.reobserving(attemptOrdinal + 1)),
+                        rejectedAttempt, now
+                );
+            }
             var recorded = workflowStore.recordAttempt(
                     current.runId(), token(current),
-                    attempt(
-                            current, attemptOrdinal, InferenceAttemptStatus.REJECTED,
-                            "LIVE_VISUAL_ANALYSIS_REJECTED", response, estimatedCost,
-                            durationMillis, counts, now
-                    ),
+                    rejectedAttempt,
                     now
             );
             if (attemptOrdinal + 1 < profile.maximumTotalCalls()) return recorded;
@@ -992,9 +1006,11 @@ public final class LiveInferenceWorker {
 
     private List<String> accumulatedRetryProblemCodes(InferenceRunSnapshot current) {
         return workflowStore.attempts(current.runId()).stream()
-                .filter(attempt -> attempt.stage() == current.stage()
-                        && attempt.status() == InferenceAttemptStatus.REJECTED)
-                .flatMap(attempt -> attempt.problemCodeCounts().keySet().stream())
+                .filter(attempt -> attempt.status() == InferenceAttemptStatus.REJECTED)
+                .flatMap(attempt -> attempt.problemCodeCounts().keySet().stream()
+                        .filter(code -> VisualSemanticIssue.earliestStage(code)
+                                .map(stage -> stage == current.stage())
+                                .orElse(attempt.stage() == current.stage())))
                 .distinct()
                 .sorted()
                 .limit(MAX_RETRY_PROBLEM_CODES)

@@ -108,6 +108,12 @@ final class VisualGroundingJsonCodec {
             var hierarchy = classifiedHierarchyShape(() -> new VisualHierarchyPlan(
                     VisualHierarchyPlan.VERSION_V2, response.rootEntityId(), entities, relationships
             ));
+            var prerequisiteIssues = SEMANTIC_VERIFIER.verifyHierarchyPrerequisites(
+                    inventory, hierarchy
+            );
+            if (!prerequisiteIssues.isEmpty()) {
+                throw invalid(prerequisiteIssues.getFirst(), null);
+            }
             classifiedHierarchySupport(() -> hierarchy.requireConsistentWith(inventory));
             var entityRegions = classified("VISUAL_HIERARCHY_V2_REGION_OWNERSHIP_INVALID", () ->
                     new VisualEntityRegionPlan(
@@ -128,7 +134,7 @@ final class VisualGroundingJsonCodec {
                     inventory, grounding, hierarchy, entityRegions
             );
             if (!semanticIssues.isEmpty()) {
-                throw invalid(semanticIssues.getFirst().code(), null);
+                throw invalid(semanticIssues.getFirst(), null);
             }
             return new GroundedHierarchyPlan(hierarchy, entityRegions);
         } catch (InvalidVisualAnalysisException failure) {
@@ -168,7 +174,7 @@ final class VisualGroundingJsonCodec {
                     inventory, grounding, hierarchy, entityRegions, result
             );
             if (!semanticIssues.isEmpty()) {
-                throw invalid(semanticIssues.getFirst().code(), null);
+                throw invalid(semanticIssues.getFirst(), null);
             }
             return result;
         } catch (InvalidVisualAnalysisException failure) {
@@ -587,6 +593,15 @@ final class VisualGroundingJsonCodec {
 
     private static InvalidVisualAnalysisException invalid(String code, Throwable cause) {
         return new InvalidVisualAnalysisException(code, "Visual grounding output is invalid", cause);
+    }
+
+    private static InvalidVisualAnalysisException invalid(
+            VisualSemanticIssue issue,
+            Throwable cause
+    ) {
+        return new InvalidVisualAnalysisException(
+                issue.code(), "Visual grounding output is invalid", cause, issue.earliestStage()
+        );
     }
 
     @FunctionalInterface

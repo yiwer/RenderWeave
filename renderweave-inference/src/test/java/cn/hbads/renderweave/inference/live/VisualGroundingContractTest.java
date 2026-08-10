@@ -281,6 +281,25 @@ class VisualGroundingContractTest {
     }
 
     @Test
+    void routesRelationshipWithoutAnyObservedGroupBackToObservation() throws Exception {
+        var observed = codec.parseElements(flatElementsJson(), views(), List.of(IMAGE_ID));
+
+        var failure = assertThrows(InvalidVisualAnalysisException.class, () ->
+                codec.parseHierarchy(
+                        hierarchyJson(), observed.inventory(), observed.grounding()
+                )
+        );
+        assertEquals("VISUAL_SEMANTIC_OBSERVE_RELATIONSHIP_GROUP_MISSING",
+                failure.diagnosticCode());
+        assertEquals(InferenceStage.OBSERVE, failure.earliestStage().orElseThrow());
+
+        var flat = codec.parseHierarchy(
+                flatHierarchyJson(), observed.inventory(), observed.grounding()
+        );
+        assertEquals(List.of(), flat.hierarchy().relationships());
+    }
+
+    @Test
     void derivesStageLocalCropsOnlyFromTheVerifiedPlan() throws Exception {
         var observed = codec.parseElements(elementsJson(), views(), List.of(IMAGE_ID));
         var hierarchy = codec.parseHierarchy(
@@ -377,6 +396,22 @@ class VisualGroundingContractTest {
                 """;
     }
 
+    private static String flatElementsJson() {
+        return """
+                {
+                  "contractVersion":"renderweave-visual-grounding/2.0",
+                  "regions":[
+                    {"regionId":"root","parentRegionId":null,"kind":"ROOT","multiplicity":"ONE","readingOrder":0,"repeatGroupId":null,"evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":0,"top":0,"right":10000,"bottom":10000}}]},
+                    {"regionId":"content","parentRegionId":"root","kind":"SECTION","multiplicity":"ONE","readingOrder":0,"repeatGroupId":null,"evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":0,"top":0,"right":10000,"bottom":10000}}]}
+                  ],
+                  "elements":[
+                    {"elementId":"title","kind":"SLOT","proposedKey":"title","displayName":"标题","multiplicity":"ONE","valueHint":"TEXT","regionIds":["content"],"evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":100,"top":100,"right":3000,"bottom":700}}]},
+                    {"elementId":"item-label","kind":"SLOT","proposedKey":"label","displayName":"项目名称","multiplicity":"ONE","valueHint":"TEXT","regionIds":["content"],"evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":100,"top":2300,"right":3000,"bottom":2800}}]}
+                  ]
+                }
+                """;
+    }
+
     private static String hierarchyJson() {
         return """
                 {
@@ -389,6 +424,19 @@ class VisualGroundingContractTest {
                   "relationships":[
                     {"relationshipId":"document-items","parentEntityId":"document","childEntityId":"item","fieldKey":"items","displayName":"项目","cardinality":"MANY","regionId":"repeat","supportingElementIds":["row-group"]}
                   ]
+                }
+                """;
+    }
+
+    private static String flatHierarchyJson() {
+        return """
+                {
+                  "contractVersion":"renderweave-visual-hierarchy/2.0",
+                  "rootEntityId":"document",
+                  "entities":[
+                    {"entityId":"document","schemaKey":"document","displayName":"文档","regionIds":["root"],"supportingElementIds":["title"]}
+                  ],
+                  "relationships":[]
                 }
                 """;
     }

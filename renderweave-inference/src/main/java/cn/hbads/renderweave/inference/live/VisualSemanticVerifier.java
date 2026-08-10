@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 /** Bounded, payload-free semantic checks that route an issue to the earliest regenerable stage. */
 final class VisualSemanticVerifier {
@@ -102,6 +103,20 @@ final class VisualSemanticVerifier {
         return canonical(issues);
     }
 
+    List<VisualSemanticIssue> verifyHierarchyPrerequisites(
+            VisualElementInventory inventory,
+            VisualHierarchyPlan hierarchy
+    ) {
+        Objects.requireNonNull(inventory, "inventory");
+        Objects.requireNonNull(hierarchy, "hierarchy");
+        var hasGroup = inventory.elements().stream()
+                .anyMatch(element -> element.kind() == VisualElementKind.GROUP);
+        if (!hierarchy.relationships().isEmpty() && !hasGroup) {
+            return List.of(VisualSemanticIssue.OBSERVE_RELATIONSHIP_GROUP_MISSING);
+        }
+        return List.of();
+    }
+
     List<VisualSemanticIssue> verifyBindings(
             VisualElementInventory inventory,
             VisualGroundingPlan grounding,
@@ -174,6 +189,9 @@ enum VisualSemanticIssue {
     OBSERVE_GROUP_REGION_INVALID(
             "VISUAL_SEMANTIC_GROUP_REGION_INVALID", InferenceStage.OBSERVE
     ),
+    OBSERVE_RELATIONSHIP_GROUP_MISSING(
+            "VISUAL_SEMANTIC_OBSERVE_RELATIONSHIP_GROUP_MISSING", InferenceStage.OBSERVE
+    ),
     HIERARCHY_GROUP_EDGE_MISSING(
             "VISUAL_SEMANTIC_HIERARCHY_GROUP_EDGE_MISSING", InferenceStage.HIERARCHY
     ),
@@ -204,5 +222,12 @@ enum VisualSemanticIssue {
 
     InferenceStage earliestStage() {
         return earliestStage;
+    }
+
+    static Optional<InferenceStage> earliestStage(String code) {
+        return java.util.Arrays.stream(values())
+                .filter(issue -> issue.code.equals(code))
+                .map(VisualSemanticIssue::earliestStage)
+                .findFirst();
     }
 }
