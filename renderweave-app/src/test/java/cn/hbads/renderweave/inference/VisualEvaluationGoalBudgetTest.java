@@ -2,7 +2,9 @@ package cn.hbads.renderweave.inference;
 
 import cn.hbads.renderweave.inference.eval.visual.VisualStageCorpus;
 import cn.hbads.renderweave.inference.profile.InferenceProfileRegistry;
+import cn.hbads.renderweave.inference.profile.InferenceProfileRegistry.ProfileResource;
 import cn.hbads.renderweave.inference.provider.InferenceProvider;
+import cn.hbads.renderweave.inference.provider.ProviderCostEstimator;
 import cn.hbads.renderweave.inference.provider.ProviderImage;
 import cn.hbads.renderweave.inference.provider.ProviderInferenceRequest;
 import cn.hbads.renderweave.inference.provider.ProviderInferenceResponse;
@@ -20,7 +22,6 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -41,6 +42,7 @@ class VisualEvaluationGoalBudgetTest {
         authorization.requireOpen(NOW);
         authorization.requireCorpus(corpus);
         authorization.requireProfileSnapshot(sha256(profile.snapshotJson()));
+        assertEquals(1_000_000L, VisualEvaluationAuthorization.GOAL_MAXIMUM_TOKENS_PER_MODEL);
 
         assertThrows(IllegalArgumentException.class,
                 () -> authorization("too-many-tokens", 24, 500_001, 4_000_000));
@@ -125,17 +127,82 @@ class VisualEvaluationGoalBudgetTest {
     }
 
     @Test
-    void aggregateTokenLimitStopsBeforeNineteenthIrreversibleCall(@TempDir Path directory) {
-        var authorization = authorization("visual-budget-cap", 24, 500_000, 4_000_000);
+    void aggregateTokenLimitStopsBeforeTheNextIrreversibleCallAcrossLedgers(@TempDir Path directory) {
+        var authorizations = List.of(
+                authorization("visual-budget-cap-a", 24, 500_000, 4_000_000),
+                authorization("visual-budget-cap-b", 24, 500_000, 4_000_000),
+                authorization("visual-budget-cap-c", 24, 500_000, 4_000_000)
+        );
         var budget = new VisualEvaluationGoalBudget(directory, JsonMapper.builder().build(), NOW);
-        for (var ordinal = 0; ordinal < 18; ordinal++) {
-            budget.reserve(authorization, request(ordinal), NOW.plusSeconds(ordinal));
+        var tokensPerRequest = ProviderCostEstimator.maximumRequestTokens(request(0));
+        var perLedger = (int) Math.min(24,
+                VisualEvaluationAuthorization.MAXIMUM_TOKENS_PER_AUTHORIZATION / tokensPerRequest);
+        var maximumCalls = (int) (VisualEvaluationAuthorization.GOAL_MAXIMUM_TOKENS_PER_MODEL
+                / tokensPerRequest);
+        for (var ordinal = 0; ordinal < maximumCalls; ordinal++) {
+            budget.reserve(authorizations.get(ordinal / perLedger), request(ordinal),
+                    NOW.plusSeconds(ordinal));
         }
         assertThrows(IllegalStateException.class,
-                () -> budget.reserve(authorization, request(18), NOW.plusSeconds(19)));
-        assertEquals(18, budget.reservations().size());
-        assertTrue(budget.snapshot("qwen3.7-plus", authorization.authorizationId()).goal().tokens()
-                <= 500_000);
+                () -> budget.reserve(authorizations.get(maximumCalls / perLedger),
+                        request(maximumCalls), NOW.plusSeconds(maximumCalls + 1L)));
+        assertEquals(maximumCalls, budget.reservations().size());
+        var goalTokens = budget.snapshot(
+                "qwen3.7-plus", authorizations.getFirst().authorizationId()
+        ).goal().tokens();
+        assertTrue(goalTokens <= VisualEvaluationAuthorization.GOAL_MAXIMUM_TOKENS_PER_MODEL);
+        assertTrue(goalTokens + tokensPerRequest
+                > VisualEvaluationAuthorization.GOAL_MAXIMUM_TOKENS_PER_MODEL);
+    }
+
+    @Test
+    void legacyGuardMigratesWithoutResetAndPinnedFlashSharesHistoricalSlot(@TempDir Path directory)
+            throws Exception {
+        var json = JsonMapper.builder().build();
+        var registry = new InferenceProfileRegistry();
+        var historicalProfile = registry.require("dashscope-qwen37-flash-product-v12-generic");
+        var pinnedProfile = registry.require(
+                "dashscope-qwen37-flash-20260715-product-v13-generic"
+        );
+        var historical = authorization(
+                "visual-flash-historical", historicalProfile, "qwen3.7-flash",
+                8, 500_000, 400_000
+        );
+        var original = new VisualEvaluationGoalBudget(directory, json, NOW);
+        var historicalReservation = original.reserve(
+                historical, request(100, historicalProfile), NOW
+        );
+        original.settle(UUID.fromString(historicalReservation.reservationId()),
+                new ProviderUsage(120, 80), 100, NOW.plusSeconds(1));
+
+        Files.writeString(directory.resolve("goal-budget.guard.json"),
+                json.writeValueAsString(VisualEvaluationGoalBudget.Guard.legacy()),
+                StandardCharsets.UTF_8);
+        var migrated = new VisualEvaluationGoalBudget(directory, json, NOW.plusSeconds(2));
+        assertEquals(VisualEvaluationGoalBudget.Guard.expected(), json.readValue(
+                Files.readString(directory.resolve("goal-budget.guard.json"), StandardCharsets.UTF_8),
+                VisualEvaluationGoalBudget.Guard.class
+        ));
+        assertEquals(historicalReservation.reservationId(), migrated.reservations().getFirst().reservationId());
+        assertEquals(200, migrated.snapshot(
+                "qwen3.7-flash-2026-07-15", "unrelated-authorization"
+        ).goal().tokens());
+
+        var pinned = authorization(
+                "visual-flash-pinned", pinnedProfile, "qwen3.7-flash-2026-07-15",
+                8, 500_000, 400_000
+        );
+        var pinnedReservation = migrated.reserve(pinned, request(101, pinnedProfile), NOW.plusSeconds(3));
+        migrated.settle(UUID.fromString(pinnedReservation.reservationId()),
+                new ProviderUsage(180, 120), 150, NOW.plusSeconds(4));
+        var pinnedSnapshot = migrated.snapshot(pinned.model(), pinned.authorizationId());
+        assertEquals(2, pinnedSnapshot.goal().attempts());
+        assertEquals(500, pinnedSnapshot.goal().tokens());
+        assertEquals(1, pinnedSnapshot.authorization().attempts());
+        assertEquals(300, pinnedSnapshot.authorization().tokens());
+        assertEquals(500, migrated.snapshot(
+                historical.model(), historical.authorizationId()
+        ).goal().tokens());
     }
 
     @Test
@@ -206,12 +273,23 @@ class VisualEvaluationGoalBudgetTest {
             long maximumTokens,
             long maximumCost
     ) {
+        return authorization(id, profile, "qwen3.7-plus", maximumAttempts, maximumTokens, maximumCost);
+    }
+
+    private VisualEvaluationAuthorization authorization(
+            String id,
+            ProfileResource selectedProfile,
+            String model,
+            int maximumAttempts,
+            long maximumTokens,
+            long maximumCost
+    ) {
         return new VisualEvaluationAuthorization(
                 VisualEvaluationAuthorization.VERSION, id, "OPEN", "BASELINE",
                 VisualEvaluationAuthorization.INPUT_CLASSIFICATION,
                 VisualStageCorpus.VERSION, corpus.sourceSha256(),
                 VisualEvaluationIdentity.VERSION + ":" + "b".repeat(64),
-                PROFILE_ID, sha256(profile.snapshotJson()), "qwen3.7-plus",
+                selectedProfile.profile().profileId(), sha256(selectedProfile.snapshotJson()), model,
                 corpus.cases().stream().limit(3).map(VisualStageCorpus.EvaluationCase::caseId).toList(),
                 maximumAttempts, maximumTokens, maximumCost, 3,
                 "yiwer", NOW.minusSeconds(60).toString(), NOW.plusSeconds(43_200).toString(),
@@ -220,9 +298,13 @@ class VisualEvaluationGoalBudgetTest {
     }
 
     private ProviderInferenceRequest request(int runIndex) {
+        return request(runIndex, profile);
+    }
+
+    private ProviderInferenceRequest request(int runIndex, ProfileResource selectedProfile) {
         return new ProviderInferenceRequest(
                 UUID.nameUUIDFromBytes(("run-" + runIndex).getBytes(StandardCharsets.UTF_8)),
-                0, InferenceStage.OBSERVE, profile.profile(),
+                0, InferenceStage.OBSERVE, selectedProfile.profile(),
                 "Return one bounded JSON object.", "{}",
                 List.of(new ProviderImage("c".repeat(64), "image/png", new byte[]{1}))
         );

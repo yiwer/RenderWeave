@@ -71,13 +71,14 @@ public final class ProviderCostEstimator {
     }
 
     /**
-     * qwen3.7-flash uses 1x/3x/6x input and output prices at the documented
+     * qwen3.7-flash and its pinned 2026-07-15 snapshot use 1x/3x/6x prices at the documented
      * 32K and 256K input-token boundaries. qwen3.7-plus uses 1x/3x at 256K.
      * Other approved P5 models use the snapshot rate throughout request sizes
      * that can pass their Profile cost gate.
      */
     private static long pricingMultiplier(InferenceProfile profile, long inputTokens) {
-        if ("qwen3.7-flash".equals(profile.model())) {
+        if ("qwen3.7-flash".equals(profile.model())
+                || "qwen3.7-flash-2026-07-15".equals(profile.model())) {
             if (inputTokens <= 32_000L) return 1L;
             if (inputTokens <= 256_000L) return 3L;
             return 6L;

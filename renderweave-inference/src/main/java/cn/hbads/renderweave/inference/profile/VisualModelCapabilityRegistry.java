@@ -13,10 +13,11 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-/** Loads the three exact, immutable visual-next model capability rows. */
+/** Loads exact, immutable visual-next model capability rows, including historical aliases. */
 public final class VisualModelCapabilityRegistry {
     private static final List<String> RESOURCES = List.of(
             "inference-capabilities/dashscope-qwen37-flash-visual-v1.json",
+            "inference-capabilities/dashscope-qwen37-flash-20260715-visual-v1.json",
             "inference-capabilities/dashscope-qwen37-plus-visual-v1.json",
             "inference-capabilities/dashscope-qwen38-max-visual-v1.json"
     );
@@ -48,9 +49,9 @@ public final class VisualModelCapabilityRegistry {
             }
         }
         if (!loaded.keySet().equals(java.util.Set.of(
-                "qwen3.7-flash", "qwen3.7-plus", "qwen3.8-max"
+                "qwen3.7-flash", "qwen3.7-flash-2026-07-15", "qwen3.7-plus", "qwen3.8-max"
         ))) {
-            throw new IllegalStateException("Visual-next capability matrix must bind exactly three models");
+            throw new IllegalStateException("Visual-next capability matrix does not match its immutable rows");
         }
         byModel = java.util.Collections.unmodifiableMap(loaded);
     }

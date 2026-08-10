@@ -78,7 +78,8 @@ public record VisualModelCapability(
                 throw new IllegalArgumentException("Capability references must be HTTPS or repository-local");
             }
         }
-        if (verificationBasis == VerificationBasis.OFFICIAL_DOCS_AND_N2_LIVE
+        if ((verificationBasis == VerificationBasis.OFFICIAL_DOCS_AND_N2_LIVE
+                || verificationBasis == VerificationBasis.OFFICIAL_DOCS_PENDING_CANARY)
                 && (advertisedMaximumBase64Images == null
                 || advertisedMaximumImagePixels == null
                 || advertisedMaximumOutputTokens == null)) {
@@ -118,6 +119,7 @@ public record VisualModelCapability(
 
     public enum VerificationBasis {
         OFFICIAL_DOCS_AND_N2_LIVE,
+        OFFICIAL_DOCS_PENDING_CANARY,
         N2_EXACT_ALIAS_LIVE_ONLY
     }
 }

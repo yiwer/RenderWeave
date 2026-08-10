@@ -617,7 +617,7 @@ final class VisualEvaluationJournal {
             if (attemptOrdinal < 0 || attemptOrdinal > 7 || stage == null
                     || !stage.matches("[A-Z][A-Z0-9_]{0,63}") || outcomeCode == null
                     || !outcomeCode.matches("[A-Z][A-Z0-9_]{0,127}")
-                    || !VisualEvaluationAuthorization.GOAL_MAXIMUM_COST_MICROS_CNY.containsKey(model)
+                    || !VisualEvaluationAuthorization.isApprovedModel(model)
                     || latencyMillis < 0 || latencyMillis > 3_600_000) {
                 throw new IllegalArgumentException("Visual attempt identity is invalid");
             }

@@ -17,10 +17,19 @@ class VisualModelCapabilityRegistryTest {
             "inference-capabilities/dashscope-qwen37-flash-visual-v1.json";
 
     @Test
-    void bindsOfficialPlusAndFlashLimitsButKeepsTheExactMaxAliasCanaryOnly() {
+    void bindsOfficialLimitsForHistoricalAndPinnedFlashButKeepsExactMaxCanaryOnly() {
         var registry = new VisualModelCapabilityRegistry();
 
-        assertEquals(Set.of("qwen3.7-flash", "qwen3.7-plus", "qwen3.8-max"), registry.models());
+        assertEquals(Set.of(
+                "qwen3.7-flash", "qwen3.7-flash-2026-07-15", "qwen3.7-plus", "qwen3.8-max"
+        ), registry.models());
+        var pinnedFlash = registry.requireModel("qwen3.7-flash-2026-07-15").capability();
+        assertEquals(VisualModelCapability.VerificationBasis.OFFICIAL_DOCS_PENDING_CANARY,
+                pinnedFlash.verificationBasis());
+        assertEquals(250, pinnedFlash.advertisedMaximumBase64Images());
+        assertEquals(64_000, pinnedFlash.advertisedMaximumOutputTokens());
+        assertTrue(pinnedFlash.sourceReferences().stream().anyMatch(value ->
+                value.endsWith("/qwen3.7-flash-2026-07-15")));
         var plus = registry.requireModel("qwen3.7-plus").capability();
         assertEquals(VisualModelCapability.VerificationBasis.OFFICIAL_DOCS_AND_N2_LIVE,
                 plus.verificationBasis());

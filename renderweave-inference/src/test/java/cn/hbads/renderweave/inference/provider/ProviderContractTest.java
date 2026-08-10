@@ -57,6 +57,9 @@ class ProviderContractTest {
     @Test
     void flashCostUsesTheOfficialInputLengthPricingTiers() {
         var flash = profiles.require("dashscope-qwen37-flash-v1").profile();
+        var pinnedFlash = profiles.require(
+                "dashscope-qwen37-flash-20260715-product-v13-generic"
+        ).profile();
 
         assertEquals(6_480L,
                 ProviderCostEstimator.estimateMicrosCny(flash, new ProviderUsage(32_000, 100)));
@@ -64,6 +67,12 @@ class ProviderContractTest {
                 ProviderCostEstimator.estimateMicrosCny(flash, new ProviderUsage(32_001, 100)));
         assertEquals(307_682L,
                 ProviderCostEstimator.estimateMicrosCny(flash, new ProviderUsage(256_001, 100)));
+        assertEquals(6_480L,
+                ProviderCostEstimator.estimateMicrosCny(pinnedFlash, new ProviderUsage(32_000, 100)));
+        assertEquals(19_441L,
+                ProviderCostEstimator.estimateMicrosCny(pinnedFlash, new ProviderUsage(32_001, 100)));
+        assertEquals(307_682L,
+                ProviderCostEstimator.estimateMicrosCny(pinnedFlash, new ProviderUsage(256_001, 100)));
     }
 
     @Test

@@ -21,7 +21,8 @@ CORPUS_VERSION = "renderweave-visual-stage-corpus/1.0"
 JOURNAL_VERSION = "renderweave-visual-evaluation-journal/1.0"
 GOAL_VERSION = "renderweave-visual-evaluation-goal-budget/1.0"
 GOAL_ID = "renderweave-visual-recognition-vnext-20260810"
-GOAL_GUARD_VERSION = "renderweave-visual-evaluation-goal-guard/1.0"
+GOAL_GUARD_VERSION = "renderweave-visual-evaluation-goal-guard/2.0"
+LEGACY_GOAL_GUARD_VERSION = "renderweave-visual-evaluation-goal-guard/1.0"
 JOURNAL_GUARD_VERSION = "renderweave-visual-evaluation-journal-guard/1.0"
 REPORT_VERSION = "renderweave-visual-stage-report/1.0"
 IDENTITY_VERSION = "renderweave-visual-evaluation-tree-sha256/1"
@@ -31,10 +32,21 @@ EXPECTED_LEDGER_PATHS = {
     ".sdlc/live/visual-evaluation-qwen37-flash.json",
 }
 MODEL_LIMITS = {
-    "qwen3.8-max": {"tokens": 500_000, "attempts": 180, "cost": 18_000_000},
-    "qwen3.7-plus": {"tokens": 500_000, "attempts": 180, "cost": 4_000_000},
-    "qwen3.7-flash": {"tokens": 500_000, "attempts": 180, "cost": 400_000},
+    "qwen3.8-max": {"attempts": 180, "cost": 18_000_000},
+    "qwen3.7-plus": {"attempts": 180, "cost": 4_000_000},
+    "qwen3.7-flash": {"attempts": 180, "cost": 400_000},
 }
+MODEL_TO_GOAL_SLOT = {
+    "qwen3.8-max": "qwen3.8-max",
+    "qwen3.7-plus": "qwen3.7-plus",
+    "qwen3.7-flash": "qwen3.7-flash",
+    "qwen3.7-flash-2026-07-15": "qwen3.7-flash",
+}
+GOAL_GUARD_TOKEN_LIMITS = {
+    LEGACY_GOAL_GUARD_VERSION: 500_000,
+    GOAL_GUARD_VERSION: 1_000_000,
+}
+MAXIMUM_AUTHORIZATION_TOKENS = 500_000
 PROFILE_FIELDS = (
     "profileVersion", "profileId", "provider", "model", "networkAllowed", "providerProtocol",
     "providerEndpoint", "apiKeyEnvironmentVariable", "pipelineVersion", "candidateContractVersion",
@@ -312,16 +324,18 @@ def validate_authorization(value: dict[str, Any], corpus_hash: str,
     require_string(value["profileId"], "profileId", ID)
     require_string(value["profileSnapshotSha256"], "profileSnapshotSha256", SHA256)
     model = require_string(value["model"], "model")
-    if model not in MODEL_LIMITS:
+    if model not in MODEL_TO_GOAL_SLOT:
         fail("authorization model is invalid")
+    goal_slot = MODEL_TO_GOAL_SLOT[model]
     cases = unique_strings(value["caseIds"], "caseIds", ID)
     if not cases or not set(cases).issubset(known_cases):
         fail("authorization cases are invalid")
     attempts = require_int(value["maximumProviderAttempts"], "maximumProviderAttempts", 1,
                            min(180, len(cases) * 8))
-    tokens = require_int(value["maximumTotalTokens"], "maximumTotalTokens", 1, 500_000)
+    tokens = require_int(value["maximumTotalTokens"], "maximumTotalTokens", 1,
+                         MAXIMUM_AUTHORIZATION_TOKENS)
     cost = require_int(value["maximumCostMicrosCny"], "maximumCostMicrosCny", 1,
-                       MODEL_LIMITS[model]["cost"])
+                       MODEL_LIMITS[goal_slot]["cost"])
     require_int(value["maximumCasesPerBatch"], "maximumCasesPerBatch", 1, 5)
     for field in ("approvedBy", "approvedAt", "expiresAt", "approvalScope"):
         require_string(value[field], field)
@@ -446,7 +460,8 @@ def evaluation(value: Any, metadata: dict[str, dict[str, str]], authorized: set[
     return result
 
 
-def validate_goal(value: dict[str, Any]) -> tuple[list[dict[str, Any]], dict[str, dict[str, int]]]:
+def validate_goal(value: dict[str, Any], maximum_tokens_per_model: int) \
+        -> tuple[list[dict[str, Any]], dict[str, dict[str, int]]]:
     require_keys(value, ("stateVersion", "goalId", "reservations", "createdAt", "updatedAt"), "goal")
     if value["stateVersion"] != GOAL_VERSION or value["goalId"] != GOAL_ID:
         fail("goal budget identity mismatch")
@@ -472,8 +487,9 @@ def validate_goal(value: dict[str, Any]) -> tuple[list[dict[str, Any]], dict[str
             fail("duplicate run attempt")
         calls.add((run_id, ordinal))
         model = require_string(item["model"], "model")
-        if model not in MODEL_LIMITS:
+        if model not in MODEL_TO_GOAL_SLOT:
             fail("reservation model is invalid")
+        goal_slot = MODEL_TO_GOAL_SLOT[model]
         state = item["state"]
         if state not in ("RESERVED", "SETTLED", "BREACHED"):
             fail("reservation state is invalid")
@@ -495,31 +511,34 @@ def validate_goal(value: dict[str, Any]) -> tuple[list[dict[str, Any]], dict[str
         if state == "BREACHED":
             exposed_tokens = max(reserved_tokens, exposed_tokens)
             exposed_cost = max(reserved_cost, exposed_cost)
-        totals[model]["attempts"] += 1
-        totals[model]["tokens"] += exposed_tokens
-        totals[model]["cost"] += exposed_cost
+        totals[goal_slot]["attempts"] += 1
+        totals[goal_slot]["tokens"] += exposed_tokens
+        totals[goal_slot]["cost"] += exposed_cost
         parsed.append({**item, "reservationId": reservation_id, "runId": run_id,
                        "attemptOrdinal": ordinal, "model": model, "state": state,
                        "actualInputTokens": actual_input, "actualOutputTokens": actual_output,
                        "actualCostMicrosCny": actual_cost})
     for model, total in totals.items():
         limit = MODEL_LIMITS[model]
-        if total["attempts"] > limit["attempts"] or total["tokens"] > limit["tokens"] \
+        if total["attempts"] > limit["attempts"] or total["tokens"] > maximum_tokens_per_model \
                 or total["cost"] > limit["cost"]:
             fail("cross-ledger model budget exceeded")
     return parsed, totals
 
 
-def validate_goal_guard(value: dict[str, Any]) -> None:
+def validate_goal_guard(value: dict[str, Any]) -> int:
     require_keys(value, ("guardVersion", "goalId", "maximumTokensPerModel",
                          "maximumAttemptsPerModel", "maximumCostMicrosCnyByModel"), "goal guard")
-    if value["guardVersion"] != GOAL_GUARD_VERSION or value["goalId"] != GOAL_ID \
-            or require_int(value["maximumTokensPerModel"], "maximumTokensPerModel") != 500_000 \
+    guard_version = require_string(value["guardVersion"], "guardVersion")
+    if guard_version not in GOAL_GUARD_TOKEN_LIMITS or value["goalId"] != GOAL_ID \
+            or require_int(value["maximumTokensPerModel"], "maximumTokensPerModel") \
+            != GOAL_GUARD_TOKEN_LIMITS[guard_version] \
             or require_int(value["maximumAttemptsPerModel"], "maximumAttemptsPerModel") != 180:
         fail("goal guard identity or caps differ")
     costs = require_object(value["maximumCostMicrosCnyByModel"], "maximumCostMicrosCnyByModel")
     if costs != {model: limits["cost"] for model, limits in MODEL_LIMITS.items()}:
         fail("goal guard model cost caps differ")
+    return GOAL_GUARD_TOKEN_LIMITS[guard_version]
 
 
 def validate_journal_guard(value: dict[str, Any], authorization: dict[str, Any]) -> None:
@@ -773,9 +792,9 @@ def main() -> int:
     journal_guard_raw, _ = read_json(args.journal_guard)
     validate_journal_guard(journal_guard_raw, authorization_raw)
     goal_guard_raw, _ = read_json(args.goal_guard)
-    validate_goal_guard(goal_guard_raw)
+    maximum_tokens_per_model = validate_goal_guard(goal_guard_raw)
     goal_raw, _ = read_json(args.goal_budget)
-    reservations, model_totals = validate_goal(goal_raw)
+    reservations, model_totals = validate_goal(goal_raw, maximum_tokens_per_model)
     journal_raw, _ = read_json(args.journal)
     results, abandoned, provider_latency_millis = validate_journal(
         journal_raw, authorization, metadata, reservations)
@@ -799,8 +818,8 @@ def main() -> int:
         "actualInputTokens": sum(item["actualInputTokens"] or 0 for item in auth_reservations),
         "actualOutputTokens": sum(item["actualOutputTokens"] or 0 for item in auth_reservations),
         "providerLatencyMillis": provider_latency_millis,
-        "exposedModelTokens": model_totals[authorization["model"]]["tokens"],
-        "exposedModelCostMicrosCny": model_totals[authorization["model"]]["cost"],
+        "exposedModelTokens": model_totals[MODEL_TO_GOAL_SLOT[authorization["model"]]]["tokens"],
+        "exposedModelCostMicrosCny": model_totals[MODEL_TO_GOAL_SLOT[authorization["model"]]]["cost"],
         "reportComplete": expected["complete"],
         "payloadScan": "PASS",
     }

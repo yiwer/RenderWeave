@@ -58,8 +58,15 @@ final class VisualEvaluationGoalBudget {
                 throw new IllegalStateException("VISUAL_EVALUATION_GOAL_BUDGET_PARTIAL_STATE");
             }
             if (stateExists) {
-                validateGuard(readGuard());
-                validateState(readState());
+                var guard = readGuard();
+                if (Guard.legacy().equals(guard)) {
+                    var state = readState(guard);
+                    writeAtomically(guardFile, json.writeValueAsString(Guard.expected()));
+                    validateState(state, Guard.expected());
+                } else {
+                    validateGuard(guard);
+                    readState(guard);
+                }
             } else {
                 writeAtomically(guardFile, json.writeValueAsString(Guard.expected()));
                 writeState(State.initial(now));
@@ -83,7 +90,6 @@ final class VisualEvaluationGoalBudget {
         var reservedCost = ProviderCostEstimator.maximumRequestCostMicrosCny(request);
         return withLock(() -> {
             var state = readState();
-            validateState(state);
             if (state.reservations().stream().anyMatch(item -> item.runId().equals(request.runId().toString())
                     && item.attemptOrdinal() == request.attemptOrdinal())) {
                 throw new IllegalStateException("VISUAL_EVALUATION_DUPLICATE_PROVIDER_ATTEMPT");
@@ -107,7 +113,6 @@ final class VisualEvaluationGoalBudget {
         var underestimated = new boolean[1];
         withLock(() -> {
             var state = readState();
-            validateState(state);
             var reservations = new ArrayList<Reservation>();
             var found = false;
             for (var item : state.reservations()) {
@@ -126,7 +131,6 @@ final class VisualEvaluationGoalBudget {
             if (!found) throw new IllegalStateException("VISUAL_EVALUATION_RESERVATION_NOT_FOUND");
             var updated = state.withReservations(reservations, now);
             writeState(updated);
-            validateState(updated);
             return null;
         });
         if (underestimated[0]) {
@@ -138,12 +142,9 @@ final class VisualEvaluationGoalBudget {
         requireModel(model);
         return withLock(() -> {
             var state = readState();
-            validateState(state);
-            return new Snapshot(
-                    aggregate(state, model, null), aggregate(state, model, authorizationId),
-                    state.reservations().stream().anyMatch(item -> item.model().equals(model)
-                            && "BREACHED".equals(item.state()))
-            );
+            var goal = aggregate(state, model, null);
+            var authorization = aggregate(state, model, authorizationId);
+            return new Snapshot(goal, authorization, goal.breached());
         });
     }
 
@@ -180,7 +181,7 @@ final class VisualEvaluationGoalBudget {
                 || Math.addExact(goal.tokens(), reservedTokens)
                 > VisualEvaluationAuthorization.GOAL_MAXIMUM_TOKENS_PER_MODEL
                 || Math.addExact(goal.costMicrosCny(), reservedCost)
-                > VisualEvaluationAuthorization.GOAL_MAXIMUM_COST_MICROS_CNY.get(authorization.model())
+                > VisualEvaluationAuthorization.goalMaximumCostMicrosCny(authorization.model())
                 || Math.addExact(ledger.attempts(), 1) > authorization.maximumProviderAttempts()
                 || Math.addExact(ledger.tokens(), reservedTokens) > authorization.maximumTotalTokens()
                 || Math.addExact(ledger.costMicrosCny(), reservedCost) > authorization.maximumCostMicrosCny()) {
@@ -193,8 +194,12 @@ final class VisualEvaluationGoalBudget {
         long cost = 0;
         var attempts = 0;
         var breached = false;
+        var goalModel = VisualEvaluationAuthorization.goalModel(model);
         for (var item : state.reservations()) {
-            if (!item.model().equals(model)
+            var modelMatches = authorizationId == null
+                    ? VisualEvaluationAuthorization.goalModel(item.model()).equals(goalModel)
+                    : item.model().equals(model);
+            if (!modelMatches
                     || authorizationId != null && !item.authorizationId().equals(authorizationId)) continue;
             attempts = Math.addExact(attempts, 1);
             tokens = Math.addExact(tokens, item.exposedTokens());
@@ -206,15 +211,20 @@ final class VisualEvaluationGoalBudget {
 
     private State readState() {
         try {
-            validateGuard(readGuard());
-            var raw = Files.readString(stateFile, StandardCharsets.UTF_8);
-            PayloadFreeLiveEvidenceGuard.requirePayloadFree(raw);
-            var state = json.readValue(raw, State.class);
-            validateState(state);
-            return state;
+            var guard = readGuard();
+            validateGuard(guard);
+            return readState(guard);
         } catch (IOException | RuntimeException invalid) {
             throw new IllegalStateException("VISUAL_EVALUATION_GOAL_BUDGET_INVALID", invalid);
         }
+    }
+
+    private State readState(Guard guard) throws IOException {
+        var raw = Files.readString(stateFile, StandardCharsets.UTF_8);
+        PayloadFreeLiveEvidenceGuard.requirePayloadFree(raw);
+        var state = json.readValue(raw, State.class);
+        validateState(state, guard);
+        return state;
     }
 
     private Guard readGuard() {
@@ -228,8 +238,9 @@ final class VisualEvaluationGoalBudget {
     }
 
     private void writeState(State state) throws IOException {
-        validateGuard(readGuard());
-        validateState(state);
+        var guard = readGuard();
+        validateGuard(guard);
+        validateState(state, guard);
         writeAtomically(stateFile, json.writerWithDefaultPrettyPrinter().writeValueAsString(state));
     }
 
@@ -261,7 +272,7 @@ final class VisualEvaluationGoalBudget {
         }
     }
 
-    private static void validateState(State state) {
+    private static void validateState(State state, Guard guard) {
         if (!VERSION.equals(state.stateVersion()) || !GOAL_ID.equals(state.goalId())) {
             throw new IllegalStateException("VISUAL_EVALUATION_GOAL_BUDGET_IDENTITY_MISMATCH");
         }
@@ -273,13 +284,13 @@ final class VisualEvaluationGoalBudget {
                 throw new IllegalStateException("VISUAL_EVALUATION_GOAL_BUDGET_DUPLICATE");
             }
         }
-        for (var model : VisualEvaluationAuthorization.GOAL_MAXIMUM_COST_MICROS_CNY.keySet()) {
+        for (var model : guard.maximumCostMicrosCnyByModel().keySet()) {
             var usage = aggregate(state, model, null);
             if (!usage.breached() && (usage.attempts()
-                    > VisualEvaluationAuthorization.GOAL_MAXIMUM_ATTEMPTS_PER_MODEL
-                    || usage.tokens() > VisualEvaluationAuthorization.GOAL_MAXIMUM_TOKENS_PER_MODEL
+                    > guard.maximumAttemptsPerModel()
+                    || usage.tokens() > guard.maximumTokensPerModel()
                     || usage.costMicrosCny()
-                    > VisualEvaluationAuthorization.GOAL_MAXIMUM_COST_MICROS_CNY.get(model))) {
+                    > guard.maximumCostMicrosCnyByModel().get(model))) {
                 throw new IllegalStateException("VISUAL_EVALUATION_GOAL_BUDGET_INVALID");
             }
         }
@@ -311,7 +322,8 @@ final class VisualEvaluationGoalBudget {
             int maximumAttemptsPerModel,
             Map<String, Long> maximumCostMicrosCnyByModel
     ) {
-        private static final String VERSION = "renderweave-visual-evaluation-goal-guard/1.0";
+        private static final String VERSION = "renderweave-visual-evaluation-goal-guard/2.0";
+        private static final String LEGACY_VERSION = "renderweave-visual-evaluation-goal-guard/1.0";
 
         Guard {
             maximumCostMicrosCnyByModel = Map.copyOf(maximumCostMicrosCnyByModel);
@@ -321,6 +333,14 @@ final class VisualEvaluationGoalBudget {
             return new Guard(
                     VERSION, GOAL_ID,
                     VisualEvaluationAuthorization.GOAL_MAXIMUM_TOKENS_PER_MODEL,
+                    VisualEvaluationAuthorization.GOAL_MAXIMUM_ATTEMPTS_PER_MODEL,
+                    VisualEvaluationAuthorization.GOAL_MAXIMUM_COST_MICROS_CNY
+            );
+        }
+
+        static Guard legacy() {
+            return new Guard(
+                    LEGACY_VERSION, GOAL_ID, 500_000L,
                     VisualEvaluationAuthorization.GOAL_MAXIMUM_ATTEMPTS_PER_MODEL,
                     VisualEvaluationAuthorization.GOAL_MAXIMUM_COST_MICROS_CNY
             );
@@ -438,9 +458,7 @@ final class VisualEvaluationGoalBudget {
     record Snapshot(UsageAggregate goal, UsageAggregate authorization, boolean breached) { }
 
     private static void requireModel(String model) {
-        if (!VisualEvaluationAuthorization.GOAL_MAXIMUM_COST_MICROS_CNY.containsKey(model)) {
-            throw new IllegalArgumentException("Visual evaluation model is invalid");
-        }
+        VisualEvaluationAuthorization.goalModel(model);
     }
 
     private static void requireUuid(String value, String name) {

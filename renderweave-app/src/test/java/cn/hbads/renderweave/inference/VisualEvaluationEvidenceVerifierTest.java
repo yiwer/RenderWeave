@@ -38,7 +38,8 @@ class VisualEvaluationEvidenceVerifierTest {
         for (var profileId : List.of(
                 "dashscope-qwen37-plus-product-v4",
                 "dashscope-qwen37-plus-product-v6-generic",
-                "dashscope-qwen37-plus-product-v7-hybrid-generic"
+                "dashscope-qwen37-plus-product-v7-hybrid-generic",
+                "dashscope-qwen37-flash-20260715-product-v13-generic"
         )) {
             var resource = registry.require(profileId);
             var profilePath = repositoryRoot().resolve(
@@ -127,6 +128,18 @@ class VisualEvaluationEvidenceVerifierTest {
         assertEquals(0, pass.exitCode(), pass.stderr() + pass.stdout()
                 + " expectedProfile=" + authorization.profileSnapshotSha256());
         assertTrue(pass.stdout().contains("\"result\":\"PASS\""));
+
+        var goalGuardFile = goalDirectory.resolve("goal-budget.guard.json");
+        var currentGoalGuard = Files.readString(goalGuardFile, StandardCharsets.UTF_8);
+        Files.writeString(goalGuardFile,
+                json.writeValueAsString(VisualEvaluationGoalBudget.Guard.legacy()),
+                StandardCharsets.UTF_8);
+        var legacyGuardPass = verify(repository, corpusFile, profileFile,
+                List.of(maxLedger, authorizationFile, flashLedger), authorizationFile,
+                journalDirectory, goalDirectory, reportFile, false);
+        assertEquals(0, legacyGuardPass.exitCode(),
+                legacyGuardPass.stderr() + legacyGuardPass.stdout());
+        Files.writeString(goalGuardFile, currentGoalGuard, StandardCharsets.UTF_8);
 
         Files.writeString(reportFile, originalReport.replaceFirst(
                 "\\\"providerCalls\\\"\\s*:\\s*1", "\"providerCalls\" : 2"));

@@ -17,6 +17,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 /** One-model, one-slice human authorization. Only OPEN is executable. */
 record VisualEvaluationAuthorization(
@@ -45,12 +46,19 @@ record VisualEvaluationAuthorization(
     static final String INPUT_CLASSIFICATION = "REPOSITORY_SYNTHETIC_ONLY";
     static final String PENDING_IDENTITY = "PENDING_PRELIVE_COMMIT";
     static final String PENDING_PROFILE_SNAPSHOT = "PENDING_PROFILE_SNAPSHOT";
-    static final long GOAL_MAXIMUM_TOKENS_PER_MODEL = 500_000L;
+    static final long GOAL_MAXIMUM_TOKENS_PER_MODEL = 1_000_000L;
+    static final long MAXIMUM_TOKENS_PER_AUTHORIZATION = 500_000L;
     static final int GOAL_MAXIMUM_ATTEMPTS_PER_MODEL = 180;
     static final Map<String, Long> GOAL_MAXIMUM_COST_MICROS_CNY = Map.of(
             "qwen3.8-max", 18_000_000L,
             "qwen3.7-plus", 4_000_000L,
             "qwen3.7-flash", 400_000L
+    );
+    private static final Set<String> APPROVED_MODELS = Set.of(
+            "qwen3.8-max",
+            "qwen3.7-plus",
+            "qwen3.7-flash",
+            "qwen3.7-flash-2026-07-15"
     );
     private static final Duration MAXIMUM_AUTHORIZATION_WINDOW = Duration.ofHours(168);
 
@@ -74,7 +82,7 @@ record VisualEvaluationAuthorization(
             throw new IllegalArgumentException("Visual evaluation authorization snapshot is invalid");
         }
         if (profileId == null || !profileId.matches("[a-z0-9][a-z0-9-]{0,127}")
-                || !GOAL_MAXIMUM_COST_MICROS_CNY.containsKey(model)
+                || !APPROVED_MODELS.contains(model)
                 || !profileMatchesModel(profileId, model)) {
             throw new IllegalArgumentException("Visual evaluation authorization profile is invalid");
         }
@@ -86,9 +94,9 @@ record VisualEvaluationAuthorization(
         if (maximumProviderAttempts < 1
                 || maximumProviderAttempts > GOAL_MAXIMUM_ATTEMPTS_PER_MODEL
                 || maximumProviderAttempts > Math.multiplyExact(caseIds.size(), 8)
-                || maximumTotalTokens < 1 || maximumTotalTokens > GOAL_MAXIMUM_TOKENS_PER_MODEL
+                || maximumTotalTokens < 1 || maximumTotalTokens > MAXIMUM_TOKENS_PER_AUTHORIZATION
                 || maximumCostMicrosCny < 1
-                || maximumCostMicrosCny > GOAL_MAXIMUM_COST_MICROS_CNY.get(model)
+                || maximumCostMicrosCny > goalMaximumCostMicrosCny(model)
                 || maximumCasesPerBatch < 1 || maximumCasesPerBatch > 5) {
             throw new IllegalArgumentException("Visual evaluation authorization budget is invalid");
         }
@@ -188,11 +196,29 @@ record VisualEvaluationAuthorization(
                 || "PROPOSED".equals(status) && PENDING_PROFILE_SNAPSHOT.equals(value));
     }
 
+    static String goalModel(String model) {
+        if (!isApprovedModel(model)) {
+            throw new IllegalArgumentException("Visual evaluation model is invalid");
+        }
+        return "qwen3.7-flash-2026-07-15".equals(model) ? "qwen3.7-flash" : model;
+    }
+
+    static boolean isApprovedModel(String model) {
+        return APPROVED_MODELS.contains(model);
+    }
+
+    static long goalMaximumCostMicrosCny(String model) {
+        return GOAL_MAXIMUM_COST_MICROS_CNY.get(goalModel(model));
+    }
+
     private static boolean profileMatchesModel(String profileId, String model) {
         return switch (model) {
             case "qwen3.8-max" -> profileId.startsWith("dashscope-qwen38-max-");
             case "qwen3.7-plus" -> profileId.startsWith("dashscope-qwen37-plus-");
-            case "qwen3.7-flash" -> profileId.startsWith("dashscope-qwen37-flash-");
+            case "qwen3.7-flash" -> profileId.startsWith("dashscope-qwen37-flash-")
+                    && !profileId.startsWith("dashscope-qwen37-flash-20260715-");
+            case "qwen3.7-flash-2026-07-15" ->
+                    profileId.startsWith("dashscope-qwen37-flash-20260715-");
             default -> false;
         };
     }
