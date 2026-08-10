@@ -1,10 +1,10 @@
 # RenderWeave v1 Phase 计划
 
-- 状态：P1–P4 implementation complete；P5 T5-1–T5-11 已完成通路、质量实测与安全硬化；P6 T6-1 已独立复核，T6-2 四步 AI Schema 识别工作台已完成 clean A1/独立 A2、最终成品 J1 待确认；所有 Profile 仍为 `EXPERIMENTAL`，全部 live authorization 均为 `CLOSED`
+- 状态：P1–P4 implementation complete；P5 T5-1–T5-11 已完成通路、质量实测与安全硬化；P6 T6-1 已独立复核，T6-2 四步 AI Schema 识别工作台已完成 clean A1/独立 A2、最终成品 J1 待确认；T6-3a 产品 live Profile、可选每任务成本限额与 Compose 运行开关已完成 clean full A1，T6-3b 恢复演练待推进。历史评测 authorization 均为 `CLOSED`，四个产品 Profile 为 `EXPERIMENTAL` 且只在显式 product-live 部署中开放
 - 日期：2026-08-10
 - Spec：[`specs/renderweave-v1.md`](../specs/renderweave-v1.md)
 - 原型：`/prototype/schema-studio?variant=A|B|C`
-- 当前 lifecycle：P0 `accepted`；P1–P4 `automated_verified`；P5 `live_canary_verified` / `live_independently_reviewed` / `decision_recorded`；P6 T6-1 `independently_reviewed`、T6-2 `human_acceptance_pending`
+- 当前 lifecycle：P0 `accepted`；P1–P4 `automated_verified`；P5 `live_canary_verified` / `live_independently_reviewed` / `decision_recorded`；P6 T6-1 `independently_reviewed`、T6-2 `human_acceptance_pending`、T6-3a `automated_verified`
 
 ## 1. 四维执行配置
 
@@ -388,13 +388,19 @@ Phase 内任务只在真实前置依赖满足时并行。当前没有 atomic cla
 4. T6-2d：clean Web/E2E/eval/full A1、独立 A2 与人工 J1 结果分级记录。
 
 #### T6-3：Compose、观测、备份/恢复与 storage failure drill
-- AC：AC-024
+- 执行状态：`in_progress`（T6-3a 产品 live 运行切片已 `automated_verified`；T6-3b 备份/恢复与 storage failure drill 待执行；`plans/logs/P6-T6-3.md`）
+- AC：AC-015, AC-019, AC-020, AC-024
 - 依赖：P4
 - 影响区域：deploy/config/ops docs
 - 局部验证：fresh deploy、health、structured logs、DB+blob restore、missing artifact/storage full simulation
 - 回归升级：infra/migration/storage changes run recovery slice
 - 证据保证：A2 + J1 ops
 - 完成信号：三类恢复分开报告，未把 Git 当数据库恢复
+
+执行切片：
+
+1. T6-3a：四个产品 DashScope Profile、每任务可选累计成本限额、独立 product-live 预算命名空间、V013、显式 Compose live overlay 与完整零 Provider A1。
+2. T6-3b：数据库与 Blob 备份/恢复、missing artifact、storage full、结构化观测与操作员演练；未完成前 T6-3 不报告完成。
 
 #### T6-4：最终 AC/非目标/安全能力审计
 - AC：AC-001–AC-025
@@ -421,7 +427,7 @@ Phase 内任务只在真实前置依赖满足时并行。当前没有 atomic cla
 
 - 源码：record-only diff；不使用 destructive reset，不覆盖用户未提交文件。
 - 数据：P1 起每个 migration task 定义 forward test、backup/restore 或补偿；Static 不通过 UPDATE 恢复。
-- 外部副作用：live model call 不可撤销费用，只能停止后续 calls；production/deploy 尚未授权。
+- 外部副作用：live model call 不可撤销费用，只能停止后续 calls；本机单用户 product-live overlay 已获授权并运行。要关闭外发，应使用不含 live overlay 的基础 Compose 重新创建 API；不得把关停服务误报为费用回滚。
 - 同一失败无新假设再次出现、必须撤销多个已验证任务、目标连续漂移或进入未授权 guarded 范围时进入 `auto_paused`。
 
 ## 7. Goal / Auto-ready 结论
@@ -433,7 +439,7 @@ Phase 内任务只在真实前置依赖满足时并行。当前没有 atomic cla
 3. 生产 UI 锁定为 A 默认 Form + B Map，共享 EditorSession；吸收 C 的 compiled preview、搜索、密度与可读性特征，不保留 C 为第三模式。
 4. P5 获得的一次限定 J1 已用于仓库 synthetic 双模型 canary：2 次 attempt、¥0.054017、无真实业务数据；unused budget 不自动扩展为后续调用授权。
 5. P5 live safety hardening 已由独立只读 reviewer 复核为 A2 PASS；范围只包括本节点授权、预算、重试、上传/响应上限、迁移账本和合同闭环，不涵盖完整质量认证。release hard gate 尚无外部 CI/branch protection，因此不存在 A3。
-6. 授权账本已关闭，Compose live overlay 的 worker/upload 两门均保持 false；任何新增调用不得继承未使用的 attempt 或预算。
-7. P5 已完成 Flash、旧 Plus 与 Prompt v2 三轮独立 60-case live 评测；三者均为 `EXPERIMENTAL`、默认关闭。新增 Profile/identity、真实业务数据、扩大费用或生产启用仍需新的精确 J1 与独立 A2。
+6. 历史 certification/canary 授权账本均已关闭，不能继承未使用的 attempt 或预算；基础 Compose 仍默认关闭 live。用户已另行批准本机产品运行，显式 product-live overlay 同时开启 worker/upload，并使用与 P5 账本隔离的 `product-live` reservation namespace。
+7. P5 已完成 Flash、旧 Plus 与 Prompt v2 三轮独立 60-case live 评测；这些历史 Profile 仍为 `EXPERIMENTAL` 且不在产品目录展示。产品目录固定为 `qwen3.7-flash`、`qwen3.7-plus`、`qwen3.8-max`、`qwen3.7-max-2026-06-08`；每次上传仍需用户确认数据外发，成本限额可填或留空，留空只表示不增加任务累计费用门，不能解除 Profile 的三次调用和输出上界。
 8. T5-6 已把 60-case v2 whole-graph 评测、fail-closed policy、每批最多 5 case 的恢复账本与完整 repository evaluation identity 做成可执行闭环，并通过独立 A2；Flash/旧 Plus 授权均已 CLOSED，决定均为 `EXPERIMENTAL`。
 9. T5-7 不复用旧质量结果：Prompt/Profile v2 修正 exact FieldKey、最小证据图、provider provenance、JSON evidence catalog 与三态 repair 路由；随后完成新的 60-case J1 与独立 A2。结果从旧 Plus 18/60 提升到 47/60、critical 51 降至 10，但 Evidence/DAG 退化且 IMAGE_ONLY 薄弱，故仍为 `EXPERIMENTAL`、默认关闭，授权已 CLOSED。
