@@ -70,7 +70,14 @@ export async function createLiveRunRequest(
     headers: { 'Idempotency-Key': idempotencyKey },
     body,
   });
-  const value = await response.json() as InferenceRunResponse | Problem;
+  const text = await response.text();
+  let value: InferenceRunResponse | Problem;
+  try {
+    value = JSON.parse(text) as InferenceRunResponse | Problem;
+  } catch {
+    if (!response.ok) throw new StudioRequestError(unexpectedLiveProblem(response));
+    throw new Error('创建 live 推断任务时服务端未返回 JSON。');
+  }
   if (!response.ok) throw new StudioRequestError(value as Problem);
   return value as InferenceRunResponse;
 }
@@ -177,4 +184,25 @@ function unwrap<T>(data: T | undefined, error: Problem | undefined, operation: s
   if (error) throw new StudioRequestError(error);
   if (data === undefined) throw new Error(`${operation}时服务端未返回数据。`);
   return data;
+}
+
+function unexpectedLiveProblem(response: Response): Problem {
+  if (response.status === 413) {
+    return {
+      type: 'about:blank',
+      title: '上传内容过大',
+      status: response.status,
+      code: 'INFERENCE_PAYLOAD_TOO_LARGE',
+      traceId: 'gateway-unavailable',
+      detail: '上传内容超过服务端传输上限，请压缩文件或减少本次上传数量。',
+    };
+  }
+  return {
+    type: 'about:blank',
+    title: '创建识别任务失败',
+    status: response.status,
+    code: 'UNEXPECTED_RESPONSE',
+    traceId: 'gateway-unavailable',
+    detail: `服务端返回了无法识别的响应（HTTP ${response.status}）。`,
+  };
 }

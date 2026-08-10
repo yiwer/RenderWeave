@@ -13,7 +13,7 @@ describe('live inference multipart request', () => {
       bodies.push(init?.body as FormData);
       return {
         ok: true,
-        json: async () => ({ runId: '44444444-4444-4444-8444-444444444444' }),
+        text: async () => JSON.stringify({ runId: '44444444-4444-4444-8444-444444444444' }),
       } as Response;
     }));
     const image = new File([new Uint8Array([1])], 'poster.png', { type: 'image/png' });
@@ -35,5 +35,26 @@ describe('live inference multipart request', () => {
     await expect(firstMetadata.text()).resolves.toContain('"costLimitMicrosCny":250000');
     await expect(firstMetadata.text()).resolves.toContain('"inputClassification":"USER_PROVIDED"');
     await expect(secondMetadata.text()).resolves.toContain('"costLimitMicrosCny":null');
+  });
+
+  it('turns a non-JSON gateway 413 into a stable readable upload problem', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({
+      ok: false,
+      status: 413,
+      statusText: 'Request Entity Too Large',
+      text: async () => '<html><h1>413 Request Entity Too Large</h1></html>',
+    } as Response)));
+    const image = new File([new Uint8Array([1])], 'poster.png', { type: 'image/png' });
+
+    await expect(createLiveRunRequest(
+      'dashscope-qwen37-flash-product-v2', 'IMAGE_ONLY', [image], [], 'too-large', null,
+    )).rejects.toMatchObject({
+      name: 'StudioRequestError',
+      problem: {
+        status: 413,
+        code: 'INFERENCE_PAYLOAD_TOO_LARGE',
+        title: '上传内容过大',
+      },
+    });
   });
 });
