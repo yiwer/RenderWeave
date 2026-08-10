@@ -307,5 +307,17 @@ connection-aware region normalization 继续复用。
 `.sdlc/evidence/20260811-071856-web`（73 tests + type/lint/build）、E2E
 `.sdlc/evidence/20260811-071927-e2e`（18 passed、1 gated skip、无 console/page error）与提交后 clean fast
 `.sdlc/evidence/20260811-072030-fast` 均为 A1 PASS。实现与门控期间 Provider attempts=0、三份 ledger CLOSED；
-product-v22 仍隐藏 `EXPERIMENTAL`。这些 repository synthetic 证据不构成 live 三阶段、Max 入口、final eval 或
-用户验收，下一步只能在重新计算 identity/Profile snapshot 且精确 J1/额度/时限仍有效时做 Plus v22 单 case。
+product-v22 仍隐藏 `EXPERIMENTAL`。在随后的 live 前，这些 repository synthetic 证据尚不构成三阶段、Max
+入口、final eval 或用户验收；当时下一步只能在重新计算 identity/Profile snapshot 且精确 J1/额度/时限仍有效
+时做 Plus v22 单 case。
+
+Plus product-v22 随后以 `6f65516` PROPOSED → `2d396e7` OPEN → `4f86456` CLOSED 完成单 case lifecycle。
+PROPOSED 负探针精确命中 `VISUAL_EVALUATION_AUTHORIZATION_NOT_OPEN`，Goal/guard 哈希、280 reservations 与
+target evidence 均未变化。唯一 wrapper exit 0、138,611 ms，先 CLOSED 后由独立 verifier A2 重建 5 attempts、
+19,659 input + 7,284 output tokens、128,862 ms、0 abandoned 与 payload scan PASS。第二次 OBSERVE accepted；
+第一次 HIERARCHY 因 relationship region/cardinality 拒绝，第二次 HIERARCHY accepted 且只记录
+`VISUAL_HIERARCHY_RELATIONSHIP_CARDINALITY_DERIVED=1`；随后 ELEMENT_BINDING accepted。由此首次建立 live
+OBSERVE→HIERARCHY→BINDING 三阶段可达性，但没有命中 v22 support-owner normalization telemetry，不能把结果
+归因于该规则。报告仍 `complete=false`，slot/group/entity/relationship/binding 与 gold 的匹配远未达标，故
+Profile 继续隐藏 `EXPERIMENTAL`。Max 的阶段前置条件现已成立，但调用仍须使用新的 exact identity/Profile
+snapshot、独立精确 J1 ledger、剩余额度与有效时限；本 ADR 不把 reachability 写成 final 质量或验收通过。

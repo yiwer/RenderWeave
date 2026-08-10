@@ -1,6 +1,14 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-11 Plus product-v22 已按 `6f65516` PROPOSED → `2d396e7` OPEN → `4f86456` CLOSED 完成单 case；
+  负探针精确 NOT_OPEN，Goal/guard/280 reservations/target evidence 零变化。唯一 wrapper exit 0、138,611 ms，
+  先 CLOSED 后由独立 verifier A2 重建：5 attempts、19,659 input + 7,284 output、128,862 ms、payload scan PASS。
+  第 2 次 OBSERVE、第二个 HIERARCHY 计划及 ELEMENT_BINDING 均 accepted，首次实证三阶段可达；仅命中
+  cardinality-derived telemetry，未命中 v22 support-owner normalization。报告仍 `complete=false`，结构/绑定
+  匹配远未达标，Profile 继续隐藏 `EXPERIMENTAL`。Plus Goal 现为 136/180、783,738/1,000,000、¥3.116058；
+  285 reservations 中 280 SETTLED、5 历史 RESERVED，三份 ledger CLOSED。Max 前置条件现已成立，但尚未调用；
+  下一步必须重新计算 identity/snapshot，并以新的精确 J1/额度/时限门执行 Max v22 单 case。
 - 2026-08-11 `edc0c28` 新增 pipeline 4.9/product-v22：仅当 relationship support 是一个已知非 GROUP、
   exact relationship region 是已验证容器、且恰有一个 observed GROUP 精确拥有该 region 时，才确定性替换
   support owner 并派生 cardinality。未知 support、非容器、零/多 owner 保留原固定码；不跨 GROUP、不排名、
@@ -149,7 +157,8 @@
   unique evidence-owned relationship region normalization 已 clean A1，Plus v20 已 CLOSED/A2 并重复暴露
   relationship region connection invalid。v21 unique cardinality+connection-compatible GROUP-owned region
   normalization 已 clean A1，Plus v21 已 CLOSED/A2 并稳定暴露 support-not-group。v22 unique exact-region
-  GROUP-owner support normalization 已 clean A1；下一步是受控 Plus v22 单 case，实证 BINDING 前禁止 Max。
+  GROUP-owner support normalization 已 clean A1；Plus v22 已 CLOSED/A2 并首次完成三阶段，但未命中该规则、
+  report 与 stage-gold 质量仍未达门。下一步是 fresh identity/snapshot 与精确 ledger 下的 Max v22 单 case。
 - [x] Java / React / PostgreSQL / OpenAPI 最小 canary 与 A1 full gate 通过。
 - [x] 用户接受“A 默认表单 + B Map + 吸收 C 的 preview/密度”的编辑器方向（J1，2026-08-08）。
 - [x] 创建 P1–P4 implementation Goal。
@@ -247,9 +256,9 @@
 - `plans/logs/P6-T6-5-N5.md`：有界本地 Document Vision、v4/v6/v7 同 case live 消融、Plus Goal 用量、
   HTTP failure 硬停与未晋级决策；全部 ledger CLOSED。
 - `plans/logs/P6-T6-5-N6.md`：bounded semantic verifier、stage-local repair、selected crops、payload-free UI、
-  Flash v10–v12 A2 诊断、v15–v22 bounded verifier 增量与 exact-clean gates；三阶段 live 仍不可达，未晋级。
-- `plans/logs/P6-T6-5-N7.md`：pinned Flash/Goal guard v2、十份单 case CLOSED/A2 reachability、v15–v21
-  bounded verifier 增量、v22 local A1 与 payload-free UI；三阶段仍不可达，Max 未调用。
-- 当前恢复点：`phase/p6-visual-recognition-vnext` 的 `edc0c28` clean implementation；最近 live lifecycle 为
-  `02872c5` CLOSED。编排 Goal `019fec8e-a851-7952-b49b-8be76a281a57` 为 active，未创建 replacement Goal。
-  下一安全切片是 fresh identity/Profile snapshot 下的 Plus product-v22 单 case；满足 BINDING 前禁止 Max。
+  Flash v10–v12 A2 诊断、v15–v22 bounded verifier 增量与 exact-clean gates；Plus v22 live 首次三阶段可达但未晋级。
+- `plans/logs/P6-T6-5-N7.md`：pinned Flash/Goal guard v2、十一份单 case CLOSED/A2 reachability、v15–v22
+  bounded verifier 增量与 payload-free UI；v22 已到 BINDING，但质量未达门，Max 未调用。
+- 当前恢复点：`phase/p6-visual-recognition-vnext` 的 `4f86456` CLOSED lifecycle；实现 revision 为
+  `edc0c28`。编排 Goal `019fec8e-a851-7952-b49b-8be76a281a57` 为 active，未创建 replacement Goal。
+  下一安全切片是 fresh identity/Profile snapshot 与新精确 ledger 下的 Max product-v22 单 case。
