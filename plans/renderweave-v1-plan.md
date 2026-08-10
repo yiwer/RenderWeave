@@ -409,7 +409,8 @@ Phase 内任务只在真实前置依赖满足时并行。当前没有 atomic cla
 8. T6-3a.7：以历史任务为默认入口并移除跨页面卡片导航；Live 新增识别与零网络确定性样本拆成独立路由，新增页不再查询 Replay fixture；clean Web/E2E A1，未调用 Provider。
 9. T6-3a.8：针对复杂站牌被压扁为标量数组的问题，发布 Product v3 串行视觉协议：元素盘点 → 层级规划 → 元素归属 → 数据定义；用严格中间契约和最终拓扑验证保留站牌 → 线路[] → 停靠站点[]、站点中英文名及温馨提示子 Schema。最多 5 次 Provider 调用、最多 1 次 repair、单次 ¥2 上界与可选任务累计限额不变；clean Server/Web/E2E A1，未调用 Provider，真实质量验证单独 pending。
 10. T6-3a.9：定位真实 Product v3 运行的 `STRUCTURE` 两次精确 90 秒 deadline；发布不可变 Product v4，将单阶段 timeout 提升为 240 秒、调用前续租、区分 `DASHSCOPE_TIMEOUT`，并防止历史 v3 直接重试继续沿用旧时限；clean Server/Web/E2E A1 与部署零新调用探针通过。
-11. T6-3b：数据库与 Blob 备份/恢复、missing artifact、storage full、结构化观测与操作员演练；未完成前 T6-3 不报告完成。
+11. T6-3a.10：运行中取消保持协作式语义，但受理后在监控/历史页立即显示“正在取消”并禁止重复提交；Provider 调用恰逢取消时，attempt telemetry、费用结算与 CANCELLED 状态原子保存；clean Server/Web/E2E A1 与部署零新调用探针通过。
+12. T6-3b：数据库与 Blob 备份/恢复、missing artifact、storage full、结构化观测与操作员演练；未完成前 T6-3 不报告完成。
 
 #### T6-4：最终 AC/非目标/安全能力审计
 - AC：AC-001–AC-025

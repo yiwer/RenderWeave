@@ -1,6 +1,7 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-10 T6-3a.10 已闭环运行中任务的协作式取消：监控页和历史页在服务端受理后立即显示“正在取消”，说明当前 Provider 调用结束后才进入安全检查点并禁止重复取消；attempt、费用结算与最终 CANCELLED 现由同一 PostgreSQL 事务保存，避免取消竞态回滚真实调用日志。`3fb66e2` clean Server 142 / Web 69 / E2E 17 A1；本机 live overlay 已部署，部署前后 active=0、attempts=15、reservations=12，未新增 Provider 调用。
 - 2026-08-10 T6-3a.8 已发布 Product v3 串行视觉识别协议：元素盘点 → 层级规划 → 元素归属 → 数据定义；严格中间契约与最终拓扑校验防止把站牌 → 线路[] → 停靠站点[] 压扁为标量数组，并把站点中英文名和温馨提示子 Schema 纳入合成回归。`ea763cb` clean Server 138 / Web 66 / E2E 16 A1；本机 live overlay 已升级到 V014/四个 Product v3 Profile，部署前后 attempts=10、reservations=6，未新增 Provider 调用；真实模型质量验证待独立授权。
 - 2026-08-10 T6-3a.7 已将历史任务固定为智能识别默认页，右上角分别进入新增识别与确定性样本；`/inference/new` 只加载 DashScope Live 输入，`/inference/samples` 独立承载零网络 Replay，并移除跨页面卡片导航。`378046e` clean Web 66 / E2E 16 A1；未调用 Provider。
 - 2026-08-10 T6-3a.6 已把智能识别拆成历史任务、新增输入、识别监控、识别结果四个可深链版面；创建/重试先进入监控，结果页只承载 Candidate。Candidate save 同时兼容旧页面，把已编辑 AI 项安全归一为 `RESOLVED_BY_EDIT`。`fe9ce0d` clean Server 134 / Web 66 / E2E 16，`0375c86` clean Web 66 / E2E 16 A1；未调用 Provider。
@@ -77,6 +78,7 @@
 - [x] T6-3a.7：历史任务成为默认入口，Live 新增识别与确定性 Replay 样本彻底拆分；完成 clean Web/E2E A1。
 - [x] T6-3a.8：发布 Product v3 串行视觉分析、四类严格契约、V014 与站牌三层拓扑回归；完成零 Provider clean Server/Web/E2E A1。真实 DashScope 质量验证仍需绑定 Product v3 identity 的新 J1。
 - [x] T6-3a.9：定位真实 v3 run 的两次 90 秒 `STRUCTURE` deadline；发布 Product v4 240 秒 stage timeout、调用前 lease 续租与精确 `DASHSCOPE_TIMEOUT`；clean Server/Web/E2E A1 和部署前后 15 attempts / 11 reservations 零增量探针通过。
+- [x] T6-3a.10：确认运行中取消已被服务端受理但 UI 无反馈，并修复取消边界上已结算 attempt 被事务回滚的问题；clean Server/Web/E2E A1 和部署前后 15 attempts / 12 reservations 零增量探针通过。
 - [ ] T6-3b：完成数据库/Blob 备份恢复、missing artifact、storage full 与操作员观测演练。
 
 ## 重要发现或局部阻塞
@@ -114,4 +116,5 @@
 - `plans/logs/P6-T6-2.md`：四步 AI Schema 识别工作台、完整 Candidate 审核、offline eval 与 browser/real-PG acceptance 已完成 clean A1/独立 A2；最终视觉 J1 pending，Provider attempts/reservations=0。
 - `plans/logs/P6-T6-3.md`：T6-3a 四产品 Profile、Product v3 串行视觉分析、¥2 单次上界、上传/图像规范化、Candidate 审核与四版面均已完成 clean A1；真实 Product v3 质量验证与 T6-3b recovery drill 分别 pending。
 - `plans/logs/P6-T6-3a.9.md`：Product v4 timeout/lease 诊断、clean A1 与部署零新调用探针。
-- 当前恢复点：`phase/p6-inference-product-acceptance-v1` 的 T6-3a.9 `automated_verified` 节点；历史评测 ledger 永久 CLOSED，显式 product-live overlay 已开放。下一安全自动切片为用户主动新建 v4 识别的真实结果诊断，或 T6-3b Compose/ops/recovery drill；Agent 本节点不自动发起 Provider 调用。
+- `plans/logs/P6-T6-3a.10.md`：协作式取消反馈、原子 attempt telemetry、clean A1 与部署零新调用探针。
+- 当前恢复点：`phase/p6-inference-product-acceptance-v1` 的 T6-3a.10 `automated_verified` 节点；历史评测 ledger 永久 CLOSED，显式 product-live overlay 已开放。下一安全自动切片为用户主动新建 v4 识别的真实结果诊断，或 T6-3b Compose/ops/recovery drill；Agent 本节点不自动发起 Provider 调用。
