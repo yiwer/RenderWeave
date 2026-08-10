@@ -150,9 +150,42 @@ class VisualGroundingContractTest {
         ).diagnosticCode());
     }
 
+    @Test
+    void classifiesHierarchyShapeAndSupportFailuresWithoutPersistingProviderValues() throws Exception {
+        var views = views();
+        var observed = codec.parseElements(elementsJson(), views, List.of(IMAGE_ID));
+
+        assertHierarchyDiagnostic(
+                hierarchyJson().replace("\"entityId\":\"item\"", "\"entityId\":\"document\""),
+                observed, "VISUAL_HIERARCHY_V2_ENTITY_ID_DUPLICATE"
+        );
+        assertHierarchyDiagnostic(
+                hierarchyJson().replace("\"childEntityId\":\"item\"", "\"childEntityId\":\"missing\""),
+                observed, "VISUAL_HIERARCHY_V2_RELATIONSHIP_ENDPOINT_INVALID"
+        );
+        assertHierarchyDiagnostic(
+                hierarchyJson().replace(
+                        "\"supportingElementIds\":[\"title\"]",
+                        "\"supportingElementIds\":[\"unknown-element\"]"
+                ),
+                observed, "VISUAL_HIERARCHY_V2_SUPPORT_ELEMENT_UNKNOWN"
+        );
+    }
+
     private void assertDiagnostic(String json, VisualViewPlan views, String expectedCode) {
         assertEquals(expectedCode, assertThrows(InvalidVisualAnalysisException.class,
                 () -> codec.parseElements(json, views, List.of(IMAGE_ID))).diagnosticCode());
+    }
+
+    private void assertHierarchyDiagnostic(
+            String json,
+            GroundedElementInventory observed,
+            String expectedCode
+    ) {
+        assertEquals(expectedCode, assertThrows(InvalidVisualAnalysisException.class,
+                () -> codec.parseHierarchy(
+                        json, observed.inventory(), observed.grounding()
+                )).diagnosticCode());
     }
 
     private static VisualViewPlan views() throws Exception {

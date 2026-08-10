@@ -96,23 +96,23 @@ final class VisualGroundingJsonCodec {
             if (!VisualHierarchyPlan.VERSION_V2.equals(response.contractVersion())) {
                 throw invalid("VISUAL_HIERARCHY_V2_VERSION_INVALID", null);
             }
-            var hierarchy = classified("VISUAL_HIERARCHY_V2_TOPOLOGY_INVALID", () ->
-                    new VisualHierarchyPlan(
-                    VisualHierarchyPlan.VERSION_V2, response.rootEntityId(),
-                    response.entities().stream().map(entity -> new VisualEntityPlan(
+            var entities = response.entities().stream().map(entity -> classified(
+                    "VISUAL_HIERARCHY_V2_ENTITY_INVALID", () -> new VisualEntityPlan(
                             entity.entityId(), entity.schemaKey(), entity.displayName(),
                             entity.supportingElementIds()
-                    )).toList(),
-                    response.relationships().stream().map(relationship -> new VisualRelationshipPlan(
+                    )
+            )).toList();
+            var relationships = response.relationships().stream().map(relationship -> classified(
+                    "VISUAL_HIERARCHY_V2_RELATIONSHIP_INVALID", () -> new VisualRelationshipPlan(
                             relationship.relationshipId(), relationship.parentEntityId(),
                             relationship.childEntityId(), relationship.fieldKey(), relationship.displayName(),
                             relationship.cardinality(), relationship.supportingElementIds()
-                    )).toList()
                     )
-            );
-            classified("VISUAL_HIERARCHY_V2_TOPOLOGY_INVALID", () ->
-                    hierarchy.requireConsistentWith(inventory)
-            );
+            )).toList();
+            var hierarchy = classifiedHierarchyShape(() -> new VisualHierarchyPlan(
+                    VisualHierarchyPlan.VERSION_V2, response.rootEntityId(), entities, relationships
+            ));
+            classifiedHierarchySupport(() -> hierarchy.requireConsistentWith(inventory));
             var entityRegions = classified("VISUAL_HIERARCHY_V2_REGION_OWNERSHIP_INVALID", () ->
                     new VisualEntityRegionPlan(
                     VisualEntityRegionPlan.VERSION,
@@ -355,6 +355,77 @@ final class VisualGroundingJsonCodec {
         } catch (Exception failure) {
             throw invalid(code, failure);
         }
+    }
+
+    private static <T> T classifiedHierarchyShape(CheckedSupplier<T> supplier) {
+        try {
+            return supplier.get();
+        } catch (InvalidVisualAnalysisException failure) {
+            throw failure;
+        } catch (Exception failure) {
+            throw invalid(hierarchyShapeCode(failure), failure);
+        }
+    }
+
+    private static void classifiedHierarchySupport(CheckedRunnable runnable) {
+        try {
+            runnable.run();
+        } catch (InvalidVisualAnalysisException failure) {
+            throw failure;
+        } catch (Exception failure) {
+            throw invalid(hierarchySupportCode(failure), failure);
+        }
+    }
+
+    private static String hierarchyShapeCode(Throwable failure) {
+        return switch (controlledMessage(failure)) {
+            case "Visual entity ids must be unique" ->
+                    "VISUAL_HIERARCHY_V2_ENTITY_ID_DUPLICATE";
+            case "Visual entity schema keys must be unique" ->
+                    "VISUAL_HIERARCHY_V2_SCHEMA_KEY_DUPLICATE";
+            case "Visual hierarchy root is missing" ->
+                    "VISUAL_HIERARCHY_V2_ROOT_MISSING";
+            case "Visual relationship ids must be unique" ->
+                    "VISUAL_HIERARCHY_V2_RELATIONSHIP_ID_DUPLICATE";
+            case "Visual relationship endpoints are invalid" ->
+                    "VISUAL_HIERARCHY_V2_RELATIONSHIP_ENDPOINT_INVALID";
+            case "Relationship field keys must be unique per parent" ->
+                    "VISUAL_HIERARCHY_V2_PARENT_FIELD_DUPLICATE";
+            case "Visual hierarchy root cannot have a parent" ->
+                    "VISUAL_HIERARCHY_V2_ROOT_HAS_PARENT";
+            case "Every non-root visual entity must have exactly one parent" ->
+                    "VISUAL_HIERARCHY_V2_PARENT_COUNT_INVALID";
+            case "Visual hierarchy exceeds depth 16" ->
+                    "VISUAL_HIERARCHY_V2_DEPTH_INVALID";
+            case "Visual hierarchy contains a cycle" ->
+                    "VISUAL_HIERARCHY_V2_CYCLE_INVALID";
+            case "Visual hierarchy contains an orphan" ->
+                    "VISUAL_HIERARCHY_V2_ORPHAN_INVALID";
+            default -> "VISUAL_HIERARCHY_V2_TOPOLOGY_INVALID";
+        };
+    }
+
+    private static String hierarchySupportCode(Throwable failure) {
+        return switch (controlledMessage(failure)) {
+            case "Visual plan references an unknown element" ->
+                    "VISUAL_HIERARCHY_V2_SUPPORT_ELEMENT_UNKNOWN";
+            case "Relationships must be supported by GROUP elements" ->
+                    "VISUAL_HIERARCHY_V2_SUPPORT_NOT_GROUP";
+            case "A GROUP element may support only one relationship" ->
+                    "VISUAL_HIERARCHY_V2_SUPPORT_GROUP_REUSED";
+            case "Relationship cardinality must match a supporting GROUP element" ->
+                    "VISUAL_HIERARCHY_V2_SUPPORT_CARDINALITY_MISMATCH";
+            default -> "VISUAL_HIERARCHY_V2_SUPPORT_INVALID";
+        };
+    }
+
+    private static String controlledMessage(Throwable failure) {
+        for (var cause = failure; cause != null; cause = cause.getCause()) {
+            if (cause instanceof IllegalArgumentException && cause.getMessage() != null) {
+                return cause.getMessage();
+            }
+        }
+        return "";
     }
 
     private static void classified(String code, CheckedRunnable runnable) {
