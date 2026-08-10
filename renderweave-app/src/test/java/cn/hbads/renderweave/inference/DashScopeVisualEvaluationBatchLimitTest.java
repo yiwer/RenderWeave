@@ -25,4 +25,15 @@ class DashScopeVisualEvaluationBatchLimitTest {
                 .isThrownBy(() -> DashScopeVisualEvaluationTest.effectiveBatchLimit(5, "one"))
                 .withMessage("VISUAL_EVALUATION_BATCH_LIMIT_INVALID");
     }
+
+    @Test
+    void haltsBatchAfterAnyProviderHttpOrGlobalFailure() {
+        assertThat(DashScopeVisualEvaluationTest.shouldHalt("DASHSCOPE_HTTP_403")).isTrue();
+        assertThat(DashScopeVisualEvaluationTest.shouldHalt("DASHSCOPE_HTTP_429")).isTrue();
+        assertThat(DashScopeVisualEvaluationTest.shouldHalt("VISUAL_EVALUATION_GOAL_BUDGET_EXCEEDED"))
+                .isTrue();
+        assertThat(DashScopeVisualEvaluationTest.shouldHalt("LIVE_VISUAL_ANALYSIS_REJECTED"))
+                .isFalse();
+        assertThat(DashScopeVisualEvaluationTest.shouldHalt(null)).isFalse();
+    }
 }

@@ -111,7 +111,7 @@ class DashScopeVisualEvaluationTest {
                 var finished = execute(corpus.require(caseId));
                 processed++;
                 writeReport();
-                if (finished.failureCode().map(HALT_FAILURE_CODES::contains).orElse(false)) break;
+                if (finished.failureCode().map(DashScopeVisualEvaluationTest::shouldHalt).orElse(false)) break;
             }
             writeReport();
             assertThat(processed).isLessThanOrEqualTo(batchLimit);
@@ -139,6 +139,11 @@ class DashScopeVisualEvaluationTest {
         } catch (NumberFormatException invalid) {
             throw new IllegalArgumentException("VISUAL_EVALUATION_BATCH_LIMIT_INVALID", invalid);
         }
+    }
+
+    static boolean shouldHalt(String failureCode) {
+        return failureCode != null && (HALT_FAILURE_CODES.contains(failureCode)
+                || failureCode.matches("DASHSCOPE_HTTP_[1-5][0-9]{2}"));
     }
 
     private cn.hbads.renderweave.inference.run.InferenceRunSnapshot execute(
