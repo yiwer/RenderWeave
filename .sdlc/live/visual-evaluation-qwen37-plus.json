@@ -1,14 +1,14 @@
 {
   "authorizationVersion": "renderweave-visual-evaluation-authorization/1.0",
-  "authorizationId": "visual-n7-support-normalization-v19-qwen37-plus-transit-20260811",
-  "status": "CLOSED",
+  "authorizationId": "visual-n7-region-normalization-v20-qwen37-plus-transit-20260811",
+  "status": "PROPOSED",
   "phase": "CANARY",
   "inputClassification": "REPOSITORY_SYNTHETIC_ONLY",
   "corpusVersion": "renderweave-visual-stage-corpus/1.0",
   "corpusSourceSha256": "bf0db7bf0ac5c4e2b357cdd96c49ff70a7b30a5bc59f322a915020dc29fc605e",
-  "evaluationIdentity": "renderweave-visual-evaluation-tree-sha256/1:4212d02570653451d95a12e6f32d00bc5cfac497a0bf49a7856516bd732416ab",
-  "profileId": "dashscope-qwen37-plus-product-v19-generic",
-  "profileSnapshotSha256": "c6df2763446a2b81598464ea64c5a30ba66ff033051073bb61eb012d1105b41d",
+  "evaluationIdentity": "renderweave-visual-evaluation-tree-sha256/1:c9c79057553f4867b810e41dd75656b4eb478c964716964961cb47fe5de8dbd4",
+  "profileId": "dashscope-qwen37-plus-product-v20-generic",
+  "profileSnapshotSha256": "f8423ae33ac9c773d94dce46e48cdd2a5684c89f2d1107c7a4c459709879ac11",
   "model": "qwen3.7-plus",
   "caseIds": [
     "transit-board-v3"
@@ -18,7 +18,7 @@
   "maximumCostMicrosCny": 600000,
   "maximumCasesPerBatch": 1,
   "approvedBy": "yiwer",
-  "approvedAt": "2026-08-10T21:59:58Z",
-  "expiresAt": "2026-08-11T09:59:58Z",
-  "approvalScope": "Goal J1 CANARY: user explicitly allowed qwen3.7-plus and requested continued Goal progression; one repository-synthetic transit-board-v3 case through immutable product-v19-generic pipeline 4.6 with fixed payload-free relationship support-ID diagnostics and exact-duplicate-only normalization, without choosing among distinct IDs, synthesizing GROUP elements, deleting relationships or guessing structure; at most 5 attempts, 60000 exposed tokens, CNY 0.60 and one case per batch within the 1000000-token Plus Goal slot; payload-free evidence, no Max call and immediate CLOSED after this smoke"
+  "approvedAt": "2026-08-10T22:30:40Z",
+  "expiresAt": "2026-08-11T10:30:40Z",
+  "approvalScope": "Goal J1 CANARY: user explicitly allowed qwen3.7-plus and requested continued Goal progression; one repository-synthetic transit-board-v3 case through immutable product-v20-generic pipeline 4.7 with fixed payload-free relationship region diagnostics and deterministic normalization only when the unique supporting GROUP owns exactly one cardinality-compatible region; zero compatible regions rewind OBSERVE and multiple compatible regions fail closed, without cross-GROUP selection, element synthesis, relationship deletion or topology guessing; at most 5 attempts, 60000 exposed tokens, CNY 0.60 and one case per batch within the 1000000-token Plus Goal slot; payload-free evidence, no Max call and immediate CLOSED after this smoke"
 }
