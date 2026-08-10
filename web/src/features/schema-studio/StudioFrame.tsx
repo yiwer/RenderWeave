@@ -106,13 +106,9 @@ export function StudioRail({ session }: { session: EditorSession }) {
     || (field.value.type === 'array' && field.value.items.type === 'reference')).length;
   return (
     <nav className="resource-rail studio-rail" aria-label="Schema 工作区导航">
-      <Link className="rail-link" to="/schemas">
+      <Link className="rail-link active" to="/schemas" aria-current="page">
         <ListTree aria-hidden="true" size={17} />
         数据结构设计
-      </Link>
-      <Link className="rail-link active" to={session.revision === null ? '/schemas/new' : `/schemas/${session.schemaKey}`} aria-current="page">
-        <Braces aria-hidden="true" size={17} />
-        当前 Draft
       </Link>
       <Link className="rail-link rail-secondary-link" to="/static-schemas">
         <Layers3 aria-hidden="true" size={17} />数据结构资产

@@ -54,12 +54,23 @@ test.describe('Schema resource lifecycle', () => {
     await page.getByRole('button', { name: '查看 商品目录卡 的历史' }).click();
     await expect(page.getByRole('heading', { name: '不可变 revision 历史' })).toBeVisible();
     await expect(page.getByRole('button', { name: /revision 2/ })).toHaveAttribute('aria-pressed', 'true');
-    await expect(page.locator('.history-preview')).toContainText('商品目录卡');
+    await expect(page.getByRole('tab', { name: '字段树' })).toHaveAttribute('aria-selected', 'true');
+    await expect(page.locator('.history-preview .readonly-schema-tree')).toContainText('商品目录卡');
+    await page.screenshot({ path: testInfo.outputPath('draft-history-tree-1280x720.png'), fullPage: true });
+    const historyAccessibility = await new AxeBuilder({ page }).include('.history-dialog').analyze();
+    expect(historyAccessibility.violations.filter((violation) =>
+      violation.impact === 'serious' || violation.impact === 'critical')).toEqual([]);
+    await page.getByRole('tab', { name: '字段表单' }).click();
+    await expect(page.locator('.history-preview .readonly-definition-form')).toContainText('标题');
+    await page.getByRole('tab', { name: 'DSL JSON' }).click();
+    await expect(page.locator('.history-preview pre')).toContainText('renderweave-schema/1.0');
     await page.getByRole('button', { name: '关闭' }).click();
     await expect(page.getByRole('button', { name: '发布 商品目录卡 为 StaticSchema' })).toBeVisible();
     await expect(page.getByRole('button', { name: '删除 商品目录卡' })).toBeVisible();
     await page.screenshot({ path: testInfo.outputPath('draft-list-1280x720.png'), fullPage: true });
     await page.getByRole('link', { name: '打开 商品目录卡' }).click();
+    await expect(page.locator('.studio-rail').getByRole('link', { name: '当前 Draft' })).toHaveCount(0);
+    await expect(page.locator('.studio-rail').getByRole('link', { name: '数据结构设计' })).toHaveAttribute('aria-current', 'page');
 
     await page.getByRole('button', { name: '历史', exact: true }).click();
     await expect(page.getByRole('heading', { name: '不可变 revision 历史' })).toBeVisible();
@@ -170,7 +181,19 @@ test.describe('Schema resource lifecycle', () => {
 
     await expect(page).toHaveURL(/\/static-schemas\/price-card\/v1$/);
     await expect(page.getByText('不可变边界已建立')).toBeVisible();
-    await expect(page.getByRole('tab', { name: '字段表单' })).toHaveAttribute('aria-selected', 'true');
+    await expect(page.getByRole('tab', { name: '字段树' })).toHaveAttribute('aria-selected', 'true');
+    await expect(page.locator('.static-view-panel .readonly-schema-tree')).toContainText('标题');
+    const breadcrumbBox = await page.locator('.resource-breadcrumb').boundingBox();
+    expect(breadcrumbBox).not.toBeNull();
+    expect(breadcrumbBox!.x).toBeLessThan(420);
+    await page.screenshot({ path: testInfo.outputPath('static-detail-tree-1280x720.png'), fullPage: true });
+    const staticAccessibility = await new AxeBuilder({ page }).include('.static-detail-views').analyze();
+    expect(staticAccessibility.violations.filter((violation) =>
+      violation.impact === 'serious' || violation.impact === 'critical')).toEqual([]);
+    await page.setViewportSize({ width: 1024, height: 768 });
+    await expectNoHorizontalOverflow(page);
+    await page.setViewportSize({ width: 1280, height: 720 });
+    await page.getByRole('tab', { name: '字段表单' }).click();
     await expect(page.locator('.static-definition-form')).toContainText('标题');
     await expect(page.getByRole('button', { name: '查看字段 标题' })).toHaveAttribute('aria-pressed', 'true');
     await expect(page.locator('.static-field-inspector')).toBeVisible();

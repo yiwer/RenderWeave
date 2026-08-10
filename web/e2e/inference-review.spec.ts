@@ -408,6 +408,9 @@ test('requires confirmation to cancel and creates a new auditable retry run', as
 
   await page.goto(`/inference-runs/${runId}/monitor`);
   await page.waitForLoadState('networkidle');
+  const inferenceBreadcrumbBox = await page.locator('.resource-breadcrumb').boundingBox();
+  expect(inferenceBreadcrumbBox).not.toBeNull();
+  expect(inferenceBreadcrumbBox!.x).toBeLessThan(420);
   const cancel = page.getByRole('button', { name: '取消任务' });
   await cancel.focus();
   await page.keyboard.press('Enter');

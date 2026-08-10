@@ -1,7 +1,11 @@
 import * as Dialog from '@radix-ui/react-dialog';
+import * as Tabs from '@radix-ui/react-tabs';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
+  Braces,
   Eye,
+  List,
+  ListTree,
   LoaderCircle,
   RotateCcw,
   Trash2,
@@ -20,6 +24,7 @@ import {
 } from './lossless-api';
 import { formatDateTime } from '../resources/resource-format';
 import { editorValueFromPersisted, serializeDefinition, type DraftSnapshot } from './editor-types';
+import { ReadonlyDefinitionForm, ReadonlyDefinitionTree } from './ReadonlyDefinitionViews';
 
 export function DraftHistoryDialog({
   schemaKey,
@@ -36,6 +41,7 @@ export function DraftHistoryDialog({
 }) {
   const [open, setOpen] = useState(false);
   const [selectedRevision, setSelectedRevision] = useState<number | null>(null);
+  const [previewView, setPreviewView] = useState<HistoryPreviewView>('tree');
   const queryClient = useQueryClient();
   const history = useQuery({
     queryKey: ['draft-history', schemaKey],
@@ -63,6 +69,7 @@ export function DraftHistoryDialog({
       onOpenChange={(value) => {
         setOpen(value);
         setSelectedRevision(value ? currentRevision : null);
+        if (value) setPreviewView('tree');
       }}
     >
       <Dialog.Trigger asChild>{trigger}</Dialog.Trigger>
@@ -88,9 +95,29 @@ export function DraftHistoryDialog({
               ))}
             </div>
             <div className="history-preview">
-              {selectedRevision === null && <div><Eye aria-hidden="true" size={22} /><span>选择一个 revision 查看 Definition DSL</span></div>}
+              {selectedRevision === null && <div><Eye aria-hidden="true" size={22} /><span>选择一个 revision 查看完整定义</span></div>}
               {snapshot.isPending && selectedRevision !== null && <div><LoaderCircle className="spin" size={18} /><span>读取 snapshot…</span></div>}
-              {snapshot.data && <pre>{revisionPreview(snapshot.data)}</pre>}
+              {snapshot.data && (
+                <Tabs.Root className="history-preview-views" value={previewView} onValueChange={(value) => setPreviewView(value as HistoryPreviewView)}>
+                  <header className="history-preview-toolbar">
+                    <span><strong>revision {snapshot.data.revision}</strong><small>{snapshot.data.definition.fields.length} 个字段 · 完整只读 snapshot</small></span>
+                    <Tabs.List className="readonly-view-tabs" aria-label="revision 查看方式">
+                      <Tabs.Trigger value="tree"><ListTree aria-hidden="true" size={14} />字段树</Tabs.Trigger>
+                      <Tabs.Trigger value="form"><List aria-hidden="true" size={14} />字段表单</Tabs.Trigger>
+                      <Tabs.Trigger value="dsl"><Braces aria-hidden="true" size={14} />DSL JSON</Tabs.Trigger>
+                    </Tabs.List>
+                  </header>
+                  <Tabs.Content className="history-preview-panel" value="tree">
+                    <ReadonlyDefinitionTree schemaKey={snapshot.data.schemaKey} definition={snapshot.data.definition} />
+                  </Tabs.Content>
+                  <Tabs.Content className="history-preview-panel" value="form">
+                    <ReadonlyDefinitionForm definition={snapshot.data.definition} />
+                  </Tabs.Content>
+                  <Tabs.Content className="history-preview-panel history-dsl-panel" value="dsl">
+                    <pre>{revisionPreview(snapshot.data)}</pre>
+                  </Tabs.Content>
+                </Tabs.Root>
+              )}
             </div>
           </div>
         )}
@@ -101,6 +128,8 @@ export function DraftHistoryDialog({
     </Dialog.Root>
   );
 }
+
+type HistoryPreviewView = 'tree' | 'form' | 'dsl';
 
 export function CopyDraftDialog({
   schemaKey: sourceSchemaKey,

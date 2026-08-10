@@ -22,6 +22,7 @@ test.describe('production Schema Studio', () => {
     });
     await page.goto('/schemas/seed-schema');
     await expect(page.locator('.studio-rail').getByRole('link', { name: '新建 Draft' })).toHaveCount(0);
+    await expect(page.locator('.studio-rail').getByRole('link', { name: '当前 Draft' })).toHaveCount(0);
     await page.goto('/schemas/new');
     await expect(page).toHaveURL(/\/schemas\/new$/);
     await expect(page.locator('[data-product="schema-studio"]')).toBeVisible();
@@ -39,6 +40,12 @@ test.describe('production Schema Studio', () => {
     await expect(requiredGroup.getByRole('button', { name: '必填' })).toHaveAttribute('aria-pressed', 'true');
     await expect(page.getByText('RootDocument 必须出现')).toHaveCount(0);
     await page.getByLabel('字段类型').selectOption('array');
+    const selectAppearance = await page.getByLabel('字段类型').evaluate((element) => {
+      const style = getComputedStyle(element);
+      return { appearance: style.appearance, backgroundImage: style.backgroundImage };
+    });
+    expect(selectAppearance.appearance).toBe('none');
+    expect(selectAppearance.backgroundImage).not.toBe('none');
     await page.getByLabel('数组元素类型').selectOption('reference');
     await page.getByLabel('目标 schemaKey').fill('product-item');
     await page.getByRole('button', { name: 'StaticSchemaRef' }).click();

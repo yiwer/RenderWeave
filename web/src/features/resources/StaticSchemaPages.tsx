@@ -10,6 +10,7 @@ import {
   Download,
   FileCode2,
   Layers3,
+  List,
   ListTree,
   LockKeyhole,
   LoaderCircle,
@@ -44,6 +45,7 @@ import { listStaticSchemasRequest, type StaticSchemaListSort } from './resource-
 import { ResourceError, ResourceLoading } from './DraftListPage';
 import { formatDateTime } from './resource-format';
 import { ResourceFrame } from './ResourceFrame';
+import { ReadonlyDefinitionTree } from '../schema-studio/ReadonlyDefinitionViews';
 
 export function StaticSchemaListPage() {
   const [page, setPage] = useState(1);
@@ -123,7 +125,7 @@ export function StaticSchemaDetailPage() {
 }
 
 function StaticSchemaDetailContent({ schemaKey, versionTag }: { schemaKey: string; versionTag: string }) {
-  const [activeView, setActiveView] = useState<StaticDetailView>('form');
+  const [activeView, setActiveView] = useState<StaticDetailView>('tree');
   const [copied, setCopied] = useState(false);
   const [selectedFieldIndex, setSelectedFieldIndex] = useState(0);
   const [inspectorOpen, setInspectorOpen] = useState(false);
@@ -183,12 +185,13 @@ function StaticSchemaDetailContent({ schemaKey, versionTag }: { schemaKey: strin
           <Tabs.Root className="static-detail-views" value={activeView} onValueChange={(value) => { setActiveView(value as StaticDetailView); setCopied(false); setInspectorOpen(false); }}>
             <div className="static-view-toolbar">
               <Tabs.List className="static-view-tabs" aria-label="StaticSchema 查看方式">
-                <Tabs.Trigger value="form"><ListTree aria-hidden="true" size={15} />字段表单</Tabs.Trigger>
+                <Tabs.Trigger value="tree"><ListTree aria-hidden="true" size={15} />字段树</Tabs.Trigger>
+                <Tabs.Trigger value="form"><List aria-hidden="true" size={15} />字段表单</Tabs.Trigger>
                 <Tabs.Trigger value="compiled"><Braces aria-hidden="true" size={15} />Compiled JSON Schema</Tabs.Trigger>
                 <Tabs.Trigger value="definition"><FileCode2 aria-hidden="true" size={15} />Definition DSL</Tabs.Trigger>
               </Tabs.List>
               <div className="static-view-tools">
-                {activeView === 'form' ? (
+                {activeView === 'tree' || activeView === 'form' ? (
                   <>
                     <span>{snapshot.data.definition.fields.length} 个字段</span><span>additionalProperties=true</span>
                     {snapshot.data.definition.fields.length > 0 && (
@@ -203,6 +206,16 @@ function StaticSchemaDetailContent({ schemaKey, versionTag }: { schemaKey: strin
                 )}
               </div>
             </div>
+            <Tabs.Content className="static-view-panel" value="tree">
+              <StaticDefinitionTree
+                schemaKey={schemaKey}
+                definition={snapshot.data.definition}
+                selectedIndex={selectedFieldIndex}
+                inspectorOpen={inspectorOpen}
+                onSelect={(index) => { setSelectedFieldIndex(index); setInspectorOpen(true); }}
+                onCloseInspector={() => setInspectorOpen(false)}
+              />
+            </Tabs.Content>
             <Tabs.Content className="static-view-panel" value="form">
               <StaticDefinitionForm
                 definition={snapshot.data.definition}
@@ -225,7 +238,44 @@ function StaticSchemaDetailContent({ schemaKey, versionTag }: { schemaKey: strin
   );
 }
 
-type StaticDetailView = 'form' | 'compiled' | 'definition';
+type StaticDetailView = 'tree' | 'form' | 'compiled' | 'definition';
+
+function StaticDefinitionTree({
+  schemaKey,
+  definition,
+  selectedIndex,
+  inspectorOpen,
+  onSelect,
+  onCloseInspector,
+}: {
+  schemaKey: string;
+  definition: PersistedDefinition;
+  selectedIndex: number;
+  inspectorOpen: boolean;
+  onSelect: (index: number) => void;
+  onCloseInspector: () => void;
+}) {
+  if (definition.fields.length === 0) {
+    return <ReadonlyDefinitionTree schemaKey={schemaKey} definition={definition} />;
+  }
+  const resolvedIndex = definition.fields[selectedIndex] ? selectedIndex : 0;
+  return (
+    <div className="static-form-workbench static-tree-workbench">
+      <ReadonlyDefinitionTree
+        schemaKey={schemaKey}
+        definition={definition}
+        selectedIndex={resolvedIndex}
+        onSelect={onSelect}
+      />
+      <StaticFieldInspector
+        field={definition.fields[resolvedIndex]!}
+        index={resolvedIndex}
+        open={inspectorOpen}
+        onClose={onCloseInspector}
+      />
+    </div>
+  );
+}
 
 function StaticDefinitionForm({
   definition,
@@ -292,7 +342,7 @@ function StaticFieldInspector({
   const label = field.displayName?.trim() || field.fieldKey || `字段 ${index + 1}`;
   const details = staticValueDetails(value);
   return (
-    <aside className={`static-field-inspector ${open ? 'is-open' : ''}`} aria-label="StaticSchema 字段信息">
+    <aside className={`static-field-inspector ${open ? 'is-open' : ''}`} aria-label="StaticSchema 字段信息" tabIndex={0}>
       <div className="static-inspector-heading">
         <div><span>字段信息</span><h2>{label}</h2></div>
         <button type="button" className="icon-button static-inspector-close" onClick={onClose} aria-label="关闭字段信息"><X aria-hidden="true" size={17} /></button>
