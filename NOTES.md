@@ -1,6 +1,7 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-10 T6-3a.6 已把智能识别拆成历史任务、新增输入、识别监控、识别结果四个可深链版面；创建/重试先进入监控，结果页只承载 Candidate。Candidate save 同时兼容旧页面，把已编辑 AI 项安全归一为 `RESOLVED_BY_EDIT`。`fe9ce0d` clean Server 134 / Web 66 / E2E 16，`0375c86` clean Web 66 / E2E 16 A1；未调用 Provider。
 - 2026-08-10 T6-3a.5 已修复真实 IMAGE_ONLY 证据框坐标空间错判：服务端对明确的像素坐标族换算为 0..10000 并保留 WARNING，Web 同规则兼容历史 Candidate；审核页聚合重复诊断、隐藏单 Schema 排序列并重排字段信息层级。`6fde235` clean Server 134 tests / Web 60 tests / E2E 16 passed A1，未调用 Provider。
 - 2026-08-10 T6-3a.4 已把真实 IMAGE_ONLY 的纯技术格式偏差与人工语义问题分离：非法 SchemaKey 和合法标量冗余 observedKinds 由本地窄域规范化为 WARNING，低置信/未解析项仍必须人工审核；审核页新增无载荷执行日志，展示阶段、调用、Token、费用、耗时与有限问题码。`02819cc` clean Server 133 tests / Web 56 tests / E2E 16 passed A1，未调用 Provider。
 - 2026-08-10 T6-3a.3 已将“源图尺寸”和“Provider 规范化尺寸”解耦：常见超大 PNG/JPEG 自动有界缩放至最长边 4096，极端源图仍受 65535 长边/268M 像素硬门保护。clean Server 131 tests / Web 55 tests A1 PASS；部署后 4097 像素幂等冲突探针证明归一化已生效且 run/artifact/reservation 计数不变。
@@ -104,4 +105,4 @@
 - `plans/logs/P6-T6-1.md`：10k/100k/10k/10k 容量基线、摘要投影、targeted graph 与统一两 lane 已完成 clean A1/独立 A2；Provider attempts/reservations=0。
 - `plans/logs/P6-T6-2.md`：四步 AI Schema 识别工作台、完整 Candidate 审核、offline eval 与 browser/real-PG acceptance 已完成 clean A1/独立 A2；最终视觉 J1 pending，Provider attempts/reservations=0。
 - `plans/logs/P6-T6-3.md`：T6-3a 四产品 Profile、Product v2/¥2、上传边界、图像规范化、IMAGE_ONLY 技术规范化与执行日志均已完成 clean A1；T6-3b recovery drill pending。
-- 当前恢复点：`phase/p6-inference-product-acceptance-v1` 的 T6-3a.5 `automated_verified` 节点；历史评测 ledger 永久 CLOSED，显式 product-live overlay 已开放，下一自动计划切片为 T6-3b Compose/ops/recovery drill。
+- 当前恢复点：`phase/p6-inference-product-acceptance-v1` 的 T6-3a.6 `automated_verified` 节点；历史评测 ledger 永久 CLOSED，显式 product-live overlay 已开放，下一自动计划切片为 T6-3b Compose/ops/recovery drill。

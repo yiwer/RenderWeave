@@ -21,7 +21,7 @@
 3. **逐项校对**：展示完成度、blocker/warning、所有证据，支持新增/删除/重排 Schema 与字段，以及 key、metadata、type、constraints/ref 编辑；仍无 confirm-all。
 4. **原子创建**：展示 readiness checklist；只有服务端 blocker 为零且 autosave 稳定时，才允许一次性 create-only 创建 Draft Bundle。
 
-路由可以保持 `/inference` 与 `/inference-runs/{runId}/review`，但用户看到的是同一个流程，不是两个无关联工具页。
+四步心智模型不要求把职责挤在同一个页面。2026-08-10 的产品收口将其固定为四个共享导航、可深链的版面：`/inference` 历史任务、`/inference/new` 新增输入、`/inference-runs/{runId}/monitor` 识别监控、`/inference-runs/{runId}/review` 识别结果。新建/重试先进入监控；结果尚未形成时访问 review 必须返回 monitor。历史列表按任务状态选择 monitor/review，从而保持一个连续流程，同时让输入、运行诊断与 Candidate 编辑各自只有一个主任务。
 
 ### 2. Candidate 审核以完整编辑能力为准
 
@@ -29,6 +29,7 @@
 - Schema 与字段排序使用显式“上移/下移”按钮；不要求拖拽。
 - 新增 Schema/field 必须是 `source: USER`、`inferred: false`、无 confidence/evidence；root identity 不可改变。
 - AI item 编辑保留原始 provenance，并自动进入 `RESOLVED_BY_EDIT`；AI item 删除继续使用 `REMOVED` resolution。
+- Candidate save 边界兼容旧页面或旧客户端：只要原始 AI item 的语义值已改变且未删除，就把提交 resolution 归一为 `RESOLVED_BY_EDIT` 后再执行来源、provenance、单项 autosave 与 validator 门控；不能因兼容而接受伪造证据或批量确认。
 - 约束按当前最终类型显示合法键，并保留 Candidate 合同的字符串 literal 表示；`enum` 使用 JSON array literal。服务端 validator/materializer 仍是最终权威。
 - Evidence 面板必须可遍历当前项关联的全部图片；每张图只绘制属于该 artifact 的 bbox。JSON evidence 独立列出 sample 与 pointer。
 

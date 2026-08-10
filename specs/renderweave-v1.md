@@ -410,6 +410,15 @@ NORMALIZE
 
 ### 8.4 Candidate 与 Evidence
 
+Web 将智能识别拆成四个可深链版面，并共享同一四步流程导航：
+
+- `/inference`：历史识别任务，分页展示 durable run，并按状态进入监控或结果；
+- `/inference/new`：新增识别输入，只负责模式、文件、Profile、外发确认与费用边界；
+- `/inference-runs/{runId}/monitor`：识别监控，只读展示状态、阶段、attempt、Token、费用与有限诊断；
+- `/inference-runs/{runId}/review`：识别结果，Candidate 生成后开放，承担证据展示、逐项校对与原子创建。
+
+新建或重试一律先进入监控版面；尚未生成 Candidate 时直接访问结果 URL 必须返回监控版面，不能把运行状态、输入表单和 Candidate 编辑器重新混在同一页面。
+
 - 一个 run 恰好一个 root CandidateSchema，零到多个从 root 可达的 child；不允许孤立新 Schema 或环。
 - Candidate 是独立宽松模型，可表达 unresolved type/ref/conflict；正式 DSL 绝不放宽。
 - 每个 candidate schema/field 有 run-local opaque ID，支持 key 改名后 evidence、confidence 和状态仍能关联。
@@ -422,7 +431,7 @@ NORMALIZE
 
 低置信 AI item 必须逐项结束为 `CONFIRMED`、`RESOLVED_BY_EDIT` 或 `REMOVED`，不提供 confirm-all。
 
-审核允许新增/删除/重排 Schema/field，修改 key、metadata、type、constraints/ref。用户新增项为 `source: USER`，无伪造 evidence/confidence；编辑 AI 项保留原 evidence 并进入 `RESOLVED_BY_EDIT`。删除仍被 bundle 引用的 child 形成 blocker。
+审核允许新增/删除/重排 Schema/field，修改 key、metadata、type、constraints/ref。用户新增项为 `source: USER`，无伪造 evidence/confidence；编辑 AI 项保留原 evidence 并进入 `RESOLVED_BY_EDIT`。删除仍被 bundle 引用的 child 形成 blocker。Candidate save 边界必须把“原始 AI item 语义已变化且未删除”的旧客户端状态确定性归一为 `RESOLVED_BY_EDIT`；这不放宽 provenance/source 不可变规则，也不放宽每次 autosave 最多改变一个 AI resolution 的规则。
 
 Candidate 保存 original immutable、current autosave、apply 时 final；不保留每次编辑 revision。autosave 使用 `expectedCandidateRevision`。
 
