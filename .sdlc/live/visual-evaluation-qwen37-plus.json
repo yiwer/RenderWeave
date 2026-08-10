@@ -1,14 +1,14 @@
 {
   "authorizationVersion": "renderweave-visual-evaluation-authorization/1.0",
-  "authorizationId": "visual-n7-region-owner-v17-qwen37-plus-transit-20260811",
-  "status": "CLOSED",
+  "authorizationId": "visual-n7-region-diagnostics-v18-qwen37-plus-transit-20260811",
+  "status": "PROPOSED",
   "phase": "CANARY",
   "inputClassification": "REPOSITORY_SYNTHETIC_ONLY",
   "corpusVersion": "renderweave-visual-stage-corpus/1.0",
   "corpusSourceSha256": "bf0db7bf0ac5c4e2b357cdd96c49ff70a7b30a5bc59f322a915020dc29fc605e",
-  "evaluationIdentity": "renderweave-visual-evaluation-tree-sha256/1:09e74346fe648240d4abfdc995c5515509470d4c604e70116dc9948efabb8bb6",
-  "profileId": "dashscope-qwen37-plus-product-v17-generic",
-  "profileSnapshotSha256": "0f4a13046eff26166dd91b415d789279946632428379dd5a8c0b67388280c385",
+  "evaluationIdentity": "renderweave-visual-evaluation-tree-sha256/1:a7a82fd79d7dbd3b22b0dfb2d05a3f745dca4b442c59d4697eb0efd9fd6a9059",
+  "profileId": "dashscope-qwen37-plus-product-v18-generic",
+  "profileSnapshotSha256": "d386967dcad443e7c514d85914b30c0874ed264b4df62917730eac5494349416",
   "model": "qwen3.7-plus",
   "caseIds": [
     "transit-board-v3"
@@ -18,7 +18,7 @@
   "maximumCostMicrosCny": 600000,
   "maximumCasesPerBatch": 1,
   "approvedBy": "yiwer",
-  "approvedAt": "2026-08-10T21:06:15Z",
-  "expiresAt": "2026-08-11T09:06:15Z",
-  "approvalScope": "Goal J1 CANARY: user explicitly allowed qwen3.7-plus and requested continued Goal progression; one repository-synthetic transit-board-v3 case through immutable product-v17-generic pipeline 4.4 with bounded HIERARCHY-to-OBSERVE rewind only when an exact relationship region lacks an observed GROUP owner; at most 5 attempts, 60000 exposed tokens, CNY 0.60 and one case per batch within the 1000000-token Plus Goal slot; payload-free evidence, no Max call and immediate CLOSED after this smoke"
+  "approvedAt": "2026-08-10T21:33:26Z",
+  "expiresAt": "2026-08-11T09:33:26Z",
+  "approvalScope": "Goal J1 CANARY: user explicitly allowed qwen3.7-plus and requested continued Goal progression; one repository-synthetic transit-board-v3 case through immutable product-v18-generic pipeline 4.5 with fixed payload-free hierarchy region diagnostics and bounded stage-local HIERARCHY repair, without deterministic GROUP synthesis or structure guessing; at most 5 attempts, 60000 exposed tokens, CNY 0.60 and one case per batch within the 1000000-token Plus Goal slot; payload-free evidence, no Max call and immediate CLOSED after this smoke"
 }
