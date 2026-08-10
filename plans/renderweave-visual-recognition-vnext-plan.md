@@ -7,7 +7,7 @@
 - Spec delta：`specs/changes/20260810-visual-recognition-vnext.md`
 - ADR：ADR-0022、ADR-0023
 - 用户 J1：yiwer，2026-08-10；三模型各 500,000 total tokens，精确约束见 spec delta
-- 当前节点：N0–N1 `automated_verified`；N2 next；所有 live ledger 均未 OPEN，Provider attempts=0
+- 当前节点：N0–N1 `automated_verified`；N2 `live_verified_mixed_a1_a2`；N3 next；全部 live ledger `CLOSED`
 
 ## 四维执行配置
 
@@ -65,15 +65,18 @@ ledger 描述成外部强制门。
 
 ### N2：旧 v4 基线
 
-- 状态：next；尚无 OPEN ledger，Provider attempts=0。
+- 状态：`live_verified_mixed_a1_a2`；checkpoint：`plans/logs/P6-T6-5-N2.md`；三模型全部 ledger `CLOSED`。
 - AC：AC-VR-002、008、010。
 - 依赖：N1；exact clean revision、Profile/corpus/evaluator identity；三份 PROPOSED ledger。
 - 执行：三个模型使用同一 12-case sentinel（含 4 HOLDOUT），每批≤5；总用量计入 Goal 500k/model。
 - 局部验证：先 OPEN 负探针与一 case canary，再逐批；每模型完成即 CLOSED；independent verifier 重建。
-- 完成信号：得到 element→hierarchy→binding→Candidate 各阶段真实 baseline，不把通路成功当质量 PASS。
+- 完成信号：已得到 element→hierarchy→binding→Candidate 各阶段真实 baseline；三模型 final pass 均为
+  0/12，全部保持 `EXPERIMENTAL`。Max/Flash live evidence 为 A2；Plus continuation 为 A2、初始末态为 A1，
+  聚合证据不夸大为完整 A2。
 
 ### N3：确定性 Candidate Materializer 与 capability matrix
 
+- 状态：next；N2 已 CLOSED，节点内零外部调用。
 - AC：AC-VR-003、008。
 - 依赖：N2 CLOSED。
 - 实现：pipeline 4、local materializer、保守 assessment、STRUCTURE zero-call invariant；三个 vNext Profile
@@ -121,11 +124,11 @@ ledger 描述成外部强制门。
 
 ## Live 预算与停止条件
 
-| 模型 | Goal total tokens | attempts | list-price CNY cap | 优先级 |
-|---|---:|---:|---:|---|
-| qwen3.8-max | 500,000 | 180 | 18.00 | 最佳质量候选，优先 final full corpus |
-| qwen3.7-plus | 500,000 | 180 | 4.00 | 质量/成本主候选 |
-| qwen3.7-flash | 500,000 | 180 | 0.40 | 低成本候选 |
+| 模型 | Goal cap | N2 consumed | 剩余 tokens | attempts | list-price CNY cap | N2 cost |
+|---|---:|---:|---:|---:|---:|---:|
+| qwen3.8-max | 500,000 | 304,043 | 195,957 | 54 / 180 | 18.00 | 6.406980 |
+| qwen3.7-plus | 500,000 | 317,619 | 182,381 | 64 / 180 | 4.00 | 1.229322 |
+| qwen3.7-flash | 500,000 | 291,784 | 208,216 | 56 / 180 | 0.40 | 0.106318 |
 
 停止条件：任一 token/attempt/CNY cap、168h ledger expiry、Goal 完成、Provider refusal/Retry-After、identity
 drift、journal/guard 不一致、payload 边界失败或同一无新假设失败再次出现。停止只关闭后续调用；已结算费用

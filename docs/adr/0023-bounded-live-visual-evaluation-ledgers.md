@@ -65,3 +65,23 @@ element → hierarchy → binding → Candidate 的阶段质量。复用其安�
   但仍是同机本地工具，不是外部不可绕过的 A3。用户本轮授权为 J1。
 - 回退：代码可 revert 当前节点；ledger 只能前进到 CLOSED，已发生调用、tokens 和费用永不删除或回退；
   Goal budget guard/state 任一缺失或不一致时永久 fail-closed，不能以新目录“恢复额度”。
+
+## N2 运行结论与身份版本债务
+
+2026-08-10 的 product-v4 baseline 按同一 12-case sentinel 执行完毕，三个模型的初始与 continuation
+ledger 均已进入 `CLOSED`。continuation 使用新的 authorization，而不是重新打开既有 CLOSED ledger；已发生
+的 attempt、Token 和费用仍由同一 Goal budget 累计。运行暴露的 evaluator 空绑定 NPE 与调用前预算终止
+checkpoint 兼容问题，均先关闭当时 ledger，再以零 Provider 回归和新 authorization 继续。
+
+- `qwen3.8-max` 的精确别名通过了单 case canary，Provider 返回的 model 与请求值完全一致，运行中没有
+  静默替换成 preview 或其他别名。由于供应商公开目录当时没有提供同等明确的长期兼容承诺，该能力仍只
+  视为本次运行事实，Profile 保持 `EXPERIMENTAL`。
+- Max 与 Flash 的 live journal 均通过独立 Python 重算；Plus continuation 通过独立重算，但 Plus 初始
+  末态只保留 A1。原因是 identity `/1` 对工作区文件字节做摘要，在 Windows `autocrlf` 的另一 checkout
+  中无法重建同一摘要；不能用降低校验强度换取“通过”。因此 Plus 聚合结果是混合 A1/A2，不能宣称完整 A2。
+- identity `/1` 对本次 exact clean checkout 仍是 fail-closed 且可定位的；历史 evidence 不重写。下一次
+  live phase 必须引入新的 Git-blob canonical identity `/2`，按 Git tracked blob 字节而不是 checkout
+  换行表示计算，并为 `/1` 保留只读兼容，不得就地改变旧算法。
+- 三模型最终 Candidate pass 均为 `0/12`，没有任何 Profile 晋级。Max 的 hierarchy 更强但 binding 与
+  生成式 STRUCTURE 丢失大量语义；Plus/Flash 更早受 hierarchy/contract 稳定性限制。该证据支持下一节点
+  将 validated visual plan 通过确定性 Java materializer 编译为 Candidate，而不是继续让模型重写拓扑。
