@@ -39,12 +39,16 @@ PROFILE_FIELDS = (
     "profileVersion", "profileId", "provider", "model", "networkAllowed", "providerProtocol",
     "providerEndpoint", "apiKeyEnvironmentVariable", "pipelineVersion", "candidateContractVersion",
     "promptVersion", "elementPromptVersion", "hierarchyPromptVersion", "bindingPromptVersion",
+    "visualHintPackVersion", "documentVisionCapabilityId", "documentVisionPromptVersion",
     "responseFormat", "thinkingEnabled", "toolsAllowed", "remoteMediaAllowed", "inputClassification",
     "supportedModes", "lowConfidenceThresholdBps", "maximumRepairRounds", "maximumTotalCalls",
     "stageTimeoutSeconds", "maximumOutputTokens", "maximumOutputBytes",
     "maximumEstimatedCostMicrosCny", "inputMicrosCnyPerMillionTokens",
     "outputMicrosCnyPerMillionTokens", "pricingEffectiveDate", "certification",
 )
+OPTIONAL_PROFILE_FIELDS = {
+    "visualHintPackVersion", "documentVisionCapabilityId", "documentVisionPromptVersion",
+}
 FORBIDDEN = (
     '"providerRequestId"', '"candidateJson"', '"prompt"', '"missingEntities"',
     '"unexpectedEntities"', '"missingFields"', '"unexpectedFields"',
@@ -258,12 +262,25 @@ def validate_profile(path: Path, authorization: dict[str, Any]) -> None:
     # The immutable profile legitimately names the API-key environment variable; it never
     # contains the key value and is repository identity input rather than runtime evidence.
     profile, _ = read_json(path, payload_free=False)
-    require_keys(profile, PROFILE_FIELDS, "profile")
+    pipeline = profile.get("pipelineVersion")
+    if pipeline == "renderweave-inference-pipeline/4.2":
+        required_optional = OPTIONAL_PROFILE_FIELDS
+    elif pipeline == "renderweave-inference-pipeline/4.1":
+        required_optional = {"visualHintPackVersion"}
+    else:
+        required_optional = set()
+    expected_fields = tuple(
+        field for field in PROFILE_FIELDS
+        if field not in OPTIONAL_PROFILE_FIELDS or field in required_optional
+    )
+    require_keys(profile, expected_fields, "profile")
+    for field in required_optional:
+        require_string(profile[field], f"profile.{field}")
     if profile.get("profileId") != authorization["profileId"] \
             or profile.get("model") != authorization["model"]:
         fail("profile identity differs from authorization")
     # InferenceProfile is a Java record; its immutable snapshot follows record-component order.
-    canonical_profile = {field: profile[field] for field in PROFILE_FIELDS}
+    canonical_profile = {field: profile[field] for field in expected_fields}
     canonical = json.dumps(canonical_profile, ensure_ascii=False, separators=(",", ":"))
     profile_hash = hashlib.sha256(canonical.encode("utf-8")).hexdigest()
     if profile_hash != authorization["profileSnapshotSha256"]:

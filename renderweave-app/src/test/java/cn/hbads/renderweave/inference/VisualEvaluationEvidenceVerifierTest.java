@@ -33,6 +33,26 @@ class VisualEvaluationEvidenceVerifierTest {
             new InferenceProfileRegistry().require(PROFILE_ID);
 
     @Test
+    void independentVerifierRecognizesExactGroundingAndHybridProfileSnapshots() throws Exception {
+        var registry = new InferenceProfileRegistry();
+        for (var profileId : List.of(
+                "dashscope-qwen37-plus-product-v4",
+                "dashscope-qwen37-plus-product-v6-generic",
+                "dashscope-qwen37-plus-product-v7-hybrid-generic"
+        )) {
+            var resource = registry.require(profileId);
+            var profilePath = repositoryRoot().resolve(
+                    "renderweave-inference/src/main/resources/inference-profiles/"
+                            + profileId + ".json"
+            );
+            var process = validateProfile(
+                    profilePath, profileId, resource.profile().model(), sha256(resource.snapshotJson())
+            );
+            assertEquals(0, process.exitCode(), process.stderr() + process.stdout());
+        }
+    }
+
+    @Test
     void independentVerifierRecomputesEvidenceAndRejectsTampering(@TempDir Path directory)
             throws Exception {
         var json = JsonMapper.builder().build();
@@ -166,6 +186,31 @@ class VisualEvaluationEvidenceVerifierTest {
         }
         if (requireComplete) command.add("--require-complete");
         var builder = new ProcessBuilder(command).directory(root.toFile()).redirectErrorStream(false);
+        List.of("DASHSCOPE_API_KEY", "DASHSCOPE_API_KEY_FILE", "RENDERWEAVE_RUN_LIVE_CANARY",
+                "RENDERWEAVE_RUN_LIVE_CERTIFICATION", "RENDERWEAVE_RUN_VISUAL_EVALUATION")
+                .forEach(key -> builder.environment().remove(key));
+        builder.environment().put("RENDERWEAVE_LIVE_AI_ENABLED", "false");
+        builder.environment().put("RENDERWEAVE_LIVE_UPLOAD_ENABLED", "false");
+        var process = builder.start();
+        var stdout = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+        var stderr = new String(process.getErrorStream().readAllBytes(), StandardCharsets.UTF_8);
+        return new VerificationProcess(process.waitFor(), stdout, stderr);
+    }
+
+    private VerificationProcess validateProfile(
+            Path profilePath,
+            String profileId,
+            String model,
+            String snapshotSha256
+    ) throws Exception {
+        var script = "import sys; from pathlib import Path; "
+                + "from tools.verify_visual_eval_evidence import validate_profile; "
+                + "validate_profile(Path(sys.argv[1]), {"
+                + "'profileId': sys.argv[2], 'model': sys.argv[3], "
+                + "'profileSnapshotSha256': sys.argv[4]})";
+        var builder = new ProcessBuilder(
+                "python", "-c", script, profilePath.toString(), profileId, model, snapshotSha256
+        ).directory(repositoryRoot().toFile()).redirectErrorStream(false);
         List.of("DASHSCOPE_API_KEY", "DASHSCOPE_API_KEY_FILE", "RENDERWEAVE_RUN_LIVE_CANARY",
                 "RENDERWEAVE_RUN_LIVE_CERTIFICATION", "RENDERWEAVE_RUN_VISUAL_EVALUATION")
                 .forEach(key -> builder.environment().remove(key));
