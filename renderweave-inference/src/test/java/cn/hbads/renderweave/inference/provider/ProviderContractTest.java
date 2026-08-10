@@ -139,6 +139,33 @@ class ProviderContractTest {
     }
 
     @Test
+    void knownMultiScaleViewDimensionsUseTheExactConservativePatchFormula() {
+        var profile = profiles.require("dashscope-qwen38-max-product-v6-generic").profile();
+        var known = new ProviderImage("9".repeat(64), "image/png", new byte[] {1}, 1_400, 1_400);
+        var unknown = new ProviderImage("8".repeat(64), "image/png", new byte[] {1});
+        var knownRequest = new ProviderInferenceRequest(
+                UUID.randomUUID(), 0, InferenceStage.OBSERVE, profile,
+                prompts.requireVisualStage(
+                        profile.elementPromptVersion(), profile.visualHintPackVersion()
+                ).text(), "{\"taskVersion\":\"renderweave-live-task/4.0\"}",
+                java.util.Collections.nCopies(10, known)
+        );
+        var unknownRequest = new ProviderInferenceRequest(
+                UUID.randomUUID(), 0, InferenceStage.OBSERVE, profile,
+                knownRequest.systemPrompt(), knownRequest.taskJson(),
+                java.util.Collections.nCopies(10, unknown)
+        );
+
+        assertTrue(ProviderCostEstimator.maximumRequestCostMicrosCny(knownRequest)
+                <= profile.maximumEstimatedCostMicrosCny());
+        assertTrue(ProviderCostEstimator.maximumRequestCostMicrosCny(unknownRequest)
+                > ProviderCostEstimator.maximumRequestCostMicrosCny(knownRequest));
+        assertThrows(IllegalArgumentException.class, () -> new ProviderImage(
+                "7".repeat(64), "image/png", new byte[] {1}, 4_097, 1
+        ));
+    }
+
+    @Test
     void everyProductProfileUsesTheTwoYuanCallCeilingAndFitsOneMaximumImage() {
         var image = new ProviderImage("e".repeat(64), "image/png", new byte[] {1});
         for (var resource : profiles.productLiveProfiles()) {

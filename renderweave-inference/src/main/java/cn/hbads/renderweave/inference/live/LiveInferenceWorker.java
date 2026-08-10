@@ -58,6 +58,7 @@ public final class LiveInferenceWorker {
     private static final String GROUNDED_PIPELINE = "renderweave-inference-pipeline/2.0";
     private static final String SERIAL_VISUAL_PIPELINE = "renderweave-inference-pipeline/3.0";
     private static final String LOCAL_MATERIALIZER_PIPELINE = "renderweave-inference-pipeline/4.0";
+    private static final String GROUNDED_VISUAL_PIPELINE = "renderweave-inference-pipeline/4.1";
     private static final int MAX_STAGE_ADVANCES = 24;
 
     private final InferenceRunStore runStore;
@@ -81,6 +82,8 @@ public final class LiveInferenceWorker {
     private final VisualAnalysisJsonCodec visualAnalysisCodec;
     private final VisualPlanCandidateValidator visualPlanValidator;
     private final VisualPlanCandidateMaterializer visualPlanMaterializer;
+    private final MultiScaleVisualViewPlanner visualViewPlanner;
+    private final VisualGroundingJsonCodec visualGroundingCodec;
 
     public LiveInferenceWorker(
             InferenceRunStore runStore,
@@ -140,6 +143,8 @@ public final class LiveInferenceWorker {
         this.visualAnalysisCodec = new VisualAnalysisJsonCodec();
         this.visualPlanValidator = new VisualPlanCandidateValidator();
         this.visualPlanMaterializer = new VisualPlanCandidateMaterializer();
+        this.visualViewPlanner = new MultiScaleVisualViewPlanner();
+        this.visualGroundingCodec = new VisualGroundingJsonCodec();
         if (leaseDuration.isZero() || leaseDuration.isNegative()
                 || leaseDuration.compareTo(Duration.ofMinutes(15)) > 0) {
             throw new IllegalArgumentException("leaseDuration must be positive and no longer than 15 minutes");
@@ -214,6 +219,10 @@ public final class LiveInferenceWorker {
                     || checkpoint.hierarchyPlan() == null
                     || checkpoint.bindingPlan() == null) {
                 throw new IllegalStateException("Local STRUCTURE requires the complete validated visual plan");
+            }
+            if (groundedVisual(profile)
+                    && (checkpoint.groundingPlan() == null || checkpoint.entityRegionPlan() == null)) {
+                throw new IllegalStateException("Pipeline 4.1 requires complete spatial grounding plans");
             }
             final CandidateBundle candidate;
             try {
@@ -449,14 +458,16 @@ public final class LiveInferenceWorker {
             case HIERARCHY -> {
                 if (!serialVisual(current, profile)
                         || checkpoint.completedStage() != InferenceStage.OBSERVE
-                        || checkpoint.elementInventory() == null) {
+                        || checkpoint.elementInventory() == null
+                        || groundedVisual(profile) && checkpoint.groundingPlan() == null) {
                     throw new IllegalStateException("HIERARCHY requires a validated element inventory");
                 }
             }
             case ELEMENT_BINDING -> {
                 if (!serialVisual(current, profile)
                         || checkpoint.completedStage() != InferenceStage.HIERARCHY
-                        || checkpoint.hierarchyPlan() == null) {
+                        || checkpoint.hierarchyPlan() == null
+                        || groundedVisual(profile) && checkpoint.entityRegionPlan() == null) {
                     throw new IllegalStateException("ELEMENT_BINDING requires a validated hierarchy");
                 }
             }
@@ -489,6 +500,12 @@ public final class LiveInferenceWorker {
         final String outcomeCode;
         final Map<String, Integer> problemCodeCounts;
         try {
+            if (groundedVisual(profile)) {
+                return acceptGroundedVisualAnalysis(
+                        current, profile, checkpoint, attemptOrdinal, response,
+                        estimatedCost, durationMillis
+                );
+            }
             switch (current.stage()) {
                 case OBSERVE -> {
                     var parsedInventory = visualAnalysisCodec.parseElements(
@@ -554,6 +571,86 @@ public final class LiveInferenceWorker {
                 attempt(
                         current, attemptOrdinal, InferenceAttemptStatus.SUCCEEDED,
                         outcomeCode, response, estimatedCost, durationMillis, problemCodeCounts, now
+                ),
+                now
+        );
+    }
+
+    private InferenceRunSnapshot acceptGroundedVisualAnalysis(
+            InferenceRunSnapshot current,
+            InferenceProfile profile,
+            LiveWorkflowCheckpoint checkpoint,
+            int attemptOrdinal,
+            ProviderInferenceResponse response,
+            long estimatedCost,
+            long durationMillis
+    ) {
+        final LiveWorkflowCheckpoint nextCheckpoint;
+        final InferenceStage nextStage;
+        final String outcomeCode;
+        try {
+            switch (current.stage()) {
+                case OBSERVE -> {
+                    var grounded = visualGroundingCodec.parseElements(
+                            response.candidateJson(), visualViewPlan(current),
+                            imageArtifactIds(current)
+                    );
+                    nextCheckpoint = checkpoint.elementsGrounded(
+                            grounded.inventory(), grounded.grounding(), attemptOrdinal + 1
+                    );
+                    nextStage = InferenceStage.HIERARCHY;
+                    outcomeCode = "LIVE_VISUAL_GROUNDING_ACCEPTED";
+                }
+                case HIERARCHY -> {
+                    var grounded = visualGroundingCodec.parseHierarchy(
+                            response.candidateJson(),
+                            Objects.requireNonNull(checkpoint.elementInventory(), "elementInventory"),
+                            Objects.requireNonNull(checkpoint.groundingPlan(), "groundingPlan")
+                    );
+                    nextCheckpoint = checkpoint.hierarchyGrounded(
+                            grounded.hierarchy(), grounded.entityRegions(), attemptOrdinal + 1
+                    );
+                    nextStage = InferenceStage.ELEMENT_BINDING;
+                    outcomeCode = "LIVE_VISUAL_HIERARCHY_V2_ACCEPTED";
+                }
+                case ELEMENT_BINDING -> {
+                    var bindings = visualGroundingCodec.parseBindings(
+                            response.candidateJson(),
+                            Objects.requireNonNull(checkpoint.elementInventory(), "elementInventory"),
+                            Objects.requireNonNull(checkpoint.hierarchyPlan(), "hierarchyPlan"),
+                            Objects.requireNonNull(checkpoint.groundingPlan(), "groundingPlan"),
+                            Objects.requireNonNull(checkpoint.entityRegionPlan(), "entityRegionPlan")
+                    );
+                    nextCheckpoint = checkpoint.elementsBound(bindings, attemptOrdinal + 1);
+                    nextStage = InferenceStage.STRUCTURE;
+                    outcomeCode = "LIVE_VISUAL_BINDINGS_V2_ACCEPTED";
+                }
+                default -> throw new IllegalStateException("Not a grounded visual analysis stage");
+            }
+        } catch (InvalidVisualAnalysisException invalid) {
+            var now = clock.instant();
+            var counts = InferenceAttemptProblemTaxonomy.count(List.of(invalid.diagnosticCode()));
+            var recorded = workflowStore.recordAttempt(
+                    current.runId(), token(current),
+                    attempt(
+                            current, attemptOrdinal, InferenceAttemptStatus.REJECTED,
+                            "LIVE_VISUAL_ANALYSIS_REJECTED", response, estimatedCost,
+                            durationMillis, counts, now
+                    ),
+                    now
+            );
+            if (attemptOrdinal + 1 < profile.maximumTotalCalls()) return recorded;
+            return runStore.fail(
+                    current.runId(), token(recorded), invalid.diagnosticCode(), clock.instant()
+            );
+        }
+        var now = clock.instant();
+        return workflowStore.checkpointAttempt(
+                current.runId(), token(current), current.stage(), nextStage,
+                workflowCodec.write(nextCheckpoint),
+                attempt(
+                        current, attemptOrdinal, InferenceAttemptStatus.SUCCEEDED,
+                        outcomeCode, response, estimatedCost, durationMillis, Map.of(), now
                 ),
                 now
         );
@@ -654,6 +751,25 @@ public final class LiveInferenceWorker {
                     .reduce((left, right) -> right)
                     .map(attempt -> attempt.problemCodeCounts().keySet().stream().sorted().toList())
                     .orElse(List.of());
+            if (groundedVisual(profile)) {
+                var views = visualViewPlan(current);
+                return new ProviderInferenceRequest(
+                        current.runId(), attemptOrdinal, current.stage(), profile,
+                        prompts.requireVisualStage(
+                                promptVersion(profile, current.stage()),
+                                Objects.requireNonNull(
+                                        profile.visualHintPackVersion(), "visualHintPackVersion"
+                                )
+                        ).text(),
+                        taskCodec.writeV4(
+                                current, current.stage(), views, profile.visualHintPackVersion(),
+                                checkpoint.elementInventory(), checkpoint.groundingPlan(),
+                                checkpoint.hierarchyPlan(), checkpoint.entityRegionPlan(),
+                                checkpoint.bindingPlan(), problemCodes, retryProblemCodes
+                        ),
+                        views.providerImages()
+                );
+            }
             return new ProviderInferenceRequest(
                     current.runId(), attemptOrdinal, current.stage(), profile,
                     prompts.require(promptVersion(profile, current.stage())).text(),
@@ -697,17 +813,24 @@ public final class LiveInferenceWorker {
     private static boolean grounded(InferenceProfile profile) {
         return GROUNDED_PIPELINE.equals(profile.pipelineVersion())
                 || SERIAL_VISUAL_PIPELINE.equals(profile.pipelineVersion())
-                || LOCAL_MATERIALIZER_PIPELINE.equals(profile.pipelineVersion());
+                || LOCAL_MATERIALIZER_PIPELINE.equals(profile.pipelineVersion())
+                || GROUNDED_VISUAL_PIPELINE.equals(profile.pipelineVersion());
     }
 
     private static boolean serialVisual(InferenceRunSnapshot current, InferenceProfile profile) {
         return (SERIAL_VISUAL_PIPELINE.equals(profile.pipelineVersion())
-                || LOCAL_MATERIALIZER_PIPELINE.equals(profile.pipelineVersion()))
+                || LOCAL_MATERIALIZER_PIPELINE.equals(profile.pipelineVersion())
+                || GROUNDED_VISUAL_PIPELINE.equals(profile.pipelineVersion()))
                 && current.mode() == InferenceMode.IMAGE_ONLY;
     }
 
     private static boolean localMaterializer(InferenceProfile profile) {
-        return LOCAL_MATERIALIZER_PIPELINE.equals(profile.pipelineVersion());
+        return LOCAL_MATERIALIZER_PIPELINE.equals(profile.pipelineVersion())
+                || GROUNDED_VISUAL_PIPELINE.equals(profile.pipelineVersion());
+    }
+
+    private static boolean groundedVisual(InferenceProfile profile) {
+        return GROUNDED_VISUAL_PIPELINE.equals(profile.pipelineVersion());
     }
 
     private static String promptVersion(InferenceProfile profile, InferenceStage stage) {
@@ -764,9 +887,23 @@ public final class LiveInferenceWorker {
                 .sorted(Comparator.comparingInt(input -> input.ordinal()))
                 .map(input -> new ProviderImage(
                         input.artifact().artifactId(), input.artifact().mediaType(),
-                        blobStore.read(input.artifact().locator())
+                        blobStore.read(input.artifact().locator()),
+                        input.artifact().width(), input.artifact().height()
                 ))
                 .toList();
+    }
+
+    private VisualViewPlan visualViewPlan(InferenceRunSnapshot current) {
+        var sources = current.inputs().stream()
+                .filter(input -> input.kind() == NormalizedArtifact.Kind.IMAGE)
+                .sorted(Comparator.comparingInt(input -> input.ordinal()))
+                .map(input -> new VisualSourceImage(
+                        input.artifact().artifactId(), blobStore.read(input.artifact().locator()),
+                        Objects.requireNonNull(input.artifact().width(), "image width"),
+                        Objects.requireNonNull(input.artifact().height(), "image height")
+                ))
+                .toList();
+        return visualViewPlanner.plan(sources, List.of());
     }
 
     private static List<String> imageArtifactIds(InferenceRunSnapshot current) {

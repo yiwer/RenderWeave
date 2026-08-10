@@ -39,7 +39,13 @@ public final class InferenceProfileRegistry {
             "inference-profiles/dashscope-qwen37-max-20260608-product-v4.json",
             "inference-profiles/dashscope-qwen37-flash-product-v5.json",
             "inference-profiles/dashscope-qwen37-plus-product-v5.json",
-            "inference-profiles/dashscope-qwen38-max-product-v5.json"
+            "inference-profiles/dashscope-qwen38-max-product-v5.json",
+            "inference-profiles/dashscope-qwen37-flash-product-v6-generic.json",
+            "inference-profiles/dashscope-qwen37-plus-product-v6-generic.json",
+            "inference-profiles/dashscope-qwen38-max-product-v6-generic.json",
+            "inference-profiles/dashscope-qwen37-flash-product-v6-transit-board.json",
+            "inference-profiles/dashscope-qwen37-plus-product-v6-transit-board.json",
+            "inference-profiles/dashscope-qwen38-max-product-v6-transit-board.json"
     );
     private static final java.util.List<String> PRODUCT_LIVE_PROFILE_IDS = java.util.List.of(
             "dashscope-qwen37-flash-product-v4",
@@ -51,6 +57,14 @@ public final class InferenceProfileRegistry {
             "dashscope-qwen37-flash-product-v5",
             "dashscope-qwen37-plus-product-v5",
             "dashscope-qwen38-max-product-v5"
+    );
+    private static final java.util.List<String> VISUAL_GROUNDING_PROFILE_IDS = java.util.List.of(
+            "dashscope-qwen37-flash-product-v6-generic",
+            "dashscope-qwen37-plus-product-v6-generic",
+            "dashscope-qwen38-max-product-v6-generic",
+            "dashscope-qwen37-flash-product-v6-transit-board",
+            "dashscope-qwen37-plus-product-v6-transit-board",
+            "dashscope-qwen38-max-product-v6-transit-board"
     );
     private static final ObjectMapper JSON = JsonMapper.builder(
                     JsonFactory.builder().enable(StreamReadFeature.STRICT_DUPLICATE_DETECTION).build())
@@ -77,7 +91,9 @@ public final class InferenceProfileRegistry {
         add(loaded, replay);
         LIVE_RESOURCES.stream().map(path -> load(classLoader, path)).forEach(resource -> add(loaded, resource));
         profiles = java.util.Collections.unmodifiableMap(loaded);
-        for (var profileId : VISUAL_NEXT_PROFILE_IDS) {
+        for (var profileId : java.util.stream.Stream.concat(
+                VISUAL_NEXT_PROFILE_IDS.stream(), VISUAL_GROUNDING_PROFILE_IDS.stream()
+        ).toList()) {
             var profile = require(profileId).profile();
             visualCapabilities.requireModel(profile.model()).capability().requireCompatible(profile);
         }
@@ -114,6 +130,20 @@ public final class InferenceProfileRegistry {
 
     public boolean isVisualNextProfile(String profileId) {
         return VISUAL_NEXT_PROFILE_IDS.contains(profileId);
+    }
+
+    /** Pipeline-4.1 profiles keep generic and explicit domain-hint identities separate. */
+    public java.util.List<VisualNextProfileResource> visualGroundingProfiles() {
+        return VISUAL_GROUNDING_PROFILE_IDS.stream().map(this::require).map(profile ->
+                new VisualNextProfileResource(
+                        profile,
+                        visualCapabilities.requireModel(profile.profile().model())
+                )
+        ).toList();
+    }
+
+    public boolean isVisualGroundingProfile(String profileId) {
+        return VISUAL_GROUNDING_PROFILE_IDS.contains(profileId);
     }
 
     /** Parses the immutable snapshot stored with a run instead of silently substituting the latest registry entry. */

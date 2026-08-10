@@ -1,6 +1,7 @@
 package cn.hbads.renderweave.inference.profile;
 
 import cn.hbads.renderweave.inference.input.InferenceMode;
+import com.fasterxml.jackson.annotation.JsonInclude;
 
 import java.util.List;
 import java.util.Objects;
@@ -20,6 +21,8 @@ public record InferenceProfile(
         String elementPromptVersion,
         String hierarchyPromptVersion,
         String bindingPromptVersion,
+        @JsonInclude(JsonInclude.Include.NON_NULL)
+        String visualHintPackVersion,
         String responseFormat,
         boolean thinkingEnabled,
         boolean toolsAllowed,
@@ -81,6 +84,7 @@ public record InferenceProfile(
                     profileId, provider, model, providerProtocol, providerEndpoint, apiKeyEnvironmentVariable,
                     pipelineVersion, promptVersion, responseFormat,
                     elementPromptVersion, hierarchyPromptVersion, bindingPromptVersion,
+                    visualHintPackVersion,
                     thinkingEnabled, toolsAllowed, remoteMediaAllowed,
                     inputClassification, maximumTotalCalls, stageTimeoutSeconds,
                     maximumEstimatedCostMicrosCny,
@@ -107,6 +111,7 @@ public record InferenceProfile(
             String elementPromptVersion,
             String hierarchyPromptVersion,
             String bindingPromptVersion,
+            String visualHintPackVersion,
             boolean thinkingEnabled,
             boolean toolsAllowed,
             boolean remoteMediaAllowed,
@@ -162,11 +167,24 @@ public record InferenceProfile(
                 && InferencePromptRegistry.VISUAL_HIERARCHY_V1.equals(hierarchyPromptVersion)
                 && InferencePromptRegistry.VISUAL_BINDINGS_V1.equals(bindingPromptVersion)
                 && profileId.endsWith("-product-v5");
+        var productPromptV6 = InferencePromptRegistry.SCHEMA_CANDIDATE_V5.equals(promptVersion)
+                && InferencePromptRegistry.VISUAL_ELEMENTS_V2.equals(elementPromptVersion)
+                && InferencePromptRegistry.VISUAL_HIERARCHY_V2.equals(hierarchyPromptVersion)
+                && InferencePromptRegistry.VISUAL_BINDINGS_V2.equals(bindingPromptVersion)
+                && ((InferencePromptRegistry.VISUAL_HINT_GENERIC_V1.equals(visualHintPackVersion)
+                && profileId.endsWith("-product-v6-generic"))
+                || (InferencePromptRegistry.VISUAL_HINT_TRANSIT_BOARD_V1.equals(visualHintPackVersion)
+                && profileId.endsWith("-product-v6-transit-board")));
         var serialVisualPipeline = "renderweave-inference-pipeline/3.0".equals(pipelineVersion)
-                || "renderweave-inference-pipeline/4.0".equals(pipelineVersion);
+                || "renderweave-inference-pipeline/4.0".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.1".equals(pipelineVersion);
         if (!serialVisualPipeline
                 && (elementPromptVersion != null || hierarchyPromptVersion != null || bindingPromptVersion != null)) {
-            throw new IllegalArgumentException("Serial visual prompts are exclusive to pipelines 3 and 4");
+            throw new IllegalArgumentException("Serial visual prompts are exclusive to visual pipelines 3 and 4");
+        }
+        if (!"renderweave-inference-pipeline/4.1".equals(pipelineVersion)
+                && visualHintPackVersion != null) {
+            throw new IllegalArgumentException("Visual hint packs are exclusive to pipeline 4.1");
         }
         var productPrompt = "USER_CONFIRMED".equals(inputClassification)
                 && (("renderweave-inference-pipeline/2.0".equals(pipelineVersion)
@@ -174,7 +192,9 @@ public record InferenceProfile(
                 || ("renderweave-inference-pipeline/3.0".equals(pipelineVersion)
                 && (productPromptV3 || productPromptV4))
                 || ("renderweave-inference-pipeline/4.0".equals(pipelineVersion)
-                && productPromptV5));
+                && productPromptV5)
+                || ("renderweave-inference-pipeline/4.1".equals(pipelineVersion)
+                && productPromptV6));
         if (!(legacySyntheticPrompt || productPrompt)
                 || !"JSON_OBJECT".equals(responseFormat)
                 || thinkingEnabled || toolsAllowed || remoteMediaAllowed) {
@@ -191,7 +211,8 @@ public record InferenceProfile(
         }
         if (productPromptV3 && stageTimeoutSeconds != 90
                 || productPromptV4 && stageTimeoutSeconds != 240
-                || productPromptV5 && stageTimeoutSeconds != 240) {
+                || productPromptV5 && stageTimeoutSeconds != 240
+                || productPromptV6 && stageTimeoutSeconds != 240) {
             throw new IllegalArgumentException("Product serial profile timeout must match its immutable version");
         }
         if (!pricingEffectiveDate.matches("\\d{4}-\\d{2}-\\d{2}")) {

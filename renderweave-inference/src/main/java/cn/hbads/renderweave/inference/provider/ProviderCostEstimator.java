@@ -12,11 +12,7 @@ public final class ProviderCostEstimator {
     private static final long TEXT_MESSAGE_OVERHEAD_TOKENS = 2_048L;
     private static final long VISUAL_PATCH_PIXELS = 32L * 32L;
     private static final long VISUAL_TOKEN_OVERHEAD = 2L;
-    /**
-     * DashScope documents visual tokens as height * width / (32 * 32) + 2. ProviderImage is
-     * reached only after ImageNormalizer, so reserving the normalized 4,096-square maximum for
-     * every image is deliberately conservative and closes cost before the irreversible call.
-     */
+    /** Unknown-size compatibility requests retain the historical 4,096-square conservative bound. */
     private static final long IMAGE_INPUT_TOKEN_UPPER_BOUND = Math.addExact(
             Math.ceilDiv(
                     Math.multiplyExact(
@@ -63,7 +59,13 @@ public final class ProviderCostEstimator {
         var promptBytes = request.systemPrompt().getBytes(StandardCharsets.UTF_8).length;
         var taskBytes = request.taskJson().getBytes(StandardCharsets.UTF_8).length;
         var textTokens = Math.addExact(TEXT_MESSAGE_OVERHEAD_TOKENS, Math.addExact(promptBytes, taskBytes));
-        var imageTokens = Math.multiplyExact((long) request.images().size(), IMAGE_INPUT_TOKEN_UPPER_BOUND);
+        var imageTokens = request.images().stream().mapToLong(image -> {
+            if (image.width() == null) return IMAGE_INPUT_TOKEN_UPPER_BOUND;
+            return Math.addExact(
+                    Math.ceilDiv(Math.multiplyExact((long) image.width(), image.height()), VISUAL_PATCH_PIXELS),
+                    VISUAL_TOKEN_OVERHEAD
+            );
+        }).reduce(0L, Math::addExact);
         var maximumInputTokens = Math.addExact(textTokens, imageTokens);
         return new ProviderUsage(maximumInputTokens, request.profile().maximumOutputTokens());
     }

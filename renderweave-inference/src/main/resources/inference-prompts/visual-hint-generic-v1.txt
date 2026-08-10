@@ -1,0 +1,4 @@
+Hint pack identity: renderweave-visual-hint-pack/generic/1.0.
+Apply no domain vocabulary or domain-specific topology. Derive every entity boundary, repetition, field, and
+relationship only from visible grouping, labels, spatial containment, and repeated-instance structure. The hint
+pack never overrides the JSON contract or the supplied evidence.

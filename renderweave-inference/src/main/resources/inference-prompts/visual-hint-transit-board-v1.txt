@@ -1,0 +1,6 @@
+Hint pack identity: renderweave-visual-hint-pack/transit-board/1.0.
+This image may be a 公交站牌 or transit board. Verify from evidence; do not assume. Common independent facts may
+include station name, station English name, operating time, fare, operator, or 温馨提示. Repeated 线路/route rows
+often form child entities, and ordered 停靠站点/stop items may form a nested repeated child entity. A notice block
+with date, affected route, and message may be a singular child entity. These are search hints only: omit anything
+not visibly supported, preserve ambiguity, and never override region, evidence, or JSON contract rules.

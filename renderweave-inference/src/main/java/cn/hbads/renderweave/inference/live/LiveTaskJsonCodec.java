@@ -91,6 +91,40 @@ final class LiveTaskJsonCodec {
         }
     }
 
+    String writeV4(
+            InferenceRunSnapshot run,
+            InferenceStage stage,
+            VisualViewPlan viewPlan,
+            String hintPackVersion,
+            VisualElementInventory elementInventory,
+            VisualGroundingPlan groundingPlan,
+            VisualHierarchyPlan hierarchyPlan,
+            VisualEntityRegionPlan entityRegionPlan,
+            VisualElementBindingPlan bindingPlan,
+            List<String> repairProblemCodes,
+            List<String> retryProblemCodes
+    ) {
+        try {
+            return JSON.writeValueAsString(new TaskV4(
+                    "renderweave-live-task/4.0",
+                    run.mode().name(),
+                    stage.name(),
+                    hintPackVersion,
+                    viewPlan.planVersion(),
+                    viewPlan.descriptors(),
+                    elementInventory,
+                    groundingPlan,
+                    hierarchyPlan,
+                    entityRegionPlan,
+                    bindingPlan,
+                    List.copyOf(repairProblemCodes),
+                    List.copyOf(retryProblemCodes)
+            ));
+        } catch (Exception exception) {
+            throw new IllegalStateException("Grounded visual task could not be encoded", exception);
+        }
+    }
+
     private static List<Artifact> artifacts(InferenceRunSnapshot run) {
         return run.inputs().stream()
                 .sorted(Comparator.comparing((cn.hbads.renderweave.inference.run.InferenceRunInput input) ->
@@ -128,6 +162,22 @@ final class LiveTaskJsonCodec {
             List<Artifact> artifactCatalog,
             VisualElementInventory elementInventory,
             VisualHierarchyPlan hierarchyPlan,
+            VisualElementBindingPlan bindingPlan,
+            List<String> repairProblemCodes,
+            List<String> retryProblemCodes
+    ) { }
+
+    private record TaskV4(
+            String taskVersion,
+            String mode,
+            String stage,
+            String hintPackVersion,
+            String viewPlanVersion,
+            List<VisualViewDescriptor> viewCatalog,
+            VisualElementInventory elementInventory,
+            VisualGroundingPlan groundingPlan,
+            VisualHierarchyPlan hierarchyPlan,
+            VisualEntityRegionPlan entityRegionPlan,
             VisualElementBindingPlan bindingPlan,
             List<String> repairProblemCodes,
             List<String> retryProblemCodes

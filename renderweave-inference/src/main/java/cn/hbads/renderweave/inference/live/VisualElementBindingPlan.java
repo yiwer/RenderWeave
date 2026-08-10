@@ -9,9 +9,12 @@ record VisualElementBindingPlan(
         List<VisualElementBinding> bindings
 ) {
     static final String VERSION = "renderweave-visual-bindings/1.0";
+    static final String VERSION_V2 = "renderweave-visual-bindings/2.0";
 
     VisualElementBindingPlan {
-        if (!VERSION.equals(contractVersion)) throw new IllegalArgumentException("Unsupported visual binding contract");
+        if (!VERSION.equals(contractVersion) && !VERSION_V2.equals(contractVersion)) {
+            throw new IllegalArgumentException("Unsupported visual binding contract");
+        }
         bindings = List.copyOf(Objects.requireNonNull(bindings, "bindings"));
         if (bindings.isEmpty() || bindings.size() > VisualAnalysisValidation.MAX_ELEMENTS) {
             throw new IllegalArgumentException("Visual binding plan must contain 1..128 bindings");

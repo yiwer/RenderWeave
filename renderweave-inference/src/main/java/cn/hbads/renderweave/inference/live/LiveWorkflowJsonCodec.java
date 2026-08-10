@@ -52,11 +52,20 @@ final class LiveWorkflowJsonCodec {
             if (LiveWorkflowCheckpoint.VERSION.equals(version)) {
                 return JSON.treeToValue(tree, LiveWorkflowCheckpoint.class);
             }
+            if (LegacyCheckpointV2.VERSION.equals(version)) {
+                var legacy = JSON.treeToValue(tree, LegacyCheckpointV2.class);
+                return new LiveWorkflowCheckpoint(
+                        LiveWorkflowCheckpoint.VERSION, legacy.completedStage(), legacy.providerCalls(),
+                        legacy.repairRounds(), legacy.elementInventory(), legacy.hierarchyPlan(),
+                        legacy.bindingPlan(), null, null,
+                        legacy.outputValid(), legacy.candidate(), legacy.validationProblems()
+                );
+            }
             if (LegacyCheckpoint.VERSION.equals(version)) {
                 var legacy = JSON.treeToValue(tree, LegacyCheckpoint.class);
                 return new LiveWorkflowCheckpoint(
                         LiveWorkflowCheckpoint.VERSION, legacy.completedStage(), legacy.structureCalls(),
-                        legacy.repairRounds(), null, null, null,
+                        legacy.repairRounds(), null, null, null, null, null,
                         legacy.outputValid(), legacy.candidate(), legacy.validationProblems()
                 );
             }
@@ -113,5 +122,20 @@ final class LiveWorkflowJsonCodec {
             List<CandidateProblem> validationProblems
     ) {
         private static final String VERSION = "renderweave-live-checkpoint/1.0";
+    }
+
+    private record LegacyCheckpointV2(
+            String checkpointVersion,
+            InferenceStage completedStage,
+            int providerCalls,
+            int repairRounds,
+            VisualElementInventory elementInventory,
+            VisualHierarchyPlan hierarchyPlan,
+            VisualElementBindingPlan bindingPlan,
+            boolean outputValid,
+            CandidateBundle candidate,
+            List<CandidateProblem> validationProblems
+    ) {
+        private static final String VERSION = "renderweave-live-checkpoint/2.0";
     }
 }

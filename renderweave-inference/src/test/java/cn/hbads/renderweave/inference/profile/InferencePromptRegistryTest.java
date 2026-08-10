@@ -130,6 +130,36 @@ class InferencePromptRegistryTest {
         assertTrue(candidate.contains("VISUAL_PLAN_*"));
     }
 
+    @Test
+    void visualV2KeepsGenericCoreDomainNeutralAndComposesExplicitHints() {
+        var registry = new InferencePromptRegistry();
+        var generic = registry.requireVisualStage(
+                InferencePromptRegistry.VISUAL_ELEMENTS_V2,
+                InferencePromptRegistry.VISUAL_HINT_GENERIC_V1
+        ).text();
+        var domain = registry.requireVisualStage(
+                InferencePromptRegistry.VISUAL_ELEMENTS_V2,
+                InferencePromptRegistry.VISUAL_HINT_TRANSIT_BOARD_V1
+        ).text();
+
+        assertTrue(generic.contains("renderweave-visual-grounding/2.0"));
+        assertTrue(generic.contains("viewCatalog"));
+        assertTrue(generic.contains("REPEATED_GROUP"));
+        assertFalse(generic.matches("(?is).*\\b(bus|station|route|stop|fare)\\b.*"));
+        assertFalse(generic.contains("公交"));
+        assertFalse(generic.contains("站牌"));
+        assertFalse(generic.contains("线路"));
+        assertFalse(generic.contains("站点"));
+        assertFalse(generic.contains("温馨"));
+        assertTrue(domain.contains("renderweave-visual-hint-pack/transit-board/1.0"));
+        assertTrue(domain.contains("route"));
+        assertTrue(domain.contains("停靠站点"));
+        assertThrows(IllegalArgumentException.class, () -> registry.requireVisualStage(
+                InferencePromptRegistry.VISUAL_ELEMENTS_V1,
+                InferencePromptRegistry.VISUAL_HINT_GENERIC_V1
+        ));
+    }
+
     private static String sha256(String value) {
         try {
             return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(

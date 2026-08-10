@@ -13,6 +13,12 @@ public final class InferencePromptRegistry {
     public static final String VISUAL_ELEMENTS_V1 = "renderweave-visual-elements-prompt/1.0";
     public static final String VISUAL_HIERARCHY_V1 = "renderweave-visual-hierarchy-prompt/1.0";
     public static final String VISUAL_BINDINGS_V1 = "renderweave-visual-bindings-prompt/1.0";
+    public static final String VISUAL_ELEMENTS_V2 = "renderweave-visual-elements-prompt/2.0";
+    public static final String VISUAL_HIERARCHY_V2 = "renderweave-visual-hierarchy-prompt/2.0";
+    public static final String VISUAL_BINDINGS_V2 = "renderweave-visual-bindings-prompt/2.0";
+    public static final String VISUAL_HINT_GENERIC_V1 = "renderweave-visual-hint-pack/generic/1.0";
+    public static final String VISUAL_HINT_TRANSIT_BOARD_V1 =
+            "renderweave-visual-hint-pack/transit-board/1.0";
     private static final Map<String, String> RESOURCES = Map.ofEntries(
             Map.entry(SCHEMA_CANDIDATE_V1, "inference-prompts/schema-candidate-v1.txt"),
             Map.entry(SCHEMA_CANDIDATE_V2, "inference-prompts/schema-candidate-v2.txt"),
@@ -21,7 +27,14 @@ public final class InferencePromptRegistry {
             Map.entry(SCHEMA_CANDIDATE_V5, "inference-prompts/schema-candidate-v5.txt"),
             Map.entry(VISUAL_ELEMENTS_V1, "inference-prompts/visual-elements-v1.txt"),
             Map.entry(VISUAL_HIERARCHY_V1, "inference-prompts/visual-hierarchy-v1.txt"),
-            Map.entry(VISUAL_BINDINGS_V1, "inference-prompts/visual-bindings-v1.txt")
+            Map.entry(VISUAL_BINDINGS_V1, "inference-prompts/visual-bindings-v1.txt"),
+            Map.entry(VISUAL_ELEMENTS_V2, "inference-prompts/visual-elements-v2.txt"),
+            Map.entry(VISUAL_HIERARCHY_V2, "inference-prompts/visual-hierarchy-v2.txt"),
+            Map.entry(VISUAL_BINDINGS_V2, "inference-prompts/visual-bindings-v2.txt")
+    );
+    private static final Map<String, String> HINT_RESOURCES = Map.of(
+            VISUAL_HINT_GENERIC_V1, "inference-prompts/visual-hint-generic-v1.txt",
+            VISUAL_HINT_TRANSIT_BOARD_V1, "inference-prompts/visual-hint-transit-board-v1.txt"
     );
 
     private final ClassLoader classLoader;
@@ -37,14 +50,36 @@ public final class InferencePromptRegistry {
     public PromptResource require(String promptVersion) {
         var path = RESOURCES.get(promptVersion);
         if (path == null) throw new IllegalArgumentException("Unknown inference prompt: " + promptVersion);
+        var prompt = read(path);
+        if (prompt.isBlank() || !prompt.contains("JSON") || prompt.contains("DASHSCOPE_API_KEY")) {
+            throw new IllegalStateException("Inference prompt violates the safe prompt contract");
+        }
+        return new PromptResource(promptVersion, prompt);
+    }
+
+    public PromptResource requireVisualStage(String promptVersion, String hintPackVersion) {
+        if (!Map.of(
+                VISUAL_ELEMENTS_V2, true,
+                VISUAL_HIERARCHY_V2, true,
+                VISUAL_BINDINGS_V2, true
+        ).containsKey(promptVersion)) {
+            throw new IllegalArgumentException("Visual hint packs require a v2 visual stage prompt");
+        }
+        var hintPath = HINT_RESOURCES.get(hintPackVersion);
+        if (hintPath == null) throw new IllegalArgumentException("Unknown visual hint pack: " + hintPackVersion);
+        var core = require(promptVersion).text();
+        var hint = read(hintPath);
+        if (hint.isBlank() || hint.contains("DASHSCOPE_API_KEY") || hint.contains("```")) {
+            throw new IllegalStateException("Visual hint pack violates the safe prompt contract");
+        }
+        return new PromptResource(promptVersion + "+" + hintPackVersion, core + "\n\n" + hint);
+    }
+
+    private String read(String path) {
         try (var input = classLoader.getResourceAsStream(path)) {
             if (input == null) throw new IllegalStateException("Missing inference prompt resource " + path);
-            var prompt = new String(input.readAllBytes(), StandardCharsets.UTF_8)
+            return new String(input.readAllBytes(), StandardCharsets.UTF_8)
                     .replace("\r\n", "\n").replace('\r', '\n');
-            if (prompt.isBlank() || !prompt.contains("JSON") || prompt.contains("DASHSCOPE_API_KEY")) {
-                throw new IllegalStateException("Inference prompt violates the safe prompt contract");
-            }
-            return new PromptResource(promptVersion, prompt);
         } catch (IOException exception) {
             throw new IllegalStateException("Inference prompt cannot be loaded: " + path, exception);
         }

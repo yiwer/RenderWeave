@@ -45,6 +45,10 @@ import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import javax.imageio.ImageIO;
+import java.awt.Color;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.Clock;
@@ -73,6 +77,8 @@ class PostgresLiveInferenceWorkflowTest {
             "dashscope-qwen37-flash-product-v4";
     private static final String LOCAL_MATERIALIZER_PROFILE =
             "dashscope-qwen37-flash-product-v5";
+    private static final String GROUNDED_VISUAL_PROFILE =
+            "dashscope-qwen37-flash-product-v6-transit-board";
 
     @Container
     @ServiceConnection
@@ -371,6 +377,53 @@ class PostgresLiveInferenceWorkflowTest {
         assertThat(recoveryProvider.requests).isEmpty();
         assertThat(workflowStore.attempts(created)).hasSize(3);
         assertThat(workflowStore.findCandidate(created)).isPresent();
+    }
+
+    @Test
+    void pipelineFourPointOneGroundsMultiScaleViewsAndPersistsOnlyOriginalCoordinates() {
+        var blobs = new MemoryBlobStore();
+        var created = createGroundedVisual(blobs, "grounded-visual-station");
+        var provider = new ScriptedProvider(
+                request -> response(request, groundedStationElements()),
+                request -> response(request, groundedStationHierarchy()),
+                request -> response(request, groundedStationBindings())
+        );
+
+        var finished = worker(provider, blobs).processNext("grounded-visual-worker").orElseThrow();
+
+        assertThat(finished.state())
+                .as("failure=%s attempts=%s", finished.failureCode(), workflowStore.attempts(created))
+                .isEqualTo(InferenceRunState.REVIEW_REQUIRED);
+        assertThat(provider.requests).extracting(request -> request.stage().name())
+                .containsExactly("OBSERVE", "HIERARCHY", "ELEMENT_BINDING");
+        assertThat(provider.requests).allSatisfy(request -> {
+            assertThat(request.images()).hasSize(3);
+            assertThat(request.taskJson())
+                    .contains("renderweave-live-task/4.0")
+                    .contains("renderweave-visual-view-plan/1.0")
+                    .contains("\"viewCatalog\"")
+                    .contains("renderweave-visual-hint-pack/transit-board/1.0");
+            assertThat(request.systemPrompt()).contains("停靠站点");
+        });
+        assertThat(workflowStore.attempts(created)).hasSize(3)
+                .allSatisfy(attempt -> assertThat(attempt.status())
+                        .isEqualTo(InferenceAttemptStatus.SUCCEEDED));
+        assertThat(finished.checkpointJson())
+                .contains("renderweave-live-checkpoint/3.0")
+                .contains("renderweave-visual-grounding/2.0")
+                .contains("renderweave-visual-entity-regions/2.0")
+                .doesNotContain("view-00-");
+
+        var candidate = candidateCodec.parse(
+                workflowStore.findCandidate(created).orElseThrow().currentJson()
+        );
+        assertThat(candidate.schemas()).extracting(CandidateSchema::proposedSchemaKey)
+                .containsExactly("bus-stop-board", "bus-route", "warm-notice", "bus-stop");
+        assertThat(candidate.schemas().stream()
+                .flatMap(schema -> schema.fields().stream())
+                .flatMap(field -> field.assessment().evidence().stream()))
+                .allSatisfy(evidence -> assertThat(evidence.artifactId())
+                        .isEqualTo(finished.inputs().getFirst().artifact().artifactId()));
     }
 
     @Test
@@ -890,6 +943,44 @@ class PostgresLiveInferenceWorkflowTest {
         )).run().runId();
     }
 
+    private UUID createGroundedVisual(MemoryBlobStore blobs, String seed) {
+        var profile = profiles.require(GROUNDED_VISUAL_PROFILE);
+        var image = new BufferedImage(1_050, 1_660, BufferedImage.TYPE_INT_RGB);
+        var graphics = image.createGraphics();
+        try {
+            graphics.setColor(Color.WHITE);
+            graphics.fillRect(0, 0, image.getWidth(), image.getHeight());
+            graphics.setColor(Color.BLUE);
+            graphics.fillRect(0, 0, image.getWidth(), 160);
+        } finally {
+            graphics.dispose();
+        }
+        final byte[] bytes;
+        try {
+            var output = new ByteArrayOutputStream();
+            if (!ImageIO.write(image, "png", output)) throw new IllegalStateException("PNG writer unavailable");
+            bytes = output.toByteArray();
+        } catch (java.io.IOException failure) {
+            throw new IllegalStateException(failure);
+        }
+        var artifactId = sha256(bytes);
+        blobs.values.put(artifactId, bytes);
+        var artifact = new NormalizedArtifact(
+                artifactId, NormalizedArtifact.Kind.IMAGE, artifactId,
+                "image/png", bytes.length, image.getWidth(), image.getHeight()
+        );
+        var normalized = new NormalizedInput(
+                InferenceMode.IMAGE_ONLY, GROUNDED_VISUAL_PROFILE, seed,
+                sha256(seed.getBytes(StandardCharsets.UTF_8)),
+                List.of(artifact),
+                List.of(new NormalizedInputReference(NormalizedArtifact.Kind.IMAGE, 0, artifactId)),
+                List.of()
+        );
+        return runs.create(NewInferenceRun.initial(
+                UUID.randomUUID(), "idem-" + seed, normalized, profile.snapshotJson(), T0
+        )).run().runId();
+    }
+
     private UUID createCombined(MemoryBlobStore blobs, String seed) {
         return createCombined(blobs, seed, "{\"title\":\"hello\"}");
     }
@@ -970,6 +1061,58 @@ class PostgresLiveInferenceWorkflowTest {
         return runs.create(NewInferenceRun.initial(
                 UUID.randomUUID(), "idem-" + seed, normalized, profile.snapshotJson(), T0
         )).run().runId();
+    }
+
+    private static String groundedStationElements() {
+        return """
+                {"contractVersion":"renderweave-visual-grounding/2.0","regions":[
+                  {"regionId":"root","parentRegionId":null,"kind":"ROOT","multiplicity":"ONE","readingOrder":0,"repeatGroupId":null,"evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":0,"top":0,"right":10000,"bottom":10000}}]},
+                  {"regionId":"header","parentRegionId":"root","kind":"SECTION","multiplicity":"ONE","readingOrder":0,"repeatGroupId":null,"evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":0,"top":0,"right":10000,"bottom":1000}}]},
+                  {"regionId":"notice","parentRegionId":"root","kind":"GROUP","multiplicity":"ONE","readingOrder":1,"repeatGroupId":null,"evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":0,"top":1000,"right":10000,"bottom":2200}}]},
+                  {"regionId":"routes","parentRegionId":"root","kind":"REPEATED_GROUP","multiplicity":"MANY","readingOrder":2,"repeatGroupId":"routes","evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":0,"top":2200,"right":10000,"bottom":10000}}]},
+                  {"regionId":"route-item","parentRegionId":"routes","kind":"ITEM","multiplicity":"ONE","readingOrder":0,"repeatGroupId":"routes","evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":0,"top":2200,"right":10000,"bottom":10000}}]},
+                  {"regionId":"stops","parentRegionId":"route-item","kind":"REPEATED_GROUP","multiplicity":"MANY","readingOrder":0,"repeatGroupId":"stops","evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":0,"top":4000,"right":10000,"bottom":10000}}]},
+                  {"regionId":"stop-item","parentRegionId":"stops","kind":"ITEM","multiplicity":"ONE","readingOrder":0,"repeatGroupId":"stops","evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":0,"top":4000,"right":10000,"bottom":10000}}]}
+                ],"elements":[
+                  {"elementId":"station-name","kind":"SLOT","proposedKey":"stationName","displayName":"站点名称","multiplicity":"ONE","valueHint":"TEXT","regionIds":["header"],"evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":500,"top":100,"right":5000,"bottom":400}}]},
+                  {"elementId":"station-english","kind":"SLOT","proposedKey":"stationEnglishName","displayName":"站点英文名","multiplicity":"ONE","valueHint":"TEXT","regionIds":["header"],"evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":500,"top":450,"right":5000,"bottom":800}}]},
+                  {"elementId":"notice-group","kind":"GROUP","proposedKey":"warmNotice","displayName":"温馨提示","multiplicity":"ONE","valueHint":null,"regionIds":["notice"],"evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":0,"top":1000,"right":10000,"bottom":2200}}]},
+                  {"elementId":"notice-date","kind":"SLOT","proposedKey":"effectiveDate","displayName":"生效日期","multiplicity":"ONE","valueHint":"DATE","regionIds":["notice"],"evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":1000,"top":1200,"right":4000,"bottom":1500}}]},
+                  {"elementId":"notice-content","kind":"SLOT","proposedKey":"content","displayName":"提示内容","multiplicity":"ONE","valueHint":"TEXT","regionIds":["notice"],"evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":1000,"top":1600,"right":9000,"bottom":2000}}]},
+                  {"elementId":"route-group","kind":"GROUP","proposedKey":"routes","displayName":"线路","multiplicity":"MANY","valueHint":null,"regionIds":["routes"],"evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":0,"top":2200,"right":10000,"bottom":10000}}]},
+                  {"elementId":"route-number","kind":"SLOT","proposedKey":"routeNumber","displayName":"线路编号","multiplicity":"ONE","valueHint":"TEXT","regionIds":["route-item"],"evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":500,"top":2400,"right":2500,"bottom":2900}}]},
+                  {"elementId":"stop-group","kind":"GROUP","proposedKey":"stops","displayName":"停靠站点","multiplicity":"MANY","valueHint":null,"regionIds":["stops"],"evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":0,"top":4000,"right":10000,"bottom":10000}}]},
+                  {"elementId":"stop-name","kind":"SLOT","proposedKey":"name","displayName":"站点名称","multiplicity":"ONE","valueHint":"TEXT","regionIds":["stop-item"],"evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":500,"top":4300,"right":3000,"bottom":4800}}]}
+                ]}
+                """;
+    }
+
+    private static String groundedStationHierarchy() {
+        return """
+                {"contractVersion":"renderweave-visual-hierarchy/2.0","rootEntityId":"board","entities":[
+                  {"entityId":"board","schemaKey":"bus-stop-board","displayName":"站牌","regionIds":["root"],"supportingElementIds":["station-name"]},
+                  {"entityId":"notice-entity","schemaKey":"warm-notice","displayName":"温馨提示","regionIds":["notice"],"supportingElementIds":["notice-group"]},
+                  {"entityId":"route","schemaKey":"bus-route","displayName":"线路","regionIds":["route-item"],"supportingElementIds":["route-group"]},
+                  {"entityId":"stop","schemaKey":"bus-stop","displayName":"停靠站点","regionIds":["stop-item"],"supportingElementIds":["stop-group"]}
+                ],"relationships":[
+                  {"relationshipId":"board-notice","parentEntityId":"board","childEntityId":"notice-entity","fieldKey":"warmNotice","displayName":"温馨提示","cardinality":"ONE","regionId":"notice","supportingElementIds":["notice-group"]},
+                  {"relationshipId":"board-routes","parentEntityId":"board","childEntityId":"route","fieldKey":"routes","displayName":"线路","cardinality":"MANY","regionId":"routes","supportingElementIds":["route-group"]},
+                  {"relationshipId":"route-stops","parentEntityId":"route","childEntityId":"stop","fieldKey":"stops","displayName":"停靠站点","cardinality":"MANY","regionId":"stops","supportingElementIds":["stop-group"]}
+                ]}
+                """;
+    }
+
+    private static String groundedStationBindings() {
+        return """
+                {"contractVersion":"renderweave-visual-bindings/2.0","bindings":[
+                  {"elementId":"station-name","entityId":"board"},
+                  {"elementId":"station-english","entityId":"board"},
+                  {"elementId":"notice-date","entityId":"notice-entity"},
+                  {"elementId":"notice-content","entityId":"notice-entity"},
+                  {"elementId":"route-number","entityId":"route"},
+                  {"elementId":"stop-name","entityId":"stop"}
+                ]}
+                """;
     }
 
     private String stationElements(ProviderInferenceRequest request) {

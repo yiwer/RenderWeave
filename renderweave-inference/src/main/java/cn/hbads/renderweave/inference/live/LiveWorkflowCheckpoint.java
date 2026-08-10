@@ -15,11 +15,13 @@ record LiveWorkflowCheckpoint(
         VisualElementInventory elementInventory,
         VisualHierarchyPlan hierarchyPlan,
         VisualElementBindingPlan bindingPlan,
+        VisualGroundingPlan groundingPlan,
+        VisualEntityRegionPlan entityRegionPlan,
         boolean outputValid,
         CandidateBundle candidate,
         List<CandidateProblem> validationProblems
 ) {
-    static final String VERSION = "renderweave-live-checkpoint/2.0";
+    static final String VERSION = "renderweave-live-checkpoint/3.0";
 
     LiveWorkflowCheckpoint {
         if (!VERSION.equals(checkpointVersion)) throw new IllegalArgumentException("Unsupported live checkpoint");
@@ -33,6 +35,12 @@ record LiveWorkflowCheckpoint(
         if (bindingPlan != null && hierarchyPlan == null) {
             throw new IllegalArgumentException("Visual bindings require a hierarchy");
         }
+        if (groundingPlan != null && elementInventory == null) {
+            throw new IllegalArgumentException("Visual grounding requires an element inventory");
+        }
+        if (entityRegionPlan != null && (hierarchyPlan == null || groundingPlan == null)) {
+            throw new IllegalArgumentException("Visual entity regions require hierarchy and grounding plans");
+        }
         validationProblems = List.copyOf(Objects.requireNonNull(validationProblems, "validationProblems"));
         if (outputValid != (candidate != null)) {
             throw new IllegalArgumentException("Valid live output and candidate must agree");
@@ -42,7 +50,7 @@ record LiveWorkflowCheckpoint(
     static LiveWorkflowCheckpoint started() {
         return new LiveWorkflowCheckpoint(
                 VERSION, InferenceStage.NORMALIZE, 0, 0,
-                null, null, null, false, null, List.of()
+                null, null, null, null, null, false, null, List.of()
         );
     }
 
@@ -53,7 +61,20 @@ record LiveWorkflowCheckpoint(
     LiveWorkflowCheckpoint elementsObserved(VisualElementInventory inventory, int calls) {
         return new LiveWorkflowCheckpoint(
                 VERSION, InferenceStage.OBSERVE, calls, repairRounds,
+                Objects.requireNonNull(inventory, "inventory"), null, null, null, null,
+                false, null, List.of()
+        );
+    }
+
+    LiveWorkflowCheckpoint elementsGrounded(
+            VisualElementInventory inventory,
+            VisualGroundingPlan grounding,
+            int calls
+    ) {
+        return new LiveWorkflowCheckpoint(
+                VERSION, InferenceStage.OBSERVE, calls, repairRounds,
                 Objects.requireNonNull(inventory, "inventory"), null, null,
+                Objects.requireNonNull(grounding, "grounding"), null,
                 false, null, List.of()
         );
     }
@@ -62,7 +83,22 @@ record LiveWorkflowCheckpoint(
         return new LiveWorkflowCheckpoint(
                 VERSION, InferenceStage.HIERARCHY, calls, repairRounds,
                 Objects.requireNonNull(elementInventory, "elementInventory"),
+                Objects.requireNonNull(hierarchy, "hierarchy"), null, groundingPlan, null,
+                false, null, List.of()
+        );
+    }
+
+    LiveWorkflowCheckpoint hierarchyGrounded(
+            VisualHierarchyPlan hierarchy,
+            VisualEntityRegionPlan entityRegions,
+            int calls
+    ) {
+        return new LiveWorkflowCheckpoint(
+                VERSION, InferenceStage.HIERARCHY, calls, repairRounds,
+                Objects.requireNonNull(elementInventory, "elementInventory"),
                 Objects.requireNonNull(hierarchy, "hierarchy"), null,
+                Objects.requireNonNull(groundingPlan, "groundingPlan"),
+                Objects.requireNonNull(entityRegions, "entityRegions"),
                 false, null, List.of()
         );
     }
@@ -73,6 +109,7 @@ record LiveWorkflowCheckpoint(
                 Objects.requireNonNull(elementInventory, "elementInventory"),
                 Objects.requireNonNull(hierarchyPlan, "hierarchyPlan"),
                 Objects.requireNonNull(bindings, "bindings"),
+                groundingPlan, entityRegionPlan,
                 false, null, List.of()
         );
     }
@@ -95,7 +132,8 @@ record LiveWorkflowCheckpoint(
     ) {
         return new LiveWorkflowCheckpoint(
                 VERSION, completed, calls, repairs,
-                elementInventory, hierarchyPlan, bindingPlan, producedCandidate != null,
+                elementInventory, hierarchyPlan, bindingPlan, groundingPlan, entityRegionPlan,
+                producedCandidate != null,
                 producedCandidate, prevalidationProblems
         );
     }
@@ -103,7 +141,7 @@ record LiveWorkflowCheckpoint(
     LiveWorkflowCheckpoint validated(List<CandidateProblem> problems) {
         return new LiveWorkflowCheckpoint(
                 VERSION, InferenceStage.DETERMINISTIC_VALIDATE, providerCalls, repairRounds,
-                elementInventory, hierarchyPlan, bindingPlan,
+                elementInventory, hierarchyPlan, bindingPlan, groundingPlan, entityRegionPlan,
                 outputValid, candidate, problems
         );
     }
@@ -111,7 +149,7 @@ record LiveWorkflowCheckpoint(
     LiveWorkflowCheckpoint critiqued() {
         return new LiveWorkflowCheckpoint(
                 VERSION, InferenceStage.CRITIQUE, providerCalls, repairRounds,
-                elementInventory, hierarchyPlan, bindingPlan,
+                elementInventory, hierarchyPlan, bindingPlan, groundingPlan, entityRegionPlan,
                 outputValid, candidate, validationProblems
         );
     }
@@ -119,7 +157,7 @@ record LiveWorkflowCheckpoint(
     private LiveWorkflowCheckpoint withCompletedStage(InferenceStage stage) {
         return new LiveWorkflowCheckpoint(
                 VERSION, stage, providerCalls, repairRounds,
-                elementInventory, hierarchyPlan, bindingPlan,
+                elementInventory, hierarchyPlan, bindingPlan, groundingPlan, entityRegionPlan,
                 outputValid, candidate, validationProblems
         );
     }

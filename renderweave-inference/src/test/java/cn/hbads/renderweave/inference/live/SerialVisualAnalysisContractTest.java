@@ -190,7 +190,7 @@ class SerialVisualAnalysisContractTest {
     }
 
     @Test
-    void migratesLegacyCheckpointInMemoryAndWritesOnlyVersionTwo() {
+    void migratesLegacyCheckpointsInMemoryAndWritesOnlyVersionThree() {
         var legacy = """
                 {
                   "checkpointVersion":"renderweave-live-checkpoint/1.0",
@@ -209,7 +209,7 @@ class SerialVisualAnalysisContractTest {
 
         assertEquals(LiveWorkflowCheckpoint.VERSION, migrated.checkpointVersion());
         assertEquals(1, migrated.providerCalls());
-        assertTrue(encoded.contains("renderweave-live-checkpoint/2.0"));
+        assertTrue(encoded.contains("renderweave-live-checkpoint/3.0"));
         assertTrue(encoded.contains("\"providerCalls\":1"));
         assertFalse(encoded.contains("structureCalls"));
         assertThrows(RuntimeException.class, () -> workflowCodec.parse(legacy + "{}"));
@@ -220,6 +220,24 @@ class SerialVisualAnalysisContractTest {
         assertThrows(RuntimeException.class, () -> workflowCodec.parse(
                 current.replace("\"completedStage\":\"NORMALIZE\"", "\"completedStage\":0")
         ));
+        var versionTwo = """
+                {
+                  "checkpointVersion":"renderweave-live-checkpoint/2.0",
+                  "completedStage":"OBSERVE",
+                  "providerCalls":1,
+                  "repairRounds":0,
+                  "elementInventory":null,
+                  "hierarchyPlan":null,
+                  "bindingPlan":null,
+                  "outputValid":false,
+                  "candidate":null,
+                  "validationProblems":[]
+                }
+                """;
+        var migratedTwo = workflowCodec.parse(versionTwo);
+        assertEquals(LiveWorkflowCheckpoint.VERSION, migratedTwo.checkpointVersion());
+        assertEquals(1, migratedTwo.providerCalls());
+        assertTrue(workflowCodec.write(migratedTwo).contains("renderweave-live-checkpoint/3.0"));
     }
 
     private static StationAnalysis stationAnalysis() {
