@@ -241,5 +241,15 @@ support-ID 去重与 unique region normalization，证明 HIERARCHY 可进入 BI
 server `.sdlc/evidence/20260811-062224-server`、Node 24 web `.sdlc/evidence/20260811-062433-web`、E2E
 `.sdlc/evidence/20260811-062513-e2e` 与提交后 clean fast `.sdlc/evidence/20260811-062623-fast` 均为 A1 PASS。
 实现和门控期间 Provider attempts=0，三份 ledger 保持 CLOSED。以上仍只是 repository synthetic 输入的本地合同
-证据；下一步必须在 fresh evaluation identity/Profile snapshot 与独立 J1 ledger 下执行 Plus product-v20 单 case，
-只有 live 实际触达 BINDING 才可考虑 Max。
+证据；随后只能在 fresh evaluation identity/Profile snapshot 与独立 J1 ledger 下执行 Plus product-v20 单 case，
+且只有 live 实际触达 BINDING 才可考虑 Max。
+
+Plus product-v20 随后以 `7afda44` PROPOSED → `191cf63` OPEN → `85b2000` CLOSED 完成单 case lifecycle；
+PROPOSED 负探针精确命中 `VISUAL_EVALUATION_AUTHORIZATION_NOT_OPEN`，Goal/guard 哈希、270 reservations 与
+target evidence 均未变化。唯一 wrapper exit 0、119,361 ms，且无遗留进程；先 CLOSED 后读取 evidence。独立
+verifier A2 重建 5 attempts、24,251 input + 6,086 output tokens、109,414 ms、0 abandoned 与 payload scan PASS。
+OBSERVE 首次接受并记录 12 SLOT/1 GROUP；四次 HIERARCHY 依次为 support-not-group、两次
+relationship-region-connection-invalid、support-IDs-empty，未进入 BINDING，也未命中 region normalization
+telemetry。Plus Goal 累计为 126 attempts、729,270 tokens、¥2.910558。该结果把下一本地切片收窄到已验证
+GROUP-owned region 与 parent/child entity ownership 的 connection 合同；三阶段仍不可达，Max 入口继续关闭，
+product-v20 不晋级。

@@ -1,13 +1,20 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-11 Plus product-v20 已按 `7afda44` PROPOSED → `191cf63` OPEN → `85b2000` CLOSED 完成单 case；
+  负探针精确 NOT_OPEN，Goal/guard/270 reservations/target evidence 零变化。唯一 wrapper exit 0、119,361 ms，
+  先 CLOSED 后由独立 verifier A2 重建：5 attempts、24,251 input + 6,086 output、109,414 ms、payload scan PASS。
+  OBSERVE 首次接受 12 SLOT/1 GROUP；四次 HIERARCHY 依次为 support-not-group、两次
+  relationship-region-connection-invalid、support-IDs-empty，未进 BINDING，未命中 normalization telemetry。
+  Plus Goal 现为 126/180 attempts、729,270/1,000,000 tokens、¥2.910558；275 reservations 中 270 SETTLED、
+  5 历史 RESERVED。CLOSED fast `.sdlc/evidence/20260811-063705-fast` PASS；Max 入口仍未成立，相同 v20 不再重复。
 - 2026-08-11 `391bd52` 新增 pipeline 4.7/product-v20：旧 Profile 保持 strict；仅当模型给出的已知
   relationship region 与 evidence-derived cardinality 不兼容，且唯一支撑 GROUP 恰有一个 compatible owned
   region 时才确定性归一化。零候选回到 OBSERVE，多个候选继续固定码 fail-closed；不跨 GROUP 选择、不补元素、
   不删边、不改 topology。payload-free telemetry、stage-local checkpoint、监控 UI 与 1024 E2E 已覆盖。inference
   定向 34/34、独立 verifier 2/2、real-PG lease recovery 1/1、server app 189（6 gated skip）、Web 73、E2E
   18/1 与 clean fast `.sdlc/evidence/20260811-062623-fast` 全绿；Provider attempts=0，三份 ledger CLOSED。
-  product-v20 仍为隐藏 `EXPERIMENTAL`；下一步是 fresh identity/snapshot/J1 下的 Plus v20 单 case lifecycle。
+  product-v20 仍为隐藏 `EXPERIMENTAL`；live 结果见上，下一本地切片收窄到 relationship region connection。
 - 2026-08-11 Plus product-v19 已按 `09c3c16` PROPOSED → `7e1b98b` OPEN → `aa92ae2` CLOSED 完成单 case；
   负探针精确 NOT_OPEN，Goal/evidence 零变化。独立 verifier A2 PASS：5 attempts、24,956 input + 6,103 output
   tokens、109,700 ms、payload scan PASS。OBSERVE 首次接受 13 SLOT/1 GROUP，随后四次 HIERARCHY 均为
@@ -117,8 +124,9 @@
   clean A1 且单 case lifecycle 已 CLOSED/A2，但仍停在 HIERARCHY；v18 detailed repair taxonomy 已 clean A1。
   Plus v18 单 case 已 CLOSED/A2 并稳定暴露 relationship support IDs invalid；v19 bounded exact-duplicate
   normalization 已 clean A1，Plus v19 已 CLOSED/A2 并稳定暴露 relationship region/cardinality invalid。v20
-  unique evidence-owned relationship region normalization 已 clean A1；下一步在 fresh identity/snapshot/J1 下执行
-  Plus v20 单 case。实证 BINDING 前禁止 Max。
+  unique evidence-owned relationship region normalization 已 clean A1，Plus v20 已 CLOSED/A2 并重复暴露
+  relationship region connection invalid。下一步只实现唯一 GROUP-owned region 同时满足 cardinality 与
+  parent/child connection 的 bounded 本地条件；实证 BINDING 前禁止 Max。
 - [x] Java / React / PostgreSQL / OpenAPI 最小 canary 与 A1 full gate 通过。
 - [x] 用户接受“A 默认表单 + B Map + 吸收 C 的 preview/密度”的编辑器方向（J1，2026-08-08）。
 - [x] 创建 P1–P4 implementation Goal。
@@ -217,8 +225,8 @@
   HTTP failure 硬停与未晋级决策；全部 ledger CLOSED。
 - `plans/logs/P6-T6-5-N6.md`：bounded semantic verifier、stage-local repair、selected crops、payload-free UI、
   Flash v10–v12 A2 诊断、v15–v20 bounded verifier 增量与 exact-clean gates；三阶段 live 仍不可达，未晋级。
-- `plans/logs/P6-T6-5-N7.md`：pinned Flash/Goal guard v2、八份单 case CLOSED/A2 reachability、v15–v20
+- `plans/logs/P6-T6-5-N7.md`：pinned Flash/Goal guard v2、九份单 case CLOSED/A2 reachability、v15–v20
   bounded verifier 增量与 payload-free UI；三阶段仍不可达，Max 未调用。
 - 当前恢复点：`phase/p6-visual-recognition-vnext` 的 `391bd52` clean implementation；最近 live lifecycle 为
-  `aa92ae2` CLOSED。编排 Goal `019fec8e-a851-7952-b49b-8be76a281a57` 为 active，未创建 replacement Goal。
-  下一安全切片是 fresh identity/snapshot/J1 下的 Plus product-v20 单 case；满足 BINDING 前禁止 Max。
+  `85b2000` CLOSED。编排 Goal `019fec8e-a851-7952-b49b-8be76a281a57` 为 active，未创建 replacement Goal。
+  下一安全切片是 bounded relationship region connection normalization；满足 BINDING 前禁止 Max。
