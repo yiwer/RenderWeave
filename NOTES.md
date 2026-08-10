@@ -1,13 +1,19 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-11 Plus product-v18 已按 `df166df` PROPOSED → `dca738c` OPEN → `2ee5691` CLOSED 完成单 case；
+  负探针精确 NOT_OPEN，Goal/evidence 零变化。独立 verifier A2 PASS：5 attempts、20,274 input + 4,920 output
+  tokens、89,402 ms、payload scan PASS。OBSERVE 首次接受 9 SLOT/0 GROUP，随后四次 HIERARCHY 均为
+  `VISUAL_HIERARCHY_V2_RELATIONSHIP_SUPPORT_IDS_INVALID`，未进 BINDING。Plus Goal 现为 116/180 attempts、
+  667,874/1,000,000 tokens、¥2.714632；265 reservations 中 260 SETTLED、5 历史 RESERVED。CLOSED fast
+  `.sdlc/evidence/20260811-053811-fast` PASS；Max 入口仍未成立，下一切片是本地 bounded relationship support-ID
+  合同诊断与 stage-local repair。
 - 2026-08-11 `4d2cc46` 新增 pipeline 4.5/product-v18：只对新 Profile 将 generic hierarchy region ownership
   failure 拆成 entity/relationship region 字段、未知引用、root coverage、parent-child connection 与
   region/cardinality 六类固定码；v17 继续 legacy generic。hierarchy prompt v6 同步 support-not-group/reuse 的
   stage-local 指令，不补 GROUP、不猜结构、不触发结构 crop。合同/Profile/prompt 31/31、独立 verifier 2/2、
   real-PG lease recovery 1/1、server 187 app tests（6 gated skip）、Web 73、E2E 18/1 与 clean fast A1 全绿；
-  实现期间 Provider attempts=0，三份 ledger CLOSED。下一安全切片是重算 identity/snapshot/Goal 后的 Plus v18
-  单 case；实证 BINDING 前禁止 Max。
+  实现期间 Provider attempts=0，三份 ledger CLOSED。对应 Plus v18 结果见上一条；实证 BINDING 前禁止 Max。
 - 2026-08-11 Plus product-v17 单 case 已按 `178bafb` PROPOSED → `8e0c31e` OPEN → `7107303` CLOSED 完成；
   负探针精确 NOT_OPEN 且 Goal/evidence 零变化。独立 verifier A2 PASS：5 attempts、27,498 input + 7,733
   output tokens、142,447 ms、payload scan PASS。OBSERVE 接受 20 SLOT/1 GROUP，随后 HIERARCHY 三次
@@ -90,7 +96,8 @@
 ## 下一步
 - [ ] P6/T6-5 图片识别 vNext：N0–N6 已形成独立 checkpoint；v17 exact relationship-region owner rewind 已
   clean A1 且单 case lifecycle 已 CLOSED/A2，但仍停在 HIERARCHY；v18 detailed repair taxonomy 已 clean A1。
-  重算 identity/Profile snapshot/Goal 后执行 Plus v18 单 case；实证 BINDING 前禁止 Max。
+  Plus v18 单 case 已 CLOSED/A2 并稳定暴露 relationship support IDs invalid；先推进本地 bounded support-ID 合同
+  诊断与 stage-local repair，实证 BINDING 前禁止 Max。
 - [x] Java / React / PostgreSQL / OpenAPI 最小 canary 与 A1 full gate 通过。
 - [x] 用户接受“A 默认表单 + B Map + 吸收 C 的 preview/密度”的编辑器方向（J1，2026-08-08）。
 - [x] 创建 P1–P4 implementation Goal。
@@ -189,8 +196,8 @@
   HTTP failure 硬停与未晋级决策；全部 ledger CLOSED。
 - `plans/logs/P6-T6-5-N6.md`：bounded semantic verifier、stage-local repair、selected crops、payload-free UI、
   Flash v10–v12 A2 诊断与 exact-clean full；三阶段仍不可达，未晋级。
-- `plans/logs/P6-T6-5-N7.md`：pinned Flash/Goal guard v2、六份单 case CLOSED/A2 reachability、v15/v16/v17
+- `plans/logs/P6-T6-5-N7.md`：pinned Flash/Goal guard v2、七份单 case CLOSED/A2 reachability、v15/v16/v17/v18
   bounded verifier 增量与 payload-free UI；三阶段仍不可达，Max 未调用。
 - 当前恢复点：`phase/p6-visual-recognition-vnext` 的 `4d2cc46` clean implementation；最近 live lifecycle 为
-  `7107303` CLOSED。编排 Goal `019fec8e-a851-7952-b49b-8be76a281a57` 为 active，未创建 replacement Goal。
-  下一安全切片是 Plus product-v18 单 case lifecycle；满足 BINDING 前禁止 Max。
+  `2ee5691` CLOSED。编排 Goal `019fec8e-a851-7952-b49b-8be76a281a57` 为 active，未创建 replacement Goal。
+  下一安全切片是本地 bounded relationship support-ID 合同诊断与 repair；满足 BINDING 前禁止 Max。

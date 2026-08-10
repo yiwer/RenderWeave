@@ -183,3 +183,11 @@ PostgreSQL lease-expiry 恢复 1/1 通过；server `.sdlc/evidence/20260811-0526
 `.sdlc/evidence/20260811-052610-web`、E2E `.sdlc/evidence/20260811-052745-e2e`、clean fast
 `.sdlc/evidence/20260811-052853-fast` 均为 A1 PASS。实现期间三份 ledger 均 CLOSED、Provider attempts=0；
 product-v18 保持 `EXPERIMENTAL`，仍需新的 identity/snapshot 单 case live 验证。
+
+Plus product-v18 随后以 `df166df` PROPOSED → `dca738c` OPEN → `2ee5691` CLOSED 完成单 case lifecycle；
+PROPOSED 负探针精确命中 `VISUAL_EVALUATION_AUTHORIZATION_NOT_OPEN`，Goal state/guard、260 reservations 与
+target evidence 均未变化。唯一 wrapper exit 0 后先 CLOSED 再读取 evidence。独立 verifier A2 重建 5 attempts、
+20,274 input + 4,920 output tokens、89,402 ms、0 abandoned 与 payload scan PASS。OBSERVE 首次接受并记录
+9 SLOT/0 GROUP；四次 HIERARCHY 均为 `VISUAL_HIERARCHY_V2_RELATIONSHIP_SUPPORT_IDS_INVALID`，没有进入
+BINDING，也没有命中新增 region taxonomy。该稳定固定码把下一本地切片收窄到 relationship support ID 合同；
+在三阶段实证可达前仍禁止 Max，product-v18 不晋级。

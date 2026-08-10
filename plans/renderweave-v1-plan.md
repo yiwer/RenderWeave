@@ -5,7 +5,7 @@
 - Spec：[`specs/renderweave-v1.md`](../specs/renderweave-v1.md)
 - 原型：`/prototype/schema-studio?variant=A|B|C`
 - 当前 lifecycle：P0 `accepted`；P1–P4 `automated_verified`；P5 `live_canary_verified` / `live_independently_reviewed` / `decision_recorded`；P6 T6-1 `independently_reviewed`、T6-2 `human_acceptance_pending`、T6-3a `automated_verified`
-- 当前扩展 Goal：P6/T6-5 图片识别 vNext 为 `in_progress`；N0–N1、N3–N4、N6 已 `automated_verified`，N2 为 `live_verified_mixed_a1_a2`，N5 为 `live_verified_not_promoted`；N7 已完成 pinned Flash/guard v2、Flash/Plus reachability 与 Plus v14/v15/v16/v17 A2 smoke，v17 仍停在 HIERARCHY；`4d2cc46` 已完成 v18 detailed region repair taxonomy clean A1，Max 未调用，全部 ledger CLOSED。2026-08-11 J1 delta 将三个预算槽位累计 cap 提到 1M tokens，详见 `plans/renderweave-visual-recognition-vnext-plan.md`。
+- 当前扩展 Goal：P6/T6-5 图片识别 vNext 为 `in_progress`；N0–N1、N3–N4、N6 已 `automated_verified`，N2 为 `live_verified_mixed_a1_a2`，N5 为 `live_verified_not_promoted`；N7 已完成 pinned Flash/guard v2、Flash/Plus reachability 与 Plus v14/v15/v16/v17/v18 A2 smoke，v18 仍停在 HIERARCHY；`4d2cc46` 已完成 detailed region repair taxonomy clean A1，Max 未调用，全部 ledger CLOSED。2026-08-11 J1 delta 将三个预算槽位累计 cap 提到 1M tokens，详见 `plans/renderweave-visual-recognition-vnext-plan.md`。
 
 ## 1. 四维执行配置
 
@@ -425,7 +425,7 @@ Phase 内任务只在真实前置依赖满足时并行。当前没有 atomic cla
 
 #### T6-5：图片识别数据结构 vNext 质量升级
 
-- 执行状态：`in_progress`（用户 J1 + approved spec delta；N0–N1、N3–N4、N6 `automated_verified`，N2 `live_verified_mixed_a1_a2`，N5 `live_verified_not_promoted`；N7 pinned Flash/Plus reachability 与 Plus v14/v15/v16/v17 smoke 已 A2，v15 bounded OBSERVE rewind、v16 evidence-derived cardinality、v17 exact relationship-region owner rewind 与 v18 detailed region repair taxonomy 实现已 clean A1，v17 live 仍停在 HIERARCHY，三阶段与 final eval 尚未满足）
+- 执行状态：`in_progress`（用户 J1 + approved spec delta；N0–N1、N3–N4、N6 `automated_verified`，N2 `live_verified_mixed_a1_a2`，N5 `live_verified_not_promoted`；N7 pinned Flash/Plus reachability 与 Plus v14/v15/v16/v17/v18 smoke 已 A2，v15 bounded OBSERVE rewind、v16 evidence-derived cardinality、v17 exact relationship-region owner rewind 与 v18 detailed region repair taxonomy 实现已 clean A1，v18 live 仍停在 HIERARCHY，三阶段与 final eval 尚未满足）
 - AC：AC-015..021、AC-VR-001..010
 - 依赖：T6-3a.8/9、ADR-0020/0021；N2 live 依赖新的 stage-gold/harness/identity
 - 影响区域：IMAGE_ONLY eval、visual contracts、worker/Profile/Prompt、OCR/layout adapter、review/monitor UI
