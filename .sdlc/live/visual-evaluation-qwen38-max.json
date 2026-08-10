@@ -1,24 +1,24 @@
 {
   "authorizationVersion": "renderweave-visual-evaluation-authorization/1.0",
-  "authorizationId": "visual-v8-array-remediation-qwen38-max-transit-20260811",
-  "status": "CLOSED",
+  "authorizationId": "visual-v9-hierarchy-remediation-qwen38-max-transit-20260811",
+  "status": "PROPOSED",
   "phase": "ABLATION",
   "inputClassification": "REPOSITORY_SYNTHETIC_ONLY",
   "corpusVersion": "renderweave-visual-stage-corpus/1.0",
   "corpusSourceSha256": "bf0db7bf0ac5c4e2b357cdd96c49ff70a7b30a5bc59f322a915020dc29fc605e",
-  "evaluationIdentity": "renderweave-visual-evaluation-tree-sha256/1:99d8f0fb7f63a4d0b054c5a4405c48a7dbeaba0699d36aa4f3b9ea2d6e41a4de",
-  "profileId": "dashscope-qwen38-max-product-v8-generic",
-  "profileSnapshotSha256": "e9342b2636d15ad35ddd361d7957d772755de2d7776e820c7b7ec23a41e74e5b",
+  "evaluationIdentity": "renderweave-visual-evaluation-tree-sha256/1:a45ef0506cf5e72090902eabd01ba9dab1dcf4dce22f8eb275ea8968d3471590",
+  "profileId": "dashscope-qwen38-max-product-v9-generic",
+  "profileSnapshotSha256": "b18660728a3f8db0a79b5e51eff0485baeac65177e8338ee968933f2952c9b71",
   "model": "qwen3.8-max",
   "caseIds": [
     "transit-board-v3"
   ],
   "maximumProviderAttempts": 5,
-  "maximumTotalTokens": 100000,
+  "maximumTotalTokens": 80000,
   "maximumCostMicrosCny": 4000000,
   "maximumCasesPerBatch": 1,
   "approvedBy": "yiwer",
-  "approvedAt": "2026-08-10T16:07:00Z",
+  "approvedAt": "2026-08-10T16:22:00Z",
   "expiresAt": "2026-08-11T15:00:17Z",
-  "approvalScope": "Goal J1 ABLATION: one repository-synthetic transit-board-v3 case; exact qwen3.8-max product-v8-generic with visual evidence array prompt v3; at most 5 attempts, 100000 exposed tokens, CNY 4.00 and one case per batch within the active per-model 500000-token Goal cap"
+  "approvalScope": "Goal J1 ABLATION: one repository-synthetic transit-board-v3 case; exact qwen3.8-max product-v9-generic with visual evidence array prompt v3 and hierarchy tree prompt v3; at most 5 attempts, 80000 exposed tokens, CNY 4.00 and one case per batch within the active per-model 500000-token Goal cap"
 }
