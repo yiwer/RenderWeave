@@ -64,6 +64,7 @@ final class InferenceController {
     private final InferenceProfileRegistry profiles = new InferenceProfileRegistry();
     private final JsonStructuralProfiler structuralProfiler = new JsonStructuralProfiler();
     private static final long MAXIMUM_RUN_COST_LIMIT_MICROS_CNY = 100_000_000L;
+    private static final int MAXIMUM_EXECUTION_LOG_EVENTS = 1_000;
 
     InferenceController(
             InferenceRunService runService,
@@ -240,6 +241,30 @@ final class InferenceController {
     InferenceRunResponse get(@PathVariable UUID runId) {
         return toRunResponse(runStore.find(runId)
                 .orElseThrow(() -> new cn.hbads.renderweave.inference.run.InferenceRunNotFoundException(runId)));
+    }
+
+    @GetMapping("/{runId}/execution-log")
+    InferenceExecutionLogResponse executionLog(@PathVariable UUID runId) {
+        var run = runStore.find(runId)
+                .orElseThrow(() -> new cn.hbads.renderweave.inference.run.InferenceRunNotFoundException(runId));
+        var events = runStore.eventsAfter(runId, 0, MAXIMUM_EXECUTION_LOG_EVENTS);
+        var truncated = !events.isEmpty()
+                && events.getLast().sequence() < run.sequence();
+        return new InferenceExecutionLogResponse(
+                toRunResponse(run),
+                events.stream().map(event -> new InferenceExecutionEventResponse(
+                        event.sequence(), event.type(), event.state().name(),
+                        event.stage().name(), event.occurredAt()
+                )).toList(),
+                replayStore.attempts(runId).stream().map(attempt -> new InferenceAttemptResponse(
+                        attempt.attemptOrdinal(), attempt.stage().name(), attempt.status().name(),
+                        attempt.outcomeCode(), attempt.providerModel().orElse(null),
+                        attempt.inputTokens(), attempt.outputTokens(),
+                        attempt.estimatedCostMicrosCny(), attempt.durationMillis(),
+                        attempt.problemCodeCounts(), attempt.completedAt()
+                )).toList(),
+                truncated
+        );
     }
 
     @PostMapping("/{runId}/cancel")
@@ -611,6 +636,35 @@ final class InferenceController {
             int size,
             long total,
             List<InferenceRunResponse> items
+    ) { }
+
+    record InferenceExecutionLogResponse(
+            InferenceRunResponse run,
+            List<InferenceExecutionEventResponse> events,
+            List<InferenceAttemptResponse> attempts,
+            boolean truncated
+    ) { }
+
+    record InferenceExecutionEventResponse(
+            long sequence,
+            String type,
+            String state,
+            String stage,
+            Instant occurredAt
+    ) { }
+
+    record InferenceAttemptResponse(
+            int attemptOrdinal,
+            String stage,
+            String status,
+            String outcomeCode,
+            String providerModel,
+            long inputTokens,
+            long outputTokens,
+            long costMicrosCny,
+            long durationMillis,
+            Map<String, Integer> problemCodeCounts,
+            Instant completedAt
     ) { }
 
     record CandidateReviewResponse(

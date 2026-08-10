@@ -484,6 +484,37 @@ export type InferenceRunPageResponse = {
     items: Array<InferenceRunResponse>;
 };
 
+export type InferenceExecutionLogResponse = {
+    run: InferenceRunResponse;
+    events: Array<InferenceExecutionEvent>;
+    attempts: Array<InferenceAttempt>;
+    truncated: boolean;
+};
+
+export type InferenceExecutionEvent = {
+    sequence: number;
+    type: string;
+    state: InferenceRunState;
+    stage: InferenceStage;
+    occurredAt: string;
+};
+
+export type InferenceAttempt = {
+    attemptOrdinal: number;
+    stage: 'STRUCTURE' | 'REPAIR';
+    status: 'SUCCEEDED' | 'REJECTED' | 'FAILED';
+    outcomeCode: string;
+    providerModel: string | null;
+    inputTokens: number;
+    outputTokens: number;
+    costMicrosCny: number;
+    durationMillis: number;
+    problemCodeCounts: {
+        [key: string]: number;
+    };
+    completedAt: string;
+};
+
 export type SaveCandidateRequest = {
     expectedCandidateRevision: number;
     candidate: CandidateBundle;
@@ -1578,6 +1609,37 @@ export type GetInferenceRunResponses = {
 };
 
 export type GetInferenceRunResponse = GetInferenceRunResponses[keyof GetInferenceRunResponses];
+
+export type GetInferenceExecutionLogData = {
+    body?: never;
+    path: {
+        runId: string;
+    };
+    query?: never;
+    url: '/api/v1/inference-runs/{runId}/execution-log';
+};
+
+export type GetInferenceExecutionLogErrors = {
+    /**
+     * The requested Draft does not exist.
+     */
+    404: Problem;
+    /**
+     * RFC 9457 problem response.
+     */
+    500: Problem;
+};
+
+export type GetInferenceExecutionLogError = GetInferenceExecutionLogErrors[keyof GetInferenceExecutionLogErrors];
+
+export type GetInferenceExecutionLogResponses = {
+    /**
+     * Structured run progress, attempts, cost and validation-problem counts.
+     */
+    200: InferenceExecutionLogResponse;
+};
+
+export type GetInferenceExecutionLogResponse = GetInferenceExecutionLogResponses[keyof GetInferenceExecutionLogResponses];
 
 export type GetInferenceCandidateData = {
     body?: never;

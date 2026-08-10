@@ -71,6 +71,7 @@ public final class LiveInferenceWorker {
     private final JsonCandidateProfiler jsonCandidateProfiler;
     private final JsonGroundedCandidateComposer groundedComposer;
     private final CandidateValidator candidateValidator;
+    private final ImageOnlyCandidateCanonicalizer imageOnlyCanonicalizer;
     private final CandidateJsonCodec candidateCodec;
     private final CandidateProblemJsonCodec problemCodec;
     private final LiveWorkflowJsonCodec workflowCodec;
@@ -126,6 +127,7 @@ public final class LiveInferenceWorker {
         this.jsonCandidateProfiler = Objects.requireNonNull(jsonCandidateProfiler, "jsonCandidateProfiler");
         this.groundedComposer = Objects.requireNonNull(groundedComposer, "groundedComposer");
         this.candidateValidator = Objects.requireNonNull(candidateValidator, "candidateValidator");
+        this.imageOnlyCanonicalizer = new ImageOnlyCandidateCanonicalizer();
         this.candidateCodec = Objects.requireNonNull(candidateCodec, "candidateCodec");
         this.problemCodec = Objects.requireNonNull(problemCodec, "problemCodec");
         this.workflowCodec = Objects.requireNonNull(workflowCodec, "workflowCodec");
@@ -303,7 +305,11 @@ public final class LiveInferenceWorker {
         var outcomeCode = "LIVE_OUTPUT_ACCEPTED";
         try {
             candidate = candidateCodec.parse(response.candidateJson());
-            if (grounded(profile) && current.mode() == InferenceMode.COMBINED) {
+            if (current.mode() == InferenceMode.IMAGE_ONLY) {
+                var canonical = imageOnlyCanonicalizer.canonicalize(candidate);
+                candidate = canonical.candidate();
+                prevalidationProblems = canonical.problems();
+            } else if (grounded(profile) && current.mode() == InferenceMode.COMBINED) {
                 var composed = groundedComposer.compose(
                         current.runId(), groundedRootKey(current), "推断数据结构",
                         jsonProfile(current), Set.copyOf(imageArtifactIds(current)),

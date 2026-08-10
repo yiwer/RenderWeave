@@ -632,6 +632,28 @@ paths:
           $ref: '#/components/responses/NotFoundProblem'
         '500':
           $ref: '#/components/responses/InternalProblem'
+  /api/v1/inference-runs/{runId}/execution-log:
+    parameters:
+      - $ref: '#/components/parameters/InferenceRunId'
+    get:
+      operationId: getInferenceExecutionLog
+      tags: [Inference Runs]
+      summary: Read the payload-free structured execution log for a run
+      description: >-
+        Returns durable state events and bounded Provider attempt telemetry. It deliberately omits
+        images, prompts, model output, chain-of-thought and Provider request identifiers. At most
+        1000 state events are returned; truncated is true when a longer history exists.
+      responses:
+        '200':
+          description: Structured run progress, attempts, cost and validation-problem counts.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InferenceExecutionLogResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundProblem'
+        '500':
+          $ref: '#/components/responses/InternalProblem'
   /api/v1/inference-runs/{runId}/candidate:
     parameters:
       - $ref: '#/components/parameters/InferenceRunId'
@@ -1903,6 +1925,93 @@ components:
           maxItems: 20
           items:
             $ref: '#/components/schemas/InferenceRunResponse'
+    InferenceExecutionLogResponse:
+      type: object
+      additionalProperties: false
+      required: [run, events, attempts, truncated]
+      properties:
+        run:
+          $ref: '#/components/schemas/InferenceRunResponse'
+        events:
+          type: array
+          maxItems: 1000
+          items:
+            $ref: '#/components/schemas/InferenceExecutionEvent'
+        attempts:
+          type: array
+          maxItems: 3
+          items:
+            $ref: '#/components/schemas/InferenceAttempt'
+        truncated:
+          type: boolean
+    InferenceExecutionEvent:
+      type: object
+      additionalProperties: false
+      required: [sequence, type, state, stage, occurredAt]
+      properties:
+        sequence:
+          type: integer
+          format: int64
+          minimum: 1
+        type:
+          type: string
+          pattern: '^[A-Z][A-Z0-9_]{0,127}$'
+        state:
+          $ref: '#/components/schemas/InferenceRunState'
+        stage:
+          $ref: '#/components/schemas/InferenceStage'
+        occurredAt:
+          type: string
+          format: date-time
+    InferenceAttempt:
+      type: object
+      additionalProperties: false
+      required:
+        [attemptOrdinal, stage, status, outcomeCode, providerModel, inputTokens, outputTokens,
+         costMicrosCny, durationMillis, problemCodeCounts, completedAt]
+      properties:
+        attemptOrdinal:
+          type: integer
+          minimum: 0
+          maximum: 2
+        stage:
+          type: string
+          enum: [STRUCTURE, REPAIR]
+        status:
+          type: string
+          enum: [SUCCEEDED, REJECTED, FAILED]
+        outcomeCode:
+          type: string
+          pattern: '^[A-Z][A-Z0-9_]{0,127}$'
+        providerModel:
+          type: [string, 'null']
+          maxLength: 128
+        inputTokens:
+          type: integer
+          format: int64
+          minimum: 0
+        outputTokens:
+          type: integer
+          format: int64
+          minimum: 0
+        costMicrosCny:
+          type: integer
+          format: int64
+          minimum: 0
+        durationMillis:
+          type: integer
+          format: int64
+          minimum: 0
+        problemCodeCounts:
+          type: object
+          maxProperties: 64
+          additionalProperties:
+            type: integer
+            minimum: 1
+            maximum: 10000
+        completedAt:
+          type: string
+          format: date-time
     SaveCandidateRequest:
       type: object
       additionalProperties: false

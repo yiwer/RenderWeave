@@ -55,6 +55,8 @@ test('completes the four-step Candidate workflow with keyboard authoring and dur
       await route.fulfill({ status: 200, contentType: 'text/event-stream', body: 'retry: 60000\n\n' });
     } else if (method === 'GET' && artifactIds.some((artifactId) => url.pathname.endsWith(`/artifacts/${artifactId}`))) {
       await route.fulfill({ status: 200, contentType: 'image/svg+xml', body: evidenceSvg() });
+    } else if (method === 'GET' && url.pathname === `/api/v1/inference-runs/${runId}/execution-log`) {
+      await json(route, executionLog(runResponse(revision, applied ? 'COMPLETED' : 'REVIEW_REQUIRED')));
     } else if (method === 'GET' && url.pathname === `/api/v1/inference-runs/${runId}`) {
       await json(route, runResponse(revision, applied ? 'COMPLETED' : 'REVIEW_REQUIRED'));
     } else if (method === 'GET' && url.pathname === `/api/v1/inference-runs/${runId}/candidate`) {
@@ -105,6 +107,8 @@ test('completes the four-step Candidate workflow with keyboard authoring and dur
 
   await expect(page).toHaveURL(new RegExp(`/inference-runs/${runId}/review$`));
   await expect(page.getByRole('heading', { name: '校对识别结果' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '执行日志' })).toBeVisible();
+  await expect(page.getByText('模型调用 #1 · 结构识别')).toBeVisible();
   await expect(page.getByRole('navigation', { name: '数据结构识别进度' }).locator('[aria-current="step"]')).toContainText('逐项校对');
   await expect(page.getByText('1 个 blocker 阻止落库')).toBeVisible();
   await expect(page.getByRole('progressbar', { name: '逐项校对完成度' })).toHaveAttribute('aria-valuenow', '50');
@@ -354,6 +358,8 @@ test('requires confirmation to cancel and creates a new auditable retry run', as
     const url = new URL(request.url());
     if (request.method() === 'GET' && url.pathname === `/api/v1/inference-runs/${runId}`) {
       await json(route, run);
+    } else if (request.method() === 'GET' && url.pathname === `/api/v1/inference-runs/${runId}/execution-log`) {
+      await json(route, executionLog(run));
     } else if (request.method() === 'POST' && url.pathname === `/api/v1/inference-runs/${runId}/cancel`) {
       cancelCalls += 1;
       run = { ...run, state: 'CANCELLED', finishedAt: '2026-08-10T00:00:03Z' };
@@ -364,6 +370,8 @@ test('requires confirmation to cancel and creates a new auditable retry run', as
       await json(route, { ...runResponse(0, 'QUEUED', retryRunId), retryOfRunId: runId }, 201);
     } else if (request.method() === 'GET' && url.pathname === `/api/v1/inference-runs/${retryRunId}`) {
       await json(route, { ...runResponse(0, 'QUEUED', retryRunId), retryOfRunId: runId });
+    } else if (request.method() === 'GET' && url.pathname === `/api/v1/inference-runs/${retryRunId}/execution-log`) {
+      await json(route, executionLog({ ...runResponse(0, 'QUEUED', retryRunId), retryOfRunId: runId }));
     } else {
       await route.abort('failed');
     }
@@ -399,6 +407,8 @@ test('keeps a failed autosave locally and lets the user retry without losing edi
       await route.fulfill({ status: 200, contentType: 'image/svg+xml', body: evidenceSvg() });
     } else if (request.method() === 'GET' && url.pathname === `/api/v1/inference-runs/${runId}`) {
       await json(route, runResponse(revision, 'REVIEW_REQUIRED'));
+    } else if (request.method() === 'GET' && url.pathname === `/api/v1/inference-runs/${runId}/execution-log`) {
+      await json(route, executionLog(runResponse(revision, 'REVIEW_REQUIRED')));
     } else if (request.method() === 'GET' && url.pathname === `/api/v1/inference-runs/${runId}/candidate`) {
       await json(route, reviewResponse(server, revision, problemsFor(server), false));
     } else if (request.method() === 'PUT' && url.pathname === `/api/v1/inference-runs/${runId}/candidate`) {
@@ -557,6 +567,30 @@ function runResponse(
     finishedAt: state === 'COMPLETED' || state === 'FAILED' || state === 'CANCELLED'
       ? '2026-08-10T00:00:02Z'
       : null,
+  };
+}
+
+function executionLog(run: InferenceRunResponse) {
+  return {
+    run,
+    events: [
+      { sequence: 1, type: 'QUEUED', state: 'QUEUED', stage: 'OBSERVE', occurredAt: '2026-08-10T00:00:00Z' },
+      { sequence: run.sequence, type: run.state === 'COMPLETED' ? 'CANDIDATE_APPLIED' : run.state === 'CANCELLED' ? 'CANCELLED' : 'REVIEW_REQUIRED', state: run.state, stage: run.stage, occurredAt: run.updatedAt },
+    ],
+    attempts: [{
+      attemptOrdinal: 0,
+      stage: 'STRUCTURE',
+      status: 'SUCCEEDED',
+      outcomeCode: 'REPLAY_OUTPUT_ACCEPTED',
+      providerModel: null,
+      inputTokens: 0,
+      outputTokens: 0,
+      costMicrosCny: 0,
+      durationMillis: 12,
+      problemCodeCounts: { LOW_CONFIDENCE_UNRESOLVED: 1 },
+      completedAt: '2026-08-10T00:00:00.500Z',
+    }],
+    truncated: false,
   };
 }
 

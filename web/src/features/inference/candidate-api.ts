@@ -3,6 +3,7 @@ import {
   cancelInferenceRun,
   createReplayInferenceRun,
   getInferenceCandidate,
+  getInferenceExecutionLog,
   getInferenceRun,
   getLiveInferenceAvailability,
   listInferenceRuns,
@@ -14,6 +15,7 @@ import {
   type CandidateReviewResponse,
   type CreateLiveRunRequest,
   type InferenceEvent,
+  type InferenceExecutionLogResponse,
   type InferenceRunResponse,
   type InferenceRunPageResponse,
   type InferenceMode,
@@ -85,6 +87,13 @@ export async function createLiveRunRequest(
 export async function getInferenceRunRequest(runId: string): Promise<InferenceRunResponse> {
   const result = await getInferenceRun({ path: { runId } });
   return unwrap(result.data, result.error, '读取推断任务');
+}
+
+export async function getInferenceExecutionLogRequest(
+  runId: string,
+): Promise<InferenceExecutionLogResponse> {
+  const result = await getInferenceExecutionLog({ path: { runId } });
+  return unwrap(result.data, result.error, '读取推断执行日志');
 }
 
 export async function listInferenceRunsRequest(

@@ -420,6 +420,36 @@ class PostgresLiveInferenceWorkflowTest {
     }
 
     @Test
+    void imageOnlyCanonicalFormattingNoiseIsNormalizedBeforeHumanReview() {
+        var blobs = new MemoryBlobStore();
+        var created = create(blobs, "live-image-only-canonical-formatting");
+        var provider = new ScriptedProvider(
+                request -> response(request, candidateWithCanonicalFormattingNoise(request))
+        );
+
+        var finished = worker(provider, blobs).processNext("live-image-only-normalize-worker").orElseThrow();
+
+        assertThat(finished.state()).isEqualTo(InferenceRunState.REVIEW_REQUIRED);
+        assertThat(provider.requests).hasSize(1);
+        var attempt = workflowStore.attempts(created).getFirst();
+        assertThat(attempt.problemCodeCounts())
+                .containsEntry("CANDIDATE_SCHEMA_KEY_NORMALIZED", 1)
+                .containsEntry("CANDIDATE_SCALAR_OBSERVED_KINDS_NORMALIZED", 6)
+                .containsEntry("CANDIDATE_ITEM_UNRESOLVED", 1)
+                .doesNotContainKeys("CANDIDATE_SCHEMA_KEY_INVALID", "CANDIDATE_SCALAR_SHAPE_INVALID");
+        var review = workflowStore.findCandidate(created).orElseThrow();
+        var candidate = candidateCodec.parse(review.currentJson());
+        assertThat(candidate.schemas().getFirst().proposedSchemaKey())
+                .matches("inferred-[0-9a-f]{32}");
+        assertThat(candidate.schemas().getFirst().fields())
+                .allSatisfy(field -> assertThat(field.value().observedKinds()).isEmpty());
+        assertThat(review.validationProblemsJson())
+                .contains("CANDIDATE_SCHEMA_KEY_NORMALIZED")
+                .contains("CANDIDATE_SCALAR_OBSERVED_KINDS_NORMALIZED")
+                .contains("CANDIDATE_ITEM_UNRESOLVED");
+    }
+
+    @Test
     void unrepresentableExactJsonFieldKeyIsPreservedForHumanReviewWithoutRepair() {
         var blobs = new MemoryBlobStore();
         var fieldKey = "x".repeat(129);
@@ -706,6 +736,38 @@ class PostgresLiveInferenceWorkflowTest {
                                 fieldId, "title", "标题", false,
                                 CandidateValue.unresolved("null"), CandidateSource.AI, fieldAssessment
                         ))
+                ))
+        ));
+    }
+
+    private String candidateWithCanonicalFormattingNoise(ProviderInferenceRequest request) {
+        var schemaId = UUID.nameUUIDFromBytes((request.runId() + ":schema").getBytes(StandardCharsets.UTF_8));
+        var evidence = CandidateEvidence.image(
+                request.images().getFirst().artifactId(), new CandidateBoundingBox(500, 500, 9_500, 2_500)
+        );
+        var schemaAssessment = CandidateAssessment.ai(
+                9_000, true, CandidateResolution.NOT_REQUIRED, List.of(evidence)
+        );
+        var fields = new ArrayList<CandidateField>();
+        for (var index = 0; index < 6; index++) {
+            var assessment = CandidateAssessment.ai(
+                    9_000, true,
+                    index == 0 ? CandidateResolution.UNRESOLVED : CandidateResolution.NOT_REQUIRED,
+                    List.of(evidence)
+            );
+            fields.add(new CandidateField(
+                    UUID.nameUUIDFromBytes((request.runId() + ":field:" + index).getBytes(StandardCharsets.UTF_8)),
+                    "field" + index, "字段 " + (index + 1), false,
+                    new CandidateValue(
+                            CandidateValueKind.TEXT, null, null, List.of("TEXT"), Map.of()
+                    ),
+                    CandidateSource.AI, assessment
+            ));
+        }
+        return candidateCodec.write(new CandidateBundle(
+                CandidateBundle.CONTRACT_VERSION, schemaId,
+                List.of(new CandidateSchema(
+                        schemaId, "商品卡片", "商品卡片", CandidateSource.AI, schemaAssessment, fields
                 ))
         ));
     }

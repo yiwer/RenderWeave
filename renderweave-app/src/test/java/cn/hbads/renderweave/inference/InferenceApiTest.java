@@ -419,6 +419,30 @@ class InferenceApiTest {
     }
 
     @Test
+    void executionLogExposesCompleteStructuredProgressWithoutProviderPayloads() throws Exception {
+        var createdBody = mockMvc.perform(post("/api/v1/inference-runs")
+                        .header("Idempotency-Key", "api-execution-log")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"fixtureId":"image-01-product-card","externalTransferConfirmed":true}
+                                """))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        var runId = json.readTree(createdBody).path("runId").asText();
+
+        mockMvc.perform(get("/api/v1/inference-runs/{runId}/execution-log", runId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.run.runId").value(runId))
+                .andExpect(jsonPath("$.events[0].type").value("QUEUED"))
+                .andExpect(jsonPath("$.events[0].data").doesNotExist())
+                .andExpect(jsonPath("$.attempts[0].attemptOrdinal").value(0))
+                .andExpect(jsonPath("$.attempts[0].stage").value("STRUCTURE"))
+                .andExpect(jsonPath("$.attempts[0].providerRequestId").doesNotExist())
+                .andExpect(jsonPath("$.attempts[0].problemCodeCounts").isMap())
+                .andExpect(jsonPath("$.truncated").value(false));
+    }
+
+    @Test
     void reviewCancellationAndManualRetryCreateANewAuditableRunWithoutDrafts() throws Exception {
         var created = mockMvc.perform(post("/api/v1/inference-runs")
                         .header("Idempotency-Key", "api-cancel-source")

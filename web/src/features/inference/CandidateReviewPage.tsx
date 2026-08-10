@@ -42,6 +42,7 @@ import {
   type CandidateReviewState,
 } from './candidate-session';
 import { InferenceFlowSteps } from './InferenceFlowSteps';
+import { InferenceExecutionLogPanel } from './InferenceExecutionLogPanel';
 import { inferenceStageLabel, inferenceStateLabel } from './inference-format';
 
 export function CandidateReviewPage() {
@@ -102,6 +103,13 @@ export function CandidateReviewPage() {
           error={cancelRun.error ?? retryRun.error}
           onCancel={() => cancelRun.mutate()}
           onRetry={() => retryRun.mutate()}
+        />
+      )}
+      {runQuery.data && (
+        <InferenceExecutionLogPanel
+          runId={runQuery.data.runId}
+          state={runQuery.data.state}
+          sequence={runQuery.data.sequence}
         />
       )}
       {reviewReady && query.isPending && <ResourceLoading label="正在读取 Candidate 与证据" />}

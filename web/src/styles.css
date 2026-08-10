@@ -5215,6 +5215,124 @@ button.required-toggle.active,
 .spin { animation: inference-spin .9s linear infinite; }
 @keyframes inference-spin { to { transform: rotate(360deg); } }
 
+.inference-execution-log {
+  margin-top: 12px;
+  overflow: hidden;
+  border: 1px solid var(--hairline);
+  border-radius: 11px;
+  background: var(--surface);
+  box-shadow: 0 9px 27px rgb(28 27 25 / 4%);
+}
+
+.inference-execution-log > header {
+  display: flex;
+  min-height: 64px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--hairline);
+  background: #fcfaf6;
+}
+
+.inference-log-title,
+.inference-log-actions,
+.inference-log-title > span {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+}
+
+.inference-log-title { gap: 9px; color: var(--primary); }
+.inference-log-title > span { flex-direction: column; align-items: flex-start; gap: 2px; }
+.inference-log-title h2 { margin: 0; color: var(--ink); font-size: 14px; }
+.inference-log-title small { color: var(--muted); font-size: 10px; line-height: 1.45; }
+.inference-log-actions { flex: 0 0 auto; gap: 6px; }
+.inference-log-actions .button { min-height: 40px; }
+.inference-log-toggle svg { transition: transform 180ms ease-out; }
+.inference-log-toggle[aria-expanded="true"] svg { transform: rotate(180deg); }
+
+.inference-log-body { display: grid; gap: 12px; padding: 14px; }
+.inference-log-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.inference-log-summary > div {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: 32px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--hairline);
+  border-radius: 8px;
+  background: #f8f7f3;
+}
+.inference-log-metric-icon { display: grid; width: 32px; height: 32px; place-items: center; border-radius: 8px; background: #eee7dc; color: var(--primary); }
+.inference-log-summary > div > span:last-child { display: flex; min-width: 0; flex-direction: column; gap: 1px; }
+.inference-log-summary small { color: var(--muted); font-size: 9px; font-weight: 700; }
+.inference-log-summary strong { color: var(--ink); font-size: 15px; font-variant-numeric: tabular-nums; }
+.inference-log-summary em { overflow: hidden; color: var(--muted); font-size: 9px; font-style: normal; text-overflow: ellipsis; white-space: nowrap; }
+
+.inference-log-state,
+.inference-log-empty,
+.inference-log-truncated {
+  display: flex;
+  min-height: 48px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px dashed var(--hairline-strong);
+  border-radius: 8px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+.inference-log-state.error,
+.inference-log-truncated { justify-content: flex-start; border-style: solid; border-color: #e0b8b3; background: #fff3f1; color: var(--error); }
+.inference-log-state.error span { flex: 1; }
+.inference-log-more { min-height: 40px; justify-self: start; }
+
+.inference-log-timeline { display: grid; gap: 0; margin: 0; padding: 0; list-style: none; }
+.inference-log-entry {
+  position: relative;
+  display: grid;
+  min-width: 0;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 8px;
+  padding: 0 0 13px;
+}
+.inference-log-entry:last-child { padding-bottom: 0; }
+.inference-log-entry:not(:last-child)::before {
+  position: absolute;
+  z-index: 0;
+  top: 28px;
+  bottom: 0;
+  left: 16px;
+  width: 1px;
+  background: var(--hairline-strong);
+  content: "";
+}
+.inference-log-marker { position: relative; z-index: 1; display: grid; width: 34px; height: 34px; place-items: center; border: 1px solid #c9d8cc; border-radius: 50%; background: #f5faf5; color: var(--success); }
+.inference-log-entry.failed .inference-log-marker { border-color: #e0b8b3; background: #fff3f1; color: var(--error); }
+.inference-log-entry.attempt .inference-log-marker { border-color: #c8c9dc; background: #f3f3f8; color: #555979; }
+.inference-log-entry-main { min-width: 0; padding: 8px 10px; border: 1px solid var(--hairline); border-radius: 8px; background: #fff; }
+.inference-log-entry.attempt .inference-log-entry-main { border-color: #d8d8e2; background: #f8f8fb; }
+.inference-log-entry.failed .inference-log-entry-main { border-color: #e0b8b3; }
+.inference-log-entry-heading { display: flex; min-width: 0; align-items: baseline; justify-content: space-between; gap: 12px; }
+.inference-log-entry-heading strong { overflow-wrap: anywhere; color: var(--ink); font-size: 12px; }
+.inference-log-entry-heading time { flex: 0 0 auto; color: var(--muted); font-size: 9px; font-variant-numeric: tabular-nums; }
+.inference-log-entry-main > p { margin: 3px 0 0; color: var(--muted); font-size: 10px; line-height: 1.45; }
+.inference-log-sequence { display: inline-block; margin-top: 5px; color: var(--muted); font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace; font-size: 8px; }
+.inference-attempt-facts { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 7px; }
+.inference-attempt-facts span,
+.inference-attempt-facts code { padding: 3px 6px; border-radius: 5px; background: #ececf2; color: #555979; font-size: 9px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.inference-attempt-facts code { background: #eee7dc; color: var(--body); }
+.inference-attempt-problems { display: grid; gap: 5px; margin: 8px 0 0; padding: 0; list-style: none; }
+.inference-attempt-problems li { display: grid; min-width: 0; grid-template-columns: minmax(140px, .8fr) minmax(180px, 1.4fr) auto; align-items: center; gap: 8px; padding: 6px 8px; border: 1px solid #e4cec4; border-radius: 6px; background: #fff9f6; }
+.inference-attempt-problems span { color: var(--body); font-size: 10px; }
+.inference-attempt-problems code { min-width: 0; overflow-wrap: anywhere; color: var(--muted); font-size: 9px; }
+.inference-attempt-problems strong { color: var(--error); font-size: 10px; font-variant-numeric: tabular-nums; }
+
 .candidate-run-strip {
   display: grid;
   grid-template-columns: minmax(145px, 1.5fr) .7fr 1fr 62px 112px;
@@ -6166,6 +6284,10 @@ button.required-toggle.active,
 
   .candidate-run-strip > div:nth-child(3n) { border-right: 0; }
   .candidate-run-strip > div:nth-child(n + 4) { border-top: 1px solid var(--hairline); }
+
+  .inference-log-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .inference-attempt-problems li { grid-template-columns: minmax(0, 1fr) auto; }
+  .inference-attempt-problems code { grid-column: 1 / -1; }
 
   .candidate-review-overview { grid-template-columns: minmax(0, 1fr); }
 

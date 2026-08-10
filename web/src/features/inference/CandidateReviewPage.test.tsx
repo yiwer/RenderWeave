@@ -5,12 +5,19 @@ import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-libra
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { CandidateApplyResponse, CandidateReviewResponse, InferenceEvent } from '../../api/generated';
+import type {
+  CandidateApplyResponse,
+  CandidateReviewResponse,
+  InferenceEvent,
+  InferenceExecutionLogResponse,
+  InferenceRunResponse,
+} from '../../api/generated';
 import { CandidateReviewPage } from './CandidateReviewPage';
 import { snapshot } from './candidate-session.test';
 
 const api = vi.hoisted(() => ({
   getInferenceRunRequest: vi.fn(),
+  getInferenceExecutionLogRequest: vi.fn(),
   getCandidateReviewRequest: vi.fn(),
   saveCandidateReviewRequest: vi.fn(),
   applyCandidateRequest: vi.fn(),
@@ -31,6 +38,7 @@ describe('Candidate atomic apply workspace', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     api.getInferenceRunRequest.mockResolvedValue(structuredClone(snapshot().run));
+    api.getInferenceExecutionLogRequest.mockImplementation(async () => executionLog(snapshot().run));
     api.subscribeInferenceRunEvents.mockReturnValue(() => undefined);
   });
 
@@ -96,6 +104,28 @@ describe('Candidate atomic apply workspace', () => {
 
     fireEvent.click(await screen.findByRole('button', { name: '重新运行' }));
     await waitFor(() => expect(api.retryInferenceRunRequest).toHaveBeenCalledWith(failed.runId));
+  });
+
+  it('renders payload-free stage and attempt diagnostics for a failed live run', async () => {
+    const failed = {
+      ...snapshot().run,
+      state: 'FAILED' as const,
+      stage: 'CRITIQUE' as const,
+      sequence: 6,
+      failureCode: 'LIVE_UNSAFE_BLOCKER_SET',
+      finishedAt: '2026-08-10T04:03:12Z',
+    };
+    api.getInferenceRunRequest.mockResolvedValue(failed);
+    api.getInferenceExecutionLogRequest.mockResolvedValue(executionLog(failed, true));
+    renderPage();
+
+    expect(await screen.findByRole('heading', { name: '执行日志' })).toBeTruthy();
+    expect(await screen.findByText('模型调用 #1 · 结构识别')).toBeTruthy();
+    expect(screen.getByText('CANDIDATE_SCHEMA_KEY_INVALID')).toBeTruthy();
+    expect(screen.getByText('CANDIDATE_SCALAR_SHAPE_INVALID')).toBeTruthy();
+    expect(screen.getByText('× 6')).toBeTruthy();
+    expect(screen.getAllByText(/0\.002715/).length).toBeGreaterThan(0);
+    expect(screen.queryByText('req-private-provider-id')).toBeNull();
   });
 
   it('synchronizes an externally completed Candidate snapshot into the run flow', async () => {
@@ -168,6 +198,48 @@ function cleanReview(): CandidateReviewResponse {
   review.original = structuredClone(review.current);
   review.problems = [];
   return review;
+}
+
+function executionLog(run: InferenceRunResponse, failed = false): InferenceExecutionLogResponse {
+  return {
+    run,
+    events: [
+      {
+        sequence: 1,
+        type: 'QUEUED',
+        state: 'QUEUED',
+        stage: 'OBSERVE',
+        occurredAt: '2026-08-10T04:02:49Z',
+      },
+      {
+        sequence: run.sequence,
+        type: failed ? 'FAILED' : 'REVIEW_REQUIRED',
+        state: failed ? 'FAILED' : run.state,
+        stage: failed ? 'CRITIQUE' : run.stage,
+        occurredAt: '2026-08-10T04:03:12Z',
+      },
+    ],
+    attempts: failed ? [
+      {
+        attemptOrdinal: 0,
+        stage: 'STRUCTURE',
+        status: 'SUCCEEDED',
+        outcomeCode: 'LIVE_OUTPUT_ACCEPTED',
+        providerModel: 'qwen3.7-flash',
+        inputTokens: 4_196,
+        outputTokens: 2_343,
+        costMicrosCny: 2_715,
+        durationMillis: 22_083,
+        problemCodeCounts: {
+          CANDIDATE_ITEM_UNRESOLVED: 1,
+          CANDIDATE_SCHEMA_KEY_INVALID: 1,
+          CANDIDATE_SCALAR_SHAPE_INVALID: 6,
+        },
+        completedAt: '2026-08-10T04:03:11Z',
+      },
+    ] : [],
+    truncated: false,
+  };
 }
 
 function applyResult(review: CandidateReviewResponse): CandidateApplyResponse {
