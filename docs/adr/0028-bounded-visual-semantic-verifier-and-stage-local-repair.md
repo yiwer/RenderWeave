@@ -274,5 +274,16 @@ inference 定向 35/35、独立 verifier 2/2、真实 PostgreSQL lease-expiry �
 `.sdlc/evidence/20260811-064835-server`、Node 24 web `.sdlc/evidence/20260811-065005-web`、E2E
 `.sdlc/evidence/20260811-065038-e2e` 与提交后 clean fast `.sdlc/evidence/20260811-065134-fast` 均为 A1 PASS。
 实现与门控期间 Provider attempts=0，三份 ledger 保持 CLOSED。该证据只证明 repository synthetic 合同可达；
-下一步必须重新计算 evaluation identity/Profile snapshot，并以独立精确 J1 ledger 执行 Plus product-v21 单 case。
-只有 live 实际触达 BINDING 才可考虑 Max。
+该 local A1 当时只允许重新计算 evaluation identity/Profile snapshot 后，以独立精确 J1 ledger 执行 Plus
+product-v21 单 case；只有 live 实际触达 BINDING 才可考虑 Max。
+
+Plus product-v21 随后以 `405fa9e` PROPOSED → `d793c92` OPEN → `02872c5` CLOSED 完成单 case lifecycle；
+PROPOSED 负探针精确命中 `VISUAL_EVALUATION_AUTHORIZATION_NOT_OPEN`，Goal/guard 哈希、275 reservations 与
+target evidence 均未变化。唯一 wrapper exit 0、174,353 ms，且无遗留进程；先 CLOSED 后读取 evidence。独立
+verifier A2 重建 5 attempts、18,715 input + 8,810 output tokens、164,553 ms、0 abandoned 与 payload scan PASS。
+前两次 OBSERVE 分别为 parent-kind/element fixed code，第三次 accepted；随后两次 HIERARCHY 均为
+support-not-group，未进入 BINDING，也未命中 region normalization telemetry。
+
+该结果没有建立 Max 入口，也不支持重复相同 v21。下一本地诊断只检查：当 relationship support ID 指向非 GROUP
+时，relationship 的 exact known region 是否恰有一个已验证 GROUP owner，可在不依赖距离、顺序、模型原文或
+跨 GROUP 猜测的前提下提供唯一替换；若零个或多个，必须保持既有 fixed code fail-closed。
