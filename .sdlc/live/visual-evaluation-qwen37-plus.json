@@ -1,20 +1,16 @@
 {
   "authorizationVersion": "renderweave-visual-evaluation-authorization/1.0",
-  "authorizationId": "visual-v4-baseline-qwen37-plus-20260810",
-  "status": "CLOSED",
+  "authorizationId": "visual-v4-baseline-qwen37-plus-continuation-20260810",
+  "status": "PROPOSED",
   "phase": "BASELINE",
   "inputClassification": "REPOSITORY_SYNTHETIC_ONLY",
   "corpusVersion": "renderweave-visual-stage-corpus/1.0",
   "corpusSourceSha256": "bf0db7bf0ac5c4e2b357cdd96c49ff70a7b30a5bc59f322a915020dc29fc605e",
-  "evaluationIdentity": "renderweave-visual-evaluation-tree-sha256/1:9e158348664c8bc7298c6edcf8ae7fe207b2a5842e5fc57e50027482582ca456",
+  "evaluationIdentity": "renderweave-visual-evaluation-tree-sha256/1:4dc70c521516860e57825da629ba4bf2f2c1ac2d7ec895852eeb1ec42b42a5e2",
   "profileId": "dashscope-qwen37-plus-product-v4",
   "profileSnapshotSha256": "a84f321cac229644d3e346c9007ac9cd510c86167ab820102aae7699cd7ec08a",
   "model": "qwen3.7-plus",
   "caseIds": [
-    "transit-board-v3",
-    "transit-board-v4",
-    "transit-board-v5",
-    "restaurant-menu-v5",
     "hospital-schedule-v5",
     "invoice-lines-v3",
     "product-catalog-v1",
@@ -24,12 +20,12 @@
     "building-directory-v2",
     "low-information-poster-v1"
   ],
-  "maximumProviderAttempts": 60,
-  "maximumTotalTokens": 200000,
-  "maximumCostMicrosCny": 1600000,
+  "maximumProviderAttempts": 40,
+  "maximumTotalTokens": 240000,
+  "maximumCostMicrosCny": 1000000,
   "maximumCasesPerBatch": 5,
-  "approvedBy": "yiwer",
-  "approvedAt": "2026-08-10T11:29:10Z",
-  "expiresAt": "2026-08-11T10:59:10Z",
-  "approvalScope": "Goal J1 BASELINE: repository-synthetic 12-case sentinel; qwen3.7-plus product-v4; at most 60 attempts, 200000 tokens, CNY 1.60 and 5 cases per batch"
+  "approvedBy": null,
+  "approvedAt": null,
+  "expiresAt": null,
+  "approvalScope": null
 }
