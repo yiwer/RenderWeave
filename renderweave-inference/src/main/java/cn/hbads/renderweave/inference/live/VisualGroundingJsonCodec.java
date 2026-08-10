@@ -8,6 +8,9 @@ import tools.jackson.databind.MapperFeature;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.SerializationFeature;
 import tools.jackson.databind.cfg.EnumFeature;
+import tools.jackson.databind.exc.InvalidFormatException;
+import tools.jackson.databind.exc.MismatchedInputException;
+import tools.jackson.databind.exc.ValueInstantiationException;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.nio.charset.StandardCharsets;
@@ -185,8 +188,79 @@ final class VisualGroundingJsonCodec {
         try {
             return JSON.readValue(value, type);
         } catch (Exception failure) {
-            throw invalid(prefix + "_JSON_INVALID", failure);
+            throw invalid(classifyJsonFailure(prefix, failure), failure);
         }
+    }
+
+    private static String classifyJsonFailure(String prefix, Throwable failure) {
+        if (containsType(failure, "UnrecognizedPropertyException")) {
+            return prefix + "_JSON_UNKNOWN_MEMBER";
+        }
+        var invalidFormat = findCause(failure, InvalidFormatException.class);
+        if (invalidFormat != null) {
+            var target = invalidFormat.getTargetType();
+            return prefix + (target != null && target.isEnum()
+                    ? "_JSON_ENUM_INVALID" : "_JSON_FORMAT_INVALID");
+        }
+        if (findCause(failure, ValueInstantiationException.class) != null) {
+            return prefix + "_JSON_CONSTRUCTOR_INVALID";
+        }
+        if (findCause(failure, MismatchedInputException.class) != null) {
+            if (messageStartsWithForType(
+                    failure, "MismatchedInputException", "trailing token (`jsontoken."
+            )) {
+                return prefix + "_JSON_TRAILING_CONTENT";
+            }
+            return prefix + "_JSON_SHAPE_INVALID";
+        }
+        if (containsType(failure, "StreamReadException")
+                || containsType(failure, "UnexpectedEndOfInputException")) {
+            if (messageStartsWithForType(failure, "StreamReadException", "duplicate field")
+                    || messageStartsWithForType(
+                            failure, "StreamReadException", "duplicate object property"
+                    )) {
+                return prefix + "_JSON_DUPLICATE_MEMBER";
+            }
+            return prefix + "_JSON_SYNTAX_INVALID";
+        }
+        return prefix + "_JSON_OTHER";
+    }
+
+    private static boolean containsType(Throwable failure, String simpleName) {
+        for (var cause = failure; cause != null; cause = cause.getCause()) {
+            if (isType(cause, simpleName)) return true;
+        }
+        return false;
+    }
+
+    private static <T extends Throwable> T findCause(Throwable failure, Class<T> expectedType) {
+        for (var cause = failure; cause != null; cause = cause.getCause()) {
+            if (expectedType.isInstance(cause)) return expectedType.cast(cause);
+        }
+        return null;
+    }
+
+    private static boolean messageStartsWithForType(
+            Throwable failure,
+            String simpleName,
+            String prefix
+    ) {
+        var expected = prefix.toLowerCase(java.util.Locale.ROOT);
+        for (var cause = failure; cause != null; cause = cause.getCause()) {
+            if (!isType(cause, simpleName)) continue;
+            var message = cause.getMessage();
+            if (message != null && message.toLowerCase(java.util.Locale.ROOT).startsWith(expected)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean isType(Throwable failure, String simpleName) {
+        for (Class<?> type = failure.getClass(); type != null; type = type.getSuperclass()) {
+            if (type.getSimpleName().equals(simpleName)) return true;
+        }
+        return false;
     }
 
     private static <T> T classified(String code, CheckedSupplier<T> supplier) {

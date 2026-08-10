@@ -1,6 +1,9 @@
 package cn.hbads.renderweave.inference.live;
 
 import cn.hbads.renderweave.inference.candidate.CandidateBoundingBox;
+import cn.hbads.renderweave.inference.provider.ProviderInferenceResponse;
+import cn.hbads.renderweave.inference.provider.ProviderUsage;
+import cn.hbads.renderweave.inference.run.InferenceStage;
 import org.junit.jupiter.api.Test;
 
 import javax.imageio.ImageIO;
@@ -53,7 +56,7 @@ class VisualGroundingContractTest {
         assertDiagnostic(elementsJson().replace("view-00-overview-00", "unknown-view"), views,
                 "VISUAL_GROUNDING_REGION_INVALID");
         assertDiagnostic(elementsJson().replaceFirst("\"left\":0", "\"left\":-1"), views,
-                "VISUAL_GROUNDING_JSON_INVALID");
+                "VISUAL_GROUNDING_JSON_CONSTRUCTOR_INVALID");
         assertDiagnostic(elementsJson().replace(
                 "\"left\":100,\"top\":100,\"right\":3000,\"bottom\":700",
                 "\"left\":100,\"top\":2500,\"right\":3000,\"bottom\":2700"
@@ -77,23 +80,32 @@ class VisualGroundingContractTest {
         var views = views();
         var observed = codec.parseElements(elementsJson(), views, List.of(IMAGE_ID));
 
-        assertEquals("VISUAL_GROUNDING_JSON_INVALID", assertThrows(
+        assertEquals("VISUAL_GROUNDING_JSON_UNKNOWN_MEMBER", assertThrows(
                 InvalidVisualAnalysisException.class, () -> codec.parseElements(
                 elementsJson().replaceFirst("\\{", "{\"unexpected\":true,"), views, List.of(IMAGE_ID)
         )).diagnosticCode());
-        assertEquals("VISUAL_GROUNDING_JSON_INVALID", assertThrows(
+        assertEquals("VISUAL_GROUNDING_JSON_DUPLICATE_MEMBER", assertThrows(
                 InvalidVisualAnalysisException.class, () -> codec.parseElements(
                 elementsJson().replaceFirst("\"contractVersion\":", "\"contractVersion\":\"bad\",\"contractVersion\":"),
                 views, List.of(IMAGE_ID)
         )).diagnosticCode());
-        assertEquals("VISUAL_GROUNDING_JSON_INVALID", assertThrows(
+        assertEquals("VISUAL_GROUNDING_JSON_TRAILING_CONTENT", assertThrows(
                 InvalidVisualAnalysisException.class, () -> codec.parseElements(
                 elementsJson() + "{}", views, List.of(IMAGE_ID)
         )).diagnosticCode());
-        assertEquals("VISUAL_GROUNDING_JSON_INVALID", assertThrows(
+        assertEquals("VISUAL_GROUNDING_JSON_SHAPE_INVALID", assertThrows(
                 InvalidVisualAnalysisException.class, () -> codec.parseElements(
                 elementsJson().replace("\"readingOrder\":0", "\"readingOrder\":\"0\""),
                 views, List.of(IMAGE_ID)
+        )).diagnosticCode());
+        assertEquals("VISUAL_GROUNDING_JSON_ENUM_INVALID", assertThrows(
+                InvalidVisualAnalysisException.class, () -> codec.parseElements(
+                elementsJson().replaceFirst("\"kind\":\"ROOT\"", "\"kind\":\"DOCUMENT\""),
+                views, List.of(IMAGE_ID)
+        )).diagnosticCode());
+        assertEquals("VISUAL_GROUNDING_JSON_SYNTAX_INVALID", assertThrows(
+                InvalidVisualAnalysisException.class, () -> codec.parseElements(
+                elementsJson().substring(0, elementsJson().length() - 8), views, List.of(IMAGE_ID)
         )).diagnosticCode());
         assertDiagnostic(elementsJson().replace(
                 "renderweave-visual-grounding/2.0", "renderweave-visual-grounding/9.0"
@@ -114,6 +126,21 @@ class VisualGroundingContractTest {
                         "{\"elementId\":\"title\",\"entityId\":\"item\"}"
                 ), observed.inventory(), hierarchy.hierarchy(), observed.grounding(), hierarchy.entityRegions()
         )).diagnosticCode());
+    }
+
+    @Test
+    void classifiesProviderLengthStopsWithoutInspectingOrPersistingPayload() {
+        var response = new ProviderInferenceResponse(
+                "{\"partial\":true}", "request-1", "qwen3.8-max",
+                new ProviderUsage(10, 20), "length"
+        );
+
+        assertEquals("VISUAL_GROUNDING_OUTPUT_TRUNCATED", assertThrows(
+                InvalidVisualAnalysisException.class,
+                () -> LiveInferenceWorker.requireCompleteGroundedResponse(
+                        InferenceStage.OBSERVE, response
+                )
+        ).diagnosticCode());
     }
 
     private void assertDiagnostic(String json, VisualViewPlan views, String expectedCode) {

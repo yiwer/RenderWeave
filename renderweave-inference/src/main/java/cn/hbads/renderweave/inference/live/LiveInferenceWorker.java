@@ -646,6 +646,7 @@ public final class LiveInferenceWorker {
         final InferenceStage nextStage;
         final String outcomeCode;
         try {
+            requireCompleteGroundedResponse(current.stage(), response);
             switch (current.stage()) {
                 case OBSERVE -> {
                     var grounded = visualGroundingCodec.parseElements(
@@ -1094,6 +1095,25 @@ public final class LiveInferenceWorker {
                 Optional.of(response.providerRequestId()), Optional.of(response.model()),
                 response.usage().inputTokens(), response.usage().outputTokens(),
                 estimatedCost, durationMillis, problemCodeCounts, now
+        );
+    }
+
+    static void requireCompleteGroundedResponse(
+            InferenceStage stage,
+            ProviderInferenceResponse response
+    ) {
+        Objects.requireNonNull(response, "response");
+        if ("stop".equals(response.finishReason())) return;
+        var prefix = switch (stage) {
+            case OBSERVE -> "VISUAL_GROUNDING";
+            case HIERARCHY -> "VISUAL_HIERARCHY_V2";
+            case ELEMENT_BINDING -> "VISUAL_BINDINGS_V2";
+            default -> throw new IllegalArgumentException("Not a grounded visual stage");
+        };
+        var suffix = "length".equals(response.finishReason())
+                ? "_OUTPUT_TRUNCATED" : "_FINISH_REASON_INVALID";
+        throw new InvalidVisualAnalysisException(
+                prefix + suffix, "Visual grounding output is incomplete", null
         );
     }
 

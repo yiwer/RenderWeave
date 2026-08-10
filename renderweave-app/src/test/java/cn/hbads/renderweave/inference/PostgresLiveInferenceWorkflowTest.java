@@ -465,6 +465,29 @@ class PostgresLiveInferenceWorkflowTest {
     }
 
     @Test
+    void groundedLengthStopPersistsTruncationWithoutParsingPartialPayload() {
+        var blobs = new MemoryBlobStore();
+        var created = createGroundedVisual(blobs, "grounded-length-diagnostic");
+        var provider = new ScriptedProvider(
+                request -> response(request, "{\"partial\":true}", "length"),
+                request -> response(request, "{\"partial\":true}", "length"),
+                request -> response(request, "{\"partial\":true}", "length"),
+                request -> response(request, "{\"partial\":true}", "length"),
+                request -> response(request, "{\"partial\":true}", "length")
+        );
+
+        var finished = worker(provider, blobs).processNext("grounded-length-worker").orElseThrow();
+
+        assertThat(finished.state()).isEqualTo(InferenceRunState.FAILED);
+        assertThat(finished.failureCode()).contains("VISUAL_GROUNDING_OUTPUT_TRUNCATED");
+        assertThat(workflowStore.attempts(created)).hasSize(5).allSatisfy(attempt ->
+                assertThat(attempt.problemCodeCounts()).containsExactlyEntriesOf(
+                        Map.of("VISUAL_GROUNDING_OUTPUT_TRUNCATED", 1)
+                )
+        );
+    }
+
+    @Test
     void pipelineFourPointTwoUsesOneEphemeralOcrObservationAcrossAllVisualStages() {
         var blobs = new MemoryBlobStore();
         var created = createGroundedVisual(blobs, "hybrid-visual-station", HYBRID_VISUAL_PROFILE);
@@ -1630,9 +1653,17 @@ class PostgresLiveInferenceWorkflowTest {
     }
 
     private static ProviderInferenceResponse response(ProviderInferenceRequest request, String candidate) {
+        return response(request, candidate, "stop");
+    }
+
+    private static ProviderInferenceResponse response(
+            ProviderInferenceRequest request,
+            String candidate,
+            String finishReason
+    ) {
         return new ProviderInferenceResponse(
                 candidate, "req-" + request.attemptOrdinal(), request.profile().model(),
-                new ProviderUsage(1_000, 500), "stop"
+                new ProviderUsage(1_000, 500), finishReason
         );
     }
 
