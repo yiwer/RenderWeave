@@ -9,14 +9,14 @@
 - 用户 J1：yiwer，2026-08-10；2026-08-11 delta 将 Flash 改为 `qwen3.7-flash-2026-07-15` 并给三个
   预算槽位各追加 500,000 tokens，累计 cap 1,000,000；attempt/CNY/time 边界不变，精确约束见 spec delta
 - 当前节点：N0–N1、N3–N4、N6 `automated_verified`；N2 `live_verified_mixed_a1_a2`；N5
-  `live_verified_not_promoted`；N7 `in_progress`（pinned Flash/Plus reachability、Plus v14–v22 smoke 已 A2；
-  Plus v22 首次实证 OBSERVE→HIERARCHY→BINDING 可达，但报告仍不完整且 stage-gold 质量未达门；v15 bounded
-  OBSERVE rewind、v16 evidence-derived cardinality 与 v17 exact relationship-region
+  `live_verified_not_promoted`；N7 `in_progress`（pinned Flash/Plus reachability、Plus v14–v22 与 Max v22
+  smoke 已 A2；Plus/Max v22 均实证 OBSERVE→HIERARCHY→BINDING 可达，但报告仍不完整且 stage-gold 质量未达门；
+  Max 为 0 GROUP/relationship；v15 bounded OBSERVE rewind、v16 evidence-derived cardinality 与 v17 exact
+  relationship-region
   owner rewind、v18 detailed region repair taxonomy、v19 exact-duplicate support-ID normalization 与 v20 unique
   evidence-owned relationship region normalization、v21 unique connected relationship region normalization、v22
-  unique exact-region GROUP-owner support normalization 实现已 clean A1；v22 live 未命中该 normalization，
-  Max 尚未调用）；全部
-  live ledger `CLOSED`
+  unique exact-region GROUP-owner support normalization 实现已 clean A1；两次 v22 live 均未命中该 normalization）；
+  全部 live ledger `CLOSED`
 
 ## 四维执行配置
 
@@ -126,8 +126,8 @@ ledger 描述成外部强制门。
   `31a8c6f`，detailed hierarchy region repair taxonomy 为 `4d2cc46`，exact-duplicate support-ID normalization 为
   `214fff9`，unique evidence-owned relationship region normalization 为 `391bd52`，unique connected relationship
   region normalization 为 `dda763c`，unique exact-region GROUP-owner support normalization 为 `edc0c28`。三轮 Flash 与后续 Plus 小
-  smoke 均有 A2 诊断证据；Plus v22 首次到达 BINDING，但报告不完整、质量未达门且未命中 v22 normalization，
-  Profile 没有晋级。
+  smoke 均有 A2 诊断证据；Plus/Max v22 均到达 BINDING，但报告不完整、质量未达门且未命中 v22 normalization；
+  Max 为 0 GROUP/relationship，Profile 没有晋级。
 - AC：AC-VR-007、009。
 - 依赖：N5。
 - 实现：bounded verifier contract、issue→earliest-stage routing、selected crop request、successful-stage
@@ -142,11 +142,12 @@ ledger 描述成外部强制门。
 
 - 状态：`in_progress`。2026-08-11 J1 delta 指定 pinned Flash，并把三个模型槽位的累计 token cap 提到
   1,000,000；immutable capability/Profile 与 v2 aggregate guard 已冻结。pinned Flash v13 与用户重新允许的
-  Plus v12 单 case reachability、Plus v14–v22 smoke 均已 CLOSED/A2；v22 首次触达 BINDING，但 final 质量未通过；
+  Plus v12 单 case reachability、Plus v14–v22 与 Max v22 smoke 均已 CLOSED/A2；两模型 v22 均触达 BINDING，
+  但 final 质量未通过；
   v15 bounded OBSERVE rewind、v16 evidence-derived cardinality 与 v17 exact relationship-region owner rewind
   以及 v18 detailed hierarchy region repair taxonomy、v19 exact-duplicate support-ID normalization、v20 unique
   evidence-owned relationship region normalization、v21 unique connected relationship region normalization、v22
-  unique exact-region GROUP-owner support normalization 实现已 clean A1；v22 live 未命中该 normalization。
+  unique exact-region GROUP-owner support normalization 实现已 clean A1；Plus/Max v22 live 均未命中该 normalization。
 - AC：AC-VR-001..010、既有 AC-015..021。
 - 依赖：N6 clean gates；final exact identities 和新的 ledger；N2 用量已进入 aggregate guard。
 - 执行：已先以 `qwen3.7-flash-2026-07-15`、再以 `qwen3.7-plus` 做单 case reachability；Flash 停在
@@ -177,12 +178,17 @@ ledger 描述成外部强制门。
   lifecycle `6f65516` PROPOSED → `2d396e7` OPEN → `4f86456` CLOSED 已由独立 verifier A2 PASS：5 attempts、
   26,943 actual tokens；第二次 OBSERVE accepted，HIERARCHY 一次拒绝后 accepted，ELEMENT_BINDING accepted，
   首次建立 live 三阶段可达性。该次只命中 cardinality-derived telemetry，未命中 support-owner normalization；
-  report `complete=false` 且结构/绑定匹配远未达标，不能视为 Profile 晋级。Max 现仅在 fresh identity/Profile
-  snapshot、新的精确 J1/额度/时限检查下具备单 case 条件；之后才考虑同一 20-case comparison，再按剩余额度优先让最佳模型完成
-  60-case/15 HOLDOUT；每批≤5。旧 Flash 不再创建 assignment，Plus/Max model ID 不变。
+  report `complete=false` 且结构/绑定匹配远未达标，不能视为 Profile 晋级。Max 随后在 fresh identity/Profile
+  snapshot 与精确 J1 ledger 下完成 `e0b1d67` PROPOSED → `740d28f` OPEN → `99efc6b` CLOSED。唯一 Provider
+  wrapper 的测试主体写出 3 个 SETTLED attempts；外层 PowerShell 因 Mockito stderr warning 未返回 Maven 摘要，
+  检查无存活子进程和完整 evidence 后立即 CLOSED，未重跑。独立 verifier A2 PASS：14,481 tokens、¥0.249684、
+  61,032 ms；三个阶段均一次 accepted，却产生 0 GROUP/relationship、0/10 binding match、tree edit 30/32，
+  也未命中 v22 normalization。相同 Max v22 不再重复；20-case comparison 前先用零 Provider 本地切片收窄
+  repeated-group/relationship omission，再按剩余额度决定 20-case 与最佳模型 60-case/15 HOLDOUT；每批≤5。
+  旧 Flash 不再创建 assignment，Plus/Max model ID 不变。
 - policy：只有满足既有 AC-021 和 stage 门槛的 Profile 可成为默认；其他保持 EXPERIMENTAL。
 - 门控：server/web/e2e/runtime/full A1；独立 verifier A2；费用/Token/secret/payload scan；用户业务/视觉 J1。
-- 当前证据：guard/Profile `252dc00`、runner slot 修复 `0d7b73c`；十一份单 case live 独立 verifier PASS；
+- 当前证据：guard/Profile `252dc00`、runner slot 修复 `0d7b73c`；十二份单 case live 独立 verifier PASS；
   hierarchy repair `98ba3d0`、OBSERVE rewind `195894b` 与 evidence-derived cardinality `bb15096` 均已通过
   A1；`31a8c6f` 的 clean evidence 为 fast `20260811-050115`，受影响 server `20260811-045814`、web
   `20260811-045937`、E2E `20260811-050010`；v17 CLOSED clean fast 为 `20260811-051247`。它们不能替代 live
@@ -199,6 +205,8 @@ ledger 描述成外部强制门。
   lease-expiry 1/1、server `20260811-071714`、Node 24 web `20260811-071856`、E2E `20260811-071927` 与
   clean fast `20260811-072030` 均为 A1 PASS，Provider attempts=0。v22 lifecycle 为 `6f65516` PROPOSED →
   `2d396e7` OPEN → `4f86456` CLOSED，独立 verifier A2 PASS，CLOSED clean fast 为 `20260811-073017`。
+  Max v22 lifecycle 为 `e0b1d67` PROPOSED → `740d28f` OPEN → `99efc6b` CLOSED，独立 verifier A2 PASS，
+  CLOSED clean fast 为 `20260811-074402`；外壳摘要失败后按 process/evidence lease 恢复且未重跑。
   三份 ledger CLOSED。这些证据不能
   替代 final eval、final identity A2 或
   用户业务/视觉 J1。
@@ -208,7 +216,7 @@ ledger 描述成外部强制门。
 
 | 模型 | Goal cap | Goal exposed tokens | 剩余 tokens | attempts | list-price CNY cap | Goal cost |
 |---|---:|---:|---:|---:|---:|---:|
-| qwen3.8-max | 1,000,000 | 428,816 | 571,184 | 73 / 180 | 18.00 | 9.204720 |
+| qwen3.8-max | 1,000,000 | 443,297 | 556,703 | 76 / 180 | 18.00 | 9.454404 |
 | qwen3.7-plus | 1,000,000 | 783,738 | 216,262 | 136 / 180 | 4.00 | 3.116058 |
 | Flash slot（旧 alias + `qwen3.7-flash-2026-07-15`） | 1,000,000 | 428,373 | 571,627 | 76 / 180 | 0.40 | 0.190286 |
 

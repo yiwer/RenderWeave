@@ -321,3 +321,14 @@ OBSERVE→HIERARCHY→BINDING 三阶段可达性，但没有命中 v22 support-o
 归因于该规则。报告仍 `complete=false`，slot/group/entity/relationship/binding 与 gold 的匹配远未达标，故
 Profile 继续隐藏 `EXPERIMENTAL`。Max 的阶段前置条件现已成立，但调用仍须使用新的 exact identity/Profile
 snapshot、独立精确 J1 ledger、剩余额度与有效时限；本 ADR 不把 reachability 写成 final 质量或验收通过。
+
+Max product-v22 在该前置条件成立后，以 `e0b1d67` PROPOSED → `740d28f` OPEN → `99efc6b` CLOSED 完成
+同一 synthetic case。PROPOSED 负探针保持 Goal/guard、285 reservations 与 target evidence 零变化。唯一一次
+Provider wrapper 的测试主体原子写出 3 个 SETTLED attempts；外层 PowerShell 因 Mockito stderr warning 未能
+返回 Maven 摘要。恢复检查确认没有存活子进程、lease evidence 已完成后立即 CLOSED，未并发或串行重跑。
+独立 verifier A2 重建 11,318 input + 3,163 output tokens、61,032 ms、¥0.249684、0 abandoned 与 payload scan
+PASS。三个阶段均一次 accepted、无 fixed-code repair，但结果为 11 slots / 0 groups、1 entity / 0 relationships、
+11 bindings 且只有 1 slot、1 entity 匹配，bindings 0/10、tree edit 30/32。该结果证明 Max 也能执行完整三阶段，
+却更明确证明“合同可达”不等于“嵌套结构正确”；v22 support-owner normalization 同样未命中。Profile 与 Goal
+继续 `EXPERIMENTAL` / `in_progress`，在形成新的 evidence-bounded OBSERVE repeated-group omission 假设前，
+不重复 Max v22，也不把单 case 扩大为 20/60-case final eval。
