@@ -104,3 +104,10 @@ OBSERVE。持久层只允许 REJECTED HIERARCHY + 该精确单码事务性写入
 不携带 crop 或旧 plan。immutable element prompt v7 与 product-v15 Profile 固化该合同；UI 将问题归到 OBSERVE，
 但不显示局部 ID、坐标或 payload。clean fast/server/web/E2E A1 全绿，且本增量 Provider attempts=0。v15 Profile
 继续隐藏 `EXPERIMENTAL`，其存在不构成 live 授权或 Max 入口成立。
+
+Plus product-v15 的后续单 case smoke 同样完成完整 ledger lifecycle 与独立 A2：5 attempts、15,823 input +
+9,945 output tokens、179,859 ms、0 abandoned、payload scan PASS。前两次 OBSERVE 被 grounding contract 拒绝，
+第三次 accepted 并得到 8 SLOT、1 GROUP；因此 0-GROUP rewind 条件正确地没有触发。随后两次 HIERARCHY 都因
+`VISUAL_HIERARCHY_V2_SUPPORT_CARDINALITY_MISMATCH` 被拒绝，仍未进入 BINDING。该结果保留了 verifier 的
+“只拒绝、不改写”边界，同时暴露出 model-owned relationship cardinality 与 evidence-owned GROUP multiplicity
+之间的冗余冲突；在形成新的版本化、可离线验证假设前，不再用同一 Profile 重复 live。

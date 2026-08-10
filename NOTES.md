@@ -1,11 +1,16 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-11 Plus product-v15 单 case lifecycle 已 CLOSED/A2：5 attempts、15,823 input + 9,945 output tokens、
+  payload scan PASS。第三次 OBSERVE accepted 并得到 8 SLOT/1 GROUP，因此 0-GROUP rewind 未触发；后两次
+  HIERARCHY 均为 `VISUAL_HIERARCHY_V2_SUPPORT_CARDINALITY_MISMATCH`，仍未到 BINDING。Plus Goal 现为
+  101/180 attempts、579,967/1,000,000 tokens、¥2.413214；三份 ledger CLOSED，Max 仍未调用。相同 v15 假设
+  不再重复 live，下一步先离线消除 model-owned cardinality 与 evidence-owned GROUP multiplicity 的冗余冲突。
 - 2026-08-11 N7 Plus product-v14 已按单 case/5 attempts 完成 PROPOSED→负探针→OPEN→CLOSED 与独立 A2：
   18,992 input + 4,628 output tokens，首个 OBSERVE accepted，但 0 GROUP 使后续四次 HIERARCHY 全部被 bounded
   contract 拒绝，仍未触达 BINDING。`195894b` 随后新增唯一的 HIERARCHY→OBSERVE semantic rewind、事务
   checkpoint 清理、immutable prompt v7/product-v15 与 payload-free UI/E2E；clean fast/server/web/E2E A1 全绿，
-  没有新增 Provider 调用。Plus Goal 当前 96/180 attempts、554,199/1,000,000 tokens、¥2.302008；三份 ledger
+  没有新增 Provider 调用。Plus Goal 当时为 96/180 attempts、554,199/1,000,000 tokens、¥2.302008；三份 ledger
   全部 CLOSED，Max 前置条件仍未成立，Goal/Profile 继续 `in_progress`/`EXPERIMENTAL`。
 - 2026-08-11 用户批准 T6-5 N7 J1 delta：当前 Flash 改为 pinned
   `qwen3.7-flash-2026-07-15`，Plus/Max model ID 不变，三个预算槽位各追加 500,000 tokens，累计 cap
@@ -155,8 +160,8 @@
   HTTP failure 硬停与未晋级决策；全部 ledger CLOSED。
 - `plans/logs/P6-T6-5-N6.md`：bounded semantic verifier、stage-local repair、selected crops、payload-free UI、
   Flash v10–v12 A2 诊断与 exact-clean full；三阶段仍不可达，未晋级。
-- `plans/logs/P6-T6-5-N7.md`：pinned Flash/Goal guard v2、Flash/Plus/v14 单 case CLOSED/A2 reachability、
+- `plans/logs/P6-T6-5-N7.md`：pinned Flash/Goal guard v2、Flash/Plus/v14/v15 单 case CLOSED/A2 reachability、
   v15 bounded OBSERVE rewind 与 payload-free UI；三阶段仍不可达，Max 未调用。
-- 当前恢复点：`phase/p6-visual-recognition-vnext` 的 `195894b` clean 节点；编排 Goal
-  `019fec8e-a851-7952-b49b-8be76a281a57` 为 active，未创建 replacement Goal。下一安全切片是 v15 精确
-  identity/Profile snapshot/预算复算后的单 case reachability；满足 BINDING 前禁止 Max。
+- 当前恢复点：`phase/p6-visual-recognition-vnext` 的 `4b57581` CLOSED lifecycle；编排 Goal
+  `019fec8e-a851-7952-b49b-8be76a281a57` 为 active，未创建 replacement Goal。下一安全切片是离线收敛
+  relationship cardinality 的确定性事实源；新 hypothesis 通过 clean gate 前不再 live，满足 BINDING 前禁止 Max。
