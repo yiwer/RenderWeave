@@ -59,6 +59,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Import(DashScopeVisualEvaluationTest.VisualEvaluationConfiguration.class)
 @EnabledIfEnvironmentVariable(named = "RENDERWEAVE_RUN_VISUAL_EVALUATION", matches = "true")
 class DashScopeVisualEvaluationTest {
+    static final String BATCH_LIMIT_PROPERTY = "renderweave.visual-evaluation.batch-limit";
     private static final List<String> HALT_FAILURE_CODES = List.of(
             "DASHSCOPE_NETWORK_ERROR", "DASHSCOPE_RATE_LIMITED", "DASHSCOPE_TIMEOUT",
             "PROVIDER_ATTEMPT_BUDGET_EXHAUSTED", "PROVIDER_COST_BUDGET_EXHAUSTED",
@@ -99,9 +100,12 @@ class DashScopeVisualEvaluationTest {
             assertThat(recovery.abandonedCaseIds()).as("no reserved case may be silently replayed").isEmpty();
             resetEphemeralDatabaseBudget();
             var terminal = journal.terminalAssignmentKeys();
+            var batchLimit = effectiveBatchLimit(
+                    authorization.maximumCasesPerBatch(), System.getProperty(BATCH_LIMIT_PROPERTY)
+            );
             var pending = authorization.caseIds().stream()
                     .filter(caseId -> !terminal.contains(authorization.profileId() + "|" + caseId))
-                    .limit(authorization.maximumCasesPerBatch()).toList();
+                    .limit(batchLimit).toList();
             var processed = 0;
             for (var caseId : pending) {
                 var finished = execute(corpus.require(caseId));
@@ -110,7 +114,7 @@ class DashScopeVisualEvaluationTest {
                 if (finished.failureCode().map(HALT_FAILURE_CODES::contains).orElse(false)) break;
             }
             writeReport();
-            assertThat(processed).isLessThanOrEqualTo(authorization.maximumCasesPerBatch());
+            assertThat(processed).isLessThanOrEqualTo(batchLimit);
             var budget = goalBudget.snapshot(authorization.model(), authorization.authorizationId());
             assertThat(budget.goal().tokens())
                     .isLessThanOrEqualTo(VisualEvaluationAuthorization.GOAL_MAXIMUM_TOKENS_PER_MODEL);
@@ -118,6 +122,22 @@ class DashScopeVisualEvaluationTest {
                     .isLessThanOrEqualTo(VisualEvaluationAuthorization.GOAL_MAXIMUM_COST_MICROS_CNY
                             .get(authorization.model()));
             assertThat(budget.breached()).isFalse();
+        }
+    }
+
+    static int effectiveBatchLimit(int authorizedMaximum, String requested) {
+        if (authorizedMaximum < 1 || authorizedMaximum > 5) {
+            throw new IllegalArgumentException("VISUAL_EVALUATION_AUTHORIZED_BATCH_LIMIT_INVALID");
+        }
+        if (requested == null || requested.isBlank()) return authorizedMaximum;
+        try {
+            var parsed = Integer.parseInt(requested);
+            if (parsed < 1 || parsed > authorizedMaximum) {
+                throw new IllegalArgumentException("VISUAL_EVALUATION_BATCH_LIMIT_INVALID");
+            }
+            return parsed;
+        } catch (NumberFormatException invalid) {
+            throw new IllegalArgumentException("VISUAL_EVALUATION_BATCH_LIMIT_INVALID", invalid);
         }
     }
 
