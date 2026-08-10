@@ -1,0 +1,118 @@
+# Spec Delta：图片识别数据结构 vNext 质量升级
+
+- 状态：approved
+- 触发任务：P6/T6-5
+- 触发证据：Product v2 真实站牌结果发生层级压扁；Product v3 真实运行虽完成 OBSERVE/HIERARCHY/ELEMENT_BINDING，但 STRUCTURE 两次超时；Product v4 尚无绑定当前流水线的真实分阶段质量报告
+- 影响 AC/规则：AC-015、AC-016、AC-017、AC-019、AC-020、AC-021、AC-022；新增 AC-VR-001..010；ADR-0020、ADR-0021、ADR-0022
+- 再锚定关系：用户于 2026-08-10 接受图片识别串行流程审查结论，并明确批准按推荐建立 Goal、自动采用决策并落 ADR；本 delta 成为后续实现和验收基准。
+
+## 冲突或新事实
+
+pipeline 3 已能确定性阻止计划内的 `route[] -> stop[]` 被最终 Candidate 再次压扁，但它只能证明
+Candidate 忠于模型自己产生的视觉计划，不能证明第一阶段没有漏掉图片元素，也不能证明元素、区域、
+层级和字段归属与图片空间关系一致。现有 `CRITIQUE` 只路由合同问题，不是重新观察图片的语义审查。
+
+同时，STRUCTURE Prompt 要求模型逐字复制已验证的 entity、relationship、binding 和 evidence；除局部
+UUID 与未校准 confidence 外，该步骤本质是确定性编译，却仍重复发送全部图片并消耗一次 Provider
+调用。当前四个产品模型使用同一 JSON 请求策略，但官方 capability 并不完全相同。
+
+## 变更
+
+### ADDED
+
+1. 新建不可变 `renderweave-inference-pipeline/4.0` 和对应 vNext Profile；历史 pipeline/Profile/run
+   snapshot 保持可读、可恢复、不可修改。
+2. 为 IMAGE_ONLY 建立不少于 60 个版本化 stage-gold bundles，45 DEV + 15 HOLDOUT，覆盖：
+   - 中英混合、小字号、密集文本、旋转/缩放；
+   - 一至三层实体、ONE/MANY、重复卡片/行/站点；
+   - 公交站牌、菜单、价签、时刻表、海报、表单和通用信息板；
+   - 多图片互补/重复、低信息、视觉歧义和 prompt injection。
+3. 评测除最终 Candidate 指标外，新增 element/group precision/recall、region grounding IoU、entity/edge
+   F1、binding accuracy、tree edit、stage survival、repair yield、置信度校准、Token/费用/延迟。
+4. 增加确定性多尺度 view planner。overview、tile、targeted crop 均携带到原规范化图片 0..10000
+   坐标的可逆 transform；模型 evidence 最终只能引用原 artifact 坐标。
+5. 增加版本化 region/grounding 合同，至少表达 regionId、parentRegionId、kind、multiplicity、
+   readingOrder、repeatGroupId、bbox、直接 evidence 和元素所属区域。必须确定性检查包含、重叠、顺序、
+   重复组一致性和无环关系。
+6. 增加 `DocumentVisionPreprocessor` 窄端口。OCR/layout 结果只作为本次 run 的受限观察输入；原始 OCR
+   文本不得进入常规日志、评测 evidence 或长期 payload 存储。参考实现必须本地执行、默认零网络，
+   缺能力时 vNext Profile 明确 unavailable，不静默退化成未标识的旧流程。
+7. 通用 Prompt 与领域 Hint Pack 分离。默认 `GENERIC`；首个可选包为 `TRANSIT_BOARD`。领域包必须
+   版本化、显式选择且参与 Profile/evaluation identity，不能把站牌术语注入所有图片。
+8. 增加只读图片语义 verifier：仅返回有限 issue code、受影响 region/entity/element ID 和 evidence，
+   不直接改 Candidate。repair 只重做被 issue 定位的最早错误阶段和必要 crop，不全图盲目重建。
+9. 增加跨 authorization 的 Goal 总预算守卫。baseline、ablation、final certification 即使使用不同
+   evaluation identity，也共享同一模型 token/费用上限，不能通过新建 ledger 重置额度。
+
+### MODIFIED
+
+1. pipeline 4 的 STRUCTURE 改为本地确定性 Candidate materialization，不调用 Provider。所有 UUID、
+   Schema/field/reference/array、source、evidence 和保守 assessment 均由已验证计划生成。
+2. baseline Provider 调用从四次降为三次；额外调用预算优先给语义 verifier 或单个定向 repair，不能
+   重新用于生成式 Candidate 编译。
+3. OCR/layout 是否进入最终默认路径由版本化消融门决定：在 dense/small-text slice 上 field recall
+   绝对提升至少 0.05、critical hallucination 不增加且成本/延迟有完整记录时启用；否则保持可插拔但
+   不成为默认生产依赖。
+4. 产品 vNext 模型目录只包含经 capability contract 验证的 `qwen3.8-max`、`qwen3.7-plus`、
+   `qwen3.7-flash`。不支持结构化输出或未完成 canary 的模型不得复用同一请求模板进入目录。
+5. JSON Object 仍只被视为语法边界；所有中间合同继续严格 decode/validate。输出 token 设置必须按
+   stage 评测，任何截断都以稳定 taxonomy 失败，不能交给宽松 JSON repair 猜测。
+6. 审核/监控页展示新的 perception/region/verifier/targeted-repair 阶段、有限 issue code 和 stage-level
+   指标，但不显示原始 OCR 文本、Provider response 或 chain-of-thought。
+
+### REMOVED
+
+- pipeline 4 不再调用 Provider 生成已被视觉计划完全决定的 Candidate。
+- 通用 Prompt 不再硬编码 station/route/stop/notice/fare 等公交领域规则。
+- 不再把合同合法或计划自洽等同于图片语义正确。
+
+## 新增验收标准
+
+| AC | 可观察行为 | 最低证据 |
+|---|---|---|
+| AC-VR-001 | 60 个 IMAGE_ONLY stage-gold bundles 可确定性生成/加载，DEV/HOLDOUT、领域与难度切片固定 | A1；final A2 verifier |
+| AC-VR-002 | baseline/ablation/final 的 identity、assignment、attempt、token、费用可恢复且跨账本总预算不可绕过 | A2 + J1 |
+| AC-VR-003 | 同一 validated plan 只产生一个 byte-stable 语义 Candidate；STRUCTURE provider attempts=0 | A1/A2 |
+| AC-VR-004 | region containment、reading order、repeat group、element ownership 与原图坐标可确定性验证 | A1/A2 |
+| AC-VR-005 | OCR/layout 原始文本不进入常规日志/evidence；adapter 缺失时 fail-readable、零网络降级 | A1/A2 |
+| AC-VR-006 | GENERIC 不携带公交偏置；TRANSIT_BOARD 只在显式选择时生效且不能修改事实边界 | A1 + live slice |
+| AC-VR-007 | verifier 只能报告 bounded issue；targeted repair 不重做无关成功 stage | A1/A2 |
+| AC-VR-008 | 三个模型各有独立 capability/profile/pricing/timeout/output contract，不静默降级模型 | A1 + canary J1 |
+| AC-VR-009 | 监控和审核页可读展示 stage、区域、问题、费用和恢复状态，1024/1280/1440 操作完整 | A1 + J1 UX |
+| AC-VR-010 | 最终最佳 Profile 满足既有 AC-021 门槛；未达标模型保持 EXPERIMENTAL 且不成为默认 | A2 + policy J1 |
+
+## Live J1 授权信封
+
+用户于 2026-08-10 批准本 Goal 内真实 DashScope 调用，并要求普通权限/决策不阻塞。执行仍主动收窄为：
+
+- 模型：`qwen3.8-max`、`qwen3.7-plus`、`qwen3.7-flash`；不得替换或追加其他模型；
+- 每模型 baseline + ablation + final 合计输入与输出最多 500,000 tokens；
+- 每模型最多 180 attempts、每批最多 5 cases；
+- 仅仓库自制、合成或 CC0 数据，不发送客户/真实业务数据；
+- 费用硬上限按当前最坏输出单价收窄为 Max ¥18、Plus ¥4、Flash ¥0.40；免费额度只会减少实际费用，
+  不扩大 token/attempt 上限；
+- 每个 OPEN ledger 最长 168 小时，并在对应批次完成、Goal 完成、预算耗尽、Provider 拒绝或异常时立即
+  CLOSED；跨 ledger Goal guard 继续累计；
+- ledger 在调用前必须绑定 exact immutable Profile、prompt、corpus、evaluator、workflow/build identity；
+- 常规证据 payload-free，不保存图片、OCR 原文、Prompt、Provider response/request ID 或 Candidate 原文。
+
+本信封不是立即 OPEN 的 ledger。只有实现树和 evaluation identity 冻结、负探针与受影响 gate 通过后，
+才由受跟踪的精确 ledger 打开；不满足前置时 Provider attempts 必须为 0。
+
+## 影响面
+
+- 用户价值/范围：提升复杂、密集、重复和多层视觉数据定义的召回与可解释性；仍不进入 Template、
+  Workspace 或渲染。
+- 实现与数据：新增 eval corpus/harness、view/region/grounding contract、OCR/layout port、local materializer、
+  verifier、Prompt/Profile、可能的 forward-only migration 和 Web stage 展示。
+- 验证与发布：先冻结旧 v4 小规模 baseline，再以同一 stage gold 做消融和 vNext final；旧质量结果不继承。
+- DAG/预算：按 `plans/renderweave-visual-recognition-vnext-plan.md` 串行执行，节点间独立 commit。
+- 恢复影响：源码使用节点 commit revert；数据库只用 forward migration/补偿；历史 run/profile/checkpoint
+  保持只读；已发生模型费用不可恢复，只能原子关闭 ledger 并阻止后续调用。
+
+## 决策
+
+- 批准人：yiwer
+- 日期：2026-08-10
+- 结论与理由：采用审查推荐的“先度量、再替换编译、再增强感知、最后认证”路径；普通实现取舍由 Agent
+  选择并写 ADR，不逐项等待批准；真实调用严格受上述三模型 500k-token 总信封和精确账本约束。

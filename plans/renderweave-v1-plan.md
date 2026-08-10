@@ -5,6 +5,7 @@
 - Spec：[`specs/renderweave-v1.md`](../specs/renderweave-v1.md)
 - 原型：`/prototype/schema-studio?variant=A|B|C`
 - 当前 lifecycle：P0 `accepted`；P1–P4 `automated_verified`；P5 `live_canary_verified` / `live_independently_reviewed` / `decision_recorded`；P6 T6-1 `independently_reviewed`、T6-2 `human_acceptance_pending`、T6-3a `automated_verified`
+- 当前扩展 Goal：P6/T6-5 图片识别 vNext 为 `in_progress`；N0 已 `automated_verified`、N1 active，批准 delta、ADR、任务 DAG 与三模型 500k-token J1 信封见 `plans/renderweave-visual-recognition-vnext-plan.md`。
 
 ## 1. 四维执行配置
 
@@ -421,6 +422,18 @@ Phase 内任务只在真实前置依赖满足时并行。当前没有 atomic cla
 - 回归升级：最后一次代码变化后重跑受影响和完整 gate
 - 证据保证：A2；外部 hard gates 若存在为 A3；J1 pending 分开报告
 - 完成信号：每个 AC 有证据/处置，生命周期状态如实更新
+
+#### T6-5：图片识别数据结构 vNext 质量升级
+
+- 执行状态：`in_progress`（用户 J1 + approved spec delta；N0 `automated_verified`，N1 active）
+- AC：AC-015..021、AC-VR-001..010
+- 依赖：T6-3a.8/9、ADR-0020/0021；N2 live 依赖新的 stage-gold/harness/identity
+- 影响区域：IMAGE_ONLY eval、visual contracts、worker/Profile/Prompt、OCR/layout adapter、review/monitor UI
+- 局部验证：stage metric goldens、materializer/property、spatial/adversarial、PG recovery、Web/E2E、三模型 bounded live
+- 回归升级：Profile/prompt/corpus/evaluator/workflow/model asset/OpenAPI/migration 任一变化均重算 identity 并跑受影响 gate
+- 证据保证：deterministic 节点 A1；live J1 + A1 + 独立 verifier A2；不存在 A3
+- 完成信号：best Profile 满足既有 AC-021 与新增 stage 门；其余诚实保持 EXPERIMENTAL；全部 ledger CLOSED
+- 详细 DAG、预算、恢复和 N0–N7 节点：`plans/renderweave-visual-recognition-vnext-plan.md`
 
 ## 5. Gate 定义
 

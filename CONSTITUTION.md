@@ -40,7 +40,7 @@ binding: generic + project-local tools/run-gate.ps1
 | 策略 | 含义 | 本项目选择 |
 |---|---|---|
 | `record-only` | Agent 只记录 commit/diff，不自行 commit/tag | P1–P4 采用 |
-| `agent-commit` | 用户已授权按任务/Phase 提交 | **P5 采用：每个节点独立 `phase/p5-*` 分支和提交** |
+| `agent-commit` | 用户已授权按任务/Phase 提交 | **P5 及 P6 图片识别 vNext Goal 采用：每个节点独立提交；当前分支 `phase/p6-visual-recognition-vnext`** |
 | `branch-per-agent` | 多写入者各在 branch/worktree，集成者合并 | N/A：当前 single writer |
 
 未授权时不默认创建 tag/branch/commit。
@@ -84,4 +84,4 @@ binding: generic + project-local tools/run-gate.ps1
 宪章变化记录动机和日期，由人确认；不要把一次性例外永久写入。
 
 ---
-版本：1.1 ｜ 采用日期：2026-08-07 ｜ P5 节点提交与 DashScope guarded delta：2026-08-08
+版本：1.2 ｜ 采用日期：2026-08-07 ｜ P5 节点提交与 DashScope guarded delta：2026-08-08 ｜ P6 图片识别 vNext Goal 节点提交：2026-08-10
