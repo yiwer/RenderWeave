@@ -147,7 +147,7 @@ def main() -> None:
         page.get_by_role("button", name="历史", exact=True).click()
         page.get_by_role("heading", name="不可变 revision 历史").wait_for()
         page.get_by_role("button", name="revision 0").click()
-        page.locator(".history-preview pre").wait_for()
+        page.locator(".history-preview .readonly-schema-tree").wait_for()
         assert "商品展示卡" in (page.locator(".history-preview").text_content() or "")
         page.get_by_role("button", name="恢复为新 revision").click()
         page.locator(".rail-context-card small").filter(has_text="revision 2").wait_for()
