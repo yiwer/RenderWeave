@@ -573,6 +573,9 @@ v1 只有：
 - undo/redo 保存最近 100 个 semantic actions；连续 typing 合并。save 不清空，reload 清空；可 restore saved definition。
 - local stable rules 在 blur/操作时反馈；graph/server rules 只在显式 save 执行，不做 per-keystroke remote validation。
 - raw DSL 只读 preview/copy，不可编辑。引用 child 只显示 summary/navigation，不 inline 编辑。
+- 不可变 Draft revision 历史默认展示只读字段树，并可切换为只读字段表单或 DSL JSON；选择当前
+  revision 时默认直接打开 current snapshot。StaticSchema 详情同样默认展示字段树，并保留字段表单、
+  Compiled JSON Schema 与 Definition DSL 四种只读视图。
 - 离开 dirty editor 和 `beforeunload` 都拦截；没有 local autosave。
 
 ### 9.3 冲突
@@ -597,6 +600,8 @@ Candidate form 是完整键盘路径：支持新增、删除、上移/下移 Sch
 - light-only warm editorial workbench；cream/coral/dark contextual panel。
 - semantic Tailwind tokens、owned components、Radix primitives、Lucide icons；不引入 Ant/MUI 全量框架。
 - `#a9583e` 承担白字 primary action；`#cc785c` 只作 accent。
+- 深链详情页保持稳定的一级侧栏：进入某个 Draft 不新增“当前 Draft”导航项；资源与智能识别面包屑
+  在顶部内容区左对齐。原生单选下拉框使用同一边框、焦点环、状态色和箭头语言，不依赖浏览器默认皮肤。
 - 全面验收 1280×720、1440×900；1024×768 用 inspector drawer 保留所有操作；低于 1024 显示不支持提示。
 - 正式支持 Chrome/Edge 最近两个稳定版本；Firefox/Safari best-effort；不支持移动浏览器/WebView。
 - 核心流程目标 WCAG 2.2 AA；axe 无 serious/critical，人工键盘走查；canvas 屏幕阅读器语义由等价 form 路径补偿。

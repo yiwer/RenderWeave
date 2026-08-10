@@ -386,6 +386,7 @@ Phase 内任务只在真实前置依赖满足时并行。当前没有 atomic cla
 2. T6-2b：启动与运行恢复体验补齐文件队列、四步进度、cancel/retry 和 readiness 呈现。
 3. T6-2c：新增零 Provider 的 60-case offline eval gate，并重建 Playwright 1024/1280/1440、axe、键盘与 real PostgreSQL replay 旅程。
 4. T6-2d：clean Web/E2E/eval/full A1、独立 A2 与人工 J1 结果分级记录。
+5. T6-2e：统一不可变 revision / StaticSchema 的字段树、字段表单与 DSL/compiled 只读视图；稳定深链侧栏、左对齐资源/识别面包屑并统一原生 select 视觉。clean Web/E2E A1 已完成，最终视觉 J1 仍随 T6-2 pending。
 
 #### T6-3：Compose、观测、备份/恢复与 storage failure drill
 - 执行状态：`in_progress`（T6-3a 产品 live 运行切片已 `automated_verified`；T6-3b 备份/恢复与 storage failure drill 待执行；`plans/logs/P6-T6-3.md`）
