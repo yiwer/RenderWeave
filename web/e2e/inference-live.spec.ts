@@ -9,8 +9,8 @@ test('executes a real replay run and atomically creates its reviewed Draft bundl
   expect(staticBeforeResponse.ok()).toBeTruthy();
   const staticBefore = await staticBeforeResponse.json() as { total: number };
 
-  await page.goto('/inference/new');
-  await expect(page.getByRole('heading', { name: '新增识别输入' })).toBeVisible();
+  await page.goto('/inference/samples');
+  await expect(page.getByRole('heading', { name: '确定性样本' })).toBeVisible();
   await expect(page.locator('.fixture-row')).toHaveCount(20);
   await page.locator('.fixture-row').filter({ hasText: 'combined-17-all-null' }).click();
   await page.getByRole('checkbox').check();

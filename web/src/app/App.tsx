@@ -27,6 +27,9 @@ const InferenceStartPage = lazyRoute(async () => ({
 const InferenceHistoryPage = lazyRoute(async () => ({
   default: (await import('../features/inference/InferenceHistoryPage')).InferenceHistoryPage,
 }));
+const InferenceReplayPage = lazyRoute(async () => ({
+  default: (await import('../features/inference/InferenceReplayPage')).InferenceReplayPage,
+}));
 const InferenceMonitorPage = lazyRoute(async () => ({
   default: (await import('../features/inference/InferenceMonitorPage')).InferenceMonitorPage,
 }));
@@ -46,6 +49,7 @@ export function App() {
         <Route path="/validator" element={<RootDocumentValidatorPage />} />
         <Route path="/inference" element={<InferenceHistoryPage />} />
         <Route path="/inference/new" element={<InferenceStartPage />} />
+        <Route path="/inference/samples" element={<InferenceReplayPage />} />
         <Route path="/inference-runs/:runId/monitor" element={<InferenceMonitorPage />} />
         <Route path="/inference-runs/:runId/review" element={<CandidateReviewPage />} />
         <Route path="/prototype/schema-studio" element={<SchemaStudioPrototype />} />

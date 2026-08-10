@@ -42,7 +42,6 @@ import {
 import { InferenceFlowSteps } from './InferenceFlowSteps';
 import { InferenceExecutionLogPanel } from './InferenceExecutionLogPanel';
 import { inferenceRunHasResult, inferenceStageLabel, inferenceStateLabel } from './inference-format';
-import { InferenceModuleNav } from './InferenceModuleNav';
 import { RunCancelButton } from './InferenceRunActions';
 
 export function CandidateReviewPage() {
@@ -90,7 +89,6 @@ export function CandidateReviewPage() {
       actions={<Link className="button ghost-button" to={`/inference-runs/${runId}/monitor`}><Activity aria-hidden="true" size={15} />查看识别监控</Link>}
       breadcrumbs={[{ label: '智能识别', to: '/inference' }, { label: '识别结果' }]}
     >
-      <InferenceModuleNav runId={runId} resultAvailable={reviewReady} />
       <InferenceFlowSteps current={flowStep} />
       {runQuery.isPending && <ResourceLoading label="正在读取推断任务" />}
       {runQuery.isError && <ResourceError error={runQuery.error} onRetry={() => void runQuery.refetch()} />}

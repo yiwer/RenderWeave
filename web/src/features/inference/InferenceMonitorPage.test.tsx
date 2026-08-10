@@ -72,7 +72,7 @@ describe('Inference monitor workspace', () => {
     expect(await screen.findByText('Candidate 已生成')).toBeTruthy();
     expect(screen.getByRole('link', { name: /查看识别结果/ }).getAttribute('href'))
       .toBe(`/inference-runs/${ready.runId}/review`);
-    expect(screen.getByRole('navigation', { name: '智能识别版面' }).textContent).toContain('识别结果');
+    expect(screen.queryByRole('navigation', { name: '智能识别版面' })).toBeNull();
   });
 });
 

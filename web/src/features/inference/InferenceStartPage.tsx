@@ -1,198 +1,51 @@
-import { useMutation, useQuery, type UseMutationResult, type UseQueryResult } from '@tanstack/react-query';
+import { useMutation, useQuery, type UseQueryResult } from '@tanstack/react-query';
 import {
-  ArrowRight,
   AlertTriangle,
   Bot,
-  Braces,
   CheckCircle2,
   CircleDollarSign,
   Cloud,
-  FileJson2,
-  Image,
-  Images,
-  Network,
-  Play,
   ShieldCheck,
   Trash2,
   Upload,
 } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 import type {
   CreateLiveRunRequest,
   InferenceMode,
-  InferenceRunResponse,
   LiveAvailabilityResponse,
   LiveProfileResponse,
-  ReplayFixtureListResponse,
-  ReplayFixtureResponse,
 } from '../../api/generated';
 import { ResourceError, ResourceLoading } from '../resources/DraftListPage';
 import { ResourceFrame } from '../resources/ResourceFrame';
 import {
   createLiveRunRequest,
-  createReplayRunRequest,
   getLiveAvailabilityRequest,
-  listReplayFixturesRequest,
 } from './candidate-api';
 import { InferenceFlowSteps } from './InferenceFlowSteps';
-import { InferenceModuleNav } from './InferenceModuleNav';
+import { InferenceInputModeTabs } from './InferenceInputModeTabs';
+import { inferenceModeLabels } from './inference-mode';
 import { filesForLiveMode, formatFileSize, mergeLiveFiles, validateLiveFiles, type LiveFileIssue, type LiveFileKind } from './live-input';
 
-type Launcher = 'REPLAY' | 'LIVE';
 type LiveProfileId = CreateLiveRunRequest['profileId'];
-
-const modeLabels: Record<InferenceMode, string> = {
-  IMAGE_ONLY: '仅图片',
-  JSON_ONLY: '仅 JSON',
-  COMBINED: '图片 + JSON',
-};
-
-const modeIcons = {
-  IMAGE_ONLY: Image,
-  JSON_ONLY: FileJson2,
-  COMBINED: Images,
-} satisfies Record<InferenceMode, typeof Image>;
 
 export function InferenceStartPage() {
   const navigate = useNavigate();
-  const [launcher, setLauncher] = useState<Launcher>('REPLAY');
   const [mode, setMode] = useState<InferenceMode>('COMBINED');
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [confirmed, setConfirmed] = useState(false);
-  const replayQuery = useQuery({ queryKey: ['replay-fixtures'], queryFn: listReplayFixturesRequest });
   const liveQuery = useQuery({ queryKey: ['live-inference-availability'], queryFn: getLiveAvailabilityRequest });
-  const fixtures = useMemo(
-    () => Array.from(replayQuery.data?.items ?? []).filter((item) => item.mode === mode),
-    [mode, replayQuery.data],
-  );
-  const selected = fixtures.find((item) => item.fixtureId === selectedId) ?? fixtures[0];
-  const createReplay = useMutation({
-    mutationFn: (fixture: ReplayFixtureResponse) => createReplayRunRequest(fixture.fixtureId, crypto.randomUUID()),
-    onSuccess: (run) => navigate(`/inference-runs/${run.runId}/monitor`),
-  });
 
   return (
     <ResourceFrame
       title="新增识别输入"
-      description="选择识别方式、输入文件、模型与费用边界；提交后进入独立监控版面，不会直接发布或写入正式数据结构。"
-      actions={<Link className="button ghost-button" to="/inference">查看历史任务</Link>}
+      description="上传图片或 JSON，选择 DashScope 模型与费用边界；提交后进入独立监控版面，不会直接发布或写入正式数据结构。"
+      actions={<Link className="button ghost-button" to="/inference">返回历史任务</Link>}
       breadcrumbs={[{ label: '智能识别', to: '/inference' }, { label: '新增识别' }]}
     >
-      <InferenceModuleNav />
       <InferenceFlowSteps current={1} />
-      <div className="inference-kind-tabs" role="tablist" aria-label="推断方式">
-        <button type="button" role="tab" aria-selected={launcher === 'REPLAY'} className={launcher === 'REPLAY' ? 'active' : ''} onClick={() => setLauncher('REPLAY')}>
-          <Braces aria-hidden="true" size={16} /><span><strong>确定性样本</strong><small>零网络 · 可复现</small></span>
-        </button>
-        <button type="button" role="tab" aria-selected={launcher === 'LIVE'} className={launcher === 'LIVE' ? 'active' : ''} onClick={() => setLauncher('LIVE')}>
-          <Bot aria-hidden="true" size={16} /><span><strong>AI 识别</strong><small>DashScope · 实验配置</small></span>
-        </button>
-      </div>
-
-      {launcher === 'REPLAY'
-        ? <ReplayLauncher
-            mode={mode}
-            setMode={setMode}
-            setSelectedId={setSelectedId}
-            confirmed={confirmed}
-            setConfirmed={setConfirmed}
-            query={replayQuery}
-            fixtures={fixtures}
-            selected={selected}
-            createRun={createReplay}
-          />
-        : <LiveLauncher mode={mode} setMode={setMode} query={liveQuery} onCreated={(runId) => navigate(`/inference-runs/${runId}/monitor`)} />}
+      <LiveLauncher mode={mode} setMode={setMode} query={liveQuery} onCreated={(runId) => navigate(`/inference-runs/${runId}/monitor`)} />
     </ResourceFrame>
-  );
-}
-
-function ReplayLauncher({
-  mode,
-  setMode,
-  setSelectedId,
-  confirmed,
-  setConfirmed,
-  query,
-  fixtures,
-  selected,
-  createRun,
-}: {
-  mode: InferenceMode;
-  setMode: (mode: InferenceMode) => void;
-  setSelectedId: (id: string | null) => void;
-  confirmed: boolean;
-  setConfirmed: (value: boolean) => void;
-  query: UseQueryResult<ReplayFixtureListResponse, Error>;
-  fixtures: ReplayFixtureResponse[];
-  selected: ReplayFixtureResponse | undefined;
-  createRun: UseMutationResult<InferenceRunResponse, Error, ReplayFixtureResponse>;
-}) {
-  return (
-    <>
-      <section className="replay-contract" aria-label="Replay 执行边界">
-        <div><ShieldCheck aria-hidden="true" size={19} /><span>执行配置</span><strong>{query.data?.profileId ?? 'replay-v1'}</strong></div>
-        <div><Network aria-hidden="true" size={19} /><span>外部网络</span><strong className="contract-safe">禁止</strong></div>
-        <div><Braces aria-hidden="true" size={19} /><span>数据范围</span><strong>仅合成样本</strong></div>
-        <p><CheckCircle2 aria-hidden="true" size={15} />本流程不上传真实图片或业务数据，也不会调用 live provider。</p>
-      </section>
-
-      <div className="replay-layout">
-        <section className="replay-catalog" aria-label="Replay 样本目录">
-          <header><div><h2>选择推断场景</h2></div><span>{fixtures.length} / 60</span></header>
-          <ModeTabs mode={mode} onChange={(value) => { setMode(value); setSelectedId(null); setConfirmed(false); }} />
-          {query.isPending && <ResourceLoading label="正在读取合成样本" />}
-          {query.isError && <ResourceError error={query.error} onRetry={() => void query.refetch()} />}
-          <div className="fixture-list">
-            {fixtures.map((fixture) => (
-              <button
-                key={fixture.fixtureId}
-                type="button"
-                className={selected?.fixtureId === fixture.fixtureId ? 'fixture-row selected' : 'fixture-row'}
-                aria-pressed={selected?.fixtureId === fixture.fixtureId}
-                onClick={() => { setSelectedId(fixture.fixtureId); setConfirmed(false); }}
-              >
-                <span className="fixture-number">{fixture.fixtureId.match(/\d+/)?.[0] ?? '—'}</span>
-                <span className="fixture-name"><strong>{humanScenario(fixture.scenario)}</strong><code>{fixture.fixtureId}</code></span>
-                <span>{fixture.expectedSchemaCount} Schema</span>
-                <ArrowRight aria-hidden="true" size={15} />
-              </button>
-            ))}
-          </div>
-        </section>
-
-        <aside className="replay-launch-panel" aria-label="运行确认">
-          <h2>{selected ? humanScenario(selected.scenario) : '选择一个场景'}</h2>
-          {selected && (
-            <>
-              <code className="fixture-id">{selected.fixtureId}</code>
-              <dl className="fixture-metrics">
-                <div><dt>输入模式</dt><dd>{modeLabels[selected.mode]}</dd></div>
-                <div><dt>图片</dt><dd>{selected.imageCount}</dd></div>
-                <div><dt>JSON 样本</dt><dd>{selected.jsonSampleCount}</dd></div>
-                <div><dt>预期 Schema</dt><dd>{selected.expectedSchemaCount}</dd></div>
-              </dl>
-              <div className="expected-problems">
-                <span>预期审核信号</span>
-                {selected.expectedProblemCodes.length === 0
-                  ? <strong>无预置 blocker</strong>
-                  : selected.expectedProblemCodes.map((code) => <code key={code}>{code}</code>)}
-              </div>
-              <label className="replay-confirmation">
-                <input type="checkbox" checked={confirmed} onChange={(event) => setConfirmed(event.target.checked)} />
-                <span><strong>确认使用 replay-v1</strong>仅处理当前合成样本，外部传输关闭。</span>
-              </label>
-              <button type="button" className="button primary-button replay-launch" disabled={!confirmed || createRun.isPending} onClick={() => createRun.mutate(selected)}>
-                <Play aria-hidden="true" size={16} />{createRun.isPending ? '正在创建任务…' : '运行并查看监控'}
-              </button>
-              {createRun.isError && <p className="replay-error" role="alert">{errorMessage(createRun.error)}</p>}
-            </>
-          )}
-          <p className="replay-footnote">运行记录和 Candidate 会持久化；Draft 表在审核完成前保持不变。</p>
-        </aside>
-      </div>
-    </>
   );
 }
 
@@ -272,7 +125,7 @@ function LiveLauncher({
           <div className="replay-layout live-layout">
             <section className="replay-catalog live-input-panel" aria-label="AI 推断输入">
               <header><div><h2>准备识别输入</h2></div><span>最多 10 图 · 20 JSON</span></header>
-              <ModeTabs mode={mode} onChange={(value) => { setMode(value); setTransferConfirmed(false); }} />
+              <InferenceInputModeTabs mode={mode} onChange={(value) => { setMode(value); setTransferConfirmed(false); }} />
 
               <div className="live-form-section">
                 <span className="section-kicker">选择模型配置</span>
@@ -332,7 +185,7 @@ function LiveLauncher({
               <span className="section-kicker">调用摘要</span>
               <h2>{profile?.model ?? '选择模型'}</h2>
               <dl className="fixture-metrics">
-                <div><dt>输入模式</dt><dd>{modeLabels[mode]}</dd></div>
+                <div><dt>输入模式</dt><dd>{inferenceModeLabels[mode]}</dd></div>
                 <div><dt>本次文件</dt><dd>{activeFiles.images.length + activeFiles.jsonSamples.length}</dd></div>
                 <div><dt>最多调用</dt><dd>{profile?.maximumTotalCalls ?? 0}</dd></div>
                 <div><dt>单次预留上界</dt><dd>¥{formatYuan(profile?.maximumEstimatedCostMicrosCny ?? 0)}</dd></div>
@@ -394,21 +247,6 @@ function LiveLauncher({
   );
 }
 
-function ModeTabs({ mode, onChange }: { mode: InferenceMode; onChange: (mode: InferenceMode) => void }) {
-  return (
-    <div className="mode-tabs" role="tablist" aria-label="输入模式">
-      {(Object.keys(modeLabels) as InferenceMode[]).map((value) => {
-        const Icon = modeIcons[value];
-        return (
-          <button key={value} type="button" role="tab" aria-selected={mode === value} className={mode === value ? 'active' : ''} onClick={() => onChange(value)}>
-            <Icon aria-hidden="true" size={15} />{modeLabels[value]}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
 function UploadField({
   kind,
   title,
@@ -463,10 +301,6 @@ function UploadField({
       )}
     </div>
   );
-}
-
-function humanScenario(scenario: string) {
-  return scenario.replaceAll('-', ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
 function formatYuan(micros: number) {

@@ -28,12 +28,14 @@ test('completes the four-step Candidate workflow with keyboard authoring and dur
   let current = candidateBundle();
   let revision = 0;
   let applied = false;
+  let replayFixtureReads = 0;
   await page.route('**/api/v1/inference-runs**', async (route) => {
     const request = route.request();
     const url = new URL(request.url());
     const method = request.method();
 
     if (method === 'GET' && url.pathname === '/api/v1/inference-runs/replay-fixtures') {
+      replayFixtureReads += 1;
       await json(route, replayFixtures());
     } else if (method === 'GET' && url.pathname === '/api/v1/inference-runs/live-availability') {
       await json(route, liveAvailability());
@@ -95,8 +97,10 @@ test('completes the four-step Candidate workflow with keyboard authoring and dur
   await page.goto('/inference');
   await page.waitForLoadState('networkidle');
   await expect(page.getByRole('heading', { name: '历史识别任务' })).toBeVisible();
-  await expect(page.getByRole('navigation', { name: '智能识别版面' })).toContainText('历史任务');
+  await expect(page.getByRole('navigation', { name: '智能识别版面' })).toHaveCount(0);
   await expect(page.getByRole('heading', { name: '全部识别记录' })).toBeVisible();
+  await expect(page.locator('.chrome-actions').getByRole('link', { name: '确定性样本' })).toHaveAttribute('href', '/inference/samples');
+  await expect(page.locator('.chrome-actions').getByRole('link', { name: '新增识别' })).toHaveAttribute('href', '/inference/new');
   await expect(page.getByRole('link', { name: /查看结果/ })).toHaveAttribute(
     'href',
     `/inference-runs/${recentRunId}/review`,
@@ -106,8 +110,21 @@ test('completes the four-step Candidate workflow with keyboard authoring and dur
   await expect(page).toHaveURL(/\/inference\/new$/);
   await expect(page.getByRole('heading', { name: '新增识别输入' })).toBeVisible();
   await expect(page.getByRole('navigation', { name: '数据结构识别进度' })).toContainText('准备输入');
-  await expect(page.getByText('零网络 · 可复现')).toBeVisible();
+  await expect(page.getByText('DashScope', { exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '确定性样本' })).toHaveCount(0);
+  await expect(page.locator('.fixture-row')).toHaveCount(0);
+  expect(replayFixtureReads).toBe(0);
   await page.screenshot({ path: testInfo.outputPath('inference-new-1280x720.png'), fullPage: true });
+
+  await page.locator('.chrome-actions').getByRole('link', { name: '返回历史任务' }).click();
+  await page.locator('.chrome-actions').getByRole('link', { name: '确定性样本' }).click();
+  await expect(page).toHaveURL(/\/inference\/samples$/);
+  await expect(page.getByRole('heading', { name: '确定性样本' })).toBeVisible();
+  await expect(page.getByText('外部网络', { exact: true })).toBeVisible();
+  await expect(page.getByText('禁止', { exact: true })).toBeVisible();
+  await expect(page.locator('.fixture-row')).toHaveCount(1);
+  expect(replayFixtureReads).toBe(1);
+  await page.screenshot({ path: testInfo.outputPath('inference-samples-1280x720.png'), fullPage: true });
   await page.getByRole('checkbox', { name: /确认使用 replay-v1/ }).check();
   await page.getByRole('button', { name: '运行并查看监控' }).click();
 
@@ -280,7 +297,6 @@ test('preflights a local upload queue while the deployment transfer gate is clos
 
   await page.goto('/inference/new');
   await page.waitForLoadState('networkidle');
-  await page.getByRole('tab', { name: /AI 识别/ }).click();
   const fileInputs = page.locator('.live-upload-field input[type="file"]');
   await fileInputs.nth(0).setInputFiles([
     { name: 'design.png', mimeType: 'image/png', buffer: Buffer.from('synthetic-png') },
@@ -335,7 +351,6 @@ test('offers four product models and an optional cumulative run cost ceiling', a
   });
 
   await page.goto('/inference/new');
-  await page.getByRole('tab', { name: /AI 识别/ }).click();
   await expect(page.getByText('可用', { exact: true })).toBeVisible();
   await expect(page.locator('.live-profile-grid button')).toHaveCount(4);
   for (const model of ['qwen3.7-flash', 'qwen3.7-plus', 'qwen3.8-max', 'qwen3.7-max-2026-06-08']) {

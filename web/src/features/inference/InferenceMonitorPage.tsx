@@ -7,7 +7,6 @@ import { ResourceFrame } from '../resources/ResourceFrame';
 import { cancelInferenceRunRequest, getInferenceRunRequest, retryInferenceRunRequest } from './candidate-api';
 import { InferenceExecutionLogPanel } from './InferenceExecutionLogPanel';
 import { InferenceFlowSteps } from './InferenceFlowSteps';
-import { InferenceModuleNav } from './InferenceModuleNav';
 import { RunCancelButton } from './InferenceRunActions';
 import {
   formatInferenceTime,
@@ -51,7 +50,6 @@ export function InferenceMonitorPage() {
       actions={<Link className="button primary-button" to="/inference/new"><Plus aria-hidden="true" size={15} />新增识别</Link>}
       breadcrumbs={[{ label: '智能识别', to: '/inference' }, { label: '识别监控' }]}
     >
-      <InferenceModuleNav runId={runId} resultAvailable={resultAvailable} />
       <InferenceFlowSteps current={flowStep} />
       {query.isPending && <ResourceLoading label="正在读取识别任务" />}
       {query.isError && <ResourceError error={query.error} onRetry={() => void query.refetch()} />}

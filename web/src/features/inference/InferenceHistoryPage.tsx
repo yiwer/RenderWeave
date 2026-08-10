@@ -1,4 +1,4 @@
-import { Activity, ArrowRight, CheckCircle2, ChevronLeft, ChevronRight, History, Plus, RefreshCw } from 'lucide-react';
+import { Activity, ArrowRight, Braces, CheckCircle2, ChevronLeft, ChevronRight, History, Plus, RefreshCw } from 'lucide-react';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
@@ -15,7 +15,6 @@ import {
   inferenceStageLabel,
   inferenceStateLabel,
 } from './inference-format';
-import { InferenceModuleNav } from './InferenceModuleNav';
 
 const PAGE_SIZE = 10;
 
@@ -36,10 +35,14 @@ export function InferenceHistoryPage() {
     <ResourceFrame
       title="历史识别任务"
       description="集中查看每次识别的输入模式、执行状态与结果去向；运行记录持久化，可随时恢复监控或继续校对。"
-      actions={<Link className="button primary-button" to="/inference/new"><Plus aria-hidden="true" size={15} />新增识别</Link>}
+      actions={(
+        <>
+          <Link className="button ghost-button" to="/inference/samples"><Braces aria-hidden="true" size={15} />确定性样本</Link>
+          <Link className="button primary-button" to="/inference/new"><Plus aria-hidden="true" size={15} />新增识别</Link>
+        </>
+      )}
       breadcrumbs={[{ label: '智能识别' }, { label: '历史任务' }]}
     >
-      <InferenceModuleNav />
       <dl className="inference-history-summary" aria-label="识别任务概览">
         <div><History aria-hidden="true" size={17} /><span><dt>任务总量</dt><dd>{query.data?.total ?? '—'}</dd></span></div>
         <div><Activity aria-hidden="true" size={17} /><span><dt>本页进行中</dt><dd>{running}</dd></span></div>
@@ -66,7 +69,7 @@ export function InferenceHistoryPage() {
           <div className="recent-inference-empty">
             <History aria-hidden="true" size={22} />
             <strong>还没有识别任务</strong>
-            <span>新建一次确定性样本或 AI 识别后，任务会在这里持续留档。</span>
+            <span>新建一次 AI 识别或运行确定性样本后，任务会在这里持续留档。</span>
             <Link className="button primary-button" to="/inference/new"><Plus aria-hidden="true" size={15} />新增识别</Link>
           </div>
         )}
