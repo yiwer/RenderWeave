@@ -1,14 +1,14 @@
 {
   "authorizationVersion": "renderweave-visual-evaluation-authorization/1.0",
-  "authorizationId": "visual-n7-observation-rewind-v15-qwen37-plus-transit-20260811",
-  "status": "CLOSED",
+  "authorizationId": "visual-n7-cardinality-v16-qwen37-plus-transit-20260811",
+  "status": "PROPOSED",
   "phase": "CANARY",
   "inputClassification": "REPOSITORY_SYNTHETIC_ONLY",
   "corpusVersion": "renderweave-visual-stage-corpus/1.0",
   "corpusSourceSha256": "bf0db7bf0ac5c4e2b357cdd96c49ff70a7b30a5bc59f322a915020dc29fc605e",
-  "evaluationIdentity": "renderweave-visual-evaluation-tree-sha256/1:84eba0e524ef2f1cb687a4247c1e4ff28304e9334c9215e3d4e36fb11269add7",
-  "profileId": "dashscope-qwen37-plus-product-v15-generic",
-  "profileSnapshotSha256": "09e1911b9671aa6098b489f5f103597b9e05143b154308d155066a995a3cf639",
+  "evaluationIdentity": "renderweave-visual-evaluation-tree-sha256/1:d268d5f5f6d9dd96b655c9719fce9f92cc865395cb3011ccc167ee0691a7345d",
+  "profileId": "dashscope-qwen37-plus-product-v16-generic",
+  "profileSnapshotSha256": "d78b1b599f4d3b419f2731e33649e9fbfd5f59d24e8a2bde6829f713edf9de5e",
   "model": "qwen3.7-plus",
   "caseIds": [
     "transit-board-v3"
@@ -18,7 +18,7 @@
   "maximumCostMicrosCny": 600000,
   "maximumCasesPerBatch": 1,
   "approvedBy": "yiwer",
-  "approvedAt": "2026-08-10T20:03:54Z",
-  "expiresAt": "2026-08-11T08:03:54Z",
-  "approvalScope": "Goal J1 CANARY: user explicitly allowed qwen3.7-plus; one repository-synthetic transit-board-v3 case through immutable product-v15-generic with bounded HIERARCHY-to-OBSERVE semantic rewind for a missing evidence-backed GROUP; at most 5 attempts, 60000 exposed tokens, CNY 0.60 and one case per batch within the 1000000-token Plus Goal slot; payload-free evidence and immediate CLOSED after this smoke"
+  "approvedAt": "2026-08-10T20:37:11Z",
+  "expiresAt": "2026-08-11T08:37:11Z",
+  "approvalScope": "Goal J1 CANARY: user explicitly allowed qwen3.7-plus and requested continued Goal progression; one repository-synthetic transit-board-v3 case through immutable product-v16-generic pipeline 4.3 with relationship cardinality derived only from one evidence-owned GROUP multiplicity; at most 5 attempts, 60000 exposed tokens, CNY 0.60 and one case per batch within the 1000000-token Plus Goal slot; payload-free evidence, no Max call and immediate CLOSED after this smoke"
 }
