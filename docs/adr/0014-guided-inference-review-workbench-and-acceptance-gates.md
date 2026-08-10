@@ -21,7 +21,7 @@
 3. **逐项校对**：展示完成度、blocker/warning、所有证据，支持新增/删除/重排 Schema 与字段，以及 key、metadata、type、constraints/ref 编辑；仍无 confirm-all。
 4. **原子创建**：展示 readiness checklist；只有服务端 blocker 为零且 autosave 稳定时，才允许一次性 create-only 创建 Draft Bundle。
 
-四步心智模型不要求把职责挤在同一个页面。2026-08-10 的产品收口将其固定为四个共享导航、可深链的版面：`/inference` 历史任务、`/inference/new` 新增输入、`/inference-runs/{runId}/monitor` 识别监控、`/inference-runs/{runId}/review` 识别结果。新建/重试先进入监控；结果尚未形成时访问 review 必须返回 monitor。历史列表按任务状态选择 monitor/review，从而保持一个连续流程，同时让输入、运行诊断与 Candidate 编辑各自只有一个主任务。
+四步心智模型不要求把职责挤在同一个页面，也不要求常驻一组跨页面导航卡。2026-08-10 的最终信息架构以 `/inference` 历史任务为模块默认页，右上角分别进入 `/inference/new` 新增识别与 `/inference/samples` 确定性样本；前者只加载 DashScope Live 能力，后者只加载零网络 Replay fixture。`/inference-runs/{runId}/monitor` 承担监控，`/inference-runs/{runId}/review` 承担结果。新建、样本运行和重试先进入 monitor；结果尚未形成时访问 review 必须返回 monitor。历史列表按任务状态选择 monitor/review，从而保持连续流程，同时让 Live 输入、Replay、运行诊断与 Candidate 编辑各自只有一个主任务。
 
 ### 2. Candidate 审核以完整编辑能力为准
 

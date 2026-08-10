@@ -406,7 +406,8 @@ Phase 内任务只在真实前置依赖满足时并行。当前没有 atomic cla
 5. T6-3a.4：对 IMAGE_ONLY 仅规范化非法技术 SchemaKey 与合法标量冗余 observedKinds，不处置语义不确定性；新增 payload-free execution log API 与审核页时间线；clean Server/Web/E2E A1，未调用 Provider。
 6. T6-3a.5：对明确使用 artifact 像素的 IMAGE_ONLY bbox 家族换算到 0..10000，Web 兼容历史 Candidate；聚合重复诊断并优化单 Schema 导航与字段信息层级；clean Server/Web/E2E A1，未调用 Provider。
 7. T6-3a.6：Candidate save 对旧客户端的已编辑 AI item 确定性归一 `RESOLVED_BY_EDIT`；智能识别拆成历史、新增、监控、结果四个深链版面，创建/重试先进入监控；clean Server/Web/E2E A1，未调用 Provider。
-8. T6-3b：数据库与 Blob 备份/恢复、missing artifact、storage full、结构化观测与操作员演练；未完成前 T6-3 不报告完成。
+8. T6-3a.7：以历史任务为默认入口并移除跨页面卡片导航；Live 新增识别与零网络确定性样本拆成独立路由，新增页不再查询 Replay fixture；clean Web/E2E A1，未调用 Provider。
+9. T6-3b：数据库与 Blob 备份/恢复、missing artifact、storage full、结构化观测与操作员演练；未完成前 T6-3 不报告完成。
 
 #### T6-4：最终 AC/非目标/安全能力审计
 - AC：AC-001–AC-025

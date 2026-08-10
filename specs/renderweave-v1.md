@@ -410,14 +410,15 @@ NORMALIZE
 
 ### 8.4 Candidate 与 Evidence
 
-Web 将智能识别拆成四个可深链版面，并共享同一四步流程导航：
+Web 将智能识别拆成职责单一、可深链的版面；模块默认页是历史识别任务，不再展示跨版面的卡片导航：
 
-- `/inference`：历史识别任务，分页展示 durable run，并按状态进入监控或结果；
-- `/inference/new`：新增识别输入，只负责模式、文件、Profile、外发确认与费用边界；
+- `/inference`：历史识别任务，分页展示 durable run，并按状态进入监控或结果；右上角提供“确定性样本”和“新增识别”两个入口；
+- `/inference/new`：新增识别输入，只负责 DashScope 模式、文件、Profile、外发确认与费用边界；不得查询或展示 Replay fixture；
+- `/inference/samples`：确定性样本，只负责合成 fixture 的零网络 Replay，不读取新增识别页面的文件；
 - `/inference-runs/{runId}/monitor`：识别监控，只读展示状态、阶段、attempt、Token、费用与有限诊断；
 - `/inference-runs/{runId}/review`：识别结果，Candidate 生成后开放，承担证据展示、逐项校对与原子创建。
 
-新建或重试一律先进入监控版面；尚未生成 Candidate 时直接访问结果 URL 必须返回监控版面，不能把运行状态、输入表单和 Candidate 编辑器重新混在同一页面。
+新增识别、确定性样本运行或重试一律先进入监控版面；尚未生成 Candidate 时直接访问结果 URL 必须返回监控版面，不能把 Live 输入、Replay fixture、运行状态和 Candidate 编辑器重新混在同一页面。四步进度只在输入、样本、监控和结果上下文显示，历史台账不伪装成流程步骤。
 
 - 一个 run 恰好一个 root CandidateSchema，零到多个从 root 可达的 child；不允许孤立新 Schema 或环。
 - Candidate 是独立宽松模型，可表达 unresolved type/ref/conflict；正式 DSL 绝不放宽。
