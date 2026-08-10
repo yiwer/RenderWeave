@@ -132,7 +132,7 @@ test('completes the four-step Candidate workflow with keyboard authoring and dur
   await expect(page.getByRole('heading', { name: '识别监控' })).toBeVisible();
   await expect(page.getByText('Candidate 已生成')).toBeVisible();
   await expect(page.getByRole('heading', { name: '执行日志' })).toBeVisible();
-  await expect(page.getByText('模型调用 #1 · 结构识别')).toBeVisible();
+  await expect(page.getByText('模型调用 #1 · 生成数据定义')).toBeVisible();
   await page.screenshot({ path: testInfo.outputPath('inference-monitor-1280x720.png'), fullPage: true });
   await page.getByRole('link', { name: /查看识别结果/ }).first().click();
 
@@ -341,7 +341,7 @@ test('offers four product models and an optional cumulative run cost ceiling', a
       multipartBody = request.postDataBuffer()?.toString('utf8') ?? '';
       await json(route, {
         ...runResponse(0, 'QUEUED'),
-        profileId: 'dashscope-qwen37-flash-product-v2',
+        profileId: 'dashscope-qwen37-flash-product-v3',
         sourceReference: 'user-upload',
         costLimitMicrosCny: 250000,
       }, 201);
@@ -659,7 +659,7 @@ function liveAvailability(enabled = false) {
     model,
     certification: 'EXPERIMENTAL',
     supportedModes,
-    maximumTotalCalls: 3,
+    maximumTotalCalls: 5,
     maximumOutputTokens: 4096,
     maximumEstimatedCostMicrosCny: 2000000,
     pricingEffectiveDate: '2026-08-10',
@@ -672,10 +672,10 @@ function liveAvailability(enabled = false) {
     runCostLimitRequired: false,
     maximumRunCostLimitMicrosCny: 100000000,
     profiles: [
-      profile('dashscope-qwen37-flash-product-v2', 'qwen3.7-flash', ['IMAGE_ONLY', 'JSON_ONLY', 'COMBINED']),
-      profile('dashscope-qwen37-plus-product-v2', 'qwen3.7-plus', ['IMAGE_ONLY', 'JSON_ONLY', 'COMBINED']),
-      profile('dashscope-qwen38-max-product-v2', 'qwen3.8-max', ['IMAGE_ONLY', 'JSON_ONLY', 'COMBINED']),
-      profile('dashscope-qwen37-max-20260608-product-v2', 'qwen3.7-max-2026-06-08', ['IMAGE_ONLY', 'JSON_ONLY', 'COMBINED']),
+      profile('dashscope-qwen37-flash-product-v3', 'qwen3.7-flash', ['IMAGE_ONLY', 'JSON_ONLY', 'COMBINED']),
+      profile('dashscope-qwen37-plus-product-v3', 'qwen3.7-plus', ['IMAGE_ONLY', 'JSON_ONLY', 'COMBINED']),
+      profile('dashscope-qwen38-max-product-v3', 'qwen3.8-max', ['IMAGE_ONLY', 'JSON_ONLY', 'COMBINED']),
+      profile('dashscope-qwen37-max-20260608-product-v3', 'qwen3.7-max-2026-06-08', ['IMAGE_ONLY', 'JSON_ONLY', 'COMBINED']),
     ],
   };
 }

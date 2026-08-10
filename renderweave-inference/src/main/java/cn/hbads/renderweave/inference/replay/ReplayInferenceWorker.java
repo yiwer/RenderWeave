@@ -152,7 +152,7 @@ public final class ReplayInferenceWorker {
             case DETERMINISTIC_VALIDATE -> deterministicValidate(current, fixture);
             case CRITIQUE -> critique(current);
             case REPAIR -> repair(current, fixture);
-            case NORMALIZE, USER_APPROVAL, ATOMIC_CREATE -> throw new IllegalStateException(
+            case HIERARCHY, ELEMENT_BINDING, NORMALIZE, USER_APPROVAL, ATOMIC_CREATE -> throw new IllegalStateException(
                     "Replay worker cannot execute stage " + current.stage()
             );
         };

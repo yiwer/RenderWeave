@@ -23,8 +23,10 @@ public record ProviderInferenceRequest(
     public ProviderInferenceRequest {
         Objects.requireNonNull(runId, "runId");
         Objects.requireNonNull(stage, "stage");
-        if (stage != InferenceStage.STRUCTURE && stage != InferenceStage.REPAIR) {
-            throw new IllegalArgumentException("Provider calls are limited to STRUCTURE and REPAIR");
+        if (stage != InferenceStage.OBSERVE && stage != InferenceStage.HIERARCHY
+                && stage != InferenceStage.ELEMENT_BINDING
+                && stage != InferenceStage.STRUCTURE && stage != InferenceStage.REPAIR) {
+            throw new IllegalArgumentException("Provider call stage is not supported");
         }
         Objects.requireNonNull(profile, "profile");
         if (!profile.networkAllowed() || !"DASHSCOPE".equals(profile.provider())) {

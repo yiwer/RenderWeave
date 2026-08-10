@@ -56,6 +56,7 @@ public final class LiveInferenceWorker {
     public static final String CANARY_BUDGET_KEY = "p5-synthetic-canary";
     public static final String PRODUCT_BUDGET_KEY = "product-live";
     private static final String GROUNDED_PIPELINE = "renderweave-inference-pipeline/2.0";
+    private static final String SERIAL_VISUAL_PIPELINE = "renderweave-inference-pipeline/3.0";
     private static final int MAX_STAGE_ADVANCES = 24;
 
     private final InferenceRunStore runStore;
@@ -76,6 +77,8 @@ public final class LiveInferenceWorker {
     private final CandidateProblemJsonCodec problemCodec;
     private final LiveWorkflowJsonCodec workflowCodec;
     private final LiveTaskJsonCodec taskCodec;
+    private final VisualAnalysisJsonCodec visualAnalysisCodec;
+    private final VisualPlanCandidateValidator visualPlanValidator;
 
     public LiveInferenceWorker(
             InferenceRunStore runStore,
@@ -132,6 +135,8 @@ public final class LiveInferenceWorker {
         this.problemCodec = Objects.requireNonNull(problemCodec, "problemCodec");
         this.workflowCodec = Objects.requireNonNull(workflowCodec, "workflowCodec");
         this.taskCodec = Objects.requireNonNull(taskCodec, "taskCodec");
+        this.visualAnalysisCodec = new VisualAnalysisJsonCodec();
+        this.visualPlanValidator = new VisualPlanCandidateValidator();
         if (leaseDuration.isZero() || leaseDuration.isNegative()
                 || leaseDuration.compareTo(Duration.ofMinutes(15)) > 0) {
             throw new IllegalArgumentException("leaseDuration must be positive and no longer than 15 minutes");
@@ -183,7 +188,8 @@ public final class LiveInferenceWorker {
         }
         var profile = validateRun(current);
         return switch (current.stage()) {
-            case OBSERVE -> observe(current);
+            case OBSERVE -> observe(current, profile);
+            case HIERARCHY, ELEMENT_BINDING -> invoke(current, profile, false);
             case STRUCTURE -> structure(current, profile);
             case DETERMINISTIC_VALIDATE -> deterministicValidate(current, profile);
             case CRITIQUE -> critique(current, profile);
@@ -203,7 +209,7 @@ public final class LiveInferenceWorker {
             var grounded = groundedBase(current);
             var next = checkpoint.callResult(
                     InferenceStage.STRUCTURE,
-                    checkpoint.structureCalls(),
+                    checkpoint.providerCalls(),
                     checkpoint.repairRounds(),
                     grounded.candidate(),
                     grounded.semanticProblems()
@@ -217,7 +223,8 @@ public final class LiveInferenceWorker {
         return invoke(current, profile, false);
     }
 
-    private InferenceRunSnapshot observe(InferenceRunSnapshot current) {
+    private InferenceRunSnapshot observe(InferenceRunSnapshot current, InferenceProfile profile) {
+        if (serialVisual(current, profile)) return invoke(current, profile, false);
         return runStore.checkpoint(
                 current.runId(), token(current), InferenceStage.OBSERVE, InferenceStage.STRUCTURE,
                 workflowCodec.write(LiveWorkflowCheckpoint.observed()), clock.instant()
@@ -229,14 +236,10 @@ public final class LiveInferenceWorker {
             InferenceProfile profile,
             boolean repair
     ) {
-        var checkpoint = workflowCodec.parse(current.checkpointJson());
-        if (!repair && checkpoint.completedStage() != InferenceStage.OBSERVE) {
-            throw new IllegalStateException("STRUCTURE requires the OBSERVE checkpoint");
-        }
-        if (repair && (checkpoint.completedStage() != InferenceStage.CRITIQUE
-                || !requiresRepair(checkpoint))) {
-            throw new IllegalStateException("REPAIR requires a rejected CRITIQUE checkpoint");
-        }
+        var checkpoint = current.stage() == InferenceStage.OBSERVE && serialVisual(current, profile)
+                ? LiveWorkflowCheckpoint.started()
+                : workflowCodec.parse(current.checkpointJson());
+        requireInvocationCheckpoint(current, checkpoint, repair, profile);
         if (grounded(profile) && current.mode() == InferenceMode.JSON_ONLY) {
             return runStore.fail(
                     current.runId(), token(current),
@@ -298,6 +301,15 @@ public final class LiveInferenceWorker {
             return runStore.fail(current.runId(), token(failed), "DASHSCOPE_MODEL_MISMATCH", clock.instant());
         }
 
+        if (serialVisual(current, profile)
+                && Set.of(InferenceStage.OBSERVE, InferenceStage.HIERARCHY,
+                InferenceStage.ELEMENT_BINDING).contains(current.stage())) {
+            return acceptVisualAnalysis(
+                    current, profile, checkpoint, attemptOrdinal, response,
+                    estimatedCost, elapsedMillis(started)
+            );
+        }
+
         CandidateBundle candidate = null;
         List<CandidateProblem> prevalidationProblems = List.of();
         Map<String, Integer> problemCodeCounts = Map.of();
@@ -310,7 +322,16 @@ public final class LiveInferenceWorker {
                         candidate, imageArtifactDimensions(current)
                 );
                 candidate = canonical.candidate();
-                prevalidationProblems = canonical.problems();
+                var combined = new ArrayList<>(canonical.problems());
+                if (serialVisual(current, profile)) {
+                    combined.addAll(visualPlanValidator.validate(
+                            candidate,
+                            Objects.requireNonNull(checkpoint.elementInventory(), "elementInventory"),
+                            Objects.requireNonNull(checkpoint.hierarchyPlan(), "hierarchyPlan"),
+                            Objects.requireNonNull(checkpoint.bindingPlan(), "bindingPlan")
+                    ));
+                }
+                prevalidationProblems = List.copyOf(combined);
             } else if (grounded(profile) && current.mode() == InferenceMode.COMBINED) {
                 var composed = groundedComposer.compose(
                         current.runId(), groundedRootKey(current), "推断数据结构",
@@ -355,6 +376,137 @@ public final class LiveInferenceWorker {
         );
     }
 
+    private void requireInvocationCheckpoint(
+            InferenceRunSnapshot current,
+            LiveWorkflowCheckpoint checkpoint,
+            boolean repair,
+            InferenceProfile profile
+    ) {
+        if (repair) {
+            if (current.stage() != InferenceStage.REPAIR
+                    || checkpoint.completedStage() != InferenceStage.CRITIQUE
+                    || !requiresRepair(checkpoint)) {
+                throw new IllegalStateException("REPAIR requires a rejected CRITIQUE checkpoint");
+            }
+            return;
+        }
+        switch (current.stage()) {
+            case OBSERVE -> {
+                if (!serialVisual(current, profile)
+                        || checkpoint.completedStage() != InferenceStage.NORMALIZE) {
+                    throw new IllegalStateException("OBSERVE provider call requires pipeline 3 IMAGE_ONLY");
+                }
+            }
+            case HIERARCHY -> {
+                if (!serialVisual(current, profile)
+                        || checkpoint.completedStage() != InferenceStage.OBSERVE
+                        || checkpoint.elementInventory() == null) {
+                    throw new IllegalStateException("HIERARCHY requires a validated element inventory");
+                }
+            }
+            case ELEMENT_BINDING -> {
+                if (!serialVisual(current, profile)
+                        || checkpoint.completedStage() != InferenceStage.HIERARCHY
+                        || checkpoint.hierarchyPlan() == null) {
+                    throw new IllegalStateException("ELEMENT_BINDING requires a validated hierarchy");
+                }
+            }
+            case STRUCTURE -> {
+                var expected = serialVisual(current, profile)
+                        ? InferenceStage.ELEMENT_BINDING : InferenceStage.OBSERVE;
+                if (checkpoint.completedStage() != expected
+                        || serialVisual(current, profile) && checkpoint.bindingPlan() == null) {
+                    throw new IllegalStateException("STRUCTURE requires its complete observation checkpoint");
+                }
+            }
+            default -> throw new IllegalStateException("Unsupported provider stage " + current.stage());
+        }
+    }
+
+    private InferenceRunSnapshot acceptVisualAnalysis(
+            InferenceRunSnapshot current,
+            InferenceProfile profile,
+            LiveWorkflowCheckpoint checkpoint,
+            int attemptOrdinal,
+            ProviderInferenceResponse response,
+            long estimatedCost,
+            long durationMillis
+    ) {
+        final LiveWorkflowCheckpoint nextCheckpoint;
+        final InferenceStage nextStage;
+        final String outcomeCode;
+        final Map<String, Integer> problemCodeCounts;
+        try {
+            switch (current.stage()) {
+                case OBSERVE -> {
+                    var parsedInventory = visualAnalysisCodec.parseElements(
+                            response.candidateJson(), Set.copyOf(imageArtifactIds(current))
+                    );
+                    var canonical = imageOnlyCanonicalizer.canonicalize(
+                            parsedInventory, imageArtifactDimensions(current)
+                    );
+                    nextCheckpoint = checkpoint.elementsObserved(
+                            canonical.inventory(), attemptOrdinal + 1
+                    );
+                    nextStage = InferenceStage.HIERARCHY;
+                    outcomeCode = "LIVE_VISUAL_ELEMENTS_ACCEPTED";
+                    problemCodeCounts = canonical.normalizedElements() == 0 ? Map.of() : Map.of(
+                            "IMAGE_EVIDENCE_PIXEL_COORDINATES_NORMALIZED",
+                            canonical.normalizedElements()
+                    );
+                }
+                case HIERARCHY -> {
+                    var hierarchy = visualAnalysisCodec.parseHierarchy(
+                            response.candidateJson(),
+                            Objects.requireNonNull(checkpoint.elementInventory(), "elementInventory")
+                    );
+                    nextCheckpoint = checkpoint.hierarchyAnalyzed(hierarchy, attemptOrdinal + 1);
+                    nextStage = InferenceStage.ELEMENT_BINDING;
+                    outcomeCode = "LIVE_VISUAL_HIERARCHY_ACCEPTED";
+                    problemCodeCounts = Map.of();
+                }
+                case ELEMENT_BINDING -> {
+                    var bindings = visualAnalysisCodec.parseBindings(
+                            response.candidateJson(),
+                            Objects.requireNonNull(checkpoint.elementInventory(), "elementInventory"),
+                            Objects.requireNonNull(checkpoint.hierarchyPlan(), "hierarchyPlan")
+                    );
+                    nextCheckpoint = checkpoint.elementsBound(bindings, attemptOrdinal + 1);
+                    nextStage = InferenceStage.STRUCTURE;
+                    outcomeCode = "LIVE_VISUAL_BINDINGS_ACCEPTED";
+                    problemCodeCounts = Map.of();
+                }
+                default -> throw new IllegalStateException("Not a visual analysis stage");
+            }
+        } catch (InvalidVisualAnalysisException invalid) {
+            var now = clock.instant();
+            var counts = InferenceAttemptProblemTaxonomy.count(List.of(invalid.diagnosticCode()));
+            var recorded = workflowStore.recordAttempt(
+                    current.runId(), token(current),
+                    attempt(
+                            current, attemptOrdinal, InferenceAttemptStatus.REJECTED,
+                            "LIVE_VISUAL_ANALYSIS_REJECTED", response, estimatedCost,
+                            durationMillis, counts, now
+                    ),
+                    now
+            );
+            if (attemptOrdinal + 1 < profile.maximumTotalCalls()) return recorded;
+            return runStore.fail(
+                    current.runId(), token(recorded), invalid.diagnosticCode(), clock.instant()
+            );
+        }
+        var now = clock.instant();
+        return workflowStore.checkpointAttempt(
+                current.runId(), token(current), current.stage(), nextStage,
+                workflowCodec.write(nextCheckpoint),
+                attempt(
+                        current, attemptOrdinal, InferenceAttemptStatus.SUCCEEDED,
+                        outcomeCode, response, estimatedCost, durationMillis, problemCodeCounts, now
+                ),
+                now
+        );
+    }
+
     private InferenceRunSnapshot deterministicValidate(
             InferenceRunSnapshot current,
             InferenceProfile profile
@@ -370,7 +522,7 @@ public final class LiveInferenceWorker {
                     ? List.of(new CandidateProblem(
                             "LIVE_STRUCTURE_OUTPUT_INVALID", CandidateProblemSeverity.BLOCKER,
                             null, "/candidate", java.util.Map.of(
-                                    "attemptOrdinal", Integer.toString(checkpoint.structureCalls() - 1)
+                                    "attemptOrdinal", Integer.toString(checkpoint.providerCalls() - 1)
                             )
                     ))
                     : checkpoint.validationProblems();
@@ -406,7 +558,7 @@ public final class LiveInferenceWorker {
                 );
             }
             if (checkpoint.repairRounds() >= profile.maximumRepairRounds()
-                    || checkpoint.structureCalls() >= profile.maximumTotalCalls()) {
+                    || checkpoint.providerCalls() >= profile.maximumTotalCalls()) {
                 return runStore.fail(
                         current.runId(), token(current), "LIVE_REPAIR_BUDGET_EXHAUSTED", clock.instant()
                 );
@@ -437,6 +589,24 @@ public final class LiveInferenceWorker {
         var problemCodes = current.stage() == InferenceStage.REPAIR
                 ? checkpoint.validationProblems().stream().map(CandidateProblem::code).distinct().sorted().toList()
                 : List.<String>of();
+        if (serialVisual(current, profile)) {
+            var retryProblemCodes = workflowStore.attempts(current.runId()).stream()
+                    .filter(attempt -> attempt.stage() == current.stage()
+                            && attempt.status() == InferenceAttemptStatus.REJECTED)
+                    .reduce((left, right) -> right)
+                    .map(attempt -> attempt.problemCodeCounts().keySet().stream().sorted().toList())
+                    .orElse(List.of());
+            return new ProviderInferenceRequest(
+                    current.runId(), attemptOrdinal, current.stage(), profile,
+                    prompts.require(promptVersion(profile, current.stage())).text(),
+                    taskCodec.writeV3(
+                            current, current.stage(), checkpoint.elementInventory(),
+                            checkpoint.hierarchyPlan(), checkpoint.bindingPlan(),
+                            problemCodes, retryProblemCodes
+                    ),
+                    providerImages(current)
+            );
+        }
         var jsonProfile = jsonProfile(current);
         var groundedCandidate = grounded(profile) && jsonProfile != null
                 ? groundedBase(current).candidate()
@@ -467,7 +637,24 @@ public final class LiveInferenceWorker {
     }
 
     private static boolean grounded(InferenceProfile profile) {
-        return GROUNDED_PIPELINE.equals(profile.pipelineVersion());
+        return GROUNDED_PIPELINE.equals(profile.pipelineVersion())
+                || SERIAL_VISUAL_PIPELINE.equals(profile.pipelineVersion());
+    }
+
+    private static boolean serialVisual(InferenceRunSnapshot current, InferenceProfile profile) {
+        return SERIAL_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                && current.mode() == InferenceMode.IMAGE_ONLY;
+    }
+
+    private static String promptVersion(InferenceProfile profile, InferenceStage stage) {
+        return switch (stage) {
+            case OBSERVE -> Objects.requireNonNull(profile.elementPromptVersion(), "elementPromptVersion");
+            case HIERARCHY -> Objects.requireNonNull(profile.hierarchyPromptVersion(), "hierarchyPromptVersion");
+            case ELEMENT_BINDING -> Objects.requireNonNull(profile.bindingPromptVersion(), "bindingPromptVersion");
+            case STRUCTURE, REPAIR -> profile.promptVersion();
+            case NORMALIZE, DETERMINISTIC_VALIDATE, CRITIQUE, USER_APPROVAL, ATOMIC_CREATE ->
+                    throw new IllegalArgumentException("Stage does not call the provider");
+        };
     }
 
     private CandidateValidationContext validationContext(

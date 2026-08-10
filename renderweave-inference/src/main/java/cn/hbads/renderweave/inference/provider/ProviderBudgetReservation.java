@@ -16,7 +16,7 @@ public record ProviderBudgetReservation(
             throw new IllegalArgumentException("budgetKey is invalid");
         }
         Objects.requireNonNull(runId, "runId");
-        if (attemptOrdinal < 0 || attemptOrdinal > 2 || reservedCostMicrosCny <= 0) {
+        if (attemptOrdinal < 0 || attemptOrdinal > 4 || reservedCostMicrosCny <= 0) {
             throw new IllegalArgumentException("Reservation bounds are invalid");
         }
     }

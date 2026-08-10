@@ -26,12 +26,14 @@ public record InferenceAttempt(
 ) {
     public InferenceAttempt {
         Objects.requireNonNull(runId, "runId");
-        if (attemptOrdinal < 0 || attemptOrdinal > 2) {
-            throw new IllegalArgumentException("attemptOrdinal must be 0..2");
+        if (attemptOrdinal < 0 || attemptOrdinal > 4) {
+            throw new IllegalArgumentException("attemptOrdinal must be 0..4");
         }
         Objects.requireNonNull(stage, "stage");
-        if (stage != InferenceStage.STRUCTURE && stage != InferenceStage.REPAIR) {
-            throw new IllegalArgumentException("Only STRUCTURE and REPAIR are replay call stages");
+        if (stage != InferenceStage.OBSERVE && stage != InferenceStage.HIERARCHY
+                && stage != InferenceStage.ELEMENT_BINDING
+                && stage != InferenceStage.STRUCTURE && stage != InferenceStage.REPAIR) {
+            throw new IllegalArgumentException("Attempt stage is not a provider call stage");
         }
         Objects.requireNonNull(status, "status");
         if (outcomeCode == null || !outcomeCode.matches("[A-Z][A-Z0-9_]{0,127}")) {

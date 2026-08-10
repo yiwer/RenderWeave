@@ -98,7 +98,7 @@ function run(state: InferenceRunResponse['state'], runId = '44444444-4444-4444-8
     state,
     stage: state === 'REVIEW_REQUIRED' ? 'USER_APPROVAL' : 'STRUCTURE',
     sequence: 3,
-    profileId: 'dashscope-qwen37-flash-product-v2',
+    profileId: 'dashscope-qwen37-flash-product-v3',
     sourceReference: 'product-upload',
     costLimitMicrosCny: 2_000_000,
     cancellationRequested: false,

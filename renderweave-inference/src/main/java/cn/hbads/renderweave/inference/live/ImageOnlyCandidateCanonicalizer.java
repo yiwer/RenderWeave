@@ -22,11 +22,50 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * Applies narrow, deterministic formatting repairs to IMAGE_ONLY provider output.
+ * Applies narrow, deterministic formatting repairs to IMAGE_ONLY provider output and visual inventory.
  * Business field identity, inferred kinds, evidence meaning, confidence and graph topology are never changed.
  * A multi-box family that demonstrably uses artifact pixels is converted to the Candidate 0..10000 contract.
  */
 final class ImageOnlyCandidateCanonicalizer {
+
+    InventoryResult canonicalize(
+            VisualElementInventory inventory,
+            Map<String, ImageDimensions> imageDimensions
+    ) {
+        var boxesByArtifact = new HashMap<String, List<CandidateBoundingBox>>();
+        for (var element : inventory.elements()) {
+            collectBoxes(element.evidence(), boxesByArtifact);
+        }
+        var pixelCoordinateArtifacts = pixelCoordinateArtifacts(boxesByArtifact, imageDimensions);
+        if (pixelCoordinateArtifacts.isEmpty()) return new InventoryResult(inventory, 0);
+
+        var normalizedElements = 0;
+        var elements = new ArrayList<VisualElement>(inventory.elements().size());
+        for (var element : inventory.elements()) {
+            var normalized = false;
+            var evidence = new ArrayList<CandidateEvidence>(element.evidence().size());
+            for (var item : element.evidence()) {
+                if (pixelCoordinateArtifacts.contains(item.artifactId())) {
+                    evidence.add(CandidateEvidence.image(
+                            item.artifactId(), normalizePixelBox(
+                                    item.boundingBox(), imageDimensions.get(item.artifactId())
+                            )
+                    ));
+                    normalized = true;
+                } else {
+                    evidence.add(item);
+                }
+            }
+            if (normalized) normalizedElements++;
+            elements.add(new VisualElement(
+                    element.elementId(), element.kind(), element.proposedKey(), element.displayName(),
+                    element.multiplicity(), element.valueHint(), evidence
+            ));
+        }
+        return new InventoryResult(
+                new VisualElementInventory(inventory.contractVersion(), elements), normalizedElements
+        );
+    }
 
     Result canonicalize(CandidateBundle candidate, Map<String, ImageDimensions> imageDimensions) {
         var pixelCoordinateArtifacts = pixelCoordinateArtifacts(candidate, imageDimensions);
@@ -128,6 +167,13 @@ final class ImageOnlyCandidateCanonicalizer {
             collectBoxes(schema.assessment(), boxesByArtifact);
             for (var field : schema.fields()) collectBoxes(field.assessment(), boxesByArtifact);
         }
+        return pixelCoordinateArtifacts(boxesByArtifact, imageDimensions);
+    }
+
+    private static Set<String> pixelCoordinateArtifacts(
+            Map<String, List<CandidateBoundingBox>> boxesByArtifact,
+            Map<String, ImageDimensions> imageDimensions
+    ) {
         var result = new HashSet<String>();
         boxesByArtifact.forEach((artifactId, boxes) -> {
             var dimensions = imageDimensions.get(artifactId);
@@ -142,7 +188,14 @@ final class ImageOnlyCandidateCanonicalizer {
             CandidateAssessment assessment,
             Map<String, List<CandidateBoundingBox>> boxesByArtifact
     ) {
-        for (var evidence : assessment.evidence()) {
+        collectBoxes(assessment.evidence(), boxesByArtifact);
+    }
+
+    private static void collectBoxes(
+            List<CandidateEvidence> evidenceItems,
+            Map<String, List<CandidateBoundingBox>> boxesByArtifact
+    ) {
+        for (var evidence : evidenceItems) {
             if (evidence.kind() != CandidateEvidenceKind.IMAGE
                     || evidence.artifactId() == null
                     || evidence.boundingBox() == null) continue;
@@ -267,6 +320,12 @@ final class ImageOnlyCandidateCanonicalizer {
     record Result(CandidateBundle candidate, List<CandidateProblem> problems) {
         Result {
             problems = List.copyOf(problems);
+        }
+    }
+
+    record InventoryResult(VisualElementInventory inventory, int normalizedElements) {
+        InventoryResult {
+            if (normalizedElements < 0) throw new IllegalArgumentException("normalizedElements is invalid");
         }
     }
 

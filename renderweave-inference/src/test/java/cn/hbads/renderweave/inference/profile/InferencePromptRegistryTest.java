@@ -107,6 +107,29 @@ class InferencePromptRegistryTest {
         assertFalse(prompt.contains("DASHSCOPE_API_KEY"));
     }
 
+    @Test
+    void productV3PinsFourFocusedPromptsAndTopologyPreservation() {
+        var registry = new InferencePromptRegistry();
+        var candidate = registry.require(InferencePromptRegistry.SCHEMA_CANDIDATE_V5).text();
+        var elements = registry.require(InferencePromptRegistry.VISUAL_ELEMENTS_V1).text();
+        var hierarchy = registry.require(InferencePromptRegistry.VISUAL_HIERARCHY_V1).text();
+        var bindings = registry.require(InferencePromptRegistry.VISUAL_BINDINGS_V1).text();
+
+        assertEquals("413a95684854133da88ae342f958857e3b67d949d4b6b5d924dfad2b086fce17",
+                sha256(candidate));
+        assertEquals("70450991949b42ff8ed6716e3c5c1d5172d87614caf3a6814528bad9f241d1cf",
+                sha256(elements));
+        assertEquals("4c4374aeab0539a02bf8092a2e310a4c2ddb4216f11faba908bb8abd1cb0a7fe",
+                sha256(hierarchy));
+        assertEquals("142d27290e47064812acb25cd111ffe5a6993f5ee8bebd1c923c338a80d145d7",
+                sha256(bindings));
+        assertTrue(elements.contains("Never copy a visible source value"));
+        assertTrue(hierarchy.contains("route[] -> stop[]"));
+        assertTrue(bindings.contains("station English name"));
+        assertTrue(candidate.contains("Do not collapse a planned entity relationship"));
+        assertTrue(candidate.contains("VISUAL_PLAN_*"));
+    }
+
     private static String sha256(String value) {
         try {
             return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(

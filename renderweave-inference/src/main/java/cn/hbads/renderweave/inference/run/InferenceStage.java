@@ -5,6 +5,8 @@ import java.util.Set;
 public enum InferenceStage {
     NORMALIZE,
     OBSERVE,
+    HIERARCHY,
+    ELEMENT_BINDING,
     STRUCTURE,
     DETERMINISTIC_VALIDATE,
     CRITIQUE,
@@ -15,7 +17,9 @@ public enum InferenceStage {
     public boolean canTransitionTo(InferenceStage next) {
         return switch (this) {
             case NORMALIZE -> next == OBSERVE;
-            case OBSERVE -> next == STRUCTURE;
+            case OBSERVE -> Set.of(HIERARCHY, STRUCTURE).contains(next);
+            case HIERARCHY -> next == ELEMENT_BINDING;
+            case ELEMENT_BINDING -> next == STRUCTURE;
             case STRUCTURE -> next == DETERMINISTIC_VALIDATE;
             case DETERMINISTIC_VALIDATE -> next == CRITIQUE;
             case CRITIQUE -> Set.of(REPAIR, USER_APPROVAL).contains(next);

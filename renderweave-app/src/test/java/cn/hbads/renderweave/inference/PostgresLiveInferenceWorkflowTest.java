@@ -6,6 +6,7 @@ import cn.hbads.renderweave.inference.candidate.CandidateBundle;
 import cn.hbads.renderweave.inference.candidate.CandidateEvidence;
 import cn.hbads.renderweave.inference.candidate.CandidateField;
 import cn.hbads.renderweave.inference.candidate.CandidateJsonCodec;
+import cn.hbads.renderweave.inference.candidate.CandidateReference;
 import cn.hbads.renderweave.inference.candidate.CandidateResolution;
 import cn.hbads.renderweave.inference.candidate.CandidateSchema;
 import cn.hbads.renderweave.inference.candidate.CandidateSource;
@@ -67,6 +68,8 @@ class PostgresLiveInferenceWorkflowTest {
     private static final String PROFILE = "dashscope-qwen37-flash-v1";
     private static final String GROUNDED_PROFILE =
             "dashscope-qwen37-plus-20260526-grounded-v1";
+    private static final String SERIAL_PRODUCT_PROFILE =
+            "dashscope-qwen37-flash-product-v3";
 
     @Container
     @ServiceConnection
@@ -102,7 +105,9 @@ class PostgresLiveInferenceWorkflowTest {
 
         var finished = worker(provider, blobs).processNext("live-success-worker").orElseThrow();
 
-        assertThat(finished.state()).isEqualTo(InferenceRunState.REVIEW_REQUIRED);
+        assertThat(finished.state())
+                .as("failure=%s attempts=%s", finished.failureCode(), workflowStore.attempts(created))
+                .isEqualTo(InferenceRunState.REVIEW_REQUIRED);
         assertThat(workflowStore.findCandidate(created).orElseThrow().currentJson())
                 .contains("renderweave-candidate/1.0");
         assertThat(provider.requests).singleElement().satisfies(request -> {
@@ -122,6 +127,108 @@ class PostgresLiveInferenceWorkflowTest {
         var budget = budgets.snapshot(LiveInferenceWorker.CANARY_BUDGET_KEY);
         assertThat(budget.consumedAttempts()).isEqualTo(1);
         assertThat(budget.consumedCostMicrosCny()).isEqualTo(600);
+    }
+
+    @Test
+    void serialProductV3PreservesStationNoticeRouteAndStopTopology() {
+        var blobs = new MemoryBlobStore();
+        var created = create(blobs, "serial-station-board", 1_050, 1_660, SERIAL_PRODUCT_PROFILE);
+        var provider = new ScriptedProvider(
+                request -> response(request, stationElements(request)),
+                request -> response(request, stationHierarchy()),
+                request -> response(request, stationBindings()),
+                request -> response(request, stationCandidate(request))
+        );
+
+        var claimed = runs.claimNextLive(
+                "serial-station-worker", T0.plusSeconds(1), Duration.ofMinutes(5)
+        ).orElseThrow();
+        var finished = worker(provider, blobs).drain(claimed);
+
+        assertThat(finished.state())
+                .as("failure=%s attempts=%s", finished.failureCode(), workflowStore.attempts(created))
+                .isEqualTo(InferenceRunState.REVIEW_REQUIRED);
+        assertThat(provider.requests).extracting(request -> request.stage().name())
+                .containsExactly("OBSERVE", "HIERARCHY", "ELEMENT_BINDING", "STRUCTURE");
+        assertThat(provider.requests.get(1).taskJson())
+                .contains("renderweave-live-task/3.0", "renderweave-visual-elements/1.0");
+        assertThat(provider.requests.get(2).taskJson())
+                .contains("renderweave-visual-hierarchy/1.0");
+        assertThat(provider.requests.get(3).taskJson())
+                .contains("renderweave-visual-bindings/1.0");
+        assertThat(workflowStore.attempts(created)).hasSize(4)
+                .extracting(attempt -> attempt.status())
+                .containsOnly(InferenceAttemptStatus.SUCCEEDED);
+
+        var candidate = candidateCodec.parse(workflowStore.findCandidate(created).orElseThrow().currentJson());
+        assertThat(candidate.schemas()).extracting(CandidateSchema::proposedSchemaKey)
+                .containsExactlyInAnyOrder("bus-stop-board", "warm-notice", "bus-route", "bus-stop");
+        var board = candidate.schemas().stream()
+                .filter(schema -> "bus-stop-board".equals(schema.proposedSchemaKey())).findFirst().orElseThrow();
+        assertThat(board.fields()).extracting(CandidateField::proposedFieldKey)
+                .contains("stationName", "stationEnglishName", "warmNotice", "routes");
+        var route = candidate.schemas().stream()
+                .filter(schema -> "bus-route".equals(schema.proposedSchemaKey())).findFirst().orElseThrow();
+        assertThat(route.fields().stream().filter(field -> "stops".equals(field.proposedFieldKey()))
+                .findFirst().orElseThrow().value().items().kind()).isEqualTo(CandidateValueKind.REFERENCE);
+        assertThat(budgets.snapshot(LiveInferenceWorker.PRODUCT_BUDGET_KEY).consumedAttempts()).isEqualTo(4);
+    }
+
+    @Test
+    void serialProductV3RetriesOneInvalidIntermediateContractWithinTheFiveCallEnvelope() {
+        var blobs = new MemoryBlobStore();
+        var created = create(blobs, "serial-station-retry", 1_050, 1_660, SERIAL_PRODUCT_PROFILE);
+        var provider = new ScriptedProvider(
+                request -> response(request, "{}"),
+                request -> response(request, stationElements(request)),
+                request -> response(request, stationHierarchy()),
+                request -> response(request, stationBindings()),
+                request -> response(request, stationCandidate(request))
+        );
+
+        var finished = worker(provider, blobs).processNext("serial-retry-worker").orElseThrow();
+
+        assertThat(finished.state())
+                .as("failure=%s attempts=%s", finished.failureCode(), workflowStore.attempts(created))
+                .isEqualTo(InferenceRunState.REVIEW_REQUIRED);
+        assertThat(provider.requests).extracting(request -> request.stage().name())
+                .containsExactly("OBSERVE", "OBSERVE", "HIERARCHY", "ELEMENT_BINDING", "STRUCTURE");
+        assertThat(provider.requests.get(1).taskJson())
+                .contains("VISUAL_ELEMENTS_CONTRACT_INVALID");
+        assertThat(workflowStore.attempts(created)).hasSize(5);
+        assertThat(workflowStore.attempts(created).getFirst().status())
+                .isEqualTo(InferenceAttemptStatus.REJECTED);
+        assertThat(workflowStore.attempts(created).getFirst().problemCodeCounts())
+                .containsEntry("VISUAL_ELEMENTS_CONTRACT_INVALID", 1);
+        assertThat(budgets.snapshot(LiveInferenceWorker.PRODUCT_BUDGET_KEY).consumedAttempts()).isEqualTo(5);
+    }
+
+    @Test
+    void serialProductV3ResumesFromItsPersistedStageAfterLeaseExpiryWithoutRepeatingObserve() {
+        var blobs = new MemoryBlobStore();
+        var created = create(blobs, "serial-station-resume", 1_050, 1_660, SERIAL_PRODUCT_PROFILE);
+        var provider = new ScriptedProvider(
+                request -> response(request, stationElements(request)),
+                request -> response(request, stationHierarchy()),
+                request -> response(request, stationBindings()),
+                request -> response(request, stationCandidate(request))
+        );
+        var firstWorker = worker(provider, blobs, T0.plusSeconds(1));
+        var claimed = runs.claimNextLive(
+                "serial-first-worker", T0.plusSeconds(1), Duration.ofMinutes(5)
+        ).orElseThrow();
+
+        var afterObserve = firstWorker.advance(claimed);
+        var finished = worker(provider, blobs, T0.plus(Duration.ofMinutes(7)))
+                .processNext("serial-recovery-worker").orElseThrow();
+
+        assertThat(afterObserve.stage().name()).isEqualTo("HIERARCHY");
+        assertThat(finished.state())
+                .as("failure=%s attempts=%s", finished.failureCode(), workflowStore.attempts(created))
+                .isEqualTo(InferenceRunState.REVIEW_REQUIRED);
+        assertThat(provider.requests).extracting(request -> request.stage().name())
+                .containsExactly("OBSERVE", "HIERARCHY", "ELEMENT_BINDING", "STRUCTURE");
+        assertThat(workflowStore.attempts(created)).hasSize(4);
     }
 
     @Test
@@ -581,9 +688,13 @@ class PostgresLiveInferenceWorkflowTest {
     }
 
     private LiveInferenceWorker worker(InferenceProvider provider, BlobStore blobs) {
+        return worker(provider, blobs, T0.plusSeconds(1));
+    }
+
+    private LiveInferenceWorker worker(InferenceProvider provider, BlobStore blobs, Instant now) {
         return new LiveInferenceWorker(
                 runs, workflowStore, budgets, provider, blobs,
-                Clock.fixed(T0.plusSeconds(1), ZoneOffset.UTC), Duration.ofMinutes(5)
+                Clock.fixed(now, ZoneOffset.UTC), Duration.ofMinutes(5)
         );
     }
 
@@ -592,7 +703,17 @@ class PostgresLiveInferenceWorkflowTest {
     }
 
     private UUID create(MemoryBlobStore blobs, String seed, int width, int height) {
-        var profile = profiles.require(PROFILE);
+        return create(blobs, seed, width, height, PROFILE);
+    }
+
+    private UUID create(
+            MemoryBlobStore blobs,
+            String seed,
+            int width,
+            int height,
+            String profileId
+    ) {
+        var profile = profiles.require(profileId);
         var bytes = ("synthetic-image:" + seed).getBytes(StandardCharsets.UTF_8);
         var artifactId = sha256(bytes);
         blobs.values.put(artifactId, bytes);
@@ -601,7 +722,7 @@ class PostgresLiveInferenceWorkflowTest {
                 "image/png", bytes.length, width, height
         );
         var normalized = new NormalizedInput(
-                InferenceMode.IMAGE_ONLY, PROFILE, seed, sha256(seed.getBytes(StandardCharsets.UTF_8)),
+                InferenceMode.IMAGE_ONLY, profileId, seed, sha256(seed.getBytes(StandardCharsets.UTF_8)),
                 List.of(artifact),
                 List.of(new NormalizedInputReference(NormalizedArtifact.Kind.IMAGE, 0, artifactId)),
                 List.of()
@@ -691,6 +812,145 @@ class PostgresLiveInferenceWorkflowTest {
         return runs.create(NewInferenceRun.initial(
                 UUID.randomUUID(), "idem-" + seed, normalized, profile.snapshotJson(), T0
         )).run().runId();
+    }
+
+    private String stationElements(ProviderInferenceRequest request) {
+        var artifactId = request.images().getFirst().artifactId();
+        return """
+                {"contractVersion":"renderweave-visual-elements/1.0","elements":[
+                  {"elementId":"station-name","kind":"SLOT","proposedKey":"stationName","displayName":"站点名称","multiplicity":"ONE","valueHint":"TEXT","evidence":[%s]},
+                  {"elementId":"station-english","kind":"SLOT","proposedKey":"stationEnglishName","displayName":"站点英文名","multiplicity":"ONE","valueHint":"TEXT","evidence":[%s]},
+                  {"elementId":"notice-group","kind":"GROUP","proposedKey":"warmNotice","displayName":"温馨提示","multiplicity":"ONE","valueHint":null,"evidence":[%s]},
+                  {"elementId":"notice-date","kind":"SLOT","proposedKey":"effectiveDate","displayName":"生效日期","multiplicity":"ONE","valueHint":"DATE","evidence":[%s]},
+                  {"elementId":"notice-content","kind":"SLOT","proposedKey":"content","displayName":"提示内容","multiplicity":"ONE","valueHint":"TEXT","evidence":[%s]},
+                  {"elementId":"route-group","kind":"GROUP","proposedKey":"routes","displayName":"线路","multiplicity":"MANY","valueHint":null,"evidence":[%s]},
+                  {"elementId":"route-number","kind":"SLOT","proposedKey":"routeNumber","displayName":"线路编号","multiplicity":"ONE","valueHint":"TEXT","evidence":[%s]},
+                  {"elementId":"stop-group","kind":"GROUP","proposedKey":"stops","displayName":"停靠站点","multiplicity":"MANY","valueHint":null,"evidence":[%s]},
+                  {"elementId":"stop-name","kind":"SLOT","proposedKey":"name","displayName":"站点名称","multiplicity":"ONE","valueHint":"TEXT","evidence":[%s]}
+                ]}
+                """.formatted(
+                evidenceJson(artifactId, 100), evidenceJson(artifactId, 400),
+                evidenceJson(artifactId, 900), evidenceJson(artifactId, 1100),
+                evidenceJson(artifactId, 1400), evidenceJson(artifactId, 2500),
+                evidenceJson(artifactId, 2800), evidenceJson(artifactId, 3800),
+                evidenceJson(artifactId, 4200)
+        );
+    }
+
+    private static String stationHierarchy() {
+        return """
+                {"contractVersion":"renderweave-visual-hierarchy/1.0","rootEntityId":"board",
+                 "entities":[
+                   {"entityId":"board","schemaKey":"bus-stop-board","displayName":"站牌","supportingElementIds":["station-name"]},
+                   {"entityId":"notice","schemaKey":"warm-notice","displayName":"温馨提示","supportingElementIds":["notice-group"]},
+                   {"entityId":"route","schemaKey":"bus-route","displayName":"线路","supportingElementIds":["route-group"]},
+                   {"entityId":"stop","schemaKey":"bus-stop","displayName":"停靠站点","supportingElementIds":["stop-group"]}
+                 ],"relationships":[
+                   {"relationshipId":"board-notice","parentEntityId":"board","childEntityId":"notice","fieldKey":"warmNotice","displayName":"温馨提示","cardinality":"ONE","supportingElementIds":["notice-group"]},
+                   {"relationshipId":"board-routes","parentEntityId":"board","childEntityId":"route","fieldKey":"routes","displayName":"线路","cardinality":"MANY","supportingElementIds":["route-group"]},
+                   {"relationshipId":"route-stops","parentEntityId":"route","childEntityId":"stop","fieldKey":"stops","displayName":"停靠站点","cardinality":"MANY","supportingElementIds":["stop-group"]}
+                 ]}
+                """;
+    }
+
+    private static String stationBindings() {
+        return """
+                {"contractVersion":"renderweave-visual-bindings/1.0","bindings":[
+                  {"elementId":"station-name","entityId":"board"},
+                  {"elementId":"station-english","entityId":"board"},
+                  {"elementId":"notice-date","entityId":"notice"},
+                  {"elementId":"notice-content","entityId":"notice"},
+                  {"elementId":"route-number","entityId":"route"},
+                  {"elementId":"stop-name","entityId":"stop"}
+                ]}
+                """;
+    }
+
+    private String stationCandidate(ProviderInferenceRequest request) {
+        var boardId = UUID.nameUUIDFromBytes((request.runId() + ":board").getBytes(StandardCharsets.UTF_8));
+        var noticeId = UUID.nameUUIDFromBytes((request.runId() + ":notice").getBytes(StandardCharsets.UTF_8));
+        var routeId = UUID.nameUUIDFromBytes((request.runId() + ":route").getBytes(StandardCharsets.UTF_8));
+        var stopId = UUID.nameUUIDFromBytes((request.runId() + ":stop").getBytes(StandardCharsets.UTF_8));
+        var artifactId = request.images().getFirst().artifactId();
+        var board = new CandidateSchema(
+                boardId, "bus-stop-board", "站牌", CandidateSource.AI,
+                stationAssessment(artifactId, 100),
+                List.of(
+                        stationField(request, "station-name", "stationName", CandidateValueKind.TEXT, 100),
+                        stationField(request, "station-english", "stationEnglishName", CandidateValueKind.TEXT, 400),
+                        stationReferenceField(request, "warm-notice", "warmNotice", noticeId, false, 900),
+                        stationReferenceField(request, "routes", "routes", routeId, true, 2500)
+                )
+        );
+        var notice = new CandidateSchema(
+                noticeId, "warm-notice", "温馨提示", CandidateSource.AI,
+                stationAssessment(artifactId, 900),
+                List.of(
+                        stationField(request, "notice-date", "effectiveDate", CandidateValueKind.DATE, 1100),
+                        stationField(request, "notice-content", "content", CandidateValueKind.TEXT, 1400)
+                )
+        );
+        var route = new CandidateSchema(
+                routeId, "bus-route", "线路", CandidateSource.AI,
+                stationAssessment(artifactId, 2500),
+                List.of(
+                        stationField(request, "route-number", "routeNumber", CandidateValueKind.TEXT, 2800),
+                        stationReferenceField(request, "stops", "stops", stopId, true, 3800)
+                )
+        );
+        var stop = new CandidateSchema(
+                stopId, "bus-stop", "停靠站点", CandidateSource.AI,
+                stationAssessment(artifactId, 3800),
+                List.of(stationField(request, "stop-name", "name", CandidateValueKind.TEXT, 4200))
+        );
+        return candidateCodec.write(new CandidateBundle(
+                CandidateBundle.CONTRACT_VERSION, boardId, List.of(board, notice, route, stop)
+        ));
+    }
+
+    private static CandidateField stationField(
+            ProviderInferenceRequest request,
+            String id,
+            String key,
+            CandidateValueKind kind,
+            int top
+    ) {
+        return new CandidateField(
+                UUID.nameUUIDFromBytes((request.runId() + ":" + id).getBytes(StandardCharsets.UTF_8)),
+                key, key, false, CandidateValue.scalar(kind), CandidateSource.AI,
+                stationAssessment(request.images().getFirst().artifactId(), top)
+        );
+    }
+
+    private static CandidateField stationReferenceField(
+            ProviderInferenceRequest request,
+            String id,
+            String key,
+            UUID target,
+            boolean many,
+            int top
+    ) {
+        var reference = CandidateValue.reference(CandidateReference.candidate(target));
+        return new CandidateField(
+                UUID.nameUUIDFromBytes((request.runId() + ":" + id).getBytes(StandardCharsets.UTF_8)),
+                key, key, false, many ? CandidateValue.array(reference) : reference, CandidateSource.AI,
+                stationAssessment(request.images().getFirst().artifactId(), top)
+        );
+    }
+
+    private static CandidateAssessment stationAssessment(String artifactId, int top) {
+        return CandidateAssessment.ai(
+                9_000, true, CandidateResolution.NOT_REQUIRED,
+                List.of(CandidateEvidence.image(
+                        artifactId, new CandidateBoundingBox(500, top, 9_500, top + 200)
+                ))
+        );
+    }
+
+    private static String evidenceJson(String artifactId, int top) {
+        return """
+                {"kind":"IMAGE","artifactId":"%s","boundingBox":{"left":500,"top":%d,"right":9500,"bottom":%d},"sampleIndex":null,"jsonPointer":null}
+                """.formatted(artifactId, top, top + 200).strip();
     }
 
     private String candidate(ProviderInferenceRequest request) {

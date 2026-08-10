@@ -102,7 +102,7 @@ class LiveInferenceApiTest {
         var metadata = new MockMultipartFile(
                 "metadata", "metadata.json", MediaType.APPLICATION_JSON_VALUE,
                 """
-                        {"profileId":"dashscope-qwen37-flash-product-v2","mode":"IMAGE_ONLY",
+                        {"profileId":"dashscope-qwen37-flash-product-v3","mode":"IMAGE_ONLY",
                          "inputClassification":"USER_PROVIDED","externalTransferConfirmed":true,
                          "experimentalProfileConfirmed":true,"costLimitMicrosCny":250000}
                         """.getBytes(StandardCharsets.UTF_8)
@@ -114,7 +114,7 @@ class LiveInferenceApiTest {
                         .file(metadata).file(image)
                         .header("Idempotency-Key", "live-api-synthetic"))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.profileId").value("dashscope-qwen37-flash-product-v2"))
+                .andExpect(jsonPath("$.profileId").value("dashscope-qwen37-flash-product-v3"))
                 .andExpect(jsonPath("$.costLimitMicrosCny").value(250000))
                 .andReturn().getResponse().getContentAsString();
         var runId = UUID.fromString(json.readTree(response).path("runId").asText());
@@ -131,7 +131,7 @@ class LiveInferenceApiTest {
                 .andExpect(jsonPath("$.images.length()").value(1))
                 .andExpect(jsonPath("$.jsonSampleCount").value(0));
         assertThat(jdbcClient.sql("select count(*) from inference_provider_reservation")
-                .query(Long.class).single()).isEqualTo(1);
+                .query(Long.class).single()).isEqualTo(4);
     }
 
     @Test
@@ -139,7 +139,7 @@ class LiveInferenceApiTest {
         var metadata = new MockMultipartFile(
                 "metadata", "metadata.json", MediaType.APPLICATION_JSON_VALUE,
                 """
-                        {"profileId":"dashscope-qwen37-flash-product-v2","mode":"IMAGE_ONLY",
+                        {"profileId":"dashscope-qwen37-flash-product-v3","mode":"IMAGE_ONLY",
                          "inputClassification":"USER_PROVIDED","externalTransferConfirmed":true,
                          "experimentalProfileConfirmed":true}
                         """.getBytes(StandardCharsets.UTF_8)
@@ -184,7 +184,7 @@ class LiveInferenceApiTest {
         var metadata = new MockMultipartFile(
                 "metadata", "metadata.json", MediaType.APPLICATION_JSON_VALUE,
                 """
-                        {"profileId":"dashscope-qwen37-flash-product-v2","mode":"IMAGE_ONLY",
+                        {"profileId":"dashscope-qwen37-flash-product-v3","mode":"IMAGE_ONLY",
                          "inputClassification":"USER_PROVIDED","externalTransferConfirmed":true,
                          "experimentalProfileConfirmed":true,"costLimitMicrosCny":100000001}
                         """.getBytes(StandardCharsets.UTF_8)
@@ -208,7 +208,7 @@ class LiveInferenceApiTest {
         var metadata = new MockMultipartFile(
                 "metadata", "metadata.json", MediaType.APPLICATION_JSON_VALUE,
                 """
-                        {"profileId":"dashscope-qwen37-flash-product-v2","mode":"IMAGE_ONLY",
+                        {"profileId":"dashscope-qwen37-flash-product-v3","mode":"IMAGE_ONLY",
                          "inputClassification":"USER_PROVIDED","externalTransferConfirmed":true,
                          "experimentalProfileConfirmed":true}
                         """.getBytes(StandardCharsets.UTF_8)
@@ -268,6 +268,37 @@ class LiveInferenceApiTest {
         InferenceProvider syntheticProvider() {
             var codec = new CandidateJsonCodec();
             return request -> {
+                var artifactId = request.images().getFirst().artifactId();
+                var output = switch (request.stage()) {
+                    case OBSERVE -> """
+                            {"contractVersion":"renderweave-visual-elements/1.0","elements":[
+                              {"elementId":"title","kind":"SLOT","proposedKey":"title",
+                               "displayName":"标题","multiplicity":"ONE","valueHint":"TEXT",
+                               "evidence":[{"kind":"IMAGE","artifactId":"%s",
+                                 "boundingBox":{"left":500,"top":500,"right":9500,"bottom":2500},
+                                 "sampleIndex":null,"jsonPointer":null}]}
+                            ]}
+                            """.formatted(artifactId);
+                    case HIERARCHY -> """
+                            {"contractVersion":"renderweave-visual-hierarchy/1.0",
+                             "rootEntityId":"product","entities":[
+                               {"entityId":"product","schemaKey":"synthetic-product",
+                                "displayName":"合成商品","supportingElementIds":["title"]}
+                             ],"relationships":[]}
+                            """;
+                    case ELEMENT_BINDING -> """
+                            {"contractVersion":"renderweave-visual-bindings/1.0",
+                             "bindings":[{"elementId":"title","entityId":"product"}]}
+                            """;
+                    case STRUCTURE, REPAIR -> null;
+                    default -> throw new AssertionError("Unexpected provider stage " + request.stage());
+                };
+                if (output != null) {
+                    return new ProviderInferenceResponse(
+                            output, "test-request-" + request.attemptOrdinal(), request.profile().model(),
+                            new ProviderUsage(1_000, 500), "stop"
+                    );
+                }
                 var schemaId = UUID.nameUUIDFromBytes((request.runId() + ":schema").getBytes(StandardCharsets.UTF_8));
                 var fieldId = UUID.nameUUIDFromBytes((request.runId() + ":field").getBytes(StandardCharsets.UTF_8));
                 var evidence = CandidateEvidence.image(
@@ -288,7 +319,7 @@ class LiveInferenceApiTest {
                         ))
                 );
                 return new ProviderInferenceResponse(
-                        codec.write(candidate), "test-request", request.profile().model(),
+                        codec.write(candidate), "test-request-" + request.attemptOrdinal(), request.profile().model(),
                         new ProviderUsage(1_000, 500), "stop"
                 );
             };

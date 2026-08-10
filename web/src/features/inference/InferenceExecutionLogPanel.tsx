@@ -181,7 +181,7 @@ function AttemptLogItem({ attempt }: { attempt: InferenceAttempt }) {
       <span className="inference-log-marker"><Bot aria-hidden="true" size={16} /></span>
       <div className="inference-log-entry-main">
         <div className="inference-log-entry-heading">
-          <strong>模型调用 #{attempt.attemptOrdinal + 1} · {attempt.stage === 'REPAIR' ? '结构修复' : '结构识别'}</strong>
+          <strong>模型调用 #{attempt.attemptOrdinal + 1} · {inferenceStageLabel(attempt.stage)}</strong>
           <time dateTime={attempt.completedAt}>{formatTime(attempt.completedAt)}</time>
         </div>
         <p>{attemptStatusLabel(attempt.status)} · {attempt.providerModel ?? '本地 replay'} · {formatDuration(attempt.durationMillis)}</p>
@@ -224,6 +224,7 @@ function eventTypeLabel(type: string) {
     LEASE_RECLAIMED: '执行器已恢复任务',
     CHECKPOINT_ADVANCED: '流程检查点已推进',
     PROVIDER_ATTEMPT_FAILED: '模型调用失败',
+    PROVIDER_ATTEMPT_REJECTED: '模型响应未通过阶段合同',
     REVIEW_REQUIRED: 'Candidate 已进入人工审核',
     CANDIDATE_UPDATED: '审核修改已保存',
     CANCELLATION_REQUESTED: '已请求取消任务',

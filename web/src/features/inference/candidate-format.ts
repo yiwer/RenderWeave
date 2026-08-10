@@ -63,6 +63,20 @@ export function problemLabel(code: string) {
     CANDIDATE_SCHEMA_ORPHAN: 'Schema 无法从 Root 到达',
     CANDIDATE_REFERENCE_CYCLE: 'Candidate 引用形成循环',
     NESTED_ARRAY_UNSUPPORTED: '不支持嵌套数组',
+    VISUAL_ELEMENTS_CONTRACT_INVALID: '图片元素盘点未通过结构合同',
+    VISUAL_HIERARCHY_CONTRACT_INVALID: '图片层级关系未通过结构合同',
+    VISUAL_BINDINGS_CONTRACT_INVALID: '元素归属计划未通过结构合同',
+    VISUAL_PLAN_ROOT_SCHEMA_MISMATCH: '根数据结构与视觉层级计划不一致',
+    VISUAL_PLAN_SCHEMA_MISSING: '视觉计划中的数据结构缺失',
+    VISUAL_PLAN_SCHEMA_EVIDENCE_MISSING: '数据结构缺少计划中的直接证据',
+    VISUAL_PLAN_SCHEMA_UNEXPECTED: '生成了视觉计划外的数据结构',
+    VISUAL_PLAN_RELATION_MISSING: '视觉计划中的嵌套关系缺失',
+    VISUAL_PLAN_RELATION_SHAPE_INVALID: '嵌套关系的引用或数组基数不正确',
+    VISUAL_PLAN_RELATION_EVIDENCE_MISSING: '嵌套关系缺少计划中的直接证据',
+    VISUAL_PLAN_FIELD_MISSING: '视觉计划中的字段缺失',
+    VISUAL_PLAN_FIELD_SHAPE_INVALID: '字段类型或数组基数与视觉计划不一致',
+    VISUAL_PLAN_FIELD_EVIDENCE_MISSING: '字段缺少计划中的直接证据',
+    VISUAL_PLAN_FIELD_UNEXPECTED: '生成了视觉计划外的字段',
   };
   return labels[code] ?? '需要审核的确定性问题';
 }

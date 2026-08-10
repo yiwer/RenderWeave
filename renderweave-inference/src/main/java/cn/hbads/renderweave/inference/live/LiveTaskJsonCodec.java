@@ -65,6 +65,32 @@ final class LiveTaskJsonCodec {
         }
     }
 
+    String writeV3(
+            InferenceRunSnapshot run,
+            InferenceStage stage,
+            VisualElementInventory elementInventory,
+            VisualHierarchyPlan hierarchyPlan,
+            VisualElementBindingPlan bindingPlan,
+            List<String> repairProblemCodes,
+            List<String> retryProblemCodes
+    ) {
+        try {
+            return JSON.writeValueAsString(new TaskV3(
+                    "renderweave-live-task/3.0",
+                    run.mode().name(),
+                    stage.name(),
+                    artifacts(run),
+                    elementInventory,
+                    hierarchyPlan,
+                    bindingPlan,
+                    List.copyOf(repairProblemCodes),
+                    List.copyOf(retryProblemCodes)
+            ));
+        } catch (Exception exception) {
+            throw new IllegalStateException("Live inference task could not be encoded", exception);
+        }
+    }
+
     private static List<Artifact> artifacts(InferenceRunSnapshot run) {
         return run.inputs().stream()
                 .sorted(Comparator.comparing((cn.hbads.renderweave.inference.run.InferenceRunInput input) ->
@@ -93,6 +119,18 @@ final class LiveTaskJsonCodec {
             JsonStructuralProfile jsonStructuralProfile,
             CandidateBundle groundedCandidate,
             List<String> repairProblemCodes
+    ) { }
+
+    private record TaskV3(
+            String taskVersion,
+            String mode,
+            String stage,
+            List<Artifact> artifactCatalog,
+            VisualElementInventory elementInventory,
+            VisualHierarchyPlan hierarchyPlan,
+            VisualElementBindingPlan bindingPlan,
+            List<String> repairProblemCodes,
+            List<String> retryProblemCodes
     ) { }
 
     private record Artifact(

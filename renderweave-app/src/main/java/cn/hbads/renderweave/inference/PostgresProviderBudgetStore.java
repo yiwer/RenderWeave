@@ -204,7 +204,7 @@ public class PostgresProviderBudgetStore implements ProviderBudgetStore {
         }
         Objects.requireNonNull(runId, "runId");
         Objects.requireNonNull(now, "now");
-        if (attemptOrdinal < 0 || attemptOrdinal > 2 || maximumCostMicrosCny <= 0
+        if (attemptOrdinal < 0 || attemptOrdinal > 4 || maximumCostMicrosCny <= 0
                 || runCostLimitMicrosCny != null && runCostLimitMicrosCny < 1) {
             throw new IllegalArgumentException("Provider reservation bounds are invalid");
         }

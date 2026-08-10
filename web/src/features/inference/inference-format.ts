@@ -3,8 +3,10 @@ import type { InferenceMode, InferenceRunResponse } from '../../api/generated';
 export function inferenceStageLabel(stage: string) {
   const labels: Record<string, string> = {
     NORMALIZE: '整理输入',
-    OBSERVE: '提取结构信号',
-    STRUCTURE: '生成候选结构',
+    OBSERVE: '盘点图片元素',
+    HIERARCHY: '构建层级关系',
+    ELEMENT_BINDING: '绑定元素归属',
+    STRUCTURE: '生成数据定义',
     DETERMINISTIC_VALIDATE: '执行确定性校验',
     CRITIQUE: '分析校验问题',
     REPAIR: '修复候选结构',

@@ -606,8 +606,12 @@ public class PostgresInferenceRunStore implements InferenceRunStore, InferenceRe
             Instant now
     ) {
         Objects.requireNonNull(attempt, "attempt");
-        if (!runId.equals(attempt.runId()) || attempt.status() != InferenceAttemptStatus.FAILED) {
-            throw new IllegalArgumentException("Attempt-only checkpoints require a matching FAILED attempt");
+        if (!runId.equals(attempt.runId())
+                || attempt.status() != InferenceAttemptStatus.FAILED
+                && attempt.status() != InferenceAttemptStatus.REJECTED) {
+            throw new IllegalArgumentException(
+                    "Attempt-only checkpoints require a matching FAILED or REJECTED attempt"
+            );
         }
         var updated = jdbcClient.sql("""
                         update inference_run
@@ -633,7 +637,8 @@ public class PostgresInferenceRunStore implements InferenceRunStore, InferenceRe
         insertAttempt(attempt);
         var result = updated.orElseThrow();
         insertEvent(
-                runId, result.sequence(), "PROVIDER_ATTEMPT_FAILED",
+                runId, result.sequence(), attempt.status() == InferenceAttemptStatus.REJECTED
+                        ? "PROVIDER_ATTEMPT_REJECTED" : "PROVIDER_ATTEMPT_FAILED",
                 InferenceRunState.RUNNING, result.stage(),
                 "{\"attemptOrdinal\":" + attempt.attemptOrdinal()
                         + ",\"outcomeCode\":\"" + attempt.outcomeCode() + "\"}",

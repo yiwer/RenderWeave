@@ -12,7 +12,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class InferenceProfileRegistryTest {
     @Test
-    void exposesHistoricalEvaluationProfilesAndFourProductModelChoices() {
+    void exposesHistoricalProfilesAndFourSerialProductModelChoices() {
         var registry = new InferenceProfileRegistry();
         var resource = registry.require("replay-v1");
         var profile = resource.profile();
@@ -31,7 +31,11 @@ class InferenceProfileRegistryTest {
                 "dashscope-qwen37-flash-product-v2",
                 "dashscope-qwen37-plus-product-v2",
                 "dashscope-qwen38-max-product-v2",
-                "dashscope-qwen37-max-20260608-product-v2"
+                "dashscope-qwen37-max-20260608-product-v2",
+                "dashscope-qwen37-flash-product-v3",
+                "dashscope-qwen37-plus-product-v3",
+                "dashscope-qwen38-max-product-v3",
+                "dashscope-qwen37-max-20260608-product-v3"
         ), registry.profileIds());
         assertEquals(java.util.List.of(
                 "qwen3.7-flash", "qwen3.7-plus", "qwen3.8-max", "qwen3.7-max-2026-06-08"
@@ -91,17 +95,21 @@ class InferenceProfileRegistryTest {
         assertHistoricalProductProfile(
                 registry, "dashscope-qwen37-max-20260608-product-v1", 2_500_000L
         );
+        assertHistoricalProductV2(registry, "dashscope-qwen37-flash-product-v2");
+        assertHistoricalProductV2(registry, "dashscope-qwen37-plus-product-v2");
+        assertHistoricalProductV2(registry, "dashscope-qwen38-max-product-v2");
+        assertHistoricalProductV2(registry, "dashscope-qwen37-max-20260608-product-v2");
         assertProductProfile(
-                registry, "dashscope-qwen37-flash-product-v2", "qwen3.7-flash", 2_000_000L
+                registry, "dashscope-qwen37-flash-product-v3", "qwen3.7-flash", 2_000_000L
         );
         assertProductProfile(
-                registry, "dashscope-qwen37-plus-product-v2", "qwen3.7-plus", 2_000_000L
+                registry, "dashscope-qwen37-plus-product-v3", "qwen3.7-plus", 2_000_000L
         );
         assertProductProfile(
-                registry, "dashscope-qwen38-max-product-v2", "qwen3.8-max", 2_000_000L
+                registry, "dashscope-qwen38-max-product-v3", "qwen3.8-max", 2_000_000L
         );
         assertProductProfile(
-                registry, "dashscope-qwen37-max-20260608-product-v2",
+                registry, "dashscope-qwen37-max-20260608-product-v3",
                 "qwen3.7-max-2026-06-08", 2_000_000L
         );
         assertThrows(IllegalArgumentException.class, () -> registry.require("live-provider"));
@@ -117,10 +125,24 @@ class InferenceProfileRegistryTest {
         assertTrue(registry.isProductLiveProfile(profileId));
         assertEquals(model, profile.model());
         assertEquals("USER_CONFIRMED", profile.inputClassification());
-        assertEquals("renderweave-inference-pipeline/2.0", profile.pipelineVersion());
-        assertEquals("renderweave-schema-candidate-prompt/4.0", profile.promptVersion());
+        assertEquals("renderweave-inference-pipeline/3.0", profile.pipelineVersion());
+        assertEquals("renderweave-schema-candidate-prompt/5.0", profile.promptVersion());
+        assertEquals("renderweave-visual-elements-prompt/1.0", profile.elementPromptVersion());
+        assertEquals("renderweave-visual-hierarchy-prompt/1.0", profile.hierarchyPromptVersion());
+        assertEquals("renderweave-visual-bindings-prompt/1.0", profile.bindingPromptVersion());
+        assertEquals(5, profile.maximumTotalCalls());
+        assertEquals(1, profile.maximumRepairRounds());
+        assertEquals(8_192, profile.maximumOutputTokens());
         assertEquals(maximumCost, profile.maximumEstimatedCostMicrosCny());
         assertEquals("EXPERIMENTAL", profile.certification());
+    }
+
+    private static void assertHistoricalProductV2(InferenceProfileRegistry registry, String profileId) {
+        var profile = registry.require(profileId).profile();
+        assertFalse(registry.isProductLiveProfile(profileId));
+        assertEquals("renderweave-inference-pipeline/2.0", profile.pipelineVersion());
+        assertEquals("renderweave-schema-candidate-prompt/4.0", profile.promptVersion());
+        assertEquals(3, profile.maximumTotalCalls());
     }
 
     private static void assertHistoricalProductProfile(

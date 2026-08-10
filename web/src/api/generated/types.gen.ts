@@ -330,7 +330,7 @@ export type CreateReplayRunRequest = {
 };
 
 export type CreateLiveRunRequest = {
-    profileId: 'dashscope-qwen37-flash-product-v2' | 'dashscope-qwen37-plus-product-v2' | 'dashscope-qwen38-max-product-v2' | 'dashscope-qwen37-max-20260608-product-v2';
+    profileId: 'dashscope-qwen37-flash-product-v3' | 'dashscope-qwen37-plus-product-v3' | 'dashscope-qwen38-max-product-v3' | 'dashscope-qwen37-max-20260608-product-v3';
     mode: InferenceMode;
     inputClassification: 'USER_PROVIDED';
     externalTransferConfirmed: true;
@@ -360,7 +360,7 @@ export type LiveAvailabilityResponse = {
 };
 
 export type LiveProfileResponse = {
-    profileId: 'dashscope-qwen37-flash-product-v2' | 'dashscope-qwen37-plus-product-v2' | 'dashscope-qwen38-max-product-v2' | 'dashscope-qwen37-max-20260608-product-v2';
+    profileId: 'dashscope-qwen37-flash-product-v3' | 'dashscope-qwen37-plus-product-v3' | 'dashscope-qwen38-max-product-v3' | 'dashscope-qwen37-max-20260608-product-v3';
     provider: 'DASHSCOPE';
     model: 'qwen3.7-flash' | 'qwen3.7-plus' | 'qwen3.8-max' | 'qwen3.7-max-2026-06-08';
     certification: 'EXPERIMENTAL';
@@ -457,7 +457,7 @@ export type InferenceMode = 'IMAGE_ONLY' | 'JSON_ONLY' | 'COMBINED';
 
 export type InferenceRunState = 'QUEUED' | 'RUNNING' | 'REVIEW_REQUIRED' | 'APPLYING' | 'COMPLETED' | 'FAILED' | 'CANCELLED';
 
-export type InferenceStage = 'NORMALIZE' | 'OBSERVE' | 'STRUCTURE' | 'DETERMINISTIC_VALIDATE' | 'CRITIQUE' | 'REPAIR' | 'USER_APPROVAL' | 'ATOMIC_CREATE';
+export type InferenceStage = 'NORMALIZE' | 'OBSERVE' | 'HIERARCHY' | 'ELEMENT_BINDING' | 'STRUCTURE' | 'DETERMINISTIC_VALIDATE' | 'CRITIQUE' | 'REPAIR' | 'USER_APPROVAL' | 'ATOMIC_CREATE';
 
 export type InferenceRunResponse = {
     runId: string;
@@ -501,7 +501,7 @@ export type InferenceExecutionEvent = {
 
 export type InferenceAttempt = {
     attemptOrdinal: number;
-    stage: 'STRUCTURE' | 'REPAIR';
+    stage: 'OBSERVE' | 'HIERARCHY' | 'ELEMENT_BINDING' | 'STRUCTURE' | 'REPAIR';
     status: 'SUCCEEDED' | 'REJECTED' | 'FAILED';
     outcomeCode: string;
     providerModel: string | null;

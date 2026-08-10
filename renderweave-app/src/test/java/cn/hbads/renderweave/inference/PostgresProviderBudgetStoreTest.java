@@ -185,6 +185,22 @@ class PostgresProviderBudgetStoreTest {
         assertThat(budgets.snapshot(BUDGET).consumedAttempts()).isZero();
     }
 
+    @Test
+    void serialVisualPipelineMayReserveFiveOrderedAttemptsButNeverASixth() {
+        var runId = createRun("dashscope-qwen37-plus-product-v3", "serial-visual-budget");
+
+        var fifth = budgets.reserve(BUDGET, runId, 4, 20_000, T0);
+
+        assertThat(fifth.attemptOrdinal()).isEqualTo(4);
+        assertThatThrownBy(() -> budgets.reserve(BUDGET, runId, 5, 20_000, T0.plusSeconds(1)))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Provider reservation bounds are invalid");
+        assertThatThrownBy(() -> new ProviderBudgetReservation(
+                UUID.randomUUID(), BUDGET, runId, 5, 20_000
+        )).isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Reservation bounds are invalid");
+    }
+
     private UUID createRun(String profileId, String seed) {
         var profile = profiles.require(profileId);
         var artifactId = sha256(seed + ":artifact");

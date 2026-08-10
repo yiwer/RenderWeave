@@ -298,7 +298,8 @@ class InferenceApiTest {
                 .andExpect(jsonPath("$.maximumRunCostLimitMicrosCny").value(100_000_000))
                 .andExpect(jsonPath("$.profiles.length()").value(4))
                 .andExpect(jsonPath("$.profiles[0].profileId")
-                        .value("dashscope-qwen37-flash-product-v2"))
+                        .value("dashscope-qwen37-flash-product-v3"))
+                .andExpect(jsonPath("$.profiles[0].maximumTotalCalls").value(5))
                 .andExpect(jsonPath("$.profiles[0].maximumEstimatedCostMicrosCny")
                         .value(2_000_000))
                 .andExpect(jsonPath("$.profiles[1].maximumEstimatedCostMicrosCny")
@@ -318,7 +319,7 @@ class InferenceApiTest {
         var metadata = new MockMultipartFile(
                 "metadata", "metadata.json", MediaType.APPLICATION_JSON_VALUE,
                 """
-                        {"profileId":"dashscope-qwen37-flash-product-v2","mode":"IMAGE_ONLY",
+                        {"profileId":"dashscope-qwen37-flash-product-v3","mode":"IMAGE_ONLY",
                          "inputClassification":"USER_PROVIDED","externalTransferConfirmed":true,
                          "experimentalProfileConfirmed":true}
                         """.getBytes(java.nio.charset.StandardCharsets.UTF_8)

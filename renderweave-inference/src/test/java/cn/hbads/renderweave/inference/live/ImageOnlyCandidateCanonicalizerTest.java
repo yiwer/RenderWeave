@@ -140,6 +140,40 @@ class ImageOnlyCandidateCanonicalizerTest {
     }
 
     @Test
+    void convertsVisualInventoryPixelsBeforeTheHierarchyAndCandidateStages() {
+        var artifactId = "a".repeat(64);
+        var boxes = List.of(
+                new cn.hbads.renderweave.inference.candidate.CandidateBoundingBox(200, 200, 1_300, 500),
+                new cn.hbads.renderweave.inference.candidate.CandidateBoundingBox(200, 500, 1_300, 700),
+                new cn.hbads.renderweave.inference.candidate.CandidateBoundingBox(200, 700, 800, 800),
+                new cn.hbads.renderweave.inference.candidate.CandidateBoundingBox(800, 700, 1_300, 800),
+                new cn.hbads.renderweave.inference.candidate.CandidateBoundingBox(200, 800, 1_300, 900),
+                new cn.hbads.renderweave.inference.candidate.CandidateBoundingBox(200, 900, 1_300, 3_800),
+                new cn.hbads.renderweave.inference.candidate.CandidateBoundingBox(200, 3_900, 1_300, 4_096)
+        );
+        var inventory = new VisualElementInventory(
+                VisualElementInventory.VERSION,
+                IntStream.range(0, boxes.size()).mapToObj(index -> new VisualElement(
+                        "slot-" + index, VisualElementKind.SLOT, "field" + index, "字段 " + index,
+                        VisualMultiplicity.ONE, VisualValueHint.TEXT,
+                        List.of(CandidateEvidence.image(artifactId, boxes.get(index)))
+                )).toList()
+        );
+
+        var result = canonicalizer.canonicalize(inventory, Map.of(
+                artifactId, new ImageOnlyCandidateCanonicalizer.ImageDimensions(1_510, 4_096)
+        ));
+
+        assertEquals(7, result.normalizedElements());
+        assertEquals(
+                new cn.hbads.renderweave.inference.candidate.CandidateBoundingBox(
+                        1_324, 2_197, 8_610, 9_278
+                ),
+                result.inventory().elements().get(5).evidence().getFirst().boundingBox()
+        );
+    }
+
+    @Test
     void leavesBroadOriginTouchingButEndAmbiguousFamiliesUnchanged() {
         var schemaId = UUID.fromString("11111111-1111-4111-8111-111111111111");
         var fieldId = UUID.fromString("22222222-2222-4222-8222-222222222222");

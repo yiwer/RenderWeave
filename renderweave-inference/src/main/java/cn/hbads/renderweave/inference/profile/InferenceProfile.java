@@ -17,6 +17,9 @@ public record InferenceProfile(
         String pipelineVersion,
         String candidateContractVersion,
         String promptVersion,
+        String elementPromptVersion,
+        String hierarchyPromptVersion,
+        String bindingPromptVersion,
         String responseFormat,
         boolean thinkingEnabled,
         boolean toolsAllowed,
@@ -77,6 +80,7 @@ public record InferenceProfile(
             validateDashScopeLive(
                     profileId, provider, model, providerProtocol, providerEndpoint, apiKeyEnvironmentVariable,
                     pipelineVersion, promptVersion, responseFormat,
+                    elementPromptVersion, hierarchyPromptVersion, bindingPromptVersion,
                     thinkingEnabled, toolsAllowed, remoteMediaAllowed,
                     inputClassification, maximumTotalCalls, maximumEstimatedCostMicrosCny,
                     inputMicrosCnyPerMillionTokens, outputMicrosCnyPerMillionTokens,
@@ -99,6 +103,9 @@ public record InferenceProfile(
             String pipelineVersion,
             String promptVersion,
             String responseFormat,
+            String elementPromptVersion,
+            String hierarchyPromptVersion,
+            String bindingPromptVersion,
             boolean thinkingEnabled,
             boolean toolsAllowed,
             boolean remoteMediaAllowed,
@@ -138,9 +145,20 @@ public record InferenceProfile(
                 && profileId.endsWith("-product-v1");
         var productPromptV2 = InferencePromptRegistry.SCHEMA_CANDIDATE_V4.equals(promptVersion)
                 && profileId.endsWith("-product-v2");
+        var productPromptV3 = InferencePromptRegistry.SCHEMA_CANDIDATE_V5.equals(promptVersion)
+                && InferencePromptRegistry.VISUAL_ELEMENTS_V1.equals(elementPromptVersion)
+                && InferencePromptRegistry.VISUAL_HIERARCHY_V1.equals(hierarchyPromptVersion)
+                && InferencePromptRegistry.VISUAL_BINDINGS_V1.equals(bindingPromptVersion)
+                && profileId.endsWith("-product-v3");
+        if (!"renderweave-inference-pipeline/3.0".equals(pipelineVersion)
+                && (elementPromptVersion != null || hierarchyPromptVersion != null || bindingPromptVersion != null)) {
+            throw new IllegalArgumentException("Serial visual prompts are exclusive to pipeline 3");
+        }
         var productPrompt = "USER_CONFIRMED".equals(inputClassification)
-                && "renderweave-inference-pipeline/2.0".equals(pipelineVersion)
-                && (productPromptV1 || productPromptV2);
+                && (("renderweave-inference-pipeline/2.0".equals(pipelineVersion)
+                && (productPromptV1 || productPromptV2))
+                || ("renderweave-inference-pipeline/3.0".equals(pipelineVersion)
+                && productPromptV3));
         if (!(legacySyntheticPrompt || productPrompt)
                 || !"JSON_OBJECT".equals(responseFormat)
                 || thinkingEnabled || toolsAllowed || remoteMediaAllowed) {
@@ -150,7 +168,8 @@ public record InferenceProfile(
                 || "USER_CONFIRMED".equals(inputClassification))) {
             throw new IllegalArgumentException("Live input classification is not approved");
         }
-        if (maximumTotalCalls > 3 || maximumEstimatedCostMicrosCny <= 0
+        var maximumApprovedCalls = "renderweave-inference-pipeline/3.0".equals(pipelineVersion) ? 5 : 3;
+        if (maximumTotalCalls > maximumApprovedCalls || maximumEstimatedCostMicrosCny <= 0
                 || inputMicrosCnyPerMillionTokens <= 0 || outputMicrosCnyPerMillionTokens <= 0) {
             throw new IllegalArgumentException("Live call and cost budgets must be bounded and priced");
         }
