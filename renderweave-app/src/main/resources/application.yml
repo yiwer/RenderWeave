@@ -43,3 +43,10 @@ renderweave:
     recovery-enabled: ${RENDERWEAVE_INFERENCE_RECOVERY_ENABLED:true}
     live-poll-millis: 2000
     poll-initial-delay-millis: 2000
+    document-vision:
+      enabled: ${RENDERWEAVE_DOCUMENT_VISION_ENABLED:false}
+      executable: ${RENDERWEAVE_DOCUMENT_VISION_EXECUTABLE:}
+      adapter-script: ${RENDERWEAVE_DOCUMENT_VISION_ADAPTER_SCRIPT:}
+      model-root: ${RENDERWEAVE_DOCUMENT_VISION_MODEL_ROOT:}
+      timeout-seconds: ${RENDERWEAVE_DOCUMENT_VISION_TIMEOUT_SECONDS:30}
+      expected-capability-id: ${RENDERWEAVE_DOCUMENT_VISION_CAPABILITY_ID:rapidocr-3.9.2-openvino-2026.0.0-ppocrv6-small-c05805399d7d10b1}

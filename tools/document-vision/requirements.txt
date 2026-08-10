@@ -1,0 +1,2 @@
+rapidocr==3.9.2
+openvino==2026.0.0

@@ -12,7 +12,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class InferenceProfileRegistryTest {
     @Test
-    void exposesHistoricalProfilesAndKeepsV5AndV6ProfilesWithheld() {
+    void exposesHistoricalProfilesAndKeepsExperimentalVisualProfilesWithheld() {
         var registry = new InferenceProfileRegistry();
         var resource = registry.require("replay-v1");
         var profile = resource.profile();
@@ -48,7 +48,10 @@ class InferenceProfileRegistryTest {
                 "dashscope-qwen38-max-product-v6-generic",
                 "dashscope-qwen37-flash-product-v6-transit-board",
                 "dashscope-qwen37-plus-product-v6-transit-board",
-                "dashscope-qwen38-max-product-v6-transit-board"
+                "dashscope-qwen38-max-product-v6-transit-board",
+                "dashscope-qwen37-flash-product-v7-hybrid-generic",
+                "dashscope-qwen37-plus-product-v7-hybrid-generic",
+                "dashscope-qwen38-max-product-v7-hybrid-generic"
         ), registry.profileIds());
         assertEquals(java.util.List.of(
                 "dashscope-qwen37-flash-product-v4",
@@ -70,6 +73,12 @@ class InferenceProfileRegistryTest {
         ), registry.visualNextProfiles().stream()
                 .map(item -> item.capability().capability().model()).toList());
         assertEquals(6, registry.visualGroundingProfiles().size());
+        assertEquals(java.util.List.of(
+                "dashscope-qwen37-flash-product-v7-hybrid-generic",
+                "dashscope-qwen37-plus-product-v7-hybrid-generic",
+                "dashscope-qwen38-max-product-v7-hybrid-generic"
+        ), registry.visualHybridProfiles().stream()
+                .map(item -> item.profile().profile().profileId()).toList());
         assertEquals("renderweave-inference-profile/1.0", profile.profileVersion());
         assertEquals("REPLAY", profile.provider());
         assertEquals("deterministic-synthetic-replay-v1", profile.model());
@@ -85,6 +94,10 @@ class InferenceProfileRegistryTest {
                 .contains("visualHintPackVersion"));
         assertTrue(registry.require("dashscope-qwen37-flash-product-v6-generic").snapshotJson()
                 .contains("\"visualHintPackVersion\":\"renderweave-visual-hint-pack/generic/1.0\""));
+        assertFalse(registry.require("dashscope-qwen37-flash-product-v6-generic").snapshotJson()
+                .contains("documentVisionCapabilityId"));
+        assertTrue(registry.require("dashscope-qwen37-flash-product-v7-hybrid-generic").snapshotJson()
+                .contains("\"documentVisionPromptVersion\":\"renderweave-document-vision-observations-prompt/1.0\""));
 
         assertDashScopeProfile(
                 registry.require("dashscope-qwen37-flash-v1").profile(),
@@ -160,7 +173,42 @@ class InferenceProfileRegistryTest {
                 registry, "dashscope-qwen38-max-product-v6-generic", "qwen3.8-max",
                 InferencePromptRegistry.VISUAL_HINT_GENERIC_V1
         );
+        assertHybridVisualProfile(
+                registry, "dashscope-qwen37-flash-product-v7-hybrid-generic", "qwen3.7-flash"
+        );
+        assertHybridVisualProfile(
+                registry, "dashscope-qwen37-plus-product-v7-hybrid-generic", "qwen3.7-plus"
+        );
+        assertHybridVisualProfile(
+                registry, "dashscope-qwen38-max-product-v7-hybrid-generic", "qwen3.8-max"
+        );
         assertThrows(IllegalArgumentException.class, () -> registry.require("live-provider"));
+    }
+
+    private static void assertHybridVisualProfile(
+            InferenceProfileRegistry registry,
+            String profileId,
+            String model
+    ) {
+        var profile = registry.require(profileId).profile();
+        assertTrue(registry.isVisualHybridProfile(profileId));
+        assertFalse(registry.isProductLiveProfile(profileId));
+        assertEquals(model, profile.model());
+        assertEquals("renderweave-inference-pipeline/4.2", profile.pipelineVersion());
+        assertEquals(InferencePromptRegistry.VISUAL_HINT_GENERIC_V1, profile.visualHintPackVersion());
+        assertEquals(
+                "rapidocr-3.9.2-openvino-2026.0.0-ppocrv6-small-c05805399d7d10b1",
+                profile.documentVisionCapabilityId()
+        );
+        assertEquals(
+                InferencePromptRegistry.DOCUMENT_VISION_OBSERVATIONS_V1,
+                profile.documentVisionPromptVersion()
+        );
+        assertEquals(java.util.List.of(InferenceMode.IMAGE_ONLY), profile.supportedModes());
+        assertEquals(0, profile.maximumRepairRounds());
+        assertEquals(5, profile.maximumTotalCalls());
+        assertEquals(240, profile.stageTimeoutSeconds());
+        assertEquals("EXPERIMENTAL", profile.certification());
     }
 
     private static void assertGroundedVisualProfile(

@@ -5,6 +5,7 @@ import cn.hbads.renderweave.inference.input.NormalizedArtifact;
 import cn.hbads.renderweave.inference.profile.JsonStructuralProfile;
 import cn.hbads.renderweave.inference.run.InferenceRunSnapshot;
 import cn.hbads.renderweave.inference.run.InferenceStage;
+import cn.hbads.renderweave.inference.vision.DocumentVisionObservation;
 import tools.jackson.databind.MapperFeature;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.SerializationFeature;
@@ -125,6 +126,42 @@ final class LiveTaskJsonCodec {
         }
     }
 
+    String writeV5(
+            InferenceRunSnapshot run,
+            InferenceStage stage,
+            VisualViewPlan viewPlan,
+            String hintPackVersion,
+            DocumentVisionObservation documentVisionObservation,
+            VisualElementInventory elementInventory,
+            VisualGroundingPlan groundingPlan,
+            VisualHierarchyPlan hierarchyPlan,
+            VisualEntityRegionPlan entityRegionPlan,
+            VisualElementBindingPlan bindingPlan,
+            List<String> repairProblemCodes,
+            List<String> retryProblemCodes
+    ) {
+        try {
+            return JSON.writeValueAsString(new TaskV5(
+                    "renderweave-live-task/5.0",
+                    run.mode().name(),
+                    stage.name(),
+                    hintPackVersion,
+                    viewPlan.planVersion(),
+                    viewPlan.descriptors(),
+                    documentVisionObservation,
+                    elementInventory,
+                    groundingPlan,
+                    hierarchyPlan,
+                    entityRegionPlan,
+                    bindingPlan,
+                    List.copyOf(repairProblemCodes),
+                    List.copyOf(retryProblemCodes)
+            ));
+        } catch (Exception exception) {
+            throw new IllegalStateException("Hybrid visual task could not be encoded", exception);
+        }
+    }
+
     private static List<Artifact> artifacts(InferenceRunSnapshot run) {
         return run.inputs().stream()
                 .sorted(Comparator.comparing((cn.hbads.renderweave.inference.run.InferenceRunInput input) ->
@@ -174,6 +211,23 @@ final class LiveTaskJsonCodec {
             String hintPackVersion,
             String viewPlanVersion,
             List<VisualViewDescriptor> viewCatalog,
+            VisualElementInventory elementInventory,
+            VisualGroundingPlan groundingPlan,
+            VisualHierarchyPlan hierarchyPlan,
+            VisualEntityRegionPlan entityRegionPlan,
+            VisualElementBindingPlan bindingPlan,
+            List<String> repairProblemCodes,
+            List<String> retryProblemCodes
+    ) { }
+
+    private record TaskV5(
+            String taskVersion,
+            String mode,
+            String stage,
+            String hintPackVersion,
+            String viewPlanVersion,
+            List<VisualViewDescriptor> viewCatalog,
+            DocumentVisionObservation documentVisionObservation,
             VisualElementInventory elementInventory,
             VisualGroundingPlan groundingPlan,
             VisualHierarchyPlan hierarchyPlan,

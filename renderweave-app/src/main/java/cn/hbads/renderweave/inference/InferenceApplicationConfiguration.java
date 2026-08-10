@@ -15,6 +15,7 @@ import cn.hbads.renderweave.inference.profile.InferencePromptRegistry;
 import cn.hbads.renderweave.inference.provider.InferenceProvider;
 import cn.hbads.renderweave.inference.provider.ProviderBudgetStore;
 import cn.hbads.renderweave.inference.live.LiveInferenceWorker;
+import cn.hbads.renderweave.inference.vision.DocumentVisionPreprocessor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
@@ -63,6 +64,22 @@ class InferenceApplicationConfiguration {
     }
 
     @Bean
+    DocumentVisionPreprocessor documentVisionPreprocessor(
+            @Value("${renderweave.inference.document-vision.enabled:false}") boolean enabled,
+            @Value("${renderweave.inference.document-vision.executable:}") String executable,
+            @Value("${renderweave.inference.document-vision.adapter-script:}") String adapterScript,
+            @Value("${renderweave.inference.document-vision.model-root:}") String modelRoot,
+            @Value("${renderweave.inference.document-vision.timeout-seconds:30}") long timeoutSeconds,
+            @Value("${renderweave.inference.document-vision.expected-capability-id:"
+                    + LocalProcessDocumentVisionPreprocessor.EXPECTED_CAPABILITY_ID + "}")
+            String expectedCapabilityId
+    ) {
+        return LocalProcessDocumentVisionPreprocessor.fromConfiguration(
+                enabled, executable, adapterScript, modelRoot, timeoutSeconds, expectedCapabilityId
+        );
+    }
+
+    @Bean
     InferenceRunService inferenceRunService(
             InferenceRunStore runStore,
             BlobStore blobStore,
@@ -93,12 +110,13 @@ class InferenceApplicationConfiguration {
             ProviderBudgetStore budgetStore,
             InferenceProvider provider,
             BlobStore blobStore,
+            DocumentVisionPreprocessor documentVisionPreprocessor,
             Clock inferenceClock,
             @Value("${renderweave.inference.live-lease-seconds:600}") long leaseSeconds
     ) {
         return new LiveInferenceWorker(
                 runStore, replayStore, budgetStore, provider, blobStore,
-                inferenceClock, Duration.ofSeconds(leaseSeconds)
+                inferenceClock, Duration.ofSeconds(leaseSeconds), documentVisionPreprocessor
         );
     }
 

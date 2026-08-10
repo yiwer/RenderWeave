@@ -36,6 +36,10 @@ import cn.hbads.renderweave.inference.run.InferenceRunSnapshot;
 import cn.hbads.renderweave.inference.run.InferenceRunState;
 import cn.hbads.renderweave.inference.run.InferenceRunStore;
 import cn.hbads.renderweave.inference.run.InferenceStage;
+import cn.hbads.renderweave.inference.vision.DocumentVisionArtifact;
+import cn.hbads.renderweave.inference.vision.DocumentVisionException;
+import cn.hbads.renderweave.inference.vision.DocumentVisionObservation;
+import cn.hbads.renderweave.inference.vision.DocumentVisionPreprocessor;
 
 import java.time.Clock;
 import java.time.Duration;
@@ -59,6 +63,7 @@ public final class LiveInferenceWorker {
     private static final String SERIAL_VISUAL_PIPELINE = "renderweave-inference-pipeline/3.0";
     private static final String LOCAL_MATERIALIZER_PIPELINE = "renderweave-inference-pipeline/4.0";
     private static final String GROUNDED_VISUAL_PIPELINE = "renderweave-inference-pipeline/4.1";
+    private static final String HYBRID_VISUAL_PIPELINE = "renderweave-inference-pipeline/4.2";
     private static final int MAX_STAGE_ADVANCES = 24;
 
     private final InferenceRunStore runStore;
@@ -84,6 +89,7 @@ public final class LiveInferenceWorker {
     private final VisualPlanCandidateMaterializer visualPlanMaterializer;
     private final MultiScaleVisualViewPlanner visualViewPlanner;
     private final VisualGroundingJsonCodec visualGroundingCodec;
+    private final DocumentVisionPreprocessor documentVisionPreprocessor;
 
     public LiveInferenceWorker(
             InferenceRunStore runStore,
@@ -96,10 +102,26 @@ public final class LiveInferenceWorker {
     ) {
         this(
                 runStore, workflowStore, budgetStore, provider, blobStore, clock, leaseDuration,
+                DocumentVisionPreprocessor.unavailable("DOCUMENT_VISION_DISABLED")
+        );
+    }
+
+    public LiveInferenceWorker(
+            InferenceRunStore runStore,
+            InferenceReplayStore workflowStore,
+            ProviderBudgetStore budgetStore,
+            InferenceProvider provider,
+            BlobStore blobStore,
+            Clock clock,
+            Duration leaseDuration,
+            DocumentVisionPreprocessor documentVisionPreprocessor
+    ) {
+        this(
+                runStore, workflowStore, budgetStore, provider, blobStore, clock, leaseDuration,
                 new InferenceProfileRegistry(), new InferencePromptRegistry(), new JsonStructuralProfiler(),
                 new JsonCandidateProfiler(), new JsonGroundedCandidateComposer(),
                 new CandidateValidator(), new CandidateJsonCodec(), new CandidateProblemJsonCodec(),
-                new LiveWorkflowJsonCodec(), new LiveTaskJsonCodec()
+                new LiveWorkflowJsonCodec(), new LiveTaskJsonCodec(), documentVisionPreprocessor
         );
     }
 
@@ -120,7 +142,8 @@ public final class LiveInferenceWorker {
             CandidateJsonCodec candidateCodec,
             CandidateProblemJsonCodec problemCodec,
             LiveWorkflowJsonCodec workflowCodec,
-            LiveTaskJsonCodec taskCodec
+            LiveTaskJsonCodec taskCodec,
+            DocumentVisionPreprocessor documentVisionPreprocessor
     ) {
         this.runStore = Objects.requireNonNull(runStore, "runStore");
         this.workflowStore = Objects.requireNonNull(workflowStore, "workflowStore");
@@ -145,6 +168,9 @@ public final class LiveInferenceWorker {
         this.visualPlanMaterializer = new VisualPlanCandidateMaterializer();
         this.visualViewPlanner = new MultiScaleVisualViewPlanner();
         this.visualGroundingCodec = new VisualGroundingJsonCodec();
+        this.documentVisionPreprocessor = Objects.requireNonNull(
+                documentVisionPreprocessor, "documentVisionPreprocessor"
+        );
         if (leaseDuration.isZero() || leaseDuration.isNegative()
                 || leaseDuration.compareTo(Duration.ofMinutes(15)) > 0) {
             throw new IllegalArgumentException("leaseDuration must be positive and no longer than 15 minutes");
@@ -173,6 +199,8 @@ public final class LiveInferenceWorker {
             return Optional.of(failIfOwned(initial, exhausted.code()));
         } catch (ProviderNotConfiguredException missing) {
             return Optional.of(failIfOwned(initial, missing.code()));
+        } catch (DocumentVisionException unavailable) {
+            return Optional.of(failIfOwned(initial, unavailable.code()));
         } catch (RuntimeException failure) {
             return Optional.of(failIfOwned(initial, "LIVE_WORKFLOW_FAILED"));
         }
@@ -180,8 +208,14 @@ public final class LiveInferenceWorker {
 
     public InferenceRunSnapshot drain(InferenceRunSnapshot claimed) {
         var current = requireRunningLease(claimed);
+        if (current.cancellationRequested()) {
+            return runStore.acknowledgeCancellation(current.runId(), token(current), clock.instant());
+        }
+        var profile = validateRun(current);
+        var documentVision = hybridVisual(profile) && visualProviderStage(current.stage())
+                ? documentVision(current, profile) : null;
         for (var advance = 0; advance < MAX_STAGE_ADVANCES && current.state() == InferenceRunState.RUNNING; advance++) {
-            current = advance(current);
+            current = advance(current, documentVision);
         }
         if (current.state() == InferenceRunState.RUNNING) {
             throw new IllegalStateException("Live stage budget was exhausted");
@@ -195,20 +229,38 @@ public final class LiveInferenceWorker {
             return runStore.acknowledgeCancellation(current.runId(), token(current), clock.instant());
         }
         var profile = validateRun(current);
+        var documentVision = hybridVisual(profile) && visualProviderStage(current.stage())
+                ? documentVision(current, profile) : null;
+        return advance(current, documentVision);
+    }
+
+    private InferenceRunSnapshot advance(
+            InferenceRunSnapshot current,
+            DocumentVisionObservation documentVision
+    ) {
+        current = requireRunningLease(current);
+        if (current.cancellationRequested()) {
+            return runStore.acknowledgeCancellation(current.runId(), token(current), clock.instant());
+        }
+        var profile = validateRun(current);
         return switch (current.stage()) {
-            case OBSERVE -> observe(current, profile);
-            case HIERARCHY, ELEMENT_BINDING -> invoke(current, profile, false);
-            case STRUCTURE -> structure(current, profile);
+            case OBSERVE -> observe(current, profile, documentVision);
+            case HIERARCHY, ELEMENT_BINDING -> invoke(current, profile, false, documentVision);
+            case STRUCTURE -> structure(current, profile, documentVision);
             case DETERMINISTIC_VALIDATE -> deterministicValidate(current, profile);
             case CRITIQUE -> critique(current, profile);
-            case REPAIR -> invoke(current, profile, true);
+            case REPAIR -> invoke(current, profile, true, documentVision);
             case NORMALIZE, USER_APPROVAL, ATOMIC_CREATE -> throw new IllegalStateException(
                     "Live worker cannot execute stage " + current.stage()
             );
         };
     }
 
-    private InferenceRunSnapshot structure(InferenceRunSnapshot current, InferenceProfile profile) {
+    private InferenceRunSnapshot structure(
+            InferenceRunSnapshot current,
+            InferenceProfile profile,
+            DocumentVisionObservation documentVision
+    ) {
         if (localMaterializer(profile)) {
             if (current.mode() != InferenceMode.IMAGE_ONLY) {
                 throw new IllegalStateException("Pipeline 4 is restricted to IMAGE_ONLY");
@@ -267,11 +319,15 @@ public final class LiveInferenceWorker {
                     workflowCodec.write(next), clock.instant()
             );
         }
-        return invoke(current, profile, false);
+        return invoke(current, profile, false, documentVision);
     }
 
-    private InferenceRunSnapshot observe(InferenceRunSnapshot current, InferenceProfile profile) {
-        if (serialVisual(current, profile)) return invoke(current, profile, false);
+    private InferenceRunSnapshot observe(
+            InferenceRunSnapshot current,
+            InferenceProfile profile,
+            DocumentVisionObservation documentVision
+    ) {
+        if (serialVisual(current, profile)) return invoke(current, profile, false, documentVision);
         return runStore.checkpoint(
                 current.runId(), token(current), InferenceStage.OBSERVE, InferenceStage.STRUCTURE,
                 workflowCodec.write(LiveWorkflowCheckpoint.observed()), clock.instant()
@@ -281,7 +337,8 @@ public final class LiveInferenceWorker {
     private InferenceRunSnapshot invoke(
             InferenceRunSnapshot current,
             InferenceProfile profile,
-            boolean repair
+            boolean repair,
+            DocumentVisionObservation documentVision
     ) {
         var checkpoint = current.stage() == InferenceStage.OBSERVE && serialVisual(current, profile)
                 ? LiveWorkflowCheckpoint.started()
@@ -304,7 +361,7 @@ public final class LiveInferenceWorker {
         }
         if (!provider.configured()) throw new ProviderNotConfiguredException("DASHSCOPE_NOT_CONFIGURED");
 
-        var request = request(current, profile, checkpoint, attemptOrdinal);
+        var request = request(current, profile, checkpoint, attemptOrdinal, documentVision);
         var maximumRequestCost = ProviderCostEstimator.maximumRequestCostMicrosCny(request);
         if (maximumRequestCost > profile.maximumEstimatedCostMicrosCny()) {
             throw new ProviderBudgetExceededException("PROVIDER_REQUEST_COST_BOUND_EXCEEDED");
@@ -739,7 +796,8 @@ public final class LiveInferenceWorker {
             InferenceRunSnapshot current,
             InferenceProfile profile,
             LiveWorkflowCheckpoint checkpoint,
-            int attemptOrdinal
+            int attemptOrdinal,
+            DocumentVisionObservation documentVision
     ) {
         var problemCodes = current.stage() == InferenceStage.REPAIR
                 ? checkpoint.validationProblems().stream().map(CandidateProblem::code).distinct().sorted().toList()
@@ -753,6 +811,31 @@ public final class LiveInferenceWorker {
                     .orElse(List.of());
             if (groundedVisual(profile)) {
                 var views = visualViewPlan(current);
+                if (hybridVisual(profile)) {
+                    if (documentVision == null) {
+                        throw new DocumentVisionException("DOCUMENT_VISION_OBSERVATION_MISSING");
+                    }
+                    return new ProviderInferenceRequest(
+                            current.runId(), attemptOrdinal, current.stage(), profile,
+                            prompts.requireHybridVisualStage(
+                                    promptVersion(profile, current.stage()),
+                                    Objects.requireNonNull(
+                                            profile.visualHintPackVersion(), "visualHintPackVersion"
+                                    ),
+                                    Objects.requireNonNull(
+                                            profile.documentVisionPromptVersion(),
+                                            "documentVisionPromptVersion"
+                                    )
+                            ).text(),
+                            taskCodec.writeV5(
+                                    current, current.stage(), views, profile.visualHintPackVersion(),
+                                    documentVision, checkpoint.elementInventory(), checkpoint.groundingPlan(),
+                                    checkpoint.hierarchyPlan(), checkpoint.entityRegionPlan(),
+                                    checkpoint.bindingPlan(), problemCodes, retryProblemCodes
+                            ),
+                            views.providerImages()
+                    );
+                }
                 return new ProviderInferenceRequest(
                         current.runId(), attemptOrdinal, current.stage(), profile,
                         prompts.requireVisualStage(
@@ -814,23 +897,36 @@ public final class LiveInferenceWorker {
         return GROUNDED_PIPELINE.equals(profile.pipelineVersion())
                 || SERIAL_VISUAL_PIPELINE.equals(profile.pipelineVersion())
                 || LOCAL_MATERIALIZER_PIPELINE.equals(profile.pipelineVersion())
-                || GROUNDED_VISUAL_PIPELINE.equals(profile.pipelineVersion());
+                || GROUNDED_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion());
     }
 
     private static boolean serialVisual(InferenceRunSnapshot current, InferenceProfile profile) {
         return (SERIAL_VISUAL_PIPELINE.equals(profile.pipelineVersion())
                 || LOCAL_MATERIALIZER_PIPELINE.equals(profile.pipelineVersion())
-                || GROUNDED_VISUAL_PIPELINE.equals(profile.pipelineVersion()))
+                || GROUNDED_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion()))
                 && current.mode() == InferenceMode.IMAGE_ONLY;
     }
 
     private static boolean localMaterializer(InferenceProfile profile) {
         return LOCAL_MATERIALIZER_PIPELINE.equals(profile.pipelineVersion())
-                || GROUNDED_VISUAL_PIPELINE.equals(profile.pipelineVersion());
+                || GROUNDED_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion());
     }
 
     private static boolean groundedVisual(InferenceProfile profile) {
-        return GROUNDED_VISUAL_PIPELINE.equals(profile.pipelineVersion());
+        return GROUNDED_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion());
+    }
+
+    private static boolean hybridVisual(InferenceProfile profile) {
+        return HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion());
+    }
+
+    private static boolean visualProviderStage(InferenceStage stage) {
+        return stage == InferenceStage.OBSERVE || stage == InferenceStage.HIERARCHY
+                || stage == InferenceStage.ELEMENT_BINDING;
     }
 
     private static String promptVersion(InferenceProfile profile, InferenceStage stage) {
@@ -904,6 +1000,31 @@ public final class LiveInferenceWorker {
                 ))
                 .toList();
         return visualViewPlanner.plan(sources, List.of());
+    }
+
+    private DocumentVisionObservation documentVision(
+            InferenceRunSnapshot current,
+            InferenceProfile profile
+    ) {
+        var capability = documentVisionPreprocessor.capability();
+        if (!capability.available()) throw new DocumentVisionException(capability.diagnosticCode());
+        if (!Objects.equals(profile.documentVisionCapabilityId(), capability.capabilityId())) {
+            throw new DocumentVisionException("DOCUMENT_VISION_CAPABILITY_MISMATCH");
+        }
+        var artifacts = current.inputs().stream()
+                .filter(input -> input.kind() == NormalizedArtifact.Kind.IMAGE)
+                .sorted(Comparator.comparingInt(input -> input.ordinal()))
+                .map(input -> new DocumentVisionArtifact(
+                        input.artifact().artifactId(), input.ordinal(), input.artifact().mediaType(),
+                        blobStore.read(input.artifact().locator()),
+                        Objects.requireNonNull(input.artifact().width(), "image width"),
+                        Objects.requireNonNull(input.artifact().height(), "image height")
+                )).toList();
+        var observation = documentVisionPreprocessor.preprocess(artifacts);
+        if (!capability.capabilityId().equals(observation.capabilityId())) {
+            throw new DocumentVisionException("DOCUMENT_VISION_CAPABILITY_MISMATCH");
+        }
+        return observation;
     }
 
     private static List<String> imageArtifactIds(InferenceRunSnapshot current) {

@@ -35,6 +35,9 @@ import cn.hbads.renderweave.inference.run.InferenceStage;
 import cn.hbads.renderweave.inference.run.InferenceRunState;
 import cn.hbads.renderweave.inference.run.InferenceRunStore;
 import cn.hbads.renderweave.inference.run.NewInferenceRun;
+import cn.hbads.renderweave.inference.vision.DocumentVisionCapability;
+import cn.hbads.renderweave.inference.vision.DocumentVisionObservation;
+import cn.hbads.renderweave.inference.vision.DocumentVisionPreprocessor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -63,6 +66,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -79,6 +83,10 @@ class PostgresLiveInferenceWorkflowTest {
             "dashscope-qwen37-flash-product-v5";
     private static final String GROUNDED_VISUAL_PROFILE =
             "dashscope-qwen37-flash-product-v6-transit-board";
+    private static final String HYBRID_VISUAL_PROFILE =
+            "dashscope-qwen37-flash-product-v7-hybrid-generic";
+    private static final String DOCUMENT_VISION_CAPABILITY =
+            "rapidocr-3.9.2-openvino-2026.0.0-ppocrv6-small-c05805399d7d10b1";
 
     @Container
     @ServiceConnection
@@ -424,6 +432,69 @@ class PostgresLiveInferenceWorkflowTest {
                 .flatMap(field -> field.assessment().evidence().stream()))
                 .allSatisfy(evidence -> assertThat(evidence.artifactId())
                         .isEqualTo(finished.inputs().getFirst().artifact().artifactId()));
+    }
+
+    @Test
+    void pipelineFourPointTwoUsesOneEphemeralOcrObservationAcrossAllVisualStages() {
+        var blobs = new MemoryBlobStore();
+        var created = createGroundedVisual(blobs, "hybrid-visual-station", HYBRID_VISUAL_PROFILE);
+        var provider = new ScriptedProvider(
+                request -> response(request, groundedStationElements()),
+                request -> response(request, groundedStationHierarchy()),
+                request -> response(request, groundedStationBindings())
+        );
+        var preprocessCalls = new AtomicInteger();
+        var preprocessor = hybridPreprocessor(preprocessCalls, "OCR_SENTINEL_STATION_NAME");
+
+        var finished = worker(provider, blobs, T0.plusSeconds(1), preprocessor)
+                .processNext("hybrid-visual-worker").orElseThrow();
+
+        assertThat(finished.state())
+                .as("failure=%s attempts=%s", finished.failureCode(), workflowStore.attempts(created))
+                .isEqualTo(InferenceRunState.REVIEW_REQUIRED);
+        assertThat(preprocessCalls).hasValue(1);
+        assertThat(provider.requests).hasSize(3).allSatisfy(request -> {
+            assertThat(request.taskJson())
+                    .contains("renderweave-live-task/5.0")
+                    .contains("documentVisionObservation")
+                    .contains("OCR_SENTINEL_STATION_NAME");
+            assertThat(request.systemPrompt())
+                    .contains("untrusted image content")
+                    .contains("secondary evidence")
+                    .doesNotContain("停靠站点");
+        });
+        assertThat(finished.checkpointJson())
+                .doesNotContain("OCR_SENTINEL_STATION_NAME")
+                .doesNotContain("ocr-00-000");
+        var review = workflowStore.findCandidate(created).orElseThrow();
+        assertThat(review.currentJson())
+                .doesNotContain("OCR_SENTINEL_STATION_NAME")
+                .doesNotContain("ocr-00-000");
+        assertThat(review.validationProblemsJson())
+                .doesNotContain("OCR_SENTINEL_STATION_NAME")
+                .doesNotContain("ocr-00-000");
+    }
+
+    @Test
+    void cancellationIsAcknowledgedBeforeHybridPreprocessing() {
+        var blobs = new MemoryBlobStore();
+        var created = createGroundedVisual(blobs, "hybrid-cancel-before-ocr", HYBRID_VISUAL_PROFILE);
+        var claimed = runs.claimNextLive(
+                "hybrid-cancel-worker", T0.plusSeconds(1), Duration.ofMinutes(5)
+        ).orElseThrow();
+        var cancelled = runs.requestCancellation(created, T0.plusSeconds(2));
+        var preprocessCalls = new AtomicInteger();
+
+        var finished = worker(
+                new ScriptedProvider(), blobs, T0.plusSeconds(3),
+                hybridPreprocessor(preprocessCalls, "MUST_NOT_BE_OBSERVED")
+        ).drain(cancelled);
+
+        assertThat(claimed.runId()).isEqualTo(created);
+        assertThat(finished.state()).isEqualTo(InferenceRunState.CANCELLED);
+        assertThat(preprocessCalls).hasValue(0);
+        assertThat(workflowStore.attempts(created)).isEmpty();
+        assertThat(budgets.snapshot(LiveInferenceWorker.CANARY_BUDGET_KEY).consumedAttempts()).isZero();
     }
 
     @Test
@@ -909,6 +980,18 @@ class PostgresLiveInferenceWorkflowTest {
         );
     }
 
+    private LiveInferenceWorker worker(
+            InferenceProvider provider,
+            BlobStore blobs,
+            Instant now,
+            DocumentVisionPreprocessor preprocessor
+    ) {
+        return new LiveInferenceWorker(
+                runs, workflowStore, budgets, provider, blobs,
+                Clock.fixed(now, ZoneOffset.UTC), Duration.ofMinutes(5), preprocessor
+        );
+    }
+
     private UUID create(MemoryBlobStore blobs, String seed) {
         return create(blobs, seed, 32, 16);
     }
@@ -944,7 +1027,11 @@ class PostgresLiveInferenceWorkflowTest {
     }
 
     private UUID createGroundedVisual(MemoryBlobStore blobs, String seed) {
-        var profile = profiles.require(GROUNDED_VISUAL_PROFILE);
+        return createGroundedVisual(blobs, seed, GROUNDED_VISUAL_PROFILE);
+    }
+
+    private UUID createGroundedVisual(MemoryBlobStore blobs, String seed, String profileId) {
+        var profile = profiles.require(profileId);
         var image = new BufferedImage(1_050, 1_660, BufferedImage.TYPE_INT_RGB);
         var graphics = image.createGraphics();
         try {
@@ -970,7 +1057,7 @@ class PostgresLiveInferenceWorkflowTest {
                 "image/png", bytes.length, image.getWidth(), image.getHeight()
         );
         var normalized = new NormalizedInput(
-                InferenceMode.IMAGE_ONLY, GROUNDED_VISUAL_PROFILE, seed,
+                InferenceMode.IMAGE_ONLY, profileId, seed,
                 sha256(seed.getBytes(StandardCharsets.UTF_8)),
                 List.of(artifact),
                 List.of(new NormalizedInputReference(NormalizedArtifact.Kind.IMAGE, 0, artifactId)),
@@ -979,6 +1066,49 @@ class PostgresLiveInferenceWorkflowTest {
         return runs.create(NewInferenceRun.initial(
                 UUID.randomUUID(), "idem-" + seed, normalized, profile.snapshotJson(), T0
         )).run().runId();
+    }
+
+    private static DocumentVisionPreprocessor hybridPreprocessor(
+            AtomicInteger calls,
+            String text
+    ) {
+        var capability = DocumentVisionCapability.available(
+                DOCUMENT_VISION_CAPABILITY,
+                "rapidocr-openvino-ppocrv6-small",
+                "rapidocr-3.9.2+openvino-2026.0.0",
+                "b".repeat(64)
+        );
+        return new DocumentVisionPreprocessor() {
+            @Override
+            public DocumentVisionCapability capability() {
+                return capability;
+            }
+
+            @Override
+            public DocumentVisionObservation preprocess(
+                    List<cn.hbads.renderweave.inference.vision.DocumentVisionArtifact> artifacts
+            ) {
+                calls.incrementAndGet();
+                assertThat(artifacts).singleElement().satisfies(artifact -> {
+                    assertThat(artifact.bytes()).isNotEmpty();
+                    assertThat(artifact.width()).isEqualTo(1_050);
+                    assertThat(artifact.height()).isEqualTo(1_660);
+                });
+                var artifact = artifacts.getFirst();
+                return DocumentVisionObservation.canonical(
+                        DOCUMENT_VISION_CAPABILITY,
+                        List.of(new DocumentVisionObservation.ArtifactObservation(
+                                artifact.artifactId(), artifact.sourceOrdinal(),
+                                List.of(new DocumentVisionObservation.TextLine(
+                                        "ocr-00-000", 0,
+                                        new CandidateBoundingBox(500, 100, 5_000, 500),
+                                        DocumentVisionObservation.ConfidenceBucket.HIGH,
+                                        text
+                                ))
+                        ))
+                );
+            }
+        };
     }
 
     private UUID createCombined(MemoryBlobStore blobs, String seed) {

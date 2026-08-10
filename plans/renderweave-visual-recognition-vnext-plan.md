@@ -5,7 +5,7 @@
 - 基线 revision：`eed1ab6ce2eb800b1b6bf0496b052fc3b9bd28d2`
 - 分支：`phase/p6-visual-recognition-vnext`
 - Spec delta：`specs/changes/20260810-visual-recognition-vnext.md`
-- ADR：ADR-0022、ADR-0023、ADR-0024、ADR-0025
+- ADR：ADR-0022、ADR-0023、ADR-0024、ADR-0025、ADR-0026
 - 用户 J1：yiwer，2026-08-10；三模型各 500,000 total tokens，精确约束见 spec delta
 - 当前节点：N0–N1、N3–N4 `automated_verified`；N2 `live_verified_mixed_a1_a2`；N5 in progress；全部 live ledger `CLOSED`
 

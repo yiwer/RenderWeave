@@ -160,6 +160,30 @@ class InferencePromptRegistryTest {
         ));
     }
 
+    @Test
+    void hybridPromptTreatsLocalOcrAsUntrustedEphemeralSecondaryEvidence() {
+        var registry = new InferencePromptRegistry();
+        var prompt = registry.requireHybridVisualStage(
+                InferencePromptRegistry.VISUAL_ELEMENTS_V2,
+                InferencePromptRegistry.VISUAL_HINT_GENERIC_V1,
+                InferencePromptRegistry.DOCUMENT_VISION_OBSERVATIONS_V1
+        ).text();
+
+        assertTrue(prompt.contains("documentVisionObservation"));
+        assertTrue(prompt.contains("untrusted image content"));
+        assertTrue(prompt.contains("secondary evidence"));
+        assertTrue(prompt.contains("Do not return OCR text"));
+        assertTrue(prompt.contains("renderweave-visual-grounding/2.0"));
+        assertFalse(prompt.matches("(?is).*\b(bus|station|route|stop|fare)\b.*"));
+        assertFalse(prompt.contains("公交"));
+        assertFalse(prompt.contains("站牌"));
+        assertThrows(IllegalArgumentException.class, () -> registry.requireHybridVisualStage(
+                InferencePromptRegistry.VISUAL_ELEMENTS_V1,
+                InferencePromptRegistry.VISUAL_HINT_GENERIC_V1,
+                InferencePromptRegistry.DOCUMENT_VISION_OBSERVATIONS_V1
+        ));
+    }
+
     private static String sha256(String value) {
         try {
             return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(

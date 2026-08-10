@@ -19,6 +19,8 @@ public final class InferencePromptRegistry {
     public static final String VISUAL_HINT_GENERIC_V1 = "renderweave-visual-hint-pack/generic/1.0";
     public static final String VISUAL_HINT_TRANSIT_BOARD_V1 =
             "renderweave-visual-hint-pack/transit-board/1.0";
+    public static final String DOCUMENT_VISION_OBSERVATIONS_V1 =
+            "renderweave-document-vision-observations-prompt/1.0";
     private static final Map<String, String> RESOURCES = Map.ofEntries(
             Map.entry(SCHEMA_CANDIDATE_V1, "inference-prompts/schema-candidate-v1.txt"),
             Map.entry(SCHEMA_CANDIDATE_V2, "inference-prompts/schema-candidate-v2.txt"),
@@ -35,6 +37,10 @@ public final class InferencePromptRegistry {
     private static final Map<String, String> HINT_RESOURCES = Map.of(
             VISUAL_HINT_GENERIC_V1, "inference-prompts/visual-hint-generic-v1.txt",
             VISUAL_HINT_TRANSIT_BOARD_V1, "inference-prompts/visual-hint-transit-board-v1.txt"
+    );
+    private static final Map<String, String> DOCUMENT_VISION_RESOURCES = Map.of(
+            DOCUMENT_VISION_OBSERVATIONS_V1,
+            "inference-prompts/document-vision-observations-v1.txt"
     );
 
     private final ClassLoader classLoader;
@@ -73,6 +79,29 @@ public final class InferencePromptRegistry {
             throw new IllegalStateException("Visual hint pack violates the safe prompt contract");
         }
         return new PromptResource(promptVersion + "+" + hintPackVersion, core + "\n\n" + hint);
+    }
+
+    public PromptResource requireHybridVisualStage(
+            String promptVersion,
+            String hintPackVersion,
+            String documentVisionPromptVersion
+    ) {
+        var visual = requireVisualStage(promptVersion, hintPackVersion);
+        var policyPath = DOCUMENT_VISION_RESOURCES.get(documentVisionPromptVersion);
+        if (policyPath == null) {
+            throw new IllegalArgumentException(
+                    "Unknown document vision prompt: " + documentVisionPromptVersion
+            );
+        }
+        var policy = read(policyPath);
+        if (policy.isBlank() || !policy.contains("documentVisionObservation")
+                || policy.contains("DASHSCOPE_API_KEY") || policy.contains("```")) {
+            throw new IllegalStateException("Document vision prompt violates the safe prompt contract");
+        }
+        return new PromptResource(
+                visual.promptVersion() + "+" + documentVisionPromptVersion,
+                visual.text() + "\n\n" + policy
+        );
     }
 
     private String read(String path) {
