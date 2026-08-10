@@ -64,7 +64,7 @@ final class VisualGroundingJsonCodec {
             var inventory = classified("VISUAL_GROUNDING_ELEMENT_INVALID", () ->
                     new VisualElementInventory(VisualElementInventory.VERSION, elements)
             );
-            var grounding = classified("VISUAL_GROUNDING_REGION_FOREST_INVALID", () ->
+            var grounding = classifiedGroundingShape(() ->
                     new VisualGroundingPlan(
                     VisualGroundingPlan.VERSION, regions,
                     response.elements().stream().map(element -> new VisualElementRegionOwnership(
@@ -133,6 +133,12 @@ final class VisualGroundingJsonCodec {
             classified("VISUAL_HIERARCHY_V2_REGION_OWNERSHIP_INVALID", () ->
                     entityRegions.requireConsistentWith(hierarchy, grounding)
             );
+            var semanticIssues = SEMANTIC_VERIFIER.verifyHierarchy(
+                    inventory, grounding, hierarchy, entityRegions
+            );
+            if (!semanticIssues.isEmpty()) {
+                throw invalid(semanticIssues.getFirst().code(), null);
+            }
             return new GroundedHierarchyPlan(hierarchy, entityRegions);
         } catch (InvalidVisualAnalysisException failure) {
             throw failure;
@@ -167,6 +173,12 @@ final class VisualGroundingJsonCodec {
             classified("VISUAL_BINDINGS_V2_REGION_OWNERSHIP_INVALID", () ->
                     entityRegions.requireBindingsConsistent(result, grounding)
             );
+            var semanticIssues = SEMANTIC_VERIFIER.verifyBindings(
+                    inventory, grounding, hierarchy, entityRegions, result
+            );
+            if (!semanticIssues.isEmpty()) {
+                throw invalid(semanticIssues.getFirst().code(), null);
+            }
             return result;
         } catch (InvalidVisualAnalysisException failure) {
             throw failure;
@@ -380,6 +392,53 @@ final class VisualGroundingJsonCodec {
         } catch (Exception failure) {
             throw invalid(hierarchySupportCode(failure), failure);
         }
+    }
+
+    private static <T> T classifiedGroundingShape(CheckedSupplier<T> supplier) {
+        try {
+            return supplier.get();
+        } catch (InvalidVisualAnalysisException failure) {
+            throw failure;
+        } catch (Exception failure) {
+            throw invalid(groundingShapeCode(failure), failure);
+        }
+    }
+
+    private static String groundingShapeCode(Throwable failure) {
+        return switch (controlledMessage(failure)) {
+            case "Visual grounding must contain 1..128 regions" ->
+                    "VISUAL_GROUNDING_REGION_COUNT_INVALID";
+            case "Visual region ids must be unique" ->
+                    "VISUAL_GROUNDING_REGION_ID_DUPLICATE";
+            case "Visual grounding requires 1..10 roots" ->
+                    "VISUAL_GROUNDING_ROOT_COUNT_INVALID";
+            case "Visual roots must cover their complete source artifact" ->
+                    "VISUAL_GROUNDING_ROOT_COVERAGE_INVALID";
+            case "Visual region parent is invalid" ->
+                    "VISUAL_GROUNDING_PARENT_INVALID";
+            case "Visual region kind is invalid for its parent" ->
+                    "VISUAL_GROUNDING_PARENT_KIND_INVALID";
+            case "Visual child regions must be contained by their parent" ->
+                    "VISUAL_GROUNDING_PARENT_CONTAINMENT_INVALID";
+            case "Visual region graph is cyclic or too deep" ->
+                    "VISUAL_GROUNDING_CYCLE_OR_DEPTH_INVALID";
+            case "Visual region graph contains an orphan" ->
+                    "VISUAL_GROUNDING_ORPHAN_INVALID";
+            case "Visual sibling readingOrder must be contiguous from zero" ->
+                    "VISUAL_GROUNDING_READING_ORDER_GAP";
+            case "Visual readingOrder must follow canonical top-left order" ->
+                    "VISUAL_GROUNDING_READING_ORDER_POSITION_INVALID";
+            case "Repeated regions require matching item children" ->
+                    "VISUAL_GROUNDING_REPEAT_CHILD_INVALID";
+            case "Repeated items require one repeat group identity" ->
+                    "VISUAL_GROUNDING_REPEAT_ITEM_INVALID";
+            case "Non-repeated visual regions must be singular" ->
+                    "VISUAL_GROUNDING_NON_REPEATED_CARDINALITY_INVALID";
+            default -> controlledMessage(failure).startsWith(
+                    "Visual sibling regions must not overlap:"
+            ) ? "VISUAL_GROUNDING_SIBLING_OVERLAP"
+                    : "VISUAL_GROUNDING_REGION_FOREST_INVALID";
+        };
     }
 
     private static String hierarchyShapeCode(Throwable failure) {

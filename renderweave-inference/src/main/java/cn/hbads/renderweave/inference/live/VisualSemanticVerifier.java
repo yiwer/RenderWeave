@@ -56,6 +56,109 @@ final class VisualSemanticVerifier {
         return issues.stream().distinct()
                 .sorted(Comparator.comparing(VisualSemanticIssue::code)).toList();
     }
+
+    List<VisualSemanticIssue> verifyHierarchy(
+            VisualElementInventory inventory,
+            VisualGroundingPlan grounding,
+            VisualHierarchyPlan hierarchy,
+            VisualEntityRegionPlan entityRegions
+    ) {
+        Objects.requireNonNull(inventory, "inventory");
+        Objects.requireNonNull(grounding, "grounding");
+        Objects.requireNonNull(hierarchy, "hierarchy");
+        Objects.requireNonNull(entityRegions, "entityRegions");
+        var issues = new ArrayList<VisualSemanticIssue>();
+        var groups = inventory.elements().stream()
+                .filter(element -> element.kind() == VisualElementKind.GROUP)
+                .toList();
+
+        for (var group : groups) {
+            var edges = hierarchy.relationships().stream().filter(relationship ->
+                    relationship.supportingElementIds().contains(group.elementId())
+            ).toList();
+            if (edges.isEmpty()) {
+                issues.add(VisualSemanticIssue.HIERARCHY_GROUP_EDGE_MISSING);
+            } else if (edges.size() != 1) {
+                issues.add(VisualSemanticIssue.HIERARCHY_GROUP_EDGE_COUNT_INVALID);
+            }
+        }
+        for (var relationship : hierarchy.relationships()) {
+            var supportingGroups = relationship.supportingElementIds().stream()
+                    .map(inventory::requireElement)
+                    .filter(element -> element.kind() == VisualElementKind.GROUP)
+                    .toList();
+            if (supportingGroups.size() != 1) {
+                issues.add(VisualSemanticIssue.HIERARCHY_EDGE_GROUP_COUNT_INVALID);
+                continue;
+            }
+            var relationshipRegion = entityRegions.requireRelationship(
+                    relationship.relationshipId()
+            ).regionId();
+            if (!grounding.regionIdsForElement(supportingGroups.getFirst().elementId())
+                    .contains(relationshipRegion)) {
+                issues.add(VisualSemanticIssue.HIERARCHY_EDGE_REGION_INVALID);
+            }
+        }
+        return canonical(issues);
+    }
+
+    List<VisualSemanticIssue> verifyBindings(
+            VisualElementInventory inventory,
+            VisualGroundingPlan grounding,
+            VisualHierarchyPlan hierarchy,
+            VisualEntityRegionPlan entityRegions,
+            VisualElementBindingPlan bindings
+    ) {
+        Objects.requireNonNull(inventory, "inventory");
+        Objects.requireNonNull(grounding, "grounding");
+        Objects.requireNonNull(hierarchy, "hierarchy");
+        Objects.requireNonNull(entityRegions, "entityRegions");
+        Objects.requireNonNull(bindings, "bindings");
+        var issues = new ArrayList<VisualSemanticIssue>();
+        for (var binding : bindings.bindings()) {
+            var elementRegions = grounding.regionIdsForElement(binding.elementId());
+            var chosen = entityRegions.requireEntity(binding.entityId());
+            var hasNearer = entityRegions.entities().stream()
+                    .filter(candidate -> !candidate.entityId().equals(chosen.entityId()))
+                    .filter(candidate -> ownsAll(candidate, elementRegions, grounding))
+                    .anyMatch(candidate -> strictlyInside(candidate, chosen, grounding));
+            if (hasNearer) issues.add(VisualSemanticIssue.BINDING_NOT_NEAREST_ENTITY);
+        }
+        return canonical(issues);
+    }
+
+    private static boolean ownsAll(
+            VisualEntityRegionOwnership entity,
+            List<String> elementRegions,
+            VisualGroundingPlan grounding
+    ) {
+        return elementRegions.stream().allMatch(elementRegion -> entity.regionIds().stream()
+                .anyMatch(entityRegion -> grounding.descendantOrSame(elementRegion, entityRegion)));
+    }
+
+    private static boolean strictlyInside(
+            VisualEntityRegionOwnership candidate,
+            VisualEntityRegionOwnership chosen,
+            VisualGroundingPlan grounding
+    ) {
+        var contained = candidate.regionIds().stream().allMatch(candidateRegion ->
+                chosen.regionIds().stream().anyMatch(chosenRegion ->
+                        grounding.descendantOrSame(candidateRegion, chosenRegion)
+                )
+        );
+        var strict = candidate.regionIds().stream().anyMatch(candidateRegion ->
+                chosen.regionIds().stream().anyMatch(chosenRegion ->
+                        !candidateRegion.equals(chosenRegion)
+                                && grounding.descendantOrSame(candidateRegion, chosenRegion)
+                )
+        );
+        return contained && strict;
+    }
+
+    private static List<VisualSemanticIssue> canonical(List<VisualSemanticIssue> issues) {
+        return issues.stream().distinct()
+                .sorted(Comparator.comparing(VisualSemanticIssue::code)).toList();
+    }
 }
 
 enum VisualSemanticIssue {
@@ -70,6 +173,21 @@ enum VisualSemanticIssue {
     ),
     OBSERVE_GROUP_REGION_INVALID(
             "VISUAL_SEMANTIC_GROUP_REGION_INVALID", InferenceStage.OBSERVE
+    ),
+    HIERARCHY_GROUP_EDGE_MISSING(
+            "VISUAL_SEMANTIC_HIERARCHY_GROUP_EDGE_MISSING", InferenceStage.HIERARCHY
+    ),
+    HIERARCHY_GROUP_EDGE_COUNT_INVALID(
+            "VISUAL_SEMANTIC_HIERARCHY_GROUP_EDGE_COUNT_INVALID", InferenceStage.HIERARCHY
+    ),
+    HIERARCHY_EDGE_GROUP_COUNT_INVALID(
+            "VISUAL_SEMANTIC_HIERARCHY_EDGE_GROUP_COUNT_INVALID", InferenceStage.HIERARCHY
+    ),
+    HIERARCHY_EDGE_REGION_INVALID(
+            "VISUAL_SEMANTIC_HIERARCHY_EDGE_REGION_INVALID", InferenceStage.HIERARCHY
+    ),
+    BINDING_NOT_NEAREST_ENTITY(
+            "VISUAL_SEMANTIC_BINDING_NOT_NEAREST_ENTITY", InferenceStage.ELEMENT_BINDING
     );
 
     private final String code;

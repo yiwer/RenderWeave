@@ -64,15 +64,26 @@ class VisualGroundingContractTest {
         assertDiagnostic(elementsJson().replace(
                 "\"left\":0,\"top\":6000,\"right\":10000,\"bottom\":10000",
                 "\"left\":0,\"top\":5000,\"right\":10000,\"bottom\":10000"
-        ), views, "VISUAL_GROUNDING_REGION_FOREST_INVALID");
+        ), views, "VISUAL_GROUNDING_SIBLING_OVERLAP");
         assertDiagnostic(elementsJson().replace(
                 "\"regionId\":\"repeat\",\"parentRegionId\":\"root\"",
                 "\"regionId\":\"repeat\",\"parentRegionId\":\"item-a\""
-        ), views, "VISUAL_GROUNDING_REGION_FOREST_INVALID");
+        ), views, "VISUAL_GROUNDING_PARENT_CONTAINMENT_INVALID");
         assertDiagnostic(elementsJson().replace(
                 "\"repeatGroupId\":\"rows\",\"evidence\":[{\"viewId\":\"view-00-overview-00\",\"boundingBox\":{\"left\":0,\"top\":6000",
                 "\"repeatGroupId\":\"other\",\"evidence\":[{\"viewId\":\"view-00-overview-00\",\"boundingBox\":{\"left\":0,\"top\":6000"
-        ), views, "VISUAL_GROUNDING_REGION_FOREST_INVALID");
+        ), views, "VISUAL_GROUNDING_PARENT_KIND_INVALID");
+        assertDiagnostic(elementsJson().replace(
+                "\"regionId\":\"repeat\",\"parentRegionId\":\"root\",\"kind\":\"REPEATED_GROUP\",\"multiplicity\":\"MANY\",\"readingOrder\":1",
+                "\"regionId\":\"repeat\",\"parentRegionId\":\"root\",\"kind\":\"REPEATED_GROUP\",\"multiplicity\":\"MANY\",\"readingOrder\":2"
+        ), views, "VISUAL_GROUNDING_READING_ORDER_GAP");
+        assertDiagnostic(elementsJson().replace(
+                "\"regionId\":\"header\",\"parentRegionId\":\"root\",\"kind\":\"SECTION\",\"multiplicity\":\"ONE\",\"readingOrder\":0",
+                "\"regionId\":\"header\",\"parentRegionId\":\"root\",\"kind\":\"SECTION\",\"multiplicity\":\"ONE\",\"readingOrder\":1"
+        ).replace(
+                "\"regionId\":\"repeat\",\"parentRegionId\":\"root\",\"kind\":\"REPEATED_GROUP\",\"multiplicity\":\"MANY\",\"readingOrder\":1",
+                "\"regionId\":\"repeat\",\"parentRegionId\":\"root\",\"kind\":\"REPEATED_GROUP\",\"multiplicity\":\"MANY\",\"readingOrder\":0"
+        ), views, "VISUAL_GROUNDING_READING_ORDER_POSITION_INVALID");
     }
 
     @Test
@@ -198,6 +209,62 @@ class VisualGroundingContractTest {
         );
     }
 
+    @Test
+    void routesHierarchyAndBindingSemanticIssuesToTheirEarliestStage() throws Exception {
+        var observed = codec.parseElements(elementsJson(), views(), List.of(IMAGE_ID));
+
+        assertHierarchyDiagnostic(
+                hierarchyWithoutGroupEdgeJson(), observed,
+                "VISUAL_SEMANTIC_HIERARCHY_GROUP_EDGE_MISSING"
+        );
+
+        var hierarchy = codec.parseHierarchy(
+                hierarchyJson(), observed.inventory(), observed.grounding()
+        );
+        assertEquals("VISUAL_SEMANTIC_BINDING_NOT_NEAREST_ENTITY", assertThrows(
+                InvalidVisualAnalysisException.class, () -> codec.parseBindings(
+                        bindingsJson().replace(
+                                "{\"elementId\":\"item-label\",\"entityId\":\"item\"}",
+                                "{\"elementId\":\"item-label\",\"entityId\":\"document\"}"
+                        ), observed.inventory(), hierarchy.hierarchy(), observed.grounding(),
+                        hierarchy.entityRegions()
+                )
+        ).diagnosticCode());
+    }
+
+    @Test
+    void derivesStageLocalCropsOnlyFromTheVerifiedPlan() throws Exception {
+        var observed = codec.parseElements(elementsJson(), views(), List.of(IMAGE_ID));
+        var hierarchy = codec.parseHierarchy(
+                hierarchyJson(), observed.inventory(), observed.grounding()
+        );
+        var selector = new VisualRepairCropSelector();
+
+        assertEquals(List.of(), selector.select(
+                InferenceStage.HIERARCHY, List.of(), List.of(IMAGE_ID),
+                observed.inventory(), observed.grounding(), hierarchy.hierarchy(),
+                hierarchy.entityRegions()
+        ));
+        assertEquals(List.of(new VisualTargetCrop(
+                0, new CandidateBoundingBox(0, 2000, 10_000, 10_000)
+        )), selector.select(
+                InferenceStage.HIERARCHY,
+                List.of("VISUAL_SEMANTIC_HIERARCHY_GROUP_EDGE_MISSING"), List.of(IMAGE_ID),
+                observed.inventory(), observed.grounding(), hierarchy.hierarchy(),
+                hierarchy.entityRegions()
+        ));
+        assertEquals(List.of(
+                new VisualTargetCrop(0, new CandidateBoundingBox(0, 0, 10_000, 2000)),
+                new VisualTargetCrop(0, new CandidateBoundingBox(0, 2000, 10_000, 6000)),
+                new VisualTargetCrop(0, new CandidateBoundingBox(0, 6000, 10_000, 10_000))
+        ), selector.select(
+                InferenceStage.ELEMENT_BINDING,
+                List.of("VISUAL_SEMANTIC_BINDING_NOT_NEAREST_ENTITY"), List.of(IMAGE_ID),
+                observed.inventory(), observed.grounding(), hierarchy.hierarchy(),
+                hierarchy.entityRegions()
+        ));
+    }
+
     private void assertDiagnostic(String json, VisualViewPlan views, String expectedCode) {
         assertEquals(expectedCode, assertThrows(InvalidVisualAnalysisException.class,
                 () -> codec.parseElements(json, views, List.of(IMAGE_ID))).diagnosticCode());
@@ -280,6 +347,19 @@ class VisualGroundingContractTest {
                     {"elementId":"title","entityId":"document"},
                     {"elementId":"item-label","entityId":"item"}
                   ]
+                }
+                """;
+    }
+
+    private static String hierarchyWithoutGroupEdgeJson() {
+        return """
+                {
+                  "contractVersion":"renderweave-visual-hierarchy/2.0",
+                  "rootEntityId":"document",
+                  "entities":[
+                    {"entityId":"document","schemaKey":"document","displayName":"文档","regionIds":["root"],"supportingElementIds":["title","row-group"]}
+                  ],
+                  "relationships":[]
                 }
                 """;
     }

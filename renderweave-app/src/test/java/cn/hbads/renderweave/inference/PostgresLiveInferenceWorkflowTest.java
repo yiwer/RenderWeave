@@ -500,6 +500,128 @@ class PostgresLiveInferenceWorkflowTest {
     }
 
     @Test
+    void groundedSemanticVerifierPreservesUpstreamStagesAndUsesVerifiedRepairCrops() {
+        var blobs = new MemoryBlobStore();
+        var created = createGroundedVisual(blobs, "grounded-semantic-stage-local-repair");
+        var misplacedBinding = groundedStationBindings().replace(
+                "{\"elementId\":\"stop-name\",\"entityId\":\"stop\"}",
+                "{\"elementId\":\"stop-name\",\"entityId\":\"board\"}"
+        );
+        var provider = new ScriptedProvider(
+                request -> response(request, groundedStationElements()),
+                request -> response(request, groundedStationHierarchyWithoutNoticeEdge()),
+                request -> response(request, groundedStationHierarchy()),
+                request -> response(request, misplacedBinding),
+                request -> response(request, groundedStationBindings())
+        );
+
+        var finished = worker(provider, blobs).processNext("grounded-stage-local-worker").orElseThrow();
+
+        assertThat(finished.state())
+                .as("failure=%s attempts=%s", finished.failureCode(), workflowStore.attempts(created))
+                .isEqualTo(InferenceRunState.REVIEW_REQUIRED);
+        assertThat(provider.requests).extracting(ProviderInferenceRequest::stage)
+                .containsExactly(
+                        InferenceStage.OBSERVE,
+                        InferenceStage.HIERARCHY, InferenceStage.HIERARCHY,
+                        InferenceStage.ELEMENT_BINDING, InferenceStage.ELEMENT_BINDING
+                );
+        assertThat(provider.requests.get(1).taskJson()).doesNotContain("TARGETED_CROP");
+        assertThat(provider.requests.get(2).taskJson())
+                .contains("TARGETED_CROP")
+                .contains("VISUAL_SEMANTIC_HIERARCHY_GROUP_EDGE_MISSING")
+                .contains("\"groundingPlan\":{");
+        assertThat(provider.requests.get(4).taskJson())
+                .contains("TARGETED_CROP")
+                .contains("VISUAL_SEMANTIC_BINDING_NOT_NEAREST_ENTITY")
+                .contains("\"hierarchyPlan\":{");
+        assertThat(workflowStore.attempts(created)).extracting(attempt -> attempt.status())
+                .containsExactly(
+                        InferenceAttemptStatus.SUCCEEDED,
+                        InferenceAttemptStatus.REJECTED, InferenceAttemptStatus.SUCCEEDED,
+                        InferenceAttemptStatus.REJECTED, InferenceAttemptStatus.SUCCEEDED
+                );
+        assertThat(workflowStore.attempts(created).get(1).problemCodeCounts())
+                .containsExactlyEntriesOf(Map.of(
+                        "VISUAL_SEMANTIC_HIERARCHY_GROUP_EDGE_MISSING", 1
+                ));
+        assertThat(workflowStore.attempts(created).get(3).problemCodeCounts())
+                .containsExactlyEntriesOf(Map.of(
+                        "VISUAL_SEMANTIC_BINDING_NOT_NEAREST_ENTITY", 1
+                ));
+    }
+
+    @Test
+    void groundedStageLocalRepairResumesAfterLeaseExpiryWithoutReobserving() {
+        var blobs = new MemoryBlobStore();
+        var created = createGroundedVisual(blobs, "grounded-semantic-lease-recovery");
+        var firstProvider = new ScriptedProvider(
+                request -> response(request, groundedStationElements()),
+                request -> response(request, groundedStationHierarchyWithoutNoticeEdge())
+        );
+        var firstWorker = worker(firstProvider, blobs, T0.plusSeconds(1));
+        var current = runs.claimNextLive(
+                "grounded-semantic-first", T0.plusSeconds(1), Duration.ofMinutes(5)
+        ).orElseThrow();
+
+        current = firstWorker.advance(current);
+        current = firstWorker.advance(current);
+
+        assertThat(current.stage()).isEqualTo(InferenceStage.HIERARCHY);
+        assertThat(current.checkpointJson())
+                .contains("renderweave-visual-grounding/2.0")
+                .doesNotContain("renderweave-visual-hierarchy/2.0");
+        assertThat(firstProvider.requests).extracting(ProviderInferenceRequest::stage)
+                .containsExactly(InferenceStage.OBSERVE, InferenceStage.HIERARCHY);
+
+        var recoveryProvider = new ScriptedProvider(
+                request -> response(request, groundedStationHierarchy()),
+                request -> response(request, groundedStationBindings())
+        );
+        var finished = worker(recoveryProvider, blobs, T0.plus(Duration.ofMinutes(7)))
+                .processNext("grounded-semantic-recovery").orElseThrow();
+
+        assertThat(finished.state()).isEqualTo(InferenceRunState.REVIEW_REQUIRED);
+        assertThat(recoveryProvider.requests).extracting(ProviderInferenceRequest::stage)
+                .containsExactly(InferenceStage.HIERARCHY, InferenceStage.ELEMENT_BINDING);
+        assertThat(recoveryProvider.requests.getFirst().taskJson())
+                .contains("TARGETED_CROP")
+                .contains("VISUAL_SEMANTIC_HIERARCHY_GROUP_EDGE_MISSING");
+        assertThat(workflowStore.attempts(created)).extracting(attempt -> attempt.status())
+                .containsExactly(
+                        InferenceAttemptStatus.SUCCEEDED, InferenceAttemptStatus.REJECTED,
+                        InferenceAttemptStatus.SUCCEEDED, InferenceAttemptStatus.SUCCEEDED
+                );
+    }
+
+    @Test
+    void groundedStageLocalRepairCancelsWithoutReplayingSuccessfulObservation() {
+        var blobs = new MemoryBlobStore();
+        var created = createGroundedVisual(blobs, "grounded-semantic-cancel");
+        var provider = new ScriptedProvider(
+                request -> response(request, groundedStationElements()),
+                request -> response(request, groundedStationHierarchyWithoutNoticeEdge())
+        );
+        var activeWorker = worker(provider, blobs, T0.plusSeconds(1));
+        var current = runs.claimNextLive(
+                "grounded-semantic-cancel-first", T0.plusSeconds(1), Duration.ofMinutes(5)
+        ).orElseThrow();
+        current = activeWorker.advance(current);
+        current = activeWorker.advance(current);
+
+        var cancelling = runs.requestCancellation(created, T0.plusSeconds(2));
+        var finished = activeWorker.drain(cancelling);
+
+        assertThat(finished.state()).isEqualTo(InferenceRunState.CANCELLED);
+        assertThat(provider.requests).extracting(ProviderInferenceRequest::stage)
+                .containsExactly(InferenceStage.OBSERVE, InferenceStage.HIERARCHY);
+        assertThat(workflowStore.attempts(created)).hasSize(2);
+        assertThat(finished.checkpointJson())
+                .contains("renderweave-visual-grounding/2.0")
+                .doesNotContain("renderweave-visual-hierarchy/2.0");
+    }
+
+    @Test
     void groundedLengthStopPersistsTruncationWithoutParsingPartialPayload() {
         var blobs = new MemoryBlobStore();
         var created = createGroundedVisual(blobs, "grounded-length-diagnostic");
@@ -1314,6 +1436,19 @@ class PostgresLiveInferenceWorkflowTest {
                   {"entityId":"stop","schemaKey":"bus-stop","displayName":"停靠站点","regionIds":["stop-item"],"supportingElementIds":["stop-group"]}
                 ],"relationships":[
                   {"relationshipId":"board-notice","parentEntityId":"board","childEntityId":"notice-entity","fieldKey":"warmNotice","displayName":"温馨提示","cardinality":"ONE","regionId":"notice","supportingElementIds":["notice-group"]},
+                  {"relationshipId":"board-routes","parentEntityId":"board","childEntityId":"route","fieldKey":"routes","displayName":"线路","cardinality":"MANY","regionId":"routes","supportingElementIds":["route-group"]},
+                  {"relationshipId":"route-stops","parentEntityId":"route","childEntityId":"stop","fieldKey":"stops","displayName":"停靠站点","cardinality":"MANY","regionId":"stops","supportingElementIds":["stop-group"]}
+                ]}
+                """;
+    }
+
+    private static String groundedStationHierarchyWithoutNoticeEdge() {
+        return """
+                {"contractVersion":"renderweave-visual-hierarchy/2.0","rootEntityId":"board","entities":[
+                  {"entityId":"board","schemaKey":"bus-stop-board","displayName":"站牌","regionIds":["root"],"supportingElementIds":["station-name","notice-group"]},
+                  {"entityId":"route","schemaKey":"bus-route","displayName":"线路","regionIds":["route-item"],"supportingElementIds":["route-group"]},
+                  {"entityId":"stop","schemaKey":"bus-stop","displayName":"停靠站点","regionIds":["stop-item"],"supportingElementIds":["stop-group"]}
+                ],"relationships":[
                   {"relationshipId":"board-routes","parentEntityId":"board","childEntityId":"route","fieldKey":"routes","displayName":"线路","cardinality":"MANY","regionId":"routes","supportingElementIds":["route-group"]},
                   {"relationshipId":"route-stops","parentEntityId":"route","childEntityId":"stop","fieldKey":"stops","displayName":"停靠站点","cardinality":"MANY","regionId":"stops","supportingElementIds":["stop-group"]}
                 ]}

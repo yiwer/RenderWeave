@@ -88,6 +88,7 @@ public final class LiveInferenceWorker {
     private final VisualPlanCandidateValidator visualPlanValidator;
     private final VisualPlanCandidateMaterializer visualPlanMaterializer;
     private final MultiScaleVisualViewPlanner visualViewPlanner;
+    private final VisualRepairCropSelector visualRepairCropSelector;
     private final VisualGroundingJsonCodec visualGroundingCodec;
     private final DocumentVisionPreprocessor documentVisionPreprocessor;
 
@@ -167,6 +168,7 @@ public final class LiveInferenceWorker {
         this.visualPlanValidator = new VisualPlanCandidateValidator();
         this.visualPlanMaterializer = new VisualPlanCandidateMaterializer();
         this.visualViewPlanner = new MultiScaleVisualViewPlanner();
+        this.visualRepairCropSelector = new VisualRepairCropSelector();
         this.visualGroundingCodec = new VisualGroundingJsonCodec();
         this.documentVisionPreprocessor = Objects.requireNonNull(
                 documentVisionPreprocessor, "documentVisionPreprocessor"
@@ -649,8 +651,10 @@ public final class LiveInferenceWorker {
             requireCompleteGroundedResponse(current.stage(), response);
             switch (current.stage()) {
                 case OBSERVE -> {
+                    var retryProblemCodes = latestRetryProblemCodes(current);
                     var grounded = visualGroundingCodec.parseElements(
-                            response.candidateJson(), visualViewPlan(current),
+                            response.candidateJson(),
+                            visualViewPlan(current, checkpoint, retryProblemCodes),
                             imageArtifactIds(current)
                     );
                     nextCheckpoint = checkpoint.elementsGrounded(
@@ -804,14 +808,9 @@ public final class LiveInferenceWorker {
                 ? checkpoint.validationProblems().stream().map(CandidateProblem::code).distinct().sorted().toList()
                 : List.<String>of();
         if (serialVisual(current, profile)) {
-            var retryProblemCodes = workflowStore.attempts(current.runId()).stream()
-                    .filter(attempt -> attempt.stage() == current.stage()
-                            && attempt.status() == InferenceAttemptStatus.REJECTED)
-                    .reduce((left, right) -> right)
-                    .map(attempt -> attempt.problemCodeCounts().keySet().stream().sorted().toList())
-                    .orElse(List.of());
+            var retryProblemCodes = latestRetryProblemCodes(current);
             if (groundedVisual(profile)) {
-                var views = visualViewPlan(current);
+                var views = visualViewPlan(current, checkpoint, retryProblemCodes);
                 if (hybridVisual(profile)) {
                     if (documentVision == null) {
                         throw new DocumentVisionException("DOCUMENT_VISION_OBSERVATION_MISSING");
@@ -990,7 +989,20 @@ public final class LiveInferenceWorker {
                 .toList();
     }
 
-    private VisualViewPlan visualViewPlan(InferenceRunSnapshot current) {
+    private List<String> latestRetryProblemCodes(InferenceRunSnapshot current) {
+        return workflowStore.attempts(current.runId()).stream()
+                .filter(attempt -> attempt.stage() == current.stage()
+                        && attempt.status() == InferenceAttemptStatus.REJECTED)
+                .reduce((left, right) -> right)
+                .map(attempt -> attempt.problemCodeCounts().keySet().stream().sorted().toList())
+                .orElse(List.of());
+    }
+
+    private VisualViewPlan visualViewPlan(
+            InferenceRunSnapshot current,
+            LiveWorkflowCheckpoint checkpoint,
+            List<String> retryProblemCodes
+    ) {
         var sources = current.inputs().stream()
                 .filter(input -> input.kind() == NormalizedArtifact.Kind.IMAGE)
                 .sorted(Comparator.comparingInt(input -> input.ordinal()))
@@ -1000,7 +1012,13 @@ public final class LiveInferenceWorker {
                         Objects.requireNonNull(input.artifact().height(), "image height")
                 ))
                 .toList();
-        return visualViewPlanner.plan(sources, List.of());
+        var sourceArtifactIds = sources.stream().map(VisualSourceImage::artifactId).toList();
+        var targets = visualRepairCropSelector.select(
+                current.stage(), retryProblemCodes, sourceArtifactIds,
+                checkpoint.elementInventory(), checkpoint.groundingPlan(),
+                checkpoint.hierarchyPlan(), checkpoint.entityRegionPlan()
+        );
+        return visualViewPlanner.plan(sources, targets);
     }
 
     private DocumentVisionObservation documentVision(

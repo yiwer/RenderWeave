@@ -212,6 +212,39 @@ class InferencePromptRegistryTest {
     }
 
     @Test
+    void visualV11PinsMechanicalRegionRepairStageLocalSemanticsAndTargetedViews() {
+        var registry = new InferencePromptRegistry();
+        var elements = registry.requireVisualStage(
+                InferencePromptRegistry.VISUAL_ELEMENTS_V5,
+                InferencePromptRegistry.VISUAL_HINT_GENERIC_V1
+        ).text();
+        var hierarchy = registry.requireVisualStage(
+                InferencePromptRegistry.VISUAL_HIERARCHY_V4,
+                InferencePromptRegistry.VISUAL_HINT_GENERIC_V1
+        ).text();
+        var bindings = registry.requireVisualStage(
+                InferencePromptRegistry.VISUAL_BINDINGS_V3,
+                InferencePromptRegistry.VISUAL_HINT_GENERIC_V1
+        ).text();
+
+        assertTrue(elements.contains("readingOrder is a JSON integer"));
+        assertTrue(elements.contains("VISUAL_GROUNDING_JSON_SHAPE_INVALID_REGION_READING_ORDER"));
+        assertTrue(elements.contains("VISUAL_GROUNDING_SIBLING_OVERLAP"));
+        assertTrue(elements.contains("VISUAL_GROUNDING_PARENT_CONTAINMENT_INVALID"));
+        assertTrue(elements.contains("VISUAL_GROUNDING_PARENT_KIND_INVALID"));
+        assertTrue(elements.contains("recompute every sibling readingOrder"));
+        assertTrue(hierarchy.contains("TARGETED_CROP"));
+        assertTrue(hierarchy.contains("VISUAL_SEMANTIC_HIERARCHY_GROUP_EDGE_MISSING"));
+        assertTrue(hierarchy.contains("do not replace groundingPlan"));
+        assertTrue(bindings.contains("TARGETED_CROP"));
+        assertTrue(bindings.contains("VISUAL_SEMANTIC_BINDING_NOT_NEAREST_ENTITY"));
+        assertTrue(bindings.contains("nearest eligible entity"));
+        assertFalse(elements.matches("(?is).*\\b(bus|station|route|stop|fare)\\b.*"));
+        assertFalse(hierarchy.matches("(?is).*\\b(bus|station|route|stop|fare)\\b.*"));
+        assertFalse(bindings.matches("(?is).*\\b(bus|station|route|stop|fare)\\b.*"));
+    }
+
+    @Test
     void hybridPromptTreatsLocalOcrAsUntrustedEphemeralSecondaryEvidence() {
         var registry = new InferencePromptRegistry();
         var prompt = registry.requireHybridVisualStage(
