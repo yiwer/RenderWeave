@@ -1,7 +1,7 @@
 {
   "authorizationVersion": "renderweave-visual-evaluation-authorization/1.0",
   "authorizationId": "visual-v6-diagnostic-qwen38-max-transit-20260810",
-  "status": "PROPOSED",
+  "status": "OPEN",
   "phase": "CANARY",
   "inputClassification": "REPOSITORY_SYNTHETIC_ONLY",
   "corpusVersion": "renderweave-visual-stage-corpus/1.0",
@@ -18,7 +18,7 @@
   "maximumCostMicrosCny": 4000000,
   "maximumCasesPerBatch": 1,
   "approvedBy": "yiwer",
-  "approvedAt": "2026-08-10T15:40:00Z",
+  "approvedAt": "2026-08-10T15:37:00Z",
   "expiresAt": "2026-08-11T15:00:17Z",
   "approvalScope": "Goal J1 CANARY diagnostic: one repository-synthetic transit-board-v3 case; exact qwen3.8-max product-v6-generic; at most 5 attempts, 100000 exposed tokens, CNY 4.00 and one case per batch within the active per-model 500000-token Goal cap"
 }
