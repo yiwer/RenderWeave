@@ -11,7 +11,8 @@
 - 当前节点：N0–N1、N3–N4、N6 `automated_verified`；N2 `live_verified_mixed_a1_a2`；N5
   `live_verified_not_promoted`；N7 `in_progress`（pinned Flash/Plus reachability、Plus v14/v15/v16/v17/v18 smoke 已 A2，
   三阶段仍不可达；v15 bounded OBSERVE rewind、v16 evidence-derived cardinality 与 v17 exact relationship-region
-  owner rewind、v18 detailed region repair taxonomy 实现已 clean A1，v18 live 仍停在 HIERARCHY）；全部
+  owner rewind、v18 detailed region repair taxonomy 与 v19 exact-duplicate support-ID normalization 实现已 clean A1，
+  v18 live 仍停在 HIERARCHY，v19 尚未 live）；全部
   live ledger `CLOSED`
 
 ## 四维执行配置
@@ -119,7 +120,8 @@ ledger 描述成外部强制门。
 - 状态：`automated_verified`；checkpoint：`plans/logs/P6-T6-5-N6.md`。实现 revisions 为 `4290227`、
   `f0ebe77`、`d5afadf`；full audit selector 修复为 `de97131`；N7 实证驱动的 cross-stage verifier 增量为
   `195894b`，evidence-owned relationship cardinality 增量为 `bb15096`，exact relationship-region owner 增量为
-  `31a8c6f`，detailed hierarchy region repair taxonomy 为 `4d2cc46`。三轮 Flash 与后续 Plus 小 smoke
+  `31a8c6f`，detailed hierarchy region repair taxonomy 为 `4d2cc46`，exact-duplicate support-ID normalization 为
+  `214fff9`。三轮 Flash 与后续 Plus 小 smoke
   均有 A2 诊断证据；最新 v18 仍停在 HIERARCHY，未触达完整三阶段，Profile 没有晋级。
 - AC：AC-VR-007、009。
 - 依赖：N5。
@@ -137,7 +139,7 @@ ledger 描述成外部强制门。
   1,000,000；immutable capability/Profile 与 v2 aggregate guard 已冻结。pinned Flash v13 与用户重新允许的
   Plus v12 单 case reachability、Plus v14/v15/v16/v17/v18 hierarchy smoke 均已 CLOSED/A2，但仍未触达 BINDING；
   v15 bounded OBSERVE rewind、v16 evidence-derived cardinality 与 v17 exact relationship-region owner rewind
-  以及 v18 detailed hierarchy region repair taxonomy 实现已 clean A1。
+  以及 v18 detailed hierarchy region repair taxonomy、v19 exact-duplicate support-ID normalization 实现已 clean A1。
 - AC：AC-VR-001..010、既有 AC-015..021。
 - 依赖：N6 clean gates；final exact identities 和新的 ledger；N2 用量已进入 aggregate guard。
 - 执行：已先以 `qwen3.7-flash-2026-07-15`、再以 `qwen3.7-plus` 做单 case reachability；Flash 停在
@@ -150,7 +152,9 @@ ledger 描述成外部强制门。
   20 SLOT/1 GROUP，HIERARCHY 三次 region ownership invalid 后一次 support not group，exact-owner rewind 未触发。
   `4d2cc46` 已为新 pipeline 4.5/product-v18 把 region ownership 拆成六类固定码，并为 support failure 补齐
   stage-local repair 指令；旧 v17 行为不变。Plus v18 已受控 CLOSED/A2：OBSERVE 接受 9 SLOT/0 GROUP，随后四次
-  HIERARCHY 均为 relationship support IDs invalid。下一安全切片是本地 bounded support-ID 合同诊断与 repair；只有实际触达
+  HIERARCHY 均为 relationship support IDs invalid。`214fff9` 的 pipeline 4.6/product-v19 已把该失败拆为
+  missing/empty/limit/invalid 固定码，并只对同一有效 ID 的精确重复做 stable dedupe；不同 ID、缺 GROUP 与结构
+  选择继续 fail-closed。下一安全切片是重新计算 identity/snapshot 后执行 Plus v19 单 case lifecycle；只有 live 实际触达
   BINDING 后才可考虑 Max 和同一 20-case comparison，再按剩余额度优先让最佳模型完成
   60-case/15 HOLDOUT；每批≤5。旧 Flash 不再创建 assignment，Plus/Max model ID 不变。
 - policy：只有满足既有 AC-021 和 stage 门槛的 Profile 可成为默认；其他保持 EXPERIMENTAL。
@@ -160,7 +164,9 @@ ledger 描述成外部强制门。
   A1；`31a8c6f` 的 clean evidence 为 fast `20260811-050115`，受影响 server `20260811-045814`、web
   `20260811-045937`、E2E `20260811-050010`；v17 CLOSED clean fast 为 `20260811-051247`。它们不能替代 live
   三阶段。`4d2cc46` 的 server `20260811-052610`、web `20260811-052610`、E2E `20260811-052745` 与 clean fast
-  `20260811-052853` 也均为 A1；v18 CLOSED clean fast 为 `20260811-053811`。这些证据不能替代 final eval、final identity A2 或
+  `20260811-052853` 也均为 A1；v18 CLOSED clean fast 为 `20260811-053811`。`214fff9` 的 server
+  `20260811-055056`、web `20260811-055228`、E2E `20260811-055259` 与提交后 clean fast
+  `20260811-055541` 均为 A1，Provider attempts=0。这些证据不能替代 v19 live、final eval、final identity A2 或
   用户业务/视觉 J1。
 - 完成信号：所有 ledger CLOSED、Goal guard 不超额、每条 AC 有结果和证据、最终 revision clean。目前未达成。
 

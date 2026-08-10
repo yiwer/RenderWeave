@@ -191,3 +191,23 @@ target evidence 均未变化。唯一 wrapper exit 0 后先 CLOSED 再读取 evi
 9 SLOT/0 GROUP；四次 HIERARCHY 均为 `VISUAL_HIERARCHY_V2_RELATIONSHIP_SUPPORT_IDS_INVALID`，没有进入
 BINDING，也没有命中新增 region taxonomy。该稳定固定码把下一本地切片收窄到 relationship support ID 合同；
 在三阶段实证可达前仍禁止 Max，product-v18 不晋级。
+
+## N7 relationship support ID canonicalization 增量
+
+v18 的 generic support-ID code 仍把缺失、空列表、超限、未知 ID 与精确重复混在一起。`214fff9` 新增
+pipeline 4.6/product-v19：旧 Profile 继续 `STRICT`；只有新 Profile 使用
+`CANONICALIZE_EXACT_DUPLICATES`，先逐项验证 ID 来自已验证 element inventory，再按输入顺序只去除同一有效
+ID 的精确重复。代码不会在多个不同 ID 之间选择，也不会新增 GROUP、删 relationship、猜 owner 或改写
+OBSERVE；去重后仍有多个不同 ID 时继续由既有 support-count 合同 fail-closed。
+
+缺失、空列表、超限和单项非法引用分别产生固定、payload-free code；成功去重只记录
+`VISUAL_HIERARCHY_RELATIONSHIP_SUPPORT_IDS_NORMALIZED`。这些结构问题不请求 `TARGETED_CROP`，checkpoint
+保留已接受的 OBSERVE/grounding。hierarchy prompt v7 只允许绑定 supplied relationship region 的唯一已提供
+GROUP，不允许从不同候选中择一。
+
+合同/Profile/prompt 定向 33/33、独立 verifier 2/2 与真实 PostgreSQL lease-expiry 恢复 1/1 通过；后者证明
+精确重复被归一化后 HIERARCHY 可接受并进入 BINDING，恢复时只重做最早未完成的 BINDING。server
+`.sdlc/evidence/20260811-055056-server`、web `.sdlc/evidence/20260811-055228-web`、E2E
+`.sdlc/evidence/20260811-055259-e2e` 与提交后 clean fast `.sdlc/evidence/20260811-055541-fast` 均为 A1
+PASS。实现和门控期间 Provider attempts=0、三份 ledger 保持 CLOSED。product-v19 仍为 `EXPERIMENTAL`；上述
+结果只证明离线合同与恢复路径，不证明真实模型能完成三阶段，也不打开 Max 入口。
