@@ -1,5 +1,6 @@
 package cn.hbads.renderweave.inference.live;
 
+import cn.hbads.renderweave.inference.candidate.CandidateBoundingBox;
 import cn.hbads.renderweave.inference.candidate.CandidateEvidence;
 import tools.jackson.core.StreamReadFeature;
 import tools.jackson.core.json.JsonFactory;
@@ -205,13 +206,15 @@ final class VisualGroundingJsonCodec {
         if (findCause(failure, ValueInstantiationException.class) != null) {
             return prefix + "_JSON_CONSTRUCTOR_INVALID";
         }
-        if (findCause(failure, MismatchedInputException.class) != null) {
+        var mismatchedInput = findCause(failure, MismatchedInputException.class);
+        if (mismatchedInput != null) {
             if (messageStartsWithForType(
                     failure, "MismatchedInputException", "trailing token (`jsontoken."
             )) {
                 return prefix + "_JSON_TRAILING_CONTENT";
             }
-            return prefix + "_JSON_SHAPE_INVALID";
+            var slot = shapeInvalidSlot(mismatchedInput);
+            return prefix + "_JSON_SHAPE_INVALID" + (slot == null ? "" : "_" + slot);
         }
         if (containsType(failure, "StreamReadException")
                 || containsType(failure, "UnexpectedEndOfInputException")) {
@@ -224,6 +227,87 @@ final class VisualGroundingJsonCodec {
             return prefix + "_JSON_SYNTAX_INVALID";
         }
         return prefix + "_JSON_OTHER";
+    }
+
+    private static String shapeInvalidSlot(MismatchedInputException failure) {
+        for (var index = failure.getPath().size() - 1; index >= 0; index--) {
+            var reference = failure.getPath().get(index);
+            var slot = shapeSlot(reference.from(), reference.getPropertyName());
+            if (slot != null) return slot;
+        }
+        return null;
+    }
+
+    private static String shapeSlot(Object owner, String propertyName) {
+        if (ownerIs(owner, GroundingOutput.class)) {
+            if ("contractVersion".equals(propertyName)) return "ROOT_CONTRACT_VERSION";
+            if ("regions".equals(propertyName)) return "ROOT_REGIONS";
+            if ("elements".equals(propertyName)) return "ROOT_ELEMENTS";
+        }
+        if (ownerIs(owner, RegionOutput.class)) {
+            if ("regionId".equals(propertyName)) return "REGION_ID";
+            if ("parentRegionId".equals(propertyName)) return "REGION_PARENT_ID";
+            if ("kind".equals(propertyName)) return "REGION_KIND";
+            if ("multiplicity".equals(propertyName)) return "REGION_MULTIPLICITY";
+            if ("readingOrder".equals(propertyName)) return "REGION_READING_ORDER";
+            if ("repeatGroupId".equals(propertyName)) return "REGION_REPEAT_GROUP_ID";
+            if ("evidence".equals(propertyName)) return "REGION_EVIDENCE";
+        }
+        if (ownerIs(owner, ElementOutput.class)) {
+            if ("elementId".equals(propertyName)) return "ELEMENT_ID";
+            if ("kind".equals(propertyName)) return "ELEMENT_KIND";
+            if ("proposedKey".equals(propertyName)) return "ELEMENT_PROPOSED_KEY";
+            if ("displayName".equals(propertyName)) return "ELEMENT_DISPLAY_NAME";
+            if ("multiplicity".equals(propertyName)) return "ELEMENT_MULTIPLICITY";
+            if ("valueHint".equals(propertyName)) return "ELEMENT_VALUE_HINT";
+            if ("regionIds".equals(propertyName)) return "ELEMENT_REGION_IDS";
+            if ("evidence".equals(propertyName)) return "ELEMENT_EVIDENCE";
+        }
+        if (ownerIs(owner, HierarchyOutput.class)) {
+            if ("contractVersion".equals(propertyName)) return "ROOT_CONTRACT_VERSION";
+            if ("rootEntityId".equals(propertyName)) return "ROOT_ENTITY_ID";
+            if ("entities".equals(propertyName)) return "ROOT_ENTITIES";
+            if ("relationships".equals(propertyName)) return "ROOT_RELATIONSHIPS";
+        }
+        if (ownerIs(owner, EntityOutput.class)) {
+            if ("entityId".equals(propertyName)) return "ENTITY_ID";
+            if ("schemaKey".equals(propertyName)) return "ENTITY_SCHEMA_KEY";
+            if ("displayName".equals(propertyName)) return "ENTITY_DISPLAY_NAME";
+            if ("regionIds".equals(propertyName)) return "ENTITY_REGION_IDS";
+            if ("supportingElementIds".equals(propertyName)) return "ENTITY_ELEMENT_IDS";
+        }
+        if (ownerIs(owner, RelationshipOutput.class)) {
+            if ("relationshipId".equals(propertyName)) return "RELATIONSHIP_ID";
+            if ("parentEntityId".equals(propertyName)) return "RELATIONSHIP_PARENT_ID";
+            if ("childEntityId".equals(propertyName)) return "RELATIONSHIP_CHILD_ID";
+            if ("fieldKey".equals(propertyName)) return "RELATIONSHIP_FIELD_KEY";
+            if ("displayName".equals(propertyName)) return "RELATIONSHIP_DISPLAY_NAME";
+            if ("cardinality".equals(propertyName)) return "RELATIONSHIP_CARDINALITY";
+            if ("regionId".equals(propertyName)) return "RELATIONSHIP_REGION_ID";
+            if ("supportingElementIds".equals(propertyName)) return "RELATIONSHIP_ELEMENT_IDS";
+        }
+        if (ownerIs(owner, BindingOutput.class)) {
+            if ("contractVersion".equals(propertyName)) return "ROOT_CONTRACT_VERSION";
+            if ("bindings".equals(propertyName)) return "ROOT_BINDINGS";
+        }
+        if (ownerIs(owner, BindingItem.class)) {
+            if ("elementId".equals(propertyName)) return "BINDING_ELEMENT_ID";
+            if ("entityId".equals(propertyName)) return "BINDING_ENTITY_ID";
+        }
+        if (ownerIs(owner, VisualViewEvidence.class)) {
+            if ("viewId".equals(propertyName)) return "EVIDENCE_VIEW_ID";
+            if ("boundingBox".equals(propertyName)) return "EVIDENCE_BOUNDING_BOX";
+        }
+        if (ownerIs(owner, CandidateBoundingBox.class)
+                && ("left".equals(propertyName) || "top".equals(propertyName)
+                || "right".equals(propertyName) || "bottom".equals(propertyName))) {
+            return "BOUNDING_BOX_COORDINATE";
+        }
+        return null;
+    }
+
+    private static boolean ownerIs(Object owner, Class<?> expectedType) {
+        return owner == expectedType || expectedType.isInstance(owner);
     }
 
     private static boolean containsType(Throwable failure, String simpleName) {

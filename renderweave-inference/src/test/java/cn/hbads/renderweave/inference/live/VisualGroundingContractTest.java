@@ -93,9 +93,16 @@ class VisualGroundingContractTest {
                 InvalidVisualAnalysisException.class, () -> codec.parseElements(
                 elementsJson() + "{}", views, List.of(IMAGE_ID)
         )).diagnosticCode());
-        assertEquals("VISUAL_GROUNDING_JSON_SHAPE_INVALID", assertThrows(
+        assertEquals("VISUAL_GROUNDING_JSON_SHAPE_INVALID_REGION_READING_ORDER", assertThrows(
                 InvalidVisualAnalysisException.class, () -> codec.parseElements(
                 elementsJson().replace("\"readingOrder\":0", "\"readingOrder\":\"0\""),
+                views, List.of(IMAGE_ID)
+        )).diagnosticCode());
+        assertEquals("VISUAL_GROUNDING_JSON_SHAPE_INVALID_ROOT_REGIONS", assertThrows(
+                InvalidVisualAnalysisException.class, () -> codec.parseElements(
+                elementsJson().replaceFirst(
+                        "\"regions\":\\[", "\"regions\":\"not-an-array\",\"ignored\":["
+                ),
                 views, List.of(IMAGE_ID)
         )).diagnosticCode());
         assertEquals("VISUAL_GROUNDING_JSON_ENUM_INVALID", assertThrows(
