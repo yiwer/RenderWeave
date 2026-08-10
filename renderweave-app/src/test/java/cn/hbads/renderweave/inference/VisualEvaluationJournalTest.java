@@ -105,6 +105,34 @@ class VisualEvaluationJournalTest {
     }
 
     @Test
+    void closedAuthorizationCanOnlyArchiveInterruptedReservedExecution(@TempDir Path directory) {
+        var open = authorization("visual-journal-closed-recovery", 2);
+        var budget = new VisualEvaluationGoalBudget(directory.resolve("goal"),
+                JsonMapper.builder().build(), NOW);
+        var journalDirectory = directory.resolve("journal");
+        var openJournal = journal(journalDirectory, open, NOW);
+        var caseId = open.caseIds().getFirst();
+        var runId = UUID.randomUUID();
+        try (var ignored = openJournal.acquireBatchLease(NOW)) {
+            var execution = openJournal.beginAssignment(caseId, NOW);
+            openJournal.bindRun(PROFILE_ID + "|" + caseId, execution, runId, NOW);
+            budget.reserve(open, request(runId, 0), NOW);
+        }
+
+        var closedJournal = journal(journalDirectory, closed(open), NOW.plusSeconds(1));
+        assertThrows(IllegalStateException.class,
+                () -> closedJournal.acquireBatchLease(NOW.plusSeconds(1)));
+        try (var ignored = closedJournal.acquireClosedRecoveryLease()) {
+            var recovery = closedJournal.recoverInterruptedAfterClosure(budget, NOW.plusSeconds(2));
+            assertEquals(List.of(caseId), recovery.abandonedCaseIds());
+            assertTrue(recovery.retriableCaseIds().isEmpty());
+            assertThrows(IllegalStateException.class,
+                    () -> closedJournal.beginAssignment(open.caseIds().get(1), NOW.plusSeconds(3)));
+        }
+        assertEquals(List.of(PROFILE_ID + "|" + caseId), closedJournal.terminalAssignmentKeys());
+    }
+
+    @Test
     void completionMustExactlyMatchGoalReservationUsage(@TempDir Path directory) {
         var authorization = authorization("visual-journal-binding", 1);
         var budget = new VisualEvaluationGoalBudget(directory.resolve("goal"),
@@ -186,6 +214,17 @@ class VisualEvaluationJournalTest {
                 Math.multiplyExact(caseCount, 8), 500_000, 4_000_000, Math.min(caseCount, 5),
                 "yiwer", NOW.minusSeconds(60).toString(), NOW.plusSeconds(43_200).toString(),
                 "Repository synthetic visual evaluation"
+        );
+    }
+
+    private static VisualEvaluationAuthorization closed(VisualEvaluationAuthorization value) {
+        return new VisualEvaluationAuthorization(
+                value.authorizationVersion(), value.authorizationId(), "CLOSED", value.phase(),
+                value.inputClassification(), value.corpusVersion(), value.corpusSourceSha256(),
+                value.evaluationIdentity(), value.profileId(), value.profileSnapshotSha256(), value.model(),
+                value.caseIds(), value.maximumProviderAttempts(), value.maximumTotalTokens(),
+                value.maximumCostMicrosCny(), value.maximumCasesPerBatch(), value.approvedBy(),
+                value.approvedAt(), value.expiresAt(), value.approvalScope()
         );
     }
 

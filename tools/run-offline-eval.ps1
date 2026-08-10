@@ -21,6 +21,7 @@ $inferenceTestClasses = @(
 )
 $applicationTestClasses = @(
     'DashScopeVisualEvaluationBatchLimitTest',
+    'VisualEvaluationClosedRecoveryTest',
     'VisualEvaluationGoalBudgetTest',
     'VisualEvaluationJournalTest',
     'VisualEvaluationIdentityTest',

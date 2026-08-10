@@ -136,6 +136,28 @@ record VisualEvaluationAuthorization(
         }
     }
 
+    void requireClosed() {
+        if (!"CLOSED".equals(status)) {
+            throw new IllegalStateException("VISUAL_EVALUATION_AUTHORIZATION_NOT_CLOSED");
+        }
+        if (approvedBy == null || approvedBy.isBlank() || approvalScope == null || approvalScope.isBlank()
+                || approvedAt == null || expiresAt == null) {
+            throw new IllegalStateException("VISUAL_EVALUATION_APPROVAL_INCOMPLETE");
+        }
+        try {
+            var approved = Instant.parse(approvedAt);
+            var expires = Instant.parse(expiresAt);
+            if (!expires.isAfter(approved)
+                    || Duration.between(approved, expires).compareTo(MAXIMUM_AUTHORIZATION_WINDOW) > 0) {
+                throw new IllegalStateException("VISUAL_EVALUATION_APPROVAL_TIME_INVALID");
+            }
+        } catch (IllegalStateException expected) {
+            throw expected;
+        } catch (RuntimeException invalid) {
+            throw new IllegalStateException("VISUAL_EVALUATION_APPROVAL_TIME_INVALID", invalid);
+        }
+    }
+
     void requireCorpus(VisualStageCorpus corpus) {
         Objects.requireNonNull(corpus, "corpus");
         if (!Objects.equals(corpusSourceSha256, corpus.sourceSha256())) {

@@ -92,6 +92,15 @@ final class VisualEvaluationJournal {
 
     BatchLease acquireBatchLease(Instant now) {
         authorization.requireOpen(Objects.requireNonNull(now, "now"));
+        return acquireLease();
+    }
+
+    BatchLease acquireClosedRecoveryLease() {
+        authorization.requireClosed();
+        return acquireLease();
+    }
+
+    private BatchLease acquireLease() {
         synchronized (this) {
             if (batchLock != null && batchLock.isValid()) {
                 throw new IllegalStateException("VISUAL_EVALUATION_BATCH_ALREADY_ACTIVE");
@@ -211,7 +220,18 @@ final class VisualEvaluationJournal {
     Recovery recoverInterrupted(VisualEvaluationGoalBudget goalBudget, Instant now) {
         requireBatchLease();
         authorization.requireOpen(now);
+        return recoverInterruptedInternal(goalBudget, now);
+    }
+
+    Recovery recoverInterruptedAfterClosure(VisualEvaluationGoalBudget goalBudget, Instant now) {
+        requireBatchLease();
+        authorization.requireClosed();
+        return recoverInterruptedInternal(goalBudget, now);
+    }
+
+    private Recovery recoverInterruptedInternal(VisualEvaluationGoalBudget goalBudget, Instant now) {
         Objects.requireNonNull(goalBudget, "goalBudget");
+        Objects.requireNonNull(now, "now");
         return withStateLock(() -> {
             var state = readState();
             var executions = new ArrayList<Execution>();
