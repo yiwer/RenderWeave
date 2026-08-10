@@ -145,7 +145,9 @@ class InferenceApiTest {
 
         var edited = current.deepCopy();
         var field = (ObjectNode) edited.path("schemas").get(0).path("fields").get(0);
-        ((ObjectNode) field.path("assessment")).put("resolution", "RESOLVED_BY_EDIT");
+        // A stale/older review client may edit the semantic value while still submitting CONFIRMED.
+        // The save boundary must persist the truthful RESOLVED_BY_EDIT state instead of rejecting it.
+        ((ObjectNode) field.path("assessment")).put("resolution", "CONFIRMED");
         var value = (ObjectNode) field.path("value");
         value.put("kind", "TEXT");
         value.putNull("items");

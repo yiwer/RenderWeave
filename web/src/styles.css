@@ -6148,6 +6148,11 @@ button.required-toggle.active,
 .candidate-resolution-actions button { min-height: 44px; font-size: 12px; }
 .candidate-resolution-actions small { font-size: 10px; }
 .candidate-resolution-actions.single-action { grid-template-columns: 1fr; }
+.candidate-resolution-actions.edited-item { grid-template-columns: 1fr; }
+.candidate-edit-resolved { display: flex; align-items: center; gap: 8px; padding: 9px 10px; border: 1px solid #b7ccb9; border-radius: 7px; background: #eef5ee; color: var(--success); }
+.candidate-edit-resolved > span { display: flex; min-width: 0; flex-direction: column; gap: 2px; }
+.candidate-edit-resolved strong { color: #315d3a; font-size: 12px; }
+.candidate-edit-resolved small { color: #5b7561; font-size: 10px; line-height: 1.4; }
 
 .evidence-image-tabs { display: flex; gap: 5px; margin-bottom: 8px; overflow-x: auto; }
 .evidence-image-tabs button { min-width: 70px; min-height: 44px; padding: 0 9px; border: 1px solid var(--hairline); border-radius: 7px; background: var(--surface-soft); color: var(--muted); font-size: 11px; font-weight: 750; }

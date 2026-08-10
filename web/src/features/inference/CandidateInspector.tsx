@@ -72,6 +72,7 @@ export function CandidateInspector({
   const itemId = field?.candidateFieldId ?? schema.candidateSchemaId;
   const itemProblems = state.snapshot.problems.filter((problem) => problem.itemId === itemId);
   const removed = item.assessment.resolution === 'REMOVED';
+  const resolvedByEdit = item.assessment.resolution === 'RESOLVED_BY_EDIT';
   const rootSchema = field === null && schema.candidateSchemaId === state.draft.rootCandidateSchemaId;
   return (
     <aside className="candidate-inspector" aria-label="Candidate 属性与证据">
@@ -100,18 +101,25 @@ export function CandidateInspector({
 
       <AssessmentPanel assessment={item.assessment} source={item.source} />
       {!readOnly && item.source === 'AI' && !removed && (
-        <section className="candidate-resolution-actions" aria-label="逐项审核操作">
+        <section className={`candidate-resolution-actions ${resolvedByEdit ? 'edited-item' : ''}`} aria-label="逐项审核操作">
           <span>只处理当前项</span>
-          <button
-            type="button"
-            className="confirm-candidate"
-            disabled={field ? field.value.kind === 'UNRESOLVED' || field.value.kind === 'CONFLICT' : false}
-            onClick={() => field
-              ? dispatch({ type: 'resolve-field', schemaId: schema.candidateSchemaId, fieldId: field.candidateFieldId, resolution: 'CONFIRMED' })
-              : dispatch({ type: 'resolve-schema', schemaId: schema.candidateSchemaId, resolution: 'CONFIRMED' })}
-          >
-            <Check aria-hidden="true" size={14} />确认当前项
-          </button>
+          {resolvedByEdit ? (
+            <div className="candidate-edit-resolved">
+              <Check aria-hidden="true" size={15} />
+              <span><strong>已通过编辑解决</strong><small>保持此状态即可自动保存，无需再次确认。</small></span>
+            </div>
+          ) : (
+            <button
+              type="button"
+              className="confirm-candidate"
+              disabled={field ? field.value.kind === 'UNRESOLVED' || field.value.kind === 'CONFLICT' : false}
+              onClick={() => field
+                ? dispatch({ type: 'resolve-field', schemaId: schema.candidateSchemaId, fieldId: field.candidateFieldId, resolution: 'CONFIRMED' })
+                : dispatch({ type: 'resolve-schema', schemaId: schema.candidateSchemaId, resolution: 'CONFIRMED' })}
+            >
+              <Check aria-hidden="true" size={14} />确认当前项
+            </button>
+          )}
           {!rootSchema && (
             <button
               type="button"

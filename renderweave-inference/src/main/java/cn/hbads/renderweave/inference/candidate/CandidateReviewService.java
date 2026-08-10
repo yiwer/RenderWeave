@@ -89,14 +89,15 @@ public final class CandidateReviewService {
                     "CANDIDATE_NOT_REVIEWABLE", "Candidate can only be edited while the run requires review"
             );
         }
-        enforceEditPolicy(currentReview.original(), currentReview.current(), proposed);
-        candidateCodec.parse(candidateCodec.write(proposed));
+        var normalized = normalizeEditedAiResolutions(currentReview.original(), proposed);
+        enforceEditPolicy(currentReview.original(), currentReview.current(), normalized);
+        candidateCodec.parse(candidateCodec.write(normalized));
         var problems = new java.util.ArrayList<>(currentReview.problems().stream()
                 .filter(problem -> problem.severity() == CandidateProblemSeverity.WARNING)
                 .toList());
-        problems.addAll(validator.validate(proposed, validationContext(currentReview.run())));
+        problems.addAll(validator.validate(normalized, validationContext(currentReview.run())));
         var saved = replayStore.saveCandidate(
-                runId, expectedCandidateRevision, candidateCodec.write(proposed),
+                runId, expectedCandidateRevision, candidateCodec.write(normalized),
                 problemCodec.write(problems), clock.instant()
         );
         return snapshot(runStore.find(runId).orElseThrow(), saved);
@@ -205,6 +206,61 @@ public final class CandidateReviewService {
                         "New review items must use source USER without AI provenance");
             }
         }
+    }
+
+    private static CandidateBundle normalizeEditedAiResolutions(
+            CandidateBundle original,
+            CandidateBundle proposed
+    ) {
+        var originalItems = items(original);
+        var proposedItems = items(proposed);
+        var editedAiItemIds = proposedItems.values().stream()
+                .filter(proposedItem -> {
+                    var originalItem = originalItems.get(proposedItem.id());
+                    return originalItem != null
+                            && originalItem.source() == CandidateSource.AI
+                            && proposedItem.source() == CandidateSource.AI
+                            && !originalItem.semanticValue().equals(proposedItem.semanticValue())
+                            && proposedItem.resolution() != CandidateResolution.REMOVED;
+                })
+                .map(ReviewItem::id)
+                .collect(java.util.stream.Collectors.toUnmodifiableSet());
+        if (editedAiItemIds.isEmpty()) return proposed;
+
+        var schemas = proposed.schemas().stream()
+                .map(schema -> new CandidateSchema(
+                        schema.candidateSchemaId(),
+                        schema.proposedSchemaKey(),
+                        schema.displayName(),
+                        schema.source(),
+                        normalizeResolution(schema.assessment(), editedAiItemIds.contains(schema.candidateSchemaId())),
+                        schema.fields().stream()
+                                .map(field -> new CandidateField(
+                                        field.candidateFieldId(),
+                                        field.proposedFieldKey(),
+                                        field.displayName(),
+                                        field.required(),
+                                        field.value(),
+                                        field.source(),
+                                        normalizeResolution(
+                                                field.assessment(),
+                                                editedAiItemIds.contains(field.candidateFieldId())
+                                        )
+                                ))
+                                .toList()
+                ))
+                .toList();
+        return new CandidateBundle(proposed.contractVersion(), proposed.rootCandidateSchemaId(), schemas);
+    }
+
+    private static CandidateAssessment normalizeResolution(CandidateAssessment assessment, boolean editedAiItem) {
+        if (!editedAiItem || assessment.resolution() == CandidateResolution.RESOLVED_BY_EDIT) return assessment;
+        return new CandidateAssessment(
+                assessment.confidenceBps(),
+                assessment.inferred(),
+                CandidateResolution.RESOLVED_BY_EDIT,
+                assessment.evidence()
+        );
     }
 
     private static Map<UUID, ReviewItem> items(CandidateBundle bundle) {

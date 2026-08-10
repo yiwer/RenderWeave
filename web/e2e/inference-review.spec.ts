@@ -127,6 +127,8 @@ test('completes the four-step Candidate workflow with keyboard authoring and dur
 
   await page.getByLabel('Candidate 字段类型').selectOption('TEXT');
   await expect.poll(() => current.schemas[0]?.fields[0]?.value.kind).toBe('TEXT');
+  await expect(page.getByText('已通过编辑解决')).toBeVisible();
+  await expect(page.getByRole('button', { name: '确认当前项' })).toHaveCount(0);
   await page.getByRole('checkbox', { name: '启用最小长度' }).check();
   await page.getByLabel('最小长度', { exact: true }).fill('3');
   await expect.poll(() => current.schemas[0]?.fields[0]?.value.constraints.minLength).toBe('3');

@@ -28,6 +28,42 @@ describe('Candidate review session', () => {
     expect(edited.dirty).toBe(true);
   });
 
+  it('does not downgrade an edited AI item to CONFIRMED', () => {
+    const initial = createCandidateReviewState(snapshot());
+    const field = initial.draft.schemas[0]!.fields[0]!;
+    const edited = candidateReviewReducer(initial, {
+      type: 'edit-field', schemaId: initial.selectedSchemaId, fieldId: field.candidateFieldId,
+      patch: { displayName: '订单金额' },
+    });
+
+    const confirmed = candidateReviewReducer(edited, {
+      type: 'resolve-field', schemaId: initial.selectedSchemaId,
+      fieldId: field.candidateFieldId, resolution: 'CONFIRMED',
+    });
+
+    expect(confirmed.draft.schemas[0]!.fields[0]!.assessment.resolution).toBe('RESOLVED_BY_EDIT');
+  });
+
+  it('restores an edited and removed AI item as RESOLVED_BY_EDIT', () => {
+    const initial = createCandidateReviewState(snapshot());
+    const field = initial.draft.schemas[0]!.fields[0]!;
+    const edited = candidateReviewReducer(initial, {
+      type: 'edit-field', schemaId: initial.selectedSchemaId, fieldId: field.candidateFieldId,
+      patch: { displayName: '订单金额' },
+    });
+    const removed = candidateReviewReducer(edited, {
+      type: 'resolve-field', schemaId: initial.selectedSchemaId,
+      fieldId: field.candidateFieldId, resolution: 'REMOVED',
+    });
+
+    const restored = candidateReviewReducer(removed, {
+      type: 'resolve-field', schemaId: initial.selectedSchemaId,
+      fieldId: field.candidateFieldId, resolution: field.assessment.resolution,
+    });
+
+    expect(restored.draft.schemas[0]!.fields[0]!.assessment.resolution).toBe('RESOLVED_BY_EDIT');
+  });
+
   it('keeps edits made during an in-flight save and adopts the returned revision', () => {
     const initial = createCandidateReviewState(snapshot());
     const field = initial.draft.schemas[0]!.fields[0]!;

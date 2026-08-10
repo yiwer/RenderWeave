@@ -55,6 +55,7 @@ describe('Candidate review components', () => {
     const itemType = screen.getByLabelText('Candidate 数组元素类型') as HTMLSelectElement;
     expect([...itemType.options].map((option) => option.value)).not.toContain('ARRAY');
     expect(screen.getByText('编辑解决')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: '确认当前项' })).toBeNull();
     expect(container.querySelectorAll('[data-evidence-box]')).toHaveLength(1);
     expect(screen.getByText('/total')).toBeTruthy();
   });

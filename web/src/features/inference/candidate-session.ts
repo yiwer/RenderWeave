@@ -118,15 +118,28 @@ export function candidateReviewReducer(
       })), action.fieldId);
     case 'resolve-schema':
       if (action.schemaId === state.draft.rootCandidateSchemaId && action.resolution === 'REMOVED') return state;
-      return change(state, updateSchema(state.draft, action.schemaId, (schema) => ({
-        ...schema,
-        assessment: { ...schema.assessment, resolution: action.resolution },
-      })));
+      {
+        const schema = state.draft.schemas.find((item) => item.candidateSchemaId === action.schemaId);
+        if (!schema) return state;
+        const resolution = safeSchemaResolution(state.snapshot.original, schema, action.resolution);
+        if (resolution === schema.assessment.resolution) return state;
+        return change(state, updateSchema(state.draft, action.schemaId, (item) => ({
+          ...item,
+          assessment: { ...item.assessment, resolution },
+        })));
+      }
     case 'resolve-field':
-      return change(state, updateField(state.draft, action.schemaId, action.fieldId, (field) => ({
-        ...field,
-        assessment: { ...field.assessment, resolution: action.resolution },
-      })));
+      {
+        const field = state.draft.schemas.find((item) => item.candidateSchemaId === action.schemaId)
+          ?.fields.find((item) => item.candidateFieldId === action.fieldId);
+        if (!field) return state;
+        const resolution = safeFieldResolution(state.snapshot.original, field, action.resolution);
+        if (resolution === field.assessment.resolution) return state;
+        return change(state, updateField(state.draft, action.schemaId, action.fieldId, (item) => ({
+          ...item,
+          assessment: { ...item.assessment, resolution },
+        })));
+      }
     case 'save-start':
       return { ...state, saving: true, saveMessage: null };
     case 'save-success': {
@@ -163,6 +176,62 @@ function change(state: CandidateReviewState, draft: CandidateBundle, selectedFie
 function editedAssessment(item: CandidateSchema | CandidateField) {
   if (item.source === 'USER') return item.assessment;
   return { ...item.assessment, resolution: 'RESOLVED_BY_EDIT' as const };
+}
+
+function safeSchemaResolution(
+  original: CandidateBundle,
+  schema: CandidateSchema,
+  requested: CandidateResolution,
+) {
+  if (schema.source !== 'AI' || requested === 'REMOVED') return requested;
+  const source = original.schemas.find((item) => item.candidateSchemaId === schema.candidateSchemaId);
+  if (!source || source.proposedSchemaKey !== schema.proposedSchemaKey || source.displayName !== schema.displayName) {
+    return 'RESOLVED_BY_EDIT' as const;
+  }
+  return requested;
+}
+
+function safeFieldResolution(
+  original: CandidateBundle,
+  field: CandidateField,
+  requested: CandidateResolution,
+) {
+  if (field.source !== 'AI' || requested === 'REMOVED') return requested;
+  const source = original.schemas.flatMap((schema) => schema.fields)
+    .find((item) => item.candidateFieldId === field.candidateFieldId);
+  if (!source
+    || source.proposedFieldKey !== field.proposedFieldKey
+    || source.displayName !== field.displayName
+    || source.required !== field.required
+    || !candidateValueEquals(source.value, field.value)) return 'RESOLVED_BY_EDIT' as const;
+  return requested;
+}
+
+function candidateValueEquals(left: CandidateValue, right: CandidateValue): boolean {
+  if (left.kind !== right.kind
+    || !candidateValueOrNullEquals(left.items, right.items)
+    || !referenceEquals(left.reference, right.reference)
+    || left.observedKinds.length !== right.observedKinds.length
+    || left.observedKinds.some((value, index) => value !== right.observedKinds[index])) return false;
+  const leftConstraints = Object.entries(left.constraints);
+  const rightConstraints = Object.entries(right.constraints);
+  return leftConstraints.length === rightConstraints.length
+    && leftConstraints.every(([key, value]) => right.constraints[key] === value);
+}
+
+function candidateValueOrNullEquals(left: CandidateValue | null, right: CandidateValue | null) {
+  return left === null || right === null ? left === right : candidateValueEquals(left, right);
+}
+
+function referenceEquals(
+  left: CandidateValue['reference'],
+  right: CandidateValue['reference'],
+) {
+  if (left === null || right === null) return left === right;
+  return left.kind === right.kind
+    && left.candidateSchemaId === right.candidateSchemaId
+    && left.schemaKey === right.schemaKey
+    && left.versionTag === right.versionTag;
 }
 
 function updateSchema(
