@@ -1,6 +1,6 @@
 # RenderWeave v1 Phase 计划
 
-- 状态：P1–P4 implementation complete；P5 T5-1–T5-11 已完成通路、质量实测与安全硬化；P6 T6-1 已独立复核，T6-2 四步 AI Schema 识别工作台已完成 clean A1/独立 A2、最终成品 J1 待确认；T6-3a 产品 live 已开放，T6-3a.1 已修复 `assessment.evidence` 精确反馈并统一 ¥2 单次预留上界，T6-3a.2 已闭合 Nginx multipart 上限与非 JSON 413 UX，T6-3b 恢复演练待推进。历史评测 authorization 均为 `CLOSED`，四个产品 Profile 为 `EXPERIMENTAL` 且只在显式 product-live 部署中开放
+- 状态：P1–P4 implementation complete；P5 T5-1–T5-11 已完成通路、质量实测与安全硬化；P6 T6-1 已独立复核，T6-2 四步 AI Schema 识别工作台已完成 clean A1/独立 A2、最终成品 J1 待确认；T6-3a 产品 live 已开放，T6-3a.1 已修复 `assessment.evidence` 精确反馈并统一 ¥2 单次预留上界，T6-3a.2 已闭合 Nginx multipart 上限，T6-3a.3 已让常见超大设计图有界缩放后进入任务，T6-3b 恢复演练待推进。历史评测 authorization 均为 `CLOSED`，四个产品 Profile 为 `EXPERIMENTAL` 且只在显式 product-live 部署中开放
 - 日期：2026-08-10
 - Spec：[`specs/renderweave-v1.md`](../specs/renderweave-v1.md)
 - 原型：`/prototype/schema-studio?variant=A|B|C`
@@ -402,7 +402,8 @@ Phase 内任务只在真实前置依赖满足时并行。当前没有 atomic cla
 1. T6-3a：四个产品 DashScope Profile、每任务可选累计成本限额、独立 product-live 预算命名空间、V013、显式 Compose live overlay 与完整零 Provider A1。
 2. T6-3a.1：针对用户触发的 `assessment.evidence=null` 解码失败，将精确有限诊断送入 repair，冻结 Prompt 4 / Product Profile v2，并将四个产品 Profile 的单次保守预留上界统一为 2,000,000 micros CNY；clean server/web/e2e A1，未由 Agent 发起真实调用。
 3. T6-3a.2：将 Nginx `/api/` 请求体上限设为 35 MiB，使 1–34 MiB multipart 进入 Spring 的稳定边界；网关自身 413 返回 JSON Problem，前端对任意非 JSON 错误 fail-readable；clean Web A1 与真实容器 1.25/36 MiB 零任务探针通过。
-4. T6-3b：数据库与 Blob 备份/恢复、missing artifact、storage full、结构化观测与操作员演练；未完成前 T6-3 不报告完成。
+4. T6-3a.3：区分源图安全门与 4096 规范化目标；常见超大 PNG/JPEG 经有界 subsampling、高质量缩放、EXIF/sRGB/metadata 清理后进入任务，极端尺寸仍 fail-closed；clean Server/Web A1 与部署后 4097 像素零 Provider 探针通过。
+5. T6-3b：数据库与 Blob 备份/恢复、missing artifact、storage full、结构化观测与操作员演练；未完成前 T6-3 不报告完成。
 
 #### T6-4：最终 AC/非目标/安全能力审计
 - AC：AC-001–AC-025
