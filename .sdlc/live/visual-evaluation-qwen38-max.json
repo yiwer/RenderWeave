@@ -1,24 +1,24 @@
 {
   "authorizationVersion": "renderweave-visual-evaluation-authorization/1.0",
-  "authorizationId": "visual-v6-diagnostic-qwen38-max-transit-20260810",
-  "status": "CLOSED",
+  "authorizationId": "visual-v6-json-diagnostic-qwen38-max-transit-20260810",
+  "status": "PROPOSED",
   "phase": "CANARY",
   "inputClassification": "REPOSITORY_SYNTHETIC_ONLY",
   "corpusVersion": "renderweave-visual-stage-corpus/1.0",
   "corpusSourceSha256": "bf0db7bf0ac5c4e2b357cdd96c49ff70a7b30a5bc59f322a915020dc29fc605e",
-  "evaluationIdentity": "renderweave-visual-evaluation-tree-sha256/1:76cc4a73ee2620b377dd013104ca57afae53fd3bb1e36f56b2a9e4a7ab006c3b",
+  "evaluationIdentity": "renderweave-visual-evaluation-tree-sha256/1:e4fe8292946aaebccfb84654287cc595b4c99e7cf77330d0b9eaca786e4da7b8",
   "profileId": "dashscope-qwen38-max-product-v6-generic",
   "profileSnapshotSha256": "ebc821cd82f16e8a3c403a0b41d7422fd141ac8c179ca401bd7b6ff324ff3e85",
   "model": "qwen3.8-max",
   "caseIds": [
     "transit-board-v3"
   ],
-  "maximumProviderAttempts": 5,
-  "maximumTotalTokens": 100000,
-  "maximumCostMicrosCny": 4000000,
+  "maximumProviderAttempts": 2,
+  "maximumTotalTokens": 35000,
+  "maximumCostMicrosCny": 1500000,
   "maximumCasesPerBatch": 1,
   "approvedBy": "yiwer",
-  "approvedAt": "2026-08-10T15:37:00Z",
+  "approvedAt": "2026-08-10T15:51:00Z",
   "expiresAt": "2026-08-11T15:00:17Z",
-  "approvalScope": "Goal J1 CANARY diagnostic: one repository-synthetic transit-board-v3 case; exact qwen3.8-max product-v6-generic; at most 5 attempts, 100000 exposed tokens, CNY 4.00 and one case per batch within the active per-model 500000-token Goal cap"
+  "approvalScope": "Goal J1 CANARY decode diagnostic: one repository-synthetic transit-board-v3 case; exact qwen3.8-max product-v6-generic; at most 2 attempts, 35000 exposed tokens, CNY 1.50 and one case per batch within the active per-model 500000-token Goal cap"
 }
