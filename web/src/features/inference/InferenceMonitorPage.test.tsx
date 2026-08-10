@@ -103,7 +103,7 @@ describe('Inference monitor workspace', () => {
       .toBeGreaterThan(0);
     expect(screen.getAllByText('层级关系支撑 ID 列表不能为空').length)
       .toBeGreaterThan(0);
-    expect(screen.getAllByText('已按唯一 GROUP 证据归一化层级关系区域').length)
+    expect(screen.getAllByText('已按唯一容器区域 GROUP 归属归一化层级关系支撑').length)
       .toBeGreaterThan(0);
     expect(screen.getByText('已从持久检查点恢复')).toBeTruthy();
     expect(screen.getByText(/0\.007346/)).toBeTruthy();
@@ -294,7 +294,7 @@ function visualExecutionLog(runSnapshot: InferenceRunResponse): InferenceExecuti
         outputTokens: 2_400,
         costMicrosCny: 1_630,
         durationMillis: 15_200,
-        problemCodeCounts: { VISUAL_HIERARCHY_RELATIONSHIP_REGION_NORMALIZED: 1 },
+        problemCodeCounts: { VISUAL_HIERARCHY_RELATIONSHIP_SUPPORT_OWNER_NORMALIZED: 1 },
         completedAt: '2026-08-10T04:03:14Z',
       },
     ],

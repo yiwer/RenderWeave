@@ -284,7 +284,7 @@ test('keeps bounded visual diagnostics keyboard-accessible at 1024 without paylo
     mode: 'IMAGE_ONLY',
     stage: 'HIERARCHY',
     sequence: 8,
-    profileId: 'dashscope-qwen37-flash-20260715-product-v21-generic',
+    profileId: 'dashscope-qwen37-flash-20260715-product-v22-generic',
     sourceReference: 'repository-synthetic-transit-board-v3',
     failureCode: 'VISUAL_HIERARCHY_V2_RELATIONSHIP_SUPPORT_IDS_EMPTY',
   };
@@ -346,7 +346,7 @@ test('keeps bounded visual diagnostics keyboard-accessible at 1024 without paylo
         outputTokens: 2_400,
         costMicrosCny: 1_630,
         durationMillis: 15_200,
-        problemCodeCounts: { VISUAL_HIERARCHY_RELATIONSHIP_REGION_NORMALIZED: 1 },
+        problemCodeCounts: { VISUAL_HIERARCHY_RELATIONSHIP_SUPPORT_OWNER_NORMALIZED: 1 },
         completedAt: '2026-08-10T00:00:19Z',
       },
     ],
@@ -374,7 +374,7 @@ test('keeps bounded visual diagnostics keyboard-accessible at 1024 without paylo
   await expect(page.getByText('VISUAL_GROUNDING_PARENT_KIND_INVALID').first()).toBeVisible();
   await expect(page.getByText('VISUAL_HIERARCHY_V2_RELATIONSHIP_SUPPORT_IDS_EMPTY').first()).toBeVisible();
   await expect(page.getByText('层级关系支撑 ID 列表不能为空').first()).toBeVisible();
-  await expect(page.getByText('已按唯一 GROUP 证据归一化层级关系区域').first()).toBeVisible();
+  await expect(page.getByText('已按唯一容器区域 GROUP 归属归一化层级关系支撑').first()).toBeVisible();
   await expect(page.getByText('从检查点恢复后仍失败')).toBeVisible();
   await expect(page.getByText('raw-ocr-secret')).toHaveCount(0);
   await expect(page.getByText('provider-response-secret')).toHaveCount(0);

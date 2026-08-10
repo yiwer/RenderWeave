@@ -95,6 +95,8 @@ class PostgresLiveInferenceWorkflowTest {
             "dashscope-qwen37-flash-20260715-product-v20-generic";
     private static final String CONNECTION_NORMALIZED_HIERARCHY_PROFILE =
             "dashscope-qwen37-flash-20260715-product-v21-generic";
+    private static final String SUPPORT_OWNER_NORMALIZED_HIERARCHY_PROFILE =
+            "dashscope-qwen37-flash-20260715-product-v22-generic";
     private static final String HYBRID_VISUAL_PROFILE =
             "dashscope-qwen37-flash-product-v7-hybrid-generic";
     private static final String DOCUMENT_VISION_CAPABILITY =
@@ -976,6 +978,58 @@ class PostgresLiveInferenceWorkflowTest {
         );
         var finished = worker(recoveryProvider, blobs, T0.plus(Duration.ofMinutes(7)))
                 .processNext("relationship-region-connection-normalization-recovery").orElseThrow();
+
+        assertThat(finished.state())
+                .as("failure=%s attempts=%s", finished.failureCode(), workflowStore.attempts(created))
+                .isEqualTo(InferenceRunState.REVIEW_REQUIRED);
+        assertThat(recoveryProvider.requests).extracting(ProviderInferenceRequest::stage)
+                .containsExactly(InferenceStage.ELEMENT_BINDING);
+        assertThat(workflowStore.attempts(created)).extracting(attempt -> attempt.status())
+                .containsExactly(
+                        InferenceAttemptStatus.SUCCEEDED, InferenceAttemptStatus.SUCCEEDED,
+                        InferenceAttemptStatus.SUCCEEDED
+                );
+    }
+
+    @Test
+    void uniqueRelationshipRegionGroupOwnerNormalizesAndResumesAtBindingAfterLeaseExpiry() {
+        var blobs = new MemoryBlobStore();
+        var created = createGroundedVisual(
+                blobs, "relationship-support-owner-normalization",
+                SUPPORT_OWNER_NORMALIZED_HIERARCHY_PROFILE
+        );
+        var slotSupport = groundedStationHierarchy().replace(
+                "\"regionId\":\"routes\",\"supportingElementIds\":[\"route-group\"]",
+                "\"regionId\":\"routes\",\"supportingElementIds\":[\"route-number\"]"
+        );
+        var firstProvider = new ScriptedProvider(
+                request -> response(request, groundedStationElements()),
+                request -> response(request, slotSupport)
+        );
+        var firstWorker = worker(firstProvider, blobs, T0.plusSeconds(1));
+        var current = runs.claimNextLive(
+                "relationship-support-owner-normalization-first", T0.plusSeconds(1),
+                Duration.ofMinutes(5)
+        ).orElseThrow();
+
+        current = firstWorker.advance(current);
+        current = firstWorker.advance(current);
+
+        assertThat(current.stage()).isEqualTo(InferenceStage.ELEMENT_BINDING);
+        assertThat(current.checkpointJson()).contains("renderweave-visual-hierarchy/2.0");
+        assertThat(firstProvider.requests).extracting(ProviderInferenceRequest::stage)
+                .containsExactly(InferenceStage.OBSERVE, InferenceStage.HIERARCHY);
+        assertThat(workflowStore.attempts(created).get(1).problemCodeCounts())
+                .containsExactlyInAnyOrderEntriesOf(Map.of(
+                        "VISUAL_HIERARCHY_RELATIONSHIP_CARDINALITY_DERIVED", 3,
+                        "VISUAL_HIERARCHY_RELATIONSHIP_SUPPORT_OWNER_NORMALIZED", 1
+                ));
+
+        var recoveryProvider = new ScriptedProvider(
+                request -> response(request, groundedStationBindings())
+        );
+        var finished = worker(recoveryProvider, blobs, T0.plus(Duration.ofMinutes(7)))
+                .processNext("relationship-support-owner-normalization-recovery").orElseThrow();
 
         assertThat(finished.state())
                 .as("failure=%s attempts=%s", finished.failureCode(), workflowStore.attempts(created))

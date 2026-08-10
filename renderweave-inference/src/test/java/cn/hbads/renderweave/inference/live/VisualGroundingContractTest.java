@@ -284,6 +284,96 @@ class VisualGroundingContractTest {
     }
 
     @Test
+    void supportOwnerPolicyNormalizesOnlyOneExactContainerRegionGroupOwner() throws Exception {
+        var observed = codec.parseElements(elementsJson(), views(), List.of(IMAGE_ID));
+        var slotSupport = hierarchyJson().replace(
+                "\"regionId\":\"repeat\",\"supportingElementIds\":[\"row-group\"]}",
+                "\"regionId\":\"repeat\",\"supportingElementIds\":[\"item-label\"]}"
+        );
+
+        var v21Failure = assertThrows(InvalidVisualAnalysisException.class, () ->
+                codec.parseHierarchy(
+                        slotSupport, observed.inventory(), observed.grounding(),
+                        VisualRelationshipCardinalityPolicy.SUPPORT_GROUP_DERIVED,
+                        VisualHierarchyPrerequisitePolicy.RELATIONSHIP_REGION_GROUP_OWNER_REQUIRED,
+                        VisualHierarchyRegionDiagnosticPolicy.DETAILED_FIXED_CODES,
+                        VisualRelationshipSupportIdPolicy.CANONICALIZE_EXACT_DUPLICATES,
+                        VisualRelationshipRegionPolicy
+                                .UNIQUE_CARDINALITY_AND_CONNECTION_COMPATIBLE_GROUP_REGION
+                )
+        );
+        assertEquals("VISUAL_HIERARCHY_V2_SUPPORT_NOT_GROUP", v21Failure.diagnosticCode());
+
+        var normalized = codec.parseHierarchy(
+                slotSupport, observed.inventory(), observed.grounding(),
+                VisualRelationshipCardinalityPolicy.SUPPORT_GROUP_DERIVED,
+                VisualHierarchyPrerequisitePolicy.RELATIONSHIP_REGION_GROUP_OWNER_REQUIRED,
+                VisualHierarchyRegionDiagnosticPolicy.DETAILED_FIXED_CODES,
+                VisualRelationshipSupportIdPolicy
+                        .CANONICALIZE_EXACT_DUPLICATES_AND_UNIQUE_REGION_GROUP_OWNER,
+                VisualRelationshipRegionPolicy
+                        .UNIQUE_CARDINALITY_AND_CONNECTION_COMPATIBLE_GROUP_REGION
+        );
+        assertEquals(List.of("row-group"),
+                normalized.hierarchy().relationships().getFirst().supportingElementIds());
+        assertEquals(VisualMultiplicity.MANY,
+                normalized.hierarchy().relationships().getFirst().cardinality());
+        assertEquals(1, normalized.normalizedRelationshipSupportOwners());
+        assertEquals(0, normalized.normalizedRelationshipSupportIdReferences());
+        assertEquals(0, normalized.normalizedRelationshipRegions());
+
+        var unknown = assertThrows(InvalidVisualAnalysisException.class, () ->
+                codec.parseHierarchy(
+                        slotSupport.replace("[\"item-label\"]}", "[\"unknown-element\"]}"),
+                        observed.inventory(), observed.grounding(),
+                        VisualRelationshipCardinalityPolicy.SUPPORT_GROUP_DERIVED,
+                        VisualHierarchyPrerequisitePolicy.RELATIONSHIP_REGION_GROUP_OWNER_REQUIRED,
+                        VisualHierarchyRegionDiagnosticPolicy.DETAILED_FIXED_CODES,
+                        VisualRelationshipSupportIdPolicy
+                                .CANONICALIZE_EXACT_DUPLICATES_AND_UNIQUE_REGION_GROUP_OWNER,
+                        VisualRelationshipRegionPolicy
+                                .UNIQUE_CARDINALITY_AND_CONNECTION_COMPATIBLE_GROUP_REGION
+                )
+        );
+        assertEquals("VISUAL_HIERARCHY_V2_SUPPORT_ELEMENT_UNKNOWN", unknown.diagnosticCode());
+
+        var nonContainer = assertThrows(InvalidVisualAnalysisException.class, () ->
+                codec.parseHierarchy(
+                        slotSupport.replace("\"regionId\":\"repeat\"", "\"regionId\":\"item-a\""),
+                        observed.inventory(), observed.grounding(),
+                        VisualRelationshipCardinalityPolicy.SUPPORT_GROUP_DERIVED,
+                        VisualHierarchyPrerequisitePolicy.RELATIONSHIP_REGION_GROUP_OWNER_REQUIRED,
+                        VisualHierarchyRegionDiagnosticPolicy.DETAILED_FIXED_CODES,
+                        VisualRelationshipSupportIdPolicy
+                                .CANONICALIZE_EXACT_DUPLICATES_AND_UNIQUE_REGION_GROUP_OWNER,
+                        VisualRelationshipRegionPolicy
+                                .UNIQUE_CARDINALITY_AND_CONNECTION_COMPATIBLE_GROUP_REGION
+                )
+        );
+        assertEquals("VISUAL_HIERARCHY_V2_SUPPORT_NOT_GROUP", nonContainer.diagnosticCode());
+
+        var ambiguousObserved = codec.parseElements(
+                elementsJson().replace(
+                        "{\"elementId\":\"item-label\"",
+                        "{\"elementId\":\"second-row-group\",\"kind\":\"GROUP\",\"proposedKey\":\"items2\",\"displayName\":\"第二重复组\",\"multiplicity\":\"MANY\",\"valueHint\":null,\"regionIds\":[\"repeat\"],\"evidence\":[{\"viewId\":\"view-00-overview-00\",\"boundingBox\":{\"left\":0,\"top\":2000,\"right\":10000,\"bottom\":10000}}]},\n                    {\"elementId\":\"item-label\""
+                ), views(), List.of(IMAGE_ID)
+        );
+        var ambiguous = assertThrows(InvalidVisualAnalysisException.class, () ->
+                codec.parseHierarchy(
+                        slotSupport, ambiguousObserved.inventory(), ambiguousObserved.grounding(),
+                        VisualRelationshipCardinalityPolicy.SUPPORT_GROUP_DERIVED,
+                        VisualHierarchyPrerequisitePolicy.RELATIONSHIP_REGION_GROUP_OWNER_REQUIRED,
+                        VisualHierarchyRegionDiagnosticPolicy.DETAILED_FIXED_CODES,
+                        VisualRelationshipSupportIdPolicy
+                                .CANONICALIZE_EXACT_DUPLICATES_AND_UNIQUE_REGION_GROUP_OWNER,
+                        VisualRelationshipRegionPolicy
+                                .UNIQUE_CARDINALITY_AND_CONNECTION_COMPATIBLE_GROUP_REGION
+                )
+        );
+        assertEquals("VISUAL_HIERARCHY_V2_SUPPORT_NOT_GROUP", ambiguous.diagnosticCode());
+    }
+
+    @Test
     void relationshipRegionPolicyNormalizesOnlyUniqueCardinalityCompatibleGroupOwnership() throws Exception {
         var observed = codec.parseElements(elementsJson(), views(), List.of(IMAGE_ID));
         var wrongSingularRegion = hierarchyJson().replace(
