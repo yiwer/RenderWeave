@@ -447,6 +447,10 @@ QUEUED → RUNNING → REVIEW_REQUIRED → APPLYING → COMPLETED
 - 模型调用已产生的费用即使取消也计入统计。
 - FAILED/CANCELLED 是终态；人工重试创建新 run，记录 `retryOfRunId`，复用规范化输入并重新预算。
 - SSE 仅通知状态变化：每 run 单调 sequence、至少一次、支持 Last-Event-ID；客户端去重后 GET authoritative snapshot。
+- 每个 run 提供只读结构化执行日志：authoritative snapshot、最多 1000 条事件的 sequence/type/state/stage/time，
+  以及全部 attempt 的 stage/status/model、Token、费用、耗时、outcome 与 bounded problem-code counts。日志不得
+  返回 event data、Provider request id、图片、RootDocument、Prompt、Candidate/model 原文或思维链；窗口截断
+  必须显式标记，活动任务的 Web 时间线在状态区之后持续刷新。
 
 ### 8.7 Provider/Profile 安全边界
 
@@ -484,6 +488,10 @@ QUEUED → RUNNING → REVIEW_REQUIRED → APPLYING → COMPLETED
 - 严格 Candidate 解码失败时，attempt telemetry 与下一次 repair 必须使用同一个 bounded diagnostic。
   不得把 `CANDIDATE_DECODE_CONSTRUCTOR_INVALID_ASSESSMENT_EVIDENCE` 等精确合同错误降级为通用
   `LIVE_STRUCTURE_OUTPUT_INVALID`；Prompt 明确要求每个 `assessment.evidence` 都存在且为非 null 数组。
+- IMAGE_ONLY Provider Candidate 可在 validator 之前做窄域确定性技术规范化：非法/缺失/重复 SchemaKey 生成
+  合法唯一技术 key；无 items/reference 的支持标量清空冗余 observedKinds，并分别留下 WARNING。不得借此修改
+  fieldKey、类型、约束、证据、置信度、resolution、引用或图拓扑；规范化后只剩人工 blocker 时进入审核，
+  仍含 trust/未知 blocker 的组合继续 fail-closed。
 - 产品 run 可选 `costLimitMicrosCny`，范围 1..100,000,000；若设置，首次识别和最多两次 repair 的
   已结算/仍预留成本累计不得超过该硬上限，超限在 Provider 调用前以稳定问题失败。若留空，不添加
   run 级累计上限，但仍受 Profile 单次保守费用上界、最大输出 token 与最多三次调用约束。人工 retry
