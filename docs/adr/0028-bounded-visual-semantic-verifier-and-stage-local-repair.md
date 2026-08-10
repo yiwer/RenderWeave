@@ -159,3 +159,11 @@ server `.sdlc/evidence/20260811-045814-server`（383 tests、6 gated skip）、w
 `.sdlc/evidence/20260811-045937-web`（73 tests + build）、E2E `.sdlc/evidence/20260811-050010-e2e`
 （18 passed、1 gated skip）与 clean fast `.sdlc/evidence/20260811-050115-fast` 均为 A1 PASS。本增量没有 Provider
 调用，三份 ledger 保持 CLOSED；Profile 继续 `EXPERIMENTAL`，必须先用新的精确 identity/snapshot 实证三阶段。
+
+Plus product-v17 随后以 `178bafb` PROPOSED → `8e0c31e` OPEN → `7107303` CLOSED 完成单 case lifecycle；
+PROPOSED 负探针精确命中 `VISUAL_EVALUATION_AUTHORIZATION_NOT_OPEN`，Goal state/guard、255 reservations 与 target
+evidence 均未变化。唯一 live wrapper exit 0 后先 CLOSED 再读取 evidence。独立 verifier A2 重建 5 attempts、
+27,498 input + 7,733 output tokens、142,447 ms、0 abandoned 与 payload scan PASS。OBSERVE 首次接受并记录
+20 SLOT/1 GROUP；四次 HIERARCHY 依次为三次 `VISUAL_HIERARCHY_V2_REGION_OWNERSHIP_INVALID` 和一次
+`VISUAL_HIERARCHY_V2_SUPPORT_NOT_GROUP`，没有触发 exact-owner rewind，也没有进入 BINDING。该结果说明 4.4
+仍只改变可证明的失败边界，不构成 Profile 晋级；Max 的三阶段前置条件仍未成立。
