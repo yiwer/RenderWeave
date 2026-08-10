@@ -1,6 +1,7 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-10 T6-3a.8 已发布 Product v3 串行视觉识别协议：元素盘点 → 层级规划 → 元素归属 → 数据定义；严格中间契约与最终拓扑校验防止把站牌 → 线路[] → 停靠站点[] 压扁为标量数组，并把站点中英文名和温馨提示子 Schema 纳入合成回归。`ea763cb` clean Server 138 / Web 66 / E2E 16 A1；未调用 Provider，真实模型质量验证待独立授权。
 - 2026-08-10 T6-3a.7 已将历史任务固定为智能识别默认页，右上角分别进入新增识别与确定性样本；`/inference/new` 只加载 DashScope Live 输入，`/inference/samples` 独立承载零网络 Replay，并移除跨页面卡片导航。`378046e` clean Web 66 / E2E 16 A1；未调用 Provider。
 - 2026-08-10 T6-3a.6 已把智能识别拆成历史任务、新增输入、识别监控、识别结果四个可深链版面；创建/重试先进入监控，结果页只承载 Candidate。Candidate save 同时兼容旧页面，把已编辑 AI 项安全归一为 `RESOLVED_BY_EDIT`。`fe9ce0d` clean Server 134 / Web 66 / E2E 16，`0375c86` clean Web 66 / E2E 16 A1；未调用 Provider。
 - 2026-08-10 T6-3a.5 已修复真实 IMAGE_ONLY 证据框坐标空间错判：服务端对明确的像素坐标族换算为 0..10000 并保留 WARNING，Web 同规则兼容历史 Candidate；审核页聚合重复诊断、隐藏单 Schema 排序列并重排字段信息层级。`6fde235` clean Server 134 tests / Web 60 tests / E2E 16 passed A1，未调用 Provider。
@@ -20,7 +21,7 @@
 - 2026-08-09 T5-10 IMAGE_ONLY live 诊断已完成并独立 A2 PASS：20/20 case 均 `LIVE_REPAIR_BUDGET_EXHAUSTED`，60/60 attempts 均为 `CANDIDATE_DECODE_VALUE_INVALID`；197,321 tokens / ¥0.642106，ledger 已 CLOSED。
 - 2026-08-10 T5-11 已离线细分值级解码 taxonomy：enum / constructor / format 均使用有限且 owner-bound 的 contract slot，关闭 coercion；clean server A1 与独立 A2 PASS（0 Blocker / 0 High / 0 Medium），Provider attempts=0。
 - 2026-08-10 T6-1 容量基线已完成：10k Draft / 100k revision / 10k Static / 10k run、10 条并发生产 Controller 旅程、共享 2 worker lanes；clean server/capacity A1 与独立 A2 PASS，Provider attempts/reservations=0，不宣称生产 SLA。
-- 产品模型目录固定为 `qwen3.7-flash`、`qwen3.7-plus`、`qwen3.8-max`、`qwen3.7-max-2026-06-08`；当前可见目录使用 Product Profile v2 / Prompt 4 / ¥2 单次预留上界，历史 product-v1 与 pinned/评测 Profile 保持不可变并从产品选择器隐藏。
+- 产品模型目录固定为 `qwen3.7-flash`、`qwen3.7-plus`、`qwen3.8-max`、`qwen3.7-max-2026-06-08`；当前可见目录使用 Product Profile v3，IMAGE_ONLY 依次绑定元素/层级/归属 Prompt 1 与 Candidate Prompt 5，单次预留上界仍为 ¥2。历史 product-v1/v2 与 pinned/评测 Profile 保持不可变并从产品选择器隐藏。
 - 需求访谈已收束，v1 产品语义以 `specs/renderweave-v1.md` 为准。
 - 生命周期状态：P0 `accepted`；P1–P4 `automated_verified`；P5 Flash / Plus / Prompt v2 / Grounded v2 / T5-10 诊断均为 `live_independently_reviewed`，T5-9/T5-11 与 P6/T6-1 为 `independently_reviewed`；P6/T6-2 为 `human_acceptance_pending`；T6-3a 为 `automated_verified`、T6-3b pending。所有 DashScope Profile 仍为 `EXPERIMENTAL`；历史评测授权均 CLOSED，基础 Compose 默认关闭，显式 product-live overlay 已按用户授权开放。
 
@@ -71,6 +72,10 @@
 - [x] T6-3a.2：修复 Nginx 1 MiB multipart 截断与前端 HTML 413 JSON 解析崩溃；完成 clean Web A1、`nginx -t` 和两档真实网关零任务探针。
 - [x] T6-3a.3：服务端自动规范化常见超大设计图并保留源图安全硬门；完成 unit、真实 PostgreSQL API、clean Server/Web A1 和部署后零 Provider 探针。
 - [x] T6-3a.4：修复 IMAGE_ONLY 技术 blocker 与人工 blocker 混合导致的 `LIVE_UNSAFE_BLOCKER_SET`；新增 payload-free execution log API/审核页时间线，并完成 clean Server/Web/E2E A1。
+- [x] T6-3a.5：统一图片证据坐标空间，聚合重复诊断并优化 Candidate 字段信息层级；完成 clean Server/Web/E2E A1。
+- [x] T6-3a.6：兼容旧客户端 AI item 编辑状态，并拆分历史、新增、监控、结果四个深链版面；完成 clean Server/Web/E2E A1。
+- [x] T6-3a.7：历史任务成为默认入口，Live 新增识别与确定性 Replay 样本彻底拆分；完成 clean Web/E2E A1。
+- [x] T6-3a.8：发布 Product v3 串行视觉分析、四类严格契约、V014 与站牌三层拓扑回归；完成零 Provider clean Server/Web/E2E A1。真实 DashScope 质量验证仍需绑定 Product v3 identity 的新 J1。
 - [ ] T6-3b：完成数据库/Blob 备份恢复、missing artifact、storage full 与操作员观测演练。
 
 ## 重要发现或局部阻塞
@@ -105,5 +110,5 @@
 - `plans/logs/P5-T5-11.md`：值级失败已完成 owner-bound 有限槽位细分、clean server A1 与独立 A2；0 Blocker / 0 High / 0 Medium，Provider attempts=0。
 - `plans/logs/P6-T6-1.md`：10k/100k/10k/10k 容量基线、摘要投影、targeted graph 与统一两 lane 已完成 clean A1/独立 A2；Provider attempts/reservations=0。
 - `plans/logs/P6-T6-2.md`：四步 AI Schema 识别工作台、完整 Candidate 审核、offline eval 与 browser/real-PG acceptance 已完成 clean A1/独立 A2；最终视觉 J1 pending，Provider attempts/reservations=0。
-- `plans/logs/P6-T6-3.md`：T6-3a 四产品 Profile、Product v2/¥2、上传边界、图像规范化、IMAGE_ONLY 技术规范化与执行日志均已完成 clean A1；T6-3b recovery drill pending。
-- 当前恢复点：`phase/p6-inference-product-acceptance-v1` 的 T6-3a.7 `automated_verified` 节点；历史评测 ledger 永久 CLOSED，显式 product-live overlay 已开放，下一自动计划切片为 T6-3b Compose/ops/recovery drill。
+- `plans/logs/P6-T6-3.md`：T6-3a 四产品 Profile、Product v3 串行视觉分析、¥2 单次上界、上传/图像规范化、Candidate 审核与四版面均已完成 clean A1；真实 Product v3 质量验证与 T6-3b recovery drill 分别 pending。
+- 当前恢复点：`phase/p6-inference-product-acceptance-v1` 的 T6-3a.8 `automated_verified` 节点；历史评测 ledger 永久 CLOSED，显式 product-live overlay 已开放。下一安全自动切片为 T6-3b Compose/ops/recovery drill；真实 Product v3 调用前必须建立绑定精确 Profile/evaluation identity/数据分类/次数/费用/时限的新 J1。

@@ -1,6 +1,6 @@
 # RenderWeave v1 Phase 计划
 
-- 状态：P1–P4 implementation complete；P5 T5-1–T5-11 已完成通路、质量实测与安全硬化；P6 T6-1 已独立复核，T6-2 四步 AI Schema 识别工作台已完成 clean A1/独立 A2、最终成品 J1 待确认；T6-3a 产品 live 已开放，T6-3a.1–a.4 已依次闭合 evidence repair/¥2 上界、multipart、超大图规范化、IMAGE_ONLY 技术规范化与执行日志，T6-3b 恢复演练待推进。历史评测 authorization 均为 `CLOSED`，四个产品 Profile 为 `EXPERIMENTAL` 且只在显式 product-live 部署中开放
+- 状态：P1–P4 implementation complete；P5 T5-1–T5-11 已完成通路、质量实测与安全硬化；P6 T6-1 已独立复核，T6-2 四步 AI Schema 识别工作台已完成 clean A1/独立 A2、最终成品 J1 待确认；T6-3a 产品 live 已开放，T6-3a.1–a.8 已闭合产品输入、审核与串行视觉分析协议，其中 Product v3 的真实模型质量仍待新 authorization 验证；T6-3b 恢复演练待推进。历史评测 authorization 均为 `CLOSED`，四个产品 Profile 为 `EXPERIMENTAL` 且只在显式 product-live 部署中开放
 - 日期：2026-08-10
 - Spec：[`specs/renderweave-v1.md`](../specs/renderweave-v1.md)
 - 原型：`/prototype/schema-studio?variant=A|B|C`
@@ -407,7 +407,8 @@ Phase 内任务只在真实前置依赖满足时并行。当前没有 atomic cla
 6. T6-3a.5：对明确使用 artifact 像素的 IMAGE_ONLY bbox 家族换算到 0..10000，Web 兼容历史 Candidate；聚合重复诊断并优化单 Schema 导航与字段信息层级；clean Server/Web/E2E A1，未调用 Provider。
 7. T6-3a.6：Candidate save 对旧客户端的已编辑 AI item 确定性归一 `RESOLVED_BY_EDIT`；智能识别拆成历史、新增、监控、结果四个深链版面，创建/重试先进入监控；clean Server/Web/E2E A1，未调用 Provider。
 8. T6-3a.7：以历史任务为默认入口并移除跨页面卡片导航；Live 新增识别与零网络确定性样本拆成独立路由，新增页不再查询 Replay fixture；clean Web/E2E A1，未调用 Provider。
-9. T6-3b：数据库与 Blob 备份/恢复、missing artifact、storage full、结构化观测与操作员演练；未完成前 T6-3 不报告完成。
+9. T6-3a.8：针对复杂站牌被压扁为标量数组的问题，发布 Product v3 串行视觉协议：元素盘点 → 层级规划 → 元素归属 → 数据定义；用严格中间契约和最终拓扑验证保留站牌 → 线路[] → 停靠站点[]、站点中英文名及温馨提示子 Schema。最多 5 次 Provider 调用、最多 1 次 repair、单次 ¥2 上界与可选任务累计限额不变；clean Server/Web/E2E A1，未调用 Provider，真实质量验证单独 pending。
+10. T6-3b：数据库与 Blob 备份/恢复、missing artifact、storage full、结构化观测与操作员演练；未完成前 T6-3 不报告完成。
 
 #### T6-4：最终 AC/非目标/安全能力审计
 - AC：AC-001–AC-025
