@@ -1,14 +1,14 @@
 # RenderWeave 图片识别数据结构 vNext Goal 计划
 
-- 状态：active
+- 状态：active（仓库生命周期；2026-08-11 `get_goal` 返回空，按用户要求未创建 replacement Goal）
 - 日期：2026-08-10
 - 基线 revision：`eed1ab6ce2eb800b1b6bf0496b052fc3b9bd28d2`
 - 分支：`phase/p6-visual-recognition-vnext`
 - Spec delta：`specs/changes/20260810-visual-recognition-vnext.md`
 - ADR：ADR-0022、ADR-0023、ADR-0024、ADR-0025、ADR-0026、ADR-0027、ADR-0028
 - 用户 J1：yiwer，2026-08-10；三模型各 500,000 total tokens，精确约束见 spec delta
-- 当前节点：N0–N1、N3–N4 `automated_verified`；N2 `live_verified_mixed_a1_a2`；N5
-  `live_verified_not_promoted`；N6 in progress；全部 live ledger `CLOSED`
+- 当前节点：N0–N1、N3–N4、N6 `automated_verified`；N2 `live_verified_mixed_a1_a2`；N5
+  `live_verified_not_promoted`；N7 `entry_gates_unmet`；全部 live ledger `CLOSED`
 
 ## 四维执行配置
 
@@ -111,31 +111,40 @@ ledger 描述成外部强制门。
 
 ### N6：Semantic Verifier、Targeted Repair 与 UI
 
-- 状态：in progress；N5 显示当前首要缺口是 14 次笼统 `VISUAL_GROUNDING_CONTRACT_INVALID` 无法定位。
+- 状态：`automated_verified`；checkpoint：`plans/logs/P6-T6-5-N6.md`。实现 revisions 为 `4290227`、
+  `f0ebe77`、`d5afadf`；full audit selector 修复为 `de97131`。三轮 Flash 小 smoke 均有 A2 诊断证据，但
+  未触达完整三阶段，Profile 没有晋级。
 - AC：AC-VR-007、009。
 - 依赖：N5。
 - 实现：bounded verifier contract、issue→earliest-stage routing、selected crop request、successful-stage
   preservation、checkpoint/attempt taxonomy；监控和审核页展示 region/stage/issue/费用/恢复。
 - 局部验证：false omission/edge/binding/extra field、mixed human blocker、crash/retry/cancel；Web component、
   1024 drawer、keyboard/axe、real PG Playwright。
-- 完成信号：repair 不重做无关 stage；UI 不显示 OCR/Provider 原文；apply 仍是唯一 create-only 写边界。
+- 完成信号：已达成实现与自动门控。repair 不重做无关 stage；UI 不显示 OCR/Provider 原文；apply 仍是
+  唯一 create-only 写边界。Flash v10/v11/v12 共 15 attempts 均停在 OBSERVE，故该状态不表示模型质量或
+  三阶段合同已通过，所有相关 Profile 继续隐藏 `EXPERIMENTAL`。
 
 ### N7：Final Live Eval 与验收
 
+- 状态：`entry_gates_unmet`，未启动。N6 Flash v10–v12 均未到达 HIERARCHY/BINDING；Plus 按 N5 决策
+  不再调用且仅余 14,114 tokens；Max 只有三阶段合同可达时才允许考虑，因此本轮未调用。当前剩余额度也
+  无法为三模型各 20-case comparison 建立 fail-closed 最坏预留，不能通过新 ledger 绕过 Goal cap。
 - AC：AC-VR-001..010、既有 AC-015..021。
 - 依赖：N6 clean gates；final exact identities 和新的 ledger；N2 用量已进入 aggregate guard。
 - 执行：三个模型先跑同一 20-case comparison；按剩余额度优先让最佳模型完成 60-case/15 HOLDOUT；每批≤5。
 - policy：只有满足既有 AC-021 和 stage 门槛的 Profile 可成为默认；其他保持 EXPERIMENTAL。
 - 门控：server/web/e2e/runtime/full A1；独立 verifier A2；费用/Token/secret/payload scan；用户业务/视觉 J1。
-- 完成信号：所有 ledger CLOSED、Goal guard 不超额、每条 AC 有结果和证据、最终 revision clean。
+- 当前证据：N6 implementation revision `de97131` 的 exact-clean full A1 已通过，但不能替代 final eval、
+  final identity A2 或用户业务/视觉 J1。
+- 完成信号：所有 ledger CLOSED、Goal guard 不超额、每条 AC 有结果和证据、最终 revision clean。目前未达成。
 
 ## Live 预算与停止条件
 
-| 模型 | Goal cap | N2 consumed | 剩余 tokens | attempts | list-price CNY cap | N2 cost |
+| 模型 | Goal cap | Goal exposed tokens | 剩余 tokens | attempts | list-price CNY cap | Goal cost |
 |---|---:|---:|---:|---:|---:|---:|
-| qwen3.8-max | 500,000 | 304,043 | 195,957 | 54 / 180 | 18.00 | 6.406980 |
-| qwen3.7-plus | 500,000 | 485,886（N5 后暴露量） | 14,114 | 86 / 180 | 4.00 | 2.040696 |
-| qwen3.7-flash | 500,000 | 291,784 | 208,216 | 56 / 180 | 0.40 | 0.106318 |
+| qwen3.8-max | 500,000 | 428,816 | 71,184 | 73 / 180 | 18.00 | 9.204720 |
+| qwen3.7-plus | 500,000 | 485,886 | 14,114 | 86 / 180 | 4.00 | 2.040696 |
+| qwen3.7-flash | 500,000 | 393,034 | 106,966 | 71 / 180 | 0.40 | 0.169035 |
 
 停止条件：任一 token/attempt/CNY cap、168h ledger expiry、Goal 完成、Provider refusal/Retry-After、identity
 drift、journal/guard 不一致、payload 边界失败或同一无新假设失败再次出现。停止只关闭后续调用；已结算费用
@@ -146,5 +155,7 @@ drift、journal/guard 不一致、payload 边界失败或同一无新假设失�
 - 源码：优先 revert 当前独立节点 commit；不 reset，不覆盖 main 或用户成果。
 - 数据：migration forward-only；历史 run/Profile/checkpoint 不 UPDATE；新版本读取失败必须保留旧路径。
 - 外部副作用：OPEN→CLOSED 原子停止；Goal aggregate guard 永不因新 ledger 清零；费用不声称可回滚。
+- 编排状态：2026-08-11 接管时 `get_goal` 返回空，与 handoff 的 paused Goal 描述漂移；没有创建新 Goal，
+  以本计划、不可变 ledger/evidence、git history 和 checkpoint 为恢复事实源。
 - 每个 N0..N7 结束后，对照 approved spec delta、AC、非目标和用户原始意图执行再锚定；Template、
   Workspace、Renderer、多租户、任意工具能力仍是非目标。

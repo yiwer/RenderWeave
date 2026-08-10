@@ -1,11 +1,17 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-11 图片识别 vNext N6 已 `automated_verified`：新增 observation/hierarchy/binding bounded semantic
+  verifier、最早阶段 repair、最多 4 个 verified selected crops、最多 16 个累计诊断，以及监控/审核共用的
+  payload-free checkpoint telemetry。Flash v10/v11/v12 在同一个 repository-synthetic case 上共 15 attempts /
+  101,250 actual tokens，独立 verifier 与 payload scan 均 PASS，但全部停在 OBSERVE；Flash Goal 累计
+  393,034/500,000 tokens。未调用 Plus 或 Max，三份 ledger 全部 CLOSED；`de97131` exact-clean full A1 全绿。
+  N7 的三阶段和预算入口未满足，所有 Profile 保持隐藏 `EXPERIMENTAL`，Goal 未完成。
 - 2026-08-10 图片识别 vNext N5 已完成但 Hybrid 未晋级：实现有界 RapidOCR/OpenVINO adapter 与隐藏 v7
   Profile；qwen3.7-plus 同 3 个站牌 case 的 v4/v6/v7 field recall 分别为 4/39、0/39、0/39，v6/v7
   响应均卡在 `VISUAL_GROUNDING_CONTRACT_INVALID`，随后 Plus HTTP 403。Plus Goal 暴露量为
-  485,886/500,000 tokens；全部 ledger CLOSED，v7 保持默认关闭。当前进入 N6 bounded diagnostics、
-  semantic verifier 与 earliest-stage targeted repair。
+  485,886/500,000 tokens；全部 ledger CLOSED，v7 保持默认关闭。该缺口已由 N6 的 bounded diagnostics、
+  semantic verifier 与 earliest-stage targeted repair 接续处理。
 - 2026-08-10 图片识别数据结构 vNext Goal 的 N4 已完成：新增有界 overview/tile/crop、多尺度坐标回写、grounding 2.0 region forest、entity/relationship 空间归属与 checkpoint 3.0；通用视觉 Prompt 与显式公交 hint pack 分离，六份 v6 Profile 保持隐藏 `EXPERIMENTAL`。`1400edb` exact-clean Server 330 tests（5 gated skip）A1 通过，Provider attempts/reservations=0；当前进入 N5 OCR/layout adapter 与 pure/multiscale/hybrid 消融。
 - 2026-08-10 图片识别数据结构 vNext Goal 的 N3 已完成：pipeline 4 使用确定性 Java materializer 将 validated element/hierarchy/binding plan 编译为 byte-stable Candidate，正常路径从 4 次降为 3 次 Provider 调用，STRUCTURE 与恢复路径均为零调用；新增 Flash/Plus/Max 三份严格 capability 与内部 v5 Profile，产品选择器仍保持 v4。图片发送边界同步收窄为最长边 4096 且总像素 16,000,000。`3d56c51` exact-clean Server 330 tests（5 gated skip）A1 通过，Provider attempts/reservations=0；当前进入 N4 多尺度 region/grounding 与 Prompt 去偏。
 - 2026-08-10 图片识别数据结构 vNext Goal 的 N2 已完成：三个 Product v4 Profile 在同一 12-case sentinel 上共执行 174 attempts / 913,446 tokens / ¥7.742620，全部授权均已 CLOSED。Max/Plus/Flash final pass 均为 0/12；Max 的 entity/relation 更强但 binding 仅 3/88，Plus/Flash 更早受 hierarchy contract 限制，三者 grounding IoU@0.5 均为 0，均保持 `EXPERIMENTAL`。Max/Flash 为 A2，Plus continuation A2、初始末态 A1，聚合状态诚实记为 `live_verified_mixed_a1_a2`；`20ca000` clean fast A1 通过。当前进入 N3：以确定性 Java materializer 替代生成式 STRUCTURE，节点内零 Provider 调用。
@@ -35,10 +41,10 @@
 - 2026-08-10 T6-1 容量基线已完成：10k Draft / 100k revision / 10k Static / 10k run、10 条并发生产 Controller 旅程、共享 2 worker lanes；clean server/capacity A1 与独立 A2 PASS，Provider attempts/reservations=0，不宣称生产 SLA。
 - 产品模型目录固定为 `qwen3.7-flash`、`qwen3.7-plus`、`qwen3.8-max`、`qwen3.7-max-2026-06-08`；当前可见目录使用 Product Profile v3，IMAGE_ONLY 依次绑定元素/层级/归属 Prompt 1 与 Candidate Prompt 5，单次预留上界仍为 ¥2。历史 product-v1/v2 与 pinned/评测 Profile 保持不可变并从产品选择器隐藏。
 - 需求访谈已收束，v1 产品语义以 `specs/renderweave-v1.md` 为准。
-- 生命周期状态：P0 `accepted`；P1–P4 `automated_verified`；P5 Flash / Plus / Prompt v2 / Grounded v2 / T5-10 诊断均为 `live_independently_reviewed`，T5-9/T5-11 与 P6/T6-1 为 `independently_reviewed`；P6/T6-2 为 `human_acceptance_pending`；T6-3a 为 `automated_verified`、T6-3b pending。所有 DashScope Profile 仍为 `EXPERIMENTAL`；历史评测授权均 CLOSED，基础 Compose 默认关闭，显式 product-live overlay 已按用户授权开放。
+- 生命周期状态：P0 `accepted`；P1–P4 `automated_verified`；P5 Flash / Plus / Prompt v2 / Grounded v2 / T5-10 诊断均为 `live_independently_reviewed`，T5-9/T5-11 与 P6/T6-1 为 `independently_reviewed`；P6/T6-2 为 `human_acceptance_pending`；T6-3a 与 T6-5 N6 为 `automated_verified`、T6-3b pending。T6-5 整体仍 active，N7 `entry_gates_unmet`。所有 DashScope Profile 仍为 `EXPERIMENTAL`；历史评测授权均 CLOSED，基础 Compose 默认关闭，显式 product-live overlay 已按用户授权开放。
 
 ## 下一步
-- [ ] P6/T6-5 图片识别 vNext：按 `plans/renderweave-visual-recognition-vnext-plan.md` 完成 N0–N7；节点间独立 commit。
+- [ ] P6/T6-5 图片识别 vNext：N0–N6 已形成独立 checkpoint；N7 因三阶段合同与现有 Goal 预算入口未满足而未启动。
 - [x] Java / React / PostgreSQL / OpenAPI 最小 canary 与 A1 full gate 通过。
 - [x] 用户接受“A 默认表单 + B Map + 吸收 C 的 preview/密度”的编辑器方向（J1，2026-08-08）。
 - [x] 创建 P1–P4 implementation Goal。
@@ -96,7 +102,7 @@
 
 ## 重要发现或局部阻塞
 - 本机全局 Node 为 20.20.2；正式 gate 已使用 checksum 固定的仓库局部 Node 24.19.0，不依赖或修改系统 Node。
-- 已建立真实 Git 节点边界；当前工作分支为 `phase/p6-inference-product-acceptance-v1`。T5-6/T5-7/T5-8/T5-10 live 与 P6/T6-1/T6-2 均有独立只读 A2，但仍无外部 CI/branch protection 的 A3。
+- 已建立真实 Git 节点边界；当前工作分支为 `phase/p6-visual-recognition-vnext`。T5-6/T5-7/T5-8/T5-10 live、P6/T6-1/T6-2 与 T6-5 N6 Flash smoke 均有独立只读 A2，但仍无外部 CI/branch protection 的 A3。
 - T4-4 首次 server gate 由于外层命令时限过短中断，其不完整 evidence 不作为结论；随后的完整 server/web/e2e 与 real inference journey 均为绿色。
 - UI 设计数据库把本项目误路由到 hero-centric/mobile/dark SaaS；已在 page override 中拒绝，采用已确认的 dense warm editorial workbench。
 - Docker product-live overlay 已成功构建并运行；readiness 已确认四个产品模型与可选成本限额。`qwen3.8-max` 精确别名尚缺当前官方目录的同等明确确认，首次用户触发若被供应商拒绝必须可读失败且不得静默降级。
@@ -135,5 +141,7 @@
 - `plans/logs/P6-T6-5-N4.md`：多尺度视图、grounding 2.0、空间不变量、显式领域 hint 与 checkpoint 3.0；exact-clean Server A1，Provider attempts/reservations=0。
 - `plans/logs/P6-T6-5-N5.md`：有界本地 Document Vision、v4/v6/v7 同 case live 消融、Plus Goal 用量、
   HTTP failure 硬停与未晋级决策；全部 ledger CLOSED。
-- 当前恢复点：`phase/p6-visual-recognition-vnext` 的 N5 `live_verified_not_promoted` 节点；下一安全切片为
-  N6 grounding diagnostics、semantic verifier 与 earliest-stage targeted repair。
+- `plans/logs/P6-T6-5-N6.md`：bounded semantic verifier、stage-local repair、selected crops、payload-free UI、
+  Flash v10–v12 A2 诊断与 exact-clean full；三阶段仍不可达，未晋级。
+- 当前恢复点：`phase/p6-visual-recognition-vnext` 的 N6 `automated_verified` 节点。N7 在现有 J1/Goal cap 下
+  无可达入口；除非出现新的已批准预算/合同假设，否则不再 live，Goal 如实保持未完成。

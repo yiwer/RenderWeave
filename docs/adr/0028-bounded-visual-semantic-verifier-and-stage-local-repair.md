@@ -23,12 +23,19 @@ Schema 的 GROUP element。若直接在 materializer 中猜测或补建 GROUP，
 2. OBSERVE 边界先执行四项有界检查：每个 `REPEATED_GROUP` 有 MANY/GROUP element；GROUP 只拥有 GROUP 或
    REPEATED_GROUP region；每个 ITEM 至少有一个 SLOT；GROUP cardinality 与重复 region 一致。失败不写入
    checkpoint，只记录固定 taxonomy，并在 OBSERVE 原地重试。
-3. 重试请求继续使用既有 `retryProblemCodes`，只重做最早失败阶段；已成功的更早 checkpoint 保留。后续
-   HIERARCHY/BINDING verifier 也遵循同一原则，禁止因下游问题重新调用无关阶段。
-4. 新增 immutable visual-elements prompt v4，把“每个 REPEATED_GROUP 必须对应 MANY/GROUP element”、嵌套
-   重复层不能压成 `Array<TEXT>`，以及四类 retry code 的纠正动作写成机械检查。新增 Flash、Plus、Max 三份
-   隐藏 product-v10-generic Profile，绑定 elements v4 + hierarchy v3 + bindings v2；v8/v9 不改写。
-5. verifier 只拒绝，绝不自动增加、改名、改类型或重连模型 plan。连续失败、预算用尽或无新假设仍 fail-closed；
+3. HIERARCHY 边界要求每个 GROUP 恰好支撑一条 relationship、每条 relationship 恰好由一个 GROUP 支撑，
+   且 relationship region 与该 GROUP 的 owned region 一致；ELEMENT_BINDING 要求字段绑定到能够覆盖其区域的
+   最近实体。两类失败分别路由到 HIERARCHY 与 ELEMENT_BINDING，不回退重做已验证的 OBSERVE。
+4. 重试请求继续使用既有 `retryProblemCodes`，只重做最早失败阶段；已成功的更早 checkpoint 保留。问题码按
+   stage 有界累积、去重、排序且最多 16 个，避免后一次修复遗忘前一次约束。selected crop 只从已验证
+   grounding checkpoint 派生，最多 4 个，不把派生图片或局部 ID 持久化。
+5. 新增 immutable v10/v11/v12 Prompt/Profile：v10 固化 OBSERVE 语义检查，v11 增加 hierarchy/binding verifier、
+   stage-local crop 和更细 JSON/ownership taxonomy，v12 增加 bounded retry union。历史 v8..v11 的资源与
+   snapshot 不改写；三模型 Profile 均保持隐藏。
+6. 监控与审核共用 payload-free execution telemetry，只展示阶段/checkpoint、受控区域类别、固定 issue code、
+   token/费用/延迟和恢复状态。它不展示动态 region/entity/element ID、原始坐标、OCR、图片、Prompt、
+   Provider response 或 chain-of-thought；1024 宽度使用既有响应式布局与 drawer 合同。
+7. verifier 只拒绝，绝不自动增加、改名、改类型或重连模型 plan。连续失败、预算用尽或无新假设仍 fail-closed；
    Profile 在完整 stage/eval 门槛前保持 `EXPERIMENTAL` 且不进入产品选择器。
 
 ## 备选方案
@@ -40,9 +47,27 @@ Schema 的 GROUP element。若直接在 materializer 中猜测或补建 GROUP，
 | 下游失败后整条 pipeline 重跑 | 可能碰巧成功 | 重复费用、丢失已验证阶段、难恢复 | 不采用 |
 | 最早阶段 verifier + stage-local retry | 定位清晰、预算可控、可恢复 | 需为每阶段维护明确 invariant | 采用 |
 
+## N6 实施与受控实证
+
+- `4290227` 完成 observation/hierarchy/binding bounded verifier、earliest-stage retry、已成功 checkpoint 保留、
+  selected crop 与 PostgreSQL crash/retry/cancel 回归；`f0ebe77` 完成 owner/slot 级固定 taxonomy 和最多 16 个
+  stage-local retry code union；`d5afadf` 完成监控/审核 telemetry、1024 keyboard/axe 与 real-PG E2E。
+- Flash 对同一个仓库合成 `transit-board-v3` 依次执行 v10、v11、v12 单 case smoke。三次均遵守
+  PROPOSED → 负探针 → OPEN → CLOSED，分别 5 attempts / 32,086 tokens、5 / 32,897、5 / 36,267；独立
+  verifier 均 PASS、0 abandoned、payload scan PASS。
+- 三次 smoke 的 15 个 attempts 全部停在 OBSERVE。v12 已把错误从 enum 推进到 parent-kind/cardinality，但
+  最后仍以 `VISUAL_GROUNDING_PARENT_KIND_INVALID` 结束，没有触达 HIERARCHY/BINDING。A2 只证明授权、预算、
+  taxonomy 和 evidence 闭环，不证明三阶段模型质量。
+- Flash Goal 累计 71 attempts、393,034/500,000 exposed tokens、¥0.169035；Plus 保持
+  485,886/500,000 且不再调用，Max 保持 428,816/500,000。三阶段入口门未满足，因此没有调用 Max；三份
+  ledger 终态均为 `CLOSED`。
+- exact-clean `de97131` full gate A1 全绿，证据为 `.sdlc/evidence/20260811-020246-full`；不存在 A3，最终
+  业务/视觉 J1 与 N7 final eval 仍未满足。
+
 ## 后果与验证
 
-- 正向：扁平化在 OBSERVE 即被捕获；失败码直接指出修复阶段；HIERARCHY 不再承担补造上游元素的职责。
+- 正向：扁平化在 OBSERVE 即被捕获；失败码直接指出修复阶段；HIERARCHY 不再承担补造上游元素的职责；
+  操作员可以在不接触载荷的情况下读到阶段、区域类别、问题、费用和恢复状态。
 - 代价：更严格的语义门可能降低一次通过率；Prompt 增加少量输入 token；通用视觉中的装饰性重复需要 corpus
   负例防止过度建模。
 - 验证：missing GROUP、cardinality、empty ITEM、invalid GROUP ownership 单元负例；同阶段重试与上游
