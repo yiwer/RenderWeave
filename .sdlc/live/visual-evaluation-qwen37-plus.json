@@ -1,14 +1,14 @@
 {
   "authorizationVersion": "renderweave-visual-evaluation-authorization/1.0",
-  "authorizationId": "visual-n7-hierarchy-v14-qwen37-plus-transit-20260811",
-  "status": "CLOSED",
+  "authorizationId": "visual-n7-observation-rewind-v15-qwen37-plus-transit-20260811",
+  "status": "PROPOSED",
   "phase": "CANARY",
   "inputClassification": "REPOSITORY_SYNTHETIC_ONLY",
   "corpusVersion": "renderweave-visual-stage-corpus/1.0",
   "corpusSourceSha256": "bf0db7bf0ac5c4e2b357cdd96c49ff70a7b30a5bc59f322a915020dc29fc605e",
-  "evaluationIdentity": "renderweave-visual-evaluation-tree-sha256/1:ff3eb6543f2d2e96be8f49c97fc236ae75d12f1e1284c922cc4e920fbffe4985",
-  "profileId": "dashscope-qwen37-plus-product-v14-generic",
-  "profileSnapshotSha256": "1d28f90776fa914cbcba6ef5748bbf6316e37a92d78272230cdef05a0a97b846",
+  "evaluationIdentity": "renderweave-visual-evaluation-tree-sha256/1:84eba0e524ef2f1cb687a4247c1e4ff28304e9334c9215e3d4e36fb11269add7",
+  "profileId": "dashscope-qwen37-plus-product-v15-generic",
+  "profileSnapshotSha256": "09e1911b9671aa6098b489f5f103597b9e05143b154308d155066a995a3cf639",
   "model": "qwen3.7-plus",
   "caseIds": [
     "transit-board-v3"
@@ -18,7 +18,7 @@
   "maximumCostMicrosCny": 600000,
   "maximumCasesPerBatch": 1,
   "approvedBy": "yiwer",
-  "approvedAt": "2026-08-10T19:28:01Z",
-  "expiresAt": "2026-08-11T07:28:01Z",
-  "approvalScope": "Goal J1 CANARY: user explicitly allowed qwen3.7-plus; one repository-synthetic transit-board-v3 case through immutable product-v14-generic with field-specific hierarchy repair and no structural-only targeted crop; at most 5 attempts, 60000 exposed tokens, CNY 0.60 and one case per batch within the 1000000-token Plus Goal slot; payload-free evidence and immediate CLOSED after this smoke"
+  "approvedAt": "2026-08-10T20:03:54Z",
+  "expiresAt": "2026-08-11T08:03:54Z",
+  "approvalScope": "Goal J1 CANARY: user explicitly allowed qwen3.7-plus; one repository-synthetic transit-board-v3 case through immutable product-v15-generic with bounded HIERARCHY-to-OBSERVE semantic rewind for a missing evidence-backed GROUP; at most 5 attempts, 60000 exposed tokens, CNY 0.60 and one case per batch within the 1000000-token Plus Goal slot; payload-free evidence and immediate CLOSED after this smoke"
 }
