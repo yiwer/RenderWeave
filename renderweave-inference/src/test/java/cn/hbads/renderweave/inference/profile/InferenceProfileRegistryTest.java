@@ -63,7 +63,10 @@ class InferenceProfileRegistryTest {
                 "dashscope-qwen38-max-product-v10-generic",
                 "dashscope-qwen37-flash-product-v11-generic",
                 "dashscope-qwen37-plus-product-v11-generic",
-                "dashscope-qwen38-max-product-v11-generic"
+                "dashscope-qwen38-max-product-v11-generic",
+                "dashscope-qwen37-flash-product-v12-generic",
+                "dashscope-qwen37-plus-product-v12-generic",
+                "dashscope-qwen38-max-product-v12-generic"
         ), registry.profileIds());
         assertEquals(java.util.List.of(
                 "dashscope-qwen37-flash-product-v4",
@@ -84,7 +87,7 @@ class InferenceProfileRegistryTest {
                 "qwen3.7-flash", "qwen3.7-plus", "qwen3.8-max"
         ), registry.visualNextProfiles().stream()
                 .map(item -> item.capability().capability().model()).toList());
-        assertEquals(18, registry.visualGroundingProfiles().size());
+        assertEquals(21, registry.visualGroundingProfiles().size());
         assertEquals(java.util.List.of(
                 "dashscope-qwen37-flash-product-v7-hybrid-generic",
                 "dashscope-qwen37-plus-product-v7-hybrid-generic",
@@ -248,6 +251,21 @@ class InferenceProfileRegistryTest {
                 InferencePromptRegistry.VISUAL_HINT_GENERIC_V1,
                 InferencePromptRegistry.VISUAL_ELEMENTS_V5
         );
+        assertGroundedVisualProfile(
+                registry, "dashscope-qwen37-flash-product-v12-generic", "qwen3.7-flash",
+                InferencePromptRegistry.VISUAL_HINT_GENERIC_V1,
+                InferencePromptRegistry.VISUAL_ELEMENTS_V6
+        );
+        assertGroundedVisualProfile(
+                registry, "dashscope-qwen37-plus-product-v12-generic", "qwen3.7-plus",
+                InferencePromptRegistry.VISUAL_HINT_GENERIC_V1,
+                InferencePromptRegistry.VISUAL_ELEMENTS_V6
+        );
+        assertGroundedVisualProfile(
+                registry, "dashscope-qwen38-max-product-v12-generic", "qwen3.8-max",
+                InferencePromptRegistry.VISUAL_HINT_GENERIC_V1,
+                InferencePromptRegistry.VISUAL_ELEMENTS_V6
+        );
         assertHybridVisualProfile(
                 registry, "dashscope-qwen37-flash-product-v7-hybrid-generic", "qwen3.7-flash"
         );
@@ -299,14 +317,14 @@ class InferenceProfileRegistryTest {
         assertEquals(model, profile.model());
         assertEquals("renderweave-inference-pipeline/4.1", profile.pipelineVersion());
         assertEquals(elementPromptVersion, profile.elementPromptVersion());
-        var hierarchyPrompt = profileId.contains("-v11-")
+        var hierarchyPrompt = profileId.contains("-v11-") || profileId.contains("-v12-")
                 ? InferencePromptRegistry.VISUAL_HIERARCHY_V4
                 : profileId.contains("-v9-") || profileId.contains("-v10-")
                 ? InferencePromptRegistry.VISUAL_HIERARCHY_V3
                 : InferencePromptRegistry.VISUAL_HIERARCHY_V2;
         assertEquals(hierarchyPrompt, profile.hierarchyPromptVersion());
         assertEquals(
-                profileId.contains("-v11-")
+                profileId.contains("-v11-") || profileId.contains("-v12-")
                         ? InferencePromptRegistry.VISUAL_BINDINGS_V3
                         : InferencePromptRegistry.VISUAL_BINDINGS_V2,
                 profile.bindingPromptVersion()

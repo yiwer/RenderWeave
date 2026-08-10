@@ -468,11 +468,16 @@ class PostgresLiveInferenceWorkflowTest {
     void groundedSemanticVerifierRetriesObservationBeforeHierarchy() {
         var blobs = new MemoryBlobStore();
         var created = createGroundedVisual(blobs, "grounded-semantic-observation-retry");
+        var readingOrderGap = groundedStationElements().replace(
+                "\"regionId\":\"routes\",\"parentRegionId\":\"root\",\"kind\":\"REPEATED_GROUP\",\"multiplicity\":\"MANY\",\"readingOrder\":2",
+                "\"regionId\":\"routes\",\"parentRegionId\":\"root\",\"kind\":\"REPEATED_GROUP\",\"multiplicity\":\"MANY\",\"readingOrder\":3"
+        );
         var flattened = groundedStationElements().replace(
                 "\"elementId\":\"route-group\",\"kind\":\"GROUP\",\"proposedKey\":\"routes\",\"displayName\":\"线路\",\"multiplicity\":\"MANY\",\"valueHint\":null",
                 "\"elementId\":\"route-group\",\"kind\":\"SLOT\",\"proposedKey\":\"routes\",\"displayName\":\"线路\",\"multiplicity\":\"MANY\",\"valueHint\":\"TEXT\""
         );
         var provider = new ScriptedProvider(
+                request -> response(request, readingOrderGap),
                 request -> response(request, flattened),
                 request -> response(request, groundedStationElements()),
                 request -> response(request, groundedStationHierarchy()),
@@ -485,16 +490,23 @@ class PostgresLiveInferenceWorkflowTest {
                 .as("failure=%s attempts=%s", finished.failureCode(), workflowStore.attempts(created))
                 .isEqualTo(InferenceRunState.REVIEW_REQUIRED);
         assertThat(provider.requests).extracting(request -> request.stage().name())
-                .containsExactly("OBSERVE", "OBSERVE", "HIERARCHY", "ELEMENT_BINDING");
+                .containsExactly("OBSERVE", "OBSERVE", "OBSERVE", "HIERARCHY", "ELEMENT_BINDING");
         assertThat(provider.requests.get(1).taskJson())
+                .contains("VISUAL_GROUNDING_READING_ORDER_GAP");
+        assertThat(provider.requests.get(2).taskJson())
+                .contains("VISUAL_GROUNDING_READING_ORDER_GAP")
                 .contains("VISUAL_SEMANTIC_REPEATED_GROUP_ELEMENT_MISSING");
         assertThat(workflowStore.attempts(created).getFirst().status())
                 .isEqualTo(InferenceAttemptStatus.REJECTED);
         assertThat(workflowStore.attempts(created).getFirst().problemCodeCounts())
                 .containsExactlyEntriesOf(Map.of(
+                        "VISUAL_GROUNDING_READING_ORDER_GAP", 1
+                ));
+        assertThat(workflowStore.attempts(created).get(1).problemCodeCounts())
+                .containsExactlyEntriesOf(Map.of(
                         "VISUAL_SEMANTIC_REPEATED_GROUP_ELEMENT_MISSING", 1
                 ));
-        assertThat(workflowStore.attempts(created).subList(1, 4))
+        assertThat(workflowStore.attempts(created).subList(2, 5))
                 .allSatisfy(attempt -> assertThat(attempt.status())
                         .isEqualTo(InferenceAttemptStatus.SUCCEEDED));
     }

@@ -65,6 +65,7 @@ public final class LiveInferenceWorker {
     private static final String GROUNDED_VISUAL_PIPELINE = "renderweave-inference-pipeline/4.1";
     private static final String HYBRID_VISUAL_PIPELINE = "renderweave-inference-pipeline/4.2";
     private static final int MAX_STAGE_ADVANCES = 24;
+    private static final int MAX_RETRY_PROBLEM_CODES = 16;
 
     private final InferenceRunStore runStore;
     private final InferenceReplayStore workflowStore;
@@ -651,7 +652,7 @@ public final class LiveInferenceWorker {
             requireCompleteGroundedResponse(current.stage(), response);
             switch (current.stage()) {
                 case OBSERVE -> {
-                    var retryProblemCodes = latestRetryProblemCodes(current);
+                    var retryProblemCodes = accumulatedRetryProblemCodes(current);
                     var grounded = visualGroundingCodec.parseElements(
                             response.candidateJson(),
                             visualViewPlan(current, checkpoint, retryProblemCodes),
@@ -808,7 +809,7 @@ public final class LiveInferenceWorker {
                 ? checkpoint.validationProblems().stream().map(CandidateProblem::code).distinct().sorted().toList()
                 : List.<String>of();
         if (serialVisual(current, profile)) {
-            var retryProblemCodes = latestRetryProblemCodes(current);
+            var retryProblemCodes = accumulatedRetryProblemCodes(current);
             if (groundedVisual(profile)) {
                 var views = visualViewPlan(current, checkpoint, retryProblemCodes);
                 if (hybridVisual(profile)) {
@@ -989,13 +990,15 @@ public final class LiveInferenceWorker {
                 .toList();
     }
 
-    private List<String> latestRetryProblemCodes(InferenceRunSnapshot current) {
+    private List<String> accumulatedRetryProblemCodes(InferenceRunSnapshot current) {
         return workflowStore.attempts(current.runId()).stream()
                 .filter(attempt -> attempt.stage() == current.stage()
                         && attempt.status() == InferenceAttemptStatus.REJECTED)
-                .reduce((left, right) -> right)
-                .map(attempt -> attempt.problemCodeCounts().keySet().stream().sorted().toList())
-                .orElse(List.of());
+                .flatMap(attempt -> attempt.problemCodeCounts().keySet().stream())
+                .distinct()
+                .sorted()
+                .limit(MAX_RETRY_PROBLEM_CODES)
+                .toList();
     }
 
     private VisualViewPlan visualViewPlan(

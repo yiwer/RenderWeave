@@ -60,7 +60,7 @@ class VisualGroundingContractTest {
         assertDiagnostic(elementsJson().replace(
                 "\"left\":100,\"top\":100,\"right\":3000,\"bottom\":700",
                 "\"left\":100,\"top\":2500,\"right\":3000,\"bottom\":2700"
-        ), views, "VISUAL_GROUNDING_ELEMENT_OWNERSHIP_INVALID");
+        ), views, "VISUAL_GROUNDING_ELEMENT_EVIDENCE_OUTSIDE_REGION");
         assertDiagnostic(elementsJson().replace(
                 "\"left\":0,\"top\":6000,\"right\":10000,\"bottom\":10000",
                 "\"left\":0,\"top\":5000,\"right\":10000,\"bottom\":10000"
@@ -116,9 +116,14 @@ class VisualGroundingContractTest {
                 ),
                 views, List.of(IMAGE_ID)
         )).diagnosticCode());
-        assertEquals("VISUAL_GROUNDING_JSON_ENUM_INVALID", assertThrows(
+        assertEquals("VISUAL_GROUNDING_JSON_ENUM_INVALID_REGION_KIND", assertThrows(
                 InvalidVisualAnalysisException.class, () -> codec.parseElements(
                 elementsJson().replaceFirst("\"kind\":\"ROOT\"", "\"kind\":\"DOCUMENT\""),
+                views, List.of(IMAGE_ID)
+        )).diagnosticCode());
+        assertEquals("VISUAL_GROUNDING_JSON_ENUM_INVALID_ELEMENT_VALUE_HINT", assertThrows(
+                InvalidVisualAnalysisException.class, () -> codec.parseElements(
+                elementsJson().replaceFirst("\"valueHint\":\"TEXT\"", "\"valueHint\":\"STRING\""),
                 views, List.of(IMAGE_ID)
         )).diagnosticCode());
         assertEquals("VISUAL_GROUNDING_JSON_SYNTAX_INVALID", assertThrows(

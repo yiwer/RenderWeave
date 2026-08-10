@@ -76,9 +76,7 @@ final class VisualGroundingJsonCodec {
                 inventory.requireKnownArtifacts(Set.copyOf(sourceArtifactIds));
                 grounding.requireKnownArtifacts(sourceArtifactIds);
             });
-            classified("VISUAL_GROUNDING_ELEMENT_OWNERSHIP_INVALID", () ->
-                    grounding.requireConsistentWith(inventory)
-            );
+            classifiedGroundingOwnership(() -> grounding.requireConsistentWith(inventory));
             var semanticIssues = SEMANTIC_VERIFIER.verifyObservation(inventory, grounding);
             if (!semanticIssues.isEmpty()) {
                 throw invalid(semanticIssues.getFirst().code(), null);
@@ -217,8 +215,11 @@ final class VisualGroundingJsonCodec {
         var invalidFormat = findCause(failure, InvalidFormatException.class);
         if (invalidFormat != null) {
             var target = invalidFormat.getTargetType();
-            return prefix + (target != null && target.isEnum()
-                    ? "_JSON_ENUM_INVALID" : "_JSON_FORMAT_INVALID");
+            if (target != null && target.isEnum()) {
+                var slot = shapeInvalidSlot(invalidFormat);
+                return prefix + "_JSON_ENUM_INVALID" + (slot == null ? "" : "_" + slot);
+            }
+            return prefix + "_JSON_FORMAT_INVALID";
         }
         if (findCause(failure, ValueInstantiationException.class) != null) {
             return prefix + "_JSON_CONSTRUCTOR_INVALID";
@@ -402,6 +403,28 @@ final class VisualGroundingJsonCodec {
         } catch (Exception failure) {
             throw invalid(groundingShapeCode(failure), failure);
         }
+    }
+
+    private static void classifiedGroundingOwnership(CheckedRunnable runnable) {
+        try {
+            runnable.run();
+        } catch (InvalidVisualAnalysisException failure) {
+            throw failure;
+        } catch (Exception failure) {
+            throw invalid(groundingOwnershipCode(failure), failure);
+        }
+    }
+
+    private static String groundingOwnershipCode(Throwable failure) {
+        return switch (controlledMessage(failure)) {
+            case "Every visual element requires region ownership" ->
+                    "VISUAL_GROUNDING_ELEMENT_REGION_COVERAGE_INVALID";
+            case "Visual plan references an unknown region" ->
+                    "VISUAL_GROUNDING_ELEMENT_REGION_UNKNOWN";
+            case "Element evidence must be contained by an owned region" ->
+                    "VISUAL_GROUNDING_ELEMENT_EVIDENCE_OUTSIDE_REGION";
+            default -> "VISUAL_GROUNDING_ELEMENT_OWNERSHIP_INVALID";
+        };
     }
 
     private static String groundingShapeCode(Throwable failure) {

@@ -245,6 +245,23 @@ class InferencePromptRegistryTest {
     }
 
     @Test
+    void visualV12PinsFieldSpecificEnumOwnershipAndAccumulatedRetryCorrections() {
+        var prompt = new InferencePromptRegistry().requireVisualStage(
+                InferencePromptRegistry.VISUAL_ELEMENTS_V6,
+                InferencePromptRegistry.VISUAL_HINT_GENERIC_V1
+        ).text();
+        var normalized = prompt.replaceAll("\\s+", " ");
+
+        assertTrue(prompt.contains("retryProblemCodes contains the bounded union"));
+        assertTrue(prompt.contains("VISUAL_GROUNDING_JSON_ENUM_INVALID_REGION_KIND"));
+        assertTrue(prompt.contains("VISUAL_GROUNDING_JSON_ENUM_INVALID_ELEMENT_VALUE_HINT"));
+        assertTrue(prompt.contains("VISUAL_GROUNDING_ELEMENT_EVIDENCE_OUTSIDE_REGION"));
+        assertTrue(normalized.contains("ROOT, SECTION, GROUP, REPEATED_GROUP, or ITEM"));
+        assertTrue(normalized.contains("TEXT, DECIMAL, DATE, TIME, BOOLEAN, or UNRESOLVED"));
+        assertFalse(prompt.matches("(?is).*\\b(bus|station|route|stop|fare)\\b.*"));
+    }
+
+    @Test
     void hybridPromptTreatsLocalOcrAsUntrustedEphemeralSecondaryEvidence() {
         var registry = new InferencePromptRegistry();
         var prompt = registry.requireHybridVisualStage(
