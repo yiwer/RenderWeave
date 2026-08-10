@@ -1,7 +1,7 @@
 {
   "authorizationVersion": "renderweave-visual-evaluation-authorization/1.0",
   "authorizationId": "visual-v6-ablation-qwen37-plus-transit-20260810",
-  "status": "OPEN",
+  "status": "CLOSED",
   "phase": "ABLATION",
   "inputClassification": "REPOSITORY_SYNTHETIC_ONLY",
   "corpusVersion": "renderweave-visual-stage-corpus/1.0",
