@@ -5,9 +5,9 @@
 - 基线 revision：`eed1ab6ce2eb800b1b6bf0496b052fc3b9bd28d2`
 - 分支：`phase/p6-visual-recognition-vnext`
 - Spec delta：`specs/changes/20260810-visual-recognition-vnext.md`
-- ADR：ADR-0022、ADR-0023、ADR-0024
+- ADR：ADR-0022、ADR-0023、ADR-0024、ADR-0025
 - 用户 J1：yiwer，2026-08-10；三模型各 500,000 total tokens，精确约束见 spec delta
-- 当前节点：N0–N1、N3 `automated_verified`；N2 `live_verified_mixed_a1_a2`；N4 next；全部 live ledger `CLOSED`
+- 当前节点：N0–N1、N3–N4 `automated_verified`；N2 `live_verified_mixed_a1_a2`；N5 in progress；全部 live ledger `CLOSED`
 
 ## 四维执行配置
 
@@ -87,7 +87,7 @@ ledger 描述成外部强制门。
 
 ### N4：多尺度 Region Grounding 与 Prompt 去偏
 
-- 状态：next；N3 clean server A1 已通过，节点内零外部调用。
+- 状态：`automated_verified`；checkpoint：`plans/logs/P6-T6-5-N4.md`；实现 `1400edb`，节点内零外部调用。
 - AC：AC-VR-004、006。
 - 依赖：N3。
 - 实现：overview/tile/crop transform、region graph、containment/repeat/order invariants；visual contracts v2；
@@ -97,6 +97,7 @@ ledger 描述成外部强制门。
 
 ### N5：OCR/Layout Grounding 与消融
 
+- 状态：in progress；N4 exact-clean server A1 已通过；live 消融前仍需冻结实现、identity 与新 ledger。
 - AC：AC-VR-005、010。
 - 依赖：N4。
 - 实现：`DocumentVisionPreprocessor` port、严格 bounded local adapter、启动 capability；原始文字内存使用并
