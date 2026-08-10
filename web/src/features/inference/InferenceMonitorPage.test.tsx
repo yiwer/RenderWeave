@@ -38,6 +38,24 @@ describe('Inference monitor workspace', () => {
     await waitFor(() => expect(api.cancelInferenceRunRequest).toHaveBeenCalledWith(queued.runId));
   });
 
+  it('shows that a running provider call accepted cooperative cancellation', async () => {
+    const running = run('RUNNING');
+    api.getInferenceRunRequest.mockResolvedValue(running);
+    api.cancelInferenceRunRequest.mockResolvedValue({
+      ...running,
+      cancellationRequested: true,
+      sequence: running.sequence + 1,
+    });
+    renderPage();
+
+    fireEvent.click(await screen.findByRole('button', { name: '取消任务' }));
+    fireEvent.click(screen.getByRole('button', { name: '确认取消' }));
+
+    expect(await screen.findByText('取消请求已受理')).toBeTruthy();
+    expect(screen.getByText(/等待当前模型调用结束/)).toBeTruthy();
+    expect(screen.queryByRole('button', { name: '取消任务' })).toBeNull();
+  });
+
   it('shows payload-free failure diagnostics and creates an auditable retry', async () => {
     const failed = {
       ...run('FAILED'),

@@ -613,6 +613,10 @@ public class PostgresInferenceRunStore implements InferenceRunStore, InferenceRe
                     "Attempt-only checkpoints require a matching FAILED or REJECTED attempt"
             );
         }
+        if (lockAttemptBoundary(runId, leaseToken, attempt.stage(), now)) {
+            insertAttempt(attempt);
+            return finishCancellationAfterAttempt(runId, leaseToken, attempt.stage(), now);
+        }
         var updated = jdbcClient.sql("""
                         update inference_run
                         set sequence = sequence + 1, updated_at = :now
@@ -662,8 +666,88 @@ public class PostgresInferenceRunStore implements InferenceRunStore, InferenceRe
         if (!runId.equals(attempt.runId()) || expectedStage != attempt.stage()) {
             throw new IllegalArgumentException("Attempt identity and expected run stage must agree");
         }
+        Objects.requireNonNull(nextStage, "nextStage");
+        Objects.requireNonNull(now, "now");
+        if (!expectedStage.canTransitionTo(nextStage)) {
+            throw new InvalidInferenceRunTransitionException(
+                    runId, "stage " + expectedStage + " cannot advance to " + nextStage
+            );
+        }
+        if (checkpointJson == null || checkpointJson.isBlank()) {
+            throw new IllegalArgumentException("checkpointJson is required");
+        }
+        var cancellationRequested = lockAttemptBoundary(runId, leaseToken, expectedStage, now);
         insertAttempt(attempt);
+        if (cancellationRequested) {
+            return finishCancellationAfterAttempt(runId, leaseToken, expectedStage, now);
+        }
         return checkpoint(runId, leaseToken, expectedStage, nextStage, checkpointJson, now);
+    }
+
+    private boolean lockAttemptBoundary(
+            UUID runId,
+            UUID leaseToken,
+            InferenceStage expectedStage,
+            Instant now
+    ) {
+        Objects.requireNonNull(runId, "runId");
+        Objects.requireNonNull(leaseToken, "leaseToken");
+        Objects.requireNonNull(expectedStage, "expectedStage");
+        Objects.requireNonNull(now, "now");
+        return jdbcClient.sql("""
+                        select cancellation_requested
+                        from inference_run
+                        where run_id = :runId
+                          and state = 'RUNNING'
+                          and stage = :expectedStage
+                          and lease_token = :leaseToken
+                          and lease_expires_at > :now
+                        for update
+                        """)
+                .param("runId", runId)
+                .param("expectedStage", expectedStage.name())
+                .param("leaseToken", leaseToken)
+                .param("now", offset(now))
+                .query(Boolean.class)
+                .optional()
+                .orElseThrow(() -> new InferenceLeaseLostException(runId));
+    }
+
+    private InferenceRunSnapshot finishCancellationAfterAttempt(
+            UUID runId,
+            UUID leaseToken,
+            InferenceStage expectedStage,
+            Instant now
+    ) {
+        var sequence = jdbcClient.sql("""
+                        update inference_run
+                        set state = 'CANCELLED',
+                            sequence = sequence + 1,
+                            lease_owner = null,
+                            lease_token = null,
+                            lease_expires_at = null,
+                            finished_at = :now,
+                            updated_at = :now
+                        where run_id = :runId
+                          and state = 'RUNNING'
+                          and stage = :expectedStage
+                          and cancellation_requested
+                          and lease_token = :leaseToken
+                          and lease_expires_at > :now
+                        returning sequence
+                        """)
+                .param("now", offset(now))
+                .param("runId", runId)
+                .param("expectedStage", expectedStage.name())
+                .param("leaseToken", leaseToken)
+                .query(Long.class)
+                .optional()
+                .orElseThrow(() -> new InferenceLeaseLostException(runId));
+        insertEvent(
+                runId, sequence, "CANCELLED", InferenceRunState.CANCELLED,
+                expectedStage, "{}", now
+        );
+        return require(runId);
     }
 
     @Override

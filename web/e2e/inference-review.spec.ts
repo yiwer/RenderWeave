@@ -423,6 +423,35 @@ test('requires confirmation to cancel and creates a new auditable retry run', as
   expect(retryCalls).toBe(1);
 });
 
+test('shows cooperative cancellation acceptance while the current provider call finishes', async ({ page }) => {
+  let run = runResponse(0, 'RUNNING');
+  let cancelCalls = 0;
+  await page.route('**/api/v1/inference-runs/**', async (route) => {
+    const request = route.request();
+    const url = new URL(request.url());
+    if (request.method() === 'GET' && url.pathname === `/api/v1/inference-runs/${runId}`) {
+      await json(route, run);
+    } else if (request.method() === 'GET' && url.pathname === `/api/v1/inference-runs/${runId}/execution-log`) {
+      await json(route, executionLog(run));
+    } else if (request.method() === 'POST' && url.pathname === `/api/v1/inference-runs/${runId}/cancel`) {
+      cancelCalls += 1;
+      run = { ...run, cancellationRequested: true, sequence: run.sequence + 1 };
+      await json(route, run);
+    } else {
+      await route.abort('failed');
+    }
+  });
+
+  await page.goto(`/inference-runs/${runId}/monitor`);
+  await page.getByRole('button', { name: '取消任务' }).click();
+  await page.getByRole('button', { name: '确认取消' }).click();
+
+  await expect.poll(() => cancelCalls).toBe(1);
+  await expect(page.getByText('取消请求已受理')).toBeVisible();
+  await expect(page.getByText(/等待当前模型调用结束/)).toBeVisible();
+  await expect(page.getByRole('button', { name: '取消任务' })).toHaveCount(0);
+});
+
 test('keeps a failed autosave locally and lets the user retry without losing edits', async ({ page }) => {
   let server = candidateBundle();
   let revision = 0;

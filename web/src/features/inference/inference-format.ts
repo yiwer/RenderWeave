@@ -29,6 +29,13 @@ export function inferenceStateLabel(state: string) {
   return labels[state] ?? state;
 }
 
+export function inferenceRunStateLabel(
+  run: Pick<InferenceRunResponse, 'state' | 'cancellationRequested'>,
+) {
+  if (run.state === 'RUNNING' && run.cancellationRequested) return '正在取消';
+  return inferenceStateLabel(run.state);
+}
+
 export function inferenceFailureMessage(code: string) {
   const messages: Record<string, string> = {
     DASHSCOPE_TIMEOUT: '模型响应超过当前步骤时限，系统已安全停止；可重新运行。',

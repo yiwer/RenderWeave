@@ -14,8 +14,8 @@ import {
   inferenceModeLabel,
   inferenceProfileLabel,
   inferenceRunHasResult,
+  inferenceRunStateLabel,
   inferenceStageLabel,
-  inferenceStateLabel,
 } from './inference-format';
 
 export function InferenceMonitorPage() {
@@ -98,18 +98,22 @@ function InferenceMonitorStatus({
 }) {
   const failed = run.state === 'FAILED' || run.state === 'CANCELLED';
   const ready = inferenceRunHasResult(run.state);
+  const cancellationRequested = run.state === 'RUNNING' && run.cancellationRequested;
   const historicalProductProfile = /-product-v[1-3]$/.test(run.profileId);
   const failureMessage = run.failureCode ? inferenceFailureMessage(run.failureCode) : null;
   return (
-    <section className={`inference-run-progress inference-monitor-status ${failed ? 'failed' : ready ? 'ready' : ''}`} aria-live="polite">
+    <section className={`inference-run-progress inference-monitor-status ${failed ? 'failed' : ready ? 'ready' : cancellationRequested ? 'cancelling' : ''}`} aria-live="polite">
       {failed
         ? <AlertCircle aria-hidden="true" size={24} />
         : ready
           ? <CheckCircle2 aria-hidden="true" size={24} />
           : <LoaderCircle className="spin" aria-hidden="true" size={24} />}
       <div>
-        <strong>{failed ? '识别任务未生成 Candidate' : ready ? 'Candidate 已生成' : '正在执行受控识别流程'}</strong>
-        <span>{inferenceStateLabel(run.state)} · {inferenceStageLabel(run.stage)} · {inferenceProfileLabel(run.profileId)}</span>
+        <strong>{failed ? '识别任务未生成 Candidate' : ready ? 'Candidate 已生成' : cancellationRequested ? '取消请求已受理' : '正在执行受控识别流程'}</strong>
+        <span>{inferenceRunStateLabel(run)} · {inferenceStageLabel(run.stage)} · {inferenceProfileLabel(run.profileId)}</span>
+        {cancellationRequested && (
+          <p className="inference-cancellation-guidance">正在等待当前模型调用结束；任务会在下一个安全检查点转为已取消，不会开始新阶段。</p>
+        )}
         {run.failureCode && (
           <>
             <code>{run.failureCode}</code>
@@ -126,7 +130,7 @@ function InferenceMonitorStatus({
           ? historicalProductProfile
             ? <Link className="button primary-button" to="/inference/new"><RotateCcw aria-hidden="true" size={15} />用新配置重新识别</Link>
             : <button type="button" className="button primary-button" disabled={retryPending} onClick={onRetry}><RotateCcw aria-hidden="true" size={15} />{retryPending ? '正在创建新任务…' : '重新运行'}</button>
-          : !ready && <RunCancelButton pending={cancelPending} onCancel={onCancel} />}
+          : !ready && !cancellationRequested && <RunCancelButton pending={cancelPending} onCancel={onCancel} />}
         <Link className="button ghost-button" to="/inference"><History aria-hidden="true" size={15} />历史任务</Link>
         {error && <p role="alert">{error.message}</p>}
       </div>

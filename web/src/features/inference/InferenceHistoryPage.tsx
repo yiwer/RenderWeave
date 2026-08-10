@@ -11,9 +11,9 @@ import {
   inferenceModeLabel,
   inferenceProfileLabel,
   inferenceRunActionLabel,
+  inferenceRunStateLabel,
   inferenceRunWorkspacePath,
   inferenceStageLabel,
-  inferenceStateLabel,
 } from './inference-format';
 
 const PAGE_SIZE = 10;
@@ -81,7 +81,7 @@ export function InferenceHistoryPage() {
             <div className="recent-inference-list">
               {items.map((run) => (
                 <Link key={run.runId} to={inferenceRunWorkspacePath(run)} className="recent-inference-row">
-                  <span className={`recent-inference-state state-${run.state.toLowerCase()}`}>{inferenceStateLabel(run.state)}</span>
+                  <span className={`recent-inference-state state-${run.state.toLowerCase()}`}>{inferenceRunStateLabel(run)}</span>
                   <span className="recent-inference-main">
                     <strong>{inferenceModeLabel(run.mode)} · {inferenceStageLabel(run.stage)}</strong>
                     <small>{run.sourceReference} · {formatInferenceTime(run.updatedAt)}</small>

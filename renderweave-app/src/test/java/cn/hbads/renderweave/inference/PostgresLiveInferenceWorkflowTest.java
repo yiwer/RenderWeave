@@ -131,6 +131,57 @@ class PostgresLiveInferenceWorkflowTest {
     }
 
     @Test
+    void cancellationDuringAProviderCallKeepsItsSettledAttemptTelemetry() {
+        var blobs = new MemoryBlobStore();
+        var created = create(blobs, "live-cancel-during-provider");
+        var provider = new ScriptedProvider(request -> {
+            runs.requestCancellation(created, T0.plusSeconds(1));
+            return response(request, candidate(request));
+        });
+
+        var finished = worker(provider, blobs).processNext("live-cancel-provider-worker").orElseThrow();
+
+        assertThat(finished.state()).isEqualTo(InferenceRunState.CANCELLED);
+        assertThat(finished.cancellationRequested()).isTrue();
+        assertThat(provider.requests).hasSize(1);
+        assertThat(workflowStore.attempts(created))
+                .singleElement()
+                .satisfies(attempt -> {
+                    assertThat(attempt.status()).isEqualTo(InferenceAttemptStatus.SUCCEEDED);
+                    assertThat(attempt.estimatedCostMicrosCny()).isPositive();
+                });
+        assertThat(jdbcClient.sql("""
+                        select state from inference_provider_reservation
+                        where run_id = :runId
+                        """)
+                .param("runId", created)
+                .query(String.class).single()).isEqualTo("SETTLED");
+    }
+
+    @Test
+    void cancellationDuringAFailedProviderCallKeepsItsFailureTelemetry() {
+        var blobs = new MemoryBlobStore();
+        var created = create(blobs, "live-cancel-during-provider-failure");
+        var provider = new ScriptedProvider(request -> {
+            runs.requestCancellation(created, T0.plusSeconds(1));
+            throw new ProviderCallException(
+                    "DASHSCOPE_NETWORK_ERROR", true, null, Optional.empty(), null
+            );
+        });
+
+        var finished = worker(provider, blobs).processNext("live-cancel-failed-provider-worker").orElseThrow();
+
+        assertThat(finished.state()).isEqualTo(InferenceRunState.CANCELLED);
+        assertThat(provider.requests).hasSize(1);
+        assertThat(workflowStore.attempts(created))
+                .singleElement()
+                .satisfies(attempt -> {
+                    assertThat(attempt.status()).isEqualTo(InferenceAttemptStatus.FAILED);
+                    assertThat(attempt.outcomeCode()).isEqualTo("DASHSCOPE_NETWORK_ERROR");
+                });
+    }
+
+    @Test
     void serialProductV3PreservesStationNoticeRouteAndStopTopology() {
         var blobs = new MemoryBlobStore();
         var created = create(blobs, "serial-station-board", 1_050, 1_660, SERIAL_PRODUCT_PROFILE);

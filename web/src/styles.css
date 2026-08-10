@@ -5755,6 +5755,8 @@ button.required-toggle.active,
 .inference-history-pagination button:disabled { opacity: .4; cursor: not-allowed; }
 
 .inference-monitor-status.ready { border-color: #b9d1be; background: #edf6ef; color: var(--success); }
+.inference-monitor-status.cancelling { border-color: #d9c59a; background: #fff6df; color: var(--warning); }
+.inference-run-progress .inference-cancellation-guidance { margin: 2px 0 0; color: var(--body); font-size: 11px; line-height: 1.45; }
 .inference-monitor-facts {
   display: grid;
   grid-template-columns: 1.35fr .7fr 1fr .85fr;
