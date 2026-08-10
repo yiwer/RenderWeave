@@ -130,3 +130,11 @@ OBSERVE→HIERARCHY→BINDING 与 Candidate materialization。
 该增量仅为 clean A1 离线假设。fast/server/web/E2E 均通过且没有 Provider 调用；三份 ledger 保持 CLOSED，
 Profile 保持 `EXPERIMENTAL`。只有新的精确 identity/snapshot 单 case live 实证触达 BINDING 后，才能讨论 Max
 或 final eval；本 ADR 不把离线可达性写成 live 模型质量。
+
+Plus product-v16 随后完成新的 PROPOSED → 负探针 → OPEN → CLOSED 单 case smoke。独立 verifier A2 重建
+5 attempts、19,201 input + 8,281 output tokens、147,141 ms、0 abandoned 与 payload scan PASS。第二次 OBSERVE
+accepted，得到 10 SLOT、1 GROUP；后三次 HIERARCHY 分别以 support group reused、relationship support IDs
+invalid、support group reused 拒绝。原 cardinality mismatch 不再出现，但 BINDING 仍不可达，因此 4.3 只证明
+新假设改变了失败边界，不构成晋级。新的最小离线假设是：当 relationship 数量严格大于可用 distinct GROUP
+数量时，HIERARCHY 不可能在不补回上游 GROUP 的情况下满足一对一支撑，应以新的固定 semantic code 回到
+OBSERVE；不能自动复制 GROUP 或放宽 support uniqueness。

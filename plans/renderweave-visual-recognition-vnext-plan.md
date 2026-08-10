@@ -9,9 +9,9 @@
 - 用户 J1：yiwer，2026-08-10；2026-08-11 delta 将 Flash 改为 `qwen3.7-flash-2026-07-15` 并给三个
   预算槽位各追加 500,000 tokens，累计 cap 1,000,000；attempt/CNY/time 边界不变，精确约束见 spec delta
 - 当前节点：N0–N1、N3–N4、N6 `automated_verified`；N2 `live_verified_mixed_a1_a2`；N5
-  `live_verified_not_promoted`；N7 `in_progress`（pinned Flash/Plus reachability、Plus v14/v15 smoke 已 A2，
-  三阶段仍不可达；v15 bounded OBSERVE rewind 与 v16 evidence-derived cardinality 已 clean A1）；全部 live
-  ledger `CLOSED`
+  `live_verified_not_promoted`；N7 `in_progress`（pinned Flash/Plus reachability、Plus v14/v15/v16 smoke 已 A2，
+  三阶段仍不可达；v15 bounded OBSERVE rewind 与 v16 evidence-derived cardinality 实现已 clean A1）；全部
+  live ledger `CLOSED`
 
 ## 四维执行配置
 
@@ -118,7 +118,7 @@ ledger 描述成外部强制门。
 - 状态：`automated_verified`；checkpoint：`plans/logs/P6-T6-5-N6.md`。实现 revisions 为 `4290227`、
   `f0ebe77`、`d5afadf`；full audit selector 修复为 `de97131`；N7 实证驱动的 cross-stage verifier 增量为
   `195894b`，evidence-owned relationship cardinality 增量为 `bb15096`。三轮 Flash 与后续 Plus 小 smoke
-  均有 A2 诊断证据，但未触达完整三阶段，Profile 没有晋级。
+  均有 A2 诊断证据；最新 v16 仍停在 HIERARCHY，未触达完整三阶段，Profile 没有晋级。
 - AC：AC-VR-007、009。
 - 依赖：N5。
 - 实现：bounded verifier contract、issue→earliest-stage routing、selected crop request、successful-stage
@@ -133,19 +133,20 @@ ledger 描述成外部强制门。
 
 - 状态：`in_progress`。2026-08-11 J1 delta 指定 pinned Flash，并把三个模型槽位的累计 token cap 提到
   1,000,000；immutable capability/Profile 与 v2 aggregate guard 已冻结。pinned Flash v13 与用户重新允许的
-  Plus v12 单 case reachability、Plus v14/v15 hierarchy smoke 均已 CLOSED/A2，但仍未触达 BINDING；v15
-  bounded OBSERVE rewind 与 v16 evidence-derived cardinality 已 clean A1。
+  Plus v12 单 case reachability、Plus v14/v15/v16 hierarchy smoke 均已 CLOSED/A2，但仍未触达 BINDING；
+  v15 bounded OBSERVE rewind 与 v16 evidence-derived cardinality 实现已 clean A1。
 - AC：AC-VR-001..010、既有 AC-015..021。
 - 依赖：N6 clean gates；final exact identities 和新的 ledger；N2 用量已进入 aggregate guard。
 - 执行：已先以 `qwen3.7-flash-2026-07-15`、再以 `qwen3.7-plus` 做单 case reachability；Flash 停在
   OBSERVE，Plus v12/v14/v15 均到 HIERARCHY 后停止。v15 已把 OBSERVE 推进到 1 GROUP，但 HIERARCHY 连续
   两次 cardinality mismatch；`bb15096` 已用 pipeline 4.3/product-v16 把 relationship cardinality 唯一派生自
-  已验证 GROUP multiplicity，并保持旧 4.1 严格语义。下一次仅允许 Plus v16 单 case/最多 5 attempts smoke；
-  只有实际触达 BINDING 后才可考虑 Max 和同一 20-case comparison，再按剩余额度优先让最佳模型完成
+  已验证 GROUP multiplicity，并保持旧 4.1 严格语义。Plus v16 live 不再出现 mismatch，但以 1 GROUP 支撑多个
+  relationships 而三次被拒；下一安全切片先离线增加“relationship 数量超过 distinct GROUP capacity”到 OBSERVE
+  的有界 semantic rewind，不重复 v16。只有实际触达 BINDING 后才可考虑 Max 和同一 20-case comparison，再按剩余额度优先让最佳模型完成
   60-case/15 HOLDOUT；每批≤5。旧 Flash 不再创建 assignment，Plus/Max model ID 不变。
 - policy：只有满足既有 AC-021 和 stage 门槛的 Profile 可成为默认；其他保持 EXPERIMENTAL。
 - 门控：server/web/e2e/runtime/full A1；独立 verifier A2；费用/Token/secret/payload scan；用户业务/视觉 J1。
-- 当前证据：guard/Profile `252dc00`、runner slot 修复 `0d7b73c`；四份单 case live 独立 verifier PASS；
+- 当前证据：guard/Profile `252dc00`、runner slot 修复 `0d7b73c`；五份单 case live 独立 verifier PASS；
   hierarchy repair `98ba3d0`、OBSERVE rewind `195894b` 与 evidence-derived cardinality `bb15096` 均已通过
   A1；`bb15096` 的 clean evidence 为 fast `20260811-043334`，受影响 server `20260811-043007`、web
   `20260811-043128`、E2E `20260811-043158`。它们不能替代 live 三阶段、final eval、final identity A2 或
@@ -157,7 +158,7 @@ ledger 描述成外部强制门。
 | 模型 | Goal cap | Goal exposed tokens | 剩余 tokens | attempts | list-price CNY cap | Goal cost |
 |---|---:|---:|---:|---:|---:|---:|
 | qwen3.8-max | 1,000,000 | 428,816 | 571,184 | 73 / 180 | 18.00 | 9.204720 |
-| qwen3.7-plus | 1,000,000 | 579,967 | 420,033 | 101 / 180 | 4.00 | 2.413214 |
+| qwen3.7-plus | 1,000,000 | 607,449 | 392,551 | 106 / 180 | 4.00 | 2.517864 |
 | Flash slot（旧 alias + `qwen3.7-flash-2026-07-15`） | 1,000,000 | 428,373 | 571,627 | 76 / 180 | 0.40 | 0.190286 |
 
 停止条件：任一 token/attempt/CNY cap、168h ledger expiry、Goal 完成、Provider refusal/Retry-After、identity
