@@ -88,7 +88,10 @@ class InferenceProfileRegistryTest {
                 "dashscope-qwen38-max-product-v19-generic",
                 "dashscope-qwen37-flash-20260715-product-v20-generic",
                 "dashscope-qwen37-plus-product-v20-generic",
-                "dashscope-qwen38-max-product-v20-generic"
+                "dashscope-qwen38-max-product-v20-generic",
+                "dashscope-qwen37-flash-20260715-product-v21-generic",
+                "dashscope-qwen37-plus-product-v21-generic",
+                "dashscope-qwen38-max-product-v21-generic"
         ), registry.profileIds());
         assertEquals(java.util.List.of(
                 "dashscope-qwen37-flash-product-v4",
@@ -109,7 +112,7 @@ class InferenceProfileRegistryTest {
                 "qwen3.7-flash", "qwen3.7-plus", "qwen3.8-max"
         ), registry.visualNextProfiles().stream()
                 .map(item -> item.capability().capability().model()).toList());
-        assertEquals(43, registry.visualGroundingProfiles().size());
+        assertEquals(46, registry.visualGroundingProfiles().size());
         assertEquals(java.util.List.of(
                 "dashscope-qwen37-flash-product-v7-hybrid-generic",
                 "dashscope-qwen37-plus-product-v7-hybrid-generic",
@@ -360,6 +363,16 @@ class InferenceProfileRegistryTest {
         assertRegionNormalizedHierarchyVisualProfile(
                 registry, "dashscope-qwen38-max-product-v20-generic", "qwen3.8-max"
         );
+        assertConnectionNormalizedHierarchyVisualProfile(
+                registry, "dashscope-qwen37-flash-20260715-product-v21-generic",
+                "qwen3.7-flash-2026-07-15"
+        );
+        assertConnectionNormalizedHierarchyVisualProfile(
+                registry, "dashscope-qwen37-plus-product-v21-generic", "qwen3.7-plus"
+        );
+        assertConnectionNormalizedHierarchyVisualProfile(
+                registry, "dashscope-qwen38-max-product-v21-generic", "qwen3.8-max"
+        );
         assertHybridVisualProfile(
                 registry, "dashscope-qwen37-flash-product-v7-hybrid-generic", "qwen3.7-flash"
         );
@@ -533,6 +546,28 @@ class InferenceProfileRegistryTest {
         assertFalse(registry.isProductLiveProfile(profileId));
         assertEquals(model, profile.model());
         assertEquals("renderweave-inference-pipeline/4.7", profile.pipelineVersion());
+        assertEquals(InferencePromptRegistry.SCHEMA_CANDIDATE_V5, profile.promptVersion());
+        assertEquals(InferencePromptRegistry.VISUAL_ELEMENTS_V8, profile.elementPromptVersion());
+        assertEquals(InferencePromptRegistry.VISUAL_HIERARCHY_V7, profile.hierarchyPromptVersion());
+        assertEquals(InferencePromptRegistry.VISUAL_BINDINGS_V3, profile.bindingPromptVersion());
+        assertEquals(InferencePromptRegistry.VISUAL_HINT_GENERIC_V1, profile.visualHintPackVersion());
+        assertEquals(java.util.List.of(InferenceMode.IMAGE_ONLY), profile.supportedModes());
+        assertEquals(0, profile.maximumRepairRounds());
+        assertEquals(5, profile.maximumTotalCalls());
+        assertEquals(240, profile.stageTimeoutSeconds());
+        assertEquals("EXPERIMENTAL", profile.certification());
+    }
+
+    private static void assertConnectionNormalizedHierarchyVisualProfile(
+            InferenceProfileRegistry registry,
+            String profileId,
+            String model
+    ) {
+        var profile = registry.require(profileId).profile();
+        assertTrue(registry.isVisualGroundingProfile(profileId));
+        assertFalse(registry.isProductLiveProfile(profileId));
+        assertEquals(model, profile.model());
+        assertEquals("renderweave-inference-pipeline/4.8", profile.pipelineVersion());
         assertEquals(InferencePromptRegistry.SCHEMA_CANDIDATE_V5, profile.promptVersion());
         assertEquals(InferencePromptRegistry.VISUAL_ELEMENTS_V8, profile.elementPromptVersion());
         assertEquals(InferencePromptRegistry.VISUAL_HIERARCHY_V7, profile.hierarchyPromptVersion());

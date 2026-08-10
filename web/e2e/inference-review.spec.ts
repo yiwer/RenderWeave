@@ -284,7 +284,7 @@ test('keeps bounded visual diagnostics keyboard-accessible at 1024 without paylo
     mode: 'IMAGE_ONLY',
     stage: 'HIERARCHY',
     sequence: 8,
-    profileId: 'dashscope-qwen37-flash-20260715-product-v20-generic',
+    profileId: 'dashscope-qwen37-flash-20260715-product-v21-generic',
     sourceReference: 'repository-synthetic-transit-board-v3',
     failureCode: 'VISUAL_HIERARCHY_V2_RELATIONSHIP_SUPPORT_IDS_EMPTY',
   };

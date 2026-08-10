@@ -271,6 +271,12 @@ public record InferenceProfile(
                 && InferencePromptRegistry.VISUAL_BINDINGS_V3.equals(bindingPromptVersion)
                 && InferencePromptRegistry.VISUAL_HINT_GENERIC_V1.equals(visualHintPackVersion)
                 && profileId.endsWith("-product-v20-generic");
+        var productPromptV21 = InferencePromptRegistry.SCHEMA_CANDIDATE_V5.equals(promptVersion)
+                && InferencePromptRegistry.VISUAL_ELEMENTS_V8.equals(elementPromptVersion)
+                && InferencePromptRegistry.VISUAL_HIERARCHY_V7.equals(hierarchyPromptVersion)
+                && InferencePromptRegistry.VISUAL_BINDINGS_V3.equals(bindingPromptVersion)
+                && InferencePromptRegistry.VISUAL_HINT_GENERIC_V1.equals(visualHintPackVersion)
+                && profileId.endsWith("-product-v21-generic");
         var serialVisualPipeline = "renderweave-inference-pipeline/3.0".equals(pipelineVersion)
                 || "renderweave-inference-pipeline/4.0".equals(pipelineVersion)
                 || "renderweave-inference-pipeline/4.1".equals(pipelineVersion)
@@ -279,7 +285,8 @@ public record InferenceProfile(
                 || "renderweave-inference-pipeline/4.4".equals(pipelineVersion)
                 || "renderweave-inference-pipeline/4.5".equals(pipelineVersion)
                 || "renderweave-inference-pipeline/4.6".equals(pipelineVersion)
-                || "renderweave-inference-pipeline/4.7".equals(pipelineVersion);
+                || "renderweave-inference-pipeline/4.7".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.8".equals(pipelineVersion);
         if (!serialVisualPipeline
                 && (elementPromptVersion != null || hierarchyPromptVersion != null || bindingPromptVersion != null)) {
             throw new IllegalArgumentException("Serial visual prompts are exclusive to visual pipelines 3 and 4");
@@ -290,7 +297,8 @@ public record InferenceProfile(
                 || "renderweave-inference-pipeline/4.4".equals(pipelineVersion)
                 || "renderweave-inference-pipeline/4.5".equals(pipelineVersion)
                 || "renderweave-inference-pipeline/4.6".equals(pipelineVersion)
-                || "renderweave-inference-pipeline/4.7".equals(pipelineVersion))
+                || "renderweave-inference-pipeline/4.7".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.8".equals(pipelineVersion))
                 && visualHintPackVersion != null) {
             throw new IllegalArgumentException("Visual hint packs are exclusive to grounded visual pipelines");
         }
@@ -320,7 +328,9 @@ public record InferenceProfile(
                 || ("renderweave-inference-pipeline/4.6".equals(pipelineVersion)
                 && productPromptV19)
                 || ("renderweave-inference-pipeline/4.7".equals(pipelineVersion)
-                && productPromptV20));
+                && productPromptV20)
+                || ("renderweave-inference-pipeline/4.8".equals(pipelineVersion)
+                && productPromptV21));
         if (!(legacySyntheticPrompt || productPrompt)
                 || !"JSON_OBJECT".equals(responseFormat)
                 || thinkingEnabled || toolsAllowed || remoteMediaAllowed) {
@@ -345,7 +355,9 @@ public record InferenceProfile(
                 || productPromptV16 && stageTimeoutSeconds != 240
                 || productPromptV17 && stageTimeoutSeconds != 240
                 || productPromptV18 && stageTimeoutSeconds != 240
-                || productPromptV19 && stageTimeoutSeconds != 240) {
+                || productPromptV19 && stageTimeoutSeconds != 240
+                || productPromptV20 && stageTimeoutSeconds != 240
+                || productPromptV21 && stageTimeoutSeconds != 240) {
             throw new IllegalArgumentException("Product serial profile timeout must match its immutable version");
         }
         if (!pricingEffectiveDate.matches("\\d{4}-\\d{2}-\\d{2}")) {

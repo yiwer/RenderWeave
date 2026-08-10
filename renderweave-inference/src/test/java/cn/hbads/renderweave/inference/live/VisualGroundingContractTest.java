@@ -353,6 +353,99 @@ class VisualGroundingContractTest {
     }
 
     @Test
+    void connectionAwareRegionPolicyNormalizesOnlyOneCompatibleGroupOwnedRegion() throws Exception {
+        var multiRegionObservation = codec.parseElements(
+                relationshipRegionElementsJson("owner", 1200, 3600).replace(
+                        "\"elementId\":\"owner-group\",\"kind\":\"GROUP\",\"proposedKey\":\"owner\",\"displayName\":\"容器\",\"multiplicity\":\"ONE\",\"valueHint\":null,\"regionIds\":[\"owner\"]",
+                        "\"elementId\":\"owner-group\",\"kind\":\"GROUP\",\"proposedKey\":\"owner\",\"displayName\":\"容器\",\"multiplicity\":\"ONE\",\"valueHint\":null,\"regionIds\":[\"owner\",\"orphan\"]"
+                ), views(), List.of(IMAGE_ID)
+        );
+        var disconnected = relationshipRegionHierarchyJson().replace(
+                "\"cardinality\":\"ONE\",\"regionId\":\"orphan\",\"supportingElementIds\":[\"owner-group\"]",
+                "\"cardinality\":\"ONE\",\"regionId\":\"owner\",\"supportingElementIds\":[\"owner-group\"]"
+        );
+
+        var v20Failure = assertThrows(InvalidVisualAnalysisException.class, () ->
+                codec.parseHierarchy(
+                        disconnected, multiRegionObservation.inventory(), multiRegionObservation.grounding(),
+                        VisualRelationshipCardinalityPolicy.SUPPORT_GROUP_DERIVED,
+                        VisualHierarchyPrerequisitePolicy.RELATIONSHIP_REGION_GROUP_OWNER_REQUIRED,
+                        VisualHierarchyRegionDiagnosticPolicy.DETAILED_FIXED_CODES,
+                        VisualRelationshipSupportIdPolicy.CANONICALIZE_EXACT_DUPLICATES,
+                        VisualRelationshipRegionPolicy.UNIQUE_CARDINALITY_COMPATIBLE_GROUP_REGION
+                )
+        );
+        assertEquals(
+                "VISUAL_HIERARCHY_V2_RELATIONSHIP_REGION_CONNECTION_INVALID",
+                v20Failure.diagnosticCode()
+        );
+
+        var normalized = codec.parseHierarchy(
+                disconnected, multiRegionObservation.inventory(), multiRegionObservation.grounding(),
+                VisualRelationshipCardinalityPolicy.SUPPORT_GROUP_DERIVED,
+                VisualHierarchyPrerequisitePolicy.RELATIONSHIP_REGION_GROUP_OWNER_REQUIRED,
+                VisualHierarchyRegionDiagnosticPolicy.DETAILED_FIXED_CODES,
+                VisualRelationshipSupportIdPolicy.CANONICALIZE_EXACT_DUPLICATES,
+                VisualRelationshipRegionPolicy
+                        .UNIQUE_CARDINALITY_AND_CONNECTION_COMPATIBLE_GROUP_REGION
+        );
+        assertEquals("orphan", normalized.entityRegions().relationships().getFirst().regionId());
+        assertEquals(1, normalized.normalizedRelationshipRegions());
+
+        var singleDisconnectedObservation = codec.parseElements(
+                relationshipRegionElementsJson("owner", 1200, 3600), views(), List.of(IMAGE_ID)
+        );
+        var noCompatibleRegion = assertThrows(InvalidVisualAnalysisException.class, () ->
+                codec.parseHierarchy(
+                        disconnected, singleDisconnectedObservation.inventory(),
+                        singleDisconnectedObservation.grounding(),
+                        VisualRelationshipCardinalityPolicy.SUPPORT_GROUP_DERIVED,
+                        VisualHierarchyPrerequisitePolicy.RELATIONSHIP_REGION_GROUP_OWNER_REQUIRED,
+                        VisualHierarchyRegionDiagnosticPolicy.DETAILED_FIXED_CODES,
+                        VisualRelationshipSupportIdPolicy.CANONICALIZE_EXACT_DUPLICATES,
+                        VisualRelationshipRegionPolicy
+                                .UNIQUE_CARDINALITY_AND_CONNECTION_COMPATIBLE_GROUP_REGION
+                )
+        );
+        assertEquals(
+                "VISUAL_HIERARCHY_V2_RELATIONSHIP_REGION_CONNECTION_INVALID",
+                noCompatibleRegion.diagnosticCode()
+        );
+
+        var ambiguousObservationJson = relationshipRegionElementsJson("owner", 1200, 3600)
+                .replace(
+                        "{\"regionId\":\"orphan\",\"parentRegionId\":\"root\"",
+                        "{\"regionId\":\"owner-inner\",\"parentRegionId\":\"owner\",\"kind\":\"GROUP\",\"multiplicity\":\"ONE\",\"readingOrder\":0,\"repeatGroupId\":null,\"evidence\":[{\"viewId\":\"view-00-overview-00\",\"boundingBox\":{\"left\":500,\"top\":1000,\"right\":9500,\"bottom\":4000}}]},\n                    {\"regionId\":\"orphan\",\"parentRegionId\":\"root\""
+                )
+                .replace(
+                        "\"elementId\":\"owner-group\",\"kind\":\"GROUP\",\"proposedKey\":\"owner\",\"displayName\":\"容器\",\"multiplicity\":\"ONE\",\"valueHint\":null,\"regionIds\":[\"owner\"]",
+                        "\"elementId\":\"owner-group\",\"kind\":\"GROUP\",\"proposedKey\":\"owner\",\"displayName\":\"容器\",\"multiplicity\":\"ONE\",\"valueHint\":null,\"regionIds\":[\"owner\",\"owner-inner\"]"
+                );
+        var ambiguousObservation = codec.parseElements(
+                ambiguousObservationJson, views(), List.of(IMAGE_ID)
+        );
+        var ambiguousHierarchy = relationshipRegionHierarchyJson().replace(
+                "\"entityId\":\"child\",\"schemaKey\":\"child\",\"displayName\":\"子项\",\"regionIds\":[\"orphan\"]",
+                "\"entityId\":\"child\",\"schemaKey\":\"child\",\"displayName\":\"子项\",\"regionIds\":[\"owner-inner\"]"
+        );
+        var ambiguous = assertThrows(InvalidVisualAnalysisException.class, () ->
+                codec.parseHierarchy(
+                        ambiguousHierarchy, ambiguousObservation.inventory(), ambiguousObservation.grounding(),
+                        VisualRelationshipCardinalityPolicy.SUPPORT_GROUP_DERIVED,
+                        VisualHierarchyPrerequisitePolicy.RELATIONSHIP_REGION_GROUP_OWNER_REQUIRED,
+                        VisualHierarchyRegionDiagnosticPolicy.DETAILED_FIXED_CODES,
+                        VisualRelationshipSupportIdPolicy.CANONICALIZE_EXACT_DUPLICATES,
+                        VisualRelationshipRegionPolicy
+                                .UNIQUE_CARDINALITY_AND_CONNECTION_COMPATIBLE_GROUP_REGION
+                )
+        );
+        assertEquals(
+                "VISUAL_HIERARCHY_V2_RELATIONSHIP_REGION_CONNECTION_INVALID",
+                ambiguous.diagnosticCode()
+        );
+    }
+
+    @Test
     void classifiesHierarchyEntityAndRelationshipFieldsWithoutPersistingProviderValues() throws Exception {
         var observed = codec.parseElements(elementsJson(), views(), List.of(IMAGE_ID));
 

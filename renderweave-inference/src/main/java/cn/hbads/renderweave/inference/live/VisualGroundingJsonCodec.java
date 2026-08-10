@@ -286,6 +286,9 @@ final class VisualGroundingJsonCodec {
         }
         var normalized = new ArrayList<VisualRelationshipRegionOwnership>();
         var normalizedCount = 0;
+        var requireConnection = policy
+                == VisualRelationshipRegionPolicy
+                .UNIQUE_CARDINALITY_AND_CONNECTION_COMPATIBLE_GROUP_REGION;
         for (var ownership : entityRegions.relationships()) {
             var relationship = hierarchy.relationships().stream()
                     .filter(item -> item.relationshipId().equals(ownership.relationshipId()))
@@ -299,25 +302,35 @@ final class VisualGroundingJsonCodec {
                 normalized.add(ownership);
                 continue;
             }
-            if (relationshipRegionCardinalityCompatible(
+            var currentCardinalityCompatible = relationshipRegionCardinalityCompatible(
                     relationship.cardinality(), currentRegion
-            )) {
+            );
+            var currentConnectionCompatible = !requireConnection
+                    || relationshipRegionConnectionCompatible(
+                    relationship, currentRegion, entityRegions, grounding
+            );
+            if (currentCardinalityCompatible && currentConnectionCompatible) {
                 normalized.add(ownership);
                 continue;
             }
             var supportingGroup = inventory.requireElement(
                     relationship.supportingElementIds().getFirst()
             );
-            var compatibleRegions = grounding.regionIdsForElement(supportingGroup.elementId()).stream()
+            var cardinalityCompatibleRegions = grounding
+                    .regionIdsForElement(supportingGroup.elementId()).stream()
                     .map(grounding::requireRegion)
                     .filter(region -> relationshipRegionCardinalityCompatible(
                             relationship.cardinality(), region
-                    ))
-                    .map(VisualRegion::regionId)
-                    .distinct().toList();
-            if (compatibleRegions.isEmpty()) {
+                    )).distinct().toList();
+            if (cardinalityCompatibleRegions.isEmpty()) {
                 throw invalid(VisualSemanticIssue.OBSERVE_GROUP_REGION_INVALID, null);
             }
+            var compatibleRegions = cardinalityCompatibleRegions.stream()
+                    .filter(region -> !requireConnection
+                            || relationshipRegionConnectionCompatible(
+                            relationship, region, entityRegions, grounding
+                    ))
+                    .map(VisualRegion::regionId).toList();
             if (compatibleRegions.size() == 1) {
                 normalized.add(new VisualRelationshipRegionOwnership(
                         ownership.relationshipId(), compatibleRegions.getFirst()
@@ -339,6 +352,29 @@ final class VisualGroundingJsonCodec {
         return cardinality == VisualMultiplicity.MANY
                 ? region.kind() == VisualRegionKind.REPEATED_GROUP
                 : region.multiplicity() == VisualMultiplicity.ONE;
+    }
+
+    private static boolean relationshipRegionConnectionCompatible(
+            VisualRelationshipPlan relationship,
+            VisualRegion region,
+            VisualEntityRegionPlan entityRegions,
+            VisualGroundingPlan grounding
+    ) {
+        var parent = entityRegions.entities().stream()
+                .filter(item -> item.entityId().equals(relationship.parentEntityId()))
+                .findFirst();
+        var child = entityRegions.entities().stream()
+                .filter(item -> item.entityId().equals(relationship.childEntityId()))
+                .findFirst();
+        if (parent.isEmpty() || child.isEmpty()) return false;
+        try {
+            return parent.orElseThrow().regionIds().stream().anyMatch(parentRegion ->
+                    grounding.descendantOrSame(region.regionId(), parentRegion))
+                    && child.orElseThrow().regionIds().stream().anyMatch(childRegion ->
+                    grounding.descendantOrSame(childRegion, region.regionId()));
+        } catch (IllegalArgumentException invalidOwnership) {
+            return false;
+        }
     }
 
     private record ClassifiedEntityRegions(
@@ -1073,5 +1109,6 @@ enum VisualRelationshipSupportIdPolicy {
 
 enum VisualRelationshipRegionPolicy {
     STRICT,
-    UNIQUE_CARDINALITY_COMPATIBLE_GROUP_REGION
+    UNIQUE_CARDINALITY_COMPATIBLE_GROUP_REGION,
+    UNIQUE_CARDINALITY_AND_CONNECTION_COMPATIBLE_GROUP_REGION
 }
