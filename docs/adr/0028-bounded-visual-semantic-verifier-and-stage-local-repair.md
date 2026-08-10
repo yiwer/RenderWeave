@@ -211,3 +211,12 @@ GROUP，不允许从不同候选中择一。
 `.sdlc/evidence/20260811-055259-e2e` 与提交后 clean fast `.sdlc/evidence/20260811-055541-fast` 均为 A1
 PASS。实现和门控期间 Provider attempts=0、三份 ledger 保持 CLOSED。product-v19 仍为 `EXPERIMENTAL`；上述
 结果只证明离线合同与恢复路径，不证明真实模型能完成三阶段，也不打开 Max 入口。
+
+Plus product-v19 随后以 `09c3c16` PROPOSED → `7e1b98b` OPEN → `aa92ae2` CLOSED 完成单 case lifecycle；
+PROPOSED 负探针精确命中 `VISUAL_EVALUATION_AUTHORIZATION_NOT_OPEN`，Goal state/guard、265 reservations 与
+target evidence 均未变化。唯一 wrapper exit 0 后先 CLOSED 再读取 evidence。独立 verifier A2 重建 5 attempts、
+24,956 input + 6,103 output tokens、109,700 ms、0 abandoned 与 payload scan PASS。OBSERVE 首次接受并记录
+13 SLOT/1 GROUP；四次 HIERARCHY 均为
+`VISUAL_HIERARCHY_V2_RELATIONSHIP_REGION_CARDINALITY_INVALID`，没有进入 BINDING，也没有命中 support-ID
+normalization telemetry。该结果把下一本地切片收窄到 relationship region/cardinality 合同；不得重复相同 v19，
+在三阶段实证可达前仍禁止 Max，product-v19 不晋级。

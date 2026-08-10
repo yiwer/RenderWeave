@@ -1,6 +1,12 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-11 Plus product-v19 已按 `09c3c16` PROPOSED → `7e1b98b` OPEN → `aa92ae2` CLOSED 完成单 case；
+  负探针精确 NOT_OPEN，Goal/evidence 零变化。独立 verifier A2 PASS：5 attempts、24,956 input + 6,103 output
+  tokens、109,700 ms、payload scan PASS。OBSERVE 首次接受 13 SLOT/1 GROUP，随后四次 HIERARCHY 均为
+  `VISUAL_HIERARCHY_V2_RELATIONSHIP_REGION_CARDINALITY_INVALID`，未进 BINDING。Plus Goal 现为 121/180
+  attempts、698,933/1,000,000 tokens、¥2.813368；270 reservations 中 265 SETTLED、5 历史 RESERVED。
+  CLOSED fast `.sdlc/evidence/20260811-060633-fast` PASS；Max 入口仍未成立，相同 v19 不再重复。
 - 2026-08-11 `214fff9` 新增 pipeline 4.6/product-v19：旧 Profile 保持 strict，新 Profile 只稳定去除同一有效
   relationship support ID 的精确重复，并把 missing/empty/limit/invalid 拆为固定 payload-free code；不同 ID
   之间不择一，不补 GROUP、不删边、不猜结构。归一化 telemetry、结构码 no-crop、最早阶段恢复与 UI/E2E 已覆盖。
@@ -103,7 +109,8 @@
 - [ ] P6/T6-5 图片识别 vNext：N0–N6 已形成独立 checkpoint；v17 exact relationship-region owner rewind 已
   clean A1 且单 case lifecycle 已 CLOSED/A2，但仍停在 HIERARCHY；v18 detailed repair taxonomy 已 clean A1。
   Plus v18 单 case 已 CLOSED/A2 并稳定暴露 relationship support IDs invalid；v19 bounded exact-duplicate
-  normalization 已 clean A1。下一步按 fresh identity/snapshot 执行 Plus v19 单 case；实证 BINDING 前禁止 Max。
+  normalization 已 clean A1，Plus v19 已 CLOSED/A2 并稳定暴露 relationship region/cardinality invalid。下一步
+  先做本地 bounded 合同诊断与 stage-local repair；实证 BINDING 前禁止 Max。
 - [x] Java / React / PostgreSQL / OpenAPI 最小 canary 与 A1 full gate 通过。
 - [x] 用户接受“A 默认表单 + B Map + 吸收 C 的 preview/密度”的编辑器方向（J1，2026-08-08）。
 - [x] 创建 P1–P4 implementation Goal。

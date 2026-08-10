@@ -9,10 +9,10 @@
 - 用户 J1：yiwer，2026-08-10；2026-08-11 delta 将 Flash 改为 `qwen3.7-flash-2026-07-15` 并给三个
   预算槽位各追加 500,000 tokens，累计 cap 1,000,000；attempt/CNY/time 边界不变，精确约束见 spec delta
 - 当前节点：N0–N1、N3–N4、N6 `automated_verified`；N2 `live_verified_mixed_a1_a2`；N5
-  `live_verified_not_promoted`；N7 `in_progress`（pinned Flash/Plus reachability、Plus v14/v15/v16/v17/v18 smoke 已 A2，
+  `live_verified_not_promoted`；N7 `in_progress`（pinned Flash/Plus reachability、Plus v14/v15/v16/v17/v18/v19 smoke 已 A2，
   三阶段仍不可达；v15 bounded OBSERVE rewind、v16 evidence-derived cardinality 与 v17 exact relationship-region
   owner rewind、v18 detailed region repair taxonomy 与 v19 exact-duplicate support-ID normalization 实现已 clean A1，
-  v18 live 仍停在 HIERARCHY，v19 尚未 live）；全部
+  v19 live 仍停在 HIERARCHY）；全部
   live ledger `CLOSED`
 
 ## 四维执行配置
@@ -122,7 +122,7 @@ ledger 描述成外部强制门。
   `195894b`，evidence-owned relationship cardinality 增量为 `bb15096`，exact relationship-region owner 增量为
   `31a8c6f`，detailed hierarchy region repair taxonomy 为 `4d2cc46`，exact-duplicate support-ID normalization 为
   `214fff9`。三轮 Flash 与后续 Plus 小 smoke
-  均有 A2 诊断证据；最新 v18 仍停在 HIERARCHY，未触达完整三阶段，Profile 没有晋级。
+  均有 A2 诊断证据；最新 v19 仍停在 HIERARCHY，未触达完整三阶段，Profile 没有晋级。
 - AC：AC-VR-007、009。
 - 依赖：N5。
 - 实现：bounded verifier contract、issue→earliest-stage routing、selected crop request、successful-stage
@@ -137,7 +137,7 @@ ledger 描述成外部强制门。
 
 - 状态：`in_progress`。2026-08-11 J1 delta 指定 pinned Flash，并把三个模型槽位的累计 token cap 提到
   1,000,000；immutable capability/Profile 与 v2 aggregate guard 已冻结。pinned Flash v13 与用户重新允许的
-  Plus v12 单 case reachability、Plus v14/v15/v16/v17/v18 hierarchy smoke 均已 CLOSED/A2，但仍未触达 BINDING；
+  Plus v12 单 case reachability、Plus v14/v15/v16/v17/v18/v19 hierarchy smoke 均已 CLOSED/A2，但仍未触达 BINDING；
   v15 bounded OBSERVE rewind、v16 evidence-derived cardinality 与 v17 exact relationship-region owner rewind
   以及 v18 detailed hierarchy region repair taxonomy、v19 exact-duplicate support-ID normalization 实现已 clean A1。
 - AC：AC-VR-001..010、既有 AC-015..021。
@@ -154,19 +154,22 @@ ledger 描述成外部强制门。
   stage-local repair 指令；旧 v17 行为不变。Plus v18 已受控 CLOSED/A2：OBSERVE 接受 9 SLOT/0 GROUP，随后四次
   HIERARCHY 均为 relationship support IDs invalid。`214fff9` 的 pipeline 4.6/product-v19 已把该失败拆为
   missing/empty/limit/invalid 固定码，并只对同一有效 ID 的精确重复做 stable dedupe；不同 ID、缺 GROUP 与结构
-  选择继续 fail-closed。下一安全切片是重新计算 identity/snapshot 后执行 Plus v19 单 case lifecycle；只有 live 实际触达
+  选择继续 fail-closed。Plus v19 已受控 CLOSED/A2：OBSERVE 接受 13 SLOT/1 GROUP，随后四次 HIERARCHY 均为
+  relationship region/cardinality invalid，未进入 BINDING，也未命中 normalization telemetry。相同 v19 不再重复；
+  下一安全切片是本地 bounded relationship region/cardinality 合同诊断与 stage-local repair。只有 live 实际触达
   BINDING 后才可考虑 Max 和同一 20-case comparison，再按剩余额度优先让最佳模型完成
   60-case/15 HOLDOUT；每批≤5。旧 Flash 不再创建 assignment，Plus/Max model ID 不变。
 - policy：只有满足既有 AC-021 和 stage 门槛的 Profile 可成为默认；其他保持 EXPERIMENTAL。
 - 门控：server/web/e2e/runtime/full A1；独立 verifier A2；费用/Token/secret/payload scan；用户业务/视觉 J1。
-- 当前证据：guard/Profile `252dc00`、runner slot 修复 `0d7b73c`；七份单 case live 独立 verifier PASS；
+- 当前证据：guard/Profile `252dc00`、runner slot 修复 `0d7b73c`；八份单 case live 独立 verifier PASS；
   hierarchy repair `98ba3d0`、OBSERVE rewind `195894b` 与 evidence-derived cardinality `bb15096` 均已通过
   A1；`31a8c6f` 的 clean evidence 为 fast `20260811-050115`，受影响 server `20260811-045814`、web
   `20260811-045937`、E2E `20260811-050010`；v17 CLOSED clean fast 为 `20260811-051247`。它们不能替代 live
   三阶段。`4d2cc46` 的 server `20260811-052610`、web `20260811-052610`、E2E `20260811-052745` 与 clean fast
   `20260811-052853` 也均为 A1；v18 CLOSED clean fast 为 `20260811-053811`。`214fff9` 的 server
   `20260811-055056`、web `20260811-055228`、E2E `20260811-055259` 与提交后 clean fast
-  `20260811-055541` 均为 A1，Provider attempts=0。这些证据不能替代 v19 live、final eval、final identity A2 或
+  `20260811-055541` 均为 A1，Provider attempts=0；v19 CLOSED clean fast 为 `20260811-060633`。这些证据不能
+  替代三阶段 reachability、final eval、final identity A2 或
   用户业务/视觉 J1。
 - 完成信号：所有 ledger CLOSED、Goal guard 不超额、每条 AC 有结果和证据、最终 revision clean。目前未达成。
 
@@ -175,7 +178,7 @@ ledger 描述成外部强制门。
 | 模型 | Goal cap | Goal exposed tokens | 剩余 tokens | attempts | list-price CNY cap | Goal cost |
 |---|---:|---:|---:|---:|---:|---:|
 | qwen3.8-max | 1,000,000 | 428,816 | 571,184 | 73 / 180 | 18.00 | 9.204720 |
-| qwen3.7-plus | 1,000,000 | 667,874 | 332,126 | 116 / 180 | 4.00 | 2.714632 |
+| qwen3.7-plus | 1,000,000 | 698,933 | 301,067 | 121 / 180 | 4.00 | 2.813368 |
 | Flash slot（旧 alias + `qwen3.7-flash-2026-07-15`） | 1,000,000 | 428,373 | 571,627 | 76 / 180 | 0.40 | 0.190286 |
 
 停止条件：任一 token/attempt/CNY cap、168h ledger expiry、Goal 完成、Provider refusal/Retry-After、identity
