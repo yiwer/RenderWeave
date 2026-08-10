@@ -120,7 +120,7 @@ try {
                 Invoke-GateStep $step { Invoke-ZeroPaidAiCommand 'mvn.cmd -B -ntp -DskipTests package' }
             }
             'server-verify' {
-                Invoke-GateStep $step { Invoke-ZeroPaidAiCommand 'mvn.cmd -B -ntp verify' }
+                Invoke-GateStep $step { Invoke-ZeroPaidAiCommand 'mvn.cmd -B -ntp clean verify' }
             }
             'web-typecheck' {
                 Invoke-GateStep $step {

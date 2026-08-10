@@ -114,6 +114,11 @@ class InferenceRunServiceTest {
         }
 
         @Override
+        public RunPage list(int page, int size) {
+            throw unsupported();
+        }
+
+        @Override
         public Optional<InferenceRunSnapshot> claimNext(String workerId, Instant now, Duration leaseDuration) {
             throw unsupported();
         }
