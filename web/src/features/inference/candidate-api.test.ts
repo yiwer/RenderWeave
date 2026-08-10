@@ -19,12 +19,21 @@ describe('live inference multipart request', () => {
     const image = new File([new Uint8Array([1])], 'poster.png', { type: 'image/png' });
     const json = new File([new Uint8Array([123, 125])], 'sample.json', { type: 'application/json' });
 
-    await createLiveRunRequest('dashscope-qwen37-flash-v1', 'JSON_ONLY', [image], [json], 'json-only');
-    await createLiveRunRequest('dashscope-qwen37-flash-v1', 'IMAGE_ONLY', [image], [json], 'image-only');
+    await createLiveRunRequest(
+      'dashscope-qwen37-flash-product-v1', 'JSON_ONLY', [image], [json], 'json-only', 250_000,
+    );
+    await createLiveRunRequest(
+      'dashscope-qwen37-flash-product-v1', 'IMAGE_ONLY', [image], [json], 'image-only', null,
+    );
 
     expect(bodies[0]?.getAll('images')).toHaveLength(0);
     expect(bodies[0]?.getAll('jsonSamples')).toHaveLength(1);
     expect(bodies[1]?.getAll('images')).toHaveLength(1);
     expect(bodies[1]?.getAll('jsonSamples')).toHaveLength(0);
+    const firstMetadata = bodies[0]?.get('metadata') as Blob;
+    const secondMetadata = bodies[1]?.get('metadata') as Blob;
+    await expect(firstMetadata.text()).resolves.toContain('"costLimitMicrosCny":250000');
+    await expect(firstMetadata.text()).resolves.toContain('"inputClassification":"USER_PROVIDED"');
+    await expect(secondMetadata.text()).resolves.toContain('"costLimitMicrosCny":null');
   });
 });

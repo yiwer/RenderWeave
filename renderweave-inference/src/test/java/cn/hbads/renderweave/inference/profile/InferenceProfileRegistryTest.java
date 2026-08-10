@@ -12,7 +12,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class InferenceProfileRegistryTest {
     @Test
-    void p5ExposesReplayAndFiveGuardedDashScopeProfiles() {
+    void exposesHistoricalEvaluationProfilesAndFourProductModelChoices() {
         var registry = new InferenceProfileRegistry();
         var resource = registry.require("replay-v1");
         var profile = resource.profile();
@@ -23,8 +23,15 @@ class InferenceProfileRegistryTest {
                 "dashscope-qwen37-plus-20260526-v1",
                 "dashscope-qwen37-plus-20260526-prompt-v2",
                 "dashscope-qwen37-plus-20260526-grounded-v1",
-                "dashscope-qwen38-max-v1"
+                "dashscope-qwen38-max-v1",
+                "dashscope-qwen37-flash-product-v1",
+                "dashscope-qwen37-plus-product-v1",
+                "dashscope-qwen38-max-product-v1",
+                "dashscope-qwen37-max-20260608-product-v1"
         ), registry.profileIds());
+        assertEquals(java.util.List.of(
+                "qwen3.7-flash", "qwen3.7-plus", "qwen3.8-max", "qwen3.7-max-2026-06-08"
+        ), registry.productLiveProfiles().stream().map(item -> item.profile().model()).toList());
         assertEquals("renderweave-inference-profile/1.0", profile.profileVersion());
         assertEquals("REPLAY", profile.provider());
         assertEquals("deterministic-synthetic-replay-v1", profile.model());
@@ -68,7 +75,30 @@ class InferenceProfileRegistryTest {
                 "qwen3.8-max", "renderweave-schema-candidate-prompt/1.0",
                 12_000_000L, 36_000_000L, 280_000L, "2026-08-08"
         );
+        assertProductProfile(registry, "dashscope-qwen37-flash-product-v1", "qwen3.7-flash", 250_000L);
+        assertProductProfile(registry, "dashscope-qwen37-plus-product-v1", "qwen3.7-plus", 500_000L);
+        assertProductProfile(registry, "dashscope-qwen38-max-product-v1", "qwen3.8-max", 2_500_000L);
+        assertProductProfile(
+                registry, "dashscope-qwen37-max-20260608-product-v1",
+                "qwen3.7-max-2026-06-08", 2_500_000L
+        );
         assertThrows(IllegalArgumentException.class, () -> registry.require("live-provider"));
+    }
+
+    private static void assertProductProfile(
+            InferenceProfileRegistry registry,
+            String profileId,
+            String model,
+            long maximumCost
+    ) {
+        var profile = registry.require(profileId).profile();
+        assertTrue(registry.isProductLiveProfile(profileId));
+        assertEquals(model, profile.model());
+        assertEquals("USER_CONFIRMED", profile.inputClassification());
+        assertEquals("renderweave-inference-pipeline/2.0", profile.pipelineVersion());
+        assertEquals("renderweave-schema-candidate-prompt/3.0", profile.promptVersion());
+        assertEquals(maximumCost, profile.maximumEstimatedCostMicrosCny());
+        assertEquals("EXPERIMENTAL", profile.certification());
     }
 
     private static void assertDashScopeProfile(

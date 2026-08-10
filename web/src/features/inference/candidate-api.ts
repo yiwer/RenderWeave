@@ -51,14 +51,16 @@ export async function createLiveRunRequest(
   images: File[],
   jsonSamples: File[],
   idempotencyKey: string,
+  costLimitMicrosCny: number | null,
 ): Promise<InferenceRunResponse> {
   const body = new FormData();
   body.append('metadata', new Blob([JSON.stringify({
     profileId,
     mode,
-    inputClassification: 'SYNTHETIC',
+    inputClassification: 'USER_PROVIDED',
     externalTransferConfirmed: true,
     experimentalProfileConfirmed: true,
+    costLimitMicrosCny,
   })], { type: 'application/json' }));
   const active = filesForLiveMode(mode, images, jsonSamples);
   active.images.forEach((image) => body.append('images', image));

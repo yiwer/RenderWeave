@@ -88,7 +88,7 @@ class LiveInferenceApiTest {
     }
 
     @Test
-    void multipartSyntheticUploadQueuesRunsAndBackgroundWorkerProducesReview() throws Exception {
+    void multipartProductUploadQueuesRunsAndBackgroundWorkerProducesReview() throws Exception {
         mockMvc.perform(get("/api/v1/inference-runs/live-availability"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.enabled").value(true))
@@ -102,9 +102,9 @@ class LiveInferenceApiTest {
         var metadata = new MockMultipartFile(
                 "metadata", "metadata.json", MediaType.APPLICATION_JSON_VALUE,
                 """
-                        {"profileId":"dashscope-qwen37-flash-v1","mode":"IMAGE_ONLY",
-                         "inputClassification":"SYNTHETIC","externalTransferConfirmed":true,
-                         "experimentalProfileConfirmed":true}
+                        {"profileId":"dashscope-qwen37-flash-product-v1","mode":"IMAGE_ONLY",
+                         "inputClassification":"USER_PROVIDED","externalTransferConfirmed":true,
+                         "experimentalProfileConfirmed":true,"costLimitMicrosCny":250000}
                         """.getBytes(StandardCharsets.UTF_8)
         );
         var image = new MockMultipartFile(
@@ -114,7 +114,8 @@ class LiveInferenceApiTest {
                         .file(metadata).file(image)
                         .header("Idempotency-Key", "live-api-synthetic"))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.profileId").value("dashscope-qwen37-flash-v1"))
+                .andExpect(jsonPath("$.profileId").value("dashscope-qwen37-flash-product-v1"))
+                .andExpect(jsonPath("$.costLimitMicrosCny").value(250000))
                 .andReturn().getResponse().getContentAsString();
         var runId = UUID.fromString(json.readTree(response).path("runId").asText());
 
@@ -126,11 +127,65 @@ class LiveInferenceApiTest {
         assertThat(runs.find(runId).orElseThrow().state()).isEqualTo(InferenceRunState.REVIEW_REQUIRED);
         mockMvc.perform(get("/api/v1/inference-runs/{runId}/candidate", runId))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.run.sourceReference").value("synthetic-upload"))
+                .andExpect(jsonPath("$.run.sourceReference").value("user-upload"))
                 .andExpect(jsonPath("$.images.length()").value(1))
                 .andExpect(jsonPath("$.jsonSampleCount").value(0));
         assertThat(jdbcClient.sql("select count(*) from inference_provider_reservation")
                 .query(Long.class).single()).isEqualTo(1);
+    }
+
+    @Test
+    void productUploadRejectsCostLimitAboveProductBoundaryBeforeCreatingRun() throws Exception {
+        var metadata = new MockMultipartFile(
+                "metadata", "metadata.json", MediaType.APPLICATION_JSON_VALUE,
+                """
+                        {"profileId":"dashscope-qwen37-flash-product-v1","mode":"IMAGE_ONLY",
+                         "inputClassification":"USER_PROVIDED","externalTransferConfirmed":true,
+                         "experimentalProfileConfirmed":true,"costLimitMicrosCny":100000001}
+                        """.getBytes(StandardCharsets.UTF_8)
+        );
+        var image = new MockMultipartFile(
+                "images", "sample.png", MediaType.IMAGE_PNG_VALUE, new byte[]{1}
+        );
+
+        mockMvc.perform(multipart("/api/v1/inference-runs/live")
+                        .file(metadata).file(image)
+                        .header("Idempotency-Key", "live-api-cost-too-high"))
+                .andExpect(status().isBadRequest());
+
+        assertThat(jdbcClient.sql("select count(*) from inference_run").query(Long.class).single()).isZero();
+        assertThat(jdbcClient.sql("select count(*) from inference_provider_reservation")
+                .query(Long.class).single()).isZero();
+    }
+
+    @Test
+    void productUploadAcceptsAnOmittedRunCostLimit() throws Exception {
+        var metadata = new MockMultipartFile(
+                "metadata", "metadata.json", MediaType.APPLICATION_JSON_VALUE,
+                """
+                        {"profileId":"dashscope-qwen37-flash-product-v1","mode":"IMAGE_ONLY",
+                         "inputClassification":"USER_PROVIDED","externalTransferConfirmed":true,
+                         "experimentalProfileConfirmed":true}
+                        """.getBytes(StandardCharsets.UTF_8)
+        );
+        var image = new MockMultipartFile(
+                "images", "sample.png", MediaType.IMAGE_PNG_VALUE, smallValidPng()
+        );
+        var response = mockMvc.perform(multipart("/api/v1/inference-runs/live")
+                        .file(metadata).file(image)
+                        .header("Idempotency-Key", "live-api-no-run-limit"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.costLimitMicrosCny").doesNotExist())
+                .andReturn().getResponse().getContentAsString();
+        var runId = UUID.fromString(json.readTree(response).path("runId").asText());
+
+        var deadline = System.nanoTime() + java.time.Duration.ofSeconds(5).toNanos();
+        while (System.nanoTime() < deadline
+                && runs.find(runId).orElseThrow().state() != InferenceRunState.REVIEW_REQUIRED) {
+            Thread.sleep(20);
+        }
+        assertThat(runs.find(runId).orElseThrow().costLimitMicrosCny()).isNull();
+        assertThat(runs.find(runId).orElseThrow().state()).isEqualTo(InferenceRunState.REVIEW_REQUIRED);
     }
 
     private static byte[] largeValidPng() throws Exception {
@@ -139,6 +194,14 @@ class LiveInferenceApiTest {
         for (var y = 0; y < image.getHeight(); y++) {
             for (var x = 0; x < image.getWidth(); x++) image.setRGB(x, y, random.nextInt());
         }
+        try (var output = new ByteArrayOutputStream()) {
+            if (!ImageIO.write(image, "png", output)) throw new IllegalStateException("PNG writer unavailable");
+            return output.toByteArray();
+        }
+    }
+
+    private static byte[] smallValidPng() throws Exception {
+        var image = new BufferedImage(2, 2, BufferedImage.TYPE_INT_RGB);
         try (var output = new ByteArrayOutputStream()) {
             if (!ImageIO.write(image, "png", output)) throw new IllegalStateException("PNG writer unavailable");
             return output.toByteArray();

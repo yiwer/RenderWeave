@@ -73,6 +73,7 @@ public interface InferenceRunStore {
             long sequence,
             String profileId,
             String sourceReference,
+            Long costLimitMicrosCny,
             boolean cancellationRequested,
             UUID retryOfRunId,
             String failureCode,

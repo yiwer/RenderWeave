@@ -30,6 +30,7 @@ final class JournaledCertificationBudgetStore implements ProviderBudgetStore {
             UUID runId,
             int attemptOrdinal,
             long maximumCostMicrosCny,
+            Long runCostLimitMicrosCny,
             Instant now
     ) {
         authorization.requireOpen(now);
@@ -37,7 +38,8 @@ final class JournaledCertificationBudgetStore implements ProviderBudgetStore {
                 budgetKey, runId, attemptOrdinal, maximumCostMicrosCny, now
         );
         var reserved = delegate.reserve(
-                budgetKey, runId, attemptOrdinal, maximumCostMicrosCny, now
+                budgetKey, runId, attemptOrdinal, maximumCostMicrosCny,
+                runCostLimitMicrosCny, now
         );
         journal.bindReservation(journalReservationId, reserved.reservationId(), now);
         return reserved;

@@ -28,9 +28,12 @@ public class PostgresProviderBudgetStore implements ProviderBudgetStore {
             UUID runId,
             int attemptOrdinal,
             long maximumCostMicrosCny,
+            Long runCostLimitMicrosCny,
             Instant now
     ) {
-        validateReservation(budgetKey, runId, attemptOrdinal, maximumCostMicrosCny, now);
+        validateReservation(
+                budgetKey, runId, attemptOrdinal, maximumCostMicrosCny, runCostLimitMicrosCny, now
+        );
         jdbcClient.sql("""
                         select run_id from inference_run
                         where run_id = :runId
@@ -72,6 +75,12 @@ public class PostgresProviderBudgetStore implements ProviderBudgetStore {
         }
         if (maximumCostMicrosCny > budget.maximumCostMicrosCny() - consumed.costMicrosCny()) {
             throw new ProviderBudgetExceededException("PROVIDER_COST_BUDGET_EXHAUSTED");
+        }
+        if (runCostLimitMicrosCny != null) {
+            var runConsumed = runConsumption(runId);
+            if (maximumCostMicrosCny > runCostLimitMicrosCny - runConsumed) {
+                throw new ProviderBudgetExceededException("PROVIDER_RUN_COST_LIMIT_EXCEEDED");
+            }
         }
 
         var reservationId = UUID.randomUUID();
@@ -171,11 +180,23 @@ public class PostgresProviderBudgetStore implements ProviderBudgetStore {
                 .single();
     }
 
+    private long runConsumption(UUID runId) {
+        return jdbcClient.sql("""
+                        select coalesce(sum(coalesce(actual_cost_micros_cny, reserved_cost_micros_cny)), 0)
+                        from inference_provider_reservation
+                        where run_id = :runId
+                        """)
+                .param("runId", runId)
+                .query(Long.class)
+                .single();
+    }
+
     private static void validateReservation(
             String budgetKey,
             UUID runId,
             int attemptOrdinal,
             long maximumCostMicrosCny,
+            Long runCostLimitMicrosCny,
             Instant now
     ) {
         if (budgetKey == null || !budgetKey.matches("[a-z0-9][a-z0-9-]{0,63}")) {
@@ -183,7 +204,8 @@ public class PostgresProviderBudgetStore implements ProviderBudgetStore {
         }
         Objects.requireNonNull(runId, "runId");
         Objects.requireNonNull(now, "now");
-        if (attemptOrdinal < 0 || attemptOrdinal > 2 || maximumCostMicrosCny <= 0) {
+        if (attemptOrdinal < 0 || attemptOrdinal > 2 || maximumCostMicrosCny <= 0
+                || runCostLimitMicrosCny != null && runCostLimitMicrosCny < 1) {
             throw new IllegalArgumentException("Provider reservation bounds are invalid");
         }
     }

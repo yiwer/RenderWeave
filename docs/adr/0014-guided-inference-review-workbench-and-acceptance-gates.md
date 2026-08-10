@@ -36,7 +36,9 @@
 
 - 文件选择后显示文件名、类型、大小、数量和逐个移除动作；客户端先做数量、扩展名/MIME、单文件与总量预检查，服务端校验仍是权威。
 - 选择文件、切换 Profile 或打开页面不触发 Provider。只有模式输入齐全、上传/worker/credential/预算均可用且用户完成两项确认后，启动按钮才可用。
-- 当前产品合同仍是 `SYNTHETIC_ONLY`。一次人工 live 授权或测试许可不自动扩展成永久的真实业务数据产品能力；未来增加业务数据分类必须另做 data-governance spec delta。
+- 本 ADR 落地时的产品合同仍是 `SYNTHETIC_ONLY`。2026-08-10 后续产品运行语义已由
+  [ADR-0015](0015-product-live-profile-catalog-and-optional-run-cost-limit.md) 明确扩展为逐任务确认的
+  `USER_PROVIDED`；历史 live 授权仍不自动扩展或复用。
 - durable run 的状态、阶段、失败 code 和 retry lineage 保持可见；失败/取消只通过已有 retry endpoint 产生新 run，不在原 run 上继续。
 
 ### 4. 验收采用两类正交门控

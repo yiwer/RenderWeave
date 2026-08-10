@@ -291,14 +291,14 @@ class InferenceApiTest {
                 .andExpect(jsonPath("$.enabled").value(false))
                 .andExpect(jsonPath("$.configured").value(false))
                 .andExpect(jsonPath("$.uploadEnabled").value(false))
-                .andExpect(jsonPath("$.maximumAttempts").value(6))
-                .andExpect(jsonPath("$.maximumCostMicrosCny").value(1_000_000))
-                .andExpect(jsonPath("$.profiles.length()").value(5))
+                .andExpect(jsonPath("$.inputClassification").value("USER_PROVIDED"))
+                .andExpect(jsonPath("$.runCostLimitRequired").value(false))
+                .andExpect(jsonPath("$.maximumRunCostLimitMicrosCny").value(100_000_000))
+                .andExpect(jsonPath("$.profiles.length()").value(4))
                 .andExpect(jsonPath("$.profiles[?(@.model == 'qwen3.7-flash')]").exists())
-                .andExpect(jsonPath("$.profiles[?(@.model == 'qwen3.7-plus-2026-05-26')]").exists())
-                .andExpect(jsonPath("$.profiles[?(@.profileId == 'dashscope-qwen37-plus-20260526-prompt-v2')]").exists())
-                .andExpect(jsonPath("$.profiles[?(@.profileId == 'dashscope-qwen37-plus-20260526-grounded-v1')]").exists())
+                .andExpect(jsonPath("$.profiles[?(@.model == 'qwen3.7-plus')]").exists())
                 .andExpect(jsonPath("$.profiles[?(@.model == 'qwen3.8-max')]").exists())
+                .andExpect(jsonPath("$.profiles[?(@.model == 'qwen3.7-max-2026-06-08')]").exists())
                 .andExpect(content().string(org.hamcrest.Matchers.not(
                         org.hamcrest.Matchers.containsString("DASHSCOPE_API_KEY")
                 )));
@@ -306,8 +306,8 @@ class InferenceApiTest {
         var metadata = new MockMultipartFile(
                 "metadata", "metadata.json", MediaType.APPLICATION_JSON_VALUE,
                 """
-                        {"profileId":"dashscope-qwen37-flash-v1","mode":"IMAGE_ONLY",
-                         "inputClassification":"SYNTHETIC","externalTransferConfirmed":true,
+                        {"profileId":"dashscope-qwen37-flash-product-v1","mode":"IMAGE_ONLY",
+                         "inputClassification":"USER_PROVIDED","externalTransferConfirmed":true,
                          "experimentalProfileConfirmed":true}
                         """.getBytes(java.nio.charset.StandardCharsets.UTF_8)
         );

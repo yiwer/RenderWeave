@@ -390,7 +390,8 @@ NORMALIZE
 → ATOMIC_CREATE
 ```
 
-- 各 stage 有 profile 固定的 output token、timeout、tool call、total call 和费用预算。
+- 各 stage 有 Profile 固定的 output token、timeout、tool call、total call 和单次费用预留上界；产品
+  run 可另设覆盖首次识别与 repair 的累计成本硬上限，留空时仍保留 Profile 的全部固定边界。
 - provider/network retry 仅由应用执行：network/408/429/5xx 最多 2 次，尊重 Retry-After；其他 4xx/refusal 不重试；invalid structured output 进入 repair。
 - 所有 attempt 都计入预算。预算用尽安全失败，不自动升级模型。
 - 默认不引入单独 OCR；只有评测证明收益才提交 spec delta。
@@ -450,17 +451,39 @@ QUEUED → RUNNING → REVIEW_REQUIRED → APPLYING → COMPLETED
 ### 8.7 Provider/Profile 安全边界
 
 - v1 首个 live adapter 是 DashScope 的 OpenAI-compatible Chat Completions HTTP endpoint；领域层只依赖 provider-neutral port，协议 DTO、HTTP client 与 `DASHSCOPE_API_KEY` 只存在于 application adapter。
-- 首批模型 Profile 为 `dashscope-qwen37-flash-v1`（`qwen3.7-flash`）和 `dashscope-qwen38-max-v1`（`qwen3.8-max`），均先保持 `EXPERIMENTAL`；同一金标集分别评测后才能决定默认或升级路由。
+- 产品入口只提供 `dashscope-qwen37-flash-product-v1`（`qwen3.7-flash`）、
+  `dashscope-qwen37-plus-product-v1`（`qwen3.7-plus`）、`dashscope-qwen38-max-product-v1`
+  （`qwen3.8-max`）和 `dashscope-qwen37-max-20260608-product-v1`
+  （`qwen3.7-max-2026-06-08`）四个 Profile；历史 canary/certification Profile 保持不可变但不进入
+  产品选择器。四个产品 Profile 均为 `EXPERIMENTAL`，不继承历史质量认证，也不做自动升级路由。
 - Profile 是 repo-versioned resource，保存 provider/model/prompt/structured output/budgets/evaluation identity；run 保存完整 snapshot。
 - API Key 只来自外部 secret，不进入 DB、Profile、UI、日志或错误。
 - 每次 call 使用 `response_format={"type":"json_object"}`、关闭 thinking、禁用 provider tools/search；prompt 必须明确要求 JSON。合法 JSON 仍须经过 Candidate codec、确定性 validator 和 bounded repair。
 - 图片只从服务端规范化 artifact 编码为 Base64 Data URL；adapter 不接受用户提供的远程 URL。每个 stage 显式携带最小所需上下文。
 - 不伪造 `store:false` 等跨 provider 语义；只有 DashScope 官方协议明确支持且合同测试覆盖的 retention 参数才发送。应用自身不持久化完整 provider request/response。
 - 不保存 chain-of-thought。完整 provider I/O 只在受控 Run storage 政策允许时保存，常规日志永不包含。
-- 应用可在无 API Key/无 certified Profile 时启动；确定性功能正常，AI 创建返回稳定 NOT_CONFIGURED/NOT_CERTIFIED problem。
-- 上传授权与 live worker 授权是两个独立的部署门，均默认关闭；配置 Key 或选择/预览文件都不会调用模型。新建 live run、复制历史输入的 live retry 以及 queued recovery 必须经过同一组 worker/upload/credential 门。每次开始前明确展示 provider/model/profile、输入范围、费用上界和外部传输提示，由用户点击启动。
-- 每个不可逆 provider call 之前，按 UTF-8 文本字节、消息 framing、默认非高分辨率视觉 token 上界及 Profile 最大输出 token 计算保守费用上界，并按 Flash 的 32K/256K 输入长度阶梯同步提高输入与输出单价；超过单 Profile 或全局剩余预算时零调用失败。reservation 是追加式费用账本：创建时以行锁验证 run 存在，此后保留 immutable run UUID 审计值且不随 run 删除；provider 返回实际 usage 后只允许向不超过预留的值结算。
-- 当前 P5 live 授权只覆盖仓库合成数据、全局最多 6 次 provider attempt、累计费用上限 ¥1；retry/repair 也计 attempt 和费用，耗尽即安全停止。该授权在 2 次 canary 后已关闭，versioned authorization ledger 阻止旧测试被再次运行；真实业务数据、重新启用 worker/upload 或任何新增调用都需要新的逐次 J1。
+- 应用可在无 API Key 或 live 部署门关闭时启动；确定性功能正常，AI 入口返回稳定的 unavailable/
+  NOT_CONFIGURED problem。产品允许用户显式接受 `EXPERIMENTAL` Profile，不把“可运行”伪装为
+  “已认证”。
+- 上传授权与 live worker 授权是两个独立的部署门，基础配置均默认关闭；显式 live overlay 同时打开
+  两门。配置 Key 或选择/预览文件都不会调用模型。新建 live run、复制历史输入的 live retry 以及
+  queued recovery 必须经过同一组 worker/upload/credential 门。每次开始前明确展示
+  provider/model/profile、当前输入范围、单次预留上界、可选任务累计成本上限和外部传输提示，由
+  用户确认其有权外发当前文件并点击启动。
+- 产品 live request 的输入分类固定为 `USER_PROVIDED`；Profile snapshot 使用 `USER_CONFIRMED` 表示
+  该 run 已通过外发确认。服务端只发送当前模式需要的规范化图片与有界 JSON 结构信息，不接受远程
+  media URL，也不把 payload 写入常规日志或证据。
+- 每个不可逆 provider call 之前，按 UTF-8 文本字节、消息 framing、视觉 token 上界及 Profile 最大
+  输出 token 计算保守费用上界，并按模型价格阶梯提高输入与输出单价；超过 Profile 单次上界时零
+  调用失败。reservation 是追加式费用账本：创建时以行锁验证 run 存在，此后保留 immutable run
+  UUID 审计值且不随 run 删除；provider 返回实际 usage 后只允许向不超过预留的值结算。
+- 产品 run 可选 `costLimitMicrosCny`，范围 1..100,000,000；若设置，首次识别和最多两次 repair 的
+  已结算/仍预留成本累计不得超过该硬上限，超限在 Provider 调用前以稳定问题失败。若留空，不添加
+  run 级累计上限，但仍受 Profile 单次保守费用上界、最大输出 token 与最多三次调用约束。人工 retry
+  创建新 run 并继承原成本上限。
+- 产品 reservation 使用独立 `product-live` 审计命名空间，不消费或重开历史 P5 有限预算。P5 的
+  synthetic canary/certification authorization 全部继续保持 `CLOSED`；产品开放不能被解释为重新授权
+  评测 harness 或继承其 evaluation identity。
 - Provider 返回 `Retry-After` 时本次 run 安全失败，不做无视服务端窗口的即时重试；人工或调度恢复必须形成新的明确授权边界。
 
 ### 8.8 AI 质量发布门槛
@@ -515,7 +538,7 @@ v1 只有：
 
 复用相同 form/map editor，加 bundle navigation、evidence overlay、confidence、blocker 和 item resolution；不出现“保存 Draft”或“发布”按钮，唯一写入动作是全部门通过后的原子创建。
 
-推断入口和审核详情使用一致的四步进度：准备输入 → 受控识别 → 逐项校对 → 原子创建。运行中展示人类可读 stage；状态机许可时可取消，FAILED/CANCELLED 只允许显式 retry 创建新 run。上传选择必须提供逐文件检查和移除，但选择、预览或切换 Profile 均不得触发 Provider。
+推断入口和审核详情使用一致的四步进度：准备输入 → 受控识别 → 逐项校对 → 原子创建。运行中展示人类可读 stage；状态机许可时可取消，FAILED/CANCELLED 只允许显式 retry 创建新 run。上传选择必须提供逐文件检查和移除，但选择、预览或切换 Profile 均不得触发 Provider。产品模型选择器只展示四个产品 Profile；用户可设置本次任务累计成本硬上限或留空，按钮是否可用不再依赖历史 canary 账本剩余额度。
 
 Candidate form 是完整键盘路径：支持新增、删除、上移/下移 Schema 与 field，编辑合法类型对应的 constraints，并在一项具有多张图片 evidence 时逐张切换和查看各自 bbox。map 与 form 共享相同顺序和选择；不要求拖拽，不提供 confirm-all。
 

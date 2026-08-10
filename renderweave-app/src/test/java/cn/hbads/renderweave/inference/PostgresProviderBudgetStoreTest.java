@@ -37,6 +37,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @SpringBootTest
 class PostgresProviderBudgetStoreTest {
     private static final String BUDGET = "p5-synthetic-canary";
+    private static final String PRODUCT_BUDGET = "product-live";
     private static final Instant T0 = Instant.parse("2026-08-08T00:00:00Z");
 
     @Container
@@ -108,6 +109,24 @@ class PostgresProviderBudgetStoreTest {
                 .isInstanceOf(ProviderBudgetExceededException.class)
                 .extracting(failure -> ((ProviderBudgetExceededException) failure).code())
                 .isEqualTo("PROVIDER_ATTEMPT_ALREADY_RESERVED");
+    }
+
+    @Test
+    void optionalRunCostLimitIsCumulativeAndCheckedBeforeEachReservation() {
+        var runId = createRun("dashscope-qwen37-plus-product-v1", "product-limit");
+        var first = budgets.reserve(PRODUCT_BUDGET, runId, 0, 60_000, 100_000L, T0);
+        budgets.settle(first.reservationId(), 40_000, T0.plusSeconds(1));
+
+        assertThatThrownBy(() -> budgets.reserve(
+                PRODUCT_BUDGET, runId, 1, 70_000, 100_000L, T0.plusSeconds(2)
+        )).isInstanceOf(ProviderBudgetExceededException.class)
+                .extracting(failure -> ((ProviderBudgetExceededException) failure).code())
+                .isEqualTo("PROVIDER_RUN_COST_LIMIT_EXCEEDED");
+
+        budgets.reserve(PRODUCT_BUDGET, runId, 1, 60_000, 100_000L, T0.plusSeconds(3));
+        assertThat(jdbcClient.sql("""
+                        select count(*) from inference_provider_reservation where run_id = :runId
+                        """).param("runId", runId).query(Long.class).single()).isEqualTo(2);
     }
 
     @Test

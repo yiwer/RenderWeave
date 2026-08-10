@@ -573,6 +573,7 @@ class LiveCertificationJournalTest {
                 UUID runId,
                 int attemptOrdinal,
                 long maximumCostMicrosCny,
+                Long runCostLimitMicrosCny,
                 Instant now
         ) {
             if (failReservation) throw new IllegalStateException("DELEGATE_RESERVATION_FAILED");

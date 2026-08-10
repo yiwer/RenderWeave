@@ -54,6 +54,7 @@ import java.util.UUID;
  */
 public final class LiveInferenceWorker {
     public static final String CANARY_BUDGET_KEY = "p5-synthetic-canary";
+    public static final String PRODUCT_BUDGET_KEY = "product-live";
     private static final String GROUNDED_PIPELINE = "renderweave-inference-pipeline/2.0";
     private static final int MAX_STAGE_ADVANCES = 24;
 
@@ -252,8 +253,8 @@ public final class LiveInferenceWorker {
             throw new ProviderBudgetExceededException("PROVIDER_REQUEST_COST_BOUND_EXCEEDED");
         }
         var reservation = budgetStore.reserve(
-                CANARY_BUDGET_KEY, current.runId(), attemptOrdinal,
-                maximumRequestCost, clock.instant()
+                budgetKey(profile), current.runId(), attemptOrdinal,
+                maximumRequestCost, current.costLimitMicrosCny(), clock.instant()
         );
         var started = System.nanoTime();
         final ProviderInferenceResponse response;
@@ -510,11 +511,18 @@ public final class LiveInferenceWorker {
         var profile = profiles.parseSnapshot(current.profileSnapshotJson());
         if (!profile.profileId().equals(current.profileId()) || !profile.networkAllowed()
                 || !"DASHSCOPE".equals(profile.provider())
-                || !"SYNTHETIC_ONLY".equals(profile.inputClassification())
+                || !("SYNTHETIC_ONLY".equals(profile.inputClassification())
+                || "USER_CONFIRMED".equals(profile.inputClassification()))
                 || !profile.supportedModes().contains(current.mode())) {
-            throw new IllegalStateException("Run does not carry an approved synthetic-only live profile");
+            throw new IllegalStateException("Run does not carry an approved live profile");
         }
         return profile;
+    }
+
+    private static String budgetKey(InferenceProfile profile) {
+        return "USER_CONFIRMED".equals(profile.inputClassification())
+                ? PRODUCT_BUDGET_KEY
+                : CANARY_BUDGET_KEY;
     }
 
     private InferenceRunSnapshot failIfOwned(InferenceRunSnapshot initial, String code) {

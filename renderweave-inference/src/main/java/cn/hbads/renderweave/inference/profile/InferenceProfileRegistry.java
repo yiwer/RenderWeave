@@ -20,7 +20,17 @@ public final class InferenceProfileRegistry {
             "inference-profiles/dashscope-qwen37-plus-20260526-v1.json",
             "inference-profiles/dashscope-qwen37-plus-20260526-prompt-v2.json",
             "inference-profiles/dashscope-qwen37-plus-20260526-grounded-v1.json",
-            "inference-profiles/dashscope-qwen38-max-v1.json"
+            "inference-profiles/dashscope-qwen38-max-v1.json",
+            "inference-profiles/dashscope-qwen37-flash-product-v1.json",
+            "inference-profiles/dashscope-qwen37-plus-product-v1.json",
+            "inference-profiles/dashscope-qwen38-max-product-v1.json",
+            "inference-profiles/dashscope-qwen37-max-20260608-product-v1.json"
+    );
+    private static final java.util.List<String> PRODUCT_LIVE_PROFILE_IDS = java.util.List.of(
+            "dashscope-qwen37-flash-product-v1",
+            "dashscope-qwen37-plus-product-v1",
+            "dashscope-qwen38-max-product-v1",
+            "dashscope-qwen37-max-20260608-product-v1"
     );
     private static final ObjectMapper JSON = JsonMapper.builder(
                     JsonFactory.builder().enable(StreamReadFeature.STRICT_DUPLICATE_DETECTION).build())
@@ -55,6 +65,15 @@ public final class InferenceProfileRegistry {
 
     public java.util.Set<String> profileIds() {
         return profiles.keySet();
+    }
+
+    /** Product-visible profiles are deliberately separate from immutable evaluation profiles. */
+    public java.util.List<ProfileResource> productLiveProfiles() {
+        return PRODUCT_LIVE_PROFILE_IDS.stream().map(this::require).toList();
+    }
+
+    public boolean isProductLiveProfile(String profileId) {
+        return PRODUCT_LIVE_PROFILE_IDS.contains(profileId);
     }
 
     /** Parses the immutable snapshot stored with a run instead of silently substituting the latest registry entry. */

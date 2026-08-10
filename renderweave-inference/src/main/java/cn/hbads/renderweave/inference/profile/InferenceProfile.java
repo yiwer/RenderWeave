@@ -112,30 +112,38 @@ public record InferenceProfile(
         if (!"DASHSCOPE".equals(provider)
                 || !("qwen3.7-flash".equals(model)
                 || "qwen3.7-plus-2026-05-26".equals(model)
+                || "qwen3.7-plus".equals(model)
+                || "qwen3.7-max-2026-06-08".equals(model)
                 || "qwen3.8-max".equals(model))) {
-            throw new IllegalArgumentException("P5 live profiles must use an approved DashScope model");
+            throw new IllegalArgumentException("Live profiles must use an approved DashScope model");
         }
         if (!"OPENAI_CHAT_COMPLETIONS".equals(providerProtocol)
                 || !DASHSCOPE_ENDPOINT.equals(providerEndpoint)) {
             throw new IllegalArgumentException("P5 provider protocol and endpoint are fixed");
         }
         if (!"DASHSCOPE_API_KEY".equals(apiKeyEnvironmentVariable)) {
-            throw new IllegalArgumentException("P5 API key source is fixed");
+            throw new IllegalArgumentException("Live API key source is fixed");
         }
-        var promptAllowed = "renderweave-inference-pipeline/1.0".equals(pipelineVersion)
+        var legacySyntheticPrompt = "SYNTHETIC_ONLY".equals(inputClassification)
+                && "renderweave-inference-pipeline/1.0".equals(pipelineVersion)
                 && (InferencePromptRegistry.SCHEMA_CANDIDATE_V1.equals(promptVersion)
                 || ("qwen3.7-plus-2026-05-26".equals(model)
                 && InferencePromptRegistry.SCHEMA_CANDIDATE_V2.equals(promptVersion)))
-                || "renderweave-inference-pipeline/2.0".equals(pipelineVersion)
+                || "SYNTHETIC_ONLY".equals(inputClassification)
+                && "renderweave-inference-pipeline/2.0".equals(pipelineVersion)
                 && "qwen3.7-plus-2026-05-26".equals(model)
                 && InferencePromptRegistry.SCHEMA_CANDIDATE_V3.equals(promptVersion);
-        if (!promptAllowed
+        var productPrompt = "USER_CONFIRMED".equals(inputClassification)
+                && "renderweave-inference-pipeline/2.0".equals(pipelineVersion)
+                && InferencePromptRegistry.SCHEMA_CANDIDATE_V3.equals(promptVersion);
+        if (!(legacySyntheticPrompt || productPrompt)
                 || !"JSON_OBJECT".equals(responseFormat)
                 || thinkingEnabled || toolsAllowed || remoteMediaAllowed) {
-            throw new IllegalArgumentException("P5 structured-output and least-capability policy is fixed");
+            throw new IllegalArgumentException("Structured-output and least-capability policy is fixed");
         }
-        if (!"SYNTHETIC_ONLY".equals(inputClassification)) {
-            throw new IllegalArgumentException("Current P5 authorization is synthetic-only");
+        if (!("SYNTHETIC_ONLY".equals(inputClassification)
+                || "USER_CONFIRMED".equals(inputClassification))) {
+            throw new IllegalArgumentException("Live input classification is not approved");
         }
         if (maximumTotalCalls > 3 || maximumEstimatedCostMicrosCny <= 0
                 || inputMicrosCnyPerMillionTokens <= 0 || outputMicrosCnyPerMillionTokens <= 0) {

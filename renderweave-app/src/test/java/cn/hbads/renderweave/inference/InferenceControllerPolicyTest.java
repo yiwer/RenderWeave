@@ -4,7 +4,6 @@ import cn.hbads.renderweave.inference.candidate.CandidateApplyService;
 import cn.hbads.renderweave.inference.candidate.CandidateReviewService;
 import cn.hbads.renderweave.inference.input.BlobStore;
 import cn.hbads.renderweave.inference.provider.InferenceProvider;
-import cn.hbads.renderweave.inference.provider.ProviderBudgetStore;
 import cn.hbads.renderweave.inference.provider.ProviderInferenceRequest;
 import cn.hbads.renderweave.inference.provider.ProviderInferenceResponse;
 import cn.hbads.renderweave.inference.profile.InferenceProfileRegistry;
@@ -128,7 +127,6 @@ class InferenceControllerPolicyTest {
                 mock(InferenceReplayStore.class),
                 coordinator,
                 provider,
-                mock(ProviderBudgetStore.class),
                 mock(CandidateReviewService.class),
                 mock(CandidateApplyService.class),
                 mock(ReplayFixtureInputFactory.class),

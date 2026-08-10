@@ -330,29 +330,28 @@ export type CreateReplayRunRequest = {
 };
 
 export type CreateLiveRunRequest = {
-    profileId: 'dashscope-qwen37-flash-v1' | 'dashscope-qwen37-plus-20260526-v1' | 'dashscope-qwen37-plus-20260526-prompt-v2' | 'dashscope-qwen37-plus-20260526-grounded-v1' | 'dashscope-qwen38-max-v1';
+    profileId: 'dashscope-qwen37-flash-product-v1' | 'dashscope-qwen37-plus-product-v1' | 'dashscope-qwen38-max-product-v1' | 'dashscope-qwen37-max-20260608-product-v1';
     mode: InferenceMode;
-    inputClassification: 'SYNTHETIC';
+    inputClassification: 'USER_PROVIDED';
     externalTransferConfirmed: true;
     experimentalProfileConfirmed: true;
+    /**
+     * Optional cumulative ceiling for this run; null applies no additional run ceiling.
+     */
+    costLimitMicrosCny?: number | null;
 };
 
 export type LiveAvailabilityResponse = {
     enabled: boolean;
     configured: boolean;
     /**
-     * False until arbitrary synthetic multipart transfer receives separate deployment authorization.
+     * False until multipart transfer is enabled for this deployment.
      */
     uploadEnabled: boolean;
-    inputClassification: 'SYNTHETIC_ONLY';
-    maximumAttempts: 6;
-    consumedAttempts: number;
-    remainingAttempts: number;
-    maximumCostMicrosCny: 1000000;
-    consumedCostMicrosCny: number;
-    remainingCostMicrosCny: number;
+    inputClassification: 'USER_PROVIDED';
+    runCostLimitRequired: false;
+    maximumRunCostLimitMicrosCny: 100000000;
     profiles: [
-        LiveProfileResponse,
         LiveProfileResponse,
         LiveProfileResponse,
         LiveProfileResponse,
@@ -361,9 +360,9 @@ export type LiveAvailabilityResponse = {
 };
 
 export type LiveProfileResponse = {
-    profileId: 'dashscope-qwen37-flash-v1' | 'dashscope-qwen37-plus-20260526-v1' | 'dashscope-qwen37-plus-20260526-prompt-v2' | 'dashscope-qwen37-plus-20260526-grounded-v1' | 'dashscope-qwen38-max-v1';
+    profileId: 'dashscope-qwen37-flash-product-v1' | 'dashscope-qwen37-plus-product-v1' | 'dashscope-qwen38-max-product-v1' | 'dashscope-qwen37-max-20260608-product-v1';
     provider: 'DASHSCOPE';
-    model: 'qwen3.7-flash' | 'qwen3.7-plus-2026-05-26' | 'qwen3.8-max';
+    model: 'qwen3.7-flash' | 'qwen3.7-plus' | 'qwen3.8-max' | 'qwen3.7-max-2026-06-08';
     certification: 'EXPERIMENTAL';
     supportedModes: Array<InferenceMode>;
     maximumTotalCalls: number;
@@ -465,6 +464,7 @@ export type InferenceRunResponse = {
     sequence: number;
     profileId: string;
     sourceReference: string;
+    costLimitMicrosCny: number | null;
     cancellationRequested: boolean;
     retryOfRunId: string | null;
     failureCode: string | null;

@@ -15,7 +15,9 @@ RenderWeave 是一个 AI-native 设计出图系统。本仓库当前固定的是
 - Form + 一层 Map 共享状态的 Schema Studio，以及 RootDocument 批量验证
 - synthetic replay 与受控 DashScope live 识别：durable run → evidence review → create-only 原子 Draft Bundle
 
-当前实现已完成计划中 P1–P4，并进入 P5 的受控验证阶段。DashScope adapter 默认关闭，只接受显式标记并确认外传的合成数据；`qwen3.7-flash` 与 `qwen3.8-max` Profile 仍为 `EXPERIMENTAL`，不能直接发布或修改 Schema。真实业务数据、扩大调用预算与 Profile 认证仍需要新的授权和独立质量证据。
+当前实现已完成 P1–P5 的受控能力验证并进入 P6 产品收口。基础 Compose 中 DashScope adapter
+默认关闭；live overlay 开放逐任务确认的用户输入，提供四个产品 Profile 与可选累计成本硬上限。
+所有产品 Profile 仍为 `EXPERIMENTAL`，只能生成待审核 Candidate，不能直接发布或修改 Schema。
 
 ## 运行原型
 
@@ -80,8 +82,8 @@ $env:DASHSCOPE_API_KEY = '<仅设置在当前终端，不写入仓库>'
 docker compose -f compose.yaml -f compose.live.yaml up --build
 ```
 
-overlay 仅通过 Compose secret 向 API 容器只读挂载 Key，浏览器端不会接触 Key。当前限定授权已关闭，因此 overlay 明确保持 `RENDERWEAVE_LIVE_AI_ENABLED=false` 与 `RENDERWEAVE_LIVE_UPLOAD_ENABLED=false`：不会领取历史队列，也不会外传任意 multipart 文件；页面仍可查看 Provider/Profile 与安全状态。以后恢复 worker 或开放上传必须获得新的调用及数据范围授权，并分别变更两个策略开关。
+overlay 仅通过 Compose secret 向 API 容器只读挂载 Key，浏览器端不会接触 Key；它会为当前本地单用户实例同时开启 worker 与上传门。选择文件、预览、切换模型都不会调用 Provider，只有用户确认数据可外发并点击“排队识别并进入审核”后才会创建任务。产品入口提供 `qwen3.7-flash`、`qwen3.7-plus`、`qwen3.8-max`、`qwen3.7-max-2026-06-08` 四个实验 Profile；可设置本次任务累计成本硬上限，也可留空而只保留 Profile 单次预留上界与最多三次调用的保护。
 
 2026-08-08 的受控 synthetic canary 已实际连通两个 Profile：各 1 次调用、合计 2 次、估算费用 ¥0.054017；两条 Candidate 均进入 `REVIEW_REQUIRED` 并通过对应结构金标。该结果只证明真实闭环，不是 60-case 质量认证；两个 Profile 仍保持 `EXPERIMENTAL` 和默认关闭。
 
-当前机器此前受 Docker registry/npm 代理配置影响，因此本轮只验证了 Compose 结构，并通过 Testcontainers + 实际 DashScope endpoint 完成受控 canary；镜像构建与整套 Compose 启动仍需在代理可用后单独验证，不能记为已通过。
+普通 `compose.yaml` 始终保持零外部模型能力；停止 live overlay 后重新用基础 Compose 启动即可恢复默认关闭状态。

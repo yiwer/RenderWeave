@@ -17,6 +17,7 @@ public record InferenceRunSnapshot(
         String profileId,
         String profileSnapshotJson,
         String sourceReference,
+        Long costLimitMicrosCny,
         String inputFingerprint,
         Optional<UUID> retryOfRunId,
         boolean cancellationRequested,
@@ -37,6 +38,9 @@ public record InferenceRunSnapshot(
         profileId = requireText(profileId, "profileId");
         profileSnapshotJson = requireText(profileSnapshotJson, "profileSnapshotJson");
         sourceReference = requireText(sourceReference, "sourceReference");
+        if (costLimitMicrosCny != null && costLimitMicrosCny < 1) {
+            throw new IllegalArgumentException("costLimitMicrosCny must be positive when present");
+        }
         if (inputFingerprint == null || !inputFingerprint.matches("[a-f0-9]{64}")) {
             throw new IllegalArgumentException("inputFingerprint must be a SHA-256 hex digest");
         }

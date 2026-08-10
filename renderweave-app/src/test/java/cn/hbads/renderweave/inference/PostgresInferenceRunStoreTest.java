@@ -192,7 +192,11 @@ class PostgresInferenceRunStoreTest {
 
     @Test
     void runningCancellationIsCooperativeAndRetryCreatesANewQueuedRunWithoutCopyingRawData() {
-        var source = runs.create(command("cancel-source", "cancel-input", "shared-artifact")).run();
+        var source = runs.create(NewInferenceRun.initial(
+                UUID.randomUUID(), "cancel-source", normalized("cancel-input", "shared-artifact"),
+                profile(), 120_000L, T0
+        )).run();
+        assertThat(source.costLimitMicrosCny()).isEqualTo(120_000L);
         var running = runs.claimNext("worker-a", T0, Duration.ofSeconds(30)).orElseThrow();
         var token = running.lease().orElseThrow().token();
 
@@ -211,6 +215,7 @@ class PostgresInferenceRunStoreTest {
         assertThat(retried.created()).isTrue();
         assertThat(retried.run().runId()).isEqualTo(retryId);
         assertThat(retried.run().retryOfRunId()).contains(source.runId());
+        assertThat(retried.run().costLimitMicrosCny()).isEqualTo(120_000L);
         assertThat(retried.run().state()).isEqualTo(InferenceRunState.QUEUED);
         assertThat(retried.run().inputs()).usingRecursiveComparison().isEqualTo(cancelled.inputs());
         assertThat(retried.run().checkpointJson()).contains("NORMALIZE").doesNotContain("safe-checkpoint");

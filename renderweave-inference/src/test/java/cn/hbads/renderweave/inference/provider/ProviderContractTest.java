@@ -69,11 +69,14 @@ class ProviderContractTest {
     @Test
     void pinnedPlusCostUsesTheOfficialInputLengthPricingTiers() {
         var plus = profiles.require("dashscope-qwen37-plus-20260526-v1").profile();
+        var productPlus = profiles.require("dashscope-qwen37-plus-product-v1").profile();
 
         assertEquals(512_800L,
                 ProviderCostEstimator.estimateMicrosCny(plus, new ProviderUsage(256_000, 100)));
         assertEquals(1_538_406L,
                 ProviderCostEstimator.estimateMicrosCny(plus, new ProviderUsage(256_001, 100)));
+        assertEquals(1_538_406L,
+                ProviderCostEstimator.estimateMicrosCny(productPlus, new ProviderUsage(256_001, 100)));
     }
 
     @Test
@@ -133,6 +136,21 @@ class ProviderContractTest {
 
         assertTrue(ProviderCostEstimator.maximumRequestCostMicrosCny(request)
                 > plus.maximumEstimatedCostMicrosCny());
+    }
+
+    @Test
+    void everyProductProfileCanPreReserveItsMaximumTenImageRequest() {
+        var image = new ProviderImage("e".repeat(64), "image/png", new byte[] {1});
+        for (var resource : profiles.productLiveProfiles()) {
+            var profile = resource.profile();
+            var request = new ProviderInferenceRequest(
+                    UUID.randomUUID(), 0, InferenceStage.STRUCTURE, profile,
+                    prompts.require(profile.promptVersion()).text(), "{\"mode\":\"IMAGE_ONLY\"}",
+                    java.util.Collections.nCopies(10, image)
+            );
+            assertTrue(ProviderCostEstimator.maximumRequestCostMicrosCny(request)
+                    <= profile.maximumEstimatedCostMicrosCny(), profile.profileId());
+        }
     }
 
     @Test

@@ -70,12 +70,12 @@ public class PostgresInferenceRunStore implements InferenceRunStore, InferenceRe
                         insert into inference_run (
                             run_id, idempotency_key, request_fingerprint, input_fingerprint,
                             mode, state, stage, sequence, profile_id, profile_snapshot,
-                            source_reference, retry_of_run_id, checkpoint_json,
+                            source_reference, cost_limit_micros_cny, retry_of_run_id, checkpoint_json,
                             created_at, updated_at
                         ) values (
                             :runId, :idempotencyKey, :requestFingerprint, :inputFingerprint,
                             :mode, 'QUEUED', 'OBSERVE', 1, :profileId, cast(:profileSnapshot as jsonb),
-                            :sourceReference, :retryOfRunId, cast(:checkpointJson as jsonb),
+                            :sourceReference, :costLimitMicrosCny, :retryOfRunId, cast(:checkpointJson as jsonb),
                             :createdAt, :createdAt
                         )
                         """)
@@ -87,6 +87,7 @@ public class PostgresInferenceRunStore implements InferenceRunStore, InferenceRe
                 .param("profileId", command.normalizedInput().profileId())
                 .param("profileSnapshot", command.profileSnapshotJson())
                 .param("sourceReference", command.normalizedInput().sourceReference())
+                .param("costLimitMicrosCny", command.costLimitMicrosCny())
                 .param("retryOfRunId", command.retryOfRunId().orElse(null))
                 .param("checkpointJson", initialCheckpoint(command.normalizedInput().inputFingerprint()))
                 .param("createdAt", OffsetDateTime.ofInstant(command.createdAt(), java.time.ZoneOffset.UTC))
@@ -129,7 +130,8 @@ public class PostgresInferenceRunStore implements InferenceRunStore, InferenceRe
                 .single();
         var items = jdbcClient.sql("""
                         select run.run_id, run.mode, run.state, run.stage, run.sequence,
-                               run.profile_id, run.source_reference, run.cancellation_requested,
+                               run.profile_id, run.source_reference, run.cost_limit_micros_cny,
+                               run.cancellation_requested,
                                run.retry_of_run_id, run.failure_code, candidate.revision as candidate_revision,
                                run.created_at, run.updated_at, run.finished_at
                         from inference_run run
@@ -473,12 +475,12 @@ public class PostgresInferenceRunStore implements InferenceRunStore, InferenceRe
                         insert into inference_run (
                             run_id, idempotency_key, request_fingerprint, input_fingerprint,
                             mode, state, stage, sequence, profile_id, profile_snapshot,
-                            source_reference, retry_of_run_id, checkpoint_json,
+                            source_reference, cost_limit_micros_cny, retry_of_run_id, checkpoint_json,
                             created_at, updated_at
                         )
                         select :newRunId, :idempotencyKey, :requestFingerprint, input_fingerprint,
                                mode, 'QUEUED', 'OBSERVE', 1, profile_id, profile_snapshot,
-                               source_reference, run_id, cast(:checkpointJson as jsonb),
+                               source_reference, cost_limit_micros_cny, run_id, cast(:checkpointJson as jsonb),
                                :now, :now
                         from inference_run
                         where run_id = :sourceRunId
@@ -905,7 +907,7 @@ public class PostgresInferenceRunStore implements InferenceRunStore, InferenceRe
         return jdbcClient.sql("""
                         select run_id, mode, state, stage, sequence, profile_id,
                                profile_snapshot::text as profile_snapshot,
-                               source_reference, input_fingerprint, retry_of_run_id,
+                               source_reference, cost_limit_micros_cny, input_fingerprint, retry_of_run_id,
                                cancellation_requested, lease_owner, lease_token, lease_expires_at,
                                failure_code, checkpoint_json::text as checkpoint_json,
                                created_at, updated_at, finished_at
@@ -1011,6 +1013,7 @@ public class PostgresInferenceRunStore implements InferenceRunStore, InferenceRe
                 resultSet.getString("profile_id"),
                 resultSet.getString("profile_snapshot"),
                 resultSet.getString("source_reference"),
+                resultSet.getObject("cost_limit_micros_cny", Long.class),
                 resultSet.getString("input_fingerprint"),
                 Optional.ofNullable(resultSet.getObject("retry_of_run_id", UUID.class)),
                 resultSet.getBoolean("cancellation_requested"),
@@ -1062,6 +1065,7 @@ public class PostgresInferenceRunStore implements InferenceRunStore, InferenceRe
                 resultSet.getLong("sequence"),
                 resultSet.getString("profile_id"),
                 resultSet.getString("source_reference"),
+                resultSet.getObject("cost_limit_micros_cny", Long.class),
                 resultSet.getBoolean("cancellation_requested"),
                 resultSet.getObject("retry_of_run_id", UUID.class),
                 resultSet.getString("failure_code"),
@@ -1171,6 +1175,7 @@ public class PostgresInferenceRunStore implements InferenceRunStore, InferenceRe
             String profileId,
             String profileSnapshotJson,
             String sourceReference,
+            Long costLimitMicrosCny,
             String inputFingerprint,
             Optional<UUID> retryOfRunId,
             boolean cancellationRequested,
@@ -1184,7 +1189,8 @@ public class PostgresInferenceRunStore implements InferenceRunStore, InferenceRe
         InferenceRunSnapshot toSnapshot(List<InferenceRunInput> inputs) {
             return new InferenceRunSnapshot(
                     runId, mode, state, stage, sequence, profileId, profileSnapshotJson,
-                    sourceReference, inputFingerprint, retryOfRunId, cancellationRequested,
+                    sourceReference, costLimitMicrosCny, inputFingerprint, retryOfRunId,
+                    cancellationRequested,
                     lease, failureCode, checkpointJson, createdAt, updatedAt, finishedAt, inputs
             );
         }

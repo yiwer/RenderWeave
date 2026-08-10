@@ -70,7 +70,8 @@ public final class ProviderCostEstimator {
             if (inputTokens <= 256_000L) return 3L;
             return 6L;
         }
-        if ("qwen3.7-plus-2026-05-26".equals(profile.model())) {
+        if ("qwen3.7-plus-2026-05-26".equals(profile.model())
+                || "qwen3.7-plus".equals(profile.model())) {
             return inputTokens <= 256_000L ? 1L : 3L;
         }
         return 1L;

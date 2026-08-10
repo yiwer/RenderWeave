@@ -162,6 +162,7 @@ export function snapshot(): CandidateReviewResponse {
       sequence: 7,
       profileId: 'replay-v1',
       sourceReference: 'combined-01',
+      costLimitMicrosCny: null,
       cancellationRequested: false,
       retryOfRunId: null,
       failureCode: null,

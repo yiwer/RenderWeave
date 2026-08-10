@@ -11,11 +11,9 @@ import cn.hbads.renderweave.inference.input.BlobStore;
 import cn.hbads.renderweave.inference.input.InferenceInput;
 import cn.hbads.renderweave.inference.input.InferenceMode;
 import cn.hbads.renderweave.inference.input.NormalizedArtifact;
-import cn.hbads.renderweave.inference.live.LiveInferenceWorker;
 import cn.hbads.renderweave.inference.profile.InferenceProfileRegistry;
 import cn.hbads.renderweave.inference.profile.JsonStructuralProfiler;
 import cn.hbads.renderweave.inference.provider.InferenceProvider;
-import cn.hbads.renderweave.inference.provider.ProviderBudgetStore;
 import cn.hbads.renderweave.inference.replay.InferenceReplayStore;
 import cn.hbads.renderweave.inference.run.InferenceRunService;
 import cn.hbads.renderweave.inference.run.InferenceRunSnapshot;
@@ -56,7 +54,6 @@ final class InferenceController {
     private final InferenceReplayStore replayStore;
     private final InferenceCoordinator coordinator;
     private final InferenceProvider provider;
-    private final ProviderBudgetStore budgets;
     private final CandidateReviewService reviews;
     private final CandidateApplyService applies;
     private final ReplayFixtureInputFactory fixtureInputs;
@@ -66,6 +63,7 @@ final class InferenceController {
     private final CandidateJsonCodec candidateCodec = new CandidateJsonCodec();
     private final InferenceProfileRegistry profiles = new InferenceProfileRegistry();
     private final JsonStructuralProfiler structuralProfiler = new JsonStructuralProfiler();
+    private static final long MAXIMUM_RUN_COST_LIMIT_MICROS_CNY = 100_000_000L;
 
     InferenceController(
             InferenceRunService runService,
@@ -73,7 +71,6 @@ final class InferenceController {
             InferenceReplayStore replayStore,
             InferenceCoordinator coordinator,
             InferenceProvider provider,
-            ProviderBudgetStore budgets,
             CandidateReviewService reviews,
             CandidateApplyService applies,
             ReplayFixtureInputFactory fixtureInputs,
@@ -86,7 +83,6 @@ final class InferenceController {
         this.replayStore = replayStore;
         this.coordinator = coordinator;
         this.provider = provider;
-        this.budgets = budgets;
         this.reviews = reviews;
         this.applies = applies;
         this.fixtureInputs = fixtureInputs;
@@ -166,11 +162,8 @@ final class InferenceController {
 
     @GetMapping("/live-availability")
     LiveAvailabilityResponse liveAvailability() {
-        var budget = budgets.snapshot(LiveInferenceWorker.CANARY_BUDGET_KEY);
-        var items = profiles.profileIds().stream()
-                .map(profiles::require)
+        var items = profiles.productLiveProfiles().stream()
                 .map(InferenceProfileRegistry.ProfileResource::profile)
-                .filter(profile -> profile.networkAllowed())
                 .map(profile -> new LiveProfileResponse(
                         profile.profileId(), profile.provider(), profile.model(), profile.certification(),
                         profile.supportedModes().stream().map(Enum::name).toList(),
@@ -179,10 +172,8 @@ final class InferenceController {
                 ))
                 .toList();
         return new LiveAvailabilityResponse(
-                coordinator.liveEnabled(), provider.configured(), liveUploadsEnabled, "SYNTHETIC_ONLY",
-                budget.maximumAttempts(), budget.consumedAttempts(), budget.remainingAttempts(),
-                budget.maximumCostMicrosCny(), budget.consumedCostMicrosCny(),
-                budget.remainingCostMicrosCny(), items
+                coordinator.liveEnabled(), provider.configured(), liveUploadsEnabled, "USER_PROVIDED",
+                false, MAXIMUM_RUN_COST_LIMIT_MICROS_CNY, items
         );
     }
 
@@ -197,8 +188,8 @@ final class InferenceController {
             throw new InvalidInferenceApiRequestException("Idempotency-Key is required");
         }
         requireLiveAuthorization();
-        if (!"SYNTHETIC".equals(request.inputClassification())) {
-            throw new InvalidInferenceApiRequestException("Only repository synthetic inputs are authorized");
+        if (!"USER_PROVIDED".equals(request.inputClassification())) {
+            throw new InvalidInferenceApiRequestException("Live uploads must use the user-provided classification");
         }
         if (!Boolean.TRUE.equals(request.externalTransferConfirmed())
                 || !Boolean.TRUE.equals(request.experimentalProfileConfirmed())) {
@@ -218,16 +209,26 @@ final class InferenceController {
         } catch (IllegalArgumentException exception) {
             throw new InvalidInferenceApiRequestException("Unknown inference profile", exception);
         }
-        if (!profile.profile().networkAllowed()
+        if (!profiles.isProductLiveProfile(profile.profile().profileId())
+                || !profile.profile().networkAllowed()
                 || !"EXPERIMENTAL".equals(profile.profile().certification())
                 || !profile.profile().supportedModes().contains(mode)) {
             throw new InvalidInferenceApiRequestException("Profile is not authorized for this live mode");
         }
+        if (request.costLimitMicrosCny() != null
+                && (request.costLimitMicrosCny() < 1
+                || request.costLimitMicrosCny() > MAXIMUM_RUN_COST_LIMIT_MICROS_CNY)) {
+            throw new InvalidInferenceApiRequestException(
+                    "costLimitMicrosCny must be 1.." + MAXIMUM_RUN_COST_LIMIT_MICROS_CNY + " when present"
+            );
+        }
         var input = new InferenceInput(
-                mode, profile.profile().profileId(), "synthetic-upload", true,
+                mode, profile.profile().profileId(), "user-upload", true,
                 binaryInputs(images, false), binaryInputs(jsonSamples, true)
         );
-        var created = runService.create(idempotencyKey, input, profile.snapshotJson());
+        var created = runService.create(
+                idempotencyKey, input, profile.snapshotJson(), request.costLimitMicrosCny()
+        );
         if (created.created()) coordinator.kick();
         return ResponseEntity
                 .status(created.created() ? 201 : 200)
@@ -501,7 +502,7 @@ final class InferenceController {
     private InferenceRunResponse toRunResponse(InferenceRunSnapshot run) {
         return new InferenceRunResponse(
                 run.runId(), run.mode().name(), run.state().name(), run.stage().name(), run.sequence(),
-                run.profileId(), run.sourceReference(), run.cancellationRequested(),
+                run.profileId(), run.sourceReference(), run.costLimitMicrosCny(), run.cancellationRequested(),
                 run.retryOfRunId().orElse(null),
                 run.failureCode().orElse(null),
                 replayStore.findCandidate(run.runId()).map(snapshot -> snapshot.revision()).orElse(null),
@@ -512,7 +513,7 @@ final class InferenceController {
     private static InferenceRunResponse toRunResponse(InferenceRunStore.RunSummary run) {
         return new InferenceRunResponse(
                 run.runId(), run.mode(), run.state(), run.stage(), run.sequence(),
-                run.profileId(), run.sourceReference(), run.cancellationRequested(),
+                run.profileId(), run.sourceReference(), run.costLimitMicrosCny(), run.cancellationRequested(),
                 run.retryOfRunId(), run.failureCode(), run.candidateRevision(),
                 run.createdAt(), run.updatedAt(), run.finishedAt()
         );
@@ -539,7 +540,8 @@ final class InferenceController {
             String mode,
             String inputClassification,
             Boolean externalTransferConfirmed,
-            Boolean experimentalProfileConfirmed
+            Boolean experimentalProfileConfirmed,
+            Long costLimitMicrosCny
     ) { }
 
     record LiveAvailabilityResponse(
@@ -547,12 +549,8 @@ final class InferenceController {
             boolean configured,
             boolean uploadEnabled,
             String inputClassification,
-            int maximumAttempts,
-            int consumedAttempts,
-            int remainingAttempts,
-            long maximumCostMicrosCny,
-            long consumedCostMicrosCny,
-            long remainingCostMicrosCny,
+            boolean runCostLimitRequired,
+            long maximumRunCostLimitMicrosCny,
             List<LiveProfileResponse> profiles
     ) { }
 
@@ -598,6 +596,7 @@ final class InferenceController {
             long sequence,
             String profileId,
             String sourceReference,
+            Long costLimitMicrosCny,
             boolean cancellationRequested,
             UUID retryOfRunId,
             String failureCode,

@@ -464,7 +464,7 @@ paths:
     get:
       operationId: getLiveInferenceAvailability
       tags: [Inference Runs]
-      summary: Read the guarded DashScope profile and global canary budget state
+      summary: Read product DashScope profiles and deployment availability
       responses:
         '200':
           description: Safe availability metadata; credentials are never returned.
@@ -478,11 +478,12 @@ paths:
     post:
       operationId: createLiveInferenceRun
       tags: [Inference Runs]
-      summary: Queue a synthetic-only DashScope inference run
+      summary: Queue an explicitly confirmed DashScope inference run
       description: >-
-        Disabled by default. Worker execution and arbitrary multipart upload require separate
-        deployment authorizations. Each external call has a conservative pre-call cost bound and
-        then consumes one durable global reservation from the six-call and one-yuan canary budget.
+        Worker execution, multipart upload and provider credentials are independent deployment
+        gates. A nullable run cost limit is cumulative across all attempts; null means no additional
+        per-run limit. Every call still has a conservative Profile bound, a three-call ceiling and a
+        durable pre-call reservation.
       parameters:
         - $ref: '#/components/parameters/IdempotencyKey'
       requestBody:
@@ -1678,28 +1679,32 @@ components:
         profileId:
           type: string
           enum:
-            [dashscope-qwen37-flash-v1, dashscope-qwen37-plus-20260526-v1,
-             dashscope-qwen37-plus-20260526-prompt-v2,
-             dashscope-qwen37-plus-20260526-grounded-v1,
-             dashscope-qwen38-max-v1]
+            [dashscope-qwen37-flash-product-v1, dashscope-qwen37-plus-product-v1,
+             dashscope-qwen38-max-product-v1,
+             dashscope-qwen37-max-20260608-product-v1]
         mode:
           $ref: '#/components/schemas/InferenceMode'
         inputClassification:
           type: string
-          const: SYNTHETIC
+          const: USER_PROVIDED
         externalTransferConfirmed:
           type: boolean
           const: true
         experimentalProfileConfirmed:
           type: boolean
           const: true
+        costLimitMicrosCny:
+          type: [integer, 'null']
+          format: int64
+          minimum: 1
+          maximum: 100000000
+          description: Optional cumulative ceiling for this run; null applies no additional run ceiling.
     LiveAvailabilityResponse:
       type: object
       additionalProperties: false
       required:
-        [enabled, configured, uploadEnabled, inputClassification, maximumAttempts, consumedAttempts,
-         remainingAttempts, maximumCostMicrosCny, consumedCostMicrosCny,
-         remainingCostMicrosCny, profiles]
+        [enabled, configured, uploadEnabled, inputClassification, runCostLimitRequired,
+         maximumRunCostLimitMicrosCny, profiles]
       properties:
         enabled:
           type: boolean
@@ -1707,39 +1712,21 @@ components:
           type: boolean
         uploadEnabled:
           type: boolean
-          description: False until arbitrary synthetic multipart transfer receives separate deployment authorization.
+          description: False until multipart transfer is enabled for this deployment.
         inputClassification:
           type: string
-          const: SYNTHETIC_ONLY
-        maximumAttempts:
-          type: integer
-          const: 6
-        consumedAttempts:
-          type: integer
-          minimum: 0
-          maximum: 6
-        remainingAttempts:
-          type: integer
-          minimum: 0
-          maximum: 6
-        maximumCostMicrosCny:
+          const: USER_PROVIDED
+        runCostLimitRequired:
+          type: boolean
+          const: false
+        maximumRunCostLimitMicrosCny:
           type: integer
           format: int64
-          const: 1000000
-        consumedCostMicrosCny:
-          type: integer
-          format: int64
-          minimum: 0
-          maximum: 1000000
-        remainingCostMicrosCny:
-          type: integer
-          format: int64
-          minimum: 0
-          maximum: 1000000
+          const: 100000000
         profiles:
           type: array
-          minItems: 5
-          maxItems: 5
+          minItems: 4
+          maxItems: 4
           items:
             $ref: '#/components/schemas/LiveProfileResponse'
     LiveProfileResponse:
@@ -1752,16 +1739,15 @@ components:
         profileId:
           type: string
           enum:
-            [dashscope-qwen37-flash-v1, dashscope-qwen37-plus-20260526-v1,
-             dashscope-qwen37-plus-20260526-prompt-v2,
-             dashscope-qwen37-plus-20260526-grounded-v1,
-             dashscope-qwen38-max-v1]
+            [dashscope-qwen37-flash-product-v1, dashscope-qwen37-plus-product-v1,
+             dashscope-qwen38-max-product-v1,
+             dashscope-qwen37-max-20260608-product-v1]
         provider:
           type: string
           const: DASHSCOPE
         model:
           type: string
-          enum: [qwen3.7-flash, qwen3.7-plus-2026-05-26, qwen3.8-max]
+          enum: [qwen3.7-flash, qwen3.7-plus, qwen3.8-max, qwen3.7-max-2026-06-08]
         certification:
           type: string
           const: EXPERIMENTAL
@@ -1847,7 +1833,8 @@ components:
       type: object
       additionalProperties: false
       required:
-        [runId, mode, state, stage, sequence, profileId, sourceReference, cancellationRequested, retryOfRunId, failureCode, candidateRevision, createdAt, updatedAt, finishedAt]
+        [runId, mode, state, stage, sequence, profileId, sourceReference, costLimitMicrosCny,
+         cancellationRequested, retryOfRunId, failureCode, candidateRevision, createdAt, updatedAt, finishedAt]
       properties:
         runId:
           type: string
@@ -1866,6 +1853,10 @@ components:
           type: string
         sourceReference:
           type: string
+        costLimitMicrosCny:
+          type: [integer, 'null']
+          format: int64
+          minimum: 1
         cancellationRequested:
           type: boolean
         retryOfRunId:

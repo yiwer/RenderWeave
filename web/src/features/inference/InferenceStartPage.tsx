@@ -260,11 +260,13 @@ function LiveLauncher({
   query: UseQueryResult<LiveAvailabilityResponse, Error>;
   onCreated: (runId: string) => void;
 }) {
-  const [profileId, setProfileId] = useState<LiveProfileId>('dashscope-qwen37-flash-v1');
+  const [profileId, setProfileId] = useState<LiveProfileId>('dashscope-qwen37-flash-product-v1');
   const [images, setImages] = useState<File[]>([]);
   const [jsonSamples, setJsonSamples] = useState<File[]>([]);
   const [transferConfirmed, setTransferConfirmed] = useState(false);
   const [experimentalConfirmed, setExperimentalConfirmed] = useState(false);
+  const [costLimitEnabled, setCostLimitEnabled] = useState(false);
+  const [costLimitYuan, setCostLimitYuan] = useState('10.00');
   const profile = query.data?.profiles.find((item) => item.profileId === profileId);
   const imageIssues = validateLiveFiles('IMAGE', images);
   const jsonIssues = validateLiveFiles('JSON', jsonSamples);
@@ -279,10 +281,19 @@ function LiveLauncher({
     && activeIssues.length === 0
     && profileSupportsMode;
   const uploadAuthorized = Boolean(query.data?.uploadEnabled);
-  const available = Boolean(query.data?.enabled && query.data.configured && uploadAuthorized
-    && query.data.remainingAttempts > 0 && query.data.remainingCostMicrosCny > 0);
+  const available = Boolean(query.data?.enabled && query.data.configured && uploadAuthorized);
+  const costLimitMicrosCny = costLimitEnabled ? parseYuanMicros(costLimitYuan) : null;
+  const costLimitValid = !costLimitEnabled || (costLimitMicrosCny !== null
+    && costLimitMicrosCny <= (query.data?.maximumRunCostLimitMicrosCny ?? 0));
   const createRun = useMutation({
-    mutationFn: () => createLiveRunRequest(profileId, mode, activeFiles.images, activeFiles.jsonSamples, crypto.randomUUID()),
+    mutationFn: () => createLiveRunRequest(
+      profileId,
+      mode,
+      activeFiles.images,
+      activeFiles.jsonSamples,
+      crypto.randomUUID(),
+      costLimitMicrosCny,
+    ),
     onSuccess: (run) => onCreated(run.runId),
   });
 
@@ -295,18 +306,18 @@ function LiveLauncher({
           <section className="replay-contract live-contract" aria-label="Live 执行边界">
             <div><Cloud aria-hidden="true" size={19} /><span>服务提供方</span><strong>DashScope</strong></div>
             <div><Bot aria-hidden="true" size={19} /><span>运行状态</span><strong className={available ? 'contract-safe' : 'contract-blocked'}>{available ? '可用' : '已关闭'}</strong></div>
-            <div><CircleDollarSign aria-hidden="true" size={19} /><span>全局预算</span><strong>{query.data.remainingAttempts} 次 / ¥{formatYuan(query.data.remainingCostMicrosCny)}</strong></div>
-            <p><ShieldCheck aria-hidden="true" size={15} />仅允许仓库合成数据；图片与结构摘要会发送到所选实验模型。</p>
+            <div><CircleDollarSign aria-hidden="true" size={19} /><span>本次成本</span><strong>可选硬上限</strong></div>
+            <p><ShieldCheck aria-hidden="true" size={15} />只有点击启动后，当前选择的图片与结构摘要才会发送到所选实验模型。</p>
           </section>
 
           {!available && (
             <section className="live-policy-notice" role="status">
               <ShieldCheck aria-hidden="true" size={18} />
               <div>
-                <strong>{!uploadAuthorized ? '当前授权未开放任意文件外传' : '部署策略尚未开放真实调用'}</strong>
+                <strong>{!uploadAuthorized ? '当前部署未开放文件传输' : 'DashScope 运行配置尚未就绪'}</strong>
                 <span>{!uploadAuthorized
-                  ? '真实通路已由仓库合成 canary 验证；任意 multipart 上传需要新的数据范围授权。选择文件不会上传或触发模型。'
-                  : '需要同时配置密钥并设置 RENDERWEAVE_LIVE_AI_ENABLED=true；上传与预览本身不会触发模型。'}</span>
+                  ? '请使用 live Compose 配置启动服务；选择文件、预览和切换模型都不会触发调用。'
+                  : '需要配置 DASHSCOPE_API_KEY 并启用运行门；页面本身不会触发模型。'}</span>
               </div>
             </section>
           )}
@@ -372,16 +383,44 @@ function LiveLauncher({
 
             <aside className="replay-launch-panel live-launch-panel" aria-label="AI 调用确认">
               <span className="section-kicker">调用摘要</span>
-              <h2>{profile ? `${profile.model} · ${liveProfileShortVersion(profile)}` : '选择模型'}</h2>
+              <h2>{profile?.model ?? '选择模型'}</h2>
               <dl className="fixture-metrics">
                 <div><dt>输入模式</dt><dd>{modeLabels[mode]}</dd></div>
                 <div><dt>本次文件</dt><dd>{activeFiles.images.length + activeFiles.jsonSamples.length}</dd></div>
                 <div><dt>最多调用</dt><dd>{profile?.maximumTotalCalls ?? 0}</dd></div>
-                <div><dt>成本预留上限</dt><dd>¥{formatYuan(profile?.maximumEstimatedCostMicrosCny ?? 0)}</dd></div>
+                <div><dt>单次预留上界</dt><dd>¥{formatYuan(profile?.maximumEstimatedCostMicrosCny ?? 0)}</dd></div>
               </dl>
+              <div className="live-cost-policy">
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={costLimitEnabled}
+                    onChange={(event) => setCostLimitEnabled(event.target.checked)}
+                  />
+                  <span><strong>设置本次任务成本上限</strong><small>累计覆盖首次识别与最多两次修复。</small></span>
+                </label>
+                {costLimitEnabled
+                  ? <div className={costLimitValid ? 'live-cost-input' : 'live-cost-input invalid'}>
+                      <span>¥</span>
+                      <input
+                        type="number"
+                        min="0.01"
+                        max={formatYuanInput(query.data.maximumRunCostLimitMicrosCny)}
+                        step="0.01"
+                        inputMode="decimal"
+                        aria-label="本次任务成本上限"
+                        value={costLimitYuan}
+                        onChange={(event) => setCostLimitYuan(event.target.value)}
+                      />
+                    </div>
+                  : <p>不设置本次上限；仍受单次预留上界与最多 3 次调用约束。</p>}
+                {costLimitEnabled && !costLimitValid && (
+                  <em role="alert">请输入大于 0 且不超过 ¥{formatYuan(query.data.maximumRunCostLimitMicrosCny)} 的金额。</em>
+                )}
+              </div>
               <label className="replay-confirmation">
                 <input type="checkbox" checked={transferConfirmed} onChange={(event) => setTransferConfirmed(event.target.checked)} />
-                <span><strong>确认数据可外发</strong>这些文件仅含仓库合成数据，可发送至 DashScope。</span>
+                <span><strong>确认数据可外发</strong>我有权将本次选择的文件发送至 DashScope 进行识别。</span>
               </label>
               <label className="replay-confirmation compact-confirmation">
                 <input type="checkbox" checked={experimentalConfirmed} onChange={(event) => setExperimentalConfirmed(event.target.checked)} />
@@ -390,7 +429,7 @@ function LiveLauncher({
               <button
                 type="button"
                 className="button primary-button replay-launch"
-                disabled={!available || !modeReady || !transferConfirmed || !experimentalConfirmed || createRun.isPending}
+                disabled={!available || !modeReady || !costLimitValid || !transferConfirmed || !experimentalConfirmed || createRun.isPending}
                 onClick={() => createRun.mutate()}
               >
                 <Upload aria-hidden="true" size={16} />{createRun.isPending ? '正在创建任务…' : '排队识别并进入审核'}
@@ -399,7 +438,7 @@ function LiveLauncher({
                 ? <p className="live-input-hint">所选模型配置不支持当前输入模式，请切换模型或模式。</p>
                 : !modeReady && <p className="live-input-hint">请按当前模式添加必需文件。</p>}
               {createRun.isError && <p className="replay-error" role="alert">{errorMessage(createRun.error)}</p>}
-              <p className="replay-footnote">每次 provider 尝试先进行持久化预算预留；失败、修复和重试都会计入 6 次全局上限。</p>
+              <p className="replay-footnote">每次 Provider 尝试都会先持久化费用预留；任务上限不足时会在调用前安全停止。</p>
             </aside>
           </div>
         </>
@@ -487,21 +526,18 @@ function formatYuan(micros: number) {
   return (micros / 1_000_000).toFixed(micros >= 100_000 ? 2 : 3);
 }
 
-function liveProfileShortVersion(profile: LiveProfileResponse) {
-  if (profile.profileId.endsWith('-grounded-v1')) return 'Grounded v1';
-  return profile.profileId.endsWith('-prompt-v2') ? 'Prompt v2' : 'Prompt v1';
-}
-
 function liveProfileDescription(profile: LiveProfileResponse) {
-  if (profile.profileId.endsWith('-grounded-v1')) return '确定性 JSON Grounding · 受限视觉覆盖';
-  if (profile.profileId.endsWith('-prompt-v2')) return '证据锚定 · 最小结构 Prompt v2';
-  return profile.model.includes('flash') ? '低成本快速识别 · Prompt v1' : '复杂结构复核 · Prompt v1';
+  if (profile.model === 'qwen3.7-flash') return '低成本快速识别';
+  if (profile.model === 'qwen3.7-plus') return '质量、速度与成本均衡';
+  if (profile.model === 'qwen3.7-max-2026-06-08') return '固定版本 · 复杂视觉结构';
+  return '高能力实验模型';
 }
 
 function humanProfile(profileId: string) {
   if (profileId === 'replay-v1') return '确定性回放';
   if (profileId.includes('qwen37-plus')) return 'Qwen3.7 Plus';
   if (profileId.includes('qwen37-flash')) return 'Qwen3.7 Flash';
+  if (profileId.includes('qwen37-max')) return 'Qwen3.7 Max 2026-06-08';
   if (profileId.includes('qwen38-max')) return 'Qwen3.8 Max';
   return profileId;
 }
@@ -520,6 +556,17 @@ function formatRunTime(value: string) {
     hour: '2-digit',
     minute: '2-digit',
   }).format(new Date(value));
+}
+
+function parseYuanMicros(value: string): number | null {
+  if (!/^\d{1,3}(?:\.\d{1,6})?$/.test(value)) return null;
+  const [whole, fraction = ''] = value.split('.');
+  const micros = Number(whole) * 1_000_000 + Number(fraction.padEnd(6, '0'));
+  return micros > 0 && Number.isSafeInteger(micros) ? micros : null;
+}
+
+function formatYuanInput(micros: number) {
+  return (micros / 1_000_000).toFixed(2);
 }
 
 function errorMessage(error: unknown) {

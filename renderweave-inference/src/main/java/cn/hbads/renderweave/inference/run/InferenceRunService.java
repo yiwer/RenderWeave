@@ -37,10 +37,20 @@ public final class InferenceRunService {
             InferenceInput input,
             String profileSnapshotJson
     ) {
+        return create(idempotencyKey, input, profileSnapshotJson, null);
+    }
+
+    public synchronized InferenceRunStore.CreationResult create(
+            String idempotencyKey,
+            InferenceInput input,
+            String profileSnapshotJson,
+            Long costLimitMicrosCny
+    ) {
         var normalized = inputNormalizer.normalize(input);
         try {
             return runStore.create(NewInferenceRun.initial(
-                    runIds.get(), idempotencyKey, normalized, profileSnapshotJson, clock.instant()
+                    runIds.get(), idempotencyKey, normalized, profileSnapshotJson,
+                    costLimitMicrosCny, clock.instant()
             ));
         } catch (RuntimeException primary) {
             cleanupLocators(normalized.newlyCreatedLocators(), primary);

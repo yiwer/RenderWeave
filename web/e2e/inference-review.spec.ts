@@ -290,6 +290,61 @@ test('preflights a local upload queue while the deployment transfer gate is clos
   expect(livePosts).toBe(0);
 });
 
+test('offers four product models and an optional cumulative run cost ceiling', async ({ page }) => {
+  let livePosts = 0;
+  let multipartBody = '';
+  await page.route('**/api/v1/inference-runs**', async (route) => {
+    const request = route.request();
+    const url = new URL(request.url());
+    if (request.method() === 'GET' && url.pathname === '/api/v1/inference-runs/replay-fixtures') {
+      await json(route, replayFixtures());
+    } else if (request.method() === 'GET' && url.pathname === '/api/v1/inference-runs/live-availability') {
+      await json(route, liveAvailability(true));
+    } else if (request.method() === 'GET' && url.pathname === '/api/v1/inference-runs') {
+      await json(route, { page: 1, size: 6, total: 0, items: [] });
+    } else if (request.method() === 'POST' && url.pathname === '/api/v1/inference-runs/live') {
+      livePosts += 1;
+      multipartBody = request.postDataBuffer()?.toString('utf8') ?? '';
+      await json(route, {
+        ...runResponse(0, 'QUEUED'),
+        profileId: 'dashscope-qwen37-flash-product-v1',
+        sourceReference: 'user-upload',
+        costLimitMicrosCny: 250000,
+      }, 201);
+    } else {
+      await route.abort('failed');
+    }
+  });
+
+  await page.goto('/inference');
+  await page.getByRole('tab', { name: /AI 识别/ }).click();
+  await expect(page.getByText('可用', { exact: true })).toBeVisible();
+  await expect(page.locator('.live-profile-grid button')).toHaveCount(4);
+  for (const model of ['qwen3.7-flash', 'qwen3.7-plus', 'qwen3.8-max', 'qwen3.7-max-2026-06-08']) {
+    await expect(page.locator('.live-profile-grid button').filter({ hasText: model })).toHaveCount(1);
+  }
+
+  await page.getByRole('tab', { name: '仅 JSON' }).click();
+  await page.locator('.live-upload-field input[type="file"]').nth(1).setInputFiles({
+    name: 'sample.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from('{"title":"示例"}'),
+  });
+  await page.getByRole('checkbox', { name: /设置本次任务成本上限/ }).check();
+  const costInput = page.getByRole('spinbutton', { name: '本次任务成本上限' });
+  await costInput.fill('0');
+  await expect(page.getByRole('button', { name: '排队识别并进入审核' })).toBeDisabled();
+  await costInput.fill('0.25');
+  await page.getByRole('checkbox', { name: /确认数据可外发/ }).check();
+  await page.getByRole('checkbox', { name: /接受实验配置/ }).check();
+  await expect(page.getByRole('button', { name: '排队识别并进入审核' })).toBeEnabled();
+  await page.getByRole('button', { name: '排队识别并进入审核' }).click();
+
+  await expect.poll(() => livePosts).toBe(1);
+  expect(multipartBody).toContain('"inputClassification":"USER_PROVIDED"');
+  expect(multipartBody).toContain('"costLimitMicrosCny":250000');
+});
+
 test('requires confirmation to cancel and creates a new auditable retry run', async ({ page }) => {
   let run = runResponse(0, 'QUEUED');
   let cancelCalls = 0;
@@ -492,6 +547,7 @@ function runResponse(
     sequence: 7 + candidateRevision + (state === 'COMPLETED' ? 2 : 0),
     profileId: 'replay-v1',
     sourceReference,
+    costLimitMicrosCny: null,
     cancellationRequested: false,
     retryOfRunId: null,
     failureCode: state === 'FAILED' ? 'LIVE_REPAIR_BUDGET_EXHAUSTED' : null,
@@ -529,7 +585,7 @@ function replayFixtures() {
   };
 }
 
-function liveAvailability() {
+function liveAvailability(enabled = false) {
   const profile = (
     profileId: string,
     model: string,
@@ -546,22 +602,17 @@ function liveAvailability() {
     pricingEffectiveDate: '2026-08-01',
   });
   return {
-    enabled: false,
-    configured: false,
-    uploadEnabled: false,
-    inputClassification: 'SYNTHETIC_ONLY',
-    maximumAttempts: 6,
-    consumedAttempts: 0,
-    remainingAttempts: 6,
-    maximumCostMicrosCny: 1000000,
-    consumedCostMicrosCny: 0,
-    remainingCostMicrosCny: 1000000,
+    enabled,
+    configured: enabled,
+    uploadEnabled: enabled,
+    inputClassification: 'USER_PROVIDED',
+    runCostLimitRequired: false,
+    maximumRunCostLimitMicrosCny: 100000000,
     profiles: [
-      profile('dashscope-qwen37-flash-v1', 'qwen3.7-flash', ['IMAGE_ONLY', 'JSON_ONLY', 'COMBINED']),
-      profile('dashscope-qwen37-plus-20260526-v1', 'qwen3.7-plus-2026-05-26', ['IMAGE_ONLY', 'JSON_ONLY', 'COMBINED']),
-      profile('dashscope-qwen37-plus-20260526-prompt-v2', 'qwen3.7-plus-2026-05-26', ['IMAGE_ONLY', 'JSON_ONLY', 'COMBINED']),
-      profile('dashscope-qwen37-plus-20260526-grounded-v1', 'qwen3.7-plus-2026-05-26', ['IMAGE_ONLY', 'JSON_ONLY', 'COMBINED']),
-      profile('dashscope-qwen38-max-v1', 'qwen3.8-max', ['IMAGE_ONLY', 'JSON_ONLY', 'COMBINED']),
+      profile('dashscope-qwen37-flash-product-v1', 'qwen3.7-flash', ['IMAGE_ONLY', 'JSON_ONLY', 'COMBINED']),
+      profile('dashscope-qwen37-plus-product-v1', 'qwen3.7-plus', ['IMAGE_ONLY', 'JSON_ONLY', 'COMBINED']),
+      profile('dashscope-qwen38-max-product-v1', 'qwen3.8-max', ['IMAGE_ONLY', 'JSON_ONLY', 'COMBINED']),
+      profile('dashscope-qwen37-max-20260608-product-v1', 'qwen3.7-max-2026-06-08', ['IMAGE_ONLY', 'JSON_ONLY', 'COMBINED']),
     ],
   };
 }

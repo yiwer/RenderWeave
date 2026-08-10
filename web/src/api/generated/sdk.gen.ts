@@ -160,14 +160,14 @@ export const validateRootDocuments = <ThrowOnError extends boolean = false>(opti
 export const listReplayFixtures = <ThrowOnError extends boolean = false>(options?: Options<ListReplayFixturesData, ThrowOnError>): RequestResult<ListReplayFixturesResponses, ListReplayFixturesErrors, ThrowOnError> => (options?.client ?? client).get<ListReplayFixturesResponses, ListReplayFixturesErrors, ThrowOnError>({ url: '/api/v1/inference-runs/replay-fixtures', ...options });
 
 /**
- * Read the guarded DashScope profile and global canary budget state
+ * Read product DashScope profiles and deployment availability
  */
 export const getLiveInferenceAvailability = <ThrowOnError extends boolean = false>(options?: Options<GetLiveInferenceAvailabilityData, ThrowOnError>): RequestResult<GetLiveInferenceAvailabilityResponses, GetLiveInferenceAvailabilityErrors, ThrowOnError> => (options?.client ?? client).get<GetLiveInferenceAvailabilityResponses, GetLiveInferenceAvailabilityErrors, ThrowOnError>({ url: '/api/v1/inference-runs/live-availability', ...options });
 
 /**
- * Queue a synthetic-only DashScope inference run
+ * Queue an explicitly confirmed DashScope inference run
  *
- * Disabled by default. Worker execution and arbitrary multipart upload require separate deployment authorizations. Each external call has a conservative pre-call cost bound and then consumes one durable global reservation from the six-call and one-yuan canary budget.
+ * Worker execution, multipart upload and provider credentials are independent deployment gates. A nullable run cost limit is cumulative across all attempts; null means no additional per-run limit. Every call still has a conservative Profile bound, a three-call ceiling and a durable pre-call reservation.
  */
 export const createLiveInferenceRun = <ThrowOnError extends boolean = false>(options: Options<CreateLiveInferenceRunData, ThrowOnError>): RequestResult<CreateLiveInferenceRunResponses, CreateLiveInferenceRunErrors, ThrowOnError> => (options.client ?? client).post<CreateLiveInferenceRunResponses, CreateLiveInferenceRunErrors, ThrowOnError>({
     ...formDataBodySerializer,
