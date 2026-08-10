@@ -135,6 +135,27 @@ Plus product-v16 随后完成新的 PROPOSED → 负探针 → OPEN → CLOSED �
 5 attempts、19,201 input + 8,281 output tokens、147,141 ms、0 abandoned 与 payload scan PASS。第二次 OBSERVE
 accepted，得到 10 SLOT、1 GROUP；后三次 HIERARCHY 分别以 support group reused、relationship support IDs
 invalid、support group reused 拒绝。原 cardinality mismatch 不再出现，但 BINDING 仍不可达，因此 4.3 只证明
-新假设改变了失败边界，不构成晋级。新的最小离线假设是：当 relationship 数量严格大于可用 distinct GROUP
-数量时，HIERARCHY 不可能在不补回上游 GROUP 的情况下满足一对一支撑，应以新的固定 semantic code 回到
-OBSERVE；不能自动复制 GROUP 或放宽 support uniqueness。
+新假设改变了失败边界，不构成晋级。进一步离线审查否决了“relationship 数量大于 distinct GROUP 数量就回退”
+的初步假设：多出的 relationship 也可能是 HIERARCHY 幻觉，应由 HIERARCHY 删除，数量差本身不能证明 OBSERVE
+漏掉了 GROUP。
+
+## N7 relationship-region GROUP owner 增量
+
+`31a8c6f` 新增 pipeline 4.4/product-v17，并把回退条件收窄为可由现有 plan 证明的上游遗漏：relationship 必须先
+通过 entity-region ownership 结构校验，且其 exact `regionId` 指向已验证 `GROUP` 或 `REPEATED_GROUP` region，
+但 inventory 中没有任何 GROUP element owner 精确拥有该 region。只有此时 verifier 才输出
+`VISUAL_SEMANTIC_OBSERVE_RELATIONSHIP_REGION_GROUP_MISSING` 与 `earliestStage=OBSERVE`。若 region 已有 owner 而模型
+复用同一 GROUP 支撑多条 relationship，既有 `VISUAL_HIERARCHY_V2_SUPPORT_GROUP_REUSED` 仍留在 HIERARCHY；代码
+不按数量推断、不复制 GROUP，也不从 hierarchy 反向物化 observation。
+
+4.4 只为新 Profile 调整诊断顺序；4.3/v16 与更早 immutable Profile 保持原有 support-first 诊断。PostgreSQL store
+仅对白名单中的精确单码 REJECTED HIERARCHY 允许回到 OBSERVE，multi-code 或其他错误仍被通用状态机拒绝。element
+prompt v8 只携带固定 repair instruction；独立 evidence verifier、监控说明与 1024 keyboard E2E 同步识别 4.4，
+不展示模型原文、图片、局部 ID、完整 prompt 或 Candidate。
+
+单元合同覆盖 legacy v16、exact owner omission、合法修复与 owned GROUP reuse；真实 PostgreSQL 测试证明 checkpoint
+清空上游 plan、保留 provider call 计数，并在 lease-expiry 后从 OBSERVE 恢复到 HIERARCHY、BINDING 和 Candidate。
+server `.sdlc/evidence/20260811-045814-server`（383 tests、6 gated skip）、web
+`.sdlc/evidence/20260811-045937-web`（73 tests + build）、E2E `.sdlc/evidence/20260811-050010-e2e`
+（18 passed、1 gated skip）与 clean fast `.sdlc/evidence/20260811-050115-fast` 均为 A1 PASS。本增量没有 Provider
+调用，三份 ledger 保持 CLOSED；Profile 继续 `EXPERIMENTAL`，必须先用新的精确 identity/snapshot 实证三阶段。

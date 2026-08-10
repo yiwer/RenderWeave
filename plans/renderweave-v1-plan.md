@@ -425,7 +425,7 @@ Phase 内任务只在真实前置依赖满足时并行。当前没有 atomic cla
 
 #### T6-5：图片识别数据结构 vNext 质量升级
 
-- 执行状态：`in_progress`（用户 J1 + approved spec delta；N0–N1、N3–N4、N6 `automated_verified`，N2 `live_verified_mixed_a1_a2`，N5 `live_verified_not_promoted`；N7 pinned Flash/Plus reachability 与 Plus v14/v15/v16 smoke 已 A2，v15 bounded OBSERVE rewind 与 v16 evidence-derived cardinality 实现已 clean A1，三阶段与 final eval 尚未满足）
+- 执行状态：`in_progress`（用户 J1 + approved spec delta；N0–N1、N3–N4、N6 `automated_verified`，N2 `live_verified_mixed_a1_a2`，N5 `live_verified_not_promoted`；N7 pinned Flash/Plus reachability 与 Plus v14/v15/v16 smoke 已 A2，v15 bounded OBSERVE rewind、v16 evidence-derived cardinality 与 v17 exact relationship-region owner rewind 实现已 clean A1，三阶段与 final eval 尚未满足）
 - AC：AC-015..021、AC-VR-001..010
 - 依赖：T6-3a.8/9、ADR-0020/0021；N2 live 依赖新的 stage-gold/harness/identity
 - 影响区域：IMAGE_ONLY eval、visual contracts、worker/Profile/Prompt、OCR/layout adapter、review/monitor UI

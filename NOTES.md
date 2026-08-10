@@ -1,12 +1,17 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-11 `31a8c6f` 新增 pipeline 4.4/product-v17：只在 relationship 的 exact GROUP/REPEATED_GROUP region
+  缺 observed GROUP element owner 时从 HIERARCHY 回退 OBSERVE；已有 owner 的 GROUP reuse 仍在 HIERARCHY。
+  count-based capacity 假设因无法区分上游遗漏与多余 relationship 已否决。合同/Profile 29/29、独立 verifier
+  2/2、real-PG rewind/recovery 1/1、server 383（6 gated skip）、Web 73、E2E 18/1 与 clean fast A1 全绿；
+  Provider attempts=0，三份 ledger CLOSED。下一安全切片是重新计算 identity/snapshot 后的 Plus v17 单 case；
+  实证 BINDING 前不调用 Max。
 - 2026-08-11 Plus product-v16 单 case lifecycle 已 CLOSED/A2：5 attempts、19,201 input + 8,281 output tokens、
   147,141 ms、payload scan PASS。第二次 OBSERVE accepted 并得到 10 SLOT/1 GROUP；后三次 HIERARCHY 为
   support group reused / relationship support IDs invalid / support group reused，未到 BINDING。Plus Goal 现为
   106/180 attempts、607,449/1,000,000 tokens、¥2.517864；255 reservations 中 250 SETTLED、5 历史 RESERVED，
-  三份 ledger CLOSED。v16 不再重复；下一步先离线把 relationship 数量超过 distinct GROUP capacity 的失败
-  有界路由回 OBSERVE，满足 live BINDING 前仍不调用 Max。
+  三份 ledger CLOSED。v16 不再重复；后续 v17 的收窄合同见上一条，满足 live BINDING 前仍不调用 Max。
 - 2026-08-11 `bb15096` 新增 pipeline 4.3/product-v16：relationship cardinality 只从唯一已验证 GROUP 的
   multiplicity 派生，旧 4.1/v15 仍严格拒绝 mismatch；多支撑、未知与非 GROUP 均 fail-closed，accepted
   HIERARCHY 只写 payload-free 派生计数。codec/Profile 定向 12/12、真实 PostgreSQL 纵向切片 1/1、server
@@ -71,8 +76,8 @@
 - 生命周期状态：P0 `accepted`；P1–P4 `automated_verified`；P5 Flash / Plus / Prompt v2 / Grounded v2 / T5-10 诊断均为 `live_independently_reviewed`，T5-9/T5-11 与 P6/T6-1 为 `independently_reviewed`；P6/T6-2 为 `human_acceptance_pending`；T6-3a 与 T6-5 N6 为 `automated_verified`、T6-3b pending。T6-5 整体仍 active，N7 `in_progress`。所有 DashScope Profile 仍为 `EXPERIMENTAL`；历史评测授权均 CLOSED，基础 Compose 默认关闭，显式 product-live overlay 已按用户授权开放。
 
 ## 下一步
-- [ ] P6/T6-5 图片识别 vNext：N0–N6 已形成独立 checkpoint；Plus v16 仍未越过 HIERARCHY，先实现并验证
-  distinct GROUP capacity 的最早阶段 rewind，再用新版本决定是否满足 Max/有界 final eval 入口。
+- [ ] P6/T6-5 图片识别 vNext：N0–N6 已形成独立 checkpoint；v17 exact relationship-region owner rewind 已
+  clean A1。重算 identity/Profile snapshot/Goal 预算后执行 Plus v17 单 case lifecycle；实证 BINDING 前禁止 Max。
 - [x] Java / React / PostgreSQL / OpenAPI 最小 canary 与 A1 full gate 通过。
 - [x] 用户接受“A 默认表单 + B Map + 吸收 C 的 preview/密度”的编辑器方向（J1，2026-08-08）。
 - [x] 创建 P1–P4 implementation Goal。
@@ -171,8 +176,8 @@
   HTTP failure 硬停与未晋级决策；全部 ledger CLOSED。
 - `plans/logs/P6-T6-5-N6.md`：bounded semantic verifier、stage-local repair、selected crops、payload-free UI、
   Flash v10–v12 A2 诊断与 exact-clean full；三阶段仍不可达，未晋级。
-- `plans/logs/P6-T6-5-N7.md`：pinned Flash/Goal guard v2、Flash/Plus/v14/v15 单 case CLOSED/A2 reachability、
-  v15 bounded OBSERVE rewind 与 payload-free UI；三阶段仍不可达，Max 未调用。
-- 当前恢复点：`phase/p6-visual-recognition-vnext` 的 `4b57581` CLOSED lifecycle；编排 Goal
-  `019fec8e-a851-7952-b49b-8be76a281a57` 为 active，未创建 replacement Goal。下一安全切片是离线收敛
-  relationship cardinality 的确定性事实源；新 hypothesis 通过 clean gate 前不再 live，满足 BINDING 前禁止 Max。
+- `plans/logs/P6-T6-5-N7.md`：pinned Flash/Goal guard v2、五份单 case CLOSED/A2 reachability、v15/v16/v17
+  bounded verifier 增量与 payload-free UI；三阶段仍不可达，Max 未调用。
+- 当前恢复点：`phase/p6-visual-recognition-vnext` 的 `31a8c6f` clean implementation；最近 live lifecycle 为
+  `46384c1` CLOSED。编排 Goal `019fec8e-a851-7952-b49b-8be76a281a57` 为 active，未创建 replacement Goal。
+  下一安全切片是 Plus product-v17 单 case lifecycle；满足 BINDING 前禁止 Max。
