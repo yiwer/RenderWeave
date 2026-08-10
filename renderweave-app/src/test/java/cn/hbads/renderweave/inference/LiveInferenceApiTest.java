@@ -102,7 +102,7 @@ class LiveInferenceApiTest {
         var metadata = new MockMultipartFile(
                 "metadata", "metadata.json", MediaType.APPLICATION_JSON_VALUE,
                 """
-                        {"profileId":"dashscope-qwen37-flash-product-v1","mode":"IMAGE_ONLY",
+                        {"profileId":"dashscope-qwen37-flash-product-v2","mode":"IMAGE_ONLY",
                          "inputClassification":"USER_PROVIDED","externalTransferConfirmed":true,
                          "experimentalProfileConfirmed":true,"costLimitMicrosCny":250000}
                         """.getBytes(StandardCharsets.UTF_8)
@@ -114,7 +114,7 @@ class LiveInferenceApiTest {
                         .file(metadata).file(image)
                         .header("Idempotency-Key", "live-api-synthetic"))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.profileId").value("dashscope-qwen37-flash-product-v1"))
+                .andExpect(jsonPath("$.profileId").value("dashscope-qwen37-flash-product-v2"))
                 .andExpect(jsonPath("$.costLimitMicrosCny").value(250000))
                 .andReturn().getResponse().getContentAsString();
         var runId = UUID.fromString(json.readTree(response).path("runId").asText());
@@ -139,7 +139,7 @@ class LiveInferenceApiTest {
         var metadata = new MockMultipartFile(
                 "metadata", "metadata.json", MediaType.APPLICATION_JSON_VALUE,
                 """
-                        {"profileId":"dashscope-qwen37-flash-product-v1","mode":"IMAGE_ONLY",
+                        {"profileId":"dashscope-qwen37-flash-product-v2","mode":"IMAGE_ONLY",
                          "inputClassification":"USER_PROVIDED","externalTransferConfirmed":true,
                          "experimentalProfileConfirmed":true,"costLimitMicrosCny":100000001}
                         """.getBytes(StandardCharsets.UTF_8)
@@ -163,7 +163,7 @@ class LiveInferenceApiTest {
         var metadata = new MockMultipartFile(
                 "metadata", "metadata.json", MediaType.APPLICATION_JSON_VALUE,
                 """
-                        {"profileId":"dashscope-qwen37-flash-product-v1","mode":"IMAGE_ONLY",
+                        {"profileId":"dashscope-qwen37-flash-product-v2","mode":"IMAGE_ONLY",
                          "inputClassification":"USER_PROVIDED","externalTransferConfirmed":true,
                          "experimentalProfileConfirmed":true}
                         """.getBytes(StandardCharsets.UTF_8)

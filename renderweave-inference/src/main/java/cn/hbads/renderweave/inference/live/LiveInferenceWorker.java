@@ -318,6 +318,10 @@ public final class LiveInferenceWorker {
             problemCodeCounts = InferenceAttemptProblemTaxonomy.count(
                     List.of(invalid.diagnosticCode())
             );
+            prevalidationProblems = List.of(new CandidateProblem(
+                    invalid.diagnosticCode(), CandidateProblemSeverity.BLOCKER,
+                    null, "/candidate", Map.of()
+            ));
         }
         if (candidate != null) {
             problemCodeCounts = InferenceAttemptProblemTaxonomy.count(
@@ -354,12 +358,14 @@ public final class LiveInferenceWorker {
         }
         final List<CandidateProblem> problems;
         if (!checkpoint.outputValid()) {
-            problems = List.of(new CandidateProblem(
-                    "LIVE_STRUCTURE_OUTPUT_INVALID", CandidateProblemSeverity.BLOCKER,
-                    null, "/candidate", java.util.Map.of(
-                            "attemptOrdinal", Integer.toString(checkpoint.structureCalls() - 1)
-                    )
-            ));
+            problems = checkpoint.validationProblems().isEmpty()
+                    ? List.of(new CandidateProblem(
+                            "LIVE_STRUCTURE_OUTPUT_INVALID", CandidateProblemSeverity.BLOCKER,
+                            null, "/candidate", java.util.Map.of(
+                                    "attemptOrdinal", Integer.toString(checkpoint.structureCalls() - 1)
+                            )
+                    ))
+                    : checkpoint.validationProblems();
         } else {
             problems = validateCandidate(
                     current, profile, checkpoint.candidate(), checkpoint.validationProblems()

@@ -1,6 +1,7 @@
 # ADR-0015：产品识别使用独立 DashScope Profile 目录与可选任务成本上限
 
 - 状态：Accepted
+- 后续：ADR-0016 将产品可见 revision 升级为 product-v2；本 ADR 的 product-v1 资源作为历史快照保留。
 - 日期：2026-08-10
 - 决策来源：用户要求开放“排队识别并进入审核”，替换重复模型选项，并允许自行设置或不设置成本限额
 - 关联：AC-015、AC-019、AC-020、P6/T6-3a
@@ -85,4 +86,3 @@ Candidate 审核才能创建 Draft，不能发布、更新或删除 Schema。
   Provider attempts 必须为 0；真实点击单独属于用户运行行为。
 - 回退：停止 live overlay 并以基础 Compose 重启即可恢复零外部模型能力；数据库列与追加式 reservation
   保留，不执行 destructive down migration。
-

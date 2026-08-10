@@ -24,13 +24,17 @@ public final class InferenceProfileRegistry {
             "inference-profiles/dashscope-qwen37-flash-product-v1.json",
             "inference-profiles/dashscope-qwen37-plus-product-v1.json",
             "inference-profiles/dashscope-qwen38-max-product-v1.json",
-            "inference-profiles/dashscope-qwen37-max-20260608-product-v1.json"
+            "inference-profiles/dashscope-qwen37-max-20260608-product-v1.json",
+            "inference-profiles/dashscope-qwen37-flash-product-v2.json",
+            "inference-profiles/dashscope-qwen37-plus-product-v2.json",
+            "inference-profiles/dashscope-qwen38-max-product-v2.json",
+            "inference-profiles/dashscope-qwen37-max-20260608-product-v2.json"
     );
     private static final java.util.List<String> PRODUCT_LIVE_PROFILE_IDS = java.util.List.of(
-            "dashscope-qwen37-flash-product-v1",
-            "dashscope-qwen37-plus-product-v1",
-            "dashscope-qwen38-max-product-v1",
-            "dashscope-qwen37-max-20260608-product-v1"
+            "dashscope-qwen37-flash-product-v2",
+            "dashscope-qwen37-plus-product-v2",
+            "dashscope-qwen38-max-product-v2",
+            "dashscope-qwen37-max-20260608-product-v2"
     );
     private static final ObjectMapper JSON = JsonMapper.builder(
                     JsonFactory.builder().enable(StreamReadFeature.STRICT_DUPLICATE_DETECTION).build())

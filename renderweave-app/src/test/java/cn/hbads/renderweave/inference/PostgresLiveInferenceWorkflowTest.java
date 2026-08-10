@@ -293,6 +293,35 @@ class PostgresLiveInferenceWorkflowTest {
     }
 
     @Test
+    void invalidAssessmentEvidenceFeedsTheExactDecodeDiagnosticIntoRepair() {
+        var blobs = new MemoryBlobStore();
+        var created = create(blobs, "live-assessment-evidence-repair");
+        var provider = new ScriptedProvider(
+                request -> response(request, candidate(request).replaceFirst(
+                        "\"evidence\":\\[[^]]*]", "\"evidence\":null"
+                )),
+                request -> response(request, candidate(request))
+        );
+
+        var finished = worker(provider, blobs)
+                .processNext("live-assessment-evidence-repair-worker")
+                .orElseThrow();
+
+        assertThat(finished.state()).isEqualTo(InferenceRunState.REVIEW_REQUIRED);
+        assertThat(provider.requests).hasSize(2);
+        assertThat(provider.requests.get(1).stage().name()).isEqualTo("REPAIR");
+        assertThat(provider.requests.get(1).taskJson()).contains(
+                "CANDIDATE_DECODE_CONSTRUCTOR_INVALID_ASSESSMENT_EVIDENCE"
+        );
+        assertThat(workflowStore.attempts(created).getFirst().problemCodeCounts())
+                .containsExactlyEntriesOf(Map.of(
+                        "CANDIDATE_DECODE_CONSTRUCTOR_INVALID_ASSESSMENT_EVIDENCE", 1
+                ));
+        assertThat(workflowStore.findCandidate(created).orElseThrow().currentJson())
+                .doesNotContain("\"evidence\":null");
+    }
+
+    @Test
     void structureAndRepairAttemptsPersistRefinedPayloadFreeDecodeSlots() {
         var blobs = new MemoryBlobStore();
         var created = create(blobs, "live-refined-decode-taxonomy");

@@ -20,10 +20,10 @@ describe('live inference multipart request', () => {
     const json = new File([new Uint8Array([123, 125])], 'sample.json', { type: 'application/json' });
 
     await createLiveRunRequest(
-      'dashscope-qwen37-flash-product-v1', 'JSON_ONLY', [image], [json], 'json-only', 250_000,
+      'dashscope-qwen37-flash-product-v2', 'JSON_ONLY', [image], [json], 'json-only', 250_000,
     );
     await createLiveRunRequest(
-      'dashscope-qwen37-flash-product-v1', 'IMAGE_ONLY', [image], [json], 'image-only', null,
+      'dashscope-qwen37-flash-product-v2', 'IMAGE_ONLY', [image], [json], 'image-only', null,
     );
 
     expect(bodies[0]?.getAll('images')).toHaveLength(0);

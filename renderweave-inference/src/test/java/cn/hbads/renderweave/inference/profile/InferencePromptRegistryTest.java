@@ -88,6 +88,25 @@ class InferencePromptRegistryTest {
         assertFalse(prompt.contains("DASHSCOPE_API_KEY"));
     }
 
+    @Test
+    void promptV4MakesAssessmentEvidenceNonNullAndRepairable() {
+        var prompt = new InferencePromptRegistry()
+                .require(InferencePromptRegistry.SCHEMA_CANDIDATE_V4)
+                .text();
+
+        assertEquals(
+                "5e7d613d40d353044d710156c691637da9efa2fa7950e7aa077cf992959362ee",
+                sha256(prompt)
+        );
+        assertTrue(prompt.contains("assessment.evidence is always a JSON array"));
+        assertTrue(prompt.contains(
+                "CANDIDATE_DECODE_CONSTRUCTOR_INVALID_ASSESSMENT_EVIDENCE"
+        ));
+        assertTrue(prompt.contains("never null or omitted"));
+        assertFalse(prompt.contains("\r"));
+        assertFalse(prompt.contains("DASHSCOPE_API_KEY"));
+    }
+
     private static String sha256(String value) {
         try {
             return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(

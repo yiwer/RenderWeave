@@ -75,7 +75,7 @@ public record InferenceProfile(
         }
         if (networkAllowed) {
             validateDashScopeLive(
-                    provider, model, providerProtocol, providerEndpoint, apiKeyEnvironmentVariable,
+                    profileId, provider, model, providerProtocol, providerEndpoint, apiKeyEnvironmentVariable,
                     pipelineVersion, promptVersion, responseFormat,
                     thinkingEnabled, toolsAllowed, remoteMediaAllowed,
                     inputClassification, maximumTotalCalls, maximumEstimatedCostMicrosCny,
@@ -90,6 +90,7 @@ public record InferenceProfile(
     }
 
     private static void validateDashScopeLive(
+            String profileId,
             String provider,
             String model,
             String providerProtocol,
@@ -133,9 +134,13 @@ public record InferenceProfile(
                 && "renderweave-inference-pipeline/2.0".equals(pipelineVersion)
                 && "qwen3.7-plus-2026-05-26".equals(model)
                 && InferencePromptRegistry.SCHEMA_CANDIDATE_V3.equals(promptVersion);
+        var productPromptV1 = InferencePromptRegistry.SCHEMA_CANDIDATE_V3.equals(promptVersion)
+                && profileId.endsWith("-product-v1");
+        var productPromptV2 = InferencePromptRegistry.SCHEMA_CANDIDATE_V4.equals(promptVersion)
+                && profileId.endsWith("-product-v2");
         var productPrompt = "USER_CONFIRMED".equals(inputClassification)
                 && "renderweave-inference-pipeline/2.0".equals(pipelineVersion)
-                && InferencePromptRegistry.SCHEMA_CANDIDATE_V3.equals(promptVersion);
+                && (productPromptV1 || productPromptV2);
         if (!(legacySyntheticPrompt || productPrompt)
                 || !"JSON_OBJECT".equals(responseFormat)
                 || thinkingEnabled || toolsAllowed || remoteMediaAllowed) {

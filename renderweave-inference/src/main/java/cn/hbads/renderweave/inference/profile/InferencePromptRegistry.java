@@ -8,10 +8,12 @@ public final class InferencePromptRegistry {
     public static final String SCHEMA_CANDIDATE_V1 = "renderweave-schema-candidate-prompt/1.0";
     public static final String SCHEMA_CANDIDATE_V2 = "renderweave-schema-candidate-prompt/2.0";
     public static final String SCHEMA_CANDIDATE_V3 = "renderweave-schema-candidate-prompt/3.0";
-    private static final Map<String, String> RESOURCES = Map.of(
-            SCHEMA_CANDIDATE_V1, "inference-prompts/schema-candidate-v1.txt",
-            SCHEMA_CANDIDATE_V2, "inference-prompts/schema-candidate-v2.txt",
-            SCHEMA_CANDIDATE_V3, "inference-prompts/schema-candidate-v3.txt"
+    public static final String SCHEMA_CANDIDATE_V4 = "renderweave-schema-candidate-prompt/4.0";
+    private static final Map<String, String> RESOURCES = Map.ofEntries(
+            Map.entry(SCHEMA_CANDIDATE_V1, "inference-prompts/schema-candidate-v1.txt"),
+            Map.entry(SCHEMA_CANDIDATE_V2, "inference-prompts/schema-candidate-v2.txt"),
+            Map.entry(SCHEMA_CANDIDATE_V3, "inference-prompts/schema-candidate-v3.txt"),
+            Map.entry(SCHEMA_CANDIDATE_V4, "inference-prompts/schema-candidate-v4.txt")
     );
 
     private final ClassLoader classLoader;

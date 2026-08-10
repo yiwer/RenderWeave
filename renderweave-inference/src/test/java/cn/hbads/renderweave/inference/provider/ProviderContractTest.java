@@ -139,18 +139,33 @@ class ProviderContractTest {
     }
 
     @Test
-    void everyProductProfileCanPreReserveItsMaximumTenImageRequest() {
+    void everyProductProfileUsesTheTwoYuanCallCeilingAndFitsOneMaximumImage() {
         var image = new ProviderImage("e".repeat(64), "image/png", new byte[] {1});
         for (var resource : profiles.productLiveProfiles()) {
             var profile = resource.profile();
             var request = new ProviderInferenceRequest(
                     UUID.randomUUID(), 0, InferenceStage.STRUCTURE, profile,
                     prompts.require(profile.promptVersion()).text(), "{\"mode\":\"IMAGE_ONLY\"}",
-                    java.util.Collections.nCopies(10, image)
+                    List.of(image)
             );
+            assertEquals(2_000_000L, profile.maximumEstimatedCostMicrosCny(), profile.profileId());
             assertTrue(ProviderCostEstimator.maximumRequestCostMicrosCny(request)
                     <= profile.maximumEstimatedCostMicrosCny(), profile.profileId());
         }
+    }
+
+    @Test
+    void twoYuanCeilingRejectsAnOverBoundMaximumResolutionMaxBatchBeforeCall() {
+        var profile = profiles.require("dashscope-qwen38-max-product-v2").profile();
+        var image = new ProviderImage("f".repeat(64), "image/png", new byte[] {1});
+        var request = new ProviderInferenceRequest(
+                UUID.randomUUID(), 0, InferenceStage.STRUCTURE, profile,
+                prompts.require(profile.promptVersion()).text(), "{\"mode\":\"IMAGE_ONLY\"}",
+                java.util.Collections.nCopies(10, image)
+        );
+
+        assertTrue(ProviderCostEstimator.maximumRequestCostMicrosCny(request)
+                > profile.maximumEstimatedCostMicrosCny());
     }
 
     @Test

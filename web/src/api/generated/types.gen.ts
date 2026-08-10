@@ -330,7 +330,7 @@ export type CreateReplayRunRequest = {
 };
 
 export type CreateLiveRunRequest = {
-    profileId: 'dashscope-qwen37-flash-product-v1' | 'dashscope-qwen37-plus-product-v1' | 'dashscope-qwen38-max-product-v1' | 'dashscope-qwen37-max-20260608-product-v1';
+    profileId: 'dashscope-qwen37-flash-product-v2' | 'dashscope-qwen37-plus-product-v2' | 'dashscope-qwen38-max-product-v2' | 'dashscope-qwen37-max-20260608-product-v2';
     mode: InferenceMode;
     inputClassification: 'USER_PROVIDED';
     externalTransferConfirmed: true;
@@ -360,14 +360,17 @@ export type LiveAvailabilityResponse = {
 };
 
 export type LiveProfileResponse = {
-    profileId: 'dashscope-qwen37-flash-product-v1' | 'dashscope-qwen37-plus-product-v1' | 'dashscope-qwen38-max-product-v1' | 'dashscope-qwen37-max-20260608-product-v1';
+    profileId: 'dashscope-qwen37-flash-product-v2' | 'dashscope-qwen37-plus-product-v2' | 'dashscope-qwen38-max-product-v2' | 'dashscope-qwen37-max-20260608-product-v2';
     provider: 'DASHSCOPE';
     model: 'qwen3.7-flash' | 'qwen3.7-plus' | 'qwen3.8-max' | 'qwen3.7-max-2026-06-08';
     certification: 'EXPERIMENTAL';
     supportedModes: Array<InferenceMode>;
     maximumTotalCalls: number;
     maximumOutputTokens: number;
-    maximumEstimatedCostMicrosCny: number;
+    /**
+     * Conservative per-provider-call reservation ceiling (¥2).
+     */
+    maximumEstimatedCostMicrosCny: 2000000;
     pricingEffectiveDate: string;
 };
 
