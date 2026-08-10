@@ -1,15 +1,15 @@
 {
   "authorizationVersion": "renderweave-visual-evaluation-authorization/1.0",
-  "authorizationId": "visual-v12-accumulated-repair-qwen37-flash-transit-20260811",
-  "status": "CLOSED",
-  "phase": "ABLATION",
+  "authorizationId": "visual-v13-pinned-flash-smoke-qwen37-flash-transit-20260811",
+  "status": "PROPOSED",
+  "phase": "CANARY",
   "inputClassification": "REPOSITORY_SYNTHETIC_ONLY",
   "corpusVersion": "renderweave-visual-stage-corpus/1.0",
   "corpusSourceSha256": "bf0db7bf0ac5c4e2b357cdd96c49ff70a7b30a5bc59f322a915020dc29fc605e",
-  "evaluationIdentity": "renderweave-visual-evaluation-tree-sha256/1:edb9f9cd7609f7afe7bb44a980e009b1cea8cab87d4157237863a1d7c8cf898f",
-  "profileId": "dashscope-qwen37-flash-product-v12-generic",
-  "profileSnapshotSha256": "7e75544006a749235943276902ca81a405087cef03b626dc58b3ae744a9a8bd8",
-  "model": "qwen3.7-flash",
+  "evaluationIdentity": "renderweave-visual-evaluation-tree-sha256/1:d33c5dcacf2a742d6652c9baf5caffcd4817ee459673d17bfaae3e5f2bea8619",
+  "profileId": "dashscope-qwen37-flash-20260715-product-v13-generic",
+  "profileSnapshotSha256": "11bc9ae2bfdb5672f5f67db3f1df44f5cd992206c2b3fed80fa77734d0232039",
+  "model": "qwen3.7-flash-2026-07-15",
   "caseIds": [
     "transit-board-v3"
   ],
@@ -18,7 +18,7 @@
   "maximumCostMicrosCny": 100000,
   "maximumCasesPerBatch": 1,
   "approvedBy": "yiwer",
-  "approvedAt": "2026-08-10T17:31:22Z",
-  "expiresAt": "2026-08-11T15:00:17Z",
-  "approvalScope": "Goal J1 ABLATION: one repository-synthetic transit-board-v3 case; exact qwen3.7-flash product-v12-generic with bounded accumulated retry diagnostics, hierarchy and binding semantic verifier, stage-local repair and verified targeted crops; at most 5 attempts, 60000 exposed tokens, CNY 0.10 and one case per batch within the active per-model 500000-token Goal cap"
+  "approvedAt": "2026-08-10T18:57:10Z",
+  "expiresAt": "2026-08-11T06:57:10Z",
+  "approvalScope": "Goal J1 CANARY: one repository-synthetic transit-board-v3 case; exact qwen3.7-flash-2026-07-15 through immutable product-v13-generic with bounded semantic verification, stage-local repair, selected crops and checkpoint telemetry; at most 5 attempts, 60000 exposed tokens, CNY 0.10 and one case per batch within the alias-normalized 1000000-token Flash Goal slot; payload-free evidence and immediate CLOSED after this smoke"
 }
