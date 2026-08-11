@@ -95,6 +95,10 @@ describe('Candidate atomic apply workspace', () => {
     expect(screen.getByText('元素归属')).toBeTruthy();
     expect(screen.getByText('重复区域')).toBeTruthy();
     expect(screen.getAllByText('VISUAL_SEMANTIC_REPEATED_GROUP_ELEMENT_MISSING').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('VISUAL_HIERARCHY_RELATIONSHIP_ENCLOSING_SUPPORT_OWNER_NORMALIZED').length)
+      .toBeGreaterThan(0);
+    expect(screen.getAllByText('已按唯一包围且连通的 GROUP 证据归一化层级关系支撑').length)
+      .toBeGreaterThan(0);
     expect(screen.getByText('阶段内定向修复已完成')).toBeTruthy();
     expect(screen.getByLabelText('Candidate 编辑工作区')).toBeTruthy();
     expect(screen.queryByText('raw-ocr-secret')).toBeNull();
@@ -261,7 +265,9 @@ function visualReviewLog(run: InferenceRunResponse): InferenceExecutionLogRespon
         outputTokens: 2_800,
         costMicrosCny: 1_900,
         durationMillis: 16_000,
-        problemCodeCounts: {},
+        problemCodeCounts: {
+          VISUAL_HIERARCHY_RELATIONSHIP_ENCLOSING_SUPPORT_OWNER_NORMALIZED: 1,
+        },
         completedAt: '2026-08-10T04:03:05Z',
       },
       {
