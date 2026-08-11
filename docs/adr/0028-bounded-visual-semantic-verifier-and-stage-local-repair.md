@@ -692,3 +692,30 @@ slot 1/10 matched、group 0/3、entity/relationship/binding 0，tree edit 20/20�
 每槽仍受 180 attempts、1,500,000 tokens 与既有 CNY 上限约束。product-v28 继续 `EXPERIMENTAL`，N6 继续
 `automated_verified`，N7 继续 `in_progress`；下一假设必须先离线解决 HIERARCHY 同码重复失败并通过真实
 PostgreSQL/受影响 gate，不能放宽 cardinality 合同或直接扩大 final eval。
+
+## N7 product-v29：把 group-region 基数矛盾前移到 OBSERVE
+
+v28 Plus 的 payload-free evidence 显示 OBSERVE 已接受、HIERARCHY 连续三次以
+`VISUAL_HIERARCHY_V2_RELATIONSHIP_REGION_CARDINALITY_INVALID` 拒绝。现有 OBSERVE verifier 只从
+REPEATED_GROUP 向 MANY GROUP 检查 ownership；它没有阻止 MANY GROUP 只拥有 singular GROUP。后者会让
+HIERARCHY 从 GROUP 推导 MANY，却无法在已验证 region forest 中找到兼容关系区域。
+
+`70da862` 因此增加 opt-in 的双向 group-region cardinality policy：每个 MANY GROUP 必须拥有至少一个
+REPEATED_GROUP，每个 REPEATED_GROUP 仍必须至少有一个 MANY GROUP owner；singular GROUP 只能拥有 singular
+container。失败继续使用既有固定码并固定为最早 OBSERVE，legacy policy 不变。该判断只消费已验证 element/
+region graph，不读取 OCR、模型文字、图片、完整 prompt/Candidate 或 gold，也不补造 repetition。
+
+`dd920cc` 以 pipeline 4.16、visual-elements prompt v9 和三份 immutable product-v29 Profile 接入 worker、
+checkpoint 与独立 snapshot verifier。真实 PostgreSQL tracer 证明四次 bounded stage call 可沿 OBSERVE rejected→
+OBSERVE accepted→HIERARCHY→BINDING 到达 `REVIEW_REQUIRED`；重试丢弃未验证 OBSERVE plan、复用一次本地
+Document Vision 结果，OCR sentinel 不进入 checkpoint。`70e0f2c` 同步监控中文解释、组件测试与 Playwright。
+
+detached clean `70e0f2c` 的 fast/server/web/inference-e2e 证据分别为 `20260811-135547`、`20260811-135605`、
+`20260811-135807`、`20260811-140010`，全部 A1 PASS；Inference 182、App 213（6 gated skip）、Web 73，真实
+replay→review→atomic Draft Apply 浏览器链路 1/1。本增量 Provider attempts=0，三份 ledger CLOSED，Goal
+aggregate 与 345 reservations 不变。
+
+该结果只证明 bounded verifier 与 stage-local recovery 可达，不证明真实模型会满足合同或质量阈值。
+product-v29 继续 `EXPERIMENTAL`，N6 继续 `automated_verified`，N7 继续 `in_progress`。新的 live 前必须基于
+包含本 ADR checkpoint 的 clean tree 重跑 full gate，并重新计算 `/2` identity、三份 Profile snapshot、1.5M
+per-slot aggregate budget 与时限；仍从 Flash 单 case/最多 5 calls 开始。

@@ -267,12 +267,12 @@ ledger 描述成外部强制门。
 | 模型 | Goal cap | Goal exposed tokens | 剩余 tokens | attempts | list-price CNY cap | Goal cost |
 |---|---:|---:|---:|---:|---:|---:|
 | qwen3.8-max | 1,500,000 | 491,919 | 1,008,081 | 82 / 180 | 18.00 | 10.289316 |
-| qwen3.7-plus | 1,500,000 | 900,566 | 599,434 | 153 / 180 | 4.00 | 3.484570 |
-| Flash slot（旧 alias + `qwen3.7-flash-2026-07-15`） | 1,500,000 | 641,256 | 858,744 | 100 / 180 | 0.40 | 0.302686 |
+| qwen3.7-plus | 1,500,000 | 936,770 | 563,230 | 158 / 180 | 4.00 | 3.608122 |
+| Flash slot（旧 alias + `qwen3.7-flash-2026-07-15`） | 1,500,000 | 685,591 | 814,409 | 105 / 180 | 0.40 | 0.326091 |
 
-Goal guard v3 共 335 reservations：330 SETTLED、5 个历史 Plus RESERVED；没有 BREACHED。`2b23617` 只提高
-token cap，单 authorization 500,000、attempt/CNY cap 与所有历史 reservation 不变。v27 Provider-backed smoke
-新增 Flash 5 个、Plus 3 个、Max 3 个 SETTLED reservation；三份 visual ledger 均 `CLOSED`。
+Goal guard v3 共 345 reservations：340 SETTLED、5 个历史 Plus RESERVED；没有 BREACHED。`2b23617` 只提高
+token cap，单 authorization 500,000、attempt/CNY cap 与所有历史 reservation 不变。v28 Flash/Plus smoke 后
+三份 visual ledger 均 `CLOSED`。
 
 停止条件：任一 token/attempt/CNY cap、168h ledger expiry、Goal 完成、Provider refusal/Retry-After、identity
 drift、journal/guard 不一致、payload 边界失败或同一无新假设失败再次出现。停止只关闭后续调用；已结算费用
@@ -379,3 +379,25 @@ drift、journal/guard 不一致、payload 边界失败或同一无新假设失�
   685,591/936,770/491,919 tokens。下一安全节点是针对同一 HIERARCHY fixed code 的 bounded、payload-free
   stage-local repair/no-progress 假设；先离线与真实 PG，不能直接 final 20/60。N7/Goal 保持 `in_progress`，
   Profile 保持 `EXPERIMENTAL`。
+
+## 2026-08-11 v29 bidirectional group-region cardinality checkpoint
+
+- 假设：v28 OBSERVE 只证明每个 REPEATED_GROUP 有 MANY GROUP owner，没有证明反向的每个 MANY GROUP 至少
+  拥有一个 REPEATED_GROUP。模型因此可以让 MANY GROUP 只指向 singular GROUP；HIERARCHY 随后从 GROUP
+  multiplicity 推导 MANY，却没有兼容的 relationship region，造成同一 cardinality 固定码重复失败。
+- 实现：`70da862` 为 opt-in policy 增加反向校验并复用最早 OBSERVE 固定码
+  `VISUAL_SEMANTIC_REPEATED_GROUP_CARDINALITY_INVALID`；legacy policy 不变。`dd920cc` 发布 pipeline 4.16、
+  generic visual-elements v9 与三模型 product-v29 immutable Profile。只有已验证 region forest、element kind、
+  multiplicity 与 region ownership 参与判断；不读取 OCR/model text，不按 gold 排名，不补造重复结构。
+- 恢复：真实 PostgreSQL tracer 的四次 scripted provider stage 精确为 OBSERVE rejected→OBSERVE accepted→
+  HIERARCHY accepted→BINDING accepted，并到达 `REVIEW_REQUIRED`。retry 只携带固定码，清空未验证
+  elementInventory/grounding，不重跑 Document Vision；OCR sentinel 未进入 checkpoint。
+- UI/验证：`70e0f2c` 将固定码解释更新为双向归属问题并加入组件与 1024 viewport Playwright 场景。detached
+  clean revision `70e0f2c` 的 fast `20260811-135547`、server `20260811-135605`、web `20260811-135807`、
+  inference-e2e `20260811-140010` 均 A1 PASS；Inference 182、App 213（6 gated skip）、Web 73，真实 replay→
+  review→atomic Draft Apply 浏览器链路 1/1。
+- 状态：本节点 Provider attempts=0，Goal 仍为 345 reservations（340 SETTLED、5 历史 Plus RESERVED、0
+  BREACHED），三份 ledger CLOSED。Flash/Plus/Max 仍为 685,591/936,770/491,919 exposed tokens；每槽累计
+  cap 1,500,000，单 authorization 500,000、attempt/CNY/time 边界不变。product-v29 仍 `EXPERIMENTAL`，N6
+  为 `automated_verified`、N7 为 `in_progress`。文档 checkpoint 后必须先跑 final-tree clean full，并重新计算
+  `/2` identity、Profile snapshots、Goal aggregate 与时限；Flash 才可优先进入单 case/最多 5 calls lifecycle。

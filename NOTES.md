@@ -1,6 +1,15 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-11 pipeline 4.16/product-v29 已完成 MANY GROUP ↔ REPEATED_GROUP 双向基数归属的 bounded
+  OBSERVE verifier 与 stage-local repair。`70da862` 增加 opt-in semantic policy；`dd920cc` 发布 visual
+  elements prompt v9、三模型 immutable Profile 与真实 PostgreSQL tracer；`70e0f2c` 更新监控中文解释和
+  Playwright 覆盖。clean revision `70e0f2c` 的 fast/server/web/inference-e2e 均 A1 PASS：Inference 182、App
+  213（6 gated skip）、Web 73、真实 replay→审核→原子 Draft Apply 浏览器链路 1/1。新 PG tracer 精确执行
+  OBSERVE rejected→OBSERVE→HIERARCHY→BINDING→REVIEW_REQUIRED，OCR sentinel 未进入 checkpoint。本节点
+  Provider attempts=0，三份 ledger CLOSED，345 reservations 与 Flash/Plus/Max 685,591/936,770/491,919
+  exposed tokens 不变；product-v29 仍 `EXPERIMENTAL`，N6=`automated_verified`、N7=`in_progress`。下一步先在
+  文档 checkpoint 后完成 clean full、fresh `/2` identity、三份 snapshot 与预算/时限重算，再决定 Flash 单 case。
 - 2026-08-11 product-v28 clean full 与 Flash/Plus bounded smoke 已完成。revision `0a3b90b` 的 full gate
   9/9 PASS（`.sdlc/evidence/20260811-125916-full`），Document Vision 19-line canary
   `.sdlc/evidence/20260811-130940-document-vision` PASS；fresh Git-blob identity 为 `…c669d172`。Flash v28b

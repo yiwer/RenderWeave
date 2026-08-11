@@ -550,3 +550,16 @@ Max 的 v28 三阶段/质量门因此不成立，保持 CLOSED。Goal 现为 345
 RESERVED、0 BREACHED），Flash/Plus/Max 累计 tokens 为 685,591/936,770/491,919，各槽 cap 1,500,000。
 T6-5 仍不晋级：N6=`automated_verified`、N7=`in_progress`、Profile=`EXPERIMENTAL`。下一节点先对 HIERARCHY
 同码重复失败实现 bounded stage-local repair/no-progress 合同并完成 offline/real-PG/受影响 gate。
+
+## 13. T6-5 v29 group-region cardinality checkpoint
+
+`70da862`、`dd920cc`、`70e0f2c` 将 v28 HIERARCHY 同码重复失败前移为 OBSERVE 的双向
+MANY GROUP↔REPEATED_GROUP ownership 不变量，发布 pipeline 4.16/product-v29、stage-local retry、独立
+snapshot verifier 与 payload-free monitor/E2E。真实 PostgreSQL tracer 只重做最早 OBSERVE，随后通过
+HIERARCHY/BINDING 到达 `REVIEW_REQUIRED`，OCR sentinel 未进入 checkpoint。
+
+clean `70e0f2c` 的 fast/server/web/inference-e2e 全绿；Inference 182、App 213（6 gated skip）、Web 73、真实
+replay→review→atomic Draft Apply 1/1。本节点零 Provider 调用，三份 ledger CLOSED，Goal 仍为 345
+reservations 与 Flash/Plus/Max 685,591/936,770/491,919 exposed tokens。product-v29 保持 `EXPERIMENTAL`，
+N6=`automated_verified`、N7=`in_progress`；只有 checkpoint 后 clean full、fresh identity/snapshot/budget/time
+全过，才允许从 Flash 单 case lifecycle 继续。
