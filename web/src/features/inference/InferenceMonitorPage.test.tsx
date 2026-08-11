@@ -97,7 +97,7 @@ describe('Inference monitor workspace', () => {
     expect(screen.getAllByText('检查点已验证').length).toBeGreaterThan(0);
     expect(screen.getAllByText('正在修复').length).toBeGreaterThan(0);
     expect(screen.getByRole('heading', { name: '有限问题定位' })).toBeTruthy();
-    expect(screen.getByText('区域树')).toBeTruthy();
+    expect(screen.getAllByText('区域树').length).toBeGreaterThan(0);
     expect(screen.getAllByText('VISUAL_GROUNDING_PARENT_KIND_INVALID').length).toBeGreaterThan(0);
     expect(screen.getAllByText('VISUAL_SEMANTIC_SLOT_EVIDENCE_CONTAINS_ELEMENT').length)
       .toBeGreaterThan(0);
@@ -106,6 +106,10 @@ describe('Inference monitor workspace', () => {
     expect(screen.getAllByText('VISUAL_SEMANTIC_REPEATED_GROUP_CARDINALITY_INVALID').length)
       .toBeGreaterThan(0);
     expect(screen.getAllByText('MANY GROUP 与重复区域的双向归属不一致').length)
+      .toBeGreaterThan(0);
+    expect(screen.getAllByText('VISUAL_GROUNDING_ELEMENT_REGION_NORMALIZED').length)
+      .toBeGreaterThan(0);
+    expect(screen.getAllByText('已按唯一最具体证据区域归一化元素归属').length)
       .toBeGreaterThan(0);
     expect(screen.getByText('证据区域')).toBeTruthy();
     expect(screen.getAllByText('最早返回 盘点图片元素 修复').length).toBeGreaterThan(0);
@@ -303,7 +307,7 @@ function visualExecutionLog(runSnapshot: InferenceRunResponse): InferenceExecuti
         outputTokens: 4_220,
         costMicrosCny: 3_001,
         durationMillis: 24_012,
-        problemCodeCounts: {},
+        problemCodeCounts: { VISUAL_GROUNDING_ELEMENT_REGION_NORMALIZED: 1 },
         completedAt: '2026-08-10T04:03:10Z',
       },
       {
