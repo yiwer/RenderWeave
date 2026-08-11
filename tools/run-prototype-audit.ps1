@@ -24,9 +24,9 @@ if ($EvidenceDir) {
 else {
     $artifactRoot = Join-Path $repoRoot ".sdlc\evidence\$timestamp-prototype-audit\browser-artifacts"
 }
-$playwrightOutput = Join-Path $artifactRoot 'playwright-results'
-$playwrightHtml = Join-Path $artifactRoot 'playwright-report'
-$prototypeOutput = Join-Path $artifactRoot 'prototype-audit'
+$playwrightOutput = Join-Path $artifactRoot 'pw'
+$playwrightHtml = Join-Path $artifactRoot 'pw-report'
+$prototypeOutput = Join-Path $artifactRoot 'prototype'
 $null = New-Item -ItemType Directory -Path $artifactRoot -Force
 
 function Write-BrowserArtifactManifest {
