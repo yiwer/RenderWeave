@@ -1,24 +1,24 @@
 {
   "authorizationVersion": "renderweave-visual-evaluation-authorization/1.0",
-  "authorizationId": "visual-n7-minimal-entity-ownership-v28b-qwen37-plus-transit-20260811",
-  "status": "CLOSED",
+  "authorizationId": "visual-n7-group-region-cardinality-v29-qwen37-plus-transit-20260811",
+  "status": "PROPOSED",
   "phase": "CANARY",
   "inputClassification": "REPOSITORY_SYNTHETIC_ONLY",
   "corpusVersion": "renderweave-visual-stage-corpus/1.0",
   "corpusSourceSha256": "bf0db7bf0ac5c4e2b357cdd96c49ff70a7b30a5bc59f322a915020dc29fc605e",
-  "evaluationIdentity": "renderweave-visual-evaluation-tree-sha256/2:c97c0ea01d6f9096b25a11f8faf2b6b45b7f55ad8f2336916379af98c669d172",
-  "profileId": "dashscope-qwen37-plus-product-v28-hybrid-generic",
-  "profileSnapshotSha256": "90057d89e74ade46de450964e62ebeb4747a8a25741d7c2059e694f6c7d220b2",
+  "evaluationIdentity": "renderweave-visual-evaluation-tree-sha256/2:f45a9bc00047e562c349af884ee7b6918ba8025772c033e4fe8e3aac2f451e78",
+  "profileId": "dashscope-qwen37-plus-product-v29-hybrid-generic",
+  "profileSnapshotSha256": "2e8d913c745644b6f94db9ba0115136c28395a4245c344a21331900fa441d559",
   "model": "qwen3.7-plus",
   "caseIds": [
     "transit-board-v3"
   ],
   "maximumProviderAttempts": 5,
   "maximumTotalTokens": 60000,
-  "maximumCostMicrosCny": 500000,
+  "maximumCostMicrosCny": 180000,
   "maximumCasesPerBatch": 1,
   "approvedBy": "yiwer",
-  "approvedAt": "2026-08-11T05:26:14Z",
-  "expiresAt": "2026-08-11T15:51:09Z",
-  "approvalScope": "Goal J1 CANARY: user explicitly allows qwen3.7-plus and renewed 500000 exposed tokens for each stable model slot under the cumulative 1500000-token guard; the first product-v28 Plus authorization is permanently CLOSED/A2 after a local DOCUMENT_VISION_TIMEOUT_INVALID configuration failure before Provider reservation, with zero attempts, zero tokens and zero cost, so this is a distinct bounded replacement rather than a replay; Flash product-v28 completed CLOSED/A2 but remained at OBSERVE, while Plus product-v27 previously reached OBSERVE, HIERARCHY and ELEMENT_BINDING; one repository-synthetic transit-board-v3 case through immutable qwen3.7-plus product-v28-hybrid-generic pipeline 4.15 using the verified 60-second Document Vision bound; no raw OCR/model text, image, complete prompt, Candidate, gold, ranking or topology synthesis in evidence; current-revision full gate 20260811-125916 and Document Vision canary 20260811-130940 passed; Plus aggregate remains 153 attempts, 900566 exposed tokens and CNY 3.484570 including five historical RESERVED entries; at most 5 attempts, 60000 exposed tokens, CNY 0.50 and one case per batch; single wrapper, payload-free evidence, no concurrent rerun or Max call before the v28 three-stage and quality gates are evaluated, and immediate CLOSED after this smoke"
+  "approvedAt": "2026-08-11T06:34:14Z",
+  "expiresAt": "2026-08-11T18:34:14Z",
+  "approvalScope": "Goal J1 CANARY escalation explicitly allowed by the user under the renewed 500000-token authorization and cumulative 1500000 exposed-token guard for each stable model slot; Flash product-v29b is permanently CLOSED and independently verified payload-free after five OBSERVE rejections, while Plus product-v28 previously accepted OBSERVE and reached HIERARCHY, so this bounded same-version probe has diagnostic value; one repository-synthetic transit-board-v3 case through immutable qwen3.7-plus product-v29-hybrid-generic pipeline 4.16 with RENDERWEAVE_DOCUMENT_VISION_ENABLED=true and the canary-verified local capability; bounded MANY GROUP and REPEATED_GROUP bidirectional region-cardinality verification with exact earliest-stage OBSERVE repair; no raw OCR/model text, image, complete prompt, Candidate, gold, ranking or topology synthesis in evidence; current-revision full gate 20260811-140553 and Document Vision canary 20260811-141657 passed; Plus stable-slot aggregate is 158 attempts, 936770 exposed tokens and CNY 3.608122 including five historical RESERVED entries, with worst case 163 attempts, 996770 exposed tokens and CNY 3.788122; at most 5 attempts, 60000 exposed tokens, CNY 0.18 and one case per batch; PROPOSED negative probe before OPEN, one wrapper only, payload-free evidence, no concurrent rerun, no Max call before the v29 three-stage and quality gates are evaluated, and immediate CLOSED after this smoke"
 }
