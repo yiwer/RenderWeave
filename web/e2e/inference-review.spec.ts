@@ -400,7 +400,7 @@ test('keeps bounded visual diagnostics keyboard-accessible at 1024 without paylo
   await expect(page.getByText('VISUAL_GROUNDING_REPEATED_ITEM_SLOT_OWNER_NORMALIZED').first()).toBeVisible();
   await expect(page.getByText('已按唯一可见 ITEM 证据归一化重复字段归属').first()).toBeVisible();
   await expect(page.getByText('VISUAL_GROUNDING_REGION_PARENT_NORMALIZED').first()).toBeVisible();
-  await expect(page.getByText('已按唯一最具体既有容器归一化区域父级').first()).toBeVisible();
+  await expect(page.getByText('已按唯一最具体既有容器或唯一包含根祖先归一化区域父级').first()).toBeVisible();
   await expect(page.getByText('VISUAL_HIERARCHY_V2_RELATIONSHIP_SUPPORT_IDS_EMPTY').first()).toBeVisible();
   await expect(page.getByText('层级关系支撑 ID 列表不能为空').first()).toBeVisible();
   await expect(page.getByText('已按唯一容器区域 GROUP 归属归一化层级关系支撑').first()).toBeVisible();

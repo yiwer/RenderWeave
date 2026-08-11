@@ -109,7 +109,7 @@ describe('Candidate atomic apply workspace', () => {
       .toBeGreaterThan(0);
     expect(screen.getAllByText('VISUAL_GROUNDING_REGION_PARENT_NORMALIZED').length)
       .toBeGreaterThan(0);
-    expect(screen.getAllByText('已按唯一最具体既有容器归一化区域父级').length)
+    expect(screen.getAllByText('已按唯一最具体既有容器或唯一包含根祖先归一化区域父级').length)
       .toBeGreaterThan(0);
     expect(screen.getAllByText('VISUAL_HIERARCHY_RELATIONSHIP_ENCLOSING_SUPPORT_OWNER_NORMALIZED').length)
       .toBeGreaterThan(0);
