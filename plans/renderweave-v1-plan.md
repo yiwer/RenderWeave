@@ -5,7 +5,7 @@
 - Spec：[`specs/renderweave-v1.md`](../specs/renderweave-v1.md)
 - 原型：`/prototype/schema-studio?variant=A|B|C`
 - 当前 lifecycle：P0 `accepted`；P1–P4 `automated_verified`；P5 `live_canary_verified` / `live_independently_reviewed` / `decision_recorded`；P6 T6-1 `independently_reviewed`、T6-2 `human_acceptance_pending`、T6-3a `automated_verified`
-- 当前扩展 Goal：P6/T6-5 图片识别 vNext 为 `in_progress`；N0–N1、N3–N4、N6 已 `automated_verified`，N2 为 `live_verified_mixed_a1_a2`，N5 为 `live_verified_not_promoted`。N7 已完成 guard v3、既有 reachability、三模型 v24、Flash/Plus v25 与 Flash/Plus v26 单 case A2；Flash v23–v26 均止于 OBSERVE，Plus/Max v24 虽完成 OBSERVE→HIERARCHY→BINDING，但质量未达门，Plus v25/v26 止于 HIERARCHY。pipeline 4.12/product-v25 leaf-evidence 与 pipeline 4.13/product-v26 unique enclosing-connected GROUP-owner 均完成 clean A1，但对应 live 均未命中新 telemetry；v26 同版本三阶段门未成立，故未调用 Max v26。v26 合同/Profile、独立 snapshot verifier、真实 PostgreSQL 三阶段 tracer、server/Node 24 Web/E2E/runtime 及 revision `371505b` 隔离 clean full 9/9 steps 均 A1 PASS；该 full gate 早于 live/final eval，最终 revision 仍须重跑。最新 324 reservations 为 319 SETTLED、5 个历史 Plus RESERVED，三份 ledger CLOSED；Profile 继续 `EXPERIMENTAL`，下一步先离线验证 unique validated ancestor-GROUP owner，不进入 20/60-case final eval。2026-08-11 两次 J1 delta 将三个预算槽位累计 cap 提到 1.5M tokens，单 authorization、attempt/CNY/time 边界不变，且用户已明确允许 Plus，详见 `plans/renderweave-visual-recognition-vnext-plan.md`。
+- 当前扩展 Goal：P6/T6-5 图片识别 vNext 为 `in_progress`；N0–N1、N3–N4、N6 已 `automated_verified`，N2 为 `live_verified_mixed_a1_a2`，N5 为 `live_verified_not_promoted`。pipeline 4.14/product-v27 unique source-ancestor GROUP-owner 的 codec/Profile/worker、真实 PostgreSQL tracer、监控/审核 UI 与受影响 gate 已 A1；revision `47f622b` 的隔离 clean full 9/9 PASS。随后 Flash v27b、Plus v27、Max v27 single-case 均完成 CLOSED/A2：Flash 仍止于 OBSERVE，Plus/Max 三阶段可达但 slot/binding 0 matched、分别有 7/26 blockers 与 4/27 critical hallucinations，三模型都未命中新 telemetry。最新 335 reservations 为 330 SETTLED、5 个历史 Plus RESERVED、0 BREACHED；三份 ledger CLOSED，Profile 继续 `EXPERIMENTAL`。两次 J1 delta 将三个预算槽位累计 cap 提到 1.5M tokens，单 authorization、attempt/CNY/time 边界不变。final 20/60、最终 revision full、final independent verifier 与业务/视觉 J1 均未满足，详见 `plans/renderweave-visual-recognition-vnext-plan.md`。
 
 ## 1. 四维执行配置
 
@@ -425,7 +425,7 @@ Phase 内任务只在真实前置依赖满足时并行。当前没有 atomic cla
 
 #### T6-5：图片识别数据结构 vNext 质量升级
 
-- 执行状态：`in_progress`（用户 J1 + approved spec delta；N0–N1、N3–N4、N6 `automated_verified`，N2 `live_verified_mixed_a1_a2`，N5 `live_verified_not_promoted`；N7 既有 reachability、三模型 v24、Flash/Plus v25 与 Flash/Plus v26 smoke 已 A2。v27 unique source-ancestor GROUP-owner codec、Profile/worker、真实 PostgreSQL tracer、监控/审核 UI 与受影响 gate 已 A1，期间修复了 default Provider reservation 入口事务绕过；v27 尚未调用 Provider。下一节点为隔离 clean full 与 fresh identity/snapshot/budget 下的 Flash 单 case 门。final eval、最终 independent verifier 与业务/视觉 J1 均未满足）
+- 执行状态：`in_progress`（用户 J1 + approved spec delta；N0–N1、N3–N4、N6 `automated_verified`，N2 `live_verified_mixed_a1_a2`，N5 `live_verified_not_promoted`；N7 既有 reachability、三模型 v24、Flash/Plus v25–v26 与 Flash/Plus/Max v27 smoke 已 A2。v27 unique source-ancestor GROUP-owner codec、Profile/worker、真实 PostgreSQL tracer、监控/审核 UI、受影响 gate 及隔离 clean full 已 A1，期间修复了 default Provider reservation 入口事务绕过。v27 三模型均未命中新 telemetry；Flash 止于 OBSERVE，Plus/Max 虽三阶段可达但质量未达门。final eval、最终 revision full、final independent verifier 与业务/视觉 J1 均未满足）
 - AC：AC-015..021、AC-VR-001..010
 - 依赖：T6-3a.8/9、ADR-0020/0021；N2 live 依赖新的 stage-gold/harness/identity
 - 影响区域：IMAGE_ONLY eval、visual contracts、worker/Profile/Prompt、OCR/layout adapter、review/monitor UI
@@ -479,3 +479,20 @@ connection 才归一化；所有歧义继续 fail-closed。真实 PostgreSQL syn
 server `20260811-113412`、Node 24 web `20260811-113607`、E2E `20260811-113652`、runtime
 `20260811-113726` 均 A1 PASS；本节点 Provider attempts=0、三份 ledger CLOSED。N6 保持
 `automated_verified`，N7 保持 `in_progress`；隔离 clean full、v27 live、final eval/A2 与业务/视觉 J1 仍是硬门。
+
+## 9. T6-5 v27 live checkpoint
+
+revision `47f622b` 的隔离 clean full 9/9 A1 PASS。随后所有 live 均使用 identity `…960c965`、精确
+product-v27 snapshot、仓库 synthetic `transit-board-v3`、单 case/单 wrapper 与独立
+PROPOSED→负探针→OPEN→CLOSED lifecycle。Flash 首个 v27 ledger 因本地 OCR 属性漏传在 Provider 前
+`DOCUMENT_VISION_DISABLED`，0 attempts 且未重开；重验 pinned runtime 后，Flash v27b 完成 5 attempts，
+Plus/Max v27 各完成 3 attempts。
+
+Flash 仍停在 OBSERVE；Plus/Max 均达到 accepted OBSERVE/HIERARCHY/BINDING，但 slot/binding matched 为 0，
+且分别有 7/26 blockers、4/27 critical hallucinations；三模型都没有命中 source-ancestor telemetry。最终三份
+current evidence 交叉独立 verifier A2 PASS、payload scan PASS。Goal 为 335 reservations（330 SETTLED、
+5 历史 Plus RESERVED、0 BREACHED），三份 ledger CLOSED；CLOSED clean fast `20260811-121335` PASS。
+
+T6-5 不晋级、不完成：product-v27 继续隐藏 `EXPERIMENTAL`，不能从三阶段可达推导质量 accepted。下一节点必须
+先从 payload-free fixed code/metrics 形成新的 bounded 假设并完成离线/真实 PG/受影响 gate；final 20/60、最终
+revision full、final independent verifier 与业务/视觉 J1 仍是硬门。

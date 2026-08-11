@@ -601,3 +601,39 @@ E2E `20260811-113652`、runtime `20260811-113726` 均 A1 PASS。该治理修复�
 v27 实现与 gate 全程 Provider attempts=0、三份 ledger CLOSED、Goal 用量不变。是否执行单-case smoke 仍需
 fresh evaluation identity、Profile snapshot、预算/时限重算与独立 ledger lifecycle；是否晋级仍由 final eval、
 final verifier、full gate 和业务/视觉 J1 共同决定。
+
+## N7 v27 三模型 smoke 与不晋级决定
+
+revision `47f622b` 在 LF detached clean worktree 通过 full gate：9/9 steps、`workingTreeDirty=false`、A1，
+evidence 位于 `D:\Yiwer\code\RenderWeave-v27-full-47f622b\.sdlc\evidence\20260811-114304-full`。随后 Java 与
+独立 Python 对同一 clean tree 重算出 evaluation identity `…960c965`；Flash/Plus/Max product-v27 snapshot
+分别为 `a0e159…128394`、`e0ed97…b6a94c`、`8c083d…a77624`。
+
+Flash 的首个 v27 lifecycle `7cf9709` PROPOSED → `ac63bc9` OPEN → `d1c076e` CLOSED 在 Provider 前以
+`DOCUMENT_VISION_DISABLED` 完成：独立 verifier PASS，但 attempts/tokens/latency 全为 0，Goal/guard 与 324 个
+reservations 不变，因此不计 live smoke。没有重开 ledger；当前 revision 的 pinned RapidOCR 3.9.2、OpenVINO
+2026.0.0 与三份模型 digest 经 `.sdlc/evidence/20260811-115701-document-vision` 重验，synthetic case 为 19 行。
+
+replacement Flash v27b 按 `6185570` → `ea9cb87` → `a473d2f` 完成。唯一 wrapper 185.983 秒；最终交叉独立
+verifier A2 PASS：5 attempts、20,110 input + 22,803 output、174,008 ms、payload scan PASS。五次均在 OBSERVE
+停止，三次 region-kind enum、两次 parent-kind；实际结构全为 0，source-ancestor telemetry 未命中。
+
+Plus v27 按 `ccfce3b` → `7f49117` → `854d652` 完成。唯一 wrapper 55.463 秒；A2 PASS：3 attempts、
+14,618 input + 2,379 output、43,867 ms。OBSERVE、HIERARCHY、ELEMENT_BINDING 均 accepted，只命中一次既有
+cardinality-derived 计数；最终 group/entity/relationship matched 为 1/2/1，slot/binding matched 均为 0，
+7 blockers、4 critical hallucinations，source-ancestor telemetry 未命中。
+
+Plus 已建立同版本三阶段可达性后，Max v27 才按 `1fa1ccf` → `705ccff` → `95be8fa` 执行。唯一 wrapper
+130.128 秒；A2 PASS：3 attempts、20,645 input + 6,258 output、118,138 ms。三阶段 accepted、既有
+cardinality-derived 计数为 2，但 slot/binding 仍 0 matched，26 blockers、27 critical hallucinations；新增
+telemetry 仍未命中。该质量比 Plus 更差，不扩大到 final 20/60。
+
+最终三模型交叉 verifier 全部 PASS、0 abandoned、payload scan PASS；Goal 为 335 reservations（330 SETTLED、
+5 个历史 Plus RESERVED、0 BREACHED）：Flash 100 attempts / 641,256 tokens / ¥0.302686，Plus 153 /
+900,566 / ¥3.484570，Max 82 / 491,919 / ¥10.289316。三份 ledger 均 `CLOSED`；clean fast 首次因隔离
+worktree 缺 `node_modules` 留下环境红灯 `20260811-121310-fast`，联接既有 pinned dependencies 后
+`20260811-121335-fast` PASS。
+
+结论仍是 `EXPERIMENTAL`：v27 本地合同可达且三模型 live 三阶段可达，但新增 normalization 没有获得 live
+命中，单 case 质量不满足晋级门。没有 final 20/60、final revision full、final independent verifier 或用户
+业务/视觉 J1，因此不得报告 Goal 完成或 Profile accepted。

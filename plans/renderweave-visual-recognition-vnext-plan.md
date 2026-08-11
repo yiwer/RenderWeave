@@ -159,7 +159,9 @@ ledger 描述成外部强制门。
   CLOSED/A2 且未通过 OBSERVE；Plus/Max v24 已 CLOSED/A2 并触达 BINDING，但质量未达门。Plus v25 已
   CLOSED/A2，在 HIERARCHY 停止且 leaf-evidence 固定码未命中；Max v25 因新假设信号/三阶段门未成立而未调用。
   Flash/Plus v26 也已 CLOSED/A2，分别止于 OBSERVE/HIERARCHY，enclosing-owner telemetry 未命中；Max v26 因
-  同版本三阶段门未成立而未调用。
+  同版本三阶段门未成立而未调用。product-v27 的 local/PG/UI 与 `47f622b` clean full 已 A1；随后 Flash v27b、
+  Plus v27、Max v27 均 CLOSED/A2。Flash 仍止于 OBSERVE，Plus/Max 三阶段可达但 slot/binding 0 matched，三模型
+  都未命中 source-ancestor telemetry，因此不进入 final 20/60。
 - AC：AC-VR-001..010、既有 AC-015..021。
 - 依赖：N6 clean gates；final exact identities 和新的 ledger；N2 用量已进入 aggregate guard。
 - 执行：已先以 `qwen3.7-flash-2026-07-15`、再以 `qwen3.7-plus` 做单 case reachability；Flash 停在
@@ -218,7 +220,7 @@ ledger 描述成外部强制门。
   旧 Flash 不再创建 assignment，Plus/Max model ID 不变。
 - policy：只有满足既有 AC-021 和 stage 门槛的 Profile 可成为默认；其他保持 EXPERIMENTAL。
 - 门控：server/web/e2e/runtime/full A1；独立 verifier A2；费用/Token/secret/payload scan；用户业务/视觉 J1。
-- 当前证据：guard/Profile `252dc00`、runner slot 修复 `0d7b73c`、guard v3 `2b23617`；二十份单 case live
+- 当前证据：guard/Profile `252dc00`、runner slot 修复 `0d7b73c`、guard v3 `2b23617`；二十三份 Provider-backed single-case live
   独立 verifier PASS；
   hierarchy repair `98ba3d0`、OBSERVE rewind `195894b` 与 evidence-derived cardinality `bb15096` 均已通过
   A1；`31a8c6f` 的 clean evidence 为 fast `20260811-050115`，受影响 server `20260811-045814`、web
@@ -264,13 +266,13 @@ ledger 描述成外部强制门。
 
 | 模型 | Goal cap | Goal exposed tokens | 剩余 tokens | attempts | list-price CNY cap | Goal cost |
 |---|---:|---:|---:|---:|---:|---:|
-| qwen3.8-max | 1,500,000 | 465,016 | 1,034,984 | 79 / 180 | 18.00 | 9.816288 |
-| qwen3.7-plus | 1,500,000 | 883,569 | 616,431 | 150 / 180 | 4.00 | 3.436302 |
-| Flash slot（旧 alias + `qwen3.7-flash-2026-07-15`） | 1,500,000 | 598,343 | 901,657 | 95 / 180 | 0.40 | 0.280418 |
+| qwen3.8-max | 1,500,000 | 491,919 | 1,008,081 | 82 / 180 | 18.00 | 10.289316 |
+| qwen3.7-plus | 1,500,000 | 900,566 | 599,434 | 153 / 180 | 4.00 | 3.484570 |
+| Flash slot（旧 alias + `qwen3.7-flash-2026-07-15`） | 1,500,000 | 641,256 | 858,744 | 100 / 180 | 0.40 | 0.302686 |
 
-Goal guard v3 共 324 reservations：319 SETTLED、5 个历史 Plus RESERVED；没有 BREACHED。`2b23617` 只提高
-token cap，单 authorization 500,000、attempt/CNY cap 与所有历史 reservation 不变。v26 Flash 新增 5 个、
-Plus 新增 4 个 SETTLED reservation；因同版本三阶段门未成立未调用 Max v26。三份 visual ledger 均 `CLOSED`。
+Goal guard v3 共 335 reservations：330 SETTLED、5 个历史 Plus RESERVED；没有 BREACHED。`2b23617` 只提高
+token cap，单 authorization 500,000、attempt/CNY cap 与所有历史 reservation 不变。v27 Provider-backed smoke
+新增 Flash 5 个、Plus 3 个、Max 3 个 SETTLED reservation；三份 visual ledger 均 `CLOSED`。
 
 停止条件：任一 token/attempt/CNY cap、168h ledger expiry、Goal 完成、Provider refusal/Retry-After、identity
 drift、journal/guard 不一致、payload 边界失败或同一无新假设失败再次出现。停止只关闭后续调用；已结算费用
@@ -303,6 +305,27 @@ drift、journal/guard 不一致、payload 边界失败或同一无新假设失�
 - 状态与预算：本节点 Provider attempts=0；Max 79 / 465,016 tokens / ¥9.816288，Plus 150 / 883,569 /
   ¥3.436302，Flash slot 95 / 598,343 / ¥0.280418；324 reservations（319 SETTLED、5 历史 Plus RESERVED、
   0 BREACHED），三份 ledger CLOSED。所有 product-v27 Profile 仍为 `EXPERIMENTAL`。
-- 下一门：先在隔离 clean worktree 为本治理 revision 完成 full gate。之后每次 live 前重新计算 evaluation
+- 当时下一门（已完成，见下一节）：先在隔离 clean worktree 为本治理 revision 完成 full gate。之后每次 live 前重新计算 evaluation
   identity、Profile snapshot 与 aggregate budget；Flash 单 case 优先，Plus 按新信号决定，Max 仅在同版本三阶段
   与质量/J1 门成立时考虑。final 20/60、最终 verifier、最终 revision full 与业务/视觉 J1 均仍未完成。
+
+## 2026-08-11 v27 live checkpoint
+
+- clean full：revision `47f622b` 的 detached LF worktree 9/9 steps A1 PASS，evidence 为
+  `D:\Yiwer\code\RenderWeave-v27-full-47f622b\.sdlc\evidence\20260811-114304-full`；它早于 live/final eval，
+  不冒充最终 revision release gate。
+- identity/Profile：Java 与独立 Python 一致得到 tree identity `…960c965`；Flash/Plus/Max snapshot 为
+  `a0e159…128394`、`e0ed97…b6a94c`、`8c083d…a77624`。每个 lifecycle 均重新核算 Goal 最坏 reservation、
+  先 PROPOSED 负探针，再 OPEN、单 wrapper、CLOSED；没有并发重跑。
+- Flash 首个 v27 lifecycle `7cf9709`→`ac63bc9`→`d1c076e` 因漏传 Document Vision Spring 属性在 Provider 前
+  以 `DOCUMENT_VISION_DISABLED` 结束，0 attempts/0 token，未重开。canary `20260811-115701-document-vision`
+  重验 pinned runtime 后，v27b `6185570`→`ea9cb87`→`a473d2f` 完成 5 attempts；全部停在 OBSERVE。
+- Plus v27 `ccfce3b`→`7f49117`→`854d652` 与 Max v27 `1fa1ccf`→`705ccff`→`95be8fa` 均以 3 attempts
+  完成 OBSERVE/HIERARCHY/BINDING，但 slot/binding matched 均为 0；Plus 为 7 blockers/4 critical，Max 为
+  26 blockers/27 critical。三模型都没有命中 source-ancestor telemetry。
+- 最终三份 current evidence 交叉独立 verifier A2 PASS、0 abandoned、payload scan PASS；335 reservations 为
+  330 SETTLED + 5 历史 Plus RESERVED，0 BREACHED。CLOSED fast 环境红灯 `20260811-121310` 保留；依赖联接后
+  `20260811-121335` PASS。
+- 决策：N7 继续 `in_progress`，所有 product-v27 Profile 继续隐藏 `EXPERIMENTAL`。当前没有足够信号扩大
+  20/60-case final eval；下一增量必须来自新的 bounded fixed-code hypothesis，并先完成离线/真实 PG/受影响 gate。
+  final eval、最终 revision full、final independent verifier 与业务/视觉 J1 仍是 Goal 完成硬门。

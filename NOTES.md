@@ -1,6 +1,14 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-11 product-v27 三模型 single-case 已完成 CLOSED/A2。隔离 clean full `47f622b` 9/9 PASS；
+  identity 为 `…960c965`。Flash 首个 v27 ledger 因 wrapper 漏传本地 OCR 属性在 Provider 前零调用结束，
+  未重开；`20260811-115701-document-vision` 重验 pinned runtime 后，Flash v27b 5 attempts 仍全部停在 OBSERVE。
+  Plus/Max v27 各 3 attempts 并完成 OBSERVE→HIERARCHY→BINDING，但 slot/binding matched 均为 0，分别有
+  7/26 blockers、4/27 critical hallucinations；三模型均未命中 source-ancestor telemetry。最终交叉 verifier
+  A2 PASS、payload scan PASS；累计 Flash 100/180、641,256/1,500,000、¥0.302686，Plus 153/180、
+  900,566/1,500,000、¥3.484570，Max 82/180、491,919/1,500,000、¥10.289316。335 reservations 为
+  330 SETTLED、5 历史 Plus RESERVED、0 BREACHED；三份 ledger CLOSED，Profile 继续 `EXPERIMENTAL`。
 - 2026-08-11 Flash/Plus product-v26 已完成受控 single-case A2。Flash v26b 按 `36a7a9e` PROPOSED →
   `ef6440f` OPEN → `b976e5f` CLOSED：5 attempts、20,120 input + 22,858 output、157,514 ms，全部停在
   OBSERVE。Plus v26 按 `3f95ae3` → `67f33dd` → `31093a6` CLOSED：4 attempts、24,635 input + 5,008
@@ -254,12 +262,11 @@
 - 生命周期状态：P0 `accepted`；P1–P4 `automated_verified`；P5 Flash / Plus / Prompt v2 / Grounded v2 / T5-10 诊断均为 `live_independently_reviewed`，T5-9/T5-11 与 P6/T6-1 为 `independently_reviewed`；P6/T6-2 为 `human_acceptance_pending`；T6-3a 与 T6-5 N6 为 `automated_verified`、T6-3b pending。T6-5 整体仍 active，N7 `in_progress`。所有 DashScope Profile 仍为 `EXPERIMENTAL`；历史评测授权均 CLOSED，基础 Compose 默认关闭，显式 product-live overlay 已按用户授权开放。
 
 ## 下一步
-- [ ] P6/T6-5 图片识别 vNext：N0–N6 已形成独立 checkpoint；Flash/Plus v26 single-case 已 CLOSED/A2，但
-  新 telemetry 未命中，Flash 止于 OBSERVE、Plus 止于 HIERARCHY，同版本三阶段门未成立，故未调用 Max v26。
-  下一安全节点是零 Provider 的 unique validated ancestor-GROUP owner 合同调查/TDD：只在唯一 ancestor owner/
-  region 同时满足既有 cardinality、enclosure、connection 时归一化，不读模型原文/OCR/gold、不排序或补删结构。
-  完成真实 PG checkpoint、payload-free telemetry 与受影响 gate 前不做新 live；没有新 bounded A1/A2 信号前不
-  扩大 20/60-case final eval。final eval、最终 revision full gate、final independent verifier 与业务/视觉 J1
+- [ ] P6/T6-5 图片识别 vNext：N0–N6 已形成独立 checkpoint；Flash/Plus/Max v27 single-case 均 CLOSED/A2，
+  但新增 telemetry 未命中。Flash 止于 OBSERVE，Plus/Max 虽三阶段可达却没有可接受 Candidate，因此不扩大
+  20/60-case final eval。下一安全节点必须从 payload-free fixed code/metrics 形成新的 bounded hypothesis，并先
+  完成离线合同、真实 PostgreSQL checkpoint、监控/审核 telemetry 与受影响 gate；不得读取模型原文/OCR/gold、
+  排名选择或补删 topology。final eval、最终 revision full gate、final independent verifier 与业务/视觉 J1
   均未满足。
 - [x] Java / React / PostgreSQL / OpenAPI 最小 canary 与 A1 full gate 通过。
 - [x] 用户接受“A 默认表单 + B Map + 吸收 C 的 preview/密度”的编辑器方向（J1，2026-08-08）。
@@ -358,15 +365,15 @@
 - `plans/logs/P6-T6-5-N5.md`：有界本地 Document Vision、v4/v6/v7 同 case live 消融、Plus Goal 用量、
   HTTP failure 硬停与未晋级决策；全部 ledger CLOSED。
 - `plans/logs/P6-T6-5-N6.md`：bounded semantic verifier、stage-local repair、selected crops、payload-free UI、
-  v15–v27 bounded verifier/normalization 增量；v27 real-PG 三阶段 tracer 与监控/审核 telemetry 已 A1，尚未 live。
-- `plans/logs/P6-T6-5-N7.md`：pinned Flash/Goal guard v3、二十份单 case CLOSED/A2 reachability、v15–v27
-  bounded verifier/normalization 增量；Flash/Plus v26 未命中新 telemetry，v27 pre-live gate 正在推进，Max v26 未调用。
-- 当前恢复点：`phase/p6-visual-recognition-vnext` 的 `5ada0fa`；v27 codec/Profile/UI 为
+  v15–v27 bounded verifier/normalization 增量；v27 real-PG/UI A1 与三模型 single-case A2 均已记录，未晋级。
+- `plans/logs/P6-T6-5-N7.md`：pinned Flash/Goal guard v3、二十三份 Provider-backed single-case CLOSED/A2
+  reachability、v15–v27 bounded verifier/normalization 增量；v27 三模型均未命中新 telemetry。
+- 当前恢复点：`phase/p6-visual-recognition-vnext` 的 `95be8fa`；v27 codec/Profile/UI 为
   `676180a` / `e1f1a9d` / `3a56af9`，预算事务修复为 `5ada0fa`。server/web/E2E/runtime A1 均绿；
-  Flash v26b `b976e5f` 与 Plus v26 `31093a6` 均 CLOSED/A2；
+  Flash v27b `a473d2f`、Plus v27 `854d652`、Max v27 `95be8fa` 均 CLOSED/A2；
   编排 Goal `019fec8e-a851-7952-b49b-8be76a281a57` 因 turn interrupt 当前显示 `paused`，用户已明确继续同一
-  objective，未创建 replacement Goal。三份 ledger CLOSED；下一节点是当前治理 revision 的隔离 clean full，
-  然后才在 fresh identity/Profile snapshot/budget 下判断 pinned Flash v27 单 case，不能直接扩大 final eval。
+  objective，未创建 replacement Goal。三份 ledger CLOSED；下一节点是新的 bounded 离线假设，不能直接扩大
+  final eval。
 
 ## v27 source-ancestor 与预算硬门 checkpoint
 
@@ -385,3 +392,17 @@
 - 本节点 Provider attempts=0；累计仍为 Max 79 / 465,016 tokens / ¥9.816288，Plus 150 / 883,569 /
   ¥3.436302，Flash 95 / 598,343 / ¥0.280418；324 reservations 中 319 SETTLED、5 历史 Plus RESERVED、
   0 BREACHED。三份 ledger CLOSED，所有 v27 Profile 保持 `EXPERIMENTAL`。
+
+## v27 full 与三模型 live checkpoint
+
+- full：`47f622b` 在 detached LF worktree 通过 9/9 steps，`workingTreeDirty=false`；evidence 为
+  `D:\Yiwer\code\RenderWeave-v27-full-47f622b\.sdlc\evidence\20260811-114304-full`。
+- Flash：零调用 v27 lifecycle `7cf9709`→`ac63bc9`→`d1c076e` 保留；重验 Document Vision 后的 v27b
+  `6185570`→`ea9cb87`→`a473d2f` 为 5 attempts、42,913 tokens，全部停在 OBSERVE。
+- Plus：`ccfce3b`→`7f49117`→`854d652`，3 attempts、16,997 tokens，三阶段 accepted；slot/binding 0 matched、
+  7 blockers、4 critical hallucinations。
+- Max：仅在 Plus 同版本三阶段门成立后按 `1fa1ccf`→`705ccff`→`95be8fa` 执行，3 attempts、26,903 tokens，
+  三阶段 accepted；slot/binding 0 matched、26 blockers、27 critical hallucinations。
+- 三份 current evidence 在最终 Goal state 下交叉 verifier PASS；CLOSED fast 首轮环境红灯
+  `20260811-121310-fast` 保留，依赖联接后的 `20260811-121335-fast` PASS。Profile 不晋级，N7 继续
+  `in_progress`。
