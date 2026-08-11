@@ -1,6 +1,7 @@
 # RenderWeave 图片识别数据结构 vNext Goal 计划
 
-- 状态：active（编排 Goal `019fec8e-a851-7952-b49b-8be76a281a57` 已恢复；未创建 replacement Goal）
+- 状态：in_progress（编排 Goal `019fec8e-a851-7952-b49b-8be76a281a57` 因 turn interrupt 当前显示
+  `paused`；用户已在本轮明确继续同一目标，未创建 replacement Goal）
 - 日期：2026-08-10
 - 基线 revision：`eed1ab6ce2eb800b1b6bf0496b052fc3b9bd28d2`
 - 分支：`phase/p6-visual-recognition-vnext`
@@ -15,8 +16,9 @@
   relationship-region
   owner rewind、v18 detailed region repair taxonomy、v19 exact-duplicate support-ID normalization 与 v20 unique
   evidence-owned relationship region normalization、v21 unique connected relationship region normalization、v22
-  unique exact-region GROUP-owner support normalization 与 v23 support-owner hybrid observation 实现已 clean A1；
-  两次 v22 live 均未命中该 normalization，v23 尚无 live 质量证据）；
+  unique exact-region GROUP-owner support normalization、v23 support-owner hybrid observation 与 v24 bounded
+  observation normalization 实现已 clean A1；两次 v22 live 均未命中该 normalization，Flash v23 已 CLOSED/A2
+  但五次均停在 OBSERVE，v24 尚无 live 质量证据）；
   全部 live ledger `CLOSED`
 
 ## 四维执行配置
@@ -128,8 +130,9 @@ ledger 描述成外部强制门。
   `214fff9`，unique evidence-owned relationship region normalization 为 `391bd52`，unique connected relationship
   region normalization 为 `dda763c`，unique exact-region GROUP-owner support normalization 为 `edc0c28`。三轮 Flash 与后续 Plus 小
   smoke 均有 A2 诊断证据；`e13bf0c` 的 v23 在 4.9 policy 上叠加一次性 ephemeral Document Vision。Plus/Max v22
-  均到达 BINDING，但报告不完整、质量未达门且未命中 v22 normalization；
-  Max 为 0 GROUP/relationship，Profile 没有晋级。
+  均到达 BINDING，但报告不完整、质量未达门且未命中 v22 normalization；Flash v23 五次均在 OBSERVE 因
+  region-kind/parent-kind 拒绝。`061101f` 的 v24 只对 documented kind alias、唯一 exact ITEM parent 与受影响
+  readingOrder 做 bounded normalization；Max 为 0 GROUP/relationship，Profile 没有晋级。
 - AC：AC-VR-007、009。
 - 依赖：N5。
 - 实现：bounded verifier contract、issue→earliest-stage routing、selected crop request、successful-stage
@@ -149,8 +152,9 @@ ledger 描述成外部强制门。
   v15 bounded OBSERVE rewind、v16 evidence-derived cardinality 与 v17 exact relationship-region owner rewind
   以及 v18 detailed hierarchy region repair taxonomy、v19 exact-duplicate support-ID normalization、v20 unique
   evidence-owned relationship region normalization、v21 unique connected relationship region normalization、v22
-  unique exact-region GROUP-owner support normalization 与 v23 support-owner hybrid observation 实现已 clean A1；
-  Plus/Max v22 live 均未命中该 normalization，v23 尚未 live。
+  unique exact-region GROUP-owner support normalization、v23 support-owner hybrid observation 与 v24 bounded
+  observation normalization 实现已 clean A1；Plus/Max v22 live 均未命中 hierarchy normalization，Flash v23 已
+  CLOSED/A2 且未通过 OBSERVE，v24 尚未 live。
 - AC：AC-VR-001..010、既有 AC-015..021。
 - 依赖：N6 clean gates；final exact identities 和新的 ledger；N2 用量已进入 aggregate guard。
 - 执行：已先以 `qwen3.7-flash-2026-07-15`、再以 `qwen3.7-plus` 做单 case reachability；Flash 停在
@@ -189,12 +193,19 @@ ledger 描述成外部强制门。
   也未命中 v22 normalization。相同 Max v22 不再重复；20-case comparison 前先用零 Provider 本地切片收窄
   repeated-group/relationship omission。`e13bf0c` 已形成 pipeline 4.10/product-v23：复用 4.9 全部 bounded policy，
   并把精确绑定的本地 OCR/layout observation 作为三个阶段共享的 ephemeral secondary evidence；不保存 OCR payload，
-  不由本地代码补造结构。其 clean A1 已通过但尚无 live 质量证据；只可在 fresh identity/Profile snapshot、精确 J1、
-  剩余额度与有效时限同时成立时先做单 case，再决定是否进入 20-case 与最佳模型 60-case/15 HOLDOUT；每批≤5。
+  不由本地代码补造结构。Flash v23 lifecycle `0c1506f` PROPOSED → `9652837` OPEN → `1185890` CLOSED 已由
+  独立 verifier A2 PASS：5 attempts、44,632 tokens、178,163 ms、payload scan PASS；三次 region-kind 与两次
+  parent-kind 固定码使全部 attempts 停在 OBSERVE，实际结构计数全为 0。外层 wrapper 因 Mockito stderr warning
+  失败后按 process/evidence lease 恢复，确认 5 SETTLED、无子进程后关闭且未重跑。相同 v23 不再重复。
+  `061101f` 新增 pipeline 4.11/product-v24：只归一化 `DOCUMENT→ROOT`、`CONTAINER→GROUP`、允许枚举大小写，
+  并仅在同 artifact/包含 bbox/精确 repeatGroupId 候选唯一时修复 ITEM parent；受影响 readingOrder 由几何确定。
+  未知 alias、零/多候选与结构增删继续 fail-closed。其 clean A1 已通过但尚无 live 质量证据；只可在 fresh
+  identity/Profile snapshot、精确 J1、剩余额度与有效时限同时成立时先做 Flash 单 case，再决定是否使用已获准的
+  Plus 或进入 20-case 与最佳模型 60-case/15 HOLDOUT；每批≤5，模型间不得并发。
   旧 Flash 不再创建 assignment，Plus/Max model ID 不变。
 - policy：只有满足既有 AC-021 和 stage 门槛的 Profile 可成为默认；其他保持 EXPERIMENTAL。
 - 门控：server/web/e2e/runtime/full A1；独立 verifier A2；费用/Token/secret/payload scan；用户业务/视觉 J1。
-- 当前证据：guard/Profile `252dc00`、runner slot 修复 `0d7b73c`；十二份单 case live 独立 verifier PASS；
+- 当前证据：guard/Profile `252dc00`、runner slot 修复 `0d7b73c`；十三份单 case live 独立 verifier PASS；
   hierarchy repair `98ba3d0`、OBSERVE rewind `195894b` 与 evidence-derived cardinality `bb15096` 均已通过
   A1；`31a8c6f` 的 clean evidence 为 fast `20260811-050115`，受影响 server `20260811-045814`、web
   `20260811-045937`、E2E `20260811-050010`；v17 CLOSED clean fast 为 `20260811-051247`。它们不能替代 live
@@ -215,7 +226,9 @@ ledger 描述成外部强制门。
   CLOSED clean fast 为 `20260811-074402`；外壳摘要失败后按 process/evidence lease 恢复且未重跑。
   `e13bf0c` 的 v23 Profile/能力合同 1/1、real-PG hybrid/payload/support-owner 与独立 verifier 2/2、clean fast
   `20260811-075518`、server `20260811-075612`（192 tests、6 gated skip）均为 A1 PASS，Provider attempts=0；
-  三份 ledger CLOSED。这些证据不能
+  v23 Document Vision canary `20260811-080747` PASS，lifecycle 为 `0c1506f` → `9652837` → `1185890`，A2
+  PASS。`061101f` 的 v24 contract/Profile 20/20、real-PG + independent verifier 2/2、clean server
+  `20260811-082418`（193 tests、6 gated skip）A1 PASS；三份 ledger CLOSED。这些证据不能
   替代 final eval、final identity A2 或
   用户业务/视觉 J1。
 - 完成信号：所有 ledger CLOSED、Goal guard 不超额、每条 AC 有结果和证据、最终 revision clean。目前未达成。
@@ -226,7 +239,10 @@ ledger 描述成外部强制门。
 |---|---:|---:|---:|---:|---:|---:|
 | qwen3.8-max | 1,000,000 | 443,297 | 556,703 | 76 / 180 | 18.00 | 9.454404 |
 | qwen3.7-plus | 1,000,000 | 783,738 | 216,262 | 136 / 180 | 4.00 | 3.116058 |
-| Flash slot（旧 alias + `qwen3.7-flash-2026-07-15`） | 1,000,000 | 428,373 | 571,627 | 76 / 180 | 0.40 | 0.190286 |
+| Flash slot（旧 alias + `qwen3.7-flash-2026-07-15`） | 1,000,000 | 473,005 | 526,995 | 81 / 180 | 0.40 | 0.213929 |
+
+Goal guard 共 293 reservations：288 SETTLED、5 个历史 Plus RESERVED；没有 BREACHED。三份 visual ledger 均
+`CLOSED`，v24 尚未创建 assignment 或 reservation。
 
 停止条件：任一 token/attempt/CNY cap、168h ledger expiry、Goal 完成、Provider refusal/Retry-After、identity
 drift、journal/guard 不一致、payload 边界失败或同一无新假设失败再次出现。停止只关闭后续调用；已结算费用
@@ -237,8 +253,8 @@ drift、journal/guard 不一致、payload 边界失败或同一无新假设失�
 - 源码：优先 revert 当前独立节点 commit；不 reset，不覆盖 main 或用户成果。
 - 数据：migration forward-only；历史 run/Profile/checkpoint 不 UPDATE；新版本读取失败必须保留旧路径。
 - 外部副作用：OPEN→CLOSED 原子停止；Goal aggregate guard 永不因新 ledger 清零；费用不声称可回滚。
-- 编排状态：2026-08-11 接管后的初次 `get_goal` 曾与 handoff 漂移；当前编排 Goal
-  `019fec8e-a851-7952-b49b-8be76a281a57` 已恢复为 active。没有创建 replacement Goal，仍以本计划、
-  不可变 ledger/evidence、git history 和 checkpoint 共同再锚定。
+- 编排状态：2026-08-11 接管后的初次 `get_goal` 曾与 handoff 漂移；恢复后又因 turn interrupt 显示
+  `paused`。用户已明确继续同一 objective；没有创建 replacement Goal，仍以本计划、不可变 ledger/evidence、
+  git history 和 checkpoint 共同再锚定。
 - 每个 N0..N7 结束后，对照 approved spec delta、AC、非目标和用户原始意图执行再锚定；Template、
   Workspace、Renderer、多租户、任意工具能力仍是非目标。

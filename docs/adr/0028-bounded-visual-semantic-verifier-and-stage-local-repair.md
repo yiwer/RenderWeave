@@ -358,3 +358,40 @@ ledger 仍 CLOSED。
 这些证据只证明 4.10 的组合语义、恢复边界和审计边界，不证明 OCR 能恢复 transit-board 的重复组。下一步如执行
 单 case，仍必须重新计算 evaluation identity/Profile snapshot，并使用精确、有效、额度内的 J1 ledger；未产生新
 A2 质量证据前不得扩大到 final eval 或晋级 Profile。
+
+## N7 v23 Flash hybrid smoke
+
+Flash product-v23 随后按 `0c1506f` PROPOSED → `9652837` OPEN → `1185890` CLOSED 完成单 case lifecycle。
+PROPOSED 负探针精确命中 `VISUAL_EVALUATION_AUTHORIZATION_NOT_OPEN`，Goal/guard、288 reservations 与 target
+evidence 均未变化。OPEN 前重新计算的 evaluation identity 为
+`renderweave-visual-evaluation-tree-sha256/1:d6f2be493cfcbfc5f6f1232b75067ba31e3322765529126fba24b5a84983b2be`，
+Flash v23 snapshot 为 `9053885261116ded0de3cc04d2e7ebe01f130fa78748c95b3f2da81c6782d102`；精确
+Document Vision canary `.sdlc/evidence/20260811-080747-document-vision` 通过后才进入 Provider。
+
+唯一 wrapper 的测试主体写出 5 个 SETTLED attempts；外层 PowerShell 将 Mockito stderr warning 提升为
+`NativeCommandError`，因此没有取得 Maven 自身退出码。恢复检查确认没有 Java/Maven/OCR 子进程，state/report
+已完成、无 RESERVED/BREACHED 后立即 CLOSED，未重跑。独立 verifier A2 PASS：20,110 input + 24,522 output
+tokens、178,163 ms、¥0.023643、0 abandoned、payload scan PASS。五次均停在 OBSERVE：三次
+`VISUAL_GROUNDING_JSON_ENUM_INVALID_REGION_KIND`、两次 `VISUAL_GROUNDING_PARENT_KIND_INVALID`；实际
+slot/group/entity/relationship/binding 全为 0。OCR secondary evidence 没有突破 OBSERVE 合同，v23 不晋级、
+不重复。
+
+## N7 bounded observation normalization 增量
+
+上述 A2 只暴露固定码，不能授权读取或持久化模型原文。`061101f` 因此新增 pipeline 4.11/product-v24，并把
+修复边界限制为可离线证明的 observation drift：只接受合同已明确列出的 `DOCUMENT→ROOT`、
+`CONTAINER→GROUP` 与允许枚举的大小写归一化；ITEM 只有在同 artifact、bbox 包含、`repeatGroupId` 精确匹配的
+`REPEATED_GROUP` 候选恰好一个时才改父节点。父节点变化后，只按已验证 bbox 的 top/left/id 重算受影响 sibling
+的 `readingOrder`。未知 alias、零个或多个候选、未知 parent、拓扑/元素/实体/relationship 增删继续 fail-closed。
+
+成功路径只记录 payload-free `VISUAL_GROUNDING_REGION_KIND_NORMALIZED`、
+`VISUAL_GROUNDING_ITEM_PARENT_NORMALIZED` 与 `VISUAL_GROUNDING_READING_ORDER_NORMALIZED` 计数；不保存被替换
+值、模型响应、OCR、图片或完整请求。4.11 继续继承 4.10 的 ephemeral Document Vision、4.9 的 hierarchy
+normalization、deterministic materializer、stage-local recovery 与审核边界，历史 Profile 不改写，三个 v24 Profile
+仍隐藏 `EXPERIMENTAL`。
+
+合同/Profile 定向 20/20、真实 PostgreSQL + 独立 verifier 2/2 通过；纵切同时命中 3 个 kind、1 个唯一 parent、
+1 个 readingOrder 与后续 support-owner telemetry，并完成 OBSERVE→HIERARCHY→BINDING，OCR sentinel 未落盘。
+提交后 clean server `.sdlc/evidence/20260811-082418-server` 为 193 tests、6 gated skip A1 PASS；实现与门控
+Provider attempts=0，三份 ledger CLOSED。该证据仍不是 live 模型质量；v24 只能在 fresh identity/snapshot、
+精确 J1、额度和时限有效时先做 Flash 单 case，Plus 虽已获准也不得与其并发。

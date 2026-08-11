@@ -1,13 +1,25 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-11 `061101f` 新增 pipeline 4.11/product-v24 bounded observation normalization：只归一化
+  `DOCUMENT→ROOT`、`CONTAINER→GROUP` 与允许枚举大小写；ITEM 只有在同 artifact、bbox 包含、精确
+  repeatGroupId 的 REPEATED_GROUP 候选唯一时才改 parent，受影响 readingOrder 只按几何重算。未知 alias、
+  零/多候选和结构增删继续 fail-closed；成功只记录三类 payload-free telemetry。contract/Profile 20/20、
+  real-PG + independent verifier 2/2、clean server `.sdlc/evidence/20260811-082418-server`（193 tests、6 gated
+  skip）均绿；Provider attempts=0，三份 ledger CLOSED，v24 仍隐藏 `EXPERIMENTAL` 且尚未 live。
+- 2026-08-11 Flash product-v23 已按 `0c1506f` PROPOSED → `9652837` OPEN → `1185890` CLOSED 完成单 case。
+  负探针精确 NOT_OPEN；精确 Document Vision canary `20260811-080747-document-vision` PASS 后唯一 wrapper 写出
+  5 个 SETTLED attempts。外层 PowerShell 因 Mockito stderr warning 失败，恢复检查确认无子进程、evidence
+  完成后立即 CLOSED，未重跑。独立 verifier A2 PASS：20,110 input + 24,522 output、178,163 ms、¥0.023643、
+  payload scan PASS；三次 region-kind、两次 parent-kind，全部停在 OBSERVE，结构计数为 0。Flash Goal 现为
+  81/180、473,005/1,000,000、¥0.213929；Goal 共 293 reservations（288 SETTLED、5 历史 Plus RESERVED）。
 - 2026-08-11 `e13bf0c` 新增 pipeline 4.10/product-v23 hybrid：完整继承 v22 的 bounded support-owner policy，
   同时绑定既有精确 RapidOCR/OpenVINO capability；每次 drain 只生成一次 ephemeral observation，由 OBSERVE、
   HIERARCHY、ELEMENT_BINDING 共享。OCR text/line ID/bbox 只作不可信 secondary evidence，不直接补造结构，也不
   进入 checkpoint、Candidate、problem、attempt、journal 或 report。Profile/能力合同 1/1、real-PG payload/
   support-owner 与独立 verifier 2/2、clean fast `.sdlc/evidence/20260811-075518-fast`、server
   `.sdlc/evidence/20260811-075612-server`（192 tests、6 gated skip）均绿；Provider attempts=0、三份 ledger
-  CLOSED。三个 v23 Profile 继续隐藏 `EXPERIMENTAL`，尚无 live 质量证据。
+  CLOSED。三个 v23 Profile 继续隐藏 `EXPERIMENTAL`；后续 live A2 如上，未通过 OBSERVE。
 - 2026-08-11 Max product-v22 已按 `e0b1d67` PROPOSED → `740d28f` OPEN → `99efc6b` CLOSED 完成单 case。
   负探针精确 NOT_OPEN，Goal/guard/285 reservations/target evidence 零变化。唯一 Provider wrapper 的测试主体
   写出 3 个 SETTLED attempts 后完成；外层 PowerShell 因 Mockito stderr warning 未取得 Maven 摘要，检查确认
@@ -175,8 +187,9 @@
   normalization 已 clean A1，Plus v21 已 CLOSED/A2 并稳定暴露 support-not-group。v22 unique exact-region
   GROUP-owner support normalization 已 clean A1；Plus v22 已 CLOSED/A2 并首次完成三阶段，但未命中该规则、
   report 与 stage-gold 质量仍未达门。Max v22 随后也已 CLOSED/A2：三阶段零 repair 通过，但 0 GROUP/
-  relationship，仍不具备 final eval 条件。v23 已用 ephemeral OCR/layout secondary evidence 形成新假设并通过
-  clean A1；下一步只能在 fresh exact 门全部满足时先做单 case，不重复相同 v22 live。
+  relationship，仍不具备 final eval 条件。Flash v23 hybrid 已 CLOSED/A2，但五次均因 region-kind/parent-kind
+  停在 OBSERVE；相同 v23 不重复。v24 bounded observation normalization 已 clean A1，下一步只能在 fresh exact
+  identity/Profile/J1/额度/时限全部满足时先做 Flash 单 case；Plus 已获准但不得与当前模型并发。
 - [x] Java / React / PostgreSQL / OpenAPI 最小 canary 与 A1 full gate 通过。
 - [x] 用户接受“A 默认表单 + B Map + 吸收 C 的 preview/密度”的编辑器方向（J1，2026-08-08）。
 - [x] 创建 P1–P4 implementation Goal。
@@ -274,9 +287,10 @@
 - `plans/logs/P6-T6-5-N5.md`：有界本地 Document Vision、v4/v6/v7 同 case live 消融、Plus Goal 用量、
   HTTP failure 硬停与未晋级决策；全部 ledger CLOSED。
 - `plans/logs/P6-T6-5-N6.md`：bounded semantic verifier、stage-local repair、selected crops、payload-free UI、
-  Flash v10–v12 A2 诊断、v15–v22 bounded verifier 与 v23 ephemeral hybrid 增量；Plus v22 首次三阶段可达但未晋级。
-- `plans/logs/P6-T6-5-N7.md`：pinned Flash/Goal guard v2、十二份单 case CLOSED/A2 reachability、v15–v22
-  bounded verifier 与 v23 ephemeral hybrid 增量；Plus/Max v22 均到 BINDING，但质量未达门。
-- 当前恢复点：`phase/p6-visual-recognition-vnext` 的 `e13bf0c` v23 clean server A1；最近 live 终态仍为
-  `99efc6b` Max v22 CLOSED。编排 Goal `019fec8e-a851-7952-b49b-8be76a281a57` 为 active，未创建 replacement
-  Goal。下一安全切片是 fresh exact v23 单 case 前置核验；未满足则继续零 Provider 安全任务。
+  Flash v10–v12 A2 诊断、v15–v24 bounded verifier/observation 增量；Plus v22 首次三阶段可达但未晋级。
+- `plans/logs/P6-T6-5-N7.md`：pinned Flash/Goal guard v2、十三份单 case CLOSED/A2 reachability、v15–v24
+  bounded verifier/observation 增量；Plus/Max v22 均到 BINDING，Flash v23 未通过 OBSERVE，质量未达门。
+- 当前恢复点：`phase/p6-visual-recognition-vnext` 的 `061101f` v24 clean server A1；最近 live 终态为
+  `1185890` Flash v23 CLOSED。编排 Goal `019fec8e-a851-7952-b49b-8be76a281a57` 因 turn interrupt 当前显示
+  `paused`，用户已明确继续同一 objective，未创建 replacement Goal。下一安全切片是 fresh exact v24 Flash
+  单 case 前置核验；未满足则继续零 Provider 安全任务。
