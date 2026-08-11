@@ -17,8 +17,9 @@
   relationship-region
   owner rewind、v18 detailed region repair taxonomy、v19 exact-duplicate support-ID normalization 与 v20 unique
   evidence-owned relationship region normalization、v21 unique connected relationship region normalization、v22
-  unique exact-region GROUP-owner support normalization、v23 support-owner hybrid observation 与 v24 bounded
-  observation normalization 实现已 clean A1；两次 v22 live 均未命中 hierarchy normalization，Flash v23/v24
+  unique exact-region GROUP-owner support normalization、v23 support-owner hybrid observation、v24 bounded
+  observation normalization 与 v25 leaf-evidence OBSERVE verifier 实现已 clean A1；两次 v22 live 均未命中
+  hierarchy normalization，Flash v23/v24
   已 CLOSED/A2 但各五次均停在 OBSERVE；Plus/Max v24 已 CLOSED/A2 并完成三阶段，但 slot/binding 均 0 matched，
   Max 有 16 critical hallucinations、17 blockers；三次 v24 smoke 的 observation normalization telemetry 均未命中）；
   全部 live ledger `CLOSED`
@@ -130,7 +131,8 @@ ledger 描述成外部强制门。
   `195894b`，evidence-owned relationship cardinality 增量为 `bb15096`，exact relationship-region owner 增量为
   `31a8c6f`，detailed hierarchy region repair taxonomy 为 `4d2cc46`，exact-duplicate support-ID normalization 为
   `214fff9`，unique evidence-owned relationship region normalization 为 `391bd52`，unique connected relationship
-  region normalization 为 `dda763c`，unique exact-region GROUP-owner support normalization 为 `edc0c28`。三轮 Flash 与后续 Plus 小
+  region normalization 为 `dda763c`，unique exact-region GROUP-owner support normalization 为 `edc0c28`；
+  leaf-evidence verifier / v25 workflow / UI telemetry 为 `f8f09b4`、`2b6eb9c`、`6cb2624`。三轮 Flash 与后续 Plus 小
   smoke 均有 A2 诊断证据；`e13bf0c` 的 v23 在 4.9 policy 上叠加一次性 ephemeral Document Vision。Plus/Max v22
   均到达 BINDING，但报告不完整、质量未达门且未命中 v22 normalization；Flash v23 五次均在 OBSERVE 因
   region-kind/parent-kind 拒绝。`061101f` 的 v24 只对 documented kind alias、唯一 exact ITEM parent 与受影响
@@ -155,8 +157,9 @@ ledger 描述成外部强制门。
   v15 bounded OBSERVE rewind、v16 evidence-derived cardinality 与 v17 exact relationship-region owner rewind
   以及 v18 detailed hierarchy region repair taxonomy、v19 exact-duplicate support-ID normalization、v20 unique
   evidence-owned relationship region normalization、v21 unique connected relationship region normalization、v22
-  unique exact-region GROUP-owner support normalization、v23 support-owner hybrid observation 与 v24 bounded
-  observation normalization 实现已 clean A1；Plus/Max v22 live 均未命中 hierarchy normalization，Flash v23 已
+  unique exact-region GROUP-owner support normalization、v23 support-owner hybrid observation、v24 bounded
+  observation normalization 与 v25 leaf-evidence OBSERVE verifier 实现已 clean A1；Plus/Max v22 live 均未命中
+  hierarchy normalization，Flash v23 已
   CLOSED/A2 且未通过 OBSERVE；Flash v24 也已 CLOSED/A2，五次仍在 OBSERVE；Plus/Max v24 已 CLOSED/A2 并
   触达 BINDING，但质量未达门且 normalization telemetry 未命中。
 - AC：AC-VR-001..010、既有 AC-015..021。

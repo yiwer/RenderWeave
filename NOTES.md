@@ -1,6 +1,16 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-11 `f8f09b4` / `2b6eb9c` / `6cb2624` 完成 pipeline 4.12/product-v25 的 leaf-evidence
+  OBSERVE verifier：SLOT 是叶子字段，其同 artifact 证据框不得严格包住另一元素证据；GROUP 容器不受该规则
+  误拒。失败只产生 `VISUAL_SEMANTIC_SLOT_EVIDENCE_CONTAINS_ELEMENT`，不写失败 checkpoint，携带固定码原地
+  重试 OBSERVE；历史 pipeline 继续 `LEGACY`。60 个 stage-gold scene 全部通过；real-PG 证明只重做 OBSERVE、
+  OCR 只预处理一次且不进入 checkpoint/Candidate/problem；三模型 v25 immutable Profile/snapshot verifier 通过，
+  均隐藏 `EXPERIMENTAL`。server `.sdlc/evidence/20260811-093552-server`（196 tests、6 gated skip）、Node 24 web
+  `.sdlc/evidence/20260811-093552-web`（73 tests + type/lint/build）、E2E
+  `.sdlc/evidence/20260811-093741-e2e`（18 passed、1 gated skip）与 runtime
+  `.sdlc/evidence/20260811-093824-runtime` 均 PASS；Provider attempts=0，三份 ledger 保持 CLOSED。该 A1 只
+  建立新的可证伪假设，不等于 live 质量或 final eval 通过。
 - 2026-08-11 Max product-v24 已按 `a04691e` PROPOSED → `b8ac358` OPEN → `57b1502` CLOSED 完成单 case。
   负探针精确 NOT_OPEN，Goal state/guard、303 reservations 与 target evidence 均未变化；复用未变的 Document
   Vision canary，唯一 wrapper exit 0、92.715 秒。独立 verifier A2 PASS：17,500 input + 4,219 output、

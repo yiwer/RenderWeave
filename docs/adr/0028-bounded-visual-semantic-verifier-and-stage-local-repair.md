@@ -465,3 +465,29 @@ Max Goal 变为 79 attempts、465,016/1,500,000 tokens、¥9.816288；总账本 
 5 历史 Plus RESERVED），三份 ledger CLOSED。clean fast `.sdlc/evidence/20260811-091152-fast` PASS。该结果否决
 直接扩大 20/60-case final eval，也不授权读取模型原文来猜测新规则；下一步只能从 stage-gold 与 payload-free
 metrics 离线证明 OBSERVE 的 bounded semantic verifier，并保持 earliest-stage repair、checkpoint 与人工审核边界。
+
+## N7 leaf-evidence OBSERVE verifier 增量
+
+v24 的 Plus/Max A2 同时表现为 expected SLOT 大量缺失、actual SLOT 过量与 GROUP 缺失；该固定指标支持一个不
+依赖模型原文的可证伪假设：模型可能把承载多个可见字段的容器误标为 scalar SLOT。`f8f09b4` 新增 opt-in
+`SLOT_LEAF_EVIDENCE_REQUIRED` policy。它只消费已通过 JSON/grounding/坐标合同的本地 inventory：同 artifact
+上，一个 SLOT 的证据框若严格包含另一个不同 element 的证据框，就拒绝该 OBSERVE plan，并输出固定码
+`VISUAL_SEMANTIC_SLOT_EVIDENCE_CONTAINS_ELEMENT`。相等框、边界相交、其他 artifact 和 GROUP 容器均不触发；
+verifier 不改 kind、不补 GROUP、不删除元素，也不读取 OCR/model text。
+
+`2b6eb9c` 以 pipeline 4.12/product-v25 将 policy 接入真实 workflow。失败不形成 OBSERVE checkpoint，只在
+OBSERVE 原地重试并携带固定问题码；Document Vision 仍只执行一次，且 OCR text/line ID 不进入 checkpoint、
+Candidate、problem 或 attempt。三个 v25 Profile 复用 immutable elements-v8/hierarchy-v7/bindings-v3 prompt，
+只新增 pipeline/Profile identity；历史 pipeline 4.11 及更早版本继续 `LEGACY`。Flash/Plus/Max Profile 全部隐藏、
+`EXPERIMENTAL`，独立 Python verifier 接受其精确 snapshot。
+
+stage-gold 回放对 60 个 scene 全部无误报；真实 PostgreSQL tracer 证明第一次 container-sized SLOT 被拒、第二次
+OBSERVE 修复后才进入 HIERARCHY/BINDING，Provider stage 序列精确为 OBSERVE、OBSERVE、HIERARCHY、
+ELEMENT_BINDING。`6cb2624` 让监控/审核共用 UI 显示固定码、中文解释、`证据区域` 与最早 OBSERVE 修复阶段，
+继续明确不展示 OCR、图片、Prompt 或 Provider 原文。
+
+clean A1 evidence：server `.sdlc/evidence/20260811-093552-server`（196 tests、6 gated skip）、Node 24 web
+`.sdlc/evidence/20260811-093552-web`（73 tests + type/lint/build）、E2E
+`.sdlc/evidence/20260811-093741-e2e`（18 passed、1 gated skip）和 runtime
+`.sdlc/evidence/20260811-093824-runtime` 全部 PASS。该增量 Provider attempts=0，三份 ledger 保持 CLOSED；
+它只建立下一次单-case smoke 的 bounded hypothesis，不满足 final eval、Profile 晋级或 Goal 完成条件。
