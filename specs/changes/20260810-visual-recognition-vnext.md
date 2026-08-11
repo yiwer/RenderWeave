@@ -472,3 +472,19 @@ final 不调用。N6=`automated_verified`，N7/Goal 仍未完成；后续算法�
 - 产品目录切换到 Plus/Max/Flash v42，v41 保持不可变且退出新建入口。v42 仍为 `EXPERIMENTAL`，不继承
   v41 的质量证据；live 前必须在新 revision 上重跑 clean full/Document Vision、重算 identity/snapshot 并取得
   新的精确 J1。
+
+### 2026-08-12 product-v43 shallow-grounding delta
+
+- v42 首张用户图已验证 7-call runtime 可执行，但所有有效模型输出仍在 strict OBSERVE region/element/
+  containment 合同处拒绝，最终无 Candidate。不得以放宽 validator 或伪造结构解决。
+- 新增三份 immutable product-v43 Profile；v42 保持逐字节不可变并退出新建目录。v43 继续使用 pipeline 4.28、
+  schema/hierarchy/binding Prompt 5/7/3、Document Vision capability、模型/价格和全部
+  7-call/360 秒/输出/费用边界，只把 element prompt 升为 Prompt 11。
+- Prompt 11 要求最浅确定 region forest；嵌套、重复或 containment 不确定时允许合法 ROOT-only forest，并把
+  SLOT 归属 ROOT；通用 element-invalid 可进入同阶段纠错。strict JSON、box、parent、overlap、ownership、
+  semantic verifier、materializer 与 Candidate 合同不变，不引入领域专用提示。
+- 用户持续 J1 允许自动执行后续精确有界调用，不构成无限授权。两个精确 Plus run 分别以 4 calls/¥0.141000
+  和 3 calls/¥0.074294 到达 `REVIEW_REQUIRED`，均确认 Candidate revision 0、1 schema、1 image；连同 v42
+  诊断累计 ¥0.638076/¥5。
+- 该 delta 验证两张指定用户图片的 Candidate reachability，不修改 `EXPERIMENTAL` 状态，也不替代 final 60、
+  全局 N7、独立质量验收或生产可靠性结论。

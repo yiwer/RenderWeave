@@ -911,3 +911,20 @@ N6=`automated_verified`、N7/Goal=`in_progress`；Plus/Max/final 不启动，Goa
   retry 不升级。产品目录切换到 Plus/Max/Flash v42，仍无跨模型 fallback。
 - 本节点只允许离线实现、合成回归、clean full/Document Vision 和 fresh identity/snapshot；在新的精确 J1
   完成前 Key/live 保持关闭，Provider attempts 必须为 0。v42=`EXPERIMENTAL`，N7/Goal=`in_progress`。
+
+### product-v43 shallow-grounding live checkpoint
+
+- root cause：v42 Plus 已完成 7-call runtime，但首张用户图连续命中 strict region forest、element 与 parent
+  containment 拒绝，并含一次 timeout/一次 network error；0 Candidate、¥0.422782。问题定位在 OBSERVE
+  过深不确定 region forest，不在数据库、凭据、Document Vision、materializer 或调用上限。
+- successor：`2da0af8` 新增三份 immutable v43 Profile，产品目录切到 v43。Prompt 11 要求最浅确定层级、
+  ROOT-only 安全回退、ROOT-owned SLOT、显式 containment 自检和通用 element-invalid 路由；不放宽 validator，
+  不引入站牌领域词汇，不修改 v42 snapshot。
+- pre-live：full `20260812-065143-full` 9/9、Document Vision `20260812-065750-document-vision` 19 lines；
+  identity `/2:17cb0b63…daaf90a5`，Plus snapshot `77990399…a1021db`。用户持续 J1 只取消逐次停等，
+  不取消精确 revision/Profile/input/budget/time 绑定。
+- outcome：run `aafca06e-fc65-42c3-9253-1bd48c4daf69` 4 calls/¥0.141000，run
+  `898b3e8f-ccf5-49be-84f6-0b2efdb7c13b` 3 calls/¥0.074294；两者均三阶段接受并到达
+  `REVIEW_REQUIRED`，Candidate revision 0、1 schema、1 image。任务累计含 v42 为 ¥0.638076/¥5。
+- disposition：用户指定两图 Goal 完成；payload-free 证据不包含图片/OCR/prompt/model output/Candidate 内容。
+  v43 保持 `EXPERIMENTAL`，两例 reachability 不替代 final 60、全局 N7 或生产可靠性验收。

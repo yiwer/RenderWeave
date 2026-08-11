@@ -941,3 +941,19 @@ focused contract、Profile、真实 PostgreSQL 五调用恢复、API/policy/evid
 该反提案使旧 v41 J1 失效。完成新 revision 的 clean full/Document Vision、fresh identity/Profile snapshot
 与新的精确 J1 前，live/key 保持关闭且 Provider attempts=0；v42 仍为 `EXPERIMENTAL`，N7/Goal 继续
 `in_progress`。
+
+### product-v43 最浅确定 grounding 与用户两图 Goal
+
+v42 首个 Plus 用户图片 run 已执行全部 7 calls、费用 ¥0.422782，但因严格 OBSERVE region/element/containment
+合同未产出 Candidate。`2da0af8` 以 additive v43 successor 引入 Prompt 11：优先最浅确定 region forest，
+不确定时使用合法 ROOT-only/ROOT-owned SLOT，并路由通用 element-invalid；pipeline 4.28、Document Vision、
+validator、materializer 和 v42 的 7/360/16384/¥5 硬边界不变。
+
+clean full `20260812-065143-full` 9/9 与 Document Vision `20260812-065750-document-vision` 19-line canary
+PASS；fresh Java/Python identity `/2:17cb0b63…daaf90a5` 和 Plus snapshot `77990399…a1021db` 匹配。
+用户授予持续但仍需精确绑定的 J1 执行权。两个 USER_PROVIDED/IMAGE_ONLY run 分别以 4 calls/¥0.141000 和
+3 calls/¥0.074294 到达 `REVIEW_REQUIRED`，均确认 Candidate revision 0、1 schema、1 image；任务含先前 v42
+诊断累计 ¥0.638076，低于 ¥5。
+
+当前用户“两图均生成 Candidate”Goal 已完成。v43 仍为 `EXPERIMENTAL`；本证据只覆盖两份指定输入，不能替代
+60 例 final eval、全局质量门或生产可靠性结论，N7/final quality gate 继续 `in_progress`。

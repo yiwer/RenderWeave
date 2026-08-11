@@ -921,3 +921,22 @@
   inference 197/197 + app 229/229（6 skipped）、Playwright 19/19（1 live replay skipped）与原型审计。
   当前仅为 `automated_verified`；还需在固定 clean revision 上完成 full/Document Vision、fresh identity/
   snapshot 和新的精确 J1，才允许启动 live-enabled 应用。
+
+### product-v43 两图 Candidate 验证
+
+- v42 Plus run `95abb5c8-469c-4e0e-ab5c-173c6cf170ba` 已走满 7 calls，证明调用上限/持久化修复生效；
+  但严格 OBSERVE grounding 仍因 region forest、element 和 parent containment 拒绝，另有 timeout/network，
+  最终无 Candidate，实际费用 ¥0.422782。
+- `2da0af8` 新增 immutable product-v43：pipeline 4.28 与 validator/materializer 不变，仅以 Prompt 11 要求
+  最浅确定 region forest、合法 ROOT-only 回退、ROOT-owned SLOT、显式 containment 检查，并路由通用
+  element-invalid。产品目录/API/Web 已切换 v43，v42 资源保持不可变。
+- exact-clean full `20260812-065143-full` 9/9、Document Vision `20260812-065750-document-vision` 1/1
+  19 lines PASS；Java/Python identity 为 `/2:17cb0b63…daaf90a5`，v43 Plus snapshot 为
+  `77990399…a1021db`。
+- 用户授予后续 J1 持续执行权，但每次仍自动绑定精确 revision/Profile/identity/input hash/分类/次数/费用/时限。
+  两份 J1 分别创建 run `aafca06e-fc65-42c3-9253-1bd48c4daf69` 与
+  `898b3e8f-ccf5-49be-84f6-0b2efdb7c13b`；前者 4 calls、后者 3 calls，均到达
+  `REVIEW_REQUIRED` 并确认 Candidate revision 0、1 schema、1 image。
+- 两个 v43 run 实际费用为 ¥0.141000 + ¥0.074294；连同先前 v42 诊断，任务累计 ¥0.638076，低于 ¥5
+  硬上限。两张指定图片的 Candidate 目标完成；v43 仍为 `EXPERIMENTAL`，不把两例成功写成 60 例发布门或
+  生产可靠性验收，全局 N7/final quality gate 继续 `in_progress`。
