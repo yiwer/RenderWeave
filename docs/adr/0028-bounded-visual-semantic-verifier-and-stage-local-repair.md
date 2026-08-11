@@ -637,3 +637,29 @@ worktree 缺 `node_modules` 留下环境红灯 `20260811-121310-fast`，联接�
 结论仍是 `EXPERIMENTAL`：v27 本地合同可达且三模型 live 三阶段可达，但新增 normalization 没有获得 live
 命中，单 case 质量不满足晋级门。没有 final 20/60、final revision full、final independent verifier 或用户
 业务/视觉 J1，因此不得报告 Goal 完成或 Profile accepted。
+
+## N7 v28 最小实体区域 ownership 增量
+
+v27 的 payload-free 结果证明三阶段可达并不等于字段归属正确：一个 entity 同时拥有祖先与后代 region，或非根
+entity 直接拥有 ROOT region 时，既有 binding 最近 owner 规则可能在错误的 hierarchy ownership 上得到形式上
+唯一的答案。`76a0635` 因而新增两个 opt-in policy，只供新版本使用：HIERARCHY 拒绝非根 entity 拥有 ROOT，
+也拒绝同一 entity 同时拥有严格祖先/后代 region；ELEMENT_BINDING 只接受覆盖字段 region 的唯一最小空间
+entity owner。零候选或多个同等最小候选继续 fail-closed，旧 Profile 的 verifier 顺序与语义不变。
+
+`a96fec1` 发布 pipeline 4.15 与 Flash/Plus/Max 三份 immutable product-v28 Profile，并把上述 policy 接入 worker、
+checkpoint 与独立 Profile snapshot verifier。binding 阶段发现多个同等最小 owner 时使用固定码
+`VISUAL_SEMANTIC_HIERARCHY_BINDING_OWNER_AMBIGUOUS`，其最早可修阶段是 HIERARCHY；因为只重做 BINDING 无法改变
+entity-region ownership。持久层只允许 `REJECTED ELEMENT_BINDING` 且问题集精确为该单码时回到 HIERARCHY，
+保留已验证 OBSERVE inventory/grounding 并清空 hierarchy/binding；其他逆向 stage transition 仍拒绝。
+
+定向验证包括 verifier/codec 27/27、inference 180/180、真实 PostgreSQL 两条 tracer 与独立 snapshot 1/1；其中
+一条证明冗余 ownership 只重做 HIERARCHY，另一条以精确 5 次 scripted stage call 从 BINDING ambiguity 回到
+HIERARCHY 并最终到达 `REVIEW_REQUIRED`。`6a8a36f` 在监控与审核 UI 显示三个固定码、中文解释与最早
+HIERARCHY 修复阶段；Node 24 Web gate 73/73、typecheck/lint/build PASS，evidence 为
+`.sdlc/evidence/20260811-125512-web`，隔离端口的 1024 keyboard/axe/payload-free Playwright 场景 1/1 PASS。
+
+本增量只消费已验证 region graph、entity ownership 与 field evidence，不读取模型原文、OCR、图片、完整 prompt、
+Candidate 或 gold，不按距离/reading order 排名，也不补造或删除 topology。实现与门控至此 Provider attempts=0，
+三份 ledger 仍 CLOSED，累计预算仍为 Flash 641,256、Plus 900,566、Max 491,919 / 各 1,500,000 tokens。
+product-v28 继续隐藏 `EXPERIMENTAL`；完成 clean full、fresh `/2` identity/Profile snapshot 与全部 pre-live 硬门前
+不创建 OPEN ledger。

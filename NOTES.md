@@ -1,6 +1,12 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-11 pipeline 4.15/product-v28 minimal entity ownership 离线节点已完成。`76a0635` 拒绝非根 entity
+  拥有 ROOT、同一 entity 同时拥有祖先/后代 region，并要求唯一最小 spatial binding owner；`a96fec1` 将
+  binding ambiguity 精确回退 HIERARCHY、保留 OBSERVE checkpoint，并发布三模型 immutable Profile；`6a8a36f`
+  接入 monitor/review 固定 telemetry。verifier/codec 27/27、inference 180/180、real-PG 2/2、独立 snapshot
+  1/1、Node 24 Web 73/73 与针对性 Playwright 1/1 PASS。当前 Provider attempts=0、三 ledger CLOSED；clean
+  full 与 fresh `/2` pre-live identity 尚未完成，Profile 保持 `EXPERIMENTAL`。
 - 2026-08-11 product-v27 三模型 single-case 已完成 CLOSED/A2。隔离 clean full `47f622b` 9/9 PASS；
   identity 为 `…960c965`。Flash 首个 v27 ledger 因 wrapper 漏传本地 OCR 属性在 Provider 前零调用结束，
   未重开；`20260811-115701-document-vision` 重验 pinned runtime 后，Flash v27b 5 attempts 仍全部停在 OBSERVE。
@@ -262,13 +268,11 @@
 - 生命周期状态：P0 `accepted`；P1–P4 `automated_verified`；P5 Flash / Plus / Prompt v2 / Grounded v2 / T5-10 诊断均为 `live_independently_reviewed`，T5-9/T5-11 与 P6/T6-1 为 `independently_reviewed`；P6/T6-2 为 `human_acceptance_pending`；T6-3a 与 T6-5 N6 为 `automated_verified`、T6-3b pending。T6-5 整体仍 active，N7 `in_progress`。所有 DashScope Profile 仍为 `EXPERIMENTAL`；历史评测授权均 CLOSED，基础 Compose 默认关闭，显式 product-live overlay 已按用户授权开放。
 
 ## 下一步
-- [ ] P6/T6-5 图片识别 vNext：N0–N6 已形成独立 checkpoint；Flash/Plus/Max v27 single-case 均 CLOSED/A2，
-  但新增 telemetry 未命中。Flash 止于 OBSERVE，Plus/Max 虽三阶段可达却没有可接受 Candidate，因此不扩大
-  20/60-case final eval。Git-blob canonical identity `/2` 治理债务已关闭；下一安全节点必须从 payload-free
-  fixed code/metrics 形成新的 bounded hypothesis，并先
-  完成离线合同、真实 PostgreSQL checkpoint、监控/审核 telemetry 与受影响 gate；不得读取模型原文/OCR/gold、
-  排名选择或补删 topology。final eval、最终 revision full gate、final independent verifier 与业务/视觉 J1
-  均未满足。
+- [ ] P6/T6-5 图片识别 vNext：v28 minimal entity ownership 已完成离线合同、真实 PostgreSQL checkpoint、
+  独立 Profile verifier 与 monitor/review telemetry；下一步在 clean revision 跑 full gate，再重新计算 `/2`
+  identity/Profile snapshot/aggregate budget。仅全部硬门通过后优先执行 Flash 单 case、最多 5 calls 的完整 ledger
+  lifecycle；Plus 按新信号决定，Max 仅在同版本三阶段与质量/J1 门成立时考虑。不得读取模型原文/OCR/gold、
+  排名选择或补删 topology。final eval、最终 revision full、final independent verifier 与业务/视觉 J1 均未满足。
 - [x] Java / React / PostgreSQL / OpenAPI 最小 canary 与 A1 full gate 通过。
 - [x] 用户接受“A 默认表单 + B Map + 吸收 C 的 preview/密度”的编辑器方向（J1，2026-08-08）。
 - [x] 创建 P1–P4 implementation Goal。
@@ -366,16 +370,16 @@
 - `plans/logs/P6-T6-5-N5.md`：有界本地 Document Vision、v4/v6/v7 同 case live 消融、Plus Goal 用量、
   HTTP failure 硬停与未晋级决策；全部 ledger CLOSED。
 - `plans/logs/P6-T6-5-N6.md`：bounded semantic verifier、stage-local repair、selected crops、payload-free UI、
-  v15–v27 bounded verifier/normalization 增量；v27 real-PG/UI A1 与三模型 single-case A2 均已记录，未晋级。
+  v15–v28 bounded verifier/normalization 增量；v28 real-PG/Profile/UI 离线证据已记录，尚未 live。
 - `plans/logs/P6-T6-5-N7.md`：pinned Flash/Goal guard v3、二十三份 Provider-backed single-case CLOSED/A2
-  reachability、v15–v27 bounded verifier/normalization 增量；v27 三模型均未命中新 telemetry。
-- 当前可恢复实现锚点：`phase/p6-visual-recognition-vnext` 的 `cded69e`；v27 codec/Profile/UI 为
-  `676180a` / `e1f1a9d` / `3a56af9`，预算事务修复为 `5ada0fa`。server/web/E2E/runtime A1 均绿；
+  reachability、v15–v28 bounded verifier/normalization 增量；v28 等待 clean full 与 fresh pre-live identity。
+- 当前可恢复实现锚点：`phase/p6-visual-recognition-vnext` 的 `6a8a36f`；v28 verifier/Profile/UI 为
+  `76a0635` / `a96fec1` / `6a8a36f`，预算事务修复为 `5ada0fa`。受影响定向后端与 Node 24 Web/E2E 已绿；
   Flash v27b `a473d2f`、Plus v27 `854d652`、Max v27 `95be8fa` 均 CLOSED/A2；
   Git-blob canonical identity `/2` 为 `cded69e`，clean server/fast A1 与真实 `/1` 历史回放通过；
   编排 Goal `019fec8e-a851-7952-b49b-8be76a281a57` 因 turn interrupt 当前显示 `paused`，用户已明确继续同一
-  objective，未创建 replacement Goal。三份 ledger CLOSED；下一节点是新的 bounded 离线假设，不能直接扩大
-  final eval。
+  objective，未创建 replacement Goal。三份 ledger CLOSED；下一节点是 v28 clean full 与 fresh pre-live
+  identity/Profile/budget 核验，不能直接扩大 final eval。
 
 ## v27 source-ancestor 与预算硬门 checkpoint
 
@@ -419,3 +423,14 @@
   新 verifier 对 v27 Flashb/Plus/Max 三份真实 CLOSED `/1` evidence 回放均 PASS、payload scan PASS。
 - 本节点 Provider attempts=0、Goal 用量不变、三份 ledger CLOSED；只关闭治理债务，不改变
   `EXPERIMENTAL`/N7 `in_progress` 或 final eval/J1 硬门。
+
+## v28 minimal entity ownership checkpoint
+
+- `76a0635`：opt-in hierarchy/binding policy 拒绝非根 ROOT ownership、同 entity 祖先/后代冗余 ownership，并
+  要求字段存在唯一最小 spatial entity owner；legacy Profile 不变。
+- `a96fec1`：pipeline 4.15/product-v28 三模型 Profile、worker/checkpoint 与独立 verifier；binding ambiguity
+  精确回到 HIERARCHY，保留 OBSERVE inventory/grounding。inference 180/180、real-PG 2/2、snapshot 1/1 PASS。
+- `6a8a36f`：monitor/review 展示三个固定码与最早 HIERARCHY 修复阶段；Node 24 Web 73/73 + build，evidence
+  `.sdlc/evidence/20260811-125512-web`；隔离 4174 Playwright 1/1 PASS。
+- 当前 Provider attempts=0、335 reservations 与累计用量不变，三份 ledger CLOSED。clean full、fresh `/2`
+  identity/Profile snapshot、预算与时限重算通过前不 OPEN；Profile 保持 `EXPERIMENTAL`、N7 保持 `in_progress`。

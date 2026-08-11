@@ -5,7 +5,15 @@
 - Spec：[`specs/renderweave-v1.md`](../specs/renderweave-v1.md)
 - 原型：`/prototype/schema-studio?variant=A|B|C`
 - 当前 lifecycle：P0 `accepted`；P1–P4 `automated_verified`；P5 `live_canary_verified` / `live_independently_reviewed` / `decision_recorded`；P6 T6-1 `independently_reviewed`、T6-2 `human_acceptance_pending`、T6-3a `automated_verified`
-- 当前扩展 Goal：P6/T6-5 图片识别 vNext 为 `in_progress`；N0–N1、N3–N4、N6 已 `automated_verified`，N2 为 `live_verified_mixed_a1_a2`，N5 为 `live_verified_not_promoted`。pipeline 4.14/product-v27 unique source-ancestor GROUP-owner 的 codec/Profile/worker、真实 PostgreSQL tracer、监控/审核 UI 与受影响 gate 已 A1；revision `47f622b` 的隔离 clean full 9/9 PASS。随后 Flash v27b、Plus v27、Max v27 single-case 均完成 CLOSED/A2：Flash 仍止于 OBSERVE，Plus/Max 三阶段可达但 slot/binding 0 matched、分别有 7/26 blockers 与 4/27 critical hallucinations，三模型都未命中新 telemetry。最新 335 reservations 为 330 SETTLED、5 个历史 Plus RESERVED、0 BREACHED；三份 ledger CLOSED，Profile 继续 `EXPERIMENTAL`。两次 J1 delta 将三个预算槽位累计 cap 提到 1.5M tokens，单 authorization、attempt/CNY/time 边界不变。final 20/60、最终 revision full、final independent verifier 与业务/视觉 J1 均未满足，详见 `plans/renderweave-visual-recognition-vnext-plan.md`。
+- 当前扩展 Goal：P6/T6-5 图片识别 vNext 为 `in_progress`；N0–N1、N3–N4、N6 已
+  `automated_verified`，N2 为 `live_verified_mixed_a1_a2`，N5 为 `live_verified_not_promoted`。v27 三模型
+  single-case 均 CLOSED/A2，但未形成可接受 Candidate。pipeline 4.15/product-v28 已进一步把 minimal entity-region
+  ownership、binding ambiguity→HIERARCHY repair、checkpoint、监控/审核 UI 与独立 Profile verifier 做成离线
+  候选；本增量 Provider attempts=0，clean full 与 fresh `/2` pre-live identity 尚待完成。最新 335 reservations
+  为 330 SETTLED、5 个历史 Plus RESERVED、0 BREACHED；三份 ledger CLOSED，Profile 继续 `EXPERIMENTAL`。
+  两次 J1 delta 将三个预算槽位累计 cap 提到 1.5M tokens，单 authorization、attempt/CNY/time 边界不变。
+  final 20/60、最终 revision full、final independent verifier 与业务/视觉 J1 均未满足，详见
+  `plans/renderweave-visual-recognition-vnext-plan.md`。
 
 ## 1. 四维执行配置
 
@@ -425,7 +433,12 @@ Phase 内任务只在真实前置依赖满足时并行。当前没有 atomic cla
 
 #### T6-5：图片识别数据结构 vNext 质量升级
 
-- 执行状态：`in_progress`（用户 J1 + approved spec delta；N0–N1、N3–N4、N6 `automated_verified`，N2 `live_verified_mixed_a1_a2`，N5 `live_verified_not_promoted`；N7 既有 reachability、三模型 v24、Flash/Plus v25–v26 与 Flash/Plus/Max v27 smoke 已 A2。v27 unique source-ancestor GROUP-owner codec、Profile/worker、真实 PostgreSQL tracer、监控/审核 UI、受影响 gate 及隔离 clean full 已 A1，期间修复了 default Provider reservation 入口事务绕过；Git-blob canonical identity `/2` 与 `/1` 只读回放也已完成 clean A1/A2。v27 三模型均未命中新 telemetry；Flash 止于 OBSERVE，Plus/Max 虽三阶段可达但质量未达门。final eval、最终 revision full、final independent verifier 与业务/视觉 J1 均未满足）
+- 执行状态：`in_progress`（用户 J1 + approved spec delta；N0–N1、N3–N4、N6 `automated_verified`，N2
+  `live_verified_mixed_a1_a2`，N5 `live_verified_not_promoted`；N7 既有 reachability、三模型 v24、Flash/Plus
+  v25–v26 与 Flash/Plus/Max v27 smoke 已 A2。Git-blob canonical identity `/2` 已完成 clean A1/A2；v28 minimal
+  entity ownership、binding→HIERARCHY stage-local rewind、real-PG tracer、独立 Profile verifier 与 payload-free
+  UI 已离线通过，Provider attempts=0，clean full/pre-live identity 待完成。v27 Flash 止于 OBSERVE，Plus/Max
+  虽三阶段可达但质量未达门。final eval、最终 revision full、final independent verifier 与业务/视觉 J1 均未满足）
 - AC：AC-015..021、AC-VR-001..010
 - 依赖：T6-3a.8/9、ADR-0020/0021；N2 live 依赖新的 stage-gold/harness/identity
 - 影响区域：IMAGE_ONLY eval、visual contracts、worker/Profile/Prompt、OCR/layout adapter、review/monitor UI
@@ -507,3 +520,16 @@ exact-clean Java/Python `/2` 一致；server `.sdlc/evidence/20260811-123055-ser
 `.sdlc/evidence/20260811-123245-fast` A1 PASS，v27 三模型真实 CLOSED `/1` evidence 由新 verifier 再回放 PASS。
 本节点 Provider attempts=0、预算不变、ledger 全 CLOSED。它关闭治理债务但不改变质量门：N6 仍
 `automated_verified`、N7 仍 `in_progress`，Profile 仍 `EXPERIMENTAL`。
+
+## 11. T6-5 v28 minimal entity ownership checkpoint
+
+`76a0635` 新增 opt-in hierarchy/binding semantic policy：非根 entity 不得拥有 ROOT，同一 entity 不得同时拥有
+祖先/后代 region，字段只能选择覆盖证据的唯一最小 spatial entity owner。`a96fec1` 发布 pipeline 4.15 与三模型
+product-v28 immutable Profile；binding ambiguity 使用固定码回到最早 HIERARCHY，持久层仅对白名单精确单码
+允许该逆向恢复，并保留已验证 OBSERVE inventory/grounding。`6a8a36f` 同步 monitor/review payload-free telemetry。
+
+verifier/codec 27/27、inference 180/180、真实 PostgreSQL tracer 2/2、独立 Profile snapshot 1/1 PASS；Node 24
+Web gate 73/73 + typecheck/lint/build PASS，evidence 为 `.sdlc/evidence/20260811-125512-web`，针对性 Playwright
+1/1 PASS。本节点没有 Provider 调用，三份 ledger CLOSED，累计 tokens/attempts/CNY 不变。product-v28 仍隐藏
+`EXPERIMENTAL`；只有 clean full、fresh `/2` identity/snapshot、预算/时限重算全部通过后，才允许从 Flash 单
+case/最多 5 calls 开始新的受控 lifecycle。

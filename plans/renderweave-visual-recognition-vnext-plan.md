@@ -11,13 +11,11 @@
   三个预算槽位各追加 500,000 tokens，当前累计 cap 1,500,000；单 authorization 500,000、attempt/CNY/time
   边界不变，精确约束见 spec delta
 - 当前节点：N0–N1、N3–N4、N6 `automated_verified`；N2 `live_verified_mixed_a1_a2`；N5
-  `live_verified_not_promoted`；N7 `in_progress`。Plus/Max v22 与 v24 已实证 OBSERVE→HIERARCHY→BINDING
-  可达，但报告不完整、stage-gold 质量未达门；Flash v23/v24/v25 均止于 OBSERVE。Flash/Plus v25 已
-  CLOSED/A2：leaf-evidence verifier 未命中，Plus 在 HIERARCHY 的 region-cardinality/support-owner 固定码停止，
-  故未调用 Max v25。`d3b0292` / `5ef25bd` 的 pipeline 4.13/product-v26 已以唯一 enclosing-connected GROUP-owner
-  normalization、stage-local checkpoint telemetry、监控/审核 UI 和真实 PostgreSQL 三阶段 tracer 完成 clean A1。
-  Flash/Plus v26 已 CLOSED/A2：Flash 仍止于 OBSERVE，Plus 止于 HIERARCHY，两者均未命中新 telemetry；同版本
-  三阶段门未成立，故未调用 Max v26。全部 live ledger `CLOSED`，Profile 均隐藏 `EXPERIMENTAL`
+  `live_verified_not_promoted`；N7 `in_progress`。v27 Flash/Plus/Max single-case 均 CLOSED/A2：Flash 止于
+  OBSERVE，Plus/Max 虽三阶段可达但 slot/binding 0 matched，未进入 final eval。pipeline 4.15/product-v28 已把
+  minimal entity-region ownership、binding ambiguity→HIERARCHY rewind、real-PG checkpoint、独立 Profile
+  verifier 与 monitor/review telemetry 做成离线候选；当前 Provider attempts=0，clean full 和 fresh `/2`
+  pre-live identity 尚待完成。全部 live ledger `CLOSED`，Profile 均隐藏 `EXPERIMENTAL`
 
 ## 四维执行配置
 
@@ -128,7 +126,8 @@ ledger 描述成外部强制门。
   `214fff9`，unique evidence-owned relationship region normalization 为 `391bd52`，unique connected relationship
   region normalization 为 `dda763c`，unique exact-region GROUP-owner support normalization 为 `edc0c28`；
   leaf-evidence verifier / v25 workflow / UI telemetry 为 `f8f09b4`、`2b6eb9c`、`6cb2624`；unique
-  enclosing-connected GROUP-owner normalization / v26 UI telemetry 为 `d3b0292`、`5ef25bd`。三轮 Flash 与后续 Plus 小
+  enclosing-connected GROUP-owner normalization / v26 UI telemetry 为 `d3b0292`、`5ef25bd`；v28 minimal entity
+  ownership verifier/Profile/UI 为 `76a0635`、`a96fec1`、`6a8a36f`。三轮 Flash 与后续 Plus 小
   smoke 均有 A2 诊断证据；`e13bf0c` 的 v23 在 4.9 policy 上叠加一次性 ephemeral Document Vision。Plus/Max v22
   均到达 BINDING，但报告不完整、质量未达门且未命中 v22 normalization；Flash v23 五次均在 OBSERVE 因
   region-kind/parent-kind 拒绝。`061101f` 的 v24 只对 documented kind alias、唯一 exact ITEM parent 与受影响
@@ -161,7 +160,8 @@ ledger 描述成外部强制门。
   Flash/Plus v26 也已 CLOSED/A2，分别止于 OBSERVE/HIERARCHY，enclosing-owner telemetry 未命中；Max v26 因
   同版本三阶段门未成立而未调用。product-v27 的 local/PG/UI 与 `47f622b` clean full 已 A1；随后 Flash v27b、
   Plus v27、Max v27 均 CLOSED/A2。Flash 仍止于 OBSERVE，Plus/Max 三阶段可达但 slot/binding 0 matched，三模型
-  都未命中 source-ancestor telemetry，因此不进入 final 20/60。
+  都未命中 source-ancestor telemetry，因此不进入 final 20/60。product-v28 的 offline/real-PG/UI contract 已绿，
+  但尚未创建 live ledger；必须先完成 clean full 与 fresh `/2` identity/Profile/budget preflight。
 - AC：AC-VR-001..010、既有 AC-015..021。
 - 依赖：N6 clean gates；final exact identities 和新的 ledger；N2 用量已进入 aggregate guard。
 - 执行：已先以 `qwen3.7-flash-2026-07-15`、再以 `qwen3.7-plus` 做单 case reachability；Flash 停在
@@ -344,3 +344,19 @@ drift、journal/guard 不一致、payload 边界失败或同一无新假设失�
 - 状态：本节点 Provider attempts=0，Goal 用量与 335 reservations 不变，三份 ledger CLOSED。identity 治理债务
   已关闭，但 v27 quality gate 未改变；N7 继续 `in_progress`，下一步仍须先形成新的 bounded、payload-free
   fixed-code hypothesis，不能直接扩大 final eval。
+
+## 2026-08-11 v28 minimal entity ownership checkpoint
+
+- 实现：`76a0635` 以 opt-in policy 拒绝非根 entity 拥有 ROOT、同一 entity 同时拥有祖先/后代 region，并要求
+  field evidence 只有一个最小 spatial entity owner；旧 Profile 不变。`a96fec1` 发布 pipeline 4.15 与三模型
+  immutable product-v28 Profile。binding ambiguity 固定返回最早 HIERARCHY，checkpoint 保留 OBSERVE inventory/
+  grounding、清空 hierarchy/binding；store 只对白名单精确单码允许该逆向 transition。
+- 验证：verifier/codec 27/27、inference 180/180、真实 PostgreSQL repair tracer 2/2、独立 Profile snapshot
+  1/1 PASS。`6a8a36f` 接入 monitor/review 固定码；Node 24 Web gate 73/73、typecheck/lint/build PASS，evidence
+  `.sdlc/evidence/20260811-125512-web`，隔离端口 Playwright 1/1 PASS，payload sentinel 不可见。
+- 治理：本增量 Provider attempts=0，335 reservations 与模型累计用量不变，三份 ledger CLOSED。每模型累计 cap
+  为 1,500,000，单 authorization 500,000 与 attempts/CNY/time 硬门不变。
+- 下一门：先对含文档 checkpoint 的 clean revision 跑 full gate，再重新计算 `/2` identity、三模型 Profile
+  snapshot、aggregate budget 与时限。Flash 优先单 case/最多 5 calls；Plus 依 Flash 新信号决定；Max 仅在 v28
+  三阶段合同可达且质量/J1 门仍有效时考虑。未满足 final 20/60、final full、final independent verifier 与业务/
+  视觉 J1 前，N7 保持 `in_progress`，product-v28 保持 `EXPERIMENTAL`。
