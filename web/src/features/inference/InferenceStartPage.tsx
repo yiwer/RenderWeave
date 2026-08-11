@@ -327,7 +327,7 @@ function formatYuan(micros: number) {
 }
 
 function liveProfileDescription(profile: LiveProfileResponse) {
-  if (profile.model === 'qwen3.7-flash-2026-07-15') return '低成本 smoke · 复杂站牌不推荐';
+  if (profile.model === 'qwen3.7-flash') return '低成本 smoke · 复杂站牌不推荐';
   if (profile.model === 'qwen3.7-plus') return '默认平衡方案 · 复杂结构优先于 Flash';
   return '高能力方案 · 高难度嵌套结构';
 }

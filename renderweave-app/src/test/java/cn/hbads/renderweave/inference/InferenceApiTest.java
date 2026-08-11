@@ -309,9 +309,16 @@ class InferenceApiTest {
                         .value(2_000_000))
                 .andExpect(jsonPath("$.profiles[2].maximumEstimatedCostMicrosCny")
                         .value(2_000_000))
-                .andExpect(jsonPath("$.profiles[?(@.model == 'qwen3.7-flash-2026-07-15')]").exists())
+                .andExpect(jsonPath("$.profiles[2].profileId")
+                        .value("dashscope-qwen37-flash-product-v40-hybrid-generic"))
+                .andExpect(jsonPath("$.profiles[?(@.model == 'qwen3.7-flash')]").exists())
                 .andExpect(jsonPath("$.profiles[?(@.model == 'qwen3.7-plus')]").exists())
                 .andExpect(jsonPath("$.profiles[?(@.model == 'qwen3.8-max')]").exists())
+                .andExpect(content().string(org.hamcrest.Matchers.not(
+                        org.hamcrest.Matchers.containsString(
+                                "dashscope-qwen37-flash-20260715-product-v40-hybrid-generic"
+                        )
+                )))
                 .andExpect(content().string(org.hamcrest.Matchers.not(
                         org.hamcrest.Matchers.containsString("DASHSCOPE_API_KEY")
                 )));

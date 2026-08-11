@@ -530,7 +530,7 @@ test('offers the v40 image catalog with Plus selected and an optional cumulative
   await page.goto('/inference/new');
   await expect(page.getByText('可用', { exact: true })).toBeVisible();
   await expect(page.locator('.live-profile-grid button')).toHaveCount(3);
-  for (const model of ['qwen3.7-plus', 'qwen3.8-max', 'qwen3.7-flash-2026-07-15']) {
+  for (const model of ['qwen3.7-plus', 'qwen3.8-max', 'qwen3.7-flash']) {
     await expect(page.locator('.live-profile-grid button').filter({ hasText: model })).toHaveCount(1);
   }
   await expect(page.locator('.live-profile-grid button.active')).toContainText('qwen3.7-plus');
@@ -921,7 +921,7 @@ function liveAvailability(enabled = false) {
     profiles: [
       profile('dashscope-qwen37-plus-product-v40-hybrid-generic', 'qwen3.7-plus', ['IMAGE_ONLY']),
       profile('dashscope-qwen38-max-product-v40-hybrid-generic', 'qwen3.8-max', ['IMAGE_ONLY']),
-      profile('dashscope-qwen37-flash-20260715-product-v40-hybrid-generic', 'qwen3.7-flash-2026-07-15', ['IMAGE_ONLY']),
+      profile('dashscope-qwen37-flash-product-v40-hybrid-generic', 'qwen3.7-flash', ['IMAGE_ONLY']),
     ],
   };
 }
