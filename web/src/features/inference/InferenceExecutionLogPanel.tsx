@@ -6,8 +6,11 @@ import {
   ChevronDown,
   Clock3,
   Coins,
+  GitBranch,
   ListChecks,
+  MapPinned,
   RefreshCw,
+  RotateCcw,
   TriangleAlert,
   XCircle,
 } from 'lucide-react';
@@ -16,6 +19,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type {
   InferenceAttempt,
   InferenceExecutionEvent,
+  InferenceExecutionLogResponse,
   InferenceRunResponse,
 } from '../../api/generated';
 import { getInferenceExecutionLogRequest } from './candidate-api';
@@ -60,6 +64,9 @@ export function InferenceExecutionLogPanel({
   const hiddenEntries = Math.max(0, timeline.length - visibleEntries);
   const visibleTimeline = hiddenEntries > 0 ? timeline.slice(hiddenEntries) : timeline;
   const totals = summarizeAttempts(query.data?.attempts ?? []);
+  const stages = summarizeStages(query.data);
+  const issues = summarizeIssues(query.data?.attempts ?? []);
+  const recovery = summarizeRecovery(query.data);
 
   return (
     <section className="inference-execution-log" aria-labelledby="inference-execution-log-title" aria-busy={query.isFetching}>
@@ -113,6 +120,16 @@ export function InferenceExecutionLogPanel({
                 <LogMetric icon={<Coins aria-hidden="true" size={16} />} label="调用费用" value={formatCost(totals.costMicrosCny)} detail={`调用耗时 ${formatDuration(totals.durationMillis)}`} />
               </div>
 
+              <StageTelemetry stages={stages} />
+
+              <div className={`inference-recovery-summary ${recovery.tone}`} aria-label="恢复状态">
+                <span className="inference-recovery-icon"><RotateCcw aria-hidden="true" size={16} /></span>
+                <span><strong>{recovery.title}</strong><small>{recovery.detail}</small></span>
+                <em>{recovery.checkpointCount} 个检查点事件</em>
+              </div>
+
+              {issues.length > 0 && <IssueTelemetry issues={issues} />}
+
               {query.data.truncated && (
                 <p className="inference-log-truncated" role="note">
                   <TriangleAlert aria-hidden="true" size={15} />日志事件超过 1000 条，当前仅展示服务端返回的受控窗口。
@@ -151,6 +168,81 @@ function LogMetric({ icon, label, value, detail }: { icon: React.ReactNode; labe
       <span className="inference-log-metric-icon">{icon}</span>
       <span><small>{label}</small><strong>{value}</strong><em>{detail}</em></span>
     </div>
+  );
+}
+
+type StageTone = 'pending' | 'active' | 'repairing' | 'verified' | 'blocked';
+
+type StageSummary = {
+  stage: InferenceAttempt['stage'];
+  label: string;
+  scope: string;
+  tone: StageTone;
+  attemptCount: number;
+  problemCount: number;
+};
+
+type IssueSummary = {
+  code: string;
+  count: number;
+  scope: string;
+  earliestStage: InferenceAttempt['stage'];
+};
+
+function StageTelemetry({ stages }: { stages: StageSummary[] }) {
+  return (
+    <section className="inference-stage-telemetry" aria-labelledby="inference-stage-telemetry-title">
+      <header>
+        <span><GitBranch aria-hidden="true" size={16} /></span>
+        <span>
+          <h3 id="inference-stage-telemetry-title">阶段与检查点</h3>
+          <small>每个阶段只展示状态、有限问题计数和受控定位范围</small>
+        </span>
+      </header>
+      <ol>
+        {stages.map((stage) => (
+          <li key={stage.stage} className={stage.tone}>
+            <span className="inference-stage-state">{stageToneLabel(stage.tone, stage.stage)}</span>
+            <strong>{stage.label}</strong>
+            <small>{stage.scope}</small>
+            <span className="inference-stage-counts">
+              {stage.attemptCount === 0
+                ? '零外部调用'
+                : stage.stage === 'REPAIR' ? `${stage.attemptCount} 次触发` : `${stage.attemptCount} 次调用`}
+              {stage.problemCount > 0 && ` · ${stage.problemCount} 个问题`}
+            </span>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+function IssueTelemetry({ issues }: { issues: IssueSummary[] }) {
+  const total = issues.reduce((sum, issue) => sum + issue.count, 0);
+  return (
+    <section className="inference-issue-telemetry" aria-labelledby="inference-issue-telemetry-title">
+      <header>
+        <span><MapPinned aria-hidden="true" size={16} /></span>
+        <span>
+          <h3 id="inference-issue-telemetry-title">有限问题定位</h3>
+          <small>{total} 个校验信号；不包含 OCR、图片、Prompt 或 Provider 原文</small>
+        </span>
+      </header>
+      <ul>
+        {issues.map((issue) => (
+          <li key={`${issue.earliestStage}:${issue.code}`}>
+            <span className="inference-issue-scope">{issue.scope}</span>
+            <span>
+              <strong>{problemLabel(issue.code)}</strong>
+              <small>最早返回 {inferenceStageLabel(issue.earliestStage)} 修复</small>
+            </span>
+            <code>{issue.code}</code>
+            <b aria-label={`${issue.count} 项`}>× {issue.count}</b>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 
@@ -214,6 +306,224 @@ function summarizeAttempts(attempts: InferenceAttempt[]) {
     problemCount: summary.problemCount
       + Object.values(attempt.problemCodeCounts).reduce((sum, count) => sum + count, 0),
   }), { inputTokens: 0, outputTokens: 0, costMicrosCny: 0, durationMillis: 0, problemCount: 0 });
+}
+
+const STAGE_DEFINITIONS: Array<Pick<StageSummary, 'stage' | 'label' | 'scope'>> = [
+  { stage: 'OBSERVE', label: '感知与区域', scope: '元素盘点 · region forest' },
+  { stage: 'HIERARCHY', label: '层级语义', scope: '实体、关系与空间归属' },
+  { stage: 'ELEMENT_BINDING', label: '元素归属', scope: '字段绑定 · 最近实体' },
+  { stage: 'STRUCTURE', label: 'Candidate 构建', scope: '确定性编译与合同' },
+  { stage: 'REPAIR', label: '定向修复', scope: '最早失败阶段 · selected crop' },
+];
+
+const STAGE_ORDER: Record<string, number> = {
+  NORMALIZE: 0,
+  OBSERVE: 1,
+  HIERARCHY: 2,
+  ELEMENT_BINDING: 3,
+  STRUCTURE: 4,
+  DETERMINISTIC_VALIDATE: 5,
+  CRITIQUE: 6,
+  REPAIR: 7,
+  USER_APPROVAL: 8,
+  ATOMIC_CREATE: 9,
+};
+
+function summarizeStages(log?: InferenceExecutionLogResponse): StageSummary[] {
+  const attempts = log?.attempts ?? [];
+  return STAGE_DEFINITIONS.map((definition) => {
+    if (definition.stage === 'REPAIR') {
+      const rejected = attempts.filter((attempt) => attempt.status === 'REJECTED');
+      const problemCount = rejected.reduce((sum, attempt) => sum
+        + Object.values(attempt.problemCodeCounts).reduce((attemptSum, count) => attemptSum + count, 0), 0);
+      const latestRejectedOrdinal = Math.max(...rejected.map((attempt) => attempt.attemptOrdinal));
+      const latestSucceededOrdinal = Math.max(...attempts
+        .filter((attempt) => attempt.status === 'SUCCEEDED')
+        .map((attempt) => attempt.attemptOrdinal));
+      const recovered = rejected.length > 0 && latestSucceededOrdinal > latestRejectedOrdinal;
+      const terminalFailure = log?.run.state === 'FAILED' || log?.run.state === 'CANCELLED';
+      return {
+        ...definition,
+        attemptCount: rejected.length,
+        problemCount,
+        tone: rejected.length === 0
+          ? 'pending'
+          : terminalFailure && !recovered
+            ? 'blocked'
+            : log?.run.state === 'RUNNING'
+              ? 'repairing'
+              : 'verified',
+      };
+    }
+    const stageAttempts = attempts.filter((attempt) => attempt.stage === definition.stage);
+    const problemCount = stageAttempts.reduce((sum, attempt) => sum
+      + Object.values(attempt.problemCodeCounts).reduce((attemptSum, count) => attemptSum + count, 0), 0);
+    return {
+      ...definition,
+      attemptCount: stageAttempts.length,
+      problemCount,
+      tone: stageTone(log, definition.stage, stageAttempts),
+    };
+  });
+}
+
+function stageTone(
+  log: InferenceExecutionLogResponse | undefined,
+  stage: InferenceAttempt['stage'],
+  attempts: InferenceAttempt[],
+): StageTone {
+  if (attempts.some((attempt) => attempt.status === 'SUCCEEDED')) return 'verified';
+  if (attempts.some((attempt) => attempt.status !== 'SUCCEEDED')) {
+    return log?.run.state === 'RUNNING' && log.run.stage === stage ? 'repairing' : 'blocked';
+  }
+  if (!log) return 'pending';
+  if ((STAGE_ORDER[log.run.stage] ?? -1) > (STAGE_ORDER[stage] ?? Number.MAX_SAFE_INTEGER)) {
+    return 'verified';
+  }
+  if (log.run.state === 'REVIEW_REQUIRED' || log.run.state === 'APPLYING' || log.run.state === 'COMPLETED') {
+    return 'verified';
+  }
+  return log.run.state === 'RUNNING' && log.run.stage === stage ? 'active' : 'pending';
+}
+
+function stageToneLabel(tone: StageTone, stage?: InferenceAttempt['stage']) {
+  if (stage === 'REPAIR') {
+    const labels: Record<StageTone, string> = {
+      pending: '未触发',
+      active: '准备修复',
+      repairing: '正在修复',
+      verified: '修复后推进',
+      blocked: '修复未通过',
+    };
+    return labels[tone];
+  }
+  const labels: Record<StageTone, string> = {
+    pending: '待执行',
+    active: '正在执行',
+    repairing: '阶段内修复',
+    verified: '检查点已验证',
+    blocked: '在此停止',
+  };
+  return labels[tone];
+}
+
+function summarizeIssues(attempts: InferenceAttempt[]): IssueSummary[] {
+  const indexed = new Map<string, IssueSummary>();
+  for (const attempt of attempts) {
+    for (const [code, count] of Object.entries(attempt.problemCodeCounts)) {
+      const earliestStage = earliestRepairStage(code, attempt.stage);
+      const key = `${earliestStage}:${code}`;
+      const existing = indexed.get(key);
+      indexed.set(key, {
+        code,
+        count: (existing?.count ?? 0) + count,
+        scope: problemScope(code),
+        earliestStage,
+      });
+    }
+  }
+  return [...indexed.values()].sort((left, right) =>
+    (STAGE_ORDER[left.earliestStage] ?? 99) - (STAGE_ORDER[right.earliestStage] ?? 99)
+      || left.code.localeCompare(right.code));
+}
+
+function earliestRepairStage(code: string, fallback: InferenceAttempt['stage']): InferenceAttempt['stage'] {
+  if (code.startsWith('VISUAL_BINDINGS') || code.startsWith('VISUAL_SEMANTIC_BINDING')) {
+    return 'ELEMENT_BINDING';
+  }
+  if (code.startsWith('VISUAL_HIERARCHY') || code.startsWith('VISUAL_SEMANTIC_HIERARCHY')) {
+    return 'HIERARCHY';
+  }
+  if (code.startsWith('VISUAL_GROUNDING') || code.startsWith('VISUAL_SEMANTIC')) {
+    return 'OBSERVE';
+  }
+  if (code.startsWith('CANDIDATE_') || code.startsWith('VISUAL_PLAN_')) return 'REPAIR';
+  return fallback;
+}
+
+function problemScope(code: string) {
+  if (code.startsWith('VISUAL_BINDINGS') || code.startsWith('VISUAL_SEMANTIC_BINDING')) return '字段归属';
+  if (code.startsWith('VISUAL_HIERARCHY') || code.startsWith('VISUAL_SEMANTIC_HIERARCHY')) return '层级边';
+  if (code.includes('REPEATED') || code.includes('GROUP')) return '重复区域';
+  if (code.startsWith('VISUAL_GROUNDING') || code.includes('REGION')) return '区域树';
+  if (code.includes('EVIDENCE')) return '证据区域';
+  if (code.startsWith('CANDIDATE_') || code.startsWith('VISUAL_PLAN_')) return 'Candidate';
+  return '阶段合同';
+}
+
+function summarizeRecovery(log?: InferenceExecutionLogResponse) {
+  const checkpointCount = log?.events.filter((event) => event.type === 'CHECKPOINT_ADVANCED').length ?? 0;
+  if (!log) return { title: '正在读取恢复状态', detail: '等待结构化事件', tone: 'neutral', checkpointCount };
+  const reclaimed = log.events.filter((event) => event.type === 'LEASE_RECLAIMED').length;
+  const rejected = log.attempts.filter((attempt) => attempt.status === 'REJECTED').length;
+  const preserved = new Set(log.attempts
+    .filter((attempt) => attempt.status === 'SUCCEEDED')
+    .map((attempt) => attempt.stage)).size;
+  if (reclaimed > 0) {
+    const failed = log.run.state === 'FAILED';
+    const cancelled = log.run.state === 'CANCELLED';
+    return {
+      title: failed ? '从检查点恢复后仍失败' : cancelled ? '从检查点恢复后安全取消' : '已从持久检查点恢复',
+      detail: `${reclaimed} 次 lease 重领；已验证阶段继续复用${failed ? '，最终固定问题码已保留' : ''}`,
+      tone: failed ? 'error' : cancelled ? 'neutral' : 'success',
+      checkpointCount,
+    };
+  }
+  if (log.run.state === 'RUNNING' && log.run.cancellationRequested) {
+    return {
+      title: '正在等待安全取消',
+      detail: '当前调用完成后在下一个检查点停止，不启动新阶段',
+      tone: 'warning',
+      checkpointCount,
+    };
+  }
+  if (log.run.state === 'CANCELLED') {
+    return {
+      title: '已在安全检查点取消',
+      detail: '已结算 attempt 与已验证检查点保持可审计',
+      tone: 'neutral',
+      checkpointCount,
+    };
+  }
+  if (log.run.retryOfRunId) {
+    return {
+      title: '当前为审计重试任务',
+      detail: '源任务保持只读；本次运行拥有独立编号和时间线',
+      tone: 'active',
+      checkpointCount,
+    };
+  }
+  if (rejected > 0) {
+    const failed = log.run.state === 'FAILED';
+    return {
+      title: failed ? '定向修复未通过' : log.run.state === 'RUNNING' ? '正在阶段内定向修复' : '阶段内定向修复已完成',
+      detail: `${rejected} 次响应由最早失败阶段处理；${preserved > 0 ? `${preserved} 个已通过阶段保持复用` : '未重做无关阶段'}`,
+      tone: failed ? 'error' : log.run.state === 'RUNNING' ? 'warning' : 'success',
+      checkpointCount,
+    };
+  }
+  if (log.run.state === 'FAILED') {
+    return {
+      title: '恢复路径可用',
+      detail: '固定问题码与完成检查点已保留，可创建独立审计重试',
+      tone: 'error',
+      checkpointCount,
+    };
+  }
+  if (log.run.state === 'RUNNING' || log.run.state === 'QUEUED') {
+    return {
+      title: '检查点持续写入',
+      detail: '崩溃或 lease 失效后只从最近安全边界继续',
+      tone: 'active',
+      checkpointCount,
+    };
+  }
+  return {
+    title: '无需恢复',
+    detail: '本次流程未发生 lease 重领、取消或审计重试',
+    tone: 'neutral',
+    checkpointCount,
+  };
 }
 
 function eventTypeLabel(type: string) {

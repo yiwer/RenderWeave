@@ -5,6 +5,16 @@
 - Spec：[`specs/renderweave-v1.md`](../specs/renderweave-v1.md)
 - 原型：`/prototype/schema-studio?variant=A|B|C`
 - 当前 lifecycle：P0 `accepted`；P1–P4 `automated_verified`；P5 `live_canary_verified` / `live_independently_reviewed` / `decision_recorded`；P6 T6-1 `independently_reviewed`、T6-2 `human_acceptance_pending`、T6-3a `automated_verified`
+- 当前扩展 Goal：P6/T6-5 图片识别 vNext 为 `in_progress`；N0–N1、N3–N4、N6 已
+  `automated_verified`，N2 为 `live_verified_mixed_a1_a2`，N5 为 `live_verified_not_promoted`。v27 三模型
+  single-case 均 CLOSED/A2，但未形成可接受 Candidate。Flash/Plus v30 bounded live 的六次调用都停在 OBSERVE；
+  其 fixed code 已驱动 pipeline 4.18/product-v31 的 bounded repeated-item SLOT owner repair、checkpoint、监控/审核
+  UI 与独立 Profile verifier，并完成离线/real-PG/Web/E2E 验证。v31 clean full/Document Vision/live 尚未执行。
+  最新 359 reservations 为 354 SETTLED、5 个历史 Plus RESERVED、0 BREACHED；三份 ledger CLOSED，Profile 继续
+  `EXPERIMENTAL`。
+  两次 J1 delta 将三个预算槽位累计 cap 提到 1.5M tokens，单 authorization、attempt/CNY/time 边界不变。
+  final 20/60、最终 revision full、final independent verifier 与业务/视觉 J1 均未满足，详见
+  `plans/renderweave-visual-recognition-vnext-plan.md`。
 
 ## 1. 四维执行配置
 
@@ -422,6 +432,24 @@ Phase 内任务只在真实前置依赖满足时并行。当前没有 atomic cla
 - 证据保证：A2；外部 hard gates 若存在为 A3；J1 pending 分开报告
 - 完成信号：每个 AC 有证据/处置，生命周期状态如实更新
 
+#### T6-5：图片识别数据结构 vNext 质量升级
+
+- 执行状态：`in_progress`（用户 J1 + approved spec delta；N0–N1、N3–N4、N6 `automated_verified`，N2
+  `live_verified_mixed_a1_a2`，N5 `live_verified_not_promoted`；N7 既有 reachability、三模型 v24、Flash/Plus
+  v25–v26 与 Flash/Plus/Max v27 smoke 已 A2。Git-blob canonical identity `/2` 已完成 clean A1/A2；v28–v31
+  bounded verifier、stage-local repair、real-PG tracer、独立 Profile verifier 与 payload-free UI 已通过。
+  product-v30 clean full/Document Vision 和 Flash/Plus single-case 已 CLOSED/A2，但均止于 OBSERVE、未命中新
+  normalization；Max v30 未调用。product-v31 尚未通过 clean full/Document Vision 或 live。final eval、最终
+  revision full、final independent verifier 与业务/视觉 J1 均未满足）
+- AC：AC-015..021、AC-VR-001..010
+- 依赖：T6-3a.8/9、ADR-0020/0021；N2 live 依赖新的 stage-gold/harness/identity
+- 影响区域：IMAGE_ONLY eval、visual contracts、worker/Profile/Prompt、OCR/layout adapter、review/monitor UI
+- 局部验证：stage metric goldens、materializer/property、spatial/adversarial、PG recovery、Web/E2E、三模型 bounded live
+- 回归升级：Profile/prompt/corpus/evaluator/workflow/model asset/OpenAPI/migration 任一变化均重算 identity 并跑受影响 gate
+- 证据保证：deterministic 节点 A1；live J1 + A1 + 独立 verifier A2；不存在 A3
+- 完成信号：best Profile 满足既有 AC-021 与新增 stage 门；其余诚实保持 EXPERIMENTAL；全部 ledger CLOSED
+- 详细 DAG、预算、恢复和 N0–N7 节点：`plans/renderweave-visual-recognition-vnext-plan.md`
+
 ## 5. Gate 定义
 
 | Gate | 必须满足 |
@@ -454,3 +482,439 @@ Phase 内任务只在真实前置依赖满足时并行。当前没有 atomic cla
 7. P5 已完成 Flash、旧 Plus 与 Prompt v2 三轮独立 60-case live 评测；这些历史 Profile 仍为 `EXPERIMENTAL` 且不在产品目录展示。产品目录固定为 `qwen3.7-flash`、`qwen3.7-plus`、`qwen3.8-max`、`qwen3.7-max-2026-06-08`；每次上传仍需用户确认数据外发，成本限额可填或留空，留空只表示不增加任务累计费用门，不能解除 Profile 的三次调用和输出上界。
 8. T5-6 已把 60-case v2 whole-graph 评测、fail-closed policy、每批最多 5 case 的恢复账本与完整 repository evaluation identity 做成可执行闭环，并通过独立 A2；Flash/旧 Plus 授权均已 CLOSED，决定均为 `EXPERIMENTAL`。
 9. T5-7 不复用旧质量结果：Prompt/Profile v2 修正 exact FieldKey、最小证据图、provider provenance、JSON evidence catalog 与三态 repair 路由；随后完成新的 60-case J1 与独立 A2。结果从旧 Plus 18/60 提升到 47/60、critical 51 降至 10，但 Evidence/DAG 退化且 IMAGE_ONLY 薄弱，故仍为 `EXPERIMENTAL`、默认关闭，授权已 CLOSED。
+
+## 8. T6-5 v27 checkpoint
+
+`676180a`、`e1f1a9d`、`3a56af9` 已把 unique source-ancestor GROUP-owner fallback 做成版本化、可恢复且
+payload-free 的 pipeline 4.14 候选：只有旧 enclosing 候选为零、source ancestor owner 唯一且满足 cardinality/
+connection 才归一化；所有歧义继续 fail-closed。真实 PostgreSQL synthetic tracer 到达 `REVIEW_REQUIRED`，
+监控/审核页展示固定 telemetry 而不展示 OCR、图片、Prompt、Candidate 或 Provider 原文。
+
+首轮 server gate 发现预算 default overload 的事务代理绕过，`5ada0fa` 已修复并以 10 次并发回归验证。修复后
+server `20260811-113412`、Node 24 web `20260811-113607`、E2E `20260811-113652`、runtime
+`20260811-113726` 均 A1 PASS；本节点 Provider attempts=0、三份 ledger CLOSED。N6 保持
+`automated_verified`，N7 保持 `in_progress`；隔离 clean full、v27 live、final eval/A2 与业务/视觉 J1 仍是硬门。
+
+## 9. T6-5 v27 live checkpoint
+
+revision `47f622b` 的隔离 clean full 9/9 A1 PASS。随后所有 live 均使用 identity `…960c965`、精确
+product-v27 snapshot、仓库 synthetic `transit-board-v3`、单 case/单 wrapper 与独立
+PROPOSED→负探针→OPEN→CLOSED lifecycle。Flash 首个 v27 ledger 因本地 OCR 属性漏传在 Provider 前
+`DOCUMENT_VISION_DISABLED`，0 attempts 且未重开；重验 pinned runtime 后，Flash v27b 完成 5 attempts，
+Plus/Max v27 各完成 3 attempts。
+
+Flash 仍停在 OBSERVE；Plus/Max 均达到 accepted OBSERVE/HIERARCHY/BINDING，但 slot/binding matched 为 0，
+且分别有 7/26 blockers、4/27 critical hallucinations；三模型都没有命中 source-ancestor telemetry。最终三份
+current evidence 交叉独立 verifier A2 PASS、payload scan PASS。Goal 为 335 reservations（330 SETTLED、
+5 历史 Plus RESERVED、0 BREACHED），三份 ledger CLOSED；CLOSED clean fast `20260811-121335` PASS。
+
+T6-5 不晋级、不完成：product-v27 继续隐藏 `EXPERIMENTAL`，不能从三阶段可达推导质量 accepted。下一节点必须
+先从 payload-free fixed code/metrics 形成新的 bounded 假设并完成离线/真实 PG/受影响 gate；final 20/60、最终
+revision full、final independent verifier 与业务/视觉 J1 仍是硬门。
+
+## 10. T6-5 evaluation identity `/2` checkpoint
+
+`cded69e` 已把 evaluation identity 从 checkout-byte `/1` 升级为 Git-blob canonical `/2`：UTF-8 path、regular
+mode 与 canonical blob bytes 被独立 framing；hidden index flags、non-regular/missing input、dirty/untracked 与
+不稳定捕获全部 fail-closed。新 OPEN ledger 只接受 `/2`，独立 verifier 继续只读重算 CLOSED `/1` 历史证据。
+
+exact-clean Java/Python `/2` 一致；server `.sdlc/evidence/20260811-123055-server` 与 fast
+`.sdlc/evidence/20260811-123245-fast` A1 PASS，v27 三模型真实 CLOSED `/1` evidence 由新 verifier 再回放 PASS。
+本节点 Provider attempts=0、预算不变、ledger 全 CLOSED。它关闭治理债务但不改变质量门：N6 仍
+`automated_verified`、N7 仍 `in_progress`，Profile 仍 `EXPERIMENTAL`。
+
+## 11. T6-5 v28 minimal entity ownership checkpoint
+
+`76a0635` 新增 opt-in hierarchy/binding semantic policy：非根 entity 不得拥有 ROOT，同一 entity 不得同时拥有
+祖先/后代 region，字段只能选择覆盖证据的唯一最小 spatial entity owner。`a96fec1` 发布 pipeline 4.15 与三模型
+product-v28 immutable Profile；binding ambiguity 使用固定码回到最早 HIERARCHY，持久层仅对白名单精确单码
+允许该逆向恢复，并保留已验证 OBSERVE inventory/grounding。`6a8a36f` 同步 monitor/review payload-free telemetry。
+
+verifier/codec 27/27、inference 180/180、真实 PostgreSQL tracer 2/2、独立 Profile snapshot 1/1 PASS；Node 24
+Web gate 73/73 + typecheck/lint/build PASS，evidence 为 `.sdlc/evidence/20260811-125512-web`，针对性 Playwright
+1/1 PASS。本节点没有 Provider 调用，三份 ledger CLOSED，累计 tokens/attempts/CNY 不变。product-v28 仍隐藏
+`EXPERIMENTAL`；只有 clean full、fresh `/2` identity/snapshot、预算/时限重算全部通过后，才允许从 Flash 单
+case/最多 5 calls 开始新的受控 lifecycle。
+
+## 12. T6-5 v28 full 与受控 live checkpoint
+
+`0a3b90b` 的 isolated full 9/9 A1 PASS，Document Vision current-revision canary 19 lines PASS；fresh `/2`
+identity 为 `…c669d172`。Flash 的 CRLF preflight 红生命周期保留并 CLOSED；LF replacement v28b 独立 A2
+PASS，5 attempts / 44,335 tokens，全部停在 OBSERVE。
+
+Plus 首个 v28 authorization 因调用配置 `timeout=120` 超出本地 1..60 秒合同，在 Provider 前以
+`DOCUMENT_VISION_TIMEOUT_INVALID` 完成并 CLOSED，0 attempts；没有重开。独立 v28b lifecycle 使用 60 秒，
+5 attempts / 36,204 tokens、A2/payload scan PASS：第二次 OBSERVE accepted，三次 HIERARCHY 均因
+`VISUAL_HIERARCHY_V2_RELATIONSHIP_REGION_CARDINALITY_INVALID` fail-closed，未进入 BINDING，slot 仅
+1/10 matched，final Candidate 未形成。
+
+Max 的 v28 三阶段/质量门因此不成立，保持 CLOSED。Goal 现为 345 reservations（340 SETTLED、5 历史 Plus
+RESERVED、0 BREACHED），Flash/Plus/Max 累计 tokens 为 685,591/936,770/491,919，各槽 cap 1,500,000。
+T6-5 仍不晋级：N6=`automated_verified`、N7=`in_progress`、Profile=`EXPERIMENTAL`。下一节点先对 HIERARCHY
+同码重复失败实现 bounded stage-local repair/no-progress 合同并完成 offline/real-PG/受影响 gate。
+
+## 13. T6-5 v29 group-region cardinality checkpoint
+
+`70da862`、`dd920cc`、`70e0f2c` 将 v28 HIERARCHY 同码重复失败前移为 OBSERVE 的双向
+MANY GROUP↔REPEATED_GROUP ownership 不变量，发布 pipeline 4.16/product-v29、stage-local retry、独立
+snapshot verifier 与 payload-free monitor/E2E。真实 PostgreSQL tracer 只重做最早 OBSERVE，随后通过
+HIERARCHY/BINDING 到达 `REVIEW_REQUIRED`，OCR sentinel 未进入 checkpoint。
+
+clean `70e0f2c` 的 fast/server/web/inference-e2e 全绿；Inference 182、App 213（6 gated skip）、Web 73、真实
+replay→review→atomic Draft Apply 1/1。本节点零 Provider 调用，三份 ledger CLOSED，Goal 仍为 345
+reservations 与 Flash/Plus/Max 685,591/936,770/491,919 exposed tokens。product-v29 保持 `EXPERIMENTAL`，
+N6=`automated_verified`、N7=`in_progress`；只有 checkpoint 后 clean full、fresh identity/snapshot/budget/time
+全过，才允许从 Flash 单 case lifecycle 继续。
+
+## 14. T6-5 v29 bounded live checkpoint
+
+clean full/Document Vision、双实现 identity、Profile snapshot 与 1.5M aggregate guard 通过后，Flash/Plus 分别
+完成独立 PROPOSED→负探针→OPEN→唯一 wrapper→CLOSED lifecycle。首次 Flash 配置探针在 Provider 前以
+`DOCUMENT_VISION_DISABLED` 结束并保持 0 attempts；显式启用本地能力后的 Flash v29b 为 5 次 OBSERVE 拒绝、
+43,203 tokens/¥0.022207，Plus v29 为 3 次 OBSERVE 拒绝、21,000 tokens/¥0.093918，二者独立 verifier 与
+payload scan 均 PASS、0 abandoned。CLOSED probes 对 Goal/evidence 零写入。
+
+Goal 现为 353 reservations（348 SETTLED、5 历史 Plus RESERVED、0 BREACHED），Flash/Plus/Max 分别为
+110/161/82 attempts 与 728,794/957,770/491,919 exposed tokens。v29 没有到达同版本 accepted
+OBSERVE/HIERARCHY/BINDING，Max 保持 CLOSED、未调用；N6=`automated_verified`、N7=`in_progress`、Profile=
+`EXPERIMENTAL`。下一节点先离线处理 OBSERVE enum、overlap、evidence-region fixed codes，不启动 final 20/60。
+
+## 15. T6-5 v30 evidence-owner normalization checkpoint
+
+`71ccbdf`、`d3fedf3`、`837c015` 将 Plus v29 的 evidence-outside-region 信号收窄为 pipeline 4.17 的原子
+bounded normalization：只使用已验证 region forest 与 canonical evidence，且只有唯一最具体兼容 region 可被
+采用；任何歧义、unknown、coverage mismatch 或 owner 上限都继续 fail-closed。三份 product-v30 Profile 仍隐藏
+`EXPERIMENTAL`，旧 pipeline 不变。
+
+真实 PostgreSQL tracer 以 OBSERVE→HIERARCHY→BINDING 三次 scripted call 到达 `REVIEW_REQUIRED`，只记录
+`VISUAL_GROUNDING_ELEMENT_REGION_NORMALIZED`，OCR sentinel 未持久化。Inference 183/183、独立 snapshot
+verifier、Node 24 Web 73/73/build、真实 replay 浏览器 Apply 1/1 与 diagnostics Playwright 1/1 PASS。本节点零
+Provider 调用，Goal/用量仍为 353 reservations 与 Flash/Plus/Max 728,794/957,770/491,919 tokens，三 ledger
+CLOSED。N6=`automated_verified`、N7/Goal=`in_progress`；文档 revision 的 clean full 与 fresh pre-live
+identity/snapshot/budget/time 通过前不 OPEN，enum/overlap 不在本次修复范围，final 20/60 不启动。
+
+## 16. T6-5 v30 full 与 bounded live checkpoint
+
+clean `e5d1977` full 9/9 与 Document Vision 19-line canary PASS；fresh `/2` identity、Flash/Plus v30 snapshot、
+1.5M aggregate guard 与时限在每次 live 前重算。Flash `ff3e5a4`→`4180ef8`→`5f99083` 完成 5 次
+OBSERVE reject，42,946 tokens/¥0.021989；Plus `d82563f`→`7a8eade`→`ec0a307` 完成 1 次 OBSERVE
+reject，7,352 tokens/¥0.034192，随后成本守卫在下一预留前停止。两次 PROPOSED 负探针、唯一 wrapper、立即
+CLOSED 与独立 verifier/payload scan 均符合合同，0 abandoned；evidence-owner telemetry 均未命中。
+
+Goal 最终为 359 reservations（354 SETTLED、5 历史 Plus RESERVED、0 BREACHED），Flash/Plus/Max 累计
+tokens 为 771,740/965,122/491,919。v30 未接受 OBSERVE，Max 的同版本三阶段/质量门失败，保持 CLOSED、未
+调用。T6-5 不晋级：N6=`automated_verified`、N7/Goal=`in_progress`、Profile=`EXPERIMENTAL`。下一节点只从
+payload-free fixed code 建立新的 bounded 离线合同，不启动 final 20/60。
+
+## 17. T6-5 v31 repeated-item SLOT owner checkpoint
+
+`7e464df`、`791d4e9`、`f6cc529`、`eea8b3f` 将 Plus v30 的
+`VISUAL_SEMANTIC_REPEATED_ITEM_FIELD_MISSING` 收窄为 pipeline 4.18 的原子 repair。它只用已验证 region forest 和
+canonical evidence，把已有 SLOT 的粗 owner 改为每块 evidence 唯一最具体的非 ROOT region；每个缺字段 ITEM
+必须都有证据，任何歧义、缺失、unknown/root-only 或 8-owner 上限均原样 fail-closed，不合成字段、topology、文字、
+selected crop 或 Candidate。三份 product-v31 Profile 继续隐藏 `EXPERIMENTAL`。
+
+Inference 184/184、真实 PostgreSQL OBSERVE→HIERARCHY→BINDING tracer 1/1、独立 snapshot verifier 1/1、Node 24
+Web 73/73/build 与 1024px payload-free diagnostics Playwright 1/1 PASS；Web/E2E 证据为
+`20260811-155052-web`、`20260811-155200-v31-diagnostics-e2e-results`。本节点零 Provider 调用，Goal/ledger/用量
+保持 v30 最终值。最新 J1 将每模型累计 token cap 设为 1.5M 并允许 Plus，但 attempts/CNY/time 不变。N6 仍
+`automated_verified`、N7/Goal 仍 `in_progress`；clean full、Document Vision、fresh identity/snapshot/budget/time
+通过前不 OPEN，Max 与 final 20/60 不启动。
+
+## 18. T6-5 v31 full 与 bounded live checkpoint
+
+exact `e5b4994` 通过 clean full 9/9 与冻结 Document Vision 19-line canary；fresh `/2` identity 为
+`578c631e…a2c0f3`，三份 v31 Profile snapshot 独立吻合。Flash lifecycle `4ed323f`→`cbda25d`→`d2fd1cf`
+完成 5 次 OBSERVE reject，43,776 tokens/¥0.022675；Plus `58d5530`→`adeac0d`→`d538638` 完成 5 次调用，
+首个 OBSERVE accepted，随后四次 HIERARCHY 均以 relationship-support-ids-empty fail-closed，34,770 tokens/
+¥0.100380。两次唯一 wrapper、PROPOSED/CLOSED 负探针、立即 CLOSED、独立 verifier/payload scan 均符合合同，
+0 abandoned。
+
+Goal 最终为 369 reservations（364 SETTLED、5 历史 Plus RESERVED、0 BREACHED）；Flash/Plus/Max 为
+120/167/82 attempts、815,516/999,892/491,919 exposed tokens、¥0.392962/¥3.836612/¥10.289316。三 ledger
+CLOSED。v31 未接受 HIERARCHY/BINDING，Max 门失败且未调用，final 20/60 不启动；N6=`automated_verified`、
+N7/Goal=`in_progress`、Profile=`EXPERIMENTAL`。下一实现只允许对 hierarchy support-id fixed code 建立 bounded、
+不补造关系的本地 repair/no-progress 合同。
+
+## 19. T6-5 v32 empty relationship support owner checkpoint
+
+`212f468`、`7e4e70c`、`b892503`、`7404c7a` 将 Plus v31 的稳定
+`VISUAL_HIERARCHY_V2_RELATIONSHIP_SUPPORT_IDS_EMPTY` 收窄为 pipeline 4.19 的原子 repair。它只消费已验证的
+relationship region、父子 entity ownership 与 OBSERVE inventory：region 必须是连通的既有 container，且必须
+恰有一个 kind/multiplicity 兼容的 GROUP owner；否则原 fixed code fail-closed。不得创建 relationship/topology、
+修改 evidence、读取 OCR/模型文字、选择 rejected crop 或合成 Candidate。三份 product-v32 Profile 继续隐藏
+`EXPERIMENTAL`，旧 v31 行为不变。
+
+Inference 185/185、Profile/capability 3/3、独立 verifier 2/2、真实 PostgreSQL OBSERVE→HIERARCHY→BINDING
+tracer 1/1、Web 73/73/build、1024px payload-free Playwright 1/1 PASS；Document Vision 仅一次，最终
+`REVIEW_REQUIRED`，OCR sentinel 零持久化。本节点零 Provider 调用，Goal/ledger/累计用量保持 369 reservations
+与 Flash/Plus/Max 815,516/999,892/491,919 tokens，三 ledger CLOSED。N6=`automated_verified`、N7/Goal=
+`in_progress`；clean full/Document Vision 与 fresh identity/snapshot/aggregate guard 完成前不 OPEN，Max/final
+20/60/最终独立 verifier/业务与视觉 J1 门不变。
+
+## 20. T6-5 v32 full 与 bounded live checkpoint
+
+exact `954792f` 的 clean full 9/9 与冻结 Document Vision 19-line canary PASS；Java/Python `/2`
+identity 与三份 v32 Profile snapshot 精确一致。Flash 因 Goal 剩余费用低于标准 OBSERVE
+reservation 而未调用。Plus 完成 `54bc798`→`a94810c`→`5d71b3f` 的
+PROPOSED→负探针→OPEN→唯一 wrapper→CLOSED lifecycle；独立 A2/payload scan PASS，3 attempts /
+21,316 tokens / ¥0.067226。OBSERVE accepted，两次 HIERARCHY 均为 support-element-unknown，
+下一调用在 Provider 前因费用守卫停止，未到 BINDING。
+
+Goal 为 372 reservations（367 SETTLED、5 历史 Plus RESERVED、0 BREACHED）；Flash/Plus/Max 为
+120/170/82 attempts、815,516/1,021,208/491,919 tokens、¥0.392962/¥3.903838/¥10.289316。三
+ledger CLOSED。v32 不满足同版本 accepted HIERARCHY/BINDING，Max/final 20/60 不启动，
+N6=`automated_verified`、N7/Goal=`in_progress`、Profile=`EXPERIMENTAL`。
+
+## 21. T6-5 v33 unknown relationship support owner checkpoint
+
+`5951047`、`7ac4259`、`edd310d`、`94060a0` 将通用 support-element-unknown 信号收窄为 pipeline
+4.20 的 opt-in bounded repair：仅当某 relationship 只有一个 unknown support ID，其已知 container
+region 在父子 entity ownership 连线上且只有一个兼容 GROUP owner 时才原子替换。歧义、
+non-container、disconnected 和多 unknown ID 仍 fail-closed；不生成字段、关系、证据、crop 或
+Candidate。三份 product-v33 Profile 继续隐藏 `EXPERIMENTAL`。
+
+contract 28/28、inference 186/186、Profile/capability 3/3、独立 snapshot verifier 2/2、真实
+PostgreSQL tracer 1/1、Web 73/73 + lint/typecheck/build 与隔离 1024px Playwright 1/1 PASS。tracer 到达
+`REVIEW_REQUIRED`，Document Vision 仅一次，OCR sentinel 未持久化；UI 仅显示 fixed code、中文解释
+和数量。本节点 Provider attempts=0，Goal 用量不变。最终 revision clean gates、20/60 final eval、
+final independent verifier 与业务/视觉 J1 仍未完成，因此 Goal 不完成。
+
+## 22. T6-5 v4 cost guard 与 live 恢复
+
+用户于 `2026-08-11T09:51:55Z` 为 Flash/Plus 各批准 ¥10 Goal 总 cap 与 24h 窗口；Max 仍为
+¥18，1.5M tokens、180 attempts、单 authorization 500k、synthetic/CC0-only 与 payload-free 约束
+不变。guard v4 以精确 v1/v2/v3 原子迁移保留全部历史 reservations，独立 verifier 对每版使用其
+当时的 token/cost map。
+
+当前先提交并验证治理 delta；随后在 fresh identity/Profile snapshot/budget/time/lock 下串行执行 v33
+Flash、Plus 单 case lifecycle。只有同版本 OBSERVE/HIERARCHY/BINDING 和质量门成立才考虑 Max 与 final
+20/60。此节点自身 Provider attempts=0，N6=`automated_verified`、N7/Goal=`in_progress`、Profile=
+`EXPERIMENTAL`。
+
+## 23. T6-5 v33 cost-restored bounded live checkpoint
+
+exact-clean `15b5d00` 的 full 9/9、Document Vision 19-line canary、双实现 evaluation identity 与三份
+v33 Profile snapshot 通过；Goal guard 原子迁移 v4。Flash lifecycle `f12e5af`→`69e8455`→`f50f591`
+完成 4 次 OBSERVE fail-closed（37,181 tokens / ¥0.019870）；Plus `b0bceab`→`36c13db`→`f7a87b9`
+完成 5 次（35,407 tokens / ¥0.159584），第五次接受 OBSERVE 后由 call cap 在 HIERARCHY 前停止。
+两份 NOT_OPEN 负探针、唯一 wrapper、立即 CLOSED、独立 verifier 与 payload scan 均通过，0 abandoned。
+
+Goal 为 381 reservations（376 SETTLED、5 历史 Plus RESERVED、0 BREACHED）；Flash/Plus/Max 为
+124/175/82 attempts、852,697/1,056,615/491,919 exposed tokens、¥0.412832/¥4.063422/¥10.289316。
+三 ledger CLOSED。v33 不满足同版本 HIERARCHY/BINDING，Max/final 20/60 不启动；N6=`automated_verified`、
+N7/Goal=`in_progress`、Profile=`EXPERIMENTAL`。下一实现仅允许 unique-existing-parent 的 bounded OBSERVE
+repair，enum/overlap/歧义保持 fail-closed。
+
+## 24. T6-5 v34 unique-existing-parent 离线 checkpoint
+
+`14e02b8`、`10f11b3`、`029277a`、`abb52a3`、`de18000` 完成 pipeline 4.21/product-v34：只在同
+artifact、严格包含、kind/repeat-group 兼容且唯一最具体时，把已有非 ROOT region 的错误 parent link
+归一化到已有容器；任何 ROOT/equal-box/zero-or-many/cycle/limit/forest failure 都原子回退。v34 保留 v30/v31
+的 observation repairs，只暴露数量型 telemetry，不创建或持久化 payload。
+
+real-PG lease-expiry 场景从 accepted OBSERVE checkpoint 继续 HIERARCHY/BINDING 到
+`REVIEW_REQUIRED`，Provider OBSERVE 不重放；OCR 只在本地按 ephemeral 合同重算且 sentinel 零持久化。
+inference 188/188、independent verifier 2/2、real-PG 57/57、Node 24 Web 73/73 + build、1024px
+Playwright 1/1 PASS。本节点 Provider attempts=0，Goal/ledger 用量不变，三 ledger CLOSED。
+
+N6=`automated_verified`、N7/Goal=`in_progress`、Profile=`EXPERIMENTAL`。下一步先提交本 checkpoint，
+再在 exact-clean revision 上跑 full/Document Vision 并 fresh 重算 identity、v34 snapshots、Goal 与 J1；
+优先 Flash bounded smoke，Plus 只剩 5 attempts，Max/final 20/60 的同版本三阶段、质量与最终验收门不变。
+
+## 25. T6-5 v34 live 与 v35 empty-source-ancestor 离线 checkpoint
+
+v34 在 exact-clean `751e412` 上通过 full/Document Vision 后完成两个独立 live lifecycle。Flash 5 次全在
+OBSERVE fail-closed；Plus 首次接受 OBSERVE，随后三次 HIERARCHY 暴露 empty-support×1 与
+support-not-group×2，第五次在 Provider 前由 authorization cost reservation 停止。两份 A2 verifier 与
+payload scan PASS、0 abandoned。Goal 结算为 390 reservations：Flash/Plus/Max 为 129/179/82 attempts、
+896,093/1,087,500/491,919 tokens、¥0.435196/¥4.159620/¥10.289316；三 ledger CLOSED。
+
+`614359f`、`708522b`、`a2b8181`、`5c59ce3` 完成 pipeline 4.22/product-v35：只在 empty support、
+已知后代关系区域、唯一严格祖先兼容 GROUP owner 且父子实体连接成立时归一化 support 与关系区域；
+unknown/ambiguous/disconnected/non-ancestor 继续 fail-closed。real-PG lease recovery 不重放 OBSERVE，
+HIERARCHY/BINDING 到 `REVIEW_REQUIRED`，OCR sentinel 零持久化；monitor/review 与 1024px E2E 展示
+payload-free code、scope 和 earliest stage。
+
+当前 contract 31/31、inference 189/189、snapshot verifier、real-PG、Web 73/73 与 Playwright 1/1 PASS。
+N6=`automated_verified`、N7/Goal=`in_progress`、Profile=`EXPERIMENTAL`。v35 exact-clean full/Document
+Vision、fresh preflight、bounded live、final 20/60、最终独立 verifier 与业务/视觉 J1 仍未完成。
+
+## 26. T6-5 v35 exact-clean Flash live checkpoint
+
+`0e52ec7` 通过 clean full 9/9 与冻结 Document Vision 19-line canary，双实现 identity 和三份 v35
+snapshot 一致。Flash lifecycle `d2c2c3d`→NOT_OPEN→`b795f0a`→唯一 wrapper→`a4298f3`→NOT_OPEN
+闭合；独立 verifier 与 payload scan PASS，5 attempts / 41,477 tokens / ¥0.020835 / 0 abandoned。
+
+五次均停在 OBSERVE（invalid region kind 四次、parent kind 一次），结构计数全 0，未形成 v35 同版本
+HIERARCHY/BINDING 或 Candidate 证据。Goal 为 395 reservations；三 ledger CLOSED。Plus 只剩 1 attempt，
+Max/final 20/60 的三阶段与质量门未满足。N6=`automated_verified`、N7/Goal=`in_progress`、
+Profile=`EXPERIMENTAL`；下一安全节点是 payload-free fixed-code 驱动的 bounded OBSERVE repair。
+
+## 27. T6-5 v36 contract-unique region-kind 离线 checkpoint
+
+`fdf7d44`、`86b6074`、`2076684`、`f395f90` 完成 pipeline 4.23/product-v36：仅当 typed region
+shape 唯一决定 `ROOT`、`REPEATED_GROUP` 或 `ITEM` 时归一化 kind；SECTION/GROUP 歧义、缺失 repeat
+事实、非法 topology 和完整 forest 校验失败全部保留旧 fixed code。三模型 Profile immutable，成功只暴露
+数量型 telemetry，不记录 region ID、坐标、OCR、模型输出或 Candidate payload。
+
+真实 PostgreSQL lease recovery 在 accepted OBSERVE 后只继续 HIERARCHY/BINDING 到 `REVIEW_REQUIRED`，
+Provider OBSERVE 不重放且 OCR sentinel 零持久化。inference 190/190、independent snapshot verifier 1/1、
+real-PG 1/1、Web 73/73、typecheck/lint 与 1024px Playwright 1/1 PASS；本机 Web 使用 Node 20，只是兼容
+验证，正式 Node 24 与 exact-clean full 尚未运行。
+
+本节点 Provider attempts=0，Goal 保持 395 reservations，三 ledger CLOSED。N6=`automated_verified`、
+N7/Goal=`in_progress`、Profile=`EXPERIMENTAL`。下一步为 docs checkpoint 后的 exact-clean full/Document
+Vision 与 fresh v36 identity/snapshot/budget/J1/process/lease preflight；仅 Flash 可优先 single-case，Plus
+只剩 1 attempt 不调用，Max/final 20/60 的同版本三阶段、质量、独立复核与最终验收门不变。
+
+### v36 Flash live disposition
+
+exact-clean full/Document Vision 与 fresh identity/snapshot/budget/J1/process/lease preflight 均通过。Flash
+按 `5a6bfc4`→NOT_OPEN→`220de94`→唯一 wrapper→`ab11a8b`→NOT_OPEN 闭合，A2 verifier 与
+payload scan PASS：5 attempts、42,469 tokens、¥0.021607、0 abandoned。三次 invalid region-kind enum、
+一次 sibling overlap、一次 parent kind 令五次全部停在 OBSERVE；三阶段与质量门未满足。
+
+Goal 更新为 400 reservations；Flash 为 139 attempts/980,039 tokens/¥0.477638，Plus/Max 保持
+179/82 attempts、1,087,500/491,919 tokens、¥4.159620/¥10.289316，三 ledger CLOSED。N6 仍
+`automated_verified`，N7/Goal 仍 `in_progress`，v36 仍 `EXPERIMENTAL`。下一节点继续 bounded 离线
+诊断/修复；Plus/Max/final 20/60 不在当前可执行 DAG 中。
+
+## 28. T6-5 v37 constraint-unique GROUP kind 离线 checkpoint
+
+`ebd0281`、`b5a4555`、`007afe6`、`e6682b4` 完成 pipeline 4.24/product-v37。只有 ONE GROUP
+element 没有兼容 GROUP owner、owner refs 全部 distinct/known、且恰有一个 eligible unresolved singular
+region 时才归一化 GROUP。两个候选、已有兼容 owner、MANY/SLOT、坏引用、root/repeat 或剩余 unknown
+全部保留 enum fixed code；不读取 alias/payload，不改 topology、evidence 或 Candidate。
+
+real-PG lease recovery 证明 OBSERVE checkpoint 不重放、恢复后完成 HIERARCHY/BINDING；OCR sentinel 零
+持久化。inference 191/191、independent verifier 2/2、v36/v37 recovery 2/2、Web 73/73、typecheck/lint
+与 Playwright 1/1 PASS。本节点 Provider=0，Goal/ledger 不变；N6=`automated_verified`、N7/Goal=
+`in_progress`、v37=`EXPERIMENTAL`。下一 DAG 节点是 exact-clean gates 与 fresh live preflight。
+
+### v37 Flash 首次 live 的 pre-provider 处置
+
+exact-clean gates 与 fresh preflight 通过后，Flash 按 `99940ef`→NOT_OPEN→`045b5b9`→唯一 wrapper→
+`c3223ee`→NOT_OPEN 关闭。A2 verifier/payload scan PASS，但 outcome 为
+`DOCUMENT_VISION_ADAPTER_MISSING`，0 attempts/0 tokens；启动参数使用了非合同 `adapter` 键，正确 Spring
+键是 `adapter-script`。Goal 仍为 400 reservations，三模型累计不变，三 ledger CLOSED。该结果不构成
+OBSERVE/HIERARCHY/BINDING 质量证据；N6=`automated_verified`、N7/Goal=`in_progress`、v37=
+`EXPERIMENTAL`。下一 DAG 节点只能在新授权和 fresh gates/preflight 下用正确键重试 Flash。
+
+### v37b Flash live disposition
+
+新授权使用正确 adapter-script，按 `9204a49`→NOT_OPEN→`0960c9f`→唯一 wrapper→`4d8e48b`→
+NOT_OPEN 闭合。A2 verifier/payload scan PASS：5 attempts、42,691 tokens、¥0.021815；四次 invalid
+region-kind 与一次 parent-containment 令所有调用停在 OBSERVE。Goal 为 405 reservations，Flash 累计
+144 attempts/1,022,730 tokens/¥0.499453，Plus/Max 不变，三 ledger CLOSED。
+
+三阶段门仍失败，N6=`automated_verified`、N7/Goal=`in_progress`、v37=`EXPERIMENTAL`；Plus/Max/final
+20/60 不执行。下一 DAG 节点只允许从 parent-containment fixed code 与 repository synthetic 结构事实建立
+bounded 离线 repair，不能读取或推断模型 payload。
+
+### product-v38 ancestor-root parent verifier disposition
+
+`632e641`/`b91637b`/`060dd47`/`1504ac6` 已完成 pipeline 4.25 的唯一包含 ROOT 祖先 parent
+normalization、三模型 immutable Profile、真实 PostgreSQL checkpoint recovery 与 monitor/review/E2E。
+规则只处理已知错误 parent 的无环祖先链唯一到达、且严格包含非 ROOT/ITEM child 的既有 ROOT；常规唯一
+最具体 parent 仍优先，missing/self/artifact mismatch/cycle/equal/full-box/ambiguity/final-plan failure 全部
+fail-closed。它不读取模型 payload、文字或 gold，也不改 box 或创建结构。
+
+自动证据为 contract 34/34、Profile/independent verifier 37/37、real-PG 2/2、inference 192/192、Web
+73/73、typecheck/lint、Playwright 7/7；Node 20 只算兼容检查。Provider=0，Goal 405 reservations 与三
+ledger CLOSED 状态不变。N6=`automated_verified`、N7/Goal=`in_progress`、v38=`EXPERIMENTAL`；下一
+DAG 节点为 exact-clean full/Document Vision 与 fresh identity/snapshot/budget/J1/process/lease，之后才可
+考虑 Flash bounded smoke。
+
+### product-v38 Flash live disposition
+
+exact-clean `3e44974` 的 full 9/9、Document Vision 19-line canary、双实现 identity 和 v38 snapshot 通过。
+Flash lifecycle `882c8ca`→NOT_OPEN→`19c726c`→唯一 wrapper→`31109c4`→NOT_OPEN 闭合；独立
+verifier/payload scan PASS：5 attempts、40,797 tokens、¥0.020282、0 abandoned。五次均停在 OBSERVE：
+invalid region-kind×2、reading-order gap×2、JSON unknown member×1，v38 parent repair 未命中。
+
+Goal 为 410 reservations；Flash 累计 149 attempts/1,063,527 tokens/¥0.519735，Plus/Max 不变，三
+ledger CLOSED。N6=`automated_verified`、N7/Goal=`in_progress`、v38=`EXPERIMENTAL`；Plus/Max/final
+20/60 不执行。下一 DAG 节点仅允许由 synthetic 反例证明 bounded sibling reading-order canonicalization，
+不得读取 unknown member 或模型 payload。
+
+### product-v39 sibling reading-order verifier disposition
+
+`a08f099`/`c99a4ac`/`80d0b73`/`d0ed4d3` 已完成 pipeline 4.26 的 bounded sibling reading-order
+compaction、三模型 immutable Profile、真实 PostgreSQL checkpoint recovery 与 monitor/review/E2E。规则只
+处理有 parent 的 sibling set：既有 order 必须互异并与 `(top,left,regionId)` canonical 顺序一致，非连续时
+最多改变 8 个值压紧到 `0..n-1`；root、duplicate/tie、反向/位置不一致、missing/cycle/final-plan failure
+全部 fail-closed。它不读取或持久化模型 payload/OCR/text/gold，也不改变 box/parent/ownership 或结构数量。
+
+自动证据为 contract 35/35、跨模块 38/38、real-PG v39 1/1 与 v38/v39 2/2、inference 193/193、Web
+73/73、typecheck/lint、Playwright 7/7；Node 20 只算兼容检查。Provider=0，Goal 410 reservations 与三
+ledger CLOSED 状态不变。N6=`automated_verified`、N7/Goal=`in_progress`、v39=`EXPERIMENTAL`；下一
+DAG 节点为 exact-clean full/Document Vision 与 fresh identity/snapshot/budget/J1/process/lease，之后才可
+考虑 Flash bounded smoke。Plus 仅余 1 attempt，Max/final 仍受同版本三阶段、质量、A2 与最终 J1 门约束。
+
+### product-v39 Flash live disposition
+
+exact-clean `0625a23` 的 full 9/9、Document Vision 19-line canary、双实现 identity 与 v39 snapshot 通过。
+Flash lifecycle `37cc036`→NOT_OPEN→`1431233`→唯一 wrapper→`678ef2e`→NOT_OPEN 闭合；独立
+verifier/payload scan PASS：3 attempts，前两次 OBSERVE 为 invalid region-kind 与 reading-order gap，第三次
+为无 actual usage 的网络错误。v39 normalization 未命中，0 HIERARCHY/BINDING/Candidate。
+
+Goal 为 413 reservations（407 SETTLED、6 RESERVED、0 BREACHED）；Flash 累计 152 attempts/
+1,105,020 exposed tokens/¥0.538392，Plus/Max 不变，三 ledger CLOSED。N6=`automated_verified`、
+N7/Goal=`in_progress`、v39=`EXPERIMENTAL`；CLOSED authorization 不重跑，Plus/Max/final 20/60 不执行。
+下一 DAG 节点只能由 payload-free 细分诊断或 repository synthetic 唯一约束建立新 bounded 假设。
+
+### product-v40 reading-order diagnostic freeze disposition
+
+`3b0d92d`/`b179b7e`/`05e1b65`/`3eff5ce` 已完成 pipeline 4.27 的 payload-free fixed-code
+classification、Prompt 10/三模型 immutable Profile、真实 PostgreSQL checkpoint recovery 与 monitor/review/
+E2E。v40 不扩大 v39 repair：只有 root order 合法且所有失败非 root sibling set 可唯一归类时，才把 GAP
+细分为 duplicate 或 position fixed code；root、mixed、超界仍 fail-closed。
+
+自动证据为 contract 36/36、Profile/Prompt 20/20、独立 verifier 2/2、real-PG v39/v40 2/2、inference
+195/195、Web 73/73、typecheck/lint、Playwright 7/7；Provider=0，Goal 413 reservations 与三 ledger
+CLOSED 不变。N6=`automated_verified`、N7/Goal=`in_progress`、v40=`EXPERIMENTAL`。
+
+按用户阶段冻结决策，下一节点只完成 exact-clean full/Document Vision、fresh live preflight、受控 Flash
+single-case smoke 与文档收尾；若同版本三阶段/质量仍失败，则以工程可用但非生产可靠的状态结束本阶段，
+不启动 Plus/Max/final，也不完成 Goal。
+
+### product-v40 阶段冻结收尾
+
+exact-clean `af2076a` 已通过 full 9/9 与 Document Vision 19-line canary；双实现 identity、三份 Profile、
+Goal/J1/process/lease preflight 全绿。Flash lifecycle `0d38448`→NOT_OPEN→`5392aa1`→唯一 wrapper→
+`6e7f522`→NOT_OPEN 闭合，独立 verifier/payload scan PASS。
+
+live 为 1 completed、0 abandoned、5 OBSERVE attempts、43,304 actual tokens、¥0.022226；失败序列为 invalid
+region-kind、sibling overlap、parent-kind、generic reading-order gap、invalid region-kind，0 HIERARCHY/
+BINDING/Candidate。Goal 更新为 418 reservations；Flash/Plus/Max 累计 157/179/82 attempts、
+1,148,324/1,087,500/491,919 tokens 与 ¥0.560618/¥4.159620/¥10.289316，三 ledger CLOSED。
+
+v40 作为稳定阶段基线冻结。运行、恢复、审计、审核/Apply 的确定性与 E2E 路径可用；真实 Flash 对当前
+合成站牌未产出 Candidate，故识别质量仍不满足 N7/Goal。状态保持 product-v40=`EXPERIMENTAL`、
+N6=`automated_verified`、N7/Goal=`in_progress`；本阶段不再调用 Plus/Max/final，不完成 Goal。
+
+### product-v40 产品工程入口收尾
+
+`f47c54a` 将新建产品目录切换为冻结 v40：默认 Plus、Max 面向高难嵌套、pinned Flash 只作 smoke；
+real-PG 合成路径只允许 OBSERVE/HIERARCHY/ELEMENT_BINDING 三次 Provider reservation，再由本地 materializer
+生成 Candidate，STRUCTURE/REPAIR Provider 为零。`f27f86a` 在 create/retry、run persistence、费用 reservation
+和 Provider 前精确检查逐 Profile Document Vision readiness；缺 adapter/model 或 capability mismatch 时
+fail-closed，Web 不发送 POST。历史 v4 snapshot 不变且可恢复，但不再创建新产品 run；不自动跨模型 fallback。
+
+ADR/spec/plan 同步 revision `6906be1` 的隔离 full `20260812-012644-full` 9/9 与 Document Vision
+`20260812-013158-document-vision` 1/1、19 lines 均 PASS，metadata 绑定 exact revision 且 clean。Provider=0，
+Goal/ledger 保持 418 reservations 与三 ledger CLOSED。该节点解决旧 v4 字段身份改写的产品可达性和本地能力
+晚失败，不改变 Flash v40 未过 OBSERVE、Plus/Max v40 无同版本质量证据的事实；N7/Goal 继续 `in_progress`。
+
+### product-v40 通用 Flash 产品身份
+
+`67d46c5` 按用户决定把新建产品目录的 Flash 精确模型切换为 `qwen3.7-flash`，Plus/Max 不变。实现新增
+immutable successor Profile，并保留 dated Flash v40 Profile 与全部历史 snapshot/evidence；产品 API、OpenAPI、
+generated client、Web 和 E2E 均改为 successor。pipeline 4.27、三阶段 Provider 合同、本地 materializer、
+verifier、checkpoint 与审核/Apply 不变。定向 Java/Web/Playwright 全绿，Provider=0，三 ledger CLOSED，
+累计 Flash 槽位不重置。successor 没有新 live 质量证据，N6/N7/Goal 状态不变。
+
+隔离 clean `ba409e9` 的 full evidence `20260812-015332-full` 为 9/9 PASS，包含正式 Node 24、真实
+PostgreSQL/runtime canary、独立 evidence verifier 与浏览器审核/Apply；metadata clean，离线 Provider
+attempts/reservations 均为 0。

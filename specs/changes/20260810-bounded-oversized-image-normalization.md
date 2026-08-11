@@ -16,7 +16,7 @@
 ### MODIFIED
 
 - 源图硬门改为最长边 65535、总像素 268435456；单图/批次 bytes 与格式限制不变。
-- 超过规范化目标时先进行有界解码 subsampling，再高质量缩放至最长边 ≤4096。
+- 超过规范化目标时先进行有界解码 subsampling，再高质量缩放至最长边 ≤4096；ADR-0024 进一步要求规范化总像素 ≤16000000，以兑现逐模型视觉 capability。
 - artifact、Provider 输入、费用估值与 evidence 坐标继续绑定规范化产物。
 
 ### ADDED
@@ -33,7 +33,7 @@
 - 用户价值/范围：高分辨率设计图可直接进入 Schema 识别。
 - 实现与数据：只修改 normalization；无迁移，历史 artifact 不重写。
 - 验证与发布：InputNormalizer unit、真实 PostgreSQL multipart API、server gate 与零 Provider 部署探针。
-- DAG/预算：不增加调用次数；Provider 仍只接收最长边 ≤4096，保守预留公式不变。
+- DAG/预算：不增加调用次数；Provider 仍只接收最长边 ≤4096、总像素 ≤16000000 的图片，保守预留仍按更大的 4096² 计算，不降低费用安全上界。
 - 恢复影响：源码可回退；无数据或外部副作用需要补偿。
 
 ## 决策

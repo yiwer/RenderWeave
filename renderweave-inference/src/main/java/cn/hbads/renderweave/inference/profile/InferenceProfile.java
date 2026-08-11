@@ -1,6 +1,7 @@
 package cn.hbads.renderweave.inference.profile;
 
 import cn.hbads.renderweave.inference.input.InferenceMode;
+import com.fasterxml.jackson.annotation.JsonInclude;
 
 import java.util.List;
 import java.util.Objects;
@@ -20,6 +21,12 @@ public record InferenceProfile(
         String elementPromptVersion,
         String hierarchyPromptVersion,
         String bindingPromptVersion,
+        @JsonInclude(JsonInclude.Include.NON_NULL)
+        String visualHintPackVersion,
+        @JsonInclude(JsonInclude.Include.NON_NULL)
+        String documentVisionCapabilityId,
+        @JsonInclude(JsonInclude.Include.NON_NULL)
+        String documentVisionPromptVersion,
         String responseFormat,
         boolean thinkingEnabled,
         boolean toolsAllowed,
@@ -81,6 +88,7 @@ public record InferenceProfile(
                     profileId, provider, model, providerProtocol, providerEndpoint, apiKeyEnvironmentVariable,
                     pipelineVersion, promptVersion, responseFormat,
                     elementPromptVersion, hierarchyPromptVersion, bindingPromptVersion,
+                    visualHintPackVersion, documentVisionCapabilityId, documentVisionPromptVersion,
                     thinkingEnabled, toolsAllowed, remoteMediaAllowed,
                     inputClassification, maximumTotalCalls, stageTimeoutSeconds,
                     maximumEstimatedCostMicrosCny,
@@ -107,6 +115,9 @@ public record InferenceProfile(
             String elementPromptVersion,
             String hierarchyPromptVersion,
             String bindingPromptVersion,
+            String visualHintPackVersion,
+            String documentVisionCapabilityId,
+            String documentVisionPromptVersion,
             boolean thinkingEnabled,
             boolean toolsAllowed,
             boolean remoteMediaAllowed,
@@ -121,6 +132,7 @@ public record InferenceProfile(
     ) {
         if (!"DASHSCOPE".equals(provider)
                 || !("qwen3.7-flash".equals(model)
+                || "qwen3.7-flash-2026-07-15".equals(model)
                 || "qwen3.7-plus-2026-05-26".equals(model)
                 || "qwen3.7-plus".equals(model)
                 || "qwen3.7-max-2026-06-08".equals(model)
@@ -157,15 +169,472 @@ public record InferenceProfile(
                 && InferencePromptRegistry.VISUAL_HIERARCHY_V1.equals(hierarchyPromptVersion)
                 && InferencePromptRegistry.VISUAL_BINDINGS_V1.equals(bindingPromptVersion)
                 && profileId.endsWith("-product-v4");
-        if (!"renderweave-inference-pipeline/3.0".equals(pipelineVersion)
+        var productPromptV5 = InferencePromptRegistry.SCHEMA_CANDIDATE_V5.equals(promptVersion)
+                && InferencePromptRegistry.VISUAL_ELEMENTS_V1.equals(elementPromptVersion)
+                && InferencePromptRegistry.VISUAL_HIERARCHY_V1.equals(hierarchyPromptVersion)
+                && InferencePromptRegistry.VISUAL_BINDINGS_V1.equals(bindingPromptVersion)
+                && profileId.endsWith("-product-v5");
+        var productPromptV6 = InferencePromptRegistry.SCHEMA_CANDIDATE_V5.equals(promptVersion)
+                && InferencePromptRegistry.VISUAL_ELEMENTS_V2.equals(elementPromptVersion)
+                && InferencePromptRegistry.VISUAL_HIERARCHY_V2.equals(hierarchyPromptVersion)
+                && InferencePromptRegistry.VISUAL_BINDINGS_V2.equals(bindingPromptVersion)
+                && ((InferencePromptRegistry.VISUAL_HINT_GENERIC_V1.equals(visualHintPackVersion)
+                && profileId.endsWith("-product-v6-generic"))
+                || (InferencePromptRegistry.VISUAL_HINT_TRANSIT_BOARD_V1.equals(visualHintPackVersion)
+                && profileId.endsWith("-product-v6-transit-board")));
+        var productPromptV7 = InferencePromptRegistry.SCHEMA_CANDIDATE_V5.equals(promptVersion)
+                && InferencePromptRegistry.VISUAL_ELEMENTS_V2.equals(elementPromptVersion)
+                && InferencePromptRegistry.VISUAL_HIERARCHY_V2.equals(hierarchyPromptVersion)
+                && InferencePromptRegistry.VISUAL_BINDINGS_V2.equals(bindingPromptVersion)
+                && InferencePromptRegistry.VISUAL_HINT_GENERIC_V1.equals(visualHintPackVersion)
+                && InferencePromptRegistry.DOCUMENT_VISION_OBSERVATIONS_V1.equals(
+                        documentVisionPromptVersion
+                )
+                && documentVisionCapabilityId != null
+                && documentVisionCapabilityId.matches("[a-z0-9][a-z0-9._:-]{0,190}")
+                && profileId.endsWith("-product-v7-hybrid-generic");
+        var productPromptV8 = InferencePromptRegistry.SCHEMA_CANDIDATE_V5.equals(promptVersion)
+                && InferencePromptRegistry.VISUAL_ELEMENTS_V3.equals(elementPromptVersion)
+                && InferencePromptRegistry.VISUAL_HIERARCHY_V2.equals(hierarchyPromptVersion)
+                && InferencePromptRegistry.VISUAL_BINDINGS_V2.equals(bindingPromptVersion)
+                && InferencePromptRegistry.VISUAL_HINT_GENERIC_V1.equals(visualHintPackVersion)
+                && profileId.endsWith("-product-v8-generic");
+        var productPromptV9 = InferencePromptRegistry.SCHEMA_CANDIDATE_V5.equals(promptVersion)
+                && InferencePromptRegistry.VISUAL_ELEMENTS_V3.equals(elementPromptVersion)
+                && InferencePromptRegistry.VISUAL_HIERARCHY_V3.equals(hierarchyPromptVersion)
+                && InferencePromptRegistry.VISUAL_BINDINGS_V2.equals(bindingPromptVersion)
+                && InferencePromptRegistry.VISUAL_HINT_GENERIC_V1.equals(visualHintPackVersion)
+                && profileId.endsWith("-product-v9-generic");
+        var productPromptV10 = InferencePromptRegistry.SCHEMA_CANDIDATE_V5.equals(promptVersion)
+                && InferencePromptRegistry.VISUAL_ELEMENTS_V4.equals(elementPromptVersion)
+                && InferencePromptRegistry.VISUAL_HIERARCHY_V3.equals(hierarchyPromptVersion)
+                && InferencePromptRegistry.VISUAL_BINDINGS_V2.equals(bindingPromptVersion)
+                && InferencePromptRegistry.VISUAL_HINT_GENERIC_V1.equals(visualHintPackVersion)
+                && profileId.endsWith("-product-v10-generic");
+        var productPromptV11 = InferencePromptRegistry.SCHEMA_CANDIDATE_V5.equals(promptVersion)
+                && InferencePromptRegistry.VISUAL_ELEMENTS_V5.equals(elementPromptVersion)
+                && InferencePromptRegistry.VISUAL_HIERARCHY_V4.equals(hierarchyPromptVersion)
+                && InferencePromptRegistry.VISUAL_BINDINGS_V3.equals(bindingPromptVersion)
+                && InferencePromptRegistry.VISUAL_HINT_GENERIC_V1.equals(visualHintPackVersion)
+                && profileId.endsWith("-product-v11-generic");
+        var productPromptV12 = InferencePromptRegistry.SCHEMA_CANDIDATE_V5.equals(promptVersion)
+                && InferencePromptRegistry.VISUAL_ELEMENTS_V6.equals(elementPromptVersion)
+                && InferencePromptRegistry.VISUAL_HIERARCHY_V4.equals(hierarchyPromptVersion)
+                && InferencePromptRegistry.VISUAL_BINDINGS_V3.equals(bindingPromptVersion)
+                && InferencePromptRegistry.VISUAL_HINT_GENERIC_V1.equals(visualHintPackVersion)
+                && profileId.endsWith("-product-v12-generic");
+        var productPromptV13 = InferencePromptRegistry.SCHEMA_CANDIDATE_V5.equals(promptVersion)
+                && InferencePromptRegistry.VISUAL_ELEMENTS_V6.equals(elementPromptVersion)
+                && InferencePromptRegistry.VISUAL_HIERARCHY_V4.equals(hierarchyPromptVersion)
+                && InferencePromptRegistry.VISUAL_BINDINGS_V3.equals(bindingPromptVersion)
+                && InferencePromptRegistry.VISUAL_HINT_GENERIC_V1.equals(visualHintPackVersion)
+                && profileId.endsWith("-product-v13-generic");
+        var productPromptV14 = InferencePromptRegistry.SCHEMA_CANDIDATE_V5.equals(promptVersion)
+                && InferencePromptRegistry.VISUAL_ELEMENTS_V6.equals(elementPromptVersion)
+                && InferencePromptRegistry.VISUAL_HIERARCHY_V5.equals(hierarchyPromptVersion)
+                && InferencePromptRegistry.VISUAL_BINDINGS_V3.equals(bindingPromptVersion)
+                && InferencePromptRegistry.VISUAL_HINT_GENERIC_V1.equals(visualHintPackVersion)
+                && profileId.endsWith("-product-v14-generic");
+        var productPromptV15 = InferencePromptRegistry.SCHEMA_CANDIDATE_V5.equals(promptVersion)
+                && InferencePromptRegistry.VISUAL_ELEMENTS_V7.equals(elementPromptVersion)
+                && InferencePromptRegistry.VISUAL_HIERARCHY_V5.equals(hierarchyPromptVersion)
+                && InferencePromptRegistry.VISUAL_BINDINGS_V3.equals(bindingPromptVersion)
+                && InferencePromptRegistry.VISUAL_HINT_GENERIC_V1.equals(visualHintPackVersion)
+                && profileId.endsWith("-product-v15-generic");
+        var productPromptV16 = InferencePromptRegistry.SCHEMA_CANDIDATE_V5.equals(promptVersion)
+                && InferencePromptRegistry.VISUAL_ELEMENTS_V7.equals(elementPromptVersion)
+                && InferencePromptRegistry.VISUAL_HIERARCHY_V5.equals(hierarchyPromptVersion)
+                && InferencePromptRegistry.VISUAL_BINDINGS_V3.equals(bindingPromptVersion)
+                && InferencePromptRegistry.VISUAL_HINT_GENERIC_V1.equals(visualHintPackVersion)
+                && profileId.endsWith("-product-v16-generic");
+        var productPromptV17 = InferencePromptRegistry.SCHEMA_CANDIDATE_V5.equals(promptVersion)
+                && InferencePromptRegistry.VISUAL_ELEMENTS_V8.equals(elementPromptVersion)
+                && InferencePromptRegistry.VISUAL_HIERARCHY_V5.equals(hierarchyPromptVersion)
+                && InferencePromptRegistry.VISUAL_BINDINGS_V3.equals(bindingPromptVersion)
+                && InferencePromptRegistry.VISUAL_HINT_GENERIC_V1.equals(visualHintPackVersion)
+                && profileId.endsWith("-product-v17-generic");
+        var productPromptV18 = InferencePromptRegistry.SCHEMA_CANDIDATE_V5.equals(promptVersion)
+                && InferencePromptRegistry.VISUAL_ELEMENTS_V8.equals(elementPromptVersion)
+                && InferencePromptRegistry.VISUAL_HIERARCHY_V6.equals(hierarchyPromptVersion)
+                && InferencePromptRegistry.VISUAL_BINDINGS_V3.equals(bindingPromptVersion)
+                && InferencePromptRegistry.VISUAL_HINT_GENERIC_V1.equals(visualHintPackVersion)
+                && profileId.endsWith("-product-v18-generic");
+        var productPromptV19 = InferencePromptRegistry.SCHEMA_CANDIDATE_V5.equals(promptVersion)
+                && InferencePromptRegistry.VISUAL_ELEMENTS_V8.equals(elementPromptVersion)
+                && InferencePromptRegistry.VISUAL_HIERARCHY_V7.equals(hierarchyPromptVersion)
+                && InferencePromptRegistry.VISUAL_BINDINGS_V3.equals(bindingPromptVersion)
+                && InferencePromptRegistry.VISUAL_HINT_GENERIC_V1.equals(visualHintPackVersion)
+                && profileId.endsWith("-product-v19-generic");
+        var productPromptV20 = InferencePromptRegistry.SCHEMA_CANDIDATE_V5.equals(promptVersion)
+                && InferencePromptRegistry.VISUAL_ELEMENTS_V8.equals(elementPromptVersion)
+                && InferencePromptRegistry.VISUAL_HIERARCHY_V7.equals(hierarchyPromptVersion)
+                && InferencePromptRegistry.VISUAL_BINDINGS_V3.equals(bindingPromptVersion)
+                && InferencePromptRegistry.VISUAL_HINT_GENERIC_V1.equals(visualHintPackVersion)
+                && profileId.endsWith("-product-v20-generic");
+        var productPromptV21 = InferencePromptRegistry.SCHEMA_CANDIDATE_V5.equals(promptVersion)
+                && InferencePromptRegistry.VISUAL_ELEMENTS_V8.equals(elementPromptVersion)
+                && InferencePromptRegistry.VISUAL_HIERARCHY_V7.equals(hierarchyPromptVersion)
+                && InferencePromptRegistry.VISUAL_BINDINGS_V3.equals(bindingPromptVersion)
+                && InferencePromptRegistry.VISUAL_HINT_GENERIC_V1.equals(visualHintPackVersion)
+                && profileId.endsWith("-product-v21-generic");
+        var productPromptV22 = InferencePromptRegistry.SCHEMA_CANDIDATE_V5.equals(promptVersion)
+                && InferencePromptRegistry.VISUAL_ELEMENTS_V8.equals(elementPromptVersion)
+                && InferencePromptRegistry.VISUAL_HIERARCHY_V7.equals(hierarchyPromptVersion)
+                && InferencePromptRegistry.VISUAL_BINDINGS_V3.equals(bindingPromptVersion)
+                && InferencePromptRegistry.VISUAL_HINT_GENERIC_V1.equals(visualHintPackVersion)
+                && profileId.endsWith("-product-v22-generic");
+        var productPromptV23 = InferencePromptRegistry.SCHEMA_CANDIDATE_V5.equals(promptVersion)
+                && InferencePromptRegistry.VISUAL_ELEMENTS_V8.equals(elementPromptVersion)
+                && InferencePromptRegistry.VISUAL_HIERARCHY_V7.equals(hierarchyPromptVersion)
+                && InferencePromptRegistry.VISUAL_BINDINGS_V3.equals(bindingPromptVersion)
+                && InferencePromptRegistry.VISUAL_HINT_GENERIC_V1.equals(visualHintPackVersion)
+                && InferencePromptRegistry.DOCUMENT_VISION_OBSERVATIONS_V1.equals(
+                        documentVisionPromptVersion
+                )
+                && documentVisionCapabilityId != null
+                && documentVisionCapabilityId.matches("[a-z0-9][a-z0-9._:-]{0,190}")
+                && profileId.endsWith("-product-v23-hybrid-generic");
+        var productPromptV24 = InferencePromptRegistry.SCHEMA_CANDIDATE_V5.equals(promptVersion)
+                && InferencePromptRegistry.VISUAL_ELEMENTS_V8.equals(elementPromptVersion)
+                && InferencePromptRegistry.VISUAL_HIERARCHY_V7.equals(hierarchyPromptVersion)
+                && InferencePromptRegistry.VISUAL_BINDINGS_V3.equals(bindingPromptVersion)
+                && InferencePromptRegistry.VISUAL_HINT_GENERIC_V1.equals(visualHintPackVersion)
+                && InferencePromptRegistry.DOCUMENT_VISION_OBSERVATIONS_V1.equals(
+                        documentVisionPromptVersion
+                )
+                && documentVisionCapabilityId != null
+                && documentVisionCapabilityId.matches("[a-z0-9][a-z0-9._:-]{0,190}")
+                && profileId.endsWith("-product-v24-hybrid-generic");
+        var productPromptV25 = InferencePromptRegistry.SCHEMA_CANDIDATE_V5.equals(promptVersion)
+                && InferencePromptRegistry.VISUAL_ELEMENTS_V8.equals(elementPromptVersion)
+                && InferencePromptRegistry.VISUAL_HIERARCHY_V7.equals(hierarchyPromptVersion)
+                && InferencePromptRegistry.VISUAL_BINDINGS_V3.equals(bindingPromptVersion)
+                && InferencePromptRegistry.VISUAL_HINT_GENERIC_V1.equals(visualHintPackVersion)
+                && InferencePromptRegistry.DOCUMENT_VISION_OBSERVATIONS_V1.equals(
+                        documentVisionPromptVersion
+                )
+                && documentVisionCapabilityId != null
+                && documentVisionCapabilityId.matches("[a-z0-9][a-z0-9._:-]{0,190}")
+                && profileId.endsWith("-product-v25-hybrid-generic");
+        var productPromptV26 = InferencePromptRegistry.SCHEMA_CANDIDATE_V5.equals(promptVersion)
+                && InferencePromptRegistry.VISUAL_ELEMENTS_V8.equals(elementPromptVersion)
+                && InferencePromptRegistry.VISUAL_HIERARCHY_V7.equals(hierarchyPromptVersion)
+                && InferencePromptRegistry.VISUAL_BINDINGS_V3.equals(bindingPromptVersion)
+                && InferencePromptRegistry.VISUAL_HINT_GENERIC_V1.equals(visualHintPackVersion)
+                && InferencePromptRegistry.DOCUMENT_VISION_OBSERVATIONS_V1.equals(
+                        documentVisionPromptVersion
+                )
+                && documentVisionCapabilityId != null
+                && documentVisionCapabilityId.matches("[a-z0-9][a-z0-9._:-]{0,190}")
+                && profileId.endsWith("-product-v26-hybrid-generic");
+        var productPromptV27 = InferencePromptRegistry.SCHEMA_CANDIDATE_V5.equals(promptVersion)
+                && InferencePromptRegistry.VISUAL_ELEMENTS_V8.equals(elementPromptVersion)
+                && InferencePromptRegistry.VISUAL_HIERARCHY_V7.equals(hierarchyPromptVersion)
+                && InferencePromptRegistry.VISUAL_BINDINGS_V3.equals(bindingPromptVersion)
+                && InferencePromptRegistry.VISUAL_HINT_GENERIC_V1.equals(visualHintPackVersion)
+                && InferencePromptRegistry.DOCUMENT_VISION_OBSERVATIONS_V1.equals(
+                        documentVisionPromptVersion
+                )
+                && documentVisionCapabilityId != null
+                && documentVisionCapabilityId.matches("[a-z0-9][a-z0-9._:-]{0,190}")
+                && profileId.endsWith("-product-v27-hybrid-generic");
+        var productPromptV28 = InferencePromptRegistry.SCHEMA_CANDIDATE_V5.equals(promptVersion)
+                && InferencePromptRegistry.VISUAL_ELEMENTS_V8.equals(elementPromptVersion)
+                && InferencePromptRegistry.VISUAL_HIERARCHY_V7.equals(hierarchyPromptVersion)
+                && InferencePromptRegistry.VISUAL_BINDINGS_V3.equals(bindingPromptVersion)
+                && InferencePromptRegistry.VISUAL_HINT_GENERIC_V1.equals(visualHintPackVersion)
+                && InferencePromptRegistry.DOCUMENT_VISION_OBSERVATIONS_V1.equals(
+                        documentVisionPromptVersion
+                )
+                && documentVisionCapabilityId != null
+                && documentVisionCapabilityId.matches("[a-z0-9][a-z0-9._:-]{0,190}")
+                && profileId.endsWith("-product-v28-hybrid-generic");
+        var productPromptV29 = InferencePromptRegistry.SCHEMA_CANDIDATE_V5.equals(promptVersion)
+                && InferencePromptRegistry.VISUAL_ELEMENTS_V9.equals(elementPromptVersion)
+                && InferencePromptRegistry.VISUAL_HIERARCHY_V7.equals(hierarchyPromptVersion)
+                && InferencePromptRegistry.VISUAL_BINDINGS_V3.equals(bindingPromptVersion)
+                && InferencePromptRegistry.VISUAL_HINT_GENERIC_V1.equals(visualHintPackVersion)
+                && InferencePromptRegistry.DOCUMENT_VISION_OBSERVATIONS_V1.equals(
+                        documentVisionPromptVersion
+                )
+                && documentVisionCapabilityId != null
+                && documentVisionCapabilityId.matches("[a-z0-9][a-z0-9._:-]{0,190}")
+                && profileId.endsWith("-product-v29-hybrid-generic");
+        var productPromptV30 = InferencePromptRegistry.SCHEMA_CANDIDATE_V5.equals(promptVersion)
+                && InferencePromptRegistry.VISUAL_ELEMENTS_V9.equals(elementPromptVersion)
+                && InferencePromptRegistry.VISUAL_HIERARCHY_V7.equals(hierarchyPromptVersion)
+                && InferencePromptRegistry.VISUAL_BINDINGS_V3.equals(bindingPromptVersion)
+                && InferencePromptRegistry.VISUAL_HINT_GENERIC_V1.equals(visualHintPackVersion)
+                && InferencePromptRegistry.DOCUMENT_VISION_OBSERVATIONS_V1.equals(
+                        documentVisionPromptVersion
+                )
+                && documentVisionCapabilityId != null
+                && documentVisionCapabilityId.matches("[a-z0-9][a-z0-9._:-]{0,190}")
+                && profileId.endsWith("-product-v30-hybrid-generic");
+        var productPromptV31 = InferencePromptRegistry.SCHEMA_CANDIDATE_V5.equals(promptVersion)
+                && InferencePromptRegistry.VISUAL_ELEMENTS_V9.equals(elementPromptVersion)
+                && InferencePromptRegistry.VISUAL_HIERARCHY_V7.equals(hierarchyPromptVersion)
+                && InferencePromptRegistry.VISUAL_BINDINGS_V3.equals(bindingPromptVersion)
+                && InferencePromptRegistry.VISUAL_HINT_GENERIC_V1.equals(visualHintPackVersion)
+                && InferencePromptRegistry.DOCUMENT_VISION_OBSERVATIONS_V1.equals(
+                        documentVisionPromptVersion
+                )
+                && documentVisionCapabilityId != null
+                && documentVisionCapabilityId.matches("[a-z0-9][a-z0-9._:-]{0,190}")
+                && profileId.endsWith("-product-v31-hybrid-generic");
+        var productPromptV32 = InferencePromptRegistry.SCHEMA_CANDIDATE_V5.equals(promptVersion)
+                && InferencePromptRegistry.VISUAL_ELEMENTS_V9.equals(elementPromptVersion)
+                && InferencePromptRegistry.VISUAL_HIERARCHY_V7.equals(hierarchyPromptVersion)
+                && InferencePromptRegistry.VISUAL_BINDINGS_V3.equals(bindingPromptVersion)
+                && InferencePromptRegistry.VISUAL_HINT_GENERIC_V1.equals(visualHintPackVersion)
+                && InferencePromptRegistry.DOCUMENT_VISION_OBSERVATIONS_V1.equals(
+                        documentVisionPromptVersion
+                )
+                && documentVisionCapabilityId != null
+                && documentVisionCapabilityId.matches("[a-z0-9][a-z0-9._:-]{0,190}")
+                && profileId.endsWith("-product-v32-hybrid-generic");
+        var productPromptV33 = InferencePromptRegistry.SCHEMA_CANDIDATE_V5.equals(promptVersion)
+                && InferencePromptRegistry.VISUAL_ELEMENTS_V9.equals(elementPromptVersion)
+                && InferencePromptRegistry.VISUAL_HIERARCHY_V7.equals(hierarchyPromptVersion)
+                && InferencePromptRegistry.VISUAL_BINDINGS_V3.equals(bindingPromptVersion)
+                && InferencePromptRegistry.VISUAL_HINT_GENERIC_V1.equals(visualHintPackVersion)
+                && InferencePromptRegistry.DOCUMENT_VISION_OBSERVATIONS_V1.equals(
+                        documentVisionPromptVersion
+                )
+                && documentVisionCapabilityId != null
+                && documentVisionCapabilityId.matches("[a-z0-9][a-z0-9._:-]{0,190}")
+                && profileId.endsWith("-product-v33-hybrid-generic");
+        var productPromptV34 = InferencePromptRegistry.SCHEMA_CANDIDATE_V5.equals(promptVersion)
+                && InferencePromptRegistry.VISUAL_ELEMENTS_V9.equals(elementPromptVersion)
+                && InferencePromptRegistry.VISUAL_HIERARCHY_V7.equals(hierarchyPromptVersion)
+                && InferencePromptRegistry.VISUAL_BINDINGS_V3.equals(bindingPromptVersion)
+                && InferencePromptRegistry.VISUAL_HINT_GENERIC_V1.equals(visualHintPackVersion)
+                && InferencePromptRegistry.DOCUMENT_VISION_OBSERVATIONS_V1.equals(
+                        documentVisionPromptVersion
+                )
+                && documentVisionCapabilityId != null
+                && documentVisionCapabilityId.matches("[a-z0-9][a-z0-9._:-]{0,190}")
+                && profileId.endsWith("-product-v34-hybrid-generic");
+        var productPromptV35 = InferencePromptRegistry.SCHEMA_CANDIDATE_V5.equals(promptVersion)
+                && InferencePromptRegistry.VISUAL_ELEMENTS_V9.equals(elementPromptVersion)
+                && InferencePromptRegistry.VISUAL_HIERARCHY_V7.equals(hierarchyPromptVersion)
+                && InferencePromptRegistry.VISUAL_BINDINGS_V3.equals(bindingPromptVersion)
+                && InferencePromptRegistry.VISUAL_HINT_GENERIC_V1.equals(visualHintPackVersion)
+                && InferencePromptRegistry.DOCUMENT_VISION_OBSERVATIONS_V1.equals(
+                        documentVisionPromptVersion
+                )
+                && documentVisionCapabilityId != null
+                && documentVisionCapabilityId.matches("[a-z0-9][a-z0-9._:-]{0,190}")
+                && profileId.endsWith("-product-v35-hybrid-generic");
+        var productPromptV36 = InferencePromptRegistry.SCHEMA_CANDIDATE_V5.equals(promptVersion)
+                && InferencePromptRegistry.VISUAL_ELEMENTS_V9.equals(elementPromptVersion)
+                && InferencePromptRegistry.VISUAL_HIERARCHY_V7.equals(hierarchyPromptVersion)
+                && InferencePromptRegistry.VISUAL_BINDINGS_V3.equals(bindingPromptVersion)
+                && InferencePromptRegistry.VISUAL_HINT_GENERIC_V1.equals(visualHintPackVersion)
+                && InferencePromptRegistry.DOCUMENT_VISION_OBSERVATIONS_V1.equals(
+                        documentVisionPromptVersion
+                )
+                && documentVisionCapabilityId != null
+                && documentVisionCapabilityId.matches("[a-z0-9][a-z0-9._:-]{0,190}")
+                && profileId.endsWith("-product-v36-hybrid-generic");
+        var productPromptV37 = InferencePromptRegistry.SCHEMA_CANDIDATE_V5.equals(promptVersion)
+                && InferencePromptRegistry.VISUAL_ELEMENTS_V9.equals(elementPromptVersion)
+                && InferencePromptRegistry.VISUAL_HIERARCHY_V7.equals(hierarchyPromptVersion)
+                && InferencePromptRegistry.VISUAL_BINDINGS_V3.equals(bindingPromptVersion)
+                && InferencePromptRegistry.VISUAL_HINT_GENERIC_V1.equals(visualHintPackVersion)
+                && InferencePromptRegistry.DOCUMENT_VISION_OBSERVATIONS_V1.equals(
+                        documentVisionPromptVersion
+                )
+                && documentVisionCapabilityId != null
+                && documentVisionCapabilityId.matches("[a-z0-9][a-z0-9._:-]{0,190}")
+                && profileId.endsWith("-product-v37-hybrid-generic");
+        var productPromptV38 = InferencePromptRegistry.SCHEMA_CANDIDATE_V5.equals(promptVersion)
+                && InferencePromptRegistry.VISUAL_ELEMENTS_V9.equals(elementPromptVersion)
+                && InferencePromptRegistry.VISUAL_HIERARCHY_V7.equals(hierarchyPromptVersion)
+                && InferencePromptRegistry.VISUAL_BINDINGS_V3.equals(bindingPromptVersion)
+                && InferencePromptRegistry.VISUAL_HINT_GENERIC_V1.equals(visualHintPackVersion)
+                && InferencePromptRegistry.DOCUMENT_VISION_OBSERVATIONS_V1.equals(
+                        documentVisionPromptVersion
+                )
+                && documentVisionCapabilityId != null
+                && documentVisionCapabilityId.matches("[a-z0-9][a-z0-9._:-]{0,190}")
+                && profileId.endsWith("-product-v38-hybrid-generic");
+        var productPromptV39 = InferencePromptRegistry.SCHEMA_CANDIDATE_V5.equals(promptVersion)
+                && InferencePromptRegistry.VISUAL_ELEMENTS_V9.equals(elementPromptVersion)
+                && InferencePromptRegistry.VISUAL_HIERARCHY_V7.equals(hierarchyPromptVersion)
+                && InferencePromptRegistry.VISUAL_BINDINGS_V3.equals(bindingPromptVersion)
+                && InferencePromptRegistry.VISUAL_HINT_GENERIC_V1.equals(visualHintPackVersion)
+                && InferencePromptRegistry.DOCUMENT_VISION_OBSERVATIONS_V1.equals(
+                        documentVisionPromptVersion
+                )
+                && documentVisionCapabilityId != null
+                && documentVisionCapabilityId.matches("[a-z0-9][a-z0-9._:-]{0,190}")
+                && profileId.endsWith("-product-v39-hybrid-generic");
+        var productPromptV40 = InferencePromptRegistry.SCHEMA_CANDIDATE_V5.equals(promptVersion)
+                && InferencePromptRegistry.VISUAL_ELEMENTS_V10.equals(elementPromptVersion)
+                && InferencePromptRegistry.VISUAL_HIERARCHY_V7.equals(hierarchyPromptVersion)
+                && InferencePromptRegistry.VISUAL_BINDINGS_V3.equals(bindingPromptVersion)
+                && InferencePromptRegistry.VISUAL_HINT_GENERIC_V1.equals(visualHintPackVersion)
+                && InferencePromptRegistry.DOCUMENT_VISION_OBSERVATIONS_V1.equals(
+                        documentVisionPromptVersion
+                )
+                && documentVisionCapabilityId != null
+                && documentVisionCapabilityId.matches("[a-z0-9][a-z0-9._:-]{0,190}")
+                && profileId.endsWith("-product-v40-hybrid-generic");
+        var serialVisualPipeline = "renderweave-inference-pipeline/3.0".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.0".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.1".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.2".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.3".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.4".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.5".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.6".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.7".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.8".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.9".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.10".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.11".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.12".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.13".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.14".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.15".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.16".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.17".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.18".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.19".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.20".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.21".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.22".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.23".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.24".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.25".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.26".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.27".equals(pipelineVersion);
+        if (!serialVisualPipeline
                 && (elementPromptVersion != null || hierarchyPromptVersion != null || bindingPromptVersion != null)) {
-            throw new IllegalArgumentException("Serial visual prompts are exclusive to pipeline 3");
+            throw new IllegalArgumentException("Serial visual prompts are exclusive to visual pipelines 3 and 4");
+        }
+        if (!("renderweave-inference-pipeline/4.1".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.2".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.3".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.4".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.5".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.6".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.7".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.8".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.9".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.10".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.11".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.12".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.13".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.14".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.15".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.16".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.17".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.18".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.19".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.20".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.21".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.22".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.23".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.24".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.25".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.26".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.27".equals(pipelineVersion))
+                && visualHintPackVersion != null) {
+            throw new IllegalArgumentException("Visual hint packs are exclusive to grounded visual pipelines");
+        }
+        var documentVisionPipeline = "renderweave-inference-pipeline/4.2".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.10".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.11".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.12".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.13".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.14".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.15".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.16".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.17".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.18".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.19".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.20".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.21".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.22".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.23".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.24".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.25".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.26".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.27".equals(pipelineVersion);
+        var documentVisionIdentityPresent = documentVisionCapabilityId != null
+                || documentVisionPromptVersion != null;
+        if (documentVisionPipeline != documentVisionIdentityPresent
+                || documentVisionIdentityPresent
+                && (documentVisionCapabilityId == null || documentVisionPromptVersion == null)) {
+            throw new IllegalArgumentException(
+                    "Document vision identity is exclusive and required for hybrid visual pipelines"
+            );
         }
         var productPrompt = "USER_CONFIRMED".equals(inputClassification)
                 && (("renderweave-inference-pipeline/2.0".equals(pipelineVersion)
                 && (productPromptV1 || productPromptV2))
                 || ("renderweave-inference-pipeline/3.0".equals(pipelineVersion)
-                && (productPromptV3 || productPromptV4)));
+                && (productPromptV3 || productPromptV4))
+                || ("renderweave-inference-pipeline/4.0".equals(pipelineVersion)
+                && productPromptV5)
+                || ("renderweave-inference-pipeline/4.1".equals(pipelineVersion)
+                && (productPromptV6 || productPromptV8 || productPromptV9
+                || productPromptV10 || productPromptV11 || productPromptV12 || productPromptV13
+                || productPromptV14 || productPromptV15))
+                || ("renderweave-inference-pipeline/4.2".equals(pipelineVersion)
+                && productPromptV7)
+                || ("renderweave-inference-pipeline/4.3".equals(pipelineVersion)
+                && productPromptV16)
+                || ("renderweave-inference-pipeline/4.4".equals(pipelineVersion)
+                && productPromptV17)
+                || ("renderweave-inference-pipeline/4.5".equals(pipelineVersion)
+                && productPromptV18)
+                || ("renderweave-inference-pipeline/4.6".equals(pipelineVersion)
+                && productPromptV19)
+                || ("renderweave-inference-pipeline/4.7".equals(pipelineVersion)
+                && productPromptV20)
+                || ("renderweave-inference-pipeline/4.8".equals(pipelineVersion)
+                && productPromptV21)
+                || ("renderweave-inference-pipeline/4.9".equals(pipelineVersion)
+                && productPromptV22)
+                || ("renderweave-inference-pipeline/4.10".equals(pipelineVersion)
+                && productPromptV23)
+                || ("renderweave-inference-pipeline/4.11".equals(pipelineVersion)
+                && productPromptV24)
+                || ("renderweave-inference-pipeline/4.12".equals(pipelineVersion)
+                && productPromptV25)
+                || ("renderweave-inference-pipeline/4.13".equals(pipelineVersion)
+                && productPromptV26)
+                || ("renderweave-inference-pipeline/4.14".equals(pipelineVersion)
+                && productPromptV27)
+                || ("renderweave-inference-pipeline/4.15".equals(pipelineVersion)
+                && productPromptV28)
+                || ("renderweave-inference-pipeline/4.16".equals(pipelineVersion)
+                && productPromptV29)
+                || ("renderweave-inference-pipeline/4.17".equals(pipelineVersion)
+                && productPromptV30)
+                || ("renderweave-inference-pipeline/4.18".equals(pipelineVersion)
+                && productPromptV31)
+                || ("renderweave-inference-pipeline/4.19".equals(pipelineVersion)
+                && productPromptV32)
+                || ("renderweave-inference-pipeline/4.20".equals(pipelineVersion)
+                && productPromptV33)
+                || ("renderweave-inference-pipeline/4.21".equals(pipelineVersion)
+                && productPromptV34)
+                || ("renderweave-inference-pipeline/4.22".equals(pipelineVersion)
+                && productPromptV35)
+                || ("renderweave-inference-pipeline/4.23".equals(pipelineVersion)
+                && productPromptV36)
+                || ("renderweave-inference-pipeline/4.24".equals(pipelineVersion)
+                && productPromptV37)
+                || ("renderweave-inference-pipeline/4.25".equals(pipelineVersion)
+                && productPromptV38)
+                || ("renderweave-inference-pipeline/4.26".equals(pipelineVersion)
+                && productPromptV39)
+                || ("renderweave-inference-pipeline/4.27".equals(pipelineVersion)
+                && productPromptV40));
         if (!(legacySyntheticPrompt || productPrompt)
                 || !"JSON_OBJECT".equals(responseFormat)
                 || thinkingEnabled || toolsAllowed || remoteMediaAllowed) {
@@ -175,13 +644,37 @@ public record InferenceProfile(
                 || "USER_CONFIRMED".equals(inputClassification))) {
             throw new IllegalArgumentException("Live input classification is not approved");
         }
-        var maximumApprovedCalls = "renderweave-inference-pipeline/3.0".equals(pipelineVersion) ? 5 : 3;
+        var maximumApprovedCalls = serialVisualPipeline ? 5 : 3;
         if (maximumTotalCalls > maximumApprovedCalls || maximumEstimatedCostMicrosCny <= 0
                 || inputMicrosCnyPerMillionTokens <= 0 || outputMicrosCnyPerMillionTokens <= 0) {
             throw new IllegalArgumentException("Live call and cost budgets must be bounded and priced");
         }
         if (productPromptV3 && stageTimeoutSeconds != 90
-                || productPromptV4 && stageTimeoutSeconds != 240) {
+                || productPromptV4 && stageTimeoutSeconds != 240
+                || productPromptV5 && stageTimeoutSeconds != 240
+                || productPromptV6 && stageTimeoutSeconds != 240
+                || productPromptV7 && stageTimeoutSeconds != 240
+                || productPromptV8 && stageTimeoutSeconds != 240
+                || productPromptV15 && stageTimeoutSeconds != 240
+                || productPromptV16 && stageTimeoutSeconds != 240
+                || productPromptV17 && stageTimeoutSeconds != 240
+                || productPromptV18 && stageTimeoutSeconds != 240
+                || productPromptV19 && stageTimeoutSeconds != 240
+                || productPromptV20 && stageTimeoutSeconds != 240
+                || productPromptV21 && stageTimeoutSeconds != 240
+                || productPromptV22 && stageTimeoutSeconds != 240
+                || productPromptV23 && stageTimeoutSeconds != 240
+                || productPromptV30 && stageTimeoutSeconds != 240
+                || productPromptV31 && stageTimeoutSeconds != 240
+                || productPromptV32 && stageTimeoutSeconds != 240
+                || productPromptV33 && stageTimeoutSeconds != 240
+                || productPromptV34 && stageTimeoutSeconds != 240
+                || productPromptV35 && stageTimeoutSeconds != 240
+                || productPromptV36 && stageTimeoutSeconds != 240
+                || productPromptV37 && stageTimeoutSeconds != 240
+                || productPromptV38 && stageTimeoutSeconds != 240
+                || productPromptV39 && stageTimeoutSeconds != 240
+                || productPromptV40 && stageTimeoutSeconds != 240) {
             throw new IllegalArgumentException("Product serial profile timeout must match its immutable version");
         }
         if (!pricingEffectiveDate.matches("\\d{4}-\\d{2}-\\d{2}")) {

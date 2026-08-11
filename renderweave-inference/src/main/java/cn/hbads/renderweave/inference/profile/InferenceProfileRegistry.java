@@ -36,13 +36,293 @@ public final class InferenceProfileRegistry {
             "inference-profiles/dashscope-qwen37-flash-product-v4.json",
             "inference-profiles/dashscope-qwen37-plus-product-v4.json",
             "inference-profiles/dashscope-qwen38-max-product-v4.json",
-            "inference-profiles/dashscope-qwen37-max-20260608-product-v4.json"
+            "inference-profiles/dashscope-qwen37-max-20260608-product-v4.json",
+            "inference-profiles/dashscope-qwen37-flash-product-v5.json",
+            "inference-profiles/dashscope-qwen37-plus-product-v5.json",
+            "inference-profiles/dashscope-qwen38-max-product-v5.json",
+            "inference-profiles/dashscope-qwen37-flash-product-v6-generic.json",
+            "inference-profiles/dashscope-qwen37-plus-product-v6-generic.json",
+            "inference-profiles/dashscope-qwen38-max-product-v6-generic.json",
+            "inference-profiles/dashscope-qwen37-flash-product-v6-transit-board.json",
+            "inference-profiles/dashscope-qwen37-plus-product-v6-transit-board.json",
+            "inference-profiles/dashscope-qwen38-max-product-v6-transit-board.json",
+            "inference-profiles/dashscope-qwen37-flash-product-v7-hybrid-generic.json",
+            "inference-profiles/dashscope-qwen37-plus-product-v7-hybrid-generic.json",
+            "inference-profiles/dashscope-qwen38-max-product-v7-hybrid-generic.json",
+            "inference-profiles/dashscope-qwen37-flash-product-v8-generic.json",
+            "inference-profiles/dashscope-qwen37-plus-product-v8-generic.json",
+            "inference-profiles/dashscope-qwen38-max-product-v8-generic.json",
+            "inference-profiles/dashscope-qwen37-flash-product-v9-generic.json",
+            "inference-profiles/dashscope-qwen37-plus-product-v9-generic.json",
+            "inference-profiles/dashscope-qwen38-max-product-v9-generic.json",
+            "inference-profiles/dashscope-qwen37-flash-product-v10-generic.json",
+            "inference-profiles/dashscope-qwen37-plus-product-v10-generic.json",
+            "inference-profiles/dashscope-qwen38-max-product-v10-generic.json",
+            "inference-profiles/dashscope-qwen37-flash-product-v11-generic.json",
+            "inference-profiles/dashscope-qwen37-plus-product-v11-generic.json",
+            "inference-profiles/dashscope-qwen38-max-product-v11-generic.json",
+            "inference-profiles/dashscope-qwen37-flash-product-v12-generic.json",
+            "inference-profiles/dashscope-qwen37-plus-product-v12-generic.json",
+            "inference-profiles/dashscope-qwen38-max-product-v12-generic.json",
+            "inference-profiles/dashscope-qwen37-flash-20260715-product-v13-generic.json",
+            "inference-profiles/dashscope-qwen37-flash-20260715-product-v14-generic.json",
+            "inference-profiles/dashscope-qwen37-plus-product-v14-generic.json",
+            "inference-profiles/dashscope-qwen38-max-product-v14-generic.json",
+            "inference-profiles/dashscope-qwen37-flash-20260715-product-v15-generic.json",
+            "inference-profiles/dashscope-qwen37-plus-product-v15-generic.json",
+            "inference-profiles/dashscope-qwen38-max-product-v15-generic.json",
+            "inference-profiles/dashscope-qwen37-flash-20260715-product-v16-generic.json",
+            "inference-profiles/dashscope-qwen37-plus-product-v16-generic.json",
+            "inference-profiles/dashscope-qwen38-max-product-v16-generic.json",
+            "inference-profiles/dashscope-qwen37-flash-20260715-product-v17-generic.json",
+            "inference-profiles/dashscope-qwen37-plus-product-v17-generic.json",
+            "inference-profiles/dashscope-qwen38-max-product-v17-generic.json",
+            "inference-profiles/dashscope-qwen37-flash-20260715-product-v18-generic.json",
+            "inference-profiles/dashscope-qwen37-plus-product-v18-generic.json",
+            "inference-profiles/dashscope-qwen38-max-product-v18-generic.json",
+            "inference-profiles/dashscope-qwen37-flash-20260715-product-v19-generic.json",
+            "inference-profiles/dashscope-qwen37-plus-product-v19-generic.json",
+            "inference-profiles/dashscope-qwen38-max-product-v19-generic.json",
+            "inference-profiles/dashscope-qwen37-flash-20260715-product-v20-generic.json",
+            "inference-profiles/dashscope-qwen37-plus-product-v20-generic.json",
+            "inference-profiles/dashscope-qwen38-max-product-v20-generic.json",
+            "inference-profiles/dashscope-qwen37-flash-20260715-product-v21-generic.json",
+            "inference-profiles/dashscope-qwen37-plus-product-v21-generic.json",
+            "inference-profiles/dashscope-qwen38-max-product-v21-generic.json",
+            "inference-profiles/dashscope-qwen37-flash-20260715-product-v22-generic.json",
+            "inference-profiles/dashscope-qwen37-plus-product-v22-generic.json",
+            "inference-profiles/dashscope-qwen38-max-product-v22-generic.json",
+            "inference-profiles/dashscope-qwen37-flash-20260715-product-v23-hybrid-generic.json",
+            "inference-profiles/dashscope-qwen37-plus-product-v23-hybrid-generic.json",
+            "inference-profiles/dashscope-qwen38-max-product-v23-hybrid-generic.json",
+            "inference-profiles/dashscope-qwen37-flash-20260715-product-v24-hybrid-generic.json",
+            "inference-profiles/dashscope-qwen37-plus-product-v24-hybrid-generic.json",
+            "inference-profiles/dashscope-qwen38-max-product-v24-hybrid-generic.json",
+            "inference-profiles/dashscope-qwen37-flash-20260715-product-v25-hybrid-generic.json",
+            "inference-profiles/dashscope-qwen37-plus-product-v25-hybrid-generic.json",
+            "inference-profiles/dashscope-qwen38-max-product-v25-hybrid-generic.json",
+            "inference-profiles/dashscope-qwen37-flash-20260715-product-v26-hybrid-generic.json",
+            "inference-profiles/dashscope-qwen37-plus-product-v26-hybrid-generic.json",
+            "inference-profiles/dashscope-qwen38-max-product-v26-hybrid-generic.json",
+            "inference-profiles/dashscope-qwen37-flash-20260715-product-v27-hybrid-generic.json",
+            "inference-profiles/dashscope-qwen37-plus-product-v27-hybrid-generic.json",
+            "inference-profiles/dashscope-qwen38-max-product-v27-hybrid-generic.json",
+            "inference-profiles/dashscope-qwen37-flash-20260715-product-v28-hybrid-generic.json",
+            "inference-profiles/dashscope-qwen37-plus-product-v28-hybrid-generic.json",
+            "inference-profiles/dashscope-qwen38-max-product-v28-hybrid-generic.json",
+            "inference-profiles/dashscope-qwen37-flash-20260715-product-v29-hybrid-generic.json",
+            "inference-profiles/dashscope-qwen37-plus-product-v29-hybrid-generic.json",
+            "inference-profiles/dashscope-qwen38-max-product-v29-hybrid-generic.json",
+            "inference-profiles/dashscope-qwen37-flash-20260715-product-v30-hybrid-generic.json",
+            "inference-profiles/dashscope-qwen37-plus-product-v30-hybrid-generic.json",
+            "inference-profiles/dashscope-qwen38-max-product-v30-hybrid-generic.json",
+            "inference-profiles/dashscope-qwen37-flash-20260715-product-v31-hybrid-generic.json",
+            "inference-profiles/dashscope-qwen37-plus-product-v31-hybrid-generic.json",
+            "inference-profiles/dashscope-qwen38-max-product-v31-hybrid-generic.json",
+            "inference-profiles/dashscope-qwen37-flash-20260715-product-v32-hybrid-generic.json",
+            "inference-profiles/dashscope-qwen37-plus-product-v32-hybrid-generic.json",
+            "inference-profiles/dashscope-qwen38-max-product-v32-hybrid-generic.json",
+            "inference-profiles/dashscope-qwen37-flash-20260715-product-v33-hybrid-generic.json",
+            "inference-profiles/dashscope-qwen37-plus-product-v33-hybrid-generic.json",
+            "inference-profiles/dashscope-qwen38-max-product-v33-hybrid-generic.json",
+            "inference-profiles/dashscope-qwen37-flash-20260715-product-v34-hybrid-generic.json",
+            "inference-profiles/dashscope-qwen37-plus-product-v34-hybrid-generic.json",
+            "inference-profiles/dashscope-qwen38-max-product-v34-hybrid-generic.json",
+            "inference-profiles/dashscope-qwen37-flash-20260715-product-v35-hybrid-generic.json",
+            "inference-profiles/dashscope-qwen37-plus-product-v35-hybrid-generic.json",
+            "inference-profiles/dashscope-qwen38-max-product-v35-hybrid-generic.json",
+            "inference-profiles/dashscope-qwen37-flash-20260715-product-v36-hybrid-generic.json",
+            "inference-profiles/dashscope-qwen37-plus-product-v36-hybrid-generic.json",
+            "inference-profiles/dashscope-qwen38-max-product-v36-hybrid-generic.json",
+            "inference-profiles/dashscope-qwen37-flash-20260715-product-v37-hybrid-generic.json",
+            "inference-profiles/dashscope-qwen37-plus-product-v37-hybrid-generic.json",
+            "inference-profiles/dashscope-qwen38-max-product-v37-hybrid-generic.json",
+            "inference-profiles/dashscope-qwen37-flash-20260715-product-v38-hybrid-generic.json",
+            "inference-profiles/dashscope-qwen37-plus-product-v38-hybrid-generic.json",
+            "inference-profiles/dashscope-qwen38-max-product-v38-hybrid-generic.json",
+            "inference-profiles/dashscope-qwen37-flash-20260715-product-v39-hybrid-generic.json",
+            "inference-profiles/dashscope-qwen37-plus-product-v39-hybrid-generic.json",
+            "inference-profiles/dashscope-qwen38-max-product-v39-hybrid-generic.json",
+            "inference-profiles/dashscope-qwen37-flash-20260715-product-v40-hybrid-generic.json",
+            "inference-profiles/dashscope-qwen37-flash-product-v40-hybrid-generic.json",
+            "inference-profiles/dashscope-qwen37-plus-product-v40-hybrid-generic.json",
+            "inference-profiles/dashscope-qwen38-max-product-v40-hybrid-generic.json"
     );
     private static final java.util.List<String> PRODUCT_LIVE_PROFILE_IDS = java.util.List.of(
-            "dashscope-qwen37-flash-product-v4",
-            "dashscope-qwen37-plus-product-v4",
-            "dashscope-qwen38-max-product-v4",
-            "dashscope-qwen37-max-20260608-product-v4"
+            "dashscope-qwen37-plus-product-v40-hybrid-generic",
+            "dashscope-qwen38-max-product-v40-hybrid-generic",
+            "dashscope-qwen37-flash-product-v40-hybrid-generic"
+    );
+    private static final java.util.List<String> VISUAL_NEXT_PROFILE_IDS = java.util.List.of(
+            "dashscope-qwen37-flash-product-v5",
+            "dashscope-qwen37-plus-product-v5",
+            "dashscope-qwen38-max-product-v5"
+    );
+    private static final java.util.List<String> VISUAL_GROUNDING_PROFILE_IDS = java.util.List.of(
+            "dashscope-qwen37-flash-product-v6-generic",
+            "dashscope-qwen37-plus-product-v6-generic",
+            "dashscope-qwen38-max-product-v6-generic",
+            "dashscope-qwen37-flash-product-v6-transit-board",
+            "dashscope-qwen37-plus-product-v6-transit-board",
+            "dashscope-qwen38-max-product-v6-transit-board",
+            "dashscope-qwen37-flash-product-v8-generic",
+            "dashscope-qwen37-plus-product-v8-generic",
+            "dashscope-qwen38-max-product-v8-generic",
+            "dashscope-qwen37-flash-product-v9-generic",
+            "dashscope-qwen37-plus-product-v9-generic",
+            "dashscope-qwen38-max-product-v9-generic",
+            "dashscope-qwen37-flash-product-v10-generic",
+            "dashscope-qwen37-plus-product-v10-generic",
+            "dashscope-qwen38-max-product-v10-generic",
+            "dashscope-qwen37-flash-product-v11-generic",
+            "dashscope-qwen37-plus-product-v11-generic",
+            "dashscope-qwen38-max-product-v11-generic",
+            "dashscope-qwen37-flash-product-v12-generic",
+            "dashscope-qwen37-plus-product-v12-generic",
+            "dashscope-qwen38-max-product-v12-generic",
+            "dashscope-qwen37-flash-20260715-product-v13-generic",
+            "dashscope-qwen37-flash-20260715-product-v14-generic",
+            "dashscope-qwen37-plus-product-v14-generic",
+            "dashscope-qwen38-max-product-v14-generic",
+            "dashscope-qwen37-flash-20260715-product-v15-generic",
+            "dashscope-qwen37-plus-product-v15-generic",
+            "dashscope-qwen38-max-product-v15-generic",
+            "dashscope-qwen37-flash-20260715-product-v16-generic",
+            "dashscope-qwen37-plus-product-v16-generic",
+            "dashscope-qwen38-max-product-v16-generic",
+            "dashscope-qwen37-flash-20260715-product-v17-generic",
+            "dashscope-qwen37-plus-product-v17-generic",
+            "dashscope-qwen38-max-product-v17-generic",
+            "dashscope-qwen37-flash-20260715-product-v18-generic",
+            "dashscope-qwen37-plus-product-v18-generic",
+            "dashscope-qwen38-max-product-v18-generic",
+            "dashscope-qwen37-flash-20260715-product-v19-generic",
+            "dashscope-qwen37-plus-product-v19-generic",
+            "dashscope-qwen38-max-product-v19-generic",
+            "dashscope-qwen37-flash-20260715-product-v20-generic",
+            "dashscope-qwen37-plus-product-v20-generic",
+            "dashscope-qwen38-max-product-v20-generic",
+            "dashscope-qwen37-flash-20260715-product-v21-generic",
+            "dashscope-qwen37-plus-product-v21-generic",
+            "dashscope-qwen38-max-product-v21-generic",
+            "dashscope-qwen37-flash-20260715-product-v22-generic",
+            "dashscope-qwen37-plus-product-v22-generic",
+            "dashscope-qwen38-max-product-v22-generic",
+            "dashscope-qwen37-flash-20260715-product-v23-hybrid-generic",
+            "dashscope-qwen37-plus-product-v23-hybrid-generic",
+            "dashscope-qwen38-max-product-v23-hybrid-generic",
+            "dashscope-qwen37-flash-20260715-product-v24-hybrid-generic",
+            "dashscope-qwen37-plus-product-v24-hybrid-generic",
+            "dashscope-qwen38-max-product-v24-hybrid-generic",
+            "dashscope-qwen37-flash-20260715-product-v25-hybrid-generic",
+            "dashscope-qwen37-plus-product-v25-hybrid-generic",
+            "dashscope-qwen38-max-product-v25-hybrid-generic",
+            "dashscope-qwen37-flash-20260715-product-v26-hybrid-generic",
+            "dashscope-qwen37-plus-product-v26-hybrid-generic",
+            "dashscope-qwen38-max-product-v26-hybrid-generic",
+            "dashscope-qwen37-flash-20260715-product-v27-hybrid-generic",
+            "dashscope-qwen37-plus-product-v27-hybrid-generic",
+            "dashscope-qwen38-max-product-v27-hybrid-generic",
+            "dashscope-qwen37-flash-20260715-product-v28-hybrid-generic",
+            "dashscope-qwen37-plus-product-v28-hybrid-generic",
+            "dashscope-qwen38-max-product-v28-hybrid-generic",
+            "dashscope-qwen37-flash-20260715-product-v29-hybrid-generic",
+            "dashscope-qwen37-plus-product-v29-hybrid-generic",
+            "dashscope-qwen38-max-product-v29-hybrid-generic",
+            "dashscope-qwen37-flash-20260715-product-v30-hybrid-generic",
+            "dashscope-qwen37-plus-product-v30-hybrid-generic",
+            "dashscope-qwen38-max-product-v30-hybrid-generic",
+            "dashscope-qwen37-flash-20260715-product-v31-hybrid-generic",
+            "dashscope-qwen37-plus-product-v31-hybrid-generic",
+            "dashscope-qwen38-max-product-v31-hybrid-generic",
+            "dashscope-qwen37-flash-20260715-product-v32-hybrid-generic",
+            "dashscope-qwen37-plus-product-v32-hybrid-generic",
+            "dashscope-qwen38-max-product-v32-hybrid-generic",
+            "dashscope-qwen37-flash-20260715-product-v33-hybrid-generic",
+            "dashscope-qwen37-plus-product-v33-hybrid-generic",
+            "dashscope-qwen38-max-product-v33-hybrid-generic",
+            "dashscope-qwen37-flash-20260715-product-v34-hybrid-generic",
+            "dashscope-qwen37-plus-product-v34-hybrid-generic",
+            "dashscope-qwen38-max-product-v34-hybrid-generic",
+            "dashscope-qwen37-flash-20260715-product-v35-hybrid-generic",
+            "dashscope-qwen37-plus-product-v35-hybrid-generic",
+            "dashscope-qwen38-max-product-v35-hybrid-generic",
+            "dashscope-qwen37-flash-20260715-product-v36-hybrid-generic",
+            "dashscope-qwen37-plus-product-v36-hybrid-generic",
+            "dashscope-qwen38-max-product-v36-hybrid-generic",
+            "dashscope-qwen37-flash-20260715-product-v37-hybrid-generic",
+            "dashscope-qwen37-plus-product-v37-hybrid-generic",
+            "dashscope-qwen38-max-product-v37-hybrid-generic",
+            "dashscope-qwen37-flash-20260715-product-v38-hybrid-generic",
+            "dashscope-qwen37-plus-product-v38-hybrid-generic",
+            "dashscope-qwen38-max-product-v38-hybrid-generic",
+            "dashscope-qwen37-flash-20260715-product-v39-hybrid-generic",
+            "dashscope-qwen37-plus-product-v39-hybrid-generic",
+            "dashscope-qwen38-max-product-v39-hybrid-generic",
+            "dashscope-qwen37-flash-20260715-product-v40-hybrid-generic",
+            "dashscope-qwen37-flash-product-v40-hybrid-generic",
+            "dashscope-qwen37-plus-product-v40-hybrid-generic",
+            "dashscope-qwen38-max-product-v40-hybrid-generic"
+    );
+    private static final java.util.List<String> VISUAL_HYBRID_PROFILE_IDS = java.util.List.of(
+            "dashscope-qwen37-flash-product-v7-hybrid-generic",
+            "dashscope-qwen37-plus-product-v7-hybrid-generic",
+            "dashscope-qwen38-max-product-v7-hybrid-generic",
+            "dashscope-qwen37-flash-20260715-product-v23-hybrid-generic",
+            "dashscope-qwen37-plus-product-v23-hybrid-generic",
+            "dashscope-qwen38-max-product-v23-hybrid-generic",
+            "dashscope-qwen37-flash-20260715-product-v24-hybrid-generic",
+            "dashscope-qwen37-plus-product-v24-hybrid-generic",
+            "dashscope-qwen38-max-product-v24-hybrid-generic",
+            "dashscope-qwen37-flash-20260715-product-v25-hybrid-generic",
+            "dashscope-qwen37-plus-product-v25-hybrid-generic",
+            "dashscope-qwen38-max-product-v25-hybrid-generic",
+            "dashscope-qwen37-flash-20260715-product-v26-hybrid-generic",
+            "dashscope-qwen37-plus-product-v26-hybrid-generic",
+            "dashscope-qwen38-max-product-v26-hybrid-generic",
+            "dashscope-qwen37-flash-20260715-product-v27-hybrid-generic",
+            "dashscope-qwen37-plus-product-v27-hybrid-generic",
+            "dashscope-qwen38-max-product-v27-hybrid-generic",
+            "dashscope-qwen37-flash-20260715-product-v28-hybrid-generic",
+            "dashscope-qwen37-plus-product-v28-hybrid-generic",
+            "dashscope-qwen38-max-product-v28-hybrid-generic",
+            "dashscope-qwen37-flash-20260715-product-v29-hybrid-generic",
+            "dashscope-qwen37-plus-product-v29-hybrid-generic",
+            "dashscope-qwen38-max-product-v29-hybrid-generic",
+            "dashscope-qwen37-flash-20260715-product-v30-hybrid-generic",
+            "dashscope-qwen37-plus-product-v30-hybrid-generic",
+            "dashscope-qwen38-max-product-v30-hybrid-generic",
+            "dashscope-qwen37-flash-20260715-product-v31-hybrid-generic",
+            "dashscope-qwen37-plus-product-v31-hybrid-generic",
+            "dashscope-qwen38-max-product-v31-hybrid-generic",
+            "dashscope-qwen37-flash-20260715-product-v32-hybrid-generic",
+            "dashscope-qwen37-plus-product-v32-hybrid-generic",
+            "dashscope-qwen38-max-product-v32-hybrid-generic",
+            "dashscope-qwen37-flash-20260715-product-v33-hybrid-generic",
+            "dashscope-qwen37-plus-product-v33-hybrid-generic",
+            "dashscope-qwen38-max-product-v33-hybrid-generic",
+            "dashscope-qwen37-flash-20260715-product-v34-hybrid-generic",
+            "dashscope-qwen37-plus-product-v34-hybrid-generic",
+            "dashscope-qwen38-max-product-v34-hybrid-generic",
+            "dashscope-qwen37-flash-20260715-product-v35-hybrid-generic",
+            "dashscope-qwen37-plus-product-v35-hybrid-generic",
+            "dashscope-qwen38-max-product-v35-hybrid-generic",
+            "dashscope-qwen37-flash-20260715-product-v36-hybrid-generic",
+            "dashscope-qwen37-plus-product-v36-hybrid-generic",
+            "dashscope-qwen38-max-product-v36-hybrid-generic",
+            "dashscope-qwen37-flash-20260715-product-v37-hybrid-generic",
+            "dashscope-qwen37-plus-product-v37-hybrid-generic",
+            "dashscope-qwen38-max-product-v37-hybrid-generic",
+            "dashscope-qwen37-flash-20260715-product-v38-hybrid-generic",
+            "dashscope-qwen37-plus-product-v38-hybrid-generic",
+            "dashscope-qwen38-max-product-v38-hybrid-generic",
+            "dashscope-qwen37-flash-20260715-product-v39-hybrid-generic",
+            "dashscope-qwen37-plus-product-v39-hybrid-generic",
+            "dashscope-qwen38-max-product-v39-hybrid-generic",
+            "dashscope-qwen37-flash-20260715-product-v40-hybrid-generic",
+            "dashscope-qwen37-flash-product-v40-hybrid-generic",
+            "dashscope-qwen37-plus-product-v40-hybrid-generic",
+            "dashscope-qwen38-max-product-v40-hybrid-generic"
     );
     private static final ObjectMapper JSON = JsonMapper.builder(
                     JsonFactory.builder().enable(StreamReadFeature.STRICT_DUPLICATE_DETECTION).build())
@@ -53,12 +333,14 @@ public final class InferenceProfileRegistry {
             .build();
 
     private final Map<String, ProfileResource> profiles;
+    private final VisualModelCapabilityRegistry visualCapabilities;
 
     public InferenceProfileRegistry() {
         this(InferenceProfileRegistry.class.getClassLoader());
     }
 
     InferenceProfileRegistry(ClassLoader classLoader) {
+        visualCapabilities = new VisualModelCapabilityRegistry(classLoader);
         var replay = load(classLoader, REPLAY_RESOURCE);
         if (!"REPLAY".equals(replay.profile().provider()) || replay.profile().networkAllowed()) {
             throw new IllegalStateException("Replay profile must make network access impossible by contract");
@@ -67,6 +349,12 @@ public final class InferenceProfileRegistry {
         add(loaded, replay);
         LIVE_RESOURCES.stream().map(path -> load(classLoader, path)).forEach(resource -> add(loaded, resource));
         profiles = java.util.Collections.unmodifiableMap(loaded);
+        for (var profileId : java.util.stream.Stream.of(
+                VISUAL_NEXT_PROFILE_IDS, VISUAL_GROUNDING_PROFILE_IDS, VISUAL_HYBRID_PROFILE_IDS
+        ).flatMap(java.util.Collection::stream).toList()) {
+            var profile = require(profileId).profile();
+            visualCapabilities.requireModel(profile.model()).capability().requireCompatible(profile);
+        }
     }
 
     public ProfileResource require(String profileId) {
@@ -86,6 +374,48 @@ public final class InferenceProfileRegistry {
 
     public boolean isProductLiveProfile(String profileId) {
         return PRODUCT_LIVE_PROFILE_IDS.contains(profileId);
+    }
+
+    /** Experimental pipeline-4 Profiles are withheld from the product selector until quality gates pass. */
+    public java.util.List<VisualNextProfileResource> visualNextProfiles() {
+        return VISUAL_NEXT_PROFILE_IDS.stream().map(this::require).map(profile ->
+                new VisualNextProfileResource(
+                        profile,
+                        visualCapabilities.requireModel(profile.profile().model())
+                )
+        ).toList();
+    }
+
+    public boolean isVisualNextProfile(String profileId) {
+        return VISUAL_NEXT_PROFILE_IDS.contains(profileId);
+    }
+
+    /** Grounded visual profiles keep immutable policy and hint identities separate. */
+    public java.util.List<VisualNextProfileResource> visualGroundingProfiles() {
+        return VISUAL_GROUNDING_PROFILE_IDS.stream().map(this::require).map(profile ->
+                new VisualNextProfileResource(
+                        profile,
+                        visualCapabilities.requireModel(profile.profile().model())
+                )
+        ).toList();
+    }
+
+    public boolean isVisualGroundingProfile(String profileId) {
+        return VISUAL_GROUNDING_PROFILE_IDS.contains(profileId);
+    }
+
+    /** Hybrid profiles bind one exact local OCR/layout capability to an immutable visual policy. */
+    public java.util.List<VisualNextProfileResource> visualHybridProfiles() {
+        return VISUAL_HYBRID_PROFILE_IDS.stream().map(this::require).map(profile ->
+                new VisualNextProfileResource(
+                        profile,
+                        visualCapabilities.requireModel(profile.profile().model())
+                )
+        ).toList();
+    }
+
+    public boolean isVisualHybridProfile(String profileId) {
+        return VISUAL_HYBRID_PROFILE_IDS.contains(profileId);
     }
 
     /** Parses the immutable snapshot stored with a run instead of silently substituting the latest registry entry. */
@@ -118,4 +448,9 @@ public final class InferenceProfileRegistry {
     }
 
     public record ProfileResource(InferenceProfile profile, String snapshotJson) { }
+
+    public record VisualNextProfileResource(
+            ProfileResource profile,
+            VisualModelCapabilityRegistry.CapabilityResource capability
+    ) { }
 }

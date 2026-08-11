@@ -1,0 +1,24 @@
+{
+  "authorizationVersion": "renderweave-visual-evaluation-authorization/1.0",
+  "authorizationId": "visual-n7-unique-region-parent-v34-qwen37-plus-transit-20260811",
+  "status": "CLOSED",
+  "phase": "CANARY",
+  "inputClassification": "REPOSITORY_SYNTHETIC_ONLY",
+  "corpusVersion": "renderweave-visual-stage-corpus/1.0",
+  "corpusSourceSha256": "bf0db7bf0ac5c4e2b357cdd96c49ff70a7b30a5bc59f322a915020dc29fc605e",
+  "evaluationIdentity": "renderweave-visual-evaluation-tree-sha256/2:dbeeb7cf9f928508b7b9f0f6148fdcf9451c69876cb7f0715397fa4fbd3d1f50",
+  "profileId": "dashscope-qwen37-plus-product-v34-hybrid-generic",
+  "profileSnapshotSha256": "8ce6f12fef3569f7a6a876e4af3429970904d70acff0eaa9a7923e0407a04f9b",
+  "model": "qwen3.7-plus",
+  "caseIds": [
+    "transit-board-v3"
+  ],
+  "maximumProviderAttempts": 5,
+  "maximumTotalTokens": 60000,
+  "maximumCostMicrosCny": 500000,
+  "maximumCasesPerBatch": 1,
+  "approvedBy": "yiwer",
+  "approvedAt": "2026-08-11T09:51:55Z",
+  "expiresAt": "2026-08-12T09:51:55Z",
+  "approvalScope": "Goal J1 CANARY approved by yiwer for the qwen3.7-plus stable slot with a cumulative CNY 10 cap and a fixed 24-hour window; only repository-synthetic transit-board-v3 may run through immutable product-v34 pipeline 4.21 with the frozen RapidOCR/OpenVINO capability; Flash product-v34 independently failed closed in five OBSERVE attempts with three bounded region-kind enum codes and two parent-kind codes, while Plus product-v33 accepted OBSERVE on its fifth attempt, so this serial Plus product-v34 smoke has direct comparative diagnostic value; the bounded unique-existing-parent repair may only replace an existing non-ROOT region parent with the unique most-specific strictly containing compatible existing container, then revalidate the complete forest, while equal boxes, zero or multiple candidates, cycles and any invalid result remain fail-closed; inherited evidence-owner and repeated-item SLOT-owner repairs remain bounded and independently tested; no raw OCR or model text, image, complete prompt, Candidate, gold or chain-of-thought may enter evidence; Plus stable-slot aggregate before this authorization is 175 attempts, 1056615 exposed tokens and CNY 4.063422 including five historical RESERVED entries; this ledger permits one case, at most the final 5 Goal Provider attempts, 60000 exposed tokens and CNY 0.50, while Goal totals remain capped at 180 attempts and 1500000 exposed tokens; exact-clean full 20260811-191800 and Document Vision 20260811-192239 passed; require PROPOSED negative probe, fresh identity/Profile/Goal/time/process/lease preflight, one serial wrapper, no rerun after timeout, immediate CLOSED before evidence inspection, and no Max unless the same-version live stage and quality gates hold"
+}

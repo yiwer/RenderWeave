@@ -1,0 +1,26 @@
+{
+  "capabilityVersion": "renderweave-visual-model-capability/1.0",
+  "capabilityId": "dashscope-qwen38-max-visual-v1",
+  "provider": "DASHSCOPE",
+  "model": "qwen3.8-max",
+  "providerProtocol": "OPENAI_CHAT_COMPLETIONS",
+  "visionInputSupported": true,
+  "jsonObjectOutputSupported": true,
+  "nonStreamingSupported": true,
+  "thinkingCanBeDisabled": true,
+  "exactModelResponseRequired": true,
+  "productMaximumImagesPerRequest": 10,
+  "productMaximumNormalizedImageEdge": 4096,
+  "productMaximumNormalizedImagePixels": 16000000,
+  "productMaximumOutputTokens": 8192,
+  "productStageTimeoutSeconds": 240,
+  "advertisedMaximumBase64Images": null,
+  "advertisedMaximumImagePixels": null,
+  "advertisedMaximumOutputTokens": null,
+  "verificationBasis": "N2_EXACT_ALIAS_LIVE_ONLY",
+  "verifiedAt": "2026-08-10",
+  "sourceReferences": [
+    "https://platform.qianwenai.com/docs/developer-guides/getting-started/vision-models",
+    "repository:.sdlc/evidence/visual-v4-baseline-qwen38-max-20260810"
+  ]
+}

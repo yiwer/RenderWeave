@@ -18,6 +18,7 @@ import cn.hbads.renderweave.inference.replay.InferenceReplayStore;
 import cn.hbads.renderweave.inference.run.InferenceRunService;
 import cn.hbads.renderweave.inference.run.InferenceRunSnapshot;
 import cn.hbads.renderweave.inference.run.InferenceRunStore;
+import cn.hbads.renderweave.inference.vision.DocumentVisionPreprocessor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.CacheControl;
 import org.springframework.http.MediaType;
@@ -59,6 +60,7 @@ final class InferenceController {
     private final ReplayFixtureInputFactory fixtureInputs;
     private final BlobStore blobStore;
     private final ObjectMapper json;
+    private final DocumentVisionPreprocessor documentVisionPreprocessor;
     private final boolean liveUploadsEnabled;
     private final CandidateJsonCodec candidateCodec = new CandidateJsonCodec();
     private final InferenceProfileRegistry profiles = new InferenceProfileRegistry();
@@ -77,6 +79,7 @@ final class InferenceController {
             ReplayFixtureInputFactory fixtureInputs,
             BlobStore blobStore,
             ObjectMapper json,
+            DocumentVisionPreprocessor documentVisionPreprocessor,
             @Value("${renderweave.inference.live-upload-enabled:false}") boolean liveUploadsEnabled
     ) {
         this.runService = runService;
@@ -89,6 +92,7 @@ final class InferenceController {
         this.fixtureInputs = fixtureInputs;
         this.blobStore = blobStore;
         this.json = json;
+        this.documentVisionPreprocessor = documentVisionPreprocessor;
         this.liveUploadsEnabled = liveUploadsEnabled;
     }
 
@@ -165,12 +169,16 @@ final class InferenceController {
     LiveAvailabilityResponse liveAvailability() {
         var items = profiles.productLiveProfiles().stream()
                 .map(InferenceProfileRegistry.ProfileResource::profile)
-                .map(profile -> new LiveProfileResponse(
-                        profile.profileId(), profile.provider(), profile.model(), profile.certification(),
-                        profile.supportedModes().stream().map(Enum::name).toList(),
-                        profile.maximumTotalCalls(), profile.maximumOutputTokens(),
-                        profile.maximumEstimatedCostMicrosCny(), profile.pricingEffectiveDate()
-                ))
+                .map(profile -> {
+                    var readiness = profileReadiness(profile);
+                    return new LiveProfileResponse(
+                            profile.profileId(), profile.provider(), profile.model(), profile.certification(),
+                            readiness.available(), readiness.unavailabilityCode(),
+                            profile.supportedModes().stream().map(Enum::name).toList(),
+                            profile.maximumTotalCalls(), profile.maximumOutputTokens(),
+                            profile.maximumEstimatedCostMicrosCny(), profile.pricingEffectiveDate()
+                    );
+                })
                 .toList();
         return new LiveAvailabilityResponse(
                 coordinator.liveEnabled(), provider.configured(), liveUploadsEnabled, "USER_PROVIDED",
@@ -216,6 +224,7 @@ final class InferenceController {
                 || !profile.profile().supportedModes().contains(mode)) {
             throw new InvalidInferenceApiRequestException("Profile is not authorized for this live mode");
         }
+        requireProfileReady(profile.profile());
         if (request.costLimitMicrosCny() != null
                 && (request.costLimitMicrosCny() < 1
                 || request.costLimitMicrosCny() > MAXIMUM_RUN_COST_LIMIT_MICROS_CNY)) {
@@ -282,8 +291,12 @@ final class InferenceController {
         }
         var source = runStore.find(runId)
                 .orElseThrow(() -> new cn.hbads.renderweave.inference.run.InferenceRunNotFoundException(runId));
-        var live = profiles.parseSnapshot(source.profileSnapshotJson()).networkAllowed();
-        if (live) requireLiveAuthorization();
+        var sourceProfile = profiles.parseSnapshot(source.profileSnapshotJson());
+        var live = sourceProfile.networkAllowed();
+        if (live) {
+            requireLiveAuthorization();
+            requireProfileReady(sourceProfile);
+        }
         var retried = runService.retry(runId, idempotencyKey);
         var run = retried.run();
         if (retried.created()) {
@@ -318,6 +331,32 @@ final class InferenceController {
                     "DASHSCOPE_NOT_CONFIGURED", "DashScope credential is not configured"
             );
         }
+    }
+
+    private void requireProfileReady(cn.hbads.renderweave.inference.profile.InferenceProfile profile) {
+        var readiness = profileReadiness(profile);
+        if (!readiness.available()) {
+            throw new LiveInferenceUnavailableException(
+                    readiness.unavailabilityCode(),
+                    "The exact local document vision capability required by this profile is unavailable"
+            );
+        }
+    }
+
+    private ProfileReadiness profileReadiness(
+            cn.hbads.renderweave.inference.profile.InferenceProfile profile
+    ) {
+        if (profile.documentVisionCapabilityId() == null) {
+            return new ProfileReadiness(true, null);
+        }
+        var capability = documentVisionPreprocessor.capability();
+        if (!capability.available()) {
+            return new ProfileReadiness(false, capability.diagnosticCode());
+        }
+        if (!profile.documentVisionCapabilityId().equals(capability.capabilityId())) {
+            return new ProfileReadiness(false, "DOCUMENT_VISION_CAPABILITY_MISMATCH");
+        }
+        return new ProfileReadiness(true, null);
     }
 
     @GetMapping(path = "/{runId}/events", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
@@ -584,12 +623,16 @@ final class InferenceController {
             String provider,
             String model,
             String certification,
+            boolean available,
+            String unavailabilityCode,
             List<String> supportedModes,
             int maximumTotalCalls,
             int maximumOutputTokens,
             long maximumEstimatedCostMicrosCny,
             String pricingEffectiveDate
     ) { }
+
+    private record ProfileReadiness(boolean available, String unavailabilityCode) { }
 
     record SaveCandidateRequest(Long expectedCandidateRevision, JsonNode candidate) { }
 

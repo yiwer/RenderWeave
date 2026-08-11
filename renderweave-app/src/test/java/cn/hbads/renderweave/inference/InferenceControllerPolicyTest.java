@@ -12,6 +12,8 @@ import cn.hbads.renderweave.inference.replay.ReplayInferenceWorker;
 import cn.hbads.renderweave.inference.run.InferenceRunService;
 import cn.hbads.renderweave.inference.run.InferenceRunSnapshot;
 import cn.hbads.renderweave.inference.run.InferenceRunStore;
+import cn.hbads.renderweave.inference.vision.DocumentVisionCapability;
+import cn.hbads.renderweave.inference.vision.DocumentVisionPreprocessor;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.ObjectMapper;
 
@@ -41,6 +43,62 @@ class InferenceControllerPolicyTest {
         assertRetryGate(controllerWithLiveSource(false, false, false), "LIVE_INFERENCE_DISABLED");
         assertRetryGate(controllerWithLiveSource(true, false, true), "LIVE_UPLOAD_NOT_AUTHORIZED");
         assertRetryGate(controllerWithLiveSource(true, true, false), "DASHSCOPE_NOT_CONFIGURED");
+    }
+
+    @Test
+    void v40ReadinessIsReportedAndRejectedBeforeRunCreation() {
+        var controller = controller(
+                true, true, true, mock(InferenceRunStore.class),
+                DocumentVisionPreprocessor.unavailable("DOCUMENT_VISION_ADAPTER_MISSING")
+        );
+
+        assertThat(controller.liveAvailability().profiles())
+                .allSatisfy(profile -> {
+                    assertThat(profile.available()).isFalse();
+                    assertThat(profile.unavailabilityCode()).isEqualTo("DOCUMENT_VISION_ADAPTER_MISSING");
+                });
+        var request = new InferenceController.CreateLiveRunRequest(
+                "dashscope-qwen37-plus-product-v40-hybrid-generic",
+                "IMAGE_ONLY", "USER_PROVIDED", true, true, null
+        );
+        assertThatThrownBy(() -> controller.createLive("v40-readiness", request, null, null))
+                .isInstanceOfSatisfying(LiveInferenceUnavailableException.class,
+                        exception -> assertThat(exception.code())
+                                .isEqualTo("DOCUMENT_VISION_ADAPTER_MISSING"));
+    }
+
+    @Test
+    void v40RetryCannotBypassDocumentVisionReadiness() {
+        var runStore = mock(InferenceRunStore.class);
+        var source = mock(InferenceRunSnapshot.class);
+        var snapshot = new InferenceProfileRegistry()
+                .require("dashscope-qwen37-plus-product-v40-hybrid-generic").snapshotJson();
+        when(source.profileSnapshotJson()).thenReturn(snapshot);
+        when(runStore.find(SOURCE_RUN_ID)).thenReturn(Optional.of(source));
+        var controller = controller(
+                true, true, true, runStore,
+                DocumentVisionPreprocessor.unavailable("DOCUMENT_VISION_MODEL_MISSING")
+        );
+
+        assertRetryGate(controller, "DOCUMENT_VISION_MODEL_MISSING");
+    }
+
+    @Test
+    void v40RequiresTheExactBoundDocumentVisionCapability() {
+        var mismatched = mock(DocumentVisionPreprocessor.class);
+        when(mismatched.capability()).thenReturn(DocumentVisionCapability.available(
+                "rapidocr-different-capability", "synthetic", "1.0", "0".repeat(64)
+        ));
+        var controller = controller(
+                true, true, true, mock(InferenceRunStore.class), mismatched
+        );
+
+        assertThat(controller.liveAvailability().profiles())
+                .allSatisfy(profile -> {
+                    assertThat(profile.available()).isFalse();
+                    assertThat(profile.unavailabilityCode())
+                            .isEqualTo("DOCUMENT_VISION_CAPABILITY_MISMATCH");
+                });
     }
 
     @Test
@@ -98,7 +156,8 @@ class InferenceControllerPolicyTest {
             boolean providerConfigured
     ) {
         return controller(
-                workerEnabled, uploadEnabled, providerConfigured, mock(InferenceRunStore.class)
+                workerEnabled, uploadEnabled, providerConfigured, mock(InferenceRunStore.class),
+                DocumentVisionPreprocessor.unavailable("DOCUMENT_VISION_DISABLED")
         );
     }
 
@@ -107,6 +166,19 @@ class InferenceControllerPolicyTest {
             boolean uploadEnabled,
             boolean providerConfigured,
             InferenceRunStore runStore
+    ) {
+        return controller(
+                workerEnabled, uploadEnabled, providerConfigured, runStore,
+                DocumentVisionPreprocessor.unavailable("DOCUMENT_VISION_DISABLED")
+        );
+    }
+
+    private static InferenceController controller(
+            boolean workerEnabled,
+            boolean uploadEnabled,
+            boolean providerConfigured,
+            InferenceRunStore runStore,
+            DocumentVisionPreprocessor documentVisionPreprocessor
     ) {
         var coordinator = mock(InferenceCoordinator.class);
         when(coordinator.liveEnabled()).thenReturn(workerEnabled);
@@ -132,6 +204,7 @@ class InferenceControllerPolicyTest {
                 mock(ReplayFixtureInputFactory.class),
                 mock(BlobStore.class),
                 mock(ObjectMapper.class),
+                documentVisionPreprocessor,
                 uploadEnabled
         );
     }

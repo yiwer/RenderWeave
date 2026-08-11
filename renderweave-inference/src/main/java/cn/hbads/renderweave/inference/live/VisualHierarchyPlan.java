@@ -16,9 +16,12 @@ record VisualHierarchyPlan(
         List<VisualRelationshipPlan> relationships
 ) {
     static final String VERSION = "renderweave-visual-hierarchy/1.0";
+    static final String VERSION_V2 = "renderweave-visual-hierarchy/2.0";
 
     VisualHierarchyPlan {
-        if (!VERSION.equals(contractVersion)) throw new IllegalArgumentException("Unsupported visual hierarchy contract");
+        if (!VERSION.equals(contractVersion) && !VERSION_V2.equals(contractVersion)) {
+            throw new IllegalArgumentException("Unsupported visual hierarchy contract");
+        }
         rootEntityId = VisualAnalysisValidation.localId(rootEntityId, "rootEntityId");
         entities = List.copyOf(Objects.requireNonNull(entities, "entities"));
         relationships = List.copyOf(Objects.requireNonNull(relationships, "relationships"));

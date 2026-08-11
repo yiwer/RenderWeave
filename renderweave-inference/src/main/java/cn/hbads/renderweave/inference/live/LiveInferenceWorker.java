@@ -36,6 +36,10 @@ import cn.hbads.renderweave.inference.run.InferenceRunSnapshot;
 import cn.hbads.renderweave.inference.run.InferenceRunState;
 import cn.hbads.renderweave.inference.run.InferenceRunStore;
 import cn.hbads.renderweave.inference.run.InferenceStage;
+import cn.hbads.renderweave.inference.vision.DocumentVisionArtifact;
+import cn.hbads.renderweave.inference.vision.DocumentVisionException;
+import cn.hbads.renderweave.inference.vision.DocumentVisionObservation;
+import cn.hbads.renderweave.inference.vision.DocumentVisionPreprocessor;
 
 import java.time.Clock;
 import java.time.Duration;
@@ -57,7 +61,61 @@ public final class LiveInferenceWorker {
     public static final String PRODUCT_BUDGET_KEY = "product-live";
     private static final String GROUNDED_PIPELINE = "renderweave-inference-pipeline/2.0";
     private static final String SERIAL_VISUAL_PIPELINE = "renderweave-inference-pipeline/3.0";
+    private static final String LOCAL_MATERIALIZER_PIPELINE = "renderweave-inference-pipeline/4.0";
+    private static final String GROUNDED_VISUAL_PIPELINE = "renderweave-inference-pipeline/4.1";
+    private static final String HYBRID_VISUAL_PIPELINE = "renderweave-inference-pipeline/4.2";
+    private static final String EVIDENCE_DERIVED_HIERARCHY_PIPELINE =
+            "renderweave-inference-pipeline/4.3";
+    private static final String REGION_OWNED_HIERARCHY_PIPELINE =
+            "renderweave-inference-pipeline/4.4";
+    private static final String DIAGNOSTIC_HIERARCHY_PIPELINE =
+            "renderweave-inference-pipeline/4.5";
+    private static final String SUPPORT_NORMALIZED_HIERARCHY_PIPELINE =
+            "renderweave-inference-pipeline/4.6";
+    private static final String REGION_NORMALIZED_HIERARCHY_PIPELINE =
+            "renderweave-inference-pipeline/4.7";
+    private static final String CONNECTION_NORMALIZED_HIERARCHY_PIPELINE =
+            "renderweave-inference-pipeline/4.8";
+    private static final String SUPPORT_OWNER_NORMALIZED_HIERARCHY_PIPELINE =
+            "renderweave-inference-pipeline/4.9";
+    private static final String SUPPORT_OWNER_HYBRID_VISUAL_PIPELINE =
+            "renderweave-inference-pipeline/4.10";
+    private static final String BOUNDED_OBSERVATION_HYBRID_VISUAL_PIPELINE =
+            "renderweave-inference-pipeline/4.11";
+    private static final String LEAF_EVIDENCE_VERIFIED_HYBRID_VISUAL_PIPELINE =
+            "renderweave-inference-pipeline/4.12";
+    private static final String ENCLOSING_SUPPORT_OWNER_HYBRID_VISUAL_PIPELINE =
+            "renderweave-inference-pipeline/4.13";
+    private static final String SOURCE_ANCESTOR_SUPPORT_OWNER_HYBRID_VISUAL_PIPELINE =
+            "renderweave-inference-pipeline/4.14";
+    private static final String MINIMAL_ENTITY_OWNERSHIP_HYBRID_VISUAL_PIPELINE =
+            "renderweave-inference-pipeline/4.15";
+    private static final String GROUP_REGION_CARDINALITY_VERIFIED_HYBRID_VISUAL_PIPELINE =
+            "renderweave-inference-pipeline/4.16";
+    private static final String ELEMENT_EVIDENCE_OWNER_NORMALIZED_HYBRID_VISUAL_PIPELINE =
+            "renderweave-inference-pipeline/4.17";
+    private static final String REPEATED_ITEM_SLOT_OWNER_NORMALIZED_HYBRID_VISUAL_PIPELINE =
+            "renderweave-inference-pipeline/4.18";
+    private static final String EMPTY_SUPPORT_OWNER_NORMALIZED_HYBRID_VISUAL_PIPELINE =
+            "renderweave-inference-pipeline/4.19";
+    private static final String UNKNOWN_SUPPORT_OWNER_NORMALIZED_HYBRID_VISUAL_PIPELINE =
+            "renderweave-inference-pipeline/4.20";
+    private static final String UNIQUE_REGION_PARENT_NORMALIZED_HYBRID_VISUAL_PIPELINE =
+            "renderweave-inference-pipeline/4.21";
+    private static final String EMPTY_SOURCE_ANCESTOR_SUPPORT_OWNER_NORMALIZED_HYBRID_VISUAL_PIPELINE =
+            "renderweave-inference-pipeline/4.22";
+    private static final String STRUCTURAL_REGION_KIND_NORMALIZED_HYBRID_VISUAL_PIPELINE =
+            "renderweave-inference-pipeline/4.23";
+    private static final String CONSTRAINT_REGION_KIND_NORMALIZED_HYBRID_VISUAL_PIPELINE =
+            "renderweave-inference-pipeline/4.24";
+    private static final String ANCESTOR_REGION_PARENT_NORMALIZED_HYBRID_VISUAL_PIPELINE =
+            "renderweave-inference-pipeline/4.25";
+    private static final String GAPPED_READING_ORDER_NORMALIZED_HYBRID_VISUAL_PIPELINE =
+            "renderweave-inference-pipeline/4.26";
+    private static final String READING_ORDER_DIAGNOSTIC_HYBRID_VISUAL_PIPELINE =
+            "renderweave-inference-pipeline/4.27";
     private static final int MAX_STAGE_ADVANCES = 24;
+    private static final int MAX_RETRY_PROBLEM_CODES = 16;
 
     private final InferenceRunStore runStore;
     private final InferenceReplayStore workflowStore;
@@ -79,6 +137,11 @@ public final class LiveInferenceWorker {
     private final LiveTaskJsonCodec taskCodec;
     private final VisualAnalysisJsonCodec visualAnalysisCodec;
     private final VisualPlanCandidateValidator visualPlanValidator;
+    private final VisualPlanCandidateMaterializer visualPlanMaterializer;
+    private final MultiScaleVisualViewPlanner visualViewPlanner;
+    private final VisualRepairCropSelector visualRepairCropSelector;
+    private final VisualGroundingJsonCodec visualGroundingCodec;
+    private final DocumentVisionPreprocessor documentVisionPreprocessor;
 
     public LiveInferenceWorker(
             InferenceRunStore runStore,
@@ -91,10 +154,26 @@ public final class LiveInferenceWorker {
     ) {
         this(
                 runStore, workflowStore, budgetStore, provider, blobStore, clock, leaseDuration,
+                DocumentVisionPreprocessor.unavailable("DOCUMENT_VISION_DISABLED")
+        );
+    }
+
+    public LiveInferenceWorker(
+            InferenceRunStore runStore,
+            InferenceReplayStore workflowStore,
+            ProviderBudgetStore budgetStore,
+            InferenceProvider provider,
+            BlobStore blobStore,
+            Clock clock,
+            Duration leaseDuration,
+            DocumentVisionPreprocessor documentVisionPreprocessor
+    ) {
+        this(
+                runStore, workflowStore, budgetStore, provider, blobStore, clock, leaseDuration,
                 new InferenceProfileRegistry(), new InferencePromptRegistry(), new JsonStructuralProfiler(),
                 new JsonCandidateProfiler(), new JsonGroundedCandidateComposer(),
                 new CandidateValidator(), new CandidateJsonCodec(), new CandidateProblemJsonCodec(),
-                new LiveWorkflowJsonCodec(), new LiveTaskJsonCodec()
+                new LiveWorkflowJsonCodec(), new LiveTaskJsonCodec(), documentVisionPreprocessor
         );
     }
 
@@ -115,7 +194,8 @@ public final class LiveInferenceWorker {
             CandidateJsonCodec candidateCodec,
             CandidateProblemJsonCodec problemCodec,
             LiveWorkflowJsonCodec workflowCodec,
-            LiveTaskJsonCodec taskCodec
+            LiveTaskJsonCodec taskCodec,
+            DocumentVisionPreprocessor documentVisionPreprocessor
     ) {
         this.runStore = Objects.requireNonNull(runStore, "runStore");
         this.workflowStore = Objects.requireNonNull(workflowStore, "workflowStore");
@@ -137,6 +217,13 @@ public final class LiveInferenceWorker {
         this.taskCodec = Objects.requireNonNull(taskCodec, "taskCodec");
         this.visualAnalysisCodec = new VisualAnalysisJsonCodec();
         this.visualPlanValidator = new VisualPlanCandidateValidator();
+        this.visualPlanMaterializer = new VisualPlanCandidateMaterializer();
+        this.visualViewPlanner = new MultiScaleVisualViewPlanner();
+        this.visualRepairCropSelector = new VisualRepairCropSelector();
+        this.visualGroundingCodec = new VisualGroundingJsonCodec();
+        this.documentVisionPreprocessor = Objects.requireNonNull(
+                documentVisionPreprocessor, "documentVisionPreprocessor"
+        );
         if (leaseDuration.isZero() || leaseDuration.isNegative()
                 || leaseDuration.compareTo(Duration.ofMinutes(15)) > 0) {
             throw new IllegalArgumentException("leaseDuration must be positive and no longer than 15 minutes");
@@ -165,6 +252,8 @@ public final class LiveInferenceWorker {
             return Optional.of(failIfOwned(initial, exhausted.code()));
         } catch (ProviderNotConfiguredException missing) {
             return Optional.of(failIfOwned(initial, missing.code()));
+        } catch (DocumentVisionException unavailable) {
+            return Optional.of(failIfOwned(initial, unavailable.code()));
         } catch (RuntimeException failure) {
             return Optional.of(failIfOwned(initial, "LIVE_WORKFLOW_FAILED"));
         }
@@ -172,8 +261,14 @@ public final class LiveInferenceWorker {
 
     public InferenceRunSnapshot drain(InferenceRunSnapshot claimed) {
         var current = requireRunningLease(claimed);
+        if (current.cancellationRequested()) {
+            return runStore.acknowledgeCancellation(current.runId(), token(current), clock.instant());
+        }
+        var profile = validateRun(current);
+        var documentVision = hybridVisual(profile) && visualProviderStage(current.stage())
+                ? documentVision(current, profile) : null;
         for (var advance = 0; advance < MAX_STAGE_ADVANCES && current.state() == InferenceRunState.RUNNING; advance++) {
-            current = advance(current);
+            current = advance(current, documentVision);
         }
         if (current.state() == InferenceRunState.RUNNING) {
             throw new IllegalStateException("Live stage budget was exhausted");
@@ -187,20 +282,77 @@ public final class LiveInferenceWorker {
             return runStore.acknowledgeCancellation(current.runId(), token(current), clock.instant());
         }
         var profile = validateRun(current);
+        var documentVision = hybridVisual(profile) && visualProviderStage(current.stage())
+                ? documentVision(current, profile) : null;
+        return advance(current, documentVision);
+    }
+
+    private InferenceRunSnapshot advance(
+            InferenceRunSnapshot current,
+            DocumentVisionObservation documentVision
+    ) {
+        current = requireRunningLease(current);
+        if (current.cancellationRequested()) {
+            return runStore.acknowledgeCancellation(current.runId(), token(current), clock.instant());
+        }
+        var profile = validateRun(current);
         return switch (current.stage()) {
-            case OBSERVE -> observe(current, profile);
-            case HIERARCHY, ELEMENT_BINDING -> invoke(current, profile, false);
-            case STRUCTURE -> structure(current, profile);
+            case OBSERVE -> observe(current, profile, documentVision);
+            case HIERARCHY, ELEMENT_BINDING -> invoke(current, profile, false, documentVision);
+            case STRUCTURE -> structure(current, profile, documentVision);
             case DETERMINISTIC_VALIDATE -> deterministicValidate(current, profile);
             case CRITIQUE -> critique(current, profile);
-            case REPAIR -> invoke(current, profile, true);
+            case REPAIR -> invoke(current, profile, true, documentVision);
             case NORMALIZE, USER_APPROVAL, ATOMIC_CREATE -> throw new IllegalStateException(
                     "Live worker cannot execute stage " + current.stage()
             );
         };
     }
 
-    private InferenceRunSnapshot structure(InferenceRunSnapshot current, InferenceProfile profile) {
+    private InferenceRunSnapshot structure(
+            InferenceRunSnapshot current,
+            InferenceProfile profile,
+            DocumentVisionObservation documentVision
+    ) {
+        if (localMaterializer(profile)) {
+            if (current.mode() != InferenceMode.IMAGE_ONLY) {
+                throw new IllegalStateException("Pipeline 4 is restricted to IMAGE_ONLY");
+            }
+            var checkpoint = workflowCodec.parse(current.checkpointJson());
+            if (checkpoint.completedStage() != InferenceStage.ELEMENT_BINDING
+                    || checkpoint.elementInventory() == null
+                    || checkpoint.hierarchyPlan() == null
+                    || checkpoint.bindingPlan() == null) {
+                throw new IllegalStateException("Local STRUCTURE requires the complete validated visual plan");
+            }
+            if (groundedVisual(profile)
+                    && (checkpoint.groundingPlan() == null || checkpoint.entityRegionPlan() == null)) {
+                throw new IllegalStateException("Pipeline 4.1 requires complete spatial grounding plans");
+            }
+            final CandidateBundle candidate;
+            try {
+                candidate = visualPlanMaterializer.materialize(
+                        current.runId(), checkpoint.elementInventory(), checkpoint.hierarchyPlan(),
+                        checkpoint.bindingPlan(), profile.lowConfidenceThresholdBps()
+                );
+            } catch (IllegalArgumentException | IllegalStateException invalidPlan) {
+                return runStore.fail(
+                        current.runId(), token(current),
+                        "LIVE_LOCAL_MATERIALIZER_INVALID", clock.instant()
+                );
+            }
+            var next = checkpoint.callResult(
+                    InferenceStage.STRUCTURE,
+                    checkpoint.providerCalls(),
+                    checkpoint.repairRounds(),
+                    candidate
+            );
+            return runStore.checkpoint(
+                    current.runId(), token(current), InferenceStage.STRUCTURE,
+                    InferenceStage.DETERMINISTIC_VALIDATE,
+                    workflowCodec.write(next), clock.instant()
+            );
+        }
         if (grounded(profile) && current.mode() == InferenceMode.JSON_ONLY) {
             var checkpoint = workflowCodec.parse(current.checkpointJson());
             if (checkpoint.completedStage() != InferenceStage.OBSERVE) {
@@ -220,11 +372,15 @@ public final class LiveInferenceWorker {
                     workflowCodec.write(next), clock.instant()
             );
         }
-        return invoke(current, profile, false);
+        return invoke(current, profile, false, documentVision);
     }
 
-    private InferenceRunSnapshot observe(InferenceRunSnapshot current, InferenceProfile profile) {
-        if (serialVisual(current, profile)) return invoke(current, profile, false);
+    private InferenceRunSnapshot observe(
+            InferenceRunSnapshot current,
+            InferenceProfile profile,
+            DocumentVisionObservation documentVision
+    ) {
+        if (serialVisual(current, profile)) return invoke(current, profile, false, documentVision);
         return runStore.checkpoint(
                 current.runId(), token(current), InferenceStage.OBSERVE, InferenceStage.STRUCTURE,
                 workflowCodec.write(LiveWorkflowCheckpoint.observed()), clock.instant()
@@ -234,12 +390,18 @@ public final class LiveInferenceWorker {
     private InferenceRunSnapshot invoke(
             InferenceRunSnapshot current,
             InferenceProfile profile,
-            boolean repair
+            boolean repair,
+            DocumentVisionObservation documentVision
     ) {
         var checkpoint = current.stage() == InferenceStage.OBSERVE && serialVisual(current, profile)
                 ? LiveWorkflowCheckpoint.started()
                 : workflowCodec.parse(current.checkpointJson());
         requireInvocationCheckpoint(current, checkpoint, repair, profile);
+        if (localMaterializer(profile)
+                && (current.stage() == InferenceStage.STRUCTURE
+                || current.stage() == InferenceStage.REPAIR)) {
+            throw new IllegalStateException("Pipeline 4 STRUCTURE and REPAIR must not call the Provider");
+        }
         if (grounded(profile) && current.mode() == InferenceMode.JSON_ONLY) {
             return runStore.fail(
                     current.runId(), token(current),
@@ -252,7 +414,7 @@ public final class LiveInferenceWorker {
         }
         if (!provider.configured()) throw new ProviderNotConfiguredException("DASHSCOPE_NOT_CONFIGURED");
 
-        var request = request(current, profile, checkpoint, attemptOrdinal);
+        var request = request(current, profile, checkpoint, attemptOrdinal, documentVision);
         var maximumRequestCost = ProviderCostEstimator.maximumRequestCostMicrosCny(request);
         if (maximumRequestCost > profile.maximumEstimatedCostMicrosCny()) {
             throw new ProviderBudgetExceededException("PROVIDER_REQUEST_COST_BOUND_EXCEEDED");
@@ -406,18 +568,23 @@ public final class LiveInferenceWorker {
             case HIERARCHY -> {
                 if (!serialVisual(current, profile)
                         || checkpoint.completedStage() != InferenceStage.OBSERVE
-                        || checkpoint.elementInventory() == null) {
+                        || checkpoint.elementInventory() == null
+                        || groundedVisual(profile) && checkpoint.groundingPlan() == null) {
                     throw new IllegalStateException("HIERARCHY requires a validated element inventory");
                 }
             }
             case ELEMENT_BINDING -> {
                 if (!serialVisual(current, profile)
                         || checkpoint.completedStage() != InferenceStage.HIERARCHY
-                        || checkpoint.hierarchyPlan() == null) {
+                        || checkpoint.hierarchyPlan() == null
+                        || groundedVisual(profile) && checkpoint.entityRegionPlan() == null) {
                     throw new IllegalStateException("ELEMENT_BINDING requires a validated hierarchy");
                 }
             }
             case STRUCTURE -> {
+                if (localMaterializer(profile)) {
+                    throw new IllegalStateException("Pipeline 4 STRUCTURE is a local stage");
+                }
                 var expected = serialVisual(current, profile)
                         ? InferenceStage.ELEMENT_BINDING : InferenceStage.OBSERVE;
                 if (checkpoint.completedStage() != expected
@@ -443,6 +610,12 @@ public final class LiveInferenceWorker {
         final String outcomeCode;
         final Map<String, Integer> problemCodeCounts;
         try {
+            if (groundedVisual(profile)) {
+                return acceptGroundedVisualAnalysis(
+                        current, profile, checkpoint, attemptOrdinal, response,
+                        estimatedCost, durationMillis
+                );
+            }
             switch (current.stage()) {
                 case OBSERVE -> {
                     var parsedInventory = visualAnalysisCodec.parseElements(
@@ -513,6 +686,119 @@ public final class LiveInferenceWorker {
         );
     }
 
+    private InferenceRunSnapshot acceptGroundedVisualAnalysis(
+            InferenceRunSnapshot current,
+            InferenceProfile profile,
+            LiveWorkflowCheckpoint checkpoint,
+            int attemptOrdinal,
+            ProviderInferenceResponse response,
+            long estimatedCost,
+            long durationMillis
+    ) {
+        final LiveWorkflowCheckpoint nextCheckpoint;
+        final InferenceStage nextStage;
+        final String outcomeCode;
+        final Map<String, Integer> problemCodeCounts;
+        try {
+            requireCompleteGroundedResponse(current.stage(), response);
+            switch (current.stage()) {
+                case OBSERVE -> {
+                    var retryProblemCodes = accumulatedRetryProblemCodes(current);
+                    var grounded = visualGroundingCodec.parseElements(
+                            response.candidateJson(),
+                            visualViewPlan(current, checkpoint, retryProblemCodes),
+                            imageArtifactIds(current), observationNormalizationPolicy(profile),
+                            observationSemanticPolicy(profile)
+                    );
+                    nextCheckpoint = checkpoint.elementsGrounded(
+                            grounded.inventory(), grounded.grounding(), attemptOrdinal + 1
+                    );
+                    nextStage = InferenceStage.HIERARCHY;
+                    outcomeCode = "LIVE_VISUAL_GROUNDING_ACCEPTED";
+                    problemCodeCounts = observationTelemetry(grounded);
+                }
+                case HIERARCHY -> {
+                    var grounded = visualGroundingCodec.parseHierarchy(
+                            response.candidateJson(),
+                            Objects.requireNonNull(checkpoint.elementInventory(), "elementInventory"),
+                            Objects.requireNonNull(checkpoint.groundingPlan(), "groundingPlan"),
+                            relationshipCardinalityPolicy(profile),
+                            hierarchyPrerequisitePolicy(profile),
+                            hierarchyRegionDiagnosticPolicy(profile),
+                            relationshipSupportIdPolicy(profile),
+                            relationshipRegionPolicy(profile),
+                            hierarchySemanticPolicy(profile)
+                    );
+                    nextCheckpoint = checkpoint.hierarchyGrounded(
+                            grounded.hierarchy(), grounded.entityRegions(), attemptOrdinal + 1
+                    );
+                    nextStage = InferenceStage.ELEMENT_BINDING;
+                    outcomeCode = "LIVE_VISUAL_HIERARCHY_V2_ACCEPTED";
+                    problemCodeCounts = hierarchyTelemetry(grounded);
+                }
+                case ELEMENT_BINDING -> {
+                    var bindings = visualGroundingCodec.parseBindings(
+                            response.candidateJson(),
+                            Objects.requireNonNull(checkpoint.elementInventory(), "elementInventory"),
+                            Objects.requireNonNull(checkpoint.hierarchyPlan(), "hierarchyPlan"),
+                            Objects.requireNonNull(checkpoint.groundingPlan(), "groundingPlan"),
+                            Objects.requireNonNull(checkpoint.entityRegionPlan(), "entityRegionPlan"),
+                            bindingSemanticPolicy(profile)
+                    );
+                    nextCheckpoint = checkpoint.elementsBound(bindings, attemptOrdinal + 1);
+                    nextStage = InferenceStage.STRUCTURE;
+                    outcomeCode = "LIVE_VISUAL_BINDINGS_V2_ACCEPTED";
+                    problemCodeCounts = Map.of();
+                }
+                default -> throw new IllegalStateException("Not a grounded visual analysis stage");
+            }
+        } catch (InvalidVisualAnalysisException invalid) {
+            var now = clock.instant();
+            var counts = InferenceAttemptProblemTaxonomy.count(List.of(invalid.diagnosticCode()));
+            var rejectedAttempt = attempt(
+                    current, attemptOrdinal, InferenceAttemptStatus.REJECTED,
+                    "LIVE_VISUAL_ANALYSIS_REJECTED", response, estimatedCost,
+                    durationMillis, counts, now
+            );
+            var earliestStage = invalid.earliestStage().orElse(current.stage());
+            if (attemptOrdinal + 1 < profile.maximumTotalCalls()
+                    && earliestStage != current.stage()) {
+                final LiveWorkflowCheckpoint rewind;
+                if (current.stage() == InferenceStage.HIERARCHY
+                        && earliestStage == InferenceStage.OBSERVE) {
+                    rewind = checkpoint.reobserving(attemptOrdinal + 1);
+                } else if (current.stage() == InferenceStage.ELEMENT_BINDING
+                        && earliestStage == InferenceStage.HIERARCHY) {
+                    rewind = checkpoint.rehierarchizing(attemptOrdinal + 1);
+                } else throw new IllegalStateException("Unsupported visual semantic rewind");
+                return workflowStore.checkpointAttempt(
+                        current.runId(), token(current), current.stage(), earliestStage,
+                        workflowCodec.write(rewind),
+                        rejectedAttempt, now
+                );
+            }
+            var recorded = workflowStore.recordAttempt(
+                    current.runId(), token(current),
+                    rejectedAttempt,
+                    now
+            );
+            if (attemptOrdinal + 1 < profile.maximumTotalCalls()) return recorded;
+            return runStore.fail(
+                    current.runId(), token(recorded), invalid.diagnosticCode(), clock.instant()
+            );
+        }
+        var now = clock.instant();
+        return workflowStore.checkpointAttempt(
+                current.runId(), token(current), current.stage(), nextStage,
+                workflowCodec.write(nextCheckpoint),
+                attempt(
+                        current, attemptOrdinal, InferenceAttemptStatus.SUCCEEDED,
+                        outcomeCode, response, estimatedCost, durationMillis, problemCodeCounts, now
+                ),
+                now
+        );
+    }
+
     private InferenceRunSnapshot deterministicValidate(
             InferenceRunSnapshot current,
             InferenceProfile profile
@@ -520,7 +806,7 @@ public final class LiveInferenceWorker {
         var checkpoint = workflowCodec.parse(current.checkpointJson());
         if (checkpoint.completedStage() != InferenceStage.STRUCTURE
                 && checkpoint.completedStage() != InferenceStage.REPAIR) {
-            throw new IllegalStateException("DETERMINISTIC_VALIDATE requires a provider attempt checkpoint");
+            throw new IllegalStateException("DETERMINISTIC_VALIDATE requires a STRUCTURE or REPAIR checkpoint");
         }
         final List<CandidateProblem> problems;
         if (!checkpoint.outputValid()) {
@@ -557,6 +843,12 @@ public final class LiveInferenceWorker {
             );
         }
         if (repairDecision == LiveRepairPolicy.Decision.REPAIR) {
+            if (localMaterializer(profile)) {
+                return runStore.fail(
+                        current.runId(), token(current),
+                        "LIVE_LOCAL_MATERIALIZER_INVALID", clock.instant()
+                );
+            }
             if (grounded(profile) && current.mode() == InferenceMode.JSON_ONLY) {
                 return runStore.fail(
                         current.runId(), token(current),
@@ -590,18 +882,58 @@ public final class LiveInferenceWorker {
             InferenceRunSnapshot current,
             InferenceProfile profile,
             LiveWorkflowCheckpoint checkpoint,
-            int attemptOrdinal
+            int attemptOrdinal,
+            DocumentVisionObservation documentVision
     ) {
         var problemCodes = current.stage() == InferenceStage.REPAIR
                 ? checkpoint.validationProblems().stream().map(CandidateProblem::code).distinct().sorted().toList()
                 : List.<String>of();
         if (serialVisual(current, profile)) {
-            var retryProblemCodes = workflowStore.attempts(current.runId()).stream()
-                    .filter(attempt -> attempt.stage() == current.stage()
-                            && attempt.status() == InferenceAttemptStatus.REJECTED)
-                    .reduce((left, right) -> right)
-                    .map(attempt -> attempt.problemCodeCounts().keySet().stream().sorted().toList())
-                    .orElse(List.of());
+            var retryProblemCodes = accumulatedRetryProblemCodes(current);
+            if (groundedVisual(profile)) {
+                var views = visualViewPlan(current, checkpoint, retryProblemCodes);
+                if (hybridVisual(profile)) {
+                    if (documentVision == null) {
+                        throw new DocumentVisionException("DOCUMENT_VISION_OBSERVATION_MISSING");
+                    }
+                    return new ProviderInferenceRequest(
+                            current.runId(), attemptOrdinal, current.stage(), profile,
+                            prompts.requireHybridVisualStage(
+                                    promptVersion(profile, current.stage()),
+                                    Objects.requireNonNull(
+                                            profile.visualHintPackVersion(), "visualHintPackVersion"
+                                    ),
+                                    Objects.requireNonNull(
+                                            profile.documentVisionPromptVersion(),
+                                            "documentVisionPromptVersion"
+                                    )
+                            ).text(),
+                            taskCodec.writeV5(
+                                    current, current.stage(), views, profile.visualHintPackVersion(),
+                                    documentVision, checkpoint.elementInventory(), checkpoint.groundingPlan(),
+                                    checkpoint.hierarchyPlan(), checkpoint.entityRegionPlan(),
+                                    checkpoint.bindingPlan(), problemCodes, retryProblemCodes
+                            ),
+                            views.providerImages()
+                    );
+                }
+                return new ProviderInferenceRequest(
+                        current.runId(), attemptOrdinal, current.stage(), profile,
+                        prompts.requireVisualStage(
+                                promptVersion(profile, current.stage()),
+                                Objects.requireNonNull(
+                                        profile.visualHintPackVersion(), "visualHintPackVersion"
+                                )
+                        ).text(),
+                        taskCodec.writeV4(
+                                current, current.stage(), views, profile.visualHintPackVersion(),
+                                checkpoint.elementInventory(), checkpoint.groundingPlan(),
+                                checkpoint.hierarchyPlan(), checkpoint.entityRegionPlan(),
+                                checkpoint.bindingPlan(), problemCodes, retryProblemCodes
+                        ),
+                        views.providerImages()
+                );
+            }
             return new ProviderInferenceRequest(
                     current.runId(), attemptOrdinal, current.stage(), profile,
                     prompts.require(promptVersion(profile, current.stage())).text(),
@@ -644,12 +976,524 @@ public final class LiveInferenceWorker {
 
     private static boolean grounded(InferenceProfile profile) {
         return GROUNDED_PIPELINE.equals(profile.pipelineVersion())
-                || SERIAL_VISUAL_PIPELINE.equals(profile.pipelineVersion());
+                || SERIAL_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || LOCAL_MATERIALIZER_PIPELINE.equals(profile.pipelineVersion())
+                || GROUNDED_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || EVIDENCE_DERIVED_HIERARCHY_PIPELINE.equals(profile.pipelineVersion())
+                || REGION_OWNED_HIERARCHY_PIPELINE.equals(profile.pipelineVersion())
+                || DIAGNOSTIC_HIERARCHY_PIPELINE.equals(profile.pipelineVersion())
+                || SUPPORT_NORMALIZED_HIERARCHY_PIPELINE.equals(profile.pipelineVersion())
+                || REGION_NORMALIZED_HIERARCHY_PIPELINE.equals(profile.pipelineVersion())
+                || CONNECTION_NORMALIZED_HIERARCHY_PIPELINE.equals(profile.pipelineVersion())
+                || SUPPORT_OWNER_NORMALIZED_HIERARCHY_PIPELINE.equals(profile.pipelineVersion())
+                || SUPPORT_OWNER_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || BOUNDED_OBSERVATION_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || LEAF_EVIDENCE_VERIFIED_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || ENCLOSING_SUPPORT_OWNER_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || SOURCE_ANCESTOR_SUPPORT_OWNER_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || MINIMAL_ENTITY_OWNERSHIP_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || GROUP_REGION_CARDINALITY_VERIFIED_HYBRID_VISUAL_PIPELINE.equals(
+                profile.pipelineVersion())
+                || ELEMENT_EVIDENCE_OWNER_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
+                profile.pipelineVersion())
+                || REPEATED_ITEM_SLOT_OWNER_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
+                profile.pipelineVersion())
+                || emptyOrUnknownSupportOwnerPipeline(profile);
     }
 
     private static boolean serialVisual(InferenceRunSnapshot current, InferenceProfile profile) {
-        return SERIAL_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+        return (SERIAL_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || LOCAL_MATERIALIZER_PIPELINE.equals(profile.pipelineVersion())
+                || GROUNDED_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || EVIDENCE_DERIVED_HIERARCHY_PIPELINE.equals(profile.pipelineVersion())
+                || REGION_OWNED_HIERARCHY_PIPELINE.equals(profile.pipelineVersion())
+                || DIAGNOSTIC_HIERARCHY_PIPELINE.equals(profile.pipelineVersion())
+                || SUPPORT_NORMALIZED_HIERARCHY_PIPELINE.equals(profile.pipelineVersion())
+                || REGION_NORMALIZED_HIERARCHY_PIPELINE.equals(profile.pipelineVersion())
+                || CONNECTION_NORMALIZED_HIERARCHY_PIPELINE.equals(profile.pipelineVersion())
+                || SUPPORT_OWNER_NORMALIZED_HIERARCHY_PIPELINE.equals(profile.pipelineVersion())
+                || SUPPORT_OWNER_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || BOUNDED_OBSERVATION_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || LEAF_EVIDENCE_VERIFIED_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || ENCLOSING_SUPPORT_OWNER_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || SOURCE_ANCESTOR_SUPPORT_OWNER_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || MINIMAL_ENTITY_OWNERSHIP_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || GROUP_REGION_CARDINALITY_VERIFIED_HYBRID_VISUAL_PIPELINE.equals(
+                profile.pipelineVersion())
+                || ELEMENT_EVIDENCE_OWNER_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
+                profile.pipelineVersion())
+                || REPEATED_ITEM_SLOT_OWNER_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
+                profile.pipelineVersion())
+                || emptyOrUnknownSupportOwnerPipeline(profile))
                 && current.mode() == InferenceMode.IMAGE_ONLY;
+    }
+
+    private static boolean localMaterializer(InferenceProfile profile) {
+        return LOCAL_MATERIALIZER_PIPELINE.equals(profile.pipelineVersion())
+                || GROUNDED_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || EVIDENCE_DERIVED_HIERARCHY_PIPELINE.equals(profile.pipelineVersion())
+                || REGION_OWNED_HIERARCHY_PIPELINE.equals(profile.pipelineVersion())
+                || DIAGNOSTIC_HIERARCHY_PIPELINE.equals(profile.pipelineVersion())
+                || SUPPORT_NORMALIZED_HIERARCHY_PIPELINE.equals(profile.pipelineVersion())
+                || REGION_NORMALIZED_HIERARCHY_PIPELINE.equals(profile.pipelineVersion())
+                || CONNECTION_NORMALIZED_HIERARCHY_PIPELINE.equals(profile.pipelineVersion())
+                || SUPPORT_OWNER_NORMALIZED_HIERARCHY_PIPELINE.equals(profile.pipelineVersion())
+                || SUPPORT_OWNER_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || BOUNDED_OBSERVATION_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || LEAF_EVIDENCE_VERIFIED_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || ENCLOSING_SUPPORT_OWNER_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || SOURCE_ANCESTOR_SUPPORT_OWNER_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || MINIMAL_ENTITY_OWNERSHIP_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || GROUP_REGION_CARDINALITY_VERIFIED_HYBRID_VISUAL_PIPELINE.equals(
+                profile.pipelineVersion())
+                || ELEMENT_EVIDENCE_OWNER_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
+                profile.pipelineVersion())
+                || REPEATED_ITEM_SLOT_OWNER_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
+                profile.pipelineVersion())
+                || emptyOrUnknownSupportOwnerPipeline(profile);
+    }
+
+    private static boolean groundedVisual(InferenceProfile profile) {
+        return GROUNDED_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || EVIDENCE_DERIVED_HIERARCHY_PIPELINE.equals(profile.pipelineVersion())
+                || REGION_OWNED_HIERARCHY_PIPELINE.equals(profile.pipelineVersion())
+                || DIAGNOSTIC_HIERARCHY_PIPELINE.equals(profile.pipelineVersion())
+                || SUPPORT_NORMALIZED_HIERARCHY_PIPELINE.equals(profile.pipelineVersion())
+                || REGION_NORMALIZED_HIERARCHY_PIPELINE.equals(profile.pipelineVersion())
+                || CONNECTION_NORMALIZED_HIERARCHY_PIPELINE.equals(profile.pipelineVersion())
+                || SUPPORT_OWNER_NORMALIZED_HIERARCHY_PIPELINE.equals(profile.pipelineVersion())
+                || SUPPORT_OWNER_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || BOUNDED_OBSERVATION_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || LEAF_EVIDENCE_VERIFIED_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || ENCLOSING_SUPPORT_OWNER_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || SOURCE_ANCESTOR_SUPPORT_OWNER_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || MINIMAL_ENTITY_OWNERSHIP_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || GROUP_REGION_CARDINALITY_VERIFIED_HYBRID_VISUAL_PIPELINE.equals(
+                profile.pipelineVersion())
+                || ELEMENT_EVIDENCE_OWNER_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
+                profile.pipelineVersion())
+                || REPEATED_ITEM_SLOT_OWNER_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
+                profile.pipelineVersion())
+                || emptyOrUnknownSupportOwnerPipeline(profile);
+    }
+
+    private static VisualRelationshipCardinalityPolicy relationshipCardinalityPolicy(
+            InferenceProfile profile
+    ) {
+        return (EVIDENCE_DERIVED_HIERARCHY_PIPELINE.equals(profile.pipelineVersion())
+                || REGION_OWNED_HIERARCHY_PIPELINE.equals(profile.pipelineVersion())
+                || DIAGNOSTIC_HIERARCHY_PIPELINE.equals(profile.pipelineVersion())
+                || SUPPORT_NORMALIZED_HIERARCHY_PIPELINE.equals(profile.pipelineVersion())
+                || REGION_NORMALIZED_HIERARCHY_PIPELINE.equals(profile.pipelineVersion())
+                || CONNECTION_NORMALIZED_HIERARCHY_PIPELINE.equals(profile.pipelineVersion())
+                || SUPPORT_OWNER_NORMALIZED_HIERARCHY_PIPELINE.equals(profile.pipelineVersion())
+                || SUPPORT_OWNER_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || BOUNDED_OBSERVATION_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || LEAF_EVIDENCE_VERIFIED_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || ENCLOSING_SUPPORT_OWNER_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || SOURCE_ANCESTOR_SUPPORT_OWNER_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || MINIMAL_ENTITY_OWNERSHIP_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || GROUP_REGION_CARDINALITY_VERIFIED_HYBRID_VISUAL_PIPELINE.equals(
+                profile.pipelineVersion())
+                || ELEMENT_EVIDENCE_OWNER_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
+                profile.pipelineVersion())
+                || REPEATED_ITEM_SLOT_OWNER_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
+                profile.pipelineVersion())
+                || emptyOrUnknownSupportOwnerPipeline(profile))
+                ? VisualRelationshipCardinalityPolicy.SUPPORT_GROUP_DERIVED
+                : VisualRelationshipCardinalityPolicy.MODEL_ASSERTED;
+    }
+
+    private static VisualHierarchyPrerequisitePolicy hierarchyPrerequisitePolicy(
+            InferenceProfile profile
+    ) {
+        return (REGION_OWNED_HIERARCHY_PIPELINE.equals(profile.pipelineVersion())
+                || DIAGNOSTIC_HIERARCHY_PIPELINE.equals(profile.pipelineVersion())
+                || SUPPORT_NORMALIZED_HIERARCHY_PIPELINE.equals(profile.pipelineVersion())
+                || REGION_NORMALIZED_HIERARCHY_PIPELINE.equals(profile.pipelineVersion())
+                || CONNECTION_NORMALIZED_HIERARCHY_PIPELINE.equals(profile.pipelineVersion())
+                || SUPPORT_OWNER_NORMALIZED_HIERARCHY_PIPELINE.equals(profile.pipelineVersion())
+                || SUPPORT_OWNER_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || BOUNDED_OBSERVATION_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || LEAF_EVIDENCE_VERIFIED_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || ENCLOSING_SUPPORT_OWNER_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || SOURCE_ANCESTOR_SUPPORT_OWNER_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || MINIMAL_ENTITY_OWNERSHIP_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || GROUP_REGION_CARDINALITY_VERIFIED_HYBRID_VISUAL_PIPELINE.equals(
+                profile.pipelineVersion())
+                || ELEMENT_EVIDENCE_OWNER_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
+                profile.pipelineVersion())
+                || REPEATED_ITEM_SLOT_OWNER_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
+                profile.pipelineVersion())
+                || emptyOrUnknownSupportOwnerPipeline(profile))
+                ? VisualHierarchyPrerequisitePolicy.RELATIONSHIP_REGION_GROUP_OWNER_REQUIRED
+                : VisualHierarchyPrerequisitePolicy.GROUP_EXISTENCE_ONLY;
+    }
+
+    private static VisualHierarchyRegionDiagnosticPolicy hierarchyRegionDiagnosticPolicy(
+            InferenceProfile profile
+    ) {
+        return (DIAGNOSTIC_HIERARCHY_PIPELINE.equals(profile.pipelineVersion())
+                || SUPPORT_NORMALIZED_HIERARCHY_PIPELINE.equals(profile.pipelineVersion())
+                || REGION_NORMALIZED_HIERARCHY_PIPELINE.equals(profile.pipelineVersion())
+                || CONNECTION_NORMALIZED_HIERARCHY_PIPELINE.equals(profile.pipelineVersion())
+                || SUPPORT_OWNER_NORMALIZED_HIERARCHY_PIPELINE.equals(profile.pipelineVersion())
+                || SUPPORT_OWNER_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || BOUNDED_OBSERVATION_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || LEAF_EVIDENCE_VERIFIED_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || ENCLOSING_SUPPORT_OWNER_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || SOURCE_ANCESTOR_SUPPORT_OWNER_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || MINIMAL_ENTITY_OWNERSHIP_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || GROUP_REGION_CARDINALITY_VERIFIED_HYBRID_VISUAL_PIPELINE.equals(
+                profile.pipelineVersion())
+                || ELEMENT_EVIDENCE_OWNER_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
+                profile.pipelineVersion())
+                || REPEATED_ITEM_SLOT_OWNER_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
+                profile.pipelineVersion())
+                || emptyOrUnknownSupportOwnerPipeline(profile))
+                ? VisualHierarchyRegionDiagnosticPolicy.DETAILED_FIXED_CODES
+                : VisualHierarchyRegionDiagnosticPolicy.LEGACY_GENERIC;
+    }
+
+    private static VisualRelationshipSupportIdPolicy relationshipSupportIdPolicy(
+            InferenceProfile profile
+    ) {
+        if (EMPTY_SOURCE_ANCESTOR_SUPPORT_OWNER_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
+                profile.pipelineVersion())
+                || STRUCTURAL_REGION_KIND_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
+                profile.pipelineVersion())
+                || CONSTRAINT_REGION_KIND_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
+                profile.pipelineVersion())
+                || ANCESTOR_REGION_PARENT_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
+                profile.pipelineVersion())
+                || GAPPED_READING_ORDER_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
+                profile.pipelineVersion())
+                || READING_ORDER_DIAGNOSTIC_HYBRID_VISUAL_PIPELINE.equals(
+                profile.pipelineVersion())) {
+            return VisualRelationshipSupportIdPolicy
+                    .CANONICALIZE_EXACT_DUPLICATES_AND_UNIQUE_CONNECTED_GROUP_OWNER_WITH_EMPTY_OR_UNKNOWN_SUPPORT_AND_EMPTY_SOURCE_ANCESTOR;
+        }
+        if (UNKNOWN_SUPPORT_OWNER_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
+                profile.pipelineVersion())
+                || UNIQUE_REGION_PARENT_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
+                profile.pipelineVersion())) {
+            return VisualRelationshipSupportIdPolicy
+                    .CANONICALIZE_EXACT_DUPLICATES_AND_UNIQUE_CONNECTED_GROUP_OWNER_WITH_EMPTY_OR_UNKNOWN_SUPPORT;
+        }
+        if (EMPTY_SUPPORT_OWNER_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
+                profile.pipelineVersion())) {
+            return VisualRelationshipSupportIdPolicy
+                    .CANONICALIZE_EXACT_DUPLICATES_AND_UNIQUE_CONNECTED_GROUP_OWNER_WITH_EMPTY_SUPPORT;
+        }
+        if (SOURCE_ANCESTOR_SUPPORT_OWNER_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || MINIMAL_ENTITY_OWNERSHIP_HYBRID_VISUAL_PIPELINE.equals(
+                profile.pipelineVersion())
+                || GROUP_REGION_CARDINALITY_VERIFIED_HYBRID_VISUAL_PIPELINE.equals(
+                profile.pipelineVersion())
+                || ELEMENT_EVIDENCE_OWNER_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
+                profile.pipelineVersion())
+                || REPEATED_ITEM_SLOT_OWNER_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
+                profile.pipelineVersion())
+                || emptyOrUnknownSupportOwnerPipeline(profile)) {
+            return VisualRelationshipSupportIdPolicy
+                    .CANONICALIZE_EXACT_DUPLICATES_AND_UNIQUE_ENCLOSING_OR_SOURCE_ANCESTOR_CONNECTED_GROUP_OWNER;
+        }
+        if (ENCLOSING_SUPPORT_OWNER_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())) {
+            return VisualRelationshipSupportIdPolicy
+                    .CANONICALIZE_EXACT_DUPLICATES_AND_UNIQUE_ENCLOSING_CONNECTED_GROUP_OWNER;
+        }
+        if (SUPPORT_OWNER_NORMALIZED_HIERARCHY_PIPELINE.equals(profile.pipelineVersion())
+                || SUPPORT_OWNER_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || BOUNDED_OBSERVATION_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || LEAF_EVIDENCE_VERIFIED_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())) {
+            return VisualRelationshipSupportIdPolicy
+                    .CANONICALIZE_EXACT_DUPLICATES_AND_UNIQUE_REGION_GROUP_OWNER;
+        }
+        return (SUPPORT_NORMALIZED_HIERARCHY_PIPELINE.equals(profile.pipelineVersion())
+                || REGION_NORMALIZED_HIERARCHY_PIPELINE.equals(profile.pipelineVersion())
+                || CONNECTION_NORMALIZED_HIERARCHY_PIPELINE.equals(profile.pipelineVersion()))
+                ? VisualRelationshipSupportIdPolicy.CANONICALIZE_EXACT_DUPLICATES
+                : VisualRelationshipSupportIdPolicy.STRICT;
+    }
+
+    private static VisualRelationshipRegionPolicy relationshipRegionPolicy(
+            InferenceProfile profile
+    ) {
+        if (CONNECTION_NORMALIZED_HIERARCHY_PIPELINE.equals(profile.pipelineVersion())
+                || SUPPORT_OWNER_NORMALIZED_HIERARCHY_PIPELINE.equals(profile.pipelineVersion())
+                || SUPPORT_OWNER_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || BOUNDED_OBSERVATION_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || LEAF_EVIDENCE_VERIFIED_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || ENCLOSING_SUPPORT_OWNER_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || SOURCE_ANCESTOR_SUPPORT_OWNER_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || MINIMAL_ENTITY_OWNERSHIP_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || GROUP_REGION_CARDINALITY_VERIFIED_HYBRID_VISUAL_PIPELINE.equals(
+                profile.pipelineVersion())
+                || ELEMENT_EVIDENCE_OWNER_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
+                profile.pipelineVersion())
+                || REPEATED_ITEM_SLOT_OWNER_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
+                profile.pipelineVersion())
+                || emptyOrUnknownSupportOwnerPipeline(profile)) {
+            return VisualRelationshipRegionPolicy
+                    .UNIQUE_CARDINALITY_AND_CONNECTION_COMPATIBLE_GROUP_REGION;
+        }
+        return REGION_NORMALIZED_HIERARCHY_PIPELINE.equals(profile.pipelineVersion())
+                ? VisualRelationshipRegionPolicy.UNIQUE_CARDINALITY_COMPATIBLE_GROUP_REGION
+                : VisualRelationshipRegionPolicy.STRICT;
+    }
+
+    private static Map<String, Integer> hierarchyTelemetry(GroundedHierarchyPlan grounded) {
+        var telemetry = new java.util.TreeMap<String, Integer>();
+        if (grounded.derivedRelationshipCardinalities() > 0) {
+            telemetry.put(
+                    "VISUAL_HIERARCHY_RELATIONSHIP_CARDINALITY_DERIVED",
+                    grounded.derivedRelationshipCardinalities()
+            );
+        }
+        if (grounded.normalizedRelationshipSupportIdReferences() > 0) {
+            telemetry.put(
+                    "VISUAL_HIERARCHY_RELATIONSHIP_SUPPORT_IDS_NORMALIZED",
+                    grounded.normalizedRelationshipSupportIdReferences()
+            );
+        }
+        if (grounded.normalizedRelationshipSupportOwners() > 0) {
+            telemetry.put(
+                    "VISUAL_HIERARCHY_RELATIONSHIP_SUPPORT_OWNER_NORMALIZED",
+                    grounded.normalizedRelationshipSupportOwners()
+            );
+        }
+        if (grounded.normalizedRelationshipEnclosingSupportOwners() > 0) {
+            telemetry.put(
+                    "VISUAL_HIERARCHY_RELATIONSHIP_ENCLOSING_SUPPORT_OWNER_NORMALIZED",
+                    grounded.normalizedRelationshipEnclosingSupportOwners()
+            );
+        }
+        if (grounded.normalizedRelationshipSourceAncestorSupportOwners() > 0) {
+            telemetry.put(
+                    "VISUAL_HIERARCHY_RELATIONSHIP_SOURCE_ANCESTOR_SUPPORT_OWNER_NORMALIZED",
+                    grounded.normalizedRelationshipSourceAncestorSupportOwners()
+            );
+        }
+        if (grounded.normalizedRelationshipEmptySupportOwners() > 0) {
+            telemetry.put(
+                    "VISUAL_HIERARCHY_RELATIONSHIP_EMPTY_SUPPORT_OWNER_NORMALIZED",
+                    grounded.normalizedRelationshipEmptySupportOwners()
+            );
+        }
+        if (grounded.normalizedRelationshipEmptySourceAncestorSupportOwners() > 0) {
+            telemetry.put(
+                    "VISUAL_HIERARCHY_RELATIONSHIP_EMPTY_SOURCE_ANCESTOR_SUPPORT_OWNER_NORMALIZED",
+                    grounded.normalizedRelationshipEmptySourceAncestorSupportOwners()
+            );
+        }
+        if (grounded.normalizedRelationshipUnknownSupportOwners() > 0) {
+            telemetry.put(
+                    "VISUAL_HIERARCHY_RELATIONSHIP_UNKNOWN_SUPPORT_OWNER_NORMALIZED",
+                    grounded.normalizedRelationshipUnknownSupportOwners()
+            );
+        }
+        if (grounded.normalizedRelationshipRegions() > 0) {
+            telemetry.put(
+                    "VISUAL_HIERARCHY_RELATIONSHIP_REGION_NORMALIZED",
+                    grounded.normalizedRelationshipRegions()
+            );
+        }
+        return Map.copyOf(telemetry);
+    }
+
+    private static VisualObservationNormalizationPolicy observationNormalizationPolicy(
+            InferenceProfile profile
+    ) {
+        if (READING_ORDER_DIAGNOSTIC_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())) {
+            return VisualObservationNormalizationPolicy
+                    .BOUNDED_CONSTRAINT_UNIQUE_KIND_ANCESTOR_PARENT_GAPPED_READING_ORDER_DIAGNOSTIC_EVIDENCE_AND_ITEM_SLOT_OWNER;
+        }
+        if (GAPPED_READING_ORDER_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
+                profile.pipelineVersion())) {
+            return VisualObservationNormalizationPolicy
+                    .BOUNDED_CONSTRAINT_UNIQUE_KIND_ANCESTOR_PARENT_GAPPED_READING_ORDER_EVIDENCE_AND_ITEM_SLOT_OWNER;
+        }
+        if (ANCESTOR_REGION_PARENT_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
+                profile.pipelineVersion())) {
+            return VisualObservationNormalizationPolicy
+                    .BOUNDED_CONSTRAINT_UNIQUE_KIND_ANCESTOR_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER;
+        }
+        if (CONSTRAINT_REGION_KIND_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
+                profile.pipelineVersion())) {
+            return VisualObservationNormalizationPolicy
+                    .BOUNDED_CONSTRAINT_UNIQUE_KIND_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER;
+        }
+        if (STRUCTURAL_REGION_KIND_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
+                profile.pipelineVersion())) {
+            return VisualObservationNormalizationPolicy
+                    .BOUNDED_STRUCTURAL_KIND_UNIQUE_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER;
+        }
+        if (UNIQUE_REGION_PARENT_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
+                profile.pipelineVersion())
+                || EMPTY_SOURCE_ANCESTOR_SUPPORT_OWNER_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
+                profile.pipelineVersion())) {
+            return VisualObservationNormalizationPolicy
+                    .BOUNDED_ENUM_UNIQUE_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER;
+        }
+        if (REPEATED_ITEM_SLOT_OWNER_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
+                profile.pipelineVersion())
+                || emptyOrUnknownSupportOwnerPipeline(profile)) {
+            return VisualObservationNormalizationPolicy
+                    .BOUNDED_ENUM_UNIQUE_ITEM_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER;
+        }
+        if (ELEMENT_EVIDENCE_OWNER_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
+                profile.pipelineVersion())) {
+            return VisualObservationNormalizationPolicy
+                    .BOUNDED_ENUM_UNIQUE_ITEM_PARENT_AND_EVIDENCE_OWNER;
+        }
+        return (BOUNDED_OBSERVATION_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || LEAF_EVIDENCE_VERIFIED_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || ENCLOSING_SUPPORT_OWNER_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || SOURCE_ANCESTOR_SUPPORT_OWNER_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || MINIMAL_ENTITY_OWNERSHIP_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || GROUP_REGION_CARDINALITY_VERIFIED_HYBRID_VISUAL_PIPELINE.equals(
+                profile.pipelineVersion()))
+                ? VisualObservationNormalizationPolicy.BOUNDED_ENUM_AND_UNIQUE_ITEM_PARENT
+                : VisualObservationNormalizationPolicy.STRICT;
+    }
+
+    private static VisualObservationSemanticPolicy observationSemanticPolicy(
+            InferenceProfile profile
+    ) {
+        if (GROUP_REGION_CARDINALITY_VERIFIED_HYBRID_VISUAL_PIPELINE.equals(
+                profile.pipelineVersion())
+                || ELEMENT_EVIDENCE_OWNER_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
+                profile.pipelineVersion())
+                || REPEATED_ITEM_SLOT_OWNER_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
+                profile.pipelineVersion())
+                || emptyOrUnknownSupportOwnerPipeline(profile)) {
+            return VisualObservationSemanticPolicy
+                    .SLOT_LEAF_EVIDENCE_AND_GROUP_REGION_CARDINALITY_REQUIRED;
+        }
+        return (LEAF_EVIDENCE_VERIFIED_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || ENCLOSING_SUPPORT_OWNER_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || SOURCE_ANCESTOR_SUPPORT_OWNER_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || MINIMAL_ENTITY_OWNERSHIP_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion()))
+                ? VisualObservationSemanticPolicy.SLOT_LEAF_EVIDENCE_REQUIRED
+                : VisualObservationSemanticPolicy.LEGACY;
+    }
+
+    private static VisualHierarchySemanticPolicy hierarchySemanticPolicy(
+            InferenceProfile profile
+    ) {
+        return (MINIMAL_ENTITY_OWNERSHIP_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || GROUP_REGION_CARDINALITY_VERIFIED_HYBRID_VISUAL_PIPELINE.equals(
+                profile.pipelineVersion())
+                || ELEMENT_EVIDENCE_OWNER_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
+                profile.pipelineVersion())
+                || REPEATED_ITEM_SLOT_OWNER_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
+                profile.pipelineVersion())
+                || emptyOrUnknownSupportOwnerPipeline(profile))
+                ? VisualHierarchySemanticPolicy.MINIMAL_ENTITY_REGION_OWNERSHIP
+                : VisualHierarchySemanticPolicy.LEGACY;
+    }
+
+    private static VisualBindingSemanticPolicy bindingSemanticPolicy(
+            InferenceProfile profile
+    ) {
+        return (MINIMAL_ENTITY_OWNERSHIP_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || GROUP_REGION_CARDINALITY_VERIFIED_HYBRID_VISUAL_PIPELINE.equals(
+                profile.pipelineVersion())
+                || ELEMENT_EVIDENCE_OWNER_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
+                profile.pipelineVersion())
+                || REPEATED_ITEM_SLOT_OWNER_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
+                profile.pipelineVersion())
+                || emptyOrUnknownSupportOwnerPipeline(profile))
+                ? VisualBindingSemanticPolicy.UNIQUE_MINIMAL_ENTITY_OWNER
+                : VisualBindingSemanticPolicy.NEAREST_ENTITY;
+    }
+
+    private static Map<String, Integer> observationTelemetry(GroundedElementInventory grounded) {
+        var telemetry = new java.util.TreeMap<String, Integer>();
+        if (grounded.normalizedRegionKinds() > 0) {
+            telemetry.put(
+                    "VISUAL_GROUNDING_REGION_KIND_NORMALIZED",
+                    grounded.normalizedRegionKinds()
+            );
+        }
+        if (grounded.normalizedItemParents() > 0) {
+            telemetry.put(
+                    "VISUAL_GROUNDING_ITEM_PARENT_NORMALIZED",
+                    grounded.normalizedItemParents()
+            );
+        }
+        if (grounded.normalizedRegionParents() > 0) {
+            telemetry.put(
+                    "VISUAL_GROUNDING_REGION_PARENT_NORMALIZED",
+                    grounded.normalizedRegionParents()
+            );
+        }
+        if (grounded.normalizedReadingOrders() > 0) {
+            telemetry.put(
+                    "VISUAL_GROUNDING_READING_ORDER_NORMALIZED",
+                    grounded.normalizedReadingOrders()
+            );
+        }
+        if (grounded.normalizedElementRegionOwners() > 0) {
+            telemetry.put(
+                    "VISUAL_GROUNDING_ELEMENT_REGION_NORMALIZED",
+                    grounded.normalizedElementRegionOwners()
+            );
+        }
+        if (grounded.normalizedRepeatedItemSlotOwners() > 0) {
+            telemetry.put(
+                    "VISUAL_GROUNDING_REPEATED_ITEM_SLOT_OWNER_NORMALIZED",
+                    grounded.normalizedRepeatedItemSlotOwners()
+            );
+        }
+        return Map.copyOf(telemetry);
+    }
+
+    private static boolean hybridVisual(InferenceProfile profile) {
+        return HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || SUPPORT_OWNER_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || BOUNDED_OBSERVATION_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || LEAF_EVIDENCE_VERIFIED_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || ENCLOSING_SUPPORT_OWNER_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || SOURCE_ANCESTOR_SUPPORT_OWNER_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || MINIMAL_ENTITY_OWNERSHIP_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || GROUP_REGION_CARDINALITY_VERIFIED_HYBRID_VISUAL_PIPELINE.equals(
+                profile.pipelineVersion())
+                || ELEMENT_EVIDENCE_OWNER_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
+                profile.pipelineVersion())
+                || REPEATED_ITEM_SLOT_OWNER_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
+                profile.pipelineVersion())
+                || emptyOrUnknownSupportOwnerPipeline(profile);
+    }
+
+    private static boolean emptyOrUnknownSupportOwnerPipeline(InferenceProfile profile) {
+        return EMPTY_SUPPORT_OWNER_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
+                profile.pipelineVersion())
+                || UNKNOWN_SUPPORT_OWNER_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
+                profile.pipelineVersion())
+                || UNIQUE_REGION_PARENT_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
+                profile.pipelineVersion())
+                || EMPTY_SOURCE_ANCESTOR_SUPPORT_OWNER_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
+                profile.pipelineVersion())
+                || STRUCTURAL_REGION_KIND_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
+                profile.pipelineVersion())
+                || CONSTRAINT_REGION_KIND_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
+                profile.pipelineVersion())
+                || ANCESTOR_REGION_PARENT_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
+                profile.pipelineVersion())
+                || GAPPED_READING_ORDER_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
+                profile.pipelineVersion())
+                || READING_ORDER_DIAGNOSTIC_HYBRID_VISUAL_PIPELINE.equals(
+                profile.pipelineVersion());
+    }
+
+    private static boolean visualProviderStage(InferenceStage stage) {
+        return stage == InferenceStage.OBSERVE || stage == InferenceStage.HIERARCHY
+                || stage == InferenceStage.ELEMENT_BINDING;
     }
 
     private static String promptVersion(InferenceProfile profile, InferenceStage stage) {
@@ -657,7 +1501,12 @@ public final class LiveInferenceWorker {
             case OBSERVE -> Objects.requireNonNull(profile.elementPromptVersion(), "elementPromptVersion");
             case HIERARCHY -> Objects.requireNonNull(profile.hierarchyPromptVersion(), "hierarchyPromptVersion");
             case ELEMENT_BINDING -> Objects.requireNonNull(profile.bindingPromptVersion(), "bindingPromptVersion");
-            case STRUCTURE, REPAIR -> profile.promptVersion();
+            case STRUCTURE, REPAIR -> {
+                if (localMaterializer(profile)) {
+                    throw new IllegalArgumentException("Pipeline 4 local stages have no Provider prompt");
+                }
+                yield profile.promptVersion();
+            }
             case NORMALIZE, DETERMINISTIC_VALIDATE, CRITIQUE, USER_APPROVAL, ATOMIC_CREATE ->
                     throw new IllegalArgumentException("Stage does not call the provider");
         };
@@ -701,9 +1550,71 @@ public final class LiveInferenceWorker {
                 .sorted(Comparator.comparingInt(input -> input.ordinal()))
                 .map(input -> new ProviderImage(
                         input.artifact().artifactId(), input.artifact().mediaType(),
-                        blobStore.read(input.artifact().locator())
+                        blobStore.read(input.artifact().locator()),
+                        input.artifact().width(), input.artifact().height()
                 ))
                 .toList();
+    }
+
+    private List<String> accumulatedRetryProblemCodes(InferenceRunSnapshot current) {
+        return workflowStore.attempts(current.runId()).stream()
+                .filter(attempt -> attempt.status() == InferenceAttemptStatus.REJECTED)
+                .flatMap(attempt -> attempt.problemCodeCounts().keySet().stream()
+                        .filter(code -> VisualSemanticIssue.earliestStage(code)
+                                .map(stage -> stage == current.stage())
+                                .orElse(attempt.stage() == current.stage())))
+                .distinct()
+                .sorted()
+                .limit(MAX_RETRY_PROBLEM_CODES)
+                .toList();
+    }
+
+    private VisualViewPlan visualViewPlan(
+            InferenceRunSnapshot current,
+            LiveWorkflowCheckpoint checkpoint,
+            List<String> retryProblemCodes
+    ) {
+        var sources = current.inputs().stream()
+                .filter(input -> input.kind() == NormalizedArtifact.Kind.IMAGE)
+                .sorted(Comparator.comparingInt(input -> input.ordinal()))
+                .map(input -> new VisualSourceImage(
+                        input.artifact().artifactId(), blobStore.read(input.artifact().locator()),
+                        Objects.requireNonNull(input.artifact().width(), "image width"),
+                        Objects.requireNonNull(input.artifact().height(), "image height")
+                ))
+                .toList();
+        var sourceArtifactIds = sources.stream().map(VisualSourceImage::artifactId).toList();
+        var targets = visualRepairCropSelector.select(
+                current.stage(), retryProblemCodes, sourceArtifactIds,
+                checkpoint.elementInventory(), checkpoint.groundingPlan(),
+                checkpoint.hierarchyPlan(), checkpoint.entityRegionPlan()
+        );
+        return visualViewPlanner.plan(sources, targets);
+    }
+
+    private DocumentVisionObservation documentVision(
+            InferenceRunSnapshot current,
+            InferenceProfile profile
+    ) {
+        var capability = documentVisionPreprocessor.capability();
+        if (!capability.available()) throw new DocumentVisionException(capability.diagnosticCode());
+        if (!Objects.equals(profile.documentVisionCapabilityId(), capability.capabilityId())) {
+            throw new DocumentVisionException("DOCUMENT_VISION_CAPABILITY_MISMATCH");
+        }
+        var artifacts = current.inputs().stream()
+                .filter(input -> input.kind() == NormalizedArtifact.Kind.IMAGE)
+                .sorted(Comparator.comparingInt(input -> input.ordinal()))
+                .map(input -> new DocumentVisionArtifact(
+                        input.artifact().artifactId(), input.ordinal(), input.artifact().mediaType(),
+                        blobStore.read(input.artifact().locator()),
+                        Objects.requireNonNull(input.artifact().width(), "image width"),
+                        Objects.requireNonNull(input.artifact().height(), "image height")
+                )).toList();
+        var observation = documentVisionPreprocessor.preprocess(artifacts);
+        if (!capability.capabilityId().equals(observation.capabilityId())) {
+            throw new DocumentVisionException("DOCUMENT_VISION_CAPABILITY_MISMATCH");
+        }
+        return observation;
     }
 
     private static List<String> imageArtifactIds(InferenceRunSnapshot current) {
@@ -773,6 +1684,25 @@ public final class LiveInferenceWorker {
                 Optional.of(response.providerRequestId()), Optional.of(response.model()),
                 response.usage().inputTokens(), response.usage().outputTokens(),
                 estimatedCost, durationMillis, problemCodeCounts, now
+        );
+    }
+
+    static void requireCompleteGroundedResponse(
+            InferenceStage stage,
+            ProviderInferenceResponse response
+    ) {
+        Objects.requireNonNull(response, "response");
+        if ("stop".equals(response.finishReason())) return;
+        var prefix = switch (stage) {
+            case OBSERVE -> "VISUAL_GROUNDING";
+            case HIERARCHY -> "VISUAL_HIERARCHY_V2";
+            case ELEMENT_BINDING -> "VISUAL_BINDINGS_V2";
+            default -> throw new IllegalArgumentException("Not a grounded visual stage");
+        };
+        var suffix = "length".equals(response.finishReason())
+                ? "_OUTPUT_TRUNCATED" : "_FINISH_REASON_INVALID";
+        throw new InvalidVisualAnalysisException(
+                prefix + suffix, "Visual grounding output is incomplete", null
         );
     }
 

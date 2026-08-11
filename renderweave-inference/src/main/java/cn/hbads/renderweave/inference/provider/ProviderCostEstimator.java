@@ -12,11 +12,7 @@ public final class ProviderCostEstimator {
     private static final long TEXT_MESSAGE_OVERHEAD_TOKENS = 2_048L;
     private static final long VISUAL_PATCH_PIXELS = 32L * 32L;
     private static final long VISUAL_TOKEN_OVERHEAD = 2L;
-    /**
-     * DashScope documents visual tokens as height * width / (32 * 32) + 2. ProviderImage is
-     * reached only after ImageNormalizer, so reserving the normalized 4,096-square maximum for
-     * every image is deliberately conservative and closes cost before the irreversible call.
-     */
+    /** Unknown-size compatibility requests retain the historical 4,096-square conservative bound. */
     private static final long IMAGE_INPUT_TOKEN_UPPER_BOUND = Math.addExact(
             Math.ceilDiv(
                     Math.multiplyExact(
@@ -46,26 +42,43 @@ public final class ProviderCostEstimator {
 
     /** Pre-call upper bound used for the irreversible external-cost gate. */
     public static long maximumRequestCostMicrosCny(ProviderInferenceRequest request) {
+        return estimateMicrosCny(
+                Objects.requireNonNull(request, "request").profile(),
+                maximumRequestUsage(request)
+        );
+    }
+
+    /** Pre-call total token upper bound used by cross-ledger Goal authorization. */
+    public static long maximumRequestTokens(ProviderInferenceRequest request) {
+        var usage = maximumRequestUsage(Objects.requireNonNull(request, "request"));
+        return Math.addExact(usage.inputTokens(), usage.outputTokens());
+    }
+
+    private static ProviderUsage maximumRequestUsage(ProviderInferenceRequest request) {
         Objects.requireNonNull(request, "request");
         var promptBytes = request.systemPrompt().getBytes(StandardCharsets.UTF_8).length;
         var taskBytes = request.taskJson().getBytes(StandardCharsets.UTF_8).length;
         var textTokens = Math.addExact(TEXT_MESSAGE_OVERHEAD_TOKENS, Math.addExact(promptBytes, taskBytes));
-        var imageTokens = Math.multiplyExact((long) request.images().size(), IMAGE_INPUT_TOKEN_UPPER_BOUND);
+        var imageTokens = request.images().stream().mapToLong(image -> {
+            if (image.width() == null) return IMAGE_INPUT_TOKEN_UPPER_BOUND;
+            return Math.addExact(
+                    Math.ceilDiv(Math.multiplyExact((long) image.width(), image.height()), VISUAL_PATCH_PIXELS),
+                    VISUAL_TOKEN_OVERHEAD
+            );
+        }).reduce(0L, Math::addExact);
         var maximumInputTokens = Math.addExact(textTokens, imageTokens);
-        return estimateMicrosCny(
-                request.profile(),
-                new ProviderUsage(maximumInputTokens, request.profile().maximumOutputTokens())
-        );
+        return new ProviderUsage(maximumInputTokens, request.profile().maximumOutputTokens());
     }
 
     /**
-     * qwen3.7-flash uses 1x/3x/6x input and output prices at the documented
+     * qwen3.7-flash and its pinned 2026-07-15 snapshot use 1x/3x/6x prices at the documented
      * 32K and 256K input-token boundaries. qwen3.7-plus uses 1x/3x at 256K.
      * Other approved P5 models use the snapshot rate throughout request sizes
      * that can pass their Profile cost gate.
      */
     private static long pricingMultiplier(InferenceProfile profile, long inputTokens) {
-        if ("qwen3.7-flash".equals(profile.model())) {
+        if ("qwen3.7-flash".equals(profile.model())
+                || "qwen3.7-flash-2026-07-15".equals(profile.model())) {
             if (inputTokens <= 32_000L) return 1L;
             if (inputTokens <= 256_000L) return 3L;
             return 6L;

@@ -1,0 +1,24 @@
+{
+  "authorizationVersion": "renderweave-visual-evaluation-authorization/1.0",
+  "authorizationId": "visual-n7-source-ancestor-v27-qwen38-max-transit-20260811",
+  "status": "CLOSED",
+  "phase": "CANARY",
+  "inputClassification": "REPOSITORY_SYNTHETIC_ONLY",
+  "corpusVersion": "renderweave-visual-stage-corpus/1.0",
+  "corpusSourceSha256": "bf0db7bf0ac5c4e2b357cdd96c49ff70a7b30a5bc59f322a915020dc29fc605e",
+  "evaluationIdentity": "renderweave-visual-evaluation-tree-sha256/1:903f5b9f87797bcf124f08cc539982f708dc8ab5217129adcd6dc9c40960c965",
+  "profileId": "dashscope-qwen38-max-product-v27-hybrid-generic",
+  "profileSnapshotSha256": "8c083d086b08abff02fcde38215e7d70921dc2371e6532d0374c614af3a77624",
+  "model": "qwen3.8-max",
+  "caseIds": [
+    "transit-board-v3"
+  ],
+  "maximumProviderAttempts": 5,
+  "maximumTotalTokens": 80000,
+  "maximumCostMicrosCny": 4000000,
+  "maximumCasesPerBatch": 1,
+  "approvedBy": "yiwer",
+  "approvedAt": "2026-08-11T04:07:56Z",
+  "expiresAt": "2026-08-11T15:51:09Z",
+  "approvalScope": "Goal J1 CANARY: user kept qwen3.8-max unchanged and renewed 500000 exposed tokens for each stable model slot, enforcing a cumulative cap of 1500000 per slot; Plus product-v27 independently reached accepted OBSERVE, HIERARCHY and ELEMENT_BINDING in the same pipeline version, satisfying the explicit Max stage precondition, while its low matched structure and seven blockers justify only this bounded comparison; one repository-synthetic transit-board-v3 case through immutable qwen3.8-max product-v27-hybrid-generic pipeline 4.14, using the current-revision RapidOCR/OpenVINO capability verified by 20260811-115701-document-vision and inheriting all product-v26 policies while adding only the unique cardinality-compatible, parent-child-connected source-ancestor region owned by exactly one GROUP when the enclosing-owner candidate set is zero; ambiguity remains fail-closed; no raw OCR/model text, gold, distance ranking or topology synthesis; at most 5 attempts, 80000 exposed tokens, CNY 4.00 and one case per batch; payload-free evidence, no concurrent rerun and immediate CLOSED after this smoke"
+}

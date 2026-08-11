@@ -57,6 +57,9 @@ class ProviderContractTest {
     @Test
     void flashCostUsesTheOfficialInputLengthPricingTiers() {
         var flash = profiles.require("dashscope-qwen37-flash-v1").profile();
+        var pinnedFlash = profiles.require(
+                "dashscope-qwen37-flash-20260715-product-v13-generic"
+        ).profile();
 
         assertEquals(6_480L,
                 ProviderCostEstimator.estimateMicrosCny(flash, new ProviderUsage(32_000, 100)));
@@ -64,6 +67,12 @@ class ProviderContractTest {
                 ProviderCostEstimator.estimateMicrosCny(flash, new ProviderUsage(32_001, 100)));
         assertEquals(307_682L,
                 ProviderCostEstimator.estimateMicrosCny(flash, new ProviderUsage(256_001, 100)));
+        assertEquals(6_480L,
+                ProviderCostEstimator.estimateMicrosCny(pinnedFlash, new ProviderUsage(32_000, 100)));
+        assertEquals(19_441L,
+                ProviderCostEstimator.estimateMicrosCny(pinnedFlash, new ProviderUsage(32_001, 100)));
+        assertEquals(307_682L,
+                ProviderCostEstimator.estimateMicrosCny(pinnedFlash, new ProviderUsage(256_001, 100)));
     }
 
     @Test
@@ -136,6 +145,33 @@ class ProviderContractTest {
 
         assertTrue(ProviderCostEstimator.maximumRequestCostMicrosCny(request)
                 > plus.maximumEstimatedCostMicrosCny());
+    }
+
+    @Test
+    void knownMultiScaleViewDimensionsUseTheExactConservativePatchFormula() {
+        var profile = profiles.require("dashscope-qwen38-max-product-v6-generic").profile();
+        var known = new ProviderImage("9".repeat(64), "image/png", new byte[] {1}, 1_400, 1_400);
+        var unknown = new ProviderImage("8".repeat(64), "image/png", new byte[] {1});
+        var knownRequest = new ProviderInferenceRequest(
+                UUID.randomUUID(), 0, InferenceStage.OBSERVE, profile,
+                prompts.requireVisualStage(
+                        profile.elementPromptVersion(), profile.visualHintPackVersion()
+                ).text(), "{\"taskVersion\":\"renderweave-live-task/4.0\"}",
+                java.util.Collections.nCopies(10, known)
+        );
+        var unknownRequest = new ProviderInferenceRequest(
+                UUID.randomUUID(), 0, InferenceStage.OBSERVE, profile,
+                knownRequest.systemPrompt(), knownRequest.taskJson(),
+                java.util.Collections.nCopies(10, unknown)
+        );
+
+        assertTrue(ProviderCostEstimator.maximumRequestCostMicrosCny(knownRequest)
+                <= profile.maximumEstimatedCostMicrosCny());
+        assertTrue(ProviderCostEstimator.maximumRequestCostMicrosCny(unknownRequest)
+                > ProviderCostEstimator.maximumRequestCostMicrosCny(knownRequest));
+        assertThrows(IllegalArgumentException.class, () -> new ProviderImage(
+                "7".repeat(64), "image/png", new byte[] {1}, 4_097, 1
+        ));
     }
 
     @Test

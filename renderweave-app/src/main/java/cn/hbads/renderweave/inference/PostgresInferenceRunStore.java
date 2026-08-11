@@ -37,6 +37,7 @@ import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.HexFormat;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
@@ -316,6 +317,19 @@ public class PostgresInferenceRunStore implements InferenceRunStore, InferenceRe
         if (checkpointJson == null || checkpointJson.isBlank()) {
             throw new IllegalArgumentException("checkpointJson is required");
         }
+        return applyCheckpoint(
+                runId, leaseToken, expectedStage, nextStage, checkpointJson, now
+        );
+    }
+
+    private InferenceRunSnapshot applyCheckpoint(
+            UUID runId,
+            UUID leaseToken,
+            InferenceStage expectedStage,
+            InferenceStage nextStage,
+            String checkpointJson,
+            Instant now
+    ) {
         var entersReview = nextStage == InferenceStage.USER_APPROVAL;
         var updated = jdbcClient.sql("""
                         update inference_run
@@ -668,7 +682,22 @@ public class PostgresInferenceRunStore implements InferenceRunStore, InferenceRe
         }
         Objects.requireNonNull(nextStage, "nextStage");
         Objects.requireNonNull(now, "now");
-        if (!expectedStage.canTransitionTo(nextStage)) {
+        var semanticObservationRewind = expectedStage == InferenceStage.HIERARCHY
+                && nextStage == InferenceStage.OBSERVE
+                && attempt.status() == InferenceAttemptStatus.REJECTED
+                && (attempt.problemCodeCounts().equals(Map.of(
+                        "VISUAL_SEMANTIC_OBSERVE_RELATIONSHIP_GROUP_MISSING", 1
+                )) || attempt.problemCodeCounts().equals(Map.of(
+                        "VISUAL_SEMANTIC_OBSERVE_RELATIONSHIP_REGION_GROUP_MISSING", 1
+                )));
+        var semanticHierarchyRewind = expectedStage == InferenceStage.ELEMENT_BINDING
+                && nextStage == InferenceStage.HIERARCHY
+                && attempt.status() == InferenceAttemptStatus.REJECTED
+                && attempt.problemCodeCounts().equals(Map.of(
+                        "VISUAL_SEMANTIC_HIERARCHY_BINDING_OWNER_AMBIGUOUS", 1
+                ));
+        if (!expectedStage.canTransitionTo(nextStage)
+                && !semanticObservationRewind && !semanticHierarchyRewind) {
             throw new InvalidInferenceRunTransitionException(
                     runId, "stage " + expectedStage + " cannot advance to " + nextStage
             );
@@ -681,7 +710,9 @@ public class PostgresInferenceRunStore implements InferenceRunStore, InferenceRe
         if (cancellationRequested) {
             return finishCancellationAfterAttempt(runId, leaseToken, expectedStage, now);
         }
-        return checkpoint(runId, leaseToken, expectedStage, nextStage, checkpointJson, now);
+        return applyCheckpoint(
+                runId, leaseToken, expectedStage, nextStage, checkpointJson, now
+        );
     }
 
     private boolean lockAttemptBoundary(

@@ -16,6 +16,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.UUID;
 
 final class LiveWorkflowJsonCodec {
     private static final ObjectMapper JSON = JsonMapper.builder(
@@ -51,19 +52,50 @@ final class LiveWorkflowJsonCodec {
             if (LiveWorkflowCheckpoint.VERSION.equals(version)) {
                 return JSON.treeToValue(tree, LiveWorkflowCheckpoint.class);
             }
+            if (LegacyCheckpointV2.VERSION.equals(version)) {
+                var legacy = JSON.treeToValue(tree, LegacyCheckpointV2.class);
+                return new LiveWorkflowCheckpoint(
+                        LiveWorkflowCheckpoint.VERSION, legacy.completedStage(), legacy.providerCalls(),
+                        legacy.repairRounds(), legacy.elementInventory(), legacy.hierarchyPlan(),
+                        legacy.bindingPlan(), null, null,
+                        legacy.outputValid(), legacy.candidate(), legacy.validationProblems()
+                );
+            }
             if (LegacyCheckpoint.VERSION.equals(version)) {
                 var legacy = JSON.treeToValue(tree, LegacyCheckpoint.class);
                 return new LiveWorkflowCheckpoint(
                         LiveWorkflowCheckpoint.VERSION, legacy.completedStage(), legacy.structureCalls(),
-                        legacy.repairRounds(), null, null, null,
+                        legacy.repairRounds(), null, null, null, null, null,
                         legacy.outputValid(), legacy.candidate(), legacy.validationProblems()
                 );
+            }
+            if (version == null && runStoreNormalizeEnvelope(tree)) {
+                return LiveWorkflowCheckpoint.started();
             }
             throw new IllegalArgumentException("Unsupported live checkpoint version");
         } catch (InvalidCandidateContractException exception) {
             throw exception;
         } catch (Exception exception) {
             throw invalid(exception);
+        }
+    }
+
+    private static boolean runStoreNormalizeEnvelope(tools.jackson.databind.JsonNode tree) {
+        if (!tree.isObject() || tree.size() != 2
+                || !"NORMALIZE".equals(tree.path("completedStage").asText())) {
+            return false;
+        }
+        var fingerprint = tree.path("inputFingerprint");
+        if (fingerprint.isString() && fingerprint.asText().matches("[a-f0-9]{64}")) {
+            return true;
+        }
+        var retry = tree.path("retryOfRunId");
+        if (!retry.isString()) return false;
+        try {
+            UUID.fromString(retry.asText());
+            return true;
+        } catch (IllegalArgumentException invalid) {
+            return false;
         }
     }
 
@@ -90,5 +122,20 @@ final class LiveWorkflowJsonCodec {
             List<CandidateProblem> validationProblems
     ) {
         private static final String VERSION = "renderweave-live-checkpoint/1.0";
+    }
+
+    private record LegacyCheckpointV2(
+            String checkpointVersion,
+            InferenceStage completedStage,
+            int providerCalls,
+            int repairRounds,
+            VisualElementInventory elementInventory,
+            VisualHierarchyPlan hierarchyPlan,
+            VisualElementBindingPlan bindingPlan,
+            boolean outputValid,
+            CandidateBundle candidate,
+            List<CandidateProblem> validationProblems
+    ) {
+        private static final String VERSION = "renderweave-live-checkpoint/2.0";
     }
 }

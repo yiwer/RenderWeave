@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-    [ValidateSet('fast', 'server', 'web', 'eval', 'e2e', 'draft-e2e', 'inference-e2e', 'compose', 'runtime', 'capacity', 'full')]
+    [ValidateSet('fast', 'server', 'web', 'eval', 'e2e', 'draft-e2e', 'inference-e2e', 'compose', 'runtime', 'document-vision', 'capacity', 'full')]
     [string]$Gate = 'fast'
 )
 
@@ -23,11 +23,13 @@ function Write-Utf8File {
 
 function Invoke-ZeroPaidAiCommand {
     param([Parameter(Mandatory = $true)][string]$CommandLine)
-    # Use a child process so the caller's secret is neither read nor mutated. Dedicated live
+    # Use a child process so the caller's secret is neither read nor mutated. Dedicated paid
     # certification deliberately does not go through this project-gate helper.
     $environmentPrefix = 'set "DASHSCOPE_API_KEY=" && set "DASHSCOPE_API_KEY_FILE=" && ' +
         'set "RENDERWEAVE_RUN_LIVE_CANARY=" && set "RENDERWEAVE_RUN_LIVE_CERTIFICATION=" && ' +
         'set "RENDERWEAVE_LIVE_CERTIFICATION_AUTHORIZATION=" && ' +
+        'set "RENDERWEAVE_RUN_VISUAL_EVALUATION=" && ' +
+        'set "RENDERWEAVE_VISUAL_EVALUATION_AUTHORIZATION=" && ' +
         'set "RENDERWEAVE_LIVE_AI_ENABLED=false" && set "RENDERWEAVE_LIVE_UPLOAD_ENABLED=false" && '
     & cmd.exe /d /s /c ($environmentPrefix + $CommandLine)
 }
@@ -107,6 +109,7 @@ try {
         'inference-e2e' { @('server-verify', 'web-node24', 'inference-browser-e2e') }
         'compose' { @('compose-config') }
         'runtime' { @('runtime-canary') }
+        'document-vision' { @('document-vision-canary') }
         'capacity' { @('capacity-baseline') }
         'full' { @('repository-diff', 'server-verify', 'web-node24', 'offline-eval', 'compose-config', 'runtime-canary', 'prototype-e2e', 'draft-browser-e2e', 'inference-browser-e2e') }
     }
@@ -160,6 +163,12 @@ try {
                 Invoke-GateStep $step {
                     Invoke-ZeroPaidAiCommand `
                         'powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools\runtime-canary.ps1'
+                }
+            }
+            'document-vision-canary' {
+                Invoke-GateStep $step {
+                    Invoke-ZeroPaidAiCommand `
+                        'set "RENDERWEAVE_RUN_DOCUMENT_VISION_CANARY=true" && mvn.cmd -B -ntp -pl renderweave-app -am -Dtest=DocumentVisionRuntimeCanaryTest -Dsurefire.failIfNoSpecifiedTests=false test'
                 }
             }
             'draft-browser-e2e' {

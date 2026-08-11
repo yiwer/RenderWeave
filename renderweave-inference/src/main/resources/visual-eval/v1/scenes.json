@@ -1,0 +1,319 @@
+{
+  "corpusVersion": "renderweave-visual-stage-corpus/1.0",
+  "scenes": [
+    {
+      "sceneId": "transit-board", "domainPack": "TRANSIT_BOARD", "title": "龙岗文化中心公交站牌", "rootEntityId": "board",
+      "elements": [
+        {"elementId":"station-name","kind":"SLOT","proposedKey":"stationName","displayName":"站点名称","multiplicity":"ONE","valueHint":"TEXT","sampleValue":"龙岗文化中心","boundingBox":[700,400,6500,1050]},
+        {"elementId":"station-name-en","kind":"SLOT","proposedKey":"stationNameEn","displayName":"站点英文名","multiplicity":"ONE","valueHint":"TEXT","sampleValue":"Longgang Culture Center","boundingBox":[700,1050,6500,1500]},
+        {"elementId":"notice-group","kind":"GROUP","proposedKey":"notice","displayName":"温馨提示","multiplicity":"ONE","boundingBox":[500,1650,9500,2750]},
+        {"elementId":"notice-message","kind":"SLOT","proposedKey":"message","displayName":"提示内容","multiplicity":"ONE","valueHint":"TEXT","sampleValue":"M139线路取消停靠本站","boundingBox":[1700,1950,8900,2450]},
+        {"elementId":"notice-date","kind":"SLOT","proposedKey":"effectiveDate","displayName":"生效日期","multiplicity":"ONE","valueHint":"DATE","sampleValue":"2026-07-31","boundingBox":[5200,2450,8900,2700]},
+        {"elementId":"routes-group","kind":"GROUP","proposedKey":"routes","displayName":"公交线路","multiplicity":"MANY","boundingBox":[500,2950,9500,9500]},
+        {"elementId":"route-number","kind":"SLOT","proposedKey":"routeNumber","displayName":"线路编号","multiplicity":"ONE","valueHint":"TEXT","sampleValue":"811 / 818 / M230","boundingBox":[700,3150,2500,3900]},
+        {"elementId":"route-destination","kind":"SLOT","proposedKey":"destination","displayName":"开往方向","multiplicity":"ONE","valueHint":"TEXT","sampleValue":"年丰村 / 大鹏中心","boundingBox":[2500,3150,6500,3900]},
+        {"elementId":"service-start","kind":"SLOT","proposedKey":"serviceStart","displayName":"首班时间","multiplicity":"ONE","valueHint":"TIME","sampleValue":"06:10:00","boundingBox":[6500,3150,7800,3900]},
+        {"elementId":"service-end","kind":"SLOT","proposedKey":"serviceEnd","displayName":"末班时间","multiplicity":"ONE","valueHint":"TIME","sampleValue":"22:10:00","boundingBox":[7800,3150,9300,3900]},
+        {"elementId":"fare","kind":"SLOT","proposedKey":"fare","displayName":"票价","multiplicity":"ONE","valueHint":"DECIMAL","sampleValue":"3","boundingBox":[7600,3950,9200,4400]},
+        {"elementId":"stops-group","kind":"GROUP","proposedKey":"stops","displayName":"停靠站点","multiplicity":"MANY","boundingBox":[900,4550,9200,9150]},
+        {"elementId":"stop-name","kind":"SLOT","proposedKey":"stopName","displayName":"站点名称","multiplicity":"ONE","valueHint":"TEXT","sampleValue":"龙岗广场 / 南联地铁站 / 双龙地铁站","boundingBox":[1200,5000,8900,8750]}
+      ],
+      "entities": [
+        {"entityId":"board","schemaKey":"transit-board","displayName":"公交站牌","supportingElementIds":["station-name"]},
+        {"entityId":"notice","schemaKey":"transit-notice","displayName":"温馨提示","supportingElementIds":["notice-group"]},
+        {"entityId":"route","schemaKey":"transit-route","displayName":"公交线路","supportingElementIds":["routes-group"]},
+        {"entityId":"stop","schemaKey":"transit-stop","displayName":"停靠站点","supportingElementIds":["stops-group"]}
+      ],
+      "relationships": [
+        {"relationshipId":"board-notice","parentEntityId":"board","childEntityId":"notice","fieldKey":"notice","displayName":"温馨提示","cardinality":"ONE","supportingElementIds":["notice-group"]},
+        {"relationshipId":"board-routes","parentEntityId":"board","childEntityId":"route","fieldKey":"routes","displayName":"公交线路","cardinality":"MANY","supportingElementIds":["routes-group"]},
+        {"relationshipId":"route-stops","parentEntityId":"route","childEntityId":"stop","fieldKey":"stops","displayName":"停靠站点","cardinality":"MANY","supportingElementIds":["stops-group"]}
+      ],
+      "bindings": [
+        {"elementId":"station-name","entityId":"board"},{"elementId":"station-name-en","entityId":"board"},
+        {"elementId":"notice-message","entityId":"notice"},{"elementId":"notice-date","entityId":"notice"},
+        {"elementId":"route-number","entityId":"route"},{"elementId":"route-destination","entityId":"route"},{"elementId":"service-start","entityId":"route"},{"elementId":"service-end","entityId":"route"},{"elementId":"fare","entityId":"route"},
+        {"elementId":"stop-name","entityId":"stop"}
+      ]
+    },
+    {
+      "sceneId": "restaurant-menu", "domainPack": "GENERIC", "title": "岭南风味菜单", "rootEntityId": "menu",
+      "elements": [
+        {"elementId":"restaurant-name","kind":"SLOT","proposedKey":"restaurantName","displayName":"餐厅名称","multiplicity":"ONE","valueHint":"TEXT","sampleValue":"岭南小馆","boundingBox":[600,400,6000,1100]},
+        {"elementId":"currency","kind":"SLOT","proposedKey":"currency","displayName":"币种","multiplicity":"ONE","valueHint":"TEXT","sampleValue":"CNY","boundingBox":[7800,500,9300,1000]},
+        {"elementId":"categories-group","kind":"GROUP","proposedKey":"categories","displayName":"菜品分类","multiplicity":"MANY","boundingBox":[500,1500,9500,9400]},
+        {"elementId":"category-name","kind":"SLOT","proposedKey":"categoryName","displayName":"分类名称","multiplicity":"ONE","valueHint":"TEXT","sampleValue":"招牌菜 / 粤式点心","boundingBox":[800,1750,4000,2400]},
+        {"elementId":"dishes-group","kind":"GROUP","proposedKey":"dishes","displayName":"菜品","multiplicity":"MANY","boundingBox":[900,2600,9200,9000]},
+        {"elementId":"dish-name","kind":"SLOT","proposedKey":"dishName","displayName":"菜品名称","multiplicity":"ONE","valueHint":"TEXT","sampleValue":"蜜汁叉烧","boundingBox":[1200,3000,4500,3700]},
+        {"elementId":"description","kind":"SLOT","proposedKey":"description","displayName":"菜品描述","multiplicity":"ONE","valueHint":"TEXT","sampleValue":"炭火慢烤，甜咸适中","boundingBox":[1200,3900,6500,4700]},
+        {"elementId":"price","kind":"SLOT","proposedKey":"price","displayName":"价格","multiplicity":"ONE","valueHint":"DECIMAL","sampleValue":"48","boundingBox":[7200,3000,8900,3700]},
+        {"elementId":"spicy","kind":"SLOT","proposedKey":"spicy","displayName":"是否辣","multiplicity":"ONE","valueHint":"BOOLEAN","sampleValue":"false","boundingBox":[7200,3900,8900,4500]}
+      ],
+      "entities": [
+        {"entityId":"menu","schemaKey":"restaurant-menu","displayName":"餐厅菜单","supportingElementIds":["restaurant-name"]},
+        {"entityId":"category","schemaKey":"menu-category","displayName":"菜品分类","supportingElementIds":["categories-group"]},
+        {"entityId":"dish","schemaKey":"menu-dish","displayName":"菜品","supportingElementIds":["dishes-group"]}
+      ],
+      "relationships": [
+        {"relationshipId":"menu-categories","parentEntityId":"menu","childEntityId":"category","fieldKey":"categories","displayName":"菜品分类","cardinality":"MANY","supportingElementIds":["categories-group"]},
+        {"relationshipId":"category-dishes","parentEntityId":"category","childEntityId":"dish","fieldKey":"dishes","displayName":"菜品","cardinality":"MANY","supportingElementIds":["dishes-group"]}
+      ],
+      "bindings": [
+        {"elementId":"restaurant-name","entityId":"menu"},{"elementId":"currency","entityId":"menu"},{"elementId":"category-name","entityId":"category"},
+        {"elementId":"dish-name","entityId":"dish"},{"elementId":"description","entityId":"dish"},{"elementId":"price","entityId":"dish"},{"elementId":"spicy","entityId":"dish"}
+      ]
+    },
+    {
+      "sceneId": "hospital-schedule", "domainPack": "GENERIC", "title": "门诊排班信息", "rootEntityId": "schedule",
+      "elements": [
+        {"elementId":"hospital-name","kind":"SLOT","proposedKey":"hospitalName","displayName":"医院名称","multiplicity":"ONE","valueHint":"TEXT","sampleValue":"南山人民医院","boundingBox":[500,350,6200,1050]},
+        {"elementId":"schedule-date","kind":"SLOT","proposedKey":"scheduleDate","displayName":"排班日期","multiplicity":"ONE","valueHint":"DATE","sampleValue":"2026-08-10","boundingBox":[7000,450,9300,1000]},
+        {"elementId":"departments-group","kind":"GROUP","proposedKey":"departments","displayName":"科室","multiplicity":"MANY","boundingBox":[500,1400,9500,9400]},
+        {"elementId":"department-name","kind":"SLOT","proposedKey":"departmentName","displayName":"科室名称","multiplicity":"ONE","valueHint":"TEXT","sampleValue":"心内科 / 儿科","boundingBox":[800,1700,3600,2350]},
+        {"elementId":"clinics-group","kind":"GROUP","proposedKey":"clinics","displayName":"门诊班次","multiplicity":"MANY","boundingBox":[900,2600,9200,9000]},
+        {"elementId":"doctor-name","kind":"SLOT","proposedKey":"doctorName","displayName":"医生姓名","multiplicity":"ONE","valueHint":"TEXT","sampleValue":"陈医生","boundingBox":[1200,3000,3500,3700]},
+        {"elementId":"room","kind":"SLOT","proposedKey":"room","displayName":"诊室","multiplicity":"ONE","valueHint":"TEXT","sampleValue":"A302","boundingBox":[3700,3000,5200,3700]},
+        {"elementId":"start-time","kind":"SLOT","proposedKey":"startTime","displayName":"开始时间","multiplicity":"ONE","valueHint":"TIME","sampleValue":"08:30:00","boundingBox":[5400,3000,7000,3700]},
+        {"elementId":"end-time","kind":"SLOT","proposedKey":"endTime","displayName":"结束时间","multiplicity":"ONE","valueHint":"TIME","sampleValue":"12:00:00","boundingBox":[7200,3000,8900,3700]}
+      ],
+      "entities": [
+        {"entityId":"schedule","schemaKey":"hospital-schedule","displayName":"门诊排班","supportingElementIds":["hospital-name"]},
+        {"entityId":"department","schemaKey":"hospital-department","displayName":"科室","supportingElementIds":["departments-group"]},
+        {"entityId":"clinic","schemaKey":"hospital-clinic","displayName":"门诊班次","supportingElementIds":["clinics-group"]}
+      ],
+      "relationships": [
+        {"relationshipId":"schedule-departments","parentEntityId":"schedule","childEntityId":"department","fieldKey":"departments","displayName":"科室","cardinality":"MANY","supportingElementIds":["departments-group"]},
+        {"relationshipId":"department-clinics","parentEntityId":"department","childEntityId":"clinic","fieldKey":"clinics","displayName":"门诊班次","cardinality":"MANY","supportingElementIds":["clinics-group"]}
+      ],
+      "bindings": [
+        {"elementId":"hospital-name","entityId":"schedule"},{"elementId":"schedule-date","entityId":"schedule"},{"elementId":"department-name","entityId":"department"},
+        {"elementId":"doctor-name","entityId":"clinic"},{"elementId":"room","entityId":"clinic"},{"elementId":"start-time","entityId":"clinic"},{"elementId":"end-time","entityId":"clinic"}
+      ]
+    },
+    {
+      "sceneId": "invoice-lines", "domainPack": "GENERIC", "title": "增值税电子发票", "rootEntityId": "invoice",
+      "elements": [
+        {"elementId":"invoice-number","kind":"SLOT","proposedKey":"invoiceNumber","displayName":"发票号码","multiplicity":"ONE","valueHint":"TEXT","sampleValue":"044032600111","boundingBox":[600,500,4000,1150]},
+        {"elementId":"issue-date","kind":"SLOT","proposedKey":"issueDate","displayName":"开票日期","multiplicity":"ONE","valueHint":"DATE","sampleValue":"2026-08-01","boundingBox":[6500,500,9300,1150]},
+        {"elementId":"buyer-name","kind":"SLOT","proposedKey":"buyerName","displayName":"购买方","multiplicity":"ONE","valueHint":"TEXT","sampleValue":"海波广告有限公司","boundingBox":[700,1400,6000,2100]},
+        {"elementId":"lines-group","kind":"GROUP","proposedKey":"items","displayName":"发票明细","multiplicity":"MANY","boundingBox":[500,2500,9500,8000]},
+        {"elementId":"item-name","kind":"SLOT","proposedKey":"itemName","displayName":"项目名称","multiplicity":"ONE","valueHint":"TEXT","sampleValue":"设计服务","boundingBox":[800,2900,4300,3600]},
+        {"elementId":"quantity","kind":"SLOT","proposedKey":"quantity","displayName":"数量","multiplicity":"ONE","valueHint":"DECIMAL","sampleValue":"2","boundingBox":[4500,2900,5600,3600]},
+        {"elementId":"unit-price","kind":"SLOT","proposedKey":"unitPrice","displayName":"单价","multiplicity":"ONE","valueHint":"DECIMAL","sampleValue":"1800","boundingBox":[5800,2900,7200,3600]},
+        {"elementId":"amount","kind":"SLOT","proposedKey":"amount","displayName":"金额","multiplicity":"ONE","valueHint":"DECIMAL","sampleValue":"3600","boundingBox":[7400,2900,9100,3600]},
+        {"elementId":"total","kind":"SLOT","proposedKey":"total","displayName":"价税合计","multiplicity":"ONE","valueHint":"DECIMAL","sampleValue":"3816","boundingBox":[6500,8350,9300,9100]}
+      ],
+      "entities": [
+        {"entityId":"invoice","schemaKey":"invoice","displayName":"发票","supportingElementIds":["invoice-number"]},
+        {"entityId":"line","schemaKey":"invoice-item","displayName":"发票明细","supportingElementIds":["lines-group"]}
+      ],
+      "relationships": [
+        {"relationshipId":"invoice-items","parentEntityId":"invoice","childEntityId":"line","fieldKey":"items","displayName":"发票明细","cardinality":"MANY","supportingElementIds":["lines-group"]}
+      ],
+      "bindings": [
+        {"elementId":"invoice-number","entityId":"invoice"},{"elementId":"issue-date","entityId":"invoice"},{"elementId":"buyer-name","entityId":"invoice"},{"elementId":"total","entityId":"invoice"},
+        {"elementId":"item-name","entityId":"line"},{"elementId":"quantity","entityId":"line"},{"elementId":"unit-price","entityId":"line"},{"elementId":"amount","entityId":"line"}
+      ]
+    },
+    {
+      "sceneId": "product-catalog", "domainPack": "GENERIC", "title": "新品目录", "rootEntityId": "catalog",
+      "elements": [
+        {"elementId":"catalog-title","kind":"SLOT","proposedKey":"catalogTitle","displayName":"目录名称","multiplicity":"ONE","valueHint":"TEXT","sampleValue":"2026 秋季新品","boundingBox":[600,400,6200,1100]},
+        {"elementId":"products-group","kind":"GROUP","proposedKey":"products","displayName":"商品","multiplicity":"MANY","boundingBox":[500,1400,9500,9400]},
+        {"elementId":"product-name","kind":"SLOT","proposedKey":"productName","displayName":"商品名称","multiplicity":"ONE","valueHint":"TEXT","sampleValue":"轻量通勤包","boundingBox":[900,1700,4700,2350]},
+        {"elementId":"product-description","kind":"SLOT","proposedKey":"description","displayName":"商品描述","multiplicity":"ONE","valueHint":"TEXT","sampleValue":"防泼水面料，14英寸电脑夹层","boundingBox":[900,2450,6500,3150]},
+        {"elementId":"variants-group","kind":"GROUP","proposedKey":"variants","displayName":"规格","multiplicity":"MANY","boundingBox":[1000,3500,9100,8900]},
+        {"elementId":"sku","kind":"SLOT","proposedKey":"sku","displayName":"SKU","multiplicity":"ONE","valueHint":"TEXT","sampleValue":"BAG-NVY-14","boundingBox":[1300,3900,4200,4550]},
+        {"elementId":"color","kind":"SLOT","proposedKey":"color","displayName":"颜色","multiplicity":"ONE","valueHint":"TEXT","sampleValue":"海军蓝","boundingBox":[4400,3900,6100,4550]},
+        {"elementId":"stock","kind":"SLOT","proposedKey":"stock","displayName":"库存","multiplicity":"ONE","valueHint":"DECIMAL","sampleValue":"128","boundingBox":[6300,3900,7600,4550]},
+        {"elementId":"price","kind":"SLOT","proposedKey":"price","displayName":"价格","multiplicity":"ONE","valueHint":"DECIMAL","sampleValue":"399","boundingBox":[7800,3900,8900,4550]}
+      ],
+      "entities": [
+        {"entityId":"catalog","schemaKey":"product-catalog","displayName":"商品目录","supportingElementIds":["catalog-title"]},
+        {"entityId":"product","schemaKey":"catalog-product","displayName":"商品","supportingElementIds":["products-group"]},
+        {"entityId":"variant","schemaKey":"product-variant","displayName":"商品规格","supportingElementIds":["variants-group"]}
+      ],
+      "relationships": [
+        {"relationshipId":"catalog-products","parentEntityId":"catalog","childEntityId":"product","fieldKey":"products","displayName":"商品","cardinality":"MANY","supportingElementIds":["products-group"]},
+        {"relationshipId":"product-variants","parentEntityId":"product","childEntityId":"variant","fieldKey":"variants","displayName":"规格","cardinality":"MANY","supportingElementIds":["variants-group"]}
+      ],
+      "bindings": [
+        {"elementId":"catalog-title","entityId":"catalog"},{"elementId":"product-name","entityId":"product"},{"elementId":"product-description","entityId":"product"},
+        {"elementId":"sku","entityId":"variant"},{"elementId":"color","entityId":"variant"},{"elementId":"stock","entityId":"variant"},{"elementId":"price","entityId":"variant"}
+      ]
+    },
+    {
+      "sceneId": "event-agenda", "domainPack": "GENERIC", "title": "人工智能工程峰会", "rootEntityId": "event",
+      "elements": [
+        {"elementId":"event-name","kind":"SLOT","proposedKey":"eventName","displayName":"活动名称","multiplicity":"ONE","valueHint":"TEXT","sampleValue":"AI Engineering Summit","boundingBox":[500,350,6500,1100]},
+        {"elementId":"event-date","kind":"SLOT","proposedKey":"eventDate","displayName":"活动日期","multiplicity":"ONE","valueHint":"DATE","sampleValue":"2026-09-18","boundingBox":[7000,450,9300,1050]},
+        {"elementId":"sessions-group","kind":"GROUP","proposedKey":"sessions","displayName":"议程","multiplicity":"MANY","boundingBox":[500,1450,9500,9400]},
+        {"elementId":"session-title","kind":"SLOT","proposedKey":"sessionTitle","displayName":"议题","multiplicity":"ONE","valueHint":"TEXT","sampleValue":"Agentic Workflow in Production","boundingBox":[900,1800,6500,2450]},
+        {"elementId":"session-start","kind":"SLOT","proposedKey":"startTime","displayName":"开始时间","multiplicity":"ONE","valueHint":"TIME","sampleValue":"10:30:00","boundingBox":[6900,1800,9000,2450]},
+        {"elementId":"speaker-group","kind":"GROUP","proposedKey":"speaker","displayName":"演讲嘉宾","multiplicity":"ONE","boundingBox":[1000,2850,9100,5200]},
+        {"elementId":"speaker-name","kind":"SLOT","proposedKey":"speakerName","displayName":"嘉宾姓名","multiplicity":"ONE","valueHint":"TEXT","sampleValue":"Lin Chen","boundingBox":[1300,3250,4200,3900]},
+        {"elementId":"speaker-role","kind":"SLOT","proposedKey":"role","displayName":"职位","multiplicity":"ONE","valueHint":"TEXT","sampleValue":"Principal Engineer","boundingBox":[4500,3250,8500,3900]}
+      ],
+      "entities": [
+        {"entityId":"event","schemaKey":"event-agenda","displayName":"活动议程","supportingElementIds":["event-name"]},
+        {"entityId":"session","schemaKey":"agenda-session","displayName":"议程项","supportingElementIds":["sessions-group"]},
+        {"entityId":"speaker","schemaKey":"session-speaker","displayName":"演讲嘉宾","supportingElementIds":["speaker-group"]}
+      ],
+      "relationships": [
+        {"relationshipId":"event-sessions","parentEntityId":"event","childEntityId":"session","fieldKey":"sessions","displayName":"议程","cardinality":"MANY","supportingElementIds":["sessions-group"]},
+        {"relationshipId":"session-speaker","parentEntityId":"session","childEntityId":"speaker","fieldKey":"speaker","displayName":"演讲嘉宾","cardinality":"ONE","supportingElementIds":["speaker-group"]}
+      ],
+      "bindings": [
+        {"elementId":"event-name","entityId":"event"},{"elementId":"event-date","entityId":"event"},{"elementId":"session-title","entityId":"session"},{"elementId":"session-start","entityId":"session"},
+        {"elementId":"speaker-name","entityId":"speaker"},{"elementId":"speaker-role","entityId":"speaker"}
+      ]
+    },
+    {
+      "sceneId": "weather-forecast", "domainPack": "GENERIC", "title": "深圳七日天气", "rootEntityId": "forecast",
+      "elements": [
+        {"elementId":"city","kind":"SLOT","proposedKey":"city","displayName":"城市","multiplicity":"ONE","valueHint":"TEXT","sampleValue":"深圳","boundingBox":[600,450,3500,1100]},
+        {"elementId":"updated-time","kind":"SLOT","proposedKey":"updatedTime","displayName":"更新时间","multiplicity":"ONE","valueHint":"TIME","sampleValue":"16:32:00","boundingBox":[7000,500,9300,1050]},
+        {"elementId":"days-group","kind":"GROUP","proposedKey":"days","displayName":"逐日预报","multiplicity":"MANY","boundingBox":[500,1600,9500,9200]},
+        {"elementId":"forecast-date","kind":"SLOT","proposedKey":"date","displayName":"日期","multiplicity":"ONE","valueHint":"DATE","sampleValue":"2026-08-11","boundingBox":[800,2000,2600,2700]},
+        {"elementId":"condition","kind":"SLOT","proposedKey":"condition","displayName":"天气","multiplicity":"ONE","valueHint":"TEXT","sampleValue":"多云转阵雨","boundingBox":[2800,2000,5000,2700]},
+        {"elementId":"temperature","kind":"SLOT","proposedKey":"temperature","displayName":"温度","multiplicity":"ONE","valueHint":"DECIMAL","sampleValue":"31","boundingBox":[5200,2000,6800,2700]},
+        {"elementId":"rain","kind":"SLOT","proposedKey":"rainExpected","displayName":"是否有雨","multiplicity":"ONE","valueHint":"BOOLEAN","sampleValue":"true","boundingBox":[7000,2000,9000,2700]}
+      ],
+      "entities": [
+        {"entityId":"forecast","schemaKey":"weather-forecast","displayName":"天气预报","supportingElementIds":["city"]},
+        {"entityId":"day","schemaKey":"forecast-day","displayName":"逐日预报","supportingElementIds":["days-group"]}
+      ],
+      "relationships": [
+        {"relationshipId":"forecast-days","parentEntityId":"forecast","childEntityId":"day","fieldKey":"days","displayName":"逐日预报","cardinality":"MANY","supportingElementIds":["days-group"]}
+      ],
+      "bindings": [
+        {"elementId":"city","entityId":"forecast"},{"elementId":"updated-time","entityId":"forecast"},{"elementId":"forecast-date","entityId":"day"},{"elementId":"condition","entityId":"day"},{"elementId":"temperature","entityId":"day"},{"elementId":"rain","entityId":"day"}
+      ]
+    },
+    {
+      "sceneId": "warehouse-inventory", "domainPack": "GENERIC", "title": "仓储库存看板", "rootEntityId": "warehouse",
+      "elements": [
+        {"elementId":"warehouse-name","kind":"SLOT","proposedKey":"warehouseName","displayName":"仓库名称","multiplicity":"ONE","valueHint":"TEXT","sampleValue":"华南一号仓","boundingBox":[500,350,5600,1050]},
+        {"elementId":"snapshot-date","kind":"SLOT","proposedKey":"snapshotDate","displayName":"盘点日期","multiplicity":"ONE","valueHint":"DATE","sampleValue":"2026-08-10","boundingBox":[6900,450,9300,1050]},
+        {"elementId":"zones-group","kind":"GROUP","proposedKey":"zones","displayName":"库区","multiplicity":"MANY","boundingBox":[500,1450,9500,9400]},
+        {"elementId":"zone-code","kind":"SLOT","proposedKey":"zoneCode","displayName":"库区编号","multiplicity":"ONE","valueHint":"TEXT","sampleValue":"A-03","boundingBox":[800,1800,2800,2450]},
+        {"elementId":"items-group","kind":"GROUP","proposedKey":"items","displayName":"库存商品","multiplicity":"MANY","boundingBox":[900,2800,9200,9000]},
+        {"elementId":"item-sku","kind":"SLOT","proposedKey":"sku","displayName":"SKU","multiplicity":"ONE","valueHint":"TEXT","sampleValue":"RW-2048","boundingBox":[1200,3200,3600,3900]},
+        {"elementId":"item-name","kind":"SLOT","proposedKey":"itemName","displayName":"商品名称","multiplicity":"ONE","valueHint":"TEXT","sampleValue":"亚克力展示架","boundingBox":[3800,3200,6500,3900]},
+        {"elementId":"available","kind":"SLOT","proposedKey":"available","displayName":"可用库存","multiplicity":"ONE","valueHint":"DECIMAL","sampleValue":"356","boundingBox":[6700,3200,7900,3900]},
+        {"elementId":"low-stock","kind":"SLOT","proposedKey":"lowStock","displayName":"低库存","multiplicity":"ONE","valueHint":"BOOLEAN","sampleValue":"false","boundingBox":[8100,3200,9000,3900]}
+      ],
+      "entities": [
+        {"entityId":"warehouse","schemaKey":"warehouse-dashboard","displayName":"仓储看板","supportingElementIds":["warehouse-name"]},
+        {"entityId":"zone","schemaKey":"warehouse-zone","displayName":"库区","supportingElementIds":["zones-group"]},
+        {"entityId":"item","schemaKey":"inventory-item","displayName":"库存商品","supportingElementIds":["items-group"]}
+      ],
+      "relationships": [
+        {"relationshipId":"warehouse-zones","parentEntityId":"warehouse","childEntityId":"zone","fieldKey":"zones","displayName":"库区","cardinality":"MANY","supportingElementIds":["zones-group"]},
+        {"relationshipId":"zone-items","parentEntityId":"zone","childEntityId":"item","fieldKey":"items","displayName":"库存商品","cardinality":"MANY","supportingElementIds":["items-group"]}
+      ],
+      "bindings": [
+        {"elementId":"warehouse-name","entityId":"warehouse"},{"elementId":"snapshot-date","entityId":"warehouse"},{"elementId":"zone-code","entityId":"zone"},
+        {"elementId":"item-sku","entityId":"item"},{"elementId":"item-name","entityId":"item"},{"elementId":"available","entityId":"item"},{"elementId":"low-stock","entityId":"item"}
+      ]
+    },
+    {
+      "sceneId": "school-timetable", "domainPack": "GENERIC", "title": "课程安排表", "rootEntityId": "school",
+      "elements": [
+        {"elementId":"school-name","kind":"SLOT","proposedKey":"schoolName","displayName":"学校名称","multiplicity":"ONE","valueHint":"TEXT","sampleValue":"坪山实验学校","boundingBox":[500,350,6000,1050]},
+        {"elementId":"term","kind":"SLOT","proposedKey":"term","displayName":"学期","multiplicity":"ONE","valueHint":"TEXT","sampleValue":"2026 秋季学期","boundingBox":[6800,450,9300,1050]},
+        {"elementId":"classes-group","kind":"GROUP","proposedKey":"classes","displayName":"班级","multiplicity":"MANY","boundingBox":[500,1450,9500,9400]},
+        {"elementId":"class-name","kind":"SLOT","proposedKey":"className","displayName":"班级名称","multiplicity":"ONE","valueHint":"TEXT","sampleValue":"七年级二班","boundingBox":[800,1800,3500,2450]},
+        {"elementId":"lessons-group","kind":"GROUP","proposedKey":"lessons","displayName":"课程","multiplicity":"MANY","boundingBox":[900,2800,9200,9000]},
+        {"elementId":"weekday","kind":"SLOT","proposedKey":"weekday","displayName":"星期","multiplicity":"ONE","valueHint":"TEXT","sampleValue":"星期一","boundingBox":[1200,3200,2900,3900]},
+        {"elementId":"course-name","kind":"SLOT","proposedKey":"courseName","displayName":"课程名称","multiplicity":"ONE","valueHint":"TEXT","sampleValue":"数学","boundingBox":[3100,3200,4800,3900]},
+        {"elementId":"teacher","kind":"SLOT","proposedKey":"teacher","displayName":"教师","multiplicity":"ONE","valueHint":"TEXT","sampleValue":"周老师","boundingBox":[5000,3200,6600,3900]},
+        {"elementId":"lesson-start","kind":"SLOT","proposedKey":"startTime","displayName":"上课时间","multiplicity":"ONE","valueHint":"TIME","sampleValue":"08:00:00","boundingBox":[6800,3200,8900,3900]}
+      ],
+      "entities": [
+        {"entityId":"school","schemaKey":"school-timetable","displayName":"课程安排","supportingElementIds":["school-name"]},
+        {"entityId":"class","schemaKey":"school-class","displayName":"班级","supportingElementIds":["classes-group"]},
+        {"entityId":"lesson","schemaKey":"class-lesson","displayName":"课程","supportingElementIds":["lessons-group"]}
+      ],
+      "relationships": [
+        {"relationshipId":"school-classes","parentEntityId":"school","childEntityId":"class","fieldKey":"classes","displayName":"班级","cardinality":"MANY","supportingElementIds":["classes-group"]},
+        {"relationshipId":"class-lessons","parentEntityId":"class","childEntityId":"lesson","fieldKey":"lessons","displayName":"课程","cardinality":"MANY","supportingElementIds":["lessons-group"]}
+      ],
+      "bindings": [
+        {"elementId":"school-name","entityId":"school"},{"elementId":"term","entityId":"school"},{"elementId":"class-name","entityId":"class"},
+        {"elementId":"weekday","entityId":"lesson"},{"elementId":"course-name","entityId":"lesson"},{"elementId":"teacher","entityId":"lesson"},{"elementId":"lesson-start","entityId":"lesson"}
+      ]
+    },
+    {
+      "sceneId": "building-directory", "domainPack": "GENERIC", "title": "创新大厦导览", "rootEntityId": "building",
+      "elements": [
+        {"elementId":"building-name","kind":"SLOT","proposedKey":"buildingName","displayName":"大厦名称","multiplicity":"ONE","valueHint":"TEXT","sampleValue":"创新大厦 Innovation Tower","boundingBox":[500,350,7000,1100]},
+        {"elementId":"address","kind":"SLOT","proposedKey":"address","displayName":"地址","multiplicity":"ONE","valueHint":"TEXT","sampleValue":"深圳市福田区中心一路","boundingBox":[500,1150,7000,1650]},
+        {"elementId":"floors-group","kind":"GROUP","proposedKey":"floors","displayName":"楼层","multiplicity":"MANY","boundingBox":[500,1900,9500,9400]},
+        {"elementId":"floor-number","kind":"SLOT","proposedKey":"floorNumber","displayName":"楼层编号","multiplicity":"ONE","valueHint":"DECIMAL","sampleValue":"12","boundingBox":[800,2250,2600,2950]},
+        {"elementId":"rooms-group","kind":"GROUP","proposedKey":"rooms","displayName":"单位","multiplicity":"MANY","boundingBox":[900,3300,9200,9000]},
+        {"elementId":"room-number","kind":"SLOT","proposedKey":"roomNumber","displayName":"房间号","multiplicity":"ONE","valueHint":"TEXT","sampleValue":"1208","boundingBox":[1200,3700,3000,4400]},
+        {"elementId":"tenant-name","kind":"SLOT","proposedKey":"tenantName","displayName":"单位名称","multiplicity":"ONE","valueHint":"TEXT","sampleValue":"未来设计实验室 Future Lab","boundingBox":[3200,3700,7600,4400]},
+        {"elementId":"open","kind":"SLOT","proposedKey":"open","displayName":"是否开放","multiplicity":"ONE","valueHint":"BOOLEAN","sampleValue":"true","boundingBox":[7800,3700,9000,4400]}
+      ],
+      "entities": [
+        {"entityId":"building","schemaKey":"building-directory","displayName":"大厦导览","supportingElementIds":["building-name"]},
+        {"entityId":"floor","schemaKey":"building-floor","displayName":"楼层","supportingElementIds":["floors-group"]},
+        {"entityId":"room","schemaKey":"floor-room","displayName":"单位","supportingElementIds":["rooms-group"]}
+      ],
+      "relationships": [
+        {"relationshipId":"building-floors","parentEntityId":"building","childEntityId":"floor","fieldKey":"floors","displayName":"楼层","cardinality":"MANY","supportingElementIds":["floors-group"]},
+        {"relationshipId":"floor-rooms","parentEntityId":"floor","childEntityId":"room","fieldKey":"rooms","displayName":"单位","cardinality":"MANY","supportingElementIds":["rooms-group"]}
+      ],
+      "bindings": [
+        {"elementId":"building-name","entityId":"building"},{"elementId":"address","entityId":"building"},{"elementId":"floor-number","entityId":"floor"},
+        {"elementId":"room-number","entityId":"room"},{"elementId":"tenant-name","entityId":"room"},{"elementId":"open","entityId":"room"}
+      ]
+    },
+    {
+      "sceneId": "analytics-dashboard", "domainPack": "GENERIC", "title": "运营数据驾驶舱", "rootEntityId": "dashboard",
+      "elements": [
+        {"elementId":"dashboard-title","kind":"SLOT","proposedKey":"dashboardTitle","displayName":"看板名称","multiplicity":"ONE","valueHint":"TEXT","sampleValue":"华南区运营数据","boundingBox":[500,350,6200,1050]},
+        {"elementId":"report-date","kind":"SLOT","proposedKey":"reportDate","displayName":"统计日期","multiplicity":"ONE","valueHint":"DATE","sampleValue":"2026-08-09","boundingBox":[7000,450,9300,1050]},
+        {"elementId":"sections-group","kind":"GROUP","proposedKey":"sections","displayName":"指标分区","multiplicity":"MANY","boundingBox":[500,1450,9500,9400]},
+        {"elementId":"section-name","kind":"SLOT","proposedKey":"sectionName","displayName":"分区名称","multiplicity":"ONE","valueHint":"TEXT","sampleValue":"销售概览","boundingBox":[800,1800,4000,2450]},
+        {"elementId":"metrics-group","kind":"GROUP","proposedKey":"metrics","displayName":"指标","multiplicity":"MANY","boundingBox":[900,2800,9200,9000]},
+        {"elementId":"metric-name","kind":"SLOT","proposedKey":"metricName","displayName":"指标名称","multiplicity":"ONE","valueHint":"TEXT","sampleValue":"成交额","boundingBox":[1200,3200,3800,3900]},
+        {"elementId":"metric-value","kind":"SLOT","proposedKey":"metricValue","displayName":"指标值","multiplicity":"ONE","valueHint":"DECIMAL","sampleValue":"1285000","boundingBox":[4100,3200,6500,3900]},
+        {"elementId":"trend-up","kind":"SLOT","proposedKey":"trendUp","displayName":"是否上涨","multiplicity":"ONE","valueHint":"BOOLEAN","sampleValue":"true","boundingBox":[6800,3200,8900,3900]}
+      ],
+      "entities": [
+        {"entityId":"dashboard","schemaKey":"analytics-dashboard","displayName":"运营看板","supportingElementIds":["dashboard-title"]},
+        {"entityId":"section","schemaKey":"dashboard-section","displayName":"指标分区","supportingElementIds":["sections-group"]},
+        {"entityId":"metric","schemaKey":"dashboard-metric","displayName":"指标","supportingElementIds":["metrics-group"]}
+      ],
+      "relationships": [
+        {"relationshipId":"dashboard-sections","parentEntityId":"dashboard","childEntityId":"section","fieldKey":"sections","displayName":"指标分区","cardinality":"MANY","supportingElementIds":["sections-group"]},
+        {"relationshipId":"section-metrics","parentEntityId":"section","childEntityId":"metric","fieldKey":"metrics","displayName":"指标","cardinality":"MANY","supportingElementIds":["metrics-group"]}
+      ],
+      "bindings": [
+        {"elementId":"dashboard-title","entityId":"dashboard"},{"elementId":"report-date","entityId":"dashboard"},{"elementId":"section-name","entityId":"section"},
+        {"elementId":"metric-name","entityId":"metric"},{"elementId":"metric-value","entityId":"metric"},{"elementId":"trend-up","entityId":"metric"}
+      ]
+    },
+    {
+      "sceneId": "low-information-poster", "domainPack": "GENERIC", "title": "低信息活动海报", "rootEntityId": "poster",
+      "elements": [
+        {"elementId":"poster-title","kind":"SLOT","proposedKey":"title","displayName":"标题","multiplicity":"ONE","valueHint":"TEXT","sampleValue":"SUMMER NIGHT","boundingBox":[1200,900,8800,2200]},
+        {"elementId":"mystery-value","kind":"SLOT","proposedKey":"value","displayName":"待确认内容","multiplicity":"ONE","valueHint":"UNRESOLVED","sampleValue":"X7-?","boundingBox":[2500,3300,7500,5000]},
+        {"elementId":"details-group","kind":"GROUP","proposedKey":"details","displayName":"活动详情","multiplicity":"ONE","boundingBox":[1000,5800,9000,9000]},
+        {"elementId":"contact","kind":"SLOT","proposedKey":"contact","displayName":"联系方式","multiplicity":"ONE","valueHint":"TEXT","sampleValue":"info@example.test","boundingBox":[1600,6500,8400,7400]}
+      ],
+      "entities": [
+        {"entityId":"poster","schemaKey":"event-poster","displayName":"活动海报","supportingElementIds":["poster-title"]},
+        {"entityId":"details","schemaKey":"poster-details","displayName":"活动详情","supportingElementIds":["details-group"]}
+      ],
+      "relationships": [
+        {"relationshipId":"poster-details","parentEntityId":"poster","childEntityId":"details","fieldKey":"details","displayName":"活动详情","cardinality":"ONE","supportingElementIds":["details-group"]}
+      ],
+      "bindings": [
+        {"elementId":"poster-title","entityId":"poster"},{"elementId":"mystery-value","entityId":"poster"},{"elementId":"contact","entityId":"details"}
+      ]
+    }
+  ]
+}

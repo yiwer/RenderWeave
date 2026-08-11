@@ -74,11 +74,107 @@ describe('Inference monitor workspace', () => {
     renderPage();
 
     expect(await screen.findByText('识别任务未生成 Candidate')).toBeTruthy();
-    expect(await screen.findByText('CANDIDATE_SCHEMA_KEY_INVALID')).toBeTruthy();
-    expect(screen.getByText('CANDIDATE_SCALAR_SHAPE_INVALID')).toBeTruthy();
+    expect((await screen.findAllByText('CANDIDATE_SCHEMA_KEY_INVALID')).length).toBeGreaterThan(0);
+    expect(screen.getAllByText('CANDIDATE_SCALAR_SHAPE_INVALID').length).toBeGreaterThan(0);
     expect(screen.queryByText('req-private-provider-id')).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: '重新运行' }));
     await waitFor(() => expect(api.retryInferenceRunRequest).toHaveBeenCalledWith(failed.runId));
+  });
+
+  it('summarizes vNext stage, region, issue, cost and recovery telemetry without payloads', async () => {
+    const running = {
+      ...run('RUNNING'),
+      stage: 'HIERARCHY' as const,
+      sequence: 8,
+    };
+    api.getInferenceRunRequest.mockResolvedValue(running);
+    api.getInferenceExecutionLogRequest.mockResolvedValue(visualExecutionLog(running));
+    renderPage();
+
+    expect(await screen.findByRole('heading', { name: '阶段与检查点' })).toBeTruthy();
+    expect(screen.getByText('感知与区域')).toBeTruthy();
+    expect(screen.getByText('层级语义')).toBeTruthy();
+    expect(screen.getAllByText('检查点已验证').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('正在修复').length).toBeGreaterThan(0);
+    expect(screen.getByRole('heading', { name: '有限问题定位' })).toBeTruthy();
+    expect(screen.getAllByText('区域树').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('VISUAL_GROUNDING_PARENT_KIND_INVALID').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('VISUAL_GROUNDING_READING_ORDER_DUPLICATE').length)
+      .toBeGreaterThan(0);
+    expect(screen.getAllByText('同级区域阅读序号重复').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('VISUAL_SEMANTIC_SLOT_EVIDENCE_CONTAINS_ELEMENT').length)
+      .toBeGreaterThan(0);
+    expect(screen.getAllByText('字段证据包住了其他元素，应恢复为叶子字段或 GROUP 容器').length)
+      .toBeGreaterThan(0);
+    expect(screen.getAllByText('VISUAL_SEMANTIC_REPEATED_GROUP_CARDINALITY_INVALID').length)
+      .toBeGreaterThan(0);
+    expect(screen.getAllByText('MANY GROUP 与重复区域的双向归属不一致').length)
+      .toBeGreaterThan(0);
+    expect(screen.getAllByText('VISUAL_GROUNDING_ELEMENT_REGION_NORMALIZED').length)
+      .toBeGreaterThan(0);
+    expect(screen.getAllByText('已按唯一最具体证据区域归一化元素归属').length)
+      .toBeGreaterThan(0);
+    expect(screen.getAllByText('VISUAL_GROUNDING_REGION_KIND_NORMALIZED').length)
+      .toBeGreaterThan(0);
+    expect(screen.getAllByText('已按受控别名、唯一结构事实或唯一绑定约束归一化区域类型').length)
+      .toBeGreaterThan(0);
+    expect(screen.getAllByText('VISUAL_GROUNDING_REPEATED_ITEM_SLOT_OWNER_NORMALIZED').length)
+      .toBeGreaterThan(0);
+    expect(screen.getAllByText('已按唯一可见 ITEM 证据归一化重复字段归属').length)
+      .toBeGreaterThan(0);
+    expect(screen.getAllByText('VISUAL_GROUNDING_REGION_PARENT_NORMALIZED').length)
+      .toBeGreaterThan(0);
+    expect(screen.getAllByText('已按唯一最具体既有容器或唯一包含根祖先归一化区域父级').length)
+      .toBeGreaterThan(0);
+    expect(screen.getAllByText('VISUAL_GROUNDING_READING_ORDER_NORMALIZED').length)
+      .toBeGreaterThan(0);
+    expect(screen.getAllByText('已按唯一既有顺序压紧区域阅读序号').length)
+      .toBeGreaterThan(0);
+    expect(screen.getByText('证据区域')).toBeTruthy();
+    expect(screen.getAllByText('最早返回 盘点图片元素 修复').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('VISUAL_HIERARCHY_V2_RELATIONSHIP_SUPPORT_IDS_EMPTY').length)
+      .toBeGreaterThan(0);
+    expect(screen.getAllByText('层级关系支撑 ID 列表不能为空').length)
+      .toBeGreaterThan(0);
+    expect(screen.getAllByText('已按唯一容器区域 GROUP 归属归一化层级关系支撑').length)
+      .toBeGreaterThan(0);
+    expect(screen.getAllByText('VISUAL_HIERARCHY_RELATIONSHIP_ENCLOSING_SUPPORT_OWNER_NORMALIZED').length)
+      .toBeGreaterThan(0);
+    expect(screen.getAllByText('已按唯一包围且连通的 GROUP 证据归一化层级关系支撑').length)
+      .toBeGreaterThan(0);
+    expect(screen.getAllByText('VISUAL_HIERARCHY_RELATIONSHIP_SOURCE_ANCESTOR_SUPPORT_OWNER_NORMALIZED').length)
+      .toBeGreaterThan(0);
+    expect(screen.getAllByText('已按关系源区域唯一且连通的祖先 GROUP 证据归一化层级关系支撑').length)
+      .toBeGreaterThan(0);
+    expect(screen.getAllByText('VISUAL_HIERARCHY_RELATIONSHIP_EMPTY_SUPPORT_OWNER_NORMALIZED').length)
+      .toBeGreaterThan(0);
+    expect(screen.getAllByText('已按关系区域唯一且连通的 GROUP 归属补全层级关系支撑').length)
+      .toBeGreaterThan(0);
+    expect(screen.getAllByText('VISUAL_HIERARCHY_RELATIONSHIP_EMPTY_SOURCE_ANCESTOR_SUPPORT_OWNER_NORMALIZED').length)
+      .toBeGreaterThan(0);
+    expect(screen.getAllByText('已按关系子区域唯一且连通的祖先 GROUP 归属补全层级关系支撑').length)
+      .toBeGreaterThan(0);
+    expect(screen.getAllByText('VISUAL_HIERARCHY_RELATIONSHIP_UNKNOWN_SUPPORT_OWNER_NORMALIZED').length)
+      .toBeGreaterThan(0);
+    expect(screen.getAllByText('已将未知层级关系支撑引用归一化为关系区域唯一且连通的 GROUP 归属').length)
+      .toBeGreaterThan(0);
+    expect(screen.getAllByText('VISUAL_SEMANTIC_HIERARCHY_ENTITY_REGION_REDUNDANT').length)
+      .toBeGreaterThan(0);
+    expect(screen.getAllByText('同一实体不能同时拥有祖先区域和后代区域').length)
+      .toBeGreaterThan(0);
+    expect(screen.getAllByText('VISUAL_SEMANTIC_HIERARCHY_NON_ROOT_OWNS_ROOT_REGION').length)
+      .toBeGreaterThan(0);
+    expect(screen.getAllByText('非根实体不能拥有图片根区域').length)
+      .toBeGreaterThan(0);
+    expect(screen.getAllByText('VISUAL_SEMANTIC_HIERARCHY_BINDING_OWNER_AMBIGUOUS').length)
+      .toBeGreaterThan(0);
+    expect(screen.getAllByText('字段存在多个同等最小的空间实体 owner').length)
+      .toBeGreaterThan(0);
+    expect(screen.getAllByText('最早返回 构建层级关系 修复').length).toBeGreaterThan(0);
+    expect(screen.getByText('已从持久检查点恢复')).toBeTruthy();
+    expect(screen.getByText(/0\.007346/)).toBeTruthy();
+    expect(screen.queryByText('raw-ocr-secret')).toBeNull();
+    expect(screen.queryByText('provider-response-secret')).toBeNull();
   });
 
   it('opens the result workspace only after Candidate generation', async () => {
@@ -184,6 +280,113 @@ function executionLog(runSnapshot: InferenceRunResponse, failed = false): Infere
       },
       completedAt: '2026-08-10T04:03:11Z',
     }] : [],
+    truncated: false,
+  };
+}
+
+function visualExecutionLog(runSnapshot: InferenceRunResponse): InferenceExecutionLogResponse {
+  return {
+    run: runSnapshot,
+    events: [
+      {
+        sequence: 1,
+        type: 'QUEUED',
+        state: 'QUEUED',
+        stage: 'OBSERVE',
+        occurredAt: '2026-08-10T04:02:49Z',
+      },
+      {
+        sequence: 6,
+        type: 'CHECKPOINT_ADVANCED',
+        state: 'RUNNING',
+        stage: 'HIERARCHY',
+        occurredAt: '2026-08-10T04:03:10Z',
+      },
+      {
+        sequence: 7,
+        type: 'LEASE_RECLAIMED',
+        state: 'RUNNING',
+        stage: 'HIERARCHY',
+        occurredAt: '2026-08-10T04:03:11Z',
+      },
+    ],
+    attempts: [
+      {
+        attemptOrdinal: 0,
+        stage: 'OBSERVE',
+        status: 'REJECTED',
+        outcomeCode: 'LIVE_VISUAL_ANALYSIS_REJECTED',
+        providerModel: 'qwen3.7-flash',
+        inputTokens: 2_300,
+        outputTokens: 4_100,
+        costMicrosCny: 2_715,
+        durationMillis: 22_083,
+        problemCodeCounts: {
+          VISUAL_GROUNDING_PARENT_KIND_INVALID: 1,
+          VISUAL_GROUNDING_READING_ORDER_DUPLICATE: 1,
+          VISUAL_SEMANTIC_REPEATED_GROUP_CARDINALITY_INVALID: 1,
+          VISUAL_SEMANTIC_SLOT_EVIDENCE_CONTAINS_ELEMENT: 1,
+        },
+        completedAt: '2026-08-10T04:03:08Z',
+      },
+      {
+        attemptOrdinal: 1,
+        stage: 'OBSERVE',
+        status: 'SUCCEEDED',
+        outcomeCode: 'LIVE_VISUAL_GROUNDING_ACCEPTED',
+        providerModel: 'qwen3.7-flash',
+        inputTokens: 2_340,
+        outputTokens: 4_220,
+        costMicrosCny: 3_001,
+        durationMillis: 24_012,
+        problemCodeCounts: {
+          VISUAL_GROUNDING_ELEMENT_REGION_NORMALIZED: 1,
+          VISUAL_GROUNDING_REGION_KIND_NORMALIZED: 3,
+          VISUAL_GROUNDING_REPEATED_ITEM_SLOT_OWNER_NORMALIZED: 1,
+          VISUAL_GROUNDING_REGION_PARENT_NORMALIZED: 1,
+          VISUAL_GROUNDING_READING_ORDER_NORMALIZED: 2,
+        },
+        completedAt: '2026-08-10T04:03:10Z',
+      },
+      {
+        attemptOrdinal: 2,
+        stage: 'HIERARCHY',
+        status: 'REJECTED',
+        outcomeCode: 'LIVE_VISUAL_ANALYSIS_REJECTED',
+        providerModel: 'qwen3.7-flash',
+        inputTokens: 0,
+        outputTokens: 0,
+        costMicrosCny: 0,
+        durationMillis: 12,
+        problemCodeCounts: {
+          VISUAL_HIERARCHY_V2_RELATIONSHIP_SUPPORT_IDS_EMPTY: 1,
+          VISUAL_SEMANTIC_HIERARCHY_ENTITY_REGION_REDUNDANT: 1,
+          VISUAL_SEMANTIC_HIERARCHY_NON_ROOT_OWNS_ROOT_REGION: 1,
+          VISUAL_SEMANTIC_HIERARCHY_BINDING_OWNER_AMBIGUOUS: 1,
+        },
+        completedAt: '2026-08-10T04:03:12Z',
+      },
+      {
+        attemptOrdinal: 3,
+        stage: 'HIERARCHY',
+        status: 'SUCCEEDED',
+        outcomeCode: 'LIVE_VISUAL_HIERARCHY_V2_ACCEPTED',
+        providerModel: 'qwen3.7-flash-2026-07-15',
+        inputTokens: 1_950,
+        outputTokens: 2_400,
+        costMicrosCny: 1_630,
+        durationMillis: 15_200,
+        problemCodeCounts: {
+          VISUAL_HIERARCHY_RELATIONSHIP_SUPPORT_OWNER_NORMALIZED: 1,
+          VISUAL_HIERARCHY_RELATIONSHIP_ENCLOSING_SUPPORT_OWNER_NORMALIZED: 1,
+          VISUAL_HIERARCHY_RELATIONSHIP_SOURCE_ANCESTOR_SUPPORT_OWNER_NORMALIZED: 1,
+          VISUAL_HIERARCHY_RELATIONSHIP_EMPTY_SUPPORT_OWNER_NORMALIZED: 1,
+          VISUAL_HIERARCHY_RELATIONSHIP_EMPTY_SOURCE_ANCESTOR_SUPPORT_OWNER_NORMALIZED: 1,
+          VISUAL_HIERARCHY_RELATIONSHIP_UNKNOWN_SUPPORT_OWNER_NORMALIZED: 1,
+        },
+        completedAt: '2026-08-10T04:03:14Z',
+      },
+    ],
     truncated: false,
   };
 }

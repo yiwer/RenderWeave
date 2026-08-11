@@ -18,6 +18,25 @@ test('executes a real replay run and atomically creates its reviewed Draft bundl
 
   await expect(page).toHaveURL(/\/inference-runs\/[0-9a-f-]+\/monitor$/);
   await expect(page.getByText('Candidate 已生成')).toBeVisible();
+  await expect(page.getByRole('heading', { name: '阶段与检查点' })).toBeVisible();
+  await expect(page.getByText('无需恢复')).toBeVisible();
+  await page.setViewportSize({ width: 1024, height: 768 });
+  await expect(page.locator('.resource-body')).toBeVisible();
+  const logToggle = page.getByRole('button', { name: '收起' });
+  await logToggle.focus();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('#inference-execution-log-body')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: '展开' })).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('heading', { name: '阶段与检查点' })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  const monitorAccessibility = await new AxeBuilder({ page })
+    .include('.resource-shell')
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa'])
+    .analyze();
+  expect(monitorAccessibility.violations.filter((violation) =>
+    violation.impact === 'serious' || violation.impact === 'critical')).toEqual([]);
+  await page.setViewportSize({ width: 1280, height: 720 });
   await page.getByRole('link', { name: /查看识别结果/ }).first().click();
   await expect(page).toHaveURL(/\/inference-runs\/[0-9a-f-]+\/review$/);
   await expect(page.getByText(/blocker 阻止落库/)).toBeVisible();

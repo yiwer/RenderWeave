@@ -28,6 +28,7 @@ import cn.hbads.renderweave.inference.provider.ProviderCostEstimator;
 import cn.hbads.renderweave.inference.provider.ProviderInferenceRequest;
 import cn.hbads.renderweave.inference.provider.ProviderInferenceResponse;
 import cn.hbads.renderweave.inference.provider.ProviderUsage;
+import cn.hbads.renderweave.inference.replay.InferenceAttempt;
 import cn.hbads.renderweave.inference.replay.InferenceAttemptStatus;
 import cn.hbads.renderweave.inference.replay.InferenceReplayStore;
 import cn.hbads.renderweave.inference.replay.ReplayCorpus;
@@ -35,6 +36,9 @@ import cn.hbads.renderweave.inference.run.InferenceStage;
 import cn.hbads.renderweave.inference.run.InferenceRunState;
 import cn.hbads.renderweave.inference.run.InferenceRunStore;
 import cn.hbads.renderweave.inference.run.NewInferenceRun;
+import cn.hbads.renderweave.inference.vision.DocumentVisionCapability;
+import cn.hbads.renderweave.inference.vision.DocumentVisionObservation;
+import cn.hbads.renderweave.inference.vision.DocumentVisionPreprocessor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,6 +49,10 @@ import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import javax.imageio.ImageIO;
+import java.awt.Color;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.Clock;
@@ -59,6 +67,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -71,6 +80,64 @@ class PostgresLiveInferenceWorkflowTest {
             "dashscope-qwen37-plus-20260526-grounded-v1";
     private static final String SERIAL_PRODUCT_PROFILE =
             "dashscope-qwen37-flash-product-v4";
+    private static final String LOCAL_MATERIALIZER_PROFILE =
+            "dashscope-qwen37-flash-product-v5";
+    private static final String GROUNDED_VISUAL_PROFILE =
+            "dashscope-qwen37-flash-product-v6-transit-board";
+    private static final String EVIDENCE_DERIVED_HIERARCHY_PROFILE =
+            "dashscope-qwen37-flash-20260715-product-v16-generic";
+    private static final String REGION_OWNED_HIERARCHY_PROFILE =
+            "dashscope-qwen37-flash-20260715-product-v17-generic";
+    private static final String DIAGNOSTIC_HIERARCHY_PROFILE =
+            "dashscope-qwen37-flash-20260715-product-v18-generic";
+    private static final String SUPPORT_NORMALIZED_HIERARCHY_PROFILE =
+            "dashscope-qwen37-flash-20260715-product-v19-generic";
+    private static final String REGION_NORMALIZED_HIERARCHY_PROFILE =
+            "dashscope-qwen37-flash-20260715-product-v20-generic";
+    private static final String CONNECTION_NORMALIZED_HIERARCHY_PROFILE =
+            "dashscope-qwen37-flash-20260715-product-v21-generic";
+    private static final String SUPPORT_OWNER_NORMALIZED_HIERARCHY_PROFILE =
+            "dashscope-qwen37-flash-20260715-product-v22-generic";
+    private static final String HYBRID_VISUAL_PROFILE =
+            "dashscope-qwen37-flash-product-v7-hybrid-generic";
+    private static final String SUPPORT_OWNER_HYBRID_VISUAL_PROFILE =
+            "dashscope-qwen37-flash-20260715-product-v23-hybrid-generic";
+    private static final String BOUNDED_OBSERVATION_HYBRID_VISUAL_PROFILE =
+            "dashscope-qwen37-flash-20260715-product-v24-hybrid-generic";
+    private static final String LEAF_EVIDENCE_VERIFIED_HYBRID_VISUAL_PROFILE =
+            "dashscope-qwen37-flash-20260715-product-v25-hybrid-generic";
+    private static final String ENCLOSING_SUPPORT_OWNER_HYBRID_VISUAL_PROFILE =
+            "dashscope-qwen37-flash-20260715-product-v26-hybrid-generic";
+    private static final String SOURCE_ANCESTOR_SUPPORT_OWNER_HYBRID_VISUAL_PROFILE =
+            "dashscope-qwen37-flash-20260715-product-v27-hybrid-generic";
+    private static final String MINIMAL_ENTITY_OWNERSHIP_HYBRID_VISUAL_PROFILE =
+            "dashscope-qwen37-flash-20260715-product-v28-hybrid-generic";
+    private static final String GROUP_REGION_CARDINALITY_HYBRID_VISUAL_PROFILE =
+            "dashscope-qwen37-flash-20260715-product-v29-hybrid-generic";
+    private static final String EVIDENCE_OWNER_NORMALIZED_HYBRID_VISUAL_PROFILE =
+            "dashscope-qwen37-flash-20260715-product-v30-hybrid-generic";
+    private static final String REPEATED_ITEM_SLOT_OWNER_NORMALIZED_HYBRID_VISUAL_PROFILE =
+            "dashscope-qwen37-flash-20260715-product-v31-hybrid-generic";
+    private static final String EMPTY_SUPPORT_OWNER_NORMALIZED_HYBRID_VISUAL_PROFILE =
+            "dashscope-qwen37-flash-20260715-product-v32-hybrid-generic";
+    private static final String UNKNOWN_SUPPORT_OWNER_NORMALIZED_HYBRID_VISUAL_PROFILE =
+            "dashscope-qwen37-flash-20260715-product-v33-hybrid-generic";
+    private static final String UNIQUE_REGION_PARENT_NORMALIZED_HYBRID_VISUAL_PROFILE =
+            "dashscope-qwen37-flash-20260715-product-v34-hybrid-generic";
+    private static final String EMPTY_SOURCE_ANCESTOR_SUPPORT_OWNER_NORMALIZED_HYBRID_VISUAL_PROFILE =
+            "dashscope-qwen37-flash-20260715-product-v35-hybrid-generic";
+    private static final String STRUCTURAL_REGION_KIND_NORMALIZED_HYBRID_VISUAL_PROFILE =
+            "dashscope-qwen37-flash-20260715-product-v36-hybrid-generic";
+    private static final String CONSTRAINT_REGION_KIND_NORMALIZED_HYBRID_VISUAL_PROFILE =
+            "dashscope-qwen37-flash-20260715-product-v37-hybrid-generic";
+    private static final String ANCESTOR_REGION_PARENT_NORMALIZED_HYBRID_VISUAL_PROFILE =
+            "dashscope-qwen37-flash-20260715-product-v38-hybrid-generic";
+    private static final String GAPPED_READING_ORDER_NORMALIZED_HYBRID_VISUAL_PROFILE =
+            "dashscope-qwen37-flash-20260715-product-v39-hybrid-generic";
+    private static final String READING_ORDER_DIAGNOSTIC_HYBRID_VISUAL_PROFILE =
+            "dashscope-qwen37-flash-20260715-product-v40-hybrid-generic";
+    private static final String DOCUMENT_VISION_CAPABILITY =
+            "rapidocr-3.9.2-openvino-2026.0.0-ppocrv6-small-c05805399d7d10b1";
 
     @Container
     @ServiceConnection
@@ -281,6 +348,2139 @@ class PostgresLiveInferenceWorkflowTest {
         assertThat(provider.requests).extracting(request -> request.stage().name())
                 .containsExactly("OBSERVE", "HIERARCHY", "ELEMENT_BINDING", "STRUCTURE");
         assertThat(workflowStore.attempts(created)).hasSize(4);
+    }
+
+    @Test
+    void pipelineFourMaterializesTheStationTreeLocallyWithExactlyThreeProviderAttempts() {
+        var blobs = new MemoryBlobStore();
+        var created = create(
+                blobs, "local-materializer-station", 1_050, 1_660, LOCAL_MATERIALIZER_PROFILE
+        );
+        var provider = new ScriptedProvider(
+                request -> response(request, stationElements(request)),
+                request -> response(request, stationHierarchy()),
+                request -> response(request, stationBindings())
+        );
+
+        var finished = worker(provider, blobs).processNext("local-materializer-worker").orElseThrow();
+
+        assertThat(finished.state())
+                .as("failure=%s attempts=%s", finished.failureCode(), workflowStore.attempts(created))
+                .isEqualTo(InferenceRunState.REVIEW_REQUIRED);
+        assertThat(provider.requests).extracting(request -> request.stage().name())
+                .containsExactly("OBSERVE", "HIERARCHY", "ELEMENT_BINDING");
+        assertThat(workflowStore.attempts(created)).hasSize(3)
+                .allSatisfy(attempt -> {
+                    assertThat(attempt.stage()).isNotEqualTo(InferenceStage.STRUCTURE);
+                    assertThat(attempt.status()).isEqualTo(InferenceAttemptStatus.SUCCEEDED);
+                });
+        assertThat(jdbcClient.sql("""
+                        select count(*) from inference_provider_reservation
+                        where run_id = :runId
+                        """)
+                .param("runId", created)
+                .query(Long.class).single()).isEqualTo(3L);
+        assertThat(budgets.snapshot(LiveInferenceWorker.PRODUCT_BUDGET_KEY).consumedAttempts())
+                .isEqualTo(3);
+
+        var candidate = candidateCodec.parse(
+                workflowStore.findCandidate(created).orElseThrow().currentJson()
+        );
+        assertThat(candidate.schemas()).extracting(CandidateSchema::proposedSchemaKey)
+                .containsExactly("bus-stop-board", "bus-route", "warm-notice", "bus-stop");
+        assertThat(candidate.schemas()).allSatisfy(schema -> {
+            assertThat(schema.assessment().resolution()).isEqualTo(CandidateResolution.UNRESOLVED);
+            assertThat(schema.assessment().confidenceBps()).isEqualTo(7_999);
+            assertThat(schema.fields()).allSatisfy(field -> {
+                assertThat(field.required()).isFalse();
+                assertThat(field.assessment().resolution()).isEqualTo(CandidateResolution.UNRESOLVED);
+                assertThat(field.assessment().confidenceBps()).isEqualTo(7_999);
+            });
+        });
+        var route = candidate.schemas().stream()
+                .filter(schema -> "bus-route".equals(schema.proposedSchemaKey()))
+                .findFirst().orElseThrow();
+        assertThat(route.fields().stream().filter(field -> "stops".equals(field.proposedFieldKey()))
+                .findFirst().orElseThrow().value().items().kind())
+                .isEqualTo(CandidateValueKind.REFERENCE);
+    }
+
+    @Test
+    void pipelineFourRecoversAtStructureWithoutRepeatingAProviderStage() {
+        var blobs = new MemoryBlobStore();
+        var created = create(
+                blobs, "local-materializer-recovery", 1_050, 1_660, LOCAL_MATERIALIZER_PROFILE
+        );
+        var firstProvider = new ScriptedProvider(
+                request -> response(request, stationElements(request)),
+                request -> response(request, stationHierarchy()),
+                request -> response(request, stationBindings())
+        );
+        var firstWorker = worker(firstProvider, blobs, T0.plusSeconds(1));
+        var current = runs.claimNextLive(
+                "local-materializer-first", T0.plusSeconds(1), Duration.ofMinutes(5)
+        ).orElseThrow();
+
+        current = firstWorker.advance(current);
+        current = firstWorker.advance(current);
+        current = firstWorker.advance(current);
+        assertThat(current.stage()).isEqualTo(InferenceStage.STRUCTURE);
+
+        var recoveryProvider = new ScriptedProvider();
+        var finished = worker(recoveryProvider, blobs, T0.plus(Duration.ofMinutes(7)))
+                .processNext("local-materializer-recovery").orElseThrow();
+
+        assertThat(finished.state()).isEqualTo(InferenceRunState.REVIEW_REQUIRED);
+        assertThat(firstProvider.requests).extracting(request -> request.stage().name())
+                .containsExactly("OBSERVE", "HIERARCHY", "ELEMENT_BINDING");
+        assertThat(recoveryProvider.requests).isEmpty();
+        assertThat(workflowStore.attempts(created)).hasSize(3);
+        assertThat(workflowStore.findCandidate(created)).isPresent();
+    }
+
+    @Test
+    void pipelineFourPointOneGroundsMultiScaleViewsAndPersistsOnlyOriginalCoordinates() {
+        var blobs = new MemoryBlobStore();
+        var created = createGroundedVisual(blobs, "grounded-visual-station");
+        var provider = new ScriptedProvider(
+                request -> response(request, groundedStationElements()),
+                request -> response(request, groundedStationHierarchy()),
+                request -> response(request, groundedStationBindings())
+        );
+
+        var finished = worker(provider, blobs).processNext("grounded-visual-worker").orElseThrow();
+
+        assertThat(finished.state())
+                .as("failure=%s attempts=%s", finished.failureCode(), workflowStore.attempts(created))
+                .isEqualTo(InferenceRunState.REVIEW_REQUIRED);
+        assertThat(provider.requests).extracting(request -> request.stage().name())
+                .containsExactly("OBSERVE", "HIERARCHY", "ELEMENT_BINDING");
+        assertThat(provider.requests).allSatisfy(request -> {
+            assertThat(request.images()).hasSize(3);
+            assertThat(request.taskJson())
+                    .contains("renderweave-live-task/4.0")
+                    .contains("renderweave-visual-view-plan/1.0")
+                    .contains("\"viewCatalog\"")
+                    .contains("renderweave-visual-hint-pack/transit-board/1.0");
+            assertThat(request.systemPrompt()).contains("停靠站点");
+        });
+        assertThat(workflowStore.attempts(created)).hasSize(3)
+                .allSatisfy(attempt -> assertThat(attempt.status())
+                        .isEqualTo(InferenceAttemptStatus.SUCCEEDED));
+        assertThat(finished.checkpointJson())
+                .contains("renderweave-live-checkpoint/3.0")
+                .contains("renderweave-visual-grounding/2.0")
+                .contains("renderweave-visual-entity-regions/2.0")
+                .doesNotContain("view-00-");
+
+        var candidate = candidateCodec.parse(
+                workflowStore.findCandidate(created).orElseThrow().currentJson()
+        );
+        assertThat(candidate.schemas()).extracting(CandidateSchema::proposedSchemaKey)
+                .containsExactly("bus-stop-board", "bus-route", "warm-notice", "bus-stop");
+        assertThat(candidate.schemas().stream()
+                .flatMap(schema -> schema.fields().stream())
+                .flatMap(field -> field.assessment().evidence().stream()))
+                .allSatisfy(evidence -> assertThat(evidence.artifactId())
+                        .isEqualTo(finished.inputs().getFirst().artifact().artifactId()));
+    }
+
+    @Test
+    void pipelineFourPointThreeDerivesRelationshipCardinalityFromUniqueGroupEvidence() {
+        var blobs = new MemoryBlobStore();
+        var created = createGroundedVisual(
+                blobs, "evidence-derived-hierarchy-cardinality",
+                EVIDENCE_DERIVED_HIERARCHY_PROFILE
+        );
+        var mismatchedHierarchy = groundedStationHierarchy().replaceFirst(
+                "\"cardinality\":\"MANY\"", "\"cardinality\":\"ONE\""
+        );
+        var provider = new ScriptedProvider(
+                request -> response(request, groundedStationElements()),
+                request -> response(request, mismatchedHierarchy),
+                request -> response(request, groundedStationBindings())
+        );
+
+        var finished = worker(provider, blobs)
+                .processNext("evidence-derived-hierarchy-worker").orElseThrow();
+
+        assertThat(finished.state())
+                .as("failure=%s attempts=%s", finished.failureCode(), workflowStore.attempts(created))
+                .isEqualTo(InferenceRunState.REVIEW_REQUIRED);
+        assertThat(provider.requests).extracting(ProviderInferenceRequest::stage)
+                .containsExactly(
+                        InferenceStage.OBSERVE,
+                        InferenceStage.HIERARCHY,
+                        InferenceStage.ELEMENT_BINDING
+                );
+        assertThat(provider.requests).allSatisfy(request ->
+                assertThat(request.profile().pipelineVersion())
+                        .isEqualTo("renderweave-inference-pipeline/4.3")
+        );
+        assertThat(workflowStore.attempts(created)).hasSize(3)
+                .allSatisfy(attempt -> assertThat(attempt.status())
+                        .isEqualTo(InferenceAttemptStatus.SUCCEEDED));
+        assertThat(workflowStore.attempts(created).get(1).problemCodeCounts())
+                .containsExactlyEntriesOf(Map.of(
+                        "VISUAL_HIERARCHY_RELATIONSHIP_CARDINALITY_DERIVED", 3
+                ));
+        assertThat(candidateCodec.parse(
+                workflowStore.findCandidate(created).orElseThrow().currentJson()
+        ).schemas()).extracting(CandidateSchema::proposedSchemaKey)
+                .containsExactly("bus-stop-board", "bus-route", "warm-notice", "bus-stop");
+    }
+
+    @Test
+    void groundedContractRetriesOnlyCurrentStageAndPersistsBoundedDiagnostic() {
+        var blobs = new MemoryBlobStore();
+        var created = createGroundedVisual(blobs, "grounded-version-diagnostic");
+        var invalid = groundedStationElements().replace(
+                "renderweave-visual-grounding/2.0", "renderweave-visual-grounding/9.0"
+        );
+        var provider = new ScriptedProvider(
+                request -> response(request, invalid),
+                request -> response(request, invalid),
+                request -> response(request, invalid),
+                request -> response(request, invalid),
+                request -> response(request, invalid)
+        );
+
+        var finished = worker(provider, blobs).processNext("grounded-diagnostic-worker").orElseThrow();
+
+        assertThat(finished.state()).isEqualTo(InferenceRunState.FAILED);
+        assertThat(finished.failureCode()).contains("VISUAL_GROUNDING_VERSION_INVALID");
+        assertThat(provider.requests).hasSize(5).allSatisfy(request ->
+                assertThat(request.stage()).isEqualTo(InferenceStage.OBSERVE)
+        );
+        assertThat(workflowStore.attempts(created)).hasSize(5).allSatisfy(attempt -> {
+            assertThat(attempt.status()).isEqualTo(InferenceAttemptStatus.REJECTED);
+            assertThat(attempt.problemCodeCounts())
+                    .containsExactlyEntriesOf(java.util.Map.of("VISUAL_GROUNDING_VERSION_INVALID", 1));
+        });
+        assertThat(workflowStore.findCandidate(created)).isEmpty();
+    }
+
+    @Test
+    void groundedSemanticVerifierRetriesObservationBeforeHierarchy() {
+        var blobs = new MemoryBlobStore();
+        var created = createGroundedVisual(blobs, "grounded-semantic-observation-retry");
+        var readingOrderGap = groundedStationElements().replace(
+                "\"regionId\":\"routes\",\"parentRegionId\":\"root\",\"kind\":\"REPEATED_GROUP\",\"multiplicity\":\"MANY\",\"readingOrder\":2",
+                "\"regionId\":\"routes\",\"parentRegionId\":\"root\",\"kind\":\"REPEATED_GROUP\",\"multiplicity\":\"MANY\",\"readingOrder\":3"
+        );
+        var flattened = groundedStationElements().replace(
+                "\"elementId\":\"route-group\",\"kind\":\"GROUP\",\"proposedKey\":\"routes\",\"displayName\":\"线路\",\"multiplicity\":\"MANY\",\"valueHint\":null",
+                "\"elementId\":\"route-group\",\"kind\":\"SLOT\",\"proposedKey\":\"routes\",\"displayName\":\"线路\",\"multiplicity\":\"MANY\",\"valueHint\":\"TEXT\""
+        );
+        var provider = new ScriptedProvider(
+                request -> response(request, readingOrderGap),
+                request -> response(request, flattened),
+                request -> response(request, groundedStationElements()),
+                request -> response(request, groundedStationHierarchy()),
+                request -> response(request, groundedStationBindings())
+        );
+
+        var finished = worker(provider, blobs).processNext("grounded-semantic-retry-worker").orElseThrow();
+
+        assertThat(finished.state())
+                .as("failure=%s attempts=%s", finished.failureCode(), workflowStore.attempts(created))
+                .isEqualTo(InferenceRunState.REVIEW_REQUIRED);
+        assertThat(provider.requests).extracting(request -> request.stage().name())
+                .containsExactly("OBSERVE", "OBSERVE", "OBSERVE", "HIERARCHY", "ELEMENT_BINDING");
+        assertThat(provider.requests.get(1).taskJson())
+                .contains("VISUAL_GROUNDING_READING_ORDER_GAP");
+        assertThat(provider.requests.get(2).taskJson())
+                .contains("VISUAL_GROUNDING_READING_ORDER_GAP")
+                .contains("VISUAL_SEMANTIC_REPEATED_GROUP_ELEMENT_MISSING");
+        assertThat(workflowStore.attempts(created).getFirst().status())
+                .isEqualTo(InferenceAttemptStatus.REJECTED);
+        assertThat(workflowStore.attempts(created).getFirst().problemCodeCounts())
+                .containsExactlyEntriesOf(Map.of(
+                        "VISUAL_GROUNDING_READING_ORDER_GAP", 1
+                ));
+        assertThat(workflowStore.attempts(created).get(1).problemCodeCounts())
+                .containsExactlyEntriesOf(Map.of(
+                        "VISUAL_SEMANTIC_REPEATED_GROUP_ELEMENT_MISSING", 1
+                ));
+        assertThat(workflowStore.attempts(created).subList(2, 5))
+                .allSatisfy(attempt -> assertThat(attempt.status())
+                        .isEqualTo(InferenceAttemptStatus.SUCCEEDED));
+    }
+
+    @Test
+    void groundedSemanticVerifierPreservesUpstreamStagesAndUsesVerifiedRepairCrops() {
+        var blobs = new MemoryBlobStore();
+        var created = createGroundedVisual(blobs, "grounded-semantic-stage-local-repair");
+        var misplacedBinding = groundedStationBindings().replace(
+                "{\"elementId\":\"stop-name\",\"entityId\":\"stop\"}",
+                "{\"elementId\":\"stop-name\",\"entityId\":\"board\"}"
+        );
+        var provider = new ScriptedProvider(
+                request -> response(request, groundedStationElements()),
+                request -> response(request, groundedStationHierarchyWithoutNoticeEdge()),
+                request -> response(request, groundedStationHierarchy()),
+                request -> response(request, misplacedBinding),
+                request -> response(request, groundedStationBindings())
+        );
+
+        var finished = worker(provider, blobs).processNext("grounded-stage-local-worker").orElseThrow();
+
+        assertThat(finished.state())
+                .as("failure=%s attempts=%s", finished.failureCode(), workflowStore.attempts(created))
+                .isEqualTo(InferenceRunState.REVIEW_REQUIRED);
+        assertThat(provider.requests).extracting(ProviderInferenceRequest::stage)
+                .containsExactly(
+                        InferenceStage.OBSERVE,
+                        InferenceStage.HIERARCHY, InferenceStage.HIERARCHY,
+                        InferenceStage.ELEMENT_BINDING, InferenceStage.ELEMENT_BINDING
+                );
+        assertThat(provider.requests.get(1).taskJson()).doesNotContain("TARGETED_CROP");
+        assertThat(provider.requests.get(2).taskJson())
+                .contains("TARGETED_CROP")
+                .contains("VISUAL_SEMANTIC_HIERARCHY_GROUP_EDGE_MISSING")
+                .contains("\"groundingPlan\":{");
+        assertThat(provider.requests.get(4).taskJson())
+                .contains("TARGETED_CROP")
+                .contains("VISUAL_SEMANTIC_BINDING_NOT_NEAREST_ENTITY")
+                .contains("\"hierarchyPlan\":{");
+        assertThat(workflowStore.attempts(created)).extracting(attempt -> attempt.status())
+                .containsExactly(
+                        InferenceAttemptStatus.SUCCEEDED,
+                        InferenceAttemptStatus.REJECTED, InferenceAttemptStatus.SUCCEEDED,
+                        InferenceAttemptStatus.REJECTED, InferenceAttemptStatus.SUCCEEDED
+                );
+        assertThat(workflowStore.attempts(created).get(1).problemCodeCounts())
+                .containsExactlyEntriesOf(Map.of(
+                        "VISUAL_SEMANTIC_HIERARCHY_GROUP_EDGE_MISSING", 1
+                ));
+        assertThat(workflowStore.attempts(created).get(3).problemCodeCounts())
+                .containsExactlyEntriesOf(Map.of(
+                        "VISUAL_SEMANTIC_BINDING_NOT_NEAREST_ENTITY", 1
+                ));
+    }
+
+    @Test
+    void groundedHierarchyStructuralRepairPreservesUpstreamStageWithoutAddingACrop() {
+        var blobs = new MemoryBlobStore();
+        var created = createGroundedVisual(blobs, "grounded-hierarchy-structural-repair");
+        var invalidEntityId = groundedStationHierarchy().replace(
+                "\"entityId\":\"route\"", "\"entityId\":\"Route\""
+        );
+        var provider = new ScriptedProvider(
+                request -> response(request, groundedStationElements()),
+                request -> response(request, invalidEntityId),
+                request -> response(request, groundedStationHierarchy()),
+                request -> response(request, groundedStationBindings())
+        );
+
+        var finished = worker(provider, blobs).processNext("grounded-structural-repair-worker")
+                .orElseThrow();
+
+        assertThat(finished.state())
+                .as("failure=%s attempts=%s", finished.failureCode(), workflowStore.attempts(created))
+                .isEqualTo(InferenceRunState.REVIEW_REQUIRED);
+        assertThat(provider.requests).extracting(ProviderInferenceRequest::stage)
+                .containsExactly(
+                        InferenceStage.OBSERVE,
+                        InferenceStage.HIERARCHY, InferenceStage.HIERARCHY,
+                        InferenceStage.ELEMENT_BINDING
+                );
+        assertThat(provider.requests.get(2).taskJson())
+                .contains("VISUAL_HIERARCHY_V2_ENTITY_ID_INVALID")
+                .doesNotContain("TARGETED_CROP")
+                .contains("\"groundingPlan\":{");
+        assertThat(workflowStore.attempts(created)).extracting(attempt -> attempt.status())
+                .containsExactly(
+                        InferenceAttemptStatus.SUCCEEDED,
+                        InferenceAttemptStatus.REJECTED, InferenceAttemptStatus.SUCCEEDED,
+                        InferenceAttemptStatus.SUCCEEDED
+                );
+        assertThat(workflowStore.attempts(created).get(1).problemCodeCounts())
+                .containsExactlyEntriesOf(Map.of(
+                        "VISUAL_HIERARCHY_V2_ENTITY_ID_INVALID", 1
+                ));
+    }
+
+    @Test
+    void hierarchyWithoutObservedGroupsRewindsAndRecoversObservationAfterLeaseExpiry() {
+        assertThat(InferenceStage.HIERARCHY.canTransitionTo(InferenceStage.OBSERVE)).isFalse();
+        var blobs = new MemoryBlobStore();
+        var created = createGroundedVisual(blobs, "grounded-observation-rewind");
+        var firstProvider = new ScriptedProvider(
+                request -> response(request, flatGroundedStationElements()),
+                request -> response(request, groundedStationHierarchy())
+        );
+        var firstWorker = worker(firstProvider, blobs, T0.plusSeconds(1));
+        var current = runs.claimNextLive(
+                "grounded-observation-rewind-first", T0.plusSeconds(1), Duration.ofMinutes(5)
+        ).orElseThrow();
+
+        current = firstWorker.advance(current);
+        current = firstWorker.advance(current);
+
+        assertThat(current.stage()).isEqualTo(InferenceStage.OBSERVE);
+        assertThat(current.checkpointJson())
+                .contains("\"completedStage\": \"NORMALIZE\"")
+                .contains("\"providerCalls\": 2")
+                .doesNotContain("renderweave-visual-grounding/2.0")
+                .doesNotContain("renderweave-visual-hierarchy/2.0");
+        assertThat(firstProvider.requests).extracting(ProviderInferenceRequest::stage)
+                .containsExactly(InferenceStage.OBSERVE, InferenceStage.HIERARCHY);
+        assertThat(workflowStore.attempts(created).get(1).problemCodeCounts())
+                .containsExactlyEntriesOf(Map.of(
+                        "VISUAL_SEMANTIC_OBSERVE_RELATIONSHIP_GROUP_MISSING", 1
+                ));
+
+        var recoveryProvider = new ScriptedProvider(
+                request -> response(request, groundedStationElements()),
+                request -> response(request, groundedStationHierarchy()),
+                request -> response(request, groundedStationBindings())
+        );
+        var finished = worker(recoveryProvider, blobs, T0.plus(Duration.ofMinutes(7)))
+                .processNext("grounded-observation-rewind-recovery").orElseThrow();
+
+        assertThat(finished.state())
+                .as("failure=%s attempts=%s", finished.failureCode(), workflowStore.attempts(created))
+                .isEqualTo(InferenceRunState.REVIEW_REQUIRED);
+        assertThat(recoveryProvider.requests).extracting(ProviderInferenceRequest::stage)
+                .containsExactly(
+                        InferenceStage.OBSERVE, InferenceStage.HIERARCHY,
+                        InferenceStage.ELEMENT_BINDING
+                );
+        assertThat(recoveryProvider.requests.getFirst().taskJson())
+                .contains("VISUAL_SEMANTIC_OBSERVE_RELATIONSHIP_GROUP_MISSING")
+                .doesNotContain("TARGETED_CROP")
+                .contains("\"elementInventory\":null")
+                .contains("\"groundingPlan\":null");
+        assertThat(workflowStore.attempts(created)).extracting(attempt -> attempt.status())
+                .containsExactly(
+                        InferenceAttemptStatus.SUCCEEDED, InferenceAttemptStatus.REJECTED,
+                        InferenceAttemptStatus.SUCCEEDED, InferenceAttemptStatus.SUCCEEDED,
+                        InferenceAttemptStatus.SUCCEEDED
+                );
+    }
+
+    @Test
+    void relationshipRegionWithoutGroupOwnerRewindsAndRecoversObservationAfterLeaseExpiry() {
+        var blobs = new MemoryBlobStore();
+        var created = createGroundedVisual(
+                blobs, "relationship-region-owner-rewind", REGION_OWNED_HIERARCHY_PROFILE
+        );
+        var firstProvider = new ScriptedProvider(
+                request -> response(request, groundedStationElementsWithoutNoticeRegionOwner()),
+                request -> response(request, groundedStationHierarchy())
+        );
+        var firstWorker = worker(firstProvider, blobs, T0.plusSeconds(1));
+        var current = runs.claimNextLive(
+                "relationship-region-owner-first", T0.plusSeconds(1), Duration.ofMinutes(5)
+        ).orElseThrow();
+
+        current = firstWorker.advance(current);
+        current = firstWorker.advance(current);
+
+        assertThat(current.stage()).isEqualTo(InferenceStage.OBSERVE);
+        assertThat(current.checkpointJson())
+                .contains("\"completedStage\": \"NORMALIZE\"")
+                .contains("\"providerCalls\": 2")
+                .doesNotContain("renderweave-visual-grounding/2.0")
+                .doesNotContain("renderweave-visual-hierarchy/2.0");
+        assertThat(firstProvider.requests).extracting(ProviderInferenceRequest::stage)
+                .containsExactly(InferenceStage.OBSERVE, InferenceStage.HIERARCHY);
+        assertThat(workflowStore.attempts(created).get(1).problemCodeCounts())
+                .containsExactlyEntriesOf(Map.of(
+                        "VISUAL_SEMANTIC_OBSERVE_RELATIONSHIP_REGION_GROUP_MISSING", 1
+                ));
+
+        var recoveryProvider = new ScriptedProvider(
+                request -> response(request, groundedStationElements()),
+                request -> response(request, groundedStationHierarchy()),
+                request -> response(request, groundedStationBindings())
+        );
+        var finished = worker(recoveryProvider, blobs, T0.plus(Duration.ofMinutes(7)))
+                .processNext("relationship-region-owner-recovery").orElseThrow();
+
+        assertThat(finished.state())
+                .as("failure=%s attempts=%s", finished.failureCode(), workflowStore.attempts(created))
+                .isEqualTo(InferenceRunState.REVIEW_REQUIRED);
+        assertThat(recoveryProvider.requests).extracting(ProviderInferenceRequest::stage)
+                .containsExactly(
+                        InferenceStage.OBSERVE, InferenceStage.HIERARCHY,
+                        InferenceStage.ELEMENT_BINDING
+                );
+        assertThat(recoveryProvider.requests.getFirst().taskJson())
+                .contains("VISUAL_SEMANTIC_OBSERVE_RELATIONSHIP_REGION_GROUP_MISSING")
+                .doesNotContain("TARGETED_CROP")
+                .contains("\"elementInventory\":null")
+                .contains("\"groundingPlan\":null");
+        assertThat(workflowStore.attempts(created)).extracting(attempt -> attempt.status())
+                .containsExactly(
+                        InferenceAttemptStatus.SUCCEEDED, InferenceAttemptStatus.REJECTED,
+                        InferenceAttemptStatus.SUCCEEDED, InferenceAttemptStatus.SUCCEEDED,
+                        InferenceAttemptStatus.SUCCEEDED
+                );
+    }
+
+    @Test
+    void detailedHierarchyRegionRepairStaysLocalAndRecoversAfterLeaseExpiry() {
+        var blobs = new MemoryBlobStore();
+        var created = createGroundedVisual(
+                blobs, "detailed-hierarchy-region-repair", DIAGNOSTIC_HIERARCHY_PROFILE
+        );
+        var firstProvider = new ScriptedProvider(
+                request -> response(request, groundedStationElements()),
+                request -> response(request, groundedStationHierarchy().replace(
+                        "\"regionIds\":[\"root\"]", "\"regionIds\":[\"header\"]"
+                ))
+        );
+        var firstWorker = worker(firstProvider, blobs, T0.plusSeconds(1));
+        var current = runs.claimNextLive(
+                "detailed-hierarchy-region-first", T0.plusSeconds(1), Duration.ofMinutes(5)
+        ).orElseThrow();
+
+        current = firstWorker.advance(current);
+        current = firstWorker.advance(current);
+
+        assertThat(current.stage()).isEqualTo(InferenceStage.HIERARCHY);
+        assertThat(current.checkpointJson())
+                .contains("renderweave-visual-grounding/2.0")
+                .doesNotContain("renderweave-visual-hierarchy/2.0");
+        assertThat(workflowStore.attempts(created)).hasSize(2);
+        assertThat(firstProvider.requests).extracting(ProviderInferenceRequest::stage)
+                .containsExactly(InferenceStage.OBSERVE, InferenceStage.HIERARCHY);
+        assertThat(workflowStore.attempts(created).get(1).problemCodeCounts())
+                .containsExactlyEntriesOf(Map.of(
+                        "VISUAL_HIERARCHY_V2_ROOT_REGION_OWNERSHIP_INVALID", 1
+                ));
+
+        var recoveryProvider = new ScriptedProvider(
+                request -> response(request, groundedStationHierarchy()),
+                request -> response(request, groundedStationBindings())
+        );
+        var finished = worker(recoveryProvider, blobs, T0.plus(Duration.ofMinutes(7)))
+                .processNext("detailed-hierarchy-region-recovery").orElseThrow();
+
+        assertThat(finished.state())
+                .as("failure=%s attempts=%s", finished.failureCode(), workflowStore.attempts(created))
+                .isEqualTo(InferenceRunState.REVIEW_REQUIRED);
+        assertThat(recoveryProvider.requests).extracting(ProviderInferenceRequest::stage)
+                .containsExactly(InferenceStage.HIERARCHY, InferenceStage.ELEMENT_BINDING);
+        assertThat(recoveryProvider.requests.getFirst().taskJson())
+                .contains("VISUAL_HIERARCHY_V2_ROOT_REGION_OWNERSHIP_INVALID")
+                .doesNotContain("TARGETED_CROP");
+        assertThat(workflowStore.attempts(created)).extracting(attempt -> attempt.status())
+                .containsExactly(
+                        InferenceAttemptStatus.SUCCEEDED, InferenceAttemptStatus.REJECTED,
+                        InferenceAttemptStatus.SUCCEEDED, InferenceAttemptStatus.SUCCEEDED
+                );
+    }
+
+    @Test
+    void exactDuplicateRelationshipSupportIdsNormalizeAndResumeAtBindingAfterLeaseExpiry() {
+        var blobs = new MemoryBlobStore();
+        var created = createGroundedVisual(
+                blobs, "support-id-normalization", SUPPORT_NORMALIZED_HIERARCHY_PROFILE
+        );
+        var duplicateSupport = groundedStationHierarchy().replace(
+                "\"regionId\":\"routes\",\"supportingElementIds\":[\"route-group\"]",
+                "\"regionId\":\"routes\",\"supportingElementIds\":[\"route-group\",\"route-group\"]"
+        );
+        var firstProvider = new ScriptedProvider(
+                request -> response(request, groundedStationElements()),
+                request -> response(request, duplicateSupport)
+        );
+        var firstWorker = worker(firstProvider, blobs, T0.plusSeconds(1));
+        var current = runs.claimNextLive(
+                "support-id-normalization-first", T0.plusSeconds(1), Duration.ofMinutes(5)
+        ).orElseThrow();
+
+        current = firstWorker.advance(current);
+        current = firstWorker.advance(current);
+
+        assertThat(current.stage()).isEqualTo(InferenceStage.ELEMENT_BINDING);
+        assertThat(current.checkpointJson()).contains("renderweave-visual-hierarchy/2.0");
+        assertThat(firstProvider.requests).extracting(ProviderInferenceRequest::stage)
+                .containsExactly(InferenceStage.OBSERVE, InferenceStage.HIERARCHY);
+        assertThat(workflowStore.attempts(created).get(1).problemCodeCounts())
+                .containsExactlyInAnyOrderEntriesOf(Map.of(
+                        "VISUAL_HIERARCHY_RELATIONSHIP_CARDINALITY_DERIVED", 3,
+                        "VISUAL_HIERARCHY_RELATIONSHIP_SUPPORT_IDS_NORMALIZED", 1
+                ));
+
+        var recoveryProvider = new ScriptedProvider(
+                request -> response(request, groundedStationBindings())
+        );
+        var finished = worker(recoveryProvider, blobs, T0.plus(Duration.ofMinutes(7)))
+                .processNext("support-id-normalization-recovery").orElseThrow();
+
+        assertThat(finished.state())
+                .as("failure=%s attempts=%s", finished.failureCode(), workflowStore.attempts(created))
+                .isEqualTo(InferenceRunState.REVIEW_REQUIRED);
+        assertThat(recoveryProvider.requests).extracting(ProviderInferenceRequest::stage)
+                .containsExactly(InferenceStage.ELEMENT_BINDING);
+        assertThat(workflowStore.attempts(created)).extracting(attempt -> attempt.status())
+                .containsExactly(
+                        InferenceAttemptStatus.SUCCEEDED, InferenceAttemptStatus.SUCCEEDED,
+                        InferenceAttemptStatus.SUCCEEDED
+                );
+    }
+
+    @Test
+    void uniqueEvidenceOwnedRelationshipRegionNormalizesAndResumesAtBindingAfterLeaseExpiry() {
+        var blobs = new MemoryBlobStore();
+        var created = createGroundedVisual(
+                blobs, "relationship-region-normalization", REGION_NORMALIZED_HIERARCHY_PROFILE
+        );
+        var wrongRegionAndDuplicateSupport = groundedStationHierarchy().replace(
+                "\"regionId\":\"routes\",\"supportingElementIds\":[\"route-group\"]",
+                "\"regionId\":\"root\",\"supportingElementIds\":[\"route-group\",\"route-group\"]"
+        );
+        var firstProvider = new ScriptedProvider(
+                request -> response(request, groundedStationElements()),
+                request -> response(request, wrongRegionAndDuplicateSupport)
+        );
+        var firstWorker = worker(firstProvider, blobs, T0.plusSeconds(1));
+        var current = runs.claimNextLive(
+                "relationship-region-normalization-first", T0.plusSeconds(1),
+                Duration.ofMinutes(5)
+        ).orElseThrow();
+
+        current = firstWorker.advance(current);
+        current = firstWorker.advance(current);
+
+        assertThat(current.stage()).isEqualTo(InferenceStage.ELEMENT_BINDING);
+        assertThat(current.checkpointJson()).contains("renderweave-visual-hierarchy/2.0");
+        assertThat(firstProvider.requests).extracting(ProviderInferenceRequest::stage)
+                .containsExactly(InferenceStage.OBSERVE, InferenceStage.HIERARCHY);
+        assertThat(workflowStore.attempts(created).get(1).problemCodeCounts())
+                .containsExactlyInAnyOrderEntriesOf(Map.of(
+                        "VISUAL_HIERARCHY_RELATIONSHIP_CARDINALITY_DERIVED", 3,
+                        "VISUAL_HIERARCHY_RELATIONSHIP_SUPPORT_IDS_NORMALIZED", 1,
+                        "VISUAL_HIERARCHY_RELATIONSHIP_REGION_NORMALIZED", 1
+                ));
+
+        var recoveryProvider = new ScriptedProvider(
+                request -> response(request, groundedStationBindings())
+        );
+        var finished = worker(recoveryProvider, blobs, T0.plus(Duration.ofMinutes(7)))
+                .processNext("relationship-region-normalization-recovery").orElseThrow();
+
+        assertThat(finished.state())
+                .as("failure=%s attempts=%s", finished.failureCode(), workflowStore.attempts(created))
+                .isEqualTo(InferenceRunState.REVIEW_REQUIRED);
+        assertThat(recoveryProvider.requests).extracting(ProviderInferenceRequest::stage)
+                .containsExactly(InferenceStage.ELEMENT_BINDING);
+        assertThat(workflowStore.attempts(created)).extracting(attempt -> attempt.status())
+                .containsExactly(
+                        InferenceAttemptStatus.SUCCEEDED, InferenceAttemptStatus.SUCCEEDED,
+                        InferenceAttemptStatus.SUCCEEDED
+                );
+    }
+
+    @Test
+    void uniqueConnectedRelationshipRegionNormalizesAndResumesAtBindingAfterLeaseExpiry() {
+        var blobs = new MemoryBlobStore();
+        var created = createGroundedVisual(
+                blobs, "relationship-region-connection-normalization",
+                CONNECTION_NORMALIZED_HIERARCHY_PROFILE
+        );
+        var disconnectedRegion = groundedStationHierarchy().replace(
+                "\"relationshipId\":\"board-routes\",\"parentEntityId\":\"board\",\"childEntityId\":\"route\",\"fieldKey\":\"routes\",\"displayName\":\"线路\",\"cardinality\":\"MANY\",\"regionId\":\"routes\",\"supportingElementIds\":[\"route-group\"]",
+                "\"relationshipId\":\"board-routes\",\"parentEntityId\":\"board\",\"childEntityId\":\"route\",\"fieldKey\":\"routes\",\"displayName\":\"线路\",\"cardinality\":\"MANY\",\"regionId\":\"stops\",\"supportingElementIds\":[\"route-group\"]"
+        );
+        var firstProvider = new ScriptedProvider(
+                request -> response(request, groundedStationElements()),
+                request -> response(request, disconnectedRegion)
+        );
+        var firstWorker = worker(firstProvider, blobs, T0.plusSeconds(1));
+        var current = runs.claimNextLive(
+                "relationship-region-connection-normalization-first", T0.plusSeconds(1),
+                Duration.ofMinutes(5)
+        ).orElseThrow();
+
+        current = firstWorker.advance(current);
+        current = firstWorker.advance(current);
+
+        assertThat(current.stage()).isEqualTo(InferenceStage.ELEMENT_BINDING);
+        assertThat(current.checkpointJson()).contains("renderweave-visual-hierarchy/2.0");
+        assertThat(firstProvider.requests).extracting(ProviderInferenceRequest::stage)
+                .containsExactly(InferenceStage.OBSERVE, InferenceStage.HIERARCHY);
+        assertThat(workflowStore.attempts(created).get(1).problemCodeCounts())
+                .containsExactlyInAnyOrderEntriesOf(Map.of(
+                        "VISUAL_HIERARCHY_RELATIONSHIP_CARDINALITY_DERIVED", 3,
+                        "VISUAL_HIERARCHY_RELATIONSHIP_REGION_NORMALIZED", 1
+                ));
+
+        var recoveryProvider = new ScriptedProvider(
+                request -> response(request, groundedStationBindings())
+        );
+        var finished = worker(recoveryProvider, blobs, T0.plus(Duration.ofMinutes(7)))
+                .processNext("relationship-region-connection-normalization-recovery").orElseThrow();
+
+        assertThat(finished.state())
+                .as("failure=%s attempts=%s", finished.failureCode(), workflowStore.attempts(created))
+                .isEqualTo(InferenceRunState.REVIEW_REQUIRED);
+        assertThat(recoveryProvider.requests).extracting(ProviderInferenceRequest::stage)
+                .containsExactly(InferenceStage.ELEMENT_BINDING);
+        assertThat(workflowStore.attempts(created)).extracting(attempt -> attempt.status())
+                .containsExactly(
+                        InferenceAttemptStatus.SUCCEEDED, InferenceAttemptStatus.SUCCEEDED,
+                        InferenceAttemptStatus.SUCCEEDED
+                );
+    }
+
+    @Test
+    void uniqueRelationshipRegionGroupOwnerNormalizesAndResumesAtBindingAfterLeaseExpiry() {
+        var blobs = new MemoryBlobStore();
+        var created = createGroundedVisual(
+                blobs, "relationship-support-owner-normalization",
+                SUPPORT_OWNER_NORMALIZED_HIERARCHY_PROFILE
+        );
+        var slotSupport = groundedStationHierarchy().replace(
+                "\"regionId\":\"routes\",\"supportingElementIds\":[\"route-group\"]",
+                "\"regionId\":\"routes\",\"supportingElementIds\":[\"route-number\"]"
+        );
+        var firstProvider = new ScriptedProvider(
+                request -> response(request, groundedStationElements()),
+                request -> response(request, slotSupport)
+        );
+        var firstWorker = worker(firstProvider, blobs, T0.plusSeconds(1));
+        var current = runs.claimNextLive(
+                "relationship-support-owner-normalization-first", T0.plusSeconds(1),
+                Duration.ofMinutes(5)
+        ).orElseThrow();
+
+        current = firstWorker.advance(current);
+        current = firstWorker.advance(current);
+
+        assertThat(current.stage()).isEqualTo(InferenceStage.ELEMENT_BINDING);
+        assertThat(current.checkpointJson()).contains("renderweave-visual-hierarchy/2.0");
+        assertThat(firstProvider.requests).extracting(ProviderInferenceRequest::stage)
+                .containsExactly(InferenceStage.OBSERVE, InferenceStage.HIERARCHY);
+        assertThat(workflowStore.attempts(created).get(1).problemCodeCounts())
+                .containsExactlyInAnyOrderEntriesOf(Map.of(
+                        "VISUAL_HIERARCHY_RELATIONSHIP_CARDINALITY_DERIVED", 3,
+                        "VISUAL_HIERARCHY_RELATIONSHIP_SUPPORT_OWNER_NORMALIZED", 1
+                ));
+
+        var recoveryProvider = new ScriptedProvider(
+                request -> response(request, groundedStationBindings())
+        );
+        var finished = worker(recoveryProvider, blobs, T0.plus(Duration.ofMinutes(7)))
+                .processNext("relationship-support-owner-normalization-recovery").orElseThrow();
+
+        assertThat(finished.state())
+                .as("failure=%s attempts=%s", finished.failureCode(), workflowStore.attempts(created))
+                .isEqualTo(InferenceRunState.REVIEW_REQUIRED);
+        assertThat(recoveryProvider.requests).extracting(ProviderInferenceRequest::stage)
+                .containsExactly(InferenceStage.ELEMENT_BINDING);
+        assertThat(workflowStore.attempts(created)).extracting(attempt -> attempt.status())
+                .containsExactly(
+                        InferenceAttemptStatus.SUCCEEDED, InferenceAttemptStatus.SUCCEEDED,
+                        InferenceAttemptStatus.SUCCEEDED
+                );
+    }
+
+    @Test
+    void groundedStageLocalRepairResumesAfterLeaseExpiryWithoutReobserving() {
+        var blobs = new MemoryBlobStore();
+        var created = createGroundedVisual(blobs, "grounded-semantic-lease-recovery");
+        var firstProvider = new ScriptedProvider(
+                request -> response(request, groundedStationElements()),
+                request -> response(request, groundedStationHierarchyWithoutNoticeEdge())
+        );
+        var firstWorker = worker(firstProvider, blobs, T0.plusSeconds(1));
+        var current = runs.claimNextLive(
+                "grounded-semantic-first", T0.plusSeconds(1), Duration.ofMinutes(5)
+        ).orElseThrow();
+
+        current = firstWorker.advance(current);
+        current = firstWorker.advance(current);
+
+        assertThat(current.stage()).isEqualTo(InferenceStage.HIERARCHY);
+        assertThat(current.checkpointJson())
+                .contains("renderweave-visual-grounding/2.0")
+                .doesNotContain("renderweave-visual-hierarchy/2.0");
+        assertThat(firstProvider.requests).extracting(ProviderInferenceRequest::stage)
+                .containsExactly(InferenceStage.OBSERVE, InferenceStage.HIERARCHY);
+
+        var recoveryProvider = new ScriptedProvider(
+                request -> response(request, groundedStationHierarchy()),
+                request -> response(request, groundedStationBindings())
+        );
+        var finished = worker(recoveryProvider, blobs, T0.plus(Duration.ofMinutes(7)))
+                .processNext("grounded-semantic-recovery").orElseThrow();
+
+        assertThat(finished.state()).isEqualTo(InferenceRunState.REVIEW_REQUIRED);
+        assertThat(recoveryProvider.requests).extracting(ProviderInferenceRequest::stage)
+                .containsExactly(InferenceStage.HIERARCHY, InferenceStage.ELEMENT_BINDING);
+        assertThat(recoveryProvider.requests.getFirst().taskJson())
+                .contains("TARGETED_CROP")
+                .contains("VISUAL_SEMANTIC_HIERARCHY_GROUP_EDGE_MISSING");
+        assertThat(workflowStore.attempts(created)).extracting(attempt -> attempt.status())
+                .containsExactly(
+                        InferenceAttemptStatus.SUCCEEDED, InferenceAttemptStatus.REJECTED,
+                        InferenceAttemptStatus.SUCCEEDED, InferenceAttemptStatus.SUCCEEDED
+                );
+    }
+
+    @Test
+    void groundedStageLocalRepairCancelsWithoutReplayingSuccessfulObservation() {
+        var blobs = new MemoryBlobStore();
+        var created = createGroundedVisual(blobs, "grounded-semantic-cancel");
+        var provider = new ScriptedProvider(
+                request -> response(request, groundedStationElements()),
+                request -> response(request, groundedStationHierarchyWithoutNoticeEdge())
+        );
+        var activeWorker = worker(provider, blobs, T0.plusSeconds(1));
+        var current = runs.claimNextLive(
+                "grounded-semantic-cancel-first", T0.plusSeconds(1), Duration.ofMinutes(5)
+        ).orElseThrow();
+        current = activeWorker.advance(current);
+        current = activeWorker.advance(current);
+
+        var cancelling = runs.requestCancellation(created, T0.plusSeconds(2));
+        var finished = activeWorker.drain(cancelling);
+
+        assertThat(finished.state()).isEqualTo(InferenceRunState.CANCELLED);
+        assertThat(provider.requests).extracting(ProviderInferenceRequest::stage)
+                .containsExactly(InferenceStage.OBSERVE, InferenceStage.HIERARCHY);
+        assertThat(workflowStore.attempts(created)).hasSize(2);
+        assertThat(finished.checkpointJson())
+                .contains("renderweave-visual-grounding/2.0")
+                .doesNotContain("renderweave-visual-hierarchy/2.0");
+    }
+
+    @Test
+    void groundedLengthStopPersistsTruncationWithoutParsingPartialPayload() {
+        var blobs = new MemoryBlobStore();
+        var created = createGroundedVisual(blobs, "grounded-length-diagnostic");
+        var provider = new ScriptedProvider(
+                request -> response(request, "{\"partial\":true}", "length"),
+                request -> response(request, "{\"partial\":true}", "length"),
+                request -> response(request, "{\"partial\":true}", "length"),
+                request -> response(request, "{\"partial\":true}", "length"),
+                request -> response(request, "{\"partial\":true}", "length")
+        );
+
+        var finished = worker(provider, blobs).processNext("grounded-length-worker").orElseThrow();
+
+        assertThat(finished.state()).isEqualTo(InferenceRunState.FAILED);
+        assertThat(finished.failureCode()).contains("VISUAL_GROUNDING_OUTPUT_TRUNCATED");
+        assertThat(workflowStore.attempts(created)).hasSize(5).allSatisfy(attempt ->
+                assertThat(attempt.problemCodeCounts()).containsExactlyEntriesOf(
+                        Map.of("VISUAL_GROUNDING_OUTPUT_TRUNCATED", 1)
+                )
+        );
+    }
+
+    @Test
+    void pipelineFourPointTwoUsesOneEphemeralOcrObservationAcrossAllVisualStages() {
+        var blobs = new MemoryBlobStore();
+        var created = createGroundedVisual(blobs, "hybrid-visual-station", HYBRID_VISUAL_PROFILE);
+        var provider = new ScriptedProvider(
+                request -> response(request, groundedStationElements()),
+                request -> response(request, groundedStationHierarchy()),
+                request -> response(request, groundedStationBindings())
+        );
+        var preprocessCalls = new AtomicInteger();
+        var preprocessor = hybridPreprocessor(preprocessCalls, "OCR_SENTINEL_STATION_NAME");
+
+        var finished = worker(provider, blobs, T0.plusSeconds(1), preprocessor)
+                .processNext("hybrid-visual-worker").orElseThrow();
+
+        assertThat(finished.state())
+                .as("failure=%s attempts=%s", finished.failureCode(), workflowStore.attempts(created))
+                .isEqualTo(InferenceRunState.REVIEW_REQUIRED);
+        assertThat(preprocessCalls).hasValue(1);
+        assertThat(provider.requests).hasSize(3).allSatisfy(request -> {
+            assertThat(request.taskJson())
+                    .contains("renderweave-live-task/5.0")
+                    .contains("documentVisionObservation")
+                    .contains("OCR_SENTINEL_STATION_NAME");
+            assertThat(request.systemPrompt())
+                    .contains("untrusted image content")
+                    .contains("secondary evidence")
+                    .doesNotContain("停靠站点");
+        });
+        assertThat(finished.checkpointJson())
+                .doesNotContain("OCR_SENTINEL_STATION_NAME")
+                .doesNotContain("ocr-00-000");
+        var review = workflowStore.findCandidate(created).orElseThrow();
+        assertThat(review.currentJson())
+                .doesNotContain("OCR_SENTINEL_STATION_NAME")
+                .doesNotContain("ocr-00-000");
+        assertThat(review.validationProblemsJson())
+                .doesNotContain("OCR_SENTINEL_STATION_NAME")
+                .doesNotContain("ocr-00-000");
+    }
+
+    @Test
+    void pipelineFourPointTenUsesOneEphemeralOcrObservationAndRetainsSupportOwnerPolicy() {
+        var blobs = new MemoryBlobStore();
+        var created = createGroundedVisual(
+                blobs, "support-owner-hybrid-visual-station", SUPPORT_OWNER_HYBRID_VISUAL_PROFILE
+        );
+        var slotSupport = groundedStationHierarchy().replace(
+                "\"regionId\":\"routes\",\"supportingElementIds\":[\"route-group\"]",
+                "\"regionId\":\"routes\",\"supportingElementIds\":[\"route-number\"]"
+        );
+        var provider = new ScriptedProvider(
+                request -> response(request, groundedStationElements()),
+                request -> response(request, slotSupport),
+                request -> response(request, groundedStationBindings())
+        );
+        var preprocessCalls = new AtomicInteger();
+        var preprocessor = hybridPreprocessor(preprocessCalls, "OCR_SENTINEL_V23_STATION_NAME");
+
+        var finished = worker(provider, blobs, T0.plusSeconds(1), preprocessor)
+                .processNext("support-owner-hybrid-visual-worker").orElseThrow();
+
+        assertThat(finished.state())
+                .as("failure=%s attempts=%s", finished.failureCode(), workflowStore.attempts(created))
+                .isEqualTo(InferenceRunState.REVIEW_REQUIRED);
+        assertThat(preprocessCalls).hasValue(1);
+        assertThat(provider.requests).hasSize(3).allSatisfy(request -> {
+            assertThat(request.taskJson())
+                    .contains("renderweave-live-task/5.0")
+                    .contains("documentVisionObservation")
+                    .contains("OCR_SENTINEL_V23_STATION_NAME");
+            assertThat(request.systemPrompt())
+                    .contains("untrusted image content")
+                    .contains("secondary evidence")
+                    .doesNotContain("停靠站点");
+        });
+        assertThat(workflowStore.attempts(created).get(1).problemCodeCounts())
+                .containsExactlyInAnyOrderEntriesOf(Map.of(
+                        "VISUAL_HIERARCHY_RELATIONSHIP_CARDINALITY_DERIVED", 3,
+                        "VISUAL_HIERARCHY_RELATIONSHIP_SUPPORT_OWNER_NORMALIZED", 1
+                ));
+        assertThat(finished.checkpointJson())
+                .doesNotContain("OCR_SENTINEL_V23_STATION_NAME")
+                .doesNotContain("ocr-00-000");
+        var review = workflowStore.findCandidate(created).orElseThrow();
+        assertThat(review.currentJson())
+                .doesNotContain("OCR_SENTINEL_V23_STATION_NAME")
+                .doesNotContain("ocr-00-000");
+        assertThat(review.validationProblemsJson())
+                .doesNotContain("OCR_SENTINEL_V23_STATION_NAME")
+                .doesNotContain("ocr-00-000");
+    }
+
+    @Test
+    void pipelineFourPointElevenNormalizesOnlyBoundedObservationDriftAndRetainsLaterPolicies() {
+        var blobs = new MemoryBlobStore();
+        var created = createGroundedVisual(
+                blobs, "bounded-observation-hybrid-station",
+                BOUNDED_OBSERVATION_HYBRID_VISUAL_PROFILE
+        );
+        var boundedObservationDrift = groundedStationElements()
+                .replaceFirst("\"kind\":\"ROOT\"", "\"kind\":\"DOCUMENT\"")
+                .replace(
+                        "\"regionId\":\"notice\",\"parentRegionId\":\"root\",\"kind\":\"GROUP\"",
+                        "\"regionId\":\"notice\",\"parentRegionId\":\"root\",\"kind\":\"container\""
+                )
+                .replace(
+                        "\"regionId\":\"route-item\",\"parentRegionId\":\"routes\",\"kind\":\"ITEM\",\"multiplicity\":\"ONE\",\"readingOrder\":0",
+                        "\"regionId\":\"route-item\",\"parentRegionId\":\"root\",\"kind\":\"item\",\"multiplicity\":\"ONE\",\"readingOrder\":3"
+                );
+        var slotSupport = groundedStationHierarchy().replace(
+                "\"regionId\":\"routes\",\"supportingElementIds\":[\"route-group\"]",
+                "\"regionId\":\"routes\",\"supportingElementIds\":[\"route-number\"]"
+        );
+        var provider = new ScriptedProvider(
+                request -> response(request, boundedObservationDrift),
+                request -> response(request, slotSupport),
+                request -> response(request, groundedStationBindings())
+        );
+        var preprocessCalls = new AtomicInteger();
+        var preprocessor = hybridPreprocessor(
+                preprocessCalls, "OCR_SENTINEL_V24_STATION_NAME"
+        );
+
+        var finished = worker(provider, blobs, T0.plusSeconds(1), preprocessor)
+                .processNext("bounded-observation-hybrid-worker").orElseThrow();
+
+        assertThat(finished.state())
+                .as("failure=%s attempts=%s", finished.failureCode(), workflowStore.attempts(created))
+                .isEqualTo(InferenceRunState.REVIEW_REQUIRED);
+        assertThat(preprocessCalls).hasValue(1);
+        assertThat(provider.requests).hasSize(3).allSatisfy(request ->
+                assertThat(request.taskJson())
+                        .contains("renderweave-live-task/5.0")
+                        .contains("documentVisionObservation")
+                        .contains("OCR_SENTINEL_V24_STATION_NAME")
+        );
+        assertThat(workflowStore.attempts(created).getFirst().problemCodeCounts())
+                .containsExactlyInAnyOrderEntriesOf(Map.of(
+                        "VISUAL_GROUNDING_REGION_KIND_NORMALIZED", 3,
+                        "VISUAL_GROUNDING_ITEM_PARENT_NORMALIZED", 1,
+                        "VISUAL_GROUNDING_READING_ORDER_NORMALIZED", 1
+                ));
+        assertThat(workflowStore.attempts(created).get(1).problemCodeCounts())
+                .containsExactlyInAnyOrderEntriesOf(Map.of(
+                        "VISUAL_HIERARCHY_RELATIONSHIP_CARDINALITY_DERIVED", 3,
+                        "VISUAL_HIERARCHY_RELATIONSHIP_SUPPORT_OWNER_NORMALIZED", 1
+                ));
+        assertThat(finished.checkpointJson())
+                .doesNotContain("OCR_SENTINEL_V24_STATION_NAME")
+                .doesNotContain("ocr-00-000");
+        var review = workflowStore.findCandidate(created).orElseThrow();
+        assertThat(review.currentJson())
+                .doesNotContain("OCR_SENTINEL_V24_STATION_NAME")
+                .doesNotContain("ocr-00-000");
+        assertThat(review.validationProblemsJson())
+                .doesNotContain("OCR_SENTINEL_V24_STATION_NAME")
+                .doesNotContain("ocr-00-000");
+    }
+
+    @Test
+    void pipelineFourPointTwelveRetriesContainerSizedSlotOnlyAtObservation() {
+        var blobs = new MemoryBlobStore();
+        var created = createGroundedVisual(
+                blobs, "leaf-evidence-verified-station",
+                LEAF_EVIDENCE_VERIFIED_HYBRID_VISUAL_PROFILE
+        );
+        var containerSlot = groundedStationElements().replace(
+                "\"elementId\":\"notice-group\",\"kind\":\"GROUP\",\"proposedKey\":\"warmNotice\",\"displayName\":\"温馨提示\",\"multiplicity\":\"ONE\",\"valueHint\":null",
+                "\"elementId\":\"notice-group\",\"kind\":\"SLOT\",\"proposedKey\":\"warmNotice\",\"displayName\":\"温馨提示\",\"multiplicity\":\"ONE\",\"valueHint\":\"UNRESOLVED\""
+        );
+        var provider = new ScriptedProvider(
+                request -> response(request, containerSlot),
+                request -> response(request, groundedStationElements()),
+                request -> response(request, groundedStationHierarchy()),
+                request -> response(request, groundedStationBindings())
+        );
+        var preprocessCalls = new AtomicInteger();
+        var preprocessor = hybridPreprocessor(
+                preprocessCalls, "OCR_SENTINEL_V25_STATION_NAME"
+        );
+
+        var finished = worker(provider, blobs, T0.plusSeconds(1), preprocessor)
+                .processNext("leaf-evidence-verified-worker").orElseThrow();
+
+        assertThat(finished.state())
+                .as("failure=%s attempts=%s", finished.failureCode(), workflowStore.attempts(created))
+                .isEqualTo(InferenceRunState.REVIEW_REQUIRED);
+        assertThat(preprocessCalls).hasValue(1);
+        assertThat(provider.requests).extracting(request -> request.stage().name())
+                .containsExactly("OBSERVE", "OBSERVE", "HIERARCHY", "ELEMENT_BINDING");
+        assertThat(provider.requests.get(1).taskJson())
+                .contains("VISUAL_SEMANTIC_SLOT_EVIDENCE_CONTAINS_ELEMENT");
+        assertThat(workflowStore.attempts(created))
+                .extracting(attempt -> attempt.status())
+                .containsExactly(
+                        InferenceAttemptStatus.REJECTED,
+                        InferenceAttemptStatus.SUCCEEDED,
+                        InferenceAttemptStatus.SUCCEEDED,
+                        InferenceAttemptStatus.SUCCEEDED
+                );
+        assertThat(workflowStore.attempts(created).getFirst().problemCodeCounts())
+                .containsExactlyEntriesOf(Map.of(
+                        "VISUAL_SEMANTIC_SLOT_EVIDENCE_CONTAINS_ELEMENT", 1
+                ));
+        assertThat(finished.checkpointJson())
+                .doesNotContain("OCR_SENTINEL_V25_STATION_NAME")
+                .doesNotContain("ocr-00-000");
+        var review = workflowStore.findCandidate(created).orElseThrow();
+        assertThat(review.currentJson())
+                .doesNotContain("OCR_SENTINEL_V25_STATION_NAME")
+                .doesNotContain("ocr-00-000");
+        assertThat(review.validationProblemsJson())
+                .doesNotContain("OCR_SENTINEL_V25_STATION_NAME")
+                .doesNotContain("ocr-00-000");
+    }
+
+    @Test
+    void pipelineFourPointThirteenNormalizesOneEnclosingConnectedSupportOwner() {
+        var blobs = new MemoryBlobStore();
+        var created = createGroundedVisual(
+                blobs, "enclosing-support-owner-station",
+                ENCLOSING_SUPPORT_OWNER_HYBRID_VISUAL_PROFILE
+        );
+        var supportRegionDeadlock = groundedStationHierarchy().replace(
+                "\"regionId\":\"routes\",\"supportingElementIds\":[\"route-group\"]",
+                "\"regionId\":\"route-item\",\"supportingElementIds\":[\"route-number\"]"
+        );
+        var provider = new ScriptedProvider(
+                request -> response(request, groundedStationElements()),
+                request -> response(request, supportRegionDeadlock),
+                request -> response(request, groundedStationBindings())
+        );
+        var preprocessCalls = new AtomicInteger();
+        var preprocessor = hybridPreprocessor(
+                preprocessCalls, "OCR_SENTINEL_V26_STATION_NAME"
+        );
+
+        var finished = worker(provider, blobs, T0.plusSeconds(1), preprocessor)
+                .processNext("enclosing-support-owner-worker").orElseThrow();
+
+        assertThat(finished.state())
+                .as("failure=%s attempts=%s", finished.failureCode(), workflowStore.attempts(created))
+                .isEqualTo(InferenceRunState.REVIEW_REQUIRED);
+        assertThat(preprocessCalls).hasValue(1);
+        assertThat(provider.requests).extracting(request -> request.stage().name())
+                .containsExactly("OBSERVE", "HIERARCHY", "ELEMENT_BINDING");
+        assertThat(workflowStore.attempts(created).get(1).problemCodeCounts())
+                .containsExactlyInAnyOrderEntriesOf(Map.of(
+                        "VISUAL_HIERARCHY_RELATIONSHIP_CARDINALITY_DERIVED", 3,
+                        "VISUAL_HIERARCHY_RELATIONSHIP_SUPPORT_OWNER_NORMALIZED", 1,
+                        "VISUAL_HIERARCHY_RELATIONSHIP_ENCLOSING_SUPPORT_OWNER_NORMALIZED", 1,
+                        "VISUAL_HIERARCHY_RELATIONSHIP_REGION_NORMALIZED", 1
+                ));
+        assertThat(finished.checkpointJson())
+                .doesNotContain("OCR_SENTINEL_V26_STATION_NAME")
+                .doesNotContain("ocr-00-000");
+        var review = workflowStore.findCandidate(created).orElseThrow();
+        assertThat(review.currentJson())
+                .doesNotContain("OCR_SENTINEL_V26_STATION_NAME")
+                .doesNotContain("ocr-00-000");
+        assertThat(review.validationProblemsJson())
+                .doesNotContain("OCR_SENTINEL_V26_STATION_NAME")
+                .doesNotContain("ocr-00-000");
+    }
+
+    @Test
+    void pipelineFourPointFourteenNormalizesOneSourceAncestorSupportOwner() {
+        var blobs = new MemoryBlobStore();
+        var created = createGroundedVisual(
+                blobs, "source-ancestor-support-owner-station",
+                SOURCE_ANCESTOR_SUPPORT_OWNER_HYBRID_VISUAL_PROFILE
+        );
+        var provider = new ScriptedProvider(
+                request -> response(request, sourceAncestorElements()),
+                request -> response(request, sourceAncestorHierarchy()),
+                request -> response(request, sourceAncestorBindings())
+        );
+        var preprocessCalls = new AtomicInteger();
+        var preprocessor = hybridPreprocessor(
+                preprocessCalls, "OCR_SENTINEL_V27_STATION_NAME"
+        );
+
+        var finished = worker(provider, blobs, T0.plusSeconds(1), preprocessor)
+                .processNext("source-ancestor-support-owner-worker").orElseThrow();
+
+        assertThat(finished.state())
+                .as("failure=%s attempts=%s", finished.failureCode(), workflowStore.attempts(created))
+                .isEqualTo(InferenceRunState.REVIEW_REQUIRED);
+        assertThat(preprocessCalls).hasValue(1);
+        assertThat(provider.requests).extracting(request -> request.stage().name())
+                .containsExactly("OBSERVE", "HIERARCHY", "ELEMENT_BINDING");
+        assertThat(workflowStore.attempts(created).get(1).problemCodeCounts())
+                .containsExactlyInAnyOrderEntriesOf(Map.of(
+                        "VISUAL_HIERARCHY_RELATIONSHIP_CARDINALITY_DERIVED", 1,
+                        "VISUAL_HIERARCHY_RELATIONSHIP_SUPPORT_OWNER_NORMALIZED", 1,
+                        "VISUAL_HIERARCHY_RELATIONSHIP_SOURCE_ANCESTOR_SUPPORT_OWNER_NORMALIZED", 1,
+                        "VISUAL_HIERARCHY_RELATIONSHIP_REGION_NORMALIZED", 1
+                ));
+        assertThat(finished.checkpointJson())
+                .doesNotContain("OCR_SENTINEL_V27_STATION_NAME")
+                .doesNotContain("ocr-00-000");
+        var review = workflowStore.findCandidate(created).orElseThrow();
+        assertThat(review.currentJson())
+                .doesNotContain("OCR_SENTINEL_V27_STATION_NAME")
+                .doesNotContain("ocr-00-000");
+        assertThat(review.validationProblemsJson())
+                .doesNotContain("OCR_SENTINEL_V27_STATION_NAME")
+                .doesNotContain("ocr-00-000");
+    }
+
+    @Test
+    void pipelineFourPointFifteenRepairsRedundantEntityRegionsOnlyAtHierarchy() {
+        var blobs = new MemoryBlobStore();
+        var created = createGroundedVisual(
+                blobs, "minimal-entity-region-station",
+                MINIMAL_ENTITY_OWNERSHIP_HYBRID_VISUAL_PROFILE
+        );
+        var redundantHierarchy = groundedStationHierarchy().replace(
+                "\"entityId\":\"route\",\"schemaKey\":\"bus-route\",\"displayName\":\"线路\",\"regionIds\":[\"route-item\"]",
+                "\"entityId\":\"route\",\"schemaKey\":\"bus-route\",\"displayName\":\"线路\",\"regionIds\":[\"routes\",\"route-item\"]"
+        );
+        var provider = new ScriptedProvider(
+                request -> response(request, groundedStationElements()),
+                request -> response(request, redundantHierarchy),
+                request -> response(request, groundedStationHierarchy()),
+                request -> response(request, groundedStationBindings())
+        );
+        var preprocessCalls = new AtomicInteger();
+        var preprocessor = hybridPreprocessor(
+                preprocessCalls, "OCR_SENTINEL_V28_HIERARCHY"
+        );
+
+        var finished = worker(provider, blobs, T0.plusSeconds(1), preprocessor)
+                .processNext("minimal-entity-region-worker").orElseThrow();
+
+        assertThat(finished.state())
+                .as("failure=%s attempts=%s", finished.failureCode(), workflowStore.attempts(created))
+                .isEqualTo(InferenceRunState.REVIEW_REQUIRED);
+        assertThat(preprocessCalls).hasValue(1);
+        assertThat(provider.requests).extracting(ProviderInferenceRequest::stage)
+                .containsExactly(
+                        InferenceStage.OBSERVE,
+                        InferenceStage.HIERARCHY, InferenceStage.HIERARCHY,
+                        InferenceStage.ELEMENT_BINDING
+                );
+        assertThat(provider.requests.get(2).taskJson())
+                .contains("VISUAL_SEMANTIC_HIERARCHY_ENTITY_REGION_REDUNDANT")
+                .contains("TARGETED_CROP")
+                .contains("\"groundingPlan\":{");
+        assertThat(workflowStore.attempts(created)).extracting(InferenceAttempt::status)
+                .containsExactly(
+                        InferenceAttemptStatus.SUCCEEDED,
+                        InferenceAttemptStatus.REJECTED, InferenceAttemptStatus.SUCCEEDED,
+                        InferenceAttemptStatus.SUCCEEDED
+                );
+        assertThat(workflowStore.attempts(created).get(1).problemCodeCounts())
+                .containsExactlyEntriesOf(Map.of(
+                        "VISUAL_SEMANTIC_HIERARCHY_ENTITY_REGION_REDUNDANT", 1
+                ));
+    }
+
+    @Test
+    void pipelineFourPointFifteenRewindsAmbiguousBindingOwnershipToHierarchy() {
+        var blobs = new MemoryBlobStore();
+        var created = createGroundedVisual(
+                blobs, "unique-minimal-binding-owner-station",
+                MINIMAL_ENTITY_OWNERSHIP_HYBRID_VISUAL_PROFILE
+        );
+        var ambiguousHierarchy = groundedStationHierarchy().replace(
+                "\"entityId\":\"notice-entity\",\"schemaKey\":\"warm-notice\",\"displayName\":\"温馨提示\",\"regionIds\":[\"notice\"]",
+                "\"entityId\":\"notice-entity\",\"schemaKey\":\"warm-notice\",\"displayName\":\"温馨提示\",\"regionIds\":[\"notice\",\"stop-item\"]"
+        );
+        var provider = new ScriptedProvider(
+                request -> response(request, groundedStationElements()),
+                request -> response(request, ambiguousHierarchy),
+                request -> response(request, groundedStationBindings()),
+                request -> response(request, groundedStationHierarchy()),
+                request -> response(request, groundedStationBindings())
+        );
+        var preprocessCalls = new AtomicInteger();
+        var preprocessor = hybridPreprocessor(
+                preprocessCalls, "OCR_SENTINEL_V28_BINDING"
+        );
+
+        var finished = worker(provider, blobs, T0.plusSeconds(1), preprocessor)
+                .processNext("unique-minimal-binding-owner-worker").orElseThrow();
+
+        assertThat(finished.state())
+                .as("failure=%s attempts=%s", finished.failureCode(), workflowStore.attempts(created))
+                .isEqualTo(InferenceRunState.REVIEW_REQUIRED);
+        assertThat(preprocessCalls).hasValue(1);
+        assertThat(provider.requests).extracting(ProviderInferenceRequest::stage)
+                .containsExactly(
+                        InferenceStage.OBSERVE, InferenceStage.HIERARCHY,
+                        InferenceStage.ELEMENT_BINDING, InferenceStage.HIERARCHY,
+                        InferenceStage.ELEMENT_BINDING
+                );
+        assertThat(provider.requests.get(3).taskJson())
+                .contains("VISUAL_SEMANTIC_HIERARCHY_BINDING_OWNER_AMBIGUOUS")
+                .contains("TARGETED_CROP")
+                .contains("\"elementInventory\":{")
+                .contains("\"groundingPlan\":{")
+                .contains("\"hierarchyPlan\":null");
+        assertThat(workflowStore.attempts(created)).extracting(InferenceAttempt::status)
+                .containsExactly(
+                        InferenceAttemptStatus.SUCCEEDED, InferenceAttemptStatus.SUCCEEDED,
+                        InferenceAttemptStatus.REJECTED, InferenceAttemptStatus.SUCCEEDED,
+                        InferenceAttemptStatus.SUCCEEDED
+                );
+        assertThat(workflowStore.attempts(created).get(2).problemCodeCounts())
+                .containsExactlyEntriesOf(Map.of(
+                        "VISUAL_SEMANTIC_HIERARCHY_BINDING_OWNER_AMBIGUOUS", 1
+                ));
+    }
+
+    @Test
+    void pipelineFourPointSixteenRepairsManyGroupRegionCardinalityAtObserve() {
+        var blobs = new MemoryBlobStore();
+        var created = createGroundedVisual(
+                blobs, "group-region-cardinality-station",
+                GROUP_REGION_CARDINALITY_HYBRID_VISUAL_PROFILE
+        );
+        var provider = new ScriptedProvider(
+                request -> response(request, manyGroupWithSingularRegion()),
+                request -> response(request, groundedStationElements()),
+                request -> response(request, groundedStationHierarchy()),
+                request -> response(request, groundedStationBindings())
+        );
+        var preprocessCalls = new AtomicInteger();
+        var preprocessor = hybridPreprocessor(
+                preprocessCalls, "OCR_SENTINEL_V29_GROUP_CARDINALITY"
+        );
+
+        var finished = worker(provider, blobs, T0.plusSeconds(1), preprocessor)
+                .processNext("group-region-cardinality-worker").orElseThrow();
+
+        assertThat(finished.state())
+                .as("failure=%s attempts=%s", finished.failureCode(), workflowStore.attempts(created))
+                .isEqualTo(InferenceRunState.REVIEW_REQUIRED);
+        assertThat(preprocessCalls).hasValue(1);
+        assertThat(provider.requests).extracting(ProviderInferenceRequest::stage)
+                .containsExactly(
+                        InferenceStage.OBSERVE, InferenceStage.OBSERVE,
+                        InferenceStage.HIERARCHY, InferenceStage.ELEMENT_BINDING
+                );
+        assertThat(provider.requests.get(1).taskJson())
+                .contains("VISUAL_SEMANTIC_REPEATED_GROUP_CARDINALITY_INVALID")
+                .contains("\"elementInventory\":null")
+                .contains("\"groundingPlan\":null");
+        assertThat(workflowStore.attempts(created)).extracting(InferenceAttempt::status)
+                .containsExactly(
+                        InferenceAttemptStatus.REJECTED, InferenceAttemptStatus.SUCCEEDED,
+                        InferenceAttemptStatus.SUCCEEDED, InferenceAttemptStatus.SUCCEEDED
+                );
+        assertThat(workflowStore.attempts(created).getFirst().problemCodeCounts())
+                .containsExactlyEntriesOf(Map.of(
+                        "VISUAL_SEMANTIC_REPEATED_GROUP_CARDINALITY_INVALID", 1
+                ));
+        assertThat(finished.checkpointJson())
+                .doesNotContain("OCR_SENTINEL_V29_GROUP_CARDINALITY");
+    }
+
+    @Test
+    void pipelineFourPointSeventeenNormalizesOneUniqueEvidenceOwnerBeforeHierarchy() {
+        var blobs = new MemoryBlobStore();
+        var created = createGroundedVisual(
+                blobs, "evidence-owner-normalized-station",
+                EVIDENCE_OWNER_NORMALIZED_HYBRID_VISUAL_PROFILE
+        );
+        var provider = new ScriptedProvider(
+                request -> response(request, groundedStationElementsWithMisownedStationName()),
+                request -> response(request, groundedStationHierarchy()),
+                request -> response(request, groundedStationBindings())
+        );
+        var preprocessCalls = new AtomicInteger();
+        var preprocessor = hybridPreprocessor(
+                preprocessCalls, "OCR_SENTINEL_V30_EVIDENCE_OWNER"
+        );
+
+        var finished = worker(provider, blobs, T0.plusSeconds(1), preprocessor)
+                .processNext("evidence-owner-normalized-worker").orElseThrow();
+
+        assertThat(finished.state())
+                .as("failure=%s attempts=%s", finished.failureCode(), workflowStore.attempts(created))
+                .isEqualTo(InferenceRunState.REVIEW_REQUIRED);
+        assertThat(preprocessCalls).hasValue(1);
+        assertThat(provider.requests).extracting(ProviderInferenceRequest::stage)
+                .containsExactly(
+                        InferenceStage.OBSERVE,
+                        InferenceStage.HIERARCHY,
+                        InferenceStage.ELEMENT_BINDING
+                );
+        assertThat(provider.requests.get(1).taskJson())
+                .contains("\"elementId\":\"station-name\",\"regionIds\":[\"header\"]")
+                .doesNotContain("\"elementId\":\"station-name\",\"regionIds\":[\"notice\"]");
+        assertThat(workflowStore.attempts(created)).extracting(InferenceAttempt::status)
+                .containsExactly(
+                        InferenceAttemptStatus.SUCCEEDED,
+                        InferenceAttemptStatus.SUCCEEDED,
+                        InferenceAttemptStatus.SUCCEEDED
+                );
+        assertThat(workflowStore.attempts(created).getFirst().problemCodeCounts())
+                .containsExactlyEntriesOf(Map.of(
+                        "VISUAL_GROUNDING_ELEMENT_REGION_NORMALIZED", 1
+                ));
+        assertThat(workflowStore.attempts(created).get(1).problemCodeCounts())
+                .doesNotContainKey("VISUAL_GROUNDING_ELEMENT_REGION_NORMALIZED");
+        assertThat(finished.checkpointJson())
+                .doesNotContain("OCR_SENTINEL_V30_EVIDENCE_OWNER")
+                .doesNotContain("ocr-00-000");
+        var review = workflowStore.findCandidate(created).orElseThrow();
+        assertThat(review.currentJson())
+                .doesNotContain("OCR_SENTINEL_V30_EVIDENCE_OWNER")
+                .doesNotContain("ocr-00-000");
+        assertThat(review.validationProblemsJson())
+                .doesNotContain("OCR_SENTINEL_V30_EVIDENCE_OWNER")
+                .doesNotContain("ocr-00-000");
+    }
+
+    @Test
+    void pipelineFourPointEighteenNormalizesRepeatedItemSlotOwnersBeforeHierarchy() {
+        var blobs = new MemoryBlobStore();
+        var created = createGroundedVisual(
+                blobs, "repeated-item-slot-owner-normalized-station",
+                REPEATED_ITEM_SLOT_OWNER_NORMALIZED_HYBRID_VISUAL_PROFILE
+        );
+        var provider = new ScriptedProvider(
+                request -> response(request, repeatedItemSlotOwnerElements()),
+                request -> response(request, repeatedItemSlotOwnerHierarchy()),
+                request -> response(request, repeatedItemSlotOwnerBindings())
+        );
+        var preprocessCalls = new AtomicInteger();
+        var preprocessor = hybridPreprocessor(
+                preprocessCalls, "OCR_SENTINEL_V31_REPEATED_ITEM_SLOT_OWNER"
+        );
+
+        var finished = worker(provider, blobs, T0.plusSeconds(1), preprocessor)
+                .processNext("repeated-item-slot-owner-normalized-worker").orElseThrow();
+
+        assertThat(finished.state())
+                .as("failure=%s attempts=%s", finished.failureCode(), workflowStore.attempts(created))
+                .isEqualTo(InferenceRunState.REVIEW_REQUIRED);
+        assertThat(preprocessCalls).hasValue(1);
+        assertThat(provider.requests).extracting(ProviderInferenceRequest::stage)
+                .containsExactly(
+                        InferenceStage.OBSERVE,
+                        InferenceStage.HIERARCHY,
+                        InferenceStage.ELEMENT_BINDING
+                );
+        assertThat(provider.requests.get(1).taskJson())
+                .contains("\"elementId\":\"item-label\",\"regionIds\":[\"item-a\",\"item-b\"]")
+                .doesNotContain("\"elementId\":\"item-label\",\"regionIds\":[\"repeat\"]");
+        assertThat(workflowStore.attempts(created)).extracting(InferenceAttempt::status)
+                .containsExactly(
+                        InferenceAttemptStatus.SUCCEEDED,
+                        InferenceAttemptStatus.SUCCEEDED,
+                        InferenceAttemptStatus.SUCCEEDED
+                );
+        assertThat(workflowStore.attempts(created).getFirst().problemCodeCounts())
+                .containsExactlyEntriesOf(Map.of(
+                        "VISUAL_GROUNDING_REPEATED_ITEM_SLOT_OWNER_NORMALIZED", 1
+                ));
+        assertThat(workflowStore.attempts(created).get(1).problemCodeCounts())
+                .doesNotContainKey("VISUAL_GROUNDING_REPEATED_ITEM_SLOT_OWNER_NORMALIZED");
+        assertThat(finished.checkpointJson())
+                .doesNotContain("OCR_SENTINEL_V31_REPEATED_ITEM_SLOT_OWNER")
+                .doesNotContain("ocr-00-000");
+        var review = workflowStore.findCandidate(created).orElseThrow();
+        assertThat(review.currentJson())
+                .doesNotContain("OCR_SENTINEL_V31_REPEATED_ITEM_SLOT_OWNER")
+                .doesNotContain("ocr-00-000");
+        assertThat(review.validationProblemsJson())
+                .doesNotContain("OCR_SENTINEL_V31_REPEATED_ITEM_SLOT_OWNER")
+                .doesNotContain("ocr-00-000");
+    }
+
+    @Test
+    void pipelineFourPointNineteenNormalizesOneEmptyRelationshipSupportOwner() {
+        var blobs = new MemoryBlobStore();
+        var created = createGroundedVisual(
+                blobs, "empty-support-owner-normalized-station",
+                EMPTY_SUPPORT_OWNER_NORMALIZED_HYBRID_VISUAL_PROFILE
+        );
+        var emptySupport = groundedStationHierarchy().replace(
+                "\"regionId\":\"routes\",\"supportingElementIds\":[\"route-group\"]",
+                "\"regionId\":\"routes\",\"supportingElementIds\":[]"
+        );
+        var provider = new ScriptedProvider(
+                request -> response(request, groundedStationElements()),
+                request -> response(request, emptySupport),
+                request -> response(request, groundedStationBindings())
+        );
+        var preprocessCalls = new AtomicInteger();
+        var preprocessor = hybridPreprocessor(
+                preprocessCalls, "OCR_SENTINEL_V32_EMPTY_SUPPORT_OWNER"
+        );
+
+        var finished = worker(provider, blobs, T0.plusSeconds(1), preprocessor)
+                .processNext("empty-support-owner-normalized-worker").orElseThrow();
+
+        assertThat(finished.state())
+                .as("failure=%s attempts=%s", finished.failureCode(), workflowStore.attempts(created))
+                .isEqualTo(InferenceRunState.REVIEW_REQUIRED);
+        assertThat(preprocessCalls).hasValue(1);
+        assertThat(provider.requests).extracting(ProviderInferenceRequest::stage)
+                .containsExactly(
+                        InferenceStage.OBSERVE,
+                        InferenceStage.HIERARCHY,
+                        InferenceStage.ELEMENT_BINDING
+                );
+        assertThat(workflowStore.attempts(created)).extracting(InferenceAttempt::status)
+                .containsExactly(
+                        InferenceAttemptStatus.SUCCEEDED,
+                        InferenceAttemptStatus.SUCCEEDED,
+                        InferenceAttemptStatus.SUCCEEDED
+                );
+        assertThat(workflowStore.attempts(created).get(1).problemCodeCounts())
+                .containsExactlyInAnyOrderEntriesOf(Map.of(
+                        "VISUAL_HIERARCHY_RELATIONSHIP_CARDINALITY_DERIVED", 3,
+                        "VISUAL_HIERARCHY_RELATIONSHIP_SUPPORT_OWNER_NORMALIZED", 1,
+                        "VISUAL_HIERARCHY_RELATIONSHIP_EMPTY_SUPPORT_OWNER_NORMALIZED", 1
+                ));
+        assertThat(workflowStore.attempts(created).getFirst().problemCodeCounts())
+                .doesNotContainKey("VISUAL_HIERARCHY_RELATIONSHIP_EMPTY_SUPPORT_OWNER_NORMALIZED");
+        assertThat(workflowStore.attempts(created).get(2).problemCodeCounts())
+                .doesNotContainKey("VISUAL_HIERARCHY_RELATIONSHIP_EMPTY_SUPPORT_OWNER_NORMALIZED");
+        assertThat(finished.checkpointJson())
+                .doesNotContain("OCR_SENTINEL_V32_EMPTY_SUPPORT_OWNER")
+                .doesNotContain("ocr-00-000");
+        var review = workflowStore.findCandidate(created).orElseThrow();
+        assertThat(review.currentJson())
+                .doesNotContain("OCR_SENTINEL_V32_EMPTY_SUPPORT_OWNER")
+                .doesNotContain("ocr-00-000");
+        assertThat(review.validationProblemsJson())
+                .doesNotContain("OCR_SENTINEL_V32_EMPTY_SUPPORT_OWNER")
+                .doesNotContain("ocr-00-000");
+    }
+
+    @Test
+    void pipelineFourPointTwentyNormalizesOneUnknownRelationshipSupportOwner() {
+        var blobs = new MemoryBlobStore();
+        var created = createGroundedVisual(
+                blobs, "unknown-support-owner-normalized-station",
+                UNKNOWN_SUPPORT_OWNER_NORMALIZED_HYBRID_VISUAL_PROFILE
+        );
+        var unknownSupport = groundedStationHierarchy().replace(
+                "\"regionId\":\"routes\",\"supportingElementIds\":[\"route-group\"]",
+                "\"regionId\":\"routes\",\"supportingElementIds\":[\"unknown-group\"]"
+        );
+        var provider = new ScriptedProvider(
+                request -> response(request, groundedStationElements()),
+                request -> response(request, unknownSupport),
+                request -> response(request, groundedStationBindings())
+        );
+        var preprocessCalls = new AtomicInteger();
+        var preprocessor = hybridPreprocessor(
+                preprocessCalls, "OCR_SENTINEL_V33_UNKNOWN_SUPPORT_OWNER"
+        );
+
+        var finished = worker(provider, blobs, T0.plusSeconds(1), preprocessor)
+                .processNext("unknown-support-owner-normalized-worker").orElseThrow();
+
+        assertThat(finished.state())
+                .as("failure=%s attempts=%s", finished.failureCode(), workflowStore.attempts(created))
+                .isEqualTo(InferenceRunState.REVIEW_REQUIRED);
+        assertThat(preprocessCalls).hasValue(1);
+        assertThat(provider.requests).extracting(ProviderInferenceRequest::stage)
+                .containsExactly(
+                        InferenceStage.OBSERVE,
+                        InferenceStage.HIERARCHY,
+                        InferenceStage.ELEMENT_BINDING
+                );
+        assertThat(workflowStore.attempts(created)).extracting(InferenceAttempt::status)
+                .containsExactly(
+                        InferenceAttemptStatus.SUCCEEDED,
+                        InferenceAttemptStatus.SUCCEEDED,
+                        InferenceAttemptStatus.SUCCEEDED
+                );
+        assertThat(workflowStore.attempts(created).get(1).problemCodeCounts())
+                .containsExactlyInAnyOrderEntriesOf(Map.of(
+                        "VISUAL_HIERARCHY_RELATIONSHIP_CARDINALITY_DERIVED", 3,
+                        "VISUAL_HIERARCHY_RELATIONSHIP_SUPPORT_OWNER_NORMALIZED", 1,
+                        "VISUAL_HIERARCHY_RELATIONSHIP_UNKNOWN_SUPPORT_OWNER_NORMALIZED", 1
+                ));
+        assertThat(workflowStore.attempts(created).getFirst().problemCodeCounts())
+                .doesNotContainKey("VISUAL_HIERARCHY_RELATIONSHIP_UNKNOWN_SUPPORT_OWNER_NORMALIZED");
+        assertThat(workflowStore.attempts(created).get(2).problemCodeCounts())
+                .doesNotContainKey("VISUAL_HIERARCHY_RELATIONSHIP_UNKNOWN_SUPPORT_OWNER_NORMALIZED");
+        assertThat(finished.checkpointJson())
+                .doesNotContain("OCR_SENTINEL_V33_UNKNOWN_SUPPORT_OWNER")
+                .doesNotContain("ocr-00-000");
+        var review = workflowStore.findCandidate(created).orElseThrow();
+        assertThat(review.currentJson())
+                .doesNotContain("OCR_SENTINEL_V33_UNKNOWN_SUPPORT_OWNER")
+                .doesNotContain("ocr-00-000");
+        assertThat(review.validationProblemsJson())
+                .doesNotContain("OCR_SENTINEL_V33_UNKNOWN_SUPPORT_OWNER")
+                .doesNotContain("ocr-00-000");
+    }
+
+    @Test
+    void pipelineFourPointTwentyOneResumesAfterNormalizingOneUniqueRegionParent() {
+        var blobs = new MemoryBlobStore();
+        var created = createGroundedVisual(
+                blobs, "unique-region-parent-normalized-station",
+                UNIQUE_REGION_PARENT_NORMALIZED_HYBRID_VISUAL_PROFILE
+        );
+        var provider = new ScriptedProvider(
+                request -> response(request, groundedStationElementsWithMisparentedNotice()),
+                request -> response(request, groundedStationHierarchy()),
+                request -> response(request, groundedStationBindings())
+        );
+        var preprocessCalls = new AtomicInteger();
+        var preprocessor = hybridPreprocessor(
+                preprocessCalls, "OCR_SENTINEL_V34_REGION_PARENT"
+        );
+        var firstWorker = worker(provider, blobs, T0.plusSeconds(1), preprocessor);
+        var claimed = runs.claimNextLive(
+                "unique-region-parent-first-worker", T0.plusSeconds(1),
+                Duration.ofMinutes(5)
+        ).orElseThrow();
+
+        var afterObserve = firstWorker.advance(claimed);
+
+        assertThat(afterObserve.stage()).isEqualTo(InferenceStage.HIERARCHY);
+        assertThat(preprocessCalls).hasValue(1);
+        assertThat(provider.requests).extracting(ProviderInferenceRequest::stage)
+                .containsExactly(InferenceStage.OBSERVE);
+        assertThat(workflowStore.attempts(created)).singleElement().satisfies(attempt -> {
+            assertThat(attempt.status()).isEqualTo(InferenceAttemptStatus.SUCCEEDED);
+            assertThat(attempt.problemCodeCounts()).containsExactlyEntriesOf(Map.of(
+                    "VISUAL_GROUNDING_REGION_PARENT_NORMALIZED", 1
+            ));
+        });
+        assertThat(afterObserve.checkpointJson())
+                .contains("renderweave-visual-grounding/2.0")
+                .doesNotContain("OCR_SENTINEL_V34_REGION_PARENT")
+                .doesNotContain("ocr-00-000");
+
+        var finished = worker(
+                provider, blobs, T0.plus(Duration.ofMinutes(7)), preprocessor
+        ).processNext("unique-region-parent-recovery-worker").orElseThrow();
+
+        assertThat(finished.state())
+                .as("failure=%s attempts=%s", finished.failureCode(), workflowStore.attempts(created))
+                .isEqualTo(InferenceRunState.REVIEW_REQUIRED);
+        assertThat(preprocessCalls)
+                .as("ephemeral OCR is recomputed after lease expiry without replaying OBSERVE")
+                .hasValue(2);
+        assertThat(provider.requests).extracting(ProviderInferenceRequest::stage)
+                .containsExactly(
+                        InferenceStage.OBSERVE,
+                        InferenceStage.HIERARCHY,
+                        InferenceStage.ELEMENT_BINDING
+                );
+        assertThat(workflowStore.attempts(created)).extracting(InferenceAttempt::status)
+                .containsExactly(
+                        InferenceAttemptStatus.SUCCEEDED,
+                        InferenceAttemptStatus.SUCCEEDED,
+                        InferenceAttemptStatus.SUCCEEDED
+                );
+        assertThat(workflowStore.attempts(created).get(1).problemCodeCounts())
+                .doesNotContainKey("VISUAL_GROUNDING_REGION_PARENT_NORMALIZED");
+        assertThat(workflowStore.attempts(created).get(2).problemCodeCounts())
+                .doesNotContainKey("VISUAL_GROUNDING_REGION_PARENT_NORMALIZED");
+        assertThat(finished.checkpointJson())
+                .doesNotContain("OCR_SENTINEL_V34_REGION_PARENT")
+                .doesNotContain("ocr-00-000");
+        var review = workflowStore.findCandidate(created).orElseThrow();
+        assertThat(review.currentJson())
+                .doesNotContain("OCR_SENTINEL_V34_REGION_PARENT")
+                .doesNotContain("ocr-00-000");
+        assertThat(review.validationProblemsJson())
+                .doesNotContain("OCR_SENTINEL_V34_REGION_PARENT")
+                .doesNotContain("ocr-00-000");
+    }
+
+    @Test
+    void pipelineFourPointTwentyTwoResumesAfterNormalizingOneEmptySourceAncestorSupportOwner() {
+        var blobs = new MemoryBlobStore();
+        var created = createGroundedVisual(
+                blobs, "empty-source-ancestor-support-owner-station",
+                EMPTY_SOURCE_ANCESTOR_SUPPORT_OWNER_NORMALIZED_HYBRID_VISUAL_PROFILE
+        );
+        var emptySourceAncestorSupport = sourceAncestorHierarchy().replace(
+                "\"regionId\":\"route-item\",\"supportingElementIds\":[\"route-number\"]",
+                "\"regionId\":\"route-item\",\"supportingElementIds\":[]"
+        ).replace(
+                "\"regionIds\":[\"root\",\"route-item\"]",
+                "\"regionIds\":[\"route-item\"]"
+        );
+        var provider = new ScriptedProvider(
+                request -> response(request, sourceAncestorElements().replace(
+                        "\"regionIds\":[\"root\",\"route-item\"]",
+                        "\"regionIds\":[\"route-item\"]"
+                )),
+                request -> response(request, emptySourceAncestorSupport),
+                request -> response(request, sourceAncestorBindings())
+        );
+        var preprocessCalls = new AtomicInteger();
+        var preprocessor = hybridPreprocessor(
+                preprocessCalls, "OCR_SENTINEL_V35_EMPTY_SOURCE_ANCESTOR"
+        );
+        var firstWorker = worker(provider, blobs, T0.plusSeconds(1), preprocessor);
+        var claimed = runs.claimNextLive(
+                "empty-source-ancestor-first-worker", T0.plusSeconds(1),
+                Duration.ofMinutes(5)
+        ).orElseThrow();
+
+        var afterObserve = firstWorker.advance(claimed);
+
+        assertThat(afterObserve.stage()).isEqualTo(InferenceStage.HIERARCHY);
+        assertThat(preprocessCalls).hasValue(1);
+        assertThat(provider.requests).extracting(ProviderInferenceRequest::stage)
+                .containsExactly(InferenceStage.OBSERVE);
+        assertThat(workflowStore.attempts(created)).singleElement().satisfies(attempt -> {
+            assertThat(attempt.status()).isEqualTo(InferenceAttemptStatus.SUCCEEDED);
+            assertThat(attempt.problemCodeCounts())
+                    .doesNotContainKey(
+                            "VISUAL_HIERARCHY_RELATIONSHIP_EMPTY_SOURCE_ANCESTOR_SUPPORT_OWNER_NORMALIZED"
+                    );
+        });
+        assertThat(afterObserve.checkpointJson())
+                .contains("renderweave-visual-grounding/2.0")
+                .doesNotContain("OCR_SENTINEL_V35_EMPTY_SOURCE_ANCESTOR")
+                .doesNotContain("ocr-00-000");
+
+        var finished = worker(
+                provider, blobs, T0.plus(Duration.ofMinutes(7)), preprocessor
+        ).processNext("empty-source-ancestor-recovery-worker").orElseThrow();
+
+        assertThat(finished.state())
+                .as("failure=%s attempts=%s", finished.failureCode(), workflowStore.attempts(created))
+                .isEqualTo(InferenceRunState.REVIEW_REQUIRED);
+        assertThat(preprocessCalls)
+                .as("ephemeral OCR is recomputed after lease expiry without replaying OBSERVE")
+                .hasValue(2);
+        assertThat(provider.requests).extracting(ProviderInferenceRequest::stage)
+                .containsExactly(
+                        InferenceStage.OBSERVE,
+                        InferenceStage.HIERARCHY,
+                        InferenceStage.ELEMENT_BINDING
+                );
+        assertThat(workflowStore.attempts(created)).extracting(InferenceAttempt::status)
+                .containsExactly(
+                        InferenceAttemptStatus.SUCCEEDED,
+                        InferenceAttemptStatus.SUCCEEDED,
+                        InferenceAttemptStatus.SUCCEEDED
+                );
+        assertThat(workflowStore.attempts(created).get(1).problemCodeCounts())
+                .containsExactlyInAnyOrderEntriesOf(Map.of(
+                        "VISUAL_HIERARCHY_RELATIONSHIP_CARDINALITY_DERIVED", 1,
+                        "VISUAL_HIERARCHY_RELATIONSHIP_SUPPORT_OWNER_NORMALIZED", 1,
+                        "VISUAL_HIERARCHY_RELATIONSHIP_EMPTY_SOURCE_ANCESTOR_SUPPORT_OWNER_NORMALIZED", 1,
+                        "VISUAL_HIERARCHY_RELATIONSHIP_REGION_NORMALIZED", 1
+                ));
+        assertThat(workflowStore.attempts(created).get(2).problemCodeCounts())
+                .doesNotContainKey(
+                        "VISUAL_HIERARCHY_RELATIONSHIP_EMPTY_SOURCE_ANCESTOR_SUPPORT_OWNER_NORMALIZED"
+                );
+        assertThat(finished.checkpointJson())
+                .doesNotContain("OCR_SENTINEL_V35_EMPTY_SOURCE_ANCESTOR")
+                .doesNotContain("ocr-00-000");
+        var review = workflowStore.findCandidate(created).orElseThrow();
+        assertThat(review.currentJson())
+                .doesNotContain("OCR_SENTINEL_V35_EMPTY_SOURCE_ANCESTOR")
+                .doesNotContain("ocr-00-000");
+        assertThat(review.validationProblemsJson())
+                .doesNotContain("OCR_SENTINEL_V35_EMPTY_SOURCE_ANCESTOR")
+                .doesNotContain("ocr-00-000");
+    }
+
+    @Test
+    void pipelineFourPointTwentyThreeResumesAfterNormalizingContractUniqueRegionKinds() {
+        var blobs = new MemoryBlobStore();
+        var created = createGroundedVisual(
+                blobs, "contract-unique-region-kinds-station",
+                STRUCTURAL_REGION_KIND_NORMALIZED_HYBRID_VISUAL_PROFILE
+        );
+        var structurallyClassifiableKinds = groundedStationElements()
+                .replaceFirst("\"kind\":\"ROOT\"", "\"kind\":\"CANVAS\"")
+                .replaceFirst("\"kind\":\"REPEATED_GROUP\"", "\"kind\":\"GROUP\"")
+                .replaceFirst("\"kind\":\"ITEM\"", "\"kind\":\"ROW\"");
+        var provider = new ScriptedProvider(
+                request -> response(request, structurallyClassifiableKinds),
+                request -> response(request, groundedStationHierarchy()),
+                request -> response(request, groundedStationBindings())
+        );
+        var preprocessCalls = new AtomicInteger();
+        var preprocessor = hybridPreprocessor(
+                preprocessCalls, "OCR_SENTINEL_V36_STRUCTURAL_REGION_KIND"
+        );
+        var firstWorker = worker(provider, blobs, T0.plusSeconds(1), preprocessor);
+        var claimed = runs.claimNextLive(
+                "structural-region-kind-first-worker", T0.plusSeconds(1),
+                Duration.ofMinutes(5)
+        ).orElseThrow();
+
+        var afterObserve = firstWorker.advance(claimed);
+
+        assertThat(afterObserve.stage()).isEqualTo(InferenceStage.HIERARCHY);
+        assertThat(preprocessCalls).hasValue(1);
+        assertThat(provider.requests).extracting(ProviderInferenceRequest::stage)
+                .containsExactly(InferenceStage.OBSERVE);
+        assertThat(workflowStore.attempts(created)).singleElement().satisfies(attempt -> {
+            assertThat(attempt.status()).isEqualTo(InferenceAttemptStatus.SUCCEEDED);
+            assertThat(attempt.problemCodeCounts()).containsExactlyEntriesOf(Map.of(
+                    "VISUAL_GROUNDING_REGION_KIND_NORMALIZED", 3
+            ));
+        });
+        assertThat(afterObserve.checkpointJson())
+                .contains("renderweave-visual-grounding/2.0")
+                .doesNotContain("OCR_SENTINEL_V36_STRUCTURAL_REGION_KIND")
+                .doesNotContain("ocr-00-000");
+
+        var finished = worker(
+                provider, blobs, T0.plus(Duration.ofMinutes(7)), preprocessor
+        ).processNext("structural-region-kind-recovery-worker").orElseThrow();
+
+        assertThat(finished.state())
+                .as("failure=%s attempts=%s", finished.failureCode(), workflowStore.attempts(created))
+                .isEqualTo(InferenceRunState.REVIEW_REQUIRED);
+        assertThat(preprocessCalls)
+                .as("ephemeral OCR is recomputed after lease expiry without replaying OBSERVE")
+                .hasValue(2);
+        assertThat(provider.requests).extracting(ProviderInferenceRequest::stage)
+                .containsExactly(
+                        InferenceStage.OBSERVE,
+                        InferenceStage.HIERARCHY,
+                        InferenceStage.ELEMENT_BINDING
+                );
+        assertThat(workflowStore.attempts(created)).extracting(InferenceAttempt::status)
+                .containsExactly(
+                        InferenceAttemptStatus.SUCCEEDED,
+                        InferenceAttemptStatus.SUCCEEDED,
+                        InferenceAttemptStatus.SUCCEEDED
+                );
+        assertThat(workflowStore.attempts(created).get(1).problemCodeCounts())
+                .doesNotContainKey("VISUAL_GROUNDING_REGION_KIND_NORMALIZED");
+        assertThat(workflowStore.attempts(created).get(2).problemCodeCounts())
+                .doesNotContainKey("VISUAL_GROUNDING_REGION_KIND_NORMALIZED");
+        assertThat(finished.checkpointJson())
+                .doesNotContain("OCR_SENTINEL_V36_STRUCTURAL_REGION_KIND")
+                .doesNotContain("ocr-00-000");
+        var review = workflowStore.findCandidate(created).orElseThrow();
+        assertThat(review.currentJson())
+                .doesNotContain("OCR_SENTINEL_V36_STRUCTURAL_REGION_KIND")
+                .doesNotContain("ocr-00-000");
+        assertThat(review.validationProblemsJson())
+                .doesNotContain("OCR_SENTINEL_V36_STRUCTURAL_REGION_KIND")
+                .doesNotContain("ocr-00-000");
+    }
+
+    @Test
+    void pipelineFourPointTwentyFourResumesAfterNormalizingConstraintUniqueGroupKind() {
+        var blobs = new MemoryBlobStore();
+        var created = createGroundedVisual(
+                blobs, "constraint-unique-group-kind-station",
+                CONSTRAINT_REGION_KIND_NORMALIZED_HYBRID_VISUAL_PROFILE
+        );
+        var constraintClassifiableKind = groundedStationElements().replace(
+                "\"regionId\":\"notice\",\"parentRegionId\":\"root\",\"kind\":\"GROUP\"",
+                "\"regionId\":\"notice\",\"parentRegionId\":\"root\",\"kind\":\"PANEL\""
+        );
+        var provider = new ScriptedProvider(
+                request -> response(request, constraintClassifiableKind),
+                request -> response(request, groundedStationHierarchy()),
+                request -> response(request, groundedStationBindings())
+        );
+        var preprocessCalls = new AtomicInteger();
+        var preprocessor = hybridPreprocessor(
+                preprocessCalls, "OCR_SENTINEL_V37_CONSTRAINT_REGION_KIND"
+        );
+        var firstWorker = worker(provider, blobs, T0.plusSeconds(1), preprocessor);
+        var claimed = runs.claimNextLive(
+                "constraint-region-kind-first-worker", T0.plusSeconds(1),
+                Duration.ofMinutes(5)
+        ).orElseThrow();
+
+        var afterObserve = firstWorker.advance(claimed);
+
+        assertThat(afterObserve.stage()).isEqualTo(InferenceStage.HIERARCHY);
+        assertThat(preprocessCalls).hasValue(1);
+        assertThat(provider.requests).extracting(ProviderInferenceRequest::stage)
+                .containsExactly(InferenceStage.OBSERVE);
+        assertThat(workflowStore.attempts(created)).singleElement().satisfies(attempt -> {
+            assertThat(attempt.status()).isEqualTo(InferenceAttemptStatus.SUCCEEDED);
+            assertThat(attempt.problemCodeCounts()).containsExactlyEntriesOf(Map.of(
+                    "VISUAL_GROUNDING_REGION_KIND_NORMALIZED", 1
+            ));
+        });
+        assertThat(afterObserve.checkpointJson())
+                .contains("renderweave-visual-grounding/2.0")
+                .doesNotContain("OCR_SENTINEL_V37_CONSTRAINT_REGION_KIND")
+                .doesNotContain("ocr-00-000");
+
+        var finished = worker(
+                provider, blobs, T0.plus(Duration.ofMinutes(7)), preprocessor
+        ).processNext("constraint-region-kind-recovery-worker").orElseThrow();
+
+        assertThat(finished.state())
+                .as("failure=%s attempts=%s", finished.failureCode(), workflowStore.attempts(created))
+                .isEqualTo(InferenceRunState.REVIEW_REQUIRED);
+        assertThat(preprocessCalls)
+                .as("ephemeral OCR is recomputed after lease expiry without replaying OBSERVE")
+                .hasValue(2);
+        assertThat(provider.requests).extracting(ProviderInferenceRequest::stage)
+                .containsExactly(
+                        InferenceStage.OBSERVE,
+                        InferenceStage.HIERARCHY,
+                        InferenceStage.ELEMENT_BINDING
+                );
+        assertThat(workflowStore.attempts(created)).extracting(InferenceAttempt::status)
+                .containsExactly(
+                        InferenceAttemptStatus.SUCCEEDED,
+                        InferenceAttemptStatus.SUCCEEDED,
+                        InferenceAttemptStatus.SUCCEEDED
+                );
+        assertThat(workflowStore.attempts(created).get(1).problemCodeCounts())
+                .doesNotContainKey("VISUAL_GROUNDING_REGION_KIND_NORMALIZED");
+        assertThat(workflowStore.attempts(created).get(2).problemCodeCounts())
+                .doesNotContainKey("VISUAL_GROUNDING_REGION_KIND_NORMALIZED");
+        assertThat(finished.checkpointJson())
+                .doesNotContain("OCR_SENTINEL_V37_CONSTRAINT_REGION_KIND")
+                .doesNotContain("ocr-00-000");
+        var review = workflowStore.findCandidate(created).orElseThrow();
+        assertThat(review.currentJson())
+                .doesNotContain("OCR_SENTINEL_V37_CONSTRAINT_REGION_KIND")
+                .doesNotContain("ocr-00-000");
+        assertThat(review.validationProblemsJson())
+                .doesNotContain("OCR_SENTINEL_V37_CONSTRAINT_REGION_KIND")
+                .doesNotContain("ocr-00-000");
+    }
+
+    @Test
+    void pipelineFourPointTwentyFiveResumesAfterPromotingKnownContainmentFailureToRootAncestor() {
+        var blobs = new MemoryBlobStore();
+        var created = createGroundedVisual(
+                blobs, "ancestor-region-parent-station",
+                ANCESTOR_REGION_PARENT_NORMALIZED_HYBRID_VISUAL_PROFILE
+        );
+        var knownOutsideParent = groundedStationElements().replace(
+                "\"regionId\":\"notice\",\"parentRegionId\":\"root\"",
+                "\"regionId\":\"notice\",\"parentRegionId\":\"routes\""
+        );
+        var provider = new ScriptedProvider(
+                request -> response(request, knownOutsideParent),
+                request -> response(request, groundedStationHierarchy()),
+                request -> response(request, groundedStationBindings())
+        );
+        var preprocessCalls = new AtomicInteger();
+        var preprocessor = hybridPreprocessor(
+                preprocessCalls, "OCR_SENTINEL_V38_ANCESTOR_REGION_PARENT"
+        );
+        var firstWorker = worker(provider, blobs, T0.plusSeconds(1), preprocessor);
+        var claimed = runs.claimNextLive(
+                "ancestor-region-parent-first-worker", T0.plusSeconds(1),
+                Duration.ofMinutes(5)
+        ).orElseThrow();
+
+        var afterObserve = firstWorker.advance(claimed);
+
+        assertThat(afterObserve.stage()).isEqualTo(InferenceStage.HIERARCHY);
+        assertThat(preprocessCalls).hasValue(1);
+        assertThat(provider.requests).extracting(ProviderInferenceRequest::stage)
+                .containsExactly(InferenceStage.OBSERVE);
+        assertThat(workflowStore.attempts(created)).singleElement().satisfies(attempt -> {
+            assertThat(attempt.status()).isEqualTo(InferenceAttemptStatus.SUCCEEDED);
+            assertThat(attempt.problemCodeCounts()).containsExactlyEntriesOf(Map.of(
+                    "VISUAL_GROUNDING_REGION_PARENT_NORMALIZED", 1
+            ));
+        });
+        assertThat(afterObserve.checkpointJson())
+                .contains("renderweave-visual-grounding/2.0")
+                .doesNotContain("OCR_SENTINEL_V38_ANCESTOR_REGION_PARENT")
+                .doesNotContain("ocr-00-000");
+
+        var finished = worker(
+                provider, blobs, T0.plus(Duration.ofMinutes(7)), preprocessor
+        ).processNext("ancestor-region-parent-recovery-worker").orElseThrow();
+
+        assertThat(finished.state())
+                .as("failure=%s attempts=%s", finished.failureCode(), workflowStore.attempts(created))
+                .isEqualTo(InferenceRunState.REVIEW_REQUIRED);
+        assertThat(preprocessCalls)
+                .as("ephemeral OCR is recomputed after lease expiry without replaying OBSERVE")
+                .hasValue(2);
+        assertThat(provider.requests).extracting(ProviderInferenceRequest::stage)
+                .containsExactly(
+                        InferenceStage.OBSERVE,
+                        InferenceStage.HIERARCHY,
+                        InferenceStage.ELEMENT_BINDING
+                );
+        assertThat(workflowStore.attempts(created)).extracting(InferenceAttempt::status)
+                .containsExactly(
+                        InferenceAttemptStatus.SUCCEEDED,
+                        InferenceAttemptStatus.SUCCEEDED,
+                        InferenceAttemptStatus.SUCCEEDED
+                );
+        assertThat(workflowStore.attempts(created).get(1).problemCodeCounts())
+                .doesNotContainKey("VISUAL_GROUNDING_REGION_PARENT_NORMALIZED");
+        assertThat(workflowStore.attempts(created).get(2).problemCodeCounts())
+                .doesNotContainKey("VISUAL_GROUNDING_REGION_PARENT_NORMALIZED");
+        assertThat(finished.checkpointJson())
+                .doesNotContain("OCR_SENTINEL_V38_ANCESTOR_REGION_PARENT")
+                .doesNotContain("ocr-00-000");
+        var review = workflowStore.findCandidate(created).orElseThrow();
+        assertThat(review.currentJson())
+                .doesNotContain("OCR_SENTINEL_V38_ANCESTOR_REGION_PARENT")
+                .doesNotContain("ocr-00-000");
+        assertThat(review.validationProblemsJson())
+                .doesNotContain("OCR_SENTINEL_V38_ANCESTOR_REGION_PARENT")
+                .doesNotContain("ocr-00-000");
+    }
+
+    @Test
+    void pipelineFourPointTwentySixResumesAfterCompactingCanonicalSiblingReadingOrders() {
+        var blobs = new MemoryBlobStore();
+        var created = createGroundedVisual(
+                blobs, "gapped-reading-order-station",
+                GAPPED_READING_ORDER_NORMALIZED_HYBRID_VISUAL_PROFILE
+        );
+        var canonicalGappedReadingOrders = groundedStationElements()
+                .replace(
+                        "\"regionId\":\"notice\",\"parentRegionId\":\"root\",\"kind\":\"GROUP\",\"multiplicity\":\"ONE\",\"readingOrder\":1",
+                        "\"regionId\":\"notice\",\"parentRegionId\":\"root\",\"kind\":\"GROUP\",\"multiplicity\":\"ONE\",\"readingOrder\":7"
+                )
+                .replace(
+                        "\"regionId\":\"routes\",\"parentRegionId\":\"root\",\"kind\":\"REPEATED_GROUP\",\"multiplicity\":\"MANY\",\"readingOrder\":2",
+                        "\"regionId\":\"routes\",\"parentRegionId\":\"root\",\"kind\":\"REPEATED_GROUP\",\"multiplicity\":\"MANY\",\"readingOrder\":9"
+                );
+        var provider = new ScriptedProvider(
+                request -> response(request, canonicalGappedReadingOrders),
+                request -> response(request, groundedStationHierarchy()),
+                request -> response(request, groundedStationBindings())
+        );
+        var preprocessCalls = new AtomicInteger();
+        var preprocessor = hybridPreprocessor(
+                preprocessCalls, "OCR_SENTINEL_V39_GAPPED_READING_ORDER"
+        );
+        var firstWorker = worker(provider, blobs, T0.plusSeconds(1), preprocessor);
+        var claimed = runs.claimNextLive(
+                "gapped-reading-order-first-worker", T0.plusSeconds(1),
+                Duration.ofMinutes(5)
+        ).orElseThrow();
+
+        var afterObserve = firstWorker.advance(claimed);
+
+        assertThat(afterObserve.stage()).isEqualTo(InferenceStage.HIERARCHY);
+        assertThat(preprocessCalls).hasValue(1);
+        assertThat(provider.requests).extracting(ProviderInferenceRequest::stage)
+                .containsExactly(InferenceStage.OBSERVE);
+        assertThat(workflowStore.attempts(created)).singleElement().satisfies(attempt -> {
+            assertThat(attempt.status()).isEqualTo(InferenceAttemptStatus.SUCCEEDED);
+            assertThat(attempt.problemCodeCounts()).containsExactlyEntriesOf(Map.of(
+                    "VISUAL_GROUNDING_READING_ORDER_NORMALIZED", 2
+            ));
+        });
+        assertThat(afterObserve.checkpointJson())
+                .contains("renderweave-visual-grounding/2.0")
+                .doesNotContain("OCR_SENTINEL_V39_GAPPED_READING_ORDER")
+                .doesNotContain("ocr-00-000");
+
+        var finished = worker(
+                provider, blobs, T0.plus(Duration.ofMinutes(7)), preprocessor
+        ).processNext("gapped-reading-order-recovery-worker").orElseThrow();
+
+        assertThat(finished.state())
+                .as("failure=%s attempts=%s", finished.failureCode(), workflowStore.attempts(created))
+                .isEqualTo(InferenceRunState.REVIEW_REQUIRED);
+        assertThat(preprocessCalls)
+                .as("ephemeral OCR is recomputed after lease expiry without replaying OBSERVE")
+                .hasValue(2);
+        assertThat(provider.requests).extracting(ProviderInferenceRequest::stage)
+                .containsExactly(
+                        InferenceStage.OBSERVE,
+                        InferenceStage.HIERARCHY,
+                        InferenceStage.ELEMENT_BINDING
+                );
+        assertThat(workflowStore.attempts(created)).extracting(InferenceAttempt::status)
+                .containsExactly(
+                        InferenceAttemptStatus.SUCCEEDED,
+                        InferenceAttemptStatus.SUCCEEDED,
+                        InferenceAttemptStatus.SUCCEEDED
+                );
+        assertThat(workflowStore.attempts(created).get(1).problemCodeCounts())
+                .doesNotContainKey("VISUAL_GROUNDING_READING_ORDER_NORMALIZED");
+        assertThat(workflowStore.attempts(created).get(2).problemCodeCounts())
+                .doesNotContainKey("VISUAL_GROUNDING_READING_ORDER_NORMALIZED");
+        assertThat(finished.checkpointJson())
+                .doesNotContain("OCR_SENTINEL_V39_GAPPED_READING_ORDER")
+                .doesNotContain("ocr-00-000");
+        var review = workflowStore.findCandidate(created).orElseThrow();
+        assertThat(review.currentJson())
+                .doesNotContain("OCR_SENTINEL_V39_GAPPED_READING_ORDER")
+                .doesNotContain("ocr-00-000");
+        assertThat(review.validationProblemsJson())
+                .doesNotContain("OCR_SENTINEL_V39_GAPPED_READING_ORDER")
+                .doesNotContain("ocr-00-000");
+    }
+
+    @Test
+    void pipelineFourPointTwentySevenResumesWithBoundedReadingOrderDiagnostics() {
+        var blobs = new MemoryBlobStore();
+        var created = createGroundedVisual(
+                blobs, "reading-order-diagnostic-station",
+                READING_ORDER_DIAGNOSTIC_HYBRID_VISUAL_PROFILE
+        );
+        var canonicalGappedReadingOrders = groundedStationElements()
+                .replace(
+                        "\"regionId\":\"notice\",\"parentRegionId\":\"root\",\"kind\":\"GROUP\",\"multiplicity\":\"ONE\",\"readingOrder\":1",
+                        "\"regionId\":\"notice\",\"parentRegionId\":\"root\",\"kind\":\"GROUP\",\"multiplicity\":\"ONE\",\"readingOrder\":7"
+                )
+                .replace(
+                        "\"regionId\":\"routes\",\"parentRegionId\":\"root\",\"kind\":\"REPEATED_GROUP\",\"multiplicity\":\"MANY\",\"readingOrder\":2",
+                        "\"regionId\":\"routes\",\"parentRegionId\":\"root\",\"kind\":\"REPEATED_GROUP\",\"multiplicity\":\"MANY\",\"readingOrder\":9"
+                );
+        var provider = new ScriptedProvider(
+                request -> response(request, canonicalGappedReadingOrders),
+                request -> response(request, groundedStationHierarchy()),
+                request -> response(request, groundedStationBindings())
+        );
+        var preprocessCalls = new AtomicInteger();
+        var preprocessor = hybridPreprocessor(
+                preprocessCalls, "OCR_SENTINEL_V40_READING_ORDER_DIAGNOSTIC"
+        );
+        var firstWorker = worker(provider, blobs, T0.plusSeconds(1), preprocessor);
+        var claimed = runs.claimNextLive(
+                "reading-order-diagnostic-first-worker", T0.plusSeconds(1),
+                Duration.ofMinutes(5)
+        ).orElseThrow();
+
+        var afterObserve = firstWorker.advance(claimed);
+
+        assertThat(afterObserve.stage()).isEqualTo(InferenceStage.HIERARCHY);
+        assertThat(preprocessCalls).hasValue(1);
+        assertThat(provider.requests).extracting(ProviderInferenceRequest::stage)
+                .containsExactly(InferenceStage.OBSERVE);
+        assertThat(workflowStore.attempts(created)).singleElement().satisfies(attempt -> {
+            assertThat(attempt.status()).isEqualTo(InferenceAttemptStatus.SUCCEEDED);
+            assertThat(attempt.problemCodeCounts()).containsExactlyEntriesOf(Map.of(
+                    "VISUAL_GROUNDING_READING_ORDER_NORMALIZED", 2
+            ));
+        });
+        assertThat(afterObserve.checkpointJson())
+                .contains("renderweave-visual-grounding/2.0")
+                .doesNotContain("OCR_SENTINEL_V40_READING_ORDER_DIAGNOSTIC")
+                .doesNotContain("ocr-00-000");
+
+        var finished = worker(
+                provider, blobs, T0.plus(Duration.ofMinutes(7)), preprocessor
+        ).processNext("reading-order-diagnostic-recovery-worker").orElseThrow();
+
+        assertThat(finished.state())
+                .as("failure=%s attempts=%s", finished.failureCode(), workflowStore.attempts(created))
+                .isEqualTo(InferenceRunState.REVIEW_REQUIRED);
+        assertThat(preprocessCalls)
+                .as("ephemeral OCR is recomputed after lease expiry without replaying OBSERVE")
+                .hasValue(2);
+        assertThat(provider.requests).extracting(ProviderInferenceRequest::stage)
+                .containsExactly(
+                        InferenceStage.OBSERVE,
+                        InferenceStage.HIERARCHY,
+                        InferenceStage.ELEMENT_BINDING
+                );
+        assertThat(workflowStore.attempts(created)).extracting(InferenceAttempt::status)
+                .containsExactly(
+                        InferenceAttemptStatus.SUCCEEDED,
+                        InferenceAttemptStatus.SUCCEEDED,
+                        InferenceAttemptStatus.SUCCEEDED
+                );
+        assertThat(workflowStore.attempts(created).get(1).problemCodeCounts())
+                .doesNotContainKey("VISUAL_GROUNDING_READING_ORDER_NORMALIZED");
+        assertThat(workflowStore.attempts(created).get(2).problemCodeCounts())
+                .doesNotContainKey("VISUAL_GROUNDING_READING_ORDER_NORMALIZED");
+        assertThat(finished.checkpointJson())
+                .doesNotContain("OCR_SENTINEL_V40_READING_ORDER_DIAGNOSTIC")
+                .doesNotContain("ocr-00-000");
+        var review = workflowStore.findCandidate(created).orElseThrow();
+        assertThat(review.currentJson())
+                .doesNotContain("OCR_SENTINEL_V40_READING_ORDER_DIAGNOSTIC")
+                .doesNotContain("ocr-00-000");
+        assertThat(review.validationProblemsJson())
+                .doesNotContain("OCR_SENTINEL_V40_READING_ORDER_DIAGNOSTIC")
+                .doesNotContain("ocr-00-000");
+    }
+
+    @Test
+    void cancellationIsAcknowledgedBeforeHybridPreprocessing() {
+        var blobs = new MemoryBlobStore();
+        var created = createGroundedVisual(blobs, "hybrid-cancel-before-ocr", HYBRID_VISUAL_PROFILE);
+        var claimed = runs.claimNextLive(
+                "hybrid-cancel-worker", T0.plusSeconds(1), Duration.ofMinutes(5)
+        ).orElseThrow();
+        var cancelled = runs.requestCancellation(created, T0.plusSeconds(2));
+        var preprocessCalls = new AtomicInteger();
+
+        var finished = worker(
+                new ScriptedProvider(), blobs, T0.plusSeconds(3),
+                hybridPreprocessor(preprocessCalls, "MUST_NOT_BE_OBSERVED")
+        ).drain(cancelled);
+
+        assertThat(claimed.runId()).isEqualTo(created);
+        assertThat(finished.state()).isEqualTo(InferenceRunState.CANCELLED);
+        assertThat(preprocessCalls).hasValue(0);
+        assertThat(workflowStore.attempts(created)).isEmpty();
+        assertThat(budgets.snapshot(LiveInferenceWorker.CANARY_BUDGET_KEY).consumedAttempts()).isZero();
     }
 
     @Test
@@ -766,6 +2966,18 @@ class PostgresLiveInferenceWorkflowTest {
         );
     }
 
+    private LiveInferenceWorker worker(
+            InferenceProvider provider,
+            BlobStore blobs,
+            Instant now,
+            DocumentVisionPreprocessor preprocessor
+    ) {
+        return new LiveInferenceWorker(
+                runs, workflowStore, budgets, provider, blobs,
+                Clock.fixed(now, ZoneOffset.UTC), Duration.ofMinutes(5), preprocessor
+        );
+    }
+
     private UUID create(MemoryBlobStore blobs, String seed) {
         return create(blobs, seed, 32, 16);
     }
@@ -798,6 +3010,91 @@ class PostgresLiveInferenceWorkflowTest {
         return runs.create(NewInferenceRun.initial(
                 UUID.randomUUID(), "idem-" + seed, normalized, profile.snapshotJson(), T0
         )).run().runId();
+    }
+
+    private UUID createGroundedVisual(MemoryBlobStore blobs, String seed) {
+        return createGroundedVisual(blobs, seed, GROUNDED_VISUAL_PROFILE);
+    }
+
+    private UUID createGroundedVisual(MemoryBlobStore blobs, String seed, String profileId) {
+        var profile = profiles.require(profileId);
+        var image = new BufferedImage(1_050, 1_660, BufferedImage.TYPE_INT_RGB);
+        var graphics = image.createGraphics();
+        try {
+            graphics.setColor(Color.WHITE);
+            graphics.fillRect(0, 0, image.getWidth(), image.getHeight());
+            graphics.setColor(Color.BLUE);
+            graphics.fillRect(0, 0, image.getWidth(), 160);
+        } finally {
+            graphics.dispose();
+        }
+        final byte[] bytes;
+        try {
+            var output = new ByteArrayOutputStream();
+            if (!ImageIO.write(image, "png", output)) throw new IllegalStateException("PNG writer unavailable");
+            bytes = output.toByteArray();
+        } catch (java.io.IOException failure) {
+            throw new IllegalStateException(failure);
+        }
+        var artifactId = sha256(bytes);
+        blobs.values.put(artifactId, bytes);
+        var artifact = new NormalizedArtifact(
+                artifactId, NormalizedArtifact.Kind.IMAGE, artifactId,
+                "image/png", bytes.length, image.getWidth(), image.getHeight()
+        );
+        var normalized = new NormalizedInput(
+                InferenceMode.IMAGE_ONLY, profileId, seed,
+                sha256(seed.getBytes(StandardCharsets.UTF_8)),
+                List.of(artifact),
+                List.of(new NormalizedInputReference(NormalizedArtifact.Kind.IMAGE, 0, artifactId)),
+                List.of()
+        );
+        return runs.create(NewInferenceRun.initial(
+                UUID.randomUUID(), "idem-" + seed, normalized, profile.snapshotJson(), T0
+        )).run().runId();
+    }
+
+    private static DocumentVisionPreprocessor hybridPreprocessor(
+            AtomicInteger calls,
+            String text
+    ) {
+        var capability = DocumentVisionCapability.available(
+                DOCUMENT_VISION_CAPABILITY,
+                "rapidocr-openvino-ppocrv6-small",
+                "rapidocr-3.9.2+openvino-2026.0.0",
+                "b".repeat(64)
+        );
+        return new DocumentVisionPreprocessor() {
+            @Override
+            public DocumentVisionCapability capability() {
+                return capability;
+            }
+
+            @Override
+            public DocumentVisionObservation preprocess(
+                    List<cn.hbads.renderweave.inference.vision.DocumentVisionArtifact> artifacts
+            ) {
+                calls.incrementAndGet();
+                assertThat(artifacts).singleElement().satisfies(artifact -> {
+                    assertThat(artifact.bytes()).isNotEmpty();
+                    assertThat(artifact.width()).isEqualTo(1_050);
+                    assertThat(artifact.height()).isEqualTo(1_660);
+                });
+                var artifact = artifacts.getFirst();
+                return DocumentVisionObservation.canonical(
+                        DOCUMENT_VISION_CAPABILITY,
+                        List.of(new DocumentVisionObservation.ArtifactObservation(
+                                artifact.artifactId(), artifact.sourceOrdinal(),
+                                List.of(new DocumentVisionObservation.TextLine(
+                                        "ocr-00-000", 0,
+                                        new CandidateBoundingBox(500, 100, 5_000, 500),
+                                        DocumentVisionObservation.ConfidenceBucket.HIGH,
+                                        text
+                                ))
+                        ))
+                );
+            }
+        };
     }
 
     private UUID createCombined(MemoryBlobStore blobs, String seed) {
@@ -880,6 +3177,197 @@ class PostgresLiveInferenceWorkflowTest {
         return runs.create(NewInferenceRun.initial(
                 UUID.randomUUID(), "idem-" + seed, normalized, profile.snapshotJson(), T0
         )).run().runId();
+    }
+
+    private static String groundedStationElements() {
+        return """
+                {"contractVersion":"renderweave-visual-grounding/2.0","regions":[
+                  {"regionId":"root","parentRegionId":null,"kind":"ROOT","multiplicity":"ONE","readingOrder":0,"repeatGroupId":null,"evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":0,"top":0,"right":10000,"bottom":10000}}]},
+                  {"regionId":"header","parentRegionId":"root","kind":"SECTION","multiplicity":"ONE","readingOrder":0,"repeatGroupId":null,"evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":0,"top":0,"right":10000,"bottom":1000}}]},
+                  {"regionId":"notice","parentRegionId":"root","kind":"GROUP","multiplicity":"ONE","readingOrder":1,"repeatGroupId":null,"evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":0,"top":1000,"right":10000,"bottom":2200}}]},
+                  {"regionId":"routes","parentRegionId":"root","kind":"REPEATED_GROUP","multiplicity":"MANY","readingOrder":2,"repeatGroupId":"routes","evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":0,"top":2200,"right":10000,"bottom":10000}}]},
+                  {"regionId":"route-item","parentRegionId":"routes","kind":"ITEM","multiplicity":"ONE","readingOrder":0,"repeatGroupId":"routes","evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":0,"top":2200,"right":10000,"bottom":10000}}]},
+                  {"regionId":"stops","parentRegionId":"route-item","kind":"REPEATED_GROUP","multiplicity":"MANY","readingOrder":0,"repeatGroupId":"stops","evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":0,"top":4000,"right":10000,"bottom":10000}}]},
+                  {"regionId":"stop-item","parentRegionId":"stops","kind":"ITEM","multiplicity":"ONE","readingOrder":0,"repeatGroupId":"stops","evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":0,"top":4000,"right":10000,"bottom":10000}}]}
+                ],"elements":[
+                  {"elementId":"station-name","kind":"SLOT","proposedKey":"stationName","displayName":"站点名称","multiplicity":"ONE","valueHint":"TEXT","regionIds":["header"],"evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":500,"top":100,"right":5000,"bottom":400}}]},
+                  {"elementId":"station-english","kind":"SLOT","proposedKey":"stationEnglishName","displayName":"站点英文名","multiplicity":"ONE","valueHint":"TEXT","regionIds":["header"],"evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":500,"top":450,"right":5000,"bottom":800}}]},
+                  {"elementId":"notice-group","kind":"GROUP","proposedKey":"warmNotice","displayName":"温馨提示","multiplicity":"ONE","valueHint":null,"regionIds":["notice"],"evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":0,"top":1000,"right":10000,"bottom":2200}}]},
+                  {"elementId":"notice-date","kind":"SLOT","proposedKey":"effectiveDate","displayName":"生效日期","multiplicity":"ONE","valueHint":"DATE","regionIds":["notice"],"evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":1000,"top":1200,"right":4000,"bottom":1500}}]},
+                  {"elementId":"notice-content","kind":"SLOT","proposedKey":"content","displayName":"提示内容","multiplicity":"ONE","valueHint":"TEXT","regionIds":["notice"],"evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":1000,"top":1600,"right":9000,"bottom":2000}}]},
+                  {"elementId":"route-group","kind":"GROUP","proposedKey":"routes","displayName":"线路","multiplicity":"MANY","valueHint":null,"regionIds":["routes"],"evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":0,"top":2200,"right":10000,"bottom":10000}}]},
+                  {"elementId":"route-number","kind":"SLOT","proposedKey":"routeNumber","displayName":"线路编号","multiplicity":"ONE","valueHint":"TEXT","regionIds":["route-item"],"evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":500,"top":2400,"right":2500,"bottom":2900}}]},
+                  {"elementId":"stop-group","kind":"GROUP","proposedKey":"stops","displayName":"停靠站点","multiplicity":"MANY","valueHint":null,"regionIds":["stops"],"evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":0,"top":4000,"right":10000,"bottom":10000}}]},
+                  {"elementId":"stop-name","kind":"SLOT","proposedKey":"name","displayName":"站点名称","multiplicity":"ONE","valueHint":"TEXT","regionIds":["stop-item"],"evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":500,"top":4300,"right":3000,"bottom":4800}}]}
+                ]}
+                """;
+    }
+
+    private static String groundedStationElementsWithMisparentedNotice() {
+        return groundedStationElements()
+                .replace(
+                        "{\"regionId\":\"notice\",\"parentRegionId\":\"root\",\"kind\":\"GROUP\",\"multiplicity\":\"ONE\",\"readingOrder\":1,\"repeatGroupId\":null,\"evidence\":[{\"viewId\":\"view-00-overview-00\",\"boundingBox\":{\"left\":0,\"top\":1000,\"right\":10000,\"bottom\":2200}}]}",
+                        "{\"regionId\":\"notice-shell\",\"parentRegionId\":\"root\",\"kind\":\"SECTION\",\"multiplicity\":\"ONE\",\"readingOrder\":1,\"repeatGroupId\":null,\"evidence\":[{\"viewId\":\"view-00-overview-00\",\"boundingBox\":{\"left\":0,\"top\":1000,\"right\":10000,\"bottom\":2200}}]},\n                  "
+                                + "{\"regionId\":\"notice\",\"parentRegionId\":\"routes\",\"kind\":\"GROUP\",\"multiplicity\":\"ONE\",\"readingOrder\":0,\"repeatGroupId\":null,\"evidence\":[{\"viewId\":\"view-00-overview-00\",\"boundingBox\":{\"left\":0,\"top\":1100,\"right\":10000,\"bottom\":2100}}]}"
+                )
+                .replace(
+                        "\"elementId\":\"notice-group\",\"kind\":\"GROUP\",\"proposedKey\":\"warmNotice\",\"displayName\":\"温馨提示\",\"multiplicity\":\"ONE\",\"valueHint\":null,\"regionIds\":[\"notice\"],\"evidence\":[{\"viewId\":\"view-00-overview-00\",\"boundingBox\":{\"left\":0,\"top\":1000,\"right\":10000,\"bottom\":2200}}]",
+                        "\"elementId\":\"notice-group\",\"kind\":\"GROUP\",\"proposedKey\":\"warmNotice\",\"displayName\":\"温馨提示\",\"multiplicity\":\"ONE\",\"valueHint\":null,\"regionIds\":[\"notice\"],\"evidence\":[{\"viewId\":\"view-00-overview-00\",\"boundingBox\":{\"left\":0,\"top\":1100,\"right\":10000,\"bottom\":2100}}]"
+                );
+    }
+
+    private static String manyGroupWithSingularRegion() {
+        return groundedStationElements().replace(
+                "{\"elementId\":\"notice-date\"",
+                "{\"elementId\":\"invalid-many-group\",\"kind\":\"GROUP\","
+                        + "\"proposedKey\":\"repeatedNotice\",\"displayName\":\"重复提示\","
+                        + "\"multiplicity\":\"MANY\",\"valueHint\":null,"
+                        + "\"regionIds\":[\"notice\"],\"evidence\":[{\"viewId\":"
+                        + "\"view-00-overview-00\",\"boundingBox\":{\"left\":0,\"top\":1000,"
+                        + "\"right\":10000,\"bottom\":2200}}]},\n                  "
+                        + "{\"elementId\":\"notice-date\""
+        );
+    }
+
+    private static String groundedStationElementsWithMisownedStationName() {
+        return groundedStationElements().replaceFirst(
+                "\"regionIds\":\\[\"header\"\\]",
+                "\"regionIds\":[\"notice\"]"
+        );
+    }
+
+    private static String repeatedItemSlotOwnerElements() {
+        return """
+                {"contractVersion":"renderweave-visual-grounding/2.0","regions":[
+                  {"regionId":"root","parentRegionId":null,"kind":"ROOT","multiplicity":"ONE","readingOrder":0,"repeatGroupId":null,"evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":0,"top":0,"right":10000,"bottom":10000}}]},
+                  {"regionId":"header","parentRegionId":"root","kind":"SECTION","multiplicity":"ONE","readingOrder":0,"repeatGroupId":null,"evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":0,"top":0,"right":10000,"bottom":2000}}]},
+                  {"regionId":"repeat","parentRegionId":"root","kind":"REPEATED_GROUP","multiplicity":"MANY","readingOrder":1,"repeatGroupId":"rows","evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":0,"top":2000,"right":10000,"bottom":10000}}]},
+                  {"regionId":"item-a","parentRegionId":"repeat","kind":"ITEM","multiplicity":"ONE","readingOrder":0,"repeatGroupId":"rows","evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":0,"top":2000,"right":10000,"bottom":6000}}]},
+                  {"regionId":"item-b","parentRegionId":"repeat","kind":"ITEM","multiplicity":"ONE","readingOrder":1,"repeatGroupId":"rows","evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":0,"top":6000,"right":10000,"bottom":10000}}]}
+                ],"elements":[
+                  {"elementId":"title","kind":"SLOT","proposedKey":"title","displayName":"标题","multiplicity":"ONE","valueHint":"TEXT","regionIds":["header"],"evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":100,"top":100,"right":3000,"bottom":700}}]},
+                  {"elementId":"row-group","kind":"GROUP","proposedKey":"items","displayName":"重复项目","multiplicity":"MANY","valueHint":null,"regionIds":["repeat"],"evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":0,"top":2000,"right":10000,"bottom":10000}}]},
+                  {"elementId":"item-label","kind":"SLOT","proposedKey":"label","displayName":"项目名称","multiplicity":"ONE","valueHint":"TEXT","regionIds":["repeat"],"evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":100,"top":2300,"right":3000,"bottom":2800}},{"viewId":"view-00-overview-00","boundingBox":{"left":100,"top":6300,"right":3000,"bottom":6800}}]}
+                ]}
+                """;
+    }
+
+    private static String repeatedItemSlotOwnerHierarchy() {
+        return """
+                {"contractVersion":"renderweave-visual-hierarchy/2.0","rootEntityId":"document","entities":[
+                  {"entityId":"document","schemaKey":"document","displayName":"文档","regionIds":["root"],"supportingElementIds":["title"]},
+                  {"entityId":"item","schemaKey":"item","displayName":"项目","regionIds":["item-a","item-b"],"supportingElementIds":["row-group"]}
+                ],"relationships":[
+                  {"relationshipId":"document-items","parentEntityId":"document","childEntityId":"item","fieldKey":"items","displayName":"项目","cardinality":"MANY","regionId":"repeat","supportingElementIds":["row-group"]}
+                ]}
+                """;
+    }
+
+    private static String repeatedItemSlotOwnerBindings() {
+        return """
+                {"contractVersion":"renderweave-visual-bindings/2.0","bindings":[
+                  {"elementId":"title","entityId":"document"},
+                  {"elementId":"item-label","entityId":"item"}
+                ]}
+                """;
+    }
+
+    private static String sourceAncestorElements() {
+        return """
+                {"contractVersion":"renderweave-visual-grounding/2.0","regions":[
+                  {"regionId":"root","parentRegionId":null,"kind":"ROOT","multiplicity":"ONE","readingOrder":0,"repeatGroupId":null,"evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":0,"top":0,"right":10000,"bottom":10000}}]},
+                  {"regionId":"routes","parentRegionId":"root","kind":"REPEATED_GROUP","multiplicity":"MANY","readingOrder":0,"repeatGroupId":"routes","evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":0,"top":1000,"right":10000,"bottom":10000}}]},
+                  {"regionId":"route-item","parentRegionId":"routes","kind":"ITEM","multiplicity":"ONE","readingOrder":0,"repeatGroupId":"routes","evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":0,"top":1000,"right":10000,"bottom":10000}}]}
+                ],"elements":[
+                  {"elementId":"route-group","kind":"GROUP","proposedKey":"routes","displayName":"线路","multiplicity":"MANY","valueHint":null,"regionIds":["routes"],"evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":0,"top":1000,"right":10000,"bottom":10000}}]},
+                  {"elementId":"route-number","kind":"SLOT","proposedKey":"routeNumber","displayName":"线路编号","multiplicity":"ONE","valueHint":"TEXT","regionIds":["root","route-item"],"evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":500,"top":1400,"right":2500,"bottom":1900}}]}
+                ]}
+                """;
+    }
+
+    private static String sourceAncestorHierarchy() {
+        return """
+                {"contractVersion":"renderweave-visual-hierarchy/2.0","rootEntityId":"board","entities":[
+                  {"entityId":"board","schemaKey":"board","displayName":"站牌","regionIds":["root"],"supportingElementIds":["route-group"]},
+                  {"entityId":"route","schemaKey":"route","displayName":"线路","regionIds":["root","route-item"],"supportingElementIds":["route-number"]}
+                ],"relationships":[
+                  {"relationshipId":"board-routes","parentEntityId":"board","childEntityId":"route","fieldKey":"routes","displayName":"线路","cardinality":"MANY","regionId":"route-item","supportingElementIds":["route-number"]}
+                ]}
+                """;
+    }
+
+    private static String sourceAncestorBindings() {
+        return """
+                {"contractVersion":"renderweave-visual-bindings/2.0","bindings":[
+                  {"elementId":"route-number","entityId":"route"}
+                ]}
+                """;
+    }
+
+    private static String groundedStationElementsWithoutNoticeRegionOwner() {
+        return groundedStationElements()
+                .replace(
+                        "{\"regionId\":\"routes\",\"parentRegionId\":\"root\",\"kind\":\"REPEATED_GROUP\",\"multiplicity\":\"MANY\",\"readingOrder\":2",
+                        "{\"regionId\":\"notice-owner\",\"parentRegionId\":\"notice\",\"kind\":\"GROUP\",\"multiplicity\":\"ONE\",\"readingOrder\":0,\"repeatGroupId\":null,\"evidence\":[{\"viewId\":\"view-00-overview-00\",\"boundingBox\":{\"left\":0,\"top\":1000,\"right\":10000,\"bottom\":2200}}]},\n                  {\"regionId\":\"routes\",\"parentRegionId\":\"root\",\"kind\":\"REPEATED_GROUP\",\"multiplicity\":\"MANY\",\"readingOrder\":2"
+                )
+                .replace(
+                        "\"elementId\":\"notice-group\",\"kind\":\"GROUP\",\"proposedKey\":\"warmNotice\",\"displayName\":\"温馨提示\",\"multiplicity\":\"ONE\",\"valueHint\":null,\"regionIds\":[\"notice\"]",
+                        "\"elementId\":\"notice-group\",\"kind\":\"GROUP\",\"proposedKey\":\"warmNotice\",\"displayName\":\"温馨提示\",\"multiplicity\":\"ONE\",\"valueHint\":null,\"regionIds\":[\"notice-owner\"]"
+                );
+    }
+
+    private static String flatGroundedStationElements() {
+        return """
+                {"contractVersion":"renderweave-visual-grounding/2.0","regions":[
+                  {"regionId":"root","parentRegionId":null,"kind":"ROOT","multiplicity":"ONE","readingOrder":0,"repeatGroupId":null,"evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":0,"top":0,"right":10000,"bottom":10000}}]},
+                  {"regionId":"content","parentRegionId":"root","kind":"SECTION","multiplicity":"ONE","readingOrder":0,"repeatGroupId":null,"evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":0,"top":0,"right":10000,"bottom":10000}}]}
+                ],"elements":[
+                  {"elementId":"station-name","kind":"SLOT","proposedKey":"stationName","displayName":"站点名称","multiplicity":"ONE","valueHint":"TEXT","regionIds":["content"],"evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":500,"top":100,"right":5000,"bottom":400}}]},
+                  {"elementId":"route-number","kind":"SLOT","proposedKey":"routeNumber","displayName":"线路编号","multiplicity":"ONE","valueHint":"TEXT","regionIds":["content"],"evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":500,"top":2400,"right":2500,"bottom":2900}}]},
+                  {"elementId":"stop-name","kind":"SLOT","proposedKey":"name","displayName":"站点名称","multiplicity":"ONE","valueHint":"TEXT","regionIds":["content"],"evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":500,"top":4300,"right":3000,"bottom":4800}}]}
+                ]}
+                """;
+    }
+
+    private static String groundedStationHierarchy() {
+        return """
+                {"contractVersion":"renderweave-visual-hierarchy/2.0","rootEntityId":"board","entities":[
+                  {"entityId":"board","schemaKey":"bus-stop-board","displayName":"站牌","regionIds":["root"],"supportingElementIds":["station-name"]},
+                  {"entityId":"notice-entity","schemaKey":"warm-notice","displayName":"温馨提示","regionIds":["notice"],"supportingElementIds":["notice-group"]},
+                  {"entityId":"route","schemaKey":"bus-route","displayName":"线路","regionIds":["route-item"],"supportingElementIds":["route-group"]},
+                  {"entityId":"stop","schemaKey":"bus-stop","displayName":"停靠站点","regionIds":["stop-item"],"supportingElementIds":["stop-group"]}
+                ],"relationships":[
+                  {"relationshipId":"board-notice","parentEntityId":"board","childEntityId":"notice-entity","fieldKey":"warmNotice","displayName":"温馨提示","cardinality":"ONE","regionId":"notice","supportingElementIds":["notice-group"]},
+                  {"relationshipId":"board-routes","parentEntityId":"board","childEntityId":"route","fieldKey":"routes","displayName":"线路","cardinality":"MANY","regionId":"routes","supportingElementIds":["route-group"]},
+                  {"relationshipId":"route-stops","parentEntityId":"route","childEntityId":"stop","fieldKey":"stops","displayName":"停靠站点","cardinality":"MANY","regionId":"stops","supportingElementIds":["stop-group"]}
+                ]}
+                """;
+    }
+
+    private static String groundedStationHierarchyWithoutNoticeEdge() {
+        return """
+                {"contractVersion":"renderweave-visual-hierarchy/2.0","rootEntityId":"board","entities":[
+                  {"entityId":"board","schemaKey":"bus-stop-board","displayName":"站牌","regionIds":["root"],"supportingElementIds":["station-name","notice-group"]},
+                  {"entityId":"route","schemaKey":"bus-route","displayName":"线路","regionIds":["route-item"],"supportingElementIds":["route-group"]},
+                  {"entityId":"stop","schemaKey":"bus-stop","displayName":"停靠站点","regionIds":["stop-item"],"supportingElementIds":["stop-group"]}
+                ],"relationships":[
+                  {"relationshipId":"board-routes","parentEntityId":"board","childEntityId":"route","fieldKey":"routes","displayName":"线路","cardinality":"MANY","regionId":"routes","supportingElementIds":["route-group"]},
+                  {"relationshipId":"route-stops","parentEntityId":"route","childEntityId":"stop","fieldKey":"stops","displayName":"停靠站点","cardinality":"MANY","regionId":"stops","supportingElementIds":["stop-group"]}
+                ]}
+                """;
+    }
+
+    private static String groundedStationBindings() {
+        return """
+                {"contractVersion":"renderweave-visual-bindings/2.0","bindings":[
+                  {"elementId":"station-name","entityId":"board"},
+                  {"elementId":"station-english","entityId":"board"},
+                  {"elementId":"notice-date","entityId":"notice-entity"},
+                  {"elementId":"notice-content","entityId":"notice-entity"},
+                  {"elementId":"route-number","entityId":"route"},
+                  {"elementId":"stop-name","entityId":"stop"}
+                ]}
+                """;
     }
 
     private String stationElements(ProviderInferenceRequest request) {
@@ -1237,9 +3725,17 @@ class PostgresLiveInferenceWorkflowTest {
     }
 
     private static ProviderInferenceResponse response(ProviderInferenceRequest request, String candidate) {
+        return response(request, candidate, "stop");
+    }
+
+    private static ProviderInferenceResponse response(
+            ProviderInferenceRequest request,
+            String candidate,
+            String finishReason
+    ) {
         return new ProviderInferenceResponse(
                 candidate, "req-" + request.attemptOrdinal(), request.profile().model(),
-                new ProviderUsage(1_000, 500), "stop"
+                new ProviderUsage(1_000, 500), finishReason
         );
     }
 

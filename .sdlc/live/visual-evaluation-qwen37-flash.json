@@ -1,0 +1,24 @@
+{
+  "authorizationVersion": "renderweave-visual-evaluation-authorization/1.0",
+  "authorizationId": "visual-n7-reading-order-diagnostic-v40-qwen37-flash-transit-20260812",
+  "status": "CLOSED",
+  "phase": "CANARY",
+  "inputClassification": "REPOSITORY_SYNTHETIC_ONLY",
+  "corpusVersion": "renderweave-visual-stage-corpus/1.0",
+  "corpusSourceSha256": "bf0db7bf0ac5c4e2b357cdd96c49ff70a7b30a5bc59f322a915020dc29fc605e",
+  "evaluationIdentity": "renderweave-visual-evaluation-tree-sha256/2:902577dd1ac48b17fa96efd9a0c3f3a37c340f9a2af248548715e228a70abd63",
+  "profileId": "dashscope-qwen37-flash-20260715-product-v40-hybrid-generic",
+  "profileSnapshotSha256": "1f6f8ceccbc6d717bde127fb628bac67b16bbda1d80062e358308a6109be9e19",
+  "model": "qwen3.7-flash-2026-07-15",
+  "caseIds": [
+    "transit-board-v3"
+  ],
+  "maximumProviderAttempts": 5,
+  "maximumTotalTokens": 60000,
+  "maximumCostMicrosCny": 250000,
+  "maximumCasesPerBatch": 1,
+  "approvedBy": "yiwer",
+  "approvedAt": "2026-08-11T09:51:55Z",
+  "expiresAt": "2026-08-12T09:51:55Z",
+  "approvalScope": "Goal J1 CANARY approved by yiwer for the qwen3.7-flash-2026-07-15 stable slot with a cumulative CNY 10 cap and the fixed 2026-08-11T09:51:55Z inclusive to 2026-08-12T09:51:55Z exclusive window; only repository-synthetic transit-board-v3 may run through immutable product-v40 pipeline 4.27 with the frozen RapidOCR/OpenVINO capability; v39 is CLOSED and immutable after two OBSERVE contract failures followed by one network reservation; v40 only classifies an otherwise-final non-root sibling reading-order gap as the payload-free duplicate fixed code when every failing set is a duplicate or tie, or as the existing position-invalid code when every failing set is distinct but conflicts with canonical top-left-regionId evidence order, while root gaps, mixed causes, over-cap canonical gaps and any invalid final grounding remain fail-closed; inherited v39 bounded compaction, strict JSON and enum handling remain independently tested and old policies immutable; no raw OCR or model text, image, complete prompt, Candidate, gold or chain-of-thought may enter evidence; Flash stable-slot aggregate before this authorization is 152 attempts, 1105020 exposed tokens and CNY 0.538392; this ledger permits one case, at most 5 Provider attempts, 60000 exposed tokens and CNY 0.25, while Goal totals remain capped at 180 attempts, 1500000 exposed tokens and CNY 10 for the stable slot; exact-clean full 20260812-001439 and Document Vision 20260812-002223 passed at revision af2076a4b5e37efc9eace3e6608f0007366d2a36; Java and independent Python evaluation identity and all v40 Profile snapshots matched immediately before proposal; require PROPOSED negative probe, fresh identity/Profile/Goal/time/process/lease preflight, one serial wrapper with the exact renderweave.inference.document-vision.adapter-script property, no concurrent rerun after timeout, immediate CLOSED before evidence inspection, and no Plus or Max unless same-version live accepted OBSERVE, HIERARCHY and BINDING and the independent quality gates hold"
+}

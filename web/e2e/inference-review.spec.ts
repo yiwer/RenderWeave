@@ -4,6 +4,7 @@ import { expect, test, type Locator, type Page, type Route } from '@playwright/t
 import type {
   CandidateBundle,
   CandidateProblem,
+  InferenceExecutionLogResponse,
   InferenceRunResponse,
   InferenceRunState,
 } from '../src/api/generated';
@@ -277,6 +278,182 @@ test('completes the four-step Candidate workflow with keyboard authoring and dur
   expect(consoleErrors).toEqual([]);
 });
 
+test('keeps bounded visual diagnostics keyboard-accessible at 1024 without payload leakage', async ({ page }, testInfo) => {
+  const failedRun: InferenceRunResponse = {
+    ...runResponse(0, 'FAILED'),
+    mode: 'IMAGE_ONLY',
+    stage: 'HIERARCHY',
+    sequence: 8,
+    profileId: 'dashscope-qwen37-flash-20260715-product-v36-hybrid-generic',
+    sourceReference: 'repository-synthetic-transit-board-v3',
+    failureCode: 'VISUAL_HIERARCHY_V2_RELATIONSHIP_SUPPORT_IDS_EMPTY',
+  };
+  const log: InferenceExecutionLogResponse = {
+    run: failedRun,
+    events: [
+      { sequence: 1, type: 'QUEUED', state: 'QUEUED', stage: 'OBSERVE', occurredAt: '2026-08-10T00:00:00Z' },
+      { sequence: 4, type: 'CHECKPOINT_ADVANCED', state: 'RUNNING', stage: 'HIERARCHY', occurredAt: '2026-08-10T00:00:08Z' },
+      { sequence: 6, type: 'LEASE_RECLAIMED', state: 'RUNNING', stage: 'HIERARCHY', occurredAt: '2026-08-10T00:00:12Z' },
+      { sequence: 8, type: 'FAILED', state: 'FAILED', stage: 'HIERARCHY', occurredAt: '2026-08-10T00:00:18Z' },
+    ],
+    attempts: [
+      {
+        attemptOrdinal: 0,
+        stage: 'OBSERVE',
+        status: 'REJECTED',
+        outcomeCode: 'LIVE_VISUAL_ANALYSIS_REJECTED',
+        providerModel: 'qwen3.7-flash',
+        inputTokens: 2_300,
+        outputTokens: 4_100,
+        costMicrosCny: 2_715,
+        durationMillis: 22_083,
+        problemCodeCounts: {
+          VISUAL_GROUNDING_PARENT_KIND_INVALID: 1,
+          VISUAL_GROUNDING_READING_ORDER_DUPLICATE: 1,
+          VISUAL_SEMANTIC_REPEATED_GROUP_CARDINALITY_INVALID: 1,
+        },
+        completedAt: '2026-08-10T00:00:05Z',
+      },
+      {
+        attemptOrdinal: 1,
+        stage: 'OBSERVE',
+        status: 'SUCCEEDED',
+        outcomeCode: 'LIVE_VISUAL_GROUNDING_ACCEPTED',
+        providerModel: 'qwen3.7-flash',
+        inputTokens: 2_340,
+        outputTokens: 4_220,
+        costMicrosCny: 3_001,
+        durationMillis: 24_012,
+        problemCodeCounts: {
+          VISUAL_GROUNDING_ELEMENT_REGION_NORMALIZED: 1,
+          VISUAL_GROUNDING_REGION_KIND_NORMALIZED: 3,
+          VISUAL_GROUNDING_REPEATED_ITEM_SLOT_OWNER_NORMALIZED: 1,
+          VISUAL_GROUNDING_REGION_PARENT_NORMALIZED: 1,
+          VISUAL_GROUNDING_READING_ORDER_NORMALIZED: 2,
+        },
+        completedAt: '2026-08-10T00:00:08Z',
+      },
+      {
+        attemptOrdinal: 2,
+        stage: 'HIERARCHY',
+        status: 'REJECTED',
+        outcomeCode: 'LIVE_VISUAL_ANALYSIS_REJECTED',
+        providerModel: 'qwen3.7-flash',
+        inputTokens: 1_900,
+        outputTokens: 2_800,
+        costMicrosCny: 1_900,
+        durationMillis: 16_000,
+        problemCodeCounts: {
+          VISUAL_HIERARCHY_V2_RELATIONSHIP_SUPPORT_IDS_EMPTY: 1,
+          VISUAL_SEMANTIC_HIERARCHY_ENTITY_REGION_REDUNDANT: 1,
+          VISUAL_SEMANTIC_HIERARCHY_NON_ROOT_OWNS_ROOT_REGION: 1,
+          VISUAL_SEMANTIC_HIERARCHY_BINDING_OWNER_AMBIGUOUS: 1,
+        },
+        completedAt: '2026-08-10T00:00:17Z',
+      },
+      {
+        attemptOrdinal: 3,
+        stage: 'HIERARCHY',
+        status: 'SUCCEEDED',
+        outcomeCode: 'LIVE_VISUAL_HIERARCHY_V2_ACCEPTED',
+        providerModel: 'qwen3.7-flash-2026-07-15',
+        inputTokens: 1_950,
+        outputTokens: 2_400,
+        costMicrosCny: 1_630,
+        durationMillis: 15_200,
+        problemCodeCounts: {
+          VISUAL_HIERARCHY_RELATIONSHIP_SUPPORT_OWNER_NORMALIZED: 1,
+          VISUAL_HIERARCHY_RELATIONSHIP_SOURCE_ANCESTOR_SUPPORT_OWNER_NORMALIZED: 1,
+          VISUAL_HIERARCHY_RELATIONSHIP_EMPTY_SUPPORT_OWNER_NORMALIZED: 1,
+          VISUAL_HIERARCHY_RELATIONSHIP_EMPTY_SOURCE_ANCESTOR_SUPPORT_OWNER_NORMALIZED: 1,
+          VISUAL_HIERARCHY_RELATIONSHIP_UNKNOWN_SUPPORT_OWNER_NORMALIZED: 1,
+        },
+        completedAt: '2026-08-10T00:00:19Z',
+      },
+    ],
+    truncated: false,
+  };
+
+  await page.route('**/api/v1/inference-runs/**', async (route) => {
+    const url = new URL(route.request().url());
+    if (route.request().method() === 'GET' && url.pathname === `/api/v1/inference-runs/${runId}/execution-log`) {
+      await json(route, log);
+    } else if (route.request().method() === 'GET' && url.pathname === `/api/v1/inference-runs/${runId}`) {
+      await json(route, failedRun);
+    } else {
+      await route.abort('failed');
+    }
+  });
+
+  await page.setViewportSize({ width: 1024, height: 768 });
+  await page.goto(`/inference-runs/${runId}/monitor`);
+  await page.waitForLoadState('networkidle');
+
+  await expect(page.getByRole('heading', { name: '阶段与检查点' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '有限问题定位' })).toBeVisible();
+  await expect(page.getByText('区域树').first()).toBeVisible();
+  await expect(page.getByText('VISUAL_GROUNDING_PARENT_KIND_INVALID').first()).toBeVisible();
+  await expect(page.getByText('VISUAL_GROUNDING_READING_ORDER_DUPLICATE').first()).toBeVisible();
+  await expect(page.getByText('同级区域阅读序号重复').first()).toBeVisible();
+  await expect(page.getByText('VISUAL_SEMANTIC_REPEATED_GROUP_CARDINALITY_INVALID').first()).toBeVisible();
+  await expect(page.getByText('MANY GROUP 与重复区域的双向归属不一致').first()).toBeVisible();
+  await expect(page.getByText('VISUAL_GROUNDING_ELEMENT_REGION_NORMALIZED').first()).toBeVisible();
+  await expect(page.getByText('已按唯一最具体证据区域归一化元素归属').first()).toBeVisible();
+  await expect(page.getByText('VISUAL_GROUNDING_REGION_KIND_NORMALIZED').first()).toBeVisible();
+  await expect(page.getByText('已按受控别名、唯一结构事实或唯一绑定约束归一化区域类型').first()).toBeVisible();
+  await expect(page.getByText('VISUAL_GROUNDING_REPEATED_ITEM_SLOT_OWNER_NORMALIZED').first()).toBeVisible();
+  await expect(page.getByText('已按唯一可见 ITEM 证据归一化重复字段归属').first()).toBeVisible();
+  await expect(page.getByText('VISUAL_GROUNDING_REGION_PARENT_NORMALIZED').first()).toBeVisible();
+  await expect(page.getByText('已按唯一最具体既有容器或唯一包含根祖先归一化区域父级').first()).toBeVisible();
+  await expect(page.getByText('VISUAL_GROUNDING_READING_ORDER_NORMALIZED').first()).toBeVisible();
+  await expect(page.getByText('已按唯一既有顺序压紧区域阅读序号').first()).toBeVisible();
+  await expect(page.getByText('VISUAL_HIERARCHY_V2_RELATIONSHIP_SUPPORT_IDS_EMPTY').first()).toBeVisible();
+  await expect(page.getByText('层级关系支撑 ID 列表不能为空').first()).toBeVisible();
+  await expect(page.getByText('已按唯一容器区域 GROUP 归属归一化层级关系支撑').first()).toBeVisible();
+  await expect(page.getByText('VISUAL_HIERARCHY_RELATIONSHIP_SOURCE_ANCESTOR_SUPPORT_OWNER_NORMALIZED').first())
+    .toBeVisible();
+  await expect(page.getByText('已按关系源区域唯一且连通的祖先 GROUP 证据归一化层级关系支撑').first())
+    .toBeVisible();
+  await expect(page.getByText('VISUAL_HIERARCHY_RELATIONSHIP_EMPTY_SUPPORT_OWNER_NORMALIZED').first())
+    .toBeVisible();
+  await expect(page.getByText('已按关系区域唯一且连通的 GROUP 归属补全层级关系支撑').first())
+    .toBeVisible();
+  await expect(page.getByText('VISUAL_HIERARCHY_RELATIONSHIP_EMPTY_SOURCE_ANCESTOR_SUPPORT_OWNER_NORMALIZED').first())
+    .toBeVisible();
+  await expect(page.getByText('已按关系子区域唯一且连通的祖先 GROUP 归属补全层级关系支撑').first())
+    .toBeVisible();
+  await expect(page.getByText('VISUAL_HIERARCHY_RELATIONSHIP_UNKNOWN_SUPPORT_OWNER_NORMALIZED').first())
+    .toBeVisible();
+  await expect(page.getByText('已将未知层级关系支撑引用归一化为关系区域唯一且连通的 GROUP 归属').first())
+    .toBeVisible();
+  await expect(page.getByText('VISUAL_SEMANTIC_HIERARCHY_ENTITY_REGION_REDUNDANT').first()).toBeVisible();
+  await expect(page.getByText('同一实体不能同时拥有祖先区域和后代区域').first()).toBeVisible();
+  await expect(page.getByText('VISUAL_SEMANTIC_HIERARCHY_NON_ROOT_OWNS_ROOT_REGION').first()).toBeVisible();
+  await expect(page.getByText('非根实体不能拥有图片根区域').first()).toBeVisible();
+  await expect(page.getByText('VISUAL_SEMANTIC_HIERARCHY_BINDING_OWNER_AMBIGUOUS').first()).toBeVisible();
+  await expect(page.getByText('字段存在多个同等最小的空间实体 owner').first()).toBeVisible();
+  await expect(page.getByText('从检查点恢复后仍失败')).toBeVisible();
+  await expect(page.getByText('raw-ocr-secret')).toHaveCount(0);
+  await expect(page.getByText('provider-response-secret')).toHaveCount(0);
+
+  const toggle = page.getByRole('button', { name: '收起' });
+  await toggle.focus();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('#inference-execution-log-body')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: '展开' })).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('heading', { name: '阶段与检查点' })).toBeVisible();
+  await expectNoHorizontalOverflow(page);
+
+  const accessibility = await new AxeBuilder({ page })
+    .include('.resource-shell')
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa'])
+    .analyze();
+  expect(accessibility.violations.filter((violation) =>
+    violation.impact === 'serious' || violation.impact === 'critical')).toEqual([]);
+  await page.screenshot({ path: testInfo.outputPath('visual-telemetry-1024x768.png'), fullPage: true });
+});
+
 test('preflights a local upload queue while the deployment transfer gate is closed', async ({ page }) => {
   let livePosts = 0;
   await page.route('**/api/v1/inference-runs**', async (route) => {
@@ -324,7 +501,7 @@ test('preflights a local upload queue while the deployment transfer gate is clos
   expect(livePosts).toBe(0);
 });
 
-test('offers four product models and an optional cumulative run cost ceiling', async ({ page }) => {
+test('offers the v40 image catalog with Plus selected and an optional cumulative run cost ceiling', async ({ page }) => {
   let livePosts = 0;
   let multipartBody = '';
   await page.route('**/api/v1/inference-runs**', async (route) => {
@@ -341,7 +518,7 @@ test('offers four product models and an optional cumulative run cost ceiling', a
       multipartBody = request.postDataBuffer()?.toString('utf8') ?? '';
       await json(route, {
         ...runResponse(0, 'QUEUED'),
-        profileId: 'dashscope-qwen37-flash-product-v4',
+        profileId: 'dashscope-qwen37-plus-product-v40-hybrid-generic',
         sourceReference: 'user-upload',
         costLimitMicrosCny: 250000,
       }, 201);
@@ -352,16 +529,17 @@ test('offers four product models and an optional cumulative run cost ceiling', a
 
   await page.goto('/inference/new');
   await expect(page.getByText('可用', { exact: true })).toBeVisible();
-  await expect(page.locator('.live-profile-grid button')).toHaveCount(4);
-  for (const model of ['qwen3.7-flash', 'qwen3.7-plus', 'qwen3.8-max', 'qwen3.7-max-2026-06-08']) {
+  await expect(page.locator('.live-profile-grid button')).toHaveCount(3);
+  for (const model of ['qwen3.7-plus', 'qwen3.8-max', 'qwen3.7-flash']) {
     await expect(page.locator('.live-profile-grid button').filter({ hasText: model })).toHaveCount(1);
   }
+  await expect(page.locator('.live-profile-grid button.active')).toContainText('qwen3.7-plus');
+  await expect(page.getByText('低成本 smoke · 复杂站牌不推荐')).toBeVisible();
 
-  await page.getByRole('tab', { name: '仅 JSON' }).click();
-  await page.locator('.live-upload-field input[type="file"]').nth(1).setInputFiles({
-    name: 'sample.json',
-    mimeType: 'application/json',
-    buffer: Buffer.from('{"title":"示例"}'),
+  await page.locator('.live-upload-field input[type="file"]').nth(0).setInputFiles({
+    name: 'station-board.png',
+    mimeType: 'image/png',
+    buffer: Buffer.from('synthetic-station-board'),
   });
   await page.getByRole('checkbox', { name: /设置本次任务成本上限/ }).check();
   const costInput = page.getByRole('spinbutton', { name: '本次任务成本上限' });
@@ -376,6 +554,41 @@ test('offers four product models and an optional cumulative run cost ceiling', a
   await expect.poll(() => livePosts).toBe(1);
   expect(multipartBody).toContain('"inputClassification":"USER_PROVIDED"');
   expect(multipartBody).toContain('"costLimitMicrosCny":250000');
+});
+
+test('blocks v40 before queueing when the exact local vision capability is unavailable', async ({ page }) => {
+  let livePosts = 0;
+  await page.route('**/api/v1/inference-runs**', async (route) => {
+    const request = route.request();
+    const url = new URL(request.url());
+    if (request.method() === 'GET' && url.pathname === '/api/v1/inference-runs/replay-fixtures') {
+      await json(route, replayFixtures());
+    } else if (request.method() === 'GET' && url.pathname === '/api/v1/inference-runs/live-availability') {
+      const availability = liveAvailability(true);
+      await json(route, {
+        ...availability,
+        profiles: availability.profiles.map((profile) => ({
+          ...profile,
+          available: false,
+          unavailabilityCode: 'DOCUMENT_VISION_ADAPTER_MISSING',
+        })),
+      });
+    } else if (request.method() === 'GET' && url.pathname === '/api/v1/inference-runs') {
+      await json(route, { page: 1, size: 6, total: 0, items: [] });
+    } else if (request.method() === 'POST' && url.pathname === '/api/v1/inference-runs/live') {
+      livePosts += 1;
+      await route.abort('blockedbyclient');
+    } else {
+      await route.abort('failed');
+    }
+  });
+
+  await page.goto('/inference/new');
+  await expect(page.getByText('v40 本地 OCR / Layout 能力尚未就绪')).toBeVisible();
+  await expect(page.locator('.live-profile-grid button')).toHaveCount(3);
+  await expect(page.locator('.live-profile-grid button:disabled')).toHaveCount(3);
+  await expect(page.getByRole('button', { name: '排队识别并查看监控' })).toBeDisabled();
+  expect(livePosts).toBe(0);
 });
 
 test('requires confirmation to cancel and creates a new auditable retry run', async ({ page }) => {
@@ -690,6 +903,8 @@ function liveAvailability(enabled = false) {
     provider: 'DASHSCOPE',
     model,
     certification: 'EXPERIMENTAL',
+    available: true,
+    unavailabilityCode: null,
     supportedModes,
     maximumTotalCalls: 5,
     maximumOutputTokens: 4096,
@@ -704,10 +919,9 @@ function liveAvailability(enabled = false) {
     runCostLimitRequired: false,
     maximumRunCostLimitMicrosCny: 100000000,
     profiles: [
-      profile('dashscope-qwen37-flash-product-v4', 'qwen3.7-flash', ['IMAGE_ONLY', 'JSON_ONLY', 'COMBINED']),
-      profile('dashscope-qwen37-plus-product-v4', 'qwen3.7-plus', ['IMAGE_ONLY', 'JSON_ONLY', 'COMBINED']),
-      profile('dashscope-qwen38-max-product-v4', 'qwen3.8-max', ['IMAGE_ONLY', 'JSON_ONLY', 'COMBINED']),
-      profile('dashscope-qwen37-max-20260608-product-v4', 'qwen3.7-max-2026-06-08', ['IMAGE_ONLY', 'JSON_ONLY', 'COMBINED']),
+      profile('dashscope-qwen37-plus-product-v40-hybrid-generic', 'qwen3.7-plus', ['IMAGE_ONLY']),
+      profile('dashscope-qwen38-max-product-v40-hybrid-generic', 'qwen3.8-max', ['IMAGE_ONLY']),
+      profile('dashscope-qwen37-flash-product-v40-hybrid-generic', 'qwen3.7-flash', ['IMAGE_ONLY']),
     ],
   };
 }

@@ -33,13 +33,13 @@ type LiveProfileId = CreateLiveRunRequest['profileId'];
 
 export function InferenceStartPage() {
   const navigate = useNavigate();
-  const [mode, setMode] = useState<InferenceMode>('COMBINED');
+  const [mode, setMode] = useState<InferenceMode>('IMAGE_ONLY');
   const liveQuery = useQuery({ queryKey: ['live-inference-availability'], queryFn: getLiveAvailabilityRequest });
 
   return (
     <ResourceFrame
       title="新增识别输入"
-      description="上传图片或 JSON，选择 DashScope 模型与费用边界；提交后进入独立监控版面，不会直接发布或写入正式数据结构。"
+      description="上传设计图片，选择 v40 DashScope 模型与费用边界；提交后进入独立监控版面，不会直接发布或写入正式数据结构。"
       actions={<Link className="button ghost-button" to="/inference">返回历史任务</Link>}
       breadcrumbs={[{ label: '智能识别', to: '/inference' }, { label: '新增识别' }]}
     >
@@ -60,14 +60,18 @@ function LiveLauncher({
   query: UseQueryResult<LiveAvailabilityResponse, Error>;
   onCreated: (runId: string) => void;
 }) {
-  const [profileId, setProfileId] = useState<LiveProfileId>('dashscope-qwen37-flash-product-v4');
+  const [profileId, setProfileId] = useState<LiveProfileId>('dashscope-qwen37-plus-product-v40-hybrid-generic');
   const [images, setImages] = useState<File[]>([]);
   const [jsonSamples, setJsonSamples] = useState<File[]>([]);
   const [transferConfirmed, setTransferConfirmed] = useState(false);
   const [experimentalConfirmed, setExperimentalConfirmed] = useState(false);
   const [costLimitEnabled, setCostLimitEnabled] = useState(false);
   const [costLimitYuan, setCostLimitYuan] = useState('10.00');
-  const profile = query.data?.profiles.find((item) => item.profileId === profileId);
+  const selectedProfile = query.data?.profiles.find((item) => item.profileId === profileId);
+  const profile = selectedProfile?.available
+    ? selectedProfile
+    : query.data?.profiles.find((item) => item.available) ?? selectedProfile;
+  const activeProfileId = profile?.profileId ?? profileId;
   const imageIssues = validateLiveFiles('IMAGE', images);
   const jsonIssues = validateLiveFiles('JSON', jsonSamples);
   const activeFiles = filesForLiveMode(mode, images, jsonSamples);
@@ -75,19 +79,24 @@ function LiveLauncher({
     ...(mode === 'JSON_ONLY' ? [] : imageIssues),
     ...(mode === 'IMAGE_ONLY' ? [] : jsonIssues),
   ];
+  const profileAvailable = Boolean(profile?.available);
   const profileSupportsMode = Boolean(profile?.supportedModes.includes(mode));
   const modeReady = (mode === 'JSON_ONLY' || activeFiles.images.length > 0)
     && (mode === 'IMAGE_ONLY' || activeFiles.jsonSamples.length > 0)
     && activeIssues.length === 0
+    && profileAvailable
     && profileSupportsMode;
   const uploadAuthorized = Boolean(query.data?.uploadEnabled);
-  const available = Boolean(query.data?.enabled && query.data.configured && uploadAuthorized);
+  const localVisionReady = Boolean(query.data?.profiles.some((item) => item.available));
+  const available = Boolean(
+    query.data?.enabled && query.data.configured && uploadAuthorized && localVisionReady,
+  );
   const costLimitMicrosCny = costLimitEnabled ? parseYuanMicros(costLimitYuan) : null;
   const costLimitValid = !costLimitEnabled || (costLimitMicrosCny !== null
     && costLimitMicrosCny <= (query.data?.maximumRunCostLimitMicrosCny ?? 0));
   const createRun = useMutation({
     mutationFn: () => createLiveRunRequest(
-      profileId,
+      activeProfileId,
       mode,
       activeFiles.images,
       activeFiles.jsonSamples,
@@ -114,10 +123,16 @@ function LiveLauncher({
             <section className="live-policy-notice" role="status">
               <ShieldCheck aria-hidden="true" size={18} />
               <div>
-                <strong>{!uploadAuthorized ? '当前部署未开放文件传输' : 'DashScope 运行配置尚未就绪'}</strong>
+                <strong>{!uploadAuthorized
+                  ? '当前部署未开放文件传输'
+                  : !query.data.enabled || !query.data.configured
+                    ? 'DashScope 运行配置尚未就绪'
+                    : 'v40 本地 OCR / Layout 能力尚未就绪'}</strong>
                 <span>{!uploadAuthorized
                   ? '请使用 live Compose 配置启动服务；选择文件、预览和切换模型都不会触发调用。'
-                  : '需要配置 DASHSCOPE_API_KEY 并启用运行门；页面本身不会触发模型。'}</span>
+                  : !query.data.enabled || !query.data.configured
+                    ? '需要配置凭据并启用运行门；页面本身不会触发模型。'
+                    : '启动前探针未匹配 Profile 绑定的精确 capability；任务不会排队，也不会产生 Provider 调用。'}</span>
               </div>
             </section>
           )}
@@ -131,10 +146,12 @@ function LiveLauncher({
                 <span className="section-kicker">选择模型配置</span>
                 <div className="live-profile-grid">
                   {query.data.profiles.map((item) => (
-                    <button key={item.profileId} type="button" className={profileId === item.profileId ? 'active' : ''} onClick={() => { setProfileId(item.profileId); setExperimentalConfirmed(false); }}>
+                    <button key={item.profileId} type="button" disabled={!item.available} className={activeProfileId === item.profileId ? 'active' : ''} onClick={() => { setProfileId(item.profileId); setExperimentalConfirmed(false); }}>
                       <Bot aria-hidden="true" size={17} />
                       <span><strong>{item.model}</strong><small>{liveProfileDescription(item)}</small></span>
-                      <em>单次上限 ¥{formatYuan(item.maximumEstimatedCostMicrosCny)}</em>
+                      <em>{item.available
+                        ? `单次上限 ¥${formatYuan(item.maximumEstimatedCostMicrosCny)}`
+                        : '本地能力未就绪'}</em>
                     </button>
                   ))}
                 </div>
@@ -234,7 +251,9 @@ function LiveLauncher({
               >
                 <Upload aria-hidden="true" size={16} />{createRun.isPending ? '正在创建任务…' : '排队识别并查看监控'}
               </button>
-              {!profileSupportsMode
+              {!profileAvailable
+                ? <p className="live-input-hint">所选 v40 Profile 的本地 OCR / Layout capability 未就绪，任务不会排队。</p>
+                : !profileSupportsMode
                 ? <p className="live-input-hint">所选模型配置不支持当前输入模式，请切换模型或模式。</p>
                 : !modeReady && <p className="live-input-hint">请按当前模式添加必需文件。</p>}
               {createRun.isError && <p className="replay-error" role="alert">{errorMessage(createRun.error)}</p>}
@@ -308,10 +327,9 @@ function formatYuan(micros: number) {
 }
 
 function liveProfileDescription(profile: LiveProfileResponse) {
-  if (profile.model === 'qwen3.7-flash') return '低成本快速识别';
-  if (profile.model === 'qwen3.7-plus') return '质量、速度与成本均衡';
-  if (profile.model === 'qwen3.7-max-2026-06-08') return '固定版本 · 复杂视觉结构';
-  return '高能力实验模型';
+  if (profile.model === 'qwen3.7-flash') return '低成本 smoke · 复杂站牌不推荐';
+  if (profile.model === 'qwen3.7-plus') return '默认平衡方案 · 复杂结构优先于 Flash';
+  return '高能力方案 · 高难度嵌套结构';
 }
 
 function parseYuanMicros(value: string): number | null {

@@ -2,6 +2,7 @@ package cn.hbads.renderweave.inference.live;
 
 import cn.hbads.renderweave.inference.candidate.CandidateEvidence;
 import cn.hbads.renderweave.inference.candidate.CandidateEvidenceKind;
+import cn.hbads.renderweave.inference.candidate.CandidateBoundingBox;
 import cn.hbads.renderweave.schema.identity.FieldKey;
 import cn.hbads.renderweave.schema.identity.SchemaKey;
 
@@ -75,14 +76,19 @@ final class VisualAnalysisValidation {
                     || evidence.sampleIndex() != null || evidence.jsonPointer() != null) {
                 throw new IllegalArgumentException(name + " must contain canonical IMAGE evidence");
             }
-            var box = evidence.boundingBox();
-            if (box.left() < 0 || box.top() < 0 || box.right() > 10_000 || box.bottom() > 10_000
-                    || box.left() >= box.right() || box.top() >= box.bottom()) {
-                throw new IllegalArgumentException(name + " bounding boxes must use 0..10000 coordinates");
-            }
+            canonicalBox(evidence.boundingBox(), name);
             if (!unique.add(evidence)) throw new IllegalArgumentException(name + " must not repeat evidence");
         }
         return values;
+    }
+
+    static CandidateBoundingBox canonicalBox(CandidateBoundingBox box, String name) {
+        if (box == null || box.left() < 0 || box.top() < 0
+                || box.right() > 10_000 || box.bottom() > 10_000
+                || box.left() >= box.right() || box.top() >= box.bottom()) {
+            throw new IllegalArgumentException(name + " bounding boxes must use 0..10000 coordinates");
+        }
+        return box;
     }
 
     static void requireKnownArtifacts(List<CandidateEvidence> evidence, Set<String> artifactIds) {
