@@ -245,7 +245,9 @@ ledger 描述成外部强制门。
   `a7a2a7f`→`a9635e4`→`edb35bc`，Plus lifecycle 为 `06cef12`→`34e7ab3`→`e93d1f7`，两者独立 verifier
   A2 PASS；恢复后的 Document Vision canary 为 `20260811-094753`，CLOSED fast 为 `20260811-100713`。
   `d3b0292` / `5ef25bd` 的 v26 server `20260811-101733`、Node 24 web `20260811-101734`、E2E
-  `20260811-101948` 与 runtime `20260811-102032` 均 A1 PASS，Provider attempts=0。三份 ledger CLOSED。这些证据不能
+  `20260811-101948` 与 runtime `20260811-102032` 均 A1 PASS；revision `371505b` 的隔离 clean full
+  `20260811-102845` 为 9/9 steps A1 PASS，Provider attempts=0。三份 ledger CLOSED。该 full gate 早于 live/final
+  eval，仍需在最终 revision 重跑；这些证据不能
   替代 final eval、final identity A2 或
   用户业务/视觉 J1。
 - 完成信号：所有 ledger CLOSED、Goal guard 不超额、每条 AC 有结果和证据、最终 revision clean。目前未达成。

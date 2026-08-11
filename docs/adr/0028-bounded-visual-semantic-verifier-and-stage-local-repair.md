@@ -535,5 +535,7 @@ region。零个或多个配对继续以原固定码 fail-closed；不读取 OCR/
 `.sdlc/evidence/20260811-101734-web`（73 tests + generate/type/lint/build）、E2E
 `.sdlc/evidence/20260811-101948-e2e`（18 passed、1 gated skip、无 console/page error）与 runtime
 `.sdlc/evidence/20260811-102032-runtime` 全部 PASS。实现期间 Provider attempts=0，三份 ledger CLOSED。v26
-仍是隐藏 `EXPERIMENTAL` 的离线可证伪假设；尚无 v26 live A2，更没有 final 20/60、full gate、final independent
-verifier 或业务/视觉 J1。
+提交与治理同步后又在隔离 clean worktree 对 revision `371505b` 完成
+`.sdlc/evidence/20260811-102845-full`：9/9 steps、`workingTreeDirty=false`、A1 PASS，Provider attempts=0。该证据是
+当前 v26 revision 的受控 full gate，不替代 final eval 后所需的最终 revision gate。v26 仍是隐藏 `EXPERIMENTAL`
+的离线可证伪假设；尚无 v26 live A2，更没有 final 20/60、final independent verifier 或业务/视觉 J1。

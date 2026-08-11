@@ -9,7 +9,9 @@
   最早 HIERARCHY 修复阶段。server `.sdlc/evidence/20260811-101733-server`（197 tests、6 gated skip）、Node 24 web
   `.sdlc/evidence/20260811-101734-web`（73 tests + generate/type/lint/build）、E2E
   `.sdlc/evidence/20260811-101948-e2e`（18 passed、1 gated skip）与 runtime
-  `.sdlc/evidence/20260811-102032-runtime` 均 PASS；Provider attempts=0，v26 仍隐藏 `EXPERIMENTAL`。
+  `.sdlc/evidence/20260811-102032-runtime` 均 PASS；revision `371505b` 的隔离 clean full
+  `.sdlc/evidence/20260811-102845-full` 为 9/9 steps、`workingTreeDirty=false`、A1 PASS。Provider attempts=0；
+  该 full gate 早于 live/final eval，最终 revision 仍须重跑，v26 继续隐藏 `EXPERIMENTAL`。
 - 2026-08-11 Plus product-v25 已按 `06cef12` PROPOSED → `34e7ab3` OPEN → `e93d1f7` CLOSED 完成单 case。
   负探针主体精确 NOT_OPEN；外层摘要因 PowerShell `$Matches` 冲突失败后完成 process/evidence/Goal/guard/
   reservation 恢复审计，确认零副作用且未重跑。唯一 wrapper exit 0、194.231 秒；独立 verifier A2 PASS：
