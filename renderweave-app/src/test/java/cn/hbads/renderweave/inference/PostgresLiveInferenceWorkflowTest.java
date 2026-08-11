@@ -112,6 +112,8 @@ class PostgresLiveInferenceWorkflowTest {
             "dashscope-qwen37-flash-20260715-product-v27-hybrid-generic";
     private static final String MINIMAL_ENTITY_OWNERSHIP_HYBRID_VISUAL_PROFILE =
             "dashscope-qwen37-flash-20260715-product-v28-hybrid-generic";
+    private static final String GROUP_REGION_CARDINALITY_HYBRID_VISUAL_PROFILE =
+            "dashscope-qwen37-flash-20260715-product-v29-hybrid-generic";
     private static final String DOCUMENT_VISION_CAPABILITY =
             "rapidocr-3.9.2-openvino-2026.0.0-ppocrv6-small-c05805399d7d10b1";
 
@@ -1566,6 +1568,53 @@ class PostgresLiveInferenceWorkflowTest {
     }
 
     @Test
+    void pipelineFourPointSixteenRepairsManyGroupRegionCardinalityAtObserve() {
+        var blobs = new MemoryBlobStore();
+        var created = createGroundedVisual(
+                blobs, "group-region-cardinality-station",
+                GROUP_REGION_CARDINALITY_HYBRID_VISUAL_PROFILE
+        );
+        var provider = new ScriptedProvider(
+                request -> response(request, manyGroupWithSingularRegion()),
+                request -> response(request, groundedStationElements()),
+                request -> response(request, groundedStationHierarchy()),
+                request -> response(request, groundedStationBindings())
+        );
+        var preprocessCalls = new AtomicInteger();
+        var preprocessor = hybridPreprocessor(
+                preprocessCalls, "OCR_SENTINEL_V29_GROUP_CARDINALITY"
+        );
+
+        var finished = worker(provider, blobs, T0.plusSeconds(1), preprocessor)
+                .processNext("group-region-cardinality-worker").orElseThrow();
+
+        assertThat(finished.state())
+                .as("failure=%s attempts=%s", finished.failureCode(), workflowStore.attempts(created))
+                .isEqualTo(InferenceRunState.REVIEW_REQUIRED);
+        assertThat(preprocessCalls).hasValue(1);
+        assertThat(provider.requests).extracting(ProviderInferenceRequest::stage)
+                .containsExactly(
+                        InferenceStage.OBSERVE, InferenceStage.OBSERVE,
+                        InferenceStage.HIERARCHY, InferenceStage.ELEMENT_BINDING
+                );
+        assertThat(provider.requests.get(1).taskJson())
+                .contains("VISUAL_SEMANTIC_REPEATED_GROUP_CARDINALITY_INVALID")
+                .contains("\"elementInventory\":null")
+                .contains("\"groundingPlan\":null");
+        assertThat(workflowStore.attempts(created)).extracting(InferenceAttempt::status)
+                .containsExactly(
+                        InferenceAttemptStatus.REJECTED, InferenceAttemptStatus.SUCCEEDED,
+                        InferenceAttemptStatus.SUCCEEDED, InferenceAttemptStatus.SUCCEEDED
+                );
+        assertThat(workflowStore.attempts(created).getFirst().problemCodeCounts())
+                .containsExactlyEntriesOf(Map.of(
+                        "VISUAL_SEMANTIC_REPEATED_GROUP_CARDINALITY_INVALID", 1
+                ));
+        assertThat(finished.checkpointJson())
+                .doesNotContain("OCR_SENTINEL_V29_GROUP_CARDINALITY");
+    }
+
+    @Test
     void cancellationIsAcknowledgedBeforeHybridPreprocessing() {
         var blobs = new MemoryBlobStore();
         var created = createGroundedVisual(blobs, "hybrid-cancel-before-ocr", HYBRID_VISUAL_PROFILE);
@@ -2305,6 +2354,19 @@ class PostgresLiveInferenceWorkflowTest {
                   {"elementId":"stop-name","kind":"SLOT","proposedKey":"name","displayName":"站点名称","multiplicity":"ONE","valueHint":"TEXT","regionIds":["stop-item"],"evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":500,"top":4300,"right":3000,"bottom":4800}}]}
                 ]}
                 """;
+    }
+
+    private static String manyGroupWithSingularRegion() {
+        return groundedStationElements().replace(
+                "{\"elementId\":\"notice-date\"",
+                "{\"elementId\":\"invalid-many-group\",\"kind\":\"GROUP\","
+                        + "\"proposedKey\":\"repeatedNotice\",\"displayName\":\"重复提示\","
+                        + "\"multiplicity\":\"MANY\",\"valueHint\":null,"
+                        + "\"regionIds\":[\"notice\"],\"evidence\":[{\"viewId\":"
+                        + "\"view-00-overview-00\",\"boundingBox\":{\"left\":0,\"top\":1000,"
+                        + "\"right\":10000,\"bottom\":2200}}]},\n                  "
+                        + "{\"elementId\":\"notice-date\""
+        );
     }
 
     private static String sourceAncestorElements() {

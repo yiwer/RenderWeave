@@ -20,6 +20,7 @@ public final class InferencePromptRegistry {
     public static final String VISUAL_ELEMENTS_V6 = "renderweave-visual-elements-prompt/6.0";
     public static final String VISUAL_ELEMENTS_V7 = "renderweave-visual-elements-prompt/7.0";
     public static final String VISUAL_ELEMENTS_V8 = "renderweave-visual-elements-prompt/8.0";
+    public static final String VISUAL_ELEMENTS_V9 = "renderweave-visual-elements-prompt/9.0";
     public static final String VISUAL_HIERARCHY_V2 = "renderweave-visual-hierarchy-prompt/2.0";
     public static final String VISUAL_HIERARCHY_V3 = "renderweave-visual-hierarchy-prompt/3.0";
     public static final String VISUAL_HIERARCHY_V4 = "renderweave-visual-hierarchy-prompt/4.0";
@@ -49,6 +50,7 @@ public final class InferencePromptRegistry {
             Map.entry(VISUAL_ELEMENTS_V6, "inference-prompts/visual-elements-v6.txt"),
             Map.entry(VISUAL_ELEMENTS_V7, "inference-prompts/visual-elements-v7.txt"),
             Map.entry(VISUAL_ELEMENTS_V8, "inference-prompts/visual-elements-v8.txt"),
+            Map.entry(VISUAL_ELEMENTS_V9, "inference-prompts/visual-elements-v9.txt"),
             Map.entry(VISUAL_HIERARCHY_V2, "inference-prompts/visual-hierarchy-v2.txt"),
             Map.entry(VISUAL_HIERARCHY_V3, "inference-prompts/visual-hierarchy-v3.txt"),
             Map.entry(VISUAL_HIERARCHY_V4, "inference-prompts/visual-hierarchy-v4.txt"),
@@ -96,6 +98,7 @@ public final class InferencePromptRegistry {
                 VISUAL_ELEMENTS_V6,
                 VISUAL_ELEMENTS_V7,
                 VISUAL_ELEMENTS_V8,
+                VISUAL_ELEMENTS_V9,
                 VISUAL_HIERARCHY_V2,
                 VISUAL_HIERARCHY_V3,
                 VISUAL_HIERARCHY_V4,

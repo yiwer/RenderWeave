@@ -262,6 +262,21 @@ class InferencePromptRegistryTest {
     }
 
     @Test
+    void visualV29PinsBidirectionalGroupRegionCardinalityRepair() {
+        var prompt = new InferencePromptRegistry().requireVisualStage(
+                InferencePromptRegistry.VISUAL_ELEMENTS_V9,
+                InferencePromptRegistry.VISUAL_HINT_GENERIC_V1
+        ).text();
+        var normalized = prompt.replaceAll("\\s+", " ");
+
+        assertTrue(prompt.contains("VISUAL_SEMANTIC_REPEATED_GROUP_CARDINALITY_INVALID"));
+        assertTrue(normalized.contains("every MANY GROUP must own at least one REPEATED_GROUP"));
+        assertTrue(normalized.contains("every REPEATED_GROUP must have at least one MANY GROUP owner"));
+        assertTrue(prompt.contains("Do not invent repeated structure"));
+        assertFalse(prompt.matches("(?is).*\\b(bus|station|route|stop|fare)\\b.*"));
+    }
+
+    @Test
     void visualV14PinsFieldSpecificHierarchyRepairWithoutStructuralCrops() {
         var prompt = new InferencePromptRegistry().requireVisualStage(
                 InferencePromptRegistry.VISUAL_HIERARCHY_V5,
