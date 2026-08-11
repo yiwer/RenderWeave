@@ -281,6 +281,7 @@ def validate_profile(path: Path, authorization: dict[str, Any]) -> None:
             "renderweave-inference-pipeline/4.2",
             "renderweave-inference-pipeline/4.10",
             "renderweave-inference-pipeline/4.11",
+            "renderweave-inference-pipeline/4.12",
     ):
         required_optional = OPTIONAL_PROFILE_FIELDS
     elif pipeline in (

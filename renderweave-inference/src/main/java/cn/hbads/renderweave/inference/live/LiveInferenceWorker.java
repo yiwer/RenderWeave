@@ -82,6 +82,8 @@ public final class LiveInferenceWorker {
             "renderweave-inference-pipeline/4.10";
     private static final String BOUNDED_OBSERVATION_HYBRID_VISUAL_PIPELINE =
             "renderweave-inference-pipeline/4.11";
+    private static final String LEAF_EVIDENCE_VERIFIED_HYBRID_VISUAL_PIPELINE =
+            "renderweave-inference-pipeline/4.12";
     private static final int MAX_STAGE_ADVANCES = 24;
     private static final int MAX_RETRY_PROBLEM_CODES = 16;
 
@@ -675,7 +677,8 @@ public final class LiveInferenceWorker {
                     var grounded = visualGroundingCodec.parseElements(
                             response.candidateJson(),
                             visualViewPlan(current, checkpoint, retryProblemCodes),
-                            imageArtifactIds(current), observationNormalizationPolicy(profile)
+                            imageArtifactIds(current), observationNormalizationPolicy(profile),
+                            observationSemanticPolicy(profile)
                     );
                     nextCheckpoint = checkpoint.elementsGrounded(
                             grounded.inventory(), grounded.grounding(), attemptOrdinal + 1
@@ -949,7 +952,8 @@ public final class LiveInferenceWorker {
                 || CONNECTION_NORMALIZED_HIERARCHY_PIPELINE.equals(profile.pipelineVersion())
                 || SUPPORT_OWNER_NORMALIZED_HIERARCHY_PIPELINE.equals(profile.pipelineVersion())
                 || SUPPORT_OWNER_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
-                || BOUNDED_OBSERVATION_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion());
+                || BOUNDED_OBSERVATION_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || LEAF_EVIDENCE_VERIFIED_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion());
     }
 
     private static boolean serialVisual(InferenceRunSnapshot current, InferenceProfile profile) {
@@ -965,7 +969,8 @@ public final class LiveInferenceWorker {
                 || CONNECTION_NORMALIZED_HIERARCHY_PIPELINE.equals(profile.pipelineVersion())
                 || SUPPORT_OWNER_NORMALIZED_HIERARCHY_PIPELINE.equals(profile.pipelineVersion())
                 || SUPPORT_OWNER_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
-                || BOUNDED_OBSERVATION_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion()))
+                || BOUNDED_OBSERVATION_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || LEAF_EVIDENCE_VERIFIED_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion()))
                 && current.mode() == InferenceMode.IMAGE_ONLY;
     }
 
@@ -981,7 +986,8 @@ public final class LiveInferenceWorker {
                 || CONNECTION_NORMALIZED_HIERARCHY_PIPELINE.equals(profile.pipelineVersion())
                 || SUPPORT_OWNER_NORMALIZED_HIERARCHY_PIPELINE.equals(profile.pipelineVersion())
                 || SUPPORT_OWNER_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
-                || BOUNDED_OBSERVATION_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion());
+                || BOUNDED_OBSERVATION_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || LEAF_EVIDENCE_VERIFIED_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion());
     }
 
     private static boolean groundedVisual(InferenceProfile profile) {
@@ -995,7 +1001,8 @@ public final class LiveInferenceWorker {
                 || CONNECTION_NORMALIZED_HIERARCHY_PIPELINE.equals(profile.pipelineVersion())
                 || SUPPORT_OWNER_NORMALIZED_HIERARCHY_PIPELINE.equals(profile.pipelineVersion())
                 || SUPPORT_OWNER_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
-                || BOUNDED_OBSERVATION_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion());
+                || BOUNDED_OBSERVATION_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || LEAF_EVIDENCE_VERIFIED_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion());
     }
 
     private static VisualRelationshipCardinalityPolicy relationshipCardinalityPolicy(
@@ -1009,7 +1016,8 @@ public final class LiveInferenceWorker {
                 || CONNECTION_NORMALIZED_HIERARCHY_PIPELINE.equals(profile.pipelineVersion())
                 || SUPPORT_OWNER_NORMALIZED_HIERARCHY_PIPELINE.equals(profile.pipelineVersion())
                 || SUPPORT_OWNER_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
-                || BOUNDED_OBSERVATION_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion()))
+                || BOUNDED_OBSERVATION_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || LEAF_EVIDENCE_VERIFIED_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion()))
                 ? VisualRelationshipCardinalityPolicy.SUPPORT_GROUP_DERIVED
                 : VisualRelationshipCardinalityPolicy.MODEL_ASSERTED;
     }
@@ -1024,7 +1032,8 @@ public final class LiveInferenceWorker {
                 || CONNECTION_NORMALIZED_HIERARCHY_PIPELINE.equals(profile.pipelineVersion())
                 || SUPPORT_OWNER_NORMALIZED_HIERARCHY_PIPELINE.equals(profile.pipelineVersion())
                 || SUPPORT_OWNER_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
-                || BOUNDED_OBSERVATION_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion()))
+                || BOUNDED_OBSERVATION_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || LEAF_EVIDENCE_VERIFIED_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion()))
                 ? VisualHierarchyPrerequisitePolicy.RELATIONSHIP_REGION_GROUP_OWNER_REQUIRED
                 : VisualHierarchyPrerequisitePolicy.GROUP_EXISTENCE_ONLY;
     }
@@ -1038,7 +1047,8 @@ public final class LiveInferenceWorker {
                 || CONNECTION_NORMALIZED_HIERARCHY_PIPELINE.equals(profile.pipelineVersion())
                 || SUPPORT_OWNER_NORMALIZED_HIERARCHY_PIPELINE.equals(profile.pipelineVersion())
                 || SUPPORT_OWNER_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
-                || BOUNDED_OBSERVATION_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion()))
+                || BOUNDED_OBSERVATION_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || LEAF_EVIDENCE_VERIFIED_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion()))
                 ? VisualHierarchyRegionDiagnosticPolicy.DETAILED_FIXED_CODES
                 : VisualHierarchyRegionDiagnosticPolicy.LEGACY_GENERIC;
     }
@@ -1048,7 +1058,8 @@ public final class LiveInferenceWorker {
     ) {
         if (SUPPORT_OWNER_NORMALIZED_HIERARCHY_PIPELINE.equals(profile.pipelineVersion())
                 || SUPPORT_OWNER_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
-                || BOUNDED_OBSERVATION_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())) {
+                || BOUNDED_OBSERVATION_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || LEAF_EVIDENCE_VERIFIED_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())) {
             return VisualRelationshipSupportIdPolicy
                     .CANONICALIZE_EXACT_DUPLICATES_AND_UNIQUE_REGION_GROUP_OWNER;
         }
@@ -1065,7 +1076,8 @@ public final class LiveInferenceWorker {
         if (CONNECTION_NORMALIZED_HIERARCHY_PIPELINE.equals(profile.pipelineVersion())
                 || SUPPORT_OWNER_NORMALIZED_HIERARCHY_PIPELINE.equals(profile.pipelineVersion())
                 || SUPPORT_OWNER_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
-                || BOUNDED_OBSERVATION_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())) {
+                || BOUNDED_OBSERVATION_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || LEAF_EVIDENCE_VERIFIED_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())) {
             return VisualRelationshipRegionPolicy
                     .UNIQUE_CARDINALITY_AND_CONNECTION_COMPATIBLE_GROUP_REGION;
         }
@@ -1106,9 +1118,18 @@ public final class LiveInferenceWorker {
     private static VisualObservationNormalizationPolicy observationNormalizationPolicy(
             InferenceProfile profile
     ) {
-        return BOUNDED_OBSERVATION_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+        return (BOUNDED_OBSERVATION_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || LEAF_EVIDENCE_VERIFIED_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion()))
                 ? VisualObservationNormalizationPolicy.BOUNDED_ENUM_AND_UNIQUE_ITEM_PARENT
                 : VisualObservationNormalizationPolicy.STRICT;
+    }
+
+    private static VisualObservationSemanticPolicy observationSemanticPolicy(
+            InferenceProfile profile
+    ) {
+        return LEAF_EVIDENCE_VERIFIED_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                ? VisualObservationSemanticPolicy.SLOT_LEAF_EVIDENCE_REQUIRED
+                : VisualObservationSemanticPolicy.LEGACY;
     }
 
     private static Map<String, Integer> observationTelemetry(GroundedElementInventory grounded) {
@@ -1137,7 +1158,8 @@ public final class LiveInferenceWorker {
     private static boolean hybridVisual(InferenceProfile profile) {
         return HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
                 || SUPPORT_OWNER_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
-                || BOUNDED_OBSERVATION_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion());
+                || BOUNDED_OBSERVATION_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || LEAF_EVIDENCE_VERIFIED_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion());
     }
 
     private static boolean visualProviderStage(InferenceStage stage) {

@@ -103,6 +103,8 @@ class PostgresLiveInferenceWorkflowTest {
             "dashscope-qwen37-flash-20260715-product-v23-hybrid-generic";
     private static final String BOUNDED_OBSERVATION_HYBRID_VISUAL_PROFILE =
             "dashscope-qwen37-flash-20260715-product-v24-hybrid-generic";
+    private static final String LEAF_EVIDENCE_VERIFIED_HYBRID_VISUAL_PROFILE =
+            "dashscope-qwen37-flash-20260715-product-v25-hybrid-generic";
     private static final String DOCUMENT_VISION_CAPABILITY =
             "rapidocr-3.9.2-openvino-2026.0.0-ppocrv6-small-c05805399d7d10b1";
 
@@ -1297,6 +1299,63 @@ class PostgresLiveInferenceWorkflowTest {
                 .doesNotContain("ocr-00-000");
         assertThat(review.validationProblemsJson())
                 .doesNotContain("OCR_SENTINEL_V24_STATION_NAME")
+                .doesNotContain("ocr-00-000");
+    }
+
+    @Test
+    void pipelineFourPointTwelveRetriesContainerSizedSlotOnlyAtObservation() {
+        var blobs = new MemoryBlobStore();
+        var created = createGroundedVisual(
+                blobs, "leaf-evidence-verified-station",
+                LEAF_EVIDENCE_VERIFIED_HYBRID_VISUAL_PROFILE
+        );
+        var containerSlot = groundedStationElements().replace(
+                "\"elementId\":\"notice-group\",\"kind\":\"GROUP\",\"proposedKey\":\"warmNotice\",\"displayName\":\"温馨提示\",\"multiplicity\":\"ONE\",\"valueHint\":null",
+                "\"elementId\":\"notice-group\",\"kind\":\"SLOT\",\"proposedKey\":\"warmNotice\",\"displayName\":\"温馨提示\",\"multiplicity\":\"ONE\",\"valueHint\":\"UNRESOLVED\""
+        );
+        var provider = new ScriptedProvider(
+                request -> response(request, containerSlot),
+                request -> response(request, groundedStationElements()),
+                request -> response(request, groundedStationHierarchy()),
+                request -> response(request, groundedStationBindings())
+        );
+        var preprocessCalls = new AtomicInteger();
+        var preprocessor = hybridPreprocessor(
+                preprocessCalls, "OCR_SENTINEL_V25_STATION_NAME"
+        );
+
+        var finished = worker(provider, blobs, T0.plusSeconds(1), preprocessor)
+                .processNext("leaf-evidence-verified-worker").orElseThrow();
+
+        assertThat(finished.state())
+                .as("failure=%s attempts=%s", finished.failureCode(), workflowStore.attempts(created))
+                .isEqualTo(InferenceRunState.REVIEW_REQUIRED);
+        assertThat(preprocessCalls).hasValue(1);
+        assertThat(provider.requests).extracting(request -> request.stage().name())
+                .containsExactly("OBSERVE", "OBSERVE", "HIERARCHY", "ELEMENT_BINDING");
+        assertThat(provider.requests.get(1).taskJson())
+                .contains("VISUAL_SEMANTIC_SLOT_EVIDENCE_CONTAINS_ELEMENT");
+        assertThat(workflowStore.attempts(created))
+                .extracting(attempt -> attempt.status())
+                .containsExactly(
+                        InferenceAttemptStatus.REJECTED,
+                        InferenceAttemptStatus.SUCCEEDED,
+                        InferenceAttemptStatus.SUCCEEDED,
+                        InferenceAttemptStatus.SUCCEEDED
+                );
+        assertThat(workflowStore.attempts(created).getFirst().problemCodeCounts())
+                .containsExactlyEntriesOf(Map.of(
+                        "VISUAL_SEMANTIC_SLOT_EVIDENCE_CONTAINS_ELEMENT", 1
+                ));
+        assertThat(finished.checkpointJson())
+                .doesNotContain("OCR_SENTINEL_V25_STATION_NAME")
+                .doesNotContain("ocr-00-000");
+        var review = workflowStore.findCandidate(created).orElseThrow();
+        assertThat(review.currentJson())
+                .doesNotContain("OCR_SENTINEL_V25_STATION_NAME")
+                .doesNotContain("ocr-00-000");
+        assertThat(review.validationProblemsJson())
+                .doesNotContain("OCR_SENTINEL_V25_STATION_NAME")
                 .doesNotContain("ocr-00-000");
     }
 
