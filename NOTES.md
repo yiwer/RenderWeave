@@ -745,3 +745,21 @@
   144/179/82 attempts、1,022,730/1,087,500/491,919 tokens、¥0.499453/¥4.159620/¥10.289316，
   三 ledger CLOSED。v37 仍 `EXPERIMENTAL`、N6=`automated_verified`、N7/Goal=`in_progress`；不调用
   Plus/Max/final 20/60，下一安全切片只从新 parent-containment fixed code 与离线结构反例建立 bounded repair。
+
+### v38 ancestor-root parent normalization offline checkpoint
+
+- pipeline 4.25/product-v38 只扩展 v34 的唯一 parent 规则：已知、非 self、同 artifact 的当前 parent
+  确实不包含非 ROOT/ITEM child，且找不到唯一最具体的常规非 ROOT 兼容 parent 时，只有沿该错误 parent
+  的既有无环祖先链恰好到达 parent=null、严格包含 child 的唯一 ROOT，才把 parent 改为该 ROOT 并规范化
+  reading order。missing parent、ITEM kind、artifact mismatch、cycle、equal/full box、歧义或最终完整
+  `VisualGroundingPlan` 校验失败均原子保留原输入并 fail-closed；v37 行为保持不可变。
+- `632e641`、`b91637b`、`060dd47`、`1504ac6` 分别完成 bounded codec、三模型 immutable v38
+  Profile、real-PG checkpoint/lease recovery 与 monitor/review/E2E 文案。成功仍只暴露数量型
+  `VISUAL_GROUNDING_REGION_PARENT_NORMALIZED`，不记录 region ID、坐标、图片、文字或 Candidate。
+- 自动证据为 focused contract 34/34、Profile/独立 snapshot verifier 37/37、real-PG v37/v38 2/2、
+  inference 192/192、Web 73/73、typecheck/lint、Playwright 7/7；本机 Web 为 Node 20 兼容证据，正式
+  Node 24 由下一 exact-clean full gate 提供。Provider attempts=0，Goal 仍为 405 reservations且三 ledger
+  CLOSED；v38=`EXPERIMENTAL`、N6=`automated_verified`、N7/Goal=`in_progress`。
+- 下一门是在本 checkpoint 的 clean revision 上运行 full/Document Vision，fresh 重算 evaluation identity、
+  三份 v38 Profile snapshot、Goal/J1/time/process/lease 后，才可考虑 Flash 单 synthetic case、最多 5 calls；
+  Plus/Max/final 20/60 的同版本三阶段、质量、独立复核与最终 J1 门不变。

@@ -749,3 +749,20 @@ adapter-script 绑定串行重试 Flash。旧 authorization 不重放；Plus/Max
 
 v37 保持 `EXPERIMENTAL`，N6=`automated_verified`、N7/Goal=`in_progress`。下一安全节点回到离线 bounded
 parent-containment/region-kind verifier；Plus/Max/final 20/60 的同版本三阶段与质量门仍不满足。
+
+### product-v38 offline disposition
+
+- commits：`632e641` codec/contract；`b91637b` pipeline 4.25、三模型 immutable Profile 与独立 verifier；
+  `060dd47` real-PG checkpoint recovery；`1504ac6` monitor/review 与 E2E。
+- bounded rule：常规唯一最具体兼容 parent 搜索为空后，只允许沿当前已知错误 parent 的无环 ancestor
+  chain 归一化到唯一 parent=null、同 artifact 且严格包含非 ROOT/ITEM child 的 ROOT；missing/self、ITEM、
+  artifact mismatch、cycle、equal/full box、歧义与最终完整 plan failure 全部原子 fail-closed。
+- evidence：contract 34/34、Profile/independent verifier 37/37、real-PG v37/v38 2/2、inference 192/192、
+  Web 73/73、typecheck/lint、Playwright 7/7 PASS；Node 20 Web 仅为兼容证据。
+- state：Provider=0；Goal=405 reservations；Flash/Plus/Max=144/179/82 attempts、
+  1,022,730/1,087,500/491,919 tokens、¥0.499453/¥4.159620/¥10.289316；三 ledger CLOSED。
+
+v38 保持 `EXPERIMENTAL`，N6=`automated_verified`、N7/Goal=`in_progress`。下一门：在本 checkpoint 的
+exact-clean revision 上执行 full/Document Vision，fresh 重算 evaluation identity、v38 snapshots、Goal/J1/
+time/process/lease；全绿后才考虑 Flash single synthetic case、最多 5 calls。Plus/Max/final 20/60 的同版本
+三阶段、质量、独立复核与最终 J1 门不变。

@@ -229,3 +229,17 @@ BREACHED）：Flash/Plus/Max 为 144/179/82 attempts、1,022,730/1,087,500/491,9
 五次仅触达 OBSERVE，故 Plus 的单个剩余 attempt 仍不调用，Max/final 20/60 也未满足同版本三阶段与质量
 门。三 ledger CLOSED；后续授权仍须独立计入当前累计，并在每次 live 前 fresh 重算 identity/Profile/
 Goal/J1/time/process/lease。
+
+### product-v38 离线预算节点
+
+pipeline 4.25 的 unique-containing-root-ancestor parent normalization、三模型 immutable Profile、real-PG
+checkpoint recovery 与审核 telemetry 全部为零 Provider 工作，没有新增 reservation。Goal 仍为 405
+reservations（400 SETTLED、5 历史 Plus RESERVED、0 BREACHED）；Flash/Plus/Max 仍为 144/179/82
+attempts、1,022,730/1,087,500/491,919 exposed tokens 与
+¥0.499453/¥4.159620/¥10.289316，三 ledger CLOSED。
+
+v38 继续受每槽 180 attempts、1.5M exposed tokens、单 authorization 500k tokens、Flash/Plus ¥10、Max
+¥18 与固定 J1 窗口约束。它仍是 `EXPERIMENTAL`，不会因离线测试通过自动获得 live 或生产资格。只有在
+checkpoint commit 的 clean revision 上重新通过 full/Document Vision、fresh identity/三份 snapshot、Goal/
+J1/time/process/lease 后，才可为 Flash 创建新的单 case、最多 5 calls authorization；Plus/Max/final 的
+同版本三阶段和质量停止门不变。

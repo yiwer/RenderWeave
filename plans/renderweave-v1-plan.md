@@ -811,3 +811,17 @@ region-kind 与一次 parent-containment 令所有调用停在 OBSERVE。Goal �
 三阶段门仍失败，N6=`automated_verified`、N7/Goal=`in_progress`、v37=`EXPERIMENTAL`；Plus/Max/final
 20/60 不执行。下一 DAG 节点只允许从 parent-containment fixed code 与 repository synthetic 结构事实建立
 bounded 离线 repair，不能读取或推断模型 payload。
+
+### product-v38 ancestor-root parent verifier disposition
+
+`632e641`/`b91637b`/`060dd47`/`1504ac6` 已完成 pipeline 4.25 的唯一包含 ROOT 祖先 parent
+normalization、三模型 immutable Profile、真实 PostgreSQL checkpoint recovery 与 monitor/review/E2E。
+规则只处理已知错误 parent 的无环祖先链唯一到达、且严格包含非 ROOT/ITEM child 的既有 ROOT；常规唯一
+最具体 parent 仍优先，missing/self/artifact mismatch/cycle/equal/full-box/ambiguity/final-plan failure 全部
+fail-closed。它不读取模型 payload、文字或 gold，也不改 box 或创建结构。
+
+自动证据为 contract 34/34、Profile/independent verifier 37/37、real-PG 2/2、inference 192/192、Web
+73/73、typecheck/lint、Playwright 7/7；Node 20 只算兼容检查。Provider=0，Goal 405 reservations 与三
+ledger CLOSED 状态不变。N6=`automated_verified`、N7/Goal=`in_progress`、v38=`EXPERIMENTAL`；下一
+DAG 节点为 exact-clean full/Document Vision 与 fresh identity/snapshot/budget/J1/process/lease，之后才可
+考虑 Flash bounded smoke。

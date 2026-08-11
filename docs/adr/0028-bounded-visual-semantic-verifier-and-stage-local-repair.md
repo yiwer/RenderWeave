@@ -1140,3 +1140,30 @@ verifier/payload scan 全部通过。A2 重建为 5 attempts、42,691 tokens、�
 alias 或任意扩张 parent box。下一 bounded 设计只能结合已解析 forest/typed ownership 与 repository synthetic
 反例证明唯一 containment 修复，否则保留原拒绝。product-v37 仍 `EXPERIMENTAL`，N6=
 `automated_verified`、N7/Goal=`in_progress`；Plus/Max/final eval 门未成立。
+
+## N6/N7 product-v38：错误 parent 链上的唯一包含 ROOT 祖先
+
+v37b 只给出一次 `VISUAL_GROUNDING_PARENT_CONTAINMENT_INVALID`，没有暴露 region identity、坐标或模型
+payload，因此 v38 不允许任意扩大 box、按距离挑 parent 或推断语义。pipeline 4.25 只在 v34 的常规唯一
+最具体非 ROOT parent 搜索为零时增加一个结构上可证明的 fallback：child 必须不是 ROOT/ITEM；当前 parent
+必须已知、非 self、与 child 同 artifact 且确实不包含 child；沿当前 parent 的既有 ancestor chain 必须无环、
+引用完整，并恰好到达一个 parent=null、严格包含 child 的 ROOT。此时只能把 child 的 parent 指向该既有
+ROOT，并对受影响 sibling reading order 做 canonical normalization，最多沿用既有 8 个替换上限。
+
+missing parent、ITEM parent-kind 约束、artifact mismatch、cycle、equal/full box、零/多常规候选、任何非唯一
+祖先状态，以及重建完整 `VisualGroundingPlan` 后的 topology/overlap/ownership/semantic failure，均原子返回
+原 plan 并保留原 fixed code。实现不读取 text、alias、OCR、gold，不创建/删除 region、edge、element、
+evidence、crop 或 Candidate。v37 policy 与三份 Profile 保持 immutable。
+
+`632e641` 完成 codec 正反例，`b91637b` 发布三份 immutable product-v38 Profile 并把 pipeline 固定为
+`renderweave-inference-pipeline/4.25`，`060dd47` 用真实 PostgreSQL 证明 OBSERVE checkpoint 后 lease
+expiry 只继续 HIERARCHY/BINDING 到 `REVIEW_REQUIRED` 且 OCR sentinel 不持久化，`1504ac6` 更新
+monitor/review 与 E2E 的 payload-free 解释。自动证据为 focused contract 34/34、Profile/独立 snapshot
+verifier 37/37、real-PG v37/v38 2/2、inference 192/192、Web 73/73、typecheck/lint 与 Playwright 7/7。
+本机 Web 使用 Node 20，只是兼容检查；正式 Node 24 由 exact-clean full gate 提供。
+
+本节点 Provider attempts=0，Goal 仍为 405 reservations，Flash/Plus/Max 累计仍为 144/179/82 attempts、
+1,022,730/1,087,500/491,919 tokens 与 ¥0.499453/¥4.159620/¥10.289316，三 ledger CLOSED。
+因此它只把 N6 保持为 `automated_verified`，不构成 live 三阶段或质量证据；product-v38 仍
+`EXPERIMENTAL`，N7/Goal 仍 `in_progress`。任何 v38 live 必须先在同一 clean revision 重跑 full/Document
+Vision，并 fresh 绑定 evaluation identity、Profile snapshot、Goal/J1/time/process/lease。

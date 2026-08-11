@@ -306,3 +306,20 @@ parent-containment×1。该 fixed-code evidence 不授权读取或记录 unknown
 box 或 Candidate，也不授权任意扩大 parent geometry；只有 repository synthetic 反例能证明唯一约束时才可
 新增 bounded repair。Goal 为 405 reservations，三 ledger CLOSED。product-v37 仍 `EXPERIMENTAL`、
 N6=`automated_verified`、N7/Goal=`in_progress`，Plus/Max/final eval 门未满足。
+
+### 2026-08-11 v38 unique-containing-root-ancestor 候选
+
+- pipeline 4.25 只扩展错误 parent containment 的可证明子集：当前 parent 必须已知、非 self、同 artifact
+  且确实不包含非 ROOT/ITEM child；常规唯一最具体兼容 parent 搜索必须为空；沿当前 parent 的既有无环
+  ancestor chain 必须恰好到达 parent=null、严格包含 child 的唯一 ROOT。只有此时可把 parent 改为该 ROOT
+  并 canonicalize reading order，且完整 `VisualGroundingPlan` 必须重新通过。
+- missing parent、ITEM kind、artifact mismatch、cycle、equal/full box、零/多候选或任何最终 topology/
+  overlap/ownership/semantic failure 继续 fixed-code fail-closed。不得读取 text/alias/OCR/model payload/gold，
+  不得改变 box 或创建、删除 region/edge/element/evidence/crop/Candidate；v37 policy 保持 immutable。
+- `632e641`/`b91637b`/`060dd47`/`1504ac6` 已完成 codec、三模型 immutable Profile、real-PG
+  checkpoint recovery 与 monitor/review E2E。自动证据为 contract 34/34、Profile/independent verifier
+  37/37、real-PG 2/2、inference 192/192、Web 73/73、typecheck/lint、Playwright 7/7；Node 20 Web 只算
+  兼容检查。
+- 本节点 Provider=0、Goal 仍为 405 reservations、三 ledger CLOSED。product-v38=`EXPERIMENTAL`、
+  N6=`automated_verified`、N7/Goal=`in_progress`；exact-clean full/Document Vision、fresh identity/
+  snapshot/budget/J1/process/lease、Flash bounded live、final 20/60 与最终业务/视觉 J1 尚未完成。
