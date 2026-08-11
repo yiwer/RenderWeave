@@ -208,6 +208,61 @@ class VisualGroundingContractTest {
     }
 
     @Test
+    void boundedEvidenceOwnerNormalizationUsesOnlyUniqueMinimalCompatibleRegions()
+            throws Exception {
+        var malformed = elementsJson()
+                .replace("\"regionIds\":[\"header\"]", "\"regionIds\":[\"item-a\"]")
+                .replace("\"regionIds\":[\"repeat\"]", "\"regionIds\":[\"header\"]")
+                .replace(
+                        "\"regionIds\":[\"item-a\",\"item-b\"]",
+                        "\"regionIds\":[\"item-a\"]"
+                );
+
+        assertEquals("VISUAL_GROUNDING_ELEMENT_EVIDENCE_OUTSIDE_REGION", assertThrows(
+                InvalidVisualAnalysisException.class, () -> codec.parseElements(
+                        malformed, views(), List.of(IMAGE_ID),
+                        VisualObservationNormalizationPolicy.BOUNDED_ENUM_AND_UNIQUE_ITEM_PARENT
+                )
+        ).diagnosticCode());
+
+        var normalized = codec.parseElements(
+                malformed, views(), List.of(IMAGE_ID),
+                VisualObservationNormalizationPolicy
+                        .BOUNDED_ENUM_UNIQUE_ITEM_PARENT_AND_EVIDENCE_OWNER
+        );
+        assertEquals(List.of("header"),
+                normalized.grounding().regionIdsForElement("title"));
+        assertEquals(List.of("repeat"),
+                normalized.grounding().regionIdsForElement("row-group"));
+        assertEquals(List.of("item-a", "item-b"),
+                normalized.grounding().regionIdsForElement("item-label"));
+        assertEquals(3, normalized.normalizedElementRegionOwners());
+
+        var rootOnly = elementsJson().replace(
+                "\"left\":100,\"top\":100,\"right\":3000,\"bottom\":700",
+                "\"left\":100,\"top\":1900,\"right\":3000,\"bottom\":2100"
+        );
+        assertEquals("VISUAL_GROUNDING_ELEMENT_EVIDENCE_OUTSIDE_REGION", assertThrows(
+                InvalidVisualAnalysisException.class, () -> codec.parseElements(
+                        rootOnly, views(), List.of(IMAGE_ID),
+                        VisualObservationNormalizationPolicy
+                                .BOUNDED_ENUM_UNIQUE_ITEM_PARENT_AND_EVIDENCE_OWNER
+                )
+        ).diagnosticCode());
+
+        var unknownOwner = elementsJson().replace(
+                "\"regionIds\":[\"header\"]", "\"regionIds\":[\"missing\"]"
+        );
+        assertEquals("VISUAL_GROUNDING_ELEMENT_REGION_UNKNOWN", assertThrows(
+                InvalidVisualAnalysisException.class, () -> codec.parseElements(
+                        unknownOwner, views(), List.of(IMAGE_ID),
+                        VisualObservationNormalizationPolicy
+                                .BOUNDED_ENUM_UNIQUE_ITEM_PARENT_AND_EVIDENCE_OWNER
+                )
+        ).diagnosticCode());
+    }
+
+    @Test
     void classifiesProviderLengthStopsWithoutInspectingOrPersistingPayload() {
         var response = new ProviderInferenceResponse(
                 "{\"partial\":true}", "request-1", "qwen3.8-max",

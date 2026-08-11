@@ -91,7 +91,7 @@ final class VisualGroundingJsonCodec {
             var inventory = classified("VISUAL_GROUNDING_ELEMENT_INVALID", () ->
                     new VisualElementInventory(VisualElementInventory.VERSION, elements)
             );
-            var grounding = classifiedGroundingShape(() ->
+            var initialGrounding = classifiedGroundingShape(() ->
                     new VisualGroundingPlan(
                     VisualGroundingPlan.VERSION, classifiedRegions.regions(),
                     response.elements().stream().map(element -> new VisualElementRegionOwnership(
@@ -99,6 +99,10 @@ final class VisualGroundingJsonCodec {
                     )).toList()
                     )
             );
+            var normalizedOwnerships = normalizeElementEvidenceOwners(
+                    inventory, initialGrounding, normalizationPolicy
+            );
+            var grounding = normalizedOwnerships.grounding();
             classified("VISUAL_GROUNDING_ARTIFACT_COVERAGE_INVALID", () -> {
                 inventory.requireKnownArtifacts(Set.copyOf(sourceArtifactIds));
                 grounding.requireKnownArtifacts(sourceArtifactIds);
@@ -113,7 +117,8 @@ final class VisualGroundingJsonCodec {
             return new GroundedElementInventory(
                     inventory, grounding, classifiedRegions.normalizedRegionKinds(),
                     classifiedRegions.normalizedItemParents(),
-                    classifiedRegions.normalizedReadingOrders()
+                    classifiedRegions.normalizedReadingOrders(),
+                    normalizedOwnerships.normalizedElements()
             );
         } catch (InvalidVisualAnalysisException failure) {
             throw failure;
@@ -1216,9 +1221,7 @@ final class VisualGroundingJsonCodec {
                 // Bounded aliases are handled below; all other values remain fail-closed.
             }
         }
-        if (normalizationPolicy
-                == VisualObservationNormalizationPolicy.BOUNDED_ENUM_AND_UNIQUE_ITEM_PARENT
-                && value != null) {
+        if (normalizationPolicy != VisualObservationNormalizationPolicy.STRICT && value != null) {
             var canonical = value.toUpperCase(Locale.ROOT);
             try {
                 return new ClassifiedRegionKind(VisualRegionKind.valueOf(canonical), true);
@@ -1323,6 +1326,96 @@ final class VisualGroundingJsonCodec {
                 && left.right() >= right.right() && left.bottom() >= right.bottom();
     }
 
+    private static boolean contains(CandidateEvidence outer, CandidateEvidence inner) {
+        if (!outer.artifactId().equals(inner.artifactId())) return false;
+        var left = outer.boundingBox();
+        var right = inner.boundingBox();
+        return left.left() <= right.left() && left.top() <= right.top()
+                && left.right() >= right.right() && left.bottom() >= right.bottom();
+    }
+
+    private static NormalizedElementRegionOwnerships normalizeElementEvidenceOwners(
+            VisualElementInventory inventory,
+            VisualGroundingPlan grounding,
+            VisualObservationNormalizationPolicy normalizationPolicy
+    ) {
+        if (normalizationPolicy != VisualObservationNormalizationPolicy
+                .BOUNDED_ENUM_UNIQUE_ITEM_PARENT_AND_EVIDENCE_OWNER) {
+            return new NormalizedElementRegionOwnerships(grounding, 0);
+        }
+        var inventoryIds = inventory.elements().stream().map(VisualElement::elementId)
+                .collect(java.util.stream.Collectors.toSet());
+        var ownershipIds = grounding.elementRegions().stream()
+                .map(VisualElementRegionOwnership::elementId)
+                .collect(java.util.stream.Collectors.toSet());
+        if (!inventoryIds.equals(ownershipIds)) {
+            return new NormalizedElementRegionOwnerships(grounding, 0);
+        }
+        var regionsById = new HashMap<String, VisualRegion>();
+        grounding.regions().forEach(region -> regionsById.put(region.regionId(), region));
+        var normalized = new ArrayList<VisualElementRegionOwnership>();
+        var normalizedElements = 0;
+        for (var element : inventory.elements()) {
+            var ownership = grounding.elementRegions().stream()
+                    .filter(item -> item.elementId().equals(element.elementId()))
+                    .findFirst().orElseThrow();
+            if (ownership.regionIds().stream().anyMatch(id -> !regionsById.containsKey(id))) {
+                return new NormalizedElementRegionOwnerships(grounding, 0);
+            }
+            var allCovered = element.evidence().stream().allMatch(evidence ->
+                    ownership.regionIds().stream().map(regionsById::get)
+                            .anyMatch(region -> contains(region.evidence().getFirst(), evidence))
+            );
+            if (allCovered) {
+                normalized.add(ownership);
+                continue;
+            }
+            var replacements = new LinkedHashSet<String>();
+            ownership.regionIds().stream().map(regionsById::get)
+                    .filter(region -> element.evidence().stream().anyMatch(evidence ->
+                            contains(region.evidence().getFirst(), evidence)))
+                    .map(VisualRegion::regionId).forEach(replacements::add);
+            for (var evidence : element.evidence()) {
+                if (replacements.stream().map(regionsById::get).anyMatch(region ->
+                        contains(region.evidence().getFirst(), evidence))) {
+                    continue;
+                }
+                var candidates = grounding.regions().stream()
+                        .filter(region -> region.kind() != VisualRegionKind.ROOT)
+                        .filter(region -> compatibleEvidenceOwner(element, region))
+                        .filter(region -> contains(region.evidence().getFirst(), evidence))
+                        .toList();
+                var minimal = candidates.stream().filter(candidate -> candidates.stream().noneMatch(other ->
+                        !other.regionId().equals(candidate.regionId())
+                                && grounding.descendantOrSame(
+                                other.regionId(), candidate.regionId()
+                        )
+                )).toList();
+                if (minimal.size() != 1) {
+                    return new NormalizedElementRegionOwnerships(grounding, 0);
+                }
+                replacements.add(minimal.getFirst().regionId());
+            }
+            if (replacements.isEmpty() || replacements.size() > 8) {
+                return new NormalizedElementRegionOwnerships(grounding, 0);
+            }
+            normalized.add(new VisualElementRegionOwnership(
+                    element.elementId(), List.copyOf(replacements)
+            ));
+            normalizedElements++;
+        }
+        return new NormalizedElementRegionOwnerships(new VisualGroundingPlan(
+                VisualGroundingPlan.VERSION, grounding.regions(), normalized
+        ), normalizedElements);
+    }
+
+    private static boolean compatibleEvidenceOwner(VisualElement element, VisualRegion region) {
+        if (element.kind() == VisualElementKind.SLOT) return true;
+        return element.multiplicity() == VisualMultiplicity.MANY
+                ? region.kind() == VisualRegionKind.REPEATED_GROUP
+                : region.kind() == VisualRegionKind.GROUP;
+    }
+
     private static void requireBounded(String value) {
         if (value == null || value.isBlank()
                 || value.getBytes(StandardCharsets.UTF_8).length > MAX_BYTES) {
@@ -1375,6 +1468,11 @@ final class VisualGroundingJsonCodec {
     ) { }
 
     private record ClassifiedRegionKind(VisualRegionKind kind, boolean normalized) { }
+
+    private record NormalizedElementRegionOwnerships(
+            VisualGroundingPlan grounding,
+            int normalizedElements
+    ) { }
 
     private record ClassifiedObservationRegions(
             List<VisualRegion> regions,
@@ -1439,7 +1537,8 @@ record GroundedElementInventory(
         VisualGroundingPlan grounding,
         int normalizedRegionKinds,
         int normalizedItemParents,
-        int normalizedReadingOrders
+        int normalizedReadingOrders,
+        int normalizedElementRegionOwners
 ) {
     GroundedElementInventory {
         Objects.requireNonNull(inventory, "inventory");
@@ -1447,7 +1546,9 @@ record GroundedElementInventory(
         if (normalizedRegionKinds < 0 || normalizedRegionKinds > grounding.regions().size()
                 || normalizedItemParents < 0 || normalizedItemParents > grounding.regions().size()
                 || normalizedReadingOrders < 0
-                || normalizedReadingOrders > grounding.regions().size()) {
+                || normalizedReadingOrders > grounding.regions().size()
+                || normalizedElementRegionOwners < 0
+                || normalizedElementRegionOwners > inventory.elements().size()) {
             throw new IllegalArgumentException("Observation normalization count is invalid");
         }
     }
@@ -1532,5 +1633,6 @@ enum VisualRelationshipRegionPolicy {
 
 enum VisualObservationNormalizationPolicy {
     STRICT,
-    BOUNDED_ENUM_AND_UNIQUE_ITEM_PARENT
+    BOUNDED_ENUM_AND_UNIQUE_ITEM_PARENT,
+    BOUNDED_ENUM_UNIQUE_ITEM_PARENT_AND_EVIDENCE_OWNER
 }
