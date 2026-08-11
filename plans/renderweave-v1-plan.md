@@ -863,3 +863,18 @@ Goal 为 413 reservations（407 SETTLED、6 RESERVED、0 BREACHED）；Flash 累
 1,105,020 exposed tokens/¥0.538392，Plus/Max 不变，三 ledger CLOSED。N6=`automated_verified`、
 N7/Goal=`in_progress`、v39=`EXPERIMENTAL`；CLOSED authorization 不重跑，Plus/Max/final 20/60 不执行。
 下一 DAG 节点只能由 payload-free 细分诊断或 repository synthetic 唯一约束建立新 bounded 假设。
+
+### product-v40 reading-order diagnostic freeze disposition
+
+`3b0d92d`/`b179b7e`/`05e1b65`/`3eff5ce` 已完成 pipeline 4.27 的 payload-free fixed-code
+classification、Prompt 10/三模型 immutable Profile、真实 PostgreSQL checkpoint recovery 与 monitor/review/
+E2E。v40 不扩大 v39 repair：只有 root order 合法且所有失败非 root sibling set 可唯一归类时，才把 GAP
+细分为 duplicate 或 position fixed code；root、mixed、超界仍 fail-closed。
+
+自动证据为 contract 36/36、Profile/Prompt 20/20、独立 verifier 2/2、real-PG v39/v40 2/2、inference
+195/195、Web 73/73、typecheck/lint、Playwright 7/7；Provider=0，Goal 413 reservations 与三 ledger
+CLOSED 不变。N6=`automated_verified`、N7/Goal=`in_progress`、v40=`EXPERIMENTAL`。
+
+按用户阶段冻结决策，下一节点只完成 exact-clean full/Document Vision、fresh live preflight、受控 Flash
+single-case smoke 与文档收尾；若同版本三阶段/质量仍失败，则以工程可用但非生产可靠的状态结束本阶段，
+不启动 Plus/Max/final，也不完成 Goal。

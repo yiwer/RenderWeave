@@ -280,3 +280,18 @@ Goal 现为 413 reservations（407 SETTLED、6 RESERVED、0 BREACHED）。Flash/
 ¥0.538392/¥4.159620/¥10.289316；6 个 RESERVED 中 5 个为历史 Plus、1 个为本次 Flash 网络失败。
 三 ledger CLOSED，仍低于 180 attempts、1.5M tokens 与各自 CNY cap。由于 v39 未越过 OBSERVE，Plus
 仅余 1 attempt 仍不调用，Max/final 20/60 的同版本三阶段与质量门也未满足。
+
+### product-v40 离线预算与阶段冻结
+
+v40 的 diagnostic classifier、Prompt/Profile、real-PG recovery 与 UI/E2E 均为零 Provider 工作。Goal 保持
+413 reservations（407 SETTLED、6 RESERVED、0 BREACHED）；Flash/Plus/Max 仍为 152/179/82 attempts、
+1,105,020/1,087,500/491,919 exposed tokens 与 ¥0.538392/¥4.159620/¥10.289316，三 ledger CLOSED。
+
+三份 v40 canonical Profile snapshot 为 Flash `1f6f8ceccbc6d717bde127fb628bac67b16bbda1d80062e358308a6109be9e19`、
+Plus `2fd63065bcb8fa9d55456bc44fc1372000973a7470291931444838c2d6817dd2`、Max
+`7444e7379711300494f53c1875c35808b4d87d2207b7164385dec9a5b3830708`。在 exact-clean gate 后仍须 fresh
+重算，不能直接复用本记录。J1/attempt/token/CNY/time/process/lease 全绿时只考虑 Flash single synthetic
+case、最多 5 calls；Plus 仅剩 1 attempt 不调用，Max 仍受同版本三阶段与质量门约束。
+
+用户要求 smoke 后冻结 v40 做阶段性收尾，不再用额度追逐生产可靠性。未满足最终硬门时 Profile 保持
+`EXPERIMENTAL`、Goal 保持未完成；剩余额度不因阶段冻结自动消费或释放。

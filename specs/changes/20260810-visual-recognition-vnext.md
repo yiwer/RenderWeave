@@ -372,3 +372,21 @@ Goal 为 413 reservations（407 SETTLED、6 RESERVED、0 BREACHED）；Flash/Plu
 152/179/82 attempts、1,105,020/1,087,500/491,919 exposed tokens 与
 ¥0.538392/¥4.159620/¥10.289316，三 ledger CLOSED。product-v39 仍 `EXPERIMENTAL`、N6=
 `automated_verified`、N7/Goal=`in_progress`；Plus/Max/final eval 门未满足。
+
+### 2026-08-12 v40 payload-free reading-order diagnostic 与阶段冻结
+
+- pipeline 4.27 继承 v39 的全部 bounded repair，不新增 normalization。只有原始 shape 会报 reading-order
+  GAP、root orders 已连续，且全部失败的非 root sibling set 可归入同一原因时，才细分 fixed code：全部
+  duplicate/tie → `VISUAL_GROUNDING_READING_ORDER_DUPLICATE`；全部 existing-order/position 冲突 →
+  `VISUAL_GROUNDING_READING_ORDER_POSITION_INVALID`。mixed、root gap、canonical 超界 gap 仍返回 GAP。
+- 分类只使用已解码的数量/相等性/相对顺序，不能写入 region ID、order 值、box、图片、OCR、完整 prompt、
+  Candidate 或模型原文；strict JSON/enum、parent/overlap/ownership、完整 semantic verifier 与 8-value cap 不变。
+- Prompt 10 相对 v9 只加入 duplicate fixed-code 的阶段内重算说明；三份 product-v40 Profile 绑定 pipeline
+  4.27 且继续 `EXPERIMENTAL`。real-PG 证明 lease expiry 后从 HIERARCHY 续跑到 REVIEW_REQUIRED，OBSERVE
+  不重放且 OCR sentinel 零持久化；monitor/review/E2E 可解释 fixed code。
+- 自动证据：contract 36/36、Profile/Prompt 20/20、独立 verifier 2/2、real-PG v39/v40 2/2、inference
+  195/195、Web 73/73、typecheck/lint、Playwright 7/7 PASS；Provider=0，Goal/ledger 不变。
+
+用户要求 v40 完成后冻结为本阶段稳定基线，并以可运行、可恢复、可审计、可人工审核为阶段性可用口径；
+不要求也不得声称生产级可靠性。exact-clean full/Document Vision、fresh identity/Profile/Goal/J1/process/
+lease 与受控 Flash smoke 尚未完成，因此当前仍为 N6=`automated_verified`、N7/Goal=`in_progress`。

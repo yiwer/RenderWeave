@@ -11,10 +11,11 @@
   三个预算槽位各追加 500,000 tokens，当前累计 cap 1,500,000，并把 Flash/Plus Goal cost cap 各设为 ¥10、
   固定 24h 窗口至 `2026-08-12T09:51:55Z`；Max ¥18、每槽 180 attempts、单 authorization 500,000 不变
 - 当前节点：N0–N1、N3–N4、N6 `automated_verified`；N2 `live_verified_mixed_a1_a2`；N5
-  `live_verified_not_promoted`；N7 `in_progress`。pipeline 4.26/product-v39 已完成离线/PG/UI 与 exact-clean
-  gate，但 Flash live 前两次 OBSERVE 分别为 invalid region-kind、reading-order gap，第三次网络错误后按 halt
-  合同停止；v39 normalization 与 HIERARCHY/BINDING 均未触达。当前 Goal 为 413 reservations（407
-  SETTLED、6 RESERVED、0 BREACHED），三份 live ledger `CLOSED`，Profile 均隐藏 `EXPERIMENTAL`
+  `live_verified_not_promoted`；N7 `in_progress`。pipeline 4.27/product-v40 已完成 bounded diagnostic、Prompt/Profile、
+  real-PG recovery 与 monitor/review/E2E 离线闭环，等待 exact-clean gate 与受控 Flash smoke；v39 live 未越过
+  OBSERVE。当前 Goal 为 413 reservations（407 SETTLED、6 RESERVED、0 BREACHED），三份 live ledger
+  `CLOSED`，Profile 均隐藏 `EXPERIMENTAL`。按用户 2026-08-12 决策，v40 验证完成后冻结为本阶段基线，
+  以“可运行、可恢复、可审计、可人工审核”收尾，不冒充生产级可靠性
 
 ## 四维执行配置
 
@@ -811,3 +812,24 @@ Max/final 20/60 的同版本三阶段、质量、独立复核与最终 J1 门不
 
 v39 继续 `EXPERIMENTAL`，N6=`automated_verified`、N7/Goal=`in_progress`。CLOSED authorization 不重跑；
 Plus/Max/final 20/60 不启动。下一安全节点回到离线 payload-free diagnostic/reading-order verifier。
+
+### product-v40 offline freeze candidate
+
+- commits：`3b0d92d` 精确 reading-order 诊断；`b179b7e` pipeline 4.27、visual-elements Prompt 10 与三模型
+  immutable Profile；`05e1b65` real-PG checkpoint recovery；`3eff5ce` monitor/review/E2E。
+- bounded rule：继承 v39 的唯一 canonical gap compaction。仅当最终 shape 原本会报 GAP、root orders 已连续，
+  且所有非连续的非 root sibling set 都能落入同一互斥类别时，duplicate/tie 输出
+  `VISUAL_GROUNDING_READING_ORDER_DUPLICATE`，existing-order 与 `(top,left,regionId)` 不一致输出既有
+  `VISUAL_GROUNDING_READING_ORDER_POSITION_INVALID`；mixed、root gap、canonical 超界 gap 继续 GAP。
+  不持久化 order/region/box/model payload，也不放宽 JSON、enum、parent、overlap、ownership 或 semantic gate。
+- identity binding：Prompt 10 仅在 v9 repair 列表加入 duplicate fixed code；Flash/Plus/Max v40 snapshot 分别为
+  `1f6f8cec…9e9e19`、`2fd63065…17dd2`、`7444e737…30708`，三份 Profile 均为 `EXPERIMENTAL`。
+- evidence：contract 36/36、Profile/Prompt 20/20、独立 Profile verifier 2/2、real-PG v39/v40 pair 2/2、
+  inference 195/195、Web 73/73、typecheck/lint、Playwright 7/7 PASS；Node 20 Web 仅为兼容证据。
+- budget/state：Provider=0；Goal 仍为 413 reservations；Flash/Plus/Max=152/179/82 attempts、
+  1,105,020/1,087,500/491,919 exposed tokens、¥0.538392/¥4.159620/¥10.289316；三 ledger CLOSED。
+
+product-v40 保持 `EXPERIMENTAL`，N6=`automated_verified`、N7/Goal=`in_progress`。下一门是在本 checkpoint
+exact-clean revision 上执行 full/Document Vision 与独立 verifier，fresh 重算 identity/Profile/Goal/J1/time/
+process/lease；有效时只执行 Flash single synthetic case、最多 5 calls。完成后冻结 v40 并阶段性收尾；
+若仍未达同版本三阶段/质量门，不调用 Plus/Max/final，也不把阶段可用性写成生产验收。

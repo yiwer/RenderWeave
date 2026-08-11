@@ -1229,3 +1229,20 @@ v39 normalization 未命中，且 HIERARCHY/BINDING/Candidate 未触达，因此
 也不建立质量改善证据。仅凭现有 fixed code 不能判断 gap 是 duplicate/tie、位置冲突还是其他不可唯一状态，
 不得读取 payload 或放宽 strict enum/order。product-v39 保持 `EXPERIMENTAL`，N6=`automated_verified`、
 N7/Goal=`in_progress`；Plus/Max/final eval 不启动。
+
+### product-v40 fixed-code refinement 与冻结决策
+
+决定把 v39 保留的 reading-order GAP 做 payload-free 诊断细分，而不继续扩大 repair。pipeline 4.27 仅在
+root order 已连续、完整 plan 原本会报 GAP、且所有失败非 root sibling set 的原因一致时改变 fixed code：
+duplicate/tie 统一为 `VISUAL_GROUNDING_READING_ORDER_DUPLICATE`，唯一 order 与 canonical position 冲突
+统一为既有 `VISUAL_GROUNDING_READING_ORDER_POSITION_INVALID`。只要出现 root gap、mixed 原因或 canonical
+超界 gap，就保留 GAP。该分类不改变任何 region/order/box/parent/ownership，也不创建结构。
+
+`3b0d92d` 固定正反例与 v39 immutability；`b179b7e` 绑定 pipeline 4.27、Prompt 10 和三份 immutable
+Profile；`05e1b65` 的 real-PG tracer 证明 OBSERVE checkpoint/lease recovery 与 OCR 零持久化；`3eff5ce`
+完成审核 UI/E2E。自动证据为 contract 36/36、Profile/Prompt 20/20、独立 verifier 2/2、real-PG pair
+2/2、inference 195/195、Web 73/73、typecheck/lint、Playwright 7/7。
+
+用户决定 v40 验证后停止继续试探式放宽并冻结为阶段基线。阶段验收只主张工程可用：可运行、可恢复、
+可审计、可人工审核；在同版本三阶段、质量、final eval、最终 J1 未满足时继续标记 `EXPERIMENTAL` /
+`automated_verified`，不等价于生产晋级。

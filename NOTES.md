@@ -820,3 +820,20 @@
   1,105,020/1,087,500/491,919 exposed tokens、¥0.538392/¥4.159620/¥10.289316；三 ledger CLOSED。
   v39 仍 `EXPERIMENTAL`、N6=`automated_verified`、N7/Goal=`in_progress`。该 CLOSED authorization 不重跑，
   Plus/Max/final 20/60 不启动；fixed code 不足以证明可进一步放宽 order/enum 合同。
+
+### v40 payload-free reading-order diagnostic checkpoint
+
+- `3b0d92d` 在不扩大 v39 repair 的前提下细分 GAP：root order 必须先合法；所有失败的非 root sibling set
+  只有都为 duplicate/tie 时才报 `VISUAL_GROUNDING_READING_ORDER_DUPLICATE`，只有都为唯一但空间顺序冲突时
+  才报 `VISUAL_GROUNDING_READING_ORDER_POSITION_INVALID`；mixed、root、canonical 超界 gap 保持 GAP。
+- `b179b7e` 固定 pipeline 4.27、visual-elements Prompt 10 与三份 immutable product-v40 Profile；Prompt 10
+  相对 v9 只新增 duplicate fixed-code repair 路由。`05e1b65` 证明真实 PostgreSQL lease recovery 不重放
+  OBSERVE 且 OCR 零持久化；`3eff5ce` 接入 monitor/review 中文说明与 1024px E2E。
+- 自动证据：contract 36/36、Profile/Prompt 20/20、independent Profile verifier 2/2、real-PG v39/v40 2/2、
+  inference 195/195、Web 73/73、typecheck/lint、Playwright 7/7 PASS。Node 20 仅为 Web 兼容证据。
+- Provider=0；Goal/ledger 保持 v39 结算后的 413 reservations（407 SETTLED、6 RESERVED、0 BREACHED），
+  Flash/Plus/Max=152/179/82 attempts、1,105,020/1,087,500/491,919 exposed tokens、
+  ¥0.538392/¥4.159620/¥10.289316，三 ledger CLOSED。
+- 用户要求 v40 验证后冻结并阶段性收尾，验收口径为可运行/可恢复/可审计/可人工审核，不要求本阶段达到
+  生产级可靠性。当前 v40 仍 `EXPERIMENTAL`、N6=`automated_verified`、N7/Goal=`in_progress`；还需
+  exact-clean full/Document Vision、fresh identity/Profile/Goal/J1/process/lease 与受控 Flash smoke。
