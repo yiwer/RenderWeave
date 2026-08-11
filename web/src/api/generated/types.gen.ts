@@ -330,7 +330,7 @@ export type CreateReplayRunRequest = {
 };
 
 export type CreateLiveRunRequest = {
-    profileId: 'dashscope-qwen37-flash-product-v4' | 'dashscope-qwen37-plus-product-v4' | 'dashscope-qwen38-max-product-v4' | 'dashscope-qwen37-max-20260608-product-v4';
+    profileId: 'dashscope-qwen37-plus-product-v40-hybrid-generic' | 'dashscope-qwen38-max-product-v40-hybrid-generic' | 'dashscope-qwen37-flash-20260715-product-v40-hybrid-generic';
     mode: InferenceMode;
     inputClassification: 'USER_PROVIDED';
     externalTransferConfirmed: true;
@@ -354,15 +354,14 @@ export type LiveAvailabilityResponse = {
     profiles: [
         LiveProfileResponse,
         LiveProfileResponse,
-        LiveProfileResponse,
         LiveProfileResponse
     ];
 };
 
 export type LiveProfileResponse = {
-    profileId: 'dashscope-qwen37-flash-product-v4' | 'dashscope-qwen37-plus-product-v4' | 'dashscope-qwen38-max-product-v4' | 'dashscope-qwen37-max-20260608-product-v4';
+    profileId: 'dashscope-qwen37-plus-product-v40-hybrid-generic' | 'dashscope-qwen38-max-product-v40-hybrid-generic' | 'dashscope-qwen37-flash-20260715-product-v40-hybrid-generic';
     provider: 'DASHSCOPE';
-    model: 'qwen3.7-flash' | 'qwen3.7-plus' | 'qwen3.8-max' | 'qwen3.7-max-2026-06-08';
+    model: 'qwen3.7-plus' | 'qwen3.8-max' | 'qwen3.7-flash-2026-07-15';
     certification: 'EXPERIMENTAL';
     supportedModes: Array<InferenceMode>;
     maximumTotalCalls: number;

@@ -1,21 +1,13 @@
 package cn.hbads.renderweave.inference;
 
-import cn.hbads.renderweave.inference.candidate.CandidateAssessment;
-import cn.hbads.renderweave.inference.candidate.CandidateBoundingBox;
-import cn.hbads.renderweave.inference.candidate.CandidateBundle;
-import cn.hbads.renderweave.inference.candidate.CandidateEvidence;
-import cn.hbads.renderweave.inference.candidate.CandidateField;
-import cn.hbads.renderweave.inference.candidate.CandidateJsonCodec;
-import cn.hbads.renderweave.inference.candidate.CandidateResolution;
-import cn.hbads.renderweave.inference.candidate.CandidateSchema;
-import cn.hbads.renderweave.inference.candidate.CandidateSource;
-import cn.hbads.renderweave.inference.candidate.CandidateValue;
-import cn.hbads.renderweave.inference.candidate.CandidateValueKind;
 import cn.hbads.renderweave.inference.provider.InferenceProvider;
 import cn.hbads.renderweave.inference.provider.ProviderInferenceResponse;
 import cn.hbads.renderweave.inference.provider.ProviderUsage;
 import cn.hbads.renderweave.inference.run.InferenceRunState;
 import cn.hbads.renderweave.inference.run.InferenceRunStore;
+import cn.hbads.renderweave.inference.vision.DocumentVisionCapability;
+import cn.hbads.renderweave.inference.vision.DocumentVisionObservation;
+import cn.hbads.renderweave.inference.vision.DocumentVisionPreprocessor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -102,7 +94,7 @@ class LiveInferenceApiTest {
         var metadata = new MockMultipartFile(
                 "metadata", "metadata.json", MediaType.APPLICATION_JSON_VALUE,
                 """
-                        {"profileId":"dashscope-qwen37-flash-product-v4","mode":"IMAGE_ONLY",
+                        {"profileId":"dashscope-qwen37-plus-product-v40-hybrid-generic","mode":"IMAGE_ONLY",
                          "inputClassification":"USER_PROVIDED","externalTransferConfirmed":true,
                          "experimentalProfileConfirmed":true,"costLimitMicrosCny":250000}
                         """.getBytes(StandardCharsets.UTF_8)
@@ -114,7 +106,7 @@ class LiveInferenceApiTest {
                         .file(metadata).file(image)
                         .header("Idempotency-Key", "live-api-synthetic"))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.profileId").value("dashscope-qwen37-flash-product-v4"))
+                .andExpect(jsonPath("$.profileId").value("dashscope-qwen37-plus-product-v40-hybrid-generic"))
                 .andExpect(jsonPath("$.costLimitMicrosCny").value(250000))
                 .andReturn().getResponse().getContentAsString();
         var runId = UUID.fromString(json.readTree(response).path("runId").asText());
@@ -131,7 +123,7 @@ class LiveInferenceApiTest {
                 .andExpect(jsonPath("$.images.length()").value(1))
                 .andExpect(jsonPath("$.jsonSampleCount").value(0));
         assertThat(jdbcClient.sql("select count(*) from inference_provider_reservation")
-                .query(Long.class).single()).isEqualTo(4);
+                .query(Long.class).single()).isEqualTo(3);
     }
 
     @Test
@@ -139,7 +131,7 @@ class LiveInferenceApiTest {
         var metadata = new MockMultipartFile(
                 "metadata", "metadata.json", MediaType.APPLICATION_JSON_VALUE,
                 """
-                        {"profileId":"dashscope-qwen37-flash-product-v4","mode":"IMAGE_ONLY",
+                        {"profileId":"dashscope-qwen37-plus-product-v40-hybrid-generic","mode":"IMAGE_ONLY",
                          "inputClassification":"USER_PROVIDED","externalTransferConfirmed":true,
                          "experimentalProfileConfirmed":true}
                         """.getBytes(StandardCharsets.UTF_8)
@@ -184,7 +176,7 @@ class LiveInferenceApiTest {
         var metadata = new MockMultipartFile(
                 "metadata", "metadata.json", MediaType.APPLICATION_JSON_VALUE,
                 """
-                        {"profileId":"dashscope-qwen37-flash-product-v4","mode":"IMAGE_ONLY",
+                        {"profileId":"dashscope-qwen37-plus-product-v40-hybrid-generic","mode":"IMAGE_ONLY",
                          "inputClassification":"USER_PROVIDED","externalTransferConfirmed":true,
                          "experimentalProfileConfirmed":true,"costLimitMicrosCny":100000001}
                         """.getBytes(StandardCharsets.UTF_8)
@@ -208,7 +200,7 @@ class LiveInferenceApiTest {
         var metadata = new MockMultipartFile(
                 "metadata", "metadata.json", MediaType.APPLICATION_JSON_VALUE,
                 """
-                        {"profileId":"dashscope-qwen37-flash-product-v4","mode":"IMAGE_ONLY",
+                        {"profileId":"dashscope-qwen37-plus-product-v40-hybrid-generic","mode":"IMAGE_ONLY",
                          "inputClassification":"USER_PROVIDED","externalTransferConfirmed":true,
                          "experimentalProfileConfirmed":true}
                         """.getBytes(StandardCharsets.UTF_8)
@@ -266,62 +258,71 @@ class LiveInferenceApiTest {
         @Bean
         @Primary
         InferenceProvider syntheticProvider() {
-            var codec = new CandidateJsonCodec();
             return request -> {
-                var artifactId = request.images().getFirst().artifactId();
                 var output = switch (request.stage()) {
                     case OBSERVE -> """
-                            {"contractVersion":"renderweave-visual-elements/1.0","elements":[
+                            {"contractVersion":"renderweave-visual-grounding/2.0","regions":[
+                              {"regionId":"root","parentRegionId":null,"kind":"ROOT","multiplicity":"ONE",
+                               "readingOrder":0,"repeatGroupId":null,"evidence":[{"viewId":"view-00-overview-00",
+                                 "boundingBox":{"left":0,"top":0,"right":10000,"bottom":10000}}]},
+                              {"regionId":"header","parentRegionId":"root","kind":"SECTION","multiplicity":"ONE",
+                               "readingOrder":0,"repeatGroupId":null,"evidence":[{"viewId":"view-00-overview-00",
+                                 "boundingBox":{"left":0,"top":0,"right":10000,"bottom":3000}}]}
+                            ],"elements":[
                               {"elementId":"title","kind":"SLOT","proposedKey":"title",
                                "displayName":"标题","multiplicity":"ONE","valueHint":"TEXT",
-                               "evidence":[{"kind":"IMAGE","artifactId":"%s",
-                                 "boundingBox":{"left":500,"top":500,"right":9500,"bottom":2500},
-                                 "sampleIndex":null,"jsonPointer":null}]}
+                               "regionIds":["header"],"evidence":[{"viewId":"view-00-overview-00",
+                                 "boundingBox":{"left":500,"top":500,"right":9500,"bottom":2500}}]}
                             ]}
-                            """.formatted(artifactId);
+                            """;
                     case HIERARCHY -> """
-                            {"contractVersion":"renderweave-visual-hierarchy/1.0",
+                            {"contractVersion":"renderweave-visual-hierarchy/2.0",
                              "rootEntityId":"product","entities":[
                                {"entityId":"product","schemaKey":"synthetic-product",
-                                "displayName":"合成商品","supportingElementIds":["title"]}
+                                "displayName":"合成商品","regionIds":["root"],
+                                "supportingElementIds":["title"]}
                              ],"relationships":[]}
                             """;
                     case ELEMENT_BINDING -> """
-                            {"contractVersion":"renderweave-visual-bindings/1.0",
+                            {"contractVersion":"renderweave-visual-bindings/2.0",
                              "bindings":[{"elementId":"title","entityId":"product"}]}
                             """;
-                    case STRUCTURE, REPAIR -> null;
+                    case STRUCTURE, REPAIR -> throw new AssertionError(
+                            "Pipeline 4 product entry must materialize locally"
+                    );
                     default -> throw new AssertionError("Unexpected provider stage " + request.stage());
                 };
-                if (output != null) {
-                    return new ProviderInferenceResponse(
-                            output, "test-request-" + request.attemptOrdinal(), request.profile().model(),
-                            new ProviderUsage(1_000, 500), "stop"
-                    );
-                }
-                var schemaId = UUID.nameUUIDFromBytes((request.runId() + ":schema").getBytes(StandardCharsets.UTF_8));
-                var fieldId = UUID.nameUUIDFromBytes((request.runId() + ":field").getBytes(StandardCharsets.UTF_8));
-                var evidence = CandidateEvidence.image(
-                        request.images().getFirst().artifactId(),
-                        new CandidateBoundingBox(500, 500, 9_500, 2_500)
-                );
-                var assessment = CandidateAssessment.ai(
-                        9_000, true, CandidateResolution.NOT_REQUIRED, List.of(evidence)
-                );
-                var candidate = new CandidateBundle(
-                        CandidateBundle.CONTRACT_VERSION, schemaId,
-                        List.of(new CandidateSchema(
-                                schemaId, "synthetic-product", "合成商品", CandidateSource.AI, assessment,
-                                List.of(new CandidateField(
-                                        fieldId, "title", "标题", false,
-                                        CandidateValue.scalar(CandidateValueKind.TEXT), CandidateSource.AI, assessment
-                                ))
-                        ))
-                );
                 return new ProviderInferenceResponse(
-                        codec.write(candidate), "test-request-" + request.attemptOrdinal(), request.profile().model(),
+                        output, "test-request-" + request.attemptOrdinal(), request.profile().model(),
                         new ProviderUsage(1_000, 500), "stop"
                 );
+            };
+        }
+
+        @Bean
+        @Primary
+        DocumentVisionPreprocessor syntheticDocumentVisionPreprocessor() {
+            var capability = DocumentVisionCapability.available(
+                    "rapidocr-3.9.2-openvino-2026.0.0-ppocrv6-small-c05805399d7d10b1",
+                    "synthetic-ocr", "1.0", "0".repeat(64)
+            );
+            return new DocumentVisionPreprocessor() {
+                @Override
+                public DocumentVisionCapability capability() {
+                    return capability;
+                }
+
+                @Override
+                public DocumentVisionObservation preprocess(
+                        List<cn.hbads.renderweave.inference.vision.DocumentVisionArtifact> artifacts
+                ) {
+                    return DocumentVisionObservation.canonical(
+                            capability.capabilityId(),
+                            artifacts.stream().map(artifact -> new DocumentVisionObservation.ArtifactObservation(
+                                    artifact.artifactId(), artifact.sourceOrdinal(), List.of()
+                            )).toList()
+                    );
+                }
             };
         }
     }

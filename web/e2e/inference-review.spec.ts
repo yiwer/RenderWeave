@@ -501,7 +501,7 @@ test('preflights a local upload queue while the deployment transfer gate is clos
   expect(livePosts).toBe(0);
 });
 
-test('offers four product models and an optional cumulative run cost ceiling', async ({ page }) => {
+test('offers the v40 image catalog with Plus selected and an optional cumulative run cost ceiling', async ({ page }) => {
   let livePosts = 0;
   let multipartBody = '';
   await page.route('**/api/v1/inference-runs**', async (route) => {
@@ -518,7 +518,7 @@ test('offers four product models and an optional cumulative run cost ceiling', a
       multipartBody = request.postDataBuffer()?.toString('utf8') ?? '';
       await json(route, {
         ...runResponse(0, 'QUEUED'),
-        profileId: 'dashscope-qwen37-flash-product-v4',
+        profileId: 'dashscope-qwen37-plus-product-v40-hybrid-generic',
         sourceReference: 'user-upload',
         costLimitMicrosCny: 250000,
       }, 201);
@@ -529,16 +529,17 @@ test('offers four product models and an optional cumulative run cost ceiling', a
 
   await page.goto('/inference/new');
   await expect(page.getByText('可用', { exact: true })).toBeVisible();
-  await expect(page.locator('.live-profile-grid button')).toHaveCount(4);
-  for (const model of ['qwen3.7-flash', 'qwen3.7-plus', 'qwen3.8-max', 'qwen3.7-max-2026-06-08']) {
+  await expect(page.locator('.live-profile-grid button')).toHaveCount(3);
+  for (const model of ['qwen3.7-plus', 'qwen3.8-max', 'qwen3.7-flash-2026-07-15']) {
     await expect(page.locator('.live-profile-grid button').filter({ hasText: model })).toHaveCount(1);
   }
+  await expect(page.locator('.live-profile-grid button.active')).toContainText('qwen3.7-plus');
+  await expect(page.getByText('低成本 smoke · 复杂站牌不推荐')).toBeVisible();
 
-  await page.getByRole('tab', { name: '仅 JSON' }).click();
-  await page.locator('.live-upload-field input[type="file"]').nth(1).setInputFiles({
-    name: 'sample.json',
-    mimeType: 'application/json',
-    buffer: Buffer.from('{"title":"示例"}'),
+  await page.locator('.live-upload-field input[type="file"]').nth(0).setInputFiles({
+    name: 'station-board.png',
+    mimeType: 'image/png',
+    buffer: Buffer.from('synthetic-station-board'),
   });
   await page.getByRole('checkbox', { name: /设置本次任务成本上限/ }).check();
   const costInput = page.getByRole('spinbutton', { name: '本次任务成本上限' });
@@ -881,10 +882,9 @@ function liveAvailability(enabled = false) {
     runCostLimitRequired: false,
     maximumRunCostLimitMicrosCny: 100000000,
     profiles: [
-      profile('dashscope-qwen37-flash-product-v4', 'qwen3.7-flash', ['IMAGE_ONLY', 'JSON_ONLY', 'COMBINED']),
-      profile('dashscope-qwen37-plus-product-v4', 'qwen3.7-plus', ['IMAGE_ONLY', 'JSON_ONLY', 'COMBINED']),
-      profile('dashscope-qwen38-max-product-v4', 'qwen3.8-max', ['IMAGE_ONLY', 'JSON_ONLY', 'COMBINED']),
-      profile('dashscope-qwen37-max-20260608-product-v4', 'qwen3.7-max-2026-06-08', ['IMAGE_ONLY', 'JSON_ONLY', 'COMBINED']),
+      profile('dashscope-qwen37-plus-product-v40-hybrid-generic', 'qwen3.7-plus', ['IMAGE_ONLY']),
+      profile('dashscope-qwen38-max-product-v40-hybrid-generic', 'qwen3.8-max', ['IMAGE_ONLY']),
+      profile('dashscope-qwen37-flash-20260715-product-v40-hybrid-generic', 'qwen3.7-flash-2026-07-15', ['IMAGE_ONLY']),
     ],
   };
 }

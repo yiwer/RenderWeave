@@ -33,13 +33,13 @@ type LiveProfileId = CreateLiveRunRequest['profileId'];
 
 export function InferenceStartPage() {
   const navigate = useNavigate();
-  const [mode, setMode] = useState<InferenceMode>('COMBINED');
+  const [mode, setMode] = useState<InferenceMode>('IMAGE_ONLY');
   const liveQuery = useQuery({ queryKey: ['live-inference-availability'], queryFn: getLiveAvailabilityRequest });
 
   return (
     <ResourceFrame
       title="新增识别输入"
-      description="上传图片或 JSON，选择 DashScope 模型与费用边界；提交后进入独立监控版面，不会直接发布或写入正式数据结构。"
+      description="上传设计图片，选择 v40 DashScope 模型与费用边界；提交后进入独立监控版面，不会直接发布或写入正式数据结构。"
       actions={<Link className="button ghost-button" to="/inference">返回历史任务</Link>}
       breadcrumbs={[{ label: '智能识别', to: '/inference' }, { label: '新增识别' }]}
     >
@@ -60,7 +60,7 @@ function LiveLauncher({
   query: UseQueryResult<LiveAvailabilityResponse, Error>;
   onCreated: (runId: string) => void;
 }) {
-  const [profileId, setProfileId] = useState<LiveProfileId>('dashscope-qwen37-flash-product-v4');
+  const [profileId, setProfileId] = useState<LiveProfileId>('dashscope-qwen37-plus-product-v40-hybrid-generic');
   const [images, setImages] = useState<File[]>([]);
   const [jsonSamples, setJsonSamples] = useState<File[]>([]);
   const [transferConfirmed, setTransferConfirmed] = useState(false);
@@ -308,10 +308,9 @@ function formatYuan(micros: number) {
 }
 
 function liveProfileDescription(profile: LiveProfileResponse) {
-  if (profile.model === 'qwen3.7-flash') return '低成本快速识别';
-  if (profile.model === 'qwen3.7-plus') return '质量、速度与成本均衡';
-  if (profile.model === 'qwen3.7-max-2026-06-08') return '固定版本 · 复杂视觉结构';
-  return '高能力实验模型';
+  if (profile.model === 'qwen3.7-flash-2026-07-15') return '低成本 smoke · 复杂站牌不推荐';
+  if (profile.model === 'qwen3.7-plus') return '默认平衡方案 · 复杂结构优先于 Flash';
+  return '高能力方案 · 高难度嵌套结构';
 }
 
 function parseYuanMicros(value: string): number | null {

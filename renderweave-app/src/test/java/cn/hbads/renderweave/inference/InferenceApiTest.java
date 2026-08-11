@@ -296,9 +296,9 @@ class InferenceApiTest {
                 .andExpect(jsonPath("$.inputClassification").value("USER_PROVIDED"))
                 .andExpect(jsonPath("$.runCostLimitRequired").value(false))
                 .andExpect(jsonPath("$.maximumRunCostLimitMicrosCny").value(100_000_000))
-                .andExpect(jsonPath("$.profiles.length()").value(4))
+                .andExpect(jsonPath("$.profiles.length()").value(3))
                 .andExpect(jsonPath("$.profiles[0].profileId")
-                        .value("dashscope-qwen37-flash-product-v4"))
+                        .value("dashscope-qwen37-plus-product-v40-hybrid-generic"))
                 .andExpect(jsonPath("$.profiles[0].maximumTotalCalls").value(5))
                 .andExpect(jsonPath("$.profiles[0].maximumEstimatedCostMicrosCny")
                         .value(2_000_000))
@@ -306,12 +306,9 @@ class InferenceApiTest {
                         .value(2_000_000))
                 .andExpect(jsonPath("$.profiles[2].maximumEstimatedCostMicrosCny")
                         .value(2_000_000))
-                .andExpect(jsonPath("$.profiles[3].maximumEstimatedCostMicrosCny")
-                        .value(2_000_000))
-                .andExpect(jsonPath("$.profiles[?(@.model == 'qwen3.7-flash')]").exists())
+                .andExpect(jsonPath("$.profiles[?(@.model == 'qwen3.7-flash-2026-07-15')]").exists())
                 .andExpect(jsonPath("$.profiles[?(@.model == 'qwen3.7-plus')]").exists())
                 .andExpect(jsonPath("$.profiles[?(@.model == 'qwen3.8-max')]").exists())
-                .andExpect(jsonPath("$.profiles[?(@.model == 'qwen3.7-max-2026-06-08')]").exists())
                 .andExpect(content().string(org.hamcrest.Matchers.not(
                         org.hamcrest.Matchers.containsString("DASHSCOPE_API_KEY")
                 )));
@@ -319,7 +316,7 @@ class InferenceApiTest {
         var metadata = new MockMultipartFile(
                 "metadata", "metadata.json", MediaType.APPLICATION_JSON_VALUE,
                 """
-                        {"profileId":"dashscope-qwen37-flash-product-v4","mode":"IMAGE_ONLY",
+                        {"profileId":"dashscope-qwen37-plus-product-v40-hybrid-generic","mode":"IMAGE_ONLY",
                          "inputClassification":"USER_PROVIDED","externalTransferConfirmed":true,
                          "experimentalProfileConfirmed":true}
                         """.getBytes(java.nio.charset.StandardCharsets.UTF_8)

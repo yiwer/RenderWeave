@@ -12,7 +12,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class InferenceProfileRegistryTest {
     @Test
-    void exposesHistoricalProfilesAndKeepsExperimentalVisualProfilesWithheld() {
+    void exposesHistoricalProfilesAndPromotesOnlyTheFrozenV40Catalog() {
         var registry = new InferenceProfileRegistry();
         var resource = registry.require("replay-v1");
         var profile = resource.profile();
@@ -151,13 +151,12 @@ class InferenceProfileRegistryTest {
                 "dashscope-qwen38-max-product-v40-hybrid-generic"
         ), registry.profileIds());
         assertEquals(java.util.List.of(
-                "dashscope-qwen37-flash-product-v4",
-                "dashscope-qwen37-plus-product-v4",
-                "dashscope-qwen38-max-product-v4",
-                "dashscope-qwen37-max-20260608-product-v4"
+                "dashscope-qwen37-plus-product-v40-hybrid-generic",
+                "dashscope-qwen38-max-product-v40-hybrid-generic",
+                "dashscope-qwen37-flash-20260715-product-v40-hybrid-generic"
         ), registry.productLiveProfiles().stream().map(item -> item.profile().profileId()).toList());
         assertEquals(java.util.List.of(
-                "qwen3.7-flash", "qwen3.7-plus", "qwen3.8-max", "qwen3.7-max-2026-06-08"
+                "qwen3.7-plus", "qwen3.8-max", "qwen3.7-flash-2026-07-15"
         ), registry.productLiveProfiles().stream().map(item -> item.profile().model()).toList());
         assertEquals(java.util.List.of(
                 "dashscope-qwen37-flash-product-v5",
@@ -302,10 +301,10 @@ class InferenceProfileRegistryTest {
         assertHistoricalProductV3(registry, "dashscope-qwen37-plus-product-v3");
         assertHistoricalProductV3(registry, "dashscope-qwen38-max-product-v3");
         assertHistoricalProductV3(registry, "dashscope-qwen37-max-20260608-product-v3");
-        assertProductProfile(registry, "dashscope-qwen37-flash-product-v4", "qwen3.7-flash", 2_000_000L);
-        assertProductProfile(registry, "dashscope-qwen37-plus-product-v4", "qwen3.7-plus", 2_000_000L);
-        assertProductProfile(registry, "dashscope-qwen38-max-product-v4", "qwen3.8-max", 2_000_000L);
-        assertProductProfile(
+        assertHistoricalProductV4(registry, "dashscope-qwen37-flash-product-v4", "qwen3.7-flash", 2_000_000L);
+        assertHistoricalProductV4(registry, "dashscope-qwen37-plus-product-v4", "qwen3.7-plus", 2_000_000L);
+        assertHistoricalProductV4(registry, "dashscope-qwen38-max-product-v4", "qwen3.8-max", 2_000_000L);
+        assertHistoricalProductV4(
                 registry, "dashscope-qwen37-max-20260608-product-v4",
                 "qwen3.7-max-2026-06-08", 2_000_000L
         );
@@ -1284,7 +1283,7 @@ class InferenceProfileRegistryTest {
         var profile = registry.require(profileId).profile();
         assertTrue(registry.isVisualGroundingProfile(profileId));
         assertTrue(registry.isVisualHybridProfile(profileId));
-        assertFalse(registry.isProductLiveProfile(profileId));
+        assertTrue(registry.isProductLiveProfile(profileId));
         assertEquals(model, profile.model());
         assertEquals("renderweave-inference-pipeline/4.27", profile.pipelineVersion());
         assertEquals(InferencePromptRegistry.SCHEMA_CANDIDATE_V5, profile.promptVersion());
@@ -1479,14 +1478,14 @@ class InferenceProfileRegistryTest {
         assertEquals("EXPERIMENTAL", profile.certification());
     }
 
-    private static void assertProductProfile(
+    private static void assertHistoricalProductV4(
             InferenceProfileRegistry registry,
             String profileId,
             String model,
             long maximumCost
     ) {
         var profile = registry.require(profileId).profile();
-        assertTrue(registry.isProductLiveProfile(profileId));
+        assertFalse(registry.isProductLiveProfile(profileId));
         assertEquals(model, profile.model());
         assertEquals("USER_CONFIRMED", profile.inputClassification());
         assertEquals("renderweave-inference-pipeline/3.0", profile.pipelineVersion());
