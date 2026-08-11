@@ -27,6 +27,7 @@ import java.util.Set;
 /** Strict decoders for region-grounded visual contracts; view evidence is canonicalized before persistence. */
 final class VisualGroundingJsonCodec {
     private static final int MAX_BYTES = 256 * 1024;
+    private static final int MAX_NORMALIZED_REGION_PARENTS = 8;
     private static final VisualSemanticVerifier SEMANTIC_VERIFIER = new VisualSemanticVerifier();
     private static final ObjectMapper JSON = JsonMapper.builder(
                     JsonFactory.builder().enable(StreamReadFeature.STRICT_DUPLICATE_DETECTION).build())
@@ -120,6 +121,7 @@ final class VisualGroundingJsonCodec {
             return new GroundedElementInventory(
                     inventory, grounding, classifiedRegions.normalizedRegionKinds(),
                     classifiedRegions.normalizedItemParents(),
+                    classifiedRegions.normalizedRegionParents(),
                     classifiedRegions.normalizedReadingOrders(),
                     normalizedOwnerships.normalizedElements(),
                     normalizedItemSlotOwnerships.normalizedElements()
@@ -1309,10 +1311,13 @@ final class VisualGroundingJsonCodec {
         }
         if (normalizationPolicy == VisualObservationNormalizationPolicy.STRICT) {
             return new ClassifiedObservationRegions(
-                    List.copyOf(regions), normalizedRegionKinds, 0, 0
+                    List.copyOf(regions), normalizedRegionKinds, 0, 0, 0
             );
         }
-        return normalizeUniqueItemParents(regions, normalizedRegionKinds);
+        var itemParents = normalizeUniqueItemParents(regions, normalizedRegionKinds);
+        return normalizationPolicy == VisualObservationNormalizationPolicy
+                .BOUNDED_ENUM_UNIQUE_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER
+                ? normalizeUniqueCompatibleParents(itemParents) : itemParents;
     }
 
     private static ClassifiedRegionKind regionKind(
@@ -1351,7 +1356,7 @@ final class VisualGroundingJsonCodec {
         for (var region : regions) {
             if (byId.putIfAbsent(region.regionId(), region) != null) {
                 return new ClassifiedObservationRegions(
-                        List.copyOf(regions), normalizedRegionKinds, 0, 0
+                        List.copyOf(regions), normalizedRegionKinds, 0, 0, 0
                 );
             }
         }
@@ -1382,6 +1387,120 @@ final class VisualGroundingJsonCodec {
             byId.put(item.regionId(), normalized);
             normalizedItemParents++;
         }
+        var normalizedReadingOrders = normalizeReadingOrders(regions, affectedParents);
+        return new ClassifiedObservationRegions(
+                List.copyOf(regions), normalizedRegionKinds,
+                normalizedItemParents, 0, normalizedReadingOrders
+        );
+    }
+
+    private static ClassifiedObservationRegions normalizeUniqueCompatibleParents(
+            ClassifiedObservationRegions source
+    ) {
+        var regions = new ArrayList<>(source.regions());
+        var byId = new HashMap<String, VisualRegion>();
+        for (var region : regions) {
+            if (byId.putIfAbsent(region.regionId(), region) != null) return source;
+        }
+        var replacements = new HashMap<String, String>();
+        var affectedParents = new LinkedHashSet<String>();
+        for (var region : regions) {
+            if (!invalidParentLink(region, byId)) continue;
+            if (region.parentRegionId() == null || region.kind() == VisualRegionKind.ROOT) {
+                return source;
+            }
+            var candidates = regions.stream()
+                    .filter(candidate -> compatibleParent(region, candidate))
+                    .filter(candidate -> strictlyContains(candidate, region))
+                    .filter(candidate -> !createsCycle(region.regionId(), candidate.regionId(), byId))
+                    .toList();
+            var minimal = candidates.stream().filter(candidate -> candidates.stream().noneMatch(other ->
+                    !other.regionId().equals(candidate.regionId())
+                            && strictlyContains(candidate, other)
+            )).toList();
+            if (minimal.size() != 1 || replacements.size() >= MAX_NORMALIZED_REGION_PARENTS) {
+                return source;
+            }
+            var replacement = minimal.getFirst().regionId();
+            replacements.put(region.regionId(), replacement);
+            affectedParents.add(region.parentRegionId());
+            affectedParents.add(replacement);
+        }
+        if (replacements.isEmpty()) return source;
+        for (var index = 0; index < regions.size(); index++) {
+            var region = regions.get(index);
+            var replacement = replacements.get(region.regionId());
+            if (replacement != null) {
+                regions.set(index, copyRegion(region, replacement, region.readingOrder()));
+            }
+        }
+        var normalizedReadingOrders = normalizeReadingOrders(regions, affectedParents);
+        try {
+            new VisualGroundingPlan(VisualGroundingPlan.VERSION, regions, List.of());
+        } catch (IllegalArgumentException ignored) {
+            return source;
+        }
+        return new ClassifiedObservationRegions(
+                List.copyOf(regions), source.normalizedRegionKinds(),
+                source.normalizedItemParents(), replacements.size(),
+                source.normalizedReadingOrders() + normalizedReadingOrders
+        );
+    }
+
+    private static boolean invalidParentLink(
+            VisualRegion region,
+            HashMap<String, VisualRegion> byId
+    ) {
+        if (region.parentRegionId() == null) return false;
+        var parent = byId.get(region.parentRegionId());
+        if (parent == null || parent.regionId().equals(region.regionId())) return true;
+        if (region.kind() == VisualRegionKind.ROOT) return true;
+        if (region.kind() == VisualRegionKind.ITEM
+                && (parent.kind() != VisualRegionKind.REPEATED_GROUP
+                || !Objects.equals(region.repeatGroupId(), parent.repeatGroupId()))) {
+            return true;
+        }
+        return !contains(parent, region);
+    }
+
+    private static boolean compatibleParent(VisualRegion child, VisualRegion candidate) {
+        if (child.regionId().equals(candidate.regionId())
+                || child.kind() == VisualRegionKind.ROOT
+                || !child.evidence().getFirst().artifactId().equals(
+                candidate.evidence().getFirst().artifactId())) {
+            return false;
+        }
+        if (child.kind() == VisualRegionKind.ITEM) {
+            return child.multiplicity() == VisualMultiplicity.ONE
+                    && child.repeatGroupId() != null
+                    && candidate.kind() == VisualRegionKind.REPEATED_GROUP
+                    && candidate.multiplicity() == VisualMultiplicity.MANY
+                    && Objects.equals(child.repeatGroupId(), candidate.repeatGroupId());
+        }
+        return (candidate.kind() == VisualRegionKind.SECTION
+                || candidate.kind() == VisualRegionKind.GROUP)
+                && candidate.multiplicity() == VisualMultiplicity.ONE
+                && candidate.repeatGroupId() == null;
+    }
+
+    private static boolean createsCycle(
+            String childId,
+            String candidateId,
+            HashMap<String, VisualRegion> byId
+    ) {
+        var current = byId.get(candidateId);
+        var visited = new LinkedHashSet<String>();
+        while (current != null) {
+            if (current.regionId().equals(childId) || !visited.add(current.regionId())) return true;
+            current = current.parentRegionId() == null ? null : byId.get(current.parentRegionId());
+        }
+        return false;
+    }
+
+    private static int normalizeReadingOrders(
+            ArrayList<VisualRegion> regions,
+            Set<String> affectedParents
+    ) {
         var normalizedReadingOrders = 0;
         for (var parentId : affectedParents) {
             var siblingIndexes = new ArrayList<Integer>();
@@ -1404,10 +1523,7 @@ final class VisualGroundingJsonCodec {
                 normalizedReadingOrders++;
             }
         }
-        return new ClassifiedObservationRegions(
-                List.copyOf(regions), normalizedRegionKinds,
-                normalizedItemParents, normalizedReadingOrders
-        );
+        return normalizedReadingOrders;
     }
 
     private static VisualRegion copyRegion(
@@ -1429,6 +1545,12 @@ final class VisualGroundingJsonCodec {
         var right = innerEvidence.boundingBox();
         return left.left() <= right.left() && left.top() <= right.top()
                 && left.right() >= right.right() && left.bottom() >= right.bottom();
+    }
+
+    private static boolean strictlyContains(VisualRegion outer, VisualRegion inner) {
+        return contains(outer, inner) && !outer.evidence().getFirst().boundingBox().equals(
+                inner.evidence().getFirst().boundingBox()
+        );
     }
 
     private static boolean contains(CandidateEvidence outer, CandidateEvidence inner) {
@@ -1694,6 +1816,7 @@ final class VisualGroundingJsonCodec {
             List<VisualRegion> regions,
             int normalizedRegionKinds,
             int normalizedItemParents,
+            int normalizedRegionParents,
             int normalizedReadingOrders
     ) { }
 
@@ -1753,6 +1876,7 @@ record GroundedElementInventory(
         VisualGroundingPlan grounding,
         int normalizedRegionKinds,
         int normalizedItemParents,
+        int normalizedRegionParents,
         int normalizedReadingOrders,
         int normalizedElementRegionOwners,
         int normalizedRepeatedItemSlotOwners
@@ -1762,6 +1886,8 @@ record GroundedElementInventory(
         Objects.requireNonNull(grounding, "grounding");
         if (normalizedRegionKinds < 0 || normalizedRegionKinds > grounding.regions().size()
                 || normalizedItemParents < 0 || normalizedItemParents > grounding.regions().size()
+                || normalizedRegionParents < 0
+                || normalizedRegionParents > grounding.regions().size()
                 || normalizedReadingOrders < 0
                 || normalizedReadingOrders > grounding.regions().size()
                 || normalizedElementRegionOwners < 0
@@ -1862,5 +1988,6 @@ enum VisualObservationNormalizationPolicy {
     STRICT,
     BOUNDED_ENUM_AND_UNIQUE_ITEM_PARENT,
     BOUNDED_ENUM_UNIQUE_ITEM_PARENT_AND_EVIDENCE_OWNER,
-    BOUNDED_ENUM_UNIQUE_ITEM_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER
+    BOUNDED_ENUM_UNIQUE_ITEM_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER,
+    BOUNDED_ENUM_UNIQUE_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER
 }

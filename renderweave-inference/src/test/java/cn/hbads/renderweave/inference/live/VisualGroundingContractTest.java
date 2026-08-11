@@ -311,6 +311,87 @@ class VisualGroundingContractTest {
     }
 
     @Test
+    void boundedRegionParentNormalizationUsesOnlyOneStrictCompatibleContainer()
+            throws Exception {
+        var rootOnly = elementsJson().replace(
+                "\"regionId\":\"header\",\"parentRegionId\":\"root\"",
+                "\"regionId\":\"header\",\"parentRegionId\":\"missing\""
+        );
+        assertEquals("VISUAL_GROUNDING_PARENT_INVALID", assertThrows(
+                InvalidVisualAnalysisException.class, () -> codec.parseElements(
+                        rootOnly, views(), List.of(IMAGE_ID),
+                        VisualObservationNormalizationPolicy
+                                .BOUNDED_ENUM_UNIQUE_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER
+                )
+        ).diagnosticCode());
+
+        var missingParent = parentNormalizationElementsJson("missing");
+        assertEquals("VISUAL_GROUNDING_PARENT_INVALID", assertThrows(
+                InvalidVisualAnalysisException.class, () -> codec.parseElements(
+                        missingParent, views(), List.of(IMAGE_ID),
+                        VisualObservationNormalizationPolicy
+                                .BOUNDED_ENUM_UNIQUE_ITEM_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER
+                )
+        ).diagnosticCode());
+
+        var normalizedMissing = codec.parseElements(
+                missingParent, views(), List.of(IMAGE_ID),
+                VisualObservationNormalizationPolicy
+                        .BOUNDED_ENUM_UNIQUE_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER
+        );
+        assertEquals("header-shell", normalizedMissing.grounding()
+                .requireRegion("header").parentRegionId());
+        assertEquals(1, normalizedMissing.normalizedRegionParents());
+
+        var outsideParent = parentNormalizationElementsJson("repeat");
+        assertEquals("VISUAL_GROUNDING_PARENT_CONTAINMENT_INVALID", assertThrows(
+                InvalidVisualAnalysisException.class, () -> codec.parseElements(
+                        outsideParent, views(), List.of(IMAGE_ID),
+                        VisualObservationNormalizationPolicy
+                                .BOUNDED_ENUM_UNIQUE_ITEM_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER
+                )
+        ).diagnosticCode());
+        var normalizedOutside = codec.parseElements(
+                outsideParent, views(), List.of(IMAGE_ID),
+                VisualObservationNormalizationPolicy
+                        .BOUNDED_ENUM_UNIQUE_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER
+        );
+        assertEquals("header-shell", normalizedOutside.grounding()
+                .requireRegion("header").parentRegionId());
+        assertEquals(1, normalizedOutside.normalizedRegionParents());
+    }
+
+    @Test
+    void boundedRegionParentNormalizationRejectsEqualMinimalOrRootCandidates()
+            throws Exception {
+        var ambiguous = elementsJson().replace(
+                "{\"regionId\":\"header\",\"parentRegionId\":\"root\",\"kind\":\"SECTION\",\"multiplicity\":\"ONE\",\"readingOrder\":0,\"repeatGroupId\":null,\"evidence\":[{\"viewId\":\"view-00-overview-00\",\"boundingBox\":{\"left\":0,\"top\":0,\"right\":10000,\"bottom\":2000}}]}",
+                "{\"regionId\":\"shell-a\",\"parentRegionId\":\"root\",\"kind\":\"GROUP\",\"multiplicity\":\"ONE\",\"readingOrder\":0,\"repeatGroupId\":null,\"evidence\":[{\"viewId\":\"view-00-overview-00\",\"boundingBox\":{\"left\":0,\"top\":0,\"right\":10000,\"bottom\":2000}}]},\n"
+                        + "{\"regionId\":\"shell-b\",\"parentRegionId\":\"shell-a\",\"kind\":\"GROUP\",\"multiplicity\":\"ONE\",\"readingOrder\":0,\"repeatGroupId\":null,\"evidence\":[{\"viewId\":\"view-00-overview-00\",\"boundingBox\":{\"left\":0,\"top\":0,\"right\":10000,\"bottom\":2000}}]},\n"
+                        + "{\"regionId\":\"header\",\"parentRegionId\":\"missing\",\"kind\":\"SECTION\",\"multiplicity\":\"ONE\",\"readingOrder\":0,\"repeatGroupId\":null,\"evidence\":[{\"viewId\":\"view-00-overview-00\",\"boundingBox\":{\"left\":100,\"top\":100,\"right\":9900,\"bottom\":1900}}]}"
+        );
+        assertEquals("VISUAL_GROUNDING_PARENT_INVALID", assertThrows(
+                InvalidVisualAnalysisException.class, () -> codec.parseElements(
+                        ambiguous, views(), List.of(IMAGE_ID),
+                        VisualObservationNormalizationPolicy
+                                .BOUNDED_ENUM_UNIQUE_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER
+                )
+        ).diagnosticCode());
+
+        var rootChild = elementsJson().replace(
+                "\"regionId\":\"root\",\"parentRegionId\":null",
+                "\"regionId\":\"root\",\"parentRegionId\":\"header\""
+        );
+        assertEquals("VISUAL_GROUNDING_ROOT_COUNT_INVALID", assertThrows(
+                InvalidVisualAnalysisException.class, () -> codec.parseElements(
+                        rootChild, views(), List.of(IMAGE_ID),
+                        VisualObservationNormalizationPolicy
+                                .BOUNDED_ENUM_UNIQUE_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER
+                )
+        ).diagnosticCode());
+    }
+
+    @Test
     void classifiesProviderLengthStopsWithoutInspectingOrPersistingPayload() {
         var response = new ProviderInferenceResponse(
                 "{\"partial\":true}", "request-1", "qwen3.8-max",
@@ -1484,6 +1565,13 @@ class VisualGroundingContractTest {
                   ]
                 }
                 """;
+    }
+
+    private static String parentNormalizationElementsJson(String parentRegionId) {
+        var header = "{\"regionId\":\"header\",\"parentRegionId\":\"root\",\"kind\":\"SECTION\",\"multiplicity\":\"ONE\",\"readingOrder\":0,\"repeatGroupId\":null,\"evidence\":[{\"viewId\":\"view-00-overview-00\",\"boundingBox\":{\"left\":0,\"top\":0,\"right\":10000,\"bottom\":2000}}]}";
+        var replacement = "{\"regionId\":\"header-shell\",\"parentRegionId\":\"root\",\"kind\":\"GROUP\",\"multiplicity\":\"ONE\",\"readingOrder\":0,\"repeatGroupId\":null,\"evidence\":[{\"viewId\":\"view-00-overview-00\",\"boundingBox\":{\"left\":0,\"top\":0,\"right\":10000,\"bottom\":2000}}]},\n"
+                + "{\"regionId\":\"header\",\"parentRegionId\":\"%s\",\"kind\":\"SECTION\",\"multiplicity\":\"ONE\",\"readingOrder\":0,\"repeatGroupId\":null,\"evidence\":[{\"viewId\":\"view-00-overview-00\",\"boundingBox\":{\"left\":100,\"top\":100,\"right\":9900,\"bottom\":1900}}]}".formatted(parentRegionId);
+        return elementsJson().replace(header, replacement);
     }
 
     private static String flatElementsJson() {
