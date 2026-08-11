@@ -19,8 +19,8 @@
   evidence-owned relationship region normalization、v21 unique connected relationship region normalization、v22
   unique exact-region GROUP-owner support normalization、v23 support-owner hybrid observation 与 v24 bounded
   observation normalization 实现已 clean A1；两次 v22 live 均未命中 hierarchy normalization，Flash v23/v24
-  已 CLOSED/A2 但各五次均停在 OBSERVE，v24 四次 enum + 一次 sibling-overlap 且三类 normalization telemetry
-  均未命中）；
+  已 CLOSED/A2 但各五次均停在 OBSERVE；Plus v24 已 CLOSED/A2 并完成三阶段，但 slot/binding 均 0 matched、
+  9 critical hallucinations、12 blockers；两次 v24 smoke 的 observation normalization telemetry 均未命中）；
   全部 live ledger `CLOSED`
 
 ## 四维执行配置
@@ -157,7 +157,8 @@ ledger 描述成外部强制门。
   evidence-owned relationship region normalization、v21 unique connected relationship region normalization、v22
   unique exact-region GROUP-owner support normalization、v23 support-owner hybrid observation 与 v24 bounded
   observation normalization 实现已 clean A1；Plus/Max v22 live 均未命中 hierarchy normalization，Flash v23 已
-  CLOSED/A2 且未通过 OBSERVE；Flash v24 也已 CLOSED/A2，五次仍在 OBSERVE 且 normalization telemetry 未命中。
+  CLOSED/A2 且未通过 OBSERVE；Flash v24 也已 CLOSED/A2，五次仍在 OBSERVE；Plus v24 已 CLOSED/A2 并再次
+  触达 BINDING，但质量未达门且 normalization telemetry 未命中。
 - AC：AC-VR-001..010、既有 AC-015..021。
 - 依赖：N6 clean gates；final exact identities 和新的 ledger；N2 用量已进入 aggregate guard。
 - 执行：已先以 `qwen3.7-flash-2026-07-15`、再以 `qwen3.7-plus` 做单 case reachability；Flash 停在
@@ -204,12 +205,12 @@ ledger 描述成外部强制门。
   并仅在同 artifact/包含 bbox/精确 repeatGroupId 候选唯一时修复 ITEM parent；受影响 readingOrder 由几何确定。
   未知 alias、零/多候选与结构增删继续 fail-closed。其 clean A1 与 Flash 单 case A2 已通过，但 Flash 输出未
   命中 normalization 且仍停在 OBSERVE；下一步只可在 fresh identity/Profile snapshot、精确 J1、剩余额度与有效
-  时限同时成立时做已获准的 Plus v24 单 case，再决定是否进入 20-case 与最佳模型 60-case/15 HOLDOUT；每批≤5，
-  模型间不得并发，Max 暂不调用。
+  时限同时成立时做已满足三阶段入口门的 Max v24 单 case，再决定是否进入 20-case 与最佳模型 60-case/15
+  HOLDOUT；每批≤5，模型间不得并发。
   旧 Flash 不再创建 assignment，Plus/Max model ID 不变。
 - policy：只有满足既有 AC-021 和 stage 门槛的 Profile 可成为默认；其他保持 EXPERIMENTAL。
 - 门控：server/web/e2e/runtime/full A1；独立 verifier A2；费用/Token/secret/payload scan；用户业务/视觉 J1。
-- 当前证据：guard/Profile `252dc00`、runner slot 修复 `0d7b73c`、guard v3 `2b23617`；十四份单 case live
+- 当前证据：guard/Profile `252dc00`、runner slot 修复 `0d7b73c`、guard v3 `2b23617`；十五份单 case live
   独立 verifier PASS；
   hierarchy repair `98ba3d0`、OBSERVE rewind `195894b` 与 evidence-derived cardinality `bb15096` 均已通过
   A1；`31a8c6f` 的 clean evidence 为 fast `20260811-050115`，受影响 server `20260811-045814`、web
@@ -234,7 +235,9 @@ ledger 描述成外部强制门。
   v23 Document Vision canary `20260811-080747` PASS，lifecycle 为 `0c1506f` → `9652837` → `1185890`，A2
   PASS。`061101f` 的 v24 contract/Profile 20/20、real-PG + independent verifier 2/2、clean server
   `20260811-082418`（193 tests、6 gated skip）A1 PASS；v24 lifecycle 为 `9d2dfa3` → `ded9e78` → `ac17e0e`，
-  Document Vision canary `20260811-084304`、独立 verifier A2 与 CLOSED clean fast `20260811-085018` PASS；
+  Document Vision canary `20260811-084304`、独立 verifier A2 与 CLOSED clean fast `20260811-085018` PASS；Plus
+  v24 lifecycle 为 `3598c12` → `963d1e6` → `4747947`，复用未变 canary 输入，独立 verifier A2 与 CLOSED
+  clean fast `20260811-085833` PASS；
   三份 ledger CLOSED。这些证据不能
   替代 final eval、final identity A2 或
   用户业务/视觉 J1。
@@ -245,12 +248,12 @@ ledger 描述成外部强制门。
 | 模型 | Goal cap | Goal exposed tokens | 剩余 tokens | attempts | list-price CNY cap | Goal cost |
 |---|---:|---:|---:|---:|---:|---:|
 | qwen3.8-max | 1,500,000 | 443,297 | 1,056,703 | 76 / 180 | 18.00 | 9.454404 |
-| qwen3.7-plus | 1,500,000 | 783,738 | 716,262 | 136 / 180 | 4.00 | 3.116058 |
+| qwen3.7-plus | 1,500,000 | 818,181 | 681,819 | 141 / 180 | 4.00 | 3.213606 |
 | Flash slot（旧 alias + `qwen3.7-flash-2026-07-15`） | 1,500,000 | 517,945 | 982,055 | 86 / 180 | 0.40 | 0.237813 |
 
-Goal guard v3 共 298 reservations：293 SETTLED、5 个历史 Plus RESERVED；没有 BREACHED。`2b23617` 只提高
+Goal guard v3 共 303 reservations：298 SETTLED、5 个历史 Plus RESERVED；没有 BREACHED。`2b23617` 只提高
 token cap，单 authorization 500,000、attempt/CNY cap 与所有历史 reservation 不变。Flash v24 新增 5 个
-SETTLED reservation；三份 visual ledger 均 `CLOSED`。
+SETTLED reservation，Plus v24 再新增 5 个 SETTLED reservation；三份 visual ledger 均 `CLOSED`。
 
 停止条件：任一 token/attempt/CNY cap、168h ledger expiry、Goal 完成、Provider refusal/Retry-After、identity
 drift、journal/guard 不一致、payload 边界失败或同一无新假设失败再次出现。停止只关闭后续调用；已结算费用

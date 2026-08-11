@@ -428,3 +428,22 @@ RESERVED），三份 ledger CLOSED。
 读取模型原文来猜值。Plus 已获用户许可且 v22 已到达 BINDING，故下一可区分假设是使用 fresh identity/snapshot
 做 Plus v24 单 case，验证同一 pipeline/OCR/bounded policy 的模型差异；在新信号出现前不扩大 final eval，也不
 调用 Max。
+
+## N7 Plus v24 smoke
+
+Plus v24 以 fresh identity `…9b077fb`、snapshot `fbf24e…deba0` 执行 `3598c12` PROPOSED → `963d1e6` OPEN →
+`4747947` CLOSED。负探针精确 NOT_OPEN，Goal state/guard 与 298 reservations 未变化。Document Vision 的代码、
+可执行文件、adapter 和 models 均未变，复用刚通过的 `.sdlc/evidence/20260811-084304-document-vision`。唯一
+wrapper exit 0、102.811 秒；ledger 在读取 evidence 前已 CLOSED。
+
+独立 verifier A2 重建出 1 completed、0 abandoned、5 SETTLED attempts、29,666 input + 4,777 output、
+90,132 ms、¥0.097548 增量和 payload scan PASS。OBSERVE accepted；两个 HIERARCHY rejection 后，第三个
+HIERARCHY 通过已存在的 `VISUAL_HIERARCHY_RELATIONSHIP_CARDINALITY_DERIVED` bounded telemetry accepted，随后
+ELEMENT_BINDING accepted。最终 group 1/3、entity 2/4、relationship 1/3，但 slot 0/10、binding 0/10、field
+1/13，9 critical hallucinations、12 blockers；三阶段可达不等于质量达标，v24 observation normalization 也仍未
+命中。
+
+Plus Goal 变为 141 attempts、818,181/1,500,000 tokens、¥3.213606；总账本 303 reservations（298 SETTLED、
+5 历史 Plus RESERVED），三份 ledger CLOSED。Profile 继续 `EXPERIMENTAL`。该结果满足 Max 的三阶段入口门，
+但只授权在 fresh identity/snapshot、精确 J1、Max attempts/token/CNY 与时限仍有效时做一个 Max v24 case；不
+直接扩大为 final eval。

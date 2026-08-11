@@ -1,6 +1,14 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-11 Plus product-v24 已按 `3598c12` PROPOSED → `963d1e6` OPEN → `4747947` CLOSED 完成单 case。
+  负探针精确 NOT_OPEN；复用未变的 Document Vision canary，唯一 wrapper exit 0、102.811 秒。独立 verifier A2
+  PASS：29,666 input + 4,777 output、90,132 ms、¥0.097548、payload scan PASS。OBSERVE accepted；两次
+  HIERARCHY rejection 后以 cardinality-derived telemetry accepted，ELEMENT_BINDING accepted。最终 group 1/3、
+  entity 2/4、relationship 1/3，但 slot/binding 均 0/10，另有 9 critical hallucinations、12 blockers；v24
+  observation normalization 未命中。Plus Goal 现为 141/180、818,181/1,500,000、¥3.213606；303 reservations
+  （298 SETTLED、5 历史 Plus RESERVED），三份 ledger CLOSED。CLOSED clean fast
+  `.sdlc/evidence/20260811-085833-fast` PASS；Profile 不晋级，三阶段门已满足但不直接扩大 final eval。
 - 2026-08-11 Flash product-v24 已按 `9d2dfa3` PROPOSED → `ded9e78` OPEN → `ac17e0e` CLOSED 完成单 case。
   负探针精确 NOT_OPEN；首次本地 canary 因变量名错误在 adapter 前 fail-closed，确认零进程/lease/Provider 后，
   精确 canary `.sdlc/evidence/20260811-084304-document-vision` PASS。唯一 wrapper exit 0、228.589 秒；独立
@@ -303,9 +311,9 @@
   HTTP failure 硬停与未晋级决策；全部 ledger CLOSED。
 - `plans/logs/P6-T6-5-N6.md`：bounded semantic verifier、stage-local repair、selected crops、payload-free UI、
   Flash v10–v12 A2 诊断、v15–v24 bounded verifier/observation 增量；Plus v22 首次三阶段可达但未晋级。
-- `plans/logs/P6-T6-5-N7.md`：pinned Flash/Goal guard v3、十四份单 case CLOSED/A2 reachability、v15–v24
-  bounded verifier/observation 增量；Plus/Max v22 均到 BINDING，Flash v23/v24 未通过 OBSERVE，质量未达门。
-- 当前恢复点：`phase/p6-visual-recognition-vnext` 的 `ac17e0e` Flash v24 CLOSED/A2；v24 实现为 `061101f`
+- `plans/logs/P6-T6-5-N7.md`：pinned Flash/Goal guard v3、十五份单 case CLOSED/A2 reachability、v15–v24
+  bounded verifier/observation 增量；Plus v24 已到 BINDING，Flash v23/v24 未通过 OBSERVE，质量仍未达门。
+- 当前恢复点：`phase/p6-visual-recognition-vnext` 的 `4747947` Plus v24 CLOSED/A2；v24 实现为 `061101f`
   clean server A1，guard v3 为 `2b23617` clean fast A1。编排 Goal `019fec8e-a851-7952-b49b-8be76a281a57`
-  因 turn interrupt 当前显示 `paused`，用户已明确继续同一 objective，未创建 replacement Goal。下一安全切片是
-  fresh exact Plus v24 单 case 前置核验；未满足则继续零 Provider 安全任务。
+  因 turn interrupt 当前显示 `paused`，用户已明确继续同一 objective，未创建 replacement Goal。三阶段入口门已
+  满足；下一安全切片是 fresh exact Max v24 单 case 前置核验，未满足则继续零 Provider 安全任务。
