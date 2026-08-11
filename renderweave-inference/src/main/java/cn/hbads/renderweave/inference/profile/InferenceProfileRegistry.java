@@ -149,12 +149,15 @@ public final class InferenceProfileRegistry {
             "inference-profiles/dashscope-qwen38-max-product-v40-hybrid-generic.json",
             "inference-profiles/dashscope-qwen37-flash-product-v41-hybrid-generic.json",
             "inference-profiles/dashscope-qwen37-plus-product-v41-hybrid-generic.json",
-            "inference-profiles/dashscope-qwen38-max-product-v41-hybrid-generic.json"
+            "inference-profiles/dashscope-qwen38-max-product-v41-hybrid-generic.json",
+            "inference-profiles/dashscope-qwen37-flash-product-v42-hybrid-generic.json",
+            "inference-profiles/dashscope-qwen37-plus-product-v42-hybrid-generic.json",
+            "inference-profiles/dashscope-qwen38-max-product-v42-hybrid-generic.json"
     );
     private static final java.util.List<String> PRODUCT_LIVE_PROFILE_IDS = java.util.List.of(
-            "dashscope-qwen37-plus-product-v41-hybrid-generic",
-            "dashscope-qwen38-max-product-v41-hybrid-generic",
-            "dashscope-qwen37-flash-product-v41-hybrid-generic"
+            "dashscope-qwen37-plus-product-v42-hybrid-generic",
+            "dashscope-qwen38-max-product-v42-hybrid-generic",
+            "dashscope-qwen37-flash-product-v42-hybrid-generic"
     );
     private static final java.util.List<String> VISUAL_NEXT_PROFILE_IDS = java.util.List.of(
             "dashscope-qwen37-flash-product-v5",
@@ -268,7 +271,10 @@ public final class InferenceProfileRegistry {
             "dashscope-qwen38-max-product-v40-hybrid-generic",
             "dashscope-qwen37-flash-product-v41-hybrid-generic",
             "dashscope-qwen37-plus-product-v41-hybrid-generic",
-            "dashscope-qwen38-max-product-v41-hybrid-generic"
+            "dashscope-qwen38-max-product-v41-hybrid-generic",
+            "dashscope-qwen37-flash-product-v42-hybrid-generic",
+            "dashscope-qwen37-plus-product-v42-hybrid-generic",
+            "dashscope-qwen38-max-product-v42-hybrid-generic"
     );
     private static final java.util.List<String> VISUAL_HYBRID_PROFILE_IDS = java.util.List.of(
             "dashscope-qwen37-flash-product-v7-hybrid-generic",
@@ -331,7 +337,10 @@ public final class InferenceProfileRegistry {
             "dashscope-qwen38-max-product-v40-hybrid-generic",
             "dashscope-qwen37-flash-product-v41-hybrid-generic",
             "dashscope-qwen37-plus-product-v41-hybrid-generic",
-            "dashscope-qwen38-max-product-v41-hybrid-generic"
+            "dashscope-qwen38-max-product-v41-hybrid-generic",
+            "dashscope-qwen37-flash-product-v42-hybrid-generic",
+            "dashscope-qwen37-plus-product-v42-hybrid-generic",
+            "dashscope-qwen38-max-product-v42-hybrid-generic"
     );
     private static final ObjectMapper JSON = JsonMapper.builder(
                     JsonFactory.builder().enable(StreamReadFeature.STRICT_DUPLICATE_DETECTION).build())

@@ -458,3 +458,17 @@ final 不调用。N6=`automated_verified`，N7/Goal 仍未完成；后续算法�
 - 红灯为 focused contract 编译失败；实现后 contract 1/1、v41 Registry 2/2、真实 PostgreSQL 五调用恢复
   1/1、API/policy/evidence 21/21、Node 24 Web 73/73 + typecheck/lint 均 PASS。整个节点显式关闭 live/key
   环境，Provider attempts/reservations=0；v41 仍为 `EXPERIMENTAL`，只能报告 `automated_verified`。
+
+### 2026-08-12 product-v42 bounded runtime envelope delta
+
+- 用户在确认 v41 live 前明确把上限改为七次 Provider call、每个 stage 360 秒、单步最多 16384 output tokens，
+  并要求任务累计成本不超过 ¥5；旧 J1 因此作废，未读取 Key、未启用 live、Provider attempts=0。
+- 不修改任何 v41 资源；新增三份 immutable product-v42 Profile，逐字继承 pipeline 4.28、Prompt 10/7/3、
+  Document Vision capability、模型/价格、0 repair、262144 bytes 和 ¥2 单次保守预留门。
+- Plus/Flash 有官方 64000 output-token capability，v42 固定为 16384；exact `qwen3.8-max` 无 advertised
+  output 上限，继续保持 8192，不以人工授权替代模型能力证据。
+- 新建 v42 run 强制 `costLimitMicrosCny=1..5,000,000`，Web 默认 ¥5；缺失或超限在创建/Provider 前
+  fail-closed。历史 run/retry 仍按保存的 Profile snapshot 与原成本边界恢复。
+- 产品目录切换到 Plus/Max/Flash v42，v41 保持不可变且退出新建入口。v42 仍为 `EXPERIMENTAL`，不继承
+  v41 的质量证据；live 前必须在新 revision 上重跑 clean full/Document Vision、重算 identity/snapshot 并取得
+  新的精确 J1。

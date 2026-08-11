@@ -65,7 +65,7 @@ final class InferenceController {
     private final CandidateJsonCodec candidateCodec = new CandidateJsonCodec();
     private final InferenceProfileRegistry profiles = new InferenceProfileRegistry();
     private final JsonStructuralProfiler structuralProfiler = new JsonStructuralProfiler();
-    private static final long MAXIMUM_RUN_COST_LIMIT_MICROS_CNY = 100_000_000L;
+    private static final long MAXIMUM_RUN_COST_LIMIT_MICROS_CNY = 5_000_000L;
     private static final int MAXIMUM_EXECUTION_LOG_EVENTS = 1_000;
 
     InferenceController(
@@ -182,7 +182,7 @@ final class InferenceController {
                 .toList();
         return new LiveAvailabilityResponse(
                 coordinator.liveEnabled(), provider.configured(), liveUploadsEnabled, "USER_PROVIDED",
-                false, MAXIMUM_RUN_COST_LIMIT_MICROS_CNY, items
+                true, MAXIMUM_RUN_COST_LIMIT_MICROS_CNY, items
         );
     }
 
@@ -225,11 +225,13 @@ final class InferenceController {
             throw new InvalidInferenceApiRequestException("Profile is not authorized for this live mode");
         }
         requireProfileReady(profile.profile());
-        if (request.costLimitMicrosCny() != null
-                && (request.costLimitMicrosCny() < 1
-                || request.costLimitMicrosCny() > MAXIMUM_RUN_COST_LIMIT_MICROS_CNY)) {
+        if (request.costLimitMicrosCny() == null) {
+            throw new InvalidInferenceApiRequestException("costLimitMicrosCny is required for product live runs");
+        }
+        if (request.costLimitMicrosCny() < 1
+                || request.costLimitMicrosCny() > MAXIMUM_RUN_COST_LIMIT_MICROS_CNY) {
             throw new InvalidInferenceApiRequestException(
-                    "costLimitMicrosCny must be 1.." + MAXIMUM_RUN_COST_LIMIT_MICROS_CNY + " when present"
+                    "costLimitMicrosCny must be 1.." + MAXIMUM_RUN_COST_LIMIT_MICROS_CNY
             );
         }
         var input = new InferenceInput(

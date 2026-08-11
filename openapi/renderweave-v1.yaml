@@ -1700,14 +1700,15 @@ components:
       type: object
       additionalProperties: false
       required:
-        [profileId, mode, inputClassification, externalTransferConfirmed, experimentalProfileConfirmed]
+        [profileId, mode, inputClassification, externalTransferConfirmed, experimentalProfileConfirmed,
+         costLimitMicrosCny]
       properties:
         profileId:
           type: string
           enum:
-            [dashscope-qwen37-plus-product-v41-hybrid-generic,
-             dashscope-qwen38-max-product-v41-hybrid-generic,
-             dashscope-qwen37-flash-product-v41-hybrid-generic]
+            [dashscope-qwen37-plus-product-v42-hybrid-generic,
+             dashscope-qwen38-max-product-v42-hybrid-generic,
+             dashscope-qwen37-flash-product-v42-hybrid-generic]
         mode:
           $ref: '#/components/schemas/InferenceMode'
         inputClassification:
@@ -1720,11 +1721,11 @@ components:
           type: boolean
           const: true
         costLimitMicrosCny:
-          type: [integer, 'null']
+          type: integer
           format: int64
           minimum: 1
-          maximum: 100000000
-          description: Optional cumulative ceiling for this run; null applies no additional run ceiling.
+          maximum: 5000000
+          description: Required cumulative ceiling for this run; the current product-live deployment caps it at CNY 5.
     LiveAvailabilityResponse:
       type: object
       additionalProperties: false
@@ -1744,11 +1745,11 @@ components:
           const: USER_PROVIDED
         runCostLimitRequired:
           type: boolean
-          const: false
+          const: true
         maximumRunCostLimitMicrosCny:
           type: integer
           format: int64
-          const: 100000000
+          const: 5000000
         profiles:
           type: array
           minItems: 3
@@ -1766,9 +1767,9 @@ components:
         profileId:
           type: string
           enum:
-            [dashscope-qwen37-plus-product-v41-hybrid-generic,
-             dashscope-qwen38-max-product-v41-hybrid-generic,
-             dashscope-qwen37-flash-product-v41-hybrid-generic]
+            [dashscope-qwen37-plus-product-v42-hybrid-generic,
+             dashscope-qwen38-max-product-v42-hybrid-generic,
+             dashscope-qwen37-flash-product-v42-hybrid-generic]
         provider:
           type: string
           const: DASHSCOPE

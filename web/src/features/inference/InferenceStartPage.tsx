@@ -39,7 +39,7 @@ export function InferenceStartPage() {
   return (
     <ResourceFrame
       title="新增识别输入"
-      description="上传设计图片，选择 v41 DashScope 模型与费用边界；提交后进入独立监控版面，不会直接发布或写入正式数据结构。"
+      description="上传设计图片，选择 v42 DashScope 模型与费用边界；提交后进入独立监控版面，不会直接发布或写入正式数据结构。"
       actions={<Link className="button ghost-button" to="/inference">返回历史任务</Link>}
       breadcrumbs={[{ label: '智能识别', to: '/inference' }, { label: '新增识别' }]}
     >
@@ -60,13 +60,13 @@ function LiveLauncher({
   query: UseQueryResult<LiveAvailabilityResponse, Error>;
   onCreated: (runId: string) => void;
 }) {
-  const [profileId, setProfileId] = useState<LiveProfileId>('dashscope-qwen37-plus-product-v41-hybrid-generic');
+  const [profileId, setProfileId] = useState<LiveProfileId>('dashscope-qwen37-plus-product-v42-hybrid-generic');
   const [images, setImages] = useState<File[]>([]);
   const [jsonSamples, setJsonSamples] = useState<File[]>([]);
   const [transferConfirmed, setTransferConfirmed] = useState(false);
   const [experimentalConfirmed, setExperimentalConfirmed] = useState(false);
-  const [costLimitEnabled, setCostLimitEnabled] = useState(false);
-  const [costLimitYuan, setCostLimitYuan] = useState('10.00');
+  const [costLimitEnabled, setCostLimitEnabled] = useState(true);
+  const [costLimitYuan, setCostLimitYuan] = useState('5.00');
   const selectedProfile = query.data?.profiles.find((item) => item.profileId === profileId);
   const profile = selectedProfile?.available
     ? selectedProfile
@@ -91,18 +91,24 @@ function LiveLauncher({
   const available = Boolean(
     query.data?.enabled && query.data.configured && uploadAuthorized && localVisionReady,
   );
+  const costLimitRequired = Boolean(query.data?.runCostLimitRequired);
   const costLimitMicrosCny = costLimitEnabled ? parseYuanMicros(costLimitYuan) : null;
-  const costLimitValid = !costLimitEnabled || (costLimitMicrosCny !== null
+  const costLimitValid = (!costLimitRequired && !costLimitEnabled) || (costLimitEnabled && costLimitMicrosCny !== null
     && costLimitMicrosCny <= (query.data?.maximumRunCostLimitMicrosCny ?? 0));
   const createRun = useMutation({
-    mutationFn: () => createLiveRunRequest(
-      activeProfileId,
-      mode,
-      activeFiles.images,
-      activeFiles.jsonSamples,
-      crypto.randomUUID(),
-      costLimitMicrosCny,
-    ),
+    mutationFn: () => {
+      if (!costLimitValid || costLimitMicrosCny === null) {
+        throw new Error('任务累计成本上限无效。');
+      }
+      return createLiveRunRequest(
+        activeProfileId,
+        mode,
+        activeFiles.images,
+        activeFiles.jsonSamples,
+        crypto.randomUUID(),
+        costLimitMicrosCny,
+      );
+    },
     onSuccess: (run) => onCreated(run.runId),
   });
 
@@ -127,7 +133,7 @@ function LiveLauncher({
                   ? '当前部署未开放文件传输'
                   : !query.data.enabled || !query.data.configured
                     ? 'DashScope 运行配置尚未就绪'
-                    : 'v41 本地 OCR / Layout 能力尚未就绪'}</strong>
+                    : 'v42 本地 OCR / Layout 能力尚未就绪'}</strong>
                 <span>{!uploadAuthorized
                   ? '请使用 live Compose 配置启动服务；选择文件、预览和切换模型都不会触发调用。'
                   : !query.data.enabled || !query.data.configured
@@ -212,9 +218,10 @@ function LiveLauncher({
                   <input
                     type="checkbox"
                     checked={costLimitEnabled}
+                    disabled={costLimitRequired}
                     onChange={(event) => setCostLimitEnabled(event.target.checked)}
                   />
-                  <span><strong>设置本次任务成本上限</strong><small>累计覆盖首次识别与最多两次修复。</small></span>
+                  <span><strong>设置本次任务成本上限</strong><small>当前部署要求累计覆盖全部串行阶段与受控重试。</small></span>
                 </label>
                 {costLimitEnabled
                   ? <div className={costLimitValid ? 'live-cost-input' : 'live-cost-input invalid'}>
@@ -230,7 +237,7 @@ function LiveLauncher({
                         onChange={(event) => setCostLimitYuan(event.target.value)}
                       />
                     </div>
-                  : <p>不设置本次上限；仍受单次预留上界与最多 3 次调用约束。</p>}
+                  : <p>不设置本次上限；仍受单次预留上界与最多 {profile?.maximumTotalCalls ?? 0} 次调用约束。</p>}
                 {costLimitEnabled && !costLimitValid && (
                   <em role="alert">请输入大于 0 且不超过 ¥{formatYuan(query.data.maximumRunCostLimitMicrosCny)} 的金额。</em>
                 )}
@@ -252,7 +259,7 @@ function LiveLauncher({
                 <Upload aria-hidden="true" size={16} />{createRun.isPending ? '正在创建任务…' : '排队识别并查看监控'}
               </button>
               {!profileAvailable
-                ? <p className="live-input-hint">所选 v41 Profile 的本地 OCR / Layout capability 未就绪，任务不会排队。</p>
+                ? <p className="live-input-hint">所选 v42 Profile 的本地 OCR / Layout capability 未就绪，任务不会排队。</p>
                 : !profileSupportsMode
                 ? <p className="live-input-hint">所选模型配置不支持当前输入模式，请切换模型或模式。</p>
                 : !modeReady && <p className="live-input-hint">请按当前模式添加必需文件。</p>}

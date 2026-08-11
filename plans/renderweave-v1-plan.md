@@ -929,3 +929,15 @@ attempts/reservations 均为 0。
 focused contract、Profile、真实 PostgreSQL 五调用恢复、API/policy/evidence 与 Node 24 Web 回归均通过，
 实现期间 Provider attempts/reservations=0。当前只达到 `automated_verified`；product-v41 仍
 `EXPERIMENTAL`，N7/Goal=`in_progress`，不得复用旧授权进行 live。
+
+### product-v42 受控运行边界
+
+用户在 v41 启动前把授权边界调整为 7 calls、360 秒/stage、单步最多 16384 output tokens，并要求每个新任务累计
+费用硬上限不超过 ¥5。Plus/Flash 固定 16384；Max 因 exact-alias capability 尚无 advertised output 上限，
+继续 fail-closed 保持 8192。实现采用 additive product-v42 Profile，不修改 v41；复用 pipeline 4.28 和全部严格
+视觉合同，保留 ¥2 单次预留、0 repair、262144 bytes 与 600 秒 lease。新建 v42 run 强制
+`costLimitMicrosCny=1..5,000,000`，产品目录切到 Plus/Max/Flash v42。
+
+该反提案使旧 v41 J1 失效。完成新 revision 的 clean full/Document Vision、fresh identity/Profile snapshot
+与新的精确 J1 前，live/key 保持关闭且 Provider attempts=0；v42 仍为 `EXPERIMENTAL`，N7/Goal 继续
+`in_progress`。

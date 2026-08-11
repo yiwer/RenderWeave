@@ -98,7 +98,7 @@ class LiveInferenceApiTest {
         var metadata = new MockMultipartFile(
                 "metadata", "metadata.json", MediaType.APPLICATION_JSON_VALUE,
                 """
-                        {"profileId":"dashscope-qwen37-plus-product-v41-hybrid-generic","mode":"IMAGE_ONLY",
+                        {"profileId":"dashscope-qwen37-plus-product-v42-hybrid-generic","mode":"IMAGE_ONLY",
                          "inputClassification":"USER_PROVIDED","externalTransferConfirmed":true,
                          "experimentalProfileConfirmed":true,"costLimitMicrosCny":250000}
                         """.getBytes(StandardCharsets.UTF_8)
@@ -110,7 +110,7 @@ class LiveInferenceApiTest {
                         .file(metadata).file(image)
                         .header("Idempotency-Key", "live-api-synthetic"))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.profileId").value("dashscope-qwen37-plus-product-v41-hybrid-generic"))
+                .andExpect(jsonPath("$.profileId").value("dashscope-qwen37-plus-product-v42-hybrid-generic"))
                 .andExpect(jsonPath("$.costLimitMicrosCny").value(250000))
                 .andReturn().getResponse().getContentAsString();
         var runId = UUID.fromString(json.readTree(response).path("runId").asText());
@@ -135,9 +135,9 @@ class LiveInferenceApiTest {
         var metadata = new MockMultipartFile(
                 "metadata", "metadata.json", MediaType.APPLICATION_JSON_VALUE,
                 """
-                        {"profileId":"dashscope-qwen37-plus-product-v41-hybrid-generic","mode":"IMAGE_ONLY",
+                        {"profileId":"dashscope-qwen37-plus-product-v42-hybrid-generic","mode":"IMAGE_ONLY",
                          "inputClassification":"USER_PROVIDED","externalTransferConfirmed":true,
-                         "experimentalProfileConfirmed":true}
+                         "experimentalProfileConfirmed":true,"costLimitMicrosCny":5000000}
                         """.getBytes(StandardCharsets.UTF_8)
         );
         var image = new MockMultipartFile(
@@ -180,9 +180,9 @@ class LiveInferenceApiTest {
         var metadata = new MockMultipartFile(
                 "metadata", "metadata.json", MediaType.APPLICATION_JSON_VALUE,
                 """
-                        {"profileId":"dashscope-qwen37-plus-product-v41-hybrid-generic","mode":"IMAGE_ONLY",
+                        {"profileId":"dashscope-qwen37-plus-product-v42-hybrid-generic","mode":"IMAGE_ONLY",
                          "inputClassification":"USER_PROVIDED","externalTransferConfirmed":true,
-                         "experimentalProfileConfirmed":true,"costLimitMicrosCny":100000001}
+                         "experimentalProfileConfirmed":true,"costLimitMicrosCny":5000001}
                         """.getBytes(StandardCharsets.UTF_8)
         );
         var image = new MockMultipartFile(
@@ -200,11 +200,11 @@ class LiveInferenceApiTest {
     }
 
     @Test
-    void productUploadAcceptsAnOmittedRunCostLimit() throws Exception {
+    void productUploadRejectsAnOmittedRunCostLimit() throws Exception {
         var metadata = new MockMultipartFile(
                 "metadata", "metadata.json", MediaType.APPLICATION_JSON_VALUE,
                 """
-                        {"profileId":"dashscope-qwen37-plus-product-v41-hybrid-generic","mode":"IMAGE_ONLY",
+                        {"profileId":"dashscope-qwen37-plus-product-v42-hybrid-generic","mode":"IMAGE_ONLY",
                          "inputClassification":"USER_PROVIDED","externalTransferConfirmed":true,
                          "experimentalProfileConfirmed":true}
                         """.getBytes(StandardCharsets.UTF_8)
@@ -212,21 +212,14 @@ class LiveInferenceApiTest {
         var image = new MockMultipartFile(
                 "images", "sample.png", MediaType.IMAGE_PNG_VALUE, smallValidPng()
         );
-        var response = mockMvc.perform(multipart("/api/v1/inference-runs/live")
+        mockMvc.perform(multipart("/api/v1/inference-runs/live")
                         .file(metadata).file(image)
                         .header("Idempotency-Key", "live-api-no-run-limit"))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.costLimitMicrosCny").doesNotExist())
-                .andReturn().getResponse().getContentAsString();
-        var runId = UUID.fromString(json.readTree(response).path("runId").asText());
+                .andExpect(status().isBadRequest());
 
-        var deadline = System.nanoTime() + java.time.Duration.ofSeconds(5).toNanos();
-        while (System.nanoTime() < deadline
-                && runs.find(runId).orElseThrow().state() != InferenceRunState.REVIEW_REQUIRED) {
-            Thread.sleep(20);
-        }
-        assertThat(runs.find(runId).orElseThrow().costLimitMicrosCny()).isNull();
-        assertThat(runs.find(runId).orElseThrow().state()).isEqualTo(InferenceRunState.REVIEW_REQUIRED);
+        assertThat(jdbcClient.sql("select count(*) from inference_run").query(Long.class).single()).isZero();
+        assertThat(jdbcClient.sql("select count(*) from inference_provider_reservation")
+                .query(Long.class).single()).isZero();
     }
 
     private static byte[] largeValidPng() throws Exception {

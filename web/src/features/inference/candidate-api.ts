@@ -53,7 +53,7 @@ export async function createLiveRunRequest(
   images: File[],
   jsonSamples: File[],
   idempotencyKey: string,
-  costLimitMicrosCny: number | null,
+  costLimitMicrosCny: number,
 ): Promise<InferenceRunResponse> {
   const body = new FormData();
   body.append('metadata', new Blob([JSON.stringify({

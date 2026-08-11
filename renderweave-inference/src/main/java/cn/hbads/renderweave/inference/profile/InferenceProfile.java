@@ -492,6 +492,17 @@ public record InferenceProfile(
                 && documentVisionCapabilityId != null
                 && documentVisionCapabilityId.matches("[a-z0-9][a-z0-9._:-]{0,190}")
                 && profileId.endsWith("-product-v41-hybrid-generic");
+        var productPromptV42 = InferencePromptRegistry.SCHEMA_CANDIDATE_V5.equals(promptVersion)
+                && InferencePromptRegistry.VISUAL_ELEMENTS_V10.equals(elementPromptVersion)
+                && InferencePromptRegistry.VISUAL_HIERARCHY_V7.equals(hierarchyPromptVersion)
+                && InferencePromptRegistry.VISUAL_BINDINGS_V3.equals(bindingPromptVersion)
+                && InferencePromptRegistry.VISUAL_HINT_GENERIC_V1.equals(visualHintPackVersion)
+                && InferencePromptRegistry.DOCUMENT_VISION_OBSERVATIONS_V1.equals(
+                        documentVisionPromptVersion
+                )
+                && documentVisionCapabilityId != null
+                && documentVisionCapabilityId.matches("[a-z0-9][a-z0-9._:-]{0,190}")
+                && profileId.endsWith("-product-v42-hybrid-generic");
         var serialVisualPipeline = "renderweave-inference-pipeline/3.0".equals(pipelineVersion)
                 || "renderweave-inference-pipeline/4.0".equals(pipelineVersion)
                 || "renderweave-inference-pipeline/4.1".equals(pipelineVersion)
@@ -650,7 +661,7 @@ public record InferenceProfile(
                 || ("renderweave-inference-pipeline/4.27".equals(pipelineVersion)
                 && productPromptV40)
                 || ("renderweave-inference-pipeline/4.28".equals(pipelineVersion)
-                && productPromptV41));
+                && (productPromptV41 || productPromptV42)));
         if (!(legacySyntheticPrompt || productPrompt)
                 || !"JSON_OBJECT".equals(responseFormat)
                 || thinkingEnabled || toolsAllowed || remoteMediaAllowed) {
@@ -660,7 +671,7 @@ public record InferenceProfile(
                 || "USER_CONFIRMED".equals(inputClassification))) {
             throw new IllegalArgumentException("Live input classification is not approved");
         }
-        var maximumApprovedCalls = serialVisualPipeline ? 5 : 3;
+        var maximumApprovedCalls = productPromptV42 ? 7 : serialVisualPipeline ? 5 : 3;
         if (maximumTotalCalls > maximumApprovedCalls || maximumEstimatedCostMicrosCny <= 0
                 || inputMicrosCnyPerMillionTokens <= 0 || outputMicrosCnyPerMillionTokens <= 0) {
             throw new IllegalArgumentException("Live call and cost budgets must be bounded and priced");
@@ -691,7 +702,8 @@ public record InferenceProfile(
                 || productPromptV38 && stageTimeoutSeconds != 240
                 || productPromptV39 && stageTimeoutSeconds != 240
                 || productPromptV40 && stageTimeoutSeconds != 240
-                || productPromptV41 && stageTimeoutSeconds != 240) {
+                || productPromptV41 && stageTimeoutSeconds != 240
+                || productPromptV42 && stageTimeoutSeconds != 360) {
             throw new IllegalArgumentException("Product serial profile timeout must match its immutable version");
         }
         if (!pricingEffectiveDate.matches("\\d{4}-\\d{2}-\\d{2}")) {

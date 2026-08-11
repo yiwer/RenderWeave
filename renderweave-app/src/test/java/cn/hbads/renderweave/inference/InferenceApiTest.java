@@ -294,15 +294,16 @@ class InferenceApiTest {
                 .andExpect(jsonPath("$.configured").value(false))
                 .andExpect(jsonPath("$.uploadEnabled").value(false))
                 .andExpect(jsonPath("$.inputClassification").value("USER_PROVIDED"))
-                .andExpect(jsonPath("$.runCostLimitRequired").value(false))
-                .andExpect(jsonPath("$.maximumRunCostLimitMicrosCny").value(100_000_000))
+                .andExpect(jsonPath("$.runCostLimitRequired").value(true))
+                .andExpect(jsonPath("$.maximumRunCostLimitMicrosCny").value(5_000_000))
                 .andExpect(jsonPath("$.profiles.length()").value(3))
                 .andExpect(jsonPath("$.profiles[0].profileId")
-                        .value("dashscope-qwen37-plus-product-v41-hybrid-generic"))
+                        .value("dashscope-qwen37-plus-product-v42-hybrid-generic"))
                 .andExpect(jsonPath("$.profiles[0].available").value(false))
                 .andExpect(jsonPath("$.profiles[0].unavailabilityCode")
                         .value("DOCUMENT_VISION_DISABLED"))
-                .andExpect(jsonPath("$.profiles[0].maximumTotalCalls").value(5))
+                .andExpect(jsonPath("$.profiles[0].maximumTotalCalls").value(7))
+                .andExpect(jsonPath("$.profiles[0].maximumOutputTokens").value(16_384))
                 .andExpect(jsonPath("$.profiles[0].maximumEstimatedCostMicrosCny")
                         .value(2_000_000))
                 .andExpect(jsonPath("$.profiles[1].maximumEstimatedCostMicrosCny")
@@ -310,7 +311,7 @@ class InferenceApiTest {
                 .andExpect(jsonPath("$.profiles[2].maximumEstimatedCostMicrosCny")
                         .value(2_000_000))
                 .andExpect(jsonPath("$.profiles[2].profileId")
-                        .value("dashscope-qwen37-flash-product-v41-hybrid-generic"))
+                        .value("dashscope-qwen37-flash-product-v42-hybrid-generic"))
                 .andExpect(jsonPath("$.profiles[?(@.model == 'qwen3.7-flash')]").exists())
                 .andExpect(jsonPath("$.profiles[?(@.model == 'qwen3.7-plus')]").exists())
                 .andExpect(jsonPath("$.profiles[?(@.model == 'qwen3.8-max')]").exists())
@@ -326,7 +327,7 @@ class InferenceApiTest {
         var metadata = new MockMultipartFile(
                 "metadata", "metadata.json", MediaType.APPLICATION_JSON_VALUE,
                 """
-                        {"profileId":"dashscope-qwen37-plus-product-v41-hybrid-generic","mode":"IMAGE_ONLY",
+                        {"profileId":"dashscope-qwen37-plus-product-v42-hybrid-generic","mode":"IMAGE_ONLY",
                          "inputClassification":"USER_PROVIDED","externalTransferConfirmed":true,
                          "experimentalProfileConfirmed":true}
                         """.getBytes(java.nio.charset.StandardCharsets.UTF_8)

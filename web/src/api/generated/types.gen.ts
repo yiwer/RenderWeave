@@ -330,15 +330,15 @@ export type CreateReplayRunRequest = {
 };
 
 export type CreateLiveRunRequest = {
-    profileId: 'dashscope-qwen37-plus-product-v41-hybrid-generic' | 'dashscope-qwen38-max-product-v41-hybrid-generic' | 'dashscope-qwen37-flash-product-v41-hybrid-generic';
+    profileId: 'dashscope-qwen37-plus-product-v42-hybrid-generic' | 'dashscope-qwen38-max-product-v42-hybrid-generic' | 'dashscope-qwen37-flash-product-v42-hybrid-generic';
     mode: InferenceMode;
     inputClassification: 'USER_PROVIDED';
     externalTransferConfirmed: true;
     experimentalProfileConfirmed: true;
     /**
-     * Optional cumulative ceiling for this run; null applies no additional run ceiling.
+     * Required cumulative ceiling for this run; the current product-live deployment caps it at CNY 5.
      */
-    costLimitMicrosCny?: number | null;
+    costLimitMicrosCny: number;
 };
 
 export type LiveAvailabilityResponse = {
@@ -349,8 +349,8 @@ export type LiveAvailabilityResponse = {
      */
     uploadEnabled: boolean;
     inputClassification: 'USER_PROVIDED';
-    runCostLimitRequired: false;
-    maximumRunCostLimitMicrosCny: 100000000;
+    runCostLimitRequired: true;
+    maximumRunCostLimitMicrosCny: 5000000;
     profiles: [
         LiveProfileResponse,
         LiveProfileResponse,
@@ -359,7 +359,7 @@ export type LiveAvailabilityResponse = {
 };
 
 export type LiveProfileResponse = {
-    profileId: 'dashscope-qwen37-plus-product-v41-hybrid-generic' | 'dashscope-qwen38-max-product-v41-hybrid-generic' | 'dashscope-qwen37-flash-product-v41-hybrid-generic';
+    profileId: 'dashscope-qwen37-plus-product-v42-hybrid-generic' | 'dashscope-qwen38-max-product-v42-hybrid-generic' | 'dashscope-qwen37-flash-product-v42-hybrid-generic';
     provider: 'DASHSCOPE';
     model: 'qwen3.7-plus' | 'qwen3.8-max' | 'qwen3.7-flash';
     certification: 'EXPERIMENTAL';

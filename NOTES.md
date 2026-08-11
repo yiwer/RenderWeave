@@ -906,3 +906,18 @@
 - focused contract 1/1、Registry 2/2、真实 PostgreSQL 五调用恢复 1/1、API/policy/evidence 21/21、正式
   Node 24 Web 73/73 + typecheck/lint 均 PASS。实现期间 live/key 环境关闭且 Provider=0；状态为
   `automated_verified`，任何 v41 live 都需要新的 exact J1。
+
+### product-v42 受控运行边界
+
+- 用户在尚未执行 v41 J1 时把边界改为最多 7 次 Provider call、360 秒/stage、单步最多 16384 output
+  tokens，并要求任务累计成本不超过 ¥5；旧 v41 J1 因此失效，未读取 Key、未启用 live、Provider=0。
+- 三份 additive immutable product-v42 Profile 复用 pipeline 4.28 与全部视觉合同。Plus/Flash 固定
+  16384 output tokens；Max 因 exact-alias capability 尚无 advertised output 上限，fail-closed 保持 8192。
+  ¥2 单次保守预留、0 repair、262144 bytes、600 秒 lease 均不变。
+- 产品目录/API/OpenAPI/generated client/Web 切换到 v42；新 run 强制 `costLimitMicrosCny=1..5,000,000`，
+  Web 默认 ¥5，缺失或超限在 run/reservation/Provider 前拒绝。v41 及更早 snapshot 保持不可变且历史 retry
+  不升级。
+- 受影响门控已通过：Profile/capability 4/4、API/policy/evidence 21/21、Node 24 Web 73/73、服务端
+  inference 197/197 + app 229/229（6 skipped）、Playwright 19/19（1 live replay skipped）与原型审计。
+  当前仅为 `automated_verified`；还需在固定 clean revision 上完成 full/Document Vision、fresh identity/
+  snapshot 和新的精确 J1，才允许启动 live-enabled 应用。

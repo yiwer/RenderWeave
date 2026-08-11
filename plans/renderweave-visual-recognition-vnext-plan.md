@@ -901,3 +901,13 @@ N6=`automated_verified`、N7/Goal=`in_progress`；Plus/Max/final 不启动，Goa
 - focused contract、Profile、真实 PostgreSQL五步恢复、API/policy/evidence 与正式 Node 24 Web 均已通过；
   真实 PostgreSQL 合成路径在同一五调用预算内到达 `REVIEW_REQUIRED`。本节点 Provider=0，v41 保持
   `EXPERIMENTAL`、N6=`automated_verified`、N7/Goal=`in_progress`；任何 live 需要新的 exact J1。
+
+### product-v42 bounded runtime envelope checkpoint
+
+- 用户对尚未执行的 v41 J1 提出新边界：最多 7 calls、360 秒/stage、单步最多 16384 output tokens、任务累计 ¥5。
+  Plus/Flash 固定 16384；Max 因 exact-alias capability 尚无 advertised output 上限，保持 8192。v41 保持冻结，
+  新增 v42 successor；pipeline/Prompt/Document Vision/semantic verifier 与 ¥2 单次预留不变。
+- 新建 v42 run 的累计成本门改为服务端 required 1..5,000,000 micros CNY，Web 默认 ¥5；历史 snapshot/
+  retry 不升级。产品目录切换到 Plus/Max/Flash v42，仍无跨模型 fallback。
+- 本节点只允许离线实现、合成回归、clean full/Document Vision 和 fresh identity/snapshot；在新的精确 J1
+  完成前 Key/live 保持关闭，Provider attempts 必须为 0。v42=`EXPERIMENTAL`，N7/Goal=`in_progress`。

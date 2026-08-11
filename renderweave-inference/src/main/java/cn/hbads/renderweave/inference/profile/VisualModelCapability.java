@@ -97,6 +97,11 @@ public record VisualModelCapability(
 
     void requireCompatible(InferenceProfile profile) {
         Objects.requireNonNull(profile, "profile");
+        var productV42 = profile.profileId().endsWith("-product-v42-hybrid-generic");
+        var requiredOutputTokens = productV42 && advertisedMaximumOutputTokens != null
+                ? Math.min(16_384, advertisedMaximumOutputTokens)
+                : productMaximumOutputTokens;
+        var requiredStageTimeoutSeconds = productV42 ? 360 : productStageTimeoutSeconds;
         if (!provider.equals(profile.provider()) || !model.equals(profile.model())
                 || !providerProtocol.equals(profile.providerProtocol())
                 || !"JSON_OBJECT".equals(profile.responseFormat())
@@ -133,8 +138,8 @@ public record VisualModelCapability(
                 || !profile.supportedModes().equals(List.of(
                 cn.hbads.renderweave.inference.input.InferenceMode.IMAGE_ONLY
         ))
-                || profile.maximumOutputTokens() != productMaximumOutputTokens
-                || profile.stageTimeoutSeconds() != productStageTimeoutSeconds) {
+                || profile.maximumOutputTokens() != requiredOutputTokens
+                || profile.stageTimeoutSeconds() != requiredStageTimeoutSeconds) {
             throw new IllegalArgumentException("Visual-next Profile does not match its model capability");
         }
     }

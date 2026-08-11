@@ -501,7 +501,7 @@ test('preflights a local upload queue while the deployment transfer gate is clos
   expect(livePosts).toBe(0);
 });
 
-test('offers the v41 image catalog with Plus selected and an optional cumulative run cost ceiling', async ({ page }) => {
+test('offers the v42 image catalog with Plus selected and a five-yuan default run cost ceiling', async ({ page }) => {
   let livePosts = 0;
   let multipartBody = '';
   await page.route('**/api/v1/inference-runs**', async (route) => {
@@ -518,7 +518,7 @@ test('offers the v41 image catalog with Plus selected and an optional cumulative
       multipartBody = request.postDataBuffer()?.toString('utf8') ?? '';
       await json(route, {
         ...runResponse(0, 'QUEUED'),
-        profileId: 'dashscope-qwen37-plus-product-v41-hybrid-generic',
+        profileId: 'dashscope-qwen37-plus-product-v42-hybrid-generic',
         sourceReference: 'user-upload',
         costLimitMicrosCny: 250000,
       }, 201);
@@ -541,8 +541,8 @@ test('offers the v41 image catalog with Plus selected and an optional cumulative
     mimeType: 'image/png',
     buffer: Buffer.from('synthetic-station-board'),
   });
-  await page.getByRole('checkbox', { name: /设置本次任务成本上限/ }).check();
   const costInput = page.getByRole('spinbutton', { name: '本次任务成本上限' });
+  await expect(costInput).toHaveValue('5.00');
   await costInput.fill('0');
   await expect(page.getByRole('button', { name: '排队识别并查看监控' })).toBeDisabled();
   await costInput.fill('0.25');
@@ -556,7 +556,7 @@ test('offers the v41 image catalog with Plus selected and an optional cumulative
   expect(multipartBody).toContain('"costLimitMicrosCny":250000');
 });
 
-test('blocks v41 before queueing when the exact local vision capability is unavailable', async ({ page }) => {
+test('blocks v42 before queueing when the exact local vision capability is unavailable', async ({ page }) => {
   let livePosts = 0;
   await page.route('**/api/v1/inference-runs**', async (route) => {
     const request = route.request();
@@ -584,7 +584,7 @@ test('blocks v41 before queueing when the exact local vision capability is unava
   });
 
   await page.goto('/inference/new');
-  await expect(page.getByText('v41 本地 OCR / Layout 能力尚未就绪')).toBeVisible();
+  await expect(page.getByText('v42 本地 OCR / Layout 能力尚未就绪')).toBeVisible();
   await expect(page.locator('.live-profile-grid button')).toHaveCount(3);
   await expect(page.locator('.live-profile-grid button:disabled')).toHaveCount(3);
   await expect(page.getByRole('button', { name: '排队识别并查看监控' })).toBeDisabled();
@@ -898,6 +898,7 @@ function liveAvailability(enabled = false) {
     profileId: string,
     model: string,
     supportedModes: Array<'IMAGE_ONLY' | 'JSON_ONLY' | 'COMBINED'>,
+    maximumOutputTokens = 16384,
   ) => ({
     profileId,
     provider: 'DASHSCOPE',
@@ -906,8 +907,8 @@ function liveAvailability(enabled = false) {
     available: true,
     unavailabilityCode: null,
     supportedModes,
-    maximumTotalCalls: 5,
-    maximumOutputTokens: 4096,
+    maximumTotalCalls: 7,
+    maximumOutputTokens,
     maximumEstimatedCostMicrosCny: 2000000,
     pricingEffectiveDate: '2026-08-10',
   });
@@ -916,12 +917,12 @@ function liveAvailability(enabled = false) {
     configured: enabled,
     uploadEnabled: enabled,
     inputClassification: 'USER_PROVIDED',
-    runCostLimitRequired: false,
-    maximumRunCostLimitMicrosCny: 100000000,
+    runCostLimitRequired: true,
+    maximumRunCostLimitMicrosCny: 5000000,
     profiles: [
-      profile('dashscope-qwen37-plus-product-v41-hybrid-generic', 'qwen3.7-plus', ['IMAGE_ONLY']),
-      profile('dashscope-qwen38-max-product-v41-hybrid-generic', 'qwen3.8-max', ['IMAGE_ONLY']),
-      profile('dashscope-qwen37-flash-product-v41-hybrid-generic', 'qwen3.7-flash', ['IMAGE_ONLY']),
+      profile('dashscope-qwen37-plus-product-v42-hybrid-generic', 'qwen3.7-plus', ['IMAGE_ONLY']),
+      profile('dashscope-qwen38-max-product-v42-hybrid-generic', 'qwen3.8-max', ['IMAGE_ONLY'], 8192),
+      profile('dashscope-qwen37-flash-product-v42-hybrid-generic', 'qwen3.7-flash', ['IMAGE_ONLY']),
     ],
   };
 }
