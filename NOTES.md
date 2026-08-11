@@ -780,3 +780,25 @@
   ledger CLOSED。v38 仍 `EXPERIMENTAL`、N6=`automated_verified`、N7/Goal=`in_progress`；Plus/Max/
   final 20/60 不启动。下一安全切片只可用 repository synthetic 反例研究 reading-order gap 的确定性
   canonicalization；unknown member 与 invalid enum 不授权读取 payload 或放宽 JSON/enum 合同。
+
+### v39 bounded sibling reading-order offline checkpoint
+
+- pipeline 4.26/product-v39 只处理非 ROOT sibling set：既有 reading-order 必须互异、按该值排序必须与
+  `(top,left,regionId)` 的 canonical 空间顺序完全一致、且序号确有间隙；最多改变 8 个既有序号并压紧为
+  `0..n-1`，重建完整 `VisualGroundingPlan` 失败则原子返回原输入。duplicate/tie、反向/位置不一致、root
+  gap、missing parent、cycle、topology/overlap/ownership failure 均保持原 fixed code。
+- `a08f099`、`c99a4ac`、`80d0b73`、`d0ed4d3` 分别完成 codec/contract、pipeline 4.26 与三模型
+  immutable Profile、真实 PostgreSQL checkpoint/lease recovery、monitor/review/E2E。成功只暴露数量型
+  `VISUAL_GROUNDING_READING_ORDER_NORMALIZED`；不读取或记录 alias/text/OCR/gold、图片、完整 prompt、
+  Candidate 或模型原文，也不改 box/parent/ownership 或创建删除结构。
+- 自动证据为 focused contract 35/35、跨模块 Profile/独立 verifier 38/38、real-PG v39 1/1 与 v38/v39
+  pair 2/2、inference 193/193、Web 73/73、typecheck/lint、Playwright 7/7 PASS；Node 20 Web 仅为兼容
+  证据，正式 Node 24 尚待 exact-clean full gate。
+- 本节点 Provider=0；Goal 保持 410 reservations（405 SETTLED、5 历史 Plus RESERVED、0 BREACHED），
+  Flash/Plus/Max=149/179/82 attempts、1,063,527/1,087,500/491,919 tokens、
+  ¥0.519735/¥4.159620/¥10.289316，三 ledger CLOSED。v39=`EXPERIMENTAL`、N6=
+  `automated_verified`、N7/Goal=`in_progress`。
+- 下一门是在本 checkpoint 的 exact-clean revision 上运行 full/Document Vision，fresh 重算 evaluation
+  identity、三份 v39 Profile snapshot、Goal/J1/time/process/lease。全绿后才可考虑 Flash 单 synthetic case、
+  最多 5 calls；Plus 仅剩 1 attempt 不足以证明三阶段，Max/final 20/60 仍受同版本三阶段、质量、独立复核
+  与最终 J1 门约束。

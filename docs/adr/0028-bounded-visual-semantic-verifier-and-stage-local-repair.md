@@ -1191,3 +1191,23 @@ Goal 更新为 410 reservations（405 SETTLED、5 历史 Plus RESERVED、0 BREAC
 149/179/82 attempts、1,063,527/1,087,500/491,919 tokens 和
 ¥0.519735/¥4.159620/¥10.289316，三 ledger CLOSED。product-v38 保持 `EXPERIMENTAL`，N6=
 `automated_verified`、N7/Goal=`in_progress`；Plus/Max/final eval 不启动。
+
+### product-v39 unique-order compaction 决策
+
+v39 只把 `VISUAL_GROUNDING_READING_ORDER_GAP` 的一个可证明子集纳入 bounded verifier：只遍历具有
+parent 的非 ROOT sibling set；既有 order 必须互异，按既有 order 的总序必须与 evidence 首框的
+`top`、`left`、`regionId` canonical 顺序完全一致，而且当前序号必须非连续。最多改变 8 个 reading-order
+值并压紧到 `0..n-1`；任何完整 `VisualGroundingPlan` 重建失败都原子返回原 plan。root gap、duplicate/tie、
+反向或位置不一致、missing parent、cycle、topology/overlap/ownership failure 继续 fail-closed。
+
+该规则不读取 alias/text/OCR/gold/model payload，不改变 box、parent、element ownership，不创建或删除
+region/edge/element/evidence/crop/Candidate；strict JSON unknown-member 与 enum 合同也不变。成功只记数量型
+`VISUAL_GROUNDING_READING_ORDER_NORMALIZED`。`a08f099` 完成 codec 正反例，`c99a4ac` 固定 pipeline
+4.26 与三份 immutable product-v39 Profile，`80d0b73` 用真实 PostgreSQL 证明 OBSERVE checkpoint 后
+lease 接管只继续 HIERARCHY/BINDING 且 OCR sentinel 零持久化，`d0ed4d3` 完成 monitor/review/E2E 解释。
+
+自动证据为 focused contract 35/35、跨模块 Profile/独立 verifier 38/38、real-PG v39 1/1 与 v38/v39
+pair 2/2、inference 193/193、Web 73/73、typecheck/lint、Playwright 7/7。Node 20 Web 只算兼容证据；
+exact-clean Node 24 full 尚未执行。本节点 Provider=0、Goal 保持 410 reservations、三 ledger CLOSED。
+因此 N6 仍为 `automated_verified`，product-v39 仍 `EXPERIMENTAL`，N7/Goal 仍 `in_progress`；live 三阶段、
+质量、final eval、最终独立复核与业务/视觉 J1 均未由本决策满足。

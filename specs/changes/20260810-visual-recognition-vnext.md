@@ -338,3 +338,21 @@ repository synthetic 反例证明唯一总序，并在 tie/duplicate/拓扑或�
 Goal 为 410 reservations，Flash/Plus/Max 累计为 149/179/82 attempts、
 1,063,527/1,087,500/491,919 tokens 与 ¥0.519735/¥4.159620/¥10.289316；三 ledger CLOSED。
 product-v38 仍 `EXPERIMENTAL`、N6=`automated_verified`、N7/Goal=`in_progress`，Plus/Max/final eval 门未满足。
+
+### 2026-08-11 v39 unique canonical sibling-order 候选
+
+- pipeline 4.26 只扩展 reading-order gap 的确定性子集：只处理 parent 非空的 sibling set；existing order
+  必须互异，按 order 排序必须与首 evidence box 的 `(top,left,regionId)` canonical 顺序完全一致，并且
+  当前序号非连续。最多改变 8 个既有 order 并压紧为 `0..n-1`，随后完整 `VisualGroundingPlan` 必须重验。
+- root gap、duplicate/tie、反向/位置不一致、missing parent、cycle、topology/overlap/ownership 或最终
+  semantic failure 继续 fixed-code fail-closed。不得读取 alias/text/OCR/model payload/gold，不得改变 box、
+  parent、element ownership 或创建删除 region/edge/element/evidence/crop/Candidate；strict JSON unknown-member
+  与 enum 合同保持不变。成功只记录数量型 `VISUAL_GROUNDING_READING_ORDER_NORMALIZED`。
+- `a08f099`/`c99a4ac`/`80d0b73`/`d0ed4d3` 已完成 codec、三模型 immutable Profile、real-PG
+  checkpoint recovery 与 monitor/review E2E。证据为 contract 35/35、跨模块 38/38、real-PG v39 1/1 与
+  v38/v39 2/2、inference 193/193、Web 73/73、typecheck/lint、Playwright 7/7；Node 20 Web 只算兼容检查。
+- 本节点 Provider=0；Goal 为 410 reservations，Flash/Plus/Max 累计 149/179/82 attempts、
+  1,063,527/1,087,500/491,919 tokens 与 ¥0.519735/¥4.159620/¥10.289316，三 ledger CLOSED。
+  product-v39=`EXPERIMENTAL`、N6=`automated_verified`、N7/Goal=`in_progress`；exact-clean full/Document
+  Vision、fresh identity/snapshot/budget/J1/process/lease、Flash bounded live、final eval/A2 与最终业务/视觉
+  J1 尚未完成。

@@ -254,3 +254,17 @@ Goal 现为 410 reservations（405 SETTLED、5 历史 Plus RESERVED、0 BREACHED
 149/179/82 attempts、1,063,527/1,087,500/491,919 tokens 与
 ¥0.519735/¥4.159620/¥10.289316；三 ledger CLOSED，仍在 180 attempts、1.5M tokens 与各自 Goal CNY
 cap 内。Plus 只剩 1 attempt，Max 仍缺同版本三阶段和质量前置，故两者及 final 20/60 不调用。
+
+### product-v39 离线预算节点
+
+pipeline 4.26 的 bounded sibling reading-order compaction、三模型 immutable Profile、real-PG recovery 与
+审核 telemetry 全部是零 Provider 工作，没有创建 reservation 或 live authorization。Goal 保持 410
+reservations（405 SETTLED、5 历史 Plus RESERVED、0 BREACHED）；Flash/Plus/Max 仍为 149/179/82
+attempts、1,063,527/1,087,500/491,919 exposed tokens 与
+¥0.519735/¥4.159620/¥10.289316，三 ledger CLOSED。
+
+用户当前 envelope 仍为每模型累计 1.5M exposed tokens、180 attempts、每次 authorization 最多 500k，
+Flash/Plus Goal cap 各 ¥10、Max ¥18，J1 截止 `2026-08-12T09:51:55Z`（exclusive）。新增额度不覆盖
+attempt/cost/stage gate：Plus 仅余 1 attempt，不能用于证明三阶段；v39 只有在 exact-clean full/Document
+Vision 与 fresh identity/Profile/Goal/J1/time/process/lease 全绿后，才可为 Flash 提议单 synthetic case、
+最多 5 calls。Max 仍须等待同版本三阶段可达且质量门成立，final 20/60 与最终 J1 不变。

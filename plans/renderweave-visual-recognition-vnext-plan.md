@@ -11,12 +11,11 @@
   三个预算槽位各追加 500,000 tokens，当前累计 cap 1,500,000，并把 Flash/Plus Goal cost cap 各设为 ¥10、
   固定 24h 窗口至 `2026-08-12T09:51:55Z`；Max ¥18、每槽 180 attempts、单 authorization 500,000 不变
 - 当前节点：N0–N1、N3–N4、N6 `automated_verified`；N2 `live_verified_mixed_a1_a2`；N5
-  `live_verified_not_promoted`；N7 `in_progress`。v34 Flash 全停在 OBSERVE；Plus accepted OBSERVE 后在
-  HIERARCHY 暴露 empty-support/support-not-group，仍未形成同版本 BINDING 或 Candidate。其 empty-support
-  信号驱动 pipeline 4.22/product-v35 的 unique connected strict-ancestor GROUP repair；codec/Profile、
-  real-PG lease recovery、monitor/review 与 1024px E2E 已提交到 `5c59ce3`，尚待 checkpoint 后 exact-clean
-  full/Document Vision 与 fresh pre-live 重算。当前 Goal 为 390 reservations（385 SETTLED、5 历史 Plus
-  RESERVED、0 BREACHED），三份 live ledger `CLOSED`，Profile 均隐藏 `EXPERIMENTAL`
+  `live_verified_not_promoted`；N7 `in_progress`。v38 Flash 五次均停在 OBSERVE，其中 reading-order gap×2
+  驱动 pipeline 4.26/product-v39 的 bounded canonical sibling-order compaction；codec/Profile、real-PG
+  lease recovery、monitor/review 与 E2E 已提交到 `d0ed4d3`，尚待 checkpoint 后 exact-clean full/Document
+  Vision 与 fresh pre-live 重算。当前 Goal 为 410 reservations（405 SETTLED、5 历史 Plus RESERVED、
+  0 BREACHED），三份 live ledger `CLOSED`，Profile 均隐藏 `EXPERIMENTAL`
 
 ## 四维执行配置
 
@@ -781,3 +780,20 @@ time/process/lease；全绿后才考虑 Flash single synthetic case、最多 5 c
 
 v38 继续 `EXPERIMENTAL`，N6=`automated_verified`、N7/Goal=`in_progress`。下一安全节点回到离线
 reading-order verifier；unknown-member/enum 不放宽，Plus/Max/final 20/60 的门不变。
+
+### product-v39 offline disposition
+
+- commits：`a08f099` codec/contract；`c99a4ac` pipeline 4.26、三模型 immutable Profile 与独立 verifier；
+  `80d0b73` real-PG checkpoint recovery；`d0ed4d3` monitor/review 与 E2E。
+- bounded rule：仅对有 parent 的 sibling set，在 existing order 互异、按 order 的总序与
+  `(top,left,regionId)` canonical 空间顺序完全一致且序号非连续时，最多改变 8 个值并压紧为 `0..n-1`；
+  root、duplicate/tie、反向/位置不一致、missing parent、cycle 与最终完整 plan failure 原子 fail-closed。
+- evidence：contract 35/35、跨模块 Profile/independent verifier 38/38、real-PG v39 1/1 与 v38/v39 pair
+  2/2、inference 193/193、Web 73/73、typecheck/lint、Playwright 7/7 PASS；Node 20 Web 仅为兼容证据。
+- state：Provider=0；Goal=410 reservations；Flash/Plus/Max=149/179/82 attempts、
+  1,063,527/1,087,500/491,919 tokens、¥0.519735/¥4.159620/¥10.289316；三 ledger CLOSED。
+
+v39 保持 `EXPERIMENTAL`，N6=`automated_verified`、N7/Goal=`in_progress`。下一门：在本 checkpoint 的
+exact-clean revision 上执行 full/Document Vision，fresh 重算 evaluation identity、v39 snapshots、Goal/J1/
+time/process/lease；全绿后才考虑 Flash single synthetic case、最多 5 calls。Plus 仅余 1 attempt 不调用；
+Max/final 20/60 的同版本三阶段、质量、独立复核与最终 J1 门不变。

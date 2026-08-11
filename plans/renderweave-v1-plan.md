@@ -837,3 +837,17 @@ Goal 为 410 reservations；Flash 累计 149 attempts/1,063,527 tokens/¥0.51973
 ledger CLOSED。N6=`automated_verified`、N7/Goal=`in_progress`、v38=`EXPERIMENTAL`；Plus/Max/final
 20/60 不执行。下一 DAG 节点仅允许由 synthetic 反例证明 bounded sibling reading-order canonicalization，
 不得读取 unknown member 或模型 payload。
+
+### product-v39 sibling reading-order verifier disposition
+
+`a08f099`/`c99a4ac`/`80d0b73`/`d0ed4d3` 已完成 pipeline 4.26 的 bounded sibling reading-order
+compaction、三模型 immutable Profile、真实 PostgreSQL checkpoint recovery 与 monitor/review/E2E。规则只
+处理有 parent 的 sibling set：既有 order 必须互异并与 `(top,left,regionId)` canonical 顺序一致，非连续时
+最多改变 8 个值压紧到 `0..n-1`；root、duplicate/tie、反向/位置不一致、missing/cycle/final-plan failure
+全部 fail-closed。它不读取或持久化模型 payload/OCR/text/gold，也不改变 box/parent/ownership 或结构数量。
+
+自动证据为 contract 35/35、跨模块 38/38、real-PG v39 1/1 与 v38/v39 2/2、inference 193/193、Web
+73/73、typecheck/lint、Playwright 7/7；Node 20 只算兼容检查。Provider=0，Goal 410 reservations 与三
+ledger CLOSED 状态不变。N6=`automated_verified`、N7/Goal=`in_progress`、v39=`EXPERIMENTAL`；下一
+DAG 节点为 exact-clean full/Document Vision 与 fresh identity/snapshot/budget/J1/process/lease，之后才可
+考虑 Flash bounded smoke。Plus 仅余 1 attempt，Max/final 仍受同版本三阶段、质量、A2 与最终 J1 门约束。
