@@ -1,14 +1,14 @@
 {
   "authorizationVersion": "renderweave-visual-evaluation-authorization/1.0",
-  "authorizationId": "visual-n7-source-ancestor-v27-qwen37-plus-transit-20260811",
-  "status": "CLOSED",
+  "authorizationId": "visual-n7-minimal-entity-ownership-v28-qwen37-plus-transit-20260811",
+  "status": "PROPOSED",
   "phase": "CANARY",
   "inputClassification": "REPOSITORY_SYNTHETIC_ONLY",
   "corpusVersion": "renderweave-visual-stage-corpus/1.0",
   "corpusSourceSha256": "bf0db7bf0ac5c4e2b357cdd96c49ff70a7b30a5bc59f322a915020dc29fc605e",
-  "evaluationIdentity": "renderweave-visual-evaluation-tree-sha256/1:903f5b9f87797bcf124f08cc539982f708dc8ab5217129adcd6dc9c40960c965",
-  "profileId": "dashscope-qwen37-plus-product-v27-hybrid-generic",
-  "profileSnapshotSha256": "e0ed977931aa024266e9123d650f9749f47238368ad52796b7c516f836b6a94c",
+  "evaluationIdentity": "renderweave-visual-evaluation-tree-sha256/2:c97c0ea01d6f9096b25a11f8faf2b6b45b7f55ad8f2336916379af98c669d172",
+  "profileId": "dashscope-qwen37-plus-product-v28-hybrid-generic",
+  "profileSnapshotSha256": "90057d89e74ade46de450964e62ebeb4747a8a25741d7c2059e694f6c7d220b2",
   "model": "qwen3.7-plus",
   "caseIds": [
     "transit-board-v3"
@@ -18,7 +18,7 @@
   "maximumCostMicrosCny": 500000,
   "maximumCasesPerBatch": 1,
   "approvedBy": "yiwer",
-  "approvedAt": "2026-08-11T04:03:46Z",
+  "approvedAt": "2026-08-11T05:19:44Z",
   "expiresAt": "2026-08-11T15:51:09Z",
-  "approvalScope": "Goal J1 CANARY: user explicitly allows qwen3.7-plus and renewed 500000 exposed tokens for each stable model slot, enforcing a cumulative cap of 1500000 per slot; Flash product-v27 remained at OBSERVE, while Plus product-v26 reached HIERARCHY with the exact region-cardinality/support-not-group evidence that motivates this bounded source-ancestor hypothesis; one repository-synthetic transit-board-v3 case through immutable qwen3.7-plus product-v27-hybrid-generic pipeline 4.14, using the current-revision pinned RapidOCR/OpenVINO capability verified by 20260811-115701-document-vision and inheriting all product-v26 policies while adding only the unique cardinality-compatible, parent-child-connected ancestor region owned by exactly one GROUP when the enclosing-owner candidate set is zero; ambiguity remains fail-closed; no raw OCR/model text, gold, distance ranking or topology synthesis; at most 5 attempts, 60000 exposed tokens, CNY 0.50 and one case per batch; payload-free evidence, no concurrent rerun or Max call and immediate CLOSED after this smoke"
+  "approvalScope": "Goal J1 CANARY: user explicitly allows qwen3.7-plus and renewed 500000 exposed tokens for each stable model slot under the cumulative 1500000-token guard; Flash product-v28 completed CLOSED/A2 but remained at OBSERVE, while Plus product-v27 previously reached OBSERVE, HIERARCHY and ELEMENT_BINDING, so one same-version Plus case is the bounded way to exercise product-v28 minimal entity-region ownership and binding ambiguity rewind; one repository-synthetic transit-board-v3 case through immutable qwen3.7-plus product-v28-hybrid-generic pipeline 4.15; no raw OCR/model text, image, complete prompt, Candidate, gold, ranking or topology synthesis in evidence; current-revision full gate 20260811-125916 and Document Vision canary 20260811-130940 passed; Plus aggregate before this ledger is 153 attempts, 900566 exposed tokens and CNY 3.484570 including five historical RESERVED entries; at most 5 attempts, 60000 exposed tokens, CNY 0.50 and one case per batch; single wrapper, payload-free evidence, no concurrent rerun or Max call before the v28 three-stage and quality gates are evaluated, and immediate CLOSED after this smoke"
 }
