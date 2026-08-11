@@ -166,3 +166,18 @@ payload scan PASS、0 abandoned。5 个 SETTLED reservations 消耗 41,477 expos
 
 395 reservations 中 390 SETTLED、5 个历史 Plus RESERVED、0 BREACHED。三 ledger CLOSED；Plus 不为凑数
 调用，Max/final eval 继续受同版本 accepted OBSERVE/HIERARCHY/BINDING 与质量门约束。
+
+## product-v36 离线节点与预算入口
+
+pipeline 4.23/product-v36 的 bounded region-kind classifier、三模型 immutable Profile、真实 PostgreSQL
+恢复和 monitor/review E2E 都是零 Provider 的离线工作，未创建 reservation 或 ledger。Goal 因而仍为
+395 reservations（390 SETTLED、5 个历史 Plus RESERVED、0 BREACHED），Flash/Plus/Max 仍为
+134/179/82 attempts、937,570/1,087,500/491,919 exposed tokens 与
+¥0.456031/¥4.159620/¥10.289316；三份现有 visual ledger 保持 CLOSED。
+
+v36 live 不是本 checkpoint 的自动授权。必须先在 exact-clean docs revision 上通过 full 与冻结 Document
+Vision，fresh 计算 `/2` evaluation identity、当次三份 Profile snapshot、Goal aggregate、剩余 token/
+attempt/CNY/time、J1、API 配置存在性、进程和 evidence lease。Flash 可按单 synthetic case/最多 5 calls
+执行独立 PROPOSED→负探针→OPEN→唯一 wrapper→CLOSED→负探针；Plus 只剩 1 Goal attempt，不足以证明
+三阶段，不为消耗额度调用。Max/final 20/60 仍要求 v36 同版本 live accepted OBSERVE/HIERARCHY/BINDING、
+质量门、独立复核与最终 J1。

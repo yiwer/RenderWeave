@@ -750,3 +750,20 @@ snapshot 一致。Flash lifecycle `d2c2c3d`→NOT_OPEN→`b795f0a`→唯一 wrap
 HIERARCHY/BINDING 或 Candidate 证据。Goal 为 395 reservations；三 ledger CLOSED。Plus 只剩 1 attempt，
 Max/final 20/60 的三阶段与质量门未满足。N6=`automated_verified`、N7/Goal=`in_progress`、
 Profile=`EXPERIMENTAL`；下一安全节点是 payload-free fixed-code 驱动的 bounded OBSERVE repair。
+
+## 27. T6-5 v36 contract-unique region-kind 离线 checkpoint
+
+`fdf7d44`、`86b6074`、`2076684`、`f395f90` 完成 pipeline 4.23/product-v36：仅当 typed region
+shape 唯一决定 `ROOT`、`REPEATED_GROUP` 或 `ITEM` 时归一化 kind；SECTION/GROUP 歧义、缺失 repeat
+事实、非法 topology 和完整 forest 校验失败全部保留旧 fixed code。三模型 Profile immutable，成功只暴露
+数量型 telemetry，不记录 region ID、坐标、OCR、模型输出或 Candidate payload。
+
+真实 PostgreSQL lease recovery 在 accepted OBSERVE 后只继续 HIERARCHY/BINDING 到 `REVIEW_REQUIRED`，
+Provider OBSERVE 不重放且 OCR sentinel 零持久化。inference 190/190、independent snapshot verifier 1/1、
+real-PG 1/1、Web 73/73、typecheck/lint 与 1024px Playwright 1/1 PASS；本机 Web 使用 Node 20，只是兼容
+验证，正式 Node 24 与 exact-clean full 尚未运行。
+
+本节点 Provider attempts=0，Goal 保持 395 reservations，三 ledger CLOSED。N6=`automated_verified`、
+N7/Goal=`in_progress`、Profile=`EXPERIMENTAL`。下一步为 docs checkpoint 后的 exact-clean full/Document
+Vision 与 fresh v36 identity/snapshot/budget/J1/process/lease preflight；仅 Flash 可优先 single-case，Plus
+只剩 1 attempt 不调用，Max/final 20/60 的同版本三阶段、质量、独立复核与最终验收门不变。

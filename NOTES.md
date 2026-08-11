@@ -1,20 +1,31 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-11 pipeline 4.23/product-v36 已形成零 Provider 的离线生产候选。`fdf7d44` 只在 typed
+  region shape 唯一决定类型时归一化：`MANY + repeatGroupId`→`REPEATED_GROUP`、
+  `ONE + repeatGroupId`→`ITEM`、无 parent/无 repeat/单个 full-artifact evidence 的 `ONE`→`ROOT`；
+  SECTION/GROUP 歧义、缺失 repeat 事实与完整 forest 校验失败继续 fail-closed。`86b6074` 发布三份
+  immutable v36 Profile，`2076684` 用 real-PG lease-expiry 证明 accepted OBSERVE 不重放、恢复后完成
+  HIERARCHY/BINDING 到 `REVIEW_REQUIRED`，OCR sentinel 零持久化；`f395f90` 补齐 monitor/review 中文说明、
+  组件测试与 1024px E2E。inference 190/190、snapshot verifier 1/1、real-PG 1/1、Web 73/73、
+  typecheck/lint 与 Playwright 1/1 PASS；本机 Web 仅为 Node 20 兼容证据，正式 Node 24 gate 尚待 exact-clean
+  执行。Provider attempts=0，Goal 仍为 395 reservations，三 ledger CLOSED；v36=`EXPERIMENTAL`、
+  N6=`automated_verified`、N7/Goal=`in_progress`。
 - 2026-08-11 pipeline 4.22/product-v35 已形成零 Provider 的离线生产候选。`614359f` 只在 relationship
   support 为空、其已知关系区域是后代 ITEM、且唯一严格祖先容器由一个基数兼容并连接父子实体的既有 GROUP
   拥有时补全 support，并同步归一化关系区域；歧义、断连、非祖先与 unknown support 继续旧 fixed code
   fail-closed。`708522b` 发布三份 immutable v35 Profile，`a2b8181` 证明 real-PG lease-expiry 从已持久化
   OBSERVE 继续 HIERARCHY/BINDING 到 `REVIEW_REQUIRED`，`5c59ce3` 完成 monitor/review 与 1024px E2E。
   contract 31/31、inference 189/189、独立 snapshot verifier、real-PG 定向、Web 73/73 与 Playwright 1/1
-  均 PASS；v35 尚未 live，仍 `EXPERIMENTAL`，N6=`automated_verified`、N7/Goal=`in_progress`。
+  均 PASS；后续 Flash v35 live 5 次均停在 OBSERVE，仍 `EXPERIMENTAL`，N6=`automated_verified`、
+  N7/Goal=`in_progress`。
 - v34 Flash/Plus live 已按各自 PROPOSED→NOT_OPEN→OPEN→唯一 wrapper→CLOSED 闭环，独立 verifier 与
   payload scan 均 PASS、0 abandoned。Flash 5 次均在 OBSERVE fail-closed；Plus 首次 OBSERVE accepted，
   随后三次 HIERARCHY 为 empty-support×1、support-not-group×2，第五次在 Provider 前被 authorization cost
   reservation 阻断。当前 390 reservations、0 BREACHED：Flash 129/896,093/¥0.435196，Plus
   179/1,087,500/¥4.159620，Max 82/491,919/¥10.289316；三 ledger CLOSED。Max/final 20/60 的同版本
-  三阶段与质量门仍失败。下一步是提交 v35 checkpoint 后 exact-clean full/Document Vision 和 fresh
-  identity/v35 snapshot/Goal/J1/process/lease preflight；Plus 仅剩 1 个 Goal attempt，不足以验证三阶段。
+  三阶段与质量门仍失败；该 payload-free 信号已由 v35/v36 bounded 节点承接。Plus 仅剩 1 个 Goal
+  attempt，不足以验证三阶段。
 - 2026-08-11 v33 cost-restored bounded live 已闭环。`15b5d00` clean full 9/9、Document Vision 19 lines、
   双实现 identity 与三份 snapshot 通过，guard 在首个 reservation 内原子迁移 v4。Flash
   `f12e5af`→`69e8455`→`f50f591` 为 4 attempts / 37,181 tokens / ¥0.019870，均停在 OBSERVE；Plus
@@ -645,3 +656,24 @@
   134/179/82 attempts、937,570/1,087,500/491,919 tokens、¥0.456031/¥4.159620/¥10.289316。
   三 ledger CLOSED。Plus 仅剩 1 attempt，不调用；Max/final 20/60 的同版本三阶段门仍失败。product-v35
   保持 `EXPERIMENTAL`，N6=`automated_verified`、N7/Goal=`in_progress`。
+
+## v36 contract-unique region kind checkpoint
+
+- `fdf7d44` 新增独立 opt-in observation policy。只有 region typed shape 唯一要求 canonical kind 时才
+  原子归一化：`MANY + repeatGroupId` 为 `REPEATED_GROUP`，`ONE + repeatGroupId` 为 `ITEM`；无 parent、
+  `ONE`、无 repeat 且只有一个 `[0,0,10000,10000]` evidence box 时为 `ROOT`。合法但冲突的 kind 与未知
+  alias 都受相同结构事实约束；SECTION/GROUP 等无法唯一决定的容器、缺失 repeat、歧义及完整 grounding
+  校验失败继续原 fixed code fail-closed。
+- `86b6074` 发布 pipeline 4.23 与 Flash/Plus/Max 三份 immutable product-v36 Profile；Prompt、Document
+  Vision capability、maximumTotalCalls=5、stage timeout 与 v35 一致，旧 Profile/snapshot 不改写。成功只
+  记录数量型 `VISUAL_GROUNDING_REGION_KIND_NORMALIZED`，不记录 region ID、坐标、OCR 或模型 payload。
+- `2076684` 的真实 PostgreSQL tracer 将 CANVAS/GROUP/ROW 三个可唯一分类的输入归一化后持久化 OBSERVE
+  checkpoint；lease-expiry 后只调用 HIERARCHY/BINDING 并到达 `REVIEW_REQUIRED`，OBSERVE 不重放，
+  ephemeral OCR 只重算且 sentinel 未进入 checkpoint/Candidate/problems。
+- `f395f90` 为 monitor/review 增加受控中文解释，并更新两页组件测试和 1024px keyboard/Axe E2E。
+  inference 190/190、independent snapshot verifier 1/1、real-PG 1/1、Web 14 files/73 tests、typecheck/lint、
+  Playwright 1/1 PASS；Web 证据使用本机 Node 20，只是兼容验证，不能替代最终 Node 24 gate。
+- 本节点 Provider attempts=0；Goal 保持 395 reservations（390 SETTLED、5 历史 Plus RESERVED、0
+  BREACHED），Flash/Plus/Max 仍为 134/179/82 attempts、937,570/1,087,500/491,919 tokens、
+  ¥0.456031/¥4.159620/¥10.289316，三 ledger CLOSED。v36 保持 `EXPERIMENTAL`，N6=
+  `automated_verified`、N7/Goal=`in_progress`。

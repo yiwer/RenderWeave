@@ -1055,3 +1055,30 @@ kind 四次、parent kind 一次；没有 accepted OBSERVE，因而 empty-source
 不能验证三阶段；Max 与 final 20/60 不启动。下一安全工作仅可依据 payload-free fixed-code 设计新的 bounded
 OBSERVE 修复，并继续保持 enum/拓扑歧义 fail-closed。product-v35 仍 `EXPERIMENTAL`，N6 仍
 `automated_verified`，N7/Goal 仍 `in_progress`。
+
+## N6/N7 product-v36：由合同唯一结构事实决定 region kind
+
+v35 Flash 的四次 invalid-region-kind 与一次 parent-kind 只提供 fixed code，不提供原文或具体 alias。
+因此不能建立通用 alias 表，也不能猜测 SECTION/GROUP。可安全收窄的仅是 region 自身 typed shape 已经
+唯一排除其他 canonical kind 的情况。本 ADR 增补以下决定：
+
+1. pipeline 4.23/product-v36 独立 opt-in；v35 及更早 policy、Prompt、Profile snapshot 与失败优先级不变。
+2. `multiplicity=MANY` 且 `repeatGroupId` 非空时，合同唯一要求 `REPEATED_GROUP`；
+   `multiplicity=ONE` 且 `repeatGroupId` 非空时，唯一要求 `ITEM`。
+3. 只有 parent 为空、`multiplicity=ONE`、`repeatGroupId` 为空、恰有一个证据且其 canonical box 精确覆盖
+   整个 artifact 时，才把 kind 归一化为 `ROOT`。这组条件任一缺失都不推断 ROOT。
+4. SECTION/GROUP/non-repeat container 仍有多种合法解释；缺 repeat、零/多结构候选、非法 parent/children、
+   重复组或完整 forest 校验失败均用既有 fixed code fail-closed。实现不创建/删除 region、edge、element、
+   evidence、entity、relationship、crop 或 Candidate，不读取文字，也不按 gold/距离排名。
+5. 成功只记录数量型 `VISUAL_GROUNDING_REGION_KIND_NORMALIZED`。合法但与唯一结构事实冲突的 kind 和
+   未知 alias 走同一 bounded 分类；所有后续 `VisualGroundingPlan` 与 semantic verifier 仍完整执行。
+
+`fdf7d44` 完成正反例与旧 policy 拒绝回归；`86b6074` 发布三模型 immutable Profile，并让 Java/独立
+Python snapshot verifier 接受 pipeline 4.23；`2076684` 用真实 PostgreSQL lease-expiry 场景证明 OBSERVE
+checkpoint 不重放、HIERARCHY/BINDING 到 `REVIEW_REQUIRED` 且 OCR sentinel 零持久化；`f395f90` 将
+telemetry 接入 monitor/review 和 1024px payload-free E2E。
+
+当前 inference 190/190、snapshot verifier 1/1、real-PG 1/1、Web 73/73、typecheck/lint 与 Playwright 1/1
+通过。本机 Web 使用 Node 20，只能算兼容检查；Node 24、exact-clean full/Document Vision、fresh identity/
+snapshot 与任何 live 均属于下一门。该增量为 `automated_verified`，product-v36 仍 `EXPERIMENTAL`；
+N7/Goal 仍 `in_progress`。

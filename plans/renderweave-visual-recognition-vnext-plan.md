@@ -669,3 +669,24 @@ evidence lease。Flash 可优先单 synthetic case/最多 5 calls；Plus 仅剩 
 
 下一门：不调用只剩 1 attempt 的 Plus，也不启动 Max/final 20/60。仅用 fixed-code 与既有 typed shape 合同
 诊断可证明唯一性的 OBSERVE region-kind/parent-kind bounded repair；不能证明唯一时保持 fail-closed。
+
+## 2026-08-11 v36 contract-unique region kind 离线 checkpoint
+
+- `fdf7d44`：新增结构唯一分类 policy；`MANY + repeatGroupId`→`REPEATED_GROUP`、
+  `ONE + repeatGroupId`→`ITEM`、无 parent/无 repeat/ONE/单 full-artifact evidence→`ROOT`。无法唯一
+  决定的 SECTION/GROUP、缺失 repeat、歧义、非法 topology 或完整 forest failure 原子回退。
+- `86b6074`：发布 pipeline 4.23 与三份 product-v36 immutable Profile；Prompt/Document Vision/call cap
+  保持 v35，独立 verifier 支持三份 snapshot。成功仅记录
+  `VISUAL_GROUNDING_REGION_KIND_NORMALIZED` 数量。
+- `2076684`：real-PG lease-expiry tracer 在 OBSERVE 记录 3 次归一化并持久化 checkpoint，恢复时不重放
+  OBSERVE，只执行 HIERARCHY/BINDING 后到 `REVIEW_REQUIRED`；OCR sentinel 零持久化。
+- `f395f90`：monitor/review 中文说明、Web 14 files/73 tests、typecheck/lint 与隔离 4174 的 1024px
+  Playwright 1/1 PASS，端口已释放；4173 的无关 TAMP 服务保持不动。Node 20 结果只算兼容验证。
+- 治理：Provider attempts=0，Goal 仍为 395 reservations；Flash/Plus/Max 为 134/179/82 attempts、
+  937,570/1,087,500/491,919 tokens、¥0.456031/¥4.159620/¥10.289316，三 ledger CLOSED。
+  product-v36=`EXPERIMENTAL`、N6=`automated_verified`、N7/Goal=`in_progress`。
+
+下一门：在 docs checkpoint 的 exact-clean revision 上跑 full（包含正式 Node 24）与冻结 Document Vision；
+fresh 重算 `/2` identity、三份 v36 snapshot、Goal/token/attempt/CNY/time、J1、API 配置存在性、进程与
+evidence lease。全部匹配后仅优先 Flash 单 synthetic case/最多 5 calls。Plus 只剩 1 Goal attempt，不调用；
+Max/final 20/60 必须等待 v36 同版本 live OBSERVE/HIERARCHY/BINDING、质量门、独立 verifier 与最终 J1。

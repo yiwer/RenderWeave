@@ -242,3 +242,21 @@ tokens。该 delta 只覆盖原信封的 Flash 模型身份和 Goal token cap：
   不构成 v35 质量或三阶段证据。Plus 仅剩 1 attempt，不调用；Max/final 20/60 不启动。
 - Goal 为 395 reservations（390 SETTLED、5 历史 Plus RESERVED、0 BREACHED）。product-v35 保持
   `EXPERIMENTAL`，N6=`automated_verified`、N7/Goal=`in_progress`。
+
+### 2026-08-11 v36 contract-unique region kind 候选
+
+- pipeline 4.23/product-v36 只允许从 typed region shape 唯一决定 canonical kind：
+  `MANY + repeatGroupId` 必为 `REPEATED_GROUP`，`ONE + repeatGroupId` 必为 `ITEM`；parent 为空、ONE、
+  repeat 为空且单个 evidence box 精确覆盖 artifact 时必为 `ROOT`。
+- SECTION/GROUP/non-repeat container、缺失 repeat、零/多解释、非法 parent/children/repeat/forest 或后续
+  semantic verifier 失败继续原 fixed code fail-closed。不得创建或删除 region/edge/element/evidence/entity/
+  relationship/crop/Candidate，不得读取文字或按 gold/距离排名。
+- 成功只记录 `VISUAL_GROUNDING_REGION_KIND_NORMALIZED` 数量。`fdf7d44`/`86b6074`/`2076684`/
+  `f395f90` 已完成 bounded codec、三模型 immutable Profile、real-PG lease recovery 与 monitor/review E2E；
+  OBSERVE checkpoint 不重放，OCR sentinel 零持久化。
+- 自动证据为 inference 190/190、independent snapshot verifier 1/1、real-PG 1/1、Web 73/73、
+  typecheck/lint、Playwright 1/1；本机 Web 使用 Node 20，不能替代正式 Node 24 gate。本节点 Provider
+  attempts=0、Goal 用量不变、三 ledger CLOSED。
+- product-v36 保持 `EXPERIMENTAL`，N6=`automated_verified`、N7/Goal=`in_progress`。exact-clean full/
+  Document Vision、fresh identity/snapshot/budget/J1/process/lease、Flash bounded live、final 20/60、最终
+  independent verifier 与业务/视觉 J1 尚未完成；Plus 仅剩 1 attempt，不用于凑数。
