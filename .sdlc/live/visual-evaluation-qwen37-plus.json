@@ -1,24 +1,24 @@
 {
   "authorizationVersion": "renderweave-visual-evaluation-authorization/1.0",
-  "authorizationId": "visual-n7-enclosing-owner-v26-qwen37-plus-transit-20260811",
-  "status": "CLOSED",
+  "authorizationId": "visual-n7-source-ancestor-v27-qwen37-plus-transit-20260811",
+  "status": "PROPOSED",
   "phase": "CANARY",
   "inputClassification": "REPOSITORY_SYNTHETIC_ONLY",
   "corpusVersion": "renderweave-visual-stage-corpus/1.0",
   "corpusSourceSha256": "bf0db7bf0ac5c4e2b357cdd96c49ff70a7b30a5bc59f322a915020dc29fc605e",
-  "evaluationIdentity": "renderweave-visual-evaluation-tree-sha256/1:d1bbd3fc7fe71925f070655efd2a8d1ecbb4a87539bec079e8cfe04d530a2696",
-  "profileId": "dashscope-qwen37-plus-product-v26-hybrid-generic",
-  "profileSnapshotSha256": "c9682a4d271d62076b53cc3a26e7e242818d55490e867842a6d762dc826157bb",
+  "evaluationIdentity": "renderweave-visual-evaluation-tree-sha256/1:903f5b9f87797bcf124f08cc539982f708dc8ab5217129adcd6dc9c40960c965",
+  "profileId": "dashscope-qwen37-plus-product-v27-hybrid-generic",
+  "profileSnapshotSha256": "e0ed977931aa024266e9123d650f9749f47238368ad52796b7c516f836b6a94c",
   "model": "qwen3.7-plus",
   "caseIds": [
     "transit-board-v3"
   ],
   "maximumProviderAttempts": 5,
   "maximumTotalTokens": 60000,
-  "maximumCostMicrosCny": 600000,
+  "maximumCostMicrosCny": 500000,
   "maximumCasesPerBatch": 1,
   "approvedBy": "yiwer",
-  "approvedAt": "2026-08-11T03:01:12Z",
-  "expiresAt": "2026-08-11T15:01:12Z",
-  "approvalScope": "Goal J1 CANARY: user explicitly allowed qwen3.7-plus, granted its stable slot a cumulative 1500000 exposed tokens and requested continued Goal progression; Plus product-v25 reached HIERARCHY with the region-cardinality/support-not-group fixed-code combination that directly motivates this bounded hypothesis; one repository-synthetic transit-board-v3 case through immutable product-v26-hybrid-generic pipeline 4.13, inheriting the exact repository-bound ephemeral RapidOCR/OpenVINO secondary observation and all bounded product-v25 policies while adding only the local unique enclosing-connected GROUP-owner normalization: a known non-GROUP support and known source region are normalized only when exactly one GROUP/container-region pair is cardinality-compatible, encloses all support element regions and connects the parent/child entity regions before the existing relationship-region normalization; zero or multiple candidates remain fail-closed; no OCR/model text, gold, distance ranking or topology synthesis; at most 5 attempts, 60000 exposed tokens, CNY 0.60 and one case per batch within the 1500000-token Plus Goal slot; payload-free evidence, no concurrent rerun or Max call and immediate CLOSED after this smoke"
+  "approvedAt": "2026-08-11T04:03:46Z",
+  "expiresAt": "2026-08-11T15:51:09Z",
+  "approvalScope": "Goal J1 CANARY: user explicitly allows qwen3.7-plus and renewed 500000 exposed tokens for each stable model slot, enforcing a cumulative cap of 1500000 per slot; Flash product-v27 remained at OBSERVE, while Plus product-v26 reached HIERARCHY with the exact region-cardinality/support-not-group evidence that motivates this bounded source-ancestor hypothesis; one repository-synthetic transit-board-v3 case through immutable qwen3.7-plus product-v27-hybrid-generic pipeline 4.14, using the current-revision pinned RapidOCR/OpenVINO capability verified by 20260811-115701-document-vision and inheriting all product-v26 policies while adding only the unique cardinality-compatible, parent-child-connected ancestor region owned by exactly one GROUP when the enclosing-owner candidate set is zero; ambiguity remains fail-closed; no raw OCR/model text, gold, distance ranking or topology synthesis; at most 5 attempts, 60000 exposed tokens, CNY 0.50 and one case per batch; payload-free evidence, no concurrent rerun or Max call and immediate CLOSED after this smoke"
 }
