@@ -1,14 +1,14 @@
 {
   "authorizationVersion": "renderweave-visual-evaluation-authorization/1.0",
-  "authorizationId": "visual-n7-leaf-evidence-v25-qwen37-plus-transit-20260811",
-  "status": "CLOSED",
+  "authorizationId": "visual-n7-enclosing-owner-v26-qwen37-plus-transit-20260811",
+  "status": "PROPOSED",
   "phase": "CANARY",
   "inputClassification": "REPOSITORY_SYNTHETIC_ONLY",
   "corpusVersion": "renderweave-visual-stage-corpus/1.0",
   "corpusSourceSha256": "bf0db7bf0ac5c4e2b357cdd96c49ff70a7b30a5bc59f322a915020dc29fc605e",
-  "evaluationIdentity": "renderweave-visual-evaluation-tree-sha256/1:d52e3567a995830b1a1c9f8fddcd0af010733018709b801b9b351bcda9c77ac2",
-  "profileId": "dashscope-qwen37-plus-product-v25-hybrid-generic",
-  "profileSnapshotSha256": "ff5a1a66ec31cc523c83b39dc0dc9b4140887495665b51f749d155e4cc40551a",
+  "evaluationIdentity": "renderweave-visual-evaluation-tree-sha256/1:d1bbd3fc7fe71925f070655efd2a8d1ecbb4a87539bec079e8cfe04d530a2696",
+  "profileId": "dashscope-qwen37-plus-product-v26-hybrid-generic",
+  "profileSnapshotSha256": "c9682a4d271d62076b53cc3a26e7e242818d55490e867842a6d762dc826157bb",
   "model": "qwen3.7-plus",
   "caseIds": [
     "transit-board-v3"
@@ -18,7 +18,7 @@
   "maximumCostMicrosCny": 600000,
   "maximumCasesPerBatch": 1,
   "approvedBy": "yiwer",
-  "approvedAt": "2026-08-11T00:53:32Z",
-  "expiresAt": "2026-08-11T12:53:32Z",
-  "approvalScope": "Goal J1 CANARY: user explicitly allowed qwen3.7-plus, granted its stable slot a cumulative 1500000 exposed tokens and requested continued Goal progression; one repository-synthetic transit-board-v3 case through immutable product-v25-hybrid-generic pipeline 4.12, inheriting the exact repository-bound ephemeral RapidOCR/OpenVINO secondary observation and all bounded product-v24 policies while adding only the local leaf-evidence OBSERVE verifier that rejects a SLOT whose same-artifact evidence strictly contains another element, never auto-edits the plan and routes the fixed problem code to OBSERVE; unknown, missing or ambiguous structure remains fail-closed; at most 5 attempts, 60000 exposed tokens, CNY 0.60 and one case per batch within the 1500000-token Plus Goal slot; payload-free evidence, no concurrent rerun and immediate CLOSED after this smoke"
+  "approvedAt": "2026-08-11T03:01:12Z",
+  "expiresAt": "2026-08-11T15:01:12Z",
+  "approvalScope": "Goal J1 CANARY: user explicitly allowed qwen3.7-plus, granted its stable slot a cumulative 1500000 exposed tokens and requested continued Goal progression; Plus product-v25 reached HIERARCHY with the region-cardinality/support-not-group fixed-code combination that directly motivates this bounded hypothesis; one repository-synthetic transit-board-v3 case through immutable product-v26-hybrid-generic pipeline 4.13, inheriting the exact repository-bound ephemeral RapidOCR/OpenVINO secondary observation and all bounded product-v25 policies while adding only the local unique enclosing-connected GROUP-owner normalization: a known non-GROUP support and known source region are normalized only when exactly one GROUP/container-region pair is cardinality-compatible, encloses all support element regions and connects the parent/child entity regions before the existing relationship-region normalization; zero or multiple candidates remain fail-closed; no OCR/model text, gold, distance ranking or topology synthesis; at most 5 attempts, 60000 exposed tokens, CNY 0.60 and one case per batch within the 1500000-token Plus Goal slot; payload-free evidence, no concurrent rerun or Max call and immediate CLOSED after this smoke"
 }
