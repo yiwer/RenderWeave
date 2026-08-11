@@ -114,6 +114,8 @@ class PostgresLiveInferenceWorkflowTest {
             "dashscope-qwen37-flash-20260715-product-v28-hybrid-generic";
     private static final String GROUP_REGION_CARDINALITY_HYBRID_VISUAL_PROFILE =
             "dashscope-qwen37-flash-20260715-product-v29-hybrid-generic";
+    private static final String EVIDENCE_OWNER_NORMALIZED_HYBRID_VISUAL_PROFILE =
+            "dashscope-qwen37-flash-20260715-product-v30-hybrid-generic";
     private static final String DOCUMENT_VISION_CAPABILITY =
             "rapidocr-3.9.2-openvino-2026.0.0-ppocrv6-small-c05805399d7d10b1";
 
@@ -1615,6 +1617,63 @@ class PostgresLiveInferenceWorkflowTest {
     }
 
     @Test
+    void pipelineFourPointSeventeenNormalizesOneUniqueEvidenceOwnerBeforeHierarchy() {
+        var blobs = new MemoryBlobStore();
+        var created = createGroundedVisual(
+                blobs, "evidence-owner-normalized-station",
+                EVIDENCE_OWNER_NORMALIZED_HYBRID_VISUAL_PROFILE
+        );
+        var provider = new ScriptedProvider(
+                request -> response(request, groundedStationElementsWithMisownedStationName()),
+                request -> response(request, groundedStationHierarchy()),
+                request -> response(request, groundedStationBindings())
+        );
+        var preprocessCalls = new AtomicInteger();
+        var preprocessor = hybridPreprocessor(
+                preprocessCalls, "OCR_SENTINEL_V30_EVIDENCE_OWNER"
+        );
+
+        var finished = worker(provider, blobs, T0.plusSeconds(1), preprocessor)
+                .processNext("evidence-owner-normalized-worker").orElseThrow();
+
+        assertThat(finished.state())
+                .as("failure=%s attempts=%s", finished.failureCode(), workflowStore.attempts(created))
+                .isEqualTo(InferenceRunState.REVIEW_REQUIRED);
+        assertThat(preprocessCalls).hasValue(1);
+        assertThat(provider.requests).extracting(ProviderInferenceRequest::stage)
+                .containsExactly(
+                        InferenceStage.OBSERVE,
+                        InferenceStage.HIERARCHY,
+                        InferenceStage.ELEMENT_BINDING
+                );
+        assertThat(provider.requests.get(1).taskJson())
+                .contains("\"elementId\":\"station-name\",\"regionIds\":[\"header\"]")
+                .doesNotContain("\"elementId\":\"station-name\",\"regionIds\":[\"notice\"]");
+        assertThat(workflowStore.attempts(created)).extracting(InferenceAttempt::status)
+                .containsExactly(
+                        InferenceAttemptStatus.SUCCEEDED,
+                        InferenceAttemptStatus.SUCCEEDED,
+                        InferenceAttemptStatus.SUCCEEDED
+                );
+        assertThat(workflowStore.attempts(created).getFirst().problemCodeCounts())
+                .containsExactlyEntriesOf(Map.of(
+                        "VISUAL_GROUNDING_ELEMENT_REGION_NORMALIZED", 1
+                ));
+        assertThat(workflowStore.attempts(created).get(1).problemCodeCounts())
+                .doesNotContainKey("VISUAL_GROUNDING_ELEMENT_REGION_NORMALIZED");
+        assertThat(finished.checkpointJson())
+                .doesNotContain("OCR_SENTINEL_V30_EVIDENCE_OWNER")
+                .doesNotContain("ocr-00-000");
+        var review = workflowStore.findCandidate(created).orElseThrow();
+        assertThat(review.currentJson())
+                .doesNotContain("OCR_SENTINEL_V30_EVIDENCE_OWNER")
+                .doesNotContain("ocr-00-000");
+        assertThat(review.validationProblemsJson())
+                .doesNotContain("OCR_SENTINEL_V30_EVIDENCE_OWNER")
+                .doesNotContain("ocr-00-000");
+    }
+
+    @Test
     void cancellationIsAcknowledgedBeforeHybridPreprocessing() {
         var blobs = new MemoryBlobStore();
         var created = createGroundedVisual(blobs, "hybrid-cancel-before-ocr", HYBRID_VISUAL_PROFILE);
@@ -2366,6 +2425,13 @@ class PostgresLiveInferenceWorkflowTest {
                         + "\"view-00-overview-00\",\"boundingBox\":{\"left\":0,\"top\":1000,"
                         + "\"right\":10000,\"bottom\":2200}}]},\n                  "
                         + "{\"elementId\":\"notice-date\""
+        );
+    }
+
+    private static String groundedStationElementsWithMisownedStationName() {
+        return groundedStationElements().replaceFirst(
+                "\"regionIds\":\\[\"header\"\\]",
+                "\"regionIds\":[\"notice\"]"
         );
     }
 
