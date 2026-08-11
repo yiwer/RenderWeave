@@ -358,11 +358,30 @@
 - `plans/logs/P6-T6-5-N5.md`：有界本地 Document Vision、v4/v6/v7 同 case live 消融、Plus Goal 用量、
   HTTP failure 硬停与未晋级决策；全部 ledger CLOSED。
 - `plans/logs/P6-T6-5-N6.md`：bounded semantic verifier、stage-local repair、selected crops、payload-free UI、
-  v15–v26 bounded verifier/normalization 增量；v26 real-PG 三阶段 tracer 与监控/审核 telemetry 已 A1，live 未命中。
-- `plans/logs/P6-T6-5-N7.md`：pinned Flash/Goal guard v3、二十份单 case CLOSED/A2 reachability、v15–v26
-  bounded verifier/normalization 增量；Flash/Plus v26 未命中新 telemetry，质量仍未达门，Max v26 未调用。
-- 当前恢复点：`phase/p6-visual-recognition-vnext` 的 `31093a6`；v26 实现为 `d3b0292`，UI telemetry 为
-  `5ef25bd`，server/web/E2E/runtime clean A1。Flash v26b `b976e5f` 与 Plus v26 `31093a6` 均 CLOSED/A2；
+  v15–v27 bounded verifier/normalization 增量；v27 real-PG 三阶段 tracer 与监控/审核 telemetry 已 A1，尚未 live。
+- `plans/logs/P6-T6-5-N7.md`：pinned Flash/Goal guard v3、二十份单 case CLOSED/A2 reachability、v15–v27
+  bounded verifier/normalization 增量；Flash/Plus v26 未命中新 telemetry，v27 pre-live gate 正在推进，Max v26 未调用。
+- 当前恢复点：`phase/p6-visual-recognition-vnext` 的 `5ada0fa`；v27 codec/Profile/UI 为
+  `676180a` / `e1f1a9d` / `3a56af9`，预算事务修复为 `5ada0fa`。server/web/E2E/runtime A1 均绿；
+  Flash v26b `b976e5f` 与 Plus v26 `31093a6` 均 CLOSED/A2；
   编排 Goal `019fec8e-a851-7952-b49b-8be76a281a57` 因 turn interrupt 当前显示 `paused`，用户已明确继续同一
-  objective，未创建 replacement Goal。三份 ledger CLOSED；下一节点是离线 ancestor-GROUP owner 合同/TDD，
-  而非直接扩大 final eval。
+  objective，未创建 replacement Goal。三份 ledger CLOSED；下一节点是当前治理 revision 的隔离 clean full，
+  然后才在 fresh identity/Profile snapshot/budget 下判断 pinned Flash v27 单 case，不能直接扩大 final eval。
+
+## v27 source-ancestor 与预算硬门 checkpoint
+
+- `676180a`：仅当 v26 enclosing 候选为零时，沿已验证 relationship source region 祖先链寻找唯一 GROUP owner；
+  cardinality/connection 仍是硬条件，zero/multiple/unknown 全部 fail-closed，不读 OCR/model text/gold、不排名、
+  不改 topology。
+- `e1f1a9d`：发布 Flash `qwen3.7-flash-2026-07-15`、Plus、Max 三份 immutable product-v27 Profile，并接入
+  worker/checkpoint、真实 PostgreSQL tracer 和独立 evidence verifier。组合后端回归 26/26，流程到达
+  `REVIEW_REQUIRED`，OCR sentinel 未持久化。
+- `3a56af9`：监控/审核 UI 显示 source-ancestor fixed telemetry；Node 24 Web 73/73、受影响 Playwright 1/1，
+  覆盖 1024px、键盘、WCAG 与 payload 不泄漏。
+- server 首轮 `.sdlc/evidence/20260811-113055-server` 发现 5 参数 budget reservation default overload 绕过
+  实现事务；`5ada0fa` 显式覆写事务入口，并发回归 10/10。修复后 server
+  `.sdlc/evidence/20260811-113412-server`、web `.sdlc/evidence/20260811-113607-web`、E2E
+  `.sdlc/evidence/20260811-113652-e2e`、runtime `.sdlc/evidence/20260811-113726-runtime` 全绿。
+- 本节点 Provider attempts=0；累计仍为 Max 79 / 465,016 tokens / ¥9.816288，Plus 150 / 883,569 /
+  ¥3.436302，Flash 95 / 598,343 / ¥0.280418；324 reservations 中 319 SETTLED、5 历史 Plus RESERVED、
+  0 BREACHED。三份 ledger CLOSED，所有 v27 Profile 保持 `EXPERIMENTAL`。

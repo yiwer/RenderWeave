@@ -570,3 +570,34 @@ v26 没有证明同版本三阶段可达，因此 Max v26 的显式入口门不�
 GROUP，且该 owner/region 仍满足既有 cardinality、enclosure 与 connection 条件，是否可以在现有 enclosing-owner
 规则之前确定性归一化。该假设不得读取模型原文/OCR/gold，不得按距离或顺序排名，也不得合成、补删结构；先以
 TDD、真实 PostgreSQL checkpoint 和 payload-free telemetry 证伪，再决定是否存在新的单-case live 门。
+
+## v27 决策增量：唯一 source-ancestor GROUP owner
+
+接受 pipeline 4.14 的有界 fallback，但不修改 pipeline 4.13 或任何历史 Profile：
+
+1. 先完整执行 v26 enclosing-owner 规则；若候选为一个则沿用 v26，若候选为多个则直接 fail-closed，只有候选
+   严格为零才允许进入 v27 fallback。
+2. fallback 只读取已经合同化的原始 `relationship.regionId` 与 region forest，沿 source region 的 ancestor 链
+   枚举容器；候选必须由恰好一个 observed GROUP element 拥有、cardinality-compatible，并连接 relationship
+   parent/child entity ownership。最终 GROUP/region 配对仍必须唯一。
+3. zero/multiple ancestor owner、未知 region/support、非容器 ancestor 或 connection 不成立均保留既有 fixed
+   diagnostic；不得以距离、reading order、OCR/model text、gold 或候选排名打破歧义，不得补造/删除 entity、
+   relationship、GROUP 或 binding。
+4. 成功时只追加 payload-free
+   `VISUAL_HIERARCHY_RELATIONSHIP_SOURCE_ANCESTOR_SUPPORT_OWNER_NORMALIZED` 计数；checkpoint、Candidate、常规
+   日志与 evidence 不包含原始图片、OCR、完整 prompt 或模型响应。
+
+`676180a` 固化 codec 与 ambiguity 负例，`e1f1a9d` 固化三模型 product-v27 Profile、worker、真实 PostgreSQL
+三阶段 tracer 与独立 snapshot verifier，`3a56af9` 固化监控/审核 UI 和 E2E。三份 Profile 均为
+`EXPERIMENTAL`、最多 5 calls、0 repair rounds；Profile 资源存在不等于 live 授权或质量晋级。
+
+受影响 gate 期间发现并修复预算 reservation 的事务入口缺陷：接口 5 参数 default method 可能绕过实现方法的
+`@Transactional`，使预算行锁早于汇总与 insert 释放。`5ada0fa` 显式覆写该入口，使 `FOR UPDATE`、消费汇总与
+ledger insert 处于同一事务，并把并发上限回归重复 10 次。首轮红灯证据保留在
+`.sdlc/evidence/20260811-113055-server`；修复后 server `20260811-113412`、Node 24 web `20260811-113607`、
+E2E `20260811-113652`、runtime `20260811-113726` 均 A1 PASS。该治理修复是 live 前置硬门，不提高模型质量
+结论。
+
+v27 实现与 gate 全程 Provider attempts=0、三份 ledger CLOSED、Goal 用量不变。是否执行单-case smoke 仍需
+fresh evaluation identity、Profile snapshot、预算/时限重算与独立 ledger lifecycle；是否晋级仍由 final eval、
+final verifier、full gate 和业务/视觉 J1 共同决定。

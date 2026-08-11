@@ -286,3 +286,23 @@ drift、journal/guard 不一致、payload 边界失败或同一无新假设失�
   git history 和 checkpoint 共同再锚定。
 - 每个 N0..N7 结束后，对照 approved spec delta、AC、非目标和用户原始意图执行再锚定；Template、
   Workspace、Renderer、多租户、任意工具能力仍是非目标。
+
+## 2026-08-11 v27 source-ancestor checkpoint
+
+- 实现：`676180a` 只在 v26 enclosing candidate 为零时，从已验证原始 relationship source region 的祖先链寻找
+  唯一 GROUP owner；仍要求 cardinality 与 parent/child connection，零/多候选 fail-closed，不读取 OCR/model
+  text/gold、不排名、不改 topology。`e1f1a9d` 接入 pipeline 4.14、三模型 immutable Profile、worker/checkpoint、
+  real-PG tracer 与独立 verifier；`3a56af9` 接入 payload-free monitor/review UI 和 E2E。
+- 定向证据：codec 22/22、registry 1/1、real-PG 1/1、独立 verifier 2/2；Node 24 Web 73/73，受影响
+  Playwright 1/1。真实 PostgreSQL 流程达到 `REVIEW_REQUIRED`，四个 bounded normalization telemetry 精确命中，
+  OCR sentinel 未进入 checkpoint/Candidate/problems。
+- 治理修复：首轮 server `.sdlc/evidence/20260811-113055-server` 暴露 5 参数 default reservation 入口的事务
+  代理绕过；`5ada0fa` 显式覆写并在事务内串行预算行锁，针对性并发回归 10/10。修复后 server
+  `.sdlc/evidence/20260811-113412-server`、web `.sdlc/evidence/20260811-113607-web`、E2E
+  `.sdlc/evidence/20260811-113652-e2e`、runtime `.sdlc/evidence/20260811-113726-runtime` 全部 A1 PASS。
+- 状态与预算：本节点 Provider attempts=0；Max 79 / 465,016 tokens / ¥9.816288，Plus 150 / 883,569 /
+  ¥3.436302，Flash slot 95 / 598,343 / ¥0.280418；324 reservations（319 SETTLED、5 历史 Plus RESERVED、
+  0 BREACHED），三份 ledger CLOSED。所有 product-v27 Profile 仍为 `EXPERIMENTAL`。
+- 下一门：先在隔离 clean worktree 为本治理 revision 完成 full gate。之后每次 live 前重新计算 evaluation
+  identity、Profile snapshot 与 aggregate budget；Flash 单 case 优先，Plus 按新信号决定，Max 仅在同版本三阶段
+  与质量/J1 门成立时考虑。final 20/60、最终 verifier、最终 revision full 与业务/视觉 J1 均仍未完成。

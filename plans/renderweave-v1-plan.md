@@ -425,7 +425,7 @@ Phase 内任务只在真实前置依赖满足时并行。当前没有 atomic cla
 
 #### T6-5：图片识别数据结构 vNext 质量升级
 
-- 执行状态：`in_progress`（用户 J1 + approved spec delta；N0–N1、N3–N4、N6 `automated_verified`，N2 `live_verified_mixed_a1_a2`，N5 `live_verified_not_promoted`；N7 既有 reachability、三模型 v24、Flash/Plus v25 与 Flash/Plus v26 smoke 已 A2。v26 Flash 停在 OBSERVE、Plus 停在 HIERARCHY，enclosing-owner telemetry 未命中，同版本三阶段门未成立，故未调用 Max v26；下一节点为零 Provider 的 unique validated ancestor-GROUP owner 合同/TDD。final eval、最终 revision full gate、final independent verifier 与业务/视觉 J1 均未满足）
+- 执行状态：`in_progress`（用户 J1 + approved spec delta；N0–N1、N3–N4、N6 `automated_verified`，N2 `live_verified_mixed_a1_a2`，N5 `live_verified_not_promoted`；N7 既有 reachability、三模型 v24、Flash/Plus v25 与 Flash/Plus v26 smoke 已 A2。v27 unique source-ancestor GROUP-owner codec、Profile/worker、真实 PostgreSQL tracer、监控/审核 UI 与受影响 gate 已 A1，期间修复了 default Provider reservation 入口事务绕过；v27 尚未调用 Provider。下一节点为隔离 clean full 与 fresh identity/snapshot/budget 下的 Flash 单 case 门。final eval、最终 independent verifier 与业务/视觉 J1 均未满足）
 - AC：AC-015..021、AC-VR-001..010
 - 依赖：T6-3a.8/9、ADR-0020/0021；N2 live 依赖新的 stage-gold/harness/identity
 - 影响区域：IMAGE_ONLY eval、visual contracts、worker/Profile/Prompt、OCR/layout adapter、review/monitor UI
@@ -467,3 +467,15 @@ Phase 内任务只在真实前置依赖满足时并行。当前没有 atomic cla
 7. P5 已完成 Flash、旧 Plus 与 Prompt v2 三轮独立 60-case live 评测；这些历史 Profile 仍为 `EXPERIMENTAL` 且不在产品目录展示。产品目录固定为 `qwen3.7-flash`、`qwen3.7-plus`、`qwen3.8-max`、`qwen3.7-max-2026-06-08`；每次上传仍需用户确认数据外发，成本限额可填或留空，留空只表示不增加任务累计费用门，不能解除 Profile 的三次调用和输出上界。
 8. T5-6 已把 60-case v2 whole-graph 评测、fail-closed policy、每批最多 5 case 的恢复账本与完整 repository evaluation identity 做成可执行闭环，并通过独立 A2；Flash/旧 Plus 授权均已 CLOSED，决定均为 `EXPERIMENTAL`。
 9. T5-7 不复用旧质量结果：Prompt/Profile v2 修正 exact FieldKey、最小证据图、provider provenance、JSON evidence catalog 与三态 repair 路由；随后完成新的 60-case J1 与独立 A2。结果从旧 Plus 18/60 提升到 47/60、critical 51 降至 10，但 Evidence/DAG 退化且 IMAGE_ONLY 薄弱，故仍为 `EXPERIMENTAL`、默认关闭，授权已 CLOSED。
+
+## 8. T6-5 v27 checkpoint
+
+`676180a`、`e1f1a9d`、`3a56af9` 已把 unique source-ancestor GROUP-owner fallback 做成版本化、可恢复且
+payload-free 的 pipeline 4.14 候选：只有旧 enclosing 候选为零、source ancestor owner 唯一且满足 cardinality/
+connection 才归一化；所有歧义继续 fail-closed。真实 PostgreSQL synthetic tracer 到达 `REVIEW_REQUIRED`，
+监控/审核页展示固定 telemetry 而不展示 OCR、图片、Prompt、Candidate 或 Provider 原文。
+
+首轮 server gate 发现预算 default overload 的事务代理绕过，`5ada0fa` 已修复并以 10 次并发回归验证。修复后
+server `20260811-113412`、Node 24 web `20260811-113607`、E2E `20260811-113652`、runtime
+`20260811-113726` 均 A1 PASS；本节点 Provider attempts=0、三份 ledger CLOSED。N6 保持
+`automated_verified`，N7 保持 `in_progress`；隔离 clean full、v27 live、final eval/A2 与业务/视觉 J1 仍是硬门。
