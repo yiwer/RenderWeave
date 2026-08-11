@@ -205,9 +205,17 @@ final class VisualSemanticVerifier {
     ) {
         Objects.requireNonNull(inventory, "inventory");
         Objects.requireNonNull(hierarchy, "hierarchy");
+        return verifyHierarchyPrerequisites(inventory, !hierarchy.relationships().isEmpty());
+    }
+
+    List<VisualSemanticIssue> verifyHierarchyPrerequisites(
+            VisualElementInventory inventory,
+            boolean hasRelationships
+    ) {
+        Objects.requireNonNull(inventory, "inventory");
         var hasGroup = inventory.elements().stream()
                 .anyMatch(element -> element.kind() == VisualElementKind.GROUP);
-        if (!hierarchy.relationships().isEmpty() && !hasGroup) {
+        if (hasRelationships && !hasGroup) {
             return List.of(VisualSemanticIssue.OBSERVE_RELATIONSHIP_GROUP_MISSING);
         }
         return List.of();

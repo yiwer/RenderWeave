@@ -918,3 +918,14 @@ verifier、checkpoint 与审核/Apply 不变。定向 Java/Web/Playwright 全绿
 隔离 clean `ba409e9` 的 full evidence `20260812-015332-full` 为 9/9 PASS，包含正式 Node 24、真实
 PostgreSQL/runtime canary、独立 evidence verifier 与浏览器审核/Apply；metadata clean，离线 Provider
 attempts/reservations 均为 0。
+
+### product-v41 zero-GROUP rewind 修复
+
+用户现场 v40 Plus run 的 OBSERVE inventory 为 7 SLOT/0 GROUP，后续四次 HIERARCHY 都先在未知 support
+解析处失败，未触发现有最早阶段回退。ADR-0031 新增 pipeline 4.28：strict hierarchy response 含 relationship
+且 inventory 0 GROUP 时，在 support/cardinality 解析前返回既有 OBSERVE fixed code；其余路径沿用 v40 的
+全部严格合同。三份 immutable product-v41 Profile 进入新建产品目录，v40 退出目录但保持可恢复。
+
+focused contract、Profile、真实 PostgreSQL 五调用恢复、API/policy/evidence 与 Node 24 Web 回归均通过，
+实现期间 Provider attempts/reservations=0。当前只达到 `automated_verified`；product-v41 仍
+`EXPERIMENTAL`，N7/Goal=`in_progress`，不得复用旧授权进行 live。

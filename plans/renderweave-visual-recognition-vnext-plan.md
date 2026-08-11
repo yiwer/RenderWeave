@@ -6,7 +6,7 @@
 - 基线 revision：`eed1ab6ce2eb800b1b6bf0496b052fc3b9bd28d2`
 - 分支：`phase/p6-visual-recognition-vnext`
 - Spec delta：`specs/changes/20260810-visual-recognition-vnext.md`
-- ADR：ADR-0022、ADR-0023、ADR-0024、ADR-0025、ADR-0026、ADR-0027、ADR-0028、ADR-0029、ADR-0030
+- ADR：ADR-0022、ADR-0023、ADR-0024、ADR-0025、ADR-0026、ADR-0027、ADR-0028、ADR-0029、ADR-0030、ADR-0031
 - 用户 J1：yiwer，2026-08-10；2026-08-11 delta 将 Flash 改为 `qwen3.7-flash-2026-07-15`，随后两次给
   三个预算槽位各追加 500,000 tokens，当前累计 cap 1,500,000，并把 Flash/Plus Goal cost cap 各设为 ¥10、
   固定 24h 窗口至 `2026-08-12T09:51:55Z`；Max ¥18、每槽 180 attempts、单 authorization 500,000 不变。
@@ -887,3 +887,17 @@ N6=`automated_verified`、N7/Goal=`in_progress`；Plus/Max/final 不启动，Goa
 - 隔离 clean `ba409e9` 的 full `20260812-015332-full` 为 9/9 PASS；inference 196/196、正式 Node 24
   Web 73/73、独立 verifier 2/2、真实 PostgreSQL/runtime canary 与浏览器 19 passed/1 live skipped。metadata
   为 `workingTreeDirty=false`，offline summary 为 0 Provider attempts/reservations。
+
+### product-v41 early relationship GROUP prerequisite checkpoint
+
+- 用户现场 Plus v40 run 在 OBSERVE 接受 7 SLOT/0 GROUP 后，四次 HIERARCHY 均以 unknown support 拒绝；
+  最小回归证明 evidence-derived cardinality 在 zero-GROUP semantic prerequisite 之前解析 support，导致已有
+  cross-stage rewind 不可达。
+- pipeline 4.28 只对“decoded hierarchy 至少一条 relationship + inventory 0 GROUP”提前输出既有
+  `VISUAL_SEMANTIC_OBSERVE_RELATIONSHIP_GROUP_MISSING` 并事务性回到 OBSERVE。它不补造结构、不按 region
+  猜 GROUP、不放宽未知 support，也不改变 v40 或任何更早 immutable policy。
+- 三份 product-v41 immutable Profile 与产品目录/API/Web 已同步；Prompt、Document Vision identity、价格、
+  5-call/0-repair、¥2 单次预留、8192 output 与 240 秒 timeout 均继承 v40 固定边界。
+- focused contract、Profile、真实 PostgreSQL五步恢复、API/policy/evidence 与正式 Node 24 Web 均已通过；
+  真实 PostgreSQL 合成路径在同一五调用预算内到达 `REVIEW_REQUIRED`。本节点 Provider=0，v41 保持
+  `EXPERIMENTAL`、N6=`automated_verified`、N7/Goal=`in_progress`；任何 live 需要新的 exact J1。

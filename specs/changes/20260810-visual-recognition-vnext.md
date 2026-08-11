@@ -440,3 +440,21 @@ final 不调用。N6=`automated_verified`，N7/Goal 仍未完成；后续算法�
 - clean revision `ba409e9` 的 full evidence `20260812-015332-full` 为 9/9 PASS；正式 Node 24、真实
   PostgreSQL/runtime canary、独立 evidence verifier 2/2 和浏览器 E2E 均通过，离线汇总明确
   Provider attempts/reservations 均为 0。
+
+### 2026-08-12 product-v41 zero-GROUP hierarchy rewind delta
+
+- 现场症状为 OBSERVE 已接受 7 SLOT/0 GROUP，而四次 HIERARCHY 均因
+  `VISUAL_HIERARCHY_V2_SUPPORT_ELEMENT_UNKNOWN` 拒绝且无 Candidate。根因不是 Profile、网络或凭据，而是
+  pipeline 4.27 在既有零 GROUP semantic prerequisite 之前先从未知 support 派生 cardinality，使应回到
+  OBSERVE 的固定诊断不可达。
+- 新增 pipeline 4.28；只有 strict hierarchy envelope 至少含一个 relationship 且已验证 inventory 为 0 GROUP
+  时，才在 support 解析前返回 `VISUAL_SEMANTIC_OBSERVE_RELATIONSHIP_GROUP_MISSING` / earliest OBSERVE。
+  空 relationship、有 GROUP、unknown support 可唯一归一化及全部历史 pipeline 的诊断顺序不变。
+- 该规则只读取 relationship presence 与 GROUP kind count；不读取/记录局部 ID、坐标、OCR、图片或模型原文，
+  不创建 GROUP、不修改 support/cardinality/region/ownership，也不放宽 strict validator。事务 rewind 继续复用
+  既有白名单 checkpoint 合同并保留调用计数。
+- 三份 immutable product-v41 Profile 复用 Prompt 10/7/3、Document Vision capability、模型和全部预算边界；
+  新建产品目录切换到 Plus/Max/Flash v41，v40 资源与 run snapshot 保持不可变、可读、可恢复。
+- 红灯为 focused contract 编译失败；实现后 contract 1/1、v41 Registry 2/2、真实 PostgreSQL 五调用恢复
+  1/1、API/policy/evidence 21/21、Node 24 Web 73/73 + typecheck/lint 均 PASS。整个节点显式关闭 live/key
+  环境，Provider attempts/reservations=0；v41 仍为 `EXPERIMENTAL`，只能报告 `automated_verified`。

@@ -1722,6 +1722,31 @@ class VisualGroundingContractTest {
     }
 
     @Test
+    void routesUnknownRelationshipSupportBackBeforeDerivedCardinalityWhenNoGroupWasObserved()
+            throws Exception {
+        var observed = codec.parseElements(flatElementsJson(), views(), List.of(IMAGE_ID));
+
+        var failure = assertThrows(InvalidVisualAnalysisException.class, () ->
+                codec.parseHierarchy(
+                        hierarchyJson(), observed.inventory(), observed.grounding(),
+                        VisualRelationshipCardinalityPolicy.SUPPORT_GROUP_DERIVED,
+                        VisualHierarchyPrerequisitePolicy
+                                .RELATIONSHIP_GROUP_REQUIRED_BEFORE_SUPPORT,
+                        VisualHierarchyRegionDiagnosticPolicy.DETAILED_FIXED_CODES,
+                        VisualRelationshipSupportIdPolicy
+                                .CANONICALIZE_EXACT_DUPLICATES_AND_UNIQUE_CONNECTED_GROUP_OWNER_WITH_EMPTY_OR_UNKNOWN_SUPPORT_AND_EMPTY_SOURCE_ANCESTOR,
+                        VisualRelationshipRegionPolicy
+                                .UNIQUE_CARDINALITY_AND_CONNECTION_COMPATIBLE_GROUP_REGION,
+                        VisualHierarchySemanticPolicy.MINIMAL_ENTITY_REGION_OWNERSHIP
+                )
+        );
+
+        assertEquals("VISUAL_SEMANTIC_OBSERVE_RELATIONSHIP_GROUP_MISSING",
+                failure.diagnosticCode());
+        assertEquals(InferenceStage.OBSERVE, failure.earliestStage().orElseThrow());
+    }
+
+    @Test
     void relationshipRegionOwnerPolicyRewindsOnlyEvidenceBackedGroupOmissions() throws Exception {
         var omitted = codec.parseElements(
                 relationshipRegionElementsJson("owner", 1200, 3600), views(), List.of(IMAGE_ID)

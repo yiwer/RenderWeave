@@ -136,6 +136,8 @@ class PostgresLiveInferenceWorkflowTest {
             "dashscope-qwen37-flash-20260715-product-v39-hybrid-generic";
     private static final String READING_ORDER_DIAGNOSTIC_HYBRID_VISUAL_PROFILE =
             "dashscope-qwen37-flash-20260715-product-v40-hybrid-generic";
+    private static final String EARLY_RELATIONSHIP_GROUP_PREREQUISITE_HYBRID_VISUAL_PROFILE =
+            "dashscope-qwen37-flash-product-v41-hybrid-generic";
     private static final String DOCUMENT_VISION_CAPABILITY =
             "rapidocr-3.9.2-openvino-2026.0.0-ppocrv6-small-c05805399d7d10b1";
 
@@ -2458,6 +2460,59 @@ class PostgresLiveInferenceWorkflowTest {
                 .doesNotContain("ocr-00-000");
         assertThat(review.validationProblemsJson())
                 .doesNotContain("OCR_SENTINEL_V40_READING_ORDER_DIAGNOSTIC")
+                .doesNotContain("ocr-00-000");
+    }
+
+    @Test
+    void pipelineFourPointTwentyEightReobservesUnknownSupportWhenObservationHasNoGroupElements() {
+        var blobs = new MemoryBlobStore();
+        var created = createGroundedVisual(
+                blobs, "early-relationship-group-prerequisite-station",
+                EARLY_RELATIONSHIP_GROUP_PREREQUISITE_HYBRID_VISUAL_PROFILE
+        );
+        var groupRegionWithoutGroupElements = flatGroundedStationElements().replace(
+                "\"kind\":\"SECTION\"", "\"kind\":\"GROUP\""
+        );
+        var provider = new ScriptedProvider(
+                request -> response(request, groupRegionWithoutGroupElements),
+                request -> response(request, groundedStationHierarchy()),
+                request -> response(request, groundedStationElements()),
+                request -> response(request, groundedStationHierarchy()),
+                request -> response(request, groundedStationBindings())
+        );
+        var preprocessCalls = new AtomicInteger();
+
+        var finished = worker(
+                provider, blobs, T0.plusSeconds(1),
+                hybridPreprocessor(preprocessCalls, "OCR_SENTINEL_V41_EARLY_GROUP_PREREQUISITE")
+        ).processNext("early-relationship-group-prerequisite-worker").orElseThrow();
+
+        assertThat(finished.state())
+                .as("failure=%s attempts=%s", finished.failureCode(), workflowStore.attempts(created))
+                .isEqualTo(InferenceRunState.REVIEW_REQUIRED);
+        assertThat(provider.requests).extracting(ProviderInferenceRequest::stage)
+                .containsExactly(
+                        InferenceStage.OBSERVE, InferenceStage.HIERARCHY,
+                        InferenceStage.OBSERVE, InferenceStage.HIERARCHY,
+                        InferenceStage.ELEMENT_BINDING
+                );
+        assertThat(workflowStore.attempts(created)).extracting(InferenceAttempt::status)
+                .containsExactly(
+                        InferenceAttemptStatus.SUCCEEDED, InferenceAttemptStatus.REJECTED,
+                        InferenceAttemptStatus.SUCCEEDED, InferenceAttemptStatus.SUCCEEDED,
+                        InferenceAttemptStatus.SUCCEEDED
+                );
+        assertThat(workflowStore.attempts(created).get(1).problemCodeCounts())
+                .containsExactlyEntriesOf(Map.of(
+                        "VISUAL_SEMANTIC_OBSERVE_RELATIONSHIP_GROUP_MISSING", 1
+                ));
+        assertThat(provider.requests.get(2).taskJson())
+                .contains("VISUAL_SEMANTIC_OBSERVE_RELATIONSHIP_GROUP_MISSING")
+                .doesNotContain("TARGETED_CROP")
+                .contains("\"elementInventory\":null")
+                .contains("\"groundingPlan\":null");
+        assertThat(finished.checkpointJson())
+                .doesNotContain("OCR_SENTINEL_V41_EARLY_GROUP_PREREQUISITE")
                 .doesNotContain("ocr-00-000");
     }
 

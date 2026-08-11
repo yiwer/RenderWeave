@@ -242,6 +242,16 @@ final class VisualGroundingJsonCodec {
             if (!VisualHierarchyPlan.VERSION_V2.equals(response.contractVersion())) {
                 throw invalid("VISUAL_HIERARCHY_V2_VERSION_INVALID", null);
             }
+            if (prerequisitePolicy
+                    == VisualHierarchyPrerequisitePolicy
+                    .RELATIONSHIP_GROUP_REQUIRED_BEFORE_SUPPORT) {
+                var prerequisiteIssues = SEMANTIC_VERIFIER.verifyHierarchyPrerequisites(
+                        inventory, !response.relationships().isEmpty()
+                );
+                if (!prerequisiteIssues.isEmpty()) {
+                    throw invalid(prerequisiteIssues.getFirst(), null);
+                }
+            }
             var entities = response.entities().stream()
                     .map(VisualGroundingJsonCodec::classifiedEntity)
                     .toList();
@@ -266,8 +276,7 @@ final class VisualGroundingJsonCodec {
                 throw invalid(prerequisiteIssues.getFirst(), null);
             }
             final ClassifiedEntityRegions classifiedEntityRegions;
-            if (prerequisitePolicy
-                    == VisualHierarchyPrerequisitePolicy.RELATIONSHIP_REGION_GROUP_OWNER_REQUIRED) {
+            if (requiresRelationshipRegionGroupOwner(prerequisitePolicy)) {
                 classifiedEntityRegions = normalizeRelationshipRegions(
                         supportOwnerEntityRegions == null
                                 ? classifiedEntityRegions(response, regionDiagnosticPolicy)
@@ -1174,6 +1183,14 @@ final class VisualGroundingJsonCodec {
             throw invalid("VISUAL_HIERARCHY_V2_SUPPORT_NOT_GROUP", null);
         }
         return supporting.multiplicity();
+    }
+
+    private static boolean requiresRelationshipRegionGroupOwner(
+            VisualHierarchyPrerequisitePolicy policy
+    ) {
+        return policy == VisualHierarchyPrerequisitePolicy.RELATIONSHIP_REGION_GROUP_OWNER_REQUIRED
+                || policy == VisualHierarchyPrerequisitePolicy
+                .RELATIONSHIP_GROUP_REQUIRED_BEFORE_SUPPORT;
     }
 
     private static <T> T classifiedHierarchyShape(CheckedSupplier<T> supplier) {
@@ -2407,7 +2424,8 @@ enum VisualRelationshipCardinalityPolicy {
 
 enum VisualHierarchyPrerequisitePolicy {
     GROUP_EXISTENCE_ONLY,
-    RELATIONSHIP_REGION_GROUP_OWNER_REQUIRED
+    RELATIONSHIP_REGION_GROUP_OWNER_REQUIRED,
+    RELATIONSHIP_GROUP_REQUIRED_BEFORE_SUPPORT
 }
 
 enum VisualHierarchyRegionDiagnosticPolicy {

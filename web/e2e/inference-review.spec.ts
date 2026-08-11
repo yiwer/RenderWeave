@@ -501,7 +501,7 @@ test('preflights a local upload queue while the deployment transfer gate is clos
   expect(livePosts).toBe(0);
 });
 
-test('offers the v40 image catalog with Plus selected and an optional cumulative run cost ceiling', async ({ page }) => {
+test('offers the v41 image catalog with Plus selected and an optional cumulative run cost ceiling', async ({ page }) => {
   let livePosts = 0;
   let multipartBody = '';
   await page.route('**/api/v1/inference-runs**', async (route) => {
@@ -518,7 +518,7 @@ test('offers the v40 image catalog with Plus selected and an optional cumulative
       multipartBody = request.postDataBuffer()?.toString('utf8') ?? '';
       await json(route, {
         ...runResponse(0, 'QUEUED'),
-        profileId: 'dashscope-qwen37-plus-product-v40-hybrid-generic',
+        profileId: 'dashscope-qwen37-plus-product-v41-hybrid-generic',
         sourceReference: 'user-upload',
         costLimitMicrosCny: 250000,
       }, 201);
@@ -556,7 +556,7 @@ test('offers the v40 image catalog with Plus selected and an optional cumulative
   expect(multipartBody).toContain('"costLimitMicrosCny":250000');
 });
 
-test('blocks v40 before queueing when the exact local vision capability is unavailable', async ({ page }) => {
+test('blocks v41 before queueing when the exact local vision capability is unavailable', async ({ page }) => {
   let livePosts = 0;
   await page.route('**/api/v1/inference-runs**', async (route) => {
     const request = route.request();
@@ -584,7 +584,7 @@ test('blocks v40 before queueing when the exact local vision capability is unava
   });
 
   await page.goto('/inference/new');
-  await expect(page.getByText('v40 本地 OCR / Layout 能力尚未就绪')).toBeVisible();
+  await expect(page.getByText('v41 本地 OCR / Layout 能力尚未就绪')).toBeVisible();
   await expect(page.locator('.live-profile-grid button')).toHaveCount(3);
   await expect(page.locator('.live-profile-grid button:disabled')).toHaveCount(3);
   await expect(page.getByRole('button', { name: '排队识别并查看监控' })).toBeDisabled();
@@ -919,9 +919,9 @@ function liveAvailability(enabled = false) {
     runCostLimitRequired: false,
     maximumRunCostLimitMicrosCny: 100000000,
     profiles: [
-      profile('dashscope-qwen37-plus-product-v40-hybrid-generic', 'qwen3.7-plus', ['IMAGE_ONLY']),
-      profile('dashscope-qwen38-max-product-v40-hybrid-generic', 'qwen3.8-max', ['IMAGE_ONLY']),
-      profile('dashscope-qwen37-flash-product-v40-hybrid-generic', 'qwen3.7-flash', ['IMAGE_ONLY']),
+      profile('dashscope-qwen37-plus-product-v41-hybrid-generic', 'qwen3.7-plus', ['IMAGE_ONLY']),
+      profile('dashscope-qwen38-max-product-v41-hybrid-generic', 'qwen3.8-max', ['IMAGE_ONLY']),
+      profile('dashscope-qwen37-flash-product-v41-hybrid-generic', 'qwen3.7-flash', ['IMAGE_ONLY']),
     ],
   };
 }

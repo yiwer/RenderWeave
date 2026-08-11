@@ -892,3 +892,17 @@
 - 隔离 clean `ba409e9` 的 full `20260812-015332-full` 9/9 PASS；metadata clean，inference 196/196、
   正式 Node 24 Web 73/73、独立 verifier 2/2、真实 PostgreSQL/runtime 和浏览器路径通过，offline summary
   明确为 0 Provider attempts/reservations。
+
+### product-v41 zero-GROUP hierarchy rewind
+
+- 用户现场 v40 Plus run 在 OBSERVE 接受 7 SLOT/0 GROUP 后连续四次以
+  `VISUAL_HIERARCHY_V2_SUPPORT_ELEMENT_UNKNOWN` 停在 HIERARCHY。最小回归定位为 support/cardinality
+  解析抢先于现有 zero-GROUP prerequisite，使 cross-stage rewind 不可达。
+- pipeline 4.28 在 strict hierarchy envelope 已解码、且“至少一条 relationship + inventory 0 GROUP”成立时，
+  直接输出既有 `VISUAL_SEMANTIC_OBSERVE_RELATIONSHIP_GROUP_MISSING` 并回到 OBSERVE；不创建 GROUP、
+  不修改 support/region/cardinality，不读取或记录 payload。v40 及更早 Profile 逐字节不变。
+- 三份 product-v41 immutable Profile 已进入产品目录，OpenAPI/generated client/Web 默认同步为 v41；全部继续
+  `EXPERIMENTAL`，Plus 默认、Max 高难、Flash smoke 与 capability-aware admission 语义不变。
+- focused contract 1/1、Registry 2/2、真实 PostgreSQL 五调用恢复 1/1、API/policy/evidence 21/21、正式
+  Node 24 Web 73/73 + typecheck/lint 均 PASS。实现期间 live/key 环境关闭且 Provider=0；状态为
+  `automated_verified`，任何 v41 live 都需要新的 exact J1。
