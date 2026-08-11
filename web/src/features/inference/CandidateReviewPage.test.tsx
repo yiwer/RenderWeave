@@ -103,6 +103,10 @@ describe('Candidate atomic apply workspace', () => {
       .toBeGreaterThan(0);
     expect(screen.getAllByText('已按唯一可见 ITEM 证据归一化重复字段归属').length)
       .toBeGreaterThan(0);
+    expect(screen.getAllByText('VISUAL_GROUNDING_REGION_PARENT_NORMALIZED').length)
+      .toBeGreaterThan(0);
+    expect(screen.getAllByText('已按唯一最具体既有容器归一化区域父级').length)
+      .toBeGreaterThan(0);
     expect(screen.getAllByText('VISUAL_HIERARCHY_RELATIONSHIP_ENCLOSING_SUPPORT_OWNER_NORMALIZED').length)
       .toBeGreaterThan(0);
     expect(screen.getAllByText('已按唯一包围且连通的 GROUP 证据归一化层级关系支撑').length)
@@ -287,6 +291,7 @@ function visualReviewLog(run: InferenceRunResponse): InferenceExecutionLogRespon
         problemCodeCounts: {
           VISUAL_GROUNDING_ELEMENT_REGION_NORMALIZED: 1,
           VISUAL_GROUNDING_REPEATED_ITEM_SLOT_OWNER_NORMALIZED: 1,
+          VISUAL_GROUNDING_REGION_PARENT_NORMALIZED: 1,
         },
         completedAt: '2026-08-10T04:03:02Z',
       },
