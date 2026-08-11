@@ -1,24 +1,24 @@
 {
   "authorizationVersion": "renderweave-visual-evaluation-authorization/1.0",
-  "authorizationId": "visual-n7-source-ancestor-v27b-qwen37-flash-transit-20260811",
-  "status": "CLOSED",
+  "authorizationId": "visual-n7-minimal-entity-ownership-v28-qwen37-flash-transit-20260811",
+  "status": "PROPOSED",
   "phase": "CANARY",
   "inputClassification": "REPOSITORY_SYNTHETIC_ONLY",
   "corpusVersion": "renderweave-visual-stage-corpus/1.0",
   "corpusSourceSha256": "bf0db7bf0ac5c4e2b357cdd96c49ff70a7b30a5bc59f322a915020dc29fc605e",
-  "evaluationIdentity": "renderweave-visual-evaluation-tree-sha256/1:903f5b9f87797bcf124f08cc539982f708dc8ab5217129adcd6dc9c40960c965",
-  "profileId": "dashscope-qwen37-flash-20260715-product-v27-hybrid-generic",
-  "profileSnapshotSha256": "a0e159152876073ea846aefa39987ddb10366ba0f53f1e68d5eec74711128394",
+  "evaluationIdentity": "renderweave-visual-evaluation-tree-sha256/2:c97c0ea01d6f9096b25a11f8faf2b6b45b7f55ad8f2336916379af98c669d172",
+  "profileId": "dashscope-qwen37-flash-20260715-product-v28-hybrid-generic",
+  "profileSnapshotSha256": "85444b1cdf2c476fe72afe84753e9c9349a2c1a1f754bcdbd2894d38eb1b3026",
   "model": "qwen3.7-flash-2026-07-15",
   "caseIds": [
     "transit-board-v3"
   ],
   "maximumProviderAttempts": 5,
   "maximumTotalTokens": 60000,
-  "maximumCostMicrosCny": 100000,
+  "maximumCostMicrosCny": 90000,
   "maximumCasesPerBatch": 1,
   "approvedBy": "yiwer",
-  "approvedAt": "2026-08-11T03:57:17Z",
+  "approvedAt": "2026-08-11T05:08:04Z",
   "expiresAt": "2026-08-11T15:51:09Z",
-  "approvalScope": "Goal J1 CANARY replacement after the product-v27 ledger was CLOSED with independently verified zero Provider attempts because the wrapper omitted the pinned local Document Vision Spring properties: Goal state, guard, reservations and tokens were unchanged; current-revision local canary 20260811-115701-document-vision verified RapidOCR 3.9.2, OpenVINO 2026.0.0, all three PP-OCRv6 manifest digests and the repository-synthetic 19-line contract; user renewed 500000 exposed tokens for each stable model slot, retaining Flash preference and the enforced cumulative cap of 1500000 per slot; one repository-synthetic transit-board-v3 case through immutable qwen3.7-flash-2026-07-15 product-v27-hybrid-generic pipeline 4.14 with the bounded unique source-ancestor GROUP-owner fallback; ambiguity remains fail-closed; no raw OCR/model text, gold, distance ranking or topology synthesis; at most 5 attempts, 60000 exposed tokens, CNY 0.10 and one case per batch; payload-free evidence, no concurrent rerun and immediate CLOSED after this smoke"
+  "approvalScope": "Goal J1 CANARY under the user's renewed 500000 exposed-token allowance for each stable model slot and the cumulative 1500000-token guard; one repository-synthetic transit-board-v3 case through immutable qwen3.7-flash-2026-07-15 product-v28-hybrid-generic pipeline 4.15; bounded minimal entity-region ownership, unique minimal spatial binding owner and exact binding-ambiguity rewind to HIERARCHY only; no raw OCR/model text, image, complete prompt, Candidate, gold, ranking or topology synthesis in evidence; current-revision full gate 20260811-125916 and Document Vision canary 20260811-130940 passed; Flash aggregate before this ledger is 100 attempts, 641256 exposed tokens and CNY 0.302686; at most 5 attempts, 60000 exposed tokens, CNY 0.09 and one case per batch; single wrapper, payload-free evidence, no concurrent rerun and immediate CLOSED after this smoke"
 }
