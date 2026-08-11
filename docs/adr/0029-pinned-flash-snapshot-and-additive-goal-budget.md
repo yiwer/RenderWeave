@@ -205,3 +205,16 @@ pipeline 4.24 的 constraint-unique GROUP kind classifier、三模型 immutable 
 evaluation identity、当次 Profile snapshot、Goal/token/attempt/CNY/time、API-key presence、进程与 lease。
 仍只优先 Flash 单 synthetic case/最多 5 calls；Plus 的 1 个剩余 attempt 不足以证明三阶段，Max/final
 20/60 继续受同版本 OBSERVE/HIERARCHY/BINDING 与质量门约束。
+
+### product-v37 首次启动的零 Provider 结算
+
+Flash v37 lifecycle 已以 `99940ef`→NOT_OPEN→`045b5b9`→唯一 wrapper→`c3223ee`→NOT_OPEN
+关闭；独立 verifier/payload scan PASS。wrapper 因错误的 Document Vision adapter 配置键在 Provider 前
+得到 `DOCUMENT_VISION_ADAPTER_MISSING`，所以 authorization 内为 0 attempts、0 tokens、0 cost，Goal
+仍是 400 reservations（395 SETTLED、5 历史 Plus RESERVED、0 BREACHED）。Flash/Plus/Max 累计仍为
+139/179/82 attempts、980,039/1,087,500/491,919 tokens 和
+¥0.477638/¥4.159620/¥10.289316。
+
+账本已 CLOSED 且负探针证明 Goal/evidence 零写入，不能在该 authorization 上重放。正确键为
+`renderweave.inference.document-vision.adapter-script`；任何重试必须使用新 authorization 和 fresh
+identity/Profile/Goal/J1/process/lease preflight。Plus/Max/final 的阶段与质量门不变。

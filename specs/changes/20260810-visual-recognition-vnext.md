@@ -288,3 +288,12 @@ OBSERVE。该结果不授权读取或记录 invalid enum 原文、模型输出�
   typecheck/lint、Playwright 1/1。Provider=0、Goal/ledgers 不变。
 - product-v37=`EXPERIMENTAL`、N6=`automated_verified`、N7/Goal=`in_progress`；exact-clean gates、fresh
   identity/snapshot/budget/J1、bounded Flash live、final 20/60 与最终 J1 尚未完成。
+
+#### v37 首次 Flash live 的规格状态
+
+exact-clean gates、fresh identity/Profile/Goal/J1/process/lease 均通过，且 PROPOSED→NOT_OPEN→OPEN→
+唯一 wrapper→CLOSED→NOT_OPEN lifecycle 与独立 verifier/payload scan 完整闭合。但唯一 outcome 是
+`DOCUMENT_VISION_ADAPTER_MISSING`，0 Provider attempts/tokens/cost；启动参数误用了非合同 `adapter`，
+实际属性为 `renderweave.inference.document-vision.adapter-script`。该授权已 CLOSED、不得重放，Goal 用量
+不变。这不满足任何 live 质量或三阶段 AC；product-v37 保持 `EXPERIMENTAL`、N7/Goal=`in_progress`。
+任何重试必须使用新的 immutable authorization、fresh gates/preflight 与正确 adapter-script 绑定。

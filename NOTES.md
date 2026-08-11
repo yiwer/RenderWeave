@@ -714,3 +714,18 @@
   Goal 保持 400 reservations；Flash/Plus/Max 仍为 139/179/82 attempts、
   980,039/1,087,500/491,919 tokens、¥0.477638/¥4.159620/¥10.289316，三 ledger CLOSED。
   v37=`EXPERIMENTAL`、N6=`automated_verified`、N7/Goal=`in_progress`。
+
+### v37 Flash 首次 live 的 pre-provider fail-closed 结论
+
+- exact-clean full `20260811-220155-full`、Document Vision `20260811-220627-document-vision`、
+  Java/Python identity `2b498c45…daeb2` 与 Flash snapshot `2dc4b025…e9919` 均通过；lifecycle 为
+  `99940ef` PROPOSED → NOT_OPEN → `045b5b9` OPEN →唯一 wrapper→ `c3223ee` CLOSED → NOT_OPEN。
+- wrapper exit 0、9.667 秒；独立 verifier/payload scan PASS，但固定结果为
+  `DOCUMENT_VISION_ADAPTER_MISSING`，1 completed、0 abandoned、0 Provider attempts、0 tokens、0 latency。
+  原因是本次启动参数误用了 `renderweave.inference.document-vision.adapter`，产品合同实际为
+  `renderweave.inference.document-vision.adapter-script`；失败发生在图片进入 Provider 之前。
+- CLOSED 负探针以 `VISUAL_EVALUATION_AUTHORIZATION_NOT_OPEN` 拒绝，受监控 evidence/Goal 哈希零变化，
+  结束后 0 process/0 held lease。Goal 和三模型累计用量完全不变，三 ledger CLOSED。
+- 该节点只证明本地 fail-closed 与审计闭环，不构成 v37 质量证据。v37 仍 `EXPERIMENTAL`、N6=
+  `automated_verified`、N7/Goal=`in_progress`；下一次只能在新 authorization、fresh gates/identity/snapshot/
+  Goal/J1 preflight 下使用正确 `adapter-script` 键串行重试，Plus/Max/final 20/60 仍不调用。

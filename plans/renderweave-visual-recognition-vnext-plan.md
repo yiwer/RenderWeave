@@ -722,3 +722,17 @@ Plus/Max，也不启动 final 20/60。
 
 下一门：exact-clean full/Document Vision，fresh `/2` identity、v37 snapshots、Goal/J1/time/process/lease/
 API-key-presence。仅 Flash 可在全绿后单 case/最多 5 calls；Plus/Max/final 仍等待同版本三阶段与质量门。
+
+### v37 Flash 首次 live：pre-provider fail-closed
+
+- gate/preflight：full `20260811-220155-full`、Document Vision `20260811-220627-document-vision`、
+  Java/Python identity `2b498c45…daeb2`、Flash snapshot `2dc4b025…e9919` 及 Goal/J1/process/lease PASS。
+- lifecycle/evidence：`99940ef` PROPOSED → NOT_OPEN → `045b5b9` OPEN →唯一 wrapper→ `c3223ee`
+  CLOSED → NOT_OPEN；A2/payload PASS，1 completed、0 abandoned、0 attempts/tokens/cost/latency。
+- fixed outcome 为 `DOCUMENT_VISION_ADAPTER_MISSING`。启动参数误用了非合同 `adapter`，正确属性为
+  `renderweave.inference.document-vision.adapter-script`；因此网络调用和 Goal reservation 均未发生。
+- CLOSED 探针监控文件零变化，0 process/lease；Goal 仍为 400 reservations且三模型累计不变，三 ledger
+  CLOSED。此节点没有质量信号，v37=`EXPERIMENTAL`、N6=`automated_verified`、N7/Goal=`in_progress`。
+
+下一门：提交本 checkpoint 后重新跑 exact-clean gates 和 fresh preflight，以新 authorization 和正确
+adapter-script 绑定串行重试 Flash。旧 authorization 不重放；Plus/Max/final 20/60 继续等待同版本三阶段。

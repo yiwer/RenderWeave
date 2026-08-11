@@ -791,3 +791,12 @@ real-PG lease recovery 证明 OBSERVE checkpoint 不重放、恢复后完成 HIE
 持久化。inference 191/191、independent verifier 2/2、v36/v37 recovery 2/2、Web 73/73、typecheck/lint
 与 Playwright 1/1 PASS。本节点 Provider=0，Goal/ledger 不变；N6=`automated_verified`、N7/Goal=
 `in_progress`、v37=`EXPERIMENTAL`。下一 DAG 节点是 exact-clean gates 与 fresh live preflight。
+
+### v37 Flash 首次 live 的 pre-provider 处置
+
+exact-clean gates 与 fresh preflight 通过后，Flash 按 `99940ef`→NOT_OPEN→`045b5b9`→唯一 wrapper→
+`c3223ee`→NOT_OPEN 关闭。A2 verifier/payload scan PASS，但 outcome 为
+`DOCUMENT_VISION_ADAPTER_MISSING`，0 attempts/0 tokens；启动参数使用了非合同 `adapter` 键，正确 Spring
+键是 `adapter-script`。Goal 仍为 400 reservations，三模型累计不变，三 ledger CLOSED。该结果不构成
+OBSERVE/HIERARCHY/BINDING 质量证据；N6=`automated_verified`、N7/Goal=`in_progress`、v37=
+`EXPERIMENTAL`。下一 DAG 节点只能在新授权和 fresh gates/preflight 下用正确键重试 Flash。

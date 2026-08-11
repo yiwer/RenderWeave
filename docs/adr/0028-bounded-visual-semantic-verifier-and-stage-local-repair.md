@@ -1114,3 +1114,16 @@ lease-expiry 证明 accepted OBSERVE 不重放并恢复到 `REVIEW_REQUIRED`，`
 解释。inference 191/191、snapshot verifier 2/2、v36/v37 recovery 2/2、Web 73/73、typecheck/lint 与
 Playwright 1/1 PASS。本节点为 `automated_verified`，product-v37 仍 `EXPERIMENTAL`，N7/Goal 仍
 `in_progress`。
+
+### product-v37 首次 live：Document Vision 配置在 Provider 前 fail-closed
+
+在 exact-clean full/Document Vision 与 fresh identity/Profile/Goal/J1/process/lease 门通过后，Flash 账本按
+`99940ef` PROPOSED → NOT_OPEN → `045b5b9` OPEN →唯一 wrapper→ `c3223ee` CLOSED → NOT_OPEN
+闭合。独立 verifier/payload scan PASS，但唯一 evaluation outcome 为
+`DOCUMENT_VISION_ADAPTER_MISSING`：1 completed、0 abandoned、0 Provider attempts、0 tokens。
+
+这是启动器把正式 `renderweave.inference.document-vision.adapter-script` 键误写成非合同键
+`renderweave.inference.document-vision.adapter` 所致；本地预处理在网络调用前拒绝，未产生模型质量信号。
+该授权不可重放。后续若在相同 product-v37 上重试，必须创建新的 immutable authorization，重新通过 clean
+gate 和全部 fresh preflight，并显式验证正确 adapter-script binding；不得从这次零调用结果放宽 semantic
+verifier、Plus/Max 或 final eval 门。product-v37 保持 `EXPERIMENTAL`，N7/Goal 保持 `in_progress`。
