@@ -152,6 +152,62 @@ class VisualGroundingContractTest {
     }
 
     @Test
+    void boundedObservationNormalizationRepairsOnlyDocumentedKindsAndOneExactItemParent()
+            throws Exception {
+        var malformed = elementsJson()
+                .replaceFirst("\"kind\":\"ROOT\"", "\"kind\":\"DOCUMENT\"")
+                .replaceFirst("\"kind\":\"SECTION\"", "\"kind\":\"container\"")
+                .replace(
+                        "\"regionId\":\"item-a\",\"parentRegionId\":\"repeat\",\"kind\":\"ITEM\",\"multiplicity\":\"ONE\",\"readingOrder\":0,\"repeatGroupId\":\"rows\"",
+                        "\"regionId\":\"item-a\",\"parentRegionId\":\"root\",\"kind\":\"item\",\"multiplicity\":\"ONE\",\"readingOrder\":3,\"repeatGroupId\":\"rows\""
+                );
+
+        assertEquals("VISUAL_GROUNDING_JSON_ENUM_INVALID_REGION_KIND", assertThrows(
+                InvalidVisualAnalysisException.class, () -> codec.parseElements(
+                        malformed, views(), List.of(IMAGE_ID)
+                )
+        ).diagnosticCode());
+
+        var normalized = codec.parseElements(
+                malformed, views(), List.of(IMAGE_ID),
+                VisualObservationNormalizationPolicy.BOUNDED_ENUM_AND_UNIQUE_ITEM_PARENT
+        );
+        assertEquals(VisualRegionKind.ROOT,
+                normalized.grounding().requireRegion("root").kind());
+        assertEquals(VisualRegionKind.GROUP,
+                normalized.grounding().requireRegion("header").kind());
+        assertEquals(VisualRegionKind.ITEM,
+                normalized.grounding().requireRegion("item-a").kind());
+        assertEquals("repeat",
+                normalized.grounding().requireRegion("item-a").parentRegionId());
+        assertEquals(0, normalized.grounding().requireRegion("item-a").readingOrder());
+        assertEquals(3, normalized.normalizedRegionKinds());
+        assertEquals(1, normalized.normalizedItemParents());
+        assertEquals(1, normalized.normalizedReadingOrders());
+
+        var unknownAlias = elementsJson().replaceFirst(
+                "\"kind\":\"ROOT\"", "\"kind\":\"FIELD\""
+        );
+        assertEquals("VISUAL_GROUNDING_JSON_ENUM_INVALID_REGION_KIND", assertThrows(
+                InvalidVisualAnalysisException.class, () -> codec.parseElements(
+                        unknownAlias, views(), List.of(IMAGE_ID),
+                        VisualObservationNormalizationPolicy.BOUNDED_ENUM_AND_UNIQUE_ITEM_PARENT
+                )
+        ).diagnosticCode());
+
+        var noExactParent = elementsJson().replace(
+                "\"regionId\":\"item-a\",\"parentRegionId\":\"repeat\",\"kind\":\"ITEM\",\"multiplicity\":\"ONE\",\"readingOrder\":0,\"repeatGroupId\":\"rows\"",
+                "\"regionId\":\"item-a\",\"parentRegionId\":\"header\",\"kind\":\"ITEM\",\"multiplicity\":\"ONE\",\"readingOrder\":0,\"repeatGroupId\":\"other\""
+        );
+        assertEquals("VISUAL_GROUNDING_PARENT_KIND_INVALID", assertThrows(
+                InvalidVisualAnalysisException.class, () -> codec.parseElements(
+                        noExactParent, views(), List.of(IMAGE_ID),
+                        VisualObservationNormalizationPolicy.BOUNDED_ENUM_AND_UNIQUE_ITEM_PARENT
+                )
+        ).diagnosticCode());
+    }
+
+    @Test
     void classifiesProviderLengthStopsWithoutInspectingOrPersistingPayload() {
         var response = new ProviderInferenceResponse(
                 "{\"partial\":true}", "request-1", "qwen3.8-max",

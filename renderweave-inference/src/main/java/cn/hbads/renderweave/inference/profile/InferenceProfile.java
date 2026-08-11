@@ -294,6 +294,17 @@ public record InferenceProfile(
                 && documentVisionCapabilityId != null
                 && documentVisionCapabilityId.matches("[a-z0-9][a-z0-9._:-]{0,190}")
                 && profileId.endsWith("-product-v23-hybrid-generic");
+        var productPromptV24 = InferencePromptRegistry.SCHEMA_CANDIDATE_V5.equals(promptVersion)
+                && InferencePromptRegistry.VISUAL_ELEMENTS_V8.equals(elementPromptVersion)
+                && InferencePromptRegistry.VISUAL_HIERARCHY_V7.equals(hierarchyPromptVersion)
+                && InferencePromptRegistry.VISUAL_BINDINGS_V3.equals(bindingPromptVersion)
+                && InferencePromptRegistry.VISUAL_HINT_GENERIC_V1.equals(visualHintPackVersion)
+                && InferencePromptRegistry.DOCUMENT_VISION_OBSERVATIONS_V1.equals(
+                        documentVisionPromptVersion
+                )
+                && documentVisionCapabilityId != null
+                && documentVisionCapabilityId.matches("[a-z0-9][a-z0-9._:-]{0,190}")
+                && profileId.endsWith("-product-v24-hybrid-generic");
         var serialVisualPipeline = "renderweave-inference-pipeline/3.0".equals(pipelineVersion)
                 || "renderweave-inference-pipeline/4.0".equals(pipelineVersion)
                 || "renderweave-inference-pipeline/4.1".equals(pipelineVersion)
@@ -305,7 +316,8 @@ public record InferenceProfile(
                 || "renderweave-inference-pipeline/4.7".equals(pipelineVersion)
                 || "renderweave-inference-pipeline/4.8".equals(pipelineVersion)
                 || "renderweave-inference-pipeline/4.9".equals(pipelineVersion)
-                || "renderweave-inference-pipeline/4.10".equals(pipelineVersion);
+                || "renderweave-inference-pipeline/4.10".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.11".equals(pipelineVersion);
         if (!serialVisualPipeline
                 && (elementPromptVersion != null || hierarchyPromptVersion != null || bindingPromptVersion != null)) {
             throw new IllegalArgumentException("Serial visual prompts are exclusive to visual pipelines 3 and 4");
@@ -319,12 +331,14 @@ public record InferenceProfile(
                 || "renderweave-inference-pipeline/4.7".equals(pipelineVersion)
                 || "renderweave-inference-pipeline/4.8".equals(pipelineVersion)
                 || "renderweave-inference-pipeline/4.9".equals(pipelineVersion)
-                || "renderweave-inference-pipeline/4.10".equals(pipelineVersion))
+                || "renderweave-inference-pipeline/4.10".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.11".equals(pipelineVersion))
                 && visualHintPackVersion != null) {
             throw new IllegalArgumentException("Visual hint packs are exclusive to grounded visual pipelines");
         }
         var documentVisionPipeline = "renderweave-inference-pipeline/4.2".equals(pipelineVersion)
-                || "renderweave-inference-pipeline/4.10".equals(pipelineVersion);
+                || "renderweave-inference-pipeline/4.10".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.11".equals(pipelineVersion);
         var documentVisionIdentityPresent = documentVisionCapabilityId != null
                 || documentVisionPromptVersion != null;
         if (documentVisionPipeline != documentVisionIdentityPresent
@@ -362,7 +376,9 @@ public record InferenceProfile(
                 || ("renderweave-inference-pipeline/4.9".equals(pipelineVersion)
                 && productPromptV22)
                 || ("renderweave-inference-pipeline/4.10".equals(pipelineVersion)
-                && productPromptV23));
+                && productPromptV23)
+                || ("renderweave-inference-pipeline/4.11".equals(pipelineVersion)
+                && productPromptV24));
         if (!(legacySyntheticPrompt || productPrompt)
                 || !"JSON_OBJECT".equals(responseFormat)
                 || thinkingEnabled || toolsAllowed || remoteMediaAllowed) {
