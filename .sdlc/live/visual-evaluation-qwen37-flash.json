@@ -1,24 +1,24 @@
 {
   "authorizationVersion": "renderweave-visual-evaluation-authorization/1.0",
-  "authorizationId": "visual-n7-item-slot-owner-v31-qwen37-flash-transit-20260811",
-  "status": "CLOSED",
+  "authorizationId": "visual-n7-unknown-support-owner-v33-qwen37-flash-transit-20260811",
+  "status": "PROPOSED",
   "phase": "CANARY",
   "inputClassification": "REPOSITORY_SYNTHETIC_ONLY",
   "corpusVersion": "renderweave-visual-stage-corpus/1.0",
   "corpusSourceSha256": "bf0db7bf0ac5c4e2b357cdd96c49ff70a7b30a5bc59f322a915020dc29fc605e",
-  "evaluationIdentity": "renderweave-visual-evaluation-tree-sha256/2:578c631edfa2948527013fc0c1831de2242891a2e87bc233376fb208f3a2c0f3",
-  "profileId": "dashscope-qwen37-flash-20260715-product-v31-hybrid-generic",
-  "profileSnapshotSha256": "c4a32c216971a38cae252f1ee0f8e68af820e3d4374d053d2c88cd0be6e398b7",
+  "evaluationIdentity": "renderweave-visual-evaluation-tree-sha256/2:84e6c3f7d70825a29d9e4bdfe8070d16323b0eb9e830619359aa2294c3ff97e7",
+  "profileId": "dashscope-qwen37-flash-20260715-product-v33-hybrid-generic",
+  "profileSnapshotSha256": "6d55bc7e2d20f158bd57c878ddabcb7de47978fb28263b73a730f82295939901",
   "model": "qwen3.7-flash-2026-07-15",
   "caseIds": [
     "transit-board-v3"
   ],
   "maximumProviderAttempts": 5,
   "maximumTotalTokens": 60000,
-  "maximumCostMicrosCny": 29000,
+  "maximumCostMicrosCny": 250000,
   "maximumCasesPerBatch": 1,
   "approvedBy": "yiwer",
-  "approvedAt": "2026-08-11T08:07:36Z",
-  "expiresAt": "2026-08-11T12:08:36Z",
-  "approvalScope": "Goal J1 CANARY explicitly continued by yiwer with another 500000 exposed-token allowance for each stable model slot, producing the repository-enforced cumulative 1500000-token cap while preserving the existing 180-attempt, CNY and time limits; this ledger authorizes only one repository-synthetic transit-board-v3 case through immutable qwen3.7-flash-2026-07-15 product-v31-hybrid-generic pipeline 4.18 with RENDERWEAVE_DOCUMENT_VISION_ENABLED=true and exact rapidocr-3.9.2-openvino-2026.0.0-ppocrv6-small-c05805399d7d10b1 capability; bounded repeated-item SLOT-owner normalization may only remap existing SLOT owners when all canonical evidence is inside ITEM regions, every evidence item has one unique most-specific non-ROOT owner, every missing ITEM has eligible evidence, the inventory is complete and at most eight items are involved, otherwise it preserves the original fail-closed code; it does not synthesize fields, topology, evidence, text, hierarchy or bindings; exact clean-revision full gate 20260811-155539 and Document Vision canary 20260811-160517 passed; no raw OCR/model text, image, complete prompt, Candidate, gold or chain-of-thought may enter evidence; Flash stable-slot aggregate before this authorization is 115 attempts, 771740 exposed tokens and CNY 0.370287, with authorization maxima of 120 attempts, 831740 exposed tokens and CNY 0.399287; at most 5 Provider attempts, 60000 exposed tokens, CNY 0.029 and one case per batch; PROPOSED negative probe before OPEN, fresh identity/Profile/Goal/time/process/lease recheck immediately before the sole wrapper, payload-free evidence, no concurrent rerun and immediate CLOSED after wrapper exit or fail-closed stop; this Flash ledger grants no Plus or Max call, and Max remains gated on same-version accepted OBSERVE, HIERARCHY and BINDING plus quality, J1, budget and time"
+  "approvedAt": "2026-08-11T09:51:55Z",
+  "expiresAt": "2026-08-12T09:51:55Z",
+  "approvalScope": "Goal J1 CANARY approved by yiwer for the qwen3.7-flash-2026-07-15 stable slot with a cumulative CNY 10 cap and a fixed 24-hour window; only repository-synthetic transit-board-v3 may run through immutable product-v33 pipeline 4.20 with the frozen RapidOCR/OpenVINO capability; the bounded unknown relationship-support repair may only select one existing, uniquely connected and multiplicity-compatible GROUP owner and otherwise remains fail-closed; no raw OCR or model text, image, complete prompt, Candidate, gold or chain-of-thought may enter evidence; this ledger permits one case, at most 5 Provider attempts, 60000 exposed tokens and CNY 0.25, while Goal totals remain capped at 180 attempts and 1500000 exposed tokens; exact-clean full 20260811-180152 and Document Vision 20260811-181058 passed; require PROPOSED negative probe, fresh identity/Profile/Goal/time/process/lease preflight, one serial wrapper, no rerun after timeout, immediate CLOSED before evidence inspection, and no Max unless the same-version live stage and quality gates hold"
 }
