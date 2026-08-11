@@ -1,14 +1,14 @@
 {
   "authorizationVersion": "renderweave-visual-evaluation-authorization/1.0",
-  "authorizationId": "visual-n7-enclosing-owner-v26b-qwen37-flash-transit-20260811",
-  "status": "CLOSED",
+  "authorizationId": "visual-n7-source-ancestor-v27-qwen37-flash-transit-20260811",
+  "status": "PROPOSED",
   "phase": "CANARY",
   "inputClassification": "REPOSITORY_SYNTHETIC_ONLY",
   "corpusVersion": "renderweave-visual-stage-corpus/1.0",
   "corpusSourceSha256": "bf0db7bf0ac5c4e2b357cdd96c49ff70a7b30a5bc59f322a915020dc29fc605e",
-  "evaluationIdentity": "renderweave-visual-evaluation-tree-sha256/1:d1bbd3fc7fe71925f070655efd2a8d1ecbb4a87539bec079e8cfe04d530a2696",
-  "profileId": "dashscope-qwen37-flash-20260715-product-v26-hybrid-generic",
-  "profileSnapshotSha256": "3730ade4c10e1ed2352ce0c0e8aa1d4d42d9ba98002b4dfe49bdda8395f69431",
+  "evaluationIdentity": "renderweave-visual-evaluation-tree-sha256/1:903f5b9f87797bcf124f08cc539982f708dc8ab5217129adcd6dc9c40960c965",
+  "profileId": "dashscope-qwen37-flash-20260715-product-v27-hybrid-generic",
+  "profileSnapshotSha256": "a0e159152876073ea846aefa39987ddb10366ba0f53f1e68d5eec74711128394",
   "model": "qwen3.7-flash-2026-07-15",
   "caseIds": [
     "transit-board-v3"
@@ -18,7 +18,7 @@
   "maximumCostMicrosCny": 100000,
   "maximumCasesPerBatch": 1,
   "approvedBy": "yiwer",
-  "approvedAt": "2026-08-11T02:53:56Z",
-  "expiresAt": "2026-08-11T14:53:56Z",
-  "approvalScope": "Goal J1 CANARY replacement after the prior product-v26 ledger was CLOSED with zero Provider attempts on a fail-closed corpus line-ending preflight mismatch: user pinned Flash to qwen3.7-flash-2026-07-15, granted its stable slot a cumulative 1500000 exposed tokens and requested continued Goal progression; one repository-synthetic transit-board-v3 case through immutable product-v26-hybrid-generic pipeline 4.13, inheriting the exact repository-bound ephemeral RapidOCR/OpenVINO secondary observation and all bounded product-v25 policies while adding only the local unique enclosing-connected GROUP-owner normalization: a known non-GROUP support and known source region are normalized only when exactly one GROUP/container-region pair is cardinality-compatible, encloses all support element regions and connects the parent/child entity regions before the existing relationship-region normalization; zero or multiple candidates remain fail-closed; no OCR/model text, gold, distance ranking or topology synthesis; at most 5 attempts, 60000 exposed tokens, CNY 0.10 and one case per batch within the alias-normalized 1500000-token Flash Goal slot; payload-free evidence, no concurrent rerun and immediate CLOSED after this smoke"
+  "approvedAt": "2026-08-11T03:51:09Z",
+  "expiresAt": "2026-08-11T15:51:09Z",
+  "approvalScope": "Goal J1 CANARY: user renewed 500000 exposed tokens for each stable model slot, retaining Flash preference and raising the enforced cumulative cap to 1500000 per slot; one repository-synthetic transit-board-v3 case through immutable qwen3.7-flash-2026-07-15 product-v27-hybrid-generic pipeline 4.14, inheriting the exact repository-bound ephemeral RapidOCR/OpenVINO secondary observation and all product-v26 policies while adding only a bounded source-ancestor fallback when the v26 enclosing-owner candidate set is zero: the already validated relationship source region must have exactly one cardinality-compatible, parent-child-connected ancestor region owned by exactly one GROUP; zero or multiple candidates remain fail-closed; no raw OCR/model text, gold, distance ranking or topology synthesis; at most 5 attempts, 60000 exposed tokens, CNY 0.10 and one case per batch within the alias-normalized 1500000-token Flash Goal slot; payload-free evidence, no concurrent rerun and immediate CLOSED after this smoke"
 }
