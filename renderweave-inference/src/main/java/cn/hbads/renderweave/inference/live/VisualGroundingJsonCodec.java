@@ -198,12 +198,31 @@ final class VisualGroundingJsonCodec {
             VisualRelationshipSupportIdPolicy supportIdPolicy,
             VisualRelationshipRegionPolicy relationshipRegionPolicy
     ) {
+        return parseHierarchy(
+                value, inventory, grounding, cardinalityPolicy, prerequisitePolicy,
+                regionDiagnosticPolicy, supportIdPolicy, relationshipRegionPolicy,
+                VisualHierarchySemanticPolicy.LEGACY
+        );
+    }
+
+    GroundedHierarchyPlan parseHierarchy(
+            String value,
+            VisualElementInventory inventory,
+            VisualGroundingPlan grounding,
+            VisualRelationshipCardinalityPolicy cardinalityPolicy,
+            VisualHierarchyPrerequisitePolicy prerequisitePolicy,
+            VisualHierarchyRegionDiagnosticPolicy regionDiagnosticPolicy,
+            VisualRelationshipSupportIdPolicy supportIdPolicy,
+            VisualRelationshipRegionPolicy relationshipRegionPolicy,
+            VisualHierarchySemanticPolicy semanticPolicy
+    ) {
         try {
             Objects.requireNonNull(cardinalityPolicy, "cardinalityPolicy");
             Objects.requireNonNull(prerequisitePolicy, "prerequisitePolicy");
             Objects.requireNonNull(regionDiagnosticPolicy, "regionDiagnosticPolicy");
             Objects.requireNonNull(supportIdPolicy, "supportIdPolicy");
             Objects.requireNonNull(relationshipRegionPolicy, "relationshipRegionPolicy");
+            Objects.requireNonNull(semanticPolicy, "semanticPolicy");
             var response = decode(value, HierarchyOutput.class, "VISUAL_HIERARCHY_V2");
             if (!VisualHierarchyPlan.VERSION_V2.equals(response.contractVersion())) {
                 throw invalid("VISUAL_HIERARCHY_V2_VERSION_INVALID", null);
@@ -267,7 +286,7 @@ final class VisualGroundingJsonCodec {
             }
             var entityRegions = classifiedEntityRegions.plan();
             var semanticIssues = SEMANTIC_VERIFIER.verifyHierarchy(
-                    inventory, grounding, hierarchy, entityRegions
+                    inventory, grounding, hierarchy, entityRegions, semanticPolicy
             );
             if (!semanticIssues.isEmpty()) {
                 throw invalid(semanticIssues.getFirst(), null);
@@ -491,7 +510,22 @@ final class VisualGroundingJsonCodec {
             VisualGroundingPlan grounding,
             VisualEntityRegionPlan entityRegions
     ) {
+        return parseBindings(
+                value, inventory, hierarchy, grounding, entityRegions,
+                VisualBindingSemanticPolicy.NEAREST_ENTITY
+        );
+    }
+
+    VisualElementBindingPlan parseBindings(
+            String value,
+            VisualElementInventory inventory,
+            VisualHierarchyPlan hierarchy,
+            VisualGroundingPlan grounding,
+            VisualEntityRegionPlan entityRegions,
+            VisualBindingSemanticPolicy semanticPolicy
+    ) {
         try {
+            Objects.requireNonNull(semanticPolicy, "semanticPolicy");
             var response = decode(value, BindingOutput.class, "VISUAL_BINDINGS_V2");
             if (!VisualElementBindingPlan.VERSION_V2.equals(response.contractVersion())) {
                 throw invalid("VISUAL_BINDINGS_V2_VERSION_INVALID", null);
@@ -511,7 +545,7 @@ final class VisualGroundingJsonCodec {
                     entityRegions.requireBindingsConsistent(result, grounding)
             );
             var semanticIssues = SEMANTIC_VERIFIER.verifyBindings(
-                    inventory, grounding, hierarchy, entityRegions, result
+                    inventory, grounding, hierarchy, entityRegions, result, semanticPolicy
             );
             if (!semanticIssues.isEmpty()) {
                 throw invalid(semanticIssues.getFirst(), null);

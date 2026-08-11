@@ -8,6 +8,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 
 /** Bounded, payload-free semantic checks that route an issue to the earliest regenerable stage. */
 final class VisualSemanticVerifier {
@@ -99,10 +100,24 @@ final class VisualSemanticVerifier {
             VisualHierarchyPlan hierarchy,
             VisualEntityRegionPlan entityRegions
     ) {
+        return verifyHierarchy(
+                inventory, grounding, hierarchy, entityRegions,
+                VisualHierarchySemanticPolicy.LEGACY
+        );
+    }
+
+    List<VisualSemanticIssue> verifyHierarchy(
+            VisualElementInventory inventory,
+            VisualGroundingPlan grounding,
+            VisualHierarchyPlan hierarchy,
+            VisualEntityRegionPlan entityRegions,
+            VisualHierarchySemanticPolicy semanticPolicy
+    ) {
         Objects.requireNonNull(inventory, "inventory");
         Objects.requireNonNull(grounding, "grounding");
         Objects.requireNonNull(hierarchy, "hierarchy");
         Objects.requireNonNull(entityRegions, "entityRegions");
+        Objects.requireNonNull(semanticPolicy, "semanticPolicy");
         var issues = new ArrayList<VisualSemanticIssue>();
         var groups = inventory.elements().stream()
                 .filter(element -> element.kind() == VisualElementKind.GROUP)
@@ -133,6 +148,42 @@ final class VisualSemanticVerifier {
             if (!grounding.regionIdsForElement(supportingGroups.getFirst().elementId())
                     .contains(relationshipRegion)) {
                 issues.add(VisualSemanticIssue.HIERARCHY_EDGE_REGION_INVALID);
+            }
+        }
+        issues.addAll(verifyEntityRegionTopology(
+                grounding, hierarchy, entityRegions, semanticPolicy
+        ));
+        return canonical(issues);
+    }
+
+    List<VisualSemanticIssue> verifyEntityRegionTopology(
+            VisualGroundingPlan grounding,
+            VisualHierarchyPlan hierarchy,
+            VisualEntityRegionPlan entityRegions,
+            VisualHierarchySemanticPolicy semanticPolicy
+    ) {
+        Objects.requireNonNull(grounding, "grounding");
+        Objects.requireNonNull(hierarchy, "hierarchy");
+        Objects.requireNonNull(entityRegions, "entityRegions");
+        Objects.requireNonNull(semanticPolicy, "semanticPolicy");
+        if (semanticPolicy == VisualHierarchySemanticPolicy.LEGACY) return List.of();
+
+        var issues = new ArrayList<VisualSemanticIssue>();
+        var rootRegions = Set.copyOf(grounding.rootRegionIds());
+        for (var entity : entityRegions.entities()) {
+            if (!entity.entityId().equals(hierarchy.rootEntityId())
+                    && entity.regionIds().stream().anyMatch(rootRegions::contains)) {
+                issues.add(VisualSemanticIssue.HIERARCHY_NON_ROOT_OWNS_ROOT_REGION);
+            }
+            for (var left = 0; left < entity.regionIds().size(); left++) {
+                for (var right = left + 1; right < entity.regionIds().size(); right++) {
+                    var leftRegion = entity.regionIds().get(left);
+                    var rightRegion = entity.regionIds().get(right);
+                    if (grounding.descendantOrSame(leftRegion, rightRegion)
+                            || grounding.descendantOrSame(rightRegion, leftRegion)) {
+                        issues.add(VisualSemanticIssue.HIERARCHY_ENTITY_REGION_REDUNDANT);
+                    }
+                }
             }
         }
         return canonical(issues);
@@ -188,15 +239,45 @@ final class VisualSemanticVerifier {
             VisualEntityRegionPlan entityRegions,
             VisualElementBindingPlan bindings
     ) {
+        return verifyBindings(
+                inventory, grounding, hierarchy, entityRegions, bindings,
+                VisualBindingSemanticPolicy.NEAREST_ENTITY
+        );
+    }
+
+    List<VisualSemanticIssue> verifyBindings(
+            VisualElementInventory inventory,
+            VisualGroundingPlan grounding,
+            VisualHierarchyPlan hierarchy,
+            VisualEntityRegionPlan entityRegions,
+            VisualElementBindingPlan bindings,
+            VisualBindingSemanticPolicy semanticPolicy
+    ) {
         Objects.requireNonNull(inventory, "inventory");
         Objects.requireNonNull(grounding, "grounding");
         Objects.requireNonNull(hierarchy, "hierarchy");
         Objects.requireNonNull(entityRegions, "entityRegions");
         Objects.requireNonNull(bindings, "bindings");
+        Objects.requireNonNull(semanticPolicy, "semanticPolicy");
         var issues = new ArrayList<VisualSemanticIssue>();
         for (var binding : bindings.bindings()) {
             var elementRegions = grounding.regionIdsForElement(binding.elementId());
             var chosen = entityRegions.requireEntity(binding.entityId());
+            if (semanticPolicy == VisualBindingSemanticPolicy.UNIQUE_MINIMAL_ENTITY_OWNER) {
+                var owners = entityRegions.entities().stream()
+                        .filter(candidate -> ownsAll(candidate, elementRegions, grounding))
+                        .toList();
+                var minimal = owners.stream().filter(candidate -> owners.stream().noneMatch(other ->
+                        !other.entityId().equals(candidate.entityId())
+                                && strictlyInside(other, candidate, grounding)
+                )).toList();
+                if (minimal.size() != 1) {
+                    issues.add(VisualSemanticIssue.BINDING_OWNER_AMBIGUOUS);
+                } else if (!minimal.getFirst().entityId().equals(chosen.entityId())) {
+                    issues.add(VisualSemanticIssue.BINDING_NOT_NEAREST_ENTITY);
+                }
+                continue;
+            }
             var hasNearer = entityRegions.entities().stream()
                     .filter(candidate -> !candidate.entityId().equals(chosen.entityId()))
                     .filter(candidate -> ownsAll(candidate, elementRegions, grounding))
@@ -256,6 +337,16 @@ enum VisualObservationSemanticPolicy {
     SLOT_LEAF_EVIDENCE_REQUIRED
 }
 
+enum VisualHierarchySemanticPolicy {
+    LEGACY,
+    MINIMAL_ENTITY_REGION_OWNERSHIP
+}
+
+enum VisualBindingSemanticPolicy {
+    NEAREST_ENTITY,
+    UNIQUE_MINIMAL_ENTITY_OWNER
+}
+
 enum VisualSemanticIssue {
     OBSERVE_REPEATED_GROUP_ELEMENT_MISSING(
             "VISUAL_SEMANTIC_REPEATED_GROUP_ELEMENT_MISSING", InferenceStage.OBSERVE
@@ -289,6 +380,15 @@ enum VisualSemanticIssue {
     ),
     HIERARCHY_EDGE_REGION_INVALID(
             "VISUAL_SEMANTIC_HIERARCHY_EDGE_REGION_INVALID", InferenceStage.HIERARCHY
+    ),
+    HIERARCHY_ENTITY_REGION_REDUNDANT(
+            "VISUAL_SEMANTIC_HIERARCHY_ENTITY_REGION_REDUNDANT", InferenceStage.HIERARCHY
+    ),
+    HIERARCHY_NON_ROOT_OWNS_ROOT_REGION(
+            "VISUAL_SEMANTIC_HIERARCHY_NON_ROOT_OWNS_ROOT_REGION", InferenceStage.HIERARCHY
+    ),
+    BINDING_OWNER_AMBIGUOUS(
+            "VISUAL_SEMANTIC_BINDING_OWNER_AMBIGUOUS", InferenceStage.ELEMENT_BINDING
     ),
     BINDING_NOT_NEAREST_ENTITY(
             "VISUAL_SEMANTIC_BINDING_NOT_NEAREST_ENTITY", InferenceStage.ELEMENT_BINDING

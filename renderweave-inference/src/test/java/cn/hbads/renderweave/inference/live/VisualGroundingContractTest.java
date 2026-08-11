@@ -835,6 +835,86 @@ class VisualGroundingContractTest {
     }
 
     @Test
+    void minimalEntityRegionPolicyIsOptInAtTheHierarchyContractBoundary() throws Exception {
+        var observed = codec.parseElements(elementsJson(), views(), List.of(IMAGE_ID));
+        var redundant = hierarchyJson().replace(
+                "\"regionIds\":[\"item-a\",\"item-b\"]",
+                "\"regionIds\":[\"root\",\"item-a\"]"
+        );
+
+        codec.parseHierarchy(redundant, observed.inventory(), observed.grounding());
+        var failure = assertThrows(InvalidVisualAnalysisException.class, () ->
+                codec.parseHierarchy(
+                        redundant, observed.inventory(), observed.grounding(),
+                        VisualRelationshipCardinalityPolicy.SUPPORT_GROUP_DERIVED,
+                        VisualHierarchyPrerequisitePolicy.RELATIONSHIP_REGION_GROUP_OWNER_REQUIRED,
+                        VisualHierarchyRegionDiagnosticPolicy.DETAILED_FIXED_CODES,
+                        VisualRelationshipSupportIdPolicy.CANONICALIZE_EXACT_DUPLICATES,
+                        VisualRelationshipRegionPolicy.STRICT,
+                        VisualHierarchySemanticPolicy.MINIMAL_ENTITY_REGION_OWNERSHIP
+                )
+        );
+
+        assertEquals("VISUAL_SEMANTIC_HIERARCHY_ENTITY_REGION_REDUNDANT",
+                failure.diagnosticCode());
+        assertEquals(InferenceStage.HIERARCHY, failure.earliestStage().orElseThrow());
+    }
+
+    @Test
+    void uniqueMinimalBindingPolicyRejectsEqualOwnersAtTheContractBoundary() throws Exception {
+        var observed = codec.parseElements(elementsJson(), views(), List.of(IMAGE_ID));
+        var hierarchy = new VisualHierarchyPlan(
+                VisualHierarchyPlan.VERSION_V2,
+                "document",
+                List.of(
+                        new VisualEntityPlan("document", "document", "Document", List.of("title")),
+                        new VisualEntityPlan("item-a-entity", "item-a-entity", "Item A", List.of("row-group")),
+                        new VisualEntityPlan("item-b-entity", "item-b-entity", "Item B", List.of("row-group"))
+                ),
+                List.of(
+                        new VisualRelationshipPlan(
+                                "document-item-a", "document", "item-a-entity", "item-a",
+                                "Item A", VisualMultiplicity.MANY, List.of("row-group")
+                        ),
+                        new VisualRelationshipPlan(
+                                "document-item-b", "document", "item-b-entity", "item-b",
+                                "Item B", VisualMultiplicity.MANY, List.of("row-group")
+                        )
+                )
+        );
+        var entityRegions = new VisualEntityRegionPlan(
+                VisualEntityRegionPlan.VERSION,
+                List.of(
+                        new VisualEntityRegionOwnership("document", List.of("root")),
+                        new VisualEntityRegionOwnership(
+                                "item-a-entity", List.of("item-a", "item-b")
+                        ),
+                        new VisualEntityRegionOwnership(
+                                "item-b-entity", List.of("item-a", "item-b")
+                        )
+                ),
+                List.of()
+        );
+        var ambiguousBindings = bindingsJson().replace(
+                "\"entityId\":\"item\"", "\"entityId\":\"item-a-entity\""
+        );
+
+        codec.parseBindings(
+                ambiguousBindings, observed.inventory(), hierarchy, observed.grounding(),
+                entityRegions
+        );
+        var failure = assertThrows(InvalidVisualAnalysisException.class, () ->
+                codec.parseBindings(
+                        ambiguousBindings, observed.inventory(), hierarchy, observed.grounding(),
+                        entityRegions, VisualBindingSemanticPolicy.UNIQUE_MINIMAL_ENTITY_OWNER
+                )
+        );
+
+        assertEquals("VISUAL_SEMANTIC_BINDING_OWNER_AMBIGUOUS", failure.diagnosticCode());
+        assertEquals(InferenceStage.ELEMENT_BINDING, failure.earliestStage().orElseThrow());
+    }
+
+    @Test
     void routesRelationshipWithoutAnyObservedGroupBackToObservation() throws Exception {
         var observed = codec.parseElements(flatElementsJson(), views(), List.of(IMAGE_ID));
 
