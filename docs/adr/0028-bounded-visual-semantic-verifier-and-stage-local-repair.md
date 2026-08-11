@@ -1167,3 +1167,27 @@ verifier 37/37、real-PG v37/v38 2/2、inference 192/192、Web 73/73、typecheck
 因此它只把 N6 保持为 `automated_verified`，不构成 live 三阶段或质量证据；product-v38 仍
 `EXPERIMENTAL`，N7/Goal 仍 `in_progress`。任何 v38 live 必须先在同一 clean revision 重跑 full/Document
 Vision，并 fresh 绑定 evaluation identity、Profile snapshot、Goal/J1/time/process/lease。
+
+### product-v38 Flash live 结论
+
+exact-clean `3e44974` 已通过 full 9/9（`20260811-225452-full`）和冻结 Document Vision 19-line canary
+（`20260811-225916-document-vision`）。Java 与独立 Python identity 均为
+`renderweave-visual-evaluation-tree-sha256/2:fc334bc7dc28508a0202881eb9754f612f34542347627f471af9d6659558a524`，
+Flash v38 canonical snapshot 为 `d91bc9681b4532a0f6edd7ed52e58a46daea42407cae9d87d37abda53c2c9412`。
+
+授权按 `882c8ca` PROPOSED → NOT_OPEN → `19c726c` OPEN →唯一 wrapper→ `31109c4` CLOSED →
+NOT_OPEN 闭合。wrapper exit 0、122.906 秒；独立 verifier/payload scan PASS，重建为 1 completed、
+0 abandoned、5 attempts、40,797 exposed tokens、¥0.020282、110,782 ms。两侧负探针的 Goal/evidence
+哈希均不变，结束后没有相关进程或 held lease。
+
+五次均停在 OBSERVE：`VISUAL_GROUNDING_JSON_ENUM_INVALID_REGION_KIND`×2、
+`VISUAL_GROUNDING_READING_ORDER_GAP`×2、`VISUAL_GROUNDING_JSON_UNKNOWN_MEMBER`×1；v38 的
+`VISUAL_GROUNDING_REGION_PARENT_NORMALIZED` 未命中。这不否定离线 bounded contract，但没有建立同版本
+HIERARCHY/BINDING 或 Candidate 质量证据。unknown member 与 invalid enum 仍不允许读取 payload、建立 alias
+或放宽严格 JSON；下一安全假设只可从 repository synthetic forest 证明 sibling reading order 的唯一
+canonicalization，并保持不可唯一时 fail-closed。
+
+Goal 更新为 410 reservations（405 SETTLED、5 历史 Plus RESERVED、0 BREACHED）；Flash/Plus/Max 为
+149/179/82 attempts、1,063,527/1,087,500/491,919 tokens 和
+¥0.519735/¥4.159620/¥10.289316，三 ledger CLOSED。product-v38 保持 `EXPERIMENTAL`，N6=
+`automated_verified`、N7/Goal=`in_progress`；Plus/Max/final eval 不启动。

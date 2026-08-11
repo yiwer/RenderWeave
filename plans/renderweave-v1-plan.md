@@ -825,3 +825,15 @@ fail-closed。它不读取模型 payload、文字或 gold，也不改 box 或创
 ledger CLOSED 状态不变。N6=`automated_verified`、N7/Goal=`in_progress`、v38=`EXPERIMENTAL`；下一
 DAG 节点为 exact-clean full/Document Vision 与 fresh identity/snapshot/budget/J1/process/lease，之后才可
 考虑 Flash bounded smoke。
+
+### product-v38 Flash live disposition
+
+exact-clean `3e44974` 的 full 9/9、Document Vision 19-line canary、双实现 identity 和 v38 snapshot 通过。
+Flash lifecycle `882c8ca`→NOT_OPEN→`19c726c`→唯一 wrapper→`31109c4`→NOT_OPEN 闭合；独立
+verifier/payload scan PASS：5 attempts、40,797 tokens、¥0.020282、0 abandoned。五次均停在 OBSERVE：
+invalid region-kind×2、reading-order gap×2、JSON unknown member×1，v38 parent repair 未命中。
+
+Goal 为 410 reservations；Flash 累计 149 attempts/1,063,527 tokens/¥0.519735，Plus/Max 不变，三
+ledger CLOSED。N6=`automated_verified`、N7/Goal=`in_progress`、v38=`EXPERIMENTAL`；Plus/Max/final
+20/60 不执行。下一 DAG 节点仅允许由 synthetic 反例证明 bounded sibling reading-order canonicalization，
+不得读取 unknown member 或模型 payload。

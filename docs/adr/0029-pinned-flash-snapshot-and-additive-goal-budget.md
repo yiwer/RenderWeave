@@ -243,3 +243,14 @@ v38 继续受每槽 180 attempts、1.5M exposed tokens、单 authorization 500k 
 checkpoint commit 的 clean revision 上重新通过 full/Document Vision、fresh identity/三份 snapshot、Goal/
 J1/time/process/lease 后，才可为 Flash 创建新的单 case、最多 5 calls authorization；Plus/Max/final 的
 同版本三阶段和质量停止门不变。
+
+### product-v38 Flash 结算
+
+v38 Flash authorization 按 `882c8ca`→NOT_OPEN→`19c726c`→唯一 wrapper→`31109c4`→NOT_OPEN
+完整闭合，产生 5 SETTLED attempts、40,797 exposed tokens 与 ¥0.020282。独立 verifier/payload scan PASS，
+0 abandoned；五次均停在 OBSERVE，未满足三阶段门。
+
+Goal 现为 410 reservations（405 SETTLED、5 历史 Plus RESERVED、0 BREACHED）。Flash/Plus/Max 累计为
+149/179/82 attempts、1,063,527/1,087,500/491,919 tokens 与
+¥0.519735/¥4.159620/¥10.289316；三 ledger CLOSED，仍在 180 attempts、1.5M tokens 与各自 Goal CNY
+cap 内。Plus 只剩 1 attempt，Max 仍缺同版本三阶段和质量前置，故两者及 final 20/60 不调用。

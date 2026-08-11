@@ -766,3 +766,18 @@ v38 保持 `EXPERIMENTAL`，N6=`automated_verified`、N7/Goal=`in_progress`。�
 exact-clean revision 上执行 full/Document Vision，fresh 重算 evaluation identity、v38 snapshots、Goal/J1/
 time/process/lease；全绿后才考虑 Flash single synthetic case、最多 5 calls。Plus/Max/final 20/60 的同版本
 三阶段、质量、独立复核与最终 J1 门不变。
+
+### v38 Flash live disposition
+
+- gates/identity：clean `3e44974`，full `20260811-225452-full` 9/9，Document Vision
+  `20260811-225916-document-vision` 19 lines，identity=`fc334bc7…8a524`，Flash snapshot=
+  `d91bc968…c9412`。
+- lifecycle/A2：`882c8ca` PROPOSED→NOT_OPEN→`19c726c` OPEN→唯一 wrapper→`31109c4` CLOSED→
+  NOT_OPEN；5 attempts、40,797 tokens、¥0.020282、110,782 ms、0 abandoned、payload PASS。
+- outcome：OBSERVE invalid region-kind×2、reading-order gap×2、JSON unknown member×1；0 HIERARCHY/
+  BINDING，v38 parent normalization 未命中。
+- budget/state：Goal=410 reservations；Flash/Plus/Max=149/179/82 attempts、
+  1,063,527/1,087,500/491,919 tokens、¥0.519735/¥4.159620/¥10.289316；三 ledger CLOSED。
+
+v38 继续 `EXPERIMENTAL`，N6=`automated_verified`、N7/Goal=`in_progress`。下一安全节点回到离线
+reading-order verifier；unknown-member/enum 不放宽，Plus/Max/final 20/60 的门不变。

@@ -323,3 +323,18 @@ N6=`automated_verified`、N7/Goal=`in_progress`，Plus/Max/final eval 门未满�
 - 本节点 Provider=0、Goal 仍为 405 reservations、三 ledger CLOSED。product-v38=`EXPERIMENTAL`、
   N6=`automated_verified`、N7/Goal=`in_progress`；exact-clean full/Document Vision、fresh identity/
   snapshot/budget/J1/process/lease、Flash bounded live、final 20/60 与最终业务/视觉 J1 尚未完成。
+
+#### v38 Flash live 规格状态
+
+exact-clean full/Document Vision、双实现 identity、Profile snapshot 与 Goal/J1/process/lease preflight 均
+通过。Flash 按 `882c8ca`→NOT_OPEN→`19c726c`→唯一 wrapper→`31109c4`→NOT_OPEN 闭合；独立
+verifier/payload scan PASS：5 attempts、40,797 exposed tokens、¥0.020282、0 abandoned。
+
+五次全部在 OBSERVE fail-closed：invalid region-kind×2、reading-order gap×2、JSON unknown member×1；
+v38 parent normalization 未命中。这些 fixed codes 不授权读取 unknown member 名、region ID、order 值、坐标
+或模型文本，也不授权宽松 JSON/enum。后续若增加 reading-order repair，必须只依赖已验证 sibling forest 与
+repository synthetic 反例证明唯一总序，并在 tie/duplicate/拓扑或最终 plan 失败时原子拒绝。
+
+Goal 为 410 reservations，Flash/Plus/Max 累计为 149/179/82 attempts、
+1,063,527/1,087,500/491,919 tokens 与 ¥0.519735/¥4.159620/¥10.289316；三 ledger CLOSED。
+product-v38 仍 `EXPERIMENTAL`、N6=`automated_verified`、N7/Goal=`in_progress`，Plus/Max/final eval 门未满足。

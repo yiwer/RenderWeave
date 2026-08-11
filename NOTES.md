@@ -763,3 +763,20 @@
 - 下一门是在本 checkpoint 的 clean revision 上运行 full/Document Vision，fresh 重算 evaluation identity、
   三份 v38 Profile snapshot、Goal/J1/time/process/lease 后，才可考虑 Flash 单 synthetic case、最多 5 calls；
   Plus/Max/final 20/60 的同版本三阶段、质量、独立复核与最终 J1 门不变。
+
+### v38 Flash live disposition
+
+- exact-clean `3e44974` 的 full `20260811-225452-full` 9/9（236.847 秒）与 Document Vision
+  `20260811-225916-document-vision` 19-line canary PASS；Java/Python identity 一致为
+  `/2:fc334bc7…8a524`，Flash v38 snapshot=`d91bc968…c9412`。
+- lifecycle 为 `882c8ca` PROPOSED → NOT_OPEN → `19c726c` OPEN →唯一 wrapper→ `31109c4`
+  CLOSED → NOT_OPEN。wrapper exit 0/122.906 秒；两侧负探针均无 Goal/evidence 写入，结束后 0 process/
+  0 held lease。
+- 独立 verifier/payload scan PASS：1 completed、0 abandoned、5 SETTLED attempts、20,595 input +
+  20,202 output=40,797 tokens、¥0.020282、110,782 ms。五次全部在 OBSERVE fail-closed：invalid region
+  kind×2、reading-order gap×2、JSON unknown member×1；v38 parent-normalization telemetry 未命中。
+- Goal 为 410 reservations（405 SETTLED、5 历史 Plus RESERVED、0 BREACHED）；Flash/Plus/Max=
+  149/179/82 attempts、1,063,527/1,087,500/491,919 tokens、¥0.519735/¥4.159620/¥10.289316，三
+  ledger CLOSED。v38 仍 `EXPERIMENTAL`、N6=`automated_verified`、N7/Goal=`in_progress`；Plus/Max/
+  final 20/60 不启动。下一安全切片只可用 repository synthetic 反例研究 reading-order gap 的确定性
+  canonicalization；unknown member 与 invalid enum 不授权读取 payload 或放宽 JSON/enum 合同。
