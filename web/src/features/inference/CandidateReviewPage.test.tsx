@@ -95,6 +95,9 @@ describe('Candidate atomic apply workspace', () => {
     expect(screen.getByText('元素归属')).toBeTruthy();
     expect(screen.getAllByText('重复区域').length).toBeGreaterThan(0);
     expect(screen.getAllByText('VISUAL_SEMANTIC_REPEATED_GROUP_ELEMENT_MISSING').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('VISUAL_GROUNDING_READING_ORDER_DUPLICATE').length)
+      .toBeGreaterThan(0);
+    expect(screen.getAllByText('同级区域阅读序号重复').length).toBeGreaterThan(0);
     expect(screen.getAllByText('VISUAL_GROUNDING_ELEMENT_REGION_NORMALIZED').length)
       .toBeGreaterThan(0);
     expect(screen.getAllByText('已按唯一最具体证据区域归一化元素归属').length)
@@ -287,7 +290,10 @@ function visualReviewLog(run: InferenceRunResponse): InferenceExecutionLogRespon
         outputTokens: 3_900,
         costMicrosCny: 2_400,
         durationMillis: 18_000,
-        problemCodeCounts: { VISUAL_SEMANTIC_REPEATED_GROUP_ELEMENT_MISSING: 1 },
+        problemCodeCounts: {
+          VISUAL_SEMANTIC_REPEATED_GROUP_ELEMENT_MISSING: 1,
+          VISUAL_GROUNDING_READING_ORDER_DUPLICATE: 1,
+        },
         completedAt: '2026-08-10T04:03:00Z',
       },
       {

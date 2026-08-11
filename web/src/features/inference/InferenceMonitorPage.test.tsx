@@ -99,6 +99,9 @@ describe('Inference monitor workspace', () => {
     expect(screen.getByRole('heading', { name: '有限问题定位' })).toBeTruthy();
     expect(screen.getAllByText('区域树').length).toBeGreaterThan(0);
     expect(screen.getAllByText('VISUAL_GROUNDING_PARENT_KIND_INVALID').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('VISUAL_GROUNDING_READING_ORDER_DUPLICATE').length)
+      .toBeGreaterThan(0);
+    expect(screen.getAllByText('同级区域阅读序号重复').length).toBeGreaterThan(0);
     expect(screen.getAllByText('VISUAL_SEMANTIC_SLOT_EVIDENCE_CONTAINS_ELEMENT').length)
       .toBeGreaterThan(0);
     expect(screen.getAllByText('字段证据包住了其他元素，应恢复为叶子字段或 GROUP 容器').length)
@@ -320,6 +323,7 @@ function visualExecutionLog(runSnapshot: InferenceRunResponse): InferenceExecuti
         durationMillis: 22_083,
         problemCodeCounts: {
           VISUAL_GROUNDING_PARENT_KIND_INVALID: 1,
+          VISUAL_GROUNDING_READING_ORDER_DUPLICATE: 1,
           VISUAL_SEMANTIC_REPEATED_GROUP_CARDINALITY_INVALID: 1,
           VISUAL_SEMANTIC_SLOT_EVIDENCE_CONTAINS_ELEMENT: 1,
         },
