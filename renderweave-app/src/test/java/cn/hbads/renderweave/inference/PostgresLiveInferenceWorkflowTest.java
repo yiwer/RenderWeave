@@ -122,6 +122,8 @@ class PostgresLiveInferenceWorkflowTest {
             "dashscope-qwen37-flash-20260715-product-v32-hybrid-generic";
     private static final String UNKNOWN_SUPPORT_OWNER_NORMALIZED_HYBRID_VISUAL_PROFILE =
             "dashscope-qwen37-flash-20260715-product-v33-hybrid-generic";
+    private static final String UNIQUE_REGION_PARENT_NORMALIZED_HYBRID_VISUAL_PROFILE =
+            "dashscope-qwen37-flash-20260715-product-v34-hybrid-generic";
     private static final String DOCUMENT_VISION_CAPABILITY =
             "rapidocr-3.9.2-openvino-2026.0.0-ppocrv6-small-c05805399d7d10b1";
 
@@ -1861,6 +1863,83 @@ class PostgresLiveInferenceWorkflowTest {
     }
 
     @Test
+    void pipelineFourPointTwentyOneResumesAfterNormalizingOneUniqueRegionParent() {
+        var blobs = new MemoryBlobStore();
+        var created = createGroundedVisual(
+                blobs, "unique-region-parent-normalized-station",
+                UNIQUE_REGION_PARENT_NORMALIZED_HYBRID_VISUAL_PROFILE
+        );
+        var provider = new ScriptedProvider(
+                request -> response(request, groundedStationElementsWithMisparentedNotice()),
+                request -> response(request, groundedStationHierarchy()),
+                request -> response(request, groundedStationBindings())
+        );
+        var preprocessCalls = new AtomicInteger();
+        var preprocessor = hybridPreprocessor(
+                preprocessCalls, "OCR_SENTINEL_V34_REGION_PARENT"
+        );
+        var firstWorker = worker(provider, blobs, T0.plusSeconds(1), preprocessor);
+        var claimed = runs.claimNextLive(
+                "unique-region-parent-first-worker", T0.plusSeconds(1),
+                Duration.ofMinutes(5)
+        ).orElseThrow();
+
+        var afterObserve = firstWorker.advance(claimed);
+
+        assertThat(afterObserve.stage()).isEqualTo(InferenceStage.HIERARCHY);
+        assertThat(preprocessCalls).hasValue(1);
+        assertThat(provider.requests).extracting(ProviderInferenceRequest::stage)
+                .containsExactly(InferenceStage.OBSERVE);
+        assertThat(workflowStore.attempts(created)).singleElement().satisfies(attempt -> {
+            assertThat(attempt.status()).isEqualTo(InferenceAttemptStatus.SUCCEEDED);
+            assertThat(attempt.problemCodeCounts()).containsExactlyEntriesOf(Map.of(
+                    "VISUAL_GROUNDING_REGION_PARENT_NORMALIZED", 1
+            ));
+        });
+        assertThat(afterObserve.checkpointJson())
+                .contains("renderweave-visual-grounding/2.0")
+                .doesNotContain("OCR_SENTINEL_V34_REGION_PARENT")
+                .doesNotContain("ocr-00-000");
+
+        var finished = worker(
+                provider, blobs, T0.plus(Duration.ofMinutes(7)), preprocessor
+        ).processNext("unique-region-parent-recovery-worker").orElseThrow();
+
+        assertThat(finished.state())
+                .as("failure=%s attempts=%s", finished.failureCode(), workflowStore.attempts(created))
+                .isEqualTo(InferenceRunState.REVIEW_REQUIRED);
+        assertThat(preprocessCalls)
+                .as("ephemeral OCR is recomputed after lease expiry without replaying OBSERVE")
+                .hasValue(2);
+        assertThat(provider.requests).extracting(ProviderInferenceRequest::stage)
+                .containsExactly(
+                        InferenceStage.OBSERVE,
+                        InferenceStage.HIERARCHY,
+                        InferenceStage.ELEMENT_BINDING
+                );
+        assertThat(workflowStore.attempts(created)).extracting(InferenceAttempt::status)
+                .containsExactly(
+                        InferenceAttemptStatus.SUCCEEDED,
+                        InferenceAttemptStatus.SUCCEEDED,
+                        InferenceAttemptStatus.SUCCEEDED
+                );
+        assertThat(workflowStore.attempts(created).get(1).problemCodeCounts())
+                .doesNotContainKey("VISUAL_GROUNDING_REGION_PARENT_NORMALIZED");
+        assertThat(workflowStore.attempts(created).get(2).problemCodeCounts())
+                .doesNotContainKey("VISUAL_GROUNDING_REGION_PARENT_NORMALIZED");
+        assertThat(finished.checkpointJson())
+                .doesNotContain("OCR_SENTINEL_V34_REGION_PARENT")
+                .doesNotContain("ocr-00-000");
+        var review = workflowStore.findCandidate(created).orElseThrow();
+        assertThat(review.currentJson())
+                .doesNotContain("OCR_SENTINEL_V34_REGION_PARENT")
+                .doesNotContain("ocr-00-000");
+        assertThat(review.validationProblemsJson())
+                .doesNotContain("OCR_SENTINEL_V34_REGION_PARENT")
+                .doesNotContain("ocr-00-000");
+    }
+
+    @Test
     void cancellationIsAcknowledgedBeforeHybridPreprocessing() {
         var blobs = new MemoryBlobStore();
         var created = createGroundedVisual(blobs, "hybrid-cancel-before-ocr", HYBRID_VISUAL_PROFILE);
@@ -2600,6 +2679,19 @@ class PostgresLiveInferenceWorkflowTest {
                   {"elementId":"stop-name","kind":"SLOT","proposedKey":"name","displayName":"站点名称","multiplicity":"ONE","valueHint":"TEXT","regionIds":["stop-item"],"evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":500,"top":4300,"right":3000,"bottom":4800}}]}
                 ]}
                 """;
+    }
+
+    private static String groundedStationElementsWithMisparentedNotice() {
+        return groundedStationElements()
+                .replace(
+                        "{\"regionId\":\"notice\",\"parentRegionId\":\"root\",\"kind\":\"GROUP\",\"multiplicity\":\"ONE\",\"readingOrder\":1,\"repeatGroupId\":null,\"evidence\":[{\"viewId\":\"view-00-overview-00\",\"boundingBox\":{\"left\":0,\"top\":1000,\"right\":10000,\"bottom\":2200}}]}",
+                        "{\"regionId\":\"notice-shell\",\"parentRegionId\":\"root\",\"kind\":\"SECTION\",\"multiplicity\":\"ONE\",\"readingOrder\":1,\"repeatGroupId\":null,\"evidence\":[{\"viewId\":\"view-00-overview-00\",\"boundingBox\":{\"left\":0,\"top\":1000,\"right\":10000,\"bottom\":2200}}]},\n                  "
+                                + "{\"regionId\":\"notice\",\"parentRegionId\":\"routes\",\"kind\":\"GROUP\",\"multiplicity\":\"ONE\",\"readingOrder\":0,\"repeatGroupId\":null,\"evidence\":[{\"viewId\":\"view-00-overview-00\",\"boundingBox\":{\"left\":0,\"top\":1100,\"right\":10000,\"bottom\":2100}}]}"
+                )
+                .replace(
+                        "\"elementId\":\"notice-group\",\"kind\":\"GROUP\",\"proposedKey\":\"warmNotice\",\"displayName\":\"温馨提示\",\"multiplicity\":\"ONE\",\"valueHint\":null,\"regionIds\":[\"notice\"],\"evidence\":[{\"viewId\":\"view-00-overview-00\",\"boundingBox\":{\"left\":0,\"top\":1000,\"right\":10000,\"bottom\":2200}}]",
+                        "\"elementId\":\"notice-group\",\"kind\":\"GROUP\",\"proposedKey\":\"warmNotice\",\"displayName\":\"温馨提示\",\"multiplicity\":\"ONE\",\"valueHint\":null,\"regionIds\":[\"notice\"],\"evidence\":[{\"viewId\":\"view-00-overview-00\",\"boundingBox\":{\"left\":0,\"top\":1100,\"right\":10000,\"bottom\":2100}}]"
+                );
     }
 
     private static String manyGroupWithSingularRegion() {
