@@ -332,3 +332,29 @@ PASS。三个阶段均一次 accepted、无 fixed-code repair，但结果为 11 
 却更明确证明“合同可达”不等于“嵌套结构正确”；v22 support-owner normalization 同样未命中。Profile 与 Goal
 继续 `EXPERIMENTAL` / `in_progress`，在形成新的 evidence-bounded OBSERVE repeated-group omission 假设前，
 不重复 Max v22，也不把单 case 扩大为 20/60-case final eval。
+
+## N7 support-owner hybrid observation 增量
+
+Max v22 的 0 GROUP/relationship 结果证明：当 OBSERVE 与 HIERARCHY 都没有提出重复结构时，bounded verifier
+没有合法证据可据以补造 GROUP 或 relationship。本地代码不得从 gold、领域词或几何距离直接合成结构；新的假设
+只能增加已绑定且不落盘的感知证据，再让原有三阶段合同和 verifier 判断。
+
+`e13bf0c` 因此新增 pipeline 4.10/product-v23 hybrid。它完整继承 4.9 的 evidence-derived cardinality、
+relationship-region prerequisite、fixed-code repair、exact support dedupe、connection-aware region normalization
+与 unique exact-region GROUP-owner support policy，同时绑定既有的
+`rapidocr-3.9.2-openvino-2026.0.0-ppocrv6-small-c05805399d7d10b1` capability 和
+`renderweave-document-vision-observations-prompt/1.0`。Flash、Plus、Max 各有独立 immutable Profile；三者都保持
+产品选择器不可见和 `EXPERIMENTAL`。
+
+每次 drain 只执行一次本地 Document Vision，OBSERVE、HIERARCHY、ELEMENT_BINDING 共享同一份 ephemeral
+observation。OCR text、line ID 与 bbox 只作为不可信 secondary evidence 进入当次请求，不直接创建 field、entity、
+relationship 或 Candidate，也不进入 checkpoint、Candidate、problem、attempt、journal、report 或普通日志。
+真实 PostgreSQL scripted-provider 纵切同时证明三阶段复用、support-owner normalization 仍命中和 payload 不落盘；
+Profile/能力合同、独立 Python snapshot verifier 也通过。提交后 clean fast
+`.sdlc/evidence/20260811-075518-fast` 与 exact-revision server
+`.sdlc/evidence/20260811-075612-server`（192 tests、6 gated skip）均为 A1 PASS；Provider attempts=0，三份
+ledger 仍 CLOSED。
+
+这些证据只证明 4.10 的组合语义、恢复边界和审计边界，不证明 OCR 能恢复 transit-board 的重复组。下一步如执行
+单 case，仍必须重新计算 evaluation identity/Profile snapshot，并使用精确、有效、额度内的 J1 ledger；未产生新
+A2 质量证据前不得扩大到 final eval 或晋级 Profile。

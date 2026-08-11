@@ -15,7 +15,8 @@
   relationship-region
   owner rewind、v18 detailed region repair taxonomy、v19 exact-duplicate support-ID normalization 与 v20 unique
   evidence-owned relationship region normalization、v21 unique connected relationship region normalization、v22
-  unique exact-region GROUP-owner support normalization 实现已 clean A1；两次 v22 live 均未命中该 normalization）；
+  unique exact-region GROUP-owner support normalization 与 v23 support-owner hybrid observation 实现已 clean A1；
+  两次 v22 live 均未命中该 normalization，v23 尚无 live 质量证据）；
   全部 live ledger `CLOSED`
 
 ## 四维执行配置
@@ -126,7 +127,8 @@ ledger 描述成外部强制门。
   `31a8c6f`，detailed hierarchy region repair taxonomy 为 `4d2cc46`，exact-duplicate support-ID normalization 为
   `214fff9`，unique evidence-owned relationship region normalization 为 `391bd52`，unique connected relationship
   region normalization 为 `dda763c`，unique exact-region GROUP-owner support normalization 为 `edc0c28`。三轮 Flash 与后续 Plus 小
-  smoke 均有 A2 诊断证据；Plus/Max v22 均到达 BINDING，但报告不完整、质量未达门且未命中 v22 normalization；
+  smoke 均有 A2 诊断证据；`e13bf0c` 的 v23 在 4.9 policy 上叠加一次性 ephemeral Document Vision。Plus/Max v22
+  均到达 BINDING，但报告不完整、质量未达门且未命中 v22 normalization；
   Max 为 0 GROUP/relationship，Profile 没有晋级。
 - AC：AC-VR-007、009。
 - 依赖：N5。
@@ -147,7 +149,8 @@ ledger 描述成外部强制门。
   v15 bounded OBSERVE rewind、v16 evidence-derived cardinality 与 v17 exact relationship-region owner rewind
   以及 v18 detailed hierarchy region repair taxonomy、v19 exact-duplicate support-ID normalization、v20 unique
   evidence-owned relationship region normalization、v21 unique connected relationship region normalization、v22
-  unique exact-region GROUP-owner support normalization 实现已 clean A1；Plus/Max v22 live 均未命中该 normalization。
+  unique exact-region GROUP-owner support normalization 与 v23 support-owner hybrid observation 实现已 clean A1；
+  Plus/Max v22 live 均未命中该 normalization，v23 尚未 live。
 - AC：AC-VR-001..010、既有 AC-015..021。
 - 依赖：N6 clean gates；final exact identities 和新的 ledger；N2 用量已进入 aggregate guard。
 - 执行：已先以 `qwen3.7-flash-2026-07-15`、再以 `qwen3.7-plus` 做单 case reachability；Flash 停在
@@ -184,7 +187,10 @@ ledger 描述成外部强制门。
   检查无存活子进程和完整 evidence 后立即 CLOSED，未重跑。独立 verifier A2 PASS：14,481 tokens、¥0.249684、
   61,032 ms；三个阶段均一次 accepted，却产生 0 GROUP/relationship、0/10 binding match、tree edit 30/32，
   也未命中 v22 normalization。相同 Max v22 不再重复；20-case comparison 前先用零 Provider 本地切片收窄
-  repeated-group/relationship omission，再按剩余额度决定 20-case 与最佳模型 60-case/15 HOLDOUT；每批≤5。
+  repeated-group/relationship omission。`e13bf0c` 已形成 pipeline 4.10/product-v23：复用 4.9 全部 bounded policy，
+  并把精确绑定的本地 OCR/layout observation 作为三个阶段共享的 ephemeral secondary evidence；不保存 OCR payload，
+  不由本地代码补造结构。其 clean A1 已通过但尚无 live 质量证据；只可在 fresh identity/Profile snapshot、精确 J1、
+  剩余额度与有效时限同时成立时先做单 case，再决定是否进入 20-case 与最佳模型 60-case/15 HOLDOUT；每批≤5。
   旧 Flash 不再创建 assignment，Plus/Max model ID 不变。
 - policy：只有满足既有 AC-021 和 stage 门槛的 Profile 可成为默认；其他保持 EXPERIMENTAL。
 - 门控：server/web/e2e/runtime/full A1；独立 verifier A2；费用/Token/secret/payload scan；用户业务/视觉 J1。
@@ -207,6 +213,8 @@ ledger 描述成外部强制门。
   `2d396e7` OPEN → `4f86456` CLOSED，独立 verifier A2 PASS，CLOSED clean fast 为 `20260811-073017`。
   Max v22 lifecycle 为 `e0b1d67` PROPOSED → `740d28f` OPEN → `99efc6b` CLOSED，独立 verifier A2 PASS，
   CLOSED clean fast 为 `20260811-074402`；外壳摘要失败后按 process/evidence lease 恢复且未重跑。
+  `e13bf0c` 的 v23 Profile/能力合同 1/1、real-PG hybrid/payload/support-owner 与独立 verifier 2/2、clean fast
+  `20260811-075518`、server `20260811-075612`（192 tests、6 gated skip）均为 A1 PASS，Provider attempts=0；
   三份 ledger CLOSED。这些证据不能
   替代 final eval、final identity A2 或
   用户业务/视觉 J1。
