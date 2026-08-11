@@ -99,6 +99,10 @@ describe('Candidate atomic apply workspace', () => {
       .toBeGreaterThan(0);
     expect(screen.getAllByText('已按唯一最具体证据区域归一化元素归属').length)
       .toBeGreaterThan(0);
+    expect(screen.getAllByText('VISUAL_GROUNDING_REGION_KIND_NORMALIZED').length)
+      .toBeGreaterThan(0);
+    expect(screen.getAllByText('已按受控别名或唯一结构事实归一化区域类型').length)
+      .toBeGreaterThan(0);
     expect(screen.getAllByText('VISUAL_GROUNDING_REPEATED_ITEM_SLOT_OWNER_NORMALIZED').length)
       .toBeGreaterThan(0);
     expect(screen.getAllByText('已按唯一可见 ITEM 证据归一化重复字段归属').length)
@@ -294,6 +298,7 @@ function visualReviewLog(run: InferenceRunResponse): InferenceExecutionLogRespon
         durationMillis: 19_000,
         problemCodeCounts: {
           VISUAL_GROUNDING_ELEMENT_REGION_NORMALIZED: 1,
+          VISUAL_GROUNDING_REGION_KIND_NORMALIZED: 3,
           VISUAL_GROUNDING_REPEATED_ITEM_SLOT_OWNER_NORMALIZED: 1,
           VISUAL_GROUNDING_REGION_PARENT_NORMALIZED: 1,
         },

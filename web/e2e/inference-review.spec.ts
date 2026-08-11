@@ -284,7 +284,7 @@ test('keeps bounded visual diagnostics keyboard-accessible at 1024 without paylo
     mode: 'IMAGE_ONLY',
     stage: 'HIERARCHY',
     sequence: 8,
-    profileId: 'dashscope-qwen37-flash-20260715-product-v35-hybrid-generic',
+    profileId: 'dashscope-qwen37-flash-20260715-product-v36-hybrid-generic',
     sourceReference: 'repository-synthetic-transit-board-v3',
     failureCode: 'VISUAL_HIERARCHY_V2_RELATIONSHIP_SUPPORT_IDS_EMPTY',
   };
@@ -325,6 +325,7 @@ test('keeps bounded visual diagnostics keyboard-accessible at 1024 without paylo
         durationMillis: 24_012,
         problemCodeCounts: {
           VISUAL_GROUNDING_ELEMENT_REGION_NORMALIZED: 1,
+          VISUAL_GROUNDING_REGION_KIND_NORMALIZED: 3,
           VISUAL_GROUNDING_REPEATED_ITEM_SLOT_OWNER_NORMALIZED: 1,
           VISUAL_GROUNDING_REGION_PARENT_NORMALIZED: 1,
         },
@@ -394,6 +395,8 @@ test('keeps bounded visual diagnostics keyboard-accessible at 1024 without paylo
   await expect(page.getByText('MANY GROUP 与重复区域的双向归属不一致').first()).toBeVisible();
   await expect(page.getByText('VISUAL_GROUNDING_ELEMENT_REGION_NORMALIZED').first()).toBeVisible();
   await expect(page.getByText('已按唯一最具体证据区域归一化元素归属').first()).toBeVisible();
+  await expect(page.getByText('VISUAL_GROUNDING_REGION_KIND_NORMALIZED').first()).toBeVisible();
+  await expect(page.getByText('已按受控别名或唯一结构事实归一化区域类型').first()).toBeVisible();
   await expect(page.getByText('VISUAL_GROUNDING_REPEATED_ITEM_SLOT_OWNER_NORMALIZED').first()).toBeVisible();
   await expect(page.getByText('已按唯一可见 ITEM 证据归一化重复字段归属').first()).toBeVisible();
   await expect(page.getByText('VISUAL_GROUNDING_REGION_PARENT_NORMALIZED').first()).toBeVisible();
