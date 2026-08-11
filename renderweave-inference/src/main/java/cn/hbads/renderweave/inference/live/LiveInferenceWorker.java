@@ -100,6 +100,8 @@ public final class LiveInferenceWorker {
             "renderweave-inference-pipeline/4.19";
     private static final String UNKNOWN_SUPPORT_OWNER_NORMALIZED_HYBRID_VISUAL_PIPELINE =
             "renderweave-inference-pipeline/4.20";
+    private static final String UNIQUE_REGION_PARENT_NORMALIZED_HYBRID_VISUAL_PIPELINE =
+            "renderweave-inference-pipeline/4.21";
     private static final int MAX_STAGE_ADVANCES = 24;
     private static final int MAX_RETRY_PROBLEM_CODES = 16;
 
@@ -1149,6 +1151,8 @@ public final class LiveInferenceWorker {
             InferenceProfile profile
     ) {
         if (UNKNOWN_SUPPORT_OWNER_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
+                profile.pipelineVersion())
+                || UNIQUE_REGION_PARENT_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
                 profile.pipelineVersion())) {
             return VisualRelationshipSupportIdPolicy
                     .CANONICALIZE_EXACT_DUPLICATES_AND_UNIQUE_CONNECTED_GROUP_OWNER_WITH_EMPTY_OR_UNKNOWN_SUPPORT;
@@ -1271,6 +1275,11 @@ public final class LiveInferenceWorker {
     private static VisualObservationNormalizationPolicy observationNormalizationPolicy(
             InferenceProfile profile
     ) {
+        if (UNIQUE_REGION_PARENT_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
+                profile.pipelineVersion())) {
+            return VisualObservationNormalizationPolicy
+                    .BOUNDED_ENUM_UNIQUE_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER;
+        }
         if (REPEATED_ITEM_SLOT_OWNER_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
                 profile.pipelineVersion())
                 || emptyOrUnknownSupportOwnerPipeline(profile)) {
@@ -1358,6 +1367,12 @@ public final class LiveInferenceWorker {
                     grounded.normalizedItemParents()
             );
         }
+        if (grounded.normalizedRegionParents() > 0) {
+            telemetry.put(
+                    "VISUAL_GROUNDING_REGION_PARENT_NORMALIZED",
+                    grounded.normalizedRegionParents()
+            );
+        }
         if (grounded.normalizedReadingOrders() > 0) {
             telemetry.put(
                     "VISUAL_GROUNDING_READING_ORDER_NORMALIZED",
@@ -1400,6 +1415,8 @@ public final class LiveInferenceWorker {
         return EMPTY_SUPPORT_OWNER_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
                 profile.pipelineVersion())
                 || UNKNOWN_SUPPORT_OWNER_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
+                profile.pipelineVersion())
+                || UNIQUE_REGION_PARENT_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
                 profile.pipelineVersion());
     }
 

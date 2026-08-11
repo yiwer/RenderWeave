@@ -124,7 +124,10 @@ public final class InferenceProfileRegistry {
             "inference-profiles/dashscope-qwen38-max-product-v32-hybrid-generic.json",
             "inference-profiles/dashscope-qwen37-flash-20260715-product-v33-hybrid-generic.json",
             "inference-profiles/dashscope-qwen37-plus-product-v33-hybrid-generic.json",
-            "inference-profiles/dashscope-qwen38-max-product-v33-hybrid-generic.json"
+            "inference-profiles/dashscope-qwen38-max-product-v33-hybrid-generic.json",
+            "inference-profiles/dashscope-qwen37-flash-20260715-product-v34-hybrid-generic.json",
+            "inference-profiles/dashscope-qwen37-plus-product-v34-hybrid-generic.json",
+            "inference-profiles/dashscope-qwen38-max-product-v34-hybrid-generic.json"
     );
     private static final java.util.List<String> PRODUCT_LIVE_PROFILE_IDS = java.util.List.of(
             "dashscope-qwen37-flash-product-v4",
@@ -219,7 +222,10 @@ public final class InferenceProfileRegistry {
             "dashscope-qwen38-max-product-v32-hybrid-generic",
             "dashscope-qwen37-flash-20260715-product-v33-hybrid-generic",
             "dashscope-qwen37-plus-product-v33-hybrid-generic",
-            "dashscope-qwen38-max-product-v33-hybrid-generic"
+            "dashscope-qwen38-max-product-v33-hybrid-generic",
+            "dashscope-qwen37-flash-20260715-product-v34-hybrid-generic",
+            "dashscope-qwen37-plus-product-v34-hybrid-generic",
+            "dashscope-qwen38-max-product-v34-hybrid-generic"
     );
     private static final java.util.List<String> VISUAL_HYBRID_PROFILE_IDS = java.util.List.of(
             "dashscope-qwen37-flash-product-v7-hybrid-generic",
@@ -257,7 +263,10 @@ public final class InferenceProfileRegistry {
             "dashscope-qwen38-max-product-v32-hybrid-generic",
             "dashscope-qwen37-flash-20260715-product-v33-hybrid-generic",
             "dashscope-qwen37-plus-product-v33-hybrid-generic",
-            "dashscope-qwen38-max-product-v33-hybrid-generic"
+            "dashscope-qwen38-max-product-v33-hybrid-generic",
+            "dashscope-qwen37-flash-20260715-product-v34-hybrid-generic",
+            "dashscope-qwen37-plus-product-v34-hybrid-generic",
+            "dashscope-qwen38-max-product-v34-hybrid-generic"
     );
     private static final ObjectMapper JSON = JsonMapper.builder(
                     JsonFactory.builder().enable(StreamReadFeature.STRICT_DUPLICATE_DETECTION).build())
