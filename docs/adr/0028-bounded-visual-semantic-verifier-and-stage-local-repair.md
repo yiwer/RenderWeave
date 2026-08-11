@@ -789,3 +789,31 @@ Flash/Plus/Max 仍为 110/161/82 attempts、728,794/957,770/491,919 exposed toke
 `automated_verified`，N7/Goal 仍 `in_progress`。只有包含本节的 clean revision 通过 full、fresh `/2` identity、
 三份 snapshot、aggregate budget/time 与 exact J1 后，才可优先做 Flash 单 case/最多 5 calls；Max 仍受同版本
 accepted OBSERVE/HIERARCHY/BINDING 及质量门约束。
+
+## N7 product-v30：bounded live 结果
+
+clean `e5d1977` 的 full gate `20260811-150901` 9/9 PASS，Document Vision canary
+`20260811-151430` 使用冻结 capability 得到 19 lines。ledger-only lifecycle 不进入 evaluation identity，Java
+重算 `/2:640ada0dfd69700da79b213815386b6cdebb1ed9fc26143ffe4447cf5b28c8af`；Flash/Plus v30
+snapshot 分别为 `e11a708f…77a3e` 与 `ce966122…8552f`。所有输入仍是 repository synthetic。
+
+Flash 按 `ff3e5a4` PROPOSED → `4180ef8` OPEN → `5f99083` CLOSED；PROPOSED 负探针精确 NOT_OPEN，唯一
+wrapper 176,686 ms。独立 verifier A2 重建 5 SETTLED attempts、20,621 input + 22,325 output、¥0.021989、
+163,491 provider ms、0 abandoned、payload scan PASS。五次全部停在 OBSERVE，固定码为 parent-kind、
+non-repeated cardinality、region-kind 两次与 parent-containment；没有 accepted plan，也没有 normalization
+telemetry。
+
+Flash 没有给出 v30 新信号，但 Plus v29 的 evidence-outside-region 是本 policy 的直接来源，且用户重新允许
+Plus，因此执行一个更窄的 Plus smoke：`d82563f` PROPOSED → `7a8eade` OPEN → `ec0a307` CLOSED，授权成本
+上限仅 ¥0.10。负探针同样零写入；唯一 wrapper 74,883 ms。独立 verifier A2 重建 1 SETTLED attempt、4,104
+input + 3,248 output、¥0.034192、57,698 provider ms、0 abandoned、payload scan PASS。该次在 OBSERVE 命中
+`VISUAL_SEMANTIC_REPEATED_ITEM_FIELD_MISSING`，下一次预留前由 `PROVIDER_COST_BUDGET_EXHAUSTED`
+fail-closed；同样没有 normalization telemetry。
+
+两份 evidence 在最终 CLOSED revision 上交叉使用同一 Goal state 重放 PASS。Goal 最终为 359 reservations
+（354 SETTLED、5 历史 Plus RESERVED、0 BREACHED）：Flash 115 attempts / 771,740 tokens / ¥0.370287，
+Plus 162 / 965,122 / ¥3.736232，Max 82 / 491,919 / ¥10.289316。v30 未形成 accepted OBSERVE，更未形成
+同版本 HIERARCHY/BINDING 或可审核 Candidate；Max 门失败、保持 CLOSED，final 20/60 不启动。该结果支持
+fail-closed 治理与恢复合同，却没有支持质量晋级；product-v30 保持 `EXPERIMENTAL`，N6 保持
+`automated_verified`，N7/Goal 保持 `in_progress`。下一决策只能从这些 payload-free fixed codes 形成新的
+bounded 离线 verifier/repair/no-progress 假设，不能读取 Provider 原文、猜测 enum/parent 或补造结构。

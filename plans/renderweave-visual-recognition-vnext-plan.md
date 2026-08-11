@@ -14,9 +14,10 @@
   `live_verified_not_promoted`；N7 `in_progress`。v27 Flash/Plus/Max single-case 均 CLOSED/A2：Flash 止于
   OBSERVE，Plus/Max 虽三阶段可达但 slot/binding 0 matched，未进入 final eval。pipeline 4.17/product-v30 已把
   unique evidence-owner normalization、real-PG 三阶段 checkpoint、独立 Profile verifier 与 monitor/review
-  telemetry 做成离线候选；当前 Goal 为 353 reservations，三份 live ledger `CLOSED`，本增量 Provider
-  attempts=0。文档 revision 的 clean full 和 fresh `/2` pre-live identity 尚待完成，Profile 均隐藏
-  `EXPERIMENTAL`
+  telemetry 做成离线候选；clean full、Document Vision canary 与 Flash/Plus 单 case lifecycle 随后均已完成。
+  两份 v30 evidence CLOSED/A2、payload scan PASS，但都停在 OBSERVE 且未命中新 telemetry；同版本三阶段门失败，
+  Max 未调用。当前 Goal 为 359 reservations（354 SETTLED、5 历史 Plus RESERVED、0 BREACHED），三份 live
+  ledger `CLOSED`，Profile 均隐藏 `EXPERIMENTAL`
 
 ## 四维执行配置
 
@@ -161,8 +162,10 @@ ledger 描述成外部强制门。
   Flash/Plus v26 也已 CLOSED/A2，分别止于 OBSERVE/HIERARCHY，enclosing-owner telemetry 未命中；Max v26 因
   同版本三阶段门未成立而未调用。product-v27 的 local/PG/UI 与 `47f622b` clean full 已 A1；随后 Flash v27b、
   Plus v27、Max v27 均 CLOSED/A2。Flash 仍止于 OBSERVE，Plus/Max 三阶段可达但 slot/binding 0 matched，三模型
-  都未命中 source-ancestor telemetry，因此不进入 final 20/60。product-v28 的 offline/real-PG/UI contract 已绿，
-  但尚未创建 live ledger；必须先完成 clean full 与 fresh `/2` identity/Profile/budget preflight。
+  都未命中 source-ancestor telemetry，因此不进入 final 20/60。product-v28/v29/v30 的 offline/real-PG/UI
+  contract 与受控 live 均已闭环；最新 v30 Flash 五次、Plus 一次调用都在 OBSERVE fail-closed，未命中
+  evidence-owner normalization。Max v30 因同版本三阶段门失败而未调用；下一节点只能先形成新的 bounded
+  payload-free fixed-code 假设。
 - AC：AC-VR-001..010、既有 AC-015..021。
 - 依赖：N6 clean gates；final exact identities 和新的 ledger；N2 用量已进入 aggregate guard。
 - 执行：已先以 `qwen3.7-flash-2026-07-15`、再以 `qwen3.7-plus` 做单 case reachability；Flash 停在
@@ -446,3 +449,23 @@ drift、journal/guard 不一致、payload 边界失败或同一无新假设失�
   `automated_verified`、N7/Goal=`in_progress`。只有本 checkpoint 后的 clean full、fresh identity/snapshot、
   aggregate budget、时限与 exact J1 均通过，才可优先执行 Flash 单 case/最多 5 calls；Max 仍要求同版本三阶段
   可达及质量门。
+
+## 2026-08-11 v30 full 与 bounded live checkpoint
+
+- 前置门：clean `e5d1977` 的 full gate `.sdlc/evidence/20260811-150901-full` 9/9 PASS；Document Vision
+  `.sdlc/evidence/20260811-151430-document-vision` 得到 19 lines。fresh `/2` identity 为
+  `…5b28c8af`，Flash/Plus snapshot 为 `e11a708f…77a3e` / `ce966122…8552f`；Profile、Goal、费用、时限、
+  API 配置存在性和 evidence lease 均在每次 live 前重算。
+- Flash：`ff3e5a4` PROPOSED→负探针→`4180ef8` OPEN→`5f99083` CLOSED。唯一 wrapper 176,686 ms；
+  独立 verifier A2 PASS，5 attempts、20,621 input + 22,325 output、¥0.021989、0 abandoned、payload scan
+  PASS。五次均为 OBSERVE reject：parent-kind、non-repeated cardinality、region-kind×2、parent-containment；
+  evidence-owner normalization 未命中。
+- Plus：用户已恢复 Plus 权限，且 v29 evidence-outside-region 是 v30 policy 的直接信号，因此执行收紧到 ¥0.10
+  的单 case：`d82563f` PROPOSED→负探针→`7a8eade` OPEN→`ec0a307` CLOSED。唯一 wrapper 74,883 ms；
+  A2 PASS，1 attempt、4,104 input + 3,248 output、¥0.034192、0 abandoned、payload scan PASS。OBSERVE
+  命中 `VISUAL_SEMANTIC_REPEATED_ITEM_FIELD_MISSING`，下一预留前成本守卫 fail-closed；normalization 未命中。
+- 停止门：最终 359 reservations 为 354 SETTLED + 5 历史 Plus RESERVED，0 BREACHED；Flash/Plus/Max
+  累计为 115/162/82 attempts、771,740/965,122/491,919 tokens、¥0.370287/¥3.736232/¥10.289316。
+  v30 没有 accepted OBSERVE/HIERARCHY/BINDING，Max CLOSED 且未调用。N6 仍 `automated_verified`，N7/Goal
+  仍 `in_progress`，product-v30 仍 `EXPERIMENTAL`；下一安全切片只允许从新 fixed code 建立离线 bounded
+  verifier/repair/no-progress 合同，final 20/60 不启动。

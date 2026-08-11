@@ -8,9 +8,10 @@
 - 当前扩展 Goal：P6/T6-5 图片识别 vNext 为 `in_progress`；N0–N1、N3–N4、N6 已
   `automated_verified`，N2 为 `live_verified_mixed_a1_a2`，N5 为 `live_verified_not_promoted`。v27 三模型
   single-case 均 CLOSED/A2，但未形成可接受 Candidate。pipeline 4.17/product-v30 已进一步把 unique
-  evidence-owner normalization、checkpoint、监控/审核 UI 与独立 Profile verifier 做成离线候选；本增量
-  Provider attempts=0，clean full 与 fresh `/2` pre-live identity 尚待完成。最新 353 reservations 为 348
-  SETTLED、5 个历史 Plus RESERVED、0 BREACHED；三份 ledger CLOSED，Profile 继续 `EXPERIMENTAL`。
+  evidence-owner normalization、checkpoint、监控/审核 UI 与独立 Profile verifier 做成离线候选；clean full、
+  Document Vision canary 与 Flash/Plus v30 bounded live 已 CLOSED/A2，但六次调用都停在 OBSERVE，未命中新
+  telemetry。最新 359 reservations 为 354 SETTLED、5 个历史 Plus RESERVED、0 BREACHED；Max v30 未调用，
+  三份 ledger CLOSED，Profile 继续 `EXPERIMENTAL`。
   两次 J1 delta 将三个预算槽位累计 cap 提到 1.5M tokens，单 authorization、attempt/CNY/time 边界不变。
   final 20/60、最终 revision full、final independent verifier 与业务/视觉 J1 均未满足，详见
   `plans/renderweave-visual-recognition-vnext-plan.md`。
@@ -435,10 +436,11 @@ Phase 内任务只在真实前置依赖满足时并行。当前没有 atomic cla
 
 - 执行状态：`in_progress`（用户 J1 + approved spec delta；N0–N1、N3–N4、N6 `automated_verified`，N2
   `live_verified_mixed_a1_a2`，N5 `live_verified_not_promoted`；N7 既有 reachability、三模型 v24、Flash/Plus
-  v25–v26 与 Flash/Plus/Max v27 smoke 已 A2。Git-blob canonical identity `/2` 已完成 clean A1/A2；v28 minimal
-  entity ownership、binding→HIERARCHY stage-local rewind、real-PG tracer、独立 Profile verifier 与 payload-free
-  UI 已离线通过，Provider attempts=0，clean full/pre-live identity 待完成。v27 Flash 止于 OBSERVE，Plus/Max
-  虽三阶段可达但质量未达门。final eval、最终 revision full、final independent verifier 与业务/视觉 J1 均未满足）
+  v25–v26 与 Flash/Plus/Max v27 smoke 已 A2。Git-blob canonical identity `/2` 已完成 clean A1/A2；v28–v30
+  bounded verifier、stage-local repair、real-PG tracer、独立 Profile verifier 与 payload-free UI 已通过。
+  product-v30 clean full/Document Vision 和 Flash/Plus single-case 已 CLOSED/A2，但均止于 OBSERVE、未命中新
+  normalization；Max v30 未调用。final eval、最终 revision full、final independent verifier 与业务/视觉 J1
+  均未满足）
 - AC：AC-015..021、AC-VR-001..010
 - 依赖：T6-3a.8/9、ADR-0020/0021；N2 live 依赖新的 stage-gold/harness/identity
 - 影响区域：IMAGE_ONLY eval、visual contracts、worker/Profile/Prompt、OCR/layout adapter、review/monitor UI
@@ -590,3 +592,16 @@ verifier、Node 24 Web 73/73/build、真实 replay 浏览器 Apply 1/1 与 diagn
 Provider 调用，Goal/用量仍为 353 reservations 与 Flash/Plus/Max 728,794/957,770/491,919 tokens，三 ledger
 CLOSED。N6=`automated_verified`、N7/Goal=`in_progress`；文档 revision 的 clean full 与 fresh pre-live
 identity/snapshot/budget/time 通过前不 OPEN，enum/overlap 不在本次修复范围，final 20/60 不启动。
+
+## 16. T6-5 v30 full 与 bounded live checkpoint
+
+clean `e5d1977` full 9/9 与 Document Vision 19-line canary PASS；fresh `/2` identity、Flash/Plus v30 snapshot、
+1.5M aggregate guard 与时限在每次 live 前重算。Flash `ff3e5a4`→`4180ef8`→`5f99083` 完成 5 次
+OBSERVE reject，42,946 tokens/¥0.021989；Plus `d82563f`→`7a8eade`→`ec0a307` 完成 1 次 OBSERVE
+reject，7,352 tokens/¥0.034192，随后成本守卫在下一预留前停止。两次 PROPOSED 负探针、唯一 wrapper、立即
+CLOSED 与独立 verifier/payload scan 均符合合同，0 abandoned；evidence-owner telemetry 均未命中。
+
+Goal 最终为 359 reservations（354 SETTLED、5 历史 Plus RESERVED、0 BREACHED），Flash/Plus/Max 累计
+tokens 为 771,740/965,122/491,919。v30 未接受 OBSERVE，Max 的同版本三阶段/质量门失败，保持 CLOSED、未
+调用。T6-5 不晋级：N6=`automated_verified`、N7/Goal=`in_progress`、Profile=`EXPERIMENTAL`。下一节点只从
+payload-free fixed code 建立新的 bounded 离线合同，不启动 final 20/60。
