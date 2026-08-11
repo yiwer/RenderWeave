@@ -715,6 +715,106 @@ class VisualGroundingContractTest {
     }
 
     @Test
+    void emptySupportSourceAncestorPolicyUsesOnlyOneValidatedRegionAncestor()
+            throws Exception {
+        var observed = codec.parseElements(elementsJson(), views(), List.of(IMAGE_ID));
+        var descendantRegionEmptySupport = hierarchyJson().replace(
+                "\"regionId\":\"repeat\",\"supportingElementIds\":[\"row-group\"]}",
+                "\"regionId\":\"item-a\",\"supportingElementIds\":[]}"
+        );
+
+        var exactOnly = assertThrows(InvalidVisualAnalysisException.class, () ->
+                codec.parseHierarchy(
+                        descendantRegionEmptySupport, observed.inventory(), observed.grounding(),
+                        VisualRelationshipCardinalityPolicy.SUPPORT_GROUP_DERIVED,
+                        VisualHierarchyPrerequisitePolicy.RELATIONSHIP_REGION_GROUP_OWNER_REQUIRED,
+                        VisualHierarchyRegionDiagnosticPolicy.DETAILED_FIXED_CODES,
+                        VisualRelationshipSupportIdPolicy
+                                .CANONICALIZE_EXACT_DUPLICATES_AND_UNIQUE_CONNECTED_GROUP_OWNER_WITH_EMPTY_OR_UNKNOWN_SUPPORT,
+                        VisualRelationshipRegionPolicy
+                                .UNIQUE_CARDINALITY_AND_CONNECTION_COMPATIBLE_GROUP_REGION
+                )
+        );
+        assertEquals("VISUAL_HIERARCHY_V2_RELATIONSHIP_SUPPORT_IDS_EMPTY",
+                exactOnly.diagnosticCode());
+
+        var normalized = codec.parseHierarchy(
+                descendantRegionEmptySupport, observed.inventory(), observed.grounding(),
+                VisualRelationshipCardinalityPolicy.SUPPORT_GROUP_DERIVED,
+                VisualHierarchyPrerequisitePolicy.RELATIONSHIP_REGION_GROUP_OWNER_REQUIRED,
+                VisualHierarchyRegionDiagnosticPolicy.DETAILED_FIXED_CODES,
+                VisualRelationshipSupportIdPolicy
+                        .CANONICALIZE_EXACT_DUPLICATES_AND_UNIQUE_CONNECTED_GROUP_OWNER_WITH_EMPTY_OR_UNKNOWN_SUPPORT_AND_EMPTY_SOURCE_ANCESTOR,
+                VisualRelationshipRegionPolicy
+                        .UNIQUE_CARDINALITY_AND_CONNECTION_COMPATIBLE_GROUP_REGION
+        );
+        assertEquals(List.of("row-group"),
+                normalized.hierarchy().relationships().getFirst().supportingElementIds());
+        assertEquals(VisualMultiplicity.MANY,
+                normalized.hierarchy().relationships().getFirst().cardinality());
+        assertEquals("repeat", normalized.entityRegions().relationships().getFirst().regionId());
+        assertEquals(1, normalized.normalizedRelationshipSupportOwners());
+        assertEquals(0, normalized.normalizedRelationshipEmptySupportOwners());
+        assertEquals(0, normalized.normalizedRelationshipSourceAncestorSupportOwners());
+        assertEquals(1, normalized.normalizedRelationshipEmptySourceAncestorSupportOwners());
+        assertEquals(1, normalized.normalizedRelationshipRegions());
+
+        var ambiguousObserved = codec.parseElements(
+                elementsJson().replace(
+                        "{\"elementId\":\"item-label\"",
+                        "{\"elementId\":\"second-row-group\",\"kind\":\"GROUP\",\"proposedKey\":\"items2\",\"displayName\":\"第二重复组\",\"multiplicity\":\"MANY\",\"valueHint\":null,\"regionIds\":[\"repeat\"],\"evidence\":[{\"viewId\":\"view-00-overview-00\",\"boundingBox\":{\"left\":0,\"top\":2000,\"right\":10000,\"bottom\":10000}}]},\n                    {\"elementId\":\"item-label\""
+                ), views(), List.of(IMAGE_ID)
+        );
+        assertEmptySourceAncestorSupportDiagnostic(
+                descendantRegionEmptySupport, ambiguousObserved
+        );
+        assertEmptySourceAncestorSupportDiagnostic(
+                descendantRegionEmptySupport.replace(
+                        "\"entityId\":\"item\",\"schemaKey\":\"item\",\"displayName\":\"项目\",\"regionIds\":[\"item-a\",\"item-b\"]",
+                        "\"entityId\":\"item\",\"schemaKey\":\"item\",\"displayName\":\"项目\",\"regionIds\":[\"header\"]"
+                ),
+                observed
+        );
+        assertEmptySourceAncestorSupportDiagnostic(
+                descendantRegionEmptySupport.replace("\"regionId\":\"item-a\"",
+                        "\"regionId\":\"header\""),
+                observed
+        );
+
+        var exactRegion = codec.parseHierarchy(
+                descendantRegionEmptySupport.replace("\"regionId\":\"item-a\"",
+                        "\"regionId\":\"repeat\""),
+                observed.inventory(), observed.grounding(),
+                VisualRelationshipCardinalityPolicy.SUPPORT_GROUP_DERIVED,
+                VisualHierarchyPrerequisitePolicy.RELATIONSHIP_REGION_GROUP_OWNER_REQUIRED,
+                VisualHierarchyRegionDiagnosticPolicy.DETAILED_FIXED_CODES,
+                VisualRelationshipSupportIdPolicy
+                        .CANONICALIZE_EXACT_DUPLICATES_AND_UNIQUE_CONNECTED_GROUP_OWNER_WITH_EMPTY_OR_UNKNOWN_SUPPORT_AND_EMPTY_SOURCE_ANCESTOR,
+                VisualRelationshipRegionPolicy
+                        .UNIQUE_CARDINALITY_AND_CONNECTION_COMPATIBLE_GROUP_REGION
+        );
+        assertEquals(1, exactRegion.normalizedRelationshipEmptySupportOwners());
+        assertEquals(0, exactRegion.normalizedRelationshipEmptySourceAncestorSupportOwners());
+
+        var unknownSupport = descendantRegionEmptySupport.replace(
+                "\"supportingElementIds\":[]", "\"supportingElementIds\":[\"unknown-element\"]"
+        );
+        assertEquals("VISUAL_HIERARCHY_V2_SUPPORT_ELEMENT_UNKNOWN",
+                assertThrows(InvalidVisualAnalysisException.class, () ->
+                        codec.parseHierarchy(
+                                unknownSupport, observed.inventory(), observed.grounding(),
+                                VisualRelationshipCardinalityPolicy.SUPPORT_GROUP_DERIVED,
+                                VisualHierarchyPrerequisitePolicy
+                                        .RELATIONSHIP_REGION_GROUP_OWNER_REQUIRED,
+                                VisualHierarchyRegionDiagnosticPolicy.DETAILED_FIXED_CODES,
+                                VisualRelationshipSupportIdPolicy
+                                        .CANONICALIZE_EXACT_DUPLICATES_AND_UNIQUE_CONNECTED_GROUP_OWNER_WITH_EMPTY_OR_UNKNOWN_SUPPORT_AND_EMPTY_SOURCE_ANCESTOR,
+                                VisualRelationshipRegionPolicy
+                                        .UNIQUE_CARDINALITY_AND_CONNECTION_COMPATIBLE_GROUP_REGION
+                        )).diagnosticCode());
+    }
+
+    @Test
     void unknownSupportPolicyUsesOnlyOneExactConnectedRelationshipRegionGroupOwner()
             throws Exception {
         var observed = codec.parseElements(elementsJson(), views(), List.of(IMAGE_ID));
@@ -1520,6 +1620,25 @@ class VisualGroundingContractTest {
                                 VisualHierarchyRegionDiagnosticPolicy.DETAILED_FIXED_CODES,
                                 VisualRelationshipSupportIdPolicy
                                         .CANONICALIZE_EXACT_DUPLICATES_AND_UNIQUE_CONNECTED_GROUP_OWNER_WITH_EMPTY_SUPPORT,
+                                VisualRelationshipRegionPolicy
+                                        .UNIQUE_CARDINALITY_AND_CONNECTION_COMPATIBLE_GROUP_REGION
+                        )).diagnosticCode());
+    }
+
+    private void assertEmptySourceAncestorSupportDiagnostic(
+            String json,
+            GroundedElementInventory observed
+    ) {
+        assertEquals("VISUAL_HIERARCHY_V2_RELATIONSHIP_SUPPORT_IDS_EMPTY",
+                assertThrows(InvalidVisualAnalysisException.class, () ->
+                        codec.parseHierarchy(
+                                json, observed.inventory(), observed.grounding(),
+                                VisualRelationshipCardinalityPolicy.SUPPORT_GROUP_DERIVED,
+                                VisualHierarchyPrerequisitePolicy
+                                        .RELATIONSHIP_REGION_GROUP_OWNER_REQUIRED,
+                                VisualHierarchyRegionDiagnosticPolicy.DETAILED_FIXED_CODES,
+                                VisualRelationshipSupportIdPolicy
+                                        .CANONICALIZE_EXACT_DUPLICATES_AND_UNIQUE_CONNECTED_GROUP_OWNER_WITH_EMPTY_OR_UNKNOWN_SUPPORT_AND_EMPTY_SOURCE_ANCESTOR,
                                 VisualRelationshipRegionPolicy
                                         .UNIQUE_CARDINALITY_AND_CONNECTION_COMPATIBLE_GROUP_REGION
                         )).diagnosticCode());

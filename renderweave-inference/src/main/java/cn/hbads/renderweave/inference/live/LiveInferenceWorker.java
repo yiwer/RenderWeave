@@ -1257,6 +1257,12 @@ public final class LiveInferenceWorker {
                     grounded.normalizedRelationshipEmptySupportOwners()
             );
         }
+        if (grounded.normalizedRelationshipEmptySourceAncestorSupportOwners() > 0) {
+            telemetry.put(
+                    "VISUAL_HIERARCHY_RELATIONSHIP_EMPTY_SOURCE_ANCESTOR_SUPPORT_OWNER_NORMALIZED",
+                    grounded.normalizedRelationshipEmptySourceAncestorSupportOwners()
+            );
+        }
         if (grounded.normalizedRelationshipUnknownSupportOwners() > 0) {
             telemetry.put(
                     "VISUAL_HIERARCHY_RELATIONSHIP_UNKNOWN_SUPPORT_OWNER_NORMALIZED",

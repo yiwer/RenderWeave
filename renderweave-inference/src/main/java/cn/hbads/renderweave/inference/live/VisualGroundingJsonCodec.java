@@ -322,6 +322,9 @@ final class VisualGroundingJsonCodec {
                             .mapToInt(ClassifiedRelationship::normalizedEmptySupportOwners)
                             .sum(),
                     classifiedRelationships.stream()
+                            .mapToInt(ClassifiedRelationship::normalizedEmptySourceAncestorSupportOwners)
+                            .sum(),
+                    classifiedRelationships.stream()
                             .mapToInt(ClassifiedRelationship::normalizedUnknownSupportOwners)
                             .sum(),
                     classifiedEntityRegions.normalizedRelationshipRegions()
@@ -833,6 +836,7 @@ final class VisualGroundingJsonCodec {
                 supportIds.normalizedEnclosingOwners(),
                 supportIds.normalizedSourceAncestorOwners(),
                 supportIds.normalizedEmptySupportOwners(),
+                supportIds.normalizedEmptySourceAncestorOwners(),
                 supportIds.normalizedUnknownSupportOwners()
         );
     }
@@ -845,14 +849,14 @@ final class VisualGroundingJsonCodec {
             return new ClassifiedSupportIds(classified(
                     "VISUAL_HIERARCHY_V2_RELATIONSHIP_SUPPORT_IDS_INVALID",
                     () -> VisualAnalysisValidation.localIds(values, "supportingElementIds", 16)
-            ), 0, 0, 0, 0, 0, 0);
+            ), 0, 0, 0, 0, 0, 0, 0);
         }
         if (values == null) {
             throw invalid("VISUAL_HIERARCHY_V2_RELATIONSHIP_SUPPORT_IDS_MISSING", null);
         }
         if (values.isEmpty()) {
             if (supportsEmptyExactRegionOwner(policy)) {
-                return new ClassifiedSupportIds(List.of(), 0, 0, 0, 0, 0, 0);
+                return new ClassifiedSupportIds(List.of(), 0, 0, 0, 0, 0, 0, 0);
             }
             throw invalid("VISUAL_HIERARCHY_V2_RELATIONSHIP_SUPPORT_IDS_EMPTY", null);
         }
@@ -867,7 +871,7 @@ final class VisualGroundingJsonCodec {
             unique.add(validated);
         }
         return new ClassifiedSupportIds(
-                List.copyOf(unique), values.size() - unique.size(), 0, 0, 0, 0, 0
+                List.copyOf(unique), values.size() - unique.size(), 0, 0, 0, 0, 0, 0
         );
     }
 
@@ -898,8 +902,20 @@ final class VisualGroundingJsonCodec {
                 if (owners.size() == 1) {
                     return new ClassifiedSupportIds(
                             List.of(owners.getFirst().elementId()),
-                            supportIds.normalizedReferences(), 1, 0, 0, 1, 0
+                            supportIds.normalizedReferences(), 1, 0, 0, 1, 0, 0
                     );
+                }
+                if (owners.isEmpty() && supportsEmptySourceAncestorOwner(policy)) {
+                    var ancestorOwners = strictConnectedRelationshipRegionAncestorGroupOwners(
+                            relationship, parentEntityId, childEntityId,
+                            inventory, grounding, entityRegions
+                    );
+                    if (ancestorOwners.size() == 1) {
+                        return new ClassifiedSupportIds(
+                                List.of(ancestorOwners.getFirst().owner().elementId()),
+                                supportIds.normalizedReferences(), 1, 0, 0, 0, 1, 0
+                        );
+                    }
                 }
             } catch (IllegalArgumentException ignored) {
                 // Preserve the empty-support fixed code for incomplete or unknown structure.
@@ -918,7 +934,7 @@ final class VisualGroundingJsonCodec {
                     if (owners.size() == 1) {
                         return new ClassifiedSupportIds(
                                 List.of(owners.getFirst().elementId()),
-                                supportIds.normalizedReferences(), 1, 0, 0, 0, 1
+                                supportIds.normalizedReferences(), 1, 0, 0, 0, 0, 1
                         );
                     }
                 } catch (IllegalArgumentException ignored) {
@@ -946,7 +962,7 @@ final class VisualGroundingJsonCodec {
             if (owners.size() == 1) {
                 return new ClassifiedSupportIds(
                         List.of(owners.getFirst().elementId()),
-                        supportIds.normalizedReferences(), 1, 0, 0, 0, 0
+                        supportIds.normalizedReferences(), 1, 0, 0, 0, 0, 0
                 );
             }
             if (!enclosingPolicy || owners.size() > 1 || entityRegions == null) return supportIds;
@@ -979,7 +995,7 @@ final class VisualGroundingJsonCodec {
             if (candidates.size() == 1) {
                 return new ClassifiedSupportIds(
                         List.of(candidates.getFirst().owner().elementId()),
-                        supportIds.normalizedReferences(), 1, 1, 0, 0, 0
+                        supportIds.normalizedReferences(), 1, 1, 0, 0, 0, 0
                 );
             }
             if (!candidates.isEmpty() || !sourceAncestorPolicy) return supportIds;
@@ -1006,7 +1022,7 @@ final class VisualGroundingJsonCodec {
             if (sourceAncestorCandidates.size() != 1) return supportIds;
             return new ClassifiedSupportIds(
                     List.of(sourceAncestorCandidates.getFirst().owner().elementId()),
-                    supportIds.normalizedReferences(), 1, 0, 1, 0, 0
+                    supportIds.normalizedReferences(), 1, 0, 1, 0, 0, 0
             );
         } catch (IllegalArgumentException failure) {
             // Keep existing fixed-code diagnostics for unknown supports or invalid regions.
@@ -1040,6 +1056,42 @@ final class VisualGroundingJsonCodec {
                 .toList();
     }
 
+    private static List<SupportOwnerRegion> strictConnectedRelationshipRegionAncestorGroupOwners(
+            RelationshipOutput relationship,
+            String parentEntityId,
+            String childEntityId,
+            VisualElementInventory inventory,
+            VisualGroundingPlan grounding,
+            VisualEntityRegionPlan entityRegions
+    ) {
+        var relationshipRegionId = VisualAnalysisValidation.localId(
+                relationship.regionId(), "regionId"
+        );
+        var relationshipRegion = grounding.requireRegion(relationshipRegionId);
+        if (entityRegions == null) return List.of();
+        var candidates = new ArrayList<SupportOwnerRegion>();
+        for (var owner : inventory.elements()) {
+            if (owner.kind() != VisualElementKind.GROUP) continue;
+            for (var ownerRegionId : grounding.regionIdsForElement(owner.elementId())) {
+                var ownerRegion = grounding.requireRegion(ownerRegionId);
+                if (ownerRegion.regionId().equals(relationshipRegion.regionId())
+                        || (ownerRegion.kind() != VisualRegionKind.GROUP
+                        && ownerRegion.kind() != VisualRegionKind.REPEATED_GROUP)
+                        || !relationshipRegionCardinalityCompatible(
+                        owner.multiplicity(), ownerRegion
+                ) || !grounding.descendantOrSame(
+                        relationshipRegion.regionId(), ownerRegion.regionId()
+                ) || !relationshipRegionConnectionCompatible(
+                        parentEntityId, childEntityId, ownerRegion, entityRegions, grounding
+                )) {
+                    continue;
+                }
+                candidates.add(new SupportOwnerRegion(owner, ownerRegion));
+            }
+        }
+        return List.copyOf(candidates);
+    }
+
     private static boolean usesConnectedSupportOwnerRegions(
             VisualRelationshipSupportIdPolicy policy
     ) {
@@ -1056,14 +1108,25 @@ final class VisualGroundingJsonCodec {
         return policy == VisualRelationshipSupportIdPolicy
                 .CANONICALIZE_EXACT_DUPLICATES_AND_UNIQUE_CONNECTED_GROUP_OWNER_WITH_EMPTY_SUPPORT
                 || policy == VisualRelationshipSupportIdPolicy
-                .CANONICALIZE_EXACT_DUPLICATES_AND_UNIQUE_CONNECTED_GROUP_OWNER_WITH_EMPTY_OR_UNKNOWN_SUPPORT;
+                .CANONICALIZE_EXACT_DUPLICATES_AND_UNIQUE_CONNECTED_GROUP_OWNER_WITH_EMPTY_OR_UNKNOWN_SUPPORT
+                || policy == VisualRelationshipSupportIdPolicy
+                .CANONICALIZE_EXACT_DUPLICATES_AND_UNIQUE_CONNECTED_GROUP_OWNER_WITH_EMPTY_OR_UNKNOWN_SUPPORT_AND_EMPTY_SOURCE_ANCESTOR;
     }
 
     private static boolean supportsUnknownExactRegionOwner(
             VisualRelationshipSupportIdPolicy policy
     ) {
         return policy == VisualRelationshipSupportIdPolicy
-                .CANONICALIZE_EXACT_DUPLICATES_AND_UNIQUE_CONNECTED_GROUP_OWNER_WITH_EMPTY_OR_UNKNOWN_SUPPORT;
+                .CANONICALIZE_EXACT_DUPLICATES_AND_UNIQUE_CONNECTED_GROUP_OWNER_WITH_EMPTY_OR_UNKNOWN_SUPPORT
+                || policy == VisualRelationshipSupportIdPolicy
+                .CANONICALIZE_EXACT_DUPLICATES_AND_UNIQUE_CONNECTED_GROUP_OWNER_WITH_EMPTY_OR_UNKNOWN_SUPPORT_AND_EMPTY_SOURCE_ANCESTOR;
+    }
+
+    private static boolean supportsEmptySourceAncestorOwner(
+            VisualRelationshipSupportIdPolicy policy
+    ) {
+        return policy == VisualRelationshipSupportIdPolicy
+                .CANONICALIZE_EXACT_DUPLICATES_AND_UNIQUE_CONNECTED_GROUP_OWNER_WITH_EMPTY_OR_UNKNOWN_SUPPORT_AND_EMPTY_SOURCE_ANCESTOR;
     }
 
     private record ClassifiedSupportIds(
@@ -1073,6 +1136,7 @@ final class VisualGroundingJsonCodec {
             int normalizedEnclosingOwners,
             int normalizedSourceAncestorOwners,
             int normalizedEmptySupportOwners,
+            int normalizedEmptySourceAncestorOwners,
             int normalizedUnknownSupportOwners
     ) { }
 
@@ -1085,6 +1149,7 @@ final class VisualGroundingJsonCodec {
             int normalizedEnclosingSupportOwners,
             int normalizedSourceAncestorSupportOwners,
             int normalizedEmptySupportOwners,
+            int normalizedEmptySourceAncestorSupportOwners,
             int normalizedUnknownSupportOwners
     ) { }
 
@@ -1912,6 +1977,7 @@ record GroundedHierarchyPlan(
         int normalizedRelationshipEnclosingSupportOwners,
         int normalizedRelationshipSourceAncestorSupportOwners,
         int normalizedRelationshipEmptySupportOwners,
+        int normalizedRelationshipEmptySourceAncestorSupportOwners,
         int normalizedRelationshipUnknownSupportOwners,
         int normalizedRelationshipRegions
 ) {
@@ -1940,10 +2006,12 @@ record GroundedHierarchyPlan(
         }
         if (normalizedRelationshipSourceAncestorSupportOwners < 0
                 || normalizedRelationshipEmptySupportOwners < 0
+                || normalizedRelationshipEmptySourceAncestorSupportOwners < 0
                 || normalizedRelationshipUnknownSupportOwners < 0
                 || normalizedRelationshipSourceAncestorSupportOwners
                 + normalizedRelationshipEnclosingSupportOwners
                 + normalizedRelationshipEmptySupportOwners
+                + normalizedRelationshipEmptySourceAncestorSupportOwners
                 + normalizedRelationshipUnknownSupportOwners
                 > normalizedRelationshipSupportOwners) {
             throw new IllegalArgumentException(
@@ -1979,7 +2047,8 @@ enum VisualRelationshipSupportIdPolicy {
     CANONICALIZE_EXACT_DUPLICATES_AND_UNIQUE_ENCLOSING_CONNECTED_GROUP_OWNER,
     CANONICALIZE_EXACT_DUPLICATES_AND_UNIQUE_ENCLOSING_OR_SOURCE_ANCESTOR_CONNECTED_GROUP_OWNER,
     CANONICALIZE_EXACT_DUPLICATES_AND_UNIQUE_CONNECTED_GROUP_OWNER_WITH_EMPTY_SUPPORT,
-    CANONICALIZE_EXACT_DUPLICATES_AND_UNIQUE_CONNECTED_GROUP_OWNER_WITH_EMPTY_OR_UNKNOWN_SUPPORT
+    CANONICALIZE_EXACT_DUPLICATES_AND_UNIQUE_CONNECTED_GROUP_OWNER_WITH_EMPTY_OR_UNKNOWN_SUPPORT,
+    CANONICALIZE_EXACT_DUPLICATES_AND_UNIQUE_CONNECTED_GROUP_OWNER_WITH_EMPTY_OR_UNKNOWN_SUPPORT_AND_EMPTY_SOURCE_ANCESTOR
 }
 
 enum VisualRelationshipRegionPolicy {
