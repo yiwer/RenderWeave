@@ -43,11 +43,18 @@ class VisualEvaluationGoalBudgetTest {
         authorization.requireCorpus(corpus);
         authorization.requireProfileSnapshot(sha256(profile.snapshotJson()));
         assertEquals(1_500_000L, VisualEvaluationAuthorization.GOAL_MAXIMUM_TOKENS_PER_MODEL);
+        assertEquals(10_000_000L,
+                VisualEvaluationAuthorization.goalMaximumCostMicrosCny("qwen3.7-plus"));
+        assertEquals(10_000_000L,
+                VisualEvaluationAuthorization.goalMaximumCostMicrosCny(
+                        "qwen3.7-flash-2026-07-15"));
+        assertEquals(18_000_000L,
+                VisualEvaluationAuthorization.goalMaximumCostMicrosCny("qwen3.8-max"));
 
         assertThrows(IllegalArgumentException.class,
                 () -> authorization("too-many-tokens", 24, 500_001, 4_000_000));
         assertThrows(IllegalArgumentException.class,
-                () -> authorization("too-much-cost", 24, 500_000, 4_000_001));
+                () -> authorization("too-much-cost", 24, 500_000, 10_000_001));
 
         var json = JsonMapper.builder().build();
         var path = directory.resolve("authorization.json");
@@ -210,7 +217,7 @@ class VisualEvaluationGoalBudgetTest {
     }
 
     @Test
-    void previousV2GuardMigratesWithoutChangingReservations(@TempDir Path directory) throws Exception {
+    void previousV3GuardMigratesWithoutChangingReservations(@TempDir Path directory) throws Exception {
         var json = JsonMapper.builder().build();
         var authorization = authorization("visual-v2-migration", 24, 500_000, 4_000_000);
         var original = new VisualEvaluationGoalBudget(directory, json, NOW);
@@ -236,12 +243,37 @@ class VisualEvaluationGoalBudgetTest {
     }
 
     @Test
+    void earlierV2GuardStillMigratesWithoutChangingReservations(@TempDir Path directory)
+            throws Exception {
+        var json = JsonMapper.builder().build();
+        var authorization = authorization("visual-v2-migration", 24, 500_000, 4_000_000);
+        var original = new VisualEvaluationGoalBudget(directory, json, NOW);
+        var reservation = original.reserve(authorization, request(103), NOW);
+        original.settle(UUID.fromString(reservation.reservationId()),
+                new ProviderUsage(240, 160), 2_000, NOW.plusSeconds(1));
+        var stateBefore = Files.readString(directory.resolve("goal-budget.json"), StandardCharsets.UTF_8);
+
+        Files.writeString(directory.resolve("goal-budget.guard.json"),
+                json.writeValueAsString(VisualEvaluationGoalBudget.Guard.previousV2()),
+                StandardCharsets.UTF_8);
+        var migrated = new VisualEvaluationGoalBudget(directory, json, NOW.plusSeconds(2));
+
+        assertEquals(VisualEvaluationGoalBudget.Guard.expected(), json.readValue(
+                Files.readString(directory.resolve("goal-budget.guard.json"), StandardCharsets.UTF_8),
+                VisualEvaluationGoalBudget.Guard.class
+        ));
+        assertEquals(stateBefore,
+                Files.readString(directory.resolve("goal-budget.json"), StandardCharsets.UTF_8));
+        assertEquals(reservation.reservationId(), migrated.reservations().getFirst().reservationId());
+    }
+
+    @Test
     void inexactPreviousGuardCannotUseTheMigrationPath(@TempDir Path directory) throws Exception {
         var json = JsonMapper.builder().build();
         new VisualEvaluationGoalBudget(directory, json, NOW);
         var tampered = json.writeValueAsString(VisualEvaluationGoalBudget.Guard.previous())
-                .replace("\"maximumTokensPerModel\":1000000",
-                        "\"maximumTokensPerModel\":1500000");
+                .replace("\"qwen3.7-flash\":400000",
+                        "\"qwen3.7-flash\":10000000");
         Files.writeString(directory.resolve("goal-budget.guard.json"), tampered,
                 StandardCharsets.UTF_8);
 

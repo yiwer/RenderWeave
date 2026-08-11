@@ -51,8 +51,8 @@ record VisualEvaluationAuthorization(
     static final int GOAL_MAXIMUM_ATTEMPTS_PER_MODEL = 180;
     static final Map<String, Long> GOAL_MAXIMUM_COST_MICROS_CNY = Map.of(
             "qwen3.8-max", 18_000_000L,
-            "qwen3.7-plus", 4_000_000L,
-            "qwen3.7-flash", 400_000L
+            "qwen3.7-plus", 10_000_000L,
+            "qwen3.7-flash", 10_000_000L
     );
     private static final Set<String> APPROVED_MODELS = Set.of(
             "qwen3.8-max",

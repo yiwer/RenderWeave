@@ -679,3 +679,15 @@ PostgreSQL tracer 1/1、Web 73/73 + lint/typecheck/build 与隔离 1024px Playwr
 `REVIEW_REQUIRED`，Document Vision 仅一次，OCR sentinel 未持久化；UI 仅显示 fixed code、中文解释
 和数量。本节点 Provider attempts=0，Goal 用量不变。最终 revision clean gates、20/60 final eval、
 final independent verifier 与业务/视觉 J1 仍未完成，因此 Goal 不完成。
+
+## 22. T6-5 v4 cost guard 与 live 恢复
+
+用户于 `2026-08-11T09:51:55Z` 为 Flash/Plus 各批准 ¥10 Goal 总 cap 与 24h 窗口；Max 仍为
+¥18，1.5M tokens、180 attempts、单 authorization 500k、synthetic/CC0-only 与 payload-free 约束
+不变。guard v4 以精确 v1/v2/v3 原子迁移保留全部历史 reservations，独立 verifier 对每版使用其
+当时的 token/cost map。
+
+当前先提交并验证治理 delta；随后在 fresh identity/Profile snapshot/budget/time/lock 下串行执行 v33
+Flash、Plus 单 case lifecycle。只有同版本 OBSERVE/HIERARCHY/BINDING 和质量门成立才考虑 Max 与 final
+20/60。此节点自身 Provider attempts=0，N6=`automated_verified`、N7/Goal=`in_progress`、Profile=
+`EXPERIMENTAL`。

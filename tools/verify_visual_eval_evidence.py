@@ -21,8 +21,9 @@ CORPUS_VERSION = "renderweave-visual-stage-corpus/1.0"
 JOURNAL_VERSION = "renderweave-visual-evaluation-journal/1.0"
 GOAL_VERSION = "renderweave-visual-evaluation-goal-budget/1.0"
 GOAL_ID = "renderweave-visual-recognition-vnext-20260810"
-GOAL_GUARD_VERSION = "renderweave-visual-evaluation-goal-guard/3.0"
-PREVIOUS_GOAL_GUARD_VERSION = "renderweave-visual-evaluation-goal-guard/2.0"
+GOAL_GUARD_VERSION = "renderweave-visual-evaluation-goal-guard/4.0"
+PREVIOUS_GOAL_GUARD_VERSION = "renderweave-visual-evaluation-goal-guard/3.0"
+PREVIOUS_V2_GOAL_GUARD_VERSION = "renderweave-visual-evaluation-goal-guard/2.0"
 LEGACY_GOAL_GUARD_VERSION = "renderweave-visual-evaluation-goal-guard/1.0"
 JOURNAL_GUARD_VERSION = "renderweave-visual-evaluation-journal-guard/1.0"
 REPORT_VERSION = "renderweave-visual-stage-report/1.0"
@@ -37,6 +38,11 @@ EXPECTED_LEDGER_PATHS = {
 }
 MODEL_LIMITS = {
     "qwen3.8-max": {"attempts": 180, "cost": 18_000_000},
+    "qwen3.7-plus": {"attempts": 180, "cost": 10_000_000},
+    "qwen3.7-flash": {"attempts": 180, "cost": 10_000_000},
+}
+HISTORICAL_MODEL_LIMITS = {
+    "qwen3.8-max": {"attempts": 180, "cost": 18_000_000},
     "qwen3.7-plus": {"attempts": 180, "cost": 4_000_000},
     "qwen3.7-flash": {"attempts": 180, "cost": 400_000},
 }
@@ -46,10 +52,19 @@ MODEL_TO_GOAL_SLOT = {
     "qwen3.7-flash": "qwen3.7-flash",
     "qwen3.7-flash-2026-07-15": "qwen3.7-flash",
 }
-GOAL_GUARD_TOKEN_LIMITS = {
-    LEGACY_GOAL_GUARD_VERSION: 500_000,
-    PREVIOUS_GOAL_GUARD_VERSION: 1_000_000,
-    GOAL_GUARD_VERSION: 1_500_000,
+GOAL_GUARD_LIMITS = {
+    LEGACY_GOAL_GUARD_VERSION: {
+        "tokens": 500_000, "models": HISTORICAL_MODEL_LIMITS,
+    },
+    PREVIOUS_V2_GOAL_GUARD_VERSION: {
+        "tokens": 1_000_000, "models": HISTORICAL_MODEL_LIMITS,
+    },
+    PREVIOUS_GOAL_GUARD_VERSION: {
+        "tokens": 1_500_000, "models": HISTORICAL_MODEL_LIMITS,
+    },
+    GOAL_GUARD_VERSION: {
+        "tokens": 1_500_000, "models": MODEL_LIMITS,
+    },
 }
 MAXIMUM_AUTHORIZATION_TOKENS = 500_000
 PROFILE_FIELDS = (
@@ -581,7 +596,7 @@ def evaluation(value: Any, metadata: dict[str, dict[str, str]], authorized: set[
     return result
 
 
-def validate_goal(value: dict[str, Any], maximum_tokens_per_model: int) \
+def validate_goal(value: dict[str, Any], guard_limits: dict[str, Any]) \
         -> tuple[list[dict[str, Any]], dict[str, dict[str, int]]]:
     require_keys(value, ("stateVersion", "goalId", "reservations", "createdAt", "updatedAt"), "goal")
     if value["stateVersion"] != GOAL_VERSION or value["goalId"] != GOAL_ID:
@@ -590,7 +605,8 @@ def validate_goal(value: dict[str, Any], maximum_tokens_per_model: int) \
     parsed: list[dict[str, Any]] = []
     ids: set[str] = set()
     calls: set[tuple[str, int]] = set()
-    totals = {model: {"attempts": 0, "tokens": 0, "cost": 0} for model in MODEL_LIMITS}
+    totals = {model: {"attempts": 0, "tokens": 0, "cost": 0}
+              for model in guard_limits["models"]}
     fields = ("reservationId", "authorizationId", "profileId", "model", "runId",
               "attemptOrdinal", "stage", "reservedTokens", "reservedCostMicrosCny",
               "actualInputTokens", "actualOutputTokens", "actualCostMicrosCny", "state",
@@ -640,26 +656,30 @@ def validate_goal(value: dict[str, Any], maximum_tokens_per_model: int) \
                        "actualInputTokens": actual_input, "actualOutputTokens": actual_output,
                        "actualCostMicrosCny": actual_cost})
     for model, total in totals.items():
-        limit = MODEL_LIMITS[model]
-        if total["attempts"] > limit["attempts"] or total["tokens"] > maximum_tokens_per_model \
+        limit = guard_limits["models"][model]
+        if total["attempts"] > limit["attempts"] \
+                or total["tokens"] > guard_limits["tokens"] \
                 or total["cost"] > limit["cost"]:
             fail("cross-ledger model budget exceeded")
     return parsed, totals
 
 
-def validate_goal_guard(value: dict[str, Any]) -> int:
+def validate_goal_guard(value: dict[str, Any]) -> dict[str, Any]:
     require_keys(value, ("guardVersion", "goalId", "maximumTokensPerModel",
                          "maximumAttemptsPerModel", "maximumCostMicrosCnyByModel"), "goal guard")
     guard_version = require_string(value["guardVersion"], "guardVersion")
-    if guard_version not in GOAL_GUARD_TOKEN_LIMITS or value["goalId"] != GOAL_ID \
-            or require_int(value["maximumTokensPerModel"], "maximumTokensPerModel") \
-            != GOAL_GUARD_TOKEN_LIMITS[guard_version] \
+    if guard_version not in GOAL_GUARD_LIMITS or value["goalId"] != GOAL_ID:
+        fail("goal guard identity or caps differ")
+    limits = GOAL_GUARD_LIMITS[guard_version]
+    if require_int(value["maximumTokensPerModel"], "maximumTokensPerModel") \
+            != limits["tokens"] \
             or require_int(value["maximumAttemptsPerModel"], "maximumAttemptsPerModel") != 180:
         fail("goal guard identity or caps differ")
     costs = require_object(value["maximumCostMicrosCnyByModel"], "maximumCostMicrosCnyByModel")
-    if costs != {model: limits["cost"] for model, limits in MODEL_LIMITS.items()}:
+    if costs != {model: model_limits["cost"]
+                 for model, model_limits in limits["models"].items()}:
         fail("goal guard model cost caps differ")
-    return GOAL_GUARD_TOKEN_LIMITS[guard_version]
+    return limits
 
 
 def validate_journal_guard(value: dict[str, Any], authorization: dict[str, Any]) -> None:
@@ -915,9 +935,9 @@ def main() -> int:
     journal_guard_raw, _ = read_json(args.journal_guard)
     validate_journal_guard(journal_guard_raw, authorization_raw)
     goal_guard_raw, _ = read_json(args.goal_guard)
-    maximum_tokens_per_model = validate_goal_guard(goal_guard_raw)
+    guard_limits = validate_goal_guard(goal_guard_raw)
     goal_raw, _ = read_json(args.goal_budget)
-    reservations, model_totals = validate_goal(goal_raw, maximum_tokens_per_model)
+    reservations, model_totals = validate_goal(goal_raw, guard_limits)
     journal_raw, _ = read_json(args.journal)
     results, abandoned, provider_latency_millis = validate_journal(
         journal_raw, authorization, metadata, reservations)

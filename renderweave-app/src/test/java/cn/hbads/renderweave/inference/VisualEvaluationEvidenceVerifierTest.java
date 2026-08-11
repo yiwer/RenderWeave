@@ -208,13 +208,21 @@ class VisualEvaluationEvidenceVerifierTest {
         assertEquals(0, legacyGuardPass.exitCode(),
                 legacyGuardPass.stderr() + legacyGuardPass.stdout());
         Files.writeString(goalGuardFile,
-                json.writeValueAsString(VisualEvaluationGoalBudget.Guard.previous()),
+                json.writeValueAsString(VisualEvaluationGoalBudget.Guard.previousV2()),
                 StandardCharsets.UTF_8);
-        var previousGuardPass = verify(repository, corpusFile, profileFile,
+        var previousV2GuardPass = verify(repository, corpusFile, profileFile,
                 List.of(maxLedger, authorizationFile, flashLedger), authorizationFile,
                 journalDirectory, goalDirectory, reportFile, false);
-        assertEquals(0, previousGuardPass.exitCode(),
-                previousGuardPass.stderr() + previousGuardPass.stdout());
+        assertEquals(0, previousV2GuardPass.exitCode(),
+                previousV2GuardPass.stderr() + previousV2GuardPass.stdout());
+        Files.writeString(goalGuardFile,
+                json.writeValueAsString(VisualEvaluationGoalBudget.Guard.previous()),
+                StandardCharsets.UTF_8);
+        var previousV3GuardPass = verify(repository, corpusFile, profileFile,
+                List.of(maxLedger, authorizationFile, flashLedger), authorizationFile,
+                journalDirectory, goalDirectory, reportFile, false);
+        assertEquals(0, previousV3GuardPass.exitCode(),
+                previousV3GuardPass.stderr() + previousV3GuardPass.stdout());
         Files.writeString(goalGuardFile, currentGoalGuard, StandardCharsets.UTF_8);
 
         Files.writeString(reportFile, originalReport.replaceFirst(

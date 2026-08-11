@@ -1,6 +1,12 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-11 用户新增 N7 J1：Flash/Plus 各 ¥10 Goal 总费用 cap、固定 24h 窗口
+  `2026-08-11T09:51:55Z`–`2026-08-12T09:51:55Z`；按总 cap 而非旧 cap + ¥10 解释。Max ¥18、
+  每槽 1.5M tokens/180 attempts、单 authorization 500k 与 synthetic/CC0-only/payload-free 不变。
+  本节点新增 goal guard v4 精确 v1/v2/v3 原子迁移和独立 verifier 分版 cap；定向 13 tests 与 Python
+  compile PASS。当前 Provider attempts=0、372 reservations、三 ledger CLOSED，尚未迁移 guard 或 OPEN；
+  下一步是独立提交、exact-clean preflight、fresh identity/snapshot 后串行 Flash→Plus v33 smoke。
 - 2026-08-11 pipeline 4.19/product-v32 已形成零 Provider 的离线生产候选。Plus v31 的 accepted OBSERVE
   checkpoint 后四次稳定命中 `VISUAL_HIERARCHY_V2_RELATIONSHIP_SUPPORT_IDS_EMPTY`；`212f468` 将其中唯一可证
   子集收窄为 bounded repair：关系 region 必须是已知 GROUP/REPEATED_GROUP、位于父子实体 ownership 连线上，

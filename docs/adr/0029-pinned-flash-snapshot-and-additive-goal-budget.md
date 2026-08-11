@@ -83,3 +83,19 @@ CNY cap 不变时，两者都必须在新 reservation 前 fail-closed，不得�
 
 这是本 ADR 的预期 fail-closed 后果：token 余量、attempt 余量或历史三阶段记录都不能替代
 当次费用与同版本阶段门。三份 visual ledger 现均为 `CLOSED`。
+
+## 后续决定：Goal guard v4 的 Flash/Plus ¥10 总费用上限
+
+用户于 2026-08-11 继续同一 Goal，明确给予 Flash 与 Plus 各 ¥10 预算、时限 24h。本 ADR 将
+“各 ¥10”按不扩大授权的方式解释为每个稳定槽位 **累计总 cap ¥10**，而不是在旧 cap 上追加
+¥10；窗口固定为 `2026-08-11T09:51:55Z`（含）到 `2026-08-12T09:51:55Z`（不含）。Max
+仍为 ¥18，三槽 1.5M tokens、180 attempts 与单 authorization 500k 不变。
+
+实现使用 `renderweave-visual-evaluation-goal-guard/4.0`：Plus/Flash/Max cost map 为
+¥10/¥10/¥18。runner 只接受字节语义精确的 v1/v2/v3 guard 并在同一原子锁内迁移到 v4；历史
+reservation 不删除、不释放、不重算。独立 Python verifier 按 guard version 分别验证历史
+500k/1M/1.5M + 旧费用 map 与当前 1.5M + 新费用 map，不能用 v4 费用回溯放宽旧 evidence。
+
+本决定只解除 Flash/Plus 的 Goal cost 停止门，不自动 OPEN ledger、不增加 attempts/tokens、不晋级
+Profile，也不放宽 Max 的同版本三阶段门。每个 single-case ledger 仍独立收窄并遵循
+PROPOSED→负探针→OPEN→CLOSED；wrapper 超时仍先查 lease/进程，禁止并发重跑。

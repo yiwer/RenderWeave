@@ -59,7 +59,9 @@ final class VisualEvaluationGoalBudget {
             }
             if (stateExists) {
                 var guard = readGuard();
-                if (Guard.previous().equals(guard) || Guard.legacy().equals(guard)) {
+                if (Guard.previous().equals(guard)
+                        || Guard.previousV2().equals(guard)
+                        || Guard.legacy().equals(guard)) {
                     var state = readState(guard);
                     writeAtomically(guardFile, json.writeValueAsString(Guard.expected()));
                     validateState(state, Guard.expected());
@@ -322,9 +324,16 @@ final class VisualEvaluationGoalBudget {
             int maximumAttemptsPerModel,
             Map<String, Long> maximumCostMicrosCnyByModel
     ) {
-        private static final String VERSION = "renderweave-visual-evaluation-goal-guard/3.0";
-        private static final String PREVIOUS_VERSION = "renderweave-visual-evaluation-goal-guard/2.0";
+        private static final String VERSION = "renderweave-visual-evaluation-goal-guard/4.0";
+        private static final String PREVIOUS_VERSION = "renderweave-visual-evaluation-goal-guard/3.0";
+        private static final String PREVIOUS_V2_VERSION =
+                "renderweave-visual-evaluation-goal-guard/2.0";
         private static final String LEGACY_VERSION = "renderweave-visual-evaluation-goal-guard/1.0";
+        private static final Map<String, Long> HISTORICAL_MAXIMUM_COST_MICROS_CNY = Map.of(
+                "qwen3.8-max", 18_000_000L,
+                "qwen3.7-plus", 4_000_000L,
+                "qwen3.7-flash", 400_000L
+        );
 
         Guard {
             maximumCostMicrosCnyByModel = Map.copyOf(maximumCostMicrosCnyByModel);
@@ -341,9 +350,17 @@ final class VisualEvaluationGoalBudget {
 
         static Guard previous() {
             return new Guard(
-                    PREVIOUS_VERSION, GOAL_ID, 1_000_000L,
+                    PREVIOUS_VERSION, GOAL_ID, 1_500_000L,
                     VisualEvaluationAuthorization.GOAL_MAXIMUM_ATTEMPTS_PER_MODEL,
-                    VisualEvaluationAuthorization.GOAL_MAXIMUM_COST_MICROS_CNY
+                    HISTORICAL_MAXIMUM_COST_MICROS_CNY
+            );
+        }
+
+        static Guard previousV2() {
+            return new Guard(
+                    PREVIOUS_V2_VERSION, GOAL_ID, 1_000_000L,
+                    VisualEvaluationAuthorization.GOAL_MAXIMUM_ATTEMPTS_PER_MODEL,
+                    HISTORICAL_MAXIMUM_COST_MICROS_CNY
             );
         }
 
@@ -351,7 +368,7 @@ final class VisualEvaluationGoalBudget {
             return new Guard(
                     LEGACY_VERSION, GOAL_ID, 500_000L,
                     VisualEvaluationAuthorization.GOAL_MAXIMUM_ATTEMPTS_PER_MODEL,
-                    VisualEvaluationAuthorization.GOAL_MAXIMUM_COST_MICROS_CNY
+                    HISTORICAL_MAXIMUM_COST_MICROS_CNY
             );
         }
     }

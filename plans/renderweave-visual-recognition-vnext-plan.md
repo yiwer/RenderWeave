@@ -571,3 +571,14 @@ drift、journal/guard 不一致、payload 边界失败或同一无新假设失�
   N6=`automated_verified`、N7/Goal=`in_progress`。下一步是 checkpoint commit 后 exact-clean
   fast/server/web/e2e/full/Document Vision 与独立 verifier；在费用或同版本阶段门未变前不创建
   新 live ledger，不启动 final 20/60。
+
+## 2026-08-11 v4 cost guard 与 24h J1 恢复入口
+
+- 用户将 Flash/Plus 各自的稳定槽位 Goal cost cap 设为 ¥10，总 token/attempt 与 Max ¥18 不变；
+  时间固定为 `2026-08-11T09:51:55Z`–`2026-08-12T09:51:55Z`。
+- guard v4 只把 Plus/Flash cost map 改为 ¥10/¥10；v1–v3 reservations 保持不可变，迁移必须在原子
+  lock 内先按来源 guard 验证完整 state。Java guard 与独立 Python verifier 都要覆盖四版。
+- 执行顺序恢复为：提交并 exact-clean 验证 v4 → fresh `/2` identity 与三份 v33 snapshot → Flash
+  单 case lifecycle/A2 → fresh preflight 后 Plus lifecycle/A2。Max 仍须同版本 live 三阶段和质量门。
+- 本 checkpoint 只固化授权与 guard，Provider attempts=0、372 reservations 与三份 CLOSED ledger
+  尚未变化；product-v33 仍 `EXPERIMENTAL`，N7/Goal 仍 `in_progress`。
