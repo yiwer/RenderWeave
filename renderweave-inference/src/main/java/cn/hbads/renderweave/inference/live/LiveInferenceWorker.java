@@ -110,6 +110,8 @@ public final class LiveInferenceWorker {
             "renderweave-inference-pipeline/4.24";
     private static final String ANCESTOR_REGION_PARENT_NORMALIZED_HYBRID_VISUAL_PIPELINE =
             "renderweave-inference-pipeline/4.25";
+    private static final String GAPPED_READING_ORDER_NORMALIZED_HYBRID_VISUAL_PIPELINE =
+            "renderweave-inference-pipeline/4.26";
     private static final int MAX_STAGE_ADVANCES = 24;
     private static final int MAX_RETRY_PROBLEM_CODES = 16;
 
@@ -1165,6 +1167,8 @@ public final class LiveInferenceWorker {
                 || CONSTRAINT_REGION_KIND_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
                 profile.pipelineVersion())
                 || ANCESTOR_REGION_PARENT_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
+                profile.pipelineVersion())
+                || GAPPED_READING_ORDER_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
                 profile.pipelineVersion())) {
             return VisualRelationshipSupportIdPolicy
                     .CANONICALIZE_EXACT_DUPLICATES_AND_UNIQUE_CONNECTED_GROUP_OWNER_WITH_EMPTY_OR_UNKNOWN_SUPPORT_AND_EMPTY_SOURCE_ANCESTOR;
@@ -1300,6 +1304,11 @@ public final class LiveInferenceWorker {
     private static VisualObservationNormalizationPolicy observationNormalizationPolicy(
             InferenceProfile profile
     ) {
+        if (GAPPED_READING_ORDER_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
+                profile.pipelineVersion())) {
+            return VisualObservationNormalizationPolicy
+                    .BOUNDED_CONSTRAINT_UNIQUE_KIND_ANCESTOR_PARENT_GAPPED_READING_ORDER_EVIDENCE_AND_ITEM_SLOT_OWNER;
+        }
         if (ANCESTOR_REGION_PARENT_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
                 profile.pipelineVersion())) {
             return VisualObservationNormalizationPolicy
@@ -1467,6 +1476,8 @@ public final class LiveInferenceWorker {
                 || CONSTRAINT_REGION_KIND_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
                 profile.pipelineVersion())
                 || ANCESTOR_REGION_PARENT_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
+                profile.pipelineVersion())
+                || GAPPED_READING_ORDER_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
                 profile.pipelineVersion());
     }
 

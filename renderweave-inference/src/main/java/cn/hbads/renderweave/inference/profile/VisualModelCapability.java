@@ -126,7 +126,8 @@ public record VisualModelCapability(
                 || "renderweave-inference-pipeline/4.22".equals(profile.pipelineVersion())
                 || "renderweave-inference-pipeline/4.23".equals(profile.pipelineVersion())
                 || "renderweave-inference-pipeline/4.24".equals(profile.pipelineVersion())
-                || "renderweave-inference-pipeline/4.25".equals(profile.pipelineVersion()))
+                || "renderweave-inference-pipeline/4.25".equals(profile.pipelineVersion())
+                || "renderweave-inference-pipeline/4.26".equals(profile.pipelineVersion()))
                 || !profile.supportedModes().equals(List.of(
                 cn.hbads.renderweave.inference.input.InferenceMode.IMAGE_ONLY
         ))
