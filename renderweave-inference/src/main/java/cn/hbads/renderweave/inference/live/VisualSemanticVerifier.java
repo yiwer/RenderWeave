@@ -61,11 +61,21 @@ final class VisualSemanticVerifier {
             }
         }
         for (var group : groups) {
-            var ownsContainer = grounding.regionIdsForElement(group.elementId()).stream()
+            var ownedContainers = grounding.regionIdsForElement(group.elementId()).stream()
                     .map(grounding::requireRegion)
-                    .anyMatch(region -> region.kind() == VisualRegionKind.GROUP
-                            || region.kind() == VisualRegionKind.REPEATED_GROUP);
-            if (!ownsContainer) issues.add(VisualSemanticIssue.OBSERVE_GROUP_REGION_INVALID);
+                    .filter(region -> region.kind() == VisualRegionKind.GROUP
+                            || region.kind() == VisualRegionKind.REPEATED_GROUP)
+                    .toList();
+            if (ownedContainers.isEmpty()) {
+                issues.add(VisualSemanticIssue.OBSERVE_GROUP_REGION_INVALID);
+            } else if (semanticPolicy == VisualObservationSemanticPolicy
+                    .SLOT_LEAF_EVIDENCE_AND_GROUP_REGION_CARDINALITY_REQUIRED
+                    && ownedContainers.stream().noneMatch(region ->
+                    group.multiplicity() == VisualMultiplicity.MANY
+                            ? region.kind() == VisualRegionKind.REPEATED_GROUP
+                            : region.multiplicity() == VisualMultiplicity.ONE)) {
+                issues.add(VisualSemanticIssue.OBSERVE_REPEATED_GROUP_CARDINALITY_INVALID);
+            }
         }
         issues.addAll(verifyElementEvidenceTopology(inventory, semanticPolicy));
         return issues.stream().distinct()
@@ -334,7 +344,8 @@ final class VisualSemanticVerifier {
 
 enum VisualObservationSemanticPolicy {
     LEGACY,
-    SLOT_LEAF_EVIDENCE_REQUIRED
+    SLOT_LEAF_EVIDENCE_REQUIRED,
+    SLOT_LEAF_EVIDENCE_AND_GROUP_REGION_CARDINALITY_REQUIRED
 }
 
 enum VisualHierarchySemanticPolicy {

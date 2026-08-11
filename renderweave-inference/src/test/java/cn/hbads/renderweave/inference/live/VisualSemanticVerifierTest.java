@@ -29,6 +29,71 @@ class VisualSemanticVerifierTest {
     }
 
     @Test
+    void groupRegionCardinalityPolicyRejectsManyGroupWithoutRepeatedRegion() {
+        var inventory = new VisualElementInventory(
+                VisualElementInventory.VERSION,
+                List.of(new VisualElement(
+                        "repeated-lines", VisualElementKind.GROUP, "lines", "Lines",
+                        VisualMultiplicity.MANY, null,
+                        List.of(evidence(1_000, 1_000, 9_000, 9_000))
+                ))
+        );
+        var grounding = new VisualGroundingPlan(
+                VisualGroundingPlan.VERSION,
+                List.of(
+                        new VisualRegion(
+                                "root-region", null, VisualRegionKind.ROOT,
+                                VisualMultiplicity.ONE, 0, null,
+                                List.of(evidence(0, 0, 10_000, 10_000))
+                        ),
+                        new VisualRegion(
+                                "singular-group", "root-region", VisualRegionKind.GROUP,
+                                VisualMultiplicity.ONE, 0, null,
+                                List.of(evidence(1_000, 1_000, 9_000, 9_000))
+                        )
+                ),
+                List.of(new VisualElementRegionOwnership(
+                        "repeated-lines", List.of("singular-group")
+                ))
+        );
+
+        assertEquals(
+                List.of(),
+                verifier.verifyObservation(
+                        inventory, grounding, VisualObservationSemanticPolicy.LEGACY
+                )
+        );
+        assertEquals(
+                List.of(VisualSemanticIssue.OBSERVE_REPEATED_GROUP_CARDINALITY_INVALID),
+                verifier.verifyObservation(
+                        inventory, grounding,
+                        VisualObservationSemanticPolicy
+                                .SLOT_LEAF_EVIDENCE_AND_GROUP_REGION_CARDINALITY_REQUIRED
+                )
+        );
+        var singularInventory = new VisualElementInventory(
+                VisualElementInventory.VERSION,
+                List.of(new VisualElement(
+                        "repeated-lines", VisualElementKind.GROUP, "lines", "Lines",
+                        VisualMultiplicity.ONE, null,
+                        List.of(evidence(1_000, 1_000, 9_000, 9_000))
+                ))
+        );
+        assertEquals(
+                List.of(),
+                verifier.verifyObservation(
+                        singularInventory, grounding,
+                        VisualObservationSemanticPolicy
+                                .SLOT_LEAF_EVIDENCE_AND_GROUP_REGION_CARDINALITY_REQUIRED
+                )
+        );
+        assertEquals(
+                InferenceStage.OBSERVE,
+                VisualSemanticIssue.OBSERVE_REPEATED_GROUP_CARDINALITY_INVALID.earliestStage()
+        );
+    }
+
+    @Test
     void minimalEntityRegionPolicyRejectsRootLeakageAndRedundantAncestors() {
         var grounding = grounding();
         var hierarchy = hierarchy();
