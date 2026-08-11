@@ -654,3 +654,18 @@ Plus 仅在剩余 5 attempts 内且 Flash 信号直接相关时使用；Max/fina
 fresh 重算 `/2` identity、v35 snapshot、Goal token/attempt/CNY、固定 J1 时限、API 配置存在性、进程与
 evidence lease。Flash 可优先单 synthetic case/最多 5 calls；Plus 仅剩 1 Goal attempt，不能被当作三阶段
 证明。Max 和 final 20/60 继续要求同版本 live OBSERVE/HIERARCHY/BINDING、质量门、独立 verifier 与最终 J1。
+
+## 2026-08-11 v35 exact-clean Flash live checkpoint
+
+- `0e52ec7` clean full `20260811-201946` 9/9；Document Vision `20260811-202810` 1/1、19 lines。
+  首次 `20260811-202505` 缺 executable 配置，确认 0 Provider/进程/held lease 后串行恢复。Java/Python
+  identity `/2:e623107c…e49d37`，Flash/Plus/Max snapshots 为 `f84747…34d0`、`8302e6…af70`、
+  `ba36e8…826a`。
+- Flash `d2c2c3d` PROPOSED → NOT_OPEN → `b795f0a` OPEN →唯一 wrapper→`a4298f3` CLOSED →
+  NOT_OPEN；A2/payload PASS，5 attempts、41,477 tokens、¥0.020835、0 abandoned。
+- 5 次均为 OBSERVE rejection：region-kind enum×4、parent-kind×1；实际结构全 0，没有 HIERARCHY/BINDING。
+  Goal 更新为 395 reservations；Flash/Plus/Max 分别 134/179/82 attempts、
+  937,570/1,087,500/491,919 tokens、¥0.456031/¥4.159620/¥10.289316。
+
+下一门：不调用只剩 1 attempt 的 Plus，也不启动 Max/final 20/60。仅用 fixed-code 与既有 typed shape 合同
+诊断可证明唯一性的 OBSERVE region-kind/parent-kind bounded repair；不能证明唯一时保持 fail-closed。

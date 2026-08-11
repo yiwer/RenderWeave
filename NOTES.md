@@ -628,3 +628,20 @@
   tokens、¥0.435196/¥4.159620/¥10.289316。v35 仍 `EXPERIMENTAL`，N6=`automated_verified`、
   N7/Goal=`in_progress`；exact-clean full/Document Vision、v35 live、final 20/60、最终独立 verifier 与
   业务/视觉 J1 尚未完成。
+
+## v35 exact-clean Flash live checkpoint
+
+- exact-clean `0e52ec7` 的 full `.sdlc/evidence/20260811-201946-full` 9/9 PASS。Document Vision 首次
+  `20260811-202505` 因 executable 未注入而在 Provider 前 fail-closed；确认 0 相关进程/held lease 后，
+  以冻结 RapidOCR 3.9.2/OpenVINO 2026.0.0/model digests 恢复为 `20260811-202810` 1/1、19 lines。
+- Java/Python `/2` identity 一致为 `…e49d37`；Flash/Plus/Max v35 snapshots 分别为
+  `f84747…34d0`、`8302e6…af70`、`ba36e8…826a`。Flash 按 `d2c2c3d` PROPOSED → NOT_OPEN →
+  `b795f0a` OPEN →唯一 wrapper→`a4298f3` CLOSED；CLOSED 后负探针仍精确 NOT_OPEN 且 Goal/evidence
+  字节不变。
+- 独立 verifier 与 payload scan PASS：1 completed、0 abandoned、5 SETTLED attempts、20,583 input +
+  20,894 output、¥0.020835、151,949 ms。5 次全部停在 OBSERVE：region-kind enum×4、parent-kind×1；
+  slots/groups/entities/relationships/bindings 实际均为 0，v35 hierarchy repair 未被 live 触发。
+- Goal 现为 395 reservations（390 SETTLED、5 历史 Plus RESERVED、0 BREACHED）；Flash/Plus/Max 为
+  134/179/82 attempts、937,570/1,087,500/491,919 tokens、¥0.456031/¥4.159620/¥10.289316。
+  三 ledger CLOSED。Plus 仅剩 1 attempt，不调用；Max/final 20/60 的同版本三阶段门仍失败。product-v35
+  保持 `EXPERIMENTAL`，N6=`automated_verified`、N7/Goal=`in_progress`。

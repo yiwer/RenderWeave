@@ -151,3 +151,18 @@ Goal guard v4 当前为 390 reservations（385 SETTLED、5 个历史 Plus RESERV
 质量门。Flash 如在固定窗口内进入 v35 smoke，仍须 exact-clean full/Document Vision、fresh identity/Profile
 snapshot/Goal/time/process/lease preflight、单 case/最多 5 calls 与完整 ledger 生命周期。任何 token 或费用
 余量都不能替代这些前置，也不能自动授权 final 20/60。
+
+## product-v35 Flash 结算
+
+Flash v35 完成独立 PROPOSED→NOT_OPEN→OPEN→唯一 wrapper→CLOSED→NOT_OPEN 生命周期，A2 verifier 与
+payload scan PASS、0 abandoned。5 个 SETTLED reservations 消耗 41,477 exposed tokens 与 ¥0.020835；
+它们全部停在 OBSERVE，未形成三阶段证据。
+
+| 稳定槽位 | attempts | exposed tokens / 1,500,000 | Goal cost / cap | 剩余 |
+|---|---:|---:|---:|---:|
+| Flash（旧 alias + pinned） | 134 / 180 | 937,570 | ¥0.456031 / ¥10 | 46 attempts；562,430 tokens；¥9.543969 |
+| Plus | 179 / 180 | 1,087,500 | ¥4.159620 / ¥10 | 1 attempt；412,500 tokens；¥5.840380 |
+| Max | 82 / 180 | 491,919 | ¥10.289316 / ¥18 | 98 attempts；1,008,081 tokens；¥7.710684 |
+
+395 reservations 中 390 SETTLED、5 个历史 Plus RESERVED、0 BREACHED。三 ledger CLOSED；Plus 不为凑数
+调用，Max/final eval 继续受同版本 accepted OBSERVE/HIERARCHY/BINDING 与质量门约束。

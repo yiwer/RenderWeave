@@ -1038,3 +1038,20 @@ sentinel 零持久化，`5c59ce3` 将 code、中文说明、scope 与 earliest H
 
 这是 `automated_verified` 的 bounded semantic verifier 增量，不是 Provider 质量证明。v35 仍
 `EXPERIMENTAL`；exact-clean full/Document Vision、v35 live、final eval、最终独立 verifier 与 J1 均属 N7。
+
+## N7 product-v35：exact-clean Flash live 结果
+
+`0e52ec7` 在独立 worktree 通过 full 9/9 与冻结 Document Vision 19-line canary；后者首次因 process
+configuration 缺失 fail-closed，确认 0 Provider、子进程和 held lease 后才按精确路径重跑通过。Java 与独立
+Python 对 `/2` identity 一致得到 `…e49d37`，三份 v35 Profile snapshot 也逐字节一致。
+
+Flash 的 `d2c2c3d` PROPOSED、`b795f0a` OPEN、`a4298f3` CLOSED 两侧均有 NOT_OPEN 负探针；唯一
+wrapper 164.057 秒，CLOSED 后才读取 evidence。独立 verifier PASS 且 payload scan PASS：5 attempts、
+41,477 exposed tokens、¥0.020835、0 abandoned。全部仍在 OBSERVE fail-closed，固定码为 invalid region
+kind 四次、parent kind 一次；没有 accepted OBSERVE，因而 empty-source-ancestor HIERARCHY policy 未被
+真实调用触发，也没有 Candidate 或可用质量指标。
+
+该结果否定“v35 已形成同版本三阶段证据”，不否定 bounded repair 的自动合同。Plus 只剩一个 Goal attempt，
+不能验证三阶段；Max 与 final 20/60 不启动。下一安全工作仅可依据 payload-free fixed-code 设计新的 bounded
+OBSERVE 修复，并继续保持 enum/拓扑歧义 fail-closed。product-v35 仍 `EXPERIMENTAL`，N6 仍
+`automated_verified`，N7/Goal 仍 `in_progress`。

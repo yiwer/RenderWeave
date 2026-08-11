@@ -739,3 +739,14 @@ payload-free code、scope 和 earliest stage。
 当前 contract 31/31、inference 189/189、snapshot verifier、real-PG、Web 73/73 与 Playwright 1/1 PASS。
 N6=`automated_verified`、N7/Goal=`in_progress`、Profile=`EXPERIMENTAL`。v35 exact-clean full/Document
 Vision、fresh preflight、bounded live、final 20/60、最终独立 verifier 与业务/视觉 J1 仍未完成。
+
+## 26. T6-5 v35 exact-clean Flash live checkpoint
+
+`0e52ec7` 通过 clean full 9/9 与冻结 Document Vision 19-line canary，双实现 identity 和三份 v35
+snapshot 一致。Flash lifecycle `d2c2c3d`→NOT_OPEN→`b795f0a`→唯一 wrapper→`a4298f3`→NOT_OPEN
+闭合；独立 verifier 与 payload scan PASS，5 attempts / 41,477 tokens / ¥0.020835 / 0 abandoned。
+
+五次均停在 OBSERVE（invalid region kind 四次、parent kind 一次），结构计数全 0，未形成 v35 同版本
+HIERARCHY/BINDING 或 Candidate 证据。Goal 为 395 reservations；三 ledger CLOSED。Plus 只剩 1 attempt，
+Max/final 20/60 的三阶段与质量门未满足。N6=`automated_verified`、N7/Goal=`in_progress`、
+Profile=`EXPERIMENTAL`；下一安全节点是 payload-free fixed-code 驱动的 bounded OBSERVE repair。

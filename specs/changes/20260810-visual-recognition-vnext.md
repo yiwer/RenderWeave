@@ -230,3 +230,15 @@ tokens。该 delta 只覆盖原信封的 Flash 模型身份和 Goal token cap：
 - 当前只具备自动证据；必须在 exact-clean revision 上重新跑 full/Document Vision 并 fresh 重算 identity、
   v35 snapshots、Goal/J1/time/process/lease 后，才可优先执行 Flash 单 synthetic case/最多 5 calls。Plus
   只剩 1 Goal attempt，不足以证明三阶段；Max/final eval 的同版本三阶段、质量、独立复核与最终 J1 门不变。
+
+### 2026-08-11 v35 exact-clean Flash live 结果
+
+- exact-clean `0e52ec7` 通过 full 9/9 与 Document Vision 19-line canary；Java/Python identity 为
+  `/2:e623107c…e49d37`，三份 v35 snapshots 精确匹配。首次 Document Vision 缺 process 配置的失败在
+  0 Provider/子进程/held lease 下恢复，不并发重跑。
+- Flash lifecycle `d2c2c3d`→NOT_OPEN→`b795f0a`→唯一 wrapper→`a4298f3`→NOT_OPEN 完整闭合。
+  独立 verifier/payload scan PASS：5 attempts、41,477 tokens、¥0.020835、0 abandoned。
+- 五次均在 OBSERVE 因 invalid-region-kind×4、parent-kind×1 fail-closed；结构计数全 0，未到 HIERARCHY，
+  不构成 v35 质量或三阶段证据。Plus 仅剩 1 attempt，不调用；Max/final 20/60 不启动。
+- Goal 为 395 reservations（390 SETTLED、5 历史 Plus RESERVED、0 BREACHED）。product-v35 保持
+  `EXPERIMENTAL`，N6=`automated_verified`、N7/Goal=`in_progress`。
