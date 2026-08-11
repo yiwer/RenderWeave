@@ -86,6 +86,15 @@ record LiveWorkflowCheckpoint(
         );
     }
 
+    LiveWorkflowCheckpoint rehierarchizing(int calls) {
+        return new LiveWorkflowCheckpoint(
+                VERSION, InferenceStage.OBSERVE, calls, repairRounds,
+                Objects.requireNonNull(elementInventory, "elementInventory"), null, null,
+                Objects.requireNonNull(groundingPlan, "groundingPlan"), null,
+                false, null, List.of()
+        );
+    }
+
     LiveWorkflowCheckpoint hierarchyAnalyzed(VisualHierarchyPlan hierarchy, int calls) {
         return new LiveWorkflowCheckpoint(
                 VERSION, InferenceStage.HIERARCHY, calls, repairRounds,

@@ -272,7 +272,7 @@ final class VisualSemanticVerifier {
                                 && strictlyInside(other, candidate, grounding)
                 )).toList();
                 if (minimal.size() != 1) {
-                    issues.add(VisualSemanticIssue.BINDING_OWNER_AMBIGUOUS);
+                    issues.add(VisualSemanticIssue.HIERARCHY_BINDING_OWNER_AMBIGUOUS);
                 } else if (!minimal.getFirst().entityId().equals(chosen.entityId())) {
                     issues.add(VisualSemanticIssue.BINDING_NOT_NEAREST_ENTITY);
                 }
@@ -387,8 +387,8 @@ enum VisualSemanticIssue {
     HIERARCHY_NON_ROOT_OWNS_ROOT_REGION(
             "VISUAL_SEMANTIC_HIERARCHY_NON_ROOT_OWNS_ROOT_REGION", InferenceStage.HIERARCHY
     ),
-    BINDING_OWNER_AMBIGUOUS(
-            "VISUAL_SEMANTIC_BINDING_OWNER_AMBIGUOUS", InferenceStage.ELEMENT_BINDING
+    HIERARCHY_BINDING_OWNER_AMBIGUOUS(
+            "VISUAL_SEMANTIC_HIERARCHY_BINDING_OWNER_AMBIGUOUS", InferenceStage.HIERARCHY
     ),
     BINDING_NOT_NEAREST_ENTITY(
             "VISUAL_SEMANTIC_BINDING_NOT_NEAREST_ENTITY", InferenceStage.ELEMENT_BINDING

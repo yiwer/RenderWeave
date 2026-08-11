@@ -690,7 +690,14 @@ public class PostgresInferenceRunStore implements InferenceRunStore, InferenceRe
                 )) || attempt.problemCodeCounts().equals(Map.of(
                         "VISUAL_SEMANTIC_OBSERVE_RELATIONSHIP_REGION_GROUP_MISSING", 1
                 )));
-        if (!expectedStage.canTransitionTo(nextStage) && !semanticObservationRewind) {
+        var semanticHierarchyRewind = expectedStage == InferenceStage.ELEMENT_BINDING
+                && nextStage == InferenceStage.HIERARCHY
+                && attempt.status() == InferenceAttemptStatus.REJECTED
+                && attempt.problemCodeCounts().equals(Map.of(
+                        "VISUAL_SEMANTIC_HIERARCHY_BINDING_OWNER_AMBIGUOUS", 1
+                ));
+        if (!expectedStage.canTransitionTo(nextStage)
+                && !semanticObservationRewind && !semanticHierarchyRewind) {
             throw new InvalidInferenceRunTransitionException(
                     runId, "stage " + expectedStage + " cannot advance to " + nextStage
             );

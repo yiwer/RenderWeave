@@ -28,6 +28,7 @@ import cn.hbads.renderweave.inference.provider.ProviderCostEstimator;
 import cn.hbads.renderweave.inference.provider.ProviderInferenceRequest;
 import cn.hbads.renderweave.inference.provider.ProviderInferenceResponse;
 import cn.hbads.renderweave.inference.provider.ProviderUsage;
+import cn.hbads.renderweave.inference.replay.InferenceAttempt;
 import cn.hbads.renderweave.inference.replay.InferenceAttemptStatus;
 import cn.hbads.renderweave.inference.replay.InferenceReplayStore;
 import cn.hbads.renderweave.inference.replay.ReplayCorpus;
@@ -109,6 +110,8 @@ class PostgresLiveInferenceWorkflowTest {
             "dashscope-qwen37-flash-20260715-product-v26-hybrid-generic";
     private static final String SOURCE_ANCESTOR_SUPPORT_OWNER_HYBRID_VISUAL_PROFILE =
             "dashscope-qwen37-flash-20260715-product-v27-hybrid-generic";
+    private static final String MINIMAL_ENTITY_OWNERSHIP_HYBRID_VISUAL_PROFILE =
+            "dashscope-qwen37-flash-20260715-product-v28-hybrid-generic";
     private static final String DOCUMENT_VISION_CAPABILITY =
             "rapidocr-3.9.2-openvino-2026.0.0-ppocrv6-small-c05805399d7d10b1";
 
@@ -1455,6 +1458,111 @@ class PostgresLiveInferenceWorkflowTest {
         assertThat(review.validationProblemsJson())
                 .doesNotContain("OCR_SENTINEL_V27_STATION_NAME")
                 .doesNotContain("ocr-00-000");
+    }
+
+    @Test
+    void pipelineFourPointFifteenRepairsRedundantEntityRegionsOnlyAtHierarchy() {
+        var blobs = new MemoryBlobStore();
+        var created = createGroundedVisual(
+                blobs, "minimal-entity-region-station",
+                MINIMAL_ENTITY_OWNERSHIP_HYBRID_VISUAL_PROFILE
+        );
+        var redundantHierarchy = groundedStationHierarchy().replace(
+                "\"entityId\":\"route\",\"schemaKey\":\"bus-route\",\"displayName\":\"线路\",\"regionIds\":[\"route-item\"]",
+                "\"entityId\":\"route\",\"schemaKey\":\"bus-route\",\"displayName\":\"线路\",\"regionIds\":[\"routes\",\"route-item\"]"
+        );
+        var provider = new ScriptedProvider(
+                request -> response(request, groundedStationElements()),
+                request -> response(request, redundantHierarchy),
+                request -> response(request, groundedStationHierarchy()),
+                request -> response(request, groundedStationBindings())
+        );
+        var preprocessCalls = new AtomicInteger();
+        var preprocessor = hybridPreprocessor(
+                preprocessCalls, "OCR_SENTINEL_V28_HIERARCHY"
+        );
+
+        var finished = worker(provider, blobs, T0.plusSeconds(1), preprocessor)
+                .processNext("minimal-entity-region-worker").orElseThrow();
+
+        assertThat(finished.state())
+                .as("failure=%s attempts=%s", finished.failureCode(), workflowStore.attempts(created))
+                .isEqualTo(InferenceRunState.REVIEW_REQUIRED);
+        assertThat(preprocessCalls).hasValue(1);
+        assertThat(provider.requests).extracting(ProviderInferenceRequest::stage)
+                .containsExactly(
+                        InferenceStage.OBSERVE,
+                        InferenceStage.HIERARCHY, InferenceStage.HIERARCHY,
+                        InferenceStage.ELEMENT_BINDING
+                );
+        assertThat(provider.requests.get(2).taskJson())
+                .contains("VISUAL_SEMANTIC_HIERARCHY_ENTITY_REGION_REDUNDANT")
+                .contains("TARGETED_CROP")
+                .contains("\"groundingPlan\":{");
+        assertThat(workflowStore.attempts(created)).extracting(InferenceAttempt::status)
+                .containsExactly(
+                        InferenceAttemptStatus.SUCCEEDED,
+                        InferenceAttemptStatus.REJECTED, InferenceAttemptStatus.SUCCEEDED,
+                        InferenceAttemptStatus.SUCCEEDED
+                );
+        assertThat(workflowStore.attempts(created).get(1).problemCodeCounts())
+                .containsExactlyEntriesOf(Map.of(
+                        "VISUAL_SEMANTIC_HIERARCHY_ENTITY_REGION_REDUNDANT", 1
+                ));
+    }
+
+    @Test
+    void pipelineFourPointFifteenRewindsAmbiguousBindingOwnershipToHierarchy() {
+        var blobs = new MemoryBlobStore();
+        var created = createGroundedVisual(
+                blobs, "unique-minimal-binding-owner-station",
+                MINIMAL_ENTITY_OWNERSHIP_HYBRID_VISUAL_PROFILE
+        );
+        var ambiguousHierarchy = groundedStationHierarchy().replace(
+                "\"entityId\":\"notice-entity\",\"schemaKey\":\"warm-notice\",\"displayName\":\"温馨提示\",\"regionIds\":[\"notice\"]",
+                "\"entityId\":\"notice-entity\",\"schemaKey\":\"warm-notice\",\"displayName\":\"温馨提示\",\"regionIds\":[\"notice\",\"stop-item\"]"
+        );
+        var provider = new ScriptedProvider(
+                request -> response(request, groundedStationElements()),
+                request -> response(request, ambiguousHierarchy),
+                request -> response(request, groundedStationBindings()),
+                request -> response(request, groundedStationHierarchy()),
+                request -> response(request, groundedStationBindings())
+        );
+        var preprocessCalls = new AtomicInteger();
+        var preprocessor = hybridPreprocessor(
+                preprocessCalls, "OCR_SENTINEL_V28_BINDING"
+        );
+
+        var finished = worker(provider, blobs, T0.plusSeconds(1), preprocessor)
+                .processNext("unique-minimal-binding-owner-worker").orElseThrow();
+
+        assertThat(finished.state())
+                .as("failure=%s attempts=%s", finished.failureCode(), workflowStore.attempts(created))
+                .isEqualTo(InferenceRunState.REVIEW_REQUIRED);
+        assertThat(preprocessCalls).hasValue(1);
+        assertThat(provider.requests).extracting(ProviderInferenceRequest::stage)
+                .containsExactly(
+                        InferenceStage.OBSERVE, InferenceStage.HIERARCHY,
+                        InferenceStage.ELEMENT_BINDING, InferenceStage.HIERARCHY,
+                        InferenceStage.ELEMENT_BINDING
+                );
+        assertThat(provider.requests.get(3).taskJson())
+                .contains("VISUAL_SEMANTIC_HIERARCHY_BINDING_OWNER_AMBIGUOUS")
+                .contains("TARGETED_CROP")
+                .contains("\"elementInventory\":{")
+                .contains("\"groundingPlan\":{")
+                .contains("\"hierarchyPlan\":null");
+        assertThat(workflowStore.attempts(created)).extracting(InferenceAttempt::status)
+                .containsExactly(
+                        InferenceAttemptStatus.SUCCEEDED, InferenceAttemptStatus.SUCCEEDED,
+                        InferenceAttemptStatus.REJECTED, InferenceAttemptStatus.SUCCEEDED,
+                        InferenceAttemptStatus.SUCCEEDED
+                );
+        assertThat(workflowStore.attempts(created).get(2).problemCodeCounts())
+                .containsExactlyEntriesOf(Map.of(
+                        "VISUAL_SEMANTIC_HIERARCHY_BINDING_OWNER_AMBIGUOUS", 1
+                ));
     }
 
     @Test

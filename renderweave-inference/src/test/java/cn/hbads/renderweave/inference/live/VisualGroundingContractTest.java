@@ -910,8 +910,9 @@ class VisualGroundingContractTest {
                 )
         );
 
-        assertEquals("VISUAL_SEMANTIC_BINDING_OWNER_AMBIGUOUS", failure.diagnosticCode());
-        assertEquals(InferenceStage.ELEMENT_BINDING, failure.earliestStage().orElseThrow());
+        assertEquals("VISUAL_SEMANTIC_HIERARCHY_BINDING_OWNER_AMBIGUOUS",
+                failure.diagnosticCode());
+        assertEquals(InferenceStage.HIERARCHY, failure.earliestStage().orElseThrow());
     }
 
     @Test

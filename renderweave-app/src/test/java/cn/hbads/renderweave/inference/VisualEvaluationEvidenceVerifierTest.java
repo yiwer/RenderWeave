@@ -58,7 +58,10 @@ class VisualEvaluationEvidenceVerifierTest {
                 "dashscope-qwen38-max-product-v26-hybrid-generic",
                 "dashscope-qwen37-flash-20260715-product-v27-hybrid-generic",
                 "dashscope-qwen37-plus-product-v27-hybrid-generic",
-                "dashscope-qwen38-max-product-v27-hybrid-generic"
+                "dashscope-qwen38-max-product-v27-hybrid-generic",
+                "dashscope-qwen37-flash-20260715-product-v28-hybrid-generic",
+                "dashscope-qwen37-plus-product-v28-hybrid-generic",
+                "dashscope-qwen38-max-product-v28-hybrid-generic"
         )) {
             var resource = registry.require(profileId);
             var profilePath = repositoryRoot().resolve(

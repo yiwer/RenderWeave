@@ -3,6 +3,7 @@ package cn.hbads.renderweave.inference.live;
 import cn.hbads.renderweave.inference.candidate.CandidateBoundingBox;
 import cn.hbads.renderweave.inference.candidate.CandidateEvidence;
 import cn.hbads.renderweave.inference.eval.visual.VisualStageCorpus;
+import cn.hbads.renderweave.inference.run.InferenceStage;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -104,11 +105,15 @@ class VisualSemanticVerifierTest {
         );
 
         assertEquals(
-                List.of(VisualSemanticIssue.BINDING_OWNER_AMBIGUOUS),
+                List.of(VisualSemanticIssue.HIERARCHY_BINDING_OWNER_AMBIGUOUS),
                 verifier.verifyBindings(
                         inventory, grounding, hierarchy, ambiguousRegions, binding,
                         VisualBindingSemanticPolicy.UNIQUE_MINIMAL_ENTITY_OWNER
                 )
+        );
+        assertEquals(
+                InferenceStage.HIERARCHY,
+                VisualSemanticIssue.HIERARCHY_BINDING_OWNER_AMBIGUOUS.earliestStage()
         );
         assertEquals(
                 List.of(),
