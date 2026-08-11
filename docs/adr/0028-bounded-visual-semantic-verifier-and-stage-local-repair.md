@@ -857,3 +857,35 @@ Flash/Plus/Max 保持 115/162/82 attempts、771,740/965,122/491,919 exposed toke
 允许 Plus；180 attempts、既有 CNY 与时限边界不变。product-v31 仍 `EXPERIMENTAL`，N6 仍
 `automated_verified`，N7/Goal 仍 `in_progress`。clean full、Document Vision、fresh identity/snapshot/aggregate
 preflight 通过前不得 OPEN；Max 与 final 20/60 的三阶段、质量和 J1 门保持不变。
+
+## N7 product-v31：bounded live 结果
+
+exact code revision `e5b4994` 的 clean full `.sdlc/evidence/20260811-155539-full` 9/9 PASS，冻结 Document
+Vision canary `.sdlc/evidence/20260811-160517-document-vision` 1/1、19 lines。ledger-only lifecycle 不进入
+identity；Java 与独立 Python 重算 `/2:578c631edfa2948527013fc0c1831de2242891a2e87bc233376fb208f3a2c0f3`。
+Flash/Plus/Max v31 snapshot 分别为 `c4a32c21…398b7`、`9cdbf6df…f8df3`、`c760ef14…edb8c`。每次 live
+前均重新核对 clean revision、Profile、Goal、CNY/token/attempt、expiry、API 配置存在性、RapidOCR 路径、进程与
+OS evidence lease；未读取或输出 Key 值。
+
+Flash 按 `4ed323f` PROPOSED → `cbda25d` OPEN → `d2fd1cf` CLOSED；授权限于一个 repository synthetic case、
+5 attempts / 60k tokens / ¥0.029。唯一 wrapper exit 0、256.3 秒；独立 verifier A2 重建 5 SETTLED attempts、
+20,581 input + 23,195 output、¥0.022675、242,988 provider ms、0 abandoned、payload scan PASS。四次固定码为
+`VISUAL_GROUNDING_JSON_ENUM_INVALID_REGION_KIND`，一次为 `VISUAL_GROUNDING_ELEMENT_INVALID`，均停在 OBSERVE，
+没有 normalization、HIERARCHY、BINDING 或 Candidate。
+
+Plus 因 v30 repeated-item-field 信号具有直接诊断价值，按 `58d5530` PROPOSED → `adeac0d` OPEN → `d538638`
+CLOSED；授权限于同一 synthetic case、5 attempts / 60k / ¥0.25。唯一 wrapper exit 0、111.6 秒；A2 重建
+5 SETTLED attempts、29,630 input + 5,140 output、¥0.100380、98,363 provider ms、0 abandoned、payload scan
+PASS。首个 OBSERVE accepted；其后四个 HIERARCHY attempt 均以
+`VISUAL_HIERARCHY_V2_RELATIONSHIP_SUPPORT_IDS_EMPTY` fail-closed，未到 BINDING/Candidate。两模型的 PROPOSED
+与 CLOSED 负探针均精确 `VISUAL_EVALUATION_AUTHORIZATION_NOT_OPEN`，Goal/guard/evidence 字节与 reservation
+计数不变；所有调用完成后才读取 payload-free evidence。
+
+最终 Goal 为 369 reservations（364 SETTLED、5 历史 Plus RESERVED、0 BREACHED）：Flash
+120 attempts / 815,516 tokens / ¥0.392962，Plus 167 / 999,892 / ¥3.836612，Max
+82 / 491,919 / ¥10.289316。两份 live evidence、Goal state、full 与 Document Vision evidence 已逐文件 SHA-256
+同步回主 worktree，三份 ledger CLOSED，无 live/Maven/OS lease 残留。v31 只证明真实 fail-closed 与 OBSERVE
+可达，不满足同版本 accepted HIERARCHY/BINDING；Max 门失败、未调用，final 20/60 不启动。product-v31 保持
+`EXPERIMENTAL`，N6 保持 `automated_verified`，N7/Goal 保持 `in_progress`。下一安全切片只能围绕 payload-free
+`RELATIONSHIP_SUPPORT_IDS_EMPTY` 建立本地唯一、bounded、no-progress 可证明的 HIERARCHY repair，不得读取
+Provider 原文、补造关系或放宽 verifier。

@@ -496,3 +496,22 @@ drift、journal/guard 不一致、payload 边界失败或同一无新假设失�
   N6=`automated_verified`、N7/Goal=`in_progress`。只有 checkpoint commit 后的 clean full、Document Vision、fresh
   identity/snapshot/aggregate preflight 与 exact J1 全部匹配，才可启动 bounded smoke；Max 与 final 20/60 的门
   保持不变。
+
+## 2026-08-11 v31 clean/full 与 bounded live 结果
+
+- clean gate：exact code `e5b4994` 的 full `20260811-155539` 9/9 PASS、workingTreeDirty=false；Document Vision
+  `20260811-160517` 以冻结 capability 得到 19 lines。fresh Java/Python identity 为
+  `/2:578c631edfa2948527013fc0c1831de2242891a2e87bc233376fb208f3a2c0f3`；Flash/Plus/Max snapshot 为
+  `c4a32c21…398b7`、`9cdbf6df…f8df3`、`c760ef14…edb8c`。
+- Flash：`4ed323f` PROPOSED → NOT_OPEN 负探针 → `cbda25d` OPEN → 唯一 wrapper → `d2fd1cf` CLOSED。
+  A2 PASS、5 SETTLED、43,776 tokens / ¥0.022675、0 abandoned、payload scan PASS；5 次均停在 OBSERVE，固定码
+  为 invalid-region-kind×4、element-invalid×1，未命中 v31 normalization。
+- Plus：基于 v30 repeated-item-field 的直接信号执行 `58d5530` PROPOSED → NOT_OPEN → `adeac0d` OPEN →
+  唯一 wrapper → `d538638` CLOSED。A2 PASS、5 SETTLED、34,770 tokens / ¥0.100380；首个 OBSERVE accepted，
+  其后四次 HIERARCHY 均为 `VISUAL_HIERARCHY_V2_RELATIONSHIP_SUPPORT_IDS_EMPTY`，未到 BINDING/Candidate。
+- 治理：两模型 CLOSED probes 同样 NOT_OPEN，Goal/evidence 字节零变化；369 reservations 中 364 SETTLED、
+  5 历史 Plus RESERVED、0 BREACHED。Flash/Plus/Max 为 120/167/82 attempts、
+  815,516/999,892/491,919 tokens、¥0.392962/¥3.836612/¥10.289316，三 ledger CLOSED，无残留进程/lease。
+  Max 因同版本 HIERARCHY/BINDING 不可达而未调用；final 20/60 不启动。product-v31=`EXPERIMENTAL`、
+  N6=`automated_verified`、N7/Goal=`in_progress`。下一节点仅离线收敛 hierarchy support-id 的 bounded repair/
+  no-progress 合同。

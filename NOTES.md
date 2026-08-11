@@ -501,3 +501,23 @@
   `.sdlc/evidence/20260811-125512-web`；隔离 4174 Playwright 1/1 PASS。
 - 当前 Provider attempts=0、335 reservations 与累计用量不变，三份 ledger CLOSED。clean full、fresh `/2`
   identity/Profile snapshot、预算与时限重算通过前不 OPEN；Profile 保持 `EXPERIMENTAL`、N7 保持 `in_progress`。
+
+## v31 clean/full 与 bounded live checkpoint
+
+- exact code revision `e5b4994` 在干净 detached worktree 通过 full 9/9：
+  `.sdlc/evidence/20260811-155539-full`；冻结 RapidOCR/OpenVINO canary 1/1、19 lines：
+  `.sdlc/evidence/20260811-160517-document-vision`。Java 与独立 Python fresh identity 一致为
+  `/2:578c631edfa2948527013fc0c1831de2242891a2e87bc233376fb208f3a2c0f3`；Flash/Plus/Max v31 snapshot
+  分别为 `c4a32c21…398b7`、`9cdbf6df…f8df3`、`c760ef14…edb8c`。
+- Flash lifecycle 为 `4ed323f` PROPOSED → `cbda25d` OPEN → `d2fd1cf` CLOSED；唯一 wrapper 5 SETTLED
+  attempts，43,776 tokens / ¥0.022675。5 次均在 OBSERVE fail-closed：region-kind×4、element-invalid×1，未命中
+  SLOT-owner normalization。
+- Plus lifecycle 为 `58d5530` PROPOSED → `adeac0d` OPEN → `d538638` CLOSED；唯一 wrapper 5 SETTLED
+  attempts，34,770 tokens / ¥0.100380。OBSERVE 首次 accepted，随后 4 次 HIERARCHY 均以
+  `VISUAL_HIERARCHY_V2_RELATIONSHIP_SUPPORT_IDS_EMPTY` fail-closed，未到 BINDING/Candidate。
+- 两模型 PROPOSED/CLOSED 负探针均精确 NOT_OPEN 且 Goal/evidence 字节不变；独立 Python verifier PASS、Java
+  verifier 2/2、0 abandoned、payload scan PASS。最终 369 reservations（364 SETTLED、5 历史 Plus RESERVED、
+  0 BREACHED）：Flash 120/815,516/¥0.392962，Plus 167/999,892/¥3.836612，Max
+  82/491,919/¥10.289316。三 ledger CLOSED、无 live/Maven/lease 残留；Max 因同版本 HIERARCHY/BINDING 门未达
+  保持零调用。product-v31 仍 `EXPERIMENTAL`，N6=`automated_verified`，N7/Goal=`in_progress`，final 20/60
+  未启动。

@@ -620,3 +620,18 @@ Web 73/73/build 与 1024px payload-free diagnostics Playwright 1/1 PASS；Web/E2
 保持 v30 最终值。最新 J1 将每模型累计 token cap 设为 1.5M 并允许 Plus，但 attempts/CNY/time 不变。N6 仍
 `automated_verified`、N7/Goal 仍 `in_progress`；clean full、Document Vision、fresh identity/snapshot/budget/time
 通过前不 OPEN，Max 与 final 20/60 不启动。
+
+## 18. T6-5 v31 full 与 bounded live checkpoint
+
+exact `e5b4994` 通过 clean full 9/9 与冻结 Document Vision 19-line canary；fresh `/2` identity 为
+`578c631e…a2c0f3`，三份 v31 Profile snapshot 独立吻合。Flash lifecycle `4ed323f`→`cbda25d`→`d2fd1cf`
+完成 5 次 OBSERVE reject，43,776 tokens/¥0.022675；Plus `58d5530`→`adeac0d`→`d538638` 完成 5 次调用，
+首个 OBSERVE accepted，随后四次 HIERARCHY 均以 relationship-support-ids-empty fail-closed，34,770 tokens/
+¥0.100380。两次唯一 wrapper、PROPOSED/CLOSED 负探针、立即 CLOSED、独立 verifier/payload scan 均符合合同，
+0 abandoned。
+
+Goal 最终为 369 reservations（364 SETTLED、5 历史 Plus RESERVED、0 BREACHED）；Flash/Plus/Max 为
+120/167/82 attempts、815,516/999,892/491,919 exposed tokens、¥0.392962/¥3.836612/¥10.289316。三 ledger
+CLOSED。v31 未接受 HIERARCHY/BINDING，Max 门失败且未调用，final 20/60 不启动；N6=`automated_verified`、
+N7/Goal=`in_progress`、Profile=`EXPERIMENTAL`。下一实现只允许对 hierarchy support-id fixed code 建立 bounded、
+不补造关系的本地 repair/no-progress 合同。
