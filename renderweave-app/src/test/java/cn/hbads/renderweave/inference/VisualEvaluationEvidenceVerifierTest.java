@@ -23,6 +23,7 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class VisualEvaluationEvidenceVerifierTest {
@@ -147,6 +148,37 @@ class VisualEvaluationEvidenceVerifierTest {
                 + " expectedProfile=" + authorization.profileSnapshotSha256());
         assertTrue(pass.stdout().contains("\"result\":\"PASS\""));
 
+        var corpusRelative = repository.relativize(corpusFile).toString().replace('\\', '/');
+        git(repository, "update-index", "--assume-unchanged", corpusRelative);
+        assertNotEquals(0, verify(repository, corpusFile, profileFile,
+                List.of(maxLedger, authorizationFile, flashLedger), authorizationFile,
+                journalDirectory, goalDirectory, reportFile, false).exitCode());
+        git(repository, "update-index", "--no-assume-unchanged", corpusRelative);
+
+        var legacyIdentity = new VisualEvaluationIdentity(
+                repository, List.of(maxLedger, authorizationFile, flashLedger)
+        ).current(VisualEvaluationIdentity.LEGACY_VERSION);
+        assertThrows(IllegalArgumentException.class, () -> authorization(legacyIdentity));
+        var legacyAuthorization = authorization(legacyIdentity, "CLOSED");
+        Files.writeString(authorizationFile,
+                json.writerWithDefaultPrettyPrinter().writeValueAsString(legacyAuthorization));
+        git(repository, "add", ".sdlc/live/visual-evaluation-qwen37-plus.json");
+        git(repository, "commit", "-m", "bind historical identity");
+        var journalGuardFile = journalDirectory.resolve("state.guard.json");
+        var currentJournalGuard = Files.readString(journalGuardFile, StandardCharsets.UTF_8);
+        Files.writeString(journalGuardFile, currentJournalGuard.replace(identity, legacyIdentity),
+                StandardCharsets.UTF_8);
+        var legacyPass = verify(repository, corpusFile, profileFile,
+                List.of(maxLedger, authorizationFile, flashLedger), authorizationFile,
+                journalDirectory, goalDirectory, reportFile, false);
+        assertEquals(0, legacyPass.exitCode(), legacyPass.stderr() + legacyPass.stdout());
+
+        Files.writeString(authorizationFile,
+                json.writerWithDefaultPrettyPrinter().writeValueAsString(authorization));
+        git(repository, "add", ".sdlc/live/visual-evaluation-qwen37-plus.json");
+        git(repository, "commit", "-m", "restore current identity");
+        Files.writeString(journalGuardFile, currentJournalGuard, StandardCharsets.UTF_8);
+
         var goalGuardFile = goalDirectory.resolve("goal-budget.guard.json");
         var currentGoalGuard = Files.readString(goalGuardFile, StandardCharsets.UTF_8);
         Files.writeString(goalGuardFile,
@@ -262,8 +294,12 @@ class VisualEvaluationEvidenceVerifierTest {
     }
 
     private VisualEvaluationAuthorization authorization(String evaluationIdentity) {
+        return authorization(evaluationIdentity, "OPEN");
+    }
+
+    private VisualEvaluationAuthorization authorization(String evaluationIdentity, String status) {
         return new VisualEvaluationAuthorization(
-                VisualEvaluationAuthorization.VERSION, "visual-verifier", "OPEN", "BASELINE",
+                VisualEvaluationAuthorization.VERSION, "visual-verifier", status, "BASELINE",
                 VisualEvaluationAuthorization.INPUT_CLASSIFICATION, VisualStageCorpus.VERSION,
                 corpus.sourceSha256(), evaluationIdentity,
                 PROFILE_ID, sha256(profile.snapshotJson()), "qwen3.7-plus",

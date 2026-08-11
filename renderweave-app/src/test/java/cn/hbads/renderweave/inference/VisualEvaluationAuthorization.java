@@ -187,7 +187,10 @@ record VisualEvaluationAuthorization(
     }
 
     private static boolean validEvaluationIdentity(String value, String status) {
-        return value != null && (value.matches("renderweave-visual-evaluation-tree-sha256/1:[0-9a-f]{64}")
+        return value != null && (value.matches(
+                "renderweave-visual-evaluation-tree-sha256/2:[0-9a-f]{64}")
+                || "CLOSED".equals(status) && value.matches(
+                "renderweave-visual-evaluation-tree-sha256/1:[0-9a-f]{64}")
                 || "PROPOSED".equals(status) && PENDING_IDENTITY.equals(value));
     }
 

@@ -26,7 +26,10 @@ PREVIOUS_GOAL_GUARD_VERSION = "renderweave-visual-evaluation-goal-guard/2.0"
 LEGACY_GOAL_GUARD_VERSION = "renderweave-visual-evaluation-goal-guard/1.0"
 JOURNAL_GUARD_VERSION = "renderweave-visual-evaluation-journal-guard/1.0"
 REPORT_VERSION = "renderweave-visual-stage-report/1.0"
-IDENTITY_VERSION = "renderweave-visual-evaluation-tree-sha256/1"
+LEGACY_IDENTITY_VERSION = "renderweave-visual-evaluation-tree-sha256/1"
+IDENTITY_VERSION = "renderweave-visual-evaluation-tree-sha256/2"
+SUPPORTED_IDENTITY_VERSIONS = {LEGACY_IDENTITY_VERSION, IDENTITY_VERSION}
+REGULAR_GIT_MODES = {b"100644", b"100755"}
 EXPECTED_LEDGER_PATHS = {
     ".sdlc/live/visual-evaluation-qwen38-max.json",
     ".sdlc/live/visual-evaluation-qwen37-plus.json",
@@ -199,7 +202,7 @@ def corpus_cases(document: dict[str, Any], source_hash: str) -> tuple[list[str],
     return case_ids, metadata
 
 
-def git_paths(repository: Path, *arguments: str) -> list[str]:
+def git_output(repository: Path, *arguments: str, input_bytes: bytes | None = None) -> bytes:
     environment = os.environ.copy()
     for key in ("DASHSCOPE_API_KEY", "DASHSCOPE_API_KEY_FILE", "RENDERWEAVE_RUN_LIVE_CANARY",
                 "RENDERWEAVE_RUN_LIVE_CERTIFICATION", "RENDERWEAVE_LIVE_CERTIFICATION_AUTHORIZATION",
@@ -209,22 +212,93 @@ def git_paths(repository: Path, *arguments: str) -> list[str]:
     environment["RENDERWEAVE_LIVE_UPLOAD_ENABLED"] = "false"
     try:
         completed = subprocess.run(("git", *arguments), cwd=repository, env=environment,
-                                   stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                                   input=input_bytes, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                                    timeout=10, check=False)
     except (OSError, subprocess.SubprocessError) as exc:
         fail(f"git identity command failed: {type(exc).__name__}")
     if completed.returncode != 0:
         fail("git identity command returned nonzero")
+    return completed.stdout
+
+
+def git_paths(repository: Path, *arguments: str) -> list[str]:
     try:
         return [item.decode("utf-8").replace("\\", "/")
-                for item in completed.stdout.split(b"\0") if item]
+                for item in git_output(repository, *arguments).split(b"\0") if item]
     except UnicodeError:
         fail("git identity path is not UTF-8")
 
 
-def repository_identity(repository: Path, excluded_files: list[Path]) -> tuple[str, set[str]]:
+def git_index_entries(repository: Path) -> list[tuple[bytes, bytes, bytes, str]]:
+    entries: list[tuple[bytes, bytes, bytes, str]] = []
+    paths: set[bytes] = set()
+    for record in git_output(repository, "ls-files", "--stage", "-z", "--cached").split(b"\0"):
+        if not record:
+            continue
+        try:
+            metadata, path_bytes = record.split(b"\t", 1)
+            mode, object_id, stage = metadata.split(b" ")
+            path = path_bytes.decode("utf-8")
+        except (UnicodeError, ValueError):
+            fail("git index entry is invalid")
+        if stage != b"0" or mode not in REGULAR_GIT_MODES | {b"120000", b"160000"} \
+                or re.fullmatch(rb"[0-9a-f]{40}|[0-9a-f]{64}", object_id) is None \
+                or not path_bytes or b"\\" in path_bytes or path_bytes in paths:
+            fail("git index entry is invalid")
+        paths.add(path_bytes)
+        entries.append((path_bytes, mode, object_id, path))
+    return sorted(entries, key=lambda entry: entry[0])
+
+
+def require_visible_index(repository: Path,
+                          entries: list[tuple[bytes, bytes, bytes, str]]) -> None:
+    expected = {entry[3] for entry in entries}
+    for tagged in git_paths(repository, "ls-files", "-v", "-z", "--cached"):
+        if not tagged.startswith("H ") or tagged[2:] not in expected:
+            fail("git index contains hidden tracked state")
+        expected.remove(tagged[2:])
+    if expected:
+        fail("git index contains hidden tracked state")
+
+
+def canonical_git_blobs(repository: Path,
+                        entries: list[tuple[bytes, bytes, bytes, str]]) -> list[bytes]:
+    query = b"".join(entry[2] + b"\n" for entry in entries)
+    output = git_output(repository, "cat-file", "--batch", input_bytes=query)
+    position = 0
+    blobs: list[bytes] = []
+    for _path_bytes, _mode, object_id, _path in entries:
+        newline = output.find(b"\n", position)
+        if newline < 0:
+            fail("git blob batch is truncated")
+        header = output[position:newline].split(b" ")
+        if len(header) != 3 or header[0] != object_id or header[1] != b"blob" \
+                or re.fullmatch(rb"[0-9]+", header[2]) is None:
+            fail("git blob batch header is invalid")
+        size = int(header[2])
+        start = newline + 1
+        end = start + size
+        if end >= len(output) or output[end:end + 1] != b"\n":
+            fail("git blob batch body is invalid")
+        blobs.append(output[start:end])
+        position = end + 1
+    if position != len(output):
+        fail("git blob batch has trailing bytes")
+    return blobs
+
+
+def repository_identity(repository: Path, excluded_files: list[Path],
+                        identity_version: str = IDENTITY_VERSION) -> tuple[str, set[str]]:
     repository = repository.resolve()
-    tracked = sorted(git_paths(repository, "ls-files", "-z", "--cached"))
+    if identity_version not in SUPPORTED_IDENTITY_VERSIONS:
+        fail("repository evaluation identity version is unsupported")
+    if identity_version == LEGACY_IDENTITY_VERSION:
+        entries: list[tuple[bytes, bytes, bytes, str]] = []
+        tracked = sorted(git_paths(repository, "ls-files", "-z", "--cached"))
+    else:
+        entries = git_index_entries(repository)
+        require_visible_index(repository, entries)
+        tracked = [entry[3] for entry in entries]
     if git_paths(repository, "status", "--porcelain=v1", "-z", "--untracked-files=no"):
         fail("repository contains tracked changes")
     if git_paths(repository, "ls-files", "-z", "--others", "--exclude-standard"):
@@ -241,24 +315,47 @@ def repository_identity(repository: Path, excluded_files: list[Path]) -> tuple[s
         excluded.add(relative)
         if relative not in tracked or not absolute.is_file() or absolute.is_symlink():
             fail("excluded authorization is not a tracked regular file")
+        if identity_version == IDENTITY_VERSION:
+            entry = next(item for item in entries if item[3] == relative)
+            if entry[1] not in REGULAR_GIT_MODES:
+                fail("excluded authorization is not a tracked regular file")
     if excluded != EXPECTED_LEDGER_PATHS:
         fail("visual evaluation must exclude exactly the three fixed tracked ledgers")
-    inputs = [path for path in tracked if path not in excluded]
-    if not inputs:
-        fail("repository evaluation identity is empty")
     digest = hashlib.sha256()
-    digest.update(f"{IDENTITY_VERSION}\n".encode("utf-8"))
-    for relative in inputs:
-        path = repository / relative
-        if not path.is_file() or path.is_symlink():
+    digest.update(f"{identity_version}\n".encode("utf-8"))
+    if identity_version == LEGACY_IDENTITY_VERSION:
+        inputs = [path for path in tracked if path not in excluded]
+        if not inputs:
+            fail("repository evaluation identity is empty")
+        for relative in inputs:
+            path = repository / relative
+            if not path.is_file() or path.is_symlink():
+                fail("tracked evaluation input is unavailable")
+            path_bytes = relative.encode("utf-8")
+            content = path.read_bytes()
+            digest.update(struct.pack(">i", len(path_bytes)))
+            digest.update(path_bytes)
+            digest.update(struct.pack(">q", len(content)))
+            digest.update(content)
+    else:
+        canonical_inputs = [entry for entry in entries if entry[3] not in excluded]
+        if not canonical_inputs:
+            fail("repository evaluation identity is empty")
+        if any(entry[1] not in REGULAR_GIT_MODES for entry in canonical_inputs):
+            fail("tracked evaluation input is not a regular file")
+        if any(not (repository / entry[3]).is_file() or (repository / entry[3]).is_symlink()
+               for entry in canonical_inputs):
             fail("tracked evaluation input is unavailable")
-        path_bytes = relative.encode("utf-8")
-        content = path.read_bytes()
-        digest.update(struct.pack(">i", len(path_bytes)))
-        digest.update(path_bytes)
-        digest.update(struct.pack(">q", len(content)))
-        digest.update(content)
-    return f"{IDENTITY_VERSION}:{digest.hexdigest()}", set(tracked)
+        blobs = canonical_git_blobs(repository, canonical_inputs)
+        for entry, content in zip(canonical_inputs, blobs, strict=True):
+            path_bytes, mode, _object_id, _path = entry
+            digest.update(struct.pack(">i", len(path_bytes)))
+            digest.update(path_bytes)
+            digest.update(struct.pack(">i", len(mode)))
+            digest.update(mode)
+            digest.update(struct.pack(">q", len(content)))
+            digest.update(content)
+    return f"{identity_version}:{digest.hexdigest()}", set(tracked)
 
 
 def require_tracked_regular(repository: Path, path: Path, tracked: set[str], name: str) -> str:
@@ -337,7 +434,7 @@ def validate_authorization(value: dict[str, Any], corpus_hash: str,
     if value["corpusVersion"] != CORPUS_VERSION or value["corpusSourceSha256"] != corpus_hash:
         fail("authorization corpus mismatch")
     identity = require_string(value["evaluationIdentity"], "evaluationIdentity")
-    if re.fullmatch(r"renderweave-visual-evaluation-tree-sha256/1:[0-9a-f]{64}", identity) is None:
+    if re.fullmatch(r"renderweave-visual-evaluation-tree-sha256/[12]:[0-9a-f]{64}", identity) is None:
         fail("authorization evaluation identity is invalid")
     require_string(value["profileId"], "profileId", ID)
     require_string(value["profileSnapshotSha256"], "profileSnapshotSha256", SHA256)
@@ -797,7 +894,9 @@ def main() -> int:
     all_case_ids, metadata = corpus_cases(corpus, corpus_hash)
     authorization_raw, _ = read_json(args.authorization)
     authorization = validate_authorization(authorization_raw, corpus_hash, set(all_case_ids))
-    actual_identity, tracked = repository_identity(args.repository_root, args.excluded_authorization)
+    identity_version = authorization_raw["evaluationIdentity"].split(":", 1)[0]
+    actual_identity, tracked = repository_identity(
+        args.repository_root, args.excluded_authorization, identity_version)
     require_tracked_regular(args.repository_root, args.corpus, tracked, "corpus")
     require_tracked_regular(args.repository_root, args.profile, tracked, "profile")
     authorization_relative = require_tracked_regular(
