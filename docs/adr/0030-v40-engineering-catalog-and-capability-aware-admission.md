@@ -53,6 +53,10 @@ STRUCTURE，因而保留了“上游 10 个字段 key 全部被改写、repair �
   成功 run 为 3 次 Provider reservation，STRUCTURE/REPAIR 为零。
 - `f27f86a` 完成 exact capability readiness、创建/retry 前置拒绝及 Web 行为；缺失和 mismatch 都只暴露
   固定 code，0 run/0 reservation/0 Provider。
+- `6906be1` 的隔离 clean full evidence `20260812-012644-full` 为 9/9 PASS，包含正式 Node 24、真实
+  PostgreSQL、runtime canary、独立 evidence verifier 与浏览器审核/Apply；clean Document Vision evidence
+  `20260812-013158-document-vision` 为 1/1 PASS、19 lines。两份 metadata 都绑定该 revision 且
+  `workingTreeDirty=false`。
 - Flash 仍可被用户显式选择用于低成本诊断；其失败继续由 stage-local fixed code、checkpoint 与人工 retry
   处置，不通过放宽 enum、parent、overlap、reading order 或 semantic verifier 获得虚假 Candidate。
 - 回退只需以新提交更换产品目录；已创建 run 永远按保存的 Profile snapshot 恢复。本决策没有数据库迁移、

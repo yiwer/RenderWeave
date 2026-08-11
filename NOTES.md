@@ -872,3 +872,8 @@
   Goal 仍为 418 reservations，三 ledger `CLOSED`。这使 v40 成为可选择、可前置诊断、确定性物化的阶段性
   工程入口，但没有改变 Flash 的 OBSERVE 失败或 N7 质量证据缺口；状态仍为 `EXPERIMENTAL` /
   `automated_verified` / Goal `in_progress`。
+- 隔离 clean `6906be1` 的 full `20260812-012644-full` 9/9、Document Vision
+  `20260812-013158-document-vision` 1/1（19 lines）均 PASS；metadata 均绑定 exact revision 且
+  `workingTreeDirty=false`。full 覆盖正式 Node 24、真实 PostgreSQL、runtime canary、独立 evidence verifier、
+  v40 catalog/readiness 以及 replay→review→Apply 浏览器路径。本轮 Provider=0，门控后无 live/Maven/Java/
+  Python 残留。

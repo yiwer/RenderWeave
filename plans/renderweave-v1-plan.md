@@ -893,3 +893,16 @@ BINDING/Candidate。Goal 更新为 418 reservations；Flash/Plus/Max 累计 157/
 v40 作为稳定阶段基线冻结。运行、恢复、审计、审核/Apply 的确定性与 E2E 路径可用；真实 Flash 对当前
 合成站牌未产出 Candidate，故识别质量仍不满足 N7/Goal。状态保持 product-v40=`EXPERIMENTAL`、
 N6=`automated_verified`、N7/Goal=`in_progress`；本阶段不再调用 Plus/Max/final，不完成 Goal。
+
+### product-v40 产品工程入口收尾
+
+`f47c54a` 将新建产品目录切换为冻结 v40：默认 Plus、Max 面向高难嵌套、pinned Flash 只作 smoke；
+real-PG 合成路径只允许 OBSERVE/HIERARCHY/ELEMENT_BINDING 三次 Provider reservation，再由本地 materializer
+生成 Candidate，STRUCTURE/REPAIR Provider 为零。`f27f86a` 在 create/retry、run persistence、费用 reservation
+和 Provider 前精确检查逐 Profile Document Vision readiness；缺 adapter/model 或 capability mismatch 时
+fail-closed，Web 不发送 POST。历史 v4 snapshot 不变且可恢复，但不再创建新产品 run；不自动跨模型 fallback。
+
+ADR/spec/plan 同步 revision `6906be1` 的隔离 full `20260812-012644-full` 9/9 与 Document Vision
+`20260812-013158-document-vision` 1/1、19 lines 均 PASS，metadata 绑定 exact revision 且 clean。Provider=0，
+Goal/ledger 保持 418 reservations 与三 ledger CLOSED。该节点解决旧 v4 字段身份改写的产品可达性和本地能力
+晚失败，不改变 Flash v40 未过 OBSERVE、Plus/Max v40 无同版本质量证据的事实；N7/Goal 继续 `in_progress`。

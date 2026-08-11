@@ -865,3 +865,7 @@ N6=`automated_verified`、N7/Goal=`in_progress`；Plus/Max/final 不启动，Goa
 - 本节点不改 pipeline 4.27、Prompt 10 或任一 v40 Profile，不自动跨模型 fallback，也没有 Provider 调用；
   Goal/ledger 数值和三份 `CLOSED` 状态不变。该节点修复“旧 v4 缺陷仍是默认路径”和“本地能力缺失却先创建
   失败任务”两项工程可用性问题，不改变 Flash 未通过 OBSERVE 的质量事实。
+- clean A1：隔离 revision `6906be1` 的 full `20260812-012644-full` 为 9/9 PASS、Document Vision
+  `20260812-013158-document-vision` 为 1/1 PASS/19 lines；两份 metadata 均 `workingTreeDirty=false`。
+  full 覆盖独立 evidence verifier 2/2、正式 Node 24、真实 PostgreSQL、runtime canary、v40 catalog/readiness
+  浏览器检查及 replay→review→Apply。Provider=0，门控后无 live/Maven/Java/Python 残留。
