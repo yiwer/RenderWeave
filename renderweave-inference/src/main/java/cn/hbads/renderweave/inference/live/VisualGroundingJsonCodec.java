@@ -1366,12 +1366,20 @@ final class VisualGroundingJsonCodec {
         var regions = new ArrayList<VisualRegion>();
         var normalizedRegionKinds = 0;
         for (var region : output) {
-            var classifiedKind = regionKind(region.kind(), normalizationPolicy);
+            var classifiedKind = lexicalRegionKind(region.kind(), normalizationPolicy);
+            if (classifiedKind == null && normalizationPolicy != VisualObservationNormalizationPolicy
+                    .BOUNDED_STRUCTURAL_KIND_UNIQUE_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER) {
+                throw invalid("VISUAL_GROUNDING_JSON_ENUM_INVALID_REGION_KIND", null);
+            }
+            var evidence = originalEvidence(region.evidence(), views);
+            classifiedKind = structurallyClassifiedRegionKind(
+                    region, evidence, normalizationPolicy, classifiedKind
+            );
             if (classifiedKind.normalized()) normalizedRegionKinds++;
             regions.add(new VisualRegion(
                     region.regionId(), region.parentRegionId(), classifiedKind.kind(),
                     region.multiplicity(), region.readingOrder(), region.repeatGroupId(),
-                    originalEvidence(region.evidence(), views)
+                    evidence
             ));
         }
         if (normalizationPolicy == VisualObservationNormalizationPolicy.STRICT) {
@@ -1382,10 +1390,29 @@ final class VisualGroundingJsonCodec {
         var itemParents = normalizeUniqueItemParents(regions, normalizedRegionKinds);
         return normalizationPolicy == VisualObservationNormalizationPolicy
                 .BOUNDED_ENUM_UNIQUE_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER
+                || normalizationPolicy == VisualObservationNormalizationPolicy
+                .BOUNDED_STRUCTURAL_KIND_UNIQUE_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER
                 ? normalizeUniqueCompatibleParents(itemParents) : itemParents;
     }
 
-    private static ClassifiedRegionKind regionKind(
+    private static ClassifiedRegionKind structurallyClassifiedRegionKind(
+            RegionOutput region,
+            List<CandidateEvidence> evidence,
+            VisualObservationNormalizationPolicy normalizationPolicy,
+            ClassifiedRegionKind classified
+    ) {
+        if (normalizationPolicy == VisualObservationNormalizationPolicy
+                .BOUNDED_STRUCTURAL_KIND_UNIQUE_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER) {
+            var structural = structurallyRequiredRegionKind(region, evidence);
+            if (structural != null && (classified == null || classified.kind() != structural)) {
+                return new ClassifiedRegionKind(structural, true);
+            }
+        }
+        if (classified != null) return classified;
+        throw invalid("VISUAL_GROUNDING_JSON_ENUM_INVALID_REGION_KIND", null);
+    }
+
+    private static ClassifiedRegionKind lexicalRegionKind(
             String value,
             VisualObservationNormalizationPolicy normalizationPolicy
     ) {
@@ -1409,7 +1436,29 @@ final class VisualGroundingJsonCodec {
                 }
             }
         }
-        throw invalid("VISUAL_GROUNDING_JSON_ENUM_INVALID_REGION_KIND", null);
+        return null;
+    }
+
+    private static VisualRegionKind structurallyRequiredRegionKind(
+            RegionOutput region,
+            List<CandidateEvidence> evidence
+    ) {
+        if (region.multiplicity() == VisualMultiplicity.MANY && region.repeatGroupId() != null) {
+            return VisualRegionKind.REPEATED_GROUP;
+        }
+        if (region.multiplicity() == VisualMultiplicity.ONE && region.repeatGroupId() != null) {
+            return VisualRegionKind.ITEM;
+        }
+        if (region.parentRegionId() == null
+                && region.multiplicity() == VisualMultiplicity.ONE
+                && region.repeatGroupId() == null
+                && evidence.size() == 1
+                && evidence.getFirst().boundingBox().equals(
+                        new CandidateBoundingBox(0, 0, 10_000, 10_000)
+                )) {
+            return VisualRegionKind.ROOT;
+        }
+        return null;
     }
 
     private static ClassifiedObservationRegions normalizeUniqueItemParents(
@@ -1636,7 +1685,9 @@ final class VisualGroundingJsonCodec {
                 && normalizationPolicy != VisualObservationNormalizationPolicy
                 .BOUNDED_ENUM_UNIQUE_ITEM_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER
                 && normalizationPolicy != VisualObservationNormalizationPolicy
-                .BOUNDED_ENUM_UNIQUE_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER) {
+                .BOUNDED_ENUM_UNIQUE_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER
+                && normalizationPolicy != VisualObservationNormalizationPolicy
+                .BOUNDED_STRUCTURAL_KIND_UNIQUE_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER) {
             return new NormalizedElementRegionOwnerships(grounding, 0);
         }
         var inventoryIds = inventory.elements().stream().map(VisualElement::elementId)
@@ -1713,7 +1764,9 @@ final class VisualGroundingJsonCodec {
         if (normalizationPolicy != VisualObservationNormalizationPolicy
                 .BOUNDED_ENUM_UNIQUE_ITEM_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER
                 && normalizationPolicy != VisualObservationNormalizationPolicy
-                .BOUNDED_ENUM_UNIQUE_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER) {
+                .BOUNDED_ENUM_UNIQUE_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER
+                && normalizationPolicy != VisualObservationNormalizationPolicy
+                .BOUNDED_STRUCTURAL_KIND_UNIQUE_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER) {
             return new NormalizedElementRegionOwnerships(grounding, 0);
         }
         var inventoryIds = inventory.elements().stream().map(VisualElement::elementId)
@@ -2062,5 +2115,6 @@ enum VisualObservationNormalizationPolicy {
     BOUNDED_ENUM_AND_UNIQUE_ITEM_PARENT,
     BOUNDED_ENUM_UNIQUE_ITEM_PARENT_AND_EVIDENCE_OWNER,
     BOUNDED_ENUM_UNIQUE_ITEM_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER,
-    BOUNDED_ENUM_UNIQUE_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER
+    BOUNDED_ENUM_UNIQUE_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER,
+    BOUNDED_STRUCTURAL_KIND_UNIQUE_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER
 }

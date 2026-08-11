@@ -208,6 +208,62 @@ class VisualGroundingContractTest {
     }
 
     @Test
+    void boundedStructuralKindNormalizationUsesOnlyContractUniqueFacts() throws Exception {
+        var malformed = elementsJson()
+                .replaceFirst("\"kind\":\"ROOT\"", "\"kind\":\"CANVAS\"")
+                .replaceFirst("\"kind\":\"REPEATED_GROUP\"", "\"kind\":\"GROUP\"")
+                .replaceFirst("\"kind\":\"ITEM\"", "\"kind\":\"ROW\"");
+
+        assertEquals("VISUAL_GROUNDING_JSON_ENUM_INVALID_REGION_KIND", assertThrows(
+                InvalidVisualAnalysisException.class, () -> codec.parseElements(
+                        malformed, views(), List.of(IMAGE_ID),
+                        VisualObservationNormalizationPolicy
+                                .BOUNDED_ENUM_UNIQUE_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER
+                )
+        ).diagnosticCode());
+
+        var normalized = codec.parseElements(
+                malformed, views(), List.of(IMAGE_ID),
+                VisualObservationNormalizationPolicy
+                        .BOUNDED_STRUCTURAL_KIND_UNIQUE_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER
+        );
+        assertEquals(VisualRegionKind.ROOT,
+                normalized.grounding().requireRegion("root").kind());
+        assertEquals(VisualRegionKind.REPEATED_GROUP,
+                normalized.grounding().requireRegion("repeat").kind());
+        assertEquals(VisualRegionKind.ITEM,
+                normalized.grounding().requireRegion("item-a").kind());
+        assertEquals(3, normalized.normalizedRegionKinds());
+        assertEquals(0, normalized.normalizedItemParents());
+        assertEquals(0, normalized.normalizedRegionParents());
+
+        var ambiguousContainer = elementsJson().replaceFirst(
+                "\"kind\":\"SECTION\"", "\"kind\":\"FIELD\""
+        );
+        assertEquals("VISUAL_GROUNDING_JSON_ENUM_INVALID_REGION_KIND", assertThrows(
+                InvalidVisualAnalysisException.class, () -> codec.parseElements(
+                        ambiguousContainer, views(), List.of(IMAGE_ID),
+                        VisualObservationNormalizationPolicy
+                                .BOUNDED_STRUCTURAL_KIND_UNIQUE_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER
+                )
+        ).diagnosticCode());
+
+        var incompleteRepeatShape = elementsJson()
+                .replaceFirst("\"kind\":\"REPEATED_GROUP\"", "\"kind\":\"TABLE\"")
+                .replaceFirst(
+                        "\"multiplicity\":\"MANY\",\"readingOrder\":1,\"repeatGroupId\":\"rows\"",
+                        "\"multiplicity\":\"MANY\",\"readingOrder\":1,\"repeatGroupId\":null"
+                );
+        assertEquals("VISUAL_GROUNDING_JSON_ENUM_INVALID_REGION_KIND", assertThrows(
+                InvalidVisualAnalysisException.class, () -> codec.parseElements(
+                        incompleteRepeatShape, views(), List.of(IMAGE_ID),
+                        VisualObservationNormalizationPolicy
+                                .BOUNDED_STRUCTURAL_KIND_UNIQUE_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER
+                )
+        ).diagnosticCode());
+    }
+
+    @Test
     void boundedEvidenceOwnerNormalizationUsesOnlyUniqueMinimalCompatibleRegions()
             throws Exception {
         var malformed = elementsJson()
