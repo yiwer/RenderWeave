@@ -1,6 +1,17 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-11 pipeline 4.18/product-v31 已形成零 Provider 的离线生产候选。`7e464df` 将 Plus v30 的
+  `VISUAL_SEMANTIC_REPEATED_ITEM_FIELD_MISSING` 收窄为原子 bounded repair：只对已有 SLOT 使用 canonical
+  evidence；每块 evidence 必须落入唯一最具体非 ROOT region，且每个缺字段 ITEM 都有可见证据，否则原样
+  fail-closed，不创建字段、region、topology、文字或 Candidate。`791d4e9` 发布三模型 immutable v31 Profile、固定
+  telemetry `VISUAL_GROUNDING_REPEATED_ITEM_SLOT_OWNER_NORMALIZED` 与真实 PostgreSQL 三阶段 tracer；`f6cc529`
+  将三份 snapshot 纳入独立 Python verifier；`eea8b3f` 接入 monitor/review 与 diagnostics E2E。Inference
+  184/184、real-PG 1/1、snapshot verifier 1/1、Node 24 Web 73/73/build、1024px Playwright 1/1 均 PASS；证据为
+  `20260811-155052-web` 与 `20260811-155200-v31-diagnostics-e2e-results`。本节点 Provider attempts=0，Goal 仍为
+  359 reservations，三 ledger CLOSED。用户最新 J1 已把每模型累计 exposed-token cap 提到 1.5M 并明确允许
+  Plus；attempt/CNY/time 边界不变。v31 仍 `EXPERIMENTAL`、N6=`automated_verified`、N7/Goal=`in_progress`；
+  v31 clean full、Document Vision、fresh identity/snapshot/budget/time 尚未重跑，因此尚未 OPEN 任何 live ledger。
 - 2026-08-11 product-v30 bounded live 已闭环但未晋级。clean `e5d1977` 的 full gate
   `20260811-150901` 9/9 PASS，Document Vision canary `20260811-151430` 得到 19 lines；fresh Git-blob
   identity 为 `…5b28c8af`。Flash lifecycle `ff3e5a4` PROPOSED→`4180ef8` OPEN→`5f99083` CLOSED，唯一
@@ -324,11 +335,11 @@
 - 生命周期状态：P0 `accepted`；P1–P4 `automated_verified`；P5 Flash / Plus / Prompt v2 / Grounded v2 / T5-10 诊断均为 `live_independently_reviewed`，T5-9/T5-11 与 P6/T6-1 为 `independently_reviewed`；P6/T6-2 为 `human_acceptance_pending`；T6-3a 与 T6-5 N6 为 `automated_verified`、T6-3b pending。T6-5 整体仍 active，N7 `in_progress`。所有 DashScope Profile 仍为 `EXPERIMENTAL`；历史评测授权均 CLOSED，基础 Compose 默认关闭，显式 product-live overlay 已按用户授权开放。
 
 ## 下一步
-- [ ] P6/T6-5 图片识别 vNext：v30 offline/real-PG/UI/full/Document Vision 与 Flash/Plus bounded A2 已完成，
-  但 live 未接受 OBSERVE，也未命中 evidence-owner normalization。下一安全切片只诊断
-  `VISUAL_SEMANTIC_REPEATED_ITEM_FIELD_MISSING` 及 Flash 的 parent/enum/cardinality fixed codes，先建立不读取
-  Provider 原文、不合成 topology 的 bounded verifier/repair/no-progress 测试，再决定新 Profile。Max 与 final
-  20/60 均不启动；最终 revision full、final independent verifier 与业务/视觉 J1 仍未满足。
+- [ ] P6/T6-5 图片识别 vNext：product-v31 的 repeated-item SLOT owner repair、real-PG checkpoint、独立 Profile
+  verifier 与 payload-free monitor/review/E2E 已离线通过。下一步在 clean v31 revision 跑 full 与 Document Vision，
+  再 fresh 重算 evaluation identity、三份 snapshot、Goal aggregate、剩余 attempts/CNY/time 和进程/lease；全部匹配
+  才可按单 case/最多 5 calls 执行 Flash 的 PROPOSED→负探针→OPEN→CLOSED smoke，Plus 仅在同样 preflight 下
+  使用，Max 仍需同版本三阶段可达与质量门。final 20/60、final independent verifier 与业务/视觉 J1 均未满足。
 - [x] Java / React / PostgreSQL / OpenAPI 最小 canary 与 A1 full gate 通过。
 - [x] 用户接受“A 默认表单 + B Map + 吸收 C 的 preview/密度”的编辑器方向（J1，2026-08-08）。
 - [x] 创建 P1–P4 implementation Goal。

@@ -817,3 +817,43 @@ Plus 162 / 965,122 / ¥3.736232，Max 82 / 491,919 / ¥10.289316。v30 未形成
 fail-closed 治理与恢复合同，却没有支持质量晋级；product-v30 保持 `EXPERIMENTAL`，N6 保持
 `automated_verified`，N7/Goal 保持 `in_progress`。下一决策只能从这些 payload-free fixed codes 形成新的
 bounded 离线 verifier/repair/no-progress 假设，不能读取 Provider 原文、猜测 enum/parent 或补造结构。
+
+## N6/N7 product-v31：重复 ITEM 字段 owner 的有界归一化
+
+Plus v30 在完整 shape/grounding 前置合同之后以
+`VISUAL_SEMANTIC_REPEATED_ITEM_FIELD_MISSING` fail-closed。一般 evidence-owner normalization 保留能覆盖 SLOT
+evidence 的粗 REPEATED_GROUP owner 是正确的，但 semantic verifier 还要求每个 ITEM 至少拥有一个可见 SLOT。
+当 region forest 与 canonical bounding boxes 已验证时，这个更窄的归属缺口可以由本地代码唯一判定。
+
+决策如下：
+
+1. 新 policy 仅由 pipeline 4.18/product-v31 opt-in，4.17/product-v30 及更早版本保持原行为。它只修改已有 SLOT
+   的 owner，不创建元素、region、GROUP、关系或 Candidate。
+2. 候选 SLOT 的每一块 canonical evidence 必须完全位于某个 ITEM region 内；每块 evidence 只能选择唯一最具体
+   非 ROOT region。每个当前缺少可见 SLOT 的 ITEM 都必须被至少一块 eligible evidence 覆盖。
+3. inventory/ownership ID 不全、unknown owner、root-only、零或多个最具体候选、缺任一 ITEM、空结果或超过 8
+   owners 时，整个 plan 原子回退原输入，并由同一 `VISUAL_SEMANTIC_REPEATED_ITEM_FIELD_MISSING` fail-closed。
+   不允许部分提交、按距离/gold 排名或修改 evidence/topology。
+4. 成功只记录数量型 `VISUAL_GROUNDING_REPEATED_ITEM_SLOT_OWNER_NORMALIZED`。完整 prompt、模型输出、OCR、图片、
+   Candidate 与 owner payload 均不进入常规 telemetry/evidence；rejected OBSERVE 仍不能提供 selected crop。
+5. 三份 immutable product-v31 Profile 继续使用 visual-elements v9、hierarchy v7、bindings v3 与 pinned Document
+   Vision capability；均为 `EXPERIMENTAL`，不加入默认 product-live selector。
+
+`7e464df` 完成 codec 正反例，证明 v30 仍拒绝粗 owner、v31 只在完整唯一 evidence 条件下归一化。`791d4e9`
+接入 worker/Profile/telemetry；真实 PostgreSQL tracer 严格执行 OBSERVE、HIERARCHY、ELEMENT_BINDING 三次 scripted
+provider stage 并到达 `REVIEW_REQUIRED`，Document Vision 仅一次，OCR sentinel 未进入 checkpoint/Candidate/
+problems。`f6cc529` 令独立 Python verifier 重算三份 v31 snapshot。`eea8b3f` 接入 monitor/review 中文说明与最早
+OBSERVE repair scope。
+
+验证为 inference 184/184、real-PG 1/1、independent snapshot verifier 1/1、Node 24 Web 14 files/73 tests +
+build、1024px diagnostics Playwright 1/1、Axe serious/critical=0、payload sentinel=0；证据为
+`.sdlc/evidence/20260811-155052-web` 与
+`.sdlc/evidence/20260811-155200-v31-diagnostics-e2e-results`。首次浏览器预检发现 4173 被既有 Node 20
+prototype 占用，测试在启动浏览器前退出；该用户进程未被终止，随后使用隔离空闲端口通过，且测试端口无残留。
+
+本增量 Provider attempts=0；Goal 保持 359 reservations（354 SETTLED、5 历史 Plus RESERVED、0 BREACHED），
+Flash/Plus/Max 保持 115/162/82 attempts、771,740/965,122/491,919 exposed tokens 与
+¥0.370287/¥3.736232/¥10.289316，三 ledger CLOSED。最新用户 J1 将每模型累计 exposed-token cap 提到 1.5M 并
+允许 Plus；180 attempts、既有 CNY 与时限边界不变。product-v31 仍 `EXPERIMENTAL`，N6 仍
+`automated_verified`，N7/Goal 仍 `in_progress`。clean full、Document Vision、fresh identity/snapshot/aggregate
+preflight 通过前不得 OPEN；Max 与 final 20/60 的三阶段、质量和 J1 门保持不变。

@@ -12,12 +12,11 @@
   边界不变，精确约束见 spec delta
 - 当前节点：N0–N1、N3–N4、N6 `automated_verified`；N2 `live_verified_mixed_a1_a2`；N5
   `live_verified_not_promoted`；N7 `in_progress`。v27 Flash/Plus/Max single-case 均 CLOSED/A2：Flash 止于
-  OBSERVE，Plus/Max 虽三阶段可达但 slot/binding 0 matched，未进入 final eval。pipeline 4.17/product-v30 已把
-  unique evidence-owner normalization、real-PG 三阶段 checkpoint、独立 Profile verifier 与 monitor/review
-  telemetry 做成离线候选；clean full、Document Vision canary 与 Flash/Plus 单 case lifecycle 随后均已完成。
-  两份 v30 evidence CLOSED/A2、payload scan PASS，但都停在 OBSERVE 且未命中新 telemetry；同版本三阶段门失败，
-  Max 未调用。当前 Goal 为 359 reservations（354 SETTLED、5 历史 Plus RESERVED、0 BREACHED），三份 live
-  ledger `CLOSED`，Profile 均隐藏 `EXPERIMENTAL`
+  OBSERVE，Plus/Max 虽三阶段可达但 slot/binding 0 matched，未进入 final eval。v30 Flash/Plus bounded live 均
+  CLOSED/A2，却都停在 OBSERVE；Plus 的 repeated-item-field fixed code 已驱动 pipeline 4.18/product-v31：bounded
+  repeated-item SLOT owner repair、real-PG 三阶段 checkpoint、独立 Profile verifier 与 monitor/review telemetry 均
+  离线通过。v31 尚未跑 clean full/Document Vision 或 OPEN live。当前 Goal 为 359 reservations（354 SETTLED、
+  5 历史 Plus RESERVED、0 BREACHED），三份 live ledger `CLOSED`，Profile 均隐藏 `EXPERIMENTAL`
 
 ## 四维执行配置
 
@@ -469,3 +468,31 @@ drift、journal/guard 不一致、payload 边界失败或同一无新假设失�
   v30 没有 accepted OBSERVE/HIERARCHY/BINDING，Max CLOSED 且未调用。N6 仍 `automated_verified`，N7/Goal
   仍 `in_progress`，product-v30 仍 `EXPERIMENTAL`；下一安全切片只允许从新 fixed code 建立离线 bounded
   verifier/repair/no-progress 合同，final 20/60 不启动。
+
+## 2026-08-11 v31 repeated-item SLOT owner checkpoint
+
+- 信号：Plus v30 的 OBSERVE 已通过 JSON shape/grounding 前置合同，但以
+  `VISUAL_SEMANTIC_REPEATED_ITEM_FIELD_MISSING` fail-closed。v30 的一般 evidence-owner policy 会保留能覆盖全部
+  evidence 的粗粒度 REPEATED_GROUP owner；语义 verifier 则要求每个 ITEM 至少有一个可见 SLOT owner，缺口可由
+  已验证 region forest 与 canonical bounding boxes 唯一判定。
+- bounded 合同：`7e464df` 只处理已有 SLOT。所有 canonical evidence 必须位于某个 ITEM 内，每块 evidence 必须有
+  唯一最具体非 ROOT region，且每个当前缺字段 ITEM 都必须由 eligible SLOT evidence 覆盖；inventory/ownership
+  不全、unknown、root-only、零/多候选、缺任一 ITEM 或 owner 超过 8 时原子返回原 plan。不得新建字段/region、修改
+  topology/evidence、读取 OCR/模型文字、按 gold 排名或从 rejected OBSERVE 生成 selected crop；旧 v30 policy 不变。
+- 产品接入：`791d4e9` 以 pipeline 4.18 和三份 product-v31 immutable Profile 显式 opt-in，继承 v30 的 hierarchy/
+  binding/Document Vision 合同；成功只记录数量型
+  `VISUAL_GROUNDING_REPEATED_ITEM_SLOT_OWNER_NORMALIZED`。真实 PostgreSQL tracer 一次 Document Vision 后严格执行
+  OBSERVE→HIERARCHY→ELEMENT_BINDING，三次 scripted provider stage 到达 `REVIEW_REQUIRED`，归一化 owner 为
+  `item-a,item-b`；OCR sentinel 未进入 checkpoint/Candidate/validation。
+- 独立复核与审核面：`f6cc529` 令独立 Python verifier 逐份重算 Flash/Plus/Max v31 snapshot；`eea8b3f` 将固定码、
+  中文解释和最早 OBSERVE repair scope 接入 monitor/review。Inference 184/184、real-PG 1/1、snapshot verifier
+  1/1、Node 24 Web 14 files/73 tests + build、1024px diagnostics Playwright 1/1、Axe serious/critical=0、payload
+  sentinel=0；证据为 `.sdlc/evidence/20260811-155052-web` 与
+  `.sdlc/evidence/20260811-155200-v31-diagnostics-e2e-results`。已有 4173 prototype 进程未被终止，浏览器证据改用
+  隔离空闲端口；测试端口退出后已清理。
+- 治理：本节点 Provider attempts=0，Goal 保持 359 reservations；Flash/Plus/Max 仍为 115/162/82 attempts、
+  771,740/965,122/491,919 tokens、¥0.370287/¥3.736232/¥10.289316，三 ledger CLOSED。最新用户 J1 将每槽累计
+  cap 设为 1.5M tokens 并允许 Plus，但 180 attempts、既有 CNY 与 time 边界不变。product-v31=`EXPERIMENTAL`、
+  N6=`automated_verified`、N7/Goal=`in_progress`。只有 checkpoint commit 后的 clean full、Document Vision、fresh
+  identity/snapshot/aggregate preflight 与 exact J1 全部匹配，才可启动 bounded smoke；Max 与 final 20/60 的门
+  保持不变。

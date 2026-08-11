@@ -7,11 +7,11 @@
 - 当前 lifecycle：P0 `accepted`；P1–P4 `automated_verified`；P5 `live_canary_verified` / `live_independently_reviewed` / `decision_recorded`；P6 T6-1 `independently_reviewed`、T6-2 `human_acceptance_pending`、T6-3a `automated_verified`
 - 当前扩展 Goal：P6/T6-5 图片识别 vNext 为 `in_progress`；N0–N1、N3–N4、N6 已
   `automated_verified`，N2 为 `live_verified_mixed_a1_a2`，N5 为 `live_verified_not_promoted`。v27 三模型
-  single-case 均 CLOSED/A2，但未形成可接受 Candidate。pipeline 4.17/product-v30 已进一步把 unique
-  evidence-owner normalization、checkpoint、监控/审核 UI 与独立 Profile verifier 做成离线候选；clean full、
-  Document Vision canary 与 Flash/Plus v30 bounded live 已 CLOSED/A2，但六次调用都停在 OBSERVE，未命中新
-  telemetry。最新 359 reservations 为 354 SETTLED、5 个历史 Plus RESERVED、0 BREACHED；Max v30 未调用，
-  三份 ledger CLOSED，Profile 继续 `EXPERIMENTAL`。
+  single-case 均 CLOSED/A2，但未形成可接受 Candidate。Flash/Plus v30 bounded live 的六次调用都停在 OBSERVE；
+  其 fixed code 已驱动 pipeline 4.18/product-v31 的 bounded repeated-item SLOT owner repair、checkpoint、监控/审核
+  UI 与独立 Profile verifier，并完成离线/real-PG/Web/E2E 验证。v31 clean full/Document Vision/live 尚未执行。
+  最新 359 reservations 为 354 SETTLED、5 个历史 Plus RESERVED、0 BREACHED；三份 ledger CLOSED，Profile 继续
+  `EXPERIMENTAL`。
   两次 J1 delta 将三个预算槽位累计 cap 提到 1.5M tokens，单 authorization、attempt/CNY/time 边界不变。
   final 20/60、最终 revision full、final independent verifier 与业务/视觉 J1 均未满足，详见
   `plans/renderweave-visual-recognition-vnext-plan.md`。
@@ -436,11 +436,11 @@ Phase 内任务只在真实前置依赖满足时并行。当前没有 atomic cla
 
 - 执行状态：`in_progress`（用户 J1 + approved spec delta；N0–N1、N3–N4、N6 `automated_verified`，N2
   `live_verified_mixed_a1_a2`，N5 `live_verified_not_promoted`；N7 既有 reachability、三模型 v24、Flash/Plus
-  v25–v26 与 Flash/Plus/Max v27 smoke 已 A2。Git-blob canonical identity `/2` 已完成 clean A1/A2；v28–v30
+  v25–v26 与 Flash/Plus/Max v27 smoke 已 A2。Git-blob canonical identity `/2` 已完成 clean A1/A2；v28–v31
   bounded verifier、stage-local repair、real-PG tracer、独立 Profile verifier 与 payload-free UI 已通过。
   product-v30 clean full/Document Vision 和 Flash/Plus single-case 已 CLOSED/A2，但均止于 OBSERVE、未命中新
-  normalization；Max v30 未调用。final eval、最终 revision full、final independent verifier 与业务/视觉 J1
-  均未满足）
+  normalization；Max v30 未调用。product-v31 尚未通过 clean full/Document Vision 或 live。final eval、最终
+  revision full、final independent verifier 与业务/视觉 J1 均未满足）
 - AC：AC-015..021、AC-VR-001..010
 - 依赖：T6-3a.8/9、ADR-0020/0021；N2 live 依赖新的 stage-gold/harness/identity
 - 影响区域：IMAGE_ONLY eval、visual contracts、worker/Profile/Prompt、OCR/layout adapter、review/monitor UI
@@ -605,3 +605,18 @@ Goal 最终为 359 reservations（354 SETTLED、5 历史 Plus RESERVED、0 BREAC
 tokens 为 771,740/965,122/491,919。v30 未接受 OBSERVE，Max 的同版本三阶段/质量门失败，保持 CLOSED、未
 调用。T6-5 不晋级：N6=`automated_verified`、N7/Goal=`in_progress`、Profile=`EXPERIMENTAL`。下一节点只从
 payload-free fixed code 建立新的 bounded 离线合同，不启动 final 20/60。
+
+## 17. T6-5 v31 repeated-item SLOT owner checkpoint
+
+`7e464df`、`791d4e9`、`f6cc529`、`eea8b3f` 将 Plus v30 的
+`VISUAL_SEMANTIC_REPEATED_ITEM_FIELD_MISSING` 收窄为 pipeline 4.18 的原子 repair。它只用已验证 region forest 和
+canonical evidence，把已有 SLOT 的粗 owner 改为每块 evidence 唯一最具体的非 ROOT region；每个缺字段 ITEM
+必须都有证据，任何歧义、缺失、unknown/root-only 或 8-owner 上限均原样 fail-closed，不合成字段、topology、文字、
+selected crop 或 Candidate。三份 product-v31 Profile 继续隐藏 `EXPERIMENTAL`。
+
+Inference 184/184、真实 PostgreSQL OBSERVE→HIERARCHY→BINDING tracer 1/1、独立 snapshot verifier 1/1、Node 24
+Web 73/73/build 与 1024px payload-free diagnostics Playwright 1/1 PASS；Web/E2E 证据为
+`20260811-155052-web`、`20260811-155200-v31-diagnostics-e2e-results`。本节点零 Provider 调用，Goal/ledger/用量
+保持 v30 最终值。最新 J1 将每模型累计 token cap 设为 1.5M 并允许 Plus，但 attempts/CNY/time 不变。N6 仍
+`automated_verified`、N7/Goal 仍 `in_progress`；clean full、Document Vision、fresh identity/snapshot/budget/time
+通过前不 OPEN，Max 与 final 20/60 不启动。
