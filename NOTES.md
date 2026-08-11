@@ -1,6 +1,18 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-11 pipeline 4.17/product-v30 已形成离线生产候选，尚未 live。`71ccbdf` 增加原子的 bounded
+  evidence-owner normalization：只基于已验证 region forest 与 canonical element evidence，为未覆盖 evidence
+  选择唯一最具体且 kind/multiplicity 兼容的非 ROOT region；零/多候选、unknown owner、coverage mismatch 或
+  owner 上限失败均保留原 plan 并 fail-closed。`d3fedf3` 发布三模型 immutable v30 Profile、固定 telemetry
+  `VISUAL_GROUNDING_ELEMENT_REGION_NORMALIZED`、独立 snapshot verifier 与真实 PostgreSQL 三阶段 tracer；
+  `837c015` 接入 monitor/review 中文解释与诊断 E2E。Inference 183/183、real-PG 1/1、独立 Profile verifier、
+  Node 24 Web 73/73/build、真实 replay→review→atomic Apply 1/1 与 1024px payload-free diagnostics Playwright
+  1/1 均 PASS；Web 证据为 `20260811-150327-web`，浏览器证据为 `20260811-150428-inference-v30-ui` 与
+  `20260811-150534-v30-diagnostics-e2e-results`。本节点 Provider attempts=0，Goal 仍为 353 reservations，三
+  ledger CLOSED，用量仍是 Flash/Plus/Max 728,794/957,770/491,919 tokens。product-v30 保持
+  `EXPERIMENTAL`、N6=`automated_verified`、N7=`in_progress`；enum/sibling-overlap 不猜测，文档提交后的 clean
+  full、fresh identity/snapshot/budget/time 仍是任何 v30 Flash smoke 的前置门。
 - 2026-08-11 product-v29 bounded live 已闭环且未晋级。clean `c4f92b9` 的 full gate
   `20260811-140553` 9/9 PASS，Document Vision canary `20260811-141657` 以精确 capability 得到 19 lines；fresh
   Git-blob identity 为 `…2f451e78`。首次 Flash ledger `e4ca5a6` PROPOSED→`3b2a558` OPEN→`9fc0632`

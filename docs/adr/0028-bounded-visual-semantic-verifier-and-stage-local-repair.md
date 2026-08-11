@@ -753,3 +753,39 @@ state/guard、evidence tree 与 reservations 零漂移，无残留 Maven/OCR/liv
 fail-closed，但不证明质量；product-v29 继续 `EXPERIMENTAL`，N6=`automated_verified`，N7=`in_progress`。
 下一 bounded 假设只能离线处理 OBSERVE enum、sibling overlap 与 evidence-region 归属，不得放宽 verifier、读取
 Provider 原文或直接扩大 final eval。
+
+## N7 product-v30：唯一最具体 evidence owner 归一化
+
+Plus product-v29 的 payload-free 结果两次命中
+`VISUAL_GROUNDING_ELEMENT_EVIDENCE_OUTSIDE_REGION`。该错误与 enum/overlap 不同：当 region forest 已通过形状、
+父子包含、kind、reading order 与 artifact coverage 校验，element evidence 也已 canonicalize 到原图坐标时，是否有
+唯一空间 owner 可由本地代码确定，无需查看模型原文或 OCR 文字。
+
+决策如下：
+
+1. 新 policy 仅在 pipeline 4.17/product-v30 opt-in；4.16 及更早 Profile 保持原行为。现有 owner 只要覆盖至少
+   一块该 element evidence 就保留。对每块未覆盖 evidence，只考虑包含它的非 ROOT region，并取没有更深兼容
+   descendant 的候选。
+2. SLOT 可使用任意非 ROOT region；ONE GROUP 只兼容 GROUP；MANY GROUP 只兼容 REPEATED_GROUP。这不是按距离
+   排名，也不创建 region、GROUP 或 topology。
+3. inventory 与 ownership ID 不一致、owner 引用未知 region、候选为零或多个、归一化结果为空或超过 8 owners 时，
+   整个 plan 原子回退为原输入，由既有 `VISUAL_GROUNDING_ELEMENT_*` 固定码 fail-closed。不得部分提交。
+4. 成功时只记录数量型 `VISUAL_GROUNDING_ELEMENT_REGION_NORMALIZED`；checkpoint、attempt 与 UI 均不记录完整
+   prompt、模型输出、OCR、图片或 Candidate。rejected OBSERVE 没有可信 plan，因此本决策不从其 region 选择 crop。
+5. 三份 immutable product-v30 Profile 继续使用 visual-elements v9、hierarchy v7、bindings v3 与同一 pinned
+   Document Vision capability；均为 `EXPERIMENTAL`，不加入默认 product-live selector。
+
+`71ccbdf` 完成 codec 合同，完整 inference 183/183 PASS。`d3fedf3` 接入 worker/Profile/独立 Python snapshot
+verifier；真实 PostgreSQL tracer 以三次 provider stage（OBSERVE、HIERARCHY、ELEMENT_BINDING）到达
+`REVIEW_REQUIRED`，Document Vision 仅一次，OCR sentinel 未进入 checkpoint/Candidate。`837c015` 接入
+monitor/review 中文说明。Node 24 Web gate `20260811-150327-web` 为 14 files/73 tests + build PASS；真实 replay
+浏览器 Apply `20260811-150428-inference-v30-ui` 1/1 PASS；1024px diagnostics Playwright
+`20260811-150534-v30-diagnostics-e2e-results` 1/1 PASS。两次 UI 预检红灯分别来自已有 4173 端口占用与新增第二个
+“区域树”后旧 strict locator 不唯一，均未触发 Provider；改用空闲端口/集合 locator 后通过。
+
+本增量 Provider attempts=0，Goal 仍为 353 reservations（348 SETTLED、5 历史 Plus RESERVED、0 BREACHED）；
+Flash/Plus/Max 仍为 110/161/82 attempts、728,794/957,770/491,919 exposed tokens 与
+¥0.348298/¥3.702040/¥10.289316，三 ledger CLOSED。product-v30 仍 `EXPERIMENTAL`，N6 仍
+`automated_verified`，N7/Goal 仍 `in_progress`。只有包含本节的 clean revision 通过 full、fresh `/2` identity、
+三份 snapshot、aggregate budget/time 与 exact J1 后，才可优先做 Flash 单 case/最多 5 calls；Max 仍受同版本
+accepted OBSERVE/HIERARCHY/BINDING 及质量门约束。

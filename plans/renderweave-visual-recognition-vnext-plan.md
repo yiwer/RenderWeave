@@ -12,10 +12,11 @@
   边界不变，精确约束见 spec delta
 - 当前节点：N0–N1、N3–N4、N6 `automated_verified`；N2 `live_verified_mixed_a1_a2`；N5
   `live_verified_not_promoted`；N7 `in_progress`。v27 Flash/Plus/Max single-case 均 CLOSED/A2：Flash 止于
-  OBSERVE，Plus/Max 虽三阶段可达但 slot/binding 0 matched，未进入 final eval。pipeline 4.15/product-v28 已把
-  minimal entity-region ownership、binding ambiguity→HIERARCHY rewind、real-PG checkpoint、独立 Profile
-  verifier 与 monitor/review telemetry 做成离线候选；当前 Provider attempts=0，clean full 和 fresh `/2`
-  pre-live identity 尚待完成。全部 live ledger `CLOSED`，Profile 均隐藏 `EXPERIMENTAL`
+  OBSERVE，Plus/Max 虽三阶段可达但 slot/binding 0 matched，未进入 final eval。pipeline 4.17/product-v30 已把
+  unique evidence-owner normalization、real-PG 三阶段 checkpoint、独立 Profile verifier 与 monitor/review
+  telemetry 做成离线候选；当前 Goal 为 353 reservations，三份 live ledger `CLOSED`，本增量 Provider
+  attempts=0。文档 revision 的 clean full 和 fresh `/2` pre-live identity 尚待完成，Profile 均隐藏
+  `EXPERIMENTAL`
 
 ## 四维执行配置
 
@@ -419,3 +420,29 @@ drift、journal/guard 不一致、payload 边界失败或同一无新假设失�
 - 门控：v29 未取得 accepted OBSERVE→HIERARCHY→BINDING，故 Max 不调用，final 20/60 不启动。Profile 仍
   `EXPERIMENTAL`、N6=`automated_verified`、N7/Goal=`in_progress`。下一节点先离线收敛 OBSERVE enum、
   overlap 与 evidence-region 归属，保持最早阶段 repair 与 no-progress 上界。
+
+## 2026-08-11 v30 unique evidence-owner normalization checkpoint
+
+- 信号：Plus v29 三次 OBSERVE 中两次为
+  `VISUAL_GROUNDING_ELEMENT_EVIDENCE_OUTSIDE_REGION`。模型已经给出合法 region forest 与 canonical evidence，
+  但 element owner 没有覆盖 evidence；该缺口可在不读取模型原文的前提下由已验证几何判定。
+- 边界：`71ccbdf` 只在 opt-in policy 中保留能覆盖至少一块 evidence 的既有 owner，并为每块未覆盖 evidence
+  选择唯一最具体、非 ROOT、kind/multiplicity 兼容的 region；SLOT 可归属任意非 ROOT，ONE GROUP 只归属
+  GROUP，MANY GROUP 只归属 REPEATED_GROUP。inventory/ownership 不全、unknown region、零/多候选、空结果或
+  超过 8 owners 时原子返回原 plan，由既有固定码 fail-closed；不改 region topology/evidence，不猜 enum 或
+  sibling overlap，也不从 rejected OBSERVE 选择 crop。
+- 产品接入：`d3fedf3` 发布 pipeline 4.17 与 Flash/Plus/Max product-v30 immutable Profile，旧 4.16 行为不变；
+  成功归一化只记录 payload-free 固定码 `VISUAL_GROUNDING_ELEMENT_REGION_NORMALIZED`。真实 PostgreSQL tracer
+  精确执行 OBSERVE→HIERARCHY→BINDING 并到达 `REVIEW_REQUIRED`，Document Vision 一次，OCR sentinel 未进入
+  checkpoint/Candidate；独立 Python verifier 接受三份精确 snapshot。
+- UI/验证：`837c015` 将固定码与中文解释接入 monitor/review。Inference 183/183、real-PG 1/1、Node 24 Web
+  14 files/73 tests 与 build、真实 replay→review→atomic Apply 1/1、1024px diagnostics Playwright 1/1 PASS；
+  证据为 `20260811-150327-web`、`20260811-150428-inference-v30-ui`、
+  `20260811-150534-v30-diagnostics-e2e-results`。端口冲突与 strict locator 的两次预检红灯未触发 Provider，修正后
+  重跑通过。
+- 状态：本节点 Provider attempts=0，Goal 仍为 353 reservations（348 SETTLED、5 历史 Plus RESERVED、0
+  BREACHED），Flash/Plus/Max 仍为 110/161/82 attempts、728,794/957,770/491,919 tokens 与
+  ¥0.348298/¥3.702040/¥10.289316。三 ledger CLOSED；product-v30=`EXPERIMENTAL`、N6=
+  `automated_verified`、N7/Goal=`in_progress`。只有本 checkpoint 后的 clean full、fresh identity/snapshot、
+  aggregate budget、时限与 exact J1 均通过，才可优先执行 Flash 单 case/最多 5 calls；Max 仍要求同版本三阶段
+  可达及质量门。

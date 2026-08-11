@@ -7,10 +7,10 @@
 - 当前 lifecycle：P0 `accepted`；P1–P4 `automated_verified`；P5 `live_canary_verified` / `live_independently_reviewed` / `decision_recorded`；P6 T6-1 `independently_reviewed`、T6-2 `human_acceptance_pending`、T6-3a `automated_verified`
 - 当前扩展 Goal：P6/T6-5 图片识别 vNext 为 `in_progress`；N0–N1、N3–N4、N6 已
   `automated_verified`，N2 为 `live_verified_mixed_a1_a2`，N5 为 `live_verified_not_promoted`。v27 三模型
-  single-case 均 CLOSED/A2，但未形成可接受 Candidate。pipeline 4.15/product-v28 已进一步把 minimal entity-region
-  ownership、binding ambiguity→HIERARCHY repair、checkpoint、监控/审核 UI 与独立 Profile verifier 做成离线
-  候选；本增量 Provider attempts=0，clean full 与 fresh `/2` pre-live identity 尚待完成。最新 335 reservations
-  为 330 SETTLED、5 个历史 Plus RESERVED、0 BREACHED；三份 ledger CLOSED，Profile 继续 `EXPERIMENTAL`。
+  single-case 均 CLOSED/A2，但未形成可接受 Candidate。pipeline 4.17/product-v30 已进一步把 unique
+  evidence-owner normalization、checkpoint、监控/审核 UI 与独立 Profile verifier 做成离线候选；本增量
+  Provider attempts=0，clean full 与 fresh `/2` pre-live identity 尚待完成。最新 353 reservations 为 348
+  SETTLED、5 个历史 Plus RESERVED、0 BREACHED；三份 ledger CLOSED，Profile 继续 `EXPERIMENTAL`。
   两次 J1 delta 将三个预算槽位累计 cap 提到 1.5M tokens，单 authorization、attempt/CNY/time 边界不变。
   final 20/60、最终 revision full、final independent verifier 与业务/视觉 J1 均未满足，详见
   `plans/renderweave-visual-recognition-vnext-plan.md`。
@@ -576,3 +576,17 @@ Goal 现为 353 reservations（348 SETTLED、5 历史 Plus RESERVED、0 BREACHED
 110/161/82 attempts 与 728,794/957,770/491,919 exposed tokens。v29 没有到达同版本 accepted
 OBSERVE/HIERARCHY/BINDING，Max 保持 CLOSED、未调用；N6=`automated_verified`、N7=`in_progress`、Profile=
 `EXPERIMENTAL`。下一节点先离线处理 OBSERVE enum、overlap、evidence-region fixed codes，不启动 final 20/60。
+
+## 15. T6-5 v30 evidence-owner normalization checkpoint
+
+`71ccbdf`、`d3fedf3`、`837c015` 将 Plus v29 的 evidence-outside-region 信号收窄为 pipeline 4.17 的原子
+bounded normalization：只使用已验证 region forest 与 canonical evidence，且只有唯一最具体兼容 region 可被
+采用；任何歧义、unknown、coverage mismatch 或 owner 上限都继续 fail-closed。三份 product-v30 Profile 仍隐藏
+`EXPERIMENTAL`，旧 pipeline 不变。
+
+真实 PostgreSQL tracer 以 OBSERVE→HIERARCHY→BINDING 三次 scripted call 到达 `REVIEW_REQUIRED`，只记录
+`VISUAL_GROUNDING_ELEMENT_REGION_NORMALIZED`，OCR sentinel 未持久化。Inference 183/183、独立 snapshot
+verifier、Node 24 Web 73/73/build、真实 replay 浏览器 Apply 1/1 与 diagnostics Playwright 1/1 PASS。本节点零
+Provider 调用，Goal/用量仍为 353 reservations 与 Flash/Plus/Max 728,794/957,770/491,919 tokens，三 ledger
+CLOSED。N6=`automated_verified`、N7/Goal=`in_progress`；文档 revision 的 clean full 与 fresh pre-live
+identity/snapshot/budget/time 通过前不 OPEN，enum/overlap 不在本次修复范围，final 20/60 不启动。
