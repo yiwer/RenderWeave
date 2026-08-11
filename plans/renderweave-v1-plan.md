@@ -906,3 +906,11 @@ ADR/spec/plan 同步 revision `6906be1` 的隔离 full `20260812-012644-full` 9/
 `20260812-013158-document-vision` 1/1、19 lines 均 PASS，metadata 绑定 exact revision 且 clean。Provider=0，
 Goal/ledger 保持 418 reservations 与三 ledger CLOSED。该节点解决旧 v4 字段身份改写的产品可达性和本地能力
 晚失败，不改变 Flash v40 未过 OBSERVE、Plus/Max v40 无同版本质量证据的事实；N7/Goal 继续 `in_progress`。
+
+### product-v40 通用 Flash 产品身份
+
+`67d46c5` 按用户决定把新建产品目录的 Flash 精确模型切换为 `qwen3.7-flash`，Plus/Max 不变。实现新增
+immutable successor Profile，并保留 dated Flash v40 Profile 与全部历史 snapshot/evidence；产品 API、OpenAPI、
+generated client、Web 和 E2E 均改为 successor。pipeline 4.27、三阶段 Provider 合同、本地 materializer、
+verifier、checkpoint 与审核/Apply 不变。定向 Java/Web/Playwright 全绿，Provider=0，三 ledger CLOSED，
+累计 Flash 槽位不重置。successor 没有新 live 质量证据，N6/N7/Goal 状态不变。

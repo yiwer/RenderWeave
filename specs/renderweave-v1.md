@@ -483,10 +483,11 @@ QUEUED → RUNNING → REVIEW_REQUIRED → APPLYING → COMPLETED
 - v1 首个 live adapter 是 DashScope 的 OpenAI-compatible Chat Completions HTTP endpoint；领域层只依赖 provider-neutral port，协议 DTO、HTTP client 与 `DASHSCOPE_API_KEY` 只存在于 application adapter。
 - 新建产品 live run 只提供 `dashscope-qwen37-plus-product-v40-hybrid-generic`（`qwen3.7-plus`）、
   `dashscope-qwen38-max-product-v40-hybrid-generic`（`qwen3.8-max`）和
-  `dashscope-qwen37-flash-20260715-product-v40-hybrid-generic`（`qwen3.7-flash-2026-07-15`）三份
+  `dashscope-qwen37-flash-product-v40-hybrid-generic`（`qwen3.7-flash`）三份
   IMAGE_ONLY Profile；Web 默认 Plus，Max 用于用户显式选择的高难嵌套任务，Flash 只定位为低成本 smoke。
-  历史 canary/certification 及 product-v1..v4 Profile 保持不可变、可读和可恢复，但不进入新建产品选择器。
-  三份 v40 Profile 均为 `EXPERIMENTAL`，不继承历史质量认证，也不做跨模型自动升级路由。
+  历史 canary/certification、dated Flash product-v40 及 product-v1..v4 Profile 保持不可变、可读和可恢复，
+  但不进入新建产品选择器。通用 Flash v40 是新的 immutable evaluation identity，不继承 dated Flash 的 live
+  或质量证据。三份当前 v40 Profile 均为 `EXPERIMENTAL`，也不做跨模型自动升级路由。
 - Profile 是 repo-versioned resource，保存 provider/model/prompt/structured output/budgets/evaluation identity；run 保存完整 snapshot。
 - API Key 只来自外部 secret，不进入 DB、Profile、UI、日志或错误。
 - 每次 call 使用 `response_format={"type":"json_object"}`、关闭 thinking、禁用 provider tools/search；prompt 必须明确要求 JSON。合法 JSON 仍须经过 Candidate codec、确定性 validator 和 bounded repair。

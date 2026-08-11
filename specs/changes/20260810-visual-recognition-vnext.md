@@ -420,3 +420,20 @@ final 不调用。N6=`automated_verified`，N7/Goal 仍未完成；后续算法�
   本地路径、模型资产、OCR 文本、图片、Prompt 或 Provider payload。
 - 本次只批准工程试用入口，不把 v40 改写为生产默认或质量认证。N6=`automated_verified`、N7/Goal=
   `in_progress`；final eval、独立 verifier 与最终 J1 门仍未满足。
+
+### 2026-08-12 通用 Flash 产品选择器 delta
+
+用户进一步要求把新建产品目录中的 Flash 精确模型从 `qwen3.7-flash-2026-07-15` 改为
+`qwen3.7-flash`，Plus/Max 不变。实现 revision `67d46c5` 采用 additive successor，而不是改写已冻结资源：
+
+- 新增 `dashscope-qwen37-flash-product-v40-hybrid-generic`，继续绑定 pipeline 4.27、Prompt 10/7/3、
+  Document Vision capability、IMAGE_ONLY、5-call/0-repair 与相同成本边界；模型精确绑定为
+  `qwen3.7-flash`。
+- `dashscope-qwen37-flash-20260715-product-v40-hybrid-generic` 及其 snapshot/live evidence 保持逐字节
+  不可变、可读和可恢复，但退出新建产品选择器。通用 Flash 不继承 dated Flash 的 reachability 或质量结论。
+- 两个 Flash alias 继续由 Goal guard 聚合到同一稳定 Flash token/cost/attempt 槽位；本次不重置额度、
+  reservation 或历史消费。ledger 保持 `CLOSED`，Provider attempts=0；未来任何真实调用仍须按新的精确
+  evaluation identity/Profile snapshot 重新执行当次 preflight 与授权校验。
+- 产品目录仍按 Plus、Max、Flash 排序且默认 Plus；pipeline、本地 materializer、verifier、checkpoint、
+  telemetry、审核/Apply 合同均不变。状态继续为 `EXPERIMENTAL` / N6=`automated_verified` /
+  N7/Goal=`in_progress`，不形成新的识别质量声明。

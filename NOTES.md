@@ -877,3 +877,15 @@
   `workingTreeDirty=false`。full 覆盖正式 Node 24、真实 PostgreSQL、runtime canary、独立 evidence verifier、
   v40 catalog/readiness 以及 replay→review→Apply 浏览器路径。本轮 Provider=0，门控后无 live/Maven/Java/
   Python 残留。
+
+### product-v40 通用 Flash 选择器
+
+- 用户将产品 Flash 精确模型从 `qwen3.7-flash-2026-07-15` 改为 `qwen3.7-flash`；Plus/Max 不变。
+  `67d46c5` 新增 immutable successor Profile 并同步 Registry、API/OpenAPI、generated client、Web 与 E2E，
+  原 dated v40 Profile/snapshot/evidence 保持不变、可读、可恢复，但退出新建产品目录。
+- successor 保持 pipeline 4.27、Prompt、Document Vision capability、IMAGE_ONLY、5-call/0-repair 与本地
+  materializer/verifier/checkpoint/telemetry/审核 Apply 合同。定向 Java 21/21、正式 Node 24 Web 73/73、
+  typecheck/lint 与产品目录 Playwright 1/1 PASS。
+- 本节点 Provider=0、三个 visual ledger 仍 `CLOSED`；Flash alias 继续共用既有稳定预算槽位，不重置额度或
+  消费。successor 尚无新 live 质量证据，状态保持 product-v40=`EXPERIMENTAL`、N6=`automated_verified`、
+  N7/Goal=`in_progress`。

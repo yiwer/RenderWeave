@@ -9,12 +9,14 @@
 - ADR：ADR-0022、ADR-0023、ADR-0024、ADR-0025、ADR-0026、ADR-0027、ADR-0028、ADR-0029、ADR-0030
 - 用户 J1：yiwer，2026-08-10；2026-08-11 delta 将 Flash 改为 `qwen3.7-flash-2026-07-15`，随后两次给
   三个预算槽位各追加 500,000 tokens，当前累计 cap 1,500,000，并把 Flash/Plus Goal cost cap 各设为 ¥10、
-  固定 24h 窗口至 `2026-08-12T09:51:55Z`；Max ¥18、每槽 180 attempts、单 authorization 500,000 不变
+  固定 24h 窗口至 `2026-08-12T09:51:55Z`；Max ¥18、每槽 180 attempts、单 authorization 500,000 不变。
+  2026-08-12 用户又把当前产品 Flash 精确模型改为 `qwen3.7-flash`；该 alias 仍聚合进原 Flash 稳定槽位，
+  不重置 cap 或消费，本节点不执行 live
 - 当前节点：N0–N1、N3–N4、N6 `automated_verified`；N2 `live_verified_mixed_a1_a2`；N5
   `live_verified_not_promoted`；N7 `in_progress`。pipeline 4.27/product-v40 已完成 bounded diagnostic、Prompt/Profile、
   real-PG recovery、monitor/review/E2E 与 Flash 失败闭环；Goal 为 418 reservations（412 SETTLED、6 RESERVED、
   0 BREACHED），Flash/Plus/Max 为 157/179/82 attempts 与 1,148,324/1,087,500/491,919 exposed tokens，三份
-  live ledger `CLOSED`。新建产品入口已切换为 Plus/Max/pinned Flash 三份 `EXPERIMENTAL` v40 Profile，Plus
+  live ledger `CLOSED`。新建产品入口已切换为 Plus/Max/通用 Flash 三份 `EXPERIMENTAL` v40 Profile，Plus
   默认、Max 面向高难嵌套、Flash 仅作 smoke，并在创建/retry 前按 Profile 精确检查本地 Document Vision
   capability。该入口只声明阶段性工程可用，不冒充生产级可靠性或识别质量验收
 
@@ -869,3 +871,16 @@ N6=`automated_verified`、N7/Goal=`in_progress`；Plus/Max/final 不启动，Goa
   `20260812-013158-document-vision` 为 1/1 PASS/19 lines；两份 metadata 均 `workingTreeDirty=false`。
   full 覆盖独立 evidence verifier 2/2、正式 Node 24、真实 PostgreSQL、runtime canary、v40 catalog/readiness
   浏览器检查及 replay→review→Apply。Provider=0，门控后无 live/Maven/Java/Python 残留。
+
+### product-v40 通用 Flash selector checkpoint
+
+- 用户把新建产品目录中的 Flash 从 dated `qwen3.7-flash-2026-07-15` 改为 `qwen3.7-flash`；Plus/Max
+  精确 model ID、默认顺序和用途不变。
+- `67d46c5` 新增 immutable `dashscope-qwen37-flash-product-v40-hybrid-generic`，复用 pipeline 4.27 的
+  三阶段合同、Prompt、Document Vision capability 和预算边界；原 dated v40 Profile/evidence 不修改且仍可
+  读取和恢复，只是不再 product-live。
+- Registry/API/OpenAPI/generated client/Web/E2E 已同步；定向 Java 为 Registry 2/2、API 9/9、policy 6/6、
+  live API 4/4，正式 Node 24 的 typecheck/lint 与 Web 73/73、产品目录 Playwright 1/1 均 PASS。
+- 本节点没有 Provider 调用，三个 ledger 继续 `CLOSED`，Flash alias 继续共用同一累计槽位且不重置消费。
+  successor 尚无 live 质量证据，故 product-v40=`EXPERIMENTAL`、N6=`automated_verified`、N7/Goal=
+  `in_progress`。
