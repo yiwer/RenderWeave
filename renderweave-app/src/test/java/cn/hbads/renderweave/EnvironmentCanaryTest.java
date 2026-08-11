@@ -44,7 +44,7 @@ class EnvironmentCanaryTest {
                 .sql("select count(*) from flyway_schema_history where success = true")
                 .query(Integer.class)
                 .single();
-        assertThat(appliedMigrations).isEqualTo(14);
+        assertThat(appliedMigrations).isEqualTo(15);
 
         Integer capacityIndexes = jdbcClient.sql("""
                         select count(*)

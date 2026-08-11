@@ -138,6 +138,8 @@ class PostgresLiveInferenceWorkflowTest {
             "dashscope-qwen37-flash-20260715-product-v40-hybrid-generic";
     private static final String EARLY_RELATIONSHIP_GROUP_PREREQUISITE_HYBRID_VISUAL_PROFILE =
             "dashscope-qwen37-flash-product-v41-hybrid-generic";
+    private static final String PLUS_V42_HYBRID_VISUAL_PROFILE =
+            "dashscope-qwen37-plus-product-v42-hybrid-generic";
     private static final String DOCUMENT_VISION_CAPABILITY =
             "rapidocr-3.9.2-openvino-2026.0.0-ppocrv6-small-c05805399d7d10b1";
 
@@ -2517,6 +2519,55 @@ class PostgresLiveInferenceWorkflowTest {
     }
 
     @Test
+    void productV42UsesAllSevenCallsAcrossObservationRetriesAndHierarchyRewind() {
+        var blobs = new MemoryBlobStore();
+        var created = createGroundedVisual(
+                blobs, "v42-seven-call-hierarchy-rewind",
+                PLUS_V42_HYBRID_VISUAL_PROFILE, 5_000_000L
+        );
+        var invalidObservation = groundedStationElements().replace(
+                "renderweave-visual-grounding/2.0", "renderweave-visual-grounding/9.0"
+        );
+        var groupRegionWithoutGroupElements = flatGroundedStationElements().replace(
+                "\"kind\":\"SECTION\"", "\"kind\":\"GROUP\""
+        );
+        var provider = new ScriptedProvider(
+                request -> response(request, invalidObservation),
+                request -> response(request, groupRegionWithoutGroupElements),
+                request -> response(request, groundedStationHierarchy()),
+                request -> response(request, invalidObservation),
+                request -> response(request, groundedStationElements()),
+                request -> response(request, groundedStationHierarchy()),
+                request -> response(request, groundedStationBindings())
+        );
+        var preprocessCalls = new AtomicInteger();
+
+        var finished = worker(
+                provider, blobs, T0.plusSeconds(1),
+                hybridPreprocessor(preprocessCalls, "OCR_SENTINEL_V42_SEVEN_CALL_REWIND")
+        ).processNext("v42-seven-call-hierarchy-rewind-worker").orElseThrow();
+
+        assertThat(finished.state())
+                .as("failure=%s attempts=%s", finished.failureCode(), workflowStore.attempts(created))
+                .isEqualTo(InferenceRunState.REVIEW_REQUIRED);
+        assertThat(provider.requests).extracting(ProviderInferenceRequest::stage)
+                .containsExactly(
+                        InferenceStage.OBSERVE, InferenceStage.OBSERVE,
+                        InferenceStage.HIERARCHY, InferenceStage.OBSERVE,
+                        InferenceStage.OBSERVE, InferenceStage.HIERARCHY,
+                        InferenceStage.ELEMENT_BINDING
+                );
+        assertThat(workflowStore.attempts(created)).extracting(InferenceAttempt::status)
+                .containsExactly(
+                        InferenceAttemptStatus.REJECTED, InferenceAttemptStatus.SUCCEEDED,
+                        InferenceAttemptStatus.REJECTED, InferenceAttemptStatus.REJECTED,
+                        InferenceAttemptStatus.SUCCEEDED, InferenceAttemptStatus.SUCCEEDED,
+                        InferenceAttemptStatus.SUCCEEDED
+                );
+        assertThat(workflowStore.findCandidate(created)).isPresent();
+    }
+
+    @Test
     void cancellationIsAcknowledgedBeforeHybridPreprocessing() {
         var blobs = new MemoryBlobStore();
         var created = createGroundedVisual(blobs, "hybrid-cancel-before-ocr", HYBRID_VISUAL_PROFILE);
@@ -3072,6 +3123,15 @@ class PostgresLiveInferenceWorkflowTest {
     }
 
     private UUID createGroundedVisual(MemoryBlobStore blobs, String seed, String profileId) {
+        return createGroundedVisual(blobs, seed, profileId, null);
+    }
+
+    private UUID createGroundedVisual(
+            MemoryBlobStore blobs,
+            String seed,
+            String profileId,
+            Long costLimitMicrosCny
+    ) {
         var profile = profiles.require(profileId);
         var image = new BufferedImage(1_050, 1_660, BufferedImage.TYPE_INT_RGB);
         var graphics = image.createGraphics();
@@ -3105,7 +3165,8 @@ class PostgresLiveInferenceWorkflowTest {
                 List.of()
         );
         return runs.create(NewInferenceRun.initial(
-                UUID.randomUUID(), "idem-" + seed, normalized, profile.snapshotJson(), T0
+                UUID.randomUUID(), "idem-" + seed, normalized, profile.snapshotJson(),
+                costLimitMicrosCny, T0
         )).run().runId();
     }
 

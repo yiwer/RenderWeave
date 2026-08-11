@@ -187,17 +187,19 @@ class PostgresProviderBudgetStoreTest {
     }
 
     @Test
-    void serialVisualPipelineMayReserveFiveOrderedAttemptsButNeverASixth() {
-        var runId = createRun("dashscope-qwen37-plus-product-v3", "serial-visual-budget");
+    void productV42MayReserveSevenOrderedAttemptsButNeverAnEighth() {
+        var runId = createRun(
+                "dashscope-qwen37-plus-product-v42-hybrid-generic", "seven-call-visual-budget"
+        );
 
-        var fifth = budgets.reserve(BUDGET, runId, 4, 20_000, T0);
+        var seventh = budgets.reserve(BUDGET, runId, 6, 20_000, T0);
 
-        assertThat(fifth.attemptOrdinal()).isEqualTo(4);
-        assertThatThrownBy(() -> budgets.reserve(BUDGET, runId, 5, 20_000, T0.plusSeconds(1)))
+        assertThat(seventh.attemptOrdinal()).isEqualTo(6);
+        assertThatThrownBy(() -> budgets.reserve(BUDGET, runId, 7, 20_000, T0.plusSeconds(1)))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Provider reservation bounds are invalid");
         assertThatThrownBy(() -> new ProviderBudgetReservation(
-                UUID.randomUUID(), BUDGET, runId, 5, 20_000
+                UUID.randomUUID(), BUDGET, runId, 7, 20_000
         )).isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Reservation bounds are invalid");
     }

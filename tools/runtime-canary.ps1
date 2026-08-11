@@ -64,7 +64,16 @@ try {
 
     $stdoutPath = Join-Path $runDir 'api.stdout.log'
     $stderrPath = Join-Path $runDir 'api.stderr.log'
-    $apiProcess = Start-Process -FilePath 'java' `
+    $javaExecutable = if ($env:JAVA_HOME) {
+        Join-Path $env:JAVA_HOME 'bin\java.exe'
+    }
+    else {
+        (Get-Command java -ErrorAction Stop).Source
+    }
+    if (-not (Test-Path -LiteralPath $javaExecutable -PathType Leaf)) {
+        throw "Java executable is missing: $javaExecutable"
+    }
+    $apiProcess = Start-Process -FilePath $javaExecutable `
         -ArgumentList @('-jar', $jarPath, "--server.port=$apiPort") `
         -WorkingDirectory $repoRoot `
         -WindowStyle Hidden `
@@ -109,13 +118,21 @@ catch {
     throw
 }
 finally {
-    if ($apiProcess -and -not $apiProcess.HasExited) {
-        Stop-Process -Id $apiProcess.Id -Force
+    $apiCleanupFailed = $false
+    if ($apiProcess) {
+        $runningApi = Get-Process -Id $apiProcess.Id -ErrorAction SilentlyContinue
+        if ($runningApi) {
+            Stop-Process -InputObject $runningApi -Force
+            $apiCleanupFailed = -not $runningApi.WaitForExit(5000)
+        }
     }
     if ($containerId) {
         & docker stop $containerName *> $null
     }
     foreach ($name in $oldEnvironment.Keys) {
         [Environment]::SetEnvironmentVariable($name, $oldEnvironment[$name], 'Process')
+    }
+    if ($apiCleanupFailed) {
+        throw "API canary process $($apiProcess.Id) did not exit within 5 seconds."
     }
 }
