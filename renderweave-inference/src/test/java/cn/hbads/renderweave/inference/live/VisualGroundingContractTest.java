@@ -264,6 +264,97 @@ class VisualGroundingContractTest {
     }
 
     @Test
+    void boundedGroupOwnerKindNormalizationUsesOnlyOneUnmetSingularContainerConstraint()
+            throws Exception {
+        var unique = elementsJson()
+                .replaceFirst("\"kind\":\"SECTION\"", "\"kind\":\"PANEL\"")
+                .replace(
+                        "\"elements\":[",
+                        "\"elements\":[\n"
+                                + "    {\"elementId\":\"header-group\",\"kind\":\"GROUP\","
+                                + "\"proposedKey\":\"headerGroup\",\"displayName\":\"标题区\","
+                                + "\"multiplicity\":\"ONE\",\"valueHint\":null,"
+                                + "\"regionIds\":[\"header\"],\"evidence\":[{\"viewId\":"
+                                + "\"view-00-overview-00\",\"boundingBox\":{\"left\":0,"
+                                + "\"top\":0,\"right\":10000,\"bottom\":2000}}]},"
+                );
+
+        assertEquals("VISUAL_GROUNDING_JSON_ENUM_INVALID_REGION_KIND", assertThrows(
+                InvalidVisualAnalysisException.class, () -> codec.parseElements(
+                        unique, views(), List.of(IMAGE_ID),
+                        VisualObservationNormalizationPolicy
+                                .BOUNDED_STRUCTURAL_KIND_UNIQUE_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER
+                )
+        ).diagnosticCode());
+
+        var normalized = codec.parseElements(
+                unique, views(), List.of(IMAGE_ID),
+                VisualObservationNormalizationPolicy
+                        .BOUNDED_CONSTRAINT_UNIQUE_KIND_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER
+        );
+        assertEquals(VisualRegionKind.GROUP,
+                normalized.grounding().requireRegion("header").kind());
+        assertEquals(1, normalized.normalizedRegionKinds());
+
+        var twoUnknownOwnedContainers = relationshipRegionElementsJson("owner", 1200, 3600)
+                .replace(
+                        "\"regionId\":\"owner\",\"parentRegionId\":\"root\",\"kind\":\"GROUP\"",
+                        "\"regionId\":\"owner\",\"parentRegionId\":\"root\",\"kind\":\"PANEL\""
+                )
+                .replace(
+                        "\"regionId\":\"orphan\",\"parentRegionId\":\"root\",\"kind\":\"GROUP\"",
+                        "\"regionId\":\"orphan\",\"parentRegionId\":\"root\",\"kind\":\"PANEL\""
+                )
+                .replace("\"regionIds\":[\"owner\"]", "\"regionIds\":[\"owner\",\"orphan\"]");
+        assertEquals("VISUAL_GROUNDING_JSON_ENUM_INVALID_REGION_KIND", assertThrows(
+                InvalidVisualAnalysisException.class, () -> codec.parseElements(
+                        twoUnknownOwnedContainers, views(), List.of(IMAGE_ID),
+                        VisualObservationNormalizationPolicy
+                                .BOUNDED_CONSTRAINT_UNIQUE_KIND_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER
+                )
+        ).diagnosticCode());
+
+        var compatibleOwnerAlreadyExists = relationshipRegionElementsJson("owner", 1200, 3600)
+                .replace(
+                        "\"regionId\":\"orphan\",\"parentRegionId\":\"root\",\"kind\":\"GROUP\"",
+                        "\"regionId\":\"orphan\",\"parentRegionId\":\"root\",\"kind\":\"PANEL\""
+                )
+                .replace("\"regionIds\":[\"owner\"]", "\"regionIds\":[\"owner\",\"orphan\"]");
+        assertEquals("VISUAL_GROUNDING_JSON_ENUM_INVALID_REGION_KIND", assertThrows(
+                InvalidVisualAnalysisException.class, () -> codec.parseElements(
+                        compatibleOwnerAlreadyExists, views(), List.of(IMAGE_ID),
+                        VisualObservationNormalizationPolicy
+                                .BOUNDED_CONSTRAINT_UNIQUE_KIND_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER
+                )
+        ).diagnosticCode());
+
+        var manyOwner = unique.replace(
+                "\"elementId\":\"header-group\",\"kind\":\"GROUP\",\"proposedKey\":"
+                        + "\"headerGroup\",\"displayName\":\"标题区\",\"multiplicity\":\"ONE\"",
+                "\"elementId\":\"header-group\",\"kind\":\"GROUP\",\"proposedKey\":"
+                        + "\"headerGroup\",\"displayName\":\"标题区\",\"multiplicity\":\"MANY\""
+        );
+        assertEquals("VISUAL_GROUNDING_JSON_ENUM_INVALID_REGION_KIND", assertThrows(
+                InvalidVisualAnalysisException.class, () -> codec.parseElements(
+                        manyOwner, views(), List.of(IMAGE_ID),
+                        VisualObservationNormalizationPolicy
+                                .BOUNDED_CONSTRAINT_UNIQUE_KIND_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER
+                )
+        ).diagnosticCode());
+
+        var slotOnly = elementsJson().replaceFirst(
+                "\"kind\":\"SECTION\"", "\"kind\":\"PANEL\""
+        );
+        assertEquals("VISUAL_GROUNDING_JSON_ENUM_INVALID_REGION_KIND", assertThrows(
+                InvalidVisualAnalysisException.class, () -> codec.parseElements(
+                        slotOnly, views(), List.of(IMAGE_ID),
+                        VisualObservationNormalizationPolicy
+                                .BOUNDED_CONSTRAINT_UNIQUE_KIND_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER
+                )
+        ).diagnosticCode());
+    }
+
+    @Test
     void boundedEvidenceOwnerNormalizationUsesOnlyUniqueMinimalCompatibleRegions()
             throws Exception {
         var malformed = elementsJson()

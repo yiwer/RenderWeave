@@ -80,7 +80,9 @@ final class VisualGroundingJsonCodec {
                 throw invalid("VISUAL_GROUNDING_VERSION_INVALID", null);
             }
             var classifiedRegions = classified("VISUAL_GROUNDING_REGION_INVALID", () ->
-                    observationRegions(response.regions(), views, normalizationPolicy)
+                    observationRegions(
+                            response.regions(), response.elements(), views, normalizationPolicy
+                    )
             );
             var elements = classified("VISUAL_GROUNDING_ELEMENT_INVALID", () ->
                     response.elements().stream().map(element -> new VisualElement(
@@ -1360,26 +1362,38 @@ final class VisualGroundingJsonCodec {
 
     private static ClassifiedObservationRegions observationRegions(
             List<RegionOutput> output,
+            List<ElementOutput> elements,
             VisualViewPlan views,
             VisualObservationNormalizationPolicy normalizationPolicy
     ) {
-        var regions = new ArrayList<VisualRegion>();
-        var normalizedRegionKinds = 0;
+        var classified = new ArrayList<ClassifiedRegionOutput>();
         for (var region : output) {
             var classifiedKind = lexicalRegionKind(region.kind(), normalizationPolicy);
-            if (classifiedKind == null && normalizationPolicy != VisualObservationNormalizationPolicy
-                    .BOUNDED_STRUCTURAL_KIND_UNIQUE_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER) {
+            if (classifiedKind == null && !structuralKindPolicy(normalizationPolicy)) {
                 throw invalid("VISUAL_GROUNDING_JSON_ENUM_INVALID_REGION_KIND", null);
             }
             var evidence = originalEvidence(region.evidence(), views);
             classifiedKind = structurallyClassifiedRegionKind(
                     region, evidence, normalizationPolicy, classifiedKind
             );
-            if (classifiedKind.normalized()) normalizedRegionKinds++;
+            classified.add(new ClassifiedRegionOutput(region, evidence, classifiedKind));
+        }
+        if (normalizationPolicy == VisualObservationNormalizationPolicy
+                .BOUNDED_CONSTRAINT_UNIQUE_KIND_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER) {
+            classified = new ArrayList<>(normalizeUniqueGroupOwnerKinds(classified, elements));
+        }
+        var regions = new ArrayList<VisualRegion>();
+        var normalizedRegionKinds = 0;
+        for (var item : classified) {
+            if (item.kind() == null) {
+                throw invalid("VISUAL_GROUNDING_JSON_ENUM_INVALID_REGION_KIND", null);
+            }
+            if (item.kind().normalized()) normalizedRegionKinds++;
+            var region = item.region();
             regions.add(new VisualRegion(
-                    region.regionId(), region.parentRegionId(), classifiedKind.kind(),
+                    region.regionId(), region.parentRegionId(), item.kind().kind(),
                     region.multiplicity(), region.readingOrder(), region.repeatGroupId(),
-                    evidence
+                    item.evidence()
             ));
         }
         if (normalizationPolicy == VisualObservationNormalizationPolicy.STRICT) {
@@ -1392,7 +1406,18 @@ final class VisualGroundingJsonCodec {
                 .BOUNDED_ENUM_UNIQUE_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER
                 || normalizationPolicy == VisualObservationNormalizationPolicy
                 .BOUNDED_STRUCTURAL_KIND_UNIQUE_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER
+                || normalizationPolicy == VisualObservationNormalizationPolicy
+                .BOUNDED_CONSTRAINT_UNIQUE_KIND_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER
                 ? normalizeUniqueCompatibleParents(itemParents) : itemParents;
+    }
+
+    private static boolean structuralKindPolicy(
+            VisualObservationNormalizationPolicy normalizationPolicy
+    ) {
+        return normalizationPolicy == VisualObservationNormalizationPolicy
+                .BOUNDED_STRUCTURAL_KIND_UNIQUE_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER
+                || normalizationPolicy == VisualObservationNormalizationPolicy
+                .BOUNDED_CONSTRAINT_UNIQUE_KIND_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER;
     }
 
     private static ClassifiedRegionKind structurallyClassifiedRegionKind(
@@ -1401,15 +1426,84 @@ final class VisualGroundingJsonCodec {
             VisualObservationNormalizationPolicy normalizationPolicy,
             ClassifiedRegionKind classified
     ) {
-        if (normalizationPolicy == VisualObservationNormalizationPolicy
-                .BOUNDED_STRUCTURAL_KIND_UNIQUE_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER) {
+        if (structuralKindPolicy(normalizationPolicy)) {
             var structural = structurallyRequiredRegionKind(region, evidence);
             if (structural != null && (classified == null || classified.kind() != structural)) {
                 return new ClassifiedRegionKind(structural, true);
             }
         }
         if (classified != null) return classified;
+        if (normalizationPolicy == VisualObservationNormalizationPolicy
+                .BOUNDED_CONSTRAINT_UNIQUE_KIND_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER) {
+            return null;
+        }
         throw invalid("VISUAL_GROUNDING_JSON_ENUM_INVALID_REGION_KIND", null);
+    }
+
+    private static List<ClassifiedRegionOutput> normalizeUniqueGroupOwnerKinds(
+            List<ClassifiedRegionOutput> source,
+            List<ElementOutput> elements
+    ) {
+        var classified = new ArrayList<>(source);
+        var indexesById = new HashMap<String, Integer>();
+        for (var index = 0; index < classified.size(); index++) {
+            var regionId = classified.get(index).region().regionId();
+            if (indexesById.putIfAbsent(regionId, index) != null) return List.copyOf(source);
+        }
+        boolean changed;
+        do {
+            changed = false;
+            for (var element : elements) {
+                if (element.kind() != VisualElementKind.GROUP
+                        || element.multiplicity() != VisualMultiplicity.ONE
+                        || element.regionIds() == null || element.regionIds().isEmpty()) {
+                    continue;
+                }
+                var ownedIds = new LinkedHashSet<>(element.regionIds());
+                if (ownedIds.size() != element.regionIds().size()) continue;
+                var owned = new ArrayList<ClassifiedRegionOutput>();
+                var complete = true;
+                for (var regionId : ownedIds) {
+                    var index = indexesById.get(regionId);
+                    if (index == null) {
+                        complete = false;
+                        break;
+                    }
+                    owned.add(classified.get(index));
+                }
+                if (!complete || owned.stream().anyMatch(
+                        VisualGroundingJsonCodec::compatibleSingularGroupKind
+                )) {
+                    continue;
+                }
+                var candidates = owned.stream()
+                        .filter(item -> item.kind() == null)
+                        .filter(VisualGroundingJsonCodec::possibleSingularGroupKind)
+                        .toList();
+                if (candidates.size() != 1) continue;
+                var candidate = candidates.getFirst();
+                var index = indexesById.get(candidate.region().regionId());
+                classified.set(index, new ClassifiedRegionOutput(
+                        candidate.region(), candidate.evidence(),
+                        new ClassifiedRegionKind(VisualRegionKind.GROUP, true)
+                ));
+                changed = true;
+            }
+        } while (changed);
+        return List.copyOf(classified);
+    }
+
+    private static boolean compatibleSingularGroupKind(ClassifiedRegionOutput item) {
+        return item.kind() != null
+                && item.kind().kind() == VisualRegionKind.GROUP
+                && item.region().multiplicity() == VisualMultiplicity.ONE
+                && item.region().repeatGroupId() == null;
+    }
+
+    private static boolean possibleSingularGroupKind(ClassifiedRegionOutput item) {
+        return item.region().parentRegionId() != null
+                && item.region().multiplicity() == VisualMultiplicity.ONE
+                && item.region().repeatGroupId() == null;
     }
 
     private static ClassifiedRegionKind lexicalRegionKind(
@@ -1687,7 +1781,9 @@ final class VisualGroundingJsonCodec {
                 && normalizationPolicy != VisualObservationNormalizationPolicy
                 .BOUNDED_ENUM_UNIQUE_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER
                 && normalizationPolicy != VisualObservationNormalizationPolicy
-                .BOUNDED_STRUCTURAL_KIND_UNIQUE_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER) {
+                .BOUNDED_STRUCTURAL_KIND_UNIQUE_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER
+                && normalizationPolicy != VisualObservationNormalizationPolicy
+                .BOUNDED_CONSTRAINT_UNIQUE_KIND_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER) {
             return new NormalizedElementRegionOwnerships(grounding, 0);
         }
         var inventoryIds = inventory.elements().stream().map(VisualElement::elementId)
@@ -1766,7 +1862,9 @@ final class VisualGroundingJsonCodec {
                 && normalizationPolicy != VisualObservationNormalizationPolicy
                 .BOUNDED_ENUM_UNIQUE_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER
                 && normalizationPolicy != VisualObservationNormalizationPolicy
-                .BOUNDED_STRUCTURAL_KIND_UNIQUE_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER) {
+                .BOUNDED_STRUCTURAL_KIND_UNIQUE_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER
+                && normalizationPolicy != VisualObservationNormalizationPolicy
+                .BOUNDED_CONSTRAINT_UNIQUE_KIND_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER) {
             return new NormalizedElementRegionOwnerships(grounding, 0);
         }
         var inventoryIds = inventory.elements().stream().map(VisualElement::elementId)
@@ -1928,6 +2026,17 @@ final class VisualGroundingJsonCodec {
     ) { }
 
     private record ClassifiedRegionKind(VisualRegionKind kind, boolean normalized) { }
+
+    private record ClassifiedRegionOutput(
+            RegionOutput region,
+            List<CandidateEvidence> evidence,
+            ClassifiedRegionKind kind
+    ) {
+        private ClassifiedRegionOutput {
+            Objects.requireNonNull(region, "region");
+            evidence = List.copyOf(Objects.requireNonNull(evidence, "evidence"));
+        }
+    }
 
     private record NormalizedElementRegionOwnerships(
             VisualGroundingPlan grounding,
@@ -2116,5 +2225,6 @@ enum VisualObservationNormalizationPolicy {
     BOUNDED_ENUM_UNIQUE_ITEM_PARENT_AND_EVIDENCE_OWNER,
     BOUNDED_ENUM_UNIQUE_ITEM_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER,
     BOUNDED_ENUM_UNIQUE_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER,
-    BOUNDED_STRUCTURAL_KIND_UNIQUE_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER
+    BOUNDED_STRUCTURAL_KIND_UNIQUE_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER,
+    BOUNDED_CONSTRAINT_UNIQUE_KIND_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER
 }
