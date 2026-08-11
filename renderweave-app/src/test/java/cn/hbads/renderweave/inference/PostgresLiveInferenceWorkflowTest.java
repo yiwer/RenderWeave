@@ -116,6 +116,8 @@ class PostgresLiveInferenceWorkflowTest {
             "dashscope-qwen37-flash-20260715-product-v29-hybrid-generic";
     private static final String EVIDENCE_OWNER_NORMALIZED_HYBRID_VISUAL_PROFILE =
             "dashscope-qwen37-flash-20260715-product-v30-hybrid-generic";
+    private static final String REPEATED_ITEM_SLOT_OWNER_NORMALIZED_HYBRID_VISUAL_PROFILE =
+            "dashscope-qwen37-flash-20260715-product-v31-hybrid-generic";
     private static final String DOCUMENT_VISION_CAPABILITY =
             "rapidocr-3.9.2-openvino-2026.0.0-ppocrv6-small-c05805399d7d10b1";
 
@@ -1674,6 +1676,63 @@ class PostgresLiveInferenceWorkflowTest {
     }
 
     @Test
+    void pipelineFourPointEighteenNormalizesRepeatedItemSlotOwnersBeforeHierarchy() {
+        var blobs = new MemoryBlobStore();
+        var created = createGroundedVisual(
+                blobs, "repeated-item-slot-owner-normalized-station",
+                REPEATED_ITEM_SLOT_OWNER_NORMALIZED_HYBRID_VISUAL_PROFILE
+        );
+        var provider = new ScriptedProvider(
+                request -> response(request, repeatedItemSlotOwnerElements()),
+                request -> response(request, repeatedItemSlotOwnerHierarchy()),
+                request -> response(request, repeatedItemSlotOwnerBindings())
+        );
+        var preprocessCalls = new AtomicInteger();
+        var preprocessor = hybridPreprocessor(
+                preprocessCalls, "OCR_SENTINEL_V31_REPEATED_ITEM_SLOT_OWNER"
+        );
+
+        var finished = worker(provider, blobs, T0.plusSeconds(1), preprocessor)
+                .processNext("repeated-item-slot-owner-normalized-worker").orElseThrow();
+
+        assertThat(finished.state())
+                .as("failure=%s attempts=%s", finished.failureCode(), workflowStore.attempts(created))
+                .isEqualTo(InferenceRunState.REVIEW_REQUIRED);
+        assertThat(preprocessCalls).hasValue(1);
+        assertThat(provider.requests).extracting(ProviderInferenceRequest::stage)
+                .containsExactly(
+                        InferenceStage.OBSERVE,
+                        InferenceStage.HIERARCHY,
+                        InferenceStage.ELEMENT_BINDING
+                );
+        assertThat(provider.requests.get(1).taskJson())
+                .contains("\"elementId\":\"item-label\",\"regionIds\":[\"item-a\",\"item-b\"]")
+                .doesNotContain("\"elementId\":\"item-label\",\"regionIds\":[\"repeat\"]");
+        assertThat(workflowStore.attempts(created)).extracting(InferenceAttempt::status)
+                .containsExactly(
+                        InferenceAttemptStatus.SUCCEEDED,
+                        InferenceAttemptStatus.SUCCEEDED,
+                        InferenceAttemptStatus.SUCCEEDED
+                );
+        assertThat(workflowStore.attempts(created).getFirst().problemCodeCounts())
+                .containsExactlyEntriesOf(Map.of(
+                        "VISUAL_GROUNDING_REPEATED_ITEM_SLOT_OWNER_NORMALIZED", 1
+                ));
+        assertThat(workflowStore.attempts(created).get(1).problemCodeCounts())
+                .doesNotContainKey("VISUAL_GROUNDING_REPEATED_ITEM_SLOT_OWNER_NORMALIZED");
+        assertThat(finished.checkpointJson())
+                .doesNotContain("OCR_SENTINEL_V31_REPEATED_ITEM_SLOT_OWNER")
+                .doesNotContain("ocr-00-000");
+        var review = workflowStore.findCandidate(created).orElseThrow();
+        assertThat(review.currentJson())
+                .doesNotContain("OCR_SENTINEL_V31_REPEATED_ITEM_SLOT_OWNER")
+                .doesNotContain("ocr-00-000");
+        assertThat(review.validationProblemsJson())
+                .doesNotContain("OCR_SENTINEL_V31_REPEATED_ITEM_SLOT_OWNER")
+                .doesNotContain("ocr-00-000");
+    }
+
+    @Test
     void cancellationIsAcknowledgedBeforeHybridPreprocessing() {
         var blobs = new MemoryBlobStore();
         var created = createGroundedVisual(blobs, "hybrid-cancel-before-ocr", HYBRID_VISUAL_PROFILE);
@@ -2433,6 +2492,42 @@ class PostgresLiveInferenceWorkflowTest {
                 "\"regionIds\":\\[\"header\"\\]",
                 "\"regionIds\":[\"notice\"]"
         );
+    }
+
+    private static String repeatedItemSlotOwnerElements() {
+        return """
+                {"contractVersion":"renderweave-visual-grounding/2.0","regions":[
+                  {"regionId":"root","parentRegionId":null,"kind":"ROOT","multiplicity":"ONE","readingOrder":0,"repeatGroupId":null,"evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":0,"top":0,"right":10000,"bottom":10000}}]},
+                  {"regionId":"header","parentRegionId":"root","kind":"SECTION","multiplicity":"ONE","readingOrder":0,"repeatGroupId":null,"evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":0,"top":0,"right":10000,"bottom":2000}}]},
+                  {"regionId":"repeat","parentRegionId":"root","kind":"REPEATED_GROUP","multiplicity":"MANY","readingOrder":1,"repeatGroupId":"rows","evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":0,"top":2000,"right":10000,"bottom":10000}}]},
+                  {"regionId":"item-a","parentRegionId":"repeat","kind":"ITEM","multiplicity":"ONE","readingOrder":0,"repeatGroupId":"rows","evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":0,"top":2000,"right":10000,"bottom":6000}}]},
+                  {"regionId":"item-b","parentRegionId":"repeat","kind":"ITEM","multiplicity":"ONE","readingOrder":1,"repeatGroupId":"rows","evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":0,"top":6000,"right":10000,"bottom":10000}}]}
+                ],"elements":[
+                  {"elementId":"title","kind":"SLOT","proposedKey":"title","displayName":"标题","multiplicity":"ONE","valueHint":"TEXT","regionIds":["header"],"evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":100,"top":100,"right":3000,"bottom":700}}]},
+                  {"elementId":"row-group","kind":"GROUP","proposedKey":"items","displayName":"重复项目","multiplicity":"MANY","valueHint":null,"regionIds":["repeat"],"evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":0,"top":2000,"right":10000,"bottom":10000}}]},
+                  {"elementId":"item-label","kind":"SLOT","proposedKey":"label","displayName":"项目名称","multiplicity":"ONE","valueHint":"TEXT","regionIds":["repeat"],"evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":100,"top":2300,"right":3000,"bottom":2800}},{"viewId":"view-00-overview-00","boundingBox":{"left":100,"top":6300,"right":3000,"bottom":6800}}]}
+                ]}
+                """;
+    }
+
+    private static String repeatedItemSlotOwnerHierarchy() {
+        return """
+                {"contractVersion":"renderweave-visual-hierarchy/2.0","rootEntityId":"document","entities":[
+                  {"entityId":"document","schemaKey":"document","displayName":"文档","regionIds":["root"],"supportingElementIds":["title"]},
+                  {"entityId":"item","schemaKey":"item","displayName":"项目","regionIds":["item-a","item-b"],"supportingElementIds":["row-group"]}
+                ],"relationships":[
+                  {"relationshipId":"document-items","parentEntityId":"document","childEntityId":"item","fieldKey":"items","displayName":"项目","cardinality":"MANY","regionId":"repeat","supportingElementIds":["row-group"]}
+                ]}
+                """;
+    }
+
+    private static String repeatedItemSlotOwnerBindings() {
+        return """
+                {"contractVersion":"renderweave-visual-bindings/2.0","bindings":[
+                  {"elementId":"title","entityId":"document"},
+                  {"elementId":"item-label","entityId":"item"}
+                ]}
+                """;
     }
 
     private static String sourceAncestorElements() {

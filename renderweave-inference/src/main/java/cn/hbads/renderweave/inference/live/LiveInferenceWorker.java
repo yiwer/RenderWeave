@@ -94,6 +94,8 @@ public final class LiveInferenceWorker {
             "renderweave-inference-pipeline/4.16";
     private static final String ELEMENT_EVIDENCE_OWNER_NORMALIZED_HYBRID_VISUAL_PIPELINE =
             "renderweave-inference-pipeline/4.17";
+    private static final String REPEATED_ITEM_SLOT_OWNER_NORMALIZED_HYBRID_VISUAL_PIPELINE =
+            "renderweave-inference-pipeline/4.18";
     private static final int MAX_STAGE_ADVANCES = 24;
     private static final int MAX_RETRY_PROBLEM_CODES = 16;
 
@@ -976,6 +978,8 @@ public final class LiveInferenceWorker {
                 || GROUP_REGION_CARDINALITY_VERIFIED_HYBRID_VISUAL_PIPELINE.equals(
                 profile.pipelineVersion())
                 || ELEMENT_EVIDENCE_OWNER_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
+                profile.pipelineVersion())
+                || REPEATED_ITEM_SLOT_OWNER_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
                 profile.pipelineVersion());
     }
 
@@ -1000,6 +1004,8 @@ public final class LiveInferenceWorker {
                 || GROUP_REGION_CARDINALITY_VERIFIED_HYBRID_VISUAL_PIPELINE.equals(
                 profile.pipelineVersion())
                 || ELEMENT_EVIDENCE_OWNER_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
+                profile.pipelineVersion())
+                || REPEATED_ITEM_SLOT_OWNER_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
                 profile.pipelineVersion()))
                 && current.mode() == InferenceMode.IMAGE_ONLY;
     }
@@ -1024,6 +1030,8 @@ public final class LiveInferenceWorker {
                 || GROUP_REGION_CARDINALITY_VERIFIED_HYBRID_VISUAL_PIPELINE.equals(
                 profile.pipelineVersion())
                 || ELEMENT_EVIDENCE_OWNER_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
+                profile.pipelineVersion())
+                || REPEATED_ITEM_SLOT_OWNER_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
                 profile.pipelineVersion());
     }
 
@@ -1046,6 +1054,8 @@ public final class LiveInferenceWorker {
                 || GROUP_REGION_CARDINALITY_VERIFIED_HYBRID_VISUAL_PIPELINE.equals(
                 profile.pipelineVersion())
                 || ELEMENT_EVIDENCE_OWNER_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
+                profile.pipelineVersion())
+                || REPEATED_ITEM_SLOT_OWNER_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
                 profile.pipelineVersion());
     }
 
@@ -1068,6 +1078,8 @@ public final class LiveInferenceWorker {
                 || GROUP_REGION_CARDINALITY_VERIFIED_HYBRID_VISUAL_PIPELINE.equals(
                 profile.pipelineVersion())
                 || ELEMENT_EVIDENCE_OWNER_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
+                profile.pipelineVersion())
+                || REPEATED_ITEM_SLOT_OWNER_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
                 profile.pipelineVersion()))
                 ? VisualRelationshipCardinalityPolicy.SUPPORT_GROUP_DERIVED
                 : VisualRelationshipCardinalityPolicy.MODEL_ASSERTED;
@@ -1091,6 +1103,8 @@ public final class LiveInferenceWorker {
                 || GROUP_REGION_CARDINALITY_VERIFIED_HYBRID_VISUAL_PIPELINE.equals(
                 profile.pipelineVersion())
                 || ELEMENT_EVIDENCE_OWNER_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
+                profile.pipelineVersion())
+                || REPEATED_ITEM_SLOT_OWNER_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
                 profile.pipelineVersion()))
                 ? VisualHierarchyPrerequisitePolicy.RELATIONSHIP_REGION_GROUP_OWNER_REQUIRED
                 : VisualHierarchyPrerequisitePolicy.GROUP_EXISTENCE_ONLY;
@@ -1113,6 +1127,8 @@ public final class LiveInferenceWorker {
                 || GROUP_REGION_CARDINALITY_VERIFIED_HYBRID_VISUAL_PIPELINE.equals(
                 profile.pipelineVersion())
                 || ELEMENT_EVIDENCE_OWNER_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
+                profile.pipelineVersion())
+                || REPEATED_ITEM_SLOT_OWNER_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
                 profile.pipelineVersion()))
                 ? VisualHierarchyRegionDiagnosticPolicy.DETAILED_FIXED_CODES
                 : VisualHierarchyRegionDiagnosticPolicy.LEGACY_GENERIC;
@@ -1127,6 +1143,8 @@ public final class LiveInferenceWorker {
                 || GROUP_REGION_CARDINALITY_VERIFIED_HYBRID_VISUAL_PIPELINE.equals(
                 profile.pipelineVersion())
                 || ELEMENT_EVIDENCE_OWNER_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
+                profile.pipelineVersion())
+                || REPEATED_ITEM_SLOT_OWNER_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
                 profile.pipelineVersion())) {
             return VisualRelationshipSupportIdPolicy
                     .CANONICALIZE_EXACT_DUPLICATES_AND_UNIQUE_ENCLOSING_OR_SOURCE_ANCESTOR_CONNECTED_GROUP_OWNER;
@@ -1163,6 +1181,8 @@ public final class LiveInferenceWorker {
                 || GROUP_REGION_CARDINALITY_VERIFIED_HYBRID_VISUAL_PIPELINE.equals(
                 profile.pipelineVersion())
                 || ELEMENT_EVIDENCE_OWNER_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
+                profile.pipelineVersion())
+                || REPEATED_ITEM_SLOT_OWNER_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
                 profile.pipelineVersion())) {
             return VisualRelationshipRegionPolicy
                     .UNIQUE_CARDINALITY_AND_CONNECTION_COMPATIBLE_GROUP_REGION;
@@ -1216,6 +1236,11 @@ public final class LiveInferenceWorker {
     private static VisualObservationNormalizationPolicy observationNormalizationPolicy(
             InferenceProfile profile
     ) {
+        if (REPEATED_ITEM_SLOT_OWNER_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
+                profile.pipelineVersion())) {
+            return VisualObservationNormalizationPolicy
+                    .BOUNDED_ENUM_UNIQUE_ITEM_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER;
+        }
         if (ELEMENT_EVIDENCE_OWNER_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
                 profile.pipelineVersion())) {
             return VisualObservationNormalizationPolicy
@@ -1238,6 +1263,8 @@ public final class LiveInferenceWorker {
         if (GROUP_REGION_CARDINALITY_VERIFIED_HYBRID_VISUAL_PIPELINE.equals(
                 profile.pipelineVersion())
                 || ELEMENT_EVIDENCE_OWNER_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
+                profile.pipelineVersion())
+                || REPEATED_ITEM_SLOT_OWNER_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
                 profile.pipelineVersion())) {
             return VisualObservationSemanticPolicy
                     .SLOT_LEAF_EVIDENCE_AND_GROUP_REGION_CARDINALITY_REQUIRED;
@@ -1257,6 +1284,8 @@ public final class LiveInferenceWorker {
                 || GROUP_REGION_CARDINALITY_VERIFIED_HYBRID_VISUAL_PIPELINE.equals(
                 profile.pipelineVersion())
                 || ELEMENT_EVIDENCE_OWNER_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
+                profile.pipelineVersion())
+                || REPEATED_ITEM_SLOT_OWNER_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
                 profile.pipelineVersion()))
                 ? VisualHierarchySemanticPolicy.MINIMAL_ENTITY_REGION_OWNERSHIP
                 : VisualHierarchySemanticPolicy.LEGACY;
@@ -1269,6 +1298,8 @@ public final class LiveInferenceWorker {
                 || GROUP_REGION_CARDINALITY_VERIFIED_HYBRID_VISUAL_PIPELINE.equals(
                 profile.pipelineVersion())
                 || ELEMENT_EVIDENCE_OWNER_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
+                profile.pipelineVersion())
+                || REPEATED_ITEM_SLOT_OWNER_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
                 profile.pipelineVersion()))
                 ? VisualBindingSemanticPolicy.UNIQUE_MINIMAL_ENTITY_OWNER
                 : VisualBindingSemanticPolicy.NEAREST_ENTITY;
@@ -1300,6 +1331,12 @@ public final class LiveInferenceWorker {
                     grounded.normalizedElementRegionOwners()
             );
         }
+        if (grounded.normalizedRepeatedItemSlotOwners() > 0) {
+            telemetry.put(
+                    "VISUAL_GROUNDING_REPEATED_ITEM_SLOT_OWNER_NORMALIZED",
+                    grounded.normalizedRepeatedItemSlotOwners()
+            );
+        }
         return Map.copyOf(telemetry);
     }
 
@@ -1314,6 +1351,8 @@ public final class LiveInferenceWorker {
                 || GROUP_REGION_CARDINALITY_VERIFIED_HYBRID_VISUAL_PIPELINE.equals(
                 profile.pipelineVersion())
                 || ELEMENT_EVIDENCE_OWNER_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
+                profile.pipelineVersion())
+                || REPEATED_ITEM_SLOT_OWNER_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
                 profile.pipelineVersion());
     }
 
