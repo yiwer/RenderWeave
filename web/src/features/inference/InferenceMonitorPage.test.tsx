@@ -139,6 +139,10 @@ describe('Inference monitor workspace', () => {
       .toBeGreaterThan(0);
     expect(screen.getAllByText('已按关系区域唯一且连通的 GROUP 归属补全层级关系支撑').length)
       .toBeGreaterThan(0);
+    expect(screen.getAllByText('VISUAL_HIERARCHY_RELATIONSHIP_EMPTY_SOURCE_ANCESTOR_SUPPORT_OWNER_NORMALIZED').length)
+      .toBeGreaterThan(0);
+    expect(screen.getAllByText('已按关系子区域唯一且连通的祖先 GROUP 归属补全层级关系支撑').length)
+      .toBeGreaterThan(0);
     expect(screen.getAllByText('VISUAL_HIERARCHY_RELATIONSHIP_UNKNOWN_SUPPORT_OWNER_NORMALIZED').length)
       .toBeGreaterThan(0);
     expect(screen.getAllByText('已将未知层级关系支撑引用归一化为关系区域唯一且连通的 GROUP 归属').length)
@@ -363,6 +367,7 @@ function visualExecutionLog(runSnapshot: InferenceRunResponse): InferenceExecuti
           VISUAL_HIERARCHY_RELATIONSHIP_ENCLOSING_SUPPORT_OWNER_NORMALIZED: 1,
           VISUAL_HIERARCHY_RELATIONSHIP_SOURCE_ANCESTOR_SUPPORT_OWNER_NORMALIZED: 1,
           VISUAL_HIERARCHY_RELATIONSHIP_EMPTY_SUPPORT_OWNER_NORMALIZED: 1,
+          VISUAL_HIERARCHY_RELATIONSHIP_EMPTY_SOURCE_ANCESTOR_SUPPORT_OWNER_NORMALIZED: 1,
           VISUAL_HIERARCHY_RELATIONSHIP_UNKNOWN_SUPPORT_OWNER_NORMALIZED: 1,
         },
         completedAt: '2026-08-10T04:03:14Z',
