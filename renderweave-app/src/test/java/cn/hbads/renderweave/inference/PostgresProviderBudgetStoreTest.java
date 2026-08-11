@@ -11,6 +11,7 @@ import cn.hbads.renderweave.inference.provider.ProviderBudgetStore;
 import cn.hbads.renderweave.inference.run.InferenceRunStore;
 import cn.hbads.renderweave.inference.run.NewInferenceRun;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -129,7 +130,7 @@ class PostgresProviderBudgetStoreTest {
                         """).param("runId", runId).query(Long.class).single()).isEqualTo(2);
     }
 
-    @Test
+    @RepeatedTest(10)
     void concurrentReservationsCannotExceedTheGlobalAttemptLimit() throws Exception {
         jdbcClient.sql("""
                         update inference_provider_budget set maximum_attempts = 1

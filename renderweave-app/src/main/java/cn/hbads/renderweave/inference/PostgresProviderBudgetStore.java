@@ -28,6 +28,18 @@ public class PostgresProviderBudgetStore implements ProviderBudgetStore {
             UUID runId,
             int attemptOrdinal,
             long maximumCostMicrosCny,
+            Instant now
+    ) {
+        return reserve(budgetKey, runId, attemptOrdinal, maximumCostMicrosCny, null, now);
+    }
+
+    @Override
+    @Transactional
+    public ProviderBudgetReservation reserve(
+            String budgetKey,
+            UUID runId,
+            int attemptOrdinal,
+            long maximumCostMicrosCny,
             Long runCostLimitMicrosCny,
             Instant now
     ) {
