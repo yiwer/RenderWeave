@@ -1,14 +1,14 @@
 {
   "authorizationVersion": "renderweave-visual-evaluation-authorization/1.0",
-  "authorizationId": "visual-n7-unknown-support-owner-v33-qwen37-flash-transit-20260811",
-  "status": "CLOSED",
+  "authorizationId": "visual-n7-unique-region-parent-v34-qwen37-flash-transit-20260811",
+  "status": "PROPOSED",
   "phase": "CANARY",
   "inputClassification": "REPOSITORY_SYNTHETIC_ONLY",
   "corpusVersion": "renderweave-visual-stage-corpus/1.0",
   "corpusSourceSha256": "bf0db7bf0ac5c4e2b357cdd96c49ff70a7b30a5bc59f322a915020dc29fc605e",
-  "evaluationIdentity": "renderweave-visual-evaluation-tree-sha256/2:84e6c3f7d70825a29d9e4bdfe8070d16323b0eb9e830619359aa2294c3ff97e7",
-  "profileId": "dashscope-qwen37-flash-20260715-product-v33-hybrid-generic",
-  "profileSnapshotSha256": "6d55bc7e2d20f158bd57c878ddabcb7de47978fb28263b73a730f82295939901",
+  "evaluationIdentity": "renderweave-visual-evaluation-tree-sha256/2:dbeeb7cf9f928508b7b9f0f6148fdcf9451c69876cb7f0715397fa4fbd3d1f50",
+  "profileId": "dashscope-qwen37-flash-20260715-product-v34-hybrid-generic",
+  "profileSnapshotSha256": "9a678ea6eecb9754e01bc8279c65c0d20cdf293a899f27a97878d0c683717d21",
   "model": "qwen3.7-flash-2026-07-15",
   "caseIds": [
     "transit-board-v3"
@@ -20,5 +20,5 @@
   "approvedBy": "yiwer",
   "approvedAt": "2026-08-11T09:51:55Z",
   "expiresAt": "2026-08-12T09:51:55Z",
-  "approvalScope": "Goal J1 CANARY approved by yiwer for the qwen3.7-flash-2026-07-15 stable slot with a cumulative CNY 10 cap and a fixed 24-hour window; only repository-synthetic transit-board-v3 may run through immutable product-v33 pipeline 4.20 with the frozen RapidOCR/OpenVINO capability; the bounded unknown relationship-support repair may only select one existing, uniquely connected and multiplicity-compatible GROUP owner and otherwise remains fail-closed; no raw OCR or model text, image, complete prompt, Candidate, gold or chain-of-thought may enter evidence; this ledger permits one case, at most 5 Provider attempts, 60000 exposed tokens and CNY 0.25, while Goal totals remain capped at 180 attempts and 1500000 exposed tokens; exact-clean full 20260811-180152 and Document Vision 20260811-181058 passed; require PROPOSED negative probe, fresh identity/Profile/Goal/time/process/lease preflight, one serial wrapper, no rerun after timeout, immediate CLOSED before evidence inspection, and no Max unless the same-version live stage and quality gates hold"
+  "approvalScope": "Goal J1 CANARY approved by yiwer for the qwen3.7-flash-2026-07-15 stable slot with a cumulative CNY 10 cap and a fixed 24-hour window; only repository-synthetic transit-board-v3 may run through immutable product-v34 pipeline 4.21 with the frozen RapidOCR/OpenVINO capability; the bounded unique-existing-parent repair may only replace an existing non-ROOT region parent with the unique most-specific strictly containing compatible existing container, then revalidate the complete forest, while equal boxes, zero or multiple candidates, cycles and any invalid result remain fail-closed; inherited evidence-owner and repeated-item SLOT-owner repairs remain bounded and independently tested; no raw OCR or model text, image, complete prompt, Candidate, gold or chain-of-thought may enter evidence; this ledger permits one case, at most 5 Provider attempts, 60000 exposed tokens and CNY 0.25, while Goal totals remain capped at 180 attempts and 1500000 exposed tokens; exact-clean full 20260811-191800 and Document Vision 20260811-192239 passed; require PROPOSED negative probe, fresh identity/Profile/Goal/time/process/lease preflight, one serial wrapper, no rerun after timeout, immediate CLOSED before evidence inspection, and no Plus or Max unless the same-version live result creates direct diagnostic value and their independent gates hold"
 }
