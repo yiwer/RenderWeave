@@ -103,6 +103,18 @@ describe('Candidate atomic apply workspace', () => {
       .toBeGreaterThan(0);
     expect(screen.getAllByText('已按关系源区域唯一且连通的祖先 GROUP 证据归一化层级关系支撑').length)
       .toBeGreaterThan(0);
+    expect(screen.getAllByText('VISUAL_SEMANTIC_HIERARCHY_ENTITY_REGION_REDUNDANT').length)
+      .toBeGreaterThan(0);
+    expect(screen.getAllByText('同一实体不能同时拥有祖先区域和后代区域').length)
+      .toBeGreaterThan(0);
+    expect(screen.getAllByText('VISUAL_SEMANTIC_HIERARCHY_NON_ROOT_OWNS_ROOT_REGION').length)
+      .toBeGreaterThan(0);
+    expect(screen.getAllByText('非根实体不能拥有图片根区域').length)
+      .toBeGreaterThan(0);
+    expect(screen.getAllByText('VISUAL_SEMANTIC_HIERARCHY_BINDING_OWNER_AMBIGUOUS').length)
+      .toBeGreaterThan(0);
+    expect(screen.getAllByText('字段存在多个同等最小的空间实体 owner').length)
+      .toBeGreaterThan(0);
     expect(screen.getByText('阶段内定向修复已完成')).toBeTruthy();
     expect(screen.getByLabelText('Candidate 编辑工作区')).toBeTruthy();
     expect(screen.queryByText('raw-ocr-secret')).toBeNull();
@@ -272,6 +284,9 @@ function visualReviewLog(run: InferenceRunResponse): InferenceExecutionLogRespon
         problemCodeCounts: {
           VISUAL_HIERARCHY_RELATIONSHIP_ENCLOSING_SUPPORT_OWNER_NORMALIZED: 1,
           VISUAL_HIERARCHY_RELATIONSHIP_SOURCE_ANCESTOR_SUPPORT_OWNER_NORMALIZED: 1,
+          VISUAL_SEMANTIC_HIERARCHY_ENTITY_REGION_REDUNDANT: 1,
+          VISUAL_SEMANTIC_HIERARCHY_NON_ROOT_OWNS_ROOT_REGION: 1,
+          VISUAL_SEMANTIC_HIERARCHY_BINDING_OWNER_AMBIGUOUS: 1,
         },
         completedAt: '2026-08-10T04:03:05Z',
       },

@@ -119,6 +119,19 @@ describe('Inference monitor workspace', () => {
       .toBeGreaterThan(0);
     expect(screen.getAllByText('已按关系源区域唯一且连通的祖先 GROUP 证据归一化层级关系支撑').length)
       .toBeGreaterThan(0);
+    expect(screen.getAllByText('VISUAL_SEMANTIC_HIERARCHY_ENTITY_REGION_REDUNDANT').length)
+      .toBeGreaterThan(0);
+    expect(screen.getAllByText('同一实体不能同时拥有祖先区域和后代区域').length)
+      .toBeGreaterThan(0);
+    expect(screen.getAllByText('VISUAL_SEMANTIC_HIERARCHY_NON_ROOT_OWNS_ROOT_REGION').length)
+      .toBeGreaterThan(0);
+    expect(screen.getAllByText('非根实体不能拥有图片根区域').length)
+      .toBeGreaterThan(0);
+    expect(screen.getAllByText('VISUAL_SEMANTIC_HIERARCHY_BINDING_OWNER_AMBIGUOUS').length)
+      .toBeGreaterThan(0);
+    expect(screen.getAllByText('字段存在多个同等最小的空间实体 owner').length)
+      .toBeGreaterThan(0);
+    expect(screen.getAllByText('最早返回 构建层级关系 修复').length).toBeGreaterThan(0);
     expect(screen.getByText('已从持久检查点恢复')).toBeTruthy();
     expect(screen.getByText(/0\.007346/)).toBeTruthy();
     expect(screen.queryByText('raw-ocr-secret')).toBeNull();
@@ -298,7 +311,12 @@ function visualExecutionLog(runSnapshot: InferenceRunResponse): InferenceExecuti
         outputTokens: 0,
         costMicrosCny: 0,
         durationMillis: 12,
-        problemCodeCounts: { VISUAL_HIERARCHY_V2_RELATIONSHIP_SUPPORT_IDS_EMPTY: 1 },
+        problemCodeCounts: {
+          VISUAL_HIERARCHY_V2_RELATIONSHIP_SUPPORT_IDS_EMPTY: 1,
+          VISUAL_SEMANTIC_HIERARCHY_ENTITY_REGION_REDUNDANT: 1,
+          VISUAL_SEMANTIC_HIERARCHY_NON_ROOT_OWNS_ROOT_REGION: 1,
+          VISUAL_SEMANTIC_HIERARCHY_BINDING_OWNER_AMBIGUOUS: 1,
+        },
         completedAt: '2026-08-10T04:03:12Z',
       },
       {
