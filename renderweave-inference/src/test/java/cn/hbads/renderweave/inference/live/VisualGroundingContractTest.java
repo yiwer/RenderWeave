@@ -576,6 +576,78 @@ class VisualGroundingContractTest {
     }
 
     @Test
+    void boundedReadingOrderNormalizationOnlyCompactsExistingCanonicalSiblingOrder()
+            throws Exception {
+        var gapped = elementsJson()
+                .replace(
+                        "\"regionId\":\"header\",\"parentRegionId\":\"root\",\"kind\":\"SECTION\",\"multiplicity\":\"ONE\",\"readingOrder\":0",
+                        "\"regionId\":\"header\",\"parentRegionId\":\"root\",\"kind\":\"SECTION\",\"multiplicity\":\"ONE\",\"readingOrder\":2"
+                )
+                .replace(
+                        "\"regionId\":\"repeat\",\"parentRegionId\":\"root\",\"kind\":\"REPEATED_GROUP\",\"multiplicity\":\"MANY\",\"readingOrder\":1",
+                        "\"regionId\":\"repeat\",\"parentRegionId\":\"root\",\"kind\":\"REPEATED_GROUP\",\"multiplicity\":\"MANY\",\"readingOrder\":7"
+                );
+        assertEquals("VISUAL_GROUNDING_READING_ORDER_GAP", assertThrows(
+                InvalidVisualAnalysisException.class, () -> codec.parseElements(
+                        gapped, views(), List.of(IMAGE_ID),
+                        VisualObservationNormalizationPolicy
+                                .BOUNDED_CONSTRAINT_UNIQUE_KIND_ANCESTOR_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER
+                )
+        ).diagnosticCode());
+
+        var normalized = codec.parseElements(
+                gapped, views(), List.of(IMAGE_ID),
+                VisualObservationNormalizationPolicy
+                        .BOUNDED_CONSTRAINT_UNIQUE_KIND_ANCESTOR_PARENT_GAPPED_READING_ORDER_EVIDENCE_AND_ITEM_SLOT_OWNER
+        );
+        assertEquals(0, normalized.grounding().requireRegion("header").readingOrder());
+        assertEquals(1, normalized.grounding().requireRegion("repeat").readingOrder());
+        assertEquals(2, normalized.normalizedReadingOrders());
+
+        var reversed = gapped.replace("\"readingOrder\":2", "\"readingOrder\":8");
+        assertEquals("VISUAL_GROUNDING_READING_ORDER_GAP", assertThrows(
+                InvalidVisualAnalysisException.class, () -> codec.parseElements(
+                        reversed, views(), List.of(IMAGE_ID),
+                        VisualObservationNormalizationPolicy
+                                .BOUNDED_CONSTRAINT_UNIQUE_KIND_ANCESTOR_PARENT_GAPPED_READING_ORDER_EVIDENCE_AND_ITEM_SLOT_OWNER
+                )
+        ).diagnosticCode());
+
+        var duplicate = gapped.replace("\"readingOrder\":2", "\"readingOrder\":7");
+        assertEquals("VISUAL_GROUNDING_READING_ORDER_GAP", assertThrows(
+                InvalidVisualAnalysisException.class, () -> codec.parseElements(
+                        duplicate, views(), List.of(IMAGE_ID),
+                        VisualObservationNormalizationPolicy
+                                .BOUNDED_CONSTRAINT_UNIQUE_KIND_ANCESTOR_PARENT_GAPPED_READING_ORDER_EVIDENCE_AND_ITEM_SLOT_OWNER
+                )
+        ).diagnosticCode());
+
+        var rootGap = elementsJson().replace(
+                "\"regionId\":\"root\",\"parentRegionId\":null,\"kind\":\"ROOT\",\"multiplicity\":\"ONE\",\"readingOrder\":0",
+                "\"regionId\":\"root\",\"parentRegionId\":null,\"kind\":\"ROOT\",\"multiplicity\":\"ONE\",\"readingOrder\":1"
+        );
+        assertEquals("VISUAL_GROUNDING_READING_ORDER_GAP", assertThrows(
+                InvalidVisualAnalysisException.class, () -> codec.parseElements(
+                        rootGap, views(), List.of(IMAGE_ID),
+                        VisualObservationNormalizationPolicy
+                                .BOUNDED_CONSTRAINT_UNIQUE_KIND_ANCESTOR_PARENT_GAPPED_READING_ORDER_EVIDENCE_AND_ITEM_SLOT_OWNER
+                )
+        ).diagnosticCode());
+
+        var invalidParent = gapped.replace(
+                "\"regionId\":\"header\",\"parentRegionId\":\"root\"",
+                "\"regionId\":\"header\",\"parentRegionId\":\"missing\""
+        );
+        assertEquals("VISUAL_GROUNDING_PARENT_INVALID", assertThrows(
+                InvalidVisualAnalysisException.class, () -> codec.parseElements(
+                        invalidParent, views(), List.of(IMAGE_ID),
+                        VisualObservationNormalizationPolicy
+                                .BOUNDED_CONSTRAINT_UNIQUE_KIND_ANCESTOR_PARENT_GAPPED_READING_ORDER_EVIDENCE_AND_ITEM_SLOT_OWNER
+                )
+        ).diagnosticCode());
+    }
+
+    @Test
     void boundedRegionParentNormalizationRejectsEqualMinimalOrRootCandidates()
             throws Exception {
         var ambiguous = elementsJson().replace(

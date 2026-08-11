@@ -28,6 +28,7 @@ import java.util.Set;
 final class VisualGroundingJsonCodec {
     private static final int MAX_BYTES = 256 * 1024;
     private static final int MAX_NORMALIZED_REGION_PARENTS = 8;
+    private static final int MAX_NORMALIZED_READING_ORDERS = 8;
     private static final VisualSemanticVerifier SEMANTIC_VERIFIER = new VisualSemanticVerifier();
     private static final ObjectMapper JSON = JsonMapper.builder(
                     JsonFactory.builder().enable(StreamReadFeature.STRICT_DUPLICATE_DETECTION).build())
@@ -1401,19 +1402,12 @@ final class VisualGroundingJsonCodec {
             );
         }
         var itemParents = normalizeUniqueItemParents(regions, normalizedRegionKinds);
-        return normalizationPolicy == VisualObservationNormalizationPolicy
-                .BOUNDED_ENUM_UNIQUE_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER
-                || normalizationPolicy == VisualObservationNormalizationPolicy
-                .BOUNDED_STRUCTURAL_KIND_UNIQUE_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER
-                || normalizationPolicy == VisualObservationNormalizationPolicy
-                .BOUNDED_CONSTRAINT_UNIQUE_KIND_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER
-                || normalizationPolicy == VisualObservationNormalizationPolicy
-                .BOUNDED_CONSTRAINT_UNIQUE_KIND_ANCESTOR_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER
+        var parentNormalized = uniqueCompatibleParentPolicy(normalizationPolicy)
                 ? normalizeUniqueCompatibleParents(
-                        itemParents,
-                        normalizationPolicy == VisualObservationNormalizationPolicy
-                                .BOUNDED_CONSTRAINT_UNIQUE_KIND_ANCESTOR_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER
+                        itemParents, ancestorParentPolicy(normalizationPolicy)
                 ) : itemParents;
+        return gappedReadingOrderPolicy(normalizationPolicy)
+                ? normalizeUniqueGappedReadingOrders(parentNormalized) : parentNormalized;
     }
 
     private static boolean structuralKindPolicy(
@@ -1430,7 +1424,33 @@ final class VisualGroundingJsonCodec {
         return normalizationPolicy == VisualObservationNormalizationPolicy
                 .BOUNDED_CONSTRAINT_UNIQUE_KIND_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER
                 || normalizationPolicy == VisualObservationNormalizationPolicy
-                .BOUNDED_CONSTRAINT_UNIQUE_KIND_ANCESTOR_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER;
+                .BOUNDED_CONSTRAINT_UNIQUE_KIND_ANCESTOR_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER
+                || gappedReadingOrderPolicy(normalizationPolicy);
+    }
+
+    private static boolean uniqueCompatibleParentPolicy(
+            VisualObservationNormalizationPolicy normalizationPolicy
+    ) {
+        return normalizationPolicy == VisualObservationNormalizationPolicy
+                .BOUNDED_ENUM_UNIQUE_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER
+                || normalizationPolicy == VisualObservationNormalizationPolicy
+                .BOUNDED_STRUCTURAL_KIND_UNIQUE_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER
+                || constraintUniqueKindPolicy(normalizationPolicy);
+    }
+
+    private static boolean ancestorParentPolicy(
+            VisualObservationNormalizationPolicy normalizationPolicy
+    ) {
+        return normalizationPolicy == VisualObservationNormalizationPolicy
+                .BOUNDED_CONSTRAINT_UNIQUE_KIND_ANCESTOR_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER
+                || gappedReadingOrderPolicy(normalizationPolicy);
+    }
+
+    private static boolean gappedReadingOrderPolicy(
+            VisualObservationNormalizationPolicy normalizationPolicy
+    ) {
+        return normalizationPolicy == VisualObservationNormalizationPolicy
+                .BOUNDED_CONSTRAINT_UNIQUE_KIND_ANCESTOR_PARENT_GAPPED_READING_ORDER_EVIDENCE_AND_ITEM_SLOT_OWNER;
     }
 
     private static ClassifiedRegionKind structurallyClassifiedRegionKind(
@@ -1705,6 +1725,68 @@ final class VisualGroundingJsonCodec {
         }
     }
 
+    private static ClassifiedObservationRegions normalizeUniqueGappedReadingOrders(
+            ClassifiedObservationRegions source
+    ) {
+        var regions = new ArrayList<>(source.regions());
+        var parentIds = new LinkedHashSet<String>();
+        regions.stream().map(VisualRegion::parentRegionId).filter(Objects::nonNull)
+                .forEach(parentIds::add);
+        var normalizedReadingOrders = 0;
+        for (var parentId : parentIds) {
+            var siblings = new ArrayList<Integer>();
+            for (var index = 0; index < regions.size(); index++) {
+                if (parentId.equals(regions.get(index).parentRegionId())) siblings.add(index);
+            }
+            if (siblings.isEmpty()) continue;
+            var distinctOrders = siblings.stream().map(index -> regions.get(index).readingOrder())
+                    .collect(java.util.stream.Collectors.toSet());
+            if (distinctOrders.size() != siblings.size()) continue;
+            var byOrder = siblings.stream().sorted(Comparator.comparingInt(
+                    index -> regions.get(index).readingOrder()
+            )).toList();
+            var byPosition = siblings.stream().sorted(Comparator
+                    .comparingInt((Integer index) -> regions.get(index).evidence().getFirst()
+                            .boundingBox().top())
+                    .thenComparingInt(index -> regions.get(index).evidence().getFirst()
+                            .boundingBox().left())
+                    .thenComparing(index -> regions.get(index).regionId())).toList();
+            if (!byOrder.equals(byPosition)) continue;
+            var contiguous = true;
+            for (var order = 0; order < byOrder.size(); order++) {
+                if (regions.get(byOrder.get(order)).readingOrder() != order) {
+                    contiguous = false;
+                    break;
+                }
+            }
+            if (contiguous) continue;
+            var changed = 0;
+            for (var order = 0; order < byOrder.size(); order++) {
+                if (regions.get(byOrder.get(order)).readingOrder() != order) changed++;
+            }
+            if (normalizedReadingOrders + changed > MAX_NORMALIZED_READING_ORDERS) return source;
+            for (var order = 0; order < byOrder.size(); order++) {
+                var index = byOrder.get(order);
+                var region = regions.get(index);
+                if (region.readingOrder() != order) {
+                    regions.set(index, copyRegion(region, region.parentRegionId(), order));
+                }
+            }
+            normalizedReadingOrders += changed;
+        }
+        if (normalizedReadingOrders == 0) return source;
+        try {
+            new VisualGroundingPlan(VisualGroundingPlan.VERSION, regions, List.of());
+        } catch (IllegalArgumentException ignored) {
+            return source;
+        }
+        return new ClassifiedObservationRegions(
+                List.copyOf(regions), source.normalizedRegionKinds(),
+                source.normalizedItemParents(), source.normalizedRegionParents(),
+                source.normalizedReadingOrders() + normalizedReadingOrders
+        );
+    }
+
     private static boolean invalidParentLink(
             VisualRegion region,
             HashMap<String, VisualRegion> byId
@@ -1835,7 +1917,8 @@ final class VisualGroundingJsonCodec {
                 && normalizationPolicy != VisualObservationNormalizationPolicy
                 .BOUNDED_CONSTRAINT_UNIQUE_KIND_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER
                 && normalizationPolicy != VisualObservationNormalizationPolicy
-                .BOUNDED_CONSTRAINT_UNIQUE_KIND_ANCESTOR_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER) {
+                .BOUNDED_CONSTRAINT_UNIQUE_KIND_ANCESTOR_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER
+                && !gappedReadingOrderPolicy(normalizationPolicy)) {
             return new NormalizedElementRegionOwnerships(grounding, 0);
         }
         var inventoryIds = inventory.elements().stream().map(VisualElement::elementId)
@@ -1918,7 +2001,8 @@ final class VisualGroundingJsonCodec {
                 && normalizationPolicy != VisualObservationNormalizationPolicy
                 .BOUNDED_CONSTRAINT_UNIQUE_KIND_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER
                 && normalizationPolicy != VisualObservationNormalizationPolicy
-                .BOUNDED_CONSTRAINT_UNIQUE_KIND_ANCESTOR_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER) {
+                .BOUNDED_CONSTRAINT_UNIQUE_KIND_ANCESTOR_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER
+                && !gappedReadingOrderPolicy(normalizationPolicy)) {
             return new NormalizedElementRegionOwnerships(grounding, 0);
         }
         var inventoryIds = inventory.elements().stream().map(VisualElement::elementId)
@@ -2281,5 +2365,6 @@ enum VisualObservationNormalizationPolicy {
     BOUNDED_ENUM_UNIQUE_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER,
     BOUNDED_STRUCTURAL_KIND_UNIQUE_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER,
     BOUNDED_CONSTRAINT_UNIQUE_KIND_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER,
-    BOUNDED_CONSTRAINT_UNIQUE_KIND_ANCESTOR_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER
+    BOUNDED_CONSTRAINT_UNIQUE_KIND_ANCESTOR_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER,
+    BOUNDED_CONSTRAINT_UNIQUE_KIND_ANCESTOR_PARENT_GAPPED_READING_ORDER_EVIDENCE_AND_ITEM_SLOT_OWNER
 }
