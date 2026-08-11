@@ -1,5 +1,6 @@
 package cn.hbads.renderweave.inference.live;
 
+import cn.hbads.renderweave.inference.candidate.CandidateEvidence;
 import cn.hbads.renderweave.inference.run.InferenceStage;
 
 import java.util.ArrayList;
@@ -16,8 +17,19 @@ final class VisualSemanticVerifier {
             VisualElementInventory inventory,
             VisualGroundingPlan grounding
     ) {
+        return verifyObservation(
+                inventory, grounding, VisualObservationSemanticPolicy.LEGACY
+        );
+    }
+
+    List<VisualSemanticIssue> verifyObservation(
+            VisualElementInventory inventory,
+            VisualGroundingPlan grounding,
+            VisualObservationSemanticPolicy semanticPolicy
+    ) {
         Objects.requireNonNull(inventory, "inventory");
         Objects.requireNonNull(grounding, "grounding");
+        Objects.requireNonNull(semanticPolicy, "semanticPolicy");
         var issues = new ArrayList<VisualSemanticIssue>();
         var groups = inventory.elements().stream()
                 .filter(element -> element.kind() == VisualElementKind.GROUP)
@@ -54,8 +66,31 @@ final class VisualSemanticVerifier {
                             || region.kind() == VisualRegionKind.REPEATED_GROUP);
             if (!ownsContainer) issues.add(VisualSemanticIssue.OBSERVE_GROUP_REGION_INVALID);
         }
+        issues.addAll(verifyElementEvidenceTopology(inventory, semanticPolicy));
         return issues.stream().distinct()
                 .sorted(Comparator.comparing(VisualSemanticIssue::code)).toList();
+    }
+
+    List<VisualSemanticIssue> verifyElementEvidenceTopology(
+            VisualElementInventory inventory,
+            VisualObservationSemanticPolicy semanticPolicy
+    ) {
+        Objects.requireNonNull(inventory, "inventory");
+        Objects.requireNonNull(semanticPolicy, "semanticPolicy");
+        if (semanticPolicy == VisualObservationSemanticPolicy.LEGACY) return List.of();
+        for (var slot : inventory.elements()) {
+            if (slot.kind() != VisualElementKind.SLOT) continue;
+            for (var outer : slot.evidence()) {
+                var containsAnotherElement = inventory.elements().stream()
+                        .filter(other -> !other.elementId().equals(slot.elementId()))
+                        .flatMap(other -> other.evidence().stream())
+                        .anyMatch(inner -> strictlyContains(outer, inner));
+                if (containsAnotherElement) {
+                    return List.of(VisualSemanticIssue.OBSERVE_SLOT_EVIDENCE_CONTAINS_ELEMENT);
+                }
+            }
+        }
+        return List.of();
     }
 
     List<VisualSemanticIssue> verifyHierarchy(
@@ -199,10 +234,26 @@ final class VisualSemanticVerifier {
         return contained && strict;
     }
 
+    private static boolean strictlyContains(CandidateEvidence outer, CandidateEvidence inner) {
+        if (!outer.artifactId().equals(inner.artifactId())) return false;
+        var container = outer.boundingBox();
+        var contained = inner.boundingBox();
+        return !container.equals(contained)
+                && container.left() <= contained.left()
+                && container.top() <= contained.top()
+                && container.right() >= contained.right()
+                && container.bottom() >= contained.bottom();
+    }
+
     private static List<VisualSemanticIssue> canonical(List<VisualSemanticIssue> issues) {
         return issues.stream().distinct()
                 .sorted(Comparator.comparing(VisualSemanticIssue::code)).toList();
     }
+}
+
+enum VisualObservationSemanticPolicy {
+    LEGACY,
+    SLOT_LEAF_EVIDENCE_REQUIRED
 }
 
 enum VisualSemanticIssue {
@@ -217,6 +268,9 @@ enum VisualSemanticIssue {
     ),
     OBSERVE_GROUP_REGION_INVALID(
             "VISUAL_SEMANTIC_GROUP_REGION_INVALID", InferenceStage.OBSERVE
+    ),
+    OBSERVE_SLOT_EVIDENCE_CONTAINS_ELEMENT(
+            "VISUAL_SEMANTIC_SLOT_EVIDENCE_CONTAINS_ELEMENT", InferenceStage.OBSERVE
     ),
     OBSERVE_RELATIONSHIP_GROUP_MISSING(
             "VISUAL_SEMANTIC_OBSERVE_RELATIONSHIP_GROUP_MISSING", InferenceStage.OBSERVE

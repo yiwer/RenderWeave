@@ -47,7 +47,8 @@ final class VisualGroundingJsonCodec {
             List<String> sourceArtifactIds
     ) {
         return parseElements(
-                value, views, sourceArtifactIds, VisualObservationNormalizationPolicy.STRICT
+                value, views, sourceArtifactIds, VisualObservationNormalizationPolicy.STRICT,
+                VisualObservationSemanticPolicy.LEGACY
         );
     }
 
@@ -57,8 +58,22 @@ final class VisualGroundingJsonCodec {
             List<String> sourceArtifactIds,
             VisualObservationNormalizationPolicy normalizationPolicy
     ) {
+        return parseElements(
+                value, views, sourceArtifactIds, normalizationPolicy,
+                VisualObservationSemanticPolicy.LEGACY
+        );
+    }
+
+    GroundedElementInventory parseElements(
+            String value,
+            VisualViewPlan views,
+            List<String> sourceArtifactIds,
+            VisualObservationNormalizationPolicy normalizationPolicy,
+            VisualObservationSemanticPolicy semanticPolicy
+    ) {
         try {
             Objects.requireNonNull(normalizationPolicy, "normalizationPolicy");
+            Objects.requireNonNull(semanticPolicy, "semanticPolicy");
             var response = decode(value, GroundingOutput.class, "VISUAL_GROUNDING");
             if (!VisualGroundingPlan.VERSION.equals(response.contractVersion())) {
                 throw invalid("VISUAL_GROUNDING_VERSION_INVALID", null);
@@ -89,7 +104,9 @@ final class VisualGroundingJsonCodec {
                 grounding.requireKnownArtifacts(sourceArtifactIds);
             });
             classifiedGroundingOwnership(() -> grounding.requireConsistentWith(inventory));
-            var semanticIssues = SEMANTIC_VERIFIER.verifyObservation(inventory, grounding);
+            var semanticIssues = SEMANTIC_VERIFIER.verifyObservation(
+                    inventory, grounding, semanticPolicy
+            );
             if (!semanticIssues.isEmpty()) {
                 throw invalid(semanticIssues.getFirst().code(), null);
             }

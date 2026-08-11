@@ -661,6 +661,25 @@ class VisualGroundingContractTest {
     }
 
     @Test
+    void rejectsContainerSizedSlotEvidenceOnlyUnderTheLeafEvidencePolicy() throws Exception {
+        var containerSlot = elementsJson().replace(
+                "\"regionIds\":[\"header\"],\"evidence\":[{\"viewId\":\"view-00-overview-00\",\"boundingBox\":{\"left\":100,\"top\":100,\"right\":3000,\"bottom\":700}}]}",
+                "\"regionIds\":[\"root\"],\"evidence\":[{\"viewId\":\"view-00-overview-00\",\"boundingBox\":{\"left\":0,\"top\":0,\"right\":10000,\"bottom\":10000}}]}"
+        );
+
+        codec.parseElements(containerSlot, views(), List.of(IMAGE_ID));
+        var failure = assertThrows(InvalidVisualAnalysisException.class, () ->
+                codec.parseElements(
+                        containerSlot, views(), List.of(IMAGE_ID),
+                        VisualObservationNormalizationPolicy.STRICT,
+                        VisualObservationSemanticPolicy.SLOT_LEAF_EVIDENCE_REQUIRED
+                )
+        );
+
+        assertEquals("VISUAL_SEMANTIC_SLOT_EVIDENCE_CONTAINS_ELEMENT", failure.diagnosticCode());
+    }
+
+    @Test
     void routesHierarchyAndBindingSemanticIssuesToTheirEarliestStage() throws Exception {
         var observed = codec.parseElements(elementsJson(), views(), List.of(IMAGE_ID));
 
