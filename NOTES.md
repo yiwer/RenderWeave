@@ -858,3 +858,17 @@
   Apply 链路可用，真实 Flash smoke 证明失败路径安全且可解释；但它没有证明当前模型能为该合成站牌产出
   Candidate。故 product-v40 保持 `EXPERIMENTAL`，N6=`automated_verified`，N7/Goal 仍未完成；不调用
   Plus/Max/final，不声称生产可靠或识别质量验收。
+
+### v40 产品入口与本地能力前置检查
+
+- `f47c54a` 已将新建 live 产品目录从已知会在 STRUCTURE 改写字段身份的 v4 切换到三份冻结 v40：Plus
+  默认、Max 供高难嵌套显式选择、pinned Flash 只作低成本 smoke。real-PG 合成路径严格只有 OBSERVE、
+  HIERARCHY、ELEMENT_BINDING 三次 Provider reservation，随后由本地 materializer 生成 Candidate；测试
+  Provider 收到 STRUCTURE/REPAIR 会失败。因此旧 v4 的 10 missing + 10 unexpected 缺陷不再是新产品路径。
+- `f27f86a` 让 `live-availability` 逐 Profile 返回 payload-free readiness，并在 create/retry 的 run persistence、
+  reservation、Provider 之前检查启动时 Document Vision capability 与 Profile 精确一致。缺 adapter/model 或
+  identity mismatch 时 Web 禁用相应入口，服务端以固定 `DOCUMENT_VISION_*` code 拒绝且 0 Provider。
+- pipeline 4.27、Prompt 10、三份 v40 Profile 与既有 evidence 均未修改；无自动跨模型 fallback，无付费调用，
+  Goal 仍为 418 reservations，三 ledger `CLOSED`。这使 v40 成为可选择、可前置诊断、确定性物化的阶段性
+  工程入口，但没有改变 Flash 的 OBSERVE 失败或 N7 质量证据缺口；状态仍为 `EXPERIMENTAL` /
+  `automated_verified` / Goal `in_progress`。

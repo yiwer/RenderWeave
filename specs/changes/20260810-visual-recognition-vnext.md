@@ -404,3 +404,19 @@ Candidate，也不满足生产可靠性、final eval 或最终业务/视觉 J1�
 
 pipeline 4.27、Prompt 10 与 product-v40 Profile 现冻结且保持 `EXPERIMENTAL`。三 ledger CLOSED；Plus/Max/
 final 不调用。N6=`automated_verified`，N7/Goal 仍未完成；后续算法变化必须使用新版本与新的精确授权。
+
+### 2026-08-12 product-v40 工程入口 delta
+
+用户明确要求普通图片识别入口切换到冻结 v40，并认可复杂站牌不应以 Flash 是否成功作为流水线工程可用性的
+唯一判断。本 delta 批准以下产品语义变化，但不修改 AC-021/AC-VR-010 的质量晋级结论：
+
+- 新 live run 只接纳三份精确 product-v40 Profile，按 Plus、Max、pinned Flash 排序；全部仅支持
+  `IMAGE_ONLY` 且保持 `EXPERIMENTAL`。Plus 为默认平衡选择，Max 面向高难度嵌套结构，Flash 明确只建议
+  低成本 smoke；不自动跨模型 fallback。
+- 历史 product-v4 与更早 Profile/run snapshot 保持不可变、可读、可恢复，但不再允许创建新产品 run。
+  pipeline 4.27 继续由本地 materializer 生成 Candidate，STRUCTURE/REPAIR Provider attempts 必须为 0。
+- `live-availability` 必须返回逐 Profile 的 payload-free readiness；Document Vision capability 缺失或与
+  Profile 绑定 ID 不匹配时，create/retry 在 run/reservation/Provider 前以固定 code fail-closed。UI 不显示
+  本地路径、模型资产、OCR 文本、图片、Prompt 或 Provider payload。
+- 本次只批准工程试用入口，不把 v40 改写为生产默认或质量认证。N6=`automated_verified`、N7/Goal=
+  `in_progress`；final eval、独立 verifier 与最终 J1 门仍未满足。

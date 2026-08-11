@@ -1264,3 +1264,11 @@ generic GAP 表明本次 shape 落在 v40 明确保留的 root/mixed/超界或�
 full、真实 PostgreSQL recovery、Document Vision 与浏览器审核/Apply E2E 建立；真实模型识别成功率没有建立，
 所以 product-v40 继续 `EXPERIMENTAL`、N6=`automated_verified`，N7/Goal 未完成。后续若解除冻结，必须使用
 新版本、fresh identity/Profile/J1 与新的有界假设，不得改写本结论。
+
+### product-v40 工程入口与前置 readiness
+
+用户随后要求将普通产品入口从历史 v4 切到冻结 v40。该决定不解除本 ADR 的算法冻结：三份 v40 Profile、
+pipeline 4.27、Prompt 10、bounded repair/verifier 全部不改。ADR-0030 仅在其外层完成产品目录和 admission：
+Plus 默认、Max 面向高难度、Flash 仅建议 smoke；本地 Document Vision capability 缺失或 identity 不匹配时，
+在创建/retry 与任何 reservation/Provider 调用前用固定 `DOCUMENT_VISION_*` code 拒绝。Profile 仍为
+`EXPERIMENTAL`，该入口不构成 N7 质量晋级，也不允许跨模型自动 fallback。

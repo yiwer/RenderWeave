@@ -19,6 +19,8 @@ RenderWeave v1 让技术型设计者定义可变的 Schema Draft，把精确 rev
 | Candidate Bundle | 一次 AI 推断产生的一根、零到多个子节点的可编辑候选图。 | 不是合法 Draft，也不能自动发布。 |
 | Evidence | 候选项对应的图片区域、JSON Pointer 或推断来源。 | 不是业务事实保证。 |
 | Inference Profile | 版本化的 provider/model/prompt/output schema/budget/eval 配置快照。 | 不使用 `latest` 语义。 |
+| Product Profile catalog | 当前允许创建新 live run 的、顺序固定且 ID 精确的 immutable Inference Profile 集合。 | 不是质量认证、`latest` alias，也不会改变历史 run snapshot。 |
+| Profile readiness | 启动时探测到的本地 capability 是否精确满足某个 Inference Profile 的 payload-free admission 事实。 | 不是模型质量、Provider 凭据、费用授权或对缺失能力的静默降级。 |
 | Template | Template Design 上下文中面向有限二维画板、以全局唯一不透明 `templateId` 标识的可变聚合；拥有永久 StaticSchemaRef、current revision 和 `ACTIVE/DELETED` 生命周期，且没有发布状态，DELETED 为不可恢复终态。 | 不是 Template revision、DesignDSL、可修改或复用的人类业务 key、独立 metadata 聚合、编辑器画布状态或最终图片；更换 StaticSchema 必须创建或复制为另一个 Template。 |
 | Template revision | 以 `{templateId, revision}` 精确标识、从 revision 0 单调追加的不可变完整 DesignDSL 历史快照；每次被接受的显式保存都会追加 revision，即使内容 hash 与 current 相同，content hash 也只证明完整性。 | 不是差异补丁、独立 metadata 版本、`TemplateVersion`、`PublishedTemplate` 或 `StaticTemplate`，也不承诺跨次求值可重放。 |
 | Template current | Template 唯一的当前内容 revision，始终是最新成功追加的 revision；恢复历史会复制旧 DesignDSL 并追加新 revision，而不回拨指针或产生分支。 | 不是 latest StaticSchema、可移动标签或多个并存分支。 |

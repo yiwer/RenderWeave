@@ -73,3 +73,10 @@ Plus/Flash 有当前官方视觉与结构化输出文档；精确 `qwen3.8-max` 
   过期恢复后零重复 Provider；server/contract gate。N3 全部测试必须清 live gate，Provider attempts=0。
 - 回退：删除 v5 注册项即可停止新实验；历史 v1..v4 与既有 run 不受影响。已排队的 v5 run 按其不可变
   Profile snapshot 和既有 checkpoint 恢复；本节点没有数据库 migration 或不可逆外部副作用。
+
+## 2026-08-12 产品目录后续决策
+
+本 ADR 第 9 项记录的是 N3 当时“不提前进入产品目录”的门。用户在 v40 工程闭环及 Flash fail-closed smoke
+完成后，明确要求把产品入口切到 v40，并接受其只达到工程试用、未达到生产质量的状态。产品目录与 admission
+的后续权威决策见 ADR-0030；pipeline 4 本地 materializer、历史 Profile 不可变和零 STRUCTURE/REPAIR
+Provider 调用的本 ADR 其余决定不变。

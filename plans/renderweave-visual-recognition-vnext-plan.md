@@ -6,16 +6,17 @@
 - 基线 revision：`eed1ab6ce2eb800b1b6bf0496b052fc3b9bd28d2`
 - 分支：`phase/p6-visual-recognition-vnext`
 - Spec delta：`specs/changes/20260810-visual-recognition-vnext.md`
-- ADR：ADR-0022、ADR-0023、ADR-0024、ADR-0025、ADR-0026、ADR-0027、ADR-0028、ADR-0029
+- ADR：ADR-0022、ADR-0023、ADR-0024、ADR-0025、ADR-0026、ADR-0027、ADR-0028、ADR-0029、ADR-0030
 - 用户 J1：yiwer，2026-08-10；2026-08-11 delta 将 Flash 改为 `qwen3.7-flash-2026-07-15`，随后两次给
   三个预算槽位各追加 500,000 tokens，当前累计 cap 1,500,000，并把 Flash/Plus Goal cost cap 各设为 ¥10、
   固定 24h 窗口至 `2026-08-12T09:51:55Z`；Max ¥18、每槽 180 attempts、单 authorization 500,000 不变
 - 当前节点：N0–N1、N3–N4、N6 `automated_verified`；N2 `live_verified_mixed_a1_a2`；N5
   `live_verified_not_promoted`；N7 `in_progress`。pipeline 4.27/product-v40 已完成 bounded diagnostic、Prompt/Profile、
-  real-PG recovery 与 monitor/review/E2E 离线闭环，等待 exact-clean gate 与受控 Flash smoke；v39 live 未越过
-  OBSERVE。当前 Goal 为 413 reservations（407 SETTLED、6 RESERVED、0 BREACHED），三份 live ledger
-  `CLOSED`，Profile 均隐藏 `EXPERIMENTAL`。按用户 2026-08-12 决策，v40 验证完成后冻结为本阶段基线，
-  以“可运行、可恢复、可审计、可人工审核”收尾，不冒充生产级可靠性
+  real-PG recovery、monitor/review/E2E 与 Flash 失败闭环；Goal 为 418 reservations（412 SETTLED、6 RESERVED、
+  0 BREACHED），Flash/Plus/Max 为 157/179/82 attempts 与 1,148,324/1,087,500/491,919 exposed tokens，三份
+  live ledger `CLOSED`。新建产品入口已切换为 Plus/Max/pinned Flash 三份 `EXPERIMENTAL` v40 Profile，Plus
+  默认、Max 面向高难嵌套、Flash 仅作 smoke，并在创建/retry 前按 Profile 精确检查本地 Document Vision
+  capability。该入口只声明阶段性工程可用，不冒充生产级可靠性或识别质量验收
 
 ## 四维执行配置
 
@@ -850,3 +851,17 @@ process/lease；有效时只执行 Flash single synthetic case、最多 5 calls�
 phase disposition：冻结 pipeline 4.27/Prompt 10/product-v40。deterministic/real-PG/browser gates 支持内部工程
 试用与失败后人工处置，但 live 没有证明该 case 的 Candidate 产出能力。product-v40=`EXPERIMENTAL`、
 N6=`automated_verified`、N7/Goal=`in_progress`；Plus/Max/final 不启动，Goal 不完成。
+
+### product-v40 产品切换与 capability-aware admission
+
+- `f47c54a` 将新建产品目录从历史 product-v4 切换为 Plus、Max、pinned Flash 三份冻结 v40 Profile，并把
+  IMAGE_ONLY/Plus 设为默认；Max 明示用于高难嵌套，Flash 明示为低成本 smoke。历史 Profile 与 run snapshot
+  不修改且仍可恢复，三份 v40 继续 `EXPERIMENTAL`。
+- 成功 real-PG 合成集成路径严格只有 OBSERVE、HIERARCHY、ELEMENT_BINDING 三次 Provider reservation；测试
+  Provider 收到 STRUCTURE/REPAIR 会立即失败，因而旧 v4 的字段 key 二次改写缺陷不再能从新产品入口到达。
+- `f27f86a` 为 `live-availability` 增加逐 Profile、payload-free readiness。创建与 live retry 都在 run、费用
+  reservation 和 Provider 调用之前校验启动时探测的 Document Vision capability 与 Profile snapshot 精确一致；
+  缺失、模型缺失或 identity mismatch 均 fail-closed，Web 禁用对应选项并只显示固定 code 的人类可读说明。
+- 本节点不改 pipeline 4.27、Prompt 10 或任一 v40 Profile，不自动跨模型 fallback，也没有 Provider 调用；
+  Goal/ledger 数值和三份 `CLOSED` 状态不变。该节点修复“旧 v4 缺陷仍是默认路径”和“本地能力缺失却先创建
+  失败任务”两项工程可用性问题，不改变 Flash 未通过 OBSERVE 的质量事实。
