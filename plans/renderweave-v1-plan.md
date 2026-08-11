@@ -721,3 +721,21 @@ Playwright 1/1 PASS。本节点 Provider attempts=0，Goal/ledger 用量不变�
 N6=`automated_verified`、N7/Goal=`in_progress`、Profile=`EXPERIMENTAL`。下一步先提交本 checkpoint，
 再在 exact-clean revision 上跑 full/Document Vision 并 fresh 重算 identity、v34 snapshots、Goal 与 J1；
 优先 Flash bounded smoke，Plus 只剩 5 attempts，Max/final 20/60 的同版本三阶段、质量与最终验收门不变。
+
+## 25. T6-5 v34 live 与 v35 empty-source-ancestor 离线 checkpoint
+
+v34 在 exact-clean `751e412` 上通过 full/Document Vision 后完成两个独立 live lifecycle。Flash 5 次全在
+OBSERVE fail-closed；Plus 首次接受 OBSERVE，随后三次 HIERARCHY 暴露 empty-support×1 与
+support-not-group×2，第五次在 Provider 前由 authorization cost reservation 停止。两份 A2 verifier 与
+payload scan PASS、0 abandoned。Goal 结算为 390 reservations：Flash/Plus/Max 为 129/179/82 attempts、
+896,093/1,087,500/491,919 tokens、¥0.435196/¥4.159620/¥10.289316；三 ledger CLOSED。
+
+`614359f`、`708522b`、`a2b8181`、`5c59ce3` 完成 pipeline 4.22/product-v35：只在 empty support、
+已知后代关系区域、唯一严格祖先兼容 GROUP owner 且父子实体连接成立时归一化 support 与关系区域；
+unknown/ambiguous/disconnected/non-ancestor 继续 fail-closed。real-PG lease recovery 不重放 OBSERVE，
+HIERARCHY/BINDING 到 `REVIEW_REQUIRED`，OCR sentinel 零持久化；monitor/review 与 1024px E2E 展示
+payload-free code、scope 和 earliest stage。
+
+当前 contract 31/31、inference 189/189、snapshot verifier、real-PG、Web 73/73 与 Playwright 1/1 PASS。
+N6=`automated_verified`、N7/Goal=`in_progress`、Profile=`EXPERIMENTAL`。v35 exact-clean full/Document
+Vision、fresh preflight、bounded live、final 20/60、最终独立 verifier 与业务/视觉 J1 仍未完成。

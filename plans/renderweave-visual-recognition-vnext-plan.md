@@ -11,12 +11,12 @@
   三个预算槽位各追加 500,000 tokens，当前累计 cap 1,500,000，并把 Flash/Plus Goal cost cap 各设为 ¥10、
   固定 24h 窗口至 `2026-08-12T09:51:55Z`；Max ¥18、每槽 180 attempts、单 authorization 500,000 不变
 - 当前节点：N0–N1、N3–N4、N6 `automated_verified`；N2 `live_verified_mixed_a1_a2`；N5
-  `live_verified_not_promoted`；N7 `in_progress`。v33 Flash/Plus CLOSED/A2 后没有形成同版本 HIERARCHY/
-  BINDING；其 parent fixed codes 驱动了 pipeline 4.21/product-v34 unique-existing-parent repair。
-  v34 codec/Profile/inheritance/real-PG lease recovery/monitor/review/1024px E2E 已通过并提交到 `de18000`，
-  尚待 checkpoint 后 exact-clean full/Document Vision 与 fresh pre-live 重算。当前 Goal 为 381 reservations
-  （376 SETTLED、5 历史 Plus RESERVED、0 BREACHED），三份 live ledger `CLOSED`，Profile 均隐藏
-  `EXPERIMENTAL`
+  `live_verified_not_promoted`；N7 `in_progress`。v34 Flash 全停在 OBSERVE；Plus accepted OBSERVE 后在
+  HIERARCHY 暴露 empty-support/support-not-group，仍未形成同版本 BINDING 或 Candidate。其 empty-support
+  信号驱动 pipeline 4.22/product-v35 的 unique connected strict-ancestor GROUP repair；codec/Profile、
+  real-PG lease recovery、monitor/review 与 1024px E2E 已提交到 `5c59ce3`，尚待 checkpoint 后 exact-clean
+  full/Document Vision 与 fresh pre-live 重算。当前 Goal 为 390 reservations（385 SETTLED、5 历史 Plus
+  RESERVED、0 BREACHED），三份 live ledger `CLOSED`，Profile 均隐藏 `EXPERIMENTAL`
 
 ## 四维执行配置
 
@@ -616,3 +616,41 @@ drift、journal/guard 不一致、payload 边界失败或同一无新假设失�
 v34 snapshot、Goal/token/attempt/CNY/time、J1、API 配置存在性、进程与 lease。优先 Flash 单 case/最多 5 calls；
 Plus 仅在剩余 5 attempts 内且 Flash 信号直接相关时使用；Max/final 20/60 仍受同版本 live 三阶段、质量、独立
 复核与最终 J1 硬门。
+
+## 2026-08-11 v34 bounded live 结果
+
+- exact-clean `751e412`：full `20260811-191800` 9/9、Document Vision `20260811-192239` 19 lines；
+  Java/Python identity 一致为 `/2:dbeeb7cf…d1f50`，Flash/Plus/Max v34 snapshot 依次为
+  `9a678ea6…17d21`、`8ce6f12f…04f9b`、`3a7066ad…cd6`。
+- Flash `e213243` PROPOSED → NOT_OPEN → `72e25cd` OPEN →唯一 wrapper→`ea5bda5` CLOSED；A2
+  PASS，5 attempts、43,396 tokens、¥0.022364、0 abandoned。5 次均停在 OBSERVE：invalid-region-kind×3、
+  parent-kind×2，无可信 checkpoint。
+- Plus `f36195f` PROPOSED → NOT_OPEN → `4ab12ea` OPEN →唯一 wrapper→`fd7fb35` CLOSED；A2
+  PASS，4 actual attempts、30,885 tokens、¥0.096198、0 abandoned。OBSERVE 首次 accepted；HIERARCHY
+  分别 empty-support×1、support-not-group×2，第五次 reservation 在 Provider 前按 authorization cost
+  fail-closed。
+- Goal 结算为 390 reservations（385 SETTLED、5 历史 Plus RESERVED、0 BREACHED）：Flash/Plus/Max
+  为 129/179/82 attempts、896,093/1,087,500/491,919 tokens、¥0.435196/¥4.159620/¥10.289316。
+  三 ledger CLOSED；Max/final 20/60 因同版本 BINDING 与质量门未满足而不启动。
+
+## 2026-08-11 v35 empty source-ancestor support 离线 checkpoint
+
+- `614359f` 新增独立 support policy：empty support 在 exact relationship-region GROUP owner 缺失时，
+  只搜索已知 relationship region 的严格祖先；候选必须为 GROUP/REPEATED_GROUP、基数兼容、唯一且连接
+  parent/child entity regions，成功同时归一化 support 与 relationship region。exact owner 优先；unknown
+  support、zero/many、disconnected、non-ancestor 继续原 fixed code。
+- `708522b` 发布 pipeline 4.22 与 Flash/Plus/Max product-v35 immutable Profile，并增加 payload-free
+  `VISUAL_HIERARCHY_RELATIONSHIP_EMPTY_SOURCE_ANCESTOR_SUPPORT_OWNER_NORMALIZED`；旧 Profile/Prompt
+  不改写，v35 保留 v30/v31/v34 observation repair 与后续 hierarchy/binding semantic policy。
+- `a2b8181` 的真实 PostgreSQL tracer 在 OBSERVE checkpoint 后模拟 lease expiry，再从 HIERARCHY 恢复并
+  完成 BINDING 到 `REVIEW_REQUIRED`；Provider OBSERVE 不重放、ephemeral OCR 重算但 sentinel 零持久化。
+  `5c59ce3` 将 code、中文说明、scope 与 earliest HIERARCHY repair 接入 monitor/review，1024px E2E 保持
+  keyboard 可达且 payload-free。
+- 当前自动证据：contract 31/31、inference 189/189、independent snapshot verifier 1/1、real-PG 1/1、
+  Web 73/73 + typecheck/lint、Playwright 1/1。v35 Provider attempts=0，Goal 总量与三份 CLOSED ledger
+  不变。N6=`automated_verified`、N7/Goal=`in_progress`、product-v35=`EXPERIMENTAL`。
+
+下一门：提交 docs checkpoint 后，在 exact-clean revision 上重新跑 full 与冻结 Document Vision；然后逐次
+fresh 重算 `/2` identity、v35 snapshot、Goal token/attempt/CNY、固定 J1 时限、API 配置存在性、进程与
+evidence lease。Flash 可优先单 synthetic case/最多 5 calls；Plus 仅剩 1 Goal attempt，不能被当作三阶段
+证明。Max 和 final 20/60 继续要求同版本 live OBSERVE/HIERARCHY/BINDING、质量门、独立 verifier 与最终 J1。

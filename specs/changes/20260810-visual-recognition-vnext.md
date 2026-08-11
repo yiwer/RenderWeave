@@ -204,3 +204,29 @@ tokens。该 delta 只覆盖原信封的 Flash 模型身份和 Goal token cap：
   Playwright 1/1。该节点 Provider attempts=0、381 reservations 与三份 CLOSED ledger 不变；v34 继续
   `EXPERIMENTAL`，N6=`automated_verified`、N7/Goal=`in_progress`。只有 fresh clean gate、identity/
   snapshot/budget/time/lease preflight 后才可执行 Flash bounded smoke；Plus/Max/final eval 的既有门不变。
+
+### 2026-08-11 v34 live 结果
+
+- exact-clean `751e412` 的 full 9/9、Document Vision 19 lines、双实现 identity 与三份 v34 snapshot 通过。
+- Flash 5 次均在 OBSERVE fail-closed；Plus 首次 OBSERVE accepted 后在 HIERARCHY 返回 empty-support×1、
+  support-not-group×2，第五次在 Provider 前由 cost reservation 停止。两份独立 verifier/payload scan PASS，
+  0 abandoned，三 ledger CLOSED。
+- Goal 为 390 reservations（385 SETTLED、5 历史 Plus RESERVED、0 BREACHED）：Flash/Plus/Max 分别
+  129/179/82 attempts、896,093/1,087,500/491,919 tokens、¥0.435196/¥4.159620/¥10.289316。
+  v34 未形成同版本 accepted BINDING/Candidate，Max 与 final 20/60 不启动。
+
+### 2026-08-11 v35 empty-source-ancestor support 候选
+
+- pipeline 4.22/product-v35 只扩展 empty support：exact relationship-region GROUP owner 仍优先；exact owner
+  为零时，仅当已知 relationship region 有一个严格祖先 GROUP/REPEATED_GROUP owner、基数兼容且连接
+  parent/child entity ownership，才用该已有 owner 补全 support 并归一化关系区域。
+- unknown support、same-region、zero/many、non-ancestor、disconnected 或后续 semantic verifier 失败时，
+  继续原 fixed code fail-closed。不得创建 element/region/entity/relationship/evidence/crop/Candidate，不得读取
+  文字或按距离/gold 排名。
+- 成功只暴露数量型
+  `VISUAL_HIERARCHY_RELATIONSHIP_EMPTY_SOURCE_ANCESTOR_SUPPORT_OWNER_NORMALIZED` 及既有通用计数。
+  `614359f`/`708522b`/`a2b8181`/`5c59ce3` 已完成 codec、immutable Profile、real-PG lease recovery、
+  monitor/review 与 1024px E2E；v35 仍 `EXPERIMENTAL`。
+- 当前只具备自动证据；必须在 exact-clean revision 上重新跑 full/Document Vision 并 fresh 重算 identity、
+  v35 snapshots、Goal/J1/time/process/lease 后，才可优先执行 Flash 单 synthetic case/最多 5 calls。Plus
+  只剩 1 Goal attempt，不足以证明三阶段；Max/final eval 的同版本三阶段、质量、独立复核与最终 J1 门不变。

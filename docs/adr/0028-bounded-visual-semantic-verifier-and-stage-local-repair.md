@@ -1008,3 +1008,33 @@ Web 14 files/73 tests + build、Playwright 1/1；Web 与浏览器证据分别为
 `.sdlc/evidence/20260811-191314-v34-diagnostics-e2e-results`。本增量 Provider attempts=0，Goal 仍为
 381 reservations，三份 visual ledger 均 CLOSED。它证明有界合同、恢复与审核面，不证明真实 v34 质量；N6
 保持 `automated_verified`，N7/Goal 保持 `in_progress`，final 20/60、最终独立 verifier 与业务/视觉 J1 仍是硬门。
+
+## N6/N7 product-v35：empty support 的唯一严格祖先 GROUP owner
+
+v34 live 使边界更精确：Flash 5 次均在 OBSERVE fail-closed；Plus 首次 accepted OBSERVE 后，HIERARCHY
+出现一次 `VISUAL_HIERARCHY_V2_RELATIONSHIP_SUPPORT_IDS_EMPTY` 与两次
+`VISUAL_HIERARCHY_V2_SUPPORT_NOT_GROUP`。后者不能安全重写；前者也只有在现有 region forest 与 entity
+ownership 同时给出唯一证明时才能修复。
+
+本 ADR 增补以下决策：
+
+1. pipeline 4.22/product-v35 独立 opt-in，v34 及更早 policy、Prompt、Profile snapshot 不变。
+2. empty `supportingElementIds` 先执行既有 exact relationship-region owner 规则；exact owner 为零时，
+   只允许已知 relationship region 的严格祖先 GROUP/REPEATED_GROUP owner。候选必须唯一、基数兼容，且
+   relationship region 位于 parent/child entity region 的连接上。
+3. 成功把 support 设为已有 GROUP local ID，并把 relationship region 归一化为该 GROUP 的已有容器 region；
+   不新建 element、region、relationship、entity、evidence、文字、crop 或 Candidate。
+4. unknown support 不使用祖先规则；zero/many、same-region、non-ancestor、disconnected、cardinality mismatch
+   或任一后续 semantic verifier 失败均保留原 fixed code，原子不改变输入。
+5. 成功仅记录数量型
+   `VISUAL_HIERARCHY_RELATIONSHIP_EMPTY_SOURCE_ANCESTOR_SUPPORT_OWNER_NORMALIZED`，同时保留通用 owner 与
+   relationship-region normalized 计数；不记录 local ID、坐标或 payload。
+
+`614359f` 完成正反例合同，`708522b` 发布 pipeline/Profile 与独立 snapshot verifier，`a2b8181` 用真实
+PostgreSQL lease-expiry 场景证明 OBSERVE checkpoint 不重放、HIERARCHY/BINDING 到 `REVIEW_REQUIRED`、OCR
+sentinel 零持久化，`5c59ce3` 将 code、中文说明、scope 与 earliest HIERARCHY repair 接入 monitor/review 和
+1024px Playwright。contract 31/31、inference 189/189、snapshot verifier、real-PG、Web 73/73、Playwright
+1/1 均通过。
+
+这是 `automated_verified` 的 bounded semantic verifier 增量，不是 Provider 质量证明。v35 仍
+`EXPERIMENTAL`；exact-clean full/Document Vision、v35 live、final eval、最终独立 verifier 与 J1 均属 N7。

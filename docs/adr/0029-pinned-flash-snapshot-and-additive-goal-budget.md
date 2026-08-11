@@ -130,3 +130,24 @@ Profile snapshot、Goal aggregate、剩余 token/attempt/CNY/time、API 配置�
 Flash 仍优先执行单 synthetic case、最多 5 calls 的完整 ledger lifecycle；Plus 只剩 5 个 Goal attempts，
 必须在 Flash 结果有直接诊断价值且 fresh preflight 仍通过时使用。Max 仍要求 v34 同版本 live accepted
 OBSERVE/HIERARCHY/BINDING、质量门与当次 J1；离线三阶段 tracer 不能替代该前置。
+
+## product-v34 live 结算与 product-v35 预算入口
+
+v34 Flash/Plus 各自完成 PROPOSED→NOT_OPEN 负探针→OPEN→唯一 wrapper→CLOSED，CLOSED 后独立 verifier
+重建与 payload scan 均 PASS、0 abandoned。Flash 结算 5 attempts / 43,396 tokens / ¥0.022364；Plus
+结算 4 actual attempts / 30,885 tokens / ¥0.096198，第五次在 Provider 前由 authorization cost reservation
+拒绝，因此没有虚增 Goal reservation。
+
+Goal guard v4 当前为 390 reservations（385 SETTLED、5 个历史 Plus RESERVED、0 BREACHED）：
+
+| 稳定槽位 | attempts | exposed tokens / 1,500,000 | Goal cost / cap | 剩余 |
+|---|---:|---:|---:|---:|
+| Flash（旧 alias + pinned） | 129 / 180 | 896,093 | ¥0.435196 / ¥10 | 51 attempts；603,907 tokens；¥9.564804 |
+| Plus | 179 / 180 | 1,087,500 | ¥4.159620 / ¥10 | 1 attempt；412,500 tokens；¥5.840380 |
+| Max | 82 / 180 | 491,919 | ¥10.289316 / ¥18 | 98 attempts；1,008,081 tokens；¥7.710684 |
+
+三份 ledger 均 CLOSED。product-v35 离线节点未创建 reservation，故上表不变。Plus 的单个剩余 attempt
+不足以验证 OBSERVE→HIERARCHY→BINDING，不应为“用完额度”而调用；Max 仍要求 v35 同版本三阶段 live 与
+质量门。Flash 如在固定窗口内进入 v35 smoke，仍须 exact-clean full/Document Vision、fresh identity/Profile
+snapshot/Goal/time/process/lease preflight、单 case/最多 5 calls 与完整 ledger 生命周期。任何 token 或费用
+余量都不能替代这些前置，也不能自动授权 final 20/60。

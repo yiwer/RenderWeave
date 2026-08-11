@@ -1,16 +1,20 @@
 # NOTES.md
 
 ## 当前目标与进度
-- 2026-08-11 pipeline 4.21/product-v34 已形成零 Provider 的离线生产候选。`14e02b8` 只在同 artifact、
-  严格包含、kind/repeat-group 兼容且唯一最具体时归一化已有非 ROOT region 的错误 parent；ROOT、equal-box、
-  zero/many、cycle、limit 与 forest failure 原子回退，enum/overlap/歧义继续 fail-closed。`10f11b3` 发布三模型
-  immutable v34 Profile 与 payload-free `VISUAL_GROUNDING_REGION_PARENT_NORMALIZED`；`029277a` 锁定 v30/v31
-  repairs 继续继承；`abb52a3` 的 real-PG lease-expiry 场景从 OBSERVE checkpoint 继续 HIERARCHY/BINDING 到
-  `REVIEW_REQUIRED`，Provider OBSERVE 不重放且 OCR sentinel 零持久化；`de18000` 完成 monitor/review/E2E。
-  Inference 188/188、independent verifier 2/2、real-PG 57/57、Node 24 Web 73/73/build、Playwright 1/1 PASS。
-  本节点 Provider attempts=0，Goal 仍为 381 reservations，三 ledger CLOSED。v34 仍 `EXPERIMENTAL`、
-  N6=`automated_verified`、N7/Goal=`in_progress`；下一步是 checkpoint 后 exact-clean full/Document Vision 与
-  fresh identity/v34 snapshot/Goal/J1 preflight，不能直接启动 Max 或 final 20/60。
+- 2026-08-11 pipeline 4.22/product-v35 已形成零 Provider 的离线生产候选。`614359f` 只在 relationship
+  support 为空、其已知关系区域是后代 ITEM、且唯一严格祖先容器由一个基数兼容并连接父子实体的既有 GROUP
+  拥有时补全 support，并同步归一化关系区域；歧义、断连、非祖先与 unknown support 继续旧 fixed code
+  fail-closed。`708522b` 发布三份 immutable v35 Profile，`a2b8181` 证明 real-PG lease-expiry 从已持久化
+  OBSERVE 继续 HIERARCHY/BINDING 到 `REVIEW_REQUIRED`，`5c59ce3` 完成 monitor/review 与 1024px E2E。
+  contract 31/31、inference 189/189、独立 snapshot verifier、real-PG 定向、Web 73/73 与 Playwright 1/1
+  均 PASS；v35 尚未 live，仍 `EXPERIMENTAL`，N6=`automated_verified`、N7/Goal=`in_progress`。
+- v34 Flash/Plus live 已按各自 PROPOSED→NOT_OPEN→OPEN→唯一 wrapper→CLOSED 闭环，独立 verifier 与
+  payload scan 均 PASS、0 abandoned。Flash 5 次均在 OBSERVE fail-closed；Plus 首次 OBSERVE accepted，
+  随后三次 HIERARCHY 为 empty-support×1、support-not-group×2，第五次在 Provider 前被 authorization cost
+  reservation 阻断。当前 390 reservations、0 BREACHED：Flash 129/896,093/¥0.435196，Plus
+  179/1,087,500/¥4.159620，Max 82/491,919/¥10.289316；三 ledger CLOSED。Max/final 20/60 的同版本
+  三阶段与质量门仍失败。下一步是提交 v35 checkpoint 后 exact-clean full/Document Vision 和 fresh
+  identity/v35 snapshot/Goal/J1/process/lease preflight；Plus 仅剩 1 个 Goal attempt，不足以验证三阶段。
 - 2026-08-11 v33 cost-restored bounded live 已闭环。`15b5d00` clean full 9/9、Document Vision 19 lines、
   双实现 identity 与三份 snapshot 通过，guard 在首个 reservation 内原子迁移 v4。Flash
   `f12e5af`→`69e8455`→`f50f591` 为 4 attempts / 37,181 tokens / ¥0.019870，均停在 OBSERVE；Plus
@@ -365,12 +369,13 @@
 - 生命周期状态：P0 `accepted`；P1–P4 `automated_verified`；P5 Flash / Plus / Prompt v2 / Grounded v2 / T5-10 诊断均为 `live_independently_reviewed`，T5-9/T5-11 与 P6/T6-1 为 `independently_reviewed`；P6/T6-2 为 `human_acceptance_pending`；T6-3a 与 T6-5 N6 为 `automated_verified`、T6-3b pending。T6-5 整体仍 active，N7 `in_progress`。所有 DashScope Profile 仍为 `EXPERIMENTAL`；历史评测授权均 CLOSED，基础 Compose 默认关闭，显式 product-live overlay 已按用户授权开放。
 
 ## 下一步
-- [ ] P6/T6-5 图片识别 vNext：product-v34 的 unique-existing-parent contract、real-PG lease recovery、独立
-  Profile verifier 与 payload-free monitor/review/E2E 已离线通过。下一步在 checkpoint 后 exact-clean revision
-  跑 full 与 Document Vision，再 fresh 重算 evaluation identity、三份 v34 snapshot、Goal aggregate、剩余
-  token/attempt/CNY/time、J1、API 配置存在性和进程/lease。全部匹配才优先执行 Flash 单 case/最多 5 calls 的
-  PROPOSED→负探针→OPEN→CLOSED smoke；Plus 仅在剩余 5 attempts 内且 Flash 信号直接相关时使用，Max 仍需
-  v34 同版本 live 三阶段与质量门。final 20/60、final independent verifier 与业务/视觉 J1 均未满足。
+- [ ] P6/T6-5 图片识别 vNext：v34 Flash/Plus live 已 CLOSED/A2；product-v35 的 empty-source-ancestor
+  contract、immutable Profile、real-PG lease recovery 与 payload-free monitor/review/E2E 已离线通过。下一步在
+  docs checkpoint 后 exact-clean revision 跑 full 与 Document Vision，再 fresh 重算 evaluation identity、三份
+  v35 snapshot、Goal aggregate、剩余 token/attempt/CNY/time、J1、API 配置存在性和进程/lease。全部匹配才
+  优先执行 Flash 单 case/最多 5 calls 的 PROPOSED→负探针→OPEN→CLOSED smoke；Plus 只剩 1 attempt，
+  不足以验证三阶段。Max 仍需 v35 同版本 live 三阶段与质量门。final 20/60、final independent verifier 与
+  业务/视觉 J1 均未满足。
 - [x] Java / React / PostgreSQL / OpenAPI 最小 canary 与 A1 full gate 通过。
 - [x] 用户接受“A 默认表单 + B Map + 吸收 C 的 preview/密度”的编辑器方向（J1，2026-08-08）。
 - [x] 创建 P1–P4 implementation Goal。
@@ -468,16 +473,16 @@
 - `plans/logs/P6-T6-5-N5.md`：有界本地 Document Vision、v4/v6/v7 同 case live 消融、Plus Goal 用量、
   HTTP failure 硬停与未晋级决策；全部 ledger CLOSED。
 - `plans/logs/P6-T6-5-N6.md`：bounded semantic verifier、stage-local repair、selected crops、payload-free UI、
-  v15–v34 bounded verifier/normalization 增量；v34 contract/Profile/real-PG/UI/E2E 离线证据已记录。
+  v15–v35 bounded verifier/normalization 增量；v35 contract/Profile/real-PG/UI/E2E 离线证据已记录。
 - `plans/logs/P6-T6-5-N7.md`：pinned Flash/Goal guard v4、Provider-backed single-case CLOSED/A2
-  reachability、v15–v34 实证驱动增量；v33 Flash 止于 OBSERVE，Plus 第五次接受 OBSERVE 后 call cap 停止，
-  v34 当前仅有离线恢复证据。
-- 当前可恢复代码锚点：`phase/p6-visual-recognition-vnext` 的 `de18000`；v34 codec/Profile/inheritance/PG/UI 为
-  `14e02b8` / `10f11b3` / `029277a` / `abb52a3` / `de18000`。Web 证据 `20260811-190723-web`、diagnostics
-  E2E `20260811-191314-v34-diagnostics-e2e-results` 已闭环；Goal 为 381 reservations，三份 ledger CLOSED，
-  无 visual/Maven/OCR live 进程。编排 Goal
+  reachability、v15–v35 实证驱动增量；v34 Flash 止于 OBSERVE，Plus accepted OBSERVE 后止于 HIERARCHY，
+  v35 当前仅有离线恢复证据。
+- 当前可恢复代码锚点：`phase/p6-visual-recognition-vnext` 的 `5c59ce3`；v35 codec/Profile/PG/UI 为
+  `614359f` / `708522b` / `a2b8181` / `5c59ce3`。Goal 为 390 reservations，三份 ledger CLOSED，
+  无 visual/Maven/OCR/evidence lease 残留。编排 Goal
   `019fec8e-a851-7952-b49b-8be76a281a57` 仍显示 `paused`，用户已明确继续同一 objective，未创建 replacement
-  Goal。下一节点是 exact-clean full/Document Vision 与 fresh v34 pre-live gate；门控前不能直接扩大 final eval。
+  Goal。下一节点是 docs checkpoint、exact-clean full/Document Vision 与 fresh v35 pre-live gate；门控前不能
+  直接扩大 final eval。
 
 ## v27 source-ancestor 与预算硬门 checkpoint
 
@@ -599,3 +604,27 @@
 - 本节点 Provider attempts=0，Goal 用量不变。product-v33 仍 `EXPERIMENTAL`，N6 仍
   `automated_verified`，N7/Goal 仍 `in_progress`；通用 live fixed code 不足以证明 unknown 必属于
   relationship，所以不宣称质量改善，不启动 final 20/60。
+
+## v34 bounded live 与 v35 empty-source-ancestor checkpoint
+
+- exact-clean `751e412` 的 full `.sdlc/evidence/20260811-191800-full` 9/9 与 Document Vision
+  `.sdlc/evidence/20260811-192239-document-vision` 19-line canary PASS；Java/Python identity 为
+  `/2:dbeeb7cf9f928508b7b9f0f6148fdcf9451c69876cb7f0715397fa4fbd3d1f50`。
+- Flash `e213243`→`72e25cd`→`ea5bda5`：5 attempts、43,396 tokens、¥0.022364；全部在 OBSERVE
+  以 region-kind×3、parent-kind×2 fail-closed。Plus `f36195f`→`4ab12ea`→`fd7fb35`：4 actual
+  attempts、30,885 tokens、¥0.096198；OBSERVE accepted，HIERARCHY 为 empty-support×1、
+  support-not-group×2，第五次在 Provider 前被费用 reservation 阻断。两份独立 verifier/payload scan
+  PASS、0 abandoned，三 ledger CLOSED，无 live/Maven/OCR/lease 残留。
+- `614359f` 将 empty-support 的安全子集限制为：已知后代 relationship region、唯一严格祖先
+  GROUP/REPEATED_GROUP owner、基数兼容且 parent/child ownership 连通；exact owner 仍优先，unknown
+  support 不扩展，zero/many/disconnected/non-ancestor 全部保留原 fixed code。
+- `708522b` 发布 pipeline 4.22/product-v35；`a2b8181` 的 real-PG lease recovery 证明 OBSERVE 不重放、
+  HIERARCHY 专项 telemetry 只记录数量、BINDING 到 `REVIEW_REQUIRED` 且 OCR sentinel 零持久化；
+  `5c59ce3` 完成 monitor/review 中文说明及隔离 4187 的 1024px E2E，未终止占用 4173 的用户 Node 20
+  prototype 进程，4187 退出后无监听残留。
+- v35 离线验证为 contract 31/31、inference 189/189、independent snapshot verifier 1/1、real-PG 1/1、
+  Web 14 files/73 tests 与 Playwright 1/1。Goal 保持 390 reservations（385 SETTLED、5 历史 Plus
+  RESERVED、0 BREACHED）；Flash/Plus/Max 分别 129/179/82 attempts、896,093/1,087,500/491,919
+  tokens、¥0.435196/¥4.159620/¥10.289316。v35 仍 `EXPERIMENTAL`，N6=`automated_verified`、
+  N7/Goal=`in_progress`；exact-clean full/Document Vision、v35 live、final 20/60、最终独立 verifier 与
+  业务/视觉 J1 尚未完成。
