@@ -307,7 +307,10 @@ test('keeps bounded visual diagnostics keyboard-accessible at 1024 without paylo
         outputTokens: 4_100,
         costMicrosCny: 2_715,
         durationMillis: 22_083,
-        problemCodeCounts: { VISUAL_GROUNDING_PARENT_KIND_INVALID: 1 },
+        problemCodeCounts: {
+          VISUAL_GROUNDING_PARENT_KIND_INVALID: 1,
+          VISUAL_SEMANTIC_REPEATED_GROUP_CARDINALITY_INVALID: 1,
+        },
         completedAt: '2026-08-10T00:00:05Z',
       },
       {
@@ -380,6 +383,8 @@ test('keeps bounded visual diagnostics keyboard-accessible at 1024 without paylo
   await expect(page.getByRole('heading', { name: '有限问题定位' })).toBeVisible();
   await expect(page.getByText('区域树')).toBeVisible();
   await expect(page.getByText('VISUAL_GROUNDING_PARENT_KIND_INVALID').first()).toBeVisible();
+  await expect(page.getByText('VISUAL_SEMANTIC_REPEATED_GROUP_CARDINALITY_INVALID').first()).toBeVisible();
+  await expect(page.getByText('MANY GROUP 与重复区域的双向归属不一致').first()).toBeVisible();
   await expect(page.getByText('VISUAL_HIERARCHY_V2_RELATIONSHIP_SUPPORT_IDS_EMPTY').first()).toBeVisible();
   await expect(page.getByText('层级关系支撑 ID 列表不能为空').first()).toBeVisible();
   await expect(page.getByText('已按唯一容器区域 GROUP 归属归一化层级关系支撑').first()).toBeVisible();

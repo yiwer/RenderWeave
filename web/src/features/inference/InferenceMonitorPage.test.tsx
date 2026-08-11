@@ -103,6 +103,10 @@ describe('Inference monitor workspace', () => {
       .toBeGreaterThan(0);
     expect(screen.getAllByText('字段证据包住了其他元素，应恢复为叶子字段或 GROUP 容器').length)
       .toBeGreaterThan(0);
+    expect(screen.getAllByText('VISUAL_SEMANTIC_REPEATED_GROUP_CARDINALITY_INVALID').length)
+      .toBeGreaterThan(0);
+    expect(screen.getAllByText('MANY GROUP 与重复区域的双向归属不一致').length)
+      .toBeGreaterThan(0);
     expect(screen.getByText('证据区域')).toBeTruthy();
     expect(screen.getAllByText('最早返回 盘点图片元素 修复').length).toBeGreaterThan(0);
     expect(screen.getAllByText('VISUAL_HIERARCHY_V2_RELATIONSHIP_SUPPORT_IDS_EMPTY').length)
@@ -284,6 +288,7 @@ function visualExecutionLog(runSnapshot: InferenceRunResponse): InferenceExecuti
         durationMillis: 22_083,
         problemCodeCounts: {
           VISUAL_GROUNDING_PARENT_KIND_INVALID: 1,
+          VISUAL_SEMANTIC_REPEATED_GROUP_CARDINALITY_INVALID: 1,
           VISUAL_SEMANTIC_SLOT_EVIDENCE_CONTAINS_ELEMENT: 1,
         },
         completedAt: '2026-08-10T04:03:08Z',
