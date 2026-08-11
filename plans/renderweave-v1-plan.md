@@ -851,3 +851,15 @@ compaction、三模型 immutable Profile、真实 PostgreSQL checkpoint recovery
 ledger CLOSED 状态不变。N6=`automated_verified`、N7/Goal=`in_progress`、v39=`EXPERIMENTAL`；下一
 DAG 节点为 exact-clean full/Document Vision 与 fresh identity/snapshot/budget/J1/process/lease，之后才可
 考虑 Flash bounded smoke。Plus 仅余 1 attempt，Max/final 仍受同版本三阶段、质量、A2 与最终 J1 门约束。
+
+### product-v39 Flash live disposition
+
+exact-clean `0625a23` 的 full 9/9、Document Vision 19-line canary、双实现 identity 与 v39 snapshot 通过。
+Flash lifecycle `37cc036`→NOT_OPEN→`1431233`→唯一 wrapper→`678ef2e`→NOT_OPEN 闭合；独立
+verifier/payload scan PASS：3 attempts，前两次 OBSERVE 为 invalid region-kind 与 reading-order gap，第三次
+为无 actual usage 的网络错误。v39 normalization 未命中，0 HIERARCHY/BINDING/Candidate。
+
+Goal 为 413 reservations（407 SETTLED、6 RESERVED、0 BREACHED）；Flash 累计 152 attempts/
+1,105,020 exposed tokens/¥0.538392，Plus/Max 不变，三 ledger CLOSED。N6=`automated_verified`、
+N7/Goal=`in_progress`、v39=`EXPERIMENTAL`；CLOSED authorization 不重跑，Plus/Max/final 20/60 不执行。
+下一 DAG 节点只能由 payload-free 细分诊断或 repository synthetic 唯一约束建立新 bounded 假设。

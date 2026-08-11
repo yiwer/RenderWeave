@@ -11,11 +11,10 @@
   三个预算槽位各追加 500,000 tokens，当前累计 cap 1,500,000，并把 Flash/Plus Goal cost cap 各设为 ¥10、
   固定 24h 窗口至 `2026-08-12T09:51:55Z`；Max ¥18、每槽 180 attempts、单 authorization 500,000 不变
 - 当前节点：N0–N1、N3–N4、N6 `automated_verified`；N2 `live_verified_mixed_a1_a2`；N5
-  `live_verified_not_promoted`；N7 `in_progress`。v38 Flash 五次均停在 OBSERVE，其中 reading-order gap×2
-  驱动 pipeline 4.26/product-v39 的 bounded canonical sibling-order compaction；codec/Profile、real-PG
-  lease recovery、monitor/review 与 E2E 已提交到 `d0ed4d3`，尚待 checkpoint 后 exact-clean full/Document
-  Vision 与 fresh pre-live 重算。当前 Goal 为 410 reservations（405 SETTLED、5 历史 Plus RESERVED、
-  0 BREACHED），三份 live ledger `CLOSED`，Profile 均隐藏 `EXPERIMENTAL`
+  `live_verified_not_promoted`；N7 `in_progress`。pipeline 4.26/product-v39 已完成离线/PG/UI 与 exact-clean
+  gate，但 Flash live 前两次 OBSERVE 分别为 invalid region-kind、reading-order gap，第三次网络错误后按 halt
+  合同停止；v39 normalization 与 HIERARCHY/BINDING 均未触达。当前 Goal 为 413 reservations（407
+  SETTLED、6 RESERVED、0 BREACHED），三份 live ledger `CLOSED`，Profile 均隐藏 `EXPERIMENTAL`
 
 ## 四维执行配置
 
@@ -797,3 +796,18 @@ v39 保持 `EXPERIMENTAL`，N6=`automated_verified`、N7/Goal=`in_progress`。�
 exact-clean revision 上执行 full/Document Vision，fresh 重算 evaluation identity、v39 snapshots、Goal/J1/
 time/process/lease；全绿后才考虑 Flash single synthetic case、最多 5 calls。Plus 仅余 1 attempt 不调用；
 Max/final 20/60 的同版本三阶段、质量、独立复核与最终 J1 门不变。
+
+### v39 Flash live disposition
+
+- gates/identity：clean `0625a23`；full `20260811-233119-full` 9/9；Document Vision
+  `20260811-233555-document-vision` 19 lines；identity=`3abc7eba…52696d`；Flash snapshot=
+  `667db9b4…d1a2bc`。
+- lifecycle/A2：`37cc036` PROPOSED→NOT_OPEN→`1431233` OPEN→唯一 wrapper→`678ef2e` CLOSED→
+  NOT_OPEN；3 attempts、17,289 actual tokens、¥0.008900 actual cost、76,442 ms、0 abandoned、payload PASS。
+- outcome：OBSERVE invalid region-kind×1、reading-order gap×1、network error×1；第三次无 actual usage 并保留
+  worst-case reservation；0 HIERARCHY/BINDING，v39 normalization 未命中。
+- budget/state：Goal=413 reservations；Flash/Plus/Max=152/179/82 attempts、
+  1,105,020/1,087,500/491,919 exposed tokens、¥0.538392/¥4.159620/¥10.289316；三 ledger CLOSED。
+
+v39 继续 `EXPERIMENTAL`，N6=`automated_verified`、N7/Goal=`in_progress`。CLOSED authorization 不重跑；
+Plus/Max/final 20/60 不启动。下一安全节点回到离线 payload-free diagnostic/reading-order verifier。

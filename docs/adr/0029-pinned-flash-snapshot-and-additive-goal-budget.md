@@ -268,3 +268,15 @@ Flash/Plus Goal cap 各 ¥10、Max ¥18，J1 截止 `2026-08-12T09:51:55Z`（exc
 attempt/cost/stage gate：Plus 仅余 1 attempt，不能用于证明三阶段；v39 只有在 exact-clean full/Document
 Vision 与 fresh identity/Profile/Goal/J1/time/process/lease 全绿后，才可为 Flash 提议单 synthetic case、
 最多 5 calls。Max 仍须等待同版本三阶段可达且质量门成立，final 20/60 与最终 J1 不变。
+
+### product-v39 Flash 结算
+
+v39 Flash authorization 按 `37cc036`→NOT_OPEN→`1431233`→唯一 wrapper→`678ef2e`→NOT_OPEN 完整
+闭合。3 个 Provider attempts 中前两个 SETTLED，actual usage 为 17,289 tokens/¥0.008900；第三个在
+`DASHSCOPE_NETWORK_ERROR` 后无 actual usage，按不可释放的 worst-case reservation 计入 Goal。该授权不重跑。
+
+Goal 现为 413 reservations（407 SETTLED、6 RESERVED、0 BREACHED）。Flash/Plus/Max 累计为
+152/179/82 attempts、1,105,020/1,087,500/491,919 exposed tokens 与
+¥0.538392/¥4.159620/¥10.289316；6 个 RESERVED 中 5 个为历史 Plus、1 个为本次 Flash 网络失败。
+三 ledger CLOSED，仍低于 180 attempts、1.5M tokens 与各自 CNY cap。由于 v39 未越过 OBSERVE，Plus
+仅余 1 attempt 仍不调用，Max/final 20/60 的同版本三阶段与质量门也未满足。

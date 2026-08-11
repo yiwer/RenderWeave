@@ -1211,3 +1211,21 @@ pair 2/2、inference 193/193、Web 73/73、typecheck/lint、Playwright 7/7。Nod
 exact-clean Node 24 full 尚未执行。本节点 Provider=0、Goal 保持 410 reservations、三 ledger CLOSED。
 因此 N6 仍为 `automated_verified`，product-v39 仍 `EXPERIMENTAL`，N7/Goal 仍 `in_progress`；live 三阶段、
 质量、final eval、最终独立复核与业务/视觉 J1 均未由本决策满足。
+
+### product-v39 Flash live 结论
+
+exact-clean `0625a23` 已通过 full 9/9（`20260811-233119-full`）和冻结 Document Vision 19-line canary
+（`20260811-233555-document-vision`）。Java/独立 Python identity 均为
+`renderweave-visual-evaluation-tree-sha256/2:3abc7ebae12956a55ba6145f5157a448571f374d5f23344b730cb818ed52696d`，
+Flash v39 canonical snapshot 为 `667db9b4238eb95bcbe69ec38625b48eb059d681ba7d01419487645d95d1a2bc`。
+
+授权按 `37cc036` PROPOSED→NOT_OPEN→`1431233` OPEN→唯一 wrapper→`678ef2e` CLOSED→NOT_OPEN
+闭合。wrapper exit 0、90.704 秒；独立 verifier/payload scan PASS，1 completed、0 abandoned、3 attempts、
+8,220 input + 9,069 output actual tokens、¥0.008900 actual cost、76,442 ms。前两次 OBSERVE 分别为
+invalid region-kind 与 reading-order gap；第三次网络错误无 actual usage，按既有 halt/recovery 合同保留
+reservation。全程没有读取或持久化模型 payload，结束后 0 process/held lease。
+
+v39 normalization 未命中，且 HIERARCHY/BINDING/Candidate 未触达，因此本 live 既不否定离线 contract，
+也不建立质量改善证据。仅凭现有 fixed code 不能判断 gap 是 duplicate/tie、位置冲突还是其他不可唯一状态，
+不得读取 payload 或放宽 strict enum/order。product-v39 保持 `EXPERIMENTAL`，N6=`automated_verified`、
+N7/Goal=`in_progress`；Plus/Max/final eval 不启动。

@@ -802,3 +802,21 @@
   identity、三份 v39 Profile snapshot、Goal/J1/time/process/lease。全绿后才可考虑 Flash 单 synthetic case、
   最多 5 calls；Plus 仅剩 1 attempt 不足以证明三阶段，Max/final 20/60 仍受同版本三阶段、质量、独立复核
   与最终 J1 门约束。
+
+### v39 Flash live disposition
+
+- exact-clean `0625a23` 的 full `20260811-233119-full` 9/9（237.61 秒）与 Document Vision
+  `20260811-233555-document-vision` 19-line canary PASS；Java/Python identity 一致为
+  `/2:3abc7eba…52696d`，Flash v39 snapshot=`667db9b4…d1a2bc`。
+- lifecycle 为 `37cc036` PROPOSED → NOT_OPEN → `1431233` OPEN →唯一 wrapper→`678ef2e` CLOSED→
+  NOT_OPEN。wrapper exit 0/90.704 秒；两侧负探针均为 0 Provider marker、7 个 watched files 零写入，
+  结束后 0 process/0 held lease。
+- 独立 verifier/payload scan PASS：1 completed、0 abandoned、3 Provider attempts、8,220 input + 9,069
+  output actual tokens、¥0.008900 actual cost、76,442 ms。前两次 OBSERVE 分别为 invalid region-kind 与
+  reading-order gap；第三次 `DASHSCOPE_NETWORK_ERROR` 无 actual usage，按 halt 合同停止并保留 worst-case
+  reservation。v39 reading-order normalization 未命中，HIERARCHY/BINDING/Candidate 均未触达。
+- Goal 为 413 reservations（407 SETTLED、6 RESERVED、0 BREACHED）；其中 5 个是历史 Plus RESERVED、
+  1 个是本次网络失败的 Flash reservation。Flash/Plus/Max=152/179/82 attempts、
+  1,105,020/1,087,500/491,919 exposed tokens、¥0.538392/¥4.159620/¥10.289316；三 ledger CLOSED。
+  v39 仍 `EXPERIMENTAL`、N6=`automated_verified`、N7/Goal=`in_progress`。该 CLOSED authorization 不重跑，
+  Plus/Max/final 20/60 不启动；fixed code 不足以证明可进一步放宽 order/enum 合同。

@@ -356,3 +356,19 @@ product-v38 仍 `EXPERIMENTAL`、N6=`automated_verified`、N7/Goal=`in_progress`
   product-v39=`EXPERIMENTAL`、N6=`automated_verified`、N7/Goal=`in_progress`；exact-clean full/Document
   Vision、fresh identity/snapshot/budget/J1/process/lease、Flash bounded live、final eval/A2 与最终业务/视觉
   J1 尚未完成。
+
+#### v39 Flash live 规格状态
+
+exact-clean full/Document Vision、双实现 identity、Profile snapshot 与 Goal/J1/process/lease preflight 均通过。
+Flash 按 `37cc036`→NOT_OPEN→`1431233`→唯一 wrapper→`678ef2e`→NOT_OPEN 闭合；独立 verifier/
+payload scan PASS：1 completed、0 abandoned、3 attempts、17,289 actual tokens、¥0.008900 actual cost。
+
+前两次 OBSERVE 分别以 invalid region-kind 和 reading-order gap fail-closed；第三次网络错误无 actual usage，
+按 immutable Goal 合同保留 worst-case reservation并停止。v39 normalization 未命中，HIERARCHY/BINDING/
+Candidate 均未触达。fixed code 不授权读取 region/order/enum/model payload，也不足以证明进一步放宽现有
+canonical order 或 strict enum 合同；CLOSED authorization 不得重跑。
+
+Goal 为 413 reservations（407 SETTLED、6 RESERVED、0 BREACHED）；Flash/Plus/Max 累计为
+152/179/82 attempts、1,105,020/1,087,500/491,919 exposed tokens 与
+¥0.538392/¥4.159620/¥10.289316，三 ledger CLOSED。product-v39 仍 `EXPERIMENTAL`、N6=
+`automated_verified`、N7/Goal=`in_progress`；Plus/Max/final eval 门未满足。
