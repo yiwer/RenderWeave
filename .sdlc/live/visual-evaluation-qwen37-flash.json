@@ -1,14 +1,14 @@
 {
   "authorizationVersion": "renderweave-visual-evaluation-authorization/1.0",
-  "authorizationId": "visual-n7-unique-region-parent-v34-qwen37-flash-transit-20260811",
-  "status": "CLOSED",
+  "authorizationId": "visual-n7-empty-source-ancestor-v35-qwen37-flash-transit-20260811",
+  "status": "PROPOSED",
   "phase": "CANARY",
   "inputClassification": "REPOSITORY_SYNTHETIC_ONLY",
   "corpusVersion": "renderweave-visual-stage-corpus/1.0",
   "corpusSourceSha256": "bf0db7bf0ac5c4e2b357cdd96c49ff70a7b30a5bc59f322a915020dc29fc605e",
-  "evaluationIdentity": "renderweave-visual-evaluation-tree-sha256/2:dbeeb7cf9f928508b7b9f0f6148fdcf9451c69876cb7f0715397fa4fbd3d1f50",
-  "profileId": "dashscope-qwen37-flash-20260715-product-v34-hybrid-generic",
-  "profileSnapshotSha256": "9a678ea6eecb9754e01bc8279c65c0d20cdf293a899f27a97878d0c683717d21",
+  "evaluationIdentity": "renderweave-visual-evaluation-tree-sha256/2:e623107c2af8f57935f71a94dc791ea1da5e701f105d25621da8a6ad52e49d37",
+  "profileId": "dashscope-qwen37-flash-20260715-product-v35-hybrid-generic",
+  "profileSnapshotSha256": "f84747b5f3a2e2e4955bab966da4f6222ae84204f52fef44d430199b3c6f34d0",
   "model": "qwen3.7-flash-2026-07-15",
   "caseIds": [
     "transit-board-v3"
@@ -20,5 +20,5 @@
   "approvedBy": "yiwer",
   "approvedAt": "2026-08-11T09:51:55Z",
   "expiresAt": "2026-08-12T09:51:55Z",
-  "approvalScope": "Goal J1 CANARY approved by yiwer for the qwen3.7-flash-2026-07-15 stable slot with a cumulative CNY 10 cap and a fixed 24-hour window; only repository-synthetic transit-board-v3 may run through immutable product-v34 pipeline 4.21 with the frozen RapidOCR/OpenVINO capability; the bounded unique-existing-parent repair may only replace an existing non-ROOT region parent with the unique most-specific strictly containing compatible existing container, then revalidate the complete forest, while equal boxes, zero or multiple candidates, cycles and any invalid result remain fail-closed; inherited evidence-owner and repeated-item SLOT-owner repairs remain bounded and independently tested; no raw OCR or model text, image, complete prompt, Candidate, gold or chain-of-thought may enter evidence; this ledger permits one case, at most 5 Provider attempts, 60000 exposed tokens and CNY 0.25, while Goal totals remain capped at 180 attempts and 1500000 exposed tokens; exact-clean full 20260811-191800 and Document Vision 20260811-192239 passed; require PROPOSED negative probe, fresh identity/Profile/Goal/time/process/lease preflight, one serial wrapper, no rerun after timeout, immediate CLOSED before evidence inspection, and no Plus or Max unless the same-version live result creates direct diagnostic value and their independent gates hold"
+  "approvalScope": "Goal J1 CANARY approved by yiwer for the qwen3.7-flash-2026-07-15 stable slot with a cumulative CNY 10 cap and the fixed 2026-08-11T09:51:55Z inclusive to 2026-08-12T09:51:55Z exclusive window; only repository-synthetic transit-board-v3 may run through immutable product-v35 pipeline 4.22 with the frozen RapidOCR/OpenVINO capability; empty relationship support may use only the unique cardinality-compatible strict ancestor GROUP or REPEATED_GROUP owner whose existing regions connect the parent and child entities, after the exact relationship-region owner path yields zero candidates, while unknown support, zero or multiple ancestors, same-region, disconnected, non-ancestor and any invalid result remain fail-closed; inherited v30, v31 and v34 repairs remain bounded and independently tested; no raw OCR or model text, image, complete prompt, Candidate, gold or chain-of-thought may enter evidence; this ledger permits one case, at most 5 Provider attempts, 60000 exposed tokens and CNY 0.25, while Goal totals remain capped at 180 attempts and 1500000 exposed tokens for the stable slot; exact-clean full 20260811-201946 and Document Vision 20260811-202810 passed after the missing-process-configuration failure was confirmed to leave zero Provider, child process or held lease; require PROPOSED negative probe, fresh identity/Profile/Goal/time/process/lease preflight, one serial wrapper, no concurrent rerun after timeout, immediate CLOSED before evidence inspection, and no Plus or Max unless same-version live accepted OBSERVE, HIERARCHY and BINDING and the independent quality gates hold"
 }
