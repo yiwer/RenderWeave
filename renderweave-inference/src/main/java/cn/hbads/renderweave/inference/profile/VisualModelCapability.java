@@ -97,11 +97,12 @@ public record VisualModelCapability(
 
     void requireCompatible(InferenceProfile profile) {
         Objects.requireNonNull(profile, "profile");
-        var productV42 = profile.profileId().endsWith("-product-v42-hybrid-generic");
-        var requiredOutputTokens = productV42 && advertisedMaximumOutputTokens != null
+        var extendedRuntimeProduct = profile.profileId().endsWith("-product-v42-hybrid-generic")
+                || profile.profileId().endsWith("-product-v43-hybrid-generic");
+        var requiredOutputTokens = extendedRuntimeProduct && advertisedMaximumOutputTokens != null
                 ? Math.min(16_384, advertisedMaximumOutputTokens)
                 : productMaximumOutputTokens;
-        var requiredStageTimeoutSeconds = productV42 ? 360 : productStageTimeoutSeconds;
+        var requiredStageTimeoutSeconds = extendedRuntimeProduct ? 360 : productStageTimeoutSeconds;
         if (!provider.equals(profile.provider()) || !model.equals(profile.model())
                 || !providerProtocol.equals(profile.providerProtocol())
                 || !"JSON_OBJECT".equals(profile.responseFormat())
