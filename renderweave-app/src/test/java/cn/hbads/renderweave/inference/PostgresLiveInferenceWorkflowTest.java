@@ -120,6 +120,8 @@ class PostgresLiveInferenceWorkflowTest {
             "dashscope-qwen37-flash-20260715-product-v31-hybrid-generic";
     private static final String EMPTY_SUPPORT_OWNER_NORMALIZED_HYBRID_VISUAL_PROFILE =
             "dashscope-qwen37-flash-20260715-product-v32-hybrid-generic";
+    private static final String UNKNOWN_SUPPORT_OWNER_NORMALIZED_HYBRID_VISUAL_PROFILE =
+            "dashscope-qwen37-flash-20260715-product-v33-hybrid-generic";
     private static final String DOCUMENT_VISION_CAPABILITY =
             "rapidocr-3.9.2-openvino-2026.0.0-ppocrv6-small-c05805399d7d10b1";
 
@@ -1793,6 +1795,68 @@ class PostgresLiveInferenceWorkflowTest {
                 .doesNotContain("ocr-00-000");
         assertThat(review.validationProblemsJson())
                 .doesNotContain("OCR_SENTINEL_V32_EMPTY_SUPPORT_OWNER")
+                .doesNotContain("ocr-00-000");
+    }
+
+    @Test
+    void pipelineFourPointTwentyNormalizesOneUnknownRelationshipSupportOwner() {
+        var blobs = new MemoryBlobStore();
+        var created = createGroundedVisual(
+                blobs, "unknown-support-owner-normalized-station",
+                UNKNOWN_SUPPORT_OWNER_NORMALIZED_HYBRID_VISUAL_PROFILE
+        );
+        var unknownSupport = groundedStationHierarchy().replace(
+                "\"regionId\":\"routes\",\"supportingElementIds\":[\"route-group\"]",
+                "\"regionId\":\"routes\",\"supportingElementIds\":[\"unknown-group\"]"
+        );
+        var provider = new ScriptedProvider(
+                request -> response(request, groundedStationElements()),
+                request -> response(request, unknownSupport),
+                request -> response(request, groundedStationBindings())
+        );
+        var preprocessCalls = new AtomicInteger();
+        var preprocessor = hybridPreprocessor(
+                preprocessCalls, "OCR_SENTINEL_V33_UNKNOWN_SUPPORT_OWNER"
+        );
+
+        var finished = worker(provider, blobs, T0.plusSeconds(1), preprocessor)
+                .processNext("unknown-support-owner-normalized-worker").orElseThrow();
+
+        assertThat(finished.state())
+                .as("failure=%s attempts=%s", finished.failureCode(), workflowStore.attempts(created))
+                .isEqualTo(InferenceRunState.REVIEW_REQUIRED);
+        assertThat(preprocessCalls).hasValue(1);
+        assertThat(provider.requests).extracting(ProviderInferenceRequest::stage)
+                .containsExactly(
+                        InferenceStage.OBSERVE,
+                        InferenceStage.HIERARCHY,
+                        InferenceStage.ELEMENT_BINDING
+                );
+        assertThat(workflowStore.attempts(created)).extracting(InferenceAttempt::status)
+                .containsExactly(
+                        InferenceAttemptStatus.SUCCEEDED,
+                        InferenceAttemptStatus.SUCCEEDED,
+                        InferenceAttemptStatus.SUCCEEDED
+                );
+        assertThat(workflowStore.attempts(created).get(1).problemCodeCounts())
+                .containsExactlyInAnyOrderEntriesOf(Map.of(
+                        "VISUAL_HIERARCHY_RELATIONSHIP_CARDINALITY_DERIVED", 3,
+                        "VISUAL_HIERARCHY_RELATIONSHIP_SUPPORT_OWNER_NORMALIZED", 1,
+                        "VISUAL_HIERARCHY_RELATIONSHIP_UNKNOWN_SUPPORT_OWNER_NORMALIZED", 1
+                ));
+        assertThat(workflowStore.attempts(created).getFirst().problemCodeCounts())
+                .doesNotContainKey("VISUAL_HIERARCHY_RELATIONSHIP_UNKNOWN_SUPPORT_OWNER_NORMALIZED");
+        assertThat(workflowStore.attempts(created).get(2).problemCodeCounts())
+                .doesNotContainKey("VISUAL_HIERARCHY_RELATIONSHIP_UNKNOWN_SUPPORT_OWNER_NORMALIZED");
+        assertThat(finished.checkpointJson())
+                .doesNotContain("OCR_SENTINEL_V33_UNKNOWN_SUPPORT_OWNER")
+                .doesNotContain("ocr-00-000");
+        var review = workflowStore.findCandidate(created).orElseThrow();
+        assertThat(review.currentJson())
+                .doesNotContain("OCR_SENTINEL_V33_UNKNOWN_SUPPORT_OWNER")
+                .doesNotContain("ocr-00-000");
+        assertThat(review.validationProblemsJson())
+                .doesNotContain("OCR_SENTINEL_V33_UNKNOWN_SUPPORT_OWNER")
                 .doesNotContain("ocr-00-000");
     }
 
