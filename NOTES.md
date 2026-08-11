@@ -1,6 +1,14 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-11 Max product-v24 已按 `a04691e` PROPOSED → `b8ac358` OPEN → `57b1502` CLOSED 完成单 case。
+  负探针精确 NOT_OPEN，Goal state/guard、303 reservations 与 target evidence 均未变化；复用未变的 Document
+  Vision canary，唯一 wrapper exit 0、92.715 秒。独立 verifier A2 PASS：17,500 input + 4,219 output、
+  79,835 ms、¥0.361884、payload scan PASS。OBSERVE、HIERARCHY、ELEMENT_BINDING 均首次 accepted，只有既有
+  cardinality-derived telemetry 命中；最终 slot 0/10、group 0/3、binding 0/10、field 0/13，16 critical
+  hallucinations、17 blockers，v24 observation normalization 未命中。Max Goal 现为 79/180、
+  465,016/1,500,000、¥9.816288；306 reservations（301 SETTLED、5 历史 Plus RESERVED），三份 ledger
+  CLOSED。CLOSED clean fast `.sdlc/evidence/20260811-091152-fast` PASS；Profile 不晋级，不进入 20/60-case eval。
 - 2026-08-11 Plus product-v24 已按 `3598c12` PROPOSED → `963d1e6` OPEN → `4747947` CLOSED 完成单 case。
   负探针精确 NOT_OPEN；复用未变的 Document Vision canary，唯一 wrapper exit 0、102.811 秒。独立 verifier A2
   PASS：29,666 input + 4,777 output、90,132 ms、¥0.097548、payload scan PASS。OBSERVE accepted；两次
@@ -201,18 +209,12 @@
 - 生命周期状态：P0 `accepted`；P1–P4 `automated_verified`；P5 Flash / Plus / Prompt v2 / Grounded v2 / T5-10 诊断均为 `live_independently_reviewed`，T5-9/T5-11 与 P6/T6-1 为 `independently_reviewed`；P6/T6-2 为 `human_acceptance_pending`；T6-3a 与 T6-5 N6 为 `automated_verified`、T6-3b pending。T6-5 整体仍 active，N7 `in_progress`。所有 DashScope Profile 仍为 `EXPERIMENTAL`；历史评测授权均 CLOSED，基础 Compose 默认关闭，显式 product-live overlay 已按用户授权开放。
 
 ## 下一步
-- [ ] P6/T6-5 图片识别 vNext：N0–N6 已形成独立 checkpoint；v17 exact relationship-region owner rewind 已
-  clean A1 且单 case lifecycle 已 CLOSED/A2，但仍停在 HIERARCHY；v18 detailed repair taxonomy 已 clean A1。
-  Plus v18 单 case 已 CLOSED/A2 并稳定暴露 relationship support IDs invalid；v19 bounded exact-duplicate
-  normalization 已 clean A1，Plus v19 已 CLOSED/A2 并稳定暴露 relationship region/cardinality invalid。v20
-  unique evidence-owned relationship region normalization 已 clean A1，Plus v20 已 CLOSED/A2 并重复暴露
-  relationship region connection invalid。v21 unique cardinality+connection-compatible GROUP-owned region
-  normalization 已 clean A1，Plus v21 已 CLOSED/A2 并稳定暴露 support-not-group。v22 unique exact-region
-  GROUP-owner support normalization 已 clean A1；Plus v22 已 CLOSED/A2 并首次完成三阶段，但未命中该规则、
-  report 与 stage-gold 质量仍未达门。Max v22 随后也已 CLOSED/A2：三阶段零 repair 通过，但 0 GROUP/
-  relationship，仍不具备 final eval 条件。Flash v23 hybrid 已 CLOSED/A2，但五次均因 region-kind/parent-kind
-  停在 OBSERVE；相同 v23 不重复。v24 bounded observation normalization 已 clean A1，下一步只能在 fresh exact
-  identity/Profile/J1/额度/时限全部满足时先做 Flash 单 case；Plus 已获准但不得与当前模型并发。
+- [ ] P6/T6-5 图片识别 vNext：N0–N6 已形成独立 checkpoint；v15–v24 的 bounded verifier/repair、hybrid
+  observation 与三模型单 case lifecycle 均已有 clean A1/A2。Flash v23/v24 未通过 OBSERVE；Plus/Max v24
+  均完成 OBSERVE→HIERARCHY→BINDING，但 stage-gold 质量未达门，Max v24 更有 16 critical hallucinations、
+  17 blockers。相同 v22/v23/v24 假设不重复，下一安全切片是零 Provider 的 stage-gold replay：在 OBSERVE
+  增加不读取模型原文的 bounded semantic verifier，并验证 earliest-stage repair/checkpoint/UI/E2E；形成新且
+  可离线证明的假设前，不进入 20/60-case final eval。
 - [x] Java / React / PostgreSQL / OpenAPI 最小 canary 与 A1 full gate 通过。
 - [x] 用户接受“A 默认表单 + B Map + 吸收 C 的 preview/密度”的编辑器方向（J1，2026-08-08）。
 - [x] 创建 P1–P4 implementation Goal。
@@ -310,10 +312,10 @@
 - `plans/logs/P6-T6-5-N5.md`：有界本地 Document Vision、v4/v6/v7 同 case live 消融、Plus Goal 用量、
   HTTP failure 硬停与未晋级决策；全部 ledger CLOSED。
 - `plans/logs/P6-T6-5-N6.md`：bounded semantic verifier、stage-local repair、selected crops、payload-free UI、
-  Flash v10–v12 A2 诊断、v15–v24 bounded verifier/observation 增量；Plus v22 首次三阶段可达但未晋级。
-- `plans/logs/P6-T6-5-N7.md`：pinned Flash/Goal guard v3、十五份单 case CLOSED/A2 reachability、v15–v24
-  bounded verifier/observation 增量；Plus v24 已到 BINDING，Flash v23/v24 未通过 OBSERVE，质量仍未达门。
-- 当前恢复点：`phase/p6-visual-recognition-vnext` 的 `4747947` Plus v24 CLOSED/A2；v24 实现为 `061101f`
+  Flash v10–v12 A2 诊断、v15–v24 bounded verifier/observation 增量；Plus/Max v24 三阶段可达但未晋级。
+- `plans/logs/P6-T6-5-N7.md`：pinned Flash/Goal guard v3、十六份单 case CLOSED/A2 reachability、v15–v24
+  bounded verifier/observation 增量；Plus/Max v24 已到 BINDING，Flash v23/v24 未通过 OBSERVE，质量仍未达门。
+- 当前恢复点：`phase/p6-visual-recognition-vnext` 的 `57b1502` Max v24 CLOSED/A2；v24 实现为 `061101f`
   clean server A1，guard v3 为 `2b23617` clean fast A1。编排 Goal `019fec8e-a851-7952-b49b-8be76a281a57`
-  因 turn interrupt 当前显示 `paused`，用户已明确继续同一 objective，未创建 replacement Goal。三阶段入口门已
-  满足；下一安全切片是 fresh exact Max v24 单 case 前置核验，未满足则继续零 Provider 安全任务。
+  因 turn interrupt 当前显示 `paused`，用户已明确继续同一 objective，未创建 replacement Goal。三模型 v24
+  live 均已闭环；下一安全切片是零 Provider 的 OBSERVE bounded semantic verifier 与 earliest-stage replay。
