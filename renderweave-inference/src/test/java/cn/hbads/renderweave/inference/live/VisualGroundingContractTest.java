@@ -263,6 +263,54 @@ class VisualGroundingContractTest {
     }
 
     @Test
+    void boundedRepeatedItemSlotOwnerNormalizationUsesOnlyCanonicalEvidence()
+            throws Exception {
+        var coarseOwner = elementsJson().replace(
+                "\"regionIds\":[\"item-a\",\"item-b\"]",
+                "\"regionIds\":[\"repeat\"]"
+        );
+        var currentFailure = assertThrows(InvalidVisualAnalysisException.class, () ->
+                codec.parseElements(
+                        coarseOwner, views(), List.of(IMAGE_ID),
+                        VisualObservationNormalizationPolicy
+                                .BOUNDED_ENUM_UNIQUE_ITEM_PARENT_AND_EVIDENCE_OWNER,
+                        VisualObservationSemanticPolicy
+                                .SLOT_LEAF_EVIDENCE_AND_GROUP_REGION_CARDINALITY_REQUIRED
+                )
+        );
+        assertEquals("VISUAL_SEMANTIC_REPEATED_ITEM_FIELD_MISSING",
+                currentFailure.diagnosticCode());
+
+        var normalized = codec.parseElements(
+                coarseOwner, views(), List.of(IMAGE_ID),
+                VisualObservationNormalizationPolicy
+                        .BOUNDED_ENUM_UNIQUE_ITEM_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER,
+                VisualObservationSemanticPolicy
+                        .SLOT_LEAF_EVIDENCE_AND_GROUP_REGION_CARDINALITY_REQUIRED
+        );
+        assertEquals(List.of("item-a", "item-b"),
+                normalized.grounding().regionIdsForElement("item-label"));
+        assertEquals(0, normalized.normalizedElementRegionOwners());
+        assertEquals(1, normalized.normalizedRepeatedItemSlotOwners());
+
+        var missingSecondItemEvidence = coarseOwner.replace(
+                "\"left\":100,\"top\":6300,\"right\":3000,\"bottom\":6800",
+                "\"left\":100,\"top\":900,\"right\":3000,\"bottom\":1400"
+        );
+        var incompleteFailure = assertThrows(InvalidVisualAnalysisException.class, () ->
+                codec.parseElements(
+                        missingSecondItemEvidence, views(), List.of(IMAGE_ID),
+                        VisualObservationNormalizationPolicy
+                                .BOUNDED_ENUM_UNIQUE_ITEM_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER,
+                        VisualObservationSemanticPolicy
+                                .SLOT_LEAF_EVIDENCE_AND_GROUP_REGION_CARDINALITY_REQUIRED
+                )
+        );
+        assertEquals("VISUAL_SEMANTIC_REPEATED_ITEM_FIELD_MISSING",
+                incompleteFailure.diagnosticCode());
+    }
+
+    @Test
     void classifiesProviderLengthStopsWithoutInspectingOrPersistingPayload() {
         var response = new ProviderInferenceResponse(
                 "{\"partial\":true}", "request-1", "qwen3.8-max",
