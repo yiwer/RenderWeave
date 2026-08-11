@@ -1246,3 +1246,21 @@ Profile；`05e1b65` 的 real-PG tracer 证明 OBSERVE checkpoint/lease recovery 
 用户决定 v40 验证后停止继续试探式放宽并冻结为阶段基线。阶段验收只主张工程可用：可运行、可恢复、
 可审计、可人工审核；在同版本三阶段、质量、final eval、最终 J1 未满足时继续标记 `EXPERIMENTAL` /
 `automated_verified`，不等价于生产晋级。
+
+### product-v40 live 反馈与最终冻结
+
+exact-clean `af2076a` 的 full 9/9（`20260812-001439-full`）与冻结 Document Vision 19-line canary
+（`20260812-002223-document-vision`）通过。Java/独立 Python identity 均为
+`renderweave-visual-evaluation-tree-sha256/2:902577dd1ac48b17fa96efd9a0c3f3a37c340f9a2af248548715e228a70abd63`；
+三份 v40 Profile snapshot 与冻结值一致。
+
+Flash 授权按 `0d38448` PROPOSED→NOT_OPEN→`5392aa1` OPEN→唯一 wrapper→`6e7f522` CLOSED→
+NOT_OPEN 闭合。独立 verifier/payload scan PASS：1 completed、0 abandoned、5 SETTLED attempts、20,699
+input + 22,605 output tokens、¥0.022226、171,157 ms。五次 OBSERVE 依次报告 invalid region-kind、sibling
+overlap、parent-kind、generic reading-order gap、invalid region-kind；没有 HIERARCHY、BINDING 或 Candidate。
+generic GAP 表明本次 shape 落在 v40 明确保留的 root/mixed/超界或其他不可唯一分类边界，不能据此新增 repair。
+
+因此本 ADR 冻结 pipeline 4.27/Prompt 10/product-v40，不再以剩余额度追逐单次成功。工程可用性由 exact
+full、真实 PostgreSQL recovery、Document Vision 与浏览器审核/Apply E2E 建立；真实模型识别成功率没有建立，
+所以 product-v40 继续 `EXPERIMENTAL`、N6=`automated_verified`，N7/Goal 未完成。后续若解除冻结，必须使用
+新版本、fresh identity/Profile/J1 与新的有界假设，不得改写本结论。

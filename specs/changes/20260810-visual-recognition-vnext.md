@@ -390,3 +390,17 @@ Goal 为 413 reservations（407 SETTLED、6 RESERVED、0 BREACHED）；Flash/Plu
 用户要求 v40 完成后冻结为本阶段稳定基线，并以可运行、可恢复、可审计、可人工审核为阶段性可用口径；
 不要求也不得声称生产级可靠性。exact-clean full/Document Vision、fresh identity/Profile/Goal/J1/process/
 lease 与受控 Flash smoke 尚未完成，因此当前仍为 N6=`automated_verified`、N7/Goal=`in_progress`。
+
+#### v40 Flash live 与冻结后的规格状态
+
+exact-clean full/Document Vision、双实现 identity、三份 Profile snapshot、Goal/J1/process/lease preflight
+均通过。Flash 以 `0d38448`→NOT_OPEN→`5392aa1`→唯一 wrapper→`6e7f522`→NOT_OPEN 闭合；独立
+verifier/payload scan PASS，5 attempts/43,304 tokens/¥0.022226 均在 authorization 与 Goal 上限内。
+
+五次调用都在 OBSERVE fail-closed，未产生 HIERARCHY、BINDING 或 Candidate。因此“阶段可用”限定为：
+本地 Document Vision 和确定性流水线可运行；checkpoint/lease 可恢复；fixed code、Token、费用、延迟可审计；
+通过合同的 Candidate 具备人工审核、编辑、移除和 Apply E2E。它不保证任意图片或当前 Flash smoke 会产出
+Candidate，也不满足生产可靠性、final eval 或最终业务/视觉 J1。
+
+pipeline 4.27、Prompt 10 与 product-v40 Profile 现冻结且保持 `EXPERIMENTAL`。三 ledger CLOSED；Plus/Max/
+final 不调用。N6=`automated_verified`，N7/Goal 仍未完成；后续算法变化必须使用新版本与新的精确授权。

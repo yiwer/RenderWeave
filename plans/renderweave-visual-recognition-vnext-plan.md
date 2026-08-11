@@ -833,3 +833,20 @@ product-v40 保持 `EXPERIMENTAL`，N6=`automated_verified`、N7/Goal=`in_progre
 exact-clean revision 上执行 full/Document Vision 与独立 verifier，fresh 重算 identity/Profile/Goal/J1/time/
 process/lease；有效时只执行 Flash single synthetic case、最多 5 calls。完成后冻结 v40 并阶段性收尾；
 若仍未达同版本三阶段/质量门，不调用 Plus/Max/final，也不把阶段可用性写成生产验收。
+
+### product-v40 Flash smoke 与阶段收尾
+
+- anchors：exact-clean `af2076a`；full `20260812-001439-full` 9/9；Document Vision
+  `20260812-002223-document-vision` 19 lines；identity=`902577dd…a70abd63`；三份 v40 snapshot 匹配。
+- lifecycle：`0d38448` PROPOSED→NOT_OPEN→`5392aa1` OPEN→唯一 wrapper→`6e7f522` CLOSED→
+  NOT_OPEN；wrapper exit 0/183.863 秒，后置 7 watched files 零变化，0 process/lease。
+- A2/outcome：verifier/payload scan PASS；1 completed、0 abandoned、5 attempts、20,699 input + 22,605
+  output tokens、¥0.022226、171,157 ms。全部停在 OBSERVE：enum×2、overlap×1、parent-kind×1、generic
+  reading-order gap×1；duplicate/position classifier 未命中，0 HIERARCHY/BINDING/Candidate。
+- budget：Goal=418 reservations（412 SETTLED、6 RESERVED、0 BREACHED）；Flash/Plus/Max=157/179/82
+  attempts、1,148,324/1,087,500/491,919 exposed tokens、¥0.560618/¥4.159620/¥10.289316；三
+  ledger CLOSED，evidence/Goal 同步校验一致。
+
+phase disposition：冻结 pipeline 4.27/Prompt 10/product-v40。deterministic/real-PG/browser gates 支持内部工程
+试用与失败后人工处置，但 live 没有证明该 case 的 Candidate 产出能力。product-v40=`EXPERIMENTAL`、
+N6=`automated_verified`、N7/Goal=`in_progress`；Plus/Max/final 不启动，Goal 不完成。

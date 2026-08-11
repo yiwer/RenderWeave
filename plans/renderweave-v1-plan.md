@@ -878,3 +878,18 @@ CLOSED 不变。N6=`automated_verified`、N7/Goal=`in_progress`、v40=`EXPERIMEN
 按用户阶段冻结决策，下一节点只完成 exact-clean full/Document Vision、fresh live preflight、受控 Flash
 single-case smoke 与文档收尾；若同版本三阶段/质量仍失败，则以工程可用但非生产可靠的状态结束本阶段，
 不启动 Plus/Max/final，也不完成 Goal。
+
+### product-v40 阶段冻结收尾
+
+exact-clean `af2076a` 已通过 full 9/9 与 Document Vision 19-line canary；双实现 identity、三份 Profile、
+Goal/J1/process/lease preflight 全绿。Flash lifecycle `0d38448`→NOT_OPEN→`5392aa1`→唯一 wrapper→
+`6e7f522`→NOT_OPEN 闭合，独立 verifier/payload scan PASS。
+
+live 为 1 completed、0 abandoned、5 OBSERVE attempts、43,304 actual tokens、¥0.022226；失败序列为 invalid
+region-kind、sibling overlap、parent-kind、generic reading-order gap、invalid region-kind，0 HIERARCHY/
+BINDING/Candidate。Goal 更新为 418 reservations；Flash/Plus/Max 累计 157/179/82 attempts、
+1,148,324/1,087,500/491,919 tokens 与 ¥0.560618/¥4.159620/¥10.289316，三 ledger CLOSED。
+
+v40 作为稳定阶段基线冻结。运行、恢复、审计、审核/Apply 的确定性与 E2E 路径可用；真实 Flash 对当前
+合成站牌未产出 Candidate，故识别质量仍不满足 N7/Goal。状态保持 product-v40=`EXPERIMENTAL`、
+N6=`automated_verified`、N7/Goal=`in_progress`；本阶段不再调用 Plus/Max/final，不完成 Goal。

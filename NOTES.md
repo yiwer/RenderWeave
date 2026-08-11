@@ -837,3 +837,24 @@
 - 用户要求 v40 验证后冻结并阶段性收尾，验收口径为可运行/可恢复/可审计/可人工审核，不要求本阶段达到
   生产级可靠性。当前 v40 仍 `EXPERIMENTAL`、N6=`automated_verified`、N7/Goal=`in_progress`；还需
   exact-clean full/Document Vision、fresh identity/Profile/Goal/J1/process/lease 与受控 Flash smoke。
+
+### v40 Flash live 与阶段冻结结论
+
+- exact-clean `af2076a` 已通过 full `20260812-001439-full` 9/9 与 Document Vision
+  `20260812-002223-document-vision` 19-line canary；Java/Python identity 一致为
+  `/2:902577dd…a70abd63`，Flash/Plus/Max v40 snapshot 分别为 `1f6f8cec…9e9e19`、
+  `2fd63065…17dd2`、`7444e737…30708`。
+- lifecycle 为 `0d38448` PROPOSED → NOT_OPEN → `5392aa1` OPEN →唯一 wrapper→`6e7f522` CLOSED→
+  NOT_OPEN。wrapper exit 0/183.863 秒；后置 7 个 watched files 的字节与时间戳零变化，结束后 0 process/
+  0 held lease。独立 verifier 与 payload scan PASS。
+- 单 case 1 completed、0 abandoned、5 SETTLED attempts、20,699 input + 22,605 output tokens、
+  ¥0.022226 actual cost、171,157 ms Provider latency。五次都停在 OBSERVE：invalid region-kind、sibling
+  overlap、parent-kind、generic reading-order gap、invalid region-kind；v40 duplicate/position classifier 未命中，
+  0 HIERARCHY/BINDING/Candidate。
+- Goal 现为 418 reservations（412 SETTLED、6 RESERVED、0 BREACHED）；Flash/Plus/Max=157/179/82
+  attempts、1,148,324/1,087,500/491,919 exposed tokens、¥0.560618/¥4.159620/¥10.289316；三 ledger
+  CLOSED，evidence 5 files 与 Goal state/guard 已逐字节同步。
+- v40 现在冻结为本阶段稳定工程基线：deterministic fixture/E2E 证明运行、checkpoint recovery、审计、审核/
+  Apply 链路可用，真实 Flash smoke 证明失败路径安全且可解释；但它没有证明当前模型能为该合成站牌产出
+  Candidate。故 product-v40 保持 `EXPERIMENTAL`，N6=`automated_verified`，N7/Goal 仍未完成；不调用
+  Plus/Max/final，不声称生产可靠或识别质量验收。

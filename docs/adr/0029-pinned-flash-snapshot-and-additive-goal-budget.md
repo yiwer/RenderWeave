@@ -295,3 +295,16 @@ case、最多 5 calls；Plus 仅剩 1 attempt 不调用，Max 仍受同版本三
 
 用户要求 smoke 后冻结 v40 做阶段性收尾，不再用额度追逐生产可靠性。未满足最终硬门时 Profile 保持
 `EXPERIMENTAL`、Goal 保持未完成；剩余额度不因阶段冻结自动消费或释放。
+
+### product-v40 Flash 结算与额度冻结
+
+v40 Flash authorization 以 `0d38448`→NOT_OPEN→`5392aa1`→唯一 wrapper→`6e7f522`→NOT_OPEN 完整
+关闭。5 个 Provider attempts 全部 SETTLED，actual usage 为 43,304 tokens、¥0.022226；独立 verifier、
+payload scan、两侧 NOT_OPEN 与 process/lease 检查均通过。该 CLOSED authorization 不重跑。
+
+Goal 现为 418 reservations（412 SETTLED、6 RESERVED、0 BREACHED）。Flash stable slot 为 157 attempts、
+1,148,324 exposed tokens、¥0.560618；Plus 为 179/1,087,500/¥4.159620；Max 为
+82/491,919/¥10.289316。全部仍低于 180 attempts、1.5M tokens 和各自 CNY cap，三 ledger CLOSED。
+
+本次没有越过 OBSERVE，同版本三阶段/质量门仍失败；Plus 仅余 1 attempt，Max 前置条件不成立。按用户的
+阶段冻结决定，剩余 Flash/Plus/Max 额度保持未消费，不再在 v40 下调用，也不启动 final 20/60。
