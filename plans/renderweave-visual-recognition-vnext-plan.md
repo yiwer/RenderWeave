@@ -8,15 +8,15 @@
 - Spec delta：`specs/changes/20260810-visual-recognition-vnext.md`
 - ADR：ADR-0022、ADR-0023、ADR-0024、ADR-0025、ADR-0026、ADR-0027、ADR-0028、ADR-0029
 - 用户 J1：yiwer，2026-08-10；2026-08-11 delta 将 Flash 改为 `qwen3.7-flash-2026-07-15`，随后两次给
-  三个预算槽位各追加 500,000 tokens，当前累计 cap 1,500,000；单 authorization 500,000、attempt/CNY/time
-  边界不变，精确约束见 spec delta
+  三个预算槽位各追加 500,000 tokens，当前累计 cap 1,500,000，并把 Flash/Plus Goal cost cap 各设为 ¥10、
+  固定 24h 窗口至 `2026-08-12T09:51:55Z`；Max ¥18、每槽 180 attempts、单 authorization 500,000 不变
 - 当前节点：N0–N1、N3–N4、N6 `automated_verified`；N2 `live_verified_mixed_a1_a2`；N5
-  `live_verified_not_promoted`；N7 `in_progress`。v32 clean full/Document Vision 与 Plus single-case CLOSED/A2
-  已完成：OBSERVE accepted，HIERARCHY 两次以 support-element-unknown 拒绝，BINDING 未调用。
-  该 fixed code 驱动了 pipeline 4.20/product-v33 的 bounded unknown relationship-support owner repair；
-  codec/Profile/real-PG/monitor/review/1024px E2E 已通过并提交到 `94060a0`，但 v33 exact-clean
-  full/Document Vision 尚未跑。当前 Goal 为 372 reservations（367 SETTLED、5 历史 Plus RESERVED、
-  0 BREACHED），三份 live ledger `CLOSED`，Profile 均隐藏 `EXPERIMENTAL`
+  `live_verified_not_promoted`；N7 `in_progress`。v33 Flash/Plus CLOSED/A2 后没有形成同版本 HIERARCHY/
+  BINDING；其 parent fixed codes 驱动了 pipeline 4.21/product-v34 unique-existing-parent repair。
+  v34 codec/Profile/inheritance/real-PG lease recovery/monitor/review/1024px E2E 已通过并提交到 `de18000`，
+  尚待 checkpoint 后 exact-clean full/Document Vision 与 fresh pre-live 重算。当前 Goal 为 381 reservations
+  （376 SETTLED、5 历史 Plus RESERVED、0 BREACHED），三份 live ledger `CLOSED`，Profile 均隐藏
+  `EXPERIMENTAL`
 
 ## 四维执行配置
 
@@ -596,3 +596,23 @@ drift、journal/guard 不一致、payload 边界失败或同一无新假设失�
 - 下一节点：先离线实现并证明 unique-existing-parent OBSERVE normalization；只允许同 artifact、严格包含、
   kind/repeat-group 兼容且唯一最具体的已有 parent，任何歧义/循环/root/全局校验失败原子回退。随后才进行
   versioned Profile、real-PG recovery、payload-free telemetry、monitor/review UI/E2E 和分层 gates。
+
+## 2026-08-11 v34 unique-existing-parent 离线 checkpoint
+
+- `14e02b8`：新增同 artifact、严格包含、kind/repeat-group 兼容、唯一最具体的 existing-parent bounded
+  normalization；ROOT/equal-box/zero-or-many/cycle/limit/forest failure 原子回退，enum/overlap/歧义继续关闭。
+- `10f11b3`：发布 pipeline 4.21、三份 immutable product-v34 Profile、worker telemetry 与独立 snapshot
+  verifier；`029277a`：锁定 v34 继续继承 evidence-owner 与 repeated-item SLOT-owner repair。
+- `abb52a3`：真实 PostgreSQL lease-expiry 恢复从已完成 OBSERVE 继续 HIERARCHY/BINDING，到达
+  `REVIEW_REQUIRED`；ephemeral OCR 可重算但不持久化，Provider OBSERVE 不重放。
+- `de18000`：monitor/review 中文说明、Node 24 组件/构建和 1024px payload-free Playwright 闭环。
+- 自动证据：inference 188/188、independent verifier 2/2、real-PG 57/57、Web 73/73 + build、Playwright
+  1/1；`.sdlc/evidence/20260811-190723-web` 与
+  `.sdlc/evidence/20260811-191314-v34-diagnostics-e2e-results`。
+- 治理：本节点 Provider attempts=0，381 reservations 与三份 CLOSED ledger 不变。N6=`automated_verified`、
+  N7/Goal=`in_progress`、product-v34=`EXPERIMENTAL`。
+
+下一门：提交 checkpoint 后在 exact-clean revision 执行 full 与 Document Vision；随后逐次 fresh 重算 identity、
+v34 snapshot、Goal/token/attempt/CNY/time、J1、API 配置存在性、进程与 lease。优先 Flash 单 case/最多 5 calls；
+Plus 仅在剩余 5 attempts 内且 Flash 信号直接相关时使用；Max/final 20/60 仍受同版本 live 三阶段、质量、独立
+复核与最终 J1 硬门。

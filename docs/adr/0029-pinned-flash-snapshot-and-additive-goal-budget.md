@@ -117,3 +117,16 @@ Flash `f12e5af`→`69e8455`→`f50f591` 结算 4 attempts / 37,181 tokens / ¥0.
 381 reservations 中 376 SETTLED、5 个历史 Plus RESERVED、0 BREACHED。Plus 第五次才接受 OBSERVE，
 随后在 HIERARCHY 前由 ledger call cap 停止；Flash 未接受 OBSERVE。因此 Max 的同版本三阶段门仍未成立，
 保持 CLOSED。guard v4 的成功迁移只证明治理闭环，不构成 Profile 晋级或 final eval 许可。
+
+## product-v34 离线节点与下一次预算入口
+
+pipeline 4.21/product-v34 的 codec、Profile、PostgreSQL 恢复、monitor/review 与 E2E 均为零 Provider 的离线
+节点，未创建 reservation 或 ledger，也不构成新的费用授权。Goal 因而仍为 381 reservations（376 SETTLED、
+5 个历史 Plus RESERVED、0 BREACHED），Flash/Plus/Max 分别保持 124/175/82 attempts、
+852,697/1,056,615/491,919 exposed tokens 与 ¥0.412832/¥4.063422/¥10.289316；三份 ledger 均 CLOSED。
+
+若在固定 J1 窗口结束前进入 v34 live，必须在 exact-clean checkpoint 上重新计算 evaluation identity、当次
+Profile snapshot、Goal aggregate、剩余 token/attempt/CNY/time、API 配置存在性、进程与 evidence lease。
+Flash 仍优先执行单 synthetic case、最多 5 calls 的完整 ledger lifecycle；Plus 只剩 5 个 Goal attempts，
+必须在 Flash 结果有直接诊断价值且 fresh preflight 仍通过时使用。Max 仍要求 v34 同版本 live accepted
+OBSERVE/HIERARCHY/BINDING、质量门与当次 J1；离线三阶段 tracer 不能替代该前置。

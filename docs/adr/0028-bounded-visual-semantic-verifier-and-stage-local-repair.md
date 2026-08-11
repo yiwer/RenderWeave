@@ -981,3 +981,30 @@ Flash 的 4 次 OBSERVE 分别以 region-kind enum×2、parent-containment、par
 零/多候选、ROOT、缺 parent、相等 box、循环风险、超过有界数量或任一全局 forest 校验失败时必须原子
 保留原输入。不得创建 region/topology/evidence、读文字、按距离/gold 排名或从 rejected OBSERVE 选择 crop。
 该候选在测试、版本化 Profile、真实 PostgreSQL 恢复、telemetry 与 UI/E2E 全部闭环前不构成新的 live 许可。
+
+## N6/N7 product-v34：唯一既有 region parent 归一化
+
+v33 的 Flash/Plus live 只通过 payload-free fixed code 暴露了 parent-invalid、parent-kind 与
+parent-containment；enum、sibling overlap 和 evidence-owner 歧义仍没有唯一安全映射。`14e02b8` 因此只对
+已有、非 ROOT region 的错误 parent link 启用新 policy：候选必须来自同一 artifact，严格几何包含 child，满足
+SECTION/GROUP 或匹配 repeatGroupId 的 REPEATED_GROUP→ITEM 合同，并且是唯一最具体的既有 parent。ROOT、相等
+box、零/多候选、循环风险、超过 8 个替换或完整 forest 重验失败均原子返回原输入；不创建 region/topology、
+不读取文字、不按距离或 gold 排名，也不从 rejected OBSERVE 生成 crop。
+
+`10f11b3` 以 pipeline 4.21 和三份 immutable product-v34 Profile 显式 opt-in，并只记录数量型
+`VISUAL_GROUNDING_REGION_PARENT_NORMALIZED`。`029277a` 用回归锁定 v34 继续继承 v30 的 evidence-owner 与
+v31 的 repeated-item SLOT-owner bounded repair，避免版本升级静默丢失既有安全能力。旧 Profile、Prompt 与
+policy 字节不改写，v34 仍隐藏且为 `EXPERIMENTAL`。
+
+`abb52a3` 的真实 PostgreSQL tracer 在 OBSERVE 接受一次唯一 parent 归一化后让 lease 过期，再由新 worker 从
+HIERARCHY checkpoint 接管并完成 BINDING 到 `REVIEW_REQUIRED`。因为 OCR observation 按合同是 ephemeral、禁止
+持久化，恢复时允许确定性 Document Vision 重算；Provider OBSERVE 严格只调用一次。专项 telemetry 仅出现在
+OBSERVE，OCR sentinel 未进入 checkpoint、Candidate 或 problems。`de18000` 将 fixed code 与中文说明接入
+monitor/review，并由 1024px keyboard/Axe Playwright 验证 payload 不展示。
+
+当前离线证据为 contract 30/30、inference 188/188、独立 snapshot verifier 2/2、real-PG 整类 57/57、Node 24
+Web 14 files/73 tests + build、Playwright 1/1；Web 与浏览器证据分别为
+`.sdlc/evidence/20260811-190723-web` 和
+`.sdlc/evidence/20260811-191314-v34-diagnostics-e2e-results`。本增量 Provider attempts=0，Goal 仍为
+381 reservations，三份 visual ledger 均 CLOSED。它证明有界合同、恢复与审核面，不证明真实 v34 质量；N6
+保持 `automated_verified`，N7/Goal 保持 `in_progress`，final 20/60、最终独立 verifier 与业务/视觉 J1 仍是硬门。

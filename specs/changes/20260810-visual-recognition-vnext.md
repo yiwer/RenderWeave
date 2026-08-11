@@ -153,8 +153,9 @@ tokens。该 delta 只覆盖原信封的 Flash 模型身份和 Goal token cap：
 - 批准人：yiwer
 - 日期：2026-08-10
 - 结论与理由：采用审查推荐的“先度量、再替换编译、再增强感知、最后认证”路径；普通实现取舍由 Agent
-  选择并写 ADR，不逐项等待批准；真实调用严格受原信封及 2026-08-11 两次 J1 delta 的三槽位累计
-  1.5M-token cap、单 authorization 500k cap、未增加的 attempts/CNY 上限和精确账本约束。
+  选择并写 ADR，不逐项等待批准；真实调用严格受原信封及 2026-08-11 后续 J1 delta 的三槽位累计
+  1.5M-token cap、单 authorization 500k cap、每槽 180 attempts、Flash/Plus ¥10 与 Max ¥18 Goal cost cap、
+  固定时限和精确账本约束。
 
 ## 2026-08-11 Flash/Plus 费用与 24h J1 delta
 
@@ -166,7 +167,7 @@ tokens。该 delta 只覆盖原信封的 Flash 模型身份和 Goal token cap：
   ¥10。Max 保持 ¥18，且仍受“同版本 live 三阶段 + 质量 + 当次 J1”前置约束。
 - 每槽 1,500,000 exposed tokens、180 attempts、单 authorization 500,000 tokens、batch≤5、
   `REPOSITORY_SYNTHETIC_ONLY`、payload-free evidence 与串行 ledger 生命周期均不变。
-- 每次 OPEN 前仍须冻结 clean evaluation identity、精确 v33 Profile snapshot、case、次数、ledger
+- 每次 OPEN 前仍须冻结 clean evaluation identity、精确的当次 immutable Profile snapshot（当前候选为 v34）、case、次数、ledger
   费用和时限；先做单 case/最多 5 attempts，只有 OBSERVE→HIERARCHY→BINDING 同版本 live 可达才
   进入 Max 或 final 20/60。
 
@@ -187,3 +188,19 @@ tokens。该 delta 只覆盖原信封的 Flash 模型身份和 Goal token cap：
   均不得启动。三份 ledger 最终 CLOSED；Goal 为 381 reservations（376 SETTLED、5 个历史 Plus
   RESERVED、0 BREACHED）。Profile 继续 `EXPERIMENTAL`，N6 继续 `automated_verified`，N7/Goal
   继续 `in_progress`。
+
+### 2026-08-11 v34 unique-existing-parent 离线候选
+
+- `14e02b8` 只对已有非 ROOT region 的错误 parent link 做 bounded normalization：候选必须同 artifact、
+  严格包含、kind/repeat-group 兼容且唯一最具体；ROOT、相等 box、零/多候选、循环、超过 8 个替换或
+  完整 forest 校验失败均原子回退。enum、sibling overlap 与歧义继续 fail-closed。
+- `10f11b3` 发布 pipeline 4.21 与三份 product-v34 immutable Profile；`029277a` 明确保留 v30/v31 的
+  evidence-owner 与 repeated-item SLOT-owner 安全继承。成功只记录
+  `VISUAL_GROUNDING_REGION_PARENT_NORMALIZED` 数量，不记录 ID、坐标或 payload。
+- `abb52a3` 以真实 PostgreSQL 证明 OBSERVE checkpoint 后 lease-expiry 接管只继续 HIERARCHY/BINDING，
+  Provider OBSERVE 不重放；ephemeral OCR 可确定性重算但不持久化。`de18000` 完成 monitor/review 与
+  1024px payload-free E2E。
+- 验证为 inference 188/188、独立 snapshot verifier 2/2、real-PG 57/57、Node 24 Web 73/73 + build、
+  Playwright 1/1。该节点 Provider attempts=0、381 reservations 与三份 CLOSED ledger 不变；v34 继续
+  `EXPERIMENTAL`，N6=`automated_verified`、N7/Goal=`in_progress`。只有 fresh clean gate、identity/
+  snapshot/budget/time/lease preflight 后才可执行 Flash bounded smoke；Plus/Max/final eval 的既有门不变。

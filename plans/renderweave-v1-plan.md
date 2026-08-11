@@ -705,3 +705,19 @@ Goal 为 381 reservations（376 SETTLED、5 历史 Plus RESERVED、0 BREACHED）
 三 ledger CLOSED。v33 不满足同版本 HIERARCHY/BINDING，Max/final 20/60 不启动；N6=`automated_verified`、
 N7/Goal=`in_progress`、Profile=`EXPERIMENTAL`。下一实现仅允许 unique-existing-parent 的 bounded OBSERVE
 repair，enum/overlap/歧义保持 fail-closed。
+
+## 24. T6-5 v34 unique-existing-parent 离线 checkpoint
+
+`14e02b8`、`10f11b3`、`029277a`、`abb52a3`、`de18000` 完成 pipeline 4.21/product-v34：只在同
+artifact、严格包含、kind/repeat-group 兼容且唯一最具体时，把已有非 ROOT region 的错误 parent link
+归一化到已有容器；任何 ROOT/equal-box/zero-or-many/cycle/limit/forest failure 都原子回退。v34 保留 v30/v31
+的 observation repairs，只暴露数量型 telemetry，不创建或持久化 payload。
+
+real-PG lease-expiry 场景从 accepted OBSERVE checkpoint 继续 HIERARCHY/BINDING 到
+`REVIEW_REQUIRED`，Provider OBSERVE 不重放；OCR 只在本地按 ephemeral 合同重算且 sentinel 零持久化。
+inference 188/188、independent verifier 2/2、real-PG 57/57、Node 24 Web 73/73 + build、1024px
+Playwright 1/1 PASS。本节点 Provider attempts=0，Goal/ledger 用量不变，三 ledger CLOSED。
+
+N6=`automated_verified`、N7/Goal=`in_progress`、Profile=`EXPERIMENTAL`。下一步先提交本 checkpoint，
+再在 exact-clean revision 上跑 full/Document Vision 并 fresh 重算 identity、v34 snapshots、Goal 与 J1；
+优先 Flash bounded smoke，Plus 只剩 5 attempts，Max/final 20/60 的同版本三阶段、质量与最终验收门不变。
