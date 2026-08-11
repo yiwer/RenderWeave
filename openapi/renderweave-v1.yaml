@@ -1759,8 +1759,9 @@ components:
       type: object
       additionalProperties: false
       required:
-        [profileId, provider, model, certification, supportedModes, maximumTotalCalls,
-         maximumOutputTokens, maximumEstimatedCostMicrosCny, pricingEffectiveDate]
+        [profileId, provider, model, certification, available, unavailabilityCode,
+         supportedModes, maximumTotalCalls, maximumOutputTokens,
+         maximumEstimatedCostMicrosCny, pricingEffectiveDate]
       properties:
         profileId:
           type: string
@@ -1777,6 +1778,13 @@ components:
         certification:
           type: string
           const: EXPERIMENTAL
+        available:
+          type: boolean
+          description: True only when the exact local capability required by this immutable profile is ready.
+        unavailabilityCode:
+          type: [string, 'null']
+          pattern: '^[A-Z][A-Z0-9_]{0,127}$'
+          description: Payload-free fixed diagnostic code; null when the profile is available.
         supportedModes:
           type: array
           items:

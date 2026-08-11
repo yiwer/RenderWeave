@@ -556,6 +556,41 @@ test('offers the v40 image catalog with Plus selected and an optional cumulative
   expect(multipartBody).toContain('"costLimitMicrosCny":250000');
 });
 
+test('blocks v40 before queueing when the exact local vision capability is unavailable', async ({ page }) => {
+  let livePosts = 0;
+  await page.route('**/api/v1/inference-runs**', async (route) => {
+    const request = route.request();
+    const url = new URL(request.url());
+    if (request.method() === 'GET' && url.pathname === '/api/v1/inference-runs/replay-fixtures') {
+      await json(route, replayFixtures());
+    } else if (request.method() === 'GET' && url.pathname === '/api/v1/inference-runs/live-availability') {
+      const availability = liveAvailability(true);
+      await json(route, {
+        ...availability,
+        profiles: availability.profiles.map((profile) => ({
+          ...profile,
+          available: false,
+          unavailabilityCode: 'DOCUMENT_VISION_ADAPTER_MISSING',
+        })),
+      });
+    } else if (request.method() === 'GET' && url.pathname === '/api/v1/inference-runs') {
+      await json(route, { page: 1, size: 6, total: 0, items: [] });
+    } else if (request.method() === 'POST' && url.pathname === '/api/v1/inference-runs/live') {
+      livePosts += 1;
+      await route.abort('blockedbyclient');
+    } else {
+      await route.abort('failed');
+    }
+  });
+
+  await page.goto('/inference/new');
+  await expect(page.getByText('v40 本地 OCR / Layout 能力尚未就绪')).toBeVisible();
+  await expect(page.locator('.live-profile-grid button')).toHaveCount(3);
+  await expect(page.locator('.live-profile-grid button:disabled')).toHaveCount(3);
+  await expect(page.getByRole('button', { name: '排队识别并查看监控' })).toBeDisabled();
+  expect(livePosts).toBe(0);
+});
+
 test('requires confirmation to cancel and creates a new auditable retry run', async ({ page }) => {
   let run = runResponse(0, 'QUEUED');
   let cancelCalls = 0;
@@ -868,6 +903,8 @@ function liveAvailability(enabled = false) {
     provider: 'DASHSCOPE',
     model,
     certification: 'EXPERIMENTAL',
+    available: true,
+    unavailabilityCode: null,
     supportedModes,
     maximumTotalCalls: 5,
     maximumOutputTokens: 4096,

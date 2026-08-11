@@ -85,7 +85,11 @@ class LiveInferenceApiTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.enabled").value(true))
                 .andExpect(jsonPath("$.configured").value(true))
-                .andExpect(jsonPath("$.uploadEnabled").value(true));
+                .andExpect(jsonPath("$.uploadEnabled").value(true))
+                .andExpect(jsonPath("$.profiles[*].available",
+                        org.hamcrest.Matchers.everyItem(org.hamcrest.Matchers.is(true))))
+                .andExpect(jsonPath("$.profiles[*].unavailabilityCode",
+                        org.hamcrest.Matchers.everyItem(org.hamcrest.Matchers.nullValue())));
 
         assertThat(multipartProperties.getMaxFileSize().toBytes()).isEqualTo(11L * 1024 * 1024);
         assertThat(multipartProperties.getMaxRequestSize().toBytes()).isEqualTo(34L * 1024 * 1024);

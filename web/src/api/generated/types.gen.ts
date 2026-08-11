@@ -363,6 +363,14 @@ export type LiveProfileResponse = {
     provider: 'DASHSCOPE';
     model: 'qwen3.7-plus' | 'qwen3.8-max' | 'qwen3.7-flash-2026-07-15';
     certification: 'EXPERIMENTAL';
+    /**
+     * True only when the exact local capability required by this immutable profile is ready.
+     */
+    available: boolean;
+    /**
+     * Payload-free fixed diagnostic code; null when the profile is available.
+     */
+    unavailabilityCode: string | null;
     supportedModes: Array<InferenceMode>;
     maximumTotalCalls: number;
     maximumOutputTokens: number;
