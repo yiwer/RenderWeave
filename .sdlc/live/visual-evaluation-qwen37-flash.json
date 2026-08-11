@@ -1,14 +1,14 @@
 {
   "authorizationVersion": "renderweave-visual-evaluation-authorization/1.0",
-  "authorizationId": "visual-n7-hybrid-v23-qwen37-flash-transit-20260811",
-  "status": "CLOSED",
+  "authorizationId": "visual-n7-observation-normalization-v24-qwen37-flash-transit-20260811",
+  "status": "PROPOSED",
   "phase": "CANARY",
   "inputClassification": "REPOSITORY_SYNTHETIC_ONLY",
   "corpusVersion": "renderweave-visual-stage-corpus/1.0",
   "corpusSourceSha256": "bf0db7bf0ac5c4e2b357cdd96c49ff70a7b30a5bc59f322a915020dc29fc605e",
-  "evaluationIdentity": "renderweave-visual-evaluation-tree-sha256/1:d6f2be493cfcbfc5f6f1232b75067ba31e3322765529126fba24b5a84983b2be",
-  "profileId": "dashscope-qwen37-flash-20260715-product-v23-hybrid-generic",
-  "profileSnapshotSha256": "9053885261116ded0de3cc04d2e7ebe01f130fa78748c95b3f2da81c6782d102",
+  "evaluationIdentity": "renderweave-visual-evaluation-tree-sha256/1:087f56257c53f63c6f84607b30cbb996089d3060051fd22a352ebc66eef0a049",
+  "profileId": "dashscope-qwen37-flash-20260715-product-v24-hybrid-generic",
+  "profileSnapshotSha256": "d4c2f0ddfdf88163c12dd327db5e8161f034b5132408f49cce282c976b02a085",
   "model": "qwen3.7-flash-2026-07-15",
   "caseIds": [
     "transit-board-v3"
@@ -18,7 +18,7 @@
   "maximumCostMicrosCny": 100000,
   "maximumCasesPerBatch": 1,
   "approvedBy": "yiwer",
-  "approvedAt": "2026-08-11T00:02:59Z",
-  "expiresAt": "2026-08-11T12:02:59Z",
-  "approvalScope": "Goal J1 CANARY: user pinned Flash to qwen3.7-flash-2026-07-15, granted its stable slot 1000000 exposed tokens and requested continued Goal progression; one repository-synthetic transit-board-v3 case through immutable product-v23-hybrid-generic pipeline 4.10, combining all bounded product-v22 support-owner, region, cardinality and repair policies with the exact repository-bound RapidOCR/OpenVINO Document Vision capability as one ephemeral untrusted secondary observation shared across OBSERVE, HIERARCHY and ELEMENT_BINDING; OCR payload cannot directly create structure and is not persisted; at most 5 attempts, 60000 exposed tokens, CNY 0.10 and one case per batch within the alias-normalized 1000000-token Flash Goal slot; payload-free evidence and immediate CLOSED after this smoke"
+  "approvedAt": "2026-08-11T00:40:33Z",
+  "expiresAt": "2026-08-11T12:40:33Z",
+  "approvalScope": "Goal J1 CANARY: user pinned Flash to qwen3.7-flash-2026-07-15, granted its stable slot a cumulative 1500000 exposed tokens and requested continued Goal progression; one repository-synthetic transit-board-v3 case through immutable product-v24-hybrid-generic pipeline 4.11, inheriting the exact repository-bound ephemeral RapidOCR/OpenVINO secondary observation and all bounded product-v22 support-owner policies while adding only documented region-kind alias normalization, uniquely evidenced ITEM parent normalization and geometry-derived affected-sibling reading-order normalization; unknown, missing or ambiguous structure remains fail-closed; at most 5 attempts, 60000 exposed tokens, CNY 0.10 and one case per batch within the alias-normalized 1500000-token Flash Goal slot; payload-free evidence, no concurrent rerun and immediate CLOSED after this smoke"
 }
