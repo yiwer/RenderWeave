@@ -93,11 +93,15 @@ describe('Candidate atomic apply workspace', () => {
 
     expect(await screen.findByRole('heading', { name: '阶段与检查点' })).toBeTruthy();
     expect(screen.getByText('元素归属')).toBeTruthy();
-    expect(screen.getByText('重复区域')).toBeTruthy();
+    expect(screen.getAllByText('重复区域').length).toBeGreaterThan(0);
     expect(screen.getAllByText('VISUAL_SEMANTIC_REPEATED_GROUP_ELEMENT_MISSING').length).toBeGreaterThan(0);
     expect(screen.getAllByText('VISUAL_GROUNDING_ELEMENT_REGION_NORMALIZED').length)
       .toBeGreaterThan(0);
     expect(screen.getAllByText('已按唯一最具体证据区域归一化元素归属').length)
+      .toBeGreaterThan(0);
+    expect(screen.getAllByText('VISUAL_GROUNDING_REPEATED_ITEM_SLOT_OWNER_NORMALIZED').length)
+      .toBeGreaterThan(0);
+    expect(screen.getAllByText('已按唯一可见 ITEM 证据归一化重复字段归属').length)
       .toBeGreaterThan(0);
     expect(screen.getAllByText('VISUAL_HIERARCHY_RELATIONSHIP_ENCLOSING_SUPPORT_OWNER_NORMALIZED').length)
       .toBeGreaterThan(0);
@@ -272,7 +276,10 @@ function visualReviewLog(run: InferenceRunResponse): InferenceExecutionLogRespon
         outputTokens: 4_000,
         costMicrosCny: 2_500,
         durationMillis: 19_000,
-        problemCodeCounts: { VISUAL_GROUNDING_ELEMENT_REGION_NORMALIZED: 1 },
+        problemCodeCounts: {
+          VISUAL_GROUNDING_ELEMENT_REGION_NORMALIZED: 1,
+          VISUAL_GROUNDING_REPEATED_ITEM_SLOT_OWNER_NORMALIZED: 1,
+        },
         completedAt: '2026-08-10T04:03:02Z',
       },
       {

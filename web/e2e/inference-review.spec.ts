@@ -284,7 +284,7 @@ test('keeps bounded visual diagnostics keyboard-accessible at 1024 without paylo
     mode: 'IMAGE_ONLY',
     stage: 'HIERARCHY',
     sequence: 8,
-    profileId: 'dashscope-qwen37-flash-20260715-product-v28-hybrid-generic',
+    profileId: 'dashscope-qwen37-flash-20260715-product-v31-hybrid-generic',
     sourceReference: 'repository-synthetic-transit-board-v3',
     failureCode: 'VISUAL_HIERARCHY_V2_RELATIONSHIP_SUPPORT_IDS_EMPTY',
   };
@@ -323,7 +323,10 @@ test('keeps bounded visual diagnostics keyboard-accessible at 1024 without paylo
         outputTokens: 4_220,
         costMicrosCny: 3_001,
         durationMillis: 24_012,
-        problemCodeCounts: { VISUAL_GROUNDING_ELEMENT_REGION_NORMALIZED: 1 },
+        problemCodeCounts: {
+          VISUAL_GROUNDING_ELEMENT_REGION_NORMALIZED: 1,
+          VISUAL_GROUNDING_REPEATED_ITEM_SLOT_OWNER_NORMALIZED: 1,
+        },
         completedAt: '2026-08-10T00:00:08Z',
       },
       {
@@ -387,6 +390,8 @@ test('keeps bounded visual diagnostics keyboard-accessible at 1024 without paylo
   await expect(page.getByText('MANY GROUP 与重复区域的双向归属不一致').first()).toBeVisible();
   await expect(page.getByText('VISUAL_GROUNDING_ELEMENT_REGION_NORMALIZED').first()).toBeVisible();
   await expect(page.getByText('已按唯一最具体证据区域归一化元素归属').first()).toBeVisible();
+  await expect(page.getByText('VISUAL_GROUNDING_REPEATED_ITEM_SLOT_OWNER_NORMALIZED').first()).toBeVisible();
+  await expect(page.getByText('已按唯一可见 ITEM 证据归一化重复字段归属').first()).toBeVisible();
   await expect(page.getByText('VISUAL_HIERARCHY_V2_RELATIONSHIP_SUPPORT_IDS_EMPTY').first()).toBeVisible();
   await expect(page.getByText('层级关系支撑 ID 列表不能为空').first()).toBeVisible();
   await expect(page.getByText('已按唯一容器区域 GROUP 归属归一化层级关系支撑').first()).toBeVisible();

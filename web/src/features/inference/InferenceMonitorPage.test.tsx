@@ -111,6 +111,10 @@ describe('Inference monitor workspace', () => {
       .toBeGreaterThan(0);
     expect(screen.getAllByText('已按唯一最具体证据区域归一化元素归属').length)
       .toBeGreaterThan(0);
+    expect(screen.getAllByText('VISUAL_GROUNDING_REPEATED_ITEM_SLOT_OWNER_NORMALIZED').length)
+      .toBeGreaterThan(0);
+    expect(screen.getAllByText('已按唯一可见 ITEM 证据归一化重复字段归属').length)
+      .toBeGreaterThan(0);
     expect(screen.getByText('证据区域')).toBeTruthy();
     expect(screen.getAllByText('最早返回 盘点图片元素 修复').length).toBeGreaterThan(0);
     expect(screen.getAllByText('VISUAL_HIERARCHY_V2_RELATIONSHIP_SUPPORT_IDS_EMPTY').length)
@@ -307,7 +311,10 @@ function visualExecutionLog(runSnapshot: InferenceRunResponse): InferenceExecuti
         outputTokens: 4_220,
         costMicrosCny: 3_001,
         durationMillis: 24_012,
-        problemCodeCounts: { VISUAL_GROUNDING_ELEMENT_REGION_NORMALIZED: 1 },
+        problemCodeCounts: {
+          VISUAL_GROUNDING_ELEMENT_REGION_NORMALIZED: 1,
+          VISUAL_GROUNDING_REPEATED_ITEM_SLOT_OWNER_NORMALIZED: 1,
+        },
         completedAt: '2026-08-10T04:03:10Z',
       },
       {
