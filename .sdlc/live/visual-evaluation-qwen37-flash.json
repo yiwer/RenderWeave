@@ -1,14 +1,14 @@
 {
   "authorizationVersion": "renderweave-visual-evaluation-authorization/1.0",
-  "authorizationId": "visual-n7-empty-source-ancestor-v35-qwen37-flash-transit-20260811",
-  "status": "CLOSED",
+  "authorizationId": "visual-n7-structural-region-kind-v36-qwen37-flash-transit-20260811",
+  "status": "PROPOSED",
   "phase": "CANARY",
   "inputClassification": "REPOSITORY_SYNTHETIC_ONLY",
   "corpusVersion": "renderweave-visual-stage-corpus/1.0",
   "corpusSourceSha256": "bf0db7bf0ac5c4e2b357cdd96c49ff70a7b30a5bc59f322a915020dc29fc605e",
-  "evaluationIdentity": "renderweave-visual-evaluation-tree-sha256/2:e623107c2af8f57935f71a94dc791ea1da5e701f105d25621da8a6ad52e49d37",
-  "profileId": "dashscope-qwen37-flash-20260715-product-v35-hybrid-generic",
-  "profileSnapshotSha256": "f84747b5f3a2e2e4955bab966da4f6222ae84204f52fef44d430199b3c6f34d0",
+  "evaluationIdentity": "renderweave-visual-evaluation-tree-sha256/2:e2fb024c23c95b53cae753d391cb91e20b69eb8bf25e889c3b46245d23889d2d",
+  "profileId": "dashscope-qwen37-flash-20260715-product-v36-hybrid-generic",
+  "profileSnapshotSha256": "cf32df2789f51ffdb893c3d56ca0425b5d36e3ef01fa8cb208e203917023a86a",
   "model": "qwen3.7-flash-2026-07-15",
   "caseIds": [
     "transit-board-v3"
@@ -20,5 +20,5 @@
   "approvedBy": "yiwer",
   "approvedAt": "2026-08-11T09:51:55Z",
   "expiresAt": "2026-08-12T09:51:55Z",
-  "approvalScope": "Goal J1 CANARY approved by yiwer for the qwen3.7-flash-2026-07-15 stable slot with a cumulative CNY 10 cap and the fixed 2026-08-11T09:51:55Z inclusive to 2026-08-12T09:51:55Z exclusive window; only repository-synthetic transit-board-v3 may run through immutable product-v35 pipeline 4.22 with the frozen RapidOCR/OpenVINO capability; empty relationship support may use only the unique cardinality-compatible strict ancestor GROUP or REPEATED_GROUP owner whose existing regions connect the parent and child entities, after the exact relationship-region owner path yields zero candidates, while unknown support, zero or multiple ancestors, same-region, disconnected, non-ancestor and any invalid result remain fail-closed; inherited v30, v31 and v34 repairs remain bounded and independently tested; no raw OCR or model text, image, complete prompt, Candidate, gold or chain-of-thought may enter evidence; this ledger permits one case, at most 5 Provider attempts, 60000 exposed tokens and CNY 0.25, while Goal totals remain capped at 180 attempts and 1500000 exposed tokens for the stable slot; exact-clean full 20260811-201946 and Document Vision 20260811-202810 passed after the missing-process-configuration failure was confirmed to leave zero Provider, child process or held lease; require PROPOSED negative probe, fresh identity/Profile/Goal/time/process/lease preflight, one serial wrapper, no concurrent rerun after timeout, immediate CLOSED before evidence inspection, and no Plus or Max unless same-version live accepted OBSERVE, HIERARCHY and BINDING and the independent quality gates hold"
+  "approvalScope": "Goal J1 CANARY approved by yiwer for the qwen3.7-flash-2026-07-15 stable slot with a cumulative CNY 10 cap and the fixed 2026-08-11T09:51:55Z inclusive to 2026-08-12T09:51:55Z exclusive window; only repository-synthetic transit-board-v3 may run through immutable product-v36 pipeline 4.23 with the frozen RapidOCR/OpenVINO capability; a region kind may be normalized only when its typed shape uniquely requires REPEATED_GROUP from MANY plus repeatGroupId, ITEM from ONE plus repeatGroupId, or ROOT from no parent plus ONE plus no repeatGroupId plus one exact full-artifact evidence box, while ambiguous SECTION or GROUP containers, missing repeat facts, invalid topology and any invalid final grounding remain fail-closed; inherited v30, v31, v34 and v35 repairs remain bounded and independently tested; no raw OCR or model text, image, complete prompt, Candidate, gold or chain-of-thought may enter evidence; this ledger permits one case, at most 5 Provider attempts, 60000 exposed tokens and CNY 0.25, while Goal totals remain capped at 180 attempts and 1500000 exposed tokens for the stable slot; exact-clean full 20260811-211447 and Document Vision 20260811-211916 passed at revision a357bee4f41499752e4ec3d3d36be8621208a5b6; require PROPOSED negative probe, fresh identity/Profile/Goal/time/process/lease preflight, one serial wrapper, no concurrent rerun after timeout, immediate CLOSED before evidence inspection, and no Plus or Max unless same-version live accepted OBSERVE, HIERARCHY and BINDING and the independent quality gates hold"
 }
