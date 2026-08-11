@@ -360,3 +360,22 @@ drift、journal/guard 不一致、payload 边界失败或同一无新假设失�
   snapshot、aggregate budget 与时限。Flash 优先单 case/最多 5 calls；Plus 依 Flash 新信号决定；Max 仅在 v28
   三阶段合同可达且质量/J1 门仍有效时考虑。未满足 final 20/60、final full、final independent verifier 与业务/
   视觉 J1 前，N7 保持 `in_progress`，product-v28 保持 `EXPERIMENTAL`。
+
+## 2026-08-11 v28 full 与 live checkpoint
+
+- clean gate：`0a3b90b` 的 detached full 9/9、`workingTreeDirty=false`，evidence
+  `.sdlc/evidence/20260811-125916-full`；Document Vision 19-line canary
+  `.sdlc/evidence/20260811-130940-document-vision`。fresh Java/Python `/2` identity 一致为 `…c669d172`，
+  三份 product-v28 Profile snapshot 精确匹配。
+- Flash：CRLF preflight lifecycle `54b4e9d`→`7a4778d`→`61088f4` 在 Provider 前因 corpus checkout bytes
+  漂移关闭；LF replacement `701f774`→`10789d8`→`c39672f` A2 PASS，5 attempts / 44,335 tokens，全部
+  OBSERVE rejected，未形成结构。
+- Plus：首个 `0f8a0dd`→`6668708`→`4215a14` 因调用侧 timeout=120 超过 60 秒合同而在 Provider 前以
+  `DOCUMENT_VISION_TIMEOUT_INVALID` 完成，0 attempts；独立 v28b `2a69291`→`fcd3abc`→`4add041` 使用合法
+  60 秒边界，A2 PASS，5 attempts / 36,204 tokens。OBSERVE accepted 后，三次 HIERARCHY 均由
+  `VISUAL_HIERARCHY_V2_RELATIONSHIP_REGION_CARDINALITY_INVALID` 拒绝，BINDING 未执行，slot 仅 1/10 matched。
+- 停止门：同版本三阶段与质量门未成立，Max CLOSED 且未调用。Goal 为 345 reservations（340 SETTLED、
+  5 历史 Plus RESERVED、0 BREACHED）；Flash/Plus/Max 分别为 105/158/82 attempts 与
+  685,591/936,770/491,919 tokens。下一安全节点是针对同一 HIERARCHY fixed code 的 bounded、payload-free
+  stage-local repair/no-progress 假设；先离线与真实 PG，不能直接 final 20/60。N7/Goal 保持 `in_progress`，
+  Profile 保持 `EXPERIMENTAL`。

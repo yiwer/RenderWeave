@@ -1,6 +1,16 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-11 product-v28 clean full 与 Flash/Plus bounded smoke 已完成。revision `0a3b90b` 的 full gate
+  9/9 PASS（`.sdlc/evidence/20260811-125916-full`），Document Vision 19-line canary
+  `.sdlc/evidence/20260811-130940-document-vision` PASS；fresh Git-blob identity 为 `…c669d172`。Flash v28b
+  CLOSED/A2：5 attempts、44,335 tokens，全部停在 OBSERVE。Plus 首个 v28 ledger 因本地 timeout=120 超过
+  60 秒合同，在 Provider 前以 `DOCUMENT_VISION_TIMEOUT_INVALID` 结束，0 attempts；独立 replacement v28b
+  CLOSED/A2：5 attempts、36,204 tokens，OBSERVE 第二次 accepted，HIERARCHY 三次均以
+  `VISUAL_HIERARCHY_V2_RELATIONSHIP_REGION_CARDINALITY_INVALID` fail-closed，未进入 BINDING。Max 的同版本
+  三阶段与质量门不成立，保持 CLOSED、未调用。累计 Flash 105/180、685,591/1,500,000、¥0.326091；Plus
+  158/180、936,770/1,500,000、¥3.608122；Max 82/180、491,919/1,500,000、¥10.289316。345 reservations
+  为 340 SETTLED、5 个历史 Plus RESERVED、0 BREACHED；N7 仍 `in_progress`，Profile 仍 `EXPERIMENTAL`。
 - 2026-08-11 pipeline 4.15/product-v28 minimal entity ownership 离线节点已完成。`76a0635` 拒绝非根 entity
   拥有 ROOT、同一 entity 同时拥有祖先/后代 region，并要求唯一最小 spatial binding owner；`a96fec1` 将
   binding ambiguity 精确回退 HIERARCHY、保留 OBSERVE checkpoint，并发布三模型 immutable Profile；`6a8a36f`

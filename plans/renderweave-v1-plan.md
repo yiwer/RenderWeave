@@ -533,3 +533,20 @@ Web gate 73/73 + typecheck/lint/build PASS，evidence 为 `.sdlc/evidence/202608
 1/1 PASS。本节点没有 Provider 调用，三份 ledger CLOSED，累计 tokens/attempts/CNY 不变。product-v28 仍隐藏
 `EXPERIMENTAL`；只有 clean full、fresh `/2` identity/snapshot、预算/时限重算全部通过后，才允许从 Flash 单
 case/最多 5 calls 开始新的受控 lifecycle。
+
+## 12. T6-5 v28 full 与受控 live checkpoint
+
+`0a3b90b` 的 isolated full 9/9 A1 PASS，Document Vision current-revision canary 19 lines PASS；fresh `/2`
+identity 为 `…c669d172`。Flash 的 CRLF preflight 红生命周期保留并 CLOSED；LF replacement v28b 独立 A2
+PASS，5 attempts / 44,335 tokens，全部停在 OBSERVE。
+
+Plus 首个 v28 authorization 因调用配置 `timeout=120` 超出本地 1..60 秒合同，在 Provider 前以
+`DOCUMENT_VISION_TIMEOUT_INVALID` 完成并 CLOSED，0 attempts；没有重开。独立 v28b lifecycle 使用 60 秒，
+5 attempts / 36,204 tokens、A2/payload scan PASS：第二次 OBSERVE accepted，三次 HIERARCHY 均因
+`VISUAL_HIERARCHY_V2_RELATIONSHIP_REGION_CARDINALITY_INVALID` fail-closed，未进入 BINDING，slot 仅
+1/10 matched，final Candidate 未形成。
+
+Max 的 v28 三阶段/质量门因此不成立，保持 CLOSED。Goal 现为 345 reservations（340 SETTLED、5 历史 Plus
+RESERVED、0 BREACHED），Flash/Plus/Max 累计 tokens 为 685,591/936,770/491,919，各槽 cap 1,500,000。
+T6-5 仍不晋级：N6=`automated_verified`、N7=`in_progress`、Profile=`EXPERIMENTAL`。下一节点先对 HIERARCHY
+同码重复失败实现 bounded stage-local repair/no-progress 合同并完成 offline/real-PG/受影响 gate。

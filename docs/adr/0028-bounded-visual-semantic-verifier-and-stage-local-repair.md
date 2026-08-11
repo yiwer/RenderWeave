@@ -663,3 +663,32 @@ Candidate 或 gold，不按距离/reading order 排名，也不补造或删除 t
 三份 ledger 仍 CLOSED，累计预算仍为 Flash 641,256、Plus 900,566、Max 491,919 / 各 1,500,000 tokens。
 product-v28 继续隐藏 `EXPERIMENTAL`；完成 clean full、fresh `/2` identity/Profile snapshot 与全部 pre-live 硬门前
 不创建 OPEN ledger。
+
+## N7 v28 clean full、受控 smoke 与停止决定
+
+revision `0a3b90b` 在 detached clean worktree 完成 full gate 9/9，`workingTreeDirty=false`，A1 evidence 为
+`.sdlc/evidence/20260811-125916-full`；同 revision 的 pinned Document Vision 19-line canary evidence 为
+`.sdlc/evidence/20260811-130940-document-vision`。Java 与独立 Python 对 LF clean tree 一致得到 Git-blob
+evaluation identity `renderweave-visual-evaluation-tree-sha256/2:c97c0ea01d6f9096b25a11f8faf2b6b45b7f55ad8f2336916379af98c669d172`；
+Flash/Plus/Max product-v28 snapshot 分别为 `85444b…1b3026`、`90057d…0b2`、`2470b5…9644`。
+
+Flash 首个 lifecycle `54b4e9d` → `7a4778d` → `61088f4` 在 CRLF checkout 因 corpus resource bytes 漂移于
+Provider/evidence/Goal 之前失败并 CLOSED；Git-blob `/2` identity 本身未漂移。没有重开该 authorization，而是
+在 LF clean worktree 以 replacement `701f774` → `10789d8` → `c39672f` 完成。独立 verifier A2 PASS：
+5 attempts、20,112 input + 24,223 output、196,049 ms、payload scan PASS。五次 OBSERVE 均被 enum/parent-kind
+合同拒绝，未形成结构，v28 ownership telemetry 无机会命中。
+
+Plus 首个 v28 lifecycle `0f8a0dd` → `6668708` → `4215a14` 的 wrapper 配置把 Document Vision timeout 设为
+120 秒，超过实现的 1..60 秒合同，因此以固定码 `DOCUMENT_VISION_TIMEOUT_INVALID` 在 Provider 前完成；A2 PASS、
+0 attempts/tokens/latency，Goal 不变。该历史授权永久 CLOSED。确认合法 60 秒边界后，独立 replacement v28b
+按 `2a69291` → `fcd3abc` → `4add041` 完成；A2 PASS：5 attempts、27,680 input + 8,524 output、151,360 ms、
+payload scan PASS。OBSERVE 首次因 evidence-outside-region 拒绝、第二次 accepted；随后三次 HIERARCHY 均以
+`VISUAL_HIERARCHY_V2_RELATIONSHIP_REGION_CARDINALITY_INVALID` fail-closed，未进入 BINDING。质量标量仅
+slot 1/10 matched、group 0/3、entity/relationship/binding 0，tree edit 20/20，final Candidate 未形成。
+
+因此 v28 没有建立同版本 accepted OBSERVE→HIERARCHY→BINDING，更没有满足质量/J1 门；Max 保持 CLOSED、没有
+调用。最终 Goal 为 345 reservations（340 SETTLED、5 个历史 Plus RESERVED、0 BREACHED）：Flash slot
+105 attempts / 685,591 tokens / ¥0.326091，Plus 158 / 936,770 / ¥3.608122，Max 82 / 491,919 / ¥10.289316；
+每槽仍受 180 attempts、1,500,000 tokens 与既有 CNY 上限约束。product-v28 继续 `EXPERIMENTAL`，N6 继续
+`automated_verified`，N7 继续 `in_progress`；下一假设必须先离线解决 HIERARCHY 同码重复失败并通过真实
+PostgreSQL/受影响 gate，不能放宽 cardinality 合同或直接扩大 final eval。
