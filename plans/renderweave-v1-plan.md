@@ -914,3 +914,7 @@ immutable successor Profile，并保留 dated Flash v40 Profile 与全部历史 
 generated client、Web 和 E2E 均改为 successor。pipeline 4.27、三阶段 Provider 合同、本地 materializer、
 verifier、checkpoint 与审核/Apply 不变。定向 Java/Web/Playwright 全绿，Provider=0，三 ledger CLOSED，
 累计 Flash 槽位不重置。successor 没有新 live 质量证据，N6/N7/Goal 状态不变。
+
+隔离 clean `ba409e9` 的 full evidence `20260812-015332-full` 为 9/9 PASS，包含正式 Node 24、真实
+PostgreSQL/runtime canary、独立 evidence verifier 与浏览器审核/Apply；metadata clean，离线 Provider
+attempts/reservations 均为 0。

@@ -64,6 +64,8 @@ lease preflight。本补充只改变产品选择器身份，不改变 pipeline 4
   固定 code，0 run/0 reservation/0 Provider。
 - `67d46c5` 新增通用 Flash immutable successor，并同步 Registry、API/OpenAPI、generated client 与 Web
   选择器；dated Flash 仍可读取和恢复，但不再允许创建新产品 run。本节点 Provider=0。
+- `ba409e9` 的隔离 clean full evidence `20260812-015332-full` 为 9/9 PASS；metadata 精确绑定该 revision，
+  `workingTreeDirty=false`，离线汇总的 Provider attempts/reservations 均为 0。
 - `6906be1` 的隔离 clean full evidence `20260812-012644-full` 为 9/9 PASS，包含正式 Node 24、真实
   PostgreSQL、runtime canary、独立 evidence verifier 与浏览器审核/Apply；clean Document Vision evidence
   `20260812-013158-document-vision` 为 1/1 PASS、19 lines。两份 metadata 都绑定该 revision 且

@@ -889,3 +889,6 @@
 - 本节点 Provider=0、三个 visual ledger 仍 `CLOSED`；Flash alias 继续共用既有稳定预算槽位，不重置额度或
   消费。successor 尚无新 live 质量证据，状态保持 product-v40=`EXPERIMENTAL`、N6=`automated_verified`、
   N7/Goal=`in_progress`。
+- 隔离 clean `ba409e9` 的 full `20260812-015332-full` 9/9 PASS；metadata clean，inference 196/196、
+  正式 Node 24 Web 73/73、独立 verifier 2/2、真实 PostgreSQL/runtime 和浏览器路径通过，offline summary
+  明确为 0 Provider attempts/reservations。

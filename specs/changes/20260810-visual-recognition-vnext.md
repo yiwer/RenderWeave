@@ -437,3 +437,6 @@ final 不调用。N6=`automated_verified`，N7/Goal 仍未完成；后续算法�
 - 产品目录仍按 Plus、Max、Flash 排序且默认 Plus；pipeline、本地 materializer、verifier、checkpoint、
   telemetry、审核/Apply 合同均不变。状态继续为 `EXPERIMENTAL` / N6=`automated_verified` /
   N7/Goal=`in_progress`，不形成新的识别质量声明。
+- clean revision `ba409e9` 的 full evidence `20260812-015332-full` 为 9/9 PASS；正式 Node 24、真实
+  PostgreSQL/runtime canary、独立 evidence verifier 2/2 和浏览器 E2E 均通过，离线汇总明确
+  Provider attempts/reservations 均为 0。

@@ -884,3 +884,6 @@ N6=`automated_verified`、N7/Goal=`in_progress`；Plus/Max/final 不启动，Goa
 - 本节点没有 Provider 调用，三个 ledger 继续 `CLOSED`，Flash alias 继续共用同一累计槽位且不重置消费。
   successor 尚无 live 质量证据，故 product-v40=`EXPERIMENTAL`、N6=`automated_verified`、N7/Goal=
   `in_progress`。
+- 隔离 clean `ba409e9` 的 full `20260812-015332-full` 为 9/9 PASS；inference 196/196、正式 Node 24
+  Web 73/73、独立 verifier 2/2、真实 PostgreSQL/runtime canary 与浏览器 19 passed/1 live skipped。metadata
+  为 `workingTreeDirty=false`，offline summary 为 0 Provider attempts/reservations。
