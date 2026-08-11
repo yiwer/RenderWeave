@@ -117,6 +117,20 @@ tokens。该 delta 只覆盖原信封的 Flash 模型身份和 Goal token cap：
 - 新假设先以 Flash 单 case canary 证明 OBSERVE→HIERARCHY→ELEMENT_BINDING 三阶段合同可达。只有该门、
   exact J1、费用、次数和时限仍满足时才进入 Max；Plus 可重新参与 N7，但仍受相同阶段与预算停止条件。
 
+### 2026-08-11 J1 Delta 2：再次追加 Goal Token
+
+用户 yiwer 于 2026-08-11 继续给三个稳定模型预算槽位各授权 500,000 exposed tokens。该授权是前一 delta
+之上的增量，不重置任何历史用量：
+
+- `qwen3.7-flash-2026-07-15`、`qwen3.7-plus`、`qwen3.8-max` 三个稳定槽位的累计上限各为
+  1,500,000 tokens；旧 Flash alias 仍与 pinned Flash 共用同一槽位；
+- 每个独立 authorization 仍最多 500,000 tokens；每槽位仍最多 180 attempts，费用硬上限仍为 Flash ¥0.40、
+  Plus ¥4、Max ¥18，没有追加费用；
+- 每批最多 5 cases、每个 OPEN ledger 最长 168 小时、repository-synthetic/CC0-only、payload-free evidence、
+  exact identity/Profile snapshot、单 wrapper 与立即 CLOSED 条件全部不变；
+- Plus 继续允许调用；是否调用任一模型仍由 fresh Profile/identity、当前累计 attempts/token/CNY、阶段可达性与
+  N7 停止条件共同约束，增加 token cap 不等于放宽质量门或费用门。
+
 官方 capability/pricing 事实源：
 
 - `https://platform.qianwenai.com/docs/developer-guides/getting-started/vision-models`
@@ -139,5 +153,5 @@ tokens。该 delta 只覆盖原信封的 Flash 模型身份和 Goal token cap：
 - 批准人：yiwer
 - 日期：2026-08-10
 - 结论与理由：采用审查推荐的“先度量、再替换编译、再增强感知、最后认证”路径；普通实现取舍由 Agent
-  选择并写 ADR，不逐项等待批准；真实调用严格受原信封及 2026-08-11 J1 delta 的三槽位累计
-  1M-token cap、未增加的 attempts/CNY 上限和精确账本约束。
+  选择并写 ADR，不逐项等待批准；真实调用严格受原信封及 2026-08-11 两次 J1 delta 的三槽位累计
+  1.5M-token cap、单 authorization 500k cap、未增加的 attempts/CNY 上限和精确账本约束。

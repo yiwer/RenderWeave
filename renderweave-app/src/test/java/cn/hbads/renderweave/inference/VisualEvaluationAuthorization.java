@@ -46,7 +46,7 @@ record VisualEvaluationAuthorization(
     static final String INPUT_CLASSIFICATION = "REPOSITORY_SYNTHETIC_ONLY";
     static final String PENDING_IDENTITY = "PENDING_PRELIVE_COMMIT";
     static final String PENDING_PROFILE_SNAPSHOT = "PENDING_PROFILE_SNAPSHOT";
-    static final long GOAL_MAXIMUM_TOKENS_PER_MODEL = 1_000_000L;
+    static final long GOAL_MAXIMUM_TOKENS_PER_MODEL = 1_500_000L;
     static final long MAXIMUM_TOKENS_PER_AUTHORIZATION = 500_000L;
     static final int GOAL_MAXIMUM_ATTEMPTS_PER_MODEL = 180;
     static final Map<String, Long> GOAL_MAXIMUM_COST_MICROS_CNY = Map.of(

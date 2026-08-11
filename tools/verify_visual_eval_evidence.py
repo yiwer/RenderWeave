@@ -21,7 +21,8 @@ CORPUS_VERSION = "renderweave-visual-stage-corpus/1.0"
 JOURNAL_VERSION = "renderweave-visual-evaluation-journal/1.0"
 GOAL_VERSION = "renderweave-visual-evaluation-goal-budget/1.0"
 GOAL_ID = "renderweave-visual-recognition-vnext-20260810"
-GOAL_GUARD_VERSION = "renderweave-visual-evaluation-goal-guard/2.0"
+GOAL_GUARD_VERSION = "renderweave-visual-evaluation-goal-guard/3.0"
+PREVIOUS_GOAL_GUARD_VERSION = "renderweave-visual-evaluation-goal-guard/2.0"
 LEGACY_GOAL_GUARD_VERSION = "renderweave-visual-evaluation-goal-guard/1.0"
 JOURNAL_GUARD_VERSION = "renderweave-visual-evaluation-journal-guard/1.0"
 REPORT_VERSION = "renderweave-visual-stage-report/1.0"
@@ -44,7 +45,8 @@ MODEL_TO_GOAL_SLOT = {
 }
 GOAL_GUARD_TOKEN_LIMITS = {
     LEGACY_GOAL_GUARD_VERSION: 500_000,
-    GOAL_GUARD_VERSION: 1_000_000,
+    PREVIOUS_GOAL_GUARD_VERSION: 1_000_000,
+    GOAL_GUARD_VERSION: 1_500_000,
 }
 MAXIMUM_AUTHORIZATION_TOKENS = 500_000
 PROFILE_FIELDS = (

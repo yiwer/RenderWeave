@@ -59,7 +59,7 @@ final class VisualEvaluationGoalBudget {
             }
             if (stateExists) {
                 var guard = readGuard();
-                if (Guard.legacy().equals(guard)) {
+                if (Guard.previous().equals(guard) || Guard.legacy().equals(guard)) {
                     var state = readState(guard);
                     writeAtomically(guardFile, json.writeValueAsString(Guard.expected()));
                     validateState(state, Guard.expected());
@@ -322,7 +322,8 @@ final class VisualEvaluationGoalBudget {
             int maximumAttemptsPerModel,
             Map<String, Long> maximumCostMicrosCnyByModel
     ) {
-        private static final String VERSION = "renderweave-visual-evaluation-goal-guard/2.0";
+        private static final String VERSION = "renderweave-visual-evaluation-goal-guard/3.0";
+        private static final String PREVIOUS_VERSION = "renderweave-visual-evaluation-goal-guard/2.0";
         private static final String LEGACY_VERSION = "renderweave-visual-evaluation-goal-guard/1.0";
 
         Guard {
@@ -333,6 +334,14 @@ final class VisualEvaluationGoalBudget {
             return new Guard(
                     VERSION, GOAL_ID,
                     VisualEvaluationAuthorization.GOAL_MAXIMUM_TOKENS_PER_MODEL,
+                    VisualEvaluationAuthorization.GOAL_MAXIMUM_ATTEMPTS_PER_MODEL,
+                    VisualEvaluationAuthorization.GOAL_MAXIMUM_COST_MICROS_CNY
+            );
+        }
+
+        static Guard previous() {
+            return new Guard(
+                    PREVIOUS_VERSION, GOAL_ID, 1_000_000L,
                     VisualEvaluationAuthorization.GOAL_MAXIMUM_ATTEMPTS_PER_MODEL,
                     VisualEvaluationAuthorization.GOAL_MAXIMUM_COST_MICROS_CNY
             );

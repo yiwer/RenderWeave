@@ -42,7 +42,7 @@ class VisualEvaluationGoalBudgetTest {
         authorization.requireOpen(NOW);
         authorization.requireCorpus(corpus);
         authorization.requireProfileSnapshot(sha256(profile.snapshotJson()));
-        assertEquals(1_000_000L, VisualEvaluationAuthorization.GOAL_MAXIMUM_TOKENS_PER_MODEL);
+        assertEquals(1_500_000L, VisualEvaluationAuthorization.GOAL_MAXIMUM_TOKENS_PER_MODEL);
 
         assertThrows(IllegalArgumentException.class,
                 () -> authorization("too-many-tokens", 24, 500_001, 4_000_000));
@@ -131,7 +131,8 @@ class VisualEvaluationGoalBudgetTest {
         var authorizations = List.of(
                 authorization("visual-budget-cap-a", 24, 500_000, 4_000_000),
                 authorization("visual-budget-cap-b", 24, 500_000, 4_000_000),
-                authorization("visual-budget-cap-c", 24, 500_000, 4_000_000)
+                authorization("visual-budget-cap-c", 24, 500_000, 4_000_000),
+                authorization("visual-budget-cap-d", 24, 500_000, 4_000_000)
         );
         var budget = new VisualEvaluationGoalBudget(directory, JsonMapper.builder().build(), NOW);
         var tokensPerRequest = ProviderCostEstimator.maximumRequestTokens(request(0));
@@ -140,8 +141,11 @@ class VisualEvaluationGoalBudgetTest {
         var maximumCalls = (int) (VisualEvaluationAuthorization.GOAL_MAXIMUM_TOKENS_PER_MODEL
                 / tokensPerRequest);
         for (var ordinal = 0; ordinal < maximumCalls; ordinal++) {
-            budget.reserve(authorizations.get(ordinal / perLedger), request(ordinal),
+            var reservation = budget.reserve(authorizations.get(ordinal / perLedger), request(ordinal),
                     NOW.plusSeconds(ordinal));
+            budget.settle(UUID.fromString(reservation.reservationId()),
+                    new ProviderUsage(reservation.reservedTokens(), 0), 0,
+                    NOW.plusSeconds(ordinal + 1L));
         }
         assertThrows(IllegalStateException.class,
                 () -> budget.reserve(authorizations.get(maximumCalls / perLedger),
@@ -156,7 +160,7 @@ class VisualEvaluationGoalBudgetTest {
     }
 
     @Test
-    void legacyGuardMigratesWithoutResetAndPinnedFlashSharesHistoricalSlot(@TempDir Path directory)
+    void legacyV1GuardMigratesWithoutResetAndPinnedFlashSharesHistoricalSlot(@TempDir Path directory)
             throws Exception {
         var json = JsonMapper.builder().build();
         var registry = new InferenceProfileRegistry();
@@ -203,6 +207,46 @@ class VisualEvaluationGoalBudgetTest {
         assertEquals(500, migrated.snapshot(
                 historical.model(), historical.authorizationId()
         ).goal().tokens());
+    }
+
+    @Test
+    void previousV2GuardMigratesWithoutChangingReservations(@TempDir Path directory) throws Exception {
+        var json = JsonMapper.builder().build();
+        var authorization = authorization("visual-v2-migration", 24, 500_000, 4_000_000);
+        var original = new VisualEvaluationGoalBudget(directory, json, NOW);
+        var reservation = original.reserve(authorization, request(102), NOW);
+        original.settle(UUID.fromString(reservation.reservationId()),
+                new ProviderUsage(240, 160), 2_000, NOW.plusSeconds(1));
+        var stateBefore = Files.readString(directory.resolve("goal-budget.json"), StandardCharsets.UTF_8);
+
+        Files.writeString(directory.resolve("goal-budget.guard.json"),
+                json.writeValueAsString(VisualEvaluationGoalBudget.Guard.previous()),
+                StandardCharsets.UTF_8);
+        var migrated = new VisualEvaluationGoalBudget(directory, json, NOW.plusSeconds(2));
+
+        assertEquals(VisualEvaluationGoalBudget.Guard.expected(), json.readValue(
+                Files.readString(directory.resolve("goal-budget.guard.json"), StandardCharsets.UTF_8),
+                VisualEvaluationGoalBudget.Guard.class
+        ));
+        assertEquals(stateBefore,
+                Files.readString(directory.resolve("goal-budget.json"), StandardCharsets.UTF_8));
+        assertEquals(reservation.reservationId(), migrated.reservations().getFirst().reservationId());
+        assertEquals(400, migrated.snapshot(authorization.model(), authorization.authorizationId())
+                .goal().tokens());
+    }
+
+    @Test
+    void inexactPreviousGuardCannotUseTheMigrationPath(@TempDir Path directory) throws Exception {
+        var json = JsonMapper.builder().build();
+        new VisualEvaluationGoalBudget(directory, json, NOW);
+        var tampered = json.writeValueAsString(VisualEvaluationGoalBudget.Guard.previous())
+                .replace("\"maximumTokensPerModel\":1000000",
+                        "\"maximumTokensPerModel\":1500000");
+        Files.writeString(directory.resolve("goal-budget.guard.json"), tampered,
+                StandardCharsets.UTF_8);
+
+        assertThrows(IllegalStateException.class,
+                () -> new VisualEvaluationGoalBudget(directory, json, NOW.plusSeconds(1)));
     }
 
     @Test
