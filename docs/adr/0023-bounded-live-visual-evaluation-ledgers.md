@@ -20,10 +20,11 @@ element → hierarchy → binding → Candidate 的阶段质量。复用其安�
 1. **三份固定 tracked ledger。** Max、Plus、Flash 各使用一个固定仓库路径；selector 只接受三个枚举值，
    不接受任意路径。ledger 的 PROPOSED/OPEN/CLOSED 生命周期提交可变，但 profile、model、corpus、case slice、
    identity、tokens、attempts、CNY、batch 和时限全部严格加载。
-2. **代码身份排除且仅排除三份 ledger。** `VisualEvaluationIdentity` 对全部其他 tracked regular files 做
-   path-length/content-length framed SHA-256，要求 clean tree、零 untracked，并双次捕获稳定；三份 ledger
-   必须真实 tracked。这样任一 ledger 的生命周期提交不会使其他模型失去同一实验身份，其他任何输入漂移
-   都 fail-closed。
+2. **代码身份排除且仅排除三份 ledger。** `/1` 对全部其他 tracked regular files 的 checkout 字节做
+   path-length/content-length framed SHA-256；`/2` 改为按 UTF-8 path 排序并对 Git regular-file mode 与 canonical
+   blob 字节做 framing。两版均要求 clean tree、零 non-ignored untracked，并双次捕获稳定；三份 ledger 必须真实
+   tracked。`/2` 还拒绝 assume-unchanged/skip-worktree、symlink/submodule 与 unavailable tracked input。这样任一
+   ledger 的生命周期提交不会使其他模型失去同一实验身份，其他任何输入漂移都 fail-closed。
 3. **Profile 单独绑定。** ledger 保存 Registry canonical snapshot SHA-256；preflight 同时检查 profileId、
    model 与 snapshot。仓库 tree identity 绑定 Profile 资源，snapshot hash 绑定实际运行时解析结果。
 4. **Goal 级不可释放预算。** `.sdlc/evidence/renderweave-visual-recognition-vnext-20260810/goal-budget.json`
@@ -80,8 +81,28 @@ checkpoint 兼容问题，均先关闭当时 ledger，再以零 Provider 回归�
   末态只保留 A1。原因是 identity `/1` 对工作区文件字节做摘要，在 Windows `autocrlf` 的另一 checkout
   中无法重建同一摘要；不能用降低校验强度换取“通过”。因此 Plus 聚合结果是混合 A1/A2，不能宣称完整 A2。
 - identity `/1` 对本次 exact clean checkout 仍是 fail-closed 且可定位的；历史 evidence 不重写。下一次
-  live phase 必须引入新的 Git-blob canonical identity `/2`，按 Git tracked blob 字节而不是 checkout
+  live phase 必须使用新的 Git-blob canonical identity `/2`，按 Git tracked blob 字节而不是 checkout
   换行表示计算，并为 `/1` 保留只读兼容，不得就地改变旧算法。
 - 三模型最终 Candidate pass 均为 `0/12`，没有任何 Profile 晋级。Max 的 hierarchy 更强但 binding 与
   生成式 STRUCTURE 丢失大量语义；Plus/Flash 更早受 hierarchy/contract 稳定性限制。该证据支持下一节点
   将 validated visual plan 通过确定性 Java materializer 编译为 Candidate，而不是继续让模型重写拓扑。
+
+## 2026-08-11 identity `/2` 落地
+
+`cded69e` 完成 Git-blob canonical `/2`，没有 Provider 调用：
+
+- 新 CLI 只生成 `renderweave-visual-evaluation-tree-sha256/2`。每项按 4-byte big-endian UTF-8 path length、
+  path bytes、4-byte mode length、mode bytes、8-byte big-endian blob length、Git blob bytes 输入 SHA-256；
+  path 使用原始 UTF-8 bytes 排序，mode 只接受 `100644` / `100755`。
+- identity 捕获从 index 取得 blob OID，再通过 `git cat-file --batch` 读取 canonical bytes；clean status 之外还
+  要求 `git ls-files -v` 全为普通 `H`，因此 assume-unchanged/skip-worktree 不能隐藏执行字节漂移。任一
+  symlink、submodule、missing regular file、stage conflict、dirty/untracked 或双捕获变化均 fail-closed。
+- Java executor 只允许 `/2` 进入 OPEN；`/1` 仅允许 CLOSED 历史 ledger 加载。独立 Python verifier 依
+  authorization prefix 选择原算法或新算法，因此不重写历史 evidence，也不能用 `/1` 新开 Provider 调用。
+- Windows Git 生成的 clean LF/CRLF 双 checkout、mode drift、dirty/untracked、hidden index flags 与跨语言
+  verifier 回归均通过。exact-clean `cded69e` 的 Java/Python `/2` 同为
+  `fc46a428c78e89f78a9f38e17b5f7404aa10fe7ec9fac12598b6c2f1f7b5a7bf`；该值只绑定该 revision，后续
+  文档或代码提交后必须重新计算。
+- clean server `.sdlc/evidence/20260811-123055-server` 与 fast
+  `.sdlc/evidence/20260811-123245-fast` 均 A1 PASS。新 verifier 对 Flash v27b、Plus v27、Max v27 三份真实
+  CLOSED `/1` evidence 再回放均 PASS、0 abandoned、payload scan PASS，证明历史兼容而非放宽验证。

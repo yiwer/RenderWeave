@@ -329,3 +329,18 @@ drift、journal/guard 不一致、payload 边界失败或同一无新假设失�
 - 决策：N7 继续 `in_progress`，所有 product-v27 Profile 继续隐藏 `EXPERIMENTAL`。当前没有足够信号扩大
   20/60-case final eval；下一增量必须来自新的 bounded fixed-code hypothesis，并先完成离线/真实 PG/受影响 gate。
   final eval、最终 revision full、final independent verifier 与业务/视觉 J1 仍是 Goal 完成硬门。
+
+## 2026-08-11 Git-blob evaluation identity `/2` checkpoint
+
+- 实现：`cded69e` 默认生成 `renderweave-visual-evaluation-tree-sha256/2`，按 UTF-8 path bytes 排序并 framing
+  regular Git mode 与 canonical blob bytes；使用 index OID + `git cat-file --batch`，不再读取 checkout 换行表示
+  作为新身份内容。dirty/untracked、assume-unchanged/skip-worktree、non-regular/missing input 与双捕获漂移均拒绝。
+- 兼容：Java executor 只允许 `/2` OPEN；`/1` 只可作为 CLOSED 历史 ledger 加载。独立 Python verifier 依
+  identity prefix 选择完全独立的 `/1` 或 `/2` 重算，不重写历史 evidence、不降低 clean-tree/profile/budget 检查。
+- 证据：clean LF/CRLF 双 checkout、mode drift 与 hidden-index 负例通过；exact-clean `cded69e` 的 Java/Python
+  `/2` 同为 `fc46a428…b5a7bf`。server `.sdlc/evidence/20260811-123055-server`、fast
+  `.sdlc/evidence/20260811-123245-fast` A1 PASS；Flash v27b、Plus v27、Max v27 的真实 CLOSED `/1` evidence
+  用新 verifier 回放均 PASS、0 abandoned、payload scan PASS。
+- 状态：本节点 Provider attempts=0，Goal 用量与 335 reservations 不变，三份 ledger CLOSED。identity 治理债务
+  已关闭，但 v27 quality gate 未改变；N7 继续 `in_progress`，下一步仍须先形成新的 bounded、payload-free
+  fixed-code hypothesis，不能直接扩大 final eval。

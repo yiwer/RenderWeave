@@ -425,7 +425,7 @@ Phase 内任务只在真实前置依赖满足时并行。当前没有 atomic cla
 
 #### T6-5：图片识别数据结构 vNext 质量升级
 
-- 执行状态：`in_progress`（用户 J1 + approved spec delta；N0–N1、N3–N4、N6 `automated_verified`，N2 `live_verified_mixed_a1_a2`，N5 `live_verified_not_promoted`；N7 既有 reachability、三模型 v24、Flash/Plus v25–v26 与 Flash/Plus/Max v27 smoke 已 A2。v27 unique source-ancestor GROUP-owner codec、Profile/worker、真实 PostgreSQL tracer、监控/审核 UI、受影响 gate 及隔离 clean full 已 A1，期间修复了 default Provider reservation 入口事务绕过。v27 三模型均未命中新 telemetry；Flash 止于 OBSERVE，Plus/Max 虽三阶段可达但质量未达门。final eval、最终 revision full、final independent verifier 与业务/视觉 J1 均未满足）
+- 执行状态：`in_progress`（用户 J1 + approved spec delta；N0–N1、N3–N4、N6 `automated_verified`，N2 `live_verified_mixed_a1_a2`，N5 `live_verified_not_promoted`；N7 既有 reachability、三模型 v24、Flash/Plus v25–v26 与 Flash/Plus/Max v27 smoke 已 A2。v27 unique source-ancestor GROUP-owner codec、Profile/worker、真实 PostgreSQL tracer、监控/审核 UI、受影响 gate 及隔离 clean full 已 A1，期间修复了 default Provider reservation 入口事务绕过；Git-blob canonical identity `/2` 与 `/1` 只读回放也已完成 clean A1/A2。v27 三模型均未命中新 telemetry；Flash 止于 OBSERVE，Plus/Max 虽三阶段可达但质量未达门。final eval、最终 revision full、final independent verifier 与业务/视觉 J1 均未满足）
 - AC：AC-015..021、AC-VR-001..010
 - 依赖：T6-3a.8/9、ADR-0020/0021；N2 live 依赖新的 stage-gold/harness/identity
 - 影响区域：IMAGE_ONLY eval、visual contracts、worker/Profile/Prompt、OCR/layout adapter、review/monitor UI
@@ -496,3 +496,14 @@ current evidence 交叉独立 verifier A2 PASS、payload scan PASS。Goal 为 33
 T6-5 不晋级、不完成：product-v27 继续隐藏 `EXPERIMENTAL`，不能从三阶段可达推导质量 accepted。下一节点必须
 先从 payload-free fixed code/metrics 形成新的 bounded 假设并完成离线/真实 PG/受影响 gate；final 20/60、最终
 revision full、final independent verifier 与业务/视觉 J1 仍是硬门。
+
+## 10. T6-5 evaluation identity `/2` checkpoint
+
+`cded69e` 已把 evaluation identity 从 checkout-byte `/1` 升级为 Git-blob canonical `/2`：UTF-8 path、regular
+mode 与 canonical blob bytes 被独立 framing；hidden index flags、non-regular/missing input、dirty/untracked 与
+不稳定捕获全部 fail-closed。新 OPEN ledger 只接受 `/2`，独立 verifier 继续只读重算 CLOSED `/1` 历史证据。
+
+exact-clean Java/Python `/2` 一致；server `.sdlc/evidence/20260811-123055-server` 与 fast
+`.sdlc/evidence/20260811-123245-fast` A1 PASS，v27 三模型真实 CLOSED `/1` evidence 由新 verifier 再回放 PASS。
+本节点 Provider attempts=0、预算不变、ledger 全 CLOSED。它关闭治理债务但不改变质量门：N6 仍
+`automated_verified`、N7 仍 `in_progress`，Profile 仍 `EXPERIMENTAL`。

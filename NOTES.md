@@ -264,7 +264,8 @@
 ## 下一步
 - [ ] P6/T6-5 图片识别 vNext：N0–N6 已形成独立 checkpoint；Flash/Plus/Max v27 single-case 均 CLOSED/A2，
   但新增 telemetry 未命中。Flash 止于 OBSERVE，Plus/Max 虽三阶段可达却没有可接受 Candidate，因此不扩大
-  20/60-case final eval。下一安全节点必须从 payload-free fixed code/metrics 形成新的 bounded hypothesis，并先
+  20/60-case final eval。Git-blob canonical identity `/2` 治理债务已关闭；下一安全节点必须从 payload-free
+  fixed code/metrics 形成新的 bounded hypothesis，并先
   完成离线合同、真实 PostgreSQL checkpoint、监控/审核 telemetry 与受影响 gate；不得读取模型原文/OCR/gold、
   排名选择或补删 topology。final eval、最终 revision full gate、final independent verifier 与业务/视觉 J1
   均未满足。
@@ -368,9 +369,10 @@
   v15–v27 bounded verifier/normalization 增量；v27 real-PG/UI A1 与三模型 single-case A2 均已记录，未晋级。
 - `plans/logs/P6-T6-5-N7.md`：pinned Flash/Goal guard v3、二十三份 Provider-backed single-case CLOSED/A2
   reachability、v15–v27 bounded verifier/normalization 增量；v27 三模型均未命中新 telemetry。
-- 当前恢复点：`phase/p6-visual-recognition-vnext` 的 `95be8fa`；v27 codec/Profile/UI 为
+- 当前可恢复实现锚点：`phase/p6-visual-recognition-vnext` 的 `cded69e`；v27 codec/Profile/UI 为
   `676180a` / `e1f1a9d` / `3a56af9`，预算事务修复为 `5ada0fa`。server/web/E2E/runtime A1 均绿；
   Flash v27b `a473d2f`、Plus v27 `854d652`、Max v27 `95be8fa` 均 CLOSED/A2；
+  Git-blob canonical identity `/2` 为 `cded69e`，clean server/fast A1 与真实 `/1` 历史回放通过；
   编排 Goal `019fec8e-a851-7952-b49b-8be76a281a57` 因 turn interrupt 当前显示 `paused`，用户已明确继续同一
   objective，未创建 replacement Goal。三份 ledger CLOSED；下一节点是新的 bounded 离线假设，不能直接扩大
   final eval。
@@ -406,3 +408,14 @@
 - 三份 current evidence 在最终 Goal state 下交叉 verifier PASS；CLOSED fast 首轮环境红灯
   `20260811-121310-fast` 保留，依赖联接后的 `20260811-121335-fast` PASS。Profile 不晋级，N7 继续
   `in_progress`。
+
+## evaluation identity `/2` checkpoint
+
+- `cded69e`：新 identity 默认使用 Git index OID 与 canonical blob bytes，并绑定 UTF-8 path/regular mode；
+  hidden index flags、dirty/untracked、non-regular/missing input 与不稳定捕获全部 fail-closed。
+- 新 OPEN ledger 只允许 `/2`；`/1` 仅用于 CLOSED 历史 evidence。exact-clean Java/Python `/2` 一致为
+  `fc46a428…b5a7bf`，该摘要随后续 revision 必须重算。
+- clean server `.sdlc/evidence/20260811-123055-server`、fast `.sdlc/evidence/20260811-123245-fast` A1 PASS；
+  新 verifier 对 v27 Flashb/Plus/Max 三份真实 CLOSED `/1` evidence 回放均 PASS、payload scan PASS。
+- 本节点 Provider attempts=0、Goal 用量不变、三份 ledger CLOSED；只关闭治理债务，不改变
+  `EXPERIMENTAL`/N7 `in_progress` 或 final eval/J1 硬门。
