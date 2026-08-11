@@ -104,6 +104,8 @@ public final class LiveInferenceWorker {
             "renderweave-inference-pipeline/4.21";
     private static final String EMPTY_SOURCE_ANCESTOR_SUPPORT_OWNER_NORMALIZED_HYBRID_VISUAL_PIPELINE =
             "renderweave-inference-pipeline/4.22";
+    private static final String STRUCTURAL_REGION_KIND_NORMALIZED_HYBRID_VISUAL_PIPELINE =
+            "renderweave-inference-pipeline/4.23";
     private static final int MAX_STAGE_ADVANCES = 24;
     private static final int MAX_RETRY_PROBLEM_CODES = 16;
 
@@ -1153,6 +1155,8 @@ public final class LiveInferenceWorker {
             InferenceProfile profile
     ) {
         if (EMPTY_SOURCE_ANCESTOR_SUPPORT_OWNER_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
+                profile.pipelineVersion())
+                || STRUCTURAL_REGION_KIND_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
                 profile.pipelineVersion())) {
             return VisualRelationshipSupportIdPolicy
                     .CANONICALIZE_EXACT_DUPLICATES_AND_UNIQUE_CONNECTED_GROUP_OWNER_WITH_EMPTY_OR_UNKNOWN_SUPPORT_AND_EMPTY_SOURCE_ANCESTOR;
@@ -1288,6 +1292,11 @@ public final class LiveInferenceWorker {
     private static VisualObservationNormalizationPolicy observationNormalizationPolicy(
             InferenceProfile profile
     ) {
+        if (STRUCTURAL_REGION_KIND_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
+                profile.pipelineVersion())) {
+            return VisualObservationNormalizationPolicy
+                    .BOUNDED_STRUCTURAL_KIND_UNIQUE_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER;
+        }
         if (UNIQUE_REGION_PARENT_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
                 profile.pipelineVersion())
                 || EMPTY_SOURCE_ANCESTOR_SUPPORT_OWNER_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
@@ -1434,6 +1443,8 @@ public final class LiveInferenceWorker {
                 || UNIQUE_REGION_PARENT_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
                 profile.pipelineVersion())
                 || EMPTY_SOURCE_ANCESTOR_SUPPORT_OWNER_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
+                profile.pipelineVersion())
+                || STRUCTURAL_REGION_KIND_NORMALIZED_HYBRID_VISUAL_PIPELINE.equals(
                 profile.pipelineVersion());
     }
 
