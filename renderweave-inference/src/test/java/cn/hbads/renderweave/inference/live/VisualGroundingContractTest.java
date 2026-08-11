@@ -528,6 +528,54 @@ class VisualGroundingContractTest {
     }
 
     @Test
+    void boundedRootAncestorParentNormalizationOnlyPromotesKnownContainmentFailures()
+            throws Exception {
+        var knownOutsideParent = elementsJson().replace(
+                "\"regionId\":\"header\",\"parentRegionId\":\"root\"",
+                "\"regionId\":\"header\",\"parentRegionId\":\"repeat\""
+        );
+        assertEquals("VISUAL_GROUNDING_PARENT_CONTAINMENT_INVALID", assertThrows(
+                InvalidVisualAnalysisException.class, () -> codec.parseElements(
+                        knownOutsideParent, views(), List.of(IMAGE_ID),
+                        VisualObservationNormalizationPolicy
+                                .BOUNDED_CONSTRAINT_UNIQUE_KIND_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER
+                )
+        ).diagnosticCode());
+
+        var normalized = codec.parseElements(
+                knownOutsideParent, views(), List.of(IMAGE_ID),
+                VisualObservationNormalizationPolicy
+                        .BOUNDED_CONSTRAINT_UNIQUE_KIND_ANCESTOR_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER
+        );
+        assertEquals("root", normalized.grounding().requireRegion("header").parentRegionId());
+        assertEquals(1, normalized.normalizedRegionParents());
+
+        var unknownParent = elementsJson().replace(
+                "\"regionId\":\"header\",\"parentRegionId\":\"root\"",
+                "\"regionId\":\"header\",\"parentRegionId\":\"missing\""
+        );
+        assertEquals("VISUAL_GROUNDING_PARENT_INVALID", assertThrows(
+                InvalidVisualAnalysisException.class, () -> codec.parseElements(
+                        unknownParent, views(), List.of(IMAGE_ID),
+                        VisualObservationNormalizationPolicy
+                                .BOUNDED_CONSTRAINT_UNIQUE_KIND_ANCESTOR_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER
+                )
+        ).diagnosticCode());
+
+        var invalidItemParent = elementsJson().replace(
+                "\"regionId\":\"item-a\",\"parentRegionId\":\"repeat\",\"kind\":\"ITEM\",\"multiplicity\":\"ONE\",\"readingOrder\":0,\"repeatGroupId\":\"rows\"",
+                "\"regionId\":\"item-a\",\"parentRegionId\":\"header\",\"kind\":\"ITEM\",\"multiplicity\":\"ONE\",\"readingOrder\":0,\"repeatGroupId\":\"other\""
+        );
+        assertEquals("VISUAL_GROUNDING_PARENT_KIND_INVALID", assertThrows(
+                InvalidVisualAnalysisException.class, () -> codec.parseElements(
+                        invalidItemParent, views(), List.of(IMAGE_ID),
+                        VisualObservationNormalizationPolicy
+                                .BOUNDED_CONSTRAINT_UNIQUE_KIND_ANCESTOR_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER
+                )
+        ).diagnosticCode());
+    }
+
+    @Test
     void boundedRegionParentNormalizationRejectsEqualMinimalOrRootCandidates()
             throws Exception {
         var ambiguous = elementsJson().replace(
