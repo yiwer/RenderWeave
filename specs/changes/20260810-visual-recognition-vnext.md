@@ -273,3 +273,18 @@ Goal/evidence 零变化，结束后无残留进程或 lease。
 OBSERVE。该结果不授权读取或记录 invalid enum 原文、模型输出、region identity、坐标或 Candidate，也不
 授权通用 alias/geometry 猜测。product-v36 保持 `EXPERIMENTAL`，N6=`automated_verified`、N7/Goal=
 `in_progress`；Plus/Max/final 20/60 必须继续等待同版本三阶段、质量门、独立复核和最终 J1。
+
+### 2026-08-11 v37 constraint-unique GROUP kind 候选
+
+- pipeline 4.24 允许从 typed ownership constraint 唯一决定 GROUP：ONE GROUP element 的 regionIds 必须
+  distinct 且全部已知、没有现存兼容 singular GROUP owner，并且恰有一个 parent 非空、ONE、无 repeat、
+  kind 未解析的 owner region。只有该唯一候选可改为 GROUP。
+- 多个候选、已有兼容 owner、MANY group、SLOT-only ownership、缺失/重复/未知 owner reference、root/
+  repeat shape 或任何剩余 unknown kind 必须原 fixed code fail-closed。不得读取或记录 unknown alias、OCR、
+  displayName、model text、box payload 或 gold；不得改 parent/readingOrder/box/ownership，亦不得创建删除
+  region、element、evidence 或 Candidate。完整 forest/ownership/semantic verifier 必须重跑。
+- `ebd0281`/`b5a4555`/`007afe6`/`e6682b4` 已完成 codec、immutable Profile、real-PG recovery 和
+  monitor/review E2E；自动证据为 inference 191/191、snapshot verifier 2/2、recovery 2/2、Web 73/73、
+  typecheck/lint、Playwright 1/1。Provider=0、Goal/ledgers 不变。
+- product-v37=`EXPERIMENTAL`、N6=`automated_verified`、N7/Goal=`in_progress`；exact-clean gates、fresh
+  identity/snapshot/budget/J1、bounded Flash live、final 20/60 与最终 J1 尚未完成。

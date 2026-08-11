@@ -705,3 +705,20 @@ Max/final 20/60 必须等待 v36 同版本 live OBSERVE/HIERARCHY/BINDING、质�
 所以 v36 仍 `EXPERIMENTAL`，N6=`automated_verified`，N7/Goal=`in_progress`。下一安全路径是对剩余
 fixed code 建立不读取 payload 的 bounded 分类、反例和 stage-local repair；在同版本三阶段可达前不调用
 Plus/Max，也不启动 final 20/60。
+
+## 2026-08-11 v37 constraint-unique GROUP kind 离线 checkpoint
+
+- `ebd0281`：只在 ONE GROUP element 的 distinct/known ownership 缺少兼容 GROUP，且唯一 unresolved
+  singular non-root/no-repeat owner 时归一化 GROUP；所有歧义与残余 unknown fail-closed，v36 不变。
+- `b5a4555`：pipeline 4.24 与 Flash/Plus/Max product-v37 Profile immutable；Prompt/Document Vision/
+  call cap/timeout/pricing 继承 v36，Java/Python snapshot 合同扩展。
+- `007afe6`：real-PG v37 recovery 在 1 次 kind normalization 后持久化 OBSERVE，恢复时只执行
+  HIERARCHY/BINDING 到 REVIEW_REQUIRED；OCR sentinel 未进入持久层。
+- `e6682b4`：monitor/review 文案覆盖唯一绑定约束；Web 73/73、typecheck/lint、4174 Chromium 1/1，
+  生成测试目录已清理。inference 191/191、verifier 2/2、recovery 2/2。
+- governance：Provider=0，Goal=400 reservations；Flash/Plus/Max 用量保持
+  139/179/82 attempts、980,039/1,087,500/491,919 tokens、¥0.477638/¥4.159620/¥10.289316；
+  三 ledger CLOSED。v37=`EXPERIMENTAL`、N6=`automated_verified`、N7/Goal=`in_progress`。
+
+下一门：exact-clean full/Document Vision，fresh `/2` identity、v37 snapshots、Goal/J1/time/process/lease/
+API-key-presence。仅 Flash 可在全绿后单 case/最多 5 calls；Plus/Max/final 仍等待同版本三阶段与质量门。

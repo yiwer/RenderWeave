@@ -193,3 +193,15 @@ BREACHED）：Flash/Plus/Max 分别为 139/179/82 attempts、980,039/1,087,500/4
 五次 Flash 调用均停在 OBSERVE，故没有同版本 HIERARCHY/BINDING 证据。Plus 虽在用户 ¥10/24h J1
 范围内，但只剩一个 Goal attempt；Max 也未满足前置质量门。两者及 final 20/60 均不调用，预算继续留给
 有直接诊断价值且满足完整治理合同的后续节点。
+
+### product-v37 离线预算节点
+
+pipeline 4.24 的 constraint-unique GROUP kind classifier、三模型 immutable Profile、real-PG recovery 与
+审核 telemetry 全部为零 Provider 工作，没有新增 reservation。Goal 仍为 400 reservations（395 SETTLED、
+5 历史 Plus RESERVED、0 BREACHED），Flash/Plus/Max 仍为 139/179/82 attempts、
+980,039/1,087,500/491,919 tokens 和 ¥0.477638/¥4.159620/¥10.289316；三 ledger CLOSED。
+
+任何 v37 live 都必须在新的 exact-clean docs revision 上重新通过 full/Document Vision，并 fresh 绑定
+evaluation identity、当次 Profile snapshot、Goal/token/attempt/CNY/time、API-key presence、进程与 lease。
+仍只优先 Flash 单 synthetic case/最多 5 calls；Plus 的 1 个剩余 attempt 不足以证明三阶段，Max/final
+20/60 继续受同版本 OBSERVE/HIERARCHY/BINDING 与质量门约束。

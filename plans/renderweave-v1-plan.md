@@ -779,3 +779,15 @@ Goal 更新为 400 reservations；Flash 为 139 attempts/980,039 tokens/¥0.4776
 179/82 attempts、1,087,500/491,919 tokens、¥4.159620/¥10.289316，三 ledger CLOSED。N6 仍
 `automated_verified`，N7/Goal 仍 `in_progress`，v36 仍 `EXPERIMENTAL`。下一节点继续 bounded 离线
 诊断/修复；Plus/Max/final 20/60 不在当前可执行 DAG 中。
+
+## 28. T6-5 v37 constraint-unique GROUP kind 离线 checkpoint
+
+`ebd0281`、`b5a4555`、`007afe6`、`e6682b4` 完成 pipeline 4.24/product-v37。只有 ONE GROUP
+element 没有兼容 GROUP owner、owner refs 全部 distinct/known、且恰有一个 eligible unresolved singular
+region 时才归一化 GROUP。两个候选、已有兼容 owner、MANY/SLOT、坏引用、root/repeat 或剩余 unknown
+全部保留 enum fixed code；不读取 alias/payload，不改 topology、evidence 或 Candidate。
+
+real-PG lease recovery 证明 OBSERVE checkpoint 不重放、恢复后完成 HIERARCHY/BINDING；OCR sentinel 零
+持久化。inference 191/191、independent verifier 2/2、v36/v37 recovery 2/2、Web 73/73、typecheck/lint
+与 Playwright 1/1 PASS。本节点 Provider=0，Goal/ledger 不变；N6=`automated_verified`、N7/Goal=
+`in_progress`、v37=`EXPERIMENTAL`。下一 DAG 节点是 exact-clean gates 与 fresh live preflight。

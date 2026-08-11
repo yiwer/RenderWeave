@@ -695,3 +695,22 @@
   139/179/82 attempts、980,039/1,087,500/491,919 tokens、¥0.477638/¥4.159620/¥10.289316，
   三 ledger CLOSED。v36 仍 `EXPERIMENTAL`，N6=`automated_verified`、N7/Goal=`in_progress`；同版本
   三阶段门不可达，因此不调用 Plus/Max/final 20/60，继续 payload-free bounded 离线修复。
+
+## v37 constraint-unique GROUP kind checkpoint
+
+- `ebd0281` 新增独立 opt-in policy：只有 ONE `GROUP` element 尚无兼容 singular GROUP region，且其
+  distinct/known `regionIds` 中恰有一个 parent 非空、ONE、无 repeat、kind 未知的现有 region 时，才把该
+  region 归一化为 GROUP。两个候选、已有兼容容器、MANY group、仅 SLOT owner、缺失/重复 owner 引用及
+  任何剩余未知 kind 都继续 `VISUAL_GROUNDING_JSON_ENUM_INVALID_REGION_KIND` fail-closed；v36 对同一
+  input 仍拒绝。实现不读取 alias/text，不改坐标、parent、owner、element 或 Candidate。
+- `b5a4555` 发布 pipeline 4.24 与 Flash/Plus/Max 三份 immutable product-v37 Profile，Prompt、Document
+  Vision、calls/timeout/pricing 与 v36 不变；Java registry/capability 和独立 Python snapshot verifier 已绑定。
+- `007afe6` real-PG lease-expiry tracer 在 ONE notice-group 唯一约束下归一化 1 个 kind、持久化 OBSERVE，
+  恢复后只执行 HIERARCHY/BINDING 到 `REVIEW_REQUIRED`；OCR sentinel 未进入 checkpoint/Candidate/
+  problems，v36/v37 恢复用例 2/2 PASS。
+- `e6682b4` 将既有计数 telemetry 的审核文案扩展为“受控别名、唯一结构事实或唯一绑定约束”；Web
+  14 files/73 tests、typecheck/lint、1024px keyboard/Axe Chromium 1/1 PASS。Node 20 仍只算兼容证据。
+- inference 191/191、independent verifier 2/2、real-PG 2/2 全绿。本离线节点 Provider attempts=0，
+  Goal 保持 400 reservations；Flash/Plus/Max 仍为 139/179/82 attempts、
+  980,039/1,087,500/491,919 tokens、¥0.477638/¥4.159620/¥10.289316，三 ledger CLOSED。
+  v37=`EXPERIMENTAL`、N6=`automated_verified`、N7/Goal=`in_progress`。

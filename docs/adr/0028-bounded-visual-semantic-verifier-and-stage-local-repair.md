@@ -1095,3 +1095,22 @@ Java/Python identity `e2fb024c…89d2d` 与 Flash snapshot `cf32df27…a86a` 均
 因此本 ADR 的 bounded v36 classifier 通过工程合同与恢复验证，但尚未证明真实三阶段可达；不得由这些
 fixed code 猜测模型 alias、region identity、坐标或 Candidate。product-v36 保持 `EXPERIMENTAL`，N6 仍为
 `automated_verified`，N7/Goal 继续 `in_progress`；下一增量只能由 payload-free 结构分类与离线反例驱动。
+
+## N6/N7 product-v37：GROUP owner 的唯一未满足类型约束
+
+v36 的 invalid-region-kind 仍只提供 fixed code，因此 v37 不建立 alias 表。新增的唯一信息源是同一
+OBSERVE document 内已经 typed 的 `GROUP` element 与其 region ownership。pipeline 4.24 只允许以下
+约束传播：element 必须为 `GROUP/ONE`；其 distinct `regionIds` 必须全部引用现有 region；当前没有已经
+兼容的 `GROUP/ONE/no-repeat` owner；且恰有一个 unresolved owner region 为 parent 非空、ONE、无 repeat。
+只有这时，该 region 为满足现行 group-region/cardinality verifier 所唯一需要的 GROUP kind。
+
+两个 unresolved owners、已有兼容 GROUP、MANY group、SLOT-only owner、缺失/重复引用、root/repeat shape
+或任何其他未解析 kind 都原子 fail-closed。分类器不读取 unknown alias、OCR、displayName、evidence text 或
+gold，不创建/删除 region/edge/element/evidence，也不改 parent、readingOrder、box 或 ownership；完整
+`VisualGroundingPlan`、ownership consistency 和 semantic verifier 仍随后执行。v36 policy 保持 immutable。
+
+`ebd0281` 完成正反例，`b5a4555` 发布三份 immutable product-v37 Profile，`007afe6` 用 real-PG
+lease-expiry 证明 accepted OBSERVE 不重放并恢复到 `REVIEW_REQUIRED`，`e6682b4` 更新 monitor/review/E2E
+解释。inference 191/191、snapshot verifier 2/2、v36/v37 recovery 2/2、Web 73/73、typecheck/lint 与
+Playwright 1/1 PASS。本节点为 `automated_verified`，product-v37 仍 `EXPERIMENTAL`，N7/Goal 仍
+`in_progress`。
