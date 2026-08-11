@@ -284,7 +284,7 @@ test('keeps bounded visual diagnostics keyboard-accessible at 1024 without paylo
     mode: 'IMAGE_ONLY',
     stage: 'HIERARCHY',
     sequence: 8,
-    profileId: 'dashscope-qwen37-flash-20260715-product-v31-hybrid-generic',
+    profileId: 'dashscope-qwen37-flash-20260715-product-v32-hybrid-generic',
     sourceReference: 'repository-synthetic-transit-board-v3',
     failureCode: 'VISUAL_HIERARCHY_V2_RELATIONSHIP_SUPPORT_IDS_EMPTY',
   };
@@ -360,6 +360,7 @@ test('keeps bounded visual diagnostics keyboard-accessible at 1024 without paylo
         problemCodeCounts: {
           VISUAL_HIERARCHY_RELATIONSHIP_SUPPORT_OWNER_NORMALIZED: 1,
           VISUAL_HIERARCHY_RELATIONSHIP_SOURCE_ANCESTOR_SUPPORT_OWNER_NORMALIZED: 1,
+          VISUAL_HIERARCHY_RELATIONSHIP_EMPTY_SUPPORT_OWNER_NORMALIZED: 1,
         },
         completedAt: '2026-08-10T00:00:19Z',
       },
@@ -398,6 +399,10 @@ test('keeps bounded visual diagnostics keyboard-accessible at 1024 without paylo
   await expect(page.getByText('VISUAL_HIERARCHY_RELATIONSHIP_SOURCE_ANCESTOR_SUPPORT_OWNER_NORMALIZED').first())
     .toBeVisible();
   await expect(page.getByText('已按关系源区域唯一且连通的祖先 GROUP 证据归一化层级关系支撑').first())
+    .toBeVisible();
+  await expect(page.getByText('VISUAL_HIERARCHY_RELATIONSHIP_EMPTY_SUPPORT_OWNER_NORMALIZED').first())
+    .toBeVisible();
+  await expect(page.getByText('已按关系区域唯一且连通的 GROUP 归属补全层级关系支撑').first())
     .toBeVisible();
   await expect(page.getByText('VISUAL_SEMANTIC_HIERARCHY_ENTITY_REGION_REDUNDANT').first()).toBeVisible();
   await expect(page.getByText('同一实体不能同时拥有祖先区域和后代区域').first()).toBeVisible();

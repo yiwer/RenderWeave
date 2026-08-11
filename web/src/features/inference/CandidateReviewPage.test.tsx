@@ -111,6 +111,10 @@ describe('Candidate atomic apply workspace', () => {
       .toBeGreaterThan(0);
     expect(screen.getAllByText('已按关系源区域唯一且连通的祖先 GROUP 证据归一化层级关系支撑').length)
       .toBeGreaterThan(0);
+    expect(screen.getAllByText('VISUAL_HIERARCHY_RELATIONSHIP_EMPTY_SUPPORT_OWNER_NORMALIZED').length)
+      .toBeGreaterThan(0);
+    expect(screen.getAllByText('已按关系区域唯一且连通的 GROUP 归属补全层级关系支撑').length)
+      .toBeGreaterThan(0);
     expect(screen.getAllByText('VISUAL_SEMANTIC_HIERARCHY_ENTITY_REGION_REDUNDANT').length)
       .toBeGreaterThan(0);
     expect(screen.getAllByText('同一实体不能同时拥有祖先区域和后代区域').length)
@@ -295,6 +299,7 @@ function visualReviewLog(run: InferenceRunResponse): InferenceExecutionLogRespon
         problemCodeCounts: {
           VISUAL_HIERARCHY_RELATIONSHIP_ENCLOSING_SUPPORT_OWNER_NORMALIZED: 1,
           VISUAL_HIERARCHY_RELATIONSHIP_SOURCE_ANCESTOR_SUPPORT_OWNER_NORMALIZED: 1,
+          VISUAL_HIERARCHY_RELATIONSHIP_EMPTY_SUPPORT_OWNER_NORMALIZED: 1,
           VISUAL_SEMANTIC_HIERARCHY_ENTITY_REGION_REDUNDANT: 1,
           VISUAL_SEMANTIC_HIERARCHY_NON_ROOT_OWNS_ROOT_REGION: 1,
           VISUAL_SEMANTIC_HIERARCHY_BINDING_OWNER_AMBIGUOUS: 1,
