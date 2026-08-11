@@ -889,3 +889,38 @@ PASS。首个 OBSERVE accepted；其后四个 HIERARCHY attempt 均以
 `EXPERIMENTAL`，N6 保持 `automated_verified`，N7/Goal 保持 `in_progress`。下一安全切片只能围绕 payload-free
 `RELATIONSHIP_SUPPORT_IDS_EMPTY` 建立本地唯一、bounded、no-progress 可证明的 HIERARCHY repair，不得读取
 Provider 原文、补造关系或放宽 verifier。
+
+## N6/N7 product-v32：空 relationship support 的唯一既有 owner 归一化
+
+Plus v31 已接受 OBSERVE，并在同一 checkpoint 上四次稳定返回空的
+`relationship.supportingElementIds`。relationship 本身、`regionId`、父子 entity ownership 与 OBSERVE 的
+region/element inventory 都已通过各自合同，因此存在一个不依赖模型原文或 OCR 文字的、更窄本地可判定子集。
+
+决策如下：
+
+1. 新 policy 仅由 pipeline 4.19/product-v32 opt-in；pipeline 4.18/product-v31 及更早版本对空 support 继续返回
+   `VISUAL_HIERARCHY_V2_RELATIONSHIP_SUPPORT_IDS_EMPTY`。null 继续返回 MISSING，二者不混淆。
+2. 只允许消费 relationship 已声明的既有 region。该 region 必须已知且 kind 为 GROUP 或 REPEATED_GROUP，必须
+   位于 parent entity region → relationship region → child entity region 的 ownership 连接上，并且恰好有一个
+   kind=GROUP、multiplicity 与 region cardinality 兼容的既有 element owner。
+3. unknown/non-container region、断连 ownership、零或多个 owner、ID/region 不完整及任何 validation failure 都
+   原子保留空 support，并由原 fixed code fail-closed。不得创建或改写 relationship、entity、region、evidence、
+   OCR/文字、selected crop 或 Candidate，也不得按 gold/距离/模型置信度排名。
+4. 成功仍计入通用 `VISUAL_HIERARCHY_RELATIONSHIP_SUPPORT_OWNER_NORMALIZED`，并额外记录数量型
+   `VISUAL_HIERARCHY_RELATIONSHIP_EMPTY_SUPPORT_OWNER_NORMALIZED`。两个计数均不携带 ID、owner 或 payload。
+5. 三份 immutable product-v32 Profile 继承 v31 的 visual-elements v9、hierarchy v7、bindings v3、pinned Document
+   Vision、semantic verifier、stage-local repair 与 deterministic materializer，继续为 `EXPERIMENTAL` 且不加入
+   默认 product-live selector。
+
+`212f468` 完成 codec 正反例与专项计数，旧 v31、ambiguous/non-container/disconnected/null 均保持原诊断；
+`7e4e70c` 接入 pipeline/Profile/worker/独立 snapshot verifier；`b892503` 的真实 PostgreSQL tracer 仅调用一次
+Document Vision，随后 OBSERVE→HIERARCHY→ELEMENT_BINDING 全部 accepted 并到达 `REVIEW_REQUIRED`，OCR sentinel
+未进入 checkpoint/Candidate/problems；`7404c7a` 将专项计数接入 monitor/review 与 diagnostics E2E。
+
+当前验证为 inference 185/185、Profile registry/capability 3/3、independent verifier 2/2、real-PG 1/1、Node 24
+Web 73/73 + build、1024px Playwright 1/1、payload sentinel=0。本增量 Provider attempts=0，Goal 仍为 369
+reservations，Flash/Plus/Max 累计用量仍为 120/167/82 attempts、815,516/999,892/491,919 tokens 与
+¥0.392962/¥3.836612/¥10.289316；三 ledger CLOSED。product-v32 仍 `EXPERIMENTAL`，N6 仍
+`automated_verified`，N7/Goal 仍 `in_progress`。在 clean full、冻结 Document Vision、fresh evaluation identity、
+三份 Profile snapshot、aggregate token/attempt/CNY/time、API 配置存在性、进程与 evidence lease 全部通过前，
+不得 OPEN live；Max 与 final 20/60 的三阶段、质量、独立复核和 J1 硬门不变。

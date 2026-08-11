@@ -1,6 +1,17 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-11 pipeline 4.19/product-v32 已形成零 Provider 的离线生产候选。Plus v31 的 accepted OBSERVE
+  checkpoint 后四次稳定命中 `VISUAL_HIERARCHY_V2_RELATIONSHIP_SUPPORT_IDS_EMPTY`；`212f468` 将其中唯一可证
+  子集收窄为 bounded repair：关系 region 必须是已知 GROUP/REPEATED_GROUP、位于父子实体 ownership 连线上，
+  且恰有一个 kind/multiplicity 兼容的既有 GROUP owner，否则保留原 fixed code，不补造 relationship、topology、
+  evidence、文字或 Candidate。`7e4e70c` 发布三模型 immutable v32 Profile、pipeline 4.19 opt-in、独立 snapshot
+  verifier 与 payload-free `VISUAL_HIERARCHY_RELATIONSHIP_EMPTY_SUPPORT_OWNER_NORMALIZED`；`b892503` 的真实
+  PostgreSQL tracer 以一次 Document Vision 和三次 scripted stage 到达 `REVIEW_REQUIRED`；`7404c7a` 完成
+  monitor/review 与 1024px E2E。Inference 185/185、registry/capability 3/3、independent verifier 2/2、real-PG
+  1/1、Web 73/73/build、Playwright 1/1 PASS。本节点 Provider attempts=0，369 reservations 与三 ledger CLOSED
+  状态不变。v32 仍 `EXPERIMENTAL`、N6=`automated_verified`、N7/Goal=`in_progress`；clean full、冻结 Document
+  Vision、fresh identity/Profile/Goal preflight 尚未运行，任何新 live ledger 都不得 OPEN。
 - 2026-08-11 pipeline 4.18/product-v31 已形成零 Provider 的离线生产候选。`7e464df` 将 Plus v30 的
   `VISUAL_SEMANTIC_REPEATED_ITEM_FIELD_MISSING` 收窄为原子 bounded repair：只对已有 SLOT 使用 canonical
   evidence；每块 evidence 必须落入唯一最具体非 ROOT region，且每个缺字段 ITEM 都有可见证据，否则原样
@@ -521,3 +532,24 @@
   82/491,919/¥10.289316。三 ledger CLOSED、无 live/Maven/lease 残留；Max 因同版本 HIERARCHY/BINDING 门未达
   保持零调用。product-v31 仍 `EXPERIMENTAL`，N6=`automated_verified`，N7/Goal=`in_progress`，final 20/60
   未启动。
+
+## v32 empty relationship support owner checkpoint
+
+- `212f468`：新增 opt-in hierarchy support policy。仅当 relationship 的既有 container region 位于父实体到子实体
+  的 ownership 连接上，并且该 region 只有一个兼容的既有 GROUP owner 时，才把空 support 原子归一化为该
+  element ID；v31、null/missing、unknown/non-container、zero/multiple owner 与断连结构继续用原 fixed code
+  fail-closed。codec 正反例与 inference 185/185 PASS。
+- `7e4e70c`：pipeline 4.19/product-v32 三模型 immutable Profile 显式 opt-in，继承 v31 的 Document Vision、
+  OBSERVE、hierarchy/binding semantic verifier、stage-local repair 与 Candidate materializer；独立 Python verifier
+  接受并重算三份 snapshot。成功只记录数量型
+  `VISUAL_HIERARCHY_RELATIONSHIP_EMPTY_SUPPORT_OWNER_NORMALIZED`，不记录 owner/prompt/OCR/模型输出。
+- `b892503`：真实 PostgreSQL tracer 1/1 PASS；OBSERVE、HIERARCHY、ELEMENT_BINDING 三次 attempt 全 SUCCEEDED，
+  最终 `REVIEW_REQUIRED`。Document Vision 仅一次，hierarchy attempt 同时记录通用 owner 与 empty-support 专项
+  计数；OCR sentinel 未进入 checkpoint、Candidate 或 validation problems。
+- `7404c7a`：monitor/review 中文解释、Web 73/73 与 build、1024px Playwright 1/1 PASS。4173 被无关 TAMP
+  Node 20 原型占用时测试在浏览器前退出；未终止该用户进程，改用隔离 4174 后通过且端口无残留。
+- 本 checkpoint Provider attempts=0；Goal 仍为 369 reservations（364 SETTLED、5 历史 Plus RESERVED、0
+  BREACHED），Flash/Plus/Max 仍为 120/167/82 attempts、815,516/999,892/491,919 tokens 与
+  ¥0.392962/¥3.836612/¥10.289316，三 ledger CLOSED。product-v32 保持 `EXPERIMENTAL`，N6 继续
+  `automated_verified`，N7/Goal 继续 `in_progress`；clean full/Document Vision/fresh identity、snapshot、
+  aggregate budget/time 与 process/lease 门通过前不进行 live，Max/final 20/60 门不变。

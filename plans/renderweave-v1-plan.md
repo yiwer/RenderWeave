@@ -635,3 +635,19 @@ Goal 最终为 369 reservations（364 SETTLED、5 历史 Plus RESERVED、0 BREAC
 CLOSED。v31 未接受 HIERARCHY/BINDING，Max 门失败且未调用，final 20/60 不启动；N6=`automated_verified`、
 N7/Goal=`in_progress`、Profile=`EXPERIMENTAL`。下一实现只允许对 hierarchy support-id fixed code 建立 bounded、
 不补造关系的本地 repair/no-progress 合同。
+
+## 19. T6-5 v32 empty relationship support owner checkpoint
+
+`212f468`、`7e4e70c`、`b892503`、`7404c7a` 将 Plus v31 的稳定
+`VISUAL_HIERARCHY_V2_RELATIONSHIP_SUPPORT_IDS_EMPTY` 收窄为 pipeline 4.19 的原子 repair。它只消费已验证的
+relationship region、父子 entity ownership 与 OBSERVE inventory：region 必须是连通的既有 container，且必须
+恰有一个 kind/multiplicity 兼容的 GROUP owner；否则原 fixed code fail-closed。不得创建 relationship/topology、
+修改 evidence、读取 OCR/模型文字、选择 rejected crop 或合成 Candidate。三份 product-v32 Profile 继续隐藏
+`EXPERIMENTAL`，旧 v31 行为不变。
+
+Inference 185/185、Profile/capability 3/3、独立 verifier 2/2、真实 PostgreSQL OBSERVE→HIERARCHY→BINDING
+tracer 1/1、Web 73/73/build、1024px payload-free Playwright 1/1 PASS；Document Vision 仅一次，最终
+`REVIEW_REQUIRED`，OCR sentinel 零持久化。本节点零 Provider 调用，Goal/ledger/累计用量保持 369 reservations
+与 Flash/Plus/Max 815,516/999,892/491,919 tokens，三 ledger CLOSED。N6=`automated_verified`、N7/Goal=
+`in_progress`；clean full/Document Vision 与 fresh identity/snapshot/aggregate guard 完成前不 OPEN，Max/final
+20/60/最终独立 verifier/业务与视觉 J1 门不变。

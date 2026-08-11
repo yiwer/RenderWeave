@@ -515,3 +515,24 @@ drift、journal/guard 不一致、payload 边界失败或同一无新假设失�
   Max 因同版本 HIERARCHY/BINDING 不可达而未调用；final 20/60 不启动。product-v31=`EXPERIMENTAL`、
   N6=`automated_verified`、N7/Goal=`in_progress`。下一节点仅离线收敛 hierarchy support-id 的 bounded repair/
   no-progress 合同。
+
+## 2026-08-11 v32 empty relationship support owner checkpoint
+
+- live 信号：Plus v31 已接受 OBSERVE，随后四次在同一可信 checkpoint 上以
+  `VISUAL_HIERARCHY_V2_RELATIONSHIP_SUPPORT_IDS_EMPTY` fail-closed；没有 BINDING/Candidate，也未读取模型原文。
+- bounded 合同：`212f468` 只在 relationship 的既有 GROUP/REPEATED_GROUP region 位于父子 entity ownership
+  连线上、且恰有一个 kind/multiplicity 兼容的既有 GROUP owner 时补入该 ID。v31、null/missing、unknown、
+  non-container、zero/multiple owner 与 disconnected structure 均保留原 fixed code；不创建关系、region、
+  evidence、文字、selected crop 或 Candidate。
+- 产品接入：`7e4e70c` 发布 pipeline 4.19 与 Flash/Plus/Max product-v32 immutable Profile，继承 v31 的
+  Document Vision、OBSERVE normalization、hierarchy/binding verifier 与 materializer；独立 verifier 重算三份
+  snapshot。成功只写通用 owner 计数及
+  `VISUAL_HIERARCHY_RELATIONSHIP_EMPTY_SUPPORT_OWNER_NORMALIZED` 数量，不写 owner/payload。
+- 恢复/审核：`b892503` 的真实 PostgreSQL tracer 以一次 Document Vision、OBSERVE→HIERARCHY→BINDING 三次
+  SUCCEEDED attempt 到达 `REVIEW_REQUIRED`，OCR sentinel 零持久化；`7404c7a` 完成 monitor/review 中文说明、
+  Web 73/73/build 与隔离 4174 的 1024px Playwright 1/1。
+- 状态：本增量 Provider attempts=0，369 reservations 与 Flash/Plus/Max 120/167/82 attempts、
+  815,516/999,892/491,919 tokens、¥0.392962/¥3.836612/¥10.289316 不变，三 ledger CLOSED。v32=
+  `EXPERIMENTAL`、N6=`automated_verified`、N7/Goal=`in_progress`；下一节点是 clean fast/server/web/e2e/full 与
+  Document Vision，再 fresh 重算 identity/Profile/Goal/budget/time/process/lease。门控全绿前不 OPEN；Max 与
+  final 20/60 仍要求同版本三阶段质量证据和 J1。
