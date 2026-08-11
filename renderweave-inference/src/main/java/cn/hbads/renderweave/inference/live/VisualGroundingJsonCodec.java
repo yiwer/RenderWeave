@@ -1569,7 +1569,9 @@ final class VisualGroundingJsonCodec {
         if (normalizationPolicy != VisualObservationNormalizationPolicy
                 .BOUNDED_ENUM_UNIQUE_ITEM_PARENT_AND_EVIDENCE_OWNER
                 && normalizationPolicy != VisualObservationNormalizationPolicy
-                .BOUNDED_ENUM_UNIQUE_ITEM_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER) {
+                .BOUNDED_ENUM_UNIQUE_ITEM_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER
+                && normalizationPolicy != VisualObservationNormalizationPolicy
+                .BOUNDED_ENUM_UNIQUE_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER) {
             return new NormalizedElementRegionOwnerships(grounding, 0);
         }
         var inventoryIds = inventory.elements().stream().map(VisualElement::elementId)
@@ -1644,7 +1646,9 @@ final class VisualGroundingJsonCodec {
             VisualObservationNormalizationPolicy normalizationPolicy
     ) {
         if (normalizationPolicy != VisualObservationNormalizationPolicy
-                .BOUNDED_ENUM_UNIQUE_ITEM_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER) {
+                .BOUNDED_ENUM_UNIQUE_ITEM_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER
+                && normalizationPolicy != VisualObservationNormalizationPolicy
+                .BOUNDED_ENUM_UNIQUE_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER) {
             return new NormalizedElementRegionOwnerships(grounding, 0);
         }
         var inventoryIds = inventory.elements().stream().map(VisualElement::elementId)

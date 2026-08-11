@@ -238,6 +238,14 @@ class VisualGroundingContractTest {
                 normalized.grounding().regionIdsForElement("item-label"));
         assertEquals(3, normalized.normalizedElementRegionOwners());
 
+        var inherited = codec.parseElements(
+                malformed, views(), List.of(IMAGE_ID),
+                VisualObservationNormalizationPolicy
+                        .BOUNDED_ENUM_UNIQUE_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER
+        );
+        assertEquals(normalized.grounding(), inherited.grounding());
+        assertEquals(3, inherited.normalizedElementRegionOwners());
+
         var rootOnly = elementsJson().replace(
                 "\"left\":100,\"top\":100,\"right\":3000,\"bottom\":700",
                 "\"left\":100,\"top\":1900,\"right\":3000,\"bottom\":2100"
@@ -292,6 +300,17 @@ class VisualGroundingContractTest {
                 normalized.grounding().regionIdsForElement("item-label"));
         assertEquals(0, normalized.normalizedElementRegionOwners());
         assertEquals(1, normalized.normalizedRepeatedItemSlotOwners());
+
+        var inherited = codec.parseElements(
+                coarseOwner, views(), List.of(IMAGE_ID),
+                VisualObservationNormalizationPolicy
+                        .BOUNDED_ENUM_UNIQUE_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER,
+                VisualObservationSemanticPolicy
+                        .SLOT_LEAF_EVIDENCE_AND_GROUP_REGION_CARDINALITY_REQUIRED
+        );
+        assertEquals(normalized.grounding(), inherited.grounding());
+        assertEquals(0, inherited.normalizedElementRegionOwners());
+        assertEquals(1, inherited.normalizedRepeatedItemSlotOwners());
 
         var missingSecondItemEvidence = coarseOwner.replace(
                 "\"left\":100,\"top\":6300,\"right\":3000,\"bottom\":6800",
