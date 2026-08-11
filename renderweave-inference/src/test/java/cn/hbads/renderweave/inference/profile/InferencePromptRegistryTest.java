@@ -277,6 +277,20 @@ class InferencePromptRegistryTest {
     }
 
     @Test
+    void visualV40PinsReadingOrderDuplicateRepairWithoutDomainHints() {
+        var prompt = new InferencePromptRegistry().requireVisualStage(
+                InferencePromptRegistry.VISUAL_ELEMENTS_V10,
+                InferencePromptRegistry.VISUAL_HINT_GENERIC_V1
+        ).text();
+        var normalized = prompt.replaceAll("\\s+", " ");
+
+        assertTrue(prompt.contains("VISUAL_GROUNDING_READING_ORDER_DUPLICATE"));
+        assertTrue(normalized.contains("recompute every sibling readingOrder"));
+        assertTrue(normalized.contains("contiguous integers starting at zero"));
+        assertFalse(prompt.matches("(?is).*\\b(bus|station|route|stop|fare)\\b.*"));
+    }
+
+    @Test
     void visualV14PinsFieldSpecificHierarchyRepairWithoutStructuralCrops() {
         var prompt = new InferencePromptRegistry().requireVisualStage(
                 InferencePromptRegistry.VISUAL_HIERARCHY_V5,
