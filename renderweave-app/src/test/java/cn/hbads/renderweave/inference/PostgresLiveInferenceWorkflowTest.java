@@ -128,6 +128,8 @@ class PostgresLiveInferenceWorkflowTest {
             "dashscope-qwen37-flash-20260715-product-v35-hybrid-generic";
     private static final String STRUCTURAL_REGION_KIND_NORMALIZED_HYBRID_VISUAL_PROFILE =
             "dashscope-qwen37-flash-20260715-product-v36-hybrid-generic";
+    private static final String CONSTRAINT_REGION_KIND_NORMALIZED_HYBRID_VISUAL_PROFILE =
+            "dashscope-qwen37-flash-20260715-product-v37-hybrid-generic";
     private static final String DOCUMENT_VISION_CAPABILITY =
             "rapidocr-3.9.2-openvino-2026.0.0-ppocrv6-small-c05805399d7d10b1";
 
@@ -2116,6 +2118,87 @@ class PostgresLiveInferenceWorkflowTest {
                 .doesNotContain("ocr-00-000");
         assertThat(review.validationProblemsJson())
                 .doesNotContain("OCR_SENTINEL_V36_STRUCTURAL_REGION_KIND")
+                .doesNotContain("ocr-00-000");
+    }
+
+    @Test
+    void pipelineFourPointTwentyFourResumesAfterNormalizingConstraintUniqueGroupKind() {
+        var blobs = new MemoryBlobStore();
+        var created = createGroundedVisual(
+                blobs, "constraint-unique-group-kind-station",
+                CONSTRAINT_REGION_KIND_NORMALIZED_HYBRID_VISUAL_PROFILE
+        );
+        var constraintClassifiableKind = groundedStationElements().replace(
+                "\"regionId\":\"notice\",\"parentRegionId\":\"root\",\"kind\":\"GROUP\"",
+                "\"regionId\":\"notice\",\"parentRegionId\":\"root\",\"kind\":\"PANEL\""
+        );
+        var provider = new ScriptedProvider(
+                request -> response(request, constraintClassifiableKind),
+                request -> response(request, groundedStationHierarchy()),
+                request -> response(request, groundedStationBindings())
+        );
+        var preprocessCalls = new AtomicInteger();
+        var preprocessor = hybridPreprocessor(
+                preprocessCalls, "OCR_SENTINEL_V37_CONSTRAINT_REGION_KIND"
+        );
+        var firstWorker = worker(provider, blobs, T0.plusSeconds(1), preprocessor);
+        var claimed = runs.claimNextLive(
+                "constraint-region-kind-first-worker", T0.plusSeconds(1),
+                Duration.ofMinutes(5)
+        ).orElseThrow();
+
+        var afterObserve = firstWorker.advance(claimed);
+
+        assertThat(afterObserve.stage()).isEqualTo(InferenceStage.HIERARCHY);
+        assertThat(preprocessCalls).hasValue(1);
+        assertThat(provider.requests).extracting(ProviderInferenceRequest::stage)
+                .containsExactly(InferenceStage.OBSERVE);
+        assertThat(workflowStore.attempts(created)).singleElement().satisfies(attempt -> {
+            assertThat(attempt.status()).isEqualTo(InferenceAttemptStatus.SUCCEEDED);
+            assertThat(attempt.problemCodeCounts()).containsExactlyEntriesOf(Map.of(
+                    "VISUAL_GROUNDING_REGION_KIND_NORMALIZED", 1
+            ));
+        });
+        assertThat(afterObserve.checkpointJson())
+                .contains("renderweave-visual-grounding/2.0")
+                .doesNotContain("OCR_SENTINEL_V37_CONSTRAINT_REGION_KIND")
+                .doesNotContain("ocr-00-000");
+
+        var finished = worker(
+                provider, blobs, T0.plus(Duration.ofMinutes(7)), preprocessor
+        ).processNext("constraint-region-kind-recovery-worker").orElseThrow();
+
+        assertThat(finished.state())
+                .as("failure=%s attempts=%s", finished.failureCode(), workflowStore.attempts(created))
+                .isEqualTo(InferenceRunState.REVIEW_REQUIRED);
+        assertThat(preprocessCalls)
+                .as("ephemeral OCR is recomputed after lease expiry without replaying OBSERVE")
+                .hasValue(2);
+        assertThat(provider.requests).extracting(ProviderInferenceRequest::stage)
+                .containsExactly(
+                        InferenceStage.OBSERVE,
+                        InferenceStage.HIERARCHY,
+                        InferenceStage.ELEMENT_BINDING
+                );
+        assertThat(workflowStore.attempts(created)).extracting(InferenceAttempt::status)
+                .containsExactly(
+                        InferenceAttemptStatus.SUCCEEDED,
+                        InferenceAttemptStatus.SUCCEEDED,
+                        InferenceAttemptStatus.SUCCEEDED
+                );
+        assertThat(workflowStore.attempts(created).get(1).problemCodeCounts())
+                .doesNotContainKey("VISUAL_GROUNDING_REGION_KIND_NORMALIZED");
+        assertThat(workflowStore.attempts(created).get(2).problemCodeCounts())
+                .doesNotContainKey("VISUAL_GROUNDING_REGION_KIND_NORMALIZED");
+        assertThat(finished.checkpointJson())
+                .doesNotContain("OCR_SENTINEL_V37_CONSTRAINT_REGION_KIND")
+                .doesNotContain("ocr-00-000");
+        var review = workflowStore.findCandidate(created).orElseThrow();
+        assertThat(review.currentJson())
+                .doesNotContain("OCR_SENTINEL_V37_CONSTRAINT_REGION_KIND")
+                .doesNotContain("ocr-00-000");
+        assertThat(review.validationProblemsJson())
+                .doesNotContain("OCR_SENTINEL_V37_CONSTRAINT_REGION_KIND")
                 .doesNotContain("ocr-00-000");
     }
 
