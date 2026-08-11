@@ -99,3 +99,21 @@ reservation 不删除、不释放、不重算。独立 Python verifier 按 guard
 本决定只解除 Flash/Plus 的 Goal cost 停止门，不自动 OPEN ledger、不增加 attempts/tokens、不晋级
 Profile，也不放宽 Max 的同版本三阶段门。每个 single-case ledger 仍独立收窄并遵循
 PROPOSED→负探针→OPEN→CLOSED；wrapper 超时仍先查 lease/进程，禁止并发重跑。
+
+## guard v4 首次迁移与 v33 结算
+
+`15b5d00` 的 clean full/Document Vision 与 fresh identity/Profile preflight 通过后，Flash v33 的首个
+OPEN reservation 在 Goal lock 内把精确 v3 guard 原子迁移为 v4；state reservation 未删除、释放或重算。
+Flash `f12e5af`→`69e8455`→`f50f591` 结算 4 attempts / 37,181 tokens / ¥0.019870；Plus
+`b0bceab`→`36c13db`→`f7a87b9` 结算 5 attempts / 35,407 tokens / ¥0.159584。两者的 PROPOSED
+负探针均为 NOT_OPEN 且 Goal/evidence 零写入，两份 CLOSED evidence 均由独立 verifier 重建 PASS。
+
+| 稳定槽位 | attempts | exposed tokens / 1,500,000 | Goal cost / cap | 剩余 |
+|---|---:|---:|---:|---:|
+| Flash（旧 alias + pinned） | 124 / 180 | 852,697 | ¥0.412832 / ¥10 | 56 attempts；647,303 tokens；¥9.587168 |
+| Plus | 175 / 180 | 1,056,615 | ¥4.063422 / ¥10 | 5 attempts；443,385 tokens；¥5.936578 |
+| Max | 82 / 180 | 491,919 | ¥10.289316 / ¥18 | 98 attempts；1,008,081 tokens；¥7.710684 |
+
+381 reservations 中 376 SETTLED、5 个历史 Plus RESERVED、0 BREACHED。Plus 第五次才接受 OBSERVE，
+随后在 HIERARCHY 前由 ledger call cap 停止；Flash 未接受 OBSERVE。因此 Max 的同版本三阶段门仍未成立，
+保持 CLOSED。guard v4 的成功迁移只证明治理闭环，不构成 Profile 晋级或 final eval 许可。

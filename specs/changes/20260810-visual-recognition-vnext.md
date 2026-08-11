@@ -169,3 +169,21 @@ tokens。该 delta 只覆盖原信封的 Flash 模型身份和 Goal token cap：
 - 每次 OPEN 前仍须冻结 clean evaluation identity、精确 v33 Profile snapshot、case、次数、ledger
   费用和时限；先做单 case/最多 5 attempts，只有 OBSERVE→HIERARCHY→BINDING 同版本 live 可达才
   进入 Max 或 final 20/60。
+
+### 2026-08-11 v33 串行执行结果与停止门
+
+- exact-clean `15b5d00` 的 full 9/9 与冻结 Document Vision canary 通过；Java/独立 Python
+  evaluation identity 一致为 `/2:84e6c3f7d70825a29d9e4bdfe8070d16323b0eb9e830619359aa2294c3ff97e7`，
+  Flash/Plus v33 snapshot 分别为 `6d55bc7e…39901` / `763412d2…dd44`。Goal guard 在首个 OPEN
+  reservation 内原子迁移为 v4，历史 reservation 未改写。
+- Flash 按独立 ledger 完成 PROPOSED→NOT_OPEN 负探针→OPEN→唯一 wrapper→CLOSED；独立 verifier
+  PASS、4 attempts / 37,181 tokens / ¥0.019870 / 0 abandoned / payload scan PASS。四次均在 OBSERVE
+  fail-closed，固定码为 invalid-region-kind×2、parent-containment×1、parent-invalid×1。
+- Plus 在 fresh preflight 后完成同一生命周期；独立 verifier PASS、5 attempts / 35,407 tokens /
+  ¥0.159584 / 0 abandoned / payload scan PASS。前四次 OBSERVE 分别为 sibling-overlap、
+  evidence-outside-region×2、parent-kind；第五次 OBSERVE accepted，但 5-call ledger 上限随即在
+  HIERARCHY 前 fail-closed。
+- v33 没有形成同版本 accepted HIERARCHY/BINDING 或可审核 Candidate，因此 Max 与 final 20/60
+  均不得启动。三份 ledger 最终 CLOSED；Goal 为 381 reservations（376 SETTLED、5 个历史 Plus
+  RESERVED、0 BREACHED）。Profile 继续 `EXPERIMENTAL`，N6 继续 `automated_verified`，N7/Goal
+  继续 `in_progress`。

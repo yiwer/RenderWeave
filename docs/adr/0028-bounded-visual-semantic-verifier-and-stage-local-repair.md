@@ -962,3 +962,22 @@ PostgreSQL tracer 与 monitor/review UI/E2E。当前已通过 contract 28/28、i
 Profile/capability 3/3、independent snapshot verifier 2/2、real-PG 1/1、Web 73/73 + lint/typecheck/build 与
 1024px Playwright 1/1。product-v33 继续 `EXPERIMENTAL`；N6 继续 `automated_verified`，N7/Goal
 继续 `in_progress`，最终 revision 的 clean gates 与 final eval/J1 仍未完成。
+
+## N7 product-v33：恢复费用后的 live 反馈与 OBSERVE parent-link 边界
+
+guard v4 的新 J1 只恢复了 Flash/Plus 的费用入口，没有改变三阶段和质量门。exact-clean `15b5d00`
+通过 full 9/9 与冻结 Document Vision；随后 Flash/Plus 各自严格执行 PROPOSED→NOT_OPEN 负探针→
+OPEN→唯一 wrapper→CLOSED，CLOSED 后才读取 evidence。两份独立 verifier 均 PASS、0 abandoned、
+payload scan PASS，未保存模型/OCR 原文、图片、完整 prompt 或 Candidate。
+
+Flash 的 4 次 OBSERVE 分别以 region-kind enum×2、parent-containment、parent-invalid fail-closed；Plus
+前四次为 sibling-overlap、element-evidence-outside-region×2、parent-kind，第五次才接受 OBSERVE，
+但 5-call authorization 已耗尽，未调用 HIERARCHY/BINDING。v33 unknown-support normalization 因而没有
+真实命中；这个结果不否定其本地合同，也不能声称质量改善。
+
+新的安全决策边界是：enum 与 partial sibling overlap 仍不能从 fixed code 唯一映射；evidence-owner
+已有 v30 bounded policy，歧义时继续 fail-closed。下一候选只能针对已有 region 的错误 parent link，
+并且必须由同 artifact 的严格几何包含、允许的 kind/repeat-group 关系与唯一最具体既有 parent 同时证明；
+零/多候选、ROOT、缺 parent、相等 box、循环风险、超过有界数量或任一全局 forest 校验失败时必须原子
+保留原输入。不得创建 region/topology/evidence、读文字、按距离/gold 排名或从 rejected OBSERVE 选择 crop。
+该候选在测试、版本化 Profile、真实 PostgreSQL 恢复、telemetry 与 UI/E2E 全部闭环前不构成新的 live 许可。

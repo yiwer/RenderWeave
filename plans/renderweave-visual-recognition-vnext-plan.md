@@ -582,3 +582,17 @@ drift、journal/guard 不一致、payload 边界失败或同一无新假设失�
   单 case lifecycle/A2 → fresh preflight 后 Plus lifecycle/A2。Max 仍须同版本 live 三阶段和质量门。
 - 本 checkpoint 只固化授权与 guard，Provider attempts=0、372 reservations 与三份 CLOSED ledger
   尚未变化；product-v33 仍 `EXPERIMENTAL`，N7/Goal 仍 `in_progress`。
+
+## 2026-08-11 v33 cost-restored live 与下一安全切片
+
+- `15b5d00` clean full 9/9、Document Vision 19 lines、双实现 identity 与三份 v33 snapshot 通过；
+  v3 guard 在首个 OPEN reservation 内原子迁移 v4。
+- Flash `f12e5af`→`69e8455`→`f50f591`：负探针 NOT_OPEN、唯一 wrapper、CLOSED 后 A2 PASS；
+  4 attempts / 37,181 tokens / ¥0.019870，全部为 OBSERVE parent/enum fail-closed。
+- Plus `b0bceab`→`36c13db`→`f7a87b9`：同等生命周期与 A2/payload PASS；5 attempts /
+  35,407 tokens / ¥0.159584，第五次 OBSERVE accepted 后 call cap 阻止 HIERARCHY。
+- Goal 最终 381 reservations（376 SETTLED、5 历史 RESERVED、0 BREACHED），三 ledger CLOSED、无残留
+  process/lease。Max/final 20/60 因同版本三阶段门失败不启动。
+- 下一节点：先离线实现并证明 unique-existing-parent OBSERVE normalization；只允许同 artifact、严格包含、
+  kind/repeat-group 兼容且唯一最具体的已有 parent，任何歧义/循环/root/全局校验失败原子回退。随后才进行
+  versioned Profile、real-PG recovery、payload-free telemetry、monitor/review UI/E2E 和分层 gates。

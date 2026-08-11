@@ -691,3 +691,17 @@ final independent verifier 与业务/视觉 J1 仍未完成，因此 Goal 不完
 Flash、Plus 单 case lifecycle。只有同版本 OBSERVE/HIERARCHY/BINDING 和质量门成立才考虑 Max 与 final
 20/60。此节点自身 Provider attempts=0，N6=`automated_verified`、N7/Goal=`in_progress`、Profile=
 `EXPERIMENTAL`。
+
+## 23. T6-5 v33 cost-restored bounded live checkpoint
+
+exact-clean `15b5d00` 的 full 9/9、Document Vision 19-line canary、双实现 evaluation identity 与三份
+v33 Profile snapshot 通过；Goal guard 原子迁移 v4。Flash lifecycle `f12e5af`→`69e8455`→`f50f591`
+完成 4 次 OBSERVE fail-closed（37,181 tokens / ¥0.019870）；Plus `b0bceab`→`36c13db`→`f7a87b9`
+完成 5 次（35,407 tokens / ¥0.159584），第五次接受 OBSERVE 后由 call cap 在 HIERARCHY 前停止。
+两份 NOT_OPEN 负探针、唯一 wrapper、立即 CLOSED、独立 verifier 与 payload scan 均通过，0 abandoned。
+
+Goal 为 381 reservations（376 SETTLED、5 历史 Plus RESERVED、0 BREACHED）；Flash/Plus/Max 为
+124/175/82 attempts、852,697/1,056,615/491,919 exposed tokens、¥0.412832/¥4.063422/¥10.289316。
+三 ledger CLOSED。v33 不满足同版本 HIERARCHY/BINDING，Max/final 20/60 不启动；N6=`automated_verified`、
+N7/Goal=`in_progress`、Profile=`EXPERIMENTAL`。下一实现仅允许 unique-existing-parent 的 bounded OBSERVE
+repair，enum/overlap/歧义保持 fail-closed。

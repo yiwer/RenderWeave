@@ -1,12 +1,15 @@
 # NOTES.md
 
 ## 当前目标与进度
-- 2026-08-11 用户新增 N7 J1：Flash/Plus 各 ¥10 Goal 总费用 cap、固定 24h 窗口
-  `2026-08-11T09:51:55Z`–`2026-08-12T09:51:55Z`；按总 cap 而非旧 cap + ¥10 解释。Max ¥18、
-  每槽 1.5M tokens/180 attempts、单 authorization 500k 与 synthetic/CC0-only/payload-free 不变。
-  本节点新增 goal guard v4 精确 v1/v2/v3 原子迁移和独立 verifier 分版 cap；定向 13 tests 与 Python
-  compile PASS。当前 Provider attempts=0、372 reservations、三 ledger CLOSED，尚未迁移 guard 或 OPEN；
-  下一步是独立提交、exact-clean preflight、fresh identity/snapshot 后串行 Flash→Plus v33 smoke。
+- 2026-08-11 v33 cost-restored bounded live 已闭环。`15b5d00` clean full 9/9、Document Vision 19 lines、
+  双实现 identity 与三份 snapshot 通过，guard 在首个 reservation 内原子迁移 v4。Flash
+  `f12e5af`→`69e8455`→`f50f591` 为 4 attempts / 37,181 tokens / ¥0.019870，均停在 OBSERVE；Plus
+  `b0bceab`→`36c13db`→`f7a87b9` 为 5 attempts / 35,407 tokens / ¥0.159584，第五次 OBSERVE accepted
+  后由 call cap 在 HIERARCHY 前停止。两份独立 verifier/payload scan PASS、0 abandoned，三 ledger CLOSED、
+  无进程/lease 残留。Goal 为 381 reservations（376 SETTLED、5 历史 Plus RESERVED）：Flash/Plus/Max
+  124/175/82 attempts、852,697/1,056,615/491,919 tokens。Max/final 20/60 的同版本三阶段门失败；下一安全
+  节点仅实现 unique-existing-parent 的 bounded OBSERVE repair，Profile 仍 `EXPERIMENTAL`、N7/Goal 仍
+  `in_progress`。
 - 2026-08-11 pipeline 4.19/product-v32 已形成零 Provider 的离线生产候选。Plus v31 的 accepted OBSERVE
   checkpoint 后四次稳定命中 `VISUAL_HIERARCHY_V2_RELATIONSHIP_SUPPORT_IDS_EMPTY`；`212f468` 将其中唯一可证
   子集收窄为 bounded repair：关系 region 必须是已知 GROUP/REPEATED_GROUP、位于父子实体 ownership 连线上，
@@ -455,15 +458,14 @@
   HTTP failure 硬停与未晋级决策；全部 ledger CLOSED。
 - `plans/logs/P6-T6-5-N6.md`：bounded semantic verifier、stage-local repair、selected crops、payload-free UI、
   v15–v33 bounded verifier/normalization 增量；v33 contract/Profile/real-PG/UI/E2E 离线证据已记录。
-- `plans/logs/P6-T6-5-N7.md`：pinned Flash/Goal guard v3、Provider-backed single-case CLOSED/A2
-  reachability、v15–v33 实证驱动增量；v32 Plus 止于 HIERARCHY，v33 等待 exact-clean gates。
-- 当前可恢复实现锚点：`phase/p6-visual-recognition-vnext` 的 `94060a0`；v33 codec/Profile/PG/UI 为
-  `5951047` / `7ac4259` / `edd310d` / `94060a0`。v32 clean full `20260811-164653`、Document Vision
-  `20260811-165243` 与 Plus live evidence 已闭环；Goal 为 372 reservations，三份 ledger CLOSED，无 visual
-  live 进程。编排 Goal `019fec8e-a851-7952-b49b-8be76a281a57` 因 turn interrupt 显示 `paused`，
-  用户已明确继续同一 objective，未创建 replacement Goal。下一节点是 v33 checkpoint commit 后
-  exact-clean fast/server/web/e2e/full/Document Vision 与独立 verifier；费用/同版本阶段门未变前不能
-  直接扩大 final eval。
+- `plans/logs/P6-T6-5-N7.md`：pinned Flash/Goal guard v4、Provider-backed single-case CLOSED/A2
+  reachability、v15–v33 实证驱动增量；v33 Flash 止于 OBSERVE，Plus 第五次接受 OBSERVE 后 call cap 停止。
+- 当前可恢复实现锚点：`phase/p6-visual-recognition-vnext` 的 `f7a87b9`；v33 codec/Profile/PG/UI 为
+  `5951047` / `7ac4259` / `edd310d` / `94060a0`，governance 为 `15b5d00`。v33 full
+  `20260811-180152`、Document Vision `20260811-181058`、Flash/Plus live A2 与 Goal v4 已闭环；Goal 为
+  381 reservations，三份 ledger CLOSED，无 visual/Maven/OCR live 进程。编排 Goal
+  `019fec8e-a851-7952-b49b-8be76a281a57` 仍显示 `paused`，用户已明确继续同一 objective，未创建 replacement
+  Goal。下一节点是 unique-existing-parent bounded OBSERVE repair；门控前不能直接扩大 final eval。
 
 ## v27 source-ancestor 与预算硬门 checkpoint
 
