@@ -448,16 +448,16 @@
 - `plans/logs/P6-T6-5-N5.md`：有界本地 Document Vision、v4/v6/v7 同 case live 消融、Plus Goal 用量、
   HTTP failure 硬停与未晋级决策；全部 ledger CLOSED。
 - `plans/logs/P6-T6-5-N6.md`：bounded semantic verifier、stage-local repair、selected crops、payload-free UI、
-  v15–v28 bounded verifier/normalization 增量；v28 real-PG/Profile/UI 离线证据已记录，尚未 live。
-- `plans/logs/P6-T6-5-N7.md`：pinned Flash/Goal guard v3、二十三份 Provider-backed single-case CLOSED/A2
-  reachability、v15–v28 bounded verifier/normalization 增量；v28 等待 clean full 与 fresh pre-live identity。
-- 当前可恢复实现锚点：`phase/p6-visual-recognition-vnext` 的 `6a8a36f`；v28 verifier/Profile/UI 为
-  `76a0635` / `a96fec1` / `6a8a36f`，预算事务修复为 `5ada0fa`。受影响定向后端与 Node 24 Web/E2E 已绿；
-  Flash v27b `a473d2f`、Plus v27 `854d652`、Max v27 `95be8fa` 均 CLOSED/A2；
-  Git-blob canonical identity `/2` 为 `cded69e`，clean server/fast A1 与真实 `/1` 历史回放通过；
-  编排 Goal `019fec8e-a851-7952-b49b-8be76a281a57` 因 turn interrupt 当前显示 `paused`，用户已明确继续同一
-  objective，未创建 replacement Goal。三份 ledger CLOSED；下一节点是 v28 clean full 与 fresh pre-live
-  identity/Profile/budget 核验，不能直接扩大 final eval。
+  v15–v33 bounded verifier/normalization 增量；v33 contract/Profile/real-PG/UI/E2E 离线证据已记录。
+- `plans/logs/P6-T6-5-N7.md`：pinned Flash/Goal guard v3、Provider-backed single-case CLOSED/A2
+  reachability、v15–v33 实证驱动增量；v32 Plus 止于 HIERARCHY，v33 等待 exact-clean gates。
+- 当前可恢复实现锚点：`phase/p6-visual-recognition-vnext` 的 `94060a0`；v33 codec/Profile/PG/UI 为
+  `5951047` / `7ac4259` / `edd310d` / `94060a0`。v32 clean full `20260811-164653`、Document Vision
+  `20260811-165243` 与 Plus live evidence 已闭环；Goal 为 372 reservations，三份 ledger CLOSED，无 visual
+  live 进程。编排 Goal `019fec8e-a851-7952-b49b-8be76a281a57` 因 turn interrupt 显示 `paused`，
+  用户已明确继续同一 objective，未创建 replacement Goal。下一节点是 v33 checkpoint commit 后
+  exact-clean fast/server/web/e2e/full/Document Vision 与独立 verifier；费用/同版本阶段门未变前不能
+  直接扩大 final eval。
 
 ## v27 source-ancestor 与预算硬门 checkpoint
 
@@ -553,3 +553,29 @@
   ¥0.392962/¥3.836612/¥10.289316，三 ledger CLOSED。product-v32 保持 `EXPERIMENTAL`，N6 继续
   `automated_verified`，N7/Goal 继续 `in_progress`；clean full/Document Vision/fresh identity、snapshot、
   aggregate budget/time 与 process/lease 门通过前不进行 live，Max/final 20/60 门不变。
+
+## v32 clean/full 与 Plus bounded live checkpoint
+
+- exact `954792f` 的 clean full 9/9、Document Vision 19 lines、Java/Python `/2` identity 与三份
+  v32 snapshot 均精确一致。Flash 因剩余费用小于标准 OBSERVE reservation 而保持 CLOSED。
+- Plus 按 `54bc798`→`a94810c`→`5d71b3f` 完成 PROPOSED→负探针→OPEN→唯一 wrapper→
+  CLOSED；A2/payload scan PASS，3 attempts / 21,316 tokens / ¥0.067226 / 0 abandoned。OBSERVE accepted，
+  HIERARCHY 两次 support-element-unknown，BINDING 未执行。
+- 当前 372 reservations = 367 SETTLED + 5 历史 Plus RESERVED，0 BREACHED。Flash/Plus/Max 为
+  120/170/82 attempts、815,516/1,021,208/491,919 tokens、¥0.392962/¥3.903838/¥10.289316。三
+  ledger CLOSED；Flash/Plus 剩余费用低于标准 OBSERVE 预留，Max 的同版本三阶段门未成立。
+
+## v33 unknown relationship-support owner checkpoint
+
+- `5951047`：仅当 relationship 只有一个 unknown support ID，已知 container region 在父子
+  ownership 连线上且只有一个兼容 GROUP owner 时才原子归一化。歧义、多 unknown、
+  non-container/disconnected 仍用原 fixed code fail-closed；不新建结构或证据。
+- `7ac4259`：发布 pipeline 4.20 与三份 product-v33 immutable Profile；独立 verifier 支持并
+  重算 snapshot。`edd310d`：真实 PostgreSQL tracer 到达 `REVIEW_REQUIRED`，Document Vision 一次、
+  OBSERVE/HIERARCHY/BINDING 三次 stage SUCCEEDED，OCR sentinel 零持久化。
+- `94060a0`：monitor/review 显示 unknown-support fixed code 与中文说明。contract 28/28、inference
+  186/186、Profile/capability 3/3、independent verifier 2/2、real-PG 1/1、Web 73/73 +
+  lint/typecheck/build、隔离 4187 的 1024px Playwright 1/1 PASS，端口无残留。
+- 本节点 Provider attempts=0，Goal 用量不变。product-v33 仍 `EXPERIMENTAL`，N6 仍
+  `automated_verified`，N7/Goal 仍 `in_progress`；通用 live fixed code 不足以证明 unknown 必属于
+  relationship，所以不宣称质量改善，不启动 final 20/60。

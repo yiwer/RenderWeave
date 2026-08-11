@@ -651,3 +651,31 @@ tracer 1/1、Web 73/73/build、1024px payload-free Playwright 1/1 PASS；Documen
 与 Flash/Plus/Max 815,516/999,892/491,919 tokens，三 ledger CLOSED。N6=`automated_verified`、N7/Goal=
 `in_progress`；clean full/Document Vision 与 fresh identity/snapshot/aggregate guard 完成前不 OPEN，Max/final
 20/60/最终独立 verifier/业务与视觉 J1 门不变。
+
+## 20. T6-5 v32 full 与 bounded live checkpoint
+
+exact `954792f` 的 clean full 9/9 与冻结 Document Vision 19-line canary PASS；Java/Python `/2`
+identity 与三份 v32 Profile snapshot 精确一致。Flash 因 Goal 剩余费用低于标准 OBSERVE
+reservation 而未调用。Plus 完成 `54bc798`→`a94810c`→`5d71b3f` 的
+PROPOSED→负探针→OPEN→唯一 wrapper→CLOSED lifecycle；独立 A2/payload scan PASS，3 attempts /
+21,316 tokens / ¥0.067226。OBSERVE accepted，两次 HIERARCHY 均为 support-element-unknown，
+下一调用在 Provider 前因费用守卫停止，未到 BINDING。
+
+Goal 为 372 reservations（367 SETTLED、5 历史 Plus RESERVED、0 BREACHED）；Flash/Plus/Max 为
+120/170/82 attempts、815,516/1,021,208/491,919 tokens、¥0.392962/¥3.903838/¥10.289316。三
+ledger CLOSED。v32 不满足同版本 accepted HIERARCHY/BINDING，Max/final 20/60 不启动，
+N6=`automated_verified`、N7/Goal=`in_progress`、Profile=`EXPERIMENTAL`。
+
+## 21. T6-5 v33 unknown relationship support owner checkpoint
+
+`5951047`、`7ac4259`、`edd310d`、`94060a0` 将通用 support-element-unknown 信号收窄为 pipeline
+4.20 的 opt-in bounded repair：仅当某 relationship 只有一个 unknown support ID，其已知 container
+region 在父子 entity ownership 连线上且只有一个兼容 GROUP owner 时才原子替换。歧义、
+non-container、disconnected 和多 unknown ID 仍 fail-closed；不生成字段、关系、证据、crop 或
+Candidate。三份 product-v33 Profile 继续隐藏 `EXPERIMENTAL`。
+
+contract 28/28、inference 186/186、Profile/capability 3/3、独立 snapshot verifier 2/2、真实
+PostgreSQL tracer 1/1、Web 73/73 + lint/typecheck/build 与隔离 1024px Playwright 1/1 PASS。tracer 到达
+`REVIEW_REQUIRED`，Document Vision 仅一次，OCR sentinel 未持久化；UI 仅显示 fixed code、中文解释
+和数量。本节点 Provider attempts=0，Goal 用量不变。最终 revision clean gates、20/60 final eval、
+final independent verifier 与业务/视觉 J1 仍未完成，因此 Goal 不完成。

@@ -11,12 +11,12 @@
   三个预算槽位各追加 500,000 tokens，当前累计 cap 1,500,000；单 authorization 500,000、attempt/CNY/time
   边界不变，精确约束见 spec delta
 - 当前节点：N0–N1、N3–N4、N6 `automated_verified`；N2 `live_verified_mixed_a1_a2`；N5
-  `live_verified_not_promoted`；N7 `in_progress`。v27 Flash/Plus/Max single-case 均 CLOSED/A2：Flash 止于
-  OBSERVE，Plus/Max 虽三阶段可达但 slot/binding 0 matched，未进入 final eval。v30 Flash/Plus bounded live 均
-  CLOSED/A2，却都停在 OBSERVE；Plus 的 repeated-item-field fixed code 已驱动 pipeline 4.18/product-v31：bounded
-  repeated-item SLOT owner repair、real-PG 三阶段 checkpoint、独立 Profile verifier 与 monitor/review telemetry 均
-  离线通过。v31 尚未跑 clean full/Document Vision 或 OPEN live。当前 Goal 为 359 reservations（354 SETTLED、
-  5 历史 Plus RESERVED、0 BREACHED），三份 live ledger `CLOSED`，Profile 均隐藏 `EXPERIMENTAL`
+  `live_verified_not_promoted`；N7 `in_progress`。v32 clean full/Document Vision 与 Plus single-case CLOSED/A2
+  已完成：OBSERVE accepted，HIERARCHY 两次以 support-element-unknown 拒绝，BINDING 未调用。
+  该 fixed code 驱动了 pipeline 4.20/product-v33 的 bounded unknown relationship-support owner repair；
+  codec/Profile/real-PG/monitor/review/1024px E2E 已通过并提交到 `94060a0`，但 v33 exact-clean
+  full/Document Vision 尚未跑。当前 Goal 为 372 reservations（367 SETTLED、5 历史 Plus RESERVED、
+  0 BREACHED），三份 live ledger `CLOSED`，Profile 均隐藏 `EXPERIMENTAL`
 
 ## 四维执行配置
 
@@ -270,12 +270,13 @@ ledger 描述成外部强制门。
 | 模型 | Goal cap | Goal exposed tokens | 剩余 tokens | attempts | list-price CNY cap | Goal cost |
 |---|---:|---:|---:|---:|---:|---:|
 | qwen3.8-max | 1,500,000 | 491,919 | 1,008,081 | 82 / 180 | 18.00 | 10.289316 |
-| qwen3.7-plus | 1,500,000 | 936,770 | 563,230 | 158 / 180 | 4.00 | 3.608122 |
-| Flash slot（旧 alias + `qwen3.7-flash-2026-07-15`） | 1,500,000 | 685,591 | 814,409 | 105 / 180 | 0.40 | 0.326091 |
+| qwen3.7-plus | 1,500,000 | 1,021,208 | 478,792 | 170 / 180 | 4.00 | 3.903838 |
+| Flash slot（旧 alias + `qwen3.7-flash-2026-07-15`） | 1,500,000 | 815,516 | 684,484 | 120 / 180 | 0.40 | 0.392962 |
 
-Goal guard v3 共 345 reservations：340 SETTLED、5 个历史 Plus RESERVED；没有 BREACHED。`2b23617` 只提高
-token cap，单 authorization 500,000、attempt/CNY cap 与所有历史 reservation 不变。v28 Flash/Plus smoke 后
-三份 visual ledger 均 `CLOSED`。
+Goal guard v3 共 372 reservations：367 SETTLED、5 个历史 Plus RESERVED；没有 BREACHED。`2b23617` 只提高
+token cap，单 authorization 500,000、attempt/CNY cap 与所有历史 reservation 不变。v32 Plus smoke 后
+三份 visual ledger 均 `CLOSED`。Flash/Plus 剩余 Goal 费用均低于当前标准 OBSERVE reservation；Max 仍受
+同版本 live 三阶段及质量/J1 前置约束。
 
 停止条件：任一 token/attempt/CNY cap、168h ledger expiry、Goal 完成、Provider refusal/Retry-After、identity
 drift、journal/guard 不一致、payload 边界失败或同一无新假设失败再次出现。停止只关闭后续调用；已结算费用
@@ -536,3 +537,37 @@ drift、journal/guard 不一致、payload 边界失败或同一无新假设失�
   `EXPERIMENTAL`、N6=`automated_verified`、N7/Goal=`in_progress`；下一节点是 clean fast/server/web/e2e/full 与
   Document Vision，再 fresh 重算 identity/Profile/Goal/budget/time/process/lease。门控全绿前不 OPEN；Max 与
   final 20/60 仍要求同版本三阶段质量证据和 J1。
+
+## 2026-08-11 v32 clean/full 与 bounded live 结果
+
+- clean gate：exact `954792f` 的 full `20260811-164653` 9/9 PASS；Document Vision
+  `20260811-165243` 为 1/1、19 lines。Java/Python evaluation identity 一致为 `/2:d3057906…e452fca`，
+  Flash/Plus/Max v32 snapshot 依次为 `cadc8c7f…adfbb`、`1d839ca5…b86c7`、`7a2e42e2…c5477`。
+- Flash：Goal 剩余 ¥0.007038 低于标准 OBSERVE reservation ¥0.009740，因此在新 reservation
+  前 fail-closed，保持 CLOSED。
+- Plus：`54bc798` PROPOSED → NOT_OPEN 负探针 → `a94810c` OPEN →唯一 wrapper →
+  `5d71b3f` CLOSED。A2/payload scan PASS；3 attempts、21,316 tokens、¥0.067226、0 abandoned。
+  OBSERVE accepted；HIERARCHY 两次为 `VISUAL_HIERARCHY_V2_SUPPORT_ELEMENT_UNKNOWN`，下一
+  reservation 在 Provider 前因费用耗尽停止，未到 BINDING。
+- 停止门：372 reservations = 367 SETTLED + 5 历史 Plus RESERVED，0 BREACHED。Flash/Plus/Max
+  为 120/170/82 attempts、815,516/1,021,208/491,919 tokens、¥0.392962/¥3.903838/¥10.289316。
+  三 ledger CLOSED。v32 未取得 accepted HIERARCHY/BINDING，Max 不调用，final 20/60 不启动。
+
+## 2026-08-11 v33 unknown relationship-support owner checkpoint
+
+- 信号边界：v32 live 只暴露通用 support-element-unknown fixed code，未暴露 ID 或原文。v33 因此只
+  处理“一个 relationship 的唯一 unknown support ID 可被既有结构唯一反证”的子集，不声称已
+  定位 live unknown 的 owner 类型。
+- bounded 合同：`5951047` 要求 relationship region 为已知 container、parent→relationship→child
+  ownership 连通、且恰有一个 multiplicity-compatible 的已有 GROUP owner。non-container、
+  ambiguous、disconnected 或多 unknown ID 原子保留旧失败；不创建任何结构或 payload。
+- 产品/恢复：`7ac4259` 发布 pipeline 4.20 与三份 product-v33 immutable Profile；`edd310d`
+  真实 PostgreSQL tracer 以一次 Document Vision 与三次 stage attempt 到达 `REVIEW_REQUIRED`，
+  unknown-support 及通用 owner telemetry 只在 HIERARCHY，OCR sentinel 零持久化。
+- 审核面/验证：`94060a0` 将 fixed code 与中文说明接入 monitor/review。contract 28/28、
+  inference 186/186、Profile/capability 3/3、independent verifier 2/2、real-PG 1/1、Web 73/73 +
+  lint/typecheck/build、隔离 4187 的 1024px Playwright 1/1 PASS；端口已释放。
+- 状态：本节点 Provider attempts=0，Goal 用量不变，三 ledger CLOSED。product-v33=`EXPERIMENTAL`、
+  N6=`automated_verified`、N7/Goal=`in_progress`。下一步是 checkpoint commit 后 exact-clean
+  fast/server/web/e2e/full/Document Vision 与独立 verifier；在费用或同版本阶段门未变前不创建
+  新 live ledger，不启动 final 20/60。

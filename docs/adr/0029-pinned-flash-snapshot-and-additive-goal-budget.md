@@ -63,3 +63,23 @@ reservations 中 330 SETTLED、5 个历史 Plus RESERVED、0 BREACHED。三份 l
   依赖 1.5M cap。外部调用费用不可恢复，只能 CLOSED ledger 并阻止后续调用。
 - 状态：本 ADR 只提供 N7 Profile/guard 的可执行边界；即使 v27 Plus/Max 已证明三阶段可达，single-case
   质量仍未过门，因此不把任何 Profile 提升出 `EXPERIMENTAL`。
+
+## v32 后续预算结果与费用停止门
+
+product-v32 Plus 单 case 又结算 3 个 attempts / 21,316 exposed tokens / ¥0.067226。Goal guard v3
+当前为 372 reservations（367 SETTLED、5 个历史 Plus RESERVED、0 BREACHED）：
+
+| 稳定槽位 | attempts | exposed tokens / 1,500,000 | Goal cost / cap | 剩余 |
+|---|---:|---:|---:|---:|
+| Flash（旧 alias + pinned） | 120 / 180 | 815,516 | ¥0.392962 / ¥0.40 | 60 attempts；684,484 tokens；¥0.007038 |
+| Plus | 170 / 180 | 1,021,208 | ¥3.903838 / ¥4.00 | 10 attempts；478,792 tokens；¥0.096162 |
+| Max | 82 / 180 | 491,919 | ¥10.289316 / ¥18.00 | 98 attempts；1,008,081 tokens；¥7.710684 |
+
+追加的 token 授权没有追加费用。按当前 Profile 的标准 OBSERVE reservation，Flash 需要
+¥0.009740，Plus 需要 ¥0.097390，分别高于两槽剩余 ¥0.007038 / ¥0.096162。因此在
+CNY cap 不变时，两者都必须在新 reservation 前 fail-closed，不得用更小的临时 token 预留规避
+完整 stage 合同。Max 虽有费用余量，但 v32 未 accepted HIERARCHY/BINDING，v33 又只有离线
+三阶段证据，不满足“同版本 live 三阶段 + 质量/J1”前置，仍保持 CLOSED。
+
+这是本 ADR 的预期 fail-closed 后果：token 余量、attempt 余量或历史三阶段记录都不能替代
+当次费用与同版本阶段门。三份 visual ledger 现均为 `CLOSED`。

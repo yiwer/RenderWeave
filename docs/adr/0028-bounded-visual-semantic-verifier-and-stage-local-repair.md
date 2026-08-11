@@ -924,3 +924,41 @@ reservations，Flash/Plus/Max 累计用量仍为 120/167/82 attempts、815,516/9
 `automated_verified`，N7/Goal 仍 `in_progress`。在 clean full、冻结 Document Vision、fresh evaluation identity、
 三份 Profile snapshot、aggregate token/attempt/CNY/time、API 配置存在性、进程与 evidence lease 全部通过前，
 不得 OPEN live；Max 与 final 20/60 的三阶段、质量、独立复核和 J1 硬门不变。
+
+## N7 product-v32 live 反馈与 product-v33 未知 relationship support 决策
+
+exact `954792f` 在隔离 clean worktree 通过 full 9/9（`20260811-164653-full`）与冻结
+Document Vision 19-line canary（`20260811-165243-document-vision`）。Java 与独立 Python 重算
+evaluation identity 一致为
+`renderweave-visual-evaluation-tree-sha256/2:d3057906b8f5523109725d95a85e5e414957763f159dac14084389fa0e452fca`；
+Flash/Plus/Max product-v32 snapshot 依次为 `cadc8c7f…adfbb`、`1d839ca5…b86c7`、
+`7a2e42e2…c5477`。
+
+Flash 剩余费用上限已低于标准 OBSERVE reservation，因此保持 CLOSED。Plus 按
+`54bc798` PROPOSED → NOT_OPEN 负探针 → `a94810c` OPEN → 唯一 wrapper → `5d71b3f`
+CLOSED 完成一个 repository-synthetic case；独立 verifier 与 payload scan PASS，重建 3 个
+SETTLED attempts、17,217 input + 4,099 output tokens、¥0.067226、73,882 provider ms、0 abandoned。
+OBSERVE accepted；两次 HIERARCHY 均以 `VISUAL_HIERARCHY_V2_SUPPORT_ELEMENT_UNKNOWN` 拒绝，
+第四次调用在 Provider 前由 `PROVIDER_COST_BUDGET_EXHAUSTED` 阻断，未到 BINDING。旧
+empty-support 修复未在 live 中命中，而该通用 fixed code 不能证明 unknown ID 必然属于
+relationship，所以不把结果写成 v32 质量失败或 v33 有效性证明。
+
+新决策只收窄该 fixed code 中可由已验证结构唯一证明的 relationship 子集：
+
+1. pipeline 4.20/product-v33 显式 opt-in；v32 及更早 policy 字节与行为不变。
+2. 一条 relationship 只允许出现一个未知 support local ID；其已知 `regionId` 必须为
+   GROUP/REPEATED_GROUP，位于 parent→relationship→child ownership 连接上，且只有一个
+   multiplicity-compatible 的已有 GROUP owner。
+3. non-container、ambiguous、disconnected、多个不同 unknown ID 或任一前置失败时，原子
+   保留原 plan 并用旧 fixed code fail-closed。不新建字段、关系、region、evidence、文字或
+   Candidate，不从 rejected stage 生成 crop。
+4. 成功只增加数量型 `VISUAL_HIERARCHY_RELATIONSHIP_UNKNOWN_SUPPORT_OWNER_NORMALIZED`，
+   并保留通用 support-owner 计数；不记录 ID/owner/payload。
+5. 本地成功只证明 deterministic bounded repair 可达，不证明 Provider 的 unknown 必属于
+   relationship，不允许因此扩大 live 或放宽 semantic verifier。
+
+`5951047`、`7ac4259`、`edd310d`、`94060a0` 分别完成 codec 合同、pipeline/Profile、真实
+PostgreSQL tracer 与 monitor/review UI/E2E。当前已通过 contract 28/28、inference 186/186、
+Profile/capability 3/3、independent snapshot verifier 2/2、real-PG 1/1、Web 73/73 + lint/typecheck/build 与
+1024px Playwright 1/1。product-v33 继续 `EXPERIMENTAL`；N6 继续 `automated_verified`，N7/Goal
+继续 `in_progress`，最终 revision 的 clean gates 与 final eval/J1 仍未完成。
