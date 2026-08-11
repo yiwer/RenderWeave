@@ -14,6 +14,7 @@ $nodeExe = Join-Path $nodeDir 'node.exe'
 $npmCommand = Join-Path $nodeDir 'npm.cmd'
 $viteCli = Join-Path $webRoot 'node_modules\vite\bin\vite.js'
 $startedProcess = $null
+$webPort = $null
 $previousWebPort = $env:RENDERWEAVE_WEB_PORT
 $previousPlaywrightOutput = $env:RENDERWEAVE_PLAYWRIGHT_OUTPUT_DIR
 $previousPlaywrightHtml = $env:RENDERWEAVE_PLAYWRIGHT_HTML_DIR
@@ -116,8 +117,29 @@ try {
 }
 finally {
     Write-BrowserArtifactManifest
-    if ($startedProcess -and -not $startedProcess.HasExited) {
-        Stop-Process -Id $startedProcess.Id -Force
+    $viteProcessIds = @()
+    if ($startedProcess) {
+        $viteProcessIds += $startedProcess.Id
+    }
+    if ($webPort) {
+        $viteProcessIds += @(Get-CimInstance Win32_Process | Where-Object {
+            $_.Name -eq 'node.exe' `
+                -and $_.CommandLine -like "*$viteCli*" `
+                -and $_.CommandLine -like "*--port $webPort*"
+        } | Select-Object -ExpandProperty ProcessId)
+    }
+    foreach ($processId in ($viteProcessIds | Sort-Object -Unique)) {
+        $runningVite = Get-Process -Id $processId -ErrorAction SilentlyContinue
+        if ($runningVite) {
+            Stop-Process -InputObject $runningVite -Force
+            $null = $runningVite.WaitForExit(5000)
+        }
+    }
+    $remainingVite = @($viteProcessIds | Where-Object {
+        Get-Process -Id $_ -ErrorAction SilentlyContinue
+    })
+    if ($remainingVite) {
+        throw "Vite process cleanup failed for PID(s): $($remainingVite -join ', ')."
     }
     if ($null -eq $previousWebPort) {
         Remove-Item Env:RENDERWEAVE_WEB_PORT -ErrorAction SilentlyContinue
