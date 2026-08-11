@@ -22,6 +22,9 @@ $containerName = "renderweave-$Journey-e2e-$PID"
 $containerId = $null
 $apiProcess = $null
 $webProcess = $null
+$apiPort = $null
+$webPort = $null
+$viteCli = $null
 $oldEnvironment = @{}
 $journeyStarted = Get-Date
 $journeyResult = 'failed'
@@ -78,6 +81,25 @@ function Wait-ForHttp {
         }
     }
     throw "$Name did not become ready within 30 seconds."
+}
+
+function Get-JourneyProcessIds {
+    $result = @()
+    if ($apiPort) {
+        $result += @(Get-CimInstance Win32_Process | Where-Object {
+            $_.Name -eq 'java.exe' `
+                -and $_.CommandLine -like "*$jarPath*" `
+                -and $_.CommandLine -like "*--server.port=$apiPort*"
+        } | Select-Object -ExpandProperty ProcessId)
+    }
+    if ($viteCli -and $webPort) {
+        $result += @(Get-CimInstance Win32_Process | Where-Object {
+            $_.Name -eq 'node.exe' `
+                -and $_.CommandLine -like "*$viteCli*" `
+                -and $_.CommandLine -like "*--port $webPort*"
+        } | Select-Object -ExpandProperty ProcessId)
+    }
+    return @($result | Sort-Object -Unique)
 }
 
 try {
@@ -137,7 +159,16 @@ try {
     $env:RENDERWEAVE_DB_PASSWORD = 'renderweave-e2e'
     $env:RENDERWEAVE_BLOB_ROOT = Join-Path $runDir 'blobs'
 
-    $apiProcess = Start-Process -FilePath 'java' `
+    $javaExecutable = if ($env:JAVA_HOME) {
+        Join-Path $env:JAVA_HOME 'bin\java.exe'
+    }
+    else {
+        (Get-Command java -ErrorAction Stop).Source
+    }
+    if (-not (Test-Path -LiteralPath $javaExecutable -PathType Leaf)) {
+        throw "Java executable is missing: $javaExecutable"
+    }
+    $apiProcess = Start-Process -FilePath $javaExecutable `
         -ArgumentList @('-jar', $jarPath, "--server.port=$apiPort") `
         -WorkingDirectory $repoRoot `
         -WindowStyle Hidden `
@@ -162,8 +193,8 @@ try {
         $env:RENDERWEAVE_LIVE_E2E = '1'
         $env:RENDERWEAVE_WEB_PORT = "$webPort"
         $env:RENDERWEAVE_EVIDENCE_DIR = $evidenceDir
-        $env:RENDERWEAVE_PLAYWRIGHT_OUTPUT_DIR = Join-Path $evidenceDir 'playwright-results'
-        $env:RENDERWEAVE_PLAYWRIGHT_HTML_DIR = Join-Path $evidenceDir 'playwright-report'
+        $env:RENDERWEAVE_PLAYWRIGHT_OUTPUT_DIR = Join-Path $evidenceDir 'pw'
+        $env:RENDERWEAVE_PLAYWRIGHT_HTML_DIR = Join-Path $evidenceDir 'pw-report'
         Push-Location $webRoot
         try {
             & $npmCommand run test:e2e -- inference-live.spec.ts
@@ -202,11 +233,35 @@ catch {
     throw
 }
 finally {
+    $ownedProcessIds = @()
     foreach ($process in @($webProcess, $apiProcess)) {
-        if ($process -and -not $process.HasExited) {
-            Stop-Process -Id $process.Id -Force
+        if ($process) {
+            $ownedProcessIds += $process.Id
         }
     }
+    $ownedProcessIds += @(Get-JourneyProcessIds)
+    foreach ($processId in ($ownedProcessIds | Sort-Object -Unique)) {
+        $ownedProcess = Get-Process -Id $processId -ErrorAction SilentlyContinue
+        if ($ownedProcess) {
+            Stop-Process -InputObject $ownedProcess -Force
+            $null = $ownedProcess.WaitForExit(5000)
+        }
+    }
+    foreach ($cleanupAttempt in 1..3) {
+        Start-Sleep -Milliseconds 100
+        $lateProcessIds = @(Get-JourneyProcessIds)
+        if (-not $lateProcessIds) {
+            break
+        }
+        foreach ($processId in $lateProcessIds) {
+            $lateProcess = Get-Process -Id $processId -ErrorAction SilentlyContinue
+            if ($lateProcess) {
+                Stop-Process -InputObject $lateProcess -Force
+                $null = $lateProcess.WaitForExit(5000)
+            }
+        }
+    }
+    $remainingProcessIds = @(Get-JourneyProcessIds)
     if ($containerId) {
         & docker stop $containerName *> $null
     }
@@ -231,4 +286,7 @@ finally {
         $encoding
     )
     Write-ArtifactManifest
+    if ($remainingProcessIds) {
+        throw "E2E process cleanup failed for PID(s): $($remainingProcessIds -join ', ')."
+    }
 }
