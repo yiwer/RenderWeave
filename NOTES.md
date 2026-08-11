@@ -1,6 +1,13 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-11 Flash product-v24 已按 `9d2dfa3` PROPOSED → `ded9e78` OPEN → `ac17e0e` CLOSED 完成单 case。
+  负探针精确 NOT_OPEN；首次本地 canary 因变量名错误在 adapter 前 fail-closed，确认零进程/lease/Provider 后，
+  精确 canary `.sdlc/evidence/20260811-084304-document-vision` PASS。唯一 wrapper exit 0、228.589 秒；独立
+  verifier A2 PASS：20,121 input + 24,819 output、216,004 ms、¥0.023884、payload scan PASS。四次 enum、一次
+  sibling-overlap，全部停在 OBSERVE，三类 v24 normalization telemetry 未命中，结构计数全 0。Flash Goal 现为
+  86/180、517,945/1,500,000、¥0.237813；298 reservations（293 SETTLED、5 历史 Plus RESERVED），三份 ledger
+  CLOSED。CLOSED clean fast `.sdlc/evidence/20260811-085018-fast` PASS；v24 不晋级、相同 Flash 假设不重复。
 - 2026-08-11 用户再次给 Flash/Plus/Max 三个稳定槽位各追加 500,000 exposed tokens；当前累计 cap 各
   1,500,000，单 authorization 仍为 500,000，attempt/CNY/time/batch 与 synthetic/CC0/payload-free 边界不变。
   `2b23617` 将 aggregate guard 升到 v3；v1/v2 只可在锁内先验证旧 state 后原子迁移，历史 reservation 不改写，
@@ -12,7 +19,8 @@
   repeatGroupId 的 REPEATED_GROUP 候选唯一时才改 parent，受影响 readingOrder 只按几何重算。未知 alias、
   零/多候选和结构增删继续 fail-closed；成功只记录三类 payload-free telemetry。contract/Profile 20/20、
   real-PG + independent verifier 2/2、clean server `.sdlc/evidence/20260811-082418-server`（193 tests、6 gated
-  skip）均绿；Provider attempts=0，三份 ledger CLOSED，v24 仍隐藏 `EXPERIMENTAL` 且尚未 live。
+  skip）均绿；Provider attempts=0，三份 ledger 当时 CLOSED。后续 Flash live 结果见上条，v24 仍隐藏
+  `EXPERIMENTAL`。
 - 2026-08-11 Flash product-v23 已按 `0c1506f` PROPOSED → `9652837` OPEN → `1185890` CLOSED 完成单 case。
   负探针精确 NOT_OPEN；精确 Document Vision canary `20260811-080747-document-vision` PASS 后唯一 wrapper 写出
   5 个 SETTLED attempts。外层 PowerShell 因 Mockito stderr warning 失败，恢复检查确认无子进程、evidence
@@ -295,10 +303,9 @@
   HTTP failure 硬停与未晋级决策；全部 ledger CLOSED。
 - `plans/logs/P6-T6-5-N6.md`：bounded semantic verifier、stage-local repair、selected crops、payload-free UI、
   Flash v10–v12 A2 诊断、v15–v24 bounded verifier/observation 增量；Plus v22 首次三阶段可达但未晋级。
-- `plans/logs/P6-T6-5-N7.md`：pinned Flash/Goal guard v3、十三份单 case CLOSED/A2 reachability、v15–v24
-  bounded verifier/observation 增量；Plus/Max v22 均到 BINDING，Flash v23 未通过 OBSERVE，质量未达门。
-- 当前恢复点：`phase/p6-visual-recognition-vnext` 的 `2b23617` guard v3 clean fast A1，v24 实现仍为
-  `061101f` clean server A1；最近 live 终态为
-  `1185890` Flash v23 CLOSED。编排 Goal `019fec8e-a851-7952-b49b-8be76a281a57` 因 turn interrupt 当前显示
-  `paused`，用户已明确继续同一 objective，未创建 replacement Goal。下一安全切片是 fresh exact v24 Flash
-  单 case 前置核验；未满足则继续零 Provider 安全任务。
+- `plans/logs/P6-T6-5-N7.md`：pinned Flash/Goal guard v3、十四份单 case CLOSED/A2 reachability、v15–v24
+  bounded verifier/observation 增量；Plus/Max v22 均到 BINDING，Flash v23/v24 未通过 OBSERVE，质量未达门。
+- 当前恢复点：`phase/p6-visual-recognition-vnext` 的 `ac17e0e` Flash v24 CLOSED/A2；v24 实现为 `061101f`
+  clean server A1，guard v3 为 `2b23617` clean fast A1。编排 Goal `019fec8e-a851-7952-b49b-8be76a281a57`
+  因 turn interrupt 当前显示 `paused`，用户已明确继续同一 objective，未创建 replacement Goal。下一安全切片是
+  fresh exact Plus v24 单 case 前置核验；未满足则继续零 Provider 安全任务。

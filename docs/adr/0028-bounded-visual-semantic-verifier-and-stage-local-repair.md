@@ -408,3 +408,23 @@ state 文件不重写。非精确旧 guard 和运行中 tamper 继续 fail-close
 v1/v2/v3 的重放，共 12/12 PASS；exact-clean fast `.sdlc/evidence/20260811-083559-fast` PASS。当前 293 条
 reservation（288 SETTLED、5 历史 Plus RESERVED）和三份 CLOSED ledger 未变化，Provider attempts=0。token
 空间增加不放宽费用门或 N7 三阶段/质量停止条件。
+
+## N7 Flash v24 smoke
+
+Flash v24 以 fresh identity `…ef0a049`、snapshot `d4c2f0…a085` 执行 `9d2dfa3` PROPOSED → `ded9e78` OPEN →
+`ac17e0e` CLOSED。负探针精确 NOT_OPEN，Goal state/guard 与 293 reservations 未变化。首次本地 canary 因使用了
+产品变量名而缺少测试专用变量，在 adapter 启动前 fail-closed；确认无 Java/Maven/OCR 进程、无 target evidence
+和 Provider 后，按测试合同修正并得到 `.sdlc/evidence/20260811-084304-document-vision` PASS。唯一 live wrapper
+exit 0，228.589 秒；ledger 在读取 evidence 前已 CLOSED。
+
+独立 verifier A2 重建出 1 completed、0 abandoned、5 SETTLED attempts、20,121 input + 24,819 output、
+216,004 ms、¥0.023884 增量和 payload scan PASS。四次固定码为
+`VISUAL_GROUNDING_JSON_ENUM_INVALID_REGION_KIND`，一次为 `VISUAL_GROUNDING_SIBLING_OVERLAP`；全部停在 OBSERVE，
+三类 v24 normalization telemetry 均未命中，实际 slot/group/entity/relationship/binding 全为 0。Flash Goal 变为
+86 attempts、517,945/1,500,000 tokens、¥0.237813；总账本 298 reservations（293 SETTLED、5 历史 Plus
+RESERVED），三份 ledger CLOSED。
+
+因此 v24 仍为 `EXPERIMENTAL`，相同 Flash 假设不重复。该 A2 没有提供可安全新增未知 enum alias 的依据；不能
+读取模型原文来猜值。Plus 已获用户许可且 v22 已到达 BINDING，故下一可区分假设是使用 fresh identity/snapshot
+做 Plus v24 单 case，验证同一 pipeline/OCR/bounded policy 的模型差异；在新信号出现前不扩大 final eval，也不
+调用 Max。
