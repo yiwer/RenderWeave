@@ -491,3 +491,49 @@ clean A1 evidence：server `.sdlc/evidence/20260811-093552-server`（196 tests�
 `.sdlc/evidence/20260811-093741-e2e`（18 passed、1 gated skip）和 runtime
 `.sdlc/evidence/20260811-093824-runtime` 全部 PASS。该增量 Provider attempts=0，三份 ledger 保持 CLOSED；
 它只建立下一次单-case smoke 的 bounded hypothesis，不满足 final eval、Profile 晋级或 Goal 完成条件。
+
+## N7 Flash / Plus v25 smoke
+
+Flash v25 在 fresh evaluation identity `…9c77ac2` 与 Profile snapshot `656df9…db2` 下，按 `a7a2a7f`
+PROPOSED → `a9635e4` OPEN → `edb35bc` CLOSED 完成单 case。负探针精确 NOT_OPEN；Document Vision 首次
+canary `.sdlc/evidence/20260811-094501-document-vision` 失败后确认无 Provider、子进程或 evidence lease，再以
+精确测试配置恢复为 `.sdlc/evidence/20260811-094753-document-vision` PASS，未并发重跑 live。唯一 wrapper
+211.8 秒；ledger 在读取 evidence 前 CLOSED。独立 verifier A2 PASS：4 SETTLED attempts、16,082 input +
+21,338 output、188,904 ms、payload scan PASS；全部因 enum/region 固定码停在 OBSERVE，leaf-evidence 规则未
+命中。Flash 累计变为 90 attempts、555,365/1,500,000 tokens、¥0.258103。
+
+Plus v25 复用同一 fresh tree identity、以 snapshot `ff5a1a…51a` 按 `06cef12` PROPOSED → `34e7ab3` OPEN →
+`e93d1f7` CLOSED 完成单 case。负探针测试主体精确命中 NOT_OPEN；外层摘要因 PowerShell `$Matches` 名称冲突
+失败后，检查 Goal/guard 哈希、310 reservations、target evidence 与存活进程均无变化，故没有重跑。唯一 live
+wrapper exit 0、194.231 秒，并在 evidence 读取前 CLOSED。独立 verifier A2 PASS：5 SETTLED attempts、25,433
+input + 10,312 output、181,561 ms、payload scan PASS。第三次 OBSERVE accepted；随后两次 HIERARCHY 分别为
+relationship region cardinality invalid 与 support not group，未进入 BINDING，也未命中 leaf-evidence 固定码。
+最终 slot matched 3/10、group 1/3、entity/relationship/binding matched 均为 0，tree edit 20/20，report 仍
+`complete=false`。Plus 累计变为 146 attempts、853,926/1,500,000 tokens、¥3.346968。
+
+v25 没有为 leaf-evidence 假设提供 live 命中，且 Plus 未证明该版本三阶段可达，因此不调用 Max v25，不把历史
+v24 的可达性当作新假设的替代证据。三份 ledger 均为 CLOSED；两份 A2 smoke 仍只是诊断，不授权 final eval、
+Profile 晋级或 Goal 完成。
+
+## N7 unique enclosing-connected GROUP-owner normalization
+
+Plus v25 揭示一个 bounded 次序死锁：exact-region support-owner normalization 在 connection-aware relationship
+region normalization 之前执行；当非 GROUP support ID 与 relationship region 同时错误时，两条规则都无法单独
+前进。`d3b0292` 以 pipeline 4.13/product-v26 新增
+`CANONICALIZE_EXACT_DUPLICATES_AND_UNIQUE_ENCLOSING_CONNECTED_GROUP_OWNER`。它仅在 support 是已知非 GROUP、
+source region 已知，且恰有一个 GROUP/容器 region 配对同时满足 cardinality、包围全部 support element regions、
+并连接 parent/child entity regions 时，才先归一化 support owner；随后既有规则可确定性归一化 relationship
+region。零个或多个配对继续以原固定码 fail-closed；不读取 OCR/模型文字、不按距离或 gold 排名、不增删结构。
+
+新 telemetry `VISUAL_HIERARCHY_RELATIONSHIP_ENCLOSING_SUPPORT_OWNER_NORMALIZED` 与既有 owner/region/cardinality
+固定计数一起进入 checkpoint/attempt。`5ef25bd` 在监控与审核共用 UI 显示固定码、中文解释、`层级边` 范围和
+最早 HIERARCHY 修复阶段，仍不展示图片、OCR、Prompt、Candidate 或 Provider 原文。定向合同/Profile 22/22、
+独立 snapshot verifier、真实 PostgreSQL OBSERVE→HIERARCHY→ELEMENT_BINDING tracer 均 PASS；ambiguity 负例保持
+`SUPPORT_NOT_GROUP`，OCR sentinel 未进入 checkpoint/current/problems。
+
+提交后 A1 evidence：server `.sdlc/evidence/20260811-101733-server`（197 tests、6 gated skip）、Node 24 web
+`.sdlc/evidence/20260811-101734-web`（73 tests + generate/type/lint/build）、E2E
+`.sdlc/evidence/20260811-101948-e2e`（18 passed、1 gated skip、无 console/page error）与 runtime
+`.sdlc/evidence/20260811-102032-runtime` 全部 PASS。实现期间 Provider attempts=0，三份 ledger CLOSED。v26
+仍是隐藏 `EXPERIMENTAL` 的离线可证伪假设；尚无 v26 live A2，更没有 final 20/60、full gate、final independent
+verifier 或业务/视觉 J1。

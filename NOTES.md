@@ -1,6 +1,27 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-11 `d3b0292` / `5ef25bd` 完成 pipeline 4.13/product-v26 unique enclosing-connected GROUP-owner
+  normalization。已知非 GROUP support 只有在恰好一个 GROUP/容器 region 配对同时满足 cardinality、包围全部
+  support element regions、连接 parent/child entity regions 时才归一化；零/多配对继续 fail-closed，不读取
+  OCR/模型文字、不按 gold/距离排序、不改 topology。合同/Profile 22/22、独立 snapshot verifier、real-PG
+  OBSERVE→HIERARCHY→ELEMENT_BINDING tracer 均 PASS；监控/审核 UI 展示 payload-free 固定码、`层级边` 范围和
+  最早 HIERARCHY 修复阶段。server `.sdlc/evidence/20260811-101733-server`（197 tests、6 gated skip）、Node 24 web
+  `.sdlc/evidence/20260811-101734-web`（73 tests + generate/type/lint/build）、E2E
+  `.sdlc/evidence/20260811-101948-e2e`（18 passed、1 gated skip）与 runtime
+  `.sdlc/evidence/20260811-102032-runtime` 均 PASS；Provider attempts=0，v26 仍隐藏 `EXPERIMENTAL`。
+- 2026-08-11 Plus product-v25 已按 `06cef12` PROPOSED → `34e7ab3` OPEN → `e93d1f7` CLOSED 完成单 case。
+  负探针主体精确 NOT_OPEN；外层摘要因 PowerShell `$Matches` 冲突失败后完成 process/evidence/Goal/guard/
+  reservation 恢复审计，确认零副作用且未重跑。唯一 wrapper exit 0、194.231 秒；独立 verifier A2 PASS：
+  5 attempts、25,433 input + 10,312 output、181,561 ms、payload scan PASS。第三次 OBSERVE accepted，随后
+  两次 HIERARCHY 分别为 region cardinality invalid 与 support not group，未进入 BINDING，leaf-evidence 新码
+  未命中。Plus 累计 146/180、853,926/1,500,000、¥3.346968；Max v25 因新假设信号/三阶段门未成立而未调用。
+- 2026-08-11 Flash product-v25 已按 `a7a2a7f` PROPOSED → `a9635e4` OPEN → `edb35bc` CLOSED 完成单 case。
+  负探针精确 NOT_OPEN；Document Vision 首次配置失败后确认零 Provider/进程/lease，再由
+  `.sdlc/evidence/20260811-094753-document-vision` 恢复 PASS，未并发重跑 live。唯一 wrapper 211.8 秒；独立
+  verifier A2 PASS：4 attempts、16,082 input + 21,338 output、188,904 ms、payload scan PASS。全部停在
+  OBSERVE，leaf-evidence 新码未命中。Flash 累计 90/180、555,365/1,500,000、¥0.258103；两份 v25 live 后
+  Goal 共 315 reservations（310 SETTLED、5 个历史 Plus RESERVED）、0 BREACHED，三份 ledger CLOSED。
 - 2026-08-11 `f8f09b4` / `2b6eb9c` / `6cb2624` 完成 pipeline 4.12/product-v25 的 leaf-evidence
   OBSERVE verifier：SLOT 是叶子字段，其同 artifact 证据框不得严格包住另一元素证据；GROUP 容器不受该规则
   误拒。失败只产生 `VISUAL_SEMANTIC_SLOT_EVIDENCE_CONTAINS_ELEMENT`，不写失败 checkpoint，携带固定码原地
@@ -219,12 +240,13 @@
 - 生命周期状态：P0 `accepted`；P1–P4 `automated_verified`；P5 Flash / Plus / Prompt v2 / Grounded v2 / T5-10 诊断均为 `live_independently_reviewed`，T5-9/T5-11 与 P6/T6-1 为 `independently_reviewed`；P6/T6-2 为 `human_acceptance_pending`；T6-3a 与 T6-5 N6 为 `automated_verified`、T6-3b pending。T6-5 整体仍 active，N7 `in_progress`。所有 DashScope Profile 仍为 `EXPERIMENTAL`；历史评测授权均 CLOSED，基础 Compose 默认关闭，显式 product-live overlay 已按用户授权开放。
 
 ## 下一步
-- [ ] P6/T6-5 图片识别 vNext：N0–N6 已形成独立 checkpoint；v15–v24 的 bounded verifier/repair、hybrid
-  observation 与三模型单 case lifecycle 均已有 clean A1/A2。Flash v23/v24 未通过 OBSERVE；Plus/Max v24
-  均完成 OBSERVE→HIERARCHY→BINDING，但 stage-gold 质量未达门，Max v24 更有 16 critical hallucinations、
-  17 blockers。相同 v22/v23/v24 假设不重复，下一安全切片是零 Provider 的 stage-gold replay：在 OBSERVE
-  增加不读取模型原文的 bounded semantic verifier，并验证 earliest-stage repair/checkpoint/UI/E2E；形成新且
-  可离线证明的假设前，不进入 20/60-case final eval。
+- [ ] P6/T6-5 图片识别 vNext：N0–N6 已形成独立 checkpoint；Flash/Plus v25 单 case 已 CLOSED/A2，但
+  leaf-evidence 新码未命中，Flash 止于 OBSERVE、Plus 止于 HIERARCHY，故未调用 Max v25。pipeline
+  4.13/product-v26 已把 support-owner/relationship-region 次序死锁收窄为 unique enclosing-connected GROUP-owner
+  normalization，并以 real-PG/checkpoint/UI/E2E 完成 A1。下一安全节点是在 fresh identity/Profile snapshot、
+  重新核算每模型 1.5M token/attempt/CNY/time 与单 authorization≤500k 后做单 case、单 wrapper smoke；没有
+  新 A2 信号前不扩大 20/60-case final eval。final eval、full gate、final independent verifier 与业务/视觉 J1
+  均未满足。
 - [x] Java / React / PostgreSQL / OpenAPI 最小 canary 与 A1 full gate 通过。
 - [x] 用户接受“A 默认表单 + B Map + 吸收 C 的 preview/密度”的编辑器方向（J1，2026-08-08）。
 - [x] 创建 P1–P4 implementation Goal。
@@ -322,10 +344,11 @@
 - `plans/logs/P6-T6-5-N5.md`：有界本地 Document Vision、v4/v6/v7 同 case live 消融、Plus Goal 用量、
   HTTP failure 硬停与未晋级决策；全部 ledger CLOSED。
 - `plans/logs/P6-T6-5-N6.md`：bounded semantic verifier、stage-local repair、selected crops、payload-free UI、
-  Flash v10–v12 A2 诊断、v15–v24 bounded verifier/observation 增量；Plus/Max v24 三阶段可达但未晋级。
-- `plans/logs/P6-T6-5-N7.md`：pinned Flash/Goal guard v3、十六份单 case CLOSED/A2 reachability、v15–v24
-  bounded verifier/observation 增量；Plus/Max v24 已到 BINDING，Flash v23/v24 未通过 OBSERVE，质量仍未达门。
-- 当前恢复点：`phase/p6-visual-recognition-vnext` 的 `57b1502` Max v24 CLOSED/A2；v24 实现为 `061101f`
-  clean server A1，guard v3 为 `2b23617` clean fast A1。编排 Goal `019fec8e-a851-7952-b49b-8be76a281a57`
-  因 turn interrupt 当前显示 `paused`，用户已明确继续同一 objective，未创建 replacement Goal。三模型 v24
-  live 均已闭环；下一安全切片是零 Provider 的 OBSERVE bounded semantic verifier 与 earliest-stage replay。
+  v15–v26 bounded verifier/normalization 增量；v26 real-PG 三阶段 tracer 与监控/审核 telemetry 已 A1。
+- `plans/logs/P6-T6-5-N7.md`：pinned Flash/Goal guard v3、十八份单 case CLOSED/A2 reachability、v15–v26
+  bounded verifier/normalization 增量；Flash/Plus v25 未命中新规则，v26 尚无 live A2，质量仍未达门。
+- 当前恢复点：`phase/p6-visual-recognition-vnext` 的 `5ef25bd`；v26 实现为 `d3b0292`，UI telemetry 为
+  `5ef25bd`，server/web/E2E/runtime clean A1。Flash v25 `edb35bc` 与 Plus v25 `e93d1f7` 均 CLOSED/A2；
+  编排 Goal `019fec8e-a851-7952-b49b-8be76a281a57` 因 turn interrupt 当前显示 `paused`，用户已明确继续同一
+  objective，未创建 replacement Goal。三份 ledger CLOSED；下一节点是受控 v26 single-case smoke，而非直接
+  扩大 final eval。
