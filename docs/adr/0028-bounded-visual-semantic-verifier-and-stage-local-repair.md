@@ -1127,3 +1127,16 @@ Playwright 1/1 PASS。本节点为 `automated_verified`，product-v37 仍 `EXPER
 该授权不可重放。后续若在相同 product-v37 上重试，必须创建新的 immutable authorization，重新通过 clean
 gate 和全部 fresh preflight，并显式验证正确 adapter-script binding；不得从这次零调用结果放宽 semantic
 verifier、Plus/Max 或 final eval 门。product-v37 保持 `EXPERIMENTAL`，N7/Goal 保持 `in_progress`。
+
+### product-v37b Flash live 结论
+
+使用正确 adapter-script 的新授权按 `9204a49`→NOT_OPEN→`0960c9f`→唯一 wrapper→`4d8e48b`→
+NOT_OPEN 完整关闭；clean full/Document Vision、fresh identity/snapshot/Goal/J1/process/lease 与独立
+verifier/payload scan 全部通过。A2 重建为 5 attempts、42,691 tokens、¥0.021815、0 abandoned。
+
+四次 `VISUAL_GROUNDING_JSON_ENUM_INVALID_REGION_KIND` 和一次
+`VISUAL_GROUNDING_PARENT_CONTAINMENT_INVALID` 使五次全部停在 OBSERVE。v37 的 constraint-unique GROUP
+规则没有获得 live 命中，且 fixed code 仍不揭示 unknown alias、region identity 或坐标；不得据此添加通用
+alias 或任意扩张 parent box。下一 bounded 设计只能结合已解析 forest/typed ownership 与 repository synthetic
+反例证明唯一 containment 修复，否则保留原拒绝。product-v37 仍 `EXPERIMENTAL`，N6=
+`automated_verified`、N7/Goal=`in_progress`；Plus/Max/final eval 门未成立。

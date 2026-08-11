@@ -736,3 +736,16 @@ API-key-presence。仅 Flash 可在全绿后单 case/最多 5 calls；Plus/Max/f
 
 下一门：提交本 checkpoint 后重新跑 exact-clean gates 和 fresh preflight，以新 authorization 和正确
 adapter-script 绑定串行重试 Flash。旧 authorization 不重放；Plus/Max/final 20/60 继续等待同版本三阶段。
+
+### v37b Flash live disposition
+
+- lifecycle/gates：`9204a49` PROPOSED → NOT_OPEN → `0960c9f` OPEN →唯一 wrapper→ `4d8e48b`
+  CLOSED → NOT_OPEN；full `20260811-221947-full`、Document Vision `20260811-222400-document-vision`、
+  fresh identity/snapshot/preflight 与 A2/payload scan 全绿。
+- evidence：1 completed、0 abandoned、5 attempts、42,691 tokens、¥0.021815、143,088 ms；OBSERVE
+  invalid region-kind×4、parent-containment×1，后两阶段未触达。
+- budget/state：Goal=405 reservations；Flash/Plus/Max=144/179/82 attempts、
+  1,022,730/1,087,500/491,919 tokens、¥0.499453/¥4.159620/¥10.289316；三 ledger CLOSED。
+
+v37 保持 `EXPERIMENTAL`，N6=`automated_verified`、N7/Goal=`in_progress`。下一安全节点回到离线 bounded
+parent-containment/region-kind verifier；Plus/Max/final 20/60 的同版本三阶段与质量门仍不满足。

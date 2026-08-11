@@ -729,3 +729,19 @@
 - 该节点只证明本地 fail-closed 与审计闭环，不构成 v37 质量证据。v37 仍 `EXPERIMENTAL`、N6=
   `automated_verified`、N7/Goal=`in_progress`；下一次只能在新 authorization、fresh gates/identity/snapshot/
   Goal/J1 preflight 下使用正确 `adapter-script` 键串行重试，Plus/Max/final 20/60 仍不调用。
+
+### v37b Flash live disposition
+
+- 新 lifecycle 为 `9204a49` PROPOSED → `VISUAL_EVALUATION_AUTHORIZATION_NOT_OPEN` → `0960c9f`
+  OPEN →唯一 wrapper→ `4d8e48b` CLOSED → `VISUAL_EVALUATION_AUTHORIZATION_NOT_OPEN`；wrapper
+  155.592 秒、0 残留 process/lease，CLOSED 探针的 evidence/Goal 哈希零变化。
+- exact-clean full `20260811-221947-full`、Document Vision `20260811-222400-document-vision`、
+  Java/Python identity `099b4b26…6cc0` 与 Flash snapshot `2dc4b025…e9919` 均匹配。
+- 独立 verifier/payload scan PASS：1 completed、0 abandoned、5 SETTLED attempts、20,565 input +
+  22,126 output = 42,691 tokens、¥0.021815、143,088 ms。五次都停在 OBSERVE：
+  `VISUAL_GROUNDING_JSON_ENUM_INVALID_REGION_KIND`×4、
+  `VISUAL_GROUNDING_PARENT_CONTAINMENT_INVALID`×1；HIERARCHY/BINDING 未触达。
+- Goal 更新为 405 reservations（400 SETTLED、5 历史 Plus RESERVED、0 BREACHED）；Flash/Plus/Max 为
+  144/179/82 attempts、1,022,730/1,087,500/491,919 tokens、¥0.499453/¥4.159620/¥10.289316，
+  三 ledger CLOSED。v37 仍 `EXPERIMENTAL`、N6=`automated_verified`、N7/Goal=`in_progress`；不调用
+  Plus/Max/final 20/60，下一安全切片只从新 parent-containment fixed code 与离线结构反例建立 bounded repair。

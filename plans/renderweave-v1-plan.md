@@ -800,3 +800,14 @@ exact-clean gates 与 fresh preflight 通过后，Flash 按 `99940ef`→NOT_OPEN
 键是 `adapter-script`。Goal 仍为 400 reservations，三模型累计不变，三 ledger CLOSED。该结果不构成
 OBSERVE/HIERARCHY/BINDING 质量证据；N6=`automated_verified`、N7/Goal=`in_progress`、v37=
 `EXPERIMENTAL`。下一 DAG 节点只能在新授权和 fresh gates/preflight 下用正确键重试 Flash。
+
+### v37b Flash live disposition
+
+新授权使用正确 adapter-script，按 `9204a49`→NOT_OPEN→`0960c9f`→唯一 wrapper→`4d8e48b`→
+NOT_OPEN 闭合。A2 verifier/payload scan PASS：5 attempts、42,691 tokens、¥0.021815；四次 invalid
+region-kind 与一次 parent-containment 令所有调用停在 OBSERVE。Goal 为 405 reservations，Flash 累计
+144 attempts/1,022,730 tokens/¥0.499453，Plus/Max 不变，三 ledger CLOSED。
+
+三阶段门仍失败，N6=`automated_verified`、N7/Goal=`in_progress`、v37=`EXPERIMENTAL`；Plus/Max/final
+20/60 不执行。下一 DAG 节点只允许从 parent-containment fixed code 与 repository synthetic 结构事实建立
+bounded 离线 repair，不能读取或推断模型 payload。

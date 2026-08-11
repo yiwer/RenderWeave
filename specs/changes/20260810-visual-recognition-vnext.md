@@ -297,3 +297,12 @@ exact-clean gates、fresh identity/Profile/Goal/J1/process/lease 均通过，且
 实际属性为 `renderweave.inference.document-vision.adapter-script`。该授权已 CLOSED、不得重放，Goal 用量
 不变。这不满足任何 live 质量或三阶段 AC；product-v37 保持 `EXPERIMENTAL`、N7/Goal=`in_progress`。
 任何重试必须使用新的 immutable authorization、fresh gates/preflight 与正确 adapter-script 绑定。
+
+#### v37b Flash live 规格状态
+
+新的 immutable authorization 使用正确 adapter-script，并完成完整 lifecycle、fresh gates/preflight 与
+独立 verifier/payload scan。5 attempts/42,691 tokens/¥0.021815 全部停在 OBSERVE：invalid region-kind×4、
+parent-containment×1。该 fixed-code evidence 不授权读取或记录 unknown alias、模型文本、region identity、
+box 或 Candidate，也不授权任意扩大 parent geometry；只有 repository synthetic 反例能证明唯一约束时才可
+新增 bounded repair。Goal 为 405 reservations，三 ledger CLOSED。product-v37 仍 `EXPERIMENTAL`、
+N6=`automated_verified`、N7/Goal=`in_progress`，Plus/Max/final eval 门未满足。

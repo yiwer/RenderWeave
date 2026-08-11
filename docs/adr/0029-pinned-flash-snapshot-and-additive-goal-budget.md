@@ -218,3 +218,14 @@ Flash v37 lifecycle 已以 `99940ef`→NOT_OPEN→`045b5b9`→唯一 wrapper→`
 账本已 CLOSED 且负探针证明 Goal/evidence 零写入，不能在该 authorization 上重放。正确键为
 `renderweave.inference.document-vision.adapter-script`；任何重试必须使用新 authorization 和 fresh
 identity/Profile/Goal/J1/process/lease preflight。Plus/Max/final 的阶段与质量门不变。
+
+### product-v37b Flash 结算
+
+新 authorization 使用正确 adapter-script，产生 5 SETTLED attempts、42,691 exposed tokens、¥0.021815，
+并在唯一 wrapper 后立即 CLOSED。Goal 现为 405 reservations（400 SETTLED、5 历史 Plus RESERVED、0
+BREACHED）：Flash/Plus/Max 为 144/179/82 attempts、1,022,730/1,087,500/491,919 tokens 与
+¥0.499453/¥4.159620/¥10.289316；均仍低于 180 attempts、1.5M tokens 和各自 CNY cap。
+
+五次仅触达 OBSERVE，故 Plus 的单个剩余 attempt 仍不调用，Max/final 20/60 也未满足同版本三阶段与质量
+门。三 ledger CLOSED；后续授权仍须独立计入当前累计，并在每次 live 前 fresh 重算 identity/Profile/
+Goal/J1/time/process/lease。
