@@ -719,3 +719,37 @@ aggregate 与 345 reservations 不变。
 product-v29 继续 `EXPERIMENTAL`，N6 继续 `automated_verified`，N7 继续 `in_progress`。新的 live 前必须基于
 包含本 ADR checkpoint 的 clean tree 重跑 full gate，并重新计算 `/2` identity、三份 Profile snapshot、1.5M
 per-slot aggregate budget 与时限；仍从 Flash 单 case/最多 5 calls 开始。
+
+## N7 product-v29：bounded live 结果
+
+clean `c4f92b9` 的 full gate `20260811-140553` 9/9 PASS，Document Vision canary
+`20260811-141657` 以精确 capability 处理 synthetic transit board 并得到 19 lines。Java 与独立 Python 对 clean
+Git blob 重算得到 `/2:f45a9bc00047e562c349af884ee7b6918ba8025772c033e4fe8e3aac2f451e78`；Flash/Plus
+product-v29 snapshot 分别为 `0f990982…f247a20`、`2e8d913c…41d559`。
+
+首次 Flash lifecycle 为 `e4ca5a6` PROPOSED → `3b2a558` OPEN → `9fc0632` CLOSED。唯一 wrapper 在 Provider
+前以 `DOCUMENT_VISION_DISABLED` 完成；根因是路径与模型虽已绑定，但 Spring runtime 的显式 enable flag 未传入。
+该 CLOSED evidence 经独立 verifier 重建为 1 completed case、0 attempts、0 tokens、0 cost、payload scan PASS，Goal
+state/hash 保持不变。它没有被重开或并发重跑；replacement 把
+`RENDERWEAVE_DOCUMENT_VISION_ENABLED=true` 明确写入授权范围并重新走完整生命周期。
+
+Flash v29b lifecycle 为 `a2c82e6` PROPOSED → `f40a6ad` OPEN → `9454422` CLOSED。PROPOSED 负探针零写入；
+唯一 wrapper 5 次均停在 OBSERVE，独立 verifier PASS：20,596 input + 22,607 output tokens、¥0.022207、
+159,460 ms、0 abandoned、payload scan PASS。固定码依次为
+`VISUAL_GROUNDING_JSON_ENUM_INVALID_REGION_KIND`、同码、`VISUAL_GROUNDING_PARENT_CONTAINMENT_INVALID`、
+`VISUAL_GROUNDING_PARENT_KIND_INVALID`、再次 enum invalid。
+
+Flash 没有越过 OBSERVE，但 Plus product-v28 曾到 HIERARCHY，因此 Plus v29 仍有诊断价值。其 lifecycle 为
+`f98bfd5` PROPOSED → `e256e53` OPEN → `f443d86` CLOSED；授权成本上界按剩余额度收窄到 ¥0.18。唯一 wrapper
+完成 3 次 OBSERVE，独立 verifier PASS：12,347 input + 8,653 output tokens、¥0.093918、152,058 ms、0
+abandoned、payload scan PASS；固定码为 `VISUAL_GROUNDING_SIBLING_OVERLAP`、
+`VISUAL_GROUNDING_ELEMENT_EVIDENCE_OUTSIDE_REGION` 两次，随后下一次预留被
+`PROVIDER_COST_BUDGET_EXHAUSTED` fail-closed。Flash/Plus 的 CLOSED 后置探针均精确 `NOT_OPEN`，Goal
+state/guard、evidence tree 与 reservations 零漂移，无残留 Maven/OCR/live 进程。
+
+最终 Goal 为 353 reservations（348 SETTLED、5 个历史 Plus RESERVED、0 BREACHED）：Flash slot 110 attempts /
+728,794 tokens / ¥0.348298，Plus 161 / 957,770 / ¥3.702040，Max 82 / 491,919 / ¥10.289316。v29 没有同
+版本 accepted OBSERVE/HIERARCHY/BINDING，Max 门槛不成立，保持 CLOSED、未调用。该结果证明治理与恢复链路
+fail-closed，但不证明质量；product-v29 继续 `EXPERIMENTAL`，N6=`automated_verified`，N7=`in_progress`。
+下一 bounded 假设只能离线处理 OBSERVE enum、sibling overlap 与 evidence-region 归属，不得放宽 verifier、读取
+Provider 原文或直接扩大 final eval。

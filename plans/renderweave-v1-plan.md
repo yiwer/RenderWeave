@@ -563,3 +563,16 @@ replay→review→atomic Draft Apply 1/1。本节点零 Provider 调用，三份
 reservations 与 Flash/Plus/Max 685,591/936,770/491,919 exposed tokens。product-v29 保持 `EXPERIMENTAL`，
 N6=`automated_verified`、N7=`in_progress`；只有 checkpoint 后 clean full、fresh identity/snapshot/budget/time
 全过，才允许从 Flash 单 case lifecycle 继续。
+
+## 14. T6-5 v29 bounded live checkpoint
+
+clean full/Document Vision、双实现 identity、Profile snapshot 与 1.5M aggregate guard 通过后，Flash/Plus 分别
+完成独立 PROPOSED→负探针→OPEN→唯一 wrapper→CLOSED lifecycle。首次 Flash 配置探针在 Provider 前以
+`DOCUMENT_VISION_DISABLED` 结束并保持 0 attempts；显式启用本地能力后的 Flash v29b 为 5 次 OBSERVE 拒绝、
+43,203 tokens/¥0.022207，Plus v29 为 3 次 OBSERVE 拒绝、21,000 tokens/¥0.093918，二者独立 verifier 与
+payload scan 均 PASS、0 abandoned。CLOSED probes 对 Goal/evidence 零写入。
+
+Goal 现为 353 reservations（348 SETTLED、5 历史 Plus RESERVED、0 BREACHED），Flash/Plus/Max 分别为
+110/161/82 attempts 与 728,794/957,770/491,919 exposed tokens。v29 没有到达同版本 accepted
+OBSERVE/HIERARCHY/BINDING，Max 保持 CLOSED、未调用；N6=`automated_verified`、N7=`in_progress`、Profile=
+`EXPERIMENTAL`。下一节点先离线处理 OBSERVE enum、overlap、evidence-region fixed codes，不启动 final 20/60。

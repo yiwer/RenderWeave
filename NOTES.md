@@ -1,6 +1,19 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-11 product-v29 bounded live 已闭环且未晋级。clean `c4f92b9` 的 full gate
+  `20260811-140553` 9/9 PASS，Document Vision canary `20260811-141657` 以精确 capability 得到 19 lines；fresh
+  Git-blob identity 为 `…2f451e78`。首次 Flash ledger `e4ca5a6` PROPOSED→`3b2a558` OPEN→`9fc0632`
+  CLOSED，因漏传 runtime enable flag 在 Provider 前以 `DOCUMENT_VISION_DISABLED` 结束，独立 verifier PASS、0
+  attempts/0 tokens，Goal 不变。replacement Flash v29b `a2c82e6`→`f40a6ad`→`9454422` CLOSED/A2：5 次
+  OBSERVE 全拒绝，20,596 input + 22,607 output tokens、¥0.022207；Plus v29
+  `f98bfd5`→`e256e53`→`f443d86` CLOSED/A2：3 次 OBSERVE 全拒绝，12,347 input + 8,653 output
+  tokens、¥0.093918，随后 fail-closed 为 `PROVIDER_COST_BUDGET_EXHAUSTED`。两模型 payload scan、CLOSED
+  零写入探针均 PASS，无 abandoned/残留进程；Max 因同版本未到 HIERARCHY/BINDING 保持 CLOSED、未调用。Goal
+  现为 353 reservations（348 SETTLED、5 历史 Plus RESERVED）：Flash 110/728,794/¥0.348298，Plus
+  161/957,770/¥3.702040，Max 82/491,919/¥10.289316。product-v29 仍 `EXPERIMENTAL`，N6=
+  `automated_verified`、N7=`in_progress`；下一步先离线收敛 OBSERVE enum/overlap/evidence-region 固定码，不能扩大
+  final eval。
 - 2026-08-11 pipeline 4.16/product-v29 已完成 MANY GROUP ↔ REPEATED_GROUP 双向基数归属的 bounded
   OBSERVE verifier 与 stage-local repair。`70da862` 增加 opt-in semantic policy；`dd920cc` 发布 visual
   elements prompt v9、三模型 immutable Profile 与真实 PostgreSQL tracer；`70e0f2c` 更新监控中文解释和

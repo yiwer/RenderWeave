@@ -401,3 +401,21 @@ drift、journal/guard 不一致、payload 边界失败或同一无新假设失�
   cap 1,500,000，单 authorization 500,000、attempt/CNY/time 边界不变。product-v29 仍 `EXPERIMENTAL`，N6
   为 `automated_verified`、N7 为 `in_progress`。文档 checkpoint 后必须先跑 final-tree clean full，并重新计算
   `/2` identity、Profile snapshots、Goal aggregate 与时限；Flash 才可优先进入单 case/最多 5 calls lifecycle。
+
+## 2026-08-11 v29 bounded live checkpoint
+
+- pre-live：clean `c4f92b9` full `20260811-140553` 9/9、Document Vision `20260811-141657` 19-line canary
+  均 PASS；Java/独立 Python identity 与 Flash/Plus snapshot 精确一致。首次 Flash 因 runtime enable flag 漏传在
+  Provider 前 `DOCUMENT_VISION_DISABLED`，CLOSED/A2 为 0 attempts，Goal 零漂移；没有重开该 ledger。
+- Flash v29b：`a2c82e6` PROPOSED→负探针→`f40a6ad` OPEN→唯一 wrapper→`9454422` CLOSED。A2 PASS、5
+  OBSERVE rejections、43,203 tokens、¥0.022207、0 abandoned、payload PASS；enum invalid×3，另有 parent
+  containment/kind invalid，未到 HIERARCHY。
+- Plus v29：基于 Flash 信号与 Plus v28 的更深阶段历史，执行 `f98bfd5` PROPOSED→负探针→`e256e53` OPEN→
+  唯一 wrapper→`f443d86` CLOSED。A2 PASS、3 OBSERVE rejections、21,000 tokens、¥0.093918、0 abandoned、
+  payload PASS；sibling overlap×1、element evidence outside region×2，随后成本预留 fail-closed。
+- 治理：两模型 CLOSED probe 均为 `NOT_OPEN` 且 Goal/evidence 零写入，无残留进程。Goal=353 reservations
+  （348 SETTLED、5 历史 Plus RESERVED）；Flash/Plus/Max 为 110/161/82 attempts、
+  728,794/957,770/491,919 tokens、¥0.348298/¥3.702040/¥10.289316。三 ledger CLOSED、0 BREACHED。
+- 门控：v29 未取得 accepted OBSERVE→HIERARCHY→BINDING，故 Max 不调用，final 20/60 不启动。Profile 仍
+  `EXPERIMENTAL`、N6=`automated_verified`、N7/Goal=`in_progress`。下一节点先离线收敛 OBSERVE enum、
+  overlap 与 evidence-region 归属，保持最早阶段 repair 与 no-progress 上界。
