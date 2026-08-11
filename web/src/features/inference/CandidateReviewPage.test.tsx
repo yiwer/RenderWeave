@@ -101,7 +101,7 @@ describe('Candidate atomic apply workspace', () => {
       .toBeGreaterThan(0);
     expect(screen.getAllByText('VISUAL_GROUNDING_REGION_KIND_NORMALIZED').length)
       .toBeGreaterThan(0);
-    expect(screen.getAllByText('已按受控别名或唯一结构事实归一化区域类型').length)
+    expect(screen.getAllByText('已按受控别名、唯一结构事实或唯一绑定约束归一化区域类型').length)
       .toBeGreaterThan(0);
     expect(screen.getAllByText('VISUAL_GROUNDING_REPEATED_ITEM_SLOT_OWNER_NORMALIZED').length)
       .toBeGreaterThan(0);

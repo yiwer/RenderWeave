@@ -396,7 +396,7 @@ test('keeps bounded visual diagnostics keyboard-accessible at 1024 without paylo
   await expect(page.getByText('VISUAL_GROUNDING_ELEMENT_REGION_NORMALIZED').first()).toBeVisible();
   await expect(page.getByText('已按唯一最具体证据区域归一化元素归属').first()).toBeVisible();
   await expect(page.getByText('VISUAL_GROUNDING_REGION_KIND_NORMALIZED').first()).toBeVisible();
-  await expect(page.getByText('已按受控别名或唯一结构事实归一化区域类型').first()).toBeVisible();
+  await expect(page.getByText('已按受控别名、唯一结构事实或唯一绑定约束归一化区域类型').first()).toBeVisible();
   await expect(page.getByText('VISUAL_GROUNDING_REPEATED_ITEM_SLOT_OWNER_NORMALIZED').first()).toBeVisible();
   await expect(page.getByText('已按唯一可见 ITEM 证据归一化重复字段归属').first()).toBeVisible();
   await expect(page.getByText('VISUAL_GROUNDING_REGION_PARENT_NORMALIZED').first()).toBeVisible();
