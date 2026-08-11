@@ -95,7 +95,8 @@ final class VisualGroundingJsonCodec {
             var inventory = classified("VISUAL_GROUNDING_ELEMENT_INVALID", () ->
                     new VisualElementInventory(VisualElementInventory.VERSION, elements)
             );
-            var initialGrounding = classifiedGroundingShape(() ->
+            var initialGrounding = classifiedGroundingShape(
+                    classifiedRegions.regions(), normalizationPolicy, () ->
                     new VisualGroundingPlan(
                     VisualGroundingPlan.VERSION, classifiedRegions.regions(),
                     response.elements().stream().map(element -> new VisualElementRegionOwnership(
@@ -1221,14 +1222,80 @@ final class VisualGroundingJsonCodec {
         };
     }
 
-    private static <T> T classifiedGroundingShape(CheckedSupplier<T> supplier) {
+    private static <T> T classifiedGroundingShape(
+            List<VisualRegion> regions,
+            VisualObservationNormalizationPolicy normalizationPolicy,
+            CheckedSupplier<T> supplier
+    ) {
         try {
             return supplier.get();
         } catch (InvalidVisualAnalysisException failure) {
             throw failure;
         } catch (Exception failure) {
-            throw invalid(groundingShapeCode(failure), failure);
+            var code = groundingShapeCode(failure);
+            if ("VISUAL_GROUNDING_READING_ORDER_GAP".equals(code)
+                    && readingOrderDiagnosticPolicy(normalizationPolicy)) {
+                code = boundedReadingOrderDiagnosticCode(regions);
+            }
+            throw invalid(code, failure);
         }
+    }
+
+    private static String boundedReadingOrderDiagnosticCode(List<VisualRegion> regions) {
+        var roots = regions.stream().filter(region -> region.parentRegionId() == null).toList();
+        if (!contiguousReadingOrders(roots)) return "VISUAL_GROUNDING_READING_ORDER_GAP";
+
+        var siblingsByParent = new HashMap<String, List<VisualRegion>>();
+        for (var region : regions) {
+            if (region.parentRegionId() != null) {
+                siblingsByParent.computeIfAbsent(
+                        region.parentRegionId(), ignored -> new ArrayList<>()
+                ).add(region);
+            }
+        }
+        var duplicate = false;
+        var position = false;
+        var unclassified = false;
+        for (var siblings : siblingsByParent.values()) {
+            if (contiguousReadingOrders(siblings)) continue;
+            var distinctOrders = siblings.stream().map(VisualRegion::readingOrder)
+                    .collect(java.util.stream.Collectors.toSet());
+            if (distinctOrders.size() != siblings.size()) {
+                duplicate = true;
+            } else if (!canonicalReadingOrder(siblings)) {
+                position = true;
+            } else {
+                unclassified = true;
+            }
+        }
+        if (duplicate && !position && !unclassified) {
+            return "VISUAL_GROUNDING_READING_ORDER_DUPLICATE";
+        }
+        if (position && !duplicate && !unclassified) {
+            return "VISUAL_GROUNDING_READING_ORDER_POSITION_INVALID";
+        }
+        return "VISUAL_GROUNDING_READING_ORDER_GAP";
+    }
+
+    private static boolean contiguousReadingOrders(List<VisualRegion> siblings) {
+        var orders = siblings.stream().map(VisualRegion::readingOrder).sorted().toList();
+        for (var index = 0; index < orders.size(); index++) {
+            if (orders.get(index) != index) return false;
+        }
+        return true;
+    }
+
+    private static boolean canonicalReadingOrder(List<VisualRegion> siblings) {
+        var byOrder = siblings.stream().sorted(Comparator.comparingInt(VisualRegion::readingOrder))
+                .map(VisualRegion::regionId).toList();
+        var byPosition = siblings.stream().sorted(Comparator
+                        .comparingInt((VisualRegion value) -> value.evidence().getFirst()
+                                .boundingBox().top())
+                        .thenComparingInt(value -> value.evidence().getFirst()
+                                .boundingBox().left())
+                        .thenComparing(VisualRegion::regionId))
+                .map(VisualRegion::regionId).toList();
+        return byOrder.equals(byPosition);
     }
 
     private static void classifiedGroundingOwnership(CheckedRunnable runnable) {
@@ -1450,7 +1517,15 @@ final class VisualGroundingJsonCodec {
             VisualObservationNormalizationPolicy normalizationPolicy
     ) {
         return normalizationPolicy == VisualObservationNormalizationPolicy
-                .BOUNDED_CONSTRAINT_UNIQUE_KIND_ANCESTOR_PARENT_GAPPED_READING_ORDER_EVIDENCE_AND_ITEM_SLOT_OWNER;
+                .BOUNDED_CONSTRAINT_UNIQUE_KIND_ANCESTOR_PARENT_GAPPED_READING_ORDER_EVIDENCE_AND_ITEM_SLOT_OWNER
+                || readingOrderDiagnosticPolicy(normalizationPolicy);
+    }
+
+    private static boolean readingOrderDiagnosticPolicy(
+            VisualObservationNormalizationPolicy normalizationPolicy
+    ) {
+        return normalizationPolicy == VisualObservationNormalizationPolicy
+                .BOUNDED_CONSTRAINT_UNIQUE_KIND_ANCESTOR_PARENT_GAPPED_READING_ORDER_DIAGNOSTIC_EVIDENCE_AND_ITEM_SLOT_OWNER;
     }
 
     private static ClassifiedRegionKind structurallyClassifiedRegionKind(
@@ -2366,5 +2441,6 @@ enum VisualObservationNormalizationPolicy {
     BOUNDED_STRUCTURAL_KIND_UNIQUE_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER,
     BOUNDED_CONSTRAINT_UNIQUE_KIND_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER,
     BOUNDED_CONSTRAINT_UNIQUE_KIND_ANCESTOR_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER,
-    BOUNDED_CONSTRAINT_UNIQUE_KIND_ANCESTOR_PARENT_GAPPED_READING_ORDER_EVIDENCE_AND_ITEM_SLOT_OWNER
+    BOUNDED_CONSTRAINT_UNIQUE_KIND_ANCESTOR_PARENT_GAPPED_READING_ORDER_EVIDENCE_AND_ITEM_SLOT_OWNER,
+    BOUNDED_CONSTRAINT_UNIQUE_KIND_ANCESTOR_PARENT_GAPPED_READING_ORDER_DIAGNOSTIC_EVIDENCE_AND_ITEM_SLOT_OWNER
 }
