@@ -260,3 +260,16 @@ tokens。该 delta 只覆盖原信封的 Flash 模型身份和 Goal token cap：
 - product-v36 保持 `EXPERIMENTAL`，N6=`automated_verified`、N7/Goal=`in_progress`。exact-clean full/
   Document Vision、fresh identity/snapshot/budget/J1/process/lease、Flash bounded live、final 20/60、最终
   independent verifier 与业务/视觉 J1 尚未完成；Plus 仅剩 1 attempt，不用于凑数。
+
+#### v36 Flash live 规格状态
+
+在 exact-clean full/Document Vision 与 fresh identity/Profile/Goal/J1/process/lease 门通过后，Flash 按
+PROPOSED→NOT_OPEN→OPEN→唯一 wrapper→CLOSED→NOT_OPEN 完成单 synthetic case。独立 verifier 与
+payload scan PASS：5 SETTLED attempts、42,469 exposed tokens、¥0.021607、0 abandoned；两次负探针
+Goal/evidence 零变化，结束后无残留进程或 lease。
+
+三次 `VISUAL_GROUNDING_JSON_ENUM_INVALID_REGION_KIND`、一次
+`VISUAL_GROUNDING_SIBLING_OVERLAP`、一次 `VISUAL_GROUNDING_PARENT_KIND_INVALID` 使全部调用停在
+OBSERVE。该结果不授权读取或记录 invalid enum 原文、模型输出、region identity、坐标或 Candidate，也不
+授权通用 alias/geometry 猜测。product-v36 保持 `EXPERIMENTAL`，N6=`automated_verified`、N7/Goal=
+`in_progress`；Plus/Max/final 20/60 必须继续等待同版本三阶段、质量门、独立复核和最终 J1。

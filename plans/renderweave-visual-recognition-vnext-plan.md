@@ -690,3 +690,18 @@ evidence lease。Flash 可优先单 synthetic case/最多 5 calls；Plus 仅剩 
 fresh 重算 `/2` identity、三份 v36 snapshot、Goal/token/attempt/CNY/time、J1、API 配置存在性、进程与
 evidence lease。全部匹配后仅优先 Flash 单 synthetic case/最多 5 calls。Plus 只剩 1 Goal attempt，不调用；
 Max/final 20/60 必须等待 v36 同版本 live OBSERVE/HIERARCHY/BINDING、质量门、独立 verifier 与最终 J1。
+
+### v36 Flash live disposition
+
+- gates/identity：full `20260811-211447-full`、Document Vision `20260811-211916-document-vision`、
+  Java/Python identity `e2fb024c…89d2d`、Flash snapshot `cf32df27…a86a` 全部 PASS。
+- lifecycle：`5a6bfc4` PROPOSED → NOT_OPEN → `220de94` OPEN →唯一 wrapper→`ab11a8b`
+  CLOSED → NOT_OPEN；探针零写入，wrapper 171.790 秒，0 残留 process/lease。
+- evidence：A2/payload PASS，1 case、0 abandoned、5 attempts、42,469 tokens、¥0.021607；OBSERVE
+  fixed code 为 invalid region-kind enum×3、sibling overlap×1、parent kind×1，未触达后两阶段。
+- budget/state：Goal=400 reservations；Flash/Plus/Max=139/179/82 attempts、
+  980,039/1,087,500/491,919 tokens、¥0.477638/¥4.159620/¥10.289316；三 ledger CLOSED。
+
+所以 v36 仍 `EXPERIMENTAL`，N6=`automated_verified`，N7/Goal=`in_progress`。下一安全路径是对剩余
+fixed code 建立不读取 payload 的 bounded 分类、反例和 stage-local repair；在同版本三阶段可达前不调用
+Plus/Max，也不启动 final 20/60。

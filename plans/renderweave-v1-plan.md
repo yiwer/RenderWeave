@@ -767,3 +767,15 @@ real-PG 1/1、Web 73/73、typecheck/lint 与 1024px Playwright 1/1 PASS；本机
 N7/Goal=`in_progress`、Profile=`EXPERIMENTAL`。下一步为 docs checkpoint 后的 exact-clean full/Document
 Vision 与 fresh v36 identity/snapshot/budget/J1/process/lease preflight；仅 Flash 可优先 single-case，Plus
 只剩 1 attempt 不调用，Max/final 20/60 的同版本三阶段、质量、独立复核与最终验收门不变。
+
+### v36 Flash live disposition
+
+exact-clean full/Document Vision 与 fresh identity/snapshot/budget/J1/process/lease preflight 均通过。Flash
+按 `5a6bfc4`→NOT_OPEN→`220de94`→唯一 wrapper→`ab11a8b`→NOT_OPEN 闭合，A2 verifier 与
+payload scan PASS：5 attempts、42,469 tokens、¥0.021607、0 abandoned。三次 invalid region-kind enum、
+一次 sibling overlap、一次 parent kind 令五次全部停在 OBSERVE；三阶段与质量门未满足。
+
+Goal 更新为 400 reservations；Flash 为 139 attempts/980,039 tokens/¥0.477638，Plus/Max 保持
+179/82 attempts、1,087,500/491,919 tokens、¥4.159620/¥10.289316，三 ledger CLOSED。N6 仍
+`automated_verified`，N7/Goal 仍 `in_progress`，v36 仍 `EXPERIMENTAL`。下一节点继续 bounded 离线
+诊断/修复；Plus/Max/final 20/60 不在当前可执行 DAG 中。

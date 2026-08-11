@@ -677,3 +677,21 @@
   BREACHED），Flash/Plus/Max 仍为 134/179/82 attempts、937,570/1,087,500/491,919 tokens、
   ¥0.456031/¥4.159620/¥10.289316，三 ledger CLOSED。v36 保持 `EXPERIMENTAL`，N6=
   `automated_verified`、N7/Goal=`in_progress`。
+
+### v36 Flash live disposition
+
+- exact-clean full `20260811-211447-full` 与冻结 Document Vision
+  `20260811-211916-document-vision` PASS；Java/Python `/2` identity 均为
+  `e2fb024c23c95b53cae753d391cb91e20b69eb8bf25e889c3b46245d23889d2d`，Flash snapshot 为
+  `cf32df2789f51ffdb893c3d56ca0425b5d36e3ef01fa8cb208e203917023a86a`。
+- lifecycle 为 `5a6bfc4` PROPOSED →精确 NOT_OPEN 负探针→`220de94` OPEN→唯一 wrapper→
+  `ab11a8b` CLOSED→精确 NOT_OPEN 负探针；两次探针 Goal/evidence 零写入，wrapper exit 0、
+  171.790 秒，结束后 0 相关进程、0 held lease。
+- 独立 verifier/payload scan PASS：1 case、0 abandoned、5 SETTLED attempts、20,619 input +
+  21,850 output = 42,469 exposed tokens、¥0.021607、159,249 ms Provider latency。五次均停在 OBSERVE：
+  `VISUAL_GROUNDING_JSON_ENUM_INVALID_REGION_KIND`×3、`VISUAL_GROUNDING_SIBLING_OVERLAP`×1、
+  `VISUAL_GROUNDING_PARENT_KIND_INVALID`×1；HIERARCHY/BINDING 未触达。
+- Goal 现为 400 reservations（395 SETTLED、5 历史 Plus RESERVED、0 BREACHED）；Flash/Plus/Max 为
+  139/179/82 attempts、980,039/1,087,500/491,919 tokens、¥0.477638/¥4.159620/¥10.289316，
+  三 ledger CLOSED。v36 仍 `EXPERIMENTAL`，N6=`automated_verified`、N7/Goal=`in_progress`；同版本
+  三阶段门不可达，因此不调用 Plus/Max/final 20/60，继续 payload-free bounded 离线修复。

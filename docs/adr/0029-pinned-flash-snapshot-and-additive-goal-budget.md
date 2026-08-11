@@ -181,3 +181,15 @@ attempt/CNY/time、J1、API 配置存在性、进程和 evidence lease。Flash �
 执行独立 PROPOSED→负探针→OPEN→唯一 wrapper→CLOSED→负探针；Plus 只剩 1 Goal attempt，不足以证明
 三阶段，不为消耗额度调用。Max/final 20/60 仍要求 v36 同版本 live accepted OBSERVE/HIERARCHY/BINDING、
 质量门、独立复核与最终 J1。
+
+### product-v36 Flash 结算
+
+Flash 已按 `5a6bfc4`→NOT_OPEN→`220de94`→唯一 wrapper→`ab11a8b`→NOT_OPEN 完成 CLOSED
+lifecycle。独立 verifier 为 5 SETTLED attempts、42,469 exposed tokens、¥0.021607、0 abandoned，且
+payload scan PASS。Goal 因此更新为 400 reservations（395 SETTLED、5 个历史 Plus RESERVED、0
+BREACHED）：Flash/Plus/Max 分别为 139/179/82 attempts、980,039/1,087,500/491,919 tokens 与
+¥0.477638/¥4.159620/¥10.289316。三 ledger 均 CLOSED。
+
+五次 Flash 调用均停在 OBSERVE，故没有同版本 HIERARCHY/BINDING 证据。Plus 虽在用户 ¥10/24h J1
+范围内，但只剩一个 Goal attempt；Max 也未满足前置质量门。两者及 final 20/60 均不调用，预算继续留给
+有直接诊断价值且满足完整治理合同的后续节点。

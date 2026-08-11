@@ -1082,3 +1082,16 @@ telemetry 接入 monitor/review 和 1024px payload-free E2E。
 通过。本机 Web 使用 Node 20，只能算兼容检查；Node 24、exact-clean full/Document Vision、fresh identity/
 snapshot 与任何 live 均属于下一门。该增量为 `automated_verified`，product-v36 仍 `EXPERIMENTAL`；
 N7/Goal 仍 `in_progress`。
+
+### product-v36 Flash live 结论
+
+exact-clean full `20260811-211447-full`、冻结 Document Vision `20260811-211916-document-vision`、
+Java/Python identity `e2fb024c…89d2d` 与 Flash snapshot `cf32df27…a86a` 均通过。Flash 按
+`5a6bfc4` PROPOSED → NOT_OPEN → `220de94` OPEN →唯一 wrapper→ `ab11a8b` CLOSED → NOT_OPEN
+完成；两次负探针零写入，wrapper exit 0、171.790 秒，关闭后无残留进程或 lease。
+
+独立 verifier/payload scan 重建为 1 case、0 abandoned、5 attempts、42,469 tokens、¥0.021607。
+五次都在 OBSERVE fail-closed：invalid region-kind enum 三次、sibling overlap 一次、parent kind 一次。
+因此本 ADR 的 bounded v36 classifier 通过工程合同与恢复验证，但尚未证明真实三阶段可达；不得由这些
+fixed code 猜测模型 alias、region identity、坐标或 Candidate。product-v36 保持 `EXPERIMENTAL`，N6 仍为
+`automated_verified`，N7/Goal 继续 `in_progress`；下一增量只能由 payload-free 结构分类与离线反例驱动。
