@@ -1,14 +1,14 @@
 {
   "authorizationVersion": "renderweave-visual-evaluation-authorization/1.0",
-  "authorizationId": "visual-v13-pinned-flash-smoke-qwen37-flash-transit-20260811",
-  "status": "CLOSED",
+  "authorizationId": "visual-n7-hybrid-v23-qwen37-flash-transit-20260811",
+  "status": "PROPOSED",
   "phase": "CANARY",
   "inputClassification": "REPOSITORY_SYNTHETIC_ONLY",
   "corpusVersion": "renderweave-visual-stage-corpus/1.0",
   "corpusSourceSha256": "bf0db7bf0ac5c4e2b357cdd96c49ff70a7b30a5bc59f322a915020dc29fc605e",
-  "evaluationIdentity": "renderweave-visual-evaluation-tree-sha256/1:d33c5dcacf2a742d6652c9baf5caffcd4817ee459673d17bfaae3e5f2bea8619",
-  "profileId": "dashscope-qwen37-flash-20260715-product-v13-generic",
-  "profileSnapshotSha256": "11bc9ae2bfdb5672f5f67db3f1df44f5cd992206c2b3fed80fa77734d0232039",
+  "evaluationIdentity": "renderweave-visual-evaluation-tree-sha256/1:d6f2be493cfcbfc5f6f1232b75067ba31e3322765529126fba24b5a84983b2be",
+  "profileId": "dashscope-qwen37-flash-20260715-product-v23-hybrid-generic",
+  "profileSnapshotSha256": "9053885261116ded0de3cc04d2e7ebe01f130fa78748c95b3f2da81c6782d102",
   "model": "qwen3.7-flash-2026-07-15",
   "caseIds": [
     "transit-board-v3"
@@ -18,7 +18,7 @@
   "maximumCostMicrosCny": 100000,
   "maximumCasesPerBatch": 1,
   "approvedBy": "yiwer",
-  "approvedAt": "2026-08-10T18:57:10Z",
-  "expiresAt": "2026-08-11T06:57:10Z",
-  "approvalScope": "Goal J1 CANARY: one repository-synthetic transit-board-v3 case; exact qwen3.7-flash-2026-07-15 through immutable product-v13-generic with bounded semantic verification, stage-local repair, selected crops and checkpoint telemetry; at most 5 attempts, 60000 exposed tokens, CNY 0.10 and one case per batch within the alias-normalized 1000000-token Flash Goal slot; payload-free evidence and immediate CLOSED after this smoke"
+  "approvedAt": "2026-08-11T00:02:59Z",
+  "expiresAt": "2026-08-11T12:02:59Z",
+  "approvalScope": "Goal J1 CANARY: user pinned Flash to qwen3.7-flash-2026-07-15, granted its stable slot 1000000 exposed tokens and requested continued Goal progression; one repository-synthetic transit-board-v3 case through immutable product-v23-hybrid-generic pipeline 4.10, combining all bounded product-v22 support-owner, region, cardinality and repair policies with the exact repository-bound RapidOCR/OpenVINO Document Vision capability as one ephemeral untrusted secondary observation shared across OBSERVE, HIERARCHY and ELEMENT_BINDING; OCR payload cannot directly create structure and is not persisted; at most 5 attempts, 60000 exposed tokens, CNY 0.10 and one case per batch within the alias-normalized 1000000-token Flash Goal slot; payload-free evidence and immediate CLOSED after this smoke"
 }
