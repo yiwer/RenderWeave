@@ -63,7 +63,8 @@ Schema 的 GROUP element。若直接在 materializer 中猜测或补建 GROUP，
   485,886/500,000 且不再调用，Max 保持 428,816/500,000。三阶段入口门未满足，因此没有调用 Max；三份
   ledger 终态均为 `CLOSED`。
 - 上述额度与 Plus 决策是 N6 freeze 时的历史快照。后续 2026-08-11 J1 delta 把三个稳定预算槽位的累计 cap
-  提高到 1,000,000 tokens，并重新允许 Plus；历史用量仍完整计入，没有重开或改写任何 CLOSED ledger。
+  提高到 1,000,000 tokens，并重新允许 Plus；同日第二次 delta 再为每槽位追加 500,000，当前累计 cap 为
+  1,500,000。历史用量仍完整计入，没有重开或改写任何 CLOSED ledger。
 - exact-clean `de97131` full gate A1 全绿，证据为 `.sdlc/evidence/20260811-020246-full`；不存在 A3，最终
   业务/视觉 J1 与 N7 final eval 仍未满足。
 
@@ -395,3 +396,15 @@ normalization、deterministic materializer、stage-local recovery 与审核边�
 提交后 clean server `.sdlc/evidence/20260811-082418-server` 为 193 tests、6 gated skip A1 PASS；实现与门控
 Provider attempts=0，三份 ledger CLOSED。该证据仍不是 live 模型质量；v24 只能在 fresh identity/snapshot、
 精确 J1、额度和时限有效时先做 Flash 单 case，Plus 虽已获准也不得与其并发。
+
+## N7 Goal guard v3 增量
+
+用户第二次追加每槽位 500,000 exposed tokens 后，`2b23617` 将跨 ledger token cap 从 1,000,000 提高到
+1,500,000，但保持单 authorization 500,000、180 attempts 与 Flash ¥0.40 / Plus ¥4 / Max ¥18 不变。v3 只允许
+字段完全匹配的 v1 或 v2 guard 在文件锁内迁移：先用旧 cap 验证完整 state，再原子替换 guard；reservation 与
+state 文件不重写。非精确旧 guard 和运行中 tamper 继续 fail-closed。
+
+定向测试覆盖 v1→v3、v2→v3、state 字节不变、旧/新 Flash 共槽位、非精确迁移拒绝及独立 verifier 对
+v1/v2/v3 的重放，共 12/12 PASS；exact-clean fast `.sdlc/evidence/20260811-083559-fast` PASS。当前 293 条
+reservation（288 SETTLED、5 历史 Plus RESERVED）和三份 CLOSED ledger 未变化，Provider attempts=0。token
+空间增加不放宽费用门或 N7 三阶段/质量停止条件。

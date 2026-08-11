@@ -7,8 +7,9 @@
 - 分支：`phase/p6-visual-recognition-vnext`
 - Spec delta：`specs/changes/20260810-visual-recognition-vnext.md`
 - ADR：ADR-0022、ADR-0023、ADR-0024、ADR-0025、ADR-0026、ADR-0027、ADR-0028、ADR-0029
-- 用户 J1：yiwer，2026-08-10；2026-08-11 delta 将 Flash 改为 `qwen3.7-flash-2026-07-15` 并给三个
-  预算槽位各追加 500,000 tokens，累计 cap 1,000,000；attempt/CNY/time 边界不变，精确约束见 spec delta
+- 用户 J1：yiwer，2026-08-10；2026-08-11 delta 将 Flash 改为 `qwen3.7-flash-2026-07-15`，随后两次给
+  三个预算槽位各追加 500,000 tokens，当前累计 cap 1,500,000；单 authorization 500,000、attempt/CNY/time
+  边界不变，精确约束见 spec delta
 - 当前节点：N0–N1、N3–N4、N6 `automated_verified`；N2 `live_verified_mixed_a1_a2`；N5
   `live_verified_not_promoted`；N7 `in_progress`（pinned Flash/Plus reachability、Plus v14–v22 与 Max v22
   smoke 已 A2；Plus/Max v22 均实证 OBSERVE→HIERARCHY→BINDING 可达，但报告仍不完整且 stage-gold 质量未达门；
@@ -145,8 +146,9 @@ ledger 描述成外部强制门。
 
 ### N7：Final Live Eval 与验收
 
-- 状态：`in_progress`。2026-08-11 J1 delta 指定 pinned Flash，并把三个模型槽位的累计 token cap 提到
-  1,000,000；immutable capability/Profile 与 v2 aggregate guard 已冻结。pinned Flash v13 与用户重新允许的
+- 状态：`in_progress`。2026-08-11 J1 delta 指定 pinned Flash，并两次把三个模型槽位各增加 500,000 token，
+  当前累计 cap 1,500,000；immutable capability/Profile 与 `2b23617` 的 v3 aggregate guard 已冻结。pinned Flash
+  v13 与用户重新允许的
   Plus v12 单 case reachability、Plus v14–v22 与 Max v22 smoke 均已 CLOSED/A2；两模型 v22 均触达 BINDING，
   但 final 质量未通过；
   v15 bounded OBSERVE rewind、v16 evidence-derived cardinality 与 v17 exact relationship-region owner rewind
@@ -237,11 +239,12 @@ ledger 描述成外部强制门。
 
 | 模型 | Goal cap | Goal exposed tokens | 剩余 tokens | attempts | list-price CNY cap | Goal cost |
 |---|---:|---:|---:|---:|---:|---:|
-| qwen3.8-max | 1,000,000 | 443,297 | 556,703 | 76 / 180 | 18.00 | 9.454404 |
-| qwen3.7-plus | 1,000,000 | 783,738 | 216,262 | 136 / 180 | 4.00 | 3.116058 |
-| Flash slot（旧 alias + `qwen3.7-flash-2026-07-15`） | 1,000,000 | 473,005 | 526,995 | 81 / 180 | 0.40 | 0.213929 |
+| qwen3.8-max | 1,500,000 | 443,297 | 1,056,703 | 76 / 180 | 18.00 | 9.454404 |
+| qwen3.7-plus | 1,500,000 | 783,738 | 716,262 | 136 / 180 | 4.00 | 3.116058 |
+| Flash slot（旧 alias + `qwen3.7-flash-2026-07-15`） | 1,500,000 | 473,005 | 1,026,995 | 81 / 180 | 0.40 | 0.213929 |
 
-Goal guard 共 293 reservations：288 SETTLED、5 个历史 Plus RESERVED；没有 BREACHED。三份 visual ledger 均
+Goal guard v3 共 293 reservations：288 SETTLED、5 个历史 Plus RESERVED；没有 BREACHED。`2b23617` 只提高
+token cap，单 authorization 500,000、attempt/CNY cap 与所有历史 reservation 不变。三份 visual ledger 均
 `CLOSED`，v24 尚未创建 assignment 或 reservation。
 
 停止条件：任一 token/attempt/CNY cap、168h ledger expiry、Goal 完成、Provider refusal/Retry-After、identity
