@@ -115,6 +115,10 @@ describe('Inference monitor workspace', () => {
       .toBeGreaterThan(0);
     expect(screen.getAllByText('已按唯一包围且连通的 GROUP 证据归一化层级关系支撑').length)
       .toBeGreaterThan(0);
+    expect(screen.getAllByText('VISUAL_HIERARCHY_RELATIONSHIP_SOURCE_ANCESTOR_SUPPORT_OWNER_NORMALIZED').length)
+      .toBeGreaterThan(0);
+    expect(screen.getAllByText('已按关系源区域唯一且连通的祖先 GROUP 证据归一化层级关系支撑').length)
+      .toBeGreaterThan(0);
     expect(screen.getByText('已从持久检查点恢复')).toBeTruthy();
     expect(screen.getByText(/0\.007346/)).toBeTruthy();
     expect(screen.queryByText('raw-ocr-secret')).toBeNull();
@@ -310,6 +314,7 @@ function visualExecutionLog(runSnapshot: InferenceRunResponse): InferenceExecuti
         problemCodeCounts: {
           VISUAL_HIERARCHY_RELATIONSHIP_SUPPORT_OWNER_NORMALIZED: 1,
           VISUAL_HIERARCHY_RELATIONSHIP_ENCLOSING_SUPPORT_OWNER_NORMALIZED: 1,
+          VISUAL_HIERARCHY_RELATIONSHIP_SOURCE_ANCESTOR_SUPPORT_OWNER_NORMALIZED: 1,
         },
         completedAt: '2026-08-10T04:03:14Z',
       },
