@@ -538,4 +538,35 @@ region。零个或多个配对继续以原固定码 fail-closed；不读取 OCR/
 提交与治理同步后又在隔离 clean worktree 对 revision `371505b` 完成
 `.sdlc/evidence/20260811-102845-full`：9/9 steps、`workingTreeDirty=false`、A1 PASS，Provider attempts=0。该证据是
 当前 v26 revision 的受控 full gate，不替代 final eval 后所需的最终 revision gate。v26 仍是隐藏 `EXPERIMENTAL`
-的离线可证伪假设；尚无 v26 live A2，更没有 final 20/60、final independent verifier 或业务/视觉 J1。
+的可证伪假设；其后续 live 结论如下，仍没有 final 20/60、final independent verifier 或业务/视觉 J1。
+
+## N7 Flash / Plus v26 smoke 与预检恢复
+
+第一次 Flash v26 lifecycle 在隔离 worktree 中按 `f2386b6` PROPOSED → `32fae98` OPEN → `2eedc61` CLOSED；负探针
+通过，但该 worktree 的 `core.autocrlf=true` 改变了 corpus 字节。wrapper 在 8.5 秒内以固定码
+`VISUAL_EVALUATION_CORPUS_IDENTITY_MISMATCH` fail-closed，发生在 evidence/Goal mutation 与 Provider adapter 之前。
+恢复审计确认无子进程、无 target evidence、Goal state/guard 哈希不变、provider attempts=0；因此没有并发重跑，
+该 lifecycle 只作为预检恢复证据，不计入 live A2 report。随后以 `core.autocrlf=false` 重建 clean worktree，重新计算
+corpus SHA、evaluation identity `…530a2696` 与各模型 Profile snapshot。
+
+Flash v26b 在 snapshot `3730ade4…69431` 下按 `36a7a9e` PROPOSED → `ef6440f` OPEN → `b976e5f` CLOSED。
+负探针精确 NOT_OPEN；RapidOCR 3.9.2/OpenVINO 2026.0.0 capability 与 synthetic canary 通过。唯一 wrapper exit 0、
+170,815 ms，ledger 在读取 evidence 前 CLOSED。独立 verifier A2 PASS：1 completed、0 abandoned、5 SETTLED
+attempts、20,120 input + 22,858 output、157,514 ms、payload scan PASS。五次均在 OBSERVE 被 enum、sibling-overlap
+或 parent-containment 固定码拒绝，实际结构计数全为 0，v26 telemetry 未命中。Flash 累计为 95 attempts、
+598,343/1,500,000 tokens、¥0.280418。
+
+Plus v26 在 snapshot `c9682a4d…57bb` 和同一 fresh identity 下按 `3f95ae3` PROPOSED → `67f33dd` OPEN →
+`31093a6` CLOSED。负探针精确 NOT_OPEN；唯一 wrapper exit 0、104,039 ms，先 CLOSED 后独立重放。A2 PASS：
+1 completed、0 abandoned、4 SETTLED attempts、24,635 input + 5,008 output、91,365 ms、payload scan PASS。
+OBSERVE 首次 accepted；三次 HIERARCHY 依次为 relationship region cardinality invalid、support not group、region
+cardinality invalid，未进入 BINDING，也未命中 enclosing-owner telemetry。最终 slot 11/10、group 1/3、entity/
+relationship/binding matched 全为 0、tree edit 20/20，report `complete=false`。Plus 累计为 150 attempts、
+883,569/1,500,000 tokens、¥3.436302。
+
+v26 没有证明同版本三阶段可达，因此 Max v26 的显式入口门不成立，Max 保持 79 attempts、465,016 tokens、
+¥9.816288。Goal 共 324 reservations（319 SETTLED、5 个历史 Plus RESERVED、0 BREACHED），三份 ledger CLOSED。
+下一安全假设只在离线合同中检查：已知非 GROUP support 若在已验证 observation inventory 中恰有一个 ancestor
+GROUP，且该 owner/region 仍满足既有 cardinality、enclosure 与 connection 条件，是否可以在现有 enclosing-owner
+规则之前确定性归一化。该假设不得读取模型原文/OCR/gold，不得按距离或顺序排名，也不得合成、补删结构；先以
+TDD、真实 PostgreSQL checkpoint 和 payload-free telemetry 证伪，再决定是否存在新的单-case live 门。

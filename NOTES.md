@@ -1,6 +1,18 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-11 Flash/Plus product-v26 已完成受控 single-case A2。Flash v26b 按 `36a7a9e` PROPOSED →
+  `ef6440f` OPEN → `b976e5f` CLOSED：5 attempts、20,120 input + 22,858 output、157,514 ms，全部停在
+  OBSERVE。Plus v26 按 `3f95ae3` → `67f33dd` → `31093a6` CLOSED：4 attempts、24,635 input + 5,008
+  output、91,365 ms；OBSERVE accepted，三次 HIERARCHY 在 region-cardinality/support-not-group 间停止。
+  两份独立 verifier 均 A2 PASS、payload scan PASS，v26 telemetry 均未命中，report `complete=false`。Max v26
+  因同版本三阶段门未成立未调用。最新累计：Flash 95/180、598,343/1,500,000、¥0.280418；Plus 150/180、
+  883,569/1,500,000、¥3.436302；Max 79/180、465,016/1,500,000、¥9.816288。324 reservations 为
+  319 SETTLED、5 历史 Plus RESERVED、0 BREACHED；三份 ledger CLOSED。
+- 2026-08-11 Flash v26 的先行 preflight lifecycle `f2386b6` → `32fae98` → `2eedc61` 因隔离 worktree
+  `core.autocrlf=true` 改变 corpus bytes，以 `VISUAL_EVALUATION_CORPUS_IDENTITY_MISMATCH` 在 Provider、evidence
+  与 Goal mutation 前 fail-closed。process/evidence lease/Goal/guard 恢复审计确认零副作用、provider attempts=0，
+  未并发重跑；该 lifecycle 不计 live A2。随后以 LF clean worktree 重新计算 identity/snapshot 后才执行 v26b。
 - 2026-08-11 `d3b0292` / `5ef25bd` 完成 pipeline 4.13/product-v26 unique enclosing-connected GROUP-owner
   normalization。已知非 GROUP support 只有在恰好一个 GROUP/容器 region 配对同时满足 cardinality、包围全部
   support element regions、连接 parent/child entity regions 时才归一化；零/多配对继续 fail-closed，不读取
@@ -242,12 +254,12 @@
 - 生命周期状态：P0 `accepted`；P1–P4 `automated_verified`；P5 Flash / Plus / Prompt v2 / Grounded v2 / T5-10 诊断均为 `live_independently_reviewed`，T5-9/T5-11 与 P6/T6-1 为 `independently_reviewed`；P6/T6-2 为 `human_acceptance_pending`；T6-3a 与 T6-5 N6 为 `automated_verified`、T6-3b pending。T6-5 整体仍 active，N7 `in_progress`。所有 DashScope Profile 仍为 `EXPERIMENTAL`；历史评测授权均 CLOSED，基础 Compose 默认关闭，显式 product-live overlay 已按用户授权开放。
 
 ## 下一步
-- [ ] P6/T6-5 图片识别 vNext：N0–N6 已形成独立 checkpoint；Flash/Plus v25 单 case 已 CLOSED/A2，但
-  leaf-evidence 新码未命中，Flash 止于 OBSERVE、Plus 止于 HIERARCHY，故未调用 Max v25。pipeline
-  4.13/product-v26 已把 support-owner/relationship-region 次序死锁收窄为 unique enclosing-connected GROUP-owner
-  normalization，并以 real-PG/checkpoint/UI/E2E 完成 A1。下一安全节点是在 fresh identity/Profile snapshot、
-  重新核算每模型 1.5M token/attempt/CNY/time 与单 authorization≤500k 后做单 case、单 wrapper smoke；没有
-  新 A2 信号前不扩大 20/60-case final eval。final eval、full gate、final independent verifier 与业务/视觉 J1
+- [ ] P6/T6-5 图片识别 vNext：N0–N6 已形成独立 checkpoint；Flash/Plus v26 single-case 已 CLOSED/A2，但
+  新 telemetry 未命中，Flash 止于 OBSERVE、Plus 止于 HIERARCHY，同版本三阶段门未成立，故未调用 Max v26。
+  下一安全节点是零 Provider 的 unique validated ancestor-GROUP owner 合同调查/TDD：只在唯一 ancestor owner/
+  region 同时满足既有 cardinality、enclosure、connection 时归一化，不读模型原文/OCR/gold、不排序或补删结构。
+  完成真实 PG checkpoint、payload-free telemetry 与受影响 gate 前不做新 live；没有新 bounded A1/A2 信号前不
+  扩大 20/60-case final eval。final eval、最终 revision full gate、final independent verifier 与业务/视觉 J1
   均未满足。
 - [x] Java / React / PostgreSQL / OpenAPI 最小 canary 与 A1 full gate 通过。
 - [x] 用户接受“A 默认表单 + B Map + 吸收 C 的 preview/密度”的编辑器方向（J1，2026-08-08）。
@@ -346,11 +358,11 @@
 - `plans/logs/P6-T6-5-N5.md`：有界本地 Document Vision、v4/v6/v7 同 case live 消融、Plus Goal 用量、
   HTTP failure 硬停与未晋级决策；全部 ledger CLOSED。
 - `plans/logs/P6-T6-5-N6.md`：bounded semantic verifier、stage-local repair、selected crops、payload-free UI、
-  v15–v26 bounded verifier/normalization 增量；v26 real-PG 三阶段 tracer 与监控/审核 telemetry 已 A1。
-- `plans/logs/P6-T6-5-N7.md`：pinned Flash/Goal guard v3、十八份单 case CLOSED/A2 reachability、v15–v26
-  bounded verifier/normalization 增量；Flash/Plus v25 未命中新规则，v26 尚无 live A2，质量仍未达门。
-- 当前恢复点：`phase/p6-visual-recognition-vnext` 的 `5ef25bd`；v26 实现为 `d3b0292`，UI telemetry 为
-  `5ef25bd`，server/web/E2E/runtime clean A1。Flash v25 `edb35bc` 与 Plus v25 `e93d1f7` 均 CLOSED/A2；
+  v15–v26 bounded verifier/normalization 增量；v26 real-PG 三阶段 tracer 与监控/审核 telemetry 已 A1，live 未命中。
+- `plans/logs/P6-T6-5-N7.md`：pinned Flash/Goal guard v3、二十份单 case CLOSED/A2 reachability、v15–v26
+  bounded verifier/normalization 增量；Flash/Plus v26 未命中新 telemetry，质量仍未达门，Max v26 未调用。
+- 当前恢复点：`phase/p6-visual-recognition-vnext` 的 `31093a6`；v26 实现为 `d3b0292`，UI telemetry 为
+  `5ef25bd`，server/web/E2E/runtime clean A1。Flash v26b `b976e5f` 与 Plus v26 `31093a6` 均 CLOSED/A2；
   编排 Goal `019fec8e-a851-7952-b49b-8be76a281a57` 因 turn interrupt 当前显示 `paused`，用户已明确继续同一
-  objective，未创建 replacement Goal。三份 ledger CLOSED；下一节点是受控 v26 single-case smoke，而非直接
-  扩大 final eval。
+  objective，未创建 replacement Goal。三份 ledger CLOSED；下一节点是离线 ancestor-GROUP owner 合同/TDD，
+  而非直接扩大 final eval。

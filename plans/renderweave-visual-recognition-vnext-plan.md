@@ -15,8 +15,9 @@
   可达，但报告不完整、stage-gold 质量未达门；Flash v23/v24/v25 均止于 OBSERVE。Flash/Plus v25 已
   CLOSED/A2：leaf-evidence verifier 未命中，Plus 在 HIERARCHY 的 region-cardinality/support-owner 固定码停止，
   故未调用 Max v25。`d3b0292` / `5ef25bd` 的 pipeline 4.13/product-v26 已以唯一 enclosing-connected GROUP-owner
-  normalization、stage-local checkpoint telemetry、监控/审核 UI 和真实 PostgreSQL 三阶段 tracer 完成 clean A1；
-  尚无 v26 live A2。全部 live ledger `CLOSED`，Profile 均隐藏 `EXPERIMENTAL`
+  normalization、stage-local checkpoint telemetry、监控/审核 UI 和真实 PostgreSQL 三阶段 tracer 完成 clean A1。
+  Flash/Plus v26 已 CLOSED/A2：Flash 仍止于 OBSERVE，Plus 止于 HIERARCHY，两者均未命中新 telemetry；同版本
+  三阶段门未成立，故未调用 Max v26。全部 live ledger `CLOSED`，Profile 均隐藏 `EXPERIMENTAL`
 
 ## 四维执行配置
 
@@ -154,9 +155,11 @@ ledger 描述成外部强制门。
   evidence-owned relationship region normalization、v21 unique connected relationship region normalization、v22
   unique exact-region GROUP-owner support normalization、v23 support-owner hybrid observation、v24 bounded
   observation normalization、v25 leaf-evidence OBSERVE verifier 与 v26 unique enclosing-connected GROUP-owner
-  normalization 已 clean A1；Plus/Max v22 live 均未命中 hierarchy normalization。Flash v23/v24/v25 已
+  normalization 已 clean A1；Plus/Max v22 live 均未命中 hierarchy normalization。Flash v23/v24/v25/v26 已
   CLOSED/A2 且未通过 OBSERVE；Plus/Max v24 已 CLOSED/A2 并触达 BINDING，但质量未达门。Plus v25 已
   CLOSED/A2，在 HIERARCHY 停止且 leaf-evidence 固定码未命中；Max v25 因新假设信号/三阶段门未成立而未调用。
+  Flash/Plus v26 也已 CLOSED/A2，分别止于 OBSERVE/HIERARCHY，enclosing-owner telemetry 未命中；Max v26 因
+  同版本三阶段门未成立而未调用。
 - AC：AC-VR-001..010、既有 AC-015..021。
 - 依赖：N6 clean gates；final exact identities 和新的 ledger；N2 用量已进入 aggregate guard。
 - 执行：已先以 `qwen3.7-flash-2026-07-15`、再以 `qwen3.7-plus` 做单 case reachability；Flash 停在
@@ -207,13 +210,15 @@ ledger 描述成外部强制门。
   `a7a2a7f`→`a9635e4`→`edb35bc` 与 Plus v25 `06cef12`→`34e7ab3`→`e93d1f7` 均 CLOSED/A2，但新规则未
   命中，Plus 在 HIERARCHY 停止，故没有调用 Max v25。`d3b0292` / `5ef25bd` 的 pipeline 4.13/product-v26
   仅在 GROUP/region 配对唯一、包围全部 support element regions、cardinality-compatible 且连接 parent/child
-  时归一化 support owner；zero/multiple 保持 fail-closed，local/PG/UI gates 已 A1。下一步若执行 v26 live，仍
-  必须 fresh identity/snapshot、单 case、单 wrapper、每批≤5 且模型间不并发；没有新 A2 信号前不进入 20-case
-  与最佳模型 60-case/15 HOLDOUT。
+  时归一化 support owner；zero/multiple 保持 fail-closed，local/PG/UI gates 已 A1。Flash v26b lifecycle
+  `36a7a9e`→`ef6440f`→`b976e5f` 与 Plus v26 `3f95ae3`→`67f33dd`→`31093a6` 已 CLOSED/A2；前者 5 次
+  停在 OBSERVE，后者 OBSERVE accepted 后 3 次停在 HIERARCHY，均未命中新 telemetry。Max v26 不调用。下一步
+  先离线验证 unique validated ancestor-GROUP owner；没有新 bounded 信号前不进入 20-case 与最佳模型
+  60-case/15 HOLDOUT。
   旧 Flash 不再创建 assignment，Plus/Max model ID 不变。
 - policy：只有满足既有 AC-021 和 stage 门槛的 Profile 可成为默认；其他保持 EXPERIMENTAL。
 - 门控：server/web/e2e/runtime/full A1；独立 verifier A2；费用/Token/secret/payload scan；用户业务/视觉 J1。
-- 当前证据：guard/Profile `252dc00`、runner slot 修复 `0d7b73c`、guard v3 `2b23617`；十八份单 case live
+- 当前证据：guard/Profile `252dc00`、runner slot 修复 `0d7b73c`、guard v3 `2b23617`；二十份单 case live
   独立 verifier PASS；
   hierarchy repair `98ba3d0`、OBSERVE rewind `195894b` 与 evidence-derived cardinality `bb15096` 均已通过
   A1；`31a8c6f` 的 clean evidence 为 fast `20260811-050115`，受影响 server `20260811-045814`、web
@@ -246,7 +251,10 @@ ledger 描述成外部强制门。
   A2 PASS；恢复后的 Document Vision canary 为 `20260811-094753`，CLOSED fast 为 `20260811-100713`。
   `d3b0292` / `5ef25bd` 的 v26 server `20260811-101733`、Node 24 web `20260811-101734`、E2E
   `20260811-101948` 与 runtime `20260811-102032` 均 A1 PASS；revision `371505b` 的隔离 clean full
-  `20260811-102845` 为 9/9 steps A1 PASS，Provider attempts=0。三份 ledger CLOSED。该 full gate 早于 live/final
+  `20260811-102845` 为 9/9 steps A1 PASS，Provider attempts=0。Flash v26 的第一次预检因 CRLF corpus identity
+  drift 在 Provider/evidence/Goal mutation 前 fail-closed，不计 live report；LF clean identity 下 Flash v26b 与 Plus
+  v26 lifecycle 分别为 `36a7a9e`→`ef6440f`→`b976e5f`、`3f95ae3`→`67f33dd`→`31093a6`，独立 verifier
+  A2 PASS。三份 ledger CLOSED。该 full gate 早于 live/final
   eval，仍需在最终 revision 重跑；这些证据不能
   替代 final eval、final identity A2 或
   用户业务/视觉 J1。
@@ -257,12 +265,12 @@ ledger 描述成外部强制门。
 | 模型 | Goal cap | Goal exposed tokens | 剩余 tokens | attempts | list-price CNY cap | Goal cost |
 |---|---:|---:|---:|---:|---:|---:|
 | qwen3.8-max | 1,500,000 | 465,016 | 1,034,984 | 79 / 180 | 18.00 | 9.816288 |
-| qwen3.7-plus | 1,500,000 | 853,926 | 646,074 | 146 / 180 | 4.00 | 3.346968 |
-| Flash slot（旧 alias + `qwen3.7-flash-2026-07-15`） | 1,500,000 | 555,365 | 944,635 | 90 / 180 | 0.40 | 0.258103 |
+| qwen3.7-plus | 1,500,000 | 883,569 | 616,431 | 150 / 180 | 4.00 | 3.436302 |
+| Flash slot（旧 alias + `qwen3.7-flash-2026-07-15`） | 1,500,000 | 598,343 | 901,657 | 95 / 180 | 0.40 | 0.280418 |
 
-Goal guard v3 共 315 reservations：310 SETTLED、5 个历史 Plus RESERVED；没有 BREACHED。`2b23617` 只提高
-token cap，单 authorization 500,000、attempt/CNY cap 与所有历史 reservation 不变。v25 Flash 新增 4 个、
-Plus 新增 5 个 SETTLED reservation；因新假设门未成立未调用 Max v25。三份 visual ledger 均 `CLOSED`。
+Goal guard v3 共 324 reservations：319 SETTLED、5 个历史 Plus RESERVED；没有 BREACHED。`2b23617` 只提高
+token cap，单 authorization 500,000、attempt/CNY cap 与所有历史 reservation 不变。v26 Flash 新增 5 个、
+Plus 新增 4 个 SETTLED reservation；因同版本三阶段门未成立未调用 Max v26。三份 visual ledger 均 `CLOSED`。
 
 停止条件：任一 token/attempt/CNY cap、168h ledger expiry、Goal 完成、Provider refusal/Retry-After、identity
 drift、journal/guard 不一致、payload 边界失败或同一无新假设失败再次出现。停止只关闭后续调用；已结算费用
