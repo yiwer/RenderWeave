@@ -107,6 +107,8 @@ class PostgresLiveInferenceWorkflowTest {
             "dashscope-qwen37-flash-20260715-product-v25-hybrid-generic";
     private static final String ENCLOSING_SUPPORT_OWNER_HYBRID_VISUAL_PROFILE =
             "dashscope-qwen37-flash-20260715-product-v26-hybrid-generic";
+    private static final String SOURCE_ANCESTOR_SUPPORT_OWNER_HYBRID_VISUAL_PROFILE =
+            "dashscope-qwen37-flash-20260715-product-v27-hybrid-generic";
     private static final String DOCUMENT_VISION_CAPABILITY =
             "rapidocr-3.9.2-openvino-2026.0.0-ppocrv6-small-c05805399d7d10b1";
 
@@ -1411,6 +1413,51 @@ class PostgresLiveInferenceWorkflowTest {
     }
 
     @Test
+    void pipelineFourPointFourteenNormalizesOneSourceAncestorSupportOwner() {
+        var blobs = new MemoryBlobStore();
+        var created = createGroundedVisual(
+                blobs, "source-ancestor-support-owner-station",
+                SOURCE_ANCESTOR_SUPPORT_OWNER_HYBRID_VISUAL_PROFILE
+        );
+        var provider = new ScriptedProvider(
+                request -> response(request, sourceAncestorElements()),
+                request -> response(request, sourceAncestorHierarchy()),
+                request -> response(request, sourceAncestorBindings())
+        );
+        var preprocessCalls = new AtomicInteger();
+        var preprocessor = hybridPreprocessor(
+                preprocessCalls, "OCR_SENTINEL_V27_STATION_NAME"
+        );
+
+        var finished = worker(provider, blobs, T0.plusSeconds(1), preprocessor)
+                .processNext("source-ancestor-support-owner-worker").orElseThrow();
+
+        assertThat(finished.state())
+                .as("failure=%s attempts=%s", finished.failureCode(), workflowStore.attempts(created))
+                .isEqualTo(InferenceRunState.REVIEW_REQUIRED);
+        assertThat(preprocessCalls).hasValue(1);
+        assertThat(provider.requests).extracting(request -> request.stage().name())
+                .containsExactly("OBSERVE", "HIERARCHY", "ELEMENT_BINDING");
+        assertThat(workflowStore.attempts(created).get(1).problemCodeCounts())
+                .containsExactlyInAnyOrderEntriesOf(Map.of(
+                        "VISUAL_HIERARCHY_RELATIONSHIP_CARDINALITY_DERIVED", 1,
+                        "VISUAL_HIERARCHY_RELATIONSHIP_SUPPORT_OWNER_NORMALIZED", 1,
+                        "VISUAL_HIERARCHY_RELATIONSHIP_SOURCE_ANCESTOR_SUPPORT_OWNER_NORMALIZED", 1,
+                        "VISUAL_HIERARCHY_RELATIONSHIP_REGION_NORMALIZED", 1
+                ));
+        assertThat(finished.checkpointJson())
+                .doesNotContain("OCR_SENTINEL_V27_STATION_NAME")
+                .doesNotContain("ocr-00-000");
+        var review = workflowStore.findCandidate(created).orElseThrow();
+        assertThat(review.currentJson())
+                .doesNotContain("OCR_SENTINEL_V27_STATION_NAME")
+                .doesNotContain("ocr-00-000");
+        assertThat(review.validationProblemsJson())
+                .doesNotContain("OCR_SENTINEL_V27_STATION_NAME")
+                .doesNotContain("ocr-00-000");
+    }
+
+    @Test
     void cancellationIsAcknowledgedBeforeHybridPreprocessing() {
         var blobs = new MemoryBlobStore();
         var created = createGroundedVisual(blobs, "hybrid-cancel-before-ocr", HYBRID_VISUAL_PROFILE);
@@ -2148,6 +2195,38 @@ class PostgresLiveInferenceWorkflowTest {
                   {"elementId":"route-number","kind":"SLOT","proposedKey":"routeNumber","displayName":"线路编号","multiplicity":"ONE","valueHint":"TEXT","regionIds":["route-item"],"evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":500,"top":2400,"right":2500,"bottom":2900}}]},
                   {"elementId":"stop-group","kind":"GROUP","proposedKey":"stops","displayName":"停靠站点","multiplicity":"MANY","valueHint":null,"regionIds":["stops"],"evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":0,"top":4000,"right":10000,"bottom":10000}}]},
                   {"elementId":"stop-name","kind":"SLOT","proposedKey":"name","displayName":"站点名称","multiplicity":"ONE","valueHint":"TEXT","regionIds":["stop-item"],"evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":500,"top":4300,"right":3000,"bottom":4800}}]}
+                ]}
+                """;
+    }
+
+    private static String sourceAncestorElements() {
+        return """
+                {"contractVersion":"renderweave-visual-grounding/2.0","regions":[
+                  {"regionId":"root","parentRegionId":null,"kind":"ROOT","multiplicity":"ONE","readingOrder":0,"repeatGroupId":null,"evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":0,"top":0,"right":10000,"bottom":10000}}]},
+                  {"regionId":"routes","parentRegionId":"root","kind":"REPEATED_GROUP","multiplicity":"MANY","readingOrder":0,"repeatGroupId":"routes","evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":0,"top":1000,"right":10000,"bottom":10000}}]},
+                  {"regionId":"route-item","parentRegionId":"routes","kind":"ITEM","multiplicity":"ONE","readingOrder":0,"repeatGroupId":"routes","evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":0,"top":1000,"right":10000,"bottom":10000}}]}
+                ],"elements":[
+                  {"elementId":"route-group","kind":"GROUP","proposedKey":"routes","displayName":"线路","multiplicity":"MANY","valueHint":null,"regionIds":["routes"],"evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":0,"top":1000,"right":10000,"bottom":10000}}]},
+                  {"elementId":"route-number","kind":"SLOT","proposedKey":"routeNumber","displayName":"线路编号","multiplicity":"ONE","valueHint":"TEXT","regionIds":["root","route-item"],"evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":500,"top":1400,"right":2500,"bottom":1900}}]}
+                ]}
+                """;
+    }
+
+    private static String sourceAncestorHierarchy() {
+        return """
+                {"contractVersion":"renderweave-visual-hierarchy/2.0","rootEntityId":"board","entities":[
+                  {"entityId":"board","schemaKey":"board","displayName":"站牌","regionIds":["root"],"supportingElementIds":["route-group"]},
+                  {"entityId":"route","schemaKey":"route","displayName":"线路","regionIds":["root","route-item"],"supportingElementIds":["route-number"]}
+                ],"relationships":[
+                  {"relationshipId":"board-routes","parentEntityId":"board","childEntityId":"route","fieldKey":"routes","displayName":"线路","cardinality":"MANY","regionId":"route-item","supportingElementIds":["route-number"]}
+                ]}
+                """;
+    }
+
+    private static String sourceAncestorBindings() {
+        return """
+                {"contractVersion":"renderweave-visual-bindings/2.0","bindings":[
+                  {"elementId":"route-number","entityId":"route"}
                 ]}
                 """;
     }
