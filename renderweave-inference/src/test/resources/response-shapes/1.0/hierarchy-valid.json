@@ -1,0 +1,8 @@
+{
+  "contractVersion": "renderweave-visual-hierarchy/2.0",
+  "rootEntityId": "document",
+  "entities": [
+    {"entityId": "document", "schemaKey": "document", "displayName": "文档", "regionIds": ["root"], "supportingElementIds": ["title"]}
+  ],
+  "relationships": []
+}

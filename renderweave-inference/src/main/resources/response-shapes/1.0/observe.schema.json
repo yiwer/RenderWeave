@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:renderweave:stage-response-shape:observe:1.0",
+  "title": "RenderWeave product-v45 OBSERVE response syntax",
+  "$comment": "Offline syntax authority only; Java codecs and semantic validators remain runtime authorities. This schema is not sent to a Provider.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contractVersion", "regions", "elements"],
+  "properties": {
+    "contractVersion": {"const": "renderweave-visual-grounding/2.0"},
+    "regions": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 128,
+      "items": {"$ref": "#/$defs/region"}
+    },
+    "elements": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 128,
+      "items": {"$ref": "#/$defs/element"}
+    }
+  },
+  "$defs": {
+    "localId": {"type": "string", "pattern": "^[a-z][a-z0-9-]{0,62}$"},
+    "fieldKey": {"type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[^\\u0000-\\u001f\\u007f-\\u009f]+$"},
+    "displayName": {"type": "string", "minLength": 1, "maxLength": 256, "pattern": ".*\\S.*"},
+    "box": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["left", "top", "right", "bottom"],
+      "properties": {
+        "left": {"type": "integer", "minimum": 0, "maximum": 10000},
+        "top": {"type": "integer", "minimum": 0, "maximum": 10000},
+        "right": {"type": "integer", "minimum": 0, "maximum": 10000},
+        "bottom": {"type": "integer", "minimum": 0, "maximum": 10000}
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["viewId", "boundingBox"],
+      "properties": {
+        "viewId": {"$ref": "#/$defs/localId"},
+        "boundingBox": {"$ref": "#/$defs/box"}
+      }
+    },
+    "region": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["regionId", "parentRegionId", "kind", "multiplicity", "readingOrder", "repeatGroupId", "evidence"],
+      "properties": {
+        "regionId": {"$ref": "#/$defs/localId"},
+        "parentRegionId": {"oneOf": [{"$ref": "#/$defs/localId"}, {"type": "null"}]},
+        "kind": {"enum": ["ROOT", "SECTION", "GROUP", "REPEATED_GROUP", "ITEM"]},
+        "multiplicity": {"enum": ["ONE", "MANY"]},
+        "readingOrder": {"type": "integer", "minimum": 0, "maximum": 127},
+        "repeatGroupId": {"oneOf": [{"$ref": "#/$defs/localId"}, {"type": "null"}]},
+        "evidence": {"type": "array", "minItems": 1, "maxItems": 1, "items": {"$ref": "#/$defs/evidence"}}
+      }
+    },
+    "element": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["elementId", "kind", "proposedKey", "displayName", "multiplicity", "valueHint", "regionIds", "evidence"],
+      "properties": {
+        "elementId": {"$ref": "#/$defs/localId"},
+        "kind": {"enum": ["SLOT", "GROUP"]},
+        "proposedKey": {"$ref": "#/$defs/fieldKey"},
+        "displayName": {"$ref": "#/$defs/displayName"},
+        "multiplicity": {"enum": ["ONE", "MANY"]},
+        "valueHint": {"enum": [null, "TEXT", "DECIMAL", "DATE", "TIME", "BOOLEAN", "UNRESOLVED"]},
+        "regionIds": {"type": "array", "minItems": 1, "maxItems": 8, "uniqueItems": true, "items": {"$ref": "#/$defs/localId"}},
+        "evidence": {"type": "array", "minItems": 1, "maxItems": 8, "uniqueItems": true, "items": {"$ref": "#/$defs/evidence"}}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"kind": {"const": "SLOT"}}, "required": ["kind"]},
+          "then": {"properties": {"valueHint": {"enum": ["TEXT", "DECIMAL", "DATE", "TIME", "BOOLEAN", "UNRESOLVED"]}}},
+          "else": {"properties": {"valueHint": {"type": "null"}}}
+        }
+      ]
+    }
+  }
+}

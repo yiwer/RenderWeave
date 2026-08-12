@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:renderweave:stage-response-shape:hierarchy:1.0",
+  "title": "RenderWeave product-v45 HIERARCHY response syntax",
+  "$comment": "Offline syntax authority only; topology, ownership, relationship and spatial validators remain authoritative. This schema is not sent to a Provider.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contractVersion", "rootEntityId", "entities", "relationships"],
+  "properties": {
+    "contractVersion": {"const": "renderweave-visual-hierarchy/2.0"},
+    "rootEntityId": {"$ref": "#/$defs/localId"},
+    "entities": {"type": "array", "minItems": 1, "maxItems": 32, "items": {"$ref": "#/$defs/entity"}},
+    "relationships": {"type": "array", "minItems": 0, "maxItems": 31, "items": {"$ref": "#/$defs/relationship"}}
+  },
+  "$defs": {
+    "localId": {"type": "string", "pattern": "^[a-z][a-z0-9-]{0,62}$"},
+    "schemaKey": {"type": "string", "pattern": "^(?!system-)[a-z0-9][a-z0-9-]{0,62}$"},
+    "fieldKey": {"type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[^\\u0000-\\u001f\\u007f-\\u009f]+$"},
+    "displayName": {"type": "string", "minLength": 1, "maxLength": 256, "pattern": ".*\\S.*"},
+    "entity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["entityId", "schemaKey", "displayName", "regionIds", "supportingElementIds"],
+      "properties": {
+        "entityId": {"$ref": "#/$defs/localId"},
+        "schemaKey": {"$ref": "#/$defs/schemaKey"},
+        "displayName": {"$ref": "#/$defs/displayName"},
+        "regionIds": {"type": "array", "minItems": 1, "maxItems": 16, "uniqueItems": true, "items": {"$ref": "#/$defs/localId"}},
+        "supportingElementIds": {"type": "array", "minItems": 1, "maxItems": 32, "uniqueItems": true, "items": {"$ref": "#/$defs/localId"}}
+      }
+    },
+    "relationship": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["relationshipId", "parentEntityId", "childEntityId", "fieldKey", "displayName", "cardinality", "regionId", "supportingElementIds"],
+      "properties": {
+        "relationshipId": {"$ref": "#/$defs/localId"},
+        "parentEntityId": {"$ref": "#/$defs/localId"},
+        "childEntityId": {"$ref": "#/$defs/localId"},
+        "fieldKey": {"$ref": "#/$defs/fieldKey"},
+        "displayName": {"$ref": "#/$defs/displayName"},
+        "cardinality": {"enum": ["ONE", "MANY"]},
+        "regionId": {"$ref": "#/$defs/localId"},
+        "supportingElementIds": {"type": "array", "minItems": 0, "maxItems": 16, "items": {"$ref": "#/$defs/localId"}}
+      }
+    }
+  }
+}

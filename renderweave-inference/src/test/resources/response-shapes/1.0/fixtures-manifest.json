@@ -1,0 +1,19 @@
+{
+  "fixtureVersion": "renderweave-stage-response-shape-fixtures/1.0",
+  "fixtures": [
+    {"fixtureId": "observe-valid", "stage": "OBSERVE", "resource": "observe-valid.json", "shapeAccepted": true, "codecAccepted": true},
+    {"fixtureId": "observe-unknown", "stage": "OBSERVE", "resource": "observe-unknown.json", "shapeAccepted": false, "codecAccepted": false},
+    {"fixtureId": "observe-duplicate", "stage": "OBSERVE", "resource": "observe-duplicate.json", "shapeAccepted": false, "codecAccepted": false},
+    {"fixtureId": "observe-trailing", "stage": "OBSERVE", "resource": "observe-trailing.json", "shapeAccepted": false, "codecAccepted": false},
+    {"fixtureId": "observe-coercion", "stage": "OBSERVE", "resource": "observe-coercion.json", "shapeAccepted": false, "codecAccepted": false},
+    {"fixtureId": "observe-null-primitive", "stage": "OBSERVE", "resource": "observe-null-primitive.json", "shapeAccepted": false, "codecAccepted": false},
+    {"fixtureId": "observe-invalid-enum", "stage": "OBSERVE", "resource": "observe-invalid-enum.json", "shapeAccepted": false, "codecAccepted": false},
+    {"fixtureId": "observe-semantic-invalid", "stage": "OBSERVE", "resource": "observe-semantic-invalid.json", "shapeAccepted": true, "codecAccepted": false},
+    {"fixtureId": "hierarchy-valid", "stage": "HIERARCHY", "resource": "hierarchy-valid.json", "shapeAccepted": true, "codecAccepted": true},
+    {"fixtureId": "hierarchy-empty", "stage": "HIERARCHY", "resource": "hierarchy-empty.json", "shapeAccepted": false, "codecAccepted": false},
+    {"fixtureId": "hierarchy-semantic-invalid", "stage": "HIERARCHY", "resource": "hierarchy-semantic-invalid.json", "shapeAccepted": true, "codecAccepted": false},
+    {"fixtureId": "binding-valid", "stage": "ELEMENT_BINDING", "resource": "binding-valid.json", "shapeAccepted": true, "codecAccepted": true},
+    {"fixtureId": "binding-unknown", "stage": "ELEMENT_BINDING", "resource": "binding-unknown.json", "shapeAccepted": false, "codecAccepted": false},
+    {"fixtureId": "binding-semantic-invalid", "stage": "ELEMENT_BINDING", "resource": "binding-semantic-invalid.json", "shapeAccepted": true, "codecAccepted": false}
+  ]
+}
