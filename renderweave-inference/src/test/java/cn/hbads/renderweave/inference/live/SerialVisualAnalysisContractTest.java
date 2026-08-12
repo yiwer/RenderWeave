@@ -190,6 +190,51 @@ class SerialVisualAnalysisContractTest {
     }
 
     @Test
+    void coalescesRepeatedInstanceObservationsIntoOneSchemaField() {
+        var inventory = new VisualElementInventory(
+                VisualElementInventory.VERSION,
+                List.of(
+                        slot("item-one-name", "name", "名称", VisualValueHint.TEXT,
+                                VisualMultiplicity.ONE, 1_000),
+                        slot("item-two-name", "name", "名称", VisualValueHint.TEXT,
+                                VisualMultiplicity.ONE, 2_000)
+                )
+        );
+        var hierarchy = new VisualHierarchyPlan(
+                VisualHierarchyPlan.VERSION,
+                "item",
+                List.of(entity("item", "item", "项目", "item-one-name")),
+                List.of()
+        );
+        var bindings = new VisualElementBindingPlan(
+                VisualElementBindingPlan.VERSION_V2,
+                List.of(
+                        new VisualElementBinding("item-one-name", "item"),
+                        new VisualElementBinding("item-two-name", "item")
+                )
+        );
+
+        assertThrows(IllegalArgumentException.class, () -> bindings.requireConsistentWith(
+                inventory, hierarchy, VisualBindingFieldPolicy.UNIQUE_FIELD_KEYS
+        ));
+        bindings.requireConsistentWith(
+                inventory, hierarchy, VisualBindingFieldPolicy.COALESCE_IDENTICAL_OBSERVATIONS
+        );
+
+        var candidate = new VisualPlanCandidateMaterializer().materialize(
+                UUID.fromString("00000000-0000-0000-0000-000000000456"),
+                inventory, hierarchy, bindings, 8_000,
+                VisualBindingFieldPolicy.COALESCE_IDENTICAL_OBSERVATIONS
+        );
+
+        assertEquals(1, candidate.schemas().size());
+        assertEquals(1, candidate.schemas().getFirst().fields().size());
+        assertEquals("name", candidate.schemas().getFirst().fields().getFirst().proposedFieldKey());
+        assertEquals(2, candidate.schemas().getFirst().fields().getFirst()
+                .assessment().evidence().size());
+    }
+
+    @Test
     void migratesLegacyCheckpointsInMemoryAndWritesOnlyVersionThree() {
         var legacy = """
                 {

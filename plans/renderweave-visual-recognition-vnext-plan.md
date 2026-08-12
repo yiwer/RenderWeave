@@ -940,3 +940,14 @@ N6=`automated_verified`、N7/Goal=`in_progress`；Plus/Max/final 不启动，Goa
 - 已验证：adapter 1/1；verifier/Profile/Prompt 29/29；真实 PostgreSQL workflow 1/1；API/policy/evidence
   21/21；Node 24 typecheck/lint + 73/73。真实图本地结构重放为第一图 35 行/10 个候选/门命中，
   第二图 8 行/0 个候选/门未命中。live 结果待 clean revision 后追加。
+
+### product-v45 repeated-observation checkpoint
+
+- v44 live 诊断：OBSERVE/HIERARCHY 已恢复 24 elements、1 MANY group、2 entities、1 MANY relationship；
+  binding 阶段 14 个同语义 SLOT 共享 child entity 字段 key，旧唯一键合同与完整覆盖合同组合无解。
+- successor：新增 immutable v45/Binding Prompt 4。Provider 仍输出每个 SLOT 的 binding；本地仅对同实体、
+  同一重复组的互异 ITEM、同 key/displayName/multiplicity/valueHint 的重复实例观测做确定性字段聚合并保留有界 evidence。
+- 不变边界：pipeline 4.28、OBSERVE Prompt 12、hierarchy Prompt 7、模型/价格、7 calls、360 秒、
+  Plus/Flash 16384、Max 8192、¥2/call、¥5/run、无 tools/remote media。
+- 当前验证：核心 Profile/Prompt/materializer 31/31；Testcontainers PostgreSQL root + child + MANY reference
+  工作流 1/1。clean revision 与真实图复验待后续节点追加。

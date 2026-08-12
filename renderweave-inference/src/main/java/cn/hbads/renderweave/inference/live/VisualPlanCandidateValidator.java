@@ -26,6 +26,20 @@ final class VisualPlanCandidateValidator {
             VisualHierarchyPlan hierarchy,
             VisualElementBindingPlan bindings
     ) {
+        return validate(
+                candidate, inventory, hierarchy, bindings,
+                VisualBindingFieldPolicy.UNIQUE_FIELD_KEYS
+        );
+    }
+
+    List<CandidateProblem> validate(
+            CandidateBundle candidate,
+            VisualElementInventory inventory,
+            VisualHierarchyPlan hierarchy,
+            VisualElementBindingPlan bindings,
+            VisualBindingFieldPolicy fieldPolicy
+    ) {
+        bindings.requireConsistentWith(inventory, hierarchy, fieldPolicy);
         var problems = new ArrayList<CandidateProblem>();
         var candidateSchemas = uniqueSchemasByKey(candidate.schemas());
         var expectedSchemaKeys = hierarchy.entities().stream()
@@ -48,7 +62,10 @@ final class VisualPlanCandidateValidator {
             if (!hasPlannedEvidence(schema.assessment().evidence(), entity.supportingElementIds(), inventory)) {
                 problems.add(problem("VISUAL_PLAN_SCHEMA_EVIDENCE_MISSING", schema, "/candidate/schemas"));
             }
-            validateFields(candidateSchemas, schema, entity, inventory, hierarchy, bindings, problems);
+            validateFields(
+                    candidateSchemas, schema, entity, inventory, hierarchy, bindings,
+                    problems
+            );
         }
         for (var schema : candidate.schemas()) {
             if (schema.proposedSchemaKey() != null && !expectedSchemaKeys.contains(schema.proposedSchemaKey())) {
@@ -87,11 +104,18 @@ final class VisualPlanCandidateValidator {
                 problems.add(problem("VISUAL_PLAN_RELATION_EVIDENCE_MISSING", field, "/candidate/schemas/fields"));
             }
         }
+        var boundElements = new HashMap<String, List<VisualElement>>();
         for (var binding : bindings.bindings()) {
             if (!binding.entityId().equals(entity.entityId())) continue;
             var element = inventory.requireElement(binding.elementId());
-            expectedKeys.add(element.proposedKey());
-            var field = fields.get(element.proposedKey());
+            boundElements.computeIfAbsent(element.proposedKey(), ignored -> new ArrayList<>())
+                    .add(element);
+        }
+        for (var entry : boundElements.entrySet()) {
+            var elements = entry.getValue();
+            var element = elements.getFirst();
+            expectedKeys.add(entry.getKey());
+            var field = fields.get(entry.getKey());
             if (field == null) {
                 problems.add(problem("VISUAL_PLAN_FIELD_MISSING", null, "/candidate/schemas/fields"));
                 continue;
@@ -99,7 +123,9 @@ final class VisualPlanCandidateValidator {
             if (!matchesSlot(field.value(), element)) {
                 problems.add(problem("VISUAL_PLAN_FIELD_SHAPE_INVALID", field, "/candidate/schemas/fields"));
             }
-            if (field.assessment().evidence().stream().noneMatch(element.evidence()::contains)) {
+            var plannedEvidence = elements.stream().flatMap(value -> value.evidence().stream())
+                    .collect(java.util.stream.Collectors.toSet());
+            if (field.assessment().evidence().stream().noneMatch(plannedEvidence::contains)) {
                 problems.add(problem("VISUAL_PLAN_FIELD_EVIDENCE_MISSING", field, "/candidate/schemas/fields"));
             }
         }

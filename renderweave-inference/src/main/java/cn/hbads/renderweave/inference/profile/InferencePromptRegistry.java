@@ -32,6 +32,7 @@ public final class InferencePromptRegistry {
     public static final String VISUAL_HIERARCHY_V7 = "renderweave-visual-hierarchy-prompt/7.0";
     public static final String VISUAL_BINDINGS_V2 = "renderweave-visual-bindings-prompt/2.0";
     public static final String VISUAL_BINDINGS_V3 = "renderweave-visual-bindings-prompt/3.0";
+    public static final String VISUAL_BINDINGS_V4 = "renderweave-visual-bindings-prompt/4.0";
     public static final String VISUAL_HINT_GENERIC_V1 = "renderweave-visual-hint-pack/generic/1.0";
     public static final String VISUAL_HINT_TRANSIT_BOARD_V1 =
             "renderweave-visual-hint-pack/transit-board/1.0";
@@ -64,7 +65,8 @@ public final class InferencePromptRegistry {
             Map.entry(VISUAL_HIERARCHY_V6, "inference-prompts/visual-hierarchy-v6.txt"),
             Map.entry(VISUAL_HIERARCHY_V7, "inference-prompts/visual-hierarchy-v7.txt"),
             Map.entry(VISUAL_BINDINGS_V2, "inference-prompts/visual-bindings-v2.txt"),
-            Map.entry(VISUAL_BINDINGS_V3, "inference-prompts/visual-bindings-v3.txt")
+            Map.entry(VISUAL_BINDINGS_V3, "inference-prompts/visual-bindings-v3.txt"),
+            Map.entry(VISUAL_BINDINGS_V4, "inference-prompts/visual-bindings-v4.txt")
     );
     private static final Map<String, String> HINT_RESOURCES = Map.of(
             VISUAL_HINT_GENERIC_V1, "inference-prompts/visual-hint-generic-v1.txt",
@@ -115,7 +117,8 @@ public final class InferencePromptRegistry {
                 VISUAL_HIERARCHY_V6,
                 VISUAL_HIERARCHY_V7,
                 VISUAL_BINDINGS_V2,
-                VISUAL_BINDINGS_V3
+                VISUAL_BINDINGS_V3,
+                VISUAL_BINDINGS_V4
         ).contains(promptVersion)) {
             throw new IllegalArgumentException("Visual hint packs require a grounded visual stage prompt");
         }

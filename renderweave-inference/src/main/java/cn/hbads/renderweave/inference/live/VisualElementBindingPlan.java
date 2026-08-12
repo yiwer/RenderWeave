@@ -1,5 +1,6 @@
 package cn.hbads.renderweave.inference.live;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -28,17 +29,27 @@ record VisualElementBindingPlan(
     }
 
     void requireConsistentWith(VisualElementInventory inventory, VisualHierarchyPlan hierarchy) {
+        requireConsistentWith(inventory, hierarchy, VisualBindingFieldPolicy.UNIQUE_FIELD_KEYS);
+    }
+
+    void requireConsistentWith(
+            VisualElementInventory inventory,
+            VisualHierarchyPlan hierarchy,
+            VisualBindingFieldPolicy fieldPolicy
+    ) {
         Objects.requireNonNull(inventory, "inventory");
         Objects.requireNonNull(hierarchy, "hierarchy");
+        Objects.requireNonNull(fieldPolicy, "fieldPolicy");
         var expectedSlots = new HashSet<String>();
         for (var element : inventory.elements()) {
             if (element.kind() == VisualElementKind.SLOT) expectedSlots.add(element.elementId());
         }
         var actualSlots = new HashSet<String>();
-        var entityFields = new HashSet<String>();
-        hierarchy.relationships().forEach(relationship -> entityFields.add(
+        var relationshipFields = new HashSet<String>();
+        hierarchy.relationships().forEach(relationship -> relationshipFields.add(
                 relationship.parentEntityId() + "\u0000" + relationship.fieldKey()
         ));
+        var boundFields = new HashMap<String, VisualElement>();
         for (var binding : bindings) {
             var element = inventory.requireElement(binding.elementId());
             if (element.kind() != VisualElementKind.SLOT) {
@@ -46,8 +57,15 @@ record VisualElementBindingPlan(
             }
             hierarchy.requireEntity(binding.entityId());
             actualSlots.add(binding.elementId());
-            if (!entityFields.add(binding.entityId() + "\u0000" + element.proposedKey())) {
+            var fieldIdentity = binding.entityId() + "\u0000" + element.proposedKey();
+            if (relationshipFields.contains(fieldIdentity)) {
                 throw new IllegalArgumentException("Bound field and relationship keys must be unique per entity");
+            }
+            var previous = boundFields.putIfAbsent(fieldIdentity, element);
+            if (previous != null && (fieldPolicy
+                    != VisualBindingFieldPolicy.COALESCE_IDENTICAL_OBSERVATIONS
+                    || !sameFieldObservation(previous, element))) {
+                throw new IllegalArgumentException("Bound field keys must be unique per entity");
             }
         }
         if (!actualSlots.equals(expectedSlots)) {
@@ -64,6 +82,14 @@ record VisualElementBindingPlan(
             throw new IllegalArgumentException("Every visual element must participate in the plan");
         }
     }
+
+    private static boolean sameFieldObservation(VisualElement left, VisualElement right) {
+        return left.kind() == right.kind()
+                && left.proposedKey().equals(right.proposedKey())
+                && left.displayName().equals(right.displayName())
+                && left.multiplicity() == right.multiplicity()
+                && left.valueHint() == right.valueHint();
+    }
 }
 
 record VisualElementBinding(
@@ -74,4 +100,9 @@ record VisualElementBinding(
         elementId = VisualAnalysisValidation.localId(elementId, "elementId");
         entityId = VisualAnalysisValidation.localId(entityId, "entityId");
     }
+}
+
+enum VisualBindingFieldPolicy {
+    UNIQUE_FIELD_KEYS,
+    COALESCE_IDENTICAL_OBSERVATIONS
 }

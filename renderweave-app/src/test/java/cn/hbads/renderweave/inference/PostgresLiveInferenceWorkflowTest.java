@@ -142,6 +142,8 @@ class PostgresLiveInferenceWorkflowTest {
             "dashscope-qwen37-plus-product-v42-hybrid-generic";
     private static final String PLUS_V44_HYBRID_VISUAL_PROFILE =
             "dashscope-qwen37-plus-product-v44-hybrid-generic";
+    private static final String PLUS_V45_HYBRID_VISUAL_PROFILE =
+            "dashscope-qwen37-plus-product-v45-hybrid-generic";
     private static final String DOCUMENT_VISION_CAPABILITY =
             "rapidocr-3.9.2-openvino-2026.0.0-ppocrv6-small-c05805399d7d10b1";
 
@@ -2614,6 +2616,70 @@ class PostgresLiveInferenceWorkflowTest {
     }
 
     @Test
+    void productV45CoalescesRepeatedInstanceObservationsIntoOneNestedSchemaField() {
+        var blobs = new MemoryBlobStore();
+        var created = createGroundedVisual(
+                blobs, "v45-repeated-observation-coalescing",
+                PLUS_V45_HYBRID_VISUAL_PROFILE, 5_000_000L
+        );
+        var provider = new ScriptedProvider(
+                request -> response(request, repeatedObservationElements()),
+                request -> response(request, repeatedObservationHierarchy()),
+                request -> response(request, repeatedObservationBindings())
+        );
+        var preprocessCalls = new AtomicInteger();
+
+        var finished = worker(
+                provider, blobs, T0.plusSeconds(1),
+                hybridPreprocessor(preprocessCalls, "OCR_SENTINEL_V45_REPEATED_OBSERVATION")
+        ).processNext("v45-repeated-observation-worker").orElseThrow();
+
+        assertThat(finished.state())
+                .as("failure=%s attempts=%s", finished.failureCode(), workflowStore.attempts(created))
+                .isEqualTo(InferenceRunState.REVIEW_REQUIRED);
+        assertThat(preprocessCalls).hasValue(1);
+        assertThat(provider.requests).extracting(ProviderInferenceRequest::stage)
+                .containsExactly(
+                        InferenceStage.OBSERVE,
+                        InferenceStage.HIERARCHY,
+                        InferenceStage.ELEMENT_BINDING
+                );
+        assertThat(provider.requests.get(2).systemPrompt())
+                .contains("coalesce those identical observations into one field");
+        assertThat(workflowStore.attempts(created)).extracting(InferenceAttempt::status)
+                .containsExactly(
+                        InferenceAttemptStatus.SUCCEEDED,
+                        InferenceAttemptStatus.SUCCEEDED,
+                        InferenceAttemptStatus.SUCCEEDED
+                );
+
+        var candidate = candidateCodec.parse(
+                workflowStore.findCandidate(created).orElseThrow().currentJson()
+        );
+        assertThat(candidate.schemas()).hasSize(2);
+        var root = candidate.schemas().stream()
+                .filter(schema -> schema.candidateSchemaId().equals(candidate.rootCandidateSchemaId()))
+                .findFirst().orElseThrow();
+        var child = candidate.schemas().stream()
+                .filter(schema -> !schema.candidateSchemaId().equals(candidate.rootCandidateSchemaId()))
+                .findFirst().orElseThrow();
+        assertThat(root.fields()).anySatisfy(field -> {
+            assertThat(field.proposedFieldKey()).isEqualTo("items");
+            assertThat(field.value().kind()).isEqualTo(CandidateValueKind.ARRAY);
+            assertThat(field.value().items().kind()).isEqualTo(CandidateValueKind.REFERENCE);
+            assertThat(field.value().items().reference().candidateSchemaId())
+                    .isEqualTo(child.candidateSchemaId());
+        });
+        assertThat(child.fields()).singleElement().satisfies(field -> {
+            assertThat(field.proposedFieldKey()).isEqualTo("label");
+            assertThat(field.assessment().evidence()).hasSize(2);
+        });
+        assertThat(workflowStore.findCandidate(created).orElseThrow().currentJson())
+                .doesNotContain("OCR_SENTINEL_V45_REPEATED_OBSERVATION")
+                .doesNotContain("ocr-00-000");
+    }
+
+    @Test
     void cancellationIsAcknowledgedBeforeHybridPreprocessing() {
         var blobs = new MemoryBlobStore();
         var created = createGroundedVisual(blobs, "hybrid-cancel-before-ocr", HYBRID_VISUAL_PROFILE);
@@ -3468,6 +3534,43 @@ class PostgresLiveInferenceWorkflowTest {
                 {"contractVersion":"renderweave-visual-bindings/2.0","bindings":[
                   {"elementId":"title","entityId":"document"},
                   {"elementId":"item-label","entityId":"item"}
+                ]}
+                """;
+    }
+
+    private static String repeatedObservationElements() {
+        return """
+                {"contractVersion":"renderweave-visual-grounding/2.0","regions":[
+                  {"regionId":"root","parentRegionId":null,"kind":"ROOT","multiplicity":"ONE","readingOrder":0,"repeatGroupId":null,"evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":0,"top":0,"right":10000,"bottom":10000}}]},
+                  {"regionId":"repeat","parentRegionId":"root","kind":"REPEATED_GROUP","multiplicity":"MANY","readingOrder":0,"repeatGroupId":"rows","evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":0,"top":2000,"right":10000,"bottom":10000}}]},
+                  {"regionId":"item-a","parentRegionId":"repeat","kind":"ITEM","multiplicity":"ONE","readingOrder":0,"repeatGroupId":"rows","evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":0,"top":2000,"right":10000,"bottom":6000}}]},
+                  {"regionId":"item-b","parentRegionId":"repeat","kind":"ITEM","multiplicity":"ONE","readingOrder":1,"repeatGroupId":"rows","evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":0,"top":6000,"right":10000,"bottom":10000}}]}
+                ],"elements":[
+                  {"elementId":"title","kind":"SLOT","proposedKey":"title","displayName":"Title","multiplicity":"ONE","valueHint":"TEXT","regionIds":["root"],"evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":100,"top":100,"right":3000,"bottom":700}}]},
+                  {"elementId":"row-group","kind":"GROUP","proposedKey":"items","displayName":"Items","multiplicity":"MANY","valueHint":null,"regionIds":["repeat"],"evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":0,"top":2000,"right":10000,"bottom":10000}}]},
+                  {"elementId":"item-label-a","kind":"SLOT","proposedKey":"label","displayName":"Label","multiplicity":"ONE","valueHint":"TEXT","regionIds":["item-a"],"evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":100,"top":2300,"right":3000,"bottom":2800}}]},
+                  {"elementId":"item-label-b","kind":"SLOT","proposedKey":"label","displayName":"Label","multiplicity":"ONE","valueHint":"TEXT","regionIds":["item-b"],"evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":100,"top":6300,"right":3000,"bottom":6800}}]}
+                ]}
+                """;
+    }
+
+    private static String repeatedObservationHierarchy() {
+        return """
+                {"contractVersion":"renderweave-visual-hierarchy/2.0","rootEntityId":"document","entities":[
+                  {"entityId":"document","schemaKey":"document","displayName":"Document","regionIds":["root"],"supportingElementIds":["title"]},
+                  {"entityId":"item","schemaKey":"item","displayName":"Item","regionIds":["item-a","item-b"],"supportingElementIds":["row-group"]}
+                ],"relationships":[
+                  {"relationshipId":"document-items","parentEntityId":"document","childEntityId":"item","fieldKey":"items","displayName":"Items","cardinality":"MANY","regionId":"repeat","supportingElementIds":["row-group"]}
+                ]}
+                """;
+    }
+
+    private static String repeatedObservationBindings() {
+        return """
+                {"contractVersion":"renderweave-visual-bindings/2.0","bindings":[
+                  {"elementId":"title","entityId":"document"},
+                  {"elementId":"item-label-a","entityId":"item"},
+                  {"elementId":"item-label-b","entityId":"item"}
                 ]}
                 """;
     }

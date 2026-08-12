@@ -18,6 +18,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
@@ -545,7 +546,8 @@ final class VisualGroundingJsonCodec {
     ) {
         return parseBindings(
                 value, inventory, hierarchy, grounding, entityRegions,
-                VisualBindingSemanticPolicy.NEAREST_ENTITY
+                VisualBindingSemanticPolicy.NEAREST_ENTITY,
+                VisualBindingFieldPolicy.UNIQUE_FIELD_KEYS
         );
     }
 
@@ -557,8 +559,24 @@ final class VisualGroundingJsonCodec {
             VisualEntityRegionPlan entityRegions,
             VisualBindingSemanticPolicy semanticPolicy
     ) {
+        return parseBindings(
+                value, inventory, hierarchy, grounding, entityRegions, semanticPolicy,
+                VisualBindingFieldPolicy.UNIQUE_FIELD_KEYS
+        );
+    }
+
+    VisualElementBindingPlan parseBindings(
+            String value,
+            VisualElementInventory inventory,
+            VisualHierarchyPlan hierarchy,
+            VisualGroundingPlan grounding,
+            VisualEntityRegionPlan entityRegions,
+            VisualBindingSemanticPolicy semanticPolicy,
+            VisualBindingFieldPolicy fieldPolicy
+    ) {
         try {
             Objects.requireNonNull(semanticPolicy, "semanticPolicy");
+            Objects.requireNonNull(fieldPolicy, "fieldPolicy");
             var response = decode(value, BindingOutput.class, "VISUAL_BINDINGS_V2");
             if (!VisualElementBindingPlan.VERSION_V2.equals(response.contractVersion())) {
                 throw invalid("VISUAL_BINDINGS_V2_VERSION_INVALID", null);
@@ -572,11 +590,16 @@ final class VisualGroundingJsonCodec {
                     )
             );
             classified("VISUAL_BINDINGS_V2_COVERAGE_INVALID", () ->
-                    result.requireConsistentWith(inventory, hierarchy)
+                    result.requireConsistentWith(inventory, hierarchy, fieldPolicy)
             );
             classified("VISUAL_BINDINGS_V2_REGION_OWNERSHIP_INVALID", () ->
                     entityRegions.requireBindingsConsistent(result, grounding)
             );
+            if (fieldPolicy == VisualBindingFieldPolicy.COALESCE_IDENTICAL_OBSERVATIONS) {
+                classified("VISUAL_BINDINGS_V2_COVERAGE_INVALID", () ->
+                        requireRepeatedInstanceCoalescing(result, inventory, grounding)
+                );
+            }
             var semanticIssues = SEMANTIC_VERIFIER.verifyBindings(
                     inventory, grounding, hierarchy, entityRegions, result, semanticPolicy
             );
@@ -588,6 +611,48 @@ final class VisualGroundingJsonCodec {
             throw failure;
         } catch (Exception failure) {
             throw invalid("VISUAL_BINDINGS_V2_CONTRACT_INVALID", failure);
+        }
+    }
+
+    private static void requireRepeatedInstanceCoalescing(
+            VisualElementBindingPlan bindings,
+            VisualElementInventory inventory,
+            VisualGroundingPlan grounding
+    ) {
+        var fields = new HashMap<String, List<VisualElement>>();
+        for (var binding : bindings.bindings()) {
+            var element = inventory.requireElement(binding.elementId());
+            var identity = binding.entityId() + "\u0000" + element.proposedKey();
+            fields.computeIfAbsent(identity, ignored -> new ArrayList<>()).add(element);
+        }
+        for (var observations : fields.values()) {
+            if (observations.size() < 2) continue;
+            Set<String> commonRepeatGroups = null;
+            var seenItemRegions = new HashSet<String>();
+            for (var observation : observations) {
+                var itemRegions = grounding.regionIdsForElement(observation.elementId()).stream()
+                        .map(grounding::requireRegion)
+                        .filter(region -> region.kind() == VisualRegionKind.ITEM)
+                        .toList();
+                if (itemRegions.isEmpty() || itemRegions.stream()
+                        .map(VisualRegion::regionId).anyMatch(id -> !seenItemRegions.add(id))) {
+                    throw new IllegalArgumentException(
+                            "Coalesced observations must belong to distinct repeated items"
+                    );
+                }
+                var repeatGroups = itemRegions.stream().map(VisualRegion::repeatGroupId)
+                        .collect(java.util.stream.Collectors.toSet());
+                if (commonRepeatGroups == null) {
+                    commonRepeatGroups = new HashSet<>(repeatGroups);
+                } else {
+                    commonRepeatGroups.retainAll(repeatGroups);
+                }
+            }
+            if (commonRepeatGroups == null || commonRepeatGroups.isEmpty()) {
+                throw new IllegalArgumentException(
+                        "Coalesced observations must share one repeated group"
+                );
+            }
         }
     }
 

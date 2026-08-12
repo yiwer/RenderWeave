@@ -58,7 +58,7 @@ class InferenceControllerPolicyTest {
                     assertThat(profile.unavailabilityCode()).isEqualTo("DOCUMENT_VISION_ADAPTER_MISSING");
                 });
         var request = new InferenceController.CreateLiveRunRequest(
-                "dashscope-qwen37-plus-product-v44-hybrid-generic",
+                "dashscope-qwen37-plus-product-v45-hybrid-generic",
                 "IMAGE_ONLY", "USER_PROVIDED", true, true, null
         );
         assertThatThrownBy(() -> controller.createLive("v44-readiness", request, null, null))
@@ -72,7 +72,7 @@ class InferenceControllerPolicyTest {
         var runStore = mock(InferenceRunStore.class);
         var source = mock(InferenceRunSnapshot.class);
         var snapshot = new InferenceProfileRegistry()
-                .require("dashscope-qwen37-plus-product-v44-hybrid-generic").snapshotJson();
+                .require("dashscope-qwen37-plus-product-v45-hybrid-generic").snapshotJson();
         when(source.profileSnapshotJson()).thenReturn(snapshot);
         when(runStore.find(SOURCE_RUN_ID)).thenReturn(Optional.of(source));
         var controller = controller(

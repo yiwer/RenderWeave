@@ -505,3 +505,17 @@ final 不调用。N6=`automated_verified`，N7/Goal 仍未完成；后续算法�
   `VISUAL_SEMANTIC_OBSERVE_DOCUMENT_SEQUENCE_GROUP_MISSING` 并回到 OBSERVE。它只拒绝不完整响应，
   不读 OCR 文本、不使用业务词汇、不更改 box 或自动创建结构。
 - v44 继续为 `EXPERIMENTAL`；单一用户样本的修复验证不替代 final 60、全局 N7 或生产可靠性验收。
+
+### 2026-08-12 product-v45 重复实例字段观测聚合 delta
+
+- v44 真实 run 已恢复 24 个 element、1 个 MANY group、2 个 entity 和 1 条 MANY relationship，但
+  ELEMENT_BINDING 连续返回 `VISUAL_BINDINGS_V2_COVERAGE_INVALID`。结构计数证明 14 个 SLOT 是同一
+  child entity、同一字段语义的重复实例观测；旧的“每 SLOT 必须绑定”和“实体字段 key 唯一”约束组合
+  无解，因此这不是继续提示模型即可修复的识别偏差。
+- 新增三份 immutable product-v45 Profile 与 binding Prompt 4。v45 继承 v44 的 pipeline 4.28、Prompt 12、
+  hierarchy Prompt 7、模型、价格、7-call、360 秒、输出与费用边界，仅启用重复实例观测聚合策略。
+- 每个 SLOT 仍须恰好绑定一次；只有同一实体、同一重复组的互异 ITEM 且 key、displayName、multiplicity、
+  valueHint 完全相同的观测才聚合为一个 Candidate field。relationship key 冲突和不兼容观测继续 fail-closed，evidence 继续按现有
+  有界规则去重和排序。
+- 单元与 PostgreSQL 工作流回归必须同时证明 v44 严格策略不变、v45 生成 root + child Schema、根上 MANY
+  array reference 和 child 上单一聚合字段。v45 保持 `EXPERIMENTAL`。

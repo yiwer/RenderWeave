@@ -335,7 +335,8 @@ public final class LiveInferenceWorker {
             try {
                 candidate = visualPlanMaterializer.materialize(
                         current.runId(), checkpoint.elementInventory(), checkpoint.hierarchyPlan(),
-                        checkpoint.bindingPlan(), profile.lowConfidenceThresholdBps()
+                        checkpoint.bindingPlan(), profile.lowConfidenceThresholdBps(),
+                        bindingFieldPolicy(profile)
                 );
             } catch (IllegalArgumentException | IllegalStateException invalidPlan) {
                 return runStore.fail(
@@ -762,7 +763,7 @@ public final class LiveInferenceWorker {
                             Objects.requireNonNull(checkpoint.hierarchyPlan(), "hierarchyPlan"),
                             Objects.requireNonNull(checkpoint.groundingPlan(), "groundingPlan"),
                             Objects.requireNonNull(checkpoint.entityRegionPlan(), "entityRegionPlan"),
-                            bindingSemanticPolicy(profile)
+                            bindingSemanticPolicy(profile), bindingFieldPolicy(profile)
                     );
                     nextCheckpoint = checkpoint.elementsBound(bindings, attemptOrdinal + 1);
                     nextStage = InferenceStage.STRUCTURE;
@@ -1438,6 +1439,12 @@ public final class LiveInferenceWorker {
                 || emptyOrUnknownSupportOwnerPipeline(profile))
                 ? VisualBindingSemanticPolicy.UNIQUE_MINIMAL_ENTITY_OWNER
                 : VisualBindingSemanticPolicy.NEAREST_ENTITY;
+    }
+
+    private static VisualBindingFieldPolicy bindingFieldPolicy(InferenceProfile profile) {
+        return InferencePromptRegistry.VISUAL_BINDINGS_V4.equals(profile.bindingPromptVersion())
+                ? VisualBindingFieldPolicy.COALESCE_IDENTICAL_OBSERVATIONS
+                : VisualBindingFieldPolicy.UNIQUE_FIELD_KEYS;
     }
 
     private static Map<String, Integer> observationTelemetry(GroundedElementInventory grounded) {

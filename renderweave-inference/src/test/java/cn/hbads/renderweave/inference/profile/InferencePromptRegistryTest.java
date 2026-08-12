@@ -245,6 +245,25 @@ class InferencePromptRegistryTest {
     }
 
     @Test
+    void visualBindingV4KeepsRepeatedObservationsCompleteAndCoalescible() {
+        var prompt = new InferencePromptRegistry().requireVisualStage(
+                InferencePromptRegistry.VISUAL_BINDINGS_V4,
+                InferencePromptRegistry.VISUAL_HINT_GENERIC_V1
+        ).text();
+        var normalized = prompt.replaceAll("\\s+", " ");
+
+        assertTrue(normalized.contains("one object for every SLOT element"));
+        assertTrue(normalized.contains("exact same proposedKey, displayName, multiplicity, and valueHint"));
+        assertTrue(normalized.contains("distinct ITEM regions sharing one repeatGroupId"));
+        assertTrue(normalized.contains("coalesce those identical observations into one field"));
+        assertTrue(prompt.contains("VISUAL_BINDINGS_V2_COVERAGE_INVALID"));
+        assertTrue(prompt.contains("nearest eligible entity"));
+        assertFalse(prompt.matches("(?is).*\\b(bus|station|route|stop|fare)\\b.*"));
+        assertFalse(prompt.contains("公交"));
+        assertFalse(prompt.contains("站牌"));
+    }
+
+    @Test
     void visualV12PinsFieldSpecificEnumOwnershipAndAccumulatedRetryCorrections() {
         var prompt = new InferencePromptRegistry().requireVisualStage(
                 InferencePromptRegistry.VISUAL_ELEMENTS_V6,

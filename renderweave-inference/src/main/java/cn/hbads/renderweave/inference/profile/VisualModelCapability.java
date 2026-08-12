@@ -99,7 +99,8 @@ public record VisualModelCapability(
         Objects.requireNonNull(profile, "profile");
         var extendedRuntimeProduct = profile.profileId().endsWith("-product-v42-hybrid-generic")
                 || profile.profileId().endsWith("-product-v43-hybrid-generic")
-                || profile.profileId().endsWith("-product-v44-hybrid-generic");
+                || profile.profileId().endsWith("-product-v44-hybrid-generic")
+                || profile.profileId().endsWith("-product-v45-hybrid-generic");
         var requiredOutputTokens = extendedRuntimeProduct && advertisedMaximumOutputTokens != null
                 ? Math.min(16_384, advertisedMaximumOutputTokens)
                 : productMaximumOutputTokens;

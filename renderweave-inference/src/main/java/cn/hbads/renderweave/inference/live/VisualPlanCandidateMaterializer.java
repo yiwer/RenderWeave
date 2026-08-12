@@ -43,15 +43,30 @@ final class VisualPlanCandidateMaterializer {
             VisualElementBindingPlan bindings,
             int lowConfidenceThresholdBps
     ) {
+        return materialize(
+                runId, inventory, hierarchy, bindings, lowConfidenceThresholdBps,
+                VisualBindingFieldPolicy.UNIQUE_FIELD_KEYS
+        );
+    }
+
+    CandidateBundle materialize(
+            UUID runId,
+            VisualElementInventory inventory,
+            VisualHierarchyPlan hierarchy,
+            VisualElementBindingPlan bindings,
+            int lowConfidenceThresholdBps,
+            VisualBindingFieldPolicy fieldPolicy
+    ) {
         Objects.requireNonNull(runId, "runId");
         Objects.requireNonNull(inventory, "inventory");
         Objects.requireNonNull(hierarchy, "hierarchy");
         Objects.requireNonNull(bindings, "bindings");
+        Objects.requireNonNull(fieldPolicy, "fieldPolicy");
         if (lowConfidenceThresholdBps < 0 || lowConfidenceThresholdBps > 10_000) {
             throw new IllegalArgumentException("lowConfidenceThresholdBps must be 0..10000");
         }
         hierarchy.requireConsistentWith(inventory);
-        bindings.requireConsistentWith(inventory, hierarchy);
+        bindings.requireConsistentWith(inventory, hierarchy, fieldPolicy);
 
         var schemaIds = new HashMap<String, UUID>();
         for (var entity : hierarchy.entities()) {
@@ -79,7 +94,7 @@ final class VisualPlanCandidateMaterializer {
                 CandidateBundle.CONTRACT_VERSION, schemaIds.get(root.schemaKey()), schemas
         );
         var planProblems = new VisualPlanCandidateValidator().validate(
-                candidate, inventory, hierarchy, bindings
+                candidate, inventory, hierarchy, bindings, fieldPolicy
         );
         if (!planProblems.isEmpty()) {
             throw new IllegalStateException("Local visual materializer violated its validated plan");
@@ -97,9 +112,18 @@ final class VisualPlanCandidateMaterializer {
             int lowConfidenceThresholdBps
     ) {
         var fields = new ArrayList<CandidateField>();
+        var boundElements = new HashMap<String, List<VisualElement>>();
         for (var binding : bindings.bindings()) {
             if (!binding.entityId().equals(entity.entityId())) continue;
             var element = inventory.requireElement(binding.elementId());
+            boundElements.computeIfAbsent(element.proposedKey(), ignored -> new ArrayList<>())
+                    .add(element);
+        }
+        for (var entry : boundElements.entrySet()) {
+            var elements = entry.getValue().stream().sorted(Comparator
+                    .comparing((VisualElement value) -> value.evidence().getFirst(), EVIDENCE_ORDER)
+                    .thenComparing(VisualElement::elementId)).toList();
+            var element = elements.getFirst();
             fields.add(new CandidateField(
                     CandidateIds.field(
                             runId, "visual-schema/" + entity.schemaKey(), element.proposedKey()
@@ -109,7 +133,11 @@ final class VisualPlanCandidateMaterializer {
                     false,
                     slotValue(element),
                     CandidateSource.AI,
-                    assessment(canonicalEvidence(element.evidence()), lowConfidenceThresholdBps)
+                    assessment(
+                            canonicalEvidence(elements.stream()
+                                    .flatMap(value -> value.evidence().stream()).toList()),
+                            lowConfidenceThresholdBps
+                    )
             ));
         }
         for (var relationship : hierarchy.relationships()) {

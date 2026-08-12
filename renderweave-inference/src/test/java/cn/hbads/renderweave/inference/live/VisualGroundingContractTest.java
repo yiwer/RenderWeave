@@ -1622,6 +1622,40 @@ class VisualGroundingContractTest {
     }
 
     @Test
+    void coalescingPolicyRejectsEqualFieldsOutsideDistinctRepeatedItems() throws Exception {
+        var duplicatedTitle = elementsJson().replace(
+                "{\"elementId\":\"row-group\"",
+                "{\"elementId\":\"title-copy\",\"kind\":\"SLOT\"," +
+                        "\"proposedKey\":\"title\",\"displayName\":\"标题\"," +
+                        "\"multiplicity\":\"ONE\",\"valueHint\":\"TEXT\"," +
+                        "\"regionIds\":[\"header\"],\"evidence\":[{" +
+                        "\"viewId\":\"view-00-overview-00\",\"boundingBox\":{" +
+                        "\"left\":3200,\"top\":100,\"right\":6000,\"bottom\":700}}]}," +
+                        "{\"elementId\":\"row-group\""
+        );
+        var observed = codec.parseElements(duplicatedTitle, views(), List.of(IMAGE_ID));
+        var hierarchy = codec.parseHierarchy(
+                hierarchyJson(), observed.inventory(), observed.grounding()
+        );
+        var duplicatedBindings = bindingsJson().replace(
+                "{\"elementId\":\"title\",\"entityId\":\"document\"}",
+                "{\"elementId\":\"title\",\"entityId\":\"document\"}," +
+                        "{\"elementId\":\"title-copy\",\"entityId\":\"document\"}"
+        );
+
+        var failure = assertThrows(InvalidVisualAnalysisException.class, () ->
+                codec.parseBindings(
+                        duplicatedBindings, observed.inventory(), hierarchy.hierarchy(),
+                        observed.grounding(), hierarchy.entityRegions(),
+                        VisualBindingSemanticPolicy.NEAREST_ENTITY,
+                        VisualBindingFieldPolicy.COALESCE_IDENTICAL_OBSERVATIONS
+                )
+        );
+
+        assertEquals("VISUAL_BINDINGS_V2_COVERAGE_INVALID", failure.diagnosticCode());
+    }
+
+    @Test
     void minimalEntityRegionPolicyIsOptInAtTheHierarchyContractBoundary() throws Exception {
         var observed = codec.parseElements(elementsJson(), views(), List.of(IMAGE_ID));
         var redundant = hierarchyJson().replace(

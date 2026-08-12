@@ -60,7 +60,7 @@ function LiveLauncher({
   query: UseQueryResult<LiveAvailabilityResponse, Error>;
   onCreated: (runId: string) => void;
 }) {
-  const [profileId, setProfileId] = useState<LiveProfileId>('dashscope-qwen37-plus-product-v44-hybrid-generic');
+  const [profileId, setProfileId] = useState<LiveProfileId>('dashscope-qwen37-plus-product-v45-hybrid-generic');
   const [images, setImages] = useState<File[]>([]);
   const [jsonSamples, setJsonSamples] = useState<File[]>([]);
   const [transferConfirmed, setTransferConfirmed] = useState(false);

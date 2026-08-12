@@ -501,7 +501,7 @@ test('preflights a local upload queue while the deployment transfer gate is clos
   expect(livePosts).toBe(0);
 });
 
-test('offers the v44 image catalog with Plus selected and a five-yuan default run cost ceiling', async ({ page }) => {
+test('offers the v45 image catalog with Plus selected and a five-yuan default run cost ceiling', async ({ page }) => {
   let livePosts = 0;
   let multipartBody = '';
   await page.route('**/api/v1/inference-runs**', async (route) => {
@@ -518,7 +518,7 @@ test('offers the v44 image catalog with Plus selected and a five-yuan default ru
       multipartBody = request.postDataBuffer()?.toString('utf8') ?? '';
       await json(route, {
         ...runResponse(0, 'QUEUED'),
-        profileId: 'dashscope-qwen37-plus-product-v44-hybrid-generic',
+        profileId: 'dashscope-qwen37-plus-product-v45-hybrid-generic',
         sourceReference: 'user-upload',
         costLimitMicrosCny: 250000,
       }, 201);
@@ -556,7 +556,7 @@ test('offers the v44 image catalog with Plus selected and a five-yuan default ru
   expect(multipartBody).toContain('"costLimitMicrosCny":250000');
 });
 
-test('blocks v44 before queueing when the exact local vision capability is unavailable', async ({ page }) => {
+test('blocks v45 before queueing when the exact local vision capability is unavailable', async ({ page }) => {
   let livePosts = 0;
   await page.route('**/api/v1/inference-runs**', async (route) => {
     const request = route.request();
@@ -920,9 +920,9 @@ function liveAvailability(enabled = false) {
     runCostLimitRequired: true,
     maximumRunCostLimitMicrosCny: 5000000,
     profiles: [
-      profile('dashscope-qwen37-plus-product-v44-hybrid-generic', 'qwen3.7-plus', ['IMAGE_ONLY']),
-      profile('dashscope-qwen38-max-product-v44-hybrid-generic', 'qwen3.8-max', ['IMAGE_ONLY'], 8192),
-      profile('dashscope-qwen37-flash-product-v44-hybrid-generic', 'qwen3.7-flash', ['IMAGE_ONLY']),
+      profile('dashscope-qwen37-plus-product-v45-hybrid-generic', 'qwen3.7-plus', ['IMAGE_ONLY']),
+      profile('dashscope-qwen38-max-product-v45-hybrid-generic', 'qwen3.8-max', ['IMAGE_ONLY'], 8192),
+      profile('dashscope-qwen37-flash-product-v45-hybrid-generic', 'qwen3.7-flash', ['IMAGE_ONLY']),
     ],
   };
 }

@@ -974,3 +974,14 @@ Document Vision 返回 0 行；显式 BGR 解码后，两张指定图分别为 3
 不自动创建数组。adapter 1/1、verifier/Profile/Prompt 29/29、真实 PostgreSQL 四调用回归 1/1、
 API/policy/evidence 21/21、Node 24 Web 73/73 与开发工作树 full `20260812-121427-full` 10/10 已通过。
 live 前仍需提交后的 exact-clean full/Document Vision、fresh identity/snapshot 与精确边界记录。
+
+### product-v45 重复实例字段观测聚合
+
+v44 首个真实 run 已把嵌套结构恢复到 OBSERVE/HIERARCHY：24 elements、1 个 MANY group、2 entities、
+1 条 MANY relationship；随后 ELEMENT_BINDING 因 14 个同语义重复实例 SLOT 共享字段 key 而连续失败。
+旧合同同时要求完整 SLOT 覆盖与实体字段 key 唯一，导致不存在合法 Provider 响应。
+
+修复采用 additive immutable v45/Binding Prompt 4：所有 SLOT 仍逐一绑定；同一实体、同一重复组的互异
+ITEM 内，只有 key、显示名、基数和值类型完全一致的重复观测可由本地 materializer 聚合为一个字段并合并有界 evidence。旧 Profile、
+relationship key 冲突和不兼容观测保持严格。单元 31/31 与真实 PostgreSQL 新回归 1/1 已通过；待完成
+API/Web、exact-clean full/Document Vision 后，按剩余授权预算绑定精确 v45 J1 并复验指定图片。

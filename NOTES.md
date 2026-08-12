@@ -952,3 +952,12 @@
 - 已通过 adapter 1/1、verifier/Profile/Prompt 29/29、真实 PostgreSQL workflow 1/1、API/policy/evidence
   21/21 与 Node 24 Web 73/73。开发工作树 full `20260812-121427-full` 10/10 PASS；浏览器审计统一改用
   pinned Python Playwright 1.62.0。待提交后的 exact-clean full/Document Vision 后重启 live 并追加指定图结构证据。
+
+### product-v45 重复实例字段聚合修复
+
+- v44 真实调用已恢复嵌套计划，但 binding 阶段发现 14 个重复实例 SLOT 映射到同一 child 字段；旧的
+  完整 SLOT 覆盖与实体字段 key 唯一规则组合无解，导致固定 coverage 诊断重复到调用上限。
+- 新增 immutable product-v45 + Binding Prompt 4；每个 SLOT 仍逐一绑定，仅将同实体、同一重复组的互异
+  ITEM 且字段语义完全一致的重复实例观测确定性聚合为一个 Candidate field，合并有界 evidence。v44 及更早 snapshot 不变。
+- 核心 31/31 与 PostgreSQL 三阶段工作流 1/1 已通过，后者确认 root + child 两个 Schema、根 MANY array
+  reference、child 单字段与两份 evidence。API/Web/full/Document Vision 和真实图片复验继续推进。
