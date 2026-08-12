@@ -14,6 +14,8 @@ import java.util.TreeSet;
 
 /** Deterministic micro-aggregator; ratios are always derived from summed sufficient statistics. */
 public final class LayeredEvaluationReporter {
+    public static final String VERSION = "renderweave-layered-reporter/1.0";
+
     public LayeredEvaluationReport report(
             LayeredVisualCorpus corpus,
             LayeredEvaluationIdentity identity,
@@ -267,7 +269,8 @@ public final class LayeredEvaluationReporter {
                 || !corpus.annotationSetIdentity().equals(values.get("annotationSetIdentity"))
                 || !corpus.renderContractIdentity().equals(values.get("normalizationRenderIdentity"))
                 || !values.get("evaluatorIdentity").startsWith(LayeredVisualEvaluator.VERSION + ":")
-                || !"budget-zero-provider/1.0".equals(values.get("budgetIdentity"))) {
+                || !values.get("budgetIdentity")
+                .matches("renderweave-zero-provider-budget/1\\.0:[0-9a-f]{64}")) {
             throw new IllegalArgumentException("LAYERED_REPORT_EVALUATION_IDENTITY_MISMATCH");
         }
     }

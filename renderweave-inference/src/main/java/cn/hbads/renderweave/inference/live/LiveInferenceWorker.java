@@ -1468,6 +1468,30 @@ public final class LiveInferenceWorker {
                 : VisualBindingFieldPolicy.UNIQUE_FIELD_KEYS;
     }
 
+    static EvaluationPolicySnapshot evaluationPolicySnapshot(InferenceProfile profile) {
+        return new EvaluationPolicySnapshot(List.of(
+                relationshipCardinalityPolicy(profile).name(),
+                hierarchyPrerequisitePolicy(profile).name(),
+                hierarchyRegionDiagnosticPolicy(profile).name(),
+                relationshipSupportIdPolicy(profile).name(),
+                relationshipRegionPolicy(profile).name(),
+                observationNormalizationPolicy(profile).name(),
+                observationSemanticPolicy(profile).name(),
+                hierarchySemanticPolicy(profile).name(),
+                bindingSemanticPolicy(profile).name()),
+                bindingFieldPolicy(profile).name());
+    }
+
+    record EvaluationPolicySnapshot(
+            List<String> validatorPolicyNames,
+            String bindingFieldPolicyName
+    ) {
+        EvaluationPolicySnapshot {
+            validatorPolicyNames = List.copyOf(validatorPolicyNames);
+            Objects.requireNonNull(bindingFieldPolicyName, "bindingFieldPolicyName");
+        }
+    }
+
     private static Map<String, Integer> observationTelemetry(GroundedElementInventory grounded) {
         var telemetry = new java.util.TreeMap<String, Integer>();
         if (grounded.normalizedRegionKinds() > 0) {

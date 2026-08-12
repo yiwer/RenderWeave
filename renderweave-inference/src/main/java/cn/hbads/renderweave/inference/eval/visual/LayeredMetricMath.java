@@ -11,6 +11,8 @@ import java.util.Set;
 
 /** Frozen integer-only metric primitives shared by the Java R1 scorer contract, not its Python implementation. */
 public final class LayeredMetricMath {
+    public static final String VERSION = "renderweave-layered-metric-math/1.0";
+
     private LayeredMetricMath() { }
 
     public static EditCounts characters(String reference, String prediction) {

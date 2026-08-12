@@ -131,7 +131,7 @@ class LayeredEvaluationReporterTest {
                 "stage-shape-catalog/1.0:" + sha, "scripted-replay/1.0:" + sha,
                 "prompt-set-v45:" + sha, "visual-validator/1.0:" + sha,
                 "candidate-materializer/1.0:" + sha, LayeredVisualEvaluator.VERSION + ":" + sha,
-                "budget-zero-provider/1.0", "deterministic-json-object/1.0");
+                "renderweave-zero-provider-budget/1.0:" + sha, "deterministic-json-object/1.0");
     }
 
     private static LayeredEvaluationRecord replaceRuntime(

@@ -161,7 +161,7 @@ class LayeredEvaluationContractsTest {
                 "visual-validator/1.0:" + SHA_A,
                 "candidate-materializer/1.0:" + SHA_A,
                 "layered-evaluator/1.0:" + SHA_A,
-                "budget-zero-provider/1.0",
+                "renderweave-zero-provider-budget/1.0:" + SHA_A,
                 "deterministic-json-object/1.0");
     }
 

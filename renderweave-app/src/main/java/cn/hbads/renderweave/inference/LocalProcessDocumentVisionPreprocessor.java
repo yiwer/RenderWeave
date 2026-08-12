@@ -7,6 +7,7 @@ import cn.hbads.renderweave.inference.vision.DocumentVisionArtifact;
 import cn.hbads.renderweave.inference.vision.DocumentVisionCapability;
 import cn.hbads.renderweave.inference.vision.DocumentVisionException;
 import cn.hbads.renderweave.inference.vision.DocumentVisionObservation;
+import cn.hbads.renderweave.inference.vision.RapidOcrBaselineContract;
 import cn.hbads.renderweave.inference.vision.DocumentVisionPreprocessor;
 import cn.hbads.renderweave.inference.vision.DocumentObservationIR;
 import cn.hbads.renderweave.inference.vision.VisualEvidenceAcquisitionException;
@@ -39,27 +40,27 @@ import java.util.concurrent.Executors;
 final class LocalProcessDocumentVisionPreprocessor
         implements ConfiguredVisualEvidenceAcquisition {
     static final String EXPECTED_CAPABILITY_ID =
-            "rapidocr-3.9.2-openvino-2026.0.0-ppocrv6-small-c05805399d7d10b1";
-    static final String EXPECTED_ENGINE = "rapidocr-openvino-ppocrv6-small";
-    static final String EXPECTED_ENGINE_VERSION = "rapidocr-3.9.2+openvino-2026.0.0";
+            RapidOcrBaselineContract.CAPABILITY_IDENTITY;
+    static final String EXPECTED_ENGINE = RapidOcrBaselineContract.ENGINE;
+    static final String EXPECTED_ENGINE_VERSION = RapidOcrBaselineContract.ENGINE_VERSION;
     static final String EXPECTED_MODEL_MANIFEST_SHA256 =
-            "c05805399d7d10b1d1e32f2f52faf2a9fe6617db50f6b96221cb3b7be47e58a5";
+            RapidOcrBaselineContract.MODEL_MANIFEST_SHA256;
     static final String PROCESS_CAPABILITY_VERSION =
             "renderweave-document-vision-process-capability/1.0";
     static final String REQUEST_VERSION = "renderweave-document-vision-request/1.0";
     static final String RESPONSE_VERSION = "renderweave-document-vision-response/1.0";
     static final int MAX_REQUEST_BYTES = 42 * 1024 * 1024;
-    static final int MAX_RESPONSE_BYTES = 512 * 1024;
-    static final String ADAPTER_IDENTITY = "rapidocr-local-process/1.0";
-    static final String PREPROCESSING_IDENTITY = "explicit-bgr/1.0";
-    static final String POSTPROCESSING_IDENTITY = "rapidocr-lines/1.0";
-    static final String COORDINATE_SPACE_IDENTITY = "source-pixel-top-left/1.0";
-    static final String BOX_SEMANTICS_IDENTITY = "half-open-box/1.0";
-    static final String PROJECTION_IDENTITY = "v45-source-to-candidate/1.0";
-    static final String READING_ORDER_IDENTITY = "top-left-canonical/1.0";
-    static final String CANONICALIZATION_IDENTITY = "unicode-nfc-whitespace-collapse/1.0";
-    static final String CONFIDENCE_SCALE_IDENTITY = "basis-points/1.0";
-    static final String CONFIDENCE_BUCKET_IDENTITY = "v45-confidence-buckets/1.0";
+    static final int MAX_RESPONSE_BYTES = RapidOcrBaselineContract.MAXIMUM_RESPONSE_BYTES;
+    static final String ADAPTER_IDENTITY = RapidOcrBaselineContract.ADAPTER_IDENTITY;
+    static final String PREPROCESSING_IDENTITY = RapidOcrBaselineContract.PREPROCESSING_IDENTITY;
+    static final String POSTPROCESSING_IDENTITY = RapidOcrBaselineContract.POSTPROCESSING_IDENTITY;
+    static final String COORDINATE_SPACE_IDENTITY = RapidOcrBaselineContract.COORDINATE_SPACE_IDENTITY;
+    static final String BOX_SEMANTICS_IDENTITY = RapidOcrBaselineContract.BOX_SEMANTICS_IDENTITY;
+    static final String PROJECTION_IDENTITY = RapidOcrBaselineContract.PROJECTION_IDENTITY;
+    static final String READING_ORDER_IDENTITY = RapidOcrBaselineContract.READING_ORDER_IDENTITY;
+    static final String CANONICALIZATION_IDENTITY = RapidOcrBaselineContract.CANONICALIZATION_IDENTITY;
+    static final String CONFIDENCE_SCALE_IDENTITY = RapidOcrBaselineContract.CONFIDENCE_SCALE_IDENTITY;
+    static final String CONFIDENCE_BUCKET_IDENTITY = RapidOcrBaselineContract.CONFIDENCE_BUCKET_IDENTITY;
 
     private static final ObjectMapper JSON = JsonMapper.builder(
                     JsonFactory.builder().enable(StreamReadFeature.STRICT_DUPLICATE_DETECTION).build())
@@ -423,31 +424,13 @@ final class LocalProcessDocumentVisionPreprocessor
             DocumentVisionCapability capability,
             Duration timeout
     ) {
-        return new AcquisitionPolicy(
-                AcquisitionPolicy.VERSION,
-                DocumentObservationIR.VERSION,
-                capability.capabilityId(),
-                ADAPTER_IDENTITY,
-                capability.engine(),
-                capability.engineVersion(),
-                capability.modelManifestSha256(),
-                PREPROCESSING_IDENTITY,
-                POSTPROCESSING_IDENTITY,
-                COORDINATE_SPACE_IDENTITY,
-                BOX_SEMANTICS_IDENTITY,
-                PROJECTION_IDENTITY,
-                READING_ORDER_IDENTITY,
-                CANONICALIZATION_IDENTITY,
-                CONFIDENCE_SCALE_IDENTITY,
-                CONFIDENCE_BUCKET_IDENTITY,
-                AcquisitionPolicy.TextExposure.EPHEMERAL_STAGE_CONTEXT_ONLY,
-                DocumentVisionObservation.MAX_ARTIFACTS,
-                DocumentVisionObservation.MAX_LINES,
-                DocumentVisionObservation.MAX_LINE_TEXT_BYTES,
-                DocumentVisionObservation.MAX_TOTAL_TEXT_BYTES,
-                MAX_RESPONSE_BYTES,
-                Math.toIntExact(timeout.toMillis())
-        );
+        if (!RapidOcrBaselineContract.CAPABILITY_IDENTITY.equals(capability.capabilityId())
+                || !RapidOcrBaselineContract.ENGINE.equals(capability.engine())
+                || !RapidOcrBaselineContract.ENGINE_VERSION.equals(capability.engineVersion())
+                || !RapidOcrBaselineContract.MODEL_MANIFEST_SHA256.equals(capability.modelManifestSha256())) {
+            throw new DocumentVisionException("DOCUMENT_VISION_CAPABILITY_MISMATCH");
+        }
+        return RapidOcrBaselineContract.policy(Math.toIntExact(timeout.toMillis()));
     }
 
     private static DocumentObservationIR.Provenance provenance(AcquisitionPolicy policy) {

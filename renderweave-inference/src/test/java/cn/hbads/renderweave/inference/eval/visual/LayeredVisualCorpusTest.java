@@ -37,10 +37,10 @@ class LayeredVisualCorpusTest {
         assertEquals("07958d0e968a9f1b7b64dea509d4b8398a112bf1d6e222aa20f35be59d97fe13",
                 corpus.manifestSha256());
         assertEquals("renderweave-visual-stage-corpus/2.0:"
-                        + "57b6b464adb1640ddd6a8bb75fdd64a1dbb9e827ffc36bd4cdc79a5b73b6babb",
+                        + "c596621eb680e7e10d42d2e1d1f926995cec9716cc6ef83a96a50ad53adc285c",
                 corpus.corpusIdentity());
         assertEquals("renderweave-layered-annotation-set/2.0:"
-                        + "294a59469e8840da09c5fd5496f24506d111674ffa569e74bfe47d37ceefb1ef",
+                        + "a6f7796d0433bb59779a3e1b99fa3c20b3e49148d24eb69dfe17682414fa746a",
                 corpus.annotationSetIdentity());
 
         assertEquals(V1_SOURCE_SHA, sha256(resource(V1_SOURCE)));

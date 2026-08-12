@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-    [ValidateSet('fast', 'server', 'web', 'eval', 'e2e', 'draft-e2e', 'inference-e2e', 'compose', 'runtime', 'document-vision', 'observation-r0', 'capacity', 'full')]
+    [ValidateSet('fast', 'server', 'web', 'eval', 'e2e', 'draft-e2e', 'inference-e2e', 'compose', 'runtime', 'document-vision', 'observation-r0', 'layered-r1', 'capacity', 'full')]
     [string]$Gate = 'fast'
 )
 
@@ -111,8 +111,9 @@ try {
         'runtime' { @('runtime-canary') }
         'document-vision' { @('document-vision-adapter-tests', 'document-vision-canary') }
         'observation-r0' { @('document-observation-r0') }
+        'layered-r1' { @('layered-evaluation-r1') }
         'capacity' { @('capacity-baseline') }
-        'full' { @('repository-diff', 'server-verify', 'web-node24', 'offline-eval', 'compose-config', 'runtime-canary', 'document-vision-adapter-tests', 'prototype-e2e', 'draft-browser-e2e', 'inference-browser-e2e') }
+        'full' { @('repository-diff', 'server-verify', 'web-node24', 'offline-eval', 'layered-evaluation-r1', 'compose-config', 'runtime-canary', 'document-vision-adapter-tests', 'prototype-e2e', 'draft-browser-e2e', 'inference-browser-e2e') }
     }
 
     foreach ($step in $requestedSteps) {
@@ -189,6 +190,19 @@ try {
                     Invoke-ZeroPaidAiCommand $command
                     if ($LASTEXITCODE -eq 0 -and -not (Test-Path -LiteralPath $reportPath -PathType Leaf)) {
                         throw 'Document observation R0 gate completed without producing its report.'
+                    }
+                }
+            }
+            'layered-evaluation-r1' {
+                Invoke-GateStep $step {
+                    $command = 'powershell.exe -NoProfile -ExecutionPolicy Bypass ' +
+                        '-File tools\run-layered-evaluation-r1.ps1 -EvidenceDir "' +
+                        $evidenceDir + '"'
+                    Invoke-ZeroPaidAiCommand $command
+                    $independentSummary = Join-Path $evidenceDir 'layered-r1-independent-summary.json'
+                    if ($LASTEXITCODE -eq 0 -and -not (
+                            Test-Path -LiteralPath $independentSummary -PathType Leaf)) {
+                        throw 'Layered R1 gate completed without producing its independent summary.'
                     }
                 }
             }

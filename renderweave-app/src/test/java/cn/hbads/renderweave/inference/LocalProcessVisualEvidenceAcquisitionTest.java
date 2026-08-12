@@ -5,6 +5,7 @@ import cn.hbads.renderweave.inference.vision.ArtifactSet;
 import cn.hbads.renderweave.inference.vision.DocumentObservationCompatibilityProjection;
 import cn.hbads.renderweave.inference.vision.DocumentObservationIR;
 import cn.hbads.renderweave.inference.vision.DocumentVisionArtifact;
+import cn.hbads.renderweave.inference.vision.RapidOcrBaselineContract;
 import cn.hbads.renderweave.inference.vision.VisualEvidenceAcquisition;
 import cn.hbads.renderweave.inference.vision.VisualEvidenceAcquisitionException;
 import org.junit.jupiter.api.Test;
@@ -60,6 +61,7 @@ class LocalProcessVisualEvidenceAcquisitionTest {
         var ir = adapter.acquire(artifacts, adapter.acquisitionPolicy());
 
         assertInstanceOf(VisualEvidenceAcquisition.class, adapter);
+        assertEquals(RapidOcrBaselineContract.policy(10_000), adapter.acquisitionPolicy());
         assertEquals(DocumentObservationIR.VERSION, ir.contractVersion());
         assertEquals(adapter.acquisitionPolicy().identity(), ir.acquisitionPolicyIdentity());
         assertEquals(List.of(FIRST_ARTIFACT, SECOND_ARTIFACT),

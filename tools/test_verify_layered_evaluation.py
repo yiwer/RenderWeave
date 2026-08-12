@@ -101,6 +101,16 @@ class LayeredEvaluationVerifierTest(unittest.TestCase):
         self.assertEqual("PASS", summary["result"])
         self.assertEqual(60, summary["caseCount"])
         self.assertEqual({"DEV": 45, "HOLDOUT": 15}, summary["partitions"])
+        self.assertRegex(
+            summary["recomputedMetricsIdentity"],
+            r"^renderweave-layered-recomputed-metrics/1\.0:[0-9a-f]{64}$",
+        )
+        self.assertRegex(
+            summary["caseAssignmentIdentity"],
+            r"^renderweave-layered-case-assignment/1\.0:[0-9a-f]{64}$",
+        )
+        self.assertEqual(22, summary["sliceAggregateCount"])
+        self.assertEqual(60, sum(summary["difficulties"].values()))
         self.assertEqual(0, summary["providerAttempts"])
         self.assertEqual(0, summary["providerReservations"])
         self.assertEqual(0, summary["externalProviderCostMicrosCny"])
@@ -270,7 +280,7 @@ def make_envelope() -> dict[str, object]:
         "validatorIdentity": identity("validator"),
         "materializerIdentity": identity("materializer"),
         "evaluatorIdentity": identity("evaluator"),
-        "budgetIdentity": "budget-zero-provider/1.0",
+        "budgetIdentity": "renderweave-zero-provider-budget/1.0:" + "a" * 64,
         "decodingModeIdentity": "deterministic-json-object/1.0",
     }
     aggregate = VERIFIER.aggregate_records

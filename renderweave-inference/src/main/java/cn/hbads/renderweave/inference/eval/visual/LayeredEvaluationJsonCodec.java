@@ -3,6 +3,7 @@ package cn.hbads.renderweave.inference.eval.visual;
 import tools.jackson.core.StreamReadFeature;
 import tools.jackson.core.json.JsonFactory;
 import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.MapperFeature;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.SerializationFeature;
@@ -77,10 +78,26 @@ public final class LayeredEvaluationJsonCodec {
 
     private static byte[] write(Object value) {
         try {
-            return JSON.writeValueAsBytes(value);
+            return JSON.writeValueAsBytes(canonicalNode(JSON.valueToTree(value)));
         } catch (RuntimeException failure) {
             throw new IllegalArgumentException("LAYERED_EVALUATION_ENCODING_FAILED", failure);
         }
+    }
+
+    private static JsonNode canonicalNode(JsonNode source) {
+        if (source.isObject()) {
+            var result = JSON.createObjectNode();
+            var properties = new java.util.ArrayList<>(source.properties());
+            properties.sort(java.util.Map.Entry.comparingByKey());
+            properties.forEach(property -> result.set(property.getKey(), canonicalNode(property.getValue())));
+            return result;
+        }
+        if (source.isArray()) {
+            var result = JSON.createArrayNode();
+            source.forEach(item -> result.add(canonicalNode(item)));
+            return result;
+        }
+        return source;
     }
 
     private static <T> T read(byte[] bytes, Class<T> type, String code) {

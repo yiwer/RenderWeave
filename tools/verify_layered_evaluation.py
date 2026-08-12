@@ -18,6 +18,8 @@ RECORD_VERSION = "renderweave-layered-evaluation-record/1.0"
 EVALUATION_VERSION = "renderweave-layered-evaluation/1.0"
 RECORD_SET_VERSION = "renderweave-layered-record-set/1.0"
 VERIFIER_VERSION = "renderweave-layered-python-verifier/1.0"
+RECOMPUTED_METRICS_VERSION = "renderweave-layered-recomputed-metrics/1.0"
+CASE_ASSIGNMENT_VERSION = "renderweave-layered-case-assignment/1.0"
 
 REGION_KINDS = ("TITLE", "SLOT", "GROUP", "REPEATED_GROUP", "ITEM")
 PARTITIONS = ("DEV", "HOLDOUT")
@@ -657,7 +659,10 @@ def verify_envelope(envelope: Any) -> dict[str, Any]:
         fail("CORPUS_IDENTITY_DRIFT")
     if report["annotationSetIdentity"] != components["annotationSetIdentity"]:
         fail("ANNOTATION_IDENTITY_DRIFT")
-    if components["budgetIdentity"] != "budget-zero-provider/1.0":
+    if not re.fullmatch(
+        r"renderweave-zero-provider-budget/1\.0:[0-9a-f]{64}",
+        components["budgetIdentity"],
+    ):
         fail("BUDGET_IDENTITY_INVALID")
 
     entries = require_list(report["records"], "RECORDS")
@@ -702,15 +707,51 @@ def verify_envelope(envelope: Any) -> dict[str, Any]:
     if domain_counts != {"generic": 55, "transit-board": 5}:
         fail("DOMAIN_ACCOUNTING_INVALID")
 
-    _require_equal(report["global"], aggregate_records(records), "GLOBAL_AGGREGATE_DRIFT")
-    _verify_slices(report["partitions"], PARTITIONS, records,
-                   lambda item, value: item["partition"] == value, "PARTITION")
-    _verify_slices(report["domains"], tuple(domain_counts), records,
-                   lambda item, value: item["domain"] == value, "DOMAIN")
-    _verify_slices(report["difficulties"], DIFFICULTIES, records,
-                   lambda item, value: item["difficulty"] == value, "DIFFICULTY")
-    _verify_slices(report["failureSlices"], FAILURE_SLICES, records,
-                   lambda item, value: value in item["failureSlices"], "FAILURE")
+    recomputed_global = aggregate_records(records)
+    _require_equal(report["global"], recomputed_global, "GLOBAL_AGGREGATE_DRIFT")
+    recomputed_partitions = _verify_slices(
+        report["partitions"], PARTITIONS, records,
+        lambda item, value: item["partition"] == value, "PARTITION",
+    )
+    recomputed_domains = _verify_slices(
+        report["domains"], tuple(domain_counts), records,
+        lambda item, value: item["domain"] == value, "DOMAIN",
+    )
+    recomputed_difficulties = _verify_slices(
+        report["difficulties"], DIFFICULTIES, records,
+        lambda item, value: item["difficulty"] == value, "DIFFICULTY",
+    )
+    recomputed_failures = _verify_slices(
+        report["failureSlices"], FAILURE_SLICES, records,
+        lambda item, value: value in item["failureSlices"], "FAILURE",
+    )
+
+    recomputed_metrics = {
+        "global": recomputed_global,
+        "partitions": recomputed_partitions,
+        "domains": recomputed_domains,
+        "difficulties": recomputed_difficulties,
+        "failureSlices": recomputed_failures,
+    }
+    metrics_identity = (
+        f"{RECOMPUTED_METRICS_VERSION}:"
+        f"{_hash_bytes(canonical_json(recomputed_metrics))}"
+    )
+    assignments = [
+        {
+            "caseId": item["caseId"],
+            "caseIdentity": item["caseIdentity"],
+            "partition": item["partition"],
+            "domain": item["domain"],
+            "difficulty": item["difficulty"],
+            "failureSlices": item["failureSlices"],
+        }
+        for item in records
+    ]
+    assignment_identity = (
+        f"{CASE_ASSIGNMENT_VERSION}:"
+        f"{_hash_bytes(canonical_json(assignments))}"
+    )
 
     serialized = canonical_json(envelope).decode("utf-8")
     scan_payload_free(serialized, "REPORT")
@@ -727,10 +768,26 @@ def verify_envelope(envelope: Any) -> dict[str, Any]:
         "reportIdentity": expected_report_identity,
         "evaluationIdentity": report["evaluationIdentity"],
         "corpusIdentity": report["corpusIdentity"],
+        "annotationSetIdentity": report["annotationSetIdentity"],
+        "recordSetIdentity": report["recordSetIdentity"],
+        "caseAssignmentIdentity": assignment_identity,
+        "recomputedMetricsIdentity": metrics_identity,
         "caseCount": 60,
         "partitions": partition_counts,
         "domains": domain_counts,
+        "difficulties": {
+            value: sum(1 for item in records if item["difficulty"] == value)
+            for value in DIFFICULTIES
+        },
+        "failureSlices": {
+            value: sum(1 for item in records if value in item["failureSlices"])
+            for value in FAILURE_SLICES
+        },
         "metricCount": len(report["global"]["metricsBps"]),
+        "sliceAggregateCount": (
+            len(recomputed_partitions) + len(recomputed_domains)
+            + len(recomputed_difficulties) + len(recomputed_failures)
+        ),
         "providerAttempts": 0,
         "providerReservations": 0,
         "externalProviderCostMicrosCny": 0,
@@ -965,12 +1022,15 @@ def _validate_binary(value: dict[str, Any], name: str) -> None:
 def _verify_slices(
         raw: Any, keys: Sequence[str], records: list[dict[str, Any]],
         predicate: Any, name: str,
-) -> None:
+) -> dict[str, dict[str, Any]]:
     value = require_object(raw, f"{name}_SLICES")
     require_keys(value, keys, f"{name}_SLICES")
+    result: dict[str, dict[str, Any]] = {}
     for key in keys:
         expected = aggregate_records([item for item in records if predicate(item, key)])
         _require_equal(value[key], expected, f"{name}_SLICE_DRIFT:{key}")
+        result[key] = expected
+    return result
 
 
 def _require_equal(actual: Any, expected: Any, code: str) -> None:

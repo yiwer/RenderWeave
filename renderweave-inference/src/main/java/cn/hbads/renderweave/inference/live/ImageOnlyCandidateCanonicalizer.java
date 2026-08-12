@@ -27,6 +27,7 @@ import java.util.UUID;
  * A multi-box family that demonstrably uses artifact pixels is converted to the Candidate 0..10000 contract.
  */
 final class ImageOnlyCandidateCanonicalizer {
+    static final String VERSION = "renderweave-image-only-candidate-canonicalizer/1.0";
 
     InventoryResult canonicalize(
             VisualElementInventory inventory,
