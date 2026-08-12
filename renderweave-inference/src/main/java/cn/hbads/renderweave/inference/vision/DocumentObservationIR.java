@@ -218,10 +218,8 @@ public final class DocumentObservationIR {
 
         @Override
         public String toString() {
-            return "TextLine[observationId=" + observationId + ", canonicalOrder=" + canonicalOrder
-                    + ", sourcePixelBox=" + sourcePixelBox + ", confidence=" + confidence
-                    + ", text=<redacted:" + text.getBytes(StandardCharsets.UTF_8).length
-                    + ">, sensitivity=" + sensitivity + "]";
+            return "TextLine[textBytes=" + text.getBytes(StandardCharsets.UTF_8).length
+                    + ", sensitivity=" + sensitivity + ", payload=<redacted>]";
         }
     }
 

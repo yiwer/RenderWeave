@@ -16,6 +16,7 @@ from typing import Any, Iterable, Mapping, Sequence
 GATE_VERSION = "renderweave-layered-r1-gate/1.0"
 SCANNER_VERSION = "renderweave-layered-evidence-scanner/1.0"
 INDEPENDENT_VERSION = "renderweave-layered-r1-independent-verifier/1.0"
+R0_PROOF_VERSION = "renderweave-layered-r0-prerequisite-proof/1.0"
 ANCHOR_REVISION = "19e22854e0be236d0068336a32969356a6befaf8"
 
 PRIMARY_SEAM = "normalized ArtifactSet + AcquisitionPolicy -> DocumentObservationIR/1.0"
@@ -89,6 +90,19 @@ def _load_layered_verifier():
 
 
 LAYERED = _load_layered_verifier()
+
+
+def _load_r0_verifier():
+    path = pathlib.Path(__file__).with_name("verify_document_observation_r0.py")
+    spec = importlib.util.spec_from_file_location("renderweave_document_observation_r0_for_r1", path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError("R0 verifier cannot be loaded")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+R0 = _load_r0_verifier()
 
 
 class GateVerificationError(Exception):
@@ -220,16 +234,45 @@ def _verify_payloads(summary: dict[str, Any], payloads: Mapping[str, bytes]) -> 
         fail("EVIDENCE_FILE_SET_INVALID")
 
 
+def verify_r0_report(path: pathlib.Path, repository: pathlib.Path) -> dict[str, Any]:
+    try:
+        R0.verify(path, repository)
+        raw = path.read_bytes()
+        document = LAYERED.parse_strict_json(raw.decode("utf-8"))
+    except (OSError, UnicodeError, R0.VerificationError, LAYERED.VerificationError):
+        fail("R0_PREREQUISITE_VERIFICATION_FAILED")
+    document = _require_object(document, "R0_PREREQUISITE_VERIFICATION_FAILED")
+    try:
+        revision = document["revision"]
+        terminal = document["behaviorOracle"]["terminalState"]
+        provider = document["externalProvider"]
+    except (KeyError, TypeError):
+        fail("R0_PREREQUISITE_VERIFICATION_FAILED")
+    return {
+        "proofVersion": R0_PROOF_VERSION,
+        "result": "PASS",
+        "assurance": "A2_STRICT_INPUT_REPLAY",
+        "reportFile": path.name,
+        "reportSha256": _sha256(raw),
+        "revision": revision,
+        "terminalState": terminal,
+        "providerAttempts": provider.get("attempts") if type(provider) is dict else None,
+        "providerReservations": provider.get("reservations") if type(provider) is dict else None,
+        "externalProviderCostMicrosCny": provider.get("costMicrosCny") if type(provider) is dict else None,
+    }
+
+
 def verify_documents(
         envelope: Any,
         claimed_independent: Any,
         gate_summary: Any,
         repository: pathlib.Path,
         evidence_payloads: Mapping[str, bytes],
+        r0_verification: Mapping[str, Any],
 ) -> dict[str, Any]:
     repository = repository.resolve(strict=True)
     try:
-        recomputed = LAYERED.verify_envelope(envelope)
+        recomputed = LAYERED.verify_envelope(envelope, repository)
     except LAYERED.VerificationError as exc:
         fail(f"LAYERED_REPORT_INVALID:{exc}")
     claimed = _require_object(claimed_independent, "INDEPENDENT_SUMMARY_INVALID")
@@ -241,7 +284,7 @@ def verify_documents(
         "reportVersion", "result", "assurance", "anchorRevision", "revision",
         "seams", "architecture", "scope", "identities", "crossLanguage",
         "caseAccounting", "externalProvider", "historicalBytes", "lifecycle",
-        "futureEvidenceGates", "visualDiff", "payloadScan",
+        "r0Prerequisite", "futureEvidenceGates", "visualDiff", "payloadScan",
     ), "GATE_SUMMARY_FIELDS_INVALID")
     _require_exact(summary["reportVersion"], GATE_VERSION, "GATE_VERSION_INVALID")
     _require_exact(summary["result"], "passed", "GATE_RESULT_INVALID")
@@ -274,10 +317,30 @@ def verify_documents(
         "dataAdaptation": False,
         "publishing": False,
     }, "GATE_SCOPE_INVALID")
+    r0_report_sha = r0_verification.get("reportSha256")
+    if type(r0_report_sha) is not str or not SHA256.fullmatch(r0_report_sha):
+        fail("R0_PREREQUISITE_INVALID")
+    expected_r0 = {
+        "proofVersion": R0_PROOF_VERSION,
+        "result": "PASS",
+        "assurance": "A2_STRICT_INPUT_REPLAY",
+        "reportFile": "document-observation-r0-summary.json",
+        "reportSha256": r0_report_sha,
+        "revision": revision,
+        "terminalState": "REVIEW_REQUIRED",
+        "providerAttempts": 0,
+        "providerReservations": 0,
+        "externalProviderCostMicrosCny": 0,
+    }
+    if dict(r0_verification) != expected_r0 or summary["r0Prerequisite"] != expected_r0:
+        fail("R0_PREREQUISITE_INVALID")
+    if expected_r0["reportFile"] not in evidence_payloads:
+        fail("R0_PREREQUISITE_EVIDENCE_MISSING")
 
     identity_keys = (
         "reportIdentity", "evaluationIdentity", "corpusIdentity", "annotationSetIdentity",
         "recordSetIdentity", "caseAssignmentIdentity", "recomputedMetricsIdentity",
+        "corpusLockIdentity",
     )
     _require_exact(summary["identities"], {
         key: recomputed[key] for key in identity_keys
@@ -350,6 +413,7 @@ def verify_documents(
         "protectedManifestIdentity": protected_identity,
         "productV45Lifecycle": "EXPERIMENTAL",
         "n7": "in_progress",
+        "r0Prerequisite": "A2_STRICT_INPUT_REPLAY",
         "visualDiffJudgement": "J0",
         "futureEvidenceGatesTriggered": False,
         "payloadForbiddenMatches": 0,
@@ -396,6 +460,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--report", required=True, type=pathlib.Path)
     parser.add_argument("--verifier-summary", required=True, type=pathlib.Path)
     parser.add_argument("--gate-summary", required=True, type=pathlib.Path)
+    parser.add_argument("--r0-report", required=True, type=pathlib.Path)
     parser.add_argument("--repository", type=pathlib.Path,
                         default=pathlib.Path(__file__).resolve().parents[1])
     parser.add_argument("--evidence-file", action="append", default=[], type=pathlib.Path)
@@ -407,8 +472,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         report_path = _confined_input(arguments.report, evidence_root)
         verifier_path = _confined_input(arguments.verifier_summary, evidence_root)
         gate_path = _confined_input(arguments.gate_summary, evidence_root)
+        r0_path = _confined_input(arguments.r0_report, evidence_root)
         output_path = _confined_output(arguments.output, evidence_root)
-        paths = [report_path, verifier_path, gate_path]
+        paths = [report_path, verifier_path, gate_path, r0_path]
         paths.extend(_confined_input(path, evidence_root) for path in arguments.evidence_file)
         unique: dict[str, pathlib.Path] = {}
         for path in paths:
@@ -419,7 +485,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         claimed, _ = _strict_json_file(verifier_path)
         summary, _ = _strict_json_file(gate_path)
         payloads = {name: path.read_bytes() for name, path in unique.items()}
-        result = verify_documents(envelope, claimed, summary, repository, payloads)
+        r0_verification = verify_r0_report(r0_path, repository)
+        result = verify_documents(
+            envelope, claimed, summary, repository, payloads, r0_verification,
+        )
         output_path.write_bytes(LAYERED.canonical_json(result) + b"\n")
     except (GateVerificationError, OSError) as exc:
         code = str(exc) if isinstance(exc, GateVerificationError) else "EVIDENCE_IO_FAILED"

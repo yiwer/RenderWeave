@@ -17,6 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class LayeredVisualCorpusTest {
     private static final String MANIFEST = "visual-eval/v2/manifest.json";
+    private static final String IDENTITY_LOCK = "visual-eval/v2/identity-lock.json";
     private static final String V1_SOURCE = "visual-eval/v1/scenes.json";
     private static final String V1_SOURCE_SHA =
             "ca53d88763af161a1b1b22fa50774c56eae929affe5316157ae355fdb005b8b3";
@@ -123,6 +124,7 @@ class LayeredVisualCorpusTest {
     @Test
     void manifestUnknownDuplicateAndIdentityTamperFailClosed() throws Exception {
         var manifest = new String(resource(MANIFEST), StandardCharsets.UTF_8);
+        var identityLock = new String(resource(IDENTITY_LOCK), StandardCharsets.UTF_8);
 
         assertThrows(IllegalStateException.class, () -> new LayeredVisualCorpus(overriding(
                 manifest.replaceFirst("\\{", "{\"unknown\":1,"))));
@@ -132,6 +134,9 @@ class LayeredVisualCorpusTest {
                 manifest.replace(V1_SOURCE_SHA, "f".repeat(64)))));
         assertThrows(IllegalStateException.class, () -> new LayeredVisualCorpus(overriding(
                 manifest.replace("OFL_1_1", "UNKNOWN_LICENSE"))));
+        assertThrows(IllegalStateException.class, () -> new LayeredVisualCorpus(overriding(
+                manifest, identityLock.replaceFirst("render-sha256:[0-9a-f]{64}",
+                        "render-sha256:" + "0".repeat(64)))));
     }
 
     private static byte[] resource(String name) throws Exception {
@@ -146,12 +151,23 @@ class LayeredVisualCorpusTest {
     }
 
     private static ClassLoader overriding(String manifest) {
+        try {
+            return overriding(manifest, new String(resource(IDENTITY_LOCK), StandardCharsets.UTF_8));
+        } catch (Exception failure) {
+            throw new IllegalStateException(failure);
+        }
+    }
+
+    private static ClassLoader overriding(String manifest, String identityLock) {
         var parent = LayeredVisualCorpusTest.class.getClassLoader();
         return new ClassLoader(parent) {
             @Override
             public InputStream getResourceAsStream(String name) {
                 if (MANIFEST.equals(name)) {
                     return new ByteArrayInputStream(manifest.getBytes(StandardCharsets.UTF_8));
+                }
+                if (IDENTITY_LOCK.equals(name)) {
+                    return new ByteArrayInputStream(identityLock.getBytes(StandardCharsets.UTF_8));
                 }
                 return super.getResourceAsStream(name);
             }

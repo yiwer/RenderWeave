@@ -111,9 +111,9 @@ try {
         'runtime' { @('runtime-canary') }
         'document-vision' { @('document-vision-adapter-tests', 'document-vision-canary') }
         'observation-r0' { @('document-observation-r0') }
-        'layered-r1' { @('layered-evaluation-r1') }
+        'layered-r1' { @('document-observation-r0', 'layered-evaluation-r1') }
         'capacity' { @('capacity-baseline') }
-        'full' { @('repository-diff', 'server-verify', 'web-node24', 'offline-eval', 'layered-evaluation-r1', 'compose-config', 'runtime-canary', 'document-vision-adapter-tests', 'prototype-e2e', 'draft-browser-e2e', 'inference-browser-e2e') }
+        'full' { @('repository-diff', 'server-verify', 'web-node24', 'offline-eval', 'document-observation-r0', 'layered-evaluation-r1', 'compose-config', 'runtime-canary', 'document-vision-adapter-tests', 'prototype-e2e', 'draft-browser-e2e', 'inference-browser-e2e') }
     }
 
     foreach ($step in $requestedSteps) {

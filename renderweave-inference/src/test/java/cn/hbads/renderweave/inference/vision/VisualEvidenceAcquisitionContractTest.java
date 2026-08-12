@@ -88,6 +88,14 @@ class VisualEvidenceAcquisitionContractTest {
         assertFalse(representations.contains("Longgang"));
         assertFalse(representations.contains("龙岗"));
         assertFalse(representations.contains("[1, 2, 3]"));
+        var textLineRepresentation = ir.artifacts().get(1).observations().getFirst().toString();
+        assertEquals("TextLine[textBytes=19, sensitivity=EPHEMERAL_UNTRUSTED, payload=<redacted>]",
+                textLineRepresentation);
+        assertFalse(textLineRepresentation.contains("ocr-01-000"));
+        assertFalse(textLineRepresentation.contains("canonicalOrder"));
+        assertFalse(textLineRepresentation.contains("SourcePixelBox"));
+        assertFalse(textLineRepresentation.contains("6001"));
+        assertFalse(textLineRepresentation.contains("MEDIUM"));
     }
 
     @Test

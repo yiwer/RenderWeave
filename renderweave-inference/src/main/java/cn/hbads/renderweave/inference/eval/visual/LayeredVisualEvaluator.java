@@ -78,11 +78,12 @@ public final class LayeredVisualEvaluator {
             wordInsertions += words.insertions();
         }
         var hallucination = predictedById.isEmpty() ? 0 : 1;
+        var emptyReferenceInsertion = gold.ocrLines().isEmpty() && !prediction.ocrLines().isEmpty() ? 1 : 0;
         var completeMiss = !gold.ocrLines().isEmpty() && prediction.ocrLines().isEmpty() ? 1 : 0;
         return new LayeredEvaluationRecord.OcrStats(
                 1, referenceCharacters, predictedCharacters, characterSubstitutions, characterInsertions,
                 characterDeletions, referenceWords, predictedWords, wordSubstitutions, wordInsertions,
-                wordDeletions, hallucination, hallucination, completeMiss);
+                wordDeletions, emptyReferenceInsertion, hallucination, completeMiss);
     }
 
     private static LayeredEvaluationRecord.LayoutStats layout(

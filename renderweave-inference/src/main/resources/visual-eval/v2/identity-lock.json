@@ -1,0 +1,551 @@
+{
+  "annotationDerivationIdentity" : "v1-scene-to-layered-gold/1.0:fa9415dca4079dc4bded5e2f4fb1146515df57c7387773b7d64d208fb10af8cc",
+  "annotationSetIdentity" : "renderweave-layered-annotation-set/2.0:a6f7796d0433bb59779a3e1b99fa3c20b3e49148d24eb69dfe17682414fa746a",
+  "cases" : [ {
+    "annotationIdentity" : "renderweave-layered-annotation/1.0:60b93f9610c43ec1f035079a40a97220aaff701cb8e2d5e4253fb9e7524d51d4",
+    "caseId" : "transit-board-v1",
+    "caseIdentity" : "renderweave-layered-case/2.0:d9b4799dc666539b119367305727d13c54cbd639ff2d431ee9d8f65c0db61777",
+    "difficulty" : "BASELINE",
+    "domain" : "transit-board",
+    "failureSlices" : [ "REPEATED_LIST" ],
+    "partition" : "DEV",
+    "renderIdentity" : "render-sha256:9c363201ad1d71f67cd210f37124d5b50a9e8b57ee5bf2bc5c6da9e85bbcc88b"
+  }, {
+    "annotationIdentity" : "renderweave-layered-annotation/1.0:3c9eef68dd8c700d2f052cdb915a7e9316b9a39d4bfc0b7277e98d5e4ddaec80",
+    "caseId" : "transit-board-v2",
+    "caseIdentity" : "renderweave-layered-case/2.0:3976013e6e00f4c93fa874804366ff1d12df066985ca320fdd20e47f7c2ee08d",
+    "difficulty" : "MULTI_COLUMN",
+    "domain" : "transit-board",
+    "failureSlices" : [ "MULTI_COLUMN", "REPEATED_LIST" ],
+    "partition" : "DEV",
+    "renderIdentity" : "render-sha256:be09af5b9a417ef30a743df10a741f41f944242b7774dbbd815df4a30a065f27"
+  }, {
+    "annotationIdentity" : "renderweave-layered-annotation/1.0:faaf46e4abddd4cb13580c99ff1d45fa19be4c92a39330070e411e129a30f110",
+    "caseId" : "transit-board-v3",
+    "caseIdentity" : "renderweave-layered-case/2.0:688daa21a13118b5591d3057b6f1f15cef8a0e4f80a6549a4b80b19d8b043c0e",
+    "difficulty" : "DENSE_TEXT",
+    "domain" : "transit-board",
+    "failureSlices" : [ "DENSE_TEXT", "REPEATED_LIST" ],
+    "partition" : "DEV",
+    "renderIdentity" : "render-sha256:2970b3648b580b46d87253560755fec752babcf3ff2435aa7e1c2c7fdd499790"
+  }, {
+    "annotationIdentity" : "renderweave-layered-annotation/1.0:e03ba541fe793825b26c162103ffafa52f7ad34ce5d38cba648173b6bcb0cc21",
+    "caseId" : "transit-board-v4",
+    "caseIdentity" : "renderweave-layered-case/2.0:e4244a8d36d4fd7d8d23a10fd4cb8e76fa440d8075a331e52ec2d867cff8c730",
+    "difficulty" : "LOW_CONTRAST",
+    "domain" : "transit-board",
+    "failureSlices" : [ "REPEATED_LIST" ],
+    "partition" : "HOLDOUT",
+    "renderIdentity" : "render-sha256:8f339623887eaa82165f1505c844f0866ffb9d8148ed23ffee2252125f9b6c58"
+  }, {
+    "annotationIdentity" : "renderweave-layered-annotation/1.0:286952ce7d24690dcf0a71d365cddb7aa50b50d19aff1e6687c834a2a0952ffd",
+    "caseId" : "transit-board-v5",
+    "caseIdentity" : "renderweave-layered-case/2.0:c8e155a1da4f8d8d93a646b01c4375773b20c14742f9cb233eebaf5673853c4f",
+    "difficulty" : "NOISY",
+    "domain" : "transit-board",
+    "failureSlices" : [ "REPEATED_LIST" ],
+    "partition" : "HOLDOUT",
+    "renderIdentity" : "render-sha256:e4c5a31cddf063b23cc1b00f9efe7e8ccad138dc7104c43d39ddfa4273c6ce90"
+  }, {
+    "annotationIdentity" : "renderweave-layered-annotation/1.0:2fbe9011525552d51d2a8a6a7ae8f0a621957b015d6aff04a2ed6a4eb8f85d1b",
+    "caseId" : "restaurant-menu-v1",
+    "caseIdentity" : "renderweave-layered-case/2.0:9d664ae10fc0b3c1f550202c07c1ade7d8399e41d4cbe838109c6b4b0b817f8b",
+    "difficulty" : "BASELINE",
+    "domain" : "generic",
+    "failureSlices" : [ "REPEATED_LIST" ],
+    "partition" : "DEV",
+    "renderIdentity" : "render-sha256:b7303c43e4b92a648b3f8f4658412b589306c86cdb58736d2a92c9cca7a8478f"
+  }, {
+    "annotationIdentity" : "renderweave-layered-annotation/1.0:d5a13e9832906206cd292e19f395c9252b24fbe46bd21b1e5b05783272e0a155",
+    "caseId" : "restaurant-menu-v2",
+    "caseIdentity" : "renderweave-layered-case/2.0:a8319953e5c287a1e873f0479c892be906e7f23a161ca6545c66c3db60e557b1",
+    "difficulty" : "MULTI_COLUMN",
+    "domain" : "generic",
+    "failureSlices" : [ "MULTI_COLUMN", "REPEATED_LIST" ],
+    "partition" : "DEV",
+    "renderIdentity" : "render-sha256:c75d12c96a1aa5d942376c01af35b54ef22480a1b144f3e4d05a6e0c5819f40d"
+  }, {
+    "annotationIdentity" : "renderweave-layered-annotation/1.0:a6ba6b710d10813e3d52661780f662418eb43fa23c37d7de5b80a6dc5f7c34a2",
+    "caseId" : "restaurant-menu-v3",
+    "caseIdentity" : "renderweave-layered-case/2.0:6910f5288cbbde4ac0d813affb19e3e1df9fb8c3d7bab85249e56801e2e8db78",
+    "difficulty" : "DENSE_TEXT",
+    "domain" : "generic",
+    "failureSlices" : [ "DENSE_TEXT", "REPEATED_LIST" ],
+    "partition" : "DEV",
+    "renderIdentity" : "render-sha256:409aa4d0634e0c3cafb05573c5b4f3fbbc7b6712ca4c61536b958f6f1d830e26"
+  }, {
+    "annotationIdentity" : "renderweave-layered-annotation/1.0:f4e167a15a5fe0659b4870c6a6704d9d0dc80082fff1bac2d6261fee394f990a",
+    "caseId" : "restaurant-menu-v4",
+    "caseIdentity" : "renderweave-layered-case/2.0:4fe9e655993d7e929fb53fb7c02f2aafc6d6e6a63dac92aeadb327a53459829a",
+    "difficulty" : "LOW_CONTRAST",
+    "domain" : "generic",
+    "failureSlices" : [ "REPEATED_LIST" ],
+    "partition" : "HOLDOUT",
+    "renderIdentity" : "render-sha256:c1e757ebe6f6f16e3d40e4053ea63e4a105b5670dbe536a1ba9b3419963d271f"
+  }, {
+    "annotationIdentity" : "renderweave-layered-annotation/1.0:265c4c2860af693c67812046f28bf381d7cf74c00a6c0fb1ff43d43dd523e9b8",
+    "caseId" : "restaurant-menu-v5",
+    "caseIdentity" : "renderweave-layered-case/2.0:d195280482d67b05bc11fb87cd566a17d34285243a228f7995cb39bc320094c0",
+    "difficulty" : "NOISY",
+    "domain" : "generic",
+    "failureSlices" : [ "REPEATED_LIST" ],
+    "partition" : "HOLDOUT",
+    "renderIdentity" : "render-sha256:eb1bc9428be8f0b331907431f27fbe296b8c74437351220c973a0d28ef36412a"
+  }, {
+    "annotationIdentity" : "renderweave-layered-annotation/1.0:2db3d817db0bc97a2d6de19676a8ee58a113a2b9bb9a35bbf7e99ad5f6bcbf16",
+    "caseId" : "hospital-schedule-v1",
+    "caseIdentity" : "renderweave-layered-case/2.0:1d834e1d0192c708919d980d3bcee670fe8c22df16d82ed0132b4d3ffe29340c",
+    "difficulty" : "BASELINE",
+    "domain" : "generic",
+    "failureSlices" : [ "REPEATED_LIST" ],
+    "partition" : "DEV",
+    "renderIdentity" : "render-sha256:39dcbb2003403869f2c3defdf0a112c8fdd2c48f1db6990498b08a3a31316a58"
+  }, {
+    "annotationIdentity" : "renderweave-layered-annotation/1.0:3f545f6275f0580a913dabbc2704ad553b264b6a13576345936ee83c551c8339",
+    "caseId" : "hospital-schedule-v2",
+    "caseIdentity" : "renderweave-layered-case/2.0:7ae0c43c4d510d363573f7a8362a87f3624652f3eb5a840af87adedd7f2ecc63",
+    "difficulty" : "MULTI_COLUMN",
+    "domain" : "generic",
+    "failureSlices" : [ "MULTI_COLUMN", "REPEATED_LIST" ],
+    "partition" : "DEV",
+    "renderIdentity" : "render-sha256:e9537972af1a48848b39c9adcaba5d022bdb4a24a861bccc40ebe7efad028a58"
+  }, {
+    "annotationIdentity" : "renderweave-layered-annotation/1.0:ceea36b7521718756a32f6988e14a42307b8809fc3513fff92c763d0c790b356",
+    "caseId" : "hospital-schedule-v3",
+    "caseIdentity" : "renderweave-layered-case/2.0:749916a935e98fbf48ae59181e1b6bcde0a0b01a347724af04566c22ac3a92f9",
+    "difficulty" : "DENSE_TEXT",
+    "domain" : "generic",
+    "failureSlices" : [ "DENSE_TEXT", "REPEATED_LIST" ],
+    "partition" : "DEV",
+    "renderIdentity" : "render-sha256:a1d78928a11a598c3a4aaf1fc3f3fecae578604c990dbcc6e79bfdf43b1007d1"
+  }, {
+    "annotationIdentity" : "renderweave-layered-annotation/1.0:1882fb8e307d5bb6a088e12f708b7dc86c5ca574178110a339092a9e1e94a70f",
+    "caseId" : "hospital-schedule-v4",
+    "caseIdentity" : "renderweave-layered-case/2.0:187f361fd335b876d8dede4478438a65b20a64f9b46dda638f248cb13c195ef1",
+    "difficulty" : "LOW_CONTRAST",
+    "domain" : "generic",
+    "failureSlices" : [ "REPEATED_LIST" ],
+    "partition" : "HOLDOUT",
+    "renderIdentity" : "render-sha256:32f33de031551444c361d59d8125aa1c0b4c256f05af98fcc7ce624cc771dbe2"
+  }, {
+    "annotationIdentity" : "renderweave-layered-annotation/1.0:021ec71cb568d045fa2d378a9417ad08a8107a0ecee2f8d5deb2293cec5ce779",
+    "caseId" : "hospital-schedule-v5",
+    "caseIdentity" : "renderweave-layered-case/2.0:ee4e4742611b4f816600c472b994aa27505c61444b76942266582501f5f5563e",
+    "difficulty" : "NOISY",
+    "domain" : "generic",
+    "failureSlices" : [ "REPEATED_LIST" ],
+    "partition" : "HOLDOUT",
+    "renderIdentity" : "render-sha256:92223e256410a61dfe9a909558203f31b5d6811fc0ddc69e910264c8f1c2a362"
+  }, {
+    "annotationIdentity" : "renderweave-layered-annotation/1.0:68f0f2a3bee6a62d74919f80b761c996e2a658dec6c7bbbd6a7558b7ef4fd9a6",
+    "caseId" : "invoice-lines-v1",
+    "caseIdentity" : "renderweave-layered-case/2.0:dfc8604c0829d397b48a941f433212ecd4070e7ac5340afe2c0a668a4c3a2036",
+    "difficulty" : "BASELINE",
+    "domain" : "generic",
+    "failureSlices" : [ "REPEATED_LIST" ],
+    "partition" : "DEV",
+    "renderIdentity" : "render-sha256:9675094706597a350b0a3fc54632457787aadcf2d1c77c66aee25a83f00ae6fa"
+  }, {
+    "annotationIdentity" : "renderweave-layered-annotation/1.0:81dac519c6ab82ffee78df7c52a2e4e755416e60a82faf15f281c8643ef3855b",
+    "caseId" : "invoice-lines-v2",
+    "caseIdentity" : "renderweave-layered-case/2.0:aa40501dfbd9f1ed9743463a1efea13e9a1fc158a2e6c3fd613d0802305c28d9",
+    "difficulty" : "MULTI_COLUMN",
+    "domain" : "generic",
+    "failureSlices" : [ "MULTI_COLUMN", "REPEATED_LIST" ],
+    "partition" : "DEV",
+    "renderIdentity" : "render-sha256:965d0716be43d4cc5062cb1546b7913bd725578ab054a3add45a346abc4df6c6"
+  }, {
+    "annotationIdentity" : "renderweave-layered-annotation/1.0:22630dceeb7a5df4f8cac1748b244c8ae6babdc65442dfe33b4f268831262fa8",
+    "caseId" : "invoice-lines-v3",
+    "caseIdentity" : "renderweave-layered-case/2.0:5906265340b4c556196095d90c2b6e34b86ac6c5300dc0fea6fedabe6a18deea",
+    "difficulty" : "DENSE_TEXT",
+    "domain" : "generic",
+    "failureSlices" : [ "DENSE_TEXT", "REPEATED_LIST" ],
+    "partition" : "DEV",
+    "renderIdentity" : "render-sha256:f415dc8b5b6560b4ba1840cccfced2322367209f23d18fa2b59e1d86dbe18f53"
+  }, {
+    "annotationIdentity" : "renderweave-layered-annotation/1.0:5ca36693794dd2933b8c6502d4cf157eaba57e44d0f0e1d4542f54e909177866",
+    "caseId" : "invoice-lines-v4",
+    "caseIdentity" : "renderweave-layered-case/2.0:72f50e6e25b09f2f5b7dc0aa959995c3ed150507cc7a95925ccd604068f5f77e",
+    "difficulty" : "LOW_CONTRAST",
+    "domain" : "generic",
+    "failureSlices" : [ "REPEATED_LIST" ],
+    "partition" : "DEV",
+    "renderIdentity" : "render-sha256:4ecd14769cb1c428007bbf41758f0904eddbeb484b0ecb699d4da9458e633e99"
+  }, {
+    "annotationIdentity" : "renderweave-layered-annotation/1.0:990458044e412eccab73b698d30a5195cfe50a25352303ac462802b45f7a650c",
+    "caseId" : "invoice-lines-v5",
+    "caseIdentity" : "renderweave-layered-case/2.0:c7b064aef1a82510073c7f7c941aed5c1453b2942e4f0c7fa999cd5a7419002a",
+    "difficulty" : "NOISY",
+    "domain" : "generic",
+    "failureSlices" : [ "REPEATED_LIST" ],
+    "partition" : "HOLDOUT",
+    "renderIdentity" : "render-sha256:3630cd4a6d00b2a4ac42b673f4956e2126300ef3e2042492e212e3f6101dbf1f"
+  }, {
+    "annotationIdentity" : "renderweave-layered-annotation/1.0:b2346b6987bc3fe5036a275c0e20cd1148036d7bc7fb0f056cbeb6fb0c53de2f",
+    "caseId" : "product-catalog-v1",
+    "caseIdentity" : "renderweave-layered-case/2.0:a21581d355f3af56e8a8a3bd6471de06c2a3dd781f72c1e9e67f579b1242026d",
+    "difficulty" : "BASELINE",
+    "domain" : "generic",
+    "failureSlices" : [ "REPEATED_LIST" ],
+    "partition" : "DEV",
+    "renderIdentity" : "render-sha256:28f837f5c1d0c2957f2ea8c311c7a77ad6dc4998d62c39a24bf94a1f1f3a3c05"
+  }, {
+    "annotationIdentity" : "renderweave-layered-annotation/1.0:47add48a9876ea57ad09d0409aed2047e69507297755b8035bf0dc9bea8f1afa",
+    "caseId" : "product-catalog-v2",
+    "caseIdentity" : "renderweave-layered-case/2.0:71843e2492be005815bbccbf3b3ca6c4c2e0f129ae0d018067c402d8ae09cdcb",
+    "difficulty" : "MULTI_COLUMN",
+    "domain" : "generic",
+    "failureSlices" : [ "MULTI_COLUMN", "REPEATED_LIST" ],
+    "partition" : "DEV",
+    "renderIdentity" : "render-sha256:06f34e2f6f605f0df52b6fc2261f15a59ab12b1f23046a22d3ac5f463460491f"
+  }, {
+    "annotationIdentity" : "renderweave-layered-annotation/1.0:44ab3046362b23037f85ed16b10ccd92b040d0eea435cc10bda6f2cc9f73389a",
+    "caseId" : "product-catalog-v3",
+    "caseIdentity" : "renderweave-layered-case/2.0:e335593ae0a36c5f541e32118c3c0818cf1b9e52c4a8176cc5eab34e569a6dae",
+    "difficulty" : "DENSE_TEXT",
+    "domain" : "generic",
+    "failureSlices" : [ "DENSE_TEXT", "REPEATED_LIST" ],
+    "partition" : "DEV",
+    "renderIdentity" : "render-sha256:bec46f1b5e8d9863cf9cee4d99217efecb5e7a6eb00c1bb2ec4993f0a2177d87"
+  }, {
+    "annotationIdentity" : "renderweave-layered-annotation/1.0:80aaa4f3554702de7ce2f3b41412b9ff65ec35900d71a54763d6825ad957498b",
+    "caseId" : "product-catalog-v4",
+    "caseIdentity" : "renderweave-layered-case/2.0:e64e956d882930d07bd9895016773d535fd47578d51c3628883da030ba626a8d",
+    "difficulty" : "LOW_CONTRAST",
+    "domain" : "generic",
+    "failureSlices" : [ "REPEATED_LIST" ],
+    "partition" : "DEV",
+    "renderIdentity" : "render-sha256:7330a29ddd8367cf723d04b13f9f82fdaafe8e57dacf14153a7d37eaaa778db1"
+  }, {
+    "annotationIdentity" : "renderweave-layered-annotation/1.0:b178319dc786f1f87f4ac89d965df9fcd7929928b9dfe71e62e130c15481a00e",
+    "caseId" : "product-catalog-v5",
+    "caseIdentity" : "renderweave-layered-case/2.0:2c0e17e489cf1ef4f1f55be50ff9ca2d070114bf58395125a811a30de3444b14",
+    "difficulty" : "NOISY",
+    "domain" : "generic",
+    "failureSlices" : [ "REPEATED_LIST" ],
+    "partition" : "HOLDOUT",
+    "renderIdentity" : "render-sha256:a3de37a98c6afc1e6493c0818ff1585dd1f538a4fc9d7ee9c18d5a7b7ca7e99b"
+  }, {
+    "annotationIdentity" : "renderweave-layered-annotation/1.0:b4a46b84897522b510867937fff65c97121dc9cdb2a357f89c1cc984a3c51507",
+    "caseId" : "event-agenda-v1",
+    "caseIdentity" : "renderweave-layered-case/2.0:631c93f353d6fff6d61db8407aef2cef380d7897b53f55c169c9746a2b0f76ba",
+    "difficulty" : "BASELINE",
+    "domain" : "generic",
+    "failureSlices" : [ "REPEATED_LIST" ],
+    "partition" : "DEV",
+    "renderIdentity" : "render-sha256:b3d891de1923c0df111afaff8a4baaaeeeb4275e1476839e4151d204551db1db"
+  }, {
+    "annotationIdentity" : "renderweave-layered-annotation/1.0:b49a119287990fc4b29493e0cd9c4256ec4dd657cadf959e56eba27706f0c751",
+    "caseId" : "event-agenda-v2",
+    "caseIdentity" : "renderweave-layered-case/2.0:b3c1b33f1e16ffd180082221397e1d00c4a7c0a6821fc7f2ea0fe0e1647d8725",
+    "difficulty" : "MULTI_COLUMN",
+    "domain" : "generic",
+    "failureSlices" : [ "MULTI_COLUMN", "REPEATED_LIST" ],
+    "partition" : "DEV",
+    "renderIdentity" : "render-sha256:da8466fb7bf15199699b2c43d3bcc4f05416cc34e9b49d13e4a888ab4b03a74b"
+  }, {
+    "annotationIdentity" : "renderweave-layered-annotation/1.0:a270e2bf7937c1271fc994159de0e81e75f5b0a36abb110051bbf6e6b207a5d4",
+    "caseId" : "event-agenda-v3",
+    "caseIdentity" : "renderweave-layered-case/2.0:7e53098bfae4a0ef4be03fa90842bb6c6c0a4ccccf6a1b725cdea772b2ad2fd1",
+    "difficulty" : "DENSE_TEXT",
+    "domain" : "generic",
+    "failureSlices" : [ "DENSE_TEXT", "REPEATED_LIST" ],
+    "partition" : "DEV",
+    "renderIdentity" : "render-sha256:71fd3380da079c69bb86894b0c946986688dcfdf17575ffaa356c417971c4104"
+  }, {
+    "annotationIdentity" : "renderweave-layered-annotation/1.0:b8323503b6d09ac020201359c10196544589ab5416ceb1d768ec40f5eef0e9e6",
+    "caseId" : "event-agenda-v4",
+    "caseIdentity" : "renderweave-layered-case/2.0:8691ed1f501c6597fecbd5c93ac433f42100f5025c7339dcff5474299a9c314f",
+    "difficulty" : "LOW_CONTRAST",
+    "domain" : "generic",
+    "failureSlices" : [ "REPEATED_LIST" ],
+    "partition" : "DEV",
+    "renderIdentity" : "render-sha256:03201bed0318fe5b556ca4f590dc5e3d2f6baea1b6d3539ad576c8a61a26a6d2"
+  }, {
+    "annotationIdentity" : "renderweave-layered-annotation/1.0:e857d66ef34ba27c56cf1c2f36b017a9d3b1fd633abebff19f6e3a592ebc0a78",
+    "caseId" : "event-agenda-v5",
+    "caseIdentity" : "renderweave-layered-case/2.0:c85bdabce13601eb1038b01ff8bd0e3100af9a7d3fd3ce680633b79482ca9ea2",
+    "difficulty" : "NOISY",
+    "domain" : "generic",
+    "failureSlices" : [ "REPEATED_LIST" ],
+    "partition" : "HOLDOUT",
+    "renderIdentity" : "render-sha256:6fd4d62d668b10a2f4be5db47faeddbea40a48fb8b126e50a6f1b76ed56d1182"
+  }, {
+    "annotationIdentity" : "renderweave-layered-annotation/1.0:07d463396b4af0f1ac4624f91d2d7b14fae1b0cd2927cfebab93aebac75fc1b6",
+    "caseId" : "weather-forecast-v1",
+    "caseIdentity" : "renderweave-layered-case/2.0:1cc09334c4f3ef694023a0f49a472679b7404dcdcc2cf5879ec339d9a92411b1",
+    "difficulty" : "BASELINE",
+    "domain" : "generic",
+    "failureSlices" : [ "REPEATED_LIST" ],
+    "partition" : "DEV",
+    "renderIdentity" : "render-sha256:93f85039af454a3e85692e4a9c8adf76f748725a532f84fd3ea1a1b333866aed"
+  }, {
+    "annotationIdentity" : "renderweave-layered-annotation/1.0:e2493b0230b6d6074fe8a85984340585062de47047fcd3075aada72b022764c6",
+    "caseId" : "weather-forecast-v2",
+    "caseIdentity" : "renderweave-layered-case/2.0:28534c1a92dca8321d3cf0126469c5feba4b188ee6966c467c05c2b8f4fca75b",
+    "difficulty" : "MULTI_COLUMN",
+    "domain" : "generic",
+    "failureSlices" : [ "MULTI_COLUMN", "REPEATED_LIST" ],
+    "partition" : "DEV",
+    "renderIdentity" : "render-sha256:d9d807d5291d508d0c7763c6f9afc5e9f13b21c2e901f0f105eb10196abeb23c"
+  }, {
+    "annotationIdentity" : "renderweave-layered-annotation/1.0:a2242ffd1ff63cd5e5a78ec09ac0b2b556714bf62d222decdb0d05a33373a76b",
+    "caseId" : "weather-forecast-v3",
+    "caseIdentity" : "renderweave-layered-case/2.0:b8276787bbfa99b49851308a7c963fcd41e5bbd311ad1db9169885fc766ee890",
+    "difficulty" : "DENSE_TEXT",
+    "domain" : "generic",
+    "failureSlices" : [ "DENSE_TEXT", "REPEATED_LIST" ],
+    "partition" : "DEV",
+    "renderIdentity" : "render-sha256:9decfce03b43ac52a832e905c48be2edf8eeaaf7c7d9d187207c0e754459c063"
+  }, {
+    "annotationIdentity" : "renderweave-layered-annotation/1.0:e07656a26ce4ec376fb49c57eb25dda6d0308a5c69c23b8868b1c95dfe4dd6f3",
+    "caseId" : "weather-forecast-v4",
+    "caseIdentity" : "renderweave-layered-case/2.0:19a6ecf8b7641b7d8eb12e3229fc8e8b63e487b3cbb9a5de9968caad42aa3946",
+    "difficulty" : "LOW_CONTRAST",
+    "domain" : "generic",
+    "failureSlices" : [ "REPEATED_LIST" ],
+    "partition" : "DEV",
+    "renderIdentity" : "render-sha256:13b7951916014f512370eeaed293332cea7d296b0af369210d14b7388fd44cf7"
+  }, {
+    "annotationIdentity" : "renderweave-layered-annotation/1.0:a2ce27c9f51eb7928dfd346b96b15f5d1b7eed86a2671ad8b94e261457a4dab4",
+    "caseId" : "weather-forecast-v5",
+    "caseIdentity" : "renderweave-layered-case/2.0:ede05f8fef3ca01dc5c0af4b3643809053bce641ebe2e6aeca8f9b39e2777386",
+    "difficulty" : "NOISY",
+    "domain" : "generic",
+    "failureSlices" : [ "REPEATED_LIST" ],
+    "partition" : "HOLDOUT",
+    "renderIdentity" : "render-sha256:9bc2247d9bb6d2b2642b6910b92d5252fcacfce972c72590723e79ee94f9a060"
+  }, {
+    "annotationIdentity" : "renderweave-layered-annotation/1.0:459fabfa0cd34f080ae9f3e1fa61349dcc30f2d98302040189dbc9fea2cd1d73",
+    "caseId" : "warehouse-inventory-v1",
+    "caseIdentity" : "renderweave-layered-case/2.0:ffd5b5c9b1b4f013fccade69d7a05c902b3d9171479a256bb32a0681f7d81d9b",
+    "difficulty" : "BASELINE",
+    "domain" : "generic",
+    "failureSlices" : [ "REPEATED_LIST" ],
+    "partition" : "DEV",
+    "renderIdentity" : "render-sha256:5bd76298b1b3fa0c755e464d69f4fea6aa6ca5c43146fcd63f592eaf96cd5283"
+  }, {
+    "annotationIdentity" : "renderweave-layered-annotation/1.0:414984dbd549c377b98fd4aef8f4ba52d745b33daeac96bc53cd4a6b98e430d7",
+    "caseId" : "warehouse-inventory-v2",
+    "caseIdentity" : "renderweave-layered-case/2.0:9ca1319537a06892e7920a973b66a9a893f0dea1fea31c4bcb21b7efaf4bf456",
+    "difficulty" : "MULTI_COLUMN",
+    "domain" : "generic",
+    "failureSlices" : [ "MULTI_COLUMN", "REPEATED_LIST" ],
+    "partition" : "DEV",
+    "renderIdentity" : "render-sha256:4bdefd154a213d2b1f25a0a56c7adbaead30f021fa08211ca08f586eb0c8637e"
+  }, {
+    "annotationIdentity" : "renderweave-layered-annotation/1.0:fa90cd9b51b0bd7f85b5a4862e7505d138a34d903057ce8a14c50356774d300f",
+    "caseId" : "warehouse-inventory-v3",
+    "caseIdentity" : "renderweave-layered-case/2.0:5df7085f4058e7a118c99d2679954e7d2c9d67bc73be21fc133d80c7ad918935",
+    "difficulty" : "DENSE_TEXT",
+    "domain" : "generic",
+    "failureSlices" : [ "DENSE_TEXT", "REPEATED_LIST" ],
+    "partition" : "DEV",
+    "renderIdentity" : "render-sha256:578959a7a25fcaabb744e0beb8bb8385f638b24f9c145aca6b5265aee3c6196c"
+  }, {
+    "annotationIdentity" : "renderweave-layered-annotation/1.0:663079cf0d4cc0d840831f4353df27d8af386e9409bd9fd91252394506e6e97a",
+    "caseId" : "warehouse-inventory-v4",
+    "caseIdentity" : "renderweave-layered-case/2.0:559c089b7fcd206b326e84584e0936b07e6a8c3c1d134cea544ad861c35fe802",
+    "difficulty" : "LOW_CONTRAST",
+    "domain" : "generic",
+    "failureSlices" : [ "REPEATED_LIST" ],
+    "partition" : "DEV",
+    "renderIdentity" : "render-sha256:4984ad80ec0836e2688b2d11653c8f398cb27a82f15a2b30f7a705a25007bf82"
+  }, {
+    "annotationIdentity" : "renderweave-layered-annotation/1.0:73cf90b3adf5639c011229edbddcd1b2d9e165d90243577fea98d036a2ad58fd",
+    "caseId" : "warehouse-inventory-v5",
+    "caseIdentity" : "renderweave-layered-case/2.0:9700d5c792db49137541d0d37261db8770c8041b57c0875843db1e70eaa874a0",
+    "difficulty" : "NOISY",
+    "domain" : "generic",
+    "failureSlices" : [ "REPEATED_LIST" ],
+    "partition" : "HOLDOUT",
+    "renderIdentity" : "render-sha256:dfcc4ce4069e51a67f6befc8af88d97a9ff315ef41e253ade86f5c4b28b3a9b3"
+  }, {
+    "annotationIdentity" : "renderweave-layered-annotation/1.0:2b0a9a2f30d6f5f4195a327aa0e156f9bdde3857e407d560f336278fef944f07",
+    "caseId" : "school-timetable-v1",
+    "caseIdentity" : "renderweave-layered-case/2.0:e0aa56c086f3d41fd911ec55a8aac51f91f5ac9bbb1f398e619e285cd655f82d",
+    "difficulty" : "BASELINE",
+    "domain" : "generic",
+    "failureSlices" : [ "REPEATED_LIST" ],
+    "partition" : "DEV",
+    "renderIdentity" : "render-sha256:d9fea8022ca427e5fe68bbb16af5c1cbc05d894c0d39c85ad6657d209433567b"
+  }, {
+    "annotationIdentity" : "renderweave-layered-annotation/1.0:42b467d2c237b63c6f0cca8b12474e524f80b657da9876dd5067ac3fd9d6dd92",
+    "caseId" : "school-timetable-v2",
+    "caseIdentity" : "renderweave-layered-case/2.0:d8e8aee718473a68004139ebc735a962c59b933be3b4093d73a7097e3139c573",
+    "difficulty" : "MULTI_COLUMN",
+    "domain" : "generic",
+    "failureSlices" : [ "MULTI_COLUMN", "REPEATED_LIST" ],
+    "partition" : "DEV",
+    "renderIdentity" : "render-sha256:29be63da228f4bcbf9d7a8394aab7737446c084bbbf987908d286497c6a427e5"
+  }, {
+    "annotationIdentity" : "renderweave-layered-annotation/1.0:9340b4be8d2e76be530603749cb4f902fcf73dd9d0d2dd893380cde2b038fef0",
+    "caseId" : "school-timetable-v3",
+    "caseIdentity" : "renderweave-layered-case/2.0:3ead47a60a3cdce92bb29b929e34c5c1bb2fd5f9047a7979862f8f5bf4c25531",
+    "difficulty" : "DENSE_TEXT",
+    "domain" : "generic",
+    "failureSlices" : [ "DENSE_TEXT", "REPEATED_LIST" ],
+    "partition" : "DEV",
+    "renderIdentity" : "render-sha256:33a007a3d0533acc59e4214296d14fd2cbf6329bf8ec24930627f7f63ccf279f"
+  }, {
+    "annotationIdentity" : "renderweave-layered-annotation/1.0:8442cbb2dd7ba9b9e087f7b1cbde3f13cf1ae3d4bd5c9f98baacdf9e0c96a323",
+    "caseId" : "school-timetable-v4",
+    "caseIdentity" : "renderweave-layered-case/2.0:5c421a2ddace4db33f68e47a39a165474a917d679ae0f33a7f6a4655fdb4a06a",
+    "difficulty" : "LOW_CONTRAST",
+    "domain" : "generic",
+    "failureSlices" : [ "REPEATED_LIST" ],
+    "partition" : "DEV",
+    "renderIdentity" : "render-sha256:5b25baf008d216e5e114142643709d57d677efe4ba1aad688ba4717488edd419"
+  }, {
+    "annotationIdentity" : "renderweave-layered-annotation/1.0:557031be39aeb4782c31dd606d9c6199c4b68f1e0d89aa3e173d34890b6b995a",
+    "caseId" : "school-timetable-v5",
+    "caseIdentity" : "renderweave-layered-case/2.0:7b628a91ce063ad7610db745fabe5ef925ac3823c9ab15489af888baa935efdf",
+    "difficulty" : "NOISY",
+    "domain" : "generic",
+    "failureSlices" : [ "REPEATED_LIST" ],
+    "partition" : "HOLDOUT",
+    "renderIdentity" : "render-sha256:ea7be66a93e444f3cc2ee4034f0bcbad50c77be08dbcd7e89a4951ac5dd056ce"
+  }, {
+    "annotationIdentity" : "renderweave-layered-annotation/1.0:950301ab91f876dec3883da55daf46421b62b7013ec9dc55864e9de020ede964",
+    "caseId" : "building-directory-v1",
+    "caseIdentity" : "renderweave-layered-case/2.0:e1f837c1503e4a44357d78975c3aeccf43757f1b389d4ca5f15d8f4a3c4ecff0",
+    "difficulty" : "BASELINE",
+    "domain" : "generic",
+    "failureSlices" : [ "REPEATED_LIST" ],
+    "partition" : "DEV",
+    "renderIdentity" : "render-sha256:2584f95e8de3f93fc01acc5b551d18460f3db9c6e545e33cfd06a079a4daa0c5"
+  }, {
+    "annotationIdentity" : "renderweave-layered-annotation/1.0:f8d836c719147897fb931ed5d85c3347ba43115289ab78b216636577dda57ec4",
+    "caseId" : "building-directory-v2",
+    "caseIdentity" : "renderweave-layered-case/2.0:01a4f89058669025c098872c61e98e8981b69ef503a0001f326d01b5ad1c2271",
+    "difficulty" : "MULTI_COLUMN",
+    "domain" : "generic",
+    "failureSlices" : [ "MULTI_COLUMN", "REPEATED_LIST" ],
+    "partition" : "DEV",
+    "renderIdentity" : "render-sha256:23e988c4245b63a668bbb063dc0be9409fb3126d98bd7b29ce936d4443a23669"
+  }, {
+    "annotationIdentity" : "renderweave-layered-annotation/1.0:c13d5da17e30e418251fc7e32e71d051b232b13845529e9b633cd9af6ea62112",
+    "caseId" : "building-directory-v3",
+    "caseIdentity" : "renderweave-layered-case/2.0:8235b0a4d33adbcc155ccdc02759ba87a9e9f40d50c63f7bd07749906b12a6fb",
+    "difficulty" : "DENSE_TEXT",
+    "domain" : "generic",
+    "failureSlices" : [ "DENSE_TEXT", "REPEATED_LIST" ],
+    "partition" : "DEV",
+    "renderIdentity" : "render-sha256:a73c6287fc87b2cff48803f81c61df05d4f78eeb7d0ea9a19a80f06a8ba53a9f"
+  }, {
+    "annotationIdentity" : "renderweave-layered-annotation/1.0:df732ccc0e27c93af6116b80c0790ade023a50ab3b3951cbeef085155e3763c2",
+    "caseId" : "building-directory-v4",
+    "caseIdentity" : "renderweave-layered-case/2.0:719b8b4dadc54acb66477597f167e3e64f8ac2e83708e70037df81a502018edb",
+    "difficulty" : "LOW_CONTRAST",
+    "domain" : "generic",
+    "failureSlices" : [ "REPEATED_LIST" ],
+    "partition" : "DEV",
+    "renderIdentity" : "render-sha256:2d1ba8b463f8fac2eea617c48b7edaf8a187d8f0f2388b68be6c8658584520e6"
+  }, {
+    "annotationIdentity" : "renderweave-layered-annotation/1.0:3f22e1396877003c2f32c2cefc76452185115254c08c95126f2fe580d3f11d3b",
+    "caseId" : "building-directory-v5",
+    "caseIdentity" : "renderweave-layered-case/2.0:ca5be012237e052ca4adc6726bb8d6c75ed9ce2597b6bee130006b412a7baef9",
+    "difficulty" : "NOISY",
+    "domain" : "generic",
+    "failureSlices" : [ "REPEATED_LIST" ],
+    "partition" : "HOLDOUT",
+    "renderIdentity" : "render-sha256:fee491f5b7f52e34c16119927c72d9172a6f0e3a97eb956227b43d75bc4149e7"
+  }, {
+    "annotationIdentity" : "renderweave-layered-annotation/1.0:e35afd84ef6f7f5eefa3f43236e514a9fdb3f3f04467041727157e24c0d88aa3",
+    "caseId" : "analytics-dashboard-v1",
+    "caseIdentity" : "renderweave-layered-case/2.0:ebcc9fab7bd8619517c7f55a0f8237ba8a5879a508fa7a3bd125143a245eb9a0",
+    "difficulty" : "BASELINE",
+    "domain" : "generic",
+    "failureSlices" : [ "REPEATED_LIST" ],
+    "partition" : "DEV",
+    "renderIdentity" : "render-sha256:a02e4d4539f83525a3a4c96a73dc96ac8200340d989290896ede4d23a7c186c0"
+  }, {
+    "annotationIdentity" : "renderweave-layered-annotation/1.0:c868b71fe6f9428553d7b3263f860df5bbb2cb189ebd40385ad61f7634310970",
+    "caseId" : "analytics-dashboard-v2",
+    "caseIdentity" : "renderweave-layered-case/2.0:1edbf2a5ac07f2b7c3e3781fcf0a463a3516e62189c46146159c1e03a57f0bea",
+    "difficulty" : "MULTI_COLUMN",
+    "domain" : "generic",
+    "failureSlices" : [ "MULTI_COLUMN", "REPEATED_LIST" ],
+    "partition" : "DEV",
+    "renderIdentity" : "render-sha256:cb5785e829e3def4d3e404394335e62fb2322ab6a3ae89906bca5b53cb68633d"
+  }, {
+    "annotationIdentity" : "renderweave-layered-annotation/1.0:acb5dc945f0efa42d4dd4091603ab4fb67841540b0a2d2203b1074c98ca61cb6",
+    "caseId" : "analytics-dashboard-v3",
+    "caseIdentity" : "renderweave-layered-case/2.0:d292b92b8db8f27c9cab8eca05442f0b079d3983b3cb5959998e4ece7de9deab",
+    "difficulty" : "DENSE_TEXT",
+    "domain" : "generic",
+    "failureSlices" : [ "DENSE_TEXT", "REPEATED_LIST" ],
+    "partition" : "DEV",
+    "renderIdentity" : "render-sha256:6d08d9858dd76f3c4c306bf820424278b3069557ddc2ef8612c7e8c7104422e8"
+  }, {
+    "annotationIdentity" : "renderweave-layered-annotation/1.0:5adc87b7c99463e510d917591ba7cdb9a32e27c991df3dcb0535d3fd97d51489",
+    "caseId" : "analytics-dashboard-v4",
+    "caseIdentity" : "renderweave-layered-case/2.0:f8bf5e73a543da44199461bbf1f8a18c280dd0750de34b1cab730c69cf19b8d2",
+    "difficulty" : "LOW_CONTRAST",
+    "domain" : "generic",
+    "failureSlices" : [ "REPEATED_LIST" ],
+    "partition" : "DEV",
+    "renderIdentity" : "render-sha256:7ca82cec1abfdfb853d9a452650bf1a01e3376da26f96ee037552e648c95b843"
+  }, {
+    "annotationIdentity" : "renderweave-layered-annotation/1.0:f7095c09cae006fd3cc24a13c20f99eaf98f61d51e9c5b83866a3692663b0961",
+    "caseId" : "analytics-dashboard-v5",
+    "caseIdentity" : "renderweave-layered-case/2.0:7bf7ddb568cb426da86bc079cba8c4f6627ab5249abd102097a394af7e438b34",
+    "difficulty" : "NOISY",
+    "domain" : "generic",
+    "failureSlices" : [ "REPEATED_LIST" ],
+    "partition" : "HOLDOUT",
+    "renderIdentity" : "render-sha256:8ae50fb83bb7f1fa57a34111074b31e1c5e08cce0bd1feea01b037dc3cafaf53"
+  }, {
+    "annotationIdentity" : "renderweave-layered-annotation/1.0:8684d38df8d0959b46ae62d840a867740b3df389cfc73d860a05520fc6632ec7",
+    "caseId" : "low-information-poster-v1",
+    "caseIdentity" : "renderweave-layered-case/2.0:1a74e7deaa608f7922e0f7f65902ee7f8c39abced61432cc6a0652a1302f9fab",
+    "difficulty" : "BASELINE",
+    "domain" : "generic",
+    "failureSlices" : [ ],
+    "partition" : "DEV",
+    "renderIdentity" : "render-sha256:cef7803c0359be1daec0228a4d3a234fbe9119beb2f9b32b8d12621043b702f1"
+  }, {
+    "annotationIdentity" : "renderweave-layered-annotation/1.0:c4499df52831edecb5abcda145145b32aa813ae0bbef07031e9e8068cfb77f98",
+    "caseId" : "low-information-poster-v2",
+    "caseIdentity" : "renderweave-layered-case/2.0:7c237a43337f46b1929eee4e13b386ae108d67248d4aa222b458e0f332369bb3",
+    "difficulty" : "MULTI_COLUMN",
+    "domain" : "generic",
+    "failureSlices" : [ "MULTI_COLUMN" ],
+    "partition" : "DEV",
+    "renderIdentity" : "render-sha256:0a6d92713406278fe194df84c09bf87f5b7845f5f0423f99602081c3d45797cb"
+  }, {
+    "annotationIdentity" : "renderweave-layered-annotation/1.0:2723a01c18be47ed6e4ab41364fafe6b1a12ef5f2436db97bbcf36cbc0338edd",
+    "caseId" : "low-information-poster-v3",
+    "caseIdentity" : "renderweave-layered-case/2.0:e18f28db845c2bc06daae935c57172ea56b062d40b765db00d168740fc88203e",
+    "difficulty" : "DENSE_TEXT",
+    "domain" : "generic",
+    "failureSlices" : [ "DENSE_TEXT", "PROMPT_INJECTION" ],
+    "partition" : "DEV",
+    "renderIdentity" : "render-sha256:87d1699d15c412ebf9cdccf65f54279ea8c3ffac7dc4b49302f15e71304a6f4d"
+  }, {
+    "annotationIdentity" : "renderweave-layered-annotation/1.0:5aa25526ded8cea487ad57d1d9ff90a71b68e980310bc867df6a74dba37f6062",
+    "caseId" : "low-information-poster-v4",
+    "caseIdentity" : "renderweave-layered-case/2.0:09ec082318adfbcdb45ca7f92598885fcb1ac30d9d72888d158352c3ee9983c0",
+    "difficulty" : "LOW_CONTRAST",
+    "domain" : "generic",
+    "failureSlices" : [ ],
+    "partition" : "DEV",
+    "renderIdentity" : "render-sha256:b6ed371d0359144f09cafbce6559579d915772335cd52f073fb1a156c82d269c"
+  }, {
+    "annotationIdentity" : "renderweave-layered-annotation/1.0:bdc2747c206c552a11f3d20f1ce8f68af14ceb019d509dbbcf76983457be01fd",
+    "caseId" : "low-information-poster-v5",
+    "caseIdentity" : "renderweave-layered-case/2.0:43b49d1b2dcc862ae2b388d1da6263d3bbefec5437874ff5d3140aaa2cd1ab6c",
+    "difficulty" : "NOISY",
+    "domain" : "generic",
+    "failureSlices" : [ "PROMPT_INJECTION" ],
+    "partition" : "HOLDOUT",
+    "renderIdentity" : "render-sha256:73cb67b7a342c1cae261cb5aacec6bdadf10e6d516c4f7ba2fbbc621f80738ed"
+  } ],
+  "corpusIdentity" : "renderweave-visual-stage-corpus/2.0:c596621eb680e7e10d42d2e1d1f926995cec9716cc6ef83a96a50ad53adc285c",
+  "corpusVersion" : "renderweave-visual-stage-corpus/2.0",
+  "lockVersion" : "renderweave-layered-corpus-identity-lock/1.0",
+  "manifestSha256" : "07958d0e968a9f1b7b64dea509d4b8398a112bf1d6e222aa20f35be59d97fe13",
+  "renderContractIdentity" : "visual-stage-rasterizer/1.0:c88e167780a6c9a0f999fb9fbf96d4df24a67e57000d4fb7e40ab22eea1c160a",
+  "sourceScenesSha256" : "ca53d88763af161a1b1b22fa50774c56eae929affe5316157ae355fdb005b8b3"
+}

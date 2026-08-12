@@ -18,6 +18,7 @@ if SPEC is None or SPEC.loader is None:
     raise RuntimeError("layered verifier cannot be loaded")
 VERIFIER = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(VERIFIER)
+REPOSITORY = VERIFIER_PATH.parent.parent
 
 
 class LayeredEvaluationVerifierTest(unittest.TestCase):
@@ -97,7 +98,7 @@ class LayeredEvaluationVerifierTest(unittest.TestCase):
 
     def test_full_report_recomputes_and_all_single_point_tamper_classes_fail(self) -> None:
         envelope = make_envelope()
-        summary = VERIFIER.verify_envelope(envelope)
+        summary = VERIFIER.verify_envelope(envelope, REPOSITORY)
         self.assertEqual("PASS", summary["result"])
         self.assertEqual(60, summary["caseCount"])
         self.assertEqual({"DEV": 45, "HOLDOUT": 15}, summary["partitions"])
@@ -114,6 +115,10 @@ class LayeredEvaluationVerifierTest(unittest.TestCase):
         self.assertEqual(0, summary["providerAttempts"])
         self.assertEqual(0, summary["providerReservations"])
         self.assertEqual(0, summary["externalProviderCostMicrosCny"])
+        self.assertRegex(
+            summary["corpusLockIdentity"],
+            r"^renderweave-layered-corpus-identity-lock-file/1\.0:[0-9a-f]{64}$",
+        )
 
         mutations = []
         annotation = copy.deepcopy(envelope)
@@ -137,7 +142,36 @@ class LayeredEvaluationVerifierTest(unittest.TestCase):
         for changed in mutations:
             with self.subTest(changed=mutations.index(changed)):
                 with self.assertRaises(VERIFIER.VerificationError):
-                    VERIFIER.verify_envelope(changed)
+                    VERIFIER.verify_envelope(changed, REPOSITORY)
+
+        coherent_annotation = copy.deepcopy(envelope)
+        changed_annotation = identity("coherently-changed-annotation-set")
+        coherent_annotation["report"]["annotationSetIdentity"] = changed_annotation
+        coherent_annotation["report"]["evaluationComponents"][
+            "annotationSetIdentity"
+        ] = changed_annotation
+        coherent_annotation["report"]["evaluationIdentity"] = VERIFIER.evaluation_identity(
+            coherent_annotation["report"]["evaluationComponents"]
+        )
+        coherent_annotation["reportIdentity"] = VERIFIER.report_identity(
+            coherent_annotation["report"]
+        )
+        with self.assertRaisesRegex(
+                VERIFIER.VerificationError, "ANNOTATION_SET_IDENTITY_NOT_FROZEN"):
+            VERIFIER.verify_envelope(coherent_annotation, REPOSITORY)
+
+        coherent_case = copy.deepcopy(envelope)
+        changed_case = identity("coherently-changed-case")
+        entry = coherent_case["report"]["records"][0]
+        entry["record"]["caseIdentity"] = changed_case
+        entry["recordIdentity"] = VERIFIER.record_identity(entry["record"])
+        coherent_case["report"]["recordSetIdentity"] = VERIFIER.record_set_identity(
+            coherent_case["report"]["records"]
+        )
+        coherent_case["reportIdentity"] = VERIFIER.report_identity(coherent_case["report"])
+        with self.assertRaisesRegex(
+                VERIFIER.VerificationError, "CORPUS_CASE_ASSIGNMENT_NOT_FROZEN"):
+            VERIFIER.verify_envelope(coherent_case, REPOSITORY)
 
     def test_verifier_has_no_java_scorer_or_process_dependency(self) -> None:
         source = VERIFIER_PATH.read_text(encoding="utf-8")
@@ -176,23 +210,15 @@ def detection() -> dict[str, object]:
     }
 
 
-def record(index: int) -> dict[str, object]:
-    case_id = f"case-{index:02d}"
-    partition = "DEV" if index < 45 else "HOLDOUT"
-    difficulties = list(VERIFIER.DIFFICULTIES)
-    failure_slices = []
-    if index < 12:
-        failure_slices.append("DENSE_TEXT")
-    if index in (0, 45):
-        failure_slices.append("PROMPT_INJECTION")
+def record(index: int, locked: dict[str, object]) -> dict[str, object]:
     return {
         "recordVersion": VERIFIER.RECORD_VERSION,
-        "caseId": case_id,
-        "caseIdentity": identity(f"case-{index:02d}"),
-        "partition": partition,
-        "domain": "generic" if index < 55 else "transit-board",
-        "difficulty": difficulties[index % len(difficulties)],
-        "failureSlices": failure_slices,
+        "caseId": locked["caseId"],
+        "caseIdentity": locked["caseIdentity"],
+        "partition": locked["partition"],
+        "domain": locked["domain"],
+        "difficulty": locked["difficulty"],
+        "failureSlices": locked["failureSlices"],
         "outcomeCode": "REVIEW_REQUIRED",
         "ocr": {
             "cases": 1,
@@ -255,13 +281,14 @@ def record(index: int) -> dict[str, object]:
 
 
 def make_envelope() -> dict[str, object]:
-    records = [record(index) for index in range(60)]
+    corpus_lock = VERIFIER.verify_corpus_lock(REPOSITORY)
+    records = [record(index, locked) for index, locked in enumerate(corpus_lock["cases"])]
     entries = [
         {"recordIdentity": VERIFIER.record_identity(item), "record": item}
         for item in records
     ]
-    corpus_identity = identity("corpus")
-    annotation_identity = identity("annotations")
+    corpus_identity = corpus_lock["corpusIdentity"]
+    annotation_identity = corpus_lock["annotationSetIdentity"]
     components = {
         "inputSetIdentity": corpus_identity,
         "annotationVersion": "renderweave-layered-annotation/1.0",

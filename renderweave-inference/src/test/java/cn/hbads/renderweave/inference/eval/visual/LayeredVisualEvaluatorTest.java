@@ -2,6 +2,7 @@ package cn.hbads.renderweave.inference.eval.visual;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -78,9 +79,60 @@ class LayeredVisualEvaluatorTest {
     }
 
     @Test
+    void extraLineAndEmptyGoldInsertionRemainDistinctOcrFailureMetrics() {
+        var original = corpus.require("transit-board-v1");
+        var extraLine = new LayeredVisualPrediction.OcrLine("unexpected-line", "ephemeral-extra");
+        var nonEmptyGold = withOcrLines(LayeredSyntheticReplay.perfect(original),
+                append(LayeredSyntheticReplay.perfect(original).ocrLines(), extraLine));
+
+        var hallucination = evaluator.evaluate(original, nonEmptyGold).ocr();
+
+        assertEquals(1, hallucination.hallucinationCases());
+        assertEquals(0, hallucination.emptyReferenceCases());
+
+        var annotation = original.annotation();
+        var nonOcrEvidence = annotation.evidence().stream()
+                .filter(item -> item.ownerKind() != LayeredVisualAnnotation.OwnerKind.OCR_LINE
+                        && item.ownerKind() != LayeredVisualAnnotation.OwnerKind.OCR_TOKEN)
+                .toList();
+        var emptyAnnotation = new LayeredVisualAnnotation(
+                annotation.annotationVersion(), annotation.caseId(), annotation.renderIdentity(),
+                annotation.sourceLicense(), List.of(), List.of(), annotation.regions(), nonOcrEvidence,
+                annotation.precedenceEdges(), annotation.repeatGroups(), annotation.entities(),
+                annotation.relationships(), annotation.bindings(), annotation.candidate(),
+                annotation.abstention());
+        var emptyGold = new LayeredVisualCorpus.Case(
+                original.caseId(), original.partition(), original.domain(), original.difficulty(),
+                original.failureSlices(), original.renderCase(), original.renderIdentity(), emptyAnnotation,
+                original.annotationIdentity(), original.caseIdentity());
+        var emptyGoldInsertion = withOcrLines(LayeredSyntheticReplay.perfect(emptyGold), List.of(extraLine));
+
+        var insertion = evaluator.evaluate(emptyGold, emptyGoldInsertion).ocr();
+
+        assertEquals(1, insertion.hallucinationCases());
+        assertEquals(1, insertion.emptyReferenceCases());
+    }
+
+    @Test
     void caseIdentityMismatchFailsClosed() {
         var gold = corpus.require("transit-board-v1");
         var prediction = LayeredSyntheticReplay.perfect(corpus.require("transit-board-v2"));
         assertThrows(IllegalArgumentException.class, () -> evaluator.evaluate(gold, prediction));
+    }
+
+    private static LayeredVisualPrediction withOcrLines(
+            LayeredVisualPrediction source,
+            List<LayeredVisualPrediction.OcrLine> ocrLines
+    ) {
+        return new LayeredVisualPrediction(
+                source.caseId(), ocrLines, source.regions(), source.evidence(), source.precedenceEdges(),
+                source.repeatGroups(), source.entities(), source.relationships(), source.bindings(),
+                source.candidate(), source.confidence(), source.runtime());
+    }
+
+    private static <T> List<T> append(List<T> source, T item) {
+        var result = new ArrayList<>(source);
+        result.add(item);
+        return List.copyOf(result);
     }
 }

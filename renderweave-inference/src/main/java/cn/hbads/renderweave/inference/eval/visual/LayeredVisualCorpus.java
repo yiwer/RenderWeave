@@ -31,8 +31,11 @@ public final class LayeredVisualCorpus {
     public static final String ANNOTATION_SET_VERSION = "renderweave-layered-annotation-set/2.0";
 
     private static final String MANIFEST_RESOURCE = "visual-eval/v2/manifest.json";
+    private static final String IDENTITY_LOCK_RESOURCE = "visual-eval/v2/identity-lock.json";
     private static final String EXPECTED_SOURCE_SHA =
             "ca53d88763af161a1b1b22fa50774c56eae929affe5316157ae355fdb005b8b3";
+    private static final String EXPECTED_IDENTITY_LOCK_SHA =
+            "cf54fd985e89a024fdc0742a737c21442c49718fdf58b0bb05b87e2cffd2247d";
     private static final ObjectMapper JSON = JsonMapper.builder(
                     JsonFactory.builder().enable(StreamReadFeature.STRICT_DUPLICATE_DETECTION).build())
             .enable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS)
@@ -96,6 +99,7 @@ public final class LayeredVisualCorpus {
                     manifest.renderContractIdentity(), manifest.annotationDerivationIdentity(),
                     annotationSetIdentity,
                     sha256(cases.stream().map(Case::caseIdentity).toList())));
+            validateIdentityLock(classLoader, cases, annotationSetIdentity, corpusIdentity);
         } catch (IOException | RuntimeException failure) {
             throw new IllegalStateException("LAYERED_VISUAL_CORPUS_INVALID", failure);
         }
@@ -200,6 +204,37 @@ public final class LayeredVisualCorpus {
         }
     }
 
+    private record IdentityLock(
+            String lockVersion,
+            String corpusVersion,
+            String manifestSha256,
+            String sourceScenesSha256,
+            String renderContractIdentity,
+            String annotationDerivationIdentity,
+            String annotationSetIdentity,
+            String corpusIdentity,
+            List<IdentityLockCase> cases
+    ) {
+        private IdentityLock {
+            cases = List.copyOf(Objects.requireNonNull(cases, "cases"));
+        }
+    }
+
+    private record IdentityLockCase(
+            String caseId,
+            LayeredEvaluationRecord.Partition partition,
+            String domain,
+            LayeredEvaluationRecord.Difficulty difficulty,
+            List<LayeredEvaluationRecord.FailureSlice> failureSlices,
+            String renderIdentity,
+            String annotationIdentity,
+            String caseIdentity
+    ) {
+        private IdentityLockCase {
+            failureSlices = List.copyOf(Objects.requireNonNull(failureSlices, "failureSlices"));
+        }
+    }
+
     private static void validateManifest(ClassLoader classLoader, Manifest value) throws IOException {
         if (!VERSION.equals(value.corpusVersion())
                 || !LayeredVisualAnnotation.VERSION.equals(value.annotationVersion())
@@ -227,6 +262,44 @@ public final class LayeredVisualCorpus {
         if (!ids.equals(Set.of("repository-synthetic-scenes", "ofl-font-subset"))
                 || !licenses.equals(Set.of(AssetLicense.REPOSITORY_SYNTHETIC, AssetLicense.OFL_1_1))) {
             throw new IllegalArgumentException("SOURCE_INVENTORY_ALLOWLIST_INVALID");
+        }
+    }
+
+    private void validateIdentityLock(
+            ClassLoader classLoader,
+            List<Case> actualCases,
+            String actualAnnotationSetIdentity,
+            String actualCorpusIdentity
+    ) throws IOException {
+        var bytes = resource(classLoader, IDENTITY_LOCK_RESOURCE);
+        if (!EXPECTED_IDENTITY_LOCK_SHA.equals(sha256(bytes))) {
+            throw new IllegalArgumentException("LAYERED_CORPUS_IDENTITY_LOCK_BYTES_CHANGED");
+        }
+        var lock = JSON.readValue(bytes, IdentityLock.class);
+        if (!"renderweave-layered-corpus-identity-lock/1.0".equals(lock.lockVersion())
+                || !VERSION.equals(lock.corpusVersion())
+                || !manifestSha256.equals(lock.manifestSha256())
+                || !manifest.sourceScenesSha256().equals(lock.sourceScenesSha256())
+                || !manifest.renderContractIdentity().equals(lock.renderContractIdentity())
+                || !manifest.annotationDerivationIdentity().equals(lock.annotationDerivationIdentity())
+                || !actualAnnotationSetIdentity.equals(lock.annotationSetIdentity())
+                || !actualCorpusIdentity.equals(lock.corpusIdentity())
+                || lock.cases().size() != actualCases.size()) {
+            throw new IllegalArgumentException("LAYERED_CORPUS_IDENTITY_LOCK_INVALID");
+        }
+        for (var index = 0; index < actualCases.size(); index++) {
+            var expected = lock.cases().get(index);
+            var actual = actualCases.get(index);
+            if (!actual.caseId().equals(expected.caseId())
+                    || actual.partition() != expected.partition()
+                    || !actual.domain().equals(expected.domain())
+                    || actual.difficulty() != expected.difficulty()
+                    || !actual.failureSlices().equals(expected.failureSlices())
+                    || !actual.renderIdentity().equals(expected.renderIdentity())
+                    || !actual.annotationIdentity().equals(expected.annotationIdentity())
+                    || !actual.caseIdentity().equals(expected.caseIdentity())) {
+                throw new IllegalArgumentException("LAYERED_CORPUS_IDENTITY_LOCK_CASE_DRIFT");
+            }
         }
     }
 

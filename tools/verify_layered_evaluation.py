@@ -20,6 +20,17 @@ RECORD_SET_VERSION = "renderweave-layered-record-set/1.0"
 VERIFIER_VERSION = "renderweave-layered-python-verifier/1.0"
 RECOMPUTED_METRICS_VERSION = "renderweave-layered-recomputed-metrics/1.0"
 CASE_ASSIGNMENT_VERSION = "renderweave-layered-case-assignment/1.0"
+CORPUS_VERSION = "renderweave-visual-stage-corpus/2.0"
+ANNOTATION_SET_VERSION = "renderweave-layered-annotation-set/2.0"
+CORPUS_LOCK_VERSION = "renderweave-layered-corpus-identity-lock/1.0"
+CORPUS_LOCK_IDENTITY_VERSION = "renderweave-layered-corpus-identity-lock-file/1.0"
+CORPUS_LOCK_SHA256 = "cf54fd985e89a024fdc0742a737c21442c49718fdf58b0bb05b87e2cffd2247d"
+CORPUS_LOCK_PATH = pathlib.PurePosixPath(
+    "renderweave-inference/src/main/resources/visual-eval/v2/identity-lock.json"
+)
+CORPUS_MANIFEST_PATH = pathlib.PurePosixPath(
+    "renderweave-inference/src/main/resources/visual-eval/v2/manifest.json"
+)
 
 REGION_KINDS = ("TITLE", "SLOT", "GROUP", "REPEATED_GROUP", "ITEM")
 PARTITIONS = ("DEV", "HOLDOUT")
@@ -122,6 +133,207 @@ def _length_prefixed_hash(values: Iterable[str], prefix: str | None = None) -> s
         digest.update(encoded)
         digest.update(b"\n")
     return digest.hexdigest()
+
+
+def _repository_file(repository: pathlib.Path, relative: pathlib.PurePosixPath,
+                     code: str) -> pathlib.Path:
+    repository = repository.resolve(strict=True)
+    candidate = repository.joinpath(*relative.parts)
+    try:
+        resolved = candidate.resolve(strict=True)
+    except OSError:
+        fail(code)
+    if candidate.is_symlink() or not resolved.is_file() or not resolved.is_relative_to(repository):
+        fail(code)
+    return resolved
+
+
+def verify_corpus_lock(repository: pathlib.Path) -> dict[str, Any]:
+    repository = repository.resolve(strict=True)
+    lock_path = _repository_file(repository, CORPUS_LOCK_PATH, "CORPUS_LOCK_MISSING")
+    lock_raw = lock_path.read_bytes()
+    if _hash_bytes(lock_raw) != CORPUS_LOCK_SHA256:
+        fail("CORPUS_LOCK_BYTES_CHANGED")
+    try:
+        lock = require_object(parse_strict_json(lock_raw.decode("utf-8")), "CORPUS_LOCK")
+    except UnicodeError:
+        fail("CORPUS_LOCK_INVALID")
+    require_keys(lock, (
+        "lockVersion", "corpusVersion", "manifestSha256", "sourceScenesSha256",
+        "renderContractIdentity", "annotationDerivationIdentity", "annotationSetIdentity",
+        "corpusIdentity", "cases",
+    ), "CORPUS_LOCK")
+    if lock["lockVersion"] != CORPUS_LOCK_VERSION or lock["corpusVersion"] != CORPUS_VERSION:
+        fail("CORPUS_LOCK_VERSION_INVALID")
+
+    manifest_path = _repository_file(repository, CORPUS_MANIFEST_PATH, "CORPUS_MANIFEST_MISSING")
+    manifest_raw = manifest_path.read_bytes()
+    if lock["manifestSha256"] != _hash_bytes(manifest_raw):
+        fail("CORPUS_MANIFEST_IDENTITY_DRIFT")
+    try:
+        manifest = require_object(parse_strict_json(manifest_raw.decode("utf-8")), "CORPUS_MANIFEST")
+    except UnicodeError:
+        fail("CORPUS_MANIFEST_INVALID")
+    require_keys(manifest, (
+        "corpusVersion", "annotationVersion", "sourceCorpusVersion", "sourceScenesSha256",
+        "renderContractIdentity", "annotationDerivationIdentity", "holdoutMutationPolicy",
+        "sourceInventory",
+    ), "CORPUS_MANIFEST")
+    expected_manifest = {
+        "corpusVersion": CORPUS_VERSION,
+        "annotationVersion": "renderweave-layered-annotation/1.0",
+        "sourceCorpusVersion": "renderweave-visual-stage-corpus/1.0",
+        "sourceScenesSha256": lock["sourceScenesSha256"],
+        "renderContractIdentity": lock["renderContractIdentity"],
+        "annotationDerivationIdentity": lock["annotationDerivationIdentity"],
+        "holdoutMutationPolicy": "MOVE_TO_DEV_AND_REPLACE_HOLDOUT/1.0",
+    }
+    for key, expected in expected_manifest.items():
+        if manifest[key] != expected:
+            fail("CORPUS_MANIFEST_CONTRACT_DRIFT")
+    inventory = require_list(manifest["sourceInventory"], "CORPUS_SOURCE_INVENTORY")
+    if len(inventory) != 2:
+        fail("CORPUS_SOURCE_INVENTORY_INVALID")
+    inventory_ids: set[str] = set()
+    for raw_item in inventory:
+        item = require_object(raw_item, "CORPUS_SOURCE_ITEM")
+        require_keys(item, (
+            "assetId", "license", "resource", "sha256", "noticeResource", "noticeSha256",
+        ), "CORPUS_SOURCE_ITEM")
+        asset_id = require_string(item["assetId"], "CORPUS_ASSET_ID")
+        if asset_id in inventory_ids:
+            fail("CORPUS_SOURCE_DUPLICATE")
+        inventory_ids.add(asset_id)
+        for resource_key, hash_key in (("resource", "sha256"), ("noticeResource", "noticeSha256")):
+            relative_value = require_string(item[resource_key], "CORPUS_RESOURCE")
+            if not re.fullmatch(r"visual-eval/[A-Za-z0-9._/-]{1,160}", relative_value) \
+                    or ".." in relative_value or "\\" in relative_value:
+                fail("CORPUS_RESOURCE_INVALID")
+            relative = pathlib.PurePosixPath(
+                "renderweave-inference/src/main/resources") / pathlib.PurePosixPath(relative_value)
+            resource_path = _repository_file(repository, relative, "CORPUS_RESOURCE_MISSING")
+            if item[hash_key] != _hash_bytes(resource_path.read_bytes()):
+                fail("CORPUS_RESOURCE_IDENTITY_DRIFT")
+    if inventory_ids != {"repository-synthetic-scenes", "ofl-font-subset"}:
+        fail("CORPUS_SOURCE_ALLOWLIST_INVALID")
+
+    scenes_item = next(item for item in inventory if item["assetId"] == "repository-synthetic-scenes")
+    scenes_relative = pathlib.PurePosixPath(
+        "renderweave-inference/src/main/resources") / pathlib.PurePosixPath(scenes_item["resource"])
+    scenes_path = _repository_file(repository, scenes_relative, "CORPUS_SCENES_MISSING")
+    try:
+        scenes_document = require_object(
+            parse_strict_json(scenes_path.read_text(encoding="utf-8")), "CORPUS_SCENES",
+        )
+    except UnicodeError:
+        fail("CORPUS_SCENES_INVALID")
+    require_keys(scenes_document, ("corpusVersion", "scenes"), "CORPUS_SCENES")
+    if scenes_document["corpusVersion"] != "renderweave-visual-stage-corpus/1.0":
+        fail("CORPUS_SOURCE_VERSION_INVALID")
+    scenes = require_list(scenes_document["scenes"], "CORPUS_SCENES")
+    if len(scenes) != 12:
+        fail("CORPUS_SOURCE_SCENE_COUNT_INVALID")
+
+    locked_cases = require_list(lock["cases"], "CORPUS_LOCK_CASES")
+    if len(locked_cases) != 60:
+        fail("CORPUS_LOCK_CASE_COUNT_INVALID")
+    expected_assignments: list[dict[str, Any]] = []
+    for scene_index, raw_scene in enumerate(scenes):
+        scene = require_object(raw_scene, "CORPUS_SCENE")
+        scene_id = require_string(scene.get("sceneId"), "CORPUS_SCENE_ID")
+        domain_pack = require_string(scene.get("domainPack"), "CORPUS_DOMAIN")
+        elements = require_list(scene.get("elements"), "CORPUS_ELEMENTS")
+        repeated = any(
+            type(item) is dict and item.get("kind") == "GROUP" and item.get("multiplicity") == "MANY"
+            for item in elements
+        )
+        for variant in range(1, 6):
+            failures: list[str] = []
+            if variant == 3:
+                failures.append("DENSE_TEXT")
+            if variant == 2:
+                failures.append("MULTI_COLUMN")
+            if repeated:
+                failures.append("REPEATED_LIST")
+            if scene_id == "low-information-poster" and variant in (3, 5):
+                failures.append("PROMPT_INJECTION")
+            expected_assignments.append({
+                "caseId": f"{scene_id}-v{variant}",
+                "partition": "HOLDOUT" if variant == 5 or variant == 4 and scene_index < 3 else "DEV",
+                "domain": domain_pack.lower().replace("_", "-"),
+                "difficulty": {
+                    1: "BASELINE", 2: "MULTI_COLUMN", 3: "DENSE_TEXT",
+                    4: "LOW_CONTRAST", 5: "NOISY",
+                }[variant],
+                "failureSlices": failures,
+            })
+
+    annotation_identities: list[str] = []
+    case_identities: list[str] = []
+    normalized_cases: list[dict[str, Any]] = []
+    for index, raw_case in enumerate(locked_cases):
+        item = require_object(raw_case, f"CORPUS_LOCK_CASE:{index}")
+        require_keys(item, (
+            "caseId", "partition", "domain", "difficulty", "failureSlices",
+            "renderIdentity", "annotationIdentity", "caseIdentity",
+        ), f"CORPUS_LOCK_CASE:{index}")
+        expected_assignment = expected_assignments[index]
+        if {key: item[key] for key in expected_assignment} != expected_assignment:
+            fail("CORPUS_LOCK_ASSIGNMENT_DRIFT")
+        failures = require_list(item["failureSlices"], "CORPUS_LOCK_FAILURE_SLICES")
+        if (
+            len(failures) != len(set(failures))
+            or any(type(value) is not str or value not in FAILURE_SLICES for value in failures)
+        ):
+            fail("CORPUS_LOCK_FAILURE_SLICES_INVALID")
+        render_identity = require_identity(item["renderIdentity"], "CORPUS_RENDER_IDENTITY")
+        annotation_identity = require_identity(item["annotationIdentity"], "CORPUS_ANNOTATION_IDENTITY")
+        case_identity = require_identity(item["caseIdentity"], "CORPUS_CASE_IDENTITY")
+        if not render_identity.startswith("render-sha256:") \
+                or not annotation_identity.startswith("renderweave-layered-annotation/1.0:") \
+                or not case_identity.startswith("renderweave-layered-case/2.0:"):
+            fail("CORPUS_LOCK_IDENTITY_PREFIX_INVALID")
+        expected_case_identity = "renderweave-layered-case/2.0:" + _length_prefixed_hash((
+            CORPUS_VERSION,
+            lock["manifestSha256"],
+            item["caseId"],
+            item["partition"],
+            item["domain"],
+            item["difficulty"],
+            "[" + ", ".join(failures) + "]",
+            render_identity,
+            annotation_identity,
+        ))
+        if case_identity != expected_case_identity:
+            fail("CORPUS_LOCK_CASE_IDENTITY_DRIFT")
+        annotation_identities.append(annotation_identity)
+        case_identities.append(case_identity)
+        normalized_cases.append(dict(item))
+    require_distinct(annotation_identities, "CORPUS_ANNOTATION_IDENTITY_DUPLICATE")
+    require_distinct(case_identities, "CORPUS_CASE_IDENTITY_DUPLICATE")
+    expected_annotation_set = (
+        f"{ANNOTATION_SET_VERSION}:{_length_prefixed_hash(annotation_identities)}"
+    )
+    if lock["annotationSetIdentity"] != expected_annotation_set:
+        fail("CORPUS_ANNOTATION_SET_IDENTITY_DRIFT")
+    case_set_hash = _length_prefixed_hash(case_identities)
+    expected_corpus_identity = f"{CORPUS_VERSION}:" + _length_prefixed_hash((
+        CORPUS_VERSION,
+        lock["manifestSha256"],
+        lock["sourceScenesSha256"],
+        lock["renderContractIdentity"],
+        lock["annotationDerivationIdentity"],
+        expected_annotation_set,
+        case_set_hash,
+    ))
+    if lock["corpusIdentity"] != expected_corpus_identity:
+        fail("CORPUS_LOCK_CORPUS_IDENTITY_DRIFT")
+    return {
+        "lockIdentity": f"{CORPUS_LOCK_IDENTITY_VERSION}:{_hash_bytes(lock_raw)}",
+        "corpusIdentity": expected_corpus_identity,
+        "annotationSetIdentity": expected_annotation_set,
+        "cases": normalized_cases,
+    }
 
 
 def evaluation_identity(components: dict[str, Any]) -> str:
@@ -642,7 +854,10 @@ def _error_rate(numerator: int, denominator: int) -> int:
     return 0 if denominator == 0 else numerator * 10_000 // denominator
 
 
-def verify_envelope(envelope: Any) -> dict[str, Any]:
+def verify_envelope(
+        envelope: Any,
+        repository: pathlib.Path | None = None,
+) -> dict[str, Any]:
     envelope = require_object(envelope, "ENVELOPE")
     require_keys(envelope, ("envelopeVersion", "reportIdentity", "report"), "ENVELOPE")
     if envelope["envelopeVersion"] != ENVELOPE_VERSION:
@@ -690,6 +905,28 @@ def verify_envelope(envelope: Any) -> dict[str, Any]:
         records.append(record)
     if report["recordSetIdentity"] != record_set_identity(entries):
         fail("RECORD_SET_IDENTITY_DRIFT")
+
+    corpus_lock = verify_corpus_lock(repository) if repository is not None else None
+    if corpus_lock is not None:
+        if report["corpusIdentity"] != corpus_lock["corpusIdentity"]:
+            fail("CORPUS_IDENTITY_NOT_FROZEN")
+        if report["annotationSetIdentity"] != corpus_lock["annotationSetIdentity"]:
+            fail("ANNOTATION_SET_IDENTITY_NOT_FROZEN")
+        locked_cases = corpus_lock["cases"]
+        if len(records) != len(locked_cases):
+            fail("CORPUS_CASE_COUNT_DRIFT")
+        for record, locked in zip(records, locked_cases, strict=True):
+            actual = {
+                "caseId": record["caseId"],
+                "caseIdentity": record["caseIdentity"],
+                "partition": record["partition"],
+                "domain": record["domain"],
+                "difficulty": record["difficulty"],
+                "failureSlices": record["failureSlices"],
+            }
+            expected = {key: locked[key] for key in actual}
+            if actual != expected:
+                fail("CORPUS_CASE_ASSIGNMENT_NOT_FROZEN")
 
     if (
         report["expectedCaseCount"] != 60
@@ -772,6 +1009,9 @@ def verify_envelope(envelope: Any) -> dict[str, Any]:
         "recordSetIdentity": report["recordSetIdentity"],
         "caseAssignmentIdentity": assignment_identity,
         "recomputedMetricsIdentity": metrics_identity,
+        "corpusLockIdentity": (
+            corpus_lock["lockIdentity"] if corpus_lock is not None else "UNBOUND_TEST_FIXTURE"
+        ),
         "caseCount": 60,
         "partitions": partition_counts,
         "domains": domain_counts,
@@ -1090,7 +1330,7 @@ def validate_box(value: tuple[int, int, int, int]) -> None:
         fail("METRIC_BOX_INVALID")
 
 
-def verify_file(path: pathlib.Path) -> dict[str, Any]:
+def verify_file(path: pathlib.Path, repository: pathlib.Path) -> dict[str, Any]:
     path = path.resolve()
     if not path.is_file() or path.stat().st_size <= 0 or path.stat().st_size > MAXIMUM_REPORT_BYTES:
         fail("REPORT_FILE_INVALID")
@@ -1099,16 +1339,18 @@ def verify_file(path: pathlib.Path) -> dict[str, Any]:
     except (OSError, UnicodeError):
         fail("REPORT_FILE_READ_FAILED")
     scan_payload_free(raw, "REPORT_FILE")
-    return verify_envelope(parse_strict_json(raw))
+    return verify_envelope(parse_strict_json(raw), repository)
 
 
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Verify a payload-safe layered evaluation report")
     parser.add_argument("report", type=pathlib.Path)
     parser.add_argument("--output", type=pathlib.Path)
+    parser.add_argument("--repository", type=pathlib.Path,
+                        default=pathlib.Path(__file__).resolve().parents[1])
     arguments = parser.parse_args(argv)
     try:
-        summary = verify_file(arguments.report)
+        summary = verify_file(arguments.report, arguments.repository.resolve(strict=True))
         encoded = canonical_json(summary).decode("utf-8")
         scan_payload_free(encoded, "VERIFIER_SUMMARY")
         if arguments.output is None:

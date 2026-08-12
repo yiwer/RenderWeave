@@ -33,6 +33,15 @@ $gateSummaryPath = Join-Path $resolvedEvidenceDir 'layered-r1-summary.json'
 $independentSummaryPath = Join-Path $resolvedEvidenceDir 'layered-r1-independent-summary.json'
 $inferenceJUnitPath = Join-Path $resolvedEvidenceDir 'r1-junit-inference.xml'
 $appJUnitPath = Join-Path $resolvedEvidenceDir 'r1-junit-app.xml'
+$r0ReportPath = Join-Path $resolvedEvidenceDir 'document-observation-r0-summary.json'
+$r0InferenceJUnitPath = Join-Path $resolvedEvidenceDir 'r0-junit-inference.xml'
+$r0AppJUnitPath = Join-Path $resolvedEvidenceDir 'r0-junit-app.xml'
+$r0Inputs = @($r0ReportPath, $r0InferenceJUnitPath, $r0AppJUnitPath)
+foreach ($path in $r0Inputs) {
+    if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
+        throw "Layered R1 requires same-directory R0 evidence: $(Split-Path -Leaf $path)"
+    }
+}
 $outputs = @(
     $reportPath, $pythonSummaryPath, $gateSummaryPath, $independentSummaryPath,
     $inferenceJUnitPath, $appJUnitPath
@@ -136,6 +145,10 @@ $appTestClasses = @('LocalProcessVisualEvidenceAcquisitionTest')
 
 Push-Location $repoRoot
 try {
+    Invoke-Checked 'r1-r0-same-revision-prerequisite' {
+        & python.exe tools/verify_document_observation_r0.py `
+            --report $r0ReportPath --repository $repoRoot
+    }
     Invoke-Checked 'r1-python-independent-metric-tests' {
         & python.exe tools/test_verify_layered_evaluation.py
     }
@@ -171,7 +184,8 @@ try {
     Merge-JUnitReports -Sources $appReports -Destination $appJUnitPath
 
     Invoke-Checked 'r1-python-independent-report-replay' {
-        & python.exe tools/verify_layered_evaluation.py $reportPath --output $pythonSummaryPath
+        & python.exe tools/verify_layered_evaluation.py $reportPath `
+            --repository $repoRoot --output $pythonSummaryPath
     }
     if (-not (Test-Path -LiteralPath $pythonSummaryPath -PathType Leaf)) {
         throw 'Python layered verifier completed without producing its summary.'
@@ -179,6 +193,7 @@ try {
 
     $pythonSummary = Get-Content -LiteralPath $pythonSummaryPath -Raw -Encoding UTF8 |
         ConvertFrom-Json
+    $r0Summary = Get-Content -LiteralPath $r0ReportPath -Raw -Encoding UTF8 | ConvertFrom-Json
     $protectedPaths = @(
         '.sdlc/live/visual-evaluation-qwen37-flash.json',
         '.sdlc/live/visual-evaluation-qwen37-plus.json',
@@ -213,6 +228,9 @@ try {
         throw 'Unable to resolve the layered R1 evidence revision.'
     }
     $evidenceFiles = @(
+        'document-observation-r0-summary.json',
+        'r0-junit-inference.xml',
+        'r0-junit-app.xml',
         'layered-report.json',
         'python-verifier-summary.json',
         'layered-r1-summary.json',
@@ -254,6 +272,7 @@ try {
             recordSetIdentity = $pythonSummary.recordSetIdentity
             caseAssignmentIdentity = $pythonSummary.caseAssignmentIdentity
             recomputedMetricsIdentity = $pythonSummary.recomputedMetricsIdentity
+            corpusLockIdentity = $pythonSummary.corpusLockIdentity
         }
         crossLanguage = [ordered]@{
             java = 'PASS'
@@ -281,6 +300,18 @@ try {
         historicalBytes = [ordered]@{
             unchanged = $true
             protectedFiles = $protectedFiles
+        }
+        r0Prerequisite = [ordered]@{
+            proofVersion = 'renderweave-layered-r0-prerequisite-proof/1.0'
+            result = 'PASS'
+            assurance = 'A2_STRICT_INPUT_REPLAY'
+            reportFile = 'document-observation-r0-summary.json'
+            reportSha256 = (Get-FileHash -LiteralPath $r0ReportPath -Algorithm SHA256).Hash.ToLowerInvariant()
+            revision = $r0Summary.revision
+            terminalState = $r0Summary.behaviorOracle.terminalState
+            providerAttempts = [int]$r0Summary.externalProvider.attempts
+            providerReservations = [int]$r0Summary.externalProvider.reservations
+            externalProviderCostMicrosCny = [long]$r0Summary.externalProvider.costMicrosCny
         }
         lifecycle = [ordered]@{
             productV45 = 'EXPERIMENTAL'
@@ -319,7 +350,10 @@ try {
             --report $reportPath `
             --verifier-summary $pythonSummaryPath `
             --gate-summary $gateSummaryPath `
+            --r0-report $r0ReportPath `
             --repository $repoRoot `
+            --evidence-file $r0InferenceJUnitPath `
+            --evidence-file $r0AppJUnitPath `
             --evidence-file $inferenceJUnitPath `
             --evidence-file $appJUnitPath `
             --output $independentSummaryPath

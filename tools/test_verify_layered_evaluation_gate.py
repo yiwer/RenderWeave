@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import copy
+import hashlib
 import importlib.util
 import pathlib
 import subprocess
@@ -39,12 +40,13 @@ class LayeredEvaluationGateVerifierTest(unittest.TestCase):
 
     def test_full_cross_language_gate_and_payload_scan_pass(self) -> None:
         envelope = FIXTURE.make_envelope()
-        independent = VERIFIER.verify_envelope(envelope)
+        independent = VERIFIER.verify_envelope(envelope, REPOSITORY)
         summary = gate_summary(independent, self.protected, self.revision)
-        payloads = evidence_payloads(envelope, independent, summary)
+        proof = r0_proof(self.revision)
+        payloads = evidence_payloads(envelope, independent, summary, self.revision)
 
         result = GATE.verify_documents(
-            envelope, independent, summary, REPOSITORY, payloads,
+            envelope, independent, summary, REPOSITORY, payloads, proof,
         )
 
         self.assertEqual("PASS", result["result"])
@@ -58,40 +60,46 @@ class LayeredEvaluationGateVerifierTest(unittest.TestCase):
 
     def test_lifecycle_future_gate_provider_history_and_payload_tampering_fail(self) -> None:
         envelope = FIXTURE.make_envelope()
-        independent = VERIFIER.verify_envelope(envelope)
+        independent = VERIFIER.verify_envelope(envelope, REPOSITORY)
         baseline = gate_summary(independent, self.protected, self.revision)
+        proof = r0_proof(self.revision)
 
         mutations: list[tuple[str, dict, dict[str, bytes]]] = []
         lifecycle = copy.deepcopy(baseline)
         lifecycle["lifecycle"]["productV45"] = "CERTIFIED"
         mutations.append(("GATE_LIFECYCLE_INVALID", lifecycle,
-                          evidence_payloads(envelope, independent, lifecycle)))
+                          evidence_payloads(envelope, independent, lifecycle, self.revision)))
 
         future = copy.deepcopy(baseline)
         future["futureEvidenceGates"]["R2"]["triggered"] = True
         mutations.append(("FUTURE_GATE_AUTO_TRIGGERED", future,
-                          evidence_payloads(envelope, independent, future)))
+                          evidence_payloads(envelope, independent, future, self.revision)))
 
         provider = copy.deepcopy(baseline)
         provider["externalProvider"]["attempts"] = 1
         mutations.append(("GATE_PROVIDER_USAGE_NONZERO", provider,
-                          evidence_payloads(envelope, independent, provider)))
+                          evidence_payloads(envelope, independent, provider, self.revision)))
 
         history = copy.deepcopy(baseline)
         history["historicalBytes"]["protectedFiles"][0]["sha256"] = "0" * 64
         mutations.append(("PROTECTED_FILE_MANIFEST_DRIFT", history,
-                          evidence_payloads(envelope, independent, history)))
+                          evidence_payloads(envelope, independent, history, self.revision)))
 
         visual = copy.deepcopy(baseline)
         visual["visualDiff"]["evidenceIncluded"] = True
         mutations.append(("VISUAL_DIFF_EVIDENCE_INVALID", visual,
-                          evidence_payloads(envelope, independent, visual)))
+                          evidence_payloads(envelope, independent, visual, self.revision)))
 
-        forbidden_payloads = evidence_payloads(envelope, independent, baseline)
+        r0 = copy.deepcopy(baseline)
+        r0["r0Prerequisite"]["result"] = "UNVERIFIED"
+        mutations.append(("R0_PREREQUISITE_INVALID", r0,
+                          evidence_payloads(envelope, independent, r0, self.revision)))
+
+        forbidden_payloads = evidence_payloads(envelope, independent, baseline, self.revision)
         forbidden_payloads["unexpected.json"] = b'{"providerRequest":"secret"}'
         mutations.append(("FORBIDDEN_EVIDENCE_MEMBER", baseline, forbidden_payloads))
 
-        image_payloads = evidence_payloads(envelope, independent, baseline)
+        image_payloads = evidence_payloads(envelope, independent, baseline, self.revision)
         image_payloads["unexpected.png"] = b"\x89PNG\r\n\x1a\n"
         mutations.append(("IMAGE_EVIDENCE_FORBIDDEN", baseline, image_payloads))
 
@@ -99,7 +107,7 @@ class LayeredEvaluationGateVerifierTest(unittest.TestCase):
             with self.subTest(expected=expected):
                 with self.assertRaisesRegex(GATE.GateVerificationError, expected):
                     GATE.verify_documents(
-                        envelope, independent, changed, REPOSITORY, payloads,
+                        envelope, independent, changed, REPOSITORY, payloads, proof,
                     )
 
 
@@ -137,7 +145,7 @@ def gate_summary(
             key: independent[key] for key in (
                 "reportIdentity", "evaluationIdentity", "corpusIdentity",
                 "annotationSetIdentity", "recordSetIdentity", "caseAssignmentIdentity",
-                "recomputedMetricsIdentity",
+                "recomputedMetricsIdentity", "corpusLockIdentity",
             )
         },
         "crossLanguage": {
@@ -167,6 +175,7 @@ def gate_summary(
             "unchanged": True,
             "protectedFiles": protected,
         },
+        "r0Prerequisite": r0_proof(revision),
         "lifecycle": {
             "productV45": "EXPERIMENTAL",
             "n7": "in_progress",
@@ -193,14 +202,41 @@ def gate_summary(
             "scanner": GATE.SCANNER_VERSION,
             "forbiddenMatches": 0,
             "files": [
-                "layered-report.json", "python-verifier-summary.json", "layered-r1-summary.json",
+                "document-observation-r0-summary.json", "layered-report.json",
+                "python-verifier-summary.json", "layered-r1-summary.json",
             ],
         },
     }
 
 
-def evidence_payloads(envelope: dict, independent: dict, summary: dict) -> dict[str, bytes]:
+def r0_payload(revision: str) -> bytes:
+    return VERIFIER.canonical_json({
+        "result": "passed", "revision": revision, "terminalState": "REVIEW_REQUIRED",
+        "externalProvider": {"attempts": 0, "reservations": 0, "costMicrosCny": 0},
+    })
+
+
+def r0_proof(revision: str) -> dict[str, object]:
+    payload = r0_payload(revision)
     return {
+        "proofVersion": GATE.R0_PROOF_VERSION,
+        "result": "PASS",
+        "assurance": "A2_STRICT_INPUT_REPLAY",
+        "reportFile": "document-observation-r0-summary.json",
+        "reportSha256": hashlib.sha256(payload).hexdigest(),
+        "revision": revision,
+        "terminalState": "REVIEW_REQUIRED",
+        "providerAttempts": 0,
+        "providerReservations": 0,
+        "externalProviderCostMicrosCny": 0,
+    }
+
+
+def evidence_payloads(
+        envelope: dict, independent: dict, summary: dict, revision: str,
+) -> dict[str, bytes]:
+    return {
+        "document-observation-r0-summary.json": r0_payload(revision),
         "layered-report.json": VERIFIER.canonical_json(envelope),
         "python-verifier-summary.json": VERIFIER.canonical_json(independent),
         "layered-r1-summary.json": VERIFIER.canonical_json(summary),
