@@ -9,7 +9,6 @@ import cn.hbads.renderweave.inference.vision.DocumentVisionException;
 import cn.hbads.renderweave.inference.vision.DocumentVisionObservation;
 import cn.hbads.renderweave.inference.vision.DocumentVisionPreprocessor;
 import cn.hbads.renderweave.inference.vision.DocumentObservationIR;
-import cn.hbads.renderweave.inference.vision.VisualEvidenceAcquisition;
 import cn.hbads.renderweave.inference.vision.VisualEvidenceAcquisitionException;
 import tools.jackson.core.StreamReadFeature;
 import tools.jackson.core.json.JsonFactory;
@@ -38,7 +37,7 @@ import java.util.concurrent.Executors;
 
 /** Optional local process adapter. It never invokes a shell and exposes only a fixed stdin/stdout protocol. */
 final class LocalProcessDocumentVisionPreprocessor
-        implements DocumentVisionPreprocessor, VisualEvidenceAcquisition {
+        implements ConfiguredVisualEvidenceAcquisition {
     static final String EXPECTED_CAPABILITY_ID =
             "rapidocr-3.9.2-openvino-2026.0.0-ppocrv6-small-c05805399d7d10b1";
     static final String EXPECTED_ENGINE = "rapidocr-openvino-ppocrv6-small";
@@ -158,7 +157,8 @@ final class LocalProcessDocumentVisionPreprocessor
         return capability;
     }
 
-    AcquisitionPolicy acquisitionPolicy() {
+    @Override
+    public AcquisitionPolicy acquisitionPolicy() {
         return acquisitionPolicy;
     }
 

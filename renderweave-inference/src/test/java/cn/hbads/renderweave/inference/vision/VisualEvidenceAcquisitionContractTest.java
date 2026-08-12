@@ -1,5 +1,6 @@
 package cn.hbads.renderweave.inference.vision;
 
+import cn.hbads.renderweave.inference.live.LiveInferenceWorker;
 import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.RecordComponent;
@@ -160,6 +161,17 @@ class VisualEvidenceAcquisitionContractTest {
         assertEquals("DOCUMENT_OBSERVATION_CAPABILITY_UNAVAILABLE", failure.code());
         assertEquals("DOCUMENT_OBSERVATION_CAPABILITY_UNAVAILABLE", failure.getMessage());
         assertFalse(acquisition.toString().contains(FIRST_ARTIFACT));
+    }
+
+    @Test
+    void liveWorkerDependsOnTheSuccessorSeamAndNotTheLegacyPreprocessor() {
+        assertTrue(Arrays.stream(LiveInferenceWorker.class.getDeclaredFields())
+                .anyMatch(field -> field.getType() == VisualEvidenceAcquisition.class));
+        assertFalse(Arrays.stream(LiveInferenceWorker.class.getDeclaredFields())
+                .anyMatch(field -> field.getType() == DocumentVisionPreprocessor.class));
+        assertFalse(Arrays.stream(LiveInferenceWorker.class.getDeclaredConstructors())
+                .flatMap(constructor -> Arrays.stream(constructor.getParameterTypes()))
+                .anyMatch(type -> type == DocumentVisionPreprocessor.class));
     }
 
     private static AcquisitionPolicy policy() {

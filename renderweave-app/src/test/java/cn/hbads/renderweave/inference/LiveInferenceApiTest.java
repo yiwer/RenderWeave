@@ -5,9 +5,11 @@ import cn.hbads.renderweave.inference.provider.ProviderInferenceResponse;
 import cn.hbads.renderweave.inference.provider.ProviderUsage;
 import cn.hbads.renderweave.inference.run.InferenceRunState;
 import cn.hbads.renderweave.inference.run.InferenceRunStore;
+import cn.hbads.renderweave.inference.vision.AcquisitionPolicy;
+import cn.hbads.renderweave.inference.vision.ArtifactSet;
+import cn.hbads.renderweave.inference.vision.DocumentObservationIR;
 import cn.hbads.renderweave.inference.vision.DocumentVisionCapability;
 import cn.hbads.renderweave.inference.vision.DocumentVisionObservation;
-import cn.hbads.renderweave.inference.vision.DocumentVisionPreprocessor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -298,15 +300,53 @@ class LiveInferenceApiTest {
 
         @Bean
         @Primary
-        DocumentVisionPreprocessor syntheticDocumentVisionPreprocessor() {
+        ConfiguredVisualEvidenceAcquisition syntheticDocumentVisionPreprocessor() {
             var capability = DocumentVisionCapability.available(
                     "rapidocr-3.9.2-openvino-2026.0.0-ppocrv6-small-c05805399d7d10b1",
                     "synthetic-ocr", "1.0", "0".repeat(64)
             );
-            return new DocumentVisionPreprocessor() {
+            var policy = new AcquisitionPolicy(
+                    AcquisitionPolicy.VERSION, DocumentObservationIR.VERSION,
+                    capability.capabilityId(), "synthetic-ocr-adapter/1.0",
+                    capability.engine(), capability.engineVersion(), capability.modelManifestSha256(),
+                    "explicit-bgr/1.0", "synthetic-lines/1.0", "source-pixel-top-left/1.0",
+                    "half-open-box/1.0", "v45-source-to-candidate/1.0",
+                    "top-left-canonical/1.0", "unicode-nfc-whitespace-collapse/1.0",
+                    "basis-points/1.0", "v45-confidence-buckets/1.0",
+                    AcquisitionPolicy.TextExposure.EPHEMERAL_STAGE_CONTEXT_ONLY,
+                    10, 512, 256, 32 * 1024, 512 * 1024, 30_000
+            );
+            return new ConfiguredVisualEvidenceAcquisition() {
                 @Override
                 public DocumentVisionCapability capability() {
                     return capability;
+                }
+
+                @Override
+                public AcquisitionPolicy acquisitionPolicy() {
+                    return policy;
+                }
+
+                @Override
+                public DocumentObservationIR acquire(ArtifactSet artifactSet, AcquisitionPolicy actual) {
+                    assertThat(actual).isEqualTo(policy);
+                    return DocumentObservationIR.canonical(
+                            policy,
+                            new DocumentObservationIR.Provenance(
+                                    policy.capabilityIdentity(), policy.adapterIdentity(), policy.engine(),
+                                    policy.engineVersion(), policy.modelManifestSha256(),
+                                    policy.preprocessingIdentity(), policy.postprocessingIdentity(),
+                                    policy.readingOrderDerivationIdentity(), policy.projectionIdentity(),
+                                    policy.confidenceScaleIdentity(),
+                                    policy.confidenceBucketProjectionIdentity(),
+                                    policy.canonicalizationIdentity()
+                            ),
+                            artifactSet.artifacts().stream().map(artifact ->
+                                    new DocumentObservationIR.ArtifactObservation(
+                                            artifact.artifactId(), artifact.sourceOrdinal(), artifact.mediaType(),
+                                            artifact.width(), artifact.height(), true, List.of()
+                                    )).toList()
+                    );
                 }
 
                 @Override

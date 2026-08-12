@@ -36,9 +36,9 @@ import cn.hbads.renderweave.inference.run.InferenceStage;
 import cn.hbads.renderweave.inference.run.InferenceRunState;
 import cn.hbads.renderweave.inference.run.InferenceRunStore;
 import cn.hbads.renderweave.inference.run.NewInferenceRun;
-import cn.hbads.renderweave.inference.vision.DocumentVisionCapability;
-import cn.hbads.renderweave.inference.vision.DocumentVisionObservation;
-import cn.hbads.renderweave.inference.vision.DocumentVisionPreprocessor;
+import cn.hbads.renderweave.inference.vision.AcquisitionPolicy;
+import cn.hbads.renderweave.inference.vision.DocumentObservationIR;
+import cn.hbads.renderweave.inference.vision.VisualEvidenceAcquisition;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -2628,11 +2628,17 @@ class PostgresLiveInferenceWorkflowTest {
                 request -> response(request, repeatedObservationBindings())
         );
         var preprocessCalls = new AtomicInteger();
+        var acquisition = hybridPreprocessor(
+                preprocessCalls, "OCR_SENTINEL_V45_REPEATED_OBSERVATION"
+        );
+        var successorWorker = worker(provider, blobs, T0.plusSeconds(1), acquisition);
 
-        var finished = worker(
-                provider, blobs, T0.plusSeconds(1),
-                hybridPreprocessor(preprocessCalls, "OCR_SENTINEL_V45_REPEATED_OBSERVATION")
-        ).processNext("v45-repeated-observation-worker").orElseThrow();
+        assertThat(successorWorker.documentObservationSuccessorIdentity())
+                .hasValueSatisfying(identity -> assertThat(identity)
+                        .startsWith("renderweave-document-observation-successor/1.0:"));
+        var finished = successorWorker.processNext(
+                "v45-repeated-observation-worker"
+        ).orElseThrow();
 
         assertThat(finished.state())
                 .as("failure=%s attempts=%s", finished.failureCode(), workflowStore.attempts(created))
@@ -2676,7 +2682,14 @@ class PostgresLiveInferenceWorkflowTest {
         });
         assertThat(workflowStore.findCandidate(created).orElseThrow().currentJson())
                 .doesNotContain("OCR_SENTINEL_V45_REPEATED_OBSERVATION")
-                .doesNotContain("ocr-00-000");
+                .doesNotContain("ocr-00-000")
+                .doesNotContain(DocumentObservationIR.VERSION)
+                .doesNotContain(acquisition.policy().identity());
+        assertThat(finished.checkpointJson())
+                .doesNotContain("OCR_SENTINEL_V45_REPEATED_OBSERVATION")
+                .doesNotContain("ocr-00-000")
+                .doesNotContain(DocumentObservationIR.VERSION)
+                .doesNotContain(acquisition.policy().identity());
     }
 
     @Test
@@ -2697,6 +2710,7 @@ class PostgresLiveInferenceWorkflowTest {
         assertThat(claimed.runId()).isEqualTo(created);
         assertThat(finished.state()).isEqualTo(InferenceRunState.CANCELLED);
         assertThat(preprocessCalls).hasValue(0);
+        assertThat(blobs.readCalls).hasValue(0);
         assertThat(workflowStore.attempts(created)).isEmpty();
         assertThat(budgets.snapshot(LiveInferenceWorker.CANARY_BUDGET_KEY).consumedAttempts()).isZero();
     }
@@ -3188,11 +3202,12 @@ class PostgresLiveInferenceWorkflowTest {
             InferenceProvider provider,
             BlobStore blobs,
             Instant now,
-            DocumentVisionPreprocessor preprocessor
+            AcquisitionFixture acquisition
     ) {
         return new LiveInferenceWorker(
                 runs, workflowStore, budgets, provider, blobs,
-                Clock.fixed(now, ZoneOffset.UTC), Duration.ofMinutes(5), preprocessor
+                Clock.fixed(now, ZoneOffset.UTC), Duration.ofMinutes(5),
+                acquisition.seam(), acquisition.policy()
         );
     }
 
@@ -3282,85 +3297,101 @@ class PostgresLiveInferenceWorkflowTest {
         )).run().runId();
     }
 
-    private static DocumentVisionPreprocessor hybridPreprocessor(
+    private static AcquisitionFixture hybridPreprocessor(
             AtomicInteger calls,
             String text
     ) {
-        var capability = DocumentVisionCapability.available(
-                DOCUMENT_VISION_CAPABILITY,
-                "rapidocr-openvino-ppocrv6-small",
-                "rapidocr-3.9.2+openvino-2026.0.0",
-                "b".repeat(64)
-        );
-        return new DocumentVisionPreprocessor() {
-            @Override
-            public DocumentVisionCapability capability() {
-                return capability;
-            }
-
-            @Override
-            public DocumentVisionObservation preprocess(
-                    List<cn.hbads.renderweave.inference.vision.DocumentVisionArtifact> artifacts
-            ) {
+        var expectedPolicy = successorPolicy();
+        VisualEvidenceAcquisition seam = (artifacts, policy) -> {
+                assertThat(policy).isEqualTo(expectedPolicy);
                 calls.incrementAndGet();
-                assertThat(artifacts).singleElement().satisfies(artifact -> {
+                assertThat(artifacts.artifacts()).singleElement().satisfies(artifact -> {
                     assertThat(artifact.bytes()).isNotEmpty();
                     assertThat(artifact.width()).isEqualTo(1_050);
                     assertThat(artifact.height()).isEqualTo(1_660);
                 });
-                var artifact = artifacts.getFirst();
-                return DocumentVisionObservation.canonical(
-                        DOCUMENT_VISION_CAPABILITY,
-                        List.of(new DocumentVisionObservation.ArtifactObservation(
-                                artifact.artifactId(), artifact.sourceOrdinal(),
-                                List.of(new DocumentVisionObservation.TextLine(
+                var artifact = artifacts.artifacts().getFirst();
+                return DocumentObservationIR.canonical(
+                        policy, successorProvenance(policy),
+                        List.of(new DocumentObservationIR.ArtifactObservation(
+                                artifact.artifactId(), artifact.sourceOrdinal(), artifact.mediaType(),
+                                artifact.width(), artifact.height(), true,
+                                List.of(new DocumentObservationIR.TextLine(
                                         "ocr-00-000", 0,
-                                        new CandidateBoundingBox(500, 100, 5_000, 500),
-                                        DocumentVisionObservation.ConfidenceBucket.HIGH,
-                                        text
+                                        new DocumentObservationIR.SourcePixelBox(53, 17, 525, 83),
+                                        new DocumentObservationIR.Confidence(
+                                                9_000, policy.confidenceScaleIdentity(),
+                                                DocumentObservationIR.ConfidenceBucket.HIGH,
+                                                policy.confidenceBucketProjectionIdentity()
+                                        ),
+                                        text, DocumentObservationIR.Sensitivity.EPHEMERAL_UNTRUSTED
                                 ))
                         ))
                 );
-            }
         };
+        return new AcquisitionFixture(seam, expectedPolicy);
     }
 
-    private static DocumentVisionPreprocessor denseSequencePreprocessor(AtomicInteger calls) {
-        var capability = DocumentVisionCapability.available(
-                DOCUMENT_VISION_CAPABILITY,
-                "rapidocr-openvino-ppocrv6-small",
-                "rapidocr-3.9.2+openvino-2026.0.0",
-                "b".repeat(64)
-        );
-        return new DocumentVisionPreprocessor() {
-            @Override
-            public DocumentVisionCapability capability() {
-                return capability;
-            }
-
-            @Override
-            public DocumentVisionObservation preprocess(
-                    List<cn.hbads.renderweave.inference.vision.DocumentVisionArtifact> artifacts
-            ) {
+    private static AcquisitionFixture denseSequencePreprocessor(AtomicInteger calls) {
+        var expectedPolicy = successorPolicy();
+        VisualEvidenceAcquisition seam = (artifacts, policy) -> {
+                assertThat(policy).isEqualTo(expectedPolicy);
                 calls.incrementAndGet();
-                var artifact = artifacts.getFirst();
-                var lines = new ArrayList<DocumentVisionObservation.TextLine>();
+                var artifact = artifacts.artifacts().getFirst();
+                var lines = new ArrayList<DocumentObservationIR.TextLine>();
                 for (var index = 0; index < 10; index++) {
-                    var left = 500 + index * 800;
-                    lines.add(new DocumentVisionObservation.TextLine(
+                    var left = 53 + index * 84;
+                    lines.add(new DocumentObservationIR.TextLine(
                             "ocr-00-%03d".formatted(index), index,
-                            new CandidateBoundingBox(left, 4_000, left + 400, 6_000),
-                            DocumentVisionObservation.ConfidenceBucket.HIGH, "item"
+                            new DocumentObservationIR.SourcePixelBox(left, 664, left + 42, 996),
+                            new DocumentObservationIR.Confidence(
+                                    9_000, policy.confidenceScaleIdentity(),
+                                    DocumentObservationIR.ConfidenceBucket.HIGH,
+                                    policy.confidenceBucketProjectionIdentity()
+                            ),
+                            "item", DocumentObservationIR.Sensitivity.EPHEMERAL_UNTRUSTED
                     ));
                 }
-                return DocumentVisionObservation.canonical(
-                        DOCUMENT_VISION_CAPABILITY,
-                        List.of(new DocumentVisionObservation.ArtifactObservation(
-                                artifact.artifactId(), artifact.sourceOrdinal(), lines
+                return DocumentObservationIR.canonical(
+                        policy, successorProvenance(policy),
+                        List.of(new DocumentObservationIR.ArtifactObservation(
+                                artifact.artifactId(), artifact.sourceOrdinal(), artifact.mediaType(),
+                                artifact.width(), artifact.height(), true, lines
                         ))
                 );
-            }
         };
+        return new AcquisitionFixture(seam, expectedPolicy);
+    }
+
+    private static AcquisitionPolicy successorPolicy() {
+        return new AcquisitionPolicy(
+                AcquisitionPolicy.VERSION, DocumentObservationIR.VERSION,
+                DOCUMENT_VISION_CAPABILITY, "rapidocr-local-process/1.0",
+                "rapidocr-openvino-ppocrv6-small", "rapidocr-3.9.2+openvino-2026.0.0",
+                "b".repeat(64), "explicit-bgr/1.0", "rapidocr-lines/1.0",
+                "source-pixel-top-left/1.0", "half-open-box/1.0",
+                "v45-source-to-candidate/1.0", "top-left-canonical/1.0",
+                "unicode-nfc-whitespace-collapse/1.0", "basis-points/1.0",
+                "v45-confidence-buckets/1.0",
+                AcquisitionPolicy.TextExposure.EPHEMERAL_STAGE_CONTEXT_ONLY,
+                10, 512, 256, 32 * 1024, 512 * 1024, 30_000
+        );
+    }
+
+    private static DocumentObservationIR.Provenance successorProvenance(AcquisitionPolicy policy) {
+        return new DocumentObservationIR.Provenance(
+                policy.capabilityIdentity(), policy.adapterIdentity(), policy.engine(),
+                policy.engineVersion(), policy.modelManifestSha256(), policy.preprocessingIdentity(),
+                policy.postprocessingIdentity(), policy.readingOrderDerivationIdentity(),
+                policy.projectionIdentity(), policy.confidenceScaleIdentity(),
+                policy.confidenceBucketProjectionIdentity(), policy.canonicalizationIdentity()
+        );
+    }
+
+    private record AcquisitionFixture(
+            VisualEvidenceAcquisition seam,
+            AcquisitionPolicy policy
+    ) {
     }
 
     private UUID createCombined(MemoryBlobStore blobs, String seed) {
@@ -4064,6 +4095,7 @@ class PostgresLiveInferenceWorkflowTest {
 
     private static final class MemoryBlobStore implements BlobStore {
         private final Map<String, byte[]> values = new HashMap<>();
+        private final AtomicInteger readCalls = new AtomicInteger();
 
         @Override
         public WriteReceipt write(String artifactId, byte[] bytes) {
@@ -4072,6 +4104,7 @@ class PostgresLiveInferenceWorkflowTest {
 
         @Override
         public byte[] read(String locator) {
+            readCalls.incrementAndGet();
             return values.get(locator).clone();
         }
 

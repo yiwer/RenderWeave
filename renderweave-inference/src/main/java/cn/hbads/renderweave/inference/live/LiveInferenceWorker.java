@@ -8,6 +8,7 @@ import cn.hbads.renderweave.inference.candidate.CandidateProblemSeverity;
 import cn.hbads.renderweave.inference.candidate.CandidateValidationContext;
 import cn.hbads.renderweave.inference.candidate.CandidateValidator;
 import cn.hbads.renderweave.inference.candidate.InvalidCandidateContractException;
+import cn.hbads.renderweave.inference.eval.visual.DocumentObservationSuccessorIdentity;
 import cn.hbads.renderweave.inference.input.BlobStore;
 import cn.hbads.renderweave.inference.input.InferenceMode;
 import cn.hbads.renderweave.inference.input.NormalizedArtifact;
@@ -36,10 +37,14 @@ import cn.hbads.renderweave.inference.run.InferenceRunSnapshot;
 import cn.hbads.renderweave.inference.run.InferenceRunState;
 import cn.hbads.renderweave.inference.run.InferenceRunStore;
 import cn.hbads.renderweave.inference.run.InferenceStage;
-import cn.hbads.renderweave.inference.vision.DocumentVisionArtifact;
+import cn.hbads.renderweave.inference.vision.AcquisitionPolicy;
+import cn.hbads.renderweave.inference.vision.ArtifactSet;
+import cn.hbads.renderweave.inference.vision.DocumentObservationCompatibilityProjection;
+import cn.hbads.renderweave.inference.vision.DocumentObservationIR;
 import cn.hbads.renderweave.inference.vision.DocumentVisionException;
 import cn.hbads.renderweave.inference.vision.DocumentVisionObservation;
-import cn.hbads.renderweave.inference.vision.DocumentVisionPreprocessor;
+import cn.hbads.renderweave.inference.vision.VisualEvidenceAcquisition;
+import cn.hbads.renderweave.inference.vision.VisualEvidenceAcquisitionException;
 
 import java.time.Clock;
 import java.time.Duration;
@@ -143,7 +148,10 @@ public final class LiveInferenceWorker {
     private final MultiScaleVisualViewPlanner visualViewPlanner;
     private final VisualRepairCropSelector visualRepairCropSelector;
     private final VisualGroundingJsonCodec visualGroundingCodec;
-    private final DocumentVisionPreprocessor documentVisionPreprocessor;
+    private final VisualEvidenceAcquisition visualEvidenceAcquisition;
+    private final Optional<AcquisitionPolicy> acquisitionPolicy;
+    private final DocumentObservationCompatibilityProjection documentObservationProjection;
+    private final Optional<DocumentObservationSuccessorIdentity> documentObservationSuccessorIdentity;
 
     public LiveInferenceWorker(
             InferenceRunStore runStore,
@@ -156,7 +164,11 @@ public final class LiveInferenceWorker {
     ) {
         this(
                 runStore, workflowStore, budgetStore, provider, blobStore, clock, leaseDuration,
-                DocumentVisionPreprocessor.unavailable("DOCUMENT_VISION_DISABLED")
+                new InferenceProfileRegistry(), new InferencePromptRegistry(), new JsonStructuralProfiler(),
+                new JsonCandidateProfiler(), new JsonGroundedCandidateComposer(),
+                new CandidateValidator(), new CandidateJsonCodec(), new CandidateProblemJsonCodec(),
+                new LiveWorkflowJsonCodec(), new LiveTaskJsonCodec(),
+                VisualEvidenceAcquisition.unavailable("DOCUMENT_VISION_DISABLED"), Optional.empty()
         );
     }
 
@@ -168,14 +180,16 @@ public final class LiveInferenceWorker {
             BlobStore blobStore,
             Clock clock,
             Duration leaseDuration,
-            DocumentVisionPreprocessor documentVisionPreprocessor
+            VisualEvidenceAcquisition visualEvidenceAcquisition,
+            AcquisitionPolicy acquisitionPolicy
     ) {
         this(
                 runStore, workflowStore, budgetStore, provider, blobStore, clock, leaseDuration,
                 new InferenceProfileRegistry(), new InferencePromptRegistry(), new JsonStructuralProfiler(),
                 new JsonCandidateProfiler(), new JsonGroundedCandidateComposer(),
                 new CandidateValidator(), new CandidateJsonCodec(), new CandidateProblemJsonCodec(),
-                new LiveWorkflowJsonCodec(), new LiveTaskJsonCodec(), documentVisionPreprocessor
+                new LiveWorkflowJsonCodec(), new LiveTaskJsonCodec(), visualEvidenceAcquisition,
+                Optional.of(Objects.requireNonNull(acquisitionPolicy, "acquisitionPolicy"))
         );
     }
 
@@ -197,7 +211,8 @@ public final class LiveInferenceWorker {
             CandidateProblemJsonCodec problemCodec,
             LiveWorkflowJsonCodec workflowCodec,
             LiveTaskJsonCodec taskCodec,
-            DocumentVisionPreprocessor documentVisionPreprocessor
+            VisualEvidenceAcquisition visualEvidenceAcquisition,
+            Optional<AcquisitionPolicy> acquisitionPolicy
     ) {
         this.runStore = Objects.requireNonNull(runStore, "runStore");
         this.workflowStore = Objects.requireNonNull(workflowStore, "workflowStore");
@@ -223,9 +238,13 @@ public final class LiveInferenceWorker {
         this.visualViewPlanner = new MultiScaleVisualViewPlanner();
         this.visualRepairCropSelector = new VisualRepairCropSelector();
         this.visualGroundingCodec = new VisualGroundingJsonCodec();
-        this.documentVisionPreprocessor = Objects.requireNonNull(
-                documentVisionPreprocessor, "documentVisionPreprocessor"
+        this.visualEvidenceAcquisition = Objects.requireNonNull(
+                visualEvidenceAcquisition, "visualEvidenceAcquisition"
         );
+        this.acquisitionPolicy = Objects.requireNonNull(acquisitionPolicy, "acquisitionPolicy");
+        this.documentObservationProjection = new DocumentObservationCompatibilityProjection();
+        this.documentObservationSuccessorIdentity = acquisitionPolicy
+                .map(DocumentObservationSuccessorIdentity::new);
         if (leaseDuration.isZero() || leaseDuration.isNegative()
                 || leaseDuration.compareTo(Duration.ofMinutes(15)) > 0) {
             throw new IllegalArgumentException("leaseDuration must be positive and no longer than 15 minutes");
@@ -255,6 +274,8 @@ public final class LiveInferenceWorker {
         } catch (ProviderNotConfiguredException missing) {
             return Optional.of(failIfOwned(initial, missing.code()));
         } catch (DocumentVisionException unavailable) {
+            return Optional.of(failIfOwned(initial, unavailable.code()));
+        } catch (VisualEvidenceAcquisitionException unavailable) {
             return Optional.of(failIfOwned(initial, unavailable.code()));
         } catch (RuntimeException failure) {
             return Optional.of(failIfOwned(initial, "LIVE_WORKFLOW_FAILED"));
@@ -1633,25 +1654,61 @@ public final class LiveInferenceWorker {
             InferenceRunSnapshot current,
             InferenceProfile profile
     ) {
-        var capability = documentVisionPreprocessor.capability();
-        if (!capability.available()) throw new DocumentVisionException(capability.diagnosticCode());
-        if (!Objects.equals(profile.documentVisionCapabilityId(), capability.capabilityId())) {
-            throw new DocumentVisionException("DOCUMENT_VISION_CAPABILITY_MISMATCH");
+        var policy = acquisitionPolicy.orElseThrow(
+                () -> new VisualEvidenceAcquisitionException("DOCUMENT_VISION_DISABLED")
+        );
+        if (!Objects.equals(profile.documentVisionCapabilityId(), policy.capabilityIdentity())) {
+            throw new VisualEvidenceAcquisitionException("DOCUMENT_VISION_CAPABILITY_MISMATCH");
         }
-        var artifacts = current.inputs().stream()
-                .filter(input -> input.kind() == NormalizedArtifact.Kind.IMAGE)
-                .sorted(Comparator.comparingInt(input -> input.ordinal()))
-                .map(input -> new DocumentVisionArtifact(
-                        input.artifact().artifactId(), input.ordinal(), input.artifact().mediaType(),
-                        blobStore.read(input.artifact().locator()),
-                        Objects.requireNonNull(input.artifact().width(), "image width"),
-                        Objects.requireNonNull(input.artifact().height(), "image height")
-                )).toList();
-        var observation = documentVisionPreprocessor.preprocess(artifacts);
-        if (!capability.capabilityId().equals(observation.capabilityId())) {
-            throw new DocumentVisionException("DOCUMENT_VISION_CAPABILITY_MISMATCH");
+        final ArtifactSet artifacts;
+        try {
+            artifacts = ArtifactSet.canonical(current.inputs().stream()
+                    .filter(input -> input.kind() == NormalizedArtifact.Kind.IMAGE)
+                    .sorted(Comparator.comparingInt(input -> input.ordinal()))
+                    .map(input -> new ArtifactSet.Artifact(
+                            input.artifact().artifactId(), input.ordinal(), input.artifact().mediaType(),
+                            blobStore.read(input.artifact().locator()),
+                            Objects.requireNonNull(input.artifact().width(), "image width"),
+                            Objects.requireNonNull(input.artifact().height(), "image height"),
+                            true
+                    )).toList());
+        } catch (VisualEvidenceAcquisitionException known) {
+            throw known;
+        } catch (RuntimeException invalid) {
+            throw new VisualEvidenceAcquisitionException("DOCUMENT_VISION_INPUT_INVALID");
         }
-        return observation;
+        var observation = visualEvidenceAcquisition.acquire(artifacts, policy);
+        if (!DocumentObservationIR.VERSION.equals(observation.contractVersion())
+                || !policy.identity().equals(observation.acquisitionPolicyIdentity())
+                || !policy.capabilityIdentity().equals(observation.capabilityIdentity())) {
+            throw new VisualEvidenceAcquisitionException("DOCUMENT_OBSERVATION_IDENTITY_MISMATCH");
+        }
+        requireMatchingArtifacts(artifacts, observation);
+        return documentObservationProjection.project(observation);
+    }
+
+    private static void requireMatchingArtifacts(ArtifactSet artifacts, DocumentObservationIR observation) {
+        if (artifacts.artifacts().size() != observation.artifacts().size()) {
+            throw new VisualEvidenceAcquisitionException("DOCUMENT_OBSERVATION_ARTIFACT_MISMATCH");
+        }
+        for (var index = 0; index < artifacts.artifacts().size(); index++) {
+            var source = artifacts.artifacts().get(index);
+            var observed = observation.artifacts().get(index);
+            if (!source.artifactId().equals(observed.artifactId())
+                    || source.sourceOrdinal() != observed.sourceOrdinal()
+                    || !source.mediaType().equals(observed.mediaType())
+                    || source.width() != observed.width()
+                    || source.height() != observed.height()
+                    || source.orientationApplied() != observed.orientationApplied()) {
+                throw new VisualEvidenceAcquisitionException("DOCUMENT_OBSERVATION_ARTIFACT_MISMATCH");
+            }
+        }
+    }
+
+    /** Payload-free additive identity for offline successor evaluation; never changes a v45 Profile snapshot. */
+    public Optional<String> documentObservationSuccessorIdentity() {
+        return documentObservationSuccessorIdentity
+                .map(DocumentObservationSuccessorIdentity::identity);
     }
 
     private static List<String> imageArtifactIds(InferenceRunSnapshot current) {

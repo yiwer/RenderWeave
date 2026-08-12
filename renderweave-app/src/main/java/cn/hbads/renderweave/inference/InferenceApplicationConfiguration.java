@@ -114,9 +114,16 @@ class InferenceApplicationConfiguration {
             Clock inferenceClock,
             @Value("${renderweave.inference.live-lease-seconds:600}") long leaseSeconds
     ) {
+        if (documentVisionPreprocessor instanceof ConfiguredVisualEvidenceAcquisition configured) {
+            return new LiveInferenceWorker(
+                    runStore, replayStore, budgetStore, provider, blobStore,
+                    inferenceClock, Duration.ofSeconds(leaseSeconds), configured,
+                    configured.acquisitionPolicy()
+            );
+        }
         return new LiveInferenceWorker(
                 runStore, replayStore, budgetStore, provider, blobStore,
-                inferenceClock, Duration.ofSeconds(leaseSeconds), documentVisionPreprocessor
+                inferenceClock, Duration.ofSeconds(leaseSeconds)
         );
     }
 
