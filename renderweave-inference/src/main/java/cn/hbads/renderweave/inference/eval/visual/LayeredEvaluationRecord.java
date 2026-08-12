@@ -178,7 +178,9 @@ public record LayeredEvaluationRecord(
             return new DetectionStats(0, 0, java.util.Collections.nCopies(10, 0L), 0, 0, 0, 0);
         }
 
-        public int meanAp5095Bps() { return evaluatedCases == 0 ? 10_000 : ratio(ap5095BpsSum, evaluatedCases); }
+        public int meanAp5095Bps() {
+            return evaluatedCases == 0 ? 10_000 : ratioRaw(ap5095BpsSum, evaluatedCases);
+        }
 
         public int meanMatchedIouBps() {
             return semanticallyMatched == 0 ? 0 : ratioRaw(matchedIouBpsSum, semanticallyMatched);
