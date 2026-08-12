@@ -19,8 +19,8 @@
   hierarchy Prompt 7 与 Binding Prompt 4；指定 Plus run 已以三次调用到达 `REVIEW_REQUIRED`，形成 root
   ARRAY→child 的两个 Schema，并保留 10 个低置信 blocker。该证据只证明指定输入 reachability，三份当前
   Product Profile 仍为 `EXPERIMENTAL`，final 20/60、最终独立 verifier 和业务/视觉 J1 均未满足。2026-08-13
-  approved successor 新增 N8/R0 与 N9/R1，当前均为 `pending`、Provider=0；它们不关闭 N7 或继承其未满足的
-  质量门
+  approved successor 新增的 N8/R0 与 N9/R1 均为 `automated_verified`、Provider=0，受控 visual diff
+  仍为 J0；它们不关闭 N7，也不继承或满足 N7 尚未关闭的质量门
 
 ## 四维执行配置
 
@@ -962,7 +962,9 @@ N6=`automated_verified`、N7/Goal=`in_progress`；Plus/Max/final 不启动，Goa
 
 ### N8：R0 DocumentObservationIR/1.0 行为等价
 
-- 状态：`pending`；2026-08-13 approved successor delta 与 ADR-0036 已登记，本节点尚未开始实现或形成 gate 证据。
+- 状态：`automated_verified`；checkpoint `f0c30644eaa871fb01b9e64805cc3960913baf63`。clean fixed-revision
+  evidence `.sdlc/evidence/20260813-071134-layered-r1` 以 A2 strict-input replay 验证 4 个 projection cases、
+  90 个 JUnit cases、完整 IMAGE_ONLY scripted replay 到 `REVIEW_REQUIRED`，Provider attempts/reservations/cost=0。
 - AC：AC-DOIR-001..009；细化 AC-VR-004、005、007。
 - 依赖：approved successor delta、ADR-0036、可重放的 exact product-v45 行为基线；不要求用新 live 关闭 N7。
 - 实现：以 `normalized ArtifactSet + AcquisitionPolicy → DocumentObservationIR/1.0` 为唯一主 seam；将现有
@@ -976,7 +978,11 @@ N6=`automated_verified`、N7/Goal=`in_progress`；Plus/Max/final 不启动，Goa
 
 ### N9：R1 分层 gold v2 与可视 diff
 
-- 状态：`pending`；必须在 N8 通过行为等价门后开始。
+- 状态：`automated_verified`；N8 同版本 R0 prerequisite 已先通过。checkpoint
+  `f0c30644eaa871fb01b9e64805cc3960913baf63`；clean fixed-revision evidence
+  `.sdlc/evidence/20260813-071134-layered-r1` 以 A2 strict-input replay 重算 60 cases、58 metrics，并绑定
+  corpus lock `cf54fd985e89a024fdc0742a737c21442c49718fdf58b0bb05b87e2cffd2247d`；Provider
+  attempts/reservations/cost=0，受控 visual diff 仍为 J0。
 - AC：AC-DOIR-010..012；细化 AC-VR-001、004、005、010。
 - 依赖：N8 完成；exact IR/acquisition/projection/shape-catalog identity。
 - 实现：新增不可变 45 DEV + 15 HOLDOUT corpus v2，补充 OCR、layout、precedence edge、repeat/item、
