@@ -983,5 +983,8 @@ v44 首个真实 run 已把嵌套结构恢复到 OBSERVE/HIERARCHY：24 elements
 
 修复采用 additive immutable v45/Binding Prompt 4：所有 SLOT 仍逐一绑定；同一实体、同一重复组的互异
 ITEM 内，只有 key、显示名、基数和值类型完全一致的重复观测可由本地 materializer 聚合为一个字段并合并有界 evidence。旧 Profile、
-relationship key 冲突和不兼容观测保持严格。单元 31/31 与真实 PostgreSQL 新回归 1/1 已通过；待完成
-API/Web、exact-clean full/Document Vision 后，按剩余授权预算绑定精确 v45 J1 并复验指定图片。
+relationship key 冲突和不兼容观测保持严格。固定 revision `b688d3a` 的 exact-clean full
+`20260812-130819-full` 10/10、Document Vision `20260812-131400-document-vision` 2/2 已通过；精确 v45 J1
+真实 run `70be41ff-5443-4428-bddf-7ce7fa493b70` 以 3 calls、57,540 tokens、¥0.168810 到达
+`REVIEW_REQUIRED`。API 与真实 UI 均确认 root ARRAY→child、2 schemas、child 单字段聚合 8 份 evidence、
+0 等价重复字段组；10 个低置信 blocker 留待人工逐项确认。v45 保持 `EXPERIMENTAL`。

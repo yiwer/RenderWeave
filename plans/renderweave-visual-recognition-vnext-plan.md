@@ -949,5 +949,9 @@ N6=`automated_verified`、N7/Goal=`in_progress`；Plus/Max/final 不启动，Goa
   同一重复组的互异 ITEM、同 key/displayName/multiplicity/valueHint 的重复实例观测做确定性字段聚合并保留有界 evidence。
 - 不变边界：pipeline 4.28、OBSERVE Prompt 12、hierarchy Prompt 7、模型/价格、7 calls、360 秒、
   Plus/Flash 16384、Max 8192、¥2/call、¥5/run、无 tools/remote media。
-- 当前验证：核心 Profile/Prompt/materializer 31/31；Testcontainers PostgreSQL root + child + MANY reference
-  工作流 1/1。clean revision 与真实图复验待后续节点追加。
+- 验证：固定 revision `b688d3a` 的 exact-clean full `20260812-130819-full` 10/10 与 Document Vision
+  `20260812-131400-document-vision` 2/2 PASS；identity `/2:35c988e5…c648a75`，Plus v45 snapshot
+  `da922ed9…58db9`。
+- live：精确 J1 下 run `70be41ff-5443-4428-bddf-7ce7fa493b70` 以 3 calls、57,540 tokens、¥0.168810
+  到达 `REVIEW_REQUIRED`。payload-free API/UI 确认 root ARRAY→child、2 schemas、child 单字段聚合 8 份
+  evidence、0 等价重复字段组；10 个低置信 blocker 保留给人工逐项审核。v45 仍为 `EXPERIMENTAL`。

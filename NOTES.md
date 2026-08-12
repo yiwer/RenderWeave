@@ -959,5 +959,14 @@
   完整 SLOT 覆盖与实体字段 key 唯一规则组合无解，导致固定 coverage 诊断重复到调用上限。
 - 新增 immutable product-v45 + Binding Prompt 4；每个 SLOT 仍逐一绑定，仅将同实体、同一重复组的互异
   ITEM 且字段语义完全一致的重复实例观测确定性聚合为一个 Candidate field，合并有界 evidence。v44 及更早 snapshot 不变。
-- 核心 31/31 与 PostgreSQL 三阶段工作流 1/1 已通过，后者确认 root + child 两个 Schema、根 MANY array
-  reference、child 单字段与两份 evidence。API/Web/full/Document Vision 和真实图片复验继续推进。
+- 固定 revision `b688d3acb0a13cae851482cfafc416feb74dc6a0` 的 exact-clean full
+  `20260812-130819-full` 为 10/10 PASS，Document Vision `20260812-131400-document-vision` 为 adapter +
+  真 canary 2/2 PASS；evaluation identity 为 `/2:35c988e5…c648a75`，Plus v45 snapshot 为
+  `da922ed9…58db9`。
+- `J1-RW-V45-REPEATED-FIELD-LIVE-20260812-1316-IMG1` 创建 run
+  `70be41ff-5443-4428-bddf-7ce7fa493b70`；OBSERVE/HIERARCHY/BINDING 三次调用均首次接受，以
+  57,540 tokens、¥0.168810 到达 `REVIEW_REQUIRED`。任务累计 ¥1.157688/¥5，500k-token 授权累计
+  182,517，剩余 317,483。
+- payload-free API 与真实 review UI 均确认 2 schemas、root 上 1 个 ARRAY→CandidateRef、1 个可达 child；
+  child 只有 1 个字段并聚合 8 份证据，0 个等价重复字段组。10 个 blocker 均为需人工逐项决定的
+  `LOW_CONFIDENCE_UNRESOLVED`，不是结构丢失。v45 仍为 `EXPERIMENTAL`。
