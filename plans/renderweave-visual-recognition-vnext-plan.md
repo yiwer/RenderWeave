@@ -5,20 +5,22 @@
 - 日期：2026-08-10
 - 基线 revision：`eed1ab6ce2eb800b1b6bf0496b052fc3b9bd28d2`
 - 分支：`phase/p6-visual-recognition-vnext`
-- Spec delta：`specs/changes/20260810-visual-recognition-vnext.md`
-- ADR：ADR-0022、ADR-0023、ADR-0024、ADR-0025、ADR-0026、ADR-0027、ADR-0028、ADR-0029、ADR-0030、ADR-0031
+- Spec delta：`specs/changes/20260810-visual-recognition-vnext.md`；2026-08-13 approved successor
+  `specs/changes/20260813-document-observation-ir-layered-evaluation.md`
+- ADR：ADR-0022..ADR-0036；ADR-0036 固定外层 durable typed state graph/FSM、内部 provider-neutral
+  DocumentObservationIR、串行语义阶段与 validator 驱动有界局部 control loop
 - 用户 J1：yiwer，2026-08-10；2026-08-11 delta 将 Flash 改为 `qwen3.7-flash-2026-07-15`，随后两次给
   三个预算槽位各追加 500,000 tokens，当前累计 cap 1,500,000，并把 Flash/Plus Goal cost cap 各设为 ¥10、
   固定 24h 窗口至 `2026-08-12T09:51:55Z`；Max ¥18、每槽 180 attempts、单 authorization 500,000 不变。
   2026-08-12 用户又把当前产品 Flash 精确模型改为 `qwen3.7-flash`；该 alias 仍聚合进原 Flash 稳定槽位，
   不重置 cap 或消费，本节点不执行 live
 - 当前节点：N0–N1、N3–N4、N6 `automated_verified`；N2 `live_verified_mixed_a1_a2`；N5
-  `live_verified_not_promoted`；N7 `in_progress`。pipeline 4.27/product-v40 已完成 bounded diagnostic、Prompt/Profile、
-  real-PG recovery、monitor/review/E2E 与 Flash 失败闭环；Goal 为 418 reservations（412 SETTLED、6 RESERVED、
-  0 BREACHED），Flash/Plus/Max 为 157/179/82 attempts 与 1,148,324/1,087,500/491,919 exposed tokens，三份
-  live ledger `CLOSED`。新建产品入口已切换为 Plus/Max/通用 Flash 三份 `EXPERIMENTAL` v40 Profile，Plus
-  默认、Max 面向高难嵌套、Flash 仅作 smoke，并在创建/retry 前按 Profile 精确检查本地 Document Vision
-  capability。该入口只声明阶段性工程可用，不冒充生产级可靠性或识别质量验收
+  `live_verified_not_promoted`；N7 `in_progress`。product-v45 继承 pipeline 4.28、OBSERVE Prompt 12、
+  hierarchy Prompt 7 与 Binding Prompt 4；指定 Plus run 已以三次调用到达 `REVIEW_REQUIRED`，形成 root
+  ARRAY→child 的两个 Schema，并保留 10 个低置信 blocker。该证据只证明指定输入 reachability，三份当前
+  Product Profile 仍为 `EXPERIMENTAL`，final 20/60、最终独立 verifier 和业务/视觉 J1 均未满足。2026-08-13
+  approved successor 新增 N8/R0 与 N9/R1，当前均为 `pending`、Provider=0；它们不关闭 N7 或继承其未满足的
+  质量门
 
 ## 四维执行配置
 
@@ -33,7 +35,7 @@
 human blocking permission。N1 必须建立独立 evidence verifier 后才允许 live，仓库不存在 A3，不把本地
 ledger 描述成外部强制门。
 
-版本控制采用 `agent-commit`：每个 N0..N7 节点在受影响 gate 通过后独立提交；不创建 tag，不自动 push，
+版本控制采用 `agent-commit`：每个 N0..N9 节点在受影响 gate 通过后独立提交；不创建 tag，不自动 push，
 不 squash 掩盖节点恢复点。
 
 ## Phase / 节点
@@ -48,6 +50,8 @@ ledger 描述成外部强制门。
 | N5 | OCR/layout adapter + pure/multiscale/hybrid 消融；固化达到门槛的默认 | server + runtime + eval | 有界 |
 | N6 | semantic verifier、targeted repair、监控/审核 UI 和 E2E | server + web + e2e + runtime | 小 canary |
 | N7 | 三模型 final eval、policy、full gate、独立 verifier 和 Goal 验收 | full A1 + verifier A2 + J1 | 有界 |
+| N8 | R0：DocumentObservationIR/1.0、v45 compatibility projection 与三阶段 shape catalog | contract + PG recovery + document-vision + full | 0 |
+| N9 | R1：不可变分层 gold v2、跨语言指标重算与受控 visual diff | eval A1/A2 + payload scan + full | 0 |
 
 ## 任务卡与完成信号
 
@@ -955,3 +959,30 @@ N6=`automated_verified`、N7/Goal=`in_progress`；Plus/Max/final 不启动，Goa
 - live：精确 J1 下 run `70be41ff-5443-4428-bddf-7ce7fa493b70` 以 3 calls、57,540 tokens、¥0.168810
   到达 `REVIEW_REQUIRED`。payload-free API/UI 确认 root ARRAY→child、2 schemas、child 单字段聚合 8 份
   evidence、0 等价重复字段组；10 个低置信 blocker 保留给人工逐项审核。v45 仍为 `EXPERIMENTAL`。
+
+### N8：R0 DocumentObservationIR/1.0 行为等价
+
+- 状态：`pending`；2026-08-13 approved successor delta 与 ADR-0036 已登记，本节点尚未开始实现或形成 gate 证据。
+- AC：AC-DOIR-001..009；细化 AC-VR-004、005、007。
+- 依赖：approved successor delta、ADR-0036、可重放的 exact product-v45 行为基线；不要求用新 live 关闭 N7。
+- 实现：以 `normalized ArtifactSet + AcquisitionPolicy → DocumentObservationIR/1.0` 为唯一主 seam；将现有
+  RapidOCR/OpenVINO 输出适配到 provider-neutral、ephemeral IR，再确定性 compatibility-project 为 v45
+  stage context；生成 OBSERVE/HIERARCHY/ELEMENT_BINDING response-shape catalog。
+- 局部验证：strict contract/property、source-pixel→0..10000 differential、CMYK/多图/sequence/repeated
+  observation、payload scan、真实 PostgreSQL crash/lease recovery、Document Vision canary 与完整 IMAGE_ONLY
+  scripted replay 到 `REVIEW_REQUIRED`。
+- 完成信号：v45 accepted stage、Candidate semantic fingerprint、evidence 顺序与 blocker 语义等价；accepted
+  stage 零重放；历史 Profile/run/corpus bytes 不变；Provider attempts/reservations/cost=0。
+
+### N9：R1 分层 gold v2 与可视 diff
+
+- 状态：`pending`；必须在 N8 通过行为等价门后开始。
+- AC：AC-DOIR-010..012；细化 AC-VR-001、004、005、010。
+- 依赖：N8 完成；exact IR/acquisition/projection/shape-catalog identity。
+- 实现：新增不可变 45 DEV + 15 HOLDOUT corpus v2，补充 OCR、layout、precedence edge、repeat/item、
+  evidence-owner 与既有 semantic/Candidate gold；新增分层报告、Java/Python 独立重算和 synthetic/CC0-only
+  本地 visual diff。
+- 局部验证：annotation closure/tamper、metric hand goldens、identity drift、cross-language exact recompute、
+  payload scan、visual-diff allowlist 负例与 full gate。
+- 完成信号：所有规定指标可按 global/partition/slice 重建；Java/Python 一致；常规 evidence 零图片/OCR/
+  Prompt/model/Candidate payload；Provider attempts/reservations/cost=0。N9 完成不自动使 v45 通过 AC-021。

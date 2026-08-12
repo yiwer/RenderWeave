@@ -970,3 +970,14 @@
 - payload-free API 与真实 review UI 均确认 2 schemas、root 上 1 个 ARRAY→CandidateRef、1 个可达 child；
   child 只有 1 个字段并聚合 8 份证据，0 个等价重复字段组。10 个 blocker 均为需人工逐项决定的
   `LOW_CONFIDENCE_UNRESOLVED`，不是结构丢失。v45 仍为 `EXPERIMENTAL`。
+
+### 图片识别 successor R0–R1 批准与 ADR-0036
+
+- 用户于 2026-08-13 批准 `DocumentObservationIR` 与分层评测 successor delta；`specs/renderweave-v1.md`
+  继续是 v1 权威源，批准范围只含 R0–R1，不包含 challenger、adaptive inspection、工作流框架迁移或 live。
+- ADR-0036 记录：外层继续使用 PostgreSQL durable typed state graph/FSM；感知层经 provider-neutral
+  `DocumentObservationIR`；OBSERVE/HIERARCHY/ELEMENT_BINDING 保持串行；局部修复由 validator 以 fixed
+  issue/action 驱动有界 control loop；不引入开放式 Agent、LangGraph 或 Temporal。
+- T6-5 新增 N8/R0 与 N9/R1，均为 `pending`。N8 先证明 RapidOCR compatibility projection 与 v45 到
+  `REVIEW_REQUIRED` 的行为等价，N9 再建立不可变分层 gold v2、跨语言重算与 synthetic/CC0-only visual
+  diff。登记动作没有启动实现、没有 Provider attempt/reservation/cost，也不关闭 N7 或晋级 v45。

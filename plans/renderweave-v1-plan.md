@@ -1,19 +1,16 @@
 # RenderWeave v1 Phase 计划
 
-- 状态：P1–P4 implementation complete；P5 T5-1–T5-11 已完成通路、质量实测与安全硬化；P6 T6-1 已独立复核，T6-2 四步 AI Schema 识别工作台已完成 clean A1/独立 A2、最终成品 J1 待确认；T6-3a 产品 live 已开放，T6-3a.1–a.8 已闭合产品输入、审核与串行视觉分析协议，其中 Product v3 的真实模型质量仍待新 authorization 验证；T6-3b 恢复演练待推进。历史评测 authorization 均为 `CLOSED`，四个产品 Profile 为 `EXPERIMENTAL` 且只在显式 product-live 部署中开放
+- 状态：P1–P4 implementation complete；P5 T5-1–T5-11 已完成通路、质量实测与安全硬化；P6 T6-1 已独立复核，T6-2 四步 AI Schema 识别工作台已完成 clean A1/独立 A2、最终成品 J1 待确认；T6-3a 产品 live 已开放，T6-3a.1–a.8 已闭合产品输入、审核与串行视觉分析协议，当前 product-v45 已证明指定输入 reachability 但未通过全局质量门；T6-3b 恢复演练待推进。历史评测 authorization 均为 `CLOSED`，三个当前产品 Profile 为 `EXPERIMENTAL` 且只在显式 product-live 部署中开放
 - 日期：2026-08-10
 - Spec：[`specs/renderweave-v1.md`](../specs/renderweave-v1.md)
 - 原型：`/prototype/schema-studio?variant=A|B|C`
 - 当前 lifecycle：P0 `accepted`；P1–P4 `automated_verified`；P5 `live_canary_verified` / `live_independently_reviewed` / `decision_recorded`；P6 T6-1 `independently_reviewed`、T6-2 `human_acceptance_pending`、T6-3a `automated_verified`
 - 当前扩展 Goal：P6/T6-5 图片识别 vNext 为 `in_progress`；N0–N1、N3–N4、N6 已
-  `automated_verified`，N2 为 `live_verified_mixed_a1_a2`，N5 为 `live_verified_not_promoted`。v27 三模型
-  single-case 均 CLOSED/A2，但未形成可接受 Candidate。Flash/Plus v30 bounded live 的六次调用都停在 OBSERVE；
-  其 fixed code 已驱动 pipeline 4.18/product-v31 的 bounded repeated-item SLOT owner repair、checkpoint、监控/审核
-  UI 与独立 Profile verifier，并完成离线/real-PG/Web/E2E 验证。v31 clean full/Document Vision/live 尚未执行。
-  最新 359 reservations 为 354 SETTLED、5 个历史 Plus RESERVED、0 BREACHED；三份 ledger CLOSED，Profile 继续
-  `EXPERIMENTAL`。
-  两次 J1 delta 将三个预算槽位累计 cap 提到 1.5M tokens，单 authorization、attempt/CNY/time 边界不变。
-  final 20/60、最终 revision full、final independent verifier 与业务/视觉 J1 均未满足，详见
+  `automated_verified`，N2 为 `live_verified_mixed_a1_a2`，N5 为 `live_verified_not_promoted`，N7 为
+  `in_progress`。product-v45 指定 Plus run 已以 OBSERVE/HIERARCHY/BINDING 三次首次接受到达
+  `REVIEW_REQUIRED`，生成 root ARRAY→child 的两个 Schema，并保留 10 个需人工逐项处理的低置信 blocker；
+  这不替代 final 20/60、最终 revision full、final independent verifier 或业务/视觉 J1，Profile 继续
+  `EXPERIMENTAL`。2026-08-13 approved successor 新增 N8/R0 与 N9/R1，均为 `pending`、Provider=0，详见
   `plans/renderweave-visual-recognition-vnext-plan.md`。
 
 ## 1. 四维执行配置
@@ -440,15 +437,16 @@ Phase 内任务只在真实前置依赖满足时并行。当前没有 atomic cla
   bounded verifier、stage-local repair、real-PG tracer、独立 Profile verifier 与 payload-free UI 已通过。
   product-v30 clean full/Document Vision 和 Flash/Plus single-case 已 CLOSED/A2，但均止于 OBSERVE、未命中新
   normalization；Max v30 未调用。product-v31 尚未通过 clean full/Document Vision 或 live。final eval、最终
-  revision full、final independent verifier 与业务/视觉 J1 均未满足）
-- AC：AC-015..021、AC-VR-001..010
-- 依赖：T6-3a.8/9、ADR-0020/0021；N2 live 依赖新的 stage-gold/harness/identity
-- 影响区域：IMAGE_ONLY eval、visual contracts、worker/Profile/Prompt、OCR/layout adapter、review/monitor UI
-- 局部验证：stage metric goldens、materializer/property、spatial/adversarial、PG recovery、Web/E2E、三模型 bounded live
+  revision full、final independent verifier 与业务/视觉 J1 均未满足；2026-08-13 approved successor 已登记
+  N8/R0 与 N9/R1 为 `pending`、Provider=0，不关闭 N7）
+- AC：AC-015..021、AC-VR-001..010、AC-DOIR-001..012
+- 依赖：T6-3a.8/9、ADR-0020/0021/0036；N2 live 依赖新的 stage-gold/harness/identity；N9 依赖 N8 行为等价
+- 影响区域：IMAGE_ONLY eval、visual contracts、worker/Profile/Prompt、OCR/layout adapter、DocumentObservationIR、review/monitor UI
+- 局部验证：stage metric goldens、materializer/property、spatial/adversarial、IR differential、PG recovery、Web/E2E、三模型 bounded live
 - 回归升级：Profile/prompt/corpus/evaluator/workflow/model asset/OpenAPI/migration 任一变化均重算 identity 并跑受影响 gate
 - 证据保证：deterministic 节点 A1；live J1 + A1 + 独立 verifier A2；不存在 A3
 - 完成信号：best Profile 满足既有 AC-021 与新增 stage 门；其余诚实保持 EXPERIMENTAL；全部 ledger CLOSED
-- 详细 DAG、预算、恢复和 N0–N7 节点：`plans/renderweave-visual-recognition-vnext-plan.md`
+- 详细 DAG、预算、恢复和 N0–N9 节点：`plans/renderweave-visual-recognition-vnext-plan.md`
 
 ## 5. Gate 定义
 
