@@ -2,10 +2,14 @@ package cn.hbads.renderweave.inference;
 
 import cn.hbads.renderweave.inference.vision.AcquisitionPolicy;
 import cn.hbads.renderweave.inference.vision.ArtifactSet;
+import cn.hbads.renderweave.inference.vision.DocumentObservationCompatibilityProjection;
 import cn.hbads.renderweave.inference.vision.DocumentObservationIR;
+import cn.hbads.renderweave.inference.vision.DocumentVisionArtifact;
 import cn.hbads.renderweave.inference.vision.VisualEvidenceAcquisition;
 import cn.hbads.renderweave.inference.vision.VisualEvidenceAcquisitionException;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
@@ -32,6 +36,7 @@ class LocalProcessVisualEvidenceAcquisitionTest {
              "engineVersion":"rapidocr-3.9.2+openvino-2026.0.0",
              "modelManifestSha256":"%s"}
             """.formatted(CAPABILITY, MANIFEST);
+    private static final ObjectMapper JSON = JsonMapper.builder().build();
 
     @Test
     void exactPolicyProducesCanonicalSourcePixelIrWithNativeConfidence() {
@@ -90,6 +95,36 @@ class LocalProcessVisualEvidenceAcquisitionTest {
         assertEquals("DOCUMENT_VISION_OUTPUT_INVALID", invalid.code());
         assertEquals("DOCUMENT_VISION_OUTPUT_INVALID", invalid.getMessage());
         assertFalse(invalid.getMessage().contains(FIRST_ARTIFACT));
+    }
+
+    @Test
+    void successorProjectionIsObjectAndByteEquivalentToTheV45Oracle() throws Exception {
+        var runner = new StubRunner("""
+                {"protocolVersion":"renderweave-document-vision-response/1.0",
+                 "capabilityId":"%s","artifacts":[
+                   {"artifactId":"%s","sourceOrdinal":0,"lines":[
+                     {"left":100,"top":50,"right":101,"bottom":51,"confidenceBps":8500,
+                      "text":"  edge\\tline  "},
+                     {"left":1,"top":2,"right":100,"bottom":50,"confidenceBps":6000,
+                      "text":"middle"}
+                   ]}
+                 ]}
+                """.formatted(CAPABILITY, FIRST_ARTIFACT));
+        var adapter = adapter(runner);
+        var bytes = new byte[]{1, 2, 3};
+
+        var oracle = adapter.preprocess(List.of(new DocumentVisionArtifact(
+                FIRST_ARTIFACT, 0, "image/jpeg", bytes, 101, 51
+        )));
+        var ir = adapter.acquire(ArtifactSet.canonical(List.of(new ArtifactSet.Artifact(
+                FIRST_ARTIFACT, 0, "image/jpeg", bytes, 101, 51, true
+        ))), adapter.acquisitionPolicy());
+        var successor = new DocumentObservationCompatibilityProjection().project(ir);
+
+        assertEquals(oracle, successor);
+        assertEquals(new String(JSON.writeValueAsBytes(oracle), StandardCharsets.UTF_8),
+                new String(JSON.writeValueAsBytes(successor), StandardCharsets.UTF_8));
+        assertEquals(3, runner.calls.size());
     }
 
     private static LocalProcessDocumentVisionPreprocessor adapter(StubRunner runner) {

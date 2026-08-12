@@ -358,7 +358,7 @@ final class LocalProcessDocumentVisionPreprocessor
                 var line = lines.get(index);
                 validateLine(line, input.width(), input.height());
                 canonical.add(new DocumentObservationIR.TextLine(
-                        "observation-%02d-%03d".formatted(input.sourceOrdinal(), index), index,
+                        "ocr-%02d-%03d".formatted(input.sourceOrdinal(), index), index,
                         new DocumentObservationIR.SourcePixelBox(
                                 line.left(), line.top(), line.right(), line.bottom()
                         ),

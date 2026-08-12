@@ -39,7 +39,7 @@ class VisualEvidenceAcquisitionContractTest {
                         new DocumentObservationIR.ArtifactObservation(
                                 SECOND_ARTIFACT, 1, "image/jpeg", 101, 51, true,
                                 List.of(new DocumentObservationIR.TextLine(
-                                        "observation-01-000", 0,
+                                        "ocr-01-000", 0,
                                         new DocumentObservationIR.SourcePixelBox(1, 2, 100, 50),
                                         new DocumentObservationIR.Confidence(
                                                 6_001, "basis-points/1.0",
@@ -53,7 +53,7 @@ class VisualEvidenceAcquisitionContractTest {
                         new DocumentObservationIR.ArtifactObservation(
                                 FIRST_ARTIFACT, 0, "image/png", 99, 49, true,
                                 List.of(new DocumentObservationIR.TextLine(
-                                        "observation-00-000", 0,
+                                        "ocr-00-000", 0,
                                         new DocumentObservationIR.SourcePixelBox(0, 0, 99, 49),
                                         new DocumentObservationIR.Confidence(
                                                 9_000, "basis-points/1.0",
@@ -109,7 +109,7 @@ class VisualEvidenceAcquisitionContractTest {
                 List.of(new DocumentObservationIR.ArtifactObservation(
                         FIRST_ARTIFACT, 0, "image/png", 10, 10, true,
                         List.of(new DocumentObservationIR.TextLine(
-                                "observation-00-000", 0,
+                                "ocr-00-000", 0,
                                 new DocumentObservationIR.SourcePixelBox(0, 0, 10, 10),
                                 new DocumentObservationIR.Confidence(
                                         5_000, "basis-points/1.0",

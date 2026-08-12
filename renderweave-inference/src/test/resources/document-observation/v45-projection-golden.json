@@ -1,0 +1,41 @@
+{
+  "fixtureVersion": "renderweave-v45-projection-golden/1.0",
+  "cases": [
+    {
+      "mediaType": "image/png",
+      "width": 99,
+      "height": 49,
+      "sourceBox": [0, 0, 99, 49],
+      "expectedBox": [0, 0, 10000, 10000],
+      "confidenceBps": 5999,
+      "expectedBucket": "LOW"
+    },
+    {
+      "mediaType": "image/jpeg",
+      "width": 101,
+      "height": 51,
+      "sourceBox": [1, 2, 100, 50],
+      "expectedBox": [99, 392, 9901, 9804],
+      "confidenceBps": 6000,
+      "expectedBucket": "MEDIUM"
+    },
+    {
+      "mediaType": "image/jpeg",
+      "width": 101,
+      "height": 51,
+      "sourceBox": [100, 50, 101, 51],
+      "expectedBox": [9900, 9803, 10000, 10000],
+      "confidenceBps": 8499,
+      "expectedBucket": "MEDIUM"
+    },
+    {
+      "mediaType": "image/png",
+      "width": 4000,
+      "height": 4000,
+      "sourceBox": [3999, 3999, 4000, 4000],
+      "expectedBox": [9997, 9997, 10000, 10000],
+      "confidenceBps": 8500,
+      "expectedBucket": "HIGH"
+    }
+  ]
+}

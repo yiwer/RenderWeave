@@ -75,7 +75,7 @@ public final class DocumentObservationIR {
             for (int lineIndex = 0; lineIndex < artifact.observations().size(); lineIndex++) {
                 var line = artifact.observations().get(lineIndex);
                 if (line.canonicalOrder() != lineIndex
-                        || !line.observationId().equals("observation-%02d-%03d".formatted(
+                        || !line.observationId().equals("ocr-%02d-%03d".formatted(
                         artifact.sourceOrdinal(), lineIndex))) {
                     throw new IllegalArgumentException("DOCUMENT_OBSERVATION_ORDER_INVALID");
                 }
@@ -202,7 +202,7 @@ public final class DocumentObservationIR {
             Sensitivity sensitivity
     ) {
         public TextLine {
-            if (observationId == null || !observationId.matches("observation-[0-9]{2}-[0-9]{3}")) {
+            if (observationId == null || !observationId.matches("ocr-[0-9]{2}-[0-9]{3}")) {
                 throw new IllegalArgumentException("DOCUMENT_OBSERVATION_ID_INVALID");
             }
             if (canonicalOrder < 0 || canonicalOrder >= 512) {
