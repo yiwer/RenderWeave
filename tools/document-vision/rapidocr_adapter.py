@@ -148,7 +148,17 @@ def _artifact(engine: Any, raw: Any) -> dict[str, Any]:
     image = base64.b64decode(value["base64"], validate=True)
     if not image or len(image) > MAX_ARTIFACT_BYTES:
         raise ValueError("DOCUMENT_VISION_ARTIFACT_INVALID")
-    output = engine(image, use_det=True, use_cls=True, use_rec=True, text_score=0.35)
+    # RapidOCR's bytes loader goes through PIL. For CMYK JPEGs its generic four-channel
+    # conversion treats K as alpha and can erase all text. Decode to an explicit BGR
+    # raster first so every accepted media type has one deterministic color path.
+    import cv2
+    import numpy as np
+
+    decoded = cv2.imdecode(np.frombuffer(image, dtype=np.uint8), cv2.IMREAD_COLOR)
+    if (decoded is None or decoded.ndim != 3 or decoded.shape[2] != 3
+            or decoded.shape[1] != width or decoded.shape[0] != height):
+        raise ValueError("DOCUMENT_VISION_ARTIFACT_INVALID")
+    output = engine(decoded, use_det=True, use_cls=True, use_rec=True, text_score=0.35)
     boxes = [] if output.boxes is None else output.boxes
     texts = [] if output.txts is None else output.txts
     scores = [] if output.scores is None else output.scores

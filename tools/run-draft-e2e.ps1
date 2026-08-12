@@ -112,6 +112,10 @@ try {
         throw 'Unable to provision the pinned Node 24 toolchain.'
     }
     $nodeExe = Join-Path $nodeDir 'node.exe'
+    $pythonExe = (& powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'ensure-python-playwright.ps1') | Select-Object -Last 1)
+    if ($LASTEXITCODE -ne 0 -or -not $pythonExe) {
+        throw 'Unable to provision the pinned Python Playwright toolchain.'
+    }
     $viteCli = Join-Path $webRoot 'node_modules\vite\bin\vite.js'
     if (-not (Test-Path -LiteralPath $viteCli)) {
         throw 'Vite is not installed. Run the web gate first.'
@@ -208,7 +212,7 @@ try {
     }
     else {
         $schemaKey = "browser-card-$PID"
-        & python tools\draft_journey_audit.py `
+        & $pythonExe tools\draft_journey_audit.py `
             --base-url "http://127.0.0.1:$webPort" `
             --schema-key $schemaKey `
             --output $evidenceDir

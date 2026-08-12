@@ -140,6 +140,8 @@ class PostgresLiveInferenceWorkflowTest {
             "dashscope-qwen37-flash-product-v41-hybrid-generic";
     private static final String PLUS_V42_HYBRID_VISUAL_PROFILE =
             "dashscope-qwen37-plus-product-v42-hybrid-generic";
+    private static final String PLUS_V44_HYBRID_VISUAL_PROFILE =
+            "dashscope-qwen37-plus-product-v44-hybrid-generic";
     private static final String DOCUMENT_VISION_CAPABILITY =
             "rapidocr-3.9.2-openvino-2026.0.0-ppocrv6-small-c05805399d7d10b1";
 
@@ -2568,6 +2570,50 @@ class PostgresLiveInferenceWorkflowTest {
     }
 
     @Test
+    void productV44RetriesObservationWhenLocalVisionProvesAnOmittedDenseSequence() {
+        var blobs = new MemoryBlobStore();
+        var created = createGroundedVisual(
+                blobs, "v44-document-sequence-coverage",
+                PLUS_V44_HYBRID_VISUAL_PROFILE, 5_000_000L
+        );
+        var provider = new ScriptedProvider(
+                request -> response(request, flatGroundedStationElements()),
+                request -> response(request, groundedStationElements()),
+                request -> response(request, groundedStationHierarchy()),
+                request -> response(request, groundedStationBindings())
+        );
+        var preprocessCalls = new AtomicInteger();
+
+        var finished = worker(
+                provider, blobs, T0.plusSeconds(1), denseSequencePreprocessor(preprocessCalls)
+        ).processNext("v44-document-sequence-coverage-worker").orElseThrow();
+
+        assertThat(finished.state())
+                .as("failure=%s attempts=%s", finished.failureCode(), workflowStore.attempts(created))
+                .isEqualTo(InferenceRunState.REVIEW_REQUIRED);
+        assertThat(provider.requests).extracting(ProviderInferenceRequest::stage)
+                .containsExactly(
+                        InferenceStage.OBSERVE, InferenceStage.OBSERVE,
+                        InferenceStage.HIERARCHY, InferenceStage.ELEMENT_BINDING
+                );
+        assertThat(workflowStore.attempts(created)).extracting(InferenceAttempt::status)
+                .containsExactly(
+                        InferenceAttemptStatus.REJECTED, InferenceAttemptStatus.SUCCEEDED,
+                        InferenceAttemptStatus.SUCCEEDED, InferenceAttemptStatus.SUCCEEDED
+                );
+        assertThat(workflowStore.attempts(created).getFirst().problemCodeCounts())
+                .containsExactlyEntriesOf(Map.of(
+                        "VISUAL_SEMANTIC_OBSERVE_DOCUMENT_SEQUENCE_GROUP_MISSING", 1
+                ));
+        assertThat(provider.requests.get(1).taskJson())
+                .contains("VISUAL_SEMANTIC_OBSERVE_DOCUMENT_SEQUENCE_GROUP_MISSING")
+                .contains("\"elementInventory\":null")
+                .contains("\"groundingPlan\":null");
+        assertThat(preprocessCalls).hasValue(1);
+        assertThat(workflowStore.findCandidate(created)).isPresent();
+    }
+
+    @Test
     void cancellationIsAcknowledgedBeforeHybridPreprocessing() {
         var blobs = new MemoryBlobStore();
         var created = createGroundedVisual(blobs, "hybrid-cancel-before-ocr", HYBRID_VISUAL_PROFILE);
@@ -3207,6 +3253,44 @@ class PostgresLiveInferenceWorkflowTest {
                                         DocumentVisionObservation.ConfidenceBucket.HIGH,
                                         text
                                 ))
+                        ))
+                );
+            }
+        };
+    }
+
+    private static DocumentVisionPreprocessor denseSequencePreprocessor(AtomicInteger calls) {
+        var capability = DocumentVisionCapability.available(
+                DOCUMENT_VISION_CAPABILITY,
+                "rapidocr-openvino-ppocrv6-small",
+                "rapidocr-3.9.2+openvino-2026.0.0",
+                "b".repeat(64)
+        );
+        return new DocumentVisionPreprocessor() {
+            @Override
+            public DocumentVisionCapability capability() {
+                return capability;
+            }
+
+            @Override
+            public DocumentVisionObservation preprocess(
+                    List<cn.hbads.renderweave.inference.vision.DocumentVisionArtifact> artifacts
+            ) {
+                calls.incrementAndGet();
+                var artifact = artifacts.getFirst();
+                var lines = new ArrayList<DocumentVisionObservation.TextLine>();
+                for (var index = 0; index < 10; index++) {
+                    var left = 500 + index * 800;
+                    lines.add(new DocumentVisionObservation.TextLine(
+                            "ocr-00-%03d".formatted(index), index,
+                            new CandidateBoundingBox(left, 4_000, left + 400, 6_000),
+                            DocumentVisionObservation.ConfidenceBucket.HIGH, "item"
+                    ));
+                }
+                return DocumentVisionObservation.canonical(
+                        DOCUMENT_VISION_CAPABILITY,
+                        List.of(new DocumentVisionObservation.ArtifactObservation(
+                                artifact.artifactId(), artifact.sourceOrdinal(), lines
                         ))
                 );
             }

@@ -39,7 +39,7 @@ export function InferenceStartPage() {
   return (
     <ResourceFrame
       title="新增识别输入"
-      description="上传设计图片，选择 v43 DashScope 模型与费用边界；提交后进入独立监控版面，不会直接发布或写入正式数据结构。"
+      description="上传设计图片，选择 v44 DashScope 模型与费用边界；提交后进入独立监控版面，不会直接发布或写入正式数据结构。"
       actions={<Link className="button ghost-button" to="/inference">返回历史任务</Link>}
       breadcrumbs={[{ label: '智能识别', to: '/inference' }, { label: '新增识别' }]}
     >
@@ -60,7 +60,7 @@ function LiveLauncher({
   query: UseQueryResult<LiveAvailabilityResponse, Error>;
   onCreated: (runId: string) => void;
 }) {
-  const [profileId, setProfileId] = useState<LiveProfileId>('dashscope-qwen37-plus-product-v43-hybrid-generic');
+  const [profileId, setProfileId] = useState<LiveProfileId>('dashscope-qwen37-plus-product-v44-hybrid-generic');
   const [images, setImages] = useState<File[]>([]);
   const [jsonSamples, setJsonSamples] = useState<File[]>([]);
   const [transferConfirmed, setTransferConfirmed] = useState(false);
@@ -133,7 +133,7 @@ function LiveLauncher({
                   ? '当前部署未开放文件传输'
                   : !query.data.enabled || !query.data.configured
                     ? 'DashScope 运行配置尚未就绪'
-                    : 'v43 本地 OCR / Layout 能力尚未就绪'}</strong>
+                    : 'v44 本地 OCR / Layout 能力尚未就绪'}</strong>
                 <span>{!uploadAuthorized
                   ? '请使用 live Compose 配置启动服务；选择文件、预览和切换模型都不会触发调用。'
                   : !query.data.enabled || !query.data.configured
@@ -259,7 +259,7 @@ function LiveLauncher({
                 <Upload aria-hidden="true" size={16} />{createRun.isPending ? '正在创建任务…' : '排队识别并查看监控'}
               </button>
               {!profileAvailable
-                ? <p className="live-input-hint">所选 v43 Profile 的本地 OCR / Layout capability 未就绪，任务不会排队。</p>
+                ? <p className="live-input-hint">所选 v44 Profile 的本地 OCR / Layout capability 未就绪，任务不会排队。</p>
                 : !profileSupportsMode
                 ? <p className="live-input-hint">所选模型配置不支持当前输入模式，请切换模型或模式。</p>
                 : !modeReady && <p className="live-input-hint">请按当前模式添加必需文件。</p>}

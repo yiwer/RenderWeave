@@ -488,3 +488,20 @@ final 不调用。N6=`automated_verified`，N7/Goal 仍未完成；后续算法�
   诊断累计 ¥0.638076/¥5。
 - 该 delta 验证两张指定用户图片的 Candidate reachability，不修改 `EXPERIMENTAL` 状态，也不替代 final 60、
   全局 N7、独立质量验收或生产可靠性结论。
+
+### 2026-08-12 product-v44 CMYK 与强序列覆盖 delta
+
+- 针对 run `aafca06e-fc65-42c3-9253-1bd48c4daf69` 的结构误识别回放证明：该 CMYK JPEG 经 RapidOCR
+  原生 bytes/PIL 路径时，K 通道被通用四通道转换当作 alpha，本地 OCR 返回 0 行；显式
+  `cv2.imdecode(..., IMREAD_COLOR)` 后同一输入返回 35 行有界观察。Prompt 11 随后合法选择了
+  ROOT-only，因此嵌套序列整体未进入 HIERARCHY；Candidate materializer 从未收到已有数组关系。
+- adapter 对全部已接受 PNG/JPEG 统一先解码为尺寸一致的三通道 BGR 矩阵，解码或尺寸不一致继续
+  fail-closed。新增无第三方依赖的 adapter 回归测试，并纳入 document-vision/full 项目门控。
+- 新增三份 immutable product-v44 Profile；v43 及更早资源保持不可变并退出新建目录。v44 仅把
+  OBSERVE element prompt 升为 Prompt 12，模型、价格、pipeline 4.28、7-call、360 秒、Plus/Flash 16384
+  tokens、Max 8192 tokens 与 ¥2 单次/¥5 run 边界不变。
+- Prompt 12 保留不确定几何的 ROOT-only 回退；但当本地 OCR 的中/高置信 box 构成强有序竖向序列，
+  而响应没有有效 `MANY GROUP → REPEATED_GROUP` 时，payload-free verifier 返回
+  `VISUAL_SEMANTIC_OBSERVE_DOCUMENT_SEQUENCE_GROUP_MISSING` 并回到 OBSERVE。它只拒绝不完整响应，
+  不读 OCR 文本、不使用业务词汇、不更改 box 或自动创建结构。
+- v44 继续为 `EXPERIMENTAL`；单一用户样本的修复验证不替代 final 60、全局 N7 或生产可靠性验收。

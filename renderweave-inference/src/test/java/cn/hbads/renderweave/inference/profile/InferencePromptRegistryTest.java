@@ -309,6 +309,23 @@ class InferencePromptRegistryTest {
     }
 
     @Test
+    void visualV44PreservesShallowFallbackButForbidsStrongSequenceOmission() {
+        var prompt = new InferencePromptRegistry().requireVisualStage(
+                InferencePromptRegistry.VISUAL_ELEMENTS_V12,
+                InferencePromptRegistry.VISUAL_HINT_GENERIC_V1
+        ).text();
+        var normalized = prompt.replaceAll("\\s+", " ");
+
+        assertTrue(normalized.contains("Prefer the shallowest valid region forest"));
+        assertTrue(normalized.contains("ROOT-only is not a valid omission"));
+        assertTrue(prompt.contains("VISUAL_SEMANTIC_OBSERVE_DOCUMENT_SEQUENCE_GROUP_MISSING"));
+        assertTrue(normalized.contains("local OCR geometry and visible pixels"));
+        assertFalse(prompt.matches("(?is).*\\b(bus|station|route|stop|fare)\\b.*"));
+        assertFalse(prompt.contains("公交"));
+        assertFalse(prompt.contains("站牌"));
+    }
+
+    @Test
     void visualV14PinsFieldSpecificHierarchyRepairWithoutStructuralCrops() {
         var prompt = new InferencePromptRegistry().requireVisualStage(
                 InferencePromptRegistry.VISUAL_HIERARCHY_V5,

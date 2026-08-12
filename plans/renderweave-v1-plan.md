@@ -957,3 +957,20 @@ PASS；fresh Java/Python identity `/2:17cb0b63…daaf90a5` 和 Plus snapshot `77
 
 当前用户“两图均生成 Candidate”Goal 已完成。v43 仍为 `EXPERIMENTAL`；本证据只覆盖两份指定输入，不能替代
 60 例 final eval、全局质量门或生产可靠性结论，N7/final quality gate 继续 `in_progress`。
+
+### product-v44 CMYK 解码与密集序列覆盖
+
+用户审核 v43 run `aafca06e-fc65-42c3-9253-1bd48c4daf69` 时发现：Candidate 虽到达
+`REVIEW_REQUIRED`，但中部嵌套重复列表整体丢失。回放证明 run 仅有 1 root Schema、0 child Schema、
+0 array reference；OBSERVE 接受了 9 个 SLOT/ONE、0 GROUP/MANY，因此 HIERARCHY/materializer 从未获得数组事实。
+
+输入是 CMYK JPEG。RapidOCR 3.9.2 的 encoded-bytes/PIL 路径对其通用四通道处理时使文字消失，本地
+Document Vision 返回 0 行；显式 BGR 解码后，两张指定图分别为 35/8 行。第一张有 10 个非 LOW
+竖长序列框触发新覆盖门，第二张为 0 个且不触发；整个验证只记录计数/布尔值，不记录 OCR 文本。
+
+修复为：adapter 先解码为与申报尺寸一致的三通道 BGR；新增 immutable product-v44/Prompt 12；
+对至少 8 个中/高置信、同向竖长、纵向对齐且水平跨度至少 40% 的 box 序列，若 OBSERVE 缺少
+`MANY GROUP → REPEATED_GROUP`，返回固定码并重试 OBSERVE。检查不读 OCR 文本、不硬编码领域词、
+不自动创建数组。adapter 1/1、verifier/Profile/Prompt 29/29、真实 PostgreSQL 四调用回归 1/1、
+API/policy/evidence 21/21、Node 24 Web 73/73 与开发工作树 full `20260812-121427-full` 10/10 已通过。
+live 前仍需提交后的 exact-clean full/Document Vision、fresh identity/snapshot 与精确边界记录。

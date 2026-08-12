@@ -940,3 +940,15 @@
 - 两个 v43 run 实际费用为 ¥0.141000 + ¥0.074294；连同先前 v42 诊断，任务累计 ¥0.638076，低于 ¥5
   硬上限。两张指定图片的 Candidate 目标完成；v43 仍为 `EXPERIMENTAL`，不把两例成功写成 60 例发布门或
   生产可靠性验收，全局 N7/final quality gate 继续 `in_progress`。
+
+### product-v44 CMYK/密集序列修复
+
+- v43 run `aafca06e-fc65-42c3-9253-1bd48c4daf69` 的中部嵌套列表在 OBSERVE 已被整体静默遗漏：
+  1 root/0 child/0 array ref，9 SLOT/ONE、0 GROUP/MANY；后续阶段从未收到嵌套事实。
+- 根因为 CMYK JPEG 经 RapidOCR bytes/PIL 四通道路径时丢失文字。adapter 改为显式 BGR 解码；
+  真图 payload-free 重放为第一图 35 lines/10 序列候选/门命中，第二图 8/0/未命中。
+- 新增 immutable product-v44 + Prompt 12；强 OCR 几何序列与像素一致但缺少 MANY GROUP/REPEATED_GROUP 时，
+  以固定码拒绝并重试 OBSERVE。不读 OCR 文本、不用领域词、不自动造数组；v43 资源不变。
+- 已通过 adapter 1/1、verifier/Profile/Prompt 29/29、真实 PostgreSQL workflow 1/1、API/policy/evidence
+  21/21 与 Node 24 Web 73/73。开发工作树 full `20260812-121427-full` 10/10 PASS；浏览器审计统一改用
+  pinned Python Playwright 1.62.0。待提交后的 exact-clean full/Document Vision 后重启 live 并追加指定图结构证据。

@@ -298,7 +298,7 @@ class InferenceApiTest {
                 .andExpect(jsonPath("$.maximumRunCostLimitMicrosCny").value(5_000_000))
                 .andExpect(jsonPath("$.profiles.length()").value(3))
                 .andExpect(jsonPath("$.profiles[0].profileId")
-                        .value("dashscope-qwen37-plus-product-v43-hybrid-generic"))
+                        .value("dashscope-qwen37-plus-product-v44-hybrid-generic"))
                 .andExpect(jsonPath("$.profiles[0].available").value(false))
                 .andExpect(jsonPath("$.profiles[0].unavailabilityCode")
                         .value("DOCUMENT_VISION_DISABLED"))
@@ -311,7 +311,7 @@ class InferenceApiTest {
                 .andExpect(jsonPath("$.profiles[2].maximumEstimatedCostMicrosCny")
                         .value(2_000_000))
                 .andExpect(jsonPath("$.profiles[2].profileId")
-                        .value("dashscope-qwen37-flash-product-v43-hybrid-generic"))
+                        .value("dashscope-qwen37-flash-product-v44-hybrid-generic"))
                 .andExpect(jsonPath("$.profiles[?(@.model == 'qwen3.7-flash')]").exists())
                 .andExpect(jsonPath("$.profiles[?(@.model == 'qwen3.7-plus')]").exists())
                 .andExpect(jsonPath("$.profiles[?(@.model == 'qwen3.8-max')]").exists())
@@ -327,7 +327,7 @@ class InferenceApiTest {
         var metadata = new MockMultipartFile(
                 "metadata", "metadata.json", MediaType.APPLICATION_JSON_VALUE,
                 """
-                        {"profileId":"dashscope-qwen37-plus-product-v43-hybrid-generic","mode":"IMAGE_ONLY",
+                        {"profileId":"dashscope-qwen37-plus-product-v44-hybrid-generic","mode":"IMAGE_ONLY",
                          "inputClassification":"USER_PROVIDED","externalTransferConfirmed":true,
                          "experimentalProfileConfirmed":true}
                         """.getBytes(java.nio.charset.StandardCharsets.UTF_8)

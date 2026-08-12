@@ -109,9 +109,9 @@ try {
         'inference-e2e' { @('server-verify', 'web-node24', 'inference-browser-e2e') }
         'compose' { @('compose-config') }
         'runtime' { @('runtime-canary') }
-        'document-vision' { @('document-vision-canary') }
+        'document-vision' { @('document-vision-adapter-tests', 'document-vision-canary') }
         'capacity' { @('capacity-baseline') }
-        'full' { @('repository-diff', 'server-verify', 'web-node24', 'offline-eval', 'compose-config', 'runtime-canary', 'prototype-e2e', 'draft-browser-e2e', 'inference-browser-e2e') }
+        'full' { @('repository-diff', 'server-verify', 'web-node24', 'offline-eval', 'compose-config', 'runtime-canary', 'document-vision-adapter-tests', 'prototype-e2e', 'draft-browser-e2e', 'inference-browser-e2e') }
     }
 
     foreach ($step in $requestedSteps) {
@@ -163,6 +163,12 @@ try {
                 Invoke-GateStep $step {
                     Invoke-ZeroPaidAiCommand `
                         'powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools\runtime-canary.ps1'
+                }
+            }
+            'document-vision-adapter-tests' {
+                Invoke-GateStep $step {
+                    Invoke-ZeroPaidAiCommand `
+                        'python.exe tools\document-vision\test_rapidocr_adapter.py'
                 }
             }
             'document-vision-canary' {

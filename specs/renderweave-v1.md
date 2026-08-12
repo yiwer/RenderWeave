@@ -381,7 +381,7 @@ JSON inference samples 每份 ≤256 KiB、总计 ≤2 MiB、depth ≤32；模�
 
 ```text
 NORMALIZE
-→ MULTISCALE_VIEW / DOCUMENT_VISION (IMAGE_ONLY product-v43: local, exact capability)
+→ MULTISCALE_VIEW / DOCUMENT_VISION (IMAGE_ONLY product-v44: local, exact capability)
 → OBSERVE (region grounding + bounded visual element inventory)
 → HIERARCHY (rooted entity/relation tree)
 → ELEMENT_BINDING (bind every data slot to one entity)
@@ -393,17 +393,21 @@ NORMALIZE
 ```
 
 JSON_ONLY 继续由确定性 profiler 产生 grounded Candidate 且零 Provider 调用；COMBINED 继续以 JSON
-grounding 为结构事实源，但当前新建产品 live 目录只接纳 IMAGE_ONLY product-v43。历史 run 继续按其不可变
-snapshot 恢复。`HIERARCHY` 与 `ELEMENT_BINDING` 用于 IMAGE_ONLY product-v43。
+grounding 为结构事实源，但当前新建产品 live 目录只接纳 IMAGE_ONLY product-v44。历史 run 继续按其不可变
+snapshot 恢复。`HIERARCHY` 与 `ELEMENT_BINDING` 用于 IMAGE_ONLY product-v44。
 
 - 各 stage 有 Profile 固定的 output token、timeout、tool call、total call 和单次费用预留上界；产品
   run 可另设覆盖首次识别与 repair 的累计成本硬上限，留空时仍保留 Profile 的全部固定边界。
 - provider/network retry 仅由应用执行：network/408/429/5xx 在 Profile 总调用边界内重试，尊重 Retry-After；
   其他 4xx/refusal 不重试。前三个视觉中间合同无效时只重试当前阶段，Candidate 合同/计划偏差进入 repair。
 - 所有 attempt 都计入预算。预算用尽安全失败，不自动升级模型。
-- product-v43 使用启动时探测、默认零网络的 Document Vision 窄端口；其 capability 必须与 Profile 精确绑定，
+- product-v44 使用启动时探测、默认零网络的 Document Vision 窄端口；其 capability 必须与 Profile 精确绑定，
   缺失或不匹配时在创建/retry 和 Provider reservation 前 fail-closed。
-- product-v43 继承 product-v41 的早期 GROUP prerequisite：在已严格解码的 HIERARCHY response 含 relationship、而 OBSERVE inventory 为 0 GROUP 时，
+- product-v44 对 PNG/JPEG 统一先解码为显式 BGR 像素矩阵再进入 RapidOCR，避免 CMYK JPEG 的 K 通道被当作 alpha 而丢失文字。
+  若本地 OCR 几何显示至少 8 个中/高置信、同向竖长且水平展开的相近文字框，而 OBSERVE 未产生有效
+  `MANY GROUP → REPEATED_GROUP`，必须返回 `VISUAL_SEMANTIC_OBSERVE_DOCUMENT_SEQUENCE_GROUP_MISSING`
+  并在 OBSERVE 同阶段重试；检查只读取 box/置信度，不读 OCR 文本、不硬编码领域词、不自动造数组。
+- product-v44 继承 product-v41 的早期 GROUP prerequisite：在已严格解码的 HIERARCHY response 含 relationship、而 OBSERVE inventory 为 0 GROUP 时，
   必须在 support ID 与 evidence-derived cardinality 解析前返回固定码
   `VISUAL_SEMANTIC_OBSERVE_RELATIONSHIP_GROUP_MISSING` 并回到 OBSERVE；不得继续原地重试 HIERARCHY、
   补造 GROUP 或放宽未知 support。空 relationship 或 inventory 已有 GROUP 时继续原有严格诊断顺序。
@@ -415,9 +419,9 @@ snapshot 恢复。`HIERARCHY` 与 `ELEMENT_BINDING` 用于 IMAGE_ONLY product-v4
 - scalar 类型冲突可降级为 text 并产生 warning；object/array/scalar 冲突和 heterogeneous array 阻断。
 - concrete + null：用 concrete 类型并记录 null adaptation warning；all-null 阻断；DSL 永不 nullable。
 - 每个 nested object 生成独立 CandidateSchema，通过 reference 连接；不产生 inline object。
-- IMAGE_ONLY product-v43 对独立可寻址/有序的重复项建立 child CandidateSchema；即使主值是文本，已有
+- IMAGE_ONLY product-v44 对独立可寻址/有序的重复项建立 child CandidateSchema；即使主值是文本，已有
   顺序、当前状态、换乘标记等 item-level 属性或明确重复组时也不得降级为 `Array<TEXT>`。
-- IMAGE_ONLY product-v43 的最终 Candidate 必须完整保持已验证计划中的根、实体、关系基数、字段归属和
+- IMAGE_ONLY product-v44 的最终 Candidate 必须完整保持已验证计划中的根、实体、关系基数、字段归属和
   direct evidence；遗漏、增加或改变拓扑产生可修复 blocker，不能以合同形式合法为由静默接受。
 - object array 对字段取并集，缺失字段 optional；结构冲突阻断，不产生 union。
 - 所有观察数组为空时 item type 未解析并阻断；combined 模式只有明确视觉重复证据且逐项确认才可提出 item 候选。
@@ -442,7 +446,7 @@ Web 将智能识别拆成职责单一、可深链的版面；模块默认页是�
 - 每个 AI item 包含 evidence、`inferred` 和 confidence。
 - 图片 evidence 可有多个 bbox；坐标为规范化后图片、左上原点、整数 0..10000，越界/反向不 clamp，直接 blocker/repair。
 - IMAGE_ONLY 若同一 artifact 的至少两个 bbox 全部位于像素边界、并集横纵覆盖至少 50% 画布且到达右侧或
-  底部 98% 边界，可在 validator 前按 artifact 尺寸确定性换算为 0..10000，并保留 WARNING；product-v43
+  底部 98% 边界，可在 validator 前按 artifact 尺寸确定性换算为 0..10000，并保留 WARNING；product-v44
   元素盘点在持久化并交给后续层级步骤前应用同一规则。单框或其他歧义集合不猜测。Web 对历史 Candidate
   使用相同规则只修正显示，不改写既有 revision。
 - JSON evidence 使用 sample index + JSON Pointer；模型值匹配仍标 inferred。
@@ -485,16 +489,16 @@ QUEUED → RUNNING → REVIEW_REQUIRED → APPLYING → COMPLETED
 ### 8.7 Provider/Profile 安全边界
 
 - v1 首个 live adapter 是 DashScope 的 OpenAI-compatible Chat Completions HTTP endpoint；领域层只依赖 provider-neutral port，协议 DTO、HTTP client 与 `DASHSCOPE_API_KEY` 只存在于 application adapter。
-- 新建产品 live run 只提供 `dashscope-qwen37-plus-product-v43-hybrid-generic`（`qwen3.7-plus`）、
-  `dashscope-qwen38-max-product-v43-hybrid-generic`（`qwen3.8-max`）和
-  `dashscope-qwen37-flash-product-v43-hybrid-generic`（`qwen3.7-flash`）三份
+- 新建产品 live run 只提供 `dashscope-qwen37-plus-product-v44-hybrid-generic`（`qwen3.7-plus`）、
+  `dashscope-qwen38-max-product-v44-hybrid-generic`（`qwen3.8-max`）和
+  `dashscope-qwen37-flash-product-v44-hybrid-generic`（`qwen3.7-flash`）三份
   IMAGE_ONLY Profile；Web 默认 Plus，Max 用于用户显式选择的高难嵌套任务，Flash 只定位为低成本 smoke。
-  历史 canary/certification、全部 product-v42 及更早 Profile 保持不可变、可读和可恢复，但不进入
-  新建产品选择器。v43 继承 v42 的 pipeline 4.28、Document Vision、价格和 7-call/360 秒运行边界；仅把
-  OBSERVE element prompt 升为 Prompt 11。Prompt 11 优先输出最浅的确定 region forest，在嵌套、重复或
-  containment 不能确定时允许合法 ROOT-only forest，并把 SLOT 归属 ROOT；它路由通用 element-invalid
-  反馈，但不放宽 strict validator、materializer 或 Candidate 合同。Plus/Flash 保持 16384 output tokens，
-  exact `qwen3.8-max` 保持 8192。三份当前 v43 Profile 均为 `EXPERIMENTAL`，也不做跨模型自动升级路由。
+  历史 canary/certification、全部 product-v43 及更早 Profile 保持不可变、可读和可恢复，但不进入
+  新建产品选择器。v44 继承 v43 的 pipeline 4.28、Document Vision capability、价格和 7-call/360 秒运行边界；
+  OBSERVE element prompt 升为 Prompt 12，保留 Prompt 11 的最浅确定/ROOT-only 回退，但当本地 OCR 几何与像素共同证明
+  强有序重复序列时，禁止用 ROOT-only 把该序列静默抹掉。它不放宽 strict validator、materializer 或
+  Candidate 合同。Plus/Flash 保持 16384 output tokens，exact `qwen3.8-max` 保持 8192。三份当前 v44 Profile
+  均为 `EXPERIMENTAL`，也不做跨模型自动升级路由。
 - Profile 是 repo-versioned resource，保存 provider/model/prompt/structured output/budgets/evaluation identity；run 保存完整 snapshot。
 - API Key 只来自外部 secret，不进入 DB、Profile、UI、日志或错误。
 - 每次 call 使用 `response_format={"type":"json_object"}`、关闭 thinking、禁用 provider tools/search；prompt 必须明确要求 JSON。合法 JSON 仍须经过 Candidate codec、确定性 validator 和 bounded repair。
@@ -516,12 +520,12 @@ QUEUED → RUNNING → REVIEW_REQUIRED → APPLYING → COMPLETED
   输出 token 计算保守费用上界，并按模型价格阶梯提高输入与输出单价；超过 Profile 单次上界时零
   调用失败。reservation 是追加式费用账本：创建时以行锁验证 run 存在，此后保留 immutable run
   UUID 审计值且不随 run 删除；provider 返回实际 usage 后只允许向不超过预留的值结算。
-- product-v43 的三个 Profile 将 `maximumEstimatedCostMicrosCny` 统一固定为 2,000,000（¥2）。这是
+- product-v44 的三个 Profile 将 `maximumEstimatedCostMicrosCny` 统一固定为 2,000,000（¥2）。这是
   每次调用的保守预留上界而非实际收费；若高分辨率/多图请求的保守估值超过 ¥2，必须在零 Provider
   调用处拒绝，不能靠任务累计限额绕过。
-- product-v43 的 Plus/Flash 单步输出上限为 16384 tokens，Max 因能力证据不足保持 8192；输出合同均不超过
+- product-v44 的 Plus/Flash 单步输出上限为 16384 tokens，Max 因能力证据不足保持 8192；输出合同均不超过
   262144 bytes。这只为有证据支持的模型提供表达空间，不放宽 ¥2 单次预留门或七次总调用上限。
-- product-v43 的每个 Provider stage 请求时限为 360 秒；
+- product-v44 的每个 Provider stage 请求时限为 360 秒；
   每次调用前必须续租 durable run lease，保证单次最长请求仍位于当前 600 秒 lease 内。
   `HttpTimeoutException` 必须记为可重试的 `DASHSCOPE_TIMEOUT`，不得混同为
   `DASHSCOPE_NETWORK_ERROR`。历史 run 永远按其保存的 Profile snapshot 恢复。
@@ -532,7 +536,7 @@ QUEUED → RUNNING → REVIEW_REQUIRED → APPLYING → COMPLETED
   合法唯一技术 key；无 items/reference 的支持标量清空冗余 observedKinds，并分别留下 WARNING。不得借此修改
   fieldKey、类型、约束、证据、置信度、resolution、引用或图拓扑；规范化后只剩人工 blocker 时进入审核，
   仍含 trust/未知 blocker 的组合继续 fail-closed。
-- product-v43 产品 run 必须设置 `costLimitMicrosCny`，范围 1..5,000,000（最多 ¥5）；全部串行阶段、阶段重试
+- product-v44 产品 run 必须设置 `costLimitMicrosCny`，范围 1..5,000,000（最多 ¥5）；全部串行阶段、阶段重试
   的已结算/仍预留成本累计不得超过该硬上限，缺失或超限均在 Provider 调用前失败。Web 默认填入 ¥5 且不允许
   取消该部署门；人工 retry 创建新 run 并继承原成本上限。
 - 产品 reservation 使用独立 `product-live` 审计命名空间，不消费或重开历史 P5 有限预算。P5 的
@@ -595,7 +599,7 @@ v1 只有：
 
 复用相同 form/map editor，加 bundle navigation、evidence overlay、confidence、blocker 和 item resolution；不出现“保存 Draft”或“发布”按钮，唯一写入动作是全部门通过后的原子创建。
 
-推断入口和审核详情使用一致的四步进度：准备输入 → 受控识别 → 逐项校对 → 原子创建。运行中展示人类可读 stage；状态机许可时可取消，FAILED/CANCELLED 只允许显式 retry 创建新 run。上传选择必须提供逐文件检查和移除，但选择、预览或切换 Profile 均不得触发 Provider。产品模型选择器只展示三份 IMAGE_ONLY product-v43 Profile，默认 Plus，并对每份 Profile 显示独立 readiness；capability 未就绪的选项不可启动。当前部署要求每个新任务设置不超过 ¥5 的累计成本硬上限，按钮是否可用不再依赖历史 canary 账本剩余额度。
+推断入口和审核详情使用一致的四步进度：准备输入 → 受控识别 → 逐项校对 → 原子创建。运行中展示人类可读 stage；状态机许可时可取消，FAILED/CANCELLED 只允许显式 retry 创建新 run。上传选择必须提供逐文件检查和移除，但选择、预览或切换 Profile 均不得触发 Provider。产品模型选择器只展示三份 IMAGE_ONLY product-v44 Profile，默认 Plus，并对每份 Profile 显示独立 readiness；capability 未就绪的选项不可启动。当前部署要求每个新任务设置不超过 ¥5 的累计成本硬上限，按钮是否可用不再依赖历史 canary 账本剩余额度。
 
 Candidate form 是完整键盘路径：支持新增、删除、上移/下移 Schema 与 field，编辑合法类型对应的 constraints，并在一项具有多张图片 evidence 时逐张切换和查看各自 bbox。map 与 form 共享相同顺序和选择；不要求拖拽，不提供 confirm-all。
 

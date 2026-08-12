@@ -12,38 +12,38 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class InferenceProfileRegistryTest {
     @Test
-    void productCatalogUsesV43WithoutMutatingTheV42Snapshots() {
+    void productCatalogUsesV44WithoutMutatingTheV43Snapshots() {
         var registry = new InferenceProfileRegistry();
 
         assertEquals(java.util.List.of(
-                "dashscope-qwen37-plus-product-v43-hybrid-generic",
-                "dashscope-qwen38-max-product-v43-hybrid-generic",
-                "dashscope-qwen37-flash-product-v43-hybrid-generic"
+                "dashscope-qwen37-plus-product-v44-hybrid-generic",
+                "dashscope-qwen38-max-product-v44-hybrid-generic",
+                "dashscope-qwen37-flash-product-v44-hybrid-generic"
         ), registry.productLiveProfiles().stream().map(item -> item.profile().profileId()).toList());
         assertEquals(java.util.List.of(
                 "qwen3.7-plus", "qwen3.8-max", "qwen3.7-flash"
         ), registry.productLiveProfiles().stream().map(item -> item.profile().model()).toList());
         assertPricingInherited(
                 registry,
-                "dashscope-qwen37-plus-product-v42-hybrid-generic",
-                "dashscope-qwen37-plus-product-v43-hybrid-generic"
+                "dashscope-qwen37-plus-product-v43-hybrid-generic",
+                "dashscope-qwen37-plus-product-v44-hybrid-generic"
         );
         assertPricingInherited(
                 registry,
-                "dashscope-qwen38-max-product-v42-hybrid-generic",
-                "dashscope-qwen38-max-product-v43-hybrid-generic"
+                "dashscope-qwen38-max-product-v43-hybrid-generic",
+                "dashscope-qwen38-max-product-v44-hybrid-generic"
         );
         assertPricingInherited(
                 registry,
-                "dashscope-qwen37-flash-product-v42-hybrid-generic",
-                "dashscope-qwen37-flash-product-v43-hybrid-generic"
+                "dashscope-qwen37-flash-product-v43-hybrid-generic",
+                "dashscope-qwen37-flash-product-v44-hybrid-generic"
         );
 
         var genericFlash = registry.require(
-                "dashscope-qwen37-flash-product-v43-hybrid-generic"
+                "dashscope-qwen37-flash-product-v44-hybrid-generic"
         ).profile();
         assertEquals("renderweave-inference-pipeline/4.28", genericFlash.pipelineVersion());
-        assertEquals(InferencePromptRegistry.VISUAL_ELEMENTS_V11, genericFlash.elementPromptVersion());
+        assertEquals(InferencePromptRegistry.VISUAL_ELEMENTS_V12, genericFlash.elementPromptVersion());
         assertEquals("qwen3.7-flash", genericFlash.model());
         assertEquals(
                 "qwen3.7-flash-2026-07-15",
@@ -63,10 +63,13 @@ class InferenceProfileRegistryTest {
         assertFalse(registry.isProductLiveProfile(
                 "dashscope-qwen37-flash-product-v42-hybrid-generic"
         ));
+        assertFalse(registry.isProductLiveProfile(
+                "dashscope-qwen37-flash-product-v43-hybrid-generic"
+        ));
     }
 
     @Test
-    void exposesHistoricalProfilesAndPromotesOnlyTheCurrentV43Catalog() {
+    void exposesHistoricalProfilesAndPromotesOnlyTheCurrentV44Catalog() {
         var registry = new InferenceProfileRegistry();
         var resource = registry.require("replay-v1");
         var profile = resource.profile();
@@ -212,12 +215,15 @@ class InferenceProfileRegistryTest {
                 "dashscope-qwen38-max-product-v42-hybrid-generic",
                 "dashscope-qwen37-flash-product-v43-hybrid-generic",
                 "dashscope-qwen37-plus-product-v43-hybrid-generic",
-                "dashscope-qwen38-max-product-v43-hybrid-generic"
+                "dashscope-qwen38-max-product-v43-hybrid-generic",
+                "dashscope-qwen37-flash-product-v44-hybrid-generic",
+                "dashscope-qwen37-plus-product-v44-hybrid-generic",
+                "dashscope-qwen38-max-product-v44-hybrid-generic"
         ), registry.profileIds());
         assertEquals(java.util.List.of(
-                "dashscope-qwen37-plus-product-v43-hybrid-generic",
-                "dashscope-qwen38-max-product-v43-hybrid-generic",
-                "dashscope-qwen37-flash-product-v43-hybrid-generic"
+                "dashscope-qwen37-plus-product-v44-hybrid-generic",
+                "dashscope-qwen38-max-product-v44-hybrid-generic",
+                "dashscope-qwen37-flash-product-v44-hybrid-generic"
         ), registry.productLiveProfiles().stream().map(item -> item.profile().profileId()).toList());
         assertEquals(java.util.List.of(
                 "qwen3.7-plus", "qwen3.8-max", "qwen3.7-flash"
@@ -232,7 +238,7 @@ class InferenceProfileRegistryTest {
                 "qwen3.7-flash", "qwen3.7-plus", "qwen3.8-max"
         ), registry.visualNextProfiles().stream()
                 .map(item -> item.capability().capability().model()).toList());
-        assertEquals(113, registry.visualGroundingProfiles().size());
+        assertEquals(116, registry.visualGroundingProfiles().size());
         assertEquals(java.util.List.of(
                 "dashscope-qwen37-flash-product-v7-hybrid-generic",
                 "dashscope-qwen37-plus-product-v7-hybrid-generic",
@@ -300,7 +306,10 @@ class InferenceProfileRegistryTest {
                 "dashscope-qwen38-max-product-v42-hybrid-generic",
                 "dashscope-qwen37-flash-product-v43-hybrid-generic",
                 "dashscope-qwen37-plus-product-v43-hybrid-generic",
-                "dashscope-qwen38-max-product-v43-hybrid-generic"
+                "dashscope-qwen38-max-product-v43-hybrid-generic",
+                "dashscope-qwen37-flash-product-v44-hybrid-generic",
+                "dashscope-qwen37-plus-product-v44-hybrid-generic",
+                "dashscope-qwen38-max-product-v44-hybrid-generic"
         ), registry.visualHybridProfiles().stream()
                 .map(item -> item.profile().profile().profileId()).toList());
         assertEquals("renderweave-inference-profile/1.0", profile.profileVersion());
@@ -785,15 +794,27 @@ class InferenceProfileRegistryTest {
         );
         assertEarlyRelationshipGroupPrerequisiteHybridVisualProfile(
                 registry, "dashscope-qwen37-flash-product-v43-hybrid-generic", "qwen3.7-flash",
-                InferencePromptRegistry.VISUAL_ELEMENTS_V11, true, 7, 360, 16_384
+                InferencePromptRegistry.VISUAL_ELEMENTS_V11, false, 7, 360, 16_384
         );
         assertEarlyRelationshipGroupPrerequisiteHybridVisualProfile(
                 registry, "dashscope-qwen37-plus-product-v43-hybrid-generic", "qwen3.7-plus",
-                InferencePromptRegistry.VISUAL_ELEMENTS_V11, true, 7, 360, 16_384
+                InferencePromptRegistry.VISUAL_ELEMENTS_V11, false, 7, 360, 16_384
         );
         assertEarlyRelationshipGroupPrerequisiteHybridVisualProfile(
                 registry, "dashscope-qwen38-max-product-v43-hybrid-generic", "qwen3.8-max",
-                InferencePromptRegistry.VISUAL_ELEMENTS_V11, true, 7, 360, 8_192
+                InferencePromptRegistry.VISUAL_ELEMENTS_V11, false, 7, 360, 8_192
+        );
+        assertEarlyRelationshipGroupPrerequisiteHybridVisualProfile(
+                registry, "dashscope-qwen37-flash-product-v44-hybrid-generic", "qwen3.7-flash",
+                InferencePromptRegistry.VISUAL_ELEMENTS_V12, true, 7, 360, 16_384
+        );
+        assertEarlyRelationshipGroupPrerequisiteHybridVisualProfile(
+                registry, "dashscope-qwen37-plus-product-v44-hybrid-generic", "qwen3.7-plus",
+                InferencePromptRegistry.VISUAL_ELEMENTS_V12, true, 7, 360, 16_384
+        );
+        assertEarlyRelationshipGroupPrerequisiteHybridVisualProfile(
+                registry, "dashscope-qwen38-max-product-v44-hybrid-generic", "qwen3.8-max",
+                InferencePromptRegistry.VISUAL_ELEMENTS_V12, true, 7, 360, 8_192
         );
         assertThrows(IllegalArgumentException.class, () -> registry.require("live-provider"));
     }

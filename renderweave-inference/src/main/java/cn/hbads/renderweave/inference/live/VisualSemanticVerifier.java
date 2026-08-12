@@ -2,6 +2,7 @@ package cn.hbads.renderweave.inference.live;
 
 import cn.hbads.renderweave.inference.candidate.CandidateEvidence;
 import cn.hbads.renderweave.inference.run.InferenceStage;
+import cn.hbads.renderweave.inference.vision.DocumentVisionObservation;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -13,6 +14,9 @@ import java.util.Set;
 /** Bounded, payload-free semantic checks that route an issue to the earliest regenerable stage. */
 final class VisualSemanticVerifier {
     static final String VERSION = "renderweave-visual-semantic-verifier/1.0";
+    private static final int MIN_VERTICAL_SEQUENCE_ITEMS = 8;
+    private static final int MAX_VERTICAL_SEQUENCE_CENTER_SPREAD = 2_500;
+    private static final int MIN_VERTICAL_SEQUENCE_HORIZONTAL_SPAN = 4_000;
 
     List<VisualSemanticIssue> verifyObservation(
             VisualElementInventory inventory,
@@ -98,6 +102,62 @@ final class VisualSemanticVerifier {
                         .anyMatch(inner -> strictlyContains(outer, inner));
                 if (containsAnotherElement) {
                     return List.of(VisualSemanticIssue.OBSERVE_SLOT_EVIDENCE_CONTAINS_ELEMENT);
+                }
+            }
+        }
+        return List.of();
+    }
+
+    /**
+     * Rejects a silent ROOT-only omission only when local OCR geometry supplies a strong,
+     * payload-free vertical sequence signal. Text is deliberately never inspected.
+     */
+    List<VisualSemanticIssue> verifyDocumentVisionCoverage(
+            VisualElementInventory inventory,
+            VisualGroundingPlan grounding,
+            DocumentVisionObservation observation
+    ) {
+        Objects.requireNonNull(inventory, "inventory");
+        Objects.requireNonNull(grounding, "grounding");
+        Objects.requireNonNull(observation, "observation");
+        var covered = inventory.elements().stream().anyMatch(element ->
+                element.kind() == VisualElementKind.GROUP
+                        && element.multiplicity() == VisualMultiplicity.MANY
+                        && grounding.regionIdsForElement(element.elementId()).stream()
+                        .map(grounding::requireRegion)
+                        .anyMatch(region -> region.kind() == VisualRegionKind.REPEATED_GROUP)
+        );
+        if (covered) return List.of();
+
+        for (var artifact : observation.artifacts()) {
+            var vertical = artifact.lines().stream()
+                    .filter(line -> line.confidence()
+                            != DocumentVisionObservation.ConfidenceBucket.LOW)
+                    .map(DocumentVisionObservation.TextLine::boundingBox)
+                    .filter(box -> {
+                        var width = box.right() - box.left();
+                        var height = box.bottom() - box.top();
+                        return width <= 1_200 && height >= 600 && height <= 4_000
+                                && height >= width * 2;
+                    })
+                    .sorted(Comparator.comparingInt(box -> box.top() + box.bottom()))
+                    .toList();
+            for (var start = 0; start < vertical.size(); start++) {
+                var minimumCenter = vertical.get(start).top() + vertical.get(start).bottom();
+                var minimumLeft = 10_000;
+                var maximumRight = 0;
+                var count = 0;
+                for (var index = start; index < vertical.size(); index++) {
+                    var box = vertical.get(index);
+                    var center = box.top() + box.bottom();
+                    if (center - minimumCenter > MAX_VERTICAL_SEQUENCE_CENTER_SPREAD * 2) break;
+                    minimumLeft = Math.min(minimumLeft, box.left());
+                    maximumRight = Math.max(maximumRight, box.right());
+                    count++;
+                }
+                if (count >= MIN_VERTICAL_SEQUENCE_ITEMS
+                        && maximumRight - minimumLeft >= MIN_VERTICAL_SEQUENCE_HORIZONTAL_SPAN) {
+                    return List.of(VisualSemanticIssue.OBSERVE_DOCUMENT_SEQUENCE_GROUP_MISSING);
                 }
             }
         }
@@ -387,6 +447,9 @@ enum VisualSemanticIssue {
     ),
     OBSERVE_RELATIONSHIP_REGION_GROUP_MISSING(
             "VISUAL_SEMANTIC_OBSERVE_RELATIONSHIP_REGION_GROUP_MISSING", InferenceStage.OBSERVE
+    ),
+    OBSERVE_DOCUMENT_SEQUENCE_GROUP_MISSING(
+            "VISUAL_SEMANTIC_OBSERVE_DOCUMENT_SEQUENCE_GROUP_MISSING", InferenceStage.OBSERVE
     ),
     HIERARCHY_GROUP_EDGE_MISSING(
             "VISUAL_SEMANTIC_HIERARCHY_GROUP_EDGE_MISSING", InferenceStage.HIERARCHY

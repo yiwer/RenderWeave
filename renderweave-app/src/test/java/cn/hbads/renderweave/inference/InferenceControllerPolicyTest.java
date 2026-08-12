@@ -46,7 +46,7 @@ class InferenceControllerPolicyTest {
     }
 
     @Test
-    void v43ReadinessIsReportedAndRejectedBeforeRunCreation() {
+    void v44ReadinessIsReportedAndRejectedBeforeRunCreation() {
         var controller = controller(
                 true, true, true, mock(InferenceRunStore.class),
                 DocumentVisionPreprocessor.unavailable("DOCUMENT_VISION_ADAPTER_MISSING")
@@ -58,21 +58,21 @@ class InferenceControllerPolicyTest {
                     assertThat(profile.unavailabilityCode()).isEqualTo("DOCUMENT_VISION_ADAPTER_MISSING");
                 });
         var request = new InferenceController.CreateLiveRunRequest(
-                "dashscope-qwen37-plus-product-v43-hybrid-generic",
+                "dashscope-qwen37-plus-product-v44-hybrid-generic",
                 "IMAGE_ONLY", "USER_PROVIDED", true, true, null
         );
-        assertThatThrownBy(() -> controller.createLive("v43-readiness", request, null, null))
+        assertThatThrownBy(() -> controller.createLive("v44-readiness", request, null, null))
                 .isInstanceOfSatisfying(LiveInferenceUnavailableException.class,
                         exception -> assertThat(exception.code())
                                 .isEqualTo("DOCUMENT_VISION_ADAPTER_MISSING"));
     }
 
     @Test
-    void v43RetryCannotBypassDocumentVisionReadiness() {
+    void v44RetryCannotBypassDocumentVisionReadiness() {
         var runStore = mock(InferenceRunStore.class);
         var source = mock(InferenceRunSnapshot.class);
         var snapshot = new InferenceProfileRegistry()
-                .require("dashscope-qwen37-plus-product-v43-hybrid-generic").snapshotJson();
+                .require("dashscope-qwen37-plus-product-v44-hybrid-generic").snapshotJson();
         when(source.profileSnapshotJson()).thenReturn(snapshot);
         when(runStore.find(SOURCE_RUN_ID)).thenReturn(Optional.of(source));
         var controller = controller(
@@ -84,7 +84,7 @@ class InferenceControllerPolicyTest {
     }
 
     @Test
-    void v43RequiresTheExactBoundDocumentVisionCapability() {
+    void v44RequiresTheExactBoundDocumentVisionCapability() {
         var mismatched = mock(DocumentVisionPreprocessor.class);
         when(mismatched.capability()).thenReturn(DocumentVisionCapability.available(
                 "rapidocr-different-capability", "synthetic", "1.0", "0".repeat(64)

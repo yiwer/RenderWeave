@@ -476,7 +476,7 @@ public final class LiveInferenceWorker {
                 InferenceStage.ELEMENT_BINDING).contains(current.stage())) {
             return acceptVisualAnalysis(
                     current, profile, checkpoint, attemptOrdinal, response,
-                    estimatedCost, elapsedMillis(started)
+                    estimatedCost, elapsedMillis(started), documentVision
             );
         }
 
@@ -605,7 +605,8 @@ public final class LiveInferenceWorker {
             int attemptOrdinal,
             ProviderInferenceResponse response,
             long estimatedCost,
-            long durationMillis
+            long durationMillis,
+            DocumentVisionObservation documentVision
     ) {
         final LiveWorkflowCheckpoint nextCheckpoint;
         final InferenceStage nextStage;
@@ -615,7 +616,7 @@ public final class LiveInferenceWorker {
             if (groundedVisual(profile)) {
                 return acceptGroundedVisualAnalysis(
                         current, profile, checkpoint, attemptOrdinal, response,
-                        estimatedCost, durationMillis
+                        estimatedCost, durationMillis, documentVision
                 );
             }
             switch (current.stage()) {
@@ -695,7 +696,8 @@ public final class LiveInferenceWorker {
             int attemptOrdinal,
             ProviderInferenceResponse response,
             long estimatedCost,
-            long durationMillis
+            long durationMillis,
+            DocumentVisionObservation documentVision
     ) {
         final LiveWorkflowCheckpoint nextCheckpoint;
         final InferenceStage nextStage;
@@ -712,6 +714,21 @@ public final class LiveInferenceWorker {
                             imageArtifactIds(current), observationNormalizationPolicy(profile),
                             observationSemanticPolicy(profile)
                     );
+                    if (InferencePromptRegistry.VISUAL_ELEMENTS_V12.equals(
+                            profile.elementPromptVersion())) {
+                        var coverageIssues = new VisualSemanticVerifier()
+                                .verifyDocumentVisionCoverage(
+                                        grounded.inventory(), grounded.grounding(),
+                                        Objects.requireNonNull(documentVision, "documentVision")
+                                );
+                        if (!coverageIssues.isEmpty()) {
+                            var issue = coverageIssues.getFirst();
+                            throw new InvalidVisualAnalysisException(
+                                    issue.code(), "Visual observation omitted a strong local sequence",
+                                    null, issue.earliestStage()
+                            );
+                        }
+                    }
                     nextCheckpoint = checkpoint.elementsGrounded(
                             grounded.inventory(), grounded.grounding(), attemptOrdinal + 1
                     );

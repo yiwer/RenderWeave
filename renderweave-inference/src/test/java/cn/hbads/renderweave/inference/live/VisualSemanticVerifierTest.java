@@ -4,6 +4,7 @@ import cn.hbads.renderweave.inference.candidate.CandidateBoundingBox;
 import cn.hbads.renderweave.inference.candidate.CandidateEvidence;
 import cn.hbads.renderweave.inference.eval.visual.VisualStageCorpus;
 import cn.hbads.renderweave.inference.run.InferenceStage;
+import cn.hbads.renderweave.inference.vision.DocumentVisionObservation;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -91,6 +92,93 @@ class VisualSemanticVerifierTest {
                 InferenceStage.OBSERVE,
                 VisualSemanticIssue.OBSERVE_REPEATED_GROUP_CARDINALITY_INVALID.earliestStage()
         );
+    }
+
+    @Test
+    void documentVisionCoverageRejectsRootOnlyObservationThatOmitsAVisibleDenseSequence() {
+        var inventory = new VisualElementInventory(
+                VisualElementInventory.VERSION,
+                List.of(new VisualElement(
+                        "title", VisualElementKind.SLOT, "title", "Title",
+                        VisualMultiplicity.ONE, VisualValueHint.TEXT,
+                        List.of(evidence(500, 500, 4_500, 1_500))
+                ))
+        );
+        var grounding = new VisualGroundingPlan(
+                VisualGroundingPlan.VERSION,
+                List.of(new VisualRegion(
+                        "root-region", null, VisualRegionKind.ROOT,
+                        VisualMultiplicity.ONE, 0, null,
+                        List.of(evidence(0, 0, 10_000, 10_000))
+                )),
+                List.of(new VisualElementRegionOwnership("title", List.of("root-region")))
+        );
+        var lines = java.util.stream.IntStream.range(0, 12).mapToObj(index ->
+                new DocumentVisionObservation.TextLine(
+                        "ocr-00-%03d".formatted(index), index,
+                        new CandidateBoundingBox(
+                                500 + index * 700, 5_000,
+                                900 + index * 700, 9_000
+                        ),
+                        DocumentVisionObservation.ConfidenceBucket.HIGH,
+                        "item-%02d".formatted(index)
+                )
+        ).toList();
+        var observation = DocumentVisionObservation.canonical(
+                "document-vision-test",
+                List.of(new DocumentVisionObservation.ArtifactObservation(IMAGE_ID, 0, lines))
+        );
+
+        assertEquals(
+                List.of(VisualSemanticIssue.OBSERVE_DOCUMENT_SEQUENCE_GROUP_MISSING),
+                verifier.verifyDocumentVisionCoverage(inventory, grounding, observation)
+        );
+    }
+
+    @Test
+    void documentVisionCoverageDoesNotInventAGroupForSparseOrAlreadyCoveredText() {
+        var repeated = new VisualElement(
+                "items", VisualElementKind.GROUP, "items", "Items",
+                VisualMultiplicity.MANY, null,
+                List.of(evidence(500, 4_000, 9_500, 9_500))
+        );
+        var inventory = new VisualElementInventory(
+                VisualElementInventory.VERSION,
+                List.of(repeated)
+        );
+        var grounding = new VisualGroundingPlan(
+                VisualGroundingPlan.VERSION,
+                List.of(
+                        new VisualRegion(
+                                "root-region", null, VisualRegionKind.ROOT,
+                                VisualMultiplicity.ONE, 0, null,
+                                List.of(evidence(0, 0, 10_000, 10_000))
+                        ),
+                        new VisualRegion(
+                                "items-region", "root-region", VisualRegionKind.REPEATED_GROUP,
+                                VisualMultiplicity.MANY, 0, "items",
+                                List.of(evidence(500, 4_000, 9_500, 9_500))
+                        ),
+                        new VisualRegion(
+                                "item-region", "items-region", VisualRegionKind.ITEM,
+                                VisualMultiplicity.ONE, 0, "items",
+                                List.of(evidence(500, 4_000, 1_000, 9_500))
+                        )
+                ),
+                List.of(new VisualElementRegionOwnership("items", List.of("items-region")))
+        );
+        var observation = DocumentVisionObservation.canonical(
+                "document-vision-test",
+                List.of(new DocumentVisionObservation.ArtifactObservation(
+                        IMAGE_ID, 0, List.of(new DocumentVisionObservation.TextLine(
+                        "ocr-00-000", 0, new CandidateBoundingBox(500, 5_000, 900, 9_000),
+                        DocumentVisionObservation.ConfidenceBucket.HIGH, "item"
+                ))))
+        );
+
+        assertEquals(List.of(), verifier.verifyDocumentVisionCoverage(
+                inventory, grounding, observation
+        ));
     }
 
     @Test

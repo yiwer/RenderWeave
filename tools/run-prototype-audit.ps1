@@ -12,6 +12,10 @@ if ($LASTEXITCODE -ne 0 -or -not $nodeDir) {
 }
 $nodeExe = Join-Path $nodeDir 'node.exe'
 $npmCommand = Join-Path $nodeDir 'npm.cmd'
+$pythonExe = (& powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'ensure-python-playwright.ps1') | Select-Object -Last 1)
+if ($LASTEXITCODE -ne 0 -or -not $pythonExe) {
+    throw 'Unable to provision the pinned Python Playwright toolchain.'
+}
 $viteCli = Join-Path $webRoot 'node_modules\vite\bin\vite.js'
 $startedProcess = $null
 $webPort = $null
@@ -106,7 +110,7 @@ try {
 
     Push-Location $repoRoot
     try {
-        & python tools\prototype_audit.py --base-url "http://127.0.0.1:$webPort" --output $prototypeOutput
+        & $pythonExe tools\prototype_audit.py --base-url "http://127.0.0.1:$webPort" --output $prototypeOutput
         if ($LASTEXITCODE -ne 0) {
             throw "Prototype browser audit failed with exit code $LASTEXITCODE."
         }

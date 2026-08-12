@@ -928,3 +928,15 @@ N6=`automated_verified`、N7/Goal=`in_progress`；Plus/Max/final 不启动，Goa
   `REVIEW_REQUIRED`，Candidate revision 0、1 schema、1 image。任务累计含 v42 为 ¥0.638076/¥5。
 - disposition：用户指定两图 Goal 完成；payload-free 证据不包含图片/OCR/prompt/model output/Candidate 内容。
   v43 保持 `EXPERIMENTAL`，两例 reachability 不替代 final 60、全局 N7 或生产可靠性验收。
+
+### product-v44 CMYK/document-sequence checkpoint
+
+- 诊断：v43 第一图的 Candidate 是 1 root/0 child/0 array reference；OBSERVE 只有 9 SLOT/ONE、0 GROUP/MANY。
+  输入为 CMYK JPEG，RapidOCR bytes/PIL 路径返回 0 行，显式 BGR 解码后返回 35 行。
+- successor：新增 immutable v44/Prompt 12，v43 snapshot 不改。adapter 统一显式 BGR 解码；
+  payload-free verifier 只在强竖长序列几何已成立且缺少有效 MANY GROUP/REPEATED_GROUP 时拒绝 OBSERVE。
+- 边界：pipeline 4.28、模型/价格、7 calls、360 秒、Plus/Flash 16384、Max 8192、¥2/call、¥5/run、
+  0 repair、无 tools/remote media 全部不变；无领域词、无 OCR 文本校验、无确定性造数组。
+- 已验证：adapter 1/1；verifier/Profile/Prompt 29/29；真实 PostgreSQL workflow 1/1；API/policy/evidence
+  21/21；Node 24 typecheck/lint + 73/73。真实图本地结构重放为第一图 35 行/10 个候选/门命中，
+  第二图 8 行/0 个候选/门未命中。live 结果待 clean revision 后追加。
