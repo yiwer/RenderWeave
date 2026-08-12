@@ -1,0 +1,2 @@
+renderweave-inference/src/main/resources/visual-eval/v2/*.json text eol=lf
+renderweave-inference/src/main/resources/visual-eval/v2/*.md text eol=lf

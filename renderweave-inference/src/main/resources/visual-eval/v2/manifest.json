@@ -1,0 +1,27 @@
+{
+  "corpusVersion": "renderweave-visual-stage-corpus/2.0",
+  "annotationVersion": "renderweave-layered-annotation/1.0",
+  "sourceCorpusVersion": "renderweave-visual-stage-corpus/1.0",
+  "sourceScenesSha256": "ca53d88763af161a1b1b22fa50774c56eae929affe5316157ae355fdb005b8b3",
+  "renderContractIdentity": "visual-stage-rasterizer/1.0:c88e167780a6c9a0f999fb9fbf96d4df24a67e57000d4fb7e40ab22eea1c160a",
+  "annotationDerivationIdentity": "v1-scene-to-layered-gold/1.0:fa9415dca4079dc4bded5e2f4fb1146515df57c7387773b7d64d208fb10af8cc",
+  "holdoutMutationPolicy": "MOVE_TO_DEV_AND_REPLACE_HOLDOUT/1.0",
+  "sourceInventory": [
+    {
+      "assetId": "repository-synthetic-scenes",
+      "license": "REPOSITORY_SYNTHETIC",
+      "resource": "visual-eval/v1/scenes.json",
+      "sha256": "ca53d88763af161a1b1b22fa50774c56eae929affe5316157ae355fdb005b8b3",
+      "noticeResource": "visual-eval/v2/SOURCE-NOTICE.md",
+      "noticeSha256": "78aaa98671cbd9489110b6c6b532b0541c180ae2fa46b94d25129e5fd803fda8"
+    },
+    {
+      "assetId": "ofl-font-subset",
+      "license": "OFL_1_1",
+      "resource": "visual-eval/v1/RenderWeaveVisualEval.ttf",
+      "sha256": "13640fa00ef05d468983c9d680fbd291c1fcce6093f99d4bb0072ecd01251514",
+      "noticeResource": "visual-eval/v1/OFL.txt",
+      "noticeSha256": "bad96c00b3042903ccd2144e140e637843a22681095318f6650c41958c435a18"
+    }
+  ]
+}
