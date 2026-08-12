@@ -96,6 +96,19 @@ class VisualEvidenceAcquisitionContractTest {
         assertFalse(textLineRepresentation.contains("SourcePixelBox"));
         assertFalse(textLineRepresentation.contains("6001"));
         assertFalse(textLineRepresentation.contains("MEDIUM"));
+        var sourcePixelBoxRepresentation = ir.artifacts().get(1).observations().getFirst()
+                .sourcePixelBox().toString();
+        assertEquals("SourcePixelBox[payload=<redacted>]", sourcePixelBoxRepresentation);
+        assertFalse(sourcePixelBoxRepresentation.contains("left"));
+        assertFalse(sourcePixelBoxRepresentation.contains("100"));
+        assertFalse(sourcePixelBoxRepresentation.contains("50"));
+        var confidenceRepresentation = ir.artifacts().get(1).observations().getFirst()
+                .confidence().toString();
+        assertEquals("Confidence[payload=<redacted>]", confidenceRepresentation);
+        assertFalse(confidenceRepresentation.contains("6001"));
+        assertFalse(confidenceRepresentation.contains("basis-points"));
+        assertFalse(confidenceRepresentation.contains("MEDIUM"));
+        assertFalse(confidenceRepresentation.contains("v45-confidence-buckets"));
     }
 
     @Test

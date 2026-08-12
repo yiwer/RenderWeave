@@ -236,6 +236,11 @@ public final class DocumentObservationIR {
             }
             return this;
         }
+
+        @Override
+        public String toString() {
+            return "SourcePixelBox[payload=<redacted>]";
+        }
     }
 
     public record Confidence(
@@ -265,6 +270,11 @@ public final class DocumentObservationIR {
                     || !bucketProjectionIdentity.equals(policy.confidenceBucketProjectionIdentity())) {
                 throw new IllegalArgumentException("DOCUMENT_OBSERVATION_CONFIDENCE_IDENTITY_MISMATCH");
             }
+        }
+
+        @Override
+        public String toString() {
+            return "Confidence[payload=<redacted>]";
         }
     }
 
