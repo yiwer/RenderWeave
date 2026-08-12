@@ -1,0 +1,20 @@
+[
+  {
+    "date": "2026-08-12",
+    "macrostructure": "Workbench",
+    "theme": "Hum (spring-green accent rgb(102 218 133))",
+    "enrichment": "none (app workbench)",
+    "brief": "RenderWeave web workbench — Hum retheme variant (pear/cyan/coral multi-accent, Jakarta Sans, push buttons)",
+    "theme_axes": "light (97% mint-cream) / rounded-sans / multi-accent (green + cyan + coral)"
+  },
+  {
+    "date": "2026-08-12",
+    "macrostructure": "Workbench",
+    "theme": "locked-brand (RenderWeave workbench)",
+    "theme_axes": "light paper band / roman-serif display (Georgia, scoped) / warm accent (terracotta)",
+    "enrichment": "none (app pages)",
+    "scope": "app",
+    "brief": "RenderWeave web redesign — OKLCH token system, component voice + interaction discipline, design.md locked",
+    "branch": "redesign/web-ui-ux"
+  }
+]

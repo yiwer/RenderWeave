@@ -1,5 +1,11 @@
 # Design System Master File
 
+> **SUPERSEDED:** This file was auto-generated and misclassified RenderWeave as
+> a dark-theme mobile SaaS surface. The locked design system for the whole web
+> app is **`/design.md`** (project root), which implements the approved
+> direction in `design-system/renderweave/pages/schema-editor.md`. Do not use
+> the palette, typography, motion or anti-pattern rules below for new work.
+
 > **LOGIC:** When building a specific page, first check `design-system/pages/[page-name].md`.
 > If that file exists, its rules **override** this Master file.
 > If not, strictly follow the rules below.

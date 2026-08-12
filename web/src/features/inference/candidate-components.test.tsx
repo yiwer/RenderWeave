@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { useReducer } from 'react';
 import { afterEach, describe, expect, it } from 'vitest';
 
@@ -25,17 +25,17 @@ describe('Candidate review components', () => {
     expect((container.querySelector('.bundle-schema-select') as HTMLButtonElement).disabled).toBe(false);
   });
 
-  it('does not allocate an order-control column for a single Schema', () => {
+  it('keeps a single Schema tab static instead of draggable', () => {
     const { container } = render(<BundleNavHarness />);
 
-    expect(container.querySelectorAll('.bundle-order-actions')).toHaveLength(0);
-    expect(container.querySelector('.bundle-schema-entry.sortable')).toBeNull();
+    expect(container.querySelector('.bundle-schema-select')?.getAttribute('draggable')).toBe('false');
+    expect(container.querySelector('.bundle-order-hint')).toBeNull();
   });
 
   it('keeps frozen Candidate evidence navigable while disabling definition edits', () => {
     render(<InspectorHarness readOnly />);
 
-    expect((screen.getByLabelText('Candidate 字段类型') as HTMLSelectElement).disabled).toBe(true);
+    expect((screen.getByLabelText('Candidate 字段类型') as HTMLButtonElement).disabled).toBe(true);
     expect((screen.getByRole('tab', { name: '查看证据图片 2' }) as HTMLButtonElement).disabled).toBe(false);
     expect(screen.queryByRole('button', { name: '确认当前项' })).toBeNull();
   });
@@ -49,11 +49,14 @@ describe('Candidate review components', () => {
 
   it('resolves an unresolved AI field by editing its type and keeps evidence visible', () => {
     const { container } = render(<InspectorHarness />);
-    fireEvent.change(screen.getByLabelText('Candidate 字段类型'), { target: { value: 'ARRAY' } });
+    fireEvent.keyDown(screen.getByLabelText('Candidate 字段类型'), { key: 'ArrowDown' });
+    fireEvent.click(screen.getByRole('option', { name: '数组' }));
 
-    expect(screen.getByLabelText('Candidate 数组元素类型')).toBeTruthy();
-    const itemType = screen.getByLabelText('Candidate 数组元素类型') as HTMLSelectElement;
-    expect([...itemType.options].map((option) => option.value)).not.toContain('ARRAY');
+    const itemType = screen.getByLabelText('Candidate 数组元素类型');
+    fireEvent.keyDown(itemType, { key: 'ArrowDown' });
+    const itemListbox = screen.getByRole('listbox', { name: 'Candidate 数组元素类型' });
+    expect(within(itemListbox).queryByRole('option', { name: '数组' })).toBeNull();
+    fireEvent.keyDown(itemType, { key: 'Escape' });
     expect(screen.getByText('编辑解决')).toBeTruthy();
     expect(screen.queryByRole('button', { name: '确认当前项' })).toBeNull();
     expect(container.querySelectorAll('[data-evidence-box]')).toHaveLength(1);
@@ -62,7 +65,8 @@ describe('Candidate review components', () => {
 
   it('edits type-specific constraints using Candidate string literals', () => {
     render(<InspectorHarness />);
-    fireEvent.change(screen.getByLabelText('Candidate 字段类型'), { target: { value: 'TEXT' } });
+    fireEvent.keyDown(screen.getByLabelText('Candidate 字段类型'), { key: 'ArrowDown' });
+    fireEvent.click(screen.getByRole('option', { name: '文本' }));
     fireEvent.click(screen.getByRole('checkbox', { name: '启用最小长度' }));
     fireEvent.change(screen.getByLabelText('最小长度'), { target: { value: '3' } });
     fireEvent.click(screen.getByRole('checkbox', { name: '启用允许值' }));

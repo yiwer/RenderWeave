@@ -43,7 +43,8 @@ test('executes a real replay run and atomically creates its reviewed Draft bundl
   await page.locator('.candidate-field-row').filter({ hasText: 'value' }).click();
   await expect(page.locator('[data-evidence-box]')).toBeVisible();
   await expect(page.locator('.json-evidence-list code').filter({ hasText: /^\/value$/ })).toBeVisible();
-  await page.getByLabel('Candidate 字段类型').selectOption('TEXT');
+  await page.getByLabel('Candidate 字段类型').click();
+  await page.getByRole('option', { name: '文本' }).click();
   await expect(page.getByText('已保存', { exact: true })).toBeVisible();
   await expect(page.getByText('Candidate 审核门已通过')).toBeVisible();
   await page.getByRole('button', { name: '树图' }).click();

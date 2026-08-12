@@ -27,6 +27,7 @@ import {
   type TextEditorValue,
 } from './editor-types';
 import type { EditorDiagnostic } from './editor-validation';
+import { SelectField } from '../../components/SelectField';
 
 interface FieldInspectorProps {
   field?: EditorField;
@@ -171,15 +172,15 @@ export function FieldInspector({
         <div className="inspector-two-col inspector-field-kind">
           <div className="control-group compact">
             <label htmlFor={`field-type-${field.rowKey}`}>字段类型</label>
-            <select
+            <SelectField
               id={`field-type-${field.rowKey}`}
+              ariaLabel="字段类型"
               value={field.value.type}
-              onChange={(event) => dispatch({
-                type: 'set-field-type', rowKey: field.rowKey, valueType: event.target.value as EditorValueType,
+              options={valueTypes.map((type) => ({ value: type, label: editorTypeLabels[type] }))}
+              onChange={(type) => dispatch({
+                type: 'set-field-type', rowKey: field.rowKey, valueType: type as EditorValueType,
               })}
-            >
-              {valueTypes.map((type) => <option key={type} value={type}>{editorTypeLabels[type]}</option>)}
-            </select>
+            />
           </div>
           <div className="control-group compact inspector-required-group">
             <span className="control-label" id={`field-required-${field.rowKey}`}>必填状态</span>
@@ -353,17 +354,16 @@ function BooleanConstraints(props: ScalarEditorProps<Extract<EditorScalarValue, 
           <input type="checkbox" checked={value.constValue.enabled} onChange={(event) => onChange({ ...value, constValue: { ...value.constValue, enabled: event.target.checked } })} />
           <span>启用固定值 const</span>
         </label>
-        <select
-          aria-label="布尔 const 值"
+        <SelectField
+          ariaLabel="布尔 const 值"
+          dataPointer={constPointer}
+          invalid={showProblem(constPointer)}
           value={value.constValue.value}
           disabled={!value.constValue.enabled}
-          data-pointer={constPointer}
-          aria-invalid={showProblem(constPointer)}
-          onChange={(event) => onChange({ ...value, constValue: { enabled: true, value: event.target.value } }, `${rowKey}:booleanConst`)}
+          options={[{ value: 'true', label: 'true' }, { value: 'false', label: 'false' }]}
+          onChange={(next) => onChange({ ...value, constValue: { enabled: true, value: next } }, `${rowKey}:booleanConst`)}
           onBlur={() => onFinish(constPointer)}
-        >
-          <option value="true">true</option><option value="false">false</option>
-        </select>
+        />
       </div>
       <ConstraintProblems {...props} />
     </ConstraintSection>
@@ -413,16 +413,15 @@ function ArrayEditor(props: ValueEditorProps & { value: ArrayEditorValue }) {
       <div className="array-item-editor">
         <div className="array-item-heading">
           <div><strong>数组元素</strong></div>
-          <select
-            aria-label="数组元素类型"
+          <SelectField
+            ariaLabel="数组元素类型"
             value={value.items.type}
-            onChange={(event) => {
-              const type = event.target.value as EditorScalarType;
-              setArray({ ...value, uniqueItems: type === 'reference' ? false : value.uniqueItems, items: createEditorScalarValue(type) });
+            options={scalarTypes.map((type) => ({ value: type, label: editorTypeLabels[type] }))}
+            onChange={(type) => {
+              const scalarType = type as EditorScalarType;
+              setArray({ ...value, uniqueItems: scalarType === 'reference' ? false : value.uniqueItems, items: createEditorScalarValue(scalarType) });
             }}
-          >
-            {scalarTypes.map((type) => <option key={type} value={type}>{editorTypeLabels[type]}</option>)}
-          </select>
+          />
         </div>
         <ScalarValueEditor
           {...props}

@@ -14,7 +14,7 @@ import {
   TriangleAlert,
   XCircle,
 } from 'lucide-react';
-import { useCallback, useEffect, useReducer, useState } from 'react';
+import { useCallback, useEffect, useReducer, useState, type CSSProperties } from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
 
 import { StudioRequestError } from '../schema-studio/lossless-api';
@@ -40,7 +40,6 @@ import {
   type CandidateReviewState,
 } from './candidate-session';
 import { InferenceFlowSteps } from './InferenceFlowSteps';
-import { InferenceExecutionLogPanel } from './InferenceExecutionLogPanel';
 import { inferenceRunHasResult, inferenceStageLabel, inferenceStateLabel } from './inference-format';
 import { RunCancelButton } from './InferenceRunActions';
 
@@ -82,35 +81,31 @@ export function CandidateReviewPage() {
     return <Navigate replace to={`/inference-runs/${runId}/monitor`} />;
   }
 
+  if (reviewReady && query.data) {
+    return (
+      <CandidateReviewWorkspace
+        key={runId}
+        initial={query.data}
+        onReload={reload}
+        cancelPending={cancelRun.isPending}
+        cancelError={cancelRun.error}
+        onCancel={() => cancelRun.mutate()}
+      />
+    );
+  }
+
   return (
     <ResourceFrame
       title="识别结果"
       description="逐项核对字段、类型、约束、引用与证据；AI 来源保持只读，只有全部门通过后才能原子创建 Draft。"
-      actions={<Link className="button ghost-button" to={`/inference-runs/${runId}/monitor`}><Activity aria-hidden="true" size={15} />查看识别监控</Link>}
+      actions={<Link className="button ghost-button" to={`/inference-runs/${runId}/monitor`}><Activity aria-hidden="true" size={15} />查看执行日志</Link>}
       breadcrumbs={[{ label: '智能识别', to: '/inference' }, { label: '识别结果' }]}
     >
       <InferenceFlowSteps current={flowStep} />
       {runQuery.isPending && <ResourceLoading label="正在读取推断任务" />}
       {runQuery.isError && <ResourceError error={runQuery.error} onRetry={() => void runQuery.refetch()} />}
-      {runQuery.data && (
-        <InferenceExecutionLogPanel
-          runId={runQuery.data.runId}
-          state={runQuery.data.state}
-          sequence={runQuery.data.sequence}
-        />
-      )}
       {reviewReady && query.isPending && <ResourceLoading label="正在读取 Candidate 与证据" />}
       {query.isError && <ResourceError error={query.error} onRetry={() => void query.refetch()} />}
-      {reviewReady && query.data && (
-        <CandidateReviewWorkspace
-          key={runId}
-          initial={query.data}
-          onReload={reload}
-          cancelPending={cancelRun.isPending}
-          cancelError={cancelRun.error}
-          onCancel={() => cancelRun.mutate()}
-        />
-      )}
     </ResourceFrame>
   );
 }
@@ -203,17 +198,53 @@ function CandidateReviewWorkspace({
     );
   }, [onReload, state.snapshot.run.runId, state.snapshot.run.sequence, state.snapshot.run.state]);
 
-  if (!selected.schema) return <div className="resource-state resource-state-error" role="alert">Candidate 包中没有可读取的 Schema。</div>;
+  const flowStep = completed || state.snapshot.run.state === 'APPLYING' ? 4 : 3;
+  const activeSchemaKeys = activeSchemas
+    .map((schema) => schema.proposedSchemaKey)
+    .filter((key): key is string => Boolean(key));
+
+  if (!selected.schema) {
+    return (
+      <ResourceFrame
+        title="识别结果"
+        description="逐项核对字段、类型、约束、引用与证据；AI 来源保持只读，只有全部门通过后才能原子创建 Draft。"
+        breadcrumbs={[{ label: '智能识别', to: '/inference' }, { label: '识别结果' }]}
+      >
+        <div className="resource-state resource-state-error" role="alert">Candidate 包中没有可读取的 Schema。</div>
+      </ResourceFrame>
+    );
+  }
   return (
-    <>
-      <section className="candidate-run-strip" aria-label="推断运行状态">
-        <div><span>运行编号</span><code>{state.snapshot.run.runId}</code></div>
-        <div><span>执行配置</span><strong>{state.snapshot.run.profileId}</strong></div>
-        <div><span>状态 / 阶段</span><strong>{inferenceStateLabel(state.snapshot.run.state)} · {inferenceStageLabel(state.snapshot.run.stage)}</strong></div>
-        <div><span>候选版本</span><strong>c{state.snapshot.candidateRevision}</strong></div>
-        <SaveIndicator state={state} />
-        {state.snapshot.run.state === 'REVIEW_REQUIRED' && <div className="candidate-run-cancel"><RunCancelButton pending={cancelPending} onCancel={onCancel} /></div>}
-      </section>
+    <ResourceFrame
+      title="识别结果"
+      description="逐项核对字段、类型、约束、引用与证据；AI 来源保持只读，只有全部门通过后才能原子创建 Draft。"
+      breadcrumbs={[{ label: '智能识别', to: '/inference' }, { label: '识别结果' }]}
+      actions={
+        <>
+          <Link className="button ghost-button" to={`/inference-runs/${state.snapshot.run.runId}/monitor`}><Activity aria-hidden="true" size={15} />查看执行日志</Link>
+          {state.snapshot.run.state === 'REVIEW_REQUIRED' && <RunCancelButton pending={cancelPending} onCancel={onCancel} />}
+          {!completed && (
+            <CandidateApplyDialog
+              canApply={canApply}
+              schemaKeys={activeSchemaKeys}
+              pending={applyMutation.isPending}
+              error={applyMutation.error}
+              onApply={() => applyMutation.mutate()}
+            />
+          )}
+        </>
+      }
+    >
+      <InferenceFlowSteps current={flowStep} />
+      <CandidateReviewStatusline
+        reviewed={reviewedCount}
+        total={reviewItems.length}
+        pending={pendingReviewCount}
+        blockers={blockerCount}
+        keysReady={activeSchemas.length > 0 && activeSchemas.every((schema) => Boolean(schema.proposedSchemaKey))}
+        completed={completed}
+        state={state}
+      />
 
       {cancelError && <p className="candidate-operation-error" role="alert">{cancelError.message}</p>}
 
@@ -226,17 +257,6 @@ function CandidateReviewWorkspace({
         </section>
       )}
 
-      <CandidateReviewOverview
-        reviewed={reviewedCount}
-        total={reviewItems.length}
-        pending={pendingReviewCount}
-        blockers={blockerCount}
-        warnings={warningCount}
-        autosaveReady={!state.dirty && !state.saving && !state.saveBlocked}
-        keysReady={activeSchemas.length > 0 && activeSchemas.every((schema) => Boolean(schema.proposedSchemaKey))}
-        completed={completed}
-      />
-
       <section className={`candidate-gate-summary ${blockerCount === 0 ? 'ready' : ''}`}>
         {blockerCount === 0 ? <ShieldCheck aria-hidden="true" size={20} /> : <TriangleAlert aria-hidden="true" size={20} />}
         <div>
@@ -248,29 +268,25 @@ function CandidateReviewWorkspace({
           : blockerCount === 0
             ? `自动保存稳定后，可一次创建 ${activeSchemas.length} 个 Draft；任一 key、引用或事务冲突都会整包回滚。`
             : '选择问题对应的 Schema/字段，逐项处理后会自动保存并重新验证。'}</p>
-        {completed
-          ? <CreatedDraftLinks result={applyResult} schemaKeys={activeSchemas.map((schema) => schema.proposedSchemaKey).filter((key): key is string => Boolean(key))} />
-          : <CandidateApplyDialog
-              canApply={canApply}
-              schemaKeys={activeSchemas.map((schema) => schema.proposedSchemaKey).filter((key): key is string => Boolean(key))}
-              pending={applyMutation.isPending}
-              error={applyMutation.error}
-              onApply={() => applyMutation.mutate()}
-            />}
+        {completed && (
+          <CreatedDraftLinks result={applyResult} schemaKeys={activeSchemaKeys} />
+        )}
       </section>
 
       {state.snapshot.problems.length > 0 && (
         <section className="candidate-problem-summary" aria-label="Candidate 全局诊断">
           <header>
-            <div><TriangleAlert aria-hidden="true" size={17} /><span><strong>诊断汇总</strong><small>{state.snapshot.problems.length} 项 · {problemGroups.length} 类</small></span></div>
-            <p>同类诊断已合并；选择一类可定位到首个相关字段。</p>
+            <TriangleAlert aria-hidden="true" size={15} />
+            <strong>诊断汇总</strong>
+            <small>{state.snapshot.problems.length} 项 · {problemGroups.length} 类 · 选择一类可定位到首个相关字段</small>
           </header>
           <ul>
             {problemGroups.map((group) => (
               <li key={`${group.severity}:${group.code}`}>
                 <button type="button" onClick={() => selectProblem(state, group.first.itemId, reviewDispatch)}>
                   <span className={group.severity.toLocaleLowerCase()}>{group.severity === 'BLOCKER' ? '阻断' : '提示'}</span>
-                  <span><strong>{problemLabel(group.code)}</strong><code>{group.code}</code></span>
+                  <strong>{problemLabel(group.code)}</strong>
+                  <code>{group.code}</code>
                   <b aria-label={`${group.count} 项`}>×{group.count}</b>
                 </button>
               </li>
@@ -316,52 +332,56 @@ function CandidateReviewWorkspace({
         )}
         </Dialog.Root>
       </section>
-    </>
+    </ResourceFrame>
   );
 }
 
-function CandidateReviewOverview({
+function CandidateReviewStatusline({
   reviewed,
   total,
   pending,
   blockers,
-  warnings,
-  autosaveReady,
   keysReady,
   completed,
+  state,
 }: {
   reviewed: number;
   total: number;
   pending: number;
   blockers: number;
-  warnings: number;
-  autosaveReady: boolean;
   keysReady: boolean;
   completed: boolean;
+  state: CandidateReviewState;
 }) {
   const percentage = total === 0 ? 100 : Math.round((reviewed / total) * 100);
   const checks = [
-    { label: '逐项处置完成', ready: pending === 0, detail: pending === 0 ? '没有待决定 AI 项' : `仍有 ${pending} 项待决定` },
-    { label: '确定性校验', ready: blockers === 0, detail: blockers === 0 ? `${warnings} 项提示不阻止创建` : `${blockers} 个 blocker` },
-    { label: '数据结构标识', ready: keysReady, detail: keysReady ? '所有活动 Schema 已填写 key' : '仍有 key 待填写' },
-    { label: '自动保存', ready: autosaveReady, detail: autosaveReady ? '服务端版本已同步' : '等待保存稳定' },
+    { label: '逐项处置', ready: pending === 0, detail: pending === 0 ? '全部已决定' : `${pending} 项待决定` },
+    { label: '确定性校验', ready: blockers === 0, detail: blockers === 0 ? '无 blocker' : `${blockers} 个 blocker` },
+    { label: '标识', ready: keysReady, detail: keysReady ? 'key 已填写' : '有 key 待填写' },
   ];
   return (
-    <section className={`candidate-review-overview ${completed ? 'completed' : ''}`} aria-label="审核完成度">
+    <section className={`candidate-review-statusline ${completed ? 'completed' : ''}`} aria-label="审核完成度">
       <div className="candidate-review-progress">
         <span>逐项校对</span>
         <strong>{completed ? '已创建' : `${reviewed} / ${total}`}</strong>
-        <div role="progressbar" aria-label="逐项校对完成度" aria-valuemin={0} aria-valuemax={100} aria-valuenow={completed ? 100 : percentage}><i style={{ width: `${completed ? 100 : percentage}%` }} /></div>
-        <small>{completed ? 'final Candidate 已冻结' : `${percentage}% 已检查；没有批量确认入口`}</small>
+        <div role="progressbar" aria-label="逐项校对完成度" aria-valuemin={0} aria-valuemax={100} aria-valuenow={completed ? 100 : percentage}><i style={{ '--progress': (completed ? 100 : percentage) / 100 } as CSSProperties} /></div>
+        <small>{percentage}% · 逐项确认</small>
       </div>
       <ul>
         {checks.map((check) => (
           <li key={check.label} className={check.ready ? 'ready' : ''}>
-            {check.ready ? <CheckCircle2 aria-hidden="true" size={16} /> : <XCircle aria-hidden="true" size={16} />}
+            {check.ready ? <CheckCircle2 aria-hidden="true" size={15} /> : <XCircle aria-hidden="true" size={15} />}
             <span><strong>{check.label}</strong><small>{check.detail}</small></span>
           </li>
         ))}
       </ul>
+      <SaveIndicator state={state} />
+      <code
+        className="candidate-run-facts"
+        title={`运行编号 ${state.snapshot.run.runId} · 执行配置 ${state.snapshot.run.profileId} · ${inferenceStateLabel(state.snapshot.run.state)} / ${inferenceStageLabel(state.snapshot.run.stage)} · 候选版本 c${state.snapshot.candidateRevision}`}
+      >
+        {state.snapshot.run.runId.slice(0, 8)}… · {state.snapshot.run.profileId} · c{state.snapshot.candidateRevision}
+      </code>
     </section>
   );
 }

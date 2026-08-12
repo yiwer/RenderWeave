@@ -7,6 +7,8 @@ import {
   X,
 } from 'lucide-react';
 
+import { SelectField } from '../../components/SelectField';
+
 export interface ResourceSortOption<T extends string> {
   value: T;
   label: string;
@@ -58,9 +60,12 @@ export function ResourceSortSelect<T extends string>({
   return (
     <label className="resource-sort-control">
       <span>排序</span>
-      <select value={value} onChange={(event) => onChange(event.target.value as T)}>
-        {options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-      </select>
+      <SelectField
+        ariaLabel="排序"
+        value={value}
+        options={options}
+        onChange={(next) => onChange(next as T)}
+      />
     </label>
   );
 }
@@ -108,11 +113,12 @@ export function ResourcePagination({
     <nav className="resource-pagination" aria-label={`${label}分页`}>
       <div className="resource-page-size">
         <span>每页</span>
-        <select aria-label="每页数量" value={size} onChange={(event) => onSizeChange(Number(event.target.value))}>
-          <option value={9}>9</option>
-          <option value={18}>18</option>
-          <option value={36}>36</option>
-        </select>
+        <SelectField
+          ariaLabel="每页数量"
+          value={String(size)}
+          options={[9, 18, 36].map((option) => ({ value: String(option), label: String(option) }))}
+          onChange={(next) => onSizeChange(Number(next))}
+        />
         <span>项</span>
       </div>
       <span className="resource-page-status">共 {total} 项 · 第 {page} / {totalPages} 页</span>

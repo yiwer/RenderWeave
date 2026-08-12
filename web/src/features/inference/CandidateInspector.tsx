@@ -31,6 +31,7 @@ import {
 } from './candidate-session';
 import { candidateTypeLabels, problemLabel, resolutionLabels } from './candidate-format';
 import { evidenceBoxPresentation, inferEvidenceCoordinateSpace } from './evidence-coordinates';
+import { SelectField } from '../../components/SelectField';
 
 const finalKinds: FinalCandidateKind[] = ['TEXT', 'DECIMAL', 'DATE', 'TIME', 'BOOLEAN', 'REFERENCE', 'ARRAY'];
 const arrayItemKinds: ArrayItemCandidateKind[] = ['TEXT', 'DECIMAL', 'DATE', 'TIME', 'BOOLEAN', 'REFERENCE'];
@@ -210,15 +211,14 @@ function FieldEditor({
       <label>显示名称<input disabled={disabled} value={field.displayName ?? ''} onChange={(event) => change({ displayName: event.target.value || null })} /></label>
       <label>fieldKey<input disabled={disabled} value={field.proposedFieldKey ?? ''} spellCheck={false} onChange={(event) => change({ proposedFieldKey: event.target.value || null })} /></label>
       <label>字段类型
-        <select
-          aria-label="Candidate 字段类型"
+        <SelectField
+          ariaLabel="Candidate 字段类型"
           disabled={disabled}
           value={selectedKind}
-          onChange={(event) => change({ value: candidateValue(event.target.value as FinalCandidateKind, defaultCandidateTarget(state, schema.candidateSchemaId)) })}
-        >
-          {!selectedKind && <option value="" disabled>{candidateTypeLabels[field.value.kind]} · 请选择最终类型</option>}
-          {finalKinds.map((kind) => <option key={kind} value={kind}>{candidateTypeLabels[kind]}</option>)}
-        </select>
+          placeholder={`${candidateTypeLabels[field.value.kind]} · 请选择最终类型`}
+          options={finalKinds.map((kind) => ({ value: kind, label: candidateTypeLabels[kind] }))}
+          onChange={(kind) => change({ value: candidateValue(kind as FinalCandidateKind, defaultCandidateTarget(state, schema.candidateSchemaId)) })}
+        />
       </label>
       <label className="candidate-checkbox"><input disabled={disabled} type="checkbox" checked={field.required} onChange={(event) => change({ required: event.target.checked })} /><span>RootDocument 中必填</span></label>
       <CandidateConstraintEditor value={field.value} disabled={disabled} onChange={(value) => change({ value })} />
@@ -256,15 +256,14 @@ function ArrayItemEditor({
     <div className="array-item-editor">
       <span>数组元素（禁止 Array&lt;Array&lt;T&gt;&gt;）</span>
       <label>元素类型
-        <select
-          aria-label="Candidate 数组元素类型"
+        <SelectField
+          ariaLabel="Candidate 数组元素类型"
           disabled={disabled}
           value={selectedKind}
-          onChange={(event) => setItems(candidateValue(event.target.value as ArrayItemCandidateKind, defaultCandidateTarget(state, schema.candidateSchemaId)))}
-        >
-          {!selectedKind && <option value="" disabled>{candidateTypeLabels[items.kind]} · 请选择</option>}
-          {arrayItemKinds.map((kind) => <option key={kind} value={kind}>{candidateTypeLabels[kind]}</option>)}
-        </select>
+          placeholder={`${candidateTypeLabels[items.kind]} · 请选择`}
+          options={arrayItemKinds.map((kind) => ({ value: kind, label: candidateTypeLabels[kind] }))}
+          onChange={(kind) => setItems(candidateValue(kind as ArrayItemCandidateKind, defaultCandidateTarget(state, schema.candidateSchemaId)))}
+        />
       </label>
       {items.kind === 'REFERENCE' && items.reference && (
         <ReferenceEditor state={state} schema={schema} value={items} disabled={disabled} onChange={setItems} />
@@ -293,22 +292,35 @@ function ReferenceEditor({
   return (
     <div className="candidate-reference-editor">
       <label>引用范围
-        <select
+        <SelectField
+          ariaLabel="引用范围"
           disabled={disabled}
           value={referenceKind}
-          onChange={(event) => setReference(referenceForKind(event.target.value as NonNullable<CandidateReference['kind']>, state, schema.candidateSchemaId))}
-        >
-          <option value="CANDIDATE_SCHEMA">本次 Candidate 包</option>
-          <option value="DRAFT">现有 Draft</option>
-          <option value="STATIC">StaticSchema</option>
-        </select>
+          options={[
+            { value: 'CANDIDATE_SCHEMA', label: '本次 Candidate 包' },
+            { value: 'DRAFT', label: '现有 Draft' },
+            { value: 'STATIC', label: 'StaticSchema' },
+          ]}
+          onChange={(kind) => setReference(referenceForKind(kind as NonNullable<CandidateReference['kind']>, state, schema.candidateSchemaId))}
+        />
       </label>
       {referenceKind === 'CANDIDATE_SCHEMA' && (
         <label>目标 Schema
-          <select disabled={disabled} value={reference.candidateSchemaId ?? ''} onChange={(event) => setReference({ kind: 'CANDIDATE_SCHEMA', candidateSchemaId: event.target.value || null, schemaKey: null, versionTag: null })}>
-            <option value="">请选择</option>
-            {state.draft.schemas.filter((item) => item.assessment.resolution !== 'REMOVED').map((item) => <option key={item.candidateSchemaId} value={item.candidateSchemaId}>{item.displayName || item.proposedSchemaKey || item.candidateSchemaId}{item.candidateSchemaId === schema.candidateSchemaId ? '（当前）' : ''}</option>)}
-          </select>
+          <SelectField
+            ariaLabel="目标 Schema"
+            disabled={disabled}
+            value={reference.candidateSchemaId ?? ''}
+            options={[
+              { value: '', label: '请选择' },
+              ...state.draft.schemas
+                .filter((item) => item.assessment.resolution !== 'REMOVED')
+                .map((item) => ({
+                  value: item.candidateSchemaId,
+                  label: `${item.displayName || item.proposedSchemaKey || item.candidateSchemaId}${item.candidateSchemaId === schema.candidateSchemaId ? '（当前）' : ''}`,
+                })),
+            ]}
+            onChange={(candidateSchemaId) => setReference({ kind: 'CANDIDATE_SCHEMA', candidateSchemaId: candidateSchemaId || null, schemaKey: null, versionTag: null })}
+          />
         </label>
       )}
       {(referenceKind === 'DRAFT' || referenceKind === 'STATIC') && (
@@ -383,13 +395,13 @@ function CandidateConstraintEditor({
                 />
               )}
               {enabled && definition.control === 'boolean' && (
-                <select
-                  id={inputId}
-                  aria-label={definition.label}
+                <SelectField
+                  ariaLabel={definition.label}
                   disabled={disabled}
                   value={value.constraints[definition.key] ?? 'true'}
-                  onChange={(event) => setConstraint(definition.key, event.target.value)}
-                ><option value="true">true</option><option value="false">false</option></select>
+                  options={[{ value: 'true', label: 'true' }, { value: 'false', label: 'false' }]}
+                  onChange={(next) => setConstraint(definition.key, next)}
+                />
               )}
               {enabled && (!definition.control || definition.control === 'input') && (
                 <input

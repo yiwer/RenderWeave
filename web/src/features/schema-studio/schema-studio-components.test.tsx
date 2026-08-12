@@ -15,18 +15,20 @@ afterEach(cleanup);
 describe('Schema Studio production components', () => {
   it('edits an array item reference and enforces the object-array uniqueItems affordance', () => {
     const { container } = render(<StudioHarness />);
-    const typeSelect = screen.getByLabelText('字段类型') as HTMLSelectElement;
-    expect([...typeSelect.options].map((option) => option.value)).toEqual([
-      'text', 'decimal', 'date', 'time', 'boolean', 'reference', 'array',
+    const typeSelect = screen.getByLabelText('字段类型');
+    fireEvent.keyDown(typeSelect, { key: 'ArrowDown' });
+    expect(screen.getAllByRole('option').map((option) => option.textContent)).toEqual([
+      '文本', '数值', '日期', '时间', '布尔', '引用', '数组',
     ]);
+    fireEvent.click(screen.getByRole('option', { name: '数组' }));
 
-    fireEvent.change(typeSelect, { target: { value: 'array' } });
     const uniqueItems = screen.getByRole('checkbox', { name: /uniqueItems/ }) as HTMLInputElement;
     expect(uniqueItems.disabled).toBe(false);
     fireEvent.click(uniqueItems);
     expect(uniqueItems.checked).toBe(true);
 
-    fireEvent.change(screen.getByLabelText('数组元素类型'), { target: { value: 'reference' } });
+    fireEvent.keyDown(screen.getByLabelText('数组元素类型'), { key: 'ArrowDown' });
+    fireEvent.click(screen.getByRole('option', { name: '引用' }));
     expect(uniqueItems.disabled).toBe(true);
     expect(uniqueItems.checked).toBe(false);
     expect(screen.getByText(/对象数组不支持唯一性约束/)).toBeTruthy();

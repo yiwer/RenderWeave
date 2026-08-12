@@ -87,7 +87,7 @@ export function RootDocumentValidatorPage() {
             <>
               <div className={`validation-summary-card ${mutation.data.summary.invalid === 0 ? 'is-valid' : 'is-invalid'}`}>
                 {mutation.data.summary.invalid === 0 ? <CheckCircle2 aria-hidden="true" size={23} /> : <XCircle aria-hidden="true" size={23} />}
-                <div><strong>{mutation.data.summary.invalid === 0 ? '全部样本有效' : `${mutation.data.summary.invalid} 份样本无效`}</strong><span>{mutation.data.summary.valid} 份有效 · 共 ${mutation.data.summary.total} 份</span></div>
+                <div><strong>{mutation.data.summary.invalid === 0 ? '全部样本有效' : `${mutation.data.summary.invalid} 份样本无效`}</strong><span>{mutation.data.summary.valid} 份有效 · 共 {mutation.data.summary.total} 份</span></div>
               </div>
               <div className="resolved-target"><span>解析目标</span><code>{formatResolved(mutation.data.target)}</code><small>{mutation.data.resolvedSchemas.length} 个已解析 Schema</small></div>
               <div className="document-results">

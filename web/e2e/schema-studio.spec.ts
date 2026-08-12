@@ -39,14 +39,11 @@ test.describe('production Schema Studio', () => {
     await requiredGroup.getByRole('button', { name: '必填' }).click();
     await expect(requiredGroup.getByRole('button', { name: '必填' })).toHaveAttribute('aria-pressed', 'true');
     await expect(page.getByText('RootDocument 必须出现')).toHaveCount(0);
-    await page.getByLabel('字段类型').selectOption('array');
-    const selectAppearance = await page.getByLabel('字段类型').evaluate((element) => {
-      const style = getComputedStyle(element);
-      return { appearance: style.appearance, backgroundImage: style.backgroundImage };
-    });
-    expect(selectAppearance.appearance).toBe('none');
-    expect(selectAppearance.backgroundImage).not.toBe('none');
-    await page.getByLabel('数组元素类型').selectOption('reference');
+    await page.getByLabel('字段类型').click();
+    await page.getByRole('option', { name: '数组' }).click();
+    await expect(page.getByLabel('字段类型')).toHaveClass(/select-field/);
+    await page.getByLabel('数组元素类型').click();
+    await page.getByRole('option', { name: '引用' }).click();
     await page.getByLabel('目标 schemaKey').fill('product-item');
     await page.getByRole('button', { name: 'StaticSchemaRef' }).click();
     await page.getByLabel('versionTag').fill('v1');

@@ -155,7 +155,8 @@ test('completes the four-step Candidate workflow with keyboard authoring and dur
   await expect(page.getByRole('button', { name: '确认当前项' })).toBeDisabled();
   await expect(page.getByRole('button', { name: /全部确认/ })).toHaveCount(0);
 
-  await page.getByLabel('Candidate 字段类型').selectOption('TEXT');
+  await page.getByLabel('Candidate 字段类型').click();
+  await page.getByRole('option', { name: '文本' }).click();
   await expect.poll(() => current.schemas[0]?.fields[0]?.value.kind).toBe('TEXT');
   await expect(page.getByText('已通过编辑解决')).toBeVisible();
   await expect(page.getByRole('button', { name: '确认当前项' })).toHaveCount(0);
@@ -178,9 +179,14 @@ test('completes the four-step Candidate workflow with keyboard authoring and dur
   await page.keyboard.press('Enter');
   await expect.poll(() => current.schemas.find((schema) => schema.proposedSchemaKey === 'customer')?.fields[0]?.proposedFieldKey).toBe('email');
 
-  const moveCustomerUp = page.getByRole('button', { name: '上移 客户' });
-  await moveCustomerUp.focus();
-  await page.keyboard.press('Enter');
+  const customerTab = page.locator('.bundle-schema-select').filter({ hasText: '客户' });
+  const orderTab = page.locator('.bundle-schema-select').filter({ hasText: '订单' });
+  await customerTab.dragTo(orderTab, { targetPosition: { x: 6, y: 20 } });
+  await expect.poll(() => current.schemas[0]?.proposedSchemaKey).toBe('customer');
+  await customerTab.focus();
+  await page.keyboard.press('Control+ArrowRight');
+  await expect.poll(() => current.schemas[0]?.proposedSchemaKey).toBe('order');
+  await page.keyboard.press('Control+ArrowLeft');
   await expect.poll(() => current.schemas[0]?.proposedSchemaKey).toBe('customer');
   await expect(page.locator('.bundle-schema-select strong').first()).toHaveText('客户');
 
@@ -188,8 +194,10 @@ test('completes the four-step Candidate workflow with keyboard authoring and dur
   await page.getByRole('button', { name: '新增人工字段' }).click();
   await page.getByLabel('显示名称', { exact: true }).fill('客户信息');
   await page.getByLabel('fieldKey', { exact: true }).fill('customer');
-  await page.getByLabel('Candidate 字段类型').selectOption('REFERENCE');
-  await page.getByLabel('目标 Schema').selectOption({ label: '客户' });
+  await page.getByLabel('Candidate 字段类型').click();
+  await page.getByRole('option', { name: '引用' }).click();
+  await page.getByLabel('目标 Schema').click();
+  await page.getByRole('option', { name: '客户', exact: true }).click();
   await expect.poll(() => current.schemas
     .find((schema) => schema.proposedSchemaKey === 'order')?.fields
     .some((field) => field.proposedFieldKey === 'customer' && field.value.kind === 'REFERENCE')).toBe(true);
@@ -209,7 +217,6 @@ test('completes the four-step Candidate workflow with keyboard authoring and dur
 
   await expectMinimumTarget(addSchema, 44);
   await expectMinimumTarget(mapButton, 44);
-  await expectMinimumTarget(moveCustomerUp, 44);
 
   for (const width of [1260, 1200, 1181]) {
     await page.setViewportSize({ width, height: 768 });
@@ -713,7 +720,8 @@ test('keeps a failed autosave locally and lets the user retry without losing edi
   await page.goto(`/inference-runs/${runId}/review`);
   await page.waitForLoadState('networkidle');
   await page.locator('.candidate-field-row').filter({ hasText: 'total' }).click();
-  await page.getByLabel('Candidate 字段类型').selectOption('TEXT');
+  await page.getByLabel('Candidate 字段类型').click();
+  await page.getByRole('option', { name: '文本' }).click();
   await expect(page.getByText('本地修改尚未保存')).toBeVisible();
   await expect(page.getByText(/本地修改仍保留/)).toBeVisible();
   expect(saveAttempts).toBe(1);

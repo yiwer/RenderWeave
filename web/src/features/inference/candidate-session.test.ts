@@ -114,6 +114,34 @@ describe('Candidate review session', () => {
     expect(moved.selectedSchemaId).toBe(child.candidateSchemaId);
   });
 
+  it('reorders schemas to an absolute index with clamping for drag-and-drop', () => {
+    const initial = createCandidateReviewState(snapshot());
+    const first = newUserSchema('customer', '客户');
+    const second = newUserSchema('parcel', '包裹');
+    const added = [first, second].reduce(
+      (state, schema) => candidateReviewReducer(state, { type: 'add-schema', schema }),
+      initial,
+    );
+
+    const reordered = candidateReviewReducer(added, {
+      type: 'reorder-schema', schemaId: second.candidateSchemaId, targetIndex: 0,
+    });
+    expect(reordered.draft.schemas.map((schema) => schema.candidateSchemaId)).toEqual([
+      second.candidateSchemaId,
+      initial.draft.rootCandidateSchemaId,
+      first.candidateSchemaId,
+    ]);
+
+    const clamped = candidateReviewReducer(added, {
+      type: 'reorder-schema', schemaId: initial.draft.rootCandidateSchemaId, targetIndex: 99,
+    });
+    expect(clamped.draft.schemas.map((schema) => schema.candidateSchemaId)).toEqual([
+      first.candidateSchemaId,
+      second.candidateSchemaId,
+      initial.draft.rootCandidateSchemaId,
+    ]);
+  });
+
   it('rejects removing the immutable root Schema in the client reducer', () => {
     const initial = createCandidateReviewState(snapshot());
     const result = candidateReviewReducer(initial, {

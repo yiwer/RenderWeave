@@ -120,40 +120,46 @@ export function InferenceExecutionLogPanel({
                 <LogMetric icon={<Coins aria-hidden="true" size={16} />} label="调用费用" value={formatCost(totals.costMicrosCny)} detail={`调用耗时 ${formatDuration(totals.durationMillis)}`} />
               </div>
 
-              <StageTelemetry stages={stages} />
+              <div className="inference-log-grid">
+                <div className="inference-log-main">
+                  {query.data.truncated && (
+                    <p className="inference-log-truncated" role="note">
+                      <TriangleAlert aria-hidden="true" size={15} />日志事件超过 1000 条，当前仅展示服务端返回的受控窗口。
+                    </p>
+                  )}
 
-              <div className={`inference-recovery-summary ${recovery.tone}`} aria-label="恢复状态">
-                <span className="inference-recovery-icon"><RotateCcw aria-hidden="true" size={16} /></span>
-                <span><strong>{recovery.title}</strong><small>{recovery.detail}</small></span>
-                <em>{recovery.checkpointCount} 个检查点事件</em>
+                  {hiddenEntries > 0 && (
+                    <button
+                      type="button"
+                      className="button ghost-button inference-log-more"
+                      onClick={() => setVisibleEntries((current) => Math.min(timeline.length, current + 100))}
+                    >
+                      显示更早记录（剩余 {hiddenEntries} 条）
+                    </button>
+                  )}
+                  {timeline.length === 0
+                    ? <div className="inference-log-empty">任务刚刚创建，尚无可展示的执行事件。</div>
+                    : (
+                      <ol className="inference-log-timeline" aria-label="推断执行时间线">
+                        {visibleTimeline.map((entry) => entry.kind === 'event'
+                          ? <EventLogItem key={`event-${entry.event.sequence}`} event={entry.event} />
+                          : <AttemptLogItem key={`attempt-${entry.attempt.attemptOrdinal}`} attempt={entry.attempt} />)}
+                      </ol>
+                    )}
+                </div>
+
+                <div className="inference-log-rail">
+                  <StageTelemetry stages={stages} />
+
+                  <div className={`inference-recovery-summary ${recovery.tone}`} aria-label="恢复状态">
+                    <span className="inference-recovery-icon"><RotateCcw aria-hidden="true" size={16} /></span>
+                    <span><strong>{recovery.title}</strong><small>{recovery.detail}</small></span>
+                    <em>{recovery.checkpointCount} 个检查点事件</em>
+                  </div>
+
+                  {issues.length > 0 && <IssueTelemetry issues={issues} />}
+                </div>
               </div>
-
-              {issues.length > 0 && <IssueTelemetry issues={issues} />}
-
-              {query.data.truncated && (
-                <p className="inference-log-truncated" role="note">
-                  <TriangleAlert aria-hidden="true" size={15} />日志事件超过 1000 条，当前仅展示服务端返回的受控窗口。
-                </p>
-              )}
-
-              {hiddenEntries > 0 && (
-                <button
-                  type="button"
-                  className="button ghost-button inference-log-more"
-                  onClick={() => setVisibleEntries((current) => Math.min(timeline.length, current + 100))}
-                >
-                  显示更早记录（剩余 {hiddenEntries} 条）
-                </button>
-              )}
-              {timeline.length === 0
-                ? <div className="inference-log-empty">任务刚刚创建，尚无可展示的执行事件。</div>
-                : (
-                  <ol className="inference-log-timeline" aria-label="推断执行时间线">
-                    {visibleTimeline.map((entry) => entry.kind === 'event'
-                      ? <EventLogItem key={`event-${entry.event.sequence}`} event={entry.event} />
-                      : <AttemptLogItem key={`attempt-${entry.attempt.attemptOrdinal}`} attempt={entry.attempt} />)}
-                  </ol>
-                )}
             </>
           )}
         </div>

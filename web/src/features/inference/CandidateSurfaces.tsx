@@ -9,17 +9,16 @@ import {
 } from '@xyflow/react';
 import {
   AlertCircle,
-  ArrowDown,
-  ArrowUp,
   Bot,
   CheckCircle2,
   ChevronRight,
   GitBranch,
+  GripVertical,
   ListFilter,
   Plus,
   UserRound,
 } from 'lucide-react';
-import { useMemo, type Dispatch } from 'react';
+import { useMemo, useState, type Dispatch } from 'react';
 
 import type { CandidateField, CandidateProblem, CandidateSchema } from '../../api/generated';
 import {
@@ -40,10 +39,23 @@ export function CandidateBundleNav({
   dispatch: Dispatch<CandidateReviewAction>;
   readOnly?: boolean;
 }) {
+  const [dragSchemaId, setDragSchemaId] = useState<string | null>(null);
+  const [dropTarget, setDropTarget] = useState<{ id: string; after: boolean } | null>(null);
+  const sortable = state.draft.schemas.length > 1 && !readOnly;
+  const clearDrag = () => {
+    setDragSchemaId(null);
+    setDropTarget(null);
+  };
+
   return (
     <aside className="candidate-bundle-nav" aria-label="Candidate Schema 包">
       <header>
         <span>候选数据结构</span><strong>{state.draft.schemas.length}</strong>
+        <div className="bundle-legend">
+          <span><Bot aria-hidden="true" size={13} />AI 建议保留原始证据</span>
+          <span><UserRound aria-hidden="true" size={13} />人工新增不伪造置信度</span>
+          {sortable && <span className="bundle-order-hint"><GripVertical aria-hidden="true" size={13} />拖拽选项卡或 Ctrl+←/→ 排序</span>}
+        </div>
         <button
           type="button"
           className="candidate-add-schema"
@@ -59,32 +71,74 @@ export function CandidateBundleNav({
           const problems = problemsForSchema(schema, state.snapshot.problems);
           const isRoot = schema.candidateSchemaId === state.draft.rootCandidateSchemaId;
           const label = schema.displayName || schema.proposedSchemaKey || '未命名 Schema';
+          const dropSide = dropTarget?.id === schema.candidateSchemaId
+            ? (dropTarget.after ? 'drop-after' : 'drop-before')
+            : '';
           return (
-            <div className={`bundle-schema-entry ${state.draft.schemas.length > 1 ? 'sortable' : ''}`} key={schema.candidateSchemaId}>
-              <button
-                type="button"
-                className={`bundle-schema-select ${schema.candidateSchemaId === state.selectedSchemaId ? 'active' : ''} ${schema.assessment.resolution === 'REMOVED' ? 'removed' : ''}`}
-                title={`${label} · ${schema.proposedSchemaKey || 'schemaKey 待填写'}`}
-                onClick={() => dispatch({ type: 'select-schema', schemaId: schema.candidateSchemaId })}
-              >
-                <span className="bundle-index">{String(index + 1).padStart(2, '0')}</span>
-                <span><strong>{label}</strong><code>{schema.proposedSchemaKey || 'schemaKey 待填写'}</code></span>
-                {isRoot && <i>根</i>}
-                {problems > 0 ? <b>{problems}</b> : <CheckCircle2 aria-hidden="true" size={14} />}
-              </button>
-              {state.draft.schemas.length > 1 && (
-                <div className="bundle-order-actions" aria-label={`${label} 排序`}>
-                  <button type="button" aria-label={`上移 ${label}`} disabled={readOnly || index === 0} onClick={() => dispatch({ type: 'move-schema', schemaId: schema.candidateSchemaId, direction: -1 })}><ArrowUp aria-hidden="true" size={13} /></button>
-                  <button type="button" aria-label={`下移 ${label}`} disabled={readOnly || index === state.draft.schemas.length - 1} onClick={() => dispatch({ type: 'move-schema', schemaId: schema.candidateSchemaId, direction: 1 })}><ArrowDown aria-hidden="true" size={13} /></button>
-                </div>
-              )}
-            </div>
+            <button
+              type="button"
+              key={schema.candidateSchemaId}
+              className={`bundle-schema-select ${schema.candidateSchemaId === state.selectedSchemaId ? 'active' : ''} ${schema.assessment.resolution === 'REMOVED' ? 'removed' : ''} ${dragSchemaId === schema.candidateSchemaId ? 'dragging' : ''} ${dropSide}`}
+              title={`${label} · ${schema.proposedSchemaKey || 'schemaKey 待填写'}${sortable ? ' · 拖拽或 Ctrl+←/→ 调整顺序' : ''}`}
+              draggable={sortable}
+              onClick={() => dispatch({ type: 'select-schema', schemaId: schema.candidateSchemaId })}
+              onKeyDown={(event) => {
+                if (!sortable || !event.ctrlKey) return;
+                if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+                  event.preventDefault();
+                  dispatch({
+                    type: 'move-schema',
+                    schemaId: schema.candidateSchemaId,
+                    direction: event.key === 'ArrowLeft' ? -1 : 1,
+                  });
+                }
+              }}
+              onDragStart={(event) => {
+                if (!sortable) {
+                  event.preventDefault();
+                  return;
+                }
+                event.dataTransfer.setData('text/plain', schema.candidateSchemaId);
+                event.dataTransfer.effectAllowed = 'move';
+                setDragSchemaId(schema.candidateSchemaId);
+              }}
+              onDragOver={(event) => {
+                if (!dragSchemaId || dragSchemaId === schema.candidateSchemaId) return;
+                event.preventDefault();
+                event.dataTransfer.dropEffect = 'move';
+                const rect = event.currentTarget.getBoundingClientRect();
+                const after = event.clientX > rect.left + rect.width / 2;
+                setDropTarget((current) => current?.id === schema.candidateSchemaId && current.after === after
+                  ? current
+                  : { id: schema.candidateSchemaId, after });
+              }}
+              onDrop={(event) => {
+                event.preventDefault();
+                if (dragSchemaId && dragSchemaId !== schema.candidateSchemaId) {
+                  const from = state.draft.schemas.findIndex((item) => item.candidateSchemaId === dragSchemaId);
+                  const rect = event.currentTarget.getBoundingClientRect();
+                  const after = event.clientX > rect.left + rect.width / 2;
+                  let target = after ? index + 1 : index;
+                  if (from >= 0 && target > from) target -= 1;
+                  if (from >= 0 && target !== from) {
+                    dispatch({ type: 'reorder-schema', schemaId: dragSchemaId, targetIndex: target });
+                  }
+                }
+                clearDrag();
+              }}
+              onDragEnd={clearDrag}
+            >
+              <span className="bundle-index">{String(index + 1).padStart(2, '0')}</span>
+              <span>
+                <strong>{label}</strong>
+                <code>{schema.proposedSchemaKey || 'schemaKey 待填写'}</code>
+                <small>{schema.fields.length} 个字段</small>
+              </span>
+              {isRoot && <i>根</i>}
+              {problems > 0 ? <b>{problems}</b> : <CheckCircle2 aria-hidden="true" size={14} />}
+            </button>
           );
         })}
-      </div>
-      <div className="bundle-legend">
-        <span><Bot aria-hidden="true" size={13} />AI 建议保留原始证据</span>
-        <span><UserRound aria-hidden="true" size={13} />人工新增不伪造置信度</span>
       </div>
     </aside>
   );
@@ -237,7 +291,7 @@ function CandidateMap({
       source: field.candidateFieldId,
       target: `detail:${field.candidateFieldId}`,
       markerEnd: { type: MarkerType.ArrowClosed, width: 11, height: 11 },
-      style: { stroke: '#aaa198', strokeDasharray: '4 3' },
+      style: { stroke: 'var(--color-map-edge)', strokeDasharray: '4 3' },
     })),
   ], [schema.fields]);
 
@@ -257,7 +311,7 @@ function CandidateMap({
         }}
         proOptions={{ hideAttribution: true }}
       >
-        <Background color="#ded7cd" gap={22} size={1} />
+        <Background color="var(--color-map-grid)" gap={22} size={1} />
         <Controls showInteractive={false} position="bottom-left" />
       </ReactFlow>
       <div className="candidate-map-legend"><GitBranch aria-hidden="true" size={14} />树图与表单共享顺序；使用上移、下移完成键盘排序。</div>

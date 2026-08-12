@@ -34,6 +34,7 @@ export type CandidateReviewAction =
   | { type: 'add-schema'; schema: CandidateSchema }
   | { type: 'add-field'; schemaId: string; field: CandidateField }
   | { type: 'move-schema'; schemaId: string; direction: -1 | 1 }
+  | { type: 'reorder-schema'; schemaId: string; targetIndex: number }
   | { type: 'move-field'; schemaId: string; fieldId: string; direction: -1 | 1 }
   | { type: 'resolve-schema'; schemaId: string; resolution: CandidateResolution }
   | { type: 'resolve-field'; schemaId: string; fieldId: string; resolution: CandidateResolution }
@@ -111,6 +112,17 @@ export function candidateReviewReducer(
         ...state.draft,
         schemas: moveById(state.draft.schemas, 'candidateSchemaId', action.schemaId, action.direction),
       });
+    case 'reorder-schema':
+      {
+        const from = state.draft.schemas.findIndex((item) => item.candidateSchemaId === action.schemaId);
+        if (from < 0) return state;
+        const target = Math.max(0, Math.min(state.draft.schemas.length - 1, action.targetIndex));
+        if (target === from) return state;
+        const schemas = [...state.draft.schemas];
+        const [moved] = schemas.splice(from, 1);
+        schemas.splice(target, 0, moved!);
+        return change(state, { ...state.draft, schemas });
+      }
     case 'move-field':
       return change(state, updateSchema(state.draft, action.schemaId, (schema) => ({
         ...schema,

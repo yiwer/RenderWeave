@@ -29,13 +29,15 @@ test.describe('resource list controls', () => {
     await expect.poll(() => lastQuery.get('search')).toBe('design-10');
     await expect.poll(() => lastQuery.get('page')).toBe('1');
 
-    await page.getByLabel('排序').selectOption('NAME_DESC');
+    await page.getByLabel('排序').click();
+    await page.getByRole('option', { name: '名称 Z–A' }).click();
     await expect.poll(() => lastQuery.get('sort')).toBe('NAME_DESC');
     await page.getByRole('button', { name: '清除搜索' }).click();
     await expect(page.locator('.draft-schema-card')).toHaveCount(9);
     await expect(page.locator('.draft-schema-card').first()).toContainText('设计 12');
 
-    await page.getByLabel('每页数量').selectOption('18');
+    await page.getByLabel('每页数量').click();
+    await page.getByRole('option', { name: '18', exact: true }).click();
     await expect(page.locator('.draft-schema-card')).toHaveCount(12);
     await expect.poll(() => lastQuery.get('size')).toBe('18');
     await expectNoHorizontalOverflow(page);
@@ -80,7 +82,8 @@ test.describe('resource list controls', () => {
     await expect(page.locator('.static-card')).toHaveCount(1);
     await expect.poll(() => lastQuery.get('search')).toBe('system-06');
     await page.getByRole('button', { name: '清除搜索' }).click();
-    await page.getByLabel('排序').selectOption('NAME_DESC');
+    await page.getByLabel('排序').click();
+    await page.getByRole('option', { name: '名称 Z–A' }).click();
     await expect(page.locator('.static-card').first()).toContainText('系统预设 06');
     await expect.poll(() => lastQuery.get('sort')).toBe('NAME_DESC');
 

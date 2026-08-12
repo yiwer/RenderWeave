@@ -1,0 +1,10 @@
+{
+  "scanned": "2026-08-12",
+  "framework": "React 19 + Vite + Tailwind v4 (preflight only, no @theme) + Radix Dialog/Tabs + @xyflow/react",
+  "fontStack": "Georgia serif (display, scoped) + Inter/system sans + JetBrains Mono/system mono — no webfonts",
+  "palette": "17 hex tokens in web/src/styles.css :root; warm paper + terracotta brand locked by design-system/renderweave/pages/schema-editor.md",
+  "motion": "motion-cut (no framer-motion/gsap); 120-220ms functional transitions",
+  "spacing": "8px base grid, density 8/10",
+  "lockedBy": "design-system/renderweave/pages/schema-editor.md (light-only, 1024px floor, hairlines over shadows)",
+  "hallmarkSystem": "design.md at project root (created by redesign run 2026-08-12)"
+}

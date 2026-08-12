@@ -39,7 +39,7 @@ export function VariantB({ state, selectedField, dispatch }: VariantProps) {
         source: 'root',
         target: `field:${field.key}`,
         markerEnd: { type: MarkerType.ArrowClosed, width: 14, height: 14 },
-        style: { stroke: field.required ? '#a9583e' : '#aaa197', strokeWidth: field.required ? 1.8 : 1.2 },
+        style: { stroke: field.required ? 'var(--color-accent)' : 'var(--color-map-edge)', strokeWidth: field.required ? 1.8 : 1.2 },
       })),
     [state.fields],
   );
@@ -79,7 +79,7 @@ export function VariantB({ state, selectedField, dispatch }: VariantProps) {
               }}
               proOptions={{ hideAttribution: true }}
             >
-              <Background color="#ded7cd" gap={22} size={1} />
+              <Background color="var(--color-map-grid)" gap={22} size={1} />
               <Controls showInteractive={false} position="bottom-left" />
             </ReactFlow>
             <div className="map-legend">

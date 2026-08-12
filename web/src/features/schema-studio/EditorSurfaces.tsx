@@ -252,7 +252,7 @@ export function MapSurface({
         source: field.rowKey,
         target: `detail:${field.rowKey}`,
         markerEnd: { type: MarkerType.ArrowClosed, width: 12, height: 12 },
-        style: { stroke: '#b6ada2', strokeDasharray: '4 3', strokeWidth: 1.1 },
+        style: { stroke: 'var(--color-map-edge)', strokeDasharray: '4 3', strokeWidth: 1.1 },
       })),
   ], [session.fields]);
 
@@ -279,7 +279,7 @@ export function MapSurface({
         }}
         proOptions={{ hideAttribution: true }}
       >
-        <Background color="#ded7cd" gap={22} size={1} />
+        <Background color="var(--color-map-grid)" gap={22} size={1} />
         <Controls showInteractive={false} position="bottom-left" />
       </ReactFlow>
       <div className="map-legend studio-map-legend">
