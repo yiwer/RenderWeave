@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-    [ValidateSet('fast', 'server', 'web', 'eval', 'e2e', 'draft-e2e', 'inference-e2e', 'compose', 'runtime', 'document-vision', 'capacity', 'full')]
+    [ValidateSet('fast', 'server', 'web', 'eval', 'e2e', 'draft-e2e', 'inference-e2e', 'compose', 'runtime', 'document-vision', 'observation-r0', 'capacity', 'full')]
     [string]$Gate = 'fast'
 )
 
@@ -110,6 +110,7 @@ try {
         'compose' { @('compose-config') }
         'runtime' { @('runtime-canary') }
         'document-vision' { @('document-vision-adapter-tests', 'document-vision-canary') }
+        'observation-r0' { @('document-observation-r0') }
         'capacity' { @('capacity-baseline') }
         'full' { @('repository-diff', 'server-verify', 'web-node24', 'offline-eval', 'compose-config', 'runtime-canary', 'document-vision-adapter-tests', 'prototype-e2e', 'draft-browser-e2e', 'inference-browser-e2e') }
     }
@@ -117,7 +118,9 @@ try {
     foreach ($step in $requestedSteps) {
         switch ($step) {
             'repository-diff' {
-                Invoke-GateStep $step { & git -c core.autocrlf=false diff --check }
+                Invoke-GateStep $step {
+                    & git -c core.autocrlf=false -c core.whitespace=cr-at-eol diff --check
+                }
             }
             'server-package' {
                 Invoke-GateStep $step { Invoke-ZeroPaidAiCommand 'mvn.cmd -B -ntp -DskipTests package' }
@@ -175,6 +178,18 @@ try {
                 Invoke-GateStep $step {
                     Invoke-ZeroPaidAiCommand `
                         'set "RENDERWEAVE_RUN_DOCUMENT_VISION_CANARY=true" && mvn.cmd -B -ntp -pl renderweave-app -am -Dtest=DocumentVisionRuntimeCanaryTest -Dsurefire.failIfNoSpecifiedTests=false test'
+                }
+            }
+            'document-observation-r0' {
+                Invoke-GateStep $step {
+                    $reportPath = Join-Path $evidenceDir 'document-observation-r0-summary.json'
+                    $command = 'powershell.exe -NoProfile -ExecutionPolicy Bypass ' +
+                        '-File tools\run-document-observation-r0.ps1 -ReportPath "' +
+                        $reportPath + '"'
+                    Invoke-ZeroPaidAiCommand $command
+                    if ($LASTEXITCODE -eq 0 -and -not (Test-Path -LiteralPath $reportPath -PathType Leaf)) {
+                        throw 'Document observation R0 gate completed without producing its report.'
+                    }
                 }
             }
             'draft-browser-e2e' {

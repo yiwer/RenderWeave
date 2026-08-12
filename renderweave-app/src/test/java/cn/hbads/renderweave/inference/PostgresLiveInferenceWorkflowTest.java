@@ -6,6 +6,8 @@ import cn.hbads.renderweave.inference.candidate.CandidateBundle;
 import cn.hbads.renderweave.inference.candidate.CandidateEvidence;
 import cn.hbads.renderweave.inference.candidate.CandidateField;
 import cn.hbads.renderweave.inference.candidate.CandidateJsonCodec;
+import cn.hbads.renderweave.inference.candidate.CandidateProblemJsonCodec;
+import cn.hbads.renderweave.inference.candidate.CandidateProblemSeverity;
 import cn.hbads.renderweave.inference.candidate.CandidateReference;
 import cn.hbads.renderweave.inference.candidate.CandidateResolution;
 import cn.hbads.renderweave.inference.candidate.CandidateSchema;
@@ -2679,7 +2681,37 @@ class PostgresLiveInferenceWorkflowTest {
         assertThat(child.fields()).singleElement().satisfies(field -> {
             assertThat(field.proposedFieldKey()).isEqualTo("label");
             assertThat(field.assessment().evidence()).hasSize(2);
+            assertThat(field.assessment().evidence())
+                    .extracting(evidence -> evidence.boundingBox().top())
+                    .containsExactly(2_300, 6_300);
         });
+        assertThat(candidateSemanticSummary(candidate)).isEqualTo(
+                "root=document;"
+                        + "schema=document(root)[title:TEXT:e1,items:ARRAY<REFERENCE:item>:e1];"
+                        + "schema=item[ label:TEXT:e2@2300,6300 ]"
+        );
+        var validationProblems = new CandidateProblemJsonCodec().parse(
+                workflowStore.findCandidate(created).orElseThrow().validationProblemsJson()
+        );
+        assertThat(validationProblems).hasSize(5).allSatisfy(problem -> {
+            assertThat(problem.code()).isEqualTo("LOW_CONFIDENCE_UNRESOLVED");
+            assertThat(problem.severity()).isEqualTo(CandidateProblemSeverity.BLOCKER);
+        });
+        assertThat(validationProblems).noneSatisfy(problem ->
+                assertThat(problem.severity()).isEqualTo(CandidateProblemSeverity.WARNING));
+        var budget = budgets.snapshot(LiveInferenceWorker.PRODUCT_BUDGET_KEY);
+        assertThat(budget.consumedAttempts()).isEqualTo(3);
+        assertThat(budget.consumedCostMicrosCny()).isEqualTo(18_000L);
+        assertThat(jdbcClient.sql("""
+                        select count(*)
+                        from inference_provider_reservation
+                        where run_id = :runId and state = 'SETTLED'
+                        """)
+                .param("runId", created).query(Integer.class).single()).isEqualTo(3);
+        assertNoEphemeralObservationPayload(
+                created, "OCR_SENTINEL_V45_REPEATED_OBSERVATION",
+                "ocr-00-000", acquisition.policy().identity()
+        );
         assertThat(workflowStore.findCandidate(created).orElseThrow().currentJson())
                 .doesNotContain("OCR_SENTINEL_V45_REPEATED_OBSERVATION")
                 .doesNotContain("ocr-00-000")
@@ -2690,6 +2722,94 @@ class PostgresLiveInferenceWorkflowTest {
                 .doesNotContain("ocr-00-000")
                 .doesNotContain(DocumentObservationIR.VERSION)
                 .doesNotContain(acquisition.policy().identity());
+    }
+
+    @Test
+    void productV45SuccessorRecomputesIrAfterLeaseExpiryWithoutReplayingObserve() {
+        var blobs = new MemoryBlobStore();
+        var created = createGroundedVisual(
+                blobs, "v45-successor-lease-recovery",
+                PLUS_V45_HYBRID_VISUAL_PROFILE, 5_000_000L
+        );
+        var firstProvider = new ScriptedProvider(
+                request -> response(request, repeatedObservationElements())
+        );
+        var acquisitionCalls = new AtomicInteger();
+        var acquisition = hybridPreprocessor(
+                acquisitionCalls, "OCR_SENTINEL_V45_LEASE_RECOVERY"
+        );
+        var firstWorker = worker(
+                firstProvider, blobs, T0.plusSeconds(1), acquisition
+        );
+        var claimed = runs.claimNextLive(
+                "v45-successor-first-worker", T0.plusSeconds(1), Duration.ofMinutes(5)
+        ).orElseThrow();
+
+        var afterObserve = firstWorker.advance(claimed);
+
+        assertThat(afterObserve.stage()).isEqualTo(InferenceStage.HIERARCHY);
+        assertThat(acquisitionCalls).hasValue(1);
+        assertThat(firstProvider.requests).extracting(ProviderInferenceRequest::stage)
+                .containsExactly(InferenceStage.OBSERVE);
+        assertThat(workflowStore.attempts(created)).extracting(InferenceAttempt::status)
+                .containsExactly(InferenceAttemptStatus.SUCCEEDED);
+        assertThat(afterObserve.checkpointJson())
+                .doesNotContain("OCR_SENTINEL_V45_LEASE_RECOVERY")
+                .doesNotContain("ocr-00-000")
+                .doesNotContain(DocumentObservationIR.VERSION)
+                .doesNotContain(acquisition.policy().identity());
+
+        var recoveryProvider = new ScriptedProvider(
+                request -> response(request, repeatedObservationHierarchy()),
+                request -> response(request, repeatedObservationBindings())
+        );
+        var finished = worker(
+                recoveryProvider, blobs, T0.plus(Duration.ofMinutes(7)), acquisition
+        ).processNext("v45-successor-recovery-worker").orElseThrow();
+
+        assertThat(finished.state())
+                .as("failure=%s attempts=%s", finished.failureCode(), workflowStore.attempts(created))
+                .isEqualTo(InferenceRunState.REVIEW_REQUIRED);
+        assertThat(acquisitionCalls)
+                .as("ephemeral IR is recomputed after lease expiry")
+                .hasValue(2);
+        assertThat(recoveryProvider.requests).extracting(ProviderInferenceRequest::stage)
+                .as("the accepted OBSERVE stage must not replay")
+                .containsExactly(InferenceStage.HIERARCHY, InferenceStage.ELEMENT_BINDING);
+        assertThat(workflowStore.attempts(created)).extracting(
+                        InferenceAttempt::stage, InferenceAttempt::status
+                )
+                .containsExactly(
+                        org.assertj.core.groups.Tuple.tuple(
+                                InferenceStage.OBSERVE, InferenceAttemptStatus.SUCCEEDED
+                        ),
+                        org.assertj.core.groups.Tuple.tuple(
+                                InferenceStage.HIERARCHY, InferenceAttemptStatus.SUCCEEDED
+                        ),
+                        org.assertj.core.groups.Tuple.tuple(
+                                InferenceStage.ELEMENT_BINDING, InferenceAttemptStatus.SUCCEEDED
+                        )
+                );
+        var review = workflowStore.findCandidate(created).orElseThrow();
+        assertThat(review.currentJson())
+                .doesNotContain("OCR_SENTINEL_V45_LEASE_RECOVERY")
+                .doesNotContain("ocr-00-000")
+                .doesNotContain(DocumentObservationIR.VERSION)
+                .doesNotContain(acquisition.policy().identity());
+        assertThat(review.validationProblemsJson())
+                .doesNotContain("OCR_SENTINEL_V45_LEASE_RECOVERY")
+                .doesNotContain("ocr-00-000")
+                .doesNotContain(DocumentObservationIR.VERSION)
+                .doesNotContain(acquisition.policy().identity());
+        assertThat(finished.checkpointJson())
+                .doesNotContain("OCR_SENTINEL_V45_LEASE_RECOVERY")
+                .doesNotContain("ocr-00-000")
+                .doesNotContain(DocumentObservationIR.VERSION)
+                .doesNotContain(acquisition.policy().identity());
+        assertNoEphemeralObservationPayload(
+                created, "OCR_SENTINEL_V45_LEASE_RECOVERY",
+                "ocr-00-000", acquisition.policy().identity()
+        );
     }
 
     @Test
@@ -4120,5 +4240,92 @@ class PostgresLiveInferenceWorkflowTest {
         } catch (Exception exception) {
             throw new AssertionError(exception);
         }
+    }
+
+    private static String candidateSemanticSummary(CandidateBundle candidate) {
+        var schemasById = candidate.schemas().stream().collect(java.util.stream.Collectors.toMap(
+                CandidateSchema::candidateSchemaId, CandidateSchema::proposedSchemaKey
+        ));
+        var rootKey = schemasById.get(candidate.rootCandidateSchemaId());
+        var schemas = candidate.schemas().stream()
+                .sorted(java.util.Comparator.comparing(CandidateSchema::proposedSchemaKey))
+                .map(schema -> {
+                    var root = schema.candidateSchemaId().equals(candidate.rootCandidateSchemaId())
+                            ? "(root)" : "";
+                    var fields = schema.fields().stream().map(field -> {
+                        var value = switch (field.value().kind()) {
+                            case ARRAY -> "ARRAY<" + valueShape(field.value().items(), schemasById) + ">";
+                            default -> valueShape(field.value(), schemasById);
+                        };
+                        var evidence = field.assessment().evidence();
+                        var topCoordinates = evidence.size() > 1
+                                ? "@" + evidence.stream()
+                                .map(item -> Integer.toString(item.boundingBox().top()))
+                                .collect(java.util.stream.Collectors.joining(","))
+                                : "";
+                        return field.proposedFieldKey() + ":" + value + ":e" + evidence.size()
+                                + topCoordinates;
+                    }).collect(java.util.stream.Collectors.joining(","));
+                    if (schema.proposedSchemaKey().equals("item")) {
+                        return "schema=" + schema.proposedSchemaKey() + root + "[ " + fields + " ]";
+                    }
+                    return "schema=" + schema.proposedSchemaKey() + root + "[" + fields + "]";
+                }).collect(java.util.stream.Collectors.joining(";"));
+        return "root=" + rootKey + ";" + schemas;
+    }
+
+    private static String valueShape(
+            CandidateValue value,
+            Map<UUID, String> schemasById
+    ) {
+        if (value.kind() == CandidateValueKind.REFERENCE) {
+            return "REFERENCE:" + schemasById.get(value.reference().candidateSchemaId());
+        }
+        return value.kind().name();
+    }
+
+    private void assertNoEphemeralObservationPayload(
+            UUID runId,
+            String textSentinel,
+            String observationId,
+            String policyIdentity
+    ) {
+        var payloads = jdbcClient.sql("""
+                        select profile_snapshot::text as payload
+                        from inference_run where run_id = :runId
+                        union all
+                        select checkpoint_json::text
+                        from inference_run where run_id = :runId
+                        union all
+                        select data_json::text
+                        from inference_run_event where run_id = :runId
+                        union all
+                        select original_json::text
+                        from inference_candidate where run_id = :runId
+                        union all
+                        select current_json::text
+                        from inference_candidate where run_id = :runId
+                        union all
+                        select validation_problems::text
+                        from inference_candidate where run_id = :runId
+                        union all
+                        select row_to_json(attempt_row)::text
+                        from (
+                            select attempt_ordinal, stage, status, outcome_code,
+                                   input_tokens, output_tokens, estimated_cost_micros_cny,
+                                   duration_millis, problem_code_counts
+                            from inference_attempt where run_id = :runId
+                            order by attempt_ordinal
+                        ) attempt_row
+                        """)
+                .param("runId", runId)
+                .query(String.class)
+                .list();
+        assertThat(payloads).isNotEmpty().allSatisfy(payload -> assertThat(payload)
+                .doesNotContain(textSentinel)
+                .doesNotContain(observationId)
+                .doesNotContain(DocumentObservationIR.VERSION)
+                .doesNotContain(policyIdentity)
+                .doesNotContain("data:image;base64"));
     }
 }
