@@ -24,7 +24,7 @@ class LocalProcessDocumentVisionPreprocessorTest {
              "capabilityId":"%s","engine":"rapidocr-openvino-ppocrv6-small",
              "engineVersion":"rapidocr-3.9.2+openvino-2026.0.0",
              "modelManifestSha256":"%s"}
-            """.formatted(CAPABILITY, "b".repeat(64));
+            """.formatted(CAPABILITY, LocalProcessDocumentVisionPreprocessor.EXPECTED_MODEL_MANIFEST_SHA256);
 
     @Test
     void probesExactCapabilityAndMapsBoundedOutputWithoutLeakingText() {
@@ -87,15 +87,23 @@ class LocalProcessDocumentVisionPreprocessorTest {
 
     @Test
     void exactCapabilityMismatchAndProcessFailuresUseStablePayloadFreeCodes() {
-        var mismatch = CAPABILITY_JSON.replace(CAPABILITY, "other-capability");
-        var failure = assertThrows(
-                DocumentVisionException.class,
-                () -> LocalProcessDocumentVisionPreprocessor.forTest(
-                        List.of("python", "adapter.py"), Path.of("models"), Duration.ofSeconds(10),
-                        CAPABILITY, new StubRunner("{}", mismatch)
-                )
-        );
-        assertEquals("DOCUMENT_VISION_CAPABILITY_MISMATCH", failure.code());
+        for (var mismatch : List.of(
+                CAPABILITY_JSON.replace(CAPABILITY, "other-capability"),
+                CAPABILITY_JSON.replace(
+                        LocalProcessDocumentVisionPreprocessor.EXPECTED_MODEL_MANIFEST_SHA256,
+                        "d".repeat(64)
+                ),
+                CAPABILITY_JSON.replace("rapidocr-3.9.2+openvino-2026.0.0", "rapidocr-3.9.3")
+        )) {
+            var failure = assertThrows(
+                    DocumentVisionException.class,
+                    () -> LocalProcessDocumentVisionPreprocessor.forTest(
+                            List.of("python", "adapter.py"), Path.of("models"), Duration.ofSeconds(10),
+                            CAPABILITY, new StubRunner("{}", mismatch)
+                    )
+            );
+            assertEquals("DOCUMENT_VISION_CAPABILITY_MISMATCH", failure.code());
+        }
 
         var failed = new StubRunner("{}");
         failed.failureCode = "DOCUMENT_VISION_TIMEOUT";

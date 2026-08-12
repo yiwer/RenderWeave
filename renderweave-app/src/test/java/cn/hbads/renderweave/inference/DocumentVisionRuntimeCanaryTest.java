@@ -2,7 +2,7 @@ package cn.hbads.renderweave.inference;
 
 import cn.hbads.renderweave.inference.eval.visual.VisualStageCorpus;
 import cn.hbads.renderweave.inference.eval.visual.VisualStageRasterizer;
-import cn.hbads.renderweave.inference.vision.DocumentVisionArtifact;
+import cn.hbads.renderweave.inference.vision.ArtifactSet;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
@@ -15,7 +15,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class DocumentVisionRuntimeCanaryTest {
     @Test
     void exactLocalCapabilityProcessesARepositoryOwnedSyntheticImage() {
-        var adapter = LocalProcessDocumentVisionPreprocessor.fromConfiguration(
+        var configured = LocalProcessDocumentVisionPreprocessor.fromConfiguration(
                 true,
                 required("RENDERWEAVE_DOCUMENT_VISION_EXECUTABLE"),
                 required("RENDERWEAVE_DOCUMENT_VISION_ADAPTER_SCRIPT"),
@@ -23,25 +23,28 @@ class DocumentVisionRuntimeCanaryTest {
                 60,
                 LocalProcessDocumentVisionPreprocessor.EXPECTED_CAPABILITY_ID
         );
-        assertThat(adapter.capability().available())
-                .as(adapter.capability().diagnosticCode())
+        assertThat(configured.capability().available())
+                .as(configured.capability().diagnosticCode())
                 .isTrue();
+        assertThat(configured).isInstanceOf(LocalProcessDocumentVisionPreprocessor.class);
+        var adapter = (LocalProcessDocumentVisionPreprocessor) configured;
         var evaluationCase = new VisualStageCorpus().require("transit-board-v3");
         var image = new VisualStageRasterizer().render(evaluationCase);
 
-        var observation = adapter.preprocess(List.of(new DocumentVisionArtifact(
-                image.sha256(), 0, image.mediaType(), image.bytes(), image.width(), image.height()
-        )));
+        var observation = adapter.acquire(ArtifactSet.canonical(List.of(new ArtifactSet.Artifact(
+                image.sha256(), 0, image.mediaType(), image.bytes(), image.width(), image.height(), true
+        ))), adapter.acquisitionPolicy());
 
-        assertThat(observation.capabilityId())
+        assertThat(observation.capabilityIdentity())
                 .isEqualTo(LocalProcessDocumentVisionPreprocessor.EXPECTED_CAPABILITY_ID);
         assertThat(observation.artifacts()).singleElement().satisfies(artifact -> {
             assertThat(artifact.artifactId()).isEqualTo(image.sha256());
-            assertThat(artifact.lines()).isNotEmpty();
+            assertThat(artifact.observations()).isNotEmpty();
         });
         System.out.printf(
-                "documentVisionCanary=PASS capability=%s imageSha256=%s lineCount=%d%n",
-                observation.capabilityId(), image.sha256(), observation.lineCount()
+                "documentObservationCanary=PASS capability=%s policy=%s artifactCount=%d observationCount=%d%n",
+                observation.capabilityIdentity(), observation.acquisitionPolicyIdentity(),
+                observation.artifacts().size(), observation.observationCount()
         );
     }
 
