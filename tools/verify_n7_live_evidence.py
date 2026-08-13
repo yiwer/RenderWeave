@@ -24,7 +24,9 @@ REPORT_VERSION = "renderweave-n7-live-semantic-report/1.0"
 SEMANTIC_CORPUS_PATH = pathlib.PurePosixPath(
     "renderweave-inference/src/main/resources/visual-eval/v1/scenes.json"
 )
-EVIDENCE_FILES = {"state.json", "state.guard.json", "report.json", "batch.lock"}
+EVIDENCE_FILES = {
+    "state.json", "state.guard.json", "report.json", "state.lock", "batch.lock",
+}
 LIVE_STAGE_ACCEPTANCE = {
     "OBSERVE": "LIVE_VISUAL_GROUNDING_ACCEPTED",
     "HIERARCHY": "LIVE_VISUAL_HIERARCHY_V2_ACCEPTED",
@@ -431,9 +433,10 @@ def validate_evidence_directory(directory: pathlib.Path) -> None:
         fail("N7_EVIDENCE_FILE_SET_INVALID")
     if any(entry.is_symlink() or not entry.is_file() for entry in entries):
         fail("N7_EVIDENCE_ENTRY_INVALID")
-    lock = directory / "batch.lock"
-    if lock.is_file() and lock.stat().st_size != 0:
-        fail("N7_EVIDENCE_LOCK_NOT_EMPTY")
+    for name in ("state.lock", "batch.lock"):
+        lock = directory / name
+        if lock.is_file() and lock.stat().st_size != 0:
+            fail("N7_EVIDENCE_LOCK_NOT_EMPTY")
 
 
 def verify(repository: pathlib.Path, evidence_directory: pathlib.Path | None = None) -> dict[str, Any]:

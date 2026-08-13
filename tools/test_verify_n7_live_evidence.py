@@ -171,6 +171,24 @@ class N7LiveEvidenceVerifierTest(unittest.TestCase):
             with self.assertRaises(VERIFIER.visual.VerificationError):
                 VERIFIER.visual.read_json(evidence)
 
+    def test_real_journal_lock_set_is_accepted_only_when_both_locks_are_empty(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            evidence = pathlib.Path(directory)
+            for name in ("state.json", "state.guard.json", "report.json"):
+                (evidence / name).write_text("{}", encoding="utf-8")
+            for name in ("state.lock", "batch.lock"):
+                (evidence / name).write_bytes(b"")
+
+            VERIFIER.validate_evidence_directory(evidence)
+
+            for name in ("state.lock", "batch.lock"):
+                with self.subTest(name=name):
+                    (evidence / name).write_bytes(b"occupied")
+                    with self.assertRaisesRegex(
+                            VERIFIER.VerificationError, "N7_EVIDENCE_LOCK_NOT_EMPTY"):
+                        VERIFIER.validate_evidence_directory(evidence)
+                    (evidence / name).write_bytes(b"")
+
 
 def make_fixture() -> dict[str, object]:
     contract, contract_identity = VERIFIER.admission.verify_contract(REPOSITORY)
