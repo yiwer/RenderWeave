@@ -1,0 +1,157 @@
+{
+  "protocolVersion": "renderweave-n7-qualification-protocol/1.0",
+  "evidenceAnchor": {
+    "baseRevision": "b50d04e710f3a176b5e95336f912460809939d89",
+    "implementationRevision": "2f3ad8aff29f53cb79f1b546f323a2966fbf489c",
+    "shadowEvaluationIdentity": "renderweave-rapidocr-shadow-evaluation/1.0:91af6d7d79b2c3bc7d8b5446c79d6b4874e16e1cb28b7fffb3fcc3b7a3b25e3a",
+    "shadowReportIdentity": "renderweave-rapidocr-shadow-report/1.0:fc2cc3523ba59e9832ba8eb6fa651fd2fac9088751a4b9b72c7fa4bab476f8a5",
+    "shadowAggregateIdentity": "renderweave-rapidocr-shadow-recomputed-aggregates/1.0:8f23fc9ddc7825f5cb4479352bd4dbdf8e013f9f73124a16306b31bb2cb15635"
+  },
+  "continuationCode": "CONTINUE_N7_CURRENT_BEHAVIOR",
+  "triggerDispositions": {
+    "R2": {
+      "status": "NOT_TRIGGERED",
+      "reasonCode": "R2_CHALLENGER_RISK_REVIEW_ABSENT",
+      "factCode": "BASELINE_GAP_STABLE_60_OF_60_BUT_CHALLENGER_REVIEW_ZERO"
+    },
+    "R3": {
+      "status": "NOT_TRIGGERED",
+      "reasonCode": "R3_ATTRIBUTED_DOWNSTREAM_TOPOLOGY_EVIDENCE_ABSENT",
+      "factCode": "ORDER_REPEAT_SIGNAL_PRESENT_BUT_OCR_OMISSION_AND_DOWNSTREAM_ATTRIBUTION_NOT_EXCLUDED"
+    },
+    "R4": {
+      "status": "NOT_TRIGGERED",
+      "reasonCode": "R4_STRICT_PROVIDER_PROTOCOL_EVIDENCE_ABSENT",
+      "factCode": "STRICT_SHAPE_PROTOCOL_EVIDENCE_CASES_ZERO"
+    },
+    "R5": {
+      "status": "NOT_TRIGGERED",
+      "reasonCode": "R5_ORACLE_CROP_AND_STATIC_VIEW_ATTRIBUTION_ABSENT",
+      "factCode": "DENSE_SMALL_TEXT_MISS_SIGNAL_PRESENT_BUT_ORACLE_CROP_EVIDENCE_ZERO"
+    }
+  },
+  "canaryCaseIds": [
+    "transit-board-v3",
+    "restaurant-menu-v2",
+    "invoice-lines-v4",
+    "building-directory-v1",
+    "low-information-poster-v3"
+  ],
+  "qualificationCaseIds": [
+    "transit-board-v3",
+    "restaurant-menu-v2",
+    "invoice-lines-v4",
+    "building-directory-v1",
+    "low-information-poster-v3",
+    "transit-board-v1",
+    "hospital-schedule-v3",
+    "invoice-lines-v2",
+    "product-catalog-v3",
+    "product-catalog-v4",
+    "event-agenda-v1",
+    "event-agenda-v2",
+    "weather-forecast-v3",
+    "warehouse-inventory-v1",
+    "warehouse-inventory-v4",
+    "school-timetable-v2",
+    "school-timetable-v3",
+    "building-directory-v2",
+    "analytics-dashboard-v3",
+    "analytics-dashboard-v4"
+  ],
+  "hardNestedCaseIds": [
+    "transit-board-v3",
+    "restaurant-menu-v2",
+    "hospital-schedule-v3",
+    "invoice-lines-v2",
+    "product-catalog-v3",
+    "event-agenda-v2",
+    "weather-forecast-v3",
+    "school-timetable-v2",
+    "school-timetable-v3",
+    "building-directory-v2",
+    "analytics-dashboard-v3",
+    "low-information-poster-v3"
+  ],
+  "thresholds": {
+    "terminalReviewRequiredBps": 10000,
+    "bundleContractBps": 10000,
+    "schemaEntityF1Bps": 9000,
+    "fieldMicroF1Bps": 9000,
+    "supportedTypeAccuracyBps": 9500,
+    "parentChildEdgeF1Bps": 9500,
+    "evidenceCoverageBps": 10000,
+    "dagValidityBps": 10000,
+    "maximumCriticalHallucinations": 0,
+    "maximumPayloadViolations": 0,
+    "maximumIdentityViolations": 0,
+    "maximumBudgetViolations": 0
+  },
+  "nonInferiorityBps": 200,
+  "finalCorpusVersion": "renderweave-visual-stage-corpus/1.0",
+  "finalCorpusSourceSha256": "ca53d88763af161a1b1b22fa50774c56eae929affe5316157ae355fdb005b8b3",
+  "finalCaseIds": [
+    "transit-board-v1", "transit-board-v2", "transit-board-v3", "transit-board-v4", "transit-board-v5",
+    "restaurant-menu-v1", "restaurant-menu-v2", "restaurant-menu-v3", "restaurant-menu-v4", "restaurant-menu-v5",
+    "hospital-schedule-v1", "hospital-schedule-v2", "hospital-schedule-v3", "hospital-schedule-v4", "hospital-schedule-v5",
+    "invoice-lines-v1", "invoice-lines-v2", "invoice-lines-v3", "invoice-lines-v4", "invoice-lines-v5",
+    "product-catalog-v1", "product-catalog-v2", "product-catalog-v3", "product-catalog-v4", "product-catalog-v5",
+    "event-agenda-v1", "event-agenda-v2", "event-agenda-v3", "event-agenda-v4", "event-agenda-v5",
+    "weather-forecast-v1", "weather-forecast-v2", "weather-forecast-v3", "weather-forecast-v4", "weather-forecast-v5",
+    "warehouse-inventory-v1", "warehouse-inventory-v2", "warehouse-inventory-v3", "warehouse-inventory-v4", "warehouse-inventory-v5",
+    "school-timetable-v1", "school-timetable-v2", "school-timetable-v3", "school-timetable-v4", "school-timetable-v5",
+    "building-directory-v1", "building-directory-v2", "building-directory-v3", "building-directory-v4", "building-directory-v5",
+    "analytics-dashboard-v1", "analytics-dashboard-v2", "analytics-dashboard-v3", "analytics-dashboard-v4", "analytics-dashboard-v5",
+    "low-information-poster-v1", "low-information-poster-v2", "low-information-poster-v3", "low-information-poster-v4", "low-information-poster-v5"
+  ],
+  "finalHoldoutCaseIds": [
+    "transit-board-v4", "transit-board-v5",
+    "restaurant-menu-v4", "restaurant-menu-v5",
+    "hospital-schedule-v4", "hospital-schedule-v5",
+    "invoice-lines-v5", "product-catalog-v5", "event-agenda-v5",
+    "weather-forecast-v5", "warehouse-inventory-v5", "school-timetable-v5",
+    "building-directory-v5", "analytics-dashboard-v5", "low-information-poster-v5"
+  ],
+  "profiles": {
+    "PLUS": {
+      "profileId": "dashscope-qwen37-plus-product-v45-hybrid-generic",
+      "model": "qwen3.7-plus",
+      "available": true,
+      "reasonCode": "EXACT_PRODUCT_V45_PROFILE_AVAILABLE"
+    },
+    "MAX": {
+      "profileId": "dashscope-qwen38-max-product-v45-hybrid-generic",
+      "model": "qwen3.8-max",
+      "available": true,
+      "reasonCode": "EXACT_PRODUCT_V45_PROFILE_AVAILABLE"
+    },
+    "FLASH": {
+      "profileId": "UNRESOLVED_PINNED_PRODUCT_V45_PROFILE",
+      "model": "qwen3.7-flash-2026-07-15",
+      "available": false,
+      "reasonCode": "PINNED_PRODUCT_V45_PROFILE_ABSENT"
+    }
+  },
+  "evidenceMapping": {
+    "AC-VR-001": "FINAL_CORPUS_V1_ASSIGNMENT_AND_HOLDOUT_LOCK",
+    "AC-VR-002": "IDENTITY_ASSIGNMENT_LEDGER_USAGE_COST_REPLAY",
+    "AC-VR-003": "BYTE_STABLE_CANDIDATE_AND_ZERO_STRUCTURE_PROVIDER_ATTEMPTS",
+    "AC-VR-004": "REGION_ORDER_REPEAT_OWNERSHIP_SOURCE_COORDINATE_METRICS",
+    "AC-VR-005": "EPHEMERAL_OCR_AND_PAYLOAD_SCAN",
+    "AC-VR-006": "GENERIC_AND_EXPLICIT_TRANSIT_BOARD_SLICES",
+    "AC-VR-007": "BOUNDED_ISSUE_AND_TARGETED_REPAIR_REPLAY",
+    "AC-VR-008": "EXACT_MODEL_PROFILE_PRICING_TIMEOUT_OUTPUT_CONTRACT",
+    "AC-VR-009": "STAGE_REGION_ISSUE_COST_RECOVERY_UI_J1",
+    "AC-VR-010": "FINAL_AC021_A2_AND_POLICY_J1",
+    "AC-021": "GLOBAL_MODE_SLICE_AND_HOLDOUT_THRESHOLDS"
+  },
+  "architecture": {
+    "orchestration": "EXISTING_POSTGRESQL_DURABLE_TYPED_STATE_MACHINE",
+    "semanticStages": "SERIAL",
+    "localRepair": "VALIDATOR_DRIVEN_BOUNDED",
+    "openEndedAgent": false,
+    "generalToolExecutor": false,
+    "langGraph": false,
+    "temporal": false
+  }
+}
