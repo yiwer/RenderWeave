@@ -9,6 +9,7 @@ import json
 import pathlib
 import tempfile
 import unittest
+from unittest import mock
 
 
 PATH = pathlib.Path(__file__).with_name("verify_n7_live_admission.py")
@@ -21,6 +22,24 @@ REPOSITORY = PATH.parent.parent
 
 
 class N7LiveAdmissionVerifierTest(unittest.TestCase):
+    def test_preproposal_goal_capacity_does_not_report_live_admission_open(self) -> None:
+        ledger = {
+            "lifecycle": "PRE_PROPOSAL_ALL_HISTORICAL_CLOSED",
+            "repositoryEvaluationIdentity": "evaluation-identity",
+            "statuses": {"qwen37-plus": "CLOSED"},
+            "historicalLedgersClosed": True,
+            "targetProposalPresent": False,
+        }
+        goal = {"admission": "GOAL_READY"}
+        with mock.patch.object(
+                VERIFIER, "verify_contract", return_value=({"ticketId": "N7-04"}, "contract")), \
+                mock.patch.object(VERIFIER, "verify_ledgers", return_value=ledger), \
+                mock.patch.object(VERIFIER, "inspect_goal", return_value=goal):
+            summary = VERIFIER.verify(REPOSITORY)
+
+        self.assertEqual("NOT_OPEN", summary["admissionDecision"])
+        self.assertEqual("GOAL_READY", summary["goalCapacityDecision"])
+
     def test_current_clean_contract_and_closed_historical_ledgers_reconstruct(self) -> None:
         # Repository identity itself requires a clean checkout, so this unit test exercises
         # immutable bindings separately; the clean-worktree acceptance run covers identity.
