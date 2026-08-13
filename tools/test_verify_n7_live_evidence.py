@@ -74,12 +74,12 @@ class N7LiveEvidenceVerifierTest(unittest.TestCase):
                 VERIFIER.VerificationError, "N7_LIVE_STAGE_TRACE_NOT_COMPLETE"):
             VERIFIER.validate_stage_trace(attempts, 7)
 
-        VERIFIER.validate_stage_trace(attempts, 7, allow_exhausted_failure=True)
+        VERIFIER.validate_stage_trace(attempts, 7, terminal_state="FAILED")
 
         with self.assertRaisesRegex(
                 VERIFIER.VerificationError, "N7_LIVE_FAILED_TRACE_NOT_EXHAUSTED"):
             VERIFIER.validate_stage_trace(
-                attempts[:-1], 7, allow_exhausted_failure=True,
+                attempts[:-1], 7, terminal_state="FAILED",
             )
 
     def test_execution_and_reservation_times_must_stay_inside_exact_j1_window(self) -> None:
@@ -187,7 +187,7 @@ class N7LiveEvidenceVerifierTest(unittest.TestCase):
 
         results, terminals, _latency = VERIFIER.validate_n7_journal(
             fixture["journal"], fixture["authorization"], fixture["metadata"],
-            fixture["reservations"], require_review_required=False,
+            fixture["reservations"], policy=VERIFIER.VerificationPolicy.AUDIT_OUTCOME,
         )
         self.assertEqual("FAILED", terminals[0])
         self.assertEqual(5, len(results))
@@ -217,7 +217,8 @@ class N7LiveEvidenceVerifierTest(unittest.TestCase):
 
         summary = VERIFIER.validate_report_envelope(
             envelope, fixture["contract"], fixture["authorization"], results,
-            fixture["metadata"], fixture["contractIdentity"], require_quality=False,
+            fixture["metadata"], fixture["contractIdentity"],
+            policy=VERIFIER.VerificationPolicy.AUDIT_OUTCOME,
         )
         self.assertEqual("FAIL", summary["qualityDecision"])
         self.assertEqual(1, summary["criticalHallucinations"])

@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
+from enum import Enum
 import hashlib
 import json
 import os
@@ -47,6 +48,11 @@ LIVE_STAGE_TRANSITIONS = {
 
 class VerificationError(Exception):
     pass
+
+
+class VerificationPolicy(Enum):
+    CERTIFICATION = "CERTIFICATION"
+    AUDIT_OUTCOME = "AUDIT_OUTCOME"
 
 
 def fail(code: str) -> None:
@@ -107,8 +113,10 @@ def require_time_in_authorization(
 def validate_stage_trace(
     attempts: list[dict[str, Any]],
     maximum_attempts: int,
-    allow_exhausted_failure: bool = False,
+    terminal_state: str = "REVIEW_REQUIRED",
 ) -> None:
+    if terminal_state not in {"REVIEW_REQUIRED", "FAILED"}:
+        fail("N7_EXECUTION_TERMINAL_INVALID")
     if len(attempts) < len(LIVE_STAGE_ACCEPTANCE) or len(attempts) > maximum_attempts:
         fail("N7_LIVE_STAGE_TRACE_COUNT_INVALID")
     if attempts[0]["stage"] != "OBSERVE":
@@ -135,7 +143,7 @@ def validate_stage_trace(
     final = attempts[-1]
     complete = final["stage"] == "ELEMENT_BINDING" \
         and final["outcomeCode"] == LIVE_STAGE_ACCEPTANCE["ELEMENT_BINDING"]
-    if not complete and not allow_exhausted_failure:
+    if not complete and terminal_state != "FAILED":
         fail("N7_LIVE_STAGE_TRACE_NOT_COMPLETE")
     if not complete and len(attempts) != maximum_attempts:
         fail("N7_LIVE_FAILED_TRACE_NOT_EXHAUSTED")
@@ -205,7 +213,7 @@ def validate_n7_journal(
     authorization: dict[str, Any],
     metadata: dict[str, dict[str, str]],
     reservations: list[dict[str, Any]],
-    require_review_required: bool = True,
+    policy: VerificationPolicy = VerificationPolicy.CERTIFICATION,
 ) -> tuple[list[dict[str, Any]], list[str], int]:
     visual.require_keys(
         value, ("journalVersion", "authorizationId", "executions", "createdAt", "updatedAt"),
@@ -261,7 +269,7 @@ def validate_n7_journal(
             fail("N7_EXECUTION_ID_DUPLICATE")
         execution_ids.add(execution_id)
         run_ids.add(run_id)
-        allowed_terminals = {"REVIEW_REQUIRED"} if require_review_required \
+        allowed_terminals = {"REVIEW_REQUIRED"} if policy is VerificationPolicy.CERTIFICATION \
             else {"REVIEW_REQUIRED", "FAILED"}
         if item["status"] != "COMPLETED" or item["terminalState"] not in allowed_terminals \
                 or item["evaluation"] is None or item["completedAt"] is None:
@@ -291,8 +299,7 @@ def validate_n7_journal(
             authorization["caseIds"]
         )
         validate_stage_trace(
-            attempts, maximum_attempts,
-            allow_exhausted_failure=item["terminalState"] == "FAILED",
+            attempts, maximum_attempts, terminal_state=item["terminalState"],
         )
         if result["providerCalls"] != len(attempts):
             fail("N7_EVALUATION_CALL_COUNT_DRIFT")
@@ -406,7 +413,7 @@ def validate_report_envelope(
     results: list[dict[str, Any]],
     metadata: dict[str, dict[str, str]],
     contract_identity: str,
-    require_quality: bool = True,
+    policy: VerificationPolicy = VerificationPolicy.CERTIFICATION,
 ) -> dict[str, Any]:
     visual.require_keys(value, ("envelopeVersion", "reportIdentity", "report"), "N7 report envelope")
     report = visual.require_object(value["report"], "N7 report")
@@ -430,7 +437,7 @@ def validate_report_envelope(
             or average_dag != 10_000 or final["criticalHallucinations"] != 0 \
             or final["blockers"] != 0
     )
-    if require_quality and not quality_passed:
+    if policy is VerificationPolicy.CERTIFICATION and not quality_passed:
         fail("N7_CANARY_QUALITY_GATE_FAILED")
     return {
         "qualityDecision": "PASS" if quality_passed else "FAIL",
@@ -540,7 +547,7 @@ def lock_evidence_snapshot(
 def verify(
     repository: pathlib.Path,
     evidence_directory: pathlib.Path | None = None,
-    audit_outcome: bool = False,
+    policy: VerificationPolicy = VerificationPolicy.CERTIFICATION,
 ) -> dict[str, Any]:
     contract, contract_identity = admission.verify_contract(repository)
     ledger_paths = [repository.joinpath(*path.parts) for path in admission.LEDGERS.values()]
@@ -586,14 +593,12 @@ def verify(
 
     validate_n7_journal_guard(journal_guard, authorization)
     results, terminal_states, provider_latency = validate_n7_journal(
-        journal, authorization, metadata, reservations,
-        require_review_required=not audit_outcome,
+        journal, authorization, metadata, reservations, policy=policy,
     )
     quality = validate_report_envelope(
-        envelope, contract, authorization, results, metadata, contract_identity,
-        require_quality=not audit_outcome,
+        envelope, contract, authorization, results, metadata, contract_identity, policy=policy,
     )
-    if audit_outcome:
+    if policy is VerificationPolicy.AUDIT_OUTCOME:
         quality = audit_gate_summary(quality, terminal_states)
     auth_reservations = [
         item for item in reservations
@@ -602,7 +607,7 @@ def verify(
     slot = visual.MODEL_TO_GOAL_SLOT[authorization["model"]]
     return {
         "verificationVersion": VERIFIER_VERSION,
-        "result": "AUDIT_COMPLETE" if audit_outcome else "PASS",
+        "result": "AUDIT_COMPLETE" if policy is VerificationPolicy.AUDIT_OUTCOME else "PASS",
         "assurance": "A2_INDEPENDENT_READ_ONLY_RECONSTRUCTION",
         "ticketId": contract["ticketId"],
         "authorizationId": authorization["authorizationId"],
@@ -613,7 +618,8 @@ def verify(
         "completedCases": len(results),
         "terminalStates": {
             "REVIEW_REQUIRED": terminal_states.count("REVIEW_REQUIRED"),
-            **({"FAILED": terminal_states.count("FAILED")} if audit_outcome else {}),
+            **({"FAILED": terminal_states.count("FAILED")}
+               if policy is VerificationPolicy.AUDIT_OUTCOME else {}),
         },
         "providerAttempts": len(auth_reservations),
         "actualInputTokens": sum(item["actualInputTokens"] for item in auth_reservations),
@@ -642,7 +648,8 @@ def main(argv: list[str]) -> int:
         summary = verify(
             args.repository.resolve(strict=True),
             args.evidence_directory.resolve(strict=True) if args.evidence_directory else None,
-            audit_outcome=args.audit_outcome,
+            policy=(VerificationPolicy.AUDIT_OUTCOME if args.audit_outcome
+                    else VerificationPolicy.CERTIFICATION),
         )
         encoded = json.dumps(summary, ensure_ascii=False, sort_keys=True, separators=(",", ":")) + "\n"
         if args.output:

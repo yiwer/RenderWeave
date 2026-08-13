@@ -63,6 +63,13 @@ class N7ClosedNegativeProbeTest(unittest.TestCase):
         "DASHSCOPE_TOKEN_API_KEY": "must-not-reach-child",
         "DASHSCOPE_TOKEN_API_KEY_FILE": "must-not-reach-child",
         "DASHSCOPE_API_KEY": "legacy-must-not-reach-child",
+        "JAVA_TOOL_OPTIONS": "-Dspring.fake=injected",
+        "JDK_JAVA_OPTIONS": "-Dspring.fake=injected",
+        "_JAVA_OPTIONS": "-Dspring.fake=injected",
+        "MAVEN_OPTS": "-Dspring.fake=injected",
+        "MAVEN_ARGS": "-Dspring.fake=injected",
+        "SPRING_APPLICATION_JSON": "{\"spring.fake\":\"injected\"}",
+        "UNRELATED_PARENT_SECRET": "must-not-reach-child",
     })
     @mock.patch.object(subprocess, "Popen")
     @mock.patch.object(pathlib.Path, "is_dir", return_value=True)
@@ -100,7 +107,8 @@ class N7ClosedNegativeProbeTest(unittest.TestCase):
 
         child_environment = popen.call_args.kwargs["env"]
         child_keys = {key.upper() for key in child_environment}
-        self.assertTrue(PROBE.SECRET_ENVIRONMENT_NAMES.isdisjoint(child_keys))
+        self.assertTrue(PROBE.FORBIDDEN_CHILD_ENVIRONMENT_NAMES.isdisjoint(child_keys))
+        self.assertNotIn("UNRELATED_PARENT_SECRET", child_keys)
         self.assertEqual("true", child_environment["RENDERWEAVE_RUN_VISUAL_EVALUATION"])
         self.assertEqual(
             "qwen37-plus",
@@ -110,6 +118,12 @@ class N7ClosedNegativeProbeTest(unittest.TestCase):
         self.assertEqual(
             "cmd.exe" if PROBE.os.name == "nt" else "mvn",
             pathlib.Path(launched[0]).name,
+        )
+
+    def test_probe_tool_hash_is_line_ending_stable(self) -> None:
+        self.assertEqual(
+            PROBE.normalized_source_sha256(b"first\nsecond\n"),
+            PROBE.normalized_source_sha256(b"first\r\nsecond\r\n"),
         )
 
     @mock.patch.object(subprocess, "Popen")

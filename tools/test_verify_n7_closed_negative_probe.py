@@ -34,8 +34,19 @@ class N7ClosedProbeVerifierTest(unittest.TestCase):
             )
 
         self.assertEqual("PASS", result["result"])
-        self.assertEqual("A2_INDEPENDENT_READ_ONLY_RECONSTRUCTION", result["assurance"])
+        self.assertEqual("MIXED_A1_DYNAMIC_A2_STATE", result["assurance"])
+        self.assertEqual("A1_TOOL_CAPTURED", result["dynamicExecutionAssurance"])
+        self.assertEqual(
+            "A2_INDEPENDENT_READ_ONLY_RECONSTRUCTION",
+            result["runtimeStateAssurance"],
+        )
         self.assertEqual(0, result["processesRemaining"])
+
+    def test_tool_hash_is_line_ending_stable(self) -> None:
+        self.assertEqual(
+            VERIFIER.normalized_source_sha256(b"first\nsecond\n"),
+            VERIFIER.normalized_source_sha256(b"first\r\nsecond\r\n"),
+        )
 
     def test_mutated_snapshot_process_or_command_binding_fails_closed(self) -> None:
         runtime = runtime_fixture()
@@ -105,9 +116,9 @@ def record_fixture(runtime: dict[str, object]) -> dict[str, object]:
         "commandIdentity": VERIFIER.canonical_identity(
             VERIFIER.probe.PROBE_VERSION, command,
         ),
-        "probeToolSha256": hashlib.sha256(
+        "probeToolSha256": VERIFIER.normalized_source_sha256(
             pathlib.Path(VERIFIER.probe.__file__).read_bytes(),
-        ).hexdigest(),
+        ),
         "startedAt": "2026-08-13T18:00:00.000Z",
         "completedAt": "2026-08-13T18:00:01.000Z",
         "exitCode": 1,

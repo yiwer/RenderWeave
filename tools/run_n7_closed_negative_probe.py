@@ -24,11 +24,27 @@ import verify_n7_live_evidence as evidence_verifier
 PROBE_VERSION = "renderweave-n7-closed-negative-probe/1.0"
 SNAPSHOT_VERSION = "renderweave-n7-runtime-snapshot/1.0"
 EXPECTED_FAILURE = "N7_LIVE_AUTHORIZATION_NOT_OPEN"
-SECRET_ENVIRONMENT_NAMES = {
+FORBIDDEN_CHILD_ENVIRONMENT_NAMES = {
     "DASHSCOPE_TOKEN_API_KEY",
     "DASHSCOPE_TOKEN_API_KEY_FILE",
     "DASHSCOPE_API_KEY",
     "DASHSCOPE_API_KEY_FILE",
+    "JAVA_TOOL_OPTIONS",
+    "JDK_JAVA_OPTIONS",
+    "_JAVA_OPTIONS",
+    "MAVEN_OPTS",
+    "MAVEN_ARGS",
+    "SPRING_APPLICATION_JSON",
+}
+PASSTHROUGH_ENVIRONMENT_NAMES = {
+    "APPDATA", "COMSPEC", "DOCKER_CERT_PATH", "DOCKER_CONTEXT", "DOCKER_HOST",
+    "DOCKER_TLS_VERIFY", "HOMEDRIVE", "HOME", "HOMEPATH", "HTTP_PROXY",
+    "HTTPS_PROXY", "JAVA_HOME", "LANG", "LC_ALL", "LOCALAPPDATA", "M2_HOME",
+    "MAVEN_HOME", "NO_PROXY", "OS", "PATH", "PATHEXT", "PROGRAMDATA",
+    "PROGRAMFILES", "PROGRAMFILES(X86)", "PROGRAMW6432", "SYSTEMDRIVE",
+    "SYSTEMROOT", "TEMP", "TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE",
+    "TESTCONTAINERS_HOST_OVERRIDE", "TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED",
+    "TESTCONTAINERS_RYUK_DISABLED", "TMP", "TMPDIR", "USERPROFILE", "WINDIR",
 }
 
 
@@ -50,6 +66,13 @@ def sha256(value: bytes) -> str:
     return hashlib.sha256(value).hexdigest()
 
 
+def normalized_source_sha256(value: bytes) -> str:
+    normalized = value.replace(b"\r\n", b"\n")
+    if b"\r" in normalized:
+        fail("N7_CLOSED_PROBE_TOOL_LINE_ENDING_INVALID")
+    return sha256(normalized)
+
+
 def canonical_identity(version: str, value: dict[str, Any]) -> str:
     raw = json.dumps(
         value, ensure_ascii=False, sort_keys=True, separators=(",", ":"),
@@ -62,7 +85,8 @@ def runtime_snapshot(
     evidence_directory: pathlib.Path,
 ) -> dict[str, Any]:
     audit = evidence_verifier.verify(
-        repository, evidence_directory, audit_outcome=True,
+        repository, evidence_directory,
+        policy=evidence_verifier.VerificationPolicy.AUDIT_OUTCOME,
     )
     goal_directory = repository.joinpath(*admission.GOAL_PATH.parts)
     paths: dict[str, pathlib.Path] = {
@@ -136,7 +160,7 @@ def matching_process_ids(marker: str) -> list[int]:
 def child_environment() -> dict[str, str]:
     environment = {
         key: value for key, value in os.environ.items()
-        if key.upper() not in SECRET_ENVIRONMENT_NAMES
+        if key.upper() in PASSTHROUGH_ENVIRONMENT_NAMES
     }
     environment["RENDERWEAVE_RUN_VISUAL_EVALUATION"] = "true"
     environment["RENDERWEAVE_VISUAL_EVALUATION_AUTHORIZATION"] = "qwen37-plus"
@@ -226,7 +250,7 @@ def run_probe(
         "platform": command_contract["platform"],
         "commandTool": command_contract["tool"],
         "commandIdentity": canonical_identity(PROBE_VERSION, command_contract),
-        "probeToolSha256": sha256(pathlib.Path(__file__).read_bytes()),
+        "probeToolSha256": normalized_source_sha256(pathlib.Path(__file__).read_bytes()),
         "startedAt": started_at,
         "completedAt": completed_at,
         "exitCode": process.returncode,

@@ -50,6 +50,13 @@ def canonical_identity(version: str, value: dict[str, Any]) -> str:
     return f"{version}:{hashlib.sha256(encoded).hexdigest()}"
 
 
+def normalized_source_sha256(value: bytes) -> str:
+    normalized = value.replace(b"\r\n", b"\n")
+    if b"\r" in normalized:
+        fail("N7_CLOSED_PROBE_TOOL_LINE_ENDING_INVALID")
+    return hashlib.sha256(normalized).hexdigest()
+
+
 def require_snapshot(value: Any) -> dict[str, Any]:
     if type(value) is not dict or set(value) != {
         "snapshotIdentity", "providerAttempts", "providerReservations",
@@ -138,7 +145,7 @@ def verify_record(
     if any(type(value[field]) is not str or not SHA256.fullmatch(
             value[field].split(":")[-1]) for field in hashes):
         fail("N7_CLOSED_PROBE_HASH_INVALID")
-    current_tool_hash = hashlib.sha256(pathlib.Path(probe.__file__).read_bytes()).hexdigest()
+    current_tool_hash = normalized_source_sha256(pathlib.Path(probe.__file__).read_bytes())
     if value["probeToolSha256"] != current_tool_hash:
         fail("N7_CLOSED_PROBE_TOOL_DRIFT")
     started = require_instant(value["startedAt"], "startedAt")
@@ -158,7 +165,9 @@ def verify_record(
     return {
         "verificationVersion": VERIFIER_VERSION,
         "result": "PASS",
-        "assurance": "A2_INDEPENDENT_READ_ONLY_RECONSTRUCTION",
+        "assurance": "MIXED_A1_DYNAMIC_A2_STATE",
+        "dynamicExecutionAssurance": "A1_TOOL_CAPTURED",
+        "runtimeStateAssurance": "A2_INDEPENDENT_READ_ONLY_RECONSTRUCTION",
         "authorizationId": value["authorizationId"],
         "failureCode": value["failureCode"],
         "probeInvocationCount": value["probeInvocationCount"],
