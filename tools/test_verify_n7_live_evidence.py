@@ -154,6 +154,64 @@ class N7LiveEvidenceVerifierTest(unittest.TestCase):
                             changed["contractIdentity"],
                         )
 
+    def test_failed_terminal_is_auditable_but_never_certifiable(self) -> None:
+        fixture = make_fixture()
+        fixture["journal"]["executions"][0]["terminalState"] = "FAILED"
+
+        with self.assertRaisesRegex(
+                VERIFIER.VerificationError, "N7_EXECUTION_TERMINAL_INVALID"):
+            VERIFIER.validate_n7_journal(
+                fixture["journal"], fixture["authorization"], fixture["metadata"],
+                fixture["reservations"],
+            )
+
+        results, terminals, _latency = VERIFIER.validate_n7_journal(
+            fixture["journal"], fixture["authorization"], fixture["metadata"],
+            fixture["reservations"], require_review_required=False,
+        )
+        self.assertEqual("FAILED", terminals[0])
+        self.assertEqual(5, len(results))
+
+    def test_failed_quality_report_is_recomputed_in_audit_mode(self) -> None:
+        fixture = make_fixture()
+        first = fixture["journal"]["executions"][0]["evaluation"]["finalCandidate"]
+        first["passed"] = False
+        first["criticalHallucinations"] = 1
+        results = [item["evaluation"] for item in fixture["journal"]["executions"]]
+        report = VERIFIER.expected_report(
+            fixture["contract"], fixture["authorization"], results,
+            fixture["metadata"], fixture["contractIdentity"],
+        )
+        envelope = {
+            "envelopeVersion": VERIFIER.REPORT_ENVELOPE_VERSION,
+            "reportIdentity": VERIFIER.report_identity(report),
+            "report": report,
+        }
+
+        with self.assertRaisesRegex(
+                VERIFIER.VerificationError, "N7_CANARY_QUALITY_GATE_FAILED"):
+            VERIFIER.validate_report_envelope(
+                envelope, fixture["contract"], fixture["authorization"], results,
+                fixture["metadata"], fixture["contractIdentity"],
+            )
+
+        summary = VERIFIER.validate_report_envelope(
+            envelope, fixture["contract"], fixture["authorization"], results,
+            fixture["metadata"], fixture["contractIdentity"], require_quality=False,
+        )
+        self.assertEqual("FAIL", summary["qualityDecision"])
+        self.assertEqual(1, summary["criticalHallucinations"])
+        decision = VERIFIER.audit_gate_summary(
+            summary, ["FAILED", "REVIEW_REQUIRED", "REVIEW_REQUIRED",
+                      "FAILED", "REVIEW_REQUIRED"],
+        )
+        self.assertEqual("FAIL", decision["qualityDecision"])
+        self.assertEqual("FAIL", decision["terminalDecision"])
+        self.assertEqual(
+            ["N7_EXECUTION_TERMINAL_INVALID", "N7_CANARY_QUALITY_GATE_FAILED"],
+            decision["gateFailureCodes"],
+        )
+
     def test_payload_markers_and_duplicate_members_are_rejected(self) -> None:
         with self.assertRaises(VERIFIER.VerificationError):
             VERIFIER.parse_payload_free_json('{"prompt":"forbidden"}', "unit")

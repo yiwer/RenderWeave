@@ -196,6 +196,7 @@ def validate_n7_journal(
     authorization: dict[str, Any],
     metadata: dict[str, dict[str, str]],
     reservations: list[dict[str, Any]],
+    require_review_required: bool = True,
 ) -> tuple[list[dict[str, Any]], list[str], int]:
     visual.require_keys(
         value, ("journalVersion", "authorizationId", "executions", "createdAt", "updatedAt"),
@@ -251,7 +252,9 @@ def validate_n7_journal(
             fail("N7_EXECUTION_ID_DUPLICATE")
         execution_ids.add(execution_id)
         run_ids.add(run_id)
-        if item["status"] != "COMPLETED" or item["terminalState"] != "REVIEW_REQUIRED" \
+        allowed_terminals = {"REVIEW_REQUIRED"} if require_review_required \
+            else {"REVIEW_REQUIRED", "FAILED"}
+        if item["status"] != "COMPLETED" or item["terminalState"] not in allowed_terminals \
                 or item["evaluation"] is None or item["completedAt"] is None:
             fail("N7_EXECUTION_TERMINAL_INVALID")
         started = require_time_in_authorization(
@@ -391,6 +394,7 @@ def validate_report_envelope(
     results: list[dict[str, Any]],
     metadata: dict[str, dict[str, str]],
     contract_identity: str,
+    require_quality: bool = True,
 ) -> dict[str, Any]:
     visual.require_keys(value, ("envelopeVersion", "reportIdentity", "report"), "N7 report envelope")
     report = visual.require_object(value["report"], "N7 report")
@@ -408,18 +412,43 @@ def validate_report_envelope(
     average_bundle = final["bundleContractBpsSum"] // case_count
     evidence_coverage = ratio_bps(final["evidencePresent"], final["evidenceExpected"])
     average_dag = final["dagValidityBpsSum"] // case_count
-    if report["global"]["passedCandidateCases"] != 5 or final["passedCases"] != 5 \
+    quality_passed = not (
+        report["global"]["passedCandidateCases"] != 5 or final["passedCases"] != 5 \
             or average_bundle != 10_000 or evidence_coverage != 10_000 \
             or average_dag != 10_000 or final["criticalHallucinations"] != 0 \
-            or final["blockers"] != 0:
+            or final["blockers"] != 0
+    )
+    if require_quality and not quality_passed:
         fail("N7_CANARY_QUALITY_GATE_FAILED")
     return {
-        "qualityDecision": "PASS",
+        "qualityDecision": "PASS" if quality_passed else "FAIL",
         "averageBundleContractBps": average_bundle,
         "evidenceCoverageBps": evidence_coverage,
         "averageDagValidityBps": average_dag,
         "criticalHallucinations": final["criticalHallucinations"],
+        "blockers": final["blockers"],
+        "passedCandidateCases": report["global"]["passedCandidateCases"],
+        "passedFinalCandidateCases": final["passedCases"],
         "reportIdentity": value["reportIdentity"],
+    }
+
+
+def audit_gate_summary(
+    quality: dict[str, Any], terminal_states: list[str],
+) -> dict[str, Any]:
+    terminal_passed = all(state == "REVIEW_REQUIRED" for state in terminal_states)
+    report_passed = quality["qualityDecision"] == "PASS"
+    failures: list[str] = []
+    if not terminal_passed:
+        failures.append("N7_EXECUTION_TERMINAL_INVALID")
+    if not report_passed:
+        failures.append("N7_CANARY_QUALITY_GATE_FAILED")
+    return {
+        **quality,
+        "qualityDecision": "PASS" if terminal_passed and report_passed else "FAIL",
+        "terminalDecision": "PASS" if terminal_passed else "FAIL",
+        "reportQualityDecision": "PASS" if report_passed else "FAIL",
+        "gateFailureCodes": failures,
     }
 
 
@@ -439,7 +468,11 @@ def validate_evidence_directory(directory: pathlib.Path) -> None:
             fail("N7_EVIDENCE_LOCK_NOT_EMPTY")
 
 
-def verify(repository: pathlib.Path, evidence_directory: pathlib.Path | None = None) -> dict[str, Any]:
+def verify(
+    repository: pathlib.Path,
+    evidence_directory: pathlib.Path | None = None,
+    audit_outcome: bool = False,
+) -> dict[str, Any]:
     contract, contract_identity = admission.verify_contract(repository)
     ledger_paths = [repository.joinpath(*path.parts) for path in admission.LEDGERS.values()]
     repository_identity, tracked = visual.repository_identity(repository, ledger_paths)
@@ -484,11 +517,15 @@ def verify(repository: pathlib.Path, evidence_directory: pathlib.Path | None = N
     journal = read_json(evidence / "state.json")
     results, terminal_states, provider_latency = validate_n7_journal(
         journal, authorization, metadata, reservations,
+        require_review_required=not audit_outcome,
     )
     envelope = read_json(evidence / "report.json")
     quality = validate_report_envelope(
         envelope, contract, authorization, results, metadata, contract_identity,
+        require_quality=not audit_outcome,
     )
+    if audit_outcome:
+        quality = audit_gate_summary(quality, terminal_states)
     auth_reservations = [
         item for item in reservations
         if item["authorizationId"] == authorization["authorizationId"]
@@ -496,7 +533,7 @@ def verify(repository: pathlib.Path, evidence_directory: pathlib.Path | None = N
     slot = visual.MODEL_TO_GOAL_SLOT[authorization["model"]]
     return {
         "verificationVersion": VERIFIER_VERSION,
-        "result": "PASS",
+        "result": "AUDIT_COMPLETE" if audit_outcome else "PASS",
         "assurance": "A2_INDEPENDENT_READ_ONLY_RECONSTRUCTION",
         "ticketId": contract["ticketId"],
         "authorizationId": authorization["authorizationId"],
@@ -505,7 +542,10 @@ def verify(repository: pathlib.Path, evidence_directory: pathlib.Path | None = N
         "contractIdentity": contract_identity,
         "evaluatorIdentity": contract["evaluatorIdentity"],
         "completedCases": len(results),
-        "terminalStates": {"REVIEW_REQUIRED": terminal_states.count("REVIEW_REQUIRED")},
+        "terminalStates": {
+            "REVIEW_REQUIRED": terminal_states.count("REVIEW_REQUIRED"),
+            **({"FAILED": terminal_states.count("FAILED")} if audit_outcome else {}),
+        },
         "providerAttempts": len(auth_reservations),
         "actualInputTokens": sum(item["actualInputTokens"] for item in auth_reservations),
         "actualOutputTokens": sum(item["actualOutputTokens"] for item in auth_reservations),
@@ -527,11 +567,13 @@ def main(argv: list[str]) -> int:
     parser.add_argument("--repository", required=True, type=pathlib.Path)
     parser.add_argument("--evidence-directory", type=pathlib.Path)
     parser.add_argument("--output", type=pathlib.Path)
+    parser.add_argument("--audit-outcome", action="store_true")
     args = parser.parse_args(argv)
     try:
         summary = verify(
             args.repository.resolve(strict=True),
             args.evidence_directory.resolve(strict=True) if args.evidence_directory else None,
+            audit_outcome=args.audit_outcome,
         )
         encoded = json.dumps(summary, ensure_ascii=False, sort_keys=True, separators=(",", ":")) + "\n"
         if args.output:
