@@ -85,13 +85,16 @@ final class N7LiveAdmissionGate {
             throw failure("N7_LIVE_GOAL_BREACHED");
         }
         var slot = audit.slots().get(VisualEvaluationAuthorization.goalModel(contract.model()));
+        var limits = audit.epochLimits();
+        var maximumCost = limits.maximumCostMicrosCnyByModel().get(
+                VisualEvaluationAuthorization.goalModel(contract.model()));
         if (slot == null
                 || Math.addExact(slot.attempts(), contract.maximumProviderAttempts())
-                > VisualEvaluationAuthorization.GOAL_MAXIMUM_ATTEMPTS_PER_MODEL
+                > limits.maximumAttemptsPerModel()
                 || Math.addExact(slot.tokens(), contract.maximumTotalTokens())
-                > VisualEvaluationAuthorization.GOAL_MAXIMUM_TOKENS_PER_MODEL
+                > limits.maximumTokensPerModel()
                 || Math.addExact(slot.costMicrosCny(), contract.maximumCostMicrosCny())
-                > VisualEvaluationAuthorization.goalMaximumCostMicrosCny(contract.model())) {
+                > maximumCost) {
             throw failure("N7_LIVE_GOAL_CAPACITY_INSUFFICIENT");
         }
     }

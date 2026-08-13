@@ -7,6 +7,7 @@ import argparse
 import hashlib
 import json
 import pathlib
+import subprocess
 import sys
 from typing import Any
 
@@ -28,6 +29,19 @@ PROFILE_PATH = pathlib.PurePosixPath(
 GOAL_PATH = pathlib.PurePosixPath(
     ".sdlc/evidence/renderweave-visual-recognition-vnext-20260810"
 )
+REANCHOR_PATH = pathlib.PurePosixPath(
+    "renderweave-app/src/test/resources/visual-eval/n7/goal-authority/"
+    "n7-closeout-successor-20260813.json"
+)
+SUCCESSOR_GOAL_VERSION = "renderweave-visual-evaluation-goal-budget/2.0"
+SUCCESSOR_GUARD_VERSION = "renderweave-visual-evaluation-goal-guard/5.0"
+AUTHORITY_EPOCH_VERSION = "renderweave-visual-evaluation-goal-authority-epoch/1.0"
+BASELINE_VERSION = "renderweave-visual-evaluation-goal-baseline/1.0"
+REANCHOR_VERSION = "renderweave-visual-evaluation-goal-reanchor/1.0"
+SUCCESSOR_AUTHORITY_EPOCH_ID = "n7-closeout-successor-20260813"
+REANCHOR_MANIFEST_SHA256 = (
+    "541f5efd137cd13009db5b722584c1353c1d3f6b0de39685ef161a1e3696efaa"
+)
 LEDGERS = {
     "qwen37-flash": pathlib.PurePosixPath(".sdlc/live/visual-evaluation-qwen37-flash.json"),
     "qwen37-plus": pathlib.PurePosixPath(".sdlc/live/visual-evaluation-qwen37-plus.json"),
@@ -42,12 +56,63 @@ GOAL_LIMITS = {
     "qwen3.7-plus": {"attempts": 180, "tokens": 1_500_000, "cost": 10_000_000},
     "qwen3.7-flash": {"attempts": 180, "tokens": 1_500_000, "cost": 10_000_000},
 }
+SUCCESSOR_EPOCH_LIMITS = {
+    "maximumTokensPerModel": 500_000,
+    "maximumAttemptsPerModel": 180,
+    "maximumCostMicrosCnyByModel": {
+        "qwen3.8-max": 18_000_000,
+        "qwen3.7-plus": 10_000_000,
+        "qwen3.7-flash": 10_000_000,
+    },
+}
 MODEL_SLOTS = {
     "qwen3.8-max": "qwen3.8-max",
     "qwen3.7-plus": "qwen3.7-plus",
     "qwen3.7-flash": "qwen3.7-flash",
     "qwen3.7-flash-2026-07-15": "qwen3.7-flash",
 }
+EXPECTED_BASELINE = {
+    "baselineVersion": BASELINE_VERSION,
+    "totalReservations": 418,
+    "settledReservations": 412,
+    "quarantinedChargedReservations": 6,
+    "breachedReservations": 0,
+    "slots": {
+        "qwen3.8-max": {
+            "attempts": 82, "exposedTokens": 491_919,
+            "exposedCostMicrosCny": 10_289_316, "settledReservations": 82,
+            "quarantinedChargedReservations": 0, "breachedReservations": 0,
+        },
+        "qwen3.7-plus": {
+            "attempts": 179, "exposedTokens": 1_087_500,
+            "exposedCostMicrosCny": 4_159_620, "settledReservations": 174,
+            "quarantinedChargedReservations": 5, "breachedReservations": 0,
+        },
+        "qwen3.7-flash": {
+            "attempts": 157, "exposedTokens": 1_148_324,
+            "exposedCostMicrosCny": 560_618, "settledReservations": 156,
+            "quarantinedChargedReservations": 1, "breachedReservations": 0,
+        },
+    },
+}
+EXPECTED_SOURCE_ANCHORS = [
+    {
+        "path": "docs/adr/0029-pinned-flash-snapshot-and-additive-goal-budget.md",
+        "sha256": "cce89516cf03f39291af26cbd1593be580f3e4eec1070867d9c1338bf9ff7d3a",
+    },
+    {
+        "path": "plans/renderweave-visual-recognition-vnext-plan.md",
+        "sha256": "643c386caf07b26d4d71fd964d5e7c1a3b531f84e2049d4b67ba64c00143635e",
+    },
+    {
+        "path": "plans/renderweave-v1-plan.md",
+        "sha256": "f892c3d8499b7165bda30e7ad7a4d029f0ef47e84f072770d8d1e05c00783ee3",
+    },
+    {
+        "path": "plans/logs/P6-T6-5-N7.md",
+        "sha256": "552d72ad303e0f3502d7e2d2fa6a5057a6d13557a9dc9065209984cc9664dac8",
+    },
+]
 
 
 class VerificationError(Exception):
@@ -72,6 +137,54 @@ def read_json(path: pathlib.Path, payload_free: bool = True) -> tuple[Any, bytes
 def require_exact_keys(value: dict[str, Any], keys: tuple[str, ...], code: str) -> None:
     if not isinstance(value, dict) or tuple(value) != keys:
         fail(code)
+
+
+def normalized_lf_sha256(raw: bytes) -> str:
+    normalized = raw.replace(b"\r\n", b"\n")
+    if b"\r" in normalized:
+        fail("LINE_ENDING_INVALID")
+    return hashlib.sha256(normalized).hexdigest()
+
+
+def verify_reanchor_manifest(repository: pathlib.Path) -> tuple[dict[str, Any], str]:
+    manifest, raw = read_json(repository.joinpath(*REANCHOR_PATH.parts))
+    require_exact_keys(manifest, (
+        "reanchorVersion", "goalId", "authorityEpochId", "predecessorEpochId",
+        "predecessorDisposition", "anchorRevision", "sourceAnchors", "baseline",
+        "epochLimits", "decision",
+    ), "REANCHOR_SHAPE_DRIFT")
+    identity = normalized_lf_sha256(raw)
+    if identity != REANCHOR_MANIFEST_SHA256:
+        fail("REANCHOR_IDENTITY_DRIFT")
+    expected = {
+        "reanchorVersion": REANCHOR_VERSION,
+        "goalId": visual.GOAL_ID,
+        "authorityEpochId": SUCCESSOR_AUTHORITY_EPOCH_ID,
+        "predecessorEpochId": "legacy-through-product-v40",
+        "predecessorDisposition": "LOST_UNRECOVERABLE",
+        "anchorRevision": "e3230398b7d6978d93527813af29df98fa7b35e6",
+        "sourceAnchors": EXPECTED_SOURCE_ANCHORS,
+        "baseline": EXPECTED_BASELINE,
+        "epochLimits": SUCCESSOR_EPOCH_LIMITS,
+        "decision": {
+            "status": "APPROVED", "approvedOn": "2026-08-13",
+            "scope": "SUCCESSOR_AUTHORITY_REANCHOR_ONLY",
+            "liveAuthorizationInherited": False, "refundCreated": False,
+        },
+    }
+    if manifest != expected:
+        fail("REANCHOR_VALUE_DRIFT")
+    for anchor in manifest["sourceAnchors"]:
+        try:
+            completed = subprocess.run(
+                ["git", "show", f'{manifest["anchorRevision"]}:{anchor["path"]}'],
+                cwd=repository, check=True, capture_output=True,
+            )
+        except (OSError, subprocess.CalledProcessError):
+            fail("REANCHOR_SOURCE_UNAVAILABLE")
+        if hashlib.sha256(completed.stdout).hexdigest() != anchor["sha256"]:
+            fail("REANCHOR_SOURCE_DRIFT")
+    return manifest, identity
 
 
 def profile_snapshot(profile: dict[str, Any]) -> str:
@@ -232,8 +345,12 @@ def reservation_exposure(value: dict[str, Any]) -> tuple[int, int]:
         if state == "BREACHED" else (tokens, cost)
 
 
-def inspect_goal(repository: pathlib.Path, contract: dict[str, Any]) -> dict[str, Any]:
-    directory = repository.joinpath(*GOAL_PATH.parts)
+def inspect_goal(
+    repository: pathlib.Path,
+    contract: dict[str, Any],
+    goal_directory: pathlib.Path | None = None,
+) -> dict[str, Any]:
+    directory = goal_directory or repository.joinpath(*GOAL_PATH.parts)
     state_path = directory / "goal-budget.json"
     guard_path = directory / "goal-budget.guard.json"
     lock_path = directory / "goal-budget.lock"
@@ -242,27 +359,87 @@ def inspect_goal(repository: pathlib.Path, contract: dict[str, Any]) -> dict[str
         return {
             "authority": "MISSING", "admission": "DENIED_GOAL_AUTHORITY_MISSING",
             "totalReservations": 0, "nonTerminalReservations": 0,
-            "breachedReservations": 0, "slots": {},
+            "epochReservations": 0, "quarantinedChargedReservations": 0,
+            "breachedReservations": 0, "slots": {}, "lifetimeSlots": {},
         }
     if not all(existing):
         fail("GOAL_PARTIAL_STATE")
     guard, guard_raw = read_json(guard_path)
     state, state_raw = read_json(state_path)
-    expected_guard = {
-        "guardVersion": visual.GOAL_GUARD_VERSION,
-        "goalId": visual.GOAL_ID,
-        "maximumTokensPerModel": 1_500_000,
-        "maximumAttemptsPerModel": 180,
-        "maximumCostMicrosCnyByModel": {
-            "qwen3.8-max": 18_000_000, "qwen3.7-plus": 10_000_000,
-            "qwen3.7-flash": 10_000_000,
-        },
-    }
-    if guard != expected_guard:
-        fail("GOAL_GUARD_DRIFT")
-    if not isinstance(state, dict) or state.get("stateVersion") != visual.GOAL_VERSION \
-            or state.get("goalId") != visual.GOAL_ID \
-            or not isinstance(state.get("reservations"), list):
+    if not isinstance(state, dict) or state.get("goalId") != visual.GOAL_ID:
+        fail("GOAL_STATE_DRIFT")
+    state_version = state.get("stateVersion")
+    if state_version == visual.GOAL_VERSION:
+        expected_guard = {
+            "guardVersion": visual.GOAL_GUARD_VERSION,
+            "goalId": visual.GOAL_ID,
+            "maximumTokensPerModel": 1_500_000,
+            "maximumAttemptsPerModel": 180,
+            "maximumCostMicrosCnyByModel": {
+                "qwen3.8-max": 18_000_000, "qwen3.7-plus": 10_000_000,
+                "qwen3.7-flash": 10_000_000,
+            },
+        }
+        if guard != expected_guard:
+            fail("GOAL_GUARD_DRIFT")
+        require_exact_keys(state,
+                           ("stateVersion", "goalId", "reservations", "createdAt", "updatedAt"),
+                           "GOAL_STATE_DRIFT")
+        baseline = {
+            "totalReservations": 0, "settledReservations": 0,
+            "quarantinedChargedReservations": 0, "breachedReservations": 0,
+            "slots": {model: {
+                "attempts": 0, "exposedTokens": 0, "exposedCostMicrosCny": 0,
+                "settledReservations": 0, "quarantinedChargedReservations": 0,
+                "breachedReservations": 0,
+            } for model in GOAL_LIMITS},
+        }
+        epoch_limits = {
+            "maximumTokensPerModel": 1_500_000,
+            "maximumAttemptsPerModel": 180,
+            "maximumCostMicrosCnyByModel": {
+                model: limits["cost"] for model, limits in GOAL_LIMITS.items()
+            },
+        }
+        authority = "AUTHORITATIVE_LEDGER"
+        authority_epoch_id = "legacy-exact-history"
+        manifest_identity = None
+    elif state_version == SUCCESSOR_GOAL_VERSION:
+        manifest, manifest_identity = verify_reanchor_manifest(repository)
+        expected_guard = {
+            "guardVersion": SUCCESSOR_GUARD_VERSION,
+            "goalId": visual.GOAL_ID,
+            "authorityEpochId": SUCCESSOR_AUTHORITY_EPOCH_ID,
+            "reanchorManifestSha256": manifest_identity,
+            "epochMaximumTokensPerModel": 500_000,
+            "epochMaximumAttemptsPerModel": 180,
+            "epochMaximumCostMicrosCnyByModel":
+                SUCCESSOR_EPOCH_LIMITS["maximumCostMicrosCnyByModel"],
+        }
+        if guard != expected_guard:
+            fail("GOAL_GUARD_DRIFT")
+        require_exact_keys(state, (
+            "stateVersion", "goalId", "authorityEpoch", "historicalBaseline",
+            "reservations", "createdAt", "updatedAt",
+        ), "GOAL_STATE_DRIFT")
+        expected_epoch = {
+            "epochVersion": AUTHORITY_EPOCH_VERSION,
+            "epochId": SUCCESSOR_AUTHORITY_EPOCH_ID,
+            "kind": "CONSERVATIVE_REANCHOR",
+            "predecessorEpochId": "legacy-through-product-v40",
+            "predecessorDisposition": "LOST_UNRECOVERABLE",
+            "reanchorManifestSha256": manifest_identity,
+        }
+        if state["authorityEpoch"] != expected_epoch \
+                or state["historicalBaseline"] != manifest["baseline"]:
+            fail("GOAL_REANCHOR_DRIFT")
+        baseline = manifest["baseline"]
+        epoch_limits = manifest["epochLimits"]
+        authority = "SUCCESSOR_AUTHORITY_EPOCH"
+        authority_epoch_id = SUCCESSOR_AUTHORITY_EPOCH_ID
+    else:
+        fail("GOAL_STATE_DRIFT")
+    if not isinstance(state.get("reservations"), list):
         fail("GOAL_STATE_DRIFT")
     slots = {key: {"attempts": 0, "tokens": 0, "costMicrosCny": 0, "breached": False}
              for key in GOAL_LIMITS}
@@ -294,27 +471,49 @@ def inspect_goal(repository: pathlib.Path, contract: dict[str, Any]) -> dict[str
             breached += 1
             slot["breached"] = True
     for key, usage in slots.items():
-        limits = GOAL_LIMITS[key]
-        if not usage["breached"] and any(usage[field] > limits[bound] for field, bound in (
-                ("attempts", "attempts"), ("tokens", "tokens"), ("costMicrosCny", "cost"))):
+        if not usage["breached"] and (
+                usage["attempts"] > epoch_limits["maximumAttemptsPerModel"]
+                or usage["tokens"] > epoch_limits["maximumTokensPerModel"]
+                or usage["costMicrosCny"]
+                > epoch_limits["maximumCostMicrosCnyByModel"][key]):
             fail("GOAL_AGGREGATE_EXCEEDS_LIMIT")
+    lifetime_slots = {
+        key: {
+            "attempts": baseline["slots"][key]["attempts"] + usage["attempts"],
+            "tokens": baseline["slots"][key]["exposedTokens"] + usage["tokens"],
+            "costMicrosCny": baseline["slots"][key]["exposedCostMicrosCny"]
+                             + usage["costMicrosCny"],
+            "breached": baseline["slots"][key]["breachedReservations"] > 0
+                        or usage["breached"],
+        }
+        for key, usage in slots.items()
+    }
     plus = slots["qwen3.7-plus"]
-    capacity = plus["attempts"] + contract["maximumProviderAttempts"] <= 180 \
-        and plus["tokens"] + contract["maximumTotalTokens"] <= 1_500_000 \
-        and plus["costMicrosCny"] + contract["maximumCostMicrosCny"] <= 10_000_000
+    capacity = plus["attempts"] + contract["maximumProviderAttempts"] \
+        <= epoch_limits["maximumAttemptsPerModel"] \
+        and plus["tokens"] + contract["maximumTotalTokens"] \
+        <= epoch_limits["maximumTokensPerModel"] \
+        and plus["costMicrosCny"] + contract["maximumCostMicrosCny"] \
+        <= epoch_limits["maximumCostMicrosCnyByModel"]["qwen3.7-plus"]
     if nonterminal:
         admission = "DENIED_NONTERMINAL_RESERVATION"
-    elif breached:
+    elif breached or baseline["breachedReservations"]:
         admission = "DENIED_BREACHED_RESERVATION"
     elif not capacity:
         admission = "DENIED_INSUFFICIENT_CUMULATIVE_CAPACITY"
     else:
         admission = "GOAL_READY"
     return {
-        "authority": "AUTHORITATIVE_LEDGER", "admission": admission,
-        "totalReservations": len(state["reservations"]),
-        "nonTerminalReservations": nonterminal, "breachedReservations": breached,
-        "slots": slots, "stateSha256": hashlib.sha256(state_raw).hexdigest(),
+        "authority": authority, "authorityEpochId": authority_epoch_id,
+        "admission": admission,
+        "totalReservations": baseline["totalReservations"] + len(state["reservations"]),
+        "epochReservations": len(state["reservations"]),
+        "nonTerminalReservations": nonterminal,
+        "quarantinedChargedReservations": baseline["quarantinedChargedReservations"],
+        "breachedReservations": baseline["breachedReservations"] + breached,
+        "slots": slots, "lifetimeSlots": lifetime_slots, "epochLimits": epoch_limits,
+        "reanchorManifestSha256": manifest_identity,
+        "stateSha256": hashlib.sha256(state_raw).hexdigest(),
         "guardSha256": hashlib.sha256(guard_raw).hexdigest(),
     }
 

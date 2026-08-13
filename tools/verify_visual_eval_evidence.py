@@ -20,8 +20,12 @@ AUTH_VERSION = "renderweave-visual-evaluation-authorization/1.0"
 CORPUS_VERSION = "renderweave-visual-stage-corpus/1.0"
 JOURNAL_VERSION = "renderweave-visual-evaluation-journal/1.0"
 GOAL_VERSION = "renderweave-visual-evaluation-goal-budget/1.0"
+SUCCESSOR_GOAL_VERSION = "renderweave-visual-evaluation-goal-budget/2.0"
 GOAL_ID = "renderweave-visual-recognition-vnext-20260810"
 GOAL_GUARD_VERSION = "renderweave-visual-evaluation-goal-guard/4.0"
+SUCCESSOR_GOAL_GUARD_VERSION = "renderweave-visual-evaluation-goal-guard/5.0"
+SUCCESSOR_AUTHORITY_EPOCH_ID = "n7-closeout-successor-20260813"
+SUCCESSOR_MANIFEST_SHA256 = "541f5efd137cd13009db5b722584c1353c1d3f6b0de39685ef161a1e3696efaa"
 PREVIOUS_GOAL_GUARD_VERSION = "renderweave-visual-evaluation-goal-guard/3.0"
 PREVIOUS_V2_GOAL_GUARD_VERSION = "renderweave-visual-evaluation-goal-guard/2.0"
 LEGACY_GOAL_GUARD_VERSION = "renderweave-visual-evaluation-goal-guard/1.0"
@@ -64,6 +68,33 @@ GOAL_GUARD_LIMITS = {
     },
     GOAL_GUARD_VERSION: {
         "tokens": 1_500_000, "models": MODEL_LIMITS,
+    },
+    SUCCESSOR_GOAL_GUARD_VERSION: {
+        "tokens": 500_000, "models": MODEL_LIMITS, "successor": True,
+    },
+}
+SUCCESSOR_BASELINE = {
+    "baselineVersion": "renderweave-visual-evaluation-goal-baseline/1.0",
+    "totalReservations": 418,
+    "settledReservations": 412,
+    "quarantinedChargedReservations": 6,
+    "breachedReservations": 0,
+    "slots": {
+        "qwen3.8-max": {
+            "attempts": 82, "exposedTokens": 491_919,
+            "exposedCostMicrosCny": 10_289_316, "settledReservations": 82,
+            "quarantinedChargedReservations": 0, "breachedReservations": 0,
+        },
+        "qwen3.7-plus": {
+            "attempts": 179, "exposedTokens": 1_087_500,
+            "exposedCostMicrosCny": 4_159_620, "settledReservations": 174,
+            "quarantinedChargedReservations": 5, "breachedReservations": 0,
+        },
+        "qwen3.7-flash": {
+            "attempts": 157, "exposedTokens": 1_148_324,
+            "exposedCostMicrosCny": 560_618, "settledReservations": 156,
+            "quarantinedChargedReservations": 1, "breachedReservations": 0,
+        },
     },
 }
 MAXIMUM_AUTHORIZATION_TOKENS = 500_000
@@ -605,9 +636,43 @@ def evaluation(value: Any, metadata: dict[str, dict[str, str]], authorized: set[
 
 
 def validate_goal(value: dict[str, Any], guard_limits: dict[str, Any]) \
-        -> tuple[list[dict[str, Any]], dict[str, dict[str, int]]]:
-    require_keys(value, ("stateVersion", "goalId", "reservations", "createdAt", "updatedAt"), "goal")
-    if value["stateVersion"] != GOAL_VERSION or value["goalId"] != GOAL_ID:
+        -> tuple[list[dict[str, Any]], dict[str, dict[str, int]],
+                 dict[str, dict[str, int]], int]:
+    if value.get("goalId") != GOAL_ID:
+        fail("goal budget identity mismatch")
+    if value.get("stateVersion") == GOAL_VERSION:
+        require_keys(value, ("stateVersion", "goalId", "reservations", "createdAt", "updatedAt"),
+                     "goal")
+        if guard_limits.get("successor"):
+            fail("goal budget and guard epochs differ")
+        baseline = {model: {"attempts": 0, "tokens": 0, "cost": 0}
+                    for model in guard_limits["models"]}
+        quarantined = 0
+    elif value.get("stateVersion") == SUCCESSOR_GOAL_VERSION:
+        require_keys(value, ("stateVersion", "goalId", "authorityEpoch", "historicalBaseline",
+                             "reservations", "createdAt", "updatedAt"), "goal")
+        if not guard_limits.get("successor"):
+            fail("goal budget and guard epochs differ")
+        expected_epoch = {
+            "epochVersion": "renderweave-visual-evaluation-goal-authority-epoch/1.0",
+            "epochId": SUCCESSOR_AUTHORITY_EPOCH_ID,
+            "kind": "CONSERVATIVE_REANCHOR",
+            "predecessorEpochId": "legacy-through-product-v40",
+            "predecessorDisposition": "LOST_UNRECOVERABLE",
+            "reanchorManifestSha256": SUCCESSOR_MANIFEST_SHA256,
+        }
+        if value["authorityEpoch"] != expected_epoch \
+                or value["historicalBaseline"] != SUCCESSOR_BASELINE:
+            fail("successor goal reanchor differs")
+        baseline = {
+            model: {
+                "attempts": usage["attempts"], "tokens": usage["exposedTokens"],
+                "cost": usage["exposedCostMicrosCny"],
+            }
+            for model, usage in SUCCESSOR_BASELINE["slots"].items()
+        }
+        quarantined = SUCCESSOR_BASELINE["quarantinedChargedReservations"]
+    else:
         fail("goal budget identity mismatch")
     reservations = require_list(value["reservations"], "goal.reservations")
     parsed: list[dict[str, Any]] = []
@@ -669,16 +734,42 @@ def validate_goal(value: dict[str, Any], guard_limits: dict[str, Any]) \
                 or total["tokens"] > guard_limits["tokens"] \
                 or total["cost"] > limit["cost"]:
             fail("cross-ledger model budget exceeded")
-    return parsed, totals
+    lifetime_totals = {
+        model: {
+            "attempts": baseline[model]["attempts"] + total["attempts"],
+            "tokens": baseline[model]["tokens"] + total["tokens"],
+            "cost": baseline[model]["cost"] + total["cost"],
+        }
+        for model, total in totals.items()
+    }
+    return parsed, totals, lifetime_totals, quarantined
 
 
 def validate_goal_guard(value: dict[str, Any]) -> dict[str, Any]:
-    require_keys(value, ("guardVersion", "goalId", "maximumTokensPerModel",
-                         "maximumAttemptsPerModel", "maximumCostMicrosCnyByModel"), "goal guard")
     guard_version = require_string(value["guardVersion"], "guardVersion")
     if guard_version not in GOAL_GUARD_LIMITS or value["goalId"] != GOAL_ID:
         fail("goal guard identity or caps differ")
     limits = GOAL_GUARD_LIMITS[guard_version]
+    if guard_version == SUCCESSOR_GOAL_GUARD_VERSION:
+        require_keys(value, ("guardVersion", "goalId", "authorityEpochId",
+                             "reanchorManifestSha256", "epochMaximumTokensPerModel",
+                             "epochMaximumAttemptsPerModel",
+                             "epochMaximumCostMicrosCnyByModel"), "goal guard")
+        if value["authorityEpochId"] != SUCCESSOR_AUTHORITY_EPOCH_ID \
+                or value["reanchorManifestSha256"] != SUCCESSOR_MANIFEST_SHA256 \
+                or require_int(value["epochMaximumTokensPerModel"],
+                               "epochMaximumTokensPerModel") != limits["tokens"] \
+                or require_int(value["epochMaximumAttemptsPerModel"],
+                               "epochMaximumAttemptsPerModel") != 180:
+            fail("goal guard identity or caps differ")
+        costs = require_object(value["epochMaximumCostMicrosCnyByModel"],
+                               "epochMaximumCostMicrosCnyByModel")
+        if costs != {model: model_limits["cost"]
+                     for model, model_limits in limits["models"].items()}:
+            fail("goal guard model cost caps differ")
+        return limits
+    require_keys(value, ("guardVersion", "goalId", "maximumTokensPerModel",
+                         "maximumAttemptsPerModel", "maximumCostMicrosCnyByModel"), "goal guard")
     if require_int(value["maximumTokensPerModel"], "maximumTokensPerModel") \
             != limits["tokens"] \
             or require_int(value["maximumAttemptsPerModel"], "maximumAttemptsPerModel") != 180:
@@ -945,7 +1036,8 @@ def main() -> int:
     goal_guard_raw, _ = read_json(args.goal_guard)
     guard_limits = validate_goal_guard(goal_guard_raw)
     goal_raw, _ = read_json(args.goal_budget)
-    reservations, model_totals = validate_goal(goal_raw, guard_limits)
+    reservations, model_totals, lifetime_model_totals, quarantined = validate_goal(
+        goal_raw, guard_limits)
     journal_raw, _ = read_json(args.journal)
     results, abandoned, provider_latency_millis = validate_journal(
         journal_raw, authorization, metadata, reservations)
@@ -971,6 +1063,11 @@ def main() -> int:
         "providerLatencyMillis": provider_latency_millis,
         "exposedModelTokens": model_totals[MODEL_TO_GOAL_SLOT[authorization["model"]]]["tokens"],
         "exposedModelCostMicrosCny": model_totals[MODEL_TO_GOAL_SLOT[authorization["model"]]]["cost"],
+        "lifetimeExposedModelTokens":
+            lifetime_model_totals[MODEL_TO_GOAL_SLOT[authorization["model"]]]["tokens"],
+        "lifetimeExposedModelCostMicrosCny":
+            lifetime_model_totals[MODEL_TO_GOAL_SLOT[authorization["model"]]]["cost"],
+        "quarantinedChargedReservations": quarantined,
         "reportComplete": expected["complete"],
         "payloadScan": "PASS",
     }

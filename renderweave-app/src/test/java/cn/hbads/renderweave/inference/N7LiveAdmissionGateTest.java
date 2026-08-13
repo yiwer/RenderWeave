@@ -3,6 +3,11 @@ package cn.hbads.renderweave.inference;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import cn.hbads.renderweave.inference.eval.visual.N7QualificationProtocol;
+import cn.hbads.renderweave.inference.profile.InferenceProfileRegistry;
+import cn.hbads.renderweave.inference.provider.ProviderImage;
+import cn.hbads.renderweave.inference.provider.ProviderInferenceRequest;
+import cn.hbads.renderweave.inference.provider.ProviderUsage;
+import cn.hbads.renderweave.inference.run.InferenceStage;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.nio.charset.StandardCharsets;
@@ -188,6 +193,79 @@ class N7LiveAdmissionGateTest {
                 () -> N7LiveAdmissionGate.requireGoalReady(contract, audit));
     }
 
+    @Test
+    void successorEpochPreservesChargedLifetimeBaselineAndAdmitsOnlyFreshEpochCapacity(
+            @TempDir Path root
+    ) throws Exception {
+        var goal = root.resolve(VisualEvaluationGoalBudget.GOAL_ID);
+        writeSuccessorAuthority(goal);
+        var before = Files.readAllBytes(goal.resolve("goal-budget.json"));
+
+        var audit = VisualEvaluationGoalBudget.inspectExisting(goal, JsonMapper.builder().build());
+
+        assertEquals("CONSERVATIVE_REANCHOR", audit.authorityKind());
+        assertEquals("n7-closeout-successor-20260813", audit.authorityEpochId());
+        assertEquals(418, audit.totalReservations());
+        assertEquals(0, audit.epochReservations());
+        assertEquals(0, audit.nonTerminalReservations());
+        assertEquals(6, audit.quarantinedChargedReservations());
+        assertEquals(179, audit.lifetimeSlots().get("qwen3.7-plus").attempts());
+        assertEquals(1_087_500, audit.lifetimeSlots().get("qwen3.7-plus").tokens());
+        assertEquals(0, audit.slots().get("qwen3.7-plus").attempts());
+        assertEquals(500_000, audit.epochLimits().maximumTokensPerModel());
+        assertEquals(180, audit.epochLimits().maximumAttemptsPerModel());
+        assertEquals(10_000_000,
+                audit.epochLimits().maximumCostMicrosCnyByModel().get("qwen3.7-plus"));
+        assertTrue(java.util.Arrays.equals(before,
+                Files.readAllBytes(goal.resolve("goal-budget.json"))));
+
+        N7LiveAdmissionGate.requireGoalReady(N7LiveTicketContract.plusCanary(), audit);
+
+        var contract = N7LiveTicketContract.plusCanary();
+        var authorization = authorization(contract, "OPEN", EVALUATION_IDENTITY,
+                contract.profileSnapshotSha256(), contract.caseIds(), contract.contractIdentity(),
+                NOW.minusSeconds(60).toString(), NOW.plusSeconds(3600).toString(),
+                contract.maximumProviderAttempts(), contract.maximumTotalTokens(),
+                contract.maximumCostMicrosCny());
+        var profile = new InferenceProfileRegistry().require(contract.profileId());
+        var request = new ProviderInferenceRequest(
+                java.util.UUID.randomUUID(), 0, InferenceStage.OBSERVE, profile.profile(),
+                "Return one bounded JSON object.", "{}",
+                List.of(new ProviderImage("c".repeat(64), "image/png", new byte[]{1})));
+        var budget = new VisualEvaluationGoalBudget(goal, JsonMapper.builder().build(), NOW);
+        var reservation = budget.reserve(authorization, request, NOW);
+        budget.settle(java.util.UUID.fromString(reservation.reservationId()),
+                new ProviderUsage(10, 5), 1_000, NOW.plusSeconds(1));
+        var after = VisualEvaluationGoalBudget.inspectExisting(goal, JsonMapper.builder().build());
+        assertEquals(1, after.epochReservations());
+        assertEquals(419, after.totalReservations());
+        assertEquals(180, after.lifetimeSlots().get("qwen3.7-plus").attempts());
+        assertEquals(6, after.quarantinedChargedReservations());
+        assertEquals(0, after.nonTerminalReservations());
+    }
+
+    @Test
+    void successorEpochRejectsBaselineOrAllocationTamper(@TempDir Path root) throws Exception {
+        var goal = root.resolve(VisualEvaluationGoalBudget.GOAL_ID);
+        writeSuccessorAuthority(goal);
+        var json = JsonMapper.builder().build();
+
+        var state = Files.readString(goal.resolve("goal-budget.json"), StandardCharsets.UTF_8);
+        Files.writeString(goal.resolve("goal-budget.json"),
+                state.replace("\"quarantinedChargedReservations\": 6",
+                        "\"quarantinedChargedReservations\": 5"), StandardCharsets.UTF_8);
+        assertCode("VISUAL_EVALUATION_GOAL_BUDGET_INVALID",
+                () -> VisualEvaluationGoalBudget.inspectExisting(goal, json));
+
+        writeSuccessorAuthority(goal);
+        var guard = Files.readString(goal.resolve("goal-budget.guard.json"), StandardCharsets.UTF_8);
+        Files.writeString(goal.resolve("goal-budget.guard.json"),
+                guard.replace("\"epochMaximumTokensPerModel\": 500000",
+                        "\"epochMaximumTokensPerModel\": 500001"), StandardCharsets.UTF_8);
+        assertCode("VISUAL_EVALUATION_GOAL_BUDGET_GUARD_MISMATCH",
+                () -> VisualEvaluationGoalBudget.inspectExisting(goal, json));
+    }
+
     private static VisualEvaluationAuthorization authorization(
             N7LiveTicketContract contract,
             String status,
@@ -247,6 +325,76 @@ class N7LiveAdmissionGateTest {
                 "reservations", reservations,
                 "createdAt", "2026-08-10T00:00:00Z",
                 "updatedAt", "2026-08-11T00:01:00Z"));
+    }
+
+    private static void writeSuccessorAuthority(Path goal) throws Exception {
+        Files.createDirectories(goal);
+        Files.writeString(goal.resolve("goal-budget.lock"), "", StandardCharsets.UTF_8);
+        Files.writeString(goal.resolve("goal-budget.guard.json"), """
+                {
+                  "guardVersion": "renderweave-visual-evaluation-goal-guard/5.0",
+                  "goalId": "renderweave-visual-recognition-vnext-20260810",
+                  "authorityEpochId": "n7-closeout-successor-20260813",
+                  "reanchorManifestSha256": "541f5efd137cd13009db5b722584c1353c1d3f6b0de39685ef161a1e3696efaa",
+                  "epochMaximumTokensPerModel": 500000,
+                  "epochMaximumAttemptsPerModel": 180,
+                  "epochMaximumCostMicrosCnyByModel": {
+                    "qwen3.8-max": 18000000,
+                    "qwen3.7-plus": 10000000,
+                    "qwen3.7-flash": 10000000
+                  }
+                }
+                """, StandardCharsets.UTF_8);
+        Files.writeString(goal.resolve("goal-budget.json"), """
+                {
+                  "stateVersion": "renderweave-visual-evaluation-goal-budget/2.0",
+                  "goalId": "renderweave-visual-recognition-vnext-20260810",
+                  "authorityEpoch": {
+                    "epochVersion": "renderweave-visual-evaluation-goal-authority-epoch/1.0",
+                    "epochId": "n7-closeout-successor-20260813",
+                    "kind": "CONSERVATIVE_REANCHOR",
+                    "predecessorEpochId": "legacy-through-product-v40",
+                    "predecessorDisposition": "LOST_UNRECOVERABLE",
+                    "reanchorManifestSha256": "541f5efd137cd13009db5b722584c1353c1d3f6b0de39685ef161a1e3696efaa"
+                  },
+                  "historicalBaseline": {
+                    "baselineVersion": "renderweave-visual-evaluation-goal-baseline/1.0",
+                    "totalReservations": 418,
+                    "settledReservations": 412,
+                    "quarantinedChargedReservations": 6,
+                    "breachedReservations": 0,
+                    "slots": {
+                      "qwen3.8-max": {
+                        "attempts": 82,
+                        "exposedTokens": 491919,
+                        "exposedCostMicrosCny": 10289316,
+                        "settledReservations": 82,
+                        "quarantinedChargedReservations": 0,
+                        "breachedReservations": 0
+                      },
+                      "qwen3.7-plus": {
+                        "attempts": 179,
+                        "exposedTokens": 1087500,
+                        "exposedCostMicrosCny": 4159620,
+                        "settledReservations": 174,
+                        "quarantinedChargedReservations": 5,
+                        "breachedReservations": 0
+                      },
+                      "qwen3.7-flash": {
+                        "attempts": 157,
+                        "exposedTokens": 1148324,
+                        "exposedCostMicrosCny": 560618,
+                        "settledReservations": 156,
+                        "quarantinedChargedReservations": 1,
+                        "breachedReservations": 0
+                      }
+                    }
+                  },
+                  "reservations": [],
+                  "createdAt": "2026-08-13T03:00:00Z",
+                  "updatedAt": "2026-08-13T03:00:00Z"
+                }
+                """, StandardCharsets.UTF_8);
     }
 
     private static void assertCode(String code, org.junit.jupiter.api.function.Executable action) {

@@ -35,7 +35,11 @@ import java.util.UUID;
  */
 final class VisualEvaluationGoalBudget {
     static final String VERSION = "renderweave-visual-evaluation-goal-budget/1.0";
+    static final String SUCCESSOR_VERSION = "renderweave-visual-evaluation-goal-budget/2.0";
     static final String GOAL_ID = "renderweave-visual-recognition-vnext-20260810";
+    static final String SUCCESSOR_AUTHORITY_EPOCH_ID = "n7-closeout-successor-20260813";
+    static final String REANCHOR_MANIFEST_SHA256 =
+            "541f5efd137cd13009db5b722584c1353c1d3f6b0de39685ef161a1e3696efaa";
     private final Path stateFile;
     private final Path guardFile;
     private final Path lockFile;
@@ -63,9 +67,10 @@ final class VisualEvaluationGoalBudget {
             }
             if (stateExists) {
                 var guard = readGuard();
-                if (Guard.previous().equals(guard)
-                        || Guard.previousV2().equals(guard)
-                        || Guard.legacy().equals(guard)) {
+                if (guard instanceof Guard legacyGuard
+                        && (Guard.previous().equals(legacyGuard)
+                        || Guard.previousV2().equals(legacyGuard)
+                        || Guard.legacy().equals(legacyGuard))) {
                     var state = readState(guard);
                     writeAtomically(guardFile, json.writeValueAsString(Guard.expected()));
                     validateState(state, Guard.expected());
@@ -95,12 +100,13 @@ final class VisualEvaluationGoalBudget {
         var reservedTokens = ProviderCostEstimator.maximumRequestTokens(request);
         var reservedCost = ProviderCostEstimator.maximumRequestCostMicrosCny(request);
         return withLock(() -> {
-            var state = readState();
+            var guard = readGuard();
+            var state = readState(guard);
             if (state.reservations().stream().anyMatch(item -> item.runId().equals(request.runId().toString())
                     && item.attemptOrdinal() == request.attemptOrdinal())) {
                 throw new IllegalStateException("VISUAL_EVALUATION_DUPLICATE_PROVIDER_ATTEMPT");
             }
-            requireCapacity(state, authorization, reservedTokens, reservedCost);
+            requireCapacity(state, guard, authorization, reservedTokens, reservedCost);
             var reservation = Reservation.reserved(
                     authorization, request, reservedTokens, reservedCost, now
             );
@@ -118,7 +124,8 @@ final class VisualEvaluationGoalBudget {
         var actualTokens = Math.addExact(usage.inputTokens(), usage.outputTokens());
         var underestimated = new boolean[1];
         withLock(() -> {
-            var state = readState();
+            var guard = readGuard();
+            var state = readState(guard);
             var reservations = new ArrayList<Reservation>();
             var found = false;
             for (var item : state.reservations()) {
@@ -147,10 +154,13 @@ final class VisualEvaluationGoalBudget {
     Snapshot snapshot(String model, String authorizationId) {
         requireModel(model);
         return withLock(() -> {
-            var state = readState();
-            var goal = aggregate(state, model, null);
-            var authorization = aggregate(state, model, authorizationId);
-            return new Snapshot(goal, authorization, goal.breached());
+            var guard = readGuard();
+            var state = readState(guard);
+            var goal = aggregateEpoch(state, model, null);
+            var authorization = aggregateEpoch(state, model, authorizationId);
+            var lifetime = aggregateLifetime(state, model);
+            return new Snapshot(goal, authorization, lifetime,
+                    goal.breached() || lifetime.breached());
         });
     }
 
@@ -202,19 +212,30 @@ final class VisualEvaluationGoalBudget {
                     new String(stateBytes, StandardCharsets.UTF_8));
             PayloadFreeLiveEvidenceGuard.requirePayloadFree(
                     new String(guardBytes, StandardCharsets.UTF_8));
-            var guard = strict.readValue(guardBytes, Guard.class);
+            var guard = parseGuard(guardBytes, strict);
             validateGuard(guard);
-            var state = strict.readValue(stateBytes, State.class);
+            var state = parseState(stateBytes, guard, strict);
             validateState(state, guard);
             var slots = Map.of(
-                    "qwen3.8-max", aggregate(state, "qwen3.8-max", null),
-                    "qwen3.7-plus", aggregate(state, "qwen3.7-plus", null),
-                    "qwen3.7-flash", aggregate(state, "qwen3.7-flash", null));
+                    "qwen3.8-max", aggregateEpoch(state, "qwen3.8-max", null),
+                    "qwen3.7-plus", aggregateEpoch(state, "qwen3.7-plus", null),
+                    "qwen3.7-flash", aggregateEpoch(state, "qwen3.7-flash", null));
+            var lifetimeSlots = Map.of(
+                    "qwen3.8-max", aggregateLifetime(state, "qwen3.8-max"),
+                    "qwen3.7-plus", aggregateLifetime(state, "qwen3.7-plus"),
+                    "qwen3.7-flash", aggregateLifetime(state, "qwen3.7-flash"));
             var nonTerminal = Math.toIntExact(state.reservations().stream()
                     .filter(item -> "RESERVED".equals(item.state())).count());
-            var breached = Math.toIntExact(state.reservations().stream()
-                    .filter(item -> "BREACHED".equals(item.state())).count());
-            return new ExistingSnapshot(slots, state.reservations().size(), nonTerminal, breached,
+            var baseline = state.historicalBaseline();
+            var breached = Math.addExact(baseline.breachedReservations(),
+                    Math.toIntExact(state.reservations().stream()
+                            .filter(item -> "BREACHED".equals(item.state())).count()));
+            return new ExistingSnapshot(
+                    slots, lifetimeSlots, guard.epochLimits(), state.authorityKind(),
+                    state.authorityEpochId(),
+                    Math.addExact(baseline.totalReservations(), state.reservations().size()),
+                    state.reservations().size(), nonTerminal,
+                    baseline.quarantinedChargedReservations(), breached,
                     sha256(stateBytes), sha256(guardBytes));
         } catch (OverlappingFileLockException busy) {
             throw new IllegalStateException("VISUAL_EVALUATION_GOAL_BUDGET_BUSY", busy);
@@ -226,19 +247,22 @@ final class VisualEvaluationGoalBudget {
     }
 
     private static void requireCapacity(
-            State state,
+            GoalState state,
+            BudgetGuard guard,
             VisualEvaluationAuthorization authorization,
             long reservedTokens,
             long reservedCost
     ) {
-        var goal = aggregate(state, authorization.model(), null);
-        var ledger = aggregate(state, authorization.model(), authorization.authorizationId());
+        var goal = aggregateEpoch(state, authorization.model(), null);
+        var ledger = aggregateEpoch(state, authorization.model(), authorization.authorizationId());
+        var limits = guard.epochLimits();
+        var model = VisualEvaluationAuthorization.goalModel(authorization.model());
         if (goal.breached() || ledger.breached()
-                || Math.addExact(goal.attempts(), 1) > VisualEvaluationAuthorization.GOAL_MAXIMUM_ATTEMPTS_PER_MODEL
+                || Math.addExact(goal.attempts(), 1) > limits.maximumAttemptsPerModel()
                 || Math.addExact(goal.tokens(), reservedTokens)
-                > VisualEvaluationAuthorization.GOAL_MAXIMUM_TOKENS_PER_MODEL
+                > limits.maximumTokensPerModel()
                 || Math.addExact(goal.costMicrosCny(), reservedCost)
-                > VisualEvaluationAuthorization.goalMaximumCostMicrosCny(authorization.model())
+                > limits.maximumCostMicrosCnyByModel().get(model)
                 || Math.addExact(ledger.attempts(), 1) > authorization.maximumProviderAttempts()
                 || Math.addExact(ledger.tokens(), reservedTokens) > authorization.maximumTotalTokens()
                 || Math.addExact(ledger.costMicrosCny(), reservedCost) > authorization.maximumCostMicrosCny()) {
@@ -246,7 +270,11 @@ final class VisualEvaluationGoalBudget {
         }
     }
 
-    private static UsageAggregate aggregate(State state, String model, String authorizationId) {
+    private static UsageAggregate aggregateEpoch(
+            GoalState state,
+            String model,
+            String authorizationId
+    ) {
         long tokens = 0;
         long cost = 0;
         var attempts = 0;
@@ -266,7 +294,18 @@ final class VisualEvaluationGoalBudget {
         return new UsageAggregate(attempts, tokens, cost, breached);
     }
 
-    private State readState() {
+    private static UsageAggregate aggregateLifetime(GoalState state, String model) {
+        var slot = VisualEvaluationAuthorization.goalModel(model);
+        var baseline = state.historicalBaseline().slots().get(slot);
+        var epoch = aggregateEpoch(state, model, null);
+        return new UsageAggregate(
+                Math.addExact(baseline.attempts(), epoch.attempts()),
+                Math.addExact(baseline.exposedTokens(), epoch.tokens()),
+                Math.addExact(baseline.exposedCostMicrosCny(), epoch.costMicrosCny()),
+                baseline.breachedReservations() > 0 || epoch.breached());
+    }
+
+    private GoalState readState() {
         try {
             var guard = readGuard();
             validateGuard(guard);
@@ -276,25 +315,25 @@ final class VisualEvaluationGoalBudget {
         }
     }
 
-    private State readState(Guard guard) throws IOException {
+    private GoalState readState(BudgetGuard guard) throws IOException {
         var raw = Files.readString(stateFile, StandardCharsets.UTF_8);
         PayloadFreeLiveEvidenceGuard.requirePayloadFree(raw);
-        var state = json.readValue(raw, State.class);
+        var state = parseState(raw.getBytes(StandardCharsets.UTF_8), guard, json);
         validateState(state, guard);
         return state;
     }
 
-    private Guard readGuard() {
+    private BudgetGuard readGuard() {
         try {
             var raw = Files.readString(guardFile, StandardCharsets.UTF_8);
             PayloadFreeLiveEvidenceGuard.requirePayloadFree(raw);
-            return json.readValue(raw, Guard.class);
+            return parseGuard(raw.getBytes(StandardCharsets.UTF_8), json);
         } catch (IOException | RuntimeException invalid) {
             throw new IllegalStateException("VISUAL_EVALUATION_GOAL_BUDGET_GUARD_INVALID", invalid);
         }
     }
 
-    private void writeState(State state) throws IOException {
+    private void writeState(GoalState state) throws IOException {
         var guard = readGuard();
         validateGuard(guard);
         validateState(state, guard);
@@ -323,15 +362,57 @@ final class VisualEvaluationGoalBudget {
         }
     }
 
-    private static void validateGuard(Guard guard) {
-        if (!Guard.expected().equals(guard)) {
+    private static void validateGuard(BudgetGuard guard) {
+        if (!(Guard.expected().equals(guard) || SuccessorGuard.expected().equals(guard))) {
             throw new IllegalStateException("VISUAL_EVALUATION_GOAL_BUDGET_GUARD_MISMATCH");
         }
     }
 
-    private static void validateState(State state, Guard guard) {
-        if (!VERSION.equals(state.stateVersion()) || !GOAL_ID.equals(state.goalId())) {
+    private static BudgetGuard parseGuard(byte[] raw, ObjectMapper mapper) throws IOException {
+        var tree = mapper.readTree(raw);
+        var version = tree.path("guardVersion").asText();
+        return switch (version) {
+            case Guard.VERSION, Guard.PREVIOUS_VERSION, Guard.PREVIOUS_V2_VERSION,
+                    Guard.LEGACY_VERSION -> mapper.treeToValue(tree, Guard.class);
+            case SuccessorGuard.VERSION -> mapper.treeToValue(tree, SuccessorGuard.class);
+            default -> throw new IllegalStateException(
+                    "VISUAL_EVALUATION_GOAL_BUDGET_GUARD_MISMATCH");
+        };
+    }
+
+    private static GoalState parseState(
+            byte[] raw,
+            BudgetGuard guard,
+            ObjectMapper mapper
+    ) throws IOException {
+        var tree = mapper.readTree(raw);
+        var version = tree.path("stateVersion").asText();
+        if (VERSION.equals(version) && guard instanceof Guard) {
+            return mapper.treeToValue(tree, State.class);
+        }
+        if (SUCCESSOR_VERSION.equals(version) && guard instanceof SuccessorGuard) {
+            return mapper.treeToValue(tree, SuccessorState.class);
+        }
+        throw new IllegalStateException("VISUAL_EVALUATION_GOAL_BUDGET_IDENTITY_MISMATCH");
+    }
+
+    private static void validateState(GoalState state, BudgetGuard guard) {
+        if (!GOAL_ID.equals(state.goalId())
+                || state instanceof State legacy && (!VERSION.equals(legacy.stateVersion())
+                || !(guard instanceof Guard))
+                || state instanceof SuccessorState successor
+                && (!SUCCESSOR_VERSION.equals(successor.stateVersion())
+                || !(guard instanceof SuccessorGuard successorGuard)
+                || !AuthorityEpoch.expected().equals(successor.authorityEpoch())
+                || !successor.authorityEpoch().epochId().equals(
+                        successorGuard.authorityEpochId())
+                || !successor.authorityEpoch().reanchorManifestSha256().equals(
+                        successorGuard.reanchorManifestSha256()))) {
             throw new IllegalStateException("VISUAL_EVALUATION_GOAL_BUDGET_IDENTITY_MISMATCH");
+        }
+        if (state instanceof SuccessorState successor
+                && !HistoricalBaseline.reanchored().equals(successor.historicalBaseline())) {
+            throw new IllegalStateException("VISUAL_EVALUATION_GOAL_BUDGET_INVALID");
         }
         var ids = new HashSet<String>();
         var attempts = new HashSet<String>();
@@ -341,13 +422,14 @@ final class VisualEvaluationGoalBudget {
                 throw new IllegalStateException("VISUAL_EVALUATION_GOAL_BUDGET_DUPLICATE");
             }
         }
-        for (var model : guard.maximumCostMicrosCnyByModel().keySet()) {
-            var usage = aggregate(state, model, null);
+        var limits = guard.epochLimits();
+        for (var model : limits.maximumCostMicrosCnyByModel().keySet()) {
+            var usage = aggregateEpoch(state, model, null);
             if (!usage.breached() && (usage.attempts()
-                    > guard.maximumAttemptsPerModel()
-                    || usage.tokens() > guard.maximumTokensPerModel()
+                    > limits.maximumAttemptsPerModel()
+                    || usage.tokens() > limits.maximumTokensPerModel()
                     || usage.costMicrosCny()
-                    > guard.maximumCostMicrosCnyByModel().get(model))) {
+                    > limits.maximumCostMicrosCnyByModel().get(model))) {
                 throw new IllegalStateException("VISUAL_EVALUATION_GOAL_BUDGET_INVALID");
             }
         }
@@ -372,18 +454,40 @@ final class VisualEvaluationGoalBudget {
         T run() throws IOException;
     }
 
+    private sealed interface BudgetGuard permits Guard, SuccessorGuard {
+        String goalId();
+
+        String authorityEpochId();
+
+        GoalLimits epochLimits();
+    }
+
+    private sealed interface GoalState permits State, SuccessorState {
+        String goalId();
+
+        List<Reservation> reservations();
+
+        HistoricalBaseline historicalBaseline();
+
+        String authorityKind();
+
+        String authorityEpochId();
+
+        GoalState withReservations(List<Reservation> value, Instant now);
+    }
+
     record Guard(
             String guardVersion,
             String goalId,
             long maximumTokensPerModel,
             int maximumAttemptsPerModel,
             Map<String, Long> maximumCostMicrosCnyByModel
-    ) {
-        private static final String VERSION = "renderweave-visual-evaluation-goal-guard/4.0";
-        private static final String PREVIOUS_VERSION = "renderweave-visual-evaluation-goal-guard/3.0";
-        private static final String PREVIOUS_V2_VERSION =
+    ) implements BudgetGuard {
+        static final String VERSION = "renderweave-visual-evaluation-goal-guard/4.0";
+        static final String PREVIOUS_VERSION = "renderweave-visual-evaluation-goal-guard/3.0";
+        static final String PREVIOUS_V2_VERSION =
                 "renderweave-visual-evaluation-goal-guard/2.0";
-        private static final String LEGACY_VERSION = "renderweave-visual-evaluation-goal-guard/1.0";
+        static final String LEGACY_VERSION = "renderweave-visual-evaluation-goal-guard/1.0";
         private static final Map<String, Long> HISTORICAL_MAXIMUM_COST_MICROS_CNY = Map.of(
                 "qwen3.8-max", 18_000_000L,
                 "qwen3.7-plus", 4_000_000L,
@@ -426,6 +530,70 @@ final class VisualEvaluationGoalBudget {
                     HISTORICAL_MAXIMUM_COST_MICROS_CNY
             );
         }
+
+        @Override
+        public String authorityEpochId() {
+            return "legacy-exact-history";
+        }
+
+        @Override
+        public GoalLimits epochLimits() {
+            return new GoalLimits(maximumTokensPerModel, maximumAttemptsPerModel,
+                    maximumCostMicrosCnyByModel);
+        }
+    }
+
+    record SuccessorGuard(
+            String guardVersion,
+            String goalId,
+            String authorityEpochId,
+            String reanchorManifestSha256,
+            long epochMaximumTokensPerModel,
+            int epochMaximumAttemptsPerModel,
+            Map<String, Long> epochMaximumCostMicrosCnyByModel
+    ) implements BudgetGuard {
+        static final String VERSION = "renderweave-visual-evaluation-goal-guard/5.0";
+
+        SuccessorGuard {
+            epochMaximumCostMicrosCnyByModel = Map.copyOf(
+                    Objects.requireNonNull(epochMaximumCostMicrosCnyByModel,
+                            "epochMaximumCostMicrosCnyByModel"));
+        }
+
+        static SuccessorGuard expected() {
+            return new SuccessorGuard(
+                    VERSION, GOAL_ID, SUCCESSOR_AUTHORITY_EPOCH_ID,
+                    REANCHOR_MANIFEST_SHA256, 500_000L, 180,
+                    VisualEvaluationAuthorization.GOAL_MAXIMUM_COST_MICROS_CNY);
+        }
+
+        @Override
+        public GoalLimits epochLimits() {
+            return new GoalLimits(epochMaximumTokensPerModel, epochMaximumAttemptsPerModel,
+                    epochMaximumCostMicrosCnyByModel);
+        }
+    }
+
+    record GoalLimits(
+            long maximumTokensPerModel,
+            int maximumAttemptsPerModel,
+            Map<String, Long> maximumCostMicrosCnyByModel
+    ) {
+        GoalLimits {
+            maximumCostMicrosCnyByModel = Map.copyOf(
+                    Objects.requireNonNull(maximumCostMicrosCnyByModel,
+                            "maximumCostMicrosCnyByModel"));
+            if (maximumTokensPerModel < 1 || maximumAttemptsPerModel < 1
+                    || !maximumCostMicrosCnyByModel.keySet().equals(
+                    Set.of("qwen3.8-max", "qwen3.7-plus", "qwen3.7-flash"))
+                    || maximumCostMicrosCnyByModel.values().stream().anyMatch(value -> value < 1)) {
+                throw new IllegalArgumentException("Visual Goal epoch limits are invalid");
+            }
+        }
+
+        static GoalLimits legacyExpected() {
+            return Guard.expected().epochLimits();
+        }
     }
 
     record State(
@@ -434,7 +602,7 @@ final class VisualEvaluationGoalBudget {
             List<Reservation> reservations,
             String createdAt,
             String updatedAt
-    ) {
+    ) implements GoalState {
         State {
             reservations = List.copyOf(Objects.requireNonNull(reservations, "reservations"));
             requireTime(createdAt);
@@ -448,8 +616,162 @@ final class VisualEvaluationGoalBudget {
             return new State(VERSION, GOAL_ID, List.of(), now.toString(), now.toString());
         }
 
-        State withReservations(List<Reservation> value, Instant now) {
+        @Override
+        public State withReservations(List<Reservation> value, Instant now) {
             return new State(stateVersion, goalId, value, createdAt, now.toString());
+        }
+
+        @Override
+        public HistoricalBaseline historicalBaseline() {
+            return HistoricalBaseline.empty();
+        }
+
+        @Override
+        public String authorityKind() {
+            return "EXACT_LEDGER";
+        }
+
+        @Override
+        public String authorityEpochId() {
+            return "legacy-exact-history";
+        }
+    }
+
+    record SuccessorState(
+            String stateVersion,
+            String goalId,
+            AuthorityEpoch authorityEpoch,
+            HistoricalBaseline historicalBaseline,
+            List<Reservation> reservations,
+            String createdAt,
+            String updatedAt
+    ) implements GoalState {
+        SuccessorState {
+            Objects.requireNonNull(authorityEpoch, "authorityEpoch");
+            Objects.requireNonNull(historicalBaseline, "historicalBaseline");
+            reservations = List.copyOf(Objects.requireNonNull(reservations, "reservations"));
+            requireTime(createdAt);
+            requireTime(updatedAt);
+            if (Instant.parse(updatedAt).isBefore(Instant.parse(createdAt))) {
+                throw new IllegalArgumentException("Visual goal budget timestamps are invalid");
+            }
+        }
+
+        @Override
+        public SuccessorState withReservations(List<Reservation> value, Instant now) {
+            return new SuccessorState(stateVersion, goalId, authorityEpoch, historicalBaseline,
+                    value, createdAt, now.toString());
+        }
+
+        @Override
+        public String authorityKind() {
+            return authorityEpoch.kind();
+        }
+
+        @Override
+        public String authorityEpochId() {
+            return authorityEpoch.epochId();
+        }
+    }
+
+    record AuthorityEpoch(
+            String epochVersion,
+            String epochId,
+            String kind,
+            String predecessorEpochId,
+            String predecessorDisposition,
+            String reanchorManifestSha256
+    ) {
+        private static final String VERSION =
+                "renderweave-visual-evaluation-goal-authority-epoch/1.0";
+
+        AuthorityEpoch {
+            if (!VERSION.equals(epochVersion)
+                    || epochId == null || !epochId.matches("[a-z0-9][a-z0-9-]{0,95}")
+                    || !"CONSERVATIVE_REANCHOR".equals(kind)
+                    || predecessorEpochId == null
+                    || !predecessorEpochId.matches("[a-z0-9][a-z0-9-]{0,95}")
+                    || !"LOST_UNRECOVERABLE".equals(predecessorDisposition)
+                    || reanchorManifestSha256 == null
+                    || !reanchorManifestSha256.matches("[0-9a-f]{64}")) {
+                throw new IllegalArgumentException("Visual Goal authority epoch is invalid");
+            }
+        }
+
+        static AuthorityEpoch expected() {
+            return new AuthorityEpoch(
+                    VERSION, SUCCESSOR_AUTHORITY_EPOCH_ID, "CONSERVATIVE_REANCHOR",
+                    "legacy-through-product-v40", "LOST_UNRECOVERABLE",
+                    REANCHOR_MANIFEST_SHA256);
+        }
+    }
+
+    record HistoricalBaseline(
+            String baselineVersion,
+            int totalReservations,
+            int settledReservations,
+            int quarantinedChargedReservations,
+            int breachedReservations,
+            Map<String, BaselineUsage> slots
+    ) {
+        private static final String VERSION =
+                "renderweave-visual-evaluation-goal-baseline/1.0";
+
+        HistoricalBaseline {
+            slots = Map.copyOf(Objects.requireNonNull(slots, "slots"));
+            if (!VERSION.equals(baselineVersion)
+                    || !slots.keySet().equals(
+                    Set.of("qwen3.8-max", "qwen3.7-plus", "qwen3.7-flash"))
+                    || totalReservations < 0 || settledReservations < 0
+                    || quarantinedChargedReservations < 0 || breachedReservations < 0
+                    || Math.addExact(Math.addExact(settledReservations,
+                    quarantinedChargedReservations), breachedReservations) != totalReservations
+                    || slots.values().stream().mapToInt(BaselineUsage::attempts).sum()
+                    != totalReservations
+                    || slots.values().stream().mapToInt(
+                    BaselineUsage::settledReservations).sum() != settledReservations
+                    || slots.values().stream().mapToInt(
+                    BaselineUsage::quarantinedChargedReservations).sum()
+                    != quarantinedChargedReservations
+                    || slots.values().stream().mapToInt(
+                    BaselineUsage::breachedReservations).sum() != breachedReservations) {
+                throw new IllegalArgumentException("Visual Goal historical baseline is invalid");
+            }
+        }
+
+        static HistoricalBaseline empty() {
+            var zero = new BaselineUsage(0, 0, 0, 0, 0, 0);
+            return new HistoricalBaseline(VERSION, 0, 0, 0, 0, Map.of(
+                    "qwen3.8-max", zero, "qwen3.7-plus", zero, "qwen3.7-flash", zero));
+        }
+
+        static HistoricalBaseline reanchored() {
+            return new HistoricalBaseline(VERSION, 418, 412, 6, 0, Map.of(
+                    "qwen3.8-max", new BaselineUsage(
+                            82, 491_919, 10_289_316, 82, 0, 0),
+                    "qwen3.7-plus", new BaselineUsage(
+                            179, 1_087_500, 4_159_620, 174, 5, 0),
+                    "qwen3.7-flash", new BaselineUsage(
+                            157, 1_148_324, 560_618, 156, 1, 0)));
+        }
+    }
+
+    record BaselineUsage(
+            int attempts,
+            long exposedTokens,
+            long exposedCostMicrosCny,
+            int settledReservations,
+            int quarantinedChargedReservations,
+            int breachedReservations
+    ) {
+        BaselineUsage {
+            if (attempts < 0 || exposedTokens < 0 || exposedCostMicrosCny < 0
+                    || settledReservations < 0 || quarantinedChargedReservations < 0
+                    || breachedReservations < 0
+                    || Math.addExact(Math.addExact(settledReservations,
+                    quarantinedChargedReservations), breachedReservations) != attempts) {
+                throw new IllegalArgumentException("Visual Goal baseline usage is invalid");
+            }
         }
     }
 
@@ -536,26 +858,59 @@ final class VisualEvaluationGoalBudget {
 
     record UsageAggregate(int attempts, long tokens, long costMicrosCny, boolean breached) { }
 
-    record Snapshot(UsageAggregate goal, UsageAggregate authorization, boolean breached) { }
+    record Snapshot(
+            UsageAggregate goal,
+            UsageAggregate authorization,
+            UsageAggregate lifetime,
+            boolean breached
+    ) { }
 
     record ExistingSnapshot(
             Map<String, UsageAggregate> slots,
+            Map<String, UsageAggregate> lifetimeSlots,
+            GoalLimits epochLimits,
+            String authorityKind,
+            String authorityEpochId,
             int totalReservations,
+            int epochReservations,
             int nonTerminalReservations,
+            int quarantinedChargedReservations,
             int breachedReservations,
             String stateSha256,
             String guardSha256
     ) {
         ExistingSnapshot {
             slots = Map.copyOf(Objects.requireNonNull(slots, "slots"));
-            if (!slots.keySet().equals(Set.of("qwen3.8-max", "qwen3.7-plus", "qwen3.7-flash"))
-                    || totalReservations < 0 || nonTerminalReservations < 0
+            lifetimeSlots = Map.copyOf(Objects.requireNonNull(lifetimeSlots, "lifetimeSlots"));
+            Objects.requireNonNull(epochLimits, "epochLimits");
+            var models = Set.of("qwen3.8-max", "qwen3.7-plus", "qwen3.7-flash");
+            if (!slots.keySet().equals(models) || !lifetimeSlots.keySet().equals(models)
+                    || !Set.of("EXACT_LEDGER", "CONSERVATIVE_REANCHOR").contains(authorityKind)
+                    || authorityEpochId == null
+                    || !authorityEpochId.matches("[a-z0-9][a-z0-9-]{0,95}")
+                    || totalReservations < 0 || epochReservations < 0
+                    || epochReservations > totalReservations || nonTerminalReservations < 0
+                    || quarantinedChargedReservations < 0
+                    || quarantinedChargedReservations > totalReservations
                     || breachedReservations < 0 || nonTerminalReservations > totalReservations
                     || breachedReservations > totalReservations
                     || stateSha256 == null || !stateSha256.matches("[0-9a-f]{64}")
                     || guardSha256 == null || !guardSha256.matches("[0-9a-f]{64}")) {
                 throw new IllegalArgumentException("Visual Goal audit snapshot is invalid");
             }
+        }
+
+        ExistingSnapshot(
+                Map<String, UsageAggregate> slots,
+                int totalReservations,
+                int nonTerminalReservations,
+                int breachedReservations,
+                String stateSha256,
+                String guardSha256
+        ) {
+            this(slots, slots, GoalLimits.legacyExpected(), "EXACT_LEDGER",
+                    "legacy-exact-history", totalReservations, totalReservations,
+                    nonTerminalReservations, 0, breachedReservations, stateSha256, guardSha256);
         }
     }
 

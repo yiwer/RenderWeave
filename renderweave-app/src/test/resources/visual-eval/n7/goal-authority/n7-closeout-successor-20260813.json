@@ -1,0 +1,75 @@
+{
+  "reanchorVersion": "renderweave-visual-evaluation-goal-reanchor/1.0",
+  "goalId": "renderweave-visual-recognition-vnext-20260810",
+  "authorityEpochId": "n7-closeout-successor-20260813",
+  "predecessorEpochId": "legacy-through-product-v40",
+  "predecessorDisposition": "LOST_UNRECOVERABLE",
+  "anchorRevision": "e3230398b7d6978d93527813af29df98fa7b35e6",
+  "sourceAnchors": [
+    {
+      "path": "docs/adr/0029-pinned-flash-snapshot-and-additive-goal-budget.md",
+      "sha256": "cce89516cf03f39291af26cbd1593be580f3e4eec1070867d9c1338bf9ff7d3a"
+    },
+    {
+      "path": "plans/renderweave-visual-recognition-vnext-plan.md",
+      "sha256": "643c386caf07b26d4d71fd964d5e7c1a3b531f84e2049d4b67ba64c00143635e"
+    },
+    {
+      "path": "plans/renderweave-v1-plan.md",
+      "sha256": "f892c3d8499b7165bda30e7ad7a4d029f0ef47e84f072770d8d1e05c00783ee3"
+    },
+    {
+      "path": "plans/logs/P6-T6-5-N7.md",
+      "sha256": "552d72ad303e0f3502d7e2d2fa6a5057a6d13557a9dc9065209984cc9664dac8"
+    }
+  ],
+  "baseline": {
+    "baselineVersion": "renderweave-visual-evaluation-goal-baseline/1.0",
+    "totalReservations": 418,
+    "settledReservations": 412,
+    "quarantinedChargedReservations": 6,
+    "breachedReservations": 0,
+    "slots": {
+      "qwen3.8-max": {
+        "attempts": 82,
+        "exposedTokens": 491919,
+        "exposedCostMicrosCny": 10289316,
+        "settledReservations": 82,
+        "quarantinedChargedReservations": 0,
+        "breachedReservations": 0
+      },
+      "qwen3.7-plus": {
+        "attempts": 179,
+        "exposedTokens": 1087500,
+        "exposedCostMicrosCny": 4159620,
+        "settledReservations": 174,
+        "quarantinedChargedReservations": 5,
+        "breachedReservations": 0
+      },
+      "qwen3.7-flash": {
+        "attempts": 157,
+        "exposedTokens": 1148324,
+        "exposedCostMicrosCny": 560618,
+        "settledReservations": 156,
+        "quarantinedChargedReservations": 1,
+        "breachedReservations": 0
+      }
+    }
+  },
+  "epochLimits": {
+    "maximumTokensPerModel": 500000,
+    "maximumAttemptsPerModel": 180,
+    "maximumCostMicrosCnyByModel": {
+      "qwen3.8-max": 18000000,
+      "qwen3.7-plus": 10000000,
+      "qwen3.7-flash": 10000000
+    }
+  },
+  "decision": {
+    "status": "APPROVED",
+    "approvedOn": "2026-08-13",
+    "scope": "SUCCESSOR_AUTHORITY_REANCHOR_ONLY",
+    "liveAuthorizationInherited": false,
+    "refundCreated": false
+  }
+}

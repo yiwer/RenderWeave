@@ -21,6 +21,8 @@ RenderWeave v1 让技术型设计者定义可变的 Schema Draft，把精确 rev
 | Evidence | 候选项对应的图片区域、JSON Pointer 或推断来源。 | 不是业务事实保证。 |
 | DocumentObservationIR | 图片识别 run 内对规范化 artifact 的版本化、供应商中立、临时感知事实，表达 observation 的几何、顺序、置信度与 provenance，并把 OCR text 视为不可信的 ephemeral 数据。 | 不是 OCR/layout 库 DTO、语义 hypothesis、Evidence、Candidate 或持久 checkpoint。 |
 | AcquisitionPolicy | 生成某一 `DocumentObservationIR` 时冻结的感知合同身份，界定 exact local capability、坐标/顺序语义、canonicalization 与硬边界。 | 不是 Inference Profile、Provider 模型路由、外部授权或通用工具权限。 |
+| Goal authority epoch | 一段由明确决策创建、具有独立上限且只追加 reservation 的视觉评测预算权威；它通过不可变 lineage 连接前序消费事实。 | 不是清零历史消费、复用旧 J1、重新打开旧 ledger 或自动获得 Provider 调用权限。 |
+| Quarantined charged baseline | 精确逐条账本不可恢复时，把经多源确认的前序累计消费按最坏上界继续计费并终结调度歧义的不可变基线。 | 不是伪造 SETTLED usage、活动 RESERVED、预算退款或可再次消费的余额。 |
 | Inference Profile | 版本化的 provider/model/prompt/output schema/budget/eval 配置快照。 | 不使用 `latest` 语义。 |
 | Product Profile catalog | 当前允许创建新 live run 的、顺序固定且 ID 精确的 immutable Inference Profile 集合。 | 不是质量认证、`latest` alias，也不会改变历史 run snapshot。 |
 | Profile readiness | 启动时探测到的本地 capability 是否精确满足某个 Inference Profile 的 payload-free admission 事实。 | 不是模型质量、Provider 凭据、费用授权或对缺失能力的静默降级。 |

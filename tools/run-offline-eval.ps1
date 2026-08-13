@@ -58,6 +58,15 @@ try {
         throw "Offline visual evidence tests failed with exit code $LASTEXITCODE."
     }
 
+    & python.exe tools/test_verify_n7_live_admission.py
+    if ($LASTEXITCODE -ne 0) {
+        throw "N7 independent admission verifier tests failed with exit code $LASTEXITCODE."
+    }
+    & python.exe tools/test_reanchor_n7_goal_authority.py
+    if ($LASTEXITCODE -ne 0) {
+        throw "N7 successor Goal reanchor tests failed with exit code $LASTEXITCODE."
+    }
+
     $testTargets = @(
         $inferenceTestClasses | ForEach-Object {
             [pscustomobject]@{ className = $_; module = 'renderweave-inference' }
@@ -131,7 +140,12 @@ try {
             'operator can narrow but never widen the authorized live batch',
             'durable interruption-safe visual journal with payload-free evidence',
             'independent Python aggregate and tamper verifier',
-            'N7 exact-J1 and cumulative Goal admission fail closed before mutation'
+            'N7 exact-J1 and cumulative Goal admission fail closed before mutation',
+            'N7 successor Goal authority keeps a charged lifetime baseline and fresh epoch cap'
+        )
+        pythonTestModules = @(
+            'tools/test_verify_n7_live_admission.py',
+            'tools/test_reanchor_n7_goal_authority.py'
         )
         testClasses = @($reports)
         totalTests = [int](($reports | Measure-Object -Property tests -Sum).Sum)
