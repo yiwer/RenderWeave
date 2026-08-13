@@ -17,13 +17,15 @@ Blocked by: none
 
 ## Answer
 
-首版 Asset Management 只管理 `IMAGE` 与 `FONT`。Asset 是以全局唯一、不透明 `assetId` 标识的稳定聚合；`ownerScopeId`、`assetId` 与 `kind` 创建后永久不变。生命周期只有 `ACTIVE ↔ DELETED`：删除是允许恢复相同身份的软删除，v1 永久保留聚合、全部内容版本与字节，不提供物理清除。跨 scope 转移、共享和身份复用均不允许。
+首版 Asset Management 只管理 `IMAGE` 与 `FONT`。Asset是以服务端生成、全局唯一的canonical lowercase UUID v4 `assetId`标识的稳定聚合；`ownerScopeId`、`assetId`与`kind`创建后永久不变。生命周期只有`ACTIVE ↔ DELETED`：删除是允许恢复相同身份的软删除，v1永久保留聚合、全部内容版本与字节，不提供物理清除。跨scope转移、共享和身份复用均不允许。
 
 Asset 同时拥有两个单调值：`assetRevision` 是 metadata、current content、删除与恢复的乐观并发令牌，不形成可恢复的完整聚合历史；`contentVersion` 从 0 开始，只标识不可变 `AssetContentRevision`。每个内容版本保存服务端计算的 SHA-256、规范 mediaType、byteLength、原始基础文件名、种类特有技术 metadata、接纳 Profile、操作者与时间。内容恢复通过复用旧 Blob、追加新 contentVersion 并推进 current 完成，绝不回拨或修改旧版本。
 
 用户 metadata 是必填、可变、非唯一的 `displayName` 与字符串标签集合。displayName 去除首尾空白、NFC 后为 1–200 个 Unicode 标量；标签最多 20 个，每个去除首尾空白、NFC 后为 1–64 个 Unicode 标量，按 Unicode case-fold 后去重但保留展示写法。标签更新整体替换并携带 `expectedAssetRevision`，没有 Tag 聚合、层级或全局重命名。`sourceFileName` 属于内容版本，只保留不含路径和控制字符、最多 255 个 Unicode 标量的基础文件名；Asset 详情可投影 current 内容的技术字段。
 
-`AssetAcceptanceProfile v1` 是 Asset Management 自己拥有的稳定合同，而不是对某个在线 Renderer capabilities 的动态查询。IMAGE 只接受静态 PNG/JPEG/WebP，编码字节最多 64 MiB、任一边最多 20,000 px、总像素最多 100,000,000；FONT 只接受最多 32 MiB 的 TTF/OTF，并拒绝字体集合与 variable font；空文件一律拒绝。提供 Render 服务的 Engine Profile 必须先证明是该接纳 Profile 的兼容超集；不兼容会阻止该部署提供 Render，而不能反向改变既有 Asset 有效性。服务端必须计算 hash/长度、检查真实 magic 并完整解码图片或解析字体，所有检查成功后才原子创建可见 ACTIVE Asset。部署可增加 fail-closed 安全 admission hook，但 v1 不标准化恶意软件、许可证或 quarantine 裁决；内部缩略图和字体样张是可丢弃、剥离 metadata 的派生缓存，不是 Asset、contentVersion 或可引用内容。
+exact `renderweave-asset-acceptance/1.0` 是 Asset Management 自己拥有的稳定 AssetAcceptanceProfile，而不是对某个在线 Renderer capabilities 的动态查询。IMAGE 只接受静态 PNG/JPEG/WebP，编码字节最多 64 MiB、任一边最多 20,000 px、总像素最多 100,000,000；其颜色合同恒为`SRGB_8BIT`，只接纳无profile、标准sRGB声明或该Profile固定canonical sRGB ICC，拒绝冲突/损坏/其他ICC、CMYK/YCCK、HDR与wide-gamut。PNG仅允许合法1/2/4/8-bit grayscale/indexed/RGB/RGBA组合与合法`tRNS`，拒绝16-bit/APNG；JPEG仅允许8-bit baseline/progressive grayscale或YCbCr；WebP仅允许静态lossy/lossless及alpha。EXIF orientation必须唯一且无冲突，其他DPI/time/GPS/thumbnail metadata不构成技术语义。
+
+FONT 只接受最多 32 MiB 的单face、non-variable、monochrome outline TTF/OTF：允许TrueType `glyf`或CFF及`cmap/GDEF/GSUB/GPOS/kern`，拒绝collection、COLR/CPAL、CBDT/CBLC、sbix、SVG、bitmap strike、Graphite、AAT-only及malformed/contradictory table；空文件一律拒绝。提供 Render 服务的 Renderer Profile 必须先证明是该接纳 Profile 的兼容超集；不兼容会阻止该部署提供 Render，而不能反向改变既有 Asset 有效性。服务端必须计算 hash/长度、检查真实 magic 并完整解码图片或解析字体，所有检查成功后才原子创建可见 ACTIVE Asset。部署可增加 fail-closed 安全 admission hook，但 v1 不标准化恶意软件、许可证或 quarantine 裁决；内部缩略图和字体样张是可丢弃、剥离 metadata 的派生缓存，不是 Asset、contentVersion 或可引用内容。
 
 首版只接收客户端上传的字节，不抓取任意 URL、不解包 ZIP。UI 多选只是多个独立 CreateAsset，允许逐文件部分成功；上传暂存不是产品可见 Asset。创建要求幂等键，结果保留 24 小时并绑定 ownerScope、操作者与完整请求指纹：同键同输入重放原结果，同键异输入冲突，过期后视为新请求。主动重复上传始终创建新 assetId；只有幂等重放复用身份。
 
@@ -31,9 +33,9 @@ Blob 是 ownerScope 内部、按 SHA-256 内容寻址的不可变字节对象；
 
 DesignDSL 的 AssetRef 是封闭的 `{assetId}` 逻辑选择器，不保存 kind、contentVersion、hash、文件名或 Profile；所在 DesignDSL 属性声明预期 `IMAGE/FONT`。Asset picker 只提供 ACTIVE Asset，但导入或编辑可保留不存在、DELETED 或类型不匹配的 AssetRef，并沿用 Template 的依赖问题二阶段确认保存为 INVALID。
 
-按已确认的非常规运行语义，Evaluator 对每个实际执行到的 AssetRef 出现位置独立读取该时刻的 Asset current，不按 assetId 做请求内 memoization；因此一次 Evaluation 中相同 assetId 的不同出现位置允许解析到不同 contentVersion。每次成功解析各自产生不可变 ResolvedAsset，包含 assetId、精确 contentVersion、kind、SHA-256、规范 mediaType、byteLength 与短期 Renderer 专用受信 fetch URL；已经解析的条目固定其字节，后续出现位置若因删除或不可用而失败，则整个 Evaluation 失败且不产生部分 RenderDocument/RenderOutput。RenderDocument 必须为同一 assetId 的不同精确内容分配可区分的资源身份，RenderEngine 只允许受信 Asset 服务来源并校验 hash 与长度。
+按已确认的非常规运行语义，Evaluator对每个实际Node property消费位置独立读取该时刻的Asset current，不按assetId做请求内memoization；因此一次Evaluation中相同assetId的不同出现位置允许解析到不同contentVersion。每次成功解析各自产生不可变ResolvedAsset与一对一RenderResource；已提交选择经短期`renderRequestId/resourceId`幂等记录固定exact内容与Renderer-only lease，后续replace/delete不撤销。后续occurrence若因删除或不可用而失败，则不形成完整RenderDocument；Engine延迟fetch/hash/decode失败时请求内部文档可短暂存在但零RenderOutput，任何阶段都无partial公共结果。
 
-调用者获准 Render 某 Template 后，Rendering 使用内部能力解析该 Template 的同 ownerScope Asset，不再逐个要求调用者具备 `asset.read`；直接目录、详情、版本、预览或下载仍需 read。TemplateReadiness 只检查 actor-independent 的存在、ACTIVE 与预期 kind。current contentVersion 改变、删除和恢复会经可靠可重放事件使 ACTIVE-current 反向索引中的 Template 进入 STALE；displayName、tags、sourceFileName 等 metadata 变化及相同内容 no-op 不触发。Template Design 幂等消费事件并周期 reconciliation，打开编辑器与每次 Render 继续作权威兜底检查。
+调用者获准Render某Template后，Rendering使用内部能力解析该Template的同ownerScope authored Asset，不再逐个要求调用者具备`asset.read`；外部PUBLIC override中的每个AssetRef则在RenderInput admission要求asset.read，准入后可跨definition/fill传递。直接目录、详情、版本、草稿preview或下载仍需read。TemplateReadiness只检查actor-independent的存在、ACTIVE与预期kind。current contentVersion改变、删除和恢复会经可靠可重放事件使ACTIVE-current反向索引中的Template进入STALE；displayName、tags、sourceFileName等metadata变化及相同内容no-op不触发。Template Design幂等消费事件并周期reconciliation，打开编辑器与每次Render继续作权威兜底检查。
 
 被 ACTIVE current DesignDSL 引用不阻止 Asset 删除。应用层删除编排通过 Template Design 提供的窄 `AssetReferenceAuthority` 获取 current-only 引用 proof 与影响报告，再让 Asset Management 签发有效期 5 分钟、单次使用的确认 token；Asset Management 核心不读取 Template 聚合或持久化模型。token 绑定 actorId、ownerScopeId、assetId、assetRevision 与完整引用 fingerprint。Template current 变更取得按 assetId 排序的读 reservation，删除取得独占 reservation 后重算 proof；任一 Asset、引用、token 或权限事实漂移均零写并要求重新确认，不共享聚合、表或数据库事务。删除者看到完整影响数量，只看到其有权读取的 Template 明细，其他项计入 `redactedCount`；成功删除后相关 Template 先 STALE 再重检为 INVALID。
 

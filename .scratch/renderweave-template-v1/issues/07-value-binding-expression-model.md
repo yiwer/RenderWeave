@@ -23,10 +23,10 @@ DesignDSL 应如何表示 literal、字段路径、参数、循环 scope、命�
 ### 1. 类型系统
 
 - `BaseValueType` 精确为 `text | decimal | boolean | date | time | color | imageRef | fontRef`；`enum<catalogId>` 与 `list<T>` 是派生 `ValueType`，不是基础类型。
-- StaticSchema 不随 Template 扩展：其事实类型仍是五种 scalar、reference 与 array；不向 StaticSchema 增加 color/image/font，也不新增对应 `system-basic-*` Schema。
-- `list<T>` v1 只允许五种 StaticSchema scalar item，保持顺序、重复与空数组；禁止 null、异构、嵌套 list。reference array 是 loop-only 的精确 Schema collection，不伪装成通用 `list<object>`。
+- StaticSchema 不随 Template 扩展：其事实类型仍是五种 scalar、reference 与 array，不增加color/image/font。正式Schema规格已有的`system-empty@v1`与五种`system-basic-*@v1`继续作为一等只读StaticSchema存在；Template Design不另造或修改这些预置Schema。
+- `list<T>` v1允许五种StaticSchema scalar及`imageRef/fontRef`作为item，保持顺序、重复与空数组；禁止null、异构、嵌套list。asset-ref list中的每个literal atom独立进入Asset依赖提取与外部override admission，但票据11的Repeat items仍只接纳五种StaticSchema scalar list；reference array是loop-only的精确Schema collection，不伪装成通用`list<object>`。
 - 类型兼容严格且不做隐式转换：enum 必须同 catalog，list invariant，imageRef/fontRef 不互换，StaticSchema constraint 也不形成隐式 subtype。
-- decimal 使用任意精度 BigDecimal 数值语义，`1.0 == 1.00`、`-0 == 0`，scale 与尾零不可观察；date/time 分别使用 `YYYY-MM-DD`/`HH:mm:ss`，color 规范为大写 `#RRGGBBAA`，imageRef/fontRef 值均为封闭 `{assetId}` 且由类型区分。
+- decimal 使用任意精度 BigDecimal 数值语义，`1.0 == 1.00`、`-0 == 0`，scale 与尾零不可观察；date/time 分别使用 `YYYY-MM-DD`/`HH:mm:ss`，color 规范为大写 `#RRGGBBAA`，imageRef/fontRef 值均为封闭`{assetId}`且由类型区分，assetId必须是Asset Management服务端生成的canonical lowercase UUID v4。
 - enum token 大小写敏感；enum catalog 由全局 Node 属性模型不可变拥有，v1 不允许 Template 自定义 catalog。Expression 1.0 对 color、asset ref、enum、list 只能显式输入后选择或透传，不能自行构造。
 
 ### 2. Definition 与 ValueSource
@@ -38,7 +38,7 @@ DesignDSL 应如何表示 literal、字段路径、参数、循环 scope、命�
   - `{kind:"context", domain, pointer}`；
   - `{kind:"loopIndex", loopId}`；
   - `{kind:"definition", definitionId}`；
-  - `{kind:"capability", ...closedPayload}`。
+  - 仅用于Expression input的三个closed capability source：`{kind:"capability",capability:"CLOCK",operation:"UTC_DATE"}`、`{kind:"capability",capability:"CLOCK",operation:"UTC_TIME"}`与`{kind:"capability",capability:"RANDOM",operation:"UNIFORM_DECIMAL_0_1"}`。
 - literal、Custom default、Mapping operand 共用一个权威类型 decoder；null、quoted decimal、嵌套/异构 list、错误 asset shape 都是 hard error。
 - context domain 只能是 invocation 或 `{kind:"loop", loopId}`；pointer 是非空、正确 RFC 6901 escaping 的 StaticSchema field path，不能取得 whole object、用数字/wildcard 穿越 array 或读取原始 JSON/unknown field。
 - `loopIndex` 返回零基、非负、整数值 decimal；item 值通过该 loop domain 的 typed context 读取，v1 没有 loop key ValueSource。
@@ -55,7 +55,7 @@ DesignDSL 应如何表示 literal、字段路径、参数、循环 scope、命�
 ### 4. MappingDefinition
 
 - wire 固定为 `kind/definitionId/displayName/domain/output/input/cases/otherwise`；input 是单个 ValueSource，cases 至少一个、没有 caseId、顺序即 first-match 语义，otherwise 必填且全部结果 source 与 output 精确兼容。
-- case 使用封闭 operator 与可选 typed literal operand；v1 operator 为：`IS_ABSENT`、`IS_PRESENT`、`EQ`、`NOT_EQ`，decimal/date/time 的 `GT/GTE/LT/LTE`，text 的 `CONTAINS/STARTS_WITH/ENDS_WITH/PATTERN_MATCH/IS_BLANK/IS_NOT_BLANK`，以及 scalar list 的 `CONTAINS`。
+- case 使用封闭 operator 与可选 typed literal operand；v1 operator 为：`IS_ABSENT`、`IS_PRESENT`、`EQ`、`NOT_EQ`，decimal/date/time 的 `GT/GTE/LT/LTE`，text 的 `CONTAINS/STARTS_WITH/ENDS_WITH/PATTERN_MATCH/IS_BLANK/IS_NOT_BLANK`，以及同质 `list<T>` 的 `CONTAINS`。
 - 输入 ABSENT 时只匹配 `IS_ABSENT`；包括 `NOT_EQ`、`IS_NOT_BLANK` 在内的所有 value operator 都不匹配。ERROR 直接传播。
 - `PATTERN_MATCH` 只接受 literal pattern，复用 StaticSchema 的 Java/ECMAScript 安全交集、substring 语义与 1024 Unicode code-point 上限；Expression 1.0 仍不提供 regex。
 - blank 使用冻结的 Unicode White_Space 集合：U+0009–000D、0020、0085、00A0、1680、2000–200A、2028、2029、202F、205F、3000。其余 text operator 精确比较 Unicode sequence，不做 normalization、case folding 或 locale 处理。
@@ -90,16 +90,16 @@ DesignDSL 应如何表示 literal、字段路径、参数、循环 scope、命�
 - Binding 存在于实际消费属性的 Design Node 的 `bindings[]` 中；host node 隐式确定，因此 wire 不保存 nodeId、slotId，也没有顶层 Binding 表。单条 wire 为 `{bindingId, targetPropertyRef, source}`，bindingId 在 Template 内唯一。
 - targetPropertyRef 使用 `{rootPropertyId, selectors[]}`；支持精确五种形状：`property`、`property.member`、`property[index]`、`property[index].member`、`property.member[index]`。
 - selectors 最多两个且至多一个 `member` 与一个 `index`；member 是全局 Node 属性模型中的 propertyId，不是任意 JSON key；index 是 literal、零基、非负整数，不允许动态、负数、wildcard 或 slice。
-- target 的所有对象/数组容器与最终静态叶子必须已存在且自身合法；index 必须在 authored array 范围内。Binding 不创建缺失 member、不扩展 array。对象/复杂数组只是属性路径容器，不能作为任意 JSON 值整体绑定；scalar list 整体只有全局属性类型明确为 `list<T>` 时才可绑定。
+- target 的所有对象/数组容器与最终静态叶子必须已存在且自身合法；index 必须在 authored array 范围内。Binding 不创建缺失 member、不扩展 array。对象/复杂数组只是属性路径容器，不能作为任意 JSON 值整体绑定；同质一维 list 整体只有全局属性类型明确为 `list<T>` 时才可绑定。
 - 数组 index 是 revision 内的位置而非 item identity；缩短导致越界是不可确认 hard error，重排默认继续指向相同下标。编辑器若要保持原 item，必须在一次作者操作中同步重写 target index。
 - 同节点 bindings 数组顺序无语义；重复 target 以及 ancestor/descendant overlap 都是 hard error，因此 overlay 顺序不影响结果。全局 BindingPolicy path pattern 也不得产生一个 target 多义匹配。
 
 ### 8. 统一静态 baseline overlay
 
-- 所有可绑定属性始终保存合法 DesignDSL 静态值，不存在 Binding-required 属性：没有对应 Binding 时使用静态值；存在 Binding 且成功产生 concrete 合法值时覆盖目标叶子；删除 Binding 后静态值重新生效。
+- 所有可绑定属性始终保存合法 DesignDSL 静态值，不存在 Binding-required 属性：没有对应 Binding 时使用静态值；存在 Binding 且成功产生 concrete 合法值时覆盖目标叶子；删除 Binding 后静态值重新生效。Repeat `items` 与 Conditional `condition` 是票据 11 定义的直接结构 ValueSource，不是 Binding target，因而不要求伪造静态 baseline。
 - 静态值只是 authoring baseline，不是 runtime fallback。Binding 存在但产生 ABSENT、ERROR、错误类型或 propertyValidation failure 时，整次 Evaluation 立即失败，不得回退 baseline 或产生部分 RenderDocument。
 - Evaluator 先形成合法静态 property tree，再应用互不重叠的叶子 overlay。普通 visual property 必须是 concrete ValueType；Loop 等结构目标若后续也采用同一模型，必须由全局 Node 属性模型声明其封闭类型并在 DesignDSL 保留合法静态 baseline，具体 collection 语义由票据 11 决定。
-- 所有 authored imageRef/fontRef literal 即使处在被 Binding 覆盖或 lazy 未选择的 baseline 中，仍是 DesignDSL 当前依赖事实，必须进入 AssetRef dependency projection/readiness 检查；runtime override 中的 AssetRef 不成为 Template 持久依赖。
+- 所有authored imageRef/fontRef literal atom（含Custom default、Definition/Mapping输出、Node baseline及asset-ref list元素）即使被Binding覆盖或lazy未选择，仍是DesignDSL current依赖事实并以独立canonical pointer进入AssetRef dependency projection/readiness；runtime override中的AssetRef不成为Template持久依赖。
 
 ### 9. Validation、Evaluation 与问题传播
 
@@ -111,6 +111,6 @@ DesignDSL 应如何表示 literal、字段路径、参数、循环 scope、命�
 
 ### 10. Asset 与 capability 边界
 
-- authored imageRef/fontRef 由全局 target type 给出期望 kind；动态根 PUBLIC asset override 在 RenderInput admission 时必须验证同 ownerScope、ACTIVE、kind 与 caller asset.read，不可见或跨 scope 返回 NOT_FOUND。child 已准入 fill 不重复要求 render caller asset.read。
-- 每个实际消费 property 的 AssetRef 仍按出现位置独立解析当时 Asset current；Definition memoization 逻辑值不能合并不同消费位置的 Asset resolution。
-- Capability 只作为 Expression 显式 input，并以 definitionId + alias + domain frame 形成稳定 call position；Clock/Random 的 payload、request consistency 与总预算由票据 14 冻结。AssetResolver 不是普通 Expression capability。
+- authored imageRef/fontRef由声明ValueType给出期望kind；动态根PUBLIC asset override的每个asset atom即使最终未使用，也在RenderInput admission验证same ownerScope、ACTIVE、kind与caller asset.read，不可见或跨scope返回NOT_FOUND并禁止partial admission。成功形成的AdmittedAssetValue可经definition/binding/child fill传递，不重复要求render caller asset.read。
+- 只有具体materialized Node property实际消费AssetRef才按OccurrencePath+ConsumerPropertyRef独立解析当时Asset current；Definition memoization逻辑值不能合并不同消费位置，同一值流入多个property或Text Run产生多个resolve occurrence。
+- Capability只作为Expression显式input；`renderweave-expression/1.0`永久映射exact Clock/Random contract。每个input以root/use/截至declaration domain的loop frame、definitionId、alias、contract/operation形成CapabilityCallPosition并惰性demand；Clock共享UTC整秒snapshot，Random按server-only nonce与position派生精确`k/10^18`。AssetResolver不是普通Expression capability。

@@ -20,7 +20,7 @@ DesignDSL 顶层 envelope、版本身份、节点/definition/binding 的局部�
 - Template 永久 StaticSchemaRef、实际 RootDocument/customValues、AdmittedRenderInput、EditorSession 样例与未来 Workspace fixture 都不属于 DesignDSL envelope。
 - 持久化字段/definition/context selector 必须保存显式 invocation 或稳定 loopId，不能保存含义随位置变化的 `$current/$parent/$root` 别名。
 - 每份 DesignDSL 即使没有 Expression 也必须携带唯一顶层 `expressionProfile`；同 revision 不混用 profile，未来 profile 只能经显式迁移形成新 Template revision，不能自动升级。
-- `definitions[]` 精确封闭为 `custom | mapping | expression`；definition/output/input/literal 的 ValueType 使用八种 base、全局 enum catalog 与受限 scalar list，未知 kind/member、null 或不自洽 literal 是 hard error。
+- `definitions[]` 精确封闭为 `custom | mapping | expression`；definition/output/input/literal 的 ValueType 使用八种 base、全局 enum catalog 与受限同质一维 `list<T>`，未知 kind/member、null 或不自洽 literal 是 hard error。
 - Binding 不在顶层聚合，而位于宿主 Design Node 的 `bindings[]`；wire 只含 bindingId、结构化 targetPropertyRef 与 source，不能再引入 nodeId/slotId。binding/definition/input 数组顺序无语义，Mapping cases 顺序有语义。
 - targetPropertyRef 最多包含一次 member 与一次固定 index selector；DesignDSL 必须无损保存具体下标和静态 baseline，禁止动态 path、wildcard、任意 JSON Pointer 或创建缺失 property。
 - 全局 BindingPolicyCatalog、policyId 与 Catalog revision 都不属于 DesignDSL；Template 不能声明或覆盖 bindability，保存时由当前追加式全局 Catalog 权威解析 node kind + targetPropertyRef。
@@ -95,22 +95,23 @@ DesignDSL 顶层 envelope、版本身份、节点/definition/binding 的局部�
 
 - local entity 使用明确字段 `nodeId/definitionId/bindingId/loopId/useId`；对象本身与引用均使用对应名称，不使用上下文相关的通用 `id`。这正式收紧票据 07 中 Definition `{id,...}` 的简写。
 - 所有 local ID 必须是 canonical lowercase UUID v4：精确 `8-4-4-4-12`、version nibble 4、RFC 4122/9562 variant，拒绝 nil、uppercase、braces、URN 与无连字符写法。每类 ID 是 Template 内独立 namespace，同一 UUID 文本可跨 namespace 出现；input alias/propertyId/node kind 不是 local ID。
-- 在线设计前端或其他创作客户端在创建 Node、Definition、Binding、Loop、TemplateUse 时生成 UUID v4。服务端只校验格式、namespace uniqueness 与 references；missing/invalid/collision 是 hard error，普通 save 不补 ID、不换 ID、不修引用。
+- 在线设计前端或其他创作客户端在创建 Node、Definition、Binding、Repeat、TemplateUse 时生成 UUID v4；Repeat 同时拥有普通 nodeId 与独立 loopId，Loop 只表示 runtime frame。服务端只校验格式、namespace uniqueness 与 references；missing/invalid/collision 是 hard error，普通 save 不补 ID、不换 ID、不修引用。
 - 普通 save 保留未替换实体 identity；restore 与 whole-Template copy 原样保留全部 local IDs。复制实体到同 Template 时客户端为副本生成新 IDs 并同步改写内部引用。手写 JSON 同时修改 ID 与全部 refs 是合法 delete+create，服务端不强制跨 revision identity continuity。
 - 显式 migration 保留可保留 IDs；若目标必须新增 identity-bearing entity，migration 要求客户端提供 UUID v4 或返回 manual-action problem，不能在普通 save 中静默生成。
+- 票据 11 在 `renderweave-design/1.0` 正式冻结前把 exact structural kind `repeat/conditional` 与 Repeat-child-only `PACK` placement并入同一NodeContract草案；其wire、ABSENT policy、词法/过滤和lowering一经正式冻结便按DesignDSL Profile永久解释，后续可观察变化必须使用新dslVersion。
 
 ### 6. 语义无损与 canonical JSON
 
 - “无损编辑”指完整保留所有受支持语义，而非保留上传 bytes。服务端不保存原始 JSON whitespace、object-member order、等价 number lexeme 或 metadata 被既定 trim 移除的空白；必须保留全部受支持 fields、semantic array order、非 metadata Unicode string 原值、exact Expression source 与 arbitrary-precision numeric value。
 - RenderWeave 自有 `renderweave-design-c14n/1.0` 是 canonical authority，不直接采用带 IEEE-754 number contract 的通用 JCS：UTF-8、无 BOM/非必要 whitespace；object member 按 name 的 unsigned UTF-8 bytes 升序；string 不做 Unicode normalization，只对 quote/backslash/control 使用唯一 JSON escapes，其余 Unicode scalar 直接写 UTF-8且 `/` 不转义。
 - decimal canonical token 按任意精度数学值写 plain notation：无 exponent/leading plus，移除无意义 leading/trailing zeros，`-0` 写 `0`，integer 无 decimal point。因此 `1/1.0/1.00/1e0` 都写为 `1`。Expression source 内 token 属于 exact string，不被改写。
-- 保存前对无语义集合排序：definitions 按 definitionId、每个 Node bindings 按 bindingId、Expression inputs 按 alias、TemplateUse fills 后续按 child definitionId。Mapping cases、target selectors、literal list 及未来赋予 z-order/layout/output 语义的数组保持 authored order；若票据 09 选择完全由显式字段排序的 flat node set，须另声明 canonical nodeId sort。
+- 保存前对无语义集合排序：definitions按definitionId、每个Node bindings按bindingId、Expression inputs按alias、TemplateUse fills按targetDefinitionId。Mapping cases、target selectors、literal list与parent children等具有match/layout/paint语义的数组保持authored order；唯一Canvas-rooted树不按nodeId重排。
 - canonical writer 不展开或删除业务 default，不创建 missing property/Binding baseline，不修复 enum/color/date/time/AssetRef，也不依据当前 BindingPolicy 改写内容。显式 default-equal 值与 omitted default 可以具有不同 contentHash，default 含义由 Node Property Identity 永久冻结。
 
 ### 7. Content hash
 
 - revision metadata 的 contentHash wire 为 `sha256:<64 lowercase hex>`，摘要输入精确为 `UTF-8("renderweave-design-content/1\0") + renderweave-design-c14n/1.0 canonical bytes`；contentHash 自身不进入 DesignDSL，canonical profile 映射是 dslVersion 永久语义的一部分。
-- hash 包含完整 authored DesignDSL：versions、metadata、definitions、static baseline、Binding、TemplateRef/AssetRef logical selectors 与 exact Expression source。它不包含 templateId/revision/StaticSchemaRef、BindingPolicyCatalog、readiness/report、resolved Asset contentVersion、resolved child Template revision、RootDocument/customValues/capability result。
+- hash包含完整authored DesignDSL：versions、metadata、definitions、static baseline、Binding、TemplateUse的nodeId/useId/context/fills/placement/common、TemplateRef/AssetRef logical selectors、closed capability source与exact Expression source。它不包含templateId/revision/ownerScope/永久StaticSchemaRef、BindingPolicyCatalog、readiness/report、resolved Asset/contentVersion/lease/RenderResource/assetSelectionDigest、resolved child Template revision、closure/runtime context/fill、OccurrencePath/compositionViewport、CapabilityState、Clock/Random result或capabilityResultDigest。
 - 因此同一 DesignDSL 在不同 Template 或 StaticSchema 下可有同 hash；dependency/current 漂移不改变 revision/hash，只影响 readiness、closure snapshot 或 Evaluation identity。contentHash 不得单独作为 Render cache key。
 - object order/transport whitespace/equivalent decimal lexeme 不改变 hash，Expression source whitespace 与任何 canonical semantic content 变化会改变 hash。相同 hash 不阻止新 save revision。
 - contentHash 只证明 canonical content integrity，用于 snapshot 与 confirmation binding；不表示 semantic equivalence、dedup、publish、replay、authorization、signature 或 provenance。导入文件中的 identity/Schema/hash 都是不可信 metadata，认证与 ownerScope 只能来自服务端事实。

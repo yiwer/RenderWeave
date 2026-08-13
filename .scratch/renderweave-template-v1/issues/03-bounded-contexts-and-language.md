@@ -13,15 +13,15 @@ Template、Template revision、DesignDSL、Render Input、Value Source、Asset�
 
 RenderWeave Template v1 新增三个限界上下文，既有 Schema/Validation 保持独立上游：
 
-- **Template Design** 拥有 Template、Template revision、DesignDSL、ValueSource 与保存时语义。Template 是永久绑定精确 StaticSchemaRef、以 current revision 表示当前内容的可变聚合；revision 是不可变历史记录；DesignDSL 只是 revision 的内容事实源。
-- **Asset Management** 拥有 Asset 的身份、生命周期与内部模型，并向其他上下文发布 AssetRef 值合同和 `AssetResolver: AssetRef → ResolvedAsset`。Template Design 只保存 AssetRef，Rendering 只消费 ResolvedAsset；两者都不访问 Asset 持久化模型。
-- **Rendering** 拥有 RenderInput、Evaluation、RenderDSL、RenderDocument、RenderEngine、LaidOutScene 与 RenderOutput。请求开始时把 Template current 一次解析成不可变 TemplateSnapshot；本次 Evaluation 不再读取可变 Template。
+- **Template Design** 拥有 Template、Template revision、DesignDSL、ValueSource 与保存时语义。Template 是拥有不可变 ownerScope、永久绑定精确 StaticSchemaRef、以 current revision 表示当前内容的可变聚合；revision 是不可变历史记录；DesignDSL 只是 revision 的内容事实源。
+- **Asset Management** 拥有Asset身份、生命周期与内部模型，并向其他上下文发布AssetRef值合同和按实际消费位置线性化选择current、签发exact fetch lease的AssetResolver。Template Design只保存AssetRef，Rendering内部形成ResolvedAsset再投影为Engine-facing RenderResource；两者都不访问Asset持久化模型。
+- **Rendering** 拥有 RenderInput、Evaluation、RenderDSL、RenderDocument、RenderEngine、LaidOutScene 与 RenderOutput。请求开始时把根 Template 及全部 authored 可达、same-scope TemplateRef current 一次冻结成一致 Template closure snapshot；本次 Evaluation 不再读取可变 Template current。
 
-依赖严格单向且只传不可变公开合同：Template Design 使用 Schema 的精确身份和 AssetRef；Rendering 消费 TemplateSnapshot、调用 Validation 与 AssetResolver；Schema、Validation 与 Asset Management 都不知道 Template 或 Rendering。上下文不共享聚合、数据库模型或无边界 common 类型。
+依赖严格单向且只传不可变公开合同：Template Design 使用 Schema 的精确身份和 AssetRef；Rendering 消费 Template closure snapshot、调用 Validation 与 AssetResolver；Schema、Validation 与 Asset Management 都不知道 Template 或 Rendering。上下文不共享聚合、数据库模型或无边界 common 类型。
 
-Evaluation 把 TemplateSnapshot、RenderInput 和受控 capabilities 编译为一份符合 RenderDSL 的 RenderDocument。该文档必须已经消除 Binding、Expression、条件/循环、嵌套 Template、current 与 capability 调用，但可以保留 RenderEngine 原生的 Stack/Grid 等渲染级布局、具体文本和 ResolvedAsset 资源清单。现有 `busbox-render-engine` 正是这一边界：它接收 `haibo.dsl/1.0` document/resources/output，内部负责 layout、受限资源获取与校验、文本 shaping、绘制和 PNG/JPEG 编码。Engine 内完成最终几何后的对象称 LaidOutScene；图片及媒体描述称 RenderOutput。正式输出和权威预览都来自同一 RenderEngine；浏览器画布只能提供非权威草稿反馈。
+Evaluation把Template closure snapshot、AdmittedRenderInput和受控capabilities编译为符合RenderDSL的请求级RenderDocument。该文档必须消除Binding、Expression、条件/循环、TemplateUse/TemplateRef、AssetRef current与capability调用，但可以保留RenderEngine原生Stack/Grid、静态compositionViewport等渲染级布局、具体文本及RenderResource manifest。compositionViewport只承载已展开child artboard静态subtree与固定映射规则，不是child Template callback或revision句柄。现有`busbox-render-engine`属于Rendering边界，但当前`haibo.render/1.0`既缺compositionViewport，也缺RenderResource的expiry/acceptance/technical descriptor；未来必须实现并认证独立的`renderweave-render-command/1.0`、`renderweave-render/1.0`、exact Layout/Renderer/Output Profile，不能复用旧version宣称兼容、把动态Template/Asset语义交给Engine或静默丢字段。Engine内最终几何对象称LaidOutScene；一条Command为根Canvas原子生成的一张完整PNG/JPEG及其closed metadata称RenderOutput。正式输出和权威预览都来自同一RenderEngine；浏览器画布只能提供非权威草稿反馈。
 
-ResolvedAsset 是请求级不可变资源清单项，至少钉死资源身份、可信 fetch URL、SHA-256、媒体类型和字节长度。RenderEngine 可按 allowlist 获取并校验内容，但不得接收 AssetRef/current 或执行 Asset 业务选择。
+ResolvedAsset是每个实际Asset消费位置在Rendering内部形成的不可变exact选择，包含Asset/内容身份、occurrence locator、技术描述和fetch lease；RenderResource是一对一删除Asset业务身份后的Engine manifest项。RenderEngine只能按allowlist取得并校验exact bytes，不得接收AssetRef/current、调用AssetResolver或执行Asset业务选择。
 
 统一语言禁止以下混用：
 
