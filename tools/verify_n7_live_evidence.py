@@ -102,7 +102,11 @@ def require_time_in_authorization(
     return parsed
 
 
-def validate_stage_trace(attempts: list[dict[str, Any]], maximum_attempts: int) -> None:
+def validate_stage_trace(
+    attempts: list[dict[str, Any]],
+    maximum_attempts: int,
+    allow_exhausted_failure: bool = False,
+) -> None:
     if len(attempts) < len(LIVE_STAGE_ACCEPTANCE) or len(attempts) > maximum_attempts:
         fail("N7_LIVE_STAGE_TRACE_COUNT_INVALID")
     if attempts[0]["stage"] != "OBSERVE":
@@ -127,9 +131,12 @@ def validate_stage_trace(attempts: list[dict[str, Any]], maximum_attempts: int) 
                 and previous["outcomeCode"] != "LIVE_VISUAL_ANALYSIS_REJECTED":
             fail("N7_LIVE_STAGE_REWIND_WITHOUT_VALIDATOR_REJECTION")
     final = attempts[-1]
-    if final["stage"] != "ELEMENT_BINDING" \
-            or final["outcomeCode"] != LIVE_STAGE_ACCEPTANCE["ELEMENT_BINDING"]:
+    complete = final["stage"] == "ELEMENT_BINDING" \
+        and final["outcomeCode"] == LIVE_STAGE_ACCEPTANCE["ELEMENT_BINDING"]
+    if not complete and not allow_exhausted_failure:
         fail("N7_LIVE_STAGE_TRACE_NOT_COMPLETE")
+    if not complete and len(attempts) != maximum_attempts:
+        fail("N7_LIVE_FAILED_TRACE_NOT_EXHAUSTED")
 
 
 def validate_closed_authorization(
@@ -281,7 +288,10 @@ def validate_n7_journal(
         maximum_attempts = authorization["maximumProviderAttempts"] // len(
             authorization["caseIds"]
         )
-        validate_stage_trace(attempts, maximum_attempts)
+        validate_stage_trace(
+            attempts, maximum_attempts,
+            allow_exhausted_failure=item["terminalState"] == "FAILED",
+        )
         if result["providerCalls"] != len(attempts):
             fail("N7_EVALUATION_CALL_COUNT_DRIFT")
         ordinals: set[int] = set()

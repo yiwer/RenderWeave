@@ -62,6 +62,24 @@ class N7LiveEvidenceVerifierTest(unittest.TestCase):
                 reordered["metadata"], reordered["reservations"],
             )
 
+    def test_audit_accepts_only_exhausted_incomplete_failure_trace(self) -> None:
+        attempts = [
+            {"attemptOrdinal": index, "stage": "OBSERVE",
+             "outcomeCode": "LIVE_VISUAL_ANALYSIS_REJECTED"}
+            for index in range(7)
+        ]
+        with self.assertRaisesRegex(
+                VERIFIER.VerificationError, "N7_LIVE_STAGE_TRACE_NOT_COMPLETE"):
+            VERIFIER.validate_stage_trace(attempts, 7)
+
+        VERIFIER.validate_stage_trace(attempts, 7, allow_exhausted_failure=True)
+
+        with self.assertRaisesRegex(
+                VERIFIER.VerificationError, "N7_LIVE_FAILED_TRACE_NOT_EXHAUSTED"):
+            VERIFIER.validate_stage_trace(
+                attempts[:-1], 7, allow_exhausted_failure=True,
+            )
+
     def test_execution_and_reservation_times_must_stay_inside_exact_j1_window(self) -> None:
         before_approval = make_fixture()
         before_approval["journal"]["executions"][0][
