@@ -85,6 +85,7 @@ class DashScopeVisualEvaluationTest {
     @Autowired private Clock clock;
 
     private final VisualStageCorpus corpus = new VisualStageCorpus();
+    private final LayeredVisualCorpus layeredCorpus = new LayeredVisualCorpus();
     private final VisualStageRasterizer rasterizer = new VisualStageRasterizer();
     private final VisualStageCheckpointReader checkpointReader = new VisualStageCheckpointReader();
     private final VisualStageEvaluator evaluator = new VisualStageEvaluator();
@@ -109,7 +110,8 @@ class DashScopeVisualEvaluationTest {
                     .limit(batchLimit).toList();
             var processed = 0;
             for (var caseId : pending) {
-                var finished = execute(corpus.require(caseId));
+                var finished = execute(authorizedCase(
+                        authorization.corpusVersion(), caseId, corpus, layeredCorpus));
                 processed++;
                 writeReport();
                 if (finished.failureCode().map(DashScopeVisualEvaluationTest::shouldHalt).orElse(false)) break;
@@ -140,6 +142,23 @@ class DashScopeVisualEvaluationTest {
         } catch (NumberFormatException invalid) {
             throw new IllegalArgumentException("VISUAL_EVALUATION_BATCH_LIMIT_INVALID", invalid);
         }
+    }
+
+    static VisualStageCorpus.EvaluationCase authorizedCase(
+            String corpusVersion,
+            String caseId,
+            VisualStageCorpus source,
+            LayeredVisualCorpus layered
+    ) {
+        Objects.requireNonNull(source, "source");
+        Objects.requireNonNull(layered, "layered");
+        if (LayeredVisualCorpus.VERSION.equals(corpusVersion)) {
+            return layered.require(caseId).renderCase();
+        }
+        if (VisualStageCorpus.VERSION.equals(corpusVersion)) {
+            return source.require(caseId);
+        }
+        throw new IllegalArgumentException("VISUAL_EVALUATION_CORPUS_VERSION_UNSUPPORTED");
     }
 
     static boolean shouldHalt(String failureCode) {

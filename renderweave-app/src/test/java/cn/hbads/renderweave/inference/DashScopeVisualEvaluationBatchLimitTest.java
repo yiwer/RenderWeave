@@ -1,5 +1,9 @@
 package cn.hbads.renderweave.inference;
 
+import cn.hbads.renderweave.inference.eval.visual.LayeredVisualCorpus;
+import cn.hbads.renderweave.inference.eval.visual.N7QualificationProtocol;
+import cn.hbads.renderweave.inference.eval.visual.VisualStageCorpus;
+import cn.hbads.renderweave.inference.eval.visual.VisualStageRasterizer;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -35,5 +39,24 @@ class DashScopeVisualEvaluationBatchLimitTest {
         assertThat(DashScopeVisualEvaluationTest.shouldHalt("LIVE_VISUAL_ANALYSIS_REJECTED"))
                 .isFalse();
         assertThat(DashScopeVisualEvaluationTest.shouldHalt(null)).isFalse();
+    }
+
+    @Test
+    void n7CanaryExecutesTheExactLayeredCorpusRenderAssignments() {
+        var source = new VisualStageCorpus();
+        var layered = new LayeredVisualCorpus();
+        var rasterizer = new VisualStageRasterizer();
+
+        for (var caseId : N7QualificationProtocol.load().canaryCaseIds()) {
+            var selected = DashScopeVisualEvaluationTest.authorizedCase(
+                    LayeredVisualCorpus.VERSION, caseId, source, layered);
+            assertThat("render-sha256:" + rasterizer.render(selected).sha256())
+                    .as(caseId)
+                    .isEqualTo(layered.require(caseId).renderIdentity());
+        }
+        var injectionCase = "low-information-poster-v3";
+        assertThat(rasterizer.render(DashScopeVisualEvaluationTest.authorizedCase(
+                LayeredVisualCorpus.VERSION, injectionCase, source, layered)).sha256())
+                .isNotEqualTo(rasterizer.render(source.require(injectionCase)).sha256());
     }
 }
