@@ -216,7 +216,7 @@ def verify_contract(repository: pathlib.Path) -> tuple[dict[str, Any], str]:
     expected = {
         "contractVersion": CONTRACT_VERSION,
         "ticketId": "N7-04",
-        "authorizationId": "n7-04-plus-canary-product-v45-20260813b",
+        "authorizationId": "n7-04-plus-canary-product-v45-20260813c",
         "lifecycle": "PROPOSED_NOT_OPEN",
         "provider": "DASHSCOPE",
         "model": "qwen3.7-plus",

@@ -25,6 +25,20 @@ SEMANTIC_CORPUS_PATH = pathlib.PurePosixPath(
     "renderweave-inference/src/main/resources/visual-eval/v1/scenes.json"
 )
 EVIDENCE_FILES = {"state.json", "state.guard.json", "report.json", "batch.lock"}
+LIVE_STAGE_ACCEPTANCE = {
+    "OBSERVE": "LIVE_VISUAL_GROUNDING_ACCEPTED",
+    "HIERARCHY": "LIVE_VISUAL_HIERARCHY_V2_ACCEPTED",
+    "ELEMENT_BINDING": "LIVE_VISUAL_BINDINGS_V2_ACCEPTED",
+}
+LIVE_STAGE_TRANSITIONS = {
+    ("OBSERVE", "OBSERVE"),
+    ("OBSERVE", "HIERARCHY"),
+    ("HIERARCHY", "HIERARCHY"),
+    ("HIERARCHY", "OBSERVE"),
+    ("HIERARCHY", "ELEMENT_BINDING"),
+    ("ELEMENT_BINDING", "ELEMENT_BINDING"),
+    ("ELEMENT_BINDING", "HIERARCHY"),
+}
 
 
 class VerificationError(Exception):
@@ -72,6 +86,48 @@ def require_instant(value: Any, name: str) -> datetime:
     if parsed.tzinfo is None or parsed.utcoffset() is None:
         fail(f"{name}:INVALID_INSTANT")
     return parsed.astimezone(timezone.utc)
+
+
+def require_time_in_authorization(
+    value: Any,
+    name: str,
+    approved: datetime,
+    expires: datetime,
+) -> datetime:
+    parsed = require_instant(value, name)
+    if parsed < approved or parsed >= expires:
+        fail(f"{name}:OUTSIDE_EXACT_J1_WINDOW")
+    return parsed
+
+
+def validate_stage_trace(attempts: list[dict[str, Any]], maximum_attempts: int) -> None:
+    if len(attempts) < len(LIVE_STAGE_ACCEPTANCE) or len(attempts) > maximum_attempts:
+        fail("N7_LIVE_STAGE_TRACE_COUNT_INVALID")
+    if attempts[0]["stage"] != "OBSERVE":
+        fail("N7_LIVE_STAGE_TRACE_MUST_START_AT_OBSERVE")
+    for index, attempt in enumerate(attempts):
+        stage = attempt["stage"]
+        if stage not in LIVE_STAGE_ACCEPTANCE or attempt["attemptOrdinal"] != index:
+            fail("N7_LIVE_STAGE_TRACE_IDENTITY_INVALID")
+        if index == 0:
+            continue
+        previous = attempts[index - 1]
+        transition = (previous["stage"], stage)
+        if transition not in LIVE_STAGE_TRANSITIONS:
+            fail("N7_LIVE_STAGE_TRACE_TRANSITION_INVALID")
+        accepted = LIVE_STAGE_ACCEPTANCE[previous["stage"]]
+        if stage == previous["stage"] and previous["outcomeCode"] == accepted:
+            fail("N7_LIVE_ACCEPTED_STAGE_REPEATED")
+        if transition in (("OBSERVE", "HIERARCHY"), ("HIERARCHY", "ELEMENT_BINDING")) \
+                and previous["outcomeCode"] != accepted:
+            fail("N7_LIVE_STAGE_ADVANCED_WITHOUT_ACCEPTANCE")
+        if transition in (("HIERARCHY", "OBSERVE"), ("ELEMENT_BINDING", "HIERARCHY")) \
+                and previous["outcomeCode"] != "LIVE_VISUAL_ANALYSIS_REJECTED":
+            fail("N7_LIVE_STAGE_REWIND_WITHOUT_VALIDATOR_REJECTION")
+    final = attempts[-1]
+    if final["stage"] != "ELEMENT_BINDING" \
+            or final["outcomeCode"] != LIVE_STAGE_ACCEPTANCE["ELEMENT_BINDING"]:
+        fail("N7_LIVE_STAGE_TRACE_NOT_COMPLETE")
 
 
 def validate_closed_authorization(
@@ -145,8 +201,16 @@ def validate_n7_journal(
     if value["journalVersion"] != JOURNAL_VERSION \
             or value["authorizationId"] != authorization["authorizationId"]:
         fail("N7_JOURNAL_IDENTITY_DRIFT")
-    require_instant(value["createdAt"], "journal.createdAt")
-    require_instant(value["updatedAt"], "journal.updatedAt")
+    approved = require_instant(authorization["approvedAt"], "approvedAt")
+    expires = require_instant(authorization["expiresAt"], "expiresAt")
+    journal_created = require_time_in_authorization(
+        value["createdAt"], "journal.createdAt", approved, expires,
+    )
+    journal_updated = require_time_in_authorization(
+        value["updatedAt"], "journal.updatedAt", approved, expires,
+    )
+    if journal_updated < journal_created:
+        fail("N7_JOURNAL_TIME_ORDER_INVALID")
     executions = visual.require_list(value["executions"], "journal.executions")
     if len(executions) != len(authorization["caseIds"]):
         fail("N7_JOURNAL_CASE_COUNT_INVALID")
@@ -186,8 +250,17 @@ def validate_n7_journal(
         if item["status"] != "COMPLETED" or item["terminalState"] != "REVIEW_REQUIRED" \
                 or item["evaluation"] is None or item["completedAt"] is None:
             fail("N7_EXECUTION_TERMINAL_INVALID")
-        for field in ("startedAt", "updatedAt", "completedAt"):
-            require_instant(item[field], f"execution[{index}].{field}")
+        started = require_time_in_authorization(
+            item["startedAt"], f"execution[{index}].startedAt", approved, expires,
+        )
+        updated = require_time_in_authorization(
+            item["updatedAt"], f"execution[{index}].updatedAt", approved, expires,
+        )
+        completed = require_time_in_authorization(
+            item["completedAt"], f"execution[{index}].completedAt", approved, expires,
+        )
+        if not journal_created <= started <= updated <= completed <= journal_updated:
+            fail("N7_EXECUTION_TIME_ORDER_INVALID")
         result = visual.evaluation(
             item["evaluation"], metadata, set(authorization["caseIds"]),
         )
@@ -195,6 +268,10 @@ def validate_n7_journal(
             fail("N7_EVALUATION_CASE_DRIFT")
         attempts = [visual.validate_attempt(attempt) for attempt in
                     visual.require_list(item["attempts"], f"execution[{index}].attempts")]
+        maximum_attempts = authorization["maximumProviderAttempts"] // len(
+            authorization["caseIds"]
+        )
+        validate_stage_trace(attempts, maximum_attempts)
         if result["providerCalls"] != len(attempts):
             fail("N7_EVALUATION_CALL_COUNT_DRIFT")
         ordinals: set[int] = set()
@@ -223,6 +300,14 @@ def validate_n7_journal(
             )
             if observed_usage != settled_usage:
                 fail("N7_ATTEMPT_USAGE_DRIFT")
+            reservation_created = require_time_in_authorization(
+                reservation["createdAt"], "reservation.createdAt", approved, expires,
+            )
+            reservation_updated = require_time_in_authorization(
+                reservation["updatedAt"], "reservation.updatedAt", approved, expires,
+            )
+            if not started <= reservation_created <= reservation_updated <= completed:
+                fail("N7_RESERVATION_TIME_ORDER_INVALID")
             provider_latency_millis += attempt["latencyMillis"]
         results.append(result)
         terminal_states.append(item["terminalState"])

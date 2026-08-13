@@ -25,7 +25,7 @@ class N7LiveSemanticEvaluationTest {
         var corpus = new LayeredVisualCorpus();
         var evaluation = new N7LiveSemanticEvaluation();
         var binding = new N7LiveSemanticEvaluation.Binding(
-                "n7-04-plus-canary-product-v45-20260813b",
+                "n7-04-plus-canary-product-v45-20260813c",
                 "CANARY",
                 "renderweave-visual-evaluation-tree-sha256/2:" + "a".repeat(64),
                 "dashscope-qwen37-plus-product-v45-hybrid-generic",
@@ -84,5 +84,41 @@ class N7LiveSemanticEvaluationTest {
                 () -> evaluation.report(corpus, binding, List.of(result, result)));
         assertThrows(IllegalArgumentException.class,
                 () -> evaluation.report(corpus, binding, List.of(outside)));
+    }
+
+    @Test
+    void reportCodecRejectsDuplicateUnknownTrailingAndIdentityTampering() {
+        var corpus = new LayeredVisualCorpus();
+        var evaluation = new N7LiveSemanticEvaluation();
+        var binding = new N7LiveSemanticEvaluation.Binding(
+                "n7-test", "CANARY",
+                "renderweave-visual-evaluation-tree-sha256/2:" + "a".repeat(64),
+                "dashscope-qwen37-plus-product-v45-hybrid-generic", "b".repeat(64),
+                "renderweave-n7-qualification-protocol/1.0:" + "c".repeat(64),
+                "renderweave-n7-canary-assignment/1.0:" + "d".repeat(64), CANARY
+        );
+        var report = evaluation.report(corpus, binding, CANARY.stream().map(caseId ->
+                evaluation.evaluateFailure(
+                        corpus.require(caseId), VisualStageSnapshot.empty(InferenceStage.NORMALIZE),
+                        "VISUAL_STAGE_CANDIDATE_MISSING"
+                )).toList());
+        var codec = new N7LiveSemanticEvaluationReportJsonCodec();
+        var encoded = new String(codec.write(report), java.nio.charset.StandardCharsets.UTF_8);
+        var identity = codec.reportIdentity(report);
+
+        var duplicate = encoded.replaceFirst(
+                "\\{", "{\\\"envelopeVersion\\\":\\\"duplicate\\\",");
+        var unknown = encoded.replaceFirst("\\{", "{\\\"unknown\\\":true,");
+        var trailing = encoded + "{}";
+
+        assertThrows(IllegalArgumentException.class, () -> codec.read(
+                duplicate.getBytes(java.nio.charset.StandardCharsets.UTF_8), identity));
+        assertThrows(IllegalArgumentException.class, () -> codec.read(
+                unknown.getBytes(java.nio.charset.StandardCharsets.UTF_8), identity));
+        assertThrows(IllegalArgumentException.class, () -> codec.read(
+                trailing.getBytes(java.nio.charset.StandardCharsets.UTF_8), identity));
+        assertThrows(IllegalArgumentException.class, () -> codec.read(
+                encoded.getBytes(java.nio.charset.StandardCharsets.UTF_8),
+                N7LiveSemanticEvaluationReport.VERSION + ":" + "0".repeat(64)));
     }
 }

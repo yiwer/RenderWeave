@@ -79,6 +79,7 @@ class DashScopeVisualEvaluationTest {
     @Autowired private InferenceReplayStore workflowStore;
     @Autowired private InferenceProfileRegistry profiles;
     @Autowired private VisualEvaluationAuthorization authorization;
+    @Autowired private Preflight preflight;
     @Autowired private VisualEvaluationGoalBudget goalBudget;
     @Autowired private VisualEvaluationJournal journal;
     @Autowired private InferenceProvider provider;
@@ -195,7 +196,7 @@ class DashScopeVisualEvaluationTest {
         var attempts = workflowStore.attempts(created.runId());
         var finalRun = runs.find(created.runId()).orElseThrow();
         var snapshot = checkpointReader.read(finalRun.checkpointJson(), attempts.size());
-        var n7Case = authorization.authorizationId().startsWith("n7-")
+        var n7Case = preflight.n7Contract() != null
                 ? layeredCorpus.require(evaluationCase.caseId()) : null;
         var stageResult = finalRun.failureCode()
                 .map(code -> n7Case == null
@@ -252,8 +253,8 @@ class DashScopeVisualEvaluationTest {
 
     private void writeReport() throws IOException {
         String encoded;
-        if (authorization.authorizationId().startsWith("n7-")) {
-            var contract = N7LiveTicketContract.plusCanary();
+        if (preflight.n7Contract() != null) {
+            var contract = preflight.n7Contract();
             var binding = new N7LiveSemanticEvaluation.Binding(
                     authorization.authorizationId(), authorization.phase(),
                     authorization.evaluationIdentity(), authorization.profileId(),
@@ -347,8 +348,8 @@ class DashScopeVisualEvaluationTest {
                 Clock clock
         ) {
             var now = clock.instant();
-            var n7 = authorization.authorizationId().startsWith("n7-")
-                    ? N7LiveTicketContract.plusCanary() : null;
+            var n7 = N7LiveTicketContract.forAuthorization(
+                    authorization.authorizationId()).orElse(null);
             if (n7 == null) {
                 authorization.requireOpen(now);
                 identity.requireCurrent(authorization.evaluationIdentity());

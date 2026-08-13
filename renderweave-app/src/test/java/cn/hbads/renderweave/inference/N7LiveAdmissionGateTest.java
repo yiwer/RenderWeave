@@ -56,6 +56,10 @@ class N7LiveAdmissionGateTest {
         assertEquals("REPOSITORY_SYNTHETIC_ONLY", contract.inputClassification());
         assertTrue(contract.contractIdentity().matches(
                 "renderweave-n7-live-ticket-contract/1\\.0:[0-9a-f]{64}"));
+        assertEquals(contract, N7LiveTicketContract.forAuthorization(
+                contract.authorizationId()).orElseThrow());
+        assertTrue(N7LiveTicketContract.forAuthorization("n7-unknown").isEmpty());
+        assertTrue(N7LiveTicketContract.forAuthorization("legacy-evaluation").isEmpty());
     }
 
     @Test

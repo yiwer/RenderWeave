@@ -19,6 +19,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 /** Immutable, payload-free request contract. Human approval remains in the excluded live ledger. */
 record N7LiveTicketContract(
@@ -53,6 +54,8 @@ record N7LiveTicketContract(
         String contractIdentity
 ) {
     static final String VERSION = "renderweave-n7-live-ticket-contract/1.0";
+    static final String PLUS_CANARY_AUTHORIZATION_ID =
+            "n7-04-plus-canary-product-v45-20260813c";
     private static final String PLUS_CANARY_RESOURCE =
             "visual-eval/n7/live-contracts/n7-04-plus-canary.json";
     private static final ObjectMapper JSON = JsonMapper.builder(
@@ -84,13 +87,18 @@ record N7LiveTicketContract(
         }
     }
 
+    static Optional<N7LiveTicketContract> forAuthorization(String authorizationId) {
+        if (!PLUS_CANARY_AUTHORIZATION_ID.equals(authorizationId)) return Optional.empty();
+        return Optional.of(plusCanary());
+    }
+
     private static void validatePlusCanary(N7LiveTicketContract value) {
         var protocol = N7QualificationProtocol.load();
         var corpus = new LayeredVisualCorpus();
         var profile = new InferenceProfileRegistry().require(value.profileId());
         var actual = profile.profile();
         require(VERSION.equals(value.contractVersion()) && "N7-04".equals(value.ticketId())
-                        && "n7-04-plus-canary-product-v45-20260813b".equals(value.authorizationId())
+                        && PLUS_CANARY_AUTHORIZATION_ID.equals(value.authorizationId())
                         && "PROPOSED_NOT_OPEN".equals(value.lifecycle()),
                 "N7_LIVE_CONTRACT_IDENTITY_DRIFT");
         require("DASHSCOPE".equals(value.provider())
