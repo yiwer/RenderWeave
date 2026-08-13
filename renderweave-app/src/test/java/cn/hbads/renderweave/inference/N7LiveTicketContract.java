@@ -55,7 +55,7 @@ record N7LiveTicketContract(
 ) {
     static final String VERSION = "renderweave-n7-live-ticket-contract/1.0";
     static final String PLUS_CANARY_AUTHORIZATION_ID =
-            "n7-04-plus-canary-product-v45-20260813c";
+            "n7-04-plus-canary-product-v45-20260813d";
     private static final String PLUS_CANARY_RESOURCE =
             "visual-eval/n7/live-contracts/n7-04-plus-canary.json";
     private static final ObjectMapper JSON = JsonMapper.builder(
