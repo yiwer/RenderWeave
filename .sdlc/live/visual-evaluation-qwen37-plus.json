@@ -1,12 +1,12 @@
 {
   "authorizationVersion": "renderweave-visual-evaluation-authorization/1.0",
-  "authorizationId": "n7-04-plus-canary-product-v45-20260813d",
-  "status": "CLOSED",
+  "authorizationId": "n7-04-plus-canary-product-v45-20260814e",
+  "status": "PROPOSED",
   "phase": "CANARY",
   "inputClassification": "REPOSITORY_SYNTHETIC_ONLY",
   "corpusVersion": "renderweave-visual-stage-corpus/2.0",
   "corpusSourceSha256": "ca53d88763af161a1b1b22fa50774c56eae929affe5316157ae355fdb005b8b3",
-  "evaluationIdentity": "renderweave-visual-evaluation-tree-sha256/2:2011bd517a2dd907dc1432aac9cd48efd4b462f1db3f3dfec518da8ceb9ffdd5",
+  "evaluationIdentity": "renderweave-visual-evaluation-tree-sha256/2:eee09d233e764f15f1d8ab1b2d47f0a8300dc55b2dbb495c906c05dfc429b05e",
   "profileId": "dashscope-qwen37-plus-product-v45-hybrid-generic",
   "profileSnapshotSha256": "da922ed9f778f98eb364ce967bf617cb8f14633dd40c028aee6550eb7d258db9",
   "model": "qwen3.7-plus",
@@ -21,8 +21,8 @@
   "maximumTotalTokens": 500000,
   "maximumCostMicrosCny": 5000000,
   "maximumCasesPerBatch": 5,
-  "approvedBy": "yiwer",
-  "approvedAt": "2026-08-13T15:51:38Z",
-  "expiresAt": "2026-08-14T15:51:38Z",
-  "approvalScope": "renderweave-n7-live-ticket-contract/1.0:453e063ef0c2881bf6608bd7659a0c3ffb2c73c1a82fc9283c9e8bcd9b3020ef"
+  "approvedBy": null,
+  "approvedAt": null,
+  "expiresAt": null,
+  "approvalScope": "renderweave-n7-live-ticket-contract/1.0:caa98a6831d5a5e8dd263265822c4568d1b26117f0d438c8a90dabdf4f422843"
 }
