@@ -155,7 +155,7 @@ def run_probe(
     executable = shutil.which("mvn.cmd" if os.name == "nt" else "mvn")
     if executable is None:
         fail("N7_CLOSED_PROBE_MAVEN_UNAVAILABLE")
-    command = [
+    maven_command = [
         executable, "-B", "-ntp", "-pl", "renderweave-app", "-am",
         "-Dtest=DashScopeVisualEvaluationTest",
         "-Dsurefire.failIfNoSpecifiedTests=false",
@@ -163,6 +163,15 @@ def run_probe(
         f"-Drenderweave.n7.closed-probe-id={marker}",
         "test",
     ]
+    command = maven_command
+    if os.name == "nt":
+        command_processor = shutil.which("cmd.exe")
+        if command_processor is None:
+            fail("N7_CLOSED_PROBE_COMMAND_PROCESSOR_UNAVAILABLE")
+        command = [
+            command_processor, "/d", "/s", "/c",
+            subprocess.list2cmdline(maven_command),
+        ]
     command_contract = {
         "tool": pathlib.Path(executable).name,
         "platform": "WINDOWS" if os.name == "nt" else "POSIX",

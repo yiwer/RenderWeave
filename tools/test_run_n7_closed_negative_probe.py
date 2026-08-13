@@ -46,7 +46,7 @@ class N7ClosedNegativeProbeTest(unittest.TestCase):
 
         with mock.patch.object(PROBE, "runtime_snapshot", side_effect=[snapshot, snapshot]), \
                 mock.patch.object(PROBE, "matching_process_ids", side_effect=[[], []]), \
-                mock.patch.object(PROBE.shutil, "which", return_value="mvn.cmd"):
+                mock.patch.object(PROBE.shutil, "which", side_effect=tool_path):
             result = PROBE.run_probe(pathlib.Path("repository"), pathlib.Path("evidence"))
 
         self.assertEqual("PASS", result["result"])
@@ -65,6 +65,11 @@ class N7ClosedNegativeProbeTest(unittest.TestCase):
         self.assertEqual(
             "qwen37-plus",
             child_environment["RENDERWEAVE_VISUAL_EVALUATION_AUTHORIZATION"],
+        )
+        launched = popen.call_args.args[0]
+        self.assertEqual(
+            "cmd.exe" if PROBE.os.name == "nt" else "mvn",
+            pathlib.Path(launched[0]).name,
         )
 
     @mock.patch.object(subprocess, "Popen")
@@ -89,10 +94,14 @@ class N7ClosedNegativeProbeTest(unittest.TestCase):
 
         with mock.patch.object(PROBE, "runtime_snapshot", side_effect=[before, after]), \
                 mock.patch.object(PROBE, "matching_process_ids", side_effect=[[], []]), \
-                mock.patch.object(PROBE.shutil, "which", return_value="mvn.cmd"):
+                mock.patch.object(PROBE.shutil, "which", side_effect=tool_path):
             with self.assertRaisesRegex(
                     PROBE.ProbeError, "N7_CLOSED_PROBE_RUNTIME_MUTATED"):
                 PROBE.run_probe(pathlib.Path("repository"), pathlib.Path("evidence"))
+
+
+def tool_path(name: str) -> str:
+    return {"mvn.cmd": "mvn.cmd", "mvn": "mvn", "cmd.exe": "cmd.exe"}[name]
 
 
 if __name__ == "__main__":
