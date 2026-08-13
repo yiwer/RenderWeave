@@ -119,6 +119,9 @@ class N7ClosedNegativeProbeTest(unittest.TestCase):
             "cmd.exe" if PROBE.os.name == "nt" else "mvn",
             pathlib.Path(launched[0]).name,
         )
+        launched_text = " ".join(launched)
+        for name in PROBE.SECRET_SYSTEM_PROPERTY_NAMES:
+            self.assertIn(f"-D{name}=", launched_text)
 
     def test_probe_tool_hash_is_line_ending_stable(self) -> None:
         self.assertEqual(

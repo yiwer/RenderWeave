@@ -100,6 +100,7 @@ def record_fixture(runtime: dict[str, object]) -> dict[str, object]:
         "authorizationSelector": "qwen37-plus",
         "batchLimit": 5,
         "credentialsRemoved": True,
+        "credentialSystemPropertiesBlank": True,
         "marker": marker,
     }
     return {

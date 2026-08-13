@@ -24,6 +24,12 @@ import verify_n7_live_evidence as evidence_verifier
 PROBE_VERSION = "renderweave-n7-closed-negative-probe/1.0"
 SNAPSHOT_VERSION = "renderweave-n7-runtime-snapshot/1.0"
 EXPECTED_FAILURE = "N7_LIVE_AUTHORIZATION_NOT_OPEN"
+SECRET_SYSTEM_PROPERTY_NAMES = (
+    "DASHSCOPE_TOKEN_API_KEY",
+    "DASHSCOPE_TOKEN_API_KEY_FILE",
+    "DASHSCOPE_API_KEY",
+    "DASHSCOPE_API_KEY_FILE",
+)
 FORBIDDEN_CHILD_ENVIRONMENT_NAMES = {
     "DASHSCOPE_TOKEN_API_KEY",
     "DASHSCOPE_TOKEN_API_KEY_FILE",
@@ -189,6 +195,10 @@ def run_probe(
         "-Dtest=DashScopeVisualEvaluationTest",
         "-Dsurefire.failIfNoSpecifiedTests=false",
         "-Drenderweave.visual-evaluation.batch-limit=5",
+        "-DDASHSCOPE_TOKEN_API_KEY=",
+        "-DDASHSCOPE_TOKEN_API_KEY_FILE=",
+        "-DDASHSCOPE_API_KEY=",
+        "-DDASHSCOPE_API_KEY_FILE=",
         f"-Drenderweave.n7.closed-probe-id={marker}",
         "test",
     ]
@@ -208,6 +218,7 @@ def run_probe(
         "authorizationSelector": "qwen37-plus",
         "batchLimit": 5,
         "credentialsRemoved": True,
+        "credentialSystemPropertiesBlank": True,
         "marker": marker,
     }
     started_at = utc_now()

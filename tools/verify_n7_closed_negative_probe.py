@@ -137,6 +137,7 @@ def verify_record(
         "authorizationSelector": "qwen37-plus",
         "batchLimit": 5,
         "credentialsRemoved": True,
+        "credentialSystemPropertiesBlank": True,
         "marker": value["probeMarker"],
     }
     if value["commandIdentity"] != canonical_identity(probe.PROBE_VERSION, command):
