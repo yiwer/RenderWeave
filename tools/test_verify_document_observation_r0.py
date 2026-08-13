@@ -44,6 +44,17 @@ class DocumentObservationR0VerifierTest(unittest.TestCase):
                 "costMicrosCny": 0,
             })
 
+    def test_active_authorization_slots_can_advance_without_weakening_product_snapshot_protection(self) -> None:
+        rows = VERIFIER.protected_file_rows(REPOSITORY)
+        paths = {row["path"] for row in rows}
+
+        self.assertFalse(any(path.startswith(".sdlc/live/") for path in paths))
+        self.assertIn(
+            "renderweave-inference/src/main/resources/inference-profiles/"
+            "dashscope-qwen37-plus-product-v45-hybrid-generic.json",
+            paths,
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

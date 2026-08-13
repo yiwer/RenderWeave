@@ -31,9 +31,6 @@ SEMANTIC_FINGERPRINT = "ee99eb03b4fd94a0970fe2db37041be30913a8d3c63f10d7bb64c3e2
 SHA256 = re.compile(r"^[0-9a-f]{64}$")
 
 PROTECTED_PATHS = (
-    ".sdlc/live/visual-evaluation-qwen37-flash.json",
-    ".sdlc/live/visual-evaluation-qwen37-plus.json",
-    ".sdlc/live/visual-evaluation-qwen38-max.json",
     "renderweave-inference/src/main/resources/inference-profiles/"
     "dashscope-qwen37-flash-product-v45-hybrid-generic.json",
     "renderweave-inference/src/main/resources/inference-profiles/"

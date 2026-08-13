@@ -109,9 +109,6 @@ try {
         -Destination (Join-Path $reportDirectory 'r0-junit-app.xml')
 
     $protectedPaths = @(
-        '.sdlc/live/visual-evaluation-qwen37-flash.json',
-        '.sdlc/live/visual-evaluation-qwen37-plus.json',
-        '.sdlc/live/visual-evaluation-qwen38-max.json',
         'renderweave-inference/src/main/resources/inference-profiles/dashscope-qwen37-flash-product-v45-hybrid-generic.json',
         'renderweave-inference/src/main/resources/inference-profiles/dashscope-qwen37-plus-product-v45-hybrid-generic.json',
         'renderweave-inference/src/main/resources/inference-profiles/dashscope-qwen38-max-product-v45-hybrid-generic.json',

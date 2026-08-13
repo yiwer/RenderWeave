@@ -58,6 +58,16 @@ class LayeredEvaluationGateVerifierTest(unittest.TestCase):
         self.assertEqual("J0", result["visualDiffJudgement"])
         self.assertEqual(0, result["payloadForbiddenMatches"])
 
+    def test_active_authorization_slots_are_not_frozen_product_snapshot_bytes(self) -> None:
+        paths = {row["path"] for row in self.protected}
+
+        self.assertFalse(any(path.startswith(".sdlc/live/") for path in paths))
+        self.assertIn(
+            "renderweave-inference/src/main/resources/inference-prompts/"
+            "visual-elements-v12.txt",
+            paths,
+        )
+
     def test_lifecycle_future_gate_provider_history_and_payload_tampering_fail(self) -> None:
         envelope = FIXTURE.make_envelope()
         independent = VERIFIER.verify_envelope(envelope, REPOSITORY)

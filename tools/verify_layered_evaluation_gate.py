@@ -23,9 +23,6 @@ PRIMARY_SEAM = "normalized ArtifactSet + AcquisitionPolicy -> DocumentObservatio
 HIGHEST_ACCEPTANCE_SEAM = "complete IMAGE_ONLY scripted replay -> REVIEW_REQUIRED"
 
 PROTECTED_PATHS = (
-    ".sdlc/live/visual-evaluation-qwen37-flash.json",
-    ".sdlc/live/visual-evaluation-qwen37-plus.json",
-    ".sdlc/live/visual-evaluation-qwen38-max.json",
     "renderweave-inference/src/main/resources/inference-profiles/"
     "dashscope-qwen37-flash-product-v45-hybrid-generic.json",
     "renderweave-inference/src/main/resources/inference-profiles/"

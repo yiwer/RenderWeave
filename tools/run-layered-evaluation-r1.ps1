@@ -195,9 +195,6 @@ try {
         ConvertFrom-Json
     $r0Summary = Get-Content -LiteralPath $r0ReportPath -Raw -Encoding UTF8 | ConvertFrom-Json
     $protectedPaths = @(
-        '.sdlc/live/visual-evaluation-qwen37-flash.json',
-        '.sdlc/live/visual-evaluation-qwen37-plus.json',
-        '.sdlc/live/visual-evaluation-qwen38-max.json',
         'renderweave-inference/src/main/resources/inference-profiles/dashscope-qwen37-flash-product-v45-hybrid-generic.json',
         'renderweave-inference/src/main/resources/inference-profiles/dashscope-qwen37-plus-product-v45-hybrid-generic.json',
         'renderweave-inference/src/main/resources/inference-profiles/dashscope-qwen38-max-product-v45-hybrid-generic.json',
