@@ -1,7 +1,7 @@
 {
   "authorizationVersion": "renderweave-visual-evaluation-authorization/1.0",
   "authorizationId": "n7-04-plus-canary-product-v45-20260814e",
-  "status": "OPEN",
+  "status": "CLOSED",
   "phase": "CANARY",
   "inputClassification": "REPOSITORY_SYNTHETIC_ONLY",
   "corpusVersion": "renderweave-visual-stage-corpus/2.0",
