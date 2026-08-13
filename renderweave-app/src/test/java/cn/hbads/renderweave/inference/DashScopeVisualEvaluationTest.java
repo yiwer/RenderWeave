@@ -1,6 +1,8 @@
 package cn.hbads.renderweave.inference;
 
 import cn.hbads.renderweave.inference.eval.visual.LayeredVisualCorpus;
+import cn.hbads.renderweave.inference.eval.visual.N7LiveSemanticEvaluation;
+import cn.hbads.renderweave.inference.eval.visual.N7LiveSemanticEvaluationReportJsonCodec;
 import cn.hbads.renderweave.inference.eval.visual.VisualStageCorpus;
 import cn.hbads.renderweave.inference.eval.visual.VisualStageEvaluator;
 import cn.hbads.renderweave.inference.eval.visual.VisualStageRasterizer;
@@ -90,6 +92,7 @@ class DashScopeVisualEvaluationTest {
     private final VisualStageCheckpointReader checkpointReader = new VisualStageCheckpointReader();
     private final VisualStageEvaluator evaluator = new VisualStageEvaluator();
     private final VisualStageReporter reporter = new VisualStageReporter();
+    private final N7LiveSemanticEvaluation n7Evaluator = new N7LiveSemanticEvaluation();
 
     @Test
     void executesAtMostOneAuthorizedBatchAndPersistsIndependentlyVerifiableEvidence()
@@ -192,9 +195,15 @@ class DashScopeVisualEvaluationTest {
         var attempts = workflowStore.attempts(created.runId());
         var finalRun = runs.find(created.runId()).orElseThrow();
         var snapshot = checkpointReader.read(finalRun.checkpointJson(), attempts.size());
+        var n7Case = authorization.authorizationId().startsWith("n7-")
+                ? layeredCorpus.require(evaluationCase.caseId()) : null;
         var stageResult = finalRun.failureCode()
-                .map(code -> evaluator.evaluateFailure(evaluationCase, snapshot, code))
-                .orElseGet(() -> evaluator.evaluate(evaluationCase, snapshot));
+                .map(code -> n7Case == null
+                        ? evaluator.evaluateFailure(evaluationCase, snapshot, code)
+                        : n7Evaluator.evaluateFailure(n7Case, snapshot, code))
+                .orElseGet(() -> n7Case == null
+                        ? evaluator.evaluate(evaluationCase, snapshot)
+                        : n7Evaluator.evaluate(n7Case, snapshot));
         var reservations = goalBudget.reservationsForRun(created.runId()).stream()
                 .collect(java.util.stream.Collectors.toMap(
                         VisualEvaluationGoalBudget.Reservation::attemptOrdinal, item -> item
@@ -211,10 +220,17 @@ class DashScopeVisualEvaluationTest {
                     attempt.durationMillis(), attempt.problemCodeCounts()
             );
         }).toList();
-        journal.completeCase(
-                assignment, executionId, created.runId(), stageResult, evidenceAttempts,
-                goalBudget, clock.instant()
-        );
+        if (n7Case == null) {
+            journal.completeCase(
+                    assignment, executionId, created.runId(), stageResult, evidenceAttempts,
+                    goalBudget, clock.instant()
+            );
+        } else {
+            journal.completeCase(
+                    assignment, executionId, created.runId(), stageResult, finished.state().name(),
+                    evidenceAttempts, goalBudget, clock.instant()
+            );
+        }
         return finished;
     }
 
@@ -235,10 +251,24 @@ class DashScopeVisualEvaluationTest {
     }
 
     private void writeReport() throws IOException {
-        var report = reporter.report(corpus, journal.completedResults());
+        String encoded;
+        if (authorization.authorizationId().startsWith("n7-")) {
+            var contract = N7LiveTicketContract.plusCanary();
+            var binding = new N7LiveSemanticEvaluation.Binding(
+                    authorization.authorizationId(), authorization.phase(),
+                    authorization.evaluationIdentity(), authorization.profileId(),
+                    authorization.profileSnapshotSha256(), contract.qualificationProtocolIdentity(),
+                    contract.assignmentIdentity(), authorization.caseIds()
+            );
+            var report = n7Evaluator.report(layeredCorpus, binding, journal.completedResults());
+            encoded = new String(new N7LiveSemanticEvaluationReportJsonCodec().write(report),
+                    StandardCharsets.UTF_8);
+        } else {
+            encoded = json.writerWithDefaultPrettyPrinter().writeValueAsString(
+                    reporter.report(corpus, journal.completedResults()));
+        }
         writeAtomically(evidenceDirectory().resolve("report.json"),
-                PayloadFreeLiveEvidenceGuard.requirePayloadFree(
-                        json.writerWithDefaultPrettyPrinter().writeValueAsString(report)));
+                PayloadFreeLiveEvidenceGuard.requirePayloadFree(encoded));
     }
 
     private static void writeAtomically(Path destination, String content) throws IOException {
@@ -367,11 +397,14 @@ class DashScopeVisualEvaluationTest {
                 Clock clock
         ) {
             Objects.requireNonNull(goalBudget, "goalBudget");
+            var directory = repositoryRoot().resolve(".sdlc/evidence")
+                    .resolve(preflight.authorization().authorizationId());
+            if (preflight.n7Contract() != null) {
+                return new VisualEvaluationJournal(
+                        directory, preflight.authorization(), new LayeredVisualCorpus(), json, clock.instant());
+            }
             return new VisualEvaluationJournal(
-                    repositoryRoot().resolve(".sdlc/evidence")
-                            .resolve(preflight.authorization().authorizationId()),
-                    preflight.authorization(), new VisualStageCorpus(), json, clock.instant()
-            );
+                    directory, preflight.authorization(), new VisualStageCorpus(), json, clock.instant());
         }
 
         @Bean

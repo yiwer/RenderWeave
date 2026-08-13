@@ -45,7 +45,8 @@ class N7LiveAdmissionGateTest {
         assertEquals("renderweave-visual-bindings-prompt/4.0", contract.bindingPromptVersion());
         assertEquals("renderweave-visual-stage-corpus/2.0", contract.corpusVersion());
         assertTrue(contract.corpusIdentity().startsWith("renderweave-visual-stage-corpus/2.0:"));
-        assertTrue(contract.evaluatorIdentity().startsWith("renderweave-layered-evaluator/1.0:"));
+        assertEquals(cn.hbads.renderweave.inference.eval.visual.N7LiveSemanticEvaluation.evaluatorIdentity(),
+                contract.evaluatorIdentity());
         assertEquals(5, contract.caseIds().size());
         assertEquals(35, contract.maximumProviderAttempts());
         assertEquals(500_000, contract.maximumTotalTokens());
@@ -281,7 +282,7 @@ class N7LiveAdmissionGateTest {
     ) {
         return new VisualEvaluationAuthorization(
                 VisualEvaluationAuthorization.VERSION,
-                "n7-04-plus-canary-product-v45-20260813", status, "CANARY",
+                contract.authorizationId(), status, "CANARY",
                 VisualEvaluationAuthorization.INPUT_CLASSIFICATION,
                 contract.corpusVersion(), contract.corpusSourceSha256(), evaluationIdentity,
                 contract.profileId(), profileSnapshot, contract.model(), caseIds,

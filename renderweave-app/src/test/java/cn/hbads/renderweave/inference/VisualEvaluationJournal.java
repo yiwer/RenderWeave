@@ -1,5 +1,7 @@
 package cn.hbads.renderweave.inference;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import cn.hbads.renderweave.inference.eval.visual.LayeredVisualCorpus;
 import cn.hbads.renderweave.inference.eval.visual.VisualStageCorpus;
 import cn.hbads.renderweave.inference.eval.visual.VisualStageEvaluationResult;
 import tools.jackson.core.StreamReadFeature;
@@ -35,10 +37,14 @@ import java.util.UUID;
  */
 final class VisualEvaluationJournal {
     static final String VERSION = "renderweave-visual-evaluation-journal/1.0";
+    static final String N7_VERSION = "renderweave-n7-visual-evaluation-journal/2.0";
     private static final String GUARD_VERSION = "renderweave-visual-evaluation-journal-guard/1.0";
+    private static final String N7_GUARD_VERSION = "renderweave-n7-visual-evaluation-journal-guard/2.0";
 
     private final VisualEvaluationAuthorization authorization;
-    private final VisualStageCorpus corpus;
+    private final java.util.function.Function<String, VisualStageCorpus.EvaluationCase> goldCase;
+    private final String journalVersion;
+    private final String guardVersion;
     private final ObjectMapper json;
     private final Path stateFile;
     private final Path guardFile;
@@ -54,10 +60,39 @@ final class VisualEvaluationJournal {
             ObjectMapper objectMapper,
             Instant now
     ) {
+        this(directory, authorization, Objects.requireNonNull(corpus, "corpus")::require,
+                () -> authorization.requireCorpus(corpus), VERSION, GUARD_VERSION, objectMapper, now);
+    }
+
+    VisualEvaluationJournal(
+            Path directory,
+            VisualEvaluationAuthorization authorization,
+            LayeredVisualCorpus corpus,
+            ObjectMapper objectMapper,
+            Instant now
+    ) {
+        this(directory, authorization,
+                caseId -> Objects.requireNonNull(corpus, "corpus").require(caseId).renderCase(),
+                () -> authorization.requireCorpus(corpus), N7_VERSION, N7_GUARD_VERSION,
+                objectMapper, now);
+    }
+
+    private VisualEvaluationJournal(
+            Path directory,
+            VisualEvaluationAuthorization authorization,
+            java.util.function.Function<String, VisualStageCorpus.EvaluationCase> goldCase,
+            Runnable corpusValidation,
+            String journalVersion,
+            String guardVersion,
+            ObjectMapper objectMapper,
+            Instant now
+    ) {
         Objects.requireNonNull(directory, "directory");
         this.authorization = Objects.requireNonNull(authorization, "authorization");
-        this.corpus = Objects.requireNonNull(corpus, "corpus");
-        authorization.requireCorpus(corpus);
+        this.goldCase = Objects.requireNonNull(goldCase, "goldCase");
+        this.journalVersion = Objects.requireNonNull(journalVersion, "journalVersion");
+        this.guardVersion = Objects.requireNonNull(guardVersion, "guardVersion");
+        Objects.requireNonNull(corpusValidation, "corpusValidation").run();
         Objects.requireNonNull(now, "now");
         json = Objects.requireNonNull(objectMapper, "objectMapper").rebuild()
                 .enable(StreamReadFeature.STRICT_DUPLICATE_DETECTION)
@@ -83,8 +118,9 @@ final class VisualEvaluationJournal {
                 validateState(readState());
             } else {
                 writeAtomically(guardFile,
-                        json.writerWithDefaultPrettyPrinter().writeValueAsString(Guard.from(authorization)));
-                writeState(State.initial(authorization.authorizationId(), now));
+                        json.writerWithDefaultPrettyPrinter().writeValueAsString(
+                                Guard.from(authorization, guardVersion)));
+                writeState(State.initial(journalVersion, authorization.authorizationId(), now));
             }
             return null;
         });
@@ -183,6 +219,19 @@ final class VisualEvaluationJournal {
             VisualEvaluationGoalBudget goalBudget,
             Instant now
     ) {
+        completeCase(assignmentKey, executionId, runId, evaluation, null, attempts, goalBudget, now);
+    }
+
+    void completeCase(
+            String assignmentKey,
+            String executionId,
+            UUID runId,
+            VisualStageEvaluationResult evaluation,
+            String terminalState,
+            List<AttemptResult> attempts,
+            VisualEvaluationGoalBudget goalBudget,
+            Instant now
+    ) {
         requireBatchLease();
         authorization.requireOpen(now);
         Objects.requireNonNull(runId, "runId");
@@ -208,7 +257,7 @@ final class VisualEvaluationJournal {
                         || !item.caseId().equals(evaluation.caseId())) {
                     throw new IllegalStateException("VISUAL_EVALUATION_EXECUTION_BINDING_MISMATCH");
                 }
-                executions.add(item.complete(evaluation, immutableAttempts, now));
+                executions.add(item.complete(evaluation, terminalState, immutableAttempts, now));
                 found = true;
             }
             if (!found) throw new IllegalStateException("VISUAL_EVALUATION_ASSIGNMENT_NOT_FOUND");
@@ -273,7 +322,7 @@ final class VisualEvaluationJournal {
     }
 
     private void requireEvaluationIdentity(VisualStageEvaluationResult result) {
-        var gold = corpus.require(result.caseId());
+        var gold = goldCase.apply(result.caseId());
         if (!authorization.caseIds().contains(result.caseId())
                 || result.partition() != gold.partition()
                 || result.style() != gold.style()
@@ -372,13 +421,13 @@ final class VisualEvaluationJournal {
     }
 
     private void requireExpectedGuard(Guard actual) {
-        if (!Guard.from(authorization).equals(actual)) {
+        if (!Guard.from(authorization, guardVersion).equals(actual)) {
             throw new IllegalStateException("VISUAL_EVALUATION_JOURNAL_AUTHORIZATION_MISMATCH");
         }
     }
 
     private void validateState(State state) {
-        if (!VERSION.equals(state.journalVersion())
+        if (!journalVersion.equals(state.journalVersion())
                 || !authorization.authorizationId().equals(state.authorizationId())) {
             throw new IllegalStateException("VISUAL_EVALUATION_JOURNAL_IDENTITY_MISMATCH");
         }
@@ -396,6 +445,14 @@ final class VisualEvaluationJournal {
                 throw new IllegalStateException("VISUAL_EVALUATION_JOURNAL_EXECUTION_INVALID");
             }
             if (item.evaluation() != null) requireEvaluationIdentity(item.evaluation());
+            var n7Terminal = N7_VERSION.equals(journalVersion)
+                    && ("COMPLETED".equals(item.status())
+                    ? List.of("REVIEW_REQUIRED", "FAILED", "CANCELLED").contains(item.terminalState())
+                    : item.terminalState() == null);
+            var legacyTerminal = VERSION.equals(journalVersion) && item.terminalState() == null;
+            if (!n7Terminal && !legacyTerminal) {
+                throw new IllegalStateException("VISUAL_EVALUATION_JOURNAL_TERMINAL_STATE_INVALID");
+            }
         }
         if (state.executions().size() > authorization.caseIds().size()) {
             throw new IllegalStateException("VISUAL_EVALUATION_JOURNAL_CASE_CAP_EXCEEDED");
@@ -403,7 +460,7 @@ final class VisualEvaluationJournal {
     }
 
     private void requireAuthorizedCase(String caseId) {
-        corpus.require(caseId);
+        goldCase.apply(caseId);
         if (!authorization.caseIds().contains(caseId)) {
             throw new IllegalArgumentException("VISUAL_EVALUATION_CASE_NOT_AUTHORIZED");
         }
@@ -500,9 +557,9 @@ final class VisualEvaluationJournal {
     ) {
         Guard { caseIds = List.copyOf(caseIds); }
 
-        static Guard from(VisualEvaluationAuthorization value) {
+        static Guard from(VisualEvaluationAuthorization value, String guardVersion) {
             return new Guard(
-                    GUARD_VERSION, value.authorizationVersion(), value.authorizationId(), value.phase(),
+                    guardVersion, value.authorizationVersion(), value.authorizationId(), value.phase(),
                     value.inputClassification(), value.corpusVersion(), value.corpusSourceSha256(),
                     value.evaluationIdentity(), value.profileId(), value.profileSnapshotSha256(), value.model(),
                     value.caseIds(), value.maximumProviderAttempts(), value.maximumTotalTokens(),
@@ -527,8 +584,8 @@ final class VisualEvaluationJournal {
             }
         }
 
-        static State initial(String authorizationId, Instant now) {
-            return new State(VERSION, authorizationId, List.of(), now.toString(), now.toString());
+        static State initial(String journalVersion, String authorizationId, Instant now) {
+            return new State(journalVersion, authorizationId, List.of(), now.toString(), now.toString());
         }
 
         State withExecutions(List<Execution> value, Instant now) {
@@ -546,6 +603,7 @@ final class VisualEvaluationJournal {
             String status,
             VisualStageEvaluationResult evaluation,
             List<AttemptResult> attempts,
+            @JsonInclude(JsonInclude.Include.NON_NULL) String terminalState,
             String startedAt,
             String updatedAt,
             String completedAt
@@ -580,23 +638,29 @@ final class VisualEvaluationJournal {
                 Instant now
         ) {
             return new Execution(key, UUID.randomUUID().toString(), caseId, authorization.profileId(),
-                    authorization.model(), null, "IN_PROGRESS", null, List.of(), now.toString(),
+                    authorization.model(), null, "IN_PROGRESS", null, List.of(), null, now.toString(),
                     now.toString(), null);
         }
 
         Execution bindRun(UUID value, Instant now) {
             return new Execution(assignmentKey, executionId, caseId, profileId, model, value.toString(),
-                    status, evaluation, attempts, startedAt, now.toString(), completedAt);
+                    status, evaluation, attempts, terminalState, startedAt, now.toString(), completedAt);
         }
 
-        Execution complete(VisualStageEvaluationResult value, List<AttemptResult> values, Instant now) {
+        Execution complete(
+                VisualStageEvaluationResult value,
+                String terminalState,
+                List<AttemptResult> values,
+                Instant now
+        ) {
             return new Execution(assignmentKey, executionId, caseId, profileId, model, runId,
-                    "COMPLETED", value, values, startedAt, now.toString(), now.toString());
+                    "COMPLETED", value, values, terminalState, startedAt, now.toString(), now.toString());
         }
 
         Execution abandon(Instant now) {
             return new Execution(assignmentKey, executionId, caseId, profileId, model, runId,
-                    "ABANDONED_AFTER_RESERVATION", null, List.of(), startedAt, now.toString(), now.toString());
+                    "ABANDONED_AFTER_RESERVATION", null, List.of(), null,
+                    startedAt, now.toString(), now.toString());
         }
     }
 

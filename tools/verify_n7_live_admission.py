@@ -216,7 +216,7 @@ def verify_contract(repository: pathlib.Path) -> tuple[dict[str, Any], str]:
     expected = {
         "contractVersion": CONTRACT_VERSION,
         "ticketId": "N7-04",
-        "authorizationId": "n7-04-plus-canary-product-v45-20260813",
+        "authorizationId": "n7-04-plus-canary-product-v45-20260813b",
         "lifecycle": "PROPOSED_NOT_OPEN",
         "provider": "DASHSCOPE",
         "model": "qwen3.7-plus",
@@ -233,8 +233,8 @@ def verify_contract(repository: pathlib.Path) -> tuple[dict[str, Any], str]:
         "corpusSourceSha256": "ca53d88763af161a1b1b22fa50774c56eae929affe5316157ae355fdb005b8b3",
         "qualificationProtocolIdentity": protocol_summary["protocolIdentity"],
         "assignmentIdentity": protocol_summary["canaryAssignmentIdentity"],
-        "evaluatorIdentity": "renderweave-layered-evaluator/1.0:"
-                             "3d880bc058c6ff0f6a66a7ee88cf7342416200f5da67a2210c5676d65b6b38d0",
+        "evaluatorIdentity": "renderweave-n7-live-semantic-evaluator/1.0:"
+                             "b277100f9ae4c365f97cb84ba447025db9472f7d4d06c4f7903094d5c24c3f77",
         "caseIds": EXPECTED_CASES,
         "inputClassification": "REPOSITORY_SYNTHETIC_ONLY",
         "maximumProviderAttempts": 35,

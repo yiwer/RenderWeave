@@ -1,6 +1,7 @@
 package cn.hbads.renderweave.inference;
 
 import cn.hbads.renderweave.inference.eval.visual.LayeredVisualCorpus;
+import cn.hbads.renderweave.inference.eval.visual.N7LiveSemanticEvaluation;
 import cn.hbads.renderweave.inference.eval.visual.N7QualificationProtocol;
 import cn.hbads.renderweave.inference.eval.visual.VisualStageCorpus;
 import cn.hbads.renderweave.inference.eval.visual.VisualStageRasterizer;
@@ -58,5 +59,11 @@ class DashScopeVisualEvaluationBatchLimitTest {
         assertThat(rasterizer.render(DashScopeVisualEvaluationTest.authorizedCase(
                 LayeredVisualCorpus.VERSION, injectionCase, source, layered)).sha256())
                 .isNotEqualTo(rasterizer.render(source.require(injectionCase)).sha256());
+    }
+
+    @Test
+    void n7ContractBindsTheEvaluatorActuallyUsedByTheLiveHarness() {
+        assertThat(N7LiveTicketContract.plusCanary().evaluatorIdentity())
+                .isEqualTo(N7LiveSemanticEvaluation.evaluatorIdentity());
     }
 }

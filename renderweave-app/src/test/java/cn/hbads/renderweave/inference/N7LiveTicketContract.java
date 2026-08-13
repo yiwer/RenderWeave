@@ -2,6 +2,7 @@ package cn.hbads.renderweave.inference;
 
 import cn.hbads.renderweave.inference.eval.visual.LayeredR1Evaluation;
 import cn.hbads.renderweave.inference.eval.visual.LayeredVisualCorpus;
+import cn.hbads.renderweave.inference.eval.visual.N7LiveSemanticEvaluation;
 import cn.hbads.renderweave.inference.eval.visual.N7QualificationProtocol;
 import cn.hbads.renderweave.inference.profile.InferenceProfileRegistry;
 import tools.jackson.core.StreamReadFeature;
@@ -89,7 +90,7 @@ record N7LiveTicketContract(
         var profile = new InferenceProfileRegistry().require(value.profileId());
         var actual = profile.profile();
         require(VERSION.equals(value.contractVersion()) && "N7-04".equals(value.ticketId())
-                        && "n7-04-plus-canary-product-v45-20260813".equals(value.authorizationId())
+                        && "n7-04-plus-canary-product-v45-20260813b".equals(value.authorizationId())
                         && "PROPOSED_NOT_OPEN".equals(value.lifecycle()),
                 "N7_LIVE_CONTRACT_IDENTITY_DRIFT");
         require("DASHSCOPE".equals(value.provider())
@@ -116,7 +117,8 @@ record N7LiveTicketContract(
                         && protocol.canaryAssignmentIdentity().equals(value.assignmentIdentity())
                         && protocol.canaryCaseIds().equals(value.caseIds()),
                 "N7_LIVE_PROTOCOL_ASSIGNMENT_DRIFT");
-        require(LayeredR1Evaluation.evaluatorIdentity().equals(value.evaluatorIdentity()),
+        require(N7LiveSemanticEvaluation.evaluatorIdentity().equals(value.evaluatorIdentity())
+                        && !LayeredR1Evaluation.evaluatorIdentity().equals(value.evaluatorIdentity()),
                 "N7_LIVE_EVALUATOR_DRIFT");
         require(VisualEvaluationAuthorization.INPUT_CLASSIFICATION.equals(value.inputClassification())
                         && value.maximumProviderAttempts() == 35
