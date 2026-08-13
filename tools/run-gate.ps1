@@ -25,7 +25,8 @@ function Invoke-ZeroPaidAiCommand {
     param([Parameter(Mandatory = $true)][string]$CommandLine)
     # Use a child process so the caller's secret is neither read nor mutated. Dedicated paid
     # certification deliberately does not go through this project-gate helper.
-    $environmentPrefix = 'set "DASHSCOPE_API_KEY=" && set "DASHSCOPE_API_KEY_FILE=" && ' +
+    $environmentPrefix = 'set "DASHSCOPE_TOKEN_API_KEY=" && set "DASHSCOPE_TOKEN_API_KEY_FILE=" && ' +
+        'set "DASHSCOPE_API_KEY=" && set "DASHSCOPE_API_KEY_FILE=" && ' +
         'set "RENDERWEAVE_RUN_LIVE_CANARY=" && set "RENDERWEAVE_RUN_LIVE_CERTIFICATION=" && ' +
         'set "RENDERWEAVE_LIVE_CERTIFICATION_AUTHORIZATION=" && ' +
         'set "RENDERWEAVE_RUN_VISUAL_EVALUATION=" && ' +

@@ -22,6 +22,7 @@ final class PayloadFreeLiveEvidenceGuard {
             "\"itemId\"",
             "\"args\"",
             "\"apiKey\"",
+            "DASHSCOPE_TOKEN_API_KEY",
             "DASHSCOPE_API_KEY",
             "data:image;base64",
             "Bearer "

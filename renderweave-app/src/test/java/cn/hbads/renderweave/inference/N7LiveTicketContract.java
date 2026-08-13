@@ -88,8 +88,13 @@ record N7LiveTicketContract(
     }
 
     static Optional<N7LiveTicketContract> forAuthorization(String authorizationId) {
-        if (!PLUS_CANARY_AUTHORIZATION_ID.equals(authorizationId)) return Optional.empty();
-        return Optional.of(plusCanary());
+        if (PLUS_CANARY_AUTHORIZATION_ID.equals(authorizationId)) {
+            return Optional.of(plusCanary());
+        }
+        if (authorizationId != null && authorizationId.startsWith("n7-")) {
+            throw invalid("N7_LIVE_CONTRACT_UNKNOWN_AUTHORIZATION");
+        }
+        return Optional.empty();
     }
 
     private static void validatePlusCanary(N7LiveTicketContract value) {

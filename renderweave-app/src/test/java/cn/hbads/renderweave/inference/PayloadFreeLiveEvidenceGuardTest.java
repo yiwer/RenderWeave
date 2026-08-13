@@ -28,6 +28,7 @@ class PayloadFreeLiveEvidenceGuardTest {
                 "{\"shapeMismatches\":[\"/customerName\"]}",
                 "{\"jsonPointer\":\"/customerName\"}",
                 "{\"value\":\"data:image;base64,AAAA\"}",
+                "{\"detail\":\"DASHSCOPE_TOKEN_API_KEY\"}",
                 "{\"authorization\":\"Bearer example\"}"
         );
 

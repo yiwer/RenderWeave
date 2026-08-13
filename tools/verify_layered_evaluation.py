@@ -63,6 +63,7 @@ FORBIDDEN_PAYLOAD_MARKERS = (
     '"providerRequest"', '"providerResponse"', '"modelOutput"', '"candidateJson"',
     '"boundingBox"', '"polygon"', '"rootDocument"', '"base64"', '"chainOfThought"',
     "data:image", "ignore prior instructions", "summer night", "bearer ",
+    "DASHSCOPE_TOKEN_API_KEY", "DASHSCOPE_API_KEY",
 )
 
 

@@ -117,7 +117,8 @@ FORBIDDEN = (
     '"unexpectedEntities"', '"missingFields"', '"unexpectedFields"',
     '"missingRootFields"', '"unexpectedRootFields"', '"typeMismatches"',
     '"edgeMismatches"', '"shapeMismatches"', '"jsonPointer"', '"itemId"',
-    '"args"', '"apiKey"', "DASHSCOPE_API_KEY", "data:image;base64", "Bearer ",
+    '"args"', '"apiKey"', "DASHSCOPE_TOKEN_API_KEY", "DASHSCOPE_API_KEY",
+    "data:image;base64", "Bearer ",
 )
 ID = re.compile(r"^[a-z][a-z0-9-]{0,127}$")
 CODE = re.compile(r"^[A-Z][A-Z0-9_]{0,127}$")
@@ -250,7 +251,8 @@ def corpus_cases(document: dict[str, Any], source_hash: str) -> tuple[list[str],
 
 def git_output(repository: Path, *arguments: str, input_bytes: bytes | None = None) -> bytes:
     environment = os.environ.copy()
-    for key in ("DASHSCOPE_API_KEY", "DASHSCOPE_API_KEY_FILE", "RENDERWEAVE_RUN_LIVE_CANARY",
+    for key in ("DASHSCOPE_TOKEN_API_KEY", "DASHSCOPE_TOKEN_API_KEY_FILE",
+                "DASHSCOPE_API_KEY", "DASHSCOPE_API_KEY_FILE", "RENDERWEAVE_RUN_LIVE_CANARY",
                 "RENDERWEAVE_RUN_LIVE_CERTIFICATION", "RENDERWEAVE_LIVE_CERTIFICATION_AUTHORIZATION",
                 "RENDERWEAVE_RUN_VISUAL_EVALUATION", "RENDERWEAVE_VISUAL_EVALUATION_AUTHORIZATION"):
         environment.pop(key, None)

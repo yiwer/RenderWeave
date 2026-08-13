@@ -58,7 +58,8 @@ class N7LiveAdmissionGateTest {
                 "renderweave-n7-live-ticket-contract/1\\.0:[0-9a-f]{64}"));
         assertEquals(contract, N7LiveTicketContract.forAuthorization(
                 contract.authorizationId()).orElseThrow());
-        assertTrue(N7LiveTicketContract.forAuthorization("n7-unknown").isEmpty());
+        assertCode("N7_LIVE_CONTRACT_UNKNOWN_AUTHORIZATION",
+                () -> N7LiveTicketContract.forAuthorization("n7-unknown"));
         assertTrue(N7LiveTicketContract.forAuthorization("legacy-evaluation").isEmpty());
     }
 
@@ -139,6 +140,22 @@ class N7LiveAdmissionGateTest {
 
         N7LiveAdmissionGate.requireExactAuthorization(contract, open, EVALUATION_IDENTITY, NOW);
         open.requireCorpus(new cn.hbads.renderweave.inference.eval.visual.LayeredVisualCorpus());
+    }
+
+    @Test
+    void fractionalAuthorizationWindowOverrunFailsClosed() {
+        var contract = N7LiveTicketContract.plusCanary();
+        var approved = NOW.minusSeconds(60);
+        var open = authorization(contract, "OPEN", EVALUATION_IDENTITY,
+                contract.profileSnapshotSha256(), contract.caseIds(), contract.contractIdentity(),
+                approved.toString(), approved.plusSeconds(
+                        contract.maximumAuthorizationWindowSeconds()).plusNanos(1).toString(),
+                contract.maximumProviderAttempts(), contract.maximumTotalTokens(),
+                contract.maximumCostMicrosCny());
+
+        assertCode("N7_LIVE_AUTHORIZATION_EXPIRED",
+                () -> N7LiveAdmissionGate.requireExactAuthorization(
+                        contract, open, EVALUATION_IDENTITY, NOW));
     }
 
     @Test

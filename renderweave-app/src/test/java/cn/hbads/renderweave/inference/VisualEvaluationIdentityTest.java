@@ -166,7 +166,8 @@ class VisualEvaluationIdentityTest {
         command[0] = "git";
         System.arraycopy(arguments, 0, command, 1, arguments.length);
         var builder = new ProcessBuilder(command).directory(repository.toFile()).redirectErrorStream(true);
-        List.of("DASHSCOPE_API_KEY", "DASHSCOPE_API_KEY_FILE", "RENDERWEAVE_RUN_LIVE_CANARY",
+        List.of("DASHSCOPE_TOKEN_API_KEY", "DASHSCOPE_TOKEN_API_KEY_FILE",
+                "DASHSCOPE_API_KEY", "DASHSCOPE_API_KEY_FILE", "RENDERWEAVE_RUN_LIVE_CANARY",
                 "RENDERWEAVE_RUN_LIVE_CERTIFICATION", "RENDERWEAVE_RUN_VISUAL_EVALUATION")
                 .forEach(key -> builder.environment().remove(key));
         var process = builder.start();

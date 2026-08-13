@@ -12,7 +12,7 @@ final class DashScopeApiKey {
 
     private DashScopeApiKey(String value) {
         if (value == null || !value.matches("sk-[A-Za-z0-9_-]{12,250}")) {
-            throw new IllegalStateException("DASHSCOPE_API_KEY has an invalid format");
+            throw new IllegalStateException("DASHSCOPE_TOKEN_API_KEY has an invalid format");
         }
         this.value = value;
     }
@@ -25,18 +25,22 @@ final class DashScopeApiKey {
         var hasDirect = directValue != null && !directValue.isBlank();
         var hasFile = fileName != null && !fileName.isBlank();
         if (hasDirect && hasFile) {
-            throw new IllegalStateException("Configure either DASHSCOPE_API_KEY or DASHSCOPE_API_KEY_FILE, not both");
+            throw new IllegalStateException(
+                    "Configure either DASHSCOPE_TOKEN_API_KEY or DASHSCOPE_TOKEN_API_KEY_FILE, not both"
+            );
         }
         if (hasDirect) return Optional.of(fromValue(directValue));
         if (!hasFile) return Optional.empty();
         var path = Path.of(fileName);
         try {
             if (!Files.isRegularFile(path) || Files.size(path) > MAX_SECRET_BYTES) {
-                throw new IllegalStateException("DASHSCOPE_API_KEY_FILE is not a bounded regular file");
+                throw new IllegalStateException(
+                        "DASHSCOPE_TOKEN_API_KEY_FILE is not a bounded regular file"
+                );
             }
             return Optional.of(fromValue(Files.readString(path, StandardCharsets.UTF_8)));
         } catch (IOException exception) {
-            throw new IllegalStateException("DASHSCOPE_API_KEY_FILE cannot be read", exception);
+            throw new IllegalStateException("DASHSCOPE_TOKEN_API_KEY_FILE cannot be read", exception);
         }
     }
 
@@ -46,6 +50,6 @@ final class DashScopeApiKey {
 
     @Override
     public String toString() {
-        return "<redacted:DASHSCOPE_API_KEY>";
+        return "<redacted:DASHSCOPE_TOKEN_API_KEY>";
     }
 }

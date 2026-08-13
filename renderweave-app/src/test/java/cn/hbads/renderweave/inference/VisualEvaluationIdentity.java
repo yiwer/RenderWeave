@@ -30,6 +30,8 @@ final class VisualEvaluationIdentity {
     private static final Set<String> SUPPORTED_VERSIONS = Set.of(LEGACY_VERSION, VERSION);
     private static final Set<String> REGULAR_GIT_MODES = Set.of("100644", "100755");
     private static final List<String> SENSITIVE_ENVIRONMENT_KEYS = List.of(
+            "DASHSCOPE_TOKEN_API_KEY",
+            "DASHSCOPE_TOKEN_API_KEY_FILE",
             "DASHSCOPE_API_KEY",
             "DASHSCOPE_API_KEY_FILE",
             "RENDERWEAVE_RUN_LIVE_CANARY",

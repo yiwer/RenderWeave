@@ -22,6 +22,8 @@ import java.util.concurrent.TimeUnit;
 final class LiveCertificationEvaluationIdentity {
     static final String VERSION = "renderweave-repository-tree-sha256/1";
     private static final List<String> PAID_ENVIRONMENT_KEYS = List.of(
+            "DASHSCOPE_TOKEN_API_KEY",
+            "DASHSCOPE_TOKEN_API_KEY_FILE",
             "DASHSCOPE_API_KEY",
             "DASHSCOPE_API_KEY_FILE",
             "RENDERWEAVE_RUN_LIVE_CANARY",

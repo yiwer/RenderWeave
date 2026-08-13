@@ -95,6 +95,8 @@ class LayeredEvaluationVerifierTest(unittest.TestCase):
             VERIFIER.parse_strict_json('{"value":0.5}')
         with self.assertRaisesRegex(VERIFIER.VerificationError, "FORBIDDEN_PAYLOAD"):
             VERIFIER.scan_payload_free('{"ocrText":"secret"}', "unit")
+        with self.assertRaisesRegex(VERIFIER.VerificationError, "FORBIDDEN_PAYLOAD"):
+            VERIFIER.scan_payload_free('{"detail":"DASHSCOPE_TOKEN_API_KEY"}', "unit")
 
     def test_full_report_recomputes_and_all_single_point_tamper_classes_fail(self) -> None:
         envelope = make_envelope()

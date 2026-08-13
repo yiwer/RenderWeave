@@ -59,8 +59,8 @@ final class N7LiveAdmissionGate {
             var approved = Instant.parse(authorization.approvedAt());
             var expires = Instant.parse(authorization.expiresAt());
             if (approved.isAfter(now) || !expires.isAfter(now) || !expires.isAfter(approved)
-                    || Duration.between(approved, expires).getSeconds()
-                    > contract.maximumAuthorizationWindowSeconds()) {
+                    || Duration.between(approved, expires).compareTo(
+                            Duration.ofSeconds(contract.maximumAuthorizationWindowSeconds())) > 0) {
                 throw failure("N7_LIVE_AUTHORIZATION_EXPIRED");
             }
         } catch (IllegalStateException expected) {

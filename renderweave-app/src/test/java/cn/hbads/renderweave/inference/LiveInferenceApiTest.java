@@ -49,6 +49,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         "renderweave.inference.live-upload-enabled=true",
         "renderweave.inference.live-poll-millis=60000",
         "renderweave.inference.blob-root=target/test-live-inference-api-blobs",
+        "DASHSCOPE_TOKEN_API_KEY=",
+        "DASHSCOPE_TOKEN_API_KEY_FILE=",
         "DASHSCOPE_API_KEY=",
         "DASHSCOPE_API_KEY_FILE="
 })

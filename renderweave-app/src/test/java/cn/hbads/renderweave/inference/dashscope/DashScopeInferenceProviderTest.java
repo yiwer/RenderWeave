@@ -30,6 +30,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class DashScopeInferenceProviderTest {
+    private static final String TOKEN_PLAN_BASE_URL =
+            "https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1";
     private static final String TEST_KEY = "sk-test-renderweave-placeholder";
     private final InferenceProfileRegistry profiles = new InferenceProfileRegistry();
     private final InferencePromptRegistry prompts = new InferencePromptRegistry();
@@ -44,7 +46,8 @@ class DashScopeInferenceProviderTest {
                 """.getBytes(StandardCharsets.UTF_8)
         ));
         var provider = new DashScopeInferenceProvider(
-                Optional.of(DashScopeApiKey.fromValue(TEST_KEY)), transport, JsonMapper.builder().build()
+                Optional.of(DashScopeApiKey.fromValue(TEST_KEY)), TOKEN_PLAN_BASE_URL,
+                transport, JsonMapper.builder().build()
         );
         var profile = profiles.require("dashscope-qwen37-flash-v1").profile();
         var response = provider.complete(new ProviderInferenceRequest(
@@ -57,7 +60,7 @@ class DashScopeInferenceProviderTest {
                 List.of(new ProviderImage("a".repeat(64), "image/png", new byte[] {1, 2, 3}))
         ));
 
-        assertEquals(profile.providerEndpoint(), transport.uri().toString());
+        assertEquals(TOKEN_PLAN_BASE_URL + "/chat/completions", transport.uri().toString());
         assertEquals(Duration.ofSeconds(90), transport.timeout());
         assertEquals(TEST_KEY.length() + "Bearer ".length(),
                 transport.headers().get("Authorization").length());
@@ -77,10 +80,23 @@ class DashScopeInferenceProviderTest {
     }
 
     @Test
+    void rejectsEveryRuntimeBaseUrlExceptTheApprovedTokenPlanRoute() {
+        var json = JsonMapper.builder().build();
+        assertThrows(IllegalStateException.class, () -> new DashScopeInferenceProvider(
+                Optional.empty(), "https://example.com/compatible-mode/v1",
+                new CapturingTransport(null), json
+        ));
+        assertThrows(IllegalStateException.class, () -> new DashScopeInferenceProvider(
+                Optional.empty(), "https://dashscope.aliyuncs.com/compatible-mode/v1",
+                new CapturingTransport(null), json
+        ));
+    }
+
+    @Test
     void missingKeyFailsBeforeTransportAndApplicationCanStillConstruct() {
         var transport = new CapturingTransport(null);
         var provider = new DashScopeInferenceProvider(
-                Optional.empty(), transport, JsonMapper.builder().build()
+                Optional.empty(), TOKEN_PLAN_BASE_URL, transport, JsonMapper.builder().build()
         );
         var profile = profiles.require("dashscope-qwen37-flash-v1").profile();
 
@@ -101,7 +117,8 @@ class DashScopeInferenceProviderTest {
                 ("upstream body containing " + TEST_KEY).getBytes(StandardCharsets.UTF_8)
         ));
         var provider = new DashScopeInferenceProvider(
-                Optional.of(DashScopeApiKey.fromValue(TEST_KEY)), transport, JsonMapper.builder().build()
+                Optional.of(DashScopeApiKey.fromValue(TEST_KEY)), TOKEN_PLAN_BASE_URL,
+                transport, JsonMapper.builder().build()
         );
         var profile = profiles.require("dashscope-qwen38-max-v1").profile();
 
@@ -125,7 +142,8 @@ class DashScopeInferenceProviderTest {
                 new byte[0]
         ));
         var provider = new DashScopeInferenceProvider(
-                Optional.of(DashScopeApiKey.fromValue(TEST_KEY)), transport, JsonMapper.builder().build()
+                Optional.of(DashScopeApiKey.fromValue(TEST_KEY)), TOKEN_PLAN_BASE_URL,
+                transport, JsonMapper.builder().build()
         );
         var profile = profiles.require("dashscope-qwen37-flash-v1").profile();
 
@@ -205,8 +223,8 @@ class DashScopeInferenceProviderTest {
 
         var direct = DashScopeApiKey.resolve(TEST_KEY, "").orElseThrow();
         var mounted = DashScopeApiKey.resolve("", file.toString()).orElseThrow();
-        assertEquals("<redacted:DASHSCOPE_API_KEY>", direct.toString());
-        assertEquals("<redacted:DASHSCOPE_API_KEY>", mounted.toString());
+        assertEquals("<redacted:DASHSCOPE_TOKEN_API_KEY>", direct.toString());
+        assertEquals("<redacted:DASHSCOPE_TOKEN_API_KEY>", mounted.toString());
         assertThrows(IllegalStateException.class,
                 () -> DashScopeApiKey.resolve(TEST_KEY, file.toString()));
     }

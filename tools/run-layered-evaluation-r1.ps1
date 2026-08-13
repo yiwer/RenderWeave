@@ -120,6 +120,8 @@ function Get-SurefireReport {
 # R0/R1 must remain zero-external-Provider even when invoked outside run-gate.ps1.
 # Values are cleared without being read or displayed.
 @(
+    'DASHSCOPE_TOKEN_API_KEY',
+    'DASHSCOPE_TOKEN_API_KEY_FILE',
     'DASHSCOPE_API_KEY',
     'DASHSCOPE_API_KEY_FILE',
     'RENDERWEAVE_RUN_LIVE_CANARY',

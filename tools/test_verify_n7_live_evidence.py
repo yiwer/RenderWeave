@@ -8,6 +8,7 @@ import hashlib
 import importlib.util
 import json
 import pathlib
+import tempfile
 import unittest
 
 
@@ -81,6 +82,31 @@ class N7LiveEvidenceVerifierTest(unittest.TestCase):
                 after_expiry["metadata"], after_expiry["reservations"],
             )
 
+        fractional_overrun = make_fixture()
+        fractional_overrun["authorization"][
+            "expiresAt"
+        ] = "2026-08-14T13:00:00.500000Z"
+        with self.assertRaisesRegex(
+                VERIFIER.VerificationError, "AUTHORIZATION_WINDOW_INVALID"):
+            VERIFIER.validate_closed_authorization(
+                fractional_overrun["authorization"],
+                fractional_overrun["contract"],
+                fractional_overrun["contractIdentity"],
+                fractional_overrun["authorization"]["evaluationIdentity"],
+            )
+
+    def test_serial_contract_rejects_overlapping_case_executions(self) -> None:
+        overlapping = make_fixture()
+        overlapping["journal"]["executions"][1][
+            "startedAt"
+        ] = overlapping["journal"]["executions"][0]["startedAt"]
+        with self.assertRaisesRegex(
+                VERIFIER.VerificationError, "N7_EXECUTION_MODE_SERIAL_VIOLATED"):
+            VERIFIER.validate_n7_journal(
+                overlapping["journal"], overlapping["authorization"],
+                overlapping["metadata"], overlapping["reservations"],
+            )
+
     def test_terminal_usage_metric_and_identity_tampering_fail_closed(self) -> None:
         fixture = make_fixture()
         mutations = []
@@ -132,7 +158,18 @@ class N7LiveEvidenceVerifierTest(unittest.TestCase):
         with self.assertRaises(VERIFIER.VerificationError):
             VERIFIER.parse_payload_free_json('{"prompt":"forbidden"}', "unit")
         with self.assertRaises(VERIFIER.VerificationError):
+            VERIFIER.parse_payload_free_json(
+                '{"detail":"DASHSCOPE_TOKEN_API_KEY"}', "unit",
+            )
+        with self.assertRaises(VERIFIER.VerificationError):
             VERIFIER.parse_payload_free_json('{"result":1,"result":2}', "unit")
+        with tempfile.TemporaryDirectory() as directory:
+            evidence = pathlib.Path(directory) / "evidence.json"
+            evidence.write_text(
+                '{"detail":"DASHSCOPE_TOKEN_API_KEY"}', encoding="utf-8",
+            )
+            with self.assertRaises(VERIFIER.visual.VerificationError):
+                VERIFIER.visual.read_json(evidence)
 
 
 def make_fixture() -> dict[str, object]:
@@ -175,6 +212,7 @@ def make_fixture() -> dict[str, object]:
         ("ELEMENT_BINDING", "LIVE_VISUAL_BINDINGS_V2_ACCEPTED"),
     )
     for index, case_id in enumerate(contract["caseIds"]):
+        start_second = index * 5
         run_id = f"00000000-0000-4000-8000-{index:012d}"
         attempts = []
         for ordinal, (stage, outcome) in enumerate(stage_trace):
@@ -194,8 +232,8 @@ def make_fixture() -> dict[str, object]:
                 "actualOutputTokens": 50,
                 "actualCostMicrosCny": 500,
                 "state": "SETTLED",
-                "createdAt": f"2026-08-13T13:00:0{ordinal}Z",
-                "updatedAt": f"2026-08-13T13:00:0{ordinal + 1}Z",
+                "createdAt": f"2026-08-13T13:00:{start_second + ordinal:02d}Z",
+                "updatedAt": f"2026-08-13T13:00:{start_second + ordinal + 1:02d}Z",
             })
             attempts.append({
                 "reservationId": reservation_id,
@@ -222,16 +260,16 @@ def make_fixture() -> dict[str, object]:
             "evaluation": result,
             "attempts": attempts,
             "terminalState": "REVIEW_REQUIRED",
-            "startedAt": "2026-08-13T13:00:00Z",
-            "updatedAt": "2026-08-13T13:00:04Z",
-            "completedAt": "2026-08-13T13:00:04Z",
+            "startedAt": f"2026-08-13T13:00:{start_second:02d}Z",
+            "updatedAt": f"2026-08-13T13:00:{start_second + 4:02d}Z",
+            "completedAt": f"2026-08-13T13:00:{start_second + 4:02d}Z",
         })
     journal = {
         "journalVersion": VERIFIER.JOURNAL_VERSION,
         "authorizationId": contract["authorizationId"],
         "executions": executions,
         "createdAt": "2026-08-13T13:00:00Z",
-        "updatedAt": "2026-08-13T13:00:04Z",
+        "updatedAt": "2026-08-13T13:00:24Z",
     }
     report = VERIFIER.expected_report(
         contract, authorization, results, metadata, contract_identity,

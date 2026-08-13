@@ -20,28 +20,35 @@ import java.util.Optional;
 
 public final class DashScopeInferenceProvider implements InferenceProvider {
     private static final int MAX_HTTP_RESPONSE_BYTES = 3 * 1024 * 1024;
+    private static final String APPROVED_BASE_URL =
+            "https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1";
 
     private final Optional<DashScopeApiKey> apiKey;
+    private final URI chatCompletionsEndpoint;
     private final DashScopeHttpTransport transport;
     private final ObjectMapper json;
 
     DashScopeInferenceProvider(
             Optional<DashScopeApiKey> apiKey,
+            String baseUrl,
             DashScopeHttpTransport transport,
             ObjectMapper json
     ) {
         this.apiKey = apiKey == null ? Optional.empty() : apiKey;
+        this.chatCompletionsEndpoint = chatCompletionsEndpoint(baseUrl);
         this.transport = java.util.Objects.requireNonNull(transport, "transport");
         this.json = java.util.Objects.requireNonNull(json, "json");
     }
 
     public static DashScopeInferenceProvider fromConfiguration(
+            String baseUrl,
             String directApiKey,
             String apiKeyFile,
             ObjectMapper json
     ) {
         return new DashScopeInferenceProvider(
                 DashScopeApiKey.resolve(directApiKey, apiKeyFile),
+                baseUrl,
                 new JdkDashScopeHttpTransport(),
                 json
         );
@@ -58,7 +65,7 @@ public final class DashScopeInferenceProvider implements InferenceProvider {
         headers.put("Content-Type", "application/json");
         headers.put("Accept", "application/json");
         var response = transport.exchange(
-                URI.create(profile.providerEndpoint()),
+                chatCompletionsEndpoint,
                 Map.copyOf(headers),
                 encodeRequest(request),
                 Duration.ofSeconds(profile.stageTimeoutSeconds())
@@ -77,6 +84,17 @@ public final class DashScopeInferenceProvider implements InferenceProvider {
     @Override
     public boolean configured() {
         return apiKey.isPresent();
+    }
+
+    private static URI chatCompletionsEndpoint(String baseUrl) {
+        var normalized = baseUrl == null ? "" : baseUrl.strip();
+        if (normalized.endsWith("/")) {
+            normalized = normalized.substring(0, normalized.length() - 1);
+        }
+        if (!APPROVED_BASE_URL.equals(normalized)) {
+            throw new IllegalStateException("DashScope base URL is not approved");
+        }
+        return URI.create(normalized + "/chat/completions");
     }
 
     private byte[] encodeRequest(ProviderInferenceRequest request) {

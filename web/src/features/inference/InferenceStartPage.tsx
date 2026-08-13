@@ -137,7 +137,7 @@ function LiveLauncher({
                 <span>{!uploadAuthorized
                   ? '请使用 live Compose 配置启动服务；选择文件、预览和切换模型都不会触发调用。'
                   : !query.data.enabled || !query.data.configured
-                    ? '需要配置凭据并启用运行门；页面本身不会触发模型。'
+                    ? '需要配置 DASHSCOPE_TOKEN_API_KEY 并启用运行门；页面本身不会触发模型。'
                     : '启动前探针未匹配 Profile 绑定的精确 capability；任务不会排队，也不会产生 Provider 调用。'}</span>
               </div>
             </section>

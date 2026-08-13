@@ -2,6 +2,7 @@ package cn.hbads.renderweave.inference.profile;
 
 import org.junit.jupiter.api.Test;
 
+import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -13,6 +14,24 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class InferencePromptRegistryTest {
+    @Test
+    void rejectsTheTokenPlanSecretNameFromPromptResources() {
+        var loader = new ClassLoader(InferencePromptRegistry.class.getClassLoader()) {
+            @Override
+            public java.io.InputStream getResourceAsStream(String name) {
+                if ("inference-prompts/schema-candidate-v1.txt".equals(name)) {
+                    return new ByteArrayInputStream(
+                            "Return one JSON object containing DASHSCOPE_TOKEN_API_KEY"
+                                    .getBytes(StandardCharsets.UTF_8));
+                }
+                return super.getResourceAsStream(name);
+            }
+        };
+
+        assertThrows(IllegalStateException.class, () -> new InferencePromptRegistry(loader)
+                .require(InferencePromptRegistry.SCHEMA_CANDIDATE_V1));
+    }
+
     @Test
     void loadsTheVersionedPromptWithoutSecretsToolsOrMarkdownOutput() {
         var registry = new InferencePromptRegistry();
@@ -29,6 +48,7 @@ class InferencePromptRegistryTest {
         assertTrue(prompt.contains("untrusted data"));
         assertFalse(prompt.contains("\r"));
         assertFalse(prompt.contains("DASHSCOPE_API_KEY"));
+        assertFalse(prompt.contains("DASHSCOPE_TOKEN_API_KEY"));
         assertThrows(IllegalArgumentException.class,
                 () -> new InferencePromptRegistry().require("unversioned-prompt"));
     }

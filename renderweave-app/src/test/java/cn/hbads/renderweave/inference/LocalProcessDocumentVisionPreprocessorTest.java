@@ -57,6 +57,7 @@ class LocalProcessDocumentVisionPreprocessorTest {
         assertFalse(runner.calls.getLast().command().contains("--capability"));
         assertEquals("*", runner.calls.getLast().environment().get("NO_PROXY"));
         assertFalse(runner.calls.getLast().environment().containsKey("DASHSCOPE_API_KEY"));
+        assertFalse(runner.calls.getLast().environment().containsKey("DASHSCOPE_TOKEN_API_KEY"));
         assertFalse(runner.calls.getLast().environment().containsKey("HTTP_PROXY"));
         assertFalse(runner.calls.getLast().environment().containsKey("HTTPS_PROXY"));
         var request = new String(runner.calls.getLast().input(), StandardCharsets.UTF_8);

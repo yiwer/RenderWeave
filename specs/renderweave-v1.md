@@ -492,7 +492,7 @@ QUEUED → RUNNING → REVIEW_REQUIRED → APPLYING → COMPLETED
 
 ### 8.7 Provider/Profile 安全边界
 
-- v1 首个 live adapter 是 DashScope 的 OpenAI-compatible Chat Completions HTTP endpoint；领域层只依赖 provider-neutral port，协议 DTO、HTTP client 与 `DASHSCOPE_API_KEY` 只存在于 application adapter。
+- v1 首个 live adapter 是 DashScope 的 OpenAI-compatible Chat Completions HTTP endpoint；启动传输固定使用 `https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1` base URL，领域层只依赖 provider-neutral port，协议 DTO、HTTP client 与 `DASHSCOPE_TOKEN_API_KEY` 只存在于 application adapter。
 - 新建产品 live run 只提供 `dashscope-qwen37-plus-product-v45-hybrid-generic`（`qwen3.7-plus`）、
   `dashscope-qwen38-max-product-v45-hybrid-generic`（`qwen3.8-max`）和
   `dashscope-qwen37-flash-product-v45-hybrid-generic`（`qwen3.7-flash`）三份

@@ -35,6 +35,8 @@ class DocumentObservationR0VerifierTest(unittest.TestCase):
             VERIFIER.parse_strict_json('{"result":"passed","result":"failed"}')
         with self.assertRaisesRegex(VERIFIER.VerificationError, "forbidden payload"):
             VERIFIER.scan_payload_free("safe-prefix OCR_SENTINEL secret", "unit-test")
+        with self.assertRaisesRegex(VERIFIER.VerificationError, "forbidden payload"):
+            VERIFIER.scan_payload_free("DASHSCOPE_TOKEN_API_KEY", "unit-test")
 
     def test_external_provider_telemetry_must_remain_exactly_zero(self) -> None:
         with self.assertRaisesRegex(VERIFIER.VerificationError, "external Provider telemetry"):

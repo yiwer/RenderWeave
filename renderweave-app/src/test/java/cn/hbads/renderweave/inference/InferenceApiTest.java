@@ -41,6 +41,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         "renderweave.inference.blob-root=target/test-inference-api-blobs",
         "renderweave.inference.recovery-enabled=true",
         "renderweave.inference.poll-initial-delay-millis=60000",
+        "DASHSCOPE_TOKEN_API_KEY=",
+        "DASHSCOPE_TOKEN_API_KEY_FILE=",
         "DASHSCOPE_API_KEY=",
         "DASHSCOPE_API_KEY_FILE="
 })
@@ -322,6 +324,9 @@ class InferenceApiTest {
                 )))
                 .andExpect(content().string(org.hamcrest.Matchers.not(
                         org.hamcrest.Matchers.containsString("DASHSCOPE_API_KEY")
+                )))
+                .andExpect(content().string(org.hamcrest.Matchers.not(
+                        org.hamcrest.Matchers.containsString("DASHSCOPE_TOKEN_API_KEY")
                 )));
 
         var metadata = new MockMultipartFile(

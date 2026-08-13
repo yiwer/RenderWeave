@@ -34,6 +34,8 @@ $applicationTestClasses = @(
 # neither reads nor mutates the operator's parent-process secrets.
 $env:DASHSCOPE_API_KEY = ''
 $env:DASHSCOPE_API_KEY_FILE = ''
+$env:DASHSCOPE_TOKEN_API_KEY = ''
+$env:DASHSCOPE_TOKEN_API_KEY_FILE = ''
 $env:RENDERWEAVE_RUN_LIVE_CANARY = ''
 $env:RENDERWEAVE_RUN_LIVE_CERTIFICATION = ''
 $env:RENDERWEAVE_LIVE_CERTIFICATION_AUTHORIZATION = ''

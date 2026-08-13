@@ -52,6 +52,8 @@ function Merge-JUnitReports {
 # R0/R1 are zero-external-Provider work. Clear authorization and credential variables without
 # reading their values, even when this script is invoked outside the parent gate wrapper.
 @(
+    'DASHSCOPE_TOKEN_API_KEY',
+    'DASHSCOPE_TOKEN_API_KEY_FILE',
     'DASHSCOPE_API_KEY',
     'DASHSCOPE_API_KEY_FILE',
     'RENDERWEAVE_RUN_LIVE_CANARY',

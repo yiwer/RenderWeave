@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 import argparse
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import hashlib
 import json
 import pathlib
@@ -166,8 +166,9 @@ def validate_closed_authorization(
         fail("AUTHORIZATION_APPROVER_MISSING")
     approved = require_instant(value.get("approvedAt"), "approvedAt")
     expires = require_instant(value.get("expiresAt"), "expiresAt")
-    window = int((expires - approved).total_seconds())
-    if window <= 0 or window > contract["maximumAuthorizationWindowSeconds"]:
+    window = expires - approved
+    if window <= timedelta(0) or window > timedelta(
+            seconds=contract["maximumAuthorizationWindowSeconds"]):
         fail("AUTHORIZATION_WINDOW_INVALID")
     return value
 
@@ -228,6 +229,7 @@ def validate_n7_journal(
     results: list[dict[str, Any]] = []
     terminal_states: list[str] = []
     provider_latency_millis = 0
+    previous_completed: datetime | None = None
     execution_fields = (
         "assignmentKey", "executionId", "caseId", "profileId", "model", "runId", "status",
         "evaluation", "attempts", "terminalState", "startedAt", "updatedAt", "completedAt",
@@ -261,6 +263,9 @@ def validate_n7_journal(
         )
         if not journal_created <= started <= updated <= completed <= journal_updated:
             fail("N7_EXECUTION_TIME_ORDER_INVALID")
+        if previous_completed is not None and started < previous_completed:
+            fail("N7_EXECUTION_MODE_SERIAL_VIOLATED")
+        previous_completed = completed
         result = visual.evaluation(
             item["evaluation"], metadata, set(authorization["caseIds"]),
         )

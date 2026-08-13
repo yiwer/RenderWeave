@@ -114,6 +114,7 @@ FORBIDDEN_PAYLOAD_MARKERS = (
     '"modelOutput"',
     '"providerRequest"',
     "Bearer ",
+    "DASHSCOPE_TOKEN_API_KEY",
     "DASHSCOPE_API_KEY",
     "ocr-00-000",
 )

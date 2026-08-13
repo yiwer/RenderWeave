@@ -91,7 +91,7 @@ public final class InferencePromptRegistry {
         var path = RESOURCES.get(promptVersion);
         if (path == null) throw new IllegalArgumentException("Unknown inference prompt: " + promptVersion);
         var prompt = read(path);
-        if (prompt.isBlank() || !prompt.contains("JSON") || prompt.contains("DASHSCOPE_API_KEY")) {
+        if (prompt.isBlank() || !prompt.contains("JSON") || containsSecretName(prompt)) {
             throw new IllegalStateException("Inference prompt violates the safe prompt contract");
         }
         return new PromptResource(promptVersion, prompt);
@@ -126,7 +126,7 @@ public final class InferencePromptRegistry {
         if (hintPath == null) throw new IllegalArgumentException("Unknown visual hint pack: " + hintPackVersion);
         var core = require(promptVersion).text();
         var hint = read(hintPath);
-        if (hint.isBlank() || hint.contains("DASHSCOPE_API_KEY") || hint.contains("```")) {
+        if (hint.isBlank() || containsSecretName(hint) || hint.contains("```")) {
             throw new IllegalStateException("Visual hint pack violates the safe prompt contract");
         }
         return new PromptResource(promptVersion + "+" + hintPackVersion, core + "\n\n" + hint);
@@ -146,13 +146,17 @@ public final class InferencePromptRegistry {
         }
         var policy = read(policyPath);
         if (policy.isBlank() || !policy.contains("documentVisionObservation")
-                || policy.contains("DASHSCOPE_API_KEY") || policy.contains("```")) {
+                || containsSecretName(policy) || policy.contains("```")) {
             throw new IllegalStateException("Document vision prompt violates the safe prompt contract");
         }
         return new PromptResource(
                 visual.promptVersion() + "+" + documentVisionPromptVersion,
                 visual.text() + "\n\n" + policy
         );
+    }
+
+    private static boolean containsSecretName(String value) {
+        return value.contains("DASHSCOPE_TOKEN_API_KEY") || value.contains("DASHSCOPE_API_KEY");
     }
 
     private String read(String path) {
