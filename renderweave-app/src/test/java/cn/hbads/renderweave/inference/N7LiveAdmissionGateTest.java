@@ -34,6 +34,8 @@ class N7LiveAdmissionGateTest {
         var contract = N7LiveTicketContract.plusCanary();
 
         assertEquals("N7-04", contract.ticketId());
+        assertEquals("n7-04-plus-canary-product-v45-20260814e",
+                contract.authorizationId());
         assertEquals("DASHSCOPE", contract.provider());
         assertEquals("qwen3.7-plus", contract.model());
         assertEquals("dashscope-qwen37-plus-product-v45-hybrid-generic", contract.profileId());

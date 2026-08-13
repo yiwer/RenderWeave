@@ -1,7 +1,7 @@
 {
   "contractVersion": "renderweave-n7-live-ticket-contract/1.0",
   "ticketId": "N7-04",
-  "authorizationId": "n7-04-plus-canary-product-v45-20260813d",
+  "authorizationId": "n7-04-plus-canary-product-v45-20260814e",
   "lifecycle": "PROPOSED_NOT_OPEN",
   "provider": "DASHSCOPE",
   "model": "qwen3.7-plus",
