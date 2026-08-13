@@ -15,6 +15,17 @@ import verify_layered_evaluation as layered
 
 VERSION = "renderweave-n7-qualification-protocol/1.0"
 VERIFIER_VERSION = "renderweave-n7-qualification-protocol-verifier/1.0"
+PROFILE_FIELDS = (
+    "profileVersion", "profileId", "provider", "model", "networkAllowed", "providerProtocol",
+    "providerEndpoint", "apiKeyEnvironmentVariable", "pipelineVersion", "candidateContractVersion",
+    "promptVersion", "elementPromptVersion", "hierarchyPromptVersion", "bindingPromptVersion",
+    "visualHintPackVersion", "documentVisionCapabilityId", "documentVisionPromptVersion",
+    "responseFormat", "thinkingEnabled", "toolsAllowed", "remoteMediaAllowed", "inputClassification",
+    "supportedModes", "lowConfidenceThresholdBps", "maximumRepairRounds", "maximumTotalCalls",
+    "stageTimeoutSeconds", "maximumOutputTokens", "maximumOutputBytes",
+    "maximumEstimatedCostMicrosCny", "inputMicrosCnyPerMillionTokens",
+    "outputMicrosCnyPerMillionTokens", "pricingEffectiveDate", "certification",
+)
 RESOURCE = pathlib.PurePosixPath(
     "renderweave-inference/src/main/resources/visual-eval/n7/qualification-protocol-v1.json")
 TRIGGER_REASONS = {
@@ -54,6 +65,13 @@ def framed_hash(values: Iterable[str]) -> str:
 
 def assignment_identity(version: str, case_ids: list[str]) -> str:
     return f"{version}:{framed_hash(case_ids)}"
+
+
+def normalized_source(raw: bytes) -> bytes:
+    normalized = raw.replace(b"\r\n", b"\n")
+    if b"\r" in normalized:
+        fail("PROTOCOL_LINE_ENDING_INVALID")
+    return normalized
 
 
 def weakest_margin(metrics: dict[str, int]) -> int:
@@ -182,7 +200,15 @@ def verify_document(document: dict[str, Any], raw: bytes, repository: pathlib.Pa
             }
             if any(profile.get(field) != value for field, value in expected_contract.items()):
                 fail("PROFILE_CONTRACT_DRIFT")
-            profile_hashes[key] = hashlib.sha256(layered.canonical_json(profile)).hexdigest()
+            # InferenceProfile.snapshotJson is a Java record serialization. Its canonical
+            # contract is record-component order, not lexicographically sorted object keys.
+            if tuple(profile) != PROFILE_FIELDS:
+                fail("PROFILE_COMPONENT_ORDER_DRIFT")
+            canonical_profile = {field: profile[field] for field in PROFILE_FIELDS}
+            encoded_profile = json.dumps(
+                canonical_profile, ensure_ascii=False, separators=(",", ":")
+            ).encode("utf-8")
+            profile_hashes[key] = hashlib.sha256(encoded_profile).hexdigest()
     product_v45 = list((repository / "renderweave-inference/src/main/resources/inference-profiles")
                       .glob("*product-v45*.json"))
     if any(layered.parse_strict_json(path.read_text(encoding="utf-8")).get("model")
@@ -204,7 +230,7 @@ def verify_document(document: dict[str, Any], raw: bytes, repository: pathlib.Pa
     return {
         "verifierVersion": VERIFIER_VERSION, "result": "PASS",
         "assurance": "A2_STRICT_INPUT_REPLAY",
-        "protocolIdentity": f"{VERSION}:{hashlib.sha256(raw).hexdigest()}",
+        "protocolIdentity": f"{VERSION}:{hashlib.sha256(normalized_source(raw)).hexdigest()}",
         "canaryAssignmentIdentity": assignment_identity(
             "renderweave-n7-canary-assignment/1.0", canary),
         "qualificationAssignmentIdentity": assignment_identity(

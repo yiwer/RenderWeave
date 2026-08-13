@@ -26,7 +26,8 @@ $applicationTestClasses = @(
     'VisualEvaluationJournalTest',
     'VisualEvaluationIdentityTest',
     'VisualEvaluationEvidenceVerifierTest',
-    'VisualEvaluationAuthorizationLocatorTest'
+    'VisualEvaluationAuthorizationLocatorTest',
+    'N7LiveAdmissionGateTest'
 )
 
 # This gate remains deliberately offline. Assigning empty values in this child PowerShell process
@@ -129,7 +130,8 @@ try {
             'cross-ledger model token and cost reservation before delegation',
             'operator can narrow but never widen the authorized live batch',
             'durable interruption-safe visual journal with payload-free evidence',
-            'independent Python aggregate and tamper verifier'
+            'independent Python aggregate and tamper verifier',
+            'N7 exact-J1 and cumulative Goal admission fail closed before mutation'
         )
         testClasses = @($reports)
         totalTests = [int](($reports | Measure-Object -Property tests -Sum).Sum)

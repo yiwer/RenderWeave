@@ -146,7 +146,7 @@ public final class LayeredR1Evaluation {
         return PROMPT_SET_VERSION + ":" + sha256(material);
     }
 
-    private static String evaluatorIdentity() {
+    public static String evaluatorIdentity() {
         return LayeredVisualEvaluator.VERSION + ":" + sha256(List.of(
                 LayeredVisualEvaluator.VERSION,
                 LayeredMetricMath.VERSION,

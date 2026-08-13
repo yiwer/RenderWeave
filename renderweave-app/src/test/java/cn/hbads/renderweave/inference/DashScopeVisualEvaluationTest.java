@@ -1,5 +1,6 @@
 package cn.hbads.renderweave.inference;
 
+import cn.hbads.renderweave.inference.eval.visual.LayeredVisualCorpus;
 import cn.hbads.renderweave.inference.eval.visual.VisualStageCorpus;
 import cn.hbads.renderweave.inference.eval.visual.VisualStageEvaluator;
 import cn.hbads.renderweave.inference.eval.visual.VisualStageRasterizer;
@@ -268,7 +269,8 @@ class DashScopeVisualEvaluationTest {
     record Preflight(
             VisualEvaluationAuthorization authorization,
             VisualEvaluationIdentity identity,
-            InferenceProfileRegistry.ProfileResource profile
+            InferenceProfileRegistry.ProfileResource profile,
+            N7LiveTicketContract n7Contract
     ) { }
 
     @TestConfiguration(proxyBeanMethods = false)
@@ -292,18 +294,36 @@ class DashScopeVisualEvaluationTest {
                 VisualEvaluationAuthorization authorization,
                 VisualEvaluationIdentity identity,
                 InferenceProfileRegistry profiles,
+                ObjectMapper json,
                 Clock clock
         ) {
             var now = clock.instant();
-            authorization.requireOpen(now);
-            identity.requireCurrent(authorization.evaluationIdentity());
-            authorization.requireCorpus(new VisualStageCorpus());
+            var n7 = authorization.authorizationId().startsWith("n7-")
+                    ? N7LiveTicketContract.plusCanary() : null;
+            if (n7 == null) {
+                authorization.requireOpen(now);
+                identity.requireCurrent(authorization.evaluationIdentity());
+            } else {
+                var currentIdentity = identity.current();
+                N7LiveAdmissionGate.requireExactAuthorization(n7, authorization,
+                        currentIdentity, now);
+                N7LiveAdmissionGate.requireExclusiveOpenLedger(
+                        repositoryRoot(), "qwen37-plus", authorization, json);
+            }
+            if (n7 == null) authorization.requireCorpus(new VisualStageCorpus());
+            else {
+                authorization.requireCorpus(new LayeredVisualCorpus());
+                var audit = VisualEvaluationGoalBudget.inspectExisting(
+                        repositoryRoot().resolve(".sdlc/evidence")
+                                .resolve(VisualEvaluationGoalBudget.GOAL_ID), json);
+                N7LiveAdmissionGate.requireGoalReady(n7, audit);
+            }
             var profile = profiles.require(authorization.profileId());
             authorization.requireProfileSnapshot(sha256(profile.snapshotJson()));
             if (!authorization.model().equals(profile.profile().model())) {
                 throw new IllegalStateException("VISUAL_EVALUATION_PROFILE_MODEL_MISMATCH");
             }
-            return new Preflight(authorization, identity, profile);
+            return new Preflight(authorization, identity, profile, n7);
         }
 
         @Bean

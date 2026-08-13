@@ -1,5 +1,6 @@
 package cn.hbads.renderweave.inference;
 
+import cn.hbads.renderweave.inference.eval.visual.LayeredVisualCorpus;
 import cn.hbads.renderweave.inference.eval.visual.VisualStageCorpus;
 import tools.jackson.core.StreamReadFeature;
 import tools.jackson.databind.DeserializationFeature;
@@ -73,7 +74,7 @@ record VisualEvaluationAuthorization(
             throw new IllegalArgumentException("Visual evaluation authorization lifecycle is invalid");
         }
         if (!INPUT_CLASSIFICATION.equals(inputClassification)
-                || !VisualStageCorpus.VERSION.equals(corpusVersion)
+                || !List.of(VisualStageCorpus.VERSION, LayeredVisualCorpus.VERSION).contains(corpusVersion)
                 || corpusSourceSha256 == null || !corpusSourceSha256.matches("[0-9a-f]{64}")) {
             throw new IllegalArgumentException("Visual evaluation authorization corpus is invalid");
         }
@@ -169,6 +170,15 @@ record VisualEvaluationAuthorization(
     void requireCorpus(VisualStageCorpus corpus) {
         Objects.requireNonNull(corpus, "corpus");
         if (!Objects.equals(corpusSourceSha256, corpus.sourceSha256())) {
+            throw new IllegalStateException("VISUAL_EVALUATION_CORPUS_IDENTITY_MISMATCH");
+        }
+        for (var caseId : caseIds) corpus.require(caseId);
+    }
+
+    void requireCorpus(LayeredVisualCorpus corpus) {
+        Objects.requireNonNull(corpus, "corpus");
+        if (!LayeredVisualCorpus.VERSION.equals(corpusVersion)
+                || !Objects.equals(corpusSourceSha256, corpus.sourceScenesSha256())) {
             throw new IllegalStateException("VISUAL_EVALUATION_CORPUS_IDENTITY_MISMATCH");
         }
         for (var caseId : caseIds) corpus.require(caseId);

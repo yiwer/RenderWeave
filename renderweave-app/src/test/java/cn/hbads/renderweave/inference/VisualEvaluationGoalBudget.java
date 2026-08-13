@@ -14,15 +14,19 @@ import java.nio.channels.OverlappingFileLockException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -168,6 +172,57 @@ final class VisualEvaluationGoalBudget {
         return withLock(() -> readState().reservations().stream()
                 .filter(item -> item.runId().equals(runId.toString()))
                 .toList());
+    }
+
+    /** Strict read-only audit. It never creates, migrates or rewrites Goal state. */
+    static ExistingSnapshot inspectExisting(Path directory, ObjectMapper objectMapper) {
+        Objects.requireNonNull(directory, "directory");
+        var stateFile = directory.resolve("goal-budget.json");
+        var guardFile = directory.resolve("goal-budget.guard.json");
+        var lockFile = directory.resolve("goal-budget.lock");
+        if (!Files.isRegularFile(stateFile, LinkOption.NOFOLLOW_LINKS)
+                || !Files.isRegularFile(guardFile, LinkOption.NOFOLLOW_LINKS)
+                || !Files.isRegularFile(lockFile, LinkOption.NOFOLLOW_LINKS)) {
+            throw new IllegalStateException("VISUAL_EVALUATION_GOAL_BUDGET_MISSING");
+        }
+        var strict = Objects.requireNonNull(objectMapper, "objectMapper").rebuild()
+                .enable(StreamReadFeature.STRICT_DUPLICATE_DETECTION)
+                .enable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                .enable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS)
+                .enable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES)
+                .disable(DeserializationFeature.ACCEPT_FLOAT_AS_INT)
+                .disable(MapperFeature.ALLOW_COERCION_OF_SCALARS)
+                .build();
+        try (var channel = FileChannel.open(lockFile, StandardOpenOption.WRITE);
+             var lock = channel.tryLock()) {
+            if (lock == null) throw new IllegalStateException("VISUAL_EVALUATION_GOAL_BUDGET_BUSY");
+            var stateBytes = Files.readAllBytes(stateFile);
+            var guardBytes = Files.readAllBytes(guardFile);
+            PayloadFreeLiveEvidenceGuard.requirePayloadFree(
+                    new String(stateBytes, StandardCharsets.UTF_8));
+            PayloadFreeLiveEvidenceGuard.requirePayloadFree(
+                    new String(guardBytes, StandardCharsets.UTF_8));
+            var guard = strict.readValue(guardBytes, Guard.class);
+            validateGuard(guard);
+            var state = strict.readValue(stateBytes, State.class);
+            validateState(state, guard);
+            var slots = Map.of(
+                    "qwen3.8-max", aggregate(state, "qwen3.8-max", null),
+                    "qwen3.7-plus", aggregate(state, "qwen3.7-plus", null),
+                    "qwen3.7-flash", aggregate(state, "qwen3.7-flash", null));
+            var nonTerminal = Math.toIntExact(state.reservations().stream()
+                    .filter(item -> "RESERVED".equals(item.state())).count());
+            var breached = Math.toIntExact(state.reservations().stream()
+                    .filter(item -> "BREACHED".equals(item.state())).count());
+            return new ExistingSnapshot(slots, state.reservations().size(), nonTerminal, breached,
+                    sha256(stateBytes), sha256(guardBytes));
+        } catch (OverlappingFileLockException busy) {
+            throw new IllegalStateException("VISUAL_EVALUATION_GOAL_BUDGET_BUSY", busy);
+        } catch (IllegalStateException expected) {
+            throw expected;
+        } catch (IOException | RuntimeException invalid) {
+            throw new IllegalStateException("VISUAL_EVALUATION_GOAL_BUDGET_INVALID", invalid);
+        }
     }
 
     private static void requireCapacity(
@@ -483,6 +538,27 @@ final class VisualEvaluationGoalBudget {
 
     record Snapshot(UsageAggregate goal, UsageAggregate authorization, boolean breached) { }
 
+    record ExistingSnapshot(
+            Map<String, UsageAggregate> slots,
+            int totalReservations,
+            int nonTerminalReservations,
+            int breachedReservations,
+            String stateSha256,
+            String guardSha256
+    ) {
+        ExistingSnapshot {
+            slots = Map.copyOf(Objects.requireNonNull(slots, "slots"));
+            if (!slots.keySet().equals(Set.of("qwen3.8-max", "qwen3.7-plus", "qwen3.7-flash"))
+                    || totalReservations < 0 || nonTerminalReservations < 0
+                    || breachedReservations < 0 || nonTerminalReservations > totalReservations
+                    || breachedReservations > totalReservations
+                    || stateSha256 == null || !stateSha256.matches("[0-9a-f]{64}")
+                    || guardSha256 == null || !guardSha256.matches("[0-9a-f]{64}")) {
+                throw new IllegalArgumentException("Visual Goal audit snapshot is invalid");
+            }
+        }
+    }
+
     private static void requireModel(String model) {
         VisualEvaluationAuthorization.goalModel(model);
     }
@@ -500,6 +576,15 @@ final class VisualEvaluationGoalBudget {
             Instant.parse(value);
         } catch (RuntimeException invalid) {
             throw new IllegalArgumentException("Visual goal budget timestamp is invalid", invalid);
+        }
+    }
+
+    private static String sha256(byte[] value) {
+        try {
+            return java.util.HexFormat.of().formatHex(
+                    MessageDigest.getInstance("SHA-256").digest(value));
+        } catch (NoSuchAlgorithmException impossible) {
+            throw new IllegalStateException("SHA_256_UNAVAILABLE", impossible);
         }
     }
 }

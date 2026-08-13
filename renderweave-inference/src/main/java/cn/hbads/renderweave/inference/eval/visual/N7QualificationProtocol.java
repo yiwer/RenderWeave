@@ -49,7 +49,7 @@ public final class N7QualificationProtocol {
         if (!VERSION.equals(document.protocolVersion())) {
             throw invalid("N7_PROTOCOL_VERSION_INVALID");
         }
-        this.identity = VERSION + ":" + sha256(source);
+        this.identity = VERSION + ":" + sha256(normalizeLineEndings(source));
         validateEvidenceAnchor(document.evidenceAnchor());
         if (!"CONTINUE_N7_CURRENT_BEHAVIOR".equals(document.continuationCode())) {
             throw invalid("N7_PROTOCOL_CONTINUATION_INVALID");
@@ -338,6 +338,22 @@ public final class N7QualificationProtocol {
         } catch (NoSuchAlgorithmException impossible) {
             throw new IllegalStateException("SHA_256_UNAVAILABLE", impossible);
         }
+    }
+
+    private static byte[] normalizeLineEndings(byte[] source) {
+        var normalized = new java.io.ByteArrayOutputStream(source.length);
+        for (var index = 0; index < source.length; index++) {
+            if (source[index] != '\r') {
+                normalized.write(source[index]);
+                continue;
+            }
+            if (index + 1 >= source.length || source[index + 1] != '\n') {
+                throw invalid("N7_PROTOCOL_LINE_ENDING_INVALID");
+            }
+            normalized.write('\n');
+            index++;
+        }
+        return normalized.toByteArray();
     }
 
     private static String assignmentIdentity(String version, List<String> caseIds) {

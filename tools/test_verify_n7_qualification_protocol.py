@@ -26,6 +26,10 @@ class N7QualificationProtocolVerifierTest(unittest.TestCase):
         self.assertEqual(20, summary["qualificationCases"])
         self.assertEqual(15, summary["finalHoldoutCases"])
         self.assertEqual(0, summary["providerAttempts"])
+        self.assertEqual(
+            "da922ed9f778f98eb364ce967bf617cb8f14633dd40c028aee6550eb7d258db9",
+            summary["profileSnapshotSha256"]["PLUS"],
+        )
 
     def test_matrix_and_selection_boundaries_are_fixed(self) -> None:
         passing = metrics(9_500)
