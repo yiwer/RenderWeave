@@ -229,6 +229,18 @@ class DashScopeInferenceProviderTest {
                 () -> DashScopeApiKey.resolve(TEST_KEY, file.toString()));
     }
 
+    @Test
+    void tokenPlanSecretAcceptsDotSegmentsButRejectsHeaderUnsafeOrOversizedValues() {
+        var tokenPlanKey = "sk-token.plan.segment-0123456789_abcdefghijklmnopqrstuvwxyz";
+
+        assertEquals("<redacted:DASHSCOPE_TOKEN_API_KEY>",
+                DashScopeApiKey.fromValue(tokenPlanKey).toString());
+        assertThrows(IllegalStateException.class,
+                () -> DashScopeApiKey.fromValue("sk-token.plan\r\nInjected-Header:value"));
+        assertThrows(IllegalStateException.class,
+                () -> DashScopeApiKey.fromValue("sk-" + "a".repeat(510)));
+    }
+
     private static final class CapturingTransport implements DashScopeHttpTransport {
         private final DashScopeHttpResponse response;
         private java.net.URI uri;

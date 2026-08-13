@@ -5,13 +5,19 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
+import java.util.regex.Pattern;
 
 final class DashScopeApiKey {
     private static final int MAX_SECRET_BYTES = 512;
+    private static final Pattern TOKEN_PLAN_KEY = Pattern.compile(
+            "sk-[A-Za-z0-9_.-]{12,509}"
+    );
     private final String value;
 
     private DashScopeApiKey(String value) {
-        if (value == null || !value.matches("sk-[A-Za-z0-9_-]{12,250}")) {
+        if (value == null
+                || value.getBytes(StandardCharsets.UTF_8).length > MAX_SECRET_BYTES
+                || !TOKEN_PLAN_KEY.matcher(value).matches()) {
             throw new IllegalStateException("DASHSCOPE_TOKEN_API_KEY has an invalid format");
         }
         this.value = value;
