@@ -8,6 +8,8 @@ import hashlib
 import importlib.util
 import json
 import pathlib
+import shutil
+import subprocess
 import tempfile
 import unittest
 
@@ -264,6 +266,63 @@ class N7LiveEvidenceVerifierTest(unittest.TestCase):
                             VERIFIER.VerificationError, "N7_EVIDENCE_LOCK_NOT_EMPTY"):
                         VERIFIER.validate_evidence_directory(evidence)
                     (evidence / name).write_bytes(b"")
+
+            (evidence / "state.lock").unlink()
+            with self.assertRaisesRegex(
+                    VERIFIER.VerificationError, "N7_EVIDENCE_FILE_SET_INVALID"):
+                VERIFIER.validate_evidence_directory(evidence)
+
+    def test_held_os_lock_blocks_evidence_snapshot_even_when_lock_file_is_empty(self) -> None:
+        child = """
+import java.nio.channels.FileChannel;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
+
+class HoldLock {
+    public static void main(String[] args) throws Exception {
+        try (var channel = FileChannel.open(Path.of(args[0]), StandardOpenOption.WRITE);
+             var ignored = channel.lock()) {
+            System.out.println("LOCKED");
+            System.out.flush();
+            System.in.read();
+        }
+    }
+}
+"""
+        with tempfile.TemporaryDirectory() as directory:
+            root = pathlib.Path(directory)
+            evidence = root / "evidence"
+            evidence.mkdir()
+            for name in VERIFIER.EVIDENCE_FILES:
+                (evidence / name).write_text(
+                    "{}" if name.endswith(".json") else "", encoding="utf-8",
+                )
+            source = root / "HoldLock.java"
+            source.write_text(child, encoding="utf-8")
+            java = shutil.which("java")
+            self.assertIsNotNone(java)
+            for name in ("batch.lock", "state.lock"):
+                with self.subTest(name=name):
+                    process = subprocess.Popen(
+                        [java, str(source), str(evidence / name)],
+                        stdin=subprocess.PIPE,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE,
+                        text=True,
+                    )
+                    try:
+                        self.assertEqual("LOCKED", process.stdout.readline().strip())
+                        with self.assertRaisesRegex(
+                                VERIFIER.VerificationError, "N7_EVIDENCE_LOCK_HELD"):
+                            with VERIFIER.lock_evidence_snapshot(evidence):
+                                pass
+                    finally:
+                        if process.stdin is not None:
+                            process.stdin.write("\n")
+                            process.stdin.flush()
+                        _stdout, stderr = process.communicate(timeout=10)
+                        self.assertEqual("", stderr)
+                        self.assertEqual(0, process.returncode)
 
 
 def make_fixture() -> dict[str, object]:

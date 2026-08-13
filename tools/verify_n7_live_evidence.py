@@ -4,12 +4,14 @@
 from __future__ import annotations
 
 import argparse
+from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
 import hashlib
 import json
+import os
 import pathlib
 import sys
-from typing import Any
+from typing import Any, Iterator
 
 import verify_layered_evaluation as layered
 import verify_n7_live_admission as admission
@@ -467,8 +469,7 @@ def validate_evidence_directory(directory: pathlib.Path) -> None:
         fail("N7_EVIDENCE_DIRECTORY_UNAVAILABLE")
     entries = list(directory.iterdir())
     names = {entry.name for entry in entries}
-    required = {"state.json", "state.guard.json", "report.json"}
-    if not required.issubset(names) or not names.issubset(EVIDENCE_FILES):
+    if names != EVIDENCE_FILES:
         fail("N7_EVIDENCE_FILE_SET_INVALID")
     if any(entry.is_symlink() or not entry.is_file() for entry in entries):
         fail("N7_EVIDENCE_ENTRY_INVALID")
@@ -476,6 +477,64 @@ def validate_evidence_directory(directory: pathlib.Path) -> None:
         lock = directory / name
         if lock.is_file() and lock.stat().st_size != 0:
             fail("N7_EVIDENCE_LOCK_NOT_EMPTY")
+
+
+def acquire_nonblocking_file_lock(handle: Any) -> None:
+    handle.seek(0)
+    try:
+        if os.name == "nt":
+            import msvcrt
+            msvcrt.locking(handle.fileno(), msvcrt.LK_NBLCK, 1)
+        else:
+            import fcntl
+            fcntl.lockf(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB, 1)
+    except OSError as failure:
+        raise VerificationError("N7_EVIDENCE_LOCK_HELD") from failure
+
+
+def release_file_lock(handle: Any) -> None:
+    handle.seek(0)
+    if os.name == "nt":
+        import msvcrt
+        msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, 1)
+    else:
+        import fcntl
+        fcntl.lockf(handle.fileno(), fcntl.LOCK_UN, 1)
+
+
+@contextmanager
+def lock_evidence_snapshot(
+    directory: pathlib.Path,
+    goal_directory: pathlib.Path | None = None,
+) -> Iterator[None]:
+    """Hold writer-compatible OS locks while all mutable live inputs are read."""
+    validate_evidence_directory(directory)
+    lock_paths = [directory / "batch.lock"]
+    if goal_directory is not None:
+        goal_lock = goal_directory / "goal-budget.lock"
+        if not goal_lock.is_file() or goal_lock.is_symlink() \
+                or goal_lock.stat().st_size != 0:
+            fail("N7_GOAL_LOCK_INVALID")
+        lock_paths.append(goal_lock)
+    lock_paths.append(directory / "state.lock")
+    handles: list[Any] = []
+    try:
+        for path in lock_paths:
+            handle = path.open("r+b", buffering=0)
+            try:
+                acquire_nonblocking_file_lock(handle)
+            except BaseException:
+                handle.close()
+                raise
+            handles.append(handle)
+        validate_evidence_directory(directory)
+        yield
+    finally:
+        for handle in reversed(handles):
+            try:
+                release_file_lock(handle)
+            finally:
+                handle.close()
 
 
 def verify(
@@ -510,8 +569,14 @@ def verify(
     _case_ids, metadata = visual.corpus_cases(corpus, corpus_hash)
 
     goal_directory = repository.joinpath(*admission.GOAL_PATH.parts)
-    goal_guard = read_json(goal_directory / "goal-budget.guard.json")
-    goal = read_json(goal_directory / "goal-budget.json")
+    evidence = evidence_directory or repository / ".sdlc" / "evidence" / contract["authorizationId"]
+    evidence = evidence.resolve()
+    with lock_evidence_snapshot(evidence, goal_directory):
+        goal_guard = read_json(goal_directory / "goal-budget.guard.json")
+        goal = read_json(goal_directory / "goal-budget.json")
+        journal_guard = read_json(evidence / "state.guard.json")
+        journal = read_json(evidence / "state.json")
+        envelope = read_json(evidence / "report.json")
     guard_limits = visual.validate_goal_guard(goal_guard)
     reservations, model_totals, lifetime_totals, quarantined = visual.validate_goal(
         goal, guard_limits,
@@ -519,17 +584,11 @@ def verify(
     if any(item["state"] != "SETTLED" for item in reservations):
         fail("N7_GOAL_NONTERMINAL_OR_BREACHED_RESERVATION")
 
-    evidence = evidence_directory or repository / ".sdlc" / "evidence" / contract["authorizationId"]
-    evidence = evidence.resolve()
-    validate_evidence_directory(evidence)
-    journal_guard = read_json(evidence / "state.guard.json")
     validate_n7_journal_guard(journal_guard, authorization)
-    journal = read_json(evidence / "state.json")
     results, terminal_states, provider_latency = validate_n7_journal(
         journal, authorization, metadata, reservations,
         require_review_required=not audit_outcome,
     )
-    envelope = read_json(evidence / "report.json")
     quality = validate_report_envelope(
         envelope, contract, authorization, results, metadata, contract_identity,
         require_quality=not audit_outcome,
