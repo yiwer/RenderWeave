@@ -4,8 +4,10 @@
 from __future__ import annotations
 
 import importlib.util
+import hashlib
 import pathlib
 import subprocess
+import tempfile
 import unittest
 from unittest import mock
 
@@ -19,6 +21,44 @@ SPEC.loader.exec_module(PROBE)
 
 
 class N7ClosedNegativeProbeTest(unittest.TestCase):
+    def test_runtime_snapshot_hashes_held_zero_byte_locks_without_reopening_them(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            repository = pathlib.Path(directory)
+            evidence = repository / "evidence"
+            evidence.mkdir()
+            for name in PROBE.evidence_verifier.EVIDENCE_FILES:
+                (evidence / name).write_text(
+                    "{}" if name.endswith(".json") else "", encoding="utf-8",
+                )
+            goal = repository.joinpath(*PROBE.admission.GOAL_PATH.parts)
+            goal.mkdir(parents=True)
+            for name in ("goal-budget.json", "goal-budget.guard.json"):
+                (goal / name).write_text("{}", encoding="utf-8")
+            (goal / "goal-budget.lock").write_bytes(b"")
+            for relative in PROBE.admission.LEDGERS.values():
+                ledger = repository.joinpath(*relative.parts)
+                ledger.parent.mkdir(parents=True, exist_ok=True)
+                ledger.write_text("{}", encoding="utf-8")
+            audit = {
+                "providerAttempts": 27,
+                "actualCostMicrosCny": 681_194,
+                "actualInputTokens": 151_105,
+                "actualOutputTokens": 47_373,
+            }
+
+            with mock.patch.object(
+                    PROBE.evidence_verifier, "verify", return_value=audit):
+                snapshot = PROBE.runtime_snapshot(repository, evidence)
+
+            lock_entries = {
+                name: value for name, value in snapshot["files"].items()
+                if name.endswith(".lock")
+            }
+            self.assertEqual(3, len(lock_entries))
+            for value in lock_entries.values():
+                self.assertEqual(0, value["bytes"])
+                self.assertEqual(hashlib.sha256(b"").hexdigest(), value["sha256"])
+
     @mock.patch.dict("os.environ", {
         "DASHSCOPE_TOKEN_API_KEY": "must-not-reach-child",
         "DASHSCOPE_TOKEN_API_KEY_FILE": "must-not-reach-child",

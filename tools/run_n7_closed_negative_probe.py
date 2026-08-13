@@ -83,7 +83,12 @@ def runtime_snapshot(
         for name, path in paths.items():
             if not path.is_file() or path.is_symlink():
                 fail("N7_CLOSED_PROBE_INPUT_UNAVAILABLE")
-            raw = path.read_bytes()
+            if path.name.endswith(".lock"):
+                if path.stat().st_size != 0:
+                    fail("N7_CLOSED_PROBE_LOCK_NOT_EMPTY")
+                raw = b""
+            else:
+                raw = path.read_bytes()
             files[name] = {"bytes": len(raw), "sha256": sha256(raw)}
     snapshot = {
         "providerAttempts": audit["providerAttempts"],
