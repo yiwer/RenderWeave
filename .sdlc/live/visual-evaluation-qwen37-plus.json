@@ -1,7 +1,7 @@
 {
   "authorizationVersion": "renderweave-visual-evaluation-authorization/1.0",
   "authorizationId": "n7-04-plus-canary-product-v45-20260813d",
-  "status": "PROPOSED",
+  "status": "OPEN",
   "phase": "CANARY",
   "inputClassification": "REPOSITORY_SYNTHETIC_ONLY",
   "corpusVersion": "renderweave-visual-stage-corpus/2.0",
@@ -21,8 +21,8 @@
   "maximumTotalTokens": 500000,
   "maximumCostMicrosCny": 5000000,
   "maximumCasesPerBatch": 5,
-  "approvedBy": null,
-  "approvedAt": null,
-  "expiresAt": null,
+  "approvedBy": "yiwer",
+  "approvedAt": "2026-08-13T15:51:38Z",
+  "expiresAt": "2026-08-14T15:51:38Z",
   "approvalScope": "renderweave-n7-live-ticket-contract/1.0:453e063ef0c2881bf6608bd7659a0c3ffb2c73c1a82fc9283c9e8bcd9b3020ef"
 }
