@@ -41,8 +41,6 @@ renderweave:
     live-upload-enabled: ${RENDERWEAVE_LIVE_UPLOAD_ENABLED:false}
     dashscope:
       base-url: https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1
-      api-key: ${DASHSCOPE_TOKEN_API_KEY:}
-      api-key-file: ${DASHSCOPE_TOKEN_API_KEY_FILE:}
     live-lease-seconds: 600
     recovery-enabled: ${RENDERWEAVE_INFERENCE_RECOVERY_ENABLED:true}
     live-poll-millis: 2000

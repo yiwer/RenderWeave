@@ -68,6 +68,13 @@ class LayeredEvaluationGateVerifierTest(unittest.TestCase):
             paths,
         )
 
+    def test_token_plan_secret_name_is_forbidden_in_final_r1_evidence(self) -> None:
+        with self.assertRaisesRegex(
+                GATE.GateVerificationError, "FORBIDDEN_EVIDENCE_MEMBER"):
+            GATE._scan_evidence_payload(
+                "evidence.txt", b"DASHSCOPE_TOKEN_API_KEY",
+            )
+
     def test_lifecycle_future_gate_provider_history_and_payload_tampering_fail(self) -> None:
         envelope = FIXTURE.make_envelope()
         independent = VERIFIER.verify_envelope(envelope, REPOSITORY)

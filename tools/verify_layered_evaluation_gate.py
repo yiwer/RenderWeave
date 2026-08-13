@@ -68,7 +68,7 @@ FORBIDDEN_PAYLOAD_MARKERS = (
     b'"providerrequest"', b'"providerresponse"', b'"candidatejson"',
     b'"rootdocument"', b'"boundingbox"', b'"bbox"', b'"polygon"',
     b'"imagebytes"', b'"chainofthought"', b"data:image", b"ignore prior instructions",
-    b"bearer ", b"dashscope_api_key",
+    b"bearer ", b"dashscope_token_api_key", b"dashscope_api_key",
 )
 LONG_BASE64 = re.compile(rb"(?:[A-Za-z0-9+/]{256,}={0,2})")
 SHA256 = re.compile(r"^[0-9a-f]{64}$")
