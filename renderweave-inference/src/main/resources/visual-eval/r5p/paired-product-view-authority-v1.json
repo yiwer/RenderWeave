@@ -1,0 +1,38 @@
+{
+  "authorityVersion": "renderweave-r5p-authority/1.0",
+  "approvedSpecPath": "specs/changes/20260815-r5-paired-product-view-successor.md",
+  "approvedSpecSha256": "650ad1632347592d1fc34325983744c02563b43d8a565b9b1cd24e1a805a892a",
+  "baselineRevision": "57be4d9b249c0aa06a1c0b32abc634c152a97234",
+  "n704TicketId": "N7-04",
+  "n704EvidenceAuthoritySha256": "e2cb4a0455f712b35618f8239e369e3a92bbd50a5a274d24a6eb39ee6734b78f",
+  "n704AuditSha256": "e1f550b28e7c57fd4944c3b83297e8c85a167ba147683e4aff655b00f0a59655",
+  "n704Decision": "FAIL",
+  "n704AuthorizationId": "n7-04-plus-canary-product-v45-20260814e",
+  "n704AuthorizationStatus": "CLOSED",
+  "n705TicketId": "N7-05",
+  "n705DependencyStatus": "PERMANENTLY_BLOCKED",
+  "oldR5AuthorityVersion": "renderweave-r5-product-transform-authority/1.1",
+  "oldR5AuthoritySha256": "a6ef7ee0820ea906cb371371d66a8eaef3ba77ac569ae24d6e4935e144ef4475",
+  "oldR5RunnerVersion": "renderweave-r5-product-transform-runner/1.0",
+  "oldR5RunnerSourceSha256": "3f7e03764f5a71d6c796ffc82e1c468d7458ca5338bc3e012166c389a3776178",
+  "oldR5RunnerDisposition": "R5_PRODUCT_TRANSFORM_ROUTE_CLOSED",
+  "prohibitedIdentityValues": [
+    "N7-04",
+    "N7-05",
+    "n7-04-plus-canary-product-v45-20260814e",
+    "renderweave-n7-live-ticket-contract/1.0:caa98a6831d5a5e8dd263265822c4568d1b26117f0d438c8a90dabdf4f422843",
+    "renderweave-visual-evaluation-tree-sha256/2:cfa3e9708b031f9383195edcd3e4a04a447982a7633d1fe9bc95ec27d2c5c650",
+    "renderweave-r5-product-transform-assignment/1.0:46c8e4c9c28b8628bac6532deeeb1a9ee311dda58b1a76f23a1b1d70abe7b540",
+    "renderweave-r5-product-transform-evaluation/1.0:e25bb4531545a399ee2e83082cc7b3dbceda0cbaa8e2e7965a570e3484925d46",
+    "renderweave-r5-product-transform-evidence/1.0:3041df28a17167c9b9eb322d0f60cf2508b2cff0ac8da344449c544908211528",
+    "renderweave-r5-product-transform-authority/1.1:a6ef7ee0820ea906cb371371d66a8eaef3ba77ac569ae24d6e4935e144ef4475",
+    "renderweave-r5-product-transform-runner/1.0"
+  ],
+  "externalProviderUsage": {
+    "attempts": 0,
+    "reservations": 0,
+    "costMicrosCny": 0
+  },
+  "apiKeyReads": 0,
+  "terminalCode": "R5P_AUTHORITY_LOCKED"
+}
