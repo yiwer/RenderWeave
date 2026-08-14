@@ -1,0 +1,58 @@
+{
+  "protocolVersion": "renderweave-offline-quality-evaluation-protocol/1.0",
+  "corpusVersion": "renderweave-visual-stage-corpus/2.0",
+  "corpusIdentity": "renderweave-visual-stage-corpus/2.0:c596621eb680e7e10d42d2e1d1f926995cec9716cc6ef83a96a50ad53adc285c",
+  "shadowDiagnostic": true,
+  "certificationEligible": false,
+  "finalAuthorityCorpusVersion": "renderweave-visual-stage-corpus/1.0",
+  "r3ProbeCaseIds": [
+    "transit-board-v2",
+    "restaurant-menu-v2",
+    "hospital-schedule-v2",
+    "transit-board-v4"
+  ],
+  "r5ProbeCaseIds": [
+    "transit-board-v3",
+    "restaurant-menu-v3",
+    "hospital-schedule-v3",
+    "transit-board-v5"
+  ],
+  "thresholds": {
+    "minimumStructuralImprovementBps": 500,
+    "maximumNonRegressionBps": 100,
+    "minimumDownstreamMetricsImproved": 1,
+    "maximumCriticalHallucinationIncrease": 0
+  },
+  "structuralMetrics": [
+    "OCR_LINE_RECALL_BPS",
+    "LAYOUT_RECALL_BPS",
+    "READING_ORDER_ACCURACY_BPS"
+  ],
+  "downstreamMetrics": [
+    "SCHEMA_ENTITY_F1_BPS",
+    "FIELD_MICRO_F1_BPS",
+    "PARENT_CHILD_EDGE_F1_BPS",
+    "CANDIDATE_TOPOLOGY_SIMILARITY_BPS"
+  ],
+  "winnerTieBreak": [
+    "STRUCTURAL_MARGIN_DESC",
+    "DOWNSTREAM_MARGIN_DESC",
+    "CRITICAL_HALLUCINATIONS_ASC",
+    "FAILURE_RATE_ASC",
+    "P95_LATENCY_ASC",
+    "PEAK_RAM_ASC",
+    "CONFIGURATION_ID_ASC"
+  ],
+  "resourceCeilings": {
+    "maximumStartupMillis": 300000,
+    "maximumCaseP95Millis": 120000,
+    "maximumPeakRamMiB": 12288,
+    "maximumDiskMiB": 15360,
+    "maximumGpuVramMiB": 12288
+  },
+  "isolationPolicy": {
+    "onlySoleDevWinnerMayOpenR2Holdout": true,
+    "r3R5GoldIsolatedFromR2Selection": true,
+    "resultBasedRetuningForbidden": true
+  }
+}
