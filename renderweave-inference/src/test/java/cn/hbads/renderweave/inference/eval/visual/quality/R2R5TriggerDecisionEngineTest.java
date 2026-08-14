@@ -100,6 +100,7 @@ class R2R5TriggerDecisionEngineTest {
                 () -> new FrozenQualityEvidencePack(
                         source.contractVersion(), source.baseRevision(), "0".repeat(64), source.n704AuditSha256(),
                         source.n704Decision(), source.n704AuthorizationStatus(), source.n705DependencyStatus(),
+                        source.componentVerifications(),
                         source.routes(), List.of(), source.externalProviderUsage())).getMessage());
         assertEquals("QUALITY_REPAIR_N7_AUTHORITY_STATE_DRIFT", assertThrows(IllegalArgumentException.class,
                 () -> new FrozenQualityEvidencePack(
@@ -107,6 +108,7 @@ class R2R5TriggerDecisionEngineTest {
                         source.n704AuditSha256(), FrozenQualityEvidencePack.N7Decision.PASS,
                         FrozenQualityEvidencePack.AuthorizationStatus.OPEN,
                         FrozenQualityEvidencePack.N7DependencyStatus.READY,
+                        source.componentVerifications(),
                         source.routes(), List.of(), source.externalProviderUsage())).getMessage());
     }
 
@@ -124,6 +126,7 @@ class R2R5TriggerDecisionEngineTest {
                 source.n704Decision(),
                 source.n704AuthorizationStatus(),
                 source.n705DependencyStatus(),
+                source.componentVerifications(),
                 routes,
                 successorIdentities,
                 source.externalProviderUsage());

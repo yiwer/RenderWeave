@@ -2,6 +2,8 @@ package cn.hbads.renderweave.inference;
 
 import cn.hbads.renderweave.inference.eval.visual.quality.ChallengerCapabilityAdmission;
 import cn.hbads.renderweave.inference.eval.visual.quality.FrozenQualityEvidencePackJsonCodec;
+import cn.hbads.renderweave.inference.eval.visual.quality.FrozenQualityEvidencePack;
+import cn.hbads.renderweave.inference.eval.visual.quality.OfflineComponentVerificationReader;
 import cn.hbads.renderweave.inference.eval.visual.quality.OfflineQualityDecisionAssembler;
 import cn.hbads.renderweave.inference.eval.visual.quality.R2R5TriggerDecision;
 import cn.hbads.renderweave.inference.eval.visual.quality.R2R5TriggerDecisionJsonCodec;
@@ -15,6 +17,7 @@ import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -29,15 +32,40 @@ class OfflineQualityDecisionGateTest {
                 "RENDERWEAVE_VRQ07_R3_EVIDENCE", "vrq05-r3-probe-evidence.json", true);
         var r5Path = requiredEvidenceFile(
                 "RENDERWEAVE_VRQ07_R5_EVIDENCE", "vrq06-r5-oracle-evidence.json", true);
+        var rapidA2Path = requiredEvidenceFile(
+                "RENDERWEAVE_VRQ07_RAPIDOCR_A2", "vrq04-causal-a2.json", true);
+        var r3A2Path = requiredEvidenceFile(
+                "RENDERWEAVE_VRQ07_R3_A2", "vrq05-r3-probe-a2.json", true);
+        var r5A2Path = requiredEvidenceFile(
+                "RENDERWEAVE_VRQ07_R5_A2", "vrq06-r5-oracle-a2.json", true);
         var packPath = requiredEvidenceFile(
                 "RENDERWEAVE_VRQ07_EVIDENCE_PACK", "vrq07-evidence-pack.json", false);
         var decisionPath = requiredEvidenceFile(
                 "RENDERWEAVE_VRQ07_DECISION", "vrq07-decision.json", false);
+        var rapidBytes = Files.readAllBytes(rapidPath);
+        var r3Bytes = Files.readAllBytes(r3Path);
+        var r5Bytes = Files.readAllBytes(r5Path);
+        var rapidCodec = new RapidOcrCausalEvidencePackJsonCodec();
+        var r3Codec = new R3OrderRepeatProbeEvidenceJsonCodec();
+        var r5Codec = new R5OracleProbeEvidenceJsonCodec();
+        var rapid = rapidCodec.read(rapidBytes);
+        var r3 = r3Codec.read(r3Bytes);
+        var r5 = r5Codec.read(r5Bytes);
+        var expectedRevision = required("RENDERWEAVE_VRQ07_EXPECTED_REVISION");
+        var verificationReader = new OfflineComponentVerificationReader();
+        var componentVerifications = List.of(
+                verificationReader.read(FrozenQualityEvidencePack.Component.RAPIDOCR_CAUSAL,
+                        rapidBytes, rapidCodec.evidenceIdentity(rapid), Files.readAllBytes(rapidA2Path), expectedRevision),
+                verificationReader.read(FrozenQualityEvidencePack.Component.R3_PROBE,
+                        r3Bytes, r3Codec.evidenceIdentity(r3), Files.readAllBytes(r3A2Path), expectedRevision),
+                verificationReader.read(FrozenQualityEvidencePack.Component.R5_PROBE,
+                        r5Bytes, r5Codec.evidenceIdentity(r5), Files.readAllBytes(r5A2Path), expectedRevision));
         var bundle = new OfflineQualityDecisionAssembler().assemble(
-                new RapidOcrCausalEvidencePackJsonCodec().read(Files.readAllBytes(rapidPath)),
+                rapid,
                 ChallengerCapabilityAdmission.load(),
-                new R3OrderRepeatProbeEvidenceJsonCodec().read(Files.readAllBytes(r3Path)),
-                new R5OracleProbeEvidenceJsonCodec().read(Files.readAllBytes(r5Path)));
+                r3,
+                r5,
+                componentVerifications);
         Files.write(packPath, bundle.encodedEvidencePack(),
                 StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE);
         Files.write(decisionPath, bundle.encodedDecision(),

@@ -17,6 +17,7 @@ public record FrozenQualityEvidencePack(
         N7Decision n704Decision,
         AuthorizationStatus n704AuthorizationStatus,
         N7DependencyStatus n705DependencyStatus,
+        List<ComponentVerification> componentVerifications,
         List<RouteEvidence> routes,
         List<SuccessorIdentity> successorIdentities,
         ExternalProviderUsage externalProviderUsage
@@ -64,6 +65,7 @@ public record FrozenQualityEvidencePack(
                 || n705DependencyStatus != N7DependencyStatus.BLOCKED) {
             throw invalid("QUALITY_REPAIR_N7_AUTHORITY_STATE_DRIFT");
         }
+        componentVerifications = canonicalComponentVerifications(componentVerifications);
         routes = canonicalRoutes(routes);
         successorIdentities = canonicalSuccessorIdentities(successorIdentities);
         externalProviderUsage = Objects.requireNonNull(externalProviderUsage, "externalProviderUsage");
@@ -81,6 +83,10 @@ public record FrozenQualityEvidencePack(
                 N7Decision.FAIL,
                 AuthorizationStatus.CLOSED,
                 N7DependencyStatus.BLOCKED,
+                List.of(
+                        ComponentVerification.missing(Component.RAPIDOCR_CAUSAL),
+                        ComponentVerification.missing(Component.R3_PROBE),
+                        ComponentVerification.missing(Component.R5_PROBE)),
                 List.of(
                         new RouteEvidence(Route.R2, List.of(
                                 predicate("R2_CAPABILITY_ADMITTED", PredicateResult.MISSING,
@@ -128,6 +134,25 @@ public record FrozenQualityEvidencePack(
         return List.copyOf(result);
     }
 
+    private static List<ComponentVerification> canonicalComponentVerifications(
+            List<ComponentVerification> source
+    ) {
+        var result = new ArrayList<>(List.copyOf(
+                Objects.requireNonNull(source, "componentVerifications")));
+        if (result.size() != Component.values().length || result.stream().anyMatch(Objects::isNull)
+                || !EnumSet.copyOf(result.stream().map(ComponentVerification::component).toList())
+                .equals(EnumSet.allOf(Component.class))) {
+            throw invalid("QUALITY_REPAIR_COMPONENT_VERIFICATION_SET_INVALID");
+        }
+        result.sort(Comparator.comparing(ComponentVerification::component));
+        var revisions = result.stream().filter(item -> item.result() == VerificationResult.PASS)
+                .map(ComponentVerification::repositoryRevision).distinct().count();
+        if (revisions > 1) {
+            throw invalid("QUALITY_REPAIR_COMPONENT_REVISION_DRIFT");
+        }
+        return List.copyOf(result);
+    }
+
     private static List<SuccessorIdentity> canonicalSuccessorIdentities(List<SuccessorIdentity> source) {
         var result = new ArrayList<>(List.copyOf(Objects.requireNonNull(source, "successorIdentities")));
         if (result.stream().anyMatch(Objects::isNull)) {
@@ -162,6 +187,39 @@ public record FrozenQualityEvidencePack(
 
     public enum SuccessorIdentityKind { TICKET, AUTHORIZATION, CONTRACT, EVALUATION }
 
+    public enum Component {
+        RAPIDOCR_CAUSAL(
+                "renderweave-rapidocr-causal-evidence/1.0",
+                "renderweave-rapidocr-causal-evidence-envelope/1.0",
+                "renderweave-vrq04-causal-verifier/1.0"),
+        R3_PROBE(
+                "renderweave-r3-order-repeat-probe-evidence/1.0",
+                "renderweave-r3-order-repeat-probe-envelope/1.0",
+                "renderweave-vrq05-r3-verifier/1.0"),
+        R5_PROBE(
+                "renderweave-r5-oracle-probe-evidence/1.0",
+                "renderweave-r5-oracle-probe-envelope/1.0",
+                "renderweave-vrq06-r5-verifier/1.0");
+
+        private final String evidenceIdentityVersion;
+        private final String evidenceEnvelopeVersion;
+        private final String verifierVersion;
+
+        Component(String evidenceIdentityVersion, String evidenceEnvelopeVersion, String verifierVersion) {
+            this.evidenceIdentityVersion = evidenceIdentityVersion;
+            this.evidenceEnvelopeVersion = evidenceEnvelopeVersion;
+            this.verifierVersion = verifierVersion;
+        }
+
+        public String evidenceIdentityVersion() { return evidenceIdentityVersion; }
+
+        public String evidenceEnvelopeVersion() { return evidenceEnvelopeVersion; }
+
+        public String verifierVersion() { return verifierVersion; }
+    }
+
+    public enum VerificationResult { PASS, MISSING }
+
     public record PredicateEvidence(
             String predicateId,
             String expectedEvidenceClass,
@@ -185,6 +243,57 @@ public record FrozenQualityEvidencePack(
                     || !evidenceReference.matches("[a-z][A-Za-z0-9._/-]{0,127}:[0-9a-f]{64}")) {
                 throw invalid("QUALITY_REPAIR_EVIDENCE_REFERENCE_INVALID");
             }
+        }
+    }
+
+    public record ComponentVerification(
+            Component component,
+            String evidenceIdentity,
+            String evidenceSha256,
+            String verificationSummarySha256,
+            String verifierVersion,
+            String assurance,
+            String repositoryRevision,
+            VerificationResult result,
+            ExternalProviderUsage externalProviderUsage
+    ) {
+        private static final String A2_ASSURANCE = "A2_CROSS_IMPLEMENTATION_RECOMPUTE";
+
+        public ComponentVerification {
+            Objects.requireNonNull(component, "component");
+            Objects.requireNonNull(result, "result");
+            externalProviderUsage = Objects.requireNonNull(externalProviderUsage, "externalProviderUsage");
+            if (evidenceIdentity == null || !evidenceIdentity.matches(
+                    java.util.regex.Pattern.quote(component.evidenceIdentityVersion()) + ":[0-9a-f]{64}")) {
+                throw invalid("QUALITY_REPAIR_COMPONENT_EVIDENCE_IDENTITY_INVALID");
+            }
+            if (!isSha256(evidenceSha256) || !isSha256(verificationSummarySha256)
+                    || !component.verifierVersion().equals(verifierVersion)
+                    || repositoryRevision == null || !repositoryRevision.matches("[0-9a-f]{40}")
+                    || !externalProviderUsage.zeroUsage()) {
+                throw invalid("QUALITY_REPAIR_COMPONENT_VERIFICATION_INVALID");
+            }
+            if (result == VerificationResult.PASS && !A2_ASSURANCE.equals(assurance)
+                    || result == VerificationResult.MISSING && !"MISSING".equals(assurance)) {
+                throw invalid("QUALITY_REPAIR_COMPONENT_ASSURANCE_INVALID");
+            }
+        }
+
+        static ComponentVerification missing(Component component) {
+            return new ComponentVerification(
+                    component,
+                    component.evidenceIdentityVersion() + ":" + "0".repeat(64),
+                    "0".repeat(64),
+                    "0".repeat(64),
+                    component.verifierVersion(),
+                    "MISSING",
+                    BASE_REVISION,
+                    VerificationResult.MISSING,
+                    new ExternalProviderUsage(0, 0, 0));
+        }
+
+        private static boolean isSha256(String value) {
+            return value != null && value.matches("[0-9a-f]{64}");
         }
     }
 

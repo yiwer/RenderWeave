@@ -7,6 +7,7 @@ import argparse
 import hashlib
 import json
 import pathlib
+import re
 from typing import Any
 
 
@@ -75,6 +76,41 @@ def component_identity(path: pathlib.Path, envelope_version: str, identity_field
     return payload, identity
 
 
+def component_verification(
+    component: str,
+    evidence_path: pathlib.Path,
+    evidence_identity: str,
+    summary_path: pathlib.Path,
+    verifier_version: str,
+    expected_revision: str,
+) -> dict[str, Any]:
+    raw = summary_path.read_bytes()
+    if not raw or len(raw) > 1024 * 1024 or any(marker in raw.lower() for marker in FORBIDDEN):
+        fail("VRQ07_A2_COMPONENT_SUMMARY_BYTES_INVALID")
+    summary = strict_json(raw)
+    if not isinstance(summary, dict) \
+            or summary.get("result") != "PASS" \
+            or summary.get("assurance") != "A2_CROSS_IMPLEMENTATION_RECOMPUTE" \
+            or summary.get("verifierVersion") != verifier_version \
+            or summary.get("evidenceIdentity") != evidence_identity \
+            or summary.get("repositoryRevision") != expected_revision:
+        fail("VRQ07_A2_COMPONENT_SUMMARY_AUTHORITY_INVALID")
+    for field in ("providerAttempts", "providerReservations", "externalProviderCostMicrosCny"):
+        if type(summary.get(field)) is not int or summary[field] != 0:
+            fail("VRQ07_A2_COMPONENT_SUMMARY_PROVIDER_USAGE_NONZERO")
+    return {
+        "component": component,
+        "evidenceIdentity": evidence_identity,
+        "evidenceSha256": hashlib.sha256(evidence_path.read_bytes()).hexdigest(),
+        "verificationSummarySha256": hashlib.sha256(raw).hexdigest(),
+        "verifierVersion": verifier_version,
+        "assurance": "A2_CROSS_IMPLEMENTATION_RECOMPUTE",
+        "repositoryRevision": expected_revision,
+        "result": "PASS",
+        "externalProviderUsage": {"attempts": 0, "reservations": 0, "costMicrosCny": 0},
+    }
+
+
 def normalized_resource_identity(path: pathlib.Path, version: str) -> str:
     raw = path.read_bytes()
     if b"\r" in raw.replace(b"\r\n", b""):
@@ -112,6 +148,8 @@ def route_decision(route_item: dict[str, Any]) -> dict[str, Any]:
 
 
 def verify(args: argparse.Namespace) -> dict[str, Any]:
+    if not re.fullmatch(r"[0-9a-f]{40}", args.expected_revision):
+        fail("VRQ07_A2_EXPECTED_REVISION_INVALID")
     rapid, rapid_identity = component_identity(
         args.rapidocr, "renderweave-rapidocr-causal-evidence-envelope/1.0", "evidenceIdentity", "evidence",
         "renderweave-rapidocr-causal-evidence/1.0")
@@ -133,6 +171,17 @@ def verify(args: argparse.Namespace) -> dict[str, Any]:
             or rapid["capabilityIdentity"] != r5["capabilityIdentity"] \
             or rapid["acquisitionPolicyIdentity"] != r5["acquisitionPolicyIdentity"]:
         fail("VRQ07_A2_COMPONENT_CLOSURE_INVALID")
+    component_verifications = [
+        component_verification(
+            "RAPIDOCR_CAUSAL", args.rapidocr, rapid_identity, args.rapidocr_a2,
+            "renderweave-vrq04-causal-verifier/1.0", args.expected_revision),
+        component_verification(
+            "R3_PROBE", args.r3, r3_identity, args.r3_a2,
+            "renderweave-vrq05-r3-verifier/1.0", args.expected_revision),
+        component_verification(
+            "R5_PROBE", args.r5, r5_identity, args.r5_a2,
+            "renderweave-vrq06-r5-verifier/1.0", args.expected_revision),
+    ]
 
     catalog_path = args.repository / (
         "renderweave-inference/src/main/resources/visual-eval/quality-repair/challenger-capabilities-v1.json"
@@ -166,6 +215,7 @@ def verify(args: argparse.Namespace) -> dict[str, Any]:
         "n704Decision": "FAIL",
         "n704AuthorizationStatus": "CLOSED",
         "n705DependencyStatus": "BLOCKED",
+        "componentVerifications": component_verifications,
         "routes": routes,
         "successorIdentities": [],
         "externalProviderUsage": {"attempts": 0, "reservations": 0, "costMicrosCny": 0},
@@ -212,6 +262,9 @@ def verify(args: argparse.Namespace) -> dict[str, Any]:
         "decisionIdentity": decision_identity,
         "overallDisposition": overall,
         "routeDispositions": {item["route"]: item["disposition"] for item in decision_routes},
+        "componentVerificationSummarySha256": {
+            item["component"]: item["verificationSummarySha256"] for item in component_verifications
+        },
         "providerAttempts": 0,
         "providerReservations": 0,
         "externalProviderCostMicrosCny": 0,
@@ -223,6 +276,10 @@ def main() -> int:
     parser.add_argument("--rapidocr", required=True, type=pathlib.Path)
     parser.add_argument("--r3", required=True, type=pathlib.Path)
     parser.add_argument("--r5", required=True, type=pathlib.Path)
+    parser.add_argument("--rapidocr-a2", required=True, type=pathlib.Path)
+    parser.add_argument("--r3-a2", required=True, type=pathlib.Path)
+    parser.add_argument("--r5-a2", required=True, type=pathlib.Path)
+    parser.add_argument("--expected-revision", required=True)
     parser.add_argument("--pack", required=True, type=pathlib.Path)
     parser.add_argument("--decision", required=True, type=pathlib.Path)
     parser.add_argument("--repository", required=True, type=pathlib.Path)

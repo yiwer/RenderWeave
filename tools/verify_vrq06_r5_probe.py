@@ -7,6 +7,8 @@ import argparse
 import hashlib
 import json
 import pathlib
+import re
+import subprocess
 from typing import Any
 
 
@@ -33,6 +35,17 @@ class VerificationError(ValueError):
 
 def fail(code: str) -> None:
     raise VerificationError(code)
+
+
+def repository_revision(repository: pathlib.Path) -> str:
+    completed = subprocess.run(
+        ["git", "-C", str(repository), "rev-parse", "HEAD"],
+        check=True, capture_output=True, text=True, encoding="utf-8",
+    )
+    revision = completed.stdout.strip()
+    if not re.fullmatch(r"[0-9a-f]{40}", revision):
+        fail("R5_A2_REPOSITORY_REVISION_INVALID")
+    return revision
 
 
 def unique_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
@@ -220,6 +233,7 @@ def verify(evidence_path: pathlib.Path, repository: pathlib.Path) -> dict[str, A
         "verifierVersion": "renderweave-vrq06-r5-verifier/1.0",
         "result": "PASS",
         "assurance": "A2_CROSS_IMPLEMENTATION_RECOMPUTE",
+        "repositoryRevision": repository_revision(repository),
         "evidenceIdentity": identity,
         "evaluationIdentity": expected_evaluation,
         "assignmentIdentity": assignment_identity,

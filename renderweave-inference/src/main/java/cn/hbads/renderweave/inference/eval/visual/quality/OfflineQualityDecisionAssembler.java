@@ -9,7 +9,8 @@ public final class OfflineQualityDecisionAssembler {
             RapidOcrCausalEvidencePack rapidOcr,
             ChallengerCapabilityAdmission challengers,
             R3OrderRepeatProbeEvidence r3,
-            R5OracleProbeEvidence r5
+            R5OracleProbeEvidence r5,
+            List<FrozenQualityEvidencePack.ComponentVerification> componentVerifications
     ) {
         Objects.requireNonNull(rapidOcr, "rapidOcr");
         Objects.requireNonNull(challengers, "challengers");
@@ -39,6 +40,8 @@ public final class OfflineQualityDecisionAssembler {
         var rapidIdentity = new RapidOcrCausalEvidencePackJsonCodec().evidenceIdentity(rapidOcr);
         var r3Identity = new R3OrderRepeatProbeEvidenceJsonCodec().evidenceIdentity(r3);
         var r5Identity = new R5OracleProbeEvidenceJsonCodec().evidenceIdentity(r5);
+        var verifiedComponents = requireComponentVerifications(
+                componentVerifications, rapidIdentity, r3Identity, r5Identity);
         var capabilityAdmitted = challengers.challengers().stream().allMatch(item ->
                 item.admissionDisposition() == ChallengerCapabilityAdmission.AdmissionDisposition.ADMITTED
                         && item.executable() && item.missingAdmissionDimensions().isEmpty());
@@ -50,6 +53,7 @@ public final class OfflineQualityDecisionAssembler {
                 FrozenQualityEvidencePack.N7Decision.FAIL,
                 FrozenQualityEvidencePack.AuthorizationStatus.CLOSED,
                 FrozenQualityEvidencePack.N7DependencyStatus.BLOCKED,
+                verifiedComponents,
                 List.of(
                         new FrozenQualityEvidencePack.RouteEvidence(
                                 FrozenQualityEvidencePack.Route.R2,
@@ -103,6 +107,35 @@ public final class OfflineQualityDecisionAssembler {
         return new Bundle(
                 evidencePack, packIdentity, encodedPack,
                 decision, decisionIdentity, encodedDecision);
+    }
+
+    private static List<FrozenQualityEvidencePack.ComponentVerification> requireComponentVerifications(
+            List<FrozenQualityEvidencePack.ComponentVerification> source,
+            String rapidIdentity,
+            String r3Identity,
+            String r5Identity
+    ) {
+        var values = List.copyOf(Objects.requireNonNull(source, "componentVerifications"));
+        var byComponent = new java.util.EnumMap<
+                FrozenQualityEvidencePack.Component,
+                FrozenQualityEvidencePack.ComponentVerification>(FrozenQualityEvidencePack.Component.class);
+        for (var value : values) {
+            if (value == null || byComponent.put(value.component(), value) != null) {
+                throw new IllegalArgumentException("QUALITY_REPAIR_COMPONENT_VERIFICATION_SET_INVALID");
+            }
+        }
+        if (byComponent.size() != FrozenQualityEvidencePack.Component.values().length
+                || byComponent.values().stream().anyMatch(item ->
+                item.result() != FrozenQualityEvidencePack.VerificationResult.PASS)
+                || !rapidIdentity.equals(byComponent.get(
+                FrozenQualityEvidencePack.Component.RAPIDOCR_CAUSAL).evidenceIdentity())
+                || !r3Identity.equals(byComponent.get(
+                FrozenQualityEvidencePack.Component.R3_PROBE).evidenceIdentity())
+                || !r5Identity.equals(byComponent.get(
+                FrozenQualityEvidencePack.Component.R5_PROBE).evidenceIdentity())) {
+            throw new IllegalArgumentException("QUALITY_REPAIR_COMPONENT_VERIFICATION_AUTHORITY_INVALID");
+        }
+        return values;
     }
 
     private static FrozenQualityEvidencePack.PredicateResult routeResult(

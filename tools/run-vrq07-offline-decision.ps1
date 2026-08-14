@@ -30,10 +30,13 @@ if (-not $resolvedEvidenceDir.StartsWith(
 $rapidPath = Join-Path $resolvedEvidenceDir 'vrq04-causal-evidence.json'
 $r3Path = Join-Path $resolvedEvidenceDir 'vrq05-r3-probe-evidence.json'
 $r5Path = Join-Path $resolvedEvidenceDir 'vrq06-r5-oracle-evidence.json'
+$rapidA2Path = Join-Path $resolvedEvidenceDir 'vrq04-causal-a2.json'
+$r3A2Path = Join-Path $resolvedEvidenceDir 'vrq05-r3-probe-a2.json'
+$r5A2Path = Join-Path $resolvedEvidenceDir 'vrq06-r5-oracle-a2.json'
 $packPath = Join-Path $resolvedEvidenceDir 'vrq07-evidence-pack.json'
 $decisionPath = Join-Path $resolvedEvidenceDir 'vrq07-decision.json'
 $verifierPath = Join-Path $resolvedEvidenceDir 'vrq07-decision-a2.json'
-foreach ($path in @($rapidPath, $r3Path, $r5Path)) {
+foreach ($path in @($rapidPath, $r3Path, $r5Path, $rapidA2Path, $r3A2Path, $r5A2Path)) {
     if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
         throw "Required offline evidence is missing: $(Split-Path -Leaf $path)"
     }
@@ -71,6 +74,14 @@ $env:RENDERWEAVE_RUN_VRQ07_OFFLINE_DECISION = 'true'
 $env:RENDERWEAVE_VRQ07_RAPIDOCR_CAUSAL = $rapidPath
 $env:RENDERWEAVE_VRQ07_R3_EVIDENCE = $r3Path
 $env:RENDERWEAVE_VRQ07_R5_EVIDENCE = $r5Path
+$env:RENDERWEAVE_VRQ07_RAPIDOCR_A2 = $rapidA2Path
+$env:RENDERWEAVE_VRQ07_R3_A2 = $r3A2Path
+$env:RENDERWEAVE_VRQ07_R5_A2 = $r5A2Path
+$expectedRevision = (& git.exe -C $repoRoot rev-parse HEAD).Trim()
+if ($LASTEXITCODE -ne 0 -or $expectedRevision -notmatch '^[0-9a-f]{40}$') {
+    throw 'Unable to resolve the exact VRQ-07 repository revision.'
+}
+$env:RENDERWEAVE_VRQ07_EXPECTED_REVISION = $expectedRevision
 $env:RENDERWEAVE_VRQ07_EVIDENCE_PACK = $packPath
 $env:RENDERWEAVE_VRQ07_DECISION = $decisionPath
 
@@ -84,6 +95,8 @@ try {
     Invoke-Checked 'vrq07-independent-decision-reconstruction' {
         & python.exe tools/verify_vrq07_offline_decision.py `
             --rapidocr $rapidPath --r3 $r3Path --r5 $r5Path `
+            --rapidocr-a2 $rapidA2Path --r3-a2 $r3A2Path --r5-a2 $r5A2Path `
+            --expected-revision $expectedRevision `
             --pack $packPath --decision $decisionPath `
             --repository $repoRoot --output $verifierPath
     }
@@ -106,6 +119,10 @@ finally {
         'RENDERWEAVE_VRQ07_RAPIDOCR_CAUSAL',
         'RENDERWEAVE_VRQ07_R3_EVIDENCE',
         'RENDERWEAVE_VRQ07_R5_EVIDENCE',
+        'RENDERWEAVE_VRQ07_RAPIDOCR_A2',
+        'RENDERWEAVE_VRQ07_R3_A2',
+        'RENDERWEAVE_VRQ07_R5_A2',
+        'RENDERWEAVE_VRQ07_EXPECTED_REVISION',
         'RENDERWEAVE_VRQ07_EVIDENCE_PACK',
         'RENDERWEAVE_VRQ07_DECISION'
     ) | ForEach-Object { [Environment]::SetEnvironmentVariable($_, $null, 'Process') }

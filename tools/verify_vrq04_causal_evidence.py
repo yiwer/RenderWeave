@@ -7,6 +7,8 @@ import argparse
 import hashlib
 import json
 import pathlib
+import re
+import subprocess
 from typing import Any
 
 import verify_rapidocr_shadow_evaluation as shadow
@@ -29,6 +31,17 @@ class VerificationError(ValueError):
 
 def fail(code: str) -> None:
     raise VerificationError(code)
+
+
+def repository_revision(repository: pathlib.Path) -> str:
+    completed = subprocess.run(
+        ["git", "-C", str(repository), "rev-parse", "HEAD"],
+        check=True, capture_output=True, text=True, encoding="utf-8",
+    )
+    revision = completed.stdout.strip()
+    if not re.fullmatch(r"[0-9a-f]{40}", revision):
+        fail("CAUSAL_REPOSITORY_REVISION_INVALID")
+    return revision
 
 
 def strict_json(raw: bytes) -> Any:
@@ -185,6 +198,7 @@ def verify(
         "verifierVersion": "renderweave-vrq04-causal-verifier/1.0",
         "result": "PASS",
         "assurance": "A2_CROSS_IMPLEMENTATION_RECOMPUTE",
+        "repositoryRevision": repository_revision(repository),
         "evidenceIdentity": computed_identity,
         "evaluationIdentity": pack["evaluationIdentity"],
         "protocolIdentity": pack["protocolIdentity"],

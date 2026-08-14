@@ -22,7 +22,8 @@ class OfflineQualityDecisionAssemblerTest {
         var r5 = R5OracleProbeEvidence.decide(identity("r5-evaluation"), improvedR5Cases(), 4);
 
         var bundle = new OfflineQualityDecisionAssembler().assemble(
-                causal, ChallengerCapabilityAdmission.load(), r3, r5);
+                causal, ChallengerCapabilityAdmission.load(), r3, r5,
+                verifiedComponents(causal, r3, r5));
 
         assertEquals(R2R5TriggerDecision.OverallDisposition.STOP_TO_SPEC_R5,
                 bundle.decision().overallDisposition());
@@ -37,6 +38,8 @@ class OfflineQualityDecisionAssemblerTest {
         assertTrue(bundle.decision().requireRoute(FrozenQualityEvidencePack.Route.R5).triggerSatisfied());
         assertFalse(bundle.decision().requireRoute(FrozenQualityEvidencePack.Route.R2).triggerSatisfied());
         assertEquals(0, bundle.evidencePack().externalProviderUsage().attempts());
+        assertTrue(bundle.evidencePack().componentVerifications().stream().allMatch(item ->
+                item.result() == FrozenQualityEvidencePack.VerificationResult.PASS));
 
         var packCodec = new FrozenQualityEvidencePackJsonCodec();
         var decisionCodec = new R2R5TriggerDecisionJsonCodec();
@@ -44,6 +47,37 @@ class OfflineQualityDecisionAssemblerTest {
                 packCodec.read(bundle.encodedEvidencePack(), bundle.evidencePackIdentity())));
         assertArrayEquals(bundle.encodedDecision(), decisionCodec.write(
                 decisionCodec.read(bundle.encodedDecision(), bundle.decisionIdentity())));
+    }
+
+    private static List<FrozenQualityEvidencePack.ComponentVerification> verifiedComponents(
+            RapidOcrCausalEvidencePack causal,
+            R3OrderRepeatProbeEvidence r3,
+            R5OracleProbeEvidence r5
+    ) {
+        return List.of(
+                verified(FrozenQualityEvidencePack.Component.RAPIDOCR_CAUSAL,
+                        new RapidOcrCausalEvidencePackJsonCodec().evidenceIdentity(causal), "a"),
+                verified(FrozenQualityEvidencePack.Component.R3_PROBE,
+                        new R3OrderRepeatProbeEvidenceJsonCodec().evidenceIdentity(r3), "b"),
+                verified(FrozenQualityEvidencePack.Component.R5_PROBE,
+                        new R5OracleProbeEvidenceJsonCodec().evidenceIdentity(r5), "c"));
+    }
+
+    private static FrozenQualityEvidencePack.ComponentVerification verified(
+            FrozenQualityEvidencePack.Component component,
+            String evidenceIdentity,
+            String digestCharacter
+    ) {
+        return new FrozenQualityEvidencePack.ComponentVerification(
+                component,
+                evidenceIdentity,
+                digestCharacter.repeat(64),
+                digestCharacter.repeat(64),
+                component.verifierVersion(),
+                "A2_CROSS_IMPLEMENTATION_RECOMPUTE",
+                "d".repeat(40),
+                FrozenQualityEvidencePack.VerificationResult.PASS,
+                new FrozenQualityEvidencePack.ExternalProviderUsage(0, 0, 0));
     }
 
     private static List<R5OracleProbeEvidence.CaseDifferential> improvedR5Cases() {
