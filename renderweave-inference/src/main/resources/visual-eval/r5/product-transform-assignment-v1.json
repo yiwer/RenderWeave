@@ -1,0 +1,41 @@
+{
+  "assignmentVersion": "renderweave-r5-product-transform-assignment/1.0",
+  "corpusVersion": "renderweave-visual-stage-corpus/2.0",
+  "corpusIdentity": "renderweave-visual-stage-corpus/2.0:c596621eb680e7e10d42d2e1d1f926995cec9716cc6ef83a96a50ad53adc285c",
+  "staticViewKind": "OVERVIEW",
+  "staticLongEdge": 768,
+  "caseAssignments": [
+    {
+      "caseId": "transit-board-v3",
+      "partition": "DEV",
+      "regions": [
+        {"baseViewId":"view-00-overview-00","boundingBox":[200,200,9800,2900],"marginPreset":"TIGHT_0000_BPS","resolutionPreset":"INSPECT_LONG_EDGE_2400"},
+        {"baseViewId":"view-00-overview-00","boundingBox":[200,2900,9800,9800],"marginPreset":"TIGHT_0000_BPS","resolutionPreset":"INSPECT_LONG_EDGE_2400"}
+      ]
+    },
+    {
+      "caseId": "restaurant-menu-v3",
+      "partition": "DEV",
+      "regions": [
+        {"baseViewId":"view-00-overview-00","boundingBox":[200,200,9800,2500],"marginPreset":"TIGHT_0000_BPS","resolutionPreset":"INSPECT_LONG_EDGE_2400"},
+        {"baseViewId":"view-00-overview-00","boundingBox":[200,2500,9800,9800],"marginPreset":"TIGHT_0000_BPS","resolutionPreset":"INSPECT_LONG_EDGE_2400"}
+      ]
+    },
+    {
+      "caseId": "hospital-schedule-v3",
+      "partition": "DEV",
+      "regions": [
+        {"baseViewId":"view-00-overview-00","boundingBox":[200,200,9800,2500],"marginPreset":"TIGHT_0000_BPS","resolutionPreset":"INSPECT_LONG_EDGE_2400"},
+        {"baseViewId":"view-00-overview-00","boundingBox":[200,2500,9800,9800],"marginPreset":"TIGHT_0000_BPS","resolutionPreset":"INSPECT_LONG_EDGE_2400"}
+      ]
+    },
+    {
+      "caseId": "transit-board-v5",
+      "partition": "HOLDOUT",
+      "regions": [
+        {"baseViewId":"view-00-overview-00","boundingBox":[200,200,9800,2900],"marginPreset":"TIGHT_0000_BPS","resolutionPreset":"INSPECT_LONG_EDGE_2400"},
+        {"baseViewId":"view-00-overview-00","boundingBox":[200,2900,9800,9800],"marginPreset":"TIGHT_0000_BPS","resolutionPreset":"INSPECT_LONG_EDGE_2400"}
+      ]
+    }
+  ]
+}

@@ -355,6 +355,12 @@ final class VisualViewPlan {
         return views.stream().map(VisualView::providerImage).toList();
     }
 
+    VisualView require(String viewId) {
+        var view = byId.get(Objects.requireNonNull(viewId, "viewId"));
+        if (view == null) throw new IllegalArgumentException("Visual view is not present in the current plan");
+        return view;
+    }
+
     CandidateEvidence toOriginalEvidence(VisualViewEvidence evidence) {
         var view = byId.get(Objects.requireNonNull(evidence, "evidence").viewId());
         if (view == null) throw new IllegalArgumentException("Visual evidence references an unknown view");
