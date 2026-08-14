@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-/** Payload-safe two-run decision for the exact normalized-raster product transform. */
+/** Payload-safe reader and threshold assessor for the closed product-transform experiment. */
 public record R5ProductTransformEvidence(
         String contractVersion,
         String assignmentIdentity,
@@ -77,7 +77,7 @@ public record R5ProductTransformEvidence(
         if (!externalProviderUsage.zeroUsage()) throw invalid("R5_PRODUCT_PROVIDER_USAGE_NONZERO");
     }
 
-    public static R5ProductTransformEvidence decide(
+    static R5ProductTransformEvidence decide(
             String evaluationIdentity,
             List<RunRecord> sourceRuns,
             int deterministicCases
@@ -119,12 +119,17 @@ public record R5ProductTransformEvidence(
         var recallGain = inspectedRecall - staticRecall;
         var staticErrors = first.stream().mapToLong(item -> item.staticView().characterErrors()).sum();
         var inspectedErrors = first.stream().mapToLong(item -> item.inspected().characterErrors()).sum();
-        var qualified = determinism && perCaseImproved && hallucinationSafe
+        // The historical run did not independently prove either prerequisite. Keep the measured
+        // threshold facts available for audit, but never turn this producer report into admission.
+        var normalizedRasterProven = false;
+        var providerZeroIndependentlyGrounded = false;
+        var measuredThresholdsPass = determinism && perCaseImproved && hallucinationSafe
                 && recallGain >= 500 && inspectedErrors < staticErrors;
+        var qualified = normalizedRasterProven && providerZeroIndependentlyGrounded && measuredThresholdsPass;
 
         var predicates = new EnumMap<Predicate, PredicateResult>(Predicate.class);
         predicates.put(Predicate.EXACT_FROZEN_ASSIGNMENT, PredicateResult.PASS);
-        predicates.put(Predicate.NORMALIZED_RASTER_ONLY, PredicateResult.PASS);
+        predicates.put(Predicate.NORMALIZED_RASTER_ONLY, PredicateResult.FAIL);
         predicates.put(Predicate.TWO_RUN_DETERMINISM, determinism ? PredicateResult.PASS : PredicateResult.FAIL);
         predicates.put(Predicate.PER_CASE_TARGET_IMPROVEMENT,
                 perCaseImproved ? PredicateResult.PASS : PredicateResult.FAIL);
@@ -134,7 +139,7 @@ public record R5ProductTransformEvidence(
                 inspectedErrors < staticErrors ? PredicateResult.PASS : PredicateResult.FAIL);
         predicates.put(Predicate.PER_CASE_HALLUCINATION_NON_INCREASE,
                 hallucinationSafe ? PredicateResult.PASS : PredicateResult.FAIL);
-        predicates.put(Predicate.EXTERNAL_PROVIDER_ZERO, PredicateResult.PASS);
+        predicates.put(Predicate.EXTERNAL_PROVIDER_ZERO, PredicateResult.FAIL);
 
         var policy = RapidOcrBaselineContract.policy(RapidOcrBaselineContract.DEFAULT_TIMEOUT_MILLIS);
         return new R5ProductTransformEvidence(
@@ -227,7 +232,11 @@ public record R5ProductTransformEvidence(
             if (sourceWidth < 1 || sourceHeight < 1 || staticViewCount != 1 || inspectedViewCount != 2
                     || staticDecodedPixels < 1 || inspectedDecodedPixels < 1
                     || inspectedDecodedPixels > 11_520_000L || staticEncodedBytes < 1
-                    || inspectedEncodedBytes < 1 || staticAcquisitionMicros < 0 || inspectedAcquisitionMicros < 0) {
+                    || inspectedEncodedBytes < 1
+                    || staticEncodedBytes > 30L * 1024L * 1024L
+                    || inspectedEncodedBytes > 30L * 1024L * 1024L
+                    || exceedsCombinedEncodedByteLimit(staticEncodedBytes, inspectedEncodedBytes)
+                    || staticAcquisitionMicros < 0 || inspectedAcquisitionMicros < 0) {
                 throw invalid("R5_PRODUCT_CASE_RESOURCES_INVALID");
             }
             requireIdentity(staticPlanIdentity, "R5_PRODUCT_STATIC_PLAN_IDENTITY_INVALID");
@@ -240,8 +249,10 @@ public record R5ProductTransformEvidence(
                     != inspectedResources.size()
                     || staticDecodedPixels != staticResource.decodedPixels()
                     || staticEncodedBytes != staticResource.encodedBytes()
-                    || inspectedDecodedPixels != inspectedResources.stream().mapToLong(ViewResource::decodedPixels).sum()
-                    || inspectedEncodedBytes != inspectedResources.stream().mapToLong(ViewResource::encodedBytes).sum()) {
+                    || inspectedDecodedPixels != checkedSum(
+                    inspectedResources.stream().map(ViewResource::decodedPixels).toList())
+                    || inspectedEncodedBytes != checkedSum(
+                    inspectedResources.stream().map(ViewResource::encodedBytes).toList())) {
                 throw invalid("R5_PRODUCT_VIEW_RESOURCE_DRIFT");
             }
             Objects.requireNonNull(staticView, "staticView");
@@ -270,6 +281,24 @@ public record R5ProductTransformEvidence(
                     && staticResource.equals(other.staticResource)
                     && inspectedResources.equals(other.inspectedResources)
                     && staticView.equals(other.staticView) && inspected.equals(other.inspected);
+        }
+
+        private static boolean exceedsCombinedEncodedByteLimit(long staticBytes, long inspectedBytes) {
+            try {
+                return Math.addExact(staticBytes, inspectedBytes) > 30L * 1024L * 1024L;
+            } catch (ArithmeticException overflow) {
+                return true;
+            }
+        }
+
+        private static long checkedSum(List<Long> values) {
+            try {
+                var result = 0L;
+                for (var value : values) result = Math.addExact(result, value);
+                return result;
+            } catch (ArithmeticException overflow) {
+                throw invalid("R5_PRODUCT_VIEW_RESOURCE_OVERFLOW");
+            }
         }
     }
 

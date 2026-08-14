@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""Independent payload-safe verifier for the exact R5 product raster transform gate."""
+"""Fail-closed audit of the rejected R5 product-transform producer report.
+
+The historical implementation did not expose raster bytes, OCR observations, or independently
+grounded Provider accounting to this process. This tool can check report consistency only; it must
+never issue A2 or admission.
+"""
 
 from __future__ import annotations
 
@@ -36,6 +41,17 @@ EXPECTED_CAPABILITY = "rapidocr-3.9.2-openvino-2026.0.0-ppocrv6-small-c05805399d
 EXPECTED_ANNOTATION = "renderweave-layered-annotation-set/2.0:a6f7796d0433bb59779a3e1b99fa3c20b3e49148d24eb69dfe17682414fa746a"
 EXPECTED_CASE_IDS = [
     "transit-board-v3", "restaurant-menu-v3", "hospital-schedule-v3", "transit-board-v5",
+]
+MAX_ENCODED_BYTES = 30 * 1024 * 1024
+ACCEPTED_ASSURANCE = "A1_PRODUCER_REPORT_CONSISTENCY_ONLY"
+A2_DISPOSITION = "NOT_ESTABLISHED"
+REJECTION_REASON_CODES = [
+    "NORMALIZED_RASTER_INPUT_NOT_PROVEN",
+    "PRODUCT_STATIC_ACQUISITION_NOT_PROVEN",
+    "INDEPENDENT_LAYERED_METRICS_NOT_REPLAYED",
+    "PROVIDER_ZERO_NOT_INDEPENDENTLY_GROUNDED",
+    "PER_CASE_HALLUCINATION_NON_INCREASE",
+    "PER_CASE_TARGET_IMPROVEMENT",
 ]
 SOURCE_DIMENSIONS = {3: (1_024, 768), 5: (1_800, 1_200)}
 EVIDENCE_FIELDS = frozenset({
@@ -146,7 +162,7 @@ def validate_view(value: Any) -> None:
             or re.fullmatch(r"[0-9a-f]{64}", value["artifactId"]) is None \
             or not strict_positive_int(value["width"], 2_400) \
             or not strict_positive_int(value["height"], 2_400) \
-            or not strict_positive_int(value["encodedBytes"], 30 * 1024 * 1024):
+            or not strict_positive_int(value["encodedBytes"], MAX_ENCODED_BYTES):
         fail("R5_PRODUCT_A2_VIEW_INVALID")
 
 
@@ -225,6 +241,8 @@ def validate_case_shape(case: Any) -> None:
         fail("R5_PRODUCT_A2_CASE_INVALID")
     for resource in resources:
         validate_view(resource)
+    if case["staticEncodedBytes"] + case["inspectedEncodedBytes"] > MAX_ENCODED_BYTES:
+        fail("R5_PRODUCT_A2_RESOURCE_LIMIT_EXCEEDED")
     validate_metrics(case["staticView"])
     validate_metrics(case["inspected"])
 
@@ -418,6 +436,50 @@ def ratio(numerator: int, denominator: int) -> int:
     return 10_000 if denominator == 0 else numerator * 10_000 // denominator
 
 
+def recompute_measurements(first: list[dict[str, Any]], second: list[dict[str, Any]]) -> dict[str, Any]:
+    """Recompute only facts derivable from the producer report; this is not independent A2."""
+    second_by_id = {item["caseId"]: item for item in second}
+    ignored = {"staticAcquisitionMicros", "inspectedAcquisitionMicros"}
+    deterministic_cases = sum(
+        1 for item in first
+        if item["caseId"] in second_by_id
+        and all(same_json_value(item[key], second_by_id[item["caseId"]][key])
+                for key in CASE_FIELDS - ignored)
+    )
+    deterministic = deterministic_cases == 4
+    improved = all(
+        item["inspected"]["matchedLines"] > item["staticView"]["matchedLines"]
+        or item["inspected"]["characterErrors"] < item["staticView"]["characterErrors"]
+        for item in first
+    )
+    hallucination_safe = all(
+        item["inspected"]["hallucinationCases"] <= item["staticView"]["hallucinationCases"]
+        for item in first
+    )
+    expected_lines = sum(item["staticView"]["expectedLines"] for item in first)
+    static_matched = sum(item["staticView"]["matchedLines"] for item in first)
+    inspected_matched = sum(item["inspected"]["matchedLines"] for item in first)
+    static_recall = ratio(static_matched, expected_lines)
+    inspected_recall = ratio(inspected_matched, expected_lines)
+    recall_gain = inspected_recall - static_recall
+    static_errors = sum(item["staticView"]["characterErrors"] for item in first)
+    inspected_errors = sum(item["inspected"]["characterErrors"] for item in first)
+    reported_qualified = deterministic and improved and hallucination_safe \
+        and recall_gain >= 500 and inspected_errors < static_errors
+    return {
+        "deterministicCases": deterministic_cases,
+        "twoRunDeterminism": deterministic,
+        "perCaseTargetImprovement": improved,
+        "perCaseHallucinationNonIncrease": hallucination_safe,
+        "aggregateStaticLineRecallBps": static_recall,
+        "aggregateInspectedLineRecallBps": inspected_recall,
+        "aggregateLineRecallGainBps": recall_gain,
+        "aggregateStaticCharacterErrors": static_errors,
+        "aggregateInspectedCharacterErrors": inspected_errors,
+        "reportedQualified": reported_qualified,
+    }
+
+
 def repository_revision(repository: pathlib.Path) -> str:
     completed = subprocess.run(
         ["git", "-C", str(repository), "rev-parse", "HEAD"],
@@ -481,54 +543,36 @@ def verify(evidence_path: pathlib.Path, repository: pathlib.Path) -> dict[str, A
                         assignment_identity)
 
     first = evidence["runs"][0]["cases"]
-    second_by_id = {item["caseId"]: item for item in evidence["runs"][1]["cases"]}
-    ignored = {"staticAcquisitionMicros", "inspectedAcquisitionMicros"}
-    deterministic_cases = sum(
-        1 for item in first
-        if all(same_json_value(item[key], second_by_id[item["caseId"]][key])
-               for key in CASE_FIELDS - ignored)
-    )
-    deterministic = deterministic_cases == 4
-    improved = all(
-        item["inspected"]["matchedLines"] > item["staticView"]["matchedLines"]
-        or item["inspected"]["characterErrors"] < item["staticView"]["characterErrors"]
-        for item in first
-    )
-    hallucination_safe = all(
-        item["inspected"]["hallucinationCases"] <= item["staticView"]["hallucinationCases"]
-        for item in first
-    )
-    expected_lines = sum(item["staticView"]["expectedLines"] for item in first)
-    static_matched = sum(item["staticView"]["matchedLines"] for item in first)
-    inspected_matched = sum(item["inspected"]["matchedLines"] for item in first)
-    static_recall = ratio(static_matched, expected_lines)
-    inspected_recall = ratio(inspected_matched, expected_lines)
-    recall_gain = inspected_recall - static_recall
-    static_errors = sum(item["staticView"]["characterErrors"] for item in first)
-    inspected_errors = sum(item["inspected"]["characterErrors"] for item in first)
-    qualified = deterministic and improved and hallucination_safe \
-        and recall_gain >= 500 and inspected_errors < static_errors
+    measurements = recompute_measurements(first, evidence["runs"][1]["cases"])
+    deterministic_cases = measurements["deterministicCases"]
+    reported_qualified = measurements["reportedQualified"]
     predicates = {
         "EXACT_FROZEN_ASSIGNMENT": "PASS",
+        # These two values reproduce the producer report for forensic consistency only. The audit
+        # result below explicitly rejects them as independently ungrounded.
         "NORMALIZED_RASTER_ONLY": "PASS",
-        "TWO_RUN_DETERMINISM": "PASS" if deterministic else "FAIL",
-        "PER_CASE_TARGET_IMPROVEMENT": "PASS" if improved else "FAIL",
-        "AGGREGATE_LINE_RECALL_GAIN_0500_BPS": "PASS" if recall_gain >= 500 else "FAIL",
-        "AGGREGATE_CHARACTER_ERROR_REDUCTION": "PASS" if inspected_errors < static_errors else "FAIL",
-        "PER_CASE_HALLUCINATION_NON_INCREASE": "PASS" if hallucination_safe else "FAIL",
+        "TWO_RUN_DETERMINISM": "PASS" if measurements["twoRunDeterminism"] else "FAIL",
+        "PER_CASE_TARGET_IMPROVEMENT": "PASS" if measurements["perCaseTargetImprovement"] else "FAIL",
+        "AGGREGATE_LINE_RECALL_GAIN_0500_BPS": "PASS"
+            if measurements["aggregateLineRecallGainBps"] >= 500 else "FAIL",
+        "AGGREGATE_CHARACTER_ERROR_REDUCTION": "PASS"
+            if measurements["aggregateInspectedCharacterErrors"]
+            < measurements["aggregateStaticCharacterErrors"] else "FAIL",
+        "PER_CASE_HALLUCINATION_NON_INCREASE": "PASS"
+            if measurements["perCaseHallucinationNonIncrease"] else "FAIL",
         "EXTERNAL_PROVIDER_ZERO": "PASS",
     }
     expected_decision = {
         "deterministicCases": deterministic_cases,
         "predicates": predicates,
-        "aggregateStaticLineRecallBps": static_recall,
-        "aggregateInspectedLineRecallBps": inspected_recall,
-        "aggregateLineRecallGainBps": recall_gain,
-        "aggregateStaticCharacterErrors": static_errors,
-        "aggregateInspectedCharacterErrors": inspected_errors,
-        "disposition": "QUALIFIED" if qualified else "NOT_QUALIFIED",
-        "qualified": qualified,
-        "reasonCode": "R5_PRODUCT_TRANSFORM_QUALIFIED" if qualified
+        "aggregateStaticLineRecallBps": measurements["aggregateStaticLineRecallBps"],
+        "aggregateInspectedLineRecallBps": measurements["aggregateInspectedLineRecallBps"],
+        "aggregateLineRecallGainBps": measurements["aggregateLineRecallGainBps"],
+        "aggregateStaticCharacterErrors": measurements["aggregateStaticCharacterErrors"],
+        "aggregateInspectedCharacterErrors": measurements["aggregateInspectedCharacterErrors"],
+        "disposition": "QUALIFIED" if reported_qualified else "NOT_QUALIFIED",
+        "qualified": reported_qualified,
+        "reasonCode": "R5_PRODUCT_TRANSFORM_QUALIFIED" if reported_qualified
             else "R5_PRODUCT_TRANSFORM_NOT_QUALIFIED",
         "externalProviderUsage": {"attempts": 0, "reservations": 0, "costMicrosCny": 0},
     }
@@ -537,10 +581,12 @@ def verify(evidence_path: pathlib.Path, repository: pathlib.Path) -> dict[str, A
         fail("R5_PRODUCT_A2_DECISION_DRIFT")
 
     return {
-        "verifierVersion": "renderweave-r5-product-transform-verifier/1.0",
-        "result": "PASS",
-        "assurance": "A2_CROSS_IMPLEMENTATION_RECOMPUTE",
-        "repositoryRevision": repository_revision(repository),
+        "verifierVersion": "renderweave-r5-product-transform-verifier/1.1",
+        "result": "REJECTED",
+        "reportConsistency": "PASS",
+        "assurance": ACCEPTED_ASSURANCE,
+        "a2Disposition": A2_DISPOSITION,
+        "verificationRevision": repository_revision(repository),
         "evidenceIdentity": evidence_identity,
         "evaluationIdentity": expected_evaluation,
         "assignmentIdentity": assignment_identity,
@@ -551,13 +597,14 @@ def verify(evidence_path: pathlib.Path, repository: pathlib.Path) -> dict[str, A
         "runs": 2,
         "actualAcquisitions": 16,
         "deterministicCases": deterministic_cases,
-        "disposition": expected_decision["disposition"],
-        "qualified": qualified,
-        "reasonCode": expected_decision["reasonCode"],
-        "providerAttempts": 0,
-        "providerReservations": 0,
-        "externalProviderCostMicrosCny": 0,
-        "apiKeyReads": 0,
+        "reportedDisposition": expected_decision["disposition"],
+        "reportedQualified": reported_qualified,
+        "disposition": "R5_PRODUCT_TRANSFORM_NOT_QUALIFIED",
+        "freshJ1Disposition": "LIVE_J1_REQUEST_NOT_ELIGIBLE",
+        "rejectionReasonCodes": REJECTION_REASON_CODES,
+        "reportedProviderAttempts": evidence["externalProviderUsage"]["attempts"],
+        "reportedProviderReservations": evidence["externalProviderUsage"]["reservations"],
+        "reportedExternalProviderCostMicrosCny": evidence["externalProviderUsage"]["costMicrosCny"],
     }
 
 
@@ -570,8 +617,8 @@ def main() -> int:
     summary = verify(args.evidence.resolve(), args.repository.resolve())
     with args.output.open("x", encoding="utf-8", newline="\n") as output:
         output.write(canonical_json(summary).decode("utf-8") + "\n")
-    print("R5 product transform: PASS; A2; disposition=" + summary["disposition"] + "; ProviderAttempts=0")
-    return 0
+    print("R5 product transform: REJECTED; A2=NOT_ESTABLISHED; route=CLOSED")
+    return 2
 
 
 if __name__ == "__main__":

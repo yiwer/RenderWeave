@@ -64,6 +64,34 @@ class R5ProductTransformVerifierTest(unittest.TestCase):
         self.assertEqual(2_400, derived["width"])
         self.assertEqual(1_295, derived["height"])
 
+    def test_combined_encoded_bytes_above_thirty_mebibytes_fail_closed(self) -> None:
+        evidence = sample_evidence()
+        selected = evidence["runs"][0]["cases"][0]
+        selected["staticEncodedBytes"] = 1
+        selected["staticResource"]["encodedBytes"] = 1
+        selected["inspectedResources"][0]["encodedBytes"] = 16 * 1024 * 1024
+        selected["inspectedResources"][1]["encodedBytes"] = 16 * 1024 * 1024
+        selected["inspectedEncodedBytes"] = 32 * 1024 * 1024
+
+        with self.assertRaisesRegex(verifier.VerificationError, "RESOURCE_LIMIT_EXCEEDED"):
+            verifier.validate_evidence_shape(evidence)
+
+    def test_exact_five_hundred_and_four_hundred_ninety_nine_bps_boundaries(self) -> None:
+        exact = threshold_cases(500)
+        below = threshold_cases(499)
+
+        exact_result = verifier.recompute_measurements(exact, copy.deepcopy(exact))
+        below_result = verifier.recompute_measurements(below, copy.deepcopy(below))
+
+        self.assertEqual(500, exact_result["aggregateLineRecallGainBps"])
+        self.assertTrue(exact_result["reportedQualified"])
+        self.assertEqual(499, below_result["aggregateLineRecallGainBps"])
+        self.assertFalse(below_result["reportedQualified"])
+
+    def test_verifier_contract_cannot_claim_a2(self) -> None:
+        self.assertEqual("A1_PRODUCER_REPORT_CONSISTENCY_ONLY", verifier.ACCEPTED_ASSURANCE)
+        self.assertEqual("NOT_ESTABLISHED", verifier.A2_DISPOSITION)
+
 
 def metrics() -> dict[str, int]:
     return {
@@ -141,6 +169,27 @@ def sample_evidence() -> dict[str, object]:
         "reasonCode": "R5_PRODUCT_TRANSFORM_QUALIFIED",
         "externalProviderUsage": {"attempts": 0, "reservations": 0, "costMicrosCny": 0},
     }
+
+
+def threshold_cases(gain_bps: int) -> list[dict[str, object]]:
+    if gain_bps not in {499, 500}:
+        raise ValueError("test fixture")
+    improvements = [125, 125, 125, 125 if gain_bps == 500 else 124]
+    result = [case(index) for index in range(1, 5)]
+    for item, improvement in zip(result, improvements):
+        item["staticView"].update({
+            "expectedLines": 2_500,
+            "matchedLines": 100,
+            "characterErrors": 100,
+            "hallucinationCases": 0,
+        })
+        item["inspected"].update({
+            "expectedLines": 2_500,
+            "matchedLines": 100 + improvement,
+            "characterErrors": 50,
+            "hallucinationCases": 0,
+        })
+    return result
 
 
 if __name__ == "__main__":

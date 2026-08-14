@@ -92,8 +92,16 @@ public final class R5ProductTransformAssignment {
         if (values.size() != 4 || values.stream().anyMatch(Objects::isNull)) {
             throw invalid("R5_PRODUCT_ASSIGNMENT_BOX_INVALID");
         }
+        var left = values.get(0);
+        var top = values.get(1);
+        var right = values.get(2);
+        var bottom = values.get(3);
+        if (left < 0 || top < 0 || right > 10_000 || bottom > 10_000
+                || left >= right || top >= bottom) {
+            throw invalid("R5_PRODUCT_ASSIGNMENT_BOX_INVALID");
+        }
         return new Region(source.baseViewId(),
-                new CandidateBoundingBox(values.get(0), values.get(1), values.get(2), values.get(3)),
+                new CandidateBoundingBox(left, top, right, bottom),
                 source.marginPreset(), source.resolutionPreset());
     }
 

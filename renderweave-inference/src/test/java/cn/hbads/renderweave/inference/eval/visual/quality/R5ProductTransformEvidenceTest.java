@@ -30,19 +30,29 @@ class R5ProductTransformEvidenceTest {
     }
 
     @Test
-    void exactThresholdsQualifyAndCanonicalEvidenceIsPayloadSafe() {
-        var first = new R5ProductTransformEvidence.RunRecord(1, improvedCases(1_000));
-        var second = new R5ProductTransformEvidence.RunRecord(2, improvedCases(2_000));
+    void exactFiveHundredBpsThresholdPassesButUnprovenA2PrerequisitesKeepAdmissionClosed() {
+        var first = new R5ProductTransformEvidence.RunRecord(1,
+                thresholdCases(500, 100, 50, 1, 1, 1_000));
+        var second = new R5ProductTransformEvidence.RunRecord(2,
+                thresholdCases(500, 100, 50, 1, 1, 2_000));
 
         var evidence = R5ProductTransformEvidence.decide(identity("evaluation"), List.of(first, second), 4);
 
-        assertEquals(R5ProductTransformEvidence.Disposition.QUALIFIED, evidence.disposition());
-        assertTrue(evidence.qualified());
-        assertEquals(2_500, evidence.aggregateLineRecallGainBps());
+        assertEquals(R5ProductTransformEvidence.Disposition.NOT_QUALIFIED, evidence.disposition());
+        assertFalse(evidence.qualified());
+        assertEquals(500, evidence.aggregateLineRecallGainBps());
         assertEquals(400, evidence.aggregateStaticCharacterErrors());
         assertEquals(200, evidence.aggregateInspectedCharacterErrors());
-        assertTrue(evidence.predicates().values().stream()
-                .allMatch(value -> value == R5ProductTransformEvidence.PredicateResult.PASS));
+        assertEquals(R5ProductTransformEvidence.PredicateResult.PASS,
+                evidence.predicates().get(
+                        R5ProductTransformEvidence.Predicate.AGGREGATE_LINE_RECALL_GAIN_0500_BPS));
+        assertEquals(R5ProductTransformEvidence.PredicateResult.PASS,
+                evidence.predicates().get(
+                        R5ProductTransformEvidence.Predicate.AGGREGATE_CHARACTER_ERROR_REDUCTION));
+        assertEquals(R5ProductTransformEvidence.PredicateResult.FAIL,
+                evidence.predicates().get(R5ProductTransformEvidence.Predicate.NORMALIZED_RASTER_ONLY));
+        assertEquals(R5ProductTransformEvidence.PredicateResult.FAIL,
+                evidence.predicates().get(R5ProductTransformEvidence.Predicate.EXTERNAL_PROVIDER_ZERO));
 
         var codec = new R5ProductTransformEvidenceJsonCodec();
         var bytes = codec.write(evidence);
@@ -54,6 +64,70 @@ class R5ProductTransformEvidenceTest {
         }) {
             assertFalse(payload.contains(forbidden), forbidden);
         }
+    }
+
+    @Test
+    void fourHundredNinetyNineBpsFailsTheMeasuredRecallBoundary() {
+        var first = thresholdCases(499, 100, 50, 1, 1, 1_000);
+        var evidence = R5ProductTransformEvidence.decide(identity("499-bps"), List.of(
+                new R5ProductTransformEvidence.RunRecord(1, first),
+                new R5ProductTransformEvidence.RunRecord(2,
+                        thresholdCases(499, 100, 50, 1, 1, 2_000))), 4);
+
+        assertEquals(499, evidence.aggregateLineRecallGainBps());
+        assertEquals(R5ProductTransformEvidence.PredicateResult.FAIL,
+                evidence.predicates().get(
+                        R5ProductTransformEvidence.Predicate.AGGREGATE_LINE_RECALL_GAIN_0500_BPS));
+        assertFalse(evidence.qualified());
+    }
+
+    @Test
+    void unchangedOrIncreasedCharacterErrorsFailTheReductionBoundary() {
+        for (var inspectedErrors : List.of(100L, 101L)) {
+            var evidence = R5ProductTransformEvidence.decide(identity("errors-" + inspectedErrors), List.of(
+                    new R5ProductTransformEvidence.RunRecord(1,
+                            thresholdCases(500, 100, inspectedErrors, 1, 1, 1_000)),
+                    new R5ProductTransformEvidence.RunRecord(2,
+                            thresholdCases(500, 100, inspectedErrors, 1, 1, 2_000))), 4);
+
+            assertEquals(R5ProductTransformEvidence.PredicateResult.FAIL,
+                    evidence.predicates().get(
+                            R5ProductTransformEvidence.Predicate.AGGREGATE_CHARACTER_ERROR_REDUCTION));
+            assertFalse(evidence.qualified());
+        }
+    }
+
+    @Test
+    void anyPerCaseHallucinationIncreaseFailsClosed() {
+        var evidence = R5ProductTransformEvidence.decide(identity("hallucination"), List.of(
+                new R5ProductTransformEvidence.RunRecord(1,
+                        thresholdCases(500, 100, 50, 0, 1, 1_000)),
+                new R5ProductTransformEvidence.RunRecord(2,
+                        thresholdCases(500, 100, 50, 0, 1, 2_000))), 4);
+
+        assertEquals(R5ProductTransformEvidence.PredicateResult.FAIL,
+                evidence.predicates().get(
+                        R5ProductTransformEvidence.Predicate.PER_CASE_HALLUCINATION_NON_INCREASE));
+        assertFalse(evidence.qualified());
+    }
+
+    @Test
+    void combinedEncodedBytesAboveThirtyMebibytesFailClosed() {
+        var source = improvedCases(1_000).getFirst();
+        var inspected = List.of(
+                new R5ProductTransformEvidence.ViewResource(
+                        identity("large-a"), hex("large-a"), 2_400, 1_000, 16L * 1024L * 1024L),
+                new R5ProductTransformEvidence.ViewResource(
+                        identity("large-b"), hex("large-b"), 2_400, 1_000, 16L * 1024L * 1024L));
+
+        assertThrows(IllegalArgumentException.class, () -> new R5ProductTransformEvidence.CaseRecord(
+                source.caseId(), source.caseIdentity(), source.partition(), source.sourceWidth(), source.sourceHeight(),
+                source.staticPlanIdentity(), source.requestIdentity(), source.inspectedPlanIdentity(), 1, 2,
+                source.staticDecodedPixels(), inspected.stream().mapToLong(
+                R5ProductTransformEvidence.ViewResource::decodedPixels).sum(), source.staticEncodedBytes(),
+                inspected.stream().mapToLong(R5ProductTransformEvidence.ViewResource::encodedBytes).sum(),
+                source.staticAcquisitionMicros(), source.inspectedAcquisitionMicros(), source.staticResource(),
+                inspected, source.staticView(), source.inspected()));
     }
 
     @Test
@@ -118,6 +192,29 @@ class R5ProductTransformEvidenceTest {
         }).toList();
     }
 
+    private static List<R5ProductTransformEvidence.CaseRecord> thresholdCases(
+            int recallGainBps,
+            long staticErrors,
+            long inspectedErrors,
+            long staticHallucinations,
+            long inspectedHallucinations,
+            long micros
+    ) {
+        if (recallGainBps != 500 && recallGainBps != 499) throw new IllegalArgumentException("test fixture");
+        var result = new ArrayList<R5ProductTransformEvidence.CaseRecord>();
+        var base = improvedCases(micros);
+        var improvements = recallGainBps == 500
+                ? List.of(125L, 125L, 125L, 125L)
+                : List.of(125L, 125L, 125L, 124L);
+        for (var index = 0; index < base.size(); index++) {
+            var item = base.get(index);
+            result.add(copy(item,
+                    metrics(2_500, 100, staticErrors, staticHallucinations),
+                    metrics(2_500, 100 + improvements.get(index), inspectedErrors, inspectedHallucinations)));
+        }
+        return List.copyOf(result);
+    }
+
     private static R5ProductTransformEvidence.CaseRecord copy(
             R5ProductTransformEvidence.CaseRecord source,
             R5ProductTransformEvidence.CaseMetrics staticMetrics,
@@ -133,8 +230,18 @@ class R5ProductTransformEvidenceTest {
     }
 
     private static R5ProductTransformEvidence.CaseMetrics metrics(long matched, long errors) {
+        return metrics(20, matched, errors, 1);
+    }
+
+    private static R5ProductTransformEvidence.CaseMetrics metrics(
+            long expected,
+            long matched,
+            long errors,
+            long hallucinations
+    ) {
         return new R5ProductTransformEvidence.CaseMetrics(
-                matched, 20, matched, matched * 5, errors, 1, 10, 8, 7, 12, 10);
+                matched, expected, matched, matched * 5, errors, hallucinations,
+                10, 8, 7, 12, 10);
     }
 
     private static String identity(String seed) {

@@ -14,10 +14,30 @@ import java.util.HexFormat;
 import java.util.List;
 import java.util.Objects;
 
-/** Immutable fail-closed authority produced by the exact product-transform A2 gate. */
+/** Immutable fail-closed authority produced by post-run review of the closed R5 experiment. */
 public final class R5ProductTransformAuthority {
-    public static final String VERSION = "renderweave-r5-product-transform-authority/1.0";
-    private static final String RESOURCE = "visual-eval/r5/product-transform-authority-v1.json";
+    public static final String VERSION = "renderweave-r5-product-transform-authority/1.1";
+    private static final String RESOURCE = "visual-eval/r5/product-transform-authority-v2.json";
+    private static final String RESOURCE_SHA256 =
+            "a6ef7ee0820ea906cb371371d66a8eaef3ba77ac569ae24d6e4935e144ef4475";
+    private static final String RUN_REVISION = "a31d54125764254c2814ecc5c7114137a3a11b29";
+    private static final String ASSIGNMENT_IDENTITY =
+            "renderweave-r5-product-transform-assignment/1.0:46c8e4c9c28b8628bac6532deeeb1a9ee311dda58b1a76f23a1b1d70abe7b540";
+    private static final String EVALUATION_IDENTITY =
+            "renderweave-r5-product-transform-evaluation/1.0:e25bb4531545a399ee2e83082cc7b3dbceda0cbaa8e2e7965a570e3484925d46";
+    private static final String PRODUCER_EVIDENCE_IDENTITY =
+            "renderweave-r5-product-transform-evidence/1.0:3041df28a17167c9b9eb322d0f60cf2508b2cff0ac8da344449c544908211528";
+    private static final String PRODUCER_EVIDENCE_SHA256 =
+            "73788b54ef9f277c5eb9b927fc6a1882a82ab997145080ad1075b3e1e27c528a";
+    private static final String VERIFICATION_SUMMARY_SHA256 =
+            "5aceab1ff9edf073753a1aa9796c27cb5773c60472859cc33cb4019bf13cfe10";
+    private static final List<String> REJECTION_REASONS = List.of(
+            "NORMALIZED_RASTER_INPUT_NOT_PROVEN",
+            "PRODUCT_STATIC_ACQUISITION_NOT_PROVEN",
+            "INDEPENDENT_LAYERED_METRICS_NOT_REPLAYED",
+            "PROVIDER_ZERO_NOT_INDEPENDENTLY_GROUNDED",
+            "PER_CASE_HALLUCINATION_NON_INCREASE",
+            "PER_CASE_TARGET_IMPROVEMENT");
     private static final tools.jackson.databind.ObjectMapper JSON = JsonMapper.builder(
                     JsonFactory.builder().enable(StreamReadFeature.STRICT_DUPLICATE_DETECTION).build())
             .enable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS)
@@ -34,9 +54,11 @@ public final class R5ProductTransformAuthority {
         try (var input = R5ProductTransformAuthority.class.getClassLoader().getResourceAsStream(RESOURCE)) {
             if (input == null) throw invalid("R5_PRODUCT_AUTHORITY_MISSING");
             var bytes = input.readAllBytes();
+            var digest = sha256(bytes);
+            if (!RESOURCE_SHA256.equals(digest)) throw invalid("R5_PRODUCT_AUTHORITY_RESOURCE_DRIFT");
             var value = JSON.readValue(bytes, Decision.class);
             value.validate();
-            return value.withAuthorityIdentity(VERSION + ":" + sha256(bytes));
+            return value.withAuthorityIdentity(VERSION + ":" + digest);
         } catch (IOException failure) {
             throw new IllegalStateException("R5_PRODUCT_AUTHORITY_INVALID", failure);
         }
@@ -58,19 +80,21 @@ public final class R5ProductTransformAuthority {
             String assignmentIdentity,
             String transformIdentity,
             String evaluationIdentity,
-            String evidenceIdentity,
-            String evidenceSha256,
-            String a2Sha256,
-            String a2Assurance,
+            String producerEvidenceIdentity,
+            String producerEvidenceSha256,
+            String verificationSummarySha256,
+            String verificationSummaryClaimedAssurance,
+            String acceptedAssurance,
+            String a2Disposition,
             int runs,
             int actualAcquisitions,
             int deterministicCases,
-            List<String> failedPredicates,
+            List<String> rejectionReasonCodes,
             List<String> failedCaseIds,
             String disposition,
             String freshJ1Disposition,
-            R5ProductTransformEvidence.ExternalProviderUsage externalProviderUsage,
-            int apiKeyReads,
+            R5ProductTransformEvidence.ExternalProviderUsage reportedExternalProviderUsage,
+            int reportedApiKeyReads,
             String authorityIdentity
     ) {
         private Decision(
@@ -79,62 +103,69 @@ public final class R5ProductTransformAuthority {
                 String assignmentIdentity,
                 String transformIdentity,
                 String evaluationIdentity,
-                String evidenceIdentity,
-                String evidenceSha256,
-                String a2Sha256,
-                String a2Assurance,
+                String producerEvidenceIdentity,
+                String producerEvidenceSha256,
+                String verificationSummarySha256,
+                String verificationSummaryClaimedAssurance,
+                String acceptedAssurance,
+                String a2Disposition,
                 int runs,
                 int actualAcquisitions,
                 int deterministicCases,
-                List<String> failedPredicates,
+                List<String> rejectionReasonCodes,
                 List<String> failedCaseIds,
                 String disposition,
                 String freshJ1Disposition,
-                R5ProductTransformEvidence.ExternalProviderUsage externalProviderUsage,
-                int apiKeyReads
+                R5ProductTransformEvidence.ExternalProviderUsage reportedExternalProviderUsage,
+                int reportedApiKeyReads
         ) {
             this(authorityVersion, repositoryRevision, assignmentIdentity, transformIdentity, evaluationIdentity,
-                    evidenceIdentity, evidenceSha256, a2Sha256, a2Assurance, runs, actualAcquisitions,
-                    deterministicCases, failedPredicates, failedCaseIds, disposition, freshJ1Disposition,
-                    externalProviderUsage, apiKeyReads, null);
+                    producerEvidenceIdentity, producerEvidenceSha256, verificationSummarySha256,
+                    verificationSummaryClaimedAssurance, acceptedAssurance, a2Disposition, runs,
+                    actualAcquisitions, deterministicCases, rejectionReasonCodes, failedCaseIds, disposition,
+                    freshJ1Disposition, reportedExternalProviderUsage, reportedApiKeyReads, null);
         }
 
         public Decision {
-            failedPredicates = List.copyOf(Objects.requireNonNull(failedPredicates, "failedPredicates"));
+            rejectionReasonCodes = List.copyOf(Objects.requireNonNull(rejectionReasonCodes, "rejectionReasonCodes"));
             failedCaseIds = List.copyOf(Objects.requireNonNull(failedCaseIds, "failedCaseIds"));
         }
 
         private void validate() {
             if (!VERSION.equals(authorityVersion)
-                    || repositoryRevision == null || !repositoryRevision.matches("[0-9a-f]{40}")
-                    || assignmentIdentity == null || !assignmentIdentity.matches(
-                    "renderweave-r5-product-transform-assignment/1\\.0:[0-9a-f]{64}")
+                    || !RUN_REVISION.equals(repositoryRevision)
+                    || !ASSIGNMENT_IDENTITY.equals(assignmentIdentity)
                     || !R5ProductTransformEvidence.TRANSFORM_IDENTITY.equals(transformIdentity)
-                    || evaluationIdentity == null || !evaluationIdentity.matches(
-                    "renderweave-r5-product-transform-evaluation/1\\.0:[0-9a-f]{64}")
-                    || evidenceIdentity == null || !evidenceIdentity.matches(
-                    "renderweave-r5-product-transform-evidence/1\\.0:[0-9a-f]{64}")
-                    || evidenceSha256 == null || !evidenceSha256.matches("[0-9a-f]{64}")
-                    || a2Sha256 == null || !a2Sha256.matches("[0-9a-f]{64}")
-                    || !"A2_CROSS_IMPLEMENTATION_RECOMPUTE".equals(a2Assurance)
+                    || !EVALUATION_IDENTITY.equals(evaluationIdentity)
+                    || !PRODUCER_EVIDENCE_IDENTITY.equals(producerEvidenceIdentity)
+                    || !PRODUCER_EVIDENCE_SHA256.equals(producerEvidenceSha256)
+                    || !VERIFICATION_SUMMARY_SHA256.equals(verificationSummarySha256)
+                    || !"A2_CROSS_IMPLEMENTATION_RECOMPUTE".equals(verificationSummaryClaimedAssurance)
+                    || !"A1_PRODUCER_REPORT_CONSISTENCY_ONLY".equals(acceptedAssurance)
+                    || !"NOT_ESTABLISHED".equals(a2Disposition)
                     || runs != 2 || actualAcquisitions != 16 || deterministicCases != 4
-                    || !failedPredicates.equals(List.of(
-                    "PER_CASE_HALLUCINATION_NON_INCREASE", "PER_CASE_TARGET_IMPROVEMENT"))
+                    || !REJECTION_REASONS.equals(rejectionReasonCodes)
                     || !failedCaseIds.equals(List.of("transit-board-v3"))
                     || !"R5_PRODUCT_TRANSFORM_NOT_QUALIFIED".equals(disposition)
                     || !"LIVE_J1_REQUEST_NOT_ELIGIBLE".equals(freshJ1Disposition)
-                    || externalProviderUsage == null || !externalProviderUsage.zeroUsage()
-                    || apiKeyReads != 0 || authorityIdentity != null) {
+                    || reportedExternalProviderUsage == null || !reportedExternalProviderUsage.zeroUsage()
+                    || reportedApiKeyReads != 0 || authorityIdentity != null) {
                 throw invalid("R5_PRODUCT_AUTHORITY_DRIFT");
             }
         }
 
         private Decision withAuthorityIdentity(String identity) {
             return new Decision(authorityVersion, repositoryRevision, assignmentIdentity, transformIdentity,
-                    evaluationIdentity, evidenceIdentity, evidenceSha256, a2Sha256, a2Assurance, runs,
-                    actualAcquisitions, deterministicCases, failedPredicates, failedCaseIds, disposition,
-                    freshJ1Disposition, externalProviderUsage, apiKeyReads, identity);
+                    evaluationIdentity, producerEvidenceIdentity, producerEvidenceSha256,
+                    verificationSummarySha256, verificationSummaryClaimedAssurance, acceptedAssurance,
+                    a2Disposition, runs, actualAcquisitions, deterministicCases, rejectionReasonCodes,
+                    failedCaseIds, disposition, freshJ1Disposition, reportedExternalProviderUsage,
+                    reportedApiKeyReads, identity);
         }
+
+        public boolean a2Established() { return false; }
+
+        public boolean allowsTransformRerun() { return false; }
 
         public boolean allowsActionImplementation() { return false; }
 

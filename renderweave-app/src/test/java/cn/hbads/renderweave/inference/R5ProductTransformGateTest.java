@@ -1,46 +1,30 @@
 package cn.hbads.renderweave.inference;
 
-import cn.hbads.renderweave.inference.eval.visual.RapidOcrShadowEvaluation;
-import cn.hbads.renderweave.inference.eval.visual.quality.R5ProductTransformEvidenceJsonCodec;
 import cn.hbads.renderweave.inference.live.R5ProductTransformEvaluation;
-import cn.hbads.renderweave.inference.vision.RapidOcrBaselineContract;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-/** Explicit opt-in, zero-Provider local OCR gate for the exact product raster transform. */
+/** Explicit opt-in proof that the terminal R5 experiment cannot be rerun. */
 @EnabledIfEnvironmentVariable(named = "RENDERWEAVE_RUN_R5_PRODUCT_TRANSFORM", matches = "true")
 class R5ProductTransformGateTest {
     @Test
-    void executesTheFrozenTwoRunAssignmentAndWritesPayloadSafeEvidence() throws Exception {
+    void refusesTheClosedRouteBeforeAnyAcquisitionOrEvidenceWrite() throws Exception {
         var output = requiredOutput();
-        var result = new R5ProductTransformEvaluation().evaluate(runOrdinal -> {
-            var configured = LocalProcessDocumentVisionPreprocessor.fromConfiguration(
-                    true,
-                    required("RENDERWEAVE_DOCUMENT_VISION_EXECUTABLE"),
-                    required("RENDERWEAVE_DOCUMENT_VISION_ADAPTER_SCRIPT"),
-                    required("RENDERWEAVE_DOCUMENT_VISION_MODEL_ROOT"),
-                    30,
-                    LocalProcessDocumentVisionPreprocessor.EXPECTED_CAPABILITY_ID);
-            assertTrue(configured.capability().available(), configured.capability().diagnosticCode());
-            var adapter = (LocalProcessDocumentVisionPreprocessor) configured;
-            assertEquals(RapidOcrBaselineContract.policy(RapidOcrBaselineContract.DEFAULT_TIMEOUT_MILLIS),
-                    adapter.acquisitionPolicy());
-            return RapidOcrShadowEvaluation.RunSession.of(adapter.acquisitionPolicy(), adapter);
-        });
-        Files.write(output, result.encodedEvidence(), StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE);
-        var codec = new R5ProductTransformEvidenceJsonCodec();
-        assertEquals(result.evidenceIdentity(), codec.evidenceIdentity(
-                codec.read(Files.readAllBytes(output), result.evidenceIdentity())));
-        assertEquals(16, result.evidence().actualAcquisitions());
-        assertEquals(0, result.evidence().externalProviderUsage().attempts());
+        var failure = assertThrows(IllegalStateException.class,
+                () -> new R5ProductTransformEvaluation().evaluate(runOrdinal -> {
+                    throw new AssertionError("acquisition factory must not be invoked");
+                }));
+
+        assertEquals("R5_PRODUCT_TRANSFORM_ROUTE_CLOSED", failure.getMessage());
+        assertFalse(Files.exists(output));
     }
 
     private static Path requiredOutput() throws Exception {
