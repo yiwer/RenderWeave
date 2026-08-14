@@ -93,6 +93,34 @@ class OfflineRepairTerminalGateTest {
     }
 
     @Test
+    void blocksHoldoutBeforeAnyGoldAccessWhenThereIsNoSoleDevWinner() {
+        var decision = stopToSpecR5();
+        var decisionIdentity = new R2R5TriggerDecisionJsonCodec().decisionIdentity(decision);
+        var capabilities = ChallengerCapabilityAdmission.load();
+        var pp = gate.closeR2Challenger(
+                OfflineRepairTerminalOutcome.Ticket.VRQ_08_PP_STRUCTUREV3_DEV_SHADOW,
+                decision, decisionIdentity, capabilities);
+        var tesseract = gate.closeR2Challenger(
+                OfflineRepairTerminalOutcome.Ticket.VRQ_09_TESSERACT_DEV_BASELINE,
+                decision, decisionIdentity, capabilities);
+        var selection = gate.closeDownstream(
+                OfflineRepairTerminalOutcome.Ticket.VRQ_10_SOLE_DEV_WINNER_SELECTION,
+                decision, decisionIdentity, List.of(pp, tesseract));
+
+        var outcome = gate.closeDownstream(
+                OfflineRepairTerminalOutcome.Ticket.VRQ_11_WINNER_HOLDOUT,
+                decision,
+                decisionIdentity,
+                List.of(selection));
+
+        assertEquals(OfflineRepairTerminalOutcome.Disposition.BLOCKED_BY_PREDECESSOR,
+                outcome.disposition());
+        assertEquals("R2_SOLE_WINNER_UNAVAILABLE", outcome.reasonCode());
+        assertEquals(0, outcome.offlineWorkUsage().holdoutCasesAccessed());
+        assertEquals(List.of(codec.outcomeIdentity(selection)), outcome.supportingIdentities());
+    }
+
+    @Test
     void refusesToCloseAChallengerAgainstAnythingExceptTheExactStopToSpecR5Decision() {
         var decision = stopToSpecR5();
         var identity = new R2R5TriggerDecisionJsonCodec().decisionIdentity(decision);

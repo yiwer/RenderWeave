@@ -40,6 +40,9 @@ class OfflineRepairTerminalEvidenceGateTest {
                     ticket, decision, decisionIdentity, List.of(
                             predecessor(outcomeCodec, 1, "vrq08-outcome.json"),
                             predecessor(outcomeCodec, 2, "vrq09-outcome.json")));
+            case VRQ_11_WINNER_HOLDOUT -> terminalGate.closeDownstream(
+                    ticket, decision, decisionIdentity, List.of(
+                            predecessor(outcomeCodec, 1, "vrq10-outcome.json")));
             default -> throw new IllegalArgumentException("OFFLINE_TERMINAL_TICKET_NOT_SUPPORTED");
         };
         Files.write(outputPath, outcomeCodec.write(outcome),
@@ -52,6 +55,7 @@ class OfflineRepairTerminalEvidenceGateTest {
             case VRQ_08_PP_STRUCTUREV3_DEV_SHADOW -> "vrq08-outcome.json";
             case VRQ_09_TESSERACT_DEV_BASELINE -> "vrq09-outcome.json";
             case VRQ_10_SOLE_DEV_WINNER_SELECTION -> "vrq10-outcome.json";
+            case VRQ_11_WINNER_HOLDOUT -> "vrq11-outcome.json";
             default -> throw new IllegalArgumentException("OFFLINE_TERMINAL_TICKET_NOT_SUPPORTED");
         };
     }
