@@ -8,10 +8,10 @@ import java.util.Set;
 public final class OfflineRepairTerminalGate {
     public static final String AUTHORITATIVE_EVIDENCE_PACK_IDENTITY =
             "renderweave-frozen-quality-evidence-pack/1.0:"
-                    + "efab0a75737e7a4177eeca401317bca998daa3925807d585f7d18e6d4260eca1";
+                    + "d765aa3d6a9c5e3aa356097092d09c446eaf6506533b9a28ea0443c7405bbab1";
     public static final String AUTHORITATIVE_DECISION_IDENTITY =
             "renderweave-r2r5-trigger-decision/1.0:"
-                    + "e5257ef0a5ea02ce87f71a2c9711a3cf2b718eb28620e8c9ae5922f059a6bde9";
+                    + "78bc4caa26a37a966530f451a6aab54397ed4cbadfca6674b9f3833a7ac2ea68";
 
     public OfflineRepairTerminalOutcome closeR2Challenger(
             OfflineRepairTerminalOutcome.Ticket ticket,
