@@ -63,6 +63,108 @@ class RapidOcrShadowVerifierTest(unittest.TestCase):
         with self.assertRaises(VERIFIER.layered.VerificationError):
             VERIFIER.layered.scan_payload_free('{"ocrText":"secret"}', "unit")
 
+    def test_closed_contract_rejects_unknown_members_at_every_level(self) -> None:
+        mutations = (
+            ("report", lambda value: value["report"].__setitem__("unexpectedEvidence", 0)),
+            ("run", lambda value: value["report"]["runs"][0].__setitem__("unexpectedEvidence", 0)),
+            ("record", lambda value: value["report"]["runs"][0]["records"][0]
+             .__setitem__("unexpectedEvidence", 0)),
+            ("aggregate", lambda value: value["report"]["runs"][0]["global"]
+             .__setitem__("unexpectedEvidence", 0)),
+            ("ocr", lambda value: value["report"]["runs"][0]["records"][0]["ocr"]
+             .__setitem__("unexpectedEvidence", 0)),
+            ("binary", lambda value: value["report"]["runs"][0]["records"][0]
+             ["layout"]["lines"].__setitem__("unexpectedEvidence", 0)),
+            ("layout", lambda value: value["report"]["runs"][0]["records"][0]["layout"]
+             .__setitem__("unexpectedEvidence", 0)),
+            ("order", lambda value: value["report"]["runs"][0]["records"][0]["order"]
+             .__setitem__("unexpectedEvidence", 0)),
+            ("repeat", lambda value: value["report"]["runs"][0]["records"][0]["repeat"]
+             .__setitem__("unexpectedEvidence", 0)),
+            ("confidence", lambda value: value["report"]["runs"][0]["records"][0]
+             ["confidence"].__setitem__("unexpectedEvidence", 0)),
+            ("latency", lambda value: value["report"]["runs"][0]["global"]
+             ["acquisitionLatency"].__setitem__("unexpectedEvidence", 0)),
+            ("determinism", lambda value: value["report"]["determinism"]
+             .__setitem__("unexpectedEvidence", 0)),
+            ("facts", lambda value: value["report"]["evidenceFacts"]
+             .__setitem__("unexpectedEvidence", 0)),
+            ("trigger", lambda value: value["report"]["triggers"]["R2"]
+             .__setitem__("unexpectedEvidence", 0)),
+            ("provider", lambda value: value["report"]["externalProvider"]
+             .__setitem__("unexpectedEvidence", 0)),
+        )
+        for name, mutate in mutations:
+            with self.subTest(name=name):
+                changed = copy.deepcopy(make_envelope())
+                mutate(changed)
+                reidentify(changed)
+                with self.assertRaises(VERIFIER.VerificationError):
+                    VERIFIER.verify_envelope(changed, REPOSITORY)
+
+    def test_contract_rejects_bool_float_and_java_numeric_overflow(self) -> None:
+        mutations = (
+            ("report-int-bool", lambda value: value["report"].__setitem__("expectedCaseCount", True)),
+            ("run-int-float", lambda value: value["report"]["runs"][0]
+             .__setitem__("runOrdinal", 1.0)),
+            ("record-int-bool", lambda value: value["report"]["runs"][0]["records"][0]
+             .__setitem__("observationCount", False)),
+            ("record-long-overflow", lambda value: value["report"]["runs"][0]["records"][0]
+             .__setitem__("acquisitionMicros", 9_223_372_036_854_775_808)),
+            ("ocr-long-bool", lambda value: value["report"]["runs"][0]["records"][0]["ocr"]
+             .__setitem__("cases", True)),
+            ("binary-long-float", lambda value: value["report"]["runs"][0]["records"][0]
+             ["layout"]["lines"].__setitem__("expected", 1.0)),
+            ("order-bool-int", lambda value: value["report"]["runs"][0]["records"][0]["order"]
+             .__setitem__("allReferencedRegionsObserved", 1)),
+            ("confidence-long-bool", lambda value: value["report"]["runs"][0]["records"][0]
+             ["confidence"].__setitem__("observations", False)),
+            ("determinism-int-long", lambda value: value["report"]["determinism"]
+             .__setitem__("comparedCases", 2_147_483_648)),
+            ("provider-long-bool", lambda value: value["report"]["externalProvider"]
+             .__setitem__("attempts", False)),
+        )
+        for name, mutate in mutations:
+            with self.subTest(name=name):
+                changed = copy.deepcopy(make_envelope())
+                mutate(changed)
+                reidentify(changed)
+                with self.assertRaises(VERIFIER.VerificationError):
+                    VERIFIER.verify_envelope(changed, REPOSITORY)
+
+    def test_nested_accounting_relations_fail_closed(self) -> None:
+        mutations = (
+            ("ocr", lambda record: record["ocr"].__setitem__("hallucinationCases", 2)),
+            ("binary", lambda record: record["layout"]["lines"].__setitem__("matched", 1)),
+            ("layout", lambda record: record["layout"].__setitem__("centerContainedMatches", 1)),
+            ("order", lambda record: record["order"].__setitem__("correctEdges", 1)),
+            ("repeat", lambda record: record["repeat"].__setitem__("completeGroups", 1)),
+            ("confidence", lambda record: record["confidence"].__setitem__("lowCount", 1)),
+        )
+        for name, mutate in mutations:
+            with self.subTest(name=name):
+                changed = copy.deepcopy(make_envelope())
+                mutate(changed["report"]["runs"][0]["records"][0])
+                reidentify(changed)
+                with self.assertRaises(VERIFIER.VerificationError):
+                    VERIFIER.verify_envelope(changed, REPOSITORY)
+
+    def test_decoded_payload_marker_cannot_hide_behind_unicode_escape(self) -> None:
+        changed = copy.deepcopy(make_envelope())
+        changed["report"]["modelOutput"] = "opaque"
+        reidentify(changed)
+        raw = VERIFIER.canonical_json(changed).replace(
+            b'"modelOutput"', b'"\\u006dodelOutput"')
+        self.assertNotIn(b'"modelOutput"', raw)
+        with self.assertRaises(VERIFIER.VerificationError):
+            VERIFIER.verify_bytes(raw, REPOSITORY)
+
+    def test_java_zero_denominator_metric_semantics(self) -> None:
+        self.assertEqual(0, VERIFIER.precision({"expected": 1, "predicted": 0, "matched": 0}))
+        self.assertEqual(10_000, VERIFIER.precision({"expected": 0, "predicted": 0, "matched": 0}))
+        self.assertEqual(10_000, VERIFIER.ocr_error_rate(1, 0))
+        self.assertEqual(0, VERIFIER.ocr_error_rate(0, 0))
+
     def test_load_verified_file_reads_and_binds_one_snapshot(self) -> None:
         raw = VERIFIER.canonical_json(make_envelope())
 
@@ -161,6 +263,10 @@ def make_envelope() -> dict[str, object]:
     }
     return {"envelopeVersion": VERIFIER.ENVELOPE_VERSION,
             "reportIdentity": VERIFIER.report_identity(report), "report": report}
+
+
+def reidentify(envelope: dict[str, object]) -> None:
+    envelope["reportIdentity"] = VERIFIER.report_identity(envelope["report"])
 
 
 if __name__ == "__main__":
