@@ -170,7 +170,9 @@ def envelope(path: pathlib.Path, version: str, identity_field: str, payload_fiel
         fail("VRQ07_A2_INPUT_BYTES_INVALID")
     value = strict_json(raw)
     ensure_decoded_payload_safe(value)
-    if value.get("envelopeVersion") != version or identity_field not in value or payload_field not in value:
+    if not isinstance(value, dict) \
+            or set(value) != {"envelopeVersion", identity_field, payload_field} \
+            or value.get("envelopeVersion") != version:
         fail("VRQ07_A2_INPUT_ENVELOPE_INVALID")
     return value[payload_field], value[identity_field]
 
@@ -271,9 +273,10 @@ def verify(args: argparse.Namespace) -> dict[str, Any]:
     r5, r5_identity = component_identity(
         args.r5, "renderweave-r5-oracle-probe-envelope/1.0", "evidenceIdentity", "evidence",
         "renderweave-r5-oracle-probe-evidence/1.0")
-    if rapid["externalProviderUsage"] != {"attempts": 0, "reservations": 0, "costMicrosCny": 0} \
-            or r3["externalProviderUsage"] != {"attempts": 0, "reservations": 0, "costMicrosCny": 0} \
-            or r5["externalProviderUsage"] != {"attempts": 0, "reservations": 0, "costMicrosCny": 0}:
+    zero_usage = {"attempts": 0, "reservations": 0, "costMicrosCny": 0}
+    if not same_json_value(rapid["externalProviderUsage"], zero_usage) \
+            or not same_json_value(r3["externalProviderUsage"], zero_usage) \
+            or not same_json_value(r5["externalProviderUsage"], zero_usage):
         fail("VRQ07_A2_PROVIDER_USAGE_NONZERO")
     if rapid["protocolIdentity"] != r3["protocolIdentity"] \
             or rapid["protocolIdentity"] != r5["protocolIdentity"] \
@@ -335,7 +338,7 @@ def verify(args: argparse.Namespace) -> dict[str, Any]:
     pack, pack_identity = envelope(
         args.pack, PACK_ENVELOPE, "evidencePackIdentity", "evidencePack")
     computed_pack_identity = f"{PACK_VERSION}:{hashlib.sha256(canonical_json(expected_pack)).hexdigest()}"
-    if pack != expected_pack or pack_identity != computed_pack_identity:
+    if not same_json_value(pack, expected_pack) or pack_identity != computed_pack_identity:
         fail("VRQ07_A2_EVIDENCE_PACK_DRIFT")
 
     decision_routes = [route_decision(item) for item in routes]
@@ -362,7 +365,7 @@ def verify(args: argparse.Namespace) -> dict[str, Any]:
     decision, decision_identity = envelope(
         args.decision, DECISION_ENVELOPE, "decisionIdentity", "decision")
     computed_decision_identity = f"{DECISION_ID_VERSION}:{hashlib.sha256(canonical_json(expected_decision)).hexdigest()}"
-    if decision != expected_decision or decision_identity != computed_decision_identity:
+    if not same_json_value(decision, expected_decision) or decision_identity != computed_decision_identity:
         fail("VRQ07_A2_DECISION_DRIFT")
     if overall != "STOP_TO_SPEC_R5":
         fail("VRQ07_A2_UNEXPECTED_OVERALL_DISPOSITION")

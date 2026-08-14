@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+import pathlib
+import tempfile
 import unittest
 
 import verify_vrq07_offline_decision as verifier
@@ -64,6 +66,35 @@ class Vrq07OfflineDecisionVerifierTest(unittest.TestCase):
                 verifier.VerificationError, "VRQ07_A2_COMPONENT_SUMMARY_SCHEMA_INVALID"
             ):
                 verifier.validate_component_summary("R3_PROBE", tampered)
+
+    def test_canonical_contract_comparison_rejects_nested_number_coercion(self) -> None:
+        expected = {"externalProviderUsage": {"attempts": 0, "reservations": 0}}
+        for confused in (
+            {"externalProviderUsage": {"attempts": False, "reservations": 0}},
+            {"externalProviderUsage": {"attempts": 0, "reservations": 0.0}},
+        ):
+            with self.subTest(confused=confused):
+                self.assertFalse(verifier.same_json_value(confused, expected))
+
+    def test_component_evidence_envelope_is_closed(self) -> None:
+        value = {
+            "envelopeVersion": "test-envelope/1.0",
+            "evidenceIdentity": "test-evidence/1.0:" + "a" * 64,
+            "evidence": {},
+            "unexpectedEvidence": "caller-attested",
+        }
+        with tempfile.TemporaryDirectory() as temporary:
+            path = pathlib.Path(temporary) / "evidence.json"
+            path.write_bytes(verifier.canonical_json(value))
+            with self.assertRaisesRegex(
+                verifier.VerificationError, "VRQ07_A2_INPUT_ENVELOPE_INVALID"
+            ):
+                verifier.envelope(
+                    path,
+                    "test-envelope/1.0",
+                    "evidenceIdentity",
+                    "evidence",
+                )
 
 
 if __name__ == "__main__":

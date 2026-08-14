@@ -21,6 +21,36 @@ class OfflineRepairTerminalVerifierTest(unittest.TestCase):
     def test_boolean_does_not_count_as_zero_execution(self) -> None:
         self.assertFalse(verifier.zero_values({"providerAttempts": False}))
 
+    def test_outcome_payload_schema_is_closed(self) -> None:
+        outcome = {
+            "contractVersion": "OfflineRepairTerminalOutcome/1.0",
+            "ticket": "VRQ_08_PP_STRUCTUREV3_DEV_SHADOW",
+            "rootDecisionIdentity": verifier.AUTHORITATIVE_DECISION_IDENTITY,
+            "rootDisposition": "STOP_TO_SPEC_R5",
+            "supportingIdentities": [],
+            "disposition": "STOPPED_FOR_R5_SUCCESSOR_SPEC",
+            "reasonCode": "R5_TRIGGERED_REQUIRES_SUCCESSOR_SPEC",
+            "offlineWorkUsage": {
+                "artifactAcquisitions": 0,
+                "devCasesExecuted": 0,
+                "holdoutCasesAccessed": 0,
+                "scriptedWorkflowReplays": 0,
+                "independentAdmissionReplays": 0,
+                "productWrites": 0,
+                "apiKeyReads": 0,
+            },
+            "externalProviderUsage": {
+                "attempts": 0,
+                "reservations": 0,
+                "costMicrosCny": 0,
+            },
+            "unexpectedEvidence": "caller-attested",
+        }
+        with self.assertRaisesRegex(
+            verifier.VerificationError, "OFFLINE_TERMINAL_OUTCOME_MEMBERS_INVALID"
+        ):
+            verifier.require_outcome_shape(outcome)
+
     def test_python_optimized_mode_is_rejected_before_argument_parsing(self) -> None:
         script = pathlib.Path(verifier.__file__).resolve()
         completed = subprocess.run(

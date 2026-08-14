@@ -75,6 +75,18 @@ EXPECTED_PREDECESSORS = {
     },
 }
 
+OUTCOME_FIELDS = {
+    "contractVersion", "ticket", "rootDecisionIdentity", "rootDisposition",
+    "supportingIdentities", "disposition", "reasonCode", "offlineWorkUsage",
+    "externalProviderUsage",
+}
+OFFLINE_WORK_FIELDS = {
+    "artifactAcquisitions", "devCasesExecuted", "holdoutCasesAccessed",
+    "scriptedWorkflowReplays", "independentAdmissionReplays", "productWrites",
+    "apiKeyReads",
+}
+PROVIDER_USAGE_FIELDS = {"attempts", "reservations", "costMicrosCny"}
+
 FORBIDDEN = (
     '"ocrText"', '"ocr_text"', '"imageBytes"', '"promptText"',
     '"providerRequest"', '"providerResponse"', '"modelOutput"',
@@ -165,6 +177,20 @@ def zero_values(mapping: dict[str, object]) -> bool:
     return bool(mapping) and all(type(value) is int and value == 0 for value in mapping.values())
 
 
+def require_outcome_shape(value: object) -> None:
+    require(isinstance(value, dict) and set(value) == OUTCOME_FIELDS,
+            "OFFLINE_TERMINAL_OUTCOME_MEMBERS_INVALID")
+    require(isinstance(value["supportingIdentities"], list)
+            and all(type(item) is str for item in value["supportingIdentities"]),
+            "OFFLINE_TERMINAL_OUTCOME_SUPPORT_TYPE_INVALID")
+    work = value["offlineWorkUsage"]
+    provider = value["externalProviderUsage"]
+    require(isinstance(work, dict) and set(work) == OFFLINE_WORK_FIELDS,
+            "OFFLINE_TERMINAL_WORK_USAGE_MEMBERS_INVALID")
+    require(isinstance(provider, dict) and set(provider) == PROVIDER_USAGE_FIELDS,
+            "OFFLINE_TERMINAL_PROVIDER_USAGE_MEMBERS_INVALID")
+
+
 def main() -> int:
     require(__debug__, "OFFLINE_TERMINAL_OPTIMIZED_MODE_FORBIDDEN")
     parser = argparse.ArgumentParser()
@@ -194,6 +220,7 @@ def main() -> int:
         "outcomeIdentity",
         OUTCOME_PREFIX,
     )
+    require_outcome_shape(outcome)
 
     challenger_id, disposition, reason_code = TICKETS[args.ticket]
     require(decision_identity == AUTHORITATIVE_DECISION_IDENTITY,
@@ -238,6 +265,8 @@ def main() -> int:
             "outcomeIdentity",
             OUTCOME_PREFIX,
         ) for path in args.predecessor]
+        for predecessor, _ in predecessors:
+            require_outcome_shape(predecessor)
         require({payload["ticket"] for payload, _ in predecessors} == expected_tickets,
                 "OFFLINE_TERMINAL_PREDECESSOR_TICKET_SET_INVALID")
         require(all(payload["rootDecisionIdentity"] == decision_identity
