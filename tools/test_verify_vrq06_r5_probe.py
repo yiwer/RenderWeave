@@ -85,6 +85,14 @@ class Vrq06R5ProbeVerifierTest(unittest.TestCase):
         ):
             verifier.verify_metrics(metrics)
 
+    def test_source_dimensions_are_reconstructed_from_frozen_case_variant(self) -> None:
+        self.assertEqual((1_024, 768), verifier.expected_source_dimensions("transit-board-v3"))
+        self.assertEqual((1_800, 1_200), verifier.expected_source_dimensions("transit-board-v5"))
+        with self.assertRaisesRegex(
+            verifier.VerificationError, "R5_A2_CASE_DIMENSION_AUTHORITY_INVALID"
+        ):
+            verifier.expected_source_dimensions("transit-board-v6")
+
 
 def verifier_test_metrics() -> dict[str, int]:
     return {key: 0 for key in verifier.METRIC_FIELDS}

@@ -56,6 +56,13 @@ PREDICATE_FIELDS = frozenset({
     "TARGET_SLICE_IMPROVED", "CRITICAL_HALLUCINATION_NON_INCREASE", "STATIC_VIEW_CAUSALITY",
 })
 PROVIDER_USAGE_FIELDS = frozenset({"attempts", "reservations", "costMicrosCny"})
+SOURCE_DIMENSIONS_BY_VARIANT = {
+    1: (1_600, 1_000),
+    2: (1_000, 1_600),
+    3: (1_024, 768),
+    4: (1_400, 900),
+    5: (1_800, 1_200),
+}
 
 
 class VerificationError(ValueError):
@@ -199,6 +206,13 @@ def oracle_dimensions(width: int, height: int) -> tuple[int, int]:
     return width * 2400 // height, 2400
 
 
+def expected_source_dimensions(case_id: str) -> tuple[int, int]:
+    match = re.fullmatch(r"[a-z][a-z0-9-]{0,124}-v([1-5])", case_id)
+    if match is None:
+        fail("R5_A2_CASE_DIMENSION_AUTHORITY_INVALID")
+    return SOURCE_DIMENSIONS_BY_VARIANT[int(match.group(1))]
+
+
 def verify_metrics(value: dict[str, Any]) -> None:
     if not exact_object(value, METRIC_FIELDS) \
             or any(not strict_nonnegative_int(item) for item in value.values()):
@@ -274,6 +288,9 @@ def verify(evidence_path: pathlib.Path, repository: pathlib.Path) -> dict[str, A
         if item["caseIdentity"] != locked["caseIdentity"] \
                 or item["partition"] != locked["partition"]:
             fail("R5_A2_CASE_IDENTITY_DRIFT")
+        if (item["sourceWidth"], item["sourceHeight"]) \
+                != expected_source_dimensions(item["caseId"]):
+            fail("R5_A2_CASE_DIMENSION_AUTHORITY_DRIFT")
         if item["partition"] == "DEV":
             dev += 1
         elif item["partition"] == "HOLDOUT":
