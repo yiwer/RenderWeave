@@ -1,5 +1,6 @@
 import { useState } from 'react';
 
+import { findNode, problemsFor } from './model';
 import type { PartProps } from './SharedParts';
 import {
   Artboard,
@@ -21,15 +22,20 @@ import {
 export function VariantA(props: PartProps) {
   const { state } = props;
   const [bottomTab, setBottomTab] = useState<'problems' | 'preview'>('problems');
+  const [bottomOpen, setBottomOpen] = useState(false);
+  const selected = findNode(state.tree, state.selectedNodeId) ?? state.tree;
+  const problemCount = problemsFor(state.scenario).length;
   return (
-    <div className="td-shell td-a">
-      <TdChrome {...props} layoutName="A · 三栏工作台" />
+    <div className="td-shell td-a rwtd rwtd-classic">
+      <TdChrome {...props} layoutName="A · Studio Classic" />
       <ScenarioBar state={state} dispatch={props.dispatch} />
       <div className="td-a-body">
-        <RailButtons state={state} dispatch={props.dispatch} />
-        <aside className="td-a-panel" aria-label="资源面板">
-          <LeftPanel state={state} dispatch={props.dispatch} />
-        </aside>
+        <div className="rwtd-left-dock">
+          <RailButtons state={state} dispatch={props.dispatch} />
+          <aside className="td-a-panel" aria-label="资源面板">
+            <LeftPanel state={state} dispatch={props.dispatch} />
+          </aside>
+        </div>
         <main className="td-a-canvas" id="main-content">
           <Artboard state={state} dispatch={props.dispatch} />
         </main>
@@ -37,33 +43,59 @@ export function VariantA(props: PartProps) {
           <Inspector state={state} dispatch={props.dispatch} />
         </aside>
       </div>
-      <footer className="td-a-problems" aria-label="问题与权威预览">
-        <div className="td-a-bottom-tabs" role="tablist">
+      <footer className="td-a-problems" data-open={bottomOpen} aria-label="问题与权威预览">
+        <div className="td-a-bottom-tabs">
+          <div className="rwtd-bottom-tabset" role="tablist">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={bottomTab === 'problems'}
+              className={bottomTab === 'problems' ? 'active' : ''}
+              onClick={() => {
+                setBottomTab('problems');
+                setBottomOpen(true);
+              }}
+            >
+              问题 <span>{problemCount}</span>
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={bottomTab === 'preview'}
+              className={bottomTab === 'preview' ? 'active' : ''}
+              onClick={() => {
+                setBottomTab('preview');
+                setBottomOpen(true);
+              }}
+            >
+              权威预览
+            </button>
+          </div>
           <button
             type="button"
-            role="tab"
-            aria-selected={bottomTab === 'problems'}
-            className={bottomTab === 'problems' ? 'active' : ''}
-            onClick={() => setBottomTab('problems')}
+            className="rwtd-bottom-toggle"
+            aria-expanded={bottomOpen}
+            onClick={() => setBottomOpen((value) => !value)}
           >
-            问题
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={bottomTab === 'preview'}
-            className={bottomTab === 'preview' ? 'active' : ''}
-            onClick={() => setBottomTab('preview')}
-          >
-            权威预览
+            {bottomOpen ? '收起' : '展开'}
           </button>
         </div>
-        {bottomTab === 'problems' ? (
-          <ProblemsList state={state} dispatch={props.dispatch} />
-        ) : (
-          <PreviewPanel {...props} />
-        )}
+        {bottomOpen ? (
+          <div className="rwtd-bottom-content">
+            {bottomTab === 'problems' ? (
+              <ProblemsList state={state} dispatch={props.dispatch} />
+            ) : (
+              <PreviewPanel {...props} />
+            )}
+          </div>
+        ) : null}
       </footer>
+      <div className="rwtd-statusbar" role="status">
+        <span>草稿画布 · 非权威</span>
+        <span>{selected.name}</span>
+        <span>{problemCount} 个问题</span>
+        <span>{state.zoom}%</span>
+      </div>
     </div>
   );
 }

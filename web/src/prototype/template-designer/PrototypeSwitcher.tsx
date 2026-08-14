@@ -1,7 +1,7 @@
-import { ArrowLeft, ArrowRight, FlaskConical } from 'lucide-react';
+import { FlaskConical } from 'lucide-react';
 import { useEffect } from 'react';
 
-import { type PrototypeVariant, variantNames } from './model';
+import { type PrototypeVariant } from './model';
 
 interface PrototypeSwitcherProps {
   current: PrototypeVariant;
@@ -9,6 +9,11 @@ interface PrototypeSwitcherProps {
 }
 
 const variants: PrototypeVariant[] = ['A', 'B', 'C'];
+const names: Record<PrototypeVariant, string> = {
+  A: 'Studio Classic',
+  B: 'Canvas Focus',
+  C: 'Binding Bench',
+};
 
 function adjacent(current: PrototypeVariant, direction: -1 | 1): PrototypeVariant {
   const index = variants.indexOf(current);
@@ -42,29 +47,28 @@ export function PrototypeSwitcher({ current, onChange }: PrototypeSwitcherProps)
   }
 
   return (
-    <aside className="prototype-switcher" aria-label="原型方案切换器">
-      <button
-        type="button"
-        className="switcher-arrow"
-        aria-label="上一个原型方案"
-        onClick={() => onChange(adjacent(current, -1))}
-      >
-        <ArrowLeft aria-hidden="true" size={17} />
-      </button>
-      <div className="switcher-label" aria-live="polite">
-        <FlaskConical aria-hidden="true" size={16} />
-        <span>
-          {current} — {variantNames[current]}
-        </span>
+    <aside className="prototype-switcher rwtd-switcher" aria-label="原型方案切换器">
+      <span className="rwtd-switcher-kicker">
+        <FlaskConical aria-hidden="true" size={14} />
+        方案
+      </span>
+      <div className="rwtd-switcher-tabs" role="tablist" aria-label="选择原型方案">
+        {variants.map((variant) => (
+          <button
+            key={variant}
+            type="button"
+            role="tab"
+            aria-selected={current === variant}
+            className={current === variant ? 'active' : ''}
+            title={names[variant]}
+            onClick={() => onChange(variant)}
+          >
+            {variant}
+          </button>
+        ))}
       </div>
-      <button
-        type="button"
-        className="switcher-arrow"
-        aria-label="下一个原型方案"
-        onClick={() => onChange(adjacent(current, 1))}
-      >
-        <ArrowRight aria-hidden="true" size={17} />
-      </button>
+      <span className="rwtd-switcher-name" aria-live="polite">{names[current]}</span>
+      <kbd>← →</kbd>
     </aside>
   );
 }

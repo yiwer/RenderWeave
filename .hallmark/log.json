@@ -16,5 +16,15 @@
     "scope": "app",
     "brief": "RenderWeave web redesign — OKLCH token system, component voice + interaction discipline, design.md locked",
     "branch": "redesign/web-ui-ux"
+  },
+  {
+    "date": "2026-08-13",
+    "macrostructure": "Workbench",
+    "theme": "Hum / professional Studio calibration",
+    "theme_axes": "warm cream / compact technical chrome / spring-green action-only",
+    "enrichment": "none (interactive application prototype)",
+    "scope": "prototype/template-designer",
+    "brief": "Template Designer redesign — Studio Classic, Canvas Focus, and Binding Bench",
+    "variation_knobs": "48px chrome / hairline panels / square segmented controls / three distinct information architectures"
   }
 ]

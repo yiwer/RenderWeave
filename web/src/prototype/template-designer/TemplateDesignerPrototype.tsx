@@ -7,6 +7,7 @@ import { ConflictBanner, BindingDialog, InvalidSaveDialog, NoticeToast } from '.
 import { VariantA } from './VariantA';
 import { VariantB } from './VariantB';
 import { VariantC } from './VariantC';
+import './template-designer.css';
 
 /**
  * PROTOTYPE — throwaway route /prototype/template-designer?variant=A|B|C
@@ -54,7 +55,7 @@ export function TemplateDesignerPrototype() {
   const partProps = { state, dispatch, onRunPreview: runPreview, onCancelPreview: cancelPreview };
 
   return (
-    <div data-prototype="template-designer">
+    <div className="rwtd-root" data-prototype="template-designer" data-variant={variant}>
       <a className="skip-link" href="#main-content">跳到主要内容</a>
       {variant === 'A' && <VariantA {...partProps} />}
       {variant === 'B' && <VariantB {...partProps} />}
@@ -65,8 +66,9 @@ export function TemplateDesignerPrototype() {
       <NoticeToast state={state} dispatch={dispatch} />
       <PrototypeSwitcher current={variant} onChange={changeVariant} />
       <div className="unsupported-width" role="status">
-        <strong>RenderWeave Template 设计器需要至少 1024px 宽度</strong>
-        <span>请扩大窗口后继续模板设计。</span>
+        <span className="weave-mark" aria-hidden="true">RW</span>
+        <strong>模板设计器需要更宽的工作区</strong>
+        <span>请将窗口扩大到至少 1024px；模板内容不会丢失。</span>
       </div>
     </div>
   );

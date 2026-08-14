@@ -21,40 +21,69 @@ import {
  */
 export function VariantC(props: PartProps) {
   const { state, dispatch } = props;
+  const sourceTab = ['data', 'definitions', 'tree', 'exchange'].includes(state.leftTab)
+    ? state.leftTab
+    : 'data';
   return (
-    <div className="td-shell td-c">
-      <TdChrome {...props} layoutName="C · 绑定工作台" />
+    <div className="td-shell td-c rwtd rwtd-binding-bench">
+      <TdChrome {...props} layoutName="C · Binding Bench" />
       <ScenarioBar state={state} dispatch={dispatch} />
       <div className="td-c-body">
-        <div className="td-c-left">
-          <section className="td-c-block" aria-label="结构树">
-            <NodeTree state={state} dispatch={dispatch} />
+        <aside className="td-c-left" aria-label="绑定来源">
+          <header className="rwtd-panel-header">
+            <span className="rwtd-panel-title"><strong>来源</strong></span>
+            <span className="rwtd-panel-context">typed</span>
+          </header>
+          <div className="rwtd-source-tabs" role="tablist" aria-label="绑定来源视图">
+            {([
+              ['data', '样本'],
+              ['definitions', '定义'],
+              ['tree', '结构'],
+              ['exchange', '交换'],
+            ] as const).map(([tab, label]) => (
+              <button
+                key={tab}
+                type="button"
+                role="tab"
+                aria-selected={sourceTab === tab}
+                className={sourceTab === tab ? 'active' : ''}
+                onClick={() => dispatch({ type: 'set-tab', tab })}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <div className="rwtd-panel-scroll" tabIndex={0} aria-label="绑定来源内容">
+            {sourceTab === 'data' ? <DataPanel state={state} /> : null}
+            {sourceTab === 'definitions' ? <DefinitionsPanel dispatch={dispatch} /> : null}
+            {sourceTab === 'tree' ? <NodeTree state={state} dispatch={dispatch} /> : null}
+            {sourceTab === 'exchange' ? <ExchangePanel state={state} dispatch={dispatch} /> : null}
+          </div>
+        </aside>
+        <main className="td-c-center" id="main-content">
+          <section className="td-c-block td-c-hero" aria-label="绑定目标与映射">
+            <Inspector state={state} dispatch={dispatch} initialMode="binding" />
           </section>
-          <section className="td-c-block" aria-label="缩略草稿画布">
+          <section className="td-c-block rwtd-canvas-reference" aria-label="草稿画布引用">
+            <header className="rwtd-panel-header">
+              <span className="rwtd-panel-title"><strong>画布引用</strong></span>
+              <span className="rwtd-panel-context">非权威</span>
+            </header>
             <Artboard state={state} dispatch={dispatch} compact />
           </section>
-        </div>
-        <main className="td-c-center" id="main-content">
-          <section className="td-c-block td-c-hero" aria-label="绑定板">
-            <Inspector state={state} dispatch={dispatch} />
-          </section>
-          <section className="td-c-block" aria-label="定义">
-            {state.leftTab === 'exchange'
-              ? <ExchangePanel state={state} dispatch={dispatch} />
-              : <DefinitionsPanel dispatch={dispatch} />}
-          </section>
         </main>
-        <div className="td-c-right">
-          <section className="td-c-block" aria-label="样本数据">
-            <DataPanel state={state} />
-          </section>
-          <section className="td-c-block" aria-label="权威预览">
+        <aside className="td-c-right" aria-label="验证与输出">
+          <section className="td-c-block rwtd-preview-pane" aria-label="权威预览">
             <PreviewPanel {...props} />
           </section>
-          <section className="td-c-block" aria-label="问题">
+          <section className="td-c-block rwtd-problems-pane" aria-label="问题">
+            <header className="rwtd-panel-header">
+              <span className="rwtd-panel-title"><strong>问题</strong></span>
+              <span className="rwtd-panel-context">current</span>
+            </header>
             <ProblemsList state={state} dispatch={dispatch} />
           </section>
-        </div>
+        </aside>
       </div>
     </div>
   );

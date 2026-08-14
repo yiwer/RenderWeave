@@ -160,8 +160,15 @@ transform/opacity only.
   On dark panels the text hierarchy is `--color-surface-soft` (primary) →
   `--color-dark-ink` (secondary/muted); `--color-muted` and `--color-body`
   are paper-only and fail WCAG there.
-- Prototype routes (`/prototype/*`) are throwaway: they inherit tokens but
-  receive no redesign investment.
+- Prototype routes (`/prototype/*`) are throwaway and inherit the shared
+  tokens. `/prototype/template-designer` is the one research exception: it
+  may use a **professional Studio calibration** (48px compact chrome, 4–8px
+  tool radii, square segmented controls, hairline panel boundaries and a
+  neutral canvas field) to compare editor information architectures. It must
+  keep the Hum font stacks and semantic colour ownership, reserve spring green
+  for action/selection, and avoid card-in-card, universal pills, hover lifts
+  and explanatory copy as permanent chrome. This allowance does not change
+  product pages and expires with the throwaway prototype.
 - Inference run pages are strictly split: the monitor page owns the execution
   log (timeline main column + telemetry rail at ≥1260px, stacked below it
   otherwise); the review page owns Candidate proofreading only, with core

@@ -5,6 +5,7 @@
  */
 import {
   AlertTriangle,
+  ArrowLeft,
   ArrowLeftRight,
   Braces,
   Check,
@@ -25,15 +26,19 @@ import {
   Play,
   Plus,
   RefreshCw,
+  Redo2,
   Save,
   Search,
   Trash2,
   Type,
   Upload,
+  Undo2,
   WandSparkles,
   X,
 } from 'lucide-react';
-import { useState, type Dispatch, type ReactNode } from 'react';
+import { useId, useState, type Dispatch, type ReactNode } from 'react';
+
+import { SelectField } from '../../components/SelectField';
 
 import { kindIcons } from './kind-icons';
 
@@ -61,6 +66,7 @@ import {
   type DesignerState,
   type InspectorProp,
   type LeftTab,
+  type NodeBinding,
   type NodeGroup,
   scenarios,
   useIds,
@@ -86,60 +92,108 @@ const newCanonicalUuid = () => crypto.randomUUID().toLowerCase();
 
 export function StatusChip({ state }: { state: DesignerState }) {
   if (state.templateStatus === 'INVALID') {
-    return <span className="status-chip status-warning">INVALID · 可编辑 · 不可权威预览</span>;
+    return (
+      <span className="status-chip status-warning" title="可继续编辑，但不可权威预览或渲染">
+        <AlertTriangle aria-hidden="true" size={13} />
+        INVALID
+      </span>
+    );
   }
   if (state.dirty) {
-    return <span className="status-chip status-dirty">有未保存更改</span>;
+    return (
+      <span className="status-chip status-dirty">
+        <span aria-hidden="true" className="rwtd-status-dot" />
+        未保存
+      </span>
+    );
   }
-  return <span className="status-chip">已保存</span>;
+  return (
+    <span className="status-chip">
+      <Check aria-hidden="true" size={13} />
+      已保存
+    </span>
+  );
 }
 
 export function TdChrome({ state, dispatch, onRunPreview, layoutName }: PartProps & { layoutName: string }) {
   return (
-    <header className="product-chrome td-chrome">
-      <div className="product-mark" aria-label="RenderWeave">
-        <span className="weave-mark" aria-hidden="true">RW</span>
-        <span>RenderWeave</span>
+    <header className="product-chrome td-chrome rwtd-topbar">
+      <div className="rwtd-brand-block">
+        <button
+          type="button"
+          className="rwtd-icon-button"
+          aria-label="返回模板列表"
+          title="返回模板列表"
+          onClick={() => dispatch({ type: 'set-notice', notice: '原型：返回模板列表' })}
+        >
+          <ArrowLeft aria-hidden="true" size={16} />
+        </button>
+        <div className="product-mark" aria-label="RenderWeave">
+          <span className="weave-mark" aria-hidden="true">RW</span>
+          <span>RenderWeave</span>
+        </div>
       </div>
       <div className="chrome-context td-chrome-context">
-        <span className="prototype-kicker">原型</span>
-        <span className="td-chrome-layout">{layoutName}</span>
-        <span className="td-chrome-divider" aria-hidden="true" />
-        <strong className="td-chrome-name">{templateMeta.name}</strong>
-        <span className="td-schema-pill" title="Template 创建时永久绑定 exact Schema,不可改绑">
-          <Lock aria-hidden="true" size={12} />
-          {templateMeta.schemaRef} · exact
+        <div className="rwtd-document-title">
+          <strong className="td-chrome-name">{templateMeta.name}</strong>
+          <span>{layoutName} · 90 × 54 mm</span>
+        </div>
+        <div className="rwtd-history-actions" role="group" aria-label="编辑历史">
+          <button
+            type="button"
+            className="rwtd-icon-button"
+            aria-label="撤销"
+            title="撤销 · Ctrl+Z"
+            onClick={() => dispatch({ type: 'set-notice', notice: '原型：撤销上一步编辑' })}
+          >
+            <Undo2 aria-hidden="true" size={15} />
+          </button>
+          <button
+            type="button"
+            className="rwtd-icon-button"
+            aria-label="重做"
+            title="重做 · Ctrl+Shift+Z"
+            onClick={() => dispatch({ type: 'set-notice', notice: '原型：重做上一步编辑' })}
+          >
+            <Redo2 aria-hidden="true" size={15} />
+          </button>
+        </div>
+        <span className="td-schema-pill" title="创建时永久绑定 exact StaticSchema，不可改绑">
+          <Lock aria-hidden="true" size={11} />
+          {templateMeta.schemaRef}
         </span>
         <code className="td-dsl-chip">{templateMeta.dslVersion}</code>
       </div>
       <div className="chrome-actions">
         <StatusChip state={state} />
-        <span className="td-revision-chip">rev <strong>{state.revision}</strong></span>
+        <span className="td-revision-chip" title="当前模板 revision">r{state.revision}</span>
         <button
           type="button"
-          className="button ghost-button"
+          className="rwtd-icon-button"
+          aria-label="导入 DesignDSL"
+          title="导入 DesignDSL"
           onClick={() => {
             dispatch({ type: 'set-tab', tab: 'exchange' });
             dispatch({ type: 'set-notice', notice: '已打开 Import 工作流 · 导入不会静默覆盖目标 identity 或 exact Schema' });
           }}
         >
           <Upload aria-hidden="true" size={15} />
-          导入
         </button>
         <button
           type="button"
-          className="button ghost-button"
+          className="rwtd-icon-button"
+          aria-label="导出 DesignDSL"
+          title="导出 DesignDSL"
           onClick={() => {
             dispatch({ type: 'set-tab', tab: 'exchange' });
             dispatch({ type: 'set-notice', notice: '已打开 Export 工作流 · 可选择 bare DesignDSL 或 exact revision envelope' });
           }}
         >
           <Download aria-hidden="true" size={15} />
-          导出
         </button>
-        <button type="button" className="button ghost-button" onClick={onRunPreview} disabled={state.previewPhase === 'loading'}>
+        <button type="button" className="button ghost-button rwtd-preview-button" onClick={onRunPreview} disabled={state.previewPhase === 'loading'}>
           <Play aria-hidden="true" size={15} />
-          权威预览
+          预览
         </button>
         <button type="button" className="button primary-button" onClick={() => dispatch({ type: 'save' })}>
           <Save aria-hidden="true" size={15} />
@@ -151,25 +205,28 @@ export function TdChrome({ state, dispatch, onRunPreview, layoutName }: PartProp
 }
 
 export function ScenarioBar({ state, dispatch }: Pick<PartProps, 'state' | 'dispatch'>) {
+  const current = scenarios.find((scenario) => scenario.key === state.scenario);
   return (
     <div className="td-scenario-bar" role="group" aria-label="演示场景(改变服务端/求值状态)">
       <span className="td-scenario-label">
         <Info aria-hidden="true" size={13} />
-        演示场景
+        状态样本
       </span>
-      {scenarios.map((scenario) => (
-        <button
-          key={scenario.key}
-          type="button"
-          className={`td-scenario-chip${state.scenario === scenario.key ? ' active' : ''}`}
-          aria-pressed={state.scenario === scenario.key}
-          title={scenario.hint}
-          onClick={() => dispatch({ type: 'set-scenario', scenario: scenario.key })}
-        >
-          {scenario.label}
-        </button>
-      ))}
-      <span className="td-scenario-hint">{scenarios.find((s) => s.key === state.scenario)?.hint}</span>
+      <div className="rwtd-scenario-options">
+        {scenarios.map((scenario) => (
+          <button
+            key={scenario.key}
+            type="button"
+            className={`td-scenario-chip${state.scenario === scenario.key ? ' active' : ''}`}
+            aria-pressed={state.scenario === scenario.key}
+            title={scenario.hint}
+            onClick={() => dispatch({ type: 'set-scenario', scenario: scenario.key })}
+          >
+            {scenario.label}
+          </button>
+        ))}
+      </div>
+      <span className="td-scenario-hint">{current?.hint}</span>
     </div>
   );
 }
@@ -188,9 +245,11 @@ function TreeRow({ node, depth, state, dispatch }: TreeRowProps) {
     <>
       <button
         type="button"
+        role="treeitem"
+        aria-level={depth + 1}
         className={`td-tree-row${selected ? ' selected' : ''}`}
         style={{ paddingLeft: `${10 + depth * 14}px` }}
-        aria-pressed={selected}
+        aria-selected={selected}
         onClick={() => dispatch({ type: 'select-node', nodeId: node.id })}
       >
         <span className="td-tree-caret" aria-hidden="true">
@@ -576,7 +635,7 @@ export function DataPanel({ state }: Pick<PartProps, 'state'>) {
           ① RootDocument · exact Schema context
           <span className="td-mini-chip chip-info">local session</span>
         </div>
-        <pre>{rootDocumentSample(state.scenario)}</pre>
+        <pre tabIndex={0}>{rootDocumentSample(state.scenario)}</pre>
       </div>
       {state.scenario === 'binding-absent' ? (
         <p className="td-inline-note chip-info-block">
@@ -590,7 +649,7 @@ export function DataPanel({ state }: Pick<PartProps, 'state'>) {
           ② 根 customValues 赋值列表
           <span className="td-mini-chip chip-info">local session</span>
         </div>
-        <pre>{customValuesSample}</pre>
+        <pre tabIndex={0}>{customValuesSample}</pre>
       </div>
       <p className="td-inline-note">
         <AlertTriangle aria-hidden="true" size={12} />
@@ -753,22 +812,40 @@ export function Artboard({ state, dispatch, compact }: Pick<PartProps, 'state' |
           </label>
         ) : null}
       </div>
-      <div className="td-artboard-clip">
-        <div className="td-artboard" style={{ width, height }} role="application" aria-label="草稿画布(非权威)">
+      <div className="td-artboard-clip" tabIndex={0} aria-label={compact ? '缩略画布视口' : '画布视口'}>
+        <div
+          className="td-artboard"
+          style={{ width, height }}
+          role={compact ? 'img' : 'application'}
+          aria-label={compact ? '草稿画布缩略引用(非权威)' : '草稿画布(非权威)'}
+        >
           <span className="td-artboard-size" aria-hidden="true">90mm × 54mm</span>
           {draftBoxes.map((box) => {
             const selected = state.selectedNodeId === box.nodeId;
+            const style = {
+              left: box.x * pxPerMm,
+              top: box.y * pxPerMm,
+              width: box.w * pxPerMm,
+              height: box.h * pxPerMm,
+            };
+            if (compact) {
+              return (
+                <span
+                  key={box.nodeId}
+                  className={`td-node-box tone-${box.tone}${selected ? ' selected' : ''}`}
+                  style={style}
+                  aria-hidden="true"
+                >
+                  <span className="td-node-label">{box.label}</span>
+                </span>
+              );
+            }
             return (
               <button
                 key={box.nodeId}
                 type="button"
                 className={`td-node-box tone-${box.tone}${selected ? ' selected' : ''}`}
-                style={{
-                  left: box.x * pxPerMm,
-                  top: box.y * pxPerMm,
-                  width: box.w * pxPerMm,
-                  height: box.h * pxPerMm,
-                }}
+                style={style}
                 aria-pressed={selected}
                 aria-label={`选择节点 ${box.label}`}
                 onClick={() => dispatch({ type: 'select-node', nodeId: box.nodeId })}
@@ -791,83 +868,349 @@ function bindingStateFor(nodeId: string, state: DesignerState): 'ok' | 'absent' 
   return 'ok';
 }
 
-function PropControl({ node, prop, dispatch }: { node: DesignerNode; prop: InspectorProp; dispatch: Dispatch<DesignerAction> }) {
-  if (prop.options) {
+type PropertyGroupKey = 'content' | 'typography' | 'layout' | 'appearance' | 'data' | 'behavior' | 'composition' | 'advanced';
+type PropertyControlKind = 'text' | 'multiline' | 'number' | 'select' | 'boolean' | 'color' | 'asset' | 'font' | 'source' | 'template' | 'readonly';
+
+interface PropertyPresentation {
+  name: string;
+  group: PropertyGroupKey;
+  control: PropertyControlKind;
+  unit?: string;
+  step?: string;
+  min?: number;
+}
+
+const propertyGroups: { key: PropertyGroupKey; label: string }[] = [
+  { key: 'content', label: '内容' },
+  { key: 'typography', label: '文字' },
+  { key: 'layout', label: '布局' },
+  { key: 'appearance', label: '外观' },
+  { key: 'data', label: '数据' },
+  { key: 'behavior', label: '行为' },
+  { key: 'composition', label: '子模板' },
+  { key: 'advanced', label: '高级' },
+];
+
+const propertyPresentations: Record<string, PropertyPresentation> = {
+  widthMm: { name: '画布宽度', group: 'layout', control: 'number', unit: 'mm', step: '0.1', min: 0 },
+  heightMm: { name: '画布高度', group: 'layout', control: 'number', unit: 'mm', step: '0.1', min: 0 },
+  backgroundColor: { name: '画布背景', group: 'appearance', control: 'color' },
+  direction: { name: '排列方向', group: 'layout', control: 'select' },
+  gapMm: { name: '项目间距', group: 'layout', control: 'number', unit: 'mm', step: '0.1', min: 0 },
+  'padding.topMm': { name: '上内边距', group: 'layout', control: 'number', unit: 'mm', step: '0.1' },
+  'fill.color': { name: '填充颜色', group: 'appearance', control: 'color' },
+  'cornerRadii.topLeftMm': { name: '左上圆角', group: 'appearance', control: 'number', unit: 'mm', step: '0.1', min: 0 },
+  'placement.fillWeight': { name: '填充权重', group: 'layout', control: 'number', step: '0.1', min: 0 },
+  'runs[0].text': { name: '文本内容', group: 'content', control: 'multiline' },
+  'runs[0].fontRef': { name: '字体', group: 'typography', control: 'font' },
+  'runs[0].fontSizePt': { name: '字号', group: 'typography', control: 'number', unit: 'pt', step: '0.5', min: 0 },
+  'runs[0].color': { name: '文字颜色', group: 'typography', control: 'color' },
+  writingMode: { name: '书写方向', group: 'typography', control: 'select' },
+  lineBreak: { name: '换行方式', group: 'typography', control: 'select' },
+  overflow: { name: '溢出处理', group: 'typography', control: 'select' },
+  horizontalAlign: { name: '水平对齐', group: 'typography', control: 'select' },
+  verticalAlign: { name: '垂直对齐', group: 'typography', control: 'select' },
+  'stroke.widthMm': { name: '描边宽度', group: 'appearance', control: 'number', unit: 'mm', step: '0.1', min: 0 },
+  shrinkToFit: { name: '自动缩小', group: 'typography', control: 'boolean' },
+  imageRef: { name: '图片资源', group: 'content', control: 'asset' },
+  fit: { name: '图片适配', group: 'appearance', control: 'select' },
+  sampling: { name: '采样方式', group: 'appearance', control: 'select' },
+  maxLines: { name: '最大行数', group: 'typography', control: 'number', unit: '行', step: '1', min: 1 },
+  items: { name: '循环数据', group: 'data', control: 'source' },
+  absentPolicy: { name: '缺失值处理', group: 'data', control: 'select' },
+  'itemLayout.kind': { name: '单项布局', group: 'layout', control: 'readonly' },
+  'itemLayout.direction': { name: '单项方向', group: 'layout', control: 'select' },
+  'itemLayout.gapMm': { name: '单项间距', group: 'layout', control: 'number', unit: 'mm', step: '0.1', min: 0 },
+  'instanceLayout.kind': { name: '实例布局', group: 'layout', control: 'readonly' },
+  'instanceLayout.columns': { name: '网格列数', group: 'layout', control: 'number', unit: '列', step: '1', min: 1 },
+  'instanceLayout.columnGapMm': { name: '列间距', group: 'layout', control: 'number', unit: 'mm', step: '0.1', min: 0 },
+  'instanceLayout.rowGapMm': { name: '行间距', group: 'layout', control: 'number', unit: 'mm', step: '0.1', min: 0 },
+  'placement.type': { name: '布局方式', group: 'layout', control: 'readonly' },
+  'templateRef.templateId': { name: '目标模板', group: 'composition', control: 'template' },
+  contextSelector: { name: '数据上下文', group: 'data', control: 'source' },
+  contextAbsentPolicy: { name: '上下文缺失', group: 'data', control: 'select' },
+  fills: { name: '自定义数据赋值', group: 'composition', control: 'readonly' },
+  'fill: brandName': { name: '品牌名称赋值', group: 'composition', control: 'source' },
+  content: { name: '二维码内容', group: 'content', control: 'text' },
+  errorCorrectionLevel: { name: '容错等级', group: 'content', control: 'select' },
+  foregroundColor: { name: '前景颜色', group: 'appearance', control: 'color' },
+  render: { name: '参与渲染', group: 'behavior', control: 'boolean' },
+  condition: { name: '渲染条件', group: 'behavior', control: 'source' },
+  visible: { name: '可见性', group: 'behavior', control: 'boolean' },
+};
+
+const propertyOptionLabels: Record<string, Record<string, string>> = {
+  direction: { VERTICAL: '纵向', HORIZONTAL: '横向' },
+  writingMode: { HORIZONTAL_TB: '横排', VERTICAL_RL: '竖排（从右向左）' },
+  lineBreak: { NONE: '不换行', WORD: '按词换行', CHAR: '按字符换行' },
+  overflow: { VISIBLE: '显示溢出', CLIP: '裁剪', ELLIPSIS: '省略号', FAIL: '溢出时报错' },
+  horizontalAlign: { LEFT: '左对齐', CENTER: '水平居中', RIGHT: '右对齐', JUSTIFY: '两端对齐', SPACE_EVENLY: '均匀分布' },
+  verticalAlign: { TOP: '顶部', CENTER: '垂直居中', BOTTOM: '底部', JUSTIFY: '两端对齐', SPACE_EVENLY: '均匀分布' },
+  fit: { CONTAIN: '完整显示', COVER: '覆盖裁剪', FILL: '拉伸填充' },
+  sampling: { LINEAR: '平滑', NEAREST: '邻近像素' },
+  absentPolicy: { ERROR: '缺失时报错', EMPTY: '按空列表处理', FALSE: '按不满足处理' },
+  'itemLayout.direction': { ROW: '横向', COLUMN: '纵向' },
+  contextAbsentPolicy: { ERROR: '缺失时报错', SKIP: '缺失时跳过' },
+  errorCorrectionLevel: { L: '低（7%）', M: '中（15%）', Q: '较高（25%）', H: '高（30%）' },
+};
+
+const colorPreviews: Record<string, string> = {
+  surface: 'var(--color-surface)',
+  'accent-wash': 'var(--color-accent-wash)',
+  ink: 'var(--color-ink)',
+  coral: 'var(--color-coral)',
+  hairline: 'var(--color-hairline)',
+};
+
+const colorNames: Record<string, string> = {
+  surface: '表面色',
+  'accent-wash': '强调浅色',
+  ink: '正文深色',
+  coral: '促销红',
+  hairline: '分隔线色',
+  '#FFFFFF': '白色',
+};
+
+function propertyPresentationFor(prop: InspectorProp): PropertyPresentation {
+  return propertyPresentations[prop.label] ?? {
+    name: '扩展属性',
+    group: 'advanced',
+    control: prop.options ? 'select' : 'text',
+  };
+}
+
+function humanReadonlyValue(prop: InspectorProp): string {
+  if (prop.label === 'items') return '调用数据 · /tags';
+  if (prop.label === 'itemLayout.kind') return '堆叠布局';
+  if (prop.label === 'instanceLayout.kind') return '网格布局';
+  if (prop.label === 'placement.type') return prop.value === 'PACK' ? '自动打包' : '堆叠定位';
+  if (prop.label === 'templateRef.templateId') {
+    return prop.value === childTemplateIds.tagPill ? '标签胶囊模板 · 当前版本' : '品牌角标模板 · 当前版本';
+  }
+  if (prop.label === 'contextSelector') return prop.value.includes('loop(') ? '当前循环项' : '调用数据 · /brand';
+  if (prop.label === 'fills') return '无自定义数据赋值';
+  if (prop.label === 'fill: brandName') return '来自 /brand.name';
+  if (prop.label === 'condition') return '固定为真';
+  return prop.value;
+}
+
+function referencedAsset(value: string): DesignerAsset | undefined {
+  const assetId = value.match(/assetId:([^}]+)/)?.[1];
+  return assets.find((asset) => asset.id === assetId);
+}
+
+function bindingSourceSummary(binding: NodeBinding): { source: string; note: string } {
+  const definitionId = binding.source.match(/^definition\(([^)]+)\)$/)?.[1];
+  if (definitionId) {
+    const definition = definitions.find((candidate) => candidate.id === definitionId);
+    return { source: `定义 · ${definition?.name ?? '表达式'}`, note: '公共定义输出' };
+  }
+  if (binding.source.startsWith('context(loop')) {
+    return { source: '循环项 · /value', note: '当前循环作用域' };
+  }
+  if (binding.note.includes('optional')) {
+    return { source: `数据字段 · ${binding.source}`, note: '可选字段；缺失时预览失败' };
+  }
+  return { source: `数据字段 · ${binding.source}`, note: '绑定值覆盖基础值' };
+}
+
+function PropControl({
+  node,
+  prop,
+  presentation,
+  controlId,
+  labelId,
+  dispatch,
+}: {
+  node: DesignerNode;
+  prop: InspectorProp;
+  presentation: PropertyPresentation;
+  controlId: string;
+  labelId: string;
+  dispatch: Dispatch<DesignerAction>;
+}) {
+  const updateValue = (value: string) => dispatch({ type: 'update-prop', nodeId: node.id, label: prop.label, value });
+
+  if (presentation.control === 'select' && prop.options) {
+    const labels = propertyOptionLabels[prop.label];
     return (
-      <select
-        className="td-prop-input"
+      <SelectField
+        id={controlId}
+        ariaLabel={`设置${presentation.name}`}
         value={prop.value}
-        aria-label={prop.label}
-        onChange={(event) => dispatch({ type: 'update-prop', nodeId: node.id, label: prop.label, value: event.target.value })}
-      >
-        {prop.options.map((option) => (
-          <option key={option} value={option}>{option}</option>
-        ))}
-      </select>
+        options={prop.options.map((option) => ({ value: option, label: labels?.[option] ?? option }))}
+        onChange={updateValue}
+      />
     );
   }
+
+  if (presentation.control === 'boolean') {
+    const checked = prop.value === 'true';
+    return (
+      <button
+        id={controlId}
+        type="button"
+        role="switch"
+        aria-labelledby={labelId}
+        aria-checked={checked}
+        className={`td-boolean-control${checked ? ' is-on' : ''}`}
+        onClick={() => updateValue(checked ? 'false' : 'true')}
+      >
+        <span className="td-toggle-track" aria-hidden="true"><span /></span>
+        <span>{checked ? '开启' : '关闭'}</span>
+      </button>
+    );
+  }
+
+  if (presentation.control === 'number') {
+    return (
+      <span className="td-number-control">
+        <input
+          id={controlId}
+          type="number"
+          inputMode="decimal"
+          value={prop.value}
+          min={presentation.min}
+          step={presentation.step}
+          aria-labelledby={labelId}
+          onChange={(event) => updateValue(event.target.value)}
+        />
+        {presentation.unit ? <span aria-hidden="true">{presentation.unit}</span> : null}
+      </span>
+    );
+  }
+
+  if (presentation.control === 'color') {
+    const preview = colorPreviews[prop.value] ?? (prop.value.startsWith('#') ? prop.value : 'var(--color-surface-strong)');
+    return (
+      <button
+        id={controlId}
+        type="button"
+        className="td-color-control"
+        aria-labelledby={labelId}
+        onClick={() => dispatch({ type: 'set-notice', notice: `已打开${presentation.name}选择器（原型）：当前 ${colorNames[prop.value] ?? prop.value}` })}
+      >
+        <span className="td-color-swatch" style={{ backgroundColor: preview }} aria-hidden="true" />
+        <span>{colorNames[prop.value] ?? prop.value}</span>
+        <ChevronRight aria-hidden="true" size={12} />
+      </button>
+    );
+  }
+
+  if (presentation.control === 'asset' || presentation.control === 'font') {
+    const asset = referencedAsset(prop.value);
+    const ResourceIcon = presentation.control === 'font' ? Type : Image;
+    return (
+      <button
+        id={controlId}
+        type="button"
+        className="td-reference-control"
+        aria-labelledby={labelId}
+        onClick={() => dispatch({ type: 'set-notice', notice: `已打开${presentation.name}选择器（原型）：当前 ${asset?.name ?? '未选择'}` })}
+      >
+        <ResourceIcon aria-hidden="true" size={13} />
+        <span>{asset?.name ?? '选择资源'}</span>
+        <ChevronRight aria-hidden="true" size={12} />
+      </button>
+    );
+  }
+
+  if (presentation.control === 'source' || presentation.control === 'template') {
+    const SourceIcon = presentation.control === 'template' ? Layers : Braces;
+    return (
+      <button
+        id={controlId}
+        type="button"
+        className="td-reference-control"
+        aria-labelledby={labelId}
+        onClick={() => dispatch({ type: 'set-notice', notice: `已打开${presentation.name}配置（原型）` })}
+      >
+        <SourceIcon aria-hidden="true" size={13} />
+        <span>{humanReadonlyValue(prop)}</span>
+        <ChevronRight aria-hidden="true" size={12} />
+      </button>
+    );
+  }
+
+  if (presentation.control === 'readonly') {
+    return (
+      <output id={controlId} className="td-readonly-control" aria-labelledby={labelId}>
+        <Lock aria-hidden="true" size={11} />
+        <span>{humanReadonlyValue(prop)}</span>
+      </output>
+    );
+  }
+
+  if (presentation.control === 'multiline') {
+    return (
+      <textarea
+        id={controlId}
+        className="td-prop-input td-prop-textarea"
+        value={prop.value}
+        rows={2}
+        aria-labelledby={labelId}
+        onChange={(event) => updateValue(event.target.value)}
+      />
+    );
+  }
+
   return (
     <input
+      id={controlId}
       className="td-prop-input"
       value={prop.value}
-      aria-label={prop.label}
-      onChange={(event) => dispatch({ type: 'update-prop', nodeId: node.id, label: prop.label, value: event.target.value })}
+      aria-labelledby={labelId}
+      onChange={(event) => updateValue(event.target.value)}
     />
   );
 }
 
 function InspectorPropRow({ node, prop, state, dispatch }: { node: DesignerNode; prop: InspectorProp; state: DesignerState; dispatch: Dispatch<DesignerAction> }) {
+  const generatedId = useId();
+  const controlId = `${generatedId}-control`;
+  const labelId = `${generatedId}-label`;
+  const presentation = propertyPresentationFor(prop);
   const bindState = prop.binding ? bindingStateFor(node.id, state) : null;
+  const sourceSummary = prop.binding ? bindingSourceSummary(prop.binding) : null;
   const openEditor = () => dispatch({ type: 'open-binding', nodeId: node.id, label: prop.label });
   return (
     <li className={`td-prop-row${prop.binding ? ' is-bound' : ''}`}>
-      <div className="td-prop-line">
-        <code>{prop.label}</code>
-        {prop.bindable && !prop.binding ? (
-          <button type="button" className="td-bind-cta" onClick={openEditor} aria-label={`为 ${prop.label} 添加绑定`}>
-            <Link2 aria-hidden="true" size={11} />
-            绑定
-          </button>
+      <label id={labelId} className="td-prop-label" htmlFor={controlId}>{presentation.name}</label>
+      <div className="td-prop-stack">
+        <div className="td-prop-editor">
+          <div className="td-prop-control">
+            <PropControl
+              node={node}
+              prop={prop}
+              presentation={presentation}
+              controlId={controlId}
+              labelId={labelId}
+              dispatch={dispatch}
+            />
+          </div>
+          {prop.bindable ? (
+            <button
+              type="button"
+              className={`td-bind-action${prop.binding ? ` is-bound bind-${bindState}` : ''}`}
+              onClick={openEditor}
+              aria-label={`${prop.binding ? '编辑' : '为'}${presentation.name}${prop.binding ? '绑定' : '添加绑定'}`}
+              title={prop.binding ? '编辑或取消绑定' : '添加绑定'}
+            >
+              {bindState && bindState !== 'ok' ? <AlertTriangle aria-hidden="true" size={12} /> : <Link2 aria-hidden="true" size={12} />}
+              <span>{prop.binding ? (bindState === 'ok' ? '已绑定' : '异常') : '绑定'}</span>
+            </button>
+          ) : null}
+        </div>
+        {prop.binding && bindState && sourceSummary ? (
+          <div className={`td-binding-summary bind-${bindState}`}>
+            {bindState === 'ok' ? <Link2 aria-hidden="true" size={11} /> : <AlertTriangle aria-hidden="true" size={11} />}
+            <span>{sourceSummary.source}</span>
+            <small>
+              {bindState === 'absent' ? '当前数据缺失；权威预览失败' : bindState === 'error' ? '绑定资源解析失败' : sourceSummary.note}
+            </small>
+          </div>
         ) : null}
       </div>
-      <div className="td-prop-control">
-        <PropControl node={node} prop={prop} dispatch={dispatch} />
-      </div>
-      {prop.bindable ? (
-        prop.binding && bindState ? (
-          <button
-            type="button"
-            className={`td-binding bind-${bindState} is-interactive`}
-            onClick={openEditor}
-            aria-label={`编辑 ${prop.label} 的绑定`}
-            title="点击编辑 / 取消绑定"
-          >
-            {bindState === 'ok' ? <Link2 aria-hidden="true" size={12} /> : <AlertTriangle aria-hidden="true" size={12} />}
-            <span className="td-binding-text">
-              <span className="td-binding-line">
-                <code>{prop.binding.ref}</code>
-                <span>← {prop.binding.source}</span>
-                <span className="td-binding-edit">编辑</span>
-              </span>
-              <small>
-                {bindState === 'ok' && 'Binding 覆盖 baseline · 无 runtime fallback'}
-                {bindState === 'absent' && 'Binding 求值 ABSENT · 权威预览失败,baseline 不回退'}
-                {bindState === 'error' && 'Binding 资源解析失败 · 依赖 ERROR'}
-                {' · '}{prop.binding.note}
-              </small>
-            </span>
-          </button>
-        ) : (
-          <div className="td-binding bind-none">
-            <Link2 aria-hidden="true" size={12} />
-            <small>BindingPolicyCatalog 已授权 · 当前无 Binding,使用 baseline</small>
-          </div>
-        )
-      ) : (
-        <div className="td-binding bind-off">
-          <small>不在 BindingPolicyCatalog · 无 Binding 操作</small>
-        </div>
-      )}
     </li>
   );
 }
@@ -875,19 +1218,19 @@ function InspectorPropRow({ node, prop, state, dispatch }: { node: DesignerNode;
 function StructuralFacts({ node, state, dispatch }: { node: DesignerNode; state: DesignerState; dispatch: Dispatch<DesignerAction> }) {
   if (node.kind === 'repeat') {
     return (
-      <section className="td-structural-facts" aria-label="Repeat 结构合同">
+      <section className="td-structural-facts" aria-label="循环容器结构说明">
         <div className="td-fact-block">
-          <span>items · 类型证明</span>
-          <code>context(invocation, /tags) → list&lt;text&gt;</code>
-          <small>exact scalar context <strong>system-basic-text@v1</strong> · 原输入 index 0 对应 /index=0</small>
+          <span>循环数据 · 类型校验</span>
+          <strong>调用数据中的标签列表</strong>
+          <small>每个循环项都是文本；原始循环序号会在过滤后保留</small>
         </div>
         <div className="td-fact-grid">
-          <div><span>item subtree</span><strong>2 direct children</strong><small>Text + 显式 TemplateUse；均为 PACK placement</small></div>
-          <div><span>itemLayout</span><strong>STACK · ROW</strong><small>gap 1.5mm · 先布局 item 内部</small></div>
-          <div><span>instanceLayout</span><strong>GRID · 3 columns</strong><small>gap 1.5mm · 再排布 surviving instances</small></div>
+          <div><span>单项内容</span><strong>2 个直接子节点</strong><small>文本 + 子模板；均使用自动打包布局</small></div>
+          <div><span>单项布局</span><strong>横向堆叠</strong><small>间距 1.5mm；先完成每个循环项内部布局</small></div>
+          <div><span>实例排列</span><strong>3 列网格</strong><small>间距 1.5mm；再排列所有保留的实例</small></div>
         </div>
-        <p>输入 index [0,1,2] 中 index 1 被结构剪枝时,packing 位置变为 [0,1],但 surviving loopIndex 保持 [0,2]；零 surviving item 时整个 Repeat 移除。</p>
-        <p className="td-inline-note"><Info size={12} />无 filter/sort/key/pagination/masonry/per-item packing；不存在 Repeat-level templateId 或 <code>templateLayout</code>。</p>
+        <p>中间项目被条件移除后，视觉位置会重新连续排列，但每项仍保留原始循环序号；没有可见项目时，整个循环容器不参与布局。</p>
+        <p className="td-inline-note"><Info size={12} />当前版本不提供筛选、排序、分页、瀑布流或逐项布局覆盖；循环内容直接使用该容器的子节点。</p>
         <div className="td-workflow-actions">
           <button
             type="button"
@@ -897,9 +1240,9 @@ function StructuralFacts({ node, state, dispatch }: { node: DesignerNode; state:
               notice: `Repeat subtree 原子复制:nodeId ${newCanonicalUuid()} · loopId ${newCanonicalUuid()} · bindingId ${newCanonicalUuid()} · 内部 domain refs 同步重写`,
             })}
           >
-            <Copy size={12} />成组复制并 remap
+            <Copy size={12} />成组复制
           </button>
-          <button type="button" className="button ghost-button" onClick={() => dispatch({ type: 'set-notice', notice: 'move/reparent 被暂停:必须显式修复 loop lexical reachability、PACK 与父 ContentModel placement' })}>模拟重挂载检查</button>
+          <button type="button" className="button ghost-button" onClick={() => dispatch({ type: 'set-notice', notice: '重新挂载已暂停：需要先修复循环作用域、自动打包方式与父容器布局关系' })}>重新挂载检查</button>
         </div>
       </section>
     );
@@ -909,21 +1252,21 @@ function StructuralFacts({ node, state, dispatch }: { node: DesignerNode; state:
     const isTagUse = node.useId === useIds.tagPill;
     const targetTemplate = isTagUse ? childTemplateIds.tagPill : childTemplateIds.brandBadge;
     return (
-      <section className="td-structural-facts" aria-label="TemplateUse 调用合同">
+      <section className="td-structural-facts" aria-label="子模板调用说明">
         <div className="td-fact-grid td-template-use-steps">
-          <button type="button" onClick={() => dispatch({ type: 'set-notice', notice: '目录只允许 same-ownerScope logical child Template current；无 exact revision/latest 切换或动态 templateId' })}>
-            <span>1 · 子模板</span><strong>{targetTemplate}</strong><small>logical current · same ownerScope</small>
+          <button type="button" onClick={() => dispatch({ type: 'set-notice', notice: '只能调用同一工作区中的逻辑子模板当前版本；不支持指定历史版本或动态选择模板' })}>
+            <span>1 · 子模板</span><strong>{isTagUse ? '标签胶囊模板' : '品牌角标模板'}</strong><small>同一工作区 · 始终使用当前版本</small>
           </button>
-          <button type="button" onClick={() => dispatch({ type: 'set-notice', notice: isTagUse ? 'ContextSelector 选择 whole scalar loop item · exact system-basic-text@v1' : 'ContextSelector 选择 invocation /brand · exact 业务 StaticSchema' })}>
-            <span>2 · ContextSelector</span><strong>{isTagUse ? 'loop item · pointer ""' : 'invocation · /brand'}</strong><small>ERROR / SKIP 明确选择 · 无父数据自动继承</small>
+          <button type="button" onClick={() => dispatch({ type: 'set-notice', notice: isTagUse ? '数据上下文使用完整的当前循环项' : '数据上下文使用调用数据中的品牌对象' })}>
+            <span>2 · 数据上下文</span><strong>{isTagUse ? '当前循环项' : '调用数据中的品牌对象'}</strong><small>必须明确选择缺失时报错或跳过；不会自动继承父级数据</small>
           </button>
-          <button type="button" onClick={() => dispatch({ type: 'set-notice', notice: 'fills 只按 child PUBLIC targetDefinitionId 编辑 typed ValueSource；同名参数不会自动传递' })}>
-            <span>3 · typed fills</span><strong>{isTagUse ? '无 fill' : 'brandName ← /brand.name'}</strong><small>child PUBLIC definitionId · authored dependency</small>
+          <button type="button" onClick={() => dispatch({ type: 'set-notice', notice: '自定义数据只按子模板公开参数赋值；名称相同也不会自动传递' })}>
+            <span>3 · 自定义数据赋值</span><strong>{isTagUse ? '无额外赋值' : '品牌名称来自调用数据'}</strong><small>只显示子模板公开的参数</small>
           </button>
         </div>
-        <p>TemplateUse 没有 children / appearance / fit 面板。HUG 使用 child trim；FIXED/FILL 使用 CONTAIN + CENTER 和透明 letterbox；source/host clip 生效,child bleed 忽略,host 尺寸不触发 child reflow。</p>
+        <p>子模板调用没有自己的子节点、外观或适配面板。自适应尺寸使用子模板裁切区；固定和填充尺寸会完整居中显示，超出宿主区域的内容按裁剪设置处理。</p>
         {state.scenario === 'child-fill-invalid' && !isTagUse ? (
-          <p className="td-inline-note chip-error-block"><AlertTriangle size={12} />child current 已移除目标 PUBLIC definitionId；authored fill 令父 Template INVALID,不能按 unknown override 静默忽略。</p>
+          <p className="td-inline-note chip-error-block"><AlertTriangle size={12} />子模板当前版本已移除目标公开参数；该赋值会使父模板失效，不能静默忽略。</p>
         ) : null}
         <button
           type="button"
@@ -942,8 +1285,8 @@ function StructuralFacts({ node, state, dispatch }: { node: DesignerNode; state:
   if (node.kind === 'conditional') {
     return (
       <section className="td-structural-facts">
-        <p><strong>render:false</strong> 不产生 occurrence、不占布局、不解析运行时资源；但完整 authored closure 的 missing/INVALID/cycle/Profile 问题仍会阻止权威预览。</p>
-        <p><strong>visible:false / opacity:0</strong> 仍产生 occurrence、占布局,且 child fill / Asset / capability 错误仍失败；“未调用”不等于“未依赖”。</p>
+        <p><strong>不参与渲染</strong>时不会生成绘制实例、占用布局或解析运行时资源；但模板自身的缺失引用、失效状态与循环依赖仍会阻止权威预览。</p>
+        <p><strong>不可见或完全透明</strong>时仍会生成绘制实例并占用布局，子模板赋值、资源和能力错误仍需处理；“看不见”不等于“没有依赖”。</p>
       </section>
     );
   }
@@ -951,13 +1294,13 @@ function StructuralFacts({ node, state, dispatch }: { node: DesignerNode; state:
   if (node.kind === 'stack' || node.kind === 'grid' || node.kind === 'frame') {
     return (
       <section className="td-structural-facts" aria-label="约束布局说明">
-        <p><strong>固定物理 Canvas 内的约束自适应</strong> — 不是网页 responsive；无 breakpoint、viewport、percent、CSS flex/grid alias 或 zIndex。</p>
+        <p><strong>固定物理画布内的约束自适应</strong>——不是网页响应式布局，不使用断点、视口百分比或层叠顺序。</p>
         <div className="td-fact-grid">
-          <div><span>Stack water filling</span><strong>FILL w2 · min10/max40</strong><small>与 FILL w1 按剩余 mm 比例迭代分配</small></div>
-          <div><span>Grid tracks</span><strong>2fr · AUTO · 1fr</strong><small>FRACTION/AUTO 是 authored layout contract</small></div>
-          <div><span>signed margin</span><strong>-1mm allowed</strong><small>HUG↔FILL cycle 则 hard error</small></div>
+          <div><span>堆叠填充</span><strong>权重 2 · 最小 10 / 最大 40</strong><small>与其他填充项按剩余毫米空间迭代分配</small></div>
+          <div><span>网格轨道</span><strong>2 份 · 自动 · 1 份</strong><small>比例轨道与自动轨道属于模板布局定义</small></div>
+          <div><span>带符号外边距</span><strong>允许 -1mm</strong><small>自适应与填充形成循环时会直接报错</small></div>
         </div>
-        <button type="button" className="button ghost-button" onClick={() => dispatch({ type: 'set-notice', notice: 'reparent 不会沿用旧 placement:客户端要求确认 ABSOLUTE ↔ STACK/GRID/PACK 显式转换' })}>演示 reparent 转换</button>
+        <button type="button" className="button ghost-button" onClick={() => dispatch({ type: 'set-notice', notice: '重新挂载不会沿用旧布局方式：客户端必须让用户确认绝对定位与容器布局之间的显式转换' })}>演示重新挂载转换</button>
       </section>
     );
   }
@@ -965,8 +1308,8 @@ function StructuralFacts({ node, state, dispatch }: { node: DesignerNode; state:
   if (node.kind === 'text') {
     return (
       <section className="td-structural-facts">
-        <p>纯文本是一个完整 <code>runs[0]</code>；字体 preset 在创建时写入 explicit <code>fontRef</code>。geometry 用 mm,字号用 pt,DPI 只属于输出 request。</p>
-        <p>支持 horizontal / vertical、双轴 JUSTIFY / SPACE_EVENLY、padding、stroke 与 shrink-to-fit。<code>VISIBLE + maxLines</code> 及无有效 FONT 都是 hard/INVALID 状态,浏览器不会自动修复。</p>
+        <p>纯文本会作为一个完整文本片段保存；创建时必须明确选择字体资源。尺寸和间距使用毫米，字号使用点，DPI 只在输出时设置。</p>
+        <p>支持横排、竖排、双轴对齐、内边距、描边与自动缩小。显示溢出与最大行数不能同时启用；字体资源失效时模板也会失效。</p>
       </section>
     );
   }
@@ -974,35 +1317,109 @@ function StructuralFacts({ node, state, dispatch }: { node: DesignerNode; state:
   return null;
 }
 
-export function Inspector({ state, dispatch }: Pick<PartProps, 'state' | 'dispatch'>) {
+export function Inspector({
+  state,
+  dispatch,
+  initialMode = 'design',
+}: Pick<PartProps, 'state' | 'dispatch'> & { initialMode?: 'design' | 'binding' }) {
+  const [mode, setMode] = useState<'design' | 'binding'>(initialMode);
   const node = findNode(state.tree, state.selectedNodeId) ?? state.tree;
+  const visibleProps = mode === 'binding' ? node.props.filter((prop) => prop.bindable) : node.props;
+  const groupedProps = propertyGroups
+    .map((group) => ({ ...group, props: visibleProps.filter((prop) => propertyPresentationFor(prop).group === group.key) }))
+    .filter((group) => group.props.length > 0);
+  const localizedName = node.name.split(/\s+/).filter((part) => /[\u3400-\u9fff]/.test(part)).join(' ') || '当前节点';
+  const kindLabel: Record<DesignerNode['kind'], string> = {
+    canvas: '画布',
+    group: '分组容器',
+    frame: '框架容器',
+    stack: '堆叠容器',
+    grid: '网格容器',
+    text: '文本',
+    image: '图片',
+    rect: '矩形',
+    ellipse: '椭圆',
+    line: '直线',
+    polygon: '多边形',
+    polyline: '折线',
+    path: '路径',
+    qrCode: '二维码',
+    barcode: '条码',
+    repeat: '循环容器',
+    conditional: '条件容器',
+    templateUse: '子模板调用',
+  };
+  const bindingCount = node.props.filter((prop) => prop.binding).length;
   return (
     <div className="td-inspector" aria-label="属性栏">
       <div className="td-inspector-head">
         <span className={`td-tree-kind kind-${node.kind}`} aria-hidden="true">{kindIcons[node.kind]}</span>
         <div>
-          <strong>{node.name}</strong>
-          <small>{node.detail}</small>
+          <strong>{localizedName}</strong>
+          <small>{kindLabel[node.kind]}{node.children.length > 0 ? ` · ${node.children.length} 个直接子节点` : ''}</small>
         </div>
-        <code className="td-node-id">{node.id}</code>
+        {bindingCount > 0 ? (
+          <span className="td-inspector-binding-count" title={`${bindingCount} 个属性已绑定`}>
+            <Link2 aria-hidden="true" size={11} />
+            {bindingCount}
+          </span>
+        ) : null}
+      </div>
+      <div className="rwtd-inspector-tabs" role="tablist" aria-label="检查器模式">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={mode === 'design'}
+          className={mode === 'design' ? 'active' : ''}
+          onClick={() => setMode('design')}
+        >
+          设计
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={mode === 'binding'}
+          className={mode === 'binding' ? 'active' : ''}
+          onClick={() => setMode('binding')}
+        >
+          绑定
+        </button>
       </div>
       <div className="td-inspector-section">
-        <span className="td-panel-subhead">属性 · static baseline 可直接编辑</span>
-        <ul className="td-prop-list">
-          {node.props.map((prop) => (
-            <InspectorPropRow key={prop.label} node={node} prop={prop} state={state} dispatch={dispatch} />
+        <div className="td-inspector-intro">
+          <strong>{mode === 'design' ? '属性' : '可绑定属性'}</strong>
+          <span>{mode === 'design' ? '按用途分组' : '由全局绑定策略授权'}</span>
+        </div>
+        <div className="td-prop-groups">
+          {groupedProps.map((group) => (
+            <section key={group.key} className="td-prop-group" aria-labelledby={`property-group-${group.key}`}>
+              <div className="td-prop-group-head">
+                <h3 id={`property-group-${group.key}`}>{group.label}</h3>
+                <span>{group.props.length} 项</span>
+              </div>
+              <ul className="td-prop-list">
+                {group.props.map((prop) => (
+                  <InspectorPropRow key={prop.label} node={node} prop={prop} state={state} dispatch={dispatch} />
+                ))}
+              </ul>
+            </section>
           ))}
-        </ul>
+        </div>
       </div>
-      <StructuralFacts node={node} state={state} dispatch={dispatch} />
-      {node.kind !== 'canvas' ? (
+      {mode === 'design' ? <StructuralFacts node={node} state={state} dispatch={dispatch} /> : null}
+      {mode === 'binding' && node.kind !== 'canvas' ? (
         <div className="td-inspector-section">
-          <span className="td-panel-subhead">通用目标(每个 non-Canvas kind 已授权)</span>
+          <span className="td-panel-subhead">通用目标 · non-Canvas</span>
           <div className="td-generic-targets">
-            {['render', 'visible', 'opacity', 'transform.rotationDeg'].map((target) => (
+            {[
+              { target: 'render', label: '参与渲染' },
+              { target: 'visible', label: '可见性' },
+              { target: 'opacity', label: '不透明度' },
+              { target: 'transform.rotationDeg', label: '旋转角度' },
+            ].map(({ target, label }) => (
               <button key={target} type="button" className="td-mini-chip" onClick={() => dispatch({ type: 'mark-dirty' })}>
                 <Link2 aria-hidden="true" size={10} />
-                {target}
+                {label}
               </button>
             ))}
           </div>
@@ -1451,14 +1868,24 @@ export function InvalidSaveDialog({ state, dispatch }: Pick<PartProps, 'state' |
 }
 
 export function LeftPanel({ state, dispatch }: Pick<PartProps, 'state' | 'dispatch'>) {
+  const currentTab = leftTabs.find((tab) => tab.key === state.leftTab) ?? leftTabs[0];
   return (
     <div className="td-left-panel">
-      {state.leftTab === 'library' && <LibraryPanel dispatch={dispatch} />}
-      {state.leftTab === 'tree' && <NodeTree state={state} dispatch={dispatch} />}
-      {state.leftTab === 'assets' && <AssetsPanel state={state} dispatch={dispatch} />}
-      {state.leftTab === 'definitions' && <DefinitionsPanel dispatch={dispatch} />}
-      {state.leftTab === 'data' && <DataPanel state={state} />}
-      {state.leftTab === 'exchange' && <ExchangePanel state={state} dispatch={dispatch} />}
+      <header className="rwtd-panel-header">
+        <span className="rwtd-panel-title">
+          {currentTab?.icon}
+          <strong>{currentTab?.label}</strong>
+        </span>
+        <span className="rwtd-panel-context">Template</span>
+      </header>
+      <div className="rwtd-panel-scroll" tabIndex={0} aria-label={`${currentTab?.label}内容`}>
+        {state.leftTab === 'library' && <LibraryPanel dispatch={dispatch} />}
+        {state.leftTab === 'tree' && <NodeTree state={state} dispatch={dispatch} />}
+        {state.leftTab === 'assets' && <AssetsPanel state={state} dispatch={dispatch} />}
+        {state.leftTab === 'definitions' && <DefinitionsPanel dispatch={dispatch} />}
+        {state.leftTab === 'data' && <DataPanel state={state} />}
+        {state.leftTab === 'exchange' && <ExchangePanel state={state} dispatch={dispatch} />}
+      </div>
     </div>
   );
 }
@@ -1472,6 +1899,8 @@ export function RailButtons({ state, dispatch }: Pick<PartProps, 'state' | 'disp
           type="button"
           className={`td-rail-button${state.leftTab === tab.key ? ' active' : ''}`}
           aria-pressed={state.leftTab === tab.key}
+          aria-label={tab.label}
+          title={tab.label}
           onClick={() => dispatch({ type: 'set-tab', tab: tab.key })}
         >
           {tab.icon}
