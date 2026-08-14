@@ -7,9 +7,9 @@ param(
 )
 
 & (Join-Path $PSScriptRoot 'run-offline-repair-r2-terminal.ps1') `
-    -Ticket VRQ_08_PP_STRUCTUREV3_DEV_SHADOW `
+    -Ticket VRQ_09_TESSERACT_DEV_BASELINE `
     -EvidenceDir $EvidenceDir `
     -DecisionPath $DecisionPath
 if (-not $? -or $LASTEXITCODE -ne 0) {
-    throw 'VRQ-08 terminal runner failed.'
+    throw 'VRQ-09 terminal runner failed.'
 }

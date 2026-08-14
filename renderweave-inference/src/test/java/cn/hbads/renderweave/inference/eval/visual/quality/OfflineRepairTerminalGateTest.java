@@ -41,6 +41,28 @@ class OfflineRepairTerminalGateTest {
     }
 
     @Test
+    void stopsTheIndependentTesseractBaselineWithoutInstallingOrExecutingIt() {
+        var decision = stopToSpecR5();
+        var decisionIdentity = new R2R5TriggerDecisionJsonCodec().decisionIdentity(decision);
+        var capabilities = ChallengerCapabilityAdmission.load();
+
+        var outcome = gate.closeR2Challenger(
+                OfflineRepairTerminalOutcome.Ticket.VRQ_09_TESSERACT_DEV_BASELINE,
+                decision,
+                decisionIdentity,
+                capabilities);
+
+        assertEquals(OfflineRepairTerminalOutcome.Disposition.STOPPED_FOR_R5_SUCCESSOR_SPEC,
+                outcome.disposition());
+        assertEquals(List.of(
+                capabilities.identity(),
+                capabilities.require("tesseract-tsv-hocr").identity()),
+                outcome.supportingIdentities());
+        assertTrue(outcome.offlineWorkUsage().zeroWork());
+        assertTrue(outcome.externalProviderUsage().zeroUsage());
+    }
+
+    @Test
     void refusesToCloseAChallengerAgainstAnythingExceptTheExactStopToSpecR5Decision() {
         var decision = stopToSpecR5();
         var identity = new R2R5TriggerDecisionJsonCodec().decisionIdentity(decision);
