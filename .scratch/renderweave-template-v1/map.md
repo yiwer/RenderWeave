@@ -43,10 +43,11 @@ Label: wayfinder:map
 - [定义 Evaluation Capabilities 与请求内一致性](issues/14-evaluation-capabilities.md) — exact Expression Profile只开放显式input中的UTC_DATE/UTC_TIME与位置派生`[0,1)`Random；完整准入后建立短期幂等CapabilityState，同请求恢复重放而新请求换state，逻辑demand预算、HMAC向量、result digest、脱敏与Engine零残留均失败封闭。
 - [定义 Evaluation 编译流水线与 RenderDocument 合同](issues/15-evaluator-and-render-document.md) — 权威Evaluator按固定阶段与consumer order把closure/input/capability/Asset物化并原子seal为`renderweave-render/1.0` strict静态文档；opaque occurrenceId、请求sidecar、一对一manifest、跨语言canonical/digest、四类运行身份及Engine final-geometry边界均失败封闭，文档不可公开、持久化或跨请求复用。
 - [定义 RenderEngine 与图片输出合同](issues/16-renderer-and-image-output.md) — 每条closed Command为根Canvas原子生成一张PNG/JPEG；独立Layout/Renderer/Output Profile冻结deadline/cancel/registry、surface像素、资源与字体、sRGB raster、QR/Barcode、byte-exact编码、trace/transport/error及READY证据，旧busbox只能作为重建基线而不兼容。
+- [原型验证在线 Template 与 Asset 创作工作流](issues/17-authoring-workflow-prototype.md) — 选择 `B · Canvas Focus` 作为桌面作者工作台基线：固定物理画布居中、左右按需面板与紧凑dock；属性以exact Property Identity投影为分组中文名称和类型化控件，BindingPolicy唯一授予bindability，同行Binding按钮明确区分未绑定、已绑定与ABSENT/ERROR，草稿画布始终不冒充权威预览。
 
 ## Not yet specified
 
-- Tickets17/18仍须以已冻结的单图片、权威preview、cancel与trace合同收口原型和编辑体验。
+- Ticket18仍须在方案B的信息架构内，以已冻结的单图片、权威preview、cancel与trace合同收口保存冲突、预览失败与恢复体验。
 - Ticket19须填写全部已命名容量数值，并冻结跨语言、跨平台conformance规模与最终证据等级；未来若引入batch/variant，应作为Engine外独立编排领域另行设计。
 
 ## Out of scope
