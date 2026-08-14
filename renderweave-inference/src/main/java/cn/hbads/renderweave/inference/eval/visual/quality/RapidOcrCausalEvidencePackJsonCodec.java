@@ -1,4 +1,4 @@
-package cn.hbads.renderweave.inference.eval.visual;
+package cn.hbads.renderweave.inference.eval.visual.quality;
 
 import tools.jackson.core.StreamReadFeature;
 import tools.jackson.core.json.JsonFactory;
@@ -15,10 +15,11 @@ import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
 import java.util.Objects;
 
-/** Strict, canonical and tamper-evident codec for the payload-safe shadow report. */
-public final class RapidOcrShadowReportJsonCodec {
-    private static final String ENVELOPE_VERSION = "renderweave-rapidocr-shadow-envelope/1.0";
-    private static final int MAXIMUM_BYTES = 16 * 1024 * 1024;
+/** Strict canonical codec for the payload-safe RapidOCR causal evidence pack. */
+public final class RapidOcrCausalEvidencePackJsonCodec {
+    private static final String ENVELOPE_VERSION =
+            "renderweave-rapidocr-causal-evidence-envelope/1.0";
+    private static final int MAXIMUM_BYTES = 4 * 1024 * 1024;
     private static final ObjectMapper JSON = JsonMapper.builder(
                     JsonFactory.builder().enable(StreamReadFeature.STRICT_DUPLICATE_DETECTION).build())
             .enable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS)
@@ -31,50 +32,40 @@ public final class RapidOcrShadowReportJsonCodec {
             .enable(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS)
             .build();
 
-    public byte[] write(RapidOcrShadowReport report) {
-        Objects.requireNonNull(report, "report");
-        return encode(new Envelope(ENVELOPE_VERSION, reportIdentity(report), report));
+    public byte[] write(RapidOcrCausalEvidencePack evidence) {
+        Objects.requireNonNull(evidence, "evidence");
+        return encode(new Envelope(ENVELOPE_VERSION, evidenceIdentity(evidence), evidence));
     }
 
-    public RapidOcrShadowReport read(byte[] bytes, String expectedIdentity) {
-        var envelope = verifiedEnvelope(bytes);
-        if (!Objects.equals(expectedIdentity, envelope.reportIdentity())) {
-            throw new IllegalArgumentException("RAPIDOCR_SHADOW_REPORT_IDENTITY_DRIFT");
-        }
-        return envelope.report();
-    }
-
-    public RapidOcrShadowReport read(byte[] bytes) {
-        return verifiedEnvelope(bytes).report();
-    }
-
-    private Envelope verifiedEnvelope(byte[] bytes) {
+    public RapidOcrCausalEvidencePack read(byte[] bytes, String expectedIdentity) {
         if (bytes == null || bytes.length == 0 || bytes.length > MAXIMUM_BYTES) {
-            throw new IllegalArgumentException("RAPIDOCR_SHADOW_REPORT_BYTES_INVALID");
+            throw new IllegalArgumentException("RAPIDOCR_CAUSAL_BYTES_INVALID");
         }
         try {
             var envelope = JSON.readValue(bytes, Envelope.class);
-            if (!ENVELOPE_VERSION.equals(envelope.envelopeVersion()) || envelope.report() == null
-                    || !reportIdentity(envelope.report()).equals(envelope.reportIdentity())) {
-                throw new IllegalArgumentException("RAPIDOCR_SHADOW_REPORT_IDENTITY_DRIFT");
+            if (!ENVELOPE_VERSION.equals(envelope.envelopeVersion()) || envelope.evidence() == null
+                    || !Objects.equals(expectedIdentity, envelope.evidenceIdentity())
+                    || !evidenceIdentity(envelope.evidence()).equals(envelope.evidenceIdentity())) {
+                throw new IllegalArgumentException("RAPIDOCR_CAUSAL_IDENTITY_DRIFT");
             }
-            return envelope;
+            return envelope.evidence();
         } catch (IllegalArgumentException failure) {
             throw failure;
         } catch (RuntimeException failure) {
-            throw new IllegalArgumentException("RAPIDOCR_SHADOW_REPORT_CONTRACT_INVALID", failure);
+            throw new IllegalArgumentException("RAPIDOCR_CAUSAL_CONTRACT_INVALID", failure);
         }
     }
 
-    public String reportIdentity(RapidOcrShadowReport report) {
-        return RapidOcrShadowReport.VERSION + ":" + sha256(encode(Objects.requireNonNull(report, "report")));
+    public String evidenceIdentity(RapidOcrCausalEvidencePack evidence) {
+        return "renderweave-rapidocr-causal-evidence/1.0:"
+                + sha256(encode(Objects.requireNonNull(evidence, "evidence")));
     }
 
     private static byte[] encode(Object value) {
         try {
             return JSON.writeValueAsBytes(canonicalNode(JSON.valueToTree(value)));
         } catch (RuntimeException failure) {
-            throw new IllegalArgumentException("RAPIDOCR_SHADOW_REPORT_ENCODING_FAILED", failure);
+            throw new IllegalArgumentException("RAPIDOCR_CAUSAL_ENCODING_FAILED", failure);
         }
     }
 
@@ -104,7 +95,7 @@ public final class RapidOcrShadowReportJsonCodec {
 
     private record Envelope(
             String envelopeVersion,
-            String reportIdentity,
-            RapidOcrShadowReport report
+            String evidenceIdentity,
+            RapidOcrCausalEvidencePack evidence
     ) { }
 }

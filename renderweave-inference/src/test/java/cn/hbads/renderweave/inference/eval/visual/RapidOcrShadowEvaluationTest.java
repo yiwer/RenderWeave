@@ -60,6 +60,7 @@ class RapidOcrShadowEvaluationTest {
         var codec = new RapidOcrShadowReportJsonCodec();
         assertArrayEquals(result.encodedReport(), codec.write(result.report()));
         assertEquals(result.report(), codec.read(result.encodedReport(), result.reportIdentity()));
+        assertEquals(result.report(), codec.read(result.encodedReport()));
         var payload = new String(result.encodedReport(), StandardCharsets.UTF_8).toLowerCase();
         for (var forbidden : new String[]{
                 "base64", "data:image", "ocrtext", "ocr_text", "promptpayload", "providerresponse",
