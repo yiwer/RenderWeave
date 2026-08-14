@@ -11,12 +11,15 @@ import re
 import subprocess
 from typing import Any
 
+import offline_quality_resources as quality_resources
 from offline_json_contract import (
+    JAVA_INT_MAX,
     exact_object,
     payload_safe,
     raw_payload_safe,
     same_json_value,
     strict_nonnegative_int,
+    strict_positive_int,
 )
 
 
@@ -110,37 +113,64 @@ def validate_evidence_shape(evidence: Any) -> None:
     if not exact_object(evidence, EVIDENCE_FIELDS) \
             or evidence["contractVersion"] != EVIDENCE_VERSION:
         fail("R5_A2_EVIDENCE_CONTRACT_INVALID")
-    if any(type(evidence[field]) is not str for field in (
-        "acquisitionPolicyIdentity", "annotationSetIdentity", "assignmentIdentity",
-        "capabilityIdentity", "corpusIdentity", "disposition", "evaluationIdentity",
-        "protocolIdentity", "reasonCode", "transformIdentity",
-    )) or type(evidence["triggered"]) is not bool:
+    identity_pattern = r"[A-Za-z][A-Za-z0-9._+/-]{0,127}:[0-9a-f]{64}"
+    if any(type(evidence[field]) is not str
+           or re.fullmatch(identity_pattern, evidence[field]) is None
+           for field in (
+               "acquisitionPolicyIdentity", "annotationSetIdentity", "assignmentIdentity",
+               "corpusIdentity", "evaluationIdentity", "protocolIdentity", "transformIdentity",
+            )) \
+            or type(evidence["capabilityIdentity"]) is not str \
+            or not evidence["capabilityIdentity"].strip() \
+            or type(evidence["disposition"]) is not str \
+            or evidence["disposition"] not in {"TRIGGERED", "NOT_TRIGGERED", "MISSING"} \
+            or type(evidence["reasonCode"]) is not str \
+            or re.fullmatch(r"[A-Z][A-Z0-9_]{0,127}", evidence["reasonCode"]) is None \
+            or type(evidence["triggered"]) is not bool:
         fail("R5_A2_EVIDENCE_CONTRACT_INVALID")
     if any(not strict_nonnegative_int(evidence[field]) for field in (
+        "actualAcquisitions", "deterministicCases", "devCases", "holdoutCases", "runs",
+    )) or any(evidence[field] > JAVA_INT_MAX for field in (
         "actualAcquisitions", "deterministicCases", "devCases", "holdoutCases", "runs",
     )):
         fail("R5_A2_EVIDENCE_CONTRACT_INVALID")
     predicates = evidence["predicates"]
     if not exact_object(predicates, PREDICATE_FIELDS) \
-            or any(type(value) is not str for value in predicates.values()):
+            or any(type(value) is not str or value not in {"PASS", "FAIL", "MISSING"}
+                   for value in predicates.values()):
         fail("R5_A2_EVIDENCE_CONTRACT_INVALID")
     usage = evidence["externalProviderUsage"]
     if not exact_object(usage, PROVIDER_USAGE_FIELDS) \
             or not all(strict_nonnegative_int(value) for value in usage.values()):
         fail("R5_A2_EVIDENCE_CONTRACT_INVALID")
     cases = evidence["cases"]
-    if type(cases) is not list:
+    if type(cases) is not list or len(cases) != 4:
         fail("R5_A2_EVIDENCE_CONTRACT_INVALID")
+    case_ids: list[str] = []
+    partitions: list[str] = []
     for item in cases:
         if not exact_object(item, CASE_FIELDS) \
-                or any(type(item[field]) is not str for field in ("caseId", "caseIdentity", "partition")) \
+                or type(item["caseId"]) is not str \
+                or re.fullmatch(r"[a-z][a-z0-9-]{0,127}", item["caseId"]) is None \
+                or type(item["caseIdentity"]) is not str \
+                or re.fullmatch(identity_pattern, item["caseIdentity"]) is None \
+                or type(item["partition"]) is not str \
+                or item["partition"] not in {"DEV", "HOLDOUT"} \
                 or type(item["deterministic"]) is not bool \
-                or any(not strict_nonnegative_int(item[field]) for field in (
+                or any(not strict_positive_int(item[field], JAVA_INT_MAX) for field in (
                     "oracleHeight", "oracleWidth", "sourceHeight", "sourceWidth",
-                )):
+                )) \
+                or item["oracleWidth"] <= item["sourceWidth"] \
+                or item["oracleHeight"] <= item["sourceHeight"] \
+                or item["oracleWidth"] > 2_400 or item["oracleHeight"] > 2_400:
             fail("R5_A2_EVIDENCE_CONTRACT_INVALID")
         verify_metrics(item["baseline"])
         verify_metrics(item["oracle"])
+        case_ids.append(item["caseId"])
+        partitions.append(item["partition"])
+    if len(set(case_ids)) != 4 or partitions.count("DEV") != 3 \
+            or partitions.count("HOLDOUT") != 1:
+        fail("R5_A2_EVIDENCE_CONTRACT_INVALID")
 
 
 def framed_hash(values: list[str]) -> str:
@@ -155,15 +185,10 @@ def framed_hash(values: list[str]) -> str:
 
 
 def load_protocol(repository: pathlib.Path) -> tuple[dict[str, Any], str]:
-    path = repository / (
-        "renderweave-inference/src/main/resources/visual-eval/quality-repair/"
-        "offline-evaluation-protocol-v1.json"
-    )
-    raw = path.read_bytes()
-    if b"\r" in raw.replace(b"\r\n", b""):
-        fail("R5_A2_PROTOCOL_LINE_ENDING_INVALID")
-    normalized = raw.replace(b"\r\n", b"\n")
-    return strict_json(raw), f"{PROTOCOL_VERSION}:{hashlib.sha256(normalized).hexdigest()}"
+    verified = quality_resources.load_protocol(repository)
+    if not verified.identity.startswith(PROTOCOL_VERSION + ":"):
+        fail("R5_A2_PROTOCOL_IDENTITY_INVALID")
+    return verified.document, verified.identity
 
 
 def oracle_dimensions(width: int, height: int) -> tuple[int, int]:
@@ -200,7 +225,9 @@ def verify(evidence_path: pathlib.Path, repository: pathlib.Path) -> dict[str, A
     if not same_json_value(envelope["evidenceIdentity"], identity):
         fail("R5_A2_IDENTITY_DRIFT")
 
-    protocol_doc, protocol_identity = load_protocol(repository)
+    verified_protocol = quality_resources.load_protocol(repository)
+    protocol_doc = verified_protocol.document
+    protocol_identity = verified_protocol.identity
     case_ids = protocol_doc["r5ProbeCaseIds"]
     assignment_identity = f"{ASSIGNMENT_VERSION}:{framed_hash([protocol_identity, chr(10).join(case_ids)])}"
     transform_identity = f"{TRANSFORM_VERSION}:{framed_hash([
@@ -243,6 +270,10 @@ def verify(evidence_path: pathlib.Path, repository: pathlib.Path) -> dict[str, A
     dev = 0
     holdout = 0
     for item in cases:
+        locked = verified_protocol.cases_by_id[item["caseId"]]
+        if item["caseIdentity"] != locked["caseIdentity"] \
+                or item["partition"] != locked["partition"]:
+            fail("R5_A2_CASE_IDENTITY_DRIFT")
         if item["partition"] == "DEV":
             dev += 1
         elif item["partition"] == "HOLDOUT":

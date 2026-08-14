@@ -88,6 +88,8 @@ $env:RENDERWEAVE_VRQ07_DECISION = $decisionPath
 Push-Location $repoRoot
 try {
     Invoke-Checked 'vrq07-verifier-regression-tests' {
+        & python.exe tools/test_offline_quality_resources.py
+        if (-not $? -or $LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
         & python.exe tools/test_verify_vrq07_offline_decision.py
     }
     Invoke-Checked 'vrq07-java-single-decision-seam' {

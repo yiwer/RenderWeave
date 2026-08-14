@@ -8,7 +8,7 @@ import hashlib
 import json
 import pathlib
 import sys
-from typing import Any, Iterable
+from typing import Any, Iterable, NamedTuple
 
 import verify_layered_evaluation as layered
 
@@ -36,6 +36,12 @@ COMPONENT_KEYS = (
 
 class VerificationError(Exception):
     pass
+
+
+class VerifiedShadowReport(NamedTuple):
+    summary: dict[str, Any]
+    envelope: dict[str, Any]
+    raw_sha256: str
 
 
 def fail(code: str) -> None:
@@ -388,8 +394,7 @@ def verify_envelope(envelope: dict[str, Any], repository: pathlib.Path) -> dict[
     }
 
 
-def verify_file(path: pathlib.Path, repository: pathlib.Path) -> dict[str, Any]:
-    raw = path.read_bytes()
+def verify_bytes(raw: bytes, repository: pathlib.Path) -> VerifiedShadowReport:
     if len(raw) == 0 or len(raw) > 16 * 1024 * 1024:
         fail("REPORT_BYTES_INVALID")
     text = raw.decode("utf-8", errors="strict")
@@ -397,7 +402,18 @@ def verify_file(path: pathlib.Path, repository: pathlib.Path) -> dict[str, Any]:
     value = layered.parse_strict_json(text)
     if not isinstance(value, dict):
         fail("ENVELOPE_NOT_OBJECT")
-    return verify_envelope(value, repository)
+    summary = verify_envelope(value, repository)
+    if summary["reportIdentity"] != value["reportIdentity"]:
+        fail("REPORT_SNAPSHOT_IDENTITY_DRIFT")
+    return VerifiedShadowReport(summary, value, hashlib.sha256(raw).hexdigest())
+
+
+def load_verified_file(path: pathlib.Path, repository: pathlib.Path) -> VerifiedShadowReport:
+    return verify_bytes(path.read_bytes(), repository)
+
+
+def verify_file(path: pathlib.Path, repository: pathlib.Path) -> dict[str, Any]:
+    return load_verified_file(path, repository).summary
 
 
 def main(argv: list[str]) -> int:

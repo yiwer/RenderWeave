@@ -25,6 +25,8 @@ FORBIDDEN_PAYLOAD_TOKENS = (
     "ignore prior instructions",
     "bearer ",
 )
+JAVA_INT_MAX = 2_147_483_647
+JAVA_LONG_MAX = 9_223_372_036_854_775_807
 
 
 def same_json_value(actual: Any, expected: Any) -> bool:
@@ -46,8 +48,12 @@ def exact_object(value: Any, fields: set[str] | frozenset[str]) -> bool:
     return type(value) is dict and set(value) == set(fields)
 
 
-def strict_nonnegative_int(value: Any) -> bool:
-    return type(value) is int and value >= 0
+def strict_nonnegative_int(value: Any, maximum: int = JAVA_LONG_MAX) -> bool:
+    return type(value) is int and 0 <= value <= maximum
+
+
+def strict_positive_int(value: Any, maximum: int = JAVA_LONG_MAX) -> bool:
+    return type(value) is int and 0 < value <= maximum
 
 
 def payload_safe(value: Any) -> bool:

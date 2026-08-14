@@ -73,6 +73,8 @@ $env:RENDERWEAVE_VRQ04_CAUSAL_PACK = $packPath
 Push-Location $repoRoot
 try {
     Invoke-Checked 'vrq04-independent-verifier-regressions' {
+        & python.exe tools/test_offline_quality_resources.py
+        if (-not $? -or $LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
         & python.exe tools/test_verify_vrq04_causal_evidence.py
     }
     Invoke-Checked 'vrq04-java-causal-projection' {

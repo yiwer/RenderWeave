@@ -93,6 +93,37 @@ class OfflineRepairTerminalVerifierTest(unittest.TestCase):
         ):
             verifier.require_payload_safe(decoded)
 
+    def test_terminal_envelope_identity_and_scan_share_one_snapshot(self) -> None:
+        payload = {"ticket": "VRQ_08_PP_STRUCTUREV3_DEV_SHADOW"}
+        identity = verifier.OUTCOME_PREFIX + verifier.sha256(verifier.canonical(payload))
+        raw = verifier.canonical({
+            "envelopeVersion": "test-envelope/1.0",
+            "outcomeIdentity": identity,
+            "outcome": payload,
+        })
+
+        class SingleReadSource:
+            reads = 0
+
+            def read_bytes(self) -> bytes:
+                self.reads += 1
+                if self.reads > 1:
+                    raise AssertionError("terminal envelope was read more than once")
+                return raw
+
+        source = SingleReadSource()
+        decoded, actual_identity, captured = verifier.read_envelope(
+            source,
+            "test-envelope/1.0",
+            "outcome",
+            "outcomeIdentity",
+            verifier.OUTCOME_PREFIX,
+        )
+        self.assertEqual(1, source.reads)
+        self.assertEqual(payload, decoded)
+        self.assertEqual(identity, actual_identity)
+        self.assertEqual(raw, captured)
+
     def test_python_optimized_mode_is_rejected_before_argument_parsing(self) -> None:
         script = pathlib.Path(verifier.__file__).resolve()
         completed = subprocess.run(

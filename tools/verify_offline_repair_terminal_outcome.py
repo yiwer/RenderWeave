@@ -10,6 +10,7 @@ import re
 import subprocess
 from pathlib import Path
 
+import offline_quality_resources as quality_resources
 from offline_json_contract import payload_safe
 
 
@@ -143,7 +144,13 @@ def sha256(value: bytes) -> str:
     return hashlib.sha256(value).hexdigest()
 
 
-def read_envelope(path: Path, envelope_version: str, payload_key: str, identity_key: str, prefix: str):
+def read_envelope(
+    path: Path,
+    envelope_version: str,
+    payload_key: str,
+    identity_key: str,
+    prefix: str,
+) -> tuple[object, str, bytes]:
     raw = path.read_bytes()
     require(0 < len(raw) <= 4 * 1024 * 1024, "OFFLINE_TERMINAL_ENVELOPE_BYTES_INVALID")
     value = strict_json(raw)
@@ -155,18 +162,7 @@ def read_envelope(path: Path, envelope_version: str, payload_key: str, identity_
             "OFFLINE_TERMINAL_ENVELOPE_VERSION_INVALID")
     expected = prefix + sha256(canonical(value[payload_key]))
     require(value[identity_key] == expected, "OFFLINE_TERMINAL_ENVELOPE_IDENTITY_DRIFT")
-    return value[payload_key], expected
-
-
-def framed_identity(values: list[str]) -> str:
-    digest = hashlib.sha256()
-    for value in values:
-        encoded = value.encode()
-        digest.update(str(len(encoded)).encode("ascii"))
-        digest.update(b":")
-        digest.update(encoded)
-        digest.update(b"\n")
-    return digest.hexdigest()
+    return value[payload_key], expected, raw
 
 
 def require_evidence_path(repository: Path, candidate: Path, must_exist: bool = True) -> Path:
@@ -251,14 +247,14 @@ def main() -> int:
     decision_path = require_evidence_path(repository, args.decision)
     outcome_path = require_evidence_path(repository, args.outcome)
     output_path = require_evidence_path(repository, args.output, must_exist=False)
-    decision, decision_identity = read_envelope(
+    decision, decision_identity, decision_raw = read_envelope(
         decision_path,
         "renderweave-r2r5-trigger-decision-envelope/1.0",
         "decision",
         "decisionIdentity",
         DECISION_PREFIX,
     )
-    outcome, outcome_identity = read_envelope(
+    outcome, outcome_identity, outcome_raw = read_envelope(
         outcome_path,
         "renderweave-offline-repair-terminal-outcome-envelope/1.0",
         "outcome",
@@ -284,24 +280,28 @@ def main() -> int:
             "OFFLINE_TERMINAL_R5_DISPOSITION_INVALID")
     require(zero_values(decision["externalProviderUsage"]),
             "OFFLINE_TERMINAL_DECISION_PROVIDER_USAGE_NONZERO")
+    verified_catalog = quality_resources.load_challenger_catalog(repository)
+    r2_predicates = {
+        predicate["predicateId"]: predicate
+        for predicate in routes["R2"]["predicates"]
+    }
+    require(r2_predicates["R2_CAPABILITY_ADMITTED"]["evidenceReference"]
+            == verified_catalog.identity,
+            "OFFLINE_TERMINAL_CATALOG_AUTHORITY_DRIFT")
 
     supporting_identities: list[str]
+    captured_raw = [decision_raw, outcome_raw, verified_catalog.raw]
     if challenger_id is not None:
         require(args.predecessor == [], "OFFLINE_TERMINAL_CHALLENGER_PREDECESSOR_INVALID")
-        catalog_path = repository / "renderweave-inference" / "src" / "main" / "resources" \
-            / "visual-eval" / "quality-repair" / "challenger-capabilities-v1.json"
-        catalog_bytes = catalog_path.read_bytes().replace(b"\r\n", b"\n")
-        require(b"\r" not in catalog_bytes, "OFFLINE_TERMINAL_CATALOG_LINE_ENDING_INVALID")
-        catalog_identity = CATALOG_PREFIX + sha256(catalog_bytes)
-        catalog = strict_json(catalog_bytes)
-        capability = next(item for item in catalog["challengers"]
+        capability = next(item for item in verified_catalog.document["challengers"]
                           if item["challengerId"] == challenger_id)
         require(capability["admissionDisposition"] == "NOT_ADMITTED",
                 "OFFLINE_TERMINAL_CAPABILITY_ADMISSION_DRIFT")
         require(capability["executable"] is False,
                 "OFFLINE_TERMINAL_CAPABILITY_EXECUTABILITY_DRIFT")
-        capability_identity = CAPABILITY_PREFIX + framed_identity([catalog_identity, challenger_id])
-        supporting_identities = sorted([catalog_identity, capability_identity])
+        capability_identity = quality_resources.capability_identity(
+            verified_catalog.identity, challenger_id)
+        supporting_identities = sorted([verified_catalog.identity, capability_identity])
     else:
         expected_tickets = EXPECTED_PREDECESSORS[args.ticket]
         require(len(args.predecessor) == len(expected_tickets),
@@ -313,22 +313,23 @@ def main() -> int:
             "outcomeIdentity",
             OUTCOME_PREFIX,
         ) for path in args.predecessor]
-        for predecessor, _ in predecessors:
+        captured_raw.extend(raw for _, _, raw in predecessors)
+        for predecessor, _, _ in predecessors:
             require_outcome_shape(predecessor)
             predecessor_ticket = predecessor["ticket"]
             require(type(predecessor_ticket) is str and predecessor_ticket in TICKETS,
                     "OFFLINE_TERMINAL_PREDECESSOR_TICKET_INVALID")
             require_payload_safe(predecessor)
             require_outcome_semantics(predecessor, predecessor_ticket, decision_identity)
-        require({payload["ticket"] for payload, _ in predecessors} == expected_tickets,
+        require({payload["ticket"] for payload, _, _ in predecessors} == expected_tickets,
                 "OFFLINE_TERMINAL_PREDECESSOR_TICKET_SET_INVALID")
         require(all(payload["rootDecisionIdentity"] == decision_identity
                     and payload["rootDisposition"] == "STOP_TO_SPEC_R5"
                     and zero_values(payload["offlineWorkUsage"])
                     and zero_values(payload["externalProviderUsage"])
-                    for payload, _ in predecessors),
+                    for payload, _, _ in predecessors),
                 "OFFLINE_TERMINAL_PREDECESSOR_AUTHORITY_INVALID")
-        supporting_identities = sorted(identity for _, identity in predecessors)
+        supporting_identities = sorted(identity for _, identity, _ in predecessors)
 
     require(outcome["contractVersion"] == "OfflineRepairTerminalOutcome/1.0",
             "OFFLINE_TERMINAL_OUTCOME_VERSION_INVALID")
@@ -348,11 +349,8 @@ def main() -> int:
     require(zero_values(outcome["externalProviderUsage"]),
             "OFFLINE_TERMINAL_OUTCOME_PROVIDER_USAGE_NONZERO")
 
-    combined = (decision_path.read_text(encoding="utf-8")
-                + outcome_path.read_text(encoding="utf-8")
-                + "".join(require_evidence_path(repository, path).read_text(encoding="utf-8")
-                          for path in args.predecessor)).lower()
-    require(all(token.lower() not in combined for token in FORBIDDEN),
+    combined = b"\n".join(captured_raw).lower()
+    require(all(token.lower().encode("utf-8") not in combined for token in FORBIDDEN),
             "OFFLINE_TERMINAL_PAYLOAD_FORBIDDEN")
     if args.ticket == "VRQ_14_FRESH_LIVE_REQUEST_ELIGIBILITY":
         historical = (
@@ -360,7 +358,7 @@ def main() -> int:
             "renderweave-n7-live-ticket-contract/1.0:",
             "renderweave-visual-evaluation-tree-sha256/2:",
         )
-        require(all(value not in combined for value in historical),
+        require(all(value.encode("utf-8") not in combined for value in historical),
                 "OFFLINE_TERMINAL_HISTORICAL_IDENTITY_REUSED")
     revision = subprocess.run(
         ["git", "rev-parse", "HEAD"], cwd=repository, check=True,

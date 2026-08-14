@@ -12,6 +12,7 @@ import subprocess
 from typing import Any
 
 import verify_rapidocr_shadow_evaluation as shadow
+import offline_quality_resources as quality_resources
 from offline_json_contract import (
     exact_object,
     payload_safe,
@@ -147,15 +148,10 @@ def validate_pack_shape(pack: Any) -> None:
 
 
 def protocol_identity(repository: pathlib.Path) -> str:
-    path = repository / (
-        "renderweave-inference/src/main/resources/visual-eval/quality-repair/"
-        "offline-evaluation-protocol-v1.json"
-    )
-    raw = path.read_bytes()
-    if b"\r" in raw.replace(b"\r\n", b""):
-        fail("CAUSAL_PROTOCOL_LINE_ENDING_INVALID")
-    normalized = raw.replace(b"\r\n", b"\n")
-    return f"{PROTOCOL_VERSION}:{hashlib.sha256(normalized).hexdigest()}"
+    protocol = quality_resources.load_protocol(repository)
+    if not protocol.identity.startswith(PROTOCOL_VERSION + ":"):
+        fail("CAUSAL_PROTOCOL_IDENTITY_INVALID")
+    return protocol.identity
 
 
 def scoped_metrics(run: dict[str, Any]) -> dict[str, Any]:
@@ -213,8 +209,11 @@ def verify(
     causal_path: pathlib.Path,
     repository: pathlib.Path,
 ) -> dict[str, Any]:
-    shadow_summary = shadow.verify_file(report_path, repository)
-    report_envelope = strict_json(report_path.read_bytes())
+    verified_report = shadow.load_verified_file(report_path, repository)
+    shadow_summary = verified_report.summary
+    report_envelope = verified_report.envelope
+    if report_envelope["reportIdentity"] != shadow_summary["reportIdentity"]:
+        fail("CAUSAL_SHADOW_REPORT_SNAPSHOT_DRIFT")
     report = report_envelope["report"]
     raw = causal_path.read_bytes()
     if not raw or len(raw) > 4 * 1024 * 1024:

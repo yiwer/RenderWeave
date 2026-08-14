@@ -54,24 +54,35 @@ class Vrq05R3ProbeVerifierTest(unittest.TestCase):
             ):
                 verifier.ensure_decoded_payload_safe(decoded)
 
+    def test_java_metric_relationships_and_long_bounds_are_enforced(self) -> None:
+        for field, value in (
+            ("matchedLines", 2),
+            ("correctPrecedenceEdges", 2),
+            ("comparablePrecedenceEdges", 2),
+            ("observableRepeatMemberships", 1),
+            ("expectedLines", 2 ** 63),
+        ):
+            evidence = verifier_test_evidence()
+            evidence["cases"][0][field] = value
+            with self.subTest(field=field), self.assertRaisesRegex(
+                verifier.VerificationError, "R3_A2_EVIDENCE_CONTRACT_INVALID"
+            ):
+                verifier.validate_evidence_shape(evidence)
+
+    def test_case_identity_and_partition_match_java_contract(self) -> None:
+        for field, value in (("caseIdentity", "identity"), ("partition", "UNKNOWN")):
+            evidence = verifier_test_evidence()
+            evidence["cases"][0][field] = value
+            with self.subTest(field=field), self.assertRaisesRegex(
+                verifier.VerificationError, "R3_A2_EVIDENCE_CONTRACT_INVALID"
+            ):
+                verifier.validate_evidence_shape(evidence)
+
 
 def verifier_test_evidence() -> dict[str, object]:
     return {
-        "assignmentIdentity": "assignment",
-        "cases": [{
-            "allReferencedRegionsObserved": True,
-            "caseId": "case-1",
-            "caseIdentity": "identity",
-            "comparablePrecedenceEdges": 1,
-            "correctPrecedenceEdges": 1,
-            "expectedLines": 1,
-            "expectedPrecedenceEdges": 1,
-            "expectedRepeatMemberships": 0,
-            "matchedLines": 1,
-            "observableRepeatMemberships": 0,
-            "orderOrRepeatDefectObserved": False,
-            "partition": "DEV",
-        }],
+        "assignmentIdentity": "renderweave-r3-probe-assignment/1.0:" + "1" * 64,
+        "cases": [verifier_test_case(index) for index in range(4)],
         "contractVersion": verifier.EVIDENCE_VERSION,
         "devCases": 3,
         "disposition": "MISSING",
@@ -82,12 +93,29 @@ def verifier_test_evidence() -> dict[str, object]:
         },
         "holdoutCases": 1,
         "predicates": {key: "PASS" for key in verifier.PREDICATE_FIELDS},
-        "protocolIdentity": "protocol",
-        "reasonCode": "reason",
+        "protocolIdentity": verifier.PROTOCOL_VERSION + ":" + "2" * 64,
+        "reasonCode": "R3_TEST_REASON",
         "runs": 2,
-        "sourceEvaluationIdentity": "evaluation",
-        "sourceReportIdentity": "report",
+        "sourceEvaluationIdentity": "renderweave-rapidocr-shadow-evaluation/1.0:" + "3" * 64,
+        "sourceReportIdentity": "renderweave-rapidocr-shadow-report/1.0:" + "4" * 64,
         "triggered": False,
+    }
+
+
+def verifier_test_case(index: int) -> dict[str, object]:
+    return {
+        "allReferencedRegionsObserved": True,
+        "caseId": f"case-{index + 1}",
+        "caseIdentity": "renderweave-layered-case/2.0:" + str(index + 1) * 64,
+        "comparablePrecedenceEdges": 1,
+        "correctPrecedenceEdges": 1,
+        "expectedLines": 1,
+        "expectedPrecedenceEdges": 1,
+        "expectedRepeatMemberships": 0,
+        "matchedLines": 1,
+        "observableRepeatMemberships": 0,
+        "orderOrRepeatDefectObserved": False,
+        "partition": "DEV" if index < 3 else "HOLDOUT",
     }
 
 

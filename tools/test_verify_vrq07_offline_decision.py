@@ -96,6 +96,35 @@ class Vrq07OfflineDecisionVerifierTest(unittest.TestCase):
                     "evidence",
                 )
 
+    def test_component_envelope_identity_and_digest_share_one_snapshot(self) -> None:
+        value = {
+            "envelopeVersion": "test-envelope/1.0",
+            "evidenceIdentity": "test-evidence/1.0:" + "a" * 64,
+            "evidence": {},
+        }
+        raw = verifier.canonical_json(value)
+
+        class SingleReadSource:
+            reads = 0
+
+            def read_bytes(self) -> bytes:
+                self.reads += 1
+                if self.reads > 1:
+                    raise AssertionError("component envelope was read more than once")
+                return raw
+
+        source = SingleReadSource()
+        payload, identity, captured = verifier.envelope(
+            source,
+            "test-envelope/1.0",
+            "evidenceIdentity",
+            "evidence",
+        )
+        self.assertEqual(1, source.reads)
+        self.assertEqual({}, payload)
+        self.assertEqual(value["evidenceIdentity"], identity)
+        self.assertEqual(raw, captured)
+
 
 if __name__ == "__main__":
     unittest.main()

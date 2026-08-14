@@ -61,6 +61,8 @@ $env:RENDERWEAVE_OFFLINE_TERMINAL_OUTCOME = $outcomePath
 
 Push-Location $repoRoot
 try {
+    & python.exe tools/test_offline_quality_resources.py
+    if (-not $? -or $LASTEXITCODE -ne 0) { throw "$Ticket resource contract tests failed." }
     & python.exe tools/test_verify_offline_repair_terminal_outcome.py
     if (-not $? -or $LASTEXITCODE -ne 0) { throw "$Ticket verifier regression tests failed." }
     & mvn.cmd -B -ntp -pl renderweave-app -am `

@@ -12,6 +12,7 @@ import subprocess
 from typing import Any
 
 import verify_rapidocr_shadow_evaluation as shadow
+import offline_quality_resources as quality_resources
 from offline_json_contract import (
     exact_object,
     payload_safe,
@@ -109,43 +110,63 @@ def validate_evidence_shape(evidence: Any) -> None:
     if not exact_object(evidence, EVIDENCE_FIELDS) \
             or evidence["contractVersion"] != EVIDENCE_VERSION:
         fail("R3_A2_EVIDENCE_CONTRACT_INVALID")
-    if any(type(evidence[field]) is not str for field in (
-        "assignmentIdentity", "disposition", "protocolIdentity", "reasonCode",
-        "sourceEvaluationIdentity", "sourceReportIdentity",
-    )) or type(evidence["triggered"]) is not bool:
+    identity_pattern = r"[A-Za-z][A-Za-z0-9._+/-]{0,127}:[0-9a-f]{64}"
+    if any(type(evidence[field]) is not str
+           or re.fullmatch(identity_pattern, evidence[field]) is None
+           for field in (
+               "assignmentIdentity", "protocolIdentity", "sourceEvaluationIdentity",
+               "sourceReportIdentity",
+           )) \
+            or type(evidence["disposition"]) is not str \
+            or evidence["disposition"] not in {"TRIGGERED", "NOT_TRIGGERED", "MISSING"} \
+            or type(evidence["reasonCode"]) is not str \
+            or re.fullmatch(r"[A-Z][A-Z0-9_]{0,127}", evidence["reasonCode"]) is None \
+            or type(evidence["triggered"]) is not bool:
         fail("R3_A2_EVIDENCE_CONTRACT_INVALID")
     if any(not strict_nonnegative_int(evidence[field])
            for field in ("devCases", "holdoutCases", "runs")):
         fail("R3_A2_EVIDENCE_CONTRACT_INVALID")
     predicates = evidence["predicates"]
     if not exact_object(predicates, PREDICATE_FIELDS) \
-            or any(type(value) is not str for value in predicates.values()):
+            or any(type(value) is not str or value not in {"PASS", "FAIL", "MISSING"}
+                   for value in predicates.values()):
         fail("R3_A2_EVIDENCE_CONTRACT_INVALID")
     usage = evidence["externalProviderUsage"]
     if not exact_object(usage, PROVIDER_USAGE_FIELDS) \
             or not all(strict_nonnegative_int(value) for value in usage.values()):
         fail("R3_A2_EVIDENCE_CONTRACT_INVALID")
     cases = evidence["cases"]
-    if type(cases) is not list:
+    if type(cases) is not list or len(cases) != 4:
         fail("R3_A2_EVIDENCE_CONTRACT_INVALID")
+    case_ids: list[str] = []
+    partitions: list[str] = []
     for item in cases:
         if not exact_object(item, CASE_FIELDS) \
-                or any(type(item[field]) is not str for field in ("caseId", "caseIdentity", "partition")) \
+                or type(item["caseId"]) is not str \
+                or re.fullmatch(r"[a-z][a-z0-9-]{0,127}", item["caseId"]) is None \
+                or type(item["caseIdentity"]) is not str \
+                or re.fullmatch(identity_pattern, item["caseIdentity"]) is None \
+                or type(item["partition"]) is not str \
+                or item["partition"] not in {"DEV", "HOLDOUT"} \
                 or any(not strict_nonnegative_int(item[field]) for field in CASE_INTEGER_FIELDS) \
-                or any(type(item[field]) is not bool for field in CASE_BOOLEAN_FIELDS):
+                or any(type(item[field]) is not bool for field in CASE_BOOLEAN_FIELDS) \
+                or item["matchedLines"] > item["expectedLines"] \
+                or item["correctPrecedenceEdges"] > item["comparablePrecedenceEdges"] \
+                or item["comparablePrecedenceEdges"] > item["expectedPrecedenceEdges"] \
+                or item["observableRepeatMemberships"] > item["expectedRepeatMemberships"]:
             fail("R3_A2_EVIDENCE_CONTRACT_INVALID")
+        case_ids.append(item["caseId"])
+        partitions.append(item["partition"])
+    if len(set(case_ids)) != 4 or partitions.count("DEV") != 3 \
+            or partitions.count("HOLDOUT") != 1:
+        fail("R3_A2_EVIDENCE_CONTRACT_INVALID")
 
 
 def protocol(repository: pathlib.Path) -> tuple[dict[str, Any], str]:
-    path = repository / (
-        "renderweave-inference/src/main/resources/visual-eval/quality-repair/"
-        "offline-evaluation-protocol-v1.json"
-    )
-    raw = path.read_bytes()
-    if b"\r" in raw.replace(b"\r\n", b""):
-        fail("R3_A2_PROTOCOL_LINE_ENDING_INVALID")
-    identity = f"{PROTOCOL_VERSION}:{hashlib.sha256(raw.replace(b'\r\n', b'\n')).hexdigest()}"
-    return strict_json(raw), identity
+    verified = quality_resources.load_protocol(repository)
+    if not verified.identity.startswith(PROTOCOL_VERSION + ":"):
+        fail("R3_A2_PROTOCOL_IDENTITY_INVALID")
+    return verified.document, verified.identity
 
 
 def list_hash(values: list[str]) -> str:
@@ -182,8 +203,11 @@ def expected_case(record: dict[str, Any]) -> dict[str, Any]:
 
 
 def verify(report_path: pathlib.Path, evidence_path: pathlib.Path, repository: pathlib.Path) -> dict[str, Any]:
-    shadow_summary = shadow.verify_file(report_path, repository)
-    report_envelope = strict_json(report_path.read_bytes())
+    verified_report = shadow.load_verified_file(report_path, repository)
+    shadow_summary = verified_report.summary
+    report_envelope = verified_report.envelope
+    if report_envelope["reportIdentity"] != shadow_summary["reportIdentity"]:
+        fail("R3_A2_SHADOW_REPORT_SNAPSHOT_DRIFT")
     report = report_envelope["report"]
     raw = evidence_path.read_bytes()
     if not raw or len(raw) > 1024 * 1024 or not raw_payload_safe(raw):

@@ -63,6 +63,26 @@ class RapidOcrShadowVerifierTest(unittest.TestCase):
         with self.assertRaises(VERIFIER.layered.VerificationError):
             VERIFIER.layered.scan_payload_free('{"ocrText":"secret"}', "unit")
 
+    def test_load_verified_file_reads_and_binds_one_snapshot(self) -> None:
+        raw = VERIFIER.canonical_json(make_envelope())
+
+        class SingleReadSource:
+            reads = 0
+
+            def read_bytes(self) -> bytes:
+                self.reads += 1
+                if self.reads > 1:
+                    raise AssertionError("shadow report was read more than once")
+                return raw
+
+        source = SingleReadSource()
+        verified = VERIFIER.load_verified_file(source, REPOSITORY)
+        self.assertEqual(1, source.reads)
+        self.assertEqual("PASS", verified.summary["result"])
+        self.assertEqual(verified.summary["reportIdentity"],
+                         verified.envelope["reportIdentity"])
+        self.assertEqual(VERIFIER.hashlib.sha256(raw).hexdigest(), verified.raw_sha256)
+
 
 def empty_record(locked: dict[str, object], diagnostics: list[str], latency: int) -> dict[str, object]:
     return {

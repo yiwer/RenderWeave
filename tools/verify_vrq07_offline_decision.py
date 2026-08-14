@@ -10,6 +10,7 @@ import pathlib
 import re
 from typing import Any
 
+import offline_quality_resources as quality_resources
 
 PACK_VERSION = "renderweave-frozen-quality-evidence-pack/1.0"
 PACK_ENVELOPE = "renderweave-frozen-quality-evidence-pack-envelope/1.0"
@@ -78,7 +79,10 @@ def unique_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
 def strict_json(raw: bytes) -> Any:
     try:
         text = raw.decode("utf-8", errors="strict")
-        value, end = json.JSONDecoder(object_pairs_hook=unique_object).raw_decode(text)
+        value, end = json.JSONDecoder(
+            object_pairs_hook=unique_object,
+            parse_constant=lambda _value: fail("VRQ07_A2_JSON_INVALID"),
+        ).raw_decode(text)
         if text[end:].strip():
             fail("VRQ07_A2_TRAILING_JSON")
         return value
@@ -164,7 +168,12 @@ def validate_component_summary(component: str, summary: dict[str, Any]) -> None:
         fail("VRQ07_A2_COMPONENT_SUMMARY_SCHEMA_INVALID")
 
 
-def envelope(path: pathlib.Path, version: str, identity_field: str, payload_field: str) -> tuple[dict[str, Any], str]:
+def envelope(
+    path: pathlib.Path,
+    version: str,
+    identity_field: str,
+    payload_field: str,
+) -> tuple[dict[str, Any], str, bytes]:
     raw = path.read_bytes()
     if not raw or len(raw) > 4 * 1024 * 1024 or any(marker in raw.lower() for marker in FORBIDDEN):
         fail("VRQ07_A2_INPUT_BYTES_INVALID")
@@ -174,21 +183,21 @@ def envelope(path: pathlib.Path, version: str, identity_field: str, payload_fiel
             or set(value) != {"envelopeVersion", identity_field, payload_field} \
             or value.get("envelopeVersion") != version:
         fail("VRQ07_A2_INPUT_ENVELOPE_INVALID")
-    return value[payload_field], value[identity_field]
+    return value[payload_field], value[identity_field], raw
 
 
 def component_identity(path: pathlib.Path, envelope_version: str, identity_field: str, payload_field: str,
-                       identity_version: str) -> tuple[dict[str, Any], str]:
-    payload, identity = envelope(path, envelope_version, identity_field, payload_field)
+                       identity_version: str) -> tuple[dict[str, Any], str, str]:
+    payload, identity, raw = envelope(path, envelope_version, identity_field, payload_field)
     computed = f"{identity_version}:{hashlib.sha256(canonical_json(payload)).hexdigest()}"
     if identity != computed:
         fail("VRQ07_A2_COMPONENT_IDENTITY_DRIFT")
-    return payload, identity
+    return payload, identity, hashlib.sha256(raw).hexdigest()
 
 
 def component_verification(
     component: str,
-    evidence_path: pathlib.Path,
+    evidence_sha256: str,
     evidence_identity: str,
     summary_path: pathlib.Path,
     verifier_version: str,
@@ -215,7 +224,7 @@ def component_verification(
     return {
         "component": component,
         "evidenceIdentity": evidence_identity,
-        "evidenceSha256": hashlib.sha256(evidence_path.read_bytes()).hexdigest(),
+        "evidenceSha256": evidence_sha256,
         "verificationSummarySha256": hashlib.sha256(raw).hexdigest(),
         "verifierVersion": verifier_version,
         "assurance": "A2_CROSS_IMPLEMENTATION_RECOMPUTE",
@@ -264,13 +273,13 @@ def route_decision(route_item: dict[str, Any]) -> dict[str, Any]:
 def verify(args: argparse.Namespace) -> dict[str, Any]:
     if not re.fullmatch(r"[0-9a-f]{40}", args.expected_revision):
         fail("VRQ07_A2_EXPECTED_REVISION_INVALID")
-    rapid, rapid_identity = component_identity(
+    rapid, rapid_identity, rapid_sha256 = component_identity(
         args.rapidocr, "renderweave-rapidocr-causal-evidence-envelope/1.0", "evidenceIdentity", "evidence",
         "renderweave-rapidocr-causal-evidence/1.0")
-    r3, r3_identity = component_identity(
+    r3, r3_identity, r3_sha256 = component_identity(
         args.r3, "renderweave-r3-order-repeat-probe-envelope/1.0", "evidenceIdentity", "evidence",
         "renderweave-r3-order-repeat-probe-evidence/1.0")
-    r5, r5_identity = component_identity(
+    r5, r5_identity, r5_sha256 = component_identity(
         args.r5, "renderweave-r5-oracle-probe-envelope/1.0", "evidenceIdentity", "evidence",
         "renderweave-r5-oracle-probe-evidence/1.0")
     zero_usage = {"attempts": 0, "reservations": 0, "costMicrosCny": 0}
@@ -278,7 +287,9 @@ def verify(args: argparse.Namespace) -> dict[str, Any]:
             or not same_json_value(r3["externalProviderUsage"], zero_usage) \
             or not same_json_value(r5["externalProviderUsage"], zero_usage):
         fail("VRQ07_A2_PROVIDER_USAGE_NONZERO")
-    if rapid["protocolIdentity"] != r3["protocolIdentity"] \
+    protocol = quality_resources.load_protocol(args.repository)
+    if rapid["protocolIdentity"] != protocol.identity \
+            or rapid["protocolIdentity"] != r3["protocolIdentity"] \
             or rapid["protocolIdentity"] != r5["protocolIdentity"] \
             or rapid["evaluationIdentity"] != r3["sourceEvaluationIdentity"] \
             or rapid["corpusIdentity"] != r5["corpusIdentity"] \
@@ -288,22 +299,19 @@ def verify(args: argparse.Namespace) -> dict[str, Any]:
         fail("VRQ07_A2_COMPONENT_CLOSURE_INVALID")
     component_verifications = [
         component_verification(
-            "RAPIDOCR_CAUSAL", args.rapidocr, rapid_identity, args.rapidocr_a2,
+            "RAPIDOCR_CAUSAL", rapid_sha256, rapid_identity, args.rapidocr_a2,
             "renderweave-vrq04-causal-verifier/1.0", args.expected_revision),
         component_verification(
-            "R3_PROBE", args.r3, r3_identity, args.r3_a2,
+            "R3_PROBE", r3_sha256, r3_identity, args.r3_a2,
             "renderweave-vrq05-r3-verifier/1.0", args.expected_revision),
         component_verification(
-            "R5_PROBE", args.r5, r5_identity, args.r5_a2,
+            "R5_PROBE", r5_sha256, r5_identity, args.r5_a2,
             "renderweave-vrq06-r5-verifier/1.0", args.expected_revision),
     ]
 
-    catalog_path = args.repository / (
-        "renderweave-inference/src/main/resources/visual-eval/quality-repair/challenger-capabilities-v1.json"
-    )
-    catalog = strict_json(catalog_path.read_bytes())
-    catalog_identity = normalized_resource_identity(
-        catalog_path, "renderweave-challenger-capability-catalog/1.0")
+    verified_catalog = quality_resources.load_challenger_catalog(args.repository)
+    catalog = verified_catalog.document
+    catalog_identity = verified_catalog.identity
     admitted = all(
         item["admissionDisposition"] == "ADMITTED" and item["executable"]
         and not item["missingAdmissionDimensions"] for item in catalog["challengers"]
@@ -335,7 +343,7 @@ def verify(args: argparse.Namespace) -> dict[str, Any]:
         "successorIdentities": [],
         "externalProviderUsage": {"attempts": 0, "reservations": 0, "costMicrosCny": 0},
     }
-    pack, pack_identity = envelope(
+    pack, pack_identity, _pack_raw = envelope(
         args.pack, PACK_ENVELOPE, "evidencePackIdentity", "evidencePack")
     computed_pack_identity = f"{PACK_VERSION}:{hashlib.sha256(canonical_json(expected_pack)).hexdigest()}"
     if not same_json_value(pack, expected_pack) or pack_identity != computed_pack_identity:
@@ -362,7 +370,7 @@ def verify(args: argparse.Namespace) -> dict[str, Any]:
         "overallDisposition": overall,
         "externalProviderUsage": {"attempts": 0, "reservations": 0, "costMicrosCny": 0},
     }
-    decision, decision_identity = envelope(
+    decision, decision_identity, _decision_raw = envelope(
         args.decision, DECISION_ENVELOPE, "decisionIdentity", "decision")
     computed_decision_identity = f"{DECISION_ID_VERSION}:{hashlib.sha256(canonical_json(expected_decision)).hexdigest()}"
     if not same_json_value(decision, expected_decision) or decision_identity != computed_decision_identity:
