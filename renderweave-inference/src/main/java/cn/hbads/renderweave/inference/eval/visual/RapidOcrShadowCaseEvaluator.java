@@ -3,6 +3,7 @@ package cn.hbads.renderweave.inference.eval.visual;
 import cn.hbads.renderweave.inference.candidate.CandidateBoundingBox;
 import cn.hbads.renderweave.inference.vision.DocumentObservationCompatibilityProjection;
 import cn.hbads.renderweave.inference.vision.DocumentObservationIR;
+import cn.hbads.renderweave.inference.vision.DocumentVisionObservation;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -52,9 +53,34 @@ public final class RapidOcrShadowCaseEvaluator {
         if (projected.artifacts().size() != 1) {
             throw new IllegalArgumentException("RAPIDOCR_SHADOW_ARTIFACT_MISMATCH");
         }
+        return evaluateProjectedAgainstSameGold(
+                evaluationCase, expectedArtifactId,
+                projected.artifacts().getFirst().lines(), confidence(observation),
+                acquisitionMicros);
+    }
 
+    /** Scores an evaluation-only source projection without creating a product observation IR. */
+    public RapidOcrShadowCaseRecord evaluateProjectedAgainstSameGold(
+            LayeredVisualCorpus.Case evaluationCase,
+            String expectedArtifactId,
+            List<DocumentVisionObservation.TextLine> actualLines,
+            RapidOcrShadowCaseRecord.ConfidenceStats confidence,
+            long acquisitionMicros
+    ) {
+        Objects.requireNonNull(evaluationCase, "evaluationCase");
+        if (expectedArtifactId == null || !expectedArtifactId.matches("[0-9a-f]{64}")) {
+            throw new IllegalArgumentException("RAPIDOCR_SHADOW_ARTIFACT_MISMATCH");
+        }
+        if (acquisitionMicros < 0) {
+            throw new IllegalArgumentException("RAPIDOCR_SHADOW_LATENCY_INVALID");
+        }
+        var actual = List.copyOf(Objects.requireNonNull(actualLines, "actualLines"));
+        Objects.requireNonNull(confidence, "confidence");
+        if (actual.stream().anyMatch(Objects::isNull)
+                || actual.size() != confidence.observations()) {
+            throw new IllegalArgumentException("RAPIDOCR_SHADOW_PROJECTED_INPUT_INVALID");
+        }
         var gold = evaluationCase.annotation();
-        var actual = projected.artifacts().getFirst().lines();
         var matches = match(gold.ocrLines(), actual);
         var ocr = ocr(gold.ocrLines(), actual, matches);
         var regionByLine = regionByLine(gold);
@@ -73,8 +99,8 @@ public final class RapidOcrShadowCaseEvaluator {
                 layout(gold.ocrLines(), actual, matches, observedRegions.size()),
                 order(gold, matches, regionByLine, observedRegions),
                 repeat(gold, observedRegions),
-                confidence(observation),
-                observation.observationCount(),
+                confidence,
+                actual.size(),
                 acquisitionMicros
         );
     }
