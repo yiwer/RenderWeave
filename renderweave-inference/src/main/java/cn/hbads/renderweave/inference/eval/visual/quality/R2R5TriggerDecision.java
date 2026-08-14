@@ -34,6 +34,9 @@ public record R2R5TriggerDecision(
         canonical.sort(Comparator.comparing(RouteDecision::route));
         routes = List.copyOf(canonical);
         Objects.requireNonNull(overallDisposition, "overallDisposition");
+        if (overallDisposition != deriveOverall(routes)) {
+            throw invalid("QUALITY_REPAIR_OVERALL_DISPOSITION_INCONSISTENT");
+        }
         externalProviderUsage = Objects.requireNonNull(externalProviderUsage, "externalProviderUsage");
         if (!externalProviderUsage.zeroUsage()) {
             throw invalid("QUALITY_REPAIR_DECISION_PROVIDER_USAGE_NONZERO");
@@ -43,6 +46,24 @@ public record R2R5TriggerDecision(
     public RouteDecision requireRoute(FrozenQualityEvidencePack.Route route) {
         return routes.stream().filter(item -> item.route() == route).findFirst()
                 .orElseThrow(() -> invalid("QUALITY_REPAIR_DECISION_ROUTE_MISSING"));
+    }
+
+    static OverallDisposition deriveOverall(List<RouteDecision> decisions) {
+        var triggered = decisions.stream().filter(RouteDecision::triggerSatisfied)
+                .map(RouteDecision::route).collect(java.util.stream.Collectors.toSet());
+        if (triggered.size() > 1) return OverallDisposition.STOP_TO_SPEC_MULTIPLE;
+        if (triggered.contains(FrozenQualityEvidencePack.Route.R3)) {
+            return OverallDisposition.STOP_TO_SPEC_R3;
+        }
+        if (triggered.contains(FrozenQualityEvidencePack.Route.R5)) {
+            return OverallDisposition.STOP_TO_SPEC_R5;
+        }
+        if (triggered.contains(FrozenQualityEvidencePack.Route.R2)) {
+            return OverallDisposition.R2_SHADOW_ALLOWED;
+        }
+        var allRejected = decisions.stream().allMatch(item ->
+                item.disposition() == RouteDisposition.REJECTED_BY_CURRENT_EVIDENCE);
+        return allRejected ? OverallDisposition.NO_REPAIR_ROUTE : OverallDisposition.OFFLINE_EVIDENCE_REQUIRED;
     }
 
     private static IllegalArgumentException invalid(String code) {

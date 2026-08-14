@@ -47,29 +47,7 @@ public final class R2R5TriggerDecisionEngine {
                 R2R5TriggerDecision.VERSION,
                 codec.evidencePackIdentity(evidencePack),
                 decisions,
-                overall(decisions),
+                R2R5TriggerDecision.deriveOverall(decisions),
                 evidencePack.externalProviderUsage());
-    }
-
-    private static R2R5TriggerDecision.OverallDisposition overall(
-            java.util.List<R2R5TriggerDecision.RouteDecision> decisions
-    ) {
-        var triggered = decisions.stream().filter(R2R5TriggerDecision.RouteDecision::triggerSatisfied)
-                .map(R2R5TriggerDecision.RouteDecision::route).collect(java.util.stream.Collectors.toSet());
-        if (triggered.size() > 1) return R2R5TriggerDecision.OverallDisposition.STOP_TO_SPEC_MULTIPLE;
-        if (triggered.contains(FrozenQualityEvidencePack.Route.R3)) {
-            return R2R5TriggerDecision.OverallDisposition.STOP_TO_SPEC_R3;
-        }
-        if (triggered.contains(FrozenQualityEvidencePack.Route.R5)) {
-            return R2R5TriggerDecision.OverallDisposition.STOP_TO_SPEC_R5;
-        }
-        if (triggered.contains(FrozenQualityEvidencePack.Route.R2)) {
-            return R2R5TriggerDecision.OverallDisposition.R2_SHADOW_ALLOWED;
-        }
-        var allRejected = decisions.stream().allMatch(item ->
-                item.disposition() == R2R5TriggerDecision.RouteDisposition.REJECTED_BY_CURRENT_EVIDENCE);
-        return allRejected
-                ? R2R5TriggerDecision.OverallDisposition.NO_REPAIR_ROUTE
-                : R2R5TriggerDecision.OverallDisposition.OFFLINE_EVIDENCE_REQUIRED;
     }
 }

@@ -67,6 +67,19 @@ class R2R5TriggerDecisionEngineTest {
     }
 
     @Test
+    void callersCannotSetAnOverallDispositionThatDisagreesWithTheRoutes() {
+        var derived = engine.decide(FrozenQualityEvidencePack.initial());
+
+        assertEquals("QUALITY_REPAIR_OVERALL_DISPOSITION_INCONSISTENT",
+                assertThrows(IllegalArgumentException.class, () -> new R2R5TriggerDecision(
+                        derived.decisionVersion(),
+                        derived.evidencePackIdentity(),
+                        derived.routes(),
+                        R2R5TriggerDecision.OverallDisposition.STOP_TO_SPEC_R5,
+                        derived.externalProviderUsage())).getMessage());
+    }
+
+    @Test
     void authorityDriftAndHistoricalSuccessorIdentityReuseFailClosed() {
         var original = FrozenQualityEvidencePack.initial();
         assertEquals("QUALITY_REPAIR_BASE_REVISION_DRIFT", assertThrows(IllegalArgumentException.class,
