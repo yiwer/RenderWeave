@@ -17,7 +17,7 @@ import java.util.Objects;
 import java.util.Set;
 
 /** Strictly binds one independently replayed A2 summary to its payload-safe evidence envelope. */
-public final class OfflineComponentVerificationReader {
+final class OfflineComponentVerificationReader {
     private static final int MAXIMUM_EVIDENCE_BYTES = 4 * 1024 * 1024;
     private static final int MAXIMUM_SUMMARY_BYTES = 1024 * 1024;
     private static final String ASSURANCE = "A2_CROSS_IMPLEMENTATION_RECOMPUTE";
@@ -58,7 +58,7 @@ public final class OfflineComponentVerificationReader {
             .enable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS)
             .build();
 
-    public FrozenQualityEvidencePack.ComponentVerification read(
+    FrozenQualityEvidencePack.ComponentVerification read(
             FrozenQualityEvidencePack.Component component,
             byte[] evidenceBytes,
             String expectedEvidenceIdentity,

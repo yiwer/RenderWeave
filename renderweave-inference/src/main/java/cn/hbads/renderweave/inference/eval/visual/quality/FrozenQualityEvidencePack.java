@@ -246,7 +246,7 @@ public record FrozenQualityEvidencePack(
         }
     }
 
-    public record ComponentVerification(
+    record ComponentVerification(
             Component component,
             String evidenceIdentity,
             String evidenceSha256,

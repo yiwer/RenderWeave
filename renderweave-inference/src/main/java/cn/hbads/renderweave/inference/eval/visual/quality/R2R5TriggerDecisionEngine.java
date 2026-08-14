@@ -6,7 +6,7 @@ import java.util.Objects;
 import java.util.Set;
 
 /** Deterministic policy engine for the single offline repair decision seam. */
-public final class R2R5TriggerDecisionEngine {
+final class R2R5TriggerDecisionEngine {
     private static final Map<FrozenQualityEvidencePack.Route, Set<String>> REQUIRED_PREDICATES = Map.of(
             FrozenQualityEvidencePack.Route.R2, Set.of(
                     "R2_STABLE_PERCEPTION_GAP", "R2_CAPABILITY_ADMITTED", "R2_SHADOW_NET_BENEFIT"),

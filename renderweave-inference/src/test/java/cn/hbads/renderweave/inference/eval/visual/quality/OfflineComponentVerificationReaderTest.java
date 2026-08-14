@@ -2,11 +2,13 @@ package cn.hbads.renderweave.inference.eval.visual.quality;
 
 import org.junit.jupiter.api.Test;
 
+import java.lang.reflect.Modifier;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.HexFormat;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class OfflineComponentVerificationReaderTest {
@@ -51,6 +53,14 @@ class OfflineComponentVerificationReaderTest {
         assertEquals("QUALITY_REPAIR_COMPONENT_PAYLOAD_FORBIDDEN",
                 assertThrows(IllegalArgumentException.class, () -> reader.read(
                         COMPONENT, evidence(), IDENTITY, injected, REVISION)).getMessage());
+    }
+
+    @Test
+    void verificationConstructionAndDecisionEngineStayInsideTheAssemblyModule() {
+        assertFalse(Modifier.isPublic(
+                FrozenQualityEvidencePack.ComponentVerification.class.getModifiers()));
+        assertFalse(Modifier.isPublic(OfflineComponentVerificationReader.class.getModifiers()));
+        assertFalse(Modifier.isPublic(R2R5TriggerDecisionEngine.class.getModifiers()));
     }
 
     private static byte[] evidence() {

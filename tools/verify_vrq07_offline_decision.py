@@ -22,6 +22,7 @@ AUDIT_SHA = "e1f550b28e7c57fd4944c3b83297e8c85a167ba147683e4aff655b00f0a59655"
 FORBIDDEN = (
     b"base64", b"data:image", b"ocrtext", b"ocr_text", b"prompttext", b"modeloutput",
     b"candidatejson", b"rootdocument", b"boundingbox", b'"bbox"', b"inspectionrequest",
+    b"providerrequest", b"providerresponse", b"bearer ",
 )
 SUMMARY_FIELDS = {
     "RAPIDOCR_CAUSAL": {
@@ -95,6 +96,21 @@ def ensure_decoded_payload_safe(value: Any) -> None:
         fail("VRQ07_A2_DECODED_PAYLOAD_FORBIDDEN")
 
 
+def same_json_value(actual: Any, expected: Any) -> bool:
+    """Compare JSON values without Python's bool/int or int/float coercions."""
+    if type(actual) is not type(expected):
+        return False
+    if isinstance(expected, dict):
+        return set(actual) == set(expected) and all(
+            same_json_value(actual[key], value) for key, value in expected.items()
+        )
+    if isinstance(expected, list):
+        return len(actual) == len(expected) and all(
+            same_json_value(left, right) for left, right in zip(actual, expected)
+        )
+    return actual == expected
+
+
 def validate_component_summary(component: str, summary: dict[str, Any]) -> None:
     if set(summary) != SUMMARY_FIELDS[component]:
         fail("VRQ07_A2_COMPONENT_SUMMARY_SCHEMA_INVALID")
@@ -141,7 +157,7 @@ def validate_component_summary(component: str, summary: dict[str, Any]) -> None:
             "evaluationIdentity": r"renderweave-r5-oracle-evaluation/1\.0:[0-9a-f]{64}",
             "transformIdentity": r"renderweave-r5-oracle-higher-resolution/1\.0:[0-9a-f]{64}",
         }
-    if any(summary.get(key) != value for key, value in expected.items()) \
+    if any(not same_json_value(summary.get(key), value) for key, value in expected.items()) \
             or any(not isinstance(summary.get(key), str)
                    or re.fullmatch(pattern, summary[key]) is None
                    for key, pattern in identity_fields.items()):
