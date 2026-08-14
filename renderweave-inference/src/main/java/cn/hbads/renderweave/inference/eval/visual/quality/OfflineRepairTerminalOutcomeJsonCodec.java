@@ -15,9 +15,10 @@ import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
 import java.util.Objects;
 
-/** Strict canonical codec for payload-safe quality repair decisions. */
-public final class R2R5TriggerDecisionJsonCodec {
-    private static final String ENVELOPE_VERSION = "renderweave-r2r5-trigger-decision-envelope/1.0";
+/** Strict canonical codec for payload-safe conditional ticket outcomes. */
+public final class OfflineRepairTerminalOutcomeJsonCodec {
+    private static final String ENVELOPE_VERSION =
+            "renderweave-offline-repair-terminal-outcome-envelope/1.0";
     private static final int MAXIMUM_BYTES = 1024 * 1024;
     private static final ObjectMapper JSON = JsonMapper.builder(
                     JsonFactory.builder().enable(StreamReadFeature.STRICT_DUPLICATE_DETECTION).build())
@@ -31,56 +32,51 @@ public final class R2R5TriggerDecisionJsonCodec {
             .enable(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS)
             .build();
 
-    public byte[] write(R2R5TriggerDecision decision) {
-        Objects.requireNonNull(decision, "decision");
-        return encode(new Envelope(ENVELOPE_VERSION, decisionIdentity(decision), decision));
+    public byte[] write(OfflineRepairTerminalOutcome outcome) {
+        Objects.requireNonNull(outcome, "outcome");
+        return encode(new Envelope(ENVELOPE_VERSION, outcomeIdentity(outcome), outcome));
     }
 
-    public R2R5TriggerDecision read(byte[] bytes, String expectedIdentity) {
+    public OfflineRepairTerminalOutcome read(byte[] bytes) {
+        return verifiedEnvelope(bytes).outcome();
+    }
+
+    public OfflineRepairTerminalOutcome read(byte[] bytes, String expectedIdentity) {
         var envelope = verifiedEnvelope(bytes);
-        if (!Objects.equals(expectedIdentity, envelope.decisionIdentity())) {
-            throw new IllegalArgumentException("QUALITY_REPAIR_DECISION_IDENTITY_DRIFT");
+        if (!Objects.equals(expectedIdentity, envelope.outcomeIdentity())) {
+            throw new IllegalArgumentException("OFFLINE_TERMINAL_OUTCOME_IDENTITY_DRIFT");
         }
-        return envelope.decision();
+        return envelope.outcome();
     }
 
-    public R2R5TriggerDecision read(byte[] bytes) {
-        return verifiedEnvelope(bytes).decision();
+    public String outcomeIdentity(OfflineRepairTerminalOutcome outcome) {
+        return OfflineRepairTerminalOutcome.IDENTITY_PREFIX
+                + sha256(encode(Objects.requireNonNull(outcome, "outcome")));
     }
 
     private Envelope verifiedEnvelope(byte[] bytes) {
         if (bytes == null || bytes.length == 0 || bytes.length > MAXIMUM_BYTES) {
-            throw new IllegalArgumentException("QUALITY_REPAIR_DECISION_BYTES_INVALID");
+            throw new IllegalArgumentException("OFFLINE_TERMINAL_OUTCOME_BYTES_INVALID");
         }
         try {
             var envelope = JSON.readValue(bytes, Envelope.class);
-            if (!ENVELOPE_VERSION.equals(envelope.envelopeVersion()) || envelope.decision() == null
-                    || !decisionIdentity(envelope.decision()).equals(envelope.decisionIdentity())) {
-                throw new IllegalArgumentException("QUALITY_REPAIR_DECISION_IDENTITY_DRIFT");
+            if (!ENVELOPE_VERSION.equals(envelope.envelopeVersion()) || envelope.outcome() == null
+                    || !outcomeIdentity(envelope.outcome()).equals(envelope.outcomeIdentity())) {
+                throw new IllegalArgumentException("OFFLINE_TERMINAL_OUTCOME_IDENTITY_DRIFT");
             }
             return envelope;
         } catch (IllegalArgumentException failure) {
             throw failure;
         } catch (RuntimeException failure) {
-            throw new IllegalArgumentException("QUALITY_REPAIR_DECISION_CONTRACT_INVALID", failure);
+            throw new IllegalArgumentException("OFFLINE_TERMINAL_OUTCOME_CONTRACT_INVALID", failure);
         }
-    }
-
-    public String decisionIdentity(R2R5TriggerDecision decision) {
-        Objects.requireNonNull(decision, "decision");
-        return "renderweave-r2r5-trigger-decision/1.0:" + sha256(encode(decision));
-    }
-
-    public String evidencePackIdentity(FrozenQualityEvidencePack evidencePack) {
-        Objects.requireNonNull(evidencePack, "evidencePack");
-        return FrozenQualityEvidencePack.VERSION + ":" + sha256(encode(evidencePack));
     }
 
     private static byte[] encode(Object value) {
         try {
             return JSON.writeValueAsBytes(canonicalNode(JSON.valueToTree(value)));
         } catch (RuntimeException failure) {
-            throw new IllegalArgumentException("QUALITY_REPAIR_DECISION_ENCODING_FAILED", failure);
+            throw new IllegalArgumentException("OFFLINE_TERMINAL_OUTCOME_ENCODING_FAILED", failure);
         }
     }
 
@@ -110,7 +106,7 @@ public final class R2R5TriggerDecisionJsonCodec {
 
     private record Envelope(
             String envelopeVersion,
-            String decisionIdentity,
-            R2R5TriggerDecision decision
+            String outcomeIdentity,
+            OfflineRepairTerminalOutcome outcome
     ) { }
 }
