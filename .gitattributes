@@ -2,5 +2,6 @@ renderweave-inference/src/main/resources/visual-eval/v2/*.json text eol=lf
 renderweave-inference/src/main/resources/visual-eval/v2/*.md text eol=lf
 renderweave-inference/src/main/resources/visual-eval/r5/*.json text eol=lf
 renderweave-inference/src/main/resources/visual-eval/r5p/*.json text eol=lf
+renderweave-inference/src/main/resources/visual-eval/r5p/raw/*.png binary
 renderweave-inference/src/test/resources/visual-eval/r5p/*.json text eol=lf
 specs/changes/20260815-r5-paired-product-view-successor.md text eol=lf

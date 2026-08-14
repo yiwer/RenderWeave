@@ -1,0 +1,183 @@
+{
+  "assignmentVersion": "renderweave-r5p-paired-view-assignment/1.0",
+  "evaluationVersion": "renderweave-r5p-paired-view-evaluation/1.0",
+  "approvedSpecIdentity": "spec-sha256:650ad1632347592d1fc34325983744c02563b43d8a565b9b1cd24e1a805a892a",
+  "authorityIdentity": "renderweave-r5p-authority/1.0:05958659a5ffc302e92f6cc6cda8b1efd868e2ec4fa7f92b0d63f821f843441d",
+  "baselineRevision": "57be4d9b249c0aa06a1c0b32abc634c152a97234",
+  "oldAssignmentIdentity": "renderweave-r5-product-transform-assignment/1.0:46c8e4c9c28b8628bac6532deeeb1a9ee311dda58b1a76f23a1b1d70abe7b540",
+  "corpusVersion": "renderweave-visual-stage-corpus/2.0",
+  "corpusIdentity": "renderweave-visual-stage-corpus/2.0:c596621eb680e7e10d42d2e1d1f926995cec9716cc6ef83a96a50ad53adc285c",
+  "annotationSetIdentity": "renderweave-layered-annotation-set/2.0:a6f7796d0433bb59779a3e1b99fa3c20b3e49148d24eb69dfe17682414fa746a",
+  "selectionPolicy": "case-domain-difficulty-failure-slice-metadata-only-pre-result/1.0",
+  "seenUsagePolicy": "veto-only-no-confirmation-no-holdout-no-ac021/1.0",
+  "confirmationUsagePolicy": "sealed-confirmation-only-no-ac021/1.0",
+  "caseAssignments": [
+    {
+      "caseId": "transit-board-v3",
+      "cohort": "SEEN_DIAGNOSTIC",
+      "sourcePartition": "DEV",
+      "caseIdentity": "renderweave-layered-case/2.0:688daa21a13118b5591d3057b6f1f15cef8a0e4f80a6549a4b80b19d8b043c0e",
+      "renderIdentity": "render-sha256:2970b3648b580b46d87253560755fec752babcf3ff2435aa7e1c2c7fdd499790",
+      "rawFixtureResource": "visual-eval/r5p/raw/transit-board-v3.png",
+      "rawFixtureSha256": "2970b3648b580b46d87253560755fec752babcf3ff2435aa7e1c2c7fdd499790",
+      "width": 1024,
+      "height": 768,
+      "regions": [
+        {"baseViewId":"view-00-overview-00","boundingBox":[200,200,9800,2900],"marginPreset":"TIGHT_0000_BPS","resolutionPreset":"INSPECT_LONG_EDGE_2400"},
+        {"baseViewId":"view-00-overview-00","boundingBox":[200,2900,9800,9800],"marginPreset":"TIGHT_0000_BPS","resolutionPreset":"INSPECT_LONG_EDGE_2400"}
+      ]
+    },
+    {
+      "caseId": "restaurant-menu-v3",
+      "cohort": "SEEN_DIAGNOSTIC",
+      "sourcePartition": "DEV",
+      "caseIdentity": "renderweave-layered-case/2.0:6910f5288cbbde4ac0d813affb19e3e1df9fb8c3d7bab85249e56801e2e8db78",
+      "renderIdentity": "render-sha256:409aa4d0634e0c3cafb05573c5b4f3fbbc7b6712ca4c61536b958f6f1d830e26",
+      "rawFixtureResource": "visual-eval/r5p/raw/restaurant-menu-v3.png",
+      "rawFixtureSha256": "409aa4d0634e0c3cafb05573c5b4f3fbbc7b6712ca4c61536b958f6f1d830e26",
+      "width": 1024,
+      "height": 768,
+      "regions": [
+        {"baseViewId":"view-00-overview-00","boundingBox":[200,200,9800,2500],"marginPreset":"TIGHT_0000_BPS","resolutionPreset":"INSPECT_LONG_EDGE_2400"},
+        {"baseViewId":"view-00-overview-00","boundingBox":[200,2500,9800,9800],"marginPreset":"TIGHT_0000_BPS","resolutionPreset":"INSPECT_LONG_EDGE_2400"}
+      ]
+    },
+    {
+      "caseId": "hospital-schedule-v3",
+      "cohort": "SEEN_DIAGNOSTIC",
+      "sourcePartition": "DEV",
+      "caseIdentity": "renderweave-layered-case/2.0:749916a935e98fbf48ae59181e1b6bcde0a0b01a347724af04566c22ac3a92f9",
+      "renderIdentity": "render-sha256:a1d78928a11a598c3a4aaf1fc3f3fecae578604c990dbcc6e79bfdf43b1007d1",
+      "rawFixtureResource": "visual-eval/r5p/raw/hospital-schedule-v3.png",
+      "rawFixtureSha256": "a1d78928a11a598c3a4aaf1fc3f3fecae578604c990dbcc6e79bfdf43b1007d1",
+      "width": 1024,
+      "height": 768,
+      "regions": [
+        {"baseViewId":"view-00-overview-00","boundingBox":[200,200,9800,2500],"marginPreset":"TIGHT_0000_BPS","resolutionPreset":"INSPECT_LONG_EDGE_2400"},
+        {"baseViewId":"view-00-overview-00","boundingBox":[200,2500,9800,9800],"marginPreset":"TIGHT_0000_BPS","resolutionPreset":"INSPECT_LONG_EDGE_2400"}
+      ]
+    },
+    {
+      "caseId": "transit-board-v5",
+      "cohort": "SEEN_DIAGNOSTIC",
+      "sourcePartition": "HOLDOUT",
+      "caseIdentity": "renderweave-layered-case/2.0:c8e155a1da4f8d8d93a646b01c4375773b20c14742f9cb233eebaf5673853c4f",
+      "renderIdentity": "render-sha256:e4c5a31cddf063b23cc1b00f9efe7e8ccad138dc7104c43d39ddfa4273c6ce90",
+      "rawFixtureResource": "visual-eval/r5p/raw/transit-board-v5.png",
+      "rawFixtureSha256": "e4c5a31cddf063b23cc1b00f9efe7e8ccad138dc7104c43d39ddfa4273c6ce90",
+      "width": 1800,
+      "height": 1200,
+      "regions": [
+        {"baseViewId":"view-00-overview-00","boundingBox":[200,200,9800,2900],"marginPreset":"TIGHT_0000_BPS","resolutionPreset":"INSPECT_LONG_EDGE_2400"},
+        {"baseViewId":"view-00-overview-00","boundingBox":[200,2900,9800,9800],"marginPreset":"TIGHT_0000_BPS","resolutionPreset":"INSPECT_LONG_EDGE_2400"}
+      ]
+    },
+    {
+      "caseId": "transit-board-v2",
+      "cohort": "SEALED_CONFIRMATION",
+      "sourcePartition": "DEV",
+      "caseIdentity": "renderweave-layered-case/2.0:3976013e6e00f4c93fa874804366ff1d12df066985ca320fdd20e47f7c2ee08d",
+      "renderIdentity": "render-sha256:be09af5b9a417ef30a743df10a741f41f944242b7774dbbd815df4a30a065f27",
+      "rawFixtureResource": "visual-eval/r5p/raw/transit-board-v2.png",
+      "rawFixtureSha256": "be09af5b9a417ef30a743df10a741f41f944242b7774dbbd815df4a30a065f27",
+      "width": 1000,
+      "height": 1600,
+      "regions": [
+        {"baseViewId":"view-00-overview-00","boundingBox":[200,200,9800,2900],"marginPreset":"TIGHT_0000_BPS","resolutionPreset":"INSPECT_LONG_EDGE_2400"},
+        {"baseViewId":"view-00-overview-00","boundingBox":[200,2900,9800,9800],"marginPreset":"TIGHT_0000_BPS","resolutionPreset":"INSPECT_LONG_EDGE_2400"}
+      ]
+    },
+    {
+      "caseId": "invoice-lines-v3",
+      "cohort": "SEALED_CONFIRMATION",
+      "sourcePartition": "DEV",
+      "caseIdentity": "renderweave-layered-case/2.0:5906265340b4c556196095d90c2b6e34b86ac6c5300dc0fea6fedabe6a18deea",
+      "renderIdentity": "render-sha256:f415dc8b5b6560b4ba1840cccfced2322367209f23d18fa2b59e1d86dbe18f53",
+      "rawFixtureResource": "visual-eval/r5p/raw/invoice-lines-v3.png",
+      "rawFixtureSha256": "f415dc8b5b6560b4ba1840cccfced2322367209f23d18fa2b59e1d86dbe18f53",
+      "width": 1024,
+      "height": 768,
+      "regions": [
+        {"baseViewId":"view-00-overview-00","boundingBox":[200,200,9800,2500],"marginPreset":"TIGHT_0000_BPS","resolutionPreset":"INSPECT_LONG_EDGE_2400"},
+        {"baseViewId":"view-00-overview-00","boundingBox":[200,2500,9800,9800],"marginPreset":"TIGHT_0000_BPS","resolutionPreset":"INSPECT_LONG_EDGE_2400"}
+      ]
+    },
+    {
+      "caseId": "school-timetable-v4",
+      "cohort": "SEALED_CONFIRMATION",
+      "sourcePartition": "DEV",
+      "caseIdentity": "renderweave-layered-case/2.0:5c421a2ddace4db33f68e47a39a165474a917d679ae0f33a7f6a4655fdb4a06a",
+      "renderIdentity": "render-sha256:5b25baf008d216e5e114142643709d57d677efe4ba1aad688ba4717488edd419",
+      "rawFixtureResource": "visual-eval/r5p/raw/school-timetable-v4.png",
+      "rawFixtureSha256": "5b25baf008d216e5e114142643709d57d677efe4ba1aad688ba4717488edd419",
+      "width": 1400,
+      "height": 900,
+      "regions": [
+        {"baseViewId":"view-00-overview-00","boundingBox":[200,200,9800,2500],"marginPreset":"TIGHT_0000_BPS","resolutionPreset":"INSPECT_LONG_EDGE_2400"},
+        {"baseViewId":"view-00-overview-00","boundingBox":[200,2500,9800,9800],"marginPreset":"TIGHT_0000_BPS","resolutionPreset":"INSPECT_LONG_EDGE_2400"}
+      ]
+    },
+    {
+      "caseId": "building-directory-v5",
+      "cohort": "SEALED_CONFIRMATION",
+      "sourcePartition": "HOLDOUT",
+      "caseIdentity": "renderweave-layered-case/2.0:ca5be012237e052ca4adc6726bb8d6c75ed9ce2597b6bee130006b412a7baef9",
+      "renderIdentity": "render-sha256:fee491f5b7f52e34c16119927c72d9172a6f0e3a97eb956227b43d75bc4149e7",
+      "rawFixtureResource": "visual-eval/r5p/raw/building-directory-v5.png",
+      "rawFixtureSha256": "fee491f5b7f52e34c16119927c72d9172a6f0e3a97eb956227b43d75bc4149e7",
+      "width": 1800,
+      "height": 1200,
+      "regions": [
+        {"baseViewId":"view-00-overview-00","boundingBox":[200,200,9800,2500],"marginPreset":"TIGHT_0000_BPS","resolutionPreset":"INSPECT_LONG_EDGE_2400"},
+        {"baseViewId":"view-00-overview-00","boundingBox":[200,2500,9800,9800],"marginPreset":"TIGHT_0000_BPS","resolutionPreset":"INSPECT_LONG_EDGE_2400"}
+      ]
+    }
+  ],
+  "thresholds": {
+    "perCaseTargetImprovementRule": "MATCHED_LINE_INCREASE_OR_CHARACTER_ERROR_REDUCTION",
+    "maximumPerCaseHallucinationIncrease": 0,
+    "minimumConfirmationLineRecallGainBps": 500,
+    "minimumConfirmationCharacterErrorReduction": 1,
+    "maximumConfirmationOrderRegressionBps": 100,
+    "maximumConfirmationRepeatRegressionBps": 100,
+    "coalescingIntersectionOverSmallerAreaBps": 5000
+  },
+  "identities": {
+    "normalizerIdentity": "renderweave-input-normalizer-source-sha256/1.0:71a4f90ee7298fb3ef3a3550e34880ed3216213fc69f31b80f9b0e496570654a",
+    "staticPlannerVersion": "renderweave-visual-view-plan/1.0",
+    "staticPlannerSourceSha256": "e10d2955c9b463ee3996eac333abf4c8f32c2a82faf38e286796e56b7d52fa0c",
+    "actionModuleVersion": "renderweave-bounded-visual-inspection/1.0",
+    "actionModuleSourceSha256": "99df52f72e1b5ff06c064bf96281149cf56e631f6f285bcbb882eb1e09723e4f",
+    "successorPlanVersion": "renderweave-visual-view-plan/2.0",
+    "actionPolicyIdentity": "AdaptiveInspectionPolicy/1.0:6843ae1ce61e0fa1804b3f0ec58c0ff8aba81ecae068d73b612070daa3a5b9bc",
+    "transformVersion": "renderweave-r5-product-raster-transform/1.0",
+    "transformSourceSha256": "3d1b0fd84a3d0600227f20c415fd4c1f333a0a26b8299812f5c412626058e552",
+    "acquisitionPolicyIdentity": "AcquisitionPolicy/1.0:32ade47685c07163e10f77be8b8ed46e420af7b7d381e1363d30886a19e26c52",
+    "capabilityIdentity": "rapidocr-3.9.2-openvino-2026.0.0-ppocrv6-small-c05805399d7d10b1",
+    "adapterIdentity": "rapidocr-local-process/1.0",
+    "adapterSourceSha256": "d715b44731171e5d29f4e405ef2320c5e6e0ea13c8129d53da06715d13875b84",
+    "projectionIdentity": "renderweave-r5p-source-projection/1.0",
+    "coalescingIdentity": "renderweave-r5p-observation-coalescing/1.0",
+    "coalescingTextRule": "unicode-nfc-whitespace-collapse-exact/1.0",
+    "coalescingGeometryRule": "intersection-over-smaller-area-at-least-5000-bps/1.0",
+    "caseEvaluatorIdentity": "renderweave-rapidocr-shadow-case-evaluator/1.0",
+    "evaluatorIdentity": "renderweave-r5p-paired-product-view-evaluator/1.0",
+    "runProtocolIdentity": "two-isolated-complete-paired-runs/1.0",
+    "runtimeIdentity": "renderweave-r5p-runtime/1.0:901eb9abb883969797387fdd45d4aeb7fccf2447743901de15087b2c4eac6e34"
+  },
+  "runtimeComponents": {
+    "os": "Windows 11",
+    "arch": "amd64",
+    "javaVendor": "Oracle Corporation",
+    "javaRuntime": "21.0.11+9-LTS-211",
+    "python": "3.12.13",
+    "rapidocr": "3.9.2",
+    "openvino": "2026.0.0",
+    "imageRuntime": "java2d-bicubic+java-imageio-png/1.0",
+    "adapterSha256": "d715b44731171e5d29f4e405ef2320c5e6e0ea13c8129d53da06715d13875b84",
+    "modelSha256": "c05805399d7d10b1d1e32f2f52faf2a9fe6617db50f6b96221cb3b7be47e58a5"
+  },
+  "externalProviderUsage": {"attempts":0,"reservations":0,"costMicrosCny":0},
+  "apiKeyReads": 0,
+  "terminalCode": "R5P_ASSIGNMENT_FROZEN"
+}
