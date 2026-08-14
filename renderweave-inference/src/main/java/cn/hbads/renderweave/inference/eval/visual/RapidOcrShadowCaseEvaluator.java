@@ -23,11 +23,29 @@ public final class RapidOcrShadowCaseEvaluator {
             long acquisitionMicros
     ) {
         Objects.requireNonNull(evaluationCase, "evaluationCase");
+        return evaluateAgainstSameGold(
+                evaluationCase,
+                observation,
+                acquisitionMicros,
+                evaluationCase.renderIdentity().substring("render-sha256:".length()));
+    }
+
+    /** Evaluates a deterministic local oracle raster against the unchanged normalized gold. */
+    public RapidOcrShadowCaseRecord evaluateAgainstSameGold(
+            LayeredVisualCorpus.Case evaluationCase,
+            DocumentObservationIR observation,
+            long acquisitionMicros,
+            String expectedArtifactId
+    ) {
+        Objects.requireNonNull(evaluationCase, "evaluationCase");
         Objects.requireNonNull(observation, "observation");
+        if (expectedArtifactId == null || !expectedArtifactId.matches("[0-9a-f]{64}")) {
+            throw new IllegalArgumentException("RAPIDOCR_SHADOW_ARTIFACT_MISMATCH");
+        }
         if (acquisitionMicros < 0) throw new IllegalArgumentException("RAPIDOCR_SHADOW_LATENCY_INVALID");
         var artifacts = observation.artifacts();
         if (artifacts.size() != 1 || artifacts.getFirst().sourceOrdinal() != 0
-                || !evaluationCase.renderIdentity().equals("render-sha256:" + artifacts.getFirst().artifactId())) {
+                || !expectedArtifactId.equals(artifacts.getFirst().artifactId())) {
             throw new IllegalArgumentException("RAPIDOCR_SHADOW_ARTIFACT_MISMATCH");
         }
         var projected = new DocumentObservationCompatibilityProjection().project(observation);
