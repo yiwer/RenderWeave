@@ -193,7 +193,7 @@ class OfflineRepairTerminalGateTest {
         assertThrows(IllegalArgumentException.class, () -> gate.closeR2Challenger(
                 OfflineRepairTerminalOutcome.Ticket.VRQ_08_PP_STRUCTUREV3_DEV_SHADOW,
                 decision,
-                identity.substring(0, identity.length() - 1) + "0",
+                identity.substring(0, identity.length() - 1) + (identity.endsWith("0") ? "1" : "0"),
                 capabilities));
         var alternateDecision = new R2R5TriggerDecision(
                 decision.decisionVersion(),
