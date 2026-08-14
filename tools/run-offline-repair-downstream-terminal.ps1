@@ -4,7 +4,8 @@ param(
     [ValidateSet(
         'VRQ_10_SOLE_DEV_WINNER_SELECTION',
         'VRQ_11_WINNER_HOLDOUT',
-        'VRQ_12_IMAGE_ONLY_SCRIPTED_REPLAY')]
+        'VRQ_12_IMAGE_ONLY_SCRIPTED_REPLAY',
+        'VRQ_13_INDEPENDENT_A2_ADMISSION')]
     [string]$Ticket,
     [Parameter(Mandatory = $true)]
     [string]$EvidenceDir,
@@ -55,6 +56,9 @@ elseif ($Ticket -eq 'VRQ_11_WINNER_HOLDOUT') {
 }
 elseif ($Ticket -eq 'VRQ_12_IMAGE_ONLY_SCRIPTED_REPLAY') {
     $expectedNames = @('vrq11-outcome.json')
+}
+elseif ($Ticket -eq 'VRQ_13_INDEPENDENT_A2_ADMISSION') {
+    $expectedNames = @('vrq12-outcome.json')
 }
 if ($PredecessorPaths.Count -ne $expectedNames.Count) {
     throw "$Ticket predecessor count is invalid."

@@ -139,6 +139,26 @@ class OfflineRepairTerminalGateTest {
     }
 
     @Test
+    void recordsThatIndependentAdmissionCannotRunWithoutReplayEvidence() {
+        var decision = stopToSpecR5();
+        var decisionIdentity = new R2R5TriggerDecisionJsonCodec().decisionIdentity(decision);
+        var holdout = holdoutOutcome(decision, decisionIdentity);
+        var replay = gate.closeDownstream(
+                OfflineRepairTerminalOutcome.Ticket.VRQ_12_IMAGE_ONLY_SCRIPTED_REPLAY,
+                decision, decisionIdentity, List.of(holdout));
+
+        var outcome = gate.closeDownstream(
+                OfflineRepairTerminalOutcome.Ticket.VRQ_13_INDEPENDENT_A2_ADMISSION,
+                decision,
+                decisionIdentity,
+                List.of(replay));
+
+        assertEquals("IMAGE_ONLY_REPLAY_UNAVAILABLE", outcome.reasonCode());
+        assertEquals(0, outcome.offlineWorkUsage().independentAdmissionReplays());
+        assertEquals(List.of(codec.outcomeIdentity(replay)), outcome.supportingIdentities());
+    }
+
+    @Test
     void refusesToCloseAChallengerAgainstAnythingExceptTheExactStopToSpecR5Decision() {
         var decision = stopToSpecR5();
         var identity = new R2R5TriggerDecisionJsonCodec().decisionIdentity(decision);
