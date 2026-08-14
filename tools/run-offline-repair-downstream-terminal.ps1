@@ -5,7 +5,8 @@ param(
         'VRQ_10_SOLE_DEV_WINNER_SELECTION',
         'VRQ_11_WINNER_HOLDOUT',
         'VRQ_12_IMAGE_ONLY_SCRIPTED_REPLAY',
-        'VRQ_13_INDEPENDENT_A2_ADMISSION')]
+        'VRQ_13_INDEPENDENT_A2_ADMISSION',
+        'VRQ_14_FRESH_LIVE_REQUEST_ELIGIBILITY')]
     [string]$Ticket,
     [Parameter(Mandatory = $true)]
     [string]$EvidenceDir,
@@ -59,6 +60,9 @@ elseif ($Ticket -eq 'VRQ_12_IMAGE_ONLY_SCRIPTED_REPLAY') {
 }
 elseif ($Ticket -eq 'VRQ_13_INDEPENDENT_A2_ADMISSION') {
     $expectedNames = @('vrq12-outcome.json')
+}
+elseif ($Ticket -eq 'VRQ_14_FRESH_LIVE_REQUEST_ELIGIBILITY') {
+    $expectedNames = @('vrq13-outcome.json')
 }
 if ($PredecessorPaths.Count -ne $expectedNames.Count) {
     throw "$Ticket predecessor count is invalid."
@@ -129,5 +133,10 @@ finally {
     Pop-Location
 }
 
-Write-Host "$Ticket result: BLOCKED_BY_PREDECESSOR; cases=0; ProviderAttempts=0"
+$result = if ($Ticket -eq 'VRQ_14_FRESH_LIVE_REQUEST_ELIGIBILITY') {
+    'LIVE_J1_REQUEST_NOT_ELIGIBLE'
+} else {
+    'BLOCKED_BY_PREDECESSOR'
+}
+Write-Host "$Ticket result: $result; cases=0; ProviderAttempts=0"
 Write-Host "$Ticket evidence: $resolvedEvidenceDir"

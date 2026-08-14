@@ -159,6 +159,32 @@ class OfflineRepairTerminalGateTest {
     }
 
     @Test
+    void deniesFreshLiveRequestEligibilityWithoutIndependentOfflineAdmission() {
+        var decision = stopToSpecR5();
+        var decisionIdentity = new R2R5TriggerDecisionJsonCodec().decisionIdentity(decision);
+        var holdout = holdoutOutcome(decision, decisionIdentity);
+        var replay = gate.closeDownstream(
+                OfflineRepairTerminalOutcome.Ticket.VRQ_12_IMAGE_ONLY_SCRIPTED_REPLAY,
+                decision, decisionIdentity, List.of(holdout));
+        var admission = gate.closeDownstream(
+                OfflineRepairTerminalOutcome.Ticket.VRQ_13_INDEPENDENT_A2_ADMISSION,
+                decision, decisionIdentity, List.of(replay));
+
+        var outcome = gate.closeDownstream(
+                OfflineRepairTerminalOutcome.Ticket.VRQ_14_FRESH_LIVE_REQUEST_ELIGIBILITY,
+                decision,
+                decisionIdentity,
+                List.of(admission));
+
+        assertEquals(OfflineRepairTerminalOutcome.Disposition.LIVE_J1_REQUEST_NOT_ELIGIBLE,
+                outcome.disposition());
+        assertEquals("INDEPENDENT_OFFLINE_ADMISSION_UNAVAILABLE", outcome.reasonCode());
+        assertEquals(0, outcome.offlineWorkUsage().apiKeyReads());
+        assertTrue(outcome.externalProviderUsage().zeroUsage());
+        assertEquals(List.of(codec.outcomeIdentity(admission)), outcome.supportingIdentities());
+    }
+
+    @Test
     void refusesToCloseAChallengerAgainstAnythingExceptTheExactStopToSpecR5Decision() {
         var decision = stopToSpecR5();
         var identity = new R2R5TriggerDecisionJsonCodec().decisionIdentity(decision);

@@ -56,6 +56,8 @@ public final class OfflineRepairTerminalGate {
                     OfflineRepairTerminalOutcome.Ticket.VRQ_11_WINNER_HOLDOUT);
             case VRQ_13_INDEPENDENT_A2_ADMISSION -> Set.of(
                     OfflineRepairTerminalOutcome.Ticket.VRQ_12_IMAGE_ONLY_SCRIPTED_REPLAY);
+            case VRQ_14_FRESH_LIVE_REQUEST_ELIGIBILITY -> Set.of(
+                    OfflineRepairTerminalOutcome.Ticket.VRQ_13_INDEPENDENT_A2_ADMISSION);
             default -> throw invalid("OFFLINE_TERMINAL_DOWNSTREAM_TICKET_INVALID");
         };
         predecessors = List.copyOf(Objects.requireNonNull(predecessors, "predecessors"));

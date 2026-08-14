@@ -46,6 +46,11 @@ TICKETS = {
         "BLOCKED_BY_PREDECESSOR",
         "IMAGE_ONLY_REPLAY_UNAVAILABLE",
     ),
+    "VRQ_14_FRESH_LIVE_REQUEST_ELIGIBILITY": (
+        None,
+        "LIVE_J1_REQUEST_NOT_ELIGIBLE",
+        "INDEPENDENT_OFFLINE_ADMISSION_UNAVAILABLE",
+    ),
 }
 
 EXPECTED_PREDECESSORS = {
@@ -56,6 +61,9 @@ EXPECTED_PREDECESSORS = {
     "VRQ_11_WINNER_HOLDOUT": {"VRQ_10_SOLE_DEV_WINNER_SELECTION"},
     "VRQ_12_IMAGE_ONLY_SCRIPTED_REPLAY": {"VRQ_11_WINNER_HOLDOUT"},
     "VRQ_13_INDEPENDENT_A2_ADMISSION": {"VRQ_12_IMAGE_ONLY_SCRIPTED_REPLAY"},
+    "VRQ_14_FRESH_LIVE_REQUEST_ELIGIBILITY": {
+        "VRQ_13_INDEPENDENT_A2_ADMISSION"
+    },
 }
 
 FORBIDDEN = (
@@ -195,6 +203,13 @@ def main() -> int:
                 + "".join(require_evidence_path(repository, path).read_text(encoding="utf-8")
                           for path in args.predecessor)).lower()
     assert all(token.lower() not in combined for token in FORBIDDEN)
+    if args.ticket == "VRQ_14_FRESH_LIVE_REQUEST_ELIGIBILITY":
+        historical = (
+            "n7-04-plus-canary-product-v45-20260814e",
+            "renderweave-n7-live-ticket-contract/1.0:",
+            "renderweave-visual-evaluation-tree-sha256/2:",
+        )
+        assert all(value not in combined for value in historical)
     revision = subprocess.run(
         ["git", "rev-parse", "HEAD"], cwd=repository, check=True,
         capture_output=True, text=True,
@@ -202,14 +217,18 @@ def main() -> int:
     summary = {
         "apiKeyReads": 0,
         "artifactAcquisitions": 0,
+        "authorizationCreated": False,
         "devCasesExecuted": 0,
         "externalProviderAttempts": 0,
         "externalProviderCostMicrosCny": 0,
         "externalProviderReservations": 0,
         "holdoutCasesAccessed": 0,
+        "historicalIdentityReuse": False,
+        "liveRequestEligible": False,
         "outcomeIdentity": outcome_identity,
         "payloadSafe": True,
         "repositoryRevision": revision,
+        "requestEnvelopeCreated": False,
         "status": "PASS",
         "ticket": args.ticket,
         "verificationLevel": "A2",
