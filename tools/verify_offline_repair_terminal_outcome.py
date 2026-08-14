@@ -26,6 +26,18 @@ TICKETS = {
         "STOPPED_FOR_R5_SUCCESSOR_SPEC",
         "R5_TRIGGERED_REQUIRES_SUCCESSOR_SPEC",
     ),
+    "VRQ_10_SOLE_DEV_WINNER_SELECTION": (
+        None,
+        "BLOCKED_BY_PREDECESSOR",
+        "R2_DEV_REPORTS_UNAVAILABLE",
+    ),
+}
+
+EXPECTED_PREDECESSORS = {
+    "VRQ_10_SOLE_DEV_WINNER_SELECTION": {
+        "VRQ_08_PP_STRUCTUREV3_DEV_SHADOW",
+        "VRQ_09_TESSERACT_DEV_BASELINE",
+    },
 }
 
 FORBIDDEN = (
@@ -86,6 +98,7 @@ def main() -> int:
     parser.add_argument("--ticket", required=True, choices=sorted(TICKETS))
     parser.add_argument("--decision", required=True, type=Path)
     parser.add_argument("--outcome", required=True, type=Path)
+    parser.add_argument("--predecessor", action="append", default=[], type=Path)
     parser.add_argument("--repository", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
     args = parser.parse_args()
@@ -116,30 +129,53 @@ def main() -> int:
     assert routes["R5"]["disposition"] == "TRIGGERED"
     assert zero_values(decision["externalProviderUsage"])
 
-    catalog_path = repository / "renderweave-inference" / "src" / "main" / "resources" \
-        / "visual-eval" / "quality-repair" / "challenger-capabilities-v1.json"
-    catalog_bytes = catalog_path.read_bytes().replace(b"\r\n", b"\n")
-    assert b"\r" not in catalog_bytes
-    catalog_identity = CATALOG_PREFIX + sha256(catalog_bytes)
-    catalog = json.loads(catalog_bytes)
-    capability = next(item for item in catalog["challengers"]
-                      if item["challengerId"] == challenger_id)
-    assert capability["admissionDisposition"] == "NOT_ADMITTED"
-    assert capability["executable"] is False
-    capability_identity = CAPABILITY_PREFIX + framed_identity([catalog_identity, challenger_id])
+    supporting_identities: list[str]
+    if challenger_id is not None:
+        assert args.predecessor == []
+        catalog_path = repository / "renderweave-inference" / "src" / "main" / "resources" \
+            / "visual-eval" / "quality-repair" / "challenger-capabilities-v1.json"
+        catalog_bytes = catalog_path.read_bytes().replace(b"\r\n", b"\n")
+        assert b"\r" not in catalog_bytes
+        catalog_identity = CATALOG_PREFIX + sha256(catalog_bytes)
+        catalog = json.loads(catalog_bytes)
+        capability = next(item for item in catalog["challengers"]
+                          if item["challengerId"] == challenger_id)
+        assert capability["admissionDisposition"] == "NOT_ADMITTED"
+        assert capability["executable"] is False
+        capability_identity = CAPABILITY_PREFIX + framed_identity([catalog_identity, challenger_id])
+        supporting_identities = sorted([catalog_identity, capability_identity])
+    else:
+        expected_tickets = EXPECTED_PREDECESSORS[args.ticket]
+        assert len(args.predecessor) == len(expected_tickets)
+        predecessors = [read_envelope(
+            require_evidence_path(repository, path),
+            "renderweave-offline-repair-terminal-outcome-envelope/1.0",
+            "outcome",
+            "outcomeIdentity",
+            OUTCOME_PREFIX,
+        ) for path in args.predecessor]
+        assert {payload["ticket"] for payload, _ in predecessors} == expected_tickets
+        assert all(payload["rootDecisionIdentity"] == decision_identity
+                   and payload["rootDisposition"] == "STOP_TO_SPEC_R5"
+                   and zero_values(payload["offlineWorkUsage"])
+                   and zero_values(payload["externalProviderUsage"])
+                   for payload, _ in predecessors)
+        supporting_identities = sorted(identity for _, identity in predecessors)
 
     assert outcome["contractVersion"] == "OfflineRepairTerminalOutcome/1.0"
     assert outcome["ticket"] == args.ticket
     assert outcome["rootDecisionIdentity"] == decision_identity
     assert outcome["rootDisposition"] == "STOP_TO_SPEC_R5"
-    assert outcome["supportingIdentities"] == sorted([catalog_identity, capability_identity])
+    assert outcome["supportingIdentities"] == supporting_identities
     assert outcome["disposition"] == disposition
     assert outcome["reasonCode"] == reason_code
     assert zero_values(outcome["offlineWorkUsage"])
     assert zero_values(outcome["externalProviderUsage"])
 
     combined = (decision_path.read_text(encoding="utf-8")
-                + outcome_path.read_text(encoding="utf-8")).lower()
+                + outcome_path.read_text(encoding="utf-8")
+                + "".join(require_evidence_path(repository, path).read_text(encoding="utf-8")
+                          for path in args.predecessor)).lower()
     assert all(token.lower() not in combined for token in FORBIDDEN)
     revision = subprocess.run(
         ["git", "rev-parse", "HEAD"], cwd=repository, check=True,

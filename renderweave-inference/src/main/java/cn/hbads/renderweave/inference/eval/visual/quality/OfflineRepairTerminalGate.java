@@ -2,6 +2,7 @@ package cn.hbads.renderweave.inference.eval.visual.quality;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 /** The fail-closed seam for conditional tickets after an authoritative route stop. */
 public final class OfflineRepairTerminalGate {
@@ -31,6 +32,44 @@ public final class OfflineRepairTerminalGate {
                 rootDecisionIdentity,
                 rootDecision.overallDisposition(),
                 List.of(capabilities.identity(), capability.identity()),
+                OfflineRepairTerminalOutcome.expectedDisposition(ticket),
+                OfflineRepairTerminalOutcome.expectedReasonCode(ticket),
+                OfflineRepairTerminalOutcome.OfflineWorkUsage.zero(),
+                new FrozenQualityEvidencePack.ExternalProviderUsage(0, 0, 0));
+    }
+
+    public OfflineRepairTerminalOutcome closeDownstream(
+            OfflineRepairTerminalOutcome.Ticket ticket,
+            R2R5TriggerDecision rootDecision,
+            String rootDecisionIdentity,
+            List<OfflineRepairTerminalOutcome> predecessors
+    ) {
+        Objects.requireNonNull(ticket, "ticket");
+        rootDecision = requireStopToSpecR5(rootDecision, rootDecisionIdentity);
+        var expectedTickets = switch (ticket) {
+            case VRQ_10_SOLE_DEV_WINNER_SELECTION -> Set.of(
+                    OfflineRepairTerminalOutcome.Ticket.VRQ_08_PP_STRUCTUREV3_DEV_SHADOW,
+                    OfflineRepairTerminalOutcome.Ticket.VRQ_09_TESSERACT_DEV_BASELINE);
+            default -> throw invalid("OFFLINE_TERMINAL_DOWNSTREAM_TICKET_INVALID");
+        };
+        predecessors = List.copyOf(Objects.requireNonNull(predecessors, "predecessors"));
+        if (predecessors.size() != expectedTickets.size()
+                || predecessors.stream().anyMatch(Objects::isNull)
+                || !Set.copyOf(predecessors.stream().map(
+                OfflineRepairTerminalOutcome::ticket).toList()).equals(expectedTickets)
+                || predecessors.stream().anyMatch(outcome ->
+                !rootDecisionIdentity.equals(outcome.rootDecisionIdentity())
+                        || outcome.rootDisposition()
+                        != R2R5TriggerDecision.OverallDisposition.STOP_TO_SPEC_R5)) {
+            throw invalid("OFFLINE_TERMINAL_PREDECESSOR_SET_INVALID");
+        }
+        var codec = new OfflineRepairTerminalOutcomeJsonCodec();
+        return new OfflineRepairTerminalOutcome(
+                OfflineRepairTerminalOutcome.VERSION,
+                ticket,
+                rootDecisionIdentity,
+                rootDecision.overallDisposition(),
+                predecessors.stream().map(codec::outcomeIdentity).toList(),
                 OfflineRepairTerminalOutcome.expectedDisposition(ticket),
                 OfflineRepairTerminalOutcome.expectedReasonCode(ticket),
                 OfflineRepairTerminalOutcome.OfflineWorkUsage.zero(),

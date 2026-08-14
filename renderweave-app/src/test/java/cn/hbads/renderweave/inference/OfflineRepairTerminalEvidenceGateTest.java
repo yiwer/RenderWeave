@@ -12,6 +12,7 @@ import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -28,12 +29,19 @@ class OfflineRepairTerminalEvidenceGateTest {
                 "RENDERWEAVE_OFFLINE_TERMINAL_OUTCOME", outputName(ticket), false);
         var decisionCodec = new R2R5TriggerDecisionJsonCodec();
         var decision = decisionCodec.read(Files.readAllBytes(decisionPath));
-        var outcome = new OfflineRepairTerminalGate().closeR2Challenger(
-                ticket,
-                decision,
-                decisionCodec.decisionIdentity(decision),
-                ChallengerCapabilityAdmission.load());
         var outcomeCodec = new OfflineRepairTerminalOutcomeJsonCodec();
+        var terminalGate = new OfflineRepairTerminalGate();
+        var decisionIdentity = decisionCodec.decisionIdentity(decision);
+        var outcome = switch (ticket) {
+            case VRQ_08_PP_STRUCTUREV3_DEV_SHADOW, VRQ_09_TESSERACT_DEV_BASELINE ->
+                    terminalGate.closeR2Challenger(
+                            ticket, decision, decisionIdentity, ChallengerCapabilityAdmission.load());
+            case VRQ_10_SOLE_DEV_WINNER_SELECTION -> terminalGate.closeDownstream(
+                    ticket, decision, decisionIdentity, List.of(
+                            predecessor(outcomeCodec, 1, "vrq08-outcome.json"),
+                            predecessor(outcomeCodec, 2, "vrq09-outcome.json")));
+            default -> throw new IllegalArgumentException("OFFLINE_TERMINAL_TICKET_NOT_SUPPORTED");
+        };
         Files.write(outputPath, outcomeCodec.write(outcome),
                 StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE);
         assertEquals(ticket, outcomeCodec.read(Files.readAllBytes(outputPath)).ticket());
@@ -43,8 +51,19 @@ class OfflineRepairTerminalEvidenceGateTest {
         return switch (ticket) {
             case VRQ_08_PP_STRUCTUREV3_DEV_SHADOW -> "vrq08-outcome.json";
             case VRQ_09_TESSERACT_DEV_BASELINE -> "vrq09-outcome.json";
+            case VRQ_10_SOLE_DEV_WINNER_SELECTION -> "vrq10-outcome.json";
             default -> throw new IllegalArgumentException("OFFLINE_TERMINAL_TICKET_NOT_SUPPORTED");
         };
+    }
+
+    private static OfflineRepairTerminalOutcome predecessor(
+            OfflineRepairTerminalOutcomeJsonCodec codec,
+            int ordinal,
+            String expectedName
+    ) throws Exception {
+        var path = evidenceFile(
+                "RENDERWEAVE_OFFLINE_TERMINAL_PREDECESSOR_" + ordinal, expectedName, true);
+        return codec.read(Files.readAllBytes(path));
     }
 
     private static Path evidenceFile(String environmentName, String expectedName, boolean mustExist)

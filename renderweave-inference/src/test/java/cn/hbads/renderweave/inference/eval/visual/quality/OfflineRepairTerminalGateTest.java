@@ -63,6 +63,36 @@ class OfflineRepairTerminalGateTest {
     }
 
     @Test
+    void blocksWinnerSelectionOnlyWhenBothStoppedDevOutcomesArePresent() {
+        var decision = stopToSpecR5();
+        var decisionIdentity = new R2R5TriggerDecisionJsonCodec().decisionIdentity(decision);
+        var capabilities = ChallengerCapabilityAdmission.load();
+        var pp = gate.closeR2Challenger(
+                OfflineRepairTerminalOutcome.Ticket.VRQ_08_PP_STRUCTUREV3_DEV_SHADOW,
+                decision, decisionIdentity, capabilities);
+        var tesseract = gate.closeR2Challenger(
+                OfflineRepairTerminalOutcome.Ticket.VRQ_09_TESSERACT_DEV_BASELINE,
+                decision, decisionIdentity, capabilities);
+
+        var outcome = gate.closeDownstream(
+                OfflineRepairTerminalOutcome.Ticket.VRQ_10_SOLE_DEV_WINNER_SELECTION,
+                decision,
+                decisionIdentity,
+                List.of(tesseract, pp));
+
+        assertEquals(OfflineRepairTerminalOutcome.Disposition.BLOCKED_BY_PREDECESSOR,
+                outcome.disposition());
+        assertEquals("R2_DEV_REPORTS_UNAVAILABLE", outcome.reasonCode());
+        assertEquals(List.of(codec.outcomeIdentity(pp), codec.outcomeIdentity(tesseract)).stream()
+                        .sorted().toList(),
+                outcome.supportingIdentities());
+        assertTrue(outcome.offlineWorkUsage().zeroWork());
+        assertThrows(IllegalArgumentException.class, () -> gate.closeDownstream(
+                OfflineRepairTerminalOutcome.Ticket.VRQ_10_SOLE_DEV_WINNER_SELECTION,
+                decision, decisionIdentity, List.of(pp)));
+    }
+
+    @Test
     void refusesToCloseAChallengerAgainstAnythingExceptTheExactStopToSpecR5Decision() {
         var decision = stopToSpecR5();
         var identity = new R2R5TriggerDecisionJsonCodec().decisionIdentity(decision);
