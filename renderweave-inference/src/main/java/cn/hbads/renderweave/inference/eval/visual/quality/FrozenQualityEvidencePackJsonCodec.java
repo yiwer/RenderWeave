@@ -15,9 +15,10 @@ import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
 import java.util.Objects;
 
-/** Strict canonical codec for R5 oracle differential evidence. */
-public final class R5OracleProbeEvidenceJsonCodec {
-    private static final String ENVELOPE_VERSION = "renderweave-r5-oracle-probe-envelope/1.0";
+/** Strict canonical codec for the sole offline decision input. */
+public final class FrozenQualityEvidencePackJsonCodec {
+    private static final String ENVELOPE_VERSION =
+            "renderweave-frozen-quality-evidence-pack-envelope/1.0";
     private static final int MAXIMUM_BYTES = 1024 * 1024;
     private static final ObjectMapper JSON = JsonMapper.builder(
                     JsonFactory.builder().enable(StreamReadFeature.STRICT_DUPLICATE_DETECTION).build())
@@ -31,51 +32,40 @@ public final class R5OracleProbeEvidenceJsonCodec {
             .enable(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS)
             .build();
 
-    public byte[] write(R5OracleProbeEvidence evidence) {
-        Objects.requireNonNull(evidence, "evidence");
-        return encode(new Envelope(ENVELOPE_VERSION, evidenceIdentity(evidence), evidence));
+    public byte[] write(FrozenQualityEvidencePack evidencePack) {
+        Objects.requireNonNull(evidencePack, "evidencePack");
+        return encode(new Envelope(ENVELOPE_VERSION, evidencePackIdentity(evidencePack), evidencePack));
     }
 
-    public R5OracleProbeEvidence read(byte[] bytes, String expectedIdentity) {
-        var envelope = verifiedEnvelope(bytes);
-        if (!Objects.equals(expectedIdentity, envelope.evidenceIdentity())) {
-            throw new IllegalArgumentException("R5_PROBE_IDENTITY_DRIFT");
-        }
-        return envelope.evidence();
-    }
-
-    public R5OracleProbeEvidence read(byte[] bytes) {
-        return verifiedEnvelope(bytes).evidence();
-    }
-
-    private Envelope verifiedEnvelope(byte[] bytes) {
+    public FrozenQualityEvidencePack read(byte[] bytes, String expectedIdentity) {
         if (bytes == null || bytes.length == 0 || bytes.length > MAXIMUM_BYTES) {
-            throw new IllegalArgumentException("R5_PROBE_BYTES_INVALID");
+            throw new IllegalArgumentException("QUALITY_REPAIR_EVIDENCE_PACK_BYTES_INVALID");
         }
         try {
             var envelope = JSON.readValue(bytes, Envelope.class);
-            if (!ENVELOPE_VERSION.equals(envelope.envelopeVersion()) || envelope.evidence() == null
-                    || !evidenceIdentity(envelope.evidence()).equals(envelope.evidenceIdentity())) {
-                throw new IllegalArgumentException("R5_PROBE_IDENTITY_DRIFT");
+            if (!ENVELOPE_VERSION.equals(envelope.envelopeVersion()) || envelope.evidencePack() == null
+                    || !Objects.equals(expectedIdentity, envelope.evidencePackIdentity())
+                    || !evidencePackIdentity(envelope.evidencePack()).equals(envelope.evidencePackIdentity())) {
+                throw new IllegalArgumentException("QUALITY_REPAIR_EVIDENCE_PACK_IDENTITY_DRIFT");
             }
-            return envelope;
+            return envelope.evidencePack();
         } catch (IllegalArgumentException failure) {
             throw failure;
         } catch (RuntimeException failure) {
-            throw new IllegalArgumentException("R5_PROBE_CONTRACT_INVALID", failure);
+            throw new IllegalArgumentException("QUALITY_REPAIR_EVIDENCE_PACK_CONTRACT_INVALID", failure);
         }
     }
 
-    public String evidenceIdentity(R5OracleProbeEvidence evidence) {
-        return "renderweave-r5-oracle-probe-evidence/1.0:"
-                + sha256(encode(Objects.requireNonNull(evidence, "evidence")));
+    public String evidencePackIdentity(FrozenQualityEvidencePack evidencePack) {
+        return FrozenQualityEvidencePack.VERSION + ":"
+                + sha256(encode(Objects.requireNonNull(evidencePack, "evidencePack")));
     }
 
     private static byte[] encode(Object value) {
         try {
             return JSON.writeValueAsBytes(canonicalNode(JSON.valueToTree(value)));
         } catch (RuntimeException failure) {
-            throw new IllegalArgumentException("R5_PROBE_ENCODING_FAILED", failure);
+            throw new IllegalArgumentException("QUALITY_REPAIR_EVIDENCE_PACK_ENCODING_FAILED", failure);
         }
     }
 
@@ -105,7 +95,7 @@ public final class R5OracleProbeEvidenceJsonCodec {
 
     private record Envelope(
             String envelopeVersion,
-            String evidenceIdentity,
-            R5OracleProbeEvidence evidence
+            String evidencePackIdentity,
+            FrozenQualityEvidencePack evidencePack
     ) { }
 }

@@ -37,17 +37,28 @@ public final class R3OrderRepeatProbeEvidenceJsonCodec {
     }
 
     public R3OrderRepeatProbeEvidence read(byte[] bytes, String expectedIdentity) {
+        var envelope = verifiedEnvelope(bytes);
+        if (!Objects.equals(expectedIdentity, envelope.evidenceIdentity())) {
+            throw new IllegalArgumentException("R3_PROBE_IDENTITY_DRIFT");
+        }
+        return envelope.evidence();
+    }
+
+    public R3OrderRepeatProbeEvidence read(byte[] bytes) {
+        return verifiedEnvelope(bytes).evidence();
+    }
+
+    private Envelope verifiedEnvelope(byte[] bytes) {
         if (bytes == null || bytes.length == 0 || bytes.length > MAXIMUM_BYTES) {
             throw new IllegalArgumentException("R3_PROBE_BYTES_INVALID");
         }
         try {
             var envelope = JSON.readValue(bytes, Envelope.class);
             if (!ENVELOPE_VERSION.equals(envelope.envelopeVersion()) || envelope.evidence() == null
-                    || !Objects.equals(expectedIdentity, envelope.evidenceIdentity())
                     || !evidenceIdentity(envelope.evidence()).equals(envelope.evidenceIdentity())) {
                 throw new IllegalArgumentException("R3_PROBE_IDENTITY_DRIFT");
             }
-            return envelope.evidence();
+            return envelope;
         } catch (IllegalArgumentException failure) {
             throw failure;
         } catch (RuntimeException failure) {
