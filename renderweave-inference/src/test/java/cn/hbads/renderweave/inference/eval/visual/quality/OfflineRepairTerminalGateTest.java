@@ -121,6 +121,24 @@ class OfflineRepairTerminalGateTest {
     }
 
     @Test
+    void doesNotStartTheImageOnlyReplayWithoutAQualifiedRepair() {
+        var decision = stopToSpecR5();
+        var decisionIdentity = new R2R5TriggerDecisionJsonCodec().decisionIdentity(decision);
+        var holdout = holdoutOutcome(decision, decisionIdentity);
+
+        var outcome = gate.closeDownstream(
+                OfflineRepairTerminalOutcome.Ticket.VRQ_12_IMAGE_ONLY_SCRIPTED_REPLAY,
+                decision,
+                decisionIdentity,
+                List.of(holdout));
+
+        assertEquals("R2_QUALIFIED_REPAIR_UNAVAILABLE", outcome.reasonCode());
+        assertEquals(0, outcome.offlineWorkUsage().scriptedWorkflowReplays());
+        assertEquals(0, outcome.offlineWorkUsage().productWrites());
+        assertEquals(List.of(codec.outcomeIdentity(holdout)), outcome.supportingIdentities());
+    }
+
+    @Test
     void refusesToCloseAChallengerAgainstAnythingExceptTheExactStopToSpecR5Decision() {
         var decision = stopToSpecR5();
         var identity = new R2R5TriggerDecisionJsonCodec().decisionIdentity(decision);
@@ -158,6 +176,25 @@ class OfflineRepairTerminalGateTest {
                                 R2R5TriggerDecision.RouteDisposition.TRIGGERED)),
                 R2R5TriggerDecision.OverallDisposition.STOP_TO_SPEC_R5,
                 new FrozenQualityEvidencePack.ExternalProviderUsage(0, 0, 0));
+    }
+
+    private OfflineRepairTerminalOutcome holdoutOutcome(
+            R2R5TriggerDecision decision,
+            String decisionIdentity
+    ) {
+        var capabilities = ChallengerCapabilityAdmission.load();
+        var pp = gate.closeR2Challenger(
+                OfflineRepairTerminalOutcome.Ticket.VRQ_08_PP_STRUCTUREV3_DEV_SHADOW,
+                decision, decisionIdentity, capabilities);
+        var tesseract = gate.closeR2Challenger(
+                OfflineRepairTerminalOutcome.Ticket.VRQ_09_TESSERACT_DEV_BASELINE,
+                decision, decisionIdentity, capabilities);
+        var selection = gate.closeDownstream(
+                OfflineRepairTerminalOutcome.Ticket.VRQ_10_SOLE_DEV_WINNER_SELECTION,
+                decision, decisionIdentity, List.of(pp, tesseract));
+        return gate.closeDownstream(
+                OfflineRepairTerminalOutcome.Ticket.VRQ_11_WINNER_HOLDOUT,
+                decision, decisionIdentity, List.of(selection));
     }
 
     private static R2R5TriggerDecision.RouteDecision route(
