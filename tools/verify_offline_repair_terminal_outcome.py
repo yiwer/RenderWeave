@@ -10,6 +10,8 @@ import re
 import subprocess
 from pathlib import Path
 
+from offline_json_contract import payload_safe
+
 
 OUTCOME_PREFIX = "renderweave-offline-repair-terminal-outcome/1.0:"
 DECISION_PREFIX = "renderweave-r2r5-trigger-decision/1.0:"
@@ -86,6 +88,9 @@ OFFLINE_WORK_FIELDS = {
     "apiKeyReads",
 }
 PROVIDER_USAGE_FIELDS = {"attempts", "reservations", "costMicrosCny"}
+CATALOG_IDENTITY_PATTERN = re.compile(r"renderweave-challenger-capability-catalog/1\.0:[0-9a-f]{64}")
+CAPABILITY_IDENTITY_PATTERN = re.compile(r"renderweave-challenger-capability/1\.0:[0-9a-f]{64}")
+OUTCOME_IDENTITY_PATTERN = re.compile(r"renderweave-offline-repair-terminal-outcome/1\.0:[0-9a-f]{64}")
 
 FORBIDDEN = (
     '"ocrText"', '"ocr_text"', '"imageBytes"', '"promptText"',
@@ -120,7 +125,10 @@ def unique_object(pairs: list[tuple[str, object]]) -> dict[str, object]:
 def strict_json(raw: bytes) -> object:
     try:
         text = raw.decode("utf-8", errors="strict")
-        value, end = json.JSONDecoder(object_pairs_hook=unique_object).raw_decode(text)
+        value, end = json.JSONDecoder(
+            object_pairs_hook=unique_object,
+            parse_constant=lambda _value: fail("OFFLINE_TERMINAL_JSON_INVALID"),
+        ).raw_decode(text)
         require(not text[end:].strip(), "OFFLINE_TERMINAL_TRAILING_JSON")
         return value
     except (UnicodeDecodeError, json.JSONDecodeError) as error:
@@ -191,6 +199,43 @@ def require_outcome_shape(value: object) -> None:
             "OFFLINE_TERMINAL_PROVIDER_USAGE_MEMBERS_INVALID")
 
 
+def require_payload_safe(value: object) -> None:
+    require(payload_safe(value), "OFFLINE_TERMINAL_DECODED_PAYLOAD_FORBIDDEN")
+
+
+def require_outcome_semantics(
+    value: object,
+    expected_ticket: str,
+    decision_identity: str,
+) -> None:
+    require_outcome_shape(value)
+    require(expected_ticket in TICKETS, "OFFLINE_TERMINAL_OUTCOME_SEMANTICS_INVALID")
+    challenger_id, disposition, reason_code = TICKETS[expected_ticket]
+    require(value["contractVersion"] == "OfflineRepairTerminalOutcome/1.0"
+            and value["ticket"] == expected_ticket
+            and value["rootDecisionIdentity"] == decision_identity
+            and value["rootDisposition"] == "STOP_TO_SPEC_R5"
+            and value["disposition"] == disposition
+            and value["reasonCode"] == reason_code
+            and zero_values(value["offlineWorkUsage"])
+            and zero_values(value["externalProviderUsage"]),
+            "OFFLINE_TERMINAL_OUTCOME_SEMANTICS_INVALID")
+    supporting = value["supportingIdentities"]
+    require(supporting == sorted(supporting) and len(supporting) == len(set(supporting)),
+            "OFFLINE_TERMINAL_OUTCOME_SEMANTICS_INVALID")
+    if challenger_id is not None:
+        valid_support = len(supporting) == 2 \
+            and sum(CATALOG_IDENTITY_PATTERN.fullmatch(item) is not None for item in supporting) == 1 \
+            and sum(CAPABILITY_IDENTITY_PATTERN.fullmatch(item) is not None for item in supporting) == 1
+    elif expected_ticket == "VRQ_10_SOLE_DEV_WINNER_SELECTION":
+        valid_support = len(supporting) == 2 \
+            and all(OUTCOME_IDENTITY_PATTERN.fullmatch(item) is not None for item in supporting)
+    else:
+        valid_support = len(supporting) == 1 \
+            and OUTCOME_IDENTITY_PATTERN.fullmatch(supporting[0]) is not None
+    require(valid_support, "OFFLINE_TERMINAL_OUTCOME_SEMANTICS_INVALID")
+
+
 def main() -> int:
     require(__debug__, "OFFLINE_TERMINAL_OPTIMIZED_MODE_FORBIDDEN")
     parser = argparse.ArgumentParser()
@@ -220,7 +265,10 @@ def main() -> int:
         "outcomeIdentity",
         OUTCOME_PREFIX,
     )
-    require_outcome_shape(outcome)
+    require(isinstance(decision, dict), "OFFLINE_TERMINAL_DECISION_CONTRACT_INVALID")
+    require_payload_safe(decision)
+    require_payload_safe(outcome)
+    require_outcome_semantics(outcome, args.ticket, decision_identity)
 
     challenger_id, disposition, reason_code = TICKETS[args.ticket]
     require(decision_identity == AUTHORITATIVE_DECISION_IDENTITY,
@@ -267,6 +315,11 @@ def main() -> int:
         ) for path in args.predecessor]
         for predecessor, _ in predecessors:
             require_outcome_shape(predecessor)
+            predecessor_ticket = predecessor["ticket"]
+            require(type(predecessor_ticket) is str and predecessor_ticket in TICKETS,
+                    "OFFLINE_TERMINAL_PREDECESSOR_TICKET_INVALID")
+            require_payload_safe(predecessor)
+            require_outcome_semantics(predecessor, predecessor_ticket, decision_identity)
         require({payload["ticket"] for payload, _ in predecessors} == expected_tickets,
                 "OFFLINE_TERMINAL_PREDECESSOR_TICKET_SET_INVALID")
         require(all(payload["rootDecisionIdentity"] == decision_identity

@@ -11,6 +11,14 @@ import re
 import subprocess
 from typing import Any
 
+from offline_json_contract import (
+    exact_object,
+    payload_safe,
+    raw_payload_safe,
+    same_json_value,
+    strict_nonnegative_int,
+)
+
 
 EVIDENCE_VERSION = "renderweave-r5-oracle-probe/1.0"
 IDENTITY_VERSION = "renderweave-r5-oracle-probe-evidence/1.0"
@@ -23,10 +31,28 @@ RUNNER_VERSION = "renderweave-r5-oracle-probe-runner/1.0"
 EXPECTED_POLICY = "AcquisitionPolicy/1.0:32ade47685c07163e10f77be8b8ed46e420af7b7d381e1363d30886a19e26c52"
 EXPECTED_CAPABILITY = "rapidocr-3.9.2-openvino-2026.0.0-ppocrv6-small-c05805399d7d10b1"
 EXPECTED_ANNOTATION = "renderweave-layered-annotation-set/2.0:a6f7796d0433bb59779a3e1b99fa3c20b3e49148d24eb69dfe17682414fa746a"
-FORBIDDEN = (
-    b"base64", b"data:image", b"ocrtext", b"ocr_text", b"prompttext", b"modeloutput",
-    b"candidatejson", b"rootdocument", b"boundingbox", b'"bbox"', b"inspectionrequest",
-)
+EVIDENCE_FIELDS = frozenset({
+    "acquisitionPolicyIdentity", "actualAcquisitions", "annotationSetIdentity",
+    "assignmentIdentity", "capabilityIdentity", "cases", "contractVersion",
+    "corpusIdentity", "deterministicCases", "devCases", "disposition",
+    "evaluationIdentity", "externalProviderUsage", "holdoutCases", "predicates",
+    "protocolIdentity", "reasonCode", "runs", "transformIdentity", "triggered",
+})
+CASE_FIELDS = frozenset({
+    "baseline", "caseId", "caseIdentity", "deterministic", "oracle", "oracleHeight",
+    "oracleWidth", "partition", "sourceHeight", "sourceWidth",
+})
+METRIC_FIELDS = frozenset({
+    "observationCount", "expectedLines", "matchedLines", "characterErrors",
+    "hallucinationCases", "expectedPrecedenceEdges", "comparablePrecedenceEdges",
+    "correctPrecedenceEdges", "expectedRepeatMemberships", "observableRepeatMemberships",
+})
+PREDICATE_FIELDS = frozenset({
+    "EXACT_ASSIGNMENT", "TWO_RUN_DETERMINISM", "REPOSITORY_ONLY_INPUT",
+    "FIXED_HIGHER_RESOLUTION_TRANSFORM", "STATIC_VIEW_UNREADABLE",
+    "TARGET_SLICE_IMPROVED", "CRITICAL_HALLUCINATION_NON_INCREASE", "STATIC_VIEW_CAUSALITY",
+})
+PROVIDER_USAGE_FIELDS = frozenset({"attempts", "reservations", "costMicrosCny"})
 
 
 class VerificationError(ValueError):
@@ -60,7 +86,10 @@ def unique_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
 def strict_json(raw: bytes) -> Any:
     try:
         text = raw.decode("utf-8", errors="strict")
-        value, end = json.JSONDecoder(object_pairs_hook=unique_object).raw_decode(text)
+        value, end = json.JSONDecoder(
+            object_pairs_hook=unique_object,
+            parse_constant=lambda _value: fail("R5_A2_JSON_INVALID"),
+        ).raw_decode(text)
         if text[end:].strip():
             fail("R5_A2_TRAILING_JSON")
         return value
@@ -70,6 +99,48 @@ def strict_json(raw: bytes) -> Any:
 
 def canonical_json(value: Any) -> bytes:
     return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+
+
+def ensure_decoded_payload_safe(value: Any) -> None:
+    if not payload_safe(value):
+        fail("R5_A2_DECODED_PAYLOAD_FORBIDDEN")
+
+
+def validate_evidence_shape(evidence: Any) -> None:
+    if not exact_object(evidence, EVIDENCE_FIELDS) \
+            or evidence["contractVersion"] != EVIDENCE_VERSION:
+        fail("R5_A2_EVIDENCE_CONTRACT_INVALID")
+    if any(type(evidence[field]) is not str for field in (
+        "acquisitionPolicyIdentity", "annotationSetIdentity", "assignmentIdentity",
+        "capabilityIdentity", "corpusIdentity", "disposition", "evaluationIdentity",
+        "protocolIdentity", "reasonCode", "transformIdentity",
+    )) or type(evidence["triggered"]) is not bool:
+        fail("R5_A2_EVIDENCE_CONTRACT_INVALID")
+    if any(not strict_nonnegative_int(evidence[field]) for field in (
+        "actualAcquisitions", "deterministicCases", "devCases", "holdoutCases", "runs",
+    )):
+        fail("R5_A2_EVIDENCE_CONTRACT_INVALID")
+    predicates = evidence["predicates"]
+    if not exact_object(predicates, PREDICATE_FIELDS) \
+            or any(type(value) is not str for value in predicates.values()):
+        fail("R5_A2_EVIDENCE_CONTRACT_INVALID")
+    usage = evidence["externalProviderUsage"]
+    if not exact_object(usage, PROVIDER_USAGE_FIELDS) \
+            or not all(strict_nonnegative_int(value) for value in usage.values()):
+        fail("R5_A2_EVIDENCE_CONTRACT_INVALID")
+    cases = evidence["cases"]
+    if type(cases) is not list:
+        fail("R5_A2_EVIDENCE_CONTRACT_INVALID")
+    for item in cases:
+        if not exact_object(item, CASE_FIELDS) \
+                or any(type(item[field]) is not str for field in ("caseId", "caseIdentity", "partition")) \
+                or type(item["deterministic"]) is not bool \
+                or any(not strict_nonnegative_int(item[field]) for field in (
+                    "oracleHeight", "oracleWidth", "sourceHeight", "sourceWidth",
+                )):
+            fail("R5_A2_EVIDENCE_CONTRACT_INVALID")
+        verify_metrics(item["baseline"])
+        verify_metrics(item["oracle"])
 
 
 def framed_hash(values: list[str]) -> str:
@@ -104,12 +175,8 @@ def oracle_dimensions(width: int, height: int) -> tuple[int, int]:
 
 
 def verify_metrics(value: dict[str, Any]) -> None:
-    expected = {
-        "observationCount", "expectedLines", "matchedLines", "characterErrors", "hallucinationCases",
-        "expectedPrecedenceEdges", "comparablePrecedenceEdges", "correctPrecedenceEdges",
-        "expectedRepeatMemberships", "observableRepeatMemberships",
-    }
-    if set(value) != expected or any(not isinstance(item, int) or item < 0 for item in value.values()):
+    if not exact_object(value, METRIC_FIELDS) \
+            or any(not strict_nonnegative_int(item) for item in value.values()):
         fail("R5_A2_CASE_METRICS_INVALID")
     if value["matchedLines"] > value["expectedLines"] \
             or value["correctPrecedenceEdges"] > value["comparablePrecedenceEdges"] \
@@ -120,15 +187,17 @@ def verify_metrics(value: dict[str, Any]) -> None:
 
 def verify(evidence_path: pathlib.Path, repository: pathlib.Path) -> dict[str, Any]:
     raw = evidence_path.read_bytes()
-    if not raw or len(raw) > 1024 * 1024 or any(marker in raw.lower() for marker in FORBIDDEN):
+    if not raw or len(raw) > 1024 * 1024 or not raw_payload_safe(raw):
         fail("R5_A2_EVIDENCE_BYTES_INVALID")
     envelope = strict_json(raw)
     if set(envelope) != {"envelopeVersion", "evidenceIdentity", "evidence"} \
             or envelope["envelopeVersion"] != ENVELOPE_VERSION:
         fail("R5_A2_ENVELOPE_INVALID")
     evidence = envelope["evidence"]
+    ensure_decoded_payload_safe(envelope)
+    validate_evidence_shape(evidence)
     identity = f"{IDENTITY_VERSION}:{hashlib.sha256(canonical_json(evidence)).hexdigest()}"
-    if envelope["evidenceIdentity"] != identity or evidence["contractVersion"] != EVIDENCE_VERSION:
+    if not same_json_value(envelope["evidenceIdentity"], identity):
         fail("R5_A2_IDENTITY_DRIFT")
 
     protocol_doc, protocol_identity = load_protocol(repository)
@@ -159,10 +228,13 @@ def verify(evidence_path: pathlib.Path, repository: pathlib.Path) -> dict[str, A
         "capabilityIdentity": EXPECTED_CAPABILITY,
         "acquisitionPolicyIdentity": EXPECTED_POLICY,
     }
-    if any(evidence.get(key) != value for key, value in expected_identities.items()):
+    if any(not same_json_value(evidence.get(key), value)
+           for key, value in expected_identities.items()):
         fail("R5_A2_SOURCE_IDENTITY_DRIFT")
-    if evidence["runs"] != 2 or evidence["devCases"] != 3 or evidence["holdoutCases"] != 1 \
-            or evidence["actualAcquisitions"] != 16:
+    if not same_json_value(evidence["runs"], 2) \
+            or not same_json_value(evidence["devCases"], 3) \
+            or not same_json_value(evidence["holdoutCases"], 1) \
+            or not same_json_value(evidence["actualAcquisitions"], 16):
         fail("R5_A2_ACCOUNTING_INVALID")
 
     cases = evidence["cases"]
@@ -180,10 +252,6 @@ def verify(evidence_path: pathlib.Path, repository: pathlib.Path) -> dict[str, A
         expected_dimensions = oracle_dimensions(item["sourceWidth"], item["sourceHeight"])
         if (item["oracleWidth"], item["oracleHeight"]) != expected_dimensions:
             fail("R5_A2_TRANSFORM_DRIFT")
-        verify_metrics(item["baseline"])
-        verify_metrics(item["oracle"])
-        if not isinstance(item["deterministic"], bool):
-            fail("R5_A2_DETERMINISM_INVALID")
     if dev != 3 or holdout != 1:
         fail("R5_A2_PARTITION_INVALID")
 
@@ -219,15 +287,15 @@ def verify(evidence_path: pathlib.Path, repository: pathlib.Path) -> dict[str, A
             )
         )
     )
-    if evidence["deterministicCases"] != deterministic_cases \
-            or evidence["predicates"] != predicates \
-            or evidence["disposition"] != disposition \
-            or evidence["triggered"] != causal \
-            or evidence["reasonCode"] != reason:
+    if not same_json_value(evidence["deterministicCases"], deterministic_cases) \
+            or not same_json_value(evidence["predicates"], predicates) \
+            or not same_json_value(evidence["disposition"], disposition) \
+            or not same_json_value(evidence["triggered"], causal) \
+            or not same_json_value(evidence["reasonCode"], reason):
         fail("R5_A2_DECISION_DRIFT")
-    if evidence["externalProviderUsage"] != {
+    if not same_json_value(evidence["externalProviderUsage"], {
         "attempts": 0, "reservations": 0, "costMicrosCny": 0,
-    }:
+    }):
         fail("R5_A2_PROVIDER_USAGE_NONZERO")
     return {
         "verifierVersion": "renderweave-vrq06-r5-verifier/1.0",

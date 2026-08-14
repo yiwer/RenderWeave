@@ -75,6 +75,9 @@ $env:RENDERWEAVE_VRQ06_R5_EVIDENCE = $evidencePath
 
 Push-Location $repoRoot
 try {
+    Invoke-Checked 'vrq06-independent-verifier-regressions' {
+        & python.exe tools/test_verify_vrq06_r5_probe.py
+    }
     Invoke-Checked 'vrq06-adapter-contract-tests' {
         & $pythonExecutable tools/document-vision/test_rapidocr_adapter.py
     }

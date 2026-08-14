@@ -11,6 +11,21 @@ import unittest
 import verify_offline_repair_terminal_outcome as verifier
 
 
+def verifier_test_outcome(ticket: str, supporting: list[str]) -> dict[str, object]:
+    _, disposition, reason = verifier.TICKETS[ticket]
+    return {
+        "contractVersion": "OfflineRepairTerminalOutcome/1.0",
+        "ticket": ticket,
+        "rootDecisionIdentity": verifier.AUTHORITATIVE_DECISION_IDENTITY,
+        "rootDisposition": "STOP_TO_SPEC_R5",
+        "supportingIdentities": sorted(supporting),
+        "disposition": disposition,
+        "reasonCode": reason,
+        "offlineWorkUsage": {key: 0 for key in verifier.OFFLINE_WORK_FIELDS},
+        "externalProviderUsage": {key: 0 for key in verifier.PROVIDER_USAGE_FIELDS},
+    }
+
+
 class OfflineRepairTerminalVerifierTest(unittest.TestCase):
     def test_duplicate_json_member_is_rejected(self) -> None:
         with self.assertRaisesRegex(
@@ -50,6 +65,33 @@ class OfflineRepairTerminalVerifierTest(unittest.TestCase):
             verifier.VerificationError, "OFFLINE_TERMINAL_OUTCOME_MEMBERS_INVALID"
         ):
             verifier.require_outcome_shape(outcome)
+
+    def test_predecessor_semantics_are_reconstructed_not_caller_attested(self) -> None:
+        predecessor = verifier_test_outcome(
+            "VRQ_10_SOLE_DEV_WINNER_SELECTION",
+            [verifier.OUTCOME_PREFIX + "a" * 64, verifier.OUTCOME_PREFIX + "b" * 64],
+        )
+        verifier.require_outcome_semantics(
+            predecessor,
+            "VRQ_10_SOLE_DEV_WINNER_SELECTION",
+            verifier.AUTHORITATIVE_DECISION_IDENTITY,
+        )
+        predecessor["disposition"] = "LIVE_J1_REQUEST_NOT_ELIGIBLE"
+        with self.assertRaisesRegex(
+            verifier.VerificationError, "OFFLINE_TERMINAL_OUTCOME_SEMANTICS_INVALID"
+        ):
+            verifier.require_outcome_semantics(
+                predecessor,
+                "VRQ_10_SOLE_DEV_WINNER_SELECTION",
+                verifier.AUTHORITATIVE_DECISION_IDENTITY,
+            )
+
+    def test_decoded_payload_marker_is_rejected(self) -> None:
+        decoded = verifier.strict_json(b'{"\\u006dodelOutput":"secret"}')
+        with self.assertRaisesRegex(
+            verifier.VerificationError, "OFFLINE_TERMINAL_DECODED_PAYLOAD_FORBIDDEN"
+        ):
+            verifier.require_payload_safe(decoded)
 
     def test_python_optimized_mode_is_rejected_before_argument_parsing(self) -> None:
         script = pathlib.Path(verifier.__file__).resolve()

@@ -68,6 +68,9 @@ $env:RENDERWEAVE_VRQ05_R3_EVIDENCE = $evidencePath
 
 Push-Location $repoRoot
 try {
+    Invoke-Checked 'vrq05-independent-verifier-regressions' {
+        & python.exe tools/test_verify_vrq05_r3_probe.py
+    }
     Invoke-Checked 'vrq05-java-r3-probe' {
         & mvn.cmd -B -ntp -pl renderweave-app -am `
             '-Dtest=R3OrderRepeatProbeEvidenceTest,R3OrderRepeatProbeGateTest' `
