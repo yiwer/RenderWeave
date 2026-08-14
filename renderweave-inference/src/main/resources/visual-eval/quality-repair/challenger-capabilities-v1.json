@@ -1,0 +1,198 @@
+{
+  "catalogVersion": "renderweave-challenger-capability-catalog/1.0",
+  "successorSpecSha256": "4632b609d4ce5726b0671e8a56fc6674e182f22152231b727622662e14b50a0e",
+  "optionalThirdChallenger": "NONE",
+  "maximumResourceEnvelope": {
+    "maximumStartupMillis": 300000,
+    "maximumCaseP95Millis": 120000,
+    "maximumPeakRamMiB": 12288,
+    "maximumDiskMiB": 15360,
+    "maximumGpuVramMiB": 12288
+  },
+  "challengers": [
+    {
+      "challengerId": "pp-structurev3",
+      "priority": 1,
+      "role": "PRIMARY_LAYOUT_CHALLENGER",
+      "adapterKind": "PP_STRUCTURE_V3",
+      "backend": "PADDLE_INFERENCE_UNRESOLVED",
+      "packagePins": [
+        {
+          "name": "paddleocr",
+          "version": "3.7.0",
+          "sha256": "c0f0a81ad4112727f30c6fcf986ac0ef6a120d31ee0991a01fae0357ee32d338",
+          "sourceReference": "https://pypi.org/project/paddleocr/3.7.0/",
+          "immutableRevision": "b03f46425e8ff4442b268ce449e3eef758146cd4",
+          "upstreamObjectIdentity": null,
+          "pinDisposition": "UPSTREAM_PIN_RECORDED_NOT_STAGED"
+        },
+        {
+          "name": "paddlex",
+          "version": "3.7.2",
+          "sha256": "f1678bf650bbaccfd8f0d4e49d0ae631b4685c829fdae6e802ccd90d4fcb9a7f",
+          "sourceReference": "https://pypi.org/project/paddlex/3.7.2/",
+          "immutableRevision": "ffb64904d23708863ff5b8da312a5cbd52a7f462",
+          "upstreamObjectIdentity": null,
+          "pinDisposition": "UPSTREAM_PIN_RECORDED_NOT_STAGED"
+        },
+        {
+          "name": "paddlepaddle-cpu-win-x64-cp312",
+          "version": "3.3.1",
+          "sha256": "324b5122cf3887dfbd15db17f36e2421ef923fd4569d26111bf1a21fe84d442b",
+          "sourceReference": "https://pypi.org/project/paddlepaddle/3.3.1/",
+          "immutableRevision": "7688495538f4d6c1893f084dd238a402e8f68ab6",
+          "upstreamObjectIdentity": null,
+          "pinDisposition": "UPSTREAM_PIN_RECORDED_NOT_STAGED"
+        }
+      ],
+      "weightPins": [
+        {
+          "name": "PP-DocLayout_plus-L/inference.pdiparams",
+          "version": "aa52b8528c84f9b1a34ac3a88fe0e576edb9d11d",
+          "sha256": "24ca3e2e442164505e250deef59f7ee9a54ea12dd32875c9cd6155d959dc97da",
+          "sourceReference": "https://huggingface.co/PaddlePaddle/PP-DocLayout_plus-L",
+          "immutableRevision": "aa52b8528c84f9b1a34ac3a88fe0e576edb9d11d",
+          "upstreamObjectIdentity": null,
+          "pinDisposition": "UPSTREAM_PIN_RECORDED_NOT_STAGED"
+        },
+        {
+          "name": "PP-OCRv5_server_det/inference.pdiparams",
+          "version": "ca867c897ecbca8873081573a802ad70d499cb94",
+          "sha256": "183146fe9d9910352f68482f623bcbbb9fa7b9e8fa1463b9ad288cef00524d2d",
+          "sourceReference": "https://huggingface.co/PaddlePaddle/PP-OCRv5_server_det",
+          "immutableRevision": "ca867c897ecbca8873081573a802ad70d499cb94",
+          "upstreamObjectIdentity": null,
+          "pinDisposition": "UPSTREAM_PIN_RECORDED_NOT_STAGED"
+        },
+        {
+          "name": "PP-OCRv5_server_rec/inference.pdiparams",
+          "version": "b26c3587fda8da3c8ec0ce357214b4d661ff1558",
+          "sha256": "63853f062a5f4089befc16f565a68277618e0da5cb45468b49d11079de0ada77",
+          "sourceReference": "https://huggingface.co/PaddlePaddle/PP-OCRv5_server_rec",
+          "immutableRevision": "b26c3587fda8da3c8ec0ce357214b4d661ff1558",
+          "upstreamObjectIdentity": null,
+          "pinDisposition": "UPSTREAM_PIN_RECORDED_NOT_STAGED"
+        }
+      ],
+      "codeLicense": {
+        "spdxExpression": "Apache-2.0",
+        "evidenceReference": "https://github.com/PaddlePaddle/PaddleOCR/blob/main/LICENSE",
+        "decision": "J0_PENDING",
+        "reasonCode": "CODE_LICENSE_REVIEW_NOT_APPROVED"
+      },
+      "weightLicense": {
+        "spdxExpression": "Apache-2.0",
+        "evidenceReference": "https://huggingface.co/PaddlePaddle/PP-DocLayout_plus-L",
+        "decision": "J0_PENDING",
+        "reasonCode": "WEIGHT_LICENSE_NOT_EXPLICITLY_APPROVED"
+      },
+      "preprocessingIdentity": "pp-structurev3-preprocess-unresolved/1.0",
+      "postprocessingIdentity": "pp-structurev3-to-document-observation-ir-unresolved/1.0",
+      "resourceEnvelope": {
+        "maximumStartupMillis": 300000,
+        "maximumCaseP95Millis": 120000,
+        "maximumPeakRamMiB": 12288,
+        "maximumDiskMiB": 15360,
+        "maximumGpuVramMiB": 12288
+      },
+      "windowsDeployment": "UNVERIFIED_J0",
+      "deploymentForm": "LOCAL_PROCESS_SHADOW_ONLY",
+      "runtimeNetworkPolicy": "DENY_ALL",
+      "runtimeDownloadAllowed": false,
+      "provenanceReferences": [
+        "https://github.com/PaddlePaddle/PaddleOCR",
+        "https://www.paddleocr.ai/latest/en/version3.x/pipeline_usage/PP-StructureV3.html"
+      ],
+      "admissionDisposition": "NOT_ADMITTED",
+      "missingAdmissionDimensions": [
+        "LICENSE_J1",
+        "TRANSITIVE_LOCK",
+        "LOCAL_MODEL_SET",
+        "RUNTIME_NETWORK_DENIAL",
+        "WINDOWS_RESOURCE_ENVELOPE",
+        "TWO_RUN_DETERMINISM",
+        "LOCAL_CAPABILITY"
+      ],
+      "executable": false
+    },
+    {
+      "challengerId": "tesseract-tsv-hocr",
+      "priority": 2,
+      "role": "INDEPENDENT_CPU_BASELINE",
+      "adapterKind": "TESSERACT_TSV_HOCR",
+      "backend": "CPU_ONLY",
+      "packagePins": [
+        {
+          "name": "tesseract-ocr-w64-setup",
+          "version": "5.5.3.20260724",
+          "sha256": "bee9e3434bd94fd65387d9be28cd467a41f61b1275383b55b0f59a1331270ae4",
+          "sourceReference": "https://github.com/tesseract-ocr/tesseract/releases/tag/5.5.3",
+          "immutableRevision": "db0ec62f81b0737fbbe184d8fea40af5738f8eef",
+          "upstreamObjectIdentity": null,
+          "pinDisposition": "UPSTREAM_PIN_RECORDED_NOT_STAGED"
+        }
+      ],
+      "weightPins": [
+        {
+          "name": "eng.traineddata",
+          "version": "87416418657359cb625c412a48b6e1d6d41c29bd",
+          "sha256": null,
+          "sourceReference": "https://github.com/tesseract-ocr/tessdata_fast/tree/87416418657359cb625c412a48b6e1d6d41c29bd",
+          "immutableRevision": "87416418657359cb625c412a48b6e1d6d41c29bd",
+          "upstreamObjectIdentity": "git-blob-sha1:bbef4675053b5b468cdb477053e28b1c698ba08e",
+          "pinDisposition": "UPSTREAM_REVISION_RECORDED_SHA256_MISSING"
+        },
+        {
+          "name": "chi_sim.traineddata",
+          "version": "87416418657359cb625c412a48b6e1d6d41c29bd",
+          "sha256": null,
+          "sourceReference": "https://github.com/tesseract-ocr/tessdata_fast/tree/87416418657359cb625c412a48b6e1d6d41c29bd",
+          "immutableRevision": "87416418657359cb625c412a48b6e1d6d41c29bd",
+          "upstreamObjectIdentity": "git-blob-sha1:388bac276d033d06e5ed5ba7a7ad14ae58f97dab",
+          "pinDisposition": "UPSTREAM_REVISION_RECORDED_SHA256_MISSING"
+        }
+      ],
+      "codeLicense": {
+        "spdxExpression": "Apache-2.0",
+        "evidenceReference": "https://github.com/tesseract-ocr/tesseract/blob/main/LICENSE",
+        "decision": "J0_PENDING",
+        "reasonCode": "CODE_LICENSE_REVIEW_NOT_APPROVED"
+      },
+      "weightLicense": {
+        "spdxExpression": "Apache-2.0",
+        "evidenceReference": "https://github.com/tesseract-ocr/tessdata_fast/blob/main/LICENSE",
+        "decision": "J0_PENDING",
+        "reasonCode": "WEIGHT_LICENSE_REVIEW_NOT_APPROVED"
+      },
+      "preprocessingIdentity": "tesseract-source-png-unresolved/1.0",
+      "postprocessingIdentity": "tesseract-tsv-hocr-to-document-observation-ir-unresolved/1.0",
+      "resourceEnvelope": {
+        "maximumStartupMillis": 60000,
+        "maximumCaseP95Millis": 60000,
+        "maximumPeakRamMiB": 4096,
+        "maximumDiskMiB": 2048,
+        "maximumGpuVramMiB": 0
+      },
+      "windowsDeployment": "UNVERIFIED_J0",
+      "deploymentForm": "LOCAL_PROCESS_SHADOW_ONLY",
+      "runtimeNetworkPolicy": "DENY_ALL",
+      "runtimeDownloadAllowed": false,
+      "provenanceReferences": [
+        "https://github.com/tesseract-ocr/tesseract",
+        "https://tesseract-ocr.github.io/tessdoc/Installation.html",
+        "https://github.com/tesseract-ocr/tessdata_fast"
+      ],
+      "admissionDisposition": "NOT_ADMITTED",
+      "missingAdmissionDimensions": [
+        "LICENSE_J1",
+        "WINDOWS_BINARY",
+        "TRAINEDDATA_SHA256",
+        "RUNTIME_NETWORK_DENIAL",
+        "WINDOWS_RESOURCE_ENVELOPE",
+        "TWO_RUN_DETERMINISM",
+        "LOCAL_CAPABILITY"
+      ],
+      "executable": false
+    }
+  ]
+}
