@@ -17,11 +17,11 @@ CATALOG_PREFIX = "renderweave-challenger-capability-catalog/1.0:"
 CAPABILITY_PREFIX = "renderweave-challenger-capability/1.0:"
 AUTHORITATIVE_DECISION_IDENTITY = (
     "renderweave-r2r5-trigger-decision/1.0:"
-    "1d1a9db92e8d4362de90e6298bb6110ac70515fc75dc5c5df4ebdbe9dc831ab0"
+    "9d4dbb3476f1e2dc78daa55f947ce4a5f0f794ece1b1ba1f73352111137748b2"
 )
 AUTHORITATIVE_EVIDENCE_PACK_IDENTITY = (
     "renderweave-frozen-quality-evidence-pack/1.0:"
-    "c67e545efa75aa8a325fbd9e46e895138e97c0ff932b57a9bf5a5cf669447136"
+    "e7eedac6e6e7b3d02aafd21aed144511172c3bed65ad4d3995d2df065209ec72"
 )
 
 TICKETS = {
