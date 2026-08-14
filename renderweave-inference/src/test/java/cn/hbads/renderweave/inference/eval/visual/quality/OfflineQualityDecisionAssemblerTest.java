@@ -5,8 +5,11 @@ import cn.hbads.renderweave.inference.eval.visual.RapidOcrShadowEvaluation;
 import cn.hbads.renderweave.inference.vision.DocumentObservationIR;
 import cn.hbads.renderweave.inference.vision.RapidOcrBaselineContract;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.json.JsonMapper;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -23,7 +26,7 @@ class OfflineQualityDecisionAssemblerTest {
 
         var bundle = new OfflineQualityDecisionAssembler().assemble(
                 causal, ChallengerCapabilityAdmission.load(), r3, r5,
-                verifiedComponents(causal, r3, r5));
+                componentEvidenceAuthority(causal, r3, r5));
 
         assertEquals(R2R5TriggerDecision.OverallDisposition.STOP_TO_SPEC_R5,
                 bundle.decision().overallDisposition());
@@ -49,35 +52,89 @@ class OfflineQualityDecisionAssemblerTest {
                 decisionCodec.read(bundle.encodedDecision(), bundle.decisionIdentity())));
     }
 
-    private static List<FrozenQualityEvidencePack.ComponentVerification> verifiedComponents(
+    private static OfflineQualityDecisionAssembler.ComponentEvidenceAuthority componentEvidenceAuthority(
             RapidOcrCausalEvidencePack causal,
             R3OrderRepeatProbeEvidence r3,
             R5OracleProbeEvidence r5
     ) {
-        return List.of(
-                verified(FrozenQualityEvidencePack.Component.RAPIDOCR_CAUSAL,
-                        new RapidOcrCausalEvidencePackJsonCodec().evidenceIdentity(causal), "a"),
-                verified(FrozenQualityEvidencePack.Component.R3_PROBE,
-                        new R3OrderRepeatProbeEvidenceJsonCodec().evidenceIdentity(r3), "b"),
-                verified(FrozenQualityEvidencePack.Component.R5_PROBE,
-                        new R5OracleProbeEvidenceJsonCodec().evidenceIdentity(r5), "c"));
+        var rapidCodec = new RapidOcrCausalEvidencePackJsonCodec();
+        var r3Codec = new R3OrderRepeatProbeEvidenceJsonCodec();
+        var r5Codec = new R5OracleProbeEvidenceJsonCodec();
+        return new OfflineQualityDecisionAssembler.ComponentEvidenceAuthority(
+                rapidCodec.write(causal),
+                summary(FrozenQualityEvidencePack.Component.RAPIDOCR_CAUSAL,
+                        rapidCodec.evidenceIdentity(causal)),
+                r3Codec.write(r3),
+                summary(FrozenQualityEvidencePack.Component.R3_PROBE, r3Codec.evidenceIdentity(r3)),
+                r5Codec.write(r5),
+                summary(FrozenQualityEvidencePack.Component.R5_PROBE, r5Codec.evidenceIdentity(r5)),
+                "d".repeat(40));
     }
 
-    private static FrozenQualityEvidencePack.ComponentVerification verified(
+    private static byte[] summary(
             FrozenQualityEvidencePack.Component component,
-            String evidenceIdentity,
-            String digestCharacter
+            String evidenceIdentity
     ) {
-        return new FrozenQualityEvidencePack.ComponentVerification(
-                component,
-                evidenceIdentity,
-                digestCharacter.repeat(64),
-                digestCharacter.repeat(64),
-                component.verifierVersion(),
-                "A2_CROSS_IMPLEMENTATION_RECOMPUTE",
-                "d".repeat(40),
-                FrozenQualityEvidencePack.VerificationResult.PASS,
-                new FrozenQualityEvidencePack.ExternalProviderUsage(0, 0, 0));
+        Map<String, Object> value = new HashMap<>();
+        value.put("assurance", "A2_CROSS_IMPLEMENTATION_RECOMPUTE");
+        value.put("evidenceIdentity", evidenceIdentity);
+        value.put("externalProviderCostMicrosCny", 0);
+        value.put("providerAttempts", 0);
+        value.put("providerReservations", 0);
+        value.put("repositoryRevision", "d".repeat(40));
+        value.put("result", "PASS");
+        value.put("verifierVersion", component.verifierVersion());
+        switch (component) {
+            case RAPIDOCR_CAUSAL -> {
+                value.put("actualAcquisitions", 120);
+                value.put("attributionResults", Map.of(
+                        "LAYOUT", "OBSERVED_CONTRIBUTOR",
+                        "MATERIALIZER", "MISSING",
+                        "OBSERVATION", "OBSERVED_CONTRIBUTOR",
+                        "ORDER_REPEAT", "MISSING",
+                        "SCORER", "EXCLUDED_BY_CURRENT_EVIDENCE",
+                        "SEMANTIC", "OBSERVED_CONTRIBUTOR",
+                        "SHAPE_CODEC", "EXCLUDED_BY_CURRENT_EVIDENCE",
+                        "STATIC_VIEW", "MISSING"));
+                value.put("caseCount", 60);
+                value.put("evaluationIdentity",
+                        "renderweave-rapidocr-shadow-evaluation/1.0:" + "e".repeat(64));
+                value.put("metricsEquivalentCases", 60);
+                value.put("observationEquivalentCases", 60);
+                value.put("protocolIdentity",
+                        "renderweave-offline-quality-evaluation-protocol/1.0:" + "f".repeat(64));
+                value.put("runCount", 2);
+            }
+            case R3_PROBE -> {
+                value.put("assignmentIdentity",
+                        "renderweave-r3-probe-assignment/1.0:" + "e".repeat(64));
+                value.put("caseCount", 4);
+                value.put("devCases", 3);
+                value.put("disposition", "MISSING");
+                value.put("holdoutCases", 1);
+                value.put("reasonCode", "R3_OCR_OMISSION_NOT_EXCLUDED");
+                value.put("runs", 2);
+                value.put("triggered", false);
+            }
+            case R5_PROBE -> {
+                value.put("actualAcquisitions", 16);
+                value.put("assignmentIdentity",
+                        "renderweave-r5-probe-assignment/1.0:" + "e".repeat(64));
+                value.put("caseCount", 4);
+                value.put("deterministicCases", 4);
+                value.put("devCases", 3);
+                value.put("disposition", "TRIGGERED");
+                value.put("evaluationIdentity",
+                        "renderweave-r5-oracle-evaluation/1.0:" + "f".repeat(64));
+                value.put("holdoutCases", 1);
+                value.put("reasonCode", "R5_ORACLE_DIFFERENTIAL_CONFIRMED");
+                value.put("runs", 2);
+                value.put("transformIdentity",
+                        "renderweave-r5-oracle-higher-resolution/1.0:" + "a".repeat(64));
+                value.put("triggered", true);
+            }
+        }
+        return JsonMapper.builder().build().writeValueAsBytes(value);
     }
 
     private static List<R5OracleProbeEvidence.CaseDifferential> improvedR5Cases() {

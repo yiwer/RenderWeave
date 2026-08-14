@@ -87,6 +87,9 @@ $env:RENDERWEAVE_VRQ07_DECISION = $decisionPath
 
 Push-Location $repoRoot
 try {
+    Invoke-Checked 'vrq07-verifier-regression-tests' {
+        & python.exe tools/test_verify_vrq07_offline_decision.py
+    }
     Invoke-Checked 'vrq07-java-single-decision-seam' {
         & mvn.cmd -B -ntp -pl renderweave-app -am `
             '-Dtest=OfflineQualityDecisionAssemblerTest,R2R5TriggerDecisionEngineTest,OfflineQualityDecisionGateTest' `

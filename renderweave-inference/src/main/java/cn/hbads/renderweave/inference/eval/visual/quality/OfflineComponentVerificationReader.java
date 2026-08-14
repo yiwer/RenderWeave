@@ -12,7 +12,9 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 /** Strictly binds one independently replayed A2 summary to its payload-safe evidence envelope. */
 public final class OfflineComponentVerificationReader {
@@ -24,6 +26,33 @@ public final class OfflineComponentVerificationReader {
             "candidatejson", "rootdocument", "boundingbox", "\"bbox\"", "inspectionrequest",
             "providerrequest", "providerresponse", "bearer "
     };
+    private static final Map<FrozenQualityEvidencePack.Component, Set<String>> SUMMARY_FIELDS = Map.of(
+            FrozenQualityEvidencePack.Component.RAPIDOCR_CAUSAL, Set.of(
+                    "actualAcquisitions", "assurance", "attributionResults", "caseCount",
+                    "evaluationIdentity", "evidenceIdentity", "externalProviderCostMicrosCny",
+                    "metricsEquivalentCases", "observationEquivalentCases", "protocolIdentity",
+                    "providerAttempts", "providerReservations", "repositoryRevision", "result",
+                    "runCount", "verifierVersion"),
+            FrozenQualityEvidencePack.Component.R3_PROBE, Set.of(
+                    "assignmentIdentity", "assurance", "caseCount", "devCases", "disposition",
+                    "evidenceIdentity", "externalProviderCostMicrosCny", "holdoutCases",
+                    "providerAttempts", "providerReservations", "reasonCode", "repositoryRevision",
+                    "result", "runs", "triggered", "verifierVersion"),
+            FrozenQualityEvidencePack.Component.R5_PROBE, Set.of(
+                    "actualAcquisitions", "assignmentIdentity", "assurance", "caseCount",
+                    "deterministicCases", "devCases", "disposition", "evaluationIdentity",
+                    "evidenceIdentity", "externalProviderCostMicrosCny", "holdoutCases",
+                    "providerAttempts", "providerReservations", "reasonCode", "repositoryRevision",
+                    "result", "runs", "transformIdentity", "triggered", "verifierVersion"));
+    private static final Map<String, String> RAPIDOCR_ATTRIBUTIONS = Map.of(
+            "LAYOUT", "OBSERVED_CONTRIBUTOR",
+            "MATERIALIZER", "MISSING",
+            "OBSERVATION", "OBSERVED_CONTRIBUTOR",
+            "ORDER_REPEAT", "MISSING",
+            "SCORER", "EXCLUDED_BY_CURRENT_EVIDENCE",
+            "SEMANTIC", "OBSERVED_CONTRIBUTOR",
+            "SHAPE_CODEC", "EXCLUDED_BY_CURRENT_EVIDENCE",
+            "STATIC_VIEW", "MISSING");
     private static final ObjectMapper JSON = JsonMapper.builder(
                     JsonFactory.builder().enable(StreamReadFeature.STRICT_DUPLICATE_DETECTION).build())
             .enable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS)
@@ -49,6 +78,7 @@ public final class OfflineComponentVerificationReader {
         }
 
         var envelope = parse(evidenceBytes, "QUALITY_REPAIR_COMPONENT_EVIDENCE_CONTRACT_INVALID");
+        validateDecodedPayload(envelope);
         if (!envelope.isObject() || envelope.size() != 3 || !envelope.has("envelopeVersion")
                 || !envelope.has("evidenceIdentity") || !envelope.has("evidence")
                 || !component.evidenceEnvelopeVersion().equals(requiredText(
@@ -59,6 +89,8 @@ public final class OfflineComponentVerificationReader {
         }
 
         var summary = parse(verificationSummaryBytes, "QUALITY_REPAIR_COMPONENT_SUMMARY_CONTRACT_INVALID");
+        validateDecodedPayload(summary);
+        validateSummarySchema(component, summary);
         if (!summary.isObject()
                 || !"PASS".equals(requiredText(summary, "result", "QUALITY_REPAIR_COMPONENT_RESULT_INVALID"))
                 || !ASSURANCE.equals(requiredText(
@@ -71,9 +103,9 @@ public final class OfflineComponentVerificationReader {
                 summary, "repositoryRevision", "QUALITY_REPAIR_COMPONENT_REVISION_DRIFT"))) {
             throw invalid("QUALITY_REPAIR_COMPONENT_SUMMARY_AUTHORITY_INVALID");
         }
-        if (requiredZero(summary, "providerAttempts") != 0
-                || requiredZero(summary, "providerReservations") != 0
-                || requiredZero(summary, "externalProviderCostMicrosCny") != 0) {
+        if (requiredLong(summary, "providerAttempts") != 0
+                || requiredLong(summary, "providerReservations") != 0
+                || requiredLong(summary, "externalProviderCostMicrosCny") != 0) {
             throw invalid("QUALITY_REPAIR_COMPONENT_PROVIDER_USAGE_NONZERO");
         }
         return new FrozenQualityEvidencePack.ComponentVerification(
@@ -104,12 +136,117 @@ public final class OfflineComponentVerificationReader {
         return value.textValue();
     }
 
-    private static long requiredZero(JsonNode source, String field) {
+    private static long requiredLong(JsonNode source, String field) {
         var value = source.get(field);
         if (value == null || !value.isIntegralNumber() || !value.canConvertToLong()) {
             throw invalid("QUALITY_REPAIR_COMPONENT_ACCOUNTING_INVALID");
         }
         return value.longValue();
+    }
+
+    private static boolean requiredBoolean(JsonNode source, String field) {
+        var value = source.get(field);
+        if (value == null || !value.isBoolean()) {
+            throw invalid("QUALITY_REPAIR_COMPONENT_SUMMARY_SCHEMA_INVALID");
+        }
+        return value.booleanValue();
+    }
+
+    private static void validateSummarySchema(
+            FrozenQualityEvidencePack.Component component,
+            JsonNode summary
+    ) {
+        if (!summary.isObject() || !Set.copyOf(summary.properties().stream()
+                .map(Map.Entry::getKey).toList()).equals(SUMMARY_FIELDS.get(component))) {
+            throw invalid("QUALITY_REPAIR_COMPONENT_SUMMARY_SCHEMA_INVALID");
+        }
+        switch (component) {
+            case RAPIDOCR_CAUSAL -> {
+                if (requiredLong(summary, "actualAcquisitions") != 120
+                        || requiredLong(summary, "caseCount") != 60
+                        || requiredLong(summary, "metricsEquivalentCases") != 60
+                        || requiredLong(summary, "observationEquivalentCases") != 60
+                        || requiredLong(summary, "runCount") != 2
+                        || !requiredText(summary, "evaluationIdentity",
+                        "QUALITY_REPAIR_COMPONENT_SUMMARY_SCHEMA_INVALID").matches(
+                        "renderweave-rapidocr-shadow-evaluation/1\\.0:[0-9a-f]{64}")
+                        || !requiredText(summary, "protocolIdentity",
+                        "QUALITY_REPAIR_COMPONENT_SUMMARY_SCHEMA_INVALID").matches(
+                        "renderweave-offline-quality-evaluation-protocol/1\\.0:[0-9a-f]{64}")) {
+                    throw invalid("QUALITY_REPAIR_COMPONENT_SUMMARY_SCHEMA_INVALID");
+                }
+                var attributions = summary.get("attributionResults");
+                if (attributions == null || !attributions.isObject()
+                        || attributions.size() != RAPIDOCR_ATTRIBUTIONS.size()
+                        || RAPIDOCR_ATTRIBUTIONS.entrySet().stream().anyMatch(entry ->
+                        !entry.getValue().equals(requiredText(attributions, entry.getKey(),
+                                "QUALITY_REPAIR_COMPONENT_SUMMARY_SCHEMA_INVALID")))) {
+                    throw invalid("QUALITY_REPAIR_COMPONENT_SUMMARY_SCHEMA_INVALID");
+                }
+            }
+            case R3_PROBE -> {
+                if (requiredLong(summary, "caseCount") != 4
+                        || requiredLong(summary, "devCases") != 3
+                        || requiredLong(summary, "holdoutCases") != 1
+                        || requiredLong(summary, "runs") != 2
+                        || requiredBoolean(summary, "triggered")
+                        || !"MISSING".equals(requiredText(
+                        summary, "disposition", "QUALITY_REPAIR_COMPONENT_SUMMARY_SCHEMA_INVALID"))
+                        || !"R3_OCR_OMISSION_NOT_EXCLUDED".equals(requiredText(
+                        summary, "reasonCode", "QUALITY_REPAIR_COMPONENT_SUMMARY_SCHEMA_INVALID"))
+                        || !requiredText(summary, "assignmentIdentity",
+                        "QUALITY_REPAIR_COMPONENT_SUMMARY_SCHEMA_INVALID").matches(
+                        "renderweave-r3-probe-assignment/1\\.0:[0-9a-f]{64}")) {
+                    throw invalid("QUALITY_REPAIR_COMPONENT_SUMMARY_SCHEMA_INVALID");
+                }
+            }
+            case R5_PROBE -> {
+                if (requiredLong(summary, "actualAcquisitions") != 16
+                        || requiredLong(summary, "caseCount") != 4
+                        || requiredLong(summary, "deterministicCases") != 4
+                        || requiredLong(summary, "devCases") != 3
+                        || requiredLong(summary, "holdoutCases") != 1
+                        || requiredLong(summary, "runs") != 2
+                        || !requiredBoolean(summary, "triggered")
+                        || !"TRIGGERED".equals(requiredText(
+                        summary, "disposition", "QUALITY_REPAIR_COMPONENT_SUMMARY_SCHEMA_INVALID"))
+                        || !"R5_ORACLE_DIFFERENTIAL_CONFIRMED".equals(requiredText(
+                        summary, "reasonCode", "QUALITY_REPAIR_COMPONENT_SUMMARY_SCHEMA_INVALID"))
+                        || !requiredText(summary, "assignmentIdentity",
+                        "QUALITY_REPAIR_COMPONENT_SUMMARY_SCHEMA_INVALID").matches(
+                        "renderweave-r5-probe-assignment/1\\.0:[0-9a-f]{64}")
+                        || !requiredText(summary, "evaluationIdentity",
+                        "QUALITY_REPAIR_COMPONENT_SUMMARY_SCHEMA_INVALID").matches(
+                        "renderweave-r5-oracle-evaluation/1\\.0:[0-9a-f]{64}")
+                        || !requiredText(summary, "transformIdentity",
+                        "QUALITY_REPAIR_COMPONENT_SUMMARY_SCHEMA_INVALID").matches(
+                        "renderweave-r5-oracle-higher-resolution/1\\.0:[0-9a-f]{64}")) {
+                    throw invalid("QUALITY_REPAIR_COMPONENT_SUMMARY_SCHEMA_INVALID");
+                }
+            }
+        }
+    }
+
+    private static void validateDecodedPayload(JsonNode value) {
+        if (value.isObject()) {
+            for (var property : value.properties()) {
+                requirePayloadSafe(property.getKey());
+                validateDecodedPayload(property.getValue());
+            }
+        } else if (value.isArray()) {
+            value.forEach(OfflineComponentVerificationReader::validateDecodedPayload);
+        } else if (value.isTextual()) {
+            requirePayloadSafe(value.textValue());
+        }
+    }
+
+    private static void requirePayloadSafe(String value) {
+        var searchable = value.toLowerCase(Locale.ROOT);
+        for (var forbidden : FORBIDDEN) {
+            if (searchable.contains(forbidden.replace("\"", ""))) {
+                throw invalid("QUALITY_REPAIR_COMPONENT_PAYLOAD_FORBIDDEN");
+            }
+        }
     }
 
     private static void validateBytes(byte[] bytes, int maximum, String code) {

@@ -10,7 +10,7 @@ public final class OfflineQualityDecisionAssembler {
             ChallengerCapabilityAdmission challengers,
             R3OrderRepeatProbeEvidence r3,
             R5OracleProbeEvidence r5,
-            List<FrozenQualityEvidencePack.ComponentVerification> componentVerifications
+            ComponentEvidenceAuthority componentEvidenceAuthority
     ) {
         Objects.requireNonNull(rapidOcr, "rapidOcr");
         Objects.requireNonNull(challengers, "challengers");
@@ -40,8 +40,8 @@ public final class OfflineQualityDecisionAssembler {
         var rapidIdentity = new RapidOcrCausalEvidencePackJsonCodec().evidenceIdentity(rapidOcr);
         var r3Identity = new R3OrderRepeatProbeEvidenceJsonCodec().evidenceIdentity(r3);
         var r5Identity = new R5OracleProbeEvidenceJsonCodec().evidenceIdentity(r5);
-        var verifiedComponents = requireComponentVerifications(
-                componentVerifications, rapidIdentity, r3Identity, r5Identity);
+        var verifiedComponents = readComponentVerifications(
+                componentEvidenceAuthority, rapidIdentity, r3Identity, r5Identity);
         var capabilityAdmitted = challengers.challengers().stream().allMatch(item ->
                 item.admissionDisposition() == ChallengerCapabilityAdmission.AdmissionDisposition.ADMITTED
                         && item.executable() && item.missingAdmissionDimensions().isEmpty());
@@ -109,33 +109,27 @@ public final class OfflineQualityDecisionAssembler {
                 decision, decisionIdentity, encodedDecision);
     }
 
-    private static List<FrozenQualityEvidencePack.ComponentVerification> requireComponentVerifications(
-            List<FrozenQualityEvidencePack.ComponentVerification> source,
+    private static List<FrozenQualityEvidencePack.ComponentVerification> readComponentVerifications(
+            ComponentEvidenceAuthority source,
             String rapidIdentity,
             String r3Identity,
             String r5Identity
     ) {
-        var values = List.copyOf(Objects.requireNonNull(source, "componentVerifications"));
-        var byComponent = new java.util.EnumMap<
-                FrozenQualityEvidencePack.Component,
-                FrozenQualityEvidencePack.ComponentVerification>(FrozenQualityEvidencePack.Component.class);
-        for (var value : values) {
-            if (value == null || byComponent.put(value.component(), value) != null) {
-                throw new IllegalArgumentException("QUALITY_REPAIR_COMPONENT_VERIFICATION_SET_INVALID");
-            }
-        }
-        if (byComponent.size() != FrozenQualityEvidencePack.Component.values().length
-                || byComponent.values().stream().anyMatch(item ->
-                item.result() != FrozenQualityEvidencePack.VerificationResult.PASS)
-                || !rapidIdentity.equals(byComponent.get(
-                FrozenQualityEvidencePack.Component.RAPIDOCR_CAUSAL).evidenceIdentity())
-                || !r3Identity.equals(byComponent.get(
-                FrozenQualityEvidencePack.Component.R3_PROBE).evidenceIdentity())
-                || !r5Identity.equals(byComponent.get(
-                FrozenQualityEvidencePack.Component.R5_PROBE).evidenceIdentity())) {
-            throw new IllegalArgumentException("QUALITY_REPAIR_COMPONENT_VERIFICATION_AUTHORITY_INVALID");
-        }
-        return values;
+        source = Objects.requireNonNull(source, "componentEvidenceAuthority");
+        var reader = new OfflineComponentVerificationReader();
+        return List.of(
+                reader.read(
+                        FrozenQualityEvidencePack.Component.RAPIDOCR_CAUSAL,
+                        source.rapidOcrEvidence(), rapidIdentity,
+                        source.rapidOcrVerificationSummary(), source.expectedRepositoryRevision()),
+                reader.read(
+                        FrozenQualityEvidencePack.Component.R3_PROBE,
+                        source.r3Evidence(), r3Identity,
+                        source.r3VerificationSummary(), source.expectedRepositoryRevision()),
+                reader.read(
+                        FrozenQualityEvidencePack.Component.R5_PROBE,
+                        source.r5Evidence(), r5Identity,
+                        source.r5VerificationSummary(), source.expectedRepositoryRevision()));
     }
 
     private static FrozenQualityEvidencePack.PredicateResult routeResult(
@@ -197,5 +191,42 @@ public final class OfflineQualityDecisionAssembler {
 
         @Override
         public byte[] encodedDecision() { return encodedDecision.clone(); }
+    }
+
+    /** Raw evidence authority; only the assembler can turn these bytes into PASS verifications. */
+    public record ComponentEvidenceAuthority(
+            byte[] rapidOcrEvidence,
+            byte[] rapidOcrVerificationSummary,
+            byte[] r3Evidence,
+            byte[] r3VerificationSummary,
+            byte[] r5Evidence,
+            byte[] r5VerificationSummary,
+            String expectedRepositoryRevision
+    ) {
+        public ComponentEvidenceAuthority {
+            rapidOcrEvidence = copy(rapidOcrEvidence);
+            rapidOcrVerificationSummary = copy(rapidOcrVerificationSummary);
+            r3Evidence = copy(r3Evidence);
+            r3VerificationSummary = copy(r3VerificationSummary);
+            r5Evidence = copy(r5Evidence);
+            r5VerificationSummary = copy(r5VerificationSummary);
+            if (expectedRepositoryRevision == null
+                    || !expectedRepositoryRevision.matches("[0-9a-f]{40}")) {
+                throw new IllegalArgumentException("QUALITY_REPAIR_COMPONENT_REVISION_INVALID");
+            }
+        }
+
+        @Override public byte[] rapidOcrEvidence() { return rapidOcrEvidence.clone(); }
+        @Override public byte[] rapidOcrVerificationSummary() {
+            return rapidOcrVerificationSummary.clone();
+        }
+        @Override public byte[] r3Evidence() { return r3Evidence.clone(); }
+        @Override public byte[] r3VerificationSummary() { return r3VerificationSummary.clone(); }
+        @Override public byte[] r5Evidence() { return r5Evidence.clone(); }
+        @Override public byte[] r5VerificationSummary() { return r5VerificationSummary.clone(); }
+
+        private static byte[] copy(byte[] value) {
+            return Objects.requireNonNull(value, "component evidence bytes").clone();
+        }
     }
 }

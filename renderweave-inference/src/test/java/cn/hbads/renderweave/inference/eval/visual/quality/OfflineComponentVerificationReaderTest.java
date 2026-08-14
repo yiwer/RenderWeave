@@ -41,6 +41,18 @@ class OfflineComponentVerificationReaderTest {
                         COMPONENT, evidence(), IDENTITY, summary(REVISION, 1), REVISION)).getMessage());
     }
 
+    @Test
+    void unicodeEscapesCannotHideForbiddenDecodedSummaryMembers() {
+        var original = new String(summary(REVISION, 0), StandardCharsets.UTF_8);
+        var escapedForbiddenMember = "\"" + "\\" + "u006dodelOutput\":\"secret\"";
+        var injected = original.replace("}\n", "," + escapedForbiddenMember + "}\n")
+                .getBytes(StandardCharsets.UTF_8);
+
+        assertEquals("QUALITY_REPAIR_COMPONENT_PAYLOAD_FORBIDDEN",
+                assertThrows(IllegalArgumentException.class, () -> reader.read(
+                        COMPONENT, evidence(), IDENTITY, injected, REVISION)).getMessage());
+    }
+
     private static byte[] evidence() {
         return ("{\"envelopeVersion\":\"" + COMPONENT.evidenceEnvelopeVersion()
                 + "\",\"evidenceIdentity\":\"" + IDENTITY + "\",\"evidence\":{}}")
@@ -48,11 +60,20 @@ class OfflineComponentVerificationReaderTest {
     }
 
     private static byte[] summary(String revision, long attempts) {
-        return ("{\"verifierVersion\":\"" + COMPONENT.verifierVersion()
-                + "\",\"result\":\"PASS\",\"assurance\":\"A2_CROSS_IMPLEMENTATION_RECOMPUTE\""
-                + ",\"evidenceIdentity\":\"" + IDENTITY + "\",\"repositoryRevision\":\"" + revision
-                + "\",\"providerAttempts\":" + attempts
-                + ",\"providerReservations\":0,\"externalProviderCostMicrosCny\":0}\n")
+        return ("{\"actualAcquisitions\":120,\"assurance\":\"A2_CROSS_IMPLEMENTATION_RECOMPUTE\""
+                + ",\"attributionResults\":{\"LAYOUT\":\"OBSERVED_CONTRIBUTOR\""
+                + ",\"MATERIALIZER\":\"MISSING\",\"OBSERVATION\":\"OBSERVED_CONTRIBUTOR\""
+                + ",\"ORDER_REPEAT\":\"MISSING\",\"SCORER\":\"EXCLUDED_BY_CURRENT_EVIDENCE\""
+                + ",\"SEMANTIC\":\"OBSERVED_CONTRIBUTOR\",\"SHAPE_CODEC\":\"EXCLUDED_BY_CURRENT_EVIDENCE\""
+                + ",\"STATIC_VIEW\":\"MISSING\"},\"caseCount\":60"
+                + ",\"evaluationIdentity\":\"renderweave-rapidocr-shadow-evaluation/1.0:"
+                + "e".repeat(64) + "\",\"evidenceIdentity\":\"" + IDENTITY
+                + "\",\"externalProviderCostMicrosCny\":0,\"metricsEquivalentCases\":60"
+                + ",\"observationEquivalentCases\":60,\"protocolIdentity\":\""
+                + "renderweave-offline-quality-evaluation-protocol/1.0:" + "f".repeat(64)
+                + "\",\"providerAttempts\":" + attempts + ",\"providerReservations\":0"
+                + ",\"repositoryRevision\":\"" + revision + "\",\"result\":\"PASS\""
+                + ",\"runCount\":2,\"verifierVersion\":\"" + COMPONENT.verifierVersion() + "\"}\n")
                 .getBytes(StandardCharsets.UTF_8);
     }
 

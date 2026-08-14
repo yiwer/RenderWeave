@@ -2,8 +2,6 @@ package cn.hbads.renderweave.inference;
 
 import cn.hbads.renderweave.inference.eval.visual.quality.ChallengerCapabilityAdmission;
 import cn.hbads.renderweave.inference.eval.visual.quality.FrozenQualityEvidencePackJsonCodec;
-import cn.hbads.renderweave.inference.eval.visual.quality.FrozenQualityEvidencePack;
-import cn.hbads.renderweave.inference.eval.visual.quality.OfflineComponentVerificationReader;
 import cn.hbads.renderweave.inference.eval.visual.quality.OfflineQualityDecisionAssembler;
 import cn.hbads.renderweave.inference.eval.visual.quality.R2R5TriggerDecision;
 import cn.hbads.renderweave.inference.eval.visual.quality.R2R5TriggerDecisionJsonCodec;
@@ -17,7 +15,6 @@ import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -52,20 +49,16 @@ class OfflineQualityDecisionGateTest {
         var r3 = r3Codec.read(r3Bytes);
         var r5 = r5Codec.read(r5Bytes);
         var expectedRevision = required("RENDERWEAVE_VRQ07_EXPECTED_REVISION");
-        var verificationReader = new OfflineComponentVerificationReader();
-        var componentVerifications = List.of(
-                verificationReader.read(FrozenQualityEvidencePack.Component.RAPIDOCR_CAUSAL,
-                        rapidBytes, rapidCodec.evidenceIdentity(rapid), Files.readAllBytes(rapidA2Path), expectedRevision),
-                verificationReader.read(FrozenQualityEvidencePack.Component.R3_PROBE,
-                        r3Bytes, r3Codec.evidenceIdentity(r3), Files.readAllBytes(r3A2Path), expectedRevision),
-                verificationReader.read(FrozenQualityEvidencePack.Component.R5_PROBE,
-                        r5Bytes, r5Codec.evidenceIdentity(r5), Files.readAllBytes(r5A2Path), expectedRevision));
         var bundle = new OfflineQualityDecisionAssembler().assemble(
                 rapid,
                 ChallengerCapabilityAdmission.load(),
                 r3,
                 r5,
-                componentVerifications);
+                new OfflineQualityDecisionAssembler.ComponentEvidenceAuthority(
+                        rapidBytes, Files.readAllBytes(rapidA2Path),
+                        r3Bytes, Files.readAllBytes(r3A2Path),
+                        r5Bytes, Files.readAllBytes(r5A2Path),
+                        expectedRevision));
         Files.write(packPath, bundle.encodedEvidencePack(),
                 StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE);
         Files.write(decisionPath, bundle.encodedDecision(),

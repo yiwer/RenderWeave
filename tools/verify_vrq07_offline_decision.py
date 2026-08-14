@@ -23,6 +23,38 @@ FORBIDDEN = (
     b"base64", b"data:image", b"ocrtext", b"ocr_text", b"prompttext", b"modeloutput",
     b"candidatejson", b"rootdocument", b"boundingbox", b'"bbox"', b"inspectionrequest",
 )
+SUMMARY_FIELDS = {
+    "RAPIDOCR_CAUSAL": {
+        "actualAcquisitions", "assurance", "attributionResults", "caseCount",
+        "evaluationIdentity", "evidenceIdentity", "externalProviderCostMicrosCny",
+        "metricsEquivalentCases", "observationEquivalentCases", "protocolIdentity",
+        "providerAttempts", "providerReservations", "repositoryRevision", "result",
+        "runCount", "verifierVersion",
+    },
+    "R3_PROBE": {
+        "assignmentIdentity", "assurance", "caseCount", "devCases", "disposition",
+        "evidenceIdentity", "externalProviderCostMicrosCny", "holdoutCases",
+        "providerAttempts", "providerReservations", "reasonCode", "repositoryRevision",
+        "result", "runs", "triggered", "verifierVersion",
+    },
+    "R5_PROBE": {
+        "actualAcquisitions", "assignmentIdentity", "assurance", "caseCount",
+        "deterministicCases", "devCases", "disposition", "evaluationIdentity",
+        "evidenceIdentity", "externalProviderCostMicrosCny", "holdoutCases",
+        "providerAttempts", "providerReservations", "reasonCode", "repositoryRevision",
+        "result", "runs", "transformIdentity", "triggered", "verifierVersion",
+    },
+}
+RAPIDOCR_ATTRIBUTIONS = {
+    "LAYOUT": "OBSERVED_CONTRIBUTOR",
+    "MATERIALIZER": "MISSING",
+    "OBSERVATION": "OBSERVED_CONTRIBUTOR",
+    "ORDER_REPEAT": "MISSING",
+    "SCORER": "EXCLUDED_BY_CURRENT_EVIDENCE",
+    "SEMANTIC": "OBSERVED_CONTRIBUTOR",
+    "SHAPE_CODEC": "EXCLUDED_BY_CURRENT_EVIDENCE",
+    "STATIC_VIEW": "MISSING",
+}
 
 
 class VerificationError(ValueError):
@@ -57,11 +89,71 @@ def canonical_json(value: Any) -> bytes:
     return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
 
 
+def ensure_decoded_payload_safe(value: Any) -> None:
+    searchable = canonical_json(value).lower()
+    if any(marker in searchable for marker in FORBIDDEN):
+        fail("VRQ07_A2_DECODED_PAYLOAD_FORBIDDEN")
+
+
+def validate_component_summary(component: str, summary: dict[str, Any]) -> None:
+    if set(summary) != SUMMARY_FIELDS[component]:
+        fail("VRQ07_A2_COMPONENT_SUMMARY_SCHEMA_INVALID")
+    if component == "RAPIDOCR_CAUSAL":
+        expected = {
+            "actualAcquisitions": 120,
+            "attributionResults": RAPIDOCR_ATTRIBUTIONS,
+            "caseCount": 60,
+            "metricsEquivalentCases": 60,
+            "observationEquivalentCases": 60,
+            "runCount": 2,
+        }
+        identity_fields = {
+            "evaluationIdentity": r"renderweave-rapidocr-shadow-evaluation/1\.0:[0-9a-f]{64}",
+            "protocolIdentity": r"renderweave-offline-quality-evaluation-protocol/1\.0:[0-9a-f]{64}",
+        }
+    elif component == "R3_PROBE":
+        expected = {
+            "caseCount": 4,
+            "devCases": 3,
+            "disposition": "MISSING",
+            "holdoutCases": 1,
+            "reasonCode": "R3_OCR_OMISSION_NOT_EXCLUDED",
+            "runs": 2,
+            "triggered": False,
+        }
+        identity_fields = {
+            "assignmentIdentity": r"renderweave-r3-probe-assignment/1\.0:[0-9a-f]{64}",
+        }
+    else:
+        expected = {
+            "actualAcquisitions": 16,
+            "caseCount": 4,
+            "deterministicCases": 4,
+            "devCases": 3,
+            "disposition": "TRIGGERED",
+            "holdoutCases": 1,
+            "reasonCode": "R5_ORACLE_DIFFERENTIAL_CONFIRMED",
+            "runs": 2,
+            "triggered": True,
+        }
+        identity_fields = {
+            "assignmentIdentity": r"renderweave-r5-probe-assignment/1\.0:[0-9a-f]{64}",
+            "evaluationIdentity": r"renderweave-r5-oracle-evaluation/1\.0:[0-9a-f]{64}",
+            "transformIdentity": r"renderweave-r5-oracle-higher-resolution/1\.0:[0-9a-f]{64}",
+        }
+    if any(summary.get(key) != value for key, value in expected.items()) \
+            or any(not isinstance(summary.get(key), str)
+                   or re.fullmatch(pattern, summary[key]) is None
+                   for key, pattern in identity_fields.items()):
+        fail("VRQ07_A2_COMPONENT_SUMMARY_SCHEMA_INVALID")
+
+
 def envelope(path: pathlib.Path, version: str, identity_field: str, payload_field: str) -> tuple[dict[str, Any], str]:
     raw = path.read_bytes()
     if not raw or len(raw) > 4 * 1024 * 1024 or any(marker in raw.lower() for marker in FORBIDDEN):
         fail("VRQ07_A2_INPUT_BYTES_INVALID")
     value = strict_json(raw)
+    ensure_decoded_payload_safe(value)
     if value.get("envelopeVersion") != version or identity_field not in value or payload_field not in value:
         fail("VRQ07_A2_INPUT_ENVELOPE_INVALID")
     return value[payload_field], value[identity_field]
@@ -88,6 +180,10 @@ def component_verification(
     if not raw or len(raw) > 1024 * 1024 or any(marker in raw.lower() for marker in FORBIDDEN):
         fail("VRQ07_A2_COMPONENT_SUMMARY_BYTES_INVALID")
     summary = strict_json(raw)
+    ensure_decoded_payload_safe(summary)
+    if not isinstance(summary, dict):
+        fail("VRQ07_A2_COMPONENT_SUMMARY_SCHEMA_INVALID")
+    validate_component_summary(component, summary)
     if not isinstance(summary, dict) \
             or summary.get("result") != "PASS" \
             or summary.get("assurance") != "A2_CROSS_IMPLEMENTATION_RECOMPUTE" \
