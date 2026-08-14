@@ -93,13 +93,6 @@ public final class ChallengerCapabilityAdmission {
         return result;
     }
 
-    /** There is intentionally no process command while the manifest is not admitted. */
-    public ExecutionPlan executionPlan(String challengerId) {
-        var capability = require(challengerId);
-        if (!capability.executable()) throw new IllegalStateException("CHALLENGER_NOT_ADMITTED");
-        throw new IllegalStateException("CHALLENGER_EXECUTION_PLAN_NOT_IMPLEMENTED");
-    }
-
     private Capability validate(CapabilityDocument value) {
         Objects.requireNonNull(value, "capability");
         requireId(value.challengerId(), "CHALLENGER_ID_INVALID");
@@ -335,8 +328,6 @@ public final class ChallengerCapabilityAdmission {
             missingAdmissionDimensions = List.copyOf(missingAdmissionDimensions);
         }
     }
-
-    public record ExecutionPlan(String capabilityIdentity, List<String> command) { }
 
     private record CapabilityDocument(
             String challengerId,

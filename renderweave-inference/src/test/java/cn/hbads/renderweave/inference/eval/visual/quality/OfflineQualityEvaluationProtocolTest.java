@@ -8,7 +8,6 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class OfflineQualityEvaluationProtocolTest {
@@ -45,36 +44,12 @@ class OfflineQualityEvaluationProtocolTest {
     }
 
     @Test
-    void onlyOneFrozenDevWinnerCanReceiveR2HoldoutCases() {
+    void doesNotExposeHoldoutCasesBeforeAContentAddressedSelectionModuleExists() {
         var protocol = OfflineQualityEvaluationProtocol.load();
-        var corpus = new LayeredVisualCorpus();
 
-        assertEquals("QUALITY_REPAIR_HOLDOUT_WINNER_COUNT_INVALID", assertThrows(IllegalArgumentException.class,
-                () -> protocol.authorizeR2Holdout(winner(protocol, 0, false))).getMessage());
-        assertEquals("QUALITY_REPAIR_HOLDOUT_POST_RESULT_RETUNING", assertThrows(IllegalArgumentException.class,
-                () -> protocol.authorizeR2Holdout(winner(protocol, 1, true))).getMessage());
-
-        var assignment = protocol.authorizeR2Holdout(winner(protocol, 1, false));
-        assertEquals(15, assignment.caseIds().size());
-        assertTrue(assignment.caseIds().stream().allMatch(caseId ->
-                corpus.require(caseId).partition() == LayeredEvaluationRecord.Partition.HOLDOUT));
-        assertTrue(assignment.identity().matches("renderweave-r2-holdout-assignment/1\\.0:[0-9a-f]{64}"));
-    }
-
-    private static OfflineQualityEvaluationProtocol.DevWinnerEvidence winner(
-            OfflineQualityEvaluationProtocol protocol,
-            int winnerCount,
-            boolean postResultRetuning
-    ) {
-        return new OfflineQualityEvaluationProtocol.DevWinnerEvidence(
-                protocol.identity(),
-                protocol.r2DevAssignment().identity(),
-                winnerCount,
-                "renderweave-r2-acquisition-configuration/1.0:" + "a".repeat(64),
-                "renderweave-r2-dev-selection/1.0:" + "b".repeat(64),
-                true,
-                true,
-                postResultRetuning);
+        assertEquals(15, protocol.r2HoldoutCount());
+        assertFalse(java.util.Arrays.stream(OfflineQualityEvaluationProtocol.class.getMethods())
+                .anyMatch(method -> method.getName().equals("authorizeR2Holdout")));
     }
 
     private static void assertProbePartitions(

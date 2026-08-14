@@ -129,35 +129,6 @@ public final class OfflineQualityEvaluationProtocol {
 
     public ResourceCeilings resourceCeilings() { return document.resourceCeilings(); }
 
-    public Assignment authorizeR2Holdout(DevWinnerEvidence evidence) {
-        Objects.requireNonNull(evidence, "evidence");
-        if (!identity.equals(evidence.protocolIdentity())) {
-            throw invalid("QUALITY_REPAIR_HOLDOUT_PROTOCOL_IDENTITY_INVALID");
-        }
-        if (!r2DevAssignment.identity().equals(evidence.devAssignmentIdentity())) {
-            throw invalid("QUALITY_REPAIR_HOLDOUT_DEV_ASSIGNMENT_INVALID");
-        }
-        if (evidence.winnerCount() != 1) {
-            throw invalid("QUALITY_REPAIR_HOLDOUT_WINNER_COUNT_INVALID");
-        }
-        if (!evidence.selectedFromDevOnly()) {
-            throw invalid("QUALITY_REPAIR_HOLDOUT_SELECTION_SCOPE_INVALID");
-        }
-        if (!evidence.thresholdsFrozenBeforeDev()) {
-            throw invalid("QUALITY_REPAIR_HOLDOUT_THRESHOLD_FREEZE_MISSING");
-        }
-        if (evidence.postResultRetuning()) {
-            throw invalid("QUALITY_REPAIR_HOLDOUT_POST_RESULT_RETUNING");
-        }
-        requireIdentity(evidence.configurationIdentity(),
-                "renderweave-r2-acquisition-configuration/1.0",
-                "QUALITY_REPAIR_HOLDOUT_CONFIGURATION_IDENTITY_INVALID");
-        requireIdentity(evidence.selectionReportIdentity(),
-                "renderweave-r2-dev-selection/1.0",
-                "QUALITY_REPAIR_HOLDOUT_SELECTION_IDENTITY_INVALID");
-        return assignment("renderweave-r2-holdout-assignment/1.0", r2HoldoutCaseIds);
-    }
-
     private static void validateFrozenDecisionRules(Document value) {
         var thresholds = Objects.requireNonNull(value.thresholds(), "thresholds");
         if (thresholds.minimumStructuralImprovementBps() != 500
@@ -280,17 +251,6 @@ public final class OfflineQualityEvaluationProtocol {
             return separator < 1 ? "invalid" : value.substring(0, separator);
         }
     }
-
-    public record DevWinnerEvidence(
-            String protocolIdentity,
-            String devAssignmentIdentity,
-            int winnerCount,
-            String configurationIdentity,
-            String selectionReportIdentity,
-            boolean selectedFromDevOnly,
-            boolean thresholdsFrozenBeforeDev,
-            boolean postResultRetuning
-    ) { }
 
     public record Thresholds(
             int minimumStructuralImprovementBps,

@@ -43,9 +43,9 @@ class ChallengerCapabilityAdmissionTest {
             assertTrue(capability.missingAdmissionDimensions().contains("LICENSE_J1"));
             assertTrue(capability.identity().matches(
                     "renderweave-challenger-capability/1\\.0:[0-9a-f]{64}"));
-            assertEquals("CHALLENGER_NOT_ADMITTED", assertThrows(IllegalStateException.class,
-                    () -> catalog.executionPlan(capability.challengerId())).getMessage());
         }
+        assertFalse(java.util.Arrays.stream(ChallengerCapabilityAdmission.class.getMethods())
+                .anyMatch(method -> method.getName().equals("executionPlan")));
 
         var pp = catalog.require("pp-structurev3");
         assertEquals(1, pp.priority());
