@@ -1,7 +1,8 @@
 # 原型验证在线 Template 与 Asset 创作工作流
 
 Type: prototype
-Status: open
+Status: resolved
+Claimed by: Codex /root
 Blocked by: 05, 07, 09, 10, 11, 12, 13, 14, 15, 16
 
 ## Question
@@ -56,3 +57,42 @@ Blocked by: 05, 07, 09, 10, 11, 12, 13, 14, 15, 16
 - 权威预览面板只提交公共`PNG | JPEG`、正整数DPI及JPEG quality；省略值应明确显示为Engine有效值96/90。一次preview operation只展示根Canvas的一张完整图片，不能提供node export、crop、target size、background override、child viewport output或batch选项。
 - 预览成功必须先核验完整length/digest/result再替换旧结果；网络截断、cancel、deadline、trace超限及任一Engine问题都撤下旧权威图片，不显示partial bytes、warning image或旧结果。Engine `requestId`、Command/document digest、Profile内部选择和exact replay control不得进入普通作者UI。
 - 获准LayoutTrace时，原型只展示服务端经sidecar投影后的occurrence box/clip/paint/overflow；trace是成功结果的有界诊断附件，不是浏览器Scene、下载Artifact或失败时仍可查看的partial layout。相同有效Profile/DPI/quality的正式输出与权威预览不得使用不同渲染路径。
+
+## Answer
+
+### 1. 原型结论与适用范围
+
+- Ticket 17 选择 `B · Canvas Focus` 作为 Template v1 在线创作工作台的信息架构基线。方案 A 与 C 只保留为本次决策的比较原型，不构成三套产品模式，也不要求后续实现长期维护三套页面。
+- 方案 B 的首要对象是固定物理尺寸画布：画布持续占据视觉中心；结构、节点库、Asset、Definition 与导入导出共用可收起的左侧导航面板；属性使用可收起的右侧检视器；数据、权威预览、问题与保存由紧凑 dock 调用。选中节点可出现轻量情境工具条，但它只能触发同一 DesignDSL 编辑命令，不能形成第二套属性事实源。
+- 顶栏持续显示 Template 身份、永久 exact StaticSchema 绑定、当前 readiness/revision 与保存状态。场景切换器仅是 throwaway 原型的受控 fixture 驱动器，用于验证 INVALID、Asset 漂移、Binding ABSENT/ERROR、保存冲突与预览失败；它不是正式作者工作台的永久业务导航。
+- 画布只提供非权威的编辑反馈。`权威预览` 必须作为独立动作经过完整 Evaluator 与 RenderEngine，并与正式图片输出复用同一条 Profile 路径；浏览器草稿图、Asset placeholder 与 LayoutTrace 均不得被表现为最终 RenderOutput。
+- Ticket 17 只冻结工作流、信息架构和交互投影，不新增 Template/Asset API、数据库、产品路由或运行时语义。后续产品视觉 token 可以演进，但不得破坏本票据冻结的权威边界与信息层级。
+
+### 2. 主工作区与作者路径
+
+- 左侧导航以 `结构 / 节点 / 资产 / 定义 / 交换` 五个中文入口组织作者任务。结构树、创建面板与右侧属性必须来自同一 NodeContractCatalog 投影；Asset、Definition 与交换面板仍各自遵守其领域合同，不能把引用、输入样例或导入来源混入 DesignDSL。
+- 中央画布始终明确显示 authored mm 几何与非权威状态；Text 的字体大小以 pt 呈现，DPI 只在权威预览请求中出现。Stack/Grid 的比例与约束反馈属于固定 Canvas 内的响应式布局，不得使用网页 breakpoint 或 CSS responsive 语言解释。
+- 右侧属性检视器是节点编辑的主要入口；绑定编辑器、资源选择器、TemplateUse、Repeat、问题定位和预览详情按需打开，不通过常驻的大型表单挤压画布。面板收起只改变作者视图，不改变任何 authored value 或 Binding。
+- 底部 dock 至少能显式切换导航、属性、数据、问题，发起权威预览和保存。INVALID 可以继续编辑并经二次确认保存，但必须禁止权威预览/Render；修复后仍须经过服务端重检才能恢复可用状态。
+- 小于桌面编辑阈值的窗口显示明确的“不支持当前宽度”状态，不把面板压缩成不可操作的移动端编辑器。v1 原型验证的是桌面在线设计工作台；这里的 viewport 适配不改变 DesignDSL 的物理布局语义。
+
+### 3. 中文属性投影与类型化控件
+
+- 右侧属性栏不直接展示 `widthMm`、`writingMode`、`fontRef` 等 wire/property ID。每个 exact Property Identity 由客户端展示元数据投影为专用中文名称；首版只有中文，不承诺多语言。该名称只用于呈现，不持久化进 DesignDSL、不参与 Binding 寻址、不能成为 UI-only semantic alias，也不能扩张 NodeContract。
+- 属性固定按 `内容 / 文字 / 布局 / 外观 / 数据 / 行为 / 子模板 / 高级` 分组；只显示当前 NodeContract 实际拥有的组和属性。未知或未配置展示元数据的 property 必须进入受控的“扩展属性”诊断投影，不能退回把 wire ID 当普通作者标签。
+- 控件按 property 类型与约束选择：短文本、长文本、带单位数值、开关、中文枚举、颜色色块/选择器、FONT/IMAGE Asset picker、ValueSource/Definition picker、Template picker 与只读结果。数值控件必须显示 `mm` 或 `pt` 等真实单位以及合法步进/范围；枚举显示中文标签但提交 exact wire value。
+- 每行使用稳定的三段结构：左侧中文属性名，中间自适应的属性控件，右侧固定宽度的 Binding 动作。长说明、校验问题与已绑定 source 摘要放在该行下方，不把操作按钮挤到下一行，也不让同组属性因控件类型不同而失去纵向对齐。
+- static baseline 控件始终存在且可编辑；Binding 只决定求值时是否覆盖 baseline。界面不提供“属性类型=静态/绑定”的额外模式字段，也不把已绑定状态解释为删除或替换 authored baseline。
+
+### 4. Binding 投影与反馈
+
+- 是否显示右侧 Binding 动作，唯一由全局追加式 BindingPolicyCatalog 针对 exact Node kind、Property Identity 与 source/target type 决定。中文展示元数据不能授予 bindability，Template 也不能局部开启 Binding。
+- 未绑定使用描边按钮 `绑定`；有效 Binding 使用高对比填充按钮 `已绑定` 和反色文字；Binding 存在但求值为 ABSENT/ERROR 时使用填充错误态 `异常`。已绑定时才在行下显示脱敏 source 摘要与“覆盖基础值”说明；异常时明确告知权威预览失败，绝不暗示回退 static baseline。
+- 点击同一行按钮打开既有 Binding 编辑器。普通属性列表只使用中文展示名；编辑器内部必须显示 exact node-local `targetPropertyRef`、target type 与允许的 selector 形状，因为它们是作者修复嵌套 member/fixed-index Binding 所需的精确语义，而不是属性栏标签。
+- Binding 模式只筛选全局策略允许绑定的当前属性，并继续使用相同中文分组、控件行与状态反馈。不能维护独立的可绑定属性表，也不能引入 Slot、nodeId 连线或隐藏的 fallback 值。
+
+### 5. 原型证据与后继票据
+
+- 三种比较方案与共享属性检视器已落在 commit `27e7420aea231ee57a1fe78db98a022de2f43048`；方案 B 覆盖桌面主工作区、面板显隐、场景 fixture、保存/预览入口和本票据所述属性/Binding 反馈。
+- Web gate 已通过：14 个测试文件、76 个测试与 production build；A/B/C、1024px 桌面宽度及 320/375/414/768px unsupported-width 状态完成浏览器检查，检查时无浏览器 console error 与 axe violation。A1 本机证据目录为 `.sdlc/evidence/20260814-180312-web`；临时截图与检查脚本不是规格事实源，不进入交接提交。
+- 下一票据为 [定义编辑器预览、保存冲突与恢复体验](18-editor-preview-and-recovery.md)。Ticket 18 必须复用方案 B 和本票据的属性投影，不重复打开已冻结的信息架构选择，并继续收口权威预览、cancel、失败撤图、canonical save 重同步与冲突恢复。
