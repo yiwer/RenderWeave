@@ -38,7 +38,7 @@ if ((Split-Path -Leaf $resolvedDecision) -ne 'vrq07-decision.json') {
     throw "$Ticket requires the canonical VRQ-07 decision filename."
 }
 $outcomePath = Join-Path $resolvedEvidenceDir "$ticketNumber-outcome.json"
-$verifierPath = Join-Path $resolvedEvidenceDir "$ticketNumber-outcome-a2.json"
+$verifierPath = Join-Path $resolvedEvidenceDir "$ticketNumber-outcome-verification.json"
 foreach ($path in @($outcomePath, $verifierPath)) {
     if (Test-Path -LiteralPath $path) {
         throw "$Ticket evidence output already exists: $(Split-Path -Leaf $path)"
@@ -61,6 +61,8 @@ $env:RENDERWEAVE_OFFLINE_TERMINAL_OUTCOME = $outcomePath
 
 Push-Location $repoRoot
 try {
+    & python.exe tools/test_verify_offline_repair_terminal_outcome.py
+    if (-not $? -or $LASTEXITCODE -ne 0) { throw "$Ticket verifier regression tests failed." }
     & mvn.cmd -B -ntp -pl renderweave-app -am `
         '-Dtest=OfflineRepairTerminalGateTest,OfflineRepairTerminalEvidenceGateTest' `
         '-Dsurefire.failIfNoSpecifiedTests=false' test

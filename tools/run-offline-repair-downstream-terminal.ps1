@@ -76,7 +76,7 @@ for ($index = 0; $index -lt $expectedNames.Count; $index++) {
     $resolvedPredecessors += $resolved
 }
 $outcomePath = Join-Path $resolvedEvidenceDir "$ticketNumber-outcome.json"
-$verifierPath = Join-Path $resolvedEvidenceDir "$ticketNumber-outcome-a2.json"
+$verifierPath = Join-Path $resolvedEvidenceDir "$ticketNumber-outcome-verification.json"
 foreach ($path in @($outcomePath, $verifierPath)) {
     if (Test-Path -LiteralPath $path) {
         throw "$Ticket evidence output already exists: $(Split-Path -Leaf $path)"
@@ -104,6 +104,8 @@ for ($index = 0; $index -lt $resolvedPredecessors.Count; $index++) {
 
 Push-Location $repoRoot
 try {
+    & python.exe tools/test_verify_offline_repair_terminal_outcome.py
+    if (-not $? -or $LASTEXITCODE -ne 0) { throw "$Ticket verifier regression tests failed." }
     & mvn.cmd -B -ntp -pl renderweave-app -am `
         '-Dtest=OfflineRepairTerminalGateTest,OfflineRepairTerminalEvidenceGateTest' `
         '-Dsurefire.failIfNoSpecifiedTests=false' test

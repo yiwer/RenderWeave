@@ -6,6 +6,13 @@ import java.util.Set;
 
 /** The fail-closed seam for conditional tickets after an authoritative route stop. */
 public final class OfflineRepairTerminalGate {
+    public static final String AUTHORITATIVE_EVIDENCE_PACK_IDENTITY =
+            "renderweave-frozen-quality-evidence-pack/1.0:"
+                    + "422d85b68bab49a970d66761f16c98d89b8b41b5929af9fcbb33b6b8c86a5401";
+    public static final String AUTHORITATIVE_DECISION_IDENTITY =
+            "renderweave-r2r5-trigger-decision/1.0:"
+                    + "723538d5e4cd6e08a343d866b4c789e9463b9ceebcdf1a56e04cbfed2ed8567a";
+
     public OfflineRepairTerminalOutcome closeR2Challenger(
             OfflineRepairTerminalOutcome.Ticket ticket,
             R2R5TriggerDecision rootDecision,
@@ -89,7 +96,9 @@ public final class OfflineRepairTerminalGate {
             String expectedIdentity
     ) {
         Objects.requireNonNull(decision, "rootDecision");
-        if (!new R2R5TriggerDecisionJsonCodec().decisionIdentity(decision).equals(expectedIdentity)
+        if (!AUTHORITATIVE_DECISION_IDENTITY.equals(expectedIdentity)
+                || !AUTHORITATIVE_EVIDENCE_PACK_IDENTITY.equals(decision.evidencePackIdentity())
+                || !new R2R5TriggerDecisionJsonCodec().decisionIdentity(decision).equals(expectedIdentity)
                 || decision.overallDisposition()
                 != R2R5TriggerDecision.OverallDisposition.STOP_TO_SPEC_R5
                 || decision.requireRoute(FrozenQualityEvidencePack.Route.R5).disposition()

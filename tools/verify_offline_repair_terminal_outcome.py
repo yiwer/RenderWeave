@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 import subprocess
 from pathlib import Path
 
@@ -14,6 +15,14 @@ OUTCOME_PREFIX = "renderweave-offline-repair-terminal-outcome/1.0:"
 DECISION_PREFIX = "renderweave-r2r5-trigger-decision/1.0:"
 CATALOG_PREFIX = "renderweave-challenger-capability-catalog/1.0:"
 CAPABILITY_PREFIX = "renderweave-challenger-capability/1.0:"
+AUTHORITATIVE_DECISION_IDENTITY = (
+    "renderweave-r2r5-trigger-decision/1.0:"
+    "723538d5e4cd6e08a343d866b4c789e9463b9ceebcdf1a56e04cbfed2ed8567a"
+)
+AUTHORITATIVE_EVIDENCE_PACK_IDENTITY = (
+    "renderweave-frozen-quality-evidence-pack/1.0:"
+    "422d85b68bab49a970d66761f16c98d89b8b41b5929af9fcbb33b6b8c86a5401"
+)
 
 TICKETS = {
     "VRQ_08_PP_STRUCTUREV3_DEV_SHADOW": (
@@ -74,6 +83,38 @@ FORBIDDEN = (
 )
 
 
+class VerificationError(ValueError):
+    pass
+
+
+def fail(code: str) -> None:
+    raise VerificationError(code)
+
+
+def require(condition: bool, code: str) -> None:
+    if not condition:
+        fail(code)
+
+
+def unique_object(pairs: list[tuple[str, object]]) -> dict[str, object]:
+    result: dict[str, object] = {}
+    for key, value in pairs:
+        if key in result:
+            fail("OFFLINE_TERMINAL_DUPLICATE_MEMBER")
+        result[key] = value
+    return result
+
+
+def strict_json(raw: bytes) -> object:
+    try:
+        text = raw.decode("utf-8", errors="strict")
+        value, end = json.JSONDecoder(object_pairs_hook=unique_object).raw_decode(text)
+        require(not text[end:].strip(), "OFFLINE_TERMINAL_TRAILING_JSON")
+        return value
+    except (UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise VerificationError("OFFLINE_TERMINAL_JSON_INVALID") from error
+
+
 def canonical(value: object) -> bytes:
     return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=True).encode()
 
@@ -84,12 +125,16 @@ def sha256(value: bytes) -> str:
 
 def read_envelope(path: Path, envelope_version: str, payload_key: str, identity_key: str, prefix: str):
     raw = path.read_bytes()
-    value = json.loads(raw)
-    assert raw == canonical(value), f"{path.name}: non-canonical JSON"
-    assert set(value) == {"envelopeVersion", identity_key, payload_key}
-    assert value["envelopeVersion"] == envelope_version
+    require(0 < len(raw) <= 4 * 1024 * 1024, "OFFLINE_TERMINAL_ENVELOPE_BYTES_INVALID")
+    value = strict_json(raw)
+    require(isinstance(value, dict), "OFFLINE_TERMINAL_ENVELOPE_INVALID")
+    require(raw == canonical(value), "OFFLINE_TERMINAL_NON_CANONICAL_JSON")
+    require(set(value) == {"envelopeVersion", identity_key, payload_key},
+            "OFFLINE_TERMINAL_ENVELOPE_MEMBERS_INVALID")
+    require(value["envelopeVersion"] == envelope_version,
+            "OFFLINE_TERMINAL_ENVELOPE_VERSION_INVALID")
     expected = prefix + sha256(canonical(value[payload_key]))
-    assert value[identity_key] == expected, f"{path.name}: identity drift"
+    require(value[identity_key] == expected, "OFFLINE_TERMINAL_ENVELOPE_IDENTITY_DRIFT")
     return value[payload_key], expected
 
 
@@ -108,18 +153,20 @@ def require_evidence_path(repository: Path, candidate: Path, must_exist: bool = 
     evidence_root = (repository / ".sdlc" / "evidence").resolve(strict=True)
     resolved_parent = candidate.resolve(strict=False).parent.resolve(strict=True)
     resolved = resolved_parent / candidate.name
-    assert evidence_root in resolved.parents, "evidence path escapes .sdlc/evidence"
-    assert resolved.exists() is must_exist, f"unexpected evidence path state: {resolved.name}"
+    require(evidence_root in resolved.parents, "OFFLINE_TERMINAL_EVIDENCE_PATH_ESCAPE")
+    require(resolved.exists() is must_exist, "OFFLINE_TERMINAL_EVIDENCE_PATH_STATE_INVALID")
     if must_exist:
-        assert resolved.is_file() and not resolved.is_symlink()
+        require(resolved.is_file() and not resolved.is_symlink(),
+                "OFFLINE_TERMINAL_EVIDENCE_FILE_INVALID")
     return resolved
 
 
 def zero_values(mapping: dict[str, object]) -> bool:
-    return bool(mapping) and all(isinstance(value, int) and value == 0 for value in mapping.values())
+    return bool(mapping) and all(type(value) is int and value == 0 for value in mapping.values())
 
 
 def main() -> int:
+    require(__debug__, "OFFLINE_TERMINAL_OPTIMIZED_MODE_FORBIDDEN")
     parser = argparse.ArgumentParser()
     parser.add_argument("--ticket", required=True, choices=sorted(TICKETS))
     parser.add_argument("--decision", required=True, type=Path)
@@ -149,30 +196,41 @@ def main() -> int:
     )
 
     challenger_id, disposition, reason_code = TICKETS[args.ticket]
-    assert decision["overallDisposition"] == "STOP_TO_SPEC_R5"
+    require(decision_identity == AUTHORITATIVE_DECISION_IDENTITY,
+            "OFFLINE_TERMINAL_DECISION_AUTHORITY_DRIFT")
+    require(decision.get("evidencePackIdentity") == AUTHORITATIVE_EVIDENCE_PACK_IDENTITY,
+            "OFFLINE_TERMINAL_EVIDENCE_PACK_AUTHORITY_DRIFT")
+    require(decision["overallDisposition"] == "STOP_TO_SPEC_R5",
+            "OFFLINE_TERMINAL_ROOT_DISPOSITION_INVALID")
     routes = {route["route"]: route for route in decision["routes"]}
-    assert routes["R5"]["triggerSatisfied"] is True
-    assert routes["R5"]["disposition"] == "TRIGGERED"
-    assert zero_values(decision["externalProviderUsage"])
+    require(routes["R5"]["triggerSatisfied"] is True,
+            "OFFLINE_TERMINAL_R5_TRIGGER_INVALID")
+    require(routes["R5"]["disposition"] == "TRIGGERED",
+            "OFFLINE_TERMINAL_R5_DISPOSITION_INVALID")
+    require(zero_values(decision["externalProviderUsage"]),
+            "OFFLINE_TERMINAL_DECISION_PROVIDER_USAGE_NONZERO")
 
     supporting_identities: list[str]
     if challenger_id is not None:
-        assert args.predecessor == []
+        require(args.predecessor == [], "OFFLINE_TERMINAL_CHALLENGER_PREDECESSOR_INVALID")
         catalog_path = repository / "renderweave-inference" / "src" / "main" / "resources" \
             / "visual-eval" / "quality-repair" / "challenger-capabilities-v1.json"
         catalog_bytes = catalog_path.read_bytes().replace(b"\r\n", b"\n")
-        assert b"\r" not in catalog_bytes
+        require(b"\r" not in catalog_bytes, "OFFLINE_TERMINAL_CATALOG_LINE_ENDING_INVALID")
         catalog_identity = CATALOG_PREFIX + sha256(catalog_bytes)
-        catalog = json.loads(catalog_bytes)
+        catalog = strict_json(catalog_bytes)
         capability = next(item for item in catalog["challengers"]
                           if item["challengerId"] == challenger_id)
-        assert capability["admissionDisposition"] == "NOT_ADMITTED"
-        assert capability["executable"] is False
+        require(capability["admissionDisposition"] == "NOT_ADMITTED",
+                "OFFLINE_TERMINAL_CAPABILITY_ADMISSION_DRIFT")
+        require(capability["executable"] is False,
+                "OFFLINE_TERMINAL_CAPABILITY_EXECUTABILITY_DRIFT")
         capability_identity = CAPABILITY_PREFIX + framed_identity([catalog_identity, challenger_id])
         supporting_identities = sorted([catalog_identity, capability_identity])
     else:
         expected_tickets = EXPECTED_PREDECESSORS[args.ticket]
-        assert len(args.predecessor) == len(expected_tickets)
+        require(len(args.predecessor) == len(expected_tickets),
+                "OFFLINE_TERMINAL_PREDECESSOR_COUNT_INVALID")
         predecessors = [read_envelope(
             require_evidence_path(repository, path),
             "renderweave-offline-repair-terminal-outcome-envelope/1.0",
@@ -180,40 +238,54 @@ def main() -> int:
             "outcomeIdentity",
             OUTCOME_PREFIX,
         ) for path in args.predecessor]
-        assert {payload["ticket"] for payload, _ in predecessors} == expected_tickets
-        assert all(payload["rootDecisionIdentity"] == decision_identity
-                   and payload["rootDisposition"] == "STOP_TO_SPEC_R5"
-                   and zero_values(payload["offlineWorkUsage"])
-                   and zero_values(payload["externalProviderUsage"])
-                   for payload, _ in predecessors)
+        require({payload["ticket"] for payload, _ in predecessors} == expected_tickets,
+                "OFFLINE_TERMINAL_PREDECESSOR_TICKET_SET_INVALID")
+        require(all(payload["rootDecisionIdentity"] == decision_identity
+                    and payload["rootDisposition"] == "STOP_TO_SPEC_R5"
+                    and zero_values(payload["offlineWorkUsage"])
+                    and zero_values(payload["externalProviderUsage"])
+                    for payload, _ in predecessors),
+                "OFFLINE_TERMINAL_PREDECESSOR_AUTHORITY_INVALID")
         supporting_identities = sorted(identity for _, identity in predecessors)
 
-    assert outcome["contractVersion"] == "OfflineRepairTerminalOutcome/1.0"
-    assert outcome["ticket"] == args.ticket
-    assert outcome["rootDecisionIdentity"] == decision_identity
-    assert outcome["rootDisposition"] == "STOP_TO_SPEC_R5"
-    assert outcome["supportingIdentities"] == supporting_identities
-    assert outcome["disposition"] == disposition
-    assert outcome["reasonCode"] == reason_code
-    assert zero_values(outcome["offlineWorkUsage"])
-    assert zero_values(outcome["externalProviderUsage"])
+    require(outcome["contractVersion"] == "OfflineRepairTerminalOutcome/1.0",
+            "OFFLINE_TERMINAL_OUTCOME_VERSION_INVALID")
+    require(outcome["ticket"] == args.ticket, "OFFLINE_TERMINAL_OUTCOME_TICKET_INVALID")
+    require(outcome["rootDecisionIdentity"] == decision_identity,
+            "OFFLINE_TERMINAL_OUTCOME_ROOT_IDENTITY_INVALID")
+    require(outcome["rootDisposition"] == "STOP_TO_SPEC_R5",
+            "OFFLINE_TERMINAL_OUTCOME_ROOT_DISPOSITION_INVALID")
+    require(outcome["supportingIdentities"] == supporting_identities,
+            "OFFLINE_TERMINAL_OUTCOME_SUPPORT_INVALID")
+    require(outcome["disposition"] == disposition,
+            "OFFLINE_TERMINAL_OUTCOME_DISPOSITION_INVALID")
+    require(outcome["reasonCode"] == reason_code,
+            "OFFLINE_TERMINAL_OUTCOME_REASON_INVALID")
+    require(zero_values(outcome["offlineWorkUsage"]),
+            "OFFLINE_TERMINAL_OUTCOME_WORK_USAGE_NONZERO")
+    require(zero_values(outcome["externalProviderUsage"]),
+            "OFFLINE_TERMINAL_OUTCOME_PROVIDER_USAGE_NONZERO")
 
     combined = (decision_path.read_text(encoding="utf-8")
                 + outcome_path.read_text(encoding="utf-8")
                 + "".join(require_evidence_path(repository, path).read_text(encoding="utf-8")
                           for path in args.predecessor)).lower()
-    assert all(token.lower() not in combined for token in FORBIDDEN)
+    require(all(token.lower() not in combined for token in FORBIDDEN),
+            "OFFLINE_TERMINAL_PAYLOAD_FORBIDDEN")
     if args.ticket == "VRQ_14_FRESH_LIVE_REQUEST_ELIGIBILITY":
         historical = (
             "n7-04-plus-canary-product-v45-20260814e",
             "renderweave-n7-live-ticket-contract/1.0:",
             "renderweave-visual-evaluation-tree-sha256/2:",
         )
-        assert all(value not in combined for value in historical)
+        require(all(value not in combined for value in historical),
+                "OFFLINE_TERMINAL_HISTORICAL_IDENTITY_REUSED")
     revision = subprocess.run(
         ["git", "rev-parse", "HEAD"], cwd=repository, check=True,
         capture_output=True, text=True,
     ).stdout.strip()
+    require(re.fullmatch(r"[0-9a-f]{40}", revision) is not None,
+            "OFFLINE_TERMINAL_REPOSITORY_REVISION_INVALID")
     summary = {
         "apiKeyReads": 0,
         "artifactAcquisitions": 0,
@@ -231,10 +303,12 @@ def main() -> int:
         "requestEnvelopeCreated": False,
         "status": "PASS",
         "ticket": args.ticket,
-        "verificationLevel": "A2",
+        "contractVerification": "A2_CROSS_IMPLEMENTATION_RECONSTRUCTION",
+        "executionAccountingVerification": "A1_TOOL_CAPTURED",
+        "verificationLevel": "MIXED_A2_CONTRACT_A1_ACCOUNTING",
     }
     output_path.write_bytes(canonical(summary))
-    print(f"{args.ticket}: PASS; A2; zero work; ProviderAttempts=0")
+    print(f"{args.ticket}: PASS; mixed A2 contract/A1 accounting; zero work; ProviderAttempts=0")
     return 0
 
 

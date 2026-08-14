@@ -195,6 +195,18 @@ class OfflineRepairTerminalGateTest {
                 decision,
                 identity.substring(0, identity.length() - 1) + "0",
                 capabilities));
+        var alternateDecision = new R2R5TriggerDecision(
+                decision.decisionVersion(),
+                FrozenQualityEvidencePack.VERSION + ":" + "a".repeat(64),
+                decision.routes(),
+                decision.overallDisposition(),
+                decision.externalProviderUsage());
+        var alternateIdentity = new R2R5TriggerDecisionJsonCodec().decisionIdentity(alternateDecision);
+        assertThrows(IllegalArgumentException.class, () -> gate.closeR2Challenger(
+                OfflineRepairTerminalOutcome.Ticket.VRQ_08_PP_STRUCTUREV3_DEV_SHADOW,
+                alternateDecision,
+                alternateIdentity,
+                capabilities));
         assertThrows(IllegalArgumentException.class, () -> gate.closeR2Challenger(
                 OfflineRepairTerminalOutcome.Ticket.VRQ_10_SOLE_DEV_WINNER_SELECTION,
                 decision,
@@ -203,25 +215,13 @@ class OfflineRepairTerminalGateTest {
     }
 
     private static R2R5TriggerDecision stopToSpecR5() {
-        var packIdentity = FrozenQualityEvidencePack.VERSION + ":" + "a".repeat(64);
-        return new R2R5TriggerDecision(
-                R2R5TriggerDecision.VERSION,
-                packIdentity,
-                List.of(
-                        route(FrozenQualityEvidencePack.Route.R2,
-                                FrozenQualityEvidencePack.PredicateResult.MISSING,
-                                R2R5TriggerDecision.RouteDisposition.EVIDENCE_REQUIRED),
-                        route(FrozenQualityEvidencePack.Route.R3,
-                                FrozenQualityEvidencePack.PredicateResult.MISSING,
-                                R2R5TriggerDecision.RouteDisposition.EVIDENCE_REQUIRED),
-                        route(FrozenQualityEvidencePack.Route.R4,
-                                FrozenQualityEvidencePack.PredicateResult.FAIL,
-                                R2R5TriggerDecision.RouteDisposition.REJECTED_BY_CURRENT_EVIDENCE),
-                        route(FrozenQualityEvidencePack.Route.R5,
-                                FrozenQualityEvidencePack.PredicateResult.PASS,
-                                R2R5TriggerDecision.RouteDisposition.TRIGGERED)),
-                R2R5TriggerDecision.OverallDisposition.STOP_TO_SPEC_R5,
-                new FrozenQualityEvidencePack.ExternalProviderUsage(0, 0, 0));
+        try (var input = OfflineRepairTerminalGateTest.class.getResourceAsStream(
+                "/visual-eval/quality-repair/authoritative-vrq07-decision.json")) {
+            if (input == null) throw new IllegalStateException("AUTHORITATIVE_VRQ07_FIXTURE_MISSING");
+            return new R2R5TriggerDecisionJsonCodec().read(input.readAllBytes());
+        } catch (java.io.IOException failure) {
+            throw new IllegalStateException("AUTHORITATIVE_VRQ07_FIXTURE_UNREADABLE", failure);
+        }
     }
 
     private OfflineRepairTerminalOutcome holdoutOutcome(
@@ -243,20 +243,4 @@ class OfflineRepairTerminalGateTest {
                 decision, decisionIdentity, List.of(selection));
     }
 
-    private static R2R5TriggerDecision.RouteDecision route(
-            FrozenQualityEvidencePack.Route route,
-            FrozenQualityEvidencePack.PredicateResult result,
-            R2R5TriggerDecision.RouteDisposition disposition
-    ) {
-        return new R2R5TriggerDecision.RouteDecision(
-                route,
-                result == FrozenQualityEvidencePack.PredicateResult.PASS,
-                disposition,
-                List.of(new FrozenQualityEvidencePack.PredicateEvidence(
-                        route.name() + "_TEST_PREDICATE",
-                        "A1_A2",
-                        result,
-                        route.name() + "_TEST_REASON",
-                        "sha256:" + Integer.toHexString(route.ordinal()).repeat(64).substring(0, 64))));
-    }
 }
