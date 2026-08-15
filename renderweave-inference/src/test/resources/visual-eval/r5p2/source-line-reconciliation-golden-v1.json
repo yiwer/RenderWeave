@@ -1,0 +1,103 @@
+{
+  "goldenVersion": "renderweave-r5p2-source-line-reconciliation-golden/1.0",
+  "policyIdentity": "FrozenSourceLineReconciliationPolicy/1.0:eead9287d942693156500a090daf5da5c2f9dafe4f6564ee642ac406c0f49443",
+  "thresholds": [
+    {"thresholdId":"area-4999","kind":"area","numerator":4999,"denominator":10000,"expected":false},
+    {"thresholdId":"area-5000","kind":"area","numerator":5000,"denominator":10000,"expected":true},
+    {"thresholdId":"vertical-7999","kind":"vertical","numerator":7999,"denominator":10000,"expected":false},
+    {"thresholdId":"vertical-8000","kind":"vertical","numerator":8000,"denominator":10000,"expected":true}
+  ],
+  "projections": [
+    {
+      "projectionId": "overview-half-line",
+      "observationId": "projected",
+      "sourceArtifactId": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "viewOrdinal": 0,
+      "lineOrdinal": 0,
+      "viewWidth": 200,
+      "viewHeight": 200,
+      "sourceWidth": 1000,
+      "sourceHeight": 1000,
+      "sourceCrop": [100, 200, 300, 400],
+      "viewLine": [0, 0, 100, 100],
+      "confidenceBps": 9000,
+      "text": "route A",
+      "expectedBox": [1000, 2000, 2000, 3000],
+      "expectedPixelDensity": [40000, 40000]
+    }
+  ],
+  "representativePairs": [
+    {
+      "pairId": "overflow-safe-density",
+      "candidate": {"observationId":"density","sourceArtifactId":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","box":[0,0,100,100],"confidenceBps":1,"text":"density","viewOrdinal":5,"lineOrdinal":8,"density":[9223372036854775807,9223372036854775806]},
+      "existing": {"observationId":"existing","sourceArtifactId":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","box":[0,0,100,100],"confidenceBps":8000,"text":"existing","viewOrdinal":4,"lineOrdinal":9,"density":[9223372036854775806,9223372036854775807]},
+      "expected": true
+    },
+    {
+      "pairId": "confidence-before-area",
+      "candidate": {"observationId":"confidence","sourceArtifactId":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","box":[0,0,101,100],"confidenceBps":8001,"text":"confidence","viewOrdinal":5,"lineOrdinal":8,"density":[1,1]},
+      "existing": {"observationId":"confidence-base","sourceArtifactId":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","box":[0,0,100,100],"confidenceBps":8000,"text":"base","viewOrdinal":4,"lineOrdinal":9,"density":[1,1]},
+      "expected": true
+    },
+    {
+      "pairId": "smaller-area",
+      "candidate": {"observationId":"smaller","sourceArtifactId":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","box":[0,0,99,100],"confidenceBps":8000,"text":"smaller","viewOrdinal":5,"lineOrdinal":8,"density":[1,1]},
+      "existing": {"observationId":"area-base","sourceArtifactId":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","box":[0,0,100,100],"confidenceBps":8000,"text":"base","viewOrdinal":4,"lineOrdinal":9,"density":[1,1]},
+      "expected": true
+    },
+    {
+      "pairId": "lower-view",
+      "candidate": {"observationId":"lower-view","sourceArtifactId":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","box":[0,0,100,100],"confidenceBps":8000,"text":"lower view","viewOrdinal":3,"lineOrdinal":99,"density":[1,1]},
+      "existing": {"observationId":"view-base","sourceArtifactId":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","box":[0,0,100,100],"confidenceBps":8000,"text":"base","viewOrdinal":4,"lineOrdinal":9,"density":[1,1]},
+      "expected": true
+    },
+    {
+      "pairId": "lower-line",
+      "candidate": {"observationId":"lower-line","sourceArtifactId":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","box":[0,0,100,100],"confidenceBps":8000,"text":"lower line","viewOrdinal":4,"lineOrdinal":8,"density":[1,1]},
+      "existing": {"observationId":"line-base","sourceArtifactId":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","box":[0,0,100,100],"confidenceBps":8000,"text":"base","viewOrdinal":4,"lineOrdinal":9,"density":[1,1]},
+      "expected": true
+    }
+  ],
+  "invalidTexts": [
+    {"caseId":"non-nfc","text":"e\u0301"},
+    {"caseId":"ascii-whitespace","text":"two  spaces"},
+    {"caseId":"unicode-whitespace","text":"non\u00a0breaking"},
+    {"caseId":"iso-control","text":"line\nfeed"}
+  ],
+  "cases": [
+    {
+      "caseId": "complete-link",
+      "lines": [
+        {"observationId":"c","sourceArtifactId":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","box":[60,0,160,100],"confidenceBps":7000,"text":"c","viewOrdinal":2,"lineOrdinal":0,"density":[1,1]},
+        {"observationId":"b","sourceArtifactId":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","box":[20,0,120,100],"confidenceBps":8000,"text":"b","viewOrdinal":1,"lineOrdinal":0,"density":[1,1]},
+        {"observationId":"a","sourceArtifactId":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","box":[0,0,100,100],"confidenceBps":9000,"text":"a","viewOrdinal":0,"lineOrdinal":0,"density":[1,1]}
+      ],
+      "expectedRepresentativeIds": ["a", "c"]
+    },
+    {
+      "caseId": "density-and-repeat",
+      "lines": [
+        {"observationId":"overview","sourceArtifactId":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","box":[0,0,100,100],"confidenceBps":9900,"text":"route A","viewOrdinal":0,"lineOrdinal":0,"density":[1,1]},
+        {"observationId":"crop","sourceArtifactId":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","box":[0,0,100,100],"confidenceBps":8000,"text":"route variant","viewOrdinal":1,"lineOrdinal":0,"density":[4,1]},
+        {"observationId":"repeat","sourceArtifactId":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","box":[0,200,100,300],"confidenceBps":8500,"text":"route A","viewOrdinal":1,"lineOrdinal":1,"density":[4,1]}
+      ],
+      "expectedRepresentativeIds": ["crop", "repeat"]
+    },
+    {
+      "caseId": "same-view-never-merges",
+      "lines": [
+        {"observationId":"same-a","sourceArtifactId":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","box":[0,0,100,100],"confidenceBps":7000,"text":"same a","viewOrdinal":0,"lineOrdinal":0,"density":[1,1]},
+        {"observationId":"same-b","sourceArtifactId":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","box":[1,1,101,101],"confidenceBps":9000,"text":"same b","viewOrdinal":0,"lineOrdinal":1,"density":[1,1]}
+      ],
+      "expectedRepresentativeIds": ["same-a", "same-b"]
+    },
+    {
+      "caseId": "unicode-scalar-order",
+      "lines": [
+        {"observationId":"supplementary","sourceArtifactId":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","box":[0,0,10,10],"confidenceBps":8000,"text":"\ud800\udc00","viewOrdinal":0,"lineOrdinal":1,"density":[1,1]},
+        {"observationId":"private-use","sourceArtifactId":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","box":[0,0,10,10],"confidenceBps":8000,"text":"\ue000","viewOrdinal":0,"lineOrdinal":0,"density":[1,1]}
+      ],
+      "expectedRepresentativeIds": ["private-use", "supplementary"]
+    }
+  ]
+}
