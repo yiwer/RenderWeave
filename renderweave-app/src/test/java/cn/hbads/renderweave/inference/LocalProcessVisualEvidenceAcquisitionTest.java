@@ -44,14 +44,14 @@ class LocalProcessVisualEvidenceAcquisitionTest {
         var runner = new StubRunner("""
                 {"protocolVersion":"renderweave-document-vision-response/1.0",
                  "capabilityId":"%s","artifacts":[
-                   {"artifactId":"%s","sourceOrdinal":1,"lines":[
-                     {"left":50,"top":20,"right":99,"bottom":49,"confidenceBps":5900,"text":" second "}
-                   ]},
                    {"artifactId":"%s","sourceOrdinal":0,"lines":[
                      {"left":10,"top":5,"right":40,"bottom":15,"confidenceBps":9200,"text":"站点\\t名称"}
+                   ]},
+                   {"artifactId":"%s","sourceOrdinal":1,"lines":[
+                     {"left":50,"top":20,"right":99,"bottom":49,"confidenceBps":5900,"text":" second "}
                    ]}
                  ]}
-                """.formatted(CAPABILITY, SECOND_ARTIFACT, FIRST_ARTIFACT));
+                """.formatted(CAPABILITY, FIRST_ARTIFACT, SECOND_ARTIFACT));
         var adapter = adapter(runner);
         var artifacts = ArtifactSet.canonical(List.of(
                 new ArtifactSet.Artifact(SECOND_ARTIFACT, 1, "image/jpeg", new byte[]{4, 5}, 101, 51, true),
@@ -59,6 +59,7 @@ class LocalProcessVisualEvidenceAcquisitionTest {
         ));
 
         var ir = adapter.acquire(artifacts, adapter.acquisitionPolicy());
+        adapter.acquire(artifacts, adapter.acquisitionPolicy());
 
         assertInstanceOf(VisualEvidenceAcquisition.class, adapter);
         assertEquals(RapidOcrBaselineContract.policy(10_000), adapter.acquisitionPolicy());
@@ -72,11 +73,36 @@ class LocalProcessVisualEvidenceAcquisitionTest {
         assertEquals("basis-points/1.0", firstLine.confidence().nativeScaleIdentity());
         assertEquals(DocumentObservationIR.ConfidenceBucket.HIGH, firstLine.confidence().derivedBucket());
         assertEquals("站点 名称", firstLine.text());
-        assertEquals(2, runner.calls.size());
+        assertEquals(3, runner.calls.size());
+        assertTrue(runner.calls.getFirst().command().contains("--capability"));
+        assertFalse(runner.calls.get(1).command().contains("--capability"));
+        assertFalse(runner.calls.get(2).command().contains("--capability"));
         var request = new String(runner.calls.getLast().input(), StandardCharsets.UTF_8);
         assertTrue(request.indexOf(FIRST_ARTIFACT) < request.indexOf(SECOND_ARTIFACT));
         assertFalse(adapter.toString().contains("站点"));
         assertFalse(ir.toString().contains("站点"));
+    }
+
+    @Test
+    void completeBranchRejectsResponseArtifactReordering() {
+        var runner = new StubRunner("""
+                {"protocolVersion":"renderweave-document-vision-response/1.0",
+                 "capabilityId":"%s","artifacts":[
+                   {"artifactId":"%s","sourceOrdinal":1,"lines":[]},
+                   {"artifactId":"%s","sourceOrdinal":0,"lines":[]}
+                 ]}
+                """.formatted(CAPABILITY, SECOND_ARTIFACT, FIRST_ARTIFACT));
+        var adapter = adapter(runner);
+        var artifacts = ArtifactSet.canonical(List.of(
+                new ArtifactSet.Artifact(FIRST_ARTIFACT, 0, "image/png", new byte[]{1}, 10, 10, true),
+                new ArtifactSet.Artifact(SECOND_ARTIFACT, 1, "image/png", new byte[]{2}, 10, 10, true)
+        ));
+
+        var failure = assertThrows(VisualEvidenceAcquisitionException.class,
+                () -> adapter.acquire(artifacts, adapter.acquisitionPolicy()));
+
+        assertEquals("DOCUMENT_VISION_OUTPUT_INVALID", failure.code());
+        assertEquals(2, runner.calls.size());
     }
 
     @Test

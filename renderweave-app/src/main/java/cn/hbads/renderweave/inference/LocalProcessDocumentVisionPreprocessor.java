@@ -332,17 +332,17 @@ final class LocalProcessDocumentVisionPreprocessor
             ProcessResponse response,
             AcquisitionPolicy policy
     ) {
-        var inputById = new HashMap<String, ArtifactSet.Artifact>();
-        inputs.artifacts().forEach(item -> inputById.put(item.artifactId(), item));
         if (response.artifacts() == null || response.artifacts().size() != inputs.artifacts().size()) {
             throw new DocumentVisionException("DOCUMENT_VISION_OUTPUT_INVALID");
         }
         var seen = new HashSet<String>();
         var artifacts = new ArrayList<DocumentObservationIR.ArtifactObservation>();
         var totalLines = 0;
-        for (var rawArtifact : response.artifacts()) {
-            var input = inputById.get(rawArtifact.artifactId());
-            if (input == null || !seen.add(rawArtifact.artifactId())
+        for (var artifactIndex = 0; artifactIndex < response.artifacts().size(); artifactIndex++) {
+            var rawArtifact = response.artifacts().get(artifactIndex);
+            var input = inputs.artifacts().get(artifactIndex);
+            if (!input.artifactId().equals(rawArtifact.artifactId())
+                    || !seen.add(rawArtifact.artifactId())
                     || input.sourceOrdinal() != rawArtifact.sourceOrdinal() || rawArtifact.lines() == null) {
                 throw new DocumentVisionException("DOCUMENT_VISION_OUTPUT_INVALID");
             }
