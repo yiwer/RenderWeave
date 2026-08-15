@@ -1,0 +1,38 @@
+{
+  "authorityVersion": "renderweave-r5p2-authority/1.0",
+  "approvedSpecPath": "specs/changes/20260815-r5p2-source-line-reconciliation-successor.md",
+  "approvedSpecSha256": "e33269e1faa04f21239a0e79d4346fc90439f142b26111b3764164f53ba7d902",
+  "baselineRevision": "4b756c52cbc2fd389d8ca34f4c4a65b1bc9615db",
+  "historicalSpecPath": "specs/changes/20260815-r5-paired-product-view-successor.md",
+  "historicalSpecSha256": "650ad1632347592d1fc34325983744c02563b43d8a565b9b1cd24e1a805a892a",
+  "historicalEffectiveTerminal": "R5P_MEASUREMENT_INVALID",
+  "historicalProducerReportIdentity": "renderweave-r5p-paired-product-view-report/1.0:2f15a068bd6c5eb8416a1d7da7c8fd679278a8f734cd78d2d35ade6ab01ff783",
+  "historicalProducerReportSha256": "df622da5089f069ed4b6bd2a929fec6539839af6375d3669d18f896397082625",
+  "historicalIndependentEvidenceIdentity": "renderweave-r5p-independent-replay-evidence/1.0:2ccd12203e15ac572d72036530973ad181e76f0a08ebd4b84b2d4b14aaca5281",
+  "historicalIndependentEvidenceSha256": "1086bbee024a126d7c665995a44461faee36e4a7ee541e73f8bccd2f2fc393d6",
+  "historicalEvaluationIdentity": "renderweave-r5p-paired-view-evaluation/1.0:c8ad69263640ca49cd93ca24c6b558c6f913ff89a40c84052634c7cd79f66b65",
+  "closedTicketIds": [
+    "R5P-07",
+    "R5P-08",
+    "R5P-09",
+    "R5P-10",
+    "R5P-11",
+    "R5P-12"
+  ],
+  "corpusIdentity": "renderweave-visual-stage-corpus/2.0:c596621eb680e7e10d42d2e1d1f926995cec9716cc6ef83a96a50ad53adc285c",
+  "corpusIdentityLockSha256": "cf54fd985e89a024fdc0742a737c21442c49718fdf58b0bb05b87e2cffd2247d",
+  "prohibitedIdentityValues": [
+    "renderweave-r5p-authority/1.0:05958659a5ffc302e92f6cc6cda8b1efd868e2ec4fa7f92b0d63f821f843441d",
+    "renderweave-r5p-paired-view-assignment/1.0:39266e24b85e0189577573e6e4e56905d41a43f7e0f81a9514fbdbcac954c3e8",
+    "renderweave-r5p-paired-view-evaluation/1.0:c8ad69263640ca49cd93ca24c6b558c6f913ff89a40c84052634c7cd79f66b65",
+    "renderweave-r5p-paired-product-view-report/1.0:2f15a068bd6c5eb8416a1d7da7c8fd679278a8f734cd78d2d35ade6ab01ff783",
+    "renderweave-r5p-independent-replay-evidence/1.0:2ccd12203e15ac572d72036530973ad181e76f0a08ebd4b84b2d4b14aaca5281"
+  ],
+  "externalProviderUsage": {
+    "attempts": 0,
+    "reservations": 0,
+    "costMicrosCny": 0
+  },
+  "apiKeyReads": 0,
+  "terminalCode": "R5P2_AUTHORITY_LOCKED"
+}
