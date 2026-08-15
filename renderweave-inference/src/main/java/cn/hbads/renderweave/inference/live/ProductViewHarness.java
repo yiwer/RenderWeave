@@ -56,6 +56,16 @@ public final class ProductViewHarness {
 
     PreparedProductView prepare(List<RawRasterFixture> sourceFixtures) {
         var fixtures = List.copyOf(Objects.requireNonNull(sourceFixtures, "fixtures"));
+        return prepare(fixtures, "r5p-offline-harness", "r5p-fixture-set:" + framedSha256(
+                fixtures.stream().map(item -> item.fixtureId() + ":" + item.rawSha256()).toList()));
+    }
+
+    PreparedProductView prepare(
+            List<RawRasterFixture> sourceFixtures,
+            String profileId,
+            String sourceReference
+    ) {
+        var fixtures = List.copyOf(Objects.requireNonNull(sourceFixtures, "fixtures"));
         if (fixtures.isEmpty() || fixtures.size() > ArtifactSet.MAXIMUM_ARTIFACTS
                 || fixtures.stream().anyMatch(Objects::isNull)) {
             throw invalid("R5P_RAW_FIXTURE_SET_INVALID");
@@ -67,9 +77,8 @@ public final class ProductViewHarness {
         var store = new ScopedBlobStore();
         var input = new InferenceInput(
                 InferenceMode.IMAGE_ONLY,
-                "r5p-offline-harness",
-                "r5p-fixture-set:" + framedSha256(
-                        fixtures.stream().map(item -> item.fixtureId() + ":" + item.rawSha256()).toList()),
+                Objects.requireNonNull(profileId, "profileId"),
+                Objects.requireNonNull(sourceReference, "sourceReference"),
                 true,
                 fixtures.stream().map(item -> new InferenceInput.BinaryInput(
                         item.fileName(), item.mediaType(), item.bytes())).toList(),
