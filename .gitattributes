@@ -1,3 +1,6 @@
+renderweave-inference/src/main/resources/visual-eval/v1/scenes.json text eol=crlf
+renderweave-inference/src/main/resources/visual-eval/v1/OFL.txt text eol=crlf
+renderweave-inference/src/main/resources/visual-eval/v1/*.ttf binary
 renderweave-inference/src/main/resources/visual-eval/v2/*.json text eol=lf
 renderweave-inference/src/main/resources/visual-eval/v2/*.md text eol=lf
 renderweave-inference/src/main/resources/visual-eval/r5/*.json text eol=lf

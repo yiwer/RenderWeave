@@ -1,6 +1,15 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-17 **Template v1 implementation TV1-T02 已 `automated_verified`**：ADR-0041 冻结
+  provider-owned contracts、consumer-owned reverse/Host/process Seams、单向 staged Maven graph、closed
+  outcomes 与 `api/spi/internal` ownership；新增非空转 architecture test 4/4，并把 Validation app Adapter
+  迁到 `app.validation` 消除唯一 split package。LF worktree 暴露的 legacy visual-eval v1 CRLF identity 通过
+  exact `.gitattributes` 修复，未改 Git blob/manifest。server
+  `.sdlc/evidence/20260817-202707-server/`（20/13/361/267 tests）、Template
+  `.sdlc/evidence/20260817-203825-template/`（authority diff=0）与 fast
+  `.sdlc/evidence/20260817-203946-fast/` 均通过。无新空 module、API/migration/route/provider/J1；Ticket 19
+  open，Template/Editor/Renderer 未 READY。TV1-T03/T05 已解锁，下一 selected frontier 为 TV1-T03。
 - 2026-08-17 **Template v1 implementation TV1-T01 已 `automated_verified`**：在相邻
   `feature/template-v1` worktree 整合 `b14c2d7`、`0b485f4` 与 7 份 exact LF registry repair；新增 approved
   additive delta、Project/single-writer DAG 与离线 `template` gate，并纳入 `full`。证据：Template replay

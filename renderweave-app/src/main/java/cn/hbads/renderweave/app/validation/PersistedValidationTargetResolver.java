@@ -1,4 +1,4 @@
-package cn.hbads.renderweave.validation;
+package cn.hbads.renderweave.app.validation;
 
 import cn.hbads.renderweave.schema.definition.DefinitionReferences;
 import cn.hbads.renderweave.schema.definition.SchemaDefinition;
@@ -10,6 +10,11 @@ import cn.hbads.renderweave.schema.draft.DraftStore;
 import cn.hbads.renderweave.schema.identity.SchemaKey;
 import cn.hbads.renderweave.schema.staticvalue.StaticSchemaNotFoundException;
 import cn.hbads.renderweave.schema.staticvalue.StaticSchemaStore;
+import cn.hbads.renderweave.validation.ResolvedSchema;
+import cn.hbads.renderweave.validation.ResolvedSchemaIdentity;
+import cn.hbads.renderweave.validation.ResolvedValidationTarget;
+import cn.hbads.renderweave.validation.ValidationTarget;
+import cn.hbads.renderweave.validation.ValidationTargetResolver;
 import org.springframework.stereotype.Component;
 
 import java.util.LinkedHashMap;

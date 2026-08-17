@@ -225,10 +225,17 @@ Template、Editor 或 Renderer READY。
 ## 限界上下文与依赖
 
 ```text
-schema (DSL + lifecycle + reference graph + compiler)
-  └── validation (RootDocument validator; depends only on schema public API)
-        └── inference (job + candidate + evidence + provider adapter)
-              └── app (HTTP, JDBC adapters, transactions, worker assembly)
+schema (Schema DSL + lifecycle + reference graph + compiler)
+  └── validation (exact-Schema RootDocument validation)
+        └── inference (job + candidate + evidence)
+
+asset (Asset aggregate + AssetRef + AssetResolver)
+  └── template (Template aggregate + DesignDSL + closure; also depends on schema)
+        └── rendering (Evaluation + RenderDocument; also depends on schema,
+                       validation and asset)
+
+app depends on every context for which it owns a real HTTP/JDBC/Host/process Adapter or assembly
+Rust RenderEngine executable is outside the Maven graph and is reached only through a Rendering-owned Seam
 
 web ── OpenAPI 3.1.2 / generated Fetch SDK ── app
 ```
@@ -236,7 +243,18 @@ web ── OpenAPI 3.1.2 / generated Fetch SDK ── app
 - `schema` 不依赖数据库、Spring MVC、模型供应商或文件系统。
 - `validation` 不能反向改变 Schema；通用 JSON Schema validator 只用于互操作测试。
 - `inference` 只能通过窄 application command 原子创建新 Draft Bundle；没有发布、更新或删除能力。
-- 模块共享只通过明确 public API；禁止建立无边界的 `common` dumping ground。
+- `asset` 不依赖 Template 或 Rendering；Template 保存 Asset-owned `AssetRef`，Rendering 消费
+  Asset-owned `AssetResolver` 与 `ResolvedAsset`。
+- `template` 不依赖 Rendering；它向 Rendering 提供一致 closure snapshot，并以
+  `AssetReferenceAuthority` 向 Asset 删除流程提供 current-only proof/reservation。
+- Asset→Template 的反向运行时协作通过 Asset-owned outbound Interface 和 app Adapter 完成，不形成
+  compile edge、共享聚合、共享表或跨上下文数据库事务。
+- Rendering 直接消费 Schema、Validation、Asset 与 Template 各自拥有的 immutable public contracts；失败在
+  Rendering Interface 内收口，不把上游 problem、聚合或 persistence model 暴露给调用方。
+- Host authorization 是一个宿主事实源，但 Template、Asset、Rendering 各自只消费本上下文的窄 authority facet；
+  请求不能自报 ownerScope/capability，capability 名不能进入 DesignDSL、RenderInput、RenderDocument 或 Command。
+- 模块共享只通过明确 public Interface；禁止建立无边界的 `common` dumping ground、split package、domain→app
+  依赖或 JNI/FFI seam。精确 Java ownership 与 staged graph 见 ADR-0041。
 
 ## 身份与路径
 

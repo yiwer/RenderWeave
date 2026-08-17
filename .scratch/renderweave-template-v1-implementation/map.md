@@ -31,6 +31,10 @@ Label: wayfinder:map
 - [建立 Template v1 实施权威与反馈闭环](issues/01-establish-implementation-authority.md) — 隔离
   `feature/template-v1`、additive approved delta、7 份 LF repair 与无写 `template` gate 已形成可重复基线；
   没有产品代码或 readiness 声明。
+- [冻结 Template 实施模块 interface 与依赖方向](issues/02-freeze-module-interfaces.md) — ADR-0041 冻结
+  provider-owned public contracts、consumer-owned reverse/Host/process Seams、单向 staged Maven graph、closed
+  outcomes 与 `api/spi/internal` ownership；现存 split package 已消除，非空转 architecture test 已进入 server
+  gate。没有创建空 module 或产品能力。
 
 ## Not yet specified
 

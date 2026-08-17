@@ -1,5 +1,8 @@
-package cn.hbads.renderweave.validation;
+package cn.hbads.renderweave.app.validation;
 
+import cn.hbads.renderweave.validation.ResolvedSchemaIdentity;
+import cn.hbads.renderweave.validation.RootDocumentValidationService;
+import cn.hbads.renderweave.validation.ValidationBatchResult;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PostMapping;

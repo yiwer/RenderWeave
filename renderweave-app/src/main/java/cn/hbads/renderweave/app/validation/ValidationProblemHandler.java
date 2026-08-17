@@ -1,6 +1,7 @@
-package cn.hbads.renderweave.validation;
+package cn.hbads.renderweave.app.validation;
 
 import cn.hbads.renderweave.schema.ApiProblem;
+import cn.hbads.renderweave.validation.InvalidValidationRequestException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;

@@ -1,6 +1,6 @@
 # RenderWeave Template v1 Implementation Plan
 
-- 状态：`in_progress`；TV1-T01=`automated_verified`，下一 frontier 为 TV1-T02
+- 状态：`in_progress`；TV1-T01/T02=`automated_verified`，TV1-T03 与 TV1-T05 已解锁，下一 selected frontier 为 TV1-T03
 - 日期：2026-08-17
 - Approved delta：[`specs/changes/20260817-template-v1-implementation-authority.md`](../specs/changes/20260817-template-v1-implementation-authority.md)
 - Frozen checkpoint：`0b485f4a13de9d754a81d07f464730776e13c14b`
@@ -78,7 +78,7 @@ flowchart LR
 | Ticket | 类型 | 状态 | Blocked by | 本票退出事实 |
 |---|---|---|---|---|
 | 01 | task | `resolved` / `automated_verified` | none | 实施权威与反馈闭环；无产品代码 |
-| 02 | grilling | `open` | 01 | 精确 module/interface/依赖 ADR 与 architecture test contract |
+| 02 | grilling | `resolved` / `automated_verified` | 01 | ADR-0041、零 split package 与非空转 architecture test |
 | 03 | task | `open` | 01, 02 | 最小 canonical kernel；TDD + independent replay |
 | 04 | grilling | `open` | 02, 03 | Template aggregate/persistence seam；无 migration |
 | 05 | grilling | `open` | 01, 02 | Asset admission/resolution deep interface |
@@ -102,7 +102,21 @@ map 的 `Not yet specified`，不为排满计划提前发明接口、migration �
 - 完成信号：Ticket 01 resolved、map 仅登记其上下文指针、Ticket 02 成为唯一 unblocked frontier、形成一个
   `agent-commit`，worktree clean；不 push/tag/PR。
 
-## 6. Gate 与证据策略
+## 6. TV1-T02 执行卡
+
+- 决策：ADR-0041；provider-owned public contracts、consumer-owned reverse/Host/process Seams、单向 staged
+  Maven graph、context-local closed outcomes 与 `api/spi/internal` ownership。
+- 允许影响：ADR、CONTEXT/tracker/plan/log、architecture tests、app Adapter package 迁移及保证冻结 legacy
+  resource checkout bytes 的 `.gitattributes`。
+- 禁止影响：新 Template/Asset/Rendering artifact 或占位 Interface、DesignDSL/product API、migration、Web route、
+  Rust wire、Profile registration、产品语义变化。
+- 局部验证：Architecture 4/4、Validation PostgreSQL/API 3/3、legacy corpus identity 5/5。
+- 受影响验证：完整 `server`、`template`、`fast` 与 `git diff --check`；不运行 browser/E2E/runtime/J1/provider。
+- 保证等级：自动 gate A1；本票没有产品 execution-class A2、A3 或 J1。
+- 完成信号：Ticket 02 resolved、ADR/CONTEXT/architecture gate 一致、零 split package、形成一个 verified
+  `agent-commit` 且 worktree clean；不 push/tag/PR。
+
+## 7. Gate 与证据策略
 
 `template` gate 顺序固定为 repository diff → 临时副本 Editor generator/independent/A2 → registry target refresh/
 Node primary/Python independent/A2 → 全树 byte comparison → frozen counts/readiness assertions。任何命令失败或
@@ -112,17 +126,17 @@ Node primary/Python independent/A2 → 全树 byte comparison → frozen counts/
 process protocol 或 `full` 组成变化属于共享面，必须提前扩大回归。自动 green 只把对应任务推进到
 `automated_verified`；体验/业务选择是 J0/J1，独立机器 replay 是 A2，物理 Linux/CI policy 才可能形成外部门。
 
-## 7. Version、恢复与熔断
+## 8. Version、恢复与熔断
 
 - 每个已验证 Template ticket 在 `feature/template-v1` 独立提交；不 rewrite/cherry-pick 到 dirty main，不 push/tag/PR。
-- Ticket 01 无数据或外部副作用，恢复为回退其单一提交或删除新 worktree；不得用 `reset --hard` 清理用户 worktree。
+- Ticket 01/02 无数据或外部副作用，恢复为回退对应单一提交或删除新 worktree；不得用 `reset --hard` 清理用户 worktree。
 - 后续 migration 一律 forward-only，只有真实纵切接线时选择当时下一个版本，并用 PostgreSQL/Testcontainers 验证。
 - provider/API key/真实数据/生产权限默认关闭。Renderer 的 hermetic build、ELF closure、portable tricky-font 与
   双物理 Linux CPU-family pixel replay未完成前持续 fail-closed。
 - 触发熔断：authority replay diff、产品语义冲突、依赖循环、test-only bypass、partial Profile availability、
   migration/route placeholder、越界外部副作用或 readiness 夸大。停止受影响票，保留证据；其他安全 frontier 继续。
 
-## 8. 当前边界
+## 9. 当前边界
 
 - Ticket 19 保持 open；Capacity formal records=0。
 - Formal Editor Case/Oracle=0/0；47 个 EditorContentSource slots 仅 1 exact、46 UNBOUND。

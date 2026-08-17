@@ -1,7 +1,8 @@
-package cn.hbads.renderweave.validation;
+package cn.hbads.renderweave.app.validation;
 
 import cn.hbads.renderweave.schema.draft.DraftService;
 import cn.hbads.renderweave.schema.staticvalue.StaticSchemaService;
+import cn.hbads.renderweave.validation.ValidationBatchRequestParser;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
