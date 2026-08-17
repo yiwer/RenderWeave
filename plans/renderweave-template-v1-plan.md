@@ -1,7 +1,7 @@
 # RenderWeave Template v1 Implementation Plan
 
-- 状态：`in_progress`；TV1-T01/T02/T03=`automated_verified`，TV1-T04/T05 已解锁
-- 日期：2026-08-17
+- 状态：`in_progress`；TV1-T01/T02/T03/T04=`automated_verified`，TV1-T05/T06 已解锁
+- 日期：2026-08-18
 - Approved delta：[`specs/changes/20260817-template-v1-implementation-authority.md`](../specs/changes/20260817-template-v1-implementation-authority.md)
 - Frozen checkpoint：`0b485f4a13de9d754a81d07f464730776e13c14b`
 - Code base anchor：`main@7848c821aa9b809dd8cadb2b5e28f40f6947a90e`
@@ -80,7 +80,7 @@ flowchart LR
 | 01 | task | `resolved` / `automated_verified` | none | 实施权威与反馈闭环；无产品代码 |
 | 02 | grilling | `resolved` / `automated_verified` | 01 | ADR-0041、零 split package 与非空转 architecture test |
 | 03 | task | `resolved` / `automated_verified` | 01, 02 | 最小 canonical kernel；TDD + independent replay |
-| 04 | grilling | `open` | 02, 03 | Template aggregate/persistence seam；无 migration |
+| 04 | grilling | `resolved` / `automated_verified` | 02, 03 | ADR-0042 与 Template aggregate/persistence contract；无 migration |
 | 05 | grilling | `open` | 01, 02 | Asset admission/resolution deep interface |
 | 06 | task | `open` | 03, 04 | Template create/read/save 真正 PostgreSQL 纵切 |
 | 07 | grilling | `open` | 03, 04, 05 | Evaluator/RenderDocument seam |
@@ -90,8 +90,8 @@ flowchart LR
 每次只 claim 一个 unblocked ticket；一票 resolved 后才由其 `Blocked by` 关系产生下一 frontier。未知实现切片留在
 map 的 `Not yet specified`，不为排满计划提前发明接口、migration 或 Profile identity。
 
-TV1-T03 已释放 TV1-T04；当前未 claim 的安全 frontier 为 TV1-T04 与 TV1-T05。single-writer 下一票由后续请求
-选择，本票不顺带预建 Template aggregate、Asset Interface 或 migration。
+TV1-T04 已完成并释放 TV1-T06。当前未 claim 的安全 frontier 为 TV1-T05 与 TV1-T06；single-writer 下一票
+优先选择能形成首个 aggregate 产品纵切的 TV1-T06，但不在本票顺带 claim 或预建 Interface/migration/route。
 
 ## 5. TV1-T01 执行卡
 
@@ -136,7 +136,24 @@ TV1-T03 已释放 TV1-T04；当前未 claim 的安全 frontier 为 TV1-T04 与 T
 - 完成信号：Ticket 03 resolved/`automated_verified`、Profile 仍 `NOT_REGISTERED`、形成一个 verified
   `agent-commit` 且 implementation worktree clean；不 push/tag/PR。
 
-## 8. Gate 与证据策略
+## 8. TV1-T04 执行卡
+
+- 决策：ADR-0042；一个 authoring `TemplateApplication`、专用 snapshot/reference provider Interfaces、
+  Template-owned `OwnerScopeAuthority` 与 transaction-sized `TemplatePersistence` outbound seams。
+- 允许影响：ADR、CONTEXT、tracker/plan/log/NOTES；只冻结 closed command/outcome、authority disclosure、
+  aggregate/revision state、trusted read、confirmation 和 forward-only persistence/test invariants。
+- 禁止影响：Java Interface/Implementation、POM dependency、OpenAPI、migration/table、route/page、Asset/
+  Rendering product seam、Profile registration、DB/网络/浏览器/Provider/J1。
+- T06 首个真实 surface 限于 create/current-read/save；copy/restore/delete/history/export/confirmation/snapshot/
+  reference proof 只能与真实 consumer/behavior 同票进入，不能用 unsupported placeholder 预建。
+- 局部验证：authority/ADR/CONTEXT cross-check、`git diff --check`、product-surface inventory。
+- 受影响验证：`template` composite 与 `fast`；DesignDSL kernel/static authority 输入未改时必须 byte-identical。
+- 保证等级：文档/静态 gate A1；既有 kernel/registry exact inputs 的 independent replay 仍只在原边界为 A2；
+  本票没有 Template aggregate product execution、A3 或 J1。
+- 完成信号：Ticket 04 resolved/`automated_verified`、ADR/CONTEXT/plan 一致、零新增 product surface，形成一个
+  verified `agent-commit` 且 worktree clean；不 push/tag/PR。
+
+## 9. Gate 与证据策略
 
 `template` gate 顺序固定为 repository diff → DesignDSL kernel Java primary/Python independent exact-vector replay
 → 临时副本 Editor generator/independent/A2 → registry target refresh/Node primary/Python independent/A2 → 全树
@@ -147,7 +164,7 @@ byte comparison → frozen counts/readiness assertions。任何命令失败或�
 process protocol 或 `full` 组成变化属于共享面，必须提前扩大回归。自动 green 只把对应任务推进到
 `automated_verified`；体验/业务选择是 J0/J1，独立机器 replay 是 A2，物理 Linux/CI policy 才可能形成外部门。
 
-## 9. Version、恢复与熔断
+## 10. Version、恢复与熔断
 
 - 每个已验证 Template ticket 在 `feature/template-v1` 独立提交；不 rewrite/cherry-pick 到 dirty main，不 push/tag/PR。
 - Ticket 01/02 无数据或外部副作用，恢复为回退对应单一提交或删除新 worktree；不得用 `reset --hard` 清理用户 worktree。
@@ -157,7 +174,7 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
 - 触发熔断：authority replay diff、产品语义冲突、依赖循环、test-only bypass、partial Profile availability、
   migration/route placeholder、越界外部副作用或 readiness 夸大。停止受影响票，保留证据；其他安全 frontier 继续。
 
-## 10. 当前边界
+## 11. 当前边界
 
 - Ticket 19 保持 open；Capacity formal records=0。
 - Formal Editor Case/Oracle=0/0；47 个 EditorContentSource slots 仅 1 exact、46 UNBOUND。

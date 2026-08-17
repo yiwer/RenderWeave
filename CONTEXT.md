@@ -57,10 +57,12 @@ Template、Editor 或 Renderer READY。
 | ImageOnlyReadiness | 新建 IMAGE_ONLY live run 在 Provider 合同、Profile Certification、secret/egress、OCR capability 与 live policy 上同时满足准入的 payload-free feature 状态。 | 不是 ServiceReadiness、一次 run 必然成功、质量认证本身或逐 run 外传确认。 |
 | ProductionUsable | IMAGE_ONLY Schema Recognition 同时取得 Profile Certification、live admission、operations acceptance 与 recovery proof 后的复合生产终态。 | 不是 Profile readiness、一次成功 live run、`EXPERIMENTAL` opt-in、自动 gate 全绿或历史 J1。 |
 | Host capability | 宿主在某个ownerScope内授予调用者、彼此不隐含的原子授权事实；Template集合为`template.read/create/update/delete/render`，Asset集合为`asset.read/create/update/delete/restore`，布局诊断另为`render.trace`。 | 不是角色、成员、Workspace、逐对象ACL、DesignDSL内容、Expression capability、对象可见性的自动证明或可传入RenderEngine的权限声明。 |
+| OwnerScopeAuthority | Template Design 拥有的宿主授权 outbound seam；它只把 server-created opaque invocation、可信持久 scope 与 closed Template operation 解析为 scope/access/recheck/disclosure 事实。 | 不是请求字段、ownerScope 目录、角色/RBAC、可缓存授权布尔值、raw Gateway token 或允许 Controller 代替领域线性化点授权的预检。 |
 | Template | Template Design 上下文中面向有限二维画板、以全局唯一不透明`templateId`标识的可变聚合；拥有不可变ownerScope、永久StaticSchemaRef、current revision和`ACTIVE/DELETED`生命周期，且没有发布状态，DELETED为不可恢复终态。 | 不是Template revision、DesignDSL、可跨scope移动或复用的人类业务key、独立metadata聚合、编辑器画布状态或最终图片；更换StaticSchema必须创建或复制为另一个Template。 |
 | Template revision | 以 `{templateId, revision}` 精确标识、从 revision 0 单调追加的不可变完整 DesignDSL 历史快照；每次被接受的显式保存都会追加 revision，即使内容 hash 与 current 相同，content hash 也只证明完整性。 | 不是差异补丁、独立 metadata 版本、`TemplateVersion`、`PublishedTemplate` 或 `StaticTemplate`，也不承诺跨次求值可重放。 |
 | Template current | Template 唯一的当前内容 revision，始终是最新成功追加的 revision；恢复历史会复制旧 DesignDSL 并追加新 revision，而不回拨指针或产生分支。 | 不是 latest StaticSchema、可移动标签或多个并存分支。 |
 | Template save | 以 `expectedRevision` 为前提，把一份结构合法的完整 DesignDSL 经权威校验后原子追加为新 revision 并更新 current 的显式操作；依赖类 ERROR 可经绑定精确问题集的二次确认提交为 INVALID。 | 不是 JSON Patch、autosave、会话锁、最后写入者覆盖或可绕过结构/版本/循环/安全规则的强制保存。 |
+| Opaque Template commit receipt | 调用者拥有 mutation capability 但没有 `template.read` 时，成功 create/save 只返回新对象或已提交动作的最小不透明回执。 | 不是 Canonical editor baseline、read capability、revision/current/DesignDSL/child/Asset disclosure，也不证明网络响应前不存在 unknown outcome。 |
 | Save-and-preview | EditorSession 有未保存更改时，先完成一次 Template save，再仅在其成功且 current 可形成 READY snapshot 后发起独立 Authoritative Preview 的顺序工作流。 | 不是跨保存与渲染的事务；preview 失败或取消不会回滚已经追加的 Template revision。 |
 | EditorSession | 在线编辑器中以某个已加载 Template current 为基线的客户端本地可变工作状态；可暂时承载 hard/dependency-invalid DesignDSL、编辑视图和不属于 Template 的输入样例。 | 不是 Template revision/current、Workspace、服务端 autosave、权威校验结果或 Render authority。 |
 | Canonical editor baseline | 服务端返回的 exact Template revision、contentHash 与 Canonical DesignDSL，作为一次 Structured Editor 工作期的内容基线和本地 undo/recovery 边界。 | 不是浏览器自行 canonicalize 的近似结果、可跨 revision 重放的命令日志或 Template current 之外的另一事实源。 |
@@ -254,6 +256,9 @@ web ── OpenAPI 3.1.2 / generated Fetch SDK ── app
   Rendering Interface 内收口，不把上游 problem、聚合或 persistence model 暴露给调用方。
 - Host authorization 是一个宿主事实源，但 Template、Asset、Rendering 各自只消费本上下文的窄 authority facet；
   请求不能自报 ownerScope/capability，capability 名不能进入 DesignDSL、RenderInput、RenderDocument 或 Command。
+- Template 作者侧 use cases 由一个 `TemplateApplication` deep Interface 收口；Rendering snapshot 与 Asset 删除
+  proof 分属 `TemplateSnapshotAuthority`/`AssetReferenceAuthority`，不会通过 authoring read 或 persistence
+  record 共享。Template persistence 是 transaction-sized outbound seam，不是 public repository/CRUD。
 - 模块共享只通过明确 public Interface；禁止建立无边界的 `common` dumping ground、split package、domain→app
   依赖或 JNI/FFI seam。精确 Java ownership 与 staged graph 见 ADR-0041。
 
@@ -290,5 +295,8 @@ QUEUED → RUNNING → REVIEW_REQUIRED → APPLYING → COMPLETED
   public surface 只有 `DesignDslAuthority.admit(rawUtf8)` closed outcome。33-vector Java/Python replay 只证明
   minimal empty-array Canvas kernel；所有 non-empty Definition/Binding/child 继续 fail closed，Profile catalog
   仍无可用 `renderweave-design/1.0` 注册。
+- Ticket 04 以 ADR-0042 冻结 Template aggregate、`TemplateApplication`/`OwnerScopeAuthority`/transaction-sized
+  persistence seams、closed outcome/disclosure 与 forward-only invariants；该设计票没有创建 Java Interface、
+  migration、table 或 route。首个真实 surface 仍只能由 Ticket 06 的 create/current-read/save 纵切物化。
 - Workspace 仍不在范围内。任何 module、表、接口、route、页面或 Profile registration 都必须服务于当前
   已连通纵切；禁止为尚未实现的渲染语义创建 placeholder。

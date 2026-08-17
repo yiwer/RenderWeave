@@ -1113,3 +1113,15 @@
 - T6-5 新增 N8/R0 与 N9/R1，均为 `pending`。N8 先证明 RapidOCR compatibility projection 与 v45 到
   `REVIEW_REQUIRED` 的行为等价，N9 再建立不可变分层 gold v2、跨语言重算与 synthetic/CC0-only visual
   diff。登记动作没有启动实现、没有 Provider attempt/reservation/cost，也不关闭 N7 或晋级 v45。
+
+### Template v1 TV1-T04 aggregate/persistence contract
+
+- ADR-0042 冻结 `TemplateApplication`、`TemplateSnapshotAuthority`、`AssetReferenceAuthority` 的职责分离，
+  以及 Template-owned `OwnerScopeAuthority`/`TemplatePersistence` outbound seams；T06 首个真实 surface 只允许
+  create/current-read/save，不提前建立 confirmation/copy/delete/history/export placeholder。
+- ownerScope 只取 Host authority，StaticSchemaRef 创建后永久；accepted save 以完整 canonical DesignDSL 与
+  expectedRevision 原子追加 immutable revision/current/projection/readiness/report，same-hash 也追加且并发只一胜。
+  JSONB trusted read 必须重新 canonicalize/hash；SPI/explicit SQL 不提供 revision UPDATE/DELETE、purge/rebind。
+- `template` composite `20260818-005721-template` 与 fast `20260818-005739-fast` 通过；authority diff=0、kernel
+  Java/Python 33/33、SPEC_REGISTRY 22,838/22,746。只有 ADR/CONTEXT/plan/tracker/log 变化，无 Java/Web/Rust、
+  OpenAPI、migration/table/route/page 或 Provider/J1；Ticket 19 open，Template/Editor/Renderer 未 READY。
