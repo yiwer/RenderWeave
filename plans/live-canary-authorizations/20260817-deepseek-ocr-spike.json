@@ -1,0 +1,77 @@
+{
+  "authorizationId": "20260817-deepseek-ocr-spike",
+  "status": "OPEN",
+  "grantedBy": "用户（2026-08-17 会话：ticket 15 Round 1 Q4 '全部按推荐'）",
+  "grantedAt": "2026-08-17T02:46:00+08:00",
+  "expiresAt": "2026-08-19T02:46:00+08:00",
+  "provider": "DASHSCOPE",
+  "model": "vanchin/deepseek-ocr",
+  "inferenceProviderNotice": "百炼三方模型，推理方快手万擎；百炼协议 6.2.9（三方模型数据处理以用户与三方约定为准）+ 万擎 EULA；输入图片先经阿里云绿网前置检测（ticket 15 Comments research 归档）",
+  "route": {
+    "baseUrlCandidates": [
+      "https://dashscope.aliyuncs.com/compatible-mode/v1",
+      "https://{WorkspaceId}.cn-beijing.maas.aliyuncs.com/compatible-mode/v1（workspace 专属，仅在前者不路由时由用户提供）"
+    ],
+    "credentialEnvironmentVariable": "DASHSCOPE_API_KEY",
+    "note": "模型需用户在控制台手动开通（agent 不可代劳）；未开通返回 400"
+  },
+  "purpose": "仅验证托管 API 的输出形态：纯文本 vs 版面标签（<|ref|>/<|det|> bbox、999 归一化坐标、阅读顺序），决定 ticket 15 的角色选择",
+  "inputs": [
+    {
+      "path": ".scratch/live-trial-20260817/m3-full.jpg",
+      "sha256": "57dd2cc16291eacb85583b68a111a7889bc3cf5924a37c711f1e8e5b5d9628ae",
+      "note": "复用 2026-08-17 试用已批准外传的 exact 输入，不新增数据暴露面"
+    },
+    {
+      "path": ".scratch/live-trial-20260817/m3-detail.jpg",
+      "sha256": "570e0347d357e6c074dcaf31ee9b696bba58cef7314c1daceff243e909010a62",
+      "note": "同上"
+    }
+  ],
+  "inputClassification": "USER_PROVIDED_ORDINARY_DESIGN",
+  "maximumCalls": 10,
+  "maximumCostMicrosCny": 1000000,
+  "costDerivation": "单价 0.216 元/M tokens（输入输出同价），8K 上下文；单图单次的量级为分钱级，¥1 绝对宽裕",
+  "consumedCalls": 3,
+  "consumedCostMicrosCny": 783,
+  "callLedger": [
+    {
+      "seq": 1,
+      "input": "m3-detail.jpg",
+      "prompt": "Read all the text in the image.（官方示例基线）",
+      "result": "纯文本输出，无版面标签；total 1173 tokens",
+      "tokens": 1173,
+      "costMicrosCny": 253
+    },
+    {
+      "seq": 2,
+      "input": "m3-detail.jpg",
+      "prompt": "<|grounding|>Convert the document to markdown.",
+      "result": "出现版面标签+bbox：语法为 label[[x1,y1,x2,y2]]（sub_title/text 等），坐标疑似 0-999 归一化；与开源版 <|ref|>/<|det|> 语法不同；total 1232 tokens",
+      "tokens": 1232,
+      "costMicrosCny": 266
+    },
+    {
+      "seq": 3,
+      "input": "m3-full.jpg",
+      "prompt": "<|grounding|>Convert the document to markdown.",
+      "result": "仅 87 completion tokens：站点矩阵几乎全部漏识别，且幻觉出图中不存在的外站 URL（已目检原图证实无此 URL）；total 1218 tokens",
+      "tokens": 1218,
+      "costMicrosCny": 264
+    }
+  ],
+  "status": "CLOSED",
+  "closedAt": "2026-08-17T02:55:00+08:00",
+  "closureReason": "spike 目的达成（输出形态已确认），主动收官；远未触及 10 次/¥1 上限",
+  "spikeFindings": {
+    "endpointAndKey": "通用域名 dashscope.aliyuncs.com + 现有 DASHSCOPE_API_KEY 直接可用（模型已开通/无需 workspace 专属域名）——ticket 15 的 endpoint/Key UNKNOWN 解除",
+    "outputForm": "grounding 提示词可触发 label[[x1,y1,x2,y2]] 版面标签+bbox，坐标约 0-999 归一化；语法与开源 release 的 <|ref|>/<|det|> 不同",
+    "qualitySignal": "负面：密版面全图（m3-full）严重不全 + 幻觉外站 URL；两图 prompt_tokens 均固定 1131，视觉压缩极强（8K 上下文）",
+    "roleImplication": "hint 预处理器形态上可行，但把幻觉 hint 注入 Max prompt 是投毒风险；质量信号不支持首个生产版本引入"
+  },
+  "rules": [
+    "到期、达次数、达费用或用户撤销，任一先触发即停止",
+    "agent 全程不读取、不输出 API Key",
+    "仅上述两份 exact 输入可外传；spike 不经过 RenderWeave 管线（直调 API），结果只记输出形态事实，不落完整模型输出到证据"
+  ]
+}

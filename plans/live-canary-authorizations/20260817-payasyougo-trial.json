@@ -1,0 +1,137 @@
+{
+  "authorizationId": "20260817-dashscope-payasyougo-trial",
+  "status": "CLOSED",
+  "closedAt": "2026-08-17T01:20:00+08:00",
+  "closureReason": "矩阵 6/6 全部执行完毕，正常收官；非到期/超限/撤销",
+  "grantedBy": "用户（2026-08-17 会话：'实际调用批准48h小时内，三个模型各500k token额度'）",
+  "grantedAt": "2026-08-17T00:23:00+08:00",
+  "expiresAt": "2026-08-19T00:23:00+08:00",
+  "provider": "DASHSCOPE",
+  "route": {
+    "baseUrl": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+    "credentialEnvironmentVariable": "DASHSCOPE_API_KEY",
+    "changeSpec": "specs/changes/20260817-dashscope-payasyougo-route-migration.md"
+  },
+  "profiles": [
+    "dashscope-qwen37-flash-product-v45-hybrid-generic",
+    "dashscope-qwen37-plus-product-v45-hybrid-generic",
+    "dashscope-qwen38-max-product-v45-hybrid-generic"
+  ],
+  "inputs": [
+    {
+      "path": "O:/GptDownload/微信图片_20260812022135_29_31.jpg",
+      "sha256": "57dd2cc16291eacb85583b68a111a7889bc3cf5924a37c711f1e8e5b5d9628ae",
+      "note": "M3 公交线路牌全版（首末班 + 站点矩阵 + 票价）"
+    },
+    {
+      "path": "O:/GptDownload/微信图片_20260812022138_30_31.jpg",
+      "sha256": "570e0347d357e6c074dcaf31ee9b696bba58cef7314c1daceff243e909010a62",
+      "note": "M3 线路牌细节变体（下一站/开往横幅）"
+    }
+  ],
+  "inputClassification": "USER_PROVIDED_ORDINARY_DESIGN",
+  "maximumRuns": 6,
+  "runMatrix": "2 inputs × 3 profiles，每个组合至多 1 次 run；单 run 内 Provider 调用受 Profile maximumTotalCalls=7 约束",
+  "perModelTokenQuota": 500000,
+  "maximumCostMicrosCny": 22400000,
+  "costDerivation": "500k tokens/模型按 v45 Profile 输出价全烧的最坏上界：Flash ¥0.40 + Plus ¥4.00 + Max ¥18.00 = ¥22.40",
+  "consumedRuns": 6,
+  "consumedTokensByModel": {
+    "qwen3.7-flash": 216948,
+    "qwen3.7-plus": 197793,
+    "qwen3.8-max": 98604
+  },
+  "consumedCostMicrosCny": 2259517,
+  "runLedger": [
+    {
+      "runId": "3715da5f-0b23-49bf-b087-d49aee8c7f69",
+      "profileId": "dashscope-qwen37-flash-product-v45-hybrid-generic",
+      "input": "m3-full.jpg (57dd2cc1…)",
+      "state": "FAILED",
+      "failureCode": "VISUAL_GROUNDING_PARENT_CONTAINMENT_INVALID",
+      "attempts": "5 REJECTED(合同拒绝 LIVE_VISUAL_ANALYSIS_REJECTED) + 1 NETWORK_ERROR + 1 REJECTED，打满 maximumTotalCalls=7",
+      "tokens": 128298,
+      "costMicrosCny": 60249,
+      "durationMinutes": 10
+    },
+    {
+      "runId": "c83eb776-9d3d-4d34-949e-3e3ba3a3a6e0",
+      "profileId": "dashscope-qwen37-plus-product-v45-hybrid-generic",
+      "input": "m3-full.jpg (57dd2cc1…)",
+      "state": "REVIEW_REQUIRED",
+      "failureCode": null,
+      "attempts": "OBSERVE 2 REJECTED→SUCCEEDED；HIERARCHY 1 REJECTED→SUCCEEDED；ELEMENT_BINDING 一次过；共 6/7",
+      "tokens": 112016,
+      "costMicrosCny": 377680,
+      "durationMinutes": 8,
+      "candidate": "bus-route(line_identifier/terminal_stations_header/first_trip_schedule:TIME/last_trip_schedule:TIME/stations:ARRAY/fare_information/effective_date:DATE) + station-stop(station_name)；10× BLOCKER LOW_CONFIDENCE_UNRESOLVED（全部 7999bps，恰低于 8000 阈值），待人工审核"
+    },
+    {
+      "runId": "95bf7d24-9644-476d-bbd2-34b84631db4a",
+      "profileId": "dashscope-qwen38-max-product-v45-hybrid-generic",
+      "input": "m3-full.jpg (57dd2cc1…)",
+      "state": "REVIEW_REQUIRED",
+      "failureCode": null,
+      "attempts": "OBSERVE 1 REJECTED→SUCCEEDED；HIERARCHY/ELEMENT_BINDING 各一次过；共 4/7",
+      "tokens": 66183,
+      "costMicrosCny": 1111956,
+      "candidate": "bus-route-info + bus-stop（均 conf 7999bps）；13× BLOCKER LOW_CONFIDENCE_UNRESOLVED；JSON 存 .scratch/live-trial-20260817/candidate-95bf7d24-*.json"
+    },
+    {
+      "runId": "fa3c3dca-5d44-4609-aff5-bed349792b0b",
+      "profileId": "dashscope-qwen37-flash-product-v45-hybrid-generic",
+      "input": "m3-detail.jpg (570e0347…)",
+      "state": "FAILED",
+      "failureCode": "VISUAL_GROUNDING_JSON_ENUM_INVALID_REGION_KIND",
+      "attempts": "OBSERVE 7/7 REJECTED（模型输出了合同外的 region kind 枚举值）",
+      "tokens": 88650,
+      "costMicrosCny": 28150,
+      "durationMinutes": 3
+    },
+    {
+      "runId": "18ca3e7f-6da4-44c3-988b-4567f6423bce",
+      "profileId": "dashscope-qwen37-plus-product-v45-hybrid-generic",
+      "input": "m3-detail.jpg (570e0347…)",
+      "state": "FAILED",
+      "failureCode": "LIVE_CALL_BUDGET_EXHAUSTED",
+      "attempts": "OBSERVE 3 REJECTED→SUCCEEDED；HIERARCHY REJECTED；重开 OBSERVE 1 REJECTED→SUCCEEDED；打满 maximumTotalCalls=7 后预算耗尽",
+      "tokens": 85777,
+      "costMicrosCny": 249830,
+      "durationMinutes": 4,
+      "note": "detail 图版面对 Plus 明显更难：OBSERVE 合计 5 次尝试才稳定通过，挤压了后续 stage 的调用预算"
+    },
+    {
+      "runId": "32f919e5-72ba-4af9-a5b8-5d3e8eb277ff",
+      "profileId": "dashscope-qwen38-max-product-v45-hybrid-generic",
+      "input": "m3-detail.jpg (570e0347…)",
+      "state": "REVIEW_REQUIRED",
+      "failureCode": null,
+      "attempts": "OBSERVE/HIERARCHY/ELEMENT_BINDING 全部一次过，0 拒绝；共 3/7",
+      "tokens": 32421,
+      "costMicrosCny": 431652,
+      "durationMinutes": 1,
+      "note": "难图对照决定性结果：同一 detail 图打爆 Plus 预算，Max 42 秒零拒绝走完；token 消耗反而是全矩阵最低",
+      "candidate": "transit-sign（conf 7999bps）；8× BLOCKER LOW_CONFIDENCE_UNRESOLVED；JSON 存 .scratch/live-trial-20260817/candidate-32f919e5-*.json"
+    }
+  ],
+  "rules": [
+    "到期、达次数、达任一模型 token 额度或用户撤销，任一先触发即停止",
+    "agent 全程不读取、不输出 API Key；Key 由用户本人在其终端设置",
+    "仅上述两份 exact 输入可外传；run 产生的 Candidate 仍需人工审核，不自动发布"
+  ],
+  "closureSummary": {
+    "headline": "2 图 × 3 模型矩阵完成：Max 2/2 REVIEW_REQUIRED 且难图零拒绝；Plus 1/2（难图预算耗尽）；Flash 0/2（合同违规，两图失败码不同）",
+    "evidence": ".scratch/live-trial-20260817/（候选 JSON payload-free 存根；原图仅存 .scratch 不外发）",
+    "candidatesPendingHumanReview": [
+      "c83eb776-9d3d-4d34-949e-3e3ba3a3a6e0 (Plus × full)",
+      "95bf7d24-9644-476d-bbd2-34b84631db4a (Max × full)",
+      "32f919e5-72ba-4af9-a5b8-5d3e8eb277ff (Max × detail)"
+    ],
+    "humanReview": {
+      "reviewedAt": "2026-08-17",
+      "verdict": "两份 Max Candidate（95bf7d24 / 32f919e5）人工审核通过、原样接受：required 全 false 无妨、fare 维持 TEXT、日期抽取正确；Plus×full（c83eb776）未被采纳。命名约定：后续统一 snake_case（本两份按所有者指示不做修改，保留 kebab-case）",
+      "apply": "2026-08-17 所有者指示后执行完毕：合同禁止 confirm-all，按所有者逐项 verdict 逐项 CONFIRMED（13 项 + 8 项，各 13/8 次单条 PUT），随后 apply 成功，两个 run 均 COMPLETED。创建 Draft Bundle：bus-route-info rev0 + bus-stop rev0（run 95bf7d24）、transit-sign rev0（run 32f919e5）；未发布 StaticSchema。Draft 仅存于一次性容器 renderweave-trial-pg 的 PG，容器删除即丢失"
+    },
+    "followUp": "模型选型结论喂给 wayfinder map ticket 05/07；OBSERVE 拒绝率与 7-call 预算问题喂给 ticket 08 与 fog 条目（DeepSeek-OCR 类强 OCR 层）"
+  }
+}

@@ -1,6 +1,94 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-17 **wayfinder 地图 `image-only-schema-production-admission` 正式闭环（closed）**：所有者对照附录 B
+  checklist 验收 Blueprint v1 通过（J1）。16 票决策完备、四维冲突检查零未决；handoff 包 =
+  `plans/image-only-production-admission-blueprint-v1.md`，移交 `$to-spec` 启动实施规划。
+  下一步动作（实施期，非本地图范围）：v46 Profile 创建与认证周期、信封加密实现、OCR sidecar 构建、
+  API 合同迁移与 release gate 扩展、guarded pilot 启动。
+- 2026-08-17 Blueprint v1 汇编完成：`plans/image-only-production-admission-blueprint-v1.md`（16 票决策按 15 章归一化
+  + Exact identity 总表 + 残余风险 + 证据索引 + Out of scope）。四维冲突检查结果：数值/术语/identity/红线
+  全部一致；3 条 drift note 均为编辑性已按"以源票为准"处置（reason code 实为 9 值、旧 OpenAPI 布尔待 12 迁移、
+  06 的"新 Profile"表述已被 Errata 收窄）。**待所有者对照附录 B checklist 验收（J1）**，通过后 map 标记 closed、
+  移交 `$to-spec`。
+- 2026-08-17 wayfinder ticket 16「冻结 Blueprint 归一化结构与 `$to-spec` handoff 包」grilling 后 resolved：
+  Blueprint = 单文档 `plans/image-only-production-admission-blueprint-v1.md`（15 章决策域 + Exact identity 总表，
+  决策只写 gist+票链接）；跨票冲突四维检查（数值/术语/identity/红线），实质冲突开新票不静默修；
+  修订走新版本号新文件；闭环 = 所有者对照 13 票 checklist J1 验收（agent 汇编不算），验收后 map 标记 closed。
+  **全部 16 票 resolved、fog 清空**；仅剩 Blueprint 汇编（机械执行）+ 所有者验收两个闭环动作。
+- 2026-08-17 wayfinder ticket 13「冻结 staged rollout、rollback 与 ProductionLiveAuthority」grilling 后 resolved：
+  三阶段 pilot（所有者/≤5 run 日/60 天）→limited（≤10 用户/09 全量/90 天）→default（租户内不限/180 天），
+  各绑 exact identity；exit gate = SLO 达标+零未关闭事件+A1/A2 pack+quad J1+restore drill，推进不自动；
+  authority 为 PG append-only（Agent/CI/canary 不继承、无委托链）；drift 矩阵 11 类触发器全 typed 事件；
+  ProductionUsable = default 稳定 ≥4 周/≥100 run + evidence pack + quad J1 终签，宣布是人类行为。
+  13 张决策票全部 resolved；最后一片 fog 毕业为 ticket 16（Blueprint 归一化 + `$to-spec` handoff），为唯一 frontier。
+- 2026-08-17 wayfinder ticket 12「冻结 IMAGE_ONLY API 合同与 release gate」grilling 后 resolved：
+  live 确认升级为一等 `ExternalTransferConfirmation`（notice 版本/政策版本/manifest id 精确字段集，
+  旧布尔 typed 422）；drift 全部 typed 410/422 fail-closed 不双跑、OpenAPI 升版、SDK diff 进 gate；
+  release gate = full 家族（Node 24 exact-clean）+ contract tests + SDK regen + security headers +
+  DB migration/recovery + 09 容量扩展 + 11 kill-switch 演练；验收须合同兼容+数据政策双轴人类 J1；
+  错误 taxonomy 封闭禁插值用户数据，retry 走 Idempotency-Key/typed 409/查询再决策。
+  链尾仅剩 ticket 13（rollout 与 ProductionLiveAuthority），其后是 Blueprint 归一化与 `$to-spec` handoff。
+- 2026-08-17 wayfinder ticket 11「冻结 payload-free OperationalTelemetry、告警与值守合同」grilling 后 resolved：
+  应用内聚合 + actuator JSON + PG 快照（无 Prometheus）；label 只许封闭枚举；audit 在线 90 天/归档 13 个月；
+  warning 日报 / page 即时（与 09/10 触发器一一映射）；所有者即 oncall；release gate 含 Provider-zero
+  kill-switch/drain 离线演练。ticket 12（API 合同与 release gate）解除阻塞，链尾仅剩 12→13。
+- 2026-08-17 wayfinder ticket 15「DeepSeek-OCR 经 DashScope API 的引入决策」两轮 grilling + scoped J1 spike 后 resolved：
+  **首个生产版本不引入**（spike 3 调用/¥0.0008：接入零障碍、grounding 标签存在，但密版面全图漏识别+幻觉外站 URL，
+  hint 投毒风险不值为）；未来质量升级凭新 J1 重评估；授权 `20260817-deepseek-ocr-spike.json` 已 CLOSED。
+  frontier 归位为链尾 ticket 11→12→13。
+- 2026-08-17 wayfinder ticket 10「冻结单节点持久化、备份与恢复合同」grilling 后 resolved：日备 pg_dump+Blob tar
+  滚动 7 天、备份以信封加密落地为前置；RPO≤24h/RTO≤4h；PG 为权威、恢复先 reconciliation 再不复活 sweep
+  （tombstone 重放、过期/关闭状态不复活）后开放流量；KEK 丢失=等效 crypto-erasure、轮换只 re-wrap；
+  首入生产前必做完整 restore drill（A1+A2+ops J1）。ticket 11（遥测/告警/值守）解除阻塞；
+  ticket 15 的 DashScope 接入事实 research 已归档（grounding 标签输出为最大 UNKNOWN，需 scoped J1 实测）。
+- 2026-08-17 wayfinder ticket 09「冻结 IMAGE_ONLY 生产 SLO、容量与成本预算」两轮 grilling 后 resolved：
+  负载模型 ≤20 run/日、并发 ≤2；E2E `REVIEW_REQUIRED` P90 ≤15min；可用性 Service 99.5%/ImageOnly 99% 双轴；
+  日 soft ¥30 / 月 hard ¥500 触线自动关新 run（人工开关永不自动）；输入 ≤10MiB/25Mpx/图、≤32MiB/run；
+  失败预算按计数告警（不自动撤销）；A1 遥测+月报、A2 扩展 CapacityBaselineTest 进 release gate。
+  ticket 10（持久化/备份/恢复）解除阻塞成为 frontier；链尾余 10→11→12→13 与 ticket 15（等 research）。
+- 2026-08-17 wayfinder ticket 05「冻结新的 IMAGE_ONLY Profile Certification authority」两轮 grilling 后 resolved：
+  独立认证合同 delta 承接 IMAGE_ONLY mode slice（AC-021 全局保持未完成）；首周期只认证 v46 Max 管线；
+  复用 N9/R1 60-case/evaluator + frozen manifest（HOLDOUT 20/60）；门槛 5/5、≥18/20、≥54/60、失败即终态；
+  `ProfileCertificationRecord` PG append-only + exact-revision gate + 纯事件制有效期；双层 J1；prohibited reuse set 确认。
+  ticket 09（SLO/容量）与 ticket 15（DeepSeek-OCR 集成，等 DashScope 接入事实 research）解除阻塞成为 frontier。
+- 2026-08-17 两份 Max Candidate 经所有者审核通过后 apply 完成：合同禁止 confirm-all，按所有者逐项 verdict
+  逐项 CONFIRMED（13+8 次单条 PUT）后 apply，两个 run 均 COMPLETED；创建 Draft Bundle `bus-route-info` rev0 +
+  `bus-stop` rev0（run 95bf7d24，m3-full）与 `transit-sign` rev0（run 32f919e5，m3-detail）；未发布 StaticSchema。
+  注意：Draft 只存于一次性容器 `renderweave-trial-pg` 的 PG，容器删除即丢失，清理前需所有者确认。
+- 2026-08-17 wayfinder ticket 08「冻结 RapidOCR 生产拓扑与 capability admission」两轮 grilling 后 resolved：
+  拓扑继承 ticket 04 无网 UDS sidecar；基座 `python:3.12-slim-bookworm` digest pin；`--require-hashes` 全量锁 +
+  antlr4 wheel 入库 + ONNX 模型构建期提取只读预置；stdlib HTTP-over-UDS 协议、代码归 `docker/ocr-sidecar/`；
+  资源上限 2C/2GB/PID64/60s 探针门禁；capability id 不变（v46 最小 diff 不受影响）；license 走 notice bundle +
+  所有者 J1；首版 rollback = fail-closed；长稳/资源探针归 ticket 11。ticket 05 全部阻塞解除，成为 frontier；
+  DeepSeek-OCR fog 毕业为 ticket 14（research，resolved：CPU-only 不可行/GPU 硬约束）；所有者随后决定改走
+  DashScope API 引入路径，立 ticket 15（grilling，blocked by 05），DashScope 接入事实 research 进行中。
+- 2026-08-17 wayfinder ticket 07「冻结 Provider 生产路线与 Profile migration 边界」两轮 grilling 后 resolved：
+  认证外部化为 `ProfileCertificationRecord`（profileId+bytes SHA-256，CONTEXT.md 已收词）；生产目录只认证 Max；
+  新发 v46 Profile 最小 diff（`maximumTotalCalls` 7→12、`maximumEstimatedCostMicrosCny` ¥2→¥6，其余 bytes 原样，
+  试用证据继承）；价格漂移只触发成本复核；不做漂移自动检测（所有者接受残余风险）；drain 继承 ticket 04 软 drain；
+  重认证开新记录、至少 fresh 5-case canary。v46 创建与记录机制设计归 ticket 05（仍被 ticket 08 阻塞）。
+- 2026-08-17 48h 按量付费 live 试用收官（scoped J1，授权 `plans/live-canary-authorizations/20260817-payasyougo-trial.json`
+  已 CLOSED）：2 图 × 3 模型 6 run 全部执行完，总消耗 ¥2.26 / 513,345 token（上界 ¥22.40 / 每模型 500k 均未触线）。
+  **qwen3.8-max 2/2 REVIEW_REQUIRED**：难图（m3-detail）42 秒零拒绝走完 OBSERVE/HIERARCHY/BINDING（3/7 调用、
+  32,421 token，全矩阵最低），易图 4/7 调用；**qwen3.7-plus 1/2**：易图 REVIEW_REQUIRED（6/7 恰好够用），
+  难图 OBSERVE 5 次尝试致 `LIVE_CALL_BUDGET_EXHAUSTED`；**qwen3.7-flash 0/2**：两图均 OBSERVE 合同违规 FAILED，
+  失败码互不相同（PARENT_CONTAINMENT_INVALID / JSON_ENUM_INVALID_REGION_KIND），修 prompt 收益存疑。
+  3 份 Candidate（Plus×full、Max×full、Max×detail）全部 BLOCKER 均为 LOW_CONFIDENCE_UNRESOLVED（7999bps，
+  恰低于 8000 阈值），待人工审核，JSON 存 `.scratch/live-trial-20260817/`。结论输入 wayfinder map
+  `.scratch/image-only-schema-production-admission`：选型（Max 质量档唯一全程达标，Plus 成本档限于易图）→
+  ticket 05/07；OBSERVE 拒绝率与 7-call 预算零冗余、强化本地确定性 OCR/版面层（含 DeepSeek-OCR 类选项）→
+  ticket 08 与 map fog。Provider attempts 随授权 CLOSED 归零，后续 live 仍需新的 scoped J1。
+- 2026-08-17 DashScope 按量付费路由迁移落地（所有者 2026-08-16/17 决定：弃用 Token Plan、免书面合同前置、
+  接受标准在线条款残余风险，见 `.scratch/image-only-schema-production-admission` ticket 06/07 与
+  `specs/changes/20260817-dashscope-payasyougo-route-migration.md`）。adapter allowlist 唯一批准 URL 改为
+  `https://dashscope.aliyuncs.com/compatible-mode/v1`，凭据只读 `DASHSCOPE_API_KEY`/`_FILE`；
+  application.yml、compose.live.yaml、spec §8.7、README 与 Web 文案同步；v45 immutable Profile bytes
+  不变（其声明的 endpoint/Key 名本即按量付费值，运行时路由与之恢复一致）；Token Plan URL 进入 adapter
+  拒绝名单测试。Provider attempts 保持 0，live 仍需绑定精确 Profile/数据分类/次数/费用/时限的当次 J1。
+  验证：DashScopeInferenceProviderTest 9/9 + InferenceApplicationConfigurationTest 1/1 PASS，
+  fast gate PASS（A1，`.sdlc/evidence/20260817-001358-fast`）；server gate PASS（261 测试 0 失败，
+  A1，`.sdlc/evidence/20260817-001552-server`）。
 - 2026-08-11 pipeline 4.23/product-v36 已形成零 Provider 的离线生产候选。`fdf7d44` 只在 typed
   region shape 唯一决定类型时归一化：`MANY + repeatGroupId`→`REPEATED_GROUP`、
   `ONE + repeatGroupId`→`ITEM`、无 parent/无 repeat/单个 full-artifact evidence 的 `ONE`→`ROOT`；
