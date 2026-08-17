@@ -15,6 +15,7 @@ import {
 import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
+import { OrbitBadge } from '../../components/doodles';
 import { DeleteDraftDialog, DraftHistoryDialog } from '../schema-studio/DraftLifecyclePanel';
 import { PublishStaticSchemaDialog } from '../schema-studio/PublishStaticSchemaDialog';
 import { StudioRequestError, restoreDraftSnapshotRequest } from '../schema-studio/lossless-api';
@@ -92,6 +93,7 @@ export function DraftListPage() {
       {query.isError && <ResourceError error={query.error} onRetry={() => void query.refetch()} />}
       {query.data && items.length === 0 && (
         <section className="resource-empty" role="status">
+          <OrbitBadge text="RENDERWEAVE · STRICT DSL · V1 · " />
           <Braces aria-hidden="true" size={25} />
           <strong>{debouncedSearch ? '没有匹配的数据结构设计' : '还没有数据结构设计'}</strong>
           <span>{debouncedSearch ? '尝试缩短关键词，或搜索 schemaKey。' : '从一个空定义或第一个字段开始。'}</span>

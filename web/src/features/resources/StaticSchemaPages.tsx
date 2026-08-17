@@ -21,6 +21,7 @@ import {
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 
+import { OrbitBadge } from '../../components/doodles';
 import {
   copyStaticToDraftRequest,
   getStaticArtifactRequest,
@@ -84,7 +85,7 @@ export function StaticSchemaListPage() {
       {query.isPending && <ResourceLoading label="正在读取数据结构资产" />}
       {query.isError && <ResourceError error={query.error} onRetry={() => void query.refetch()} />}
       {query.data && items.length === 0 && (
-        <section className="resource-empty" role="status"><Layers3 aria-hidden="true" size={25} /><strong>{debouncedSearch ? '没有匹配的数据结构资产' : systemOnly ? '没有系统预设' : '还没有数据结构资产'}</strong><span>{debouncedSearch ? '尝试缩短关键词，或搜索 schemaKey 与版本号。' : systemOnly ? '当前环境未提供系统预设。' : '先保存一份有效的数据结构设计，再从卡片或详情页发布。'}</span></section>
+        <section className="resource-empty" role="status"><OrbitBadge text="RENDERWEAVE · IMMUTABLE · V1 · " /><Layers3 aria-hidden="true" size={25} /><strong>{debouncedSearch ? '没有匹配的数据结构资产' : systemOnly ? '没有系统预设' : '还没有数据结构资产'}</strong><span>{debouncedSearch ? '尝试缩短关键词，或搜索 schemaKey 与版本号。' : systemOnly ? '当前环境未提供系统预设。' : '先保存一份有效的数据结构设计，再从卡片或详情页发布。'}</span></section>
       )}
       {items.length > 0 && (
         <div className="static-card-grid" aria-label="数据结构资产卡片列表">

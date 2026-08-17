@@ -9,6 +9,8 @@ import {
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import type { ReactNode } from 'react';
 
+import { Sparkle, Squiggle } from '../../components/doodles';
+
 export function ResourceFrame({
   title,
   description,
@@ -47,7 +49,12 @@ export function ResourceFrame({
         <ResourceRail />
         <main className={`resource-main ${detail ? 'resource-main-detail' : ''}`} id="main-content" tabIndex={-1}>
           <header className={`resource-page-heading ${detail ? 'is-detail' : ''}`}>
-            <h1>{title}</h1>
+            <div className="page-heading-title">
+              <h1>{title}</h1>
+              <Squiggle />
+            </div>
+            <Sparkle className="is-heading-a" />
+            <Sparkle className="is-heading-b" delay={1300} />
             <p>{description}</p>
           </header>
           {children}
