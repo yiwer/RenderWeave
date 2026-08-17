@@ -82,6 +82,7 @@ Template、Editor 或 Renderer READY。
 | OccurrencePath | 一次Evaluation内按root/TemplateUse invocation、Repeat的loopId与原输入index、合成role及source node组成的请求级出现位置，只保留在Rendering诊断边界。 | 不是authored identity、业务key、revision事实、item/context内容、跨请求稳定地址或Engine输入，也不写入DesignDSL/RenderDocument。 |
 | Render occurrence ID | RenderDocument seal时按最终静态树先序分配、以`rwocc_`加16位小写十六进制序号编码的请求内opaque occurrenceId。 | 不是OccurrencePath、nodeId、业务身份、跨请求地址、随机UUID或Template信息的hash。 |
 | Canonical DesignDSL | DesignDSL 经版本化 metadata normalization、无语义集合排序、精确 decimal 与 canonical JSON encoding 后得到的唯一内容表示。 | 不是原始上传字节、业务 default 展开、自动修复结果或由数据库 serializer 偶然产生的 JSON 文本。 |
+| DesignDSL canonical kernel | `renderweave-template` 中首个真实产品原子，通过唯一 `DesignDslAuthority.admit(rawUtf8)` 对 empty definitions/bindings/children 的单 Canvas 执行 strict parse、九项预算、metadata/decimal normalization、capped canonical bytes 与 domain hash。 | 不是完整 `renderweave-design/1.0` Profile、Template 保存/API、StaticSchema/Asset dependency validation、non-empty set sorting、Editor/Renderer 行为或 Profile available 资格。 |
 | Design content hash | 对 Canonical DesignDSL 作 domain-separated SHA-256 得到的 revision 内容完整性标识；不包含 Template/Schema 身份或解析后的外部依赖版本。 | 不是签名、来源证明、语义等价、发布版本、去重键、可重放承诺或可单独使用的 Render cache identity。 |
 | Template revision export | 把 exact Template revision identity、永久 StaticSchemaRef、Design content hash 与完整 DesignDSL 组合成的版本化可移植 envelope。 | 不是可移动 current 快照、跨部署身份声明、Template copy、Schema 改绑命令或可被导入方信任的授权证明。 |
 | DesignDSL migration | 从 exact source DesignDSL/Profile/hash 纯转换并预览为另一个 exact profile 的显式作者操作；接受后通过普通保存追加新 revision。 | 不是读取时升级、历史重写、依赖修复、普通 save 的 ID 生成器或允许未知旧格式静默导入的兼容层。 |
@@ -285,5 +286,9 @@ QUEUED → RUNNING → REVIEW_REQUIRED → APPLYING → COMPLETED
   StaticSchema、Validation 或 Inference 的既有合同。
 - Schema/Inference 提供给 Template 的稳定接缝仍是精确 StaticSchema 标识、不可变 DSL 快照和已保存的
   compiled JSON Schema；Template module 的精确依赖方向与 owning interfaces 由实施 Ticket 02 冻结。
+- Ticket 03 已创建首个真实 `renderweave-template` artifact；当前 POM 不声明尚未使用的 Schema/Asset edge，
+  public surface 只有 `DesignDslAuthority.admit(rawUtf8)` closed outcome。33-vector Java/Python replay 只证明
+  minimal empty-array Canvas kernel；所有 non-empty Definition/Binding/child 继续 fail closed，Profile catalog
+  仍无可用 `renderweave-design/1.0` 注册。
 - Workspace 仍不在范围内。任何 module、表、接口、route、页面或 Profile registration 都必须服务于当前
   已连通纵切；禁止为尚未实现的渲染语义创建 placeholder。

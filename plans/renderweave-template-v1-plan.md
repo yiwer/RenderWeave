@@ -1,6 +1,6 @@
 # RenderWeave Template v1 Implementation Plan
 
-- 状态：`in_progress`；TV1-T01/T02=`automated_verified`，TV1-T03 与 TV1-T05 已解锁，下一 selected frontier 为 TV1-T03
+- 状态：`in_progress`；TV1-T01/T02/T03=`automated_verified`，TV1-T04/T05 已解锁
 - 日期：2026-08-17
 - Approved delta：[`specs/changes/20260817-template-v1-implementation-authority.md`](../specs/changes/20260817-template-v1-implementation-authority.md)
 - Frozen checkpoint：`0b485f4a13de9d754a81d07f464730776e13c14b`
@@ -79,7 +79,7 @@ flowchart LR
 |---|---|---|---|---|
 | 01 | task | `resolved` / `automated_verified` | none | 实施权威与反馈闭环；无产品代码 |
 | 02 | grilling | `resolved` / `automated_verified` | 01 | ADR-0041、零 split package 与非空转 architecture test |
-| 03 | task | `open` | 01, 02 | 最小 canonical kernel；TDD + independent replay |
+| 03 | task | `resolved` / `automated_verified` | 01, 02 | 最小 canonical kernel；TDD + independent replay |
 | 04 | grilling | `open` | 02, 03 | Template aggregate/persistence seam；无 migration |
 | 05 | grilling | `open` | 01, 02 | Asset admission/resolution deep interface |
 | 06 | task | `open` | 03, 04 | Template create/read/save 真正 PostgreSQL 纵切 |
@@ -89,6 +89,9 @@ flowchart LR
 
 每次只 claim 一个 unblocked ticket；一票 resolved 后才由其 `Blocked by` 关系产生下一 frontier。未知实现切片留在
 map 的 `Not yet specified`，不为排满计划提前发明接口、migration 或 Profile identity。
+
+TV1-T03 已释放 TV1-T04；当前未 claim 的安全 frontier 为 TV1-T04 与 TV1-T05。single-writer 下一票由后续请求
+选择，本票不顺带预建 Template aggregate、Asset Interface 或 migration。
 
 ## 5. TV1-T01 执行卡
 
@@ -116,17 +119,35 @@ map 的 `Not yet specified`，不为排满计划提前发明接口、migration �
 - 完成信号：Ticket 02 resolved、ADR/CONTEXT/architecture gate 一致、零 split package、形成一个 verified
   `agent-commit` 且 worktree clean；不 push/tag/PR。
 
-## 7. Gate 与证据策略
+## 7. TV1-T03 执行卡
 
-`template` gate 顺序固定为 repository diff → 临时副本 Editor generator/independent/A2 → registry target refresh/
-Node primary/Python independent/A2 → 全树 byte comparison → frozen counts/readiness assertions。任何命令失败或
-相同输入生成 diff 都失败；仓库 authority 不被重写。
+- 决策：新增首个真实 `renderweave-template` artifact；唯一 public top-level Interface 为
+  `DesignDslAuthority.admit(rawUtf8)` closed outcome，Implementation 与 JSON model/canonical writer 全部 internal。
+- 允许影响：root reactor、新 Template module、TDD/ArchUnit/public-surface tests、exact vector fixture、独立 Python
+  replay、template/full gate composition、CONTEXT/tracker/plan/log/NOTES。
+- 禁止影响：app wiring、OpenAPI、migration/table、Template/Asset aggregate、产品 route/page、Renderer/Rust、
+  Profile available registration、DB/网络/浏览器/Web 服务/provider/J1。
+- admission 原子：exact versions + root metadata + empty definitions + single Canvas + empty bindings/children；
+  non-empty set/semantic arrays 以 `DESIGN_KERNEL_SCOPE_UNSUPPORTED` fail closed，不推断未知 wire。
+- 局部验证：TDD red/green、Template module 17 tests、app architecture 4/4、Java primary/Python independent 33/33。
+- 受影响验证：完整 `server`、`template`、`fast`、`git diff --check` 与 product-surface/Git audit；不运行
+  browser/E2E/runtime/full/provider。
+- 保证等级：Java/module/gate 为 A1；Python 对 exact manifest/Java report 的独立重放为 A2；无 A3/J1。
+- 完成信号：Ticket 03 resolved/`automated_verified`、Profile 仍 `NOT_REGISTERED`、形成一个 verified
+  `agent-commit` 且 implementation worktree clean；不 push/tag/PR。
+
+## 8. Gate 与证据策略
+
+`template` gate 顺序固定为 repository diff → DesignDSL kernel Java primary/Python independent exact-vector replay
+→ 临时副本 Editor generator/independent/A2 → registry target refresh/Node primary/Python independent/A2 → 全树
+byte comparison → frozen counts/readiness assertions。任何命令失败或相同输入生成 diff 都失败；仓库 authority
+不被重写。kernel report 必须保持 33/33、Profile=`NOT_REGISTERED`；static replay 的冻结 counts 不变。
 
 后续票据遵守 focused → affected → Phase → Goal。新增 Maven module、root POM、OpenAPI、lockfile、migration、
 process protocol 或 `full` 组成变化属于共享面，必须提前扩大回归。自动 green 只把对应任务推进到
 `automated_verified`；体验/业务选择是 J0/J1，独立机器 replay 是 A2，物理 Linux/CI policy 才可能形成外部门。
 
-## 8. Version、恢复与熔断
+## 9. Version、恢复与熔断
 
 - 每个已验证 Template ticket 在 `feature/template-v1` 独立提交；不 rewrite/cherry-pick 到 dirty main，不 push/tag/PR。
 - Ticket 01/02 无数据或外部副作用，恢复为回退对应单一提交或删除新 worktree；不得用 `reset --hard` 清理用户 worktree。
@@ -136,7 +157,7 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
 - 触发熔断：authority replay diff、产品语义冲突、依赖循环、test-only bypass、partial Profile availability、
   migration/route placeholder、越界外部副作用或 readiness 夸大。停止受影响票，保留证据；其他安全 frontier 继续。
 
-## 9. 当前边界
+## 10. 当前边界
 
 - Ticket 19 保持 open；Capacity formal records=0。
 - Formal Editor Case/Oracle=0/0；47 个 EditorContentSource slots 仅 1 exact、46 UNBOUND。

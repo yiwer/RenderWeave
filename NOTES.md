@@ -1,6 +1,16 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-17 **Template v1 implementation TV1-T03 已 `automated_verified`**：新增首个真实
+  `renderweave-template` artifact 与唯一 `DesignDslAuthority.admit(rawUtf8)` closed Interface；minimal kernel
+  只承认 empty definitions/bindings/children 的单 Canvas，实施 strict UTF-8/JSON、九项 parser/canonical
+  budget、metadata/decimal normalization、canonical bytes 与 domain hash。33 个 exact vectors 由 Java primary
+  和独立 Python verifier 逐 case 0 failure 重放，vector SHA-256=`3b5c907c…6d07`；non-empty set/semantic arrays
+  继续 fail closed，Profile=`NOT_REGISTERED`。server `.sdlc/evidence/20260817-213140-server/`
+  （20/13/361/17/267 tests）、template `.sdlc/evidence/20260817-214131-template/`（kernel 33/33；static
+  authority diff=0）与 fast `.sdlc/evidence/20260817-214151-fast/` 均通过。无 app wiring、API、migration、
+  DB 产品访问、网络、浏览器、provider/J1；Ticket 19 open，Template/Editor/Renderer 未 READY。TV1-T04/T05
+  已解锁但未 claim。
 - 2026-08-17 **Template v1 implementation TV1-T02 已 `automated_verified`**：ADR-0041 冻结
   provider-owned contracts、consumer-owned reverse/Host/process Seams、单向 staged Maven graph、closed
   outcomes 与 `api/spi/internal` ownership；新增非空转 architecture test 4/4，并把 Validation app Adapter

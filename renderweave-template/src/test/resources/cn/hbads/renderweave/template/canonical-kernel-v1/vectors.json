@@ -1,0 +1,479 @@
+{
+  "vectorVersion": "renderweave-template-canonical-kernel-v1/1",
+  "authorityContext": {
+    "staticSchemaProfile": "system-empty@v1",
+    "designDslProfile": "renderweave-design/1.0",
+    "expressionProfile": "renderweave-expression/1.0",
+    "profileAvailability": "NOT_REGISTERED"
+  },
+  "cases": [
+    {
+      "id": "admit-baseline-member-order",
+      "input": {
+        "kind": "UTF8",
+        "text": "{\"expressionProfile\":\"renderweave-expression/1.0\",\"designRoot\":{\"widthMm\":210,\"children\":[],\"nodeId\":\"00000000-0000-4000-8000-000000000001\",\"heightMm\":297,\"bindings\":[],\"kind\":\"canvas\"},\"definitions\":[],\"displayName\":\"Baseline\",\"dslVersion\":\"renderweave-design/1.0\"}"
+      },
+      "expected": {
+        "outcome": "ADMITTED",
+        "canonicalUtf8": "{\"definitions\":[],\"designRoot\":{\"bindings\":[],\"children\":[],\"heightMm\":297,\"kind\":\"canvas\",\"nodeId\":\"00000000-0000-4000-8000-000000000001\",\"widthMm\":210},\"displayName\":\"Baseline\",\"dslVersion\":\"renderweave-design/1.0\",\"expressionProfile\":\"renderweave-expression/1.0\"}",
+        "canonicalBytes": 266,
+        "canonicalSha256": "a025c0cd8bac7504df91469c84a8c5497cbe56b96804028a9ab5c9c8386e0d77",
+        "contentHash": "sha256:618bcfe94db5f8779c6113b99712b39ef1cd361fc0911a97b6c48b474caf5f49"
+      }
+    },
+    {
+      "id": "admit-metadata-unicode-decimal-semantic-empty-arrays",
+      "input": {
+        "kind": "UTF8",
+        "text": "{\"designRoot\":{\"widthMm\":2.10e2,\"nodeId\":\"00000000-0000-4000-8000-000000000001\",\"children\":[],\"bleed\":{\"leftMm\":2.5000,\"topMm\":-0,\"bottomMm\":1e0,\"rightMm\":0.00},\"kind\":\"canvas\",\"bindings\":[],\"displayName\":\"  画布 é  \",\"heightMm\":2.9700e2},\"description\":\"  \\t \",\"definitions\":[],\"displayName\":\"  A/会员 é  \",\"expressionProfile\":\"renderweave-expression/1.0\",\"dslVersion\":\"renderweave-design/1.0\"}"
+      },
+      "expected": {
+        "outcome": "ADMITTED",
+        "canonicalUtf8": "{\"definitions\":[],\"designRoot\":{\"bindings\":[],\"bleed\":{\"bottomMm\":1,\"leftMm\":2.5,\"rightMm\":0,\"topMm\":0},\"children\":[],\"displayName\":\"画布 é\",\"heightMm\":297,\"kind\":\"canvas\",\"nodeId\":\"00000000-0000-4000-8000-000000000001\",\"widthMm\":210},\"displayName\":\"A/会员 é\",\"dslVersion\":\"renderweave-design/1.0\",\"expressionProfile\":\"renderweave-expression/1.0\"}",
+        "canonicalBytes": 355,
+        "canonicalSha256": "14b8034b078056e5502389d8a8a62f2cdda0e12939a915dba09457e77f4231c0",
+        "contentHash": "sha256:12ab67ae5fda681500facee245d0b92af2e1a1590a58a7ffcf12ea520f423333"
+      }
+    },
+    {
+      "id": "admit-explicit-uppercase-color-without-default-expansion",
+      "input": {
+        "kind": "CANVAS",
+        "canvasPrefix": "\"backgroundColor\":\"#10A0B0FF\","
+      },
+      "expected": {
+        "outcome": "ADMITTED",
+        "canonicalUtf8": "{\"definitions\":[],\"designRoot\":{\"backgroundColor\":\"#10A0B0FF\",\"bindings\":[],\"children\":[],\"heightMm\":297,\"kind\":\"canvas\",\"nodeId\":\"00000000-0000-4000-8000-000000000001\",\"widthMm\":210},\"displayName\":\"Baseline\",\"dslVersion\":\"renderweave-design/1.0\",\"expressionProfile\":\"renderweave-expression/1.0\"}",
+        "canonicalBytes": 296,
+        "canonicalSha256": "deb9f64b667f0da5a40450e1617ff8a33e94df900be0dca3634f61f588729b9f",
+        "contentHash": "sha256:12a1cccad59d558c6dcd694d25404b0119debba727cc7317f86bf09c9b55c301"
+      }
+    },
+    {
+      "id": "reject-duplicate-member",
+      "input": {
+        "kind": "UTF8",
+        "text": "{\"displayName\":\"one\",\"displayName\":\"two\"}"
+      },
+      "expected": {
+        "outcome": "REJECTED",
+        "code": "DESIGN_DUPLICATE_MEMBER",
+        "stage": "DESIGN_PARSE",
+        "pointer": "",
+        "limit": null
+      }
+    },
+    {
+      "id": "reject-illegal-utf8",
+      "input": {
+        "kind": "HEX",
+        "hex": "80"
+      },
+      "expected": {
+        "outcome": "REJECTED",
+        "code": "DESIGN_UTF8_INVALID",
+        "stage": "DESIGN_PARSE",
+        "pointer": "",
+        "limit": null
+      }
+    },
+    {
+      "id": "reject-utf8-bom",
+      "input": {
+        "kind": "UTF8_BOM",
+        "text": "{}"
+      },
+      "expected": {
+        "outcome": "REJECTED",
+        "code": "DESIGN_UTF8_INVALID",
+        "stage": "DESIGN_PARSE",
+        "pointer": "",
+        "limit": null
+      }
+    },
+    {
+      "id": "reject-malformed-json",
+      "input": {
+        "kind": "UTF8",
+        "text": "{\"displayName\":\"Baseline\",}"
+      },
+      "expected": {
+        "outcome": "REJECTED",
+        "code": "DESIGN_JSON_INVALID",
+        "stage": "DESIGN_PARSE",
+        "pointer": "",
+        "limit": null
+      }
+    },
+    {
+      "id": "reject-unknown-root-member",
+      "input": {
+        "kind": "CANVAS",
+        "rootSuffix": ",\"future\":true"
+      },
+      "expected": {
+        "outcome": "REJECTED",
+        "code": "DESIGN_MEMBER_UNKNOWN",
+        "stage": "DESIGN_SEMANTIC_VALIDATION",
+        "pointer": "/future",
+        "limit": null
+      }
+    },
+    {
+      "id": "reject-unsupported-version",
+      "input": {
+        "kind": "CANVAS",
+        "dslVersion": "renderweave-design/2.0"
+      },
+      "expected": {
+        "outcome": "REJECTED",
+        "code": "DESIGN_VERSION_UNSUPPORTED",
+        "stage": "DESIGN_SEMANTIC_VALIDATION",
+        "pointer": "/dslVersion",
+        "limit": null
+      }
+    },
+    {
+      "id": "reject-null-before-closed-member-validation",
+      "input": {
+        "kind": "CANVAS",
+        "rootSuffix": ",\"future\":null"
+      },
+      "expected": {
+        "outcome": "REJECTED",
+        "code": "DESIGN_VALUE_INVALID",
+        "stage": "DESIGN_SEMANTIC_VALIDATION",
+        "pointer": "/future",
+        "limit": null
+      }
+    },
+    {
+      "id": "reject-nonempty-set-array-until-definition-contract-is-implemented",
+      "input": {
+        "kind": "CANVAS",
+        "definitions": "[{}]"
+      },
+      "expected": {
+        "outcome": "REJECTED",
+        "code": "DESIGN_KERNEL_SCOPE_UNSUPPORTED",
+        "stage": "DESIGN_SEMANTIC_VALIDATION",
+        "pointer": "/definitions",
+        "limit": null
+      }
+    },
+    {
+      "id": "reject-nonempty-semantic-array-without-reordering",
+      "input": {
+        "kind": "CANVAS",
+        "children": "[{}]"
+      },
+      "expected": {
+        "outcome": "REJECTED",
+        "code": "DESIGN_KERNEL_SCOPE_UNSUPPORTED",
+        "stage": "DESIGN_SEMANTIC_VALIDATION",
+        "pointer": "/designRoot/children",
+        "limit": null
+      }
+    },
+    {
+      "id": "reject-noncanonical-color",
+      "input": {
+        "kind": "CANVAS",
+        "canvasPrefix": "\"backgroundColor\":\"#10a0b0ff\","
+      },
+      "expected": {
+        "outcome": "REJECTED",
+        "code": "DESIGN_VALUE_INVALID",
+        "stage": "DESIGN_SEMANTIC_VALIDATION",
+        "pointer": "/designRoot/backgroundColor",
+        "limit": null
+      }
+    },
+    {
+      "id": "reject-non-canvas-design-root-as-value-not-version",
+      "input": {
+        "kind": "CANVAS",
+        "nodeKind": "frame"
+      },
+      "expected": {
+        "outcome": "REJECTED",
+        "code": "DESIGN_VALUE_INVALID",
+        "stage": "DESIGN_SEMANTIC_VALIDATION",
+        "pointer": "/designRoot/kind",
+        "limit": null
+      }
+    },
+    {
+      "id": "reject-incomplete-bleed-with-deterministic-first-pointer",
+      "input": {
+        "kind": "CANVAS",
+        "canvasPrefix": "\"bleed\":{\"rightMm\":0,\"bottomMm\":0,\"leftMm\":0},"
+      },
+      "expected": {
+        "outcome": "REJECTED",
+        "code": "DESIGN_STRUCTURE_INVALID",
+        "stage": "DESIGN_SEMANTIC_VALIDATION",
+        "pointer": "/designRoot/bleed/topMm",
+        "limit": null
+      }
+    },
+    {
+      "id": "raw-utf8-bytes-at-limit",
+      "input": {
+        "kind": "PADDED_CANVAS",
+        "totalBytes": 16777216
+      },
+      "expected": {
+        "outcome": "ADMITTED",
+        "canonicalUtf8": "{\"definitions\":[],\"designRoot\":{\"bindings\":[],\"children\":[],\"heightMm\":297,\"kind\":\"canvas\",\"nodeId\":\"00000000-0000-4000-8000-000000000001\",\"widthMm\":210},\"displayName\":\"Baseline\",\"dslVersion\":\"renderweave-design/1.0\",\"expressionProfile\":\"renderweave-expression/1.0\"}",
+        "canonicalBytes": 266,
+        "canonicalSha256": "a025c0cd8bac7504df91469c84a8c5497cbe56b96804028a9ab5c9c8386e0d77",
+        "contentHash": "sha256:618bcfe94db5f8779c6113b99712b39ef1cd361fc0911a97b6c48b474caf5f49"
+      }
+    },
+    {
+      "id": "raw-utf8-bytes-above-limit",
+      "input": {
+        "kind": "PADDED_CANVAS",
+        "totalBytes": 16777217
+      },
+      "expected": {
+        "outcome": "REJECTED",
+        "code": "DESIGN_DSL_LIMIT_EXCEEDED",
+        "stage": "DESIGN_PARSE",
+        "pointer": "",
+        "limit": "designDslParser.rawUtf8Bytes"
+      }
+    },
+    {
+      "id": "json-depth-at-limit",
+      "input": {
+        "kind": "NESTED_ARRAY",
+        "depth": 64
+      },
+      "expected": {
+        "outcome": "REJECTED",
+        "code": "DESIGN_STRUCTURE_INVALID",
+        "stage": "DESIGN_SEMANTIC_VALIDATION",
+        "pointer": "",
+        "limit": null
+      }
+    },
+    {
+      "id": "json-depth-above-limit",
+      "input": {
+        "kind": "NESTED_ARRAY",
+        "depth": 65
+      },
+      "expected": {
+        "outcome": "REJECTED",
+        "code": "DESIGN_DSL_LIMIT_EXCEEDED",
+        "stage": "DESIGN_PARSE",
+        "pointer": "",
+        "limit": "designDslParser.jsonDepth"
+      }
+    },
+    {
+      "id": "object-members-at-limit",
+      "input": {
+        "kind": "OBJECT_MEMBERS",
+        "count": 1024
+      },
+      "expected": {
+        "outcome": "REJECTED",
+        "code": "DESIGN_MEMBER_UNKNOWN",
+        "stage": "DESIGN_SEMANTIC_VALIDATION",
+        "pointer": "/m0",
+        "limit": null
+      }
+    },
+    {
+      "id": "object-members-above-limit",
+      "input": {
+        "kind": "OBJECT_MEMBERS",
+        "count": 1025
+      },
+      "expected": {
+        "outcome": "REJECTED",
+        "code": "DESIGN_DSL_LIMIT_EXCEEDED",
+        "stage": "DESIGN_PARSE",
+        "pointer": "",
+        "limit": "designDslParser.objectMembers"
+      }
+    },
+    {
+      "id": "array-items-at-limit",
+      "input": {
+        "kind": "ARRAY_ITEMS",
+        "count": 100000
+      },
+      "expected": {
+        "outcome": "REJECTED",
+        "code": "DESIGN_STRUCTURE_INVALID",
+        "stage": "DESIGN_SEMANTIC_VALIDATION",
+        "pointer": "",
+        "limit": null
+      }
+    },
+    {
+      "id": "array-items-above-limit",
+      "input": {
+        "kind": "ARRAY_ITEMS",
+        "count": 100001
+      },
+      "expected": {
+        "outcome": "REJECTED",
+        "code": "DESIGN_DSL_LIMIT_EXCEEDED",
+        "stage": "DESIGN_PARSE",
+        "pointer": "",
+        "limit": "designDslParser.arrayItems"
+      }
+    },
+    {
+      "id": "total-values-and-containers-at-limit",
+      "input": {
+        "kind": "TOTAL_VALUES",
+        "fullArrays": 9,
+        "fullArrayItems": 100000,
+        "lastArrayItems": 99989
+      },
+      "expected": {
+        "outcome": "REJECTED",
+        "code": "DESIGN_STRUCTURE_INVALID",
+        "stage": "DESIGN_SEMANTIC_VALIDATION",
+        "pointer": "",
+        "limit": null
+      }
+    },
+    {
+      "id": "total-values-and-containers-above-limit",
+      "input": {
+        "kind": "TOTAL_VALUES",
+        "fullArrays": 9,
+        "fullArrayItems": 100000,
+        "lastArrayItems": 99990
+      },
+      "expected": {
+        "outcome": "REJECTED",
+        "code": "DESIGN_DSL_LIMIT_EXCEEDED",
+        "stage": "DESIGN_PARSE",
+        "pointer": "",
+        "limit": "designDslParser.totalValuesAndContainers"
+      }
+    },
+    {
+      "id": "string-utf8-bytes-at-limit",
+      "input": {
+        "kind": "STRING_BYTES",
+        "count": 1048576
+      },
+      "expected": {
+        "outcome": "REJECTED",
+        "code": "DESIGN_STRUCTURE_INVALID",
+        "stage": "DESIGN_SEMANTIC_VALIDATION",
+        "pointer": "",
+        "limit": null
+      }
+    },
+    {
+      "id": "string-utf8-bytes-above-limit",
+      "input": {
+        "kind": "STRING_BYTES",
+        "count": 1048577
+      },
+      "expected": {
+        "outcome": "REJECTED",
+        "code": "DESIGN_DSL_LIMIT_EXCEEDED",
+        "stage": "DESIGN_PARSE",
+        "pointer": "",
+        "limit": "designDslParser.stringUtf8Bytes"
+      }
+    },
+    {
+      "id": "member-name-utf8-bytes-at-limit",
+      "input": {
+        "kind": "MEMBER_NAME_BYTES",
+        "count": 256
+      },
+      "expected": {
+        "outcome": "REJECTED",
+        "code": "DESIGN_MEMBER_UNKNOWN",
+        "stage": "DESIGN_SEMANTIC_VALIDATION",
+        "pointerRepeat": {
+          "prefix": "/",
+          "value": "a",
+          "count": 256
+        },
+        "limit": null
+      }
+    },
+    {
+      "id": "member-name-utf8-bytes-above-limit",
+      "input": {
+        "kind": "MEMBER_NAME_BYTES",
+        "count": 257
+      },
+      "expected": {
+        "outcome": "REJECTED",
+        "code": "DESIGN_DSL_LIMIT_EXCEEDED",
+        "stage": "DESIGN_PARSE",
+        "pointer": "",
+        "limit": "designDslParser.memberNameUtf8Bytes"
+      }
+    },
+    {
+      "id": "number-token-bytes-at-limit",
+      "input": {
+        "kind": "CANVAS_WIDTH_DIGITS",
+        "count": 256
+      },
+      "expected": {
+        "outcome": "ADMITTED",
+        "canonicalBytes": 519,
+        "canonicalSha256": "e643c13bce74ae1d754cd3af7670e6cbbcfb342de4c220e7cb1037f071c47e2b",
+        "contentHash": "sha256:5cdf3593940fc0e06a61402edf16dc4712c0dc92eb39893a5098fb57ac5de13a"
+      }
+    },
+    {
+      "id": "number-token-bytes-above-limit",
+      "input": {
+        "kind": "CANVAS_WIDTH_DIGITS",
+        "count": 257
+      },
+      "expected": {
+        "outcome": "REJECTED",
+        "code": "DESIGN_DSL_LIMIT_EXCEEDED",
+        "stage": "DESIGN_PARSE",
+        "pointer": "",
+        "limit": "designDslParser.numberTokenBytes"
+      }
+    },
+    {
+      "id": "canonical-bytes-at-limit",
+      "input": {
+        "kind": "CANVAS_WIDTH_EXPONENT",
+        "exponent": 16776952
+      },
+      "expected": {
+        "outcome": "ADMITTED",
+        "canonicalBytes": 16777216,
+        "canonicalSha256": "6c77a25b0a3e7b3c25a3713a62c36fdb7a170fd7a7523969aada1239aad38797",
+        "contentHash": "sha256:3f1539c3e5f3ce3618d03476b37598f3b2ee62d5116c3a7dcddb04bb96a05a00"
+      }
+    },
+    {
+      "id": "canonical-bytes-above-limit",
+      "input": {
+        "kind": "CANVAS_WIDTH_EXPONENT",
+        "exponent": 16776953
+      },
+      "expected": {
+        "outcome": "REJECTED",
+        "code": "DESIGN_DSL_LIMIT_EXCEEDED",
+        "stage": "DESIGN_CANONICAL_COUNT",
+        "pointer": "",
+        "limit": "designDslParser.canonicalBytes"
+      }
+    }
+  ]
+}
