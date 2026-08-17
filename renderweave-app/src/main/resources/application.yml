@@ -40,7 +40,7 @@ renderweave:
     live-enabled: ${RENDERWEAVE_LIVE_AI_ENABLED:false}
     live-upload-enabled: ${RENDERWEAVE_LIVE_UPLOAD_ENABLED:false}
     dashscope:
-      base-url: https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1
+      base-url: https://dashscope.aliyuncs.com/compatible-mode/v1
     live-lease-seconds: 600
     recovery-enabled: ${RENDERWEAVE_INFERENCE_RECOVERY_ENABLED:true}
     live-poll-millis: 2000

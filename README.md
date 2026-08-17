@@ -78,7 +78,7 @@ docker compose up --build
 基础 Compose 不启用外部模型。仅在明确允许传输的数据上启用 DashScope overlay：
 
 ```powershell
-$env:DASHSCOPE_TOKEN_API_KEY = '<仅设置在当前终端，不写入仓库>'
+$env:DASHSCOPE_API_KEY = '<仅设置在当前终端，不写入仓库>'
 docker compose -f compose.yaml -f compose.live.yaml up --build
 ```
 

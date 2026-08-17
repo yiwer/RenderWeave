@@ -12,7 +12,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 class InferenceApplicationConfigurationTest {
     @Test
-    void dashScopeSecretSourceUsesOnlyTheExactTokenPlanNames() throws Exception {
+    void dashScopeSecretSourceUsesOnlyTheExactPayAsYouGoNames() throws Exception {
         var method = InferenceApplicationConfiguration.class.getDeclaredMethod(
                 "dashScopeInferenceProvider",
                 ObjectMapper.class, String.class, String.class, String.class
@@ -21,9 +21,9 @@ class InferenceApplicationConfigurationTest {
 
         assertEquals("${renderweave.inference.dashscope.base-url}",
                 parameters[1].getAnnotation(Value.class).value());
-        assertEquals("${DASHSCOPE_TOKEN_API_KEY:}",
+        assertEquals("${DASHSCOPE_API_KEY:}",
                 parameters[2].getAnnotation(Value.class).value());
-        assertEquals("${DASHSCOPE_TOKEN_API_KEY_FILE:}",
+        assertEquals("${DASHSCOPE_API_KEY_FILE:}",
                 parameters[3].getAnnotation(Value.class).value());
 
         try (var input = getClass().getClassLoader().getResourceAsStream("application.yml")) {

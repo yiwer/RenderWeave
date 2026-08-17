@@ -46,8 +46,8 @@ class InferenceApplicationConfiguration {
     InferenceProvider dashScopeInferenceProvider(
             ObjectMapper json,
             @Value("${renderweave.inference.dashscope.base-url}") String baseUrl,
-            @Value("${DASHSCOPE_TOKEN_API_KEY:}") String directApiKey,
-            @Value("${DASHSCOPE_TOKEN_API_KEY_FILE:}") String apiKeyFile
+            @Value("${DASHSCOPE_API_KEY:}") String directApiKey,
+            @Value("${DASHSCOPE_API_KEY_FILE:}") String apiKeyFile
     ) {
         return DashScopeInferenceProvider.fromConfiguration(baseUrl, directApiKey, apiKeyFile, json);
     }

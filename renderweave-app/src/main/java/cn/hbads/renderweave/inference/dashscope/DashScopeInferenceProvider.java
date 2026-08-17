@@ -21,7 +21,7 @@ import java.util.Optional;
 public final class DashScopeInferenceProvider implements InferenceProvider {
     private static final int MAX_HTTP_RESPONSE_BYTES = 3 * 1024 * 1024;
     private static final String APPROVED_BASE_URL =
-            "https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1";
+            "https://dashscope.aliyuncs.com/compatible-mode/v1";
 
     private final Optional<DashScopeApiKey> apiKey;
     private final URI chatCompletionsEndpoint;
