@@ -6,7 +6,7 @@
   `22f561c88b30fabbf3ba660bcfe203fb570975f770ff122f2ce1c7216454ac0c`），相对 v45 仅三字段差异；实现
   12-call/单 run ¥6 settled+reserved 聚合预算、append-only Profile certification events、seeded 5/20/60 +
   20 HOLDOUT evaluator、store-derived next-stage J1 schema/Provider-zero proof 与 `image-only-p0` gate。证据
-  `.sdlc/evidence/20260817-160035-image-only-p0/`：Java 16/16、Testcontainers PostgreSQL 18/18、Python
+  `.sdlc/evidence/20260817-162343-image-only-p0/`：Java 16/16、Testcontainers PostgreSQL 18/18、Python
   exact-verdict A2 strict-input replay PASS；完整服务端回归 `.sdlc/evidence/20260817-160140-server/`
   （Schema 20、Validation 13、Inference 360、App 263）绿色。Provider
   attempts/reservations/cost/API-key reads=0，v46 OPEN authorization=0。

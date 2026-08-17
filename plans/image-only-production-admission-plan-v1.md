@@ -32,7 +32,7 @@ Blueprint 附录 A 开新票；不得在计划、代码或测试中静默改写�
 - A1/A2：`tools/run-gate.ps1 -Gate image-only-p0` 绿色；Testcontainers PostgreSQL 覆盖 12-call/¥6 aggregate
   reservation 与 append-only event trigger；Python 独立重算 v46 diff/hash、60-case assignment、20 HOLDOUT、
   58 metrics、逐 case payload-free verdict 与 exact stage evidence identity。专用证据：
-  `.sdlc/evidence/20260817-160035-image-only-p0/`；完整服务端回归证据：
+  `.sdlc/evidence/20260817-162343-image-only-p0/`；完整服务端回归证据：
   `.sdlc/evidence/20260817-160140-server/`。
 - Provider-zero：attempts=0、reservations=0、cost=0、API-key reads=0；无 StaticSchema 发布或 apply。
 - J1 边界：本轮会话给出的“全阶段、每模型 1M token、48h”只进入 preflight 的最大 token/time 约束，不能替代
@@ -211,7 +211,8 @@ P1 等待 live J1 时，P2 的 Provider-zero 实现可继续；P3 同时依赖 P
 - 依赖：IOPA-P0-04。
 - 影响区域：`plans/live-canary-authorizations/` schema/validator、live preflight、ledger verifier、gate scripts。
 - 实施：定义每阶段所需 exact Profile hash、数据分类、case hashes、calls、cost、effective/expiry、owner J1 与
-  CLOSED 规则；只提供无效 fixture/template，不创建 OPEN authorization。
+  CLOSED 规则；`approvedAt` 不得早于 cycle 创建，且 approval→expiry 不得超过 48h；只提供无效
+  fixture/template，不创建 OPEN authorization。
 - 局部验证：missing/expired/wrong-profile/wrong-class/over-count/over-cost/open-after-terminal 全拒绝；默认环境即使存在
   fake key 字符串也不能读取或调用 Provider。
 - Assurance：A1 authorization/preflight evidence。

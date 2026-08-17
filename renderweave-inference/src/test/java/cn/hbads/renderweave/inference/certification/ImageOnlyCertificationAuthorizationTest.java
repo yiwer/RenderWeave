@@ -102,6 +102,24 @@ class ImageOnlyCertificationAuthorizationTest {
                         SHA, "ORDINARY_DESIGN", 5, 60, 1_000_000, 30_000_000,
                         T0, T0.plusSeconds(48 * 60 * 60 + 1), cases),
                 cycle, manifest, progress, T0));
+        var staleApproval = withApprovedAt(authorization(
+                manifest, AuthorizationStatus.OPEN, CertificationStage.CANARY_5,
+                SHA, "ORDINARY_DESIGN", 5, 60, 1_000_000, 30_000_000,
+                T0, T0.plusSeconds(10), cases), cycle.createdAt().minusSeconds(1));
+        assertReason("CERTIFICATION_AUTHORIZATION_APPROVAL_PREDATES_CYCLE",
+                () -> preflight.requireProviderZeroProof(
+                        staleApproval, cycle, manifest, progress, T0));
+
+        var oldCycle = cycle(manifest, T0.minusSeconds(49 * 60 * 60));
+        var oldService = started(oldCycle, manifest);
+        var longApprovalWindow = withApprovedAt(authorization(
+                manifest, AuthorizationStatus.OPEN, CertificationStage.CANARY_5,
+                SHA, "ORDINARY_DESIGN", 5, 60, 1_000_000, 30_000_000,
+                T0, T0.plusSeconds(1), cases), T0.minusSeconds(48 * 60 * 60));
+        assertReason("CERTIFICATION_AUTHORIZATION_DURATION_INVALID",
+                () -> preflight.requireProviderZeroProof(
+                        longApprovalWindow, oldCycle, manifest,
+                        oldService.progress(oldCycle.cycleId()), T0));
 
         var finalCases = authorizedCases(manifest, CertificationStage.FINAL_60);
         assertReason("CERTIFICATION_AUTHORIZATION_STAGE_NOT_UNLOCKED",
@@ -193,10 +211,32 @@ class ImageOnlyCertificationAuthorizationTest {
     }
 
     private static FrozenCertificationCycle cycle(FrozenImageOnlyCertificationManifest manifest) {
+        return cycle(manifest, T0.minusSeconds(1));
+    }
+
+    private static FrozenCertificationCycle cycle(
+            FrozenImageOnlyCertificationManifest manifest,
+            Instant createdAt
+    ) {
         return new FrozenCertificationCycle(
                 CYCLE_ID, manifest.profileId(), manifest.profileSha256(), manifest.manifestIdentity(),
                 manifest.evaluatorIdentity(),
-                CertificationAuthorityInventory.loadCanonical().canonicalSha256(), T0.minusSeconds(1));
+                CertificationAuthorityInventory.loadCanonical().canonicalSha256(), createdAt);
+    }
+
+    private static ImageOnlyCertificationAuthorization withApprovedAt(
+            ImageOnlyCertificationAuthorization source,
+            Instant approvedAt
+    ) {
+        return new ImageOnlyCertificationAuthorization(
+                source.version(), source.authorizationId(), source.status(), source.cycleId(),
+                source.stage(), source.profileId(), source.profileSha256(), source.manifestIdentity(),
+                source.evaluatorIdentity(), source.provider(), source.model(), source.providerBaseUrl(),
+                source.inputProvenance(), source.dataClassification(), source.cases(),
+                source.maximumRuns(), source.maximumProviderCalls(), source.maximumModelTokens(),
+                source.maximumCostMicrosCny(), source.effectiveAt(), source.expiresAt(),
+                source.approvedBy(), approvedAt, source.approvalScope(), source.closedAt(),
+                source.closureReason());
     }
 
     private static ProfileCertificationService started(

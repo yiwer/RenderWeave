@@ -46,6 +46,14 @@ public final class ImageOnlyCertificationPreflight {
         if (!authorization.cycleId().equals(cycle.cycleId())) {
             fail("CERTIFICATION_AUTHORIZATION_CYCLE_MISMATCH");
         }
+        if (authorization.approvedAt().isBefore(cycle.createdAt())) {
+            fail("CERTIFICATION_AUTHORIZATION_APPROVAL_PREDATES_CYCLE");
+        }
+        if (!authorization.expiresAt().isAfter(authorization.approvedAt())
+                || Duration.between(authorization.approvedAt(), authorization.expiresAt())
+                .compareTo(MAXIMUM_WINDOW) > 0) {
+            fail("CERTIFICATION_AUTHORIZATION_DURATION_INVALID");
+        }
         if (!progress.cycleId().equals(cycle.cycleId())
                 || !progress.profileSha256().equals(cycle.profileSha256())
                 || !progress.manifestIdentity().equals(cycle.manifestIdentity())
