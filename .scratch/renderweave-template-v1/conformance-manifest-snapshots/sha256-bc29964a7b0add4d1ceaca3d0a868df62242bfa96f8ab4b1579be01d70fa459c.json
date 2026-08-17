@@ -1,0 +1,281 @@
+{
+  "artifactVersion": "renderweave-conformance-generator-manifests/1.0",
+  "status": "SPEC_DOMAIN_DESIGN_RENDERING_AND_RENDERER_GENERATORS_REFERENCEABLE_EDITOR_PENDING",
+  "authority": "Ticket19 deterministic generated-fixture contracts; only entries with frozen implementation, target, goldens, and recordMayReference true are usable",
+  "safeBaselineManifest": "conformance-safe-baselines-v1.json",
+  "parameterSchemas": [
+    {
+      "parameterSchemaId": "renderweave-capacity-boundary-parameters/1.0",
+      "closedObject": true,
+      "requiredMembersInOrder": [
+        "comparator",
+        "contractStage",
+        "deltaId",
+        "executionClass",
+        "limitId",
+        "limitValue",
+        "mode",
+        "plannedAssertions",
+        "plannedOracleId",
+        "publicRenderStage",
+        "requirementIds",
+        "reservationPoint",
+        "resolvedCode",
+        "resolvedKind",
+        "stimulusValue",
+        "valueEncoding",
+        "variant",
+        "zeroBoundary"
+      ],
+      "constants": {
+        "mode": "CAPACITY_BOUNDARY"
+      },
+      "enums": {
+        "variant": [
+          "below",
+          "at",
+          "above"
+        ],
+        "valueEncoding": [
+          "CANONICAL_INTEGER",
+          "CANONICAL_DECIMAL",
+          "ENUM_TOKEN",
+          "FORMULA"
+        ]
+      },
+      "requirementIds": "nonempty unique exact requirement IDs in canonical unsigned-UTF-8 order",
+      "plannedAssertions": "exact ordered assertion plan copied byte-for-byte from conformance-capacity-coverage-v1.json",
+      "additionalMembersAllowed": false
+    },
+    {
+      "parameterSchemaId": "renderweave-named-scenario-parameters/1.0",
+      "closedObject": true,
+      "requiredMembersInOrder": [
+        "mode",
+        "scenarioId",
+        "fixtureArtifactPath",
+        "fixtureArtifactSha256",
+        "expectedObservationProfile"
+      ],
+      "constants": {
+        "mode": "NAMED_SCENARIO"
+      },
+      "pathRule": "repo-relative safe path",
+      "digestRule": "sha256 plus 64 lowercase hexadecimal characters",
+      "additionalMembersAllowed": false
+    }
+  ],
+  "generators": [
+    {
+      "generatorProfile": "renderweave-spec-registry-generator/1.0",
+      "executionClass": "EXEC::SPEC_REGISTRY::1.0",
+      "safeBaselineId": "baseline.spec-registry.empty-v1",
+      "supportedModes": [
+        "CAPACITY_BOUNDARY",
+        "NAMED_SCENARIO"
+      ],
+      "parameterSchemaIds": [
+        "renderweave-capacity-boundary-parameters/1.0",
+        "renderweave-named-scenario-parameters/1.0"
+      ],
+      "determinism": "total function of generatorProfile, complete parameters, safe-baseline fixture bytes, and all explicitly SHA-256-bound referenced artifacts",
+      "seedPolicy": "No hidden entropy. A generator that needs pseudorandom construction must add required explicit uint64 seed to a new parameter schema and freeze output vectors.",
+      "hiddenDefaultsAllowed": false,
+      "environmentReadsAllowed": false,
+      "networkReadsAllowed": false,
+      "outputContract": "one strict UTF-8 fixture artifact plus its mediaType, exact bytes, SHA-256, and normalized observation-adapter configuration",
+      "implementationManifestStatus": "FROZEN_DUAL_VALIDATED",
+      "implementationManifest": {
+        "path": "spec-registry/generator-implementation-manifest-v1.json",
+        "sha256": "sha256:94cd7f6ae9fc8162cd619130f0117fb85d2df433182f422d4f718cb43ee06b42"
+      },
+      "targetManifest": {
+        "path": "spec-registry/generator-target-manifest-v1.json",
+        "sha256": "sha256:896869c11803feda55f5d3fe964047a79dc1ff1c7f4cddd99edce4a4e9136950"
+      },
+      "goldenVectorStatus": "FROZEN_DUAL_REPLAYED",
+      "goldenVectors": {
+        "path": "spec-registry/generator-goldens-v1.json",
+        "sha256": "sha256:ee6b23b0e603866bb504395582391755423076ddbc816a7ea4933426abb69a9b",
+        "goldenCount": 46
+      },
+      "recordMayReference": true
+    },
+    {
+      "generatorProfile": "renderweave-domain-services-generator/1.0",
+      "executionClass": "EXEC::DOMAIN_SERVICES::1.0",
+      "safeBaselineId": "baseline.domain-services.minimal-v1",
+      "supportedModes": [
+        "CAPACITY_BOUNDARY",
+        "NAMED_SCENARIO"
+      ],
+      "parameterSchemaIds": [
+        "renderweave-capacity-boundary-parameters/1.0",
+        "renderweave-named-scenario-parameters/1.0"
+      ],
+      "determinism": "total function of generatorProfile, complete parameters, safe-baseline fixture bytes, and all explicitly SHA-256-bound referenced artifacts",
+      "seedPolicy": "No hidden entropy. A generator that needs pseudorandom construction must add required explicit uint64 seed to a new parameter schema and freeze output vectors.",
+      "hiddenDefaultsAllowed": false,
+      "environmentReadsAllowed": false,
+      "networkReadsAllowed": false,
+      "outputContract": "one strict UTF-8 fixture artifact plus its mediaType, exact bytes, SHA-256, and normalized observation-adapter configuration",
+      "implementationManifestStatus": "FROZEN_DUAL_VALIDATED_STATIC_ONLY",
+      "implementationManifest": {
+        "path": "domain-services/generator-implementation-manifest-v1.json",
+        "sha256": "sha256:3742082a47b57ec3635094f8953a3d0cff1d4097ce277966196b276d63491462"
+      },
+      "targetManifest": {
+        "path": "domain-services/generator-target-manifest-v1.json",
+        "sha256": "sha256:3f6d2df37c776262e328f5159b2ff38bb89c9882d60a82a67c48a42efb487dd9"
+      },
+      "goldenVectorStatus": "FROZEN_DUAL_REPLAYED_STATIC_ONLY",
+      "goldenVectors": {
+        "path": "domain-services/generator-goldens-v1.json",
+        "sha256": "sha256:97501ec24f2c9dc4ca78774d92d37d23010afffe635453666aa77cb2f56e8b60",
+        "goldenCount": 13
+      },
+      "recordMayReference": true
+    },
+    {
+      "generatorProfile": "renderweave-design-input-expression-generator/1.0",
+      "executionClass": "EXEC::DESIGN_INPUT_EXPRESSION::1.0",
+      "safeBaselineId": "baseline.design-input-expression.minimal-v1",
+      "supportedModes": [
+        "CAPACITY_BOUNDARY",
+        "NAMED_SCENARIO"
+      ],
+      "parameterSchemaIds": [
+        "renderweave-capacity-boundary-parameters/1.0",
+        "renderweave-named-scenario-parameters/1.0"
+      ],
+      "determinism": "total function of generatorProfile, complete parameters, safe-baseline fixture bytes, and all explicitly SHA-256-bound referenced artifacts",
+      "seedPolicy": "No hidden entropy. A generator that needs pseudorandom construction must add required explicit uint64 seed to a new parameter schema and freeze output vectors.",
+      "hiddenDefaultsAllowed": false,
+      "environmentReadsAllowed": false,
+      "networkReadsAllowed": false,
+      "outputContract": "one strict UTF-8 fixture artifact plus its mediaType, exact bytes, SHA-256, and normalized observation-adapter configuration",
+      "implementationManifestStatus": "FROZEN_DUAL_VALIDATED_STATIC_ONLY",
+      "implementationManifest": {
+        "path": "design-input-expression/generator-implementation-manifest-v1.json",
+        "sha256": "sha256:382f599e43999e6b7ab285e8b0b4ed1579cc4c00f3757a6766d18ec96d2bba10"
+      },
+      "targetManifest": {
+        "path": "design-input-expression/generator-target-manifest-v1.json",
+        "sha256": "sha256:2de5c33e7f03c3c1354426882960200344e232ad12ec12d5eae20d80483760c8"
+      },
+      "goldenVectorStatus": "FROZEN_DUAL_REPLAYED_STATIC_ONLY",
+      "goldenVectors": {
+        "path": "design-input-expression/generator-goldens-v1.json",
+        "sha256": "sha256:de59d7a3f8f953c77115060a076e6ea73d697f7bf9aa838a813c18a865589498",
+        "goldenCount": 196
+      },
+      "recordMayReference": true
+    },
+    {
+      "generatorProfile": "renderweave-rendering-pipeline-generator/1.0",
+      "executionClass": "EXEC::RENDERING_PIPELINE::1.0",
+      "safeBaselineId": "baseline.rendering-pipeline.minimal-v1",
+      "supportedModes": [
+        "CAPACITY_BOUNDARY",
+        "NAMED_SCENARIO"
+      ],
+      "parameterSchemaIds": [
+        "renderweave-capacity-boundary-parameters/1.0",
+        "renderweave-named-scenario-parameters/1.0"
+      ],
+      "determinism": "total function of generatorProfile, complete parameters, safe-baseline fixture bytes, and all explicitly SHA-256-bound referenced artifacts",
+      "seedPolicy": "No hidden entropy. A generator that needs pseudorandom construction must add required explicit uint64 seed to a new parameter schema and freeze output vectors.",
+      "hiddenDefaultsAllowed": false,
+      "environmentReadsAllowed": false,
+      "networkReadsAllowed": false,
+      "outputContract": "one strict UTF-8 fixture artifact plus its mediaType, exact bytes, SHA-256, and normalized observation-adapter configuration",
+      "implementationManifestStatus": "FROZEN_DUAL_VALIDATED_STATIC_ONLY",
+      "implementationManifest": {
+        "path": "rendering-pipeline/generator-implementation-manifest-v1.json",
+        "sha256": "sha256:dec9f8d56d1fc972edf40b0b0d6c1ed4338d6c624cad33086ee6e3c276f2a06f"
+      },
+      "targetManifest": {
+        "path": "rendering-pipeline/generator-target-manifest-v1.json",
+        "sha256": "sha256:8b792d30b96ad567fd01325ee1447d86b8b1f65737a4eef51fd51b5477800b8b"
+      },
+      "goldenVectorStatus": "FROZEN_DUAL_REPLAYED_STATIC_ONLY",
+      "goldenVectors": {
+        "path": "rendering-pipeline/generator-goldens-v1.json",
+        "sha256": "sha256:a8380f233c823654b0609af4df2e4c41e7974e4dacfe5d9e1b2b595db661c6f8",
+        "goldenCount": 157
+      },
+      "recordMayReference": true
+    },
+    {
+      "generatorProfile": "renderweave-renderer-exact-output-generator/1.0",
+      "executionClass": "EXEC::RENDERER_EXACT_OUTPUT::1.0",
+      "safeBaselineId": "baseline.renderer-exact-output.minimal-v1",
+      "supportedModes": [
+        "CAPACITY_BOUNDARY",
+        "NAMED_SCENARIO"
+      ],
+      "parameterSchemaIds": [
+        "renderweave-capacity-boundary-parameters/1.0",
+        "renderweave-named-scenario-parameters/1.0"
+      ],
+      "determinism": "total function of generatorProfile, complete parameters, safe-baseline fixture bytes, and all explicitly SHA-256-bound referenced artifacts",
+      "seedPolicy": "No hidden entropy. A generator that needs pseudorandom construction must add required explicit uint64 seed to a new parameter schema and freeze output vectors.",
+      "hiddenDefaultsAllowed": false,
+      "environmentReadsAllowed": false,
+      "networkReadsAllowed": false,
+      "outputContract": "one strict UTF-8 fixture artifact plus its mediaType, exact bytes, SHA-256, and normalized observation-adapter configuration",
+      "implementationManifestStatus": "FROZEN_DUAL_VALIDATED_STATIC_ONLY",
+      "implementationManifest": {
+        "path": "renderer-exact-output/generator-implementation-manifest-v1.json",
+        "sha256": "sha256:d68b4825edaa3fd8118f67f57f2f7a08f996113be5dad36c1d227f33156ced70"
+      },
+      "targetManifest": {
+        "path": "renderer-exact-output/generator-target-manifest-v1.json",
+        "sha256": "sha256:b83cdf4e50250d7180e18ce05170c57a6d570f21dabf7d95f5d407ad95e99120"
+      },
+      "goldenVectorStatus": "FROZEN_DUAL_REPLAYED_STATIC_ONLY",
+      "goldenVectors": {
+        "path": "renderer-exact-output/generator-goldens-v1.json",
+        "sha256": "sha256:2fdb4c1d9ded1d464c1942d3c0979702733be7cc98f930be1bb6e1f131d6de18",
+        "goldenCount": 163
+      },
+      "recordMayReference": true
+    },
+    {
+      "generatorProfile": "renderweave-editor-automated-generator/1.0",
+      "executionClass": "EXEC::EDITOR_AUTOMATED::1.0",
+      "safeBaselineId": "baseline.editor-automated.minimal-v1",
+      "supportedModes": [
+        "CAPACITY_BOUNDARY",
+        "NAMED_SCENARIO"
+      ],
+      "parameterSchemaIds": [
+        "renderweave-capacity-boundary-parameters/1.0",
+        "renderweave-named-scenario-parameters/1.0"
+      ],
+      "determinism": "total function of generatorProfile, complete parameters, safe-baseline fixture bytes, and all explicitly SHA-256-bound referenced artifacts",
+      "seedPolicy": "No hidden entropy. A generator that needs pseudorandom construction must add required explicit uint64 seed to a new parameter schema and freeze output vectors.",
+      "hiddenDefaultsAllowed": false,
+      "environmentReadsAllowed": false,
+      "networkReadsAllowed": false,
+      "outputContract": "one strict UTF-8 fixture artifact plus its mediaType, exact bytes, SHA-256, and normalized observation-adapter configuration",
+      "implementationManifestStatus": "PENDING",
+      "goldenVectorStatus": "PENDING",
+      "recordMayReference": false
+    }
+  ],
+  "generatorCount": 6,
+  "capacityDispatchRule": "conformance-capacity-coverage-v1.json selects exactly one generatorProfile whose executionClass and safeBaselineId match the axis record",
+  "expansionRule": "Every generated Case stores all resolved literals; no executor or generator may consult capacity defaults, overrides, ambient environment, current time, or latest profile at runtime.",
+  "identityRule": "Any parameter-schema, algorithm, output-contract, baseline, or vector semantic change requires a new exact generatorProfile.",
+  "implementationGate": "A generator remains non-referenceable until its implementation bytes, implementation manifest, target manifest, and complete golden vectors are frozen.",
+  "referenceableGeneratorProfiles": [
+    "renderweave-spec-registry-generator/1.0",
+    "renderweave-domain-services-generator/1.0",
+    "renderweave-design-input-expression-generator/1.0",
+    "renderweave-rendering-pipeline-generator/1.0",
+    "renderweave-renderer-exact-output-generator/1.0"
+  ],
+  "referenceableGeneratorCount": 5,
+  "recordsMayReference": true
+}

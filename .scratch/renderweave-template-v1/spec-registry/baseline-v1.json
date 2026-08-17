@@ -1,0 +1,9 @@
+{
+  "fixtureVersion": "renderweave-spec-registry-baseline/1.0",
+  "baselineId": "baseline.spec-registry.empty-v1",
+  "executionClass": "EXEC::SPEC_REGISTRY::1.0",
+  "targetRoot": ".scratch/renderweave-template-v1",
+  "registryMode": "APPEND_ONLY_JSONL",
+  "productMutationAllowed": false,
+  "externalReadAllowed": false
+}

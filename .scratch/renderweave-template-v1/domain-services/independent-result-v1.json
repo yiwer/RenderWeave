@@ -1,0 +1,24 @@
+{
+  "resultVersion": "renderweave-domain-services-fixture-generator-result/1.0",
+  "executorId": "DOMAIN_SERVICES_FIXTURE_GENERATOR::PYTHON::1.0",
+  "role": "independent-domain-services-fixture-generator-replayer",
+  "status": "PASS",
+  "checkCount": 246,
+  "failureCount": 0,
+  "runtime": "CPython 3.12.13",
+  "generatorTargetSha256": "sha256:3f6d2df37c776262e328f5159b2ff38bb89c9882d60a82a67c48a42efb487dd9",
+  "fixtureCount": 13,
+  "productExecutionObserved": false,
+  "recordIssuanceAllowed": false,
+  "implementationRevision": "domain-services-fixture-generator/1.0",
+  "targetManifest": {
+    "path": "domain-services/generator-target-manifest-v1.json",
+    "sha256": "sha256:3f6d2df37c776262e328f5159b2ff38bb89c9882d60a82a67c48a42efb487dd9",
+    "byteLength": 4562
+  },
+  "entrypoint": {
+    "path": "domain-services/validate_domain_services_fixtures_independent.py",
+    "sha256": "sha256:b757bb10c93b764ca64915e25615500c4c711fb9b3411c6f46580960e0a72f2a",
+    "byteLength": 20927
+  }
+}

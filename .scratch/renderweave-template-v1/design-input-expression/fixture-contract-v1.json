@@ -1,0 +1,108 @@
+{
+  "artifactVersion": "renderweave-design-input-expression-fixture-contract/1.0",
+  "fixtureVersion": "renderweave-design-input-expression-fixture/1.0",
+  "status": "FROZEN_STATIC_FIXTURE_CONTRACT",
+  "executionClass": "EXEC::DESIGN_INPUT_EXPRESSION::1.0",
+  "serialization": {
+    "encoding": "UTF-8 without BOM",
+    "lineEnding": "LF",
+    "indentationSpaces": 2,
+    "finalLfRequired": true,
+    "memberOrder": "exactly the contract order emitted by renderweave-design-input-expression-generator/1.0"
+  },
+  "allowedModes": [
+    "CAPACITY_BOUNDARY",
+    "NAMED_SCENARIO"
+  ],
+  "capacityBoundary": {
+    "entrypoint": "DESIGN_INPUT_EXPRESSION_CAPACITY_GUARD",
+    "guardContractId": "renderweave-design-input-expression-capacity-guard/1.0",
+    "allowedLimitSource": "all 65 axes assigned to EXEC::DESIGN_INPUT_EXPRESSION::1.0 in conformance-capacity-coverage-v1.json, in source order",
+    "allowedValueEncodings": [
+      "CANONICAL_INTEGER",
+      "CANONICAL_DECIMAL",
+      "ENUM_TOKEN"
+    ],
+    "allowedComparators": [
+      "ENUM_EXACT",
+      "EXACT",
+      "MAX_INCLUSIVE",
+      "MIN_EXCLUSIVE",
+      "MIN_INCLUSIVE"
+    ],
+    "allowedVariants": [
+      "below",
+      "at",
+      "above"
+    ],
+    "observedValueWire": "exact string copied from the expanded capacity coverage variant; integer, decimal, and enum interpretation remains valueEncoding-specific",
+    "targetContract": {
+      "exactProductionGuardRequired": true,
+      "duplicateGuardImplementationForbidden": true,
+      "productApiSurfaceCreated": false,
+      "parserOrCanonicalizerExecutedByThisProbe": false,
+      "semanticOrExpressionEvaluatorExecutedByThisProbe": false,
+      "fullAuthoringOrRenderInputPathProvenByThisProbe": false,
+      "futureIntegrationProofRequired": "The exact DESIGN_INPUT_EXPRESSION target must separately prove that each authoritative parser, canonical writer, semantic counter, Expression analyzer, property validator, or RenderInput admission path derives the observed value from its frozen source and invokes this same limit-specific guard at the frozen reservation point."
+    }
+  },
+  "namedScenario": {
+    "parameterSchemaId": "renderweave-named-scenario-parameters/1.0",
+    "allowedScenarioIds": [
+      "DESIGN-INPUT-EXPRESSION-BASELINE-NOOP"
+    ],
+    "entrypoint": "BASELINE_CONTRACT_CHECK",
+    "expectedObservationProfile": "renderweave-design-input-expression-observation-adapter/1.0",
+    "parametersReferenceExactFixtureBytes": true,
+    "productMutationAllowed": false
+  },
+  "fixtureTopLevelOrder": [
+    "fixtureVersion",
+    "generatorProfile",
+    "executionClass",
+    "baseline",
+    "scenario",
+    "observationAdapter",
+    "targetContract"
+  ],
+  "capacityScenarioOrder": [
+    "mode",
+    "scenarioId",
+    "operationId",
+    "entrypoint",
+    "guardContractId",
+    "limitId",
+    "observedValue",
+    "valueEncoding",
+    "comparator",
+    "variant",
+    "contractStage",
+    "publicRenderStage",
+    "reservationPoint",
+    "zeroBoundary",
+    "faultSchedule"
+  ],
+  "namedScenarioOrder": [
+    "mode",
+    "scenarioId",
+    "operationId",
+    "entrypoint",
+    "faultSchedule"
+  ],
+  "forbiddenFixtureMembers": [
+    "expectedTerminal",
+    "expectedAssertions",
+    "plannedAssertions",
+    "plannedOracleId",
+    "requirementIds",
+    "resolvedCode",
+    "resolvedKind",
+    "latest",
+    "default",
+    "script"
+  ],
+  "evidenceBoundary": {
+    "fixtureGenerationMayProve": "deterministic closed fixture bytes, exact scalar-or-token preservation, and one-axis target-input isolation",
+    "fixtureGenerationCannotProve": "product parser or canonicalizer behavior, semantic or Expression evaluation, Design save, RenderInput admission, command terminal, transaction behavior, capacity enforcement, record issuance, or execution-class readiness"
+  }
+}

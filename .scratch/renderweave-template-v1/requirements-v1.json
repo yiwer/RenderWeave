@@ -1,0 +1,240 @@
+{
+  "artifactVersion": "renderweave-template-v1-requirements/1.0",
+  "status": "requirements-frozen-spec-registry-issued-capacity-mapping-complete-other-case-mapping-pending",
+  "authority": "Ticket19 planning evidence; this registry issues stable requirement identities but does not claim implementation acceptance or READY",
+  "identityModel": {
+    "pattern": "RW-T<ticket>-S<section>-<three-digit-local-ordinal>",
+    "meaning": "one source-bound normative atomic clause",
+    "sourceLocator": "source path, current line, and clause ordinal are mutable locator metadata and never replace requirementId",
+    "summary": "a concise non-identity description; identical summaries may occur when distinct Answer authorities independently state the same clause",
+    "reuseWithChangedMeaning": false,
+    "deleteIssuedIdentity": false,
+    "replacementField": "supersededBy"
+  },
+  "authorityRules": {
+    "included": [
+      "Tickets04-18 ## Answer normative clauses",
+      "Ticket19 ## Decisions so far normative clauses",
+      "normative prohibitions and explicit v1 out-of-scope clauses"
+    ],
+    "excluded": [
+      "Question",
+      "ticket metadata",
+      "Tickets04-18 Inherited constraints repetitions"
+    ],
+    "trackingRequirement": {
+      "requirementId": "RW-T19-S00-001",
+      "meaning": "track inherited Ticket04 through Ticket18 authority without reissuing those semantic requirements"
+    },
+    "atomicityRule": "Split a source clause whenever its assertions can fail independently, belong to different contract stages, or have independently observable terminal behavior.",
+    "duplicateRule": "Duplicate requirementId is forbidden. A repeated summary across different authoritative Answer clauses remains two source-bound requirements; summary text is not identity."
+  },
+  "tsvContract": {
+    "mediaType": "text/tab-separated-values; charset=utf-8",
+    "encoding": "UTF-8 without BOM",
+    "lineEnding": "LF",
+    "header": [
+      "requirement_id",
+      "source_line",
+      "clause_ordinal_on_line",
+      "family",
+      "normative_summary"
+    ],
+    "familyEnum": [
+      "WIRE_CANONICAL_DIGEST",
+      "DESIGN_INPUT_EXPRESSION",
+      "CLOSURE_REPEAT_COMPOSITION_EVALUATOR",
+      "ASSET_CAPABILITY_CONCURRENCY",
+      "LAYOUT_SHAPING",
+      "RENDERER_OUTPUT",
+      "SECURITY_FAULT",
+      "EDITOR_AUTOMATED"
+    ],
+    "familySemantics": "routing metadata only; family never selects evidence grade, executor, target, or whether a requirement belongs to automated versus J1 acceptance"
+  },
+  "tickets": [
+    {
+      "ticket": 4,
+      "sourcePath": "issues/04-mutable-template-lifecycle.md",
+      "authorityHeading": "## Answer",
+      "registryPath": "requirements/04.tsv",
+      "requirementCount": 92,
+      "sha256": "4aa1a81ca82cc7b6691f9331c2101cf2344e32e13053310c9651c0288ae2b63d"
+    },
+    {
+      "ticket": 5,
+      "sourcePath": "issues/05-asset-management-domain.md",
+      "authorityHeading": "## Answer",
+      "registryPath": "requirements/05.tsv",
+      "requirementCount": 147,
+      "sha256": "4b832c73259be0fc9547ada77767959495d8da3f896d0f2d2d1fa9b3d6b08a0c"
+    },
+    {
+      "ticket": 6,
+      "sourcePath": "issues/06-render-input-and-scope.md",
+      "authorityHeading": "## Answer",
+      "registryPath": "requirements/06.tsv",
+      "requirementCount": 111,
+      "sha256": "cd56337bc874b277768480ce0b900dd0c49e8d847516f557e704f5643aec8fad"
+    },
+    {
+      "ticket": 7,
+      "sourcePath": "issues/07-value-binding-expression-model.md",
+      "authorityHeading": "## Answer",
+      "registryPath": "requirements/07.tsv",
+      "requirementCount": 206,
+      "sha256": "8a9adf0a73e1a264d51f87a99ff4f460fa74d17b47956eb4643a155dd0a08c45"
+    },
+    {
+      "ticket": 8,
+      "sourcePath": "issues/08-designdsl-envelope-and-evolution.md",
+      "authorityHeading": "## Answer",
+      "registryPath": "requirements/08.tsv",
+      "requirementCount": 167,
+      "sha256": "000ebf81482f36e7a2e8bfc8e13e8fb079fb0fdead06979bae63dea6efb93438"
+    },
+    {
+      "ticket": 9,
+      "sourcePath": "issues/09-node-property-slot-model.md",
+      "authorityHeading": "## Answer",
+      "registryPath": "requirements/09.tsv",
+      "requirementCount": 258,
+      "sha256": "c4404f1d75e692cc1285f3a984ce339def394e176d58baed926a002da966ae4d"
+    },
+    {
+      "ticket": 10,
+      "sourcePath": "issues/10-geometry-and-layout.md",
+      "authorityHeading": "## Answer",
+      "registryPath": "requirements/10.tsv",
+      "requirementCount": 228,
+      "sha256": "6b736f093afa5e1a27a7d825b568107e1c790a28f3dd17abdd85f74193564d40"
+    },
+    {
+      "ticket": 11,
+      "sourcePath": "issues/11-repeat-and-conditional-structure.md",
+      "authorityHeading": "## Answer",
+      "registryPath": "requirements/11.tsv",
+      "requirementCount": 176,
+      "sha256": "45e703e4d3300ddc84dc1c688bb2c3a529139a6e0b1372c891a4fd62b3aab551"
+    },
+    {
+      "ticket": 12,
+      "sourcePath": "issues/12-nested-template-composition.md",
+      "authorityHeading": "## Answer",
+      "registryPath": "requirements/12.tsv",
+      "requirementCount": 141,
+      "sha256": "db0e9c1b50c7662b73420c921c5b80033a70b309ce10f0007fa6c5c455f717ba"
+    },
+    {
+      "ticket": 13,
+      "sourcePath": "issues/13-asset-reference-and-resolution.md",
+      "authorityHeading": "## Answer",
+      "registryPath": "requirements/13.tsv",
+      "requirementCount": 149,
+      "sha256": "333de0b23c827f05d520daec3bcdebadb2cba5c2df9e4ae89bdc97b893f9f326"
+    },
+    {
+      "ticket": 14,
+      "sourcePath": "issues/14-evaluation-capabilities.md",
+      "authorityHeading": "## Answer",
+      "registryPath": "requirements/14.tsv",
+      "requirementCount": 135,
+      "sha256": "e31bee48ff58ad373aed4c138682261212a17e06612983311ee7e43ca5849aed"
+    },
+    {
+      "ticket": 15,
+      "sourcePath": "issues/15-evaluator-and-render-document.md",
+      "authorityHeading": "## Answer",
+      "registryPath": "requirements/15.tsv",
+      "requirementCount": 195,
+      "sha256": "064d2bd44656a78aaeeb3bdf3b48f406535873d06b66ce0e4f5f6e31385e1e69"
+    },
+    {
+      "ticket": 16,
+      "sourcePath": "issues/16-renderer-and-image-output.md",
+      "authorityHeading": "## Answer",
+      "registryPath": "requirements/16.tsv",
+      "requirementCount": 355,
+      "sha256": "a4ca0621810fd528a14e32b3d6d20a27011e84007746061b7cab36292a3180f8"
+    },
+    {
+      "ticket": 17,
+      "sourcePath": "issues/17-authoring-workflow-prototype.md",
+      "authorityHeading": "## Answer",
+      "registryPath": "requirements/17.tsv",
+      "requirementCount": 88,
+      "sha256": "a700773deb581db6cfc5dcd4da9559f94bd2fa6b614b17b51024231686b9c3f9"
+    },
+    {
+      "ticket": 18,
+      "sourcePath": "issues/18-editor-preview-and-recovery.md",
+      "authorityHeading": "## Answer",
+      "registryPath": "requirements/18.tsv",
+      "requirementCount": 224,
+      "sha256": "421a37a45529e3cb614de8eb504c9e9c4b760ff8d1837e94692dada7f2c012c8"
+    },
+    {
+      "ticket": 19,
+      "sourcePath": "issues/19-security-capacity-acceptance.md",
+      "authorityHeading": "## Decisions so far",
+      "registryPath": "requirements/19.tsv",
+      "requirementCount": 979,
+      "sha256": "83777a12e4939a65aacaacb0600bced7f8e474ba18a670c79022c5ee85811f30"
+    }
+  ],
+  "counts": {
+    "ticketFiles": 16,
+    "requirements": 3651,
+    "semanticAuthorityRequirements": 3650,
+    "trackingRequirements": 1,
+    "byFamily": {
+      "WIRE_CANONICAL_DIGEST": 583,
+      "DESIGN_INPUT_EXPRESSION": 341,
+      "CLOSURE_REPEAT_COMPOSITION_EVALUATOR": 215,
+      "ASSET_CAPABILITY_CONCURRENCY": 326,
+      "LAYOUT_SHAPING": 259,
+      "RENDERER_OUTPUT": 514,
+      "SECURITY_FAULT": 1003,
+      "EDITOR_AUTOMATED": 410
+    }
+  },
+  "validation": {
+    "status": "planning-validated",
+    "checks": [
+      "exact file set 04.tsv through 19.tsv",
+      "UTF-8 without BOM and LF-only line endings",
+      "exact five-column header and row shape",
+      "globally unique requirementId",
+      "monotonic and contiguous section-local requirement ordinals",
+      "contiguous clause ordinals for each source line",
+      "closed family enum",
+      "current source line belongs to the encoded authority section",
+      "every authority subsection has at least one requirement",
+      "T12-T18 have no S00 and T19 has exactly RW-T19-S00-001"
+    ],
+    "exactRepeatedSummaryGroups": 1,
+    "exactRepeatedSummaryRequirementIds": [
+      "RW-T08-S3-015",
+      "RW-T09-S1-005"
+    ]
+  },
+  "acceptanceMapping": {
+    "manifest": "acceptance-manifest-v1.json",
+    "capacityCoverage": "conformance-capacity-coverage-v1.json",
+    "status": "spec-registry-46-case-and-oracle-records-issued-capacity-and-other-class-records-pending",
+    "requiredRules": [
+      "every active requirementId has at least one active requirement-to-case-to-oracle-assertion coverage path",
+      "every active case has at least one requirement coverage edge and at least one referenced assertion",
+      "every expected terminal has a corresponding terminal assertion",
+      "every active oracle is referenced by at least one active case",
+      "duplicate identifiers are rejected",
+      "duplicate active case signatures and duplicate active oracle assertion signatures are rejected",
+      "orphan requirements, orphan cases, orphan oracles, and oracle-free cases are rejected after every supersession",
+      "executor, target, and implementation revision multiply runId evidence and never create new case semantics"
+    ],
+    "issuedSpecRegistryCaseCount": 46,
+    "issuedSpecRegistryOracleCount": 46,
+    "automatedCaseCount": null,
+    "j1CountedInAutomatedCorpus": false
+  }
+}

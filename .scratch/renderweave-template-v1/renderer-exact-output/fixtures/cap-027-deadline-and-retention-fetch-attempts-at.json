@@ -1,0 +1,47 @@
+{
+  "fixtureVersion": "renderweave-renderer-exact-output-fixture/1.0",
+  "generatorProfile": "renderweave-renderer-exact-output-generator/1.0",
+  "executionClass": "EXEC::RENDERER_EXACT_OUTPUT::1.0",
+  "baseline": {
+    "baselineId": "baseline.renderer-exact-output.minimal-v1",
+    "path": "renderer-exact-output/baseline-v1.json",
+    "sha256": "sha256:ece9f8a4d5befe4bcc0bbe6e9719e4b9b0c51462c7b6348991e237993bff69db",
+    "byteLength": 1289
+  },
+  "scenario": {
+    "mode": "CAPACITY_BOUNDARY",
+    "scenarioId": "CAP::deadlineAndRetention.fetchAttempts::at",
+    "operationId": "main",
+    "entrypoint": "RENDERER_EXACT_OUTPUT_CAPACITY_GUARD",
+    "guardContractId": "renderweave-renderer-exact-output-capacity-guard/1.0",
+    "limitId": "deadlineAndRetention.fetchAttempts",
+    "observedValue": "2",
+    "valueEncoding": "CANONICAL_INTEGER",
+    "comparator": "EXACT",
+    "variant": "at",
+    "contractStage": "RESOURCE_PREPARATION",
+    "publicRenderStage": "ENGINE",
+    "reservationPoint": "before starting an additional fetch attempt",
+    "zeroBoundary": "ZERO_OUTPUT",
+    "faultSchedule": {
+      "kind": "NONE"
+    }
+  },
+  "observationAdapter": {
+    "adapterId": "renderweave-renderer-exact-output-observation-adapter/1.0",
+    "path": "renderer-exact-output/observation-adapter-v1.json",
+    "sha256": "sha256:13e18a0222deb2d0e91cc5ab5d8a711e25823be1d1b20cc68787de841a006adc"
+  },
+  "targetContract": {
+    "exactProductionGuardRequired": true,
+    "duplicateGuardImplementationForbidden": true,
+    "productApiSurfaceCreated": false,
+    "productCommandConstructedByThisProbe": false,
+    "renderDocumentParsedByThisProbe": false,
+    "resourceFetchOrDecodeExecutedByThisProbe": false,
+    "layoutOrShapingExecutedByThisProbe": false,
+    "rasterOrEncodingExecutedByThisProbe": false,
+    "rendererOrOutputExecutedByThisProbe": false,
+    "exactRendererOutputProvenByThisProbe": false
+  }
+}

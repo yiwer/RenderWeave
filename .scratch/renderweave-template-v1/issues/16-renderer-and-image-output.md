@@ -73,8 +73,8 @@ RenderEngine 如何消费 RenderDocument，并在内部完成 layout、资源获
 ### 3. Deadline、准入、幂等重发与取消
 
 - Engine channel 必须加密并认证 workload identity；具体 mTLS/service-mesh 机制属于部署。认证失败在解析 JSON 前拒绝，Command 内不携带用户 credential、bearer token 或权限声明。
-- 同一 `requestId` 的 Command、cancel 与重发必须路由到同一线性化 registry shard。第一个合法 Command 在容量判断前建立 `{requestId, rendererCommandDigest, deadlineAt}` reservation；同 ID、同 canonical digest 的请求 join/replay 同一个 inflight 或已 seal 的 terminal result，同 ID、不同 digest 或不同 deadline 返回 `RENDER_REQUEST_CONFLICT`。
-- Engine 使用有界 FIFO admission queue。active registry lookup 先于 queue admission；queue wait 计入 deadline且可取消。队列满返回非 terminal `RENDER_ENGINE_BUSY`，reservation 保留到原 deadline，同 digest 可重试；只有实际进入队列才算 accepted execution。并发 slot、queue length 与等待上限由票据 19 冻结。
+- 同一 `requestId` 的 Command、cancel 与重发必须路由到同一线性化 registry shard。第一个合法 Command 在容量判断前建立 `{requestId, rendererCommandDigest, deadlineAt}` registry reservation；它只建立join/conflict identity，不代表accepted execution。同 ID、同 canonical digest 的请求 join/replay 同一个inflight或已seal的terminal result，同 ID、不同digest或不同deadline返回`RENDER_REQUEST_CONFLICT`。
+- Engine 使用有界 FIFO admission queue。active registry lookup先于queue admission；只有原子取得一个FIFO queue position才线性化为accepted execution。无法取得position返回非terminal `RENDER_ENGINE_BUSY`，registry reservation保留到原deadline且同digest可重试；一旦accepted，queue wait计入deadline、可取消且最多5秒，超时固定返回terminal `RENDER_DEADLINE_EXCEEDED`，不得再返回BUSY。并发slot、queue length与等待上限由票据19冻结。
 - `deadlineAt` 对 queue、resource、layout、raster、encode、trace 与 seal 全过程生效。Engine 入站时只把该绝对时刻换算一次为 monotonic remaining time；exact resend不能重置或延长。输出必须在 deadline 前 seal；已 seal 响应的网络传输可以越过 deadline，但 deadline 后不再开始 join/replay。
 - cancel 是 authenticated internal control，wire 精确为：
 
@@ -91,7 +91,7 @@ RenderEngine 如何消费 RenderDocument，并在内部完成 layout、资源获
 - cancel 可先于 Command 到达并建立保留到 deadline 的 tombstone；同 digest 重复取消幂等，不同 digest 冲突。取消在原子 output seal 前线性化成功时返回 `RENDER_CANCELLED` 且零输出；seal 后到达不改变成功。HTTP disconnect 只表示调用方停止等待，不是可靠 cancel。
 - 固定 cooperative checkpoint 至少覆盖 queue、每次 fetch/retry、decode、font parse、layout阶段、每次 Text shrink iteration、paint chunk、encode chunk 与 seal。不可中断底层调用完成后的结果必须丢弃，slot 直到计算真正停止才释放；各阶段最长 checkpoint latency 与总 deadline 由票据 19 冻结。
 - registry/shard 状态丢失时，同 requestId 返回 `RENDER_REQUEST_STATE_LOST`，绝不猜测或重新执行；调用方只能以新 public render operation 完整重新 Evaluation。public `renderOperationId` 与 Engine `requestId` 分离，不能充当 capability key 或 replay token。
-- request registry、cancel tombstone、RenderDocument、lease、临时图片与 trace 都按请求隔离并采用内存或加密暂存，只保留到 deadline 以支持 join/replay；不进入普通日志、dump、backup、审计或历史。清理失败只触发运维告警，不延长公共可见生命周期。
+- request registry、cancel tombstone、RenderDocument、lease、临时图片与trace都按请求隔离并采用内存或加密暂存，不进入普通日志、dump、backup、审计或历史。未seal的RenderDocument、lease、resource buffer、raw trace/sidecar与临时输出在terminal/cancel后立即清理且最迟不超过deadline；只有最小terminal registry与已授权、已seal的完整响应或安全terminal problem可保留到`max(sealedAt, deadlineAt) + 5 min`用于exact replay，访问、retry或cancel均不续期。pre-command cancel tombstone独立固定保留60秒；清理失败只触发运维告警，不延长公共可见生命周期。
 
 ### 4. 固定执行顺序、资源重试与原子 seal
 
@@ -130,7 +130,7 @@ heightPx = ROUND_HALF_UP((heightPt + topBleedPt  + bottomBleedPt) × dpi / 72)
 
 ### 8. Raster、alpha、sampling、QR 与 Barcode
 
-- 权威Renderer只使用CPU raster；不允许GPU或环境相关hinting/LCD subpixel。文字与vector使用Renderer Profile固定的grayscale antialias、coverage、stroke、clip、blend和integer rounding。任一OS/CPU/SIMD target只有独立通过exact corpus后才能READY。
+- 权威Renderer只使用CPU raster；不允许GPU、LCD subpixel、dither、hinting、embedded bitmap、autohint或runtime CPU/SIMD dispatch。文字固定grayscale antialias且vector固定AA；Skia、FreeType、compiler、build arguments与唯一x86-64-v2执行路径必须由机器manifest钉死。coverage mask、stroke/clip边缘与sampling tie由该exact build和golden corpus共同定义，不能把Skia API名称或环境默认当成exact语义。任一OS/CPU/SIMD target只有独立通过exact corpus后才能READY。
 - decoded straight RGBA8按`ROUND_HALF_UP(channel × alpha / 255)`转成premultiplied sRGB8，`alpha=0`时RGB强制为0；opacity、coverage与Porter-Duff source-over使用Profile固定8-bit premultiplied运算和顺序，不在线性光空间混合。PNG编码前按Profile固定规则unpremultiply，完全透明像素RGB仍为0。
 - Image在orientation与sRGB归一化后采样。device pixel centers固定在half-integer；`NEAREST`使用Profile固定最近邻及tie规则，`LINEAR`使用premultiplied RGBA8 bilinear；source边缘clamp，不使用透明延伸、mipmap或更高阶filter。CONTAIN bars保持透明，JPEG matte只在最终编码前应用。
 - QR/Barcode在完整祖先、Node及compositionViewport world transform累计后，只允许translation、正uniform scale与任意rotation；reflection、skew及non-uniform scale返回`TRANSFORM_UNSUPPORTED`。最终物理box和DPI确定device pitch后，包含quiet zone的local module grid取能放入box的最大整数module pitch并居中；pitch小于1px返回`MODULE_TOO_SMALL`。先以nearest绘制local integer grid，再按固定nearest规则旋转，不反馈layout。
@@ -139,8 +139,8 @@ heightPx = ROUND_HALF_UP((heightPt + topBleedPt  + bottomBleedPt) × dpi / 72)
 
 ### 9. PNG/JPEG Output Profile 与字节确定性
 
-- PNG输出固定RGBA8、non-interlaced、sRGB声明和`pHYs`；pixels-per-meter为`ROUND_HALF_UP(dpi × 5000 / 127)`。chunk集合/顺序、filter选择、compression/zlib参数、CRC与encoder实现全部由 `renderweave-output-png/1.0` 的机器manifest和golden corpus冻结，不能依赖库默认值或使用旧引擎的ceil行为。
-- JPEG输出固定RGB8、baseline、non-progressive、4:4:4，quality使用有效Command整数；JFIF 1.02写入精确integer DPI，并携带Output Profile固定的canonical sRGB ICC payload。marker/table顺序、quantization、Huffman/entropy行为及encoder实现由 `renderweave-output-jpeg/1.0` 的机器manifest和golden corpus冻结。
+- PNG输出固定signature后依次为`IHDR → sRGB(intent=0) → pHYs → one-or-more IDAT → IEND`，不得出现其他chunk、空IDAT或尾随bytes；IHDR精确为RGBA8/color type 6、compression/filter method 0、non-interlaced，pixels-per-meter为`ROUND_HALF_UP(dpi × 5000 / 127)`。每scanline固定filter byte 0；唯一zlib stream固定header`78 01`、无dictionary，将未压缩输入依次切为`min(65,535, remaining)`的stored DEFLATE block，因此每个非末block恰好65,535 bytes且末block为1..65,535 bytes；只有末block置BFINAL且padding bits为0，LEN/NLEN按little-endian互补。Adler-32与PNG CRC按标准算法。完整zlib stream同样依次切为`min(1,048,576, remaining)`的IDAT payload，因此每个非末IDAT恰好1,048,576 bytes、末IDAT为1..1,048,576 bytes。该自描述算法和golden共同定义`renderweave-output-png/1.0`，不依赖libpng/zlib默认或版本。
+- JPEG输出固定white-matte后的RGB8输入、YCbCr、baseline SOF0、non-progressive单scan、4:4:4、non-arithmetic；quality使用有效Command整数。pinned static libjpeg-turbo build必须关闭SIMD并使用`JDCT_ISLOW`；关闭optimized Huffman、restart、smoothing与Adobe APP14，使用固定Annex K标准DC/AC Huffman tables。不得把`jpeg_set_defaults`或`jpeg_set_quality`helper当成合同；机器manifest保存两张64项基础quant table，并固定`scale = q < 50 ? floor(5000/q) : 200 - 2q`、`entry = clamp(floor((base × scale + 50)/100), 1, 255)`。marker顺序精确为`SOI → APP0 JFIF 1.02(unit=1, integer DPI, zero thumbnail) → APP2 ICC_PROFILE → DQT0/DQT1 → SOF0 → DHT DC0/AC0/DC1/AC1 → SOS → entropy bytes → EOI`；canonical sRGB ICC使用机器manifest固定的完整bytes、length与SHA-256。exact libjpeg-turbo source/build与golden共同定义最终entropy bytes。
 - 两种格式都不得写入time、software、EXIF、XMP、随机标识或来源metadata。相同静态Node与exact资源bytes、Renderer/Layout/Output Profile、DPI及JPEG quality必须产生byte-identical encoded image；requestId、deadline、lease URL/expiry、retry/cache路径和trace开关不得改变图片bytes。
 - layout中间结果按Layout Profile tolerance验收；最终pixels必须exact，最终encoded image必须byte-exact。任何可观察pixel变化要求新Renderer Profile；只有pixel不变而编码bytes/metadata变化时要求新Output Profile；layout/shaping/break变化要求新Layout Profile，并在pixels也变化时同步新Renderer compatibility组合。
 
@@ -150,7 +150,7 @@ heightPx = ROUND_HALF_UP((heightPt + topBleedPt  + bottomBleedPt) × dpi / 72)
 - 未请求trace的普通成功以raw `image/png`或`image/jpeg`响应，并固定携带`Content-Type`、`Content-Length`、标准`Content-Digest: sha-256=:<base64-sha256>:`以及`RenderWeave-Result-Version/Request-Id/Renderer-Profile/DSL-Version/Layout-Profile/Output-Profile/Format/Width-Px/Height-Px/DPI`；JPEG再携带`RenderWeave-Quality`。Rendering在向公共调用者释放前核对headers、Command、body length与digest。
 - `diagnostics.layoutTrace`默认`false`，只有Rendering先独立授权才可设为`true`。成功trace为closed `renderweave-layout-trace/1.0`，按RenderDocument preorder投影Canvas、synthetic occurrence、`visible:false`与`opacity:0`项；每项只可含opaque occurrenceId、LayoutBox/ContentBox、world transform、PaintBounds/EffectivePaintBounds、clip kind/AABB、适用时paintIndex与overflow flags。诊断binary64统一量化六位`HALF_EVEN`，`-0`写0；量化结果永不反馈布局或绘制。
 - trace成功响应使用`multipart/related`，固定两part且无额外part：第一part是media type `application/vnd.renderweave.render-result-with-trace+json;version=1.0`的closed `{result,layoutTrace}` JSON，第二part是raw image。两part各有Content-Digest；Rendering必须核验part数量、顺序、media type、requestId、closed JSON、length与hash后才原子释放。trace超限返回`RENDER_LAYOUT_TRACE_LIMIT_EXCEEDED`且零图片，不截断；调用方可另发不带trace的新请求。
-- Engine只把opaque trace返回Rendering；Rendering在seal后依据请求sidecar和权限投影安全定位，删除未授权字段而不是输出placeholder。sidecar、trace、multipart临时内容与定位映射随deadline清理。
+- Engine只把opaque trace返回Rendering；Rendering在seal前依据请求sidecar和权限投影安全定位，删除未授权字段而不是输出placeholder，并把最终获准投影原子seal进响应。raw sidecar、未seal trace、multipart临时内容与定位映射在terminal/cancel后立即清理且最迟随deadline清理；已授权并seal进完整响应的安全trace与multipart bytes可随该sealed response保留到票据19规定的五分钟exact-replay截止点，不再依赖raw sidecar重新投影。
 - TCP/HTTP chunk不是产品上的partial output。接收方只有在完整length、digest、result及body全部核验后才可展示或保存；截断时删除临时内容并按相同Command exact replay。v1不自动持久化成功bytes，是否向已授权公共响应stream由Rendering决定。
 
 ### 11. Problem、阶段、重试分类与 HTTP 映射
@@ -158,14 +158,14 @@ heightPx = ROUND_HALF_UP((heightPt + topBleedPt  + bottomBleedPt) × dpi / 72)
 - Engine terminal failure只返回一个closed `renderweave-render-problem/1.0`：`{contractVersion,requestId,code,engineStage,occurrenceId?,resourceId?,parameters}`；不适用的optional member必须省略而非`null`。每个code的`parameters`是closed、低基数、安全对象，禁止自由文本、path、业务文本、URL/token/hash、raw cause或stack。是否允许重试由Rendering拥有的code catalog决定，Engine不返回布尔retry hint。
 - problem HTTP entity media type固定为`application/vnd.renderweave.render-problem+json;version=1.0`；HTTP status只作transport映射，客户端以stable `code`判断语义。
 - `engineStage`只允许：`COMMAND_ADMISSION | REQUEST_CONTROL | DOCUMENT_ADMISSION | OUTPUT_PREFLIGHT | RESOURCE_PREPARATION | LAYOUT | SHAPING | RASTERIZATION | ENCODING | TRACE_PROJECTION | OUTPUT_SEAL`。Command/document admission可按canonical字段有界收集；进入resource之后严格返回第一个错误，顺序为manifest、tree preorder、property declaration与Run index。
-- 稳定控制code至少为`RENDER_ENGINE_BUSY/RENDER_REQUEST_CONFLICT/RENDER_REQUEST_STATE_LOST/RENDER_CANCELLED/RENDER_DEADLINE_EXCEEDED`；资源code沿用`RESOURCE_LEASE_EXPIRED/FETCH_FAILED/LENGTH_MISMATCH/HASH_MISMATCH/MEDIA_MISMATCH/DECODE_FAILED/FONT_GLYPH_MISSING`并增加`FONT_DECORATION_METRICS_MISSING`；布局/输出code至少为`LAYOUT_CONSTRAINT_INVALID/LAYOUT_CYCLE/LAYOUT_NUMERIC_ERROR/LAYOUT_BUDGET_EXCEEDED/TEXT_OVERFLOW/CODE_CONTENT_TOO_LARGE/MODULE_TOO_SMALL/TRANSFORM_UNSUPPORTED/RASTER_BUDGET_EXCEEDED/OUTPUT_BUDGET_EXCEEDED/RENDER_LAYOUT_TRACE_LIMIT_EXCEEDED`。
+- 稳定控制code至少为`RENDER_ENGINE_BUSY/RENDER_REQUEST_CONFLICT/RENDER_REQUEST_STATE_LOST/RENDER_CANCELLED/RENDER_DEADLINE_EXCEEDED`；资源code沿用`RESOURCE_LEASE_EXPIRED/FETCH_FAILED/LENGTH_MISMATCH/HASH_MISMATCH/MEDIA_MISMATCH/DECODE_FAILED/FONT_GLYPH_MISSING`并增加`FONT_DECORATION_METRICS_MISSING/RESOURCE_BUDGET_EXCEEDED`；布局/输出code至少为`LAYOUT_CONSTRAINT_INVALID/LAYOUT_CYCLE/LAYOUT_NUMERIC_ERROR/LAYOUT_BUDGET_EXCEEDED/TEXT_OVERFLOW/CODE_CONTENT_TOO_LARGE/MODULE_TOO_SMALL/TRANSFORM_UNSUPPORTED/RASTER_BUDGET_EXCEEDED/OUTPUT_BUDGET_EXCEEDED/RENDER_LAYOUT_TRACE_LIMIT_EXCEEDED`。capacity problem的closed parameters只携带机器oracle定义的`limitId`，不返回actual count或输入值。
 - malformed sealed document、digest/manifest/descriptor/Profile/encoder/seal不变量违约使用更细内部code和脱敏告警，但公共Rendering一律折叠为`RENDER_INTERNAL_ERROR`。普通legal-unrenderable错误保留具体code，不因同为Engine stage而折叠。
 - HTTP status只映射transport类别，不改变code语义：成功200、malformed Command 400、request conflict/cancel 409、合法但不可渲染422、upstream resource 502、busy 503、deadline 504、internal 500。Rendering只对`RENDER_ENGINE_BUSY`或unknown transport outcome重发同Command；timeout/cancel/4xx/expiry/integrity/decode/layout/raster/encode均不重试，资源内部5xx重试仍由Engine负责。
 - 普通overflow、signed overlap、low contrast、1–3px module或其他仍合法结果不形成warning；获准trace可给固定flag。无warning数组、自动修复或“成功但有错误”状态。
 
 ### 12. Profile authority、READY 与 conformance
 
-- `renderweave-renderer/1.0`由机器可读算法/dependency/feature manifest、固定reference implementation commit与golden corpus共同定义；prose解释边界，不能替代可执行向量。Engine startup读取只读certified manifest，只有完整exact compatibility组合均受支持且当前平台通过证据时才进入READY；内部可暴露health/capability，公共调用方不可见也不可选。
+- `renderweave-renderer/1.0`由机器可读算法/dependency/feature manifest、固定reference implementation commit与golden corpus共同定义；prose解释边界，不能替代可执行向量。Raster manifest必须钉死Skia/FreeType/compiler/build hash及单一CPU路径；JPEG manifest必须钉死libjpeg-turbo source/build、quant/Huffman/ICC bytes；PNG算法虽不依赖codec默认仍必须以边界golden复核。Engine startup读取只读certified manifest，只有完整exact compatibility组合均受支持且当前平台通过证据时才进入READY；内部可暴露health/capability，公共调用方不可见也不可选。
 - Profile ownership固定为：layout、shaping、break变更发布Layout Profile；decoder、orientation、color、font parser、raster、AA、sampling与QR/Barcode算法变更发布Renderer Profile；仅encoded bitstream/metadata且pixels不变的变更发布Output Profile；wire变更发布对应contract version；可接纳Asset特性范围变更发布AssetAcceptanceProfile。不存在以engine build version、库patch或环境默认热修复旧Profile语义。
 - Renderer Profile包含的语义型per-request限制由票据19填入exact数值，部署只有能完整兑现这些上限才能READY，不能悄悄使用更低内存/CPU限制。部署级concurrency slot与queue容量可在接受执行前返回BUSY，但已接受请求只能依合同预算完成或返回合同错误。
 - READY证据必须覆盖strict wire/canonical/digest、Layout/shaping、exact pixels、exact PNG/JPEG bytes、QR/Barcode matrix与decode、malformed IMAGE/FONT及descriptor、SSRF/DNS/redirect/proxy/fetch fault、deadline/cancel/retry/registry/shard-loss和output/multipart校验；每个获准OS/CPU/SIMD组合独立重放。截图、单侧unit test、旧Haibo测试或仅说明“Skia默认”均不足以认证。

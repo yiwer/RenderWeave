@@ -1,0 +1,351 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:renderweave:conformance-case-record:1.0",
+  "title": "RenderWeave Conformance Case Record 1.0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "recordVersion",
+    "caseId",
+    "suite",
+    "executionClass",
+    "stimulus",
+    "expectedTerminals",
+    "coverage",
+    "supersedes"
+  ],
+  "properties": {
+    "recordVersion": {
+      "const": "renderweave-conformance-case-record/1.0"
+    },
+    "caseId": {
+      "$ref": "#/$defs/caseId"
+    },
+    "suite": {
+      "enum": [
+        "CAPACITY_BOUNDARY",
+        "CAPACITY_COMBINED",
+        "CONFORMANCE",
+        "SPEC_REGISTRY"
+      ]
+    },
+    "family": {
+      "$ref": "#/$defs/family"
+    },
+    "executionClass": {
+      "enum": [
+        "EXEC::SPEC_REGISTRY::1.0",
+        "EXEC::DOMAIN_SERVICES::1.0",
+        "EXEC::DESIGN_INPUT_EXPRESSION::1.0",
+        "EXEC::RENDERING_PIPELINE::1.0",
+        "EXEC::RENDERER_EXACT_OUTPUT::1.0",
+        "EXEC::EDITOR_AUTOMATED::1.0"
+      ]
+    },
+    "stimulus": {
+      "$ref": "#/$defs/stimulus"
+    },
+    "expectedTerminals": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/expectedTerminal"
+      }
+    },
+    "coverage": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/coverageEdge"
+      }
+    },
+    "supersedes": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/caseId"
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "caseId": {
+            "pattern": "^CONF::"
+          }
+        },
+        "required": [
+          "caseId"
+        ]
+      },
+      "then": {
+        "required": [
+          "family"
+        ]
+      },
+      "else": {
+        "not": {
+          "required": [
+            "family"
+          ]
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "relativePath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._/-]+$"
+    },
+    "family": {
+      "enum": [
+        "WIRE_CANONICAL_DIGEST",
+        "DESIGN_INPUT_EXPRESSION",
+        "CLOSURE_REPEAT_COMPOSITION_EVALUATOR",
+        "ASSET_CAPABILITY_CONCURRENCY",
+        "LAYOUT_SHAPING",
+        "RENDERER_OUTPUT",
+        "SECURITY_FAULT",
+        "EDITOR_AUTOMATED",
+        "SPEC_REGISTRY"
+      ]
+    },
+    "caseId": {
+      "type": "string",
+      "anyOf": [
+        {
+          "pattern": "^CAP::[A-Za-z][A-Za-z0-9]*(?:\\.[A-Za-z][A-Za-z0-9]*)+::(?:below|at|above)$"
+        },
+        {
+          "pattern": "^CAP::COMBINED::[0-9]{3}$"
+        },
+        {
+          "pattern": "^CONF::(?:WIRE_CANONICAL_DIGEST|DESIGN_INPUT_EXPRESSION|CLOSURE_REPEAT_COMPOSITION_EVALUATOR|ASSET_CAPABILITY_CONCURRENCY|LAYOUT_SHAPING|RENDERER_OUTPUT|SECURITY_FAULT|EDITOR_AUTOMATED|SPEC_REGISTRY)::[0-9]{6}$"
+        }
+      ]
+    },
+    "requirementId": {
+      "type": "string",
+      "pattern": "^RW-T(?:0[4-9]|1[0-9])-S(?:00|[1-9][0-9]*)-[0-9]{3}$"
+    },
+    "oracleId": {
+      "type": "string",
+      "pattern": "^ORC::(?:WIRE_CANONICAL_DIGEST|DESIGN_INPUT_EXPRESSION|CLOSURE_REPEAT_COMPOSITION_EVALUATOR|ASSET_CAPABILITY_CONCURRENCY|LAYOUT_SHAPING|RENDERER_OUTPUT|SECURITY_FAULT|EDITOR_AUTOMATED|CAPACITY|SPEC_REGISTRY)::[0-9]{6}$"
+    },
+    "input": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "artifactPath",
+            "mediaType",
+            "artifactSha256",
+            "identitySha256"
+          ],
+          "properties": {
+            "kind": {
+              "const": "ARTIFACT"
+            },
+            "artifactPath": {
+              "$ref": "#/$defs/relativePath"
+            },
+            "mediaType": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 127
+            },
+            "artifactSha256": {
+              "$ref": "#/$defs/sha256"
+            },
+            "identitySha256": {
+              "$ref": "#/$defs/sha256"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "generatorProfile",
+            "generatorManifestSha256",
+            "parameters",
+            "safeBaselineId",
+            "safeBaselineManifestSha256",
+            "identitySha256"
+          ],
+          "properties": {
+            "kind": {
+              "const": "GENERATED"
+            },
+            "generatorProfile": {
+              "type": "string",
+              "pattern": "^renderweave-[a-z0-9-]+/[0-9]+\\.[0-9]+$"
+            },
+            "generatorManifestSha256": {
+              "$ref": "#/$defs/sha256"
+            },
+            "parameters": {
+              "type": "object"
+            },
+            "safeBaselineId": {
+              "type": "string",
+              "pattern": "^[A-Za-z][A-Za-z0-9._-]{0,127}$"
+            },
+            "safeBaselineManifestSha256": {
+              "$ref": "#/$defs/sha256"
+            },
+            "identitySha256": {
+              "$ref": "#/$defs/sha256"
+            }
+          }
+        }
+      ]
+    },
+    "faultSchedule": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "identitySha256"
+          ],
+          "properties": {
+            "kind": {
+              "const": "NONE"
+            },
+            "identitySha256": {
+              "$ref": "#/$defs/sha256"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "artifactPath",
+            "artifactSha256",
+            "identitySha256"
+          ],
+          "properties": {
+            "kind": {
+              "const": "ARTIFACT"
+            },
+            "artifactPath": {
+              "$ref": "#/$defs/relativePath"
+            },
+            "artifactSha256": {
+              "$ref": "#/$defs/sha256"
+            },
+            "identitySha256": {
+              "$ref": "#/$defs/sha256"
+            }
+          }
+        }
+      ]
+    },
+    "stimulus": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "input",
+        "faultSchedule"
+      ],
+      "properties": {
+        "input": {
+          "$ref": "#/$defs/input"
+        },
+        "faultSchedule": {
+          "$ref": "#/$defs/faultSchedule"
+        }
+      }
+    },
+    "expectedTerminal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "operationId",
+        "outcome"
+      ],
+      "properties": {
+        "operationId": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9._-]{0,63}$"
+        },
+        "outcome": {
+          "enum": [
+            "SUCCESS",
+            "PROBLEM",
+            "NONTERMINAL_REJECTION"
+          ]
+        },
+        "code": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_]{0,127}$"
+        },
+        "stage": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_]{0,127}$"
+        },
+        "parameters": {
+          "type": "object"
+        }
+      }
+    },
+    "evidenceLink": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "oracleId",
+        "assertionIds"
+      ],
+      "properties": {
+        "oracleId": {
+          "$ref": "#/$defs/oracleId"
+        },
+        "assertionIds": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^A[0-9]{3}$"
+          }
+        }
+      }
+    },
+    "coverageEdge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "requirementId",
+        "evidence"
+      ],
+      "properties": {
+        "requirementId": {
+          "$ref": "#/$defs/requirementId"
+        },
+        "evidence": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/evidenceLink"
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "fixtureVersion": "renderweave-domain-services-fixture/1.0",
+  "generatorProfile": "renderweave-domain-services-generator/1.0",
+  "executionClass": "EXEC::DOMAIN_SERVICES::1.0",
+  "baseline": {
+    "baselineId": "baseline.domain-services.minimal-v1",
+    "path": "domain-services/baseline-v1.json",
+    "sha256": "sha256:be84f240724b5ea50ae8921b1ffc4daa318fce52189fd0f8b2669c5ec562cf16",
+    "byteLength": 814
+  },
+  "scenario": {
+    "mode": "CAPACITY_BOUNDARY",
+    "scenarioId": "CAP::assetsAndFetch.acceptedFontBytesPerContent::above",
+    "operationId": "main",
+    "entrypoint": "ASSET_CONTENT_ADMISSION_CAPACITY_GUARD",
+    "guardContractId": "renderweave-domain-asset-content-capacity-guard/1.0",
+    "limitId": "assetsAndFetch.acceptedFontBytesPerContent",
+    "observedValue": "33554433",
+    "valueEncoding": "CANONICAL_INTEGER",
+    "comparator": "MAX_INCLUSIVE",
+    "variant": "above",
+    "contractStage": "ASSET_CONTENT_ADMISSION",
+    "publicRenderStage": "ASSET_ADMISSION",
+    "reservationPoint": "before admitting the next authored or resolved Asset unit and before external fetch",
+    "zeroBoundary": "ZERO_DOCUMENT_OUTPUT",
+    "faultSchedule": {
+      "kind": "NONE"
+    }
+  },
+  "observationAdapter": {
+    "adapterId": "renderweave-domain-services-observation-adapter/1.0",
+    "path": "domain-services/observation-adapter-v1.json",
+    "sha256": "sha256:4bda561d8628461b783796e38acb9066e840c307479603e39afa6c241393ea06"
+  },
+  "targetContract": {
+    "exactProductionGuardRequired": true,
+    "duplicateGuardImplementationForbidden": true,
+    "productApiSurfaceCreated": false,
+    "databaseRequiredForThisProbe": false,
+    "mediaPayloadRequiredForThisProbe": false,
+    "fullUploadPathProvenByThisProbe": false
+  }
+}

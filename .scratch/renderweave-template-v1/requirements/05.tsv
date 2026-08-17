@@ -1,0 +1,148 @@
+requirement_id	source_line	clause_ordinal_on_line	family	normative_summary
+RW-T05-S1-001	20	1	ASSET_CAPABILITY_CONCURRENCY	v1 Asset Management 只管理 IMAGE 与 FONT。
+RW-T05-S1-002	20	2	WIRE_CANONICAL_DIGEST	assetId 由服务端生成，且为全局唯一 canonical lowercase UUID v4。
+RW-T05-S1-003	20	3	ASSET_CAPABILITY_CONCURRENCY	Asset 是 identity 稳定的 aggregate。
+RW-T05-S1-004	20	4	ASSET_CAPABILITY_CONCURRENCY	ownerScopeId、assetId、kind 创建后永久不变。
+RW-T05-S1-005	20	5	ASSET_CAPABILITY_CONCURRENCY	Asset lifecycle 精确为 ACTIVE↔DELETED。
+RW-T05-S1-006	20	6	ASSET_CAPABILITY_CONCURRENCY	Delete 是可恢复相同 identity 的 soft delete。
+RW-T05-S1-007	20	7	ASSET_CAPABILITY_CONCURRENCY	v1 永久保留 aggregate、全部 content versions 与 bytes。
+RW-T05-S1-008	20	8	SECURITY_FAULT	v1 不提供 physical purge。
+RW-T05-S1-009	20	9	SECURITY_FAULT	禁止 cross-scope transfer/share 与 identity reuse。
+RW-T05-S1-010	22	1	ASSET_CAPABILITY_CONCURRENCY	assetRevision 是 metadata/current/delete/restore 共用的单调 optimistic-concurrency token。
+RW-T05-S1-011	22	2	WIRE_CANONICAL_DIGEST	assetRevision 不形成可恢复的完整 aggregate history。
+RW-T05-S1-012	22	3	WIRE_CANONICAL_DIGEST	contentVersion 从 0 单调递增并仅标识 immutable AssetContentRevision。
+RW-T05-S1-013	22	4	WIRE_CANONICAL_DIGEST	每个 content version 保存 server SHA-256、canonical mediaType、byteLength、base source filename、kind-specific metadata、acceptance Profile、actor 与 time。
+RW-T05-S1-014	22	5	ASSET_CAPABILITY_CONCURRENCY	旧内容 restore 复用旧 Blob。
+RW-T05-S1-015	22	6	ASSET_CAPABILITY_CONCURRENCY	旧内容 restore 追加新 contentVersion。
+RW-T05-S1-016	22	7	ASSET_CAPABILITY_CONCURRENCY	旧内容 restore 将 current 推进到新 version。
+RW-T05-S1-017	22	8	ASSET_CAPABILITY_CONCURRENCY	Content restore 不回拨或修改旧 version。
+RW-T05-S1-018	24	1	WIRE_CANONICAL_DIGEST	displayName 是 required、mutable、non-unique user metadata。
+RW-T05-S1-019	24	2	WIRE_CANONICAL_DIGEST	tags 是 mutable string set user metadata。
+RW-T05-S1-020	24	3	WIRE_CANONICAL_DIGEST	displayName trim+NFC 后必须为 1–200 Unicode scalars。
+RW-T05-S1-021	24	4	WIRE_CANONICAL_DIGEST	tags 数量最多 20。
+RW-T05-S1-022	24	5	WIRE_CANONICAL_DIGEST	每个 tag trim+NFC 后必须为 1–64 Unicode scalars。
+RW-T05-S1-023	24	6	WIRE_CANONICAL_DIGEST	tags 按 Unicode case-fold 去重但保留 display spelling。
+RW-T05-S1-024	24	7	ASSET_CAPABILITY_CONCURRENCY	Tag update 整体替换并携带 expectedAssetRevision。
+RW-T05-S1-025	24	8	SECURITY_FAULT	v1 不建立 Tag aggregate、hierarchy 或 global rename。
+RW-T05-S1-026	24	9	WIRE_CANONICAL_DIGEST	sourceFileName 属于 content version 而非 aggregate metadata。
+RW-T05-S1-027	24	10	SECURITY_FAULT	sourceFileName 仅保留无 path/control 的 base name，且最多 255 Unicode scalars。
+RW-T05-S1-028	24	11	WIRE_CANONICAL_DIGEST	Asset detail 可投影 current content technical fields。
+RW-T05-S1-029	26	1	ASSET_CAPABILITY_CONCURRENCY	exact renderweave-asset-acceptance/1.0 是 Asset Management 自有稳定 acceptance profile，而非动态 Renderer capability query。
+RW-T05-S1-030	26	2	ASSET_CAPABILITY_CONCURRENCY	IMAGE 只接受 static PNG/JPEG/WebP。
+RW-T05-S1-031	26	3	SECURITY_FAULT	IMAGE encoded bytes 上限 64 MiB。
+RW-T05-S1-032	26	4	SECURITY_FAULT	IMAGE 任一边上限 20,000 px。
+RW-T05-S1-033	26	5	SECURITY_FAULT	IMAGE total pixels 上限 100,000,000。
+RW-T05-S1-034	26	6	RENDERER_OUTPUT	IMAGE color contract 固定为 SRGB_8BIT。
+RW-T05-S1-035	26	7	ASSET_CAPABILITY_CONCURRENCY	IMAGE 只接受 no-profile、standard sRGB 或 acceptance-profile canonical sRGB ICC。
+RW-T05-S1-036	26	8	SECURITY_FAULT	拒绝 conflicting/corrupt/other ICC、CMYK/YCCK、HDR 与 wide-gamut IMAGE。
+RW-T05-S1-037	26	9	ASSET_CAPABILITY_CONCURRENCY	PNG 只接受合法 1/2/4/8-bit grayscale/indexed/RGB/RGBA 组合及合法 tRNS。
+RW-T05-S1-038	26	10	SECURITY_FAULT	拒绝 16-bit PNG 与 APNG。
+RW-T05-S1-039	26	11	ASSET_CAPABILITY_CONCURRENCY	JPEG 只接受 8-bit baseline/progressive grayscale 或 YCbCr。
+RW-T05-S1-040	26	12	ASSET_CAPABILITY_CONCURRENCY	WebP 只接受 static lossy/lossless（可含 alpha）。
+RW-T05-S1-041	26	13	SECURITY_FAULT	EXIF orientation 必须唯一且无冲突。
+RW-T05-S1-042	26	14	RENDERER_OUTPUT	DPI/time/GPS/thumbnail metadata 不构成 Asset technical semantics。
+RW-T05-S1-043	28	1	SECURITY_FAULT	FONT encoded bytes 上限 32 MiB。
+RW-T05-S1-044	28	2	ASSET_CAPABILITY_CONCURRENCY	FONT 只接受 single-face、non-variable、monochrome-outline TTF/OTF。
+RW-T05-S1-045	28	3	ASSET_CAPABILITY_CONCURRENCY	FONT 允许 TrueType glyf 或 CFF 及 cmap/GDEF/GSUB/GPOS/kern。
+RW-T05-S1-046	28	4	SECURITY_FAULT	FONT 拒绝 collection、COLR/CPAL、CBDT/CBLC、sbix、SVG、bitmap strike、Graphite、AAT-only 与 malformed/contradictory tables。
+RW-T05-S1-047	28	5	SECURITY_FAULT	空 FONT 文件一律拒绝。
+RW-T05-S1-048	28	6	RENDERER_OUTPUT	提供 Render 的 Renderer Profile 必须证明为 acceptance profile compatible superset。
+RW-T05-S1-049	28	7	RENDERER_OUTPUT	不兼容 Renderer Profile 阻止该 deployment 提供 Render。
+RW-T05-S1-050	28	8	ASSET_CAPABILITY_CONCURRENCY	Renderer 不兼容不得反向改变既有 Asset validity。
+RW-T05-S1-051	28	9	SECURITY_FAULT	服务端必须自行计算 content hash 与 length。
+RW-T05-S1-052	28	10	SECURITY_FAULT	服务端必须检查真实 magic，并完整 decode image 或 parse font。
+RW-T05-S1-053	28	11	ASSET_CAPABILITY_CONCURRENCY	全部 admission checks 成功后才原子创建 visible ACTIVE Asset。
+RW-T05-S1-054	28	12	SECURITY_FAULT	Deployment 可增加 fail-closed security admission hook。
+RW-T05-S1-055	28	13	SECURITY_FAULT	v1 不标准化 malware、license 或 quarantine decision。
+RW-T05-S1-056	28	14	ASSET_CAPABILITY_CONCURRENCY	thumbnail/font specimen 是可丢弃且 metadata-stripped derived cache，不是 Asset/contentVersion/referenceable content。
+RW-T05-S1-057	30	1	ASSET_CAPABILITY_CONCURRENCY	v1 只接收 client-uploaded bytes。
+RW-T05-S1-058	30	2	SECURITY_FAULT	v1 不 fetch arbitrary URL。
+RW-T05-S1-059	30	3	SECURITY_FAULT	v1 不 unpack ZIP。
+RW-T05-S1-060	30	4	ASSET_CAPABILITY_CONCURRENCY	UI multi-select 等价多个独立 CreateAsset，并允许逐文件 partial success。
+RW-T05-S1-061	30	5	ASSET_CAPABILITY_CONCURRENCY	Upload staging 不是 product-visible Asset。
+RW-T05-S1-062	30	6	ASSET_CAPABILITY_CONCURRENCY	CreateAsset 必须携带 idempotency key。
+RW-T05-S1-063	30	7	ASSET_CAPABILITY_CONCURRENCY	Idempotency result 保留 24h，并绑定 ownerScope、actor 与 full request fingerprint。
+RW-T05-S1-064	30	8	ASSET_CAPABILITY_CONCURRENCY	同 key 同 input replay 原 result。
+RW-T05-S1-065	30	9	ASSET_CAPABILITY_CONCURRENCY	同 key 异 input 返回 conflict。
+RW-T05-S1-066	30	10	ASSET_CAPABILITY_CONCURRENCY	Idempotency record 过期后同 key 视为新 request。
+RW-T05-S1-067	30	11	ASSET_CAPABILITY_CONCURRENCY	主动 duplicate upload 总是创建新 assetId。
+RW-T05-S1-068	30	12	ASSET_CAPABILITY_CONCURRENCY	只有 idempotent replay 复用 Asset identity。
+RW-T05-S1-069	32	1	ASSET_CAPABILITY_CONCURRENCY	Blob 是 ownerScope-internal、按 SHA-256 content-addressed immutable bytes object。
+RW-T05-S1-070	32	2	ASSET_CAPABILITY_CONCURRENCY	同 scope 的多个 Asset/contentVersion 可复用 Blob。
+RW-T05-S1-071	32	3	SECURITY_FAULT	Blob 不得 cross-scope expose 或 global deduplicate。
+RW-T05-S1-072	32	4	ASSET_CAPABILITY_CONCURRENCY	Content replace 必须携带 expectedAssetRevision。
+RW-T05-S1-073	32	5	ASSET_CAPABILITY_CONCURRENCY	Replace 先完成 validation 与 secure staging，再原子 append contentVersion、switch current、increment assetRevision。
+RW-T05-S1-074	32	6	SECURITY_FAULT	Replace failure 不得 expose new version 或改变 current。
+RW-T05-S1-075	32	7	ASSET_CAPABILITY_CONCURRENCY	validated content 与 current 完全相同的 Replace 成功为 no-op。
+RW-T05-S1-076	32	8	ASSET_CAPABILITY_CONCURRENCY	same-content no-op 不增加 revision/event 或 Template STALE。
+RW-T05-S1-077	32	9	ASSET_CAPABILITY_CONCURRENCY	metadata normalized value 未变时 update 为 no-op。
+RW-T05-S1-078	34	1	WIRE_CANONICAL_DIGEST	DesignDSL AssetRef exact wire 是 closed {assetId} logical selector。
+RW-T05-S1-079	34	2	WIRE_CANONICAL_DIGEST	AssetRef 不存 kind/contentVersion/hash/filename/Profile。
+RW-T05-S1-080	34	3	DESIGN_INPUT_EXPRESSION	承载 AssetRef 的 DesignDSL property 声明 expected IMAGE/FONT kind。
+RW-T05-S1-081	34	4	EDITOR_AUTOMATED	Asset picker 只提供 ACTIVE Asset。
+RW-T05-S1-082	34	5	EDITOR_AUTOMATED	Import/edit 可保留 missing、DELETED 或 kind-mismatched AssetRef。
+RW-T05-S1-083	34	6	DESIGN_INPUT_EXPRESSION	上述 invalid AssetRef 可按 dependency two-phase confirmation 保存 INVALID。
+RW-T05-S1-084	36	1	ASSET_CAPABILITY_CONCURRENCY	Evaluator 在每个实际 Node-property consumer occurrence 独立读取该时刻 Asset current，禁止按 assetId request memoization。
+RW-T05-S1-085	36	2	ASSET_CAPABILITY_CONCURRENCY	同一 Evaluation 中同 assetId 的不同 occurrence 可解析为不同 contentVersion。
+RW-T05-S1-086	36	3	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	每次 successful resolve 产生 immutable ResolvedAsset 与一对一 RenderResource。
+RW-T05-S1-087	36	4	ASSET_CAPABILITY_CONCURRENCY	短期 renderRequestId/resourceId idempotency record 固定 exact selected content 与 Renderer-only lease。
+RW-T05-S1-088	36	5	ASSET_CAPABILITY_CONCURRENCY	后续 replace/delete 不撤销已提交 lease selection。
+RW-T05-S1-089	36	6	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	后续 occurrence 因 delete/unavailable 失败时不形成 complete RenderDocument。
+RW-T05-S1-090	36	7	RENDERER_OUTPUT	Engine late fetch/hash/decode failure 可有 transient internal document，但必须 zero RenderOutput。
+RW-T05-S1-091	36	8	SECURITY_FAULT	任何 Asset-resolution stage 都不得产生 partial public result。
+RW-T05-S1-092	38	1	SECURITY_FAULT	调用者获准 Render Template 后，内部能力解析 same-scope authored Asset，不逐 Asset 要求 caller asset.read。
+RW-T05-S1-093	38	2	SECURITY_FAULT	外部 PUBLIC override 中每个 AssetRef 在 RenderInput admission 要求 asset.read。
+RW-T05-S1-094	38	3	DESIGN_INPUT_EXPRESSION	Admitted external AssetRef 可跨 definition/fill 传递。
+RW-T05-S1-095	38	4	SECURITY_FAULT	direct listing/detail/version/draft-preview/download 均要求 asset.read。
+RW-T05-S1-096	38	5	ASSET_CAPABILITY_CONCURRENCY	TemplateReadiness 只检查 actor-independent existence、ACTIVE 与 expected kind。
+RW-T05-S1-097	38	6	ASSET_CAPABILITY_CONCURRENCY	current contentVersion change/delete/restore 通过 reliable replayable event 将反向索引 Template 置 STALE。
+RW-T05-S1-098	38	7	ASSET_CAPABILITY_CONCURRENCY	displayName/tags/sourceFileName change 与 same-content no-op 不触发 STALE。
+RW-T05-S1-099	38	8	ASSET_CAPABILITY_CONCURRENCY	Template Design 必须幂等 consume Asset events，并做 periodic reconciliation。
+RW-T05-S1-100	38	9	ASSET_CAPABILITY_CONCURRENCY	打开 Editor 与每次 Render 继续做 authoritative Asset recheck。
+RW-T05-S1-101	40	1	ASSET_CAPABILITY_CONCURRENCY	ACTIVE-current DesignDSL 引用不直接阻止 Asset delete。
+RW-T05-S1-102	40	2	ASSET_CAPABILITY_CONCURRENCY	Delete orchestrator 通过 narrow AssetReferenceAuthority 获取 current-only proof 与 impact report。
+RW-T05-S1-103	40	3	ASSET_CAPABILITY_CONCURRENCY	Asset Management 签发 5-minute、single-use delete-confirmation token。
+RW-T05-S1-104	40	4	SECURITY_FAULT	Asset Management core 不读取 Template aggregate/persistence model。
+RW-T05-S1-105	40	5	SECURITY_FAULT	Delete token 绑定 actorId、ownerScopeId、assetId、assetRevision 与 complete reference fingerprint。
+RW-T05-S1-106	40	6	ASSET_CAPABILITY_CONCURRENCY	Template current change 按 assetId sorted 顺序取得 read reservation。
+RW-T05-S1-107	40	7	ASSET_CAPABILITY_CONCURRENCY	Delete 取得 exclusive reservation 后重新计算 reference proof。
+RW-T05-S1-108	40	8	ASSET_CAPABILITY_CONCURRENCY	Asset/reference/token/permission 任一漂移均 zero-write 并要求重新确认。
+RW-T05-S1-109	40	9	ASSET_CAPABILITY_CONCURRENCY	Asset 与 Template delete coordination 不共享 aggregate、table 或 DB transaction。
+RW-T05-S1-110	40	10	SECURITY_FAULT	Delete actor 可见 complete impact count。
+RW-T05-S1-111	40	11	SECURITY_FAULT	Delete actor 只见有权读取的 Template details。
+RW-T05-S1-112	40	12	SECURITY_FAULT	不可见 Template 计入 redactedCount。
+RW-T05-S1-113	40	13	ASSET_CAPABILITY_CONCURRENCY	Delete success 后相关 Template 先 STALE 再重检为 INVALID。
+RW-T05-S1-114	42	1	ASSET_CAPABILITY_CONCURRENCY	Restore 必须携带 expectedAssetRevision。
+RW-T05-S1-115	42	2	ASSET_CAPABILITY_CONCURRENCY	Restore reactivates 同一 assetId 与 pre-delete current。
+RW-T05-S1-116	42	3	ASSET_CAPABILITY_CONCURRENCY	Restore 触发相关 Template recheck。
+RW-T05-S1-117	42	4	WIRE_CANONICAL_DIGEST	Restore 本身不创建 contentVersion。
+RW-T05-S1-118	42	5	SECURITY_FAULT	有 management permission 的 actor 可在 deleted listing 查看 metadata/history、exact-download、restore。
+RW-T05-S1-119	42	6	ASSET_CAPABILITY_CONCURRENCY	AssetResolver 永远拒绝 DELETED Asset。
+RW-T05-S1-120	42	7	SECURITY_FAULT	Host capability map 精确为 asset.read/create/update/delete/restore，update 覆盖 metadata/replace/old-content-restore。
+RW-T05-S1-121	42	8	SECURITY_FAULT	Asset Management 不建立 role/member/Workspace/per-Asset ACL。
+RW-T05-S1-122	42	9	SECURITY_FAULT	cross-scope 或 direct-query missing-read 统一表现 NOT_FOUND。
+RW-T05-S1-123	42	10	SECURITY_FAULT	same-scope mutation 缺具体 capability 表现 FORBIDDEN。
+RW-T05-S1-124	42	11	SECURITY_FAULT	internal Resolver 不产生 actor authorization error。
+RW-T05-S1-125	44	1	ASSET_CAPABILITY_CONCURRENCY	每次 effective create/metadata-update/content replace-or-restore/delete/restore 追加 bounded audit event。
+RW-T05-S1-126	44	2	SECURITY_FAULT	Audit 只记 assetId、before/after assetRevision、actorId、time、operation、content-version identity。
+RW-T05-S1-127	44	3	SECURITY_FAULT	Audit 不记录 raw bytes、full tags 或 request。
+RW-T05-S1-128	44	4	ASSET_CAPABILITY_CONCURRENCY	v1 product surface 精确包含 create/list/detail/metadata-update/version-list/exact-download/replace/old-content-restore/internal-preview/delete-impact-preflight/soft-delete/restore/render-only-resolve。
+RW-T05-S1-129	44	5	ASSET_CAPABILITY_CONCURRENCY	Directory 默认查询 ACTIVE，可显式查询 DELETED。
+RW-T05-S1-130	44	6	ASSET_CAPABILITY_CONCURRENCY	Directory 支持 kind、tagsAll/tagsAny、displayName/sourceFileName case-insensitive filters。
+RW-T05-S1-131	44	7	ASSET_CAPABILITY_CONCURRENCY	Directory 使用 updatedAt DESC, assetId ASC stable cursor pagination。
+RW-T05-S1-132	46	1	SECURITY_FAULT	Asset command/resolve 返回 namespaced stable code 与 bounded fields，并至少覆盖票据列出的 15 个 exact codes。
+RW-T05-S1-133	46	2	SECURITY_FAULT	Client 不得被要求 parse natural-language error。
+RW-T05-S1-134	46	3	SECURITY_FAULT	v1 不设 ownerScope product quota。
+RW-T05-S1-135	46	4	SECURITY_FAULT	Blob storage 必须有 deployment capacity watermark 与 fail-closed admission breaker。
+RW-T05-S1-136	46	5	SECURITY_FAULT	达到 hard watermark 只拒绝需要新 Blob 的 create/replace。
+RW-T05-S1-137	46	6	SECURITY_FAULT	达到 hard watermark 时 Blob reuse、metadata、delete、restore、Render 不受影响。
+RW-T05-S1-138	48	1	SECURITY_FAULT	v1 排除 DOCUMENT/SVG/animation/other media。
+RW-T05-S1-139	48	2	SECURITY_FAULT	v1 排除 URL/ZIP import。
+RW-T05-S1-140	48	3	SECURITY_FAULT	v1 排除 folder 与 Tag aggregate。
+RW-T05-S1-141	48	4	SECURITY_FAULT	v1 排除 cross-scope transfer/share/public link。
+RW-T05-S1-142	48	5	SECURITY_FAULT	v1 排除 crop/resize/transcode/compress/font-subset/AI processing。
+RW-T05-S1-143	48	6	SECURITY_FAULT	v1 排除 standardized antivirus/license/quarantine workflow。
+RW-T05-S1-144	48	7	SECURITY_FAULT	v1 排除 Blob GC/hard purge/retention policy。
+RW-T05-S1-145	48	8	SECURITY_FAULT	v1 排除 scope billing quota。
+RW-T05-S1-146	48	9	SECURITY_FAULT	v1 排除 global dedup 与 resource copy/merge。
+RW-T05-S1-147	48	10	SECURITY_FAULT	v1 排除 full-text/fuzzy search 与 atomic batch processing。

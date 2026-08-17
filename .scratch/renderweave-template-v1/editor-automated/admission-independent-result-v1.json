@@ -1,0 +1,31 @@
+{
+  "resultVersion": "renderweave-editor-automation-admission-static-result/1.0",
+  "executorId": "EDITOR_ADMISSION_STATIC::PYTHON::1.0",
+  "role": "independent-editor-admission-contract-replayer",
+  "executionClass": "EXEC::EDITOR_AUTOMATED::1.0",
+  "implementationRevision": "editor-automation-admission/1.0",
+  "status": "PASS_INDEPENDENT_STATIC_CONTRACT_REJECTED_PRODUCT_ADMISSION",
+  "checkCount": 5385,
+  "failureCount": 0,
+  "contract": {
+    "path": "editor-automated/execution-admission-contract-v1.json",
+    "sha256": "sha256:5e38203fcf952e6b195e26c88386f4731072a59ba0b20f546ab93dea40678dd9",
+    "byteLength": 7280
+  },
+  "assignment": {
+    "path": "editor-automated/non-capacity-assignment-v1.json",
+    "sha256": "sha256:4c993b03077e32dc6ae80cf7f7ce15c6c681fd017578919130f95032fcfb4807",
+    "byteLength": 44208
+  },
+  "readinessAudit": {
+    "path": "editor-automated/repository-readiness-audit-v1.json",
+    "sha256": "sha256:a0d059516430994ffed1bfaf1a1f7140844af64c83a72ef1316f91ef8fb1aaf7",
+    "byteLength": 4043
+  },
+  "assignedRequirementCount": 414,
+  "exactTargetManifestIssued": false,
+  "automationRunnerManifestIssued": false,
+  "browserAutomationExecuted": false,
+  "productExecutionEvidence": false,
+  "recordIssuanceAllowed": false
+}

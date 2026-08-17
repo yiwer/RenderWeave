@@ -1,0 +1,9 @@
+{
+  "fixtureVersion": "renderweave-spec-registry-scenario/1.0",
+  "scenarioId": "SPEC-MUT-020",
+  "scenarioKind": "NAMED_MUTATION",
+  "expectedOutcome": "PROBLEM",
+  "expectedCode": "SPEC_REGISTRY_REFERENCE_MISSING",
+  "expectedStage": "SPEC_REGISTRY",
+  "mutationKind": "REFERENCE_CLOSURE_MISSING_ARTIFACT"
+}

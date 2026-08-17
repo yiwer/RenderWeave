@@ -1,0 +1,578 @@
+{
+  "artifactVersion": "renderweave-editor-fault-schedule-catalog/1.0",
+  "status": "EXACT_PLANNING_ARTIFACTS_PRODUCT_ADAPTER_UNPROVEN",
+  "executionClass": "EXEC::EDITOR_AUTOMATED::1.0",
+  "contract": {
+    "path": "editor-automated/fault-schedule-contract-v1.json",
+    "sha256": "sha256:7a1b131f572a1c443e9154b6f72c18df4f478ba2313817e5f953102ac6972c9d",
+    "byteLength": 5450
+  },
+  "formalNoneBinding": {
+    "kind": "NONE",
+    "identitySha256": "sha256:41042a03228cdd46583d0e6aff814ba139e183b72280d45375e9a09d0b9e09ae"
+  },
+  "counts": {
+    "candidateCount": 108,
+    "noneCandidateCount": 71,
+    "artifactCandidateCount": 37,
+    "orphanArtifactCount": 0
+  },
+  "artifacts": [
+    {
+      "candidateId": "EDC::J02::010",
+      "scenarioSlug": "save-clears-local-history",
+      "artifact": {
+        "path": "editor-automated/fault-schedules/edc-j02-010.json",
+        "sha256": "sha256:825ef956b5464ab104ceeca9a985b62fb08c8960e94f1e9195077636cc74f846",
+        "byteLength": 413
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/fault-schedules/edc-j02-010.json",
+        "artifactSha256": "sha256:825ef956b5464ab104ceeca9a985b62fb08c8960e94f1e9195077636cc74f846",
+        "identitySha256": "sha256:04dbccdac7d320ff1bc363b84a35a4d1b9f2c3600eb752ee4dc5a5b503e4877f"
+      }
+    },
+    {
+      "candidateId": "EDC::J02::011",
+      "scenarioSlug": "overwrite-clears-local-history",
+      "artifact": {
+        "path": "editor-automated/fault-schedules/edc-j02-011.json",
+        "sha256": "sha256:caa841107b567d2582c086b023432e85aad11f93535e96ef255dba68cb057b0e",
+        "byteLength": 418
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/fault-schedules/edc-j02-011.json",
+        "artifactSha256": "sha256:caa841107b567d2582c086b023432e85aad11f93535e96ef255dba68cb057b0e",
+        "identitySha256": "sha256:69931d7c45ea63a678ca3d7bf1739ad48465d9a79c02cbd43133491d370704b3"
+      }
+    },
+    {
+      "candidateId": "EDC::J02::012",
+      "scenarioSlug": "revision-restore-clears-local-history",
+      "artifact": {
+        "path": "editor-automated/fault-schedules/edc-j02-012.json",
+        "sha256": "sha256:e24dac8627e886eb4cfd08ae05095f76bc8713b971779daeb94511b214b0b004",
+        "byteLength": 428
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/fault-schedules/edc-j02-012.json",
+        "artifactSha256": "sha256:e24dac8627e886eb4cfd08ae05095f76bc8713b971779daeb94511b214b0b004",
+        "identitySha256": "sha256:fc211c74ffce3c5b044760d03d549b7a94d9d28153ecc7b648cbba78c34bf578"
+      }
+    },
+    {
+      "candidateId": "EDC::J02::013",
+      "scenarioSlug": "whole-template-copy-or-create-clears-history",
+      "artifact": {
+        "path": "editor-automated/fault-schedules/edc-j02-013.json",
+        "sha256": "sha256:46162178d806f5150745d921558e00314395353354ae2509b27438ccd963a8e9",
+        "byteLength": 429
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/fault-schedules/edc-j02-013.json",
+        "artifactSha256": "sha256:46162178d806f5150745d921558e00314395353354ae2509b27438ccd963a8e9",
+        "identitySha256": "sha256:839f914b7b8bfcef8e04c5cd728733f7fa05f9ed95b2bf98654a40bf4f7d1e42"
+      }
+    },
+    {
+      "candidateId": "EDC::J03::008",
+      "scenarioSlug": "authoritative-preview-distinct",
+      "artifact": {
+        "path": "editor-automated/fault-schedules/edc-j03-008.json",
+        "sha256": "sha256:608155bf24cf57feb5777ee71b05ae7d3bf54c6ffb15cc4771c55853822dbc19",
+        "byteLength": 383
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/fault-schedules/edc-j03-008.json",
+        "artifactSha256": "sha256:608155bf24cf57feb5777ee71b05ae7d3bf54c6ffb15cc4771c55853822dbc19",
+        "identitySha256": "sha256:61cbe937b85de24028bdcf2d2873579b079b9d30b49bab0cd2f8a019787da07b"
+      }
+    },
+    {
+      "candidateId": "EDC::J05::003",
+      "scenarioSlug": "save-problem-submission-basis",
+      "artifact": {
+        "path": "editor-automated/fault-schedules/edc-j05-003.json",
+        "sha256": "sha256:55c828a930558dab962de6e8f06fbee12fde5bb19fba35ab6f84b924b3c21907",
+        "byteLength": 474
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/fault-schedules/edc-j05-003.json",
+        "artifactSha256": "sha256:55c828a930558dab962de6e8f06fbee12fde5bb19fba35ab6f84b924b3c21907",
+        "identitySha256": "sha256:b4cbf38e004128ab1dcc0bbcae3adabb31f807473cb91d416dee1d6d86d5abdf"
+      }
+    },
+    {
+      "candidateId": "EDC::J05::006",
+      "scenarioSlug": "preview-problem-basis",
+      "artifact": {
+        "path": "editor-automated/fault-schedules/edc-j05-006.json",
+        "sha256": "sha256:abeca9308eecb7a48f5aa5fc6c5342b6097d7e5cb9df8ab5b05cf810da2d85a9",
+        "byteLength": 452
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/fault-schedules/edc-j05-006.json",
+        "artifactSha256": "sha256:abeca9308eecb7a48f5aa5fc6c5342b6097d7e5cb9df8ab5b05cf810da2d85a9",
+        "identitySha256": "sha256:e1a6ac7be7ca99fda0bf40c80dfa0d5f9ffa69ab9acf8fe3b6a8a879832c1b19"
+      }
+    },
+    {
+      "candidateId": "EDC::J05::007",
+      "scenarioSlug": "stale-problem-generation-discarded",
+      "artifact": {
+        "path": "editor-automated/fault-schedules/edc-j05-007.json",
+        "sha256": "sha256:9199b916a107e275597912baf34c92828ca32065e03924d30f561da107ab4ed9",
+        "byteLength": 429
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/fault-schedules/edc-j05-007.json",
+        "artifactSha256": "sha256:9199b916a107e275597912baf34c92828ca32065e03924d30f561da107ab4ed9",
+        "identitySha256": "sha256:e137c44a3b9d3c6099211f8e0890292f8c5eb68ef33c1b4eda72baa658608ff2"
+      }
+    },
+    {
+      "candidateId": "EDC::J05::008",
+      "scenarioSlug": "failure-focuses-summary",
+      "artifact": {
+        "path": "editor-automated/fault-schedules/edc-j05-008.json",
+        "sha256": "sha256:a609e2ab7d4dad382ad074cb7e12815ac221296c3b89f6f5e50781494e8778e9",
+        "byteLength": 474
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/fault-schedules/edc-j05-008.json",
+        "artifactSha256": "sha256:a609e2ab7d4dad382ad074cb7e12815ac221296c3b89f6f5e50781494e8778e9",
+        "identitySha256": "sha256:1d091569c5377ad6ec711e8904b685c398e207693b622de6c70c6a9d50a41e0e"
+      }
+    },
+    {
+      "candidateId": "EDC::J06::001",
+      "scenarioSlug": "save-normalization-summary",
+      "artifact": {
+        "path": "editor-automated/fault-schedules/edc-j06-001.json",
+        "sha256": "sha256:23760410917ed13c34b47ecdf9591e38b5b2696b4bd2bf48ed973e40494e205e",
+        "byteLength": 391
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/fault-schedules/edc-j06-001.json",
+        "artifactSha256": "sha256:23760410917ed13c34b47ecdf9591e38b5b2696b4bd2bf48ed973e40494e205e",
+        "identitySha256": "sha256:e24a977a70e415f8dccccfc279c1868231b8022ee192ead3efedf78af0d276e5"
+      }
+    },
+    {
+      "candidateId": "EDC::J06::002",
+      "scenarioSlug": "save-preserves-expression-unicode",
+      "artifact": {
+        "path": "editor-automated/fault-schedules/edc-j06-002.json",
+        "sha256": "sha256:70325d1c5c23603a889da3f5aa3e5565faf6d20893f2279a7fb27620d2c5f943",
+        "byteLength": 387
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/fault-schedules/edc-j06-002.json",
+        "artifactSha256": "sha256:70325d1c5c23603a889da3f5aa3e5565faf6d20893f2279a7fb27620d2c5f943",
+        "identitySha256": "sha256:cab0248967a8388ea52a9d2dc78904abcdf92caec114e84623a1845d44edaa3a"
+      }
+    },
+    {
+      "candidateId": "EDC::J06::003",
+      "scenarioSlug": "save-preserves-semantic-arrays-fields",
+      "artifact": {
+        "path": "editor-automated/fault-schedules/edc-j06-003.json",
+        "sha256": "sha256:190071c14baa312070d687958d27feb1a56f86a86a1f69ae6d3858a1872644c9",
+        "byteLength": 391
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/fault-schedules/edc-j06-003.json",
+        "artifactSha256": "sha256:190071c14baa312070d687958d27feb1a56f86a86a1f69ae6d3858a1872644c9",
+        "identitySha256": "sha256:aed2fc98876922898888bd48c374122e0d2bb48bd15249e066b68f3f29a1c680"
+      }
+    },
+    {
+      "candidateId": "EDC::J07::001",
+      "scenarioSlug": "dependency-set-offers-confirmation",
+      "artifact": {
+        "path": "editor-automated/fault-schedules/edc-j07-001.json",
+        "sha256": "sha256:f1a026811b7df012c55e5674ecb1e7feb9cd54ea74bb2818e4cf5cfd55f946d9",
+        "byteLength": 464
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/fault-schedules/edc-j07-001.json",
+        "artifactSha256": "sha256:f1a026811b7df012c55e5674ecb1e7feb9cd54ea74bb2818e4cf5cfd55f946d9",
+        "identitySha256": "sha256:20dd37b64bb1135465f47bc97bd372c7c5f2ee95faa0d9ab6808a13f67e7fe04"
+      }
+    },
+    {
+      "candidateId": "EDC::J07::002",
+      "scenarioSlug": "dependency-confirmation-commits-invalid",
+      "artifact": {
+        "path": "editor-automated/fault-schedules/edc-j07-002.json",
+        "sha256": "sha256:438d605523db3e4b73e91b2a36fec16272785fb50ac5e6c92cbca901a546a2ba",
+        "byteLength": 401
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/fault-schedules/edc-j07-002.json",
+        "artifactSha256": "sha256:438d605523db3e4b73e91b2a36fec16272785fb50ac5e6c92cbca901a546a2ba",
+        "identitySha256": "sha256:bdd96d6275cd0f5b7ef5380685c4dfb6f62d6966d2d22667be539ea50021f9d8"
+      }
+    },
+    {
+      "candidateId": "EDC::J07::003",
+      "scenarioSlug": "truncated-set-response",
+      "artifact": {
+        "path": "editor-automated/fault-schedules/edc-j07-003.json",
+        "sha256": "sha256:1066fb93057dececd839fd81aab98faacba2feee3f458d18b4b03e0674683031",
+        "byteLength": 450
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/fault-schedules/edc-j07-003.json",
+        "artifactSha256": "sha256:1066fb93057dececd839fd81aab98faacba2feee3f458d18b4b03e0674683031",
+        "identitySha256": "sha256:c2306ea54715d762c7f17512f7fc9409e8f6bff04782f4bd6cbdf9394b2433f6"
+      }
+    },
+    {
+      "candidateId": "EDC::J08::001",
+      "scenarioSlug": "first-conflict-preserves-local",
+      "artifact": {
+        "path": "editor-automated/fault-schedules/edc-j08-001.json",
+        "sha256": "sha256:91ebdf0b3fdfa23866fb5bbfaf20bb5f46d6bfb4cf1a40d902b2f91e739987fa",
+        "byteLength": 547
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/fault-schedules/edc-j08-001.json",
+        "artifactSha256": "sha256:91ebdf0b3fdfa23866fb5bbfaf20bb5f46d6bfb4cf1a40d902b2f91e739987fa",
+        "identitySha256": "sha256:bbf578a62642a9abe1a979a1696b99c10b4ec596d0139360dd130aa22363a115"
+      }
+    },
+    {
+      "candidateId": "EDC::J08::002",
+      "scenarioSlug": "confirmed-overwrite-fresh-revision",
+      "artifact": {
+        "path": "editor-automated/fault-schedules/edc-j08-002.json",
+        "sha256": "sha256:ce6c013339ffa996b469648b37b69fdd707532e0b4917bf2016a4b9372563720",
+        "byteLength": 502
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/fault-schedules/edc-j08-002.json",
+        "artifactSha256": "sha256:ce6c013339ffa996b469648b37b69fdd707532e0b4917bf2016a4b9372563720",
+        "identitySha256": "sha256:39c46e5ad3ffb0b676b0fb947d4537d6e97275f1fd5ca3d161c121bdffa80f4c"
+      }
+    },
+    {
+      "candidateId": "EDC::J08::003",
+      "scenarioSlug": "second-drift-requires-new-confirmation",
+      "artifact": {
+        "path": "editor-automated/fault-schedules/edc-j08-003.json",
+        "sha256": "sha256:f9846b90a755f8ac06401caee807ca97c0e1949b1d4929d39740237003413a4f",
+        "byteLength": 575
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/fault-schedules/edc-j08-003.json",
+        "artifactSha256": "sha256:f9846b90a755f8ac06401caee807ca97c0e1949b1d4929d39740237003413a4f",
+        "identitySha256": "sha256:28196bf7a0a78bb060e02413ba2cf89840fa76fcf77e944a8fb2975338a857c7"
+      }
+    },
+    {
+      "candidateId": "EDC::J09::001",
+      "scenarioSlug": "transport-unknown-enters-reconciliation",
+      "artifact": {
+        "path": "editor-automated/fault-schedules/edc-j09-001.json",
+        "sha256": "sha256:c58b2369fa85bb6f024d6def7ba2444449c8bfab4dc3ea152f7217ef732cceec",
+        "byteLength": 469
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/fault-schedules/edc-j09-001.json",
+        "artifactSha256": "sha256:c58b2369fa85bb6f024d6def7ba2444449c8bfab4dc3ea152f7217ef732cceec",
+        "identitySha256": "sha256:1dd9c45c357ab970bef26c0dee1402282d7119dff1a1245c753ce8ffdf30e02a"
+      }
+    },
+    {
+      "candidateId": "EDC::J09::002",
+      "scenarioSlug": "reconcile-converged-content",
+      "artifact": {
+        "path": "editor-automated/fault-schedules/edc-j09-002.json",
+        "sha256": "sha256:811967742d3826d8f7cb2f2187e62c8c1b6225cf1b562c54c143a3f65577ecf4",
+        "byteLength": 398
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/fault-schedules/edc-j09-002.json",
+        "artifactSha256": "sha256:811967742d3826d8f7cb2f2187e62c8c1b6225cf1b562c54c143a3f65577ecf4",
+        "identitySha256": "sha256:e6d1f252aa346c0f2f6fe83e05a8db2b2c6d9d75cb7df921d34bbeaab9478327"
+      }
+    },
+    {
+      "candidateId": "EDC::J09::003",
+      "scenarioSlug": "reconcile-safe-explicit-retry",
+      "artifact": {
+        "path": "editor-automated/fault-schedules/edc-j09-003.json",
+        "sha256": "sha256:3a16e66c5da041dffd0c1d4fdd2b6c4714e71cf6f6c6a93204da4ff36b3f32e1",
+        "byteLength": 500
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/fault-schedules/edc-j09-003.json",
+        "artifactSha256": "sha256:3a16e66c5da041dffd0c1d4fdd2b6c4714e71cf6f6c6a93204da4ff36b3f32e1",
+        "identitySha256": "sha256:79eaec8cce945fb4e346a94eee946f2f3b92ca8cea21e7978fb370435758ea23"
+      }
+    },
+    {
+      "candidateId": "EDC::J09::004",
+      "scenarioSlug": "reconcile-enters-conflict",
+      "artifact": {
+        "path": "editor-automated/fault-schedules/edc-j09-004.json",
+        "sha256": "sha256:80269990f2de3151f5b36996815c8026fc5ab3f3b5d0ef016bb724d309041456",
+        "byteLength": 470
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/fault-schedules/edc-j09-004.json",
+        "artifactSha256": "sha256:80269990f2de3151f5b36996815c8026fc5ab3f3b5d0ef016bb724d309041456",
+        "identitySha256": "sha256:002ad71931539ddf502640b058b0f3404b441e416de7ebff8806e76c3855f0bb"
+      }
+    },
+    {
+      "candidateId": "EDC::J09::005",
+      "scenarioSlug": "reconcile-deleted-readonly",
+      "artifact": {
+        "path": "editor-automated/fault-schedules/edc-j09-005.json",
+        "sha256": "sha256:10838d9ab44f03c273778aadca7028a1af098dcf2d7aa0bcdf7bf74c1de725ef",
+        "byteLength": 440
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/fault-schedules/edc-j09-005.json",
+        "artifactSha256": "sha256:10838d9ab44f03c273778aadca7028a1af098dcf2d7aa0bcdf7bf74c1de725ef",
+        "identitySha256": "sha256:1adff4c81c69b50e1eb30f2833c2605fa612c598cebdde953d405820e3b2a5e3"
+      }
+    },
+    {
+      "candidateId": "EDC::J09::006",
+      "scenarioSlug": "reconcile-integrity-fails-closed",
+      "artifact": {
+        "path": "editor-automated/fault-schedules/edc-j09-006.json",
+        "sha256": "sha256:b90d563509a1e3aa2c52bb3f389af561f1e04cfb561b1988630b96a6dd598f08",
+        "byteLength": 476
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/fault-schedules/edc-j09-006.json",
+        "artifactSha256": "sha256:b90d563509a1e3aa2c52bb3f389af561f1e04cfb561b1988630b96a6dd598f08",
+        "identitySha256": "sha256:13fd29616d477d7187bcfe12f247619b638155f5cc64029fde2994eeb7193f43"
+      }
+    },
+    {
+      "candidateId": "EDC::J09::007",
+      "scenarioSlug": "reconcile-unreadable-remains-unknown",
+      "artifact": {
+        "path": "editor-automated/fault-schedules/edc-j09-007.json",
+        "sha256": "sha256:f895beba62269290ef8330182adccf74e6d7d38bd07c8bd1e3d09575bc19a386",
+        "byteLength": 447
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/fault-schedules/edc-j09-007.json",
+        "artifactSha256": "sha256:f895beba62269290ef8330182adccf74e6d7d38bd07c8bd1e3d09575bc19a386",
+        "identitySha256": "sha256:c7d953de99ae4766a0917661945949178482d9308219105107794b0360c7b799"
+      }
+    },
+    {
+      "candidateId": "EDC::J09::008",
+      "scenarioSlug": "reopen-resumes-reconciliation",
+      "artifact": {
+        "path": "editor-automated/fault-schedules/edc-j09-008.json",
+        "sha256": "sha256:d625b40c35a47b87d5261fe26035a2c13f51286ea3a12c3b6ad2ce1a5308e2da",
+        "byteLength": 400
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/fault-schedules/edc-j09-008.json",
+        "artifactSha256": "sha256:d625b40c35a47b87d5261fe26035a2c13f51286ea3a12c3b6ad2ce1a5308e2da",
+        "identitySha256": "sha256:df74dde05df1bfb2c883db8410651f1b379dc56d760ce5ad026df69f04c09df0"
+      }
+    },
+    {
+      "candidateId": "EDC::J11::001",
+      "scenarioSlug": "clean-current-preview",
+      "artifact": {
+        "path": "editor-automated/fault-schedules/edc-j11-001.json",
+        "sha256": "sha256:da89650b7ee1768773a6fbbfb22f6b169e5f9f9b269c4744b49f46f80e4a1400",
+        "byteLength": 374
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/fault-schedules/edc-j11-001.json",
+        "artifactSha256": "sha256:da89650b7ee1768773a6fbbfb22f6b169e5f9f9b269c4744b49f46f80e4a1400",
+        "identitySha256": "sha256:319ded7acf8a677b30ec38c9f659861dd6cdcc4ebef5480f2913679b49061334"
+      }
+    },
+    {
+      "candidateId": "EDC::J11::003",
+      "scenarioSlug": "save-and-preview-save-fails",
+      "artifact": {
+        "path": "editor-automated/fault-schedules/edc-j11-003.json",
+        "sha256": "sha256:45bff3b9b68c39c37da6bb5e8f1aa5da5a8a960b380e3d26f9c54d073e457056",
+        "byteLength": 474
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/fault-schedules/edc-j11-003.json",
+        "artifactSha256": "sha256:45bff3b9b68c39c37da6bb5e8f1aa5da5a8a960b380e3d26f9c54d073e457056",
+        "identitySha256": "sha256:593dd62cdb2984303ee0407efa9f3b75c7d7b3a788e9b0ba3bcd62c189574a84"
+      }
+    },
+    {
+      "candidateId": "EDC::J11::004",
+      "scenarioSlug": "save-and-preview-invalid-save",
+      "artifact": {
+        "path": "editor-automated/fault-schedules/edc-j11-004.json",
+        "sha256": "sha256:a99ac7df1793989d679a4bc02d02b5ba564a00b653fe1b82fdf1e4608bb617e4",
+        "byteLength": 374
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/fault-schedules/edc-j11-004.json",
+        "artifactSha256": "sha256:a99ac7df1793989d679a4bc02d02b5ba564a00b653fe1b82fdf1e4608bb617e4",
+        "identitySha256": "sha256:0e2995e0187d325d777a11fae8f0599d06e6f8580d2ad36c0b257de86bc308cd"
+      }
+    },
+    {
+      "candidateId": "EDC::J11::005",
+      "scenarioSlug": "save-and-preview-save-phase-success",
+      "artifact": {
+        "path": "editor-automated/fault-schedules/edc-j11-005.json",
+        "sha256": "sha256:5370bcaa92a9a69bb6fc60c4714c2025caec415686a945b84a0ef85f12f1ccf5",
+        "byteLength": 471
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/fault-schedules/edc-j11-005.json",
+        "artifactSha256": "sha256:5370bcaa92a9a69bb6fc60c4714c2025caec415686a945b84a0ef85f12f1ccf5",
+        "identitySha256": "sha256:2ca8e31e73841305f7f9b6ac430508c6fce9a644e2bbb17fc130fa2f64f0188e"
+      }
+    },
+    {
+      "candidateId": "EDC::J11::006",
+      "scenarioSlug": "save-and-preview-preview-phase-success",
+      "artifact": {
+        "path": "editor-automated/fault-schedules/edc-j11-006.json",
+        "sha256": "sha256:7475cef66e9641d90ffef195cbee66917cd71d4a04acd8a74fcf4a00a64a4a27",
+        "byteLength": 373
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/fault-schedules/edc-j11-006.json",
+        "artifactSha256": "sha256:7475cef66e9641d90ffef195cbee66917cd71d4a04acd8a74fcf4a00a64a4a27",
+        "identitySha256": "sha256:872f0950720c8b36cae89d7a83bceee85a503d140dc08ec4160bfac94aa94599"
+      }
+    },
+    {
+      "candidateId": "EDC::J11::013",
+      "scenarioSlug": "basis-current-readiness-withdraws",
+      "artifact": {
+        "path": "editor-automated/fault-schedules/edc-j11-013.json",
+        "sha256": "sha256:8513709976083e4b3b3c6e471e4e83f03b2f8f0253f775ef7edc3d9a7eb60397",
+        "byteLength": 399
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/fault-schedules/edc-j11-013.json",
+        "artifactSha256": "sha256:8513709976083e4b3b3c6e471e4e83f03b2f8f0253f775ef7edc3d9a7eb60397",
+        "identitySha256": "sha256:b09a0dea08439747dad4777a247a8f4e80563a2571e2f130fde1fd3986d298c3"
+      }
+    },
+    {
+      "candidateId": "EDC::J11::015",
+      "scenarioSlug": "new-preview-revokes-old",
+      "artifact": {
+        "path": "editor-automated/fault-schedules/edc-j11-015.json",
+        "sha256": "sha256:4ab9396d09e73c0634b501bfe11ed0adfe097adc90970c1a820bbaf69f48f8f8",
+        "byteLength": 381
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/fault-schedules/edc-j11-015.json",
+        "artifactSha256": "sha256:4ab9396d09e73c0634b501bfe11ed0adfe097adc90970c1a820bbaf69f48f8f8",
+        "identitySha256": "sha256:7b9e77867223e29a1ec0dd7ca90c8312ebaddbc2214e656d0d0453778396e2fa"
+      }
+    },
+    {
+      "candidateId": "EDC::J11::016",
+      "scenarioSlug": "author-cancel-clears-slot",
+      "artifact": {
+        "path": "editor-automated/fault-schedules/edc-j11-016.json",
+        "sha256": "sha256:04955a0d0d14cd6dc49751b9e8d2f1408dc68543c70d8e5c143dc78365e942f0",
+        "byteLength": 379
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/fault-schedules/edc-j11-016.json",
+        "artifactSha256": "sha256:04955a0d0d14cd6dc49751b9e8d2f1408dc68543c70d8e5c143dc78365e942f0",
+        "identitySha256": "sha256:ffc07e7fa51356a794322d707549f1ca6e39d787c0f05c08d34e35b1ee01b7b9"
+      }
+    },
+    {
+      "candidateId": "EDC::J11::017",
+      "scenarioSlug": "late-success-discarded",
+      "artifact": {
+        "path": "editor-automated/fault-schedules/edc-j11-017.json",
+        "sha256": "sha256:f4b22c7dd406d53b7fdcabda4933472474c5bce798fe2cddefe38d7534c02266",
+        "byteLength": 413
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/fault-schedules/edc-j11-017.json",
+        "artifactSha256": "sha256:f4b22c7dd406d53b7fdcabda4933472474c5bce798fe2cddefe38d7534c02266",
+        "identitySha256": "sha256:c74597a245f3eaca8f95cd2f505d0d88a4bd45c24af8b7b5d82c4afba9102c78"
+      }
+    },
+    {
+      "candidateId": "EDC::J11::018",
+      "scenarioSlug": "late-failure-discarded",
+      "artifact": {
+        "path": "editor-automated/fault-schedules/edc-j11-018.json",
+        "sha256": "sha256:0002580d504407ce6b00df0eea1d86bebd127d3d62808031761726c2434cb893",
+        "byteLength": 413
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/fault-schedules/edc-j11-018.json",
+        "artifactSha256": "sha256:0002580d504407ce6b00df0eea1d86bebd127d3d62808031761726c2434cb893",
+        "identitySha256": "sha256:e92c58801411329cfb6d144e36b2a0da76291c32b75b2cbe549efb64a6df8930"
+      }
+    },
+    {
+      "candidateId": "EDC::J11::019",
+      "scenarioSlug": "preview-failure-does-not-rollback-save",
+      "artifact": {
+        "path": "editor-automated/fault-schedules/edc-j11-019.json",
+        "sha256": "sha256:4df345c2d0faa3ea34c0d1aa9ea6740c50e31183b64c077cfe36e8e18b67f517",
+        "byteLength": 438
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/fault-schedules/edc-j11-019.json",
+        "artifactSha256": "sha256:4df345c2d0faa3ea34c0d1aa9ea6740c50e31183b64c077cfe36e8e18b67f517",
+        "identitySha256": "sha256:68033cb56eb99048a32a7697f192b852367f98f6cd4d3c392b63c33e202892dc"
+      }
+    }
+  ],
+  "boundary": "Every non-NONE planning schedule has immutable bytes and a formal fault identity candidate; no product adapter, browser injection, or terminal observation has occurred."
+}

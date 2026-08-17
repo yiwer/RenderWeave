@@ -1,0 +1,8 @@
+[
+  {
+    "operationId": "reconcileSave",
+    "outcome": "PROBLEM",
+    "code": "TEMPLATE_REVISION_CONFLICT",
+    "stage": "EDITOR_SAVE_RECONCILIATION"
+  }
+]

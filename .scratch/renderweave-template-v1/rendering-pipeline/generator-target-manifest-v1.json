@@ -1,0 +1,830 @@
+{
+  "artifactVersion": "renderweave-rendering-pipeline-generator-target/1.0",
+  "targetId": "RENDERING_PIPELINE_GENERATOR_TARGET::FIXTURE::1.0",
+  "generatorProfile": "renderweave-rendering-pipeline-generator/1.0",
+  "status": "FROZEN_STATIC_GENERATOR_TARGET",
+  "implementationRevision": "rendering-pipeline-fixture-generator/1.0",
+  "entrypoint": {
+    "path": "rendering-pipeline/generate-rendering-pipeline-fixtures.mjs",
+    "sha256": "sha256:aaf424e8b726b7fd832b538d52bf6cf1a2d269fc3e0a37215dd34a98694a42ee",
+    "byteLength": 21603
+  },
+  "baseline": {
+    "path": "rendering-pipeline/baseline-v1.json",
+    "sha256": "sha256:9efddc6a2cfe43be255828bf32e3ef6e126fd188a61f2cfda6a9d101e06ddbfb",
+    "byteLength": 1545
+  },
+  "fixtureContract": {
+    "path": "rendering-pipeline/fixture-contract-v1.json",
+    "sha256": "sha256:ba09b8d38f7f3f6ee45a1ce067afdc625a507d1925992d71ac46d297a9eaf441",
+    "byteLength": 3687
+  },
+  "observationAdapter": {
+    "path": "rendering-pipeline/observation-adapter-v1.json",
+    "sha256": "sha256:bc16d95de8cf80da63a071c246692ecbe37ad86a53ffa21500dcaf1c595c48fa",
+    "byteLength": 6603
+  },
+  "scenarioCatalog": {
+    "path": "rendering-pipeline/capacity-scenarios-v1.json",
+    "sha256": "sha256:5cda20420126593c5ad7c0052839ec4121cb77bfd6ca4c3d181352cbba8acf2b",
+    "byteLength": 490968
+  },
+  "goldenVectors": {
+    "path": "rendering-pipeline/generator-goldens-v1.json",
+    "sha256": "sha256:a8380f233c823654b0609af4df2e4c41e7974e4dacfe5d9e1b2b595db661c6f8",
+    "byteLength": 514418
+  },
+  "fixtureArtifacts": [
+    {
+      "path": "rendering-pipeline/fixtures/cap-001-closure-and-expansion-unique-template-snapshots-below.json",
+      "sha256": "sha256:50190e2a802bb9a463e068acdc603f9c932a024e02fc3dedb3d62b74b91d108e",
+      "byteLength": 1863
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-001-closure-and-expansion-unique-template-snapshots-at.json",
+      "sha256": "sha256:1565ed0e36dbbbb854898d9d1cd02cf301a77ddcf4a97c68de8346ca082f4bdb",
+      "byteLength": 1857
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-001-closure-and-expansion-unique-template-snapshots-above.json",
+      "sha256": "sha256:c63331faf660581e6e6f0357c51035cb7e29fe3ddb9c5d34d2263cd84974a7a7",
+      "byteLength": 1863
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-002-closure-and-expansion-authored-template-ref-edges-below.json",
+      "sha256": "sha256:fc0995d3c731e4be5ae6acf49fd8661e2edcb54d1066108bdc6ea673139aad88",
+      "byteLength": 1868
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-002-closure-and-expansion-authored-template-ref-edges-at.json",
+      "sha256": "sha256:d608c9736772cc5687abca91983d4f50661e32c39db9e99548b858f2e203e014",
+      "byteLength": 1862
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-002-closure-and-expansion-authored-template-ref-edges-above.json",
+      "sha256": "sha256:2a43d78d27032d7f333017cfbf52d772cf73a46d9629f143883c3e6fcba49d4f",
+      "byteLength": 1868
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-003-closure-and-expansion-closure-depth-below.json",
+      "sha256": "sha256:0b921c14dd2663fa91d1562aa07599f23ac82a9a48f309dedc70b4d7ddcb2d4e",
+      "byteLength": 1838
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-003-closure-and-expansion-closure-depth-at.json",
+      "sha256": "sha256:f416e2c91f25a2e689e7c05afbbc6c7b97063e89567e24dd1486345444cf2473",
+      "byteLength": 1832
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-003-closure-and-expansion-closure-depth-above.json",
+      "sha256": "sha256:081469ddcf62b2a7a1cee17b70efa49d067301670db2bdb3d9c007c03aea4671",
+      "byteLength": 1838
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-004-closure-and-expansion-closure-freeze-attempts-below.json",
+      "sha256": "sha256:cf636dc4c9156cd1270a1743c9f3a1457c03ecf62e17622b8d937690f9454bb5",
+      "byteLength": 1865
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-004-closure-and-expansion-closure-freeze-attempts-at.json",
+      "sha256": "sha256:02ee9a62e707f2dde909837ed96bed66986f43e98fdea465a4f95ad2002c1ccb",
+      "byteLength": 1859
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-004-closure-and-expansion-closure-freeze-attempts-above.json",
+      "sha256": "sha256:0fd4eac2ceffc193441b6a4f0fb96912cb4f39d737663725120262feaa24cbde",
+      "byteLength": 1865
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-005-closure-and-expansion-closure-canonical-design-bytes-below.json",
+      "sha256": "sha256:3f7579458a36aec59afac41aa4d1d165c00c288bca76773d45398999d24599fa",
+      "byteLength": 1884
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-005-closure-and-expansion-closure-canonical-design-bytes-at.json",
+      "sha256": "sha256:40f675985027de4349d3903adbdff3dbfc86a06cefa4b12875c936b253cc1292",
+      "byteLength": 1878
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-005-closure-and-expansion-closure-canonical-design-bytes-above.json",
+      "sha256": "sha256:e423331e6579b16f15937a174d273ea9e723fadb230905369ebddfb6a13f9f91",
+      "byteLength": 1884
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-006-closure-and-expansion-actual-template-invocations-below.json",
+      "sha256": "sha256:b7cf05a1f43f7b39cf51fafc6ce0a19a3d21e0e6e64d878b7c62be0c4d17e170",
+      "byteLength": 1921
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-006-closure-and-expansion-actual-template-invocations-at.json",
+      "sha256": "sha256:a3d7b2509aca2729d79db3164f675672381345202d9e80a9d8c9f72fbfebad53",
+      "byteLength": 1915
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-006-closure-and-expansion-actual-template-invocations-above.json",
+      "sha256": "sha256:a91828aa103f3cafdda75c9b258cfde5b2ba5e372f75e8123f6bb368b2bc57a3",
+      "byteLength": 1921
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-007-closure-and-expansion-invocation-depth-below.json",
+      "sha256": "sha256:9b441ec1f27d917bd9a15c0df347493c12b18ebaeb7d9b9b6a7cd0b75b5a3560",
+      "byteLength": 1900
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-007-closure-and-expansion-invocation-depth-at.json",
+      "sha256": "sha256:78c1ff51f7631cf0c0f4e22beb3952882728dc9b6da586e085dd4aeda3fa2f5e",
+      "byteLength": 1894
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-007-closure-and-expansion-invocation-depth-above.json",
+      "sha256": "sha256:89951816c9b6706266baf21cf60bcd9a33f0d00e1e034a23c7d7b6819ead1272",
+      "byteLength": 1900
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-008-closure-and-expansion-composition-viewports-below.json",
+      "sha256": "sha256:84261337819697fea3534dc639157197669422c069e146774623e1e180612685",
+      "byteLength": 1911
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-008-closure-and-expansion-composition-viewports-at.json",
+      "sha256": "sha256:c7261d0c9f07bae475bae92aed4edd2b13e5312b0471ebdfc4dda1c61e4fc653",
+      "byteLength": 1905
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-008-closure-and-expansion-composition-viewports-above.json",
+      "sha256": "sha256:ae67ecd74c5f0fe53a0e523cf7977c29e160fdc859a164c4eb4c2d872723e2a3",
+      "byteLength": 1911
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-009-closure-and-expansion-repeat-collection-items-per-occurrence-below.json",
+      "sha256": "sha256:282175134c6f06bf4b7e2ca000acca1251e8348fb7f31a9272f6e07b11042c37",
+      "byteLength": 1939
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-009-closure-and-expansion-repeat-collection-items-per-occurrence-at.json",
+      "sha256": "sha256:dcd32c54b11b0a58048780035d59b3cdab3cb863f56dca1d230a08f0020a4326",
+      "byteLength": 1934
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-009-closure-and-expansion-repeat-collection-items-per-occurrence-above.json",
+      "sha256": "sha256:edb637e39d1cd3257f8354c43b3e7372d263b338f9be308de1963fdc11fa0d19",
+      "byteLength": 1940
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-010-closure-and-expansion-repeat-nesting-depth-below.json",
+      "sha256": "sha256:5466de7a26a98e52bdf41bba6ee38ecbe0d29cb46fcf4d8801bcef91be8ee1a6",
+      "byteLength": 1905
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-010-closure-and-expansion-repeat-nesting-depth-at.json",
+      "sha256": "sha256:775aac8f9e548e7b249d0d1184a4bd55321f92f5c855fe2bfad4dc15349aed5f",
+      "byteLength": 1899
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-010-closure-and-expansion-repeat-nesting-depth-above.json",
+      "sha256": "sha256:02dfc4f9798a7cee101b37d5059a0b369b0292145e7ed740119ddddc3e8c9aea",
+      "byteLength": 1905
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-011-closure-and-expansion-loop-frames-total-below.json",
+      "sha256": "sha256:ab0695bbb0b1b1730b62c3fc839ddaeb3b2b9372a6718bf1ad3766dcb5c55d82",
+      "byteLength": 1902
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-011-closure-and-expansion-loop-frames-total-at.json",
+      "sha256": "sha256:88ca37cddccee58e63f0e3ca634f5218307235554f68f50da40a8de91c4f9da9",
+      "byteLength": 1897
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-011-closure-and-expansion-loop-frames-total-above.json",
+      "sha256": "sha256:42299d663b24e98ea66c3df68d5e85d0903e5dbe7a6747b2ac7d5d5fed97928e",
+      "byteLength": 1903
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-012-closure-and-expansion-render-occurrences-below.json",
+      "sha256": "sha256:c3b67cad7628a88c5258e82bde3d6529ff53d28086c755ed80fe84454cb2c82b",
+      "byteLength": 1907
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-012-closure-and-expansion-render-occurrences-at.json",
+      "sha256": "sha256:af704d2fa8275c82bceee7607a5b2a82f2655c324958edd104c24f4e185bc1c9",
+      "byteLength": 1901
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-012-closure-and-expansion-render-occurrences-above.json",
+      "sha256": "sha256:0be69f14d1206886112cb41ffc068f45d7921e58c1c357e46f0cdea785666193",
+      "byteLength": 1907
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-013-closure-and-expansion-materialized-static-nodes-below.json",
+      "sha256": "sha256:aeffafeb88ff66f1f71e381b141fee228c245df2bda84257ae910c76945066e8",
+      "byteLength": 1919
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-013-closure-and-expansion-materialized-static-nodes-at.json",
+      "sha256": "sha256:7aa6b0293d3acd180d9024b82b12175a99acd02ff105d058b7f10fe29f060363",
+      "byteLength": 1913
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-013-closure-and-expansion-materialized-static-nodes-above.json",
+      "sha256": "sha256:47af0ef9f3a8e395a0e418e455b3a75aeab2dcca7e737a6bfa8b696025b96607",
+      "byteLength": 1919
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-014-closure-and-expansion-generated-track-and-cell-entries-below.json",
+      "sha256": "sha256:f7aaa3660c86dbd2f45f4b6d6246a49101e7b779767a7cc903a49451e9869222",
+      "byteLength": 1929
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-014-closure-and-expansion-generated-track-and-cell-entries-at.json",
+      "sha256": "sha256:406919cc3d8cfca4bb4f71ca640ace736f022479471fc250fab1f9f6c1abc847",
+      "byteLength": 1924
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-014-closure-and-expansion-generated-track-and-cell-entries-above.json",
+      "sha256": "sha256:0d1a49a1fa2254f4aec1243bdcc2d983438879fa16063ddd0330207de0bd12f0",
+      "byteLength": 1930
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-015-closure-and-expansion-logical-operations-below.json",
+      "sha256": "sha256:37c1865fc655ea493dcd3d25da3d00080ac3c33c66b27bb3a267f392e53c8b17",
+      "byteLength": 1908
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-015-closure-and-expansion-logical-operations-at.json",
+      "sha256": "sha256:ddbe632a3aa09b21f08c0db83a9e5335b1dd14a9054d35e5e0fcc2e15b63f6b6",
+      "byteLength": 1903
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-015-closure-and-expansion-logical-operations-above.json",
+      "sha256": "sha256:d814a572314db0068d0ce4ead943005d890220dda0b43f18a548014a36e52517",
+      "byteLength": 1909
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-016-render-document-canonical-bytes-below.json",
+      "sha256": "sha256:d823149e6a1aec61a466479eb3bd54976397a28e8623674d73f92e7eab5f9975",
+      "byteLength": 1856
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-016-render-document-canonical-bytes-at.json",
+      "sha256": "sha256:5331581ef4f1fedf2a9db547086cdaea5210e00165d0d2df048028e81b3595c0",
+      "byteLength": 1850
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-016-render-document-canonical-bytes-above.json",
+      "sha256": "sha256:ab44d1fa56d0b18628ba34b2990c0dc336fa3b51d0cb783cf6c2a6efc1619199",
+      "byteLength": 1856
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-017-render-document-json-depth-below.json",
+      "sha256": "sha256:f111454a9881dbf3201fa0e6289705f7b21ed360cb70419e7e25d6a402590709",
+      "byteLength": 1841
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-017-render-document-json-depth-at.json",
+      "sha256": "sha256:6b7688a22e8ae35560b4a58a89f279217ae01d0060772f84279ec2105ae86d61",
+      "byteLength": 1835
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-017-render-document-json-depth-above.json",
+      "sha256": "sha256:815fed2c086d5dfb637eaf81888e5dba6319a1835d4b10a4f36a048884ee172b",
+      "byteLength": 1841
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-018-render-document-static-nodes-below.json",
+      "sha256": "sha256:1ff3c3f5acfc24e62640f3c881b5983065713a42ee91f470784685920f013cba",
+      "byteLength": 1847
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-018-render-document-static-nodes-at.json",
+      "sha256": "sha256:fa4f2c68a18df7db4c9e09b43661555ad26bfbda3ee42d442214db2e4eb01fb0",
+      "byteLength": 1841
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-018-render-document-static-nodes-above.json",
+      "sha256": "sha256:d0c1e809531dabe8e5374fee77d3268b7b09bbbb2ec4037a6b61f5dff771009a",
+      "byteLength": 1847
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-019-render-document-child-edges-below.json",
+      "sha256": "sha256:c42042af969c7fa429d8174833eae43683832e9ca64aab96e9803e7352dc00a3",
+      "byteLength": 1845
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-019-render-document-child-edges-at.json",
+      "sha256": "sha256:5266e560d11d69bb1f7d10513c46203401317ed45c86910a047b063b44de5d8b",
+      "byteLength": 1839
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-019-render-document-child-edges-above.json",
+      "sha256": "sha256:2c094883d2852ddba49657a3f93a12481b132f34cb451a19f5c24e64c01d6d68",
+      "byteLength": 1845
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-020-render-document-runs-below.json",
+      "sha256": "sha256:f1d757835755b720d9c12e48a202f37a0d60844197593dc73494a25e35ce2b1d",
+      "byteLength": 1832
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-020-render-document-runs-at.json",
+      "sha256": "sha256:09166bf2106dc187482238754802c40b7ba42a67b81ddcbf7c55a66a9b91a0cd",
+      "byteLength": 1827
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-020-render-document-runs-above.json",
+      "sha256": "sha256:9a182c4bc0d7d0aa37aba5afe78f9c3e5a4f639d3080e3bab51d30736c3bc86b",
+      "byteLength": 1833
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-021-render-document-text-scalars-below.json",
+      "sha256": "sha256:015a8d2d07558da85a06a31739aafbcb8b837ec87017a2ab34fec70e48ce7662",
+      "byteLength": 1848
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-021-render-document-text-scalars-at.json",
+      "sha256": "sha256:692b1c8987f75abe3ed9b4c1ce1784573c34be1f4400fbe9647e12841ca986b8",
+      "byteLength": 1843
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-021-render-document-text-scalars-above.json",
+      "sha256": "sha256:64a06b8280d00954859b7808e784cea2236f5a310fced4f02a0d86b4dafa3eff",
+      "byteLength": 1849
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-022-render-document-vector-entries-below.json",
+      "sha256": "sha256:f36e822ee1cf4637bee22cf5a893ef86a6886eb0593f6744df1a198f217683a0",
+      "byteLength": 1851
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-022-render-document-vector-entries-at.json",
+      "sha256": "sha256:12ef5eb746315c7c74a99338d7b3d9d0fb5526584900016f5def1f71dba78980",
+      "byteLength": 1846
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-022-render-document-vector-entries-above.json",
+      "sha256": "sha256:ee47e638a08a1b2bb7770f9d754edcbc9abd6e4a8f31134c0e4c8cd3d2a1554f",
+      "byteLength": 1852
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-023-diagnostics-sidecar-items-below.json",
+      "sha256": "sha256:3fb20e6e280d9e95e42e22a55750ce97e61c221eeaddffc669690d579a03de94",
+      "byteLength": 1824
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-023-diagnostics-sidecar-items-at.json",
+      "sha256": "sha256:eae4bcc5629b601b0beea64a90bb051a700aaab70ba9345d135e14075808d1ee",
+      "byteLength": 1818
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-023-diagnostics-sidecar-items-above.json",
+      "sha256": "sha256:04bbffba107f26da678728cbf2a743e474fa63f753c00e902f19f88e724a67dc",
+      "byteLength": 1824
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-024-diagnostics-sidecar-bytes-below.json",
+      "sha256": "sha256:d51fbb7455ca01a3d27ce7233e0ea176d675cb961f628ab7f14a133e94c21aa0",
+      "byteLength": 1826
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-024-diagnostics-sidecar-bytes-at.json",
+      "sha256": "sha256:7f994ff5dbc6f22ad66c7ca1bafa4403893c0b66dc81f1d9b7d1bc1c03f7a348",
+      "byteLength": 1820
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-024-diagnostics-sidecar-bytes-above.json",
+      "sha256": "sha256:4dded98c2422d616d9e7372ae37ac5a768dd3ffb36d7de91a7973fc26e5a0126",
+      "byteLength": 1826
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-025-assets-and-fetch-authored-asset-occurrences-below.json",
+      "sha256": "sha256:19149a35abe6d384e105a06e39d76d763d40e5d8619206287bda96b342beafc7",
+      "byteLength": 1889
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-025-assets-and-fetch-authored-asset-occurrences-at.json",
+      "sha256": "sha256:b96f32e47ea22891b894ae7638017f8aae256b0700daa404fbf0d6d59786e3c0",
+      "byteLength": 1883
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-025-assets-and-fetch-authored-asset-occurrences-above.json",
+      "sha256": "sha256:02949dd83ec7ee62109cc6a29928784c1e57a8cff1be52f9d709ac2b55a0b1c6",
+      "byteLength": 1889
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-026-assets-and-fetch-unique-logical-assets-below.json",
+      "sha256": "sha256:4d0faf6cd679deb56892c105edaa2bef362a6d872e445ecb5fc8093e8fd7baf4",
+      "byteLength": 1878
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-026-assets-and-fetch-unique-logical-assets-at.json",
+      "sha256": "sha256:19a0335fed2dd040d3fa908ea5bb4d686bf914be18cbaa9777294b16a9682166",
+      "byteLength": 1872
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-026-assets-and-fetch-unique-logical-assets-above.json",
+      "sha256": "sha256:5d22a96b1145aac313c2872cdf4cf03297c88fa650615b5bca79c857315686ef",
+      "byteLength": 1878
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-027-assets-and-fetch-actual-resolve-occurrences-below.json",
+      "sha256": "sha256:abac755359437b7c019f3a074bf5200824b1e7be15a120e8e49b3ca1d44e9fab",
+      "byteLength": 1834
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-027-assets-and-fetch-actual-resolve-occurrences-at.json",
+      "sha256": "sha256:2aa89ac51df599234563e1251c265790ecdc78f52d81a459d70adfb2dc859721",
+      "byteLength": 1828
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-027-assets-and-fetch-actual-resolve-occurrences-above.json",
+      "sha256": "sha256:6717561d0734eb3fd033c0307ca3a82706346112d4c66912b55ec51ccc2dadda",
+      "byteLength": 1834
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-028-assets-and-fetch-render-resource-entries-below.json",
+      "sha256": "sha256:8a0caff1be7bb66efb92da1a0004f275d767cef84ad92524c97b95cde748fc0c",
+      "byteLength": 1851
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-028-assets-and-fetch-render-resource-entries-at.json",
+      "sha256": "sha256:c84458da5f00057708f4cad91c3a236b0f3d4fba586f87334ca74b7864203a55",
+      "byteLength": 1845
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-028-assets-and-fetch-render-resource-entries-above.json",
+      "sha256": "sha256:69bdeccb5763ea37c862ae177c3963a949990441007c81397c3eeeab63ff7836",
+      "byteLength": 1851
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-029-assets-and-fetch-unique-exact-contents-below.json",
+      "sha256": "sha256:9d54dab66fc4e184de7a74f217b6e64b5e2dfb42520a5123e356edcffa7dfa83",
+      "byteLength": 1878
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-029-assets-and-fetch-unique-exact-contents-at.json",
+      "sha256": "sha256:170f31dd963555905ba69be3162b24402ad20fd61cb07de591e541fe80ecb58a",
+      "byteLength": 1872
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-029-assets-and-fetch-unique-exact-contents-above.json",
+      "sha256": "sha256:572b46b36e9a01890ae3bea49fd3f0e94e6ef89c4922a10e98f0b61f4ad2f069",
+      "byteLength": 1878
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-030-assets-and-fetch-occurrence-declared-raw-bytes-below.json",
+      "sha256": "sha256:258abc9aceb11e189b7e4c3b6666eb4480e2a91accb1d67f231e28463aa5861d",
+      "byteLength": 1899
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-030-assets-and-fetch-occurrence-declared-raw-bytes-at.json",
+      "sha256": "sha256:179775a91b375be6ab4a2025c7e18472bbd4fe19f84acf4fb60dc3bc88beb600",
+      "byteLength": 1893
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-030-assets-and-fetch-occurrence-declared-raw-bytes-above.json",
+      "sha256": "sha256:bf94f0ce82dcc37b070b48291949016e027ba907f43f2d466bc70cb47d9b13a0",
+      "byteLength": 1899
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-031-assets-and-fetch-unique-raw-bytes-below.json",
+      "sha256": "sha256:0a5e2b4efd740451fe9035501787deac9c2fe5812033f5fb6bca8f9e0d953bce",
+      "byteLength": 1874
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-031-assets-and-fetch-unique-raw-bytes-at.json",
+      "sha256": "sha256:4d537702c5d4250e6007eb68f4d9babbc6f2453701fbe5c2f04a89b63ef7d6d8",
+      "byteLength": 1868
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-031-assets-and-fetch-unique-raw-bytes-above.json",
+      "sha256": "sha256:40855c199840dfbd51d643a18de969c3fa4b617ad5b36a7b89cc7ed02ad78cb5",
+      "byteLength": 1874
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-032-assets-and-fetch-occurrence-image-pixels-below.json",
+      "sha256": "sha256:c0b37796affb91a1d89841324ef84f76b9fc22f868f6604a864306f7070c5e0c",
+      "byteLength": 1888
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-032-assets-and-fetch-occurrence-image-pixels-at.json",
+      "sha256": "sha256:c80eb078dfadd0d87f718e7751d4196e1e26d67cde8d9a63da4a0ae2a9bda76b",
+      "byteLength": 1883
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-032-assets-and-fetch-occurrence-image-pixels-above.json",
+      "sha256": "sha256:b5ac4ebb05aa660f801e9dba2327d9b93437169e64ece9de56fe42c7a772dfbe",
+      "byteLength": 1889
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-033-assets-and-fetch-unique-image-pixels-below.json",
+      "sha256": "sha256:7b7e9f627a13378de0fb32c5ff2c2d5affb7f4b0dcc3e4e843a531ef649e856f",
+      "byteLength": 1880
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-033-assets-and-fetch-unique-image-pixels-at.json",
+      "sha256": "sha256:10658556848228c5667fe0eb09eeba6c6fd0d614e3e43e73a5c050d320b08298",
+      "byteLength": 1874
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-033-assets-and-fetch-unique-image-pixels-above.json",
+      "sha256": "sha256:e8e365eff0aeec6ca642bad6ece2a5a7a771da94cf871f5e668a64df3097b923",
+      "byteLength": 1880
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-034-assets-and-fetch-occurrence-font-bytes-below.json",
+      "sha256": "sha256:30641c47ff401f6d5829ce1816d0ccf4fb0b424afcbadf2214bccc231747d25e",
+      "byteLength": 1884
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-034-assets-and-fetch-occurrence-font-bytes-at.json",
+      "sha256": "sha256:6fddd99f8b9546c5eafcdf376561c65af1e7cee8653fea1b6bd4073fbcdbdba9",
+      "byteLength": 1878
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-034-assets-and-fetch-occurrence-font-bytes-above.json",
+      "sha256": "sha256:797db8efbe6b20d6a192d297c9a28797c349efce7a87dc246ebf61ef4f3ea3b4",
+      "byteLength": 1884
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-035-assets-and-fetch-unique-font-bytes-below.json",
+      "sha256": "sha256:e214deb28426bbeb3024fa084bb95805af5ac36d999ff2e809954d3c84990662",
+      "byteLength": 1875
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-035-assets-and-fetch-unique-font-bytes-at.json",
+      "sha256": "sha256:940d0ee61dcafa7d73e12bd8ffa7280897fc066004e31518f0956919f30b326a",
+      "byteLength": 1869
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-035-assets-and-fetch-unique-font-bytes-above.json",
+      "sha256": "sha256:fffe9824b7ccf3b95a925b2accbdde06af6a9a0ee641d5f0280a519606fa7d5c",
+      "byteLength": 1875
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-036-assets-and-fetch-manifest-bytes-below.json",
+      "sha256": "sha256:9ab0be4bd98e0dca2528afbc9d2063a2fb67ae4450d923d0a4fab1e396872104",
+      "byteLength": 1870
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-036-assets-and-fetch-manifest-bytes-at.json",
+      "sha256": "sha256:875902e9d22690ac38e6ee6b404bd1d585f2b9874052a585e7715d5a176579a8",
+      "byteLength": 1864
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-036-assets-and-fetch-manifest-bytes-above.json",
+      "sha256": "sha256:9f048240ba2c17e720a3e1dfff883b3791180fbe11b75ff9532a25f798f26bbc",
+      "byteLength": 1870
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-037-capability-runtime-static-capability-sources-below.json",
+      "sha256": "sha256:16a5bbe383e3bbd00139f354f7050df5bb24ae376956c942194fdafdbc11357f",
+      "byteLength": 1866
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-037-capability-runtime-static-capability-sources-at.json",
+      "sha256": "sha256:36e6dadcd72a9740728043f669dd57dcd1dd15d03811ad652196198b238fd541",
+      "byteLength": 1860
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-037-capability-runtime-static-capability-sources-above.json",
+      "sha256": "sha256:4375677ffc9f4d001071c76778a40f0bb4e891d63391b7911f9ca725f60d243e",
+      "byteLength": 1866
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-038-capability-runtime-total-demands-below.json",
+      "sha256": "sha256:57db08ff2288f7fc7815cea0eef31138b82dc59cd47f3beec14224e56b0a2586",
+      "byteLength": 1869
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-038-capability-runtime-total-demands-at.json",
+      "sha256": "sha256:af926899b2222911bc62f7d55fbe3ecd22016843b049fe19b35cdd9a7ffd1080",
+      "byteLength": 1863
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-038-capability-runtime-total-demands-above.json",
+      "sha256": "sha256:7400e88361b8deb7bf4fbb1544338a6397adc69f8e5b95fed626d62be4124edc",
+      "byteLength": 1869
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-039-capability-runtime-clock-demands-below.json",
+      "sha256": "sha256:4b535fefd9cae06480d9c81c9d7e6e8667d7a253c5cf2eba2b59775a8c73239a",
+      "byteLength": 1869
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-039-capability-runtime-clock-demands-at.json",
+      "sha256": "sha256:90f67e558a9238a33358e7562b2f0442051888209ca4a1ce356a109e8a396586",
+      "byteLength": 1863
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-039-capability-runtime-clock-demands-above.json",
+      "sha256": "sha256:997f9fe6f455458396378d1c9de4189cd498971f26cec1a11e87f25d159a9656",
+      "byteLength": 1869
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-040-capability-runtime-random-demands-below.json",
+      "sha256": "sha256:7be1cd7b5e6ca56a5fbee8ee3a7e72bce98f1617a5bb9a6a71334a7becb0903c",
+      "byteLength": 1871
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-040-capability-runtime-random-demands-at.json",
+      "sha256": "sha256:2e2dfb5245e5f095e28e9a7633f50fe3db75bd2b75cc69b59509b98dbd66a867",
+      "byteLength": 1865
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-040-capability-runtime-random-demands-above.json",
+      "sha256": "sha256:d6b6ae3173637ffe2d2b91d5bef46893881a38ec9998aecaa3eb0f806cef54d8",
+      "byteLength": 1871
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-041-capability-runtime-position-canonical-bytes-per-demand-below.json",
+      "sha256": "sha256:cf46cde04223516206ffba60c866aaf60b4706e145aa01273ba663665f58cffb",
+      "byteLength": 1907
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-041-capability-runtime-position-canonical-bytes-per-demand-at.json",
+      "sha256": "sha256:19158d9c4e5fd2658d9f473fb6fce053d5409fc9d3497ac573b47cfff9bd5950",
+      "byteLength": 1901
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-041-capability-runtime-position-canonical-bytes-per-demand-above.json",
+      "sha256": "sha256:5cb76f415d0eabc13974e1b266595b0f34a5237a35cf5c49f732084c2a680d9c",
+      "byteLength": 1907
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-042-capability-runtime-position-canonical-bytes-total-below.json",
+      "sha256": "sha256:3c0514e76edac751223689ad02128db29f73f8afe7c3391f0377cb13ae29e07e",
+      "byteLength": 1903
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-042-capability-runtime-position-canonical-bytes-total-at.json",
+      "sha256": "sha256:e4a55b673fa9d8f6b929d4be3ef76db7572b2e76856b4350870afb458a8b0f7a",
+      "byteLength": 1897
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-042-capability-runtime-position-canonical-bytes-total-above.json",
+      "sha256": "sha256:bdac4ecb3e21646b54ee1ad68747d29208b786c0fa2453b8c933c836e4f14101",
+      "byteLength": 1903
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-043-capability-runtime-capability-state-record-bytes-below.json",
+      "sha256": "sha256:947a515b6e0ae7cc4e2726b037ea6c930f549047cd896405439d19b5fe71a15a",
+      "byteLength": 1854
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-043-capability-runtime-capability-state-record-bytes-at.json",
+      "sha256": "sha256:8c10689d3a419ab7bbeb52cf09ba02d690c252596d9642d3755fde6daaff63d3",
+      "byteLength": 1848
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-043-capability-runtime-capability-state-record-bytes-above.json",
+      "sha256": "sha256:749b79f965166a3094d9b98c75d51f4ca14bff6ad7077e03768b99fba9350949",
+      "byteLength": 1854
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-044-capability-runtime-result-digest-streaming-bytes-below.json",
+      "sha256": "sha256:8fca2b9e1b8bfa04a277bf89111179bc5624a44423b2ce80cbcc87fb1abd6f20",
+      "byteLength": 1901
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-044-capability-runtime-result-digest-streaming-bytes-at.json",
+      "sha256": "sha256:7cab64723d4b096300c657af69406ea3b0b28e408c25a1ea3f3648b60c46c9a4",
+      "byteLength": 1895
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-044-capability-runtime-result-digest-streaming-bytes-above.json",
+      "sha256": "sha256:af3fcf4af3651c68acb205ddf9aa38446529e4ed5dfc0b7bef70e6a37d7b7da4",
+      "byteLength": 1901
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-045-capability-runtime-initialization-attempts-below.json",
+      "sha256": "sha256:826b0ca2f76270b7e1ea6c61b07934377b43ce7d577f25cb233ee2802f7f27b8",
+      "byteLength": 1851
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-045-capability-runtime-initialization-attempts-at.json",
+      "sha256": "sha256:d1f8514cc6be962cb0ae59353aabaec7b534247e45b7bbc8d5d7118adf9d77d0",
+      "byteLength": 1845
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-045-capability-runtime-initialization-attempts-above.json",
+      "sha256": "sha256:1b6ca2a49e54fc92d7465951a08eedb1592891a454d9e6fc5d839ed1d073fe72",
+      "byteLength": 1851
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-046-capability-runtime-random-rejection-attempts-below.json",
+      "sha256": "sha256:5754389a289e62b77816a686e30f1a9de446ad3584dd0c577537559041caf87f",
+      "byteLength": 1858
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-046-capability-runtime-random-rejection-attempts-at.json",
+      "sha256": "sha256:33f61dd61a4098434a6ccf5c6fcb84836c4eb9f4a30687eb502ca19c6a12baeb",
+      "byteLength": 1852
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-046-capability-runtime-random-rejection-attempts-above.json",
+      "sha256": "sha256:737cc55a5be0ec132b9c18b2342a878af4d0e59b74bc4282d3b6be16164a0e06",
+      "byteLength": 1858
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-047-deadline-and-retention-total-deadline-millis-below.json",
+      "sha256": "sha256:21bad81fe6fca8ab5b6dad909d9c0de646ffd7f1e332a4c3027da12ea71fe652",
+      "byteLength": 1853
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-047-deadline-and-retention-total-deadline-millis-at.json",
+      "sha256": "sha256:cca4ccee62868ff6b711ff4c8348c3c2a674f035d8c5d14dfcb608b0d44f1062",
+      "byteLength": 1847
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-047-deadline-and-retention-total-deadline-millis-above.json",
+      "sha256": "sha256:46da885152619dd70673b1dbe52823118ae7d7f3346b06bba0a4192c0a0eb264",
+      "byteLength": 1853
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-048-deadline-and-retention-admission-and-closure-millis-below.json",
+      "sha256": "sha256:72fee5fd9906aca33522d5ff11e9545777907bad69e83347b2487268c2ba2193",
+      "byteLength": 1892
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-048-deadline-and-retention-admission-and-closure-millis-at.json",
+      "sha256": "sha256:720608d82f9b12a625f5b29ed4c0dbdabd934fc59814244246060cf2e1f39649",
+      "byteLength": 1886
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-048-deadline-and-retention-admission-and-closure-millis-above.json",
+      "sha256": "sha256:e9a96e58fbeaa2f5886e06d9fe6ac14e8634321250db546d5f60e92d8c56b56e",
+      "byteLength": 1892
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-049-deadline-and-retention-evaluation-and-document-seal-millis-below.json",
+      "sha256": "sha256:b1f44dcccfe2fad7979ad571916974b5f5ac14a7e20076ec74c4b5e3f75298ca",
+      "byteLength": 1900
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-049-deadline-and-retention-evaluation-and-document-seal-millis-at.json",
+      "sha256": "sha256:756227bff82c6428f702cc554456ba87a320f9b14c83a17ae1c4d202e742276e",
+      "byteLength": 1894
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-049-deadline-and-retention-evaluation-and-document-seal-millis-above.json",
+      "sha256": "sha256:717fd864cec0ebd969780d3f48db6fd913eda720a81ea4ce1abbc552a25959f9",
+      "byteLength": 1900
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-050-deadline-and-retention-terminal-registry-and-output-retention-millis-below.json",
+      "sha256": "sha256:e6e658335537b011003afe224fc1ff14e6bc538fcf9796d01f578ef9f5a25389",
+      "byteLength": 1899
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-050-deadline-and-retention-terminal-registry-and-output-retention-millis-at.json",
+      "sha256": "sha256:1e7ee0aff99f776ff6f37daf9bfe3bf1a18fdc22fcbb2668b2b73e68083d1013",
+      "byteLength": 1893
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-050-deadline-and-retention-terminal-registry-and-output-retention-millis-above.json",
+      "sha256": "sha256:ea121c61d1a79b449ac25d970cb327f0d215f0f149fb08d2b07b876340fda0de",
+      "byteLength": 1899
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-051-deadline-and-retention-pre-command-cancel-tombstone-millis-below.json",
+      "sha256": "sha256:0a4aa86d2b6db483fb0338f8b0b30fa6892ceb6ec31b3c0cbc9dcac03963125e",
+      "byteLength": 1880
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-051-deadline-and-retention-pre-command-cancel-tombstone-millis-at.json",
+      "sha256": "sha256:0c44ed0ffc6e9fcb2025ce29b495e3d4dcf7ca424685e55ad0fe9bce3b681366",
+      "byteLength": 1874
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-051-deadline-and-retention-pre-command-cancel-tombstone-millis-above.json",
+      "sha256": "sha256:4ad08659610fd27562f2137bfb6f828b6e1549ebb6b796b9e7cc2f463d26455e",
+      "byteLength": 1880
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-052-deadline-and-retention-capability-and-resolver-recovery-retention-after-deadline-millis-below.json",
+      "sha256": "sha256:aa50e5be8cf20d026c93f89870d589c8265390604ec102fb476840509ac482d8",
+      "byteLength": 1933
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-052-deadline-and-retention-capability-and-resolver-recovery-retention-after-deadline-millis-at.json",
+      "sha256": "sha256:ee9f1bbdc670489ef2fe199587d8d6444f62f98d2b9fd943684a7a375b15e9d9",
+      "byteLength": 1927
+    },
+    {
+      "path": "rendering-pipeline/fixtures/cap-052-deadline-and-retention-capability-and-resolver-recovery-retention-after-deadline-millis-above.json",
+      "sha256": "sha256:f1d73c538341eea96b7f621d3cee8122fecb42ef2610f5407132ba317c611242",
+      "byteLength": 1933
+    },
+    {
+      "path": "rendering-pipeline/fixtures/named-rendering-pipeline-baseline-noop.json",
+      "sha256": "sha256:296f29542e6d1097478f6fa3fae1f1d7593a70531add5df038df2dc7e48fe640",
+      "byteLength": 1340
+    }
+  ],
+  "expectedScenarioCount": 157,
+  "productTarget": false,
+  "productExecutionAllowed": false,
+  "networkReadsAllowed": false,
+  "environmentReadsAllowed": false,
+  "currentTimeReadsAllowed": false
+}

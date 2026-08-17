@@ -132,8 +132,8 @@ Blocked by: 08, 10, 11, 12, 13, 14
 
 ### 8. Seal、空画布与失败清理
 
-- 全部求值与Asset解析成功后执行一次原子seal：验证唯一Canvas root、closed kind/ContentModel、default展开、量化值、occurrenceId连续唯一、tree/manifest双射、RenderResource/lease、动态与业务身份零残留，以及全部容量限制；最后才产生不可变canonical bytes与digest。
-- 在seal发现本应由Evaluator排除的结构残留或不变量破坏属于内部lowering合同违约；普通运行时数值或容量错误必须在进入seal前使用所属领域code失败。seal前任何builder内容都不能发送Engine。
+- 全部求值与Asset解析成功后进入`DOCUMENT_SEAL`：先验证唯一Canvas root、closed kind/ContentModel、default展开、量化值、occurrenceId连续唯一、tree/manifest双射、RenderResource/lease、动态与业务身份零残留，并通过capped counting writer验证RenderDocument-owned容量；全部成功后才原子commit不可变canonical bytes与digest。grapheme/glyph/line、paint item与clip depth等只有Engine布局后才可知的预算不属于RenderDocument seal。
+- 在seal发现本应由Evaluator排除的结构残留或不变量破坏属于内部lowering合同违约；普通运行时数值或容量错误必须在原子seal commit前使用所属领域code失败，其中RenderDocument-owned容量返回`RENDER_DOCUMENT_LIMIT_EXCEEDED`。seal前任何builder或canonical prefix都不能发送Engine。
 - 空Canvas合法：当children原本为空或全部被合法剪枝时，文档仍包含root Canvas、显式background/bleed、空children与空resources，Engine输出对应背景或透明图片；不插入placeholder。
 - seal前失败时丢弃builder、未封存bytes与完整sidecar，绝不调用Engine。已线性化CapabilityState和AssetResolver记录保留到固定expiry以支持unknown-commit安全性，不重采样、不删除、不续签，也不形成partial digest/document/history；只保留允许的聚合计数、稳定code与耗时。
 
@@ -162,20 +162,20 @@ Blocked by: 08, 10, 11, 12, 13, 14
 
 ### 12. 容量与重试计数维度
 
-- Ticket15冻结容量轴，票据19填写exact数值：closure的unique snapshot/edge/depth/retry/canonical bytes；admission的typed values/Asset atoms/dependency calls/problem bytes；runtime的operations/Definition/frame/item/invocation/occurrence/depth/synthetic node/generated track-cell；resource的actual resolve/manifest entry/unique exact content、按occurrence与unique content的声明bytes及manifest/URL bytes；document的node/children/run/text/point/command/track/string/depth/canonical bytes；diagnostic sidecar/problem/trace条目与字节。
+- Ticket15冻结容量轴，票据19填写exact数值：closure的unique snapshot/edge/depth/retry/canonical bytes；admission的typed values/Asset atoms/dependency calls/problem bytes；runtime的operations/Definition/frame/item/invocation/occurrence/depth/synthetic node/generated track-cell；resource的actual resolve/manifest entry/unique exact content、按occurrence与unique content的声明bytes及manifest/URL bytes；document的node/children/run/text/point/command/track/string/depth/canonical bytes；diagnostic sidecar/problem/trace条目与字节。grapheme/glyph/line、paint/clip及raster计数由Engine阶段拥有，不能冒充seal前已知的RenderDocument字段。
 - 动态计数必须在创建frame/node/resource、分配大对象或外部调用前原子预留；超限立即失败，不截断、不跳项。相同逻辑位置在同一Evaluation只计一次语义单位；内部重试另行消耗attempt、physical-operation与deadline预算且不得重置累计值。新renderRequestId才有新预算。
 - 静态可证明超限在CapabilityState前失败；动态超限返回所属稳定budget code并保证零RenderDocument。内存耗尽、线程调度或下游默认限制不能替代合同预算。
 
 ### 13. 错误、诊断与权限
 
-- 保留最具体的所属领域code并增加closed stage：`REQUEST_ADMISSION | TEMPLATE_CLOSURE | INPUT_ADMISSION | ASSET_ADMISSION | CAPABILITY_STATE | MATERIALIZATION | ASSET_RESOLUTION | DOCUMENT_SEAL | ENGINE`。Template dependency、Expression、Capability、AssetResolver、layout/resource Engine错误不统一改写为含糊`EVALUATION_FAILED`。contentHash/Profile兼容回归、malformed sealed document或Engine再次发现manifest不变量等内部违约，对外折叠为`RENDER_INTERNAL_ERROR`并产生脱敏运维告警。
-- 公共problem基础形态为`{code,stage,safeLocation,parameters}`。Admission可在权限范围内定位Template/revision/canonical DesignDSL pointer；runtime/Engine首先只返回opaque occurrenceId/resourceId与安全property identity。
+- 保留最具体的所属领域code并增加closed stage：`REQUEST_ADMISSION | TEMPLATE_CLOSURE | INPUT_ADMISSION | ASSET_ADMISSION | CAPABILITY_STATE | MATERIALIZATION | ASSET_RESOLUTION | DOCUMENT_SEAL | ENGINE`。容量目录至少包含`RENDER_INPUT_LIMIT_EXCEEDED/DESIGN_DSL_LIMIT_EXCEEDED/EXPRESSION_LIMIT_EXCEEDED/TEMPLATE_CLOSURE_LIMIT_EXCEEDED/EVALUATION_BUDGET_EXCEEDED/RENDER_DOCUMENT_LIMIT_EXCEEDED/RENDER_DIAGNOSTIC_LIMIT_EXCEEDED/ASSET_BUDGET_EXCEEDED/RESOURCE_BUDGET_EXCEEDED`，并复用各领域已有更具体code。Content-Encoding与geometry分别使用`RENDER_INPUT_CONTENT_ENCODING_UNSUPPORTED`和`DESIGN_PROPERTY_CONSTRAINT_INVALID`，不能伪装成容量超限。Template dependency、Expression、Capability、AssetResolver、layout/resource Engine错误不统一改写为含糊`EVALUATION_FAILED`。contentHash/Profile兼容回归、malformed sealed document或Engine再次发现manifest不变量等内部违约，对外折叠为`RENDER_INTERNAL_ERROR`并产生脱敏运维告警。
+- 公共problem基础形态为`{code,stage,safeLocation,parameters}`。容量problem的parameters只允许closed`limitId`，不得回显actual count、原始值或被省略内容；每个limitId必须由机器oracle固定code、stage、reservation point与零写/零RenderDocument/零RenderOutput边界。Admission可在权限范围内定位Template/revision/canonical DesignDSL pointer；runtime/Engine首先只返回opaque occurrenceId/resourceId与安全property identity。
 - Rendering只为拥有相应Template read权限的诊断调用者把sidecar投影为definitionId、bindingId、sourceNodeId与逐段授权Invocation/OccurrencePath；无权child segment必须redact。Asset identity继续依票据13的asset.read规则附加。
 - problem、log、trace和metrics不得回显业务值、完整文本、原始输入、Expression/Capability结果、Asset URL/token/hash/bytes、完整child path、stack或provider/raw cause。metrics只使用stage/code/profile/status等有界label。
 
 ### 14. Conformance 与明确排除
 
-- 实施前必须让Java Evaluator/sealer与Rust parser/validator独立重放同一corpus：覆盖全部static kind/default/lowering edge、canonical scalar与document digest vectors、结构展开与occurrenceId、剪枝/空树/visible/opacity、Binding/lazy/first-error、量化、manifest/descriptor/碰撞、动态及业务身份零残留、malformed/profile mismatch，以及合法final-geometry失败与内部文档违约的分类。
+- 实施前必须让Java Evaluator/sealer与Rust parser/validator独立重放同一corpus：覆盖全部static kind/default/lowering edge、canonical scalar与document digest vectors、结构展开与occurrenceId、剪枝/空树/visible/opacity、Binding/lazy/first-error、量化、manifest/descriptor/碰撞、动态及业务身份零残留、malformed/profile mismatch，以及合法final-geometry失败与内部文档违约的分类。Design/Input/Expression的authoring反馈另由Java authority与独立TypeScript实现重放相同语义向量；不要求无关语言重复不属于其seam的全部场景。
 - 同一机器可读RenderNodeContract和字节向量是跨语言authority；同名Java/Rust类、浏览器截图、旧MaterializedScene或单边单元测试都不能替代。
 - v1明确排除正式MaterializedScene、持久/序列化中间IR、Java预布局/final geometry；partial/streaming/带错误RenderDocument、断点续跑、跨请求文档复用；public RenderDSL上传下载、Workspace/Artifact保存、长期sidecar；宽松JSON、unknown/null、properties/metadata bag、插件kind；caller协商`latest`、旧Haibo静默降级；Engine回读Template/Resolver/Capability或动态callback；失败截断、资源跳过、placeholder、默认字体及partial output。
 - 本票据只冻结探索规格、术语及下游实施约束，不创建Evaluator、builder/sealer、RenderDSL model、Renderer client、API、表、路由、缓存、生产Engine适配或占位实现。

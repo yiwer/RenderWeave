@@ -1,0 +1,16 @@
+{
+  "artifactVersion": "renderweave-editor-fault-schedule/1.0",
+  "candidateId": "EDC::J11::016",
+  "executionClass": "EXEC::EDITOR_AUTOMATED::1.0",
+  "events": [
+    {
+      "at": "CANCEL_REQUEST",
+      "action": "ENGINE_MAY_ALREADY_SEAL",
+      "parameters": {}
+    }
+  ],
+  "expectedTerminal": {
+    "operationId": "author-cancel-clears-slot",
+    "outcome": "SUCCESS"
+  }
+}

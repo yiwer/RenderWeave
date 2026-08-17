@@ -1,0 +1,16 @@
+{
+  "artifactVersion": "renderweave-editor-input-fixture/1.0",
+  "candidateId": "EDC::J05::002",
+  "executionClass": "EXEC::EDITOR_AUTOMATED::1.0",
+  "baselineId": "EditorStructuredWithCurrentReport",
+  "parameters": {
+    "revision": 4,
+    "contentHashAlias": "current-hash-a"
+  },
+  "actionScript": [
+    {
+      "action": "OPEN_PROBLEM_PANEL",
+      "parameters": {}
+    }
+  ]
+}

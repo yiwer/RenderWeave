@@ -1,0 +1,102 @@
+{
+  "artifactVersion": "renderweave-domain-services-fixture-contract/1.0",
+  "fixtureVersion": "renderweave-domain-services-fixture/1.0",
+  "status": "FROZEN_STATIC_FIXTURE_CONTRACT",
+  "executionClass": "EXEC::DOMAIN_SERVICES::1.0",
+  "serialization": {
+    "encoding": "UTF-8 without BOM",
+    "lineEnding": "LF",
+    "indentationSpaces": 2,
+    "finalLfRequired": true,
+    "memberOrder": "exactly the contract order emitted by renderweave-domain-services-generator/1.0"
+  },
+  "allowedModes": [
+    "CAPACITY_BOUNDARY",
+    "NAMED_SCENARIO"
+  ],
+  "capacityBoundary": {
+    "entrypoint": "ASSET_CONTENT_ADMISSION_CAPACITY_GUARD",
+    "guardContractId": "renderweave-domain-asset-content-capacity-guard/1.0",
+    "allowedLimitIds": [
+      "assetsAndFetch.acceptedImageBytesPerContent",
+      "assetsAndFetch.acceptedImageEdgePixelsPerContent",
+      "assetsAndFetch.acceptedImagePixelsPerContent",
+      "assetsAndFetch.acceptedFontBytesPerContent"
+    ],
+    "allowedValueEncoding": "CANONICAL_INTEGER",
+    "allowedComparator": "MAX_INCLUSIVE",
+    "allowedVariants": [
+      "below",
+      "at",
+      "above"
+    ],
+    "targetContract": {
+      "exactProductionGuardRequired": true,
+      "duplicateGuardImplementationForbidden": true,
+      "productApiSurfaceCreated": false,
+      "databaseRequiredForThisProbe": false,
+      "mediaPayloadRequiredForThisProbe": false,
+      "fullUploadPathProvenByThisProbe": false,
+      "futureIntegrationProofRequired": "The exact DOMAIN_SERVICES target must separately prove that IMAGE and FONT admission derive the observed scalar from authoritative bytes or decoded descriptors and invoke this same guard at the frozen reservation point."
+    }
+  },
+  "namedScenario": {
+    "parameterSchemaId": "renderweave-named-scenario-parameters/1.0",
+    "allowedScenarioIds": [
+      "DOMAIN-BASELINE-NOOP"
+    ],
+    "entrypoint": "BASELINE_CONTRACT_CHECK",
+    "expectedObservationProfile": "renderweave-domain-services-observation-adapter/1.0",
+    "parametersReferenceExactFixtureBytes": true,
+    "productMutationAllowed": false
+  },
+  "fixtureTopLevelOrder": [
+    "fixtureVersion",
+    "generatorProfile",
+    "executionClass",
+    "baseline",
+    "scenario",
+    "observationAdapter",
+    "targetContract"
+  ],
+  "capacityScenarioOrder": [
+    "mode",
+    "scenarioId",
+    "operationId",
+    "entrypoint",
+    "guardContractId",
+    "limitId",
+    "observedValue",
+    "valueEncoding",
+    "comparator",
+    "variant",
+    "contractStage",
+    "publicRenderStage",
+    "reservationPoint",
+    "zeroBoundary",
+    "faultSchedule"
+  ],
+  "namedScenarioOrder": [
+    "mode",
+    "scenarioId",
+    "operationId",
+    "entrypoint",
+    "faultSchedule"
+  ],
+  "forbiddenFixtureMembers": [
+    "expectedTerminal",
+    "expectedAssertions",
+    "plannedAssertions",
+    "plannedOracleId",
+    "requirementIds",
+    "resolvedCode",
+    "resolvedKind",
+    "latest",
+    "default",
+    "script"
+  ],
+  "evidenceBoundary": {
+    "fixtureGenerationMayProve": "deterministic closed fixture bytes and target-input isolation",
+    "fixtureGenerationCannotProve": "product guard wiring, command terminal, transaction behavior, PostgreSQL behavior, media parsing, capacity enforcement, record issuance, or execution-class readiness"
+  }
+}

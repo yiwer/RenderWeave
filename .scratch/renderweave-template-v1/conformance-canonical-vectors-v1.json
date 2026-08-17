@@ -1,0 +1,177 @@
+{
+  "artifactVersion": "renderweave-conformance-canonical-vectors/1.0",
+  "profileId": "renderweave-conformance-c14n/1.0",
+  "status": "FROZEN_DUAL_REPLAYED",
+  "authority": "Ticket19 canonical byte and digest seam vectors; these vectors do not issue any Case or Oracle record",
+  "positiveVectors": [
+    {
+      "vectorId": "C14N-P001",
+      "kind": "CANONICAL_BYTES",
+      "rule": "plain decimal removes insignificant zeroes",
+      "inputUtf8Hex": "312e3030",
+      "expectedCanonicalUtf8Hex": "31",
+      "expectedCanonicalSha256": "sha256:6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b"
+    },
+    {
+      "vectorId": "C14N-P002",
+      "kind": "CANONICAL_BYTES",
+      "rule": "negative zero becomes zero",
+      "inputUtf8Hex": "2d302e303030",
+      "expectedCanonicalUtf8Hex": "30",
+      "expectedCanonicalSha256": "sha256:5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+    },
+    {
+      "vectorId": "C14N-P003",
+      "kind": "CANONICAL_BYTES",
+      "rule": "exponent becomes plain notation",
+      "inputUtf8Hex": "31652b33",
+      "expectedCanonicalUtf8Hex": "31303030",
+      "expectedCanonicalSha256": "sha256:40510175845988f13f6162ed8526f0b09f73384467fa855e1e79b44a56562a58"
+    },
+    {
+      "vectorId": "C14N-P004",
+      "kind": "CANONICAL_BYTES",
+      "rule": "slash escape is removed",
+      "inputUtf8Hex": "22615c2f6222",
+      "expectedCanonicalUtf8Hex": "22612f6222",
+      "expectedCanonicalSha256": "sha256:f5effa31772a3689cb116700c569f4b72d765290968f099016a899ab6c1e4ee3"
+    },
+    {
+      "vectorId": "C14N-P005",
+      "kind": "CANONICAL_BYTES",
+      "rule": "escaped scalar emits directly",
+      "inputUtf8Hex": "225c753030653922",
+      "expectedCanonicalUtf8Hex": "22c3a922",
+      "expectedCanonicalSha256": "sha256:f2886017e9c7abacf804b54d64787dce2b611c9544ba21f3affdd126a6e50086"
+    },
+    {
+      "vectorId": "C14N-P006",
+      "kind": "CANONICAL_BYTES",
+      "rule": "decomposed scalar sequence is not normalized",
+      "inputUtf8Hex": "22655c753033303122",
+      "expectedCanonicalUtf8Hex": "2265cc8122",
+      "expectedCanonicalSha256": "sha256:3d68ce21f2899a475713cdbe7562ba9bdb6b1dfde8af1f221bdff4a0935b53b2"
+    },
+    {
+      "vectorId": "C14N-P007",
+      "kind": "CANONICAL_BYTES",
+      "rule": "map keys sort by unsigned UTF-8",
+      "inputUtf8Hex": "7b22c3a9223a312c227a223a322c2261223a337d",
+      "expectedCanonicalUtf8Hex": "7b2261223a332c227a223a322c22c3a9223a317d",
+      "expectedCanonicalSha256": "sha256:fa7ddcf43923b2711f2f592f210e5ab9e4a54a3b2df09830d93f402391a33e4e"
+    },
+    {
+      "vectorId": "C14N-P008",
+      "kind": "CANONICAL_BYTES",
+      "rule": "named coverage set sorts by requirementId",
+      "inputUtf8Hex": "7b22636f766572616765223a5b7b22726571756972656d656e744964223a227a227d2c7b22726571756972656d656e744964223a2261227d5d7d",
+      "expectedCanonicalUtf8Hex": "7b22636f766572616765223a5b7b22726571756972656d656e744964223a2261227d2c7b22726571756972656d656e744964223a227a227d5d7d",
+      "expectedCanonicalSha256": "sha256:51f6c8ff95b64a1faa5a4b72e033a382f26bcf536decff49f0ec3c344b0558b1"
+    },
+    {
+      "vectorId": "C14N-P009",
+      "kind": "CANONICAL_BYTES",
+      "rule": "ordinary arrays preserve semantic order",
+      "inputUtf8Hex": "7b2276616c756573223a5b227a222c2261225d7d",
+      "expectedCanonicalUtf8Hex": "7b2276616c756573223a5b227a222c2261225d7d",
+      "expectedCanonicalSha256": "sha256:dfddf9755119cf01303ca31b3c450602f494592efc62d3a6aa05bbf4c5e7087d"
+    },
+    {
+      "vectorId": "C14N-P010",
+      "kind": "DOMAIN_DIGEST",
+      "rule": "case signature",
+      "domainUtf8Hex": "72656e64657277656176652d636f6e666f726d616e63652d636173652d7369676e61747572652f3100",
+      "canonicalProjectionUtf8Hex": "7b227374696d756c7573223a7b22696e707574223a7b226b696e64223a224152544946414354222c22617274696661637450617468223a2266222c226d6564696154797065223a226170706c69636174696f6e2f6a736f6e222c226172746966616374536861323536223a227368613235363a30303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030222c226964656e74697479536861323536223a227368613235363a31313131313131313131313131313131313131313131313131313131313131313131313131313131313131313131313131313131313131313131313131313131227d2c226661756c745363686564756c65223a7b226b696e64223a224e4f4e45222c226964656e74697479536861323536223a227368613235363a32323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232227d7d2c2265787065637465645465726d696e616c73223a5b7b226f7065726174696f6e4964223a226d61696e222c226f7574636f6d65223a2253554343455353227d5d7d",
+      "expectedDigest": "sha256:4c30b2493ccdc0ca62aa3ccc33651fa6d69c1cc7658f078dc883e109723bb3d8"
+    },
+    {
+      "vectorId": "C14N-P011",
+      "kind": "DOMAIN_DIGEST",
+      "rule": "oracle signature",
+      "domainUtf8Hex": "72656e64657277656176652d636f6e666f726d616e63652d6f7261636c652d7369676e61747572652f3100",
+      "canonicalProjectionUtf8Hex": "7b2270726f626550726f66696c65223a2272656e64657277656176652d636f6e666f726d616e63652d70726f6265732f312e30222c22617373657274696f6e73223a5b7b22617373657274696f6e4964223a2241303031222c2270726f62654964223a226f7065726174696f6e2e6163636570746564222c226f70657261746f72223a224551222c226578706563746564223a7b226b696e64223a224c49544552414c222c2276616c7565223a747275657d7d5d7d",
+      "expectedDigest": "sha256:820d325577f162b507bd256ddd7e614366f9bf51a43d00e6caba4e9715450338"
+    },
+    {
+      "vectorId": "C14N-P012",
+      "kind": "DOMAIN_DIGEST",
+      "rule": "input identity excludes identitySha256",
+      "domainUtf8Hex": "72656e64657277656176652d636f6e666f726d616e63652d696e7075742d6964656e746974792f3100",
+      "canonicalProjectionUtf8Hex": "7b226b696e64223a224152544946414354222c22617274696661637450617468223a22666978747572652e6a736f6e222c226d6564696154797065223a226170706c69636174696f6e2f6a736f6e222c226172746966616374536861323536223a227368613235363a30303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030227d",
+      "expectedDigest": "sha256:1a93c69bbf2db10bbf7b4c0ce08261eff1c544cdc5f95e336fffff3fe92675c7"
+    },
+    {
+      "vectorId": "C14N-P013",
+      "kind": "DOMAIN_DIGEST",
+      "rule": "fault identity excludes identitySha256",
+      "domainUtf8Hex": "72656e64657277656176652d636f6e666f726d616e63652d6661756c742d6964656e746974792f3100",
+      "canonicalProjectionUtf8Hex": "7b226b696e64223a224e4f4e45227d",
+      "expectedDigest": "sha256:41042a03228cdd46583d0e6aff814ba139e183b72280d45375e9a09d0b9e09ae"
+    }
+  ],
+  "negativeVectors": [
+    {
+      "vectorId": "C14N-N001",
+      "rule": "duplicate member",
+      "inputUtf8Hex": "7b2261223a312c2261223a327d",
+      "expectedCode": "CONFORMANCE_DUPLICATE_MEMBER"
+    },
+    {
+      "vectorId": "C14N-N002",
+      "rule": "comment",
+      "inputUtf8Hex": "7b2261223a312f2a782a2f7d",
+      "expectedCode": "CONFORMANCE_JSON_SYNTAX_INVALID"
+    },
+    {
+      "vectorId": "C14N-N003",
+      "rule": "trailing comma",
+      "inputUtf8Hex": "7b2261223a312c7d",
+      "expectedCode": "CONFORMANCE_JSON_SYNTAX_INVALID"
+    },
+    {
+      "vectorId": "C14N-N004",
+      "rule": "NaN",
+      "inputUtf8Hex": "7b2261223a4e614e7d",
+      "expectedCode": "CONFORMANCE_NUMBER_INVALID"
+    },
+    {
+      "vectorId": "C14N-N005",
+      "rule": "Infinity",
+      "inputUtf8Hex": "7b2261223a496e66696e6974797d",
+      "expectedCode": "CONFORMANCE_NUMBER_INVALID"
+    },
+    {
+      "vectorId": "C14N-N006",
+      "rule": "lone surrogate",
+      "inputUtf8Hex": "225c756438303022",
+      "expectedCode": "CONFORMANCE_UNICODE_INVALID"
+    },
+    {
+      "vectorId": "C14N-N007",
+      "rule": "invalid UTF-8",
+      "inputUtf8Hex": "22c32822",
+      "expectedCode": "CONFORMANCE_UTF8_INVALID"
+    },
+    {
+      "vectorId": "C14N-N008",
+      "rule": "duplicate named canonical-set key",
+      "inputUtf8Hex": "7b22636f766572616765223a5b7b22726571756972656d656e744964223a2261227d2c7b22726571756972656d656e744964223a2261227d5d7d",
+      "expectedCode": "CONFORMANCE_CANONICAL_SET_DUPLICATE"
+    }
+  ],
+  "positiveVectorCount": 13,
+  "negativeVectorCount": 8,
+  "vectorCount": 21,
+  "independentReplay": {
+    "status": "PASS",
+    "roles": [
+      "primary-registry-validator",
+      "independent-schema-and-graph-replayer"
+    ],
+    "positiveVectorCount": 13,
+    "negativeVectorCount": 8
+  },
+  "recordIssuanceBlockedBy": [
+    "the selected execution class exact target and replay gate"
+  ]
+}

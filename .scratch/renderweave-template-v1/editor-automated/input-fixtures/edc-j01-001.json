@@ -1,0 +1,25 @@
+{
+  "artifactVersion": "renderweave-editor-input-fixture/1.0",
+  "candidateId": "EDC::J01::001",
+  "executionClass": "EXEC::EDITOR_AUTOMATED::1.0",
+  "baselineId": "EditorStructuredClean",
+  "parameters": {
+    "viewportClass": "SUPPORTED_DESKTOP",
+    "entryFocus": "EDITOR_ROOT"
+  },
+  "actionScript": [
+    {
+      "action": "TRAVERSE_CORE_WORKSPACES_BY_KEYBOARD",
+      "parameters": {
+        "order": [
+          "STRUCTURE_TREE",
+          "CANVAS_EQUIVALENT",
+          "PROPERTY_GROUPS",
+          "PROBLEM_SUMMARY",
+          "PREVIEW_CONTROLS",
+          "EDITOR_ROOT"
+        ]
+      }
+    }
+  ]
+}

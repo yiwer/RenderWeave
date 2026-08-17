@@ -1,0 +1,1651 @@
+{
+  "artifactVersion": "renderweave-editor-semantic-projection-catalog/1.1",
+  "status": "42_EXACT_SEMANTIC_LITERALS_58_CONTENT_PREREQUISITES_62_UI_OBSERVATIONS_EXCLUDED",
+  "executionClass": "EXEC::EDITOR_AUTOMATED::1.0",
+  "contract": {
+    "path": "editor-automated/semantic-projection-contract-v1.json",
+    "sha256": "sha256:bbafb420c5f149d849410b83bf44b09a0f6587d3e0723b1f8d227f8fa118c34a",
+    "byteLength": 5909
+  },
+  "counts": {
+    "sourcePendingExpectationCount": 308,
+    "priorMechanicalExactCount": 146,
+    "semanticInputPendingExpectationCount": 162,
+    "excludedUiObservedCount": 62,
+    "nonUiDecisionCount": 100,
+    "exactCommandResultCount": 22,
+    "exactPreviewGenerationCount": 20,
+    "exactLiteralBindingCount": 42,
+    "contentDerivedPendingCount": 58
+  },
+  "excludedUiObservedByProbe": [
+    {
+      "probeId": "editor.accessibilityTreeBytes",
+      "count": 17
+    },
+    {
+      "probeId": "editor.announcementSequence",
+      "count": 1
+    },
+    {
+      "probeId": "editor.focusSequence",
+      "count": 14
+    },
+    {
+      "probeId": "editor.problemPanelBytes",
+      "count": 30
+    }
+  ],
+  "decisions": [
+    {
+      "candidateId": "EDC::J02::001",
+      "planAssertionId": "PA010",
+      "scenarioSlug": "create-entity-atomic",
+      "probeId": "editor.commandResult",
+      "operator": "EQ",
+      "bindingKey": "create-entity-atomic.command-result",
+      "originalStatus": "PENDING_TARGET_LITERAL",
+      "resolution": "EXACT_COMMAND_RESULT_CODE",
+      "resultStatus": "EXACT_LITERAL",
+      "expected": {
+        "kind": "LITERAL",
+        "value": "COMMAND_APPLIED"
+      }
+    },
+    {
+      "candidateId": "EDC::J02::001",
+      "planAssertionId": "PA011",
+      "scenarioSlug": "create-entity-atomic",
+      "probeId": "editor.workingCopyDigest",
+      "operator": "EQ",
+      "bindingKey": "create-entity-atomic.working-copy-digest",
+      "originalStatus": "PENDING_TARGET_LITERAL",
+      "resolution": "WAIT_FOR_EXACT_CONTENT_PREREQUISITES",
+      "resultStatus": "PENDING_TARGET_LITERAL",
+      "prerequisiteIds": [
+        "EXACT_WORKING_COPY_CANONICAL_DESIGN_DSL_BYTES"
+      ],
+      "reason": "The complete resulting working-copy DesignDSL bytes required for this digest are not uniquely derivable from the abstract action plan."
+    },
+    {
+      "candidateId": "EDC::J02::002",
+      "planAssertionId": "PA010",
+      "scenarioSlug": "duplicate-entity-remaps",
+      "probeId": "editor.commandResult",
+      "operator": "EQ",
+      "bindingKey": "duplicate-entity-remaps.command-result",
+      "originalStatus": "PENDING_TARGET_LITERAL",
+      "resolution": "EXACT_COMMAND_RESULT_CODE",
+      "resultStatus": "EXACT_LITERAL",
+      "expected": {
+        "kind": "LITERAL",
+        "value": "COMMAND_APPLIED"
+      }
+    },
+    {
+      "candidateId": "EDC::J02::002",
+      "planAssertionId": "PA011",
+      "scenarioSlug": "duplicate-entity-remaps",
+      "probeId": "editor.workingCopyDigest",
+      "operator": "EQ",
+      "bindingKey": "duplicate-entity-remaps.working-copy-digest",
+      "originalStatus": "PENDING_TARGET_LITERAL",
+      "resolution": "WAIT_FOR_EXACT_CONTENT_PREREQUISITES",
+      "resultStatus": "PENDING_TARGET_LITERAL",
+      "prerequisiteIds": [
+        "EXACT_WORKING_COPY_CANONICAL_DESIGN_DSL_BYTES"
+      ],
+      "reason": "The complete resulting working-copy DesignDSL bytes required for this digest are not uniquely derivable from the abstract action plan."
+    },
+    {
+      "candidateId": "EDC::J02::003",
+      "planAssertionId": "PA010",
+      "scenarioSlug": "delete-entity-atomic",
+      "probeId": "editor.commandResult",
+      "operator": "EQ",
+      "bindingKey": "delete-entity-atomic.command-result",
+      "originalStatus": "PENDING_TARGET_LITERAL",
+      "resolution": "EXACT_COMMAND_RESULT_CODE",
+      "resultStatus": "EXACT_LITERAL",
+      "expected": {
+        "kind": "LITERAL",
+        "value": "COMMAND_APPLIED"
+      }
+    },
+    {
+      "candidateId": "EDC::J02::003",
+      "planAssertionId": "PA011",
+      "scenarioSlug": "delete-entity-atomic",
+      "probeId": "editor.workingCopyDigest",
+      "operator": "EQ",
+      "bindingKey": "delete-entity-atomic.working-copy-digest",
+      "originalStatus": "PENDING_TARGET_LITERAL",
+      "resolution": "WAIT_FOR_EXACT_CONTENT_PREREQUISITES",
+      "resultStatus": "PENDING_TARGET_LITERAL",
+      "prerequisiteIds": [
+        "EXACT_WORKING_COPY_CANONICAL_DESIGN_DSL_BYTES"
+      ],
+      "reason": "The complete resulting working-copy DesignDSL bytes required for this digest are not uniquely derivable from the abstract action plan."
+    },
+    {
+      "candidateId": "EDC::J02::004",
+      "planAssertionId": "PA010",
+      "scenarioSlug": "delete-unsafe-rejected",
+      "probeId": "editor.commandResult",
+      "operator": "EQ",
+      "bindingKey": "delete-unsafe-rejected.command-result",
+      "originalStatus": "PENDING_TARGET_LITERAL",
+      "resolution": "EXACT_COMMAND_RESULT_CODE",
+      "resultStatus": "EXACT_LITERAL",
+      "expected": {
+        "kind": "LITERAL",
+        "value": "COMMAND_REJECTED_ATOMIC"
+      }
+    },
+    {
+      "candidateId": "EDC::J02::004",
+      "planAssertionId": "PA011",
+      "scenarioSlug": "delete-unsafe-rejected",
+      "probeId": "editor.workingCopyDigest",
+      "operator": "EQ",
+      "bindingKey": "delete-unsafe-rejected.working-copy-digest",
+      "originalStatus": "PENDING_TARGET_LITERAL",
+      "resolution": "WAIT_FOR_EXACT_CONTENT_PREREQUISITES",
+      "resultStatus": "PENDING_TARGET_LITERAL",
+      "prerequisiteIds": [
+        "EXACT_WORKING_COPY_CANONICAL_DESIGN_DSL_BYTES"
+      ],
+      "reason": "The complete resulting working-copy DesignDSL bytes required for this digest are not uniquely derivable from the abstract action plan."
+    },
+    {
+      "candidateId": "EDC::J02::005",
+      "planAssertionId": "PA010",
+      "scenarioSlug": "move-entity-atomic",
+      "probeId": "editor.commandResult",
+      "operator": "EQ",
+      "bindingKey": "move-entity-atomic.command-result",
+      "originalStatus": "PENDING_TARGET_LITERAL",
+      "resolution": "EXACT_COMMAND_RESULT_CODE",
+      "resultStatus": "EXACT_LITERAL",
+      "expected": {
+        "kind": "LITERAL",
+        "value": "COMMAND_APPLIED"
+      }
+    },
+    {
+      "candidateId": "EDC::J02::005",
+      "planAssertionId": "PA011",
+      "scenarioSlug": "move-entity-atomic",
+      "probeId": "editor.workingCopyDigest",
+      "operator": "EQ",
+      "bindingKey": "move-entity-atomic.working-copy-digest",
+      "originalStatus": "PENDING_TARGET_LITERAL",
+      "resolution": "WAIT_FOR_EXACT_CONTENT_PREREQUISITES",
+      "resultStatus": "PENDING_TARGET_LITERAL",
+      "prerequisiteIds": [
+        "EXACT_WORKING_COPY_CANONICAL_DESIGN_DSL_BYTES"
+      ],
+      "reason": "The complete resulting working-copy DesignDSL bytes required for this digest are not uniquely derivable from the abstract action plan."
+    },
+    {
+      "candidateId": "EDC::J02::006",
+      "planAssertionId": "PA010",
+      "scenarioSlug": "reparent-entity-atomic",
+      "probeId": "editor.commandResult",
+      "operator": "EQ",
+      "bindingKey": "reparent-entity-atomic.command-result",
+      "originalStatus": "PENDING_TARGET_LITERAL",
+      "resolution": "EXACT_COMMAND_RESULT_CODE",
+      "resultStatus": "EXACT_LITERAL",
+      "expected": {
+        "kind": "LITERAL",
+        "value": "COMMAND_APPLIED"
+      }
+    },
+    {
+      "candidateId": "EDC::J02::006",
+      "planAssertionId": "PA011",
+      "scenarioSlug": "reparent-entity-atomic",
+      "probeId": "editor.workingCopyDigest",
+      "operator": "EQ",
+      "bindingKey": "reparent-entity-atomic.working-copy-digest",
+      "originalStatus": "PENDING_TARGET_LITERAL",
+      "resolution": "WAIT_FOR_EXACT_CONTENT_PREREQUISITES",
+      "resultStatus": "PENDING_TARGET_LITERAL",
+      "prerequisiteIds": [
+        "EXACT_WORKING_COPY_CANONICAL_DESIGN_DSL_BYTES"
+      ],
+      "reason": "The complete resulting working-copy DesignDSL bytes required for this digest are not uniquely derivable from the abstract action plan."
+    },
+    {
+      "candidateId": "EDC::J02::007",
+      "planAssertionId": "PA010",
+      "scenarioSlug": "reorder-entity-atomic",
+      "probeId": "editor.commandResult",
+      "operator": "EQ",
+      "bindingKey": "reorder-entity-atomic.command-result",
+      "originalStatus": "PENDING_TARGET_LITERAL",
+      "resolution": "EXACT_COMMAND_RESULT_CODE",
+      "resultStatus": "EXACT_LITERAL",
+      "expected": {
+        "kind": "LITERAL",
+        "value": "COMMAND_APPLIED"
+      }
+    },
+    {
+      "candidateId": "EDC::J02::007",
+      "planAssertionId": "PA011",
+      "scenarioSlug": "reorder-entity-atomic",
+      "probeId": "editor.workingCopyDigest",
+      "operator": "EQ",
+      "bindingKey": "reorder-entity-atomic.working-copy-digest",
+      "originalStatus": "PENDING_TARGET_LITERAL",
+      "resolution": "WAIT_FOR_EXACT_CONTENT_PREREQUISITES",
+      "resultStatus": "PENDING_TARGET_LITERAL",
+      "prerequisiteIds": [
+        "EXACT_WORKING_COPY_CANONICAL_DESIGN_DSL_BYTES"
+      ],
+      "reason": "The complete resulting working-copy DesignDSL bytes required for this digest are not uniquely derivable from the abstract action plan."
+    },
+    {
+      "candidateId": "EDC::J02::008",
+      "planAssertionId": "PA010",
+      "scenarioSlug": "undo-complete-working-copy",
+      "probeId": "editor.commandResult",
+      "operator": "EQ",
+      "bindingKey": "undo-complete-working-copy.command-result",
+      "originalStatus": "PENDING_TARGET_LITERAL",
+      "resolution": "EXACT_COMMAND_RESULT_CODE",
+      "resultStatus": "EXACT_LITERAL",
+      "expected": {
+        "kind": "LITERAL",
+        "value": "COMMAND_APPLIED"
+      }
+    },
+    {
+      "candidateId": "EDC::J02::008",
+      "planAssertionId": "PA011",
+      "scenarioSlug": "undo-complete-working-copy",
+      "probeId": "editor.workingCopyDigest",
+      "operator": "EQ",
+      "bindingKey": "undo-complete-working-copy.working-copy-digest",
+      "originalStatus": "PENDING_TARGET_LITERAL",
+      "resolution": "WAIT_FOR_EXACT_CONTENT_PREREQUISITES",
+      "resultStatus": "PENDING_TARGET_LITERAL",
+      "prerequisiteIds": [
+        "EXACT_WORKING_COPY_CANONICAL_DESIGN_DSL_BYTES"
+      ],
+      "reason": "The complete resulting working-copy DesignDSL bytes required for this digest are not uniquely derivable from the abstract action plan."
+    },
+    {
+      "candidateId": "EDC::J02::009",
+      "planAssertionId": "PA010",
+      "scenarioSlug": "redo-complete-working-copy",
+      "probeId": "editor.commandResult",
+      "operator": "EQ",
+      "bindingKey": "redo-complete-working-copy.command-result",
+      "originalStatus": "PENDING_TARGET_LITERAL",
+      "resolution": "EXACT_COMMAND_RESULT_CODE",
+      "resultStatus": "EXACT_LITERAL",
+      "expected": {
+        "kind": "LITERAL",
+        "value": "COMMAND_APPLIED"
+      }
+    },
+    {
+      "candidateId": "EDC::J02::009",
+      "planAssertionId": "PA011",
+      "scenarioSlug": "redo-complete-working-copy",
+      "probeId": "editor.workingCopyDigest",
+      "operator": "EQ",
+      "bindingKey": "redo-complete-working-copy.working-copy-digest",
+      "originalStatus": "PENDING_TARGET_LITERAL",
+      "resolution": "WAIT_FOR_EXACT_CONTENT_PREREQUISITES",
+      "resultStatus": "PENDING_TARGET_LITERAL",
+      "prerequisiteIds": [
+        "EXACT_WORKING_COPY_CANONICAL_DESIGN_DSL_BYTES"
+      ],
+      "reason": "The complete resulting working-copy DesignDSL bytes required for this digest are not uniquely derivable from the abstract action plan."
+    },
+    {
+      "candidateId": "EDC::J02::010",
+      "planAssertionId": "PA010",
+      "scenarioSlug": "save-clears-local-history",
+      "probeId": "editor.canonicalBaselineBytes",
+      "operator": "BYTES_EQ",
+      "bindingKey": "save-clears-local-history.canonical-baseline-projection",
+      "originalStatus": "PENDING_TARGET_ARTIFACT",
+      "resolution": "WAIT_FOR_EXACT_CONTENT_PREREQUISITES",
+      "resultStatus": "PENDING_TARGET_ARTIFACT",
+      "prerequisiteIds": [
+        "EXACT_SERVER_CANONICAL_REVISION",
+        "EXACT_SERVER_CANONICAL_CONTENT_HASH",
+        "EXACT_WORKING_COPY_CANONICAL_DESIGN_DSL_BYTES",
+        "CANONICAL_BASELINE_PROJECTION_ENCODER"
+      ],
+      "reason": "The exact server canonical facts, complete working-copy bytes, and projection encoder prerequisites are not all frozen."
+    },
+    {
+      "candidateId": "EDC::J02::011",
+      "planAssertionId": "PA010",
+      "scenarioSlug": "overwrite-clears-local-history",
+      "probeId": "editor.canonicalBaselineBytes",
+      "operator": "BYTES_EQ",
+      "bindingKey": "overwrite-clears-local-history.canonical-baseline-projection",
+      "originalStatus": "PENDING_TARGET_ARTIFACT",
+      "resolution": "WAIT_FOR_EXACT_CONTENT_PREREQUISITES",
+      "resultStatus": "PENDING_TARGET_ARTIFACT",
+      "prerequisiteIds": [
+        "EXACT_SERVER_CANONICAL_REVISION",
+        "EXACT_SERVER_CANONICAL_CONTENT_HASH",
+        "EXACT_WORKING_COPY_CANONICAL_DESIGN_DSL_BYTES",
+        "CANONICAL_BASELINE_PROJECTION_ENCODER"
+      ],
+      "reason": "The exact server canonical facts, complete working-copy bytes, and projection encoder prerequisites are not all frozen."
+    },
+    {
+      "candidateId": "EDC::J02::012",
+      "planAssertionId": "PA010",
+      "scenarioSlug": "revision-restore-clears-local-history",
+      "probeId": "editor.canonicalBaselineBytes",
+      "operator": "BYTES_EQ",
+      "bindingKey": "revision-restore-clears-local-history.canonical-baseline-projection",
+      "originalStatus": "PENDING_TARGET_ARTIFACT",
+      "resolution": "WAIT_FOR_EXACT_CONTENT_PREREQUISITES",
+      "resultStatus": "PENDING_TARGET_ARTIFACT",
+      "prerequisiteIds": [
+        "EXACT_SERVER_CANONICAL_REVISION",
+        "EXACT_SERVER_CANONICAL_CONTENT_HASH",
+        "EXACT_WORKING_COPY_CANONICAL_DESIGN_DSL_BYTES",
+        "CANONICAL_BASELINE_PROJECTION_ENCODER"
+      ],
+      "reason": "The exact server canonical facts, complete working-copy bytes, and projection encoder prerequisites are not all frozen."
+    },
+    {
+      "candidateId": "EDC::J02::013",
+      "planAssertionId": "PA010",
+      "scenarioSlug": "whole-template-copy-or-create-clears-history",
+      "probeId": "editor.canonicalBaselineBytes",
+      "operator": "BYTES_EQ",
+      "bindingKey": "whole-template-copy-or-create-clears-history.canonical-baseline-projection",
+      "originalStatus": "PENDING_TARGET_ARTIFACT",
+      "resolution": "WAIT_FOR_EXACT_CONTENT_PREREQUISITES",
+      "resultStatus": "PENDING_TARGET_ARTIFACT",
+      "prerequisiteIds": [
+        "EXACT_SERVER_CANONICAL_REVISION",
+        "EXACT_SERVER_CANONICAL_CONTENT_HASH",
+        "EXACT_WORKING_COPY_CANONICAL_DESIGN_DSL_BYTES",
+        "CANONICAL_BASELINE_PROJECTION_ENCODER"
+      ],
+      "reason": "The exact server canonical facts, complete working-copy bytes, and projection encoder prerequisites are not all frozen."
+    },
+    {
+      "candidateId": "EDC::J03::001",
+      "planAssertionId": "PA011",
+      "scenarioSlug": "binding-unbound-state",
+      "probeId": "editor.commandResult",
+      "operator": "EQ",
+      "bindingKey": "binding-unbound-state.binding-state-code",
+      "originalStatus": "PENDING_TARGET_LITERAL",
+      "resolution": "EXACT_COMMAND_RESULT_CODE",
+      "resultStatus": "EXACT_LITERAL",
+      "expected": {
+        "kind": "LITERAL",
+        "value": "BINDING_UNBOUND"
+      }
+    },
+    {
+      "candidateId": "EDC::J03::002",
+      "planAssertionId": "PA011",
+      "scenarioSlug": "binding-present-state",
+      "probeId": "editor.commandResult",
+      "operator": "EQ",
+      "bindingKey": "binding-present-state.binding-state-code",
+      "originalStatus": "PENDING_TARGET_LITERAL",
+      "resolution": "EXACT_COMMAND_RESULT_CODE",
+      "resultStatus": "EXACT_LITERAL",
+      "expected": {
+        "kind": "LITERAL",
+        "value": "BINDING_PRESENT"
+      }
+    },
+    {
+      "candidateId": "EDC::J03::003",
+      "planAssertionId": "PA011",
+      "scenarioSlug": "binding-absent-state",
+      "probeId": "editor.commandResult",
+      "operator": "EQ",
+      "bindingKey": "binding-absent-state.binding-state-code",
+      "originalStatus": "PENDING_TARGET_LITERAL",
+      "resolution": "EXACT_COMMAND_RESULT_CODE",
+      "resultStatus": "EXACT_LITERAL",
+      "expected": {
+        "kind": "LITERAL",
+        "value": "BINDING_ABSENT"
+      }
+    },
+    {
+      "candidateId": "EDC::J03::004",
+      "planAssertionId": "PA011",
+      "scenarioSlug": "binding-error-state",
+      "probeId": "editor.commandResult",
+      "operator": "EQ",
+      "bindingKey": "binding-error-state.binding-state-code",
+      "originalStatus": "PENDING_TARGET_LITERAL",
+      "resolution": "EXACT_COMMAND_RESULT_CODE",
+      "resultStatus": "EXACT_LITERAL",
+      "expected": {
+        "kind": "LITERAL",
+        "value": "BINDING_ERROR"
+      }
+    },
+    {
+      "candidateId": "EDC::J03::005",
+      "planAssertionId": "PA011",
+      "scenarioSlug": "binding-type-invalid-state",
+      "probeId": "editor.commandResult",
+      "operator": "EQ",
+      "bindingKey": "binding-type-invalid-state.binding-state-code",
+      "originalStatus": "PENDING_TARGET_LITERAL",
+      "resolution": "EXACT_COMMAND_RESULT_CODE",
+      "resultStatus": "EXACT_LITERAL",
+      "expected": {
+        "kind": "LITERAL",
+        "value": "BINDING_TYPE_INVALID"
+      }
+    },
+    {
+      "candidateId": "EDC::J03::006",
+      "planAssertionId": "PA011",
+      "scenarioSlug": "binding-property-invalid-state",
+      "probeId": "editor.commandResult",
+      "operator": "EQ",
+      "bindingKey": "binding-property-invalid-state.binding-state-code",
+      "originalStatus": "PENDING_TARGET_LITERAL",
+      "resolution": "EXACT_COMMAND_RESULT_CODE",
+      "resultStatus": "EXACT_LITERAL",
+      "expected": {
+        "kind": "LITERAL",
+        "value": "BINDING_PROPERTY_INVALID"
+      }
+    },
+    {
+      "candidateId": "EDC::J03::007",
+      "planAssertionId": "PA010",
+      "scenarioSlug": "binding-remove-to-unbound",
+      "probeId": "editor.commandResult",
+      "operator": "EQ",
+      "bindingKey": "binding-remove-to-unbound.command-result",
+      "originalStatus": "PENDING_TARGET_LITERAL",
+      "resolution": "EXACT_COMMAND_RESULT_CODE",
+      "resultStatus": "EXACT_LITERAL",
+      "expected": {
+        "kind": "LITERAL",
+        "value": "COMMAND_APPLIED"
+      }
+    },
+    {
+      "candidateId": "EDC::J03::007",
+      "planAssertionId": "PA011",
+      "scenarioSlug": "binding-remove-to-unbound",
+      "probeId": "editor.workingCopyDigest",
+      "operator": "EQ",
+      "bindingKey": "binding-remove-to-unbound.working-copy-digest",
+      "originalStatus": "PENDING_TARGET_LITERAL",
+      "resolution": "WAIT_FOR_EXACT_CONTENT_PREREQUISITES",
+      "resultStatus": "PENDING_TARGET_LITERAL",
+      "prerequisiteIds": [
+        "EXACT_WORKING_COPY_CANONICAL_DESIGN_DSL_BYTES"
+      ],
+      "reason": "The complete resulting working-copy DesignDSL bytes required for this digest are not uniquely derivable from the abstract action plan."
+    },
+    {
+      "candidateId": "EDC::J03::008",
+      "planAssertionId": "PA011",
+      "scenarioSlug": "authoritative-preview-distinct",
+      "probeId": "editor.previewBasisDigest",
+      "operator": "EQ",
+      "bindingKey": "authoritative-preview-distinct.preview-basis-digest",
+      "originalStatus": "PENDING_TARGET_LITERAL",
+      "resolution": "WAIT_FOR_EXACT_CONTENT_PREREQUISITES",
+      "resultStatus": "PENDING_TARGET_LITERAL",
+      "prerequisiteIds": [
+        "EXACT_SAVED_CURRENT_IDENTITY",
+        "EXACT_LOCAL_DIVERGENCE_STATE",
+        "EXACT_SAMPLE_INPUT_IDENTITY",
+        "EXACT_OUTPUT_PARAMETER_VECTOR",
+        "EXACT_CURRENT_READINESS",
+        "PREVIEW_BASIS_CANONICAL_ENCODER"
+      ],
+      "reason": "The exact preview-basis source facts and canonical encoder prerequisites are not all frozen."
+    },
+    {
+      "candidateId": "EDC::J03::008",
+      "planAssertionId": "PA012",
+      "scenarioSlug": "authoritative-preview-distinct",
+      "probeId": "editor.previewEligibilityGeneration",
+      "operator": "EQ",
+      "bindingKey": "authoritative-preview-distinct.preview-eligibility-generation",
+      "originalStatus": "PENDING_TARGET_LITERAL",
+      "resolution": "EXACT_PREVIEW_ELIGIBILITY_GENERATION",
+      "resultStatus": "EXACT_LITERAL",
+      "initialGeneration": 0,
+      "generationDelta": 1,
+      "expected": {
+        "kind": "LITERAL",
+        "value": 1
+      }
+    },
+    {
+      "candidateId": "EDC::J04::001",
+      "planAssertionId": "PA010",
+      "scenarioSlug": "array-reorder-single-target",
+      "probeId": "editor.commandResult",
+      "operator": "EQ",
+      "bindingKey": "array-reorder-single-target.command-result",
+      "originalStatus": "PENDING_TARGET_LITERAL",
+      "resolution": "EXACT_COMMAND_RESULT_CODE",
+      "resultStatus": "EXACT_LITERAL",
+      "expected": {
+        "kind": "LITERAL",
+        "value": "COMMAND_APPLIED"
+      }
+    },
+    {
+      "candidateId": "EDC::J04::001",
+      "planAssertionId": "PA011",
+      "scenarioSlug": "array-reorder-single-target",
+      "probeId": "editor.workingCopyDigest",
+      "operator": "EQ",
+      "bindingKey": "array-reorder-single-target.working-copy-digest",
+      "originalStatus": "PENDING_TARGET_LITERAL",
+      "resolution": "WAIT_FOR_EXACT_CONTENT_PREREQUISITES",
+      "resultStatus": "PENDING_TARGET_LITERAL",
+      "prerequisiteIds": [
+        "EXACT_WORKING_COPY_CANONICAL_DESIGN_DSL_BYTES"
+      ],
+      "reason": "The complete resulting working-copy DesignDSL bytes required for this digest are not uniquely derivable from the abstract action plan."
+    },
+    {
+      "candidateId": "EDC::J04::002",
+      "planAssertionId": "PA010",
+      "scenarioSlug": "array-reorder-multiple-targets",
+      "probeId": "editor.commandResult",
+      "operator": "EQ",
+      "bindingKey": "array-reorder-multiple-targets.command-result",
+      "originalStatus": "PENDING_TARGET_LITERAL",
+      "resolution": "EXACT_COMMAND_RESULT_CODE",
+      "resultStatus": "EXACT_LITERAL",
+      "expected": {
+        "kind": "LITERAL",
+        "value": "COMMAND_APPLIED"
+      }
+    },
+    {
+      "candidateId": "EDC::J04::002",
+      "planAssertionId": "PA011",
+      "scenarioSlug": "array-reorder-multiple-targets",
+      "probeId": "editor.workingCopyDigest",
+      "operator": "EQ",
+      "bindingKey": "array-reorder-multiple-targets.working-copy-digest",
+      "originalStatus": "PENDING_TARGET_LITERAL",
+      "resolution": "WAIT_FOR_EXACT_CONTENT_PREREQUISITES",
+      "resultStatus": "PENDING_TARGET_LITERAL",
+      "prerequisiteIds": [
+        "EXACT_WORKING_COPY_CANONICAL_DESIGN_DSL_BYTES"
+      ],
+      "reason": "The complete resulting working-copy DesignDSL bytes required for this digest are not uniquely derivable from the abstract action plan."
+    },
+    {
+      "candidateId": "EDC::J04::003",
+      "planAssertionId": "PA010",
+      "scenarioSlug": "array-reorder-overlap-rejected",
+      "probeId": "editor.commandResult",
+      "operator": "EQ",
+      "bindingKey": "array-reorder-overlap-rejected.command-result",
+      "originalStatus": "PENDING_TARGET_LITERAL",
+      "resolution": "EXACT_COMMAND_RESULT_CODE",
+      "resultStatus": "EXACT_LITERAL",
+      "expected": {
+        "kind": "LITERAL",
+        "value": "COMMAND_REJECTED_ATOMIC"
+      }
+    },
+    {
+      "candidateId": "EDC::J04::003",
+      "planAssertionId": "PA011",
+      "scenarioSlug": "array-reorder-overlap-rejected",
+      "probeId": "editor.workingCopyDigest",
+      "operator": "EQ",
+      "bindingKey": "array-reorder-overlap-rejected.working-copy-digest",
+      "originalStatus": "PENDING_TARGET_LITERAL",
+      "resolution": "WAIT_FOR_EXACT_CONTENT_PREREQUISITES",
+      "resultStatus": "PENDING_TARGET_LITERAL",
+      "prerequisiteIds": [
+        "EXACT_WORKING_COPY_CANONICAL_DESIGN_DSL_BYTES"
+      ],
+      "reason": "The complete resulting working-copy DesignDSL bytes required for this digest are not uniquely derivable from the abstract action plan."
+    },
+    {
+      "candidateId": "EDC::J04::004",
+      "planAssertionId": "PA010",
+      "scenarioSlug": "array-reorder-out-of-bounds-rejected",
+      "probeId": "editor.commandResult",
+      "operator": "EQ",
+      "bindingKey": "array-reorder-out-of-bounds-rejected.command-result",
+      "originalStatus": "PENDING_TARGET_LITERAL",
+      "resolution": "EXACT_COMMAND_RESULT_CODE",
+      "resultStatus": "EXACT_LITERAL",
+      "expected": {
+        "kind": "LITERAL",
+        "value": "COMMAND_REJECTED_ATOMIC"
+      }
+    },
+    {
+      "candidateId": "EDC::J04::004",
+      "planAssertionId": "PA011",
+      "scenarioSlug": "array-reorder-out-of-bounds-rejected",
+      "probeId": "editor.workingCopyDigest",
+      "operator": "EQ",
+      "bindingKey": "array-reorder-out-of-bounds-rejected.working-copy-digest",
+      "originalStatus": "PENDING_TARGET_LITERAL",
+      "resolution": "WAIT_FOR_EXACT_CONTENT_PREREQUISITES",
+      "resultStatus": "PENDING_TARGET_LITERAL",
+      "prerequisiteIds": [
+        "EXACT_WORKING_COPY_CANONICAL_DESIGN_DSL_BYTES"
+      ],
+      "reason": "The complete resulting working-copy DesignDSL bytes required for this digest are not uniquely derivable from the abstract action plan."
+    },
+    {
+      "candidateId": "EDC::J04::005",
+      "planAssertionId": "PA010",
+      "scenarioSlug": "array-reorder-duplicate-target-rejected",
+      "probeId": "editor.commandResult",
+      "operator": "EQ",
+      "bindingKey": "array-reorder-duplicate-target-rejected.command-result",
+      "originalStatus": "PENDING_TARGET_LITERAL",
+      "resolution": "EXACT_COMMAND_RESULT_CODE",
+      "resultStatus": "EXACT_LITERAL",
+      "expected": {
+        "kind": "LITERAL",
+        "value": "COMMAND_REJECTED_ATOMIC"
+      }
+    },
+    {
+      "candidateId": "EDC::J04::005",
+      "planAssertionId": "PA011",
+      "scenarioSlug": "array-reorder-duplicate-target-rejected",
+      "probeId": "editor.workingCopyDigest",
+      "operator": "EQ",
+      "bindingKey": "array-reorder-duplicate-target-rejected.working-copy-digest",
+      "originalStatus": "PENDING_TARGET_LITERAL",
+      "resolution": "WAIT_FOR_EXACT_CONTENT_PREREQUISITES",
+      "resultStatus": "PENDING_TARGET_LITERAL",
+      "prerequisiteIds": [
+        "EXACT_WORKING_COPY_CANONICAL_DESIGN_DSL_BYTES"
+      ],
+      "reason": "The complete resulting working-copy DesignDSL bytes required for this digest are not uniquely derivable from the abstract action plan."
+    },
+    {
+      "candidateId": "EDC::J06::001",
+      "planAssertionId": "PA010",
+      "scenarioSlug": "save-normalization-summary",
+      "probeId": "editor.canonicalBaselineBytes",
+      "operator": "BYTES_EQ",
+      "bindingKey": "save-normalization-summary.canonical-baseline-projection",
+      "originalStatus": "PENDING_TARGET_ARTIFACT",
+      "resolution": "WAIT_FOR_EXACT_CONTENT_PREREQUISITES",
+      "resultStatus": "PENDING_TARGET_ARTIFACT",
+      "prerequisiteIds": [
+        "EXACT_SERVER_CANONICAL_REVISION",
+        "EXACT_SERVER_CANONICAL_CONTENT_HASH",
+        "EXACT_WORKING_COPY_CANONICAL_DESIGN_DSL_BYTES",
+        "CANONICAL_BASELINE_PROJECTION_ENCODER"
+      ],
+      "reason": "The exact server canonical facts, complete working-copy bytes, and projection encoder prerequisites are not all frozen."
+    },
+    {
+      "candidateId": "EDC::J06::001",
+      "planAssertionId": "PA012",
+      "scenarioSlug": "save-normalization-summary",
+      "probeId": "editor.normalizationSummaryBytes",
+      "operator": "BYTES_EQ",
+      "bindingKey": "save-normalization-summary.normalization-summary",
+      "originalStatus": "PENDING_TARGET_ARTIFACT",
+      "resolution": "WAIT_FOR_EXACT_CONTENT_PREREQUISITES",
+      "resultStatus": "PENDING_TARGET_ARTIFACT",
+      "prerequisiteIds": [
+        "EXACT_SERVER_CANONICAL_BEFORE_AFTER_BYTES",
+        "EXACT_NORMALIZATION_CATEGORY_COUNTS",
+        "NORMALIZATION_SUMMARY_CANONICAL_ENCODER"
+      ],
+      "reason": "The exact before/after bytes, category counts, and summary encoder prerequisites are not all frozen."
+    },
+    {
+      "candidateId": "EDC::J06::002",
+      "planAssertionId": "PA010",
+      "scenarioSlug": "save-preserves-expression-unicode",
+      "probeId": "editor.canonicalBaselineBytes",
+      "operator": "BYTES_EQ",
+      "bindingKey": "save-preserves-expression-unicode.canonical-baseline-projection",
+      "originalStatus": "PENDING_TARGET_ARTIFACT",
+      "resolution": "WAIT_FOR_EXACT_CONTENT_PREREQUISITES",
+      "resultStatus": "PENDING_TARGET_ARTIFACT",
+      "prerequisiteIds": [
+        "EXACT_SERVER_CANONICAL_REVISION",
+        "EXACT_SERVER_CANONICAL_CONTENT_HASH",
+        "EXACT_WORKING_COPY_CANONICAL_DESIGN_DSL_BYTES",
+        "CANONICAL_BASELINE_PROJECTION_ENCODER"
+      ],
+      "reason": "The exact server canonical facts, complete working-copy bytes, and projection encoder prerequisites are not all frozen."
+    },
+    {
+      "candidateId": "EDC::J06::003",
+      "planAssertionId": "PA010",
+      "scenarioSlug": "save-preserves-semantic-arrays-fields",
+      "probeId": "editor.canonicalBaselineBytes",
+      "operator": "BYTES_EQ",
+      "bindingKey": "save-preserves-semantic-arrays-fields.canonical-baseline-projection",
+      "originalStatus": "PENDING_TARGET_ARTIFACT",
+      "resolution": "WAIT_FOR_EXACT_CONTENT_PREREQUISITES",
+      "resultStatus": "PENDING_TARGET_ARTIFACT",
+      "prerequisiteIds": [
+        "EXACT_SERVER_CANONICAL_REVISION",
+        "EXACT_SERVER_CANONICAL_CONTENT_HASH",
+        "EXACT_WORKING_COPY_CANONICAL_DESIGN_DSL_BYTES",
+        "CANONICAL_BASELINE_PROJECTION_ENCODER"
+      ],
+      "reason": "The exact server canonical facts, complete working-copy bytes, and projection encoder prerequisites are not all frozen."
+    },
+    {
+      "candidateId": "EDC::J07::002",
+      "planAssertionId": "PA010",
+      "scenarioSlug": "dependency-confirmation-commits-invalid",
+      "probeId": "editor.canonicalBaselineBytes",
+      "operator": "BYTES_EQ",
+      "bindingKey": "dependency-confirmation-commits-invalid.canonical-baseline-projection",
+      "originalStatus": "PENDING_TARGET_ARTIFACT",
+      "resolution": "WAIT_FOR_EXACT_CONTENT_PREREQUISITES",
+      "resultStatus": "PENDING_TARGET_ARTIFACT",
+      "prerequisiteIds": [
+        "EXACT_SERVER_CANONICAL_REVISION",
+        "EXACT_SERVER_CANONICAL_CONTENT_HASH",
+        "EXACT_WORKING_COPY_CANONICAL_DESIGN_DSL_BYTES",
+        "CANONICAL_BASELINE_PROJECTION_ENCODER"
+      ],
+      "reason": "The exact server canonical facts, complete working-copy bytes, and projection encoder prerequisites are not all frozen."
+    },
+    {
+      "candidateId": "EDC::J08::001",
+      "planAssertionId": "PA011",
+      "scenarioSlug": "first-conflict-preserves-local",
+      "probeId": "editor.workingCopyDigest",
+      "operator": "EQ",
+      "bindingKey": "first-conflict-preserves-local.working-copy-digest",
+      "originalStatus": "PENDING_TARGET_LITERAL",
+      "resolution": "WAIT_FOR_EXACT_CONTENT_PREREQUISITES",
+      "resultStatus": "PENDING_TARGET_LITERAL",
+      "prerequisiteIds": [
+        "EXACT_WORKING_COPY_CANONICAL_DESIGN_DSL_BYTES"
+      ],
+      "reason": "The complete resulting working-copy DesignDSL bytes required for this digest are not uniquely derivable from the abstract action plan."
+    },
+    {
+      "candidateId": "EDC::J08::002",
+      "planAssertionId": "PA010",
+      "scenarioSlug": "confirmed-overwrite-fresh-revision",
+      "probeId": "editor.canonicalBaselineBytes",
+      "operator": "BYTES_EQ",
+      "bindingKey": "confirmed-overwrite-fresh-revision.canonical-baseline-projection",
+      "originalStatus": "PENDING_TARGET_ARTIFACT",
+      "resolution": "WAIT_FOR_EXACT_CONTENT_PREREQUISITES",
+      "resultStatus": "PENDING_TARGET_ARTIFACT",
+      "prerequisiteIds": [
+        "EXACT_SERVER_CANONICAL_REVISION",
+        "EXACT_SERVER_CANONICAL_CONTENT_HASH",
+        "EXACT_WORKING_COPY_CANONICAL_DESIGN_DSL_BYTES",
+        "CANONICAL_BASELINE_PROJECTION_ENCODER"
+      ],
+      "reason": "The exact server canonical facts, complete working-copy bytes, and projection encoder prerequisites are not all frozen."
+    },
+    {
+      "candidateId": "EDC::J08::003",
+      "planAssertionId": "PA011",
+      "scenarioSlug": "second-drift-requires-new-confirmation",
+      "probeId": "editor.workingCopyDigest",
+      "operator": "EQ",
+      "bindingKey": "second-drift-requires-new-confirmation.working-copy-digest",
+      "originalStatus": "PENDING_TARGET_LITERAL",
+      "resolution": "WAIT_FOR_EXACT_CONTENT_PREREQUISITES",
+      "resultStatus": "PENDING_TARGET_LITERAL",
+      "prerequisiteIds": [
+        "EXACT_WORKING_COPY_CANONICAL_DESIGN_DSL_BYTES"
+      ],
+      "reason": "The complete resulting working-copy DesignDSL bytes required for this digest are not uniquely derivable from the abstract action plan."
+    },
+    {
+      "candidateId": "EDC::J09::001",
+      "planAssertionId": "PA011",
+      "scenarioSlug": "transport-unknown-enters-reconciliation",
+      "probeId": "editor.workingCopyDigest",
+      "operator": "EQ",
+      "bindingKey": "transport-unknown-enters-reconciliation.working-copy-digest",
+      "originalStatus": "PENDING_TARGET_LITERAL",
+      "resolution": "WAIT_FOR_EXACT_CONTENT_PREREQUISITES",
+      "resultStatus": "PENDING_TARGET_LITERAL",
+      "prerequisiteIds": [
+        "EXACT_WORKING_COPY_CANONICAL_DESIGN_DSL_BYTES"
+      ],
+      "reason": "The complete resulting working-copy DesignDSL bytes required for this digest are not uniquely derivable from the abstract action plan."
+    },
+    {
+      "candidateId": "EDC::J09::002",
+      "planAssertionId": "PA011",
+      "scenarioSlug": "reconcile-converged-content",
+      "probeId": "editor.workingCopyDigest",
+      "operator": "EQ",
+      "bindingKey": "reconcile-converged-content.working-copy-digest",
+      "originalStatus": "PENDING_TARGET_LITERAL",
+      "resolution": "WAIT_FOR_EXACT_CONTENT_PREREQUISITES",
+      "resultStatus": "PENDING_TARGET_LITERAL",
+      "prerequisiteIds": [
+        "EXACT_WORKING_COPY_CANONICAL_DESIGN_DSL_BYTES"
+      ],
+      "reason": "The complete resulting working-copy DesignDSL bytes required for this digest are not uniquely derivable from the abstract action plan."
+    },
+    {
+      "candidateId": "EDC::J09::003",
+      "planAssertionId": "PA011",
+      "scenarioSlug": "reconcile-safe-explicit-retry",
+      "probeId": "editor.workingCopyDigest",
+      "operator": "EQ",
+      "bindingKey": "reconcile-safe-explicit-retry.working-copy-digest",
+      "originalStatus": "PENDING_TARGET_LITERAL",
+      "resolution": "WAIT_FOR_EXACT_CONTENT_PREREQUISITES",
+      "resultStatus": "PENDING_TARGET_LITERAL",
+      "prerequisiteIds": [
+        "EXACT_WORKING_COPY_CANONICAL_DESIGN_DSL_BYTES"
+      ],
+      "reason": "The complete resulting working-copy DesignDSL bytes required for this digest are not uniquely derivable from the abstract action plan."
+    },
+    {
+      "candidateId": "EDC::J09::004",
+      "planAssertionId": "PA011",
+      "scenarioSlug": "reconcile-enters-conflict",
+      "probeId": "editor.workingCopyDigest",
+      "operator": "EQ",
+      "bindingKey": "reconcile-enters-conflict.working-copy-digest",
+      "originalStatus": "PENDING_TARGET_LITERAL",
+      "resolution": "WAIT_FOR_EXACT_CONTENT_PREREQUISITES",
+      "resultStatus": "PENDING_TARGET_LITERAL",
+      "prerequisiteIds": [
+        "EXACT_WORKING_COPY_CANONICAL_DESIGN_DSL_BYTES"
+      ],
+      "reason": "The complete resulting working-copy DesignDSL bytes required for this digest are not uniquely derivable from the abstract action plan."
+    },
+    {
+      "candidateId": "EDC::J09::005",
+      "planAssertionId": "PA011",
+      "scenarioSlug": "reconcile-deleted-readonly",
+      "probeId": "editor.workingCopyDigest",
+      "operator": "EQ",
+      "bindingKey": "reconcile-deleted-readonly.working-copy-digest",
+      "originalStatus": "PENDING_TARGET_LITERAL",
+      "resolution": "WAIT_FOR_EXACT_CONTENT_PREREQUISITES",
+      "resultStatus": "PENDING_TARGET_LITERAL",
+      "prerequisiteIds": [
+        "EXACT_WORKING_COPY_CANONICAL_DESIGN_DSL_BYTES"
+      ],
+      "reason": "The complete resulting working-copy DesignDSL bytes required for this digest are not uniquely derivable from the abstract action plan."
+    },
+    {
+      "candidateId": "EDC::J09::006",
+      "planAssertionId": "PA011",
+      "scenarioSlug": "reconcile-integrity-fails-closed",
+      "probeId": "editor.workingCopyDigest",
+      "operator": "EQ",
+      "bindingKey": "reconcile-integrity-fails-closed.working-copy-digest",
+      "originalStatus": "PENDING_TARGET_LITERAL",
+      "resolution": "WAIT_FOR_EXACT_CONTENT_PREREQUISITES",
+      "resultStatus": "PENDING_TARGET_LITERAL",
+      "prerequisiteIds": [
+        "EXACT_WORKING_COPY_CANONICAL_DESIGN_DSL_BYTES"
+      ],
+      "reason": "The complete resulting working-copy DesignDSL bytes required for this digest are not uniquely derivable from the abstract action plan."
+    },
+    {
+      "candidateId": "EDC::J09::007",
+      "planAssertionId": "PA011",
+      "scenarioSlug": "reconcile-unreadable-remains-unknown",
+      "probeId": "editor.workingCopyDigest",
+      "operator": "EQ",
+      "bindingKey": "reconcile-unreadable-remains-unknown.working-copy-digest",
+      "originalStatus": "PENDING_TARGET_LITERAL",
+      "resolution": "WAIT_FOR_EXACT_CONTENT_PREREQUISITES",
+      "resultStatus": "PENDING_TARGET_LITERAL",
+      "prerequisiteIds": [
+        "EXACT_WORKING_COPY_CANONICAL_DESIGN_DSL_BYTES"
+      ],
+      "reason": "The complete resulting working-copy DesignDSL bytes required for this digest are not uniquely derivable from the abstract action plan."
+    },
+    {
+      "candidateId": "EDC::J09::008",
+      "planAssertionId": "PA011",
+      "scenarioSlug": "reopen-resumes-reconciliation",
+      "probeId": "editor.workingCopyDigest",
+      "operator": "EQ",
+      "bindingKey": "reopen-resumes-reconciliation.working-copy-digest",
+      "originalStatus": "PENDING_TARGET_LITERAL",
+      "resolution": "WAIT_FOR_EXACT_CONTENT_PREREQUISITES",
+      "resultStatus": "PENDING_TARGET_LITERAL",
+      "prerequisiteIds": [
+        "EXACT_WORKING_COPY_CANONICAL_DESIGN_DSL_BYTES"
+      ],
+      "reason": "The complete resulting working-copy DesignDSL bytes required for this digest are not uniquely derivable from the abstract action plan."
+    },
+    {
+      "candidateId": "EDC::J10::001",
+      "planAssertionId": "PA011",
+      "scenarioSlug": "recovery-reopen-offers-actions",
+      "probeId": "editor.recoveryDraftEnvelopeBytes",
+      "operator": "BYTES_EQ",
+      "bindingKey": "recovery-reopen-offers-actions.recovery-draft-envelope",
+      "originalStatus": "PENDING_TARGET_ARTIFACT",
+      "resolution": "WAIT_FOR_EXACT_CONTENT_PREREQUISITES",
+      "resultStatus": "PENDING_TARGET_ARTIFACT",
+      "prerequisiteIds": [
+        "EXACT_RECOVERY_WORKING_COPY_DIGEST",
+        "EXACT_RECOVERY_BASE_FACTS",
+        "RECOVERY_ENVELOPE_CANONICAL_ENCODER"
+      ],
+      "reason": "The exact recovery digest, base facts, and envelope encoder prerequisites are not all frozen."
+    },
+    {
+      "candidateId": "EDC::J10::001",
+      "planAssertionId": "PA012",
+      "scenarioSlug": "recovery-reopen-offers-actions",
+      "probeId": "editor.workingCopyDigest",
+      "operator": "EQ",
+      "bindingKey": "recovery-reopen-offers-actions.working-copy-digest",
+      "originalStatus": "PENDING_TARGET_LITERAL",
+      "resolution": "WAIT_FOR_EXACT_CONTENT_PREREQUISITES",
+      "resultStatus": "PENDING_TARGET_LITERAL",
+      "prerequisiteIds": [
+        "EXACT_WORKING_COPY_CANONICAL_DESIGN_DSL_BYTES"
+      ],
+      "reason": "The complete resulting working-copy DesignDSL bytes required for this digest are not uniquely derivable from the abstract action plan."
+    },
+    {
+      "candidateId": "EDC::J10::002",
+      "planAssertionId": "PA012",
+      "scenarioSlug": "recovery-restore-same-base",
+      "probeId": "editor.workingCopyDigest",
+      "operator": "EQ",
+      "bindingKey": "recovery-restore-same-base.working-copy-digest",
+      "originalStatus": "PENDING_TARGET_LITERAL",
+      "resolution": "WAIT_FOR_EXACT_CONTENT_PREREQUISITES",
+      "resultStatus": "PENDING_TARGET_LITERAL",
+      "prerequisiteIds": [
+        "EXACT_WORKING_COPY_CANONICAL_DESIGN_DSL_BYTES"
+      ],
+      "reason": "The complete resulting working-copy DesignDSL bytes required for this digest are not uniquely derivable from the abstract action plan."
+    },
+    {
+      "candidateId": "EDC::J10::003",
+      "planAssertionId": "PA012",
+      "scenarioSlug": "recovery-restore-advanced-base",
+      "probeId": "editor.workingCopyDigest",
+      "operator": "EQ",
+      "bindingKey": "recovery-restore-advanced-base.working-copy-digest",
+      "originalStatus": "PENDING_TARGET_LITERAL",
+      "resolution": "WAIT_FOR_EXACT_CONTENT_PREREQUISITES",
+      "resultStatus": "PENDING_TARGET_LITERAL",
+      "prerequisiteIds": [
+        "EXACT_WORKING_COPY_CANONICAL_DESIGN_DSL_BYTES"
+      ],
+      "reason": "The complete resulting working-copy DesignDSL bytes required for this digest are not uniquely derivable from the abstract action plan."
+    },
+    {
+      "candidateId": "EDC::J10::004",
+      "planAssertionId": "PA010",
+      "scenarioSlug": "recovery-export",
+      "probeId": "editor.recoveryDraftEnvelopeBytes",
+      "operator": "BYTES_EQ",
+      "bindingKey": "recovery-export.recovery-draft-envelope",
+      "originalStatus": "PENDING_TARGET_ARTIFACT",
+      "resolution": "WAIT_FOR_EXACT_CONTENT_PREREQUISITES",
+      "resultStatus": "PENDING_TARGET_ARTIFACT",
+      "prerequisiteIds": [
+        "EXACT_RECOVERY_WORKING_COPY_DIGEST",
+        "EXACT_RECOVERY_BASE_FACTS",
+        "RECOVERY_ENVELOPE_CANONICAL_ENCODER"
+      ],
+      "reason": "The exact recovery digest, base facts, and envelope encoder prerequisites are not all frozen."
+    },
+    {
+      "candidateId": "EDC::J10::004",
+      "planAssertionId": "PA011",
+      "scenarioSlug": "recovery-export",
+      "probeId": "editor.workingCopyDigest",
+      "operator": "EQ",
+      "bindingKey": "recovery-export.working-copy-digest",
+      "originalStatus": "PENDING_TARGET_LITERAL",
+      "resolution": "WAIT_FOR_EXACT_CONTENT_PREREQUISITES",
+      "resultStatus": "PENDING_TARGET_LITERAL",
+      "prerequisiteIds": [
+        "EXACT_WORKING_COPY_CANONICAL_DESIGN_DSL_BYTES"
+      ],
+      "reason": "The complete resulting working-copy DesignDSL bytes required for this digest are not uniquely derivable from the abstract action plan."
+    },
+    {
+      "candidateId": "EDC::J10::005",
+      "planAssertionId": "PA011",
+      "scenarioSlug": "recovery-discard",
+      "probeId": "editor.workingCopyDigest",
+      "operator": "EQ",
+      "bindingKey": "recovery-discard.working-copy-digest",
+      "originalStatus": "PENDING_TARGET_LITERAL",
+      "resolution": "WAIT_FOR_EXACT_CONTENT_PREREQUISITES",
+      "resultStatus": "PENDING_TARGET_LITERAL",
+      "prerequisiteIds": [
+        "EXACT_WORKING_COPY_CANONICAL_DESIGN_DSL_BYTES"
+      ],
+      "reason": "The complete resulting working-copy DesignDSL bytes required for this digest are not uniquely derivable from the abstract action plan."
+    },
+    {
+      "candidateId": "EDC::J10::006",
+      "planAssertionId": "PA010",
+      "scenarioSlug": "recovery-minimal-content",
+      "probeId": "editor.recoveryDraftEnvelopeBytes",
+      "operator": "BYTES_EQ",
+      "bindingKey": "recovery-minimal-content.recovery-draft-envelope",
+      "originalStatus": "PENDING_TARGET_ARTIFACT",
+      "resolution": "WAIT_FOR_EXACT_CONTENT_PREREQUISITES",
+      "resultStatus": "PENDING_TARGET_ARTIFACT",
+      "prerequisiteIds": [
+        "EXACT_RECOVERY_WORKING_COPY_DIGEST",
+        "EXACT_RECOVERY_BASE_FACTS",
+        "RECOVERY_ENVELOPE_CANONICAL_ENCODER"
+      ],
+      "reason": "The exact recovery digest, base facts, and envelope encoder prerequisites are not all frozen."
+    },
+    {
+      "candidateId": "EDC::J10::006",
+      "planAssertionId": "PA011",
+      "scenarioSlug": "recovery-minimal-content",
+      "probeId": "editor.workingCopyDigest",
+      "operator": "EQ",
+      "bindingKey": "recovery-minimal-content.working-copy-digest",
+      "originalStatus": "PENDING_TARGET_LITERAL",
+      "resolution": "WAIT_FOR_EXACT_CONTENT_PREREQUISITES",
+      "resultStatus": "PENDING_TARGET_LITERAL",
+      "prerequisiteIds": [
+        "EXACT_WORKING_COPY_CANONICAL_DESIGN_DSL_BYTES"
+      ],
+      "reason": "The complete resulting working-copy DesignDSL bytes required for this digest are not uniquely derivable from the abstract action plan."
+    },
+    {
+      "candidateId": "EDC::J10::007",
+      "planAssertionId": "PA014",
+      "scenarioSlug": "valid-import-becomes-dirty-draft",
+      "probeId": "editor.workingCopyDigest",
+      "operator": "EQ",
+      "bindingKey": "valid-import-becomes-dirty-draft.working-copy-digest",
+      "originalStatus": "PENDING_TARGET_LITERAL",
+      "resolution": "WAIT_FOR_EXACT_CONTENT_PREREQUISITES",
+      "resultStatus": "PENDING_TARGET_LITERAL",
+      "prerequisiteIds": [
+        "EXACT_WORKING_COPY_CANONICAL_DESIGN_DSL_BYTES"
+      ],
+      "reason": "The complete resulting working-copy DesignDSL bytes required for this digest are not uniquely derivable from the abstract action plan."
+    },
+    {
+      "candidateId": "EDC::J10::009",
+      "planAssertionId": "PA012",
+      "scenarioSlug": "raw-repair-valid-transition",
+      "probeId": "editor.workingCopyDigest",
+      "operator": "EQ",
+      "bindingKey": "raw-repair-valid-transition.working-copy-digest",
+      "originalStatus": "PENDING_TARGET_LITERAL",
+      "resolution": "WAIT_FOR_EXACT_CONTENT_PREREQUISITES",
+      "resultStatus": "PENDING_TARGET_LITERAL",
+      "prerequisiteIds": [
+        "EXACT_WORKING_COPY_CANONICAL_DESIGN_DSL_BYTES"
+      ],
+      "reason": "The complete resulting working-copy DesignDSL bytes required for this digest are not uniquely derivable from the abstract action plan."
+    },
+    {
+      "candidateId": "EDC::J10::010",
+      "planAssertionId": "PA012",
+      "scenarioSlug": "unsupported-wire-compatibility-readonly",
+      "probeId": "editor.compatibilityOriginalDigest",
+      "operator": "EQ",
+      "bindingKey": "unsupported-wire-compatibility-readonly.compatibility-original-digest",
+      "originalStatus": "PENDING_TARGET_LITERAL",
+      "resolution": "WAIT_FOR_EXACT_CONTENT_PREREQUISITES",
+      "resultStatus": "PENDING_TARGET_LITERAL",
+      "prerequisiteIds": [
+        "EXACT_COMPATIBILITY_ORIGINAL_BYTES"
+      ],
+      "reason": "The exact original compatibility payload bytes required for this digest are not frozen in the semantic fixture."
+    },
+    {
+      "candidateId": "EDC::J10::011",
+      "planAssertionId": "PA012",
+      "scenarioSlug": "migration-preview-accepted-dirty",
+      "probeId": "editor.compatibilityOriginalDigest",
+      "operator": "EQ",
+      "bindingKey": "migration-preview-accepted-dirty.compatibility-original-digest",
+      "originalStatus": "PENDING_TARGET_LITERAL",
+      "resolution": "WAIT_FOR_EXACT_CONTENT_PREREQUISITES",
+      "resultStatus": "PENDING_TARGET_LITERAL",
+      "prerequisiteIds": [
+        "EXACT_COMPATIBILITY_ORIGINAL_BYTES"
+      ],
+      "reason": "The exact original compatibility payload bytes required for this digest are not frozen in the semantic fixture."
+    },
+    {
+      "candidateId": "EDC::J10::011",
+      "planAssertionId": "PA015",
+      "scenarioSlug": "migration-preview-accepted-dirty",
+      "probeId": "editor.workingCopyDigest",
+      "operator": "EQ",
+      "bindingKey": "migration-preview-accepted-dirty.working-copy-digest",
+      "originalStatus": "PENDING_TARGET_LITERAL",
+      "resolution": "WAIT_FOR_EXACT_CONTENT_PREREQUISITES",
+      "resultStatus": "PENDING_TARGET_LITERAL",
+      "prerequisiteIds": [
+        "EXACT_WORKING_COPY_CANONICAL_DESIGN_DSL_BYTES"
+      ],
+      "reason": "The complete resulting working-copy DesignDSL bytes required for this digest are not uniquely derivable from the abstract action plan."
+    },
+    {
+      "candidateId": "EDC::J10::012",
+      "planAssertionId": "PA010",
+      "scenarioSlug": "dirty-guard-blocks-replacement",
+      "probeId": "editor.commandResult",
+      "operator": "EQ",
+      "bindingKey": "dirty-guard-blocks-replacement.command-result",
+      "originalStatus": "PENDING_TARGET_LITERAL",
+      "resolution": "EXACT_COMMAND_RESULT_CODE",
+      "resultStatus": "EXACT_LITERAL",
+      "expected": {
+        "kind": "LITERAL",
+        "value": "COMMAND_REJECTED_ATOMIC"
+      }
+    },
+    {
+      "candidateId": "EDC::J10::012",
+      "planAssertionId": "PA011",
+      "scenarioSlug": "dirty-guard-blocks-replacement",
+      "probeId": "editor.workingCopyDigest",
+      "operator": "EQ",
+      "bindingKey": "dirty-guard-blocks-replacement.working-copy-digest",
+      "originalStatus": "PENDING_TARGET_LITERAL",
+      "resolution": "WAIT_FOR_EXACT_CONTENT_PREREQUISITES",
+      "resultStatus": "PENDING_TARGET_LITERAL",
+      "prerequisiteIds": [
+        "EXACT_WORKING_COPY_CANONICAL_DESIGN_DSL_BYTES"
+      ],
+      "reason": "The complete resulting working-copy DesignDSL bytes required for this digest are not uniquely derivable from the abstract action plan."
+    },
+    {
+      "candidateId": "EDC::J11::001",
+      "planAssertionId": "PA011",
+      "scenarioSlug": "clean-current-preview",
+      "probeId": "editor.previewBasisDigest",
+      "operator": "EQ",
+      "bindingKey": "clean-current-preview.preview-basis-digest",
+      "originalStatus": "PENDING_TARGET_LITERAL",
+      "resolution": "WAIT_FOR_EXACT_CONTENT_PREREQUISITES",
+      "resultStatus": "PENDING_TARGET_LITERAL",
+      "prerequisiteIds": [
+        "EXACT_SAVED_CURRENT_IDENTITY",
+        "EXACT_LOCAL_DIVERGENCE_STATE",
+        "EXACT_SAMPLE_INPUT_IDENTITY",
+        "EXACT_OUTPUT_PARAMETER_VECTOR",
+        "EXACT_CURRENT_READINESS",
+        "PREVIEW_BASIS_CANONICAL_ENCODER"
+      ],
+      "reason": "The exact preview-basis source facts and canonical encoder prerequisites are not all frozen."
+    },
+    {
+      "candidateId": "EDC::J11::001",
+      "planAssertionId": "PA012",
+      "scenarioSlug": "clean-current-preview",
+      "probeId": "editor.previewEligibilityGeneration",
+      "operator": "EQ",
+      "bindingKey": "clean-current-preview.preview-eligibility-generation",
+      "originalStatus": "PENDING_TARGET_LITERAL",
+      "resolution": "EXACT_PREVIEW_ELIGIBILITY_GENERATION",
+      "resultStatus": "EXACT_LITERAL",
+      "initialGeneration": 0,
+      "generationDelta": 1,
+      "expected": {
+        "kind": "LITERAL",
+        "value": 1
+      }
+    },
+    {
+      "candidateId": "EDC::J11::002",
+      "planAssertionId": "PA012",
+      "scenarioSlug": "dirty-primary-save-and-preview",
+      "probeId": "editor.previewEligibilityGeneration",
+      "operator": "EQ",
+      "bindingKey": "dirty-primary-save-and-preview.preview-eligibility-generation",
+      "originalStatus": "PENDING_TARGET_LITERAL",
+      "resolution": "EXACT_PREVIEW_ELIGIBILITY_GENERATION",
+      "resultStatus": "EXACT_LITERAL",
+      "initialGeneration": 0,
+      "generationDelta": 0,
+      "expected": {
+        "kind": "LITERAL",
+        "value": 0
+      }
+    },
+    {
+      "candidateId": "EDC::J11::003",
+      "planAssertionId": "PA013",
+      "scenarioSlug": "save-and-preview-save-fails",
+      "probeId": "editor.previewEligibilityGeneration",
+      "operator": "EQ",
+      "bindingKey": "save-and-preview-save-fails.preview-eligibility-generation",
+      "originalStatus": "PENDING_TARGET_LITERAL",
+      "resolution": "EXACT_PREVIEW_ELIGIBILITY_GENERATION",
+      "resultStatus": "EXACT_LITERAL",
+      "initialGeneration": 0,
+      "generationDelta": 0,
+      "expected": {
+        "kind": "LITERAL",
+        "value": 0
+      }
+    },
+    {
+      "candidateId": "EDC::J11::003",
+      "planAssertionId": "PA014",
+      "scenarioSlug": "save-and-preview-save-fails",
+      "probeId": "editor.canonicalBaselineBytes",
+      "operator": "BYTES_EQ",
+      "bindingKey": "save-and-preview-save-fails.canonical-baseline-projection",
+      "originalStatus": "PENDING_TARGET_ARTIFACT",
+      "resolution": "WAIT_FOR_EXACT_CONTENT_PREREQUISITES",
+      "resultStatus": "PENDING_TARGET_ARTIFACT",
+      "prerequisiteIds": [
+        "EXACT_SERVER_CANONICAL_REVISION",
+        "EXACT_SERVER_CANONICAL_CONTENT_HASH",
+        "EXACT_WORKING_COPY_CANONICAL_DESIGN_DSL_BYTES",
+        "CANONICAL_BASELINE_PROJECTION_ENCODER"
+      ],
+      "reason": "The exact server canonical facts, complete working-copy bytes, and projection encoder prerequisites are not all frozen."
+    },
+    {
+      "candidateId": "EDC::J11::004",
+      "planAssertionId": "PA013",
+      "scenarioSlug": "save-and-preview-invalid-save",
+      "probeId": "editor.previewEligibilityGeneration",
+      "operator": "EQ",
+      "bindingKey": "save-and-preview-invalid-save.preview-eligibility-generation",
+      "originalStatus": "PENDING_TARGET_LITERAL",
+      "resolution": "EXACT_PREVIEW_ELIGIBILITY_GENERATION",
+      "resultStatus": "EXACT_LITERAL",
+      "initialGeneration": 0,
+      "generationDelta": 1,
+      "expected": {
+        "kind": "LITERAL",
+        "value": 1
+      }
+    },
+    {
+      "candidateId": "EDC::J11::004",
+      "planAssertionId": "PA014",
+      "scenarioSlug": "save-and-preview-invalid-save",
+      "probeId": "editor.canonicalBaselineBytes",
+      "operator": "BYTES_EQ",
+      "bindingKey": "save-and-preview-invalid-save.canonical-baseline-projection",
+      "originalStatus": "PENDING_TARGET_ARTIFACT",
+      "resolution": "WAIT_FOR_EXACT_CONTENT_PREREQUISITES",
+      "resultStatus": "PENDING_TARGET_ARTIFACT",
+      "prerequisiteIds": [
+        "EXACT_SERVER_CANONICAL_REVISION",
+        "EXACT_SERVER_CANONICAL_CONTENT_HASH",
+        "EXACT_WORKING_COPY_CANONICAL_DESIGN_DSL_BYTES",
+        "CANONICAL_BASELINE_PROJECTION_ENCODER"
+      ],
+      "reason": "The exact server canonical facts, complete working-copy bytes, and projection encoder prerequisites are not all frozen."
+    },
+    {
+      "candidateId": "EDC::J11::005",
+      "planAssertionId": "PA012",
+      "scenarioSlug": "save-and-preview-save-phase-success",
+      "probeId": "editor.previewEligibilityGeneration",
+      "operator": "EQ",
+      "bindingKey": "save-and-preview-save-phase-success.preview-eligibility-generation",
+      "originalStatus": "PENDING_TARGET_LITERAL",
+      "resolution": "EXACT_PREVIEW_ELIGIBILITY_GENERATION",
+      "resultStatus": "EXACT_LITERAL",
+      "initialGeneration": 0,
+      "generationDelta": 1,
+      "expected": {
+        "kind": "LITERAL",
+        "value": 1
+      }
+    },
+    {
+      "candidateId": "EDC::J11::006",
+      "planAssertionId": "PA011",
+      "scenarioSlug": "save-and-preview-preview-phase-success",
+      "probeId": "editor.previewBasisDigest",
+      "operator": "EQ",
+      "bindingKey": "save-and-preview-preview-phase-success.preview-basis-digest",
+      "originalStatus": "PENDING_TARGET_LITERAL",
+      "resolution": "WAIT_FOR_EXACT_CONTENT_PREREQUISITES",
+      "resultStatus": "PENDING_TARGET_LITERAL",
+      "prerequisiteIds": [
+        "EXACT_SAVED_CURRENT_IDENTITY",
+        "EXACT_LOCAL_DIVERGENCE_STATE",
+        "EXACT_SAMPLE_INPUT_IDENTITY",
+        "EXACT_OUTPUT_PARAMETER_VECTOR",
+        "EXACT_CURRENT_READINESS",
+        "PREVIEW_BASIS_CANONICAL_ENCODER"
+      ],
+      "reason": "The exact preview-basis source facts and canonical encoder prerequisites are not all frozen."
+    },
+    {
+      "candidateId": "EDC::J11::006",
+      "planAssertionId": "PA012",
+      "scenarioSlug": "save-and-preview-preview-phase-success",
+      "probeId": "editor.previewEligibilityGeneration",
+      "operator": "EQ",
+      "bindingKey": "save-and-preview-preview-phase-success.preview-eligibility-generation",
+      "originalStatus": "PENDING_TARGET_LITERAL",
+      "resolution": "EXACT_PREVIEW_ELIGIBILITY_GENERATION",
+      "resultStatus": "EXACT_LITERAL",
+      "initialGeneration": 0,
+      "generationDelta": 1,
+      "expected": {
+        "kind": "LITERAL",
+        "value": 1
+      }
+    },
+    {
+      "candidateId": "EDC::J11::007",
+      "planAssertionId": "PA012",
+      "scenarioSlug": "basis-design-edit-withdraws",
+      "probeId": "editor.previewEligibilityGeneration",
+      "operator": "EQ",
+      "bindingKey": "basis-design-edit-withdraws.preview-eligibility-generation",
+      "originalStatus": "PENDING_TARGET_LITERAL",
+      "resolution": "EXACT_PREVIEW_ELIGIBILITY_GENERATION",
+      "resultStatus": "EXACT_LITERAL",
+      "initialGeneration": 0,
+      "generationDelta": 1,
+      "expected": {
+        "kind": "LITERAL",
+        "value": 1
+      }
+    },
+    {
+      "candidateId": "EDC::J11::008",
+      "planAssertionId": "PA012",
+      "scenarioSlug": "basis-sample-input-withdraws",
+      "probeId": "editor.previewEligibilityGeneration",
+      "operator": "EQ",
+      "bindingKey": "basis-sample-input-withdraws.preview-eligibility-generation",
+      "originalStatus": "PENDING_TARGET_LITERAL",
+      "resolution": "EXACT_PREVIEW_ELIGIBILITY_GENERATION",
+      "resultStatus": "EXACT_LITERAL",
+      "initialGeneration": 0,
+      "generationDelta": 1,
+      "expected": {
+        "kind": "LITERAL",
+        "value": 1
+      }
+    },
+    {
+      "candidateId": "EDC::J11::009",
+      "planAssertionId": "PA012",
+      "scenarioSlug": "basis-format-withdraws",
+      "probeId": "editor.previewEligibilityGeneration",
+      "operator": "EQ",
+      "bindingKey": "basis-format-withdraws.preview-eligibility-generation",
+      "originalStatus": "PENDING_TARGET_LITERAL",
+      "resolution": "EXACT_PREVIEW_ELIGIBILITY_GENERATION",
+      "resultStatus": "EXACT_LITERAL",
+      "initialGeneration": 0,
+      "generationDelta": 1,
+      "expected": {
+        "kind": "LITERAL",
+        "value": 1
+      }
+    },
+    {
+      "candidateId": "EDC::J11::010",
+      "planAssertionId": "PA012",
+      "scenarioSlug": "basis-dpi-withdraws",
+      "probeId": "editor.previewEligibilityGeneration",
+      "operator": "EQ",
+      "bindingKey": "basis-dpi-withdraws.preview-eligibility-generation",
+      "originalStatus": "PENDING_TARGET_LITERAL",
+      "resolution": "EXACT_PREVIEW_ELIGIBILITY_GENERATION",
+      "resultStatus": "EXACT_LITERAL",
+      "initialGeneration": 0,
+      "generationDelta": 1,
+      "expected": {
+        "kind": "LITERAL",
+        "value": 1
+      }
+    },
+    {
+      "candidateId": "EDC::J11::011",
+      "planAssertionId": "PA012",
+      "scenarioSlug": "basis-jpeg-quality-withdraws",
+      "probeId": "editor.previewEligibilityGeneration",
+      "operator": "EQ",
+      "bindingKey": "basis-jpeg-quality-withdraws.preview-eligibility-generation",
+      "originalStatus": "PENDING_TARGET_LITERAL",
+      "resolution": "EXACT_PREVIEW_ELIGIBILITY_GENERATION",
+      "resultStatus": "EXACT_LITERAL",
+      "initialGeneration": 0,
+      "generationDelta": 1,
+      "expected": {
+        "kind": "LITERAL",
+        "value": 1
+      }
+    },
+    {
+      "candidateId": "EDC::J11::012",
+      "planAssertionId": "PA012",
+      "scenarioSlug": "basis-layout-trace-withdraws",
+      "probeId": "editor.previewEligibilityGeneration",
+      "operator": "EQ",
+      "bindingKey": "basis-layout-trace-withdraws.preview-eligibility-generation",
+      "originalStatus": "PENDING_TARGET_LITERAL",
+      "resolution": "EXACT_PREVIEW_ELIGIBILITY_GENERATION",
+      "resultStatus": "EXACT_LITERAL",
+      "initialGeneration": 0,
+      "generationDelta": 1,
+      "expected": {
+        "kind": "LITERAL",
+        "value": 1
+      }
+    },
+    {
+      "candidateId": "EDC::J11::013",
+      "planAssertionId": "PA012",
+      "scenarioSlug": "basis-current-readiness-withdraws",
+      "probeId": "editor.previewEligibilityGeneration",
+      "operator": "EQ",
+      "bindingKey": "basis-current-readiness-withdraws.preview-eligibility-generation",
+      "originalStatus": "PENDING_TARGET_LITERAL",
+      "resolution": "EXACT_PREVIEW_ELIGIBILITY_GENERATION",
+      "resultStatus": "EXACT_LITERAL",
+      "initialGeneration": 0,
+      "generationDelta": 1,
+      "expected": {
+        "kind": "LITERAL",
+        "value": 1
+      }
+    },
+    {
+      "candidateId": "EDC::J11::014",
+      "planAssertionId": "PA011",
+      "scenarioSlug": "panel-selection-preserves-basis",
+      "probeId": "editor.previewBasisDigest",
+      "operator": "EQ",
+      "bindingKey": "panel-selection-preserves-basis.unchanged-preview-basis-digest",
+      "originalStatus": "PENDING_TARGET_LITERAL",
+      "resolution": "WAIT_FOR_EXACT_CONTENT_PREREQUISITES",
+      "resultStatus": "PENDING_TARGET_LITERAL",
+      "prerequisiteIds": [
+        "EXACT_SAVED_CURRENT_IDENTITY",
+        "EXACT_LOCAL_DIVERGENCE_STATE",
+        "EXACT_SAMPLE_INPUT_IDENTITY",
+        "EXACT_OUTPUT_PARAMETER_VECTOR",
+        "EXACT_CURRENT_READINESS",
+        "PREVIEW_BASIS_CANONICAL_ENCODER"
+      ],
+      "reason": "The exact preview-basis source facts and canonical encoder prerequisites are not all frozen."
+    },
+    {
+      "candidateId": "EDC::J11::014",
+      "planAssertionId": "PA012",
+      "scenarioSlug": "panel-selection-preserves-basis",
+      "probeId": "editor.previewEligibilityGeneration",
+      "operator": "EQ",
+      "bindingKey": "panel-selection-preserves-basis.preview-eligibility-generation",
+      "originalStatus": "PENDING_TARGET_LITERAL",
+      "resolution": "EXACT_PREVIEW_ELIGIBILITY_GENERATION",
+      "resultStatus": "EXACT_LITERAL",
+      "initialGeneration": 0,
+      "generationDelta": 0,
+      "expected": {
+        "kind": "LITERAL",
+        "value": 0
+      }
+    },
+    {
+      "candidateId": "EDC::J11::016",
+      "planAssertionId": "PA012",
+      "scenarioSlug": "author-cancel-clears-slot",
+      "probeId": "editor.previewEligibilityGeneration",
+      "operator": "EQ",
+      "bindingKey": "author-cancel-clears-slot.preview-eligibility-generation",
+      "originalStatus": "PENDING_TARGET_LITERAL",
+      "resolution": "EXACT_PREVIEW_ELIGIBILITY_GENERATION",
+      "resultStatus": "EXACT_LITERAL",
+      "initialGeneration": 0,
+      "generationDelta": 1,
+      "expected": {
+        "kind": "LITERAL",
+        "value": 1
+      }
+    },
+    {
+      "candidateId": "EDC::J11::017",
+      "planAssertionId": "PA012",
+      "scenarioSlug": "late-success-discarded",
+      "probeId": "editor.previewEligibilityGeneration",
+      "operator": "EQ",
+      "bindingKey": "late-success-discarded.preview-eligibility-generation",
+      "originalStatus": "PENDING_TARGET_LITERAL",
+      "resolution": "EXACT_PREVIEW_ELIGIBILITY_GENERATION",
+      "resultStatus": "EXACT_LITERAL",
+      "initialGeneration": 9,
+      "generationDelta": 0,
+      "expected": {
+        "kind": "LITERAL",
+        "value": 9
+      }
+    },
+    {
+      "candidateId": "EDC::J11::018",
+      "planAssertionId": "PA012",
+      "scenarioSlug": "late-failure-discarded",
+      "probeId": "editor.previewEligibilityGeneration",
+      "operator": "EQ",
+      "bindingKey": "late-failure-discarded.preview-eligibility-generation",
+      "originalStatus": "PENDING_TARGET_LITERAL",
+      "resolution": "EXACT_PREVIEW_ELIGIBILITY_GENERATION",
+      "resultStatus": "EXACT_LITERAL",
+      "initialGeneration": 9,
+      "generationDelta": 0,
+      "expected": {
+        "kind": "LITERAL",
+        "value": 9
+      }
+    },
+    {
+      "candidateId": "EDC::J11::019",
+      "planAssertionId": "PA013",
+      "scenarioSlug": "preview-failure-does-not-rollback-save",
+      "probeId": "editor.previewEligibilityGeneration",
+      "operator": "EQ",
+      "bindingKey": "preview-failure-does-not-rollback-save.preview-eligibility-generation",
+      "originalStatus": "PENDING_TARGET_LITERAL",
+      "resolution": "EXACT_PREVIEW_ELIGIBILITY_GENERATION",
+      "resultStatus": "EXACT_LITERAL",
+      "initialGeneration": 0,
+      "generationDelta": 1,
+      "expected": {
+        "kind": "LITERAL",
+        "value": 1
+      }
+    },
+    {
+      "candidateId": "EDC::J11::019",
+      "planAssertionId": "PA014",
+      "scenarioSlug": "preview-failure-does-not-rollback-save",
+      "probeId": "editor.canonicalBaselineBytes",
+      "operator": "BYTES_EQ",
+      "bindingKey": "preview-failure-does-not-rollback-save.canonical-baseline-projection",
+      "originalStatus": "PENDING_TARGET_ARTIFACT",
+      "resolution": "WAIT_FOR_EXACT_CONTENT_PREREQUISITES",
+      "resultStatus": "PENDING_TARGET_ARTIFACT",
+      "prerequisiteIds": [
+        "EXACT_SERVER_CANONICAL_REVISION",
+        "EXACT_SERVER_CANONICAL_CONTENT_HASH",
+        "EXACT_WORKING_COPY_CANONICAL_DESIGN_DSL_BYTES",
+        "CANONICAL_BASELINE_PROJECTION_ENCODER"
+      ],
+      "reason": "The exact server canonical facts, complete working-copy bytes, and projection encoder prerequisites are not all frozen."
+    },
+    {
+      "candidateId": "EDC::J11::020",
+      "planAssertionId": "PA011",
+      "scenarioSlug": "single-slot-no-history-autorun",
+      "probeId": "editor.previewBasisDigest",
+      "operator": "EQ",
+      "bindingKey": "single-slot-no-history-autorun.preview-basis-digest",
+      "originalStatus": "PENDING_TARGET_LITERAL",
+      "resolution": "WAIT_FOR_EXACT_CONTENT_PREREQUISITES",
+      "resultStatus": "PENDING_TARGET_LITERAL",
+      "prerequisiteIds": [
+        "EXACT_SAVED_CURRENT_IDENTITY",
+        "EXACT_LOCAL_DIVERGENCE_STATE",
+        "EXACT_SAMPLE_INPUT_IDENTITY",
+        "EXACT_OUTPUT_PARAMETER_VECTOR",
+        "EXACT_CURRENT_READINESS",
+        "PREVIEW_BASIS_CANONICAL_ENCODER"
+      ],
+      "reason": "The exact preview-basis source facts and canonical encoder prerequisites are not all frozen."
+    },
+    {
+      "candidateId": "EDC::J11::020",
+      "planAssertionId": "PA012",
+      "scenarioSlug": "single-slot-no-history-autorun",
+      "probeId": "editor.previewEligibilityGeneration",
+      "operator": "EQ",
+      "bindingKey": "single-slot-no-history-autorun.preview-eligibility-generation",
+      "originalStatus": "PENDING_TARGET_LITERAL",
+      "resolution": "EXACT_PREVIEW_ELIGIBILITY_GENERATION",
+      "resultStatus": "EXACT_LITERAL",
+      "initialGeneration": 0,
+      "generationDelta": 0,
+      "expected": {
+        "kind": "LITERAL",
+        "value": 0
+      }
+    }
+  ],
+  "boundary": "Only 42 non-UI literals are mechanically closed. Fifty-eight content-derived assertions retain exact prerequisite edges; two modes with no trusted DesignDSL working copy bind editor.workingCopyDigest to exact ABSENT instead. Sixty-two accessibility/focus/problem-panel observations are deliberately excluded and remain fail-closed; no product observation occurred."
+}

@@ -1,0 +1,41 @@
+{
+  "artifactVersion": "renderweave-source-integrity-target-manifest/1.0",
+  "targetId": "rw-source-target-skia-m151-freetype-2.14.3-ninja-linux-amd64-000001",
+  "targetKind": "source identity and candidate patch applicability only",
+  "skia": {
+    "remote": "https://skia.googlesource.com/skia.git",
+    "commit": "93458b5faf9cd8befbe6c93158d4d8ee7c8424ee",
+    "tree": "e3eaee9c6a83beffdf115a267c3d9a4bd7d9348e",
+    "normalizedArchiveSha256": "9dfc76b78fc6363e77f96b4faca566cfa0c28d06ad478f809f241e98966652af",
+    "blobIds": {
+      "DEPS": "190ec9bf8b0654d130a062ef4550a7a9bc6a6bfe",
+      "src/ports/SkFontHost_FreeType.cpp": "f8043f25e91e2d95bc2cb3349068be10d3eb6b0c",
+      "src/ports/SkFontHost_FreeType_common.cpp": "865d761c83038e8b3d4992e220c8930607a672d8",
+      "third_party/freetype2/BUILD.gn": "631b9096e4d1e9f3656e0c13abe468b8547573c5",
+      "gn/skia.gni": "db3ae85c020c8b2e2a564f5eebc2ae0596346f81"
+    }
+  },
+  "freetype": {
+    "remote": "https://gitlab.freedesktop.org/freetype/freetype.git",
+    "commit": "0a0221a1347e2f1e07c395263540026e9a0aa7c7",
+    "tree": "589225074ab1eb876682820c482069693c251e88",
+    "officialTarSha256": "36bc4f1cc413335368ee656c42afca65c5a3987e8768cc28cf11ba775e785a5f",
+    "blobIds": {
+      "include/freetype/config/ftoption.h": "b857e0ebbd9a5fed2b088c28ce409d9fbdbfd64e",
+      "include/freetype/config/ftmodule.h": "b315baba8ae406c1c78914449c5e6764038aa099"
+    }
+  },
+  "ninja": {
+    "package": "infra/3pp/tools/ninja/linux-amd64",
+    "version": "version:2@1.12.1.chromium.4",
+    "instanceId": "Px8cwPaaG8_fZ_tsK8dBmx3YEruNDnmvqb-oo1U7UIIC"
+  },
+  "candidateArtifactSha256": {
+    "patch": "a573de549efe6deb7673aec7046f39731a9847ce9453a78b076b10eed338e28d",
+    "ftoption": "ad7c496b8290e32026ededb9322f420d424b3d025256b7f29086b67fa1190011",
+    "ftmodule": "2daa0dc83ec934272c28b2d6aa5f801f13cf19bf5a05096752637dd63b224f00",
+    "applicationOrder": "6f3e2a6125341da3762642631b65068e50ddeac4aa59c6b537ea1f8c3bff3a78"
+  },
+  "rendererTarget": false,
+  "ready": false
+}

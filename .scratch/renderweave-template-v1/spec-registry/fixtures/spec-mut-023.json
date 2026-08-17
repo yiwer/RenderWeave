@@ -1,0 +1,9 @@
+{
+  "fixtureVersion": "renderweave-spec-registry-scenario/1.0",
+  "scenarioId": "SPEC-MUT-023",
+  "scenarioKind": "NAMED_MUTATION",
+  "expectedOutcome": "PROBLEM",
+  "expectedCode": "SPEC_REGISTRY_SCHEMA_INVALID",
+  "expectedStage": "SPEC_REGISTRY",
+  "mutationKind": "DUPLICATE_JSON_MEMBER"
+}

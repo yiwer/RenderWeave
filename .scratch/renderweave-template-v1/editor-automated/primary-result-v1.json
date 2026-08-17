@@ -1,0 +1,26 @@
+{
+  "resultVersion": "renderweave-editor-automated-fixture-generator-result/1.0",
+  "executorId": "EDITOR_AUTOMATED_FIXTURE_GENERATOR::NODE::1.0",
+  "role": "primary-editor-automated-fixture-generator-replayer",
+  "status": "PASS",
+  "checkCount": 186,
+  "failureCount": 0,
+  "runtime": "Node.js v24.18.0",
+  "generatorTargetSha256": "sha256:6a2540e7bd86bd827e386a0f05680f225591ec58e9ed962dda0c35f43c39cbeb",
+  "fixtureCount": 1,
+  "browserAutomationObserved": false,
+  "productExecutionObserved": false,
+  "j1Observed": false,
+  "recordIssuanceAllowed": false,
+  "implementationRevision": "editor-automated-fixture-generator/1.0",
+  "targetManifest": {
+    "path": "editor-automated/generator-target-manifest-v1.json",
+    "sha256": "sha256:6a2540e7bd86bd827e386a0f05680f225591ec58e9ed962dda0c35f43c39cbeb",
+    "byteLength": 2233
+  },
+  "entrypoint": {
+    "path": "editor-automated/generate-editor-automated-fixtures.mjs",
+    "sha256": "sha256:81942984cbbd84ab8a9d627c993991d76644a5cc1ce0c531c4795353b0b1ef0b",
+    "byteLength": 20941
+  }
+}

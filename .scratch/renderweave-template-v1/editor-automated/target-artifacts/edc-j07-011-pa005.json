@@ -1,0 +1,8 @@
+[
+  {
+    "operationId": "saveTemplate",
+    "outcome": "PROBLEM",
+    "code": "TEMPLATE_REF_CYCLE",
+    "stage": "DESIGN_SEMANTIC_VALIDATION"
+  }
+]

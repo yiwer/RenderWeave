@@ -1,0 +1,9 @@
+{
+  "fixtureVersion": "renderweave-spec-registry-scenario/1.0",
+  "scenarioId": "SPEC-C14N-C14N-P009",
+  "scenarioKind": "CANONICAL_VECTOR",
+  "expectedOutcome": "SUCCESS",
+  "expectedCode": null,
+  "expectedStage": null,
+  "vectorId": "C14N-P009"
+}

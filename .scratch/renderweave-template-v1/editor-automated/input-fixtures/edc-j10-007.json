@@ -1,0 +1,17 @@
+{
+  "artifactVersion": "renderweave-editor-input-fixture/1.0",
+  "candidateId": "EDC::J10::007",
+  "executionClass": "EXEC::EDITOR_AUTOMATED::1.0",
+  "baselineId": "EditorStructuredCleanWithValidSupportedImport",
+  "parameters": {},
+  "actionScript": [
+    {
+      "action": "IMPORT_DESIGN_DSL",
+      "parameters": {}
+    },
+    {
+      "action": "ACCEPT_IMPORT",
+      "parameters": {}
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "evidenceVersion": "renderweave-spec-registry-replay-result/1.0",
+  "executorId": "SPEC_EXECUTOR::PYTHON::1.0",
+  "role": "independent-schema-and-graph-replayer",
+  "runtime": "3.12.13",
+  "mode": "TARGET_REPLAY",
+  "targetManifest": {
+    "path": "spec-registry/target-manifest-v1.json",
+    "sha256": "sha256:122577f0dc84713897e5d7803b21d94fd283fff067aa54cbdc9d20b29e767e84",
+    "byteLength": 77305
+  },
+  "status": "PASS",
+  "checkCount": 22746,
+  "failureCount": 0,
+  "failures": [],
+  "implementationRevision": "spec-registry-bootstrap/1.13",
+  "executorManifest": {
+    "path": "spec-registry/independent-executor-manifest-v1.json",
+    "sha256": "sha256:a0788cbc90fde6d1510cf105facf787a9dfe88ec56f29c5ab02714632888b900",
+    "byteLength": 973
+  }
+}

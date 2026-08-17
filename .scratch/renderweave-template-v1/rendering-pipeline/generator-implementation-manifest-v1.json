@@ -1,0 +1,56 @@
+{
+  "artifactVersion": "renderweave-rendering-pipeline-generator-implementation/1.0",
+  "generatorProfile": "renderweave-rendering-pipeline-generator/1.0",
+  "status": "FROZEN_GOLDENS_PRESENT_STATIC_ONLY",
+  "implementationRevision": "rendering-pipeline-fixture-generator/1.0",
+  "runtime": "Node.js >=24",
+  "entrypoint": {
+    "path": "rendering-pipeline/generate-rendering-pipeline-fixtures.mjs",
+    "sha256": "sha256:aaf424e8b726b7fd832b538d52bf6cf1a2d269fc3e0a37215dd34a98694a42ee",
+    "byteLength": 21603
+  },
+  "baseline": {
+    "path": "rendering-pipeline/baseline-v1.json",
+    "sha256": "sha256:9efddc6a2cfe43be255828bf32e3ef6e126fd188a61f2cfda6a9d101e06ddbfb",
+    "byteLength": 1545
+  },
+  "fixtureContract": {
+    "path": "rendering-pipeline/fixture-contract-v1.json",
+    "sha256": "sha256:ba09b8d38f7f3f6ee45a1ce067afdc625a507d1925992d71ac46d297a9eaf441",
+    "byteLength": 3687
+  },
+  "observationAdapter": {
+    "path": "rendering-pipeline/observation-adapter-v1.json",
+    "sha256": "sha256:bc16d95de8cf80da63a071c246692ecbe37ad86a53ffa21500dcaf1c595c48fa",
+    "byteLength": 6603
+  },
+  "scenarioCatalog": {
+    "path": "rendering-pipeline/capacity-scenarios-v1.json",
+    "sha256": "sha256:5cda20420126593c5ad7c0052839ec4121cb77bfd6ca4c3d181352cbba8acf2b",
+    "byteLength": 490968
+  },
+  "goldenVectors": {
+    "path": "rendering-pipeline/generator-goldens-v1.json",
+    "sha256": "sha256:a8380f233c823654b0609af4df2e4c41e7974e4dacfe5d9e1b2b595db661c6f8",
+    "byteLength": 514418
+  },
+  "targetManifest": {
+    "path": "rendering-pipeline/generator-target-manifest-v1.json",
+    "sha256": "sha256:8b792d30b96ad567fd01325ee1447d86b8b1f65737a4eef51fd51b5477800b8b",
+    "byteLength": 38604
+  },
+  "omittedExpectationKeys": [
+    "expectedTerminal",
+    "expectedAssertions",
+    "plannedAssertions",
+    "plannedOracleId",
+    "requirementIds",
+    "resolvedCode",
+    "resolvedKind"
+  ],
+  "productExecutionAllowed": false,
+  "environmentReadsAllowed": false,
+  "networkReadsAllowed": false,
+  "currentTimeReadsAllowed": false,
+  "hiddenDefaultsAllowed": false
+}

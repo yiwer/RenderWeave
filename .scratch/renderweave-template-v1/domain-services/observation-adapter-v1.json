@@ -1,0 +1,183 @@
+{
+  "artifactVersion": "renderweave-domain-services-observation-adapter/1.0",
+  "adapterId": "renderweave-domain-services-observation-adapter/1.0",
+  "status": "FROZEN_CONTRACT_TARGET_PENDING",
+  "executionClass": "EXEC::DOMAIN_SERVICES::1.0",
+  "probeProfile": "renderweave-conformance-probes/1.0",
+  "closedObservationVersion": "renderweave-domain-services-closed-observation/1.0",
+  "genericJsonPathAllowed": false,
+  "arbitraryScriptAllowed": false,
+  "fallbackAllowed": false,
+  "expectedValuesVisibleToTarget": false,
+  "mappings": [
+    {
+      "probeId": "operation.accepted",
+      "valueType": "BOOLEAN",
+      "source": "closedObservation.operation.accepted",
+      "absentPolicy": "MUST_BE_PRESENT"
+    },
+    {
+      "probeId": "operation.terminalCode",
+      "valueType": "CODE",
+      "source": "closedObservation.operation.terminalCode",
+      "absentPolicy": "EXPLICIT_ABSENT"
+    },
+    {
+      "probeId": "operation.terminalStage",
+      "valueType": "STAGE",
+      "source": "closedObservation.operation.terminalStage",
+      "absentPolicy": "EXPLICIT_ABSENT"
+    },
+    {
+      "probeId": "operation.terminalParametersBytes",
+      "valueType": "BYTE_SEQUENCE",
+      "source": "closedObservation.operation.terminalParametersBytes",
+      "absentPolicy": "EXPLICIT_ABSENT"
+    },
+    {
+      "probeId": "operation.writeCount",
+      "valueType": "INTEGER",
+      "source": "closedObservation.operation.writeCount",
+      "absentPolicy": "MUST_BE_PRESENT"
+    },
+    {
+      "probeId": "operation.renderDocumentCount",
+      "valueType": "INTEGER",
+      "source": "closedObservation.operation.renderDocumentCount",
+      "absentPolicy": "MUST_BE_PRESENT"
+    },
+    {
+      "probeId": "operation.renderOutputCount",
+      "valueType": "INTEGER",
+      "source": "closedObservation.operation.renderOutputCount",
+      "absentPolicy": "MUST_BE_PRESENT"
+    },
+    {
+      "probeId": "operation.downstreamEffects",
+      "valueType": "TEXT_SEQUENCE",
+      "source": "closedObservation.operation.downstreamEffects",
+      "absentPolicy": "MUST_BE_PRESENT"
+    },
+    {
+      "probeId": "operation.terminalsBytes",
+      "valueType": "BYTE_SEQUENCE",
+      "source": "closedObservation.operation.terminalsBytes",
+      "absentPolicy": "MUST_BE_PRESENT"
+    },
+    {
+      "probeId": "capacity.limitId",
+      "valueType": "TEXT",
+      "source": "closedObservation.capacity.limitId",
+      "absentPolicy": "MUST_BE_PRESENT"
+    },
+    {
+      "probeId": "capacity.observedValue",
+      "valueType": "TEXT",
+      "source": "closedObservation.capacity.observedValue",
+      "absentPolicy": "MUST_BE_PRESENT"
+    },
+    {
+      "probeId": "capacity.reservationReached",
+      "valueType": "BOOLEAN",
+      "source": "closedObservation.capacity.reservationReached",
+      "absentPolicy": "MUST_BE_PRESENT"
+    },
+    {
+      "probeId": "capacity.zeroBoundary",
+      "valueType": "CODE",
+      "source": "closedObservation.capacity.zeroBoundary",
+      "absentPolicy": "EXPLICIT_ABSENT"
+    },
+    {
+      "probeId": "domain.transactionCommitted",
+      "valueType": "BOOLEAN",
+      "source": "closedObservation.domain.transactionCommitted",
+      "absentPolicy": "MUST_BE_PRESENT"
+    },
+    {
+      "probeId": "domain.revisionBefore",
+      "valueType": "INTEGER",
+      "source": "closedObservation.domain.revisionBefore",
+      "absentPolicy": "EXPLICIT_ABSENT"
+    },
+    {
+      "probeId": "domain.revisionAfter",
+      "valueType": "INTEGER",
+      "source": "closedObservation.domain.revisionAfter",
+      "absentPolicy": "EXPLICIT_ABSENT"
+    },
+    {
+      "probeId": "domain.contentVersionBefore",
+      "valueType": "INTEGER",
+      "source": "closedObservation.domain.contentVersionBefore",
+      "absentPolicy": "EXPLICIT_ABSENT"
+    },
+    {
+      "probeId": "domain.contentVersionAfter",
+      "valueType": "INTEGER",
+      "source": "closedObservation.domain.contentVersionAfter",
+      "absentPolicy": "EXPLICIT_ABSENT"
+    },
+    {
+      "probeId": "domain.lifecycleBefore",
+      "valueType": "CODE",
+      "source": "closedObservation.domain.lifecycleBefore",
+      "absentPolicy": "EXPLICIT_ABSENT"
+    },
+    {
+      "probeId": "domain.lifecycleAfter",
+      "valueType": "CODE",
+      "source": "closedObservation.domain.lifecycleAfter",
+      "absentPolicy": "EXPLICIT_ABSENT"
+    },
+    {
+      "probeId": "domain.auditEventCount",
+      "valueType": "INTEGER",
+      "source": "closedObservation.domain.auditEventCount",
+      "absentPolicy": "MUST_BE_PRESENT"
+    },
+    {
+      "probeId": "domain.domainEventCount",
+      "valueType": "INTEGER",
+      "source": "closedObservation.domain.domainEventCount",
+      "absentPolicy": "MUST_BE_PRESENT"
+    },
+    {
+      "probeId": "domain.referenceOccurrenceCount",
+      "valueType": "INTEGER",
+      "source": "closedObservation.domain.referenceOccurrenceCount",
+      "absentPolicy": "MUST_BE_PRESENT"
+    },
+    {
+      "probeId": "domain.resultBytes",
+      "valueType": "BYTE_SEQUENCE",
+      "source": "closedObservation.domain.resultBytes",
+      "absentPolicy": "EXPLICIT_ABSENT"
+    },
+    {
+      "probeId": "domain.idempotencyOutcome",
+      "valueType": "CODE",
+      "source": "closedObservation.domain.idempotencyOutcome",
+      "absentPolicy": "EXPLICIT_ABSENT"
+    }
+  ],
+  "mappingCount": 25,
+  "capacityProbeObservationPolicy": {
+    "writeCount": 0,
+    "renderDocumentCount": 0,
+    "renderOutputCount": 0,
+    "transactionCommitted": false,
+    "revisionBefore": "ABSENT",
+    "revisionAfter": "ABSENT",
+    "contentVersionBefore": "ABSENT",
+    "contentVersionAfter": "ABSENT",
+    "lifecycleBefore": "ABSENT",
+    "lifecycleAfter": "ABSENT",
+    "auditEventCount": 0,
+    "domainEventCount": 0,
+    "referenceOccurrenceCount": 0,
+    "resultBytes": "ABSENT",
+    "idempotencyOutcome": "ABSENT"
+  },
+  "evidenceBoundary": "This adapter freezes probe extraction only. It does not prove any observation exists until an exact DOMAIN_SERVICES target and both required executor roles replay it."
+}

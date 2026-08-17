@@ -1,0 +1,142 @@
+requirement_id	source_line	clause_ordinal_on_line	family	normative_summary
+RW-T12-S1-001	45	1	WIRE_CANONICAL_DIGEST	Authored TemplateUse kind is exactly templateUse.
+RW-T12-S1-002	45	2	DESIGN_INPUT_EXPRESSION	TemplateUse is a structural Node in the shared NodeContractCatalog, not Frame, Slot, sidecar, or callback.
+RW-T12-S1-003	45	3	DESIGN_INPUT_EXPRESSION	TemplateUse is allowed only in parent ContentModels that admit it and cannot be DesignRoot.
+RW-T12-S1-004	46	1	WIRE_CANONICAL_DIGEST	TemplateUse requires kind, nodeId, useId, templateRef, contextSelector, fills, placement, and bindings.
+RW-T12-S1-005	46	2	WIRE_CANONICAL_DIGEST	TemplateUse optional fields are exactly displayName, render, visible, opacity, and transform.
+RW-T12-S1-006	46	3	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	templateRef is closed {templateId} and follows target current only.
+RW-T12-S1-007	46	4	DESIGN_INPUT_EXPRESSION	nodeId and useId are namespace-local unique client-generated canonical UUID v4 values.
+RW-T12-S1-008	47	1	WIRE_CANONICAL_DIGEST	TemplateUse forbids children, appearance, fit/alignment, and child-override members.
+RW-T12-S1-009	47	2	WIRE_CANONICAL_DIGEST	All TemplateUse objects and unions reject unknown members, unknown kinds, and null.
+RW-T12-S1-010	47	3	WIRE_CANONICAL_DIGEST	bindings and fills members are mandatory even when empty.
+RW-T12-S1-011	47	4	WIRE_CANONICAL_DIGEST	displayName is authored hash content but is non-evaluated and non-bindable.
+RW-T12-S1-012	48	1	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	Every actual TemplateUse occurrence creates one isolated child invocation.
+RW-T12-S1-013	48	2	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	Shared target snapshot may share closure facts but never frame, fill, capability, Asset, path, or subtree results.
+RW-T12-S2-001	52	1	DESIGN_INPUT_EXPRESSION	system-empty and five system-basic schemas are first-class immutable StaticSchemas with ordinary identity.
+RW-T12-S2-002	52	2	DESIGN_INPUT_EXPRESSION	System schemas are selectable and referenceable, have no Draft, and are not evaluator-private contracts.
+RW-T12-S2-003	53	1	WIRE_CANONICAL_DIGEST	Each system-basic schema requires integer-decimal index and a correctly typed value.
+RW-T12-S2-004	53	2	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	Evaluator builds one immutable exact-system-schema context for each scalar Repeat item.
+RW-T12-S2-005	53	3	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	/index and loopIndex equal the original zero-based input index and are never renumbered by pruning or packing.
+RW-T12-S2-006	54	1	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	A matching system-basic child may receive the complete scalar item context.
+RW-T12-S2-007	54	2	DESIGN_INPUT_EXPRESSION	Reference items retain only business schema and never gain implicit index; index transfer requires explicit PUBLIC fill.
+RW-T12-S3-001	58	1	WIRE_CANONICAL_DIGEST	contextSelector is a closed union.
+RW-T12-S3-002	58	2	WIRE_CANONICAL_DIGEST	Ordinary selector wire is exact invocation/loop-domain context plus pointer.
+RW-T12-S3-003	58	3	DESIGN_INPUT_EXPRESSION	Empty selector is exact {kind:empty} and only valid for a system-empty child.
+RW-T12-S3-004	59	1	DESIGN_INPUT_EXPRESSION	Empty pointer selects the complete typed context of the selected domain.
+RW-T12-S3-005	59	2	DESIGN_INPUT_EXPRESSION	Non-empty pointer must be valid RFC6901 and statically resolve to a reference-typed object context.
+RW-T12-S3-006	59	3	DESIGN_INPUT_EXPRESSION	Selectors reject scalar, array, numeric-index, wildcard, arbitrary-object, shape-inference, and JSON-revalidation paths.
+RW-T12-S3-007	59	4	DESIGN_INPUT_EXPRESSION	Selected StaticSchemaRef must exactly equal the child permanent StaticSchemaRef.
+RW-T12-S3-008	60	1	WIRE_CANONICAL_DIGEST	Ordinary selector requires ERROR or SKIP absent policy; empty selector forbids it.
+RW-T12-S3-009	60	2	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	ERROR on legal runtime ABSENT terminates Evaluation.
+RW-T12-S3-010	60	3	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	SKIP removes the invocation and consumes no host layout/gap or downstream placement, fill, child, Asset, or capability work.
+RW-T12-S3-011	60	4	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	Empty selector always yields concrete system-empty context.
+RW-T12-S3-012	61	1	DESIGN_INPUT_EXPRESSION	null, source ERROR, invalid or nonexistent pointer, wrong type, and schema mismatch are not ABSENT and cannot be hidden by SKIP.
+RW-T12-S3-013	61	2	DESIGN_INPUT_EXPRESSION	Save validates every selector even in statically pruned structure.
+RW-T12-S4-001	65	1	WIRE_CANONICAL_DIGEST	Each fill has exact {targetDefinitionId,source} wire.
+RW-T12-S4-002	65	2	DESIGN_INPUT_EXPRESSION	Fill target is unique per TemplateUse.
+RW-T12-S4-003	65	3	WIRE_CANONICAL_DIGEST	fills order has no semantics and canonicalizes by targetDefinitionId.
+RW-T12-S4-004	65	4	DESIGN_INPUT_EXPRESSION	Fill target must be a child-current PUBLIC CustomDefinition and source type must match exactly.
+RW-T12-S4-005	66	1	DESIGN_INPUT_EXPRESSION	Fill source evaluates in the parent TemplateUse lexical domain.
+RW-T12-S4-006	66	2	DESIGN_INPUT_EXPRESSION	Fill directly permits only context, loopIndex, or definition sources and forbids literal and capability sources.
+RW-T12-S4-007	66	3	ASSET_CAPABILITY_CONCURRENCY	Capability-derived fill requires a parent Expression input; TemplateUse exposes no capability entry.
+RW-T12-S4-008	67	1	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	Omitted PUBLIC fill or legal ABSENT uses the child literal default.
+RW-T12-S4-009	67	2	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	ERROR, wrong type, invalid dynamic AssetRef, or budget failure never falls back to default.
+RW-T12-S4-010	67	3	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	PRIVATE definition always uses its child default.
+RW-T12-S4-011	68	1	SECURITY_FAULT	Target removal, privacy change, or type drift is dependency ERROR and triggers recursive parent recheck.
+RW-T12-S4-012	68	2	DESIGN_INPUT_EXPRESSION	Duplicate target or illegal source wire is hard error.
+RW-T12-S4-013	68	3	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	Child evaluation begins only after all PUBLIC fill/default and PRIVATE defaults are frozen.
+RW-T12-S4-014	68	4	SECURITY_FAULT	Child frame cannot read parent frame.
+RW-T12-S5-001	72	1	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	Every Render freezes one consistent closure from all authored reachable TemplateRefs, including statically unreachable refs.
+RW-T12-S5-002	72	2	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	Closure snapshots deduplicate by templateId and pin exact current revision and contentHash.
+RW-T12-S5-003	72	3	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	Every authored TemplateUse remains a distinct closure edge.
+RW-T12-S5-004	72	4	ASSET_CAPABILITY_CONCURRENCY	Any current drift discards the closure attempt; only bounded retry or failure is allowed.
+RW-T12-S5-005	73	1	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	Closure validates scope, lifecycle, readiness, DAG, profile compatibility, and integrity before invocation pruning.
+RW-T12-S5-006	73	2	SECURITY_FAULT	Structural pruning cannot hide invalid closure, remove delete blockers, or bypass static validation.
+RW-T12-S5-007	74	1	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	TemplateUse consumer order is render, selector/policy, placement, visible, opacity, transform, sorted fills, child frame, and child DFS.
+RW-T12-S5-008	74	2	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	Composite leaves follow NodeContract order; JSON or binding order cannot change first error.
+RW-T12-S5-009	75	1	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	render:false prunes before selector and all later work.
+RW-T12-S5-010	75	2	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	SKIP prunes immediately after selector and executes no later work.
+RW-T12-S5-011	75	3	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	visible:false and opacity:0 execute fill, child, and Asset work with normal failures.
+RW-T12-S5-012	75	4	SECURITY_FAULT	First demanded runtime error fails fast with zero RenderDocument.
+RW-T12-S6-001	79	1	SECURITY_FAULT	Template ownerScope is immutable after creation.
+RW-T12-S6-002	79	2	SECURITY_FAULT	TemplateRef requires parent and target in the same scope.
+RW-T12-S6-003	79	3	SECURITY_FAULT	Template copy is same-ownerScope only.
+RW-T12-S6-004	79	4	SECURITY_FAULT	Cross-scope migration requires future explicit export/import and reference mapping; no deep copy or confirmed invalid cross-scope ref.
+RW-T12-S6-005	80	1	SECURITY_FAULT	Authorized root Render uses internal capability for same-scope closure and authored child Assets without per-child caller read.
+RW-T12-S6-006	80	2	SECURITY_FAULT	Directory, edit, draft-preview, and download retain their own read authorization.
+RW-T12-S6-007	80	3	ASSET_CAPABILITY_CONCURRENCY	Each actual child property Asset use creates a distinct resourceId and observes current independently.
+RW-T12-S6-008	80	4	ASSET_CAPABILITY_CONCURRENCY	Snapshot, asset, content, or definition equality never merges resolve occurrences; only exact-byte cache may reuse within Ticket13 boundaries.
+RW-T12-S6-009	81	1	ASSET_CAPABILITY_CONCURRENCY	Each Template exact Expression Profile supplies capability contracts to its actual child invocations.
+RW-T12-S6-010	81	2	ASSET_CAPABILITY_CONCURRENCY	Child Expression must explicitly declare capability input; TemplateUse cannot alter or save allowlists.
+RW-T12-S6-011	81	3	ASSET_CAPABILITY_CONCURRENCY	Invocations share request CapabilityState components and budgets while declaration frame makes call positions distinct.
+RW-T12-S6-012	81	4	SECURITY_FAULT	Capability data is fully eliminated before RenderDocument.
+RW-T12-S7-001	85	1	LAYOUT_SHAPING	Parent ContentModel selects ABSOLUTE, STACK, GRID, or PACK only for a Repeat direct child.
+RW-T12-S7-002	85	2	LAYOUT_SHAPING	ABSOLUTE, STACK, and GRID allow FIXED, HUG, and FILL; PACK allows FIXED and HUG only.
+RW-T12-S7-003	85	3	LAYOUT_SHAPING	Existing min, max, margin, cell, alignment, definite-FILL, and cycle rules remain applicable.
+RW-T12-S7-004	86	1	LAYOUT_SHAPING	HUG intrinsic size is the child Canvas original trim size before min/max clamp.
+RW-T12-S7-005	86	2	LAYOUT_SHAPING	FIXED or FILL host box is determined by parent layout.
+RW-T12-S7-006	86	3	LAYOUT_SHAPING	Host size never reflows or changes child Canvas, Stack, Grid, or Text constraints.
+RW-T12-S7-007	87	1	LAYOUT_SHAPING	Child subtree lays out against original trim constraints, then clips to source trim.
+RW-T12-S7-008	87	2	LAYOUT_SHAPING	The whole source artboard maps by uniform CONTAIN and centered offset into the host.
+RW-T12-S7-009	87	3	LAYOUT_SHAPING	Mapped child is clipped again to the host.
+RW-T12-S7-010	88	1	RENDERER_OUTPUT	Concrete child background fills source trim before child paint.
+RW-T12-S7-011	88	2	LAYOUT_SHAPING	Nested child bleed contributes to neither size, paint, nor clip.
+RW-T12-S7-012	88	3	RENDERER_OUTPUT	CONTAIN letterbox is transparent and TemplateUse has no self paint.
+RW-T12-S7-013	88	4	LAYOUT_SHAPING	visible, opacity, and transform apply exactly once at the host layer.
+RW-T12-S7-014	88	5	RENDERER_OUTPUT	Child paints as one continuous subtree in parent authored order and cannot interleave siblings.
+RW-T12-S8-001	92	1	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	Evaluator completely removes TemplateUse and child Canvas.
+RW-T12-S8-002	92	2	WIRE_CANONICAL_DIGEST	Expanded child lowers to static compositionViewport with no ValueSource, ref, fill, or callback residue.
+RW-T12-S8-003	92	3	LAYOUT_SHAPING	compositionViewport carries source trim, concrete background, CONTAIN/CENTER, and source/host clips.
+RW-T12-S8-004	93	1	LAYOUT_SHAPING	Engine recursively lays out the child under source trim after host box is known, then computes contain transform.
+RW-T12-S8-005	93	2	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	Evaluator does not pre-layout or write final coordinates.
+RW-T12-S8-006	93	3	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	Nested uses lower recursively to nested static viewports without runtime Template reads.
+RW-T12-S8-007	94	1	LAYOUT_SHAPING	Implementation must extend RenderDSL and pass Layout Profile conformance for compositionViewport.
+RW-T12-S8-008	94	2	SECURITY_FAULT	Implementation must not preserve TemplateUse, pre-layout in Evaluator, rasterize child, or use an Engine callback.
+RW-T12-S8-009	94	3	SECURITY_FAULT	Exploration creates no placeholder kind or API.
+RW-T12-S9-001	98	1	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	Each snapshot parses and evaluates with its own exact DSL and Expression profiles.
+RW-T12-S9-002	98	2	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	Root Design Profile maps through an append-only compatibility table to one exact Layout Profile.
+RW-T12-S9-003	98	3	SECURITY_FAULT	Caller cannot select, negotiate, upgrade, request latest, or fall back the Layout Profile.
+RW-T12-S9-004	99	1	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	Every child Profile requires a permanent lossless edge to the root-selected Layout Profile including compositionViewport.
+RW-T12-S9-005	99	2	SECURITY_FAULT	A missing edge fails before Evaluation and causes no migration, mutation, mixed profile, or partial document.
+RW-T12-S10-001	103	1	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	Request path uses closed ordered root, Repeat, TemplateUse, and node segments.
+RW-T12-S10-002	103	2	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	Outer Repeat segments precede use; child Repeat segments follow use.
+RW-T12-S10-003	104	1	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	Viewport role maps to source TemplateUse node; canvas-background role maps to child Canvas node.
+RW-T12-S10-004	104	2	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	Repeat and conditional synthetic roles remain as defined by Ticket11.
+RW-T12-S10-005	104	3	DESIGN_INPUT_EXPRESSION	Synthetic nodes never receive UUIDs.
+RW-T12-S10-006	105	1	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	Skipped use creates no invocation, viewport, or descendant occurrence.
+RW-T12-S10-007	105	2	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	The same use at different input index and a shared child through different use or path are distinct occurrences.
+RW-T12-S10-008	105	3	SECURITY_FAULT	RenderDocument carries only opaque occurrenceId.
+RW-T12-S10-009	105	4	SECURITY_FAULT	Request sidecar maps path and source identity to problems, paint, and trace; Engine receives no Template identity.
+RW-T12-S10-010	106	1	SECURITY_FAULT	Resolved revision is a request-local locator only.
+RW-T12-S10-011	106	2	SECURITY_FAULT	Paths exclude context, fill, and item values and are not author, business, revision, or cross-request identities.
+RW-T12-S10-012	106	3	WIRE_CANONICAL_DIGEST	Paths do not enter Design hash or independently form cache identity.
+RW-T12-S11-001	110	1	DESIGN_INPUT_EXPRESSION	Illegal wire, null, IDs, fills, children, placement, binding, selector, domain, or cycle is a non-confirmable hard error.
+RW-T12-S11-002	110	2	SECURITY_FAULT	Well-formed child lifecycle, readiness, fill, context, schema, or profile failure is a dependency error eligible for confirmed INVALID save.
+RW-T12-S11-003	110	3	SECURITY_FAULT	INVALID or STALE Template cannot Render.
+RW-T12-S11-004	111	1	SECURITY_FAULT	Runtime selector, fill, child, Asset, capability, or capacity failure affects the request only, not readiness.
+RW-T12-S11-005	111	2	SECURITY_FAULT	Static unreachability does not weaken problem classification.
+RW-T12-S11-006	112	1	EDITOR_AUTOMATED	Local TemplateUse copy generates fresh nodeId, useId, and bindingIds and atomically rewrites references.
+RW-T12-S11-007	112	2	EDITOR_AUTOMATED	Copy preserves templateRef and child targetDefinitionId.
+RW-T12-S11-008	112	3	EDITOR_AUTOMATED	Context or fill refs survive copy only if lexically reachable; otherwise the client copies, redirects, or rejects.
+RW-T12-S11-009	112	4	EDITOR_AUTOMATED	Reparent explicitly converts placement; server never guesses scope, placement, domain, or repairs IDs.
+RW-T12-S11-010	112	5	EDITOR_AUTOMATED	Whole Template copy or restore preserves local IDs.
+RW-T12-S11-011	113	1	ASSET_CAPABILITY_CONCURRENCY	Child current save and DAG check are atomic; a cycle causes zero write.
+RW-T12-S11-012	113	2	ASSET_CAPABILITY_CONCURRENCY	Valid child current change marks incoming active parents STALE then rechecks recursively without changing parent revision or hash.
+RW-T12-S11-013	113	3	SECURITY_FAULT	Refs in render:false or unreachable branches still propagate invalidation and block child deletion.
+RW-T12-S12-001	117	1	WIRE_CANONICAL_DIGEST	All authored TemplateUse, common, parent-position, and logical-ref facts enter canonical Design and content hash.
+RW-T12-S12-002	117	2	WIRE_CANONICAL_DIGEST	fills sort by targetDefinitionId, bindings by bindingId, and parent children retain semantic order.
+RW-T12-S12-003	117	3	WIRE_CANONICAL_DIGEST	Resolved child current, closure, runtime context, fill, path, viewport, contain, and expanded subtree do not enter parent hash.
+RW-T12-S12-004	118	1	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	Active-current projection retains every authored use logical target and stable parent locator.
+RW-T12-S12-005	118	2	SECURITY_FAULT	Projection queries may aggregate target but cannot lose use occurrences or become fact authority.
+RW-T12-S12-006	118	3	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	All authored edges participate in DAG, readiness, and delete blocking.
+RW-T12-S12-007	119	1	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	Capacity independently limits closure snapshots, edges, depth, invocation count and depth, viewports, nodes, and paint items.
+RW-T12-S12-008	119	2	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	SKIP or pruning consumes closure budgets but not actual invocation, materialization, capability, or Asset budgets.
+RW-T12-S12-009	119	3	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	A shared snapshot counts once; every actual invocation counts separately.
+RW-T12-S12-010	120	1	SECURITY_FAULT	Parent dependency diagnostics expose bounded parent-side IDs, pointer, and target details.
+RW-T12-S12-011	120	2	SECURITY_FAULT	Child runtime diagnostics use bounded invocation or occurrence and child-local identities.
+RW-T12-S12-012	120	3	SECURITY_FAULT	Diagnostics never echo context, fill, text, child DSL, or Asset bytes.
+RW-T12-S12-013	120	4	SECURITY_FAULT	Cross-permission detail may redact but must preserve the parent use locator.
+RW-T12-S12-014	120	5	SECURITY_FAULT	Problem truncation explicitly emits PROBLEM_LIMIT_REACHED.
+RW-T12-S13-001	124	1	SECURITY_FAULT	v1 excludes all listed dynamic selectors, schema inference, cross-scope or deep copy, slots, fallbacks, overrides, inheritance, callbacks, configurable viewport behavior, memoized invocation, child output, and multi-Canvas features.
+RW-T12-S13-002	125	1	SECURITY_FAULT	Any excluded capability requires a new Design or Layout Profile plus explicit migration.
+RW-T12-S13-003	125	2	WIRE_CANONICAL_DIGEST	v1 persists neither nullable placeholders nor parsed-but-unimplemented fields.

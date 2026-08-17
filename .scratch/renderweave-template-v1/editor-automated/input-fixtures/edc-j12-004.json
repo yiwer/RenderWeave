@@ -1,0 +1,15 @@
+{
+  "artifactVersion": "renderweave-editor-input-fixture/1.0",
+  "candidateId": "EDC::J12::004",
+  "executionClass": "EXEC::EDITOR_AUTOMATED::1.0",
+  "baselineId": "EditorStructuredClean",
+  "parameters": {
+    "environmentProfile": "REDUCED_MOTION"
+  },
+  "actionScript": [
+    {
+      "action": "COMPLETE_CORE_FLOW",
+      "parameters": {}
+    }
+  ]
+}

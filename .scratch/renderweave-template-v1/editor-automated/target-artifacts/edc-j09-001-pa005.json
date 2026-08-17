@@ -1,0 +1,8 @@
+[
+  {
+    "operationId": "saveTemplate",
+    "outcome": "PROBLEM",
+    "code": "TEMPLATE_SAVE_OUTCOME_UNKNOWN",
+    "stage": "EDITOR_SAVE_RECONCILIATION"
+  }
+]

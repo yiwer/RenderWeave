@@ -1,0 +1,15 @@
+{
+  "artifactVersion": "renderweave-editor-input-fixture/1.0",
+  "candidateId": "EDC::J03::007",
+  "executionClass": "EXEC::EDITOR_AUTOMATED::1.0",
+  "baselineId": "EditorStructuredBindingPresent",
+  "parameters": {},
+  "actionScript": [
+    {
+      "action": "REMOVE_BINDING",
+      "parameters": {
+        "target": "node-text-a.text"
+      }
+    }
+  ]
+}

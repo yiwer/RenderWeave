@@ -1,0 +1,112 @@
+{
+  "artifactVersion": "renderweave-renderer-exact-output-fixture-contract/1.0",
+  "fixtureVersion": "renderweave-renderer-exact-output-fixture/1.0",
+  "status": "FROZEN_STATIC_FIXTURE_CONTRACT",
+  "executionClass": "EXEC::RENDERER_EXACT_OUTPUT::1.0",
+  "serialization": {
+    "encoding": "UTF-8 without BOM",
+    "lineEnding": "LF",
+    "indentationSpaces": 2,
+    "finalLfRequired": true,
+    "memberOrder": "exactly the contract order emitted by renderweave-renderer-exact-output-generator/1.0"
+  },
+  "allowedModes": [
+    "CAPACITY_BOUNDARY",
+    "NAMED_SCENARIO"
+  ],
+  "capacityBoundary": {
+    "entrypoint": "RENDERER_EXACT_OUTPUT_CAPACITY_GUARD",
+    "guardContractId": "renderweave-renderer-exact-output-capacity-guard/1.0",
+    "allowedLimitSource": "all 54 axes assigned to EXEC::RENDERER_EXACT_OUTPUT::1.0 in conformance-capacity-coverage-v1.json, in source order",
+    "allowedValueEncodings": [
+      "CANONICAL_INTEGER",
+      "FORMULA"
+    ],
+    "formulaGrammar": "exactly fillChildCount, fillChildCount+1, or fillChildCount+2; only the frozen Stack water-fill axis may use it",
+    "allowedComparators": [
+      "EXACT",
+      "FORMULA_MAX",
+      "MAX_INCLUSIVE",
+      "MIN_INCLUSIVE",
+      "READY_MINIMUM"
+    ],
+    "allowedVariants": [
+      "below",
+      "at",
+      "above"
+    ],
+    "observedValueWire": "exact canonical integer or closed formula string copied from the expanded capacity coverage variant",
+    "targetContract": {
+      "exactProductionGuardRequired": true,
+      "duplicateGuardImplementationForbidden": true,
+      "productApiSurfaceCreated": false,
+      "productCommandConstructedByThisProbe": false,
+      "renderDocumentParsedByThisProbe": false,
+      "resourceFetchOrDecodeExecutedByThisProbe": false,
+      "layoutOrShapingExecutedByThisProbe": false,
+      "rasterOrEncodingExecutedByThisProbe": false,
+      "rendererOrOutputExecutedByThisProbe": false,
+      "exactRendererOutputProvenByThisProbe": false,
+      "futureIntegrationProofRequired": "Each exact Renderer target must prove that the authoritative deployment, command, resource, layout, shaping, raster, encoding, trace, deadline, or control counter derives the observed value at its frozen stage and enforces this same limit-specific predicate at the frozen reservation or certification point."
+    }
+  },
+  "namedScenario": {
+    "parameterSchemaId": "renderweave-named-scenario-parameters/1.0",
+    "allowedScenarioIds": [
+      "RENDERER-EXACT-OUTPUT-BASELINE-CONTEXT"
+    ],
+    "entrypoint": "BASELINE_CONTRACT_CHECK",
+    "expectedObservationProfile": "renderweave-renderer-exact-output-observation-adapter/1.0",
+    "parametersReferenceExactFixtureBytes": true,
+    "productMutationAllowed": false
+  },
+  "fixtureTopLevelOrder": [
+    "fixtureVersion",
+    "generatorProfile",
+    "executionClass",
+    "baseline",
+    "scenario",
+    "observationAdapter",
+    "targetContract"
+  ],
+  "capacityScenarioOrder": [
+    "mode",
+    "scenarioId",
+    "operationId",
+    "entrypoint",
+    "guardContractId",
+    "limitId",
+    "observedValue",
+    "valueEncoding",
+    "comparator",
+    "variant",
+    "contractStage",
+    "publicRenderStage",
+    "reservationPoint",
+    "zeroBoundary",
+    "faultSchedule"
+  ],
+  "namedScenarioOrder": [
+    "mode",
+    "scenarioId",
+    "operationId",
+    "entrypoint",
+    "faultSchedule"
+  ],
+  "forbiddenFixtureMembers": [
+    "expectedTerminal",
+    "expectedAssertions",
+    "plannedAssertions",
+    "plannedOracleId",
+    "requirementIds",
+    "resolvedCode",
+    "resolvedKind",
+    "latest",
+    "default",
+    "script"
+  ],
+  "evidenceBoundary": {
+    "fixtureGenerationMayProve": "deterministic closed fixture bytes, exact canonical-integer and closed-formula preservation, and one-axis target-input isolation",
+    "fixtureGenerationCannotProve": "valid product Command or RenderDocument construction, deployment certification, resource fetch or decode, layout, shaping, rasterization, encoding, trace production, deadline or cancellation enforcement, terminal output, record issuance, physical Linux equivalence, or execution-class readiness"
+  }
+}

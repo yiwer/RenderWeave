@@ -1,0 +1,23 @@
+{
+  "artifactVersion": "renderweave-spec-registry-executor-manifest/1.0",
+  "executorId": "SPEC_EXECUTOR::NODE::1.0",
+  "role": "primary-registry-validator",
+  "executionClass": "EXEC::SPEC_REGISTRY::1.0",
+  "targetId": "SPEC_TARGET::REGISTRY::1.0",
+  "targetManifest": {
+    "path": "spec-registry/preissuance-target-manifest-v1.json",
+    "sha256": "sha256:76b0a60125fdc6f91f83212b6503a616933077b0c1684d29b186b759656ab2e1",
+    "byteLength": 14909
+  },
+  "implementationRevision": "spec-registry-bootstrap/1.0",
+  "runtime": "Node.js 24.x",
+  "entrypoint": {
+    "path": "spec-registry/validate-spec-registry-primary.mjs",
+    "sha256": "sha256:34051d3e74c4baf539827d1857d8164d8cba94dc9ede5185db2bd761677d10ad",
+    "byteLength": 30758
+  },
+  "command": "node spec-registry/validate-spec-registry-primary.mjs --target spec-registry/preissuance-target-manifest-v1.json",
+  "sharedSemanticLibrary": null,
+  "networkReadsAllowed": false,
+  "productMutationAllowed": false
+}

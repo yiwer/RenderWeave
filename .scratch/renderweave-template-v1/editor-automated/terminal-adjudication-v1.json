@@ -1,0 +1,831 @@
+{
+  "artifactVersion": "renderweave-editor-terminal-adjudication/1.0",
+  "status": "EXACT_PLANNING_BINDINGS_PRODUCT_UNPROVEN",
+  "authority": "Ticket04-Ticket18 semantics plus Ticket19 exact terminal planning; new literals are acceptance-contract decisions and not evidence that product code exists",
+  "executionClass": "EXEC::EDITOR_AUTOMATED::1.0",
+  "rules": {
+    "oneTerminalPerCandidate": true,
+    "codeAndStageMayBeOmittedOnlyByExactNotRequiredDecision": true,
+    "genericFallbackForbidden": true,
+    "naturalLanguageParsingForbidden": true,
+    "productObservationRequiredBeforeFormalIssuance": true
+  },
+  "existingSpecLiterals": {
+    "codes": [
+      "DESIGN_DSL_LIMIT_EXCEEDED",
+      "DESIGN_PROPERTY_CONSTRAINT_INVALID",
+      "PROBLEM_LIMIT_REACHED",
+      "RENDER_DEADLINE_EXCEEDED",
+      "TEMPLATE_CLOSURE_UNSTABLE"
+    ],
+    "stages": [
+      "BOUNDED_PROBLEM_COLLECTION",
+      "DESIGN_PARSE",
+      "DESIGN_PROPERTY_AND_AGGREGATE_VALIDATION",
+      "DESIGN_SEMANTIC_VALIDATION",
+      "ENGINE",
+      "TEMPLATE_CLOSURE"
+    ]
+  },
+  "editorAcceptanceLiterals": {
+    "codes": [
+      "DESIGN_DSL_MEMBER_OR_KIND_UNKNOWN",
+      "DESIGN_DSL_SECURITY_VIOLATION",
+      "DESIGN_DSL_STRUCTURE_INVALID",
+      "DESIGN_DSL_VERSION_UNSUPPORTED",
+      "EDITOR_ARRAY_REWRITE_DUPLICATE_TARGET",
+      "EDITOR_ARRAY_REWRITE_OUT_OF_BOUNDS",
+      "EDITOR_ARRAY_REWRITE_OVERLAP",
+      "EDITOR_DIRTY_DRAFT_REPLACEMENT_BLOCKED",
+      "EDITOR_INVALID_CONFIRMATION_UNAVAILABLE",
+      "EDITOR_STRUCTURE_COMMAND_REFERENCE_UNSAFE",
+      "TEMPLATE_CURRENT_UNAVAILABLE",
+      "TEMPLATE_DELETED",
+      "TEMPLATE_DEPENDENCY_ERROR",
+      "TEMPLATE_INTEGRITY_MISMATCH",
+      "TEMPLATE_REF_CYCLE",
+      "TEMPLATE_REVISION_CONFLICT",
+      "TEMPLATE_SAVE_OUTCOME_UNKNOWN"
+    ],
+    "stages": [
+      "DESIGN_DEPENDENCY_VALIDATION",
+      "EDITOR_SAVE_RECONCILIATION",
+      "TEMPLATE_MUTATION"
+    ]
+  },
+  "counts": {
+    "candidateTerminalCount": 108,
+    "adjudicatedFromPendingCount": 33,
+    "exactCodeCandidateCount": 33,
+    "exactStageCandidateCount": 21,
+    "pendingCodeOrStageCount": 0
+  },
+  "decisions": [
+    {
+      "candidateId": "EDC::J02::004",
+      "scenarioSlug": "delete-unsafe-rejected",
+      "requirementIds": [
+        "RW-T18-S3-019",
+        "RW-T18-S3-020"
+      ],
+      "previousCodeBinding": {
+        "status": "PENDING_PRODUCT_CODE_BINDING"
+      },
+      "previousStageBinding": {
+        "status": "NOT_REQUIRED"
+      },
+      "exactTerminal": {
+        "operationId": "deleteEntity",
+        "outcome": "NONTERMINAL_REJECTION",
+        "code": "EDITOR_STRUCTURE_COMMAND_REFERENCE_UNSAFE"
+      },
+      "literalSource": "EDITOR_ACCEPTANCE_LITERAL",
+      "productImplementationObserved": false
+    },
+    {
+      "candidateId": "EDC::J04::003",
+      "scenarioSlug": "array-reorder-overlap-rejected",
+      "requirementIds": [
+        "RW-T18-S3-029"
+      ],
+      "previousCodeBinding": {
+        "status": "PENDING_PRODUCT_CODE_BINDING"
+      },
+      "previousStageBinding": {
+        "status": "NOT_REQUIRED"
+      },
+      "exactTerminal": {
+        "operationId": "reorderSemanticArray",
+        "outcome": "NONTERMINAL_REJECTION",
+        "code": "EDITOR_ARRAY_REWRITE_OVERLAP"
+      },
+      "literalSource": "EDITOR_ACCEPTANCE_LITERAL",
+      "productImplementationObserved": false
+    },
+    {
+      "candidateId": "EDC::J04::004",
+      "scenarioSlug": "array-reorder-out-of-bounds-rejected",
+      "requirementIds": [
+        "RW-T18-S3-029"
+      ],
+      "previousCodeBinding": {
+        "status": "PENDING_PRODUCT_CODE_BINDING"
+      },
+      "previousStageBinding": {
+        "status": "NOT_REQUIRED"
+      },
+      "exactTerminal": {
+        "operationId": "reorderSemanticArray",
+        "outcome": "NONTERMINAL_REJECTION",
+        "code": "EDITOR_ARRAY_REWRITE_OUT_OF_BOUNDS"
+      },
+      "literalSource": "EDITOR_ACCEPTANCE_LITERAL",
+      "productImplementationObserved": false
+    },
+    {
+      "candidateId": "EDC::J04::005",
+      "scenarioSlug": "array-reorder-duplicate-target-rejected",
+      "requirementIds": [
+        "RW-T18-S3-029"
+      ],
+      "previousCodeBinding": {
+        "status": "PENDING_PRODUCT_CODE_BINDING"
+      },
+      "previousStageBinding": {
+        "status": "NOT_REQUIRED"
+      },
+      "exactTerminal": {
+        "operationId": "reorderSemanticArray",
+        "outcome": "NONTERMINAL_REJECTION",
+        "code": "EDITOR_ARRAY_REWRITE_DUPLICATE_TARGET"
+      },
+      "literalSource": "EDITOR_ACCEPTANCE_LITERAL",
+      "productImplementationObserved": false
+    },
+    {
+      "candidateId": "EDC::J05::003",
+      "scenarioSlug": "save-problem-submission-basis",
+      "requirementIds": [
+        "RW-T18-S3-032",
+        "RW-T18-S3-033",
+        "RW-T18-S3-034",
+        "RW-T18-S3-035",
+        "RW-T18-S3-039",
+        "RW-T18-S3-042"
+      ],
+      "previousCodeBinding": {
+        "status": "PENDING_SPEC_BINDING"
+      },
+      "previousStageBinding": {
+        "status": "PENDING_SPEC_BINDING"
+      },
+      "exactTerminal": {
+        "operationId": "saveTemplate",
+        "outcome": "PROBLEM",
+        "code": "DESIGN_PROPERTY_CONSTRAINT_INVALID",
+        "stage": "DESIGN_PROPERTY_AND_AGGREGATE_VALIDATION"
+      },
+      "literalSource": "EXISTING_SPEC_LITERAL",
+      "productImplementationObserved": false
+    },
+    {
+      "candidateId": "EDC::J05::004",
+      "scenarioSlug": "import-migration-problem-basis",
+      "requirementIds": [
+        "RW-T18-S3-032",
+        "RW-T18-S3-033",
+        "RW-T18-S3-034",
+        "RW-T18-S3-035",
+        "RW-T18-S3-039",
+        "RW-T18-S3-042"
+      ],
+      "previousCodeBinding": {
+        "status": "PENDING_SPEC_BINDING"
+      },
+      "previousStageBinding": {
+        "status": "PENDING_SPEC_BINDING"
+      },
+      "exactTerminal": {
+        "operationId": "validateImportOrMigration",
+        "outcome": "PROBLEM",
+        "code": "DESIGN_DSL_VERSION_UNSUPPORTED",
+        "stage": "DESIGN_PARSE"
+      },
+      "literalSource": "EDITOR_ACCEPTANCE_LITERAL",
+      "productImplementationObserved": false
+    },
+    {
+      "candidateId": "EDC::J05::006",
+      "scenarioSlug": "preview-problem-basis",
+      "requirementIds": [
+        "RW-T18-S3-032",
+        "RW-T18-S3-033",
+        "RW-T18-S3-034",
+        "RW-T18-S3-035",
+        "RW-T18-S3-040",
+        "RW-T18-S3-042"
+      ],
+      "previousCodeBinding": {
+        "status": "PENDING_SPEC_BINDING"
+      },
+      "previousStageBinding": {
+        "status": "PENDING_SPEC_BINDING"
+      },
+      "exactTerminal": {
+        "operationId": "authoritativePreview",
+        "outcome": "PROBLEM",
+        "code": "TEMPLATE_CLOSURE_UNSTABLE",
+        "stage": "TEMPLATE_CLOSURE"
+      },
+      "literalSource": "EXISTING_SPEC_LITERAL",
+      "productImplementationObserved": false
+    },
+    {
+      "candidateId": "EDC::J05::008",
+      "scenarioSlug": "failure-focuses-summary",
+      "requirementIds": [
+        "RW-T18-S3-032",
+        "RW-T18-S3-033",
+        "RW-T18-S3-042"
+      ],
+      "previousCodeBinding": {
+        "status": "PENDING_SPEC_BINDING"
+      },
+      "previousStageBinding": {
+        "status": "PENDING_SPEC_BINDING"
+      },
+      "exactTerminal": {
+        "operationId": "saveTemplate",
+        "outcome": "PROBLEM",
+        "code": "DESIGN_PROPERTY_CONSTRAINT_INVALID",
+        "stage": "DESIGN_PROPERTY_AND_AGGREGATE_VALIDATION"
+      },
+      "literalSource": "EXISTING_SPEC_LITERAL",
+      "productImplementationObserved": false
+    },
+    {
+      "candidateId": "EDC::J07::001",
+      "scenarioSlug": "dependency-set-offers-confirmation",
+      "requirementIds": [
+        "RW-T18-S1-026"
+      ],
+      "previousCodeBinding": {
+        "status": "PENDING_SPEC_BINDING"
+      },
+      "previousStageBinding": {
+        "status": "PENDING_SPEC_BINDING"
+      },
+      "exactTerminal": {
+        "operationId": "saveTemplate",
+        "outcome": "PROBLEM",
+        "code": "TEMPLATE_DEPENDENCY_ERROR",
+        "stage": "DESIGN_DEPENDENCY_VALIDATION"
+      },
+      "literalSource": "EDITOR_ACCEPTANCE_LITERAL",
+      "productImplementationObserved": false
+    },
+    {
+      "candidateId": "EDC::J07::003",
+      "scenarioSlug": "truncated-set-response",
+      "requirementIds": [
+        "RW-T18-S1-027",
+        "RW-T18-S1-029"
+      ],
+      "previousCodeBinding": {
+        "status": "EXACT",
+        "code": "PROBLEM_LIMIT_REACHED"
+      },
+      "previousStageBinding": {
+        "status": "PENDING_SPEC_BINDING"
+      },
+      "exactTerminal": {
+        "operationId": "saveTemplate",
+        "outcome": "PROBLEM",
+        "code": "PROBLEM_LIMIT_REACHED",
+        "stage": "BOUNDED_PROBLEM_COLLECTION"
+      },
+      "literalSource": "EXISTING_SPEC_LITERAL",
+      "productImplementationObserved": false
+    },
+    {
+      "candidateId": "EDC::J07::004",
+      "scenarioSlug": "truncated-confirmation-attempt-rejected",
+      "requirementIds": [
+        "RW-T18-S1-027",
+        "RW-T18-S1-028",
+        "RW-T18-S1-029"
+      ],
+      "previousCodeBinding": {
+        "status": "PENDING_PRODUCT_CODE_BINDING"
+      },
+      "previousStageBinding": {
+        "status": "NOT_REQUIRED"
+      },
+      "exactTerminal": {
+        "operationId": "attemptInvalidConfirmation",
+        "outcome": "NONTERMINAL_REJECTION",
+        "code": "EDITOR_INVALID_CONFIRMATION_UNAVAILABLE"
+      },
+      "literalSource": "EDITOR_ACCEPTANCE_LITERAL",
+      "productImplementationObserved": false
+    },
+    {
+      "candidateId": "EDC::J07::005",
+      "scenarioSlug": "unknown-version-hard-error-response",
+      "requirementIds": [
+        "RW-T04-S1-038",
+        "RW-T04-S1-039",
+        "RW-T04-S1-040",
+        "RW-T18-S1-027"
+      ],
+      "previousCodeBinding": {
+        "status": "PENDING_SPEC_BINDING"
+      },
+      "previousStageBinding": {
+        "status": "PENDING_SPEC_BINDING"
+      },
+      "exactTerminal": {
+        "operationId": "saveTemplate",
+        "outcome": "PROBLEM",
+        "code": "DESIGN_DSL_VERSION_UNSUPPORTED",
+        "stage": "DESIGN_PARSE"
+      },
+      "literalSource": "EDITOR_ACCEPTANCE_LITERAL",
+      "productImplementationObserved": false
+    },
+    {
+      "candidateId": "EDC::J07::006",
+      "scenarioSlug": "unknown-version-confirmation-rejected",
+      "requirementIds": [
+        "RW-T04-S1-039",
+        "RW-T04-S1-040",
+        "RW-T18-S1-027",
+        "RW-T18-S1-028"
+      ],
+      "previousCodeBinding": {
+        "status": "PENDING_PRODUCT_CODE_BINDING"
+      },
+      "previousStageBinding": {
+        "status": "NOT_REQUIRED"
+      },
+      "exactTerminal": {
+        "operationId": "attemptInvalidConfirmation",
+        "outcome": "NONTERMINAL_REJECTION",
+        "code": "EDITOR_INVALID_CONFIRMATION_UNAVAILABLE"
+      },
+      "literalSource": "EDITOR_ACCEPTANCE_LITERAL",
+      "productImplementationObserved": false
+    },
+    {
+      "candidateId": "EDC::J07::007",
+      "scenarioSlug": "unknown-member-kind-hard-error-response",
+      "requirementIds": [
+        "RW-T04-S1-038",
+        "RW-T04-S1-039",
+        "RW-T04-S1-040",
+        "RW-T18-S1-027"
+      ],
+      "previousCodeBinding": {
+        "status": "PENDING_SPEC_BINDING"
+      },
+      "previousStageBinding": {
+        "status": "PENDING_SPEC_BINDING"
+      },
+      "exactTerminal": {
+        "operationId": "saveTemplate",
+        "outcome": "PROBLEM",
+        "code": "DESIGN_DSL_MEMBER_OR_KIND_UNKNOWN",
+        "stage": "DESIGN_SEMANTIC_VALIDATION"
+      },
+      "literalSource": "EDITOR_ACCEPTANCE_LITERAL",
+      "productImplementationObserved": false
+    },
+    {
+      "candidateId": "EDC::J07::008",
+      "scenarioSlug": "unknown-member-kind-confirmation-rejected",
+      "requirementIds": [
+        "RW-T04-S1-039",
+        "RW-T04-S1-040",
+        "RW-T18-S1-027",
+        "RW-T18-S1-028"
+      ],
+      "previousCodeBinding": {
+        "status": "PENDING_PRODUCT_CODE_BINDING"
+      },
+      "previousStageBinding": {
+        "status": "NOT_REQUIRED"
+      },
+      "exactTerminal": {
+        "operationId": "attemptInvalidConfirmation",
+        "outcome": "NONTERMINAL_REJECTION",
+        "code": "EDITOR_INVALID_CONFIRMATION_UNAVAILABLE"
+      },
+      "literalSource": "EDITOR_ACCEPTANCE_LITERAL",
+      "productImplementationObserved": false
+    },
+    {
+      "candidateId": "EDC::J07::009",
+      "scenarioSlug": "structural-hard-error-response",
+      "requirementIds": [
+        "RW-T04-S1-038",
+        "RW-T04-S1-039",
+        "RW-T04-S1-040",
+        "RW-T18-S1-027"
+      ],
+      "previousCodeBinding": {
+        "status": "PENDING_SPEC_BINDING"
+      },
+      "previousStageBinding": {
+        "status": "PENDING_SPEC_BINDING"
+      },
+      "exactTerminal": {
+        "operationId": "saveTemplate",
+        "outcome": "PROBLEM",
+        "code": "DESIGN_DSL_STRUCTURE_INVALID",
+        "stage": "DESIGN_SEMANTIC_VALIDATION"
+      },
+      "literalSource": "EDITOR_ACCEPTANCE_LITERAL",
+      "productImplementationObserved": false
+    },
+    {
+      "candidateId": "EDC::J07::010",
+      "scenarioSlug": "structural-confirmation-rejected",
+      "requirementIds": [
+        "RW-T04-S1-039",
+        "RW-T04-S1-040",
+        "RW-T18-S1-027",
+        "RW-T18-S1-028"
+      ],
+      "previousCodeBinding": {
+        "status": "PENDING_PRODUCT_CODE_BINDING"
+      },
+      "previousStageBinding": {
+        "status": "NOT_REQUIRED"
+      },
+      "exactTerminal": {
+        "operationId": "attemptInvalidConfirmation",
+        "outcome": "NONTERMINAL_REJECTION",
+        "code": "EDITOR_INVALID_CONFIRMATION_UNAVAILABLE"
+      },
+      "literalSource": "EDITOR_ACCEPTANCE_LITERAL",
+      "productImplementationObserved": false
+    },
+    {
+      "candidateId": "EDC::J07::011",
+      "scenarioSlug": "template-cycle-hard-error-response",
+      "requirementIds": [
+        "RW-T04-S1-038",
+        "RW-T04-S1-039",
+        "RW-T04-S1-040",
+        "RW-T18-S1-027"
+      ],
+      "previousCodeBinding": {
+        "status": "PENDING_SPEC_BINDING"
+      },
+      "previousStageBinding": {
+        "status": "PENDING_SPEC_BINDING"
+      },
+      "exactTerminal": {
+        "operationId": "saveTemplate",
+        "outcome": "PROBLEM",
+        "code": "TEMPLATE_REF_CYCLE",
+        "stage": "DESIGN_SEMANTIC_VALIDATION"
+      },
+      "literalSource": "EDITOR_ACCEPTANCE_LITERAL",
+      "productImplementationObserved": false
+    },
+    {
+      "candidateId": "EDC::J07::012",
+      "scenarioSlug": "template-cycle-confirmation-rejected",
+      "requirementIds": [
+        "RW-T04-S1-039",
+        "RW-T04-S1-040",
+        "RW-T18-S1-027",
+        "RW-T18-S1-028"
+      ],
+      "previousCodeBinding": {
+        "status": "PENDING_PRODUCT_CODE_BINDING"
+      },
+      "previousStageBinding": {
+        "status": "NOT_REQUIRED"
+      },
+      "exactTerminal": {
+        "operationId": "attemptInvalidConfirmation",
+        "outcome": "NONTERMINAL_REJECTION",
+        "code": "EDITOR_INVALID_CONFIRMATION_UNAVAILABLE"
+      },
+      "literalSource": "EDITOR_ACCEPTANCE_LITERAL",
+      "productImplementationObserved": false
+    },
+    {
+      "candidateId": "EDC::J07::013",
+      "scenarioSlug": "security-hard-error-response",
+      "requirementIds": [
+        "RW-T04-S1-038",
+        "RW-T04-S1-039",
+        "RW-T04-S1-040",
+        "RW-T18-S1-027"
+      ],
+      "previousCodeBinding": {
+        "status": "PENDING_SPEC_BINDING"
+      },
+      "previousStageBinding": {
+        "status": "PENDING_SPEC_BINDING"
+      },
+      "exactTerminal": {
+        "operationId": "saveTemplate",
+        "outcome": "PROBLEM",
+        "code": "DESIGN_DSL_SECURITY_VIOLATION",
+        "stage": "DESIGN_SEMANTIC_VALIDATION"
+      },
+      "literalSource": "EDITOR_ACCEPTANCE_LITERAL",
+      "productImplementationObserved": false
+    },
+    {
+      "candidateId": "EDC::J07::014",
+      "scenarioSlug": "security-confirmation-rejected",
+      "requirementIds": [
+        "RW-T04-S1-039",
+        "RW-T04-S1-040",
+        "RW-T18-S1-027",
+        "RW-T18-S1-028"
+      ],
+      "previousCodeBinding": {
+        "status": "PENDING_PRODUCT_CODE_BINDING"
+      },
+      "previousStageBinding": {
+        "status": "NOT_REQUIRED"
+      },
+      "exactTerminal": {
+        "operationId": "attemptInvalidConfirmation",
+        "outcome": "NONTERMINAL_REJECTION",
+        "code": "EDITOR_INVALID_CONFIRMATION_UNAVAILABLE"
+      },
+      "literalSource": "EDITOR_ACCEPTANCE_LITERAL",
+      "productImplementationObserved": false
+    },
+    {
+      "candidateId": "EDC::J07::015",
+      "scenarioSlug": "capacity-hard-error-response",
+      "requirementIds": [
+        "RW-T04-S1-038",
+        "RW-T04-S1-039",
+        "RW-T04-S1-040",
+        "RW-T18-S1-027"
+      ],
+      "previousCodeBinding": {
+        "status": "PENDING_SPEC_BINDING"
+      },
+      "previousStageBinding": {
+        "status": "PENDING_SPEC_BINDING"
+      },
+      "exactTerminal": {
+        "operationId": "saveTemplate",
+        "outcome": "PROBLEM",
+        "code": "DESIGN_DSL_LIMIT_EXCEEDED",
+        "stage": "DESIGN_SEMANTIC_VALIDATION"
+      },
+      "literalSource": "EXISTING_SPEC_LITERAL",
+      "productImplementationObserved": false
+    },
+    {
+      "candidateId": "EDC::J07::016",
+      "scenarioSlug": "capacity-confirmation-rejected",
+      "requirementIds": [
+        "RW-T04-S1-039",
+        "RW-T04-S1-040",
+        "RW-T18-S1-027",
+        "RW-T18-S1-028"
+      ],
+      "previousCodeBinding": {
+        "status": "PENDING_PRODUCT_CODE_BINDING"
+      },
+      "previousStageBinding": {
+        "status": "NOT_REQUIRED"
+      },
+      "exactTerminal": {
+        "operationId": "attemptInvalidConfirmation",
+        "outcome": "NONTERMINAL_REJECTION",
+        "code": "EDITOR_INVALID_CONFIRMATION_UNAVAILABLE"
+      },
+      "literalSource": "EDITOR_ACCEPTANCE_LITERAL",
+      "productImplementationObserved": false
+    },
+    {
+      "candidateId": "EDC::J08::001",
+      "scenarioSlug": "first-conflict-preserves-local",
+      "requirementIds": [
+        "RW-T18-S1-019",
+        "RW-T18-S1-020",
+        "RW-T18-S1-021",
+        "RW-T18-S1-025"
+      ],
+      "previousCodeBinding": {
+        "status": "PENDING_SPEC_BINDING"
+      },
+      "previousStageBinding": {
+        "status": "PENDING_SPEC_BINDING"
+      },
+      "exactTerminal": {
+        "operationId": "saveTemplate",
+        "outcome": "PROBLEM",
+        "code": "TEMPLATE_REVISION_CONFLICT",
+        "stage": "TEMPLATE_MUTATION"
+      },
+      "literalSource": "EDITOR_ACCEPTANCE_LITERAL",
+      "productImplementationObserved": false
+    },
+    {
+      "candidateId": "EDC::J08::003",
+      "scenarioSlug": "second-drift-requires-new-confirmation",
+      "requirementIds": [
+        "RW-T18-S1-024",
+        "RW-T18-S1-025"
+      ],
+      "previousCodeBinding": {
+        "status": "PENDING_SPEC_BINDING"
+      },
+      "previousStageBinding": {
+        "status": "PENDING_SPEC_BINDING"
+      },
+      "exactTerminal": {
+        "operationId": "resubmitCompleteDesign",
+        "outcome": "PROBLEM",
+        "code": "TEMPLATE_REVISION_CONFLICT",
+        "stage": "TEMPLATE_MUTATION"
+      },
+      "literalSource": "EDITOR_ACCEPTANCE_LITERAL",
+      "productImplementationObserved": false
+    },
+    {
+      "candidateId": "EDC::J09::001",
+      "scenarioSlug": "transport-unknown-enters-reconciliation",
+      "requirementIds": [
+        "RW-T18-S5-006",
+        "RW-T18-S5-007",
+        "RW-T18-S5-008",
+        "RW-T18-S5-009"
+      ],
+      "previousCodeBinding": {
+        "status": "PENDING_SPEC_BINDING"
+      },
+      "previousStageBinding": {
+        "status": "PENDING_SPEC_BINDING"
+      },
+      "exactTerminal": {
+        "operationId": "saveTemplate",
+        "outcome": "PROBLEM",
+        "code": "TEMPLATE_SAVE_OUTCOME_UNKNOWN",
+        "stage": "EDITOR_SAVE_RECONCILIATION"
+      },
+      "literalSource": "EDITOR_ACCEPTANCE_LITERAL",
+      "productImplementationObserved": false
+    },
+    {
+      "candidateId": "EDC::J09::004",
+      "scenarioSlug": "reconcile-enters-conflict",
+      "requirementIds": [
+        "RW-T18-S5-012"
+      ],
+      "previousCodeBinding": {
+        "status": "PENDING_SPEC_BINDING"
+      },
+      "previousStageBinding": {
+        "status": "PENDING_SPEC_BINDING"
+      },
+      "exactTerminal": {
+        "operationId": "reconcileSave",
+        "outcome": "PROBLEM",
+        "code": "TEMPLATE_REVISION_CONFLICT",
+        "stage": "EDITOR_SAVE_RECONCILIATION"
+      },
+      "literalSource": "EDITOR_ACCEPTANCE_LITERAL",
+      "productImplementationObserved": false
+    },
+    {
+      "candidateId": "EDC::J09::005",
+      "scenarioSlug": "reconcile-deleted-readonly",
+      "requirementIds": [
+        "RW-T18-S5-013"
+      ],
+      "previousCodeBinding": {
+        "status": "PENDING_SPEC_BINDING"
+      },
+      "previousStageBinding": {
+        "status": "PENDING_SPEC_BINDING"
+      },
+      "exactTerminal": {
+        "operationId": "reconcileSave",
+        "outcome": "PROBLEM",
+        "code": "TEMPLATE_DELETED",
+        "stage": "EDITOR_SAVE_RECONCILIATION"
+      },
+      "literalSource": "EDITOR_ACCEPTANCE_LITERAL",
+      "productImplementationObserved": false
+    },
+    {
+      "candidateId": "EDC::J09::006",
+      "scenarioSlug": "reconcile-integrity-fails-closed",
+      "requirementIds": [
+        "RW-T18-S5-014"
+      ],
+      "previousCodeBinding": {
+        "status": "PENDING_SPEC_BINDING"
+      },
+      "previousStageBinding": {
+        "status": "PENDING_SPEC_BINDING"
+      },
+      "exactTerminal": {
+        "operationId": "reconcileSave",
+        "outcome": "PROBLEM",
+        "code": "TEMPLATE_INTEGRITY_MISMATCH",
+        "stage": "EDITOR_SAVE_RECONCILIATION"
+      },
+      "literalSource": "EDITOR_ACCEPTANCE_LITERAL",
+      "productImplementationObserved": false
+    },
+    {
+      "candidateId": "EDC::J09::007",
+      "scenarioSlug": "reconcile-unreadable-remains-unknown",
+      "requirementIds": [
+        "RW-T18-S5-015",
+        "RW-T18-S5-016",
+        "RW-T18-S5-017"
+      ],
+      "previousCodeBinding": {
+        "status": "PENDING_SPEC_BINDING"
+      },
+      "previousStageBinding": {
+        "status": "PENDING_SPEC_BINDING"
+      },
+      "exactTerminal": {
+        "operationId": "reconcileSave",
+        "outcome": "PROBLEM",
+        "code": "TEMPLATE_CURRENT_UNAVAILABLE",
+        "stage": "EDITOR_SAVE_RECONCILIATION"
+      },
+      "literalSource": "EDITOR_ACCEPTANCE_LITERAL",
+      "productImplementationObserved": false
+    },
+    {
+      "candidateId": "EDC::J10::012",
+      "scenarioSlug": "dirty-guard-blocks-replacement",
+      "requirementIds": [
+        "RW-T18-S4-020",
+        "RW-T18-S4-021"
+      ],
+      "previousCodeBinding": {
+        "status": "PENDING_PRODUCT_CODE_BINDING"
+      },
+      "previousStageBinding": {
+        "status": "NOT_REQUIRED"
+      },
+      "exactTerminal": {
+        "operationId": "replaceWorkingDraft",
+        "outcome": "NONTERMINAL_REJECTION",
+        "code": "EDITOR_DIRTY_DRAFT_REPLACEMENT_BLOCKED"
+      },
+      "literalSource": "EDITOR_ACCEPTANCE_LITERAL",
+      "productImplementationObserved": false
+    },
+    {
+      "candidateId": "EDC::J11::003",
+      "scenarioSlug": "save-and-preview-save-fails",
+      "requirementIds": [
+        "RW-T18-S1-005",
+        "RW-T18-S1-007",
+        "RW-T18-S2-026",
+        "RW-T18-S2-029",
+        "RW-T18-S2-030"
+      ],
+      "previousCodeBinding": {
+        "status": "PENDING_SPEC_BINDING"
+      },
+      "previousStageBinding": {
+        "status": "PENDING_SPEC_BINDING"
+      },
+      "exactTerminal": {
+        "operationId": "saveTemplate",
+        "outcome": "PROBLEM",
+        "code": "DESIGN_PROPERTY_CONSTRAINT_INVALID",
+        "stage": "DESIGN_PROPERTY_AND_AGGREGATE_VALIDATION"
+      },
+      "literalSource": "EXISTING_SPEC_LITERAL",
+      "productImplementationObserved": false
+    },
+    {
+      "candidateId": "EDC::J11::019",
+      "scenarioSlug": "preview-failure-does-not-rollback-save",
+      "requirementIds": [
+        "RW-T18-S2-026",
+        "RW-T18-S2-027",
+        "RW-T18-S2-028",
+        "RW-T18-S2-029",
+        "RW-T18-S2-030"
+      ],
+      "previousCodeBinding": {
+        "status": "PENDING_SPEC_BINDING"
+      },
+      "previousStageBinding": {
+        "status": "PENDING_SPEC_BINDING"
+      },
+      "exactTerminal": {
+        "operationId": "authoritativePreview",
+        "outcome": "PROBLEM",
+        "code": "RENDER_DEADLINE_EXCEEDED",
+        "stage": "ENGINE"
+      },
+      "literalSource": "EXISTING_SPEC_LITERAL",
+      "productImplementationObserved": false
+    }
+  ],
+  "zeroExecutionBoundary": {
+    "productCodeChanged": false,
+    "browserStarted": false,
+    "networkUsed": false,
+    "formalJsonlAppended": false,
+    "productTerminalObserved": false,
+    "j1Executed": false,
+    "readyClaimed": false
+  }
+}

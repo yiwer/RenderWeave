@@ -1,0 +1,18 @@
+{
+  "artifactVersion": "renderweave-editor-fault-schedule/1.0",
+  "candidateId": "EDC::J05::006",
+  "executionClass": "EXEC::EDITOR_AUTOMATED::1.0",
+  "events": [
+    {
+      "at": "PREVIEW_RESPONSE",
+      "action": "RETURN_STRUCTURED_PROBLEM",
+      "parameters": {}
+    }
+  ],
+  "expectedTerminal": {
+    "operationId": "authoritativePreview",
+    "outcome": "PROBLEM",
+    "code": "TEMPLATE_CLOSURE_UNSTABLE",
+    "stage": "TEMPLATE_CLOSURE"
+  }
+}

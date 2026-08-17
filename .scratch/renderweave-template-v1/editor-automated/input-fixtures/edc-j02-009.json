@@ -1,0 +1,22 @@
+{
+  "artifactVersion": "renderweave-editor-input-fixture/1.0",
+  "candidateId": "EDC::J02::009",
+  "executionClass": "EXEC::EDITOR_AUTOMATED::1.0",
+  "baselineId": "EditorStructuredAfterUndo",
+  "parameters": {
+    "undoDepth": 0,
+    "redoDepth": 1,
+    "operatingSystemFamily": "WINDOWS"
+  },
+  "actionScript": [
+    {
+      "action": "REDO",
+      "parameters": {
+        "shortcuts": [
+          "CTRL_SHIFT_Z",
+          "CTRL_Y"
+        ]
+      }
+    }
+  ]
+}

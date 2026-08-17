@@ -1,0 +1,4001 @@
+{
+  "artifactVersion": "renderweave-conformance-assertion-vectors/1.1-candidate",
+  "status": "COMPLETE_CANDIDATE_VECTOR_SET_NOT_ISSUED",
+  "probeProfile": "renderweave-conformance-probes/1.1",
+  "baseProbeProfile": {
+    "profileId": "renderweave-conformance-probes/1.0",
+    "path": "conformance-probe-profile-v1.json",
+    "sha256": "sha256:f800eb1e6e138215c26c7761ed80e0fc9cf77fc3ce051be4e3c5ba530cd6053d",
+    "byteLength": 51328
+  },
+  "baseAssertionVectors": {
+    "path": "spec-registry/assertion-vectors-v1.json",
+    "sha256": "sha256:291d450f0a1bfa84124664827b2e83fb562545561de9c9fd973070d0eb26762c",
+    "byteLength": 98282
+  },
+  "probeCount": 119,
+  "valueEncoding": {
+    "BOOLEAN": "JSON boolean",
+    "TEXT": "JSON string",
+    "CODE": "JSON string matching uppercase stable-code syntax",
+    "STAGE": "JSON string matching uppercase stage syntax",
+    "DIGEST": "JSON string sha256:<64 lowercase hex>",
+    "INTEGER": "JSON integer within exact safe registry range",
+    "BYTE_SEQUENCE": "SHA-256-bound ARTIFACT expected value",
+    "TEXT_SEQUENCE": "JSON string array preserving order",
+    "INTEGER_SEQUENCE": "JSON integer array preserving order",
+    "RATIONAL_DURATION_MILLISECONDS": "WITHIN literal with closed minimum and maximum rational numerator/denominator pairs"
+  },
+  "acceptedVectors": [
+    {
+      "vectorId": "ASSERT-OK-001",
+      "probeId": "operation.accepted",
+      "valueType": "BOOLEAN",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "operation.accepted",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": true
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-002",
+      "probeId": "operation.terminalCode",
+      "valueType": "CODE",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "operation.terminalCode",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "SPEC_REGISTRY_SCHEMA_INVALID"
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-003",
+      "probeId": "operation.terminalCode",
+      "valueType": "CODE",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "operation.terminalCode",
+        "operator": "ABSENT"
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-004",
+      "probeId": "operation.terminalStage",
+      "valueType": "STAGE",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "operation.terminalStage",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "SPEC_REGISTRY"
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-005",
+      "probeId": "operation.terminalStage",
+      "valueType": "STAGE",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "operation.terminalStage",
+        "operator": "ABSENT"
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-006",
+      "probeId": "operation.terminalParametersBytes",
+      "valueType": "BYTE_SEQUENCE",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "operation.terminalParametersBytes",
+        "operator": "BYTES_EQ",
+        "expected": {
+          "kind": "ARTIFACT",
+          "artifactPath": "spec-registry/expected-bytes/assertion-byte-sample-v1.bin",
+          "mediaType": "application/octet-stream",
+          "artifactSha256": "sha256:0150a92bb1212cd00516b65fde0704614760000963874fcbb11eaa734ee87809"
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-007",
+      "probeId": "operation.terminalParametersBytes",
+      "valueType": "BYTE_SEQUENCE",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "operation.terminalParametersBytes",
+        "operator": "ABSENT"
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-008",
+      "probeId": "operation.writeCount",
+      "valueType": "INTEGER",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "operation.writeCount",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": 1
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-009",
+      "probeId": "operation.renderDocumentCount",
+      "valueType": "INTEGER",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "operation.renderDocumentCount",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": 1
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-010",
+      "probeId": "operation.renderOutputCount",
+      "valueType": "INTEGER",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "operation.renderOutputCount",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": 1
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-011",
+      "probeId": "operation.downstreamEffects",
+      "valueType": "TEXT_SEQUENCE",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "operation.downstreamEffects",
+        "operator": "SEQUENCE_EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": [
+            "alpha",
+            "beta"
+          ]
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-012",
+      "probeId": "operation.terminalsBytes",
+      "valueType": "BYTE_SEQUENCE",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "operation.terminalsBytes",
+        "operator": "BYTES_EQ",
+        "expected": {
+          "kind": "ARTIFACT",
+          "artifactPath": "spec-registry/expected-bytes/assertion-byte-sample-v1.bin",
+          "mediaType": "application/octet-stream",
+          "artifactSha256": "sha256:0150a92bb1212cd00516b65fde0704614760000963874fcbb11eaa734ee87809"
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-013",
+      "probeId": "capacity.limitId",
+      "valueType": "TEXT",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "capacity.limitId",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "sample"
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-014",
+      "probeId": "capacity.observedValue",
+      "valueType": "TEXT",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "capacity.observedValue",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "sample"
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-015",
+      "probeId": "capacity.reservationReached",
+      "valueType": "BOOLEAN",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "capacity.reservationReached",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": true
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-016",
+      "probeId": "capacity.zeroBoundary",
+      "valueType": "CODE",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "capacity.zeroBoundary",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "SPEC_REGISTRY_SCHEMA_INVALID"
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-017",
+      "probeId": "capacity.zeroBoundary",
+      "valueType": "CODE",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "capacity.zeroBoundary",
+        "operator": "ABSENT"
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-018",
+      "probeId": "specRegistry.requirementCount",
+      "valueType": "INTEGER",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "specRegistry.requirementCount",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": 1
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-019",
+      "probeId": "specRegistry.semanticRequirementCount",
+      "valueType": "INTEGER",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "specRegistry.semanticRequirementCount",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": 1
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-020",
+      "probeId": "specRegistry.trackingRequirementCount",
+      "valueType": "INTEGER",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "specRegistry.trackingRequirementCount",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": 1
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-021",
+      "probeId": "specRegistry.caseRecordCount",
+      "valueType": "INTEGER",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "specRegistry.caseRecordCount",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": 1
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-022",
+      "probeId": "specRegistry.oracleRecordCount",
+      "valueType": "INTEGER",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "specRegistry.oracleRecordCount",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": 1
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-023",
+      "probeId": "specRegistry.orphanRequirementCount",
+      "valueType": "INTEGER",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "specRegistry.orphanRequirementCount",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": 1
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-024",
+      "probeId": "specRegistry.orphanCaseCount",
+      "valueType": "INTEGER",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "specRegistry.orphanCaseCount",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": 1
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-025",
+      "probeId": "specRegistry.orphanOracleCount",
+      "valueType": "INTEGER",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "specRegistry.orphanOracleCount",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": 1
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-026",
+      "probeId": "specRegistry.duplicateIdentityCount",
+      "valueType": "INTEGER",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "specRegistry.duplicateIdentityCount",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": 1
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-027",
+      "probeId": "specRegistry.supersessionGraphValid",
+      "valueType": "BOOLEAN",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "specRegistry.supersessionGraphValid",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": true
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-028",
+      "probeId": "specRegistry.sourceLocatorErrorCount",
+      "valueType": "INTEGER",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "specRegistry.sourceLocatorErrorCount",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": 1
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-029",
+      "probeId": "specRegistry.schemaErrorCount",
+      "valueType": "INTEGER",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "specRegistry.schemaErrorCount",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": 1
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-030",
+      "probeId": "specRegistry.canonicalRecordBytes",
+      "valueType": "BYTE_SEQUENCE",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "specRegistry.canonicalRecordBytes",
+        "operator": "BYTES_EQ",
+        "expected": {
+          "kind": "ARTIFACT",
+          "artifactPath": "spec-registry/expected-bytes/assertion-byte-sample-v1.bin",
+          "mediaType": "application/octet-stream",
+          "artifactSha256": "sha256:0150a92bb1212cd00516b65fde0704614760000963874fcbb11eaa734ee87809"
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-031",
+      "probeId": "specRegistry.identityDigest",
+      "valueType": "DIGEST",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "specRegistry.identityDigest",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-032",
+      "probeId": "specRegistry.manifestDigest",
+      "valueType": "DIGEST",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "specRegistry.manifestDigest",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-033",
+      "probeId": "specRegistry.executionOrder",
+      "valueType": "TEXT_SEQUENCE",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "specRegistry.executionOrder",
+        "operator": "SEQUENCE_EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": [
+            "alpha",
+            "beta"
+          ]
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-034",
+      "probeId": "specRegistry.referenceClosureValid",
+      "valueType": "BOOLEAN",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "specRegistry.referenceClosureValid",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": true
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-035",
+      "probeId": "specRegistry.profileRecordMayReference",
+      "valueType": "BOOLEAN",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "specRegistry.profileRecordMayReference",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": true
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-036",
+      "probeId": "domain.transactionCommitted",
+      "valueType": "BOOLEAN",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "domain.transactionCommitted",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": true
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-037",
+      "probeId": "domain.revisionBefore",
+      "valueType": "INTEGER",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "domain.revisionBefore",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": 1
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-038",
+      "probeId": "domain.revisionBefore",
+      "valueType": "INTEGER",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "domain.revisionBefore",
+        "operator": "ABSENT"
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-039",
+      "probeId": "domain.revisionAfter",
+      "valueType": "INTEGER",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "domain.revisionAfter",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": 1
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-040",
+      "probeId": "domain.revisionAfter",
+      "valueType": "INTEGER",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "domain.revisionAfter",
+        "operator": "ABSENT"
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-041",
+      "probeId": "domain.contentVersionBefore",
+      "valueType": "INTEGER",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "domain.contentVersionBefore",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": 1
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-042",
+      "probeId": "domain.contentVersionBefore",
+      "valueType": "INTEGER",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "domain.contentVersionBefore",
+        "operator": "ABSENT"
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-043",
+      "probeId": "domain.contentVersionAfter",
+      "valueType": "INTEGER",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "domain.contentVersionAfter",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": 1
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-044",
+      "probeId": "domain.contentVersionAfter",
+      "valueType": "INTEGER",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "domain.contentVersionAfter",
+        "operator": "ABSENT"
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-045",
+      "probeId": "domain.lifecycleBefore",
+      "valueType": "CODE",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "domain.lifecycleBefore",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "SPEC_REGISTRY_SCHEMA_INVALID"
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-046",
+      "probeId": "domain.lifecycleBefore",
+      "valueType": "CODE",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "domain.lifecycleBefore",
+        "operator": "ABSENT"
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-047",
+      "probeId": "domain.lifecycleAfter",
+      "valueType": "CODE",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "domain.lifecycleAfter",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "SPEC_REGISTRY_SCHEMA_INVALID"
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-048",
+      "probeId": "domain.lifecycleAfter",
+      "valueType": "CODE",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "domain.lifecycleAfter",
+        "operator": "ABSENT"
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-049",
+      "probeId": "domain.auditEventCount",
+      "valueType": "INTEGER",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "domain.auditEventCount",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": 1
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-050",
+      "probeId": "domain.domainEventCount",
+      "valueType": "INTEGER",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "domain.domainEventCount",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": 1
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-051",
+      "probeId": "domain.referenceOccurrenceCount",
+      "valueType": "INTEGER",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "domain.referenceOccurrenceCount",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": 1
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-052",
+      "probeId": "domain.resultBytes",
+      "valueType": "BYTE_SEQUENCE",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "domain.resultBytes",
+        "operator": "BYTES_EQ",
+        "expected": {
+          "kind": "ARTIFACT",
+          "artifactPath": "spec-registry/expected-bytes/assertion-byte-sample-v1.bin",
+          "mediaType": "application/octet-stream",
+          "artifactSha256": "sha256:0150a92bb1212cd00516b65fde0704614760000963874fcbb11eaa734ee87809"
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-053",
+      "probeId": "domain.resultBytes",
+      "valueType": "BYTE_SEQUENCE",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "domain.resultBytes",
+        "operator": "ABSENT"
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-054",
+      "probeId": "domain.idempotencyOutcome",
+      "valueType": "CODE",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "domain.idempotencyOutcome",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "SPEC_REGISTRY_SCHEMA_INVALID"
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-055",
+      "probeId": "domain.idempotencyOutcome",
+      "valueType": "CODE",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "domain.idempotencyOutcome",
+        "operator": "ABSENT"
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-056",
+      "probeId": "design.problemCodes",
+      "valueType": "TEXT_SEQUENCE",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "design.problemCodes",
+        "operator": "SEQUENCE_EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": [
+            "alpha",
+            "beta"
+          ]
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-057",
+      "probeId": "design.canonicalBytes",
+      "valueType": "BYTE_SEQUENCE",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "design.canonicalBytes",
+        "operator": "BYTES_EQ",
+        "expected": {
+          "kind": "ARTIFACT",
+          "artifactPath": "spec-registry/expected-bytes/assertion-byte-sample-v1.bin",
+          "mediaType": "application/octet-stream",
+          "artifactSha256": "sha256:0150a92bb1212cd00516b65fde0704614760000963874fcbb11eaa734ee87809"
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-058",
+      "probeId": "design.canonicalBytes",
+      "valueType": "BYTE_SEQUENCE",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "design.canonicalBytes",
+        "operator": "ABSENT"
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-059",
+      "probeId": "design.contentHash",
+      "valueType": "DIGEST",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "design.contentHash",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-060",
+      "probeId": "design.contentHash",
+      "valueType": "DIGEST",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "design.contentHash",
+        "operator": "ABSENT"
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-061",
+      "probeId": "design.typedValueBytes",
+      "valueType": "BYTE_SEQUENCE",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "design.typedValueBytes",
+        "operator": "BYTES_EQ",
+        "expected": {
+          "kind": "ARTIFACT",
+          "artifactPath": "spec-registry/expected-bytes/assertion-byte-sample-v1.bin",
+          "mediaType": "application/octet-stream",
+          "artifactSha256": "sha256:0150a92bb1212cd00516b65fde0704614760000963874fcbb11eaa734ee87809"
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-062",
+      "probeId": "design.typedValueBytes",
+      "valueType": "BYTE_SEQUENCE",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "design.typedValueBytes",
+        "operator": "ABSENT"
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-063",
+      "probeId": "design.definitionEvaluationCount",
+      "valueType": "INTEGER",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "design.definitionEvaluationCount",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": 1
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-064",
+      "probeId": "design.capabilityDemandCount",
+      "valueType": "INTEGER",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "design.capabilityDemandCount",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": 1
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-065",
+      "probeId": "design.assetAtomSequence",
+      "valueType": "TEXT_SEQUENCE",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "design.assetAtomSequence",
+        "operator": "SEQUENCE_EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": [
+            "alpha",
+            "beta"
+          ]
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-066",
+      "probeId": "design.bindingTargetSequence",
+      "valueType": "TEXT_SEQUENCE",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "design.bindingTargetSequence",
+        "operator": "SEQUENCE_EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": [
+            "alpha",
+            "beta"
+          ]
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-067",
+      "probeId": "design.evaluationOrder",
+      "valueType": "TEXT_SEQUENCE",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "design.evaluationOrder",
+        "operator": "SEQUENCE_EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": [
+            "alpha",
+            "beta"
+          ]
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-068",
+      "probeId": "design.normalizationBytes",
+      "valueType": "BYTE_SEQUENCE",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "design.normalizationBytes",
+        "operator": "BYTES_EQ",
+        "expected": {
+          "kind": "ARTIFACT",
+          "artifactPath": "spec-registry/expected-bytes/assertion-byte-sample-v1.bin",
+          "mediaType": "application/octet-stream",
+          "artifactSha256": "sha256:0150a92bb1212cd00516b65fde0704614760000963874fcbb11eaa734ee87809"
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-069",
+      "probeId": "design.lexicalFrameCount",
+      "valueType": "INTEGER",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "design.lexicalFrameCount",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": 1
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-070",
+      "probeId": "design.dependencyIoCount",
+      "valueType": "INTEGER",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "design.dependencyIoCount",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": 1
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-071",
+      "probeId": "rendering.problemCodes",
+      "valueType": "TEXT_SEQUENCE",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "rendering.problemCodes",
+        "operator": "SEQUENCE_EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": [
+            "alpha",
+            "beta"
+          ]
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-072",
+      "probeId": "rendering.documentBytes",
+      "valueType": "BYTE_SEQUENCE",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "rendering.documentBytes",
+        "operator": "BYTES_EQ",
+        "expected": {
+          "kind": "ARTIFACT",
+          "artifactPath": "spec-registry/expected-bytes/assertion-byte-sample-v1.bin",
+          "mediaType": "application/octet-stream",
+          "artifactSha256": "sha256:0150a92bb1212cd00516b65fde0704614760000963874fcbb11eaa734ee87809"
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-073",
+      "probeId": "rendering.documentBytes",
+      "valueType": "BYTE_SEQUENCE",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "rendering.documentBytes",
+        "operator": "ABSENT"
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-074",
+      "probeId": "rendering.documentDigest",
+      "valueType": "DIGEST",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "rendering.documentDigest",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-075",
+      "probeId": "rendering.documentDigest",
+      "valueType": "DIGEST",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "rendering.documentDigest",
+        "operator": "ABSENT"
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-076",
+      "probeId": "rendering.closureDigest",
+      "valueType": "DIGEST",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "rendering.closureDigest",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-077",
+      "probeId": "rendering.closureDigest",
+      "valueType": "DIGEST",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "rendering.closureDigest",
+        "operator": "ABSENT"
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-078",
+      "probeId": "rendering.admittedInputDigest",
+      "valueType": "DIGEST",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "rendering.admittedInputDigest",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-079",
+      "probeId": "rendering.admittedInputDigest",
+      "valueType": "DIGEST",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "rendering.admittedInputDigest",
+        "operator": "ABSENT"
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-080",
+      "probeId": "rendering.evaluationFingerprint",
+      "valueType": "DIGEST",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "rendering.evaluationFingerprint",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-081",
+      "probeId": "rendering.evaluationFingerprint",
+      "valueType": "DIGEST",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "rendering.evaluationFingerprint",
+        "operator": "ABSENT"
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-082",
+      "probeId": "rendering.capabilityResultsDigest",
+      "valueType": "DIGEST",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "rendering.capabilityResultsDigest",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-083",
+      "probeId": "rendering.capabilityResultsDigest",
+      "valueType": "DIGEST",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "rendering.capabilityResultsDigest",
+        "operator": "ABSENT"
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-084",
+      "probeId": "rendering.assetSelectionDigest",
+      "valueType": "DIGEST",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "rendering.assetSelectionDigest",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-085",
+      "probeId": "rendering.assetSelectionDigest",
+      "valueType": "DIGEST",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "rendering.assetSelectionDigest",
+        "operator": "ABSENT"
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-086",
+      "probeId": "rendering.evaluationResultDigest",
+      "valueType": "DIGEST",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "rendering.evaluationResultDigest",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-087",
+      "probeId": "rendering.evaluationResultDigest",
+      "valueType": "DIGEST",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "rendering.evaluationResultDigest",
+        "operator": "ABSENT"
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-088",
+      "probeId": "rendering.nodeCount",
+      "valueType": "INTEGER",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "rendering.nodeCount",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": 1
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-089",
+      "probeId": "rendering.resourceCount",
+      "valueType": "INTEGER",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "rendering.resourceCount",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": 1
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-090",
+      "probeId": "rendering.occurrenceIds",
+      "valueType": "TEXT_SEQUENCE",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "rendering.occurrenceIds",
+        "operator": "SEQUENCE_EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": [
+            "alpha",
+            "beta"
+          ]
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-091",
+      "probeId": "rendering.resourceIds",
+      "valueType": "TEXT_SEQUENCE",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "rendering.resourceIds",
+        "operator": "SEQUENCE_EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": [
+            "alpha",
+            "beta"
+          ]
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-092",
+      "probeId": "rendering.assetResolveCount",
+      "valueType": "INTEGER",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "rendering.assetResolveCount",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": 1
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-093",
+      "probeId": "rendering.capabilityDemandCount",
+      "valueType": "INTEGER",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "rendering.capabilityDemandCount",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": 1
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-094",
+      "probeId": "rendering.loweringResidueCount",
+      "valueType": "INTEGER",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "rendering.loweringResidueCount",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": 1
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-095",
+      "probeId": "rendering.templateCurrentReadCount",
+      "valueType": "INTEGER",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "rendering.templateCurrentReadCount",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": 1
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-096",
+      "probeId": "rendering.assetCurrentReadCount",
+      "valueType": "INTEGER",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "rendering.assetCurrentReadCount",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": 1
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-097",
+      "probeId": "renderer.outputBytes",
+      "valueType": "BYTE_SEQUENCE",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "renderer.outputBytes",
+        "operator": "BYTES_EQ",
+        "expected": {
+          "kind": "ARTIFACT",
+          "artifactPath": "spec-registry/expected-bytes/assertion-byte-sample-v1.bin",
+          "mediaType": "application/octet-stream",
+          "artifactSha256": "sha256:0150a92bb1212cd00516b65fde0704614760000963874fcbb11eaa734ee87809"
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-098",
+      "probeId": "renderer.outputBytes",
+      "valueType": "BYTE_SEQUENCE",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "renderer.outputBytes",
+        "operator": "ABSENT"
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-099",
+      "probeId": "renderer.outputDigest",
+      "valueType": "DIGEST",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "renderer.outputDigest",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-100",
+      "probeId": "renderer.outputDigest",
+      "valueType": "DIGEST",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "renderer.outputDigest",
+        "operator": "ABSENT"
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-101",
+      "probeId": "renderer.outputMediaType",
+      "valueType": "TEXT",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "renderer.outputMediaType",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "sample"
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-102",
+      "probeId": "renderer.outputMediaType",
+      "valueType": "TEXT",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "renderer.outputMediaType",
+        "operator": "ABSENT"
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-103",
+      "probeId": "renderer.pixelBytes",
+      "valueType": "BYTE_SEQUENCE",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "renderer.pixelBytes",
+        "operator": "BYTES_EQ",
+        "expected": {
+          "kind": "ARTIFACT",
+          "artifactPath": "spec-registry/expected-bytes/assertion-byte-sample-v1.bin",
+          "mediaType": "application/octet-stream",
+          "artifactSha256": "sha256:0150a92bb1212cd00516b65fde0704614760000963874fcbb11eaa734ee87809"
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-104",
+      "probeId": "renderer.pixelBytes",
+      "valueType": "BYTE_SEQUENCE",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "renderer.pixelBytes",
+        "operator": "ABSENT"
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-105",
+      "probeId": "renderer.pixelDigest",
+      "valueType": "DIGEST",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "renderer.pixelDigest",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-106",
+      "probeId": "renderer.pixelDigest",
+      "valueType": "DIGEST",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "renderer.pixelDigest",
+        "operator": "ABSENT"
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-107",
+      "probeId": "renderer.surfaceWidth",
+      "valueType": "INTEGER",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "renderer.surfaceWidth",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": 1
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-108",
+      "probeId": "renderer.surfaceWidth",
+      "valueType": "INTEGER",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "renderer.surfaceWidth",
+        "operator": "ABSENT"
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-109",
+      "probeId": "renderer.surfaceHeight",
+      "valueType": "INTEGER",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "renderer.surfaceHeight",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": 1
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-110",
+      "probeId": "renderer.surfaceHeight",
+      "valueType": "INTEGER",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "renderer.surfaceHeight",
+        "operator": "ABSENT"
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-111",
+      "probeId": "renderer.traceBytes",
+      "valueType": "BYTE_SEQUENCE",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "renderer.traceBytes",
+        "operator": "BYTES_EQ",
+        "expected": {
+          "kind": "ARTIFACT",
+          "artifactPath": "spec-registry/expected-bytes/assertion-byte-sample-v1.bin",
+          "mediaType": "application/octet-stream",
+          "artifactSha256": "sha256:0150a92bb1212cd00516b65fde0704614760000963874fcbb11eaa734ee87809"
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-112",
+      "probeId": "renderer.traceBytes",
+      "valueType": "BYTE_SEQUENCE",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "renderer.traceBytes",
+        "operator": "ABSENT"
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-113",
+      "probeId": "renderer.traceDigest",
+      "valueType": "DIGEST",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "renderer.traceDigest",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-114",
+      "probeId": "renderer.traceDigest",
+      "valueType": "DIGEST",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "renderer.traceDigest",
+        "operator": "ABSENT"
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-115",
+      "probeId": "renderer.traceItemCount",
+      "valueType": "INTEGER",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "renderer.traceItemCount",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": 1
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-116",
+      "probeId": "renderer.resourceFetchCount",
+      "valueType": "INTEGER",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "renderer.resourceFetchCount",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": 1
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-117",
+      "probeId": "renderer.glyphSequence",
+      "valueType": "INTEGER_SEQUENCE",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "renderer.glyphSequence",
+        "operator": "SEQUENCE_EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": [
+            0,
+            1
+          ]
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-118",
+      "probeId": "renderer.glyphCount",
+      "valueType": "INTEGER",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "renderer.glyphCount",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": 1
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-119",
+      "probeId": "renderer.lineCount",
+      "valueType": "INTEGER",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "renderer.lineCount",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": 1
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-120",
+      "probeId": "renderer.paintItemCount",
+      "valueType": "INTEGER",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "renderer.paintItemCount",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": 1
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-121",
+      "probeId": "renderer.clipDepth",
+      "valueType": "INTEGER",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "renderer.clipDepth",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": 1
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-122",
+      "probeId": "renderer.dynamicDependencyNames",
+      "valueType": "TEXT_SEQUENCE",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "renderer.dynamicDependencyNames",
+        "operator": "SEQUENCE_EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": [
+            "alpha",
+            "beta"
+          ]
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-123",
+      "probeId": "renderer.queueWaitDurationMillis",
+      "valueType": "RATIONAL_DURATION_MILLISECONDS",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "renderer.queueWaitDurationMillis",
+        "operator": "WITHIN",
+        "expected": {
+          "kind": "LITERAL",
+          "value": {
+            "minimum": {
+              "numerator": 0,
+              "denominator": 1
+            },
+            "maximum": {
+              "numerator": 5000,
+              "denominator": 1
+            }
+          }
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-124",
+      "probeId": "renderer.cancelStopDurationMillis",
+      "valueType": "RATIONAL_DURATION_MILLISECONDS",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "renderer.cancelStopDurationMillis",
+        "operator": "WITHIN",
+        "expected": {
+          "kind": "LITERAL",
+          "value": {
+            "minimum": {
+              "numerator": 0,
+              "denominator": 1
+            },
+            "maximum": {
+              "numerator": 5000,
+              "denominator": 1
+            }
+          }
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-125",
+      "probeId": "editor.mode",
+      "valueType": "CODE",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "editor.mode",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "SPEC_REGISTRY_SCHEMA_INVALID"
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-126",
+      "probeId": "editor.accessibilityTreeBytes",
+      "valueType": "BYTE_SEQUENCE",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "editor.accessibilityTreeBytes",
+        "operator": "BYTES_EQ",
+        "expected": {
+          "kind": "ARTIFACT",
+          "artifactPath": "spec-registry/expected-bytes/assertion-byte-sample-v1.bin",
+          "mediaType": "application/octet-stream",
+          "artifactSha256": "sha256:0150a92bb1212cd00516b65fde0704614760000963874fcbb11eaa734ee87809"
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-127",
+      "probeId": "editor.focusSequence",
+      "valueType": "TEXT_SEQUENCE",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "editor.focusSequence",
+        "operator": "SEQUENCE_EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": [
+            "alpha",
+            "beta"
+          ]
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-128",
+      "probeId": "editor.announcementSequence",
+      "valueType": "TEXT_SEQUENCE",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "editor.announcementSequence",
+        "operator": "SEQUENCE_EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": [
+            "alpha",
+            "beta"
+          ]
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-129",
+      "probeId": "editor.commandResult",
+      "valueType": "CODE",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "editor.commandResult",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "SPEC_REGISTRY_SCHEMA_INVALID"
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-130",
+      "probeId": "editor.undoDepth",
+      "valueType": "INTEGER",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "editor.undoDepth",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": 1
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-131",
+      "probeId": "editor.redoDepth",
+      "valueType": "INTEGER",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "editor.redoDepth",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": 1
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-132",
+      "probeId": "editor.selectedEntityIds",
+      "valueType": "TEXT_SEQUENCE",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "editor.selectedEntityIds",
+        "operator": "SEQUENCE_EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": [
+            "alpha",
+            "beta"
+          ]
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-133",
+      "probeId": "editor.problemPanelBytes",
+      "valueType": "BYTE_SEQUENCE",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "editor.problemPanelBytes",
+        "operator": "BYTES_EQ",
+        "expected": {
+          "kind": "ARTIFACT",
+          "artifactPath": "spec-registry/expected-bytes/assertion-byte-sample-v1.bin",
+          "mediaType": "application/octet-stream",
+          "artifactSha256": "sha256:0150a92bb1212cd00516b65fde0704614760000963874fcbb11eaa734ee87809"
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-134",
+      "probeId": "editor.previewBasisDigest",
+      "valueType": "DIGEST",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "editor.previewBasisDigest",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-135",
+      "probeId": "editor.previewBasisDigest",
+      "valueType": "DIGEST",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "editor.previewBasisDigest",
+        "operator": "ABSENT"
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-136",
+      "probeId": "editor.previewVisible",
+      "valueType": "BOOLEAN",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "editor.previewVisible",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": true
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-137",
+      "probeId": "editor.saveEnabled",
+      "valueType": "BOOLEAN",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "editor.saveEnabled",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": true
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-138",
+      "probeId": "editor.networkRequestSequence",
+      "valueType": "TEXT_SEQUENCE",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "editor.networkRequestSequence",
+        "operator": "SEQUENCE_EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": [
+            "alpha",
+            "beta"
+          ]
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-139",
+      "probeId": "editor.semanticDiffCount",
+      "valueType": "INTEGER",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "editor.semanticDiffCount",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": 1
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-140",
+      "probeId": "editor.keyboardTrapDetected",
+      "valueType": "BOOLEAN",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "editor.keyboardTrapDetected",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": true
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-141",
+      "probeId": "editor.highContrastOperable",
+      "valueType": "BOOLEAN",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "editor.highContrastOperable",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": true
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-142",
+      "probeId": "editor.reducedMotionHonored",
+      "valueType": "BOOLEAN",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "editor.reducedMotionHonored",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": true
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-143",
+      "probeId": "editor.zoom200Operable",
+      "valueType": "BOOLEAN",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "editor.zoom200Operable",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": true
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-144",
+      "probeId": "editor.canonicalBaselineBytes",
+      "valueType": "BYTE_SEQUENCE",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "editor.canonicalBaselineBytes",
+        "operator": "BYTES_EQ",
+        "expected": {
+          "kind": "ARTIFACT",
+          "artifactPath": "spec-registry/expected-bytes/assertion-byte-sample-v1.bin",
+          "mediaType": "application/octet-stream",
+          "artifactSha256": "sha256:0150a92bb1212cd00516b65fde0704614760000963874fcbb11eaa734ee87809"
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-145",
+      "probeId": "editor.canonicalBaselineBytes",
+      "valueType": "BYTE_SEQUENCE",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "editor.canonicalBaselineBytes",
+        "operator": "ABSENT"
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-146",
+      "probeId": "editor.compatibilityOriginalDigest",
+      "valueType": "DIGEST",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "editor.compatibilityOriginalDigest",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-147",
+      "probeId": "editor.compatibilityOriginalDigest",
+      "valueType": "DIGEST",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "editor.compatibilityOriginalDigest",
+        "operator": "ABSENT"
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-148",
+      "probeId": "editor.confirmationAvailable",
+      "valueType": "BOOLEAN",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "editor.confirmationAvailable",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": true
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-149",
+      "probeId": "editor.dirty",
+      "valueType": "BOOLEAN",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "editor.dirty",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": true
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-150",
+      "probeId": "editor.mutationLockActive",
+      "valueType": "BOOLEAN",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "editor.mutationLockActive",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": true
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-151",
+      "probeId": "editor.normalizationSummaryBytes",
+      "valueType": "BYTE_SEQUENCE",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "editor.normalizationSummaryBytes",
+        "operator": "BYTES_EQ",
+        "expected": {
+          "kind": "ARTIFACT",
+          "artifactPath": "spec-registry/expected-bytes/assertion-byte-sample-v1.bin",
+          "mediaType": "application/octet-stream",
+          "artifactSha256": "sha256:0150a92bb1212cd00516b65fde0704614760000963874fcbb11eaa734ee87809"
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-152",
+      "probeId": "editor.normalizationSummaryBytes",
+      "valueType": "BYTE_SEQUENCE",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "editor.normalizationSummaryBytes",
+        "operator": "ABSENT"
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-153",
+      "probeId": "editor.previewEligibilityGeneration",
+      "valueType": "INTEGER",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "editor.previewEligibilityGeneration",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": 1
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-154",
+      "probeId": "editor.recoveryDraftEnvelopeBytes",
+      "valueType": "BYTE_SEQUENCE",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "editor.recoveryDraftEnvelopeBytes",
+        "operator": "BYTES_EQ",
+        "expected": {
+          "kind": "ARTIFACT",
+          "artifactPath": "spec-registry/expected-bytes/assertion-byte-sample-v1.bin",
+          "mediaType": "application/octet-stream",
+          "artifactSha256": "sha256:0150a92bb1212cd00516b65fde0704614760000963874fcbb11eaa734ee87809"
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-155",
+      "probeId": "editor.recoveryDraftEnvelopeBytes",
+      "valueType": "BYTE_SEQUENCE",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "editor.recoveryDraftEnvelopeBytes",
+        "operator": "ABSENT"
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-156",
+      "probeId": "editor.workingCopyDigest",
+      "valueType": "DIGEST",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "editor.workingCopyDigest",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+        }
+      }
+    },
+    {
+      "vectorId": "ASSERT-OK-157",
+      "probeId": "editor.workingCopyDigest",
+      "valueType": "DIGEST",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "editor.workingCopyDigest",
+        "operator": "ABSENT"
+      }
+    }
+  ],
+  "rejectedVectors": [
+    {
+      "vectorId": "ASSERT-NO-001",
+      "probeId": "operation.accepted",
+      "valueType": "BOOLEAN",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "operation.accepted",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "true"
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-002",
+      "probeId": "operation.terminalCode",
+      "valueType": "CODE",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "operation.terminalCode",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": 1
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-003",
+      "probeId": "operation.terminalStage",
+      "valueType": "STAGE",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "operation.terminalStage",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": 1
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-004",
+      "probeId": "operation.terminalParametersBytes",
+      "valueType": "BYTE_SEQUENCE",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "operation.terminalParametersBytes",
+        "operator": "BYTES_EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "not-an-artifact"
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-005",
+      "probeId": "operation.writeCount",
+      "valueType": "INTEGER",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "operation.writeCount",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "1"
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-006",
+      "probeId": "operation.renderDocumentCount",
+      "valueType": "INTEGER",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "operation.renderDocumentCount",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "1"
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-007",
+      "probeId": "operation.renderOutputCount",
+      "valueType": "INTEGER",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "operation.renderOutputCount",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "1"
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-008",
+      "probeId": "operation.downstreamEffects",
+      "valueType": "TEXT_SEQUENCE",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "operation.downstreamEffects",
+        "operator": "SEQUENCE_EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "not-a-sequence"
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-009",
+      "probeId": "operation.terminalsBytes",
+      "valueType": "BYTE_SEQUENCE",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "operation.terminalsBytes",
+        "operator": "BYTES_EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "not-an-artifact"
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-010",
+      "probeId": "capacity.limitId",
+      "valueType": "TEXT",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "capacity.limitId",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": 1
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-011",
+      "probeId": "capacity.observedValue",
+      "valueType": "TEXT",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "capacity.observedValue",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": 1
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-012",
+      "probeId": "capacity.reservationReached",
+      "valueType": "BOOLEAN",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "capacity.reservationReached",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "true"
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-013",
+      "probeId": "capacity.zeroBoundary",
+      "valueType": "CODE",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "capacity.zeroBoundary",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": 1
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-014",
+      "probeId": "specRegistry.requirementCount",
+      "valueType": "INTEGER",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "specRegistry.requirementCount",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "1"
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-015",
+      "probeId": "specRegistry.semanticRequirementCount",
+      "valueType": "INTEGER",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "specRegistry.semanticRequirementCount",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "1"
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-016",
+      "probeId": "specRegistry.trackingRequirementCount",
+      "valueType": "INTEGER",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "specRegistry.trackingRequirementCount",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "1"
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-017",
+      "probeId": "specRegistry.caseRecordCount",
+      "valueType": "INTEGER",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "specRegistry.caseRecordCount",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "1"
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-018",
+      "probeId": "specRegistry.oracleRecordCount",
+      "valueType": "INTEGER",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "specRegistry.oracleRecordCount",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "1"
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-019",
+      "probeId": "specRegistry.orphanRequirementCount",
+      "valueType": "INTEGER",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "specRegistry.orphanRequirementCount",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "1"
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-020",
+      "probeId": "specRegistry.orphanCaseCount",
+      "valueType": "INTEGER",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "specRegistry.orphanCaseCount",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "1"
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-021",
+      "probeId": "specRegistry.orphanOracleCount",
+      "valueType": "INTEGER",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "specRegistry.orphanOracleCount",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "1"
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-022",
+      "probeId": "specRegistry.duplicateIdentityCount",
+      "valueType": "INTEGER",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "specRegistry.duplicateIdentityCount",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "1"
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-023",
+      "probeId": "specRegistry.supersessionGraphValid",
+      "valueType": "BOOLEAN",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "specRegistry.supersessionGraphValid",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "true"
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-024",
+      "probeId": "specRegistry.sourceLocatorErrorCount",
+      "valueType": "INTEGER",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "specRegistry.sourceLocatorErrorCount",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "1"
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-025",
+      "probeId": "specRegistry.schemaErrorCount",
+      "valueType": "INTEGER",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "specRegistry.schemaErrorCount",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "1"
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-026",
+      "probeId": "specRegistry.canonicalRecordBytes",
+      "valueType": "BYTE_SEQUENCE",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "specRegistry.canonicalRecordBytes",
+        "operator": "BYTES_EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "not-an-artifact"
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-027",
+      "probeId": "specRegistry.identityDigest",
+      "valueType": "DIGEST",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "specRegistry.identityDigest",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": 1
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-028",
+      "probeId": "specRegistry.manifestDigest",
+      "valueType": "DIGEST",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "specRegistry.manifestDigest",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": 1
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-029",
+      "probeId": "specRegistry.executionOrder",
+      "valueType": "TEXT_SEQUENCE",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "specRegistry.executionOrder",
+        "operator": "SEQUENCE_EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "not-a-sequence"
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-030",
+      "probeId": "specRegistry.referenceClosureValid",
+      "valueType": "BOOLEAN",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "specRegistry.referenceClosureValid",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "true"
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-031",
+      "probeId": "specRegistry.profileRecordMayReference",
+      "valueType": "BOOLEAN",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "specRegistry.profileRecordMayReference",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "true"
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-032",
+      "probeId": "domain.transactionCommitted",
+      "valueType": "BOOLEAN",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "domain.transactionCommitted",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "true"
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-033",
+      "probeId": "domain.revisionBefore",
+      "valueType": "INTEGER",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "domain.revisionBefore",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "1"
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-034",
+      "probeId": "domain.revisionAfter",
+      "valueType": "INTEGER",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "domain.revisionAfter",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "1"
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-035",
+      "probeId": "domain.contentVersionBefore",
+      "valueType": "INTEGER",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "domain.contentVersionBefore",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "1"
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-036",
+      "probeId": "domain.contentVersionAfter",
+      "valueType": "INTEGER",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "domain.contentVersionAfter",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "1"
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-037",
+      "probeId": "domain.lifecycleBefore",
+      "valueType": "CODE",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "domain.lifecycleBefore",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": 1
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-038",
+      "probeId": "domain.lifecycleAfter",
+      "valueType": "CODE",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "domain.lifecycleAfter",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": 1
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-039",
+      "probeId": "domain.auditEventCount",
+      "valueType": "INTEGER",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "domain.auditEventCount",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "1"
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-040",
+      "probeId": "domain.domainEventCount",
+      "valueType": "INTEGER",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "domain.domainEventCount",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "1"
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-041",
+      "probeId": "domain.referenceOccurrenceCount",
+      "valueType": "INTEGER",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "domain.referenceOccurrenceCount",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "1"
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-042",
+      "probeId": "domain.resultBytes",
+      "valueType": "BYTE_SEQUENCE",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "domain.resultBytes",
+        "operator": "BYTES_EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "not-an-artifact"
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-043",
+      "probeId": "domain.idempotencyOutcome",
+      "valueType": "CODE",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "domain.idempotencyOutcome",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": 1
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-044",
+      "probeId": "design.problemCodes",
+      "valueType": "TEXT_SEQUENCE",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "design.problemCodes",
+        "operator": "SEQUENCE_EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "not-a-sequence"
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-045",
+      "probeId": "design.canonicalBytes",
+      "valueType": "BYTE_SEQUENCE",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "design.canonicalBytes",
+        "operator": "BYTES_EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "not-an-artifact"
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-046",
+      "probeId": "design.contentHash",
+      "valueType": "DIGEST",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "design.contentHash",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": 1
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-047",
+      "probeId": "design.typedValueBytes",
+      "valueType": "BYTE_SEQUENCE",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "design.typedValueBytes",
+        "operator": "BYTES_EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "not-an-artifact"
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-048",
+      "probeId": "design.definitionEvaluationCount",
+      "valueType": "INTEGER",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "design.definitionEvaluationCount",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "1"
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-049",
+      "probeId": "design.capabilityDemandCount",
+      "valueType": "INTEGER",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "design.capabilityDemandCount",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "1"
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-050",
+      "probeId": "design.assetAtomSequence",
+      "valueType": "TEXT_SEQUENCE",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "design.assetAtomSequence",
+        "operator": "SEQUENCE_EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "not-a-sequence"
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-051",
+      "probeId": "design.bindingTargetSequence",
+      "valueType": "TEXT_SEQUENCE",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "design.bindingTargetSequence",
+        "operator": "SEQUENCE_EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "not-a-sequence"
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-052",
+      "probeId": "design.evaluationOrder",
+      "valueType": "TEXT_SEQUENCE",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "design.evaluationOrder",
+        "operator": "SEQUENCE_EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "not-a-sequence"
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-053",
+      "probeId": "design.normalizationBytes",
+      "valueType": "BYTE_SEQUENCE",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "design.normalizationBytes",
+        "operator": "BYTES_EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "not-an-artifact"
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-054",
+      "probeId": "design.lexicalFrameCount",
+      "valueType": "INTEGER",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "design.lexicalFrameCount",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "1"
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-055",
+      "probeId": "design.dependencyIoCount",
+      "valueType": "INTEGER",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "design.dependencyIoCount",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "1"
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-056",
+      "probeId": "rendering.problemCodes",
+      "valueType": "TEXT_SEQUENCE",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "rendering.problemCodes",
+        "operator": "SEQUENCE_EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "not-a-sequence"
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-057",
+      "probeId": "rendering.documentBytes",
+      "valueType": "BYTE_SEQUENCE",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "rendering.documentBytes",
+        "operator": "BYTES_EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "not-an-artifact"
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-058",
+      "probeId": "rendering.documentDigest",
+      "valueType": "DIGEST",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "rendering.documentDigest",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": 1
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-059",
+      "probeId": "rendering.closureDigest",
+      "valueType": "DIGEST",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "rendering.closureDigest",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": 1
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-060",
+      "probeId": "rendering.admittedInputDigest",
+      "valueType": "DIGEST",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "rendering.admittedInputDigest",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": 1
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-061",
+      "probeId": "rendering.evaluationFingerprint",
+      "valueType": "DIGEST",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "rendering.evaluationFingerprint",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": 1
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-062",
+      "probeId": "rendering.capabilityResultsDigest",
+      "valueType": "DIGEST",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "rendering.capabilityResultsDigest",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": 1
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-063",
+      "probeId": "rendering.assetSelectionDigest",
+      "valueType": "DIGEST",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "rendering.assetSelectionDigest",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": 1
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-064",
+      "probeId": "rendering.evaluationResultDigest",
+      "valueType": "DIGEST",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "rendering.evaluationResultDigest",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": 1
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-065",
+      "probeId": "rendering.nodeCount",
+      "valueType": "INTEGER",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "rendering.nodeCount",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "1"
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-066",
+      "probeId": "rendering.resourceCount",
+      "valueType": "INTEGER",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "rendering.resourceCount",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "1"
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-067",
+      "probeId": "rendering.occurrenceIds",
+      "valueType": "TEXT_SEQUENCE",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "rendering.occurrenceIds",
+        "operator": "SEQUENCE_EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "not-a-sequence"
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-068",
+      "probeId": "rendering.resourceIds",
+      "valueType": "TEXT_SEQUENCE",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "rendering.resourceIds",
+        "operator": "SEQUENCE_EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "not-a-sequence"
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-069",
+      "probeId": "rendering.assetResolveCount",
+      "valueType": "INTEGER",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "rendering.assetResolveCount",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "1"
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-070",
+      "probeId": "rendering.capabilityDemandCount",
+      "valueType": "INTEGER",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "rendering.capabilityDemandCount",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "1"
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-071",
+      "probeId": "rendering.loweringResidueCount",
+      "valueType": "INTEGER",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "rendering.loweringResidueCount",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "1"
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-072",
+      "probeId": "rendering.templateCurrentReadCount",
+      "valueType": "INTEGER",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "rendering.templateCurrentReadCount",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "1"
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-073",
+      "probeId": "rendering.assetCurrentReadCount",
+      "valueType": "INTEGER",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "rendering.assetCurrentReadCount",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "1"
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-074",
+      "probeId": "renderer.outputBytes",
+      "valueType": "BYTE_SEQUENCE",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "renderer.outputBytes",
+        "operator": "BYTES_EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "not-an-artifact"
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-075",
+      "probeId": "renderer.outputDigest",
+      "valueType": "DIGEST",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "renderer.outputDigest",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": 1
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-076",
+      "probeId": "renderer.outputMediaType",
+      "valueType": "TEXT",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "renderer.outputMediaType",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": 1
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-077",
+      "probeId": "renderer.pixelBytes",
+      "valueType": "BYTE_SEQUENCE",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "renderer.pixelBytes",
+        "operator": "BYTES_EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "not-an-artifact"
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-078",
+      "probeId": "renderer.pixelDigest",
+      "valueType": "DIGEST",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "renderer.pixelDigest",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": 1
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-079",
+      "probeId": "renderer.surfaceWidth",
+      "valueType": "INTEGER",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "renderer.surfaceWidth",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "1"
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-080",
+      "probeId": "renderer.surfaceHeight",
+      "valueType": "INTEGER",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "renderer.surfaceHeight",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "1"
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-081",
+      "probeId": "renderer.traceBytes",
+      "valueType": "BYTE_SEQUENCE",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "renderer.traceBytes",
+        "operator": "BYTES_EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "not-an-artifact"
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-082",
+      "probeId": "renderer.traceDigest",
+      "valueType": "DIGEST",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "renderer.traceDigest",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": 1
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-083",
+      "probeId": "renderer.traceItemCount",
+      "valueType": "INTEGER",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "renderer.traceItemCount",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "1"
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-084",
+      "probeId": "renderer.resourceFetchCount",
+      "valueType": "INTEGER",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "renderer.resourceFetchCount",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "1"
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-085",
+      "probeId": "renderer.glyphSequence",
+      "valueType": "INTEGER_SEQUENCE",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "renderer.glyphSequence",
+        "operator": "SEQUENCE_EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "not-a-sequence"
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-086",
+      "probeId": "renderer.glyphCount",
+      "valueType": "INTEGER",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "renderer.glyphCount",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "1"
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-087",
+      "probeId": "renderer.lineCount",
+      "valueType": "INTEGER",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "renderer.lineCount",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "1"
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-088",
+      "probeId": "renderer.paintItemCount",
+      "valueType": "INTEGER",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "renderer.paintItemCount",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "1"
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-089",
+      "probeId": "renderer.clipDepth",
+      "valueType": "INTEGER",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "renderer.clipDepth",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "1"
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-090",
+      "probeId": "renderer.dynamicDependencyNames",
+      "valueType": "TEXT_SEQUENCE",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "renderer.dynamicDependencyNames",
+        "operator": "SEQUENCE_EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "not-a-sequence"
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-091",
+      "probeId": "renderer.queueWaitDurationMillis",
+      "valueType": "RATIONAL_DURATION_MILLISECONDS",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "renderer.queueWaitDurationMillis",
+        "operator": "WITHIN",
+        "expected": {
+          "kind": "LITERAL",
+          "value": {
+            "minimum": 1,
+            "maximum": 0
+          }
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-092",
+      "probeId": "renderer.cancelStopDurationMillis",
+      "valueType": "RATIONAL_DURATION_MILLISECONDS",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "renderer.cancelStopDurationMillis",
+        "operator": "WITHIN",
+        "expected": {
+          "kind": "LITERAL",
+          "value": {
+            "minimum": 1,
+            "maximum": 0
+          }
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-093",
+      "probeId": "editor.mode",
+      "valueType": "CODE",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "editor.mode",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": 1
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-094",
+      "probeId": "editor.accessibilityTreeBytes",
+      "valueType": "BYTE_SEQUENCE",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "editor.accessibilityTreeBytes",
+        "operator": "BYTES_EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "not-an-artifact"
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-095",
+      "probeId": "editor.focusSequence",
+      "valueType": "TEXT_SEQUENCE",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "editor.focusSequence",
+        "operator": "SEQUENCE_EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "not-a-sequence"
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-096",
+      "probeId": "editor.announcementSequence",
+      "valueType": "TEXT_SEQUENCE",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "editor.announcementSequence",
+        "operator": "SEQUENCE_EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "not-a-sequence"
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-097",
+      "probeId": "editor.commandResult",
+      "valueType": "CODE",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "editor.commandResult",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": 1
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-098",
+      "probeId": "editor.undoDepth",
+      "valueType": "INTEGER",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "editor.undoDepth",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "1"
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-099",
+      "probeId": "editor.redoDepth",
+      "valueType": "INTEGER",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "editor.redoDepth",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "1"
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-100",
+      "probeId": "editor.selectedEntityIds",
+      "valueType": "TEXT_SEQUENCE",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "editor.selectedEntityIds",
+        "operator": "SEQUENCE_EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "not-a-sequence"
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-101",
+      "probeId": "editor.problemPanelBytes",
+      "valueType": "BYTE_SEQUENCE",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "editor.problemPanelBytes",
+        "operator": "BYTES_EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "not-an-artifact"
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-102",
+      "probeId": "editor.previewBasisDigest",
+      "valueType": "DIGEST",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "editor.previewBasisDigest",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": 1
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-103",
+      "probeId": "editor.previewVisible",
+      "valueType": "BOOLEAN",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "editor.previewVisible",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "true"
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-104",
+      "probeId": "editor.saveEnabled",
+      "valueType": "BOOLEAN",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "editor.saveEnabled",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "true"
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-105",
+      "probeId": "editor.networkRequestSequence",
+      "valueType": "TEXT_SEQUENCE",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "editor.networkRequestSequence",
+        "operator": "SEQUENCE_EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "not-a-sequence"
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-106",
+      "probeId": "editor.semanticDiffCount",
+      "valueType": "INTEGER",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "editor.semanticDiffCount",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "1"
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-107",
+      "probeId": "editor.keyboardTrapDetected",
+      "valueType": "BOOLEAN",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "editor.keyboardTrapDetected",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "true"
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-108",
+      "probeId": "editor.highContrastOperable",
+      "valueType": "BOOLEAN",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "editor.highContrastOperable",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "true"
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-109",
+      "probeId": "editor.reducedMotionHonored",
+      "valueType": "BOOLEAN",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "editor.reducedMotionHonored",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "true"
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-110",
+      "probeId": "editor.zoom200Operable",
+      "valueType": "BOOLEAN",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "editor.zoom200Operable",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "true"
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-111",
+      "probeId": "editor.canonicalBaselineBytes",
+      "valueType": "BYTE_SEQUENCE",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "editor.canonicalBaselineBytes",
+        "operator": "BYTES_EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "not-an-artifact"
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-112",
+      "probeId": "editor.compatibilityOriginalDigest",
+      "valueType": "DIGEST",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "editor.compatibilityOriginalDigest",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": 1
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-113",
+      "probeId": "editor.confirmationAvailable",
+      "valueType": "BOOLEAN",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "editor.confirmationAvailable",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "true"
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-114",
+      "probeId": "editor.dirty",
+      "valueType": "BOOLEAN",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "editor.dirty",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "true"
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-115",
+      "probeId": "editor.mutationLockActive",
+      "valueType": "BOOLEAN",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "editor.mutationLockActive",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "true"
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-116",
+      "probeId": "editor.normalizationSummaryBytes",
+      "valueType": "BYTE_SEQUENCE",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "editor.normalizationSummaryBytes",
+        "operator": "BYTES_EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "not-an-artifact"
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-117",
+      "probeId": "editor.previewEligibilityGeneration",
+      "valueType": "INTEGER",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "editor.previewEligibilityGeneration",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "1"
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-118",
+      "probeId": "editor.recoveryDraftEnvelopeBytes",
+      "valueType": "BYTE_SEQUENCE",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "editor.recoveryDraftEnvelopeBytes",
+        "operator": "BYTES_EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": "not-an-artifact"
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    },
+    {
+      "vectorId": "ASSERT-NO-119",
+      "probeId": "editor.workingCopyDigest",
+      "valueType": "DIGEST",
+      "assertion": {
+        "assertionId": "A001",
+        "probeId": "editor.workingCopyDigest",
+        "operator": "EQ",
+        "expected": {
+          "kind": "LITERAL",
+          "value": 1
+        }
+      },
+      "expectedCode": "CONFORMANCE_ASSERTION_EXPECTED_INVALID"
+    }
+  ],
+  "acceptedVectorCount": 157,
+  "rejectedVectorCount": 119,
+  "delta": {
+    "addedProbeCount": 9,
+    "acceptedVectorCount": 14,
+    "rejectedVectorCount": 9,
+    "acceptedVectorIds": [
+      "ASSERT-OK-144",
+      "ASSERT-OK-145",
+      "ASSERT-OK-146",
+      "ASSERT-OK-147",
+      "ASSERT-OK-148",
+      "ASSERT-OK-149",
+      "ASSERT-OK-150",
+      "ASSERT-OK-151",
+      "ASSERT-OK-152",
+      "ASSERT-OK-153",
+      "ASSERT-OK-154",
+      "ASSERT-OK-155",
+      "ASSERT-OK-156",
+      "ASSERT-OK-157"
+    ],
+    "rejectedVectorIds": [
+      "ASSERT-NO-111",
+      "ASSERT-NO-112",
+      "ASSERT-NO-113",
+      "ASSERT-NO-114",
+      "ASSERT-NO-115",
+      "ASSERT-NO-116",
+      "ASSERT-NO-117",
+      "ASSERT-NO-118",
+      "ASSERT-NO-119"
+    ]
+  },
+  "completeProbeOperatorCoverage": true,
+  "boundary": "Complete static candidate vectors are not issuance. The current 1.0 assertion-vector artifact remains authoritative until a separately approved Profile replacement is issued."
+}

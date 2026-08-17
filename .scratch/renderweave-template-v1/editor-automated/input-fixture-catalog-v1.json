@@ -1,0 +1,1746 @@
+{
+  "artifactVersion": "renderweave-editor-input-fixture-catalog/1.0",
+  "status": "EXACT_SEMANTIC_FIXTURES_PRODUCT_ADAPTER_UNPROVEN",
+  "executionClass": "EXEC::EDITOR_AUTOMATED::1.0",
+  "contract": {
+    "path": "editor-automated/input-fixture-contract-v1.json",
+    "sha256": "sha256:d42c7544527d74e70f06fec07a6c320c45aa8dfc4884401c1378792290a60d62",
+    "byteLength": 12414
+  },
+  "counts": {
+    "candidateCount": 108,
+    "artifactCandidateCount": 108,
+    "orphanArtifactCount": 0
+  },
+  "artifacts": [
+    {
+      "candidateId": "EDC::J01::001",
+      "scenarioSlug": "keyboard-core-traversal",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j01-001.json",
+        "sha256": "sha256:3debaa266a0af99295de26b27ddeefbcf7cd007afd4eeba4dca7f66df7ab8c8e",
+        "byteLength": 610
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j01-001.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:3debaa266a0af99295de26b27ddeefbcf7cd007afd4eeba4dca7f66df7ab8c8e",
+        "identitySha256": "sha256:b38257fab0cecfbdcf0300827f1a2511c6769fcae423ed150e13a626e4a5d7a0"
+      }
+    },
+    {
+      "candidateId": "EDC::J01::002",
+      "scenarioSlug": "tree-roving-canvas-equivalent",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j01-002.json",
+        "sha256": "sha256:f3d157c476ce3861ef3e37f44400eeb79a7cade4c1b1860e6eeb4791319a7b5e",
+        "byteLength": 489
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j01-002.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:f3d157c476ce3861ef3e37f44400eeb79a7cade4c1b1860e6eeb4791319a7b5e",
+        "identitySha256": "sha256:9da74b0e26417d024ef591fd65c62c19365f5bc70e7597aad26d92c13ccc04ad"
+      }
+    },
+    {
+      "candidateId": "EDC::J01::003",
+      "scenarioSlug": "escape-restores-trigger-focus",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j01-003.json",
+        "sha256": "sha256:da27a0596786a3d6e57f135ede0a02128fa8c8f9469948fe7ad4580f8bf1f764",
+        "byteLength": 370
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j01-003.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:da27a0596786a3d6e57f135ede0a02128fa8c8f9469948fe7ad4580f8bf1f764",
+        "identitySha256": "sha256:f531322aa5a67e36d6df780c566342b9436eb9a2e9b54d51199ae52d31eaeb76"
+      }
+    },
+    {
+      "candidateId": "EDC::J02::001",
+      "scenarioSlug": "create-entity-atomic",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j02-001.json",
+        "sha256": "sha256:06bce593e27d5627d21b198078ece24cb7296d2670ec52716a90dc1073dab936",
+        "byteLength": 379
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j02-001.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:06bce593e27d5627d21b198078ece24cb7296d2670ec52716a90dc1073dab936",
+        "identitySha256": "sha256:d8b3497bebc06545c510e0fdc205c54b0dd24c644b7b9b66993d924ad8659161"
+      }
+    },
+    {
+      "candidateId": "EDC::J02::002",
+      "scenarioSlug": "duplicate-entity-remaps",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j02-002.json",
+        "sha256": "sha256:4c33e6d6e093557bf7564d43e7efe3e04428f13287562f9cca7ef37b4373b44d",
+        "byteLength": 373
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j02-002.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:4c33e6d6e093557bf7564d43e7efe3e04428f13287562f9cca7ef37b4373b44d",
+        "identitySha256": "sha256:a5025338b35b9940b4356d530fddbdef402575693b57cb3fba8e049a98ec1c7d"
+      }
+    },
+    {
+      "candidateId": "EDC::J02::003",
+      "scenarioSlug": "delete-entity-atomic",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j02-003.json",
+        "sha256": "sha256:63d09e841e48547857ae0d56cfa58ec8bea3e1a1ed29359112b7e6bc2fa2ae92",
+        "byteLength": 364
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j02-003.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:63d09e841e48547857ae0d56cfa58ec8bea3e1a1ed29359112b7e6bc2fa2ae92",
+        "identitySha256": "sha256:e4242051df31698bb9c82152050b97d0a758ef7efa87e7ed02bd11f8b381e4d1"
+      }
+    },
+    {
+      "candidateId": "EDC::J02::004",
+      "scenarioSlug": "delete-unsafe-rejected",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j02-004.json",
+        "sha256": "sha256:34eb5a9de695781fa38fa972e3df31c134909b40d07f8a27b5f7ffe93302ec27",
+        "byteLength": 374
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j02-004.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:34eb5a9de695781fa38fa972e3df31c134909b40d07f8a27b5f7ffe93302ec27",
+        "identitySha256": "sha256:bd76533cb29227cf0271442a0e2b5845775f2706ab6e03c9f1972e061c2dbffd"
+      }
+    },
+    {
+      "candidateId": "EDC::J02::005",
+      "scenarioSlug": "move-entity-atomic",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j02-005.json",
+        "sha256": "sha256:1fdbf78b19ed64c531f598a4af1d1b412aa230b85e45d4bf63fda3d9ad27083e",
+        "byteLength": 395
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j02-005.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:1fdbf78b19ed64c531f598a4af1d1b412aa230b85e45d4bf63fda3d9ad27083e",
+        "identitySha256": "sha256:ec8cd7bb1d647bc48488669752b4014d8ba85eb8ae0777e5e25d9e7e3e69f24e"
+      }
+    },
+    {
+      "candidateId": "EDC::J02::006",
+      "scenarioSlug": "reparent-entity-atomic",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j02-006.json",
+        "sha256": "sha256:abdd9a0c1f2b92318ac9cde8e318b6a2cf966b9d4be8cf0040ca6f9fac413ec9",
+        "byteLength": 405
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j02-006.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:abdd9a0c1f2b92318ac9cde8e318b6a2cf966b9d4be8cf0040ca6f9fac413ec9",
+        "identitySha256": "sha256:cb589edb658fb214a882df35c96ee5ee5cb9df8c7be1e5bd0782a9ef2927a1aa"
+      }
+    },
+    {
+      "candidateId": "EDC::J02::007",
+      "scenarioSlug": "reorder-entity-atomic",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j02-007.json",
+        "sha256": "sha256:cb5a3b4035332b76a599c0d41c33aa48552ce85366c043dcea1620177b6962e6",
+        "byteLength": 386
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j02-007.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:cb5a3b4035332b76a599c0d41c33aa48552ce85366c043dcea1620177b6962e6",
+        "identitySha256": "sha256:890c07d6da0a2fcf4f08dc94361b3a137543517d7e50a6bc433ea11fc3b8546a"
+      }
+    },
+    {
+      "candidateId": "EDC::J02::008",
+      "scenarioSlug": "undo-complete-working-copy",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j02-008.json",
+        "sha256": "sha256:7f192487dba659563cf19fafa8402b3e289644980acdcd46d0e1991ee3526021",
+        "byteLength": 400
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j02-008.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:7f192487dba659563cf19fafa8402b3e289644980acdcd46d0e1991ee3526021",
+        "identitySha256": "sha256:9601418674efff146cec45cba04343c2e489fdff7aadc91f4754bb00c18d5795"
+      }
+    },
+    {
+      "candidateId": "EDC::J02::009",
+      "scenarioSlug": "redo-complete-working-copy",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j02-009.json",
+        "sha256": "sha256:46761867c0f10c92c7c11c32a3b76337eaecba3b0c695fad3429d53723cf0d16",
+        "byteLength": 465
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j02-009.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:46761867c0f10c92c7c11c32a3b76337eaecba3b0c695fad3429d53723cf0d16",
+        "identitySha256": "sha256:655c815a360f902fd9b9053f117367794e6151b68dd62877b54f2a310c6c3952"
+      }
+    },
+    {
+      "candidateId": "EDC::J02::010",
+      "scenarioSlug": "save-clears-local-history",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j02-010.json",
+        "sha256": "sha256:5911111f97d678057d7fb3d7afd53b644323f2b3b44a35c67401bbd52223601f",
+        "byteLength": 357
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j02-010.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:5911111f97d678057d7fb3d7afd53b644323f2b3b44a35c67401bbd52223601f",
+        "identitySha256": "sha256:412ea9ca861418c4249d5a190e175cdd15d53f331249752c420fd51b42e6dcbe"
+      }
+    },
+    {
+      "candidateId": "EDC::J02::011",
+      "scenarioSlug": "overwrite-clears-local-history",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j02-011.json",
+        "sha256": "sha256:99900e250e9871f13e4431652118917c3e95e2f51526b4bd99c69421d75fecdd",
+        "byteLength": 389
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j02-011.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:99900e250e9871f13e4431652118917c3e95e2f51526b4bd99c69421d75fecdd",
+        "identitySha256": "sha256:0b3bd3e2647df67513c70e91c78ff3ccf3567d669e62c855075ba7847fd6dfe7"
+      }
+    },
+    {
+      "candidateId": "EDC::J02::012",
+      "scenarioSlug": "revision-restore-clears-local-history",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j02-012.json",
+        "sha256": "sha256:197b26295797ac0284816a6dac7bcc52fc14f25c365873de05f9e3ecc4cdc8e6",
+        "byteLength": 409
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j02-012.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:197b26295797ac0284816a6dac7bcc52fc14f25c365873de05f9e3ecc4cdc8e6",
+        "identitySha256": "sha256:9e9b10213aba0d0ff92544babfb120a01506ed4e8c477cfe0ea5cd4d30a0764a"
+      }
+    },
+    {
+      "candidateId": "EDC::J02::013",
+      "scenarioSlug": "whole-template-copy-or-create-clears-history",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j02-013.json",
+        "sha256": "sha256:121cb4bad44ff7587d4795f17a5308a2e8715ea2a198d89d40f23d426c7abb3c",
+        "byteLength": 378
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j02-013.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:121cb4bad44ff7587d4795f17a5308a2e8715ea2a198d89d40f23d426c7abb3c",
+        "identitySha256": "sha256:bee713ec7f4b4644b1eaa831a439f285ca7f9c2daec8ef13bb593b01dac802d9"
+      }
+    },
+    {
+      "candidateId": "EDC::J03::001",
+      "scenarioSlug": "binding-unbound-state",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j03-001.json",
+        "sha256": "sha256:0ac0d55ee46630c23e5ef11de2d6ac7311d3133bced67411fe8222e5a4d113fd",
+        "byteLength": 360
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j03-001.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:0ac0d55ee46630c23e5ef11de2d6ac7311d3133bced67411fe8222e5a4d113fd",
+        "identitySha256": "sha256:0e9112bf9022f8b0864b9f9438d4633262d904760df62ee71543f3a412599676"
+      }
+    },
+    {
+      "candidateId": "EDC::J03::002",
+      "scenarioSlug": "binding-present-state",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j03-002.json",
+        "sha256": "sha256:2e981e6952b1121e6cec7083edf48774a5b137f922014b4899b66209e8fc60b6",
+        "byteLength": 359
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j03-002.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:2e981e6952b1121e6cec7083edf48774a5b137f922014b4899b66209e8fc60b6",
+        "identitySha256": "sha256:bbaa1cdf7ae86b5d5b9ac643931cc8bf4861293f97c1ce8a4f0f45c8581e5faf"
+      }
+    },
+    {
+      "candidateId": "EDC::J03::003",
+      "scenarioSlug": "binding-absent-state",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j03-003.json",
+        "sha256": "sha256:a618c68e8a229a43cd0e8206ea5810cff3a2dd40a9638246030fd108efcd2b1c",
+        "byteLength": 358
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j03-003.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:a618c68e8a229a43cd0e8206ea5810cff3a2dd40a9638246030fd108efcd2b1c",
+        "identitySha256": "sha256:de7f05e9982e4b05763c8ffbb2f15c7f79745488485ae224755c093f4ab18473"
+      }
+    },
+    {
+      "candidateId": "EDC::J03::004",
+      "scenarioSlug": "binding-error-state",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j03-004.json",
+        "sha256": "sha256:625b55e32f3f30c55562dcae4b91161917e184cc0e32afbf246b28efffa59b27",
+        "byteLength": 357
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j03-004.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:625b55e32f3f30c55562dcae4b91161917e184cc0e32afbf246b28efffa59b27",
+        "identitySha256": "sha256:c95d970becdd7ca9e38f86a6f2af7a8430e17ddbf6c763aba030dac3b7e3e8c5"
+      }
+    },
+    {
+      "candidateId": "EDC::J03::005",
+      "scenarioSlug": "binding-type-invalid-state",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j03-005.json",
+        "sha256": "sha256:62944c201fe7113551dd56d6706a1b566be4a83c26f3960a5b74d602718b82db",
+        "byteLength": 363
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j03-005.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:62944c201fe7113551dd56d6706a1b566be4a83c26f3960a5b74d602718b82db",
+        "identitySha256": "sha256:b10bcccdbd65ad3b22f65e9a185595554da9777ed1b02ed8039c992b200f8113"
+      }
+    },
+    {
+      "candidateId": "EDC::J03::006",
+      "scenarioSlug": "binding-property-invalid-state",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j03-006.json",
+        "sha256": "sha256:e273fce9dcb34a1e3e6ae46c769745fd25925643daa8ca6f0308b5ccb5587657",
+        "byteLength": 370
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j03-006.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:e273fce9dcb34a1e3e6ae46c769745fd25925643daa8ca6f0308b5ccb5587657",
+        "identitySha256": "sha256:4132a863ed33601abf8af2bab665b54d534c4b8fd3f64b9bc8e334708ade2642"
+      }
+    },
+    {
+      "candidateId": "EDC::J03::007",
+      "scenarioSlug": "binding-remove-to-unbound",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j03-007.json",
+        "sha256": "sha256:b0a7b0cd5a366e611807276637fd4bef0c8a708a5512b1e489931183e05bbf09",
+        "byteLength": 357
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j03-007.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:b0a7b0cd5a366e611807276637fd4bef0c8a708a5512b1e489931183e05bbf09",
+        "identitySha256": "sha256:7d12522ee7657c3394d1224d7286a3287216fbda5a8e73f0933f58966d36ab2e"
+      }
+    },
+    {
+      "candidateId": "EDC::J03::008",
+      "scenarioSlug": "authoritative-preview-distinct",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j03-008.json",
+        "sha256": "sha256:7220a2ee34fe903b268e5858eb0b089b75551507159a9251dda74f7943afda2f",
+        "byteLength": 340
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j03-008.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:7220a2ee34fe903b268e5858eb0b089b75551507159a9251dda74f7943afda2f",
+        "identitySha256": "sha256:478262d87351d282e488da628d92fc8fb129e2d363831548e0ab0ff5fbd2c3ae"
+      }
+    },
+    {
+      "candidateId": "EDC::J04::001",
+      "scenarioSlug": "array-reorder-single-target",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j04-001.json",
+        "sha256": "sha256:fd9f7a0ce1b6b7a9059760a7a430424dc663bd4a08325c85092d00a0186c89e0",
+        "byteLength": 421
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j04-001.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:fd9f7a0ce1b6b7a9059760a7a430424dc663bd4a08325c85092d00a0186c89e0",
+        "identitySha256": "sha256:c1a0b36b0abfe9bb452780b60d3bfa9932403cac4cc9b803824d754641a62b06"
+      }
+    },
+    {
+      "candidateId": "EDC::J04::002",
+      "scenarioSlug": "array-reorder-multiple-targets",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j04-002.json",
+        "sha256": "sha256:3d940628f3705e747a1d873fd43c3ff2d6464f98f8e916e18ca94833a7ad5dd3",
+        "byteLength": 427
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j04-002.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:3d940628f3705e747a1d873fd43c3ff2d6464f98f8e916e18ca94833a7ad5dd3",
+        "identitySha256": "sha256:769bd727353b55945cc0374416066c3d1a74eec7ed0321232abb9acb8099a1cb"
+      }
+    },
+    {
+      "candidateId": "EDC::J04::003",
+      "scenarioSlug": "array-reorder-overlap-rejected",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j04-003.json",
+        "sha256": "sha256:58706f03037b18adc1d41275984f1e8d7da78228723270d638576d7cfbc69193",
+        "byteLength": 427
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j04-003.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:58706f03037b18adc1d41275984f1e8d7da78228723270d638576d7cfbc69193",
+        "identitySha256": "sha256:6e2332963b2b84026a8257d771bb882ddd2ae1a8acb6228925fe3995a1e12e9c"
+      }
+    },
+    {
+      "candidateId": "EDC::J04::004",
+      "scenarioSlug": "array-reorder-out-of-bounds-rejected",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j04-004.json",
+        "sha256": "sha256:0c93e61f530f71a3aa6e77ab2d4488f5e6c5a3aacdcd42675920298b88f3d631",
+        "byteLength": 422
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j04-004.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:0c93e61f530f71a3aa6e77ab2d4488f5e6c5a3aacdcd42675920298b88f3d631",
+        "identitySha256": "sha256:c4c4ef82e7e5d3f73aacd9131a4517bfab684c9ff956813cb905a66356cf83ae"
+      }
+    },
+    {
+      "candidateId": "EDC::J04::005",
+      "scenarioSlug": "array-reorder-duplicate-target-rejected",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j04-005.json",
+        "sha256": "sha256:222d94082fa5b2284c34ff8f909eb96c2f7a5a8a1de9c9a98815854a87d2c48a",
+        "byteLength": 436
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j04-005.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:222d94082fa5b2284c34ff8f909eb96c2f7a5a8a1de9c9a98815854a87d2c48a",
+        "identitySha256": "sha256:17c5c9f3fce8254dd6d3587338e06ff5bef3077b6df723918b4f970a3e49a865"
+      }
+    },
+    {
+      "candidateId": "EDC::J05::001",
+      "scenarioSlug": "local-lint-generation",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j05-001.json",
+        "sha256": "sha256:4900962f11733846ca7cf4a74652840797d61b83bf10fbf1d69de0a4ea895d00",
+        "byteLength": 346
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j05-001.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:4900962f11733846ca7cf4a74652840797d61b83bf10fbf1d69de0a4ea895d00",
+        "identitySha256": "sha256:8a32d8ae73e96c354a237c18f1e2a93ba65dcd705f3bc3dccb917d565d9ec691"
+      }
+    },
+    {
+      "candidateId": "EDC::J05::002",
+      "scenarioSlug": "server-current-report-basis",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j05-002.json",
+        "sha256": "sha256:ee60a5e878a037cc2ec9c6eba836ea8d2e8b06e1fef5810d3454dcf7832580c0",
+        "byteLength": 383
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j05-002.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:ee60a5e878a037cc2ec9c6eba836ea8d2e8b06e1fef5810d3454dcf7832580c0",
+        "identitySha256": "sha256:b1dd5fa87468265cf296bebaf4585a12083e62970777a3f39481621a8fa804eb"
+      }
+    },
+    {
+      "candidateId": "EDC::J05::003",
+      "scenarioSlug": "save-problem-submission-basis",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j05-003.json",
+        "sha256": "sha256:6ce0ead29e7f109ad92fc7a4cae1ba5415dd890fd6ba8184cd0e55531391d09a",
+        "byteLength": 314
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j05-003.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:6ce0ead29e7f109ad92fc7a4cae1ba5415dd890fd6ba8184cd0e55531391d09a",
+        "identitySha256": "sha256:728d2a12a71f2cc069ef33733f6d7c5cb535ec4b1487239992ecf7f2c7fd987e"
+      }
+    },
+    {
+      "candidateId": "EDC::J05::004",
+      "scenarioSlug": "import-migration-problem-basis",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j05-004.json",
+        "sha256": "sha256:dade662b728c1fb2c426e507d7d1f554dd990b94a1c7daa3cc6d2ad9186d430e",
+        "byteLength": 325
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j05-004.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:dade662b728c1fb2c426e507d7d1f554dd990b94a1c7daa3cc6d2ad9186d430e",
+        "identitySha256": "sha256:46d4706a2aa27e52619027e40a0b82b8fb2df0d6f07e2ff3c001acaf9038a584"
+      }
+    },
+    {
+      "candidateId": "EDC::J05::005",
+      "scenarioSlug": "closure-problem-authorized-location",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j05-005.json",
+        "sha256": "sha256:13a6a47bd9183f5238f94ff4378f4a7e671499645087deee65e04d13244d2d62",
+        "byteLength": 317
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j05-005.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:13a6a47bd9183f5238f94ff4378f4a7e671499645087deee65e04d13244d2d62",
+        "identitySha256": "sha256:b7fe00ddaacd14ddb01d83228694ba15055991dae7bcf6a3f1b83af04b5811db"
+      }
+    },
+    {
+      "candidateId": "EDC::J05::006",
+      "scenarioSlug": "preview-problem-basis",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j05-006.json",
+        "sha256": "sha256:842ead7ee740e073f22e16e2c3452b3580d148fef9b252948a13a0da560ccbf8",
+        "byteLength": 331
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j05-006.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:842ead7ee740e073f22e16e2c3452b3580d148fef9b252948a13a0da560ccbf8",
+        "identitySha256": "sha256:1210ca0316a034e96ea897a37d5037c51697a815221a0be3e928746d3a1b8aeb"
+      }
+    },
+    {
+      "candidateId": "EDC::J05::007",
+      "scenarioSlug": "stale-problem-generation-discarded",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j05-007.json",
+        "sha256": "sha256:2601bb44efe8b8d2707179bca004397cc4b782d5f2c39ccb9a04076563fa516c",
+        "byteLength": 409
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j05-007.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:2601bb44efe8b8d2707179bca004397cc4b782d5f2c39ccb9a04076563fa516c",
+        "identitySha256": "sha256:e6bcefc5512dac3a32912f3c42ab1479752ddcba1f838e5968414d0795c65272"
+      }
+    },
+    {
+      "candidateId": "EDC::J05::008",
+      "scenarioSlug": "failure-focuses-summary",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j05-008.json",
+        "sha256": "sha256:5a4048c1ab4299a51bdba85d4f662d99a0999d2c382bb4f711f4791d2f4d95f2",
+        "byteLength": 314
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j05-008.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:5a4048c1ab4299a51bdba85d4f662d99a0999d2c382bb4f711f4791d2f4d95f2",
+        "identitySha256": "sha256:a0e69d2db55d1abbdcc22dd17d312f5e1d360d9b4a8f1ef7ae6ffe8e7539eb37"
+      }
+    },
+    {
+      "candidateId": "EDC::J05::009",
+      "scenarioSlug": "problem-location-activated",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j05-009.json",
+        "sha256": "sha256:b6d67675c722a606ef5eaa1d639c9f32080c500a7eebf0721f133865e72660de",
+        "byteLength": 363
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j05-009.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:b6d67675c722a606ef5eaa1d639c9f32080c500a7eebf0721f133865e72660de",
+        "identitySha256": "sha256:22fbff878a28e0e366af9245a03eb90c0cfde01abec5e39cec8ce82e286cf945"
+      }
+    },
+    {
+      "candidateId": "EDC::J05::010",
+      "scenarioSlug": "redacted-location-understandable",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j05-010.json",
+        "sha256": "sha256:40e734aa8784de1f89d968a108163b2d0be166b0e4f2f7633fb45c0a89806798",
+        "byteLength": 356
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j05-010.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:40e734aa8784de1f89d968a108163b2d0be166b0e4f2f7633fb45c0a89806798",
+        "identitySha256": "sha256:29e134524f617d8cb2f9911649393831d63ed20c98b2f4ff74e55319ef2a94d0"
+      }
+    },
+    {
+      "candidateId": "EDC::J06::001",
+      "scenarioSlug": "save-normalization-summary",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j06-001.json",
+        "sha256": "sha256:f2d37b79e48f5953aaa5e48d250c4b07bfaacf4543c194761e4f137cc6f1bcd1",
+        "byteLength": 430
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j06-001.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:f2d37b79e48f5953aaa5e48d250c4b07bfaacf4543c194761e4f137cc6f1bcd1",
+        "identitySha256": "sha256:2e2f46742053e82b800c35c5a1c8863c53f38f05b286fa734d9a45f0421d1148"
+      }
+    },
+    {
+      "candidateId": "EDC::J06::002",
+      "scenarioSlug": "save-preserves-expression-unicode",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j06-002.json",
+        "sha256": "sha256:d6886af75c0de58882517356635f2b45ed16d1ee278fe0261cbcc2cb36450913",
+        "byteLength": 325
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j06-002.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:d6886af75c0de58882517356635f2b45ed16d1ee278fe0261cbcc2cb36450913",
+        "identitySha256": "sha256:7e6aefbb4ed0dfbd914b2288a042674e684cb739aa1a8a70b71f8269480bcf8e"
+      }
+    },
+    {
+      "candidateId": "EDC::J06::003",
+      "scenarioSlug": "save-preserves-semantic-arrays-fields",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j06-003.json",
+        "sha256": "sha256:7e90e5d394405e2dacfa69ceb6e6dfc34ea555558a280020538d407305f2d3d1",
+        "byteLength": 329
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j06-003.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:7e90e5d394405e2dacfa69ceb6e6dfc34ea555558a280020538d407305f2d3d1",
+        "identitySha256": "sha256:4c2f3cb4d5ef4833b3b2fe4695de0538c0c2716242e36875c62db56238a4195a"
+      }
+    },
+    {
+      "candidateId": "EDC::J07::001",
+      "scenarioSlug": "dependency-set-offers-confirmation",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j07-001.json",
+        "sha256": "sha256:04cd92a3d5891bbed53998dbf2352f9f750c92c6181c84a77eab3701c10276fd",
+        "byteLength": 324
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j07-001.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:04cd92a3d5891bbed53998dbf2352f9f750c92c6181c84a77eab3701c10276fd",
+        "identitySha256": "sha256:5218cf664526c7b8c16b6787b5e18e0830c38d4693a86e6a56e530f33a1c482c"
+      }
+    },
+    {
+      "candidateId": "EDC::J07::002",
+      "scenarioSlug": "dependency-confirmation-commits-invalid",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j07-002.json",
+        "sha256": "sha256:12438c15ae8fb4710d3661ea34d4aa4ccaee8b5027c6ee176e0286b2cedd4633",
+        "byteLength": 352
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j07-002.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:12438c15ae8fb4710d3661ea34d4aa4ccaee8b5027c6ee176e0286b2cedd4633",
+        "identitySha256": "sha256:c48e22270ef3821a9391b0e0ff54f88bce2b567da3d62f5976fee5983f034bd5"
+      }
+    },
+    {
+      "candidateId": "EDC::J07::003",
+      "scenarioSlug": "truncated-set-response",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j07-003.json",
+        "sha256": "sha256:296cdf1d31c390a5eef74784e187c791d84cb029b63c5c72f9b891faa4ec356c",
+        "byteLength": 325
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j07-003.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:296cdf1d31c390a5eef74784e187c791d84cb029b63c5c72f9b891faa4ec356c",
+        "identitySha256": "sha256:a69a108477fcbe3edce45d5eb6adc1a1d89253bd94184ea0c46e4dcb3df70672"
+      }
+    },
+    {
+      "candidateId": "EDC::J07::004",
+      "scenarioSlug": "truncated-confirmation-attempt-rejected",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j07-004.json",
+        "sha256": "sha256:ef2d5e8f5777c5e116df156c20da935c41913fad5a3eff2b49c7f7559213bd44",
+        "byteLength": 340
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j07-004.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:ef2d5e8f5777c5e116df156c20da935c41913fad5a3eff2b49c7f7559213bd44",
+        "identitySha256": "sha256:a785751c41734387ed3144fe517acb99f57f42cc6b889e396a9c797a9f65e161"
+      }
+    },
+    {
+      "candidateId": "EDC::J07::005",
+      "scenarioSlug": "unknown-version-hard-error-response",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j07-005.json",
+        "sha256": "sha256:fe687ae7333a2c397fb7d8d5a30bbf6352641ebb7bae7f7b5473795667064423",
+        "byteLength": 305
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j07-005.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:fe687ae7333a2c397fb7d8d5a30bbf6352641ebb7bae7f7b5473795667064423",
+        "identitySha256": "sha256:9a69cb266c746d2f24e09590794a82aaa8d0d50290e49ea418cc30e4adae8b31"
+      }
+    },
+    {
+      "candidateId": "EDC::J07::006",
+      "scenarioSlug": "unknown-version-confirmation-rejected",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j07-006.json",
+        "sha256": "sha256:cc341abec58577f133a095e85d879ab0d600fbc4c7241605e55ce99c90e13256",
+        "byteLength": 333
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j07-006.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:cc341abec58577f133a095e85d879ab0d600fbc4c7241605e55ce99c90e13256",
+        "identitySha256": "sha256:865b7778418f17b5f42a81868594177ee5751b22e142caf2aedc3150da51e1c1"
+      }
+    },
+    {
+      "candidateId": "EDC::J07::007",
+      "scenarioSlug": "unknown-member-kind-hard-error-response",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j07-007.json",
+        "sha256": "sha256:5ca1bae51a464e1dc26932d991f0aff38811f619c916945642917becdcbbd175",
+        "byteLength": 307
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j07-007.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:5ca1bae51a464e1dc26932d991f0aff38811f619c916945642917becdcbbd175",
+        "identitySha256": "sha256:ebdcb9c87b69bf6d9c0d7d78379025ad5b474c4a1bae4ff25989a9d0d4429293"
+      }
+    },
+    {
+      "candidateId": "EDC::J07::008",
+      "scenarioSlug": "unknown-member-kind-confirmation-rejected",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j07-008.json",
+        "sha256": "sha256:5fa7536c46df8ad610a081d444e1d183d5344f573c18dd29153897559bf28bec",
+        "byteLength": 335
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j07-008.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:5fa7536c46df8ad610a081d444e1d183d5344f573c18dd29153897559bf28bec",
+        "identitySha256": "sha256:5a1ef5b1c8b80a1c404cd3a853ce047cfe6ab1b84e3a7fde5f77c9f6b2e0afe3"
+      }
+    },
+    {
+      "candidateId": "EDC::J07::009",
+      "scenarioSlug": "structural-hard-error-response",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j07-009.json",
+        "sha256": "sha256:4b3aad1177dfa1f328295bbf2d1eade8e2dda7c9f232f21ae14fff9014523dc5",
+        "byteLength": 307
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j07-009.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:4b3aad1177dfa1f328295bbf2d1eade8e2dda7c9f232f21ae14fff9014523dc5",
+        "identitySha256": "sha256:ad7f0b1dc88ac86829349a36a4fa2aa118e5e573be932b53ce3f471c79e52e62"
+      }
+    },
+    {
+      "candidateId": "EDC::J07::010",
+      "scenarioSlug": "structural-confirmation-rejected",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j07-010.json",
+        "sha256": "sha256:0912f77aaff19539ff1883def9b2881fa25009fcc5903dc8a2c331941ca8ff05",
+        "byteLength": 335
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j07-010.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:0912f77aaff19539ff1883def9b2881fa25009fcc5903dc8a2c331941ca8ff05",
+        "identitySha256": "sha256:8fdf4c8e38b32ed2019f982a2cd0f9d795bda0efdd1546c66c735dbbeb387329"
+      }
+    },
+    {
+      "candidateId": "EDC::J07::011",
+      "scenarioSlug": "template-cycle-hard-error-response",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j07-011.json",
+        "sha256": "sha256:deaeb2fd9712afa38c2e6ec4d53b0169d0b7c869e7d9a7ba726ca29b3d239147",
+        "byteLength": 304
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j07-011.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:deaeb2fd9712afa38c2e6ec4d53b0169d0b7c869e7d9a7ba726ca29b3d239147",
+        "identitySha256": "sha256:4a3b3c07f6a972992319cc5ea6e11bc7d8f73f569a91f9022be16058246a1dff"
+      }
+    },
+    {
+      "candidateId": "EDC::J07::012",
+      "scenarioSlug": "template-cycle-confirmation-rejected",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j07-012.json",
+        "sha256": "sha256:1c926fa25cd8744a6578b16fc20a9386339b7d2746d0572d6b59f4d2be92bd75",
+        "byteLength": 332
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j07-012.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:1c926fa25cd8744a6578b16fc20a9386339b7d2746d0572d6b59f4d2be92bd75",
+        "identitySha256": "sha256:88c850bdf519bd3cc78ddfd83affc84b99cd7482e0ea38678c57bf7484c29e3b"
+      }
+    },
+    {
+      "candidateId": "EDC::J07::013",
+      "scenarioSlug": "security-hard-error-response",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j07-013.json",
+        "sha256": "sha256:e86b187dbdd04c7a01b391a8354b40d5482b33f5276375d9745ec56aed2282fe",
+        "byteLength": 305
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j07-013.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:e86b187dbdd04c7a01b391a8354b40d5482b33f5276375d9745ec56aed2282fe",
+        "identitySha256": "sha256:6d83a10c044ffd9bf8eb76be3d346a1be1b0dc54539ae78a61ffe474f8800829"
+      }
+    },
+    {
+      "candidateId": "EDC::J07::014",
+      "scenarioSlug": "security-confirmation-rejected",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j07-014.json",
+        "sha256": "sha256:6115e407358e421eac0727838aaf234cfc6030501f64ff38fa8b93590243e8e1",
+        "byteLength": 333
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j07-014.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:6115e407358e421eac0727838aaf234cfc6030501f64ff38fa8b93590243e8e1",
+        "identitySha256": "sha256:736a239dd80fab60ece5c4a40842a0195971224aae92667524d26bdec1ac642a"
+      }
+    },
+    {
+      "candidateId": "EDC::J07::015",
+      "scenarioSlug": "capacity-hard-error-response",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j07-015.json",
+        "sha256": "sha256:c76aceba79ce4b564013671a0539769c0d30c5c7427ceae384b8777fa3d29d22",
+        "byteLength": 305
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j07-015.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:c76aceba79ce4b564013671a0539769c0d30c5c7427ceae384b8777fa3d29d22",
+        "identitySha256": "sha256:7a1870f8e70e3d5db4a68173365afff9e283b056ae1b0927906c2e5c02199ec8"
+      }
+    },
+    {
+      "candidateId": "EDC::J07::016",
+      "scenarioSlug": "capacity-confirmation-rejected",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j07-016.json",
+        "sha256": "sha256:d9cdfdf2048784a86c62d0803a2f14fc8d2562e874816cb1a779febd32c0331c",
+        "byteLength": 333
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j07-016.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:d9cdfdf2048784a86c62d0803a2f14fc8d2562e874816cb1a779febd32c0331c",
+        "identitySha256": "sha256:a4bbd3082abc18e67d3a20d1babdfdbf97f5d6d0e33d7bfd3c4b3b2c17de7136"
+      }
+    },
+    {
+      "candidateId": "EDC::J08::001",
+      "scenarioSlug": "first-conflict-preserves-local",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j08-001.json",
+        "sha256": "sha256:2718ff08f353ab6e5f538c67179f313b8994dc978f2da48ef07cbe278a14dc75",
+        "byteLength": 325
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j08-001.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:2718ff08f353ab6e5f538c67179f313b8994dc978f2da48ef07cbe278a14dc75",
+        "identitySha256": "sha256:18fef1579740845ffdb4c235a4c5c0bc6772ae3673d41aec089f5f4eb8de9c9e"
+      }
+    },
+    {
+      "candidateId": "EDC::J08::002",
+      "scenarioSlug": "confirmed-overwrite-fresh-revision",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j08-002.json",
+        "sha256": "sha256:71517d2a4d7ff311658fad2682819d40cc2ae1a7fed72ad13a1ff6482dde67f0",
+        "byteLength": 502
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j08-002.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:71517d2a4d7ff311658fad2682819d40cc2ae1a7fed72ad13a1ff6482dde67f0",
+        "identitySha256": "sha256:bf996523b8878d4d4262de993de6aff558efef2026dafc38dd98d90d5d399918"
+      }
+    },
+    {
+      "candidateId": "EDC::J08::003",
+      "scenarioSlug": "second-drift-requires-new-confirmation",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j08-003.json",
+        "sha256": "sha256:79e3027e7b12a61638e5cb2cb97a472e0fb41bca912c5dc0011d5dad6a07a788",
+        "byteLength": 426
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j08-003.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:79e3027e7b12a61638e5cb2cb97a472e0fb41bca912c5dc0011d5dad6a07a788",
+        "identitySha256": "sha256:5001fc2d7906ede7c1de8e14b0c8d41369212efca9395e8909c834e9fbc91143"
+      }
+    },
+    {
+      "candidateId": "EDC::J09::001",
+      "scenarioSlug": "transport-unknown-enters-reconciliation",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j09-001.json",
+        "sha256": "sha256:e76a1611d519ac3edf41079ff03af37e8044ad7caf55ec9cc84db9861be4371f",
+        "byteLength": 314
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j09-001.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:e76a1611d519ac3edf41079ff03af37e8044ad7caf55ec9cc84db9861be4371f",
+        "identitySha256": "sha256:5add1a36e7821cb68a151a1d14709ce133e1f09e9430933c58091ee04bd46148"
+      }
+    },
+    {
+      "candidateId": "EDC::J09::002",
+      "scenarioSlug": "reconcile-converged-content",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j09-002.json",
+        "sha256": "sha256:1bb1ba53b21aea4388aef06d2788bf36e1dcec9a068a2f7f1b7a2934bd196752",
+        "byteLength": 320
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j09-002.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:1bb1ba53b21aea4388aef06d2788bf36e1dcec9a068a2f7f1b7a2934bd196752",
+        "identitySha256": "sha256:fda17f9c745fb12df5c4d2dd43b099dd3eabff227cd30ce7b74f8158bd3ec350"
+      }
+    },
+    {
+      "candidateId": "EDC::J09::003",
+      "scenarioSlug": "reconcile-safe-explicit-retry",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j09-003.json",
+        "sha256": "sha256:9d695046fb326da5fb9d6002f62d838fa731a5ab1ec0ad92d2638ff49f18979b",
+        "byteLength": 397
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j09-003.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:9d695046fb326da5fb9d6002f62d838fa731a5ab1ec0ad92d2638ff49f18979b",
+        "identitySha256": "sha256:d85c248d36e8846ba2659ea6b0c6e47d5b6da801e6b0e632a758c36c3d520da6"
+      }
+    },
+    {
+      "candidateId": "EDC::J09::004",
+      "scenarioSlug": "reconcile-enters-conflict",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j09-004.json",
+        "sha256": "sha256:e498db3d296f358386b98d487a287cf8e858d391de934aff1877455105084d63",
+        "byteLength": 320
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j09-004.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:e498db3d296f358386b98d487a287cf8e858d391de934aff1877455105084d63",
+        "identitySha256": "sha256:437fa9c7377699c6bf1d0a160ecd7daa6795d0ac70b4dc2b03282f772b18249f"
+      }
+    },
+    {
+      "candidateId": "EDC::J09::005",
+      "scenarioSlug": "reconcile-deleted-readonly",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j09-005.json",
+        "sha256": "sha256:08126c5fba4e3759aa7aafeee8dedb88d59b771d65e0d13c78bdc907c32e6f3c",
+        "byteLength": 320
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j09-005.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:08126c5fba4e3759aa7aafeee8dedb88d59b771d65e0d13c78bdc907c32e6f3c",
+        "identitySha256": "sha256:4c8d815a884f81ad3b6c0ea34455e3252f4f21c0adb34fe4da0492d60a1331b6"
+      }
+    },
+    {
+      "candidateId": "EDC::J09::006",
+      "scenarioSlug": "reconcile-integrity-fails-closed",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j09-006.json",
+        "sha256": "sha256:ab424ab6b860d3c1c0c6bf90536df65e1087312e3d56ec0bf88a2b9e40b2c0b3",
+        "byteLength": 320
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j09-006.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:ab424ab6b860d3c1c0c6bf90536df65e1087312e3d56ec0bf88a2b9e40b2c0b3",
+        "identitySha256": "sha256:edc054e500d95f7a4801e38b95e2ca065fcf8a06d1a3b6b08960140aa13ccb7f"
+      }
+    },
+    {
+      "candidateId": "EDC::J09::007",
+      "scenarioSlug": "reconcile-unreadable-remains-unknown",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j09-007.json",
+        "sha256": "sha256:fb981f53a5143390c57dc93c67c035ec60e867fc3e8fe6c1d335e53dafa3caf2",
+        "byteLength": 472
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j09-007.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:fb981f53a5143390c57dc93c67c035ec60e867fc3e8fe6c1d335e53dafa3caf2",
+        "identitySha256": "sha256:9cc683111ea5a837d07fc62a3c7e3b41fc1c01a24031172a9d71b91a9064e288"
+      }
+    },
+    {
+      "candidateId": "EDC::J09::008",
+      "scenarioSlug": "reopen-resumes-reconciliation",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j09-008.json",
+        "sha256": "sha256:fa0703ec14cd5e918bf96f3224a33bf023d49876fef3efcec702e63afacd78f6",
+        "byteLength": 400
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j09-008.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:fa0703ec14cd5e918bf96f3224a33bf023d49876fef3efcec702e63afacd78f6",
+        "identitySha256": "sha256:fd46357fe24d9c93e81c3dbd31b9f4c33045d8721c587c573a42d03f71a9f54a"
+      }
+    },
+    {
+      "candidateId": "EDC::J10::001",
+      "scenarioSlug": "recovery-reopen-offers-actions",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j10-001.json",
+        "sha256": "sha256:94465d4775d462638d4b9c930f5fb9b704f9e6add4afa6551717b238479b70e7",
+        "byteLength": 322
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j10-001.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:94465d4775d462638d4b9c930f5fb9b704f9e6add4afa6551717b238479b70e7",
+        "identitySha256": "sha256:07662752a8743a919a94da74d06869c770ee88d45873819c2411093dad2cb023"
+      }
+    },
+    {
+      "candidateId": "EDC::J10::002",
+      "scenarioSlug": "recovery-restore-same-base",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j10-002.json",
+        "sha256": "sha256:c342aae5e0f448da838c90daa3f96780f3e4f2aff7a5641c6dad44d11bed2842",
+        "byteLength": 326
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j10-002.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:c342aae5e0f448da838c90daa3f96780f3e4f2aff7a5641c6dad44d11bed2842",
+        "identitySha256": "sha256:12589467e7a3d7049a3c2c2ae61663c51caed978ded675d000b14fef51cb6dfe"
+      }
+    },
+    {
+      "candidateId": "EDC::J10::003",
+      "scenarioSlug": "recovery-restore-advanced-base",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j10-003.json",
+        "sha256": "sha256:3ff762d20c2cc8b9f4bc915c8284783b31276024537e5f72b763c17be8efa1e5",
+        "byteLength": 414
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j10-003.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:3ff762d20c2cc8b9f4bc915c8284783b31276024537e5f72b763c17be8efa1e5",
+        "identitySha256": "sha256:fa11fc347d6264b53963b543d77a36469fce64ea4cff4e98da825e1e0292263f"
+      }
+    },
+    {
+      "candidateId": "EDC::J10::004",
+      "scenarioSlug": "recovery-export",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j10-004.json",
+        "sha256": "sha256:c727b648d035ba2b44933823f2f089ace22d67c8d6d63e52cf61ef0a8ef6c9d7",
+        "byteLength": 330
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j10-004.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:c727b648d035ba2b44933823f2f089ace22d67c8d6d63e52cf61ef0a8ef6c9d7",
+        "identitySha256": "sha256:59235e4412542a816ed76278e49379e1eb71741c8d920101fd6903730afda396"
+      }
+    },
+    {
+      "candidateId": "EDC::J10::005",
+      "scenarioSlug": "recovery-discard",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j10-005.json",
+        "sha256": "sha256:079cdf2c48e21b791351d6e3efadcd0a0d0c877f3df9a2214a57349f4b083bb8",
+        "byteLength": 331
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j10-005.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:079cdf2c48e21b791351d6e3efadcd0a0d0c877f3df9a2214a57349f4b083bb8",
+        "identitySha256": "sha256:749f4a4586e6d2eb1728e01443f9adef02e1f03c6a2131a31114752b2e43fdff"
+      }
+    },
+    {
+      "candidateId": "EDC::J10::006",
+      "scenarioSlug": "recovery-minimal-content",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j10-006.json",
+        "sha256": "sha256:9f27318ec2c514aabeb9307382bb20538f02c07026024d36d78076e2c75c91a2",
+        "byteLength": 353
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j10-006.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:9f27318ec2c514aabeb9307382bb20538f02c07026024d36d78076e2c75c91a2",
+        "identitySha256": "sha256:98bc0c2888c4176d13d9778a176bf150c23e764d7842af525464a08547fb4f07"
+      }
+    },
+    {
+      "candidateId": "EDC::J10::007",
+      "scenarioSlug": "valid-import-becomes-dirty-draft",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j10-007.json",
+        "sha256": "sha256:203929c3812a2deae5f779d393eabc9aeff5ed9928f68dffab59688409b568e5",
+        "byteLength": 400
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j10-007.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:203929c3812a2deae5f779d393eabc9aeff5ed9928f68dffab59688409b568e5",
+        "identitySha256": "sha256:506e366a2f7d9c6f3c2dab4a67358145196cd132fd313bef44d32b9823bdf2b5"
+      }
+    },
+    {
+      "candidateId": "EDC::J10::008",
+      "scenarioSlug": "malformed-import-enters-raw-repair",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j10-008.json",
+        "sha256": "sha256:387f2b1aa820df9a87bef3f0ded10caf6b89c14199b626a27b9289c145c2d1f7",
+        "byteLength": 349
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j10-008.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:387f2b1aa820df9a87bef3f0ded10caf6b89c14199b626a27b9289c145c2d1f7",
+        "identitySha256": "sha256:4d7241bc18a21da984a77f9e0c170221baf82553399cdcaf1e0b317a4658687b"
+      }
+    },
+    {
+      "candidateId": "EDC::J10::009",
+      "scenarioSlug": "raw-repair-valid-transition",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j10-009.json",
+        "sha256": "sha256:77db0977e7001f957cd08c247e24c73ba3b681bd9a44b26f7a3e11f4c748c1ed",
+        "byteLength": 420
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j10-009.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:77db0977e7001f957cd08c247e24c73ba3b681bd9a44b26f7a3e11f4c748c1ed",
+        "identitySha256": "sha256:229f4188ec5d3b61b40ede7288047fe9db7d7d14fdcaee27499796b6a7a38f7a"
+      }
+    },
+    {
+      "candidateId": "EDC::J10::010",
+      "scenarioSlug": "unsupported-wire-compatibility-readonly",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j10-010.json",
+        "sha256": "sha256:1bd07fb0c6757a658bab3d5af515fa5b3c4702c44e1c27777e66ba90f5f850af",
+        "byteLength": 338
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j10-010.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:1bd07fb0c6757a658bab3d5af515fa5b3c4702c44e1c27777e66ba90f5f850af",
+        "identitySha256": "sha256:2fb27966da3480de389065c282453a18f898e9fc8c849c0a28350a7219235455"
+      }
+    },
+    {
+      "candidateId": "EDC::J10::011",
+      "scenarioSlug": "migration-preview-accepted-dirty",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j10-011.json",
+        "sha256": "sha256:4c5f95224252d70d16c8b7b06e08c7ff0532d50587917803eb240863d74983bc",
+        "byteLength": 419
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j10-011.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:4c5f95224252d70d16c8b7b06e08c7ff0532d50587917803eb240863d74983bc",
+        "identitySha256": "sha256:0c7d275b6eddb87db6a3067659e51d0733b9dffcbf0310078a8ea82899030bef"
+      }
+    },
+    {
+      "candidateId": "EDC::J10::012",
+      "scenarioSlug": "dirty-guard-blocks-replacement",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j10-012.json",
+        "sha256": "sha256:b1be775873ad272b6dffab3aa6139401fadfc0d86225e35ba62fffe1f1ddcae6",
+        "byteLength": 370
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j10-012.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:b1be775873ad272b6dffab3aa6139401fadfc0d86225e35ba62fffe1f1ddcae6",
+        "identitySha256": "sha256:8de938c6296218fff92727f3ad097d108939c5080fab2386eead39e0f7e6f6ec"
+      }
+    },
+    {
+      "candidateId": "EDC::J11::001",
+      "scenarioSlug": "clean-current-preview",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j11-001.json",
+        "sha256": "sha256:209200db0126ac03dd0579972fc2788d2c615f838c16b53a40cf956aab7afb66",
+        "byteLength": 329
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j11-001.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:209200db0126ac03dd0579972fc2788d2c615f838c16b53a40cf956aab7afb66",
+        "identitySha256": "sha256:73cd6c48643f647b1f9e3b5757ebe86a6c303aed1cd6130ebe72a76c4c027066"
+      }
+    },
+    {
+      "candidateId": "EDC::J11::002",
+      "scenarioSlug": "dirty-primary-save-and-preview",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j11-002.json",
+        "sha256": "sha256:98915d20b60b37abc424415ab9f878dca4930c76a0d7309979b90ad01f004f20",
+        "byteLength": 320
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j11-002.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:98915d20b60b37abc424415ab9f878dca4930c76a0d7309979b90ad01f004f20",
+        "identitySha256": "sha256:c7b0569b839b0583fb0cc41f930af6ec6e0d633bfa80bb22b433e92c5b2b7f6d"
+      }
+    },
+    {
+      "candidateId": "EDC::J11::003",
+      "scenarioSlug": "save-and-preview-save-fails",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j11-003.json",
+        "sha256": "sha256:7641893f603f4c912928348bf5a8d1eb9d57d19e032c261b53d3148b89557e37",
+        "byteLength": 317
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j11-003.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:7641893f603f4c912928348bf5a8d1eb9d57d19e032c261b53d3148b89557e37",
+        "identitySha256": "sha256:90b8abfe99ab4bec475c9df1ce279b6151c4fd076b04a7f824df42a48ee84530"
+      }
+    },
+    {
+      "candidateId": "EDC::J11::004",
+      "scenarioSlug": "save-and-preview-invalid-save",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j11-004.json",
+        "sha256": "sha256:4d4053e238abf4f0cfd279c2be8e3edd42840103e7caea7fb9c500e121a62f13",
+        "byteLength": 333
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j11-004.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:4d4053e238abf4f0cfd279c2be8e3edd42840103e7caea7fb9c500e121a62f13",
+        "identitySha256": "sha256:26e7731ac5fa1dfd8b085b0239035e895ed6f9e4cfa49b871b1e909768a77c72"
+      }
+    },
+    {
+      "candidateId": "EDC::J11::005",
+      "scenarioSlug": "save-and-preview-save-phase-success",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j11-005.json",
+        "sha256": "sha256:a16455533bd76c9eb93d3f595da31161e8b5e74950313bf0b9373d7b6107057a",
+        "byteLength": 331
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j11-005.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:a16455533bd76c9eb93d3f595da31161e8b5e74950313bf0b9373d7b6107057a",
+        "identitySha256": "sha256:3417415a827a70cd2a7bbcdf0031648380e5460fc1cbec2b6655b383be0259e4"
+      }
+    },
+    {
+      "candidateId": "EDC::J11::006",
+      "scenarioSlug": "save-and-preview-preview-phase-success",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j11-006.json",
+        "sha256": "sha256:b3f5d1c88a6e37df3eb3bdf5d13fe26167e757e9b0a0bc0ce88caf896dcc3633",
+        "byteLength": 347
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j11-006.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:b3f5d1c88a6e37df3eb3bdf5d13fe26167e757e9b0a0bc0ce88caf896dcc3633",
+        "identitySha256": "sha256:26ba38fb5519c6e444f1a35e60b2a276dbfef3dc9df04c548ec89043f1df1832"
+      }
+    },
+    {
+      "candidateId": "EDC::J11::007",
+      "scenarioSlug": "basis-design-edit-withdraws",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j11-007.json",
+        "sha256": "sha256:edd3528710e66a665c5a117d61d3f0911f3a323c29369961e7529498287ee446",
+        "byteLength": 304
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j11-007.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:edd3528710e66a665c5a117d61d3f0911f3a323c29369961e7529498287ee446",
+        "identitySha256": "sha256:6191e676e55545a994d59d60805722e1484ac4e9463e567ca1699bf58cebab79"
+      }
+    },
+    {
+      "candidateId": "EDC::J11::008",
+      "scenarioSlug": "basis-sample-input-withdraws",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j11-008.json",
+        "sha256": "sha256:750276b5f41b8deef317e60f0e860a2ef212312883eafe19fdc7e012d92aa161",
+        "byteLength": 308
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j11-008.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:750276b5f41b8deef317e60f0e860a2ef212312883eafe19fdc7e012d92aa161",
+        "identitySha256": "sha256:febb1d0e9f115e2d12ee22b745707a7d8706ff35008c76f9e1bbaac336e07395"
+      }
+    },
+    {
+      "candidateId": "EDC::J11::009",
+      "scenarioSlug": "basis-format-withdraws",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j11-009.json",
+        "sha256": "sha256:1ac641f7f4ba8feee58095a877eed490449ac061bca553328e3362029dedcdec",
+        "byteLength": 364
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j11-009.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:1ac641f7f4ba8feee58095a877eed490449ac061bca553328e3362029dedcdec",
+        "identitySha256": "sha256:04a6b11fd91a24292582f48157eaa78517dc6b206d197f8328767fec0de1dde8"
+      }
+    },
+    {
+      "candidateId": "EDC::J11::010",
+      "scenarioSlug": "basis-dpi-withdraws",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j11-010.json",
+        "sha256": "sha256:87d8d9619fbced6055a59925a7b552ec62df95c47679208f074ac261534bb4ba",
+        "byteLength": 342
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j11-010.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:87d8d9619fbced6055a59925a7b552ec62df95c47679208f074ac261534bb4ba",
+        "identitySha256": "sha256:5850099c005e27e00967bdaa4007fa7a42c9f26cd57fa52828376fcf957070df"
+      }
+    },
+    {
+      "candidateId": "EDC::J11::011",
+      "scenarioSlug": "basis-jpeg-quality-withdraws",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j11-011.json",
+        "sha256": "sha256:e6a74d38abd70a5dfc6f3875a2b50e2741f405ab7e1a7431f0d24384080f9739",
+        "byteLength": 380
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j11-011.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:e6a74d38abd70a5dfc6f3875a2b50e2741f405ab7e1a7431f0d24384080f9739",
+        "identitySha256": "sha256:2fad1998893ee394225c33d010597e2bcb38d72e61a314c87ed7d2f84b70055a"
+      }
+    },
+    {
+      "candidateId": "EDC::J11::012",
+      "scenarioSlug": "basis-layout-trace-withdraws",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j11-012.json",
+        "sha256": "sha256:841671a33fdb6cd009db5be04d274c5c85b7198bdcbcb5e5376bf9b98bb92a4a",
+        "byteLength": 392
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j11-012.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:841671a33fdb6cd009db5be04d274c5c85b7198bdcbcb5e5376bf9b98bb92a4a",
+        "identitySha256": "sha256:4bbadc833fc9b00e81099ed7944dc87e892d1d9c8c9b4547d33d8dfa788e0a29"
+      }
+    },
+    {
+      "candidateId": "EDC::J11::013",
+      "scenarioSlug": "basis-current-readiness-withdraws",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j11-013.json",
+        "sha256": "sha256:5ae31cdc81a5e1178dd458cdcbc3daadcfd7a617f954aa43b7c13ea96aab48ad",
+        "byteLength": 324
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j11-013.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:5ae31cdc81a5e1178dd458cdcbc3daadcfd7a617f954aa43b7c13ea96aab48ad",
+        "identitySha256": "sha256:97e7a2b375fecf0c95ed7024f53a994280a271c22a00131d6d7e6b51498b8c37"
+      }
+    },
+    {
+      "candidateId": "EDC::J11::014",
+      "scenarioSlug": "panel-selection-preserves-basis",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j11-014.json",
+        "sha256": "sha256:a19b5e156f1efac1299b5b076662fc248ed6ac8afca5936cb682524d0c11a495",
+        "byteLength": 371
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j11-014.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:a19b5e156f1efac1299b5b076662fc248ed6ac8afca5936cb682524d0c11a495",
+        "identitySha256": "sha256:fc812570ab62ef83be07a429ef9964cb6bd489b7216ef2b1ed74daa970694534"
+      }
+    },
+    {
+      "candidateId": "EDC::J11::015",
+      "scenarioSlug": "new-preview-revokes-old",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j11-015.json",
+        "sha256": "sha256:215af84b416393f9abd4a3637fa4c169f2833943466972b4a215507ffd63aeba",
+        "byteLength": 324
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j11-015.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:215af84b416393f9abd4a3637fa4c169f2833943466972b4a215507ffd63aeba",
+        "identitySha256": "sha256:78caa0973a5392b99f0a6e0828c0081988524a92f8a0a8683533fcaaba9cc291"
+      }
+    },
+    {
+      "candidateId": "EDC::J11::016",
+      "scenarioSlug": "author-cancel-clears-slot",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j11-016.json",
+        "sha256": "sha256:ab66becbd18e22b76cf23549b43c54ba900f4a5cad7afff0cb970a726517ef01",
+        "byteLength": 342
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j11-016.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:ab66becbd18e22b76cf23549b43c54ba900f4a5cad7afff0cb970a726517ef01",
+        "identitySha256": "sha256:57fbaab1690ca4b1d07ba75c8032edbc361c6e499330be2dfe9c5f1a2ab9854c"
+      }
+    },
+    {
+      "candidateId": "EDC::J11::017",
+      "scenarioSlug": "late-success-discarded",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j11-017.json",
+        "sha256": "sha256:0cc78285150f35deb3e50a9c8f96917e5496c1cb29b30d1c69f0c62bcbadbc85",
+        "byteLength": 390
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j11-017.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:0cc78285150f35deb3e50a9c8f96917e5496c1cb29b30d1c69f0c62bcbadbc85",
+        "identitySha256": "sha256:9f6a03f687c06337ecf22227185ee2ce52e6daa732ff0a79be33ae3de6f936b9"
+      }
+    },
+    {
+      "candidateId": "EDC::J11::018",
+      "scenarioSlug": "late-failure-discarded",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j11-018.json",
+        "sha256": "sha256:2b0c7e59c6cea2d836191face4faca7dfe317ceaf14282ab098581dc614cf7db",
+        "byteLength": 390
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j11-018.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:2b0c7e59c6cea2d836191face4faca7dfe317ceaf14282ab098581dc614cf7db",
+        "identitySha256": "sha256:0693b67c2e283f8c32c5fc8c2aadc25a75b206a15e18bbf4f868ef3b03cb3284"
+      }
+    },
+    {
+      "candidateId": "EDC::J11::019",
+      "scenarioSlug": "preview-failure-does-not-rollback-save",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j11-019.json",
+        "sha256": "sha256:47d7277aa64c471571f69b8e6e83238ee3908e9faedb0daaa000d93e8948eae8",
+        "byteLength": 337
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j11-019.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:47d7277aa64c471571f69b8e6e83238ee3908e9faedb0daaa000d93e8948eae8",
+        "identitySha256": "sha256:123537e277c0e2827de63d7cbd1ca04cb1a510eaed9729424d59006bfd0c6dd5"
+      }
+    },
+    {
+      "candidateId": "EDC::J11::020",
+      "scenarioSlug": "single-slot-no-history-autorun",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j11-020.json",
+        "sha256": "sha256:5114d77d449fa15e42f2d9f41388523e63d9de0eb75f7963b44424d57e96290d",
+        "byteLength": 332
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j11-020.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:5114d77d449fa15e42f2d9f41388523e63d9de0eb75f7963b44424d57e96290d",
+        "identitySha256": "sha256:71e525380606d2f8cfc4f66b6fd78710de1c69290bca1624cd6baf02f5bdb090"
+      }
+    },
+    {
+      "candidateId": "EDC::J12::001",
+      "scenarioSlug": "screen-reader-semantic-tree",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j12-001.json",
+        "sha256": "sha256:2da8c3c02e80ee0a9b0b099f1ff86abf07714b7c628bcd474caec497b365a62e",
+        "byteLength": 357
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j12-001.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:2da8c3c02e80ee0a9b0b099f1ff86abf07714b7c628bcd474caec497b365a62e",
+        "identitySha256": "sha256:158ca77c9f725a8b6719f75b52e0cdb692142877d6a441ac3ebfb3a8fcdd5010"
+      }
+    },
+    {
+      "candidateId": "EDC::J12::002",
+      "scenarioSlug": "keyboard-core-flow",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j12-002.json",
+        "sha256": "sha256:3cc9108a741bcb923b2c0f392bee80fd04a7dc0a24b13f942dd521be06e7a774",
+        "byteLength": 335
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j12-002.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:3cc9108a741bcb923b2c0f392bee80fd04a7dc0a24b13f942dd521be06e7a774",
+        "identitySha256": "sha256:1ee4a168d52f7003d1ef5c480699c3c9942eab71f43c66404c4e3ea658088678"
+      }
+    },
+    {
+      "candidateId": "EDC::J12::003",
+      "scenarioSlug": "live-region-announcements",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j12-003.json",
+        "sha256": "sha256:9742cd0c185e9eb17ac71a341904ca8526dd7e6d76c8f5b2e6fb0a997403baef",
+        "byteLength": 351
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j12-003.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:9742cd0c185e9eb17ac71a341904ca8526dd7e6d76c8f5b2e6fb0a997403baef",
+        "identitySha256": "sha256:1aff7bddd5e470e756ccce81e062875d833929e7d1d784c0972e74a7295c6cc8"
+      }
+    },
+    {
+      "candidateId": "EDC::J12::004",
+      "scenarioSlug": "reduced-motion-core-flow",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j12-004.json",
+        "sha256": "sha256:376384530655b8682b9fa4c0d42e4f4b546501fa073d6ea4be5fc0d697b1c16c",
+        "byteLength": 354
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j12-004.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:376384530655b8682b9fa4c0d42e4f4b546501fa073d6ea4be5fc0d697b1c16c",
+        "identitySha256": "sha256:7433f99620ce882263dcc7e1806fb51a165740f0b4da92c30b00afb4eb0eb4f9"
+      }
+    },
+    {
+      "candidateId": "EDC::J12::005",
+      "scenarioSlug": "zoom-200-canvas-pan",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j12-005.json",
+        "sha256": "sha256:eede20af5fc4ae751f530372ae304ea09238cdc340ba4f9833c8e52385a80952",
+        "byteLength": 369
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j12-005.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:eede20af5fc4ae751f530372ae304ea09238cdc340ba4f9833c8e52385a80952",
+        "identitySha256": "sha256:76b5dd329a0bec0d50fede1f85f8af77c6d8d1cef5e7ffc51d5fff4499b86509"
+      }
+    },
+    {
+      "candidateId": "EDC::J12::006",
+      "scenarioSlug": "unsupported-width-operable",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j12-006.json",
+        "sha256": "sha256:a49a6f513d4d6ffb5c646494247e9702c5066ac63813fc5cc23ead0342dd24a7",
+        "byteLength": 411
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j12-006.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:a49a6f513d4d6ffb5c646494247e9702c5066ac63813fc5cc23ead0342dd24a7",
+        "identitySha256": "sha256:c7c71c93c7693c828c550af5dd2945d2134ee5be5aea698775db12120137f951"
+      }
+    },
+    {
+      "candidateId": "EDC::J12::007",
+      "scenarioSlug": "high-contrast-noncolor-flow",
+      "artifact": {
+        "path": "editor-automated/input-fixtures/edc-j12-007.json",
+        "sha256": "sha256:be09ab72fc65256c6b6e93a17f35dfd934f67d0ec036520562418b446bf0a821",
+        "byteLength": 386
+      },
+      "formalBinding": {
+        "kind": "ARTIFACT",
+        "artifactPath": "editor-automated/input-fixtures/edc-j12-007.json",
+        "mediaType": "application/json",
+        "artifactSha256": "sha256:be09ab72fc65256c6b6e93a17f35dfd934f67d0ec036520562418b446bf0a821",
+        "identitySha256": "sha256:bea9ab032aa3a50c3a407c92c6675a5538eabfdfa7d061f5884cfb6dad68bea7"
+      }
+    }
+  ],
+  "boundary": "Every Editor candidate now has immutable semantic fixture bytes and a formal input identity; no product fixture adapter, browser setup, action execution, or observed result is proved."
+}

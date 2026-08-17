@@ -1,0 +1,18 @@
+{
+  "artifactVersion": "renderweave-editor-fault-schedule/1.0",
+  "candidateId": "EDC::J07::003",
+  "executionClass": "EXEC::EDITOR_AUTOMATED::1.0",
+  "events": [
+    {
+      "at": "SAVE_RESPONSE",
+      "action": "RETURN_PROBLEM_LIMIT_REACHED",
+      "parameters": {}
+    }
+  ],
+  "expectedTerminal": {
+    "operationId": "saveTemplate",
+    "outcome": "PROBLEM",
+    "code": "PROBLEM_LIMIT_REACHED",
+    "stage": "BOUNDED_PROBLEM_COLLECTION"
+  }
+}

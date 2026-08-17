@@ -1,0 +1,33 @@
+{
+  "fixtureVersion": "renderweave-design-input-expression-baseline/1.0",
+  "baselineId": "baseline.design-input-expression.minimal-v1",
+  "executionClass": "EXEC::DESIGN_INPUT_EXPRESSION::1.0",
+  "authorityContext": {
+    "staticSchemaRef": "system-empty@v1",
+    "designDsl": {
+      "dslVersion": "renderweave-design/1.0",
+      "expressionProfile": "renderweave-expression/1.0",
+      "displayName": "Baseline",
+      "definitions": [],
+      "designRoot": {
+        "nodeId": "00000000-0000-4000-8000-000000000001",
+        "kind": "canvas",
+        "widthMm": 210,
+        "heightMm": 297,
+        "bindings": [],
+        "children": []
+      }
+    }
+  },
+  "renderInput": {
+    "rootDocument": {},
+    "customValues": []
+  },
+  "faultSchedule": {
+    "kind": "NONE"
+  },
+  "externalReadsAllowed": false,
+  "networkReadsAllowed": false,
+  "currentTimeReadsAllowed": false,
+  "productMutationAllowedByFixtureGeneration": false
+}

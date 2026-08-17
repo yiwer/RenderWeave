@@ -1,0 +1,143 @@
+{
+  "evidenceVersion": "renderweave-editor-automation-admission-static-a2/1.0",
+  "evidenceId": "EDITOR_AUTOMATION_ADMISSION_STATIC_A2::2026-08-17::000001",
+  "status": "A2_STATIC_ADMISSION_INTERFACE_REPLAYED_PRODUCT_ADMISSION_REJECTED",
+  "grade": "A2_INDEPENDENT_STATIC_REPLAY_ONLY",
+  "executionClass": "EXEC::EDITOR_AUTOMATED::1.0",
+  "sourceRevision": "b14c2d7d4978c679e7ab8e7a2bace3da7af884de",
+  "conclusion": {
+    "admissionResult": "REJECTED",
+    "rejectionCodes": [
+      "EDITOR_BOOTSTRAP_PREDECESSOR_PENDING",
+      "EDITOR_SUPPORT_MATRIX_MISSING",
+      "EDITOR_PRODUCT_BUILD_MANIFEST_MISSING",
+      "EDITOR_BROWSER_BINARY_IDENTITY_MISSING",
+      "EDITOR_OS_TARGET_IDENTITY_MISSING",
+      "EDITOR_ENVIRONMENT_PROFILE_INCOMPLETE",
+      "EDITOR_RUNNER_MANIFEST_MISSING",
+      "EDITOR_CORPUS_ASSIGNMENT_INCOMPLETE",
+      "EDITOR_INDEPENDENT_REPLAY_MISSING"
+    ],
+    "assignedRequirementCount": 414,
+    "routingGroupCount": 45,
+    "journeySeedCount": 12,
+    "admittedProbeCount": 31,
+    "formalEditorCaseCount": 0,
+    "formalEditorOracleCount": 0,
+    "exactTargetManifestIssued": false,
+    "automationRunnerManifestIssued": false,
+    "productExecutionEvidence": false,
+    "browserAutomationEvidence": false,
+    "recordIssuanceAllowed": false,
+    "executable": false
+  },
+  "staticInterfaceArtifacts": {
+    "executionAdmissionContract": {
+      "path": "editor-automated/execution-admission-contract-v1.json",
+      "sha256": "sha256:5e38203fcf952e6b195e26c88386f4731072a59ba0b20f546ab93dea40678dd9",
+      "byteLength": 7280
+    },
+    "nonCapacityAssignment": {
+      "path": "editor-automated/non-capacity-assignment-v1.json",
+      "sha256": "sha256:4c993b03077e32dc6ae80cf7f7ce15c6c681fd017578919130f95032fcfb4807",
+      "byteLength": 44208
+    },
+    "repositoryReadinessAudit": {
+      "path": "editor-automated/repository-readiness-audit-v1.json",
+      "sha256": "sha256:a0d059516430994ffed1bfaf1a1f7140844af64c83a72ef1316f91ef8fb1aaf7",
+      "byteLength": 4043
+    }
+  },
+  "authorityBindings": {
+    "requirementsRegistry": {
+      "path": "requirements-v1.json",
+      "sha256": "sha256:f038abf56d2db6168c1eac2b64ac26fdd3ada7d8e21e0c018e4bb27a6cd88bab",
+      "byteLength": 9646
+    },
+    "j1Checklist": {
+      "path": "j1-editor-checklist-v1.json",
+      "sha256": "sha256:1c3e3fcc4ca34fcc3ca5577df8133d5c403faa0078672a655cbdf0268278fc01",
+      "byteLength": 11406
+    },
+    "probeProfile": {
+      "path": "conformance-probe-profile-v1.json",
+      "sha256": "sha256:f800eb1e6e138215c26c7761ed80e0fc9cf77fc3ce051be4e3c5ba530cd6053d",
+      "byteLength": 51328
+    },
+    "observationAdapter": {
+      "path": "editor-automated/observation-adapter-v1.json",
+      "sha256": "sha256:7f65c78c0d390e7ab972275b43341e94174d267ec4dadd28b71c60223fbe45d7",
+      "byteLength": 7049
+    },
+    "webPackage": {
+      "path": "web/package.json",
+      "sha256": "sha256:2523f90c60f34ad4e3b5b804eb26c894d798a131b707f333e84dffbc685d0a84",
+      "byteLength": 1645
+    },
+    "webPackageLock": {
+      "path": "web/package-lock.json",
+      "sha256": "sha256:eae24a189f4124f071b50a42d26920b5513bc1096c7ae4b3e71586fbd49ca836",
+      "byteLength": 196179
+    },
+    "playwrightConfig": {
+      "path": "web/playwright.config.ts",
+      "sha256": "sha256:0b87ed8a35facde7619fb511deb24ff344cbccb334e30ee6eae06abfb1700968",
+      "byteLength": 949
+    }
+  },
+  "executors": [
+    {
+      "executorId": "EDITOR_ADMISSION_STATIC::NODE::1.0",
+      "role": "primary-editor-admission-contract-validator",
+      "runtime": "v24.18.0",
+      "entrypoint": {
+        "path": "editor-automated/generate-editor-automation-admission.mjs",
+        "sha256": "sha256:8ec102151d98052733f9bade233640e5053c21f352a690a590548b9b0a048854",
+        "byteLength": 22268
+      },
+      "result": {
+        "path": "editor-automated/admission-primary-result-v1.json",
+        "sha256": "sha256:b53b7c4f23a37a4c78cce29ef892791cb4e1a07b38b81bae2f0655146b0d1175",
+        "byteLength": 1245
+      },
+      "checkCount": 27,
+      "failureCount": 0
+    },
+    {
+      "executorId": "EDITOR_ADMISSION_STATIC::PYTHON::1.0",
+      "role": "independent-editor-admission-contract-replayer",
+      "runtime": "CPython independent implementation",
+      "entrypoint": {
+        "path": "editor-automated/validate_editor_automation_admission_independent.py",
+        "sha256": "sha256:9b49c213037eba0d306cd642448331e76a090969c56089725f59ed21bf0dbe4b",
+        "byteLength": 16527
+      },
+      "result": {
+        "path": "editor-automated/admission-independent-result-v1.json",
+        "sha256": "sha256:d8be9ad80d80dee430cab5841bf4eeb0dda873e7a81a8bd7dc374324c4b4beab",
+        "byteLength": 1264
+      },
+      "checkCount": 5385,
+      "failureCount": 0
+    }
+  ],
+  "replayAgreement": {
+    "contractSha256": "sha256:5e38203fcf952e6b195e26c88386f4731072a59ba0b20f546ab93dea40678dd9",
+    "assignmentSha256": "sha256:4c993b03077e32dc6ae80cf7f7ce15c6c681fd017578919130f95032fcfb4807",
+    "readinessAuditSha256": "sha256:a0d059516430994ffed1bfaf1a1f7140844af64c83a72ef1316f91ef8fb1aaf7",
+    "assignedRequirementCount": 414,
+    "bothRejectedProductAdmission": true,
+    "sharedSemanticLibrary": null
+  },
+  "evidenceBoundary": {
+    "mayProve": "the Editor admission seam, exact target and runner fact requirements, closed rejection codes, complete routing inventory, 12 automation journey seeds, and the repository's current fail-closed admission decision",
+    "cannotProve": "a supported-browser policy, product build, browser binary, OS target, environment profile, automation runner, formal Editor Case or Oracle, browser behavior, product behavior, accessibility semantics, independent product replay, J1, execution-class readiness, Renderer readiness, or Ticket19 closure",
+    "browserLaunched": false,
+    "webServerLaunched": false,
+    "productCodeExecuted": false,
+    "productBuildExecuted": false,
+    "networkRead": false,
+    "j1Evaluated": false,
+    "formalRegistryMutated": false
+  }
+}

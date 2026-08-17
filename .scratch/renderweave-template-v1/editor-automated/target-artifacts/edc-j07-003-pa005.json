@@ -1,0 +1,8 @@
+[
+  {
+    "operationId": "saveTemplate",
+    "outcome": "PROBLEM",
+    "code": "PROBLEM_LIMIT_REACHED",
+    "stage": "BOUNDED_PROBLEM_COLLECTION"
+  }
+]

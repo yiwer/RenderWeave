@@ -1,0 +1,1090 @@
+{
+  "artifactVersion": "renderweave-editor-content-source-catalog/1.1",
+  "status": "ONE_IMMUTABLE_SPEC_FIXTURE_BOUND_46_SOURCE_SLOTS_UNBOUND",
+  "executionClass": "EXEC::EDITOR_AUTOMATED::1.0",
+  "contract": {
+    "path": "editor-automated/content-source-contract-v1.json",
+    "sha256": "sha256:4099e713bc8b7dececce6d9902bd6e1c6d2b5a340dec86d093012328a090ae48",
+    "byteLength": 6011
+  },
+  "semanticProjectionCatalog": {
+    "path": "editor-automated/semantic-projection-catalog-v1.json",
+    "sha256": "sha256:6754fb53dc412c7711e8d67254cc915db56caf527f256985ca9f8d5cd53e4f6a",
+    "byteLength": 66525
+  },
+  "counts": {
+    "sourceSlotCount": 47,
+    "workingCopySourceSlotCount": 35,
+    "canonicalBaselineSourceSlotCount": 12,
+    "postSettledActionWorkingCopySlotCount": 34,
+    "atomicRejectionFixtureSlotCount": 1,
+    "serverCanonicalResponseSlotCount": 10,
+    "existingTrustedBaselineSlotCount": 2,
+    "exactSourceBindingCount": 1,
+    "unboundSourceBindingCount": 46,
+    "sourceRecordArtifactCount": 1,
+    "canonicalDesignDslArtifactCount": 2,
+    "sourceArtifactCount": 3
+  },
+  "sourceRecords": [
+    {
+      "sourceSlotId": "ECS::J10::012::PA011",
+      "candidateId": "EDC::J10::012",
+      "planAssertionId": "PA011",
+      "artifact": {
+        "path": "editor-automated/content-sources/ecs-j10-012-pa011.json",
+        "sha256": "sha256:fd6b4f3a120ed98ef31f56409140ef31d34c012a4628f700c1eff57f79177d5f",
+        "byteLength": 2456
+      }
+    }
+  ],
+  "supportingArtifacts": [
+    {
+      "role": "CANONICAL_BASELINE_DESIGN_DSL",
+      "artifact": {
+        "path": "editor-automated/content-sources/dirty-guard-clean-baseline.design.json",
+        "sha256": "sha256:eebf61d7025416476990adda79caeb6d66fe30f19acf90faa0447aa44a0c949c",
+        "byteLength": 272
+      }
+    },
+    {
+      "role": "PRE_AND_POST_ACTION_WORKING_COPY_DESIGN_DSL",
+      "artifact": {
+        "path": "editor-automated/content-sources/dirty-guard-working-copy.design.json",
+        "sha256": "sha256:ee0e5678114d1c725d6669c0f354562f273a56124d1541f3abae688696e18b26",
+        "byteLength": 282
+      }
+    }
+  ],
+  "slots": [
+    {
+      "sourceSlotId": "ECS::J02::001::PA011",
+      "candidateId": "EDC::J02::001",
+      "planAssertionId": "PA011",
+      "scenarioSlug": "create-entity-atomic",
+      "probeId": "editor.workingCopyDigest",
+      "sourceKind": "WORKING_COPY_CANONICAL_DESIGN_DSL",
+      "acquisitionMode": "POST_SETTLED_ACTION_WORKING_COPY",
+      "semanticInputFixture": {
+        "path": "editor-automated/input-fixtures/edc-j02-001.json",
+        "sha256": "sha256:06bce593e27d5627d21b198078ece24cb7296d2670ec52716a90dc1073dab936",
+        "byteLength": 379
+      },
+      "prerequisiteIds": [
+        "EXACT_WORKING_COPY_CANONICAL_DESIGN_DSL_BYTES"
+      ],
+      "binding": {
+        "status": "UNBOUND",
+        "reasonCode": "EXACT_EDITOR_CONTENT_SOURCE_ARTIFACT_MISSING"
+      }
+    },
+    {
+      "sourceSlotId": "ECS::J02::002::PA011",
+      "candidateId": "EDC::J02::002",
+      "planAssertionId": "PA011",
+      "scenarioSlug": "duplicate-entity-remaps",
+      "probeId": "editor.workingCopyDigest",
+      "sourceKind": "WORKING_COPY_CANONICAL_DESIGN_DSL",
+      "acquisitionMode": "POST_SETTLED_ACTION_WORKING_COPY",
+      "semanticInputFixture": {
+        "path": "editor-automated/input-fixtures/edc-j02-002.json",
+        "sha256": "sha256:4c33e6d6e093557bf7564d43e7efe3e04428f13287562f9cca7ef37b4373b44d",
+        "byteLength": 373
+      },
+      "prerequisiteIds": [
+        "EXACT_WORKING_COPY_CANONICAL_DESIGN_DSL_BYTES"
+      ],
+      "binding": {
+        "status": "UNBOUND",
+        "reasonCode": "EXACT_EDITOR_CONTENT_SOURCE_ARTIFACT_MISSING"
+      }
+    },
+    {
+      "sourceSlotId": "ECS::J02::003::PA011",
+      "candidateId": "EDC::J02::003",
+      "planAssertionId": "PA011",
+      "scenarioSlug": "delete-entity-atomic",
+      "probeId": "editor.workingCopyDigest",
+      "sourceKind": "WORKING_COPY_CANONICAL_DESIGN_DSL",
+      "acquisitionMode": "POST_SETTLED_ACTION_WORKING_COPY",
+      "semanticInputFixture": {
+        "path": "editor-automated/input-fixtures/edc-j02-003.json",
+        "sha256": "sha256:63d09e841e48547857ae0d56cfa58ec8bea3e1a1ed29359112b7e6bc2fa2ae92",
+        "byteLength": 364
+      },
+      "prerequisiteIds": [
+        "EXACT_WORKING_COPY_CANONICAL_DESIGN_DSL_BYTES"
+      ],
+      "binding": {
+        "status": "UNBOUND",
+        "reasonCode": "EXACT_EDITOR_CONTENT_SOURCE_ARTIFACT_MISSING"
+      }
+    },
+    {
+      "sourceSlotId": "ECS::J02::004::PA011",
+      "candidateId": "EDC::J02::004",
+      "planAssertionId": "PA011",
+      "scenarioSlug": "delete-unsafe-rejected",
+      "probeId": "editor.workingCopyDigest",
+      "sourceKind": "WORKING_COPY_CANONICAL_DESIGN_DSL",
+      "acquisitionMode": "POST_SETTLED_ACTION_WORKING_COPY",
+      "semanticInputFixture": {
+        "path": "editor-automated/input-fixtures/edc-j02-004.json",
+        "sha256": "sha256:34eb5a9de695781fa38fa972e3df31c134909b40d07f8a27b5f7ffe93302ec27",
+        "byteLength": 374
+      },
+      "prerequisiteIds": [
+        "EXACT_WORKING_COPY_CANONICAL_DESIGN_DSL_BYTES"
+      ],
+      "binding": {
+        "status": "UNBOUND",
+        "reasonCode": "EXACT_EDITOR_CONTENT_SOURCE_ARTIFACT_MISSING"
+      }
+    },
+    {
+      "sourceSlotId": "ECS::J02::005::PA011",
+      "candidateId": "EDC::J02::005",
+      "planAssertionId": "PA011",
+      "scenarioSlug": "move-entity-atomic",
+      "probeId": "editor.workingCopyDigest",
+      "sourceKind": "WORKING_COPY_CANONICAL_DESIGN_DSL",
+      "acquisitionMode": "POST_SETTLED_ACTION_WORKING_COPY",
+      "semanticInputFixture": {
+        "path": "editor-automated/input-fixtures/edc-j02-005.json",
+        "sha256": "sha256:1fdbf78b19ed64c531f598a4af1d1b412aa230b85e45d4bf63fda3d9ad27083e",
+        "byteLength": 395
+      },
+      "prerequisiteIds": [
+        "EXACT_WORKING_COPY_CANONICAL_DESIGN_DSL_BYTES"
+      ],
+      "binding": {
+        "status": "UNBOUND",
+        "reasonCode": "EXACT_EDITOR_CONTENT_SOURCE_ARTIFACT_MISSING"
+      }
+    },
+    {
+      "sourceSlotId": "ECS::J02::006::PA011",
+      "candidateId": "EDC::J02::006",
+      "planAssertionId": "PA011",
+      "scenarioSlug": "reparent-entity-atomic",
+      "probeId": "editor.workingCopyDigest",
+      "sourceKind": "WORKING_COPY_CANONICAL_DESIGN_DSL",
+      "acquisitionMode": "POST_SETTLED_ACTION_WORKING_COPY",
+      "semanticInputFixture": {
+        "path": "editor-automated/input-fixtures/edc-j02-006.json",
+        "sha256": "sha256:abdd9a0c1f2b92318ac9cde8e318b6a2cf966b9d4be8cf0040ca6f9fac413ec9",
+        "byteLength": 405
+      },
+      "prerequisiteIds": [
+        "EXACT_WORKING_COPY_CANONICAL_DESIGN_DSL_BYTES"
+      ],
+      "binding": {
+        "status": "UNBOUND",
+        "reasonCode": "EXACT_EDITOR_CONTENT_SOURCE_ARTIFACT_MISSING"
+      }
+    },
+    {
+      "sourceSlotId": "ECS::J02::007::PA011",
+      "candidateId": "EDC::J02::007",
+      "planAssertionId": "PA011",
+      "scenarioSlug": "reorder-entity-atomic",
+      "probeId": "editor.workingCopyDigest",
+      "sourceKind": "WORKING_COPY_CANONICAL_DESIGN_DSL",
+      "acquisitionMode": "POST_SETTLED_ACTION_WORKING_COPY",
+      "semanticInputFixture": {
+        "path": "editor-automated/input-fixtures/edc-j02-007.json",
+        "sha256": "sha256:cb5a3b4035332b76a599c0d41c33aa48552ce85366c043dcea1620177b6962e6",
+        "byteLength": 386
+      },
+      "prerequisiteIds": [
+        "EXACT_WORKING_COPY_CANONICAL_DESIGN_DSL_BYTES"
+      ],
+      "binding": {
+        "status": "UNBOUND",
+        "reasonCode": "EXACT_EDITOR_CONTENT_SOURCE_ARTIFACT_MISSING"
+      }
+    },
+    {
+      "sourceSlotId": "ECS::J02::008::PA011",
+      "candidateId": "EDC::J02::008",
+      "planAssertionId": "PA011",
+      "scenarioSlug": "undo-complete-working-copy",
+      "probeId": "editor.workingCopyDigest",
+      "sourceKind": "WORKING_COPY_CANONICAL_DESIGN_DSL",
+      "acquisitionMode": "POST_SETTLED_ACTION_WORKING_COPY",
+      "semanticInputFixture": {
+        "path": "editor-automated/input-fixtures/edc-j02-008.json",
+        "sha256": "sha256:7f192487dba659563cf19fafa8402b3e289644980acdcd46d0e1991ee3526021",
+        "byteLength": 400
+      },
+      "prerequisiteIds": [
+        "EXACT_WORKING_COPY_CANONICAL_DESIGN_DSL_BYTES"
+      ],
+      "binding": {
+        "status": "UNBOUND",
+        "reasonCode": "EXACT_EDITOR_CONTENT_SOURCE_ARTIFACT_MISSING"
+      }
+    },
+    {
+      "sourceSlotId": "ECS::J02::009::PA011",
+      "candidateId": "EDC::J02::009",
+      "planAssertionId": "PA011",
+      "scenarioSlug": "redo-complete-working-copy",
+      "probeId": "editor.workingCopyDigest",
+      "sourceKind": "WORKING_COPY_CANONICAL_DESIGN_DSL",
+      "acquisitionMode": "POST_SETTLED_ACTION_WORKING_COPY",
+      "semanticInputFixture": {
+        "path": "editor-automated/input-fixtures/edc-j02-009.json",
+        "sha256": "sha256:46761867c0f10c92c7c11c32a3b76337eaecba3b0c695fad3429d53723cf0d16",
+        "byteLength": 465
+      },
+      "prerequisiteIds": [
+        "EXACT_WORKING_COPY_CANONICAL_DESIGN_DSL_BYTES"
+      ],
+      "binding": {
+        "status": "UNBOUND",
+        "reasonCode": "EXACT_EDITOR_CONTENT_SOURCE_ARTIFACT_MISSING"
+      }
+    },
+    {
+      "sourceSlotId": "ECS::J02::010::PA010",
+      "candidateId": "EDC::J02::010",
+      "planAssertionId": "PA010",
+      "scenarioSlug": "save-clears-local-history",
+      "probeId": "editor.canonicalBaselineBytes",
+      "sourceKind": "CANONICAL_BASELINE",
+      "acquisitionMode": "SERVER_CANONICAL_RESPONSE",
+      "semanticInputFixture": {
+        "path": "editor-automated/input-fixtures/edc-j02-010.json",
+        "sha256": "sha256:5911111f97d678057d7fb3d7afd53b644323f2b3b44a35c67401bbd52223601f",
+        "byteLength": 357
+      },
+      "prerequisiteIds": [
+        "EXACT_SERVER_CANONICAL_REVISION",
+        "EXACT_SERVER_CANONICAL_CONTENT_HASH",
+        "EXACT_WORKING_COPY_CANONICAL_DESIGN_DSL_BYTES",
+        "CANONICAL_BASELINE_PROJECTION_ENCODER"
+      ],
+      "binding": {
+        "status": "UNBOUND",
+        "reasonCode": "EXACT_EDITOR_CONTENT_SOURCE_ARTIFACT_MISSING"
+      }
+    },
+    {
+      "sourceSlotId": "ECS::J02::011::PA010",
+      "candidateId": "EDC::J02::011",
+      "planAssertionId": "PA010",
+      "scenarioSlug": "overwrite-clears-local-history",
+      "probeId": "editor.canonicalBaselineBytes",
+      "sourceKind": "CANONICAL_BASELINE",
+      "acquisitionMode": "SERVER_CANONICAL_RESPONSE",
+      "semanticInputFixture": {
+        "path": "editor-automated/input-fixtures/edc-j02-011.json",
+        "sha256": "sha256:99900e250e9871f13e4431652118917c3e95e2f51526b4bd99c69421d75fecdd",
+        "byteLength": 389
+      },
+      "prerequisiteIds": [
+        "EXACT_SERVER_CANONICAL_REVISION",
+        "EXACT_SERVER_CANONICAL_CONTENT_HASH",
+        "EXACT_WORKING_COPY_CANONICAL_DESIGN_DSL_BYTES",
+        "CANONICAL_BASELINE_PROJECTION_ENCODER"
+      ],
+      "binding": {
+        "status": "UNBOUND",
+        "reasonCode": "EXACT_EDITOR_CONTENT_SOURCE_ARTIFACT_MISSING"
+      }
+    },
+    {
+      "sourceSlotId": "ECS::J02::012::PA010",
+      "candidateId": "EDC::J02::012",
+      "planAssertionId": "PA010",
+      "scenarioSlug": "revision-restore-clears-local-history",
+      "probeId": "editor.canonicalBaselineBytes",
+      "sourceKind": "CANONICAL_BASELINE",
+      "acquisitionMode": "SERVER_CANONICAL_RESPONSE",
+      "semanticInputFixture": {
+        "path": "editor-automated/input-fixtures/edc-j02-012.json",
+        "sha256": "sha256:197b26295797ac0284816a6dac7bcc52fc14f25c365873de05f9e3ecc4cdc8e6",
+        "byteLength": 409
+      },
+      "prerequisiteIds": [
+        "EXACT_SERVER_CANONICAL_REVISION",
+        "EXACT_SERVER_CANONICAL_CONTENT_HASH",
+        "EXACT_WORKING_COPY_CANONICAL_DESIGN_DSL_BYTES",
+        "CANONICAL_BASELINE_PROJECTION_ENCODER"
+      ],
+      "binding": {
+        "status": "UNBOUND",
+        "reasonCode": "EXACT_EDITOR_CONTENT_SOURCE_ARTIFACT_MISSING"
+      }
+    },
+    {
+      "sourceSlotId": "ECS::J02::013::PA010",
+      "candidateId": "EDC::J02::013",
+      "planAssertionId": "PA010",
+      "scenarioSlug": "whole-template-copy-or-create-clears-history",
+      "probeId": "editor.canonicalBaselineBytes",
+      "sourceKind": "CANONICAL_BASELINE",
+      "acquisitionMode": "SERVER_CANONICAL_RESPONSE",
+      "semanticInputFixture": {
+        "path": "editor-automated/input-fixtures/edc-j02-013.json",
+        "sha256": "sha256:121cb4bad44ff7587d4795f17a5308a2e8715ea2a198d89d40f23d426c7abb3c",
+        "byteLength": 378
+      },
+      "prerequisiteIds": [
+        "EXACT_SERVER_CANONICAL_REVISION",
+        "EXACT_SERVER_CANONICAL_CONTENT_HASH",
+        "EXACT_WORKING_COPY_CANONICAL_DESIGN_DSL_BYTES",
+        "CANONICAL_BASELINE_PROJECTION_ENCODER"
+      ],
+      "binding": {
+        "status": "UNBOUND",
+        "reasonCode": "EXACT_EDITOR_CONTENT_SOURCE_ARTIFACT_MISSING"
+      }
+    },
+    {
+      "sourceSlotId": "ECS::J03::007::PA011",
+      "candidateId": "EDC::J03::007",
+      "planAssertionId": "PA011",
+      "scenarioSlug": "binding-remove-to-unbound",
+      "probeId": "editor.workingCopyDigest",
+      "sourceKind": "WORKING_COPY_CANONICAL_DESIGN_DSL",
+      "acquisitionMode": "POST_SETTLED_ACTION_WORKING_COPY",
+      "semanticInputFixture": {
+        "path": "editor-automated/input-fixtures/edc-j03-007.json",
+        "sha256": "sha256:b0a7b0cd5a366e611807276637fd4bef0c8a708a5512b1e489931183e05bbf09",
+        "byteLength": 357
+      },
+      "prerequisiteIds": [
+        "EXACT_WORKING_COPY_CANONICAL_DESIGN_DSL_BYTES"
+      ],
+      "binding": {
+        "status": "UNBOUND",
+        "reasonCode": "EXACT_EDITOR_CONTENT_SOURCE_ARTIFACT_MISSING"
+      }
+    },
+    {
+      "sourceSlotId": "ECS::J04::001::PA011",
+      "candidateId": "EDC::J04::001",
+      "planAssertionId": "PA011",
+      "scenarioSlug": "array-reorder-single-target",
+      "probeId": "editor.workingCopyDigest",
+      "sourceKind": "WORKING_COPY_CANONICAL_DESIGN_DSL",
+      "acquisitionMode": "POST_SETTLED_ACTION_WORKING_COPY",
+      "semanticInputFixture": {
+        "path": "editor-automated/input-fixtures/edc-j04-001.json",
+        "sha256": "sha256:fd9f7a0ce1b6b7a9059760a7a430424dc663bd4a08325c85092d00a0186c89e0",
+        "byteLength": 421
+      },
+      "prerequisiteIds": [
+        "EXACT_WORKING_COPY_CANONICAL_DESIGN_DSL_BYTES"
+      ],
+      "binding": {
+        "status": "UNBOUND",
+        "reasonCode": "EXACT_EDITOR_CONTENT_SOURCE_ARTIFACT_MISSING"
+      }
+    },
+    {
+      "sourceSlotId": "ECS::J04::002::PA011",
+      "candidateId": "EDC::J04::002",
+      "planAssertionId": "PA011",
+      "scenarioSlug": "array-reorder-multiple-targets",
+      "probeId": "editor.workingCopyDigest",
+      "sourceKind": "WORKING_COPY_CANONICAL_DESIGN_DSL",
+      "acquisitionMode": "POST_SETTLED_ACTION_WORKING_COPY",
+      "semanticInputFixture": {
+        "path": "editor-automated/input-fixtures/edc-j04-002.json",
+        "sha256": "sha256:3d940628f3705e747a1d873fd43c3ff2d6464f98f8e916e18ca94833a7ad5dd3",
+        "byteLength": 427
+      },
+      "prerequisiteIds": [
+        "EXACT_WORKING_COPY_CANONICAL_DESIGN_DSL_BYTES"
+      ],
+      "binding": {
+        "status": "UNBOUND",
+        "reasonCode": "EXACT_EDITOR_CONTENT_SOURCE_ARTIFACT_MISSING"
+      }
+    },
+    {
+      "sourceSlotId": "ECS::J04::003::PA011",
+      "candidateId": "EDC::J04::003",
+      "planAssertionId": "PA011",
+      "scenarioSlug": "array-reorder-overlap-rejected",
+      "probeId": "editor.workingCopyDigest",
+      "sourceKind": "WORKING_COPY_CANONICAL_DESIGN_DSL",
+      "acquisitionMode": "POST_SETTLED_ACTION_WORKING_COPY",
+      "semanticInputFixture": {
+        "path": "editor-automated/input-fixtures/edc-j04-003.json",
+        "sha256": "sha256:58706f03037b18adc1d41275984f1e8d7da78228723270d638576d7cfbc69193",
+        "byteLength": 427
+      },
+      "prerequisiteIds": [
+        "EXACT_WORKING_COPY_CANONICAL_DESIGN_DSL_BYTES"
+      ],
+      "binding": {
+        "status": "UNBOUND",
+        "reasonCode": "EXACT_EDITOR_CONTENT_SOURCE_ARTIFACT_MISSING"
+      }
+    },
+    {
+      "sourceSlotId": "ECS::J04::004::PA011",
+      "candidateId": "EDC::J04::004",
+      "planAssertionId": "PA011",
+      "scenarioSlug": "array-reorder-out-of-bounds-rejected",
+      "probeId": "editor.workingCopyDigest",
+      "sourceKind": "WORKING_COPY_CANONICAL_DESIGN_DSL",
+      "acquisitionMode": "POST_SETTLED_ACTION_WORKING_COPY",
+      "semanticInputFixture": {
+        "path": "editor-automated/input-fixtures/edc-j04-004.json",
+        "sha256": "sha256:0c93e61f530f71a3aa6e77ab2d4488f5e6c5a3aacdcd42675920298b88f3d631",
+        "byteLength": 422
+      },
+      "prerequisiteIds": [
+        "EXACT_WORKING_COPY_CANONICAL_DESIGN_DSL_BYTES"
+      ],
+      "binding": {
+        "status": "UNBOUND",
+        "reasonCode": "EXACT_EDITOR_CONTENT_SOURCE_ARTIFACT_MISSING"
+      }
+    },
+    {
+      "sourceSlotId": "ECS::J04::005::PA011",
+      "candidateId": "EDC::J04::005",
+      "planAssertionId": "PA011",
+      "scenarioSlug": "array-reorder-duplicate-target-rejected",
+      "probeId": "editor.workingCopyDigest",
+      "sourceKind": "WORKING_COPY_CANONICAL_DESIGN_DSL",
+      "acquisitionMode": "POST_SETTLED_ACTION_WORKING_COPY",
+      "semanticInputFixture": {
+        "path": "editor-automated/input-fixtures/edc-j04-005.json",
+        "sha256": "sha256:222d94082fa5b2284c34ff8f909eb96c2f7a5a8a1de9c9a98815854a87d2c48a",
+        "byteLength": 436
+      },
+      "prerequisiteIds": [
+        "EXACT_WORKING_COPY_CANONICAL_DESIGN_DSL_BYTES"
+      ],
+      "binding": {
+        "status": "UNBOUND",
+        "reasonCode": "EXACT_EDITOR_CONTENT_SOURCE_ARTIFACT_MISSING"
+      }
+    },
+    {
+      "sourceSlotId": "ECS::J06::001::PA010",
+      "candidateId": "EDC::J06::001",
+      "planAssertionId": "PA010",
+      "scenarioSlug": "save-normalization-summary",
+      "probeId": "editor.canonicalBaselineBytes",
+      "sourceKind": "CANONICAL_BASELINE",
+      "acquisitionMode": "SERVER_CANONICAL_RESPONSE",
+      "semanticInputFixture": {
+        "path": "editor-automated/input-fixtures/edc-j06-001.json",
+        "sha256": "sha256:f2d37b79e48f5953aaa5e48d250c4b07bfaacf4543c194761e4f137cc6f1bcd1",
+        "byteLength": 430
+      },
+      "prerequisiteIds": [
+        "EXACT_SERVER_CANONICAL_REVISION",
+        "EXACT_SERVER_CANONICAL_CONTENT_HASH",
+        "EXACT_WORKING_COPY_CANONICAL_DESIGN_DSL_BYTES",
+        "CANONICAL_BASELINE_PROJECTION_ENCODER"
+      ],
+      "binding": {
+        "status": "UNBOUND",
+        "reasonCode": "EXACT_EDITOR_CONTENT_SOURCE_ARTIFACT_MISSING"
+      }
+    },
+    {
+      "sourceSlotId": "ECS::J06::002::PA010",
+      "candidateId": "EDC::J06::002",
+      "planAssertionId": "PA010",
+      "scenarioSlug": "save-preserves-expression-unicode",
+      "probeId": "editor.canonicalBaselineBytes",
+      "sourceKind": "CANONICAL_BASELINE",
+      "acquisitionMode": "SERVER_CANONICAL_RESPONSE",
+      "semanticInputFixture": {
+        "path": "editor-automated/input-fixtures/edc-j06-002.json",
+        "sha256": "sha256:d6886af75c0de58882517356635f2b45ed16d1ee278fe0261cbcc2cb36450913",
+        "byteLength": 325
+      },
+      "prerequisiteIds": [
+        "EXACT_SERVER_CANONICAL_REVISION",
+        "EXACT_SERVER_CANONICAL_CONTENT_HASH",
+        "EXACT_WORKING_COPY_CANONICAL_DESIGN_DSL_BYTES",
+        "CANONICAL_BASELINE_PROJECTION_ENCODER"
+      ],
+      "binding": {
+        "status": "UNBOUND",
+        "reasonCode": "EXACT_EDITOR_CONTENT_SOURCE_ARTIFACT_MISSING"
+      }
+    },
+    {
+      "sourceSlotId": "ECS::J06::003::PA010",
+      "candidateId": "EDC::J06::003",
+      "planAssertionId": "PA010",
+      "scenarioSlug": "save-preserves-semantic-arrays-fields",
+      "probeId": "editor.canonicalBaselineBytes",
+      "sourceKind": "CANONICAL_BASELINE",
+      "acquisitionMode": "SERVER_CANONICAL_RESPONSE",
+      "semanticInputFixture": {
+        "path": "editor-automated/input-fixtures/edc-j06-003.json",
+        "sha256": "sha256:7e90e5d394405e2dacfa69ceb6e6dfc34ea555558a280020538d407305f2d3d1",
+        "byteLength": 329
+      },
+      "prerequisiteIds": [
+        "EXACT_SERVER_CANONICAL_REVISION",
+        "EXACT_SERVER_CANONICAL_CONTENT_HASH",
+        "EXACT_WORKING_COPY_CANONICAL_DESIGN_DSL_BYTES",
+        "CANONICAL_BASELINE_PROJECTION_ENCODER"
+      ],
+      "binding": {
+        "status": "UNBOUND",
+        "reasonCode": "EXACT_EDITOR_CONTENT_SOURCE_ARTIFACT_MISSING"
+      }
+    },
+    {
+      "sourceSlotId": "ECS::J07::002::PA010",
+      "candidateId": "EDC::J07::002",
+      "planAssertionId": "PA010",
+      "scenarioSlug": "dependency-confirmation-commits-invalid",
+      "probeId": "editor.canonicalBaselineBytes",
+      "sourceKind": "CANONICAL_BASELINE",
+      "acquisitionMode": "SERVER_CANONICAL_RESPONSE",
+      "semanticInputFixture": {
+        "path": "editor-automated/input-fixtures/edc-j07-002.json",
+        "sha256": "sha256:12438c15ae8fb4710d3661ea34d4aa4ccaee8b5027c6ee176e0286b2cedd4633",
+        "byteLength": 352
+      },
+      "prerequisiteIds": [
+        "EXACT_SERVER_CANONICAL_REVISION",
+        "EXACT_SERVER_CANONICAL_CONTENT_HASH",
+        "EXACT_WORKING_COPY_CANONICAL_DESIGN_DSL_BYTES",
+        "CANONICAL_BASELINE_PROJECTION_ENCODER"
+      ],
+      "binding": {
+        "status": "UNBOUND",
+        "reasonCode": "EXACT_EDITOR_CONTENT_SOURCE_ARTIFACT_MISSING"
+      }
+    },
+    {
+      "sourceSlotId": "ECS::J08::001::PA011",
+      "candidateId": "EDC::J08::001",
+      "planAssertionId": "PA011",
+      "scenarioSlug": "first-conflict-preserves-local",
+      "probeId": "editor.workingCopyDigest",
+      "sourceKind": "WORKING_COPY_CANONICAL_DESIGN_DSL",
+      "acquisitionMode": "POST_SETTLED_ACTION_WORKING_COPY",
+      "semanticInputFixture": {
+        "path": "editor-automated/input-fixtures/edc-j08-001.json",
+        "sha256": "sha256:2718ff08f353ab6e5f538c67179f313b8994dc978f2da48ef07cbe278a14dc75",
+        "byteLength": 325
+      },
+      "prerequisiteIds": [
+        "EXACT_WORKING_COPY_CANONICAL_DESIGN_DSL_BYTES"
+      ],
+      "binding": {
+        "status": "UNBOUND",
+        "reasonCode": "EXACT_EDITOR_CONTENT_SOURCE_ARTIFACT_MISSING"
+      }
+    },
+    {
+      "sourceSlotId": "ECS::J08::002::PA010",
+      "candidateId": "EDC::J08::002",
+      "planAssertionId": "PA010",
+      "scenarioSlug": "confirmed-overwrite-fresh-revision",
+      "probeId": "editor.canonicalBaselineBytes",
+      "sourceKind": "CANONICAL_BASELINE",
+      "acquisitionMode": "SERVER_CANONICAL_RESPONSE",
+      "semanticInputFixture": {
+        "path": "editor-automated/input-fixtures/edc-j08-002.json",
+        "sha256": "sha256:71517d2a4d7ff311658fad2682819d40cc2ae1a7fed72ad13a1ff6482dde67f0",
+        "byteLength": 502
+      },
+      "prerequisiteIds": [
+        "EXACT_SERVER_CANONICAL_REVISION",
+        "EXACT_SERVER_CANONICAL_CONTENT_HASH",
+        "EXACT_WORKING_COPY_CANONICAL_DESIGN_DSL_BYTES",
+        "CANONICAL_BASELINE_PROJECTION_ENCODER"
+      ],
+      "binding": {
+        "status": "UNBOUND",
+        "reasonCode": "EXACT_EDITOR_CONTENT_SOURCE_ARTIFACT_MISSING"
+      }
+    },
+    {
+      "sourceSlotId": "ECS::J08::003::PA011",
+      "candidateId": "EDC::J08::003",
+      "planAssertionId": "PA011",
+      "scenarioSlug": "second-drift-requires-new-confirmation",
+      "probeId": "editor.workingCopyDigest",
+      "sourceKind": "WORKING_COPY_CANONICAL_DESIGN_DSL",
+      "acquisitionMode": "POST_SETTLED_ACTION_WORKING_COPY",
+      "semanticInputFixture": {
+        "path": "editor-automated/input-fixtures/edc-j08-003.json",
+        "sha256": "sha256:79e3027e7b12a61638e5cb2cb97a472e0fb41bca912c5dc0011d5dad6a07a788",
+        "byteLength": 426
+      },
+      "prerequisiteIds": [
+        "EXACT_WORKING_COPY_CANONICAL_DESIGN_DSL_BYTES"
+      ],
+      "binding": {
+        "status": "UNBOUND",
+        "reasonCode": "EXACT_EDITOR_CONTENT_SOURCE_ARTIFACT_MISSING"
+      }
+    },
+    {
+      "sourceSlotId": "ECS::J09::001::PA011",
+      "candidateId": "EDC::J09::001",
+      "planAssertionId": "PA011",
+      "scenarioSlug": "transport-unknown-enters-reconciliation",
+      "probeId": "editor.workingCopyDigest",
+      "sourceKind": "WORKING_COPY_CANONICAL_DESIGN_DSL",
+      "acquisitionMode": "POST_SETTLED_ACTION_WORKING_COPY",
+      "semanticInputFixture": {
+        "path": "editor-automated/input-fixtures/edc-j09-001.json",
+        "sha256": "sha256:e76a1611d519ac3edf41079ff03af37e8044ad7caf55ec9cc84db9861be4371f",
+        "byteLength": 314
+      },
+      "prerequisiteIds": [
+        "EXACT_WORKING_COPY_CANONICAL_DESIGN_DSL_BYTES"
+      ],
+      "binding": {
+        "status": "UNBOUND",
+        "reasonCode": "EXACT_EDITOR_CONTENT_SOURCE_ARTIFACT_MISSING"
+      }
+    },
+    {
+      "sourceSlotId": "ECS::J09::002::PA011",
+      "candidateId": "EDC::J09::002",
+      "planAssertionId": "PA011",
+      "scenarioSlug": "reconcile-converged-content",
+      "probeId": "editor.workingCopyDigest",
+      "sourceKind": "WORKING_COPY_CANONICAL_DESIGN_DSL",
+      "acquisitionMode": "POST_SETTLED_ACTION_WORKING_COPY",
+      "semanticInputFixture": {
+        "path": "editor-automated/input-fixtures/edc-j09-002.json",
+        "sha256": "sha256:1bb1ba53b21aea4388aef06d2788bf36e1dcec9a068a2f7f1b7a2934bd196752",
+        "byteLength": 320
+      },
+      "prerequisiteIds": [
+        "EXACT_WORKING_COPY_CANONICAL_DESIGN_DSL_BYTES"
+      ],
+      "binding": {
+        "status": "UNBOUND",
+        "reasonCode": "EXACT_EDITOR_CONTENT_SOURCE_ARTIFACT_MISSING"
+      }
+    },
+    {
+      "sourceSlotId": "ECS::J09::003::PA011",
+      "candidateId": "EDC::J09::003",
+      "planAssertionId": "PA011",
+      "scenarioSlug": "reconcile-safe-explicit-retry",
+      "probeId": "editor.workingCopyDigest",
+      "sourceKind": "WORKING_COPY_CANONICAL_DESIGN_DSL",
+      "acquisitionMode": "POST_SETTLED_ACTION_WORKING_COPY",
+      "semanticInputFixture": {
+        "path": "editor-automated/input-fixtures/edc-j09-003.json",
+        "sha256": "sha256:9d695046fb326da5fb9d6002f62d838fa731a5ab1ec0ad92d2638ff49f18979b",
+        "byteLength": 397
+      },
+      "prerequisiteIds": [
+        "EXACT_WORKING_COPY_CANONICAL_DESIGN_DSL_BYTES"
+      ],
+      "binding": {
+        "status": "UNBOUND",
+        "reasonCode": "EXACT_EDITOR_CONTENT_SOURCE_ARTIFACT_MISSING"
+      }
+    },
+    {
+      "sourceSlotId": "ECS::J09::004::PA011",
+      "candidateId": "EDC::J09::004",
+      "planAssertionId": "PA011",
+      "scenarioSlug": "reconcile-enters-conflict",
+      "probeId": "editor.workingCopyDigest",
+      "sourceKind": "WORKING_COPY_CANONICAL_DESIGN_DSL",
+      "acquisitionMode": "POST_SETTLED_ACTION_WORKING_COPY",
+      "semanticInputFixture": {
+        "path": "editor-automated/input-fixtures/edc-j09-004.json",
+        "sha256": "sha256:e498db3d296f358386b98d487a287cf8e858d391de934aff1877455105084d63",
+        "byteLength": 320
+      },
+      "prerequisiteIds": [
+        "EXACT_WORKING_COPY_CANONICAL_DESIGN_DSL_BYTES"
+      ],
+      "binding": {
+        "status": "UNBOUND",
+        "reasonCode": "EXACT_EDITOR_CONTENT_SOURCE_ARTIFACT_MISSING"
+      }
+    },
+    {
+      "sourceSlotId": "ECS::J09::005::PA011",
+      "candidateId": "EDC::J09::005",
+      "planAssertionId": "PA011",
+      "scenarioSlug": "reconcile-deleted-readonly",
+      "probeId": "editor.workingCopyDigest",
+      "sourceKind": "WORKING_COPY_CANONICAL_DESIGN_DSL",
+      "acquisitionMode": "POST_SETTLED_ACTION_WORKING_COPY",
+      "semanticInputFixture": {
+        "path": "editor-automated/input-fixtures/edc-j09-005.json",
+        "sha256": "sha256:08126c5fba4e3759aa7aafeee8dedb88d59b771d65e0d13c78bdc907c32e6f3c",
+        "byteLength": 320
+      },
+      "prerequisiteIds": [
+        "EXACT_WORKING_COPY_CANONICAL_DESIGN_DSL_BYTES"
+      ],
+      "binding": {
+        "status": "UNBOUND",
+        "reasonCode": "EXACT_EDITOR_CONTENT_SOURCE_ARTIFACT_MISSING"
+      }
+    },
+    {
+      "sourceSlotId": "ECS::J09::006::PA011",
+      "candidateId": "EDC::J09::006",
+      "planAssertionId": "PA011",
+      "scenarioSlug": "reconcile-integrity-fails-closed",
+      "probeId": "editor.workingCopyDigest",
+      "sourceKind": "WORKING_COPY_CANONICAL_DESIGN_DSL",
+      "acquisitionMode": "POST_SETTLED_ACTION_WORKING_COPY",
+      "semanticInputFixture": {
+        "path": "editor-automated/input-fixtures/edc-j09-006.json",
+        "sha256": "sha256:ab424ab6b860d3c1c0c6bf90536df65e1087312e3d56ec0bf88a2b9e40b2c0b3",
+        "byteLength": 320
+      },
+      "prerequisiteIds": [
+        "EXACT_WORKING_COPY_CANONICAL_DESIGN_DSL_BYTES"
+      ],
+      "binding": {
+        "status": "UNBOUND",
+        "reasonCode": "EXACT_EDITOR_CONTENT_SOURCE_ARTIFACT_MISSING"
+      }
+    },
+    {
+      "sourceSlotId": "ECS::J09::007::PA011",
+      "candidateId": "EDC::J09::007",
+      "planAssertionId": "PA011",
+      "scenarioSlug": "reconcile-unreadable-remains-unknown",
+      "probeId": "editor.workingCopyDigest",
+      "sourceKind": "WORKING_COPY_CANONICAL_DESIGN_DSL",
+      "acquisitionMode": "POST_SETTLED_ACTION_WORKING_COPY",
+      "semanticInputFixture": {
+        "path": "editor-automated/input-fixtures/edc-j09-007.json",
+        "sha256": "sha256:fb981f53a5143390c57dc93c67c035ec60e867fc3e8fe6c1d335e53dafa3caf2",
+        "byteLength": 472
+      },
+      "prerequisiteIds": [
+        "EXACT_WORKING_COPY_CANONICAL_DESIGN_DSL_BYTES"
+      ],
+      "binding": {
+        "status": "UNBOUND",
+        "reasonCode": "EXACT_EDITOR_CONTENT_SOURCE_ARTIFACT_MISSING"
+      }
+    },
+    {
+      "sourceSlotId": "ECS::J09::008::PA011",
+      "candidateId": "EDC::J09::008",
+      "planAssertionId": "PA011",
+      "scenarioSlug": "reopen-resumes-reconciliation",
+      "probeId": "editor.workingCopyDigest",
+      "sourceKind": "WORKING_COPY_CANONICAL_DESIGN_DSL",
+      "acquisitionMode": "POST_SETTLED_ACTION_WORKING_COPY",
+      "semanticInputFixture": {
+        "path": "editor-automated/input-fixtures/edc-j09-008.json",
+        "sha256": "sha256:fa0703ec14cd5e918bf96f3224a33bf023d49876fef3efcec702e63afacd78f6",
+        "byteLength": 400
+      },
+      "prerequisiteIds": [
+        "EXACT_WORKING_COPY_CANONICAL_DESIGN_DSL_BYTES"
+      ],
+      "binding": {
+        "status": "UNBOUND",
+        "reasonCode": "EXACT_EDITOR_CONTENT_SOURCE_ARTIFACT_MISSING"
+      }
+    },
+    {
+      "sourceSlotId": "ECS::J10::001::PA012",
+      "candidateId": "EDC::J10::001",
+      "planAssertionId": "PA012",
+      "scenarioSlug": "recovery-reopen-offers-actions",
+      "probeId": "editor.workingCopyDigest",
+      "sourceKind": "WORKING_COPY_CANONICAL_DESIGN_DSL",
+      "acquisitionMode": "POST_SETTLED_ACTION_WORKING_COPY",
+      "semanticInputFixture": {
+        "path": "editor-automated/input-fixtures/edc-j10-001.json",
+        "sha256": "sha256:94465d4775d462638d4b9c930f5fb9b704f9e6add4afa6551717b238479b70e7",
+        "byteLength": 322
+      },
+      "prerequisiteIds": [
+        "EXACT_WORKING_COPY_CANONICAL_DESIGN_DSL_BYTES"
+      ],
+      "binding": {
+        "status": "UNBOUND",
+        "reasonCode": "EXACT_EDITOR_CONTENT_SOURCE_ARTIFACT_MISSING"
+      }
+    },
+    {
+      "sourceSlotId": "ECS::J10::002::PA012",
+      "candidateId": "EDC::J10::002",
+      "planAssertionId": "PA012",
+      "scenarioSlug": "recovery-restore-same-base",
+      "probeId": "editor.workingCopyDigest",
+      "sourceKind": "WORKING_COPY_CANONICAL_DESIGN_DSL",
+      "acquisitionMode": "POST_SETTLED_ACTION_WORKING_COPY",
+      "semanticInputFixture": {
+        "path": "editor-automated/input-fixtures/edc-j10-002.json",
+        "sha256": "sha256:c342aae5e0f448da838c90daa3f96780f3e4f2aff7a5641c6dad44d11bed2842",
+        "byteLength": 326
+      },
+      "prerequisiteIds": [
+        "EXACT_WORKING_COPY_CANONICAL_DESIGN_DSL_BYTES"
+      ],
+      "binding": {
+        "status": "UNBOUND",
+        "reasonCode": "EXACT_EDITOR_CONTENT_SOURCE_ARTIFACT_MISSING"
+      }
+    },
+    {
+      "sourceSlotId": "ECS::J10::003::PA012",
+      "candidateId": "EDC::J10::003",
+      "planAssertionId": "PA012",
+      "scenarioSlug": "recovery-restore-advanced-base",
+      "probeId": "editor.workingCopyDigest",
+      "sourceKind": "WORKING_COPY_CANONICAL_DESIGN_DSL",
+      "acquisitionMode": "POST_SETTLED_ACTION_WORKING_COPY",
+      "semanticInputFixture": {
+        "path": "editor-automated/input-fixtures/edc-j10-003.json",
+        "sha256": "sha256:3ff762d20c2cc8b9f4bc915c8284783b31276024537e5f72b763c17be8efa1e5",
+        "byteLength": 414
+      },
+      "prerequisiteIds": [
+        "EXACT_WORKING_COPY_CANONICAL_DESIGN_DSL_BYTES"
+      ],
+      "binding": {
+        "status": "UNBOUND",
+        "reasonCode": "EXACT_EDITOR_CONTENT_SOURCE_ARTIFACT_MISSING"
+      }
+    },
+    {
+      "sourceSlotId": "ECS::J10::004::PA011",
+      "candidateId": "EDC::J10::004",
+      "planAssertionId": "PA011",
+      "scenarioSlug": "recovery-export",
+      "probeId": "editor.workingCopyDigest",
+      "sourceKind": "WORKING_COPY_CANONICAL_DESIGN_DSL",
+      "acquisitionMode": "POST_SETTLED_ACTION_WORKING_COPY",
+      "semanticInputFixture": {
+        "path": "editor-automated/input-fixtures/edc-j10-004.json",
+        "sha256": "sha256:c727b648d035ba2b44933823f2f089ace22d67c8d6d63e52cf61ef0a8ef6c9d7",
+        "byteLength": 330
+      },
+      "prerequisiteIds": [
+        "EXACT_WORKING_COPY_CANONICAL_DESIGN_DSL_BYTES"
+      ],
+      "binding": {
+        "status": "UNBOUND",
+        "reasonCode": "EXACT_EDITOR_CONTENT_SOURCE_ARTIFACT_MISSING"
+      }
+    },
+    {
+      "sourceSlotId": "ECS::J10::005::PA011",
+      "candidateId": "EDC::J10::005",
+      "planAssertionId": "PA011",
+      "scenarioSlug": "recovery-discard",
+      "probeId": "editor.workingCopyDigest",
+      "sourceKind": "WORKING_COPY_CANONICAL_DESIGN_DSL",
+      "acquisitionMode": "POST_SETTLED_ACTION_WORKING_COPY",
+      "semanticInputFixture": {
+        "path": "editor-automated/input-fixtures/edc-j10-005.json",
+        "sha256": "sha256:079cdf2c48e21b791351d6e3efadcd0a0d0c877f3df9a2214a57349f4b083bb8",
+        "byteLength": 331
+      },
+      "prerequisiteIds": [
+        "EXACT_WORKING_COPY_CANONICAL_DESIGN_DSL_BYTES"
+      ],
+      "binding": {
+        "status": "UNBOUND",
+        "reasonCode": "EXACT_EDITOR_CONTENT_SOURCE_ARTIFACT_MISSING"
+      }
+    },
+    {
+      "sourceSlotId": "ECS::J10::006::PA011",
+      "candidateId": "EDC::J10::006",
+      "planAssertionId": "PA011",
+      "scenarioSlug": "recovery-minimal-content",
+      "probeId": "editor.workingCopyDigest",
+      "sourceKind": "WORKING_COPY_CANONICAL_DESIGN_DSL",
+      "acquisitionMode": "POST_SETTLED_ACTION_WORKING_COPY",
+      "semanticInputFixture": {
+        "path": "editor-automated/input-fixtures/edc-j10-006.json",
+        "sha256": "sha256:9f27318ec2c514aabeb9307382bb20538f02c07026024d36d78076e2c75c91a2",
+        "byteLength": 353
+      },
+      "prerequisiteIds": [
+        "EXACT_WORKING_COPY_CANONICAL_DESIGN_DSL_BYTES"
+      ],
+      "binding": {
+        "status": "UNBOUND",
+        "reasonCode": "EXACT_EDITOR_CONTENT_SOURCE_ARTIFACT_MISSING"
+      }
+    },
+    {
+      "sourceSlotId": "ECS::J10::007::PA014",
+      "candidateId": "EDC::J10::007",
+      "planAssertionId": "PA014",
+      "scenarioSlug": "valid-import-becomes-dirty-draft",
+      "probeId": "editor.workingCopyDigest",
+      "sourceKind": "WORKING_COPY_CANONICAL_DESIGN_DSL",
+      "acquisitionMode": "POST_SETTLED_ACTION_WORKING_COPY",
+      "semanticInputFixture": {
+        "path": "editor-automated/input-fixtures/edc-j10-007.json",
+        "sha256": "sha256:203929c3812a2deae5f779d393eabc9aeff5ed9928f68dffab59688409b568e5",
+        "byteLength": 400
+      },
+      "prerequisiteIds": [
+        "EXACT_WORKING_COPY_CANONICAL_DESIGN_DSL_BYTES"
+      ],
+      "binding": {
+        "status": "UNBOUND",
+        "reasonCode": "EXACT_EDITOR_CONTENT_SOURCE_ARTIFACT_MISSING"
+      }
+    },
+    {
+      "sourceSlotId": "ECS::J10::009::PA012",
+      "candidateId": "EDC::J10::009",
+      "planAssertionId": "PA012",
+      "scenarioSlug": "raw-repair-valid-transition",
+      "probeId": "editor.workingCopyDigest",
+      "sourceKind": "WORKING_COPY_CANONICAL_DESIGN_DSL",
+      "acquisitionMode": "POST_SETTLED_ACTION_WORKING_COPY",
+      "semanticInputFixture": {
+        "path": "editor-automated/input-fixtures/edc-j10-009.json",
+        "sha256": "sha256:77db0977e7001f957cd08c247e24c73ba3b681bd9a44b26f7a3e11f4c748c1ed",
+        "byteLength": 420
+      },
+      "prerequisiteIds": [
+        "EXACT_WORKING_COPY_CANONICAL_DESIGN_DSL_BYTES"
+      ],
+      "binding": {
+        "status": "UNBOUND",
+        "reasonCode": "EXACT_EDITOR_CONTENT_SOURCE_ARTIFACT_MISSING"
+      }
+    },
+    {
+      "sourceSlotId": "ECS::J10::011::PA015",
+      "candidateId": "EDC::J10::011",
+      "planAssertionId": "PA015",
+      "scenarioSlug": "migration-preview-accepted-dirty",
+      "probeId": "editor.workingCopyDigest",
+      "sourceKind": "WORKING_COPY_CANONICAL_DESIGN_DSL",
+      "acquisitionMode": "POST_SETTLED_ACTION_WORKING_COPY",
+      "semanticInputFixture": {
+        "path": "editor-automated/input-fixtures/edc-j10-011.json",
+        "sha256": "sha256:4c5f95224252d70d16c8b7b06e08c7ff0532d50587917803eb240863d74983bc",
+        "byteLength": 419
+      },
+      "prerequisiteIds": [
+        "EXACT_WORKING_COPY_CANONICAL_DESIGN_DSL_BYTES"
+      ],
+      "binding": {
+        "status": "UNBOUND",
+        "reasonCode": "EXACT_EDITOR_CONTENT_SOURCE_ARTIFACT_MISSING"
+      }
+    },
+    {
+      "sourceSlotId": "ECS::J10::012::PA011",
+      "candidateId": "EDC::J10::012",
+      "planAssertionId": "PA011",
+      "scenarioSlug": "dirty-guard-blocks-replacement",
+      "probeId": "editor.workingCopyDigest",
+      "sourceKind": "WORKING_COPY_CANONICAL_DESIGN_DSL",
+      "acquisitionMode": "ATOMIC_REJECTION_PRESERVES_INITIAL_WORKING_COPY",
+      "semanticInputFixture": {
+        "path": "editor-automated/input-fixtures/edc-j10-012.json",
+        "sha256": "sha256:b1be775873ad272b6dffab3aa6139401fadfc0d86225e35ba62fffe1f1ddcae6",
+        "byteLength": 370
+      },
+      "prerequisiteIds": [
+        "EXACT_WORKING_COPY_CANONICAL_DESIGN_DSL_BYTES"
+      ],
+      "binding": {
+        "status": "EXACT_SOURCE",
+        "adapterKind": "IMMUTABLE_SPEC_FIXTURE",
+        "sourceRecordArtifact": {
+          "path": "editor-automated/content-sources/ecs-j10-012-pa011.json",
+          "sha256": "sha256:fd6b4f3a120ed98ef31f56409140ef31d34c012a4628f700c1eff57f79177d5f",
+          "byteLength": 2456
+        }
+      }
+    },
+    {
+      "sourceSlotId": "ECS::J11::003::PA014",
+      "candidateId": "EDC::J11::003",
+      "planAssertionId": "PA014",
+      "scenarioSlug": "save-and-preview-save-fails",
+      "probeId": "editor.canonicalBaselineBytes",
+      "sourceKind": "CANONICAL_BASELINE",
+      "acquisitionMode": "EXISTING_TRUSTED_BASELINE",
+      "semanticInputFixture": {
+        "path": "editor-automated/input-fixtures/edc-j11-003.json",
+        "sha256": "sha256:7641893f603f4c912928348bf5a8d1eb9d57d19e032c261b53d3148b89557e37",
+        "byteLength": 317
+      },
+      "prerequisiteIds": [
+        "EXACT_SERVER_CANONICAL_REVISION",
+        "EXACT_SERVER_CANONICAL_CONTENT_HASH",
+        "EXACT_WORKING_COPY_CANONICAL_DESIGN_DSL_BYTES",
+        "CANONICAL_BASELINE_PROJECTION_ENCODER"
+      ],
+      "binding": {
+        "status": "UNBOUND",
+        "reasonCode": "EXACT_EDITOR_CONTENT_SOURCE_ARTIFACT_MISSING"
+      }
+    },
+    {
+      "sourceSlotId": "ECS::J11::004::PA014",
+      "candidateId": "EDC::J11::004",
+      "planAssertionId": "PA014",
+      "scenarioSlug": "save-and-preview-invalid-save",
+      "probeId": "editor.canonicalBaselineBytes",
+      "sourceKind": "CANONICAL_BASELINE",
+      "acquisitionMode": "SERVER_CANONICAL_RESPONSE",
+      "semanticInputFixture": {
+        "path": "editor-automated/input-fixtures/edc-j11-004.json",
+        "sha256": "sha256:4d4053e238abf4f0cfd279c2be8e3edd42840103e7caea7fb9c500e121a62f13",
+        "byteLength": 333
+      },
+      "prerequisiteIds": [
+        "EXACT_SERVER_CANONICAL_REVISION",
+        "EXACT_SERVER_CANONICAL_CONTENT_HASH",
+        "EXACT_WORKING_COPY_CANONICAL_DESIGN_DSL_BYTES",
+        "CANONICAL_BASELINE_PROJECTION_ENCODER"
+      ],
+      "binding": {
+        "status": "UNBOUND",
+        "reasonCode": "EXACT_EDITOR_CONTENT_SOURCE_ARTIFACT_MISSING"
+      }
+    },
+    {
+      "sourceSlotId": "ECS::J11::019::PA014",
+      "candidateId": "EDC::J11::019",
+      "planAssertionId": "PA014",
+      "scenarioSlug": "preview-failure-does-not-rollback-save",
+      "probeId": "editor.canonicalBaselineBytes",
+      "sourceKind": "CANONICAL_BASELINE",
+      "acquisitionMode": "EXISTING_TRUSTED_BASELINE",
+      "semanticInputFixture": {
+        "path": "editor-automated/input-fixtures/edc-j11-019.json",
+        "sha256": "sha256:47d7277aa64c471571f69b8e6e83238ee3908e9faedb0daaa000d93e8948eae8",
+        "byteLength": 337
+      },
+      "prerequisiteIds": [
+        "EXACT_SERVER_CANONICAL_REVISION",
+        "EXACT_SERVER_CANONICAL_CONTENT_HASH",
+        "EXACT_WORKING_COPY_CANONICAL_DESIGN_DSL_BYTES",
+        "CANONICAL_BASELINE_PROJECTION_ENCODER"
+      ],
+      "binding": {
+        "status": "UNBOUND",
+        "reasonCode": "EXACT_EDITOR_CONTENT_SOURCE_ARTIFACT_MISSING"
+      }
+    }
+  ],
+  "boundary": "Exactly one Editor-owned immutable dirty-guard fixture freezes canonical DesignDSL bytes and an expected atomic-rejection state proof. The remaining 46 source slots stay UNBOUND; no product adapter, product capture, browser execution, formal record, J1, or READY evidence exists."
+}

@@ -1,0 +1,24 @@
+{
+  "resultVersion": "renderweave-design-input-expression-fixture-generator-result/1.0",
+  "executorId": "DESIGN_INPUT_EXPRESSION_FIXTURE_GENERATOR::NODE::1.0",
+  "role": "primary-design-input-expression-fixture-generator-replayer",
+  "status": "PASS",
+  "checkCount": 2163,
+  "failureCount": 0,
+  "runtime": "Node.js v24.18.0",
+  "generatorTargetSha256": "sha256:2de5c33e7f03c3c1354426882960200344e232ad12ec12d5eae20d80483760c8",
+  "fixtureCount": 196,
+  "productExecutionObserved": false,
+  "recordIssuanceAllowed": false,
+  "implementationRevision": "design-input-expression-fixture-generator/1.0",
+  "targetManifest": {
+    "path": "design-input-expression/generator-target-manifest-v1.json",
+    "sha256": "sha256:2de5c33e7f03c3c1354426882960200344e232ad12ec12d5eae20d80483760c8",
+    "byteLength": 47584
+  },
+  "entrypoint": {
+    "path": "design-input-expression/generate-design-input-expression-fixtures.mjs",
+    "sha256": "sha256:32e6bfc5b6dbd9dbd21b238b1b9a31027f145934830ec9b87b1cce8227370616",
+    "byteLength": 22455
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "artifactVersion": "renderweave-editor-input-fixture/1.0",
+  "candidateId": "EDC::J12::001",
+  "executionClass": "EXEC::EDITOR_AUTOMATED::1.0",
+  "baselineId": "EditorStructuredClean",
+  "parameters": {
+    "assistiveMode": "SCREEN_READER"
+  },
+  "actionScript": [
+    {
+      "action": "TRAVERSE_ACCESSIBILITY_TREE",
+      "parameters": {}
+    }
+  ]
+}

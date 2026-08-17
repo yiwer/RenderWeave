@@ -1,0 +1,18 @@
+{
+  "artifactVersion": "renderweave-editor-fault-schedule/1.0",
+  "candidateId": "EDC::J07::001",
+  "executionClass": "EXEC::EDITOR_AUTOMATED::1.0",
+  "events": [
+    {
+      "at": "SAVE_RESPONSE",
+      "action": "RETURN_COMPLETE_DEPENDENCY_ERROR_SET",
+      "parameters": {}
+    }
+  ],
+  "expectedTerminal": {
+    "operationId": "saveTemplate",
+    "outcome": "PROBLEM",
+    "code": "TEMPLATE_DEPENDENCY_ERROR",
+    "stage": "DESIGN_DEPENDENCY_VALIDATION"
+  }
+}

@@ -1,0 +1,80 @@
+{
+  "artifactVersion": "renderweave-editor-target-binding-contract/1.3",
+  "status": "FROZEN_SEMANTIC_TARGET_RESOLUTION_INTERFACE_PRODUCT_OBSERVATION_PENDING",
+  "executionClass": "EXEC::EDITOR_AUTOMATED::1.0",
+  "module": {
+    "name": "EditorTargetBinding",
+    "interface": "resolve a pending assertion only when one exact expected literal or immutable artifact follows mechanically from already frozen candidate semantics",
+    "seam": "target resolution consumes candidate terminal, network, EditorSemanticProjection, and verified EditorContentSource decisions only; it cannot inspect or invent DOM, accessibility, focus, raw content, transport timing, or persistence internals",
+    "adapter": "future product observations must match these exact expectations and separately bind every still-pending assertion before formal Oracle issuance"
+  },
+  "semanticProjectionContract": {
+    "path": "editor-automated/semantic-projection-contract-v1.json",
+    "sha256": "sha256:bbafb420c5f149d849410b83bf44b09a0f6587d3e0723b1f8d227f8fa118c34a",
+    "byteLength": 5909
+  },
+  "semanticProjectionCatalog": {
+    "path": "editor-automated/semantic-projection-catalog-v1.json",
+    "sha256": "sha256:6754fb53dc412c7711e8d67254cc915db56caf527f256985ca9f8d5cd53e4f6a",
+    "byteLength": 66525
+  },
+  "contentSourceContract": {
+    "path": "editor-automated/content-source-contract-v1.json",
+    "sha256": "sha256:4099e713bc8b7dececce6d9902bd6e1c6d2b5a340dec86d093012328a090ae48",
+    "byteLength": 6011
+  },
+  "contentSourceCatalog": {
+    "path": "editor-automated/content-source-catalog-v1.json",
+    "sha256": "sha256:882d3f4928fefd114662a827d26cf25ddcec675b3cc89f099ce58e41c482d310",
+    "byteLength": 41449
+  },
+  "resolutionRules": [
+    {
+      "ruleId": "EXACT_TERMINAL_VECTOR_ARTIFACT",
+      "probeId": "operation.terminalsBytes",
+      "from": "the candidate's one exact terminal projected to operationId, outcome, optional code, and optional stage",
+      "expectationStatus": "EXACT_ARTIFACT",
+      "artifactProfile": "renderweave-editor-terminal-target/1.0",
+      "encoding": "UTF-8 JSON, two-space indentation, LF line endings, one final LF, root array, member order operationId/outcome/code?/stage?",
+      "mediaType": "application/json"
+    },
+    {
+      "ruleId": "EXACT_NETWORK_REQUEST_SEQUENCE_LITERAL",
+      "probeId": "editor.networkRequestSequence",
+      "from": "the already frozen ordered product-boundary action projection",
+      "expectationStatus": "EXACT_LITERAL"
+    },
+    {
+      "ruleId": "EXACT_COMMAND_RESULT_CODE",
+      "probeId": "editor.commandResult",
+      "from": "the closed EditorSemanticProjection command-result catalog",
+      "expectationStatus": "EXACT_LITERAL"
+    },
+    {
+      "ruleId": "EXACT_PREVIEW_ELIGIBILITY_GENERATION",
+      "probeId": "editor.previewEligibilityGeneration",
+      "from": "the explicit fixture generation start plus the closed candidate transition delta",
+      "expectationStatus": "EXACT_LITERAL"
+    },
+    {
+      "ruleId": "EXACT_WORKING_COPY_DIGEST_FROM_CONTENT_SOURCE",
+      "probeId": "editor.workingCopyDigest",
+      "from": "one EXACT_SOURCE EditorContentSource result whose canonical DesignDSL artifact bytes independently replay to the same SHA-256 digest",
+      "expectationStatus": "EXACT_LITERAL"
+    }
+  ],
+  "unresolvedProbeReasons": {
+    "editor.accessibilityTreeBytes": "Exact accessible names, roles, states, relationships, and tree serialization require an admitted product accessibility observation.",
+    "editor.announcementSequence": "Exact live-region announcement text and order require an admitted product accessibility observation.",
+    "editor.focusSequence": "Exact focus targets and order require an admitted product focus observation.",
+    "editor.previewBasisDigest": "The exact preview-basis source facts and canonical encoder prerequisites are not all frozen.",
+    "editor.problemPanelBytes": "Exact grouped problem-panel projection and serialization require a new atomic contract or admitted product observation.",
+    "editor.canonicalBaselineBytes": "The exact server canonical facts, complete working-copy bytes, and projection encoder prerequisites are not all frozen.",
+    "editor.compatibilityOriginalDigest": "The exact original compatibility payload bytes required for this digest are not frozen in the semantic fixture.",
+    "editor.normalizationSummaryBytes": "The exact before/after bytes, category counts, and summary encoder prerequisites are not all frozen.",
+    "editor.recoveryDraftEnvelopeBytes": "The exact recovery digest, base facts, and envelope encoder prerequisites are not all frozen.",
+    "editor.workingCopyDigest": "The complete resulting working-copy DesignDSL bytes required for this digest are not uniquely derivable from the abstract action plan."
+  },
+  "noInferenceRule": "A pending expectation without one applicable exact rule remains pending; similarity, UI convention, placeholder bytes, a generic default, or a guessed digest is forbidden.",
+  "boundary": "Exact target bindings are acceptance-contract decisions, not product observations. Remaining pending targets stay fail-closed, and all exact targets still require independent product replay."
+}

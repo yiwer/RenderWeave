@@ -1,0 +1,9 @@
+{
+  "fixtureVersion": "renderweave-spec-registry-scenario/1.0",
+  "scenarioId": "SPEC-MUT-002",
+  "scenarioKind": "NAMED_MUTATION",
+  "expectedOutcome": "PROBLEM",
+  "expectedCode": "SPEC_REGISTRY_SCHEMA_INVALID",
+  "expectedStage": "SPEC_REGISTRY",
+  "mutationKind": "ORACLE_SCHEMA_ASSERTION_INVALID"
+}

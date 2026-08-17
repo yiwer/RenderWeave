@@ -1,0 +1,8 @@
+[
+  {
+    "operationId": "authoritativePreview",
+    "outcome": "PROBLEM",
+    "code": "TEMPLATE_CLOSURE_UNSTABLE",
+    "stage": "TEMPLATE_CLOSURE"
+  }
+]

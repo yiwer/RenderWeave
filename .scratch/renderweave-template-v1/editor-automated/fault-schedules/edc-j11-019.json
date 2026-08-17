@@ -1,0 +1,18 @@
+{
+  "artifactVersion": "renderweave-editor-fault-schedule/1.0",
+  "candidateId": "EDC::J11::019",
+  "executionClass": "EXEC::EDITOR_AUTOMATED::1.0",
+  "events": [
+    {
+      "at": "PREVIEW_RESPONSE",
+      "action": "RETURN_RUNTIME_PROBLEM",
+      "parameters": {}
+    }
+  ],
+  "expectedTerminal": {
+    "operationId": "authoritativePreview",
+    "outcome": "PROBLEM",
+    "code": "RENDER_DEADLINE_EXCEEDED",
+    "stage": "ENGINE"
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "artifactVersion": "renderweave-editor-input-fixture/1.0",
+  "candidateId": "EDC::J03::004",
+  "executionClass": "EXEC::EDITOR_AUTOMATED::1.0",
+  "baselineId": "EditorStructuredBindingError",
+  "parameters": {},
+  "actionScript": [
+    {
+      "action": "INSPECT_PROPERTY",
+      "parameters": {
+        "target": "node-text-a.text"
+      }
+    }
+  ]
+}

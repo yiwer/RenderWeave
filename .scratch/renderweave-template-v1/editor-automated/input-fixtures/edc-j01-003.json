@@ -1,0 +1,15 @@
+{
+  "artifactVersion": "renderweave-editor-input-fixture/1.0",
+  "candidateId": "EDC::J01::003",
+  "executionClass": "EXEC::EDITOR_AUTOMATED::1.0",
+  "baselineId": "EditorStructuredWithOpenTemporaryPanel",
+  "parameters": {
+    "triggerLocator": "PROBLEM_SUMMARY_TRIGGER"
+  },
+  "actionScript": [
+    {
+      "action": "PRESS_ESCAPE",
+      "parameters": {}
+    }
+  ]
+}

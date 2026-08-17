@@ -1,0 +1,18 @@
+{
+  "artifactVersion": "renderweave-editor-fault-schedule/1.0",
+  "candidateId": "EDC::J02::012",
+  "executionClass": "EXEC::EDITOR_AUTOMATED::1.0",
+  "events": [
+    {
+      "at": "RESTORE_RESPONSE",
+      "action": "RETURN_CANONICAL_SUCCESS",
+      "parameters": {
+        "revisionDelta": 1
+      }
+    }
+  ],
+  "expectedTerminal": {
+    "operationId": "revision-restore-clears-local-history",
+    "outcome": "SUCCESS"
+  }
+}

@@ -1,0 +1,1825 @@
+{
+  "artifactVersion": "renderweave-spec-registry-coverage/1.0",
+  "status": "FROZEN",
+  "executionClass": "EXEC::SPEC_REGISTRY::1.0",
+  "assignmentRule": "RW-T19-S00-001 plus every active RW-T19-S13 requirement",
+  "assignedRequirementCount": 363,
+  "assignedRequirementIds": [
+    "RW-T19-S00-001",
+    "RW-T19-S13-001",
+    "RW-T19-S13-002",
+    "RW-T19-S13-003",
+    "RW-T19-S13-004",
+    "RW-T19-S13-005",
+    "RW-T19-S13-006",
+    "RW-T19-S13-007",
+    "RW-T19-S13-008",
+    "RW-T19-S13-009",
+    "RW-T19-S13-010",
+    "RW-T19-S13-011",
+    "RW-T19-S13-012",
+    "RW-T19-S13-013",
+    "RW-T19-S13-014",
+    "RW-T19-S13-015",
+    "RW-T19-S13-016",
+    "RW-T19-S13-017",
+    "RW-T19-S13-018",
+    "RW-T19-S13-019",
+    "RW-T19-S13-020",
+    "RW-T19-S13-021",
+    "RW-T19-S13-022",
+    "RW-T19-S13-023",
+    "RW-T19-S13-024",
+    "RW-T19-S13-025",
+    "RW-T19-S13-026",
+    "RW-T19-S13-027",
+    "RW-T19-S13-028",
+    "RW-T19-S13-029",
+    "RW-T19-S13-030",
+    "RW-T19-S13-031",
+    "RW-T19-S13-032",
+    "RW-T19-S13-033",
+    "RW-T19-S13-034",
+    "RW-T19-S13-035",
+    "RW-T19-S13-036",
+    "RW-T19-S13-037",
+    "RW-T19-S13-038",
+    "RW-T19-S13-039",
+    "RW-T19-S13-040",
+    "RW-T19-S13-041",
+    "RW-T19-S13-042",
+    "RW-T19-S13-043",
+    "RW-T19-S13-044",
+    "RW-T19-S13-045",
+    "RW-T19-S13-046",
+    "RW-T19-S13-047",
+    "RW-T19-S13-048",
+    "RW-T19-S13-049",
+    "RW-T19-S13-050",
+    "RW-T19-S13-051",
+    "RW-T19-S13-052",
+    "RW-T19-S13-053",
+    "RW-T19-S13-054",
+    "RW-T19-S13-055",
+    "RW-T19-S13-056",
+    "RW-T19-S13-057",
+    "RW-T19-S13-058",
+    "RW-T19-S13-059",
+    "RW-T19-S13-060",
+    "RW-T19-S13-061",
+    "RW-T19-S13-062",
+    "RW-T19-S13-063",
+    "RW-T19-S13-064",
+    "RW-T19-S13-065",
+    "RW-T19-S13-066",
+    "RW-T19-S13-067",
+    "RW-T19-S13-068",
+    "RW-T19-S13-069",
+    "RW-T19-S13-070",
+    "RW-T19-S13-071",
+    "RW-T19-S13-072",
+    "RW-T19-S13-073",
+    "RW-T19-S13-074",
+    "RW-T19-S13-075",
+    "RW-T19-S13-076",
+    "RW-T19-S13-077",
+    "RW-T19-S13-078",
+    "RW-T19-S13-079",
+    "RW-T19-S13-080",
+    "RW-T19-S13-081",
+    "RW-T19-S13-082",
+    "RW-T19-S13-083",
+    "RW-T19-S13-084",
+    "RW-T19-S13-085",
+    "RW-T19-S13-086",
+    "RW-T19-S13-087",
+    "RW-T19-S13-088",
+    "RW-T19-S13-089",
+    "RW-T19-S13-090",
+    "RW-T19-S13-091",
+    "RW-T19-S13-092",
+    "RW-T19-S13-093",
+    "RW-T19-S13-094",
+    "RW-T19-S13-095",
+    "RW-T19-S13-096",
+    "RW-T19-S13-097",
+    "RW-T19-S13-098",
+    "RW-T19-S13-099",
+    "RW-T19-S13-100",
+    "RW-T19-S13-101",
+    "RW-T19-S13-102",
+    "RW-T19-S13-103",
+    "RW-T19-S13-104",
+    "RW-T19-S13-105",
+    "RW-T19-S13-106",
+    "RW-T19-S13-107",
+    "RW-T19-S13-108",
+    "RW-T19-S13-109",
+    "RW-T19-S13-110",
+    "RW-T19-S13-111",
+    "RW-T19-S13-112",
+    "RW-T19-S13-113",
+    "RW-T19-S13-114",
+    "RW-T19-S13-115",
+    "RW-T19-S13-116",
+    "RW-T19-S13-117",
+    "RW-T19-S13-118",
+    "RW-T19-S13-119",
+    "RW-T19-S13-120",
+    "RW-T19-S13-121",
+    "RW-T19-S13-122",
+    "RW-T19-S13-123",
+    "RW-T19-S13-124",
+    "RW-T19-S13-125",
+    "RW-T19-S13-126",
+    "RW-T19-S13-127",
+    "RW-T19-S13-128",
+    "RW-T19-S13-129",
+    "RW-T19-S13-130",
+    "RW-T19-S13-131",
+    "RW-T19-S13-132",
+    "RW-T19-S13-133",
+    "RW-T19-S13-134",
+    "RW-T19-S13-135",
+    "RW-T19-S13-136",
+    "RW-T19-S13-137",
+    "RW-T19-S13-138",
+    "RW-T19-S13-139",
+    "RW-T19-S13-140",
+    "RW-T19-S13-141",
+    "RW-T19-S13-142",
+    "RW-T19-S13-143",
+    "RW-T19-S13-144",
+    "RW-T19-S13-145",
+    "RW-T19-S13-146",
+    "RW-T19-S13-147",
+    "RW-T19-S13-148",
+    "RW-T19-S13-149",
+    "RW-T19-S13-150",
+    "RW-T19-S13-151",
+    "RW-T19-S13-152",
+    "RW-T19-S13-153",
+    "RW-T19-S13-154",
+    "RW-T19-S13-155",
+    "RW-T19-S13-156",
+    "RW-T19-S13-157",
+    "RW-T19-S13-158",
+    "RW-T19-S13-159",
+    "RW-T19-S13-160",
+    "RW-T19-S13-161",
+    "RW-T19-S13-162",
+    "RW-T19-S13-163",
+    "RW-T19-S13-164",
+    "RW-T19-S13-165",
+    "RW-T19-S13-166",
+    "RW-T19-S13-167",
+    "RW-T19-S13-168",
+    "RW-T19-S13-169",
+    "RW-T19-S13-170",
+    "RW-T19-S13-171",
+    "RW-T19-S13-172",
+    "RW-T19-S13-173",
+    "RW-T19-S13-174",
+    "RW-T19-S13-175",
+    "RW-T19-S13-176",
+    "RW-T19-S13-177",
+    "RW-T19-S13-178",
+    "RW-T19-S13-179",
+    "RW-T19-S13-180",
+    "RW-T19-S13-181",
+    "RW-T19-S13-182",
+    "RW-T19-S13-183",
+    "RW-T19-S13-184",
+    "RW-T19-S13-185",
+    "RW-T19-S13-186",
+    "RW-T19-S13-187",
+    "RW-T19-S13-188",
+    "RW-T19-S13-189",
+    "RW-T19-S13-190",
+    "RW-T19-S13-191",
+    "RW-T19-S13-192",
+    "RW-T19-S13-193",
+    "RW-T19-S13-194",
+    "RW-T19-S13-195",
+    "RW-T19-S13-196",
+    "RW-T19-S13-197",
+    "RW-T19-S13-198",
+    "RW-T19-S13-199",
+    "RW-T19-S13-200",
+    "RW-T19-S13-201",
+    "RW-T19-S13-202",
+    "RW-T19-S13-203",
+    "RW-T19-S13-204",
+    "RW-T19-S13-205",
+    "RW-T19-S13-206",
+    "RW-T19-S13-207",
+    "RW-T19-S13-208",
+    "RW-T19-S13-209",
+    "RW-T19-S13-210",
+    "RW-T19-S13-211",
+    "RW-T19-S13-212",
+    "RW-T19-S13-213",
+    "RW-T19-S13-214",
+    "RW-T19-S13-215",
+    "RW-T19-S13-216",
+    "RW-T19-S13-217",
+    "RW-T19-S13-218",
+    "RW-T19-S13-219",
+    "RW-T19-S13-220",
+    "RW-T19-S13-221",
+    "RW-T19-S13-222",
+    "RW-T19-S13-223",
+    "RW-T19-S13-224",
+    "RW-T19-S13-225",
+    "RW-T19-S13-226",
+    "RW-T19-S13-227",
+    "RW-T19-S13-228",
+    "RW-T19-S13-229",
+    "RW-T19-S13-230",
+    "RW-T19-S13-231",
+    "RW-T19-S13-232",
+    "RW-T19-S13-233",
+    "RW-T19-S13-234",
+    "RW-T19-S13-235",
+    "RW-T19-S13-236",
+    "RW-T19-S13-237",
+    "RW-T19-S13-238",
+    "RW-T19-S13-239",
+    "RW-T19-S13-240",
+    "RW-T19-S13-241",
+    "RW-T19-S13-242",
+    "RW-T19-S13-243",
+    "RW-T19-S13-244",
+    "RW-T19-S13-245",
+    "RW-T19-S13-246",
+    "RW-T19-S13-247",
+    "RW-T19-S13-248",
+    "RW-T19-S13-249",
+    "RW-T19-S13-250",
+    "RW-T19-S13-251",
+    "RW-T19-S13-252",
+    "RW-T19-S13-253",
+    "RW-T19-S13-254",
+    "RW-T19-S13-255",
+    "RW-T19-S13-256",
+    "RW-T19-S13-257",
+    "RW-T19-S13-258",
+    "RW-T19-S13-259",
+    "RW-T19-S13-260",
+    "RW-T19-S13-261",
+    "RW-T19-S13-262",
+    "RW-T19-S13-263",
+    "RW-T19-S13-264",
+    "RW-T19-S13-265",
+    "RW-T19-S13-266",
+    "RW-T19-S13-267",
+    "RW-T19-S13-268",
+    "RW-T19-S13-269",
+    "RW-T19-S13-270",
+    "RW-T19-S13-271",
+    "RW-T19-S13-272",
+    "RW-T19-S13-273",
+    "RW-T19-S13-274",
+    "RW-T19-S13-275",
+    "RW-T19-S13-276",
+    "RW-T19-S13-277",
+    "RW-T19-S13-278",
+    "RW-T19-S13-279",
+    "RW-T19-S13-280",
+    "RW-T19-S13-281",
+    "RW-T19-S13-282",
+    "RW-T19-S13-283",
+    "RW-T19-S13-284",
+    "RW-T19-S13-285",
+    "RW-T19-S13-286",
+    "RW-T19-S13-287",
+    "RW-T19-S13-288",
+    "RW-T19-S13-289",
+    "RW-T19-S13-290",
+    "RW-T19-S13-291",
+    "RW-T19-S13-292",
+    "RW-T19-S13-293",
+    "RW-T19-S13-294",
+    "RW-T19-S13-295",
+    "RW-T19-S13-296",
+    "RW-T19-S13-297",
+    "RW-T19-S13-298",
+    "RW-T19-S13-299",
+    "RW-T19-S13-300",
+    "RW-T19-S13-301",
+    "RW-T19-S13-302",
+    "RW-T19-S13-303",
+    "RW-T19-S13-304",
+    "RW-T19-S13-305",
+    "RW-T19-S13-306",
+    "RW-T19-S13-307",
+    "RW-T19-S13-308",
+    "RW-T19-S13-309",
+    "RW-T19-S13-310",
+    "RW-T19-S13-311",
+    "RW-T19-S13-312",
+    "RW-T19-S13-313",
+    "RW-T19-S13-314",
+    "RW-T19-S13-315",
+    "RW-T19-S13-316",
+    "RW-T19-S13-317",
+    "RW-T19-S13-318",
+    "RW-T19-S13-319",
+    "RW-T19-S13-320",
+    "RW-T19-S13-321",
+    "RW-T19-S13-322",
+    "RW-T19-S13-323",
+    "RW-T19-S13-324",
+    "RW-T19-S13-325",
+    "RW-T19-S13-326",
+    "RW-T19-S13-327",
+    "RW-T19-S13-328",
+    "RW-T19-S13-329",
+    "RW-T19-S13-330",
+    "RW-T19-S13-331",
+    "RW-T19-S13-332",
+    "RW-T19-S13-333",
+    "RW-T19-S13-334",
+    "RW-T19-S13-335",
+    "RW-T19-S13-336",
+    "RW-T19-S13-337",
+    "RW-T19-S13-338",
+    "RW-T19-S13-339",
+    "RW-T19-S13-340",
+    "RW-T19-S13-341",
+    "RW-T19-S13-342",
+    "RW-T19-S13-343",
+    "RW-T19-S13-344",
+    "RW-T19-S13-345",
+    "RW-T19-S13-346",
+    "RW-T19-S13-347",
+    "RW-T19-S13-348",
+    "RW-T19-S13-349",
+    "RW-T19-S13-350",
+    "RW-T19-S13-351",
+    "RW-T19-S13-352",
+    "RW-T19-S13-353",
+    "RW-T19-S13-354",
+    "RW-T19-S13-355",
+    "RW-T19-S13-356",
+    "RW-T19-S13-357",
+    "RW-T19-S13-358",
+    "RW-T19-S13-359",
+    "RW-T19-S13-360",
+    "RW-T19-S13-361",
+    "RW-T19-S13-362"
+  ],
+  "caseCount": 46,
+  "oracleCount": 46,
+  "cases": [
+    {
+      "caseId": "CONF::SPEC_REGISTRY::000001",
+      "oracleId": "ORC::SPEC_REGISTRY::000001",
+      "scenarioId": "SPEC-COMPLETE-REGISTRY",
+      "requirementIds": [
+        "RW-T19-S00-001",
+        "RW-T19-S13-001",
+        "RW-T19-S13-002",
+        "RW-T19-S13-003",
+        "RW-T19-S13-004",
+        "RW-T19-S13-005",
+        "RW-T19-S13-006",
+        "RW-T19-S13-007",
+        "RW-T19-S13-008",
+        "RW-T19-S13-009",
+        "RW-T19-S13-010",
+        "RW-T19-S13-011",
+        "RW-T19-S13-012",
+        "RW-T19-S13-013",
+        "RW-T19-S13-014",
+        "RW-T19-S13-015",
+        "RW-T19-S13-016",
+        "RW-T19-S13-017",
+        "RW-T19-S13-018",
+        "RW-T19-S13-019",
+        "RW-T19-S13-020",
+        "RW-T19-S13-021",
+        "RW-T19-S13-022",
+        "RW-T19-S13-023",
+        "RW-T19-S13-024",
+        "RW-T19-S13-025",
+        "RW-T19-S13-026",
+        "RW-T19-S13-027",
+        "RW-T19-S13-028",
+        "RW-T19-S13-029",
+        "RW-T19-S13-030",
+        "RW-T19-S13-031",
+        "RW-T19-S13-032",
+        "RW-T19-S13-035",
+        "RW-T19-S13-036",
+        "RW-T19-S13-037",
+        "RW-T19-S13-038",
+        "RW-T19-S13-039",
+        "RW-T19-S13-041",
+        "RW-T19-S13-042",
+        "RW-T19-S13-044",
+        "RW-T19-S13-045",
+        "RW-T19-S13-046",
+        "RW-T19-S13-047",
+        "RW-T19-S13-048",
+        "RW-T19-S13-049",
+        "RW-T19-S13-050",
+        "RW-T19-S13-051",
+        "RW-T19-S13-052",
+        "RW-T19-S13-053",
+        "RW-T19-S13-054",
+        "RW-T19-S13-055",
+        "RW-T19-S13-056",
+        "RW-T19-S13-057",
+        "RW-T19-S13-060",
+        "RW-T19-S13-061",
+        "RW-T19-S13-062",
+        "RW-T19-S13-063",
+        "RW-T19-S13-064",
+        "RW-T19-S13-065",
+        "RW-T19-S13-066",
+        "RW-T19-S13-067",
+        "RW-T19-S13-069",
+        "RW-T19-S13-074",
+        "RW-T19-S13-075",
+        "RW-T19-S13-079",
+        "RW-T19-S13-080",
+        "RW-T19-S13-081",
+        "RW-T19-S13-083",
+        "RW-T19-S13-085",
+        "RW-T19-S13-086",
+        "RW-T19-S13-088",
+        "RW-T19-S13-089",
+        "RW-T19-S13-090",
+        "RW-T19-S13-091",
+        "RW-T19-S13-092",
+        "RW-T19-S13-095",
+        "RW-T19-S13-101",
+        "RW-T19-S13-114",
+        "RW-T19-S13-115",
+        "RW-T19-S13-116",
+        "RW-T19-S13-117",
+        "RW-T19-S13-118",
+        "RW-T19-S13-119",
+        "RW-T19-S13-120",
+        "RW-T19-S13-121",
+        "RW-T19-S13-122",
+        "RW-T19-S13-125",
+        "RW-T19-S13-126",
+        "RW-T19-S13-127",
+        "RW-T19-S13-146",
+        "RW-T19-S13-148",
+        "RW-T19-S13-151",
+        "RW-T19-S13-153",
+        "RW-T19-S13-154",
+        "RW-T19-S13-155",
+        "RW-T19-S13-156",
+        "RW-T19-S13-167",
+        "RW-T19-S13-168",
+        "RW-T19-S13-169",
+        "RW-T19-S13-170",
+        "RW-T19-S13-171",
+        "RW-T19-S13-173",
+        "RW-T19-S13-176",
+        "RW-T19-S13-178",
+        "RW-T19-S13-180",
+        "RW-T19-S13-181",
+        "RW-T19-S13-182",
+        "RW-T19-S13-185",
+        "RW-T19-S13-186",
+        "RW-T19-S13-187",
+        "RW-T19-S13-189",
+        "RW-T19-S13-190",
+        "RW-T19-S13-191",
+        "RW-T19-S13-192",
+        "RW-T19-S13-193",
+        "RW-T19-S13-194",
+        "RW-T19-S13-195",
+        "RW-T19-S13-196",
+        "RW-T19-S13-197",
+        "RW-T19-S13-198",
+        "RW-T19-S13-199",
+        "RW-T19-S13-200",
+        "RW-T19-S13-201",
+        "RW-T19-S13-202",
+        "RW-T19-S13-203",
+        "RW-T19-S13-204",
+        "RW-T19-S13-205",
+        "RW-T19-S13-206",
+        "RW-T19-S13-207",
+        "RW-T19-S13-208",
+        "RW-T19-S13-209",
+        "RW-T19-S13-210",
+        "RW-T19-S13-211",
+        "RW-T19-S13-212",
+        "RW-T19-S13-213",
+        "RW-T19-S13-214",
+        "RW-T19-S13-215",
+        "RW-T19-S13-216",
+        "RW-T19-S13-217",
+        "RW-T19-S13-218",
+        "RW-T19-S13-219",
+        "RW-T19-S13-220",
+        "RW-T19-S13-221",
+        "RW-T19-S13-222",
+        "RW-T19-S13-223",
+        "RW-T19-S13-224",
+        "RW-T19-S13-225",
+        "RW-T19-S13-226",
+        "RW-T19-S13-227",
+        "RW-T19-S13-229",
+        "RW-T19-S13-230",
+        "RW-T19-S13-231",
+        "RW-T19-S13-232",
+        "RW-T19-S13-233",
+        "RW-T19-S13-234",
+        "RW-T19-S13-235",
+        "RW-T19-S13-236",
+        "RW-T19-S13-237",
+        "RW-T19-S13-238",
+        "RW-T19-S13-239",
+        "RW-T19-S13-240",
+        "RW-T19-S13-241",
+        "RW-T19-S13-242",
+        "RW-T19-S13-243",
+        "RW-T19-S13-244",
+        "RW-T19-S13-245",
+        "RW-T19-S13-247",
+        "RW-T19-S13-248",
+        "RW-T19-S13-249",
+        "RW-T19-S13-250",
+        "RW-T19-S13-251",
+        "RW-T19-S13-252",
+        "RW-T19-S13-253",
+        "RW-T19-S13-254",
+        "RW-T19-S13-255",
+        "RW-T19-S13-256",
+        "RW-T19-S13-257",
+        "RW-T19-S13-259",
+        "RW-T19-S13-260",
+        "RW-T19-S13-261",
+        "RW-T19-S13-262",
+        "RW-T19-S13-263",
+        "RW-T19-S13-264",
+        "RW-T19-S13-266",
+        "RW-T19-S13-267",
+        "RW-T19-S13-268",
+        "RW-T19-S13-269",
+        "RW-T19-S13-270",
+        "RW-T19-S13-271",
+        "RW-T19-S13-272",
+        "RW-T19-S13-276",
+        "RW-T19-S13-277",
+        "RW-T19-S13-278",
+        "RW-T19-S13-279",
+        "RW-T19-S13-280",
+        "RW-T19-S13-281",
+        "RW-T19-S13-282",
+        "RW-T19-S13-283",
+        "RW-T19-S13-284",
+        "RW-T19-S13-285",
+        "RW-T19-S13-286",
+        "RW-T19-S13-287",
+        "RW-T19-S13-288",
+        "RW-T19-S13-289",
+        "RW-T19-S13-290",
+        "RW-T19-S13-291",
+        "RW-T19-S13-292",
+        "RW-T19-S13-293",
+        "RW-T19-S13-294",
+        "RW-T19-S13-295",
+        "RW-T19-S13-296",
+        "RW-T19-S13-297",
+        "RW-T19-S13-298",
+        "RW-T19-S13-299",
+        "RW-T19-S13-300",
+        "RW-T19-S13-301",
+        "RW-T19-S13-302",
+        "RW-T19-S13-303",
+        "RW-T19-S13-304",
+        "RW-T19-S13-305",
+        "RW-T19-S13-306",
+        "RW-T19-S13-307",
+        "RW-T19-S13-308",
+        "RW-T19-S13-309",
+        "RW-T19-S13-310",
+        "RW-T19-S13-311",
+        "RW-T19-S13-312",
+        "RW-T19-S13-313",
+        "RW-T19-S13-314",
+        "RW-T19-S13-315",
+        "RW-T19-S13-316",
+        "RW-T19-S13-317",
+        "RW-T19-S13-318",
+        "RW-T19-S13-319",
+        "RW-T19-S13-320",
+        "RW-T19-S13-321",
+        "RW-T19-S13-322",
+        "RW-T19-S13-323",
+        "RW-T19-S13-324",
+        "RW-T19-S13-325",
+        "RW-T19-S13-326",
+        "RW-T19-S13-328",
+        "RW-T19-S13-329",
+        "RW-T19-S13-330",
+        "RW-T19-S13-331",
+        "RW-T19-S13-332",
+        "RW-T19-S13-333",
+        "RW-T19-S13-335",
+        "RW-T19-S13-337",
+        "RW-T19-S13-338",
+        "RW-T19-S13-339",
+        "RW-T19-S13-340",
+        "RW-T19-S13-342",
+        "RW-T19-S13-343",
+        "RW-T19-S13-344",
+        "RW-T19-S13-345",
+        "RW-T19-S13-346",
+        "RW-T19-S13-348",
+        "RW-T19-S13-349",
+        "RW-T19-S13-353",
+        "RW-T19-S13-355",
+        "RW-T19-S13-356",
+        "RW-T19-S13-357",
+        "RW-T19-S13-358",
+        "RW-T19-S13-359",
+        "RW-T19-S13-360",
+        "RW-T19-S13-361",
+        "RW-T19-S13-362"
+      ],
+      "assertionIds": [
+        "A001",
+        "A002",
+        "A003",
+        "A004",
+        "A005",
+        "A006",
+        "A007",
+        "A008",
+        "A009",
+        "A010",
+        "A011",
+        "A012",
+        "A013",
+        "A014",
+        "A015",
+        "A016",
+        "A017",
+        "A018",
+        "A019",
+        "A020",
+        "A021",
+        "A022",
+        "A023"
+      ],
+      "expectedTerminal": {
+        "operationId": "validate",
+        "outcome": "SUCCESS"
+      }
+    },
+    {
+      "caseId": "CONF::SPEC_REGISTRY::000002",
+      "oracleId": "ORC::SPEC_REGISTRY::000002",
+      "scenarioId": "SPEC-MUT-001",
+      "requirementIds": [
+        "RW-T19-S13-058",
+        "RW-T19-S13-059",
+        "RW-T19-S13-076",
+        "RW-T19-S13-077"
+      ],
+      "assertionIds": [
+        "A001",
+        "A002",
+        "A003",
+        "A004",
+        "A005",
+        "A006",
+        "A007",
+        "A008",
+        "A009"
+      ],
+      "expectedTerminal": {
+        "operationId": "validate",
+        "outcome": "PROBLEM",
+        "code": "SPEC_REGISTRY_SCHEMA_INVALID",
+        "stage": "SPEC_REGISTRY"
+      }
+    },
+    {
+      "caseId": "CONF::SPEC_REGISTRY::000003",
+      "oracleId": "ORC::SPEC_REGISTRY::000003",
+      "scenarioId": "SPEC-MUT-002",
+      "requirementIds": [
+        "RW-T19-S13-078",
+        "RW-T19-S13-082",
+        "RW-T19-S13-084",
+        "RW-T19-S13-087"
+      ],
+      "assertionIds": [
+        "A001",
+        "A002",
+        "A003",
+        "A004",
+        "A005",
+        "A006",
+        "A007",
+        "A008",
+        "A009"
+      ],
+      "expectedTerminal": {
+        "operationId": "validate",
+        "outcome": "PROBLEM",
+        "code": "SPEC_REGISTRY_SCHEMA_INVALID",
+        "stage": "SPEC_REGISTRY"
+      }
+    },
+    {
+      "caseId": "CONF::SPEC_REGISTRY::000004",
+      "oracleId": "ORC::SPEC_REGISTRY::000004",
+      "scenarioId": "SPEC-MUT-003",
+      "requirementIds": [
+        "RW-T19-S13-034",
+        "RW-T19-S13-354"
+      ],
+      "assertionIds": [
+        "A001",
+        "A002",
+        "A003",
+        "A004",
+        "A005",
+        "A006",
+        "A007",
+        "A008",
+        "A009"
+      ],
+      "expectedTerminal": {
+        "operationId": "validate",
+        "outcome": "PROBLEM",
+        "code": "SPEC_REGISTRY_SOURCE_LOCATOR_INVALID",
+        "stage": "SPEC_REGISTRY"
+      }
+    },
+    {
+      "caseId": "CONF::SPEC_REGISTRY::000005",
+      "oracleId": "ORC::SPEC_REGISTRY::000005",
+      "scenarioId": "SPEC-MUT-004",
+      "requirementIds": [
+        "RW-T19-S13-033",
+        "RW-T19-S13-040"
+      ],
+      "assertionIds": [
+        "A001",
+        "A002",
+        "A003",
+        "A004",
+        "A005",
+        "A006",
+        "A007",
+        "A008",
+        "A009"
+      ],
+      "expectedTerminal": {
+        "operationId": "validate",
+        "outcome": "PROBLEM",
+        "code": "SPEC_REGISTRY_DUPLICATE_IDENTITY",
+        "stage": "SPEC_REGISTRY"
+      }
+    },
+    {
+      "caseId": "CONF::SPEC_REGISTRY::000006",
+      "oracleId": "ORC::SPEC_REGISTRY::000006",
+      "scenarioId": "SPEC-MUT-005",
+      "requirementIds": [
+        "RW-T19-S13-033",
+        "RW-T19-S13-105",
+        "RW-T19-S13-123",
+        "RW-T19-S13-124",
+        "RW-T19-S13-327",
+        "RW-T19-S13-350"
+      ],
+      "assertionIds": [
+        "A001",
+        "A002",
+        "A003",
+        "A004",
+        "A005",
+        "A006",
+        "A007",
+        "A008",
+        "A009"
+      ],
+      "expectedTerminal": {
+        "operationId": "validate",
+        "outcome": "PROBLEM",
+        "code": "SPEC_REGISTRY_ORPHAN",
+        "stage": "SPEC_REGISTRY"
+      }
+    },
+    {
+      "caseId": "CONF::SPEC_REGISTRY::000007",
+      "oracleId": "ORC::SPEC_REGISTRY::000007",
+      "scenarioId": "SPEC-MUT-006",
+      "requirementIds": [
+        "RW-T19-S13-033",
+        "RW-T19-S13-106",
+        "RW-T19-S13-107",
+        "RW-T19-S13-351"
+      ],
+      "assertionIds": [
+        "A001",
+        "A002",
+        "A003",
+        "A004",
+        "A005",
+        "A006",
+        "A007",
+        "A008",
+        "A009"
+      ],
+      "expectedTerminal": {
+        "operationId": "validate",
+        "outcome": "PROBLEM",
+        "code": "SPEC_REGISTRY_ORPHAN",
+        "stage": "SPEC_REGISTRY"
+      }
+    },
+    {
+      "caseId": "CONF::SPEC_REGISTRY::000008",
+      "oracleId": "ORC::SPEC_REGISTRY::000008",
+      "scenarioId": "SPEC-MUT-007",
+      "requirementIds": [
+        "RW-T19-S13-033",
+        "RW-T19-S13-109",
+        "RW-T19-S13-352"
+      ],
+      "assertionIds": [
+        "A001",
+        "A002",
+        "A003",
+        "A004",
+        "A005",
+        "A006",
+        "A007",
+        "A008",
+        "A009"
+      ],
+      "expectedTerminal": {
+        "operationId": "validate",
+        "outcome": "PROBLEM",
+        "code": "SPEC_REGISTRY_ORPHAN",
+        "stage": "SPEC_REGISTRY"
+      }
+    },
+    {
+      "caseId": "CONF::SPEC_REGISTRY::000009",
+      "oracleId": "ORC::SPEC_REGISTRY::000009",
+      "scenarioId": "SPEC-MUT-008",
+      "requirementIds": [
+        "RW-T19-S13-108"
+      ],
+      "assertionIds": [
+        "A001",
+        "A002",
+        "A003",
+        "A004",
+        "A005",
+        "A006",
+        "A007",
+        "A008"
+      ],
+      "expectedTerminal": {
+        "operationId": "validate",
+        "outcome": "PROBLEM",
+        "code": "SPEC_REGISTRY_TERMINAL_ASSERTION_MISSING",
+        "stage": "SPEC_REGISTRY"
+      }
+    },
+    {
+      "caseId": "CONF::SPEC_REGISTRY::000010",
+      "oracleId": "ORC::SPEC_REGISTRY::000010",
+      "scenarioId": "SPEC-MUT-009",
+      "requirementIds": [
+        "RW-T19-S13-097",
+        "RW-T19-S13-098",
+        "RW-T19-S13-099"
+      ],
+      "assertionIds": [
+        "A001",
+        "A002",
+        "A003",
+        "A004",
+        "A005",
+        "A006",
+        "A007",
+        "A008",
+        "A009"
+      ],
+      "expectedTerminal": {
+        "operationId": "validate",
+        "outcome": "PROBLEM",
+        "code": "SPEC_REGISTRY_SUPERSESSION_INVALID",
+        "stage": "SPEC_REGISTRY"
+      }
+    },
+    {
+      "caseId": "CONF::SPEC_REGISTRY::000011",
+      "oracleId": "ORC::SPEC_REGISTRY::000011",
+      "scenarioId": "SPEC-MUT-010",
+      "requirementIds": [
+        "RW-T19-S13-100",
+        "RW-T19-S13-102"
+      ],
+      "assertionIds": [
+        "A001",
+        "A002",
+        "A003",
+        "A004",
+        "A005",
+        "A006",
+        "A007",
+        "A008",
+        "A009"
+      ],
+      "expectedTerminal": {
+        "operationId": "validate",
+        "outcome": "PROBLEM",
+        "code": "SPEC_REGISTRY_SUPERSESSION_INVALID",
+        "stage": "SPEC_REGISTRY"
+      }
+    },
+    {
+      "caseId": "CONF::SPEC_REGISTRY::000012",
+      "oracleId": "ORC::SPEC_REGISTRY::000012",
+      "scenarioId": "SPEC-MUT-011",
+      "requirementIds": [
+        "RW-T19-S13-103",
+        "RW-T19-S13-104",
+        "RW-T19-S13-113"
+      ],
+      "assertionIds": [
+        "A001",
+        "A002",
+        "A003",
+        "A004",
+        "A005",
+        "A006",
+        "A007",
+        "A008",
+        "A009"
+      ],
+      "expectedTerminal": {
+        "operationId": "validate",
+        "outcome": "PROBLEM",
+        "code": "SPEC_REGISTRY_SUPERSESSION_INVALID",
+        "stage": "SPEC_REGISTRY"
+      }
+    },
+    {
+      "caseId": "CONF::SPEC_REGISTRY::000013",
+      "oracleId": "ORC::SPEC_REGISTRY::000013",
+      "scenarioId": "SPEC-MUT-012",
+      "requirementIds": [
+        "RW-T19-S13-110",
+        "RW-T19-S13-111",
+        "RW-T19-S13-166"
+      ],
+      "assertionIds": [
+        "A001",
+        "A002",
+        "A003",
+        "A004",
+        "A005",
+        "A006",
+        "A007",
+        "A008"
+      ],
+      "expectedTerminal": {
+        "operationId": "validate",
+        "outcome": "PROBLEM",
+        "code": "SPEC_REGISTRY_SIGNATURE_DUPLICATE",
+        "stage": "SPEC_REGISTRY"
+      }
+    },
+    {
+      "caseId": "CONF::SPEC_REGISTRY::000014",
+      "oracleId": "ORC::SPEC_REGISTRY::000014",
+      "scenarioId": "SPEC-MUT-013",
+      "requirementIds": [
+        "RW-T19-S13-093",
+        "RW-T19-S13-094",
+        "RW-T19-S13-112",
+        "RW-T19-S13-228"
+      ],
+      "assertionIds": [
+        "A001",
+        "A002",
+        "A003",
+        "A004",
+        "A005",
+        "A006",
+        "A007",
+        "A008"
+      ],
+      "expectedTerminal": {
+        "operationId": "validate",
+        "outcome": "PROBLEM",
+        "code": "SPEC_REGISTRY_SIGNATURE_DUPLICATE",
+        "stage": "SPEC_REGISTRY"
+      }
+    },
+    {
+      "caseId": "CONF::SPEC_REGISTRY::000015",
+      "oracleId": "ORC::SPEC_REGISTRY::000015",
+      "scenarioId": "SPEC-MUT-014",
+      "requirementIds": [
+        "RW-T19-S13-068",
+        "RW-T19-S13-163",
+        "RW-T19-S13-165"
+      ],
+      "assertionIds": [
+        "A001",
+        "A002",
+        "A003",
+        "A004",
+        "A005",
+        "A006",
+        "A007",
+        "A008"
+      ],
+      "expectedTerminal": {
+        "operationId": "validate",
+        "outcome": "PROBLEM",
+        "code": "SPEC_REGISTRY_IDENTITY_MISMATCH",
+        "stage": "SPEC_REGISTRY"
+      }
+    },
+    {
+      "caseId": "CONF::SPEC_REGISTRY::000016",
+      "oracleId": "ORC::SPEC_REGISTRY::000016",
+      "scenarioId": "SPEC-MUT-015",
+      "requirementIds": [
+        "RW-T19-S13-070",
+        "RW-T19-S13-164",
+        "RW-T19-S13-165"
+      ],
+      "assertionIds": [
+        "A001",
+        "A002",
+        "A003",
+        "A004",
+        "A005",
+        "A006",
+        "A007",
+        "A008"
+      ],
+      "expectedTerminal": {
+        "operationId": "validate",
+        "outcome": "PROBLEM",
+        "code": "SPEC_REGISTRY_IDENTITY_MISMATCH",
+        "stage": "SPEC_REGISTRY"
+      }
+    },
+    {
+      "caseId": "CONF::SPEC_REGISTRY::000017",
+      "oracleId": "ORC::SPEC_REGISTRY::000017",
+      "scenarioId": "SPEC-MUT-016",
+      "requirementIds": [
+        "RW-T19-S13-043",
+        "RW-T19-S13-096",
+        "RW-T19-S13-341",
+        "RW-T19-S13-347"
+      ],
+      "assertionIds": [
+        "A001",
+        "A002",
+        "A003",
+        "A004",
+        "A005",
+        "A006",
+        "A007",
+        "A008"
+      ],
+      "expectedTerminal": {
+        "operationId": "validate",
+        "outcome": "PROBLEM",
+        "code": "SPEC_REGISTRY_MANIFEST_MISMATCH",
+        "stage": "SPEC_REGISTRY"
+      }
+    },
+    {
+      "caseId": "CONF::SPEC_REGISTRY::000018",
+      "oracleId": "ORC::SPEC_REGISTRY::000018",
+      "scenarioId": "SPEC-MUT-017",
+      "requirementIds": [
+        "RW-T19-S13-179",
+        "RW-T19-S13-183",
+        "RW-T19-S13-188"
+      ],
+      "assertionIds": [
+        "A001",
+        "A002",
+        "A003",
+        "A004",
+        "A005",
+        "A006",
+        "A007",
+        "A008",
+        "A009"
+      ],
+      "expectedTerminal": {
+        "operationId": "validate",
+        "outcome": "PROBLEM",
+        "code": "SPEC_REGISTRY_PROFILE_INVALID",
+        "stage": "SPEC_REGISTRY"
+      }
+    },
+    {
+      "caseId": "CONF::SPEC_REGISTRY::000019",
+      "oracleId": "ORC::SPEC_REGISTRY::000019",
+      "scenarioId": "SPEC-MUT-018",
+      "requirementIds": [
+        "RW-T19-S13-177",
+        "RW-T19-S13-184",
+        "RW-T19-S13-336"
+      ],
+      "assertionIds": [
+        "A001",
+        "A002",
+        "A003",
+        "A004",
+        "A005",
+        "A006",
+        "A007",
+        "A008",
+        "A009"
+      ],
+      "expectedTerminal": {
+        "operationId": "validate",
+        "outcome": "PROBLEM",
+        "code": "SPEC_REGISTRY_PROFILE_INVALID",
+        "stage": "SPEC_REGISTRY"
+      }
+    },
+    {
+      "caseId": "CONF::SPEC_REGISTRY::000020",
+      "oracleId": "ORC::SPEC_REGISTRY::000020",
+      "scenarioId": "SPEC-MUT-019",
+      "requirementIds": [
+        "RW-T19-S13-265",
+        "RW-T19-S13-273",
+        "RW-T19-S13-274",
+        "RW-T19-S13-334"
+      ],
+      "assertionIds": [
+        "A001",
+        "A002",
+        "A003",
+        "A004",
+        "A005",
+        "A006",
+        "A007",
+        "A008"
+      ],
+      "expectedTerminal": {
+        "operationId": "validate",
+        "outcome": "PROBLEM",
+        "code": "SPEC_REGISTRY_GENERATOR_INVALID",
+        "stage": "SPEC_REGISTRY"
+      }
+    },
+    {
+      "caseId": "CONF::SPEC_REGISTRY::000021",
+      "oracleId": "ORC::SPEC_REGISTRY::000021",
+      "scenarioId": "SPEC-MUT-020",
+      "requirementIds": [
+        "RW-T19-S13-258",
+        "RW-T19-S13-275",
+        "RW-T19-S13-341",
+        "RW-T19-S13-354"
+      ],
+      "assertionIds": [
+        "A001",
+        "A002",
+        "A003",
+        "A004",
+        "A005",
+        "A006",
+        "A007",
+        "A008",
+        "A009"
+      ],
+      "expectedTerminal": {
+        "operationId": "validate",
+        "outcome": "PROBLEM",
+        "code": "SPEC_REGISTRY_REFERENCE_MISSING",
+        "stage": "SPEC_REGISTRY"
+      }
+    },
+    {
+      "caseId": "CONF::SPEC_REGISTRY::000022",
+      "oracleId": "ORC::SPEC_REGISTRY::000022",
+      "scenarioId": "SPEC-MUT-021",
+      "requirementIds": [
+        "RW-T19-S13-071",
+        "RW-T19-S13-072",
+        "RW-T19-S13-073"
+      ],
+      "assertionIds": [
+        "A001",
+        "A002",
+        "A003",
+        "A004",
+        "A005",
+        "A006",
+        "A007",
+        "A008"
+      ],
+      "expectedTerminal": {
+        "operationId": "validate",
+        "outcome": "PROBLEM",
+        "code": "SPEC_REGISTRY_TERMINAL_VECTOR_INVALID",
+        "stage": "SPEC_REGISTRY"
+      }
+    },
+    {
+      "caseId": "CONF::SPEC_REGISTRY::000023",
+      "oracleId": "ORC::SPEC_REGISTRY::000023",
+      "scenarioId": "SPEC-MUT-022",
+      "requirementIds": [
+        "RW-T19-S13-128",
+        "RW-T19-S13-144",
+        "RW-T19-S13-145"
+      ],
+      "assertionIds": [
+        "A001",
+        "A002",
+        "A003",
+        "A004",
+        "A005",
+        "A006",
+        "A007",
+        "A008"
+      ],
+      "expectedTerminal": {
+        "operationId": "validate",
+        "outcome": "PROBLEM",
+        "code": "SPEC_REGISTRY_CANONICAL_RECORD_INVALID",
+        "stage": "SPEC_REGISTRY"
+      }
+    },
+    {
+      "caseId": "CONF::SPEC_REGISTRY::000024",
+      "oracleId": "ORC::SPEC_REGISTRY::000024",
+      "scenarioId": "SPEC-MUT-023",
+      "requirementIds": [
+        "RW-T19-S13-130"
+      ],
+      "assertionIds": [
+        "A001",
+        "A002",
+        "A003",
+        "A004",
+        "A005",
+        "A006",
+        "A007",
+        "A008",
+        "A009"
+      ],
+      "expectedTerminal": {
+        "operationId": "validate",
+        "outcome": "PROBLEM",
+        "code": "SPEC_REGISTRY_SCHEMA_INVALID",
+        "stage": "SPEC_REGISTRY"
+      }
+    },
+    {
+      "caseId": "CONF::SPEC_REGISTRY::000025",
+      "oracleId": "ORC::SPEC_REGISTRY::000025",
+      "scenarioId": "SPEC-MUT-024",
+      "requirementIds": [
+        "RW-T19-S13-172",
+        "RW-T19-S13-174",
+        "RW-T19-S13-175",
+        "RW-T19-S13-246"
+      ],
+      "assertionIds": [
+        "A001",
+        "A002",
+        "A003",
+        "A004",
+        "A005",
+        "A006",
+        "A007",
+        "A008",
+        "A009"
+      ],
+      "expectedTerminal": {
+        "operationId": "validate",
+        "outcome": "PROBLEM",
+        "code": "SPEC_REGISTRY_PROFILE_INVALID",
+        "stage": "SPEC_REGISTRY"
+      }
+    },
+    {
+      "caseId": "CONF::SPEC_REGISTRY::000026",
+      "oracleId": "ORC::SPEC_REGISTRY::000026",
+      "scenarioId": "SPEC-C14N-C14N-P001",
+      "requirementIds": [
+        "RW-T19-S13-135",
+        "RW-T19-S13-140",
+        "RW-T19-S13-141",
+        "RW-T19-S13-143"
+      ],
+      "assertionIds": [
+        "A001",
+        "A002",
+        "A003",
+        "A004",
+        "A005",
+        "A006",
+        "A007",
+        "A008",
+        "A009"
+      ],
+      "expectedTerminal": {
+        "operationId": "validate",
+        "outcome": "SUCCESS"
+      }
+    },
+    {
+      "caseId": "CONF::SPEC_REGISTRY::000027",
+      "oracleId": "ORC::SPEC_REGISTRY::000027",
+      "scenarioId": "SPEC-C14N-C14N-P002",
+      "requirementIds": [
+        "RW-T19-S13-142"
+      ],
+      "assertionIds": [
+        "A001",
+        "A002",
+        "A003",
+        "A004",
+        "A005",
+        "A006",
+        "A007",
+        "A008",
+        "A009"
+      ],
+      "expectedTerminal": {
+        "operationId": "validate",
+        "outcome": "SUCCESS"
+      }
+    },
+    {
+      "caseId": "CONF::SPEC_REGISTRY::000028",
+      "oracleId": "ORC::SPEC_REGISTRY::000028",
+      "scenarioId": "SPEC-C14N-C14N-P003",
+      "requirementIds": [
+        "RW-T19-S13-136",
+        "RW-T19-S13-140"
+      ],
+      "assertionIds": [
+        "A001",
+        "A002",
+        "A003",
+        "A004",
+        "A005",
+        "A006",
+        "A007",
+        "A008",
+        "A009"
+      ],
+      "expectedTerminal": {
+        "operationId": "validate",
+        "outcome": "SUCCESS"
+      }
+    },
+    {
+      "caseId": "CONF::SPEC_REGISTRY::000029",
+      "oracleId": "ORC::SPEC_REGISTRY::000029",
+      "scenarioId": "SPEC-C14N-C14N-P004",
+      "requirementIds": [
+        "RW-T19-S13-138",
+        "RW-T19-S13-139"
+      ],
+      "assertionIds": [
+        "A001",
+        "A002",
+        "A003",
+        "A004",
+        "A005",
+        "A006",
+        "A007",
+        "A008",
+        "A009"
+      ],
+      "expectedTerminal": {
+        "operationId": "validate",
+        "outcome": "SUCCESS"
+      }
+    },
+    {
+      "caseId": "CONF::SPEC_REGISTRY::000030",
+      "oracleId": "ORC::SPEC_REGISTRY::000030",
+      "scenarioId": "SPEC-C14N-C14N-P005",
+      "requirementIds": [
+        "RW-T19-S13-137",
+        "RW-T19-S13-138"
+      ],
+      "assertionIds": [
+        "A001",
+        "A002",
+        "A003",
+        "A004",
+        "A005",
+        "A006",
+        "A007",
+        "A008",
+        "A009"
+      ],
+      "expectedTerminal": {
+        "operationId": "validate",
+        "outcome": "SUCCESS"
+      }
+    },
+    {
+      "caseId": "CONF::SPEC_REGISTRY::000031",
+      "oracleId": "ORC::SPEC_REGISTRY::000031",
+      "scenarioId": "SPEC-C14N-C14N-P006",
+      "requirementIds": [
+        "RW-T19-S13-137"
+      ],
+      "assertionIds": [
+        "A001",
+        "A002",
+        "A003",
+        "A004",
+        "A005",
+        "A006",
+        "A007",
+        "A008",
+        "A009"
+      ],
+      "expectedTerminal": {
+        "operationId": "validate",
+        "outcome": "SUCCESS"
+      }
+    },
+    {
+      "caseId": "CONF::SPEC_REGISTRY::000032",
+      "oracleId": "ORC::SPEC_REGISTRY::000032",
+      "scenarioId": "SPEC-C14N-C14N-P007",
+      "requirementIds": [
+        "RW-T19-S13-147",
+        "RW-T19-S13-149",
+        "RW-T19-S13-150"
+      ],
+      "assertionIds": [
+        "A001",
+        "A002",
+        "A003",
+        "A004",
+        "A005",
+        "A006",
+        "A007",
+        "A008",
+        "A009"
+      ],
+      "expectedTerminal": {
+        "operationId": "validate",
+        "outcome": "SUCCESS"
+      }
+    },
+    {
+      "caseId": "CONF::SPEC_REGISTRY::000033",
+      "oracleId": "ORC::SPEC_REGISTRY::000033",
+      "scenarioId": "SPEC-C14N-C14N-P008",
+      "requirementIds": [
+        "RW-T19-S13-152"
+      ],
+      "assertionIds": [
+        "A001",
+        "A002",
+        "A003",
+        "A004",
+        "A005",
+        "A006",
+        "A007",
+        "A008",
+        "A009"
+      ],
+      "expectedTerminal": {
+        "operationId": "validate",
+        "outcome": "SUCCESS"
+      }
+    },
+    {
+      "caseId": "CONF::SPEC_REGISTRY::000034",
+      "oracleId": "ORC::SPEC_REGISTRY::000034",
+      "scenarioId": "SPEC-C14N-C14N-P009",
+      "requirementIds": [
+        "RW-T19-S13-157"
+      ],
+      "assertionIds": [
+        "A001",
+        "A002",
+        "A003",
+        "A004",
+        "A005",
+        "A006",
+        "A007",
+        "A008",
+        "A009"
+      ],
+      "expectedTerminal": {
+        "operationId": "validate",
+        "outcome": "SUCCESS"
+      }
+    },
+    {
+      "caseId": "CONF::SPEC_REGISTRY::000035",
+      "oracleId": "ORC::SPEC_REGISTRY::000035",
+      "scenarioId": "SPEC-C14N-C14N-P010",
+      "requirementIds": [
+        "RW-T19-S13-159",
+        "RW-T19-S13-160"
+      ],
+      "assertionIds": [
+        "A001",
+        "A002",
+        "A003",
+        "A004",
+        "A005",
+        "A006",
+        "A007",
+        "A008",
+        "A009"
+      ],
+      "expectedTerminal": {
+        "operationId": "validate",
+        "outcome": "SUCCESS"
+      }
+    },
+    {
+      "caseId": "CONF::SPEC_REGISTRY::000036",
+      "oracleId": "ORC::SPEC_REGISTRY::000036",
+      "scenarioId": "SPEC-C14N-C14N-P011",
+      "requirementIds": [
+        "RW-T19-S13-161",
+        "RW-T19-S13-162"
+      ],
+      "assertionIds": [
+        "A001",
+        "A002",
+        "A003",
+        "A004",
+        "A005",
+        "A006",
+        "A007",
+        "A008",
+        "A009"
+      ],
+      "expectedTerminal": {
+        "operationId": "validate",
+        "outcome": "SUCCESS"
+      }
+    },
+    {
+      "caseId": "CONF::SPEC_REGISTRY::000037",
+      "oracleId": "ORC::SPEC_REGISTRY::000037",
+      "scenarioId": "SPEC-C14N-C14N-P012",
+      "requirementIds": [
+        "RW-T19-S13-163"
+      ],
+      "assertionIds": [
+        "A001",
+        "A002",
+        "A003",
+        "A004",
+        "A005",
+        "A006",
+        "A007",
+        "A008",
+        "A009"
+      ],
+      "expectedTerminal": {
+        "operationId": "validate",
+        "outcome": "SUCCESS"
+      }
+    },
+    {
+      "caseId": "CONF::SPEC_REGISTRY::000038",
+      "oracleId": "ORC::SPEC_REGISTRY::000038",
+      "scenarioId": "SPEC-C14N-C14N-P013",
+      "requirementIds": [
+        "RW-T19-S13-164"
+      ],
+      "assertionIds": [
+        "A001",
+        "A002",
+        "A003",
+        "A004",
+        "A005",
+        "A006",
+        "A007",
+        "A008",
+        "A009"
+      ],
+      "expectedTerminal": {
+        "operationId": "validate",
+        "outcome": "SUCCESS"
+      }
+    },
+    {
+      "caseId": "CONF::SPEC_REGISTRY::000039",
+      "oracleId": "ORC::SPEC_REGISTRY::000039",
+      "scenarioId": "SPEC-C14N-C14N-N001",
+      "requirementIds": [
+        "RW-T19-S13-130"
+      ],
+      "assertionIds": [
+        "A001",
+        "A002",
+        "A003",
+        "A004",
+        "A005",
+        "A006",
+        "A007",
+        "A008"
+      ],
+      "expectedTerminal": {
+        "operationId": "validate",
+        "outcome": "PROBLEM",
+        "code": "CONFORMANCE_DUPLICATE_MEMBER",
+        "stage": "SPEC_REGISTRY"
+      }
+    },
+    {
+      "caseId": "CONF::SPEC_REGISTRY::000040",
+      "oracleId": "ORC::SPEC_REGISTRY::000040",
+      "scenarioId": "SPEC-C14N-C14N-N002",
+      "requirementIds": [
+        "RW-T19-S13-131"
+      ],
+      "assertionIds": [
+        "A001",
+        "A002",
+        "A003",
+        "A004",
+        "A005",
+        "A006",
+        "A007",
+        "A008"
+      ],
+      "expectedTerminal": {
+        "operationId": "validate",
+        "outcome": "PROBLEM",
+        "code": "CONFORMANCE_JSON_SYNTAX_INVALID",
+        "stage": "SPEC_REGISTRY"
+      }
+    },
+    {
+      "caseId": "CONF::SPEC_REGISTRY::000041",
+      "oracleId": "ORC::SPEC_REGISTRY::000041",
+      "scenarioId": "SPEC-C14N-C14N-N003",
+      "requirementIds": [
+        "RW-T19-S13-132"
+      ],
+      "assertionIds": [
+        "A001",
+        "A002",
+        "A003",
+        "A004",
+        "A005",
+        "A006",
+        "A007",
+        "A008"
+      ],
+      "expectedTerminal": {
+        "operationId": "validate",
+        "outcome": "PROBLEM",
+        "code": "CONFORMANCE_JSON_SYNTAX_INVALID",
+        "stage": "SPEC_REGISTRY"
+      }
+    },
+    {
+      "caseId": "CONF::SPEC_REGISTRY::000042",
+      "oracleId": "ORC::SPEC_REGISTRY::000042",
+      "scenarioId": "SPEC-C14N-C14N-N004",
+      "requirementIds": [
+        "RW-T19-S13-133"
+      ],
+      "assertionIds": [
+        "A001",
+        "A002",
+        "A003",
+        "A004",
+        "A005",
+        "A006",
+        "A007",
+        "A008"
+      ],
+      "expectedTerminal": {
+        "operationId": "validate",
+        "outcome": "PROBLEM",
+        "code": "CONFORMANCE_NUMBER_INVALID",
+        "stage": "SPEC_REGISTRY"
+      }
+    },
+    {
+      "caseId": "CONF::SPEC_REGISTRY::000043",
+      "oracleId": "ORC::SPEC_REGISTRY::000043",
+      "scenarioId": "SPEC-C14N-C14N-N005",
+      "requirementIds": [
+        "RW-T19-S13-133"
+      ],
+      "assertionIds": [
+        "A001",
+        "A002",
+        "A003",
+        "A004",
+        "A005",
+        "A006",
+        "A007",
+        "A008"
+      ],
+      "expectedTerminal": {
+        "operationId": "validate",
+        "outcome": "PROBLEM",
+        "code": "CONFORMANCE_NUMBER_INVALID",
+        "stage": "SPEC_REGISTRY"
+      }
+    },
+    {
+      "caseId": "CONF::SPEC_REGISTRY::000044",
+      "oracleId": "ORC::SPEC_REGISTRY::000044",
+      "scenarioId": "SPEC-C14N-C14N-N006",
+      "requirementIds": [
+        "RW-T19-S13-134"
+      ],
+      "assertionIds": [
+        "A001",
+        "A002",
+        "A003",
+        "A004",
+        "A005",
+        "A006",
+        "A007",
+        "A008"
+      ],
+      "expectedTerminal": {
+        "operationId": "validate",
+        "outcome": "PROBLEM",
+        "code": "CONFORMANCE_UNICODE_INVALID",
+        "stage": "SPEC_REGISTRY"
+      }
+    },
+    {
+      "caseId": "CONF::SPEC_REGISTRY::000045",
+      "oracleId": "ORC::SPEC_REGISTRY::000045",
+      "scenarioId": "SPEC-C14N-C14N-N007",
+      "requirementIds": [
+        "RW-T19-S13-129"
+      ],
+      "assertionIds": [
+        "A001",
+        "A002",
+        "A003",
+        "A004",
+        "A005",
+        "A006",
+        "A007",
+        "A008"
+      ],
+      "expectedTerminal": {
+        "operationId": "validate",
+        "outcome": "PROBLEM",
+        "code": "CONFORMANCE_UTF8_INVALID",
+        "stage": "SPEC_REGISTRY"
+      }
+    },
+    {
+      "caseId": "CONF::SPEC_REGISTRY::000046",
+      "oracleId": "ORC::SPEC_REGISTRY::000046",
+      "scenarioId": "SPEC-C14N-C14N-N008",
+      "requirementIds": [
+        "RW-T19-S13-158"
+      ],
+      "assertionIds": [
+        "A001",
+        "A002",
+        "A003",
+        "A004",
+        "A005",
+        "A006",
+        "A007",
+        "A008"
+      ],
+      "expectedTerminal": {
+        "operationId": "validate",
+        "outcome": "PROBLEM",
+        "code": "CONFORMANCE_CANONICAL_SET_DUPLICATE",
+        "stage": "SPEC_REGISTRY"
+      }
+    }
+  ]
+}

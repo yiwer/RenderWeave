@@ -1,0 +1,207 @@
+requirement_id	source_line	clause_ordinal_on_line	family	normative_summary
+RW-T07-S1-001	25	1	DESIGN_INPUT_EXPRESSION	BaseValueType exact set 为 text/decimal/boolean/date/time/color/imageRef/fontRef。
+RW-T07-S1-002	25	2	DESIGN_INPUT_EXPRESSION	enum<catalogId> 与 list<T> 是 derived ValueType，不是 base type。
+RW-T07-S1-003	26	1	DESIGN_INPUT_EXPRESSION	Template 不扩展 StaticSchema；Schema fact type 仍仅五 scalar、reference、array，不增加 color/image/font。
+RW-T07-S1-004	26	2	DESIGN_INPUT_EXPRESSION	system-empty@v1 与五个 system-basic-*@v1 继续是一等 read-only StaticSchema。
+RW-T07-S1-005	26	3	SECURITY_FAULT	Template Design 不得另造或修改预置 Schema。
+RW-T07-S1-006	27	1	DESIGN_INPUT_EXPRESSION	list<T> v1 item 只允许五个 StaticSchema scalar 与 imageRef/fontRef。
+RW-T07-S1-007	27	2	DESIGN_INPUT_EXPRESSION	list 保持 order、duplicates 与 empty array。
+RW-T07-S1-008	27	3	SECURITY_FAULT	list 禁止 null、heterogeneous item 与 nested list。
+RW-T07-S1-009	27	4	ASSET_CAPABILITY_CONCURRENCY	asset-ref list 每个 literal atom 独立进入 Asset dependency extraction 与 external-override admission。
+RW-T07-S1-010	27	5	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	Repeat items 只接受五个 StaticSchema scalar list。
+RW-T07-S1-011	27	6	DESIGN_INPUT_EXPRESSION	reference array 是 loop-only exact-Schema collection，不得伪装为 generic list<object>。
+RW-T07-S1-012	28	1	DESIGN_INPUT_EXPRESSION	Type compatibility strict，禁止 implicit conversion。
+RW-T07-S1-013	28	2	DESIGN_INPUT_EXPRESSION	enum 必须 same catalog；list invariant；imageRef/fontRef 不互换；Schema constraint 不形成 implicit subtype。
+RW-T07-S1-014	29	1	DESIGN_INPUT_EXPRESSION	decimal 使用 arbitrary-precision BigDecimal value semantics，scale/trailing-zero 不可观察且 1.0=1.00、-0=0。
+RW-T07-S1-015	29	2	WIRE_CANONICAL_DIGEST	date/time exact wire 分别 YYYY-MM-DD 与 HH:mm:ss。
+RW-T07-S1-016	29	3	WIRE_CANONICAL_DIGEST	color canonical wire 为 uppercase #RRGGBBAA。
+RW-T07-S1-017	29	4	WIRE_CANONICAL_DIGEST	imageRef/fontRef 均为 typed closed {assetId}，assetId 必须 server-generated canonical lowercase UUID v4。
+RW-T07-S1-018	30	1	DESIGN_INPUT_EXPRESSION	enum token case-sensitive。
+RW-T07-S1-019	30	2	SECURITY_FAULT	enum catalog 由 global Node property model immutable-owned；v1 禁止 Template-defined catalog。
+RW-T07-S1-020	30	3	DESIGN_INPUT_EXPRESSION	Expression 1.0 对 color/asset-ref/enum/list 只可 explicit-input 后 select/pass-through，不可 construct。
+RW-T07-S2-001	34	1	WIRE_CANONICAL_DIGEST	definitions[] exact closed union 为 custom|mapping|expression。
+RW-T07-S2-002	34	2	WIRE_CANONICAL_DIGEST	Computed Definition 只是 Mapping/Expression 的术语统称，不是 wire kind。
+RW-T07-S2-003	34	3	SECURITY_FAULT	不允许 inline expression/mapping。
+RW-T07-S2-004	35	1	WIRE_CANONICAL_DIGEST	所有 Definition 具有 Template-unique opaque definitionId 与 required non-unique displayName。
+RW-T07-S2-005	35	2	DESIGN_INPUT_EXPRESSION	CustomDefinition 固定 invocation domain，并有 required typed-literal default 与 PUBLIC|PRIVATE exposure。
+RW-T07-S2-006	35	3	DESIGN_INPUT_EXPRESSION	Mapping/Expression Definition 显式声明 invocation/loopId domain 与 output type。
+RW-T07-S2-007	37	1	WIRE_CANONICAL_DIGEST	literal ValueSource exact wire 为 {kind:"literal",valueType,value}。
+RW-T07-S2-008	38	1	WIRE_CANONICAL_DIGEST	context ValueSource exact wire 为 {kind:"context",domain,pointer}。
+RW-T07-S2-009	39	1	WIRE_CANONICAL_DIGEST	loopIndex ValueSource exact wire 为 {kind:"loopIndex",loopId}。
+RW-T07-S2-010	40	1	WIRE_CANONICAL_DIGEST	definition ValueSource exact wire 为 {kind:"definition",definitionId}。
+RW-T07-S2-011	41	1	WIRE_CANONICAL_DIGEST	Expression-only capability sources exact 为 CLOCK.UTC_DATE、CLOCK.UTC_TIME、RANDOM.UNIFORM_DECIMAL_0_1 三个 closed forms。
+RW-T07-S2-012	42	1	DESIGN_INPUT_EXPRESSION	literal、Custom default、Mapping operand 共用一个 authoritative type decoder。
+RW-T07-S2-013	42	2	SECURITY_FAULT	null、quoted decimal、nested/heterogeneous list、bad asset shape 均为 hard error。
+RW-T07-S2-014	43	1	DESIGN_INPUT_EXPRESSION	context domain 只能是 invocation 或 {kind:"loop",loopId}。
+RW-T07-S2-015	43	2	WIRE_CANONICAL_DIGEST	context pointer 必须 non-empty 且为 RFC6901-correct StaticSchema field path。
+RW-T07-S2-016	43	3	SECURITY_FAULT	context pointer 禁止 whole object、numeric/wildcard array traversal、raw JSON 或 unknown field。
+RW-T07-S2-017	44	1	DESIGN_INPUT_EXPRESSION	loopIndex 返回 zero-based、nonnegative integer-valued decimal。
+RW-T07-S2-018	44	2	DESIGN_INPUT_EXPRESSION	loop item value 通过该 loop domain typed context 读取。
+RW-T07-S2-019	44	3	SECURITY_FAULT	v1 不提供 loop-key ValueSource。
+RW-T07-S2-020	45	1	DESIGN_INPUT_EXPRESSION	Capability ValueSource 只可作 Expression explicit input。
+RW-T07-S2-021	45	2	SECURITY_FAULT	Capability ValueSource 禁止直接作 Binding、Mapping input/result、Custom default、child fill 或 static property。
+RW-T07-S2-022	45	3	DESIGN_INPUT_EXPRESSION	普通 property Binding source 只允许 context、loopIndex、definition。
+RW-T07-S2-023	45	4	DESIGN_INPUT_EXPRESSION	literal static value 必须写入 DesignDSL baseline，而非 Binding。
+RW-T07-S2-024	46	1	DESIGN_INPUT_EXPRESSION	Context source 可以是 MAY_BE_ABSENT。
+RW-T07-S2-025	46	2	DESIGN_INPUT_EXPRESSION	Computed Definition output 与普通 Binding source 静态分析后必须 CONCRETE。
+RW-T07-S2-026	46	3	DESIGN_INPUT_EXPRESSION	typed ABSENT 必须经 exists/coalesce/Mapping otherwise/structural missing-policy totalize。
+RW-T07-S2-027	46	4	DESIGN_INPUT_EXPRESSION	ERROR 与 ABSENT 必须区分，ERROR 不可被 missing totalization 吞掉。
+RW-T07-S2-028	36	1	WIRE_CANONICAL_DIGEST	ValueSource 是由 literal/context/loopIndex/definition 与三个 Expression-only capability forms 构成的 exact closed union。
+RW-T07-S3-001	50	1	DESIGN_INPUT_EXPRESSION	Definition 可 forward-reference。
+RW-T07-S3-002	50	2	SECURITY_FAULT	Definition graph 必须 acyclic、all refs existing、domains valid。
+RW-T07-S3-003	50	3	DESIGN_INPUT_EXPRESSION	Definitions、Expression inputs、node bindings array order 无 evaluation semantics。
+RW-T07-S3-004	50	4	DESIGN_INPUT_EXPRESSION	Mapping cases 等 explicit sequences 保留 order semantics。
+RW-T07-S3-005	51	1	DESIGN_INPUT_EXPRESSION	non-Custom Definition 只读 own/lexical-ancestor domain。
+RW-T07-S3-006	51	2	DESIGN_INPUT_EXPRESSION	non-Custom Definition 只可由 own/descendant domain consume。
+RW-T07-S3-007	51	3	SECURITY_FAULT	loop value 不得逃逸到 parent、sibling 或 child Template。
+RW-T07-S3-008	51	4	EDITOR_AUTOMATED	移动 consumer node 可使既有 Binding lexical-invalid；不得隐式改域。
+RW-T07-S3-009	52	1	DESIGN_INPUT_EXPRESSION	所有 Definition 即使 unused 也在 save/recheck 做 syntax/type/domain/cycle/dependency validation。
+RW-T07-S3-010	52	2	EDITOR_AUTOMATED	unused Definition 只产生 non-blocking editor hint。
+RW-T07-S3-011	53	1	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	Mapping/Expression 在 declaration frame lazy-evaluate 并 memoize：invocation-domain 每 invocation 最多一次、loop-domain 每 frame 最多一次。
+RW-T07-S3-012	53	2	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	Binding 只在 consumer materialize 时 evaluate。
+RW-T07-S4-001	57	1	WIRE_CANONICAL_DIGEST	Mapping wire exact members 为 kind/definitionId/displayName/domain/output/input/cases/otherwise。
+RW-T07-S4-002	57	2	DESIGN_INPUT_EXPRESSION	Mapping input 是单个 ValueSource。
+RW-T07-S4-003	57	3	WIRE_CANONICAL_DIGEST	Mapping cases 至少一个且没有 caseId。
+RW-T07-S4-004	57	4	DESIGN_INPUT_EXPRESSION	Mapping cases 顺序采用 first-match semantics。
+RW-T07-S4-005	57	5	DESIGN_INPUT_EXPRESSION	otherwise 必填，且全部 result sources 与 declared output exact-compatible。
+RW-T07-S4-006	58	1	DESIGN_INPUT_EXPRESSION	Mapping case 使用 closed operator 与 optional typed-literal operand。
+RW-T07-S4-007	58	2	DESIGN_INPUT_EXPRESSION	v1 universal presence/equality operators exact 为 IS_ABSENT/IS_PRESENT/EQ/NOT_EQ。
+RW-T07-S4-008	58	3	DESIGN_INPUT_EXPRESSION	decimal/date/time comparison operators exact 为 GT/GTE/LT/LTE。
+RW-T07-S4-009	58	4	DESIGN_INPUT_EXPRESSION	text operators exact 为 CONTAINS/STARTS_WITH/ENDS_WITH/PATTERN_MATCH/IS_BLANK/IS_NOT_BLANK。
+RW-T07-S4-010	58	5	DESIGN_INPUT_EXPRESSION	homogeneous list<T> 只提供 CONTAINS。
+RW-T07-S4-011	59	1	DESIGN_INPUT_EXPRESSION	ABSENT input 只匹配 IS_ABSENT；所有 value operators（含 NOT_EQ/IS_NOT_BLANK）均不匹配。
+RW-T07-S4-012	59	2	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	Mapping input ERROR 直接传播。
+RW-T07-S4-013	60	1	DESIGN_INPUT_EXPRESSION	PATTERN_MATCH 只接受 literal pattern，并复用 Schema Java/ECMAScript safe-intersection、substring semantics、1024-codepoint limit。
+RW-T07-S4-014	60	2	SECURITY_FAULT	Expression 1.0 不提供 regex。
+RW-T07-S4-015	61	1	DESIGN_INPUT_EXPRESSION	blank 使用票据列出的 frozen Unicode White_Space code-point set。
+RW-T07-S4-016	61	2	DESIGN_INPUT_EXPRESSION	其他 text operator exact-compare Unicode sequence，不做 normalization/case-fold/locale。
+RW-T07-S4-017	62	1	EDITOR_AUTOMATED	overlapping cases 合法且只给 editor hint；复杂条件应改用 ExpressionDefinition。
+RW-T07-S5-001	66	1	WIRE_CANONICAL_DIGEST	Expression wire language exact 为 renderweave-expression/1.0。
+RW-T07-S5-002	66	2	DESIGN_INPUT_EXPRESSION	RenderWeave 自己定义 grammar/types/BigDecimal/ABSENT/functions/eval-order/budgets。
+RW-T07-S5-003	66	3	DESIGN_INPUT_EXPRESSION	Java Evaluator 是唯一 semantic authority。
+RW-T07-S5-004	66	4	DESIGN_INPUT_EXPRESSION	CEL 只可作为通过 conformance corpus 的 replaceable internal implementation。
+RW-T07-S5-005	67	1	WIRE_CANONICAL_DIGEST	每份 DesignDSL 即使无 Expression 也始终携一个 top-level expressionProfile。
+RW-T07-S5-006	67	2	WIRE_CANONICAL_DIGEST	ExpressionDefinition 只存 definitionId/displayName/domain/output/inputs/source，不重复 profile。
+RW-T07-S5-007	67	3	SECURITY_FAULT	同 revision 禁止混用 profile。
+RW-T07-S5-008	67	4	WIRE_CANONICAL_DIGEST	未来 profile upgrade 必须 explicit migration 并追加 revision。
+RW-T07-S5-009	67	5	SECURITY_FAULT	禁止 automatic profile upgrade/fallback。
+RW-T07-S5-010	68	1	WIRE_CANONICAL_DIGEST	source 是 exact UTF-8 JSON string，可 multiline、no comments、case-sensitive。
+RW-T07-S5-011	68	2	WIRE_CANONICAL_DIGEST	source whitespace/newline 不 normalize 且参与 content hash。
+RW-T07-S5-012	68	3	WIRE_CANONICAL_DIGEST	Expression AST/IR 仅为 derived artifact，不进 historical fact source。
+RW-T07-S5-013	69	1	WIRE_CANONICAL_DIGEST	Expression input exact shape 为 {alias,source}。
+RW-T07-S5-014	69	2	DESIGN_INPUT_EXPRESSION	alias 最多64 ASCII identifier、unique、all-used；inputs order 无语义。
+RW-T07-S5-015	69	3	SECURITY_FAULT	source code 只能通过 input.alias 读取，禁止直接 path/definitionId/loopId/capability。
+RW-T07-S5-016	70	1	DESIGN_INPUT_EXPRESSION	grammar precedence 与 v1 literal/operator/function set 精确按票据冻结。
+RW-T07-S5-017	71	1	WIRE_CANONICAL_DIGEST	text literal 用 single quote 与 frozen limited escapes。
+RW-T07-S5-018	71	2	WIRE_CANONICAL_DIGEST	decimal literal 使用 JSON-number/exponent lexicon。
+RW-T07-S5-019	71	3	SECURITY_FAULT	text 不支持 +；decimal 不提供 / 或 %，必须用 explicit functions。
+RW-T07-S5-020	72	1	SECURITY_FAULT	v1 排除 member/index、object/list construction、higher-order collection、lambda/recursion/user-function/eval/regex/date-arithmetic/color-op/arbitrary-script。
+RW-T07-S5-021	72	2	SECURITY_FAULT	unsupported feature 在该 profile 中必须 illegal，不得 parsed-but-unimplemented。
+RW-T07-S5-022	73	1	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	普通 args left-to-right；&&/||/if/coalesce lazy。
+RW-T07-S5-023	73	2	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	Expression input lazy 且单次 Expression evaluation 内 memoized。
+RW-T07-S5-024	73	3	ASSET_CAPABILITY_CONCURRENCY	未选择 branch 不调用 capability。
+RW-T07-S5-025	73	4	DESIGN_INPUT_EXPRESSION	所有 branches 即使 lazy 仍 static-validate。
+RW-T07-S5-026	74	1	DESIGN_INPUT_EXPRESSION	exists(ABSENT)=false、exists(PRESENT)=true、exists(ERROR)=ERROR。
+RW-T07-S5-027	74	2	DESIGN_INPUT_EXPRESSION	coalesce 只处理 ABSENT，fallback 与 first arg 同 base type。
+RW-T07-S5-028	74	3	DESIGN_INPUT_EXPRESSION	if condition 必须 concrete boolean，两个 branches same type。
+RW-T07-S5-029	74	4	DESIGN_INPUT_EXPRESSION	concat 只接受 concrete text。
+RW-T07-S5-030	74	5	DESIGN_INPUT_EXPRESSION	length 按 Unicode codepoint 或 list-item count，并返回 integer decimal。
+RW-T07-S5-031	75	1	DESIGN_INPUT_EXPRESSION	presence refinement 只支持 exists(input.x) 及 direct !，并仅在指定 &&/|| RHS patterns narrowing；不做 general flow analysis。
+RW-T07-S5-032	76	1	DESIGN_INPUT_EXPRESSION	decimal +/-/* 为 exact arithmetic。
+RW-T07-S5-033	76	2	DESIGN_INPUT_EXPRESSION	divide/round scale 与 rounding mode 必须 compile-time literal。
+RW-T07-S5-034	76	3	DESIGN_INPUT_EXPRESSION	scale nonnegative；mode exact 为 HALF_UP/HALF_EVEN/DOWN/UP。
+RW-T07-S5-035	76	4	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	divide-by-zero、invalid scale、budget breach 均产生 ERROR。
+RW-T07-S5-036	77	1	DESIGN_INPUT_EXPRESSION	formatDecimal 先按 max exact-round，再 strip 超过 min 的 trailing zeros 并保留 min digits。
+RW-T07-S5-037	77	2	WIRE_CANONICAL_DIGEST	formatDecimal 输出 ASCII、fixed dot、no grouping/exponent；max=0 无 decimal point。
+RW-T07-S5-038	77	3	WIRE_CANONICAL_DIGEST	formatDate/formatTime 只输出 frozen canonical format。
+RW-T07-S5-039	77	4	SECURITY_FAULT	locale/timezone/custom pattern 留待 future profile。
+RW-T07-S5-040	78	1	DESIGN_INPUT_EXPRESSION	equality 只接受 same-type concrete scalar。
+RW-T07-S5-041	78	2	DESIGN_INPUT_EXPRESSION	text 按 exact Unicode、asset refs 按 assetId、enum 按 same-catalog token 比较。
+RW-T07-S5-042	78	3	SECURITY_FAULT	list 不提供 whole equality 或 ordering。
+RW-T07-S6-001	82	1	DESIGN_INPUT_EXPRESSION	Design Node property model 对所有 Template 全局固定。
+RW-T07-S6-002	82	2	SECURITY_FAULT	Template 不得定义、复制或覆盖 bindable-property rules。
+RW-T07-S6-003	82	3	DESIGN_INPUT_EXPRESSION	Global BindingPolicyCatalog 由 platform Node definers 维护。
+RW-T07-S6-004	82	4	EDITOR_AUTOMATED	Frontend/client 必须据 Catalog 呈现与 author Binding。
+RW-T07-S6-005	82	5	DESIGN_INPUT_EXPRESSION	服务端在 save 与 Evaluation 时 authoritative-enforce Catalog。
+RW-T07-S6-006	83	1	WIRE_CANONICAL_DIGEST	每条 BindingPolicy 由 nodeKind + propertyPathPattern 唯一定位。
+RW-T07-S6-007	83	2	DESIGN_INPUT_EXPRESSION	BindingPolicy 给出 targetType 与该 property 原有 propertyValidation。
+RW-T07-S6-008	83	3	SECURITY_FAULT	不存在 matching Policy 的 property 不可 bind。
+RW-T07-S6-009	83	4	SECURITY_FAULT	Catalog 不使用 STATIC_ONLY/STATIC_OR_BINDING/BINDING_REQUIRED assignment modes。
+RW-T07-S6-010	84	1	WIRE_CANONICAL_DIGEST	BindingPolicyCatalog append-only，不随 DesignDSL version freeze。
+RW-T07-S6-011	84	2	SECURITY_FAULT	既有 Policy 的 path/type/validation 不可修改或删除。
+RW-T07-S6-012	84	3	SECURITY_FAULT	新增 Policy 不得与现有 target set overlap。
+RW-T07-S6-013	84	4	DESIGN_INPUT_EXPRESSION	新增 Policy 只把此前不可绑定的固定 property 变为 optional Binding target。
+RW-T07-S6-014	84	5	SECURITY_FAULT	新增 Policy 不得使既有合法 Template invalid。
+RW-T07-S6-015	85	1	WIRE_CANONICAL_DIGEST	Template 不保存 policyId 或 Catalog revision。
+RW-T07-S6-016	85	2	DESIGN_INPUT_EXPRESSION	Binding 通过 node kind + targetPropertyRef 解析 current append-only Catalog。
+RW-T07-S6-017	85	3	WIRE_CANONICAL_DIGEST	新增 Policy 无需 migrate old DesignDSL。
+RW-T07-S6-018	85	4	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	新增 Policy 不改变 old revision existing evaluation semantics。
+RW-T07-S6-019	86	1	DESIGN_INPUT_EXPRESSION	Property target 校验 evaluated source ValueType，不按 source kind 各列 whitelist。
+RW-T07-S6-020	86	2	DESIGN_INPUT_EXPRESSION	普通 Binding source kinds 统一使用既有 source rules。
+RW-T07-S6-021	86	3	DESIGN_INPUT_EXPRESSION	Binding output 必须 exact-match Policy targetType。
+RW-T07-S6-022	86	4	DESIGN_INPUT_EXPRESSION	Overlay 后必须重新通过 target propertyValidation。
+RW-T07-S7-001	90	1	WIRE_CANONICAL_DIGEST	Binding 存在于实际消费 property 的 Design Node bindings[]。
+RW-T07-S7-002	90	2	WIRE_CANONICAL_DIGEST	host node 隐式确定；wire 不存 nodeId/slotId 且无 top-level Binding table。
+RW-T07-S7-003	90	3	WIRE_CANONICAL_DIGEST	Binding exact wire 为 {bindingId,targetPropertyRef,source}，bindingId Template-unique。
+RW-T07-S7-004	91	1	WIRE_CANONICAL_DIGEST	targetPropertyRef exact shape 为 {rootPropertyId,selectors[]}。
+RW-T07-S7-005	91	2	WIRE_CANONICAL_DIGEST	Target path 只支持 property、property.member、property[index]、property[index].member、property.member[index]。
+RW-T07-S7-006	92	1	WIRE_CANONICAL_DIGEST	selectors 最多两个，且至多一个 member 与一个 index。
+RW-T07-S7-007	92	2	DESIGN_INPUT_EXPRESSION	member 必须是 global Node property-model propertyId，不是 arbitrary JSON key。
+RW-T07-S7-008	92	3	SECURITY_FAULT	index 必须 literal zero-based nonnegative integer；禁止 dynamic/negative/wildcard/slice。
+RW-T07-S7-009	93	1	DESIGN_INPUT_EXPRESSION	target 全部 containers 与 final static leaf 必须 already exist 且自身合法。
+RW-T07-S7-010	93	2	DESIGN_INPUT_EXPRESSION	index 必须在 authored array bounds 内。
+RW-T07-S7-011	93	3	SECURITY_FAULT	Binding 不创建 missing member 或扩展 array。
+RW-T07-S7-012	93	4	SECURITY_FAULT	object/complex-array 只可作 path container，不可 whole-value bind。
+RW-T07-S7-013	93	5	DESIGN_INPUT_EXPRESSION	homogeneous 1-D list 仅在 global property type exact list<T> 时可 whole-bind。
+RW-T07-S7-014	94	1	WIRE_CANONICAL_DIGEST	array index 是 revision-local position，不是 item identity。
+RW-T07-S7-015	94	2	SECURITY_FAULT	array shortening 使 target out-of-bounds 时为不可确认 hard error。
+RW-T07-S7-016	94	3	DESIGN_INPUT_EXPRESSION	array reorder 默认继续指向 same index。
+RW-T07-S7-017	94	4	EDITOR_AUTOMATED	Editor 若保持 original item，必须在一个 author action 中同步 rewrite target index。
+RW-T07-S7-018	95	1	DESIGN_INPUT_EXPRESSION	same-node bindings array order 无 semantics。
+RW-T07-S7-019	95	2	SECURITY_FAULT	duplicate target 与 ancestor/descendant overlap 是 hard error。
+RW-T07-S7-020	95	3	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	Binding target 不重叠，因此 overlay order 不影响 result。
+RW-T07-S7-021	95	4	SECURITY_FAULT	Global Policy path patterns 不得让一个 target ambiguous-match。
+RW-T07-S8-001	99	1	DESIGN_INPUT_EXPRESSION	所有 bindable properties 始终保存 legal DesignDSL static value；不存在 Binding-required property。
+RW-T07-S8-002	99	2	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	无 Binding 时使用 static baseline。
+RW-T07-S8-003	99	3	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	Binding 成功产生 concrete legal value 时 overlay target leaf。
+RW-T07-S8-004	99	4	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	删除 Binding 后 static baseline 重新生效。
+RW-T07-S8-005	99	5	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	Repeat items 与 Conditional condition 是 direct structural ValueSource，不是 Binding target且无需 fake baseline。
+RW-T07-S8-006	100	1	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	static baseline 只是 authoring baseline，不是 runtime fallback。
+RW-T07-S8-007	100	2	SECURITY_FAULT	Binding 的 ABSENT/ERROR/wrong-type/propertyValidation failure 立即 fail 整次 Evaluation。
+RW-T07-S8-008	100	3	SECURITY_FAULT	Binding failure 不得 fallback baseline 或产出 partial RenderDocument。
+RW-T07-S8-009	101	1	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	Evaluator 先形成 legal static property tree，再应用 nonoverlapping leaf overlays。
+RW-T07-S8-010	101	2	DESIGN_INPUT_EXPRESSION	普通 visual property 必须为 concrete ValueType。
+RW-T07-S8-011	101	3	DESIGN_INPUT_EXPRESSION	未来 structural Binding target 必须由 global model 声明 closed type 并保留 legal baseline。
+RW-T07-S8-012	101	4	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	具体 collection semantics 由 T11 冻结。
+RW-T07-S8-013	102	1	ASSET_CAPABILITY_CONCURRENCY	所有 authored imageRef/fontRef literal atoms 即使被 overlay/lazy-pruned 仍是 current dependency facts。
+RW-T07-S8-014	102	2	WIRE_CANONICAL_DIGEST	每个 authored AssetRef atom 以 independent canonical pointer 进入 dependency projection/readiness。
+RW-T07-S8-015	102	3	ASSET_CAPABILITY_CONCURRENCY	runtime override AssetRef 不成为 Template persisted dependency。
+RW-T07-S9-001	106	1	DESIGN_INPUT_EXPRESSION	save/recheck 对全部 Definition/Expression/Mapping/Binding/ID/type/domain/cycle/authored-literal 做 bounded deterministic complete problem collection。
+RW-T07-S9-002	106	2	SECURITY_FAULT	可证明 literal/runtime fault 即使在 unreachable branch 仍是 hard error。
+RW-T07-S9-003	106	3	DESIGN_INPUT_EXPRESSION	constant folding 可选。
+RW-T07-S9-004	106	4	ASSET_CAPABILITY_CONCURRENCY	constant folding 不得改变 semantics 或 capability-call count。
+RW-T07-S9-005	107	1	SECURITY_FAULT	grammar/unknown-member/invalid-domain-or-path/empty-pointer/duplicate identity/cycle/type-slot mismatch/bad function/baseline-target structure 均为不可确认 hard error。
+RW-T07-S9-006	108	1	DESIGN_INPUT_EXPRESSION	exact-Schema path missing 或 type/presence proof drift、invalid AssetRef/TemplateRef 是 confirmable dependency ERROR。
+RW-T07-S9-007	108	2	SECURITY_FAULT	INVALID/STALE Template 不得 Render。
+RW-T07-S9-008	109	1	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	runtime demand-driven，只 materialize actual consumer/binding、selected Mapping result、selected Expression branch。
+RW-T07-S9-009	109	2	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	首个 demanded ERROR fail-fast。
+RW-T07-S9-010	109	3	ASSET_CAPABILITY_CONCURRENCY	fail-fast 后不再调用 capability 或 resolve Asset。
+RW-T07-S9-011	109	4	SECURITY_FAULT	runtime demanded ERROR 使整次 Evaluation zero RenderDocument。
+RW-T07-S9-012	110	1	SECURITY_FAULT	diagnostic 携 stable code、DesignDSL pointer/target、definitionId/bindingId、zero-based UTF-16 span 与 bounded consumption chain。
+RW-T07-S9-013	110	2	SECURITY_FAULT	diagnostic 不回显实际 business value。
+RW-T07-S9-014	110	3	EDITOR_AUTOMATED	Web linter 仅作 feedback。
+RW-T07-S9-015	110	4	DESIGN_INPUT_EXPRESSION	server save/recheck 与 Java Evaluator 是 authority。
+RW-T07-S10-001	114	1	DESIGN_INPUT_EXPRESSION	authored imageRef/fontRef 由 declared ValueType 给 expected kind。
+RW-T07-S10-002	114	2	SECURITY_FAULT	dynamic root PUBLIC asset override 的每个 atom 即使 unused 也在 admission 校验 same-scope/ACTIVE/kind/caller asset.read。
+RW-T07-S10-003	114	3	SECURITY_FAULT	invisible 或 cross-scope dynamic AssetRef 返回 NOT_FOUND。
+RW-T07-S10-004	114	4	SECURITY_FAULT	Asset override admission 禁止 partial admission。
+RW-T07-S10-005	114	5	ASSET_CAPABILITY_CONCURRENCY	AdmittedAssetValue 可经 definition/binding/child-fill 传递，不重复要求 render caller asset.read。
+RW-T07-S10-006	115	1	ASSET_CAPABILITY_CONCURRENCY	只有 materialized Node-property actual consumer 才按 OccurrencePath+ConsumerPropertyRef 独立 resolve Asset current。
+RW-T07-S10-007	115	2	ASSET_CAPABILITY_CONCURRENCY	Definition memoized logical value 不得 merge distinct consumer occurrences。
+RW-T07-S10-008	115	3	ASSET_CAPABILITY_CONCURRENCY	同一 AssetRef 流入多个 property/Text Run 时产生多个 resolve occurrences。
+RW-T07-S10-009	116	1	DESIGN_INPUT_EXPRESSION	Capability 只作为 Expression explicit input。
+RW-T07-S10-010	116	2	ASSET_CAPABILITY_CONCURRENCY	renderweave-expression/1.0 永久映射 exact Clock/Random contract。
+RW-T07-S10-011	116	3	ASSET_CAPABILITY_CONCURRENCY	每个 capability input 由 root/use/loop-frame path、definitionId、alias、contract/operation 构成 CallPosition，并 lazy-demand。
+RW-T07-S10-012	116	4	ASSET_CAPABILITY_CONCURRENCY	Clock 共享 UTC whole-second snapshot。
+RW-T07-S10-013	116	5	ASSET_CAPABILITY_CONCURRENCY	Random 按 server-only nonce 与 position 派生 exact k/10^18。
+RW-T07-S10-014	116	6	SECURITY_FAULT	AssetResolver 不是普通 Expression capability。

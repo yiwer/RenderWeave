@@ -1,0 +1,21 @@
+{
+  "artifactVersion": "renderweave-editor-input-fixture/1.0",
+  "candidateId": "EDC::J09::007",
+  "executionClass": "EXEC::EDITOR_AUTOMATED::1.0",
+  "baselineId": "EditorSaveReconciliationUnknown",
+  "parameters": {},
+  "actionScript": [
+    {
+      "action": "READ_TRUSTED_CURRENT",
+      "parameters": {}
+    },
+    {
+      "action": "EXPORT_DRAFT",
+      "parameters": {}
+    },
+    {
+      "action": "LEAVE_WITH_RECOVERY_RETAINED",
+      "parameters": {}
+    }
+  ]
+}

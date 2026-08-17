@@ -1,0 +1,17 @@
+{
+  "artifactVersion": "renderweave-editor-input-fixture/1.0",
+  "candidateId": "EDC::J04::002",
+  "executionClass": "EXEC::EDITOR_AUTOMATED::1.0",
+  "baselineId": "EditorStructuredArrayMultipleNumericTargets",
+  "parameters": {},
+  "actionScript": [
+    {
+      "action": "REORDER_SEMANTIC_ARRAY",
+      "parameters": {
+        "arrayPointer": "/nodes/0/runs",
+        "fromIndex": 2,
+        "toIndex": 0
+      }
+    }
+  ]
+}

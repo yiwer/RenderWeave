@@ -1,0 +1,21 @@
+{
+  "artifactVersion": "renderweave-editor-input-fixture/1.0",
+  "candidateId": "EDC::J08::002",
+  "executionClass": "EXEC::EDITOR_AUTOMATED::1.0",
+  "baselineId": "EditorStructuredConflictAwaitingDecision",
+  "parameters": {},
+  "actionScript": [
+    {
+      "action": "CONFIRM_OVERWRITE",
+      "parameters": {}
+    },
+    {
+      "action": "READ_LATEST_CURRENT",
+      "parameters": {}
+    },
+    {
+      "action": "RESUBMIT_COMPLETE_DESIGN_WITH_LATEST_REVISION",
+      "parameters": {}
+    }
+  ]
+}

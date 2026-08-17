@@ -1,0 +1,112 @@
+requirement_id	source_line	clause_ordinal_on_line	family	normative_summary
+RW-T06-S1-001	20	1	DESIGN_INPUT_EXPRESSION	每次 root Template Evaluation 只接收一个 request-scoped RenderInput。
+RW-T06-S1-002	20	2	DESIGN_INPUT_EXPRESSION	RenderInput 必须含一个 aggregate rootDocument。
+RW-T06-S1-003	20	3	DESIGN_INPUT_EXPRESSION	RenderInput 可省略 top-level customValues[]。
+RW-T06-S1-004	20	4	SECURITY_FAULT	CSV/Excel/DB/HTTP Connector 必须在 Template boundary 外聚合并 normalize 数据。
+RW-T06-S1-005	20	5	SECURITY_FAULT	Connector 不得成为第二 data root、DesignDSL node 或 runtime connection config。
+RW-T06-S1-006	20	6	WIRE_CANONICAL_DIGEST	RenderInput 不携带 StaticSchemaRef。
+RW-T06-S1-007	20	7	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	权威目标 Schema 只能来自请求开始时 frozen root TemplateSnapshot permanent StaticSchemaRef。
+RW-T06-S1-008	22	1	DESIGN_INPUT_EXPRESSION	RenderInput envelope 与每个 assignment 都是 closed strict-JSON object。
+RW-T06-S1-009	22	2	SECURITY_FAULT	未知 member 必须拒绝。
+RW-T06-S1-010	22	3	SECURITY_FAULT	duplicate JSON object key 必须拒绝。
+RW-T06-S1-011	22	4	SECURITY_FAULT	non-object assignment 必须拒绝。
+RW-T06-S1-012	22	5	SECURITY_FAULT	lexically invalid definitionId 必须拒绝。
+RW-T06-S1-013	22	6	DESIGN_INPUT_EXPRESSION	rootDocument 必填且 JSON root 必须为 object。
+RW-T06-S1-014	22	7	DESIGN_INPUT_EXPRESSION	customValues 省略等价 empty list。
+RW-T06-S1-015	22	8	DESIGN_INPUT_EXPRESSION	每个 assignment 必须同时有 definitionId 与 strict-JSON value。
+RW-T06-S1-016	22	9	SECURITY_FAULT	完整 request 先受 global byte/depth/entry budgets。
+RW-T06-S1-017	22	10	SECURITY_FAULT	具体 RenderInput limits 由 capacity contract 冻结。
+RW-T06-S1-018	24	1	DESIGN_INPUT_EXPRESSION	RootDocument 必须经保留 decimal 等 scalar precision 的 lossless raw-JSON boundary 进入 validator。
+RW-T06-S1-019	24	2	DESIGN_INPUT_EXPRESSION	不得先经 generic object binding 改变 number 或 key。
+RW-T06-S1-020	24	3	DESIGN_INPUT_EXPRESSION	每次 Evaluation 按 root TemplateSnapshot exact StaticSchemaRef 权威验证。
+RW-T06-S1-021	24	4	SECURITY_FAULT	Caller 不得选择、重复或覆盖 Schema。
+RW-T06-S1-022	24	5	DESIGN_INPUT_EXPRESSION	StaticSchema-undeclared fields 依既有 validator 允许，但不进入任何 observable evaluation scope。
+RW-T06-S1-023	24	6	DESIGN_INPUT_EXPRESSION	声明 optional field 缺失产生 statically typed ABSENT。
+RW-T06-S1-024	24	7	DESIGN_INPUT_EXPRESSION	声明 field 的 explicit null 一律 validation failure。
+RW-T06-S1-025	24	8	WIRE_CANONICAL_DIGEST	Input string 不做额外 trim 或 Unicode normalization。
+RW-T06-S1-026	26	1	DESIGN_INPUT_EXPRESSION	全部 admission 成功后形成 immutable AdmittedRenderInput。
+RW-T06-S1-027	26	2	DESIGN_INPUT_EXPRESSION	AdmittedRenderInput 只含 exact SchemaRef、unknown-filtered closed typed view、PRESENT/ABSENT、resolved root Custom map 与必要 type proofs。
+RW-T06-S1-028	26	3	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	Evaluator 只消费 admitted semantic view，不重新 parse/read raw RootDocument。
+RW-T06-S1-029	26	4	SECURITY_FAULT	envelope、RootDocument 或 effective Custom override error 不创建 Evaluation frame。
+RW-T06-S1-030	26	5	SECURITY_FAULT	Admission error 不执行 Expression 或 capability。
+RW-T06-S1-031	26	6	SECURITY_FAULT	Admission error 不产生 partial RenderDocument。
+RW-T06-S1-032	26	7	SECURITY_FAULT	Admission 可返回 bounded multi-problem response。
+RW-T06-S1-033	26	8	SECURITY_FAULT	raw RootDocument/customValues 不得进入 normal logs、Template revision 或 audit dump。
+RW-T06-S1-034	28	1	WIRE_CANONICAL_DIGEST	top-level definitions[] 是 version-closed union，custom 表示 CustomDefinition 而非 DataSource/Connector。
+RW-T06-S1-035	28	2	DESIGN_INPUT_EXPRESSION	CustomDefinition 必须有 stable definitionId、declared type、required non-null typed-literal defaultValue、PUBLIC|PRIVATE exposure。
+RW-T06-S1-036	28	3	DESIGN_INPUT_EXPRESSION	Custom defaultValue 不得是 ValueSource 或 Expression。
+RW-T06-S1-037	28	4	WIRE_CANONICAL_DIGEST	definitionId 在单 Template 全部 definitions 中唯一。
+RW-T06-S1-038	28	5	DESIGN_INPUT_EXPRESSION	definitions array order 不构成 evaluation order。
+RW-T06-S1-039	28	6	SECURITY_FAULT	duplicate ID、invalid domain、bad default type、lexical escape、definition cycle 是不可确认 self-contained hard error。
+RW-T06-S1-040	28	7	WIRE_CANONICAL_DIGEST	具体 type set/wire/dependency 由 ValueSource/Expression 与 DesignDSL envelope contracts 冻结。
+RW-T06-S1-041	30	1	DESIGN_INPUT_EXPRESSION	root customValues 只 override root Template current PUBLIC CustomDefinition。
+RW-T06-S1-042	30	2	DESIGN_INPUT_EXPRESSION	Override 按 stable definitionId 寻址，不用 displayName/externalKey。
+RW-T06-S1-043	30	3	SECURITY_FAULT	root customValues 不得定向 nested Template。
+RW-T06-S1-044	30	4	DESIGN_INPUT_EXPRESSION	duplicate definitionId 使用最后一项；除此外 list order 无语义。
+RW-T06-S1-045	30	5	SECURITY_FAULT	全部 custom entries 先完成 envelope 与 global-budget checks。
+RW-T06-S1-046	30	6	DESIGN_INPUT_EXPRESSION	完成 global checks 后按 definitionId grouping。
+RW-T06-S1-047	30	7	DESIGN_INPUT_EXPRESSION	被覆盖 loser 不做 declared-type/shape validation。
+RW-T06-S1-048	30	8	DESIGN_INPUT_EXPRESSION	winner target missing 或 PRIVATE 时 silent ignore 且 no warning。
+RW-T06-S1-049	30	9	DESIGN_INPUT_EXPRESSION	PUBLIC winner 必须 value present、non-null、declared-type valid 且 value-budget valid。
+RW-T06-S1-050	30	10	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	root invocation frame 创建时一次冻结 effective Custom map。
+RW-T06-S1-051	30	11	DESIGN_INPUT_EXPRESSION	PUBLIC Custom 使用 winner 或 default。
+RW-T06-S1-052	30	12	DESIGN_INPUT_EXPRESSION	PRIVATE Custom 永远使用 default。
+RW-T06-S1-053	30	13	DESIGN_INPUT_EXPRESSION	effective Custom map 每键皆 concrete，不存在 Custom ABSENT。
+RW-T06-S1-054	32	1	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	evaluation scope 由 immutable lexical frames 构成。
+RW-T06-S1-055	32	2	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	每次 Template invocation 建 frame，持有本 Template typed context、effective Custom map 与 definitions。
+RW-T06-S1-056	32	3	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	每个 actual loop item 建由 stable unique loopId 标识的 frame，公开 typed item 与 zero-based index。
+RW-T06-S1-057	32	4	SECURITY_FAULT	Loop frame 只链接 same-Template lexical ancestors。
+RW-T06-S1-058	32	5	DESIGN_INPUT_EXPRESSION	CustomDefinition 固定属于 invocation domain。
+RW-T06-S1-059	32	6	DESIGN_INPUT_EXPRESSION	Computed Definition 必须显式声明 invocation 或一个 loopId 作为唯一 evaluation domain。
+RW-T06-S1-060	32	7	DESIGN_INPUT_EXPRESSION	Computed Definition 可读 own domain 与 same-Template lexical ancestors。
+RW-T06-S1-061	32	8	SECURITY_FAULT	Computed Definition 不得读 sibling/descendant/caller/callee frame。
+RW-T06-S1-062	32	9	WIRE_CANONICAL_DIGEST	definitionId 与 loopId 是 independent namespaces。
+RW-T06-S1-063	34	1	WIRE_CANONICAL_DIGEST	persisted ValueSource、Computed domain、ContextSelector 必须显式指 invocation 或 concrete loopId。
+RW-T06-S1-064	34	2	SECURITY_FAULT	DSL 不保存 position-relative $current/$parent/$root。
+RW-T06-S1-065	34	3	EDITOR_AUTOMATED	Editor convenience alias 保存前必须 normalize 为 stable domain。
+RW-T06-S1-066	34	4	DESIGN_INPUT_EXPRESSION	StaticSchema field path 相对 selected domain、按 exact SchemaRef 静态解析。
+RW-T06-S1-067	34	5	WIRE_CANONICAL_DIGEST	Field path case-sensitive、preserve Unicode key、使用 RFC6901 escaping。
+RW-T06-S1-068	34	6	SECURITY_FAULT	Field path 禁止 wildcard 或 numeric array indexing。
+RW-T06-S1-069	34	7	DESIGN_INPUT_EXPRESSION	Array elements 必须通过 Loop 建新 domain。
+RW-T06-S1-070	34	8	DESIGN_INPUT_EXPRESSION	optional ancestor runtime missing 使合法 descendant path 得 typed ABSENT。
+RW-T06-S1-071	34	9	DESIGN_INPUT_EXPRESSION	Schema-nonexistent path 是 dependency ERROR 而非 runtime ABSENT。
+RW-T06-S1-072	34	10	DESIGN_INPUT_EXPRESSION	empty pointer 只允许 ContextSelector 选择 whole typed context。
+RW-T06-S1-073	34	11	SECURITY_FAULT	不得把 arbitrary raw object 暴露为 generic ValueSource。
+RW-T06-S1-074	36	1	DESIGN_INPUT_EXPRESSION	Repeat iterable 必须有 statically closed item type。
+RW-T06-S1-075	36	2	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	scalar item 映射到 exact system-basic-text/decimal/date/time/boolean@v1 typed context。
+RW-T06-S1-076	36	3	DESIGN_INPUT_EXPRESSION	每个 scalar-item context 必含 /index 与 typed /value。
+RW-T06-S1-077	36	4	DESIGN_INPUT_EXPRESSION	scalar /index 与 loopIndex ValueSource 表示同一值。
+RW-T06-S1-078	36	5	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	只有 validated StaticSchema array(items:reference) object item 携 exact SchemaRef，且不注入 index。
+RW-T06-S1-079	36	6	SECURITY_FAULT	Expression/computed JSON object 不得因 shape 相似成为 Schema context 或 child Template input。
+RW-T06-S1-080	36	7	SECURITY_FAULT	nested Repeat 只能按 loopId 读 current/ancestor，不得读 sibling/descendant。
+RW-T06-S1-081	38	1	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	每次 TemplateUse 建 isolated child invocation frame。
+RW-T06-S1-082	38	2	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	child context 只能由 explicit ContextSelector 选 exact same-Schema invocation context、exact reference subtree/item、whole system-basic scalar context 或 explicit system-empty context。
+RW-T06-S1-083	38	3	SECURITY_FAULT	ContextSelector 禁止 shape-based object construction 与 arbitrary JSON injection。
+RW-T06-S1-084	38	4	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	普通 selector 必须声明 ERROR|SKIP absent policy。
+RW-T06-S1-085	38	5	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	合法 optional context ABSENT 时 ERROR 失败、SKIP 完全跳过 invocation。
+RW-T06-S1-086	38	6	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	typed subview 携 exact Schema proof 并保持 immutable。
+RW-T06-S1-087	38	7	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	typed subview 不经 JSON serialization 或 shape revalidation。
+RW-T06-S1-088	38	8	DESIGN_INPUT_EXPRESSION	只有 external root RootDocument 在每次 Evaluation entry 做 authoritative validation。
+RW-T06-S1-089	40	1	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	child Custom input 仅经 TemplateUse explicit fills 按 child current PUBLIC definitionId 赋值。
+RW-T06-S1-090	40	2	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	fill source 在 parent use-site lexical domain 求值；loop 内逐 item，并复制 typed value 到 child frame。
+RW-T06-S1-091	40	3	SECURITY_FAULT	child 不得回读 parent frame。
+RW-T06-S1-092	40	4	DESIGN_INPUT_EXPRESSION	omitted fill 或 ABSENT fill source 使用 child default。
+RW-T06-S1-093	40	5	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	fill evaluation ERROR 使 Evaluation fail。
+RW-T06-S1-094	40	6	DESIGN_INPUT_EXPRESSION	duplicate target、missing/PRIVATE target、static type incompatibility 使 parent Template dependency ERROR。
+RW-T06-S1-095	40	7	DESIGN_INPUT_EXPRESSION	external customValue 指向 deleted/PRIVATE root definition 仍 silent ignore。
+RW-T06-S1-096	40	8	ASSET_CAPABILITY_CONCURRENCY	persisted parent fill target drift 触发 TemplateRef dependency recheck，并使 parent INVALID。
+RW-T06-S1-097	40	9	DESIGN_INPUT_EXPRESSION	child PRIVATE definition 永远用自身 default。
+RW-T06-S1-098	40	10	DESIGN_INPUT_EXPRESSION	PUBLIC/PRIVATE 只限制 invocation boundary；两者在 own Template 内均可读取。
+RW-T06-S1-099	40	11	SECURITY_FAULT	child invocation 不继承 parent custom/definition/RootDocument handle/loop/sibling/general system map。
+RW-T06-S1-100	40	12	ASSET_CAPABILITY_CONCURRENCY	实际 child invocation 仅共享 same-root Evaluation exact Profile 许可的 request CapabilityState components。
+RW-T06-S1-101	40	13	DESIGN_INPUT_EXPRESSION	child Expression 必须显式声明 capability input。
+RW-T06-S1-102	40	14	SECURITY_FAULT	TemplateUse 不配置 per-use capability allowlist。
+RW-T06-S1-103	42	1	SECURITY_FAULT	RootDocument/customValues/AdmittedRenderInput/frames 不保存到 DesignDSL/revision/report/normal audit。
+RW-T06-S1-104	42	2	EDITOR_AUTOMATED	Editor sample 只属于 local EditorSession。
+RW-T06-S1-105	42	3	EDITOR_AUTOMATED	未来 Workspace 可独立管理 input presets/fixtures。
+RW-T06-S1-106	42	4	WIRE_CANONICAL_DIGEST	未来 fixtures 不改变 Template/DesignDSL ownership boundary。
+RW-T06-S1-107	44	1	WIRE_CANONICAL_DIGEST	ValueSource/Binding/Expression wire、type system 与 definition memoization 由 T07 权威冻结。
+RW-T06-S1-108	44	2	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	Repeat empty/missing 与 TemplateUse selector ERROR/SKIP 由 T11/T12 冻结。
+RW-T06-S1-109	44	3	ASSET_CAPABILITY_CONCURRENCY	exact capability contract 由 T14 冻结。
+RW-T06-S1-110	44	4	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	Evaluation fingerprint/result identity/cache preconditions 由 T15 冻结。
+RW-T06-S1-111	44	5	SECURITY_FAULT	API UX 与 numeric capacity 由 T18/T19 在继承以上 invariants 后收口。

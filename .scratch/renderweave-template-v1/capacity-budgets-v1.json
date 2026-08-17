@@ -1,0 +1,286 @@
+{
+  "artifactVersion": "renderweave-capacity-matrix/1.0",
+  "status": "all-capacity-values-frozen",
+  "authority": "Ticket19 planning evidence; limits remain owned by the exact contracts named in each group",
+  "oracleIndex": "capacity-oracles-v1.json",
+  "boundaryIndex": "capacity-boundaries-v1.json",
+  "acceptanceManifest": "acceptance-manifest-v1.json",
+  "groups": {
+    "renderInput": {
+      "owner": "render-input/1.0",
+      "phase": "request-admission-before-grouping",
+      "limits": {
+        "contentEncoding": "identity",
+        "utf8Bytes": 8388608,
+        "jsonDepth": 32,
+        "objectMembers": 1024,
+        "arrayItems": 10000,
+        "totalValuesAndContainers": 250000,
+        "stringUtf8Bytes": 1048576,
+        "numberTokenBytes": 256,
+        "customValueEntries": 256
+      }
+    },
+    "problems": {
+      "owner": "shared-problem-contract/1.0",
+      "phase": "stable-semantic-collection",
+      "limits": {
+        "itemsIncludingLimitMarker": 200,
+        "ordinaryItemsWhenTruncated": 199,
+        "canonicalBytesPerItem": 4096,
+        "canonicalBytesTotal": 262144,
+        "limitMarkerReservedBytes": 1024
+      }
+    },
+    "designDslParser": {
+      "owner": "renderweave-design/1.0",
+      "phase": "parse-before-model-and-canonicalization",
+      "limits": {
+        "rawUtf8Bytes": 16777216,
+        "canonicalBytes": 16777216,
+        "jsonDepth": 64,
+        "objectMembers": 1024,
+        "arrayItems": 100000,
+        "totalValuesAndContainers": 1000000,
+        "stringUtf8Bytes": 1048576,
+        "memberNameUtf8Bytes": 256,
+        "numberTokenBytes": 256
+      }
+    },
+    "designDslSemantics": {
+      "owner": "renderweave-design/1.0",
+      "phase": "semantic-validation-before-dependency-io",
+      "limits": {
+        "authoredNodes": 4096,
+        "authoredTreeDepth": 32,
+        "childrenPerContainer": 1024,
+        "definitions": 512,
+        "bindingsTotal": 4096,
+        "bindingsPerNode": 64,
+        "runsPerTextNode": 256,
+        "runsTotal": 4096,
+        "gridTracksPerAxis": 64,
+        "vectorEntriesPerNode": 10000,
+        "vectorEntriesTotal": 100000,
+        "fillsPerTemplateUse": 256,
+        "literalListItemsPerList": 4096,
+        "literalListItemsTotal": 16384,
+        "authoredRunTextScalars": 1000000
+      }
+    },
+    "expression": {
+      "owner": "renderweave-expression/1.0",
+      "phase": "parse-and-static-analysis-before-lazy-execution",
+      "limits": {
+        "sourceUtf8BytesPerExpression": 65536,
+        "sourceUtf8BytesTotal": 1048576,
+        "inputsPerExpression": 32,
+        "inputsTotal": 4096,
+        "mappingCasesPerDefinition": 256,
+        "mappingCasesTotal": 8192,
+        "astNodesPerExpression": 4096,
+        "astNodesTotal": 65536,
+        "definitionGraphEdges": 8192,
+        "definitionChainDepth": 64,
+        "admittedDecimalPrecisionDigits": 128,
+        "admittedDecimalScaleMin": -64,
+        "admittedDecimalScaleMax": 64,
+        "intermediateDecimalPrecisionDigits": 256,
+        "intermediateDecimalScaleMin": -128,
+        "intermediateDecimalScaleMax": 128,
+        "explicitRoundingScaleMax": 64
+      }
+    },
+    "closureAndExpansion": {
+      "owner": "evaluation/1.0",
+      "phase": "closure-freeze-and-serial-materialization",
+      "limits": {
+        "uniqueTemplateSnapshots": 64,
+        "authoredTemplateRefEdges": 256,
+        "closureDepth": 16,
+        "closureFreezeAttempts": 3,
+        "closureCanonicalDesignBytes": 33554432,
+        "actualTemplateInvocations": 256,
+        "invocationDepth": 16,
+        "compositionViewports": 256,
+        "repeatCollectionItemsPerOccurrence": 1000,
+        "repeatNestingDepth": 8,
+        "loopFramesTotal": 10000,
+        "renderOccurrences": 25000,
+        "materializedStaticNodes": 20000,
+        "generatedTrackAndCellEntries": 100000,
+        "logicalOperations": 1000000
+      }
+    },
+    "renderDocument": {
+      "owner": "renderweave-render/1.0",
+      "phase": "document-seal-counting-before-atomic-commit",
+      "limits": {
+        "canonicalBytes": 67108864,
+        "jsonDepth": 128,
+        "staticNodes": 20000,
+        "childEdges": 19999,
+        "runs": 10000,
+        "textScalars": 1000000,
+        "vectorEntries": 100000
+      }
+    },
+    "diagnostics": {
+      "owner": "rendering-diagnostics/1.0",
+      "phase": "request-sidecar-and-authorized-trace",
+      "limits": {
+        "sidecarItems": 25000,
+        "sidecarBytes": 8388608,
+        "layoutTraceItems": 20000,
+        "layoutTraceBytes": 8388608
+      }
+    },
+    "geometry": {
+      "owner": "renderweave-design/1.0",
+      "phase": "property-and-aggregate-validation",
+      "limits": {
+        "canvasTrimMmPerAxisExclusiveMin": 0,
+        "canvasTrimMmPerAxisMax": 1000,
+        "bleedMmPerSideMin": 0,
+        "bleedMmPerSideMax": 100,
+        "authoredCoordinateOrLengthMmAbsoluteMax": 10000,
+        "fontSizePtExclusiveMin": 0,
+        "fontSizePtMax": 4096,
+        "transformScaleAbsoluteMax": 100,
+        "rotationDegreesMin": -360,
+        "rotationDegreesMax": 360
+      }
+    },
+    "referenceDeployment": {
+      "owner": "deployment-admission",
+      "phase": "before-accepted-execution",
+      "limits": {
+        "vcpus": 4,
+        "memoryBytes": 8589934592,
+        "ephemeralBytes": 4294967296,
+        "activeSlots": 1,
+        "fifoQueuePositions": 4
+      }
+    },
+    "assetsAndFetch": {
+      "owner": "renderweave-asset-acceptance/1.0 and asset-resolution/1.0",
+      "phase": "closure-admission-and-serial-consumer-resolution",
+      "limits": {
+        "authoredAssetOccurrences": 4096,
+        "uniqueLogicalAssets": 512,
+        "actualResolveOccurrences": 2048,
+        "renderResourceEntries": 2048,
+        "uniqueExactContents": 128,
+        "occurrenceDeclaredRawBytes": 2147483648,
+        "uniqueRawBytes": 268435456,
+        "occurrenceImagePixels": 1000000000,
+        "uniqueImagePixels": 125000000,
+        "occurrenceFontBytes": 536870912,
+        "uniqueFontBytes": 67108864,
+        "requestRawCacheBytes": 268435456,
+        "requestDecodedCacheBytes": 536870912,
+        "manifestBytes": 4194304,
+        "fetchUrlUtf8BytesPerEntry": 2048,
+        "fetchUrlUtf8BytesTotal": 4194304,
+        "physicalFetchBytesIncludingRetries": 536870912,
+        "acceptedImageBytesPerContent": 67108864,
+        "acceptedImageEdgePixelsPerContent": 20000,
+        "acceptedImagePixelsPerContent": 100000000,
+        "acceptedFontBytesPerContent": 33554432
+      }
+    },
+    "capabilityRuntime": {
+      "owner": "renderweave-expression/1.0 capability contracts",
+      "phase": "capability-state-initialization-and-first-demand",
+      "limits": {
+        "staticCapabilitySources": 4096,
+        "totalDemands": 8192,
+        "clockDemands": 4096,
+        "randomDemands": 4096,
+        "positionCanonicalBytesPerDemand": 2048,
+        "positionCanonicalBytesTotal": 16777216,
+        "capabilityStateRecordBytes": 1048576,
+        "resultDigestStreamingBytes": 16777216,
+        "initializationAttempts": 3,
+        "randomRejectionAttempts": 128
+      }
+    },
+    "rendererSurfaceAndOutput": {
+      "owner": "renderweave-renderer/1.0 and exact Output Profile",
+      "phase": "command-admission-before-resource-fetch-and-allocation",
+      "references": {
+        "decodedCacheBytes": "#/groups/assetsAndFetch/limits/requestDecodedCacheBytes"
+      },
+      "limits": {
+        "dpi": 600,
+        "surfaceEdgePixels": 16384,
+        "surfacePixels": 50000000,
+        "rgba8SurfaceBytes": 200000000,
+        "decoderScratchBytes": 134217728,
+        "encoderScratchBytes": 67108864,
+        "liveRequestRamBytes": 2147483648,
+        "encodedImageBytes": 536870912,
+        "requestEphemeralBytes": 1073741824,
+        "multipartFramingAndHeaderBytes": 65536,
+        "traceMultipartBytes": 545325056
+      }
+    },
+    "deadlineAndRetention": {
+      "owner": "render-request and renderweave-render-command/1.0",
+      "phase": "public-admission-through-atomic-output-seal",
+      "limits": {
+        "totalDeadlineMillis": 60000,
+        "admissionAndClosureMillis": 5000,
+        "evaluationAndDocumentSealMillis": 15000,
+        "engineQueueWaitMillis": 5000,
+        "resourcePhaseMillis": 20000,
+        "layoutRasterEncodeMillis": 15000,
+        "fetchAttempts": 2,
+        "fetchBackoffMillis": 100,
+        "fetchAttemptMillis": 5000,
+        "leaseSafetyMarginMillis": 5000,
+        "cooperativeCheckpointMillis": 50,
+        "cancelStopMillis": 250,
+        "terminalRegistryAndOutputRetentionMillis": 300000,
+        "preCommandCancelTombstoneMillis": 60000,
+        "capabilityAndResolverRecoveryRetentionAfterDeadlineMillis": 300000
+      }
+    },
+    "layoutFontAndRaster": {
+      "owner": "renderweave-layout/1.0 and renderweave-renderer/1.0",
+      "phase": "measure-through-encode",
+      "limits": {
+        "measureCalls": 200000,
+        "constraintRemeasureCalls": 100000,
+        "layoutOperations": 10000000,
+        "shapingGlyphAttempts": 8000000,
+        "breakCandidates": 8000000,
+        "graphemeClusters": 1000000,
+        "shapedGlyphs": 2000000,
+        "shapedLinesOrColumns": 100000,
+        "paintItems": 50000,
+        "clipDepth": 128,
+        "paintedPixelVisits": 200000000,
+        "uniqueFonts": 32,
+        "tablesPerFont": 256,
+        "fontTablesTotal": 4096,
+        "uniqueGlyphOutlines": 262144,
+        "qrInputUtf8Bytes": 4096,
+        "codeModuleCells": 5000000,
+        "paintChunkPixelVisits": 262144,
+        "byteChunkBytes": 1048576,
+        "textShrinkIterations": 32,
+        "stackWaterFillRoundsPerContainer": "fillChildCount+1",
+        "gridSpanPassesPerConstraint": 1
+      }
+    }
+  },
+  "pendingMeasuredGroups": [],
+  "pendingEvidence": [
+    "limit-minus-one-limit-limit-plus-one fixtures for every axis",
+    "real layout shaping raster codec fetch and cancellation measurements",
+    "A2 cross-language and independent target replay",
+    "A3 CI and branch protection enforcement",
+    "J1 editor accessibility and experience acceptance"
+  ]
+}

@@ -1,0 +1,225 @@
+requirement_id	source_line	clause_ordinal_on_line	family	normative_summary
+RW-T18-S1-001	63	1	EDITOR_AUTOMATED	Authoritative Preview evaluates only the saved Template current.
+RW-T18-S1-002	63	2	EDITOR_AUTOMATED	An unsaved EditorSession cannot be authoritative Evaluation input.
+RW-T18-S1-003	63	3	EDITOR_AUTOMATED	A clean EditorSession may preview current directly.
+RW-T18-S1-004	63	4	EDITOR_AUTOMATED	A dirty EditorSession presents Save and Preview as the primary action.
+RW-T18-S1-005	63	5	EDITOR_AUTOMATED	Save and Preview performs a complete explicit save before starting an independent preview operation.
+RW-T18-S1-006	63	6	EDITOR_AUTOMATED	Preview starts only after save success and a READY snapshot from that save's authoritative recheck.
+RW-T18-S1-007	63	7	EDITOR_AUTOMATED	Save failure or confirmed INVALID save starts no preview.
+RW-T18-S1-008	64	1	EDITOR_AUTOMATED	The server stores no autosave, Patch, or EditorSession.
+RW-T18-S1-009	64	2	EDITOR_AUTOMATED	The client may store a DesignDSL working copy and minimal edit state as a device-local recovery draft.
+RW-T18-S1-010	64	3	EDITOR_AUTOMATED	Recovery draft content is restored, exported, or discarded only by explicit author action.
+RW-T18-S1-011	64	4	EDITOR_AUTOMATED	A recovery draft creates no revision and does not synchronize across devices.
+RW-T18-S1-012	64	5	EDITOR_AUTOMATED	Recovery drafts omit RootDocument, customValues, preview images, and Asset bytes by default.
+RW-T18-S1-013	65	1	EDITOR_AUTOMATED	Each EditorSession has at most one Template save or invalid-confirmation mutation in flight.
+RW-T18-S1-014	65	2	EDITOR_AUTOMATED	Authored mutations pause while a Template mutation is in flight.
+RW-T18-S1-015	65	3	EDITOR_AUTOMATED	Structure, property, and problem browsing remains available during the mutation pause.
+RW-T18-S1-016	65	4	EDITOR_AUTOMATED	Successful save rebuilds the entire baseline from server canonical DesignDSL, revision, and contentHash.
+RW-T18-S1-017	65	5	EDITOR_AUTOMATED	Failed save preserves the local working copy unchanged and releases the mutation pause.
+RW-T18-S1-018	65	6	EDITOR_AUTOMATED	v1 has no submitted-versus-working draft layers, post-response command replay, or background save queue.
+RW-T18-S1-019	66	1	EDITOR_AUTOMATED	Every save requires expectedRevision concurrency control.
+RW-T18-S1-020	66	2	EDITOR_AUTOMATED	Conflict recovery provides no three-way diff, automatic merge, or item-level selection.
+RW-T18-S1-021	66	3	EDITOR_AUTOMATED	Conflict recovery preserves the complete local DesignDSL and reports that remote current advanced.
+RW-T18-S1-022	66	4	EDITOR_AUTOMATED	Local overwrite requires one explicit author confirmation.
+RW-T18-S1-023	66	5	EDITOR_AUTOMATED	After confirmation the client reads latest revision and resubmits complete DesignDSL with it as expectedRevision under full validation.
+RW-T18-S1-024	66	6	EDITOR_AUTOMATED	Further drift before or during retry returns a new conflict and requires new confirmation.
+RW-T18-S1-025	66	7	EDITOR_AUTOMATED	Conflict overwrite is neither silent nor unconditional last-write-wins.
+RW-T18-S1-026	67	1	EDITOR_AUTOMATED	Invalid commit confirmation binds only a complete untruncated dependency ERROR set.
+RW-T18-S1-027	67	2	EDITOR_AUTOMATED	Any hard error or PROBLEM_LIMIT_REACHED forbids issuing or using invalid confirmation.
+RW-T18-S1-028	67	3	EDITOR_AUTOMATED	A forbidden confirmation attempt performs zero writes.
+RW-T18-S1-029	67	4	EDITOR_AUTOMATED	The author must reduce problems and revalidate until the complete confirmation set is visible.
+RW-T18-S2-001	71	1	EDITOR_AUTOMATED	Each Template has at most one recovery draft per device.
+RW-T18-S2-002	71	2	EDITOR_AUTOMATED	A recovery record stores base revision, base contentHash, complete DesignDSL working copy, minimal edit state, and updated time.
+RW-T18-S2-003	71	3	EDITOR_AUTOMATED	A successful local authored command replaces the recovery record after bounded debounce and retains no draft history.
+RW-T18-S2-004	71	4	EDITOR_AUTOMATED	Recovery clears on successful clean save, explicit discard, Template deletion, or age beyond seven days.
+RW-T18-S2-005	71	5	EDITOR_AUTOMATED	Browser quota reclamation may remove recovery earlier.
+RW-T18-S2-006	71	6	EDITOR_AUTOMATED	Local recovery is best-effort and not a durability promise.
+RW-T18-S2-007	72	1	EDITOR_AUTOMATED	A recovery draft whose base equals server current may restore directly as a dirty EditorSession on that current.
+RW-T18-S2-008	72	2	EDITOR_AUTOMATED	When current advanced, UI reports the changed baseline before allowing restoration of the complete local draft.
+RW-T18-S2-009	72	3	EDITOR_AUTOMATED	Restoration itself writes nothing and its later save uses normal conflict-overwrite confirmation.
+RW-T18-S2-010	72	4	EDITOR_AUTOMATED	The client never automatically adopts a local draft or overwrites server current.
+RW-T18-S2-011	73	1	EDITOR_AUTOMATED	Leaving a dirty EditorSession through editor navigation offers Save, Keep local draft and leave, and Cancel.
+RW-T18-S2-012	73	2	EDITOR_AUTOMATED	If save is unavailable or fails, Keep local draft and leave and Cancel remain available.
+RW-T18-S2-013	73	3	EDITOR_AUTOMATED	Browser close, refresh, and crash recovery relies only on best-effort beforeunload and Local recovery draft.
+RW-T18-S2-014	73	4	EDITOR_AUTOMATED	Reopening offers Restore, Export, and Discard and never auto-loads or submits recovery content.
+RW-T18-S2-015	73	5	EDITOR_AUTOMATED	Recovery records never store RootDocument, customValues, preview images, or Asset bytes.
+RW-T18-S2-016	74	1	EDITOR_AUTOMATED	An EditorSession has one Authoritative Preview result slot and one active preview operation.
+RW-T18-S2-017	74	2	EDITOR_AUTOMATED	Preview basis includes saved current, absence of local divergence, RootDocument or customValues sample, format, DPI, JPEG quality, and LayoutTrace choice.
+RW-T18-S2-018	74	3	EDITOR_AUTOMATED	Any DesignDSL edit, sample-input or parameter change, or current revision or readiness change immediately withdraws the image and requires a new preview.
+RW-T18-S2-019	74	4	EDITOR_AUTOMATED	Panel visibility and selection movement do not affect preview basis.
+RW-T18-S2-020	75	1	EDITOR_AUTOMATED	Starting a preview best-effort cancels the previous operation.
+RW-T18-S2-021	75	2	EDITOR_AUTOMATED	Starting a new preview immediately revokes the previous operation's display eligibility.
+RW-T18-S2-022	75	3	EDITOR_AUTOMATED	Author cancel immediately clears the preview result slot.
+RW-T18-S2-023	75	4	EDITOR_AUTOMATED	Cancel may lose to Engine seal.
+RW-T18-S2-024	75	5	EDITOR_AUTOMATED	A client generation guard discards every late success or failure from an old operation.
+RW-T18-S2-025	75	6	EDITOR_AUTOMATED	v1 has no preview history, parallel result slots, or automatic rerun.
+RW-T18-S2-026	76	1	EDITOR_AUTOMATED	Save and Preview consists of two sequential non-atomic operations.
+RW-T18-S2-027	76	2	EDITOR_AUTOMATED	Successful Template save permanently appends its revision.
+RW-T18-S2-028	76	3	EDITOR_AUTOMATED	Later preview cancel or runtime failure cannot roll back a successful save.
+RW-T18-S2-029	76	4	EDITOR_AUTOMATED	UI separately reports save success and preview failure or cancellation.
+RW-T18-S2-030	76	5	EDITOR_AUTOMATED	UI cannot present Save and Preview as one transaction or classify preview failure as save failure.
+RW-T18-S2-031	77	1	EDITOR_AUTOMATED	Historical restore of an ACTIVE Template can start only from a clean EditorSession.
+RW-T18-S2-032	77	2	EDITOR_AUTOMATED	Before restore, unsaved content must be saved, exported, or discarded.
+RW-T18-S2-033	77	3	EDITOR_AUTOMATED	Restore confirmation shows exact source and current revision, contentHash, and authoritative problems but no three-way or semantic diff.
+RW-T18-S2-034	77	4	EDITOR_AUTOMATED	Restore carries current expectedRevision and appends source DesignDSL as a new revision.
+RW-T18-S2-035	77	5	EDITOR_AUTOMATED	Restore may enter INVALID only through the existing complete dependency-error confirmation flow.
+RW-T18-S2-036	77	6	EDITOR_AUTOMATED	Further current drift makes restore zero-write and requires new confirmation.
+RW-T18-S2-037	77	7	EDITOR_AUTOMATED	A DELETED Template remains limited to read-only, export, or copying exact history into a new Template.
+RW-T18-S3-001	81	1	EDITOR_AUTOMATED	The editor has exactly three explicit mutually exclusive content modes.
+RW-T18-S3-002	81	2	EDITOR_AUTOMATED	Structured Editor requires complete client understanding of exact dslVersion, expressionProfile, NodeContractCatalog, and every closed wire member.
+RW-T18-S3-003	81	3	EDITOR_AUTOMATED	Structured Editor may project a valid canvas or a best-effort invalid canvas.
+RW-T18-S3-004	81	4	EDITOR_AUTOMATED	Raw Repair is used for illegal UTF-8 or JSON, duplicate keys, or other raw imports that cannot produce a trusted DesignDSL.
+RW-T18-S3-005	81	5	EDITOR_AUTOMATED	Raw Repair permits only repair, replacement, download, or discard of raw input.
+RW-T18-S3-006	81	6	EDITOR_AUTOMATED	Compatibility Read-only is used for complete input whose exact profile or wire is not understood by the client.
+RW-T18-S3-007	81	7	EDITOR_AUTOMATED	Compatibility Read-only permits only safe metadata viewing, export, or explicit migration.
+RW-T18-S3-008	81	8	EDITOR_AUTOMATED	No editor mode may partially reserialize content.
+RW-T18-S3-009	81	9	EDITOR_AUTOMATED	No editor mode may discard unknown members and save.
+RW-T18-S3-010	81	10	EDITOR_AUTOMATED	No editor mode may treat browser guesses as compatibility interpretation.
+RW-T18-S3-011	82	1	EDITOR_AUTOMATED	Raw Repair enters Structured Editor only after strict UTF-8 JSON, no duplicate keys, supported exact profile pair, and complete closed-model construction all succeed.
+RW-T18-S3-012	82	2	EDITOR_AUTOMATED	Before Raw Repair conversion, the UI exposes no structure tree, property inspector, best-effort Canvas, Template save, or Authoritative Preview.
+RW-T18-S3-013	82	3	EDITOR_AUTOMATED	Compatibility Read-only enters Structured Editor only after a contentHash-bound migration preview succeeds and the author accepts it.
+RW-T18-S3-014	82	4	EDITOR_AUTOMATED	The original compatibility content always remains exportable.
+RW-T18-S3-015	82	5	EDITOR_AUTOMATED	Migration never rewrites original compatibility content in place.
+RW-T18-S3-016	83	1	EDITOR_AUTOMATED	Structured continuous property, number, text, Expression, ValueSource, and direct-JSON edits may temporarily produce hard or dependency problems.
+RW-T18-S3-017	83	2	EDITOR_AUTOMATED	Supported imported content may begin in invalid state.
+RW-T18-S3-018	83	3	EDITOR_AUTOMATED	Each discrete create, copy, delete, move, reparent, or reorder command atomically generates and remaps every affected domain and target identity or reference.
+RW-T18-S3-019	83	4	EDITOR_AUTOMATED	A structural command is rejected in full with a locatable reason when identity, lexical reachability, ContentModel, placement, or reference-rewrite safety cannot be proved.
+RW-T18-S3-020	83	5	EDITOR_AUTOMATED	A rejected structural command leaves no partial local mutation.
+RW-T18-S3-021	83	6	EDITOR_AUTOMATED	The client cannot delegate repair guesses to the server.
+RW-T18-S3-022	84	1	EDITOR_AUTOMATED	Undo and redo are local structural-command history within one Canonical editor baseline.
+RW-T18-S3-023	84	2	EDITOR_AUTOMATED	Every undo or redo step restores a complete EditorSession working copy even through temporary invalid states.
+RW-T18-S3-024	84	3	EDITOR_AUTOMATED	Successful save, conflict overwrite, revision restore, and whole-Template copy or create adopt a new server canonical baseline and clear undo or redo.
+RW-T18-S3-025	84	4	EDITOR_AUTOMATED	Content across canonical baselines is restored only from immutable Template revision history and cannot replay old local commands.
+RW-T18-S3-026	84	5	EDITOR_AUTOMATED	Accepted import or migration preview writes nothing, clears prior undo or redo, and creates a complete dirty working draft anchored to the original baseline.
+RW-T18-S3-027	84	6	EDITOR_AUTOMATED	Only a later successful ordinary save creates the next canonical baseline for imported or migrated content.
+RW-T18-S3-028	85	1	EDITOR_AUTOMATED	Reordering a semantic array applies one permutation and atomically rewrites every affected numeric targetPropertyRef to follow the moved item.
+RW-T18-S3-029	85	2	EDITOR_AUTOMATED	Unsafe rewrite, out-of-bounds result, duplicate target, or ancestor-descendant overlap rejects the entire reorder.
+RW-T18-S3-030	85	3	EDITOR_AUTOMATED	v1 has no alternate keep-numeric-index reorder mode.
+RW-T18-S3-031	85	4	EDITOR_AUTOMATED	The editor cannot invent item identity for semantic arrays.
+RW-T18-S3-032	86	1	EDITOR_AUTOMATED	The editor provides one unified keyboard-accessible problem panel.
+RW-T18-S3-033	86	2	EDITOR_AUTOMATED	Problems are visibly separated into hard save blockers, confirmable dependency errors, and operation-only runtime or preview problems.
+RW-T18-S3-034	86	3	EDITOR_AUTOMATED	Stable problem code carries semantics and Chinese text is projected from code and message arguments.
+RW-T18-S3-035	86	4	EDITOR_AUTOMATED	Within authorization, each problem retains canonical pointer and relevant domain identity, target reference, or exact zero-based UTF-16 Expression span.
+RW-T18-S3-036	86	5	EDITOR_AUTOMATED	Raw business values and unauthorized child paths remain redacted.
+RW-T18-S3-037	87	1	EDITOR_AUTOMATED	Local lint binds to EditorSession content generation.
+RW-T18-S3-038	87	2	EDITOR_AUTOMATED	Server current reports bind to the read current revision and contentHash.
+RW-T18-S3-039	87	3	EDITOR_AUTOMATED	Save, import, and migration problems bind to submitted canonical content.
+RW-T18-S3-040	87	4	EDITOR_AUTOMATED	Preview problems bind to public renderOperationId and Authoritative Preview basis.
+RW-T18-S3-041	87	5	EDITOR_AUTOMATED	Any late report, validation, or preview result with mismatched basis or generation is discarded.
+RW-T18-S3-042	87	6	EDITOR_AUTOMATED	After explicit save or preview failure, focus moves to a problem summary containing total, category, and truncation state without changing Canvas or tree selection.
+RW-T18-S3-043	87	7	EDITOR_AUTOMATED	Navigation and focus to an entity, property, or source span occurs only when the author activates that problem.
+RW-T18-S4-001	91	1	EDITOR_AUTOMATED	Opening an ACTIVE Template first reads and verifies trusted canonical current and establishes the Canonical editor baseline.
+RW-T18-S4-002	91	2	EDITOR_AUTOMATED	Prior readiness and reports are not current conclusions and UI shows authoritative recheck in progress.
+RW-T18-S4-003	91	3	EDITOR_AUTOMATED	A supported exact model that passes the integrity gate may enter Structured Editor.
+RW-T18-S4-004	91	4	EDITOR_AUTOMATED	Structured Editor permits local editing and explicit save while current recheck runs.
+RW-T18-S4-005	91	5	EDITOR_AUTOMATED	Authoritative Preview stays disabled until current and closure recheck succeeds.
+RW-T18-S4-006	91	6	EDITOR_AUTOMATED	Only a new report bound to current revision and contentHash replaces checking state.
+RW-T18-S4-007	92	1	EDITOR_AUTOMATED	When remote current advances during a clean EditorSession, the client automatically adopts trusted canonical DesignDSL, revision, and contentHash.
+RW-T18-S4-008	92	2	EDITOR_AUTOMATED	Clean-current adoption clears undo or redo and withdraws preview.
+RW-T18-S4-009	92	3	EDITOR_AUTOMATED	Clean-current adoption reports the revision update non-blockingly.
+RW-T18-S4-010	92	4	EDITOR_AUTOMATED	Still-existing panel, expansion, and selection state may be preserved but is not content fact.
+RW-T18-S4-011	92	5	EDITOR_AUTOMATED	Remote content never overwrites a dirty EditorSession.
+RW-T18-S4-012	92	6	EDITOR_AUTOMATED	Remote advance marks a dirty canonical baseline stale while preserving the draft.
+RW-T18-S4-013	92	7	EDITOR_AUTOMATED	Saving a dirty stale baseline enters the normal conflict-overwrite flow.
+RW-T18-S4-014	92	8	EDITOR_AUTOMATED	Readiness and dependency events must match current.
+RW-T18-S4-015	92	9	EDITOR_AUTOMATED	STALE, INVALID, or a new recheck immediately withdraws preview.
+RW-T18-S4-016	93	1	EDITOR_AUTOMATED	A Template becoming DELETED immediately disables edit, save, and preview.
+RW-T18-S4-017	93	2	EDITOR_AUTOMATED	A DELETED Template exposes only read-only history, export, and copy capabilities.
+RW-T18-S4-018	93	3	EDITOR_AUTOMATED	Deletion does not automatically remove an unsaved working draft or Local recovery draft, which remain exportable.
+RW-T18-S4-019	93	4	EDITOR_AUTOMATED	Recovery and conflict overwrite cannot reactivate the deleted Template.
+RW-T18-S4-020	94	1	EDITOR_AUTOMATED	Import, accepted migration preview, and Local recovery share the dirty guard before replacing a working draft.
+RW-T18-S4-021	94	2	EDITOR_AUTOMATED	The dirty guard requires save, export, keeping current recovery while leaving, or explicit discard.
+RW-T18-S4-022	94	3	EDITOR_AUTOMATED	Accepted replacement becomes a complete dirty working draft and clears old undo or redo with zero server writes.
+RW-T18-S4-023	94	4	EDITOR_AUTOMATED	Only an ordinary later save appends a revision for replaced content.
+RW-T18-S4-024	94	5	EDITOR_AUTOMATED	Supported exact-pair invalid content enters Structured Editor best-effort mode and unconstructable content enters Raw Repair.
+RW-T18-S4-025	94	6	EDITOR_AUTOMATED	A complete exact wire not fully understood by the client enters Compatibility Read-only.
+RW-T18-S4-026	95	1	EDITOR_AUTOMATED	Importing an exact revision export first verifies exportVersion and canonical contentHash.
+RW-T18-S4-027	95	2	EDITOR_AUTOMATED	File templateId, revision, StaticSchemaRef, and contentHash show provenance only and grant no identity, authority, or target replacement.
+RW-T18-S4-028	95	3	EDITOR_AUTOMATED	Import into an existing Template preserves its permanent StaticSchemaRef.
+RW-T18-S4-029	95	4	EDITOR_AUTOMATED	For new Template creation, file StaticSchemaRef is only a prefilled suggestion requiring explicit author confirmation, authorization, and validation.
+RW-T18-S4-030	95	5	EDITOR_AUTOMATED	A bare DesignDSL import requires separate Schema selection.
+RW-T18-S4-031	95	6	EDITOR_AUTOMATED	Cross-scope TemplateRef and AssetRef are not automatically mapped, deep-copied, or authorization-preserved.
+RW-T18-S4-032	96	1	EDITOR_AUTOMATED	Every successful save rebuilds the baseline from a trusted canonical server response or GET.
+RW-T18-S4-033	96	2	EDITOR_AUTOMATED	Metadata trim, set sorting, or equivalent-decimal normalization produces only an expandable non-blocking category and count summary, not a complete diff.
+RW-T18-S4-034	96	3	EDITOR_AUTOMATED	Exact Expression source, Unicode, semantic array order, and every supported field must survive canonical resynchronization.
+RW-T18-S4-035	96	4	EDITOR_AUTOMATED	Response contentHash or integrity mismatch fails closed.
+RW-T18-S4-036	96	5	EDITOR_AUTOMATED	A contract-forbidden semantic change fails closed and cannot load suspect content into Structured Editor.
+RW-T18-S4-037	96	6	EDITOR_AUTOMATED	On canonical-response failure the client preserves an exportable local submission copy, reports compatibility failure, and rereads trusted current.
+RW-T18-S4-038	96	7	EDITOR_AUTOMATED	The client cannot present an already-committed server revision as rolled back.
+RW-T18-S4-039	97	1	EDITOR_AUTOMATED	The UI shows the variable-preview warning only when the complete Template closure declares Clock or Random Evaluation Capability.
+RW-T18-S4-040	97	2	EDITOR_AUTOMATED	Every new Authoritative Preview creates a new CapabilityState.
+RW-T18-S4-041	97	3	EDITOR_AUTOMATED	Browser drafts may show only visibly non-authoritative simulation or placeholders.
+RW-T18-S4-042	97	4	EDITOR_AUTOMATED	UI neither displays nor persists actual Clock or Random result, snapshot, nonce, call position, fingerprint, result digest, or internal recovery state.
+RW-T18-S4-043	98	1	EDITOR_AUTOMATED	Ctrl or Cmd plus S triggers explicit save.
+RW-T18-S4-044	98	2	EDITOR_AUTOMATED	Ctrl or Cmd plus Z and Ctrl or Cmd plus Shift plus Z trigger undo and redo, with Ctrl plus Y also triggering redo on Windows.
+RW-T18-S4-045	98	3	EDITOR_AUTOMATED	Delete or Backspace deletes only a deletable selection when tree or Canvas owns explicit focus and focus is outside text or editing controls.
+RW-T18-S4-046	98	4	EDITOR_AUTOMATED	A keyboard deletion is undoable.
+RW-T18-S4-047	98	5	EDITOR_AUTOMATED	Escape closes only temporary panel, menu, or dialog state and restores focus to its trigger.
+RW-T18-S4-048	98	6	EDITOR_AUTOMATED	Authoritative Preview and cancel have no global shortcut.
+RW-T18-S4-049	98	7	EDITOR_AUTOMATED	Invalid confirmation, conflict overwrite, restore, accepted import or migration, and Template or Asset deletion have no global shortcut.
+RW-T18-S4-050	98	8	EDITOR_AUTOMATED	Critical operations use named buttons and explicit confirmation.
+RW-T18-S4-051	98	9	EDITOR_AUTOMATED	Keyboard shortcuts do not execute during IME composition.
+RW-T18-S4-052	99	1	EDITOR_AUTOMATED	Supported desktop viewports target WCAG 2.2 AA.
+RW-T18-S4-053	99	2	EDITOR_AUTOMATED	The structure tree uses correct tree and roving-focus semantics.
+RW-T18-S4-054	99	3	EDITOR_AUTOMATED	Inspector, Binding, problems, history, import, and preview core flows work by keyboard alone.
+RW-T18-S4-055	99	4	EDITOR_AUTOMATED	Canvas selection has an equivalent entry in tree or problem panel.
+RW-T18-S4-056	99	5	EDITOR_AUTOMATED	Status, Binding, and severity never rely on color alone.
+RW-T18-S4-057	99	6	EDITOR_AUTOMATED	Every control has visible focus and an accessible name.
+RW-T18-S4-058	99	7	EDITOR_AUTOMATED	Progress and non-blocking changes use restrained polite live regions while blocking errors use a focused summary without duplicate announcements.
+RW-T18-S4-059	99	8	EDITOR_AUTOMATED	The editor follows reduced-motion preference.
+RW-T18-S4-060	99	9	EDITOR_AUTOMATED	At 200-percent zoom control panels remain scrollable and operable.
+RW-T18-S4-061	99	10	EDITOR_AUTOMATED	The two-dimensional Canvas may use necessary horizontal and vertical panning.
+RW-T18-S4-062	99	11	EDITOR_AUTOMATED	Below the desktop threshold, the unsupported-width state itself remains keyboard and screen-reader operable.
+RW-T18-S4-063	99	12	EDITOR_AUTOMATED	Unsupported narrow viewports cannot masquerade as an editable mobile UI.
+RW-T18-S4-064	99	13	EDITOR_AUTOMATED	No stage of a core keyboard workflow may create a keyboard trap.
+RW-T18-S4-065	99	14	EDITOR_AUTOMATED	Binding type-invalid and property-invalid states use distinct accessible text and state instead of one generic error.
+RW-T18-S4-066	99	15	EDITOR_AUTOMATED	A redacted or unavailable problem location remains understandable from authorized information and never fabricates a locator or placeholder.
+RW-T18-S4-067	99	16	EDITOR_AUTOMATED	Each control exposes stable accessible name, role, value, validation, expanded, and selected semantics when applicable.
+RW-T18-S4-068	99	17	EDITOR_AUTOMATED	Core workflows remain fully operable under platform-supported high-contrast settings.
+RW-T18-S5-001	103	1	EDITOR_AUTOMATED	Structured Editor enables save only when working draft and canonical baseline have a canonical semantic-content difference.
+RW-T18-S5-002	103	2	EDITOR_AUTOMATED	A clean UI cannot append a meaningless same-contentHash revision.
+RW-T18-S5-003	103	3	EDITOR_AUTOMATED	The domain API may still allow a controlled caller to explicitly save the same hash.
+RW-T18-S5-004	103	4	EDITOR_AUTOMATED	Dirty state uses complete exact-profile canonicalization or reliable complete command state since the canonical baseline.
+RW-T18-S5-005	103	5	EDITOR_AUTOMATED	Transport bytes, object order, and form-touched flags cannot determine dirty state.
+RW-T18-S5-006	104	1	EDITOR_AUTOMATED	A transport-unknown save enters Save reconciliation.
+RW-T18-S5-007	104	2	EDITOR_AUTOMATED	Save reconciliation preserves the authored-mutation lock, working draft, proposed contentHash, and Local recovery draft.
+RW-T18-S5-008	104	3	EDITOR_AUTOMATED	A timeout is not reported as success or failure and does not trigger blind resend.
+RW-T18-S5-009	104	4	EDITOR_AUTOMATED	Reconciliation first reads trusted current.
+RW-T18-S5-010	104	5	EDITOR_AUTOMATED	If current advanced beyond expectedRevision and equals proposed contentHash, the client adopts it and reports server confirmation without claiming request ownership.
+RW-T18-S5-011	104	6	EDITOR_AUTOMATED	If current still equals original expectedRevision, only an explicit author action may retry.
+RW-T18-S5-012	104	7	EDITOR_AUTOMATED	If current advanced with a different hash, reconciliation enters conflict overwrite.
+RW-T18-S5-013	104	8	EDITOR_AUTOMATED	If the target is DELETED, reconciliation enters read-only and export state.
+RW-T18-S5-014	104	9	EDITOR_AUTOMATED	Revision regression, integrity mismatch, and unexplained current state fail closed.
+RW-T18-S5-015	105	1	EDITOR_AUTOMATED	When trusted current is unreadable, Save reconciliation remains unknown.
+RW-T18-S5-016	105	2	EDITOR_AUTOMATED	Unknown reconciliation forbids new Template mutation, preview, and recovery-draft cleanup.
+RW-T18-S5-017	105	3	EDITOR_AUTOMATED	During unknown reconciliation the author may export the draft or leave after explicitly retaining recovery.
+RW-T18-S5-018	105	4	EDITOR_AUTOMATED	Reopening the Template resumes reconciliation before ordinary editing.
+RW-T18-S5-019	105	5	EDITOR_AUTOMATED	Only adoption of a trusted canonical baseline clears recovery and mutation lock and decides whether Save and Preview continues.
+RW-T18-S5-020	106	1	EDITOR_AUTOMATED	Create and copy with unknown transport result are not automatically retried because no duplicate-prevention command key exists.
+RW-T18-S5-021	106	2	EDITOR_AUTOMATED	The UI refreshes the Template directory and reports the create or copy result as unknown.
+RW-T18-S5-022	106	3	EDITOR_AUTOMATED	When a new object cannot be reliably correlated, the author checks the directory and sees a duplicate-risk warning before manually retrying.
+RW-T18-S5-023	106	4	EDITOR_AUTOMATED	v1 adds no private source lineage, client identity, or pseudo-idempotency key.
+RW-T18-S5-024	107	1	EDITOR_AUTOMATED	Conflict overwrite, invalid commit, revision restore, accepted migration, and deletion confirmations retain distinct exact semantics.
+RW-T18-S5-025	107	2	EDITOR_AUTOMATED	Distinct confirmations cannot collapse into a generic force-continue action.
+RW-T18-S5-026	107	3	EDITOR_AUTOMATED	After conflict overwrite confirmation, new authoritative validation independently issues any invalid-confirmation token for the new content and dependency snapshot.
+RW-T18-S5-027	107	4	EDITOR_AUTOMATED	Intermediate drift returns to its corresponding confirmation step and cannot reuse old confirmation.
+RW-T18-S5-028	108	1	EDITOR_AUTOMATED	A submitted Template save or confirmation mutation exposes no cancel operation.
+RW-T18-S5-029	108	2	EDITOR_AUTOMATED	The client cannot infer from a local cancel that the server did not commit.
+RW-T18-S5-030	108	3	EDITOR_AUTOMATED	Mode replacement, import, restore, and leave are blocked until mutation terminal state or explicit unknown reconciliation.
+RW-T18-S5-031	108	4	EDITOR_AUTOMATED	Forced browser close relies only on Local recovery draft.
+RW-T18-S5-032	108	5	EDITOR_AUTOMATED	Unknown state may leave with recovery but must reconcile first on the next open.
+RW-T18-S5-033	108	6	EDITOR_AUTOMATED	Authoritative Preview cancel remains independent best-effort Rendering control and does not imply save cancellation.
+RW-T18-S6-001	112	1	EDITOR_AUTOMATED	v1 Editor has no server autosave or Patch.
+RW-T18-S6-002	112	2	EDITOR_AUTOMATED	v1 Editor has no realtime collaboration or session lock.
+RW-T18-S6-003	112	3	EDITOR_AUTOMATED	v1 Editor has no automatic or three-way merge.
+RW-T18-S6-004	112	4	EDITOR_AUTOMATED	v1 Editor has no semantic diff.
+RW-T18-S6-005	112	5	EDITOR_AUTOMATED	v1 Editor has no unconditional last-write-wins.
+RW-T18-S6-006	112	6	EDITOR_AUTOMATED	v1 Editor has no preview history or parallel preview slots.
+RW-T18-S6-007	112	7	EDITOR_AUTOMATED	v1 Editor has no cross-device draft synchronization.
+RW-T18-S6-008	112	8	EDITOR_AUTOMATED	v1 Editor has no Workspace fixture.
+RW-T18-S6-009	112	9	EDITOR_AUTOMATED	v1 Editor has no fallback to old authoritative images.
+RW-T18-S6-010	112	10	EDITOR_AUTOMATED	v1 Editor cannot save a partial model.
+RW-T18-S6-011	112	11	EDITOR_AUTOMATED	v1 Editor has no generic force confirmation.
+RW-T18-S6-012	113	1	EDITOR_AUTOMATED	Ticket18 freezes product workflow, state, domain language, and later implementation and acceptance constraints only.
+RW-T18-S6-013	113	2	EDITOR_AUTOMATED	Ticket18 creates no Template or Asset API, database, EditorSession store, frontend product route, Evaluator or Renderer capability, or other product code.
+RW-T18-S6-014	113	3	EDITOR_AUTOMATED	Ticket19 must supply every named capacity value and freeze cross-language, cross-platform, security, and WCAG evidence levels.

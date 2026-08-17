@@ -1,0 +1,177 @@
+requirement_id	source_line	clause_ordinal_on_line	family	normative_summary
+RW-T11-S1-001	37	1	WIRE_CANONICAL_DIGEST	authored structural NodeKinds exact 为 repeat 与 conditional。
+RW-T11-S1-002	37	2	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	Loop 只指 actual-item runtime frame，不是 authored NodeKind。
+RW-T11-S1-003	37	3	WIRE_CANONICAL_DIGEST	Repeat 同时拥有 normal nodeId 与 independent loopId。
+RW-T11-S1-004	37	4	WIRE_CANONICAL_DIGEST	Conditional 只有 nodeId。
+RW-T11-S1-005	37	5	WIRE_CANONICAL_DIGEST	两者在 DesignDSL 1.0 freeze 前并入 same NodeContractCatalog，不是 property hack。
+RW-T11-S1-006	38	1	WIRE_CANONICAL_DIGEST	Repeat required kind/nodeId/loopId/items/absentPolicy/itemLayout/instanceLayout/placement/bindings/children。
+RW-T11-S1-007	38	2	WIRE_CANONICAL_DIGEST	Repeat 可选 existing displayName/render/visible/opacity/transform。
+RW-T11-S1-008	38	3	WIRE_CANONICAL_DIGEST	Conditional required kind/nodeId/condition/absentPolicy/placement/bindings/children。
+RW-T11-S1-009	38	4	WIRE_CANONICAL_DIGEST	Conditional 可选 same common fields，且无 loopId。
+RW-T11-S1-010	38	5	SECURITY_FAULT	displayName 只作 author identity并入 hash，不 evaluate/Binding。
+RW-T11-S1-011	39	1	WIRE_CANONICAL_DIGEST	Repeat/Conditional children 均 required nonempty ordered array。
+RW-T11-S1-012	39	2	EDITOR_AUTOMATED	EditorSession 可 temporary empty children，但 server 不可 save。
+RW-T11-S1-013	39	3	SECURITY_FAULT	all structural objects/unions closed；unknown member/kind 与 null fail。
+RW-T11-S1-014	39	4	WIRE_CANONICAL_DIGEST	bindings 即使 empty 也 required。
+RW-T11-S1-015	39	5	SECURITY_FAULT	Repeat/Conditional 无 fill/stroke/corners/padding/clipContent；需要 visual box 必须 explicit Frame。
+RW-T11-S1-016	40	1	DESIGN_INPUT_EXPRESSION	items/condition 是 required structural ValueSource，不是 normal Binding 且无需 static baseline。
+RW-T11-S1-017	40	2	DESIGN_INPUT_EXPRESSION	structural source 复用 existing ValueSource union、type proof、domain、error semantics。
+RW-T11-S1-018	40	3	SECURITY_FAULT	absentPolicy、children topology、structural source 不可被 Binding rewrite。
+RW-T11-S2-001	44	1	DESIGN_INPUT_EXPRESSION	Repeat items static type 只能 list<T> 或 exact StaticSchema array(items:reference) collection。
+RW-T11-S2-002	44	2	DESIGN_INPUT_EXPRESSION	list<T> item T 只允许 text/decimal/date/time/boolean。
+RW-T11-S2-003	44	3	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	collection 保持 input order、duplicates、empty array。
+RW-T11-S2-004	44	4	SECURITY_FAULT	禁止 null/heterogeneous/nested-list/color/image/font/object collection 与 shape-guessed context。
+RW-T11-S2-005	45	1	DESIGN_INPUT_EXPRESSION	items source 只允许 literal/context/definition。
+RW-T11-S2-006	45	2	DESIGN_INPUT_EXPRESSION	context 可指 proven scalar/reference array。
+RW-T11-S2-007	45	3	DESIGN_INPUT_EXPRESSION	Definition 可产生 declared scalar list<T>。
+RW-T11-S2-008	45	4	SECURITY_FAULT	Capability 与 loopIndex 不可 direct items source。
+RW-T11-S2-009	45	5	SECURITY_FAULT	Expression 1.0 不可 construct/filter/map arbitrary collection。
+RW-T11-S2-010	45	6	SECURITY_FAULT	reference collection 只来自 validated exact-item-Schema context，不可由 literal/Definition 构造 object list。
+RW-T11-S2-011	46	1	DESIGN_INPUT_EXPRESSION	T 唯一从 items ValueSource static type proof derive。
+RW-T11-S2-012	46	2	SECURITY_FAULT	Repeat 不保存 itemType/itemTemplate/runtime shape hint。
+RW-T11-S2-013	46	3	SECURITY_FAULT	StaticSchema 只证明 data type，不参与 visual Template selection。
+RW-T11-S2-014	47	1	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	scalar item frame exact 使用五个 formal system-basic-*@v1 read-only Schemas。
+RW-T11-S2-015	47	2	DESIGN_INPUT_EXPRESSION	每个 scalar context required /index integer-decimal>=0 与 typed /value。
+RW-T11-S2-016	47	3	DESIGN_INPUT_EXPRESSION	descendant context source explicit-select loopId 并 read field。
+RW-T11-S2-017	47	4	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	TemplateUse 可用 empty pointer 将 whole scalar context 传给 same-system-Schema child。
+RW-T11-S2-018	48	1	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	reference item frame 携 referenced exact StaticSchemaRef；unknown fields invisible且不 inject index。
+RW-T11-S2-019	48	2	DESIGN_INPUT_EXPRESSION	loopIndex 返回 original input zero-based nonnegative integer decimal，并与 scalar /index 同值。
+RW-T11-S2-020	48	3	SECURITY_FAULT	v1 无 loop key/packedIndex/row/column/general loop object。
+RW-T11-S3-001	52	1	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	Repeat children[] 是唯一 item subtree，同一 authored subtree 每个 Loop frame separately evaluate，不 persist per-item expansion。
+RW-T11-S3-002	52	2	LAYOUT_SHAPING	itemLayout 排列单 item 的 surviving direct children。
+RW-T11-S3-003	52	3	LAYOUT_SHAPING	instanceLayout 排列 all surviving item instances。
+RW-T11-S3-004	52	4	SECURITY_FAULT	旧名 templateLayout deprecated，因为不选择 Template。
+RW-T11-S3-005	53	1	WIRE_CANONICAL_DIGEST	item subtree 可含任意 non-Canvas Node，包括 visual/layout/nested Repeat/Conditional/TemplateUse。
+RW-T11-S3-006	53	2	SECURITY_FAULT	Canvas 始终只可作 DesignRoot。
+RW-T11-S3-007	54	1	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	每项需 child Template 时必须在 item subtree explicit 放一个或多个 TemplateUse。
+RW-T11-S3-008	54	2	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	每个 TemplateUse 自选 {templateId} 并用 ContextSelector 选择 current loop item。
+RW-T11-S3-009	54	3	SECURITY_FAULT	禁止从同 Schema 推断 default/latest/first Template。
+RW-T11-S3-010	54	4	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	child permanent Schema 与 selected item-context compatibility 由 T12 authoritative-validate。
+RW-T11-S4-001	58	1	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	Repeat own render/items/placement/common/packing Bindings 全在 parent lexical domain evaluate，不可引用 own loopId。
+RW-T11-S4-002	58	2	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	nested Repeat parent domain 可是 ancestor Loop frame。
+RW-T11-S4-003	58	3	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	items 每 actual Repeat occurrence evaluate exactly once。
+RW-T11-S4-004	59	1	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	collection success 后按 original order 为每 item 建 immutable Loop frame。
+RW-T11-S4-005	59	2	SECURITY_FAULT	Repeat descendants 只可 explicit-read self/lexical-ancestor loopId，不可 sibling/descendant/out-of-scope。
+RW-T11-S4-006	59	3	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	nested Repeat items 可读 ancestor loopId。
+RW-T11-S4-007	59	4	SECURITY_FAULT	nested Repeat items 不可读 own loopId。
+RW-T11-S4-008	60	1	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	itemLayout/instanceLayout dynamic leaves 在 parent frame 每 Repeat occurrence evaluate once，all items share。
+RW-T11-S4-009	60	2	SECURITY_FAULT	不允许 per-item columns/gap/direction。
+RW-T11-S4-010	60	3	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	每 item PACK placement/Binding/Conditional/nested Repeat 在 own Loop frame evaluate。
+RW-T11-S4-011	61	1	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	Conditional 不建 frame；condition 每 occurrence 在 node lexical domain evaluate once，children same domain。
+RW-T11-S4-012	61	2	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	loop-domain Definition 每 Loop frame lazy-memoize；invocation-domain 每 invocation memoize。
+RW-T11-S4-013	62	1	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	TemplateUse selector/fill 可在 current Loop frame evaluate。
+RW-T11-S4-014	62	2	SECURITY_FAULT	进入 child Template 后 isolated invocation；child 不可读 parent loopId/Definition/RootDocument handle。
+RW-T11-S5-001	66	1	DESIGN_INPUT_EXPRESSION	Repeat absentPolicy required exact ERROR|EMPTY。
+RW-T11-S5-002	66	2	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	EMPTY 只将 legal MAY_BE_ABSENT collection runtime ABSENT 转为 zero items；ERROR 下 ABSENT fails。
+RW-T11-S5-003	66	3	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	explicit empty array 始终 concrete zero items。
+RW-T11-S5-004	66	4	SECURITY_FAULT	null/wrong type/ValueSource ERROR/budget error 在两 policy 下都 fail。
+RW-T11-S5-005	67	1	DESIGN_INPUT_EXPRESSION	Conditional condition 必须 statically boolean；absentPolicy required exact ERROR|FALSE。
+RW-T11-S5-006	67	2	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	FALSE 只将 typed ABSENT 当 false；ERROR-policy ABSENT fails。
+RW-T11-S5-007	67	3	SECURITY_FAULT	Conditional null/wrong type/source ERROR/budget error 在两 policy 下都 fail。
+RW-T11-S5-008	67	4	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	EMPTY/FALSE 成功处理 ABSENT 不产生 warning。
+RW-T11-S5-009	68	1	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	node-local bindings order 无 evaluation semantics；runtime consumer order 固定。
+RW-T11-S5-010	69	1	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	Repeat consumer order exact 为 render→items→placement→visible→opacity→transform→itemLayout→instanceLayout→children DFS。
+RW-T11-S5-011	70	1	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	Conditional consumer order exact 为 render→condition→placement→visible→opacity→transform→children DFS。
+RW-T11-S5-012	71	1	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	composite leaves 按 NodeContract declaration order demand，不按 JSON-member/bindingId order。
+RW-T11-S5-013	72	1	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	render first；false 立即 prune且不 demand structural source/Bindings/descendants/Assets/capabilities。
+RW-T11-S5-014	72	2	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	Repeat items zero 后立即 prune，不 demand remaining common/packing/children。
+RW-T11-S5-015	72	3	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	Conditional false 同样立即 prune remaining subtree。
+RW-T11-S5-016	72	4	ASSET_CAPABILITY_CONCURRENCY	pruned undemanded ERROR/capability call 不发生。
+RW-T11-S5-017	73	1	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	visible:false/opacity:0 永不 evaluation-prune；仍 resolve descendants/resources/layout/failures。
+RW-T11-S5-018	73	2	SECURITY_FAULT	static save 验证 all authored branches/sources/baselines/domains/ContentModel，literal false/empty 不得 hide invalid structure。
+RW-T11-S6-001	77	1	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	每 item 按 children authored-order DFS materialize。
+RW-T11-S6-002	77	2	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	item all direct children 被 structural-prune 时该 instance 不进 instanceLayout/gap/cell。
+RW-T11-S6-003	77	3	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	visible:false/opacity:0/materialized zero-size-or-empty Node 均使 instance survive。
+RW-T11-S6-004	78	1	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	loopIndex 与 OccurrencePath inputIndex 始终 original collection index，不因 prune renumber。
+RW-T11-S6-005	78	2	LAYOUT_SHAPING	instanceLayout 只对 surviving sequence compact-pack。
+RW-T11-S6-006	78	3	SECURITY_FAULT	v1 不把 packing ordinal 暴露为 ValueSource。
+RW-T11-S6-007	79	1	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	zero items/zero survivors 移除 entire Repeat，即使 authored placement FIXED/FILL 也不保留 blank box。
+RW-T11-S6-008	79	2	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	Conditional false 完全移除。
+RW-T11-S6-009	79	3	LAYOUT_SHAPING	Conditional true 即使 descendants all pruned 仍 materialize appearance-free Frame；FIXED/FILL占box，HUG=0×0。
+RW-T11-S6-010	80	1	SECURITY_FAULT	collection length 与 early-decidable budgets 在 frame creation 前检查。
+RW-T11-S6-011	80	2	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	随后 strict input order + children DFS execute。
+RW-T11-S6-012	80	3	SECURITY_FAULT	first demanded runtime ERROR 停止 later items/capabilities/Asset resolution，whole Evaluation zero RenderDocument。
+RW-T11-S6-013	80	4	SECURITY_FAULT	不得 skip failed item、return first-N 或 partial output。
+RW-T11-S7-001	84	1	WIRE_CANONICAL_DIGEST	新增 permanent shallow PACK placement，仅 Repeat direct child 可用。
+RW-T11-S7-002	84	2	WIRE_CANONICAL_DIGEST	PACK exact members 为 type、required widthMode/heightMode，每轴 only FIXED|HUG_CONTENT。
+RW-T11-S7-003	84	3	DESIGN_INPUT_EXPRESSION	FIXED requires matching size>0；HUG forbids size。
+RW-T11-S7-004	84	4	WIRE_CANONICAL_DIGEST	non-Group PACK 可选 existing min/max with T09/T10 constraints。
+RW-T11-S7-005	84	5	SECURITY_FAULT	Group 仍 dual-HUG 且 no min/max。
+RW-T11-S7-006	85	1	SECURITY_FAULT	PACK 禁止 FILL/margin/x-y/inset/grid-cell/align/fillWeight/normal Stack-Grid hints。
+RW-T11-S7-007	85	2	EDITOR_AUTOMATED	itemLayout STACK/GRID switch 不 rewrite children placement。
+RW-T11-S7-008	85	3	LAYOUT_SHAPING	gap 是 item-subtree sibling spacing 唯一 authority。
+RW-T11-S7-009	86	1	WIRE_CANONICAL_DIGEST	Repeat/Conditional 作 ordinary child 使用 parent-required ABSOLUTE/STACK/GRID 且可 FIXED/HUG/FILL。
+RW-T11-S7-010	86	2	WIRE_CANONICAL_DIGEST	作为 Repeat direct child 时必须 PACK 且只 FIXED/HUG。
+RW-T11-S7-011	86	3	EDITOR_AUTOMATED	reparent 必须由 authoring client explicit-convert placement。
+RW-T11-S7-012	87	1	WIRE_CANONICAL_DIGEST	Conditional direct children 统一 ABSOLUTE placement。
+RW-T11-S7-013	87	2	LAYOUT_SHAPING	Conditional true box 用 no-padding/stroke/clip Frame rules；HUG transformed-positive extents，FIXED/FILL parent offer。
+RW-T11-S7-014	87	3	SECURITY_FAULT	Conditional HUG/FILL dependency cycle fails。
+RW-T11-S8-001	91	1	WIRE_CANONICAL_DIGEST	itemLayout 与 instanceLayout 共用 exact closed RepeatPackingSpec STACK/GRID union。
+RW-T11-S8-002	98	1	WIRE_CANONICAL_DIGEST	STACK requires kind/direction，gap optional default0；direction ROW|COLUMN。
+RW-T11-S8-003	98	2	WIRE_CANONICAL_DIGEST	GRID requires kind + positive-integer columns；gaps optional default0，columns capacity-limited。
+RW-T11-S8-004	98	3	DESIGN_INPUT_EXPRESSION	all packing gaps nonnegative。
+RW-T11-S8-005	98	4	DESIGN_INPUT_EXPRESSION	packing kind static；direction/gap/columns 可 Binding present baseline 后 revalidate。
+RW-T11-S8-006	99	1	LAYOUT_SHAPING	STACK uses surviving pre-transform LayoutBoxes：ROW sum widths+gaps/max height；COLUMN transpose。
+RW-T11-S8-007	99	2	LAYOUT_SHAPING	STACK physical order fixed left-right/top-bottom；cross-axis START。
+RW-T11-S8-008	99	3	LAYOUT_SHAPING	zero-size materialized item 仍参与 sequence 与 adjacent gaps。
+RW-T11-S8-009	99	4	LAYOUT_SHAPING	transform 不影响 Repeat packing。
+RW-T11-S8-010	100	1	LAYOUT_SHAPING	GRID effectiveColumns=min(columns,n)，surviving sequence zero-based row-major。
+RW-T11-S8-011	100	2	LAYOUT_SHAPING	每列宽/每行高取其 items LayoutBox maxima；item START top-left且 no stretch。
+RW-T11-S8-012	100	3	LAYOUT_SHAPING	positions 用 track-prefix+gap；natural size = effective tracks + adjacent gaps。
+RW-T11-S8-013	100	4	LAYOUT_SHAPING	incomplete last row 无 placeholder，但共享 earlier-determined column widths。
+RW-T11-S8-014	100	5	LAYOUT_SHAPING	transform 不参与 track measure；paint order remains sequence。
+RW-T11-S8-015	101	1	LAYOUT_SHAPING	itemLayout 先独立产生每 item-container HUG natural box；instanceLayout 再排这些 boxes。
+RW-T11-S8-016	101	2	LAYOUT_SHAPING	Repeat HUG = instance-packing natural size。
+RW-T11-S8-017	101	3	LAYOUT_SHAPING	Repeat FIXED/FILL 不 stretch item/reorder/dynamic-columns；anchor top-left，small overflow，large blank right/bottom。
+RW-T11-S8-018	101	4	LAYOUT_SHAPING	structural container 不 clip；overflow obeys ancestor/surface。
+RW-T11-S8-019	102	1	SECURITY_FAULT	RepeatPackingSpec 不是 Stack/Grid alias；v1 排除 justify/align/margin/FILL/reverse/wrap/tracks/manual-cell/masonry/responsive columns。
+RW-T11-S9-001	106	1	DESIGN_INPUT_EXPRESSION	Repeat/Conditional inherit legal common 与 parent-placement leaf Policies；PACK non-Group 只授权 existing size/min-max leaves。
+RW-T11-S9-002	106	2	SECURITY_FAULT	PACK mode/type 不可 Binding。
+RW-T11-S9-003	107	1	DESIGN_INPUT_EXPRESSION	Repeat 新增 itemLayout/instanceLayout direction/gap/columns/columnGap/rowGap variant-specific Policies；actual Catalog expand 且 union targets nonoverlap。
+RW-T11-S9-004	107	2	EDITOR_AUTOMATED	optional packing gap 若 Binding，author 必须先 materialize static baseline。
+RW-T11-S9-005	108	1	SECURITY_FAULT	items/condition/absentPolicy/loopId/children/packing-kind/placement type-mode/whole structures 永不 Binding target。
+RW-T11-S9-006	108	2	WIRE_CANONICAL_DIGEST	items/condition 已是 ValueSource，不再 wrap Binding 或 store expectedType。
+RW-T11-S10-001	112	1	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	Repeat/Conditional 在 Evaluator completely eliminate；Engine 看不到 ValueSource/Loop/dynamic structure。
+RW-T11-S10-002	112	2	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	true Conditional lowers to appearance/padding/clip-free Frame；false no node。
+RW-T11-S10-003	112	3	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	each surviving Repeat item lowers to HUG Stack/Grid item container；outer lowers to Stack/Grid inheriting Repeat common/placement。
+RW-T11-S10-004	113	1	LAYOUT_SHAPING	PACK lowers to generated parent STACK/GRID placement，preserving FIXED/HUG size/min-max。
+RW-T11-S10-005	113	2	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	Repeat GRID generates explicit AUTO rows/columns + zero-based GRID placements by concrete survivors；STACK generates STACK placements。
+RW-T11-S10-006	113	3	SECURITY_FAULT	Evaluator only generates static layout rules，不 compute final coordinates/tracks/line-break/glyphs。
+RW-T11-S10-007	114	1	SECURITY_FAULT	synthetic outer/item containers 无 fill/stroke/padding/corner/clip。
+RW-T11-S10-008	114	2	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	Repeat transform/visible/opacity apply once to outer subtree，不复制 per item。
+RW-T11-S10-009	114	3	RENDERER_OUTPUT	item children paint authored order；items paint surviving order；later overlap covers earlier。
+RW-T11-S10-010	114	4	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	Conditional common visual controls 只作用 true subtree。
+RW-T11-S10-011	115	1	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	request OccurrencePath 以 root Template invocation segment 开始。
+RW-T11-S10-012	115	2	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	每层 Repeat append {loopId,inputIndex}。
+RW-T11-S10-013	115	3	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	actual TemplateUse append {useId,childTemplateId,resolvedRevision} 后进入 child source nodes。
+RW-T11-S10-014	115	4	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	synthetic role 至少区分 repeat-container/repeat-item/conditional-frame/template-use-viewport/canvas-background。
+RW-T11-S10-015	115	5	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	duplicate values 仍 distinct occurrence；array reorder 改变 path。
+RW-T11-S10-016	116	1	WIRE_CANONICAL_DIGEST	synthetic container 不生成或 persist UUID；source node/loop segment+role 定位。
+RW-T11-S10-017	116	2	SECURITY_FAULT	RenderDocument 只携 opaque occurrenceId；request diagnostic sidecar maps OccurrencePath+optional sourceNodeId。
+RW-T11-S10-018	116	3	SECURITY_FAULT	error/LayoutTrace/paint diagnostic 按 permission projection 使用 path。
+RW-T11-S10-019	116	4	SECURITY_FAULT	OccurrencePath 不含 item value，且不是 author identity/revision/business key/Engine input/cross-request stable identity。
+RW-T11-S11-001	120	1	SECURITY_FAULT	empty children、bad loopId/union/PACK/FILL/parent-placement/packing/lexical cycle/source-type mismatch 是不可确认 hard error。
+RW-T11-S11-002	120	2	DESIGN_INPUT_EXPRESSION	missing StaticSchema path/Definition dependency 仍是 confirmable dependency ERROR；INVALID/STALE 不得 Render。
+RW-T11-S11-003	120	3	SECURITY_FAULT	runtime ABSENT/source/budget error 只影响 request，不 auto-change readiness。
+RW-T11-S11-004	121	1	EDITOR_AUTOMATED	same-Template Repeat-subtree copy 必须为 copied nodeId/bindingId/loopId 生成 new UUID 并 atomic-rewrite internal domain refs。
+RW-T11-S11-005	121	2	EDITOR_AUTOMATED	若 copy 依赖 outside-subtree Definition scoped in original Repeat，client 必须 copy/retarget 或 reject。
+RW-T11-S11-006	121	3	EDITOR_AUTOMATED	move/delete 导致 loopId unreachable 必须先 repair，否则 save hard error。
+RW-T11-S11-007	121	4	SECURITY_FAULT	server 不猜测 rewrite 为 invocation/ancestor domain。
+RW-T11-S11-008	121	5	WIRE_CANONICAL_DIGEST	whole-Template copy/restore 保留 local IDs。
+RW-T11-S11-009	122	1	WIRE_CANONICAL_DIGEST	children/literal-list/Mapping-cases preserve semantic order；bindings by bindingId canonical-sort。
+RW-T11-S11-010	122	2	WIRE_CANONICAL_DIGEST	loopId/sources/absentPolicy/packing/authored subtree 全部进入 canonical DesignDSL/contentHash。
+RW-T11-S11-011	122	3	WIRE_CANONICAL_DIGEST	runtime items/survival/OccurrencePath/synthetic containers/derived tracks/resolved Template current 不进 hash。
+RW-T11-S12-001	126	1	SECURITY_FAULT	每个 input item 即使最终 pruned 仍消耗 collection/frame/operation/nested-traversal budgets。
+RW-T11-S12-002	126	2	SECURITY_FAULT	只有 surviving instances/descendants 进入 materialized-node/layout/paint budgets；nested Repeat 使用 request-cumulative limits from T19。
+RW-T11-S12-003	126	3	SECURITY_FAULT	budget exceed fail-closed，不 truncate/page/approximate。
+RW-T11-S12-004	127	1	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	ABSENT 被 EMPTY/FALSE accept 时 silent。
+RW-T11-S12-005	127	2	SECURITY_FAULT	source problem 定位 structural node+path；item-descendant adds loopId/inputIndex + safe source identities。
+RW-T11-S12-006	127	3	SECURITY_FAULT	Problem 不回显 item value/full text/RootDocument fragment/expanded subtree；global limit 按 T19 truncate。
+RW-T11-S12-007	128	1	WIRE_CANONICAL_DIGEST	Repeat/Conditional/PACK wire、ABSENT、pruning、OccurrencePath、lowering 属 DesignDSL Profile；observable change需新 dslVersion。
+RW-T11-S12-008	128	2	WIRE_CANONICAL_DIGEST	lowered Stack/Grid/Frame measure-arrange 属 Layout Profile；algorithm change需新 Layout Profile；both affected则 both bump。
+RW-T11-S12-009	128	3	WIRE_CANONICAL_DIGEST	本 ticket 是 DesignDSL 1.0 freeze 前受控 T09 draft extension，不是 post-release identity mutation。
+RW-T11-S12-010	129	1	SECURITY_FAULT	v1 排除 Repeat filter/sort/distinct/reverse/limit/offset/key、dynamic-template inference、per-item packing/masonry/wrap/pagination/multi-output/skip-failure/partial-success。
+RW-T11-S12-011	129	2	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	different visual Template 只能由 item subtree explicit Conditional+TemplateUse compose。
+RW-T11-S12-012	129	3	DESIGN_INPUT_EXPRESSION	data transformation 由 supported upstream Connector 或 future Expression Profile 产 ordered collection。
+RW-T11-S12-013	130	1	SECURITY_FAULT	不继承 historical implementation 任一旧 wire/missing-layout fields/Scene lifecycle。
+RW-T11-S12-014	131	1	SECURITY_FAULT	本 ticket 只冻结 exploration spec/language/downstream constraints，不创建 NodeContract/Evaluator/RenderDocument/Editor/API/DB/product code。

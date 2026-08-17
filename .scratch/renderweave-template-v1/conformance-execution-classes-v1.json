@@ -1,0 +1,184 @@
+{
+  "artifactVersion": "renderweave-conformance-execution-classes/1.0",
+  "status": "SPEC_REGISTRY_EXECUTABLE_ALL_CLASS_FIXTURES_STATIC_A2_EDITOR_ADMISSION_INTERFACE_STATIC_A2_CAPACITY_SHAPES_STATIC_A2_PRODUCT_MANIFESTS_PENDING",
+  "authority": "Ticket19 execution-boundary catalog; only a class entry with an exact target, every required executor role, assigned corpus, adapter, and replay status may claim executable",
+  "assignmentRule": "Every case declares exactly one most-downstream executionClass; concrete executor, target, implementation revision, run, and evidence grade remain manifest facts outside case identity.",
+  "classes": [
+    {
+      "executionClass": "EXEC::SPEC_REGISTRY::1.0",
+      "observationBoundary": "append-only requirement, case, oracle, schema, canonical-profile, and manifest registry validation",
+      "requiredExecutorRoles": [
+        "primary-registry-validator",
+        "independent-schema-and-graph-replayer"
+      ],
+      "targetKind": "exact specification artifact set",
+      "status": "EXECUTABLE_A2_REPLAYED",
+      "targetManifest": "spec-registry/target-manifest-v1.json",
+      "executorManifests": [
+        "spec-registry/primary-executor-manifest-v1.json",
+        "spec-registry/independent-executor-manifest-v1.json"
+      ],
+      "observationAdapter": {
+        "path": "spec-registry/observation-adapter-v1.json",
+        "sha256": "sha256:066c8c15e1c5d1a547e3c557e011aa407699741d262de2bf1e0856e07323d963"
+      },
+      "assignedActiveCorpusDigest": "sha256:96d5bc83d51820c698fcb98db5ca6416a655186c1420f9d92ef06db0449906e7",
+      "caseRecordCount": 46,
+      "oracleRecordCount": 46,
+      "replayEvidence": "spec-registry/spec-registry-a2-2026-08-17.json",
+      "executable": true
+    },
+    {
+      "executionClass": "EXEC::DOMAIN_SERVICES::1.0",
+      "observationBoundary": "Template and Asset domain command, lifecycle, concurrency, transaction, and dependency-event behavior",
+      "requiredExecutorRoles": [
+        "java-domain-authority",
+        "transactional-integration-replayer"
+      ],
+      "targetKind": "exact domain-service implementation and PostgreSQL integration target",
+      "status": "FIXTURE_GENERATOR_STATIC_A2_PRODUCT_TARGET_PENDING",
+      "fixtureGeneratorTarget": {
+        "path": "domain-services/generator-target-manifest-v1.json",
+        "sha256": "sha256:3f6d2df37c776262e328f5159b2ff38bb89c9882d60a82a67c48a42efb487dd9"
+      },
+      "observationAdapter": {
+        "path": "domain-services/observation-adapter-v1.json",
+        "sha256": "sha256:4bda561d8628461b783796e38acb9066e840c307479603e39afa6c241393ea06"
+      },
+      "fixtureGeneratorEvidence": "domain-services/domain-services-fixture-static-a2-2026-08-17.json",
+      "exactProductTargetManifestStatus": "PENDING",
+      "executorManifestStatus": "PENDING",
+      "independentProductReplayStatus": "PENDING",
+      "executable": false
+    },
+    {
+      "executionClass": "EXEC::DESIGN_INPUT_EXPRESSION::1.0",
+      "observationBoundary": "DesignDSL, RenderInput, type, Binding, Mapping, Expression, and canonical-authoring semantics before Rendering handoff",
+      "requiredExecutorRoles": [
+        "java-semantic-authority",
+        "typescript-independent-authoring-replayer"
+      ],
+      "targetKind": "exact Java authority plus independent TypeScript replay target",
+      "status": "FIXTURE_GENERATOR_STATIC_A2_PRODUCT_TARGET_PENDING",
+      "fixtureGeneratorTarget": {
+        "path": "design-input-expression/generator-target-manifest-v1.json",
+        "sha256": "sha256:2de5c33e7f03c3c1354426882960200344e232ad12ec12d5eae20d80483760c8"
+      },
+      "observationAdapter": {
+        "path": "design-input-expression/observation-adapter-v1.json",
+        "sha256": "sha256:e46af856d38c1844d1c3b222479e25208c0f5297caabdfea16ccd779301d77e9"
+      },
+      "fixtureGeneratorEvidence": "design-input-expression/design-input-expression-fixture-static-a2-2026-08-17.json",
+      "exactProductTargetManifestStatus": "PENDING",
+      "executorManifestStatus": "PENDING",
+      "independentProductReplayStatus": "PENDING",
+      "executable": false
+    },
+    {
+      "executionClass": "EXEC::RENDERING_PIPELINE::1.0",
+      "observationBoundary": "root admission through closure, capability, asset resolution, lowering, RenderDocument seal, command handoff, and terminal output",
+      "requiredExecutorRoles": [
+        "java-evaluator-and-sealer",
+        "rust-render-document-parser-and-engine"
+      ],
+      "targetKind": "one exact end-to-end root render target",
+      "status": "FIXTURE_GENERATOR_STATIC_A2_PRODUCT_TARGET_PENDING",
+      "fixtureGeneratorTarget": {
+        "path": "rendering-pipeline/generator-target-manifest-v1.json",
+        "sha256": "sha256:8b792d30b96ad567fd01325ee1447d86b8b1f65737a4eef51fd51b5477800b8b"
+      },
+      "observationAdapter": {
+        "path": "rendering-pipeline/observation-adapter-v1.json",
+        "sha256": "sha256:bc16d95de8cf80da63a071c246692ecbe37ad86a53ffa21500dcaf1c595c48fa"
+      },
+      "fixtureGeneratorEvidence": "rendering-pipeline/rendering-pipeline-fixture-static-a2-2026-08-17.json",
+      "exactProductTargetManifestStatus": "PENDING",
+      "executorManifestStatus": "PENDING",
+      "independentProductReplayStatus": "PENDING",
+      "executable": false
+    },
+    {
+      "executionClass": "EXEC::RENDERER_EXACT_OUTPUT::1.0",
+      "observationBoundary": "Renderer-owned resource, layout, shaping, raster, PNG, JPEG, trace, and byte-exact behavior",
+      "requiredExecutorRoles": [
+        "rust-renderer",
+        "independent-replay-runner"
+      ],
+      "targetKind": "every exact Certified Renderer target independently",
+      "status": "FIXTURE_GENERATOR_STATIC_A2_PRODUCT_TARGET_PENDING",
+      "fixtureGeneratorTarget": {
+        "path": "renderer-exact-output/generator-target-manifest-v1.json",
+        "sha256": "sha256:ec00e210d6963bb375337bfdcd7fd243bb099f6df151e6ca9cd556dd92c64c56"
+      },
+      "observationAdapter": {
+        "path": "renderer-exact-output/observation-adapter-v1.json",
+        "sha256": "sha256:13e18a0222deb2d0e91cc5ab5d8a711e25823be1d1b20cc68787de841a006adc"
+      },
+      "fixtureGeneratorEvidence": "renderer-exact-output/renderer-exact-output-fixture-static-a2-2026-08-17.json",
+      "exactProductTargetManifestStatus": "PENDING",
+      "executorManifestStatus": "PENDING",
+      "independentProductReplayStatus": "PENDING",
+      "executable": false
+    },
+    {
+      "executionClass": "EXEC::EDITOR_AUTOMATED::1.0",
+      "observationBoundary": "browser-visible structured authoring, recovery, preview orchestration, accessibility automation, and client-side non-authority boundaries",
+      "requiredExecutorRoles": [
+        "supported-browser-automation-runner"
+      ],
+      "targetKind": "each frozen supported browser and operating-system target; Editor J1 remains a separate human record",
+      "status": "FIXTURE_AND_ADMISSION_INTERFACE_STATIC_A2_BROWSER_AND_PRODUCT_TARGETS_PENDING",
+      "fixtureGeneratorTarget": {
+        "path": "editor-automated/generator-target-manifest-v1.json",
+        "sha256": "sha256:6a2540e7bd86bd827e386a0f05680f225591ec58e9ed962dda0c35f43c39cbeb"
+      },
+      "observationAdapter": {
+        "path": "editor-automated/observation-adapter-v1.json",
+        "sha256": "sha256:7f65c78c0d390e7ab972275b43341e94174d267ec4dadd28b71c60223fbe45d7"
+      },
+      "fixtureGeneratorEvidence": "editor-automated/editor-automated-fixture-static-a2-2026-08-17.json",
+      "executionAdmissionContract": {
+        "path": "editor-automated/execution-admission-contract-v1.json",
+        "sha256": "sha256:5e38203fcf952e6b195e26c88386f4731072a59ba0b20f546ab93dea40678dd9"
+      },
+      "nonCapacityAssignment": {
+        "path": "editor-automated/non-capacity-assignment-v1.json",
+        "sha256": "sha256:4c993b03077e32dc6ae80cf7f7ce15c6c681fd017578919130f95032fcfb4807",
+        "assignedRequirementCount": 414,
+        "routingGroupCount": 45,
+        "journeySeedCount": 12,
+        "formalCaseCount": 0,
+        "formalOracleCount": 0
+      },
+      "repositoryReadinessAudit": {
+        "path": "editor-automated/repository-readiness-audit-v1.json",
+        "sha256": "sha256:a0d059516430994ffed1bfaf1a1f7140844af64c83a72ef1316f91ef8fb1aaf7",
+        "result": "REJECTED"
+      },
+      "admissionStaticEvidence": "editor-automated/editor-automation-admission-static-a2-2026-08-17.json",
+      "atomicCaseSplitStatus": "PENDING",
+      "exactBrowserAndOperatingSystemTargetManifestStatus": "PENDING",
+      "exactProductTargetManifestStatus": "PENDING",
+      "executorManifestStatus": "PENDING",
+      "independentProductReplayStatus": "PENDING",
+      "j1Status": "PENDING_SEPARATE_HUMAN_RECORD",
+      "executable": false
+    }
+  ],
+  "classCount": 6,
+  "capacityBoundaryMaterialization": {
+    "status": "STATIC_A2_SHAPE_CANDIDATES_READY_RECORD_ISSUANCE_BLOCKED",
+    "axisCount": 175,
+    "candidateCaseCount": 525,
+    "candidateOracleCount": 525,
+    "assignedExecutionClassCount": 4,
+    "evidence": "capacity-boundary/capacity-boundary-static-a2-2026-08-17.json",
+    "formalCapacityCaseCount": 0,
+    "formalCapacityOracleCount": 0,
+    "recordIssuanceAllowed": false,
+    "executionEvidence": false
+  },
+  "executorManifestStatus": "SPEC_REGISTRY_FROZEN_OTHER_CLASSES_PENDING",
+  "targetManifestStatus": "SPEC_REGISTRY_FROZEN_OTHER_CLASSES_PENDING",
+  "recordsMayClaimExecutableWithoutRequiredManifest": false
+}

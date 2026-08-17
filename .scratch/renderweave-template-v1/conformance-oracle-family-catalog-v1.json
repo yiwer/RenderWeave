@@ -1,0 +1,21 @@
+{
+  "artifactVersion": "renderweave-conformance-oracle-families/1.0",
+  "status": "FROZEN",
+  "authority": "Ticket19 Oracle identity namespace catalog",
+  "families": [
+    "WIRE_CANONICAL_DIGEST",
+    "DESIGN_INPUT_EXPRESSION",
+    "CLOSURE_REPEAT_COMPOSITION_EVALUATOR",
+    "ASSET_CAPABILITY_CONCURRENCY",
+    "LAYOUT_SHAPING",
+    "RENDERER_OUTPUT",
+    "SECURITY_FAULT",
+    "EDITOR_AUTOMATED",
+    "CAPACITY",
+    "SPEC_REGISTRY"
+  ],
+  "familyCount": 10,
+  "semantics": "Oracle family is identity namespace and routing metadata only; it never implies requirement coverage, executor, target, evidence grade, probe membership, or assertion semantics.",
+  "reuseRule": "An exactly identical canonical assertion signature reuses the same Oracle even when its coverage edges reach requirements in multiple requirement families.",
+  "idPatternMeaning": "ORC::<one exact family value>::<six-digit ordinal>"
+}

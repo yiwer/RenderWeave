@@ -1,0 +1,42 @@
+{
+  "fixtureVersion": "renderweave-renderer-exact-output-baseline/1.0",
+  "baselineId": "baseline.renderer-exact-output.minimal-v1",
+  "executionClass": "EXEC::RENDERER_EXACT_OUTPUT::1.0",
+  "fixtureOnlyEffectiveCommandContext": {
+    "contractVersion": "renderweave-render-command/1.0",
+    "requestId": "00000000-0000-4000-8000-000000000000",
+    "rendererProfile": "renderweave-renderer/1.0",
+    "deadlineAt": "2026-08-17T00:01:00.000Z",
+    "documentContract": {
+      "dslVersion": "renderweave-render/1.0",
+      "layoutProfile": "renderweave-layout/1.0",
+      "rootKind": "canvas",
+      "rootOccurrenceId": "rwocc_0000000000000000",
+      "resourceCount": 0
+    },
+    "output": {
+      "profile": "renderweave-output-png/1.0",
+      "dpi": 96
+    },
+    "diagnostics": {
+      "layoutTrace": false
+    }
+  },
+  "resourceState": {
+    "renderResources": [],
+    "fetchLeases": [],
+    "images": [],
+    "fonts": []
+  },
+  "faultSchedule": {
+    "kind": "NONE"
+  },
+  "productCommandConstructed": false,
+  "productRenderDocumentBytesPresent": false,
+  "renderDocumentDigestPresent": false,
+  "rendererTargetInvoked": false,
+  "externalReadsAllowed": false,
+  "networkReadsAllowed": false,
+  "currentTimeReadsAllowed": false,
+  "productMutationAllowedByFixtureGeneration": false
+}

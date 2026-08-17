@@ -1,0 +1,126 @@
+{
+  "artifactVersion": "renderweave-hermetic-linux-build-prerequisites/1.0",
+  "candidateId": "rw-renderer-spike-linux-x86_64-v2-000001",
+  "status": "PREREQUISITES_FROZEN_BUILD_NOT_AUTHORIZED",
+  "authority": "Ticket19 next-spike admission boundary; this artifact is neither a build manifest nor build evidence",
+  "target": {
+    "operatingSystem": "Linux",
+    "architecture": "x86_64",
+    "isa": "x86-64-v2 only",
+    "cpuPath": "single CPU-only path",
+    "virtualizationUse": "permitted only for non-authoritative build rehearsal after fresh authorization",
+    "certificationHosts": "two non-virtualized physical Linux hosts from different CPU families"
+  },
+  "requiredSourceClosure": [
+    "Skia exact commit, tree, normalized archive and downstream patchset",
+    "FreeType exact commit, tree, official archive, custom options and module headers",
+    "HarfBuzz and every Unicode, normalization, line-break and BiDi data input",
+    "PNG, JPEG and WebP input decoders and their complete transitive sources",
+    "libjpeg-turbo output encoder source and downstream configuration",
+    "Rust crate graph with checksums and vendoring policy",
+    "libc, libc++, compiler runtime, sysroot and linker inputs",
+    "GN, Ninja, CMake and every generated build file or code generator",
+    "canonical ICC bytes and hash",
+    "OCI image manifest, layer digests and base operating-system package closure"
+  ],
+  "requiredToolchainClosure": [
+    "exact LLVM, Clang and LLD binaries plus SHA-256",
+    "exact GN, Ninja and CMake binaries plus SHA-256",
+    "target triple, sysroot, libc and libc++ identities",
+    "all compiler, assembler, linker and archiver flags",
+    "SOURCE_DATE_EPOCH, locale, timezone, umask and path remapping",
+    "environment allowlist with every unlisted variable removed",
+    "network-disabled build after all inputs are staged"
+  ],
+  "requiredBuildManifestFields": [
+    "candidateId",
+    "source artifact paths and SHA-256",
+    "patch application order and resulting tree digest",
+    "tool binary paths and SHA-256",
+    "complete GN args",
+    "complete compile and link command digests",
+    "generated-file digests",
+    "ELF file and section digests",
+    "dynamic dependency allowlist",
+    "ISA audit result",
+    "module and symbol audit result",
+    "reproducibility comparison"
+  ],
+  "portableTrickyFontGate": {
+    "policy": "renderer-spike/tricky-font-fixture-policy-v1.json",
+    "requiredAuthority": "deterministic license-safe synthetic or open fixture",
+    "requiredBindings": [
+      "recipe or upstream source",
+      "license",
+      "exact bytes",
+      "SHA-256",
+      "FT_IS_TRICKY proof",
+      "NO_HINTING-only control",
+      "NO_HINTING plus NO_AUTOHINT expected behavior"
+    ],
+    "proprietaryBytesAllowed": false,
+    "localSupplementaryDiagnosis": "requires separate fresh authorization and can never be sole READY authority",
+    "currentStatus": "PENDING"
+  },
+  "preBuildGates": [
+    "complete transitive source closure manifest frozen",
+    "complete toolchain and sysroot manifest frozen",
+    "portable tricky-font bytes and proof plan frozen",
+    "custom FreeType CFF behavior plan frozen",
+    "all FT_Load_Glyph path assertions frozen",
+    "ELF, module, symbol and ISA audit commands frozen",
+    "temporary path, time, disk, CPU and network bounds frozen",
+    "fresh explicit user authorization for the exact build rehearsal"
+  ],
+  "plannedEvidenceStages": [
+    {
+      "stage": "SOURCE",
+      "minimumGrade": "A1",
+      "current": "COMPLETE_FOR_BOUNDED_SOURCE_IDENTITY_ONLY"
+    },
+    {
+      "stage": "BUILD",
+      "minimumGrade": "A1",
+      "current": "PENDING"
+    },
+    {
+      "stage": "LINK_ELF",
+      "minimumGrade": "A1",
+      "current": "PENDING"
+    },
+    {
+      "stage": "FONT_BEHAVIOR",
+      "minimumGrade": "A2",
+      "current": "PENDING"
+    },
+    {
+      "stage": "PIXEL_AND_ENCODED_BYTES",
+      "minimumGrade": "A2",
+      "current": "PENDING"
+    },
+    {
+      "stage": "PHYSICAL_LINUX_REPLAY",
+      "minimumGrade": "A2",
+      "current": "PENDING"
+    },
+    {
+      "stage": "CI_ENFORCEMENT",
+      "minimumGrade": "A3",
+      "current": "PENDING"
+    }
+  ],
+  "forbiddenShortcuts": [
+    "Windows-native result as Linux authority",
+    "Docker or WSL result as physical-host certification",
+    "system FreeType, fontconfig, system font or undeclared dynamic library",
+    "proprietary font download or committed bytes",
+    "network access during the hermetic build",
+    "latest tag, floating package, ambient environment or tool PATH selection",
+    "READY, Certified, or Ticket19 closure from source-only or build-only evidence"
+  ],
+  "buildAuthorized": false,
+  "buildAttemptedByThisDecision": false,
+  "certified": false,
+  "ready": false,
+  "ticket19MayClose": false
+}

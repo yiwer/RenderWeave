@@ -1,0 +1,7 @@
+[
+  {
+    "operationId": "deleteEntity",
+    "outcome": "NONTERMINAL_REJECTION",
+    "code": "EDITOR_STRUCTURE_COMMAND_REFERENCE_UNSAFE"
+  }
+]

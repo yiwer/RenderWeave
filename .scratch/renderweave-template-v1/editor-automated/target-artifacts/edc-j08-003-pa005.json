@@ -1,0 +1,8 @@
+[
+  {
+    "operationId": "resubmitCompleteDesign",
+    "outcome": "PROBLEM",
+    "code": "TEMPLATE_REVISION_CONFLICT",
+    "stage": "TEMPLATE_MUTATION"
+  }
+]

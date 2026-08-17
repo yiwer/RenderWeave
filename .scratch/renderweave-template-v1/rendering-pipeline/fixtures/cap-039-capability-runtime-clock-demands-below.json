@@ -1,0 +1,45 @@
+{
+  "fixtureVersion": "renderweave-rendering-pipeline-fixture/1.0",
+  "generatorProfile": "renderweave-rendering-pipeline-generator/1.0",
+  "executionClass": "EXEC::RENDERING_PIPELINE::1.0",
+  "baseline": {
+    "baselineId": "baseline.rendering-pipeline.minimal-v1",
+    "path": "rendering-pipeline/baseline-v1.json",
+    "sha256": "sha256:9efddc6a2cfe43be255828bf32e3ef6e126fd188a61f2cfda6a9d101e06ddbfb",
+    "byteLength": 1545
+  },
+  "scenario": {
+    "mode": "CAPACITY_BOUNDARY",
+    "scenarioId": "CAP::capabilityRuntime.clockDemands::below",
+    "operationId": "main",
+    "entrypoint": "RENDERING_PIPELINE_CAPACITY_GUARD",
+    "guardContractId": "renderweave-rendering-pipeline-capacity-guard/1.0",
+    "limitId": "capabilityRuntime.clockDemands",
+    "observedValue": "4095",
+    "valueEncoding": "CANONICAL_INTEGER",
+    "comparator": "MAX_INCLUSIVE",
+    "variant": "below",
+    "contractStage": "CAPABILITY_FIRST_DEMAND",
+    "publicRenderStage": "MATERIALIZATION",
+    "reservationPoint": "before state allocation or returning the first result for the next total and kind demand",
+    "zeroBoundary": "ZERO_DOCUMENT_OUTPUT",
+    "faultSchedule": {
+      "kind": "NONE"
+    }
+  },
+  "observationAdapter": {
+    "adapterId": "renderweave-rendering-pipeline-observation-adapter/1.0",
+    "path": "rendering-pipeline/observation-adapter-v1.json",
+    "sha256": "sha256:bc16d95de8cf80da63a071c246692ecbe37ad86a53ffa21500dcaf1c595c48fa"
+  },
+  "targetContract": {
+    "exactProductionGuardRequired": true,
+    "duplicateGuardImplementationForbidden": true,
+    "productApiSurfaceCreated": false,
+    "closureFreezeExecutedByThisProbe": false,
+    "capabilityOrAssetResolutionExecutedByThisProbe": false,
+    "evaluatorOrSealerExecutedByThisProbe": false,
+    "rendererOrOutputExecutedByThisProbe": false,
+    "fullRenderingPipelineProvenByThisProbe": false
+  }
+}

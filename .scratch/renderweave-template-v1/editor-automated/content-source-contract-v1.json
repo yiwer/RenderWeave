@@ -1,0 +1,149 @@
+{
+  "artifactVersion": "renderweave-editor-content-source-contract/1.1",
+  "profileId": "renderweave-editor-content-source/1.1",
+  "status": "FROZEN_CONTENT_FACT_SOURCE_INTERFACE_ONE_IMMUTABLE_SPEC_FIXTURE_BOUND",
+  "executionClass": "EXEC::EDITOR_AUTOMATED::1.0",
+  "module": {
+    "name": "EditorContentSource",
+    "interface": "resolve one source slot to verified canonical DesignDSL and, when required, trusted canonical-baseline facts through one closed result union",
+    "seam": "candidate generation, target binding, and a future product runner consume the same source result; baseline labels, revision deltas, action names, DOM state, transport internals, persistence rows, and cross-execution-class artifacts cannot substitute for source facts",
+    "adapters": [
+      {
+        "adapterKind": "IMMUTABLE_SPEC_FIXTURE",
+        "authority": "an immutable Editor-owned specification fixture containing exact canonical DesignDSL bytes and a closed state proof; it freezes planned fixture content but proves no product behavior"
+      },
+      {
+        "adapterKind": "ADMITTED_PRODUCT_CAPTURE",
+        "authority": "an admitted product target capture containing the exact canonical response or trusted current facts and exact canonical DesignDSL bytes"
+      }
+    ]
+  },
+  "sourceKinds": [
+    {
+      "sourceKind": "WORKING_COPY_CANONICAL_DESIGN_DSL",
+      "requiredFacts": [
+        "canonicalDesignDslArtifact",
+        "workingCopyDigest"
+      ],
+      "resultRule": "workingCopyDigest is SHA-256 over the exact renderweave-design-c14n/1.0 canonical DesignDSL bytes, with sha256:<64 lowercase hex> wire"
+    },
+    {
+      "sourceKind": "CANONICAL_BASELINE",
+      "requiredFacts": [
+        "revision",
+        "contentHash",
+        "canonicalDesignDslArtifact",
+        "workingCopyDigest",
+        "canonicalBaselineProjectionArtifact"
+      ],
+      "resultRule": "revision, contentHash, canonical DesignDSL bytes, workingCopyDigest, and projection bytes are one coherent trusted baseline result"
+    }
+  ],
+  "bindingUnion": {
+    "UNBOUND": {
+      "exactMembersInOrder": [
+        "status",
+        "reasonCode"
+      ],
+      "reasonCode": "EXACT_EDITOR_CONTENT_SOURCE_ARTIFACT_MISSING"
+    },
+    "EXACT_SOURCE": {
+      "exactMembersInOrder": [
+        "status",
+        "adapterKind",
+        "sourceRecordArtifact"
+      ],
+      "adapterKinds": [
+        "IMMUTABLE_SPEC_FIXTURE",
+        "ADMITTED_PRODUCT_CAPTURE"
+      ],
+      "sourceRecordArtifactMembersInOrder": [
+        "path",
+        "sha256",
+        "byteLength"
+      ]
+    }
+  },
+  "sourceRecord": {
+    "profile": "renderweave-editor-content-source-record/1.0",
+    "exactMembersInOrder": [
+      "artifactVersion",
+      "sourceSlotId",
+      "candidateId",
+      "planAssertionId",
+      "executionClass",
+      "sourceKind",
+      "adapterKind",
+      "acquisitionMode",
+      "semanticInputFixture",
+      "stateProof",
+      "result",
+      "boundary"
+    ],
+    "resultMembersBySourceKind": {
+      "WORKING_COPY_CANONICAL_DESIGN_DSL": [
+        "canonicalDesignDslArtifact",
+        "workingCopyDigest"
+      ],
+      "CANONICAL_BASELINE": [
+        "revision",
+        "contentHash",
+        "canonicalDesignDslArtifact",
+        "workingCopyDigest",
+        "canonicalBaselineProjectionArtifact"
+      ]
+    },
+    "immutableSpecFixtureProof": {
+      "proofKind": "DIRTY_GUARD_ATOMIC_REJECTION",
+      "exactMembersInOrder": [
+        "proofKind",
+        "canonicalBaseline",
+        "preActionWorkingCopy",
+        "dirtyStateRule",
+        "expectedTerminal",
+        "postActionRule"
+      ],
+      "canonicalBaselineMembersInOrder": [
+        "revision",
+        "contentHash",
+        "workingCopyDigest",
+        "canonicalDesignDslArtifact"
+      ],
+      "preActionWorkingCopyMembersInOrder": [
+        "canonicalDesignDslArtifact",
+        "workingCopyDigest"
+      ],
+      "expectedTerminalMembersInOrder": [
+        "operationId",
+        "outcome",
+        "code"
+      ],
+      "postActionRule": "BYTE_IDENTICAL_TO_PRE_ACTION"
+    }
+  },
+  "canonicalFacts": {
+    "designDslCanonicalProfile": "renderweave-design-c14n/1.0",
+    "workingCopyDigest": "sha256(exact canonical DesignDSL bytes), encoded as sha256:<64 lowercase hex>",
+    "contentHash": "sha256(UTF-8(\"renderweave-design-content/1\\0\") + exact canonical DesignDSL bytes), encoded as sha256:<64 lowercase hex>",
+    "revision": "exact trusted nonnegative integer returned by the canonical response or trusted current; revisionDelta and baseline labels are never absolute revision facts",
+    "canonicalBaselineProjection": {
+      "profile": "renderweave-editor-canonical-baseline-projection/1.0",
+      "exactMembersInOrder": [
+        "profile",
+        "revision",
+        "contentHash",
+        "workingCopyDigest"
+      ],
+      "encoding": "UTF-8 strict JSON, no BOM, exact member order, ':' and ',' separators, no insignificant whitespace, shortest nonnegative base-10 revision, one final LF"
+    }
+  },
+  "sourceSlotRule": "Each pending first-layer content decision receives exactly one source slot. A source artifact may be reused only when exact bytes and every baseline fact are identical and the reuse remains inside EXEC::EDITOR_AUTOMATED::1.0.",
+  "forbiddenInference": [
+    "derive DesignDSL bytes from baselineId, scenario title, action name, semantic parameter, or expected outcome",
+    "derive absolute revision from revisionDelta",
+    "invent contentHash, workingCopyDigest, canonical response, placeholder DesignDSL, or empty object",
+    "reuse a DesignDSL baseline or capture from another execution class",
+    "treat the semantic input fixture as exact DesignDSL or product-captured content"
+  ],
+  "boundary": "This is a specification-only content-fact interface. An IMMUTABLE_SPEC_FIXTURE may freeze Editor-owned canonical source bytes and an expected state proof, but it creates no product adapter, product capture, browser observation, formal Case or Oracle, J1 evidence, or READY evidence."
+}

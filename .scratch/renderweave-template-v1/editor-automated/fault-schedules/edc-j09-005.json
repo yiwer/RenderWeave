@@ -1,0 +1,18 @@
+{
+  "artifactVersion": "renderweave-editor-fault-schedule/1.0",
+  "candidateId": "EDC::J09::005",
+  "executionClass": "EXEC::EDITOR_AUTOMATED::1.0",
+  "events": [
+    {
+      "at": "CURRENT_READ",
+      "action": "RETURN_TEMPLATE_DELETED",
+      "parameters": {}
+    }
+  ],
+  "expectedTerminal": {
+    "operationId": "reconcileSave",
+    "outcome": "PROBLEM",
+    "code": "TEMPLATE_DELETED",
+    "stage": "EDITOR_SAVE_RECONCILIATION"
+  }
+}

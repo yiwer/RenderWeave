@@ -1,0 +1,18 @@
+{
+  "artifactVersion": "renderweave-editor-fault-schedule/1.0",
+  "candidateId": "EDC::J09::006",
+  "executionClass": "EXEC::EDITOR_AUTOMATED::1.0",
+  "events": [
+    {
+      "at": "CURRENT_READ",
+      "action": "RETURN_REVISION_REGRESSION_OR_INTEGRITY_MISMATCH",
+      "parameters": {}
+    }
+  ],
+  "expectedTerminal": {
+    "operationId": "reconcileSave",
+    "outcome": "PROBLEM",
+    "code": "TEMPLATE_INTEGRITY_MISMATCH",
+    "stage": "EDITOR_SAVE_RECONCILIATION"
+  }
+}

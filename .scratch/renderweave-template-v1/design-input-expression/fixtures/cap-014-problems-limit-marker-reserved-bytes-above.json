@@ -1,0 +1,43 @@
+{
+  "fixtureVersion": "renderweave-design-input-expression-fixture/1.0",
+  "generatorProfile": "renderweave-design-input-expression-generator/1.0",
+  "executionClass": "EXEC::DESIGN_INPUT_EXPRESSION::1.0",
+  "baseline": {
+    "baselineId": "baseline.design-input-expression.minimal-v1",
+    "path": "design-input-expression/baseline-v1.json",
+    "sha256": "sha256:30bd8a0ff27310a89c1a837a0dd7b056556ab9401b3c9d549010ec035e5980ef",
+    "byteLength": 934
+  },
+  "scenario": {
+    "mode": "CAPACITY_BOUNDARY",
+    "scenarioId": "CAP::problems.limitMarkerReservedBytes::above",
+    "operationId": "main",
+    "entrypoint": "DESIGN_INPUT_EXPRESSION_CAPACITY_GUARD",
+    "guardContractId": "renderweave-design-input-expression-capacity-guard/1.0",
+    "limitId": "problems.limitMarkerReservedBytes",
+    "observedValue": "1025",
+    "valueEncoding": "CANONICAL_INTEGER",
+    "comparator": "EXACT",
+    "variant": "above",
+    "contractStage": "BOUNDED_PROBLEM_COLLECTION",
+    "publicRenderStage": "ORIGINATING_STAGE",
+    "reservationPoint": "before appending each canonical ordinary problem; one marker reservation always remains",
+    "zeroBoundary": "BOUNDED_PROBLEM_PREFIX_ONLY",
+    "faultSchedule": {
+      "kind": "NONE"
+    }
+  },
+  "observationAdapter": {
+    "adapterId": "renderweave-design-input-expression-observation-adapter/1.0",
+    "path": "design-input-expression/observation-adapter-v1.json",
+    "sha256": "sha256:e46af856d38c1844d1c3b222479e25208c0f5297caabdfea16ccd779301d77e9"
+  },
+  "targetContract": {
+    "exactProductionGuardRequired": true,
+    "duplicateGuardImplementationForbidden": true,
+    "productApiSurfaceCreated": false,
+    "parserOrCanonicalizerExecutedByThisProbe": false,
+    "semanticOrExpressionEvaluatorExecutedByThisProbe": false,
+    "fullAuthoringOrRenderInputPathProvenByThisProbe": false
+  }
+}

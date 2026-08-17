@@ -1,0 +1,19 @@
+{
+  "artifactVersion": "renderweave-editor-input-fixture/1.0",
+  "candidateId": "EDC::J06::001",
+  "executionClass": "EXEC::EDITOR_AUTOMATED::1.0",
+  "baselineId": "EditorStructuredDirtyCanonicalNormalization",
+  "parameters": {
+    "normalizationKinds": [
+      "METADATA_TRIM",
+      "SET_SORT",
+      "EQUIVALENT_DECIMAL"
+    ]
+  },
+  "actionScript": [
+    {
+      "action": "SAVE_TEMPLATE",
+      "parameters": {}
+    }
+  ]
+}

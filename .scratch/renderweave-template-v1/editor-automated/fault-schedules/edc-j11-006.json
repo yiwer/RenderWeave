@@ -1,0 +1,16 @@
+{
+  "artifactVersion": "renderweave-editor-fault-schedule/1.0",
+  "candidateId": "EDC::J11::006",
+  "executionClass": "EXEC::EDITOR_AUTOMATED::1.0",
+  "events": [
+    {
+      "at": "PREVIEW_RESPONSE",
+      "action": "RETURN_RENDER_OUTPUT",
+      "parameters": {}
+    }
+  ],
+  "expectedTerminal": {
+    "operationId": "authoritativePreview",
+    "outcome": "SUCCESS"
+  }
+}

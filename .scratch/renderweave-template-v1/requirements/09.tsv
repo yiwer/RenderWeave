@@ -1,0 +1,259 @@
+requirement_id	source_line	clause_ordinal_on_line	family	normative_summary
+RW-T09-S1-001	33	1	WIRE_CANONICAL_DIGEST	renderweave-design/1.0 全部 Node wire/property/type/default/validation/array-item/ContentModel 由唯一 global NodeContractCatalog 定义。
+RW-T09-S1-002	33	2	DESIGN_INPUT_EXPRESSION	Web、server-save、Evaluator、lowering 必须消费同一 NodeContract。
+RW-T09-S1-003	33	3	SECURITY_FAULT	不得分别维护 UI schema、validator switch、Renderer mapping 作为 second authority。
+RW-T09-S1-004	34	1	WIRE_CANONICAL_DIGEST	NodeContractCatalog 按 exact dslVersion interpret。
+RW-T09-S1-005	34	2	WIRE_CANONICAL_DIGEST	Global Node Property Identity 永久为 nodeKind + propertyPathPattern。
+RW-T09-S1-006	34	3	SECURITY_FAULT	既有 identity 的 ValueType/structural-role/default/validation 跨版本不可改变。
+RW-T09-S1-007	34	4	WIRE_CANONICAL_DIGEST	breaking change 必须新 property name 或 node kind，并引入新 dslVersion。
+RW-T09-S1-008	35	1	WIRE_CANONICAL_DIGEST	CommonNode/Placement/Fill/Stroke fragments 只可作 Catalog declaration/generation convenience。
+RW-T09-S1-009	35	2	SECURITY_FAULT	authoritative validation/diagnostic 必须可展开到 concrete node kind + path。
+RW-T09-S1-010	35	3	SECURITY_FAULT	fragment 不得成为可 drift 的 second contract。
+RW-T09-S1-011	36	1	DESIGN_INPUT_EXPRESSION	BindingPolicyCatalog 是独立 global append-only authorization set。
+RW-T09-S1-012	36	2	DESIGN_INPUT_EXPRESSION	每条 Policy 只授权一个 existing Property Identity 作 Binding target。
+RW-T09-S1-013	36	3	DESIGN_INPUT_EXPRESSION	target type/default/validation 始终从 NodeContract derive。
+RW-T09-S1-014	36	4	SECURITY_FAULT	Policy 不复制 target type/default/validation。
+RW-T09-S1-015	36	5	DESIGN_INPUT_EXPRESSION	Policy 不限制 ValueSource kind。
+RW-T09-S1-016	37	1	SECURITY_FAULT	Catalog existing target 不可修改、删除或 overlap-redeclare。
+RW-T09-S1-017	37	2	DESIGN_INPUT_EXPRESSION	新增 Policy 只单调扩大 future authoring ability。
+RW-T09-S1-018	37	3	WIRE_CANONICAL_DIGEST	新增 Policy 不改变 wire、contentHash 或 existing Binding semantics。
+RW-T09-S1-019	37	4	ASSET_CAPABILITY_CONCURRENCY	Catalog 可有 monotonic operational/distribution version。
+RW-T09-S1-020	37	5	WIRE_CANONICAL_DIGEST	DesignDSL 不保存 policyId、Catalog revision 或 self-reported target type。
+RW-T09-S1-021	38	1	SECURITY_FAULT	模型不引入 Slot/SlotRegistry/Template-local property definition/runtime Node plugin/generic properties bag。
+RW-T09-S1-022	38	2	EDITOR_AUTOMATED	Frontend 可从 NodeContract+BindingPolicy generate controls。
+RW-T09-S1-023	38	3	SECURITY_FAULT	UI config 不是 contract authority。
+RW-T09-S2-001	42	1	WIRE_CANONICAL_DIGEST	designRoot 必须直接承载唯一 Canvas Node，最小 exact shape 按票据 code block。
+RW-T09-S2-002	55	1	WIRE_CANONICAL_DIGEST	v1 exact node-kind set 为 canvas/group/frame/stack/grid/text/image/rect/ellipse/line/polygon/polyline/path/qrCode/barcode/repeat/conditional/templateUse。
+RW-T09-S2-003	63	1	WIRE_CANONICAL_DIGEST	kind/property/member names 用 lowerCamelCase；enum token 用 UPPER_SNAKE_CASE。
+RW-T09-S2-004	63	2	WIRE_CANONICAL_DIGEST	repeat/conditional/templateUse 在 v1 freeze 前作为 exact structural kinds 并入 Catalog。
+RW-T09-S2-005	63	3	SECURITY_FAULT	structural kinds 不得伪装为 visual property、Frame 或 sidecar composition table。
+RW-T09-S2-006	64	1	WIRE_CANONICAL_DIGEST	每个 Node required nodeId、kind、bindings；displayName optional。
+RW-T09-S2-007	64	2	WIRE_CANONICAL_DIGEST	nodeId 由 authoring client 生成 canonical lowercase UUID v4，且整棵 designRoot tree unique。
+RW-T09-S2-008	64	3	SECURITY_FAULT	Server 不生成、repair 或 rewrite nodeId。
+RW-T09-S2-009	65	1	WIRE_CANONICAL_DIGEST	displayName trim 后 1–128 Unicode codepoints，不 Unicode-normalize。
+RW-T09-S2-010	65	2	WIRE_CANONICAL_DIGEST	displayName 是 authored revision/contentHash fact。
+RW-T09-S2-011	65	3	SECURITY_FAULT	displayName 不 evaluate 且不可 Binding。
+RW-T09-S2-012	66	1	WIRE_CANONICAL_DIGEST	每个 non-Canvas Node required placement，可选 render/visible/opacity/transform。
+RW-T09-S2-013	66	2	WIRE_CANONICAL_DIGEST	common fields 直接位于 Node，不放 generic properties object。
+RW-T09-S2-014	67	1	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	render omitted 默认 true；evaluated false 移除 entire subtree 的 layout/resources/output。
+RW-T09-S2-015	67	2	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	visible omitted 默认 true；evaluated false 保留 layout 但 skip draw。
+RW-T09-S2-016	67	3	DESIGN_INPUT_EXPRESSION	opacity omitted 默认 1，合法范围 [0,1]。
+RW-T09-S2-017	67	4	LAYOUT_SHAPING	parent-child opacity composition order 由 layout/Renderer contract 冻结。
+RW-T09-S2-018	68	1	WIRE_CANONICAL_DIGEST	Canvas/Group/Frame/Stack/Grid required children，即使 empty。
+RW-T09-S2-019	68	2	WIRE_CANONICAL_DIGEST	这些 container children 可为任意 defined non-Canvas Node，包括 structural kinds，并可 recursively nest。
+RW-T09-S2-020	68	3	WIRE_CANONICAL_DIGEST	Repeat/Conditional required nonempty children 并使用 T11 special ContentModel。
+RW-T09-S2-021	68	4	WIRE_CANONICAL_DIGEST	TemplateUse 是 child-forbidden structural leaf，使用 T12 invocation contract。
+RW-T09-S2-022	68	5	WIRE_CANONICAL_DIGEST	visual leaf 禁止 children。
+RW-T09-S2-023	68	6	SECURITY_FAULT	Canvas 只能是 designRoot，不得出现在 children。
+RW-T09-S2-024	69	1	LAYOUT_SHAPING	children authored order 同时决定 layout traversal 与 paint z-order，先者先画后者覆盖。
+RW-T09-S2-025	69	2	SECURITY_FAULT	不存在 zIndex、order 或 flat-node second sorting authority。
+RW-T09-S2-026	70	1	WIRE_CANONICAL_DIGEST	Group 是 pure structural container，不拥有 fill/stroke/cornerRadii/padding/clip/explicit box size。
+RW-T09-S2-027	70	2	LAYOUT_SHAPING	empty Group 合法且 intrinsic size 为 0×0。
+RW-T09-S2-028	70	3	EDITOR_AUTOMATED	需要 explicit blank box/appearance/padding/clip 时必须使用 Frame。
+RW-T09-S2-029	71	1	SECURITY_FAULT	所有 Node/property/member/union 对 unknown field/kind 与 JSON null fail-closed。
+RW-T09-S2-030	71	2	WIRE_CANONICAL_DIGEST	optional member 只由 omission 表达。
+RW-T09-S3-001	75	1	DESIGN_INPUT_EXPRESSION	property leaf 只可用 eight BaseValueTypes、exact enum 或 limited homogeneous 1-D list<T>。
+RW-T09-S3-002	75	2	SECURITY_FAULT	complex object/array 只作 authored tree container，不是 arbitrary JSON ValueType 或 whole Binding target。
+RW-T09-S3-003	76	1	LAYOUT_SHAPING	geometry/placement/padding/gap/corner/shape-stroke/vector-coordinate 单位为 mm。
+RW-T09-S3-004	76	2	LAYOUT_SHAPING	fontSizePt/fixed-line-height/absolute-letter-spacing/Text-stroke 单位为 pt。
+RW-T09-S3-005	76	3	LAYOUT_SHAPING	ratio/scale unitless；rotation 单位 degree。
+RW-T09-S3-006	77	1	LAYOUT_SHAPING	unit relation 永久为 1in=25.4mm、1pt=1/72in。
+RW-T09-S3-007	77	2	SECURITY_FAULT	DPI 不属于 Canvas/Template/DesignDSL。
+RW-T09-S3-008	77	3	RENDERER_OUTPUT	raster request omitted DPI 默认 96px/in；final pixel size/rounding 由 T16。
+RW-T09-S3-009	78	1	WIRE_CANONICAL_DIGEST	optional composite 出现时 all members required-valid；禁止 partial object/null。
+RW-T09-S3-010	78	2	WIRE_CANONICAL_DIGEST	canonical writer 不 fill object/default 或 remove explicit default-equal value。
+RW-T09-S3-011	82	1	WIRE_CANONICAL_DIGEST	Fill exact shape 为 {color}。
+RW-T09-S3-012	83	1	WIRE_CANONICAL_DIGEST	StrokeMm exact shape 为 {color,widthMm,cap,join} 且 widthMm>0。
+RW-T09-S3-013	84	1	WIRE_CANONICAL_DIGEST	StrokePt exact shape 为 {color,widthPt,cap,join}、widthPt>0，且只用于 Text。
+RW-T09-S3-014	85	1	WIRE_CANONICAL_DIGEST	PaddingMm exact four-side shape，all values>=0。
+RW-T09-S3-015	86	1	WIRE_CANONICAL_DIGEST	CornerRadiiMm exact four-corner shape，all values>=0。
+RW-T09-S3-016	87	1	WIRE_CANONICAL_DIGEST	BleedMm exact four-side shape，all values>=0。
+RW-T09-S3-017	88	1	WIRE_CANONICAL_DIGEST	Transform exact shape 为 rotationDeg/scaleX/scaleY/originX/originY；scales nonzero，origins in [0,1]。
+RW-T09-S3-018	89	1	WIRE_CANONICAL_DIGEST	PointMm exact shape {xMm,yMm}，coordinates 可 negative。
+RW-T09-S3-019	90	1	WIRE_CANONICAL_DIGEST	AssetRef 是 imageRef/fontRef atomic closed {assetId}，assetId canonical server lowercase UUID v4。
+RW-T09-S3-020	92	1	WIRE_CANONICAL_DIGEST	Stroke cap exact BUTT|ROUND|SQUARE；join exact MITER|ROUND|BEVEL；MITER fixed limit 4 且无 authored property。
+RW-T09-S3-021	92	2	WIRE_CANONICAL_DIGEST	Fill/Stroke omitted=none；Padding/CornerRadii omitted=zero；Transform omitted=identity。
+RW-T09-S3-022	93	1	SECURITY_FAULT	v1 appearance 仅 single solid Fill + single Stroke；排除 gradient/multiple fills-strokes/shadow/dash/alignment/blend。
+RW-T09-S3-023	94	1	WIRE_CANONICAL_DIGEST	rotationDeg 接受 any decimal 且不作 360 canonical normalization；negative scale 表 flip。
+RW-T09-S3-024	94	2	SECURITY_FAULT	Transform 不支持 translate 或 skew。
+RW-T09-S3-025	95	1	LAYOUT_SHAPING	final-box adjacent radii sum 超边长时按 CSS common-scale rule normalize all corners，不 fail/individual-clip。
+RW-T09-S4-001	99	1	WIRE_CANONICAL_DIGEST	placement 是 required closed shallow union；bindable leaves 直接为 placement.<member>。
+RW-T09-S4-002	99	2	WIRE_CANONICAL_DIGEST	parent ContentModel 固定 variant：Canvas/Frame/Group/Conditional→ABSOLUTE，Stack→STACK，Grid→GRID，Repeat→PACK。
+RW-T09-S4-003	99	3	SECURITY_FAULT	placement variant mismatch 是 hard error。
+RW-T09-S4-004	99	4	EDITOR_AUTOMATED	reparent 必须 explicit-convert placement。
+RW-T09-S4-005	100	1	WIRE_CANONICAL_DIGEST	每个 non-Canvas placement required widthMode 与 heightMode。
+RW-T09-S4-006	100	2	WIRE_CANONICAL_DIGEST	ABSOLUTE/STACK/GRID 轴允许 FIXED|HUG_CONTENT|FILL 且受 node capability；PACK 仅 FIXED|HUG_CONTENT。
+RW-T09-S4-007	100	3	DESIGN_INPUT_EXPRESSION	FIXED required matching size>0；HUG/FILL 禁止 matching size field。
+RW-T09-S4-008	100	4	SECURITY_FAULT	FILL 要求 definite parent axis；任何 HUG/FILL dependency cycle 是 hard error。
+RW-T09-S4-009	101	1	DESIGN_INPUT_EXPRESSION	non-Group placement 可选 min>=0/max>0；same-axis min<=max，FIXED value 必须 within range。
+RW-T09-S4-010	101	2	LAYOUT_SHAPING	HUG/FILL clamp order 由 T10 冻结。
+RW-T09-S4-011	101	3	SECURITY_FAULT	Group 禁止 all min/max。
+RW-T09-S4-012	102	1	WIRE_CANONICAL_DIGEST	ABSOLUTE exact members 为 type、required x/y、axis modes/conditional sizes、optional min/max。
+RW-T09-S4-013	102	2	WIRE_CANONICAL_DIGEST	width/height FILL 可选 right/bottom inset，omitted=0；其他 mode 禁止对应 inset。
+RW-T09-S4-014	102	3	LAYOUT_SHAPING	x/y/inset 可 negative，origin 为 parent content-box top-left。
+RW-T09-S4-015	103	1	WIRE_CANONICAL_DIGEST	STACK exact members 包含 modes/sizes/min-max、four optional margins default0可负、optional alignSelf、optional fillWeight>0 default1。
+RW-T09-S4-016	103	2	DESIGN_INPUT_EXPRESSION	alignSelf 只 override cross axis；cross-axis FILL 时 explicit alignSelf illegal。
+RW-T09-S4-017	103	3	DESIGN_INPUT_EXPRESSION	fillWeight 仅当 owning Stack current direction main-axis mode=FILL 合法。
+RW-T09-S4-018	103	4	DESIGN_INPUT_EXPRESSION	direction/weight Binding 后必须重新 aggregate-validate。
+RW-T09-S4-019	103	5	SECURITY_FAULT	STACK 不提供 order/grow/shrink/flex-basis。
+RW-T09-S4-020	104	1	WIRE_CANONICAL_DIGEST	GRID exact members 包含 modes/sizes/min-max、required nonnegative integer row/column、optional positive spans default1、margins、optional axis align defaults START。
+RW-T09-S4-021	104	2	DESIGN_INPUT_EXPRESSION	GRID corresponding-axis FILL 时 explicit align-self illegal。
+RW-T09-S4-022	104	3	SECURITY_FAULT	GRID placement 禁止 absolute inset 与 Stack alignSelf。
+RW-T09-S4-023	105	1	WIRE_CANONICAL_DIGEST	PACK exact members 为 type、FIXED/HUG axis modes与conditional sizes、optional min/max。
+RW-T09-S4-024	105	2	SECURITY_FAULT	PACK 只允许 Repeat direct child。
+RW-T09-S4-025	105	3	SECURITY_FAULT	PACK 禁止 FILL/margin/x-y/inset/grid-cell/align/fillWeight/normal layout hints。
+RW-T09-S4-026	105	4	EDITOR_AUTOMATED	itemLayout 在 STACK/GRID 切换无需 rewrite child PACK placement。
+RW-T09-S4-027	106	1	WIRE_CANONICAL_DIGEST	margin 只存在 STACK/GRID，可 negative 且不 collapse；ABSOLUTE/PACK 无 margin。
+RW-T09-S4-028	106	2	DESIGN_INPUT_EXPRESSION	padding 与 gap 必须 nonnegative。
+RW-T09-S4-029	106	3	LAYOUT_SHAPING	多个 Stack main-axis FILL child 按 fillWeight 分 remaining space；water-fill/rounding/conflict 由 T10。
+RW-T09-S4-030	110	1	WIRE_CANONICAL_DIGEST	group width/height modes 均只允许 HUG_CONTENT。
+RW-T09-S4-031	111	1	WIRE_CANONICAL_DIGEST	frame/stack/grid/text 两轴允许 FIXED/HUG_CONTENT/FILL。
+RW-T09-S4-032	112	1	WIRE_CANONICAL_DIGEST	repeat/conditional/templateUse 一般两轴允许 FIXED/HUG/FILL；作为 Repeat direct child 受 PACK 限为 FIXED/HUG。
+RW-T09-S4-033	113	1	WIRE_CANONICAL_DIGEST	image 允许 FIXED/FILL；最多一轴 HUG，另一轴必须 FIXED/FILL。
+RW-T09-S4-034	114	1	WIRE_CANONICAL_DIGEST	rect/ellipse/qrCode/barcode 两轴只允许 FIXED/FILL。
+RW-T09-S4-035	115	1	WIRE_CANONICAL_DIGEST	line/polygon/polyline/path 两轴允许 FIXED/HUG_CONTENT/FILL。
+RW-T09-S5-001	119	1	WIRE_CANONICAL_DIGEST	Canvas required widthMm>0、heightMm>0、bindings、children；optional backgroundColor default transparent 与 complete bleed。
+RW-T09-S5-002	119	2	SECURITY_FAULT	Canvas 禁止 placement/transform/render/visible/opacity。
+RW-T09-S5-003	119	3	DESIGN_INPUT_EXPRESSION	Canvas size/bleed 不可 Binding；backgroundColor 可 Binding。
+RW-T09-S5-004	120	1	WIRE_CANONICAL_DIGEST	Frame/Stack/Grid 可选 fill/stroke/cornerRadii/padding/clipContent，clip omitted=false。
+RW-T09-S5-005	120	2	SECURITY_FAULT	Group 不拥有这些 appearance properties。
+RW-T09-S5-006	121	1	LAYOUT_SHAPING	Frame/Stack/Grid stroke 全部 inward；ContentBox 先扣 stroke 再 padding；clipContent 用 inner-border rounded shape。
+RW-T09-S5-007	121	2	LAYOUT_SHAPING	Rect/Ellipse stroke 同样 inward 且无 child ContentBox。
+RW-T09-S5-008	121	3	LAYOUT_SHAPING	Text stroke 是 glyph stroke，不是 container border。
+RW-T09-S5-009	122	1	WIRE_CANONICAL_DIGEST	Stack direction/gap/justify/align exact enums 与 defaults 按票据冻结。
+RW-T09-S5-010	122	2	LAYOUT_SHAPING	Stack child omitted alignSelf 时 inherit parent alignItems。
+RW-T09-S5-011	122	3	SECURITY_FAULT	Stack 不提供 STRETCH；FILL 是唯一 stretch authority。
+RW-T09-S5-012	123	1	WIRE_CANONICAL_DIGEST	Grid required nonempty ordered rows/columns；optional nonnegative row/column gaps default0。
+RW-T09-S5-013	123	2	WIRE_CANONICAL_DIGEST	Grid Track exact closed union 为 FIXED{valueMm}、FRACTION{weight}、AUTO。
+RW-T09-S5-014	123	3	WIRE_CANONICAL_DIGEST	Track arrays 保持 authored order。
+RW-T09-S5-015	131	1	DESIGN_INPUT_EXPRESSION	FIXED valueMm>0、FRACTION weight>0；type 不可 Binding，present valueMm/weight 可 Binding。
+RW-T09-S5-016	131	2	SECURITY_FAULT	Grid 不提供 named track/minmax/implicit track/template areas。
+RW-T09-S5-017	131	3	SECURITY_FAULT	child span 必须在 explicit bounds。
+RW-T09-S5-018	131	4	LAYOUT_SHAPING	Grid overlap 合法，children order 决定 paint order。
+RW-T09-S5-019	132	1	WIRE_CANONICAL_DIGEST	Repeat/Conditional exact structure/ValueSource/ABSENT/frames/packing/lowering 以 T11 为 authority。
+RW-T09-S5-020	132	2	WIRE_CANONICAL_DIGEST	Repeat children 统一 PACK；Conditional children 统一 ABSOLUTE。
+RW-T09-S5-021	132	3	SECURITY_FAULT	Repeat/Conditional 无 appearance/padding/clip。
+RW-T09-S5-022	132	4	SECURITY_FAULT	RepeatPackingSpec 是 dedicated closed STACK/GRID spec，不是 normal Grid implicit-track extension。
+RW-T09-S5-023	133	1	WIRE_CANONICAL_DIGEST	TemplateUse exact invocation contract 以 T12 为 authority。
+RW-T09-S5-024	133	2	SECURITY_FAULT	TemplateUse 无 children/appearance/padding/clip/fit。
+RW-T09-S5-025	133	3	LAYOUT_SHAPING	TemplateUse HUG intrinsic size 为 child Canvas trim。
+RW-T09-S5-026	133	4	LAYOUT_SHAPING	TemplateUse FIXED/FILL 只改变 host box并静态 CONTAIN/CENTER/clip，不向 child 反馈 reflow constraints。
+RW-T09-S6-001	137	1	WIRE_CANONICAL_DIGEST	Text exact properties 为 required nonempty ordered runs 及票据列出的 optional typography/layout members。
+RW-T09-S6-002	138	1	WIRE_CANONICAL_DIGEST	Run 是 closed object，required text/fontRef/fontSizePt>0/color/decoration。
+RW-T09-S6-003	138	2	DESIGN_INPUT_EXPRESSION	Run 必须且只能出现 letterSpacingPt 或 letterSpacingFactor 之一。
+RW-T09-S6-004	138	3	WIRE_CANONICAL_DIGEST	Run 无 runId；index 是 revision-local identity，reorder 保持 Binding intent 时须同步 rewrite target index。
+RW-T09-S6-005	139	1	WIRE_CANONICAL_DIGEST	decoration exact enum 为 NONE|UNDERLINE|LINE_THROUGH。
+RW-T09-S6-006	139	2	SECURITY_FAULT	weight/italic 只由 exact FONT AssetRef 表达，不提供 independent Run property。
+RW-T09-S6-007	139	3	RENDERER_OUTPUT	Renderer 不得使用 implicit family/environment font/fallback；missing required glyph 使 Render fail。
+RW-T09-S6-008	139	4	EDITOR_AUTOMATED	Editor preset 创建时必须把 exact fontRef snapshot 写入每个 Run。
+RW-T09-S6-009	140	1	LAYOUT_SHAPING	letterSpacingPt 是 absolute additional advance；factor 是 fontSizePt×factor advance。
+RW-T09-S6-010	140	2	DESIGN_INPUT_EXPRESSION	两种 letter spacing 接受 negative decimal 且不 clamp。
+RW-T09-S6-011	140	3	LAYOUT_SHAPING	letter spacing 只施加相邻 typographic units 之间，不加 line edges 或 forced-LF sides。
+RW-T09-S6-012	141	1	LAYOUT_SHAPING	Run text 按 array order 无 separator concatenate；Run boundary 只改变 style。
+RW-T09-S6-013	141	2	WIRE_CANONICAL_DIGEST	empty Run 合法。
+RW-T09-S6-014	141	3	WIRE_CANONICAL_DIGEST	entire empty text 必须表示为一个 text:"" Run。
+RW-T09-S6-015	141	4	SECURITY_FAULT	不增加 top-level text/plainText alias 或第二 plain-text node kind。
+RW-T09-S6-016	142	1	WIRE_CANONICAL_DIGEST	Text 只允许 LF 作为 forced-line-break control。
+RW-T09-S6-017	142	2	SECURITY_FAULT	CR/TAB/other C0 controls illegal。
+RW-T09-S6-018	142	3	WIRE_CANONICAL_DIGEST	Unicode scalars 原值保留，不做 NFC/NFKC normalization。
+RW-T09-S6-019	143	1	WIRE_CANONICAL_DIGEST	writingMode exact HORIZONTAL_TB|VERTICAL_RL，default HORIZONTAL_TB。
+RW-T09-S6-020	143	2	LAYOUT_SHAPING	VERTICAL_RL glyph flow top-to-bottom，wrapped columns right-to-left。
+RW-T09-S6-021	143	3	SECURITY_FAULT	v1 不提供 VERTICAL_LR 或 independent RTL mode。
+RW-T09-S6-022	144	1	WIRE_CANONICAL_DIGEST	horizontalAlign 与 verticalAlign exact enum/defaults 按票据冻结。
+RW-T09-S6-023	144	2	LAYOUT_SHAPING	Text alignments 作用于 internal physical axes，不替代 parent placement。
+RW-T09-S6-024	145	1	WIRE_CANONICAL_DIGEST	lineBreak exact NONE|WORD|CHAR default WORD；overflow exact VISIBLE|CLIP|ELLIPSIS|FAIL default CLIP。
+RW-T09-S6-025	145	2	WIRE_CANONICAL_DIGEST	需要 old visible overflow semantics 时必须 explicit VISIBLE。
+RW-T09-S6-026	146	1	WIRE_CANONICAL_DIGEST	lineHeight exact union 为 FACTOR{factor} 或 FIXED{valuePt}，numeric >0，omitted default FACTOR 1.2。
+RW-T09-S6-027	146	2	SECURITY_FAULT	lineHeight type 不可 Binding。
+RW-T09-S6-028	146	3	DESIGN_INPUT_EXPRESSION	lineHeight present numeric member 可 Binding。
+RW-T09-S6-029	147	1	DESIGN_INPUT_EXPRESSION	maxLines 若 present 必须 integer>=1；horizontal 表 rows，vertical 表 columns。
+RW-T09-S6-030	147	2	SECURITY_FAULT	overflow:VISIBLE 与 authored maxLines 同时出现是 hard error。
+RW-T09-S6-031	147	3	WIRE_CANONICAL_DIGEST	fitMode exact NONE|SHRINK_TO_FIT default NONE；SHRINK requires 0<minScale<=1，NONE forbids minScale。
+RW-T09-S6-032	147	4	DESIGN_INPUT_EXPRESSION	fitMode 不可 Binding，present minScale 可 Binding；先 scale all Runs 到 minScale 后再 overflow。
+RW-T09-S6-033	147	5	SECURITY_FAULT	v1 不设 autoSizeText/overScale；HUG 与 fitMode 分别负责 intrinsic sizing 与 text scale。
+RW-T09-S6-034	148	1	LAYOUT_SHAPING	Text HUG_CONTENT 包含 shaped content、padding、glyph-stroke bounds；ContentBox 只扣 padding。
+RW-T09-S6-035	148	2	LAYOUT_SHAPING	shaping/mixed-run line-box/vertical/ellipsis/pixel rounding 由 T10/T16 冻结。
+RW-T09-S7-001	152	1	WIRE_CANONICAL_DIGEST	Image required imageRef；fit exact CONTAIN|COVER|FILL default CONTAIN；sampling exact LINEAR|NEAREST default LINEAR。
+RW-T09-S7-002	152	2	SECURITY_FAULT	v1 Image 排除 URL/base64/crop/focal/filter/alt/corner/fit-NONE；corner/clip 用 Frame。
+RW-T09-S7-003	153	1	LAYOUT_SHAPING	Image single-axis HUG 只用 resolved pixel aspect ratio derive other axis，不用 Asset DPI；dual-HUG illegal。
+RW-T09-S7-004	153	2	LAYOUT_SHAPING	default Render DPI 不改变 authored Image physical semantics。
+RW-T09-S7-005	154	1	WIRE_CANONICAL_DIGEST	Rect optional fill/stroke/cornerRadii；Ellipse optional fill/stroke；二者至少一个 fill/stroke。
+RW-T09-S7-006	154	2	WIRE_CANONICAL_DIGEST	Line required start/end/stroke，且 start!=end。
+RW-T09-S7-007	155	1	WIRE_CANONICAL_DIGEST	Polygon required >=3 ordered points、optional fill/stroke at least one；首尾/adjacent distinct且 >=3 non-collinear。
+RW-T09-S7-008	155	2	LAYOUT_SHAPING	Polygon implicitly closed。
+RW-T09-S7-009	155	3	WIRE_CANONICAL_DIGEST	Polyline required >=2 ordered points与stroke；adjacent points distinct。
+RW-T09-S7-010	156	1	WIRE_CANONICAL_DIGEST	Path required nonempty ordered commands、optional fill/stroke at least one；fillRule NONZERO|EVEN_ODD default NONZERO。
+RW-T09-S7-011	156	2	WIRE_CANONICAL_DIGEST	PathCommand exact union 为 MOVE_TO/LINE_TO/QUAD_TO/CUBIC_TO/CLOSE with exact members。
+RW-T09-S7-012	166	1	SECURITY_FAULT	Path first command 必须 MOVE_TO 且至少一个 drawing command；CLOSE 仅关 current open subpath、不可 consecutive；CLOSE 后 drawing 先 MOVE_TO。
+RW-T09-S7-013	166	2	WIRE_CANONICAL_DIGEST	Path 允许 multiple subpaths。
+RW-T09-S7-014	166	3	LAYOUT_SHAPING	Fill 对 open subpath implicit-close；stroke 仅 explicit CLOSE 才 closed。
+RW-T09-S7-015	167	1	LAYOUT_SHAPING	vector coordinates 是 local pre-transform mm，可 negative。
+RW-T09-S7-016	167	2	LAYOUT_SHAPING	HUG bounds/FIXED-FILL scaling/stroke/negative-origin/min-max order 由 T10。
+RW-T09-S7-017	167	3	SECURITY_FAULT	vector contract 不预设 viewBox 或 extra scale property。
+RW-T09-S7-018	168	1	WIRE_CANONICAL_DIGEST	QR required nonempty content；optional ECL L|M|Q|H default M、foreground black、background white。
+RW-T09-S7-019	168	2	RENDERER_OUTPUT	QR content UTF-8；quiet zone fixed four modules；capacity overflow fails。
+RW-T09-S7-020	168	3	LAYOUT_SHAPING	QR final content box 必须 positive square；不得 auto-stretch 或 implicit-center in rectangle。
+RW-T09-S7-021	168	4	SECURITY_FAULT	QR Color 只 type-validate，不承诺 scannable contrast。
+RW-T09-S7-022	169	1	WIRE_CANONICAL_DIGEST	Barcode required format EAN_8|EAN_13|UPC_A|CODE_128 与 value；colors default black/white。
+RW-T09-S7-023	169	2	RENDERER_OUTPUT	Barcode 不绘 human-readable text。
+RW-T09-S7-024	169	3	DESIGN_INPUT_EXPRESSION	EAN/UPC value 必须含且通过 full check digit；CODE_128 接受 1–128 printable ASCII。
+RW-T09-S7-025	169	4	RENDERER_OUTPUT	Barcode quiet-zone 与 encoding selection 为 fixed Renderer semantics，不开放 authored property。
+RW-T09-S8-001	173	1	WIRE_CANONICAL_DIGEST	规格 kind-group 只是 shorthand；actual Catalog 必须展开逐个 nodeKind+propertyPathPattern entry，runtime 无 node-kind wildcard。
+RW-T09-S8-002	173	2	WIRE_CANONICAL_DIGEST	Array Policy 只用 [*]；actual Binding target 用 fixed nonnegative index。
+RW-T09-S8-003	174	1	DESIGN_INPUT_EXPRESSION	只有 atomic semantic value、derived enum 或 scalar leaf 可作 Binding target。
+RW-T09-S8-004	174	2	SECURITY_FAULT	Fill/Stroke/Placement/Run/Point/Track/PathCommand/AssetRef member 与任意 array/object whole 不可 replace。
+RW-T09-S8-005	174	3	DESIGN_INPUT_EXPRESSION	imageRef/fontRef 虽 object wire，仍是 indivisible atomic ValueType。
+RW-T09-S8-006	178	1	DESIGN_INPUT_EXPRESSION	首批 canvas Policy 只授权 backgroundColor。
+RW-T09-S8-007	179	1	DESIGN_INPUT_EXPRESSION	首批每个 non-Canvas kind 授权 render/visible/opacity 与 transform 的 rotation/scale/origin leaves。
+RW-T09-S8-008	180	1	DESIGN_INPUT_EXPRESSION	首批 non-Canvas ABSOLUTE variant 授权 placement.xMm/yMm。
+RW-T09-S8-009	181	1	DESIGN_INPUT_EXPRESSION	首批 non-Canvas STACK/GRID variant 授权 four margin leaves。
+RW-T09-S8-010	182	1	DESIGN_INPUT_EXPRESSION	首批 non-Canvas STACK variant 授权 placement.alignSelf。
+RW-T09-S8-011	183	1	DESIGN_INPUT_EXPRESSION	首批 non-Canvas non-Group STACK variant 授权 fillWeight，且仅 owning-main-axis FILL 时 evaluate。
+RW-T09-S8-012	184	1	DESIGN_INPUT_EXPRESSION	首批 non-Canvas GRID variant 授权 row/column/spans/horizontalAlignSelf/verticalAlignSelf。
+RW-T09-S8-013	185	1	DESIGN_INPUT_EXPRESSION	首批 non-Canvas non-Group kinds 授权 placement width/height/min/max leaves。
+RW-T09-S8-014	186	1	DESIGN_INPUT_EXPRESSION	首批 non-Canvas non-Group ABSOLUTE variant 授权 rightInsetMm/bottomInsetMm。
+RW-T09-S8-015	187	1	DESIGN_INPUT_EXPRESSION	首批 non-Canvas non-Group PACK variant 授权 width/height/min/max，限 Repeat-direct-child FIXED/HUG。
+RW-T09-S8-016	188	1	DESIGN_INPUT_EXPRESSION	首批 frame/stack/grid 授权票据列出的 fill/stroke/corner/padding/clip leaves。
+RW-T09-S8-017	189	1	DESIGN_INPUT_EXPRESSION	首批 stack 授权 direction/gapMm/justifyContent/alignItems。
+RW-T09-S8-018	190	1	DESIGN_INPUT_EXPRESSION	首批 grid 授权 row/column gaps 与 rows/columns [*] valueMm/weight。
+RW-T09-S8-019	191	1	DESIGN_INPUT_EXPRESSION	首批 repeat 授权 itemLayout/instanceLayout 的 direction/gaps/columns variant leaves，且 optional baseline 必须 present。
+RW-T09-S8-020	192	1	DESIGN_INPUT_EXPRESSION	首批 text 授权票据列出的 Run、alignment、overflow、line-height、maxLines、padding、stroke、minScale leaves。
+RW-T09-S8-021	193	1	DESIGN_INPUT_EXPRESSION	首批 image 授权 imageRef/fit/sampling。
+RW-T09-S8-022	194	1	DESIGN_INPUT_EXPRESSION	首批 rect 授权 fill/stroke/corner leaves。
+RW-T09-S8-023	195	1	DESIGN_INPUT_EXPRESSION	首批 ellipse 授权 fill/stroke leaves。
+RW-T09-S8-024	196	1	DESIGN_INPUT_EXPRESSION	首批 line 授权 start/end coordinates 与 stroke leaves。
+RW-T09-S8-025	197	1	DESIGN_INPUT_EXPRESSION	首批 polygon 授权 points[*] coordinates 与 fill/stroke leaves。
+RW-T09-S8-026	198	1	DESIGN_INPUT_EXPRESSION	首批 polyline 授权 points[*] coordinates 与 stroke leaves。
+RW-T09-S8-027	199	1	DESIGN_INPUT_EXPRESSION	首批 path 授权 command coordinate leaves、fill/stroke leaves、fillRule。
+RW-T09-S8-028	200	1	DESIGN_INPUT_EXPRESSION	首批 qrCode 授权 content/ECL/foreground/background。
+RW-T09-S8-029	201	1	DESIGN_INPUT_EXPRESSION	首批 barcode 授权 format/value/foreground/background。
+RW-T09-S8-030	203	1	SECURITY_FAULT	首批明确永不可授权 target exact 包括 identity/topology/union discriminator/mode/Canvas size/structural sources/array topology/whole containers 等票据集合。
+RW-T09-S8-031	204	1	DESIGN_INPUT_EXPRESSION	target leaf、containers、concrete index 必须已存在于 authored static tree 并 unique-match Policy。
+RW-T09-S8-032	204	2	EDITOR_AUTOMATED	omitted default member 不可 Binding；Editor 必须先 materialize legal baseline。
+RW-T09-S8-033	204	3	SECURITY_FAULT	Binding 不创建 member、switch union variant、extend array 或改变 topology。
+RW-T09-S8-034	205	1	DESIGN_INPUT_EXPRESSION	overlay result 必须 exact ValueType/enum 并重新通过 propertyValidation 与 aggregate validation。
+RW-T09-S8-035	205	2	SECURITY_FAULT	ABSENT/ERROR/type-range-domain failure 终止 Evaluation，不 coercion/clamp/static fallback。
+RW-T09-S9-001	209	1	WIRE_CANONICAL_DIGEST	children/runs/points/commands/Grid rows-columns 保留 semantic order。
+RW-T09-S9-002	209	2	WIRE_CANONICAL_DIGEST	bindings 是 set-like，save 前按 bindingId canonical-sort。
+RW-T09-S9-003	209	3	WIRE_CANONICAL_DIGEST	current Node wire 无可按 nodeId sort 的 flat collection。
+RW-T09-S9-004	210	1	SECURITY_FAULT	Node validation authoritative phases 为 closed JSON/type→property constraints→ContentModel/placement→tree IDs/aggregates→Binding targets/Policy→external readiness。
+RW-T09-S9-005	210	2	SECURITY_FAULT	structure phase unsafe 时不执行 later external I/O。
+RW-T09-S9-006	211	1	SECURITY_FAULT	duplicate/overlap/missing-or-OOB target、variant mismatch、no Policy 均为不可确认 hard error。
+RW-T09-S9-007	211	2	SECURITY_FAULT	Server 不得 auto-delete Binding 或 generate baseline。
+RW-T09-S9-008	212	1	DESIGN_INPUT_EXPRESSION	NodeContract 对 imageRef/fontRef 只校验 ValueType shape 与 Asset-id syntax。
+RW-T09-S9-009	212	2	ASSET_CAPABILITY_CONCURRENCY	Asset current existence/ACTIVE/kind 属于 Template dependency/readiness。
+RW-T09-S9-010	212	3	SECURITY_FAULT	structurally legal invalid authored AssetRef 可 confirm-save INVALID，但不得 Render。
+RW-T09-S9-011	213	1	ASSET_CAPABILITY_CONCURRENCY	所有 statically discoverable authored AssetRef atoms 独立按 canonical pointer 进入 current-only dependency projection，即使 overlay/lazy-unused。
+RW-T09-S9-012	213	2	ASSET_CAPABILITY_CONCURRENCY	RenderInput/runtime-passed AssetRef 不进入 reverse index。
+RW-T09-S9-013	213	3	ASSET_CAPABILITY_CONCURRENCY	只有 final materialized property consumption 形成 OccurrencePath+ConsumerPropertyRef resolve occurrence。
+RW-T09-S9-014	213	4	SECURITY_FAULT	runtime resolve failure 使当前 Render zero-output，但不自动将 Template current 标 INVALID。
+RW-T09-S9-015	214	1	LAYOUT_SHAPING	Canvas/Text/Vector/QR aggregate geometry rules 由 T10 定义。
+RW-T09-S9-016	214	2	LAYOUT_SHAPING	Evaluator 只做可判定 preflight；final geometry authority 是 Engine exact Layout Profile measure/arrange。
+RW-T09-S9-017	214	3	SECURITY_FAULT	任何 stage 不得改变已冻结 property identity/unit/default/fail-closed semantics。
+RW-T09-S9-018	214	4	SECURITY_FAULT	Node/Run/Point/PathCommand/Track lower aggregate budgets 由 T19 冻结。
+RW-T09-S10-001	218	1	SECURITY_FAULT	本合同选择 single global NodeContractCatalog 与 explicit fontRef 消除 distributed property/fallback second authorities。
+RW-T09-S10-002	219	1	LAYOUT_SHAPING	legacy-text migration target 覆盖 vertical writing、distributed align、padding、text stroke、shrink-to-fit semantics。
+RW-T09-S10-003	219	2	SECURITY_FAULT	不承诺 legacy environment fallback、historical bugs 或 pixel-identical output。
+RW-T09-S10-004	220	1	WIRE_CANONICAL_DIGEST	T10–T12/T16 受控增加 fillWeight/margin/stroke/VISIBLE+maxLines 与 structural/composition contracts，并冻结 derived algorithms/output。
+RW-T09-S10-005	220	2	SECURITY_FAULT	除显式扩展外，后续票据只能 tighten derived algorithm，不得改变 authored wire/permanent Property Identity。
+RW-T09-S10-006	221	1	SECURITY_FAULT	本 ticket 只冻结 exploration spec/downstream constraints，不创建 Catalog/validator/Editor/Evaluator/Renderer/API/persistence implementation。

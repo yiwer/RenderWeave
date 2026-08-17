@@ -1,0 +1,23 @@
+{
+  "artifactVersion": "renderweave-renderer-tricky-font-fixture-policy/1.0",
+  "status": "POLICY_FROZEN_FIXTURE_BYTES_PENDING",
+  "candidateId": "rw-renderer-spike-linux-x86_64-v2-000001",
+  "portableAuthority": {
+    "required": true,
+    "fixtureKind": "deterministic license-safe synthetic or openly licensed font fixture",
+    "requiredProperties": [
+      "FreeType classifies the face as FT_IS_TRICKY",
+      "the corpus distinguishes NO_HINTING alone from NO_HINTING plus NO_AUTOHINT",
+      "source recipe, license, exact bytes, and SHA-256 are committed",
+      "independent replay runs on every Certified Renderer target"
+    ],
+    "currentState": "fixture source, bytes, and hash pending"
+  },
+  "proprietaryFonts": {
+    "downloadAllowed": false,
+    "commitAllowed": false,
+    "portableAuthorityAllowed": false,
+    "futureSupplementaryDiagnostic": "local-only use requires a fresh explicit authorization; evidence records only source description and local SHA-256 and never exports font bytes"
+  },
+  "readyMayRelyOnlyOnProprietaryDiagnostic": false
+}

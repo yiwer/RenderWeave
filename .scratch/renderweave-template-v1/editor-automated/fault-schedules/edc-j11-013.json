@@ -1,0 +1,16 @@
+{
+  "artifactVersion": "renderweave-editor-fault-schedule/1.0",
+  "candidateId": "EDC::J11::013",
+  "executionClass": "EXEC::EDITOR_AUTOMATED::1.0",
+  "events": [
+    {
+      "at": "CURRENT_EVENT",
+      "action": "ADVANCE_REVISION_OR_CHANGE_READINESS",
+      "parameters": {}
+    }
+  ],
+  "expectedTerminal": {
+    "operationId": "basis-current-readiness-withdraws",
+    "outcome": "SUCCESS"
+  }
+}

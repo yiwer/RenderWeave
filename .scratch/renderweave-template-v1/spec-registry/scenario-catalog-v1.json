@@ -1,0 +1,781 @@
+{
+  "artifactVersion": "renderweave-spec-registry-scenario-catalog/1.0",
+  "status": "FROZEN",
+  "generatorProfile": "renderweave-spec-registry-generator/1.0",
+  "executionClass": "EXEC::SPEC_REGISTRY::1.0",
+  "completeRegistryScenarioCount": 1,
+  "namedMutationScenarioCount": 24,
+  "canonicalVectorScenarioCount": 21,
+  "scenarioCount": 46,
+  "scenarios": [
+    {
+      "ordinal": 1,
+      "scenarioId": "SPEC-COMPLETE-REGISTRY",
+      "scenarioKind": "COMPLETE_REGISTRY",
+      "expectedOutcome": "SUCCESS",
+      "expectedCode": null,
+      "requirementIds": [],
+      "fixtureArtifactPath": "spec-registry/fixtures/spec-complete-registry.json",
+      "fixtureArtifactSha256": "sha256:68d1ee1a47f5f981fc3ee8cdadf1af536f9f86362d543658f17f50ad7b257484",
+      "fixtureByteLength": 227
+    },
+    {
+      "ordinal": 2,
+      "scenarioId": "SPEC-MUT-001",
+      "scenarioKind": "NAMED_MUTATION",
+      "mutationKind": "CASE_SCHEMA_UNKNOWN_MEMBER",
+      "expectedOutcome": "PROBLEM",
+      "expectedCode": "SPEC_REGISTRY_SCHEMA_INVALID",
+      "requirementIds": [
+        "RW-T19-S13-058",
+        "RW-T19-S13-059",
+        "RW-T19-S13-076",
+        "RW-T19-S13-077"
+      ],
+      "fixtureArtifactPath": "spec-registry/fixtures/spec-mut-001.json",
+      "fixtureArtifactSha256": "sha256:1d4187ef950f42f2f27611d64b00ed4113098b92c5c0829571b61b60fee24c37",
+      "fixtureByteLength": 299
+    },
+    {
+      "ordinal": 3,
+      "scenarioId": "SPEC-MUT-002",
+      "scenarioKind": "NAMED_MUTATION",
+      "mutationKind": "ORACLE_SCHEMA_ASSERTION_INVALID",
+      "expectedOutcome": "PROBLEM",
+      "expectedCode": "SPEC_REGISTRY_SCHEMA_INVALID",
+      "requirementIds": [
+        "RW-T19-S13-078",
+        "RW-T19-S13-082",
+        "RW-T19-S13-084",
+        "RW-T19-S13-087"
+      ],
+      "fixtureArtifactPath": "spec-registry/fixtures/spec-mut-002.json",
+      "fixtureArtifactSha256": "sha256:c3349d0a7e6ef201279c15ab220f076396c0938f7f718227e847145611e7c1fc",
+      "fixtureByteLength": 304
+    },
+    {
+      "ordinal": 4,
+      "scenarioId": "SPEC-MUT-003",
+      "scenarioKind": "NAMED_MUTATION",
+      "mutationKind": "SOURCE_LOCATOR_OUT_OF_RANGE",
+      "expectedOutcome": "PROBLEM",
+      "expectedCode": "SPEC_REGISTRY_SOURCE_LOCATOR_INVALID",
+      "requirementIds": [
+        "RW-T19-S13-034",
+        "RW-T19-S13-354"
+      ],
+      "fixtureArtifactPath": "spec-registry/fixtures/spec-mut-003.json",
+      "fixtureArtifactSha256": "sha256:a1f2277a1c906d9422ec9bab855889df6a7f712398d5cf0801a5f6ee5b4329f2",
+      "fixtureByteLength": 308
+    },
+    {
+      "ordinal": 5,
+      "scenarioId": "SPEC-MUT-004",
+      "scenarioKind": "NAMED_MUTATION",
+      "mutationKind": "DUPLICATE_REQUIREMENT_ID",
+      "expectedOutcome": "PROBLEM",
+      "expectedCode": "SPEC_REGISTRY_DUPLICATE_IDENTITY",
+      "requirementIds": [
+        "RW-T19-S13-033",
+        "RW-T19-S13-040"
+      ],
+      "fixtureArtifactPath": "spec-registry/fixtures/spec-mut-004.json",
+      "fixtureArtifactSha256": "sha256:ba7288c1e433132db786ba9a2340d7b269ea097b747fb47e4ea35b5af43c86ef",
+      "fixtureByteLength": 301
+    },
+    {
+      "ordinal": 6,
+      "scenarioId": "SPEC-MUT-005",
+      "scenarioKind": "NAMED_MUTATION",
+      "mutationKind": "ORPHAN_REQUIREMENT",
+      "expectedOutcome": "PROBLEM",
+      "expectedCode": "SPEC_REGISTRY_ORPHAN",
+      "requirementIds": [
+        "RW-T19-S13-033",
+        "RW-T19-S13-105",
+        "RW-T19-S13-123",
+        "RW-T19-S13-124",
+        "RW-T19-S13-327",
+        "RW-T19-S13-350"
+      ],
+      "fixtureArtifactPath": "spec-registry/fixtures/spec-mut-005.json",
+      "fixtureArtifactSha256": "sha256:5891cdc7107f77f1a685dc0f666d704aa11080f5688ee246d3dc5c99e5b52036",
+      "fixtureByteLength": 283
+    },
+    {
+      "ordinal": 7,
+      "scenarioId": "SPEC-MUT-006",
+      "scenarioKind": "NAMED_MUTATION",
+      "mutationKind": "ORPHAN_CASE",
+      "expectedOutcome": "PROBLEM",
+      "expectedCode": "SPEC_REGISTRY_ORPHAN",
+      "requirementIds": [
+        "RW-T19-S13-033",
+        "RW-T19-S13-106",
+        "RW-T19-S13-107",
+        "RW-T19-S13-351"
+      ],
+      "fixtureArtifactPath": "spec-registry/fixtures/spec-mut-006.json",
+      "fixtureArtifactSha256": "sha256:0e0c45b8d4f0d78e5c6e38e73846a6b1ce23510be2c2f9cd4e40974c7da4cfe6",
+      "fixtureByteLength": 276
+    },
+    {
+      "ordinal": 8,
+      "scenarioId": "SPEC-MUT-007",
+      "scenarioKind": "NAMED_MUTATION",
+      "mutationKind": "ORPHAN_ORACLE",
+      "expectedOutcome": "PROBLEM",
+      "expectedCode": "SPEC_REGISTRY_ORPHAN",
+      "requirementIds": [
+        "RW-T19-S13-033",
+        "RW-T19-S13-109",
+        "RW-T19-S13-352"
+      ],
+      "fixtureArtifactPath": "spec-registry/fixtures/spec-mut-007.json",
+      "fixtureArtifactSha256": "sha256:4db915bc1de4e8e57328bf9b80b704bc149e61b7309def65bd11998fa26ed0e5",
+      "fixtureByteLength": 278
+    },
+    {
+      "ordinal": 9,
+      "scenarioId": "SPEC-MUT-008",
+      "scenarioKind": "NAMED_MUTATION",
+      "mutationKind": "TERMINAL_ASSERTION_MISSING",
+      "expectedOutcome": "PROBLEM",
+      "expectedCode": "SPEC_REGISTRY_TERMINAL_ASSERTION_MISSING",
+      "requirementIds": [
+        "RW-T19-S13-108"
+      ],
+      "fixtureArtifactPath": "spec-registry/fixtures/spec-mut-008.json",
+      "fixtureArtifactSha256": "sha256:95eb95c936c3ff3ccf54c91b9802ec2342cd918c59d735a99752faa1c04ef9e3",
+      "fixtureByteLength": 311
+    },
+    {
+      "ordinal": 10,
+      "scenarioId": "SPEC-MUT-009",
+      "scenarioKind": "NAMED_MUTATION",
+      "mutationKind": "SUPERSESSION_CYCLE",
+      "expectedOutcome": "PROBLEM",
+      "expectedCode": "SPEC_REGISTRY_SUPERSESSION_INVALID",
+      "requirementIds": [
+        "RW-T19-S13-097",
+        "RW-T19-S13-098",
+        "RW-T19-S13-099"
+      ],
+      "fixtureArtifactPath": "spec-registry/fixtures/spec-mut-009.json",
+      "fixtureArtifactSha256": "sha256:0d354b62250fce0e4361016da06943ebb2657bbbcaf30bfe2057d29549500ac1",
+      "fixtureByteLength": 297
+    },
+    {
+      "ordinal": 11,
+      "scenarioId": "SPEC-MUT-010",
+      "scenarioKind": "NAMED_MUTATION",
+      "mutationKind": "SUPERSESSION_DANGLING",
+      "expectedOutcome": "PROBLEM",
+      "expectedCode": "SPEC_REGISTRY_SUPERSESSION_INVALID",
+      "requirementIds": [
+        "RW-T19-S13-100",
+        "RW-T19-S13-102"
+      ],
+      "fixtureArtifactPath": "spec-registry/fixtures/spec-mut-010.json",
+      "fixtureArtifactSha256": "sha256:a363955702f7784b45143a84ece2246720008a697c995d510b7b99ea32ef1e22",
+      "fixtureByteLength": 300
+    },
+    {
+      "ordinal": 12,
+      "scenarioId": "SPEC-MUT-011",
+      "scenarioKind": "NAMED_MUTATION",
+      "mutationKind": "ACTIVE_CASE_TO_SUPERSEDED_ORACLE",
+      "expectedOutcome": "PROBLEM",
+      "expectedCode": "SPEC_REGISTRY_SUPERSESSION_INVALID",
+      "requirementIds": [
+        "RW-T19-S13-103",
+        "RW-T19-S13-104",
+        "RW-T19-S13-113"
+      ],
+      "fixtureArtifactPath": "spec-registry/fixtures/spec-mut-011.json",
+      "fixtureArtifactSha256": "sha256:59f292a57ac89d8a94a56415fb30cbfe080cf3aa1658847c8ebc58176bcc98fe",
+      "fixtureByteLength": 311
+    },
+    {
+      "ordinal": 13,
+      "scenarioId": "SPEC-MUT-012",
+      "scenarioKind": "NAMED_MUTATION",
+      "mutationKind": "DUPLICATE_CASE_SIGNATURE",
+      "expectedOutcome": "PROBLEM",
+      "expectedCode": "SPEC_REGISTRY_SIGNATURE_DUPLICATE",
+      "requirementIds": [
+        "RW-T19-S13-110",
+        "RW-T19-S13-111",
+        "RW-T19-S13-166"
+      ],
+      "fixtureArtifactPath": "spec-registry/fixtures/spec-mut-012.json",
+      "fixtureArtifactSha256": "sha256:5c125e717edbdcb377dbc2979b681b4bc6e3d71d3ef1d8817cfe9e392c8db92d",
+      "fixtureByteLength": 302
+    },
+    {
+      "ordinal": 14,
+      "scenarioId": "SPEC-MUT-013",
+      "scenarioKind": "NAMED_MUTATION",
+      "mutationKind": "DUPLICATE_ORACLE_SIGNATURE",
+      "expectedOutcome": "PROBLEM",
+      "expectedCode": "SPEC_REGISTRY_SIGNATURE_DUPLICATE",
+      "requirementIds": [
+        "RW-T19-S13-093",
+        "RW-T19-S13-094",
+        "RW-T19-S13-112",
+        "RW-T19-S13-228"
+      ],
+      "fixtureArtifactPath": "spec-registry/fixtures/spec-mut-013.json",
+      "fixtureArtifactSha256": "sha256:241005dee144bb4ed171f62bb7fa77414229f28a5038723350e1768a357a244d",
+      "fixtureByteLength": 304
+    },
+    {
+      "ordinal": 15,
+      "scenarioId": "SPEC-MUT-014",
+      "scenarioKind": "NAMED_MUTATION",
+      "mutationKind": "INPUT_IDENTITY_MISMATCH",
+      "expectedOutcome": "PROBLEM",
+      "expectedCode": "SPEC_REGISTRY_IDENTITY_MISMATCH",
+      "requirementIds": [
+        "RW-T19-S13-068",
+        "RW-T19-S13-163",
+        "RW-T19-S13-165"
+      ],
+      "fixtureArtifactPath": "spec-registry/fixtures/spec-mut-014.json",
+      "fixtureArtifactSha256": "sha256:4821562ccfeae14bc5a0c1c9201431635ddf8b7b313dc758921fcd6e6ea46098",
+      "fixtureByteLength": 299
+    },
+    {
+      "ordinal": 16,
+      "scenarioId": "SPEC-MUT-015",
+      "scenarioKind": "NAMED_MUTATION",
+      "mutationKind": "FAULT_IDENTITY_MISMATCH",
+      "expectedOutcome": "PROBLEM",
+      "expectedCode": "SPEC_REGISTRY_IDENTITY_MISMATCH",
+      "requirementIds": [
+        "RW-T19-S13-070",
+        "RW-T19-S13-164",
+        "RW-T19-S13-165"
+      ],
+      "fixtureArtifactPath": "spec-registry/fixtures/spec-mut-015.json",
+      "fixtureArtifactSha256": "sha256:6ccd8d23bbc6bbcc5a09ed719d93baedac0330e16d8b6c4c994766e3d701faa5",
+      "fixtureByteLength": 299
+    },
+    {
+      "ordinal": 17,
+      "scenarioId": "SPEC-MUT-016",
+      "scenarioKind": "NAMED_MUTATION",
+      "mutationKind": "MANIFEST_DIGEST_MISMATCH",
+      "expectedOutcome": "PROBLEM",
+      "expectedCode": "SPEC_REGISTRY_MANIFEST_MISMATCH",
+      "requirementIds": [
+        "RW-T19-S13-043",
+        "RW-T19-S13-096",
+        "RW-T19-S13-341",
+        "RW-T19-S13-347"
+      ],
+      "fixtureArtifactPath": "spec-registry/fixtures/spec-mut-016.json",
+      "fixtureArtifactSha256": "sha256:eb8fbbe86069d192b65a58c57cf3fa698b57ee3cbc0206723d1ed3ac927704f5",
+      "fixtureByteLength": 300
+    },
+    {
+      "ordinal": 18,
+      "scenarioId": "SPEC-MUT-017",
+      "scenarioKind": "NAMED_MUTATION",
+      "mutationKind": "PROBE_OPERATOR_NOT_ALLOWED",
+      "expectedOutcome": "PROBLEM",
+      "expectedCode": "SPEC_REGISTRY_PROFILE_INVALID",
+      "requirementIds": [
+        "RW-T19-S13-179",
+        "RW-T19-S13-183",
+        "RW-T19-S13-188"
+      ],
+      "fixtureArtifactPath": "spec-registry/fixtures/spec-mut-017.json",
+      "fixtureArtifactSha256": "sha256:0027ba3b369c65bfdb4c43d72c67df31f91253e228ca550fe4afa02f0bfe8530",
+      "fixtureByteLength": 300
+    },
+    {
+      "ordinal": 19,
+      "scenarioId": "SPEC-MUT-018",
+      "scenarioKind": "NAMED_MUTATION",
+      "mutationKind": "ASSERTION_VALUE_TYPE_MISMATCH",
+      "expectedOutcome": "PROBLEM",
+      "expectedCode": "SPEC_REGISTRY_PROFILE_INVALID",
+      "requirementIds": [
+        "RW-T19-S13-177",
+        "RW-T19-S13-184",
+        "RW-T19-S13-336"
+      ],
+      "fixtureArtifactPath": "spec-registry/fixtures/spec-mut-018.json",
+      "fixtureArtifactSha256": "sha256:23d81d1f230efb34e0a48c0c1d4a097857ea884477e39d0e068100fff50b6f41",
+      "fixtureByteLength": 303
+    },
+    {
+      "ordinal": 20,
+      "scenarioId": "SPEC-MUT-019",
+      "scenarioKind": "NAMED_MUTATION",
+      "mutationKind": "GENERATOR_GOLDEN_MISMATCH",
+      "expectedOutcome": "PROBLEM",
+      "expectedCode": "SPEC_REGISTRY_GENERATOR_INVALID",
+      "requirementIds": [
+        "RW-T19-S13-265",
+        "RW-T19-S13-273",
+        "RW-T19-S13-274",
+        "RW-T19-S13-334"
+      ],
+      "fixtureArtifactPath": "spec-registry/fixtures/spec-mut-019.json",
+      "fixtureArtifactSha256": "sha256:7645da605ac5afa196c1707b33519f53374b4cbf04bf9cf16eb60288aee3f258",
+      "fixtureByteLength": 301
+    },
+    {
+      "ordinal": 21,
+      "scenarioId": "SPEC-MUT-020",
+      "scenarioKind": "NAMED_MUTATION",
+      "mutationKind": "REFERENCE_CLOSURE_MISSING_ARTIFACT",
+      "expectedOutcome": "PROBLEM",
+      "expectedCode": "SPEC_REGISTRY_REFERENCE_MISSING",
+      "requirementIds": [
+        "RW-T19-S13-258",
+        "RW-T19-S13-275",
+        "RW-T19-S13-341",
+        "RW-T19-S13-354"
+      ],
+      "fixtureArtifactPath": "spec-registry/fixtures/spec-mut-020.json",
+      "fixtureArtifactSha256": "sha256:aa01565eab2c25ca40927d0834eb69e9c85905d7752677a4ae3c932a06d1a76c",
+      "fixtureByteLength": 310
+    },
+    {
+      "ordinal": 22,
+      "scenarioId": "SPEC-MUT-021",
+      "scenarioKind": "NAMED_MUTATION",
+      "mutationKind": "ORDINARY_CASE_MULTI_TERMINAL",
+      "expectedOutcome": "PROBLEM",
+      "expectedCode": "SPEC_REGISTRY_TERMINAL_VECTOR_INVALID",
+      "requirementIds": [
+        "RW-T19-S13-071",
+        "RW-T19-S13-072",
+        "RW-T19-S13-073"
+      ],
+      "fixtureArtifactPath": "spec-registry/fixtures/spec-mut-021.json",
+      "fixtureArtifactSha256": "sha256:11e2d2c4aac9b99aca60dcf5bd0a5587521166720c6a774b92968a52feeb8de9",
+      "fixtureByteLength": 310
+    },
+    {
+      "ordinal": 23,
+      "scenarioId": "SPEC-MUT-022",
+      "scenarioKind": "NAMED_MUTATION",
+      "mutationKind": "NONCANONICAL_JSONL_RECORD",
+      "expectedOutcome": "PROBLEM",
+      "expectedCode": "SPEC_REGISTRY_CANONICAL_RECORD_INVALID",
+      "requirementIds": [
+        "RW-T19-S13-128",
+        "RW-T19-S13-144",
+        "RW-T19-S13-145"
+      ],
+      "fixtureArtifactPath": "spec-registry/fixtures/spec-mut-022.json",
+      "fixtureArtifactSha256": "sha256:31150570b2cdb23ae2dcd2043a5fafa5475b2af4a6d50af27bb127e2d93630e5",
+      "fixtureByteLength": 308
+    },
+    {
+      "ordinal": 24,
+      "scenarioId": "SPEC-MUT-023",
+      "scenarioKind": "NAMED_MUTATION",
+      "mutationKind": "DUPLICATE_JSON_MEMBER",
+      "expectedOutcome": "PROBLEM",
+      "expectedCode": "SPEC_REGISTRY_SCHEMA_INVALID",
+      "requirementIds": [
+        "RW-T19-S13-130"
+      ],
+      "fixtureArtifactPath": "spec-registry/fixtures/spec-mut-023.json",
+      "fixtureArtifactSha256": "sha256:177b6d5a8d776f64a96580d05f9032b6186d0660991ab76a911d1965cc2e11b6",
+      "fixtureByteLength": 294
+    },
+    {
+      "ordinal": 25,
+      "scenarioId": "SPEC-MUT-024",
+      "scenarioKind": "NAMED_MUTATION",
+      "mutationKind": "PROFILE_ID_INVALID",
+      "expectedOutcome": "PROBLEM",
+      "expectedCode": "SPEC_REGISTRY_PROFILE_INVALID",
+      "requirementIds": [
+        "RW-T19-S13-172",
+        "RW-T19-S13-174",
+        "RW-T19-S13-175",
+        "RW-T19-S13-246"
+      ],
+      "fixtureArtifactPath": "spec-registry/fixtures/spec-mut-024.json",
+      "fixtureArtifactSha256": "sha256:d21ef7e847700c6c49f17b03a2a2a2752da7bf3d8597d4face5ebeafee077380",
+      "fixtureByteLength": 292
+    },
+    {
+      "ordinal": 26,
+      "scenarioId": "SPEC-C14N-C14N-P001",
+      "scenarioKind": "CANONICAL_VECTOR",
+      "vectorId": "C14N-P001",
+      "vectorKind": "CANONICAL_BYTES",
+      "expectedOutcome": "SUCCESS",
+      "expectedCode": null,
+      "requirementIds": [
+        "RW-T19-S13-135",
+        "RW-T19-S13-140",
+        "RW-T19-S13-141",
+        "RW-T19-S13-143"
+      ],
+      "fixtureArtifactPath": "spec-registry/fixtures/spec-c14n-c14n-p001.json",
+      "fixtureArtifactSha256": "sha256:0499e8d1138f17ecfa3e11accd455c6ae4c543faeb695a41864a78bbe5e61dd7",
+      "fixtureByteLength": 250,
+      "expectedBytesArtifact": {
+        "path": "spec-registry/expected-bytes/c14n-p001.bin",
+        "sha256": "sha256:6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b",
+        "byteLength": 1
+      }
+    },
+    {
+      "ordinal": 27,
+      "scenarioId": "SPEC-C14N-C14N-P002",
+      "scenarioKind": "CANONICAL_VECTOR",
+      "vectorId": "C14N-P002",
+      "vectorKind": "CANONICAL_BYTES",
+      "expectedOutcome": "SUCCESS",
+      "expectedCode": null,
+      "requirementIds": [
+        "RW-T19-S13-142"
+      ],
+      "fixtureArtifactPath": "spec-registry/fixtures/spec-c14n-c14n-p002.json",
+      "fixtureArtifactSha256": "sha256:62d744de169ca80550c871908cb3768ecf88c99e6823f64d5e8e2509b63a25e3",
+      "fixtureByteLength": 250,
+      "expectedBytesArtifact": {
+        "path": "spec-registry/expected-bytes/c14n-p002.bin",
+        "sha256": "sha256:5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9",
+        "byteLength": 1
+      }
+    },
+    {
+      "ordinal": 28,
+      "scenarioId": "SPEC-C14N-C14N-P003",
+      "scenarioKind": "CANONICAL_VECTOR",
+      "vectorId": "C14N-P003",
+      "vectorKind": "CANONICAL_BYTES",
+      "expectedOutcome": "SUCCESS",
+      "expectedCode": null,
+      "requirementIds": [
+        "RW-T19-S13-136",
+        "RW-T19-S13-140"
+      ],
+      "fixtureArtifactPath": "spec-registry/fixtures/spec-c14n-c14n-p003.json",
+      "fixtureArtifactSha256": "sha256:bd7dab43821d4543ee2bde7e2734c52903ece962405a9ec4ce0c3ec6dda55b05",
+      "fixtureByteLength": 250,
+      "expectedBytesArtifact": {
+        "path": "spec-registry/expected-bytes/c14n-p003.bin",
+        "sha256": "sha256:40510175845988f13f6162ed8526f0b09f73384467fa855e1e79b44a56562a58",
+        "byteLength": 4
+      }
+    },
+    {
+      "ordinal": 29,
+      "scenarioId": "SPEC-C14N-C14N-P004",
+      "scenarioKind": "CANONICAL_VECTOR",
+      "vectorId": "C14N-P004",
+      "vectorKind": "CANONICAL_BYTES",
+      "expectedOutcome": "SUCCESS",
+      "expectedCode": null,
+      "requirementIds": [
+        "RW-T19-S13-138",
+        "RW-T19-S13-139"
+      ],
+      "fixtureArtifactPath": "spec-registry/fixtures/spec-c14n-c14n-p004.json",
+      "fixtureArtifactSha256": "sha256:a0f828c95ff67b3ac0477d6cc6825b96e0f1abd522c9c9cf7c50083c1ccf5852",
+      "fixtureByteLength": 250,
+      "expectedBytesArtifact": {
+        "path": "spec-registry/expected-bytes/c14n-p004.bin",
+        "sha256": "sha256:f5effa31772a3689cb116700c569f4b72d765290968f099016a899ab6c1e4ee3",
+        "byteLength": 5
+      }
+    },
+    {
+      "ordinal": 30,
+      "scenarioId": "SPEC-C14N-C14N-P005",
+      "scenarioKind": "CANONICAL_VECTOR",
+      "vectorId": "C14N-P005",
+      "vectorKind": "CANONICAL_BYTES",
+      "expectedOutcome": "SUCCESS",
+      "expectedCode": null,
+      "requirementIds": [
+        "RW-T19-S13-137",
+        "RW-T19-S13-138"
+      ],
+      "fixtureArtifactPath": "spec-registry/fixtures/spec-c14n-c14n-p005.json",
+      "fixtureArtifactSha256": "sha256:e0ea1405d0b9c86689325301ba6cfbb05d98683285e0153129bed6b0f691cf00",
+      "fixtureByteLength": 250,
+      "expectedBytesArtifact": {
+        "path": "spec-registry/expected-bytes/c14n-p005.bin",
+        "sha256": "sha256:f2886017e9c7abacf804b54d64787dce2b611c9544ba21f3affdd126a6e50086",
+        "byteLength": 4
+      }
+    },
+    {
+      "ordinal": 31,
+      "scenarioId": "SPEC-C14N-C14N-P006",
+      "scenarioKind": "CANONICAL_VECTOR",
+      "vectorId": "C14N-P006",
+      "vectorKind": "CANONICAL_BYTES",
+      "expectedOutcome": "SUCCESS",
+      "expectedCode": null,
+      "requirementIds": [
+        "RW-T19-S13-137"
+      ],
+      "fixtureArtifactPath": "spec-registry/fixtures/spec-c14n-c14n-p006.json",
+      "fixtureArtifactSha256": "sha256:72d00b93aa3167598661aae6f55d03cb94fc2e8d4014ba0618263b4821b2cf9d",
+      "fixtureByteLength": 250,
+      "expectedBytesArtifact": {
+        "path": "spec-registry/expected-bytes/c14n-p006.bin",
+        "sha256": "sha256:3d68ce21f2899a475713cdbe7562ba9bdb6b1dfde8af1f221bdff4a0935b53b2",
+        "byteLength": 5
+      }
+    },
+    {
+      "ordinal": 32,
+      "scenarioId": "SPEC-C14N-C14N-P007",
+      "scenarioKind": "CANONICAL_VECTOR",
+      "vectorId": "C14N-P007",
+      "vectorKind": "CANONICAL_BYTES",
+      "expectedOutcome": "SUCCESS",
+      "expectedCode": null,
+      "requirementIds": [
+        "RW-T19-S13-147",
+        "RW-T19-S13-149",
+        "RW-T19-S13-150"
+      ],
+      "fixtureArtifactPath": "spec-registry/fixtures/spec-c14n-c14n-p007.json",
+      "fixtureArtifactSha256": "sha256:d9b99f67ac8347f51d64099844ca17bf8e18b4d91433c16d28ef82429c9d354b",
+      "fixtureByteLength": 250,
+      "expectedBytesArtifact": {
+        "path": "spec-registry/expected-bytes/c14n-p007.bin",
+        "sha256": "sha256:fa7ddcf43923b2711f2f592f210e5ab9e4a54a3b2df09830d93f402391a33e4e",
+        "byteLength": 20
+      }
+    },
+    {
+      "ordinal": 33,
+      "scenarioId": "SPEC-C14N-C14N-P008",
+      "scenarioKind": "CANONICAL_VECTOR",
+      "vectorId": "C14N-P008",
+      "vectorKind": "CANONICAL_BYTES",
+      "expectedOutcome": "SUCCESS",
+      "expectedCode": null,
+      "requirementIds": [
+        "RW-T19-S13-152"
+      ],
+      "fixtureArtifactPath": "spec-registry/fixtures/spec-c14n-c14n-p008.json",
+      "fixtureArtifactSha256": "sha256:3faaf3fa50009ffbea2de04e19914cc4063bb5ed43cbfd30d3c3786490d45142",
+      "fixtureByteLength": 250,
+      "expectedBytesArtifact": {
+        "path": "spec-registry/expected-bytes/c14n-p008.bin",
+        "sha256": "sha256:51f6c8ff95b64a1faa5a4b72e033a382f26bcf536decff49f0ec3c344b0558b1",
+        "byteLength": 58
+      }
+    },
+    {
+      "ordinal": 34,
+      "scenarioId": "SPEC-C14N-C14N-P009",
+      "scenarioKind": "CANONICAL_VECTOR",
+      "vectorId": "C14N-P009",
+      "vectorKind": "CANONICAL_BYTES",
+      "expectedOutcome": "SUCCESS",
+      "expectedCode": null,
+      "requirementIds": [
+        "RW-T19-S13-157"
+      ],
+      "fixtureArtifactPath": "spec-registry/fixtures/spec-c14n-c14n-p009.json",
+      "fixtureArtifactSha256": "sha256:ef82073016998aea3716b3ace0d24ef1e290c0da19be3e3c74f354acaad654dc",
+      "fixtureByteLength": 250,
+      "expectedBytesArtifact": {
+        "path": "spec-registry/expected-bytes/c14n-p009.bin",
+        "sha256": "sha256:dfddf9755119cf01303ca31b3c450602f494592efc62d3a6aa05bbf4c5e7087d",
+        "byteLength": 20
+      }
+    },
+    {
+      "ordinal": 35,
+      "scenarioId": "SPEC-C14N-C14N-P010",
+      "scenarioKind": "CANONICAL_VECTOR",
+      "vectorId": "C14N-P010",
+      "vectorKind": "DOMAIN_DIGEST",
+      "expectedOutcome": "SUCCESS",
+      "expectedCode": null,
+      "requirementIds": [
+        "RW-T19-S13-159",
+        "RW-T19-S13-160"
+      ],
+      "fixtureArtifactPath": "spec-registry/fixtures/spec-c14n-c14n-p010.json",
+      "fixtureArtifactSha256": "sha256:7ee080864b8d9ed30870d887704b0f51bda8e2e9c0d5964088ddfae84c94a300",
+      "fixtureByteLength": 250
+    },
+    {
+      "ordinal": 36,
+      "scenarioId": "SPEC-C14N-C14N-P011",
+      "scenarioKind": "CANONICAL_VECTOR",
+      "vectorId": "C14N-P011",
+      "vectorKind": "DOMAIN_DIGEST",
+      "expectedOutcome": "SUCCESS",
+      "expectedCode": null,
+      "requirementIds": [
+        "RW-T19-S13-161",
+        "RW-T19-S13-162"
+      ],
+      "fixtureArtifactPath": "spec-registry/fixtures/spec-c14n-c14n-p011.json",
+      "fixtureArtifactSha256": "sha256:d10c10cf2b3e679fdade15110d1f492153e93de138bf26b008a410616d778cce",
+      "fixtureByteLength": 250
+    },
+    {
+      "ordinal": 37,
+      "scenarioId": "SPEC-C14N-C14N-P012",
+      "scenarioKind": "CANONICAL_VECTOR",
+      "vectorId": "C14N-P012",
+      "vectorKind": "DOMAIN_DIGEST",
+      "expectedOutcome": "SUCCESS",
+      "expectedCode": null,
+      "requirementIds": [
+        "RW-T19-S13-163"
+      ],
+      "fixtureArtifactPath": "spec-registry/fixtures/spec-c14n-c14n-p012.json",
+      "fixtureArtifactSha256": "sha256:4ac3366ab43035802bf378cced0bc6034de05e80b598a74a1bce126423df8827",
+      "fixtureByteLength": 250
+    },
+    {
+      "ordinal": 38,
+      "scenarioId": "SPEC-C14N-C14N-P013",
+      "scenarioKind": "CANONICAL_VECTOR",
+      "vectorId": "C14N-P013",
+      "vectorKind": "DOMAIN_DIGEST",
+      "expectedOutcome": "SUCCESS",
+      "expectedCode": null,
+      "requirementIds": [
+        "RW-T19-S13-164"
+      ],
+      "fixtureArtifactPath": "spec-registry/fixtures/spec-c14n-c14n-p013.json",
+      "fixtureArtifactSha256": "sha256:395cc0fa9412b2704c377d19bd735f1b761317a2301b8a05fc44fb40f7b4830b",
+      "fixtureByteLength": 250
+    },
+    {
+      "ordinal": 39,
+      "scenarioId": "SPEC-C14N-C14N-N001",
+      "scenarioKind": "CANONICAL_VECTOR",
+      "vectorId": "C14N-N001",
+      "vectorKind": "REJECTION",
+      "expectedOutcome": "PROBLEM",
+      "expectedCode": "CONFORMANCE_DUPLICATE_MEMBER",
+      "requirementIds": [
+        "RW-T19-S13-130"
+      ],
+      "fixtureArtifactPath": "spec-registry/fixtures/spec-c14n-c14n-n001.json",
+      "fixtureArtifactSha256": "sha256:9fdf5c172b092abfdcd29ae48a572cc8a609cfff780c455e0d2d12938e22a113",
+      "fixtureByteLength": 287
+    },
+    {
+      "ordinal": 40,
+      "scenarioId": "SPEC-C14N-C14N-N002",
+      "scenarioKind": "CANONICAL_VECTOR",
+      "vectorId": "C14N-N002",
+      "vectorKind": "REJECTION",
+      "expectedOutcome": "PROBLEM",
+      "expectedCode": "CONFORMANCE_JSON_SYNTAX_INVALID",
+      "requirementIds": [
+        "RW-T19-S13-131"
+      ],
+      "fixtureArtifactPath": "spec-registry/fixtures/spec-c14n-c14n-n002.json",
+      "fixtureArtifactSha256": "sha256:e5ba80528863a0b9cc715754d2e4fa875b2b12e8880817478e8a17db34734773",
+      "fixtureByteLength": 290
+    },
+    {
+      "ordinal": 41,
+      "scenarioId": "SPEC-C14N-C14N-N003",
+      "scenarioKind": "CANONICAL_VECTOR",
+      "vectorId": "C14N-N003",
+      "vectorKind": "REJECTION",
+      "expectedOutcome": "PROBLEM",
+      "expectedCode": "CONFORMANCE_JSON_SYNTAX_INVALID",
+      "requirementIds": [
+        "RW-T19-S13-132"
+      ],
+      "fixtureArtifactPath": "spec-registry/fixtures/spec-c14n-c14n-n003.json",
+      "fixtureArtifactSha256": "sha256:bd75020eb00e2194ab0711344e96271ce19b7a780c5007209374db520518be47",
+      "fixtureByteLength": 290
+    },
+    {
+      "ordinal": 42,
+      "scenarioId": "SPEC-C14N-C14N-N004",
+      "scenarioKind": "CANONICAL_VECTOR",
+      "vectorId": "C14N-N004",
+      "vectorKind": "REJECTION",
+      "expectedOutcome": "PROBLEM",
+      "expectedCode": "CONFORMANCE_NUMBER_INVALID",
+      "requirementIds": [
+        "RW-T19-S13-133"
+      ],
+      "fixtureArtifactPath": "spec-registry/fixtures/spec-c14n-c14n-n004.json",
+      "fixtureArtifactSha256": "sha256:b4f211a583aebdcc6e43d6a364e9dc24de3265f0e80db850cbbfd8740a6daa05",
+      "fixtureByteLength": 285
+    },
+    {
+      "ordinal": 43,
+      "scenarioId": "SPEC-C14N-C14N-N005",
+      "scenarioKind": "CANONICAL_VECTOR",
+      "vectorId": "C14N-N005",
+      "vectorKind": "REJECTION",
+      "expectedOutcome": "PROBLEM",
+      "expectedCode": "CONFORMANCE_NUMBER_INVALID",
+      "requirementIds": [
+        "RW-T19-S13-133"
+      ],
+      "fixtureArtifactPath": "spec-registry/fixtures/spec-c14n-c14n-n005.json",
+      "fixtureArtifactSha256": "sha256:8b04bdfd4d0f5ae8d36f9b590dfeaf78fdbb441fe43ef2b7a8d2e0077b57ddfb",
+      "fixtureByteLength": 285
+    },
+    {
+      "ordinal": 44,
+      "scenarioId": "SPEC-C14N-C14N-N006",
+      "scenarioKind": "CANONICAL_VECTOR",
+      "vectorId": "C14N-N006",
+      "vectorKind": "REJECTION",
+      "expectedOutcome": "PROBLEM",
+      "expectedCode": "CONFORMANCE_UNICODE_INVALID",
+      "requirementIds": [
+        "RW-T19-S13-134"
+      ],
+      "fixtureArtifactPath": "spec-registry/fixtures/spec-c14n-c14n-n006.json",
+      "fixtureArtifactSha256": "sha256:4f84b439c422f502b5973cd4c816a88a3897c71be014fd32a144647dee4f3ad5",
+      "fixtureByteLength": 286
+    },
+    {
+      "ordinal": 45,
+      "scenarioId": "SPEC-C14N-C14N-N007",
+      "scenarioKind": "CANONICAL_VECTOR",
+      "vectorId": "C14N-N007",
+      "vectorKind": "REJECTION",
+      "expectedOutcome": "PROBLEM",
+      "expectedCode": "CONFORMANCE_UTF8_INVALID",
+      "requirementIds": [
+        "RW-T19-S13-129"
+      ],
+      "fixtureArtifactPath": "spec-registry/fixtures/spec-c14n-c14n-n007.json",
+      "fixtureArtifactSha256": "sha256:d1ff8022a37dad6449662580f6dd77c40daf4cfbc859c96439863ee07473429c",
+      "fixtureByteLength": 283
+    },
+    {
+      "ordinal": 46,
+      "scenarioId": "SPEC-C14N-C14N-N008",
+      "scenarioKind": "CANONICAL_VECTOR",
+      "vectorId": "C14N-N008",
+      "vectorKind": "REJECTION",
+      "expectedOutcome": "PROBLEM",
+      "expectedCode": "CONFORMANCE_CANONICAL_SET_DUPLICATE",
+      "requirementIds": [
+        "RW-T19-S13-158"
+      ],
+      "fixtureArtifactPath": "spec-registry/fixtures/spec-c14n-c14n-n008.json",
+      "fixtureArtifactSha256": "sha256:9f64e242462256b217137e15e24f617acbd3795cb51fd53d4066f601853e4ff3",
+      "fixtureByteLength": 294
+    }
+  ]
+}

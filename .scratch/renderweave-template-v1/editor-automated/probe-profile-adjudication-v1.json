@@ -1,0 +1,126 @@
+{
+  "artifactVersion": "renderweave-editor-probe-profile-adjudication/1.0",
+  "status": "ADJUDICATED_CANDIDATE_ONLY_NOT_ISSUED",
+  "executionClass": "EXEC::EDITOR_AUTOMATED::1.0",
+  "baseProbeProfile": {
+    "profileId": "renderweave-conformance-probes/1.0",
+    "path": "conformance-probe-profile-v1.json",
+    "sha256": "sha256:f800eb1e6e138215c26c7761ed80e0fc9cf77fc3ce051be4e3c5ba530cd6053d",
+    "byteLength": 51328
+  },
+  "candidateProbeProfileId": "renderweave-conformance-probes/1.1",
+  "designRule": {
+    "interfaceKind": "closed observation Interface",
+    "deepModuleBoundary": "Expose a small stable semantic result at the command-settled Seam; do not expose Editor aggregate layout, generic state snapshots, raw drafts, or raw DesignDSL only to make tests convenient.",
+    "genericStateSnapshotAllowed": false,
+    "rawRecoveryDraftAllowed": false,
+    "rawWorkingCopyAllowed": false,
+    "arbitraryScriptAllowed": false,
+    "wildcardAllowed": false
+  },
+  "decisions": [
+    {
+      "sourceProbeId": "editor.canonicalBaselineContentHash",
+      "sourceValueType": "DIGEST",
+      "sourceCandidateCount": 9,
+      "decision": "CONSOLIDATED_INTO",
+      "candidateProbeId": "editor.canonicalBaselineBytes",
+      "rationale": "One closed baseline projection keeps revision, contentHash, and working-copy digest coherent at one observation boundary."
+    },
+    {
+      "sourceProbeId": "editor.canonicalBaselineDigest",
+      "sourceValueType": "DIGEST",
+      "sourceCandidateCount": 9,
+      "decision": "CONSOLIDATED_INTO",
+      "candidateProbeId": "editor.canonicalBaselineBytes",
+      "rationale": "A separate digest would widen the test seam without adding an independently meaningful state transition."
+    },
+    {
+      "sourceProbeId": "editor.canonicalBaselineRevision",
+      "sourceValueType": "INTEGER",
+      "sourceCandidateCount": 12,
+      "decision": "CONSOLIDATED_INTO",
+      "candidateProbeId": "editor.canonicalBaselineBytes",
+      "rationale": "Revision is a member of the closed baseline projection rather than an independently observable Editor subsystem."
+    },
+    {
+      "sourceProbeId": "editor.compatibilityOriginalDigest",
+      "sourceValueType": "DIGEST",
+      "sourceCandidateCount": 2,
+      "decision": "APPROVED_UNCHANGED",
+      "candidateProbeId": "editor.compatibilityOriginalDigest",
+      "rationale": "Exact retained-original identity is independently meaningful while raw original bytes remain hidden."
+    },
+    {
+      "sourceProbeId": "editor.confirmationAvailable",
+      "sourceValueType": "BOOLEAN",
+      "sourceCandidateCount": 17,
+      "decision": "APPROVED_UNCHANGED",
+      "candidateProbeId": "editor.confirmationAvailable",
+      "rationale": "The user-visible guarded action is a small stable interface fact."
+    },
+    {
+      "sourceProbeId": "editor.dirty",
+      "sourceValueType": "BOOLEAN",
+      "sourceCandidateCount": 7,
+      "decision": "APPROVED_UNCHANGED",
+      "candidateProbeId": "editor.dirty",
+      "rationale": "Dirty is a user-visible semantic guard and not a dump of internal state."
+    },
+    {
+      "sourceProbeId": "editor.mutationLockActive",
+      "sourceValueType": "BOOLEAN",
+      "sourceCandidateCount": 8,
+      "decision": "APPROVED_UNCHANGED",
+      "candidateProbeId": "editor.mutationLockActive",
+      "rationale": "The mutation gate is the narrow seam needed to verify command exclusion during reconciliation."
+    },
+    {
+      "sourceProbeId": "editor.normalizationSummaryBytes",
+      "sourceValueType": "BYTE_SEQUENCE",
+      "sourceCandidateCount": 1,
+      "decision": "APPROVED_UNCHANGED",
+      "candidateProbeId": "editor.normalizationSummaryBytes",
+      "rationale": "A closed bounded category/count projection verifies the summary without exposing authored content."
+    },
+    {
+      "sourceProbeId": "editor.previewEligibilityGeneration",
+      "sourceValueType": "INTEGER",
+      "sourceCandidateCount": 21,
+      "decision": "APPROVED_UNCHANGED",
+      "candidateProbeId": "editor.previewEligibilityGeneration",
+      "rationale": "A monotonic generation is the narrow identity seam for late-result eligibility."
+    },
+    {
+      "sourceProbeId": "editor.recoveryDraftBytes",
+      "sourceValueType": "BYTE_SEQUENCE",
+      "sourceCandidateCount": 1,
+      "decision": "CONSOLIDATED_INTO",
+      "candidateProbeId": "editor.recoveryDraftEnvelopeBytes",
+      "rationale": "Raw recovery bytes would expose business content; only a closed digest-and-exclusion-proof envelope is admissible."
+    },
+    {
+      "sourceProbeId": "editor.recoveryDraftPresent",
+      "sourceValueType": "BOOLEAN",
+      "sourceCandidateCount": 4,
+      "decision": "CONSOLIDATED_INTO",
+      "candidateProbeId": "editor.recoveryDraftEnvelopeBytes",
+      "rationale": "Presence is represented by BYTES_EQ versus ABSENT on the same safe envelope probe."
+    },
+    {
+      "sourceProbeId": "editor.workingCopyDigest",
+      "sourceValueType": "DIGEST",
+      "sourceCandidateCount": 37,
+      "decision": "APPROVED_UNCHANGED",
+      "candidateProbeId": "editor.workingCopyDigest",
+      "rationale": "A digest proves whole-working-copy identity while keeping authored bytes outside the observation seam."
+    }
+  ],
+  "counts": {
+    "sourceProposalCount": 12,
+    "approvedUnchangedSourceCount": 7,
+    "consolidatedSourceCount": 5,
+    "candidateProbeCount": 9
+  },
+  "boundary": "This adjudication selects a complete 1.1 candidate interface. It does not issue the Probe Profile, mutate the current 1.0 Profile, admit Oracle records, execute a browser, or prove product behavior."
+}

@@ -1,0 +1,23 @@
+{
+  "artifactVersion": "renderweave-spec-registry-executor-manifest/1.0",
+  "executorId": "SPEC_EXECUTOR::NODE::1.0",
+  "role": "primary-registry-validator",
+  "executionClass": "EXEC::SPEC_REGISTRY::1.0",
+  "targetId": "SPEC_TARGET::REGISTRY::1.0",
+  "targetManifest": {
+    "path": "spec-registry/target-manifest-v1.json",
+    "sha256": "sha256:122577f0dc84713897e5d7803b21d94fd283fff067aa54cbdc9d20b29e767e84",
+    "byteLength": 77305
+  },
+  "implementationRevision": "spec-registry-bootstrap/1.13",
+  "runtime": "Node.js 24.x",
+  "entrypoint": {
+    "path": "spec-registry/validate-spec-registry-primary.mjs",
+    "sha256": "sha256:bff6a42da0f8ee926bdb3239bb95cf5b80a5a2b0233198ca831775d3eabfe7a3",
+    "byteLength": 41451
+  },
+  "command": "node spec-registry/validate-spec-registry-primary.mjs --target spec-registry/target-manifest-v1.json",
+  "sharedSemanticLibrary": null,
+  "networkReadsAllowed": false,
+  "productMutationAllowed": false
+}

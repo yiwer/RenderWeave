@@ -88,7 +88,7 @@ DesignDSL 顶层 envelope、版本身份、节点/definition/binding 的局部�
 - DesignDSL 只接受无 BOM 的合法 UTF-8 strict JSON object；拒绝 comments、trailing comma、single-quoted string、NaN/Infinity、JSON5、孤立 surrogate 与所有 object 层级 duplicate key。
 - JSON null 在 DesignDSL v1 全面非法；optional member 通过省略表达，业务“无”使用显式封闭 union。空字符串、false、0 与空数组是具体值，不等于 missing。
 - DesignDSL-owned objects 与按对应 DSL version 解析的所有 Node property 都拒绝 unknown member/kind。未来 wire 扩展必须用新 dslVersion，不能依赖旧 reader 忽略或 opaque-preserve 后保存；BindingPolicy 新增只授权已经存在的固定 property，不新增 wire。
-- parser 级 hard limits 按解压后的 bare DesignDSL 计数，并在完整建模、number expansion 和 canonicalization 前执行：最大 raw UTF-8 与 canonical bytes 均 16 MiB、JSON depth 64、单 object 1,024 members、单 array 100,000 items、全文 1,000,000 JSON values/containers、单 string 1 MiB、member name 256 UTF-8 bytes、number token 256 bytes。票据 19 必须再给 Node/Definition/Expression/Loop 等更低语义预算。
+- parser 级 raw/token hard limits 按解压后的 bare DesignDSL 计数，并在完整建模、number expansion 和 canonicalization 前执行：最大 raw UTF-8 16 MiB、JSON depth 64、单 object 1,024 members、单 array 100,000 items、全文 1,000,000 JSON values/containers、单 string 1 MiB、member name 256 UTF-8 bytes、number token 256 bytes。canonical bytes 另在安全结构建模、metadata normalization 与 set sorting 后，通过上限为 16 MiB 的 counting sink 计算；该计数必须在 external dependency I/O 前完成且不保留完整canonical输出。票据 19 必须再给 Node/Definition/Expression/Loop 等更低语义预算。
 - 非法 UTF-8/JSON、duplicate key、limit violation 返回单个 parser-level problem 并停止；root/envelope/version 不能可信识别时停止后续语义分析。结构可安全遍历后才有界收集独立 hard problems，且只有没有阻断性 hard error 才查询 StaticSchema/Asset/Template external dependency。
 
 ### 5. Local authored identity
@@ -118,7 +118,7 @@ DesignDSL 顶层 envelope、版本身份、节点/definition/binding 的局部�
 
 ### 8. Canonical write、confirmation 与 trusted read
 
-- create/save/copy/restore/migration 取得完整 DesignDSL 后依次执行：pre-parse limits/strict parse → envelope/version/local structure/type/graph → metadata normalization/set sorting → external dependency validation → canonical bytes/hash → 原子 immutable revision write。dependency errors 可继续形成 canonical proposal，hard errors 零写。
+- create/save/copy/restore/migration 取得完整 DesignDSL 后依次执行：raw/token limits与strict parse → bounded envelope/version/local structure/type/graph → metadata normalization/set sorting → capped canonical-byte counting sink → external dependency validation → final canonical bytes/hash → 原子 immutable revision write。counting sink超出16 MiB立即以DesignDSL limit失败且不发起dependency I/O；dependency errors仍可继续形成canonical proposal，hard errors零写。
 - dependency-only 首阶段返回 canonical problems、`proposedContentHash` 与 confirmation token；token 同时绑定 operation、target Template/Schema、expectedRevision、hash、dependency snapshot 与 problem fingerprint。canonical-equivalent transport 改写不使 token 漂移，Expression source/semantic order/metadata/content 变化会使其失效；成功 revision hash 必须等于 proposed hash。
 - API/save 响应至少返回新 revision 与 contentHash；客户端若本地表示与服务端 normalization 不同，必须从 canonical response/GET 重新同步，不能把上传 bytes 当成 persisted fact。
 - trusted read 必须从 persisted JSON value 重新 canonicalize 并核对 hash；数据库 serializer 不是 canonical authority。mismatch 是内部不可恢复的 integrity problem：fail closed，不建立 TemplateSnapshot，不交给 Editor/copy/restore/migration/Evaluator/Renderer，不自动重算/回写历史，并触发运维告警而不记录/回显完整 payload。

@@ -1,0 +1,1648 @@
+{
+  "artifactVersion": "renderweave-conformance-probe-profile-artifact/1.1-candidate",
+  "candidateProbeProfileId": "renderweave-conformance-probes/1.1",
+  "status": "COMPLETE_CANDIDATE_NOT_ISSUED",
+  "authority": "Ticket19 closed-probe framework plus the Editor 12-to-9 deep-interface adjudication; this artifact is complete for static review but has not replaced the issued 1.0 Profile",
+  "recordMayReference": false,
+  "assertionVectors": {
+    "path": "editor-automated/probe-assertion-vectors-candidate-v1_1.json",
+    "sha256": "sha256:c1d9ba770f28fcefa0e6280e506b9618942cbfd14de6c57ea3372bb4795cead5",
+    "byteLength": 108789,
+    "acceptedVectorCount": 157,
+    "rejectedVectorCount": 119,
+    "probeOperatorCoverageComplete": true,
+    "candidateOnly": true
+  },
+  "probeDefinitionContract": {
+    "requiredMembersInOrder": [
+      "probeId",
+      "valueType",
+      "observationBoundary",
+      "allowedOperators",
+      "sensitivity",
+      "executionClasses"
+    ],
+    "closedObject": true,
+    "probeIdPattern": "^[a-z][A-Za-z0-9]*(?:\\.[a-z][A-Za-z0-9]*)+$",
+    "valueTypeEnum": [
+      "BOOLEAN",
+      "TEXT",
+      "DECIMAL",
+      "INTEGER",
+      "CODE",
+      "STAGE",
+      "DIGEST",
+      "BYTE_SEQUENCE",
+      "TEXT_SEQUENCE",
+      "INTEGER_SEQUENCE",
+      "RATIONAL_DURATION_MILLISECONDS"
+    ],
+    "sensitivityEnum": [
+      "PUBLIC_BOUNDED",
+      "AUTHORIZED_DIAGNOSTIC",
+      "INTERNAL_REDACTED"
+    ],
+    "executionClassCatalog": "conformance-execution-classes-v1.json"
+  },
+  "operatorContract": {
+    "enum": [
+      "EQ",
+      "ABSENT",
+      "SEQUENCE_EQ",
+      "BYTES_EQ",
+      "WITHIN"
+    ],
+    "EQ": "exact typed equality under the probe ValueType",
+    "ABSENT": "the named observation is absent; expected must be omitted",
+    "SEQUENCE_EQ": "exact length and exact item-by-item order equality",
+    "BYTES_EQ": "exact byte equality against a SHA-256-bound artifact",
+    "WITHIN": "closed rational interval comparison available only to a probe explicitly declaring host-scheduling or wall-clock observation"
+  },
+  "withinPolicy": {
+    "interval": "closed [minimum, maximum] with exact rational millisecond endpoints",
+    "allowedObservationKinds": [
+      "wall-clock duration",
+      "host scheduling delay"
+    ],
+    "forbiddenValueTypes": [
+      "BOOLEAN",
+      "TEXT",
+      "INTEGER",
+      "CODE",
+      "STAGE",
+      "DIGEST",
+      "BYTE_SEQUENCE",
+      "TEXT_SEQUENCE",
+      "INTEGER_SEQUENCE"
+    ],
+    "cannotWeaken": [
+      "canonical values",
+      "codes",
+      "stages",
+      "counts",
+      "digests",
+      "bytes",
+      "pixels"
+    ]
+  },
+  "forbiddenProbeMechanisms": [
+    "generic JSONPath",
+    "generic state snapshot",
+    "arbitrary script",
+    "parameter template",
+    "wildcard",
+    "default fallback",
+    "natural-language predicate"
+  ],
+  "evolutionRule": "Adding, removing, or changing any probe, ValueType, boundary, operator permission, sensitivity, or execution-class membership requires a new exact Probe Profile identity.",
+  "probes": [
+    {
+      "probeId": "operation.accepted",
+      "valueType": "BOOLEAN",
+      "observationBoundary": "one named operation terminal and its capacity reservation ledger after the selected execution-class boundary returns",
+      "allowedOperators": [
+        "EQ"
+      ],
+      "sensitivity": "PUBLIC_BOUNDED",
+      "executionClasses": [
+        "EXEC::SPEC_REGISTRY::1.0",
+        "EXEC::DOMAIN_SERVICES::1.0",
+        "EXEC::DESIGN_INPUT_EXPRESSION::1.0",
+        "EXEC::RENDERING_PIPELINE::1.0",
+        "EXEC::RENDERER_EXACT_OUTPUT::1.0",
+        "EXEC::EDITOR_AUTOMATED::1.0"
+      ]
+    },
+    {
+      "probeId": "operation.terminalCode",
+      "valueType": "CODE",
+      "observationBoundary": "one named operation terminal and its capacity reservation ledger after the selected execution-class boundary returns",
+      "allowedOperators": [
+        "EQ",
+        "ABSENT"
+      ],
+      "sensitivity": "PUBLIC_BOUNDED",
+      "executionClasses": [
+        "EXEC::SPEC_REGISTRY::1.0",
+        "EXEC::DOMAIN_SERVICES::1.0",
+        "EXEC::DESIGN_INPUT_EXPRESSION::1.0",
+        "EXEC::RENDERING_PIPELINE::1.0",
+        "EXEC::RENDERER_EXACT_OUTPUT::1.0",
+        "EXEC::EDITOR_AUTOMATED::1.0"
+      ]
+    },
+    {
+      "probeId": "operation.terminalStage",
+      "valueType": "STAGE",
+      "observationBoundary": "one named operation terminal and its capacity reservation ledger after the selected execution-class boundary returns",
+      "allowedOperators": [
+        "EQ",
+        "ABSENT"
+      ],
+      "sensitivity": "PUBLIC_BOUNDED",
+      "executionClasses": [
+        "EXEC::SPEC_REGISTRY::1.0",
+        "EXEC::DOMAIN_SERVICES::1.0",
+        "EXEC::DESIGN_INPUT_EXPRESSION::1.0",
+        "EXEC::RENDERING_PIPELINE::1.0",
+        "EXEC::RENDERER_EXACT_OUTPUT::1.0",
+        "EXEC::EDITOR_AUTOMATED::1.0"
+      ]
+    },
+    {
+      "probeId": "operation.terminalParametersBytes",
+      "valueType": "BYTE_SEQUENCE",
+      "observationBoundary": "one named operation terminal and its capacity reservation ledger after the selected execution-class boundary returns",
+      "allowedOperators": [
+        "BYTES_EQ",
+        "ABSENT"
+      ],
+      "sensitivity": "INTERNAL_REDACTED",
+      "executionClasses": [
+        "EXEC::SPEC_REGISTRY::1.0",
+        "EXEC::DOMAIN_SERVICES::1.0",
+        "EXEC::DESIGN_INPUT_EXPRESSION::1.0",
+        "EXEC::RENDERING_PIPELINE::1.0",
+        "EXEC::RENDERER_EXACT_OUTPUT::1.0",
+        "EXEC::EDITOR_AUTOMATED::1.0"
+      ]
+    },
+    {
+      "probeId": "operation.writeCount",
+      "valueType": "INTEGER",
+      "observationBoundary": "one named operation terminal and its capacity reservation ledger after the selected execution-class boundary returns",
+      "allowedOperators": [
+        "EQ"
+      ],
+      "sensitivity": "AUTHORIZED_DIAGNOSTIC",
+      "executionClasses": [
+        "EXEC::SPEC_REGISTRY::1.0",
+        "EXEC::DOMAIN_SERVICES::1.0",
+        "EXEC::DESIGN_INPUT_EXPRESSION::1.0",
+        "EXEC::RENDERING_PIPELINE::1.0",
+        "EXEC::RENDERER_EXACT_OUTPUT::1.0",
+        "EXEC::EDITOR_AUTOMATED::1.0"
+      ]
+    },
+    {
+      "probeId": "operation.renderDocumentCount",
+      "valueType": "INTEGER",
+      "observationBoundary": "one named operation terminal and its capacity reservation ledger after the selected execution-class boundary returns",
+      "allowedOperators": [
+        "EQ"
+      ],
+      "sensitivity": "AUTHORIZED_DIAGNOSTIC",
+      "executionClasses": [
+        "EXEC::SPEC_REGISTRY::1.0",
+        "EXEC::DOMAIN_SERVICES::1.0",
+        "EXEC::DESIGN_INPUT_EXPRESSION::1.0",
+        "EXEC::RENDERING_PIPELINE::1.0",
+        "EXEC::RENDERER_EXACT_OUTPUT::1.0",
+        "EXEC::EDITOR_AUTOMATED::1.0"
+      ]
+    },
+    {
+      "probeId": "operation.renderOutputCount",
+      "valueType": "INTEGER",
+      "observationBoundary": "one named operation terminal and its capacity reservation ledger after the selected execution-class boundary returns",
+      "allowedOperators": [
+        "EQ"
+      ],
+      "sensitivity": "AUTHORIZED_DIAGNOSTIC",
+      "executionClasses": [
+        "EXEC::SPEC_REGISTRY::1.0",
+        "EXEC::DOMAIN_SERVICES::1.0",
+        "EXEC::DESIGN_INPUT_EXPRESSION::1.0",
+        "EXEC::RENDERING_PIPELINE::1.0",
+        "EXEC::RENDERER_EXACT_OUTPUT::1.0",
+        "EXEC::EDITOR_AUTOMATED::1.0"
+      ]
+    },
+    {
+      "probeId": "operation.downstreamEffects",
+      "valueType": "TEXT_SEQUENCE",
+      "observationBoundary": "one named operation terminal and its capacity reservation ledger after the selected execution-class boundary returns",
+      "allowedOperators": [
+        "SEQUENCE_EQ"
+      ],
+      "sensitivity": "AUTHORIZED_DIAGNOSTIC",
+      "executionClasses": [
+        "EXEC::SPEC_REGISTRY::1.0",
+        "EXEC::DOMAIN_SERVICES::1.0",
+        "EXEC::DESIGN_INPUT_EXPRESSION::1.0",
+        "EXEC::RENDERING_PIPELINE::1.0",
+        "EXEC::RENDERER_EXACT_OUTPUT::1.0",
+        "EXEC::EDITOR_AUTOMATED::1.0"
+      ]
+    },
+    {
+      "probeId": "operation.terminalsBytes",
+      "valueType": "BYTE_SEQUENCE",
+      "observationBoundary": "one named operation terminal and its capacity reservation ledger after the selected execution-class boundary returns",
+      "allowedOperators": [
+        "BYTES_EQ"
+      ],
+      "sensitivity": "AUTHORIZED_DIAGNOSTIC",
+      "executionClasses": [
+        "EXEC::SPEC_REGISTRY::1.0",
+        "EXEC::DOMAIN_SERVICES::1.0",
+        "EXEC::DESIGN_INPUT_EXPRESSION::1.0",
+        "EXEC::RENDERING_PIPELINE::1.0",
+        "EXEC::RENDERER_EXACT_OUTPUT::1.0",
+        "EXEC::EDITOR_AUTOMATED::1.0"
+      ]
+    },
+    {
+      "probeId": "capacity.limitId",
+      "valueType": "TEXT",
+      "observationBoundary": "one named operation terminal and its capacity reservation ledger after the selected execution-class boundary returns",
+      "allowedOperators": [
+        "EQ"
+      ],
+      "sensitivity": "PUBLIC_BOUNDED",
+      "executionClasses": [
+        "EXEC::SPEC_REGISTRY::1.0",
+        "EXEC::DOMAIN_SERVICES::1.0",
+        "EXEC::DESIGN_INPUT_EXPRESSION::1.0",
+        "EXEC::RENDERING_PIPELINE::1.0",
+        "EXEC::RENDERER_EXACT_OUTPUT::1.0",
+        "EXEC::EDITOR_AUTOMATED::1.0"
+      ]
+    },
+    {
+      "probeId": "capacity.observedValue",
+      "valueType": "TEXT",
+      "observationBoundary": "one named operation terminal and its capacity reservation ledger after the selected execution-class boundary returns",
+      "allowedOperators": [
+        "EQ"
+      ],
+      "sensitivity": "AUTHORIZED_DIAGNOSTIC",
+      "executionClasses": [
+        "EXEC::SPEC_REGISTRY::1.0",
+        "EXEC::DOMAIN_SERVICES::1.0",
+        "EXEC::DESIGN_INPUT_EXPRESSION::1.0",
+        "EXEC::RENDERING_PIPELINE::1.0",
+        "EXEC::RENDERER_EXACT_OUTPUT::1.0",
+        "EXEC::EDITOR_AUTOMATED::1.0"
+      ]
+    },
+    {
+      "probeId": "capacity.reservationReached",
+      "valueType": "BOOLEAN",
+      "observationBoundary": "one named operation terminal and its capacity reservation ledger after the selected execution-class boundary returns",
+      "allowedOperators": [
+        "EQ"
+      ],
+      "sensitivity": "AUTHORIZED_DIAGNOSTIC",
+      "executionClasses": [
+        "EXEC::SPEC_REGISTRY::1.0",
+        "EXEC::DOMAIN_SERVICES::1.0",
+        "EXEC::DESIGN_INPUT_EXPRESSION::1.0",
+        "EXEC::RENDERING_PIPELINE::1.0",
+        "EXEC::RENDERER_EXACT_OUTPUT::1.0",
+        "EXEC::EDITOR_AUTOMATED::1.0"
+      ]
+    },
+    {
+      "probeId": "capacity.zeroBoundary",
+      "valueType": "CODE",
+      "observationBoundary": "one named operation terminal and its capacity reservation ledger after the selected execution-class boundary returns",
+      "allowedOperators": [
+        "EQ",
+        "ABSENT"
+      ],
+      "sensitivity": "PUBLIC_BOUNDED",
+      "executionClasses": [
+        "EXEC::SPEC_REGISTRY::1.0",
+        "EXEC::DOMAIN_SERVICES::1.0",
+        "EXEC::DESIGN_INPUT_EXPRESSION::1.0",
+        "EXEC::RENDERING_PIPELINE::1.0",
+        "EXEC::RENDERER_EXACT_OUTPUT::1.0",
+        "EXEC::EDITOR_AUTOMATED::1.0"
+      ]
+    },
+    {
+      "probeId": "specRegistry.requirementCount",
+      "valueType": "INTEGER",
+      "observationBoundary": "complete append-only specification registry validation before any non-registry executor is admitted",
+      "allowedOperators": [
+        "EQ"
+      ],
+      "sensitivity": "PUBLIC_BOUNDED",
+      "executionClasses": [
+        "EXEC::SPEC_REGISTRY::1.0"
+      ]
+    },
+    {
+      "probeId": "specRegistry.semanticRequirementCount",
+      "valueType": "INTEGER",
+      "observationBoundary": "complete append-only specification registry validation before any non-registry executor is admitted",
+      "allowedOperators": [
+        "EQ"
+      ],
+      "sensitivity": "PUBLIC_BOUNDED",
+      "executionClasses": [
+        "EXEC::SPEC_REGISTRY::1.0"
+      ]
+    },
+    {
+      "probeId": "specRegistry.trackingRequirementCount",
+      "valueType": "INTEGER",
+      "observationBoundary": "complete append-only specification registry validation before any non-registry executor is admitted",
+      "allowedOperators": [
+        "EQ"
+      ],
+      "sensitivity": "PUBLIC_BOUNDED",
+      "executionClasses": [
+        "EXEC::SPEC_REGISTRY::1.0"
+      ]
+    },
+    {
+      "probeId": "specRegistry.caseRecordCount",
+      "valueType": "INTEGER",
+      "observationBoundary": "complete append-only specification registry validation before any non-registry executor is admitted",
+      "allowedOperators": [
+        "EQ"
+      ],
+      "sensitivity": "PUBLIC_BOUNDED",
+      "executionClasses": [
+        "EXEC::SPEC_REGISTRY::1.0"
+      ]
+    },
+    {
+      "probeId": "specRegistry.oracleRecordCount",
+      "valueType": "INTEGER",
+      "observationBoundary": "complete append-only specification registry validation before any non-registry executor is admitted",
+      "allowedOperators": [
+        "EQ"
+      ],
+      "sensitivity": "PUBLIC_BOUNDED",
+      "executionClasses": [
+        "EXEC::SPEC_REGISTRY::1.0"
+      ]
+    },
+    {
+      "probeId": "specRegistry.orphanRequirementCount",
+      "valueType": "INTEGER",
+      "observationBoundary": "complete append-only specification registry validation before any non-registry executor is admitted",
+      "allowedOperators": [
+        "EQ"
+      ],
+      "sensitivity": "PUBLIC_BOUNDED",
+      "executionClasses": [
+        "EXEC::SPEC_REGISTRY::1.0"
+      ]
+    },
+    {
+      "probeId": "specRegistry.orphanCaseCount",
+      "valueType": "INTEGER",
+      "observationBoundary": "complete append-only specification registry validation before any non-registry executor is admitted",
+      "allowedOperators": [
+        "EQ"
+      ],
+      "sensitivity": "PUBLIC_BOUNDED",
+      "executionClasses": [
+        "EXEC::SPEC_REGISTRY::1.0"
+      ]
+    },
+    {
+      "probeId": "specRegistry.orphanOracleCount",
+      "valueType": "INTEGER",
+      "observationBoundary": "complete append-only specification registry validation before any non-registry executor is admitted",
+      "allowedOperators": [
+        "EQ"
+      ],
+      "sensitivity": "PUBLIC_BOUNDED",
+      "executionClasses": [
+        "EXEC::SPEC_REGISTRY::1.0"
+      ]
+    },
+    {
+      "probeId": "specRegistry.duplicateIdentityCount",
+      "valueType": "INTEGER",
+      "observationBoundary": "complete append-only specification registry validation before any non-registry executor is admitted",
+      "allowedOperators": [
+        "EQ"
+      ],
+      "sensitivity": "PUBLIC_BOUNDED",
+      "executionClasses": [
+        "EXEC::SPEC_REGISTRY::1.0"
+      ]
+    },
+    {
+      "probeId": "specRegistry.supersessionGraphValid",
+      "valueType": "BOOLEAN",
+      "observationBoundary": "complete append-only specification registry validation before any non-registry executor is admitted",
+      "allowedOperators": [
+        "EQ"
+      ],
+      "sensitivity": "PUBLIC_BOUNDED",
+      "executionClasses": [
+        "EXEC::SPEC_REGISTRY::1.0"
+      ]
+    },
+    {
+      "probeId": "specRegistry.sourceLocatorErrorCount",
+      "valueType": "INTEGER",
+      "observationBoundary": "complete append-only specification registry validation before any non-registry executor is admitted",
+      "allowedOperators": [
+        "EQ"
+      ],
+      "sensitivity": "AUTHORIZED_DIAGNOSTIC",
+      "executionClasses": [
+        "EXEC::SPEC_REGISTRY::1.0"
+      ]
+    },
+    {
+      "probeId": "specRegistry.schemaErrorCount",
+      "valueType": "INTEGER",
+      "observationBoundary": "complete append-only specification registry validation before any non-registry executor is admitted",
+      "allowedOperators": [
+        "EQ"
+      ],
+      "sensitivity": "AUTHORIZED_DIAGNOSTIC",
+      "executionClasses": [
+        "EXEC::SPEC_REGISTRY::1.0"
+      ]
+    },
+    {
+      "probeId": "specRegistry.canonicalRecordBytes",
+      "valueType": "BYTE_SEQUENCE",
+      "observationBoundary": "complete append-only specification registry validation before any non-registry executor is admitted",
+      "allowedOperators": [
+        "BYTES_EQ"
+      ],
+      "sensitivity": "AUTHORIZED_DIAGNOSTIC",
+      "executionClasses": [
+        "EXEC::SPEC_REGISTRY::1.0"
+      ]
+    },
+    {
+      "probeId": "specRegistry.identityDigest",
+      "valueType": "DIGEST",
+      "observationBoundary": "complete append-only specification registry validation before any non-registry executor is admitted",
+      "allowedOperators": [
+        "EQ"
+      ],
+      "sensitivity": "PUBLIC_BOUNDED",
+      "executionClasses": [
+        "EXEC::SPEC_REGISTRY::1.0"
+      ]
+    },
+    {
+      "probeId": "specRegistry.manifestDigest",
+      "valueType": "DIGEST",
+      "observationBoundary": "complete append-only specification registry validation before any non-registry executor is admitted",
+      "allowedOperators": [
+        "EQ"
+      ],
+      "sensitivity": "PUBLIC_BOUNDED",
+      "executionClasses": [
+        "EXEC::SPEC_REGISTRY::1.0"
+      ]
+    },
+    {
+      "probeId": "specRegistry.executionOrder",
+      "valueType": "TEXT_SEQUENCE",
+      "observationBoundary": "complete append-only specification registry validation before any non-registry executor is admitted",
+      "allowedOperators": [
+        "SEQUENCE_EQ"
+      ],
+      "sensitivity": "PUBLIC_BOUNDED",
+      "executionClasses": [
+        "EXEC::SPEC_REGISTRY::1.0"
+      ]
+    },
+    {
+      "probeId": "specRegistry.referenceClosureValid",
+      "valueType": "BOOLEAN",
+      "observationBoundary": "complete append-only specification registry validation before any non-registry executor is admitted",
+      "allowedOperators": [
+        "EQ"
+      ],
+      "sensitivity": "PUBLIC_BOUNDED",
+      "executionClasses": [
+        "EXEC::SPEC_REGISTRY::1.0"
+      ]
+    },
+    {
+      "probeId": "specRegistry.profileRecordMayReference",
+      "valueType": "BOOLEAN",
+      "observationBoundary": "complete append-only specification registry validation before any non-registry executor is admitted",
+      "allowedOperators": [
+        "EQ"
+      ],
+      "sensitivity": "PUBLIC_BOUNDED",
+      "executionClasses": [
+        "EXEC::SPEC_REGISTRY::1.0"
+      ]
+    },
+    {
+      "probeId": "domain.transactionCommitted",
+      "valueType": "BOOLEAN",
+      "observationBoundary": "one domain command after its transaction or reservation linearization and before response projection",
+      "allowedOperators": [
+        "EQ"
+      ],
+      "sensitivity": "AUTHORIZED_DIAGNOSTIC",
+      "executionClasses": [
+        "EXEC::DOMAIN_SERVICES::1.0"
+      ]
+    },
+    {
+      "probeId": "domain.revisionBefore",
+      "valueType": "INTEGER",
+      "observationBoundary": "one domain command after its transaction or reservation linearization and before response projection",
+      "allowedOperators": [
+        "EQ",
+        "ABSENT"
+      ],
+      "sensitivity": "AUTHORIZED_DIAGNOSTIC",
+      "executionClasses": [
+        "EXEC::DOMAIN_SERVICES::1.0"
+      ]
+    },
+    {
+      "probeId": "domain.revisionAfter",
+      "valueType": "INTEGER",
+      "observationBoundary": "one domain command after its transaction or reservation linearization and before response projection",
+      "allowedOperators": [
+        "EQ",
+        "ABSENT"
+      ],
+      "sensitivity": "AUTHORIZED_DIAGNOSTIC",
+      "executionClasses": [
+        "EXEC::DOMAIN_SERVICES::1.0"
+      ]
+    },
+    {
+      "probeId": "domain.contentVersionBefore",
+      "valueType": "INTEGER",
+      "observationBoundary": "one domain command after its transaction or reservation linearization and before response projection",
+      "allowedOperators": [
+        "EQ",
+        "ABSENT"
+      ],
+      "sensitivity": "AUTHORIZED_DIAGNOSTIC",
+      "executionClasses": [
+        "EXEC::DOMAIN_SERVICES::1.0"
+      ]
+    },
+    {
+      "probeId": "domain.contentVersionAfter",
+      "valueType": "INTEGER",
+      "observationBoundary": "one domain command after its transaction or reservation linearization and before response projection",
+      "allowedOperators": [
+        "EQ",
+        "ABSENT"
+      ],
+      "sensitivity": "AUTHORIZED_DIAGNOSTIC",
+      "executionClasses": [
+        "EXEC::DOMAIN_SERVICES::1.0"
+      ]
+    },
+    {
+      "probeId": "domain.lifecycleBefore",
+      "valueType": "CODE",
+      "observationBoundary": "one domain command after its transaction or reservation linearization and before response projection",
+      "allowedOperators": [
+        "EQ",
+        "ABSENT"
+      ],
+      "sensitivity": "AUTHORIZED_DIAGNOSTIC",
+      "executionClasses": [
+        "EXEC::DOMAIN_SERVICES::1.0"
+      ]
+    },
+    {
+      "probeId": "domain.lifecycleAfter",
+      "valueType": "CODE",
+      "observationBoundary": "one domain command after its transaction or reservation linearization and before response projection",
+      "allowedOperators": [
+        "EQ",
+        "ABSENT"
+      ],
+      "sensitivity": "AUTHORIZED_DIAGNOSTIC",
+      "executionClasses": [
+        "EXEC::DOMAIN_SERVICES::1.0"
+      ]
+    },
+    {
+      "probeId": "domain.auditEventCount",
+      "valueType": "INTEGER",
+      "observationBoundary": "one domain command after its transaction or reservation linearization and before response projection",
+      "allowedOperators": [
+        "EQ"
+      ],
+      "sensitivity": "AUTHORIZED_DIAGNOSTIC",
+      "executionClasses": [
+        "EXEC::DOMAIN_SERVICES::1.0"
+      ]
+    },
+    {
+      "probeId": "domain.domainEventCount",
+      "valueType": "INTEGER",
+      "observationBoundary": "one domain command after its transaction or reservation linearization and before response projection",
+      "allowedOperators": [
+        "EQ"
+      ],
+      "sensitivity": "AUTHORIZED_DIAGNOSTIC",
+      "executionClasses": [
+        "EXEC::DOMAIN_SERVICES::1.0"
+      ]
+    },
+    {
+      "probeId": "domain.referenceOccurrenceCount",
+      "valueType": "INTEGER",
+      "observationBoundary": "one domain command after its transaction or reservation linearization and before response projection",
+      "allowedOperators": [
+        "EQ"
+      ],
+      "sensitivity": "AUTHORIZED_DIAGNOSTIC",
+      "executionClasses": [
+        "EXEC::DOMAIN_SERVICES::1.0"
+      ]
+    },
+    {
+      "probeId": "domain.resultBytes",
+      "valueType": "BYTE_SEQUENCE",
+      "observationBoundary": "one domain command after its transaction or reservation linearization and before response projection",
+      "allowedOperators": [
+        "BYTES_EQ",
+        "ABSENT"
+      ],
+      "sensitivity": "AUTHORIZED_DIAGNOSTIC",
+      "executionClasses": [
+        "EXEC::DOMAIN_SERVICES::1.0"
+      ]
+    },
+    {
+      "probeId": "domain.idempotencyOutcome",
+      "valueType": "CODE",
+      "observationBoundary": "one domain command after its transaction or reservation linearization and before response projection",
+      "allowedOperators": [
+        "EQ",
+        "ABSENT"
+      ],
+      "sensitivity": "PUBLIC_BOUNDED",
+      "executionClasses": [
+        "EXEC::DOMAIN_SERVICES::1.0"
+      ]
+    },
+    {
+      "probeId": "design.problemCodes",
+      "valueType": "TEXT_SEQUENCE",
+      "observationBoundary": "authoritative DesignDSL, RenderInput, Binding, Mapping, or Expression semantic boundary before Rendering handoff",
+      "allowedOperators": [
+        "SEQUENCE_EQ"
+      ],
+      "sensitivity": "PUBLIC_BOUNDED",
+      "executionClasses": [
+        "EXEC::DESIGN_INPUT_EXPRESSION::1.0"
+      ]
+    },
+    {
+      "probeId": "design.canonicalBytes",
+      "valueType": "BYTE_SEQUENCE",
+      "observationBoundary": "authoritative DesignDSL, RenderInput, Binding, Mapping, or Expression semantic boundary before Rendering handoff",
+      "allowedOperators": [
+        "BYTES_EQ",
+        "ABSENT"
+      ],
+      "sensitivity": "AUTHORIZED_DIAGNOSTIC",
+      "executionClasses": [
+        "EXEC::DESIGN_INPUT_EXPRESSION::1.0"
+      ]
+    },
+    {
+      "probeId": "design.contentHash",
+      "valueType": "DIGEST",
+      "observationBoundary": "authoritative DesignDSL, RenderInput, Binding, Mapping, or Expression semantic boundary before Rendering handoff",
+      "allowedOperators": [
+        "EQ",
+        "ABSENT"
+      ],
+      "sensitivity": "PUBLIC_BOUNDED",
+      "executionClasses": [
+        "EXEC::DESIGN_INPUT_EXPRESSION::1.0"
+      ]
+    },
+    {
+      "probeId": "design.typedValueBytes",
+      "valueType": "BYTE_SEQUENCE",
+      "observationBoundary": "authoritative DesignDSL, RenderInput, Binding, Mapping, or Expression semantic boundary before Rendering handoff",
+      "allowedOperators": [
+        "BYTES_EQ",
+        "ABSENT"
+      ],
+      "sensitivity": "INTERNAL_REDACTED",
+      "executionClasses": [
+        "EXEC::DESIGN_INPUT_EXPRESSION::1.0"
+      ]
+    },
+    {
+      "probeId": "design.definitionEvaluationCount",
+      "valueType": "INTEGER",
+      "observationBoundary": "authoritative DesignDSL, RenderInput, Binding, Mapping, or Expression semantic boundary before Rendering handoff",
+      "allowedOperators": [
+        "EQ"
+      ],
+      "sensitivity": "AUTHORIZED_DIAGNOSTIC",
+      "executionClasses": [
+        "EXEC::DESIGN_INPUT_EXPRESSION::1.0"
+      ]
+    },
+    {
+      "probeId": "design.capabilityDemandCount",
+      "valueType": "INTEGER",
+      "observationBoundary": "authoritative DesignDSL, RenderInput, Binding, Mapping, or Expression semantic boundary before Rendering handoff",
+      "allowedOperators": [
+        "EQ"
+      ],
+      "sensitivity": "AUTHORIZED_DIAGNOSTIC",
+      "executionClasses": [
+        "EXEC::DESIGN_INPUT_EXPRESSION::1.0"
+      ]
+    },
+    {
+      "probeId": "design.assetAtomSequence",
+      "valueType": "TEXT_SEQUENCE",
+      "observationBoundary": "authoritative DesignDSL, RenderInput, Binding, Mapping, or Expression semantic boundary before Rendering handoff",
+      "allowedOperators": [
+        "SEQUENCE_EQ"
+      ],
+      "sensitivity": "AUTHORIZED_DIAGNOSTIC",
+      "executionClasses": [
+        "EXEC::DESIGN_INPUT_EXPRESSION::1.0"
+      ]
+    },
+    {
+      "probeId": "design.bindingTargetSequence",
+      "valueType": "TEXT_SEQUENCE",
+      "observationBoundary": "authoritative DesignDSL, RenderInput, Binding, Mapping, or Expression semantic boundary before Rendering handoff",
+      "allowedOperators": [
+        "SEQUENCE_EQ"
+      ],
+      "sensitivity": "AUTHORIZED_DIAGNOSTIC",
+      "executionClasses": [
+        "EXEC::DESIGN_INPUT_EXPRESSION::1.0"
+      ]
+    },
+    {
+      "probeId": "design.evaluationOrder",
+      "valueType": "TEXT_SEQUENCE",
+      "observationBoundary": "authoritative DesignDSL, RenderInput, Binding, Mapping, or Expression semantic boundary before Rendering handoff",
+      "allowedOperators": [
+        "SEQUENCE_EQ"
+      ],
+      "sensitivity": "AUTHORIZED_DIAGNOSTIC",
+      "executionClasses": [
+        "EXEC::DESIGN_INPUT_EXPRESSION::1.0"
+      ]
+    },
+    {
+      "probeId": "design.normalizationBytes",
+      "valueType": "BYTE_SEQUENCE",
+      "observationBoundary": "authoritative DesignDSL, RenderInput, Binding, Mapping, or Expression semantic boundary before Rendering handoff",
+      "allowedOperators": [
+        "BYTES_EQ"
+      ],
+      "sensitivity": "AUTHORIZED_DIAGNOSTIC",
+      "executionClasses": [
+        "EXEC::DESIGN_INPUT_EXPRESSION::1.0"
+      ]
+    },
+    {
+      "probeId": "design.lexicalFrameCount",
+      "valueType": "INTEGER",
+      "observationBoundary": "authoritative DesignDSL, RenderInput, Binding, Mapping, or Expression semantic boundary before Rendering handoff",
+      "allowedOperators": [
+        "EQ"
+      ],
+      "sensitivity": "AUTHORIZED_DIAGNOSTIC",
+      "executionClasses": [
+        "EXEC::DESIGN_INPUT_EXPRESSION::1.0"
+      ]
+    },
+    {
+      "probeId": "design.dependencyIoCount",
+      "valueType": "INTEGER",
+      "observationBoundary": "authoritative DesignDSL, RenderInput, Binding, Mapping, or Expression semantic boundary before Rendering handoff",
+      "allowedOperators": [
+        "EQ"
+      ],
+      "sensitivity": "AUTHORIZED_DIAGNOSTIC",
+      "executionClasses": [
+        "EXEC::DESIGN_INPUT_EXPRESSION::1.0"
+      ]
+    },
+    {
+      "probeId": "rendering.problemCodes",
+      "valueType": "TEXT_SEQUENCE",
+      "observationBoundary": "sealed root Rendering operation after admission, closure, Evaluation, resolution, lowering, and document-seal outcome",
+      "allowedOperators": [
+        "SEQUENCE_EQ"
+      ],
+      "sensitivity": "PUBLIC_BOUNDED",
+      "executionClasses": [
+        "EXEC::RENDERING_PIPELINE::1.0"
+      ]
+    },
+    {
+      "probeId": "rendering.documentBytes",
+      "valueType": "BYTE_SEQUENCE",
+      "observationBoundary": "sealed root Rendering operation after admission, closure, Evaluation, resolution, lowering, and document-seal outcome",
+      "allowedOperators": [
+        "BYTES_EQ",
+        "ABSENT"
+      ],
+      "sensitivity": "INTERNAL_REDACTED",
+      "executionClasses": [
+        "EXEC::RENDERING_PIPELINE::1.0"
+      ]
+    },
+    {
+      "probeId": "rendering.documentDigest",
+      "valueType": "DIGEST",
+      "observationBoundary": "sealed root Rendering operation after admission, closure, Evaluation, resolution, lowering, and document-seal outcome",
+      "allowedOperators": [
+        "EQ",
+        "ABSENT"
+      ],
+      "sensitivity": "AUTHORIZED_DIAGNOSTIC",
+      "executionClasses": [
+        "EXEC::RENDERING_PIPELINE::1.0"
+      ]
+    },
+    {
+      "probeId": "rendering.closureDigest",
+      "valueType": "DIGEST",
+      "observationBoundary": "sealed root Rendering operation after admission, closure, Evaluation, resolution, lowering, and document-seal outcome",
+      "allowedOperators": [
+        "EQ",
+        "ABSENT"
+      ],
+      "sensitivity": "AUTHORIZED_DIAGNOSTIC",
+      "executionClasses": [
+        "EXEC::RENDERING_PIPELINE::1.0"
+      ]
+    },
+    {
+      "probeId": "rendering.admittedInputDigest",
+      "valueType": "DIGEST",
+      "observationBoundary": "sealed root Rendering operation after admission, closure, Evaluation, resolution, lowering, and document-seal outcome",
+      "allowedOperators": [
+        "EQ",
+        "ABSENT"
+      ],
+      "sensitivity": "AUTHORIZED_DIAGNOSTIC",
+      "executionClasses": [
+        "EXEC::RENDERING_PIPELINE::1.0"
+      ]
+    },
+    {
+      "probeId": "rendering.evaluationFingerprint",
+      "valueType": "DIGEST",
+      "observationBoundary": "sealed root Rendering operation after admission, closure, Evaluation, resolution, lowering, and document-seal outcome",
+      "allowedOperators": [
+        "EQ",
+        "ABSENT"
+      ],
+      "sensitivity": "INTERNAL_REDACTED",
+      "executionClasses": [
+        "EXEC::RENDERING_PIPELINE::1.0"
+      ]
+    },
+    {
+      "probeId": "rendering.capabilityResultsDigest",
+      "valueType": "DIGEST",
+      "observationBoundary": "sealed root Rendering operation after admission, closure, Evaluation, resolution, lowering, and document-seal outcome",
+      "allowedOperators": [
+        "EQ",
+        "ABSENT"
+      ],
+      "sensitivity": "AUTHORIZED_DIAGNOSTIC",
+      "executionClasses": [
+        "EXEC::RENDERING_PIPELINE::1.0"
+      ]
+    },
+    {
+      "probeId": "rendering.assetSelectionDigest",
+      "valueType": "DIGEST",
+      "observationBoundary": "sealed root Rendering operation after admission, closure, Evaluation, resolution, lowering, and document-seal outcome",
+      "allowedOperators": [
+        "EQ",
+        "ABSENT"
+      ],
+      "sensitivity": "AUTHORIZED_DIAGNOSTIC",
+      "executionClasses": [
+        "EXEC::RENDERING_PIPELINE::1.0"
+      ]
+    },
+    {
+      "probeId": "rendering.evaluationResultDigest",
+      "valueType": "DIGEST",
+      "observationBoundary": "sealed root Rendering operation after admission, closure, Evaluation, resolution, lowering, and document-seal outcome",
+      "allowedOperators": [
+        "EQ",
+        "ABSENT"
+      ],
+      "sensitivity": "AUTHORIZED_DIAGNOSTIC",
+      "executionClasses": [
+        "EXEC::RENDERING_PIPELINE::1.0"
+      ]
+    },
+    {
+      "probeId": "rendering.nodeCount",
+      "valueType": "INTEGER",
+      "observationBoundary": "sealed root Rendering operation after admission, closure, Evaluation, resolution, lowering, and document-seal outcome",
+      "allowedOperators": [
+        "EQ"
+      ],
+      "sensitivity": "AUTHORIZED_DIAGNOSTIC",
+      "executionClasses": [
+        "EXEC::RENDERING_PIPELINE::1.0"
+      ]
+    },
+    {
+      "probeId": "rendering.resourceCount",
+      "valueType": "INTEGER",
+      "observationBoundary": "sealed root Rendering operation after admission, closure, Evaluation, resolution, lowering, and document-seal outcome",
+      "allowedOperators": [
+        "EQ"
+      ],
+      "sensitivity": "AUTHORIZED_DIAGNOSTIC",
+      "executionClasses": [
+        "EXEC::RENDERING_PIPELINE::1.0"
+      ]
+    },
+    {
+      "probeId": "rendering.occurrenceIds",
+      "valueType": "TEXT_SEQUENCE",
+      "observationBoundary": "sealed root Rendering operation after admission, closure, Evaluation, resolution, lowering, and document-seal outcome",
+      "allowedOperators": [
+        "SEQUENCE_EQ"
+      ],
+      "sensitivity": "AUTHORIZED_DIAGNOSTIC",
+      "executionClasses": [
+        "EXEC::RENDERING_PIPELINE::1.0"
+      ]
+    },
+    {
+      "probeId": "rendering.resourceIds",
+      "valueType": "TEXT_SEQUENCE",
+      "observationBoundary": "sealed root Rendering operation after admission, closure, Evaluation, resolution, lowering, and document-seal outcome",
+      "allowedOperators": [
+        "SEQUENCE_EQ"
+      ],
+      "sensitivity": "AUTHORIZED_DIAGNOSTIC",
+      "executionClasses": [
+        "EXEC::RENDERING_PIPELINE::1.0"
+      ]
+    },
+    {
+      "probeId": "rendering.assetResolveCount",
+      "valueType": "INTEGER",
+      "observationBoundary": "sealed root Rendering operation after admission, closure, Evaluation, resolution, lowering, and document-seal outcome",
+      "allowedOperators": [
+        "EQ"
+      ],
+      "sensitivity": "AUTHORIZED_DIAGNOSTIC",
+      "executionClasses": [
+        "EXEC::RENDERING_PIPELINE::1.0"
+      ]
+    },
+    {
+      "probeId": "rendering.capabilityDemandCount",
+      "valueType": "INTEGER",
+      "observationBoundary": "sealed root Rendering operation after admission, closure, Evaluation, resolution, lowering, and document-seal outcome",
+      "allowedOperators": [
+        "EQ"
+      ],
+      "sensitivity": "AUTHORIZED_DIAGNOSTIC",
+      "executionClasses": [
+        "EXEC::RENDERING_PIPELINE::1.0"
+      ]
+    },
+    {
+      "probeId": "rendering.loweringResidueCount",
+      "valueType": "INTEGER",
+      "observationBoundary": "sealed root Rendering operation after admission, closure, Evaluation, resolution, lowering, and document-seal outcome",
+      "allowedOperators": [
+        "EQ"
+      ],
+      "sensitivity": "AUTHORIZED_DIAGNOSTIC",
+      "executionClasses": [
+        "EXEC::RENDERING_PIPELINE::1.0"
+      ]
+    },
+    {
+      "probeId": "rendering.templateCurrentReadCount",
+      "valueType": "INTEGER",
+      "observationBoundary": "sealed root Rendering operation after admission, closure, Evaluation, resolution, lowering, and document-seal outcome",
+      "allowedOperators": [
+        "EQ"
+      ],
+      "sensitivity": "AUTHORIZED_DIAGNOSTIC",
+      "executionClasses": [
+        "EXEC::RENDERING_PIPELINE::1.0"
+      ]
+    },
+    {
+      "probeId": "rendering.assetCurrentReadCount",
+      "valueType": "INTEGER",
+      "observationBoundary": "sealed root Rendering operation after admission, closure, Evaluation, resolution, lowering, and document-seal outcome",
+      "allowedOperators": [
+        "EQ"
+      ],
+      "sensitivity": "AUTHORIZED_DIAGNOSTIC",
+      "executionClasses": [
+        "EXEC::RENDERING_PIPELINE::1.0"
+      ]
+    },
+    {
+      "probeId": "renderer.outputBytes",
+      "valueType": "BYTE_SEQUENCE",
+      "observationBoundary": "exact Renderer target after command admission, resource work, layout, shaping, raster, encode, and atomic terminal seal",
+      "allowedOperators": [
+        "BYTES_EQ",
+        "ABSENT"
+      ],
+      "sensitivity": "AUTHORIZED_DIAGNOSTIC",
+      "executionClasses": [
+        "EXEC::RENDERER_EXACT_OUTPUT::1.0"
+      ]
+    },
+    {
+      "probeId": "renderer.outputDigest",
+      "valueType": "DIGEST",
+      "observationBoundary": "exact Renderer target after command admission, resource work, layout, shaping, raster, encode, and atomic terminal seal",
+      "allowedOperators": [
+        "EQ",
+        "ABSENT"
+      ],
+      "sensitivity": "PUBLIC_BOUNDED",
+      "executionClasses": [
+        "EXEC::RENDERER_EXACT_OUTPUT::1.0"
+      ]
+    },
+    {
+      "probeId": "renderer.outputMediaType",
+      "valueType": "TEXT",
+      "observationBoundary": "exact Renderer target after command admission, resource work, layout, shaping, raster, encode, and atomic terminal seal",
+      "allowedOperators": [
+        "EQ",
+        "ABSENT"
+      ],
+      "sensitivity": "PUBLIC_BOUNDED",
+      "executionClasses": [
+        "EXEC::RENDERER_EXACT_OUTPUT::1.0"
+      ]
+    },
+    {
+      "probeId": "renderer.pixelBytes",
+      "valueType": "BYTE_SEQUENCE",
+      "observationBoundary": "exact Renderer target after command admission, resource work, layout, shaping, raster, encode, and atomic terminal seal",
+      "allowedOperators": [
+        "BYTES_EQ",
+        "ABSENT"
+      ],
+      "sensitivity": "AUTHORIZED_DIAGNOSTIC",
+      "executionClasses": [
+        "EXEC::RENDERER_EXACT_OUTPUT::1.0"
+      ]
+    },
+    {
+      "probeId": "renderer.pixelDigest",
+      "valueType": "DIGEST",
+      "observationBoundary": "exact Renderer target after command admission, resource work, layout, shaping, raster, encode, and atomic terminal seal",
+      "allowedOperators": [
+        "EQ",
+        "ABSENT"
+      ],
+      "sensitivity": "PUBLIC_BOUNDED",
+      "executionClasses": [
+        "EXEC::RENDERER_EXACT_OUTPUT::1.0"
+      ]
+    },
+    {
+      "probeId": "renderer.surfaceWidth",
+      "valueType": "INTEGER",
+      "observationBoundary": "exact Renderer target after command admission, resource work, layout, shaping, raster, encode, and atomic terminal seal",
+      "allowedOperators": [
+        "EQ",
+        "ABSENT"
+      ],
+      "sensitivity": "PUBLIC_BOUNDED",
+      "executionClasses": [
+        "EXEC::RENDERER_EXACT_OUTPUT::1.0"
+      ]
+    },
+    {
+      "probeId": "renderer.surfaceHeight",
+      "valueType": "INTEGER",
+      "observationBoundary": "exact Renderer target after command admission, resource work, layout, shaping, raster, encode, and atomic terminal seal",
+      "allowedOperators": [
+        "EQ",
+        "ABSENT"
+      ],
+      "sensitivity": "PUBLIC_BOUNDED",
+      "executionClasses": [
+        "EXEC::RENDERER_EXACT_OUTPUT::1.0"
+      ]
+    },
+    {
+      "probeId": "renderer.traceBytes",
+      "valueType": "BYTE_SEQUENCE",
+      "observationBoundary": "exact Renderer target after command admission, resource work, layout, shaping, raster, encode, and atomic terminal seal",
+      "allowedOperators": [
+        "BYTES_EQ",
+        "ABSENT"
+      ],
+      "sensitivity": "AUTHORIZED_DIAGNOSTIC",
+      "executionClasses": [
+        "EXEC::RENDERER_EXACT_OUTPUT::1.0"
+      ]
+    },
+    {
+      "probeId": "renderer.traceDigest",
+      "valueType": "DIGEST",
+      "observationBoundary": "exact Renderer target after command admission, resource work, layout, shaping, raster, encode, and atomic terminal seal",
+      "allowedOperators": [
+        "EQ",
+        "ABSENT"
+      ],
+      "sensitivity": "PUBLIC_BOUNDED",
+      "executionClasses": [
+        "EXEC::RENDERER_EXACT_OUTPUT::1.0"
+      ]
+    },
+    {
+      "probeId": "renderer.traceItemCount",
+      "valueType": "INTEGER",
+      "observationBoundary": "exact Renderer target after command admission, resource work, layout, shaping, raster, encode, and atomic terminal seal",
+      "allowedOperators": [
+        "EQ"
+      ],
+      "sensitivity": "AUTHORIZED_DIAGNOSTIC",
+      "executionClasses": [
+        "EXEC::RENDERER_EXACT_OUTPUT::1.0"
+      ]
+    },
+    {
+      "probeId": "renderer.resourceFetchCount",
+      "valueType": "INTEGER",
+      "observationBoundary": "exact Renderer target after command admission, resource work, layout, shaping, raster, encode, and atomic terminal seal",
+      "allowedOperators": [
+        "EQ"
+      ],
+      "sensitivity": "AUTHORIZED_DIAGNOSTIC",
+      "executionClasses": [
+        "EXEC::RENDERER_EXACT_OUTPUT::1.0"
+      ]
+    },
+    {
+      "probeId": "renderer.glyphSequence",
+      "valueType": "INTEGER_SEQUENCE",
+      "observationBoundary": "exact Renderer target after command admission, resource work, layout, shaping, raster, encode, and atomic terminal seal",
+      "allowedOperators": [
+        "SEQUENCE_EQ"
+      ],
+      "sensitivity": "AUTHORIZED_DIAGNOSTIC",
+      "executionClasses": [
+        "EXEC::RENDERER_EXACT_OUTPUT::1.0"
+      ]
+    },
+    {
+      "probeId": "renderer.glyphCount",
+      "valueType": "INTEGER",
+      "observationBoundary": "exact Renderer target after command admission, resource work, layout, shaping, raster, encode, and atomic terminal seal",
+      "allowedOperators": [
+        "EQ"
+      ],
+      "sensitivity": "AUTHORIZED_DIAGNOSTIC",
+      "executionClasses": [
+        "EXEC::RENDERER_EXACT_OUTPUT::1.0"
+      ]
+    },
+    {
+      "probeId": "renderer.lineCount",
+      "valueType": "INTEGER",
+      "observationBoundary": "exact Renderer target after command admission, resource work, layout, shaping, raster, encode, and atomic terminal seal",
+      "allowedOperators": [
+        "EQ"
+      ],
+      "sensitivity": "AUTHORIZED_DIAGNOSTIC",
+      "executionClasses": [
+        "EXEC::RENDERER_EXACT_OUTPUT::1.0"
+      ]
+    },
+    {
+      "probeId": "renderer.paintItemCount",
+      "valueType": "INTEGER",
+      "observationBoundary": "exact Renderer target after command admission, resource work, layout, shaping, raster, encode, and atomic terminal seal",
+      "allowedOperators": [
+        "EQ"
+      ],
+      "sensitivity": "AUTHORIZED_DIAGNOSTIC",
+      "executionClasses": [
+        "EXEC::RENDERER_EXACT_OUTPUT::1.0"
+      ]
+    },
+    {
+      "probeId": "renderer.clipDepth",
+      "valueType": "INTEGER",
+      "observationBoundary": "exact Renderer target after command admission, resource work, layout, shaping, raster, encode, and atomic terminal seal",
+      "allowedOperators": [
+        "EQ"
+      ],
+      "sensitivity": "AUTHORIZED_DIAGNOSTIC",
+      "executionClasses": [
+        "EXEC::RENDERER_EXACT_OUTPUT::1.0"
+      ]
+    },
+    {
+      "probeId": "renderer.dynamicDependencyNames",
+      "valueType": "TEXT_SEQUENCE",
+      "observationBoundary": "exact Renderer target after command admission, resource work, layout, shaping, raster, encode, and atomic terminal seal",
+      "allowedOperators": [
+        "SEQUENCE_EQ"
+      ],
+      "sensitivity": "AUTHORIZED_DIAGNOSTIC",
+      "executionClasses": [
+        "EXEC::RENDERER_EXACT_OUTPUT::1.0"
+      ]
+    },
+    {
+      "probeId": "renderer.queueWaitDurationMillis",
+      "valueType": "RATIONAL_DURATION_MILLISECONDS",
+      "observationBoundary": "exact Renderer target after command admission, resource work, layout, shaping, raster, encode, and atomic terminal seal",
+      "allowedOperators": [
+        "WITHIN"
+      ],
+      "sensitivity": "AUTHORIZED_DIAGNOSTIC",
+      "executionClasses": [
+        "EXEC::RENDERER_EXACT_OUTPUT::1.0"
+      ]
+    },
+    {
+      "probeId": "renderer.cancelStopDurationMillis",
+      "valueType": "RATIONAL_DURATION_MILLISECONDS",
+      "observationBoundary": "exact Renderer target after command admission, resource work, layout, shaping, raster, encode, and atomic terminal seal",
+      "allowedOperators": [
+        "WITHIN"
+      ],
+      "sensitivity": "AUTHORIZED_DIAGNOSTIC",
+      "executionClasses": [
+        "EXEC::RENDERER_EXACT_OUTPUT::1.0"
+      ]
+    },
+    {
+      "probeId": "editor.mode",
+      "valueType": "CODE",
+      "observationBoundary": "supported-browser automated Editor observation after one named user-visible command or state transition settles",
+      "allowedOperators": [
+        "EQ"
+      ],
+      "sensitivity": "PUBLIC_BOUNDED",
+      "executionClasses": [
+        "EXEC::EDITOR_AUTOMATED::1.0"
+      ]
+    },
+    {
+      "probeId": "editor.accessibilityTreeBytes",
+      "valueType": "BYTE_SEQUENCE",
+      "observationBoundary": "supported-browser automated Editor observation after one named user-visible command or state transition settles",
+      "allowedOperators": [
+        "BYTES_EQ"
+      ],
+      "sensitivity": "AUTHORIZED_DIAGNOSTIC",
+      "executionClasses": [
+        "EXEC::EDITOR_AUTOMATED::1.0"
+      ]
+    },
+    {
+      "probeId": "editor.focusSequence",
+      "valueType": "TEXT_SEQUENCE",
+      "observationBoundary": "supported-browser automated Editor observation after one named user-visible command or state transition settles",
+      "allowedOperators": [
+        "SEQUENCE_EQ"
+      ],
+      "sensitivity": "AUTHORIZED_DIAGNOSTIC",
+      "executionClasses": [
+        "EXEC::EDITOR_AUTOMATED::1.0"
+      ]
+    },
+    {
+      "probeId": "editor.announcementSequence",
+      "valueType": "TEXT_SEQUENCE",
+      "observationBoundary": "supported-browser automated Editor observation after one named user-visible command or state transition settles",
+      "allowedOperators": [
+        "SEQUENCE_EQ"
+      ],
+      "sensitivity": "AUTHORIZED_DIAGNOSTIC",
+      "executionClasses": [
+        "EXEC::EDITOR_AUTOMATED::1.0"
+      ]
+    },
+    {
+      "probeId": "editor.commandResult",
+      "valueType": "CODE",
+      "observationBoundary": "supported-browser automated Editor observation after one named user-visible command or state transition settles",
+      "allowedOperators": [
+        "EQ"
+      ],
+      "sensitivity": "PUBLIC_BOUNDED",
+      "executionClasses": [
+        "EXEC::EDITOR_AUTOMATED::1.0"
+      ]
+    },
+    {
+      "probeId": "editor.undoDepth",
+      "valueType": "INTEGER",
+      "observationBoundary": "supported-browser automated Editor observation after one named user-visible command or state transition settles",
+      "allowedOperators": [
+        "EQ"
+      ],
+      "sensitivity": "AUTHORIZED_DIAGNOSTIC",
+      "executionClasses": [
+        "EXEC::EDITOR_AUTOMATED::1.0"
+      ]
+    },
+    {
+      "probeId": "editor.redoDepth",
+      "valueType": "INTEGER",
+      "observationBoundary": "supported-browser automated Editor observation after one named user-visible command or state transition settles",
+      "allowedOperators": [
+        "EQ"
+      ],
+      "sensitivity": "AUTHORIZED_DIAGNOSTIC",
+      "executionClasses": [
+        "EXEC::EDITOR_AUTOMATED::1.0"
+      ]
+    },
+    {
+      "probeId": "editor.selectedEntityIds",
+      "valueType": "TEXT_SEQUENCE",
+      "observationBoundary": "supported-browser automated Editor observation after one named user-visible command or state transition settles",
+      "allowedOperators": [
+        "SEQUENCE_EQ"
+      ],
+      "sensitivity": "AUTHORIZED_DIAGNOSTIC",
+      "executionClasses": [
+        "EXEC::EDITOR_AUTOMATED::1.0"
+      ]
+    },
+    {
+      "probeId": "editor.problemPanelBytes",
+      "valueType": "BYTE_SEQUENCE",
+      "observationBoundary": "supported-browser automated Editor observation after one named user-visible command or state transition settles",
+      "allowedOperators": [
+        "BYTES_EQ"
+      ],
+      "sensitivity": "AUTHORIZED_DIAGNOSTIC",
+      "executionClasses": [
+        "EXEC::EDITOR_AUTOMATED::1.0"
+      ]
+    },
+    {
+      "probeId": "editor.previewBasisDigest",
+      "valueType": "DIGEST",
+      "observationBoundary": "supported-browser automated Editor observation after one named user-visible command or state transition settles",
+      "allowedOperators": [
+        "EQ",
+        "ABSENT"
+      ],
+      "sensitivity": "AUTHORIZED_DIAGNOSTIC",
+      "executionClasses": [
+        "EXEC::EDITOR_AUTOMATED::1.0"
+      ]
+    },
+    {
+      "probeId": "editor.previewVisible",
+      "valueType": "BOOLEAN",
+      "observationBoundary": "supported-browser automated Editor observation after one named user-visible command or state transition settles",
+      "allowedOperators": [
+        "EQ"
+      ],
+      "sensitivity": "PUBLIC_BOUNDED",
+      "executionClasses": [
+        "EXEC::EDITOR_AUTOMATED::1.0"
+      ]
+    },
+    {
+      "probeId": "editor.saveEnabled",
+      "valueType": "BOOLEAN",
+      "observationBoundary": "supported-browser automated Editor observation after one named user-visible command or state transition settles",
+      "allowedOperators": [
+        "EQ"
+      ],
+      "sensitivity": "PUBLIC_BOUNDED",
+      "executionClasses": [
+        "EXEC::EDITOR_AUTOMATED::1.0"
+      ]
+    },
+    {
+      "probeId": "editor.networkRequestSequence",
+      "valueType": "TEXT_SEQUENCE",
+      "observationBoundary": "supported-browser automated Editor observation after one named user-visible command or state transition settles",
+      "allowedOperators": [
+        "SEQUENCE_EQ"
+      ],
+      "sensitivity": "AUTHORIZED_DIAGNOSTIC",
+      "executionClasses": [
+        "EXEC::EDITOR_AUTOMATED::1.0"
+      ]
+    },
+    {
+      "probeId": "editor.semanticDiffCount",
+      "valueType": "INTEGER",
+      "observationBoundary": "supported-browser automated Editor observation after one named user-visible command or state transition settles",
+      "allowedOperators": [
+        "EQ"
+      ],
+      "sensitivity": "AUTHORIZED_DIAGNOSTIC",
+      "executionClasses": [
+        "EXEC::EDITOR_AUTOMATED::1.0"
+      ]
+    },
+    {
+      "probeId": "editor.keyboardTrapDetected",
+      "valueType": "BOOLEAN",
+      "observationBoundary": "supported-browser automated Editor observation after one named user-visible command or state transition settles",
+      "allowedOperators": [
+        "EQ"
+      ],
+      "sensitivity": "PUBLIC_BOUNDED",
+      "executionClasses": [
+        "EXEC::EDITOR_AUTOMATED::1.0"
+      ]
+    },
+    {
+      "probeId": "editor.highContrastOperable",
+      "valueType": "BOOLEAN",
+      "observationBoundary": "supported-browser automated Editor observation after one named user-visible command or state transition settles",
+      "allowedOperators": [
+        "EQ"
+      ],
+      "sensitivity": "PUBLIC_BOUNDED",
+      "executionClasses": [
+        "EXEC::EDITOR_AUTOMATED::1.0"
+      ]
+    },
+    {
+      "probeId": "editor.reducedMotionHonored",
+      "valueType": "BOOLEAN",
+      "observationBoundary": "supported-browser automated Editor observation after one named user-visible command or state transition settles",
+      "allowedOperators": [
+        "EQ"
+      ],
+      "sensitivity": "PUBLIC_BOUNDED",
+      "executionClasses": [
+        "EXEC::EDITOR_AUTOMATED::1.0"
+      ]
+    },
+    {
+      "probeId": "editor.zoom200Operable",
+      "valueType": "BOOLEAN",
+      "observationBoundary": "supported-browser automated Editor observation after one named user-visible command or state transition settles",
+      "allowedOperators": [
+        "EQ"
+      ],
+      "sensitivity": "PUBLIC_BOUNDED",
+      "executionClasses": [
+        "EXEC::EDITOR_AUTOMATED::1.0"
+      ]
+    },
+    {
+      "probeId": "editor.canonicalBaselineBytes",
+      "valueType": "BYTE_SEQUENCE",
+      "observationBoundary": "supported-browser automated Editor observation after one named user-visible command or state transition settles; exact UTF-8 bytes of the closed renderweave-editor-canonical-baseline-projection/1.0 object in member order profile, revision, contentHash, workingCopyDigest; the projection contains no DesignDSL bytes",
+      "allowedOperators": [
+        "BYTES_EQ",
+        "ABSENT"
+      ],
+      "sensitivity": "AUTHORIZED_DIAGNOSTIC",
+      "executionClasses": [
+        "EXEC::EDITOR_AUTOMATED::1.0"
+      ]
+    },
+    {
+      "probeId": "editor.compatibilityOriginalDigest",
+      "valueType": "DIGEST",
+      "observationBoundary": "supported-browser automated Editor observation after one named user-visible command or state transition settles; SHA-256 of the exact original compatibility-mode bytes retained for export, or absence when no compatibility original is retained",
+      "allowedOperators": [
+        "EQ",
+        "ABSENT"
+      ],
+      "sensitivity": "AUTHORIZED_DIAGNOSTIC",
+      "executionClasses": [
+        "EXEC::EDITOR_AUTOMATED::1.0"
+      ]
+    },
+    {
+      "probeId": "editor.confirmationAvailable",
+      "valueType": "BOOLEAN",
+      "observationBoundary": "supported-browser automated Editor observation after one named user-visible command or state transition settles; whether the exact current command state exposes the guarded overwrite confirmation action",
+      "allowedOperators": [
+        "EQ"
+      ],
+      "sensitivity": "PUBLIC_BOUNDED",
+      "executionClasses": [
+        "EXEC::EDITOR_AUTOMATED::1.0"
+      ]
+    },
+    {
+      "probeId": "editor.dirty",
+      "valueType": "BOOLEAN",
+      "observationBoundary": "supported-browser automated Editor observation after one named user-visible command or state transition settles; whether the working copy differs semantically from its adopted canonical baseline",
+      "allowedOperators": [
+        "EQ"
+      ],
+      "sensitivity": "PUBLIC_BOUNDED",
+      "executionClasses": [
+        "EXEC::EDITOR_AUTOMATED::1.0"
+      ]
+    },
+    {
+      "probeId": "editor.mutationLockActive",
+      "valueType": "BOOLEAN",
+      "observationBoundary": "supported-browser automated Editor observation after one named user-visible command or state transition settles; whether the Editor mutation gate is closed while save reconciliation is in progress",
+      "allowedOperators": [
+        "EQ"
+      ],
+      "sensitivity": "AUTHORIZED_DIAGNOSTIC",
+      "executionClasses": [
+        "EXEC::EDITOR_AUTOMATED::1.0"
+      ]
+    },
+    {
+      "probeId": "editor.normalizationSummaryBytes",
+      "valueType": "BYTE_SEQUENCE",
+      "observationBoundary": "supported-browser automated Editor observation after one named user-visible command or state transition settles; exact UTF-8 bytes of the closed renderweave-editor-normalization-summary/1.0 projection containing only bounded category identifiers and counts, or absence when no normalization summary exists",
+      "allowedOperators": [
+        "BYTES_EQ",
+        "ABSENT"
+      ],
+      "sensitivity": "AUTHORIZED_DIAGNOSTIC",
+      "executionClasses": [
+        "EXEC::EDITOR_AUTOMATED::1.0"
+      ]
+    },
+    {
+      "probeId": "editor.previewEligibilityGeneration",
+      "valueType": "INTEGER",
+      "observationBoundary": "supported-browser automated Editor observation after one named user-visible command or state transition settles; nonnegative generation owned by the Editor and incremented whenever authoritative-preview display eligibility changes",
+      "allowedOperators": [
+        "EQ"
+      ],
+      "sensitivity": "AUTHORIZED_DIAGNOSTIC",
+      "executionClasses": [
+        "EXEC::EDITOR_AUTOMATED::1.0"
+      ]
+    },
+    {
+      "probeId": "editor.recoveryDraftEnvelopeBytes",
+      "valueType": "BYTE_SEQUENCE",
+      "observationBoundary": "supported-browser automated Editor observation after one named user-visible command or state transition settles; exact UTF-8 bytes of the closed renderweave-editor-recovery-draft-envelope/1.0 projection containing only workingCopyDigest, optional baseRevision/baseContentHash, and false-valued containsRootDocument/containsCustomValues/containsPreviewImage/containsAssetBytes proofs, or absence when no device-local recovery draft exists; raw recovery or business content is forbidden",
+      "allowedOperators": [
+        "BYTES_EQ",
+        "ABSENT"
+      ],
+      "sensitivity": "AUTHORIZED_DIAGNOSTIC",
+      "executionClasses": [
+        "EXEC::EDITOR_AUTOMATED::1.0"
+      ]
+    },
+    {
+      "probeId": "editor.workingCopyDigest",
+      "valueType": "DIGEST",
+      "observationBoundary": "supported-browser automated Editor observation after one named user-visible command or state transition settles; SHA-256 of the exact canonical working-copy DesignDSL bytes without exposing those bytes, or absence in Raw Repair and Compatibility Read-only modes where no trusted canonical DesignDSL working copy exists",
+      "allowedOperators": [
+        "EQ",
+        "ABSENT"
+      ],
+      "sensitivity": "AUTHORIZED_DIAGNOSTIC",
+      "executionClasses": [
+        "EXEC::EDITOR_AUTOMATED::1.0"
+      ]
+    }
+  ],
+  "probeCount": 119,
+  "issuanceBlockers": [
+    "EXPLICIT_PROFILE_1_1_ISSUANCE_AUTHORITY_PENDING",
+    "CURRENT_PROFILE_1_0_SUPERSESSION_RECORD_PENDING"
+  ],
+  "classRecordGate": "No Case or Oracle may reference this candidate identity before explicit Profile issuance. If 1.1 is later issued, Editor record issuance remains a separate gate requiring frozen exact fixtures/faults/terminals, an admitted Editor target and runner, and independent product replay; those class facts do not gate the global Profile identity itself.",
+  "baseProbeProfile": {
+    "profileId": "renderweave-conformance-probes/1.0",
+    "path": "conformance-probe-profile-v1.json",
+    "sha256": "sha256:f800eb1e6e138215c26c7761ed80e0fc9cf77fc3ce051be4e3c5ba530cd6053d",
+    "byteLength": 51328
+  },
+  "adjudication": {
+    "path": "editor-automated/probe-profile-adjudication-v1.json",
+    "sha256": "sha256:7564fcf2606b5c74e5abd590e4870b99b683b54c13122b376cdac57e609f00b7",
+    "byteLength": 5605
+  }
+}

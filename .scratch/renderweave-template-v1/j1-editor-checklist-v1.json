@@ -1,0 +1,324 @@
+{
+  "artifactVersion": "renderweave-template-v1-editor-j1/1.0",
+  "status": "checklist-frozen-evidence-pending",
+  "authority": "Ticket18 editor experience plus Ticket19 J1 exit boundary",
+  "requiredCaseCount": 12,
+  "allCasesMustPass": true,
+  "countedInAutomatedCorpus": false,
+  "runRecordSchema": {
+    "required": [
+      "runId",
+      "caseId",
+      "operatorName",
+      "observedAt",
+      "browser",
+      "operatingSystem",
+      "buildRevision",
+      "result",
+      "issues"
+    ],
+    "resultEnum": [
+      "PASSED",
+      "FAILED",
+      "PENDING"
+    ],
+    "historyRule": "Retest creates a new immutable run record; it never overwrites an earlier result."
+  },
+  "cases": [
+    {
+      "caseId": "J1-EDITOR-001",
+      "title": "Keyboard workspace traversal",
+      "requirementIds": [
+        "RW-T18-S3-032",
+        "RW-T18-S4-047",
+        "RW-T18-S4-052",
+        "RW-T18-S4-053",
+        "RW-T18-S4-054",
+        "RW-T18-S4-055",
+        "RW-T18-S4-057",
+        "RW-T18-S4-064"
+      ],
+      "task": "Use only the keyboard to enter and traverse the tree, canvas selection equivalent, property groups, problem summary, preview controls, dialogs, and return paths.",
+      "passCriteria": [
+        "Every interactive target is reachable without pointer input.",
+        "Roving focus and focus restoration are predictable and visible.",
+        "No keyboard trap occurs."
+      ]
+    },
+    {
+      "caseId": "J1-EDITOR-002",
+      "title": "Atomic structure commands and undo",
+      "requirementIds": [
+        "RW-T18-S3-018",
+        "RW-T18-S3-019",
+        "RW-T18-S3-020",
+        "RW-T18-S3-022",
+        "RW-T18-S3-023",
+        "RW-T18-S3-024",
+        "RW-T18-S3-025",
+        "RW-T18-S4-044"
+      ],
+      "task": "Create, duplicate, delete, reparent, and reorder representative Nodes, Definitions, Bindings, Repeat, and TemplateUse, then exercise undo and redo.",
+      "passCriteria": [
+        "Each command updates identity, references, and placement atomically.",
+        "Undo and redo remain within one canonical baseline.",
+        "Save, overwrite, or restore clears the old undo history."
+      ]
+    },
+    {
+      "caseId": "J1-EDITOR-003",
+      "title": "Binding and presence states",
+      "requirementIds": [
+        "RW-T17-S1-014",
+        "RW-T17-S1-015",
+        "RW-T17-S1-017",
+        "RW-T17-S4-004",
+        "RW-T17-S4-005",
+        "RW-T17-S4-006",
+        "RW-T17-S4-007",
+        "RW-T17-S4-008",
+        "RW-T17-S4-009",
+        "RW-T18-S4-056",
+        "RW-T18-S4-065"
+      ],
+      "task": "Create, replace, inspect, and remove Bindings while moving the value through PRESENT, ABSENT, ERROR, type-invalid, and property-invalid states.",
+      "passCriteria": [
+        "Bound, unbound, ABSENT, and ERROR states are distinguishable without color alone.",
+        "Type-invalid and property-invalid states remain separately identifiable through accessible text and state.",
+        "The UI never implies fallback to the static baseline after Binding failure.",
+        "Authoritative validation remains visibly distinct from local feedback."
+      ]
+    },
+    {
+      "caseId": "J1-EDITOR-004",
+      "title": "Array reorder target rewrite",
+      "requirementIds": [
+        "RW-T18-S3-028",
+        "RW-T18-S3-029",
+        "RW-T18-S3-030",
+        "RW-T18-S3-031"
+      ],
+      "task": "Reorder an array element referenced by one or more numeric target selectors, including nested and overlapping invalid controls.",
+      "passCriteria": [
+        "The moved semantic item retains its Binding relationship.",
+        "All affected numeric selectors rewrite atomically.",
+        "An invalid rewrite rejects the whole command without partial state."
+      ]
+    },
+    {
+      "caseId": "J1-EDITOR-005",
+      "title": "Problem focus and generation",
+      "requirementIds": [
+        "RW-T18-S3-032",
+        "RW-T18-S3-033",
+        "RW-T18-S3-034",
+        "RW-T18-S3-035",
+        "RW-T18-S3-036",
+        "RW-T18-S3-037",
+        "RW-T18-S3-038",
+        "RW-T18-S3-039",
+        "RW-T18-S3-040",
+        "RW-T18-S3-041",
+        "RW-T18-S3-042",
+        "RW-T18-S3-043",
+        "RW-T18-S4-066"
+      ],
+      "task": "Trigger local, save, closure, and preview problems, then change the draft while navigating summary and detail locations.",
+      "passCriteria": [
+        "The summary receives focus before a detail location is activated.",
+        "Stale problem generations cannot move focus in the new draft.",
+        "Redacted or unavailable locations remain understandable without fabricated placeholders."
+      ]
+    },
+    {
+      "caseId": "J1-EDITOR-006",
+      "title": "Canonical save resynchronization",
+      "requirementIds": [
+        "RW-T18-S1-016",
+        "RW-T18-S4-032",
+        "RW-T18-S4-033",
+        "RW-T18-S4-034"
+      ],
+      "task": "Save content that exercises metadata trimming, set-like ordering, equivalent decimals, and exact Expression source preservation.",
+      "passCriteria": [
+        "The editor replaces its baseline with the server canonical DesignDSL, revision, and contentHash.",
+        "A concise normalization summary is available.",
+        "Exact Expression source and semantic arrays are not rewritten."
+      ]
+    },
+    {
+      "caseId": "J1-EDITOR-007",
+      "title": "Invalid confirmation and truncation guard",
+      "requirementIds": [
+        "RW-T18-S1-026",
+        "RW-T18-S1-027",
+        "RW-T18-S1-028",
+        "RW-T18-S1-029",
+        "RW-T04-S1-038",
+        "RW-T04-S1-039",
+        "RW-T04-S1-040"
+      ],
+      "task": "Exercise a complete dependency-only problem set and then a problem set ending in PROBLEM_LIMIT_REACHED.",
+      "passCriteria": [
+        "Only the complete dependency-only set offers confirmation.",
+        "The truncated set cannot be confirmed or saved as INVALID.",
+        "Hard, security, version, and capacity failures never offer confirmation."
+      ]
+    },
+    {
+      "caseId": "J1-EDITOR-008",
+      "title": "Guarded conflict overwrite",
+      "requirementIds": [
+        "RW-T18-S1-019",
+        "RW-T18-S1-020",
+        "RW-T18-S1-021",
+        "RW-T18-S1-022",
+        "RW-T18-S1-023",
+        "RW-T18-S1-024",
+        "RW-T18-S1-025"
+      ],
+      "task": "Cause an expectedRevision conflict, choose to retain the complete local DesignDSL, fetch the latest current, and submit again; then repeat with another intervening change.",
+      "passCriteria": [
+        "No automatic diff or merge is presented as authoritative.",
+        "Overwrite requires an explicit author decision and a fresh expectedRevision.",
+        "A second drift requires a new confirmation instead of silent last-write-wins."
+      ]
+    },
+    {
+      "caseId": "J1-EDITOR-009",
+      "title": "Unknown save reconciliation",
+      "requirementIds": [
+        "RW-T18-S5-006",
+        "RW-T18-S5-007",
+        "RW-T18-S5-008",
+        "RW-T18-S5-009",
+        "RW-T18-S5-010",
+        "RW-T18-S5-011",
+        "RW-T18-S5-012",
+        "RW-T18-S5-013",
+        "RW-T18-S5-014",
+        "RW-T18-S5-015",
+        "RW-T18-S5-016",
+        "RW-T18-S5-017",
+        "RW-T18-S5-018",
+        "RW-T18-S5-019",
+        "RW-T04-S1-090"
+      ],
+      "task": "Interrupt the save response after the server may or may not have committed, then reconcile against trusted current.",
+      "passCriteria": [
+        "The editor distinguishes converged content, safe explicit retry, conflict, and deletion.",
+        "It does not claim command-key idempotency or commit ownership.",
+        "It never blindly creates another revision."
+      ]
+    },
+    {
+      "caseId": "J1-EDITOR-010",
+      "title": "Recovery, import, repair, and compatibility modes",
+      "requirementIds": [
+        "RW-T18-S1-009",
+        "RW-T18-S1-010",
+        "RW-T18-S1-011",
+        "RW-T18-S1-012",
+        "RW-T18-S2-001",
+        "RW-T18-S2-006",
+        "RW-T18-S2-007",
+        "RW-T18-S2-008",
+        "RW-T18-S2-009",
+        "RW-T18-S2-010",
+        "RW-T18-S2-014",
+        "RW-T18-S2-015",
+        "RW-T18-S3-001",
+        "RW-T18-S3-004",
+        "RW-T18-S3-005",
+        "RW-T18-S3-006",
+        "RW-T18-S3-007",
+        "RW-T18-S3-008",
+        "RW-T18-S3-009",
+        "RW-T18-S3-010",
+        "RW-T18-S3-011",
+        "RW-T18-S3-012",
+        "RW-T18-S3-013",
+        "RW-T18-S3-014",
+        "RW-T18-S3-015",
+        "RW-T18-S3-026",
+        "RW-T18-S3-027",
+        "RW-T18-S4-020",
+        "RW-T18-S4-021",
+        "RW-T18-S4-022",
+        "RW-T18-S4-023",
+        "RW-T18-S4-024",
+        "RW-T18-S4-025"
+      ],
+      "task": "Restore, export, and discard a local recovery draft; import valid and malformed content; enter Raw Repair and Compatibility Read-only and return only through valid transitions.",
+      "passCriteria": [
+        "Recovery is explicit, device-local, and clearly non-authoritative.",
+        "Import and migration create only a dirty local draft and perform no server write.",
+        "Malformed or unsupported input cannot be partially reserialized by Structured Editor."
+      ]
+    },
+    {
+      "caseId": "J1-EDITOR-011",
+      "title": "Authoritative preview freshness",
+      "requirementIds": [
+        "RW-T18-S1-001",
+        "RW-T18-S1-002",
+        "RW-T18-S1-003",
+        "RW-T18-S1-004",
+        "RW-T18-S1-005",
+        "RW-T18-S1-006",
+        "RW-T18-S1-007",
+        "RW-T18-S2-016",
+        "RW-T18-S2-017",
+        "RW-T18-S2-018",
+        "RW-T18-S2-019",
+        "RW-T18-S2-020",
+        "RW-T18-S2-021",
+        "RW-T18-S2-022",
+        "RW-T18-S2-023",
+        "RW-T18-S2-024",
+        "RW-T18-S2-025",
+        "RW-T18-S2-026",
+        "RW-T18-S2-027",
+        "RW-T18-S2-028",
+        "RW-T18-S2-029",
+        "RW-T18-S2-030",
+        "RW-T18-S3-040",
+        "RW-T18-S3-041"
+      ],
+      "task": "Start preview, alter every basis component in turn, cancel, save-and-preview, and deliver late success and failure responses out of order.",
+      "passCriteria": [
+        "Only saved current content can produce Authoritative Preview.",
+        "Any basis change withdraws the old image instead of labeling it current.",
+        "Generation guards prevent late results from replacing the newest state.",
+        "Preview failure never rolls back an already successful save."
+      ]
+    },
+    {
+      "caseId": "J1-EDITOR-012",
+      "title": "Screen reader and visual accessibility",
+      "requirementIds": [
+        "RW-T18-S4-052",
+        "RW-T18-S4-053",
+        "RW-T18-S4-054",
+        "RW-T18-S4-055",
+        "RW-T18-S4-056",
+        "RW-T18-S4-057",
+        "RW-T18-S4-058",
+        "RW-T18-S4-059",
+        "RW-T18-S4-060",
+        "RW-T18-S4-061",
+        "RW-T18-S4-062",
+        "RW-T18-S4-067",
+        "RW-T18-S4-068"
+      ],
+      "task": "Complete the core authoring and problem flow with a screen reader, keyboard, 200 percent zoom, reduced motion, and supported high-contrast settings.",
+      "passCriteria": [
+        "Controls expose stable names, roles, values, validation state, and expanded or selected state.",
+        "Focus remains visible and content remains operable at 200 percent zoom.",
+        "Status announcements are useful and not duplicated or excessively verbose.",
+        "Reduced motion and non-color state cues preserve the complete workflow.",
+        "Supported high-contrast settings preserve the complete core workflow."
+      ]
+    }
+  ]
+}

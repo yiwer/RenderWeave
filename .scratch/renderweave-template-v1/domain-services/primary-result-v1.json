@@ -1,0 +1,24 @@
+{
+  "resultVersion": "renderweave-domain-services-fixture-generator-result/1.0",
+  "executorId": "DOMAIN_SERVICES_FIXTURE_GENERATOR::NODE::1.0",
+  "role": "primary-domain-services-fixture-generator-replayer",
+  "status": "PASS",
+  "checkCount": 138,
+  "failureCount": 0,
+  "runtime": "Node.js v24.18.0",
+  "generatorTargetSha256": "sha256:3f6d2df37c776262e328f5159b2ff38bb89c9882d60a82a67c48a42efb487dd9",
+  "fixtureCount": 13,
+  "productExecutionObserved": false,
+  "recordIssuanceAllowed": false,
+  "implementationRevision": "domain-services-fixture-generator/1.0",
+  "targetManifest": {
+    "path": "domain-services/generator-target-manifest-v1.json",
+    "sha256": "sha256:3f6d2df37c776262e328f5159b2ff38bb89c9882d60a82a67c48a42efb487dd9",
+    "byteLength": 4562
+  },
+  "entrypoint": {
+    "path": "domain-services/generate-domain-services-fixtures.mjs",
+    "sha256": "sha256:b360c06a668d3cd65ca5d07dafd96d87b1010d843bc170cbfddca199b24633fc",
+    "byteLength": 18928
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "artifactVersion": "renderweave-editor-input-fixture/1.0",
+  "candidateId": "EDC::J12::005",
+  "executionClass": "EXEC::EDITOR_AUTOMATED::1.0",
+  "baselineId": "EditorStructuredLargeCanvas",
+  "parameters": {
+    "environmentProfile": "ZOOM_200"
+  },
+  "actionScript": [
+    {
+      "action": "COMPLETE_CORE_FLOW_AND_PAN_CANVAS",
+      "parameters": {}
+    }
+  ]
+}

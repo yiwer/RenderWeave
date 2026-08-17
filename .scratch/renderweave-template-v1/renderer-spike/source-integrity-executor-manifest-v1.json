@@ -1,0 +1,37 @@
+{
+  "artifactVersion": "renderweave-source-integrity-executor-manifest/1.0",
+  "executorId": "rw-source-integrity-pwsh-git-windows-amd64-000001",
+  "purpose": "bounded open-source acquisition, hashing, structural inspection, and exact git-apply check",
+  "host": {
+    "operatingSystem": "Microsoft Windows 10.0.26200",
+    "architecture": "AMD64",
+    "virtualizationMayBePresent": true,
+    "rendererTarget": false
+  },
+  "tools": {
+    "powershell": "7.6.4 Core",
+    "git": "2.55.0.windows.2",
+    "sha256": "System.Security.Cryptography SHA-256 and PowerShell Get-FileHash",
+    "http": "PowerShell Invoke-WebRequest"
+  },
+  "allowedOperations": [
+    "git shallow fetch of an exact commit",
+    "git tree and blob identity read",
+    "normalized git archive tar generation",
+    "official fixed-URL download",
+    "official CIPD resolve API query",
+    "SHA-256 and byte-length calculation",
+    "source grep and structural comparison",
+    "git apply --check",
+    "bounded temporary cleanup"
+  ],
+  "forbiddenOperations": [
+    "full build",
+    "link",
+    "execute acquired code",
+    "font execution",
+    "render",
+    "retain vendor source",
+    "access proprietary font"
+  ]
+}

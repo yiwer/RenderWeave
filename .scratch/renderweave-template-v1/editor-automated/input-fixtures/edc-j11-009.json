@@ -1,0 +1,17 @@
+{
+  "artifactVersion": "renderweave-editor-input-fixture/1.0",
+  "candidateId": "EDC::J11::009",
+  "executionClass": "EXEC::EDITOR_AUTOMATED::1.0",
+  "baselineId": "EditorPreviewVisible",
+  "parameters": {
+    "format": "PNG"
+  },
+  "actionScript": [
+    {
+      "action": "CHANGE_OUTPUT_FORMAT",
+      "parameters": {
+        "format": "JPEG"
+      }
+    }
+  ]
+}

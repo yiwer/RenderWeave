@@ -1,0 +1,9 @@
+{
+  "fixtureVersion": "renderweave-spec-registry-scenario/1.0",
+  "scenarioId": "SPEC-MUT-016",
+  "scenarioKind": "NAMED_MUTATION",
+  "expectedOutcome": "PROBLEM",
+  "expectedCode": "SPEC_REGISTRY_MANIFEST_MISMATCH",
+  "expectedStage": "SPEC_REGISTRY",
+  "mutationKind": "MANIFEST_DIGEST_MISMATCH"
+}

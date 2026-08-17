@@ -1,0 +1,26 @@
+{
+  "resultVersion": "renderweave-editor-automated-fixture-generator-result/1.0",
+  "executorId": "EDITOR_AUTOMATED_FIXTURE_GENERATOR::PYTHON::1.0",
+  "role": "independent-editor-automated-fixture-generator-replayer",
+  "status": "PASS",
+  "checkCount": 189,
+  "failureCount": 0,
+  "runtime": "CPython 3.12.13",
+  "generatorTargetSha256": "sha256:6a2540e7bd86bd827e386a0f05680f225591ec58e9ed962dda0c35f43c39cbeb",
+  "fixtureCount": 1,
+  "browserAutomationObserved": false,
+  "productExecutionObserved": false,
+  "j1Observed": false,
+  "recordIssuanceAllowed": false,
+  "implementationRevision": "editor-automated-fixture-generator/1.0",
+  "targetManifest": {
+    "path": "editor-automated/generator-target-manifest-v1.json",
+    "sha256": "sha256:6a2540e7bd86bd827e386a0f05680f225591ec58e9ed962dda0c35f43c39cbeb",
+    "byteLength": 2233
+  },
+  "entrypoint": {
+    "path": "editor-automated/validate_editor_automated_fixtures_independent.py",
+    "sha256": "sha256:20a1ea9f5cb9c6166172b9de1c3d8b310d4b9e145755d6d3d9818a32b781a2ff",
+    "byteLength": 10515
+  }
+}

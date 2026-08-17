@@ -1,0 +1,7 @@
+[
+  {
+    "operationId": "reorderSemanticArray",
+    "outcome": "NONTERMINAL_REJECTION",
+    "code": "EDITOR_ARRAY_REWRITE_OUT_OF_BOUNDS"
+  }
+]

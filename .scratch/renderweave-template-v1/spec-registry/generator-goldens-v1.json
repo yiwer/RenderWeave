@@ -1,0 +1,610 @@
+{
+  "artifactVersion": "renderweave-spec-registry-generator-goldens/1.0",
+  "generatorProfile": "renderweave-spec-registry-generator/1.0",
+  "baseline": {
+    "path": "spec-registry/baseline-v1.json",
+    "sha256": "sha256:66439fec0bb7f78809ef991180098f73b556899e41ff326c49d0f452136ce629",
+    "byteLength": 322
+  },
+  "scenarios": [
+    {
+      "scenarioId": "SPEC-COMPLETE-REGISTRY",
+      "parameters": {
+        "mode": "NAMED_SCENARIO",
+        "scenarioId": "SPEC-COMPLETE-REGISTRY",
+        "fixtureArtifactPath": "spec-registry/fixtures/spec-complete-registry.json",
+        "fixtureArtifactSha256": "sha256:68d1ee1a47f5f981fc3ee8cdadf1af536f9f86362d543658f17f50ad7b257484",
+        "expectedObservationProfile": "renderweave-spec-registry-observation-adapter/1.0"
+      },
+      "expectedFixtureArtifactPath": "spec-registry/fixtures/spec-complete-registry.json",
+      "expectedFixtureArtifactSha256": "sha256:68d1ee1a47f5f981fc3ee8cdadf1af536f9f86362d543658f17f50ad7b257484",
+      "expectedFixtureByteLength": 227
+    },
+    {
+      "scenarioId": "SPEC-MUT-001",
+      "parameters": {
+        "mode": "NAMED_SCENARIO",
+        "scenarioId": "SPEC-MUT-001",
+        "fixtureArtifactPath": "spec-registry/fixtures/spec-mut-001.json",
+        "fixtureArtifactSha256": "sha256:1d4187ef950f42f2f27611d64b00ed4113098b92c5c0829571b61b60fee24c37",
+        "expectedObservationProfile": "renderweave-spec-registry-observation-adapter/1.0"
+      },
+      "expectedFixtureArtifactPath": "spec-registry/fixtures/spec-mut-001.json",
+      "expectedFixtureArtifactSha256": "sha256:1d4187ef950f42f2f27611d64b00ed4113098b92c5c0829571b61b60fee24c37",
+      "expectedFixtureByteLength": 299
+    },
+    {
+      "scenarioId": "SPEC-MUT-002",
+      "parameters": {
+        "mode": "NAMED_SCENARIO",
+        "scenarioId": "SPEC-MUT-002",
+        "fixtureArtifactPath": "spec-registry/fixtures/spec-mut-002.json",
+        "fixtureArtifactSha256": "sha256:c3349d0a7e6ef201279c15ab220f076396c0938f7f718227e847145611e7c1fc",
+        "expectedObservationProfile": "renderweave-spec-registry-observation-adapter/1.0"
+      },
+      "expectedFixtureArtifactPath": "spec-registry/fixtures/spec-mut-002.json",
+      "expectedFixtureArtifactSha256": "sha256:c3349d0a7e6ef201279c15ab220f076396c0938f7f718227e847145611e7c1fc",
+      "expectedFixtureByteLength": 304
+    },
+    {
+      "scenarioId": "SPEC-MUT-003",
+      "parameters": {
+        "mode": "NAMED_SCENARIO",
+        "scenarioId": "SPEC-MUT-003",
+        "fixtureArtifactPath": "spec-registry/fixtures/spec-mut-003.json",
+        "fixtureArtifactSha256": "sha256:a1f2277a1c906d9422ec9bab855889df6a7f712398d5cf0801a5f6ee5b4329f2",
+        "expectedObservationProfile": "renderweave-spec-registry-observation-adapter/1.0"
+      },
+      "expectedFixtureArtifactPath": "spec-registry/fixtures/spec-mut-003.json",
+      "expectedFixtureArtifactSha256": "sha256:a1f2277a1c906d9422ec9bab855889df6a7f712398d5cf0801a5f6ee5b4329f2",
+      "expectedFixtureByteLength": 308
+    },
+    {
+      "scenarioId": "SPEC-MUT-004",
+      "parameters": {
+        "mode": "NAMED_SCENARIO",
+        "scenarioId": "SPEC-MUT-004",
+        "fixtureArtifactPath": "spec-registry/fixtures/spec-mut-004.json",
+        "fixtureArtifactSha256": "sha256:ba7288c1e433132db786ba9a2340d7b269ea097b747fb47e4ea35b5af43c86ef",
+        "expectedObservationProfile": "renderweave-spec-registry-observation-adapter/1.0"
+      },
+      "expectedFixtureArtifactPath": "spec-registry/fixtures/spec-mut-004.json",
+      "expectedFixtureArtifactSha256": "sha256:ba7288c1e433132db786ba9a2340d7b269ea097b747fb47e4ea35b5af43c86ef",
+      "expectedFixtureByteLength": 301
+    },
+    {
+      "scenarioId": "SPEC-MUT-005",
+      "parameters": {
+        "mode": "NAMED_SCENARIO",
+        "scenarioId": "SPEC-MUT-005",
+        "fixtureArtifactPath": "spec-registry/fixtures/spec-mut-005.json",
+        "fixtureArtifactSha256": "sha256:5891cdc7107f77f1a685dc0f666d704aa11080f5688ee246d3dc5c99e5b52036",
+        "expectedObservationProfile": "renderweave-spec-registry-observation-adapter/1.0"
+      },
+      "expectedFixtureArtifactPath": "spec-registry/fixtures/spec-mut-005.json",
+      "expectedFixtureArtifactSha256": "sha256:5891cdc7107f77f1a685dc0f666d704aa11080f5688ee246d3dc5c99e5b52036",
+      "expectedFixtureByteLength": 283
+    },
+    {
+      "scenarioId": "SPEC-MUT-006",
+      "parameters": {
+        "mode": "NAMED_SCENARIO",
+        "scenarioId": "SPEC-MUT-006",
+        "fixtureArtifactPath": "spec-registry/fixtures/spec-mut-006.json",
+        "fixtureArtifactSha256": "sha256:0e0c45b8d4f0d78e5c6e38e73846a6b1ce23510be2c2f9cd4e40974c7da4cfe6",
+        "expectedObservationProfile": "renderweave-spec-registry-observation-adapter/1.0"
+      },
+      "expectedFixtureArtifactPath": "spec-registry/fixtures/spec-mut-006.json",
+      "expectedFixtureArtifactSha256": "sha256:0e0c45b8d4f0d78e5c6e38e73846a6b1ce23510be2c2f9cd4e40974c7da4cfe6",
+      "expectedFixtureByteLength": 276
+    },
+    {
+      "scenarioId": "SPEC-MUT-007",
+      "parameters": {
+        "mode": "NAMED_SCENARIO",
+        "scenarioId": "SPEC-MUT-007",
+        "fixtureArtifactPath": "spec-registry/fixtures/spec-mut-007.json",
+        "fixtureArtifactSha256": "sha256:4db915bc1de4e8e57328bf9b80b704bc149e61b7309def65bd11998fa26ed0e5",
+        "expectedObservationProfile": "renderweave-spec-registry-observation-adapter/1.0"
+      },
+      "expectedFixtureArtifactPath": "spec-registry/fixtures/spec-mut-007.json",
+      "expectedFixtureArtifactSha256": "sha256:4db915bc1de4e8e57328bf9b80b704bc149e61b7309def65bd11998fa26ed0e5",
+      "expectedFixtureByteLength": 278
+    },
+    {
+      "scenarioId": "SPEC-MUT-008",
+      "parameters": {
+        "mode": "NAMED_SCENARIO",
+        "scenarioId": "SPEC-MUT-008",
+        "fixtureArtifactPath": "spec-registry/fixtures/spec-mut-008.json",
+        "fixtureArtifactSha256": "sha256:95eb95c936c3ff3ccf54c91b9802ec2342cd918c59d735a99752faa1c04ef9e3",
+        "expectedObservationProfile": "renderweave-spec-registry-observation-adapter/1.0"
+      },
+      "expectedFixtureArtifactPath": "spec-registry/fixtures/spec-mut-008.json",
+      "expectedFixtureArtifactSha256": "sha256:95eb95c936c3ff3ccf54c91b9802ec2342cd918c59d735a99752faa1c04ef9e3",
+      "expectedFixtureByteLength": 311
+    },
+    {
+      "scenarioId": "SPEC-MUT-009",
+      "parameters": {
+        "mode": "NAMED_SCENARIO",
+        "scenarioId": "SPEC-MUT-009",
+        "fixtureArtifactPath": "spec-registry/fixtures/spec-mut-009.json",
+        "fixtureArtifactSha256": "sha256:0d354b62250fce0e4361016da06943ebb2657bbbcaf30bfe2057d29549500ac1",
+        "expectedObservationProfile": "renderweave-spec-registry-observation-adapter/1.0"
+      },
+      "expectedFixtureArtifactPath": "spec-registry/fixtures/spec-mut-009.json",
+      "expectedFixtureArtifactSha256": "sha256:0d354b62250fce0e4361016da06943ebb2657bbbcaf30bfe2057d29549500ac1",
+      "expectedFixtureByteLength": 297
+    },
+    {
+      "scenarioId": "SPEC-MUT-010",
+      "parameters": {
+        "mode": "NAMED_SCENARIO",
+        "scenarioId": "SPEC-MUT-010",
+        "fixtureArtifactPath": "spec-registry/fixtures/spec-mut-010.json",
+        "fixtureArtifactSha256": "sha256:a363955702f7784b45143a84ece2246720008a697c995d510b7b99ea32ef1e22",
+        "expectedObservationProfile": "renderweave-spec-registry-observation-adapter/1.0"
+      },
+      "expectedFixtureArtifactPath": "spec-registry/fixtures/spec-mut-010.json",
+      "expectedFixtureArtifactSha256": "sha256:a363955702f7784b45143a84ece2246720008a697c995d510b7b99ea32ef1e22",
+      "expectedFixtureByteLength": 300
+    },
+    {
+      "scenarioId": "SPEC-MUT-011",
+      "parameters": {
+        "mode": "NAMED_SCENARIO",
+        "scenarioId": "SPEC-MUT-011",
+        "fixtureArtifactPath": "spec-registry/fixtures/spec-mut-011.json",
+        "fixtureArtifactSha256": "sha256:59f292a57ac89d8a94a56415fb30cbfe080cf3aa1658847c8ebc58176bcc98fe",
+        "expectedObservationProfile": "renderweave-spec-registry-observation-adapter/1.0"
+      },
+      "expectedFixtureArtifactPath": "spec-registry/fixtures/spec-mut-011.json",
+      "expectedFixtureArtifactSha256": "sha256:59f292a57ac89d8a94a56415fb30cbfe080cf3aa1658847c8ebc58176bcc98fe",
+      "expectedFixtureByteLength": 311
+    },
+    {
+      "scenarioId": "SPEC-MUT-012",
+      "parameters": {
+        "mode": "NAMED_SCENARIO",
+        "scenarioId": "SPEC-MUT-012",
+        "fixtureArtifactPath": "spec-registry/fixtures/spec-mut-012.json",
+        "fixtureArtifactSha256": "sha256:5c125e717edbdcb377dbc2979b681b4bc6e3d71d3ef1d8817cfe9e392c8db92d",
+        "expectedObservationProfile": "renderweave-spec-registry-observation-adapter/1.0"
+      },
+      "expectedFixtureArtifactPath": "spec-registry/fixtures/spec-mut-012.json",
+      "expectedFixtureArtifactSha256": "sha256:5c125e717edbdcb377dbc2979b681b4bc6e3d71d3ef1d8817cfe9e392c8db92d",
+      "expectedFixtureByteLength": 302
+    },
+    {
+      "scenarioId": "SPEC-MUT-013",
+      "parameters": {
+        "mode": "NAMED_SCENARIO",
+        "scenarioId": "SPEC-MUT-013",
+        "fixtureArtifactPath": "spec-registry/fixtures/spec-mut-013.json",
+        "fixtureArtifactSha256": "sha256:241005dee144bb4ed171f62bb7fa77414229f28a5038723350e1768a357a244d",
+        "expectedObservationProfile": "renderweave-spec-registry-observation-adapter/1.0"
+      },
+      "expectedFixtureArtifactPath": "spec-registry/fixtures/spec-mut-013.json",
+      "expectedFixtureArtifactSha256": "sha256:241005dee144bb4ed171f62bb7fa77414229f28a5038723350e1768a357a244d",
+      "expectedFixtureByteLength": 304
+    },
+    {
+      "scenarioId": "SPEC-MUT-014",
+      "parameters": {
+        "mode": "NAMED_SCENARIO",
+        "scenarioId": "SPEC-MUT-014",
+        "fixtureArtifactPath": "spec-registry/fixtures/spec-mut-014.json",
+        "fixtureArtifactSha256": "sha256:4821562ccfeae14bc5a0c1c9201431635ddf8b7b313dc758921fcd6e6ea46098",
+        "expectedObservationProfile": "renderweave-spec-registry-observation-adapter/1.0"
+      },
+      "expectedFixtureArtifactPath": "spec-registry/fixtures/spec-mut-014.json",
+      "expectedFixtureArtifactSha256": "sha256:4821562ccfeae14bc5a0c1c9201431635ddf8b7b313dc758921fcd6e6ea46098",
+      "expectedFixtureByteLength": 299
+    },
+    {
+      "scenarioId": "SPEC-MUT-015",
+      "parameters": {
+        "mode": "NAMED_SCENARIO",
+        "scenarioId": "SPEC-MUT-015",
+        "fixtureArtifactPath": "spec-registry/fixtures/spec-mut-015.json",
+        "fixtureArtifactSha256": "sha256:6ccd8d23bbc6bbcc5a09ed719d93baedac0330e16d8b6c4c994766e3d701faa5",
+        "expectedObservationProfile": "renderweave-spec-registry-observation-adapter/1.0"
+      },
+      "expectedFixtureArtifactPath": "spec-registry/fixtures/spec-mut-015.json",
+      "expectedFixtureArtifactSha256": "sha256:6ccd8d23bbc6bbcc5a09ed719d93baedac0330e16d8b6c4c994766e3d701faa5",
+      "expectedFixtureByteLength": 299
+    },
+    {
+      "scenarioId": "SPEC-MUT-016",
+      "parameters": {
+        "mode": "NAMED_SCENARIO",
+        "scenarioId": "SPEC-MUT-016",
+        "fixtureArtifactPath": "spec-registry/fixtures/spec-mut-016.json",
+        "fixtureArtifactSha256": "sha256:eb8fbbe86069d192b65a58c57cf3fa698b57ee3cbc0206723d1ed3ac927704f5",
+        "expectedObservationProfile": "renderweave-spec-registry-observation-adapter/1.0"
+      },
+      "expectedFixtureArtifactPath": "spec-registry/fixtures/spec-mut-016.json",
+      "expectedFixtureArtifactSha256": "sha256:eb8fbbe86069d192b65a58c57cf3fa698b57ee3cbc0206723d1ed3ac927704f5",
+      "expectedFixtureByteLength": 300
+    },
+    {
+      "scenarioId": "SPEC-MUT-017",
+      "parameters": {
+        "mode": "NAMED_SCENARIO",
+        "scenarioId": "SPEC-MUT-017",
+        "fixtureArtifactPath": "spec-registry/fixtures/spec-mut-017.json",
+        "fixtureArtifactSha256": "sha256:0027ba3b369c65bfdb4c43d72c67df31f91253e228ca550fe4afa02f0bfe8530",
+        "expectedObservationProfile": "renderweave-spec-registry-observation-adapter/1.0"
+      },
+      "expectedFixtureArtifactPath": "spec-registry/fixtures/spec-mut-017.json",
+      "expectedFixtureArtifactSha256": "sha256:0027ba3b369c65bfdb4c43d72c67df31f91253e228ca550fe4afa02f0bfe8530",
+      "expectedFixtureByteLength": 300
+    },
+    {
+      "scenarioId": "SPEC-MUT-018",
+      "parameters": {
+        "mode": "NAMED_SCENARIO",
+        "scenarioId": "SPEC-MUT-018",
+        "fixtureArtifactPath": "spec-registry/fixtures/spec-mut-018.json",
+        "fixtureArtifactSha256": "sha256:23d81d1f230efb34e0a48c0c1d4a097857ea884477e39d0e068100fff50b6f41",
+        "expectedObservationProfile": "renderweave-spec-registry-observation-adapter/1.0"
+      },
+      "expectedFixtureArtifactPath": "spec-registry/fixtures/spec-mut-018.json",
+      "expectedFixtureArtifactSha256": "sha256:23d81d1f230efb34e0a48c0c1d4a097857ea884477e39d0e068100fff50b6f41",
+      "expectedFixtureByteLength": 303
+    },
+    {
+      "scenarioId": "SPEC-MUT-019",
+      "parameters": {
+        "mode": "NAMED_SCENARIO",
+        "scenarioId": "SPEC-MUT-019",
+        "fixtureArtifactPath": "spec-registry/fixtures/spec-mut-019.json",
+        "fixtureArtifactSha256": "sha256:7645da605ac5afa196c1707b33519f53374b4cbf04bf9cf16eb60288aee3f258",
+        "expectedObservationProfile": "renderweave-spec-registry-observation-adapter/1.0"
+      },
+      "expectedFixtureArtifactPath": "spec-registry/fixtures/spec-mut-019.json",
+      "expectedFixtureArtifactSha256": "sha256:7645da605ac5afa196c1707b33519f53374b4cbf04bf9cf16eb60288aee3f258",
+      "expectedFixtureByteLength": 301
+    },
+    {
+      "scenarioId": "SPEC-MUT-020",
+      "parameters": {
+        "mode": "NAMED_SCENARIO",
+        "scenarioId": "SPEC-MUT-020",
+        "fixtureArtifactPath": "spec-registry/fixtures/spec-mut-020.json",
+        "fixtureArtifactSha256": "sha256:aa01565eab2c25ca40927d0834eb69e9c85905d7752677a4ae3c932a06d1a76c",
+        "expectedObservationProfile": "renderweave-spec-registry-observation-adapter/1.0"
+      },
+      "expectedFixtureArtifactPath": "spec-registry/fixtures/spec-mut-020.json",
+      "expectedFixtureArtifactSha256": "sha256:aa01565eab2c25ca40927d0834eb69e9c85905d7752677a4ae3c932a06d1a76c",
+      "expectedFixtureByteLength": 310
+    },
+    {
+      "scenarioId": "SPEC-MUT-021",
+      "parameters": {
+        "mode": "NAMED_SCENARIO",
+        "scenarioId": "SPEC-MUT-021",
+        "fixtureArtifactPath": "spec-registry/fixtures/spec-mut-021.json",
+        "fixtureArtifactSha256": "sha256:11e2d2c4aac9b99aca60dcf5bd0a5587521166720c6a774b92968a52feeb8de9",
+        "expectedObservationProfile": "renderweave-spec-registry-observation-adapter/1.0"
+      },
+      "expectedFixtureArtifactPath": "spec-registry/fixtures/spec-mut-021.json",
+      "expectedFixtureArtifactSha256": "sha256:11e2d2c4aac9b99aca60dcf5bd0a5587521166720c6a774b92968a52feeb8de9",
+      "expectedFixtureByteLength": 310
+    },
+    {
+      "scenarioId": "SPEC-MUT-022",
+      "parameters": {
+        "mode": "NAMED_SCENARIO",
+        "scenarioId": "SPEC-MUT-022",
+        "fixtureArtifactPath": "spec-registry/fixtures/spec-mut-022.json",
+        "fixtureArtifactSha256": "sha256:31150570b2cdb23ae2dcd2043a5fafa5475b2af4a6d50af27bb127e2d93630e5",
+        "expectedObservationProfile": "renderweave-spec-registry-observation-adapter/1.0"
+      },
+      "expectedFixtureArtifactPath": "spec-registry/fixtures/spec-mut-022.json",
+      "expectedFixtureArtifactSha256": "sha256:31150570b2cdb23ae2dcd2043a5fafa5475b2af4a6d50af27bb127e2d93630e5",
+      "expectedFixtureByteLength": 308
+    },
+    {
+      "scenarioId": "SPEC-MUT-023",
+      "parameters": {
+        "mode": "NAMED_SCENARIO",
+        "scenarioId": "SPEC-MUT-023",
+        "fixtureArtifactPath": "spec-registry/fixtures/spec-mut-023.json",
+        "fixtureArtifactSha256": "sha256:177b6d5a8d776f64a96580d05f9032b6186d0660991ab76a911d1965cc2e11b6",
+        "expectedObservationProfile": "renderweave-spec-registry-observation-adapter/1.0"
+      },
+      "expectedFixtureArtifactPath": "spec-registry/fixtures/spec-mut-023.json",
+      "expectedFixtureArtifactSha256": "sha256:177b6d5a8d776f64a96580d05f9032b6186d0660991ab76a911d1965cc2e11b6",
+      "expectedFixtureByteLength": 294
+    },
+    {
+      "scenarioId": "SPEC-MUT-024",
+      "parameters": {
+        "mode": "NAMED_SCENARIO",
+        "scenarioId": "SPEC-MUT-024",
+        "fixtureArtifactPath": "spec-registry/fixtures/spec-mut-024.json",
+        "fixtureArtifactSha256": "sha256:d21ef7e847700c6c49f17b03a2a2a2752da7bf3d8597d4face5ebeafee077380",
+        "expectedObservationProfile": "renderweave-spec-registry-observation-adapter/1.0"
+      },
+      "expectedFixtureArtifactPath": "spec-registry/fixtures/spec-mut-024.json",
+      "expectedFixtureArtifactSha256": "sha256:d21ef7e847700c6c49f17b03a2a2a2752da7bf3d8597d4face5ebeafee077380",
+      "expectedFixtureByteLength": 292
+    },
+    {
+      "scenarioId": "SPEC-C14N-C14N-P001",
+      "parameters": {
+        "mode": "NAMED_SCENARIO",
+        "scenarioId": "SPEC-C14N-C14N-P001",
+        "fixtureArtifactPath": "spec-registry/fixtures/spec-c14n-c14n-p001.json",
+        "fixtureArtifactSha256": "sha256:0499e8d1138f17ecfa3e11accd455c6ae4c543faeb695a41864a78bbe5e61dd7",
+        "expectedObservationProfile": "renderweave-spec-registry-observation-adapter/1.0"
+      },
+      "expectedFixtureArtifactPath": "spec-registry/fixtures/spec-c14n-c14n-p001.json",
+      "expectedFixtureArtifactSha256": "sha256:0499e8d1138f17ecfa3e11accd455c6ae4c543faeb695a41864a78bbe5e61dd7",
+      "expectedFixtureByteLength": 250
+    },
+    {
+      "scenarioId": "SPEC-C14N-C14N-P002",
+      "parameters": {
+        "mode": "NAMED_SCENARIO",
+        "scenarioId": "SPEC-C14N-C14N-P002",
+        "fixtureArtifactPath": "spec-registry/fixtures/spec-c14n-c14n-p002.json",
+        "fixtureArtifactSha256": "sha256:62d744de169ca80550c871908cb3768ecf88c99e6823f64d5e8e2509b63a25e3",
+        "expectedObservationProfile": "renderweave-spec-registry-observation-adapter/1.0"
+      },
+      "expectedFixtureArtifactPath": "spec-registry/fixtures/spec-c14n-c14n-p002.json",
+      "expectedFixtureArtifactSha256": "sha256:62d744de169ca80550c871908cb3768ecf88c99e6823f64d5e8e2509b63a25e3",
+      "expectedFixtureByteLength": 250
+    },
+    {
+      "scenarioId": "SPEC-C14N-C14N-P003",
+      "parameters": {
+        "mode": "NAMED_SCENARIO",
+        "scenarioId": "SPEC-C14N-C14N-P003",
+        "fixtureArtifactPath": "spec-registry/fixtures/spec-c14n-c14n-p003.json",
+        "fixtureArtifactSha256": "sha256:bd7dab43821d4543ee2bde7e2734c52903ece962405a9ec4ce0c3ec6dda55b05",
+        "expectedObservationProfile": "renderweave-spec-registry-observation-adapter/1.0"
+      },
+      "expectedFixtureArtifactPath": "spec-registry/fixtures/spec-c14n-c14n-p003.json",
+      "expectedFixtureArtifactSha256": "sha256:bd7dab43821d4543ee2bde7e2734c52903ece962405a9ec4ce0c3ec6dda55b05",
+      "expectedFixtureByteLength": 250
+    },
+    {
+      "scenarioId": "SPEC-C14N-C14N-P004",
+      "parameters": {
+        "mode": "NAMED_SCENARIO",
+        "scenarioId": "SPEC-C14N-C14N-P004",
+        "fixtureArtifactPath": "spec-registry/fixtures/spec-c14n-c14n-p004.json",
+        "fixtureArtifactSha256": "sha256:a0f828c95ff67b3ac0477d6cc6825b96e0f1abd522c9c9cf7c50083c1ccf5852",
+        "expectedObservationProfile": "renderweave-spec-registry-observation-adapter/1.0"
+      },
+      "expectedFixtureArtifactPath": "spec-registry/fixtures/spec-c14n-c14n-p004.json",
+      "expectedFixtureArtifactSha256": "sha256:a0f828c95ff67b3ac0477d6cc6825b96e0f1abd522c9c9cf7c50083c1ccf5852",
+      "expectedFixtureByteLength": 250
+    },
+    {
+      "scenarioId": "SPEC-C14N-C14N-P005",
+      "parameters": {
+        "mode": "NAMED_SCENARIO",
+        "scenarioId": "SPEC-C14N-C14N-P005",
+        "fixtureArtifactPath": "spec-registry/fixtures/spec-c14n-c14n-p005.json",
+        "fixtureArtifactSha256": "sha256:e0ea1405d0b9c86689325301ba6cfbb05d98683285e0153129bed6b0f691cf00",
+        "expectedObservationProfile": "renderweave-spec-registry-observation-adapter/1.0"
+      },
+      "expectedFixtureArtifactPath": "spec-registry/fixtures/spec-c14n-c14n-p005.json",
+      "expectedFixtureArtifactSha256": "sha256:e0ea1405d0b9c86689325301ba6cfbb05d98683285e0153129bed6b0f691cf00",
+      "expectedFixtureByteLength": 250
+    },
+    {
+      "scenarioId": "SPEC-C14N-C14N-P006",
+      "parameters": {
+        "mode": "NAMED_SCENARIO",
+        "scenarioId": "SPEC-C14N-C14N-P006",
+        "fixtureArtifactPath": "spec-registry/fixtures/spec-c14n-c14n-p006.json",
+        "fixtureArtifactSha256": "sha256:72d00b93aa3167598661aae6f55d03cb94fc2e8d4014ba0618263b4821b2cf9d",
+        "expectedObservationProfile": "renderweave-spec-registry-observation-adapter/1.0"
+      },
+      "expectedFixtureArtifactPath": "spec-registry/fixtures/spec-c14n-c14n-p006.json",
+      "expectedFixtureArtifactSha256": "sha256:72d00b93aa3167598661aae6f55d03cb94fc2e8d4014ba0618263b4821b2cf9d",
+      "expectedFixtureByteLength": 250
+    },
+    {
+      "scenarioId": "SPEC-C14N-C14N-P007",
+      "parameters": {
+        "mode": "NAMED_SCENARIO",
+        "scenarioId": "SPEC-C14N-C14N-P007",
+        "fixtureArtifactPath": "spec-registry/fixtures/spec-c14n-c14n-p007.json",
+        "fixtureArtifactSha256": "sha256:d9b99f67ac8347f51d64099844ca17bf8e18b4d91433c16d28ef82429c9d354b",
+        "expectedObservationProfile": "renderweave-spec-registry-observation-adapter/1.0"
+      },
+      "expectedFixtureArtifactPath": "spec-registry/fixtures/spec-c14n-c14n-p007.json",
+      "expectedFixtureArtifactSha256": "sha256:d9b99f67ac8347f51d64099844ca17bf8e18b4d91433c16d28ef82429c9d354b",
+      "expectedFixtureByteLength": 250
+    },
+    {
+      "scenarioId": "SPEC-C14N-C14N-P008",
+      "parameters": {
+        "mode": "NAMED_SCENARIO",
+        "scenarioId": "SPEC-C14N-C14N-P008",
+        "fixtureArtifactPath": "spec-registry/fixtures/spec-c14n-c14n-p008.json",
+        "fixtureArtifactSha256": "sha256:3faaf3fa50009ffbea2de04e19914cc4063bb5ed43cbfd30d3c3786490d45142",
+        "expectedObservationProfile": "renderweave-spec-registry-observation-adapter/1.0"
+      },
+      "expectedFixtureArtifactPath": "spec-registry/fixtures/spec-c14n-c14n-p008.json",
+      "expectedFixtureArtifactSha256": "sha256:3faaf3fa50009ffbea2de04e19914cc4063bb5ed43cbfd30d3c3786490d45142",
+      "expectedFixtureByteLength": 250
+    },
+    {
+      "scenarioId": "SPEC-C14N-C14N-P009",
+      "parameters": {
+        "mode": "NAMED_SCENARIO",
+        "scenarioId": "SPEC-C14N-C14N-P009",
+        "fixtureArtifactPath": "spec-registry/fixtures/spec-c14n-c14n-p009.json",
+        "fixtureArtifactSha256": "sha256:ef82073016998aea3716b3ace0d24ef1e290c0da19be3e3c74f354acaad654dc",
+        "expectedObservationProfile": "renderweave-spec-registry-observation-adapter/1.0"
+      },
+      "expectedFixtureArtifactPath": "spec-registry/fixtures/spec-c14n-c14n-p009.json",
+      "expectedFixtureArtifactSha256": "sha256:ef82073016998aea3716b3ace0d24ef1e290c0da19be3e3c74f354acaad654dc",
+      "expectedFixtureByteLength": 250
+    },
+    {
+      "scenarioId": "SPEC-C14N-C14N-P010",
+      "parameters": {
+        "mode": "NAMED_SCENARIO",
+        "scenarioId": "SPEC-C14N-C14N-P010",
+        "fixtureArtifactPath": "spec-registry/fixtures/spec-c14n-c14n-p010.json",
+        "fixtureArtifactSha256": "sha256:7ee080864b8d9ed30870d887704b0f51bda8e2e9c0d5964088ddfae84c94a300",
+        "expectedObservationProfile": "renderweave-spec-registry-observation-adapter/1.0"
+      },
+      "expectedFixtureArtifactPath": "spec-registry/fixtures/spec-c14n-c14n-p010.json",
+      "expectedFixtureArtifactSha256": "sha256:7ee080864b8d9ed30870d887704b0f51bda8e2e9c0d5964088ddfae84c94a300",
+      "expectedFixtureByteLength": 250
+    },
+    {
+      "scenarioId": "SPEC-C14N-C14N-P011",
+      "parameters": {
+        "mode": "NAMED_SCENARIO",
+        "scenarioId": "SPEC-C14N-C14N-P011",
+        "fixtureArtifactPath": "spec-registry/fixtures/spec-c14n-c14n-p011.json",
+        "fixtureArtifactSha256": "sha256:d10c10cf2b3e679fdade15110d1f492153e93de138bf26b008a410616d778cce",
+        "expectedObservationProfile": "renderweave-spec-registry-observation-adapter/1.0"
+      },
+      "expectedFixtureArtifactPath": "spec-registry/fixtures/spec-c14n-c14n-p011.json",
+      "expectedFixtureArtifactSha256": "sha256:d10c10cf2b3e679fdade15110d1f492153e93de138bf26b008a410616d778cce",
+      "expectedFixtureByteLength": 250
+    },
+    {
+      "scenarioId": "SPEC-C14N-C14N-P012",
+      "parameters": {
+        "mode": "NAMED_SCENARIO",
+        "scenarioId": "SPEC-C14N-C14N-P012",
+        "fixtureArtifactPath": "spec-registry/fixtures/spec-c14n-c14n-p012.json",
+        "fixtureArtifactSha256": "sha256:4ac3366ab43035802bf378cced0bc6034de05e80b598a74a1bce126423df8827",
+        "expectedObservationProfile": "renderweave-spec-registry-observation-adapter/1.0"
+      },
+      "expectedFixtureArtifactPath": "spec-registry/fixtures/spec-c14n-c14n-p012.json",
+      "expectedFixtureArtifactSha256": "sha256:4ac3366ab43035802bf378cced0bc6034de05e80b598a74a1bce126423df8827",
+      "expectedFixtureByteLength": 250
+    },
+    {
+      "scenarioId": "SPEC-C14N-C14N-P013",
+      "parameters": {
+        "mode": "NAMED_SCENARIO",
+        "scenarioId": "SPEC-C14N-C14N-P013",
+        "fixtureArtifactPath": "spec-registry/fixtures/spec-c14n-c14n-p013.json",
+        "fixtureArtifactSha256": "sha256:395cc0fa9412b2704c377d19bd735f1b761317a2301b8a05fc44fb40f7b4830b",
+        "expectedObservationProfile": "renderweave-spec-registry-observation-adapter/1.0"
+      },
+      "expectedFixtureArtifactPath": "spec-registry/fixtures/spec-c14n-c14n-p013.json",
+      "expectedFixtureArtifactSha256": "sha256:395cc0fa9412b2704c377d19bd735f1b761317a2301b8a05fc44fb40f7b4830b",
+      "expectedFixtureByteLength": 250
+    },
+    {
+      "scenarioId": "SPEC-C14N-C14N-N001",
+      "parameters": {
+        "mode": "NAMED_SCENARIO",
+        "scenarioId": "SPEC-C14N-C14N-N001",
+        "fixtureArtifactPath": "spec-registry/fixtures/spec-c14n-c14n-n001.json",
+        "fixtureArtifactSha256": "sha256:9fdf5c172b092abfdcd29ae48a572cc8a609cfff780c455e0d2d12938e22a113",
+        "expectedObservationProfile": "renderweave-spec-registry-observation-adapter/1.0"
+      },
+      "expectedFixtureArtifactPath": "spec-registry/fixtures/spec-c14n-c14n-n001.json",
+      "expectedFixtureArtifactSha256": "sha256:9fdf5c172b092abfdcd29ae48a572cc8a609cfff780c455e0d2d12938e22a113",
+      "expectedFixtureByteLength": 287
+    },
+    {
+      "scenarioId": "SPEC-C14N-C14N-N002",
+      "parameters": {
+        "mode": "NAMED_SCENARIO",
+        "scenarioId": "SPEC-C14N-C14N-N002",
+        "fixtureArtifactPath": "spec-registry/fixtures/spec-c14n-c14n-n002.json",
+        "fixtureArtifactSha256": "sha256:e5ba80528863a0b9cc715754d2e4fa875b2b12e8880817478e8a17db34734773",
+        "expectedObservationProfile": "renderweave-spec-registry-observation-adapter/1.0"
+      },
+      "expectedFixtureArtifactPath": "spec-registry/fixtures/spec-c14n-c14n-n002.json",
+      "expectedFixtureArtifactSha256": "sha256:e5ba80528863a0b9cc715754d2e4fa875b2b12e8880817478e8a17db34734773",
+      "expectedFixtureByteLength": 290
+    },
+    {
+      "scenarioId": "SPEC-C14N-C14N-N003",
+      "parameters": {
+        "mode": "NAMED_SCENARIO",
+        "scenarioId": "SPEC-C14N-C14N-N003",
+        "fixtureArtifactPath": "spec-registry/fixtures/spec-c14n-c14n-n003.json",
+        "fixtureArtifactSha256": "sha256:bd75020eb00e2194ab0711344e96271ce19b7a780c5007209374db520518be47",
+        "expectedObservationProfile": "renderweave-spec-registry-observation-adapter/1.0"
+      },
+      "expectedFixtureArtifactPath": "spec-registry/fixtures/spec-c14n-c14n-n003.json",
+      "expectedFixtureArtifactSha256": "sha256:bd75020eb00e2194ab0711344e96271ce19b7a780c5007209374db520518be47",
+      "expectedFixtureByteLength": 290
+    },
+    {
+      "scenarioId": "SPEC-C14N-C14N-N004",
+      "parameters": {
+        "mode": "NAMED_SCENARIO",
+        "scenarioId": "SPEC-C14N-C14N-N004",
+        "fixtureArtifactPath": "spec-registry/fixtures/spec-c14n-c14n-n004.json",
+        "fixtureArtifactSha256": "sha256:b4f211a583aebdcc6e43d6a364e9dc24de3265f0e80db850cbbfd8740a6daa05",
+        "expectedObservationProfile": "renderweave-spec-registry-observation-adapter/1.0"
+      },
+      "expectedFixtureArtifactPath": "spec-registry/fixtures/spec-c14n-c14n-n004.json",
+      "expectedFixtureArtifactSha256": "sha256:b4f211a583aebdcc6e43d6a364e9dc24de3265f0e80db850cbbfd8740a6daa05",
+      "expectedFixtureByteLength": 285
+    },
+    {
+      "scenarioId": "SPEC-C14N-C14N-N005",
+      "parameters": {
+        "mode": "NAMED_SCENARIO",
+        "scenarioId": "SPEC-C14N-C14N-N005",
+        "fixtureArtifactPath": "spec-registry/fixtures/spec-c14n-c14n-n005.json",
+        "fixtureArtifactSha256": "sha256:8b04bdfd4d0f5ae8d36f9b590dfeaf78fdbb441fe43ef2b7a8d2e0077b57ddfb",
+        "expectedObservationProfile": "renderweave-spec-registry-observation-adapter/1.0"
+      },
+      "expectedFixtureArtifactPath": "spec-registry/fixtures/spec-c14n-c14n-n005.json",
+      "expectedFixtureArtifactSha256": "sha256:8b04bdfd4d0f5ae8d36f9b590dfeaf78fdbb441fe43ef2b7a8d2e0077b57ddfb",
+      "expectedFixtureByteLength": 285
+    },
+    {
+      "scenarioId": "SPEC-C14N-C14N-N006",
+      "parameters": {
+        "mode": "NAMED_SCENARIO",
+        "scenarioId": "SPEC-C14N-C14N-N006",
+        "fixtureArtifactPath": "spec-registry/fixtures/spec-c14n-c14n-n006.json",
+        "fixtureArtifactSha256": "sha256:4f84b439c422f502b5973cd4c816a88a3897c71be014fd32a144647dee4f3ad5",
+        "expectedObservationProfile": "renderweave-spec-registry-observation-adapter/1.0"
+      },
+      "expectedFixtureArtifactPath": "spec-registry/fixtures/spec-c14n-c14n-n006.json",
+      "expectedFixtureArtifactSha256": "sha256:4f84b439c422f502b5973cd4c816a88a3897c71be014fd32a144647dee4f3ad5",
+      "expectedFixtureByteLength": 286
+    },
+    {
+      "scenarioId": "SPEC-C14N-C14N-N007",
+      "parameters": {
+        "mode": "NAMED_SCENARIO",
+        "scenarioId": "SPEC-C14N-C14N-N007",
+        "fixtureArtifactPath": "spec-registry/fixtures/spec-c14n-c14n-n007.json",
+        "fixtureArtifactSha256": "sha256:d1ff8022a37dad6449662580f6dd77c40daf4cfbc859c96439863ee07473429c",
+        "expectedObservationProfile": "renderweave-spec-registry-observation-adapter/1.0"
+      },
+      "expectedFixtureArtifactPath": "spec-registry/fixtures/spec-c14n-c14n-n007.json",
+      "expectedFixtureArtifactSha256": "sha256:d1ff8022a37dad6449662580f6dd77c40daf4cfbc859c96439863ee07473429c",
+      "expectedFixtureByteLength": 283
+    },
+    {
+      "scenarioId": "SPEC-C14N-C14N-N008",
+      "parameters": {
+        "mode": "NAMED_SCENARIO",
+        "scenarioId": "SPEC-C14N-C14N-N008",
+        "fixtureArtifactPath": "spec-registry/fixtures/spec-c14n-c14n-n008.json",
+        "fixtureArtifactSha256": "sha256:9f64e242462256b217137e15e24f617acbd3795cb51fd53d4066f601853e4ff3",
+        "expectedObservationProfile": "renderweave-spec-registry-observation-adapter/1.0"
+      },
+      "expectedFixtureArtifactPath": "spec-registry/fixtures/spec-c14n-c14n-n008.json",
+      "expectedFixtureArtifactSha256": "sha256:9f64e242462256b217137e15e24f617acbd3795cb51fd53d4066f601853e4ff3",
+      "expectedFixtureByteLength": 294
+    }
+  ],
+  "goldenCount": 46
+}

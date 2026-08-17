@@ -1,0 +1,15 @@
+{
+  "resultVersion": "renderweave-capacity-boundary-static-replay-result/1.0",
+  "executorId": "CAPACITY_STATIC_EXECUTOR::PYTHON::1.0",
+  "role": "independent-capacity-materialization-replayer",
+  "status": "PASS",
+  "checkCount": 39401,
+  "failureCount": 0,
+  "failures": [],
+  "runtime": "CPython 3.12.13",
+  "materializationManifestSha256": "sha256:0e7a5b8d1b2b8e9b816dc4434456b0c0c0868a9aff8c4dfa5c1dc60092669252",
+  "candidateCasesSha256": "sha256:30ee645c8dd472cfaf66550f26dd9234371d3f797d34c90df9de16de0569d284",
+  "candidateOraclesSha256": "sha256:271ce23304e246f7a03ceee25385888de49620607ce8a5cc597429026f8833c2",
+  "scope": "static candidate materialization only; no class executor or target invoked",
+  "recordIssuanceAllowed": false
+}

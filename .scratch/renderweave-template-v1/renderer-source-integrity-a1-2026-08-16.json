@@ -1,0 +1,175 @@
+{
+  "artifactVersion": "renderweave-renderer-source-integrity-evidence/1.0",
+  "evidenceId": "rw-renderer-source-integrity-a1-2026-08-16-000001",
+  "candidateId": "rw-renderer-spike-linux-x86_64-v2-000001",
+  "grade": "A1_TOOL_CAPTURED_SOURCE_ONLY",
+  "status": "SOURCE_INTEGRITY_COMPLETE_BUILD_AND_RENDER_EVIDENCE_ABSENT",
+  "authority": "Ticket19 non-product dependency rehearsal; this record proves only the listed source identities, candidate bytes, and structural checks",
+  "evidenceBindings": {
+    "specRevision": {
+      "branch": "spec/template-v1",
+      "baselineCommit": "b14c2d7d4978c679e7ab8e7a2bace3da7af884de",
+        "requirementsRegistrySha256": "f038abf56d2db6168c1eac2b64ac26fdd3ada7d8e21e0c018e4bb27a6cd88bab"
+    },
+      "acceptanceManifestSha256": "9a7cc788e71d5570ecc6f902ecf308facf73a39970b1e1117e04b543d9f29403",
+    "fixtureSha256": [
+      "a573de549efe6deb7673aec7046f39731a9847ce9453a78b076b10eed338e28d",
+      "ad7c496b8290e32026ededb9322f420d424b3d025256b7f29086b67fa1190011",
+      "2daa0dc83ec934272c28b2d6aa5f801f13cf19bf5a05096752637dd63b224f00",
+      "6f3e2a6125341da3762642631b65068e50ddeac4aa59c6b537ea1f8c3bff3a78",
+      "0517e8e4e08b13b39f8d8947439d382796a8a997628f605859a95382ae200d71"
+    ],
+    "executorManifest": {
+      "path": "renderer-spike/source-integrity-executor-manifest-v1.json",
+      "sha256": "8f9269083986674743350ecd0c872826c8fd6d19969f0dd1adb5948f64d27dee"
+    },
+    "targetManifest": {
+      "path": "renderer-spike/source-integrity-target-manifest-v1.json",
+      "sha256": "d51bf5bf279a18d43604da90d21e0762c8151398555eae5e5243c3c6fe94962e"
+    },
+    "implementationRevision": "NONE_SOURCE_ONLY_NO_PRODUCT_IMPLEMENTATION"
+  },
+  "authorizationBoundary": {
+    "approvedByUser": true,
+    "maximumElapsedMinutes": 30,
+    "maximumTemporaryBytes": 2147483648,
+    "fixedOpenSourceOnly": true,
+    "fullBuildAllowed": false,
+    "vendorSourceRetentionAllowed": false,
+    "proprietaryFontAllowed": false
+  },
+  "timing": {
+    "startedAtUtc": "2026-08-15T20:26:49.9557944Z",
+    "completedAtUtc": "2026-08-15T20:32:44.7586439Z",
+    "elapsedBelowAuthorizedMaximum": true
+  },
+  "skia": {
+    "remote": "https://skia.googlesource.com/skia.git",
+    "commit": "93458b5faf9cd8befbe6c93158d4d8ee7c8424ee",
+    "tree": "e3eaee9c6a83beffdf115a267c3d9a4bd7d9348e",
+    "fetch": "git fetch --depth=1 --filter=blob:none origin <commit>",
+    "normalizedArchive": {
+      "method": "git 2.55.0.windows.2 archive --format=tar with prefix skia-<commit>/ over FETCH_HEAD",
+      "lengthBytes": 187033600,
+      "sha256": "9dfc76b78fc6363e77f96b4faca566cfa0c28d06ad478f809f241e98966652af",
+      "retained": false
+    },
+    "inspectedBlobIds": {
+      "DEPS": "190ec9bf8b0654d130a062ef4550a7a9bc6a6bfe",
+      "src/ports/SkFontHost_FreeType.cpp": "f8043f25e91e2d95bc2cb3349068be10d3eb6b0c",
+      "src/ports/SkFontHost_FreeType_common.cpp": "865d761c83038e8b3d4992e220c8930607a672d8",
+      "third_party/freetype2/BUILD.gn": "631b9096e4d1e9f3656e0c13abe468b8547573c5",
+      "gn/skia.gni": "db3ae85c020c8b2e2a564f5eebc2ae0596346f81"
+    },
+    "observedFacts": [
+      "ordinary non-Android SkFontHinting::kNone adds FT_LOAD_NO_HINTING but not FT_LOAD_NO_AUTOHINT",
+      "the fixed-size branch clears FT_LOAD_NO_BITMAP and adds FT_LOAD_COLOR",
+      "the scalable SVG branch may add FT_LOAD_COLOR when FT_CONFIG_OPTION_SVG and a decoder factory are present",
+      "the two inspected FreeType port translation units contain ten FT_Load_Glyph source call sites"
+    ]
+  },
+  "freetype": {
+    "remote": "https://gitlab.freedesktop.org/freetype/freetype.git",
+    "release": "2.14.3",
+    "commit": "0a0221a1347e2f1e07c395263540026e9a0aa7c7",
+    "tree": "589225074ab1eb876682820c482069693c251e88",
+    "officialTar": {
+      "url": "https://download.savannah.gnu.org/releases/freetype/freetype-2.14.3.tar.xz",
+      "lengthBytes": 2670220,
+      "sha256": "36bc4f1cc413335368ee656c42afca65c5a3987e8768cc28cf11ba775e785a5f",
+      "retained": false
+    },
+    "inspectedBlobIds": {
+      "include/freetype/config/ftoption.h": "b857e0ebbd9a5fed2b088c28ce409d9fbdbfd64e",
+      "include/freetype/config/ftmodule.h": "b315baba8ae406c1c78914449c5e6764038aa099"
+    },
+    "referenceFact": "FreeType 2.14.3 documents FT_LOAD_NO_HINTING, FT_LOAD_NO_AUTOHINT, FT_LOAD_NO_BITMAP, FT_LOAD_COLOR, FT_LOAD_NO_SVG, and the FT_FACE_FLAG_TRICKY exception as separate behavior controls"
+  },
+  "ninja": {
+    "skiaDepsVersion": "version:2@1.12.1.chromium.4",
+    "package": "infra/3pp/tools/ninja/linux-amd64",
+    "resolveEndpoint": "https://chrome-infra-packages.appspot.com/_ah/api/repo/v1/instance/resolve?package_name=infra%2F3pp%2Ftools%2Fninja%2Flinux-amd64&version=version%3A2%401.12.1.chromium.4",
+    "instanceId": "Px8cwPaaG8_fZ_tsK8dBmx3YEruNDnmvqb-oo1U7UIIC",
+    "resolveResponseSha256": "9238cee0c6deaeee015f1fc3a1ba8173c4f3de723be5b3906952b55dc1f3584c"
+  },
+  "candidateArtifacts": [
+    {
+      "path": "renderer-spike/skia-m151-freetype-policy.patch",
+      "lengthBytes": 4908,
+      "sha256": "a573de549efe6deb7673aec7046f39731a9847ce9453a78b076b10eed338e28d"
+    },
+    {
+      "path": "renderer-spike/rw-freetype-ftoption.h",
+      "lengthBytes": 968,
+      "sha256": "ad7c496b8290e32026ededb9322f420d424b3d025256b7f29086b67fa1190011"
+    },
+    {
+      "path": "renderer-spike/rw-freetype-ftmodule.h",
+      "lengthBytes": 447,
+      "sha256": "2daa0dc83ec934272c28b2d6aa5f801f13cf19bf5a05096752637dd63b224f00"
+    },
+    {
+      "path": "renderer-spike/application-order-v1.json",
+      "lengthBytes": 1413,
+      "sha256": "6f3e2a6125341da3762642631b65068e50ddeac4aa59c6b537ea1f8c3bff3a78"
+    },
+    {
+      "path": "renderer-spike/tricky-font-fixture-policy-v1.json",
+      "lengthBytes": 1069,
+      "sha256": "0517e8e4e08b13b39f8d8947439d382796a8a997628f605859a95382ae200d71"
+    },
+    {
+      "path": "renderer-spike/source-integrity-executor-manifest-v1.json",
+      "lengthBytes": 1191,
+      "sha256": "8f9269083986674743350ecd0c872826c8fd6d19969f0dd1adb5948f64d27dee"
+    },
+    {
+      "path": "renderer-spike/source-integrity-target-manifest-v1.json",
+      "lengthBytes": 2029,
+      "sha256": "d51bf5bf279a18d43604da90d21e0762c8151398555eae5e5243c3c6fe94962e"
+    }
+  ],
+  "checks": {
+    "patchAppliesToExactSkiaTree": true,
+    "patchCheckCommand": "git apply --check renderer-spike/skia-m151-freetype-policy.patch",
+    "forbiddenAndDerivedOptionUndefCount": 13,
+    "missingRequiredUndefs": [],
+    "retainedModuleClasses": [
+      "tt_driver_class",
+      "cff_driver_class",
+      "sfnt_module_class",
+      "psaux_module_class",
+      "psnames_module_class",
+      "ft_smooth_renderer_class"
+    ],
+    "retainedModuleClassCount": 6,
+    "structuralGlyphPathResult": "candidate patch establishes one constructor-owned final flag invariant; derived path flags preserve it, while TT_SUPPORT_COLRV1 is removed by the custom option header",
+    "structuralCheckIsBuildProof": false
+  },
+  "temporaryFootprint": {
+    "observedBytesBeforeCleanup": 543836082,
+    "observedMiBBeforeCleanup": 518.64,
+    "underAuthorizedMaximum": true,
+    "temporaryRootRemoved": true,
+    "retainedVendorSource": false
+  },
+  "notPerformed": [
+    "GN generation",
+    "C or C++ compilation",
+    "linking",
+    "ELF or symbol audit",
+    "font parsing or shaping",
+    "tricky-font execution",
+    "pixel or encoded-byte rendering",
+    "physical Linux replay",
+    "Renderer certification"
+  ],
+  "conclusion": {
+    "sourceIdentityReadyForNextSpike": true,
+    "candidatePatchBytesFrozen": true,
+    "customHeaderBytesFrozen": true,
+    "certified": false,
+    "ready": false,
+    "ticket19MayClose": false
+  }
+}

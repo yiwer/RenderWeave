@@ -1,0 +1,13 @@
+{
+  "artifactVersion": "renderweave-editor-input-fixture/1.0",
+  "candidateId": "EDC::J12::002",
+  "executionClass": "EXEC::EDITOR_AUTOMATED::1.0",
+  "baselineId": "EditorStructuredWithCoreFlowProblems",
+  "parameters": {},
+  "actionScript": [
+    {
+      "action": "COMPLETE_CORE_FLOW_BY_KEYBOARD",
+      "parameters": {}
+    }
+  ]
+}

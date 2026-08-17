@@ -1,0 +1,65 @@
+{
+  "artifactVersion": "renderweave-editor-automated-fixture-contract/1.0",
+  "fixtureVersion": "renderweave-editor-automated-fixture/1.0",
+  "status": "FROZEN_STATIC_FIXTURE_CONTRACT",
+  "executionClass": "EXEC::EDITOR_AUTOMATED::1.0",
+  "serialization": {
+    "encoding": "UTF-8 without BOM",
+    "lineEnding": "LF",
+    "indentationSpaces": 2,
+    "finalLfRequired": true,
+    "memberOrder": "exactly the contract order emitted by renderweave-editor-automated-generator/1.0"
+  },
+  "allowedModes": [
+    "NAMED_SCENARIO"
+  ],
+  "capacityBoundary": {
+    "supported": false,
+    "assignedAxisCount": 0,
+    "reason": "Ticket19 assigns no capacity axis to EXEC::EDITOR_AUTOMATED::1.0"
+  },
+  "namedScenario": {
+    "parameterSchemaId": "renderweave-named-scenario-parameters/1.0",
+    "allowedScenarioIds": [
+      "EDITOR-AUTOMATED-STRUCTURED-CLEAN-RECHECK-PENDING"
+    ],
+    "entrypoint": "EDITOR_SESSION_BASELINE_CONTRACT_CHECK",
+    "expectedObservationProfile": "renderweave-editor-automated-observation-adapter/1.0",
+    "parametersReferenceExactFixtureBytes": true,
+    "productMutationAllowed": false,
+    "browserAutomationAllowedDuringFixtureGeneration": false
+  },
+  "fixtureTopLevelOrder": [
+    "fixtureVersion",
+    "generatorProfile",
+    "executionClass",
+    "baseline",
+    "scenario",
+    "observationAdapter",
+    "targetContract"
+  ],
+  "namedScenarioOrder": [
+    "mode",
+    "scenarioId",
+    "operationId",
+    "entrypoint",
+    "faultSchedule"
+  ],
+  "forbiddenFixtureMembers": [
+    "expectedTerminal",
+    "expectedAssertions",
+    "plannedAssertions",
+    "plannedOracleId",
+    "requirementIds",
+    "resolvedCode",
+    "resolvedKind",
+    "contentHash",
+    "latest",
+    "default",
+    "script"
+  ],
+  "evidenceBoundary": {
+    "fixtureGenerationMayProve": "deterministic closed fixture bytes, a fixture-only Canvas Focus Structured Editor baseline context, exact admitted-probe adapter coverage, and absence of browser/product/network execution",
+    "fixtureGenerationCannotProve": "supported-browser behavior, operating-system behavior, accessibility tree semantics, focus or announcement order, keyboard accessibility, high-contrast or reduced-motion behavior, zoom behavior, save/conflict/recovery/preview orchestration, product writes, authoritative preview, J1, record issuance, or execution-class readiness"
+  }
+}

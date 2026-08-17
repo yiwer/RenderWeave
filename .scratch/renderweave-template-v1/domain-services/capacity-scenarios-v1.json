@@ -1,0 +1,1218 @@
+{
+  "artifactVersion": "renderweave-domain-services-scenario-catalog/1.0",
+  "status": "FROZEN_12_CAPACITY_PLUS_1_NAMED",
+  "generatorProfile": "renderweave-domain-services-generator/1.0",
+  "executionClass": "EXEC::DOMAIN_SERVICES::1.0",
+  "sourceRule": "The twelve CAPACITY_BOUNDARY parameter objects are copied from the fully expanded four-axis mapping; no matrix default remains. The named scenario is closed locally.",
+  "baseline": {
+    "path": "domain-services/baseline-v1.json",
+    "sha256": "sha256:be84f240724b5ea50ae8921b1ffc4daa318fce52189fd0f8b2669c5ec562cf16",
+    "byteLength": 814
+  },
+  "observationAdapter": {
+    "path": "domain-services/observation-adapter-v1.json",
+    "sha256": "sha256:4bda561d8628461b783796e38acb9066e840c307479603e39afa6c241393ea06",
+    "byteLength": 6006
+  },
+  "scenarios": [
+    {
+      "scenarioId": "CAP::assetsAndFetch.acceptedImageBytesPerContent::below",
+      "mode": "CAPACITY_BOUNDARY",
+      "parameters": {
+        "comparator": "MAX_INCLUSIVE",
+        "contractStage": "ASSET_CONTENT_ADMISSION",
+        "deltaId": "INTEGER_UNIT",
+        "executionClass": "EXEC::DOMAIN_SERVICES::1.0",
+        "limitId": "assetsAndFetch.acceptedImageBytesPerContent",
+        "limitValue": "67108864",
+        "mode": "CAPACITY_BOUNDARY",
+        "plannedAssertions": [
+          {
+            "assertionId": "A001",
+            "probeId": "operation.accepted",
+            "operator": "EQ",
+            "expected": {
+              "kind": "LITERAL",
+              "value": true
+            }
+          },
+          {
+            "assertionId": "A002",
+            "probeId": "operation.terminalCode",
+            "operator": "ABSENT"
+          },
+          {
+            "assertionId": "A003",
+            "probeId": "operation.terminalStage",
+            "operator": "ABSENT"
+          },
+          {
+            "assertionId": "A004",
+            "probeId": "capacity.limitId",
+            "operator": "EQ",
+            "expected": {
+              "kind": "LITERAL",
+              "value": "assetsAndFetch.acceptedImageBytesPerContent"
+            }
+          },
+          {
+            "assertionId": "A005",
+            "probeId": "capacity.observedValue",
+            "operator": "EQ",
+            "expected": {
+              "kind": "LITERAL",
+              "value": "67108863"
+            }
+          },
+          {
+            "assertionId": "A006",
+            "probeId": "capacity.reservationReached",
+            "operator": "EQ",
+            "expected": {
+              "kind": "LITERAL",
+              "value": true
+            }
+          },
+          {
+            "assertionId": "A007",
+            "probeId": "capacity.zeroBoundary",
+            "operator": "ABSENT"
+          },
+          {
+            "assertionId": "A008",
+            "probeId": "operation.downstreamEffects",
+            "operator": "SEQUENCE_EQ",
+            "expected": {
+              "kind": "LITERAL",
+              "value": [
+                "targetAxisAccepted=1"
+              ]
+            }
+          }
+        ],
+        "plannedOracleId": "ORC::CAPACITY::000340",
+        "publicRenderStage": "ASSET_ADMISSION",
+        "requirementIds": [
+          "RW-T19-S7-005",
+          "RW-T19-S7-006",
+          "RW-T19-S7-007",
+          "RW-T19-S8-012",
+          "RW-T19-S9-019"
+        ],
+        "reservationPoint": "before admitting the next authored or resolved Asset unit and before external fetch",
+        "resolvedCode": "ASSET_CONTENT_LIMIT_EXCEEDED",
+        "resolvedKind": "capacity",
+        "stimulusValue": "67108863",
+        "valueEncoding": "CANONICAL_INTEGER",
+        "variant": "below",
+        "zeroBoundary": "ZERO_DOCUMENT_OUTPUT"
+      },
+      "fixtureArtifactPath": "domain-services/fixtures/cap-accepted-image-bytes-per-content-below.json"
+    },
+    {
+      "scenarioId": "CAP::assetsAndFetch.acceptedImageBytesPerContent::at",
+      "mode": "CAPACITY_BOUNDARY",
+      "parameters": {
+        "comparator": "MAX_INCLUSIVE",
+        "contractStage": "ASSET_CONTENT_ADMISSION",
+        "deltaId": "INTEGER_UNIT",
+        "executionClass": "EXEC::DOMAIN_SERVICES::1.0",
+        "limitId": "assetsAndFetch.acceptedImageBytesPerContent",
+        "limitValue": "67108864",
+        "mode": "CAPACITY_BOUNDARY",
+        "plannedAssertions": [
+          {
+            "assertionId": "A001",
+            "probeId": "operation.accepted",
+            "operator": "EQ",
+            "expected": {
+              "kind": "LITERAL",
+              "value": true
+            }
+          },
+          {
+            "assertionId": "A002",
+            "probeId": "operation.terminalCode",
+            "operator": "ABSENT"
+          },
+          {
+            "assertionId": "A003",
+            "probeId": "operation.terminalStage",
+            "operator": "ABSENT"
+          },
+          {
+            "assertionId": "A004",
+            "probeId": "capacity.limitId",
+            "operator": "EQ",
+            "expected": {
+              "kind": "LITERAL",
+              "value": "assetsAndFetch.acceptedImageBytesPerContent"
+            }
+          },
+          {
+            "assertionId": "A005",
+            "probeId": "capacity.observedValue",
+            "operator": "EQ",
+            "expected": {
+              "kind": "LITERAL",
+              "value": "67108864"
+            }
+          },
+          {
+            "assertionId": "A006",
+            "probeId": "capacity.reservationReached",
+            "operator": "EQ",
+            "expected": {
+              "kind": "LITERAL",
+              "value": true
+            }
+          },
+          {
+            "assertionId": "A007",
+            "probeId": "capacity.zeroBoundary",
+            "operator": "ABSENT"
+          },
+          {
+            "assertionId": "A008",
+            "probeId": "operation.downstreamEffects",
+            "operator": "SEQUENCE_EQ",
+            "expected": {
+              "kind": "LITERAL",
+              "value": [
+                "targetAxisAccepted=1"
+              ]
+            }
+          }
+        ],
+        "plannedOracleId": "ORC::CAPACITY::000341",
+        "publicRenderStage": "ASSET_ADMISSION",
+        "requirementIds": [
+          "RW-T19-S7-005",
+          "RW-T19-S7-006",
+          "RW-T19-S7-007",
+          "RW-T19-S8-012",
+          "RW-T19-S9-019"
+        ],
+        "reservationPoint": "before admitting the next authored or resolved Asset unit and before external fetch",
+        "resolvedCode": "ASSET_CONTENT_LIMIT_EXCEEDED",
+        "resolvedKind": "capacity",
+        "stimulusValue": "67108864",
+        "valueEncoding": "CANONICAL_INTEGER",
+        "variant": "at",
+        "zeroBoundary": "ZERO_DOCUMENT_OUTPUT"
+      },
+      "fixtureArtifactPath": "domain-services/fixtures/cap-accepted-image-bytes-per-content-at.json"
+    },
+    {
+      "scenarioId": "CAP::assetsAndFetch.acceptedImageBytesPerContent::above",
+      "mode": "CAPACITY_BOUNDARY",
+      "parameters": {
+        "comparator": "MAX_INCLUSIVE",
+        "contractStage": "ASSET_CONTENT_ADMISSION",
+        "deltaId": "INTEGER_UNIT",
+        "executionClass": "EXEC::DOMAIN_SERVICES::1.0",
+        "limitId": "assetsAndFetch.acceptedImageBytesPerContent",
+        "limitValue": "67108864",
+        "mode": "CAPACITY_BOUNDARY",
+        "plannedAssertions": [
+          {
+            "assertionId": "A001",
+            "probeId": "operation.accepted",
+            "operator": "EQ",
+            "expected": {
+              "kind": "LITERAL",
+              "value": false
+            }
+          },
+          {
+            "assertionId": "A002",
+            "probeId": "operation.terminalCode",
+            "operator": "EQ",
+            "expected": {
+              "kind": "LITERAL",
+              "value": "ASSET_CONTENT_LIMIT_EXCEEDED"
+            }
+          },
+          {
+            "assertionId": "A003",
+            "probeId": "operation.terminalStage",
+            "operator": "EQ",
+            "expected": {
+              "kind": "LITERAL",
+              "value": "ASSET_CONTENT_ADMISSION"
+            }
+          },
+          {
+            "assertionId": "A004",
+            "probeId": "capacity.limitId",
+            "operator": "EQ",
+            "expected": {
+              "kind": "LITERAL",
+              "value": "assetsAndFetch.acceptedImageBytesPerContent"
+            }
+          },
+          {
+            "assertionId": "A005",
+            "probeId": "capacity.observedValue",
+            "operator": "EQ",
+            "expected": {
+              "kind": "LITERAL",
+              "value": "67108865"
+            }
+          },
+          {
+            "assertionId": "A006",
+            "probeId": "capacity.reservationReached",
+            "operator": "EQ",
+            "expected": {
+              "kind": "LITERAL",
+              "value": true
+            }
+          },
+          {
+            "assertionId": "A007",
+            "probeId": "capacity.zeroBoundary",
+            "operator": "EQ",
+            "expected": {
+              "kind": "LITERAL",
+              "value": "ZERO_DOCUMENT_OUTPUT"
+            }
+          },
+          {
+            "assertionId": "A008",
+            "probeId": "operation.downstreamEffects",
+            "operator": "SEQUENCE_EQ",
+            "expected": {
+              "kind": "LITERAL",
+              "value": [
+                "renderDocuments=0",
+                "engineCommands=0",
+                "renderOutputs=0"
+              ]
+            }
+          }
+        ],
+        "plannedOracleId": "ORC::CAPACITY::000342",
+        "publicRenderStage": "ASSET_ADMISSION",
+        "requirementIds": [
+          "RW-T19-S7-005",
+          "RW-T19-S7-006",
+          "RW-T19-S7-007",
+          "RW-T19-S8-012",
+          "RW-T19-S9-019"
+        ],
+        "reservationPoint": "before admitting the next authored or resolved Asset unit and before external fetch",
+        "resolvedCode": "ASSET_CONTENT_LIMIT_EXCEEDED",
+        "resolvedKind": "capacity",
+        "stimulusValue": "67108865",
+        "valueEncoding": "CANONICAL_INTEGER",
+        "variant": "above",
+        "zeroBoundary": "ZERO_DOCUMENT_OUTPUT"
+      },
+      "fixtureArtifactPath": "domain-services/fixtures/cap-accepted-image-bytes-per-content-above.json"
+    },
+    {
+      "scenarioId": "CAP::assetsAndFetch.acceptedImageEdgePixelsPerContent::below",
+      "mode": "CAPACITY_BOUNDARY",
+      "parameters": {
+        "comparator": "MAX_INCLUSIVE",
+        "contractStage": "ASSET_CONTENT_ADMISSION",
+        "deltaId": "INTEGER_UNIT",
+        "executionClass": "EXEC::DOMAIN_SERVICES::1.0",
+        "limitId": "assetsAndFetch.acceptedImageEdgePixelsPerContent",
+        "limitValue": "20000",
+        "mode": "CAPACITY_BOUNDARY",
+        "plannedAssertions": [
+          {
+            "assertionId": "A001",
+            "probeId": "operation.accepted",
+            "operator": "EQ",
+            "expected": {
+              "kind": "LITERAL",
+              "value": true
+            }
+          },
+          {
+            "assertionId": "A002",
+            "probeId": "operation.terminalCode",
+            "operator": "ABSENT"
+          },
+          {
+            "assertionId": "A003",
+            "probeId": "operation.terminalStage",
+            "operator": "ABSENT"
+          },
+          {
+            "assertionId": "A004",
+            "probeId": "capacity.limitId",
+            "operator": "EQ",
+            "expected": {
+              "kind": "LITERAL",
+              "value": "assetsAndFetch.acceptedImageEdgePixelsPerContent"
+            }
+          },
+          {
+            "assertionId": "A005",
+            "probeId": "capacity.observedValue",
+            "operator": "EQ",
+            "expected": {
+              "kind": "LITERAL",
+              "value": "19999"
+            }
+          },
+          {
+            "assertionId": "A006",
+            "probeId": "capacity.reservationReached",
+            "operator": "EQ",
+            "expected": {
+              "kind": "LITERAL",
+              "value": true
+            }
+          },
+          {
+            "assertionId": "A007",
+            "probeId": "capacity.zeroBoundary",
+            "operator": "ABSENT"
+          },
+          {
+            "assertionId": "A008",
+            "probeId": "operation.downstreamEffects",
+            "operator": "SEQUENCE_EQ",
+            "expected": {
+              "kind": "LITERAL",
+              "value": [
+                "targetAxisAccepted=1"
+              ]
+            }
+          }
+        ],
+        "plannedOracleId": "ORC::CAPACITY::000343",
+        "publicRenderStage": "ASSET_ADMISSION",
+        "requirementIds": [
+          "RW-T19-S7-005",
+          "RW-T19-S7-006",
+          "RW-T19-S7-007",
+          "RW-T19-S8-013",
+          "RW-T19-S9-019"
+        ],
+        "reservationPoint": "before admitting the next authored or resolved Asset unit and before external fetch",
+        "resolvedCode": "ASSET_CONTENT_LIMIT_EXCEEDED",
+        "resolvedKind": "capacity",
+        "stimulusValue": "19999",
+        "valueEncoding": "CANONICAL_INTEGER",
+        "variant": "below",
+        "zeroBoundary": "ZERO_DOCUMENT_OUTPUT"
+      },
+      "fixtureArtifactPath": "domain-services/fixtures/cap-accepted-image-edge-pixels-per-content-below.json"
+    },
+    {
+      "scenarioId": "CAP::assetsAndFetch.acceptedImageEdgePixelsPerContent::at",
+      "mode": "CAPACITY_BOUNDARY",
+      "parameters": {
+        "comparator": "MAX_INCLUSIVE",
+        "contractStage": "ASSET_CONTENT_ADMISSION",
+        "deltaId": "INTEGER_UNIT",
+        "executionClass": "EXEC::DOMAIN_SERVICES::1.0",
+        "limitId": "assetsAndFetch.acceptedImageEdgePixelsPerContent",
+        "limitValue": "20000",
+        "mode": "CAPACITY_BOUNDARY",
+        "plannedAssertions": [
+          {
+            "assertionId": "A001",
+            "probeId": "operation.accepted",
+            "operator": "EQ",
+            "expected": {
+              "kind": "LITERAL",
+              "value": true
+            }
+          },
+          {
+            "assertionId": "A002",
+            "probeId": "operation.terminalCode",
+            "operator": "ABSENT"
+          },
+          {
+            "assertionId": "A003",
+            "probeId": "operation.terminalStage",
+            "operator": "ABSENT"
+          },
+          {
+            "assertionId": "A004",
+            "probeId": "capacity.limitId",
+            "operator": "EQ",
+            "expected": {
+              "kind": "LITERAL",
+              "value": "assetsAndFetch.acceptedImageEdgePixelsPerContent"
+            }
+          },
+          {
+            "assertionId": "A005",
+            "probeId": "capacity.observedValue",
+            "operator": "EQ",
+            "expected": {
+              "kind": "LITERAL",
+              "value": "20000"
+            }
+          },
+          {
+            "assertionId": "A006",
+            "probeId": "capacity.reservationReached",
+            "operator": "EQ",
+            "expected": {
+              "kind": "LITERAL",
+              "value": true
+            }
+          },
+          {
+            "assertionId": "A007",
+            "probeId": "capacity.zeroBoundary",
+            "operator": "ABSENT"
+          },
+          {
+            "assertionId": "A008",
+            "probeId": "operation.downstreamEffects",
+            "operator": "SEQUENCE_EQ",
+            "expected": {
+              "kind": "LITERAL",
+              "value": [
+                "targetAxisAccepted=1"
+              ]
+            }
+          }
+        ],
+        "plannedOracleId": "ORC::CAPACITY::000344",
+        "publicRenderStage": "ASSET_ADMISSION",
+        "requirementIds": [
+          "RW-T19-S7-005",
+          "RW-T19-S7-006",
+          "RW-T19-S7-007",
+          "RW-T19-S8-013",
+          "RW-T19-S9-019"
+        ],
+        "reservationPoint": "before admitting the next authored or resolved Asset unit and before external fetch",
+        "resolvedCode": "ASSET_CONTENT_LIMIT_EXCEEDED",
+        "resolvedKind": "capacity",
+        "stimulusValue": "20000",
+        "valueEncoding": "CANONICAL_INTEGER",
+        "variant": "at",
+        "zeroBoundary": "ZERO_DOCUMENT_OUTPUT"
+      },
+      "fixtureArtifactPath": "domain-services/fixtures/cap-accepted-image-edge-pixels-per-content-at.json"
+    },
+    {
+      "scenarioId": "CAP::assetsAndFetch.acceptedImageEdgePixelsPerContent::above",
+      "mode": "CAPACITY_BOUNDARY",
+      "parameters": {
+        "comparator": "MAX_INCLUSIVE",
+        "contractStage": "ASSET_CONTENT_ADMISSION",
+        "deltaId": "INTEGER_UNIT",
+        "executionClass": "EXEC::DOMAIN_SERVICES::1.0",
+        "limitId": "assetsAndFetch.acceptedImageEdgePixelsPerContent",
+        "limitValue": "20000",
+        "mode": "CAPACITY_BOUNDARY",
+        "plannedAssertions": [
+          {
+            "assertionId": "A001",
+            "probeId": "operation.accepted",
+            "operator": "EQ",
+            "expected": {
+              "kind": "LITERAL",
+              "value": false
+            }
+          },
+          {
+            "assertionId": "A002",
+            "probeId": "operation.terminalCode",
+            "operator": "EQ",
+            "expected": {
+              "kind": "LITERAL",
+              "value": "ASSET_CONTENT_LIMIT_EXCEEDED"
+            }
+          },
+          {
+            "assertionId": "A003",
+            "probeId": "operation.terminalStage",
+            "operator": "EQ",
+            "expected": {
+              "kind": "LITERAL",
+              "value": "ASSET_CONTENT_ADMISSION"
+            }
+          },
+          {
+            "assertionId": "A004",
+            "probeId": "capacity.limitId",
+            "operator": "EQ",
+            "expected": {
+              "kind": "LITERAL",
+              "value": "assetsAndFetch.acceptedImageEdgePixelsPerContent"
+            }
+          },
+          {
+            "assertionId": "A005",
+            "probeId": "capacity.observedValue",
+            "operator": "EQ",
+            "expected": {
+              "kind": "LITERAL",
+              "value": "20001"
+            }
+          },
+          {
+            "assertionId": "A006",
+            "probeId": "capacity.reservationReached",
+            "operator": "EQ",
+            "expected": {
+              "kind": "LITERAL",
+              "value": true
+            }
+          },
+          {
+            "assertionId": "A007",
+            "probeId": "capacity.zeroBoundary",
+            "operator": "EQ",
+            "expected": {
+              "kind": "LITERAL",
+              "value": "ZERO_DOCUMENT_OUTPUT"
+            }
+          },
+          {
+            "assertionId": "A008",
+            "probeId": "operation.downstreamEffects",
+            "operator": "SEQUENCE_EQ",
+            "expected": {
+              "kind": "LITERAL",
+              "value": [
+                "renderDocuments=0",
+                "engineCommands=0",
+                "renderOutputs=0"
+              ]
+            }
+          }
+        ],
+        "plannedOracleId": "ORC::CAPACITY::000345",
+        "publicRenderStage": "ASSET_ADMISSION",
+        "requirementIds": [
+          "RW-T19-S7-005",
+          "RW-T19-S7-006",
+          "RW-T19-S7-007",
+          "RW-T19-S8-013",
+          "RW-T19-S9-019"
+        ],
+        "reservationPoint": "before admitting the next authored or resolved Asset unit and before external fetch",
+        "resolvedCode": "ASSET_CONTENT_LIMIT_EXCEEDED",
+        "resolvedKind": "capacity",
+        "stimulusValue": "20001",
+        "valueEncoding": "CANONICAL_INTEGER",
+        "variant": "above",
+        "zeroBoundary": "ZERO_DOCUMENT_OUTPUT"
+      },
+      "fixtureArtifactPath": "domain-services/fixtures/cap-accepted-image-edge-pixels-per-content-above.json"
+    },
+    {
+      "scenarioId": "CAP::assetsAndFetch.acceptedImagePixelsPerContent::below",
+      "mode": "CAPACITY_BOUNDARY",
+      "parameters": {
+        "comparator": "MAX_INCLUSIVE",
+        "contractStage": "ASSET_CONTENT_ADMISSION",
+        "deltaId": "INTEGER_UNIT",
+        "executionClass": "EXEC::DOMAIN_SERVICES::1.0",
+        "limitId": "assetsAndFetch.acceptedImagePixelsPerContent",
+        "limitValue": "100000000",
+        "mode": "CAPACITY_BOUNDARY",
+        "plannedAssertions": [
+          {
+            "assertionId": "A001",
+            "probeId": "operation.accepted",
+            "operator": "EQ",
+            "expected": {
+              "kind": "LITERAL",
+              "value": true
+            }
+          },
+          {
+            "assertionId": "A002",
+            "probeId": "operation.terminalCode",
+            "operator": "ABSENT"
+          },
+          {
+            "assertionId": "A003",
+            "probeId": "operation.terminalStage",
+            "operator": "ABSENT"
+          },
+          {
+            "assertionId": "A004",
+            "probeId": "capacity.limitId",
+            "operator": "EQ",
+            "expected": {
+              "kind": "LITERAL",
+              "value": "assetsAndFetch.acceptedImagePixelsPerContent"
+            }
+          },
+          {
+            "assertionId": "A005",
+            "probeId": "capacity.observedValue",
+            "operator": "EQ",
+            "expected": {
+              "kind": "LITERAL",
+              "value": "99999999"
+            }
+          },
+          {
+            "assertionId": "A006",
+            "probeId": "capacity.reservationReached",
+            "operator": "EQ",
+            "expected": {
+              "kind": "LITERAL",
+              "value": true
+            }
+          },
+          {
+            "assertionId": "A007",
+            "probeId": "capacity.zeroBoundary",
+            "operator": "ABSENT"
+          },
+          {
+            "assertionId": "A008",
+            "probeId": "operation.downstreamEffects",
+            "operator": "SEQUENCE_EQ",
+            "expected": {
+              "kind": "LITERAL",
+              "value": [
+                "targetAxisAccepted=1"
+              ]
+            }
+          }
+        ],
+        "plannedOracleId": "ORC::CAPACITY::000346",
+        "publicRenderStage": "ASSET_ADMISSION",
+        "requirementIds": [
+          "RW-T19-S7-005",
+          "RW-T19-S7-006",
+          "RW-T19-S7-007",
+          "RW-T19-S8-014",
+          "RW-T19-S9-019"
+        ],
+        "reservationPoint": "before admitting the next authored or resolved Asset unit and before external fetch",
+        "resolvedCode": "ASSET_CONTENT_LIMIT_EXCEEDED",
+        "resolvedKind": "capacity",
+        "stimulusValue": "99999999",
+        "valueEncoding": "CANONICAL_INTEGER",
+        "variant": "below",
+        "zeroBoundary": "ZERO_DOCUMENT_OUTPUT"
+      },
+      "fixtureArtifactPath": "domain-services/fixtures/cap-accepted-image-pixels-per-content-below.json"
+    },
+    {
+      "scenarioId": "CAP::assetsAndFetch.acceptedImagePixelsPerContent::at",
+      "mode": "CAPACITY_BOUNDARY",
+      "parameters": {
+        "comparator": "MAX_INCLUSIVE",
+        "contractStage": "ASSET_CONTENT_ADMISSION",
+        "deltaId": "INTEGER_UNIT",
+        "executionClass": "EXEC::DOMAIN_SERVICES::1.0",
+        "limitId": "assetsAndFetch.acceptedImagePixelsPerContent",
+        "limitValue": "100000000",
+        "mode": "CAPACITY_BOUNDARY",
+        "plannedAssertions": [
+          {
+            "assertionId": "A001",
+            "probeId": "operation.accepted",
+            "operator": "EQ",
+            "expected": {
+              "kind": "LITERAL",
+              "value": true
+            }
+          },
+          {
+            "assertionId": "A002",
+            "probeId": "operation.terminalCode",
+            "operator": "ABSENT"
+          },
+          {
+            "assertionId": "A003",
+            "probeId": "operation.terminalStage",
+            "operator": "ABSENT"
+          },
+          {
+            "assertionId": "A004",
+            "probeId": "capacity.limitId",
+            "operator": "EQ",
+            "expected": {
+              "kind": "LITERAL",
+              "value": "assetsAndFetch.acceptedImagePixelsPerContent"
+            }
+          },
+          {
+            "assertionId": "A005",
+            "probeId": "capacity.observedValue",
+            "operator": "EQ",
+            "expected": {
+              "kind": "LITERAL",
+              "value": "100000000"
+            }
+          },
+          {
+            "assertionId": "A006",
+            "probeId": "capacity.reservationReached",
+            "operator": "EQ",
+            "expected": {
+              "kind": "LITERAL",
+              "value": true
+            }
+          },
+          {
+            "assertionId": "A007",
+            "probeId": "capacity.zeroBoundary",
+            "operator": "ABSENT"
+          },
+          {
+            "assertionId": "A008",
+            "probeId": "operation.downstreamEffects",
+            "operator": "SEQUENCE_EQ",
+            "expected": {
+              "kind": "LITERAL",
+              "value": [
+                "targetAxisAccepted=1"
+              ]
+            }
+          }
+        ],
+        "plannedOracleId": "ORC::CAPACITY::000347",
+        "publicRenderStage": "ASSET_ADMISSION",
+        "requirementIds": [
+          "RW-T19-S7-005",
+          "RW-T19-S7-006",
+          "RW-T19-S7-007",
+          "RW-T19-S8-014",
+          "RW-T19-S9-019"
+        ],
+        "reservationPoint": "before admitting the next authored or resolved Asset unit and before external fetch",
+        "resolvedCode": "ASSET_CONTENT_LIMIT_EXCEEDED",
+        "resolvedKind": "capacity",
+        "stimulusValue": "100000000",
+        "valueEncoding": "CANONICAL_INTEGER",
+        "variant": "at",
+        "zeroBoundary": "ZERO_DOCUMENT_OUTPUT"
+      },
+      "fixtureArtifactPath": "domain-services/fixtures/cap-accepted-image-pixels-per-content-at.json"
+    },
+    {
+      "scenarioId": "CAP::assetsAndFetch.acceptedImagePixelsPerContent::above",
+      "mode": "CAPACITY_BOUNDARY",
+      "parameters": {
+        "comparator": "MAX_INCLUSIVE",
+        "contractStage": "ASSET_CONTENT_ADMISSION",
+        "deltaId": "INTEGER_UNIT",
+        "executionClass": "EXEC::DOMAIN_SERVICES::1.0",
+        "limitId": "assetsAndFetch.acceptedImagePixelsPerContent",
+        "limitValue": "100000000",
+        "mode": "CAPACITY_BOUNDARY",
+        "plannedAssertions": [
+          {
+            "assertionId": "A001",
+            "probeId": "operation.accepted",
+            "operator": "EQ",
+            "expected": {
+              "kind": "LITERAL",
+              "value": false
+            }
+          },
+          {
+            "assertionId": "A002",
+            "probeId": "operation.terminalCode",
+            "operator": "EQ",
+            "expected": {
+              "kind": "LITERAL",
+              "value": "ASSET_CONTENT_LIMIT_EXCEEDED"
+            }
+          },
+          {
+            "assertionId": "A003",
+            "probeId": "operation.terminalStage",
+            "operator": "EQ",
+            "expected": {
+              "kind": "LITERAL",
+              "value": "ASSET_CONTENT_ADMISSION"
+            }
+          },
+          {
+            "assertionId": "A004",
+            "probeId": "capacity.limitId",
+            "operator": "EQ",
+            "expected": {
+              "kind": "LITERAL",
+              "value": "assetsAndFetch.acceptedImagePixelsPerContent"
+            }
+          },
+          {
+            "assertionId": "A005",
+            "probeId": "capacity.observedValue",
+            "operator": "EQ",
+            "expected": {
+              "kind": "LITERAL",
+              "value": "100000001"
+            }
+          },
+          {
+            "assertionId": "A006",
+            "probeId": "capacity.reservationReached",
+            "operator": "EQ",
+            "expected": {
+              "kind": "LITERAL",
+              "value": true
+            }
+          },
+          {
+            "assertionId": "A007",
+            "probeId": "capacity.zeroBoundary",
+            "operator": "EQ",
+            "expected": {
+              "kind": "LITERAL",
+              "value": "ZERO_DOCUMENT_OUTPUT"
+            }
+          },
+          {
+            "assertionId": "A008",
+            "probeId": "operation.downstreamEffects",
+            "operator": "SEQUENCE_EQ",
+            "expected": {
+              "kind": "LITERAL",
+              "value": [
+                "renderDocuments=0",
+                "engineCommands=0",
+                "renderOutputs=0"
+              ]
+            }
+          }
+        ],
+        "plannedOracleId": "ORC::CAPACITY::000348",
+        "publicRenderStage": "ASSET_ADMISSION",
+        "requirementIds": [
+          "RW-T19-S7-005",
+          "RW-T19-S7-006",
+          "RW-T19-S7-007",
+          "RW-T19-S8-014",
+          "RW-T19-S9-019"
+        ],
+        "reservationPoint": "before admitting the next authored or resolved Asset unit and before external fetch",
+        "resolvedCode": "ASSET_CONTENT_LIMIT_EXCEEDED",
+        "resolvedKind": "capacity",
+        "stimulusValue": "100000001",
+        "valueEncoding": "CANONICAL_INTEGER",
+        "variant": "above",
+        "zeroBoundary": "ZERO_DOCUMENT_OUTPUT"
+      },
+      "fixtureArtifactPath": "domain-services/fixtures/cap-accepted-image-pixels-per-content-above.json"
+    },
+    {
+      "scenarioId": "CAP::assetsAndFetch.acceptedFontBytesPerContent::below",
+      "mode": "CAPACITY_BOUNDARY",
+      "parameters": {
+        "comparator": "MAX_INCLUSIVE",
+        "contractStage": "ASSET_CONTENT_ADMISSION",
+        "deltaId": "INTEGER_UNIT",
+        "executionClass": "EXEC::DOMAIN_SERVICES::1.0",
+        "limitId": "assetsAndFetch.acceptedFontBytesPerContent",
+        "limitValue": "33554432",
+        "mode": "CAPACITY_BOUNDARY",
+        "plannedAssertions": [
+          {
+            "assertionId": "A001",
+            "probeId": "operation.accepted",
+            "operator": "EQ",
+            "expected": {
+              "kind": "LITERAL",
+              "value": true
+            }
+          },
+          {
+            "assertionId": "A002",
+            "probeId": "operation.terminalCode",
+            "operator": "ABSENT"
+          },
+          {
+            "assertionId": "A003",
+            "probeId": "operation.terminalStage",
+            "operator": "ABSENT"
+          },
+          {
+            "assertionId": "A004",
+            "probeId": "capacity.limitId",
+            "operator": "EQ",
+            "expected": {
+              "kind": "LITERAL",
+              "value": "assetsAndFetch.acceptedFontBytesPerContent"
+            }
+          },
+          {
+            "assertionId": "A005",
+            "probeId": "capacity.observedValue",
+            "operator": "EQ",
+            "expected": {
+              "kind": "LITERAL",
+              "value": "33554431"
+            }
+          },
+          {
+            "assertionId": "A006",
+            "probeId": "capacity.reservationReached",
+            "operator": "EQ",
+            "expected": {
+              "kind": "LITERAL",
+              "value": true
+            }
+          },
+          {
+            "assertionId": "A007",
+            "probeId": "capacity.zeroBoundary",
+            "operator": "ABSENT"
+          },
+          {
+            "assertionId": "A008",
+            "probeId": "operation.downstreamEffects",
+            "operator": "SEQUENCE_EQ",
+            "expected": {
+              "kind": "LITERAL",
+              "value": [
+                "targetAxisAccepted=1"
+              ]
+            }
+          }
+        ],
+        "plannedOracleId": "ORC::CAPACITY::000349",
+        "publicRenderStage": "ASSET_ADMISSION",
+        "requirementIds": [
+          "RW-T19-S7-005",
+          "RW-T19-S7-006",
+          "RW-T19-S7-007",
+          "RW-T19-S8-015",
+          "RW-T19-S9-019"
+        ],
+        "reservationPoint": "before admitting the next authored or resolved Asset unit and before external fetch",
+        "resolvedCode": "ASSET_CONTENT_LIMIT_EXCEEDED",
+        "resolvedKind": "capacity",
+        "stimulusValue": "33554431",
+        "valueEncoding": "CANONICAL_INTEGER",
+        "variant": "below",
+        "zeroBoundary": "ZERO_DOCUMENT_OUTPUT"
+      },
+      "fixtureArtifactPath": "domain-services/fixtures/cap-accepted-font-bytes-per-content-below.json"
+    },
+    {
+      "scenarioId": "CAP::assetsAndFetch.acceptedFontBytesPerContent::at",
+      "mode": "CAPACITY_BOUNDARY",
+      "parameters": {
+        "comparator": "MAX_INCLUSIVE",
+        "contractStage": "ASSET_CONTENT_ADMISSION",
+        "deltaId": "INTEGER_UNIT",
+        "executionClass": "EXEC::DOMAIN_SERVICES::1.0",
+        "limitId": "assetsAndFetch.acceptedFontBytesPerContent",
+        "limitValue": "33554432",
+        "mode": "CAPACITY_BOUNDARY",
+        "plannedAssertions": [
+          {
+            "assertionId": "A001",
+            "probeId": "operation.accepted",
+            "operator": "EQ",
+            "expected": {
+              "kind": "LITERAL",
+              "value": true
+            }
+          },
+          {
+            "assertionId": "A002",
+            "probeId": "operation.terminalCode",
+            "operator": "ABSENT"
+          },
+          {
+            "assertionId": "A003",
+            "probeId": "operation.terminalStage",
+            "operator": "ABSENT"
+          },
+          {
+            "assertionId": "A004",
+            "probeId": "capacity.limitId",
+            "operator": "EQ",
+            "expected": {
+              "kind": "LITERAL",
+              "value": "assetsAndFetch.acceptedFontBytesPerContent"
+            }
+          },
+          {
+            "assertionId": "A005",
+            "probeId": "capacity.observedValue",
+            "operator": "EQ",
+            "expected": {
+              "kind": "LITERAL",
+              "value": "33554432"
+            }
+          },
+          {
+            "assertionId": "A006",
+            "probeId": "capacity.reservationReached",
+            "operator": "EQ",
+            "expected": {
+              "kind": "LITERAL",
+              "value": true
+            }
+          },
+          {
+            "assertionId": "A007",
+            "probeId": "capacity.zeroBoundary",
+            "operator": "ABSENT"
+          },
+          {
+            "assertionId": "A008",
+            "probeId": "operation.downstreamEffects",
+            "operator": "SEQUENCE_EQ",
+            "expected": {
+              "kind": "LITERAL",
+              "value": [
+                "targetAxisAccepted=1"
+              ]
+            }
+          }
+        ],
+        "plannedOracleId": "ORC::CAPACITY::000350",
+        "publicRenderStage": "ASSET_ADMISSION",
+        "requirementIds": [
+          "RW-T19-S7-005",
+          "RW-T19-S7-006",
+          "RW-T19-S7-007",
+          "RW-T19-S8-015",
+          "RW-T19-S9-019"
+        ],
+        "reservationPoint": "before admitting the next authored or resolved Asset unit and before external fetch",
+        "resolvedCode": "ASSET_CONTENT_LIMIT_EXCEEDED",
+        "resolvedKind": "capacity",
+        "stimulusValue": "33554432",
+        "valueEncoding": "CANONICAL_INTEGER",
+        "variant": "at",
+        "zeroBoundary": "ZERO_DOCUMENT_OUTPUT"
+      },
+      "fixtureArtifactPath": "domain-services/fixtures/cap-accepted-font-bytes-per-content-at.json"
+    },
+    {
+      "scenarioId": "CAP::assetsAndFetch.acceptedFontBytesPerContent::above",
+      "mode": "CAPACITY_BOUNDARY",
+      "parameters": {
+        "comparator": "MAX_INCLUSIVE",
+        "contractStage": "ASSET_CONTENT_ADMISSION",
+        "deltaId": "INTEGER_UNIT",
+        "executionClass": "EXEC::DOMAIN_SERVICES::1.0",
+        "limitId": "assetsAndFetch.acceptedFontBytesPerContent",
+        "limitValue": "33554432",
+        "mode": "CAPACITY_BOUNDARY",
+        "plannedAssertions": [
+          {
+            "assertionId": "A001",
+            "probeId": "operation.accepted",
+            "operator": "EQ",
+            "expected": {
+              "kind": "LITERAL",
+              "value": false
+            }
+          },
+          {
+            "assertionId": "A002",
+            "probeId": "operation.terminalCode",
+            "operator": "EQ",
+            "expected": {
+              "kind": "LITERAL",
+              "value": "ASSET_CONTENT_LIMIT_EXCEEDED"
+            }
+          },
+          {
+            "assertionId": "A003",
+            "probeId": "operation.terminalStage",
+            "operator": "EQ",
+            "expected": {
+              "kind": "LITERAL",
+              "value": "ASSET_CONTENT_ADMISSION"
+            }
+          },
+          {
+            "assertionId": "A004",
+            "probeId": "capacity.limitId",
+            "operator": "EQ",
+            "expected": {
+              "kind": "LITERAL",
+              "value": "assetsAndFetch.acceptedFontBytesPerContent"
+            }
+          },
+          {
+            "assertionId": "A005",
+            "probeId": "capacity.observedValue",
+            "operator": "EQ",
+            "expected": {
+              "kind": "LITERAL",
+              "value": "33554433"
+            }
+          },
+          {
+            "assertionId": "A006",
+            "probeId": "capacity.reservationReached",
+            "operator": "EQ",
+            "expected": {
+              "kind": "LITERAL",
+              "value": true
+            }
+          },
+          {
+            "assertionId": "A007",
+            "probeId": "capacity.zeroBoundary",
+            "operator": "EQ",
+            "expected": {
+              "kind": "LITERAL",
+              "value": "ZERO_DOCUMENT_OUTPUT"
+            }
+          },
+          {
+            "assertionId": "A008",
+            "probeId": "operation.downstreamEffects",
+            "operator": "SEQUENCE_EQ",
+            "expected": {
+              "kind": "LITERAL",
+              "value": [
+                "renderDocuments=0",
+                "engineCommands=0",
+                "renderOutputs=0"
+              ]
+            }
+          }
+        ],
+        "plannedOracleId": "ORC::CAPACITY::000351",
+        "publicRenderStage": "ASSET_ADMISSION",
+        "requirementIds": [
+          "RW-T19-S7-005",
+          "RW-T19-S7-006",
+          "RW-T19-S7-007",
+          "RW-T19-S8-015",
+          "RW-T19-S9-019"
+        ],
+        "reservationPoint": "before admitting the next authored or resolved Asset unit and before external fetch",
+        "resolvedCode": "ASSET_CONTENT_LIMIT_EXCEEDED",
+        "resolvedKind": "capacity",
+        "stimulusValue": "33554433",
+        "valueEncoding": "CANONICAL_INTEGER",
+        "variant": "above",
+        "zeroBoundary": "ZERO_DOCUMENT_OUTPUT"
+      },
+      "fixtureArtifactPath": "domain-services/fixtures/cap-accepted-font-bytes-per-content-above.json"
+    },
+    {
+      "scenarioId": "DOMAIN-BASELINE-NOOP",
+      "mode": "NAMED_SCENARIO",
+      "parameters": {
+        "mode": "NAMED_SCENARIO",
+        "scenarioId": "DOMAIN-BASELINE-NOOP",
+        "fixtureArtifactPath": "domain-services/fixtures/named-domain-baseline-noop.json",
+        "fixtureArtifactSha256": "sha256:152848e36dcdbf7f567d00c3b5c253ef966c1544faf15a66a44f2a1678ddb829",
+        "expectedObservationProfile": "renderweave-domain-services-observation-adapter/1.0"
+      },
+      "fixtureArtifactPath": "domain-services/fixtures/named-domain-baseline-noop.json"
+    }
+  ],
+  "scenarioCount": 13,
+  "capacityScenarioCount": 12,
+  "namedScenarioCount": 1
+}

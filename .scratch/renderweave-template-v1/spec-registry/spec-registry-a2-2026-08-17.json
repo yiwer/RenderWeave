@@ -1,0 +1,160 @@
+{
+  "evidenceVersion": "renderweave-spec-registry-a2/1.1",
+  "evidenceId": "SPEC_REGISTRY_A2::2026-08-17::000002",
+  "status": "PASS",
+  "grade": "A2_INDEPENDENTLY_REPLAYED",
+  "scope": "EXEC::SPEC_REGISTRY::1.0 only",
+  "predecessorEvidenceId": "SPEC_REGISTRY_A2::2026-08-16::000001",
+  "specRevision": {
+    "branch": "spec/template-v1",
+    "baseCommit": "b14c2d7d4978c679e7ab8e7a2bace3da7af884de",
+    "implementationRevision": "spec-registry-bootstrap/1.13"
+  },
+  "authorityBindings": {
+    "acceptanceManifest": {
+      "path": "acceptance-manifest-v1.json",
+      "sha256": "sha256:9db08ea5263e2431ecd8ec1b2a336baa51e248540473475bc2a0cb9cdd3d840c",
+      "byteLength": 54373
+    },
+    "requirementsRegistry": {
+      "path": "requirements-v1.json",
+      "sha256": "sha256:f038abf56d2db6168c1eac2b64ac26fdd3ada7d8e21e0c018e4bb27a6cd88bab",
+      "byteLength": 9646,
+      "registeredRequirementCount": 3651
+    },
+    "probeProfile": {
+      "path": "conformance-probe-profile-v1.json",
+      "sha256": "sha256:f800eb1e6e138215c26c7761ed80e0fc9cf77fc3ce051be4e3c5ba530cd6053d",
+      "byteLength": 51328
+    },
+    "safeBaselineManifest": {
+      "path": "conformance-safe-baselines-v1.json",
+      "sha256": "sha256:7ce057b57600c639e15a6e5055689efcb170af037e24515126ccdf94f9039569",
+      "byteLength": 19435
+    },
+    "generatorManifest": {
+      "path": "conformance-generator-manifests-v1.json",
+      "sha256": "sha256:d117a993462c022ee1810fc7e200a38a90d4a274c2a72e6f1e4090d121f80645",
+      "byteLength": 14326
+    },
+    "manifestSnapshotPolicy": {
+      "path": "conformance-manifest-snapshot-policy-v1.json",
+      "sha256": "sha256:60b2dde31826ba766b7a8fe5e3ea6aa98ef1162e216069d739e475581490b327",
+      "byteLength": 6380,
+      "retainedSnapshotCount": 13,
+      "latestFallbackAllowed": false
+    },
+    "capacityCoverage": {
+      "path": "conformance-capacity-coverage-v1.json",
+      "sha256": "sha256:d9662c79464f0fe726ff9067068d9317565e4f4d1caa13b04cf5c0b2e0e60582",
+      "byteLength": 318460
+    },
+    "capacityMaterialization": {
+      "path": "capacity-boundary/materialization-manifest-v1.json",
+      "sha256": "sha256:0e7a5b8d1b2b8e9b816dc4434456b0c0c0868a9aff8c4dfa5c1dc60092669252",
+      "byteLength": 5211,
+      "axisCount": 175,
+      "candidateCaseCount": 525,
+      "candidateOracleCount": 525,
+      "formallyIssued": false
+    },
+    "targetManifest": {
+      "path": "spec-registry/target-manifest-v1.json",
+      "sha256": "sha256:122577f0dc84713897e5d7803b21d94fd283fff067aa54cbdc9d20b29e767e84",
+      "byteLength": 77305
+    },
+    "primaryExecutorManifest": {
+      "path": "spec-registry/primary-executor-manifest-v1.json",
+      "sha256": "sha256:6a2e8ff105aac4532cf7686365d934c1e71e991d49ea523aad09ab3cf450a5a7",
+      "byteLength": 950
+    },
+    "independentExecutorManifest": {
+      "path": "spec-registry/independent-executor-manifest-v1.json",
+      "sha256": "sha256:a0788cbc90fde6d1510cf105facf787a9dfe88ec56f29c5ab02714632888b900",
+      "byteLength": 973
+    }
+  },
+  "registryBindings": {
+    "candidateCases": {
+      "path": "spec-registry/candidate/conformance-cases-v1.jsonl",
+      "sha256": "sha256:ebe58e84977ee84befe89f8c126f37fbec7076cd7725b29f1b7609448fe7ef16",
+      "byteLength": 146309,
+      "recordCount": 46
+    },
+    "formalCases": {
+      "path": "conformance-cases-v1.jsonl",
+      "sha256": "sha256:ebe58e84977ee84befe89f8c126f37fbec7076cd7725b29f1b7609448fe7ef16",
+      "byteLength": 146309,
+      "recordCount": 46,
+      "byteIdenticalToCandidate": true
+    },
+    "candidateOracles": {
+      "path": "spec-registry/candidate/conformance-oracles-v1.jsonl",
+      "sha256": "sha256:3825b9fb40c1b43c484da3ebdf29429ed749e622012212ca79f9cea5b9cb9339",
+      "byteLength": 63191,
+      "recordCount": 46
+    },
+    "formalOracles": {
+      "path": "conformance-oracles-v1.jsonl",
+      "sha256": "sha256:3825b9fb40c1b43c484da3ebdf29429ed749e622012212ca79f9cea5b9cb9339",
+      "byteLength": 63191,
+      "recordCount": 46,
+      "byteIdenticalToCandidate": true
+    },
+    "activeCorpusDigest": "sha256:96d5bc83d51820c698fcb98db5ca6416a655186c1420f9d92ef06db0449906e7"
+  },
+  "replay": {
+    "primary": {
+      "result": {
+        "path": "spec-registry/primary-result-v1.json",
+        "sha256": "sha256:2862fbc8c8dea945f409e6d7eea23123b5823bd896885a790467db3679792be6",
+        "byteLength": 745
+      },
+      "status": "PASS",
+      "checkCount": 22838,
+      "failureCount": 0,
+      "runtime": "v24.18.0"
+    },
+    "independent": {
+      "result": {
+        "path": "spec-registry/independent-result-v1.json",
+        "sha256": "sha256:35b98910618c92796ab6c87d8bdc0602bb22d3595967d3056fdda26163e84438",
+        "byteLength": 761
+      },
+      "status": "PASS",
+      "checkCount": 22746,
+      "failureCount": 0,
+      "runtime": "3.12.13"
+    },
+    "sharedSemanticLibrary": null,
+    "differentRuntimeAndParserImplementations": true
+  },
+  "observedFrontier": {
+    "snapshotCatalogClosureValid": true,
+    "issuedSpecCaseCount": 46,
+    "issuedSpecOracleCount": 46,
+    "capacityAxisCount": 175,
+    "capacityShapeCandidateCaseCount": 525,
+    "capacityShapeCandidateOracleCount": 525,
+    "capacityRecordsIssued": 0,
+    "capacityProductExecutionObserved": false
+  },
+  "sideEffects": {
+    "productCodeFilesChanged": 0,
+    "productWritesObservedPerCase": 0,
+    "renderDocumentsObservedPerCase": 0,
+    "renderOutputsObservedPerCase": 0,
+    "networkAttempts": 0,
+    "externalProviderAttempts": 0
+  },
+  "boundary": {
+    "currentIssuancePhase": "CAPACITY_BOUNDARY",
+    "otherExecutionClassesExecutable": false,
+    "isolatedCapacityRecordsIssued": 0,
+    "combinedCapacityRecordsIssued": 0,
+    "fullAutomatedCorpusExecutable": false,
+    "rendererCertified": false,
+    "rendererReady": false,
+    "ticket19Closed": false
+  }
+}

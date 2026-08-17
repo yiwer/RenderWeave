@@ -1,0 +1,15 @@
+{
+  "artifactVersion": "renderweave-editor-input-fixture/1.0",
+  "candidateId": "EDC::J05::009",
+  "executionClass": "EXEC::EDITOR_AUTOMATED::1.0",
+  "baselineId": "EditorStructuredWithLocatableProblem",
+  "parameters": {},
+  "actionScript": [
+    {
+      "action": "ACTIVATE_PROBLEM_LOCATION",
+      "parameters": {
+        "problemIndex": 0
+      }
+    }
+  ]
+}

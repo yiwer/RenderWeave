@@ -1,0 +1,7 @@
+[
+  {
+    "operationId": "replaceWorkingDraft",
+    "outcome": "NONTERMINAL_REJECTION",
+    "code": "EDITOR_DIRTY_DRAFT_REPLACEMENT_BLOCKED"
+  }
+]
