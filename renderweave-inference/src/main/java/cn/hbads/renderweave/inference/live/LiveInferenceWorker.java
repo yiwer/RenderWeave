@@ -28,6 +28,7 @@ import cn.hbads.renderweave.inference.provider.ProviderImage;
 import cn.hbads.renderweave.inference.provider.ProviderInferenceRequest;
 import cn.hbads.renderweave.inference.provider.ProviderInferenceResponse;
 import cn.hbads.renderweave.inference.provider.ProviderNotConfiguredException;
+import cn.hbads.renderweave.inference.provider.ProfileRunBudgetPolicy;
 import cn.hbads.renderweave.inference.replay.InferenceAttempt;
 import cn.hbads.renderweave.inference.replay.InferenceAttemptProblemTaxonomy;
 import cn.hbads.renderweave.inference.replay.InferenceAttemptStatus;
@@ -451,7 +452,9 @@ public final class LiveInferenceWorker {
         }
         var reservation = budgetStore.reserve(
                 budgetKey(profile), current.runId(), attemptOrdinal,
-                maximumRequestCost, current.costLimitMicrosCny(), invocationNow
+                maximumRequestCost,
+                ProfileRunBudgetPolicy.effectiveRunCostLimit(profile, current.costLimitMicrosCny()),
+                invocationNow
         );
         var started = System.nanoTime();
         final ProviderInferenceResponse response;

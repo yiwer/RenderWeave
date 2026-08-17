@@ -31,7 +31,8 @@ RenderWeave v1 让技术型设计者定义可变的 Schema Draft，把精确 rev
 | Product Profile catalog | 当前允许创建新 live run 的、顺序固定且 ID 精确的 immutable Inference Profile 集合。 | 不是质量认证、`latest` alias，也不会改变历史 run snapshot。 |
 | Profile readiness | 启动时探测到的本地 capability 是否精确满足某个 Inference Profile 的 payload-free admission 事实。 | 不是模型质量、Provider 凭据、费用授权或对缺失能力的静默降级。 |
 | Profile Certification | 一份精确不可变 Inference Profile 对冻结语料、指标、独立复核与人工判断所形成的质量资格事实。 | 不是 Profile readiness、产品目录可见性、单例可达、运行授权或自动成为默认模型。 |
-| ProfileCertificationRecord | 对某一 exact Inference Profile（`profileId` + bytes SHA-256）授予、维持或撤销 Profile Certification 的外部可变记录；认证状态变化只改写本记录，Profile bytes 永不因此改写。 | 不是 Inference Profile bytes 的一部分、Profile readiness、live 运行授权或 Product Profile catalog 成员资格本身。 |
+| FrozenCertificationCycle | 在查看 stage 输出前绑定 exact Profile bytes、5/20/60 case hashes/assignment、20 HOLDOUT、threshold、evaluator 与 evidence identity 的不可变认证周期。 | 不是可补丁的评测配置、历史 N7/R5 assignment、live J1、Profile grant 或失败后可原地重跑的容器。 |
+| ProfileCertificationRecord | 对某一 exact Inference Profile（`profileId` + bytes SHA-256）授予、维持或撤销 Profile Certification 的 append-only 事件投影；状态变化只追加 event，既有 event 与 Profile bytes 均不改写。 | 不是 Inference Profile bytes 的一部分、Profile readiness、live 运行授权或 Product Profile catalog 成员资格本身。 |
 | InputProvenance | 一次推断输入的来源与提交者是否拥有处理及外发权利的事实；首个产品值为 `USER_PROVIDED`。 | 不是数据敏感等级、内容安全判断、Provider 处理合同或长期授权。 |
 | SensitivityClass | 对一次推断输入的数据敏感程度作出的闭合分类；首版只有可准入的 `ORDINARY_DESIGN` 与必拒绝的 `RESTRICTED`，缺失或未知不构成第三个可放行值。 | 不是 InputProvenance、用户勾选的外发确认、文件类型、AI 自动判定或模型 Profile。 |
 | GatewayAssertion | 唯一外部网关为一次 API 请求签发、由应用验证的短期身份事实，以 opaque actor 与 request identity 把上游认证及 mutation intent 带入审计边界。 | 不是 RenderWeave 账号/RBAC、客户端可声明 header、长期 session、数据外传确认或业务授权。 |

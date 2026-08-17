@@ -1,5 +1,12 @@
 # RenderWeave 图片识别数据结构 vNext Goal 计划
 
+- 2026-08-17 调度权威更新：本文件作为 vNext 历史执行/证据记录保留；N7/R5/R5P/R5P2 及其
+  authorization/ledger 已 `CLOSED`，不得从本文件恢复调度。product-v45 为 `ACTIVE_EXPERIMENTAL`；后续
+  IMAGE_ONLY production admission 只由
+  [`plans/image-only-production-admission-plan-v1.md`](image-only-production-admission-plan-v1.md) 编排。
+- 2026-08-17 P0 checkpoint：IOPA-P0-01..05=`automated_verified`；v46 仅为 hidden certification candidate，
+  Provider-zero 与 OPEN authorization=0 已由 `image-only-p0` gate 捕获。P1 只接受 fresh 5/20/60 cycle 与逐阶段
+  exact scoped J1，不得复用本文件的历史 assignment、ledger 或 evidence。
 - 状态：in_progress（编排 Goal `019fec8e-a851-7952-b49b-8be76a281a57` 因 turn interrupt 当前显示
   `paused`；用户已在本轮明确继续同一目标，未创建 replacement Goal）
 - 日期：2026-08-10

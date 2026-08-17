@@ -187,21 +187,52 @@ class PostgresProviderBudgetStoreTest {
     }
 
     @Test
-    void productV42MayReserveSevenOrderedAttemptsButNeverAnEighth() {
+    void providerLedgerSupportsTwelveOrderedAttemptsButNeverAThirteenth() {
         var runId = createRun(
-                "dashscope-qwen37-plus-product-v42-hybrid-generic", "seven-call-visual-budget"
+                "dashscope-qwen38-max-product-v46-hybrid-generic", "twelve-call-visual-budget"
         );
 
-        var seventh = budgets.reserve(BUDGET, runId, 6, 20_000, T0);
+        var twelfth = budgets.reserve(BUDGET, runId, 11, 20_000, T0);
 
-        assertThat(seventh.attemptOrdinal()).isEqualTo(6);
-        assertThatThrownBy(() -> budgets.reserve(BUDGET, runId, 7, 20_000, T0.plusSeconds(1)))
+        assertThat(twelfth.attemptOrdinal()).isEqualTo(11);
+        assertThatThrownBy(() -> budgets.reserve(BUDGET, runId, 12, 20_000, T0.plusSeconds(1)))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Provider reservation bounds are invalid");
         assertThatThrownBy(() -> new ProviderBudgetReservation(
-                UUID.randomUUID(), BUDGET, runId, 7, 20_000
+                UUID.randomUUID(), BUDGET, runId, 12, 20_000
         )).isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Reservation bounds are invalid");
+    }
+
+    @Test
+    void v46RunCapCountsSettledAndReservedCostBeforeEveryReservation() {
+        var runId = createRun(
+                "dashscope-qwen38-max-product-v46-hybrid-generic", "v46-run-aggregate"
+        );
+        var first = budgets.reserve(PRODUCT_BUDGET, runId, 0, 500_000, 6_000_000L, T0);
+        for (var ordinal = 1; ordinal <= 10; ordinal++) {
+            budgets.reserve(PRODUCT_BUDGET, runId, ordinal, 500_000, 6_000_000L,
+                    T0.plusSeconds(ordinal));
+        }
+
+        assertThatThrownBy(() -> budgets.reserve(
+                PRODUCT_BUDGET, runId, 11, 600_000, 6_000_000L, T0.plusSeconds(20)
+        )).isInstanceOf(ProviderBudgetExceededException.class)
+                .extracting(failure -> ((ProviderBudgetExceededException) failure).code())
+                .isEqualTo("PROVIDER_RUN_COST_LIMIT_EXCEEDED");
+
+        budgets.settle(first.reservationId(), 250_000, T0.plusSeconds(21));
+        var twelfth = budgets.reserve(
+                PRODUCT_BUDGET, runId, 11, 750_000, 6_000_000L, T0.plusSeconds(22)
+        );
+        assertThat(twelfth.attemptOrdinal()).isEqualTo(11);
+        assertThatThrownBy(() -> budgets.reserve(
+                PRODUCT_BUDGET, createRun(
+                        "dashscope-qwen38-max-product-v46-hybrid-generic", "v46-single-over-cap"
+                ), 0, 6_000_001, 6_000_000L, T0.plusSeconds(23)
+        )).isInstanceOf(ProviderBudgetExceededException.class)
+                .extracting(failure -> ((ProviderBudgetExceededException) failure).code())
+                .isEqualTo("PROVIDER_RUN_COST_LIMIT_EXCEEDED");
     }
 
     private UUID createRun(String profileId, String seed) {

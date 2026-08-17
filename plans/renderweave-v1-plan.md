@@ -1,5 +1,12 @@
 # RenderWeave v1 Phase 计划
 
+- 2026-08-17 调度权威更新：本文件保留 v1 历史计划与证据，不再调度 N7/R5/R5P/R5P2；这些路线及其
+  authorization/ledger 均为 `CLOSED`，product-v45 为 `ACTIVE_EXPERIMENTAL`。IMAGE_ONLY production admission
+  的当前执行计划是 [`plans/image-only-production-admission-plan-v1.md`](image-only-production-admission-plan-v1.md)，
+  细节决定仍以 closed wayfinder 源票为权威。
+- 2026-08-17 P0 checkpoint：IOPA-P0-01..05=`automated_verified`；hidden v46 canonical SHA-256 =
+  `22f561c88b30fabbf3ba660bcfe203fb570975f770ff122f2ce1c7216454ac0c`；Provider attempts/reservations/cost/
+  API-key reads=0，OPEN authorization=0。未形成 Profile certification grant、live J1 或 production authority。
 - 状态：P1–P4 implementation complete；P5 T5-1–T5-11 已完成通路、质量实测与安全硬化；P6 T6-1 已独立复核，T6-2 四步 AI Schema 识别工作台已完成 clean A1/独立 A2、最终成品 J1 待确认；T6-3a 产品 live 已开放，T6-3a.1–a.8 已闭合产品输入、审核与串行视觉分析协议，当前 product-v45 已证明指定输入 reachability 但未通过全局质量门；T6-3b 恢复演练待推进。历史评测 authorization 均为 `CLOSED`，三个当前产品 Profile 为 `EXPERIMENTAL` 且只在显式 product-live 部署中开放
 - 日期：2026-08-10
 - Spec：[`specs/renderweave-v1.md`](../specs/renderweave-v1.md)

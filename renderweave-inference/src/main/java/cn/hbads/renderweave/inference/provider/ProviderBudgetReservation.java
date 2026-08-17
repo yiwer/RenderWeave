@@ -10,7 +10,7 @@ public record ProviderBudgetReservation(
         int attemptOrdinal,
         long reservedCostMicrosCny
 ) {
-    public static final int MAXIMUM_PROVIDER_CALLS = 7;
+    public static final int MAXIMUM_PROVIDER_CALLS = 12;
     public static final int MAXIMUM_ATTEMPT_ORDINAL = MAXIMUM_PROVIDER_CALLS - 1;
 
     public ProviderBudgetReservation {

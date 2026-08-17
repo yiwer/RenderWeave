@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-    [ValidateSet('fast', 'server', 'web', 'eval', 'e2e', 'draft-e2e', 'inference-e2e', 'compose', 'runtime', 'document-vision', 'observation-r0', 'layered-r1', 'capacity', 'full')]
+    [ValidateSet('fast', 'server', 'web', 'eval', 'e2e', 'draft-e2e', 'inference-e2e', 'compose', 'runtime', 'document-vision', 'observation-r0', 'layered-r1', 'image-only-p0', 'capacity', 'full')]
     [string]$Gate = 'fast'
 )
 
@@ -113,8 +113,9 @@ try {
         'document-vision' { @('document-vision-adapter-tests', 'document-vision-canary') }
         'observation-r0' { @('document-observation-r0') }
         'layered-r1' { @('document-observation-r0', 'layered-evaluation-r1') }
+        'image-only-p0' { @('image-only-certification-p0') }
         'capacity' { @('capacity-baseline') }
-        'full' { @('repository-diff', 'server-verify', 'web-node24', 'offline-eval', 'document-observation-r0', 'layered-evaluation-r1', 'compose-config', 'runtime-canary', 'document-vision-adapter-tests', 'prototype-e2e', 'draft-browser-e2e', 'inference-browser-e2e') }
+        'full' { @('repository-diff', 'server-verify', 'web-node24', 'offline-eval', 'document-observation-r0', 'layered-evaluation-r1', 'image-only-certification-p0', 'compose-config', 'runtime-canary', 'document-vision-adapter-tests', 'prototype-e2e', 'draft-browser-e2e', 'inference-browser-e2e') }
     }
 
     foreach ($step in $requestedSteps) {
@@ -204,6 +205,19 @@ try {
                     if ($LASTEXITCODE -eq 0 -and -not (
                             Test-Path -LiteralPath $independentSummary -PathType Leaf)) {
                         throw 'Layered R1 gate completed without producing its independent summary.'
+                    }
+                }
+            }
+            'image-only-certification-p0' {
+                Invoke-GateStep $step {
+                    $command = 'powershell.exe -NoProfile -ExecutionPolicy Bypass ' +
+                        '-File tools\run-image-only-certification-p0.ps1 -EvidenceDir "' +
+                        $evidenceDir + '"'
+                    Invoke-ZeroPaidAiCommand $command
+                    $independentSummary = Join-Path $evidenceDir 'image-only-p0-independent.json'
+                    if ($LASTEXITCODE -eq 0 -and -not (
+                            Test-Path -LiteralPath $independentSummary -PathType Leaf)) {
+                        throw 'IMAGE_ONLY P0 gate completed without producing its independent summary.'
                     }
                 }
             }

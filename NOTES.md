@@ -1,6 +1,22 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-17 **IMAGE_ONLY production admission P0-01..05 已 `automated_verified`**：创建 hidden
+  `dashscope-qwen38-max-product-v46-hybrid-generic`（canonical SHA
+  `22f561c88b30fabbf3ba660bcfe203fb570975f770ff122f2ce1c7216454ac0c`），相对 v45 仅三字段差异；实现
+  12-call/单 run ¥6 settled+reserved 聚合预算、append-only Profile certification events、seeded 5/20/60 +
+  20 HOLDOUT evaluator、严格 per-stage J1 schema/preflight 与 `image-only-p0` gate。证据
+  `.sdlc/evidence/20260817-153507-image-only-p0/`：Java 15/15、Testcontainers PostgreSQL 18/18、Python
+  A2 strict-input replay PASS；完整服务端回归 `.sdlc/evidence/20260817-151431-server/` 绿色。Provider
+  attempts/reservations/cost/API-key reads=0，v46 OPEN authorization=0。
+  当前 lifecycle 不是 certification grant/J1/release；会话给出的每模型 1M token/48h 仅冻结为授权上限，P1
+  仍需 fresh 5-case hashes、exact manifest/calls/cost 后逐阶段 scoped J1。下一入口 IOPA-P1-01；P2 可并行安全推进。
+- 2026-08-17 **IMAGE_ONLY production admission 已完成 `$to-spec` 规划交付**：approved delta =
+  `specs/changes/20260817-image-only-production-admission.md`，Project Mode 实施计划 =
+  `plans/image-only-production-admission-plan-v1.md`，该规划步骤当时状态为 `Plan-ready/planned`。关键路径冻结为
+  P0 v46+认证骨架 → P1 fresh 5/20/60 certification → P2 secure intake/envelope encryption/UDS OCR sidecar →
+  P3 production release candidate → P4 isolated restore drill → P5 guarded pilot entry。旧 N7/R5/R5P/R5P2
+  计划头已标为历史且不可调度；该规划步骤只写 spec/plan，Provider=0、无 OPEN J1、无 Key 读取、无 commit/push。
 - 2026-08-17 **wayfinder 地图 `image-only-schema-production-admission` 正式闭环（closed）**：所有者对照附录 B
   checklist 验收 Blueprint v1 通过（J1）。16 票决策完备、四维冲突检查零未决；handoff 包 =
   `plans/image-only-production-admission-blueprint-v1.md`，移交 `$to-spec` 启动实施规划。

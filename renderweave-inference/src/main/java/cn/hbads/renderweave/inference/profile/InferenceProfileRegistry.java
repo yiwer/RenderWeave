@@ -9,6 +9,9 @@ import tools.jackson.databind.SerializationFeature;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -161,12 +164,16 @@ public final class InferenceProfileRegistry {
             "inference-profiles/dashscope-qwen38-max-product-v44-hybrid-generic.json",
             "inference-profiles/dashscope-qwen37-flash-product-v45-hybrid-generic.json",
             "inference-profiles/dashscope-qwen37-plus-product-v45-hybrid-generic.json",
-            "inference-profiles/dashscope-qwen38-max-product-v45-hybrid-generic.json"
+            "inference-profiles/dashscope-qwen38-max-product-v45-hybrid-generic.json",
+            "inference-profiles/dashscope-qwen38-max-product-v46-hybrid-generic.json"
     );
     private static final java.util.List<String> PRODUCT_LIVE_PROFILE_IDS = java.util.List.of(
             "dashscope-qwen37-plus-product-v45-hybrid-generic",
             "dashscope-qwen38-max-product-v45-hybrid-generic",
             "dashscope-qwen37-flash-product-v45-hybrid-generic"
+    );
+    private static final java.util.List<String> CERTIFICATION_CANDIDATE_PROFILE_IDS = java.util.List.of(
+            "dashscope-qwen38-max-product-v46-hybrid-generic"
     );
     private static final java.util.List<String> VISUAL_NEXT_PROFILE_IDS = java.util.List.of(
             "dashscope-qwen37-flash-product-v5",
@@ -395,7 +402,8 @@ public final class InferenceProfileRegistry {
         LIVE_RESOURCES.stream().map(path -> load(classLoader, path)).forEach(resource -> add(loaded, resource));
         profiles = java.util.Collections.unmodifiableMap(loaded);
         for (var profileId : java.util.stream.Stream.of(
-                VISUAL_NEXT_PROFILE_IDS, VISUAL_GROUNDING_PROFILE_IDS, VISUAL_HYBRID_PROFILE_IDS
+                VISUAL_NEXT_PROFILE_IDS, VISUAL_GROUNDING_PROFILE_IDS, VISUAL_HYBRID_PROFILE_IDS,
+                CERTIFICATION_CANDIDATE_PROFILE_IDS
         ).flatMap(java.util.Collection::stream).toList()) {
             var profile = require(profileId).profile();
             visualCapabilities.requireModel(profile.model()).capability().requireCompatible(profile);
@@ -419,6 +427,15 @@ public final class InferenceProfileRegistry {
 
     public boolean isProductLiveProfile(String profileId) {
         return PRODUCT_LIVE_PROFILE_IDS.contains(profileId);
+    }
+
+    /** Candidates are addressable only by certification tooling until an external grant exists. */
+    public java.util.List<ProfileResource> certificationCandidateProfiles() {
+        return CERTIFICATION_CANDIDATE_PROFILE_IDS.stream().map(this::require).toList();
+    }
+
+    public boolean isCertificationCandidateProfile(String profileId) {
+        return CERTIFICATION_CANDIDATE_PROFILE_IDS.contains(profileId);
     }
 
     /** Experimental pipeline-4 Profiles are withheld from the product selector until quality gates pass. */
@@ -480,7 +497,8 @@ public final class InferenceProfileRegistry {
             if (input == null) throw new IllegalStateException("Missing inference profile resource " + path);
             var bytes = input.readAllBytes();
             var profile = JSON.readValue(bytes, InferenceProfile.class);
-            return new ProfileResource(profile, JSON.writeValueAsString(profile));
+            var snapshotJson = JSON.writeValueAsString(profile);
+            return new ProfileResource(profile, snapshotJson, sha256(snapshotJson));
         } catch (IOException exception) {
             throw new IllegalStateException("Inference profile cannot be loaded: " + path, exception);
         }
@@ -492,7 +510,20 @@ public final class InferenceProfileRegistry {
         }
     }
 
-    public record ProfileResource(InferenceProfile profile, String snapshotJson) { }
+    private static String sha256(String value) {
+        try {
+            return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(
+                    value.getBytes(StandardCharsets.UTF_8)));
+        } catch (Exception impossible) {
+            throw new IllegalStateException("SHA-256 is required by the JVM", impossible);
+        }
+    }
+
+    public record ProfileResource(
+            InferenceProfile profile,
+            String snapshotJson,
+            String canonicalSha256
+    ) { }
 
     public record VisualNextProfileResource(
             ProfileResource profile,

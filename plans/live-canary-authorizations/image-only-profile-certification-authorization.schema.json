@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://renderweave.local/schemas/image-only-profile-certification-authorization-v1.json",
+  "title": "RenderWeave IMAGE_ONLY Profile Certification J1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version", "authorizationId", "status", "cycleId", "stage", "profileId",
+    "profileSha256", "manifestIdentity", "evaluatorIdentity", "provider", "model",
+    "providerBaseUrl", "inputProvenance", "dataClassification", "cases", "maximumRuns",
+    "maximumProviderCalls", "maximumModelTokens", "maximumCostMicrosCny", "effectiveAt",
+    "expiresAt", "approvedBy", "approvedAt", "approvalScope", "closedAt", "closureReason"
+  ],
+  "properties": {
+    "version": { "const": "renderweave-image-only-certification-authorization/1.0" },
+    "authorizationId": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]{2,95}$" },
+    "status": { "enum": ["PROPOSED", "OPEN", "CLOSED"] },
+    "cycleId": { "type": "string", "format": "uuid" },
+    "stage": { "enum": ["CANARY_5", "DEV_20", "FINAL_60"] },
+    "profileId": { "const": "dashscope-qwen38-max-product-v46-hybrid-generic" },
+    "profileSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "manifestIdentity": {
+      "type": "string",
+      "pattern": "^renderweave-image-only-certification-manifest/1\\.0:[0-9a-f]{64}$"
+    },
+    "evaluatorIdentity": {
+      "type": "string",
+      "pattern": "^renderweave-image-only-certification-evaluator/1\\.0:[0-9a-f]{64}$"
+    },
+    "provider": { "const": "DASHSCOPE" },
+    "model": { "const": "qwen3.8-max" },
+    "providerBaseUrl": { "const": "https://dashscope.aliyuncs.com/compatible-mode/v1" },
+    "inputProvenance": { "const": "USER_PROVIDED" },
+    "dataClassification": { "const": "ORDINARY_DESIGN" },
+    "cases": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 60,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["caseId", "artifactSha256"],
+        "properties": {
+          "caseId": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]{2,95}$" },
+          "artifactSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+        }
+      }
+    },
+    "maximumRuns": { "type": "integer", "minimum": 1, "maximum": 60 },
+    "maximumProviderCalls": { "type": "integer", "minimum": 1, "maximum": 720 },
+    "maximumModelTokens": { "type": "integer", "minimum": 1, "maximum": 1000000 },
+    "maximumCostMicrosCny": { "type": "integer", "minimum": 1, "maximum": 360000000 },
+    "effectiveAt": { "type": "string", "format": "date-time" },
+    "expiresAt": { "type": "string", "format": "date-time" },
+    "approvedBy": { "type": "string", "minLength": 1, "maxLength": 256 },
+    "approvedAt": { "type": "string", "format": "date-time" },
+    "approvalScope": {
+      "enum": [
+        "IMAGE_ONLY_PROFILE_CERTIFICATION_CANARY_5",
+        "IMAGE_ONLY_PROFILE_CERTIFICATION_DEV_20",
+        "IMAGE_ONLY_PROFILE_CERTIFICATION_FINAL_60"
+      ]
+    },
+    "closedAt": { "type": ["string", "null"], "format": "date-time" },
+    "closureReason": { "type": ["string", "null"], "maxLength": 256 }
+  }
+}

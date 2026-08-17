@@ -73,7 +73,7 @@ class InferenceProfileRegistryTest {
     }
 
     @Test
-    void exposesHistoricalProfilesAndPromotesOnlyTheCurrentV45Catalog() {
+    void exposesHistoricalAndHiddenCandidateProfilesButPromotesOnlyTheCurrentV45Catalog() {
         var registry = new InferenceProfileRegistry();
         var resource = registry.require("replay-v1");
         var profile = resource.profile();
@@ -225,7 +225,8 @@ class InferenceProfileRegistryTest {
                 "dashscope-qwen38-max-product-v44-hybrid-generic",
                 "dashscope-qwen37-flash-product-v45-hybrid-generic",
                 "dashscope-qwen37-plus-product-v45-hybrid-generic",
-                "dashscope-qwen38-max-product-v45-hybrid-generic"
+                "dashscope-qwen38-max-product-v45-hybrid-generic",
+                "dashscope-qwen38-max-product-v46-hybrid-generic"
         ), registry.profileIds());
         assertEquals(java.util.List.of(
                 "dashscope-qwen37-plus-product-v45-hybrid-generic",
@@ -235,6 +236,11 @@ class InferenceProfileRegistryTest {
         assertEquals(java.util.List.of(
                 "qwen3.7-plus", "qwen3.8-max", "qwen3.7-flash"
         ), registry.productLiveProfiles().stream().map(item -> item.profile().model()).toList());
+        assertEquals(java.util.List.of(
+                "dashscope-qwen38-max-product-v46-hybrid-generic"
+        ), registry.certificationCandidateProfiles().stream()
+                .map(item -> item.profile().profileId()).toList());
+        assertFalse(registry.isProductLiveProfile("dashscope-qwen38-max-product-v46-hybrid-generic"));
         assertEquals(java.util.List.of(
                 "dashscope-qwen37-flash-product-v5",
                 "dashscope-qwen37-plus-product-v5",
