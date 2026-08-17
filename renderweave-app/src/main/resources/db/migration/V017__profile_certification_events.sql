@@ -6,6 +6,8 @@ CREATE TABLE profile_certification_event (
     profile_sha256 CHAR(64) NOT NULL CHECK (profile_sha256 ~ '^[0-9a-f]{64}$'),
     manifest_identity VARCHAR(256) NOT NULL,
     evaluator_identity VARCHAR(256) NOT NULL,
+    authority_inventory_sha256 CHAR(64) NOT NULL
+        CHECK (authority_inventory_sha256 ~ '^[0-9a-f]{64}$'),
     event_type VARCHAR(32) NOT NULL CHECK (event_type IN (
         'CYCLE_STARTED', 'STAGE_PASSED', 'CYCLE_FAILED',
         'CERTIFICATION_GRANTED', 'CERTIFICATION_REVOKED'
@@ -13,6 +15,9 @@ CREATE TABLE profile_certification_event (
     stage VARCHAR(16) NULL CHECK (stage IS NULL OR stage IN ('CANARY_5', 'DEV_20', 'FINAL_60')),
     accepted_cases INTEGER NULL CHECK (accepted_cases IS NULL OR accepted_cases >= 0),
     total_cases INTEGER NULL CHECK (total_cases IS NULL OR total_cases IN (5, 20, 60)),
+    acceptance_threshold INTEGER NULL CHECK (
+        acceptance_threshold IS NULL OR acceptance_threshold IN (5, 18, 54)
+    ),
     evidence_identity VARCHAR(256) NOT NULL,
     authority_reference VARCHAR(256) NULL,
     reason_code VARCHAR(128) NULL,
@@ -20,10 +25,12 @@ CREATE TABLE profile_certification_event (
     CONSTRAINT profile_certification_event_cycle_sequence UNIQUE (cycle_id, sequence_no),
     CONSTRAINT profile_certification_event_stage_shape CHECK (
         (event_type IN ('STAGE_PASSED', 'CYCLE_FAILED')
-            AND stage IS NOT NULL AND accepted_cases IS NOT NULL AND total_cases IS NOT NULL)
+            AND stage IS NOT NULL AND accepted_cases IS NOT NULL AND total_cases IS NOT NULL
+            AND acceptance_threshold IS NOT NULL)
         OR
         (event_type NOT IN ('STAGE_PASSED', 'CYCLE_FAILED')
-            AND stage IS NULL AND accepted_cases IS NULL AND total_cases IS NULL)
+            AND stage IS NULL AND accepted_cases IS NULL AND total_cases IS NULL
+            AND acceptance_threshold IS NULL)
     ),
     CONSTRAINT profile_certification_event_authority_shape CHECK (
         (event_type = 'CERTIFICATION_GRANTED' AND authority_reference IS NOT NULL)

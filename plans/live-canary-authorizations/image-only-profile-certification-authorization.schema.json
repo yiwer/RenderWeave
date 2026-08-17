@@ -64,5 +64,25 @@
     },
     "closedAt": { "type": ["string", "null"], "format": "date-time" },
     "closureReason": { "type": ["string", "null"], "maxLength": 256 }
-  }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "status": { "const": "CLOSED" } },
+        "required": ["status"]
+      },
+      "then": {
+        "properties": {
+          "closedAt": { "type": "string", "format": "date-time" },
+          "closureReason": { "type": "string", "minLength": 1, "maxLength": 256 }
+        }
+      },
+      "else": {
+        "properties": {
+          "closedAt": { "const": null },
+          "closureReason": { "const": null }
+        }
+      }
+    }
+  ]
 }

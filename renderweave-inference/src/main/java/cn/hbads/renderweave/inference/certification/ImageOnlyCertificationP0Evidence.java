@@ -7,9 +7,9 @@ import cn.hbads.renderweave.inference.provider.ProfileRunBudgetPolicy;
 import java.util.ArrayList;
 import java.util.List;
 
-/** Deterministic P0 evidence assembly. It contains no Provider adapter or credential access seam. */
-public final class ImageOnlyCertificationP0Evidence {
-    public ImageOnlyCertificationP0Report generate() {
+/** Package-private verifier projection. It contains no Provider adapter or credential access seam. */
+final class ImageOnlyCertificationP0Evidence {
+    ImageOnlyCertificationP0Report generate() {
         var registry = new InferenceProfileRegistry();
         var candidate = registry.require(ProfileRunBudgetPolicy.IMAGE_ONLY_V46_PROFILE_ID);
         var inventory = CertificationAuthorityInventory.loadCanonical();
@@ -20,6 +20,7 @@ public final class ImageOnlyCertificationP0Evidence {
         var dev = evaluate(evaluator, manifest, CertificationStage.DEV_20, 18, true);
         var finalStage = evaluate(evaluator, manifest, CertificationStage.FINAL_60, 54, false);
         var negative = evaluate(evaluator, manifest, CertificationStage.CANARY_5, 4, false);
+        var invalidKey = evaluateInvalidKey(evaluator, manifest);
         var r1 = new LayeredR1Evaluation().evaluate().report();
         var runtime = r1.global().runtime();
 
@@ -55,7 +56,8 @@ public final class ImageOnlyCertificationP0Evidence {
                         r1.global().metricsBps().size()
                 ),
                 new ImageOnlyCertificationP0Report.DryRunProof(
-                        proof(canary), proof(dev), proof(finalStage), proof(negative)
+                        proof(canary), proof(dev), proof(finalStage), proof(negative),
+                        proof(invalidKey)
                 ),
                 new ImageOnlyCertificationP0Report.AuthorizationProof(
                         0, 48, 1_000_000L,
@@ -69,7 +71,7 @@ public final class ImageOnlyCertificationP0Evidence {
         );
     }
 
-    private static CertificationStageEvaluation evaluate(
+    private static DryRun evaluate(
             ImageOnlyCertificationEvaluator evaluator,
             FrozenImageOnlyCertificationManifest manifest,
             CertificationStage stage,
@@ -79,21 +81,55 @@ public final class ImageOnlyCertificationP0Evidence {
         var cases = manifest.stageView(stage).cases();
         var verdicts = new ArrayList<CertificationCaseVerdict>();
         for (var index = 0; index < cases.size(); index++) {
+            var terminal = includeFlags && index == 2
+                    ? CertificationTerminalState.COMPLETED
+                    : includeFlags && index == 18
+                    ? CertificationTerminalState.FAILED
+                    : CertificationTerminalState.REVIEW_REQUIRED;
             verdicts.add(new CertificationCaseVerdict(
-                    cases.get(index).caseId(), CertificationTerminalState.REVIEW_REQUIRED,
+                    cases.get(index).caseId(), terminal,
                     index < accepted, includeFlags && index == 0 ? 7_999 : 9_000,
                     List.of(includeFlags && index == 1 ? "route-name" : "route_name")
             ));
         }
-        return evaluator.evaluate(manifest, stage, verdicts);
+        return new DryRun(evaluator.evaluate(manifest, stage, verdicts), List.copyOf(verdicts));
+    }
+
+    private static DryRun evaluateInvalidKey(
+            ImageOnlyCertificationEvaluator evaluator,
+            FrozenImageOnlyCertificationManifest manifest
+    ) {
+        var cases = manifest.stageView(CertificationStage.CANARY_5).cases();
+        var verdicts = new ArrayList<CertificationCaseVerdict>();
+        for (var index = 0; index < cases.size(); index++) {
+            verdicts.add(new CertificationCaseVerdict(
+                    cases.get(index).caseId(), CertificationTerminalState.REVIEW_REQUIRED,
+                    true, 9_000, List.of(index == 0 ? "RouteName" : "route_name")
+            ));
+        }
+        return new DryRun(evaluator.evaluate(
+                manifest, CertificationStage.CANARY_5, verdicts), List.copyOf(verdicts));
     }
 
     private static ImageOnlyCertificationP0Report.StageProof proof(
-            CertificationStageEvaluation result
+            DryRun dryRun
     ) {
+        var result = dryRun.result();
         return new ImageOnlyCertificationP0Report.StageProof(
                 result.stage().name(), result.acceptedCases(), result.totalCases(),
-                result.passed(), result.evidenceIdentity());
+                result.passed(), result.evidenceIdentity(), dryRun.verdicts().stream().map(verdict ->
+                        new ImageOnlyCertificationP0Report.VerdictProof(
+                                verdict.caseId(), verdict.terminalState().name(),
+                                verdict.manuallyAccepted(), verdict.confidenceBps(),
+                                verdict.proposedKeys().stream().map(
+                                        ImageOnlyCertificationP0Evidence::keyShape).toList()
+                        )).toList());
+    }
+
+    private static String keyShape(String key) {
+        if (key.matches("[a-z][a-z0-9]*(?:_[a-z0-9]+)*")) return "SNAKE_CASE";
+        if (key.matches("[a-z][a-z0-9]*(?:-[a-z0-9]+)+")) return "KEBAB_CASE";
+        return "INVALID";
     }
 
     private static List<CertificationCanaryCase> syntheticCanaries() {
@@ -104,4 +140,9 @@ public final class ImageOnlyCertificationP0Evidence {
         }
         return List.copyOf(result);
     }
+
+    private record DryRun(
+            CertificationStageEvaluation result,
+            List<CertificationCaseVerdict> verdicts
+    ) { }
 }

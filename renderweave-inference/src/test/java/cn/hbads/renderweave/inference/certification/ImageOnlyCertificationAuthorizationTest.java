@@ -5,9 +5,11 @@ import org.junit.jupiter.api.Test;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class ImageOnlyCertificationAuthorizationTest {
@@ -17,100 +19,121 @@ class ImageOnlyCertificationAuthorizationTest {
             UUID.fromString("22222222-2222-2222-2222-222222222222");
 
     @Test
-    void exactOpenJ1ProducesOnlyAProviderZeroPreflightPermit() {
+    void exactOpenJ1ProducesOnlyANonEgressProviderZeroProof() {
         var manifest = manifest();
         var cycle = cycle(manifest);
+        var service = started(cycle, manifest);
         var authorization = authorization(manifest, AuthorizationStatus.OPEN,
                 CertificationStage.CANARY_5, SHA, "ORDINARY_DESIGN", 5, 60,
                 1_000_000, 30_000_000, T0, T0.plusSeconds(48 * 60 * 60),
                 authorizedCases(manifest, CertificationStage.CANARY_5));
 
-        var permit = new ImageOnlyCertificationPreflight().requirePermit(
-                authorization, cycle, manifest,
-                ProfileCertificationStatus.IN_PROGRESS, T0.plusSeconds(1));
+        var proof = new ImageOnlyCertificationPreflight().requireProviderZeroProof(
+                authorization, cycle, manifest, service.progress(cycle.cycleId()),
+                T0.plusSeconds(1));
 
-        assertEquals(authorization.authorizationId(), permit.authorizationId());
-        assertEquals(0, permit.providerAttempts());
-        assertEquals(0, permit.providerReservations());
-        assertEquals(0, permit.providerCostMicrosCny());
-        assertEquals(0, permit.apiKeyReads());
+        assertEquals(authorization.authorizationId(), proof.authorizationId());
+        assertEquals(0, proof.providerAttempts());
+        assertEquals(0, proof.providerReservations());
+        assertEquals(0, proof.providerCostMicrosCny());
+        assertEquals(0, proof.apiKeyReads());
+        assertFalse(proof.grantsProviderEgress());
     }
 
     @Test
     void missingExpiredWrongIdentityClassCaseAndBoundsAllFailClosed() {
         var manifest = manifest();
         var cycle = cycle(manifest);
+        var service = started(cycle, manifest);
+        var progress = service.progress(cycle.cycleId());
         var preflight = new ImageOnlyCertificationPreflight();
         var cases = authorizedCases(manifest, CertificationStage.CANARY_5);
-        assertReason("CERTIFICATION_AUTHORIZATION_REQUIRED", () -> preflight.requirePermit(
-                null, cycle, manifest, ProfileCertificationStatus.IN_PROGRESS, T0));
-        assertReason("CERTIFICATION_AUTHORIZATION_NOT_OPEN", () -> preflight.requirePermit(
+        assertReason("CERTIFICATION_AUTHORIZATION_REQUIRED", () -> preflight.requireProviderZeroProof(
+                null, cycle, manifest, progress, T0));
+        assertReason("CERTIFICATION_AUTHORIZATION_NOT_OPEN", () -> preflight.requireProviderZeroProof(
                 authorization(manifest, AuthorizationStatus.CLOSED, CertificationStage.CANARY_5,
                         SHA, "ORDINARY_DESIGN", 5, 60, 1_000_000, 30_000_000,
                         T0, T0.plusSeconds(1), cases),
-                cycle, manifest, ProfileCertificationStatus.IN_PROGRESS, T0));
-        assertReason("CERTIFICATION_AUTHORIZATION_EXPIRED", () -> preflight.requirePermit(
+                cycle, manifest, progress, T0));
+        assertReason("CERTIFICATION_AUTHORIZATION_EXPIRED", () -> preflight.requireProviderZeroProof(
                 authorization(manifest, AuthorizationStatus.OPEN, CertificationStage.CANARY_5,
                         SHA, "ORDINARY_DESIGN", 5, 60, 1_000_000, 30_000_000,
                         T0.minusSeconds(100), T0.minusSeconds(1), cases),
-                cycle, manifest, ProfileCertificationStatus.IN_PROGRESS, T0));
-        assertReason("CERTIFICATION_AUTHORIZATION_PROFILE_MISMATCH", () -> preflight.requirePermit(
+                cycle, manifest, progress, T0));
+        assertReason("CERTIFICATION_AUTHORIZATION_PROFILE_MISMATCH", () -> preflight.requireProviderZeroProof(
                 authorization(manifest, AuthorizationStatus.OPEN, CertificationStage.CANARY_5,
                         "f".repeat(64), "ORDINARY_DESIGN", 5, 60, 1_000_000, 30_000_000,
                         T0, T0.plusSeconds(10), cases),
-                cycle, manifest, ProfileCertificationStatus.IN_PROGRESS, T0));
-        assertReason("CERTIFICATION_AUTHORIZATION_DATA_CLASS_NOT_ALLOWED", () -> preflight.requirePermit(
+                cycle, manifest, progress, T0));
+        assertReason("CERTIFICATION_AUTHORIZATION_DATA_CLASS_NOT_ALLOWED", () -> preflight.requireProviderZeroProof(
                 authorization(manifest, AuthorizationStatus.OPEN, CertificationStage.CANARY_5,
                         SHA, "CONFIDENTIAL", 5, 60, 1_000_000, 30_000_000,
                         T0, T0.plusSeconds(10), cases),
-                cycle, manifest, ProfileCertificationStatus.IN_PROGRESS, T0));
+                cycle, manifest, progress, T0));
         var wrongCases = new ArrayList<>(cases);
         wrongCases.set(0, new AuthorizedCertificationCase("owner-canary-1", "f".repeat(64)));
-        assertReason("CERTIFICATION_AUTHORIZATION_CASE_SET_MISMATCH", () -> preflight.requirePermit(
+        assertReason("CERTIFICATION_AUTHORIZATION_CASE_SET_MISMATCH", () -> preflight.requireProviderZeroProof(
                 authorization(manifest, AuthorizationStatus.OPEN, CertificationStage.CANARY_5,
                         SHA, "ORDINARY_DESIGN", 5, 60, 1_000_000, 30_000_000,
                         T0, T0.plusSeconds(10), wrongCases),
-                cycle, manifest, ProfileCertificationStatus.IN_PROGRESS, T0));
-        assertReason("CERTIFICATION_AUTHORIZATION_RUN_CAP_INVALID", () -> preflight.requirePermit(
+                cycle, manifest, progress, T0));
+        assertReason("CERTIFICATION_AUTHORIZATION_RUN_CAP_INVALID", () -> preflight.requireProviderZeroProof(
                 authorization(manifest, AuthorizationStatus.OPEN, CertificationStage.CANARY_5,
                         SHA, "ORDINARY_DESIGN", 6, 60, 1_000_000, 30_000_000,
                         T0, T0.plusSeconds(10), cases),
-                cycle, manifest, ProfileCertificationStatus.IN_PROGRESS, T0));
-        assertReason("CERTIFICATION_AUTHORIZATION_CALL_CAP_INVALID", () -> preflight.requirePermit(
+                cycle, manifest, progress, T0));
+        assertReason("CERTIFICATION_AUTHORIZATION_CALL_CAP_INVALID", () -> preflight.requireProviderZeroProof(
                 authorization(manifest, AuthorizationStatus.OPEN, CertificationStage.CANARY_5,
                         SHA, "ORDINARY_DESIGN", 5, 61, 1_000_000, 30_000_000,
                         T0, T0.plusSeconds(10), cases),
-                cycle, manifest, ProfileCertificationStatus.IN_PROGRESS, T0));
-        assertReason("CERTIFICATION_AUTHORIZATION_TOKEN_CAP_INVALID", () -> preflight.requirePermit(
+                cycle, manifest, progress, T0));
+        assertReason("CERTIFICATION_AUTHORIZATION_TOKEN_CAP_INVALID", () -> preflight.requireProviderZeroProof(
                 authorization(manifest, AuthorizationStatus.OPEN, CertificationStage.CANARY_5,
                         SHA, "ORDINARY_DESIGN", 5, 60, 1_000_001, 30_000_000,
                         T0, T0.plusSeconds(10), cases),
-                cycle, manifest, ProfileCertificationStatus.IN_PROGRESS, T0));
-        assertReason("CERTIFICATION_AUTHORIZATION_COST_CAP_INVALID", () -> preflight.requirePermit(
+                cycle, manifest, progress, T0));
+        assertReason("CERTIFICATION_AUTHORIZATION_COST_CAP_INVALID", () -> preflight.requireProviderZeroProof(
                 authorization(manifest, AuthorizationStatus.OPEN, CertificationStage.CANARY_5,
                         SHA, "ORDINARY_DESIGN", 5, 60, 1_000_000, 30_000_001,
                         T0, T0.plusSeconds(10), cases),
-                cycle, manifest, ProfileCertificationStatus.IN_PROGRESS, T0));
-        assertReason("CERTIFICATION_AUTHORIZATION_DURATION_INVALID", () -> preflight.requirePermit(
+                cycle, manifest, progress, T0));
+        assertReason("CERTIFICATION_AUTHORIZATION_DURATION_INVALID", () -> preflight.requireProviderZeroProof(
                 authorization(manifest, AuthorizationStatus.OPEN, CertificationStage.CANARY_5,
                         SHA, "ORDINARY_DESIGN", 5, 60, 1_000_000, 30_000_000,
                         T0, T0.plusSeconds(48 * 60 * 60 + 1), cases),
-                cycle, manifest, ProfileCertificationStatus.IN_PROGRESS, T0));
-        assertReason("CERTIFICATION_AUTHORIZATION_CYCLE_TERMINAL", () -> preflight.requirePermit(
+                cycle, manifest, progress, T0));
+
+        var finalCases = authorizedCases(manifest, CertificationStage.FINAL_60);
+        assertReason("CERTIFICATION_AUTHORIZATION_STAGE_NOT_UNLOCKED",
+                () -> preflight.requireProviderZeroProof(
+                        authorization(manifest, AuthorizationStatus.OPEN, CertificationStage.FINAL_60,
+                                SHA, "ORDINARY_DESIGN", 60, 720, 1_000_000, 360_000_000,
+                                T0, T0.plusSeconds(10), finalCases),
+                        cycle, manifest, progress, T0));
+
+        var failedService = started(cycle, manifest);
+        failedService.recordStage(cycle.cycleId(), new CertificationStageOutcome(
+                CertificationStage.CANARY_5, 4, 5,
+                "renderweave-image-only-certification-stage-evidence/1.0:" + "f".repeat(64)),
+                T0.plusSeconds(2));
+        assertReason("CERTIFICATION_AUTHORIZATION_CYCLE_TERMINAL",
+                () -> preflight.requireProviderZeroProof(
                 authorization(manifest, AuthorizationStatus.OPEN, CertificationStage.CANARY_5,
                         SHA, "ORDINARY_DESIGN", 5, 60, 1_000_000, 30_000_000,
                         T0, T0.plusSeconds(10), cases),
-                cycle, manifest, ProfileCertificationStatus.FAILED, T0));
+                cycle, manifest, failedService.progress(cycle.cycleId()), T0.plusSeconds(3)));
 
         var wrongCycle = new FrozenCertificationCycle(
                 UUID.fromString("33333333-3333-3333-3333-333333333333"),
                 manifest.profileId(), manifest.profileSha256(), manifest.manifestIdentity(),
-                manifest.evaluatorIdentity(), T0.minusSeconds(1));
-        assertReason("CERTIFICATION_AUTHORIZATION_CYCLE_MISMATCH", () -> preflight.requirePermit(
+                manifest.evaluatorIdentity(),
+                CertificationAuthorityInventory.loadCanonical().canonicalSha256(), T0.minusSeconds(1));
+        assertReason("CERTIFICATION_AUTHORIZATION_CYCLE_MISMATCH",
+                () -> preflight.requireProviderZeroProof(
                 authorization(manifest, AuthorizationStatus.OPEN, CertificationStage.CANARY_5,
                         SHA, "ORDINARY_DESIGN", 5, 60, 1_000_000, 30_000_000,
                         T0, T0.plusSeconds(10), cases),
-                wrongCycle, manifest, ProfileCertificationStatus.IN_PROGRESS, T0));
+                wrongCycle, manifest, progress, T0));
     }
 
     @Test
@@ -172,7 +195,17 @@ class ImageOnlyCertificationAuthorizationTest {
     private static FrozenCertificationCycle cycle(FrozenImageOnlyCertificationManifest manifest) {
         return new FrozenCertificationCycle(
                 CYCLE_ID, manifest.profileId(), manifest.profileSha256(), manifest.manifestIdentity(),
-                manifest.evaluatorIdentity(), T0.minusSeconds(1));
+                manifest.evaluatorIdentity(),
+                CertificationAuthorityInventory.loadCanonical().canonicalSha256(), T0.minusSeconds(1));
+    }
+
+    private static ProfileCertificationService started(
+            FrozenCertificationCycle cycle,
+            FrozenImageOnlyCertificationManifest manifest
+    ) {
+        var service = new ProfileCertificationService(new MemoryStore());
+        service.start(cycle, manifest);
+        return service;
     }
 
     private static List<AuthorizedCertificationCase> authorizedCases(
@@ -186,5 +219,19 @@ class ImageOnlyCertificationAuthorizationTest {
     private static void assertReason(String expected, Runnable action) {
         var failure = assertThrows(CertificationAuthorizationViolation.class, action::run);
         assertEquals(expected, failure.reasonCode());
+    }
+
+    private static final class MemoryStore implements ProfileCertificationStore {
+        private final Map<UUID, List<ProfileCertificationEvent>> events = new java.util.HashMap<>();
+
+        @Override
+        public void append(ProfileCertificationEvent event) {
+            events.computeIfAbsent(event.cycleId(), ignored -> new ArrayList<>()).add(event);
+        }
+
+        @Override
+        public List<ProfileCertificationEvent> events(UUID cycleId) {
+            return List.copyOf(events.getOrDefault(cycleId, List.of()));
+        }
     }
 }

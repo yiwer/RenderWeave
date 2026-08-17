@@ -36,6 +36,10 @@ class ImageOnlyProductionAdmissionP0GateTest {
         assertTrue(first.dryRun().dev().passed());
         assertTrue(first.dryRun().finalStage().passed());
         assertFalse(first.dryRun().negativeCanary().passed());
+        assertFalse(first.dryRun().invalidKeyCanary().passed());
+        assertEquals(4, first.dryRun().invalidKeyCanary().acceptedCases());
+        assertTrue(first.dryRun().canary().verdicts().stream()
+                .allMatch(item -> !item.keyShapes().isEmpty()));
         assertEquals(0, first.authorization().openAuthorizationCount());
         assertEquals(48, first.authorization().maximumWindowHours());
         assertEquals(1_000_000L, first.authorization().maximumModelTokens());

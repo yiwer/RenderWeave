@@ -525,7 +525,7 @@ public record InferenceProfile(
                 && documentVisionCapabilityId != null
                 && documentVisionCapabilityId.matches("[a-z0-9][a-z0-9._:-]{0,190}")
                 && profileId.endsWith("-product-v44-hybrid-generic");
-        var productPromptV45 = InferencePromptRegistry.SCHEMA_CANDIDATE_V5.equals(promptVersion)
+        var productPromptV45OrV46 = InferencePromptRegistry.SCHEMA_CANDIDATE_V5.equals(promptVersion)
                 && InferencePromptRegistry.VISUAL_ELEMENTS_V12.equals(elementPromptVersion)
                 && InferencePromptRegistry.VISUAL_HIERARCHY_V7.equals(hierarchyPromptVersion)
                 && InferencePromptRegistry.VISUAL_BINDINGS_V4.equals(bindingPromptVersion)
@@ -535,17 +535,11 @@ public record InferenceProfile(
                 )
                 && documentVisionCapabilityId != null
                 && documentVisionCapabilityId.matches("[a-z0-9][a-z0-9._:-]{0,190}")
+                && (profileId.endsWith("-product-v45-hybrid-generic")
+                || profileId.endsWith("-product-v46-hybrid-generic"));
+        var productPromptV45 = productPromptV45OrV46
                 && profileId.endsWith("-product-v45-hybrid-generic");
-        var productPromptV46 = InferencePromptRegistry.SCHEMA_CANDIDATE_V5.equals(promptVersion)
-                && InferencePromptRegistry.VISUAL_ELEMENTS_V12.equals(elementPromptVersion)
-                && InferencePromptRegistry.VISUAL_HIERARCHY_V7.equals(hierarchyPromptVersion)
-                && InferencePromptRegistry.VISUAL_BINDINGS_V4.equals(bindingPromptVersion)
-                && InferencePromptRegistry.VISUAL_HINT_GENERIC_V1.equals(visualHintPackVersion)
-                && InferencePromptRegistry.DOCUMENT_VISION_OBSERVATIONS_V1.equals(
-                        documentVisionPromptVersion
-                )
-                && documentVisionCapabilityId != null
-                && documentVisionCapabilityId.matches("[a-z0-9][a-z0-9._:-]{0,190}")
+        var productPromptV46 = productPromptV45OrV46
                 && profileId.endsWith("-product-v46-hybrid-generic");
         var serialVisualPipeline = "renderweave-inference-pipeline/3.0".equals(pipelineVersion)
                 || "renderweave-inference-pipeline/4.0".equals(pipelineVersion)

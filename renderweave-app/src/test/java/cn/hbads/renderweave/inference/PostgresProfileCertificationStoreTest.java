@@ -2,7 +2,10 @@ package cn.hbads.renderweave.inference;
 
 import cn.hbads.renderweave.inference.certification.CertificationStage;
 import cn.hbads.renderweave.inference.certification.CertificationStageOutcome;
+import cn.hbads.renderweave.inference.certification.CertificationAuthorityInventory;
+import cn.hbads.renderweave.inference.certification.CertificationCanaryCase;
 import cn.hbads.renderweave.inference.certification.FrozenCertificationCycle;
+import cn.hbads.renderweave.inference.certification.ImageOnlyCertificationManifestFactory;
 import cn.hbads.renderweave.inference.certification.ProfileCertificationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -16,6 +19,7 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -43,16 +47,25 @@ class PostgresProfileCertificationStoreTest {
 
     @Test
     void eventsRoundTripInOrderAndCannotBeUpdatedDeletedOrDuplicated() {
-        var cycle = new FrozenCertificationCycle(
-                UUID.randomUUID(), "dashscope-qwen38-max-product-v46-hybrid-generic",
+        var canaries = new ArrayList<CertificationCanaryCase>();
+        for (var index = 1; index <= 5; index++) {
+            canaries.add(new CertificationCanaryCase("owner-canary-" + index,
+                    String.format("%064x", index)));
+        }
+        var manifest = new ImageOnlyCertificationManifestFactory().create(
                 "22f561c88b30fabbf3ba660bcfe203fb570975f770ff122f2ce1c7216454ac0c",
-                "renderweave-image-only-certification-manifest/1.0:" + "a".repeat(64),
-                "renderweave-image-only-certification-evaluator/1.0:" + "b".repeat(64), T0
+                canaries, "image-only-certification-seed-v1");
+        var cycle = new FrozenCertificationCycle(
+                UUID.randomUUID(), manifest.profileId(), manifest.profileSha256(),
+                manifest.manifestIdentity(), manifest.evaluatorIdentity(),
+                CertificationAuthorityInventory.loadCanonical().canonicalSha256(), T0
         );
         var service = new ProfileCertificationService(store);
-        service.start(cycle);
+        service.start(cycle, manifest);
         service.recordStage(cycle.cycleId(), new CertificationStageOutcome(
-                CertificationStage.CANARY_5, 5, 5, "evidence:canary"), T0.plusSeconds(1));
+                CertificationStage.CANARY_5, 5, 5,
+                "renderweave-image-only-certification-stage-evidence/1.0:" + "a".repeat(64)),
+                T0.plusSeconds(1));
 
         var events = store.events(cycle.cycleId());
         assertThat(events).extracting(item -> item.sequence()).containsExactly(0, 1);

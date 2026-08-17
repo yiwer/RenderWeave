@@ -33,6 +33,9 @@ v45 只改变 `profileId`、`maximumTotalCalls=12` 和 `maximumEstimatedCostMicr
 6. **live authorization 仍是逐阶段外部硬门。** 每次授权必须绑定 exact Profile SHA、cycle/manifest/evaluator、
    case hashes、数据分类、route/model、次数、费用和时间窗。每模型 1M tokens 与 48h 只是允许的最大边界，不能替代
    exact scoped J1；P0 只保留不可执行模板，OPEN authorization 数量必须为 0。
+7. **P0 preflight 不产生执行许可。** 它只能针对 append-only 投影给出的唯一 next stage 生成 Provider-zero proof，
+   且固定 `grantsProviderEgress=false`。P1 在任何真实调用前还必须实现原子 runs/calls/tokens/cost 消费与 CLOSED
+   ledger；重复 proof 不能消费额度，也不能打开 Provider egress。
 
 ## 备选方案
 

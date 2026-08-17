@@ -13,7 +13,7 @@ import java.time.OffsetDateTime;
 import java.util.Objects;
 import java.util.UUID;
 
-import static cn.hbads.renderweave.inference.provider.ProviderBudgetReservation.MAXIMUM_ATTEMPT_ORDINAL;
+import static cn.hbads.renderweave.inference.provider.ProviderBudgetReservation.REPRESENTATIONAL_MAXIMUM_ATTEMPT_ORDINAL;
 
 @Repository
 public class PostgresProviderBudgetStore implements ProviderBudgetStore {
@@ -218,7 +218,7 @@ public class PostgresProviderBudgetStore implements ProviderBudgetStore {
         }
         Objects.requireNonNull(runId, "runId");
         Objects.requireNonNull(now, "now");
-        if (attemptOrdinal < 0 || attemptOrdinal > MAXIMUM_ATTEMPT_ORDINAL
+        if (attemptOrdinal < 0 || attemptOrdinal > REPRESENTATIONAL_MAXIMUM_ATTEMPT_ORDINAL
                 || maximumCostMicrosCny <= 0
                 || runCostLimitMicrosCny != null && runCostLimitMicrosCny < 1) {
             throw new IllegalArgumentException("Provider reservation bounds are invalid");

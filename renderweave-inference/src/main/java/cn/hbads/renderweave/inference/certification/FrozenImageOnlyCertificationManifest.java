@@ -54,11 +54,12 @@ public final class FrozenImageOnlyCertificationManifest {
     public String corpusIdentity() { return corpusIdentity; }
     public String evaluatorIdentity() { return evaluatorIdentity; }
     public String r1InfrastructureIdentity() { return r1InfrastructureIdentity; }
-    public String assignmentSeed() { return assignmentSeed; }
-    public List<CertificationCanaryCase> canariesForIndependentReplay() { return canaries; }
-    public List<CertificationCaseAssignment> assignmentsForIndependentReplay() { return assignments; }
+    String assignmentSeed() { return assignmentSeed; }
+    /* Full case projections are verifier-only and deliberately stay package-private. */
+    List<CertificationCanaryCase> canariesForIndependentReplay() { return canaries; }
+    List<CertificationCaseAssignment> assignmentsForIndependentReplay() { return assignments; }
 
-    public CertificationStageView stageView(CertificationStage stage) {
+    CertificationStageView stageView(CertificationStage stage) {
         Objects.requireNonNull(stage, "stage");
         List<CertificationStageCase> cases;
         if (stage == CertificationStage.CANARY_5) {

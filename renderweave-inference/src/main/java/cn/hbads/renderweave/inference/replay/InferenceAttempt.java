@@ -8,7 +8,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
-import static cn.hbads.renderweave.inference.provider.ProviderBudgetReservation.MAXIMUM_ATTEMPT_ORDINAL;
+import static cn.hbads.renderweave.inference.provider.ProviderBudgetReservation.REPRESENTATIONAL_MAXIMUM_ATTEMPT_ORDINAL;
 
 /** Safe attempt metadata: no prompt, input value, model output, or chain-of-thought is retained. */
 public record InferenceAttempt(
@@ -28,8 +28,10 @@ public record InferenceAttempt(
 ) {
     public InferenceAttempt {
         Objects.requireNonNull(runId, "runId");
-        if (attemptOrdinal < 0 || attemptOrdinal > MAXIMUM_ATTEMPT_ORDINAL) {
-            throw new IllegalArgumentException("attemptOrdinal must be 0..6");
+        if (attemptOrdinal < 0 || attemptOrdinal > REPRESENTATIONAL_MAXIMUM_ATTEMPT_ORDINAL) {
+            throw new IllegalArgumentException(
+                    "attemptOrdinal must be 0.."
+                            + REPRESENTATIONAL_MAXIMUM_ATTEMPT_ORDINAL);
         }
         Objects.requireNonNull(stage, "stage");
         if (stage != InferenceStage.OBSERVE && stage != InferenceStage.HIERARCHY

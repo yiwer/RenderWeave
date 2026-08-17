@@ -12,6 +12,7 @@ public record FrozenCertificationCycle(
         String profileSha256,
         String manifestIdentity,
         String evaluatorIdentity,
+        String authorityInventorySha256,
         Instant createdAt
 ) {
     public FrozenCertificationCycle {
@@ -22,6 +23,8 @@ public record FrozenCertificationCycle(
         requireSha256(profileSha256, "PROFILE_CERTIFICATION_PROFILE_SHA_INVALID");
         requireVersionedDigest(manifestIdentity, "PROFILE_CERTIFICATION_MANIFEST_IDENTITY_INVALID");
         requireVersionedDigest(evaluatorIdentity, "PROFILE_CERTIFICATION_EVALUATOR_IDENTITY_INVALID");
+        requireSha256(authorityInventorySha256,
+                "PROFILE_CERTIFICATION_AUTHORITY_INVENTORY_SHA_INVALID");
         Objects.requireNonNull(createdAt, "createdAt");
     }
 

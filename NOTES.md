@@ -5,12 +5,14 @@
   `dashscope-qwen38-max-product-v46-hybrid-generic`（canonical SHA
   `22f561c88b30fabbf3ba660bcfe203fb570975f770ff122f2ce1c7216454ac0c`），相对 v45 仅三字段差异；实现
   12-call/单 run ¥6 settled+reserved 聚合预算、append-only Profile certification events、seeded 5/20/60 +
-  20 HOLDOUT evaluator、严格 per-stage J1 schema/preflight 与 `image-only-p0` gate。证据
-  `.sdlc/evidence/20260817-153507-image-only-p0/`：Java 15/15、Testcontainers PostgreSQL 18/18、Python
-  A2 strict-input replay PASS；完整服务端回归 `.sdlc/evidence/20260817-151431-server/` 绿色。Provider
+  20 HOLDOUT evaluator、store-derived next-stage J1 schema/Provider-zero proof 与 `image-only-p0` gate。证据
+  `.sdlc/evidence/20260817-160035-image-only-p0/`：Java 16/16、Testcontainers PostgreSQL 18/18、Python
+  exact-verdict A2 strict-input replay PASS；完整服务端回归 `.sdlc/evidence/20260817-160140-server/`
+  （Schema 20、Validation 13、Inference 360、App 263）绿色。Provider
   attempts/reservations/cost/API-key reads=0，v46 OPEN authorization=0。
   当前 lifecycle 不是 certification grant/J1/release；会话给出的每模型 1M token/48h 仅冻结为授权上限，P1
-  仍需 fresh 5-case hashes、exact manifest/calls/cost 后逐阶段 scoped J1。下一入口 IOPA-P1-01；P2 可并行安全推进。
+  仍需 fresh 5-case hashes、exact manifest/calls/cost、原子消费 ledger 后逐阶段 scoped J1。P0 proof 明确
+  `grantsProviderEgress=false`。下一入口 IOPA-P1-01；P2 可并行安全推进。
 - 2026-08-17 **IMAGE_ONLY production admission 已完成 `$to-spec` 规划交付**：approved delta =
   `specs/changes/20260817-image-only-production-admission.md`，Project Mode 实施计划 =
   `plans/image-only-production-admission-plan-v1.md`，该规划步骤当时状态为 `Plan-ready/planned`。关键路径冻结为

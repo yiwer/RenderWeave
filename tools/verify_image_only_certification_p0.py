@@ -227,20 +227,95 @@ def verify(report_path: Path, repository: Path) -> dict[str, Any]:
 
     dry = report["dryRun"]
     expected_dry = {
-        "canary": ("CANARY_5", 5, 5, True),
-        "dev": ("DEV_20", 18, 20, True),
-        "finalStage": ("FINAL_60", 54, 60, True),
-        "negativeCanary": ("CANARY_5", 4, 5, False),
+        "canary": ("CANARY_5", 5, 5, True, [item["caseId"] for item in canaries]),
+        "dev": ("DEV_20", 18, 18, True,
+                [item["caseId"] for item in assignments if item["role"] == "DEV_VISIBLE"]),
+        "finalStage": ("FINAL_60", 54, 54, True,
+                       [item["caseId"] for item in assignments]),
+        "negativeCanary": ("CANARY_5", 5, 4, False,
+                           [item["caseId"] for item in canaries]),
+        "invalidKeyCanary": ("CANARY_5", 5, 4, False,
+                             [item["caseId"] for item in canaries]),
     }
-    for name, expected in expected_dry.items():
+    require_keys(dry, set(expected_dry), "DRY_RUN_KEYS")
+    observed_semantics: set[str] = set()
+    for name, (stage, threshold, expected_accepted, expected_pass,
+               expected_case_ids) in expected_dry.items():
         item = dry[name]
-        require_keys(item, {"acceptedCases", "evidenceIdentity", "passed", "stage", "totalCases"},
-                     "DRY_RUN_STAGE_KEYS")
-        if (item["stage"], item["acceptedCases"], item["totalCases"], item["passed"]) != expected:
+        require_keys(item, {
+            "acceptedCases", "evidenceIdentity", "passed", "stage", "totalCases", "verdicts",
+        }, "DRY_RUN_STAGE_KEYS")
+        if item["stage"] != stage or item["totalCases"] != len(expected_case_ids):
             raise VerificationError(f"DRY_RUN_STAGE_INVALID:{name}")
-        require_digest(item["evidenceIdentity"],
-                       "renderweave-image-only-certification-stage-evidence/1.0",
-                       "DRY_RUN_EVIDENCE_IDENTITY_INVALID")
+        verdicts = item["verdicts"]
+        if not isinstance(verdicts, list) or len(verdicts) != len(expected_case_ids):
+            raise VerificationError(f"DRY_RUN_VERDICT_COUNT_INVALID:{name}")
+        evidence_material = [manifest["manifestIdentity"], stage]
+        accepted = 0
+        for expected_case_id, verdict in zip(expected_case_ids, verdicts, strict=True):
+            require_keys(verdict, {
+                "caseId", "confidenceBps", "keyShapes", "manuallyAccepted", "terminalState",
+            }, "DRY_RUN_VERDICT_KEYS")
+            if verdict["caseId"] != expected_case_id:
+                raise VerificationError(f"DRY_RUN_VERDICT_ORDER_INVALID:{name}")
+            terminal = verdict["terminalState"]
+            manually_accepted = verdict["manuallyAccepted"]
+            confidence = verdict["confidenceBps"]
+            key_shapes = verdict["keyShapes"]
+            if terminal not in {"REVIEW_REQUIRED", "COMPLETED", "FAILED"} \
+                    or type(manually_accepted) is not bool \
+                    or type(confidence) is not int or not 0 <= confidence <= 10_000 \
+                    or not isinstance(key_shapes, list) or not key_shapes \
+                    or any(shape not in {"SNAKE_CASE", "KEBAB_CASE", "INVALID"}
+                           for shape in key_shapes):
+                raise VerificationError(f"DRY_RUN_VERDICT_SHAPE_INVALID:{name}")
+            observed_semantics.add(f"TERMINAL_{terminal}")
+            if not manually_accepted:
+                observed_semantics.add("MANUAL_REJECTION")
+            flags: list[str] = []
+            if confidence < 8_000:
+                flags.append("LOW_CONFIDENCE_REVIEW_FLAG")
+                observed_semantics.add("LOW_CONFIDENCE_REVIEW_FLAG")
+            key_contract_valid = True
+            for shape in key_shapes:
+                if shape == "SNAKE_CASE":
+                    observed_semantics.add("SNAKE_CASE")
+                elif shape == "KEBAB_CASE":
+                    flags.append("KEBAB_CASE_MANUAL_NORMALIZATION_REQUIRED")
+                    observed_semantics.add("KEBAB_CASE_MANUAL_NORMALIZATION_REQUIRED")
+                elif shape == "INVALID":
+                    flags.append("FIELD_KEY_CONTRACT_INVALID")
+                    observed_semantics.add("FIELD_KEY_CONTRACT_INVALID")
+                    key_contract_valid = False
+            case_accepted = (terminal in {"REVIEW_REQUIRED", "COMPLETED"}
+                             and manually_accepted and key_contract_valid)
+            if case_accepted:
+                accepted += 1
+            evidence_material.append(
+                f"{expected_case_id}|{terminal}|{str(manually_accepted).lower()}|{confidence}|"
+                f"{str(key_contract_valid).lower()}|{str(case_accepted).lower()}|{','.join(flags)}"
+            )
+        passed = accepted >= threshold
+        evidence_material.extend([f"accepted={accepted}", f"passed={str(passed).lower()}"])
+        expected_evidence = (
+            "renderweave-image-only-certification-stage-evidence/1.0:"
+            + length_hash(evidence_material)
+        )
+        if accepted != expected_accepted or item["acceptedCases"] != accepted \
+                or item["passed"] != passed \
+                or passed != expected_pass or item["evidenceIdentity"] != expected_evidence:
+            raise VerificationError(f"DRY_RUN_EXACT_REPLAY_FAILED:{name}")
+    if observed_semantics != {
+        "LOW_CONFIDENCE_REVIEW_FLAG",
+        "KEBAB_CASE_MANUAL_NORMALIZATION_REQUIRED",
+        "FIELD_KEY_CONTRACT_INVALID",
+        "SNAKE_CASE",
+        "MANUAL_REJECTION",
+        "TERMINAL_REVIEW_REQUIRED",
+        "TERMINAL_COMPLETED",
+        "TERMINAL_FAILED",
+    }:
+        raise VerificationError("DRY_RUN_SEMANTIC_COVERAGE_INVALID")
 
     authorization = report["authorization"]
     if authorization["openAuthorizationCount"] != 0 \
@@ -251,7 +326,12 @@ def verify(report_path: Path, repository: Path) -> dict[str, Any]:
     template_path = repository / authorization["nonExecutableTemplatePath"]
     schema = load_json(schema_path)
     template = load_json(template_path)
+    closure_rule = schema.get("allOf", [{}])[0]
     if schema["properties"]["maximumModelTokens"]["maximum"] != 1_000_000 \
+            or closure_rule.get("then", {}).get("properties", {}).get(
+                "closedAt", {}).get("type") != "string" \
+            or closure_rule.get("else", {}).get("properties", {}).get(
+                "closedAt", {}).get("const", "missing") is not None \
             or template.get("status") != "PROPOSED" or template.get("cases") != [] \
             or template.get("maximumRuns") != 0:
         raise VerificationError("NON_EXECUTABLE_AUTHORIZATION_TEMPLATE_INVALID")
@@ -284,6 +364,7 @@ def verify(report_path: Path, repository: Path) -> dict[str, Any]:
     if migration16.count("BETWEEN 0 AND 11") != 2:
         raise VerificationError("TWELVE_CALL_MIGRATION_INVALID")
     if "BEFORE UPDATE OR DELETE" not in migration17 \
+            or "acceptance_threshold INTEGER" not in migration17 \
             or "PROFILE_CERTIFICATION_EVENTS_ARE_APPEND_ONLY" not in migration17:
         raise VerificationError("CERTIFICATION_APPEND_ONLY_MIGRATION_INVALID")
 

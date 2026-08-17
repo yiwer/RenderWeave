@@ -7,7 +7,7 @@ import cn.hbads.renderweave.inference.run.InferenceStage;
 import java.util.List;
 import java.util.Objects;
 
-import static cn.hbads.renderweave.inference.provider.ProviderBudgetReservation.MAXIMUM_PROVIDER_CALLS;
+import static cn.hbads.renderweave.inference.provider.ProviderBudgetReservation.REPRESENTATIONAL_MAXIMUM_PROVIDER_CALLS;
 
 record LiveWorkflowCheckpoint(
         String checkpointVersion,
@@ -28,7 +28,7 @@ record LiveWorkflowCheckpoint(
     LiveWorkflowCheckpoint {
         if (!VERSION.equals(checkpointVersion)) throw new IllegalArgumentException("Unsupported live checkpoint");
         Objects.requireNonNull(completedStage, "completedStage");
-        if (providerCalls < 0 || providerCalls > MAXIMUM_PROVIDER_CALLS
+        if (providerCalls < 0 || providerCalls > REPRESENTATIONAL_MAXIMUM_PROVIDER_CALLS
                 || repairRounds < 0 || repairRounds > 2) {
             throw new IllegalArgumentException("Live checkpoint budgets are invalid");
         }

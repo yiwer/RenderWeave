@@ -57,7 +57,8 @@ public record ImageOnlyCertificationP0Report(
             StageProof canary,
             StageProof dev,
             StageProof finalStage,
-            StageProof negativeCanary
+            StageProof negativeCanary,
+            StageProof invalidKeyCanary
     ) { }
 
     public record StageProof(
@@ -65,7 +66,17 @@ public record ImageOnlyCertificationP0Report(
             int acceptedCases,
             int totalCases,
             boolean passed,
-            String evidenceIdentity
+            String evidenceIdentity,
+            List<VerdictProof> verdicts
+    ) { }
+
+    /** Payload-free evaluator inputs sufficient for an exact independent verdict replay. */
+    public record VerdictProof(
+            String caseId,
+            String terminalState,
+            boolean manuallyAccepted,
+            int confidenceBps,
+            List<String> keyShapes
     ) { }
 
     public record AuthorizationProof(

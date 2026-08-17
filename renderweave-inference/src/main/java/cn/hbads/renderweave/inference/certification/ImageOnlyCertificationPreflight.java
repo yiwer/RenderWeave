@@ -11,25 +11,22 @@ public final class ImageOnlyCertificationPreflight {
     private static final Duration MAXIMUM_WINDOW = Duration.ofHours(48);
     private static final long MAXIMUM_MODEL_TOKENS = 1_000_000L;
 
-    public CertificationPreflightPermit requirePermit(
+    public CertificationPreflightProof requireProviderZeroProof(
             ImageOnlyCertificationAuthorization authorization,
             FrozenCertificationCycle cycle,
             FrozenImageOnlyCertificationManifest manifest,
-            ProfileCertificationStatus cycleStatus,
+            ProfileCertificationProgress progress,
             Instant now
     ) {
         if (authorization == null) fail("CERTIFICATION_AUTHORIZATION_REQUIRED");
         Objects.requireNonNull(cycle, "cycle");
         Objects.requireNonNull(manifest, "manifest");
-        Objects.requireNonNull(cycleStatus, "cycleStatus");
+        Objects.requireNonNull(progress, "progress");
         Objects.requireNonNull(now, "now");
         if (authorization.status() != AuthorizationStatus.OPEN) {
             fail("CERTIFICATION_AUTHORIZATION_NOT_OPEN");
         }
-        if (cycleStatus == ProfileCertificationStatus.FAILED
-                || cycleStatus == ProfileCertificationStatus.READY_TO_GRANT
-                || cycleStatus == ProfileCertificationStatus.GRANTED
-                || cycleStatus == ProfileCertificationStatus.REVOKED) {
+        if (progress.status() != ProfileCertificationStatus.IN_PROGRESS) {
             fail("CERTIFICATION_AUTHORIZATION_CYCLE_TERMINAL");
         }
         if (now.isBefore(authorization.effectiveAt())) {
@@ -48,6 +45,16 @@ public final class ImageOnlyCertificationPreflight {
         }
         if (!authorization.cycleId().equals(cycle.cycleId())) {
             fail("CERTIFICATION_AUTHORIZATION_CYCLE_MISMATCH");
+        }
+        if (!progress.cycleId().equals(cycle.cycleId())
+                || !progress.profileSha256().equals(cycle.profileSha256())
+                || !progress.manifestIdentity().equals(cycle.manifestIdentity())
+                || !progress.evaluatorIdentity().equals(cycle.evaluatorIdentity())
+                || !progress.authorityInventorySha256().equals(cycle.authorityInventorySha256())) {
+            fail("CERTIFICATION_AUTHORIZATION_PROGRESS_MISMATCH");
+        }
+        if (authorization.stage() != progress.nextStage()) {
+            fail("CERTIFICATION_AUTHORIZATION_STAGE_NOT_UNLOCKED");
         }
         if (!cycle.profileId().equals(manifest.profileId())
                 || !cycle.profileSha256().equals(manifest.profileSha256())
@@ -100,9 +107,9 @@ public final class ImageOnlyCertificationPreflight {
                 .equals(authorization.approvalScope())) {
             fail("CERTIFICATION_AUTHORIZATION_SCOPE_MISMATCH");
         }
-        return new CertificationPreflightPermit(
+        return new CertificationPreflightProof(
                 authorization.authorizationId(), authorization.cycleId(), authorization.stage(),
-                authorization.profileSha256(), authorization.manifestIdentity(), 0, 0, 0, 0
+                authorization.profileSha256(), authorization.manifestIdentity(), 0, 0, 0, 0, false
         );
     }
 

@@ -31,13 +31,15 @@ Blueprint 附录 A 开新票；不得在计划、代码或测试中静默改写�
   这些 P0 synthetic identities 证明 evaluator，不可冒充 P1 的 fresh owner case manifest。
 - A1/A2：`tools/run-gate.ps1 -Gate image-only-p0` 绿色；Testcontainers PostgreSQL 覆盖 12-call/¥6 aggregate
   reservation 与 append-only event trigger；Python 独立重算 v46 diff/hash、60-case assignment、20 HOLDOUT、
-  58 metrics、threshold/evaluator/manifest identities。专用证据：
-  `.sdlc/evidence/20260817-153507-image-only-p0/`；完整服务端回归证据：
-  `.sdlc/evidence/20260817-151431-server/`。
+  58 metrics、逐 case payload-free verdict 与 exact stage evidence identity。专用证据：
+  `.sdlc/evidence/20260817-160035-image-only-p0/`；完整服务端回归证据：
+  `.sdlc/evidence/20260817-160140-server/`。
 - Provider-zero：attempts=0、reservations=0、cost=0、API-key reads=0；无 StaticSchema 发布或 apply。
 - J1 边界：本轮会话给出的“全阶段、每模型 1M token、48h”只进入 preflight 的最大 token/time 约束，不能替代
   P1 每阶段在 fresh case hash、exact cycle/manifest、调用次数和费用形成后所需的新 scoped J1 JSON。当前只存在
-  `PROPOSED` 且故意不可执行的模板，OPEN=0。
+  `PROPOSED` 且故意不可执行的模板，OPEN=0。P0 preflight 只返回 `grantsProviderEgress=false` 的 Provider-zero
+  proof，并从 append-only event 投影取得唯一 next stage；原子 runs/calls/tokens/cost 消费与 CLOSED ledger 是
+  IOPA-P1-01 的前置实现，不能由重复 P0 proof 替代。
 - 下一恢复入口：IOPA-P1-01；需先取得 5 份 fresh `USER_PROVIDED+ORDINARY_DESIGN` 输入及与其 exact hashes/
   manifest/calls/cost 绑定的 canary J1。P1 阻塞期间可独立推进 P2 Provider-zero 实现。
 

@@ -10,8 +10,10 @@ public record ProviderBudgetReservation(
         int attemptOrdinal,
         long reservedCostMicrosCny
 ) {
-    public static final int MAXIMUM_PROVIDER_CALLS = 12;
-    public static final int MAXIMUM_ATTEMPT_ORDINAL = MAXIMUM_PROVIDER_CALLS - 1;
+    /** Neutral persistence/replay ceiling; each immutable Profile owns its executable cap. */
+    public static final int REPRESENTATIONAL_MAXIMUM_PROVIDER_CALLS = 12;
+    public static final int REPRESENTATIONAL_MAXIMUM_ATTEMPT_ORDINAL =
+            REPRESENTATIONAL_MAXIMUM_PROVIDER_CALLS - 1;
 
     public ProviderBudgetReservation {
         Objects.requireNonNull(reservationId, "reservationId");
@@ -19,7 +21,7 @@ public record ProviderBudgetReservation(
             throw new IllegalArgumentException("budgetKey is invalid");
         }
         Objects.requireNonNull(runId, "runId");
-        if (attemptOrdinal < 0 || attemptOrdinal > MAXIMUM_ATTEMPT_ORDINAL
+        if (attemptOrdinal < 0 || attemptOrdinal > REPRESENTATIONAL_MAXIMUM_ATTEMPT_ORDINAL
                 || reservedCostMicrosCny <= 0) {
             throw new IllegalArgumentException("Reservation bounds are invalid");
         }

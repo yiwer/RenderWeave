@@ -28,13 +28,15 @@ public class PostgresProfileCertificationStore implements ProfileCertificationSt
         jdbcClient.sql("""
                         insert into profile_certification_event (
                             event_id, cycle_id, sequence_no, profile_id, profile_sha256,
-                            manifest_identity, evaluator_identity, event_type, stage,
-                            accepted_cases, total_cases, evidence_identity,
+                            manifest_identity, evaluator_identity, authority_inventory_sha256,
+                            event_type, stage,
+                            accepted_cases, total_cases, acceptance_threshold, evidence_identity,
                             authority_reference, reason_code, recorded_at
                         ) values (
                             :eventId, :cycleId, :sequenceNo, :profileId, :profileSha256,
-                            :manifestIdentity, :evaluatorIdentity, :eventType, :stage,
-                            :acceptedCases, :totalCases, :evidenceIdentity,
+                            :manifestIdentity, :evaluatorIdentity, :authorityInventorySha256,
+                            :eventType, :stage,
+                            :acceptedCases, :totalCases, :acceptanceThreshold, :evidenceIdentity,
                             :authorityReference, :reasonCode, :recordedAt
                         )
                         """)
@@ -45,10 +47,12 @@ public class PostgresProfileCertificationStore implements ProfileCertificationSt
                 .param("profileSha256", event.profileSha256())
                 .param("manifestIdentity", event.manifestIdentity())
                 .param("evaluatorIdentity", event.evaluatorIdentity())
+                .param("authorityInventorySha256", event.authorityInventorySha256())
                 .param("eventType", event.eventType().name())
                 .param("stage", event.stage() == null ? null : event.stage().name())
                 .param("acceptedCases", event.acceptedCases())
                 .param("totalCases", event.totalCases())
+                .param("acceptanceThreshold", event.acceptanceThreshold())
                 .param("evidenceIdentity", event.evidenceIdentity())
                 .param("authorityReference", event.authorityReference())
                 .param("reasonCode", event.reasonCode())
@@ -61,8 +65,9 @@ public class PostgresProfileCertificationStore implements ProfileCertificationSt
         Objects.requireNonNull(cycleId, "cycleId");
         return jdbcClient.sql("""
                         select event_id, cycle_id, sequence_no, profile_id, profile_sha256,
-                               manifest_identity, evaluator_identity, event_type, stage,
-                               accepted_cases, total_cases, evidence_identity,
+                               manifest_identity, evaluator_identity, authority_inventory_sha256,
+                               event_type, stage,
+                               accepted_cases, total_cases, acceptance_threshold, evidence_identity,
                                authority_reference, reason_code, recorded_at
                         from profile_certification_event
                         where cycle_id = :cycleId
@@ -77,10 +82,12 @@ public class PostgresProfileCertificationStore implements ProfileCertificationSt
                         resultSet.getString("profile_sha256"),
                         resultSet.getString("manifest_identity"),
                         resultSet.getString("evaluator_identity"),
+                        resultSet.getString("authority_inventory_sha256"),
                         ProfileCertificationEvent.EventType.valueOf(resultSet.getString("event_type")),
                         nullableStage(resultSet.getString("stage")),
                         resultSet.getObject("accepted_cases", Integer.class),
                         resultSet.getObject("total_cases", Integer.class),
+                        resultSet.getObject("acceptance_threshold", Integer.class),
                         resultSet.getString("evidence_identity"),
                         resultSet.getString("authority_reference"),
                         resultSet.getString("reason_code"),
