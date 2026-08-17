@@ -1,9 +1,9 @@
 # RenderWeave 环境、能力与反馈闭环
 
 - 状态：Environment canary automated-verified；独立复核与原型 J1 pending
-- 日期：2026-08-07
+- 日期：2026-08-17（原 P0 canary 2026-08-07；Template capability update 2026-08-17）
 - Binding：`generic + tools/run-gate.ps1`
-- 适用 Phase：P0–P6；live AI 的附加 guarded gate 见 ADR-0007
+- 适用 Phase：Schema/Inference P0–P6 与 additive Template TV1-P0+；live AI 的附加 guarded gate 见 ADR-0007
 
 ## 能力协商（RULE-AUT-001）
 
@@ -12,13 +12,16 @@ capabilities:
   evidence_capture: tool
   atomic_claim: none
   blocking_permission: human
-  independent_verify: unavailable
-  isolated_workspace: unavailable
+  independent_verify: limited
+  isolated_workspace: available
 binding: references/bindings/generic.md + project-local gate
-assurance_ceiling: A1
+assurance_ceiling: A1 generally; A2 only for registered strict-input independent replays
 ```
 
-结论：当前可由本地脚本绑定输入文件清单、Git 状态、退出码、逐步原始日志和结果元数据，达到 A1。仓库没有 CI、独立 verifier、原子 claim 或隔离 worktree，所以不宣称 A2/A3，也不进行多写入者 Auto。确定性标准任务可在 P0/J1 后连续执行；live AI、真实数据、生产与恢复演练保持 guarded。
+结论：当前可由本地脚本绑定输入文件清单、Git 状态、退出码、逐步原始日志和结果元数据，达到 A1。
+Template effort 已使用相邻隔离 worktree；视觉评测和 Template Editor static/SPEC_REGISTRY 有 strict-input
+独立 verifier，可在各自封闭范围达到 A2。仓库仍没有 CI、A3、原子 claim 或通用产品独立 verifier，因此保持
+single writer，不把局部 A2 外推为产品认证。live AI、真实数据、生产与恢复演练保持 guarded。
 
 ## 工具链实测
 
@@ -26,7 +29,7 @@ assurance_ceiling: A1
 |---|---|---|
 | Java | Temurin 21.0.10 | 本机 gate 使用 |
 | Maven | 3.8.8；POM 固定 Boot/BOM/plugin | 本机 reactor 使用 |
-| Node | 正式 24.19.0 LTS；本机全局 20.20.2 | `ensure-node24.ps1` 下载官方 zip、SHA-256 校验、仓库局部使用 |
+| Node | Web 正式固定 24.19.0 LTS；当前全局 24.12.0 只用于冻结 Template replay | `ensure-node24.ps1` 下载官方 zip、SHA-256 校验、仓库局部用于 Web；Template registry evidence 绑定各 executor runtime |
 | npm | Node 24 随附版本；`package-lock.json` | Web gate 执行 `npm ci` |
 | PostgreSQL | 16 Alpine | Testcontainers 与 runtime canary；无 H2/SQLite |
 | Docker | Desktop 29.2.0 | 本地已有 PostgreSQL 镜像可用 |
@@ -42,6 +45,7 @@ Node 工具链落在忽略提交的 `.sdlc/toolchains/`，不会修改系统 Nod
 | 局部检查 | `tools/run-gate.ps1 -Gate fast` | 连贯改动后 | diff whitespace、Java package、Web typecheck | evidence | A1 | ~10s |
 | 服务端回归 | `-Gate server` | Java/SQL/依赖变化 | Maven verify；Flyway + PG Testcontainers | evidence | A1 | ~13s |
 | Web 回归 | `-Gate web` | Web/OpenAPI/lockfile 变化 | pinned Node24 `npm ci/check/build` | evidence | A1 | ~25s 热缓存 |
+| Template 静态权威 | `-Gate template` | Template spec/registry/gate 变化 | 临时副本 replay 全绿、冻结计数成立、authority byte diff=0 | evidence | A1；strict replay A2 | 以 evidence 为准 |
 | 关键路径 E2E | `-Gate e2e` | UI/路由/交互变化 | Chromium smoke + 三方案 Python audit | evidence + J0/J1 | A1 | ~50s |
 | 运行 canary | `-Gate runtime` | API/config/infra 变化 | 临时 PG + 实际 Boot 进程 + HTTP/DB ready | evidence | A1 | ~16s |
 | 拓扑检查 | `-Gate compose` | Compose/Dockerfile 变化 | `docker compose config --quiet` | evidence | A1 | ~2s |
@@ -58,7 +62,10 @@ Node 工具链落在忽略提交的 `.sdlc/toolchains/`，不会修改系统 Nod
 - Docker Node24 pull：由于 Docker registry 代理不可用，gate 保留 exit 125 失败证据；未改全局代理，改用官方校验过的局部 Node24。
 - `run-gate.ps1` 的 unborn HEAD 与 PowerShell 5.1 stderr/list binder 均经失败探针修正；绿色元数据明确记录 `revision=UNBORN`，不虚构 commit。
 
-恢复边界：runtime canary 只停止自己创建的 Java PID 与唯一命名临时 PG container；Node 引导只写 `.sdlc/downloads|toolchains`；源码仍为 record-only diff。没有数据库/生产/外部模型副作用。
+恢复边界：runtime canary 只停止自己创建的 Java PID 与唯一命名临时 PG container；Node 引导只写
+`.sdlc/downloads|toolchains`。Template static gate 只删除系统 temp 下自己创建且已校验的 GUID 目录，仓库
+authority 只读。Schema/Inference 的历史 record-only/agent-commit 规则不变；Template 在独立分支按 verified
+ticket agent-commit。普通 gate 没有数据库生产、真实数据或外部模型副作用。
 
 ## 协作与决策闭环
 
@@ -66,7 +73,7 @@ Node 工具链落在忽略提交的 `.sdlc/toolchains/`，不会修改系统 Nod
 - [x] SDD、风险测试、ADR、Gate、checkpoint 的落点明确。
 - [x] 普通失败输出足以自主定位，并已完成多次红→绿干跑。
 - [x] guarded 操作写明权限和三类恢复边界。
-- [ ] 独立 review 执行者尚不可用；Phase release 前需 A2。
+- [x] Template Editor static/SPEC_REGISTRY 与视觉评测已有封闭输入独立 verifier；其他产品范围和 release 仍需 A2。
 - [ ] 编辑器 A+B 推荐组合仍需用户 J1。
 - [ ] Docker registry 恢复后执行 `docker compose up --build`；当前只有 config + 等价 live runtime canary。
 
@@ -89,5 +96,6 @@ Node 工具链落在忽略提交的 `.sdlc/toolchains/`，不会修改系统 Nod
 
 ## 退出结论
 
-最小工程 canary 已覆盖 spec→实现→失败定位→修正→分层验证→实际运行→证据；Agent 不需要用户代跑普通命令。P0 的自动部分可记 `automated_verified`，但原型选择是 `human_acceptance_pending`，Compose 全拓扑启动和独立 A2 仍诚实保留为 pending。
-
+最小工程 canary 已覆盖 spec→实现→失败定位→修正→分层验证→实际运行→证据；Template static gate 另覆盖
+frozen authority 的无写重放。Agent 不需要用户代跑普通命令。P0 自动部分可记 `automated_verified`；局部 A2
+不替代产品独立复核，原型选择仍为 `human_acceptance_pending`，Compose 全拓扑与 release evidence 继续 pending。

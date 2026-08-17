@@ -1,5 +1,8 @@
 # RenderWeave v1 Phase 计划
 
+- 2026-08-17 additive Template v1 已在独立 `feature/template-v1` effort 启动；其 approved delta、DAG 与证据见
+  [`plans/renderweave-template-v1-plan.md`](renderweave-template-v1-plan.md)。本文件继续作为 Schema/Inference
+  历史计划，不调度 Template；该 Template single-writer effort 期间暂停 P6 新写入，既有证据与 lifecycle 不变。
 - 2026-08-17 调度权威更新：本文件保留 v1 历史计划与证据，不再调度 N7/R5/R5P/R5P2；这些路线及其
   authorization/ledger 均为 `CLOSED`，product-v45 为 `ACTIVE_EXPERIMENTAL`。IMAGE_ONLY production admission
   的当前执行计划是 [`plans/image-only-production-admission-plan-v1.md`](image-only-production-admission-plan-v1.md)，
@@ -43,7 +46,9 @@
 | P5 Provider 与认证 | 经显式授权运行 DashScope adapter；60-case 分模式评测决定 Profile certified/experimental | 外部费用、隐私、prompt injection、模型漂移 | independent eval + safe live canary | G-P5-QUALITY（A2 + J1） |
 | P6 发布候选 | 10-user/large dataset、浏览器/无障碍、Compose、备份恢复和全部主路径完成 | 性能、运维、恢复、scope drift | full + independent replay + human acceptance | G-V1-RELEASE |
 
-每个 Phase 门控后执行 `RULE-ANCHOR-001`：对照 approved spec/delta、AC、非目标，确认没有引入 Template/Workspace/Renderer 或扩大 AI 权限。
+每个 Phase 门控后执行 `RULE-ANCHOR-001`：对照 approved spec/delta、AC、非目标，确认本 Schema/Inference
+计划没有偷偷引入 Template/Workspace/Renderer 或扩大 AI 权限。additive Template artifacts 由其独立 approved
+delta 评价，不再以 AC-025 的仓库全局 absence 误判。
 
 ## 3. 依赖 DAG
 

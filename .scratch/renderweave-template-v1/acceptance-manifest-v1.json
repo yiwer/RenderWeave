@@ -706,7 +706,7 @@
       "implementationRevision": "spec-registry-bootstrap/1.13",
       "targetManifest": {
         "path": "spec-registry/target-manifest-v1.json",
-        "sha256": "122577f0dc84713897e5d7803b21d94fd283fff067aa54cbdc9d20b29e767e84",
+        "sha256": "33713ad84d566a8ddaa21d4f0e930bb8a3f5e29e049c29a1b85733036c5b0147",
         "byteLength": 77305,
         "artifactCount": 382
       },
@@ -714,13 +714,13 @@
         {
           "role": "primary-registry-validator",
           "path": "spec-registry/primary-executor-manifest-v1.json",
-          "sha256": "6a2e8ff105aac4532cf7686365d934c1e71e991d49ea523aad09ab3cf450a5a7",
+          "sha256": "2352c86a57290e14cadd7bbbc5eb5c151c2d7df6353f8a945f86e5747d206490",
           "byteLength": 950
         },
         {
           "role": "independent-schema-and-graph-replayer",
           "path": "spec-registry/independent-executor-manifest-v1.json",
-          "sha256": "a0788cbc90fde6d1510cf105facf787a9dfe88ec56f29c5ab02714632888b900",
+          "sha256": "06ec868eb4495dd25f7761ca06a400e5c1f7a60b9edfc003f0224d6c584bd928",
           "byteLength": 973
         }
       ],

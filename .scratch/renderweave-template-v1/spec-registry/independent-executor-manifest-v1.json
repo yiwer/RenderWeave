@@ -6,7 +6,7 @@
   "targetId": "SPEC_TARGET::REGISTRY::1.0",
   "targetManifest": {
     "path": "spec-registry/target-manifest-v1.json",
-    "sha256": "sha256:122577f0dc84713897e5d7803b21d94fd283fff067aa54cbdc9d20b29e767e84",
+    "sha256": "sha256:33713ad84d566a8ddaa21d4f0e930bb8a3f5e29e049c29a1b85733036c5b0147",
     "byteLength": 77305
   },
   "implementationRevision": "spec-registry-bootstrap/1.13",

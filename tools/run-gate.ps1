@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-    [ValidateSet('fast', 'server', 'web', 'eval', 'e2e', 'draft-e2e', 'inference-e2e', 'compose', 'runtime', 'document-vision', 'observation-r0', 'layered-r1', 'image-only-p0', 'capacity', 'full')]
+    [ValidateSet('fast', 'server', 'web', 'template', 'eval', 'e2e', 'draft-e2e', 'inference-e2e', 'compose', 'runtime', 'document-vision', 'observation-r0', 'layered-r1', 'image-only-p0', 'capacity', 'full')]
     [string]$Gate = 'fast'
 )
 
@@ -104,6 +104,7 @@ try {
         'fast' { @('repository-diff', 'server-package', 'web-typecheck') }
         'server' { @('server-verify') }
         'web' { @('web-node24') }
+        'template' { @('repository-diff', 'template-static-replay') }
         'eval' { @('offline-eval') }
         'e2e' { @('prototype-e2e') }
         'draft-e2e' { @('server-verify', 'web-node24', 'draft-browser-e2e') }
@@ -115,7 +116,7 @@ try {
         'layered-r1' { @('document-observation-r0', 'layered-evaluation-r1') }
         'image-only-p0' { @('image-only-certification-p0') }
         'capacity' { @('capacity-baseline') }
-        'full' { @('repository-diff', 'server-verify', 'web-node24', 'offline-eval', 'document-observation-r0', 'layered-evaluation-r1', 'image-only-certification-p0', 'compose-config', 'runtime-canary', 'document-vision-adapter-tests', 'prototype-e2e', 'draft-browser-e2e', 'inference-browser-e2e') }
+        'full' { @('repository-diff', 'template-static-replay', 'server-verify', 'web-node24', 'offline-eval', 'document-observation-r0', 'layered-evaluation-r1', 'image-only-certification-p0', 'compose-config', 'runtime-canary', 'document-vision-adapter-tests', 'prototype-e2e', 'draft-browser-e2e', 'inference-browser-e2e') }
     }
 
     foreach ($step in $requestedSteps) {
@@ -140,6 +141,18 @@ try {
                 Invoke-GateStep $step {
                     Invoke-ZeroPaidAiCommand `
                         'powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools\run-web-gate.ps1'
+                }
+            }
+            'template-static-replay' {
+                Invoke-GateStep $step {
+                    $command = 'powershell.exe -NoProfile -ExecutionPolicy Bypass ' +
+                        '-File tools\run-template-static-gate.ps1 -EvidenceDir "' + $evidenceDir + '"'
+                    Invoke-ZeroPaidAiCommand $command
+                    $summaryPath = Join-Path $evidenceDir 'template-static-summary.json'
+                    if ($LASTEXITCODE -eq 0 -and -not (
+                            Test-Path -LiteralPath $summaryPath -PathType Leaf)) {
+                        throw 'Template static gate completed without producing its summary.'
+                    }
                 }
             }
             'offline-eval' {

@@ -13,7 +13,7 @@
   "authorityBindings": {
     "acceptanceManifest": {
       "path": "acceptance-manifest-v1.json",
-      "sha256": "sha256:9db08ea5263e2431ecd8ec1b2a336baa51e248540473475bc2a0cb9cdd3d840c",
+      "sha256": "sha256:8c553b9c089101f5b9b595b1483dce6b2d20fb564c8d67cdf170720367164066",
       "byteLength": 54373
     },
     "requirementsRegistry": {
@@ -60,17 +60,17 @@
     },
     "targetManifest": {
       "path": "spec-registry/target-manifest-v1.json",
-      "sha256": "sha256:122577f0dc84713897e5d7803b21d94fd283fff067aa54cbdc9d20b29e767e84",
+      "sha256": "sha256:33713ad84d566a8ddaa21d4f0e930bb8a3f5e29e049c29a1b85733036c5b0147",
       "byteLength": 77305
     },
     "primaryExecutorManifest": {
       "path": "spec-registry/primary-executor-manifest-v1.json",
-      "sha256": "sha256:6a2e8ff105aac4532cf7686365d934c1e71e991d49ea523aad09ab3cf450a5a7",
+      "sha256": "sha256:2352c86a57290e14cadd7bbbc5eb5c151c2d7df6353f8a945f86e5747d206490",
       "byteLength": 950
     },
     "independentExecutorManifest": {
       "path": "spec-registry/independent-executor-manifest-v1.json",
-      "sha256": "sha256:a0788cbc90fde6d1510cf105facf787a9dfe88ec56f29c5ab02714632888b900",
+      "sha256": "sha256:06ec868eb4495dd25f7761ca06a400e5c1f7a60b9edfc003f0224d6c584bd928",
       "byteLength": 973
     }
   },
@@ -107,24 +107,24 @@
     "primary": {
       "result": {
         "path": "spec-registry/primary-result-v1.json",
-        "sha256": "sha256:2862fbc8c8dea945f409e6d7eea23123b5823bd896885a790467db3679792be6",
+        "sha256": "sha256:ee1db62848748dfae8b8f7d1e8cc38fe8766332fb3cbbc8065de533285d66009",
         "byteLength": 745
       },
       "status": "PASS",
       "checkCount": 22838,
       "failureCount": 0,
-      "runtime": "v24.18.0"
+      "runtime": "v24.12.0"
     },
     "independent": {
       "result": {
         "path": "spec-registry/independent-result-v1.json",
-        "sha256": "sha256:35b98910618c92796ab6c87d8bdc0602bb22d3595967d3056fdda26163e84438",
+        "sha256": "sha256:afacac7490e6367d66e7b3db28bab504efe31bdc69686ad3d58786211ea29008",
         "byteLength": 761
       },
       "status": "PASS",
       "checkCount": 22746,
       "failureCount": 0,
-      "runtime": "3.12.13"
+      "runtime": "3.13.13"
     },
     "sharedSemanticLibrary": null,
     "differentRuntimeAndParserImplementations": true

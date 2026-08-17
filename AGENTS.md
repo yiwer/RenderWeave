@@ -4,6 +4,7 @@
 - 局部/快速检查：`powershell -ExecutionPolicy Bypass -File tools/run-gate.ps1 -Gate fast`
 - 服务端回归：`powershell -ExecutionPolicy Bypass -File tools/run-gate.ps1 -Gate server`
 - Web 回归：`powershell -ExecutionPolicy Bypass -File tools/run-gate.ps1 -Gate web`
+- Template 静态权威重放：`powershell -ExecutionPolicy Bypass -File tools/run-gate.ps1 -Gate template`
 - 实际运行 canary：`powershell -ExecutionPolicy Bypass -File tools/run-gate.ps1 -Gate runtime`
 - 完整/发布级门控：`powershell -ExecutionPolicy Bypass -File tools/run-gate.ps1 -Gate full`
 - 构建/打包：`mvn -B -ntp verify` 与 `npm --prefix web run build`
@@ -12,15 +13,19 @@
 
 ## 工作约定
 - 治理与需求见 CONSTITUTION.md 与 specs/；计划与证据见 plans/
-- 领域语言与模块边界先读 CONTEXT.md；v1 权威规格是 specs/renderweave-v1.md
-- 当前 Phase 与任务 DAG 见 plans/renderweave-v1-plan.md；进度广播见 NOTES.md
+- 领域语言与模块边界先读 CONTEXT.md；Schema/Inference v1 权威是 specs/renderweave-v1.md，additive Template v1
+  实施权威见 specs/changes/20260817-template-v1-implementation-authority.md 与冻结 checkpoint
+- Schema/Inference 历史 Phase 见 plans/renderweave-v1-plan.md；Template 当前 DAG 见
+  plans/renderweave-template-v1-plan.md 与 `.scratch/renderweave-template-v1-implementation/`；进度广播见 NOTES.md
 - 核心规则见下方受管区块；完整语义见 skill 内 references/core-rules.md（rule ID 对齐）
 - fast-track 零落盘；Project Mode 才创建流程文件（RULE-FAST-001）
 - 局部阻塞时继续其他安全任务；只有无安全路径时才合并请求用户（RULE-USER-001）
-- 不默认创建 tag；P1–P4 保持 record-only，P5 已获用户 J1，按节点创建 `phase/p5-*` 分支并提交
+- 不默认创建 tag；P1–P4 保持 record-only，P5/P6 按既有授权提交；Template 已获按 verified ticket 在
+  `feature/template-v1` 提交的授权，但不 push、tag 或建 PR
 
 ## 项目特有禁区
-- v1 不实现 Template、数据适配、Workspace 或图片渲染，也不创建占位页面/表/接口。
+- 历史 Schema/Inference v1 不实现 Template、数据适配、Workspace 或图片渲染；经批准的 additive Template v1
+  effort 只按已 claim ticket 实现真实纵切，仍禁止占位页面、表、接口、route、module 或 Profile registration。
 - Schema DSL 是事实源；通用 JSON Schema 验证器不能替代 RenderWeave validator。
 - StaticSchema 内容和已编译 JSON Schema 永不 UPDATE/DELETE/重编译。
 - 正式 Schema 不引入 fieldId；Candidate 的局部 ID 不允许泄漏进 Draft/Static/编译产物。

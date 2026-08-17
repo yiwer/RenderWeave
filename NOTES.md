@@ -1,6 +1,13 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-17 **Template v1 implementation TV1-T01 已 `automated_verified`**：在相邻
+  `feature/template-v1` worktree 整合 `b14c2d7`、`0b485f4` 与 7 份 exact LF registry repair；新增 approved
+  additive delta、Project/single-writer DAG 与离线 `template` gate，并纳入 `full`。证据：Template replay
+  `.sdlc/evidence/20260817-185121-template/`（authority diff=0；Node 22,838/Python 22,746）、Web
+  `.sdlc/evidence/20260817-185519-web/`（14 files/76 tests）、fast
+  `.sdlc/evidence/20260817-185601-fast/`。本票无产品代码、浏览器/Web 服务/provider/J1；Ticket 19 open，
+  Template/Editor/Renderer 未 READY。下一唯一 frontier：TV1-T02 module interface/依赖 ADR。
 - 2026-08-17 **IMAGE_ONLY production admission P0-01..05 已 `automated_verified`**：创建 hidden
   `dashscope-qwen38-max-product-v46-hybrid-generic`（canonical SHA
   `22f561c88b30fabbf3ba660bcfe203fb570975f770ff122f2ce1c7216454ac0c`），相对 v45 仅三字段差异；实现

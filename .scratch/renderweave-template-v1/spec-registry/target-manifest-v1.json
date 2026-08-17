@@ -1630,8 +1630,8 @@
     },
     {
       "path": "issues/19-security-capacity-acceptance.md",
-      "sha256": "sha256:ec3bdbd8fb1fd89435ccfd1e645a4df98e0ce1b4dc73b5a41673cf4334bcf1fd",
-      "byteLength": 74637
+      "sha256": "sha256:ce7335f4b50ad23fb77b018cea1d9d89d94c11e02c72da13e1d392b13a065cae",
+      "byteLength": 74549
     },
     {
       "path": "requirements-v1.json",

@@ -7,7 +7,7 @@
 
 | 实践 | RenderWeave 落地方式 | 决定 |
 |---|---|---|
-| SDD/spec-first | `specs/renderweave-v1.md` 是 v1 意图与 AC 的权威源；实现发现冲突先提交 spec delta。 | 采用 |
+| SDD/spec-first | `specs/renderweave-v1.md` 是 Schema/Inference v1 历史权威；新增 effort 由 approved spec delta 与其冻结 source records 管辖。实现发现冲突先提交 spec delta。 | 采用 |
 | 风险驱动测试 | 领域不变量先建立失败测试；DSL/编译/验证用 unit + golden + property，PostgreSQL 并发用 Testcontainers。 | 采用 |
 | 独立 Review | Phase 退出前要求不同上下文 Agent、CI 或人工复核；视觉评测已有独立 Python 重算器，其他范围仍需独立 Agent/CI/人工。 | 分范围采用 |
 | ADR | 只记录身份、不可变发布、编译权威、模块边界、AI 权限和编辑器状态等真实取舍。 | 采用 |
@@ -25,12 +25,13 @@ capabilities:
   evidence_capture: tool       # 项目本地 gate 捕获 revision、diff hash、exit 与原始输出；上限 A1
   atomic_claim: none           # 当前 single writer，不伪造 claim
   blocking_permission: human  # live AI、真实数据、生产/难恢复动作需人工批准
-  independent_verify: available # 仅视觉评测 raw evidence 可由独立 Python 算法重算；其余范围不可推导
-  isolated_workspace: unavailable
+  independent_verify: limited   # 视觉评测、Template Editor static/SPEC_REGISTRY 仅在 strict inputs 内可独立重算
+  isolated_workspace: available # Template effort 使用相邻 worktree；dirty main 保持只读
 binding: generic + project-local tools/run-gate.ps1
 ```
 
-- 本地 gate 只能产生 A1；视觉 evidence verifier 可在其严格输入范围内形成 A2，但不是外部硬门控。
+- 本地 gate 捕获本身只能产生 A1；视觉与 Template SPEC_REGISTRY 的独立 verifier 可在各自严格输入范围内形成
+  A2，但不是产品执行或外部硬门控。
 - 确定性、可逆的标准风险 Phase 在 canary 通过后可达到 Auto-ready。
 - live AI、真实数据、生产发布和恢复演练属于 guarded；没有 A2 与当次 human permission 时保持 copilot。
 - 当前没有 CI/分支保护，因此不存在 A3 hard gate。
@@ -40,10 +41,10 @@ binding: generic + project-local tools/run-gate.ps1
 | 策略 | 含义 | 本项目选择 |
 |---|---|---|
 | `record-only` | Agent 只记录 commit/diff，不自行 commit/tag | P1–P4 采用 |
-| `agent-commit` | 用户已授权按任务/Phase 提交 | **P5 及 P6 图片识别 vNext Goal 采用：每个节点独立提交；当前分支 `phase/p6-visual-recognition-vnext`** |
+| `agent-commit` | 用户已授权按任务/Phase 提交 | **P5/P6 图片识别按既有授权；Template v1 在 `feature/template-v1` 按 verified ticket 独立提交** |
 | `branch-per-agent` | 多写入者各在 branch/worktree，集成者合并 | N/A：当前 single writer |
 
-未授权时不默认创建 tag/branch/commit。
+Template 授权不包含 push、tag 或 PR；其他范围未授权时不默认创建 branch/commit/tag。
 
 ## 项目验证命令
 
@@ -52,7 +53,8 @@ binding: generic + project-local tools/run-gate.ps1
 | 局部/快速检查 | `tools/run-gate.ps1 -Gate fast` | whitespace、Java package 与 Web typecheck 通过 | A1 |
 | 服务端回归 | `tools/run-gate.ps1 -Gate server` | Maven verify、架构与 PostgreSQL 集成测试通过 | A1 |
 | Web 回归 | `tools/run-gate.ps1 -Gate web` | 固定 Node 24 下 npm ci、OpenAPI generation、typecheck、lint、unit 与 production build 通过 | A1 |
-| 完整/发布级门控 | `tools/run-gate.ps1 -Gate full` | server + Node24 web + runtime + Compose config + browser E2E 通过 | A1；发布前需 A2/CI |
+| Template 静态权威 | `tools/run-gate.ps1 -Gate template` | Editor static 与 SPEC_REGISTRY 在临时副本重放通过、冻结计数成立且 authority byte diff=0 | 捕获 A1；strict independent replay 范围 A2 |
+| 完整/发布级门控 | `tools/run-gate.ps1 -Gate full` | Template static + server + Node24 web + runtime + Compose config + browser E2E 通过 | A1；发布前需 A2/CI |
 | 构建/打包 | `mvn -B -ntp verify`; `npm --prefix web run build` | 全部制品生成且 exit 0 | A1 |
 | 关键路径 E2E | `tools/run-gate.ps1 -Gate e2e` | Playwright 支持矩阵关键路径通过 | A1；体验另需 J1 |
 | 本地运行 canary | `tools/run-gate.ps1 -Gate runtime` | 临时 PostgreSQL、实际 API 进程和 HTTP/database readiness 通过 | A1 |
@@ -72,7 +74,8 @@ binding: generic + project-local tools/run-gate.ps1
 
 ## 项目稳定原则
 
-- v1 只交付 Schema Draft、StaticSchema、确定性编译/验证、AI Candidate 推断与审核；其余能力是明确非目标。
+- 历史 Schema/Inference v1 只交付 Schema Draft、StaticSchema、确定性编译/验证、AI Candidate 推断与审核；
+  additive Template v1 只受 approved delta 与冻结 Template authority 管辖，不反向改写这段历史。
 - 服务端是 Java 21 / Spring Boot 4.1 modular monolith；客户端是 React 19 + TypeScript strict + Vite 8.1。
 - PostgreSQL 是全部环境的唯一数据库语义来源；生产代码不依赖 H2/SQLite。
 - OpenAPI 3.1.2 是 HTTP 合同源；Java 服务端手写并做合同验证，TypeScript SDK 由固定版本生成。
@@ -84,4 +87,4 @@ binding: generic + project-local tools/run-gate.ps1
 宪章变化记录动机和日期，由人确认；不要把一次性例外永久写入。
 
 ---
-版本：1.2 ｜ 采用日期：2026-08-07 ｜ P5 节点提交与 DashScope guarded delta：2026-08-08 ｜ P6 图片识别 vNext Goal 节点提交：2026-08-10
+版本：1.3 ｜ 采用日期：2026-08-07 ｜ P5 节点提交与 DashScope guarded delta：2026-08-08 ｜ P6 图片识别 vNext Goal 节点提交：2026-08-10 ｜ Template additive effort：2026-08-17
