@@ -1,0 +1,16 @@
+{
+  "artifactVersion": "renderweave-editor-fault-schedule/1.0",
+  "candidateId": "EDC::J11::015",
+  "executionClass": "EXEC::EDITOR_AUTOMATED::1.0",
+  "events": [
+    {
+      "at": "CANCEL_REQUEST",
+      "action": "BEST_EFFORT_CANCEL_PREVIOUS",
+      "parameters": {}
+    }
+  ],
+  "expectedTerminal": {
+    "operationId": "new-preview-revokes-old",
+    "outcome": "SUCCESS"
+  }
+}

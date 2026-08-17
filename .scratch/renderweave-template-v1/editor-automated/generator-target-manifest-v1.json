@@ -1,0 +1,58 @@
+{
+  "artifactVersion": "renderweave-editor-automated-generator-target/1.0",
+  "targetId": "EDITOR_AUTOMATED_GENERATOR_TARGET::FIXTURE::1.0",
+  "generatorProfile": "renderweave-editor-automated-generator/1.0",
+  "status": "FROZEN_STATIC_GENERATOR_TARGET",
+  "implementationRevision": "editor-automated-fixture-generator/1.0",
+  "entrypoint": {
+    "path": "editor-automated/generate-editor-automated-fixtures.mjs",
+    "sha256": "sha256:81942984cbbd84ab8a9d627c993991d76644a5cc1ce0c531c4795353b0b1ef0b",
+    "byteLength": 20941
+  },
+  "probeProfile": {
+    "path": "conformance-probe-profile-v1.json",
+    "sha256": "sha256:f800eb1e6e138215c26c7761ed80e0fc9cf77fc3ce051be4e3c5ba530cd6053d",
+    "byteLength": 51328
+  },
+  "baseline": {
+    "path": "editor-automated/baseline-v1.json",
+    "sha256": "sha256:35c29750076654c559b3663995d0f17e15cf038d61feb66aedc0d77005788f9f",
+    "byteLength": 1956
+  },
+  "fixtureContract": {
+    "path": "editor-automated/fixture-contract-v1.json",
+    "sha256": "sha256:c5ebeb106d41d549f6c313648829d8841cb466e9778f4d7143b18e77b4555a9c",
+    "byteLength": 2355
+  },
+  "observationAdapter": {
+    "path": "editor-automated/observation-adapter-v1.json",
+    "sha256": "sha256:7f65c78c0d390e7ab972275b43341e94174d267ec4dadd28b71c60223fbe45d7",
+    "byteLength": 7049
+  },
+  "scenarioCatalog": {
+    "path": "editor-automated/capacity-scenarios-v1.json",
+    "sha256": "sha256:8138aff0e56bb16d2e014ff1449a09d9f753ad838e62769225453afbf6b64f4f",
+    "byteLength": 1606
+  },
+  "goldenVectors": {
+    "path": "editor-automated/generator-goldens-v1.json",
+    "sha256": "sha256:11d4396f2fc2ea6d4d02ecff05e4533347f88c8177c891ecfe0bdee95e40c5ae",
+    "byteLength": 1174
+  },
+  "fixtureArtifacts": [
+    {
+      "path": "editor-automated/fixtures/named-editor-structured-clean-recheck-pending.json",
+      "sha256": "sha256:af401b7102cc6f9e32645b97322e05c561ec5f415545ea8c288cd46e97a43115",
+      "byteLength": 1473
+    }
+  ],
+  "expectedScenarioCount": 1,
+  "capacityAxisCount": 0,
+  "productTarget": false,
+  "browserTarget": false,
+  "productExecutionAllowed": false,
+  "browserAutomationAllowed": false,
+  "networkReadsAllowed": false,
+  "environmentReadsAllowed": false,
+  "currentTimeReadsAllowed": false
+}

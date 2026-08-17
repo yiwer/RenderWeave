@@ -1,0 +1,247 @@
+{
+  "artifactVersion": "renderweave-editor-probe-profile-candidate-readiness-audit/1.1",
+  "status": "STATIC_CANDIDATE_COMPLETE_NOT_ISSUED",
+  "executionClass": "EXEC::EDITOR_AUTOMATED::1.0",
+  "baseArtifacts": {
+    "probeProfile": {
+      "path": "conformance-probe-profile-v1.json",
+      "sha256": "sha256:f800eb1e6e138215c26c7761ed80e0fc9cf77fc3ce051be4e3c5ba530cd6053d",
+      "byteLength": 51328
+    },
+    "assertionVectors": {
+      "path": "spec-registry/assertion-vectors-v1.json",
+      "sha256": "sha256:291d450f0a1bfa84124664827b2e83fb562545561de9c9fd973070d0eb26762c",
+      "byteLength": 98282
+    },
+    "observationAdapter": {
+      "path": "editor-automated/observation-adapter-v1.json",
+      "sha256": "sha256:7f65c78c0d390e7ab972275b43341e94174d267ec4dadd28b71c60223fbe45d7",
+      "byteLength": 7049
+    }
+  },
+  "candidateArtifacts": {
+    "adjudication": {
+      "path": "editor-automated/probe-profile-adjudication-v1.json",
+      "sha256": "sha256:7564fcf2606b5c74e5abd590e4870b99b683b54c13122b376cdac57e609f00b7",
+      "byteLength": 5605
+    },
+    "probeProfile": {
+      "path": "editor-automated/probe-profile-candidate-v1_1.json",
+      "sha256": "sha256:f76cae2b80a4205d7bf73b0e79d69611f2b95880a399fc5808d624ce7741f53f",
+      "byteLength": 57149
+    },
+    "assertionVectors": {
+      "path": "editor-automated/probe-assertion-vectors-candidate-v1_1.json",
+      "sha256": "sha256:c1d9ba770f28fcefa0e6280e506b9618942cbfd14de6c57ea3372bb4795cead5",
+      "byteLength": 108789
+    },
+    "observationAdapter": {
+      "path": "editor-automated/observation-adapter-candidate-v1_1.json",
+      "sha256": "sha256:90648f1a60cf2faabc4fb89ffc2608ecac7c67e9b4210ab0ca21bdc58c93018c",
+      "byteLength": 10606
+    }
+  },
+  "counts": {
+    "sourceProposalCount": 12,
+    "candidateAddedProbeCount": 9,
+    "candidateTotalProbeCount": 119,
+    "candidateEditorProbeCount": 40,
+    "candidateAcceptedVectorCount": 157,
+    "candidateRejectedVectorCount": 119,
+    "candidateAddedAcceptedVectorCount": 14,
+    "candidateAddedRejectedVectorCount": 9
+  },
+  "validation": {
+    "checks": [
+      {
+        "name": "base Profile bytes remain exact",
+        "pass": true,
+        "details": {
+          "path": "conformance-probe-profile-v1.json",
+          "sha256": "sha256:f800eb1e6e138215c26c7761ed80e0fc9cf77fc3ce051be4e3c5ba530cd6053d",
+          "byteLength": 51328
+        }
+      },
+      {
+        "name": "base assertion vectors remain exact",
+        "pass": true,
+        "details": {
+          "path": "spec-registry/assertion-vectors-v1.json",
+          "sha256": "sha256:291d450f0a1bfa84124664827b2e83fb562545561de9c9fd973070d0eb26762c",
+          "byteLength": 98282
+        }
+      },
+      {
+        "name": "base Editor adapter remains exact",
+        "pass": true,
+        "details": {
+          "path": "editor-automated/observation-adapter-v1.json",
+          "sha256": "sha256:7f65c78c0d390e7ab972275b43341e94174d267ec4dadd28b71c60223fbe45d7",
+          "byteLength": 7049
+        }
+      },
+      {
+        "name": "adjudication covers exactly 12 proposals",
+        "pass": true,
+        "details": {
+          "sourceProposalCount": 12,
+          "approvedUnchangedSourceCount": 7,
+          "consolidatedSourceCount": 5,
+          "candidateProbeCount": 9
+        }
+      },
+      {
+        "name": "adjudication converges to exactly 9 probes",
+        "pass": true,
+        "details": {
+          "sourceProposalCount": 12,
+          "approvedUnchangedSourceCount": 7,
+          "consolidatedSourceCount": 5,
+          "candidateProbeCount": 9
+        }
+      },
+      {
+        "name": "candidate Probe Profile is complete but unissued",
+        "pass": true,
+        "details": null
+      },
+      {
+        "name": "candidate retains base probes byte-semantically and appends 9",
+        "pass": true,
+        "details": 119
+      },
+      {
+        "name": "candidate probe identities are unique",
+        "pass": true,
+        "details": null
+      },
+      {
+        "name": "forbidden generic snapshot mechanisms stay forbidden",
+        "pass": true,
+        "details": {
+          "interfaceKind": "closed observation Interface",
+          "deepModuleBoundary": "Expose a small stable semantic result at the command-settled Seam; do not expose Editor aggregate layout, generic state snapshots, raw drafts, or raw DesignDSL only to make tests convenient.",
+          "genericStateSnapshotAllowed": false,
+          "rawRecoveryDraftAllowed": false,
+          "rawWorkingCopyAllowed": false,
+          "arbitraryScriptAllowed": false,
+          "wildcardAllowed": false
+        }
+      },
+      {
+        "name": "every candidate probe/operator has exactly one accepted vector",
+        "pass": true,
+        "details": 157
+      },
+      {
+        "name": "every candidate probe has exactly one rejected vector",
+        "pass": true,
+        "details": 119
+      },
+      {
+        "name": "all accepted vectors have exact typed expected shapes",
+        "pass": true,
+        "details": null
+      },
+      {
+        "name": "candidate vector delta is exactly 14 accepted and 9 rejected",
+        "pass": true,
+        "details": {
+          "addedProbeCount": 9,
+          "acceptedVectorCount": 14,
+          "rejectedVectorCount": 9,
+          "acceptedVectorIds": [
+            "ASSERT-OK-144",
+            "ASSERT-OK-145",
+            "ASSERT-OK-146",
+            "ASSERT-OK-147",
+            "ASSERT-OK-148",
+            "ASSERT-OK-149",
+            "ASSERT-OK-150",
+            "ASSERT-OK-151",
+            "ASSERT-OK-152",
+            "ASSERT-OK-153",
+            "ASSERT-OK-154",
+            "ASSERT-OK-155",
+            "ASSERT-OK-156",
+            "ASSERT-OK-157"
+          ],
+          "rejectedVectorIds": [
+            "ASSERT-NO-111",
+            "ASSERT-NO-112",
+            "ASSERT-NO-113",
+            "ASSERT-NO-114",
+            "ASSERT-NO-115",
+            "ASSERT-NO-116",
+            "ASSERT-NO-117",
+            "ASSERT-NO-118",
+            "ASSERT-NO-119"
+          ]
+        }
+      },
+      {
+        "name": "candidate Editor Adapter maps all and only 40 Editor probes",
+        "pass": true,
+        "details": {
+          "adapter": 40,
+          "profile": 40
+        }
+      },
+      {
+        "name": "candidate Adapter retains every base mapping",
+        "pass": true,
+        "details": null
+      },
+      {
+        "name": "candidate Adapter exposes no generic extraction",
+        "pass": true,
+        "details": null
+      },
+      {
+        "name": "base artifacts still declare 1.0",
+        "pass": true,
+        "details": null
+      }
+    ],
+    "passed": true
+  },
+  "issuanceBoundary": {
+    "candidateComplete": true,
+    "currentProfileMutated": false,
+    "currentProfileSuperseded": false,
+    "candidateRecordMayReference": false,
+    "formalJsonlAppended": false,
+    "productCodeChanged": false,
+    "browserStarted": false,
+    "webServiceStarted": false,
+    "networkUsed": false,
+    "j1Executed": false,
+    "productReadyClaimed": false
+  },
+  "gateSeparation": {
+    "globalProfileCandidateGate": {
+      "exactInventoryComplete": true,
+      "probeOperatorVectorsComplete": true,
+      "explicitIssuanceAuthorityPending": true,
+      "currentProfileSupersessionRecordPending": true,
+      "editorProductTargetRequiredForProfileIssuance": false
+    },
+    "editorRecordGate": {
+      "candidateProfileMustFirstBeIssued": true,
+      "exactFixtureFaultTerminalAndTargetBindingsPending": true,
+      "exactTargetAndRunnerAdmissionPending": true,
+      "independentProductReplayPending": true
+    }
+  },
+  "remainingBlockers": [
+    "EXACT_PRODUCT_FIXTURE_ARTIFACT_MISSING",
+    "FAULT_SCHEDULE_ARTIFACT_MISSING_FOR_FAULTED_SCENARIOS",
+    "EXPECTED_TERMINAL_CODE_OR_STAGE_UNBOUND_FOR_PENDING_SCENARIOS",
+    "TARGET_LITERAL_OR_ARTIFACT_MISSING",
+    "EXACT_BROWSER_OS_TARGET_MISSING",
+    "EXECUTOR_MANIFEST_MISSING",
+    "INDEPENDENT_PRODUCT_REPLAY_MISSING",
+    "PROFILE_CANDIDATE_NOT_ISSUED"
+  ],
+  "decision": "The 1.1 candidate is structurally complete and safe to bind from planning candidates, but no Case or Oracle may reference it until explicit issuance and all product-execution blockers close."
+}

@@ -1,0 +1,46 @@
+{
+  "artifactVersion": "renderweave-spec-registry-generator-implementation/1.0",
+  "generatorProfile": "renderweave-spec-registry-generator/1.0",
+  "status": "FROZEN_GOLDENS_PRESENT",
+  "implementationRevision": "spec-registry-bootstrap/1.0",
+  "runtime": "Node.js >=24",
+  "entrypoint": {
+    "path": "spec-registry/generate-spec-registry.mjs",
+    "sha256": "sha256:02e6872dbfd8dec9b741b87fe79d6c12eefd2f47d5f3afe54e9cc7e534e889e3",
+    "byteLength": 35323
+  },
+  "baseline": {
+    "path": "spec-registry/baseline-v1.json",
+    "sha256": "sha256:66439fec0bb7f78809ef991180098f73b556899e41ff326c49d0f452136ce629",
+    "byteLength": 322
+  },
+  "scenarioCatalog": {
+    "path": "spec-registry/scenario-catalog-v1.json",
+    "sha256": "sha256:2325410b6ce59ca588431f5b5b8a8df04d34c81eaa61d84f4b2ea191926f184a",
+    "byteLength": 28223
+  },
+  "assertionVectors": {
+    "path": "spec-registry/assertion-vectors-v1.json",
+    "sha256": "sha256:291d450f0a1bfa84124664827b2e83fb562545561de9c9fd973070d0eb26762c",
+    "byteLength": 98282
+  },
+  "observationAdapter": {
+    "path": "spec-registry/observation-adapter-v1.json",
+    "sha256": "sha256:066c8c15e1c5d1a547e3c557e011aa407699741d262de2bf1e0856e07323d963",
+    "byteLength": 6595
+  },
+  "goldenVectors": {
+    "path": "spec-registry/generator-goldens-v1.json",
+    "sha256": "sha256:ee6b23b0e603866bb504395582391755423076ddbc816a7ea4933426abb69a9b",
+    "byteLength": 31302
+  },
+  "targetManifest": {
+    "path": "spec-registry/generator-target-manifest-v1.json",
+    "sha256": "sha256:896869c11803feda55f5d3fe964047a79dc1ff1c7f4cddd99edce4a4e9136950",
+    "byteLength": 1529
+  },
+  "environmentReadsAllowed": false,
+  "networkReadsAllowed": false,
+  "currentTimeReadsAllowed": false,
+  "hiddenDefaultsAllowed": false
+}

@@ -1,0 +1,466 @@
+{
+  "artifactVersion": "renderweave-editor-input-fixture-contract/1.0",
+  "profileId": "renderweave-editor-input-fixture/1.0",
+  "status": "FROZEN_SEMANTIC_FIXTURE_INTERFACE_PRODUCT_ADAPTER_PENDING",
+  "executionClass": "EXEC::EDITOR_AUTOMATED::1.0",
+  "module": {
+    "name": "EditorInputFixture",
+    "interface": "one immutable SHA-256-bound semantic baseline selection, closed parameter object, and ordered action script per Editor candidate",
+    "seam": "the fixture describes only product-visible starting semantics and named user actions; DOM selectors, framework state, persistence rows, transport internals, clocks, arbitrary scripts, and hidden setup are excluded",
+    "adapter": "a future admitted product adapter must construct the named baseline and execute each action once in order without changing fixture bytes or candidate meaning"
+  },
+  "artifactMembersInOrder": [
+    "artifactVersion",
+    "candidateId",
+    "executionClass",
+    "baselineId",
+    "parameters",
+    "actionScript"
+  ],
+  "actionMembersInOrder": [
+    "action",
+    "parameters"
+  ],
+  "allowedBaselineIds": [
+    "EditorAfterCapacityHardErrorResponse",
+    "EditorAfterSecurityHardErrorResponse",
+    "EditorAfterStructuralHardErrorResponse",
+    "EditorAfterTemplateRefCycleResponse",
+    "EditorAfterTruncatedDependencyErrorResponse",
+    "EditorAfterUnknownDslVersionResponse",
+    "EditorAfterUnknownMemberOrKindResponse",
+    "EditorCanonicalReadyAfterCommittedSave",
+    "EditorCanonicalReadyAfterSaveAndPreviewSavePhase",
+    "EditorCapacityHardError",
+    "EditorClosedWithDeviceLocalRecoveryDraft",
+    "EditorClosedWithSaveReconciliationRecovery",
+    "EditorCompatibilityReadOnlyWithMigrationPreview",
+    "EditorCompleteUnsupportedExactWire",
+    "EditorImportMigrationProblem",
+    "EditorMalformedRawImport",
+    "EditorNewerPreviewGenerationActive",
+    "EditorPreviewCompletedOnce",
+    "EditorPreviewOperationActive",
+    "EditorPreviewOperationActiveWithVisibleResult",
+    "EditorPreviewVisible",
+    "EditorRawRepairWithRepairedSupportedContent",
+    "EditorRecoveryDraftBehindServerCurrent",
+    "EditorRecoveryDraftSameAsServerBase",
+    "EditorRecoveryDraftWithSensitiveRuntimeCandidates",
+    "EditorSaveReconciliationUnknown",
+    "EditorSecurityHardError",
+    "EditorStructuralHardError",
+    "EditorStructuredAfterUndo",
+    "EditorStructuredArrayDuplicateTargetAfterPermutation",
+    "EditorStructuredArrayMultipleNumericTargets",
+    "EditorStructuredArrayOneNumericTarget",
+    "EditorStructuredArrayOutOfBoundsTarget",
+    "EditorStructuredArrayOverlappingTargets",
+    "EditorStructuredBindingAbsent",
+    "EditorStructuredBindingError",
+    "EditorStructuredBindingPresent",
+    "EditorStructuredBindingPropertyInvalid",
+    "EditorStructuredBindingTypeInvalid",
+    "EditorStructuredClean",
+    "EditorStructuredCleanCurrentReady",
+    "EditorStructuredCleanPreviewProblem",
+    "EditorStructuredCleanWithLocalCanvasFeedback",
+    "EditorStructuredCleanWithValidSupportedImport",
+    "EditorStructuredClosureProblem",
+    "EditorStructuredCompleteDependencyErrorSet",
+    "EditorStructuredCompleteDependencyErrorSetWithValidConfirmation",
+    "EditorStructuredConflictAwaitingDecision",
+    "EditorStructuredConflictConfirmed",
+    "EditorStructuredConflictConfirmedOnce",
+    "EditorStructuredDirty",
+    "EditorStructuredDirtyBeforeReplacement",
+    "EditorStructuredDirtyCanonicalNormalization",
+    "EditorStructuredDirtyConfirmedInvalid",
+    "EditorStructuredDirtyCopySource",
+    "EditorStructuredDirtyExactExpressionUnicode",
+    "EditorStructuredDirtyExpectedRevisionBehind",
+    "EditorStructuredDirtyReadyAfterSave",
+    "EditorStructuredDirtySavePending",
+    "EditorStructuredDirtySaveProblem",
+    "EditorStructuredDirtySemanticArraysAndAllFields",
+    "EditorStructuredDirtyWithRestoreTarget",
+    "EditorStructuredDirtyWithUndoRedo",
+    "EditorStructuredLargeCanvas",
+    "EditorStructuredTruncatedDependencyErrorSet",
+    "EditorStructuredUnboundProperty",
+    "EditorStructuredWithBindingAndSeverityStates",
+    "EditorStructuredWithCoreFlowProblems",
+    "EditorStructuredWithCurrentProblemGeneration",
+    "EditorStructuredWithCurrentReport",
+    "EditorStructuredWithLocalLintProblem",
+    "EditorStructuredWithLocatableProblem",
+    "EditorStructuredWithMovableNode",
+    "EditorStructuredWithOneInvalidatingCommand",
+    "EditorStructuredWithOpenTemporaryPanel",
+    "EditorStructuredWithOrderedChildren",
+    "EditorStructuredWithProgressAndBlockingProblem",
+    "EditorStructuredWithRedactedProblem",
+    "EditorStructuredWithReparentableNode",
+    "EditorStructuredWithRepeatTemplateUseBindings",
+    "EditorStructuredWithSafelyDeletableEntity",
+    "EditorStructuredWithSelectableCanvasEntity",
+    "EditorStructuredWithUnsafeDeleteReference",
+    "EditorTemplateRefCycle",
+    "EditorUnknownDslVersion",
+    "EditorUnknownMemberOrKind",
+    "EditorUnsupportedWidth"
+  ],
+  "allowedActionSignatures": [
+    {
+      "action": "ACCEPT_IMPORT",
+      "parameterMembers": []
+    },
+    {
+      "action": "ACCEPT_MIGRATION_PREVIEW",
+      "parameterMembers": []
+    },
+    {
+      "action": "ACCEPT_REPAIRED_CONTENT",
+      "parameterMembers": []
+    },
+    {
+      "action": "ACKNOWLEDGE_ADVANCED_BASELINE",
+      "parameterMembers": []
+    },
+    {
+      "action": "ACTIVATE_PROBLEM_LOCATION",
+      "parameterMembers": [
+        "problemIndex"
+      ]
+    },
+    {
+      "action": "ATTEMPT_INVALID_CONFIRMATION",
+      "parameterMembers": []
+    },
+    {
+      "action": "ATTEMPT_REPLACE_WORKING_DRAFT",
+      "parameterMembers": [
+        "source"
+      ]
+    },
+    {
+      "action": "AUTHOR_EXPLICIT_RETRY",
+      "parameterMembers": []
+    },
+    {
+      "action": "CANCEL_AUTHORITATIVE_PREVIEW",
+      "parameterMembers": []
+    },
+    {
+      "action": "CHANGE_DPI",
+      "parameterMembers": [
+        "dpi"
+      ]
+    },
+    {
+      "action": "CHANGE_JPEG_QUALITY",
+      "parameterMembers": [
+        "quality"
+      ]
+    },
+    {
+      "action": "CHANGE_LAYOUT_TRACE_CHOICE",
+      "parameterMembers": [
+        "includeLayoutTrace"
+      ]
+    },
+    {
+      "action": "CHANGE_OUTPUT_FORMAT",
+      "parameterMembers": [
+        "format"
+      ]
+    },
+    {
+      "action": "CHANGE_SAMPLE_INPUT",
+      "parameterMembers": []
+    },
+    {
+      "action": "COMPLETE_CORE_FLOW",
+      "parameterMembers": []
+    },
+    {
+      "action": "COMPLETE_CORE_FLOW_AND_PAN_CANVAS",
+      "parameterMembers": []
+    },
+    {
+      "action": "COMPLETE_CORE_FLOW_BY_KEYBOARD",
+      "parameterMembers": []
+    },
+    {
+      "action": "CONFIRM_INVALID_SAVE",
+      "parameterMembers": []
+    },
+    {
+      "action": "CONFIRM_OVERWRITE",
+      "parameterMembers": []
+    },
+    {
+      "action": "CREATE_ENTITY",
+      "parameterMembers": [
+        "entityKind",
+        "parentId"
+      ]
+    },
+    {
+      "action": "CREATE_TEMPLATE_FROM_COMPLETE_DESIGN",
+      "parameterMembers": []
+    },
+    {
+      "action": "DELETE_ENTITY",
+      "parameterMembers": [
+        "entityId"
+      ]
+    },
+    {
+      "action": "DELIVER_CURRENT_OR_READINESS_CHANGE",
+      "parameterMembers": []
+    },
+    {
+      "action": "DELIVER_OLD_PREVIEW_FAILURE",
+      "parameterMembers": []
+    },
+    {
+      "action": "DELIVER_OLD_PREVIEW_SUCCESS",
+      "parameterMembers": []
+    },
+    {
+      "action": "DELIVER_OLD_PROBLEM_RESULT",
+      "parameterMembers": [
+        "deliveredGeneration"
+      ]
+    },
+    {
+      "action": "DISCARD_RECOVERY_DRAFT",
+      "parameterMembers": []
+    },
+    {
+      "action": "DUPLICATE_ENTITY",
+      "parameterMembers": [
+        "entityId"
+      ]
+    },
+    {
+      "action": "EDIT_DESIGN_DSL",
+      "parameterMembers": []
+    },
+    {
+      "action": "EXPORT_DRAFT",
+      "parameterMembers": []
+    },
+    {
+      "action": "EXPORT_RECOVERY_DRAFT",
+      "parameterMembers": []
+    },
+    {
+      "action": "IMPORT_DESIGN_DSL",
+      "parameterMembers": []
+    },
+    {
+      "action": "IMPORT_RAW_CONTENT",
+      "parameterMembers": []
+    },
+    {
+      "action": "IMPORT_UNSUPPORTED_COMPLETE_CONTENT",
+      "parameterMembers": []
+    },
+    {
+      "action": "INSPECT_PREVIEW_PRIMARY_ACTION",
+      "parameterMembers": []
+    },
+    {
+      "action": "INSPECT_PREVIEW_SLOT_AND_IDLE_NETWORK",
+      "parameterMembers": []
+    },
+    {
+      "action": "INSPECT_PROPERTY",
+      "parameterMembers": [
+        "target"
+      ]
+    },
+    {
+      "action": "LEAVE_WITH_RECOVERY_RETAINED",
+      "parameterMembers": []
+    },
+    {
+      "action": "MOVE_ENTITY",
+      "parameterMembers": [
+        "beforeEntityId",
+        "entityId"
+      ]
+    },
+    {
+      "action": "MOVE_SELECTION",
+      "parameterMembers": []
+    },
+    {
+      "action": "OPEN_PROBLEM_DETAIL",
+      "parameterMembers": [
+        "problemIndex"
+      ]
+    },
+    {
+      "action": "OPEN_PROBLEM_PANEL",
+      "parameterMembers": []
+    },
+    {
+      "action": "OPEN_TEMPLATE",
+      "parameterMembers": []
+    },
+    {
+      "action": "PERSIST_DEVICE_LOCAL_RECOVERY_DRAFT",
+      "parameterMembers": []
+    },
+    {
+      "action": "PRESS_ESCAPE",
+      "parameterMembers": []
+    },
+    {
+      "action": "READ_LATEST_CURRENT",
+      "parameterMembers": []
+    },
+    {
+      "action": "READ_TRUSTED_CURRENT",
+      "parameterMembers": []
+    },
+    {
+      "action": "REDO",
+      "parameterMembers": [
+        "shortcuts"
+      ]
+    },
+    {
+      "action": "REMOVE_BINDING",
+      "parameterMembers": [
+        "target"
+      ]
+    },
+    {
+      "action": "REORDER_ENTITY",
+      "parameterMembers": [
+        "entityId",
+        "targetIndex"
+      ]
+    },
+    {
+      "action": "REORDER_SEMANTIC_ARRAY",
+      "parameterMembers": [
+        "arrayPointer",
+        "fromIndex",
+        "toIndex"
+      ]
+    },
+    {
+      "action": "REPARENT_ENTITY",
+      "parameterMembers": [
+        "entityId",
+        "newParentId"
+      ]
+    },
+    {
+      "action": "RESTORE_RECOVERY_DRAFT",
+      "parameterMembers": []
+    },
+    {
+      "action": "RESTORE_TEMPLATE_REVISION",
+      "parameterMembers": [
+        "sourceRevision"
+      ]
+    },
+    {
+      "action": "RESUBMIT_COMPLETE_DESIGN_WITH_LATEST_REVISION",
+      "parameterMembers": []
+    },
+    {
+      "action": "ROVE_TREE_AND_ENTER_CANVAS_EQUIVALENT",
+      "parameterMembers": [
+        "keys"
+      ]
+    },
+    {
+      "action": "SAVE_AND_PREVIEW",
+      "parameterMembers": []
+    },
+    {
+      "action": "SAVE_AND_PREVIEW_SAVE_PHASE",
+      "parameterMembers": []
+    },
+    {
+      "action": "SAVE_TEMPLATE",
+      "parameterMembers": []
+    },
+    {
+      "action": "START_AUTHORITATIVE_PREVIEW",
+      "parameterMembers": []
+    },
+    {
+      "action": "START_MIGRATION_PREVIEW",
+      "parameterMembers": []
+    },
+    {
+      "action": "START_PREVIEW_AFTER_SAVE_PHASE",
+      "parameterMembers": []
+    },
+    {
+      "action": "TOGGLE_PANEL",
+      "parameterMembers": []
+    },
+    {
+      "action": "TRAVERSE_ACCESSIBILITY_TREE",
+      "parameterMembers": []
+    },
+    {
+      "action": "TRAVERSE_CORE_WORKSPACES_BY_KEYBOARD",
+      "parameterMembers": [
+        "order"
+      ]
+    },
+    {
+      "action": "TRAVERSE_UNSUPPORTED_WIDTH_STATE",
+      "parameterMembers": []
+    },
+    {
+      "action": "TRIGGER_PROGRESS_THEN_BLOCKING_ERROR",
+      "parameterMembers": []
+    },
+    {
+      "action": "UNDO",
+      "parameterMembers": [
+        "shortcut"
+      ]
+    },
+    {
+      "action": "VALIDATE_IMPORT_OR_MIGRATION",
+      "parameterMembers": []
+    },
+    {
+      "action": "VALIDATE_REPAIRED_RAW_CONTENT",
+      "parameterMembers": []
+    }
+  ],
+  "formalInputBindingMembersInOrder": [
+    "kind",
+    "artifactPath",
+    "mediaType",
+    "artifactSha256",
+    "identitySha256"
+  ],
+  "formalInputIdentityDomain": "renderweave-conformance-input-identity/1",
+  "forbiddenMechanisms": [
+    "wildcard",
+    "regex selector",
+    "arbitrary script",
+    "ambient database state",
+    "ambient browser storage",
+    "ambient time",
+    "ambient entropy",
+    "network lookup",
+    "hidden default"
+  ],
+  "evolutionRule": "Any new baseline semantic, parameter member, action, ordering rule, or adapter obligation requires a new exact input fixture Profile.",
+  "boundary": "These artifacts freeze semantic stimuli and formal input identities only; they do not prove that a product fixture adapter exists, a browser loaded the baseline, or an action executed."
+}

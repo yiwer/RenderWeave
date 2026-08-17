@@ -1,0 +1,356 @@
+requirement_id	source_line	clause_ordinal_on_line	family	normative_summary
+RW-T16-S1-001	37	1	RENDERER_OUTPUT	Each Renderer Command represents exactly one RenderDocument root Canvas.
+RW-T16-S1-002	37	2	RENDERER_OUTPUT	Each Renderer Command atomically produces one complete image.
+RW-T16-S1-003	37	3	RENDERER_OUTPUT	Repeat, Conditional, TemplateUse, and compositionViewport only affect content inside that image.
+RW-T16-S1-004	37	4	RENDERER_OUTPUT	A child viewport never becomes an independent output.
+RW-T16-S1-005	37	5	RENDERER_OUTPUT	Multiple Templates, inputs, variants, DPIs, or formats are orchestrated outside Engine as independent Commands.
+RW-T16-S1-006	37	6	RENDERER_OUTPUT	Renderer v1 has no outputs array, page, batch, or partial-success semantics.
+RW-T16-S1-007	38	1	RENDERER_OUTPUT	Output covers the complete root Canvas physical surface including authored bleed.
+RW-T16-S1-008	38	2	RENDERER_OUTPUT	Callers cannot request node export, crop, resize, target dimensions, rotation, background override, bleed toggle, or secondary layout.
+RW-T16-S1-009	38	3	RENDERER_OUTPUT	The single-Canvas and no-multi-Canvas-flow constraints remain authoritative.
+RW-T16-S1-010	39	1	RENDERER_OUTPUT	RenderEngine is an internal component of the Rendering bounded context.
+RW-T16-S1-011	39	2	RENDERER_OUTPUT	Public clients may call only the Rendering API and cannot submit or obtain Engine-internal contracts, identities, leases, or controls.
+RW-T16-S1-012	39	3	RENDERER_OUTPUT	Engine cannot read Template, DesignDSL, RootDocument, caller tokens, or business identity.
+RW-T16-S1-013	40	1	RENDERER_OUTPUT	The Layout Profile independently freezes measure, arrange, and shaping semantics.
+RW-T16-S1-014	40	2	RENDERER_OUTPUT	The Renderer Profile independently freezes resource interpretation, color, raster, sampling, code, and pixel algorithms.
+RW-T16-S1-015	40	3	RENDERER_OUTPUT	The PNG Output Profile independently freezes PNG bytes and metadata.
+RW-T16-S1-016	40	4	RENDERER_OUTPUT	The JPEG Output Profile independently freezes JPEG bytes and metadata.
+RW-T16-S1-017	40	5	RENDERER_OUTPUT	The server maintains an immutable exact compatibility table that selects one complete profile combination per allowed public request.
+RW-T16-S1-018	40	6	RENDERER_OUTPUT	Callers cannot select profiles or request latest, negotiation, or fallback behavior.
+RW-T16-S1-019	40	7	RENDERER_OUTPUT	A rendered subtree cannot mix profile versions.
+RW-T16-S1-020	41	1	RENDERER_OUTPUT	One Evaluation may produce multiple output Commands only outside Engine.
+RW-T16-S1-021	41	2	RENDERER_OUTPUT	Every output Command independently re-enters Engine.
+RW-T16-S1-022	41	3	RENDERER_OUTPUT	Renderer v1 provides no cross-request RenderOutput cache.
+RW-T16-S1-023	41	4	RENDERER_OUTPUT	Engine output is transient and does not create files, URLs, Artifacts, Workspace items, revisions, or history.
+RW-T16-S1-024	42	1	RENDERER_OUTPUT	Formal output and Authoritative Preview use the same Evaluation, compatibility table, and RenderEngine path.
+RW-T16-S1-025	42	2	RENDERER_OUTPUT	Preview may request an ordinary lower DPI or another allowed format.
+RW-T16-S1-026	42	3	RENDERER_OUTPUT	Equal effective document, Profile, DPI, and quality inputs must produce identical image bytes regardless of formal-output or preview purpose.
+RW-T16-S1-027	42	4	RENDERER_OUTPUT	A browser-local canvas is always non-authoritative.
+RW-T16-S2-001	46	1	RENDERER_OUTPUT	Renderer Command input is strict UTF-8 JSON.
+RW-T16-S2-002	46	2	RENDERER_OUTPUT	Renderer Command rejects duplicate keys.
+RW-T16-S2-003	46	3	RENDERER_OUTPUT	Renderer Command rejects unknown members.
+RW-T16-S2-004	46	4	RENDERER_OUTPUT	Renderer Command rejects null values.
+RW-T16-S2-005	46	5	RENDERER_OUTPUT	Renderer Command rejects unknown exact Profiles and non-canonical scalars.
+RW-T16-S2-006	46	6	RENDERER_OUTPUT	The example document object is only a formatting placeholder and cannot validate independently of a complete RenderDocument.
+RW-T16-S2-007	66	1	RENDERER_OUTPUT	Rendering generates requestId as a canonical lowercase UUID v4.
+RW-T16-S2-008	66	2	RENDERER_OUTPUT	The Command document is the complete Ticket15 RenderDocument.
+RW-T16-S2-009	66	3	RENDERER_OUTPUT	Engine verifies renderDocumentDigest with renderweave-render-c14n/1.0 before use.
+RW-T16-S2-010	66	4	RENDERER_OUTPUT	Rendering expands deadlineAt from server policy as an absolute UTC deadline.
+RW-T16-S2-011	66	5	RENDERER_OUTPUT	deadlineAt wire form is RFC3339 UTC with exactly three millisecond digits.
+RW-T16-S2-012	66	6	RENDERER_OUTPUT	Public callers may request at most a duration.
+RW-T16-S2-013	66	7	RENDERER_OUTPUT	Public callers cannot submit arbitrary absolute deadlines.
+RW-T16-S2-014	67	1	RENDERER_OUTPUT	A PNG output object contains exactly profile and dpi.
+RW-T16-S2-015	67	2	RENDERER_OUTPUT	A JPEG output object contains exactly profile, dpi, and quality.
+RW-T16-S2-016	67	3	RENDERER_OUTPUT	DPI is a positive integer.
+RW-T16-S2-017	67	4	RENDERER_OUTPUT	An omitted public DPI expands to 96 before Command construction.
+RW-T16-S2-018	67	5	RENDERER_OUTPUT	JPEG quality is an integer from 1 through 100.
+RW-T16-S2-019	67	6	RENDERER_OUTPUT	An omitted JPEG quality expands to 90 before Command construction.
+RW-T16-S2-020	67	7	RENDERER_OUTPUT	The output object has no redundant format member because profile uniquely determines the format and encoding contract.
+RW-T16-S2-021	68	1	RENDERER_OUTPUT	The exact Command canonical profile is renderweave-render-command-c14n/1.0.
+RW-T16-S2-022	68	2	RENDERER_OUTPUT	Command canonicalization reuses Render member ordering and escaping rules.
+RW-T16-S2-023	68	3	RENDERER_OUTPUT	Command canonicalization uses shortest integer form and rejects unknown or null members.
+RW-T16-S2-024	68	4	RENDERER_OUTPUT	Semantic arrays retain their defined order during Command canonicalization.
+RW-T16-S2-025	68	5	RENDERER_OUTPUT	The canonical writer never repairs invalid input.
+RW-T16-S2-026	69	1	RENDERER_OUTPUT	rendererCommandDigest uses the specified domain-separated SHA-256 formula over canonical effective Command bytes.
+RW-T16-S2-027	69	2	RENDERER_OUTPUT	rendererCommandDigest is used only for Engine registry identity, resend conflict detection, and cancel.
+RW-T16-S2-028	69	3	RENDERER_OUTPUT	rendererCommandDigest is excluded from Command, image bytes, public response, logs, Template or Evaluation identity, Artifact identity, and cross-request caches.
+RW-T16-S2-029	70	1	RENDERER_OUTPUT	The public API exposes only PNG or JPEG, DPI, and JPEG quality.
+RW-T16-S2-030	70	2	RENDERER_OUTPUT	Rendering expands public parameters through an immutable exact-profile and default mapping.
+RW-T16-S2-031	70	3	RENDERER_OUTPUT	An existing supported public mapping cannot silently change its output algorithm.
+RW-T16-S2-032	70	4	RENDERER_OUTPUT	A mapping or observable-output change requires a new API and Profile combination.
+RW-T16-S2-033	71	1	RENDERER_OUTPUT	Command HTTP entities use application/vnd.renderweave.render-command+json with version 1.0.
+RW-T16-S2-034	71	2	RENDERER_OUTPUT	The embedded contractVersion remains wire authority and cannot be replaced or relaxed by a media parameter.
+RW-T16-S3-001	75	1	ASSET_CAPABILITY_CONCURRENCY	The Engine channel uses encryption and authenticated workload identity.
+RW-T16-S3-002	75	2	ASSET_CAPABILITY_CONCURRENCY	Authentication failure is rejected before JSON parsing.
+RW-T16-S3-003	75	3	ASSET_CAPABILITY_CONCURRENCY	Command carries no user credential, bearer token, or permission declaration.
+RW-T16-S3-004	76	1	ASSET_CAPABILITY_CONCURRENCY	Command, cancel, and resend for one requestId route to one linearizable registry shard.
+RW-T16-S3-005	76	2	ASSET_CAPABILITY_CONCURRENCY	The first legal Command creates a registry reservation before capacity admission.
+RW-T16-S3-006	76	3	ASSET_CAPABILITY_CONCURRENCY	The reservation records requestId, rendererCommandDigest, and deadlineAt.
+RW-T16-S3-007	76	4	ASSET_CAPABILITY_CONCURRENCY	Registry reservation establishes join and conflict identity but is not accepted execution.
+RW-T16-S3-008	76	5	ASSET_CAPABILITY_CONCURRENCY	A same-ID same-digest request joins or replays the existing inflight or sealed terminal result.
+RW-T16-S3-009	76	6	ASSET_CAPABILITY_CONCURRENCY	A same-ID different-digest request returns RENDER_REQUEST_CONFLICT.
+RW-T16-S3-010	76	7	ASSET_CAPABILITY_CONCURRENCY	A same-ID different-deadline request returns RENDER_REQUEST_CONFLICT.
+RW-T16-S3-011	77	1	ASSET_CAPABILITY_CONCURRENCY	Engine admission uses a bounded FIFO queue.
+RW-T16-S3-012	77	2	ASSET_CAPABILITY_CONCURRENCY	Active registry lookup precedes queue admission.
+RW-T16-S3-013	77	3	ASSET_CAPABILITY_CONCURRENCY	Accepted execution linearizes only when a FIFO queue position is atomically acquired.
+RW-T16-S3-014	77	4	ASSET_CAPABILITY_CONCURRENCY	Failure to acquire a queue position returns nonterminal RENDER_ENGINE_BUSY.
+RW-T16-S3-015	77	5	ASSET_CAPABILITY_CONCURRENCY	A BUSY reservation remains until the original deadline.
+RW-T16-S3-016	77	6	ASSET_CAPABILITY_CONCURRENCY	A BUSY request may retry the same digest within the original deadline.
+RW-T16-S3-017	77	7	ASSET_CAPABILITY_CONCURRENCY	An accepted request's queue wait counts against the deadline and remains cancellable.
+RW-T16-S3-018	77	8	ASSET_CAPABILITY_CONCURRENCY	Accepted queue wait is bounded to five seconds.
+RW-T16-S3-019	77	9	ASSET_CAPABILITY_CONCURRENCY	Accepted queue-wait exhaustion returns terminal RENDER_DEADLINE_EXCEEDED and never BUSY.
+RW-T16-S3-020	77	10	ASSET_CAPABILITY_CONCURRENCY	Ticket19 supplies the exact concurrency-slot, queue-length, and wait bounds.
+RW-T16-S3-021	78	1	ASSET_CAPABILITY_CONCURRENCY	deadlineAt governs queue, resource, layout, raster, encode, trace, and seal stages.
+RW-T16-S3-022	78	2	ASSET_CAPABILITY_CONCURRENCY	Engine converts deadlineAt to monotonic remaining time exactly once on ingress.
+RW-T16-S3-023	78	3	ASSET_CAPABILITY_CONCURRENCY	Exact resend cannot reset or extend the deadline.
+RW-T16-S3-024	78	4	ASSET_CAPABILITY_CONCURRENCY	Output must atomically seal before the deadline.
+RW-T16-S3-025	78	5	ASSET_CAPABILITY_CONCURRENCY	Transport of already sealed output may complete after the deadline.
+RW-T16-S3-026	78	6	ASSET_CAPABILITY_CONCURRENCY	Engine cannot start join or replay after the deadline.
+RW-T16-S3-027	90	1	ASSET_CAPABILITY_CONCURRENCY	Cancel HTTP entities use application/vnd.renderweave.render-cancel+json with version 1.0.
+RW-T16-S3-028	91	1	ASSET_CAPABILITY_CONCURRENCY	Authenticated cancel may arrive before Command and create a tombstone retained until the deadline.
+RW-T16-S3-029	91	2	ASSET_CAPABILITY_CONCURRENCY	Repeated cancel with the same digest is idempotent.
+RW-T16-S3-030	91	3	ASSET_CAPABILITY_CONCURRENCY	Cancel with a different digest conflicts.
+RW-T16-S3-031	91	4	ASSET_CAPABILITY_CONCURRENCY	Cancel linearized before atomic output seal returns RENDER_CANCELLED with zero output.
+RW-T16-S3-032	91	5	ASSET_CAPABILITY_CONCURRENCY	Cancel arriving after seal cannot change success.
+RW-T16-S3-033	91	6	ASSET_CAPABILITY_CONCURRENCY	HTTP disconnect is not a reliable cancel signal.
+RW-T16-S3-034	92	1	ASSET_CAPABILITY_CONCURRENCY	Cooperative checkpoints cover queue, every fetch or retry, decode, font parse, layout, every Text shrink iteration, paint chunks, encode chunks, and seal.
+RW-T16-S3-035	92	2	ASSET_CAPABILITY_CONCURRENCY	A result from an uninterruptible call completed after cancellation is discarded and its slot remains occupied until computation stops.
+RW-T16-S3-036	92	3	ASSET_CAPABILITY_CONCURRENCY	Ticket19 freezes maximum checkpoint latency and the total deadline.
+RW-T16-S3-037	93	1	ASSET_CAPABILITY_CONCURRENCY	Lost registry or shard state returns RENDER_REQUEST_STATE_LOST for the same requestId.
+RW-T16-S3-038	93	2	ASSET_CAPABILITY_CONCURRENCY	Engine never guesses or re-executes after request state loss.
+RW-T16-S3-039	93	3	ASSET_CAPABILITY_CONCURRENCY	The caller must create a new public render operation and repeat complete Evaluation after state loss.
+RW-T16-S3-040	93	4	ASSET_CAPABILITY_CONCURRENCY	Public renderOperationId and Engine requestId are distinct and cannot serve as capability keys or replay tokens.
+RW-T16-S3-041	94	1	ASSET_CAPABILITY_CONCURRENCY	Registry, tombstone, document, lease, temporary image, and trace state is request-isolated in memory or encrypted temporary storage.
+RW-T16-S3-042	94	2	ASSET_CAPABILITY_CONCURRENCY	Request state is excluded from ordinary logs, dumps, backups, audits, and history.
+RW-T16-S3-043	94	3	ASSET_CAPABILITY_CONCURRENCY	Unsealed document, lease, resource buffer, raw trace or sidecar, and temporary output are cleaned immediately after terminal or cancel and no later than deadline.
+RW-T16-S3-044	94	4	ASSET_CAPABILITY_CONCURRENCY	Only minimal terminal registry and an authorized sealed complete response or safe terminal problem may remain until max of sealedAt and deadlineAt plus five minutes for exact replay.
+RW-T16-S3-045	94	5	ASSET_CAPABILITY_CONCURRENCY	Access, retry, and cancel cannot extend retention.
+RW-T16-S3-046	94	6	ASSET_CAPABILITY_CONCURRENCY	A pre-Command cancel tombstone is retained for exactly 60 seconds.
+RW-T16-S3-047	94	7	ASSET_CAPABILITY_CONCURRENCY	Cleanup failure emits only an operational alert and cannot extend public lifecycle.
+RW-T16-S4-001	98	1	RENDERER_OUTPUT	Engine observable execution follows the specified parse-through-seal stage order.
+RW-T16-S4-002	98	2	RENDERER_OUTPUT	Unobservable pure preparation may run concurrently only when first error, budgets, resource selection, and output remain equivalent to serial order.
+RW-T16-S4-003	99	1	RENDERER_OUTPUT	Resources are processed serially in manifest encounter order.
+RW-T16-S4-004	99	2	RENDERER_OUTPUT	A fetch URL is retried only for transport failure or HTTP 5xx.
+RW-T16-S4-005	99	3	RENDERER_OUTPUT	Fetch attempts and backoff are Profile-fixed and contain no jitter.
+RW-T16-S4-006	99	4	RENDERER_OUTPUT	Every fetch attempt rechecks deadline, lease expiry, and cumulative budgets before starting.
+RW-T16-S4-007	99	5	RENDERER_OUTPUT	HTTP 4xx, expiry, length, hash, media, magic, descriptor, and decode failures receive zero retry.
+RW-T16-S4-008	99	6	RENDERER_OUTPUT	Ticket19 freezes exact attempt, backoff, byte, and duration limits.
+RW-T16-S4-009	100	1	RENDERER_OUTPUT	Engine has no cross-request raw or decoded resource cache without a trusted ownerScope partition.
+RW-T16-S4-010	100	2	RENDERER_OUTPUT	Request-local reuse keys are exactly kind, sha256, byteLength, mediaType, and exact Renderer Profile.
+RW-T16-S4-011	100	3	RENDERER_OUTPUT	Request-local cache reuse does not bypass occurrence lease, manifest-order, first-error, or budget checks.
+RW-T16-S4-012	100	4	RENDERER_OUTPUT	Logical current, assetId, resourceId, and URL are not cache keys.
+RW-T16-S4-013	101	1	RENDERER_OUTPUT	Engine completes encoded bytes, content hash, closed result metadata, and authorized trace before seal.
+RW-T16-S4-014	101	2	RENDERER_OUTPUT	The registry critical section performs a final cancel and deadline check before seal.
+RW-T16-S4-015	101	3	RENDERER_OUTPUT	Result and authorized trace seal atomically.
+RW-T16-S4-016	101	4	RENDERER_OUTPUT	Any pre-seal failure deletes temporary bytes and trace and returns one terminal problem.
+RW-T16-S4-017	101	5	RENDERER_OUTPUT	After seal, cancel cannot change success and transport truncation can obtain the same result through exact-digest replay.
+RW-T16-S4-018	102	1	RENDERER_OUTPUT	Engine success and terminal problem are mutually exclusive.
+RW-T16-S4-019	102	2	RENDERER_OUTPUT	Engine cannot emit partial scene, partial page, placeholder, warning image, best-effort resource, old-image fallback, or success-with-warning output.
+RW-T16-S4-020	102	3	RENDERER_OUTPUT	Runtime failure creates no business write and cannot delete, restore, replace Asset, or change Template readiness or revision.
+RW-T16-S5-001	106	1	RENDERER_OUTPUT	Root Canvas trim in points is the rectangle from zero to widthPt and heightPt.
+RW-T16-S5-002	106	2	RENDERER_OUTPUT	The physical surface expands trim by the four authored bleed values using the specified coordinates.
+RW-T16-S5-003	106	3	RENDERER_OUTPUT	Output widthPx and heightPx use the specified ROUND_HALF_UP surface-times-DPI formulas.
+RW-T16-S5-004	113	1	RENDERER_OUTPUT	Surface dimension arithmetic uses exact arbitrary-precision decimal multiplication and division.
+RW-T16-S5-005	113	2	RENDERER_OUTPUT	Each complete surface width and height is rounded exactly once.
+RW-T16-S5-006	113	3	RENDERER_OUTPUT	Trim, bleed, and individual edges cannot be rounded before addition.
+RW-T16-S5-007	113	4	RENDERER_OUTPUT	Zero dimensions, edge, pixel, or encoded-byte overflow, and unsafe allocation fail before resource fetch and surface allocation with a stable output or raster budget code.
+RW-T16-S5-008	114	1	RENDERER_OUTPUT	Device surface origin is top-left at zero and pixel centers are at half-integer coordinates.
+RW-T16-S5-009	114	2	RENDERER_OUTPUT	The hard device clip is the half-open rectangle bounded by widthPx and heightPx.
+RW-T16-S5-010	114	3	RENDERER_OUTPUT	Trim origin uses exact bleed-times-DPI translation and may be subpixel.
+RW-T16-S5-011	114	4	RENDERER_OUTPUT	Layout, boxes, glyphs, clips, and transforms cannot pixel-snap.
+RW-T16-S5-012	114	5	RENDERER_OUTPUT	The four surface edges cannot be rounded independently.
+RW-T16-S5-013	115	1	RENDERER_OUTPUT	Canvas background covers the complete surface including bleed.
+RW-T16-S5-014	115	2	RENDERER_OUTPUT	PNG preserves Canvas RGBA alpha.
+RW-T16-S5-015	115	3	RENDERER_OUTPUT	JPEG applies fixed opaque white matte as the final Output Profile operation.
+RW-T16-S5-016	115	4	RENDERER_OUTPUT	Callers cannot choose JPEG matte.
+RW-T16-S5-017	115	5	RENDERER_OUTPUT	DPI affects only device lowering and output metadata and cannot feed back into layout, shaping, HUG, line breaking, or Image aspect ratio.
+RW-T16-S6-001	119	1	SECURITY_FAULT	The Renderer Profile output color contract is only SRGB_8BIT.
+RW-T16-S6-002	119	2	SECURITY_FAULT	IMAGE technical descriptors require colorEncoding equal to SRGB_8BIT.
+RW-T16-S6-003	119	3	SECURITY_FAULT	Asset admission accepts only no-profile, standard-sRGB declaration, or the fixed canonical sRGB ICC as equivalent color inputs.
+RW-T16-S6-004	119	4	SECURITY_FAULT	Asset admission rejects conflicting, damaged, arbitrary ICC, CMYK or YCCK, HDR, and wide-gamut inputs.
+RW-T16-S6-005	119	5	SECURITY_FAULT	Engine re-proves the color contract from exact bytes and does not trust descriptor assertions.
+RW-T16-S6-006	120	1	SECURITY_FAULT	Static PNG decode accepts only legal grayscale, indexed, RGB, or RGBA forms with 1, 2, 4, or 8-bit depth and legal tRNS.
+RW-T16-S6-007	120	2	SECURITY_FAULT	PNG decode rejects 16-bit PNG and APNG.
+RW-T16-S6-008	120	3	SECURITY_FAULT	JPEG decode accepts only 8-bit baseline or progressive grayscale or YCbCr.
+RW-T16-S6-009	120	4	SECURITY_FAULT	JPEG decode rejects CMYK or YCCK, 12-bit, and extended formats.
+RW-T16-S6-010	120	5	SECURITY_FAULT	WebP decode accepts only static lossy or lossless content with optional alpha.
+RW-T16-S6-011	120	6	SECURITY_FAULT	WebP decode rejects animation.
+RW-T16-S6-012	120	7	SECURITY_FAULT	Every accepted image is deterministically decoded before orientation is applied.
+RW-T16-S6-013	120	8	SECURITY_FAULT	Every accepted image is converted to straight RGBA8 sRGB before fixed integer premultiplication.
+RW-T16-S6-014	121	1	SECURITY_FAULT	Renderer interprets only color, alpha, and one valid EXIF orientation from image metadata.
+RW-T16-S6-015	121	2	SECURITY_FAULT	Duplicate or conflicting orientation metadata fails.
+RW-T16-S6-016	121	3	SECURITY_FAULT	Orientation is applied exactly once.
+RW-T16-S6-017	121	4	SECURITY_FAULT	Input DPI, time, GPS, thumbnail, software tags, and all other metadata are ignored and not propagated.
+RW-T16-S6-018	122	1	SECURITY_FAULT	Fetch URLs must be canonical HTTPS and reject userinfo, fragments, noncanonical host or port, dot segments, and percent-encoding allowlist bypasses.
+RW-T16-S6-019	122	2	SECURITY_FAULT	Origin and path-prefix authorization matches segment boundaries.
+RW-T16-S6-020	122	3	SECURITY_FAULT	Every connection re-evaluates DNS and egress policy.
+RW-T16-S6-021	122	4	SECURITY_FAULT	Fetch forbids redirect, proxy environment, cookies, range requests, caller headers, and transparent compression.
+RW-T16-S6-022	122	5	SECURITY_FAULT	Renderer Profile fixes request headers.
+RW-T16-S6-023	122	6	SECURITY_FAULT	Fetch accepts only HTTP 200 with identity body and one Content-Length equal to the declared value.
+RW-T16-S6-024	123	1	SECURITY_FAULT	At Command admission every resource expiresAt must cover deadlineAt plus the Renderer Profile safety margin.
+RW-T16-S6-025	123	2	SECURITY_FAULT	Insufficient lease lifetime is treated as an internal handoff violation.
+RW-T16-S6-026	123	3	SECURITY_FAULT	Every fetch attempt rechecks lease expiry.
+RW-T16-S6-027	123	4	SECURITY_FAULT	Bytes fully downloaded before expiry and verified for length, hash, media, magic, and descriptor remain valid within the request after expiry.
+RW-T16-S6-028	123	5	SECURITY_FAULT	Resource leases cannot be renewed by Engine.
+RW-T16-S7-001	127	1	LAYOUT_SHAPING	The initial FONT subset accepts one-face non-variable monochrome-outline TTF or OTF with the listed outline and shaping tables.
+RW-T16-S7-002	127	2	LAYOUT_SHAPING	FONT parsing rejects collections, color, bitmap, SVG, Graphite, AAT-only, and malformed or contradictory fonts.
+RW-T16-S7-003	127	3	LAYOUT_SHAPING	faceIndex zero, flavor, and unitsPerEm must match exact font bytes.
+RW-T16-S7-004	128	1	LAYOUT_SHAPING	Each Run uses only its exact fontResourceId.
+RW-T16-S7-005	128	2	LAYOUT_SHAPING	Renderer cannot read system locale or use system, built-in, family, or replacement-glyph fallback.
+RW-T16-S7-006	128	3	LAYOUT_SHAPING	Missing glyphs in actual text return FONT_GLYPH_MISSING.
+RW-T16-S7-007	128	4	LAYOUT_SHAPING	Renderer cannot draw notdef as a missing-glyph substitute.
+RW-T16-S7-008	128	5	LAYOUT_SHAPING	Invalid post or OS/2 decoration metrics return FONT_DECORATION_METRICS_MISSING only when the corresponding underline or strike is actually used.
+RW-T16-S7-009	129	1	LAYOUT_SHAPING	v1 has no authored locale, language, or OpenType feature switches.
+RW-T16-S7-010	129	2	LAYOUT_SHAPING	Layout Profile uses fixed Unicode data, inferred script, language und, writingMode, and fixed BiDi, vertical-orientation, line, grapheme, shaping versions, and feature set.
+RW-T16-S7-011	129	3	LAYOUT_SHAPING	Environment, OS, CPU, and font-discovery order cannot change shaping results.
+RW-T16-S8-001	133	1	RENDERER_OUTPUT	The authoritative Renderer uses CPU raster only.
+RW-T16-S8-002	133	2	RENDERER_OUTPUT	GPU, LCD subpixel, dither, hinting, embedded bitmap, autohint, and runtime CPU or SIMD dispatch are forbidden.
+RW-T16-S8-003	133	3	RENDERER_OUTPUT	Text uses fixed grayscale antialiasing and vectors use fixed antialiasing.
+RW-T16-S8-004	133	4	RENDERER_OUTPUT	Machine manifest pins Skia, FreeType, compiler, build arguments, and one x86-64-v2 path while exact build and goldens define coverage, edge, and sampling ties.
+RW-T16-S8-005	133	5	RENDERER_OUTPUT	Every OS, CPU, or SIMD target must independently pass the exact corpus before READY.
+RW-T16-S8-006	134	1	RENDERER_OUTPUT	Straight RGBA8 converts to premultiplied sRGB8 using the specified ROUND_HALF_UP channel-times-alpha formula.
+RW-T16-S8-007	134	2	RENDERER_OUTPUT	Premultiplication forces RGB to zero when alpha is zero.
+RW-T16-S8-008	134	3	RENDERER_OUTPUT	Opacity, coverage, and Porter-Duff source-over use the Profile-fixed 8-bit premultiplied order.
+RW-T16-S8-009	134	4	RENDERER_OUTPUT	Renderer does not blend in linear-light space.
+RW-T16-S8-010	134	5	RENDERER_OUTPUT	PNG unpremultiplies by the Profile-fixed rule and keeps fully transparent RGB at zero.
+RW-T16-S8-011	135	1	RENDERER_OUTPUT	Image sampling occurs after orientation and sRGB normalization.
+RW-T16-S8-012	135	2	RENDERER_OUTPUT	Device pixel centers remain half-integer during sampling.
+RW-T16-S8-013	135	3	RENDERER_OUTPUT	NEAREST uses the Profile-fixed nearest-neighbor and tie rule.
+RW-T16-S8-014	135	4	RENDERER_OUTPUT	LINEAR uses premultiplied-RGBA8 bilinear sampling.
+RW-T16-S8-015	135	5	RENDERER_OUTPUT	Sampling clamps source edges and forbids transparent extension, mipmaps, and higher-order filters.
+RW-T16-S8-016	135	6	RENDERER_OUTPUT	CONTAIN bars remain transparent and JPEG matte is applied only immediately before final encoding.
+RW-T16-S8-017	136	1	RENDERER_OUTPUT	After composing all world transforms, QR and Barcode allow only translation, positive uniform scale, and arbitrary rotation.
+RW-T16-S8-018	136	2	RENDERER_OUTPUT	Reflection, skew, and nonuniform scale return TRANSFORM_UNSUPPORTED.
+RW-T16-S8-019	136	3	RENDERER_OUTPUT	The local module grid uses the largest centered integer pitch that fits the final physical box including quiet zone.
+RW-T16-S8-020	136	4	RENDERER_OUTPUT	Module pitch below one device pixel returns MODULE_TOO_SMALL.
+RW-T16-S8-021	136	5	RENDERER_OUTPUT	Codes render first as a local integer grid with nearest sampling and then rotate by the fixed nearest rule without feeding back into layout.
+RW-T16-S8-022	137	1	RENDERER_OUTPUT	QR encodes UTF-8 byte mode and always writes ECI 26.
+RW-T16-S8-023	137	2	RENDERER_OUTPUT	QR error correction comes from the authored value.
+RW-T16-S8-024	137	3	RENDERER_OUTPUT	QR selects the smallest fitting version from 1 through 40 and the lowest-penalty mask with smaller mask ID as tie-breaker.
+RW-T16-S8-025	137	4	RENDERER_OUTPUT	QR quiet zone is exactly four modules.
+RW-T16-S8-026	137	5	RENDERER_OUTPUT	QR content overflow returns CODE_CONTENT_TOO_LARGE.
+RW-T16-S8-027	138	1	RENDERER_OUTPUT	EAN-8, EAN-13, and UPC-A require an already-valid check digit and use their specified left and right quiet zones.
+RW-T16-S8-028	138	2	RENDERER_OUTPUT	Code 128 accepts only printable ASCII.
+RW-T16-S8-029	138	3	RENDERER_OUTPUT	Code 128 chooses the minimum-codeword B or C plan, breaking ties by earlier switch and then set B.
+RW-T16-S8-030	138	4	RENDERER_OUTPUT	Code 128 computes the standard checksum and uses a 10X quiet zone on both sides.
+RW-T16-S8-031	138	5	RENDERER_OUTPUT	Barcodes paint bars across the complete usable height and never render human-readable text.
+RW-T16-S9-001	142	1	RENDERER_OUTPUT	PNG chunk order is exactly signature, IHDR, sRGB intent zero, pHYs, one or more IDAT, and IEND.
+RW-T16-S9-002	142	2	RENDERER_OUTPUT	PNG forbids other chunks, empty IDAT chunks, and trailing bytes.
+RW-T16-S9-003	142	3	RENDERER_OUTPUT	IHDR is exactly RGBA8 color type 6 with method zero and noninterlaced output.
+RW-T16-S9-004	142	4	RENDERER_OUTPUT	PNG pixels-per-meter uses ROUND_HALF_UP of dpi times 5000 divided by 127.
+RW-T16-S9-005	142	5	RENDERER_OUTPUT	Every PNG scanline uses filter byte zero.
+RW-T16-S9-006	142	6	RENDERER_OUTPUT	The sole zlib stream uses header 78 01 and no dictionary.
+RW-T16-S9-007	142	7	RENDERER_OUTPUT	Uncompressed input is split into stored DEFLATE blocks of at most 65,535 bytes with every nonfinal block full and a nonempty final block.
+RW-T16-S9-008	142	8	RENDERER_OUTPUT	Only the final DEFLATE block sets BFINAL, padding bits are zero, and LEN and NLEN use complementary little-endian values.
+RW-T16-S9-009	142	9	RENDERER_OUTPUT	Adler-32 and PNG CRC use their standard algorithms.
+RW-T16-S9-010	142	10	RENDERER_OUTPUT	The complete zlib stream is split into IDAT payloads of at most 1,048,576 bytes with every nonfinal payload full and a nonempty final payload.
+RW-T16-S9-011	142	11	RENDERER_OUTPUT	The PNG algorithm plus golden vectors defines renderweave-output-png/1.0 independent of libpng and zlib defaults or versions.
+RW-T16-S9-012	143	1	RENDERER_OUTPUT	JPEG input is white-matted RGB8 converted to YCbCr and encoded as baseline SOF0, one nonprogressive 4:4:4 nonarithmetic scan.
+RW-T16-S9-013	143	2	RENDERER_OUTPUT	JPEG quality is the effective Command integer.
+RW-T16-S9-014	143	3	RENDERER_OUTPUT	The pinned static libjpeg-turbo build disables SIMD and uses JDCT_ISLOW.
+RW-T16-S9-015	143	4	RENDERER_OUTPUT	JPEG disables optimized Huffman, restart, smoothing, and Adobe APP14 and uses fixed Annex K DC and AC tables.
+RW-T16-S9-016	143	5	RENDERER_OUTPUT	jpeg_set_defaults and jpeg_set_quality helpers are not contract authority.
+RW-T16-S9-017	143	6	RENDERER_OUTPUT	The machine manifest stores both 64-entry base quantization tables.
+RW-T16-S9-018	143	7	RENDERER_OUTPUT	JPEG quantization scaling and entry clamping use the specified integer formulas.
+RW-T16-S9-019	143	8	RENDERER_OUTPUT	JPEG marker order and all listed JFIF, ICC, table, scan, and entropy fields are exact.
+RW-T16-S9-020	143	9	RENDERER_OUTPUT	Canonical sRGB ICC uses manifest-pinned full bytes, length, and SHA-256.
+RW-T16-S9-021	143	10	RENDERER_OUTPUT	Exact libjpeg-turbo source, build, and golden vectors jointly define final entropy bytes.
+RW-T16-S9-022	144	1	RENDERER_OUTPUT	PNG and JPEG write no time, software, EXIF, XMP, random identifier, or source metadata.
+RW-T16-S9-023	144	2	RENDERER_OUTPUT	Identical static nodes, exact resources, Profiles, DPI, and JPEG quality produce byte-identical encoded images.
+RW-T16-S9-024	144	3	RENDERER_OUTPUT	requestId, deadline, lease URL or expiry, retry or cache path, and trace flag cannot change image bytes.
+RW-T16-S9-025	145	1	RENDERER_OUTPUT	Layout intermediates use Layout Profile tolerances while final pixels are exact and final encoded images are byte-exact.
+RW-T16-S9-026	145	2	RENDERER_OUTPUT	Any observable pixel change requires a new Renderer Profile.
+RW-T16-S9-027	145	3	RENDERER_OUTPUT	Encoding-only changes require a new Output Profile, and layout, shaping, or break changes require a new Layout Profile plus a new Renderer compatibility combination when pixels change.
+RW-T16-S10-001	149	1	RENDERER_OUTPUT	Engine computes contentSha256 only after complete encoding.
+RW-T16-S10-002	149	2	RENDERER_OUTPUT	contentSha256 is exactly SHA-256 of the final encoded image bytes.
+RW-T16-S10-003	149	3	RENDERER_OUTPUT	contentSha256 is not Evaluation identity, cache key, authorization value, or business Artifact ID.
+RW-T16-S10-004	149	4	RENDERER_OUTPUT	Success metadata is a closed renderweave-render-result/1.0 object with exactly the listed common members.
+RW-T16-S10-005	149	5	RENDERER_OUTPUT	JPEG success metadata requires quality while PNG success metadata forbids quality.
+RW-T16-S10-006	150	1	RENDERER_OUTPUT	A successful response without trace carries raw image/png or image/jpeg bytes.
+RW-T16-S10-007	150	2	RENDERER_OUTPUT	A trace-free success carries the specified fixed content and RenderWeave headers.
+RW-T16-S10-008	150	3	RENDERER_OUTPUT	JPEG success additionally carries RenderWeave-Quality.
+RW-T16-S10-009	150	4	RENDERER_OUTPUT	Rendering verifies response headers, Command, body length, and digest before public release.
+RW-T16-S10-010	151	1	RENDERER_OUTPUT	diagnostics.layoutTrace defaults to false.
+RW-T16-S10-011	151	2	RENDERER_OUTPUT	Only independently authorized Rendering may set layoutTrace true.
+RW-T16-S10-012	151	3	RENDERER_OUTPUT	Successful trace is a closed renderweave-layout-trace/1.0 value.
+RW-T16-S10-013	151	4	RENDERER_OUTPUT	Trace projects Canvas, synthetic occurrences, invisible items, and zero-opacity items in RenderDocument preorder.
+RW-T16-S10-014	151	5	RENDERER_OUTPUT	Each trace item contains only the allowed opaque identity, box, transform, bounds, clip, paint index, and overflow fields.
+RW-T16-S10-015	151	6	RENDERER_OUTPUT	Diagnostic binary64 values quantize to six decimal places with HALF_EVEN and encode negative zero as zero.
+RW-T16-S10-016	151	7	RENDERER_OUTPUT	Trace quantization never feeds back into layout or paint.
+RW-T16-S10-017	152	1	RENDERER_OUTPUT	A trace success response is multipart/related with exactly two ordered parts and no extras.
+RW-T16-S10-018	152	2	RENDERER_OUTPUT	The first multipart part is the closed result-with-trace JSON media type containing result and layoutTrace.
+RW-T16-S10-019	152	3	RENDERER_OUTPUT	The second multipart part is the raw image.
+RW-T16-S10-020	152	4	RENDERER_OUTPUT	Each multipart part carries its own Content-Digest.
+RW-T16-S10-021	152	5	RENDERER_OUTPUT	Rendering verifies part count, order, media type, requestId, closed JSON, length, and hash before atomic public release.
+RW-T16-S10-022	152	6	RENDERER_OUTPUT	Trace overflow returns RENDER_LAYOUT_TRACE_LIMIT_EXCEEDED with zero image and cannot truncate trace.
+RW-T16-S10-023	152	7	RENDERER_OUTPUT	A caller may issue a new no-trace request after trace overflow.
+RW-T16-S10-024	153	1	RENDERER_OUTPUT	Engine returns only opaque trace to Rendering.
+RW-T16-S10-025	153	2	RENDERER_OUTPUT	Before seal Rendering uses request sidecar and permission projection to remove unauthorized fields rather than emit placeholders.
+RW-T16-S10-026	153	3	RENDERER_OUTPUT	Rendering atomically seals the final authorized trace projection into the response.
+RW-T16-S10-027	153	4	RENDERER_OUTPUT	Raw sidecar, unsealed trace, multipart temporary content, and locator mapping are cleaned immediately after terminal or cancel and no later than deadline.
+RW-T16-S10-028	153	5	RENDERER_OUTPUT	Authorized sealed safe trace and multipart bytes may remain only with the sealed response until the Ticket19 five-minute exact-replay cutoff.
+RW-T16-S10-029	153	6	RENDERER_OUTPUT	Exact replay cannot depend on raw sidecar re-projection.
+RW-T16-S10-030	154	1	RENDERER_OUTPUT	TCP or HTTP chunks do not constitute product partial output.
+RW-T16-S10-031	154	2	RENDERER_OUTPUT	A receiver displays or saves output only after verifying complete length, digest, result, and body.
+RW-T16-S10-032	154	3	RENDERER_OUTPUT	A truncated response is deleted and recovered only by exact replay of the same Command.
+RW-T16-S10-033	154	4	RENDERER_OUTPUT	v1 does not automatically persist successful image bytes.
+RW-T16-S10-034	154	5	RENDERER_OUTPUT	Rendering decides whether an authorized public response is streamed.
+RW-T16-S11-001	158	1	RENDERER_OUTPUT	Engine terminal failure returns exactly one closed renderweave-render-problem/1.0 object.
+RW-T16-S11-002	158	2	RENDERER_OUTPUT	A render problem has exactly the listed required and optional members.
+RW-T16-S11-003	158	3	RENDERER_OUTPUT	Inapplicable optional problem members are omitted rather than null.
+RW-T16-S11-004	158	4	RENDERER_OUTPUT	Each code uses a closed low-cardinality safe parameters object.
+RW-T16-S11-005	158	5	RENDERER_OUTPUT	Problem parameters forbid free text, paths, business text, URL, token, hash, raw cause, and stack.
+RW-T16-S11-006	158	6	RENDERER_OUTPUT	Rendering owns retry classification and Engine returns no boolean retry hint.
+RW-T16-S11-007	159	1	RENDERER_OUTPUT	Problem HTTP entities use application/vnd.renderweave.render-problem+json with version 1.0.
+RW-T16-S11-008	159	2	RENDERER_OUTPUT	HTTP status is transport mapping only and clients use stable code for semantics.
+RW-T16-S11-009	160	1	RENDERER_OUTPUT	engineStage is closed to the eleven listed stage values.
+RW-T16-S11-010	160	2	RENDERER_OUTPUT	Command and document admission may boundedly collect errors by canonical field order.
+RW-T16-S11-011	160	3	RENDERER_OUTPUT	After resource processing begins Engine returns strictly the first error.
+RW-T16-S11-012	160	4	RENDERER_OUTPUT	Post-resource first-error order is manifest order, tree preorder, property declaration order, then Run index.
+RW-T16-S11-013	161	1	RENDERER_OUTPUT	Control failures use the listed stable RENDER control codes.
+RW-T16-S11-014	161	2	RENDERER_OUTPUT	Resource failures reuse the listed resource codes and add FONT_DECORATION_METRICS_MISSING and RESOURCE_BUDGET_EXCEEDED.
+RW-T16-S11-015	161	3	RENDERER_OUTPUT	Layout and output failures use at least the listed stable layout, code, raster, output, and trace codes.
+RW-T16-S11-016	161	4	RENDERER_OUTPUT	Capacity problem parameters expose only oracle-defined limitId and never actual count or input value.
+RW-T16-S11-017	162	1	RENDERER_OUTPUT	Malformed sealed document and digest, manifest, descriptor, Profile, encoder, or seal invariant violations use detailed internal codes and redacted operational alerts.
+RW-T16-S11-018	162	2	RENDERER_OUTPUT	Public Rendering folds internal invariant failures to RENDER_INTERNAL_ERROR.
+RW-T16-S11-019	162	3	RENDERER_OUTPUT	Legal-but-unrenderable failures retain their specific public code.
+RW-T16-S11-020	163	1	RENDERER_OUTPUT	HTTP status maps success, malformed Command, conflict or cancel, unrenderable, upstream resource, busy, deadline, and internal categories to the specified statuses.
+RW-T16-S11-021	163	2	RENDERER_OUTPUT	HTTP status mapping never changes code semantics.
+RW-T16-S11-022	163	3	RENDERER_OUTPUT	Rendering resends the same Command only for RENDER_ENGINE_BUSY or unknown transport outcome.
+RW-T16-S11-023	163	4	RENDERER_OUTPUT	Rendering does not retry timeout, cancel, 4xx, expiry, integrity, decode, layout, raster, or encode failures.
+RW-T16-S11-024	163	5	RENDERER_OUTPUT	Engine alone performs permitted internal resource 5xx retry.
+RW-T16-S11-025	164	1	RENDERER_OUTPUT	Legal overflow, signed overlap, low contrast, and one-to-three-pixel module outcomes do not create warnings.
+RW-T16-S11-026	164	2	RENDERER_OUTPUT	Authorized trace may expose only fixed flags for such legal outcomes.
+RW-T16-S11-027	164	3	RENDERER_OUTPUT	There is no warning array, automatic repair, or success-with-error state.
+RW-T16-S12-001	168	1	RENDERER_OUTPUT	renderweave-renderer/1.0 is jointly defined by machine-readable algorithm, dependency, and feature manifest, a fixed reference implementation commit, and golden corpus.
+RW-T16-S12-002	168	2	RENDERER_OUTPUT	Prose explains boundaries but cannot replace executable conformance vectors.
+RW-T16-S12-003	168	3	RENDERER_OUTPUT	Raster manifest pins Skia, FreeType, compiler, build hash, and one CPU path.
+RW-T16-S12-004	168	4	RENDERER_OUTPUT	JPEG manifest pins libjpeg-turbo source and build plus quantization, Huffman, and ICC bytes.
+RW-T16-S12-005	168	5	RENDERER_OUTPUT	The self-described PNG algorithm still requires boundary golden verification.
+RW-T16-S12-006	168	6	RENDERER_OUTPUT	Engine startup reads a read-only certified manifest and enters READY only when the complete exact compatibility combination is supported and evidenced on the current platform.
+RW-T16-S12-007	168	7	RENDERER_OUTPUT	Internal health or capability may be exposed internally but is neither visible nor selectable by public callers.
+RW-T16-S12-008	169	1	RENDERER_OUTPUT	Layout, shaping, and break changes publish a new Layout Profile.
+RW-T16-S12-009	169	2	RENDERER_OUTPUT	Decoder, orientation, color, font parser, raster, antialias, sampling, and QR or Barcode changes publish a new Renderer Profile.
+RW-T16-S12-010	169	3	RENDERER_OUTPUT	Encoded-bitstream or metadata-only changes with unchanged pixels publish a new Output Profile.
+RW-T16-S12-011	169	4	RENDERER_OUTPUT	Wire changes publish a new corresponding contract version.
+RW-T16-S12-012	169	5	RENDERER_OUTPUT	Changes to accepted Asset feature scope publish a new AssetAcceptanceProfile.
+RW-T16-S12-013	169	6	RENDERER_OUTPUT	Engine build version, library patch, or environment default cannot silently hot-fix old Profile semantics.
+RW-T16-S12-014	170	1	RENDERER_OUTPUT	Ticket19 supplies exact values for Renderer Profile semantic per-request limits.
+RW-T16-S12-015	170	2	RENDERER_OUTPUT	A deployment is READY only if it can honor every Profile limit without silently lowering memory or CPU ceilings.
+RW-T16-S12-016	170	3	RENDERER_OUTPUT	Deployment concurrency and queue capacity may return BUSY before accepted execution.
+RW-T16-S12-017	170	4	RENDERER_OUTPUT	An accepted request must complete within contract budgets or return a contract error.
+RW-T16-S12-018	171	1	RENDERER_OUTPUT	READY evidence covers strict wire, canonicalization, digest, layout, shaping, exact pixels, and exact PNG and JPEG bytes.
+RW-T16-S12-019	171	2	RENDERER_OUTPUT	READY evidence covers QR and Barcode matrices, image decode, malformed IMAGE and FONT, descriptors, and fetch-security faults.
+RW-T16-S12-020	171	3	RENDERER_OUTPUT	READY evidence covers deadline, cancel, retry, registry or shard loss, and output or multipart verification.
+RW-T16-S12-021	171	4	RENDERER_OUTPUT	Every allowed OS, CPU, and SIMD combination independently replays the evidence corpus.
+RW-T16-S12-022	171	5	RENDERER_OUTPUT	Screenshots, one-sided unit tests, old Haibo tests, and claims based on Skia defaults cannot certify READY.
+RW-T16-S12-023	172	1	RENDERER_OUTPUT	The old busbox renderer may contribute implementation and test foundations but its listed wire, DPI, concurrency, font, control, descriptor, trace, locator, and environmental semantics are incompatible.
+RW-T16-S12-024	172	2	RENDERER_OUTPUT	A successor implementation must provide new parsers, profiles, resource paths, and control paths and pass the new corpus.
+RW-T16-S12-025	172	3	RENDERER_OUTPUT	An adapter or version-string change cannot claim equivalence to this contract.
+RW-T16-S12-026	173	1	RENDERER_OUTPUT	The historical Haibo Render Artifact and browser-SVG preview cannot prove this image Renderer or Output Profile contract.
+RW-T16-S13-001	177	1	RENDERER_OUTPUT	Ticket19 must freeze exact maximum DPI and surface edge, pixel, decoded-byte, and encoded-byte limits.
+RW-T16-S13-002	177	2	RENDERER_OUTPUT	Ticket19 must freeze exact queue, slot, deadline, and checkpoint limits.
+RW-T16-S13-003	177	3	RENDERER_OUTPUT	Ticket19 must freeze resource attempt, backoff, fetch-byte, and total-duration limits.
+RW-T16-S13-004	177	4	RENDERER_OUTPUT	Ticket19 must freeze manifest and request-local cache limits.
+RW-T16-S13-005	177	5	RENDERER_OUTPUT	Ticket19 must freeze font-table, glyph, shaping, paint, and clip limits.
+RW-T16-S13-006	177	6	RENDERER_OUTPUT	Ticket19 must freeze QR and Barcode module and content limits.
+RW-T16-S13-007	177	7	RENDERER_OUTPUT	Ticket19 must freeze PNG and JPEG encoding limits.
+RW-T16-S13-008	177	8	RENDERER_OUTPUT	Ticket19 must freeze trace item, trace byte, and multipart limits.
+RW-T16-S13-009	177	9	RENDERER_OUTPUT	Ticket19 must freeze registry and temporary-state retention limits.
+RW-T16-S13-010	177	10	RENDERER_OUTPUT	Ticket19 must support frozen limits with peak-memory, CPU, and fault-injection evidence.
+RW-T16-S13-011	178	1	RENDERER_OUTPUT	v1 excludes multi-output, batch, page, and node export.
+RW-T16-S13-012	178	2	RENDERER_OUTPUT	v1 excludes crop, resize, target-size, and background override.
+RW-T16-S13-013	178	3	RENDERER_OUTPUT	v1 excludes WebP, SVG, PDF, and HTML output.
+RW-T16-S13-014	178	4	RENDERER_OUTPUT	v1 excludes GPU rendering.
+RW-T16-S13-015	178	5	RENDERER_OUTPUT	v1 excludes cross-request output and resource caches.
+RW-T16-S13-016	178	6	RENDERER_OUTPUT	v1 excludes Artifact, Workspace, and history persistence.
+RW-T16-S13-017	178	7	RENDERER_OUTPUT	v1 excludes public RenderDSL, Command, and Engine APIs.
+RW-T16-S13-018	178	8	RENDERER_OUTPUT	v1 excludes partial output, warning image, and placeholder output.
+RW-T16-S13-019	178	9	RENDERER_OUTPUT	v1 excludes default and replacement fonts.
+RW-T16-S13-020	178	10	RENDERER_OUTPUT	v1 excludes arbitrary ICC, HDR, and CMYK.
+RW-T16-S13-021	178	11	RENDERER_OUTPUT	v1 excludes variable, color, and bitmap fonts.
+RW-T16-S13-022	178	12	RENDERER_OUTPUT	v1 excludes caller Profile selection, old Haibo fallback, and environment defaults.
+RW-T16-S13-023	178	13	RENDERER_OUTPUT	v1 excludes lease renewal and replacement of URLs or Asset current.
+RW-T16-S13-024	178	14	RENDERER_OUTPUT	v1 excludes continuing after partial failure and Engine-triggered re-Evaluation.
+RW-T16-S13-025	179	1	RENDERER_OUTPUT	Ticket16 freezes exploration specification, domain language, and later implementation and acceptance constraints only.
+RW-T16-S13-026	179	2	RENDERER_OUTPUT	Ticket16 creates no Renderer, client, API, queue, registry, cache, codec, Artifact, table, route, deployment configuration, or placeholder implementation.

@@ -1,0 +1,9 @@
+{
+  "fixtureVersion": "renderweave-spec-registry-scenario/1.0",
+  "scenarioId": "SPEC-MUT-009",
+  "scenarioKind": "NAMED_MUTATION",
+  "expectedOutcome": "PROBLEM",
+  "expectedCode": "SPEC_REGISTRY_SUPERSESSION_INVALID",
+  "expectedStage": "SPEC_REGISTRY",
+  "mutationKind": "SUPERSESSION_CYCLE"
+}

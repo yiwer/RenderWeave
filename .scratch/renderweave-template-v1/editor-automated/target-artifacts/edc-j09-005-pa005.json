@@ -1,0 +1,8 @@
+[
+  {
+    "operationId": "reconcileSave",
+    "outcome": "PROBLEM",
+    "code": "TEMPLATE_DELETED",
+    "stage": "EDITOR_SAVE_RECONCILIATION"
+  }
+]

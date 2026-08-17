@@ -1,0 +1,21 @@
+{
+  "artifactVersion": "renderweave-editor-fault-schedule/1.0",
+  "candidateId": "EDC::J08::002",
+  "executionClass": "EXEC::EDITOR_AUTOMATED::1.0",
+  "events": [
+    {
+      "at": "LATEST_CURRENT_READ",
+      "action": "RETURN_ADVANCED_CURRENT",
+      "parameters": {}
+    },
+    {
+      "at": "SAVE_RESPONSE",
+      "action": "RETURN_CANONICAL_SUCCESS",
+      "parameters": {}
+    }
+  ],
+  "expectedTerminal": {
+    "operationId": "confirmed-overwrite-fresh-revision",
+    "outcome": "SUCCESS"
+  }
+}

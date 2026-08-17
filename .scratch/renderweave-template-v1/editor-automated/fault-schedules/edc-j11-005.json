@@ -1,0 +1,21 @@
+{
+  "artifactVersion": "renderweave-editor-fault-schedule/1.0",
+  "candidateId": "EDC::J11::005",
+  "executionClass": "EXEC::EDITOR_AUTOMATED::1.0",
+  "events": [
+    {
+      "at": "SAVE_RESPONSE",
+      "action": "RETURN_CANONICAL_SUCCESS",
+      "parameters": {}
+    },
+    {
+      "at": "AUTHORITATIVE_RECHECK",
+      "action": "RETURN_READY",
+      "parameters": {}
+    }
+  ],
+  "expectedTerminal": {
+    "operationId": "saveTemplate",
+    "outcome": "SUCCESS"
+  }
+}

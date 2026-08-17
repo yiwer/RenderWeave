@@ -1,0 +1,168 @@
+requirement_id	source_line	clause_ordinal_on_line	family	normative_summary
+RW-T08-S1-001	33	1	WIRE_CANONICAL_DIGEST	Template revision persisted content fact 只是一份 complete DesignDSL。
+RW-T08-S1-002	33	2	WIRE_CANONICAL_DIGEST	v1 exact root 固定含 dslVersion=renderweave-design/1.0、expressionProfile=renderweave-expression/1.0、displayName、optional description、definitions、designRoot。
+RW-T08-S1-003	46	1	WIRE_CANONICAL_DIGEST	definitions 必填。
+RW-T08-S1-004	46	2	WIRE_CANONICAL_DIGEST	designRoot 必填。
+RW-T08-S1-005	46	3	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	designRoot 是唯一 authored visual root。
+RW-T08-S1-006	46	4	WIRE_CANONICAL_DIGEST	designRoot closed structure 由 T09–T12 冻结。
+RW-T08-S1-007	46	5	SECURITY_FAULT	designRoot 不是 business RootDocument、Editor canvas state 或 RenderDocument。
+RW-T08-S1-008	47	1	SECURITY_FAULT	DesignDSL root 不含 top-level bindings 或 Asset inventory。
+RW-T08-S1-009	47	2	SECURITY_FAULT	DesignDSL root 不含 StaticSchemaRef、runtime inputs、capabilities、extensions 或 editor state。
+RW-T08-S1-010	47	3	WIRE_CANONICAL_DIGEST	Binding 只能位于 designRoot 内实际消费 property 的 Design Node。
+RW-T08-S1-011	48	1	WIRE_CANONICAL_DIGEST	displayName required，trim 后 1–128 Unicode codepoints。
+RW-T08-S1-012	48	2	WIRE_CANONICAL_DIGEST	description optional，trim 后最多 2048 codepoints；blank normalize 为 absent。
+RW-T08-S1-013	48	3	WIRE_CANONICAL_DIGEST	displayName/description 不做 Unicode normalization。
+RW-T08-S1-014	48	4	SECURITY_FAULT	v1 DesignDSL 不含 tags、owner、createdAt/updatedAt 或 standalone metadata object。
+RW-T08-S1-015	49	1	WIRE_CANONICAL_DIGEST	templateId/revision/StaticSchemaRef/current/lifecycle/readiness-report/expectedRevision 属于 Template/API envelope，不进 DesignDSL。
+RW-T08-S1-016	49	2	WIRE_CANONICAL_DIGEST	TemplateRef 按 authored {templateId} 留在 DesignDSL。
+RW-T08-S2-001	53	1	WIRE_CANONICAL_DIGEST	bare DesignDSL media type 为 application/vnd.renderweave.design+json。
+RW-T08-S2-002	54	1	WIRE_CANONICAL_DIGEST	exact revision export media type 为 application/vnd.renderweave.template-revision+json。
+RW-T08-S2-003	54	2	WIRE_CANONICAL_DIGEST	export exact envelope 固定含 exportVersion、templateRevision identity、StaticSchemaRef、contentHash、designDsl。
+RW-T08-S2-004	73	1	WIRE_CANONICAL_DIGEST	export envelope strict、version-closed，并 reject unknown member。
+RW-T08-S2-005	73	2	SECURITY_FAULT	export 不含 current、lifecycle、readiness/report 或 input samples。
+RW-T08-S2-006	74	1	ASSET_CAPABILITY_CONCURRENCY	export current 必须 consistent-read 并 pin 当时 exact revision/hash。
+RW-T08-S2-007	74	2	WIRE_CANONICAL_DIGEST	后续 current drift 不改变 export artifact。
+RW-T08-S2-008	74	3	SECURITY_FAULT	export 不写 current:true 或其他 moving label。
+RW-T08-S2-009	74	4	WIRE_CANONICAL_DIGEST	ACTIVE/DELETED Template history 均可按 lifecycle contract export exact revision。
+RW-T08-S2-010	75	1	WIRE_CANONICAL_DIGEST	export 前必须重新验证 persisted revision contentHash。
+RW-T08-S2-011	75	2	SECURITY_FAULT	content integrity failure 不得输出 artifact。
+RW-T08-S3-001	79	1	WIRE_CANONICAL_DIGEST	每份 DesignDSL required exact dslVersion/expressionProfile；v1 exact pair 为 renderweave-design/1.0 + renderweave-expression/1.0。
+RW-T08-S3-002	79	2	SECURITY_FAULT	禁止 latest、SemVer range、auto-negotiation、auto-fallback 或按 library version interpret。
+RW-T08-S3-003	80	1	WIRE_CANONICAL_DIGEST	平台维护 append-only immutable exact compatibility-pair catalog。
+RW-T08-S3-004	80	2	WIRE_CANONICAL_DIGEST	一个 dslVersion 未来可 append compatible Expression Profile。
+RW-T08-S3-005	80	3	WIRE_CANONICAL_DIGEST	每个 revision 只能选择一个 exact pair。
+RW-T08-S3-006	80	4	EDITOR_AUTOMATED	Client 必须完整理解 dslVersion 与 expressionProfile 才可 save。
+RW-T08-S3-007	81	1	WIRE_CANONICAL_DIGEST	object/union/member、Node/property identity、ValueType/ValueSource、Mapping operator、selector、canonicalization 等 wire/semantic extension 需要新 dslVersion。
+RW-T08-S3-008	81	2	SECURITY_FAULT	既有 Node Property Identity 不得复用来修改 default/validation。
+RW-T08-S3-009	81	3	WIRE_CANONICAL_DIGEST	Expression grammar/operator/function/type/presence/order 变化只需新 Expression Profile。
+RW-T08-S3-010	82	1	WIRE_CANONICAL_DIGEST	UI/localized label/help/nonsemantic diagnostic prose 不触发 version bump。
+RW-T08-S3-011	82	2	WIRE_CANONICAL_DIGEST	append BindingPolicy 是明确 exception，不改变 DSL version。
+RW-T08-S3-012	82	3	SECURITY_FAULT	semantic error 不得以 bugfix 名义 silent-fix；必须新 exact profile。
+RW-T08-S3-013	83	1	WIRE_CANONICAL_DIGEST	一旦 version/profile pair 可写 revision，其 authoritative parser/validator/evaluator semantics 成为 permanent compatibility obligation。
+RW-T08-S3-014	83	2	SECURITY_FAULT	read/history/copy/restore/recheck/Render 不自动 migrate 或 rewrite version。
+RW-T08-S3-015	84	1	WIRE_CANONICAL_DIGEST	Global Node Property Identity 永久为 nodeKind + propertyPathPattern。
+RW-T08-S3-016	84	2	SECURITY_FAULT	Identity 的 ValueType、structural role、default、propertyValidation 跨版本不可改变。
+RW-T08-S3-017	84	3	WIRE_CANONICAL_DIGEST	breaking design 必须新 node kind/propertyId 并配新 dslVersion。
+RW-T08-S3-018	84	4	DESIGN_INPUT_EXPRESSION	BindingPolicy 可后来授权既有 identity，并对包含该 identity 的全部 versions 生效。
+RW-T08-S4-001	88	1	WIRE_CANONICAL_DIGEST	DesignDSL 只接受 no-BOM legal UTF-8 strict-JSON object。
+RW-T08-S4-002	88	2	SECURITY_FAULT	拒绝 comments、trailing comma、single-quoted string、NaN/Infinity、JSON5、unpaired surrogate 与任意层 duplicate key。
+RW-T08-S4-003	89	1	SECURITY_FAULT	JSON null 在 DesignDSL v1 全面非法。
+RW-T08-S4-004	89	2	WIRE_CANONICAL_DIGEST	optional member 只以 omission 表达。
+RW-T08-S4-005	89	3	WIRE_CANONICAL_DIGEST	business none 使用 explicit closed union。
+RW-T08-S4-006	89	4	DESIGN_INPUT_EXPRESSION	empty string、false、0、empty array 是 concrete values，不等于 missing。
+RW-T08-S4-007	90	1	SECURITY_FAULT	DesignDSL-owned objects 与 version-specific Node properties reject unknown member/kind。
+RW-T08-S4-008	90	2	SECURITY_FAULT	future wire extension 必须新 dslVersion，old reader 不得 ignore/opaque-preserve 后 save。
+RW-T08-S4-009	90	3	WIRE_CANONICAL_DIGEST	BindingPolicy addition 只授权 existing fixed property，不新增 wire。
+RW-T08-S4-010	91	1	SECURITY_FAULT	parser raw/token limits 按 decompressed bare DesignDSL 计数，并在 modeling/number expansion/canonicalization 前执行。
+RW-T08-S4-011	91	2	SECURITY_FAULT	raw limits exact 为 16MiB bytes、depth64、1024 object members、100000 array items、1000000 values/containers、1MiB string、256-byte member name、256-byte number token。
+RW-T08-S4-012	91	3	SECURITY_FAULT	canonical bytes 在 safe modeling、metadata normalization、set sorting 后经 16MiB capped counting sink 计数。
+RW-T08-S4-013	91	4	SECURITY_FAULT	canonical counting 必须在 external dependency I/O 前完成，且不保留 full canonical output。
+RW-T08-S4-014	91	5	SECURITY_FAULT	T19 必须再冻结 Node/Definition/Expression/Loop 等 lower semantic budgets。
+RW-T08-S4-015	92	1	SECURITY_FAULT	invalid UTF-8/JSON、duplicate key、limit violation 返回单 parser-level problem 并 stop。
+RW-T08-S4-016	92	2	SECURITY_FAULT	root/envelope/version 不可信时 stop subsequent semantic analysis。
+RW-T08-S4-017	92	3	SECURITY_FAULT	结构可安全 traverse 后才 bounded-collect independent hard problems。
+RW-T08-S4-018	92	4	SECURITY_FAULT	只有不存在 blocking hard error 才 query StaticSchema/Asset/Template dependencies。
+RW-T08-S5-001	96	1	WIRE_CANONICAL_DIGEST	local entity explicit fields 为 nodeId/definitionId/bindingId/loopId/useId。
+RW-T08-S5-002	96	2	SECURITY_FAULT	entity 与 refs 必须用 type-specific ID field，不用 context-sensitive generic id。
+RW-T08-S5-003	97	1	WIRE_CANONICAL_DIGEST	所有 local IDs 必须 canonical lowercase UUID v4，满足 exact format/version/variant 并拒绝 nil/uppercase/braces/URN/no-hyphen。
+RW-T08-S5-004	97	2	WIRE_CANONICAL_DIGEST	每类 ID 是 Template 内 independent namespace；同 UUID text 可跨 namespace。
+RW-T08-S5-005	97	3	WIRE_CANONICAL_DIGEST	input alias/propertyId/node kind 不是 local IDs。
+RW-T08-S5-006	98	1	EDITOR_AUTOMATED	Authoring client 创建 Node/Definition/Binding/Repeat/TemplateUse 时生成 UUID v4。
+RW-T08-S5-007	98	2	WIRE_CANONICAL_DIGEST	Repeat 同时有 normal nodeId 与 independent loopId；Loop 只表示 runtime frame。
+RW-T08-S5-008	98	3	SECURITY_FAULT	Server 只 validation ID format、namespace uniqueness 与 references。
+RW-T08-S5-009	98	4	SECURITY_FAULT	missing/invalid/collision local ID 是 hard error。
+RW-T08-S5-010	98	5	SECURITY_FAULT	normal save 不补 ID、不换 ID、不修 refs。
+RW-T08-S5-011	99	1	WIRE_CANONICAL_DIGEST	normal save 保留未替换 entity identity。
+RW-T08-S5-012	99	2	WIRE_CANONICAL_DIGEST	restore 与 whole-Template copy 原样保留全部 local IDs。
+RW-T08-S5-013	99	3	EDITOR_AUTOMATED	同 Template entity copy 时 client 为副本生成新 IDs 并同步 rewrite internal refs。
+RW-T08-S5-014	99	4	WIRE_CANONICAL_DIGEST	手写 JSON 同时改 ID 与 all refs 是合法 delete+create；server 不强制 cross-revision continuity。
+RW-T08-S5-015	100	1	WIRE_CANONICAL_DIGEST	explicit migration 保留可保留 IDs。
+RW-T08-S5-016	100	2	EDITOR_AUTOMATED	migration 必须新增 identity entity 时要求 client-provided UUID v4，否则 manual-action problem。
+RW-T08-S5-017	100	3	SECURITY_FAULT	migration/normal save 不得 silent-generate missing identity。
+RW-T08-S5-018	101	1	WIRE_CANONICAL_DIGEST	repeat/conditional 与 Repeat-child PACK 在 DesignDSL 1.0 freeze 前并入 same NodeContract draft。
+RW-T08-S5-019	101	2	WIRE_CANONICAL_DIGEST	structural wire/ABSENT/lexical-filter/lowering freeze 后永久按 Profile interpret；observable change 需新 dslVersion。
+RW-T08-S6-001	105	1	WIRE_CANONICAL_DIGEST	lossless editing 指保留全部 supported semantics，不保留 upload bytes。
+RW-T08-S6-002	105	2	WIRE_CANONICAL_DIGEST	Server 不保存 raw whitespace、object-member order、equivalent number lexeme 或被 metadata trim 移除的 whitespace。
+RW-T08-S6-003	105	3	WIRE_CANONICAL_DIGEST	必须保留 supported fields、semantic array order、nonmetadata Unicode string、exact Expression source、arbitrary-precision numeric value。
+RW-T08-S6-004	106	1	WIRE_CANONICAL_DIGEST	renderweave-design-c14n/1.0 是 canonical authority，不直接采用 IEEE-754 JCS contract。
+RW-T08-S6-005	106	2	WIRE_CANONICAL_DIGEST	canonical output 为 UTF-8、no BOM、no unnecessary whitespace。
+RW-T08-S6-006	106	3	WIRE_CANONICAL_DIGEST	object members 按 name unsigned UTF-8 bytes ascending。
+RW-T08-S6-007	106	4	WIRE_CANONICAL_DIGEST	string 不 Unicode-normalize；唯一 JSON escaping 仅处理 quote/backslash/control，其余 scalar direct UTF-8 且 slash unescaped。
+RW-T08-S6-008	107	1	WIRE_CANONICAL_DIGEST	decimal canonical token 按 arbitrary-precision value 用 plain notation，无 exponent/leading-plus/meaningless zeros，-0→0，integer 无 dot。
+RW-T08-S6-009	107	2	WIRE_CANONICAL_DIGEST	1/1.0/1.00/1e0 均 canonicalize 为 1。
+RW-T08-S6-010	107	3	WIRE_CANONICAL_DIGEST	Expression source 内 numeric token 属于 exact string，不被 canonical writer rewrite。
+RW-T08-S6-011	108	1	WIRE_CANONICAL_DIGEST	canonical set sorting：definitions by definitionId、Node bindings by bindingId、Expression inputs by alias、TemplateUse fills by targetDefinitionId。
+RW-T08-S6-012	108	2	WIRE_CANONICAL_DIGEST	Mapping cases、selectors、literal lists、parent children 等 semantic arrays 保留 authored order。
+RW-T08-S6-013	108	3	WIRE_CANONICAL_DIGEST	唯一 Canvas-rooted tree 不按 nodeId reorder。
+RW-T08-S6-014	109	1	WIRE_CANONICAL_DIGEST	canonical writer 不 expand/delete business default。
+RW-T08-S6-015	109	2	SECURITY_FAULT	canonical writer 不 create missing property/Binding baseline，且不 repair enum/color/date/time/AssetRef。
+RW-T08-S6-016	109	3	WIRE_CANONICAL_DIGEST	canonical writer 不依据 current BindingPolicy rewrite content。
+RW-T08-S6-017	109	4	WIRE_CANONICAL_DIGEST	explicit default-equal 与 omitted default 可有不同 contentHash；default meaning 由 Property Identity freeze。
+RW-T08-S7-001	113	1	WIRE_CANONICAL_DIGEST	contentHash wire exact 为 sha256:<64 lowercase hex>。
+RW-T08-S7-002	113	2	WIRE_CANONICAL_DIGEST	digest input exact 为 UTF-8("renderweave-design-content/1\0") + c14n/1.0 canonical bytes。
+RW-T08-S7-003	113	3	WIRE_CANONICAL_DIGEST	contentHash 不进 DesignDSL；canonical-profile mapping 是 dslVersion permanent semantics。
+RW-T08-S7-004	114	1	WIRE_CANONICAL_DIGEST	hash includes 完整 authored DesignDSL，包括版本、metadata、definitions、baseline、Binding、TemplateUse authored facts、logical refs、capability source、exact Expression source。
+RW-T08-S7-005	114	2	WIRE_CANONICAL_DIGEST	hash excludes Template/API facts、Catalog、readiness、resolved assets/children、runtime closure/context/fill、Occurrence/composition、CapabilityState/results。
+RW-T08-S7-006	115	1	WIRE_CANONICAL_DIGEST	same DesignDSL 在不同 Template/StaticSchema 下可有 same hash。
+RW-T08-S7-007	115	2	WIRE_CANONICAL_DIGEST	dependency/current drift 不改变 revision/hash，只影响 readiness/closure/Evaluation identity。
+RW-T08-S7-008	115	3	SECURITY_FAULT	contentHash 不得单独作为 Render cache key。
+RW-T08-S7-009	116	1	WIRE_CANONICAL_DIGEST	object order/transport whitespace/equivalent decimal lexeme 不改变 hash。
+RW-T08-S7-010	116	2	WIRE_CANONICAL_DIGEST	Expression-source whitespace 或任一 canonical semantic content change 改变 hash。
+RW-T08-S7-011	116	3	WIRE_CANONICAL_DIGEST	same hash 不阻止 new save revision。
+RW-T08-S7-012	117	1	WIRE_CANONICAL_DIGEST	contentHash 只证明 canonical-content integrity，并用于 snapshot/confirmation binding。
+RW-T08-S7-013	117	2	SECURITY_FAULT	contentHash 不表示 semantic equivalence、dedup、publish、replay、authorization、signature 或 provenance。
+RW-T08-S7-014	117	3	SECURITY_FAULT	import identity/Schema/hash 均 untrusted；authentication 与 ownerScope 只取 server facts。
+RW-T08-S8-001	121	1	WIRE_CANONICAL_DIGEST	create/save/copy/restore/migration 使用固定 pipeline：raw strict limits→bounded structure/type/graph→normalization/sort→capped count→dependency validation→final bytes/hash→atomic revision write。
+RW-T08-S8-002	121	2	SECURITY_FAULT	counting sink 超 16MiB 立即 DesignDSL-limit fail，且不发起 dependency I/O。
+RW-T08-S8-003	121	3	WIRE_CANONICAL_DIGEST	dependency errors 仍可形成 canonical proposal。
+RW-T08-S8-004	121	4	SECURITY_FAULT	hard errors 必须 zero-write。
+RW-T08-S8-005	122	1	SECURITY_FAULT	dependency-only first phase 返回 canonical problems、proposedContentHash 与 confirmation token。
+RW-T08-S8-006	122	2	SECURITY_FAULT	token 绑定 operation、target Template/Schema、expectedRevision、hash、dependency snapshot、problem fingerprint。
+RW-T08-S8-007	122	3	WIRE_CANONICAL_DIGEST	canonical-equivalent transport rewrite 不使 token drift。
+RW-T08-S8-008	122	4	ASSET_CAPABILITY_CONCURRENCY	Expression source、semantic order、metadata 或 content change 使 token invalid。
+RW-T08-S8-009	122	5	WIRE_CANONICAL_DIGEST	successful revision hash 必须等于 proposed hash。
+RW-T08-S8-010	123	1	WIRE_CANONICAL_DIGEST	API/save response 至少返回 new revision 与 contentHash。
+RW-T08-S8-011	123	2	EDITOR_AUTOMATED	若 local representation 与 server normalization 不同，client 必须从 canonical response/GET resync。
+RW-T08-S8-012	123	3	WIRE_CANONICAL_DIGEST	client 不得把 uploaded bytes 当 persisted fact。
+RW-T08-S8-013	124	1	WIRE_CANONICAL_DIGEST	trusted read 必须从 persisted JSON value recanonicalize 并核对 hash。
+RW-T08-S8-014	124	2	WIRE_CANONICAL_DIGEST	DB serializer 不是 canonical authority。
+RW-T08-S8-015	124	3	SECURITY_FAULT	hash mismatch 是 unrecoverable integrity problem：fail closed，不建 snapshot，且不交 Editor/copy/restore/migration/Evaluator/Renderer。
+RW-T08-S8-016	124	4	SECURITY_FAULT	integrity mismatch 不自动 recompute/rewrite history。
+RW-T08-S8-017	124	5	SECURITY_FAULT	integrity mismatch 触发 ops alert，且不 log/echo full payload。
+RW-T08-S9-001	128	1	EDITOR_AUTOMATED	Editor 可 import bare DesignDSL 或 exact revision export。
+RW-T08-S9-002	128	2	WIRE_CANONICAL_DIGEST	export import 先 strict-check exportVersion 与 canonical contentHash；mismatch 是 corrupt file。
+RW-T08-S9-003	128	3	SECURITY_FAULT	templateId/revision 只显示 provenance，不在 target 创建 same identity。
+RW-T08-S9-004	128	4	EDITOR_AUTOMATED	import StaticSchemaRef 只可作为 new-Template user-confirmed prefill，不得 silent-rebind existing Template。
+RW-T08-S9-005	129	1	DESIGN_INPUT_EXPRESSION	bare import 到 existing Template 使用其 permanent Schema。
+RW-T08-S9-006	129	2	EDITOR_AUTOMATED	new Template import 必须在 DesignDSL 外 explicit-select Schema 后再 validate。
+RW-T08-S9-007	129	3	SECURITY_FAULT	strict create 仍要求 all-valid，不得以 import bypass。
+RW-T08-S9-008	129	4	DESIGN_INPUT_EXPRESSION	incompatible path 仅按 dependency-error rules 用于 confirmable save/copy/restore，不放宽 create。
+RW-T08-S9-009	130	1	EDITOR_AUTOMATED	nonstrict JSON/duplicate/illegal UTF-8/unsupported version 不可构造 DesignDSL 或 authoritative canvas，只进 local raw repair。
+RW-T08-S9-010	130	2	EDITOR_AUTOMATED	supported recognizable pair 即使有 ID/ref/type/domain/target/dependency errors 可进入 unsaved EditorSession 与 best-effort canvas。
+RW-T08-S9-011	130	3	SECURITY_FAULT	explicit save 时 hard errors 必须清零，只有 dependency error 可 confirmation。
+RW-T08-S9-012	131	1	EDITOR_AUTOMATED	Import 本身不调用 save、不改 current/readiness/report、不创建 revision。
+RW-T08-S9-013	131	2	EDITOR_AUTOMATED	raw-repair/placeholder UX 由 T18 决定。
+RW-T08-S9-014	132	1	EDITOR_AUTOMATED	client 只有完整理解 exact pair 与该 version 全部 Node/Definition wire 才可 save。
+RW-T08-S9-015	132	2	EDITOR_AUTOMATED	不理解时只允许 canonical read-only、download/export、raw repair 或 explicit migration。
+RW-T08-S9-016	132	3	SECURITY_FAULT	禁止 partial-model reserialization、drop unknown fields 或 self-declared compatibility。
+RW-T08-S9-017	133	1	SECURITY_FAULT	v1 不 auto-detect hbads-design-v2、old RenderWeave 或 unversioned JSON。
+RW-T08-S9-018	133	2	EDITOR_AUTOMATED	historical conversion 必须 explicit converter/migration profile。
+RW-T08-S10-001	137	1	WIRE_CANONICAL_DIGEST	migration input 绑定 exact source dslVersion/expressionProfile/contentHash 与 exact target pair。
+RW-T08-S10-002	137	2	SECURITY_FAULT	migration transform 必须 pure、deterministic、bounded。
+RW-T08-S10-003	137	3	SECURITY_FAULT	migration 不使用 Clock/Random/AssetResolver、network、user data 或 runtime dependency resolution。
+RW-T08-S10-004	138	1	EDITOR_AUTOMATED	migration 先产生 canonical preview DesignDSL、change summary、problem set，不 direct-save。
+RW-T08-S10-005	138	2	EDITOR_AUTOMATED	user confirm 后按 complete DesignDSL+expectedRevision 走 normal validation/save 并 append revision。
+RW-T08-S10-006	138	3	WIRE_CANONICAL_DIGEST	old revision 永不 rewrite；read/Render/copy/restore 不 implicit-migrate。
+RW-T08-S10-007	139	1	WIRE_CANONICAL_DIGEST	downgrade 仅在存在 separate explicit lossless migration profile 时允许。
+RW-T08-S10-008	139	2	DESIGN_INPUT_EXPRESSION	migration target dependency issues 使用 normal save rules。
+RW-T08-S10-009	139	3	SECURITY_FAULT	migration 不得通过 repair/hide hard error 使 output writable。
+RW-T08-S11-001	143	1	EDITOR_AUTOMATED	parser problem 指向 raw submit/import text location。
+RW-T08-S11-002	143	2	SECURITY_FAULT	structure/type/reference/dependency problem authority 为 stable entity ID + property path。
+RW-T08-S11-003	143	3	WIRE_CANONICAL_DIGEST	problem JSON Pointer 指向 canonical DesignDSL，不指 client temporary nonssemantic array order。
+RW-T08-S11-004	144	1	EDITOR_AUTOMATED	client 通过 nodeId/definitionId/bindingId/loopId/useId map entities。
+RW-T08-S11-005	144	2	EDITOR_AUTOMATED	Mapping cases、literal lists、selectors 等 semantic arrays 可继续用 index 定位。
+RW-T08-S11-006	144	3	SECURITY_FAULT	TemplateValidationReport 只保留 canonical pointer，不保留 raw-upload location。
+RW-T08-S11-007	144	4	DESIGN_INPUT_EXPRESSION	Expression diagnostic 使用 zero-based UTF-16 source span。
+RW-T08-S11-008	145	1	SECURITY_FAULT	safely collected problems 按 phase→canonical pointer→stable code→entity ID stable-sort。
+RW-T08-S11-009	145	2	SECURITY_FAULT	达到 T19 limit 时 append PROBLEM_LIMIT_REACHED 并 stop expensive checks。
+RW-T08-S11-010	145	3	SECURITY_FAULT	Problem 不回显 full DesignDSL、Expression source、business input 或 Asset content。

@@ -1,0 +1,9 @@
+{
+  "fixtureVersion": "renderweave-spec-registry-scenario/1.0",
+  "scenarioId": "SPEC-MUT-003",
+  "scenarioKind": "NAMED_MUTATION",
+  "expectedOutcome": "PROBLEM",
+  "expectedCode": "SPEC_REGISTRY_SOURCE_LOCATOR_INVALID",
+  "expectedStage": "SPEC_REGISTRY",
+  "mutationKind": "SOURCE_LOCATOR_OUT_OF_RANGE"
+}

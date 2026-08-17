@@ -1,0 +1,23 @@
+{
+  "artifactVersion": "renderweave-spec-registry-executor-manifest/1.0",
+  "executorId": "SPEC_EXECUTOR::PYTHON::1.0",
+  "role": "independent-schema-and-graph-replayer",
+  "executionClass": "EXEC::SPEC_REGISTRY::1.0",
+  "targetId": "SPEC_TARGET::REGISTRY::1.0",
+  "targetManifest": {
+    "path": "spec-registry/target-manifest-v1.json",
+    "sha256": "sha256:122577f0dc84713897e5d7803b21d94fd283fff067aa54cbdc9d20b29e767e84",
+    "byteLength": 77305
+  },
+  "implementationRevision": "spec-registry-bootstrap/1.13",
+  "runtime": "CPython 3.12.x",
+  "entrypoint": {
+    "path": "spec-registry/validate-spec-registry-independent.py",
+    "sha256": "sha256:cb295837d3486148d7668a01d70637d2ad19427e0ee959b27706b600c1e50b2b",
+    "byteLength": 40758
+  },
+  "command": "python spec-registry/validate-spec-registry-independent.py --target spec-registry/target-manifest-v1.json",
+  "sharedSemanticLibrary": null,
+  "networkReadsAllowed": false,
+  "productMutationAllowed": false
+}

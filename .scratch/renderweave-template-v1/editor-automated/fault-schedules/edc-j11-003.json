@@ -1,0 +1,18 @@
+{
+  "artifactVersion": "renderweave-editor-fault-schedule/1.0",
+  "candidateId": "EDC::J11::003",
+  "executionClass": "EXEC::EDITOR_AUTOMATED::1.0",
+  "events": [
+    {
+      "at": "SAVE_RESPONSE",
+      "action": "RETURN_STRUCTURED_PROBLEM",
+      "parameters": {}
+    }
+  ],
+  "expectedTerminal": {
+    "operationId": "saveTemplate",
+    "outcome": "PROBLEM",
+    "code": "DESIGN_PROPERTY_CONSTRAINT_INVALID",
+    "stage": "DESIGN_PROPERTY_AND_AGGREGATE_VALIDATION"
+  }
+}

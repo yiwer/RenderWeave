@@ -1,0 +1,15 @@
+{
+  "artifactVersion": "renderweave-editor-input-fixture/1.0",
+  "candidateId": "EDC::J10::012",
+  "executionClass": "EXEC::EDITOR_AUTOMATED::1.0",
+  "baselineId": "EditorStructuredDirtyBeforeReplacement",
+  "parameters": {},
+  "actionScript": [
+    {
+      "action": "ATTEMPT_REPLACE_WORKING_DRAFT",
+      "parameters": {
+        "source": "IMPORT"
+      }
+    }
+  ]
+}

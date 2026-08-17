@@ -1,0 +1,17 @@
+{
+  "artifactVersion": "renderweave-editor-input-fixture/1.0",
+  "candidateId": "EDC::J11::014",
+  "executionClass": "EXEC::EDITOR_AUTOMATED::1.0",
+  "baselineId": "EditorPreviewVisible",
+  "parameters": {},
+  "actionScript": [
+    {
+      "action": "TOGGLE_PANEL",
+      "parameters": {}
+    },
+    {
+      "action": "MOVE_SELECTION",
+      "parameters": {}
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "artifactVersion": "renderweave-editor-input-fixture/1.0",
+  "candidateId": "EDC::J11::012",
+  "executionClass": "EXEC::EDITOR_AUTOMATED::1.0",
+  "baselineId": "EditorPreviewVisible",
+  "parameters": {
+    "includeLayoutTrace": false
+  },
+  "actionScript": [
+    {
+      "action": "CHANGE_LAYOUT_TRACE_CHOICE",
+      "parameters": {
+        "includeLayoutTrace": true
+      }
+    }
+  ]
+}

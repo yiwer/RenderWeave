@@ -1,0 +1,15 @@
+{
+  "artifactVersion": "renderweave-editor-input-fixture/1.0",
+  "candidateId": "EDC::J10::008",
+  "executionClass": "EXEC::EDITOR_AUTOMATED::1.0",
+  "baselineId": "EditorMalformedRawImport",
+  "parameters": {
+    "fault": "DUPLICATE_JSON_KEYS"
+  },
+  "actionScript": [
+    {
+      "action": "IMPORT_RAW_CONTENT",
+      "parameters": {}
+    }
+  ]
+}

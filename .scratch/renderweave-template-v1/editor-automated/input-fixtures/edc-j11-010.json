@@ -1,0 +1,17 @@
+{
+  "artifactVersion": "renderweave-editor-input-fixture/1.0",
+  "candidateId": "EDC::J11::010",
+  "executionClass": "EXEC::EDITOR_AUTOMATED::1.0",
+  "baselineId": "EditorPreviewVisible",
+  "parameters": {
+    "dpi": 96
+  },
+  "actionScript": [
+    {
+      "action": "CHANGE_DPI",
+      "parameters": {
+        "dpi": 144
+      }
+    }
+  ]
+}

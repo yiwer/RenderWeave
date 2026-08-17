@@ -1,0 +1,56 @@
+{
+  "artifactVersion": "renderweave-domain-services-generator-implementation/1.0",
+  "generatorProfile": "renderweave-domain-services-generator/1.0",
+  "status": "FROZEN_GOLDENS_PRESENT_STATIC_ONLY",
+  "implementationRevision": "domain-services-fixture-generator/1.0",
+  "runtime": "Node.js >=24",
+  "entrypoint": {
+    "path": "domain-services/generate-domain-services-fixtures.mjs",
+    "sha256": "sha256:b360c06a668d3cd65ca5d07dafd96d87b1010d843bc170cbfddca199b24633fc",
+    "byteLength": 18928
+  },
+  "baseline": {
+    "path": "domain-services/baseline-v1.json",
+    "sha256": "sha256:be84f240724b5ea50ae8921b1ffc4daa318fce52189fd0f8b2669c5ec562cf16",
+    "byteLength": 814
+  },
+  "fixtureContract": {
+    "path": "domain-services/fixture-contract-v1.json",
+    "sha256": "sha256:d04fd28556619a26d5c3ed6653510da73815153791c8ae7b3e86e30158297657",
+    "byteLength": 3273
+  },
+  "observationAdapter": {
+    "path": "domain-services/observation-adapter-v1.json",
+    "sha256": "sha256:4bda561d8628461b783796e38acb9066e840c307479603e39afa6c241393ea06",
+    "byteLength": 6006
+  },
+  "scenarioCatalog": {
+    "path": "domain-services/capacity-scenarios-v1.json",
+    "sha256": "sha256:c856206b3403c3a85fb0953f5179ed1870cecba7059280dae1a486297b7f4797",
+    "byteLength": 39135
+  },
+  "goldenVectors": {
+    "path": "domain-services/generator-goldens-v1.json",
+    "sha256": "sha256:97501ec24f2c9dc4ca78774d92d37d23010afffe635453666aa77cb2f56e8b60",
+    "byteLength": 40861
+  },
+  "targetManifest": {
+    "path": "domain-services/generator-target-manifest-v1.json",
+    "sha256": "sha256:3f6d2df37c776262e328f5159b2ff38bb89c9882d60a82a67c48a42efb487dd9",
+    "byteLength": 4562
+  },
+  "omittedExpectationKeys": [
+    "expectedTerminal",
+    "expectedAssertions",
+    "plannedAssertions",
+    "plannedOracleId",
+    "requirementIds",
+    "resolvedCode",
+    "resolvedKind"
+  ],
+  "productExecutionAllowed": false,
+  "environmentReadsAllowed": false,
+  "networkReadsAllowed": false,
+  "currentTimeReadsAllowed": false,
+  "hiddenDefaultsAllowed": false
+}

@@ -1,0 +1,23 @@
+{
+  "artifactVersion": "renderweave-editor-fault-schedule/1.0",
+  "candidateId": "EDC::J08::001",
+  "executionClass": "EXEC::EDITOR_AUTOMATED::1.0",
+  "events": [
+    {
+      "at": "BEFORE_SAVE",
+      "action": "ADVANCE_SERVER_CURRENT",
+      "parameters": {}
+    },
+    {
+      "at": "SAVE_RESPONSE",
+      "action": "RETURN_REVISION_CONFLICT",
+      "parameters": {}
+    }
+  ],
+  "expectedTerminal": {
+    "operationId": "saveTemplate",
+    "outcome": "PROBLEM",
+    "code": "TEMPLATE_REVISION_CONFLICT",
+    "stage": "TEMPLATE_MUTATION"
+  }
+}

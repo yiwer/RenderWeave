@@ -1,0 +1,7 @@
+[
+  {
+    "operationId": "attemptInvalidConfirmation",
+    "outcome": "NONTERMINAL_REJECTION",
+    "code": "EDITOR_INVALID_CONFIRMATION_UNAVAILABLE"
+  }
+]

@@ -1,0 +1,106 @@
+{
+  "artifactVersion": "renderweave-editor-semantic-projection-contract/1.1",
+  "status": "FROZEN_PLANNING_PROJECTION_INTERFACE_PRODUCT_ADAPTER_PENDING",
+  "executionClass": "EXEC::EDITOR_AUTOMATED::1.0",
+  "module": {
+    "name": "EditorSemanticProjection",
+    "interface": "project one settled semantic candidate action into a closed command-result code or preview-eligibility generation, or report the exact content prerequisites still required for a byte-derived target",
+    "seam": "the projection consumes only candidateId, immutable semantic fixture identity, exact named action and fault semantics, and settled product-visible outcome; DOM, framework state, transport, persistence rows, raw business values, and guessed bytes are excluded",
+    "adapter": "a future admitted product adapter must expose the same projection without changing candidate semantics or treating this planning catalog as a product observation"
+  },
+  "commandResult": {
+    "allowedCodes": [
+      "COMMAND_APPLIED",
+      "COMMAND_REJECTED_ATOMIC",
+      "BINDING_UNBOUND",
+      "BINDING_PRESENT",
+      "BINDING_ABSENT",
+      "BINDING_ERROR",
+      "BINDING_TYPE_INVALID",
+      "BINDING_PROPERTY_INVALID"
+    ],
+    "rule": "A successful local structural or binding-removal command projects COMMAND_APPLIED; a fail-closed atomic rejection projects COMMAND_REJECTED_ATOMIC; a pure Binding inspection projects its one exact closed Binding state code."
+  },
+  "previewEligibilityGeneration": {
+    "initialGenerationRule": "Use input.parameters.currentGeneration when explicitly present; otherwise the isolated semantic fixture starts at exact generation 0. This is an explicit acceptance-fixture default, not ambient framework state.",
+    "transitionRule": "Add exactly one for each preview display-eligibility invalidation or new-operation generation transition named by the candidate action/fault script; inspection and discarded late delivery add zero.",
+    "forbiddenInference": "Do not read a framework counter, wall clock, operation ordinal, prior browser session, or hidden setup; do not reset an explicit currentGeneration parameter."
+  },
+  "workingCopyAvailability": {
+    "digestPresent": "Only a trusted canonical DesignDSL working copy has editor.workingCopyDigest.",
+    "digestAbsent": "Raw Repair preserves malformed raw bytes and Compatibility Read-only preserves unsupported original bytes, but neither mode constructs a trusted canonical DesignDSL working copy; the digest is therefore exactly ABSENT.",
+    "forbiddenSubstitution": "Never hash malformed raw import bytes or unsupported compatibility-original bytes as though they were a canonical DesignDSL working copy."
+  },
+  "contentPrerequisites": [
+    {
+      "prerequisiteId": "EXACT_WORKING_COPY_CANONICAL_DESIGN_DSL_BYTES",
+      "meaning": "the exact complete post-action working-copy DesignDSL after authoritative canonical encoding"
+    },
+    {
+      "prerequisiteId": "EXACT_SERVER_CANONICAL_REVISION",
+      "meaning": "the exact trusted server revision adopted by the candidate"
+    },
+    {
+      "prerequisiteId": "EXACT_SERVER_CANONICAL_CONTENT_HASH",
+      "meaning": "the exact trusted server contentHash adopted by the candidate"
+    },
+    {
+      "prerequisiteId": "CANONICAL_BASELINE_PROJECTION_ENCODER",
+      "meaning": "the frozen renderweave-editor-canonical-baseline-projection/1.0 member and byte encoding"
+    },
+    {
+      "prerequisiteId": "EXACT_SAVED_CURRENT_IDENTITY",
+      "meaning": "the exact saved current revision and contentHash used by Authoritative Preview"
+    },
+    {
+      "prerequisiteId": "EXACT_LOCAL_DIVERGENCE_STATE",
+      "meaning": "the exact clean or divergent local-content fact in the preview basis"
+    },
+    {
+      "prerequisiteId": "EXACT_SAMPLE_INPUT_IDENTITY",
+      "meaning": "the exact RootDocument and customValues sample identity without exposing business bytes"
+    },
+    {
+      "prerequisiteId": "EXACT_OUTPUT_PARAMETER_VECTOR",
+      "meaning": "the exact format, DPI, JPEG quality, and LayoutTrace choice vector"
+    },
+    {
+      "prerequisiteId": "EXACT_CURRENT_READINESS",
+      "meaning": "the exact current readiness admitted into the preview basis"
+    },
+    {
+      "prerequisiteId": "PREVIEW_BASIS_CANONICAL_ENCODER",
+      "meaning": "the frozen closed preview-basis projection and digest encoder"
+    },
+    {
+      "prerequisiteId": "EXACT_RECOVERY_WORKING_COPY_DIGEST",
+      "meaning": "the exact digest of the complete recovery working copy"
+    },
+    {
+      "prerequisiteId": "EXACT_RECOVERY_BASE_FACTS",
+      "meaning": "the exact optional recovery baseRevision and baseContentHash facts"
+    },
+    {
+      "prerequisiteId": "RECOVERY_ENVELOPE_CANONICAL_ENCODER",
+      "meaning": "the frozen recovery-draft-envelope/1.0 member and byte encoding"
+    },
+    {
+      "prerequisiteId": "EXACT_COMPATIBILITY_ORIGINAL_BYTES",
+      "meaning": "the exact complete original compatibility-mode bytes retained for export"
+    },
+    {
+      "prerequisiteId": "EXACT_SERVER_CANONICAL_BEFORE_AFTER_BYTES",
+      "meaning": "the exact submitted and trusted server-canonical DesignDSL bytes"
+    },
+    {
+      "prerequisiteId": "EXACT_NORMALIZATION_CATEGORY_COUNTS",
+      "meaning": "the exact bounded normalization category identifiers and counts"
+    },
+    {
+      "prerequisiteId": "NORMALIZATION_SUMMARY_CANONICAL_ENCODER",
+      "meaning": "the frozen normalization-summary/1.0 member and byte encoding"
+    }
+  ],
+  "noInferenceRule": "A byte- or digest-derived target remains pending until every listed prerequisite is exact; placeholder DesignDSL, synthetic digest, guessed revision, generic empty object, or UI convention is forbidden.",
+  "boundary": "This contract freezes a narrow acceptance projection only. It is not product code, an observation adapter implementation, a browser result, a formal Oracle, J1 evidence, or READY evidence."
+}

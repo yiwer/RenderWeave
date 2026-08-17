@@ -1,0 +1,196 @@
+requirement_id	source_line	clause_ordinal_on_line	family	normative_summary
+RW-T15-S1-001	59	1	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	Rendering owns Evaluation, RenderDSL, RenderDocument, and Renderer Command.
+RW-T15-S1-002	59	2	SECURITY_FAULT	Only the authoritative server Evaluator and sealer may produce an Engine-admissible RenderDocument.
+RW-T15-S1-003	59	3	SECURITY_FAULT	Web and client feedback is non-authoritative and cannot submit documents or digests, bypass admission, or call Engine.
+RW-T15-S1-004	60	1	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	No formal MaterializedScene, MaterializedTree, or second static language exists between DesignDSL and RenderDocument.
+RW-T15-S1-005	60	2	SECURITY_FAULT	A request builder is private, transient, nonpersistent, noncacheable, nonpublic, and identityless.
+RW-T15-S1-006	60	3	WIRE_CANONICAL_DIGEST	Only one immutable RenderDocument is sealed after complete success.
+RW-T15-S1-007	61	1	SECURITY_FAULT	RenderDocument is a request-scoped Renderer-only handoff, not an Artifact, Workspace item, audit object, or download.
+RW-T15-S1-008	61	2	SECURITY_FAULT	Public Render or Preview returns only a RenderOutput description or structured problem.
+RW-T15-S1-009	61	3	WIRE_CANONICAL_DIGEST	Future static-document export requires a new contract without leases and internal identities.
+RW-T15-S1-010	62	1	ASSET_CAPABILITY_CONCURRENCY	v1 never caches or reuses RenderDocument across requests or caches RenderOutput across requests.
+RW-T15-S1-011	62	2	RENDERER_OUTPUT	Every successful Evaluation enters Engine.
+RW-T15-S1-012	62	3	SECURITY_FAULT	A future cache cannot skip current admission, capability demand, or Asset current selection.
+RW-T15-S2-001	66	1	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	Evaluation stages are a strict total order and any failed stage blocks every later stage.
+RW-T15-S2-002	68	1	SECURITY_FAULT	Stage one authenticates and admits scope, strict request envelope, and outer capacity.
+RW-T15-S2-003	69	1	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	Stage two resolves root current and integrity-gates every candidate before reading TemplateRefs and freezing closure.
+RW-T15-S2-004	70	1	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	Stage three revalidates every unique snapshot semantics, scope, DAG, dependencies, profiles, and lowering edge.
+RW-T15-S2-005	71	1	DESIGN_INPUT_EXPRESSION	Stage four validates RootDocument and constructs closed typed context and root Customs.
+RW-T15-S2-006	72	1	ASSET_CAPABILITY_CONCURRENCY	Stage five admits authored then external-public Asset atoms in canonical occurrence order.
+RW-T15-S2-007	73	1	ASSET_CAPABILITY_CONCURRENCY	Stage six gathers closure capability contracts and linearizes required CapabilityState.
+RW-T15-S2-008	74	1	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	Stage seven creates the root frame, lazily materializes, binds, and expands, and serially resolves Assets at consumers.
+RW-T15-S2-009	75	1	WIRE_CANONICAL_DIGEST	Stage eight seals the tree and manifest and forms capability, asset, result, and document digests.
+RW-T15-S2-010	76	1	RENDERER_OUTPUT	Stage nine constructs the Renderer Command and invokes Engine.
+RW-T15-S2-011	78	1	ASSET_CAPABILITY_CONCURRENCY	Any root or child current drift discards the entire closure attempt and retries from the root only.
+RW-T15-S2-012	78	2	SECURITY_FAULT	Closure cannot patch-read a child or mix temporal snapshots.
+RW-T15-S2-013	78	3	SECURITY_FAULT	Frozen retry exhaustion returns TEMPLATE_CLOSURE_UNSTABLE.
+RW-T15-S2-014	78	4	ASSET_CAPABILITY_CONCURRENCY	After freeze, Template current is never reread; Asset current remains per-occurrence linearized.
+RW-T15-S2-015	79	1	SECURITY_FAULT	Every Render distrusts readiness and current report and rechecks each snapshot under its permanent exact Profile.
+RW-T15-S2-016	79	2	SECURITY_FAULT	Lost support for an admitted Profile is an internal compatibility breach, not an automatic INVALID mutation.
+RW-T15-S2-017	80	1	WIRE_CANONICAL_DIGEST	Persisted DesignDSL is re-canonicalized and contentHash-checked before snapshot creation.
+RW-T15-S2-018	80	2	SECURITY_FAULT	A hash mismatch creates no snapshot, historical rewrite, or Evaluator payload.
+RW-T15-S3-001	84	1	SECURITY_FAULT	Closure, dependency, input, and Asset admission collect bounded problems in their own fixed canonical order.
+RW-T15-S3-002	84	2	SECURITY_FAULT	At the shared cap append PROBLEM_LIMIT_REACHED, stop the current stage, and never enter the next.
+RW-T15-S3-003	84	3	SECURITY_FAULT	Unsafe malformed, hash, or Profile failures stop after one problem.
+RW-T15-S3-004	85	1	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	After state creation, the first demanded ValueSource, Definition, Binding, Capability, property, Asset, or capacity error terminates Evaluation.
+RW-T15-S3-005	85	2	SECURITY_FAULT	A runtime error triggers no later Capability, Resolver, or lowering and no partial document.
+RW-T15-S3-006	86	1	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	Product semantics are one deterministic serial trace.
+RW-T15-S3-007	86	2	ASSET_CAPABILITY_CONCURRENCY	Parallel preparation is allowed only when demand, budget, error, selection, manifest, and tree observables remain serial-equivalent.
+RW-T15-S3-008	86	3	SECURITY_FAULT	Thread completion order has no semantic effect.
+RW-T15-S3-009	87	1	DESIGN_INPUT_EXPRESSION	A Definition lazily memoizes success or failure within its exact lexical frame.
+RW-T15-S3-010	87	2	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	One logical position is evaluated once.
+RW-T15-S3-011	87	3	SECURITY_FAULT	A runtime failure affects the request only, not readiness, revision, or projection.
+RW-T15-S4-001	91	1	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	Ordinary Node consumer order is render, placement, visible, opacity, transform, kind properties, and children DFS.
+RW-T15-S4-002	91	2	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	Canvas order is root geometry and bleed, background, and children DFS.
+RW-T15-S4-003	91	3	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	Composite, Run, Point, Command, and Track values consume in catalog order.
+RW-T15-S4-004	91	4	SECURITY_FAULT	JSON member, binding array, or bindingId order cannot change runtime order.
+RW-T15-S4-005	92	1	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	Repeat, Conditional, and TemplateUse use their frozen specialized orders.
+RW-T15-S4-006	92	2	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	render:false, false Conditional, zero Repeat, and SKIP prune before later binding, descendant, capability, and Asset work.
+RW-T15-S4-007	92	3	SECURITY_FAULT	visible:false and opacity:0 do not prune and retain evaluation, resource, and layout failures.
+RW-T15-S4-008	93	1	DESIGN_INPUT_EXPRESSION	Evaluator builds the complete typed static property tree and expands semantic defaults.
+RW-T15-S4-009	93	2	DESIGN_INPUT_EXPRESSION	Evaluator preserves proof of author-materialized leaves.
+RW-T15-S4-010	93	3	DESIGN_INPUT_EXPRESSION	Binding overlays only existing author-materialized targets allowed by Policy.
+RW-T15-S4-011	93	4	SECURITY_FAULT	Default expansion cannot create a bindable target.
+RW-T15-S4-012	93	5	DESIGN_INPUT_EXPRESSION	Post-overlay revalidates leaf, composite, placement, and Node aggregate.
+RW-T15-S4-013	93	6	SECURITY_FAULT	ABSENT, error, type, or validation failure never falls back to baseline.
+RW-T15-S4-014	94	1	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	A Node resolves Assets only after all concrete properties pass post-binding validation.
+RW-T15-S4-015	94	2	ASSET_CAPABILITY_CONCURRENCY	Asset occurrences resolve serially in property and Run order before child DFS.
+RW-T15-S4-016	94	3	SECURITY_FAULT	A Node validation failure signs no Asset lease.
+RW-T15-S4-017	95	1	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	True Conditional lowers to an appearance-free frame; Repeat containers and items lower to stack or grid and PACK placement.
+RW-T15-S4-018	95	2	SECURITY_FAULT	Synthetic role stays sidecar-only and RenderDocument has no synthetic marker.
+RW-T15-S5-001	99	1	DESIGN_INPUT_EXPRESSION	Post-binding semantics validate in authored units with arbitrary precision before lowering.
+RW-T15-S5-002	99	2	WIRE_CANONICAL_DIGEST	Lowering computes exact pt equal to mm times 360 divided by 127.
+RW-T15-S5-003	99	3	WIRE_CANONICAL_DIGEST	pt, unitless, and degree values quantize once to six decimals HALF_EVEN and normalize negative zero.
+RW-T15-S5-004	99	4	DESIGN_INPUT_EXPRESSION	Actual RenderDSL values are rechecked for ranges, sign, min and max, finiteness, and pre-layout aggregates.
+RW-T15-S5-005	100	1	SECURITY_FAULT	Quantization never repairs an authored error.
+RW-T15-S5-006	100	2	SECURITY_FAULT	A quantization-caused zero, overflow, or contract failure terminates Evaluation.
+RW-T15-S5-007	100	3	LAYOUT_SHAPING	Engine cannot redo semantic rounding or recompute from authored mm.
+RW-T15-S5-008	101	1	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	Evaluator rejects only contradictions knowable without layout.
+RW-T15-S5-009	101	2	LAYOUT_SHAPING	The exact Layout Profile Engine uniquely determines final geometry and measure-dependent constraints.
+RW-T15-S5-010	101	3	SECURITY_FAULT	Java cannot pre-layout, emit final geometry, text, glyph, or scene, or run a second layout algorithm.
+RW-T15-S5-011	102	1	SECURITY_FAULT	A legal final-layout constraint failure is a request error and does not alter readiness.
+RW-T15-S5-012	102	2	SECURITY_FAULT	An Engine-detected malformed, dynamic, or manifest residue is an internal RenderDocument breach.
+RW-T15-S6-001	106	1	WIRE_CANONICAL_DIGEST	Command, RenderDocument, and Layout Profile are three independent exact v1 contracts.
+RW-T15-S6-002	106	2	WIRE_CANONICAL_DIGEST	The new contracts claim no old Haibo compatibility and never silently downgrade.
+RW-T15-S6-003	107	1	WIRE_CANONICAL_DIGEST	RenderDocument is UTF-8 strict JSON rejecting duplicates, unknowns, null, and noncanonical scalars.
+RW-T15-S6-004	107	2	WIRE_CANONICAL_DIGEST	RenderDocument top level is the exact closed dslVersion, layoutProfile, canvas, and resources envelope.
+RW-T15-S6-005	118	1	SECURITY_FAULT	The top level excludes request, deadline, output, business, Evaluation, and digest metadata.
+RW-T15-S6-006	118	2	WIRE_CANONICAL_DIGEST	Execution facts belong only in Command or Rendering internals.
+RW-T15-S6-007	119	1	WIRE_CANONICAL_DIGEST	The static Node kind union is exactly the frozen list.
+RW-T15-S6-008	119	2	WIRE_CANONICAL_DIGEST	Canvas is root-only and compositionViewport is lowering-only.
+RW-T15-S6-009	119	3	SECURITY_FAULT	Repeat, Conditional, and TemplateUse are illegal in RenderDSL.
+RW-T15-S6-010	120	1	WIRE_CANONICAL_DIGEST	Every kind is a closed lowerCamel discriminator union without a generic property bag.
+RW-T15-S6-011	120	2	WIRE_CANONICAL_DIGEST	The versioned RenderNodeContractCatalog explicitly defines each approved lowering edge.
+RW-T15-S6-012	120	3	WIRE_CANONICAL_DIGEST	Lowering allows only frozen unit, resource, authored-field, structure, and default transformations.
+RW-T15-S6-013	120	4	WIRE_CANONICAL_DIGEST	Java sealer and Rust parser consume the same machine contract and corpus, not handwritten drifting switches.
+RW-T15-S6-014	121	1	WIRE_CANONICAL_DIGEST	Root Canvas and other Node closed fields are exactly frozen.
+RW-T15-S6-015	121	2	WIRE_CANONICAL_DIGEST	All defaults expand and authored-only IDs, display, bindings, and render are removed.
+RW-T15-S6-016	122	1	WIRE_CANONICAL_DIGEST	RenderDSL Placement is the closed ABSOLUTE, STACK, and GRID union with frozen rules and pt fields.
+RW-T15-S6-017	122	2	SECURITY_FAULT	PACK must disappear during lowering.
+RW-T15-S6-018	123	1	LAYOUT_SHAPING	compositionViewport permanently implies CONTAIN, CENTER, and source and host clipping.
+RW-T15-S6-019	123	2	WIRE_CANONICAL_DIGEST	compositionViewport sourceCanvas has exact closed fields and no bleed.
+RW-T15-S6-020	123	3	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	Viewport and sourceCanvas occurrences map to the use host and child Canvas background.
+RW-T15-S7-001	127	1	WIRE_CANONICAL_DIGEST	Seal assigns continuous uint64 preorder ordinals to every final real, synthetic, and sourceCanvas Node.
+RW-T15-S7-002	127	2	WIRE_CANONICAL_DIGEST	occurrenceId wire is rwocc_ plus 16 zero-padded lowercase hexadecimal digits.
+RW-T15-S7-003	127	3	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	Viewport traversal visits sourceCanvas before its children; pruned content has no ordinal.
+RW-T15-S7-004	127	4	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	visible:false, opacity:0, and empty Nodes retain ordinals.
+RW-T15-S7-005	128	1	SECURITY_FAULT	Engine sees only opaque occurrenceId.
+RW-T15-S7-006	128	2	SECURITY_FAULT	Author and resource backreferences exist only in the bounded request sidecar.
+RW-T15-S7-007	128	3	SECURITY_FAULT	The sidecar is destroyed and excluded from document, identity, cache, log, and history.
+RW-T15-S7-008	129	1	WIRE_CANONICAL_DIGEST	Image and each Text Run require their respective resourceId field.
+RW-T15-S7-009	129	2	SECURITY_FAULT	Nodes inline no URL, descriptor, or resource object.
+RW-T15-S7-010	129	3	ASSET_CAPABILITY_CONCURRENCY	Each actual resource property uses a unique resourceId even for identical content.
+RW-T15-S7-011	130	1	WIRE_CANONICAL_DIGEST	resources preserve resolve encounter order and exact Ticket13 closed fields.
+RW-T15-S7-012	130	2	SECURITY_FAULT	The manifest excludes Asset, content, scope, and Template identities.
+RW-T15-S7-013	131	1	WIRE_CANONICAL_DIGEST	Tree references and manifest entries are an exact one-to-one bijection.
+RW-T15-S7-014	131	2	SECURITY_FAULT	Missing, unused, duplicate, collision, kind, or count mismatch fails seal; no merge or prefetch residue remains.
+RW-T15-S8-001	135	1	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	DOCUMENT_SEAL begins only after Evaluation and Asset resolution succeed.
+RW-T15-S8-002	135	2	WIRE_CANONICAL_DIGEST	Precommit seal validates root, kinds, content, defaults, numbers, ordinals, manifest, resources, leases, and identity residue.
+RW-T15-S8-003	135	3	WIRE_CANONICAL_DIGEST	A capped counting writer validates only RenderDocument-owned capacities before commit.
+RW-T15-S8-004	135	4	WIRE_CANONICAL_DIGEST	Canonical bytes and digest commit atomically only after all checks pass.
+RW-T15-S8-005	135	5	LAYOUT_SHAPING	Grapheme, glyph, line, paint, and clip budgets belong to Engine, not document seal.
+RW-T15-S8-006	136	1	SECURITY_FAULT	Seal-discovered Evaluator structural residue is an internal lowering breach.
+RW-T15-S8-007	136	2	SECURITY_FAULT	An ordinary runtime or capacity failure returns its domain code before atomic commit.
+RW-T15-S8-008	136	3	SECURITY_FAULT	Document capacity specifically returns RENDER_DOCUMENT_LIMIT_EXCEEDED.
+RW-T15-S8-009	136	4	SECURITY_FAULT	No preseal builder or canonical prefix reaches Engine.
+RW-T15-S8-010	137	1	RENDERER_OUTPUT	An empty Canvas is valid and outputs its explicit background or transparent surface.
+RW-T15-S8-011	137	2	SECURITY_FAULT	An empty Canvas inserts no placeholder.
+RW-T15-S8-012	138	1	SECURITY_FAULT	Any preseal failure discards the builder, unsealed bytes, and sidecar and never calls Engine.
+RW-T15-S8-013	138	2	ASSET_CAPABILITY_CONCURRENCY	Committed state and Resolver records remain only to fixed expiry for unknown-commit safety.
+RW-T15-S8-014	138	3	SECURITY_FAULT	Failure records are not resampled, deleted, or renewed and form no partial digest, document, or history.
+RW-T15-S8-015	138	4	SECURITY_FAULT	Only allowed aggregate counts, stable code, and timing remain.
+RW-T15-S9-001	142	1	WIRE_CANONICAL_DIGEST	The Render canonical Profile fixes UTF-8 member ordering, Design string rules, shortest integers, and six-decimal plain numbers.
+RW-T15-S9-002	142	2	WIRE_CANONICAL_DIGEST	Canonical decimal forbids exponent, plus, trailing zero, negative zero, and nonfinite values.
+RW-T15-S9-003	143	1	WIRE_CANONICAL_DIGEST	All semantic arrays preserve frozen order and never set-sort.
+RW-T15-S9-004	143	2	SECURITY_FAULT	The canonical writer never repairs, guesses, or deletes invalid values.
+RW-T15-S9-005	144	1	WIRE_CANONICAL_DIGEST	renderDocumentDigest uses frozen domain-separated SHA-256 over complete canonical bytes including lease URL and expiry.
+RW-T15-S9-006	144	2	WIRE_CANONICAL_DIGEST	The Command carries the digest and Engine verifies it.
+RW-T15-S9-007	145	1	SECURITY_FAULT	Document digest is transport integrity only and excluded from identity, cache, log, public response, and persistence.
+RW-T15-S9-008	145	2	ASSET_CAPABILITY_CONCURRENCY	The same active request with the same frozen inputs, state, selections, and leases rebuilds a byte-identical document and digest.
+RW-T15-S9-009	145	3	WIRE_CANONICAL_DIGEST	A new request may differ because a new lease changes bytes.
+RW-T15-S10-001	149	1	WIRE_CANONICAL_DIGEST	Identity objects reuse frozen Design primitive canonical rules without metadata normalization or set inference.
+RW-T15-S10-002	149	2	WIRE_CANONICAL_DIGEST	Only explicitly named arrays sort; all others retain semantic order and objects are closed and nonnull.
+RW-T15-S10-003	150	1	WIRE_CANONICAL_DIGEST	closureDigest uses frozen domain-separated SHA-256 over the exact closure manifest.
+RW-T15-S10-004	150	2	WIRE_CANONICAL_DIGEST	The closure manifest binds scope and root, sorted unique snapshot facts, and sorted authored-edge facts.
+RW-T15-S10-005	150	3	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	Unreachable edges remain and a diamond snapshot appears once.
+RW-T15-S10-006	150	4	WIRE_CANONICAL_DIGEST	Readiness, display, and database row facts are excluded from closure digest.
+RW-T15-S10-007	151	1	WIRE_CANONICAL_DIGEST	admittedInputDigest hashes the exact closed typed schema, root, and custom input object.
+RW-T15-S10-008	151	2	WIRE_CANONICAL_DIGEST	Root includes only declared PRESENT fields, customs sort by definitionId, and ordinary arrays retain order.
+RW-T15-S10-009	151	3	WIRE_CANONICAL_DIGEST	Value contracts determine canonical wire without redundant type tags.
+RW-T15-S10-010	151	4	SECURITY_FAULT	ABSENT, unknown, loser, private, raw lexical, order, and proof facts are excluded.
+RW-T15-S10-011	152	1	WIRE_CANONICAL_DIGEST	evaluationFingerprint hashes the exact closed scope, authorization, closure, input, contract, and budget object.
+RW-T15-S10-012	152	2	SECURITY_FAULT	Authorization digest binds subject and decisions without a raw token.
+RW-T15-S10-013	152	3	WIRE_CANONICAL_DIGEST	Contract lists sort canonically and budget contains the full effective vector.
+RW-T15-S10-014	153	1	ASSET_CAPABILITY_CONCURRENCY	renderRequestId is a recovery record key only and is excluded from the fingerprint.
+RW-T15-S10-015	153	2	WIRE_CANONICAL_DIGEST	State, results, Asset current, lease, output, deadline, and timing are excluded from the fingerprint.
+RW-T15-S10-016	153	3	SECURITY_FAULT	The fingerprint is for same-request recovery and conflict only and is never public or logged.
+RW-T15-S10-017	153	4	WIRE_CANONICAL_DIGEST	All identity hashes use sha256 plus 64 lowercase hexadecimal digits.
+RW-T15-S10-018	154	1	WIRE_CANONICAL_DIGEST	evaluationResultDigest exists only after successful document seal.
+RW-T15-S10-019	154	2	WIRE_CANONICAL_DIGEST	The result digest hashes the exact scope, closure, input, contract, capability, and Asset result object.
+RW-T15-S10-020	154	3	WIRE_CANONICAL_DIGEST	Subject, request, budget, lease, document digest, and output parameters are excluded.
+RW-T15-S10-021	155	1	WIRE_CANONICAL_DIGEST	The five request, fingerprint, result, document, and content identities are noninterchangeable.
+RW-T15-S10-022	155	2	SECURITY_FAULT	A future output cache requires a completed result digest plus exact Renderer and Output Profiles and independent authorization and scope partition.
+RW-T15-S11-001	159	1	WIRE_CANONICAL_DIGEST	Renderer Command closed fields are exactly frozen.
+RW-T15-S11-002	159	2	RENDERER_OUTPUT	One Command outputs exactly one complete root Canvas PNG or JPEG.
+RW-T15-S11-003	159	3	WIRE_CANONICAL_DIGEST	PNG and JPEG output objects and 96 and 90 defaults are exact and expanded before Command construction.
+RW-T15-S11-004	159	4	WIRE_CANONICAL_DIGEST	Command, document, Layout, Renderer, and Output Profiles are independently exact.
+RW-T15-S11-005	159	5	SECURITY_FAULT	The Command contains no Template, Evaluation, Capability, or Asset business identity.
+RW-T15-S11-006	160	1	WIRE_CANONICAL_DIGEST	Canonical Command and domain-separated digest uniquely define same-request join, replay, conflict, and cancel.
+RW-T15-S11-007	160	2	ASSET_CAPABILITY_CONCURRENCY	An unknown transport result may resend only the same request and canonical Command before deadline with valid leases.
+RW-T15-S11-008	160	3	SECURITY_FAULT	Retry cannot reseal, renew, resolve current, rebuild state, or extend the deadline.
+RW-T15-S11-009	160	4	SECURITY_FAULT	A lost registry fails; a new request repeats the full Evaluation.
+RW-T15-S11-010	161	1	SECURITY_FAULT	Engine validates authorization, Command, Profile, registry, document, and digest before resources or layout.
+RW-T15-S11-011	161	2	SECURITY_FAULT	Engine cannot read the original Render request, Template current, DesignDSL, or sidecar.
+RW-T15-S11-012	161	3	WIRE_CANONICAL_DIGEST	Cancel, registry, seal, and transient outcome never change Evaluation identity.
+RW-T15-S12-001	165	1	SECURITY_FAULT	Capacity axes cover all frozen closure, admission, runtime, resource, document, and diagnostic dimensions.
+RW-T15-S12-002	165	2	LAYOUT_SHAPING	Grapheme, glyph, line, paint, clip, and raster counts are Engine-owned, not preseal document fields.
+RW-T15-S12-003	166	1	SECURITY_FAULT	Dynamic capacity reserves atomically before frame, Node, resource, allocation, or external call.
+RW-T15-S12-004	166	2	SECURITY_FAULT	An excess fails immediately without truncation or skipping.
+RW-T15-S12-005	166	3	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	One logical position counts once per Evaluation.
+RW-T15-S12-006	166	4	ASSET_CAPABILITY_CONCURRENCY	A retry consumes separate attempt, physical, and deadline budget without resetting semantic totals.
+RW-T15-S12-007	166	5	ASSET_CAPABILITY_CONCURRENCY	Only a new renderRequestId starts fresh budgets.
+RW-T15-S12-008	167	1	SECURITY_FAULT	A statically provable excess fails before CapabilityState.
+RW-T15-S12-009	167	2	SECURITY_FAULT	A dynamic excess returns the owner code with zero RenderDocument.
+RW-T15-S12-010	167	3	SECURITY_FAULT	OOM, scheduler behavior, or downstream defaults cannot substitute for contract limits.
+RW-T15-S13-001	171	1	SECURITY_FAULT	Public problem stage is one of the nine frozen closed stages.
+RW-T15-S13-002	171	2	SECURITY_FAULT	The capacity catalog contains the nine frozen domain capacity codes and reuses more specific existing codes.
+RW-T15-S13-003	171	3	SECURITY_FAULT	Encoding and geometry use their distinct non-capacity codes.
+RW-T15-S13-004	171	4	SECURITY_FAULT	Specific domain errors never collapse to generic EVALUATION_FAILED.
+RW-T15-S13-005	171	5	SECURITY_FAULT	An internal hash, Profile, document, or manifest breach publicly folds to RENDER_INTERNAL_ERROR plus a redacted operations alert.
+RW-T15-S13-006	172	1	WIRE_CANONICAL_DIGEST	A public problem has the exact {code,stage,safeLocation,parameters} base shape.
+RW-T15-S13-007	172	2	SECURITY_FAULT	Capacity parameters expose only closed limitId, not actual, input, or omitted data.
+RW-T15-S13-008	172	3	SECURITY_FAULT	Every limit oracle freezes code, stage, reservation, and zero-write, zero-document, and zero-output boundaries.
+RW-T15-S13-009	172	4	SECURITY_FAULT	An admission locator may expose an authorized Template, revision, and canonical pointer.
+RW-T15-S13-010	172	5	SECURITY_FAULT	Runtime or Engine initially exposes only opaque occurrence, resource, and safe property identity.
+RW-T15-S13-011	173	1	SECURITY_FAULT	Sidecar author projection requires corresponding Template read and segment authorization.
+RW-T15-S13-012	173	2	SECURITY_FAULT	An unreadable child segment is redacted; Asset identity additionally follows asset.read.
+RW-T15-S13-013	174	1	SECURITY_FAULT	Problems, logs, traces, and metrics prohibit business, content, input, result, Asset, child, stack, and provider raw data.
+RW-T15-S13-014	174	2	SECURITY_FAULT	Metrics labels are limited to bounded stage, code, Profile, and status.
+RW-T15-S14-001	178	1	WIRE_CANONICAL_DIGEST	Java Evaluator and sealer and Rust parser and validator independently replay the shared seam corpus before implementation readiness.
+RW-T15-S14-002	178	2	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	The shared corpus covers all listed structure, ordering, binding, quantization, manifest, residue, malformed, geometry, and breach classifications.
+RW-T15-S14-003	178	3	DESIGN_INPUT_EXPRESSION	The Java authority and independent TypeScript implementation replay authoring Design, Input, and Expression vectors.
+RW-T15-S14-004	178	4	SECURITY_FAULT	Executors need not replay semantics outside their seam.
+RW-T15-S14-005	179	1	WIRE_CANONICAL_DIGEST	The machine-readable RenderNodeContract and byte vectors are cross-language authority.
+RW-T15-S14-006	179	2	SECURITY_FAULT	Same-named classes, screenshots, legacy scenes, or one-sided unit tests cannot substitute for the authority.
+RW-T15-S14-007	180	1	SECURITY_FAULT	v1 excludes all listed formal IR, partial or streamed documents, prelayout, resume, reuse, public upload or download, storage, loose wire, plugin, fallback, callback, skip, placeholder, default-font, and partial-output features.
+RW-T15-S14-008	181	1	SECURITY_FAULT	Ticket15 creates no product model, client, API, storage, cache, Engine adapter, or placeholder implementation.

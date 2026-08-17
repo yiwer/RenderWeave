@@ -1,0 +1,56 @@
+{
+  "artifactVersion": "renderweave-design-input-expression-generator-implementation/1.0",
+  "generatorProfile": "renderweave-design-input-expression-generator/1.0",
+  "status": "FROZEN_GOLDENS_PRESENT_STATIC_ONLY",
+  "implementationRevision": "design-input-expression-fixture-generator/1.0",
+  "runtime": "Node.js >=24",
+  "entrypoint": {
+    "path": "design-input-expression/generate-design-input-expression-fixtures.mjs",
+    "sha256": "sha256:32e6bfc5b6dbd9dbd21b238b1b9a31027f145934830ec9b87b1cce8227370616",
+    "byteLength": 22455
+  },
+  "baseline": {
+    "path": "design-input-expression/baseline-v1.json",
+    "sha256": "sha256:30bd8a0ff27310a89c1a837a0dd7b056556ab9401b3c9d549010ec035e5980ef",
+    "byteLength": 934
+  },
+  "fixtureContract": {
+    "path": "design-input-expression/fixture-contract-v1.json",
+    "sha256": "sha256:ee7bb2dff80686dabdd9c5583d01d8b0159930fa75a0f70178aa92bbf125cc31",
+    "byteLength": 3808
+  },
+  "observationAdapter": {
+    "path": "design-input-expression/observation-adapter-v1.json",
+    "sha256": "sha256:e46af856d38c1844d1c3b222479e25208c0f5297caabdfea16ccd779301d77e9",
+    "byteLength": 5368
+  },
+  "scenarioCatalog": {
+    "path": "design-input-expression/capacity-scenarios-v1.json",
+    "sha256": "sha256:0da23ce533b419cd6d4c7e5e01917d7864c29f058c03dadf25bd55d727282fbf",
+    "byteLength": 618941
+  },
+  "goldenVectors": {
+    "path": "design-input-expression/generator-goldens-v1.json",
+    "sha256": "sha256:de59d7a3f8f953c77115060a076e6ea73d697f7bf9aa838a813c18a865589498",
+    "byteLength": 648280
+  },
+  "targetManifest": {
+    "path": "design-input-expression/generator-target-manifest-v1.json",
+    "sha256": "sha256:2de5c33e7f03c3c1354426882960200344e232ad12ec12d5eae20d80483760c8",
+    "byteLength": 47584
+  },
+  "omittedExpectationKeys": [
+    "expectedTerminal",
+    "expectedAssertions",
+    "plannedAssertions",
+    "plannedOracleId",
+    "requirementIds",
+    "resolvedCode",
+    "resolvedKind"
+  ],
+  "productExecutionAllowed": false,
+  "environmentReadsAllowed": false,
+  "networkReadsAllowed": false,
+  "currentTimeReadsAllowed": false,
+  "hiddenDefaultsAllowed": false
+}

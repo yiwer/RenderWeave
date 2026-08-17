@@ -1,0 +1,13 @@
+{
+  "artifactVersion": "renderweave-editor-input-fixture/1.0",
+  "candidateId": "EDC::J07::016",
+  "executionClass": "EXEC::EDITOR_AUTOMATED::1.0",
+  "baselineId": "EditorAfterCapacityHardErrorResponse",
+  "parameters": {},
+  "actionScript": [
+    {
+      "action": "ATTEMPT_INVALID_CONFIRMATION",
+      "parameters": {}
+    }
+  ]
+}

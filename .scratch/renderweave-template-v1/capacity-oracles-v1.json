@@ -1,0 +1,548 @@
+{
+  "artifactVersion": "renderweave-capacity-oracles/1.0",
+  "budgetMatrix": "capacity-budgets-v1.json",
+  "status": "planning-frozen",
+  "limitIdRule": "<groupName>.<limitName> for every entry under groups.<groupName>.limits",
+  "resolutionRule": "Merge the exact groupDefaults[groupName] object with overrides[limitId] when present. No other fallback or wildcard is allowed.",
+  "requiredResolvedFields": [
+    "kind",
+    "code",
+    "contractStage",
+    "publicRenderStage",
+    "reservationPoint",
+    "zeroBoundary"
+  ],
+  "publicCapacityProblem": {
+    "parameters": [
+      "limitId"
+    ],
+    "forbiddenParameters": [
+      "actual",
+      "observed",
+      "inputBytes",
+      "rawValue",
+      "omittedContent",
+      "freeText"
+    ]
+  },
+  "zeroBoundaries": {
+    "ZERO_WRITE_AND_DOWNSTREAM": "No immutable Template or Asset write and no downstream Evaluation or RenderOutput.",
+    "ZERO_EVALUATION_DOCUMENT_OUTPUT": "No CapabilityState, Evaluation, RenderDocument, Engine Command, or RenderOutput.",
+    "ZERO_DOCUMENT_OUTPUT": "Already linearized request recovery records may remain, but no RenderDocument, Engine Command, or RenderOutput is produced.",
+    "ZERO_OUTPUT": "No image, trace, multipart response, or partial output is sealed or released.",
+    "BOUNDED_PROBLEM_PREFIX_ONLY": "Only the bounded ordinary problem prefix and one PROBLEM_LIMIT_REACHED marker may be returned.",
+    "NOT_READY_NO_ADMISSION": "The deployment cannot report READY and cannot accept execution for this exact target.",
+    "ALGORITHM_INVARIANT": "Violation is an implementation or profile compatibility failure, never a caller capacity problem."
+  },
+  "groupDefaults": {
+    "renderInput": {
+      "kind": "capacity",
+      "code": "RENDER_INPUT_LIMIT_EXCEEDED",
+      "contractStage": "RENDER_INPUT_ADMISSION",
+      "publicRenderStage": "INPUT_ADMISSION",
+      "reservationPoint": "before JSON allocation, grouping, last-wins selection, or value-level validation",
+      "zeroBoundary": "ZERO_EVALUATION_DOCUMENT_OUTPUT"
+    },
+    "problems": {
+      "kind": "diagnostic-collection",
+      "code": "PROBLEM_LIMIT_REACHED",
+      "contractStage": "BOUNDED_PROBLEM_COLLECTION",
+      "publicRenderStage": "ORIGINATING_STAGE",
+      "reservationPoint": "before appending each canonical ordinary problem; one marker reservation always remains",
+      "zeroBoundary": "BOUNDED_PROBLEM_PREFIX_ONLY"
+    },
+    "designDslParser": {
+      "kind": "capacity",
+      "code": "DESIGN_DSL_LIMIT_EXCEEDED",
+      "contractStage": "DESIGN_PARSE",
+      "publicRenderStage": "TEMPLATE_CLOSURE",
+      "reservationPoint": "before full model allocation, numeric expansion, dependency IO, or persisted write",
+      "zeroBoundary": "ZERO_WRITE_AND_DOWNSTREAM",
+      "trustedReadViolationCode": "RENDER_INTERNAL_ERROR"
+    },
+    "designDslSemantics": {
+      "kind": "capacity",
+      "code": "DESIGN_DSL_LIMIT_EXCEEDED",
+      "contractStage": "DESIGN_SEMANTIC_VALIDATION",
+      "publicRenderStage": "TEMPLATE_CLOSURE",
+      "reservationPoint": "before adding the bounded authored entity and before dependency IO or persisted write",
+      "zeroBoundary": "ZERO_WRITE_AND_DOWNSTREAM",
+      "trustedReadViolationCode": "RENDER_INTERNAL_ERROR"
+    },
+    "expression": {
+      "kind": "capacity",
+      "code": "EXPRESSION_LIMIT_EXCEEDED",
+      "contractStage": "EXPRESSION_PARSE_AND_STATIC_ANALYSIS",
+      "publicRenderStage": "TEMPLATE_CLOSURE",
+      "reservationPoint": "before AST, graph, case, input, list, or decimal operation admission and before lazy execution",
+      "zeroBoundary": "ZERO_WRITE_AND_DOWNSTREAM",
+      "trustedReadViolationCode": "RENDER_INTERNAL_ERROR"
+    },
+    "closureAndExpansion": {
+      "kind": "capacity",
+      "code": "EVALUATION_BUDGET_EXCEEDED",
+      "contractStage": "SERIAL_MATERIALIZATION",
+      "publicRenderStage": "MATERIALIZATION",
+      "reservationPoint": "before creating the next invocation, frame, occurrence, materialized node, generated entry, or logical operation",
+      "zeroBoundary": "ZERO_DOCUMENT_OUTPUT"
+    },
+    "renderDocument": {
+      "kind": "capacity",
+      "code": "RENDER_DOCUMENT_LIMIT_EXCEEDED",
+      "contractStage": "DOCUMENT_SEAL_COUNTING",
+      "publicRenderStage": "DOCUMENT_SEAL",
+      "reservationPoint": "before atomic canonical-byte and digest commit and before any Engine Command",
+      "zeroBoundary": "ZERO_DOCUMENT_OUTPUT"
+    },
+    "diagnostics": {
+      "kind": "capacity",
+      "code": "RENDER_DIAGNOSTIC_LIMIT_EXCEEDED",
+      "contractStage": "REQUEST_SIDECAR",
+      "publicRenderStage": "MATERIALIZATION",
+      "reservationPoint": "before adding the next sidecar entry or canonical sidecar byte",
+      "zeroBoundary": "ZERO_DOCUMENT_OUTPUT"
+    },
+    "geometry": {
+      "kind": "property-constraint",
+      "code": "DESIGN_PROPERTY_CONSTRAINT_INVALID",
+      "contractStage": "DESIGN_PROPERTY_AND_AGGREGATE_VALIDATION",
+      "publicRenderStage": "TEMPLATE_CLOSURE",
+      "reservationPoint": "before persisted write or Evaluation",
+      "zeroBoundary": "ZERO_WRITE_AND_DOWNSTREAM",
+      "trustedReadViolationCode": "RENDER_INTERNAL_ERROR"
+    },
+    "referenceDeployment": {
+      "kind": "ready-invariant",
+      "code": null,
+      "contractStage": "DEPLOYMENT_READY_CHECK",
+      "publicRenderStage": "NOT_APPLICABLE",
+      "reservationPoint": "before the Engine instance reports READY or accepts execution",
+      "zeroBoundary": "NOT_READY_NO_ADMISSION"
+    },
+    "assetsAndFetch": {
+      "kind": "capacity",
+      "code": "ASSET_BUDGET_EXCEEDED",
+      "contractStage": "ASSET_ADMISSION_AND_RESOLUTION",
+      "publicRenderStage": "ASSET_ADMISSION",
+      "reservationPoint": "before admitting the next authored or resolved Asset unit and before external fetch",
+      "zeroBoundary": "ZERO_DOCUMENT_OUTPUT"
+    },
+    "capabilityRuntime": {
+      "kind": "capacity",
+      "code": "CAPABILITY_BUDGET_EXCEEDED",
+      "contractStage": "CAPABILITY_FIRST_DEMAND",
+      "publicRenderStage": "MATERIALIZATION",
+      "reservationPoint": "before state allocation or returning the first result for the next total and kind demand",
+      "zeroBoundary": "ZERO_DOCUMENT_OUTPUT"
+    },
+    "rendererSurfaceAndOutput": {
+      "kind": "capacity",
+      "code": "OUTPUT_BUDGET_EXCEEDED",
+      "contractStage": "OUTPUT_PREFLIGHT",
+      "publicRenderStage": "ENGINE",
+      "engineStage": "OUTPUT_PREFLIGHT",
+      "reservationPoint": "before resource fetch, surface allocation, encoding, trace projection, or output seal as specified by the exact override",
+      "zeroBoundary": "ZERO_OUTPUT"
+    },
+    "deadlineAndRetention": {
+      "kind": "algorithm-invariant",
+      "code": null,
+      "contractStage": "REQUEST_CONTROL",
+      "publicRenderStage": "ENGINE",
+      "engineStage": "REQUEST_CONTROL",
+      "reservationPoint": "fixed in the effective Command or certified deployment before accepted execution",
+      "zeroBoundary": "ALGORITHM_INVARIANT"
+    },
+    "layoutFontAndRaster": {
+      "kind": "capacity",
+      "code": "LAYOUT_BUDGET_EXCEEDED",
+      "contractStage": "ENGINE_LAYOUT",
+      "publicRenderStage": "ENGINE",
+      "engineStage": "LAYOUT",
+      "reservationPoint": "before the next measure, layout, shaping, line, glyph, paint, or other exact engine unit",
+      "zeroBoundary": "ZERO_OUTPUT"
+    }
+  },
+  "overrides": {
+    "renderInput.contentEncoding": {
+      "kind": "enum-constraint",
+      "code": "RENDER_INPUT_CONTENT_ENCODING_UNSUPPORTED"
+    },
+    "designDslParser.canonicalBytes": {
+      "contractStage": "DESIGN_CANONICAL_COUNT",
+      "reservationPoint": "after bounded structure and normalization but before dependency IO; capped counting sink retains no complete output"
+    },
+    "closureAndExpansion.uniqueTemplateSnapshots": {
+      "code": "TEMPLATE_CLOSURE_LIMIT_EXCEEDED",
+      "contractStage": "TEMPLATE_CLOSURE_FREEZE",
+      "publicRenderStage": "TEMPLATE_CLOSURE",
+      "reservationPoint": "before adding the next unique TemplateSnapshot",
+      "zeroBoundary": "ZERO_EVALUATION_DOCUMENT_OUTPUT"
+    },
+    "closureAndExpansion.authoredTemplateRefEdges": {
+      "code": "TEMPLATE_CLOSURE_LIMIT_EXCEEDED",
+      "contractStage": "TEMPLATE_CLOSURE_FREEZE",
+      "publicRenderStage": "TEMPLATE_CLOSURE",
+      "reservationPoint": "before adding the next authored TemplateRef edge",
+      "zeroBoundary": "ZERO_EVALUATION_DOCUMENT_OUTPUT"
+    },
+    "closureAndExpansion.closureDepth": {
+      "code": "TEMPLATE_CLOSURE_LIMIT_EXCEEDED",
+      "contractStage": "TEMPLATE_CLOSURE_FREEZE",
+      "publicRenderStage": "TEMPLATE_CLOSURE",
+      "reservationPoint": "before descending to the next closure depth",
+      "zeroBoundary": "ZERO_EVALUATION_DOCUMENT_OUTPUT"
+    },
+    "closureAndExpansion.closureFreezeAttempts": {
+      "kind": "retry-bound",
+      "code": "TEMPLATE_CLOSURE_UNSTABLE",
+      "contractStage": "TEMPLATE_CLOSURE_FREEZE",
+      "publicRenderStage": "TEMPLATE_CLOSURE",
+      "reservationPoint": "before starting an additional complete closure freeze attempt",
+      "zeroBoundary": "ZERO_EVALUATION_DOCUMENT_OUTPUT"
+    },
+    "closureAndExpansion.closureCanonicalDesignBytes": {
+      "code": "TEMPLATE_CLOSURE_LIMIT_EXCEEDED",
+      "contractStage": "TEMPLATE_CLOSURE_FREEZE",
+      "publicRenderStage": "TEMPLATE_CLOSURE",
+      "reservationPoint": "before adding the next snapshot canonical-byte length",
+      "zeroBoundary": "ZERO_EVALUATION_DOCUMENT_OUTPUT"
+    },
+    "diagnostics.layoutTraceItems": {
+      "code": "RENDER_LAYOUT_TRACE_LIMIT_EXCEEDED",
+      "contractStage": "TRACE_PROJECTION",
+      "publicRenderStage": "ENGINE",
+      "engineStage": "TRACE_PROJECTION",
+      "reservationPoint": "before appending the next authorized trace item",
+      "zeroBoundary": "ZERO_OUTPUT"
+    },
+    "diagnostics.layoutTraceBytes": {
+      "code": "RENDER_LAYOUT_TRACE_LIMIT_EXCEEDED",
+      "contractStage": "TRACE_PROJECTION",
+      "publicRenderStage": "ENGINE",
+      "engineStage": "TRACE_PROJECTION",
+      "reservationPoint": "before appending canonical trace bytes",
+      "zeroBoundary": "ZERO_OUTPUT"
+    },
+    "assetsAndFetch.actualResolveOccurrences": {
+      "code": "RESOURCE_BUDGET_EXCEEDED",
+      "contractStage": "SERIAL_ASSET_RESOLUTION",
+      "publicRenderStage": "ASSET_RESOLUTION",
+      "reservationPoint": "before the next Resolver operation"
+    },
+    "assetsAndFetch.renderResourceEntries": {
+      "code": "RESOURCE_BUDGET_EXCEEDED",
+      "contractStage": "SERIAL_ASSET_RESOLUTION",
+      "publicRenderStage": "ASSET_RESOLUTION",
+      "reservationPoint": "before appending the next one-to-one RenderResource entry"
+    },
+    "assetsAndFetch.requestRawCacheBytes": {
+      "code": "RESOURCE_BUDGET_EXCEEDED",
+      "contractStage": "RESOURCE_PREPARATION",
+      "publicRenderStage": "ENGINE",
+      "engineStage": "RESOURCE_PREPARATION",
+      "reservationPoint": "before retaining verified request-local raw bytes",
+      "zeroBoundary": "ZERO_OUTPUT"
+    },
+    "assetsAndFetch.requestDecodedCacheBytes": {
+      "code": "RESOURCE_BUDGET_EXCEEDED",
+      "contractStage": "RESOURCE_PREPARATION",
+      "publicRenderStage": "ENGINE",
+      "engineStage": "RESOURCE_PREPARATION",
+      "reservationPoint": "before retaining decoded request-local RGBA8 bytes",
+      "zeroBoundary": "ZERO_OUTPUT"
+    },
+    "assetsAndFetch.physicalFetchBytesIncludingRetries": {
+      "code": "RESOURCE_BUDGET_EXCEEDED",
+      "contractStage": "RESOURCE_PREPARATION",
+      "publicRenderStage": "ENGINE",
+      "engineStage": "RESOURCE_PREPARATION",
+      "reservationPoint": "before accepting the next fetched byte chunk including retry bodies",
+      "zeroBoundary": "ZERO_OUTPUT"
+    },
+    "assetsAndFetch.acceptedImageBytesPerContent": {
+      "code": "ASSET_CONTENT_LIMIT_EXCEEDED",
+      "contractStage": "ASSET_CONTENT_ADMISSION",
+      "publicRenderStage": "ASSET_ADMISSION"
+    },
+    "assetsAndFetch.acceptedImageEdgePixelsPerContent": {
+      "code": "ASSET_CONTENT_LIMIT_EXCEEDED",
+      "contractStage": "ASSET_CONTENT_ADMISSION",
+      "publicRenderStage": "ASSET_ADMISSION"
+    },
+    "assetsAndFetch.acceptedImagePixelsPerContent": {
+      "code": "ASSET_CONTENT_LIMIT_EXCEEDED",
+      "contractStage": "ASSET_CONTENT_ADMISSION",
+      "publicRenderStage": "ASSET_ADMISSION"
+    },
+    "assetsAndFetch.acceptedFontBytesPerContent": {
+      "code": "ASSET_CONTENT_LIMIT_EXCEEDED",
+      "contractStage": "ASSET_CONTENT_ADMISSION",
+      "publicRenderStage": "ASSET_ADMISSION"
+    },
+    "capabilityRuntime.staticCapabilitySources": {
+      "contractStage": "CAPABILITY_STATIC_ADMISSION",
+      "publicRenderStage": "TEMPLATE_CLOSURE",
+      "reservationPoint": "before adding the next static capability source",
+      "zeroBoundary": "ZERO_EVALUATION_DOCUMENT_OUTPUT"
+    },
+    "capabilityRuntime.capabilityStateRecordBytes": {
+      "contractStage": "CAPABILITY_STATE_INITIALIZATION",
+      "publicRenderStage": "CAPABILITY_STATE",
+      "reservationPoint": "before committing CapabilityState",
+      "zeroBoundary": "ZERO_DOCUMENT_OUTPUT"
+    },
+    "capabilityRuntime.initializationAttempts": {
+      "kind": "retry-bound",
+      "code": "CAPABILITY_STATE_UNAVAILABLE",
+      "contractStage": "CAPABILITY_STATE_INITIALIZATION",
+      "publicRenderStage": "CAPABILITY_STATE",
+      "reservationPoint": "before starting an additional initialization attempt"
+    },
+    "capabilityRuntime.randomRejectionAttempts": {
+      "kind": "retry-bound",
+      "code": "CAPABILITY_RESULT_INVALID",
+      "contractStage": "CAPABILITY_FIRST_DEMAND",
+      "publicRenderStage": "MATERIALIZATION",
+      "reservationPoint": "before starting the next HMAC rejection-sampling counter attempt",
+      "zeroBoundary": "ZERO_DOCUMENT_OUTPUT"
+    },
+    "rendererSurfaceAndOutput.rgba8SurfaceBytes": {
+      "code": "RASTER_BUDGET_EXCEEDED",
+      "contractStage": "OUTPUT_PREFLIGHT",
+      "engineStage": "OUTPUT_PREFLIGHT",
+      "reservationPoint": "before allocating the RGBA8 surface"
+    },
+    "rendererSurfaceAndOutput.decoderScratchBytes": {
+      "code": "RESOURCE_BUDGET_EXCEEDED",
+      "contractStage": "RESOURCE_PREPARATION",
+      "engineStage": "RESOURCE_PREPARATION",
+      "reservationPoint": "before decoder scratch allocation"
+    },
+    "rendererSurfaceAndOutput.encoderScratchBytes": {
+      "contractStage": "ENCODING",
+      "engineStage": "ENCODING",
+      "reservationPoint": "before encoder scratch allocation"
+    },
+    "rendererSurfaceAndOutput.liveRequestRamBytes": {
+      "kind": "admission-reservation",
+      "code": "RENDER_ENGINE_BUSY",
+      "contractStage": "QUEUE_ADMISSION",
+      "engineStage": "COMMAND_ADMISSION",
+      "reservationPoint": "before atomically acquiring a FIFO queue position and accepted execution",
+      "zeroBoundary": "ZERO_OUTPUT"
+    },
+    "rendererSurfaceAndOutput.requestEphemeralBytes": {
+      "code": "OUTPUT_BUDGET_EXCEEDED",
+      "contractStage": "OUTPUT_PREFLIGHT",
+      "engineStage": "OUTPUT_PREFLIGHT",
+      "reservationPoint": "before creating or extending request-local temporary storage"
+    },
+    "rendererSurfaceAndOutput.multipartFramingAndHeaderBytes": {
+      "kind": "capacity",
+      "code": "RENDER_LAYOUT_TRACE_LIMIT_EXCEEDED",
+      "contractStage": "TRACE_PROJECTION",
+      "engineStage": "TRACE_PROJECTION",
+      "reservationPoint": "before appending multipart framing or headers",
+      "zeroBoundary": "ZERO_OUTPUT"
+    },
+    "rendererSurfaceAndOutput.traceMultipartBytes": {
+      "kind": "capacity",
+      "code": "RENDER_LAYOUT_TRACE_LIMIT_EXCEEDED",
+      "contractStage": "TRACE_PROJECTION",
+      "engineStage": "TRACE_PROJECTION",
+      "reservationPoint": "before atomic multipart output seal",
+      "zeroBoundary": "ZERO_OUTPUT"
+    },
+    "deadlineAndRetention.totalDeadlineMillis": {
+      "kind": "deadline",
+      "code": "RENDER_DEADLINE_EXCEEDED",
+      "contractStage": "REQUEST_CONTROL",
+      "reservationPoint": "fixed once at public admission and converted once to monotonic remaining time"
+    },
+    "deadlineAndRetention.admissionAndClosureMillis": {
+      "kind": "deadline",
+      "code": "RENDER_DEADLINE_EXCEEDED",
+      "contractStage": "ADMISSION_AND_CLOSURE_DEADLINE",
+      "publicRenderStage": "TEMPLATE_CLOSURE"
+    },
+    "deadlineAndRetention.evaluationAndDocumentSealMillis": {
+      "kind": "deadline",
+      "code": "RENDER_DEADLINE_EXCEEDED",
+      "contractStage": "EVALUATION_AND_SEAL_DEADLINE",
+      "publicRenderStage": "DOCUMENT_SEAL"
+    },
+    "deadlineAndRetention.engineQueueWaitMillis": {
+      "kind": "deadline",
+      "code": "RENDER_DEADLINE_EXCEEDED",
+      "contractStage": "ENGINE_QUEUE_WAIT",
+      "engineStage": "REQUEST_CONTROL"
+    },
+    "deadlineAndRetention.resourcePhaseMillis": {
+      "kind": "deadline",
+      "code": "RENDER_DEADLINE_EXCEEDED",
+      "contractStage": "RESOURCE_PHASE_DEADLINE",
+      "engineStage": "RESOURCE_PREPARATION"
+    },
+    "deadlineAndRetention.layoutRasterEncodeMillis": {
+      "kind": "deadline",
+      "code": "RENDER_DEADLINE_EXCEEDED",
+      "contractStage": "LAYOUT_RASTER_ENCODE_DEADLINE",
+      "engineStage": "REQUEST_CONTROL"
+    },
+    "deadlineAndRetention.fetchAttempts": {
+      "kind": "retry-bound",
+      "code": "FETCH_FAILED",
+      "contractStage": "RESOURCE_PREPARATION",
+      "engineStage": "RESOURCE_PREPARATION",
+      "reservationPoint": "before starting an additional fetch attempt",
+      "zeroBoundary": "ZERO_OUTPUT"
+    },
+    "deadlineAndRetention.fetchBackoffMillis": {
+      "kind": "profile-invariant",
+      "code": null,
+      "contractStage": "RESOURCE_RETRY_PROFILE",
+      "engineStage": "RESOURCE_PREPARATION",
+      "zeroBoundary": "ALGORITHM_INVARIANT"
+    },
+    "deadlineAndRetention.fetchAttemptMillis": {
+      "kind": "deadline",
+      "code": "FETCH_FAILED",
+      "contractStage": "RESOURCE_FETCH_ATTEMPT",
+      "engineStage": "RESOURCE_PREPARATION",
+      "zeroBoundary": "ZERO_OUTPUT"
+    },
+    "deadlineAndRetention.leaseSafetyMarginMillis": {
+      "kind": "profile-invariant",
+      "code": "RESOURCE_LEASE_EXPIRED",
+      "contractStage": "COMMAND_ADMISSION",
+      "engineStage": "COMMAND_ADMISSION",
+      "zeroBoundary": "ZERO_OUTPUT"
+    },
+    "deadlineAndRetention.cooperativeCheckpointMillis": {
+      "kind": "profile-invariant",
+      "code": null,
+      "zeroBoundary": "ALGORITHM_INVARIANT"
+    },
+    "deadlineAndRetention.cancelStopMillis": {
+      "kind": "profile-invariant",
+      "code": null,
+      "zeroBoundary": "ALGORITHM_INVARIANT"
+    },
+    "deadlineAndRetention.terminalRegistryAndOutputRetentionMillis": {
+      "kind": "retention-invariant",
+      "code": null,
+      "zeroBoundary": "ALGORITHM_INVARIANT"
+    },
+    "deadlineAndRetention.preCommandCancelTombstoneMillis": {
+      "kind": "retention-invariant",
+      "code": null,
+      "zeroBoundary": "ALGORITHM_INVARIANT"
+    },
+    "deadlineAndRetention.capabilityAndResolverRecoveryRetentionAfterDeadlineMillis": {
+      "kind": "retention-invariant",
+      "code": null,
+      "zeroBoundary": "ALGORITHM_INVARIANT"
+    },
+    "layoutFontAndRaster.shapingGlyphAttempts": {
+      "contractStage": "ENGINE_SHAPING",
+      "engineStage": "SHAPING"
+    },
+    "layoutFontAndRaster.breakCandidates": {
+      "contractStage": "ENGINE_SHAPING",
+      "engineStage": "SHAPING"
+    },
+    "layoutFontAndRaster.graphemeClusters": {
+      "contractStage": "ENGINE_SHAPING",
+      "engineStage": "SHAPING"
+    },
+    "layoutFontAndRaster.shapedGlyphs": {
+      "contractStage": "ENGINE_SHAPING",
+      "engineStage": "SHAPING"
+    },
+    "layoutFontAndRaster.shapedLinesOrColumns": {
+      "contractStage": "ENGINE_SHAPING",
+      "engineStage": "SHAPING"
+    },
+    "layoutFontAndRaster.paintItems": {
+      "code": "RASTER_BUDGET_EXCEEDED",
+      "contractStage": "ENGINE_RASTERIZATION",
+      "engineStage": "RASTERIZATION"
+    },
+    "layoutFontAndRaster.clipDepth": {
+      "code": "RASTER_BUDGET_EXCEEDED",
+      "contractStage": "ENGINE_RASTERIZATION",
+      "engineStage": "RASTERIZATION"
+    },
+    "layoutFontAndRaster.paintedPixelVisits": {
+      "code": "RASTER_BUDGET_EXCEEDED",
+      "contractStage": "ENGINE_RASTERIZATION",
+      "engineStage": "RASTERIZATION"
+    },
+    "layoutFontAndRaster.uniqueFonts": {
+      "code": "RESOURCE_BUDGET_EXCEEDED",
+      "contractStage": "RESOURCE_PREPARATION",
+      "engineStage": "RESOURCE_PREPARATION"
+    },
+    "layoutFontAndRaster.tablesPerFont": {
+      "code": "RESOURCE_BUDGET_EXCEEDED",
+      "contractStage": "RESOURCE_PREPARATION",
+      "engineStage": "RESOURCE_PREPARATION"
+    },
+    "layoutFontAndRaster.fontTablesTotal": {
+      "code": "RESOURCE_BUDGET_EXCEEDED",
+      "contractStage": "RESOURCE_PREPARATION",
+      "engineStage": "RESOURCE_PREPARATION"
+    },
+    "layoutFontAndRaster.uniqueGlyphOutlines": {
+      "code": "RESOURCE_BUDGET_EXCEEDED",
+      "contractStage": "ENGINE_SHAPING",
+      "engineStage": "SHAPING"
+    },
+    "layoutFontAndRaster.qrInputUtf8Bytes": {
+      "kind": "content-constraint",
+      "code": "CODE_CONTENT_TOO_LARGE",
+      "contractStage": "FINAL_CODE_FEASIBILITY",
+      "engineStage": "LAYOUT"
+    },
+    "layoutFontAndRaster.codeModuleCells": {
+      "code": "RASTER_BUDGET_EXCEEDED",
+      "contractStage": "ENGINE_RASTERIZATION",
+      "engineStage": "RASTERIZATION"
+    },
+    "layoutFontAndRaster.paintChunkPixelVisits": {
+      "kind": "profile-invariant",
+      "code": null,
+      "contractStage": "COOPERATIVE_CHECKPOINT_PROFILE",
+      "engineStage": "RASTERIZATION",
+      "zeroBoundary": "ALGORITHM_INVARIANT"
+    },
+    "layoutFontAndRaster.byteChunkBytes": {
+      "kind": "profile-invariant",
+      "code": null,
+      "contractStage": "COOPERATIVE_CHECKPOINT_PROFILE",
+      "engineStage": "REQUEST_CONTROL",
+      "zeroBoundary": "ALGORITHM_INVARIANT"
+    },
+    "layoutFontAndRaster.textShrinkIterations": {
+      "kind": "algorithm-bound",
+      "code": "TEXT_OVERFLOW",
+      "contractStage": "ENGINE_SHAPING",
+      "engineStage": "SHAPING",
+      "reservationPoint": "before starting another shrink iteration",
+      "zeroBoundary": "ZERO_OUTPUT"
+    },
+    "layoutFontAndRaster.stackWaterFillRoundsPerContainer": {
+      "kind": "algorithm-formula",
+      "code": null,
+      "contractStage": "LAYOUT_PROFILE",
+      "zeroBoundary": "ALGORITHM_INVARIANT"
+    },
+    "layoutFontAndRaster.gridSpanPassesPerConstraint": {
+      "kind": "algorithm-formula",
+      "code": null,
+      "contractStage": "LAYOUT_PROFILE",
+      "zeroBoundary": "ALGORITHM_INVARIANT"
+    }
+  }
+}

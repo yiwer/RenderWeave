@@ -1,0 +1,191 @@
+{
+  "evidenceVersion": "renderweave-editor-automated-fixture-static-a2/1.0",
+  "evidenceId": "EDITOR_AUTOMATED_FIXTURE_STATIC_A2::2026-08-17::000001",
+  "status": "PASS",
+  "grade": "A2_INDEPENDENT_STATIC_REPLAY",
+  "scope": "EDITOR_AUTOMATED fixture-only Canvas Focus Structured Editor baseline context, 31-probe closed observation adapter, deterministic named-fixture generator, and one exact named fixture only; no browser, operating-system target, Web server, product session, save, conflict, recovery, preview, accessibility assertion, J1, network, or product code was executed.",
+  "specRevision": {
+    "branch": "spec/template-v1",
+    "baseCommit": "b14c2d7d4978c679e7ab8e7a2bace3da7af884de",
+    "implementationRevision": "editor-automated-fixture-generator/1.0"
+  },
+  "authorityBindings": {
+    "acceptanceManifest": {
+      "path": "acceptance-manifest-v1.json",
+      "sha256": "sha256:186c4de3351a5b794eb47294ac4f787aa47f1a19ea213a66c4ddd60ef28b620f",
+      "byteLength": 48336
+    },
+    "ticket17": {
+      "path": "issues/17-authoring-workflow-prototype.md",
+      "sha256": "sha256:302ce8009c939b0aab02b01e5787a16201db973b19073ab239e3d0f598e4df29",
+      "byteLength": 19612
+    },
+    "ticket18": {
+      "path": "issues/18-editor-preview-and-recovery.md",
+      "sha256": "sha256:2bcce38b84bf3a5cb63b290b1da17c445f78ce8cfd51da89c1c2ed9f68a7bd8e",
+      "byteLength": 31047
+    },
+    "probeProfile": {
+      "path": "conformance-probe-profile-v1.json",
+      "sha256": "sha256:f800eb1e6e138215c26c7761ed80e0fc9cf77fc3ce051be4e3c5ba530cd6053d",
+      "byteLength": 51328
+    },
+    "safeBaselineCatalog": {
+      "path": "conformance-safe-baselines-v1.json",
+      "sha256": "sha256:7ce057b57600c639e15a6e5055689efcb170af037e24515126ccdf94f9039569",
+      "byteLength": 19435
+    },
+    "generatorCatalog": {
+      "path": "conformance-generator-manifests-v1.json",
+      "sha256": "sha256:d117a993462c022ee1810fc7e200a38a90d4a274c2a72e6f1e4090d121f80645",
+      "byteLength": 14326
+    },
+    "executionClassCatalog": {
+      "path": "conformance-execution-classes-v1.json",
+      "sha256": "sha256:a984d9327dd880f1c4b10d4dc4351fa102d75d8167df08464281516ffbdecfbd",
+      "byteLength": 9456
+    },
+    "bootstrapOrder": {
+      "path": "conformance-bootstrap-order-v1.json",
+      "sha256": "sha256:d3487a85839282f64050606bad17ff87b801a71e456524c63f1dd257dd152825",
+      "byteLength": 10047
+    },
+    "manifestSnapshotPolicy": {
+      "path": "conformance-manifest-snapshot-policy-v1.json",
+      "sha256": "sha256:60b2dde31826ba766b7a8fe5e3ea6aa98ef1162e216069d739e475581490b327",
+      "byteLength": 6380,
+      "retainedSnapshotCount": 13,
+      "currentCatalogSnapshotCount": 2
+    },
+    "baseline": {
+      "path": "editor-automated/baseline-v1.json",
+      "sha256": "sha256:35c29750076654c559b3663995d0f17e15cf038d61feb66aedc0d77005788f9f",
+      "byteLength": 1956
+    },
+    "fixtureContract": {
+      "path": "editor-automated/fixture-contract-v1.json",
+      "sha256": "sha256:c5ebeb106d41d549f6c313648829d8841cb466e9778f4d7143b18e77b4555a9c",
+      "byteLength": 2355
+    },
+    "observationAdapter": {
+      "path": "editor-automated/observation-adapter-v1.json",
+      "sha256": "sha256:7f65c78c0d390e7ab972275b43341e94174d267ec4dadd28b71c60223fbe45d7",
+      "byteLength": 7049
+    },
+    "scenarioCatalog": {
+      "path": "editor-automated/capacity-scenarios-v1.json",
+      "sha256": "sha256:8138aff0e56bb16d2e014ff1449a09d9f753ad838e62769225453afbf6b64f4f",
+      "byteLength": 1606
+    },
+    "generatorGoldens": {
+      "path": "editor-automated/generator-goldens-v1.json",
+      "sha256": "sha256:11d4396f2fc2ea6d4d02ecff05e4533347f88c8177c891ecfe0bdee95e40c5ae",
+      "byteLength": 1174
+    },
+    "generatorTarget": {
+      "path": "editor-automated/generator-target-manifest-v1.json",
+      "sha256": "sha256:6a2540e7bd86bd827e386a0f05680f225591ec58e9ed962dda0c35f43c39cbeb",
+      "byteLength": 2233
+    },
+    "generatorImplementation": {
+      "path": "editor-automated/generator-implementation-manifest-v1.json",
+      "sha256": "sha256:ce83c15f770b48a33fa58509def35acd682cf6e9722f4066a4b2218eecf25a0d",
+      "byteLength": 2283
+    }
+  },
+  "fixtureInventory": {
+    "fixtureCount": 1,
+    "capacityAxisCount": 0,
+    "capacityFixtureCount": 0,
+    "namedFixtureCount": 1,
+    "admittedProbeCount": 31,
+    "artifacts": [
+      {
+        "path": "editor-automated/fixtures/named-editor-structured-clean-recheck-pending.json",
+        "sha256": "sha256:af401b7102cc6f9e32645b97322e05c561ec5f415545ea8c288cd46e97a43115",
+        "byteLength": 1473
+      }
+    ],
+    "expectationDataPresentInTargetFixtures": false
+  },
+  "replay": {
+    "primary": {
+      "result": {
+        "path": "editor-automated/primary-result-v1.json",
+        "sha256": "sha256:f605dd929448d9babf3c97dcc7cb9147078fda1d2904450866dbcc92c4c5023b",
+        "byteLength": 1045
+      },
+      "executorId": "EDITOR_AUTOMATED_FIXTURE_GENERATOR::NODE::1.0",
+      "runtime": "Node.js v24.18.0",
+      "checkCount": 186,
+      "failureCount": 0
+    },
+    "independent": {
+      "result": {
+        "path": "editor-automated/independent-result-v1.json",
+        "sha256": "sha256:a1b4d80ab6ce954a19443c098f3e5ae938766f2239520e0439c1b847170028bf",
+        "byteLength": 1061
+      },
+      "executorId": "EDITOR_AUTOMATED_FIXTURE_GENERATOR::PYTHON::1.0",
+      "runtime": "CPython 3.12.13",
+      "checkCount": 189,
+      "failureCount": 0
+    },
+    "sharedSemanticLibrary": null,
+    "differentRuntimeAndParserImplementations": true,
+    "fixtureByteAgreement": true
+  },
+  "findings": {
+    "informationArchitectureVariant": "B_CANVAS_FOCUS",
+    "baselineMode": "STRUCTURED",
+    "baselineDirty": false,
+    "baselineCurrentRecheckState": "PENDING",
+    "baselineSaveEnabled": false,
+    "baselineAuthoritativePreviewEnabled": false,
+    "exactBrowserAndOperatingSystemTargetBound": false,
+    "browserObservationProduced": false,
+    "editorCapacityAxesAssigned": 0
+  },
+  "formalRegistryBoundary": {
+    "cases": {
+      "path": "conformance-cases-v1.jsonl",
+      "sha256": "sha256:ebe58e84977ee84befe89f8c126f37fbec7076cd7725b29f1b7609448fe7ef16",
+      "byteLength": 146309,
+      "recordCount": 46
+    },
+    "oracles": {
+      "path": "conformance-oracles-v1.jsonl",
+      "sha256": "sha256:3825b9fb40c1b43c484da3ebdf29429ed749e622012212ca79f9cea5b9cb9339",
+      "byteLength": 63191,
+      "recordCount": 46
+    },
+    "issuedEditorAutomatedCaseCount": 0,
+    "issuedEditorAutomatedOracleCount": 0,
+    "appendPerformed": false
+  },
+  "sideEffects": {
+    "productCodeFilesChanged": 0,
+    "browserInvocations": 0,
+    "operatingSystemTargetInvocations": 0,
+    "webServerInvocations": 0,
+    "productSessionCreations": 0,
+    "productMutationInvocations": 0,
+    "authoritativePreviewInvocations": 0,
+    "accessibilityAssertionRuns": 0,
+    "j1Runs": 0,
+    "networkAttempts": 0,
+    "externalProviderAttempts": 0
+  },
+  "boundary": {
+    "fixtureAndGeneratorReferenceable": true,
+    "exactBrowserAndOperatingSystemTargetsPresent": false,
+    "exactProductTargetPresent": false,
+    "requiredBrowserAutomationExecutorManifestPresent": false,
+    "independentProductExecutionReplayPresent": false,
+    "executionClassExecutable": false,
+    "automatedEditorBehaviorProven": false,
+    "j1Passed": false,
+    "recordIssuanceAllowed": false,
+    "ticket19Closed": false
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "resultVersion": "renderweave-rendering-pipeline-fixture-generator-result/1.0",
+  "executorId": "RENDERING_PIPELINE_FIXTURE_GENERATOR::PYTHON::1.0",
+  "role": "independent-rendering-pipeline-fixture-generator-replayer",
+  "status": "PASS",
+  "checkCount": 2072,
+  "failureCount": 0,
+  "runtime": "CPython 3.12.13",
+  "generatorTargetSha256": "sha256:8b792d30b96ad567fd01325ee1447d86b8b1f65737a4eef51fd51b5477800b8b",
+  "fixtureCount": 157,
+  "productExecutionObserved": false,
+  "recordIssuanceAllowed": false,
+  "implementationRevision": "rendering-pipeline-fixture-generator/1.0",
+  "targetManifest": {
+    "path": "rendering-pipeline/generator-target-manifest-v1.json",
+    "sha256": "sha256:8b792d30b96ad567fd01325ee1447d86b8b1f65737a4eef51fd51b5477800b8b",
+    "byteLength": 38604
+  },
+  "entrypoint": {
+    "path": "rendering-pipeline/validate_rendering_pipeline_fixtures_independent.py",
+    "sha256": "sha256:5b00cbe74681daaa0e25ce44b325fac93b16d182b695d53121ffaa425018ee41",
+    "byteLength": 20772
+  }
+}

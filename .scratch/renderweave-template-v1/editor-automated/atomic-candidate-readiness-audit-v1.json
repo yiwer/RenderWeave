@@ -1,0 +1,309 @@
+{
+  "artifactVersion": "renderweave-editor-atomic-candidate-readiness-audit/1.5",
+  "status": "ONE_CONTENT_SOURCE_AND_DETERMINISTIC_TARGETS_BOUND_PREISSUANCE_BLOCKED",
+  "executionClass": "EXEC::EDITOR_AUTOMATED::1.0",
+  "contract": {
+    "path": "editor-automated/atomic-candidate-contract-v1.json",
+    "sha256": "sha256:36cff271af05b0c8c3b8de7b88879d5779530ebb6cfd107143a4342d18932326",
+    "byteLength": 8539
+  },
+  "candidates": {
+    "path": "editor-automated/atomic-scenario-candidates-v1.json",
+    "sha256": "sha256:fd82c16ec133388fa25806c26160660152b54e9d8fc54ec32da3dc70091f47c6",
+    "byteLength": 931947
+  },
+  "sourceAssignment": {
+    "path": "editor-automated/non-capacity-assignment-v1.json",
+    "sha256": "sha256:4c993b03077e32dc6ae80cf7f7ce15c6c681fd017578919130f95032fcfb4807",
+    "byteLength": 44208
+  },
+  "probeProfiles": {
+    "current": {
+      "path": "conformance-probe-profile-v1.json",
+      "sha256": "sha256:f800eb1e6e138215c26c7761ed80e0fc9cf77fc3ce051be4e3c5ba530cd6053d",
+      "byteLength": 51328
+    },
+    "candidate": {
+      "path": "editor-automated/probe-profile-candidate-v1_1.json",
+      "sha256": "sha256:f76cae2b80a4205d7bf73b0e79d69611f2b95880a399fc5808d624ce7741f53f",
+      "byteLength": 57149
+    },
+    "adjudication": {
+      "path": "editor-automated/probe-profile-adjudication-v1.json",
+      "sha256": "sha256:7564fcf2606b5c74e5abd590e4870b99b683b54c13122b376cdac57e609f00b7",
+      "byteLength": 5605
+    }
+  },
+  "terminalAndFaultBindings": {
+    "terminalAdjudication": {
+      "path": "editor-automated/terminal-adjudication-v1.json",
+      "sha256": "sha256:4df1ec215851ada8818deaa94d239e6780181cb56068ef4dd72ffb04e87f3c43",
+      "byteLength": 24704
+    },
+    "faultScheduleContract": {
+      "path": "editor-automated/fault-schedule-contract-v1.json",
+      "sha256": "sha256:7a1b131f572a1c443e9154b6f72c18df4f478ba2313817e5f953102ac6972c9d",
+      "byteLength": 5450
+    },
+    "faultScheduleCatalog": {
+      "path": "editor-automated/fault-schedule-catalog-v1.json",
+      "sha256": "sha256:6ae1383877f2a04d1c79babc880fd406661a8d24b61b05d8cb0afb10ed42cd62",
+      "byteLength": 25421
+    }
+  },
+  "inputAndTargetBindings": {
+    "inputFixtureContract": {
+      "path": "editor-automated/input-fixture-contract-v1.json",
+      "sha256": "sha256:d42c7544527d74e70f06fec07a6c320c45aa8dfc4884401c1378792290a60d62",
+      "byteLength": 12414
+    },
+    "inputFixtureCatalog": {
+      "path": "editor-automated/input-fixture-catalog-v1.json",
+      "sha256": "sha256:6df083648df4da6dfe3aaff406b9f6ef99dcd5118bed04611689f3f7afdb7f44",
+      "byteLength": 76371
+    },
+    "semanticProjectionContract": {
+      "path": "editor-automated/semantic-projection-contract-v1.json",
+      "sha256": "sha256:bbafb420c5f149d849410b83bf44b09a0f6587d3e0723b1f8d227f8fa118c34a",
+      "byteLength": 5909
+    },
+    "semanticProjectionCatalog": {
+      "path": "editor-automated/semantic-projection-catalog-v1.json",
+      "sha256": "sha256:6754fb53dc412c7711e8d67254cc915db56caf527f256985ca9f8d5cd53e4f6a",
+      "byteLength": 66525
+    },
+    "contentSourceContract": {
+      "path": "editor-automated/content-source-contract-v1.json",
+      "sha256": "sha256:4099e713bc8b7dececce6d9902bd6e1c6d2b5a340dec86d093012328a090ae48",
+      "byteLength": 6011
+    },
+    "contentSourceCatalog": {
+      "path": "editor-automated/content-source-catalog-v1.json",
+      "sha256": "sha256:882d3f4928fefd114662a827d26cf25ddcec675b3cc89f099ce58e41c482d310",
+      "byteLength": 41449
+    },
+    "targetBindingContract": {
+      "path": "editor-automated/target-binding-contract-v1.json",
+      "sha256": "sha256:aa9d1a2cea81a49f95395c4c941d17c8be4b490ab7139603d8737c8791602f4b",
+      "byteLength": 5214
+    },
+    "targetBindingCatalog": {
+      "path": "editor-automated/target-binding-catalog-v1.json",
+      "sha256": "sha256:ce2504aa4c5093a657a8487a9df77fde0c9af2e7e44217b4ea02cfd935ea2f93",
+      "byteLength": 221704
+    }
+  },
+  "counts": {
+    "journeySeedCount": 12,
+    "candidateCount": 108,
+    "seedRequirementUnionCount": 138,
+    "plannedRequirementUnionCount": 138,
+    "assertionPlanCount": 1265,
+    "exactLiteralAssertionPlanCount": 749,
+    "exactArtifactAssertionPlanCount": 108,
+    "exactAbsentAssertionPlanCount": 289,
+    "exactExpectationAssertionPlanCount": 1146,
+    "pendingExpectationAssertionPlanCount": 119,
+    "inputFixtureArtifactBindingCount": 108,
+    "targetArtifactBindingCount": 108,
+    "targetLiteralAdjudicatedFromPendingCount": 81,
+    "semanticProjectionExactLiteralBindingCount": 42,
+    "semanticProjectionContentPrerequisiteCount": 58,
+    "contentPrerequisiteResolvedBySourceCount": 1,
+    "contentPrerequisiteRemainingCount": 57,
+    "contentSourceSlotCount": 47,
+    "contentSourceExactBindingCount": 1,
+    "contentSourceUnboundBindingCount": 46,
+    "contentSourceRecordArtifactCount": 1,
+    "contentSourceCanonicalDesignDslArtifactCount": 2,
+    "uiObservationPendingCount": 62,
+    "terminalAdjudicatedFromPendingCount": 33,
+    "pendingTerminalBindingCount": 0,
+    "faultArtifactBindingCount": 37,
+    "faultNoneBindingCount": 71,
+    "proposedProbeCount": 0,
+    "candidateProfileBindingAssertionCount": 109,
+    "candidateProfileBoundCandidateCount": 82,
+    "formalCaseCount": 46,
+    "formalOracleCount": 46
+  },
+  "byJourney": [
+    {
+      "journeySeedId": "AUTO-SEED-J1-EDITOR-001",
+      "sourceJ1CaseId": "J1-EDITOR-001",
+      "candidateCount": 3,
+      "seedRequirementCount": 8,
+      "plannedRequirementCount": 8,
+      "uncoveredRequirementIds": [],
+      "extraneousRequirementIds": []
+    },
+    {
+      "journeySeedId": "AUTO-SEED-J1-EDITOR-002",
+      "sourceJ1CaseId": "J1-EDITOR-002",
+      "candidateCount": 13,
+      "seedRequirementCount": 8,
+      "plannedRequirementCount": 8,
+      "uncoveredRequirementIds": [],
+      "extraneousRequirementIds": []
+    },
+    {
+      "journeySeedId": "AUTO-SEED-J1-EDITOR-003",
+      "sourceJ1CaseId": "J1-EDITOR-003",
+      "candidateCount": 8,
+      "seedRequirementCount": 11,
+      "plannedRequirementCount": 11,
+      "uncoveredRequirementIds": [],
+      "extraneousRequirementIds": []
+    },
+    {
+      "journeySeedId": "AUTO-SEED-J1-EDITOR-004",
+      "sourceJ1CaseId": "J1-EDITOR-004",
+      "candidateCount": 5,
+      "seedRequirementCount": 4,
+      "plannedRequirementCount": 4,
+      "uncoveredRequirementIds": [],
+      "extraneousRequirementIds": []
+    },
+    {
+      "journeySeedId": "AUTO-SEED-J1-EDITOR-005",
+      "sourceJ1CaseId": "J1-EDITOR-005",
+      "candidateCount": 10,
+      "seedRequirementCount": 13,
+      "plannedRequirementCount": 13,
+      "uncoveredRequirementIds": [],
+      "extraneousRequirementIds": []
+    },
+    {
+      "journeySeedId": "AUTO-SEED-J1-EDITOR-006",
+      "sourceJ1CaseId": "J1-EDITOR-006",
+      "candidateCount": 3,
+      "seedRequirementCount": 4,
+      "plannedRequirementCount": 4,
+      "uncoveredRequirementIds": [],
+      "extraneousRequirementIds": []
+    },
+    {
+      "journeySeedId": "AUTO-SEED-J1-EDITOR-007",
+      "sourceJ1CaseId": "J1-EDITOR-007",
+      "candidateCount": 16,
+      "seedRequirementCount": 7,
+      "plannedRequirementCount": 7,
+      "uncoveredRequirementIds": [],
+      "extraneousRequirementIds": []
+    },
+    {
+      "journeySeedId": "AUTO-SEED-J1-EDITOR-008",
+      "sourceJ1CaseId": "J1-EDITOR-008",
+      "candidateCount": 3,
+      "seedRequirementCount": 7,
+      "plannedRequirementCount": 7,
+      "uncoveredRequirementIds": [],
+      "extraneousRequirementIds": []
+    },
+    {
+      "journeySeedId": "AUTO-SEED-J1-EDITOR-009",
+      "sourceJ1CaseId": "J1-EDITOR-009",
+      "candidateCount": 8,
+      "seedRequirementCount": 15,
+      "plannedRequirementCount": 15,
+      "uncoveredRequirementIds": [],
+      "extraneousRequirementIds": []
+    },
+    {
+      "journeySeedId": "AUTO-SEED-J1-EDITOR-010",
+      "sourceJ1CaseId": "J1-EDITOR-010",
+      "candidateCount": 12,
+      "seedRequirementCount": 33,
+      "plannedRequirementCount": 33,
+      "uncoveredRequirementIds": [],
+      "extraneousRequirementIds": []
+    },
+    {
+      "journeySeedId": "AUTO-SEED-J1-EDITOR-011",
+      "sourceJ1CaseId": "J1-EDITOR-011",
+      "candidateCount": 20,
+      "seedRequirementCount": 24,
+      "plannedRequirementCount": 24,
+      "uncoveredRequirementIds": [],
+      "extraneousRequirementIds": []
+    },
+    {
+      "journeySeedId": "AUTO-SEED-J1-EDITOR-012",
+      "sourceJ1CaseId": "J1-EDITOR-012",
+      "candidateCount": 7,
+      "seedRequirementCount": 13,
+      "plannedRequirementCount": 13,
+      "uncoveredRequirementIds": [],
+      "extraneousRequirementIds": []
+    }
+  ],
+  "requirementClosure": {
+    "exactSeedUnionMatch": true,
+    "missingRequirementIds": [],
+    "extraneousRequirementIds": []
+  },
+  "identityAudit": {
+    "candidateIdsUnique": true,
+    "identityDigestsUnique": true,
+    "formalCaseNamespaceUsed": false,
+    "formalOracleNamespaceUsed": false
+  },
+  "currentProfileAudit": {
+    "currentEditorProbeCount": 31,
+    "unknownCurrentProbeBindings": [],
+    "candidateProfileId": "renderweave-conformance-probes/1.1",
+    "candidateEditorProbeCount": 40,
+    "unknownCandidateProbeBindings": [],
+    "proposedProbeCandidates": [],
+    "profileMutationPerformed": false,
+    "candidateProfileIssued": false,
+    "requiredNextProfileAction": "Keep every 1.1 binding planning-only until the 119 remaining target expectations, 46 unbound first-layer content source slots, exact target and runner admission, product fixture adapter, product replay, and explicit Profile issuance are complete."
+  },
+  "blockers": [
+    {
+      "code": "EXACT_PRODUCT_FIXTURE_ARTIFACT_MISSING",
+      "candidateCount": 0
+    },
+    {
+      "code": "EXACT_BROWSER_OS_TARGET_MISSING",
+      "candidateCount": 108
+    },
+    {
+      "code": "EXECUTOR_MANIFEST_MISSING",
+      "candidateCount": 108
+    },
+    {
+      "code": "INDEPENDENT_PRODUCT_REPLAY_MISSING",
+      "candidateCount": 108
+    },
+    {
+      "code": "FAULT_SCHEDULE_ARTIFACT_MISSING",
+      "candidateCount": 0
+    },
+    {
+      "code": "EXPECTED_TERMINAL_CODE_OR_STAGE_UNBOUND",
+      "candidateCount": 0
+    },
+    {
+      "code": "TARGET_LITERAL_OR_ARTIFACT_MISSING",
+      "candidateCount": 93
+    },
+    {
+      "code": "EDITOR_PROBE_PROFILE_CANDIDATE_NOT_ISSUED",
+      "candidateCount": 82
+    }
+  ],
+  "zeroExecutionBoundary": {
+    "productCodeChanged": false,
+    "browserStarted": false,
+    "webServiceStarted": false,
+    "networkUsed": false,
+    "formalJsonlAppended": false,
+    "j1Executed": false,
+    "productReadyClaimed": false
+  },
+  "decision": {
+    "formalRecordIssuanceAllowed": false,
+    "nextSafeAction": "Continue binding only independently derivable immutable Editor content artifacts to the remaining 46 EditorContentSource slots, then satisfy the remaining downstream content prerequisite graphs and observe the 62 UI targets without invention; only afterward admit an exact product target, fixture adapter, and runner and obtain independent product replay before requesting explicit 1.1 Profile issuance or converting any candidate to formal Case and Oracle records."
+  }
+}

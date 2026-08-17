@@ -1,0 +1,9 @@
+{
+  "fixtureVersion": "renderweave-spec-registry-scenario/1.0",
+  "scenarioId": "SPEC-MUT-024",
+  "scenarioKind": "NAMED_MUTATION",
+  "expectedOutcome": "PROBLEM",
+  "expectedCode": "SPEC_REGISTRY_PROFILE_INVALID",
+  "expectedStage": "SPEC_REGISTRY",
+  "mutationKind": "PROFILE_ID_INVALID"
+}

@@ -1,0 +1,8 @@
+[
+  {
+    "operationId": "validateImportOrMigration",
+    "outcome": "PROBLEM",
+    "code": "DESIGN_DSL_VERSION_UNSUPPORTED",
+    "stage": "DESIGN_PARSE"
+  }
+]

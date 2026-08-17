@@ -1,0 +1,980 @@
+requirement_id	source_line	clause_ordinal_on_line	family	normative_summary
+RW-T19-S00-001	11	1	SECURITY_FAULT	Track inherited Ticket04 through Ticket18 authority without reissuing semantically duplicate requirements.
+RW-T19-S1-001	95	1	SECURITY_FAULT	v1 defines only atomic Host capability mapping by ownerScope.
+RW-T19-S1-002	95	2	SECURITY_FAULT	v1 defines no roles, members, Workspace, sharing relationship, or per-Template or per-Asset ACL.
+RW-T19-S1-003	95	3	SECURITY_FAULT	Template Host capabilities are exactly template.read, create, update, delete, and render.
+RW-T19-S1-004	95	4	SECURITY_FAULT	Asset Host capabilities are exactly asset.read, create, update, delete, and restore.
+RW-T19-S1-005	95	5	SECURITY_FAULT	Layout diagnostics uses the distinct render.trace Host capability.
+RW-T19-S1-006	95	6	SECURITY_FAULT	Host capability names are authorization input and never enter DesignDSL, RenderInput, RenderDocument, or Engine Command.
+RW-T19-S1-007	96	1	SECURITY_FAULT	Template directory, detail, history, export, and deleted-history reads require template.read.
+RW-T19-S1-008	96	2	SECURITY_FAULT	Template creation requires template.create.
+RW-T19-S1-009	96	3	SECURITY_FAULT	Save, invalid-confirmation save, revision restore, and conflict overwrite require template.update.
+RW-T19-S1-010	96	4	SECURITY_FAULT	Template deletion requires template.delete.
+RW-T19-S1-011	96	5	SECURITY_FAULT	Render requires template.render.
+RW-T19-S1-012	96	6	SECURITY_FAULT	Same-scope copy requires template.read on the source and template.create on the target scope.
+RW-T19-S1-013	97	1	SECURITY_FAULT	Authoritative Preview requires both template.read and template.render.
+RW-T19-S1-014	97	2	SECURITY_FAULT	Save and Preview additionally requires template.update for its preceding save.
+RW-T19-S1-015	97	3	SECURITY_FAULT	Only a caller with template.render may receive successful RenderOutput.
+RW-T19-S1-016	97	4	SECURITY_FAULT	template.render alone reveals no DesignDSL, revision history, child Template, or Asset detail.
+RW-T19-S1-017	98	1	SECURITY_FAULT	LayoutTrace requests require both template.render and render.trace.
+RW-T19-S1-018	98	2	SECURITY_FAULT	Only trace segments whose Template is readable by the caller can project author locators from sidecar.
+RW-T19-S1-019	98	3	SECURITY_FAULT	Unreadable trace segments are removed or redacted.
+RW-T19-S1-020	98	4	SECURITY_FAULT	render.trace grants no Template or Asset read, Render, edit, or Engine access.
+RW-T19-S1-021	99	1	SECURITY_FAULT	Asset directory, detail, version, download, and draft resource selection require asset.read.
+RW-T19-S1-022	99	2	SECURITY_FAULT	Asset create requires asset.create.
+RW-T19-S1-023	99	3	SECURITY_FAULT	Asset metadata or content update requires asset.update.
+RW-T19-S1-024	99	4	SECURITY_FAULT	Asset deletion requires asset.delete.
+RW-T19-S1-025	99	5	SECURITY_FAULT	Asset lifecycle restore requires asset.restore.
+RW-T19-S1-026	99	6	SECURITY_FAULT	An AssetRef in an external PUBLIC override requires asset.read at admission.
+RW-T19-S1-027	99	7	SECURITY_FAULT	After root Template render authorization, authored same-scope Template and Asset resolution uses internal capability without inheriting caller read per item.
+RW-T19-S1-028	100	1	SECURITY_FAULT	Host capabilities do not imply one another.
+RW-T19-S1-029	100	2	SECURITY_FAULT	Cross-scope ID access or lack of both operation and corresponding read returns namespaced NOT_FOUND.
+RW-T19-S1-030	100	3	SECURITY_FAULT	A caller with corresponding read but lacking mutation, render, or trace receives namespaced FORBIDDEN.
+RW-T19-S1-031	100	4	SECURITY_FAULT	A caller with an operation capability but without read may execute that authorized operation.
+RW-T19-S1-032	100	5	SECURITY_FAULT	An operation-only response removes author content, revision, child, Asset, and other read-only facts from responses, problems, and sidecar projection.
+RW-T19-S1-033	101	1	SECURITY_FAULT	Authorization drift before confirmation, queue admission, or execution makes every not-yet-completed action zero-write or zero-output under latest authorization.
+RW-T19-S1-034	101	2	SECURITY_FAULT	An atomically completed Template or Asset mutation is not rolled back after authorization drift.
+RW-T19-S1-035	101	3	SECURITY_FAULT	An unknown mutation result enters the existing reconciliation flow.
+RW-T19-S1-036	101	4	SECURITY_FAULT	Render or trace authorization loss before atomic output seal discards the complete result.
+RW-T19-S1-037	101	5	SECURITY_FAULT	After seal, transport can replay only the already-authorized sealed response and cannot expand diagnostics.
+RW-T19-S2-001	105	1	SECURITY_FAULT	v1 has one capacity contract that callers cannot negotiate or select.
+RW-T19-S2-002	105	2	SECURITY_FAULT	v1 has no small or large, preview or production, or interactive or batch capacity tiers.
+RW-T19-S2-003	105	3	SECURITY_FAULT	Each limit belongs to the exact wire or Profile that owns its semantics.
+RW-T19-S2-004	105	4	SECURITY_FAULT	Every effective budget enters the Evaluation fingerprint.
+RW-T19-S2-005	105	5	SECURITY_FAULT	There is no independent latest capacity configuration or request-level downgrade.
+RW-T19-S2-006	106	1	SECURITY_FAULT	Renderer Profile per-request semantic limits are minimum READY guarantees for accepted requests.
+RW-T19-S2-007	106	2	SECURITY_FAULT	Deployment queue, slot, and resource watermarks may return BUSY only atomically before acceptance.
+RW-T19-S2-008	106	3	SECURITY_FAULT	An accepted request cannot be subjected to a lower hidden limit or approximate execution path.
+RW-T19-S2-009	106	4	SECURITY_FAULT	Queueing cannot renew the request deadline.
+RW-T19-S2-010	107	1	SECURITY_FAULT	The contract workload is one root Template closure.
+RW-T19-S2-011	107	2	SECURITY_FAULT	The contract workload has one root Canvas.
+RW-T19-S2-012	107	3	SECURITY_FAULT	The contract workload emits one complete PNG or JPEG.
+RW-T19-S2-013	107	4	SECURITY_FAULT	The workload serves Authoritative Preview and single-image Render.
+RW-T19-S2-014	107	5	SECURITY_FAULT	Batch, multipage, oversized poster, multi-output, and persistent background jobs are outside v1 capacity goals.
+RW-T19-S2-015	108	1	SECURITY_FAULT	Request hard deadline and stage checkpoints are correctness and resource-safety contracts.
+RW-T19-S2-016	108	2	SECURITY_FAULT	Operational p50, p95, throughput, and queue-wait SLOs are outside semantic Profiles.
+RW-T19-S2-017	108	3	SECURITY_FAULT	Operational SLOs cannot alter result or failure boundaries for the same input.
+RW-T19-S2-018	109	1	SECURITY_FAULT	The reference Engine instance has exactly 4 vCPU, 8 GiB RAM, and 4 GiB ephemeral storage.
+RW-T19-S2-019	109	2	SECURITY_FAULT	The reference Engine instance has one active slot.
+RW-T19-S2-020	109	3	SECURITY_FAULT	The reference Engine instance has four FIFO queue positions.
+RW-T19-S2-021	109	4	SECURITY_FAULT	Reference scale-out adds identical certified instances rather than raising same-instance concurrency dynamically.
+RW-T19-S2-022	109	5	SECURITY_FAULT	Other deployments may provision more resources.
+RW-T19-S2-023	109	6	SECURITY_FAULT	A deployment changing OS, CPU, SIMD, or execution path, or unable to reserve the contract working set per slot, is not the same READY target.
+RW-T19-S3-001	113	1	RENDERER_OUTPUT	The only v1 certified authoritative Renderer target is Linux x86_64-v2.
+RW-T19-S3-002	113	2	RENDERER_OUTPUT	The certified target is CPU-only with fixed software raster, codec, and SIMD paths.
+RW-T19-S3-003	113	3	RENDERER_OUTPUT	GPU, fast-math, environment fonts, runtime algorithm or ISA dispatch, and uncertified fallback are forbidden.
+RW-T19-S3-004	113	4	RENDERER_OUTPUT	A read-only machine manifest pins machine, OS image, dependency, and build facts.
+RW-T19-S3-005	114	1	RENDERER_OUTPUT	Windows, browser Canvas, and other OS, CPU, or SIMD targets are development feedback only before independent exact-corpus certification.
+RW-T19-S3-006	114	2	RENDERER_OUTPUT	An uncertified target cannot claim READY.
+RW-T19-S3-007	114	3	RENDERER_OUTPUT	An uncertified target cannot serve Authoritative Preview or Render.
+RW-T19-S3-008	114	4	RENDERER_OUTPUT	Results cannot gain authority from majority agreement across targets.
+RW-T19-S4-001	118	1	SECURITY_FAULT	Implementation planning requires all numeric limits, stable codes, stages, scenario oracles, and owning exact contracts to be frozen.
+RW-T19-S4-002	118	2	SECURITY_FAULT	At one fixed revision, machine-readable scenario list, vector format, budget matrix, and requirements traceability must pass A1 tool-captured validation.
+RW-T19-S4-003	118	3	SECURITY_FAULT	Every specification issue must be closed before implementation planning.
+RW-T19-S4-004	118	4	SECURITY_FAULT	Planning entry does not require an unimplemented product to pass conformance.
+RW-T19-S4-005	119	1	DESIGN_INPUT_EXPRESSION	READY evidence has Java authority and an independent TypeScript feedback implementation replay Design, Input, and Expression corpora.
+RW-T19-S4-006	119	2	WIRE_CANONICAL_DIGEST	READY evidence has Java and Rust replay canonical wire, digest, and RenderDocument admission corpora at their seam.
+RW-T19-S4-007	119	3	RENDERER_OUTPUT	Rust Renderer executes the complete pixel and encoded-byte golden corpus on every allowed target.
+RW-T19-S4-008	119	4	RENDERER_OUTPUT	An independent runner re-executes and verifies Renderer goldens to form A2 evidence.
+RW-T19-S4-009	119	5	SECURITY_FAULT	Fault injection, security, and layout evidence follow assigned scenario ownership without forcing unrelated languages to duplicate every corpus.
+RW-T19-S4-010	119	6	SECURITY_FAULT	A3 release CI and branch policy pins target, manifest, case list, revision, and artifact hash.
+RW-T19-S4-011	119	7	SECURITY_FAULT	The Profile corpus is non-skippable in A3.
+RW-T19-S4-012	119	8	SECURITY_FAULT	Without repository A3 evidence, local green gates cannot claim release readiness.
+RW-T19-S4-013	120	1	EDITOR_AUTOMATED	Editor accessibility, keyboard flow, focus recovery, and experience acceptance remain J1.
+RW-T19-S4-014	120	2	EDITOR_AUTOMATED	A1, A2, and A3 automation can report only automated_verified and cannot replace human accepted.
+RW-T19-S4-015	120	3	EDITOR_AUTOMATED	Browser screenshots, old Haibo one-sided tests, and self-reported results cannot independently raise the evidence grade.
+RW-T19-S5-001	124	1	SECURITY_FAULT	Every previously unfrozen Ticket19 value requires one isolated non-product capacity calibration.
+RW-T19-S5-002	124	2	SECURITY_FAULT	Calibration records workload model, generation protocol, fixed target manifest, raw measurements, peak resources, and derived margin only under .scratch.
+RW-T19-S5-003	124	3	SECURITY_FAULT	Calibration cannot modify product modules or create a placeholder runtime or API.
+RW-T19-S5-004	125	1	SECURITY_FAULT	Calibration covers below-boundary, boundary, and above-boundary cases for every limit.
+RW-T19-S5-005	125	2	SECURITY_FAULT	Calibration covers combined worst paths.
+RW-T19-S5-006	125	3	SECURITY_FAULT	Calibration covers reservation before allocation or call.
+RW-T19-S5-007	125	4	SECURITY_FAULT	Calibration covers cancel, deadline, fault injection, and zero-partial-output behavior.
+RW-T19-S5-008	125	5	SECURITY_FAULT	Every final value has both a static upper-bound derivation and target-machine measurement.
+RW-T19-S5-009	125	6	SECURITY_FAULT	A single average, browser behavior, or an empirical number without raw evidence cannot become contract authority.
+RW-T19-S5-010	126	1	SECURITY_FAULT	Old busbox code and tests are only candidate-scenario, algorithm, and risk clues.
+RW-T19-S5-011	126	2	SECURITY_FAULT	Old busbox numeric limits, concurrent fetch, environment fallback, and missing control boundaries cannot be inherited as RenderWeave v1 answers.
+RW-T19-S5-012	127	1	SECURITY_FAULT	capacity-calibration.md is the read-only inventory of current environment, gate and corpus patterns, and nontransferable evidence.
+RW-T19-S5-013	127	2	SECURITY_FAULT	The recorded non-product A1 harness uses pinned Rust, a 4-vCPU and 8-GiB cgroup, and an x86-64-v2 compilation path on Docker Desktop Linux Engine.
+RW-T19-S5-014	127	3	SECURITY_FAULT	Raw calibration results remain under .scratch.
+RW-T19-S5-015	127	4	SECURITY_FAULT	Inaccessible old busbox source and benchmarks contribute no evidence.
+RW-T19-S5-016	127	5	SECURITY_FAULT	The repository still has no real Template or Renderer conformance implementation.
+RW-T19-S5-017	128	1	SECURITY_FAULT	A1 virtualized calibration and static formulas support planning values only.
+RW-T19-S5-018	128	2	SECURITY_FAULT	Values supported by that calibration may be marked planning-frozen.
+RW-T19-S5-019	128	3	SECURITY_FAULT	Virtualized calibration does not prove real layout, shaping, raster, codec, fetch, or cancel paths.
+RW-T19-S5-020	128	4	SECURITY_FAULT	Virtualized calibration cannot replace later physical-Linux A2 independent replay or the A3 READY gate.
+RW-T19-S5-021	128	5	SECURITY_FAULT	Harness and fixtures remain under .scratch and cannot evolve into placeholder product Renderer code.
+RW-T19-S5-022	129	1	SECURITY_FAULT	Discrete DesignDSL, RenderInput, closure, Repeat, Node, and problem limits derive first from product workload and composition complexity and are fixture-verified.
+RW-T19-S5-023	129	2	SECURITY_FAULT	Surface, working-byte, font, layout, fetch, deadline, and checkpoint values require both static formulas and pinned-Linux measurement.
+RW-T19-S5-024	129	3	SECURITY_FAULT	Every limit has at least limit-minus-one, limit, limit-plus-one, and one combined worst-path case.
+RW-T19-S5-025	129	4	SECURITY_FAULT	Queue and slot remain deployment-admission contracts and not caller Profile options.
+RW-T19-S6-001	133	1	SECURITY_FAULT	v1 observable capabilities are closed to listed Host capabilities, closed Clock and Random Expression operations, internal AssetResolver, and exact-lease restricted HTTPS fetch by Engine.
+RW-T19-S6-002	133	2	SECURITY_FAULT	Every unlisted capability is absent.
+RW-T19-S6-003	133	3	SECURITY_FAULT	Configuration, request fields, Template declarations, plugins, and administrator mode cannot dynamically open capabilities.
+RW-T19-S6-004	134	1	SECURITY_FAULT	Template, DesignDSL, Expression, Evaluator, and RenderEngine cannot perform arbitrary HTTP, DNS, or socket access.
+RW-T19-S6-005	134	2	SECURITY_FAULT	They cannot access SQL or databases.
+RW-T19-S6-006	134	3	SECURITY_FAULT	They cannot access arbitrary files or directories.
+RW-T19-S6-007	134	4	SECURITY_FAULT	They cannot invoke shell, process, script, eval, or WASM.
+RW-T19-S6-008	134	5	SECURITY_FAULT	They cannot use reflection, classloading, environment variables, or system properties.
+RW-T19-S6-009	134	6	SECURITY_FAULT	They cannot read credentials or tokens or invoke models, providers, or paid services.
+RW-T19-S6-010	134	7	SECURITY_FAULT	They cannot inject arbitrary Clock or entropy or access general tools or plugins.
+RW-T19-S6-011	134	8	SECURITY_FAULT	They cannot publish, delete, perform other business mutation, or access cross-scope data.
+RW-T19-S6-012	134	9	SECURITY_FAULT	Connectors normalize input only outside the Template boundary.
+RW-T19-S6-013	135	1	SECURITY_FAULT	Engine's only external access is canonical HTTPS allowlist fetch using a short-lived Renderer-only RenderResource lease.
+RW-T19-S6-014	135	2	SECURITY_FAULT	Engine fetch forbids caller URL and headers.
+RW-T19-S6-015	135	3	SECURITY_FAULT	Engine fetch forbids redirect, proxy, cookie, range, and transparent compression.
+RW-T19-S6-016	135	4	SECURITY_FAULT	Engine fetch forbids fallback, lease renewal, and replacement URL or current.
+RW-T19-S6-017	135	5	SECURITY_FAULT	Engine forbids system or built-in fonts and GPU.
+RW-T19-S6-018	135	6	SECURITY_FAULT	Engine forbids cross-request credential, cache, and state reuse.
+RW-T19-S6-019	136	1	SECURITY_FAULT	Unknown capability, member, or Profile fails hard before state establishment, entropy or Clock read, resolver or fetch, and mutation.
+RW-T19-S6-020	136	2	SECURITY_FAULT	Capability outside Expression input and self-reported versions or arguments fail at the same pre-effect boundary.
+RW-T19-S6-021	136	3	SECURITY_FAULT	Probing a forbidden surface fails at the same pre-effect boundary.
+RW-T19-S6-022	136	4	SECURITY_FAULT	Failure exposes only a stable code and safe location.
+RW-T19-S6-023	136	5	SECURITY_FAULT	Failure cannot reveal environment, provider, URL, token, raw network error, or hidden-object existence.
+RW-T19-S7-001	140	1	DESIGN_INPUT_EXPRESSION	capacity-budgets-v1.json is the machine-readable numeric-limit index.
+RW-T19-S7-002	140	2	DESIGN_INPUT_EXPRESSION	capacity-oracles-v1.json is the machine-readable code, stage, reservation, and zero-boundary index.
+RW-T19-S7-003	140	3	DESIGN_INPUT_EXPRESSION	The budget and oracle indexes jointly constitute planning evidence.
+RW-T19-S7-004	140	4	DESIGN_INPUT_EXPRESSION	Capacity indexes are neither caller wire nor separately selectable Profiles.
+RW-T19-S7-005	140	5	DESIGN_INPUT_EXPRESSION	Every count is atomically reserved at its oracle point before grouping, deduplication, lazy pruning, or allocation.
+RW-T19-S7-006	140	6	DESIGN_INPUT_EXPRESSION	Every limit violation uses its oracle-assigned stable code.
+RW-T19-S7-007	140	7	DESIGN_INPUT_EXPRESSION	Every limit violation satisfies its assigned zero-write, zero-RenderDocument, or zero-RenderOutput boundary.
+RW-T19-S7-008	141	1	DESIGN_INPUT_EXPRESSION	RenderInput accepts only identity Content-Encoding with a strict UTF-8 JSON body.
+RW-T19-S7-009	141	2	DESIGN_INPUT_EXPRESSION	RenderInput entity size is at most 8 MiB.
+RW-T19-S7-010	141	3	DESIGN_INPUT_EXPRESSION	RenderInput JSON depth is at most 32.
+RW-T19-S7-011	141	4	DESIGN_INPUT_EXPRESSION	A RenderInput object has at most 1,024 members.
+RW-T19-S7-012	141	5	DESIGN_INPUT_EXPRESSION	A RenderInput array has at most 10,000 items.
+RW-T19-S7-013	141	6	DESIGN_INPUT_EXPRESSION	RenderInput has at most 250,000 total values and containers.
+RW-T19-S7-014	141	7	DESIGN_INPUT_EXPRESSION	A RenderInput string has at most 1 MiB of UTF-8 bytes.
+RW-T19-S7-015	141	8	DESIGN_INPUT_EXPRESSION	A RenderInput number token has at most 256 bytes.
+RW-T19-S7-016	141	9	DESIGN_INPUT_EXPRESSION	customValues has at most 256 entries before last-wins grouping and unknown or PRIVATE resolution.
+RW-T19-S7-017	141	10	DESIGN_INPUT_EXPRESSION	Compressed RenderInput is rejected.
+RW-T19-S7-018	141	11	DESIGN_INPUT_EXPRESSION	RenderInput has no separate decompressed-size budget.
+RW-T19-S7-019	142	1	DESIGN_INPUT_EXPRESSION	A problem collection has at most 200 items.
+RW-T19-S7-020	142	2	DESIGN_INPUT_EXPRESSION	One canonical problem response has at most 4 KiB.
+RW-T19-S7-021	142	3	DESIGN_INPUT_EXPRESSION	A canonical problem collection has at most 256 KiB.
+RW-T19-S7-022	142	4	DESIGN_INPUT_EXPRESSION	Problem collection permanently reserves 1 KiB for PROBLEM_LIMIT_REACHED.
+RW-T19-S7-023	142	5	DESIGN_INPUT_EXPRESSION	Ordinary problems can consume at most 255 KiB.
+RW-T19-S7-024	142	6	DESIGN_INPUT_EXPRESSION	Natural completion at no more than 200 items returns every ordinary problem.
+RW-T19-S7-025	142	7	DESIGN_INPUT_EXPRESSION	On the 201st problem, the collector drops the 200th ordinary problem and appends PROBLEM_LIMIT_REACHED.
+RW-T19-S7-026	142	8	DESIGN_INPUT_EXPRESSION	When ordinary problems reach 255 KiB, the collector immediately appends the marker and stops expensive checks.
+RW-T19-S7-027	142	9	DESIGN_INPUT_EXPRESSION	PROBLEM_LIMIT_REACHED reason is closed to ITEMS or BYTES.
+RW-T19-S7-028	142	10	DESIGN_INPUT_EXPRESSION	If the byte boundary triggers first, marker reason is BYTES.
+RW-T19-S7-029	142	11	DESIGN_INPUT_EXPRESSION	An unsafe parser path still stops under the established single-problem rule.
+RW-T19-S7-030	142	12	DESIGN_INPUT_EXPRESSION	Problem truncation cannot leak omitted content.
+RW-T19-S7-031	143	1	DESIGN_INPUT_EXPRESSION	One DesignDSL has at most 4,096 authored Nodes.
+RW-T19-S7-032	143	2	DESIGN_INPUT_EXPRESSION	Authored tree depth is at most 32.
+RW-T19-S7-033	143	3	DESIGN_INPUT_EXPRESSION	One container has at most 1,024 children.
+RW-T19-S7-034	143	4	DESIGN_INPUT_EXPRESSION	One DesignDSL has at most 512 Definitions.
+RW-T19-S7-035	143	5	DESIGN_INPUT_EXPRESSION	One DesignDSL has at most 4,096 Bindings.
+RW-T19-S7-036	143	6	DESIGN_INPUT_EXPRESSION	One Node has at most 64 Bindings.
+RW-T19-S7-037	143	7	DESIGN_INPUT_EXPRESSION	One Text Node has at most 256 Runs.
+RW-T19-S7-038	143	8	DESIGN_INPUT_EXPRESSION	One DesignDSL has at most 4,096 total Runs.
+RW-T19-S7-039	143	9	DESIGN_INPUT_EXPRESSION	One Grid axis has at most 64 tracks.
+RW-T19-S7-040	143	10	DESIGN_INPUT_EXPRESSION	One TemplateUse has at most 256 fills.
+RW-T19-S7-041	143	11	DESIGN_INPUT_EXPRESSION	One literal list has at most 4,096 items.
+RW-T19-S7-042	143	12	DESIGN_INPUT_EXPRESSION	All literal lists in one DesignDSL have at most 16,384 items.
+RW-T19-S7-043	143	13	DESIGN_INPUT_EXPRESSION	All authored Run text has at most 1,000,000 Unicode scalars.
+RW-T19-S7-044	143	14	DESIGN_INPUT_EXPRESSION	Polygon and Polyline points and Path commands share one vector-entry counting unit.
+RW-T19-S7-045	143	15	DESIGN_INPUT_EXPRESSION	One vector Node has at most 10,000 vector entries.
+RW-T19-S7-046	143	16	DESIGN_INPUT_EXPRESSION	One DesignDSL has at most 100,000 vector entries.
+RW-T19-S7-047	144	1	DESIGN_INPUT_EXPRESSION	One Expression source has at most 64 KiB of UTF-8 bytes.
+RW-T19-S7-048	144	2	DESIGN_INPUT_EXPRESSION	All Expression source in one DesignDSL has at most 1 MiB of UTF-8 bytes.
+RW-T19-S7-049	144	3	DESIGN_INPUT_EXPRESSION	One Expression has at most 32 inputs.
+RW-T19-S7-050	144	4	DESIGN_INPUT_EXPRESSION	One DesignDSL has at most 4,096 Expression inputs.
+RW-T19-S7-051	144	5	DESIGN_INPUT_EXPRESSION	One Mapping has at most 256 cases.
+RW-T19-S7-052	144	6	DESIGN_INPUT_EXPRESSION	One DesignDSL has at most 8,192 Mapping cases.
+RW-T19-S7-053	144	7	DESIGN_INPUT_EXPRESSION	One Expression has at most 4,096 AST nodes.
+RW-T19-S7-054	144	8	DESIGN_INPUT_EXPRESSION	One DesignDSL has at most 65,536 Expression AST nodes.
+RW-T19-S7-055	144	9	DESIGN_INPUT_EXPRESSION	The Definition graph has at most 8,192 edges.
+RW-T19-S7-056	144	10	DESIGN_INPUT_EXPRESSION	Dependency-chain depth is at most 64.
+RW-T19-S7-057	144	11	DESIGN_INPUT_EXPRESSION	Static Expression limits apply before presence and lazy execution.
+RW-T19-S7-058	144	12	DESIGN_INPUT_EXPRESSION	Unused inputs, unselected cases, and statically unreachable Definitions still consume static budget.
+RW-T19-S7-059	145	1	DESIGN_INPUT_EXPRESSION	An admitted decimal has at most 128 precision digits after unobservable trailing-zero removal.
+RW-T19-S7-060	145	2	DESIGN_INPUT_EXPRESSION	An admitted decimal scale is between -64 and 64 inclusive.
+RW-T19-S7-061	145	3	DESIGN_INPUT_EXPRESSION	One unobservable decimal intermediate has at most 256 precision digits.
+RW-T19-S7-062	145	4	DESIGN_INPUT_EXPRESSION	One unobservable decimal intermediate scale is between -128 and 128 inclusive.
+RW-T19-S7-063	145	5	DESIGN_INPUT_EXPRESSION	Every observable decimal result returns to admitted bounds.
+RW-T19-S7-064	145	6	DESIGN_INPUT_EXPRESSION	Literal scale for divide, round, and formatDecimal is between 0 and 64 inclusive.
+RW-T19-S7-065	145	7	DESIGN_INPUT_EXPRESSION	Decimal bound violation is an Expression ERROR.
+RW-T19-S7-066	145	8	DESIGN_INPUT_EXPRESSION	Decimal bound violation cannot truncate, saturate, or switch to binary floating point.
+RW-T19-S7-067	146	1	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	A closure has at most 64 unique TemplateSnapshots.
+RW-T19-S7-068	146	2	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	A closure has at most 256 authored TemplateRef edges.
+RW-T19-S7-069	146	3	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	Closure DAG depth is at most 16.
+RW-T19-S7-070	146	4	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	All canonical DesignDSL in a closure has at most 32 MiB.
+RW-T19-S7-071	146	5	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	Closure freeze performs at most three complete attempts comprising the first attempt and two retries.
+RW-T19-S7-072	146	6	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	Any freeze drift discards the entire attempt.
+RW-T19-S7-073	146	7	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	Actual Template invocations are at most 256.
+RW-T19-S7-074	146	8	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	Template invocation depth is at most 16.
+RW-T19-S7-075	146	9	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	Actual compositionViewports are at most 256.
+RW-T19-S7-076	147	1	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	Each actual Repeat occurrence collection has at most 1,000 items.
+RW-T19-S7-077	147	2	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	Repeat nesting depth is at most 8.
+RW-T19-S7-078	147	3	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	A request has at most 10,000 total Loop frames.
+RW-T19-S7-079	147	4	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	Every Repeat item reserves its frame and operation before pruning.
+RW-T19-S7-080	147	5	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	The 10,001st frame fails before frame creation.
+RW-T19-S7-081	147	6	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	Nested Repeat overflow cannot silently truncate to a partial result.
+RW-T19-S7-082	148	1	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	A request has at most 25,000 Render occurrences.
+RW-T19-S7-083	148	2	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	A request materializes at most 20,000 static Nodes.
+RW-T19-S7-084	148	3	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	A request generates at most 100,000 track or cell entries.
+RW-T19-S7-085	148	4	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	A request performs at most 1,000,000 Evaluator logical operations.
+RW-T19-S7-086	148	5	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	Memoization and cache do not reduce logical counts.
+RW-T19-S7-087	148	6	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	Retry consumes physical attempts and deadline separately.
+RW-T19-S7-088	148	7	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	Retry cannot reset request logical budgets.
+RW-T19-S7-089	149	1	RENDERER_OUTPUT	RenderDocument canonical bytes are at most 64 MiB.
+RW-T19-S7-090	149	2	RENDERER_OUTPUT	RenderDocument strict JSON depth is at most 128.
+RW-T19-S7-091	149	3	RENDERER_OUTPUT	RenderDocument has at most 20,000 static Nodes.
+RW-T19-S7-092	149	4	RENDERER_OUTPUT	RenderDocument has at most 19,999 child edges.
+RW-T19-S7-093	149	5	RENDERER_OUTPUT	RenderDocument has at most 10,000 Runs.
+RW-T19-S7-094	149	6	RENDERER_OUTPUT	RenderDocument text has at most 1,000,000 Unicode scalars.
+RW-T19-S7-095	149	7	RENDERER_OUTPUT	RenderDocument has at most 100,000 vector entries.
+RW-T19-S7-096	149	8	RENDERER_OUTPUT	RenderDocument-owned capacities fail in the DOCUMENT_SEAL capped writer or validator before atomic commit.
+RW-T19-S7-097	149	9	RENDERER_OUTPUT	RenderDocument-owned capacity failure returns RENDER_DOCUMENT_LIMIT_EXCEEDED rather than internal error.
+RW-T19-S7-098	149	10	LAYOUT_SHAPING	Engine handles at most 1,000,000 extended grapheme clusters.
+RW-T19-S7-099	149	11	LAYOUT_SHAPING	Engine shapes at most 2,000,000 glyphs.
+RW-T19-S7-100	149	12	LAYOUT_SHAPING	Engine shapes at most 100,000 lines or columns.
+RW-T19-S7-101	149	13	RENDERER_OUTPUT	Engine paints at most 50,000 paint items.
+RW-T19-S7-102	149	14	RENDERER_OUTPUT	Engine clip depth is at most 128.
+RW-T19-S7-103	149	15	RENDERER_OUTPUT	Diagnostic sidecar has at most 25,000 items.
+RW-T19-S7-104	149	16	RENDERER_OUTPUT	Diagnostic sidecar has at most 8 MiB.
+RW-T19-S7-105	149	17	RENDERER_OUTPUT	Requested LayoutTrace has at most 20,000 items.
+RW-T19-S7-106	149	18	RENDERER_OUTPUT	Requested LayoutTrace has at most 8 MiB.
+RW-T19-S7-107	149	19	RENDERER_OUTPUT	Trace overflow fails the complete request rather than truncating trace or returning an untraced image.
+RW-T19-S7-108	150	1	LAYOUT_SHAPING	Each Canvas trim axis is greater than zero and at most 1,000 millimeters.
+RW-T19-S7-109	150	2	LAYOUT_SHAPING	Each bleed side is between zero and 100 millimeters inclusive.
+RW-T19-S7-110	150	3	LAYOUT_SHAPING	Absolute authored geometry coordinates and lengths are at most 10,000 millimeters.
+RW-T19-S7-111	150	4	LAYOUT_SHAPING	Font size is greater than zero and at most 4,096 points.
+RW-T19-S7-112	150	5	LAYOUT_SHAPING	Absolute transform scale is between zero and 100 inclusive.
+RW-T19-S7-113	150	6	LAYOUT_SHAPING	Authored rotation is between -360 and 360 degrees inclusive.
+RW-T19-S7-114	150	7	LAYOUT_SHAPING	Equivalent authored rotation angles are not normalized.
+RW-T19-S7-115	150	8	LAYOUT_SHAPING	Passing physical numeric domains does not guarantee renderability at a chosen DPI.
+RW-T19-S7-116	150	9	LAYOUT_SHAPING	Surface edge, pixel, and byte budgets remain independently enforced.
+RW-T19-S8-001	154	1	ASSET_CAPABILITY_CONCURRENCY	Closure admission has at most 4,096 authored Asset occurrences.
+RW-T19-S8-002	154	2	ASSET_CAPABILITY_CONCURRENCY	Closure admission has at most 512 unique logical Assets.
+RW-T19-S8-003	154	3	ASSET_CAPABILITY_CONCURRENCY	Actual Evaluation has at most 2,048 Asset resolve occurrences.
+RW-T19-S8-004	154	4	ASSET_CAPABILITY_CONCURRENCY	Each resolve occurrence produces exactly one RenderResource entry.
+RW-T19-S8-005	154	5	ASSET_CAPABILITY_CONCURRENCY	Actual Evaluation uses at most 128 unique exact Asset contents.
+RW-T19-S8-006	154	6	ASSET_CAPABILITY_CONCURRENCY	Occurrence-counted declared raw bytes are at most 2 GiB.
+RW-T19-S8-007	154	7	ASSET_CAPABILITY_CONCURRENCY	Occurrence-counted declared image pixels are at most 1,000,000,000.
+RW-T19-S8-008	154	8	ASSET_CAPABILITY_CONCURRENCY	Occurrence-counted declared FONT bytes are at most 512 MiB.
+RW-T19-S8-009	154	9	ASSET_CAPABILITY_CONCURRENCY	Unique-exact-content raw bytes are at most 256 MiB.
+RW-T19-S8-010	154	10	ASSET_CAPABILITY_CONCURRENCY	Unique-exact-content oriented image pixels are at most 125,000,000.
+RW-T19-S8-011	154	11	ASSET_CAPABILITY_CONCURRENCY	Unique-exact-content FONT bytes are at most 64 MiB.
+RW-T19-S8-012	154	12	ASSET_CAPABILITY_CONCURRENCY	One IMAGE remains limited by AssetAcceptanceProfile to 64 MiB.
+RW-T19-S8-013	154	13	ASSET_CAPABILITY_CONCURRENCY	One IMAGE remains limited to a 20,000-pixel edge.
+RW-T19-S8-014	154	14	ASSET_CAPABILITY_CONCURRENCY	One IMAGE remains limited to 100,000,000 pixels.
+RW-T19-S8-015	154	15	ASSET_CAPABILITY_CONCURRENCY	One FONT remains limited to 32 MiB.
+RW-T19-S8-016	154	16	ASSET_CAPABILITY_CONCURRENCY	The first reached lower individual or aggregate Asset limit fails.
+RW-T19-S8-017	155	1	ASSET_CAPABILITY_CONCURRENCY	Request-local verified raw cache is at most 256 MiB.
+RW-T19-S8-018	155	2	ASSET_CAPABILITY_CONCURRENCY	Request-local decoded RGBA8 cache is at most 512 MiB.
+RW-T19-S8-019	155	3	ASSET_CAPABILITY_CONCURRENCY	Cache hits do not reduce occurrence, lease, manifest, declared byte or pixel, or consumer-order budgets.
+RW-T19-S8-020	155	4	ASSET_CAPABILITY_CONCURRENCY	RenderResource manifest is at most 4 MiB.
+RW-T19-S8-021	155	5	ASSET_CAPABILITY_CONCURRENCY	One canonical fetch URL is at most 2 KiB of UTF-8 bytes.
+RW-T19-S8-022	155	6	ASSET_CAPABILITY_CONCURRENCY	All canonical fetch URLs are at most 4 MiB of UTF-8 bytes.
+RW-T19-S8-023	155	7	ASSET_CAPABILITY_CONCURRENCY	Actual fetch bytes including successful and retry bodies are at most 512 MiB.
+RW-T19-S8-024	156	1	ASSET_CAPABILITY_CONCURRENCY	A complete closure has at most 4,096 static capability sources.
+RW-T19-S8-025	156	2	ASSET_CAPABILITY_CONCURRENCY	A request has at most 8,192 logical capability demands.
+RW-T19-S8-026	156	3	ASSET_CAPABILITY_CONCURRENCY	A request has at most 4,096 Clock demands.
+RW-T19-S8-027	156	4	ASSET_CAPABILITY_CONCURRENCY	A request has at most 4,096 Random demands.
+RW-T19-S8-028	156	5	ASSET_CAPABILITY_CONCURRENCY	One CapabilityCallPosition has at most 2 KiB of canonical bytes.
+RW-T19-S8-029	156	6	ASSET_CAPABILITY_CONCURRENCY	All CapabilityCallPositions have at most 16 MiB of canonical bytes.
+RW-T19-S8-030	156	7	ASSET_CAPABILITY_CONCURRENCY	CapabilityState record is at most 1 MiB.
+RW-T19-S8-031	156	8	ASSET_CAPABILITY_CONCURRENCY	Result-digest streaming input is at most 16 MiB.
+RW-T19-S8-032	156	9	ASSET_CAPABILITY_CONCURRENCY	CapabilityState initialization performs at most three attempts.
+RW-T19-S8-033	156	10	ASSET_CAPABILITY_CONCURRENCY	Random rejection performs at most 128 attempts.
+RW-T19-S8-034	156	11	ASSET_CAPABILITY_CONCURRENCY	First demand atomically reserves total and per-kind units before evaluation.
+RW-T19-S8-035	156	12	ASSET_CAPABILITY_CONCURRENCY	Definition memo, alias reread, and physical cache do not reduce logical capability budgets.
+RW-T19-S8-036	157	1	RENDERER_OUTPUT	Effective output DPI is at most 600.
+RW-T19-S8-037	157	2	RENDERER_OUTPUT	Each surface edge is at most 16,384 pixels.
+RW-T19-S8-038	157	3	RENDERER_OUTPUT	A surface has at most 50,000,000 pixels.
+RW-T19-S8-039	157	4	RENDERER_OUTPUT	An RGBA8 surface has at most exactly 200,000,000 bytes.
+RW-T19-S8-040	157	5	RENDERER_OUTPUT	Renderer working-set references the single 512-MiB request-local decoded cache cell and defines no second same-name budget.
+RW-T19-S8-041	157	6	RENDERER_OUTPUT	Decoder scratch is at most 128 MiB.
+RW-T19-S8-042	157	7	RENDERER_OUTPUT	Encoder scratch is at most 64 MiB.
+RW-T19-S8-043	157	8	RENDERER_OUTPUT	One request has a 2-GiB live-RAM ceiling.
+RW-T19-S8-044	157	9	ASSET_CAPABILITY_CONCURRENCY	Live RAM is atomically reserved before acquiring a FIFO queue position and accepted execution.
+RW-T19-S8-045	157	10	ASSET_CAPABILITY_CONCURRENCY	Failure to reserve live RAM can return only RENDER_ENGINE_BUSY.
+RW-T19-S8-046	158	1	RENDERER_OUTPUT	A complete PNG or JPEG image is at most 512 MiB.
+RW-T19-S8-047	158	2	RENDERER_OUTPUT	Encoded image overflow fails with zero output even for a legal surface.
+RW-T19-S8-048	158	3	RENDERER_OUTPUT	One request has at most 1 GiB ephemeral bytes.
+RW-T19-S8-049	158	4	ASSET_CAPABILITY_CONCURRENCY	The reference instance has 4 GiB total ephemeral bytes and enforces a pre-admission watermark breaker.
+RW-T19-S8-050	158	5	RENDERER_OUTPUT	Trace multipart maximum is exactly 545,325,056 bytes from image, trace, and 64-KiB framing limits.
+RW-T19-S8-051	158	6	RENDERER_OUTPUT	Overflow of either multipart part or total multipart prevents image release.
+RW-T19-S8-052	159	1	ASSET_CAPABILITY_CONCURRENCY	The absolute deadline from public Render admission through atomic output seal is 60 seconds.
+RW-T19-S8-053	159	2	ASSET_CAPABILITY_CONCURRENCY	Admission plus closure has at most 5 seconds.
+RW-T19-S8-054	159	3	ASSET_CAPABILITY_CONCURRENCY	Evaluation plus RenderDocument seal has at most 15 seconds.
+RW-T19-S8-055	159	4	ASSET_CAPABILITY_CONCURRENCY	Engine queue wait has at most 5 seconds.
+RW-T19-S8-056	159	5	ASSET_CAPABILITY_CONCURRENCY	Resource processing has at most 20 seconds.
+RW-T19-S8-057	159	6	ASSET_CAPABILITY_CONCURRENCY	Layout, raster, and encode together have at most 15 seconds.
+RW-T19-S8-058	159	7	ASSET_CAPABILITY_CONCURRENCY	Unused time from one stage cannot let another exceed its stage cap.
+RW-T19-S8-059	159	8	ASSET_CAPABILITY_CONCURRENCY	Every stage remains subject to the same nonextendable absolute deadline.
+RW-T19-S8-060	159	9	ASSET_CAPABILITY_CONCURRENCY	Already-sealed bytes may transport after deadline but cannot be recomputed, renewed, or changed.
+RW-T19-S8-061	160	1	ASSET_CAPABILITY_CONCURRENCY	Each fetch performs at most two attempts consisting of first attempt and one retry.
+RW-T19-S8-062	160	2	ASSET_CAPABILITY_CONCURRENCY	Fetch retry uses a fixed no-jitter 100-millisecond backoff.
+RW-T19-S8-063	160	3	ASSET_CAPABILITY_CONCURRENCY	One fetch attempt lasts at most 5 seconds.
+RW-T19-S8-064	160	4	ASSET_CAPABILITY_CONCURRENCY	Fetch attempts remain subject to the 20-second resource cap and absolute deadline.
+RW-T19-S8-065	160	5	ASSET_CAPABILITY_CONCURRENCY	Only transport and HTTP 5xx failures can retry.
+RW-T19-S8-066	160	6	ASSET_CAPABILITY_CONCURRENCY	At Command admission every lease covers the absolute deadline plus a five-second safety margin.
+RW-T19-S8-067	160	7	ASSET_CAPABILITY_CONCURRENCY	An insufficient lease is rejected before fetch.
+RW-T19-S8-068	161	1	ASSET_CAPABILITY_CONCURRENCY	Worst-case cooperative checkpoint interval is 50 milliseconds.
+RW-T19-S8-069	161	2	ASSET_CAPABILITY_CONCURRENCY	After accepted cancel, actual CPU and IO stop within 250 milliseconds.
+RW-T19-S8-070	161	3	ASSET_CAPABILITY_CONCURRENCY	An uninterruptible primitive must prove at its input that worst-case execution meets 50 milliseconds or be split or rejected.
+RW-T19-S8-071	161	4	ASSET_CAPABILITY_CONCURRENCY	Unsealed document, lease, resource buffer, raw sidecar, trace, and temporary state clean immediately after terminal or cancel and no later than deadline.
+RW-T19-S8-072	161	5	ASSET_CAPABILITY_CONCURRENCY	Minimal terminal registry and authorized sealed response or safe terminal problem remain until max of sealedAt and deadlineAt plus five minutes.
+RW-T19-S8-073	161	6	ASSET_CAPABILITY_CONCURRENCY	A pre-Command cancel tombstone remains for 60 seconds.
+RW-T19-S8-074	161	7	ASSET_CAPABILITY_CONCURRENCY	CapabilityState and Resolver recovery records remain until five minutes after the original deadline.
+RW-T19-S8-075	161	8	ASSET_CAPABILITY_CONCURRENCY	Retention deadlines are fixed and cannot extend through access, retry, or cancel.
+RW-T19-S8-076	162	1	LAYOUT_SHAPING	A request performs at most 200,000 measure calls.
+RW-T19-S8-077	162	2	LAYOUT_SHAPING	A request performs at most 100,000 constraint-sensitive remeasure calls.
+RW-T19-S8-078	162	3	LAYOUT_SHAPING	A request performs at most 10,000,000 total layout operations.
+RW-T19-S8-079	162	4	LAYOUT_SHAPING	A request performs at most 8,000,000 shaping glyph attempts.
+RW-T19-S8-080	162	5	LAYOUT_SHAPING	A request evaluates at most 8,000,000 break candidates.
+RW-T19-S8-081	162	6	LAYOUT_SHAPING	Final glyph, line, and node counts remain subject to lower Section7 output counts.
+RW-T19-S8-082	162	7	LAYOUT_SHAPING	All 32 Text shrink iterations consume layout-operation budget.
+RW-T19-S8-083	162	8	LAYOUT_SHAPING	Each Stack container's fillChildCount plus one rounds consume layout-operation budget.
+RW-T19-S8-084	162	9	LAYOUT_SHAPING	Each Grid span constraint processing consumes layout-operation budget.
+RW-T19-S8-085	163	1	RENDERER_OUTPUT	Raster performs at most 200,000,000 painted pixel-visits.
+RW-T19-S8-086	163	2	RENDERER_OUTPUT	Clip, mask, and overdraw all count as painted pixel-visits.
+RW-T19-S8-087	163	3	RENDERER_OUTPUT	One paint checkpoint chunk has at most 262,144 pixel-visits.
+RW-T19-S8-088	163	4	RENDERER_OUTPUT	One fetch, decode, or encode byte chunk has at most 1 MiB.
+RW-T19-S8-089	163	5	LAYOUT_SHAPING	A request uses at most 32 unique exact FONT contents.
+RW-T19-S8-090	163	6	LAYOUT_SHAPING	One FONT has at most 256 tables.
+RW-T19-S8-091	163	7	LAYOUT_SHAPING	All FONT contents have at most 4,096 tables.
+RW-T19-S8-092	163	8	LAYOUT_SHAPING	A request uses at most 262,144 unique glyph outlines.
+RW-T19-S8-093	163	9	LAYOUT_SHAPING	Lower raw-byte, font-byte, and glyph budgets remain jointly enforced.
+RW-T19-S8-094	164	1	RENDERER_OUTPUT	QR input has at most 4 KiB of UTF-8 bytes.
+RW-T19-S8-095	164	2	RENDERER_OUTPUT	QR content remains subject to ECI 26, authored error correction, and version 1 through 40 capacity with CODE_CONTENT_TOO_LARGE.
+RW-T19-S8-096	164	3	RENDERER_OUTPUT	Barcode retains its fixed-length and Code128 128-printable-ASCII constraints.
+RW-T19-S8-097	164	4	RENDERER_OUTPUT	All QR and Barcode instances have at most 5,000,000 module cells per request.
+RW-T19-S8-098	164	5	RENDERER_OUTPUT	Each code still passes transform, quiet-zone, and integer-pitch checks.
+RW-T19-S9-001	168	1	SECURITY_FAULT	RenderInput capacity failure uses RENDER_INPUT_LIMIT_EXCEEDED.
+RW-T19-S9-002	168	2	SECURITY_FAULT	DesignDSL capacity failure uses DESIGN_DSL_LIMIT_EXCEEDED.
+RW-T19-S9-003	168	3	SECURITY_FAULT	Expression capacity failure uses EXPRESSION_LIMIT_EXCEEDED.
+RW-T19-S9-004	168	4	SECURITY_FAULT	Template closure capacity failure uses TEMPLATE_CLOSURE_LIMIT_EXCEEDED.
+RW-T19-S9-005	168	5	SECURITY_FAULT	Evaluation capacity failure uses EVALUATION_BUDGET_EXCEEDED.
+RW-T19-S9-006	168	6	SECURITY_FAULT	RenderDocument capacity failure uses RENDER_DOCUMENT_LIMIT_EXCEEDED.
+RW-T19-S9-007	168	7	SECURITY_FAULT	Diagnostic-sidecar capacity failure uses RENDER_DIAGNOSTIC_LIMIT_EXCEEDED.
+RW-T19-S9-008	168	8	SECURITY_FAULT	Asset aggregate capacity failure uses ASSET_BUDGET_EXCEEDED.
+RW-T19-S9-009	168	9	SECURITY_FAULT	Resource aggregate capacity failure uses RESOURCE_BUDGET_EXCEEDED.
+RW-T19-S9-010	168	10	SECURITY_FAULT	Capability capacity continues to use CAPABILITY_BUDGET_EXCEEDED.
+RW-T19-S9-011	168	11	SECURITY_FAULT	Single Asset content limits continue to use ASSET_CONTENT_LIMIT_EXCEEDED.
+RW-T19-S9-012	168	12	SECURITY_FAULT	Layout, raster, and encoded output budgets continue to use their existing specific budget codes.
+RW-T19-S9-013	168	13	SECURITY_FAULT	LayoutTrace capacity continues to use RENDER_LAYOUT_TRACE_LIMIT_EXCEEDED.
+RW-T19-S9-014	168	14	SECURITY_FAULT	QR or Barcode content capacity continues to use CODE_CONTENT_TOO_LARGE.
+RW-T19-S9-015	168	15	SECURITY_FAULT	Any other existing more-specific code takes precedence over a new aggregate capacity code.
+RW-T19-S9-016	169	1	SECURITY_FAULT	Nonidentity Content-Encoding uses RENDER_INPUT_CONTENT_ENCODING_UNSUPPORTED as an enum violation.
+RW-T19-S9-017	169	2	SECURITY_FAULT	Geometry numeric-domain violation uses DESIGN_PROPERTY_CONSTRAINT_INVALID as a property-contract violation.
+RW-T19-S9-018	169	3	SECURITY_FAULT	Reference deployment, chunk or Profile invariants, and formulas cannot masquerade as request capacity failures.
+RW-T19-S9-019	169	4	SECURITY_FAULT	Each budget-matrix cell resolves through explicit oracle data or one group default to a closed kind, code, stage, reservation point, and zero boundary.
+RW-T19-S9-020	170	1	SECURITY_FAULT	A public capacity problem exposes only closed limitId.
+RW-T19-S9-021	170	2	SECURITY_FAULT	A public capacity problem omits actual count, observed value, input length, omitted content, and free text.
+RW-T19-S9-022	170	3	SECURITY_FAULT	Deployment READY checks may record expected and available machine facts only when they contain no request data.
+RW-T19-S9-023	170	4	SECURITY_FAULT	Deployment READY facts do not reuse the public Render problem wire.
+RW-T19-S10-001	174	1	DESIGN_INPUT_EXPRESSION	DesignDSL raw, token, and parser hard limits apply before complete model construction.
+RW-T19-S10-002	174	2	DESIGN_INPUT_EXPRESSION	Canonical counting starts only after safe structure, normalization, and set sorting.
+RW-T19-S10-003	174	3	DESIGN_INPUT_EXPRESSION	A 16-MiB capped counting sink proves canonical-byte budget before any dependency IO.
+RW-T19-S10-004	174	4	DESIGN_INPUT_EXPRESSION	External dependency validation and final canonical emission or hash happen only after successful canonical count.
+RW-T19-S10-005	174	5	WIRE_CANONICAL_DIGEST	Counting and final writers replay the same exact canonical rules.
+RW-T19-S10-006	174	6	WIRE_CANONICAL_DIGEST	The counting writer does not retain complete canonical output.
+RW-T19-S10-007	175	1	DESIGN_INPUT_EXPRESSION	The problem collector permanently reserves the 1-KiB marker.
+RW-T19-S10-008	175	2	DESIGN_INPUT_EXPRESSION	The problem collector applies the Section7 item-and-byte algorithm.
+RW-T19-S10-009	175	3	DESIGN_INPUT_EXPRESSION	The marker records collection truncation and cannot substitute for an ordinary domain problem.
+RW-T19-S10-010	175	4	DESIGN_INPUT_EXPRESSION	After a collection limit, validators cannot continue collecting sensitive or expensive content.
+RW-T19-S10-011	176	1	ASSET_CAPABILITY_CONCURRENCY	Engine registry reservation is only a request-identity fence.
+RW-T19-S10-012	176	2	ASSET_CAPABILITY_CONCURRENCY	Accepted execution begins only on atomic acquisition of a FIFO queue position.
+RW-T19-S10-013	176	3	ASSET_CAPABILITY_CONCURRENCY	No queue position returns nonterminal RENDER_ENGINE_BUSY and permits same-digest retry within the original deadline.
+RW-T19-S10-014	176	4	ASSET_CAPABILITY_CONCURRENCY	An accepted request waits for a slot for at most five seconds.
+RW-T19-S10-015	176	5	ASSET_CAPABILITY_CONCURRENCY	Accepted wait exhaustion returns terminal RENDER_DEADLINE_EXCEEDED.
+RW-T19-S10-016	176	6	ASSET_CAPABILITY_CONCURRENCY	Queue wait and replay cannot reset the absolute deadline.
+RW-T19-S11-001	180	1	RENDERER_OUTPUT	The budget matrix RenderDocument group contains only fields knowable before seal.
+RW-T19-S11-002	180	2	RENDERER_OUTPUT	Grapheme, glyph, line, paint, and clip capacities belong to Engine groups.
+RW-T19-S11-003	180	3	ASSET_CAPABILITY_CONCURRENCY	assetsAndFetch.requestDecodedCacheBytes is the sole authoritative decoded-cache cell.
+RW-T19-S11-004	180	4	RENDERER_OUTPUT	Surface working set references the decoded-cache cell by JSON Pointer rather than duplicating it.
+RW-T19-S11-005	180	5	SECURITY_FAULT	Enum, property, deployment, and formula cells remain in the matrix but oracle classifies them as noncapacity kinds.
+RW-T19-S11-006	181	1	RENDERER_OUTPUT	Ordinary RenderDocument capacity fails at DOCUMENT_SEAL before atomic commit with its specific limit code.
+RW-T19-S11-007	181	2	RENDERER_OUTPUT	Only Engine detection of a sealed-document invariant, digest, manifest, or Profile violation folds publicly to RENDER_INTERNAL_ERROR.
+RW-T19-S11-008	181	3	RENDERER_OUTPUT	A failed builder, canonical prefix, or sidecar is never sent to Engine.
+RW-T19-S11-009	182	1	SECURITY_FAULT	Raw request artifacts and sealed replay state remain strictly separate.
+RW-T19-S11-010	182	2	SECURITY_FAULT	Raw request artifacts clean according to Section8 lifecycle deadlines.
+RW-T19-S11-011	182	3	SECURITY_FAULT	Sealed replay state stores only authorized complete bytes or a safe problem plus minimal registry.
+RW-T19-S11-012	182	4	SECURITY_FAULT	Five-minute replay cannot reread Template or Asset, renew leases, rebuild sidecar, expand diagnostics, or change authorization projection.
+RW-T19-S11-013	183	1	DESIGN_INPUT_EXPRESSION	Java and TypeScript jointly replay Design, Input, and Expression for A2.
+RW-T19-S11-014	183	2	WIRE_CANONICAL_DIGEST	Java and Rust jointly replay canonical, digest, and RenderDocument seams for A2.
+RW-T19-S11-015	183	3	RENDERER_OUTPUT	Rust Renderer runs exact goldens on every READY target and an independent runner re-verifies them for A2.
+RW-T19-S11-016	183	4	SECURITY_FAULT	A3 pins target, manifest, case, revision, and artifact hash.
+RW-T19-S11-017	183	5	SECURITY_FAULT	A3 evidence cannot be skipped.
+RW-T19-S11-018	183	6	EDITOR_AUTOMATED	Editor keyboard, accessibility, and experience remain a separate J1 responsibility.
+RW-T19-S12-001	187	1	RENDERER_OUTPUT	renderweave-renderer/1.0 fixes one CPU-only x86-64-v2 execution path.
+RW-T19-S12-002	187	2	RENDERER_OUTPUT	GPU, LCD, dither, hinting, embedded bitmap, autohint, fast-math, and runtime ISA dispatch are disabled.
+RW-T19-S12-003	187	3	RENDERER_OUTPUT	Exact machine manifest and goldens jointly define Skia, FreeType, compiler, and build arguments.
+RW-T19-S12-004	187	4	RENDERER_OUTPUT	Exact machine manifest and goldens jointly define antialias coverage, stroke or clip edges, and sampling ties.
+RW-T19-S12-005	187	5	RENDERER_OUTPUT	Public API names and environment defaults are not Renderer semantics.
+RW-T19-S12-006	188	1	RENDERER_OUTPUT	renderweave-output-png/1.0 uses the Ticket16 filter-zero and stored-DEFLATE self-described algorithm.
+RW-T19-S12-007	188	2	RENDERER_OUTPUT	PNG uses fixed chunk order and one-MiB IDAT payload chunks.
+RW-T19-S12-008	188	3	RENDERER_OUTPUT	PNG uses specified CRC and Adler-32 algorithms.
+RW-T19-S12-009	188	4	RENDERER_OUTPUT	PNG output does not depend on libpng or zlib version defaults.
+RW-T19-S12-010	188	5	RENDERER_OUTPUT	PNG goldens cover one scanline, a 65,535-byte block, one-MiB IDAT, maximum height, transparent RGB, and corruption checks.
+RW-T19-S12-011	189	1	RENDERER_OUTPUT	renderweave-output-jpeg/1.0 uses pinned static libjpeg-turbo with SIMD disabled and JDCT_ISLOW.
+RW-T19-S12-012	189	2	RENDERER_OUTPUT	JPEG uses baseline 4:4:4 and fixed quantization, Huffman, marker, and ICC contracts.
+RW-T19-S12-013	189	3	RENDERER_OUTPUT	JPEG exact goldens participate in Profile authority.
+RW-T19-S12-014	189	4	RENDERER_OUTPUT	Codec defaults and quality helpers are not JPEG authority.
+RW-T19-S12-015	189	5	RENDERER_OUTPUT	JPEG goldens cover rounding, padding, coefficient edges, the listed quality values, byte stuffing, marker or table or ICC bytes, one-by-one, and non-eight-multiple surfaces.
+RW-T19-S12-016	190	1	RENDERER_OUTPUT	Candidate commits cannot be treated as certified facts while the complete Renderer dependency tree remains uncertifiable.
+RW-T19-S12-017	190	2	RENDERER_OUTPUT	Ticket19 remains open until dependency calibration completes.
+RW-T19-S12-018	190	3	RENDERER_OUTPUT	Before implementation planning, non-product dependency calibration provides exact source commits.
+RW-T19-S12-019	190	4	RENDERER_OUTPUT	Dependency calibration provides toolchain and build hashes plus flags.
+RW-T19-S12-020	190	5	RENDERER_OUTPUT	Dependency calibration provides canonical ICC bytes and hash.
+RW-T19-S12-021	190	6	RENDERER_OUTPUT	Dependency calibration provides a golden manifest.
+RW-T19-S12-022	190	7	RENDERER_OUTPUT	Dependency calibration passes A1 structural and vector self-checks.
+RW-T19-S12-023	190	8	RENDERER_OUTPUT	renderer-spike-candidate-v1.json freezes non-certified candidate rw-renderer-spike-linux-x86_64-v2-000001.
+RW-T19-S12-024	190	9	RENDERER_OUTPUT	The spike candidate pins Skia M151 commit 93458b5faf9cd8befbe6c93158d4d8ee7c8424ee and tree e3eaee9c6a83beffdf115a267c3d9a4bd7d9348e.
+RW-T19-S12-025	190	10	RENDERER_OUTPUT	The spike candidate pins FreeType 2.14.3 commit 0a0221a1347e2f1e07c395263540026e9a0aa7c7.
+RW-T19-S12-026	190	11	RENDERER_OUTPUT	The spike candidate pins libjpeg-turbo 3.2.0 commit c85e6b905bf237038faa936dab160ebfc5da0344.
+RW-T19-S12-027	190	12	RENDERER_OUTPUT	The spike candidate pins LLVM, Clang, and LLD 22.1.8 commit ca7933e47d3a3451d81e72ac174dcb5aa28b59d1.
+RW-T19-S12-028	190	13	RENDERER_OUTPUT	The spike candidate pins GN commit b2afae122eeb6ce09c52d63f67dc53fc517dbdc8.
+RW-T19-S12-029	190	14	RENDERER_OUTPUT	The spike candidate pins Ninja 1.12.1.chromium.4.
+RW-T19-S12-030	190	15	RENDERER_OUTPUT	The spike candidate pins CMake 4.4.2.
+RW-T19-S12-031	190	16	RENDERER_OUTPUT	The candidate status can only be SPIKE_CANDIDATE and cannot claim Certified or READY.
+RW-T19-S12-032	190	17	RENDERER_OUTPUT	Candidate failure or a source change issues a new candidateId.
+RW-T19-S12-033	190	18	RENDERER_OUTPUT	The prior candidate identity is retained with supersededBy and never changes meaning in place.
+RW-T19-S12-034	190	19	RENDERER_OUTPUT	Certification pins the exact HarfBuzz source and build.
+RW-T19-S12-035	190	20	RENDERER_OUTPUT	Certification pins the exact Unicode and BiDi data identity.
+RW-T19-S12-036	190	21	RENDERER_OUTPUT	Certification pins the exact PNG input decoder source and build.
+RW-T19-S12-037	190	22	RENDERER_OUTPUT	Certification pins the exact WebP input decoder source and build.
+RW-T19-S12-038	190	23	RENDERER_OUTPUT	Certification pins every Rust crate and enabled feature.
+RW-T19-S12-039	190	24	RENDERER_OUTPUT	Certification pins libc and libc++ identity.
+RW-T19-S12-040	190	25	RENDERER_OUTPUT	Certification pins the compiler sysroot.
+RW-T19-S12-041	190	26	RENDERER_OUTPUT	Certification pins the OCI image digest.
+RW-T19-S12-042	190	27	RENDERER_OUTPUT	Certification pins the complete downstream patchset.
+RW-T19-S12-043	190	28	RENDERER_OUTPUT	Certification pins all build flags.
+RW-T19-S12-044	190	29	RENDERER_OUTPUT	Certification pins canonical ICC bytes and SHA-256.
+RW-T19-S12-045	190	30	RENDERER_OUTPUT	Certification pins the complete golden corpus manifest.
+RW-T19-S12-046	190	31	RENDERER_OUTPUT	ELF audit excludes AVX instructions.
+RW-T19-S12-047	190	32	RENDERER_OUTPUT	ELF audit excludes AVX2 instructions.
+RW-T19-S12-048	190	33	RENDERER_OUTPUT	ELF audit excludes FMA instructions.
+RW-T19-S12-049	190	34	RENDERER_OUTPUT	ELF audit excludes x86-64-v3-only and x86-64-v4-only instruction leakage.
+RW-T19-S12-050	190	35	RENDERER_OUTPUT	ELF audit excludes GPU execution paths.
+RW-T19-S12-051	190	36	RENDERER_OUTPUT	ELF audit excludes undeclared dynamic dependencies.
+RW-T19-S12-052	190	37	RENDERER_OUTPUT	Exact pixels replay identically on two non-virtualized physical Linux hosts.
+RW-T19-S12-053	190	38	RENDERER_OUTPUT	Exact PNG bytes replay identically on both physical Linux hosts.
+RW-T19-S12-054	190	39	RENDERER_OUTPUT	Exact JPEG bytes replay identically on both physical Linux hosts.
+RW-T19-S12-055	190	40	RENDERER_OUTPUT	The two physical certification hosts use different CPU families.
+RW-T19-S12-056	190	41	RENDERER_OUTPUT	Certification host selection prefers one AMD and one Intel machine.
+RW-T19-S12-057	190	42	RENDERER_OUTPUT	Docker or WSL virtualized A1 evidence cannot participate in READY certification.
+RW-T19-S12-058	190	43	RENDERER_OUTPUT	Ticket19 remains open while any Renderer certification gate is incomplete.
+RW-T19-S12-059	190	44	RENDERER_OUTPUT	The FreeType downstream policy is frozen but remains spike-only evidence.
+RW-T19-S12-060	190	45	RENDERER_OUTPUT	The only approved Skia patch seam is src/ports/SkFontHost_FreeType.cpp in SkScalerContext_FreeType::SkScalerContext_FreeType.
+RW-T19-S12-061	190	46	RENDERER_OUTPUT	SkFontHinting::kNone unconditionally adds FT_LOAD_NO_AUTOHINT.
+RW-T19-S12-062	190	47	RENDERER_OUTPUT	The kNone FT_LOAD_NO_AUTOHINT rule cannot depend on SK_BUILD_FOR_ANDROID_FRAMEWORK.
+RW-T19-S12-063	190	48	RENDERER_OUTPUT	Every final glyph-load path retains FT_LOAD_NO_HINTING.
+RW-T19-S12-064	190	49	RENDERER_OUTPUT	Every final glyph-load path retains FT_LOAD_NO_AUTOHINT.
+RW-T19-S12-065	190	50	RENDERER_OUTPUT	Every final glyph-load path retains FT_LOAD_NO_BITMAP.
+RW-T19-S12-066	190	51	RENDERER_OUTPUT	Every final glyph-load path retains FT_LOAD_NO_SVG.
+RW-T19-S12-067	190	52	RENDERER_OUTPUT	Every final glyph-load path excludes FT_LOAD_FORCE_AUTOHINT.
+RW-T19-S12-068	190	53	RENDERER_OUTPUT	Every final glyph-load path excludes FT_LOAD_COLOR.
+RW-T19-S12-069	190	54	RENDERER_OUTPUT	A non-scalable face fails closed before Skia can clear FT_LOAD_NO_BITMAP or add FT_LOAD_COLOR.
+RW-T19-S12-070	190	55	RENDERER_OUTPUT	A fixed-size face fails closed before Skia can clear FT_LOAD_NO_BITMAP or add FT_LOAD_COLOR.
+RW-T19-S12-071	190	56	RENDERER_OUTPUT	A bitmap-only face fails closed before Skia can clear FT_LOAD_NO_BITMAP or add FT_LOAD_COLOR.
+RW-T19-S12-072	190	57	RENDERER_OUTPUT	The GN build freezes skia_use_system_freetype2=false.
+RW-T19-S12-073	190	58	RENDERER_OUTPUT	The GN build freezes skia_use_freetype_svg=false.
+RW-T19-S12-074	190	59	RENDERER_OUTPUT	The GN build freezes skia_use_fontconfig=false.
+RW-T19-S12-075	190	60	RENDERER_OUTPUT	The GN build freezes skia_enable_fontmgr_fontconfig=false.
+RW-T19-S12-076	190	61	RENDERER_OUTPUT	The GN build freezes skia_enable_fontmgr_FontConfigInterface=false.
+RW-T19-S12-077	190	62	RENDERER_OUTPUT	The complete FT_CONFIG_OPTIONS_H bytes and SHA-256 enter the candidate identity.
+RW-T19-S12-078	190	63	RENDERER_OUTPUT	The complete FT_CONFIG_MODULES_H bytes and SHA-256 enter the candidate identity.
+RW-T19-S12-079	190	64	RENDERER_OUTPUT	The custom FreeType options disable FT_CONFIG_OPTION_SVG.
+RW-T19-S12-080	190	65	RENDERER_OUTPUT	The custom FreeType options disable TT_CONFIG_OPTION_EMBEDDED_BITMAPS.
+RW-T19-S12-081	190	66	RENDERER_OUTPUT	The custom FreeType options disable TT_CONFIG_OPTION_COLOR_LAYERS.
+RW-T19-S12-082	190	67	RENDERER_OUTPUT	The custom FreeType options disable TT_CONFIG_OPTION_BYTECODE_INTERPRETER.
+RW-T19-S12-083	190	68	RENDERER_OUTPUT	The custom FreeType options disable TT_CONFIG_OPTION_SUBPIXEL_HINTING.
+RW-T19-S12-084	190	69	RENDERER_OUTPUT	The custom FreeType options disable FT_CONFIG_OPTION_SUBPIXEL_RENDERING.
+RW-T19-S12-085	190	70	RENDERER_OUTPUT	The custom FreeType options disable FT_CONFIG_OPTION_ENVIRONMENT_PROPERTIES.
+RW-T19-S12-086	190	71	RENDERER_OUTPUT	The custom FreeType options disable FT_CONFIG_OPTION_USE_PNG.
+RW-T19-S12-087	190	72	RENDERER_OUTPUT	The custom FreeType options disable FT_CONFIG_OPTION_USE_HARFBUZZ.
+RW-T19-S12-088	190	73	RENDERER_OUTPUT	The custom FreeType options disable TT_CONFIG_OPTION_GX_VAR_SUPPORT.
+RW-T19-S12-089	190	74	RENDERER_OUTPUT	The trimmed FreeType module closure retains tt_driver_class.
+RW-T19-S12-090	190	75	RENDERER_OUTPUT	The trimmed FreeType module closure retains cff_driver_class pending CFF spike proof.
+RW-T19-S12-091	190	76	RENDERER_OUTPUT	The trimmed FreeType module closure retains sfnt_module_class.
+RW-T19-S12-092	190	77	RENDERER_OUTPUT	The trimmed FreeType module closure retains psaux_module_class.
+RW-T19-S12-093	190	78	RENDERER_OUTPUT	The trimmed FreeType module closure retains psnames_module_class.
+RW-T19-S12-094	190	79	RENDERER_OUTPUT	The trimmed FreeType module closure retains ft_smooth_renderer_class.
+RW-T19-S12-095	190	80	RENDERER_OUTPUT	The trimmed FreeType module closure removes autofit.
+RW-T19-S12-096	190	81	RENDERER_OUTPUT	The trimmed FreeType module closure removes pshinter.
+RW-T19-S12-097	190	82	RENDERER_OUTPUT	The trimmed FreeType module closure removes SVG rendering.
+RW-T19-S12-098	190	83	RENDERER_OUTPUT	The trimmed FreeType module closure removes raster1 rendering.
+RW-T19-S12-099	190	84	RENDERER_OUTPUT	The trimmed FreeType module closure removes SDF renderers.
+RW-T19-S12-100	190	85	RENDERER_OUTPUT	The trimmed FreeType module closure removes every unadmitted font driver.
+RW-T19-S12-101	190	86	RENDERER_OUTPUT	Asset admission continues to reject fixed-size fonts.
+RW-T19-S12-102	190	87	RENDERER_OUTPUT	Asset admission continues to reject bitmap fonts.
+RW-T19-S12-103	190	88	RENDERER_OUTPUT	Asset admission continues to reject SVG fonts.
+RW-T19-S12-104	190	89	RENDERER_OUTPUT	Asset admission continues to reject color fonts.
+RW-T19-S12-105	190	90	RENDERER_OUTPUT	Asset admission continues to reject variable fonts.
+RW-T19-S12-106	190	91	RENDERER_OUTPUT	The Renderer build cannot reopen a font path excluded by Asset admission.
+RW-T19-S12-107	190	92	RENDERER_OUTPUT	Every metrics-reachable FT_Load_Glyph call proves the final load-flag invariant.
+RW-T19-S12-108	190	93	RENDERER_OUTPUT	Every image-reachable FT_Load_Glyph call proves the final load-flag invariant.
+RW-T19-S12-109	190	94	RENDERER_OUTPUT	Every path-reachable FT_Load_Glyph call proves the final load-flag invariant.
+RW-T19-S12-110	190	95	RENDERER_OUTPUT	Every drawable-reachable FT_Load_Glyph call proves the final load-flag invariant.
+RW-T19-S12-111	190	96	RENDERER_OUTPUT	The exact downstream patch bytes enter the candidate identity.
+RW-T19-S12-112	190	97	RENDERER_OUTPUT	The exact downstream patch application order enters the candidate identity.
+RW-T19-S12-113	190	98	RENDERER_OUTPUT	The exact custom-header bytes enter the candidate identity.
+RW-T19-S12-114	190	99	RENDERER_OUTPUT	SHA-256 binds every patch, application-order, and custom-header candidate identity component.
+RW-T19-S12-115	190	100	RENDERER_OUTPUT	Any semantic patch or custom-header change issues a new candidateId.
+RW-T19-S12-116	190	101	RENDERER_OUTPUT	CFF behavior after pshinter removal remains unproven spike evidence.
+RW-T19-S12-117	190	102	RENDERER_OUTPUT	Tricky-font equivalence remains unproven spike evidence.
+RW-T19-S12-118	190	103	RENDERER_OUTPUT	Preservation of the final invariant across all glyph paths remains unproven spike evidence.
+RW-T19-S12-119	190	104	RENDERER_OUTPUT	The M151 custom-header and trimmed-module build remains unproven spike evidence.
+RW-T19-S12-120	190	105	RENDERER_OUTPUT	ELF and module exclusion remains unproven spike evidence.
+RW-T19-S12-121	190	106	RENDERER_OUTPUT	Any unproven FreeType spike item prevents Certified or READY status.
+RW-T19-S12-122	190	107	RENDERER_OUTPUT	renderer-source-integrity-a1-2026-08-16.json binds the bounded source-integrity A1 evidence and its SHA-256.
+RW-T19-S12-123	190	108	SECURITY_FAULT	The source-integrity A1 elapsed-time authorization is at most 30 minutes.
+RW-T19-S12-124	190	109	SECURITY_FAULT	The source-integrity A1 temporary-storage authorization is at most 2 GiB.
+RW-T19-S12-125	190	110	SECURITY_FAULT	The source-integrity A1 accesses only fixed open-source sources.
+RW-T19-S12-126	190	111	SECURITY_FAULT	The source-integrity A1 does not run a full build.
+RW-T19-S12-127	190	112	SECURITY_FAULT	The source-integrity A1 retains no vendor source checkout or archive.
+RW-T19-S12-128	190	113	SECURITY_FAULT	The source-integrity A1 does not access a proprietary font.
+RW-T19-S12-129	190	114	RENDERER_OUTPUT	The normalized Skia archive is produced from the exact M151 candidate commit.
+RW-T19-S12-130	190	115	RENDERER_OUTPUT	The normalized Skia archive uses the frozen Git version, tar format, and commit-derived prefix method.
+RW-T19-S12-131	190	116	RENDERER_OUTPUT	The normalized Skia archive length is exactly 187033600 bytes.
+RW-T19-S12-132	190	117	RENDERER_OUTPUT	The normalized Skia archive SHA-256 is 9dfc76b78fc6363e77f96b4faca566cfa0c28d06ad478f809f241e98966652af.
+RW-T19-S12-133	190	118	RENDERER_OUTPUT	The exact M151 DEPS Ninja version is version:2@1.12.1.chromium.4.
+RW-T19-S12-134	190	119	RENDERER_OUTPUT	The Linux amd64 Ninja CIPD package is infra/3pp/tools/ninja/linux-amd64.
+RW-T19-S12-135	190	120	RENDERER_OUTPUT	The Linux amd64 Ninja CIPD instance is Px8cwPaaG8_fZ_tsK8dBmx3YEruNDnmvqb-oo1U7UIIC.
+RW-T19-S12-136	190	121	RENDERER_OUTPUT	The candidate FreeType patch path and exact SHA-256 are frozen.
+RW-T19-S12-137	190	122	RENDERER_OUTPUT	The candidate FreeType patch must pass git apply --check against the exact Skia tree.
+RW-T19-S12-138	190	123	RENDERER_OUTPUT	The custom FT_CONFIG_OPTIONS_H bytes are bound by SHA-256 ad7c496b8290e32026ededb9322f420d424b3d025256b7f29086b67fa1190011.
+RW-T19-S12-139	190	124	RENDERER_OUTPUT	The custom FT_CONFIG_MODULES_H bytes are bound by SHA-256 2daa0dc83ec934272c28b2d6aa5f801f13cf19bf5a05096752637dd63b224f00.
+RW-T19-S12-140	190	125	RENDERER_OUTPUT	The candidate patch application order is bound by SHA-256 6f3e2a6125341da3762642631b65068e50ddeac4aa59c6b537ea1f8c3bff3a78.
+RW-T19-S12-141	190	126	SECURITY_FAULT	Source-integrity A1 only prepares source identity and candidate bytes for a later spike.
+RW-T19-S12-142	190	127	SECURITY_FAULT	Source-integrity A1 does not prove GN generation.
+RW-T19-S12-143	190	128	SECURITY_FAULT	Source-integrity A1 does not prove compilation.
+RW-T19-S12-144	190	129	SECURITY_FAULT	Source-integrity A1 does not prove linking.
+RW-T19-S12-145	190	130	SECURITY_FAULT	Source-integrity A1 does not prove ELF or symbol closure.
+RW-T19-S12-146	190	131	SECURITY_FAULT	Source-integrity A1 does not prove font parsing, shaping, or tricky-font behavior.
+RW-T19-S12-147	190	132	SECURITY_FAULT	Source-integrity A1 does not prove pixels or encoded output bytes.
+RW-T19-S12-148	190	133	SECURITY_FAULT	Source-integrity A1 does not prove physical-Linux replay.
+RW-T19-S12-149	190	134	RENDERER_OUTPUT	A portable tricky-font fixture is mandatory for certification.
+RW-T19-S12-150	190	135	RENDERER_OUTPUT	The portable tricky-font fixture is deterministic.
+RW-T19-S12-151	190	136	SECURITY_FAULT	The portable tricky-font fixture must be license-safe.
+RW-T19-S12-152	190	137	SECURITY_FAULT	The portable tricky-font fixture is synthetic or openly licensed.
+RW-T19-S12-153	190	138	RENDERER_OUTPUT	The portable tricky-font fixture binds its generation or source recipe.
+RW-T19-S12-154	190	139	SECURITY_FAULT	The portable tricky-font fixture binds its license.
+RW-T19-S12-155	190	140	RENDERER_OUTPUT	The portable tricky-font fixture binds its exact bytes.
+RW-T19-S12-156	190	141	RENDERER_OUTPUT	The portable tricky-font fixture binds its SHA-256.
+RW-T19-S12-157	190	142	RENDERER_OUTPUT	FreeType must classify the portable tricky-font fixture as FT_IS_TRICKY.
+RW-T19-S12-158	190	143	RENDERER_OUTPUT	The portable tricky-font fixture distinguishes NO_HINTING alone from NO_HINTING plus NO_AUTOHINT.
+RW-T19-S12-159	190	144	RENDERER_OUTPUT	Every Certified Renderer target independently replays the portable tricky-font fixture.
+RW-T19-S12-160	190	145	SECURITY_FAULT	The project does not download a proprietary real font for tricky-font authority.
+RW-T19-S12-161	190	146	SECURITY_FAULT	The project does not commit a proprietary real font.
+RW-T19-S12-162	190	147	SECURITY_FAULT	A proprietary real font cannot be portable certification authority.
+RW-T19-S12-163	190	148	SECURITY_FAULT	Any future proprietary-font supplementary diagnostic requires fresh explicit authorization.
+RW-T19-S12-164	190	149	SECURITY_FAULT	Any authorized proprietary-font supplementary diagnostic remains local-only.
+RW-T19-S12-165	190	150	SECURITY_FAULT	A proprietary-font supplementary diagnostic records only source description and local SHA-256.
+RW-T19-S12-166	190	151	SECURITY_FAULT	A proprietary-font supplementary diagnostic never exports font bytes.
+RW-T19-S12-167	190	152	SECURITY_FAULT	READY cannot rely only on a proprietary-font diagnostic.
+RW-T19-S12-168	190	153	RENDERER_OUTPUT	Portable tricky-font fixture bytes remain pending.
+RW-T19-S12-169	190	154	SECURITY_FAULT	Pending portable tricky-font fixture bytes leave tricky-font proof incomplete and prevent Ticket19 closure.
+RW-T19-S12-170	190	155	WIRE_CANONICAL_DIGEST	renderer-spike/hermetic-linux-build-prerequisites-v1.json freezes the next Renderer build-spike admission prerequisites.
+RW-T19-S12-171	190	156	WIRE_CANONICAL_DIGEST	The hermetic Linux build-prerequisite artifact has exact SHA-256 db79db2b39df447309547dc09ac254527e6ac2853d2e61d6cbb0780f1f5aab58.
+RW-T19-S12-172	190	157	SECURITY_FAULT	The hermetic Linux build-prerequisite artifact is not a build manifest.
+RW-T19-S12-173	190	158	SECURITY_FAULT	The hermetic Linux build-prerequisite artifact is not build evidence.
+RW-T19-S12-174	190	159	SECURITY_FAULT	The next Renderer build is not currently authorized.
+RW-T19-S12-175	190	160	SECURITY_FAULT	The approved prerequisite decision performs no Renderer build attempt.
+RW-T19-S12-176	190	161	RENDERER_OUTPUT	A Renderer build requires a frozen complete transitive source closure.
+RW-T19-S12-177	190	162	RENDERER_OUTPUT	A Renderer build requires frozen exact toolchain, sysroot, and tool binary hashes.
+RW-T19-S12-178	190	163	RENDERER_OUTPUT	A Renderer build requires frozen complete GN, compile, and link flags.
+RW-T19-S12-179	190	164	RENDERER_OUTPUT	A Renderer build requires frozen generated-file and ELF audit contracts.
+RW-T19-S12-180	190	165	SECURITY_FAULT	A Renderer build requires a frozen environment allowlist.
+RW-T19-S12-181	190	166	SECURITY_FAULT	The hermetic Renderer build runs network-disabled after all inputs are staged.
+RW-T19-S12-182	190	167	RENDERER_OUTPUT	A Renderer build requires portable tricky-font exact bytes and a frozen proof plan.
+RW-T19-S12-183	190	168	SECURITY_FAULT	A Renderer build rehearsal requires fresh explicit authorization binding temporary path, time, disk, CPU, network, and exact target bounds.
+RW-T19-S12-184	190	169	SECURITY_FAULT	A Windows-native result cannot serve as Linux Renderer authority.
+RW-T19-S12-185	190	170	SECURITY_FAULT	Docker or WSL evidence cannot serve as non-virtualized physical-host certification.
+RW-T19-S12-186	190	171	SECURITY_FAULT	Source-only evidence cannot upgrade the Renderer candidate to Certified or READY.
+RW-T19-S12-187	190	172	SECURITY_FAULT	Build-only evidence cannot upgrade the Renderer candidate to Certified or READY.
+RW-T19-S12-188	190	173	SECURITY_FAULT	The frozen build prerequisites do not permit Ticket19 closure.
+RW-T19-S13-001	194	1	SECURITY_FAULT	acceptance-manifest-v1.json is the machine-readable acceptance entry point.
+RW-T19-S13-002	194	2	SECURITY_FAULT	The current capacity matrix contains exactly 175 contract cells.
+RW-T19-S13-003	194	3	SECURITY_FAULT	Each capacity cell creates three isolated boundary cases interpreted by capacity-boundaries comparators with other axes retaining safe margin.
+RW-T19-S13-004	194	4	SECURITY_FAULT	The three-per-cell capacity base has 525 unique caseIds.
+RW-T19-S13-005	194	5	SECURITY_FAULT	Mutually exclusive join, conflict, BUSY, accepted-timeout, cancel, and seal terminals cannot be safely merged.
+RW-T19-S13-006	194	6	SECURITY_FAULT	Cross-group combined worst paths contain exactly 18 cases.
+RW-T19-S13-007	194	7	SECURITY_FAULT	The contract-boundary corpus has a strict minimum of 543 cases.
+RW-T19-S13-008	194	8	SECURITY_FAULT	New mutually exclusive endpoints can only increase the case count.
+RW-T19-S13-009	195	1	SECURITY_FAULT	Comparator catalog is closed to MAX_INCLUSIVE, MIN_INCLUSIVE, MIN_EXCLUSIVE, EXACT, ENUM_EXACT, READY_MINIMUM, and FORMULA_MAX.
+RW-T19-S13-010	195	2	SECURITY_FAULT	Adjacent integer, count, byte, pixel, attempt, and millisecond boundary values differ by one.
+RW-T19-S13-011	195	3	SECURITY_FAULT	Authored decimal adjacency uses exact plain values equivalent to 1e-64.
+RW-T19-S13-012	195	4	SECURITY_FAULT	Boundary cases cannot use binary floating-point epsilon.
+RW-T19-S13-013	195	5	SECURITY_FAULT	Content-Encoding control cases are exactly gzip, identity, and br.
+RW-T19-S13-014	195	6	SECURITY_FAULT	Stack-round cases are exactly fillChildCount, fillChildCount plus one, and fillChildCount plus two.
+RW-T19-S13-015	195	7	SECURITY_FAULT	Capability initialization exhaustion reuses CAPABILITY_STATE_UNAVAILABLE.
+RW-T19-S13-016	195	8	SECURITY_FAULT	Random rejection exhaustion reuses CAPABILITY_RESULT_INVALID.
+RW-T19-S13-017	195	9	SECURITY_FAULT	Trace multipart overflow reuses RENDER_LAYOUT_TRACE_LIMIT_EXCEEDED.
+RW-T19-S13-018	195	10	SECURITY_FAULT	The 33rd Text shrink reuses TEXT_OVERFLOW.
+RW-T19-S13-019	196	1	SECURITY_FAULT	Acceptance manifest freezes title, participating groups, objective, and expected terminal for all 18 combined cases.
+RW-T19-S13-020	196	2	SECURITY_FAULT	The first 14 combined cases cover the listed capacity-domain cross-group paths.
+RW-T19-S13-021	196	3	SECURITY_FAULT	The last four combined cases separately cover join or replay, identity conflict, BUSY versus accepted timeout, and cancel or seal or replay.
+RW-T19-S13-022	196	4	SECURITY_FAULT	A combined case cannot replace any single-axis boundary case.
+RW-T19-S13-023	197	1	SECURITY_FAULT	The 543 contract-boundary cases are not the complete automated corpus target.
+RW-T19-S13-024	197	2	SECURITY_FAULT	Every noncapacity wire, canonical, digest, Design, Input, Expression, closure, Repeat, composition, Asset, Capability, concurrency, layout, shaping, Renderer, output, security, and fault clause becomes an atomic scenario.
+RW-T19-S13-025	197	3	SECURITY_FAULT	The acceptance manifest computes complete automated case count as 543 plus all noncapacity atomic cases.
+RW-T19-S13-026	197	4	SECURITY_FAULT	The project cannot choose an arbitrary total and write tests to meet it.
+RW-T19-S13-027	197	5	SECURITY_FAULT	Additional executor, certified target, or repeated execution creates a new runId rather than a new caseId.
+RW-T19-S13-028	198	1	SECURITY_FAULT	Ticket04 through Ticket19 Answer and Decisions sections are requirement authority.
+RW-T19-S13-029	198	2	SECURITY_FAULT	Question, metadata, and restated Inherited constraints do not reissue semantic IDs.
+RW-T19-S13-030	198	3	SECURITY_FAULT	Normative prohibitions and out-of-scope clauses still enter the requirement registry.
+RW-T19-S13-031	198	4	SECURITY_FAULT	Independently failing, different-stage, or independently observable assertions in one bullet split into atomic requirements.
+RW-T19-S13-032	198	5	SECURITY_FAULT	Ticket19 Inherited constraints retains exactly one tracking requirement.
+RW-T19-S13-033	198	6	SECURITY_FAULT	The acceptance validator rejects orphan requirements, orphan cases, duplicate IDs, and scenarios without an oracle.
+RW-T19-S13-034	199	1	SECURITY_FAULT	requirementId is stable ticket, section, and local ordinal while source path and line are updateable locators.
+RW-T19-S13-035	199	2	SECURITY_FAULT	caseId uniquely identifies input, fault schedule, and expected terminal.
+RW-T19-S13-036	199	3	SECURITY_FAULT	oracleId uniquely identifies stable code, stage, digest, bytes, side effects, and state assertions.
+RW-T19-S13-037	199	4	SECURITY_FAULT	runId uniquely identifies caseId, executor, target, and implementation revision.
+RW-T19-S13-038	199	5	SECURITY_FAULT	One case may cover multiple requirements.
+RW-T19-S13-039	199	6	SECURITY_FAULT	A case's semantics cannot change with executor.
+RW-T19-S13-040	200	1	SECURITY_FAULT	An issued identity cannot change meaning or be reused.
+RW-T19-S13-041	200	2	SECURITY_FAULT	A semantic change creates a new identity.
+RW-T19-S13-042	200	3	SECURITY_FAULT	A superseded identity remains and points to its replacement through supersededBy.
+RW-T19-S13-043	200	4	SECURITY_FAULT	Every A1, A2, or A3 evidence record pins spec revision, acceptance-manifest SHA-256, fixture hashes, executor or target manifest, and implementation revision.
+RW-T19-S13-044	200	5	SECURITY_FAULT	Deleted or skipped cases require explicit status and reason.
+RW-T19-S13-045	200	6	SECURITY_FAULT	Renumbering cannot conceal deletion or skipping.
+RW-T19-S13-046	200	7	SECURITY_FAULT	acceptance-manifest-v1.json is only an index for conformance registries.
+RW-T19-S13-047	200	8	SECURITY_FAULT	conformance-cases-v1.jsonl is the append-only Conformance case fact source.
+RW-T19-S13-048	200	9	SECURITY_FAULT	conformance-oracles-v1.jsonl is the append-only Conformance oracle fact source.
+RW-T19-S13-049	200	10	SECURITY_FAULT	Existing CAP::<limitId>::<variant> case identities do not change.
+RW-T19-S13-050	200	11	SECURITY_FAULT	Existing CAP::COMBINED::<ordinal> case identities do not change.
+RW-T19-S13-051	200	12	SECURITY_FAULT	Non-capacity case identities use append-only CONF::<family>::<six-digit> values.
+RW-T19-S13-052	200	13	SECURITY_FAULT	Oracle identities use append-only ORC::<family>::<six-digit> values.
+RW-T19-S13-053	200	14	SECURITY_FAULT	Multiple requirements share one case only when their input is identical.
+RW-T19-S13-054	200	15	SECURITY_FAULT	Multiple requirements share one case only when their fault schedule is identical.
+RW-T19-S13-055	200	16	SECURITY_FAULT	Multiple requirements share one case only when their expected terminal is identical.
+RW-T19-S13-056	200	17	SECURITY_FAULT	Inverse requirement coverage is generated validator output and never a second fact source.
+RW-T19-S13-057	200	18	SECURITY_FAULT	The registry does not require one distinct case for every requirement.
+RW-T19-S13-058	200	19	WIRE_CANONICAL_DIGEST	conformance-case-record-schema-v1.json freezes the exact Case record wire.
+RW-T19-S13-059	200	20	WIRE_CANONICAL_DIGEST	Every Case record requires recordVersion.
+RW-T19-S13-060	200	21	WIRE_CANONICAL_DIGEST	Every Case record requires caseId.
+RW-T19-S13-061	200	22	WIRE_CANONICAL_DIGEST	Every Case record requires suite.
+RW-T19-S13-062	200	23	WIRE_CANONICAL_DIGEST	Every Case record requires executionClass.
+RW-T19-S13-063	200	24	WIRE_CANONICAL_DIGEST	Every Case record requires stimulus.
+RW-T19-S13-064	200	25	WIRE_CANONICAL_DIGEST	Every Case record requires expectedTerminals.
+RW-T19-S13-065	200	26	WIRE_CANONICAL_DIGEST	Every Case record requires coverage.
+RW-T19-S13-066	200	27	WIRE_CANONICAL_DIGEST	Every Case record requires supersedes.
+RW-T19-S13-067	200	28	WIRE_CANONICAL_DIGEST	Case input is a closed ARTIFACT or GENERATED union.
+RW-T19-S13-068	200	29	WIRE_CANONICAL_DIGEST	Every Case input is bound by a SHA-256 identity digest.
+RW-T19-S13-069	200	30	WIRE_CANONICAL_DIGEST	Case faultSchedule is a closed NONE or ARTIFACT union.
+RW-T19-S13-070	200	31	WIRE_CANONICAL_DIGEST	Every Case faultSchedule is bound by a SHA-256 identity digest.
+RW-T19-S13-071	200	32	WIRE_CANONICAL_DIGEST	expectedTerminals defines a closed vector of named operation terminals.
+RW-T19-S13-072	200	33	WIRE_CANONICAL_DIGEST	Only combined or concurrency scenarios may define multiple named operation terminals.
+RW-T19-S13-073	200	34	WIRE_CANONICAL_DIGEST	Every ordinary Case defines exactly one operation terminal.
+RW-T19-S13-074	200	35	WIRE_CANONICAL_DIGEST	Case coverage is the only authoritative requirement traceability edge.
+RW-T19-S13-075	200	36	WIRE_CANONICAL_DIGEST	Each coverage edge binds one requirementId to exact oracleId and assertionIds evidence.
+RW-T19-S13-076	200	37	WIRE_CANONICAL_DIGEST	A Case record cannot store a parallel requirementIds array.
+RW-T19-S13-077	200	38	WIRE_CANONICAL_DIGEST	A Case record cannot store a parallel oracleIds array.
+RW-T19-S13-078	200	39	WIRE_CANONICAL_DIGEST	conformance-oracle-record-schema-v1.json freezes the exact Oracle record wire.
+RW-T19-S13-079	200	40	WIRE_CANONICAL_DIGEST	Every Oracle record requires recordVersion.
+RW-T19-S13-080	200	41	WIRE_CANONICAL_DIGEST	Every Oracle record requires oracleId.
+RW-T19-S13-081	200	42	WIRE_CANONICAL_DIGEST	Every Oracle record requires probeProfile.
+RW-T19-S13-082	200	43	WIRE_CANONICAL_DIGEST	Every Oracle record requires assertions.
+RW-T19-S13-083	200	44	WIRE_CANONICAL_DIGEST	Every Oracle record requires supersedes.
+RW-T19-S13-084	200	45	WIRE_CANONICAL_DIGEST	Each Oracle assertion uses an oracle-local A plus three-digit assertionId.
+RW-T19-S13-085	200	46	WIRE_CANONICAL_DIGEST	Every probeId belongs to the exact closed probe catalog selected by probeProfile.
+RW-T19-S13-086	200	47	WIRE_CANONICAL_DIGEST	Oracle operators are exactly EQ, ABSENT, SEQUENCE_EQ, BYTES_EQ, and WITHIN.
+RW-T19-S13-087	200	48	WIRE_CANONICAL_DIGEST	Oracle expected data is either a strict literal or a SHA-256-bound artifact.
+RW-T19-S13-088	200	49	WIRE_CANONICAL_DIGEST	Oracle assertions cannot use natural-language predicates.
+RW-T19-S13-089	200	50	WIRE_CANONICAL_DIGEST	Oracle assertions cannot use parameter templates.
+RW-T19-S13-090	200	51	WIRE_CANONICAL_DIGEST	Oracle assertions cannot use wildcard predicates.
+RW-T19-S13-091	200	52	WIRE_CANONICAL_DIGEST	Oracle assertions cannot execute arbitrary scripts.
+RW-T19-S13-092	200	53	WIRE_CANONICAL_DIGEST	Oracle assertions cannot use a default fallback.
+RW-T19-S13-093	200	54	WIRE_CANONICAL_DIGEST	An Oracle may be reused only for the same observation boundary and an exactly identical canonical assertion set.
+RW-T19-S13-094	200	55	WIRE_CANONICAL_DIGEST	Two active Oracles with identical canonical assertion sets must reuse one oracle identity.
+RW-T19-S13-095	200	56	WIRE_CANONICAL_DIGEST	executionClass is a stable Case fact.
+RW-T19-S13-096	200	57	WIRE_CANONICAL_DIGEST	Concrete executor, target, and evidence grade mapping stays outside Case identity in the manifest.
+RW-T19-S13-097	200	58	SECURITY_FAULT	A new Conformance record points to replaced identities through supersedes.
+RW-T19-S13-098	200	59	SECURITY_FAULT	ACTIVE and SUPERSEDED Conformance status is derived from the complete valid append-only registry.
+RW-T19-S13-099	200	60	SECURITY_FAULT	A Conformance supersession graph cannot contain a cycle.
+RW-T19-S13-100	200	61	SECURITY_FAULT	A Conformance supersession graph cannot contain a dangling target.
+RW-T19-S13-101	200	62	SECURITY_FAULT	Conformance supersession cannot reuse an issued identity with changed meaning.
+RW-T19-S13-102	200	63	SECURITY_FAULT	Conformance supersession cannot withdraw an active record without a replacement.
+RW-T19-S13-103	200	64	SECURITY_FAULT	An active Case cannot reference a superseded Oracle.
+RW-T19-S13-104	200	65	SECURITY_FAULT	Replacing an Oracle requires reissuing and superseding every active Case that referenced it.
+RW-T19-S13-105	200	66	SECURITY_FAULT	Every active requirement has at least one active requirement-to-Case-to-Oracle-assertion path.
+RW-T19-S13-106	200	67	SECURITY_FAULT	Every active Case covers at least one requirement.
+RW-T19-S13-107	200	68	SECURITY_FAULT	Every active Case references at least one Oracle assertion.
+RW-T19-S13-108	200	69	SECURITY_FAULT	Every expected terminal has a corresponding terminal assertion.
+RW-T19-S13-109	200	70	SECURITY_FAULT	Every active Oracle is referenced by at least one active Case.
+RW-T19-S13-110	200	71	SECURITY_FAULT	An active Case signature canonically covers input, faultSchedule, and expectedTerminals.
+RW-T19-S13-111	200	72	SECURITY_FAULT	Two active Cases with the same semantic signature are rejected as duplicates.
+RW-T19-S13-112	200	73	SECURITY_FAULT	An active Oracle signature canonically covers its assertions.
+RW-T19-S13-113	200	74	SECURITY_FAULT	Every supersession reruns the complete no-orphan graph validation.
+RW-T19-S13-114	200	75	SECURITY_FAULT	Capacity Case materialization requires a frozen safe-baseline manifest.
+RW-T19-S13-115	200	76	SECURITY_FAULT	Capacity Case materialization requires a frozen generator manifest.
+RW-T19-S13-116	200	77	SECURITY_FAULT	Capacity Case materialization requires an explicit limitId-to-requirement-and-assertion mapping.
+RW-T19-S13-117	200	78	SECURITY_FAULT	All 525 isolated capacity boundary Cases are materialized once the prerequisites are frozen.
+RW-T19-S13-118	200	79	SECURITY_FAULT	At least 18 combined capacity Cases are materialized once the prerequisites are frozen.
+RW-T19-S13-119	200	80	SECURITY_FAULT	Materialized capacity records expand every matrix default and exact override into literals.
+RW-T19-S13-120	200	81	SECURITY_FAULT	A conformance executor cannot consult a capacity default fallback at runtime.
+RW-T19-S13-121	200	82	SECURITY_FAULT	CAP::COMBINED::002 terminates only with a dependency-free READY Save success.
+RW-T19-S13-122	200	83	SECURITY_FAULT	CAP::COMBINED::002 appends exactly one immutable revision.
+RW-T19-S13-123	200	84	SECURITY_FAULT	RW-T19-S00-001 is covered by a SPEC_REGISTRY static Case.
+RW-T19-S13-124	200	85	SECURITY_FAULT	Tracking requirements receive no exception from complete coverage validation.
+RW-T19-S13-125	200	86	SECURITY_FAULT	Editor J1 evidence cannot replace automated Case and Oracle coverage for the same requirement.
+RW-T19-S13-126	200	87	SECURITY_FAULT	The 525 plus 18 capacity corpus remains planned rather than executable until fixtures, generator, mappings, and records exist.
+RW-T19-S13-127	200	88	WIRE_CANONICAL_DIGEST	The exact Conformance record canonical Profile is renderweave-conformance-c14n/1.0.
+RW-T19-S13-128	200	89	WIRE_CANONICAL_DIGEST	Conformance canonical input is strict UTF-8 JSON without BOM.
+RW-T19-S13-129	200	90	SECURITY_FAULT	Conformance canonical input rejects invalid UTF-8.
+RW-T19-S13-130	200	91	SECURITY_FAULT	Conformance canonical input rejects duplicate object members at every depth.
+RW-T19-S13-131	200	92	SECURITY_FAULT	Conformance canonical input rejects comments.
+RW-T19-S13-132	200	93	SECURITY_FAULT	Conformance canonical input rejects trailing commas.
+RW-T19-S13-133	200	94	SECURITY_FAULT	Conformance canonical input rejects NaN and Infinity.
+RW-T19-S13-134	200	95	SECURITY_FAULT	Conformance canonical input rejects lone surrogate code points.
+RW-T19-S13-135	200	96	WIRE_CANONICAL_DIGEST	Conformance numbers preserve their mathematical value as arbitrary-precision decimals.
+RW-T19-S13-136	200	97	SECURITY_FAULT	Conformance canonicalization cannot first bind a number through binary floating point.
+RW-T19-S13-137	200	98	WIRE_CANONICAL_DIGEST	Conformance strings preserve the exact Unicode scalar sequence without normalization.
+RW-T19-S13-138	200	99	WIRE_CANONICAL_DIGEST	Conformance strings use the unique JSON escape for quote, backslash, and control characters.
+RW-T19-S13-139	200	100	WIRE_CANONICAL_DIGEST	Conformance strings never escape slash.
+RW-T19-S13-140	200	101	WIRE_CANONICAL_DIGEST	Conformance numbers are written in plain notation without exponent or leading plus.
+RW-T19-S13-141	200	102	WIRE_CANONICAL_DIGEST	Conformance numbers remove insignificant leading and trailing zeroes.
+RW-T19-S13-142	200	103	WIRE_CANONICAL_DIGEST	Conformance negative zero is written as 0.
+RW-T19-S13-143	200	104	WIRE_CANONICAL_DIGEST	An integer-valued Conformance number has no decimal point.
+RW-T19-S13-144	200	105	WIRE_CANONICAL_DIGEST	A closed Conformance record object writes members in the exact order declared by its record schema.
+RW-T19-S13-145	200	106	WIRE_CANONICAL_DIGEST	Omitting an optional Conformance member preserves the relative order of all present members.
+RW-T19-S13-146	200	107	WIRE_CANONICAL_DIGEST	Only parameters maps and literal-value map objects use map-like canonical member ordering.
+RW-T19-S13-147	200	108	WIRE_CANONICAL_DIGEST	A map-like Conformance object sorts member names by unsigned UTF-8 bytes.
+RW-T19-S13-148	200	109	SECURITY_FAULT	Transport object-member order is not Conformance authority.
+RW-T19-S13-149	200	110	SECURITY_FAULT	Locale collation is not Conformance authority.
+RW-T19-S13-150	200	111	SECURITY_FAULT	Implementation hash-map iteration order is not Conformance authority.
+RW-T19-S13-151	200	112	WIRE_CANONICAL_DIGEST	expectedTerminals sorts by operationId.
+RW-T19-S13-152	200	113	WIRE_CANONICAL_DIGEST	coverage sorts by requirementId.
+RW-T19-S13-153	200	114	WIRE_CANONICAL_DIGEST	coverage evidence sorts by oracleId.
+RW-T19-S13-154	200	115	WIRE_CANONICAL_DIGEST	assertionIds sort by assertionId.
+RW-T19-S13-155	200	116	WIRE_CANONICAL_DIGEST	Oracle assertions sort by assertionId.
+RW-T19-S13-156	200	117	WIRE_CANONICAL_DIGEST	supersedes sorts by issued identity.
+RW-T19-S13-157	200	118	WIRE_CANONICAL_DIGEST	Every other Conformance array preserves semantic input order.
+RW-T19-S13-158	200	119	SECURITY_FAULT	A duplicate named canonical-set key is rejected before hashing.
+RW-T19-S13-159	200	120	WIRE_CANONICAL_DIGEST	Case signature uses domain renderweave-conformance-case-signature/1 followed by NUL.
+RW-T19-S13-160	200	121	WIRE_CANONICAL_DIGEST	Case signature canonically projects stimulus and expectedTerminals.
+RW-T19-S13-161	200	122	WIRE_CANONICAL_DIGEST	Oracle signature uses domain renderweave-conformance-oracle-signature/1 followed by NUL.
+RW-T19-S13-162	200	123	WIRE_CANONICAL_DIGEST	Oracle signature canonically projects probeProfile and assertions.
+RW-T19-S13-163	200	124	WIRE_CANONICAL_DIGEST	Input identity uses its frozen domain and excludes identitySha256 from its canonical projection.
+RW-T19-S13-164	200	125	WIRE_CANONICAL_DIGEST	Fault identity uses its frozen domain and excludes identitySha256 from its canonical projection.
+RW-T19-S13-165	200	126	WIRE_CANONICAL_DIGEST	Every Conformance identity digest uses SHA-256 wire sha256:<64 lowercase hexadecimal characters>.
+RW-T19-S13-166	200	127	SECURITY_FAULT	Unrelated issued Conformance records cannot share a semantic signature.
+RW-T19-S13-167	200	128	SECURITY_FAULT	Historical records may share a signature only within one valid supersession chain.
+RW-T19-S13-168	200	129	SECURITY_FAULT	Exactly one record in a same-signature supersession chain is active.
+RW-T19-S13-169	200	130	SECURITY_FAULT	A same-signature replacement issues a new identity.
+RW-T19-S13-170	200	131	SECURITY_FAULT	A superseded same-signature record remains immutable.
+RW-T19-S13-171	200	132	SECURITY_FAULT	Canonical Conformance vectors are mandatory before record issuance.
+RW-T19-S13-172	200	133	WIRE_CANONICAL_DIGEST	The candidate closed Probe Profile identity is renderweave-conformance-probes/1.0.
+RW-T19-S13-173	200	134	SECURITY_FAULT	Before the global Probe Profile gate passes the frozen 110-probe inventory is not referenceable by Conformance records.
+RW-T19-S13-174	200	135	SECURITY_FAULT	A Conformance record cannot reference the candidate Probe Profile while recordMayReference is false.
+RW-T19-S13-175	200	136	SECURITY_FAULT	The candidate Probe Profile remains unissued until every global Profile issuance blocker is cleared.
+RW-T19-S13-176	200	137	WIRE_CANONICAL_DIGEST	Every issued probe has an exact probeId.
+RW-T19-S13-177	200	138	WIRE_CANONICAL_DIGEST	Every issued probe has one closed exact valueType.
+RW-T19-S13-178	200	139	WIRE_CANONICAL_DIGEST	Every issued probe has one exact observation boundary.
+RW-T19-S13-179	200	140	WIRE_CANONICAL_DIGEST	Every issued probe has an exact allowed-operator set.
+RW-T19-S13-180	200	141	WIRE_CANONICAL_DIGEST	Every issued probe has one exact sensitivity classification.
+RW-T19-S13-181	200	142	WIRE_CANONICAL_DIGEST	Every issued probe has an exact execution-class membership set.
+RW-T19-S13-182	200	143	SECURITY_FAULT	Changing any issued probe contract member requires a new exact Probe Profile.
+RW-T19-S13-183	200	144	WIRE_CANONICAL_DIGEST	Probe operators are exactly EQ, ABSENT, SEQUENCE_EQ, BYTES_EQ, and WITHIN.
+RW-T19-S13-184	200	145	WIRE_CANONICAL_DIGEST	EQ compares exact typed equality under the probe ValueType.
+RW-T19-S13-185	200	146	WIRE_CANONICAL_DIGEST	ABSENT requires the named observation to be absent and omits expected.
+RW-T19-S13-186	200	147	WIRE_CANONICAL_DIGEST	SEQUENCE_EQ compares exact length and item order.
+RW-T19-S13-187	200	148	WIRE_CANONICAL_DIGEST	BYTES_EQ compares exact bytes against a SHA-256-bound artifact.
+RW-T19-S13-188	200	149	SECURITY_FAULT	WITHIN is legal only for a probe that explicitly authorizes it.
+RW-T19-S13-189	200	150	WIRE_CANONICAL_DIGEST	WITHIN uses a closed interval with exact rational millisecond endpoints.
+RW-T19-S13-190	200	151	SECURITY_FAULT	WITHIN is limited to wall-clock duration and host scheduling delay observations.
+RW-T19-S13-191	200	152	SECURITY_FAULT	WITHIN cannot weaken a canonical value assertion.
+RW-T19-S13-192	200	153	SECURITY_FAULT	WITHIN cannot weaken a code assertion.
+RW-T19-S13-193	200	154	SECURITY_FAULT	WITHIN cannot weaken a stage assertion.
+RW-T19-S13-194	200	155	SECURITY_FAULT	WITHIN cannot weaken a count assertion.
+RW-T19-S13-195	200	156	SECURITY_FAULT	WITHIN cannot weaken a digest assertion.
+RW-T19-S13-196	200	157	SECURITY_FAULT	WITHIN cannot weaken a byte assertion.
+RW-T19-S13-197	200	158	SECURITY_FAULT	WITHIN cannot weaken a pixel assertion.
+RW-T19-S13-198	200	159	SECURITY_FAULT	A probe cannot use generic JSONPath.
+RW-T19-S13-199	200	160	SECURITY_FAULT	A probe cannot expose a generic state snapshot.
+RW-T19-S13-200	200	161	SECURITY_FAULT	A probe cannot execute an arbitrary script.
+RW-T19-S13-201	200	162	SECURITY_FAULT	A probe cannot be a parameter template.
+RW-T19-S13-202	200	163	SECURITY_FAULT	A probe cannot use a wildcard.
+RW-T19-S13-203	200	164	SECURITY_FAULT	A probe cannot use a natural-language predicate.
+RW-T19-S13-204	200	165	SECURITY_FAULT	A probe cannot use a default fallback.
+RW-T19-S13-205	200	166	WIRE_CANONICAL_DIGEST	The Conformance execution-class catalog contains exactly six classes.
+RW-T19-S13-206	200	167	SECURITY_FAULT	Every Case selects exactly one most-downstream execution class.
+RW-T19-S13-207	200	168	WIRE_CANONICAL_DIGEST	EXEC::SPEC_REGISTRY::1.0 is an exact execution class.
+RW-T19-S13-208	200	169	WIRE_CANONICAL_DIGEST	EXEC::DOMAIN_SERVICES::1.0 is an exact execution class.
+RW-T19-S13-209	200	170	WIRE_CANONICAL_DIGEST	EXEC::DESIGN_INPUT_EXPRESSION::1.0 is an exact execution class.
+RW-T19-S13-210	200	171	WIRE_CANONICAL_DIGEST	EXEC::RENDERING_PIPELINE::1.0 is an exact execution class.
+RW-T19-S13-211	200	172	WIRE_CANONICAL_DIGEST	EXEC::RENDERER_EXACT_OUTPUT::1.0 is an exact execution class.
+RW-T19-S13-212	200	173	WIRE_CANONICAL_DIGEST	EXEC::EDITOR_AUTOMATED::1.0 is an exact execution class.
+RW-T19-S13-213	200	174	SECURITY_FAULT	Every execution class requires its frozen executor-role manifest.
+RW-T19-S13-214	200	175	SECURITY_FAULT	Every execution class requires its frozen target manifest.
+RW-T19-S13-215	200	176	SECURITY_FAULT	A Case cannot claim executable status before its required executor and target manifests exist.
+RW-T19-S13-216	200	177	SECURITY_FAULT	Editor J1 remains independent of EXEC::EDITOR_AUTOMATED::1.0 evidence.
+RW-T19-S13-217	200	178	WIRE_CANONICAL_DIGEST	The Oracle family catalog contains exactly ten values.
+RW-T19-S13-218	200	179	WIRE_CANONICAL_DIGEST	The Oracle family catalog retains all eight requirement-family values.
+RW-T19-S13-219	200	180	WIRE_CANONICAL_DIGEST	CAPACITY is an exact Oracle family.
+RW-T19-S13-220	200	181	WIRE_CANONICAL_DIGEST	SPEC_REGISTRY is an exact Oracle family.
+RW-T19-S13-221	200	182	SECURITY_FAULT	Oracle family is only identity namespace and routing metadata.
+RW-T19-S13-222	200	183	SECURITY_FAULT	Oracle family does not imply requirement coverage.
+RW-T19-S13-223	200	184	SECURITY_FAULT	Oracle family does not imply an executor.
+RW-T19-S13-224	200	185	SECURITY_FAULT	Oracle family does not imply a target.
+RW-T19-S13-225	200	186	SECURITY_FAULT	Oracle family does not imply an evidence grade.
+RW-T19-S13-226	200	187	SECURITY_FAULT	Oracle family does not imply probe membership.
+RW-T19-S13-227	200	188	SECURITY_FAULT	Oracle family does not imply assertion semantics.
+RW-T19-S13-228	200	189	WIRE_CANONICAL_DIGEST	An identical canonical assertion signature reuses one Oracle across requirement families.
+RW-T19-S13-229	200	190	WIRE_CANONICAL_DIGEST	Case executionClass wire is closed to the six exact execution-class IDs.
+RW-T19-S13-230	200	191	WIRE_CANONICAL_DIGEST	CONF case family wire admits SPEC_REGISTRY in addition to the eight requirement families.
+RW-T19-S13-231	200	192	WIRE_CANONICAL_DIGEST	Oracle identity wire is closed to the ten exact Oracle-family namespaces.
+RW-T19-S13-232	200	193	WIRE_CANONICAL_DIGEST	conformance-probe-profile-v1.json freezes the exact Probe inventory.
+RW-T19-S13-233	200	194	WIRE_CANONICAL_DIGEST	The frozen Probe inventory contains exactly 110 probes.
+RW-T19-S13-234	200	195	SECURITY_FAULT	All 110 probeId values are unique.
+RW-T19-S13-235	200	196	WIRE_CANONICAL_DIGEST	The Probe inventory has exactly 13 shared operation and capacity probes.
+RW-T19-S13-236	200	197	WIRE_CANONICAL_DIGEST	The Probe inventory has exactly 18 SPEC_REGISTRY probes.
+RW-T19-S13-237	200	198	WIRE_CANONICAL_DIGEST	The Probe inventory has exactly 12 DOMAIN_SERVICES probes.
+RW-T19-S13-238	200	199	WIRE_CANONICAL_DIGEST	The Probe inventory has exactly 12 DESIGN_INPUT_EXPRESSION probes.
+RW-T19-S13-239	200	200	WIRE_CANONICAL_DIGEST	The Probe inventory has exactly 18 RENDERING_PIPELINE probes.
+RW-T19-S13-240	200	201	WIRE_CANONICAL_DIGEST	The Probe inventory has exactly 19 RENDERER_EXACT_OUTPUT probes.
+RW-T19-S13-241	200	202	WIRE_CANONICAL_DIGEST	The Probe inventory has exactly 18 EDITOR_AUTOMATED probes.
+RW-T19-S13-242	200	203	SECURITY_FAULT	Changing the frozen Probe inventory requires a new exact Probe Profile.
+RW-T19-S13-243	200	204	SECURITY_FAULT	Non-capacity probe-to-requirement and terminal mapping is a class-specific record gate.
+RW-T19-S13-244	200	205	SECURITY_FAULT	Complete canonical assertion vectors are a global Probe Profile gate.
+RW-T19-S13-245	200	206	SECURITY_FAULT	Executor observation adapters are class-specific record gates.
+RW-T19-S13-246	200	207	SECURITY_FAULT	renderweave-conformance-probes/1.0 is non-referenceable until its global gate passes.
+RW-T19-S13-247	200	208	WIRE_CANONICAL_DIGEST	conformance-canonical-vectors-v1.json freezes canonical byte and domain-digest vectors.
+RW-T19-S13-248	200	209	WIRE_CANONICAL_DIGEST	The canonical vector artifact contains exactly 13 positive vectors.
+RW-T19-S13-249	200	210	WIRE_CANONICAL_DIGEST	The canonical vector artifact contains exactly eight negative vectors.
+RW-T19-S13-250	200	211	SECURITY_FAULT	Independent replay of the canonical vector artifact is pending before SPEC_REGISTRY bootstrap.
+RW-T19-S13-251	200	212	WIRE_CANONICAL_DIGEST	conformance-safe-baselines-v1.json freezes safe-baseline layering.
+RW-T19-S13-252	200	213	WIRE_CANONICAL_DIGEST	The safe-baseline manifest contains exactly 13 immutable fragment definitions.
+RW-T19-S13-253	200	214	WIRE_CANONICAL_DIGEST	The safe-baseline manifest contains exactly six root baseline definitions.
+RW-T19-S13-254	200	215	WIRE_CANONICAL_DIGEST	Each execution class has exactly one root safe-baseline definition.
+RW-T19-S13-255	200	216	SECURITY_FAULT	A root baseline definition digest cannot substitute for its validated fixture-byte digest.
+RW-T19-S13-256	200	217	SECURITY_FAULT	Cross-execution-class safe-baseline fallback is forbidden.
+RW-T19-S13-257	200	218	WIRE_CANONICAL_DIGEST	Every GENERATED Case explicitly binds one safeBaselineId and the complete safe-baseline manifest SHA-256.
+RW-T19-S13-258	200	219	SECURITY_FAULT	A baseline remains non-referenceable until exact fixture bytes, artifact hash, schema validation, and its class adapter are frozen.
+RW-T19-S13-259	200	220	SECURITY_FAULT	A safe baseline that has not passed its own fixture, schema, and adapter gate is non-referenceable by Case records.
+RW-T19-S13-260	200	221	WIRE_CANONICAL_DIGEST	Changing a baseline definition, fragment order, or fixture bytes requires a new baseline identity or artifact version.
+RW-T19-S13-261	200	222	WIRE_CANONICAL_DIGEST	conformance-generator-manifests-v1.json freezes Conformance generator contracts.
+RW-T19-S13-262	200	223	WIRE_CANONICAL_DIGEST	The generator catalog contains exactly six generator Profiles.
+RW-T19-S13-263	200	224	WIRE_CANONICAL_DIGEST	Each execution class has exactly one generator Profile.
+RW-T19-S13-264	200	225	WIRE_CANONICAL_DIGEST	Generator parameters use only the exact capacity-boundary and named-scenario closed contracts.
+RW-T19-S13-265	200	226	WIRE_CANONICAL_DIGEST	A generator is a total deterministic function of its exact Profile, complete parameters, baseline fixture bytes, and explicitly hashed artifacts.
+RW-T19-S13-266	200	227	SECURITY_FAULT	A Conformance generator cannot use hidden defaults.
+RW-T19-S13-267	200	228	SECURITY_FAULT	A Conformance generator cannot read ambient environment facts.
+RW-T19-S13-268	200	229	SECURITY_FAULT	A Conformance generator cannot access the network.
+RW-T19-S13-269	200	230	SECURITY_FAULT	A Conformance generator cannot use undeclared entropy.
+RW-T19-S13-270	200	231	WIRE_CANONICAL_DIGEST	A pseudorandom generator requires a new parameter schema with an explicit fixed seed.
+RW-T19-S13-271	200	232	WIRE_CANONICAL_DIGEST	Every generated Case expands all resolved values into literal record fields.
+RW-T19-S13-272	200	233	SECURITY_FAULT	A generator or executor cannot consult matrix defaults or latest profiles at runtime.
+RW-T19-S13-273	200	234	SECURITY_FAULT	Each generator implementation manifest remains pending until that execution class passes its implementation gate.
+RW-T19-S13-274	200	235	SECURITY_FAULT	Each generator golden-vector set remains pending until that execution class passes its implementation gate.
+RW-T19-S13-275	200	236	SECURITY_FAULT	A generator Profile that has not passed its implementation gate is non-referenceable by Case records.
+RW-T19-S13-276	200	237	WIRE_CANONICAL_DIGEST	Changing a generator parameter schema, algorithm, output contract, baseline, or vector meaning requires a new exact generator Profile.
+RW-T19-S13-277	200	238	WIRE_CANONICAL_DIGEST	conformance-capacity-coverage-v1.json is the explicit capacity generation and assertion mapping.
+RW-T19-S13-278	200	239	WIRE_CANONICAL_DIGEST	The capacity coverage mapping contains exactly 175 unique limitId axes.
+RW-T19-S13-279	200	240	WIRE_CANONICAL_DIGEST	Every capacity axis has below, at, and above variants, yielding exactly 525 planned Cases.
+RW-T19-S13-280	200	241	WIRE_CANONICAL_DIGEST	The capacity coverage mapping reserves exactly 525 planned Capacity Oracle identities.
+RW-T19-S13-281	200	242	WIRE_CANONICAL_DIGEST	Every capacity axis explicitly records its limit value, value encoding, comparator, and delta identity.
+RW-T19-S13-282	200	243	WIRE_CANONICAL_DIGEST	Every capacity axis explicitly records resolved kind, code, contract stage, public stage, reservation point, and zero boundary.
+RW-T19-S13-283	200	244	WIRE_CANONICAL_DIGEST	Every capacity axis explicitly selects one most-downstream execution class.
+RW-T19-S13-284	200	245	WIRE_CANONICAL_DIGEST	Every capacity axis explicitly maps to existing authoritative requirement IDs.
+RW-T19-S13-285	200	246	WIRE_CANONICAL_DIGEST	Every capacity variant explicitly records caseId, stimulus value, terminal, planned Oracle identity, and expected assertions.
+RW-T19-S13-286	200	247	WIRE_CANONICAL_DIGEST	Capacity axes are assigned only to DOMAIN_SERVICES, DESIGN_INPUT_EXPRESSION, RENDERING_PIPELINE, and RENDERER_EXACT_OUTPUT.
+RW-T19-S13-287	200	248	WIRE_CANONICAL_DIGEST	Capacity assertion A001 observes operation.accepted.
+RW-T19-S13-288	200	249	WIRE_CANONICAL_DIGEST	Capacity assertion A002 observes operation.terminalCode.
+RW-T19-S13-289	200	250	WIRE_CANONICAL_DIGEST	Capacity assertion A003 observes operation.terminalStage.
+RW-T19-S13-290	200	251	WIRE_CANONICAL_DIGEST	Capacity assertion A004 observes capacity.limitId.
+RW-T19-S13-291	200	252	WIRE_CANONICAL_DIGEST	Capacity assertion A005 observes capacity.observedValue.
+RW-T19-S13-292	200	253	WIRE_CANONICAL_DIGEST	Capacity assertion A006 observes capacity.reservationReached.
+RW-T19-S13-293	200	254	WIRE_CANONICAL_DIGEST	Capacity assertion A007 observes capacity.zeroBoundary.
+RW-T19-S13-294	200	255	WIRE_CANONICAL_DIGEST	Capacity assertion A008 observes operation.downstreamEffects.
+RW-T19-S13-295	200	256	SECURITY_FAULT	A generated Capacity Oracle materializes all A001 through A008 expected values as literal record fields.
+RW-T19-S13-296	200	257	SECURITY_FAULT	An executor never evaluates capacity mapping valueFrom expressions at runtime.
+RW-T19-S13-297	200	258	WIRE_CANONICAL_DIGEST	All capacity default and override values are resolved inside the capacity coverage mapping.
+RW-T19-S13-298	200	259	SECURITY_FAULT	A generator or executor never reads a capacity group default or wildcard fallback.
+RW-T19-S13-299	200	260	SECURITY_FAULT	Planned capacity Case and Oracle identities are reservations only.
+RW-T19-S13-300	200	261	SECURITY_FAULT	A planned capacity identity is issued only by appending its immutable JSONL record after every gate passes.
+RW-T19-S13-301	200	262	SECURITY_FAULT	The capacity coverage mapping is not currently referenceable by Case records.
+RW-T19-S13-302	200	263	WIRE_CANONICAL_DIGEST	conformance-bootstrap-order-v1.json freezes Conformance bootstrap and record-issuance order.
+RW-T19-S13-303	200	264	WIRE_CANONICAL_DIGEST	Execution bootstrap order is SPEC_REGISTRY, DOMAIN_SERVICES, DESIGN_INPUT_EXPRESSION, RENDERING_PIPELINE, RENDERER_EXACT_OUTPUT, then EDITOR_AUTOMATED.
+RW-T19-S13-304	200	265	SECURITY_FAULT	A later execution class cannot claim executable before every earlier bootstrap step is executable.
+RW-T19-S13-305	200	266	SECURITY_FAULT	Executable status requires an exact executor manifest.
+RW-T19-S13-306	200	267	SECURITY_FAULT	Executable status requires an exact target manifest.
+RW-T19-S13-307	200	268	SECURITY_FAULT	Executable status requires an exact implementation revision.
+RW-T19-S13-308	200	269	SECURITY_FAULT	Executable status requires an assigned active-corpus digest.
+RW-T19-S13-309	200	270	SECURITY_FAULT	Executable status requires a probe observation-adapter manifest.
+RW-T19-S13-310	200	271	SECURITY_FAULT	Executable status requires a successful independent replay.
+RW-T19-S13-311	200	272	WIRE_CANONICAL_DIGEST	Record issuance phases are prerequisites, SPEC_REGISTRY bootstrap, isolated capacity, combined capacity, non-capacity automated, and separate Editor J1.
+RW-T19-S13-312	200	273	SECURITY_FAULT	The prerequisites phase permits no JSONL mutation.
+RW-T19-S13-313	200	274	SECURITY_FAULT	SPEC_REGISTRY Oracle and Case records are issued before all non-registry records.
+RW-T19-S13-314	200	275	SECURITY_FAULT	The 525 isolated capacity records are issued only after SPEC_REGISTRY bootstrap passes and assigned generator targets exist.
+RW-T19-S13-315	200	276	SECURITY_FAULT	The 18 combined capacity records are issued only after isolated capacity graph validation passes.
+RW-T19-S13-316	200	277	SECURITY_FAULT	Non-capacity automated records are issued only after their assigned execution-class manifests exist.
+RW-T19-S13-317	200	278	EDITOR_AUTOMATED	Editor J1 remains outside automated record issuance and cannot substitute for it.
+RW-T19-S13-318	200	279	SECURITY_FAULT	Before SPEC_REGISTRY issuance the Conformance issuance phase is PREREQUISITES.
+RW-T19-S13-319	200	280	WIRE_CANONICAL_DIGEST	Each Conformance JSONL registry is exactly one LF byte during the prerequisites phase.
+RW-T19-S13-320	200	281	SECURITY_FAULT	The Conformance Case registry contains zero records before Phase 1 issuance.
+RW-T19-S13-321	200	282	SECURITY_FAULT	The Conformance Oracle registry contains zero records before Phase 1 issuance.
+RW-T19-S13-322	201	1	SECURITY_FAULT	The global Probe Profile issuance gate and each execution-class record issuance gate are separate.
+RW-T19-S13-323	201	2	WIRE_CANONICAL_DIGEST	The global Probe Profile gate requires the exact 110-probe inventory and complete canonical assertion vectors.
+RW-T19-S13-324	201	3	SECURITY_FAULT	Pending mappings, adapters, executors, or targets for the other five execution classes do not block Probe Profile issuance.
+RW-T19-S13-325	201	4	SECURITY_FAULT	Each execution class independently requires assigned requirement mapping, terminal-to-assertion mapping, observation adapter, exact executor and target manifests, and successful independent replay before record issuance.
+RW-T19-S13-326	201	5	WIRE_CANONICAL_DIGEST	The SPEC_REGISTRY assigned active requirement set is exactly RW-T19-S00-001 plus every RW-T19-S13 requirement.
+RW-T19-S13-327	201	6	SECURITY_FAULT	SPEC_REGISTRY class-local no-orphan validation ranges only over its assigned active requirement set.
+RW-T19-S13-328	201	7	SECURITY_FAULT	Active requirements assigned to later classes remain PENDING_UNASSIGNED and are neither reported orphan nor falsely covered by SPEC_REGISTRY.
+RW-T19-S13-329	201	8	SECURITY_FAULT	SPEC_REGISTRY mutation terminals use only the fourteen frozen SPEC_REGISTRY codes.
+RW-T19-S13-330	201	9	WIRE_CANONICAL_DIGEST	Canonical-vector rejection retains the exact CONFORMANCE codes frozen by each vector.
+RW-T19-S13-331	201	10	SECURITY_FAULT	Every SPEC_REGISTRY problem uses stage SPEC_REGISTRY.
+RW-T19-S13-332	201	11	SECURITY_FAULT	Every SPEC_REGISTRY success or failure has zero product writes, zero RenderDocuments, zero RenderOutputs, and no downstream product effects.
+RW-T19-S13-333	201	12	WIRE_CANONICAL_DIGEST	The exact baseline.spec-registry.empty-v1 fixture bytes, media type, and SHA-256 are frozen before reference.
+RW-T19-S13-334	201	13	SECURITY_FAULT	renderweave-spec-registry-generator/1.0 is deterministic from complete named-scenario parameters and explicit SHA-bound artifacts and reads no network, time, environment, or hidden default.
+RW-T19-S13-335	201	14	WIRE_CANONICAL_DIGEST	The SPEC_REGISTRY fixture catalog contains exactly one complete-registry scenario, 24 named mutation scenarios, and 21 canonical-vector scenarios.
+RW-T19-S13-336	201	15	WIRE_CANONICAL_DIGEST	Canonical assertion vectors cover every allowed operator and expected encoding for all 110 probes plus at least one rejection boundary per probe.
+RW-T19-S13-337	201	16	WIRE_CANONICAL_DIGEST	The SPEC_REGISTRY observation adapter maps exactly the 31 shared or class-specific probes visible to that execution class.
+RW-T19-S13-338	201	17	SECURITY_FAULT	The primary-registry-validator role is bound to the Node.js implementation.
+RW-T19-S13-339	201	18	SECURITY_FAULT	The independent-schema-and-graph-replayer role is bound to the Python implementation.
+RW-T19-S13-340	201	19	SECURITY_FAULT	The two SPEC_REGISTRY executors share no semantic helper, parser, or validation library.
+RW-T19-S13-341	201	20	WIRE_CANONICAL_DIGEST	The exact target manifest binds all SPEC_REGISTRY authority, schema, profile, fixture, generator, mapping, and candidate-record bytes.
+RW-T19-S13-342	201	21	SECURITY_FAULT	Before first issuance both executors independently replay byte-identical candidate JSONL outside the append-only registries.
+RW-T19-S13-343	201	22	SECURITY_FAULT	No SPEC_REGISTRY record is appended unless both preissuance replays pass.
+RW-T19-S13-344	201	23	WIRE_CANONICAL_DIGEST	The bytes appended to each registry are exactly the bytes that passed preissuance replay.
+RW-T19-S13-345	201	24	SECURITY_FAULT	After issuance both executors replay the formal JSONL registries again.
+RW-T19-S13-346	201	25	SECURITY_FAULT	A successful preissuance rehearsal never substitutes for postissuance replay evidence.
+RW-T19-S13-347	201	26	SECURITY_FAULT	SPEC_REGISTRY A2 evidence binds the spec revision, acceptance-manifest hash, fixture, generator, assertion, adapter, executor and target manifests, candidate and formal JSONL hashes, implementation revision, and actual runtime versions.
+RW-T19-S13-348	201	27	WIRE_CANONICAL_DIGEST	The first SPEC_REGISTRY issuance contains exactly 46 Case records.
+RW-T19-S13-349	201	28	WIRE_CANONICAL_DIGEST	The first SPEC_REGISTRY issuance contains exactly 46 Oracle records.
+RW-T19-S13-350	201	29	SECURITY_FAULT	The issued SPEC_REGISTRY graph has zero assigned-requirement orphans.
+RW-T19-S13-351	201	30	SECURITY_FAULT	The issued SPEC_REGISTRY graph has zero active Case orphans.
+RW-T19-S13-352	201	31	SECURITY_FAULT	The issued SPEC_REGISTRY graph has zero active Oracle orphans.
+RW-T19-S13-353	201	32	SECURITY_FAULT	The issued SPEC_REGISTRY graph has zero duplicate active signatures.
+RW-T19-S13-354	201	33	SECURITY_FAULT	The issued SPEC_REGISTRY graph has valid supersession, source locators, schemas, canonical bytes, identities, manifest closure, and Profile reference closure.
+RW-T19-S13-355	201	34	WIRE_CANONICAL_DIGEST	renderweave-conformance-probes/1.0 becomes record-referenceable after its global gate passes.
+RW-T19-S13-356	201	35	SECURITY_FAULT	Only the SPEC_REGISTRY baseline and generator become referenceable in this bootstrap; all other class baseline and generator entries remain pending.
+RW-T19-S13-357	201	36	SECURITY_FAULT	After successful preissuance and postissuance independent replay bootstrap step 1 is EXECUTABLE_A2_REPLAYED.
+RW-T19-S13-358	201	37	SECURITY_FAULT	After SPEC_REGISTRY closure the current issuance phase is CAPACITY_BOUNDARY.
+RW-T19-S13-359	201	38	SECURITY_FAULT	The other five execution classes remain pending after SPEC_REGISTRY closure.
+RW-T19-S13-360	201	39	SECURITY_FAULT	The 525 isolated capacity and 18 combined capacity records remain unissued after SPEC_REGISTRY closure.
+RW-T19-S13-361	201	40	SECURITY_FAULT	The full automated corpus remains non-executable after this local bootstrap.
+RW-T19-S13-362	201	41	SECURITY_FAULT	SPEC_REGISTRY closure does not certify or ready the Renderer and does not close Ticket19.
+RW-T19-S14-001	205	1	EDITOR_AUTOMATED	j1-editor-checklist-v1.json is the independent human-acceptance checklist authority.
+RW-T19-S14-002	205	2	EDITOR_AUTOMATED	The J1 Editor checklist has exactly 12 items.
+RW-T19-S14-003	205	3	EDITOR_AUTOMATED	All 12 items must pass before Editor experience can be reported J1 accepted.
+RW-T19-S14-004	205	4	EDITOR_AUTOMATED	J1 checklist items are excluded from automated case totals.
+RW-T19-S14-005	205	5	EDITOR_AUTOMATED	Screenshots, A1, A2, A3, and accessibility scanners cannot replace J1 human acceptance.
+RW-T19-S14-006	206	1	EDITOR_AUTOMATED	J1 covers keyboard traversal.
+RW-T19-S14-007	206	2	EDITOR_AUTOMATED	J1 covers structural commands and undo or redo.
+RW-T19-S14-008	206	3	EDITOR_AUTOMATED	J1 covers Binding and ABSENT or ERROR feedback.
+RW-T19-S14-009	206	4	EDITOR_AUTOMATED	J1 covers numeric target rewrites during array reorder.
+RW-T19-S14-010	206	5	EDITOR_AUTOMATED	J1 covers problem location, focus, and generation behavior.
+RW-T19-S14-011	206	6	EDITOR_AUTOMATED	J1 covers canonical resynchronization after save.
+RW-T19-S14-012	206	7	EDITOR_AUTOMATED	J1 covers complete dependency-invalid confirmation and prohibits confirmation of truncated problems.
+RW-T19-S14-013	206	8	EDITOR_AUTOMATED	J1 covers guarded conflict overwrite.
+RW-T19-S14-014	206	9	EDITOR_AUTOMATED	J1 covers unknown save reconciliation.
+RW-T19-S14-015	206	10	EDITOR_AUTOMATED	J1 covers Local recovery, import, Raw Repair, and Compatibility Read-only.
+RW-T19-S14-016	206	11	EDITOR_AUTOMATED	J1 covers preview cancel, old-result suppression, and preview basis.
+RW-T19-S14-017	206	12	EDITOR_AUTOMATED	J1 covers screen reader, focus, 200-percent zoom, contrast, and reduced motion.
+RW-T19-S14-018	207	1	EDITOR_AUTOMATED	Each J1 run records a named operator.
+RW-T19-S14-019	207	2	EDITOR_AUTOMATED	Each J1 run records its date.
+RW-T19-S14-020	207	3	EDITOR_AUTOMATED	Each J1 run records browser and OS.
+RW-T19-S14-021	207	4	EDITOR_AUTOMATED	Each J1 run records build revision.
+RW-T19-S14-022	207	5	EDITOR_AUTOMATED	Each J1 run records result and problems.
+RW-T19-S14-023	207	6	EDITOR_AUTOMATED	Any pending or failed item limits the report to J0 or J1 pending.
+RW-T19-S14-024	207	7	EDITOR_AUTOMATED	Passing the other 11 items cannot be aggregated into accepted.
+RW-T19-S14-025	207	8	EDITOR_AUTOMATED	A retest creates a new run record.
+RW-T19-S14-026	207	9	EDITOR_AUTOMATED	A retest never overwrites historical run records.

@@ -1,0 +1,229 @@
+requirement_id	source_line	clause_ordinal_on_line	family	normative_summary
+RW-T10-S1-001	29	1	LAYOUT_SHAPING	first exact layout contract ID 为 renderweave-layout/1.0。
+RW-T10-S1-002	29	2	WIRE_CANONICAL_DIGEST	Layout Profile 必须 explicit 写入 RenderDocument。
+RW-T10-S1-003	29	3	WIRE_CANONICAL_DIGEST	Layout Profile 由 DesignDSL/RenderDSL compatibility table 选择。
+RW-T10-S1-004	29	4	SECURITY_FAULT	Render Request/caller 不得任意 select、upgrade 或 request fallback。
+RW-T10-S1-005	29	5	WIRE_CANONICAL_DIGEST	任何 observable layout-algorithm change 必须新 Layout Profile。
+RW-T10-S1-006	29	6	WIRE_CANONICAL_DIGEST	若同时改变 authored wire/Property Identity/default/validation，还必须新 dslVersion，不能只换 Layout Profile。
+RW-T10-S1-007	30	1	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	Evaluator 负责 materialize Binding/Definition/Repeat/Conditional/TemplateUse/logical AssetRef。
+RW-T10-S1-008	30	2	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	Evaluator 按 actual consumer 产生 one-to-one RenderResource manifest 与 ordered static Node tree。
+RW-T10-S1-009	30	3	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	TemplateUse/child Canvas lower 为无 Template handle 的 static compositionViewport。
+RW-T10-S1-010	30	4	LAYOUT_SHAPING	RenderDocument 保留 Stack/Grid/Placement/viewport rules，不携 final x-y/breaks/glyph/derived boxes。
+RW-T10-S1-011	31	1	LAYOUT_SHAPING	RenderEngine 是 layout authority，完成 resource prep/measure/arrange/final shaping-reflow/draw。
+RW-T10-S1-012	31	2	LAYOUT_SHAPING	Engine 内部产生 LaidOutScene。
+RW-T10-S1-013	31	3	SECURITY_FAULT	LaidOutScene/derived coordinates/glyphs/boxes/tree 不回写 DesignDSL/revision/RenderDocument，且无独立 lifecycle。
+RW-T10-S1-014	32	1	EDITOR_AUTOMATED	browser canvas 只能提供同 contract 的 non-authoritative feedback。
+RW-T10-S1-015	32	2	RENDERER_OUTPUT	authoritative preview 与 formal output 必须进入同一 RenderEngine。
+RW-T10-S1-016	32	3	LAYOUT_SHAPING	现有 busbox engine 能力不足，后续必须扩展为 explicit RenderWeave Layout Profile support。
+RW-T10-S1-017	32	4	SECURITY_FAULT	Adapter 可转换 wire/unit，但不得 pre-layout、silent-simulate 或 degrade semantics。
+RW-T10-S1-018	33	1	WIRE_CANONICAL_DIGEST	RenderDocument 必须 expand all NodeContract defaults。
+RW-T10-S1-019	33	2	WIRE_CANONICAL_DIGEST	RenderDocument 按 final materialized order 保存 children。
+RW-T10-S1-020	33	3	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	每个 occurrence 携按 final-tree preorder 分配的 opaque occurrenceId。
+RW-T10-S1-021	33	4	SECURITY_FAULT	full OccurrencePath 与 optional source-node link 只存在 Rendering request sidecar。
+RW-T10-S1-022	33	5	SECURITY_FAULT	RenderDocument 不含 Binding/Definition/dynamic decisions/logical AssetRef/editor state/Template identity/default omission info。
+RW-T10-S2-001	37	1	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	render:false、false Conditional、zero-item Repeat 在 measure/layout/dynamic-Asset/output 前移除 whole subtree。
+RW-T10-S2-002	37	2	LAYOUT_SHAPING	被 structural-prune 的 subtree 不占 size 或 Stack gap。
+RW-T10-S2-003	37	3	LAYOUT_SHAPING	Stack gap 只存在 final materialized adjacent children 之间。
+RW-T10-S2-004	37	4	LAYOUT_SHAPING	expanded authored occurrence order 同时决定 layout traversal 与 paint order。
+RW-T10-S2-005	38	1	LAYOUT_SHAPING	visible:false 保留 resource resolution/measure/layout，skip self+descendant draw。
+RW-T10-S2-006	38	2	LAYOUT_SHAPING	opacity:0 保留 resources/measure/layout/failure，只允许 draw-stage optimize。
+RW-T10-S2-007	38	3	SECURITY_FAULT	不可见状态不得 mask missing-font/image-decode/layout error。
+RW-T10-S2-008	38	4	ASSET_CAPABILITY_CONCURRENCY	static authored AssetRef readiness/index validation 独立于 runtime pruning。
+RW-T10-S2-009	39	1	LAYOUT_SHAPING	Engine 先 prepare exact font/image sizes，再 bottom-up measure、top-down arrange、final-width reflow/shaping、draw。
+RW-T10-S2-010	39	2	SECURITY_FAULT	resource/measure/layout/shaping/draw-precondition 任一失败使 whole request fail，不返回 partial Scene/Trace/Output。
+RW-T10-S3-001	43	1	LAYOUT_SHAPING	authored geometry/padding/margin/gap/shape-stroke/vector-coordinate 用 mm。
+RW-T10-S3-002	43	2	LAYOUT_SHAPING	fontSize/fixed-line-height/absolute-letter-spacing/Text-stroke 用 pt；scale/ratio/weight unitless；rotation degree。
+RW-T10-S3-003	43	3	RENDERER_OUTPUT	DPI 只在 raster request 生效，omitted=96。
+RW-T10-S3-004	43	4	LAYOUT_SHAPING	DPI 不参与 physical layout/font metrics/Image HUG/shrink-to-fit。
+RW-T10-S3-005	44	1	LAYOUT_SHAPING	lowering 以 pt=mm×360/127 转换 physical quantities。
+RW-T10-S3-006	44	2	LAYOUT_SHAPING	每个 decimal 只在 lowering boundary quantize once 到 6 decimals HALF_EVEN；native pt/unitless/degree 同样 quantize。
+RW-T10-S3-007	44	3	WIRE_CANONICAL_DIGEST	量化后 -0→0，integer 保持 exact。
+RW-T10-S3-008	44	4	SECURITY_FAULT	量化后 nonfinite/out-of-range/contract violation 直接 fail，不 clamp。
+RW-T10-S3-009	44	5	LAYOUT_SHAPING	rotation 不作 360 normalize。
+RW-T10-S3-010	45	1	LAYOUT_SHAPING	Layout Profile 使用 binary64、fixed eval order，禁止 result-affecting fast-math/FMA contraction。
+RW-T10-S3-011	45	2	LAYOUT_SHAPING	intermediate results 不再 quantize。
+RW-T10-S3-012	45	3	LAYOUT_SHAPING	FILL/FRACTION/AUTO-deficit/distributed allocations 按 stable authored order 计算前 n-1，last receives remainder。
+RW-T10-S3-013	45	4	LAYOUT_SHAPING	water-level 每轮至少 freeze 一个 min/max item；ties 用 authored order。
+RW-T10-S3-014	45	5	SECURITY_FAULT	tiny negative residue within Profile tolerance→0；outside tolerance numeric error。
+RW-T10-S3-015	45	6	LAYOUT_SHAPING	layout stage 不 pixel-snap。
+RW-T10-S3-016	46	1	LAYOUT_SHAPING	conformance 比较 boxes/breaks/transforms/paint-clip order/errors/Profile tolerance。
+RW-T10-S3-017	46	2	LAYOUT_SHAPING	conformance 不要求 internal floating bit-pattern equality。
+RW-T10-S3-018	46	3	RENDERER_OUTPUT	DPI-to-pixel/final-pixel rounding 由 T16。
+RW-T10-S4-001	50	1	LAYOUT_SHAPING	IntrinsicSize 是 Node 在 axis constraint 下的 natural content size。
+RW-T10-S4-002	50	2	LAYOUT_SHAPING	axis constraints exact 为 UNBOUNDED|AT_MOST(value)|EXACT(value)。
+RW-T10-S4-003	50	3	LAYOUT_SHAPING	measure 必须是 Node+resolved-resources+constraint 的 pure function。
+RW-T10-S4-004	51	1	LAYOUT_SHAPING	LayoutBox 是 arranged pre-transform border box，不含 margin；placement sizes 均指它。
+RW-T10-S4-005	51	2	LAYOUT_SHAPING	MarginExtent 是 Stack/Grid 排布用的 LayoutBox + signed-margin interval，不可绘制。
+RW-T10-S4-006	52	1	LAYOUT_SHAPING	Frame/Stack/Grid ContentBox 由 LayoutBox inward-stroke 后再 padding 得 nonnegative region。
+RW-T10-S4-007	52	2	LAYOUT_SHAPING	Rect/Ellipse 无 child ContentBox。
+RW-T10-S4-008	52	3	LAYOUT_SHAPING	Text ContentBox 只扣 padding；Text stroke 是 glyph stroke。
+RW-T10-S4-009	52	4	LAYOUT_SHAPING	box deduction 结果 negative 时 floor0，不 auto-scale 或 error。
+RW-T10-S4-010	53	1	LAYOUT_SHAPING	PaintBounds 是 world-transform 后、clip 前 conservative world AABB；EffectivePaintBounds 再 intersect all clips/surface。
+RW-T10-S4-011	53	2	LAYOUT_SHAPING	ClipRegion 必须保留 actual path/rounded semantics，不得用 AABB 替代。
+RW-T10-S4-012	53	3	LAYOUT_SHAPING	LayoutOverflow 只表示 unclipped content 超 own box，不反馈 layout 且不是 readiness issue。
+RW-T10-S4-013	54	1	LAYOUT_SHAPING	LaidOutScene 内含 final boxes/world transforms/clips/glyphs/paint-items/resources。
+RW-T10-S4-014	54	2	SECURITY_FAULT	LaidOutScene 不是 RenderDSL/persisted artifact/cross-context product contract。
+RW-T10-S4-015	55	1	DESIGN_INPUT_EXPRESSION	FIXED authored sizes 必须 >0；HUG/FILL final LayoutBox 可为 zero。
+RW-T10-S4-016	55	2	LAYOUT_SHAPING	zero-size Node 仍在 tree，unclipped descendant/VISIBLE content 可 overflow。
+RW-T10-S4-017	55	3	RENDERER_OUTPUT	zero Image clip empty/no draw；Rect/Ellipse no self area；QR/Barcode positive-size requirement 仍 fail。
+RW-T10-S4-018	55	4	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	zero size 不等于 render:false。
+RW-T10-S5-001	59	1	LAYOUT_SHAPING	FIXED 用 authored size；HUG 用 constraint-sensitive IntrinsicSize；FILL 用 parent definite offer。
+RW-T10-S5-002	59	2	LAYOUT_SHAPING	min/max 只 clamp HUG/FILL；FIXED 必须 pre-layout 已 within min/max。
+RW-T10-S5-003	59	3	LAYOUT_SHAPING	HUG 收 parent offer/max 时使用 AT_MOST。
+RW-T10-S5-004	59	4	LAYOUT_SHAPING	Text intrinsic measure 前按 inline-axis constraint wrap/reflow；non-reflow shape natural-size 后 clamp。
+RW-T10-S5-005	59	5	LAYOUT_SHAPING	max 小于 content 只产生 overflow，不 implicit-shrink content。
+RW-T10-S5-006	60	1	SECURITY_FAULT	FILL 必须获得 definite offer。
+RW-T10-S5-007	60	2	SECURITY_FAULT	HUG/FILL、Frame inset、Stack main-FILL、Grid AUTO/FILL dependency cycle 均 hard error；不猜零/通用 fixed-point。
+RW-T10-S5-008	60	3	LAYOUT_SHAPING	Stack 先 solve main axis，再按 final main 重新 measure cross HUG，一次完成且不反算 main。
+RW-T10-S5-009	60	4	LAYOUT_SHAPING	Grid fixed columns-first，再以 final columns measure rows；rows 不反推 columns。
+RW-T10-S5-010	60	5	LAYOUT_SHAPING	mixed Text writing mode 不改变 Grid columns-first order。
+RW-T10-S5-011	61	1	LAYOUT_SHAPING	Node transform applied after arrange，普通 transform 不影响 parent HUG/Stack-Grid allocation/sibling positions。
+RW-T10-S5-012	61	2	LAYOUT_SHAPING	唯一 exception：Group 与 HUG Frame 对 direct ABSOLUTE child 使用 transformed LayoutBox extent。
+RW-T10-S5-013	61	3	LAYOUT_SHAPING	exception 仍不使用 PaintBounds，container own transform 不反馈自身 layout。
+RW-T10-S5-014	62	1	LAYOUT_SHAPING	local transform exact 为 origin + clockwiseRotate × Scale × (p-origin)：先 scale 后 rotate。
+RW-T10-S5-015	62	2	LAYOUT_SHAPING	origin 是 untransformed LayoutBox normalized coordinate；negative scale=flip；parent transform covers descendant subtree。
+RW-T10-S5-016	62	3	SECURITY_FAULT	v1 无 authored translate/skew transform。
+RW-T10-S6-001	66	1	LAYOUT_SHAPING	Canvas trim box fixed (0,0,width,height)；bleed expands final surface four sides。
+RW-T10-S6-002	66	2	RENDERER_OUTPUT	Canvas background fills entire bleed-inclusive surface。
+RW-T10-S6-003	66	3	LAYOUT_SHAPING	trim 不形成 clip；children 可 paint into bleed。
+RW-T10-S6-004	66	4	RENDERER_OUTPUT	all content 受 surface hard clip。
+RW-T10-S6-005	66	5	SECURITY_FAULT	v1 不 auto-generate crop marks。
+RW-T10-S6-006	67	1	RENDERER_OUTPUT	Canvas 作 root surface 时使用 bleed semantics。
+RW-T10-S6-007	67	2	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	Canvas 作 child Template source 时自身不进入 RenderDocument。
+RW-T10-S6-008	67	3	LAYOUT_SHAPING	compositionViewport 在 child original trim constraints 内 layout，并 hard-clip trim、ignore child bleed。
+RW-T10-S6-009	67	4	LAYOUT_SHAPING	child artboard uniform CONTAIN/CENTER 到 host 并 hard host-clip；letterbox transparent。
+RW-T10-S6-010	67	5	LAYOUT_SHAPING	parent constraints 不使 child reflow。
+RW-T10-S6-011	68	1	LAYOUT_SHAPING	ABSOLUTE FIXED/HUG top-left = parent ContentBox origin + x/y。
+RW-T10-S6-012	68	2	LAYOUT_SHAPING	ABSOLUTE FILL size=max(0,parentContent-start-endInset) 后 apply min/max。
+RW-T10-S6-013	68	3	LAYOUT_SHAPING	negative x/y/inset allowed and may overflow；Absolute has no margin。
+RW-T10-S6-014	69	1	LAYOUT_SHAPING	HUG Frame 保持 stable local ContentBox origin (0,0)。
+RW-T10-S6-015	69	2	LAYOUT_SHAPING	HUG Frame per-axis need = direct-child transformed LayoutBox furthest positive end；negative end only overflow。
+RW-T10-S6-016	69	3	LAYOUT_SHAPING	Frame HUG size 再加 padding + inward stroke。
+RW-T10-S6-017	69	4	LAYOUT_SHAPING	empty Frame HUG size = padding + stroke。
+RW-T10-S6-018	69	5	SECURITY_FAULT	child FILL/inset 依赖 Frame HUG axis 形成 cycle并 fail。
+RW-T10-S6-019	70	1	LAYOUT_SHAPING	Group 取 direct-child transformed LayoutBox 2D union。
+RW-T10-S6-020	70	2	LAYOUT_SHAPING	Group 以 union min 为 derived local origin，并绘制时 normalize-translate 到 (0,0)。
+RW-T10-S6-021	70	3	LAYOUT_SHAPING	Group placement 放 normalized union top-left，再 apply Group transform。
+RW-T10-S6-022	70	4	LAYOUT_SHAPING	empty Group 为 0×0。
+RW-T10-S6-023	70	5	EDITOR_AUTOMATED	group/ungroup/reparent 若保持 world position，Editor 必须 rewrite authored placement；Engine 不 write-back。
+RW-T10-S6-024	71	1	LAYOUT_SHAPING	Frame/Stack/Grid fill 用 normalized outer rounded shape；stroke fully inward。
+RW-T10-S6-025	71	2	LAYOUT_SHAPING	inner-border = outer inset stroke，radius=max(0,r-stroke)。
+RW-T10-S6-026	71	3	LAYOUT_SHAPING	clipContent:true 只 clip descendants 到 inner-border rounded shape，padding 不是 clip boundary。
+RW-T10-S6-027	71	4	LAYOUT_SHAPING	too-thick stroke 可令 inner/ContentBox/descendant-clip empty，但 self stroke 仍 draw。
+RW-T10-S6-028	72	1	RENDERER_OUTPUT	draw stack exact 为 ancestor transform/clip→node transform→opacity isolation→self content→descendant clip/children→self stroke→opacity composite。
+RW-T10-S6-029	72	2	RENDERER_OUTPUT	Image always self-clips；Text by overflow；box primitives in own box；free Vector/Group no auto self-clip。
+RW-T10-S6-030	72	3	RENDERER_OUTPUT	all clips intersect；opacity covers whole subtree 且不改变 bounds。
+RW-T10-S7-001	76	1	LAYOUT_SHAPING	Stack ROW fixed left-to-right，COLUMN top-to-bottom，不受 BiDi。
+RW-T10-S7-002	76	2	LAYOUT_SHAPING	main cursor 从0按 leading margin→child size→trailing margin，并仅 materialized adjacent 加 gap。
+RW-T10-S7-003	76	3	LAYOUT_SHAPING	signed negative margins allow cursor retreat/overlap/outset，不 collapse。
+RW-T10-S7-004	77	1	LAYOUT_SHAPING	definite main-axis 先扣 gaps/signed margins/FIXED/measured-HUG，remaining max(0,available-used) 给 main-FILL children。
+RW-T10-S7-005	77	2	DESIGN_INPUT_EXPRESSION	fillWeight optional >0 default1，仅 owning-direction main-axis FILL 合法并 proportional-allocate。
+RW-T10-S7-006	77	3	DESIGN_INPUT_EXPRESSION	direction/weight Binding 后重新 aggregate-validate。
+RW-T10-S7-007	78	1	LAYOUT_SHAPING	FILL 使用 weighted iterative min/max water filling，bound-hit child freeze，remaining redistributes。
+RW-T10-S7-008	78	2	LAYOUT_SHAPING	min sum 超 space 时允许 overflow 不 shrink min；max 截断后 remainder 给 justifyContent。
+RW-T10-S7-009	78	3	SECURITY_FAULT	water filling 最多 fillChildCount+1 rounds。
+RW-T10-S7-010	79	1	LAYOUT_SHAPING	main occupied/free-space exact formulas 按票据定义且 floor at 0。
+RW-T10-S7-011	79	2	LAYOUT_SHAPING	START/END/CENTER/SPACE_BETWEEN/AROUND/EVENLY exact distribution formulas 与 single-child behavior 按票据。
+RW-T10-S7-012	79	3	LAYOUT_SHAPING	overflow 时 free=0，all justify fallback START distribution。
+RW-T10-S7-013	80	1	LAYOUT_SHAPING	cross axis 从 signed margins 得 available interval；FILL max(0,available) 后 clamp，FIXED/HUG own size。
+RW-T10-S7-014	80	2	LAYOUT_SHAPING	alignSelf overrides alignItems；START/CENTER/END use original interval，oversized child still selected alignment。
+RW-T10-S7-015	80	3	LAYOUT_SHAPING	child transform 不影响 sibling。
+RW-T10-S7-016	81	1	LAYOUT_SHAPING	HUG Stack main 模拟 same cursor/margin/gap/non-FILL，以 origin0/furthest-positive size；negative leading only overflow。
+RW-T10-S7-017	81	2	SECURITY_FAULT	HUG main-axis 出现 FILL 是 cycle。
+RW-T10-S7-018	81	3	LAYOUT_SHAPING	cross HUG 取 all child MarginExtent furthest positive；再 add padding/stroke and min/max。
+RW-T10-S7-019	81	4	LAYOUT_SHAPING	empty HUG Stack = padding + stroke。
+RW-T10-S8-001	85	1	LAYOUT_SHAPING	Grid definite axis 按 FIXED→AUTO→FRACTION solve tracks。
+RW-T10-S8-002	85	2	LAYOUT_SHAPING	AUTO contribution = non-FILL child constraint-sensitive size + signed margins，floor0；single track取max。
+RW-T10-S8-003	85	3	LAYOUT_SHAPING	multi-track deficit 只 average-increase spanned AUTO tracks，constraints 按 spanLength/startIndex/materializedOrder stable-sort。
+RW-T10-S8-004	85	4	LAYOUT_SHAPING	span 中无 AUTO 时允许 overflow。
+RW-T10-S8-005	85	5	SECURITY_FAULT	该轴 FILL child 跨任一 AUTO track 形成 cycle。
+RW-T10-S8-006	86	1	LAYOUT_SHAPING	FIXED/AUTO+gaps 超 available 时 FRACTION 全0且不 shrink existing tracks；否则按 positive weight 分 remaining。
+RW-T10-S8-007	86	2	LAYOUT_SHAPING	无 FRACTION 时 extra space 留 physical right/bottom；v1 无 grid-track justify。
+RW-T10-S8-008	86	3	LAYOUT_SHAPING	row/column zero-based；track physical order left-to-right/top-to-bottom。
+RW-T10-S8-009	87	1	SECURITY_FAULT	HUG axis 只允许 FIXED/AUTO；FRACTION 是 hard error。
+RW-T10-S8-010	87	2	LAYOUT_SHAPING	no-contribution AUTO=0；HUG size=explicit tracks+adjacent gaps+padding+inward stroke；zero track still keeps both declared gaps。
+RW-T10-S8-011	87	3	LAYOUT_SHAPING	dual-axis HUG 在无 FRACTION 时 legal，always columns-first。
+RW-T10-S8-012	87	4	LAYOUT_SHAPING	empty Grid 保留 explicit tracks/gaps size。
+RW-T10-S8-013	88	1	LAYOUT_SHAPING	spanned cell 包含 internal gaps；signed margins define available interval。
+RW-T10-S8-014	88	2	LAYOUT_SHAPING	FILL fills max(0,available) then clamp；FIXED/HUG align by axis selector，oversize仍 obey。
+RW-T10-S8-015	88	3	LAYOUT_SHAPING	child min 不 expand FIXED/FRACTION track。
+RW-T10-S8-016	88	4	LAYOUT_SHAPING	Grid overlap legal，仅 children order 决定 paint。
+RW-T10-S8-017	89	1	LAYOUT_SHAPING	AUTO/span deficit 是 monotonic finite stable process，不做 convergence。
+RW-T10-S8-018	89	2	LAYOUT_SHAPING	每条 span constraint 最多 process once；residue 用 common numeric rules。
+RW-T10-S8-019	89	3	SECURITY_FAULT	over capacity fail directly，不 approximate。
+RW-T10-S9-001	93	1	LAYOUT_SHAPING	每个 Run exact FONT Asset 是唯一 font source；metrics 用 OpenType design metrics×fontSize，不用 hinted pixel metrics。
+RW-T10-S9-002	93	2	SECURITY_FAULT	DPI/system font/platform fallback 不得改变 layout/shrink。
+RW-T10-S9-003	93	3	WIRE_CANONICAL_DIGEST	Layout Profile 固定 Unicode/BiDi/vertical orientation/shaping engine-features versions；script inferred，language=und，无 authored locale/language/features/axis。
+RW-T10-S9-004	93	4	RENDERER_OUTPUT	首批 fonts 仅 single-face nonvariable monochrome glyf/CFF；missing glyph fail，不画 .notdef。
+RW-T10-S9-005	93	5	RENDERER_OUTPUT	underline/strike only fail when actually used and required post/OS2 metrics invalid。
+RW-T10-S9-006	94	1	LAYOUT_SHAPING	horizontal inline=X/block=Y；vertical inline=Y且 wrapped columns right-to-left。
+RW-T10-S9-007	94	2	LAYOUT_SHAPING	horizontal only soft-wrap under definite/AT_MOST content width，HUG width only LF；vertical analog by height。
+RW-T10-S9-008	94	3	LAYOUT_SHAPING	NONE no soft wrap but LF forced；WORD fixed Unicode opportunities and long token overflows without CHAR fallback；CHAR only extended-grapheme boundaries。
+RW-T10-S9-009	94	4	LAYOUT_SHAPING	Run boundary itself 不产生 break opportunity。
+RW-T10-S9-010	95	1	WIRE_CANONICAL_DIGEST	original whitespace fully preserved，不 collapse/trim。
+RW-T10-S9-011	95	2	LAYOUT_SHAPING	horizontal base direction LTR with fixed Unicode BiDi；vertical fixed shaping/orientation。
+RW-T10-S9-012	95	3	LAYOUT_SHAPING	每个 LF 建 next line/column；consecutive/trailing LF preserved。
+RW-T10-S9-013	95	4	LAYOUT_SHAPING	entire empty text still one empty line/column。
+RW-T10-S9-014	96	1	LAYOUT_SHAPING	shaping cluster 不跨 incompatible Run；Run boundary itself adds no advance。
+RW-T10-S9-015	96	2	LAYOUT_SHAPING	letter spacing between adjacent units，cross-Run uses previous cluster Run spacing。
+RW-T10-S9-016	96	3	LAYOUT_SHAPING	spacing 不进入 grapheme、line/column edges 或 LF sides。
+RW-T10-S9-017	96	4	LAYOUT_SHAPING	factor spacing 在 shrink 后按 scaled font size compute。
+RW-T10-S9-018	97	1	LAYOUT_SHAPING	FACTOR line-height 取每行 max(fontSize×factor)；FIXED uses fixed advance。
+RW-T10-S9-019	97	2	LAYOUT_SHAPING	mixed Runs 用 real font metrics shared baseline；glyph ink 可越 line advance。
+RW-T10-S9-020	97	3	LAYOUT_SHAPING	LF empty line style 取该位置 style；fully empty 用 sole Run；horizontal empty width0/block consumes one advance，vertical transpose。
+RW-T10-S9-021	97	4	LAYOUT_SHAPING	HUG intrinsic = line/column advances union glyph ink incl Text stroke + padding。
+RW-T10-S9-022	98	1	LAYOUT_SHAPING	horizontalAlign/verticalAlign always physical axes；writing mode maps them to inline/block accordingly。
+RW-T10-S9-023	98	2	LAYOUT_SHAPING	JUSTIFY 只扩 Profile opportunities；last/hard-LF line fallback LEFT/TOP；SPACE_EVENLY equal endpoints，single unit centered。
+RW-T10-S9-024	98	3	LAYOUT_SHAPING	block-axis JUSTIFY/SPACE_EVENLY distribute between lines/columns。
+RW-T10-S9-025	98	4	LAYOUT_SHAPING	negative available space 不 distribute，使用 normal overflow alignment。
+RW-T10-S9-026	99	1	LAYOUT_SHAPING	SHRINK_TO_FIT 不改变 LayoutBox/padding，只 uniform-scale font/line/spacing/decoration/Text stroke。
+RW-T10-S9-027	99	2	LAYOUT_SHAPING	每个 candidate scale 重新 shape/reflow。
+RW-T10-S9-028	99	3	LAYOUT_SHAPING	fit target 是 untruncated content 两轴内且 within maxLines。
+RW-T10-S9-029	99	4	LAYOUT_SHAPING	用 fixed 32-step binary search [minScale,1]，选择 largest proven-fit lower bound。
+RW-T10-S9-030	99	5	LAYOUT_SHAPING	minScale still not fit 时再 apply overflow。
+RW-T10-S9-031	100	1	LAYOUT_SHAPING	Text ContentBox 只扣 padding；stroke 属 glyph ink，HUG includes it，FIXED/FILL ink may overflow。
+RW-T10-S9-032	100	2	SECURITY_FAULT	VISIBLE 不 self-clip，且 authored maxLines+VISIBLE hard error。
+RW-T10-S9-033	100	3	LAYOUT_SHAPING	CLIP layout all content then clip ContentBox；maxLines adds Nth line/column boundary。
+RW-T10-S9-034	100	4	LAYOUT_SHAPING	ELLIPSIS 在 final visible line 用 U+2026 replace omitted content，并按 last visible/first omitted style selection。
+RW-T10-S9-035	100	5	RENDERER_OUTPUT	ellipsis itself 必须 shape and fit，否则 line empty。
+RW-T10-S9-036	100	6	SECURITY_FAULT	FAIL 在 shrink 后任意 overflow/maxLines breach 使 request fail；ellipsis 不移动 hard LF，empty/trailing LF count maxLines。
+RW-T10-S10-001	104	1	LAYOUT_SHAPING	Image intrinsic 只用 RenderResource descriptor 与 exact-byte recheck 后 orientation-consistent logical pixel ratio，不读 DPI/EXIF physical resolution。
+RW-T10-S10-002	104	2	SECURITY_FAULT	descriptor mismatch、missing/zero dimensions、decode failure 直接 fail。
+RW-T10-S10-003	104	3	LAYOUT_SHAPING	single-axis HUG 从 other definite axis+ratio derive，只 clamp HUG axis；ratio change 后交 fit。
+RW-T10-S10-004	104	4	RENDERER_OUTPUT	CONTAIN center with transparent bars；COVER center-crop；FILL nonuniform-scale；Image always clip LayoutBox。
+RW-T10-S10-005	104	5	RENDERER_OUTPUT	T16 freezes orientation/sRGB、pixel centers、premultiplied nearest-bilinear、edge-clamp pipeline。
+RW-T10-S10-006	104	6	LAYOUT_SHAPING	sampling 只影响 draw，不反馈 layout。
+RW-T10-S10-007	105	1	LAYOUT_SHAPING	free-vector HUG 使用 geometry + cap/join/miter stroke-inclusive bounds，并 normalize min to local (0,0)。
+RW-T10-S10-008	105	2	LAYOUT_SHAPING	FIXED/FILL nonuniform-map geometry/centerline bounds 到 LayoutBox；authored mm stroke 不随 mapping scale，可能 paint outside。
+RW-T10-S10-009	105	3	LAYOUT_SHAPING	Node transform scales/rotates full fill/stroke/subtree。
+RW-T10-S10-010	105	4	LAYOUT_SHAPING	source extent zero 时该轴不 scale，只 center in target axis。
+RW-T10-S10-011	105	5	SECURITY_FAULT	v1 no viewBox/aspect-fit；free Vector no auto-clip。
+RW-T10-S10-012	106	1	LAYOUT_SHAPING	QR final box strictly square positive；Barcode axes positive arbitrary rectangle；quiet zones inside；both no HUG。
+RW-T10-S10-013	106	2	SECURITY_FAULT	不得 implicit-center QR in rectangle。
+RW-T10-S10-014	106	3	RENDERER_OUTPUT	T16 freezes allowed world transform、integer module pitch、quiet zone、QR encoding/mask/version、barcode encoding。
+RW-T10-S10-015	106	4	LAYOUT_SHAPING	device rules only after final geometry+DPI，不反馈 layout。
+RW-T10-S11-001	110	1	SECURITY_FAULT	Template save static baseline 必须完成 size/min-max/cycles/Stack/Grid/Absolute/QR-square 全部 structural+decidable layout constraints。
+RW-T10-S11-002	110	2	SECURITY_FAULT	这些 static violations 是不可确认 hard error。
+RW-T10-S11-003	110	3	LAYOUT_SHAPING	Binding/Repeat/TemplateUse expansion 后每个 occurrence 对 concrete values 重做 same aggregate validation。
+RW-T10-S11-004	110	4	SECURITY_FAULT	runtime-input layout failure 只 fail request，不把 TemplateReadiness 置 INVALID。
+RW-T10-S11-005	111	1	LAYOUT_SHAPING	Engine 用 same Layout Profile defensive-validate，不定义 second semantics。
+RW-T10-S11-006	111	2	SECURITY_FAULT	preflight 可按 stable occurrence/property/code bounded-collect problems。
+RW-T10-S11-007	111	3	SECURITY_FAULT	进入 resource/layout runtime 后按 materialized authored DFS fail-fast。
+RW-T10-S11-008	111	4	SECURITY_FAULT	failure 不返回 Scene/Trace/Output/partial success。
+RW-T10-S11-009	111	5	LAYOUT_SHAPING	normal overflow/signed overlap/paint outset 非 warning/error，只在 authorized LayoutTrace 为 flags。
+RW-T10-S11-010	112	1	SECURITY_FAULT	LayoutTrace optional、request-scoped、capacity-limited、bound exact Layout Profile。
+RW-T10-S11-011	112	2	LAYOUT_SHAPING	LayoutTrace occurrence 可含 boxes/world transform/bounds/clip kind-AABB/paint index/overflow flags。
+RW-T10-S11-012	112	3	SECURITY_FAULT	LayoutTrace 不含 raw text/RenderInput/full DesignDSL/Asset bytes，且不参与 revision/hash/output identity/cache key。
+RW-T10-S11-013	112	4	SECURITY_FAULT	LayoutTrace API authorization 与 exact occurrence identity 由后续 contracts。
+RW-T10-S11-014	113	1	LAYOUT_SHAPING	shared conformance corpus 必须覆盖 boxes/wrap-break/transform/paint-clip/visibility-resource-failure/stable-errors/tolerance。
+RW-T10-S11-015	113	2	EDITOR_AUTOMATED	Engine 是 authority；browser 只能以 corpus 证明 feedback consistency。
+RW-T10-S11-016	113	3	WIRE_CANONICAL_DIGEST	observable behavior fix 必须 new Layout Profile，不得 hot-replace renderweave-layout/1.0。
+RW-T10-S12-001	117	1	WIRE_CANONICAL_DIGEST	受控修正1：STACK placement 新增 permanent fillWeight Identity 与 first append-only Policy。
+RW-T10-S12-002	117	2	WIRE_CANONICAL_DIGEST	受控修正2：margin 只属于 STACK/GRID placement。
+RW-T10-S12-003	117	3	LAYOUT_SHAPING	受控修正3：Frame/Stack/Grid stroke fully inward 且参与 ContentBox。
+RW-T10-S12-004	117	4	SECURITY_FAULT	受控修正4：Text VISIBLE+maxLines 是 hard error。
+RW-T10-S12-005	117	5	SECURITY_FAULT	除四项外不改 T09 frozen kind/wire/default/ValueType/Property Identity。
+RW-T10-S12-006	118	1	SECURITY_FAULT	v1 排除 percent/viewport/breakpoint/anchor/advanced Stack-Grid/aspect-ratio/zIndex/scroll-flow/vector-viewBox/pixel-snap/browser-auto-repair 等票据集合。
+RW-T10-S12-007	118	2	WIRE_CANONICAL_DIGEST	新增 authored wire 必须进入新 DesignDSL Profile。
+RW-T10-S12-008	118	3	WIRE_CANONICAL_DIGEST	只改变 derived algorithm 也必须新 Layout Profile。
+RW-T10-S12-009	119	1	SECURITY_FAULT	本 ticket 只冻结 exploration spec/language/downstream constraints，不创建 Engine/RenderDSL/NodeContract/validator/Web/API/DB implementation。

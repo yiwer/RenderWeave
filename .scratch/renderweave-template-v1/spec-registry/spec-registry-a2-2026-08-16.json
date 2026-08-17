@@ -1,0 +1,179 @@
+{
+  "evidenceVersion": "renderweave-spec-registry-a2/1.0",
+  "evidenceId": "SPEC_REGISTRY_A2::2026-08-16::000001",
+  "status": "PASS",
+  "grade": "A2_INDEPENDENTLY_REPLAYED",
+  "scope": "EXEC::SPEC_REGISTRY::1.0 only",
+  "specRevision": {
+    "branch": "spec/template-v1",
+    "baseCommit": "b14c2d7d4978c679e7ab8e7a2bace3da7af884de",
+    "implementationRevision": "spec-registry-bootstrap/1.0"
+  },
+  "authorityBindings": {
+    "acceptanceManifest": {
+      "path": "acceptance-manifest-v1.json",
+      "sha256": "sha256:9a7cc788e71d5570ecc6f902ecf308facf73a39970b1e1117e04b543d9f29403"
+    },
+    "requirementsRegistry": {
+      "path": "requirements-v1.json",
+      "sha256": "sha256:f038abf56d2db6168c1eac2b64ac26fdd3ada7d8e21e0c018e4bb27a6cd88bab",
+      "registeredRequirementCount": 3651,
+      "assignedRequirementCount": 363
+    },
+    "probeProfile": {
+      "path": "conformance-probe-profile-v1.json",
+      "sha256": "sha256:f800eb1e6e138215c26c7761ed80e0fc9cf77fc3ce051be4e3c5ba530cd6053d",
+      "probeCount": 110,
+      "recordMayReference": true
+    },
+    "safeBaselineManifest": {
+      "path": "conformance-safe-baselines-v1.json",
+      "sha256": "sha256:72687bcffc1ac15883dc483d96710c7eace5bdb320f8ef03aff5540ad3f5adc2"
+    },
+    "generatorManifest": {
+      "path": "conformance-generator-manifests-v1.json",
+      "sha256": "sha256:60ca9eee8cddd1251bb11b893d87a00ad89837e8cea7f9cfc2aeda8b8b77ec80"
+    },
+    "assertionVectors": {
+      "path": "spec-registry/assertion-vectors-v1.json",
+      "sha256": "sha256:291d450f0a1bfa84124664827b2e83fb562545561de9c9fd973070d0eb26762c",
+      "acceptedVectorCount": 143,
+      "rejectedVectorCount": 110
+    },
+    "observationAdapter": {
+      "path": "spec-registry/observation-adapter-v1.json",
+      "sha256": "sha256:066c8c15e1c5d1a547e3c557e011aa407699741d262de2bf1e0856e07323d963",
+      "mappingCount": 31
+    },
+    "generatorImplementation": {
+      "path": "spec-registry/generator-implementation-manifest-v1.json",
+      "sha256": "sha256:94cd7f6ae9fc8162cd619130f0117fb85d2df433182f422d4f718cb43ee06b42"
+    },
+    "generatorTarget": {
+      "path": "spec-registry/generator-target-manifest-v1.json",
+      "sha256": "sha256:896869c11803feda55f5d3fe964047a79dc1ff1c7f4cddd99edce4a4e9136950"
+    },
+    "generatorGoldens": {
+      "path": "spec-registry/generator-goldens-v1.json",
+      "sha256": "sha256:ee6b23b0e603866bb504395582391755423076ddbc816a7ea4933426abb69a9b",
+      "goldenCount": 46
+    },
+    "coverage": {
+      "path": "spec-registry/coverage-v1.json",
+      "sha256": "sha256:cee064438155142b69dfe076ac7395f85bfef380024ee8ac9de73420197dba57",
+      "assignedRequirementCount": 363
+    }
+  },
+  "registryBindings": {
+    "candidateCases": {
+      "path": "spec-registry/candidate/conformance-cases-v1.jsonl",
+      "sha256": "sha256:ebe58e84977ee84befe89f8c126f37fbec7076cd7725b29f1b7609448fe7ef16",
+      "recordCount": 46
+    },
+    "formalCases": {
+      "path": "conformance-cases-v1.jsonl",
+      "sha256": "sha256:ebe58e84977ee84befe89f8c126f37fbec7076cd7725b29f1b7609448fe7ef16",
+      "recordCount": 46,
+      "byteIdenticalToCandidate": true
+    },
+    "candidateOracles": {
+      "path": "spec-registry/candidate/conformance-oracles-v1.jsonl",
+      "sha256": "sha256:3825b9fb40c1b43c484da3ebdf29429ed749e622012212ca79f9cea5b9cb9339",
+      "recordCount": 46
+    },
+    "formalOracles": {
+      "path": "conformance-oracles-v1.jsonl",
+      "sha256": "sha256:3825b9fb40c1b43c484da3ebdf29429ed749e622012212ca79f9cea5b9cb9339",
+      "recordCount": 46,
+      "byteIdenticalToCandidate": true
+    },
+    "activeCorpusDigest": "sha256:96d5bc83d51820c698fcb98db5ca6416a655186c1420f9d92ef06db0449906e7"
+  },
+  "preissuance": {
+    "targetManifest": {
+      "path": "spec-registry/preissuance-target-manifest-v1.json",
+      "sha256": "sha256:76b0a60125fdc6f91f83212b6503a616933077b0c1684d29b186b759656ab2e1",
+      "historicalSnapshot": true
+    },
+    "primaryExecutorManifest": {
+      "path": "spec-registry/preissuance-primary-executor-manifest-v1.json",
+      "sha256": "sha256:716232f73ff1355e91e99071bed374644c4dae811e192316b5d4cc39e2fb921b"
+    },
+    "independentExecutorManifest": {
+      "path": "spec-registry/preissuance-independent-executor-manifest-v1.json",
+      "sha256": "sha256:860c62e675634521be3e1b3df16d6344bb0b8e8c1bdd12225c6eb843bf7530b1"
+    },
+    "primaryResult": {
+      "status": "PASS",
+      "checkCount": 8258,
+      "failureCount": 0,
+      "runtime": "Node.js v24.18.0"
+    },
+    "independentResult": {
+      "status": "PASS",
+      "checkCount": 8166,
+      "failureCount": 0,
+      "runtime": "CPython 3.12.13"
+    }
+  },
+  "postissuance": {
+    "targetManifest": {
+      "path": "spec-registry/target-manifest-v1.json",
+      "sha256": "sha256:f444ad52c0c99f7c0f6fe3b21f06002573743a0848acf62eeca81911f1d370ee"
+    },
+    "primaryExecutorManifest": {
+      "path": "spec-registry/primary-executor-manifest-v1.json",
+      "sha256": "sha256:de2efccce76d1c8cfdec51bb05b9985e5b5cd6e8ac27c07fc479277225d296d2"
+    },
+    "independentExecutorManifest": {
+      "path": "spec-registry/independent-executor-manifest-v1.json",
+      "sha256": "sha256:faccc0ba7d57b55e42f263c6915367fd41781728f33f065d30909309dad8ccf5"
+    },
+    "primaryResult": {
+      "status": "PASS",
+      "checkCount": 21848,
+      "failureCount": 0,
+      "runtime": "Node.js v24.18.0"
+    },
+    "independentResult": {
+      "status": "PASS",
+      "checkCount": 21756,
+      "failureCount": 0,
+      "runtime": "CPython 3.12.13"
+    }
+  },
+  "executorSeparation": {
+    "primaryEntrypointSha256": "sha256:a4b8cb4e4671fde3203eef10010d485fcd6872e21ea26cb91ce74b69b984e635",
+    "independentEntrypointSha256": "sha256:63f1d3e4e1c6aab908972fed7bcdf81e7cc880e99411284b0804584679ed7219",
+    "sharedSemanticLibrary": null,
+    "differentRuntimeAndParserImplementations": true
+  },
+  "observedGraph": {
+    "assignedRequirementOrphanCount": 0,
+    "activeCaseOrphanCount": 0,
+    "activeOracleOrphanCount": 0,
+    "duplicateActiveSignatureCount": 0,
+    "supersessionGraphValid": true,
+    "sourceLocatorErrorCount": 0,
+    "schemaErrorCount": 0,
+    "referenceClosureValid": true
+  },
+  "sideEffects": {
+    "productCodeFilesChanged": 0,
+    "productWritesObservedPerCase": 0,
+    "renderDocumentsObservedPerCase": 0,
+    "renderOutputsObservedPerCase": 0,
+    "networkAttempts": 0,
+    "externalProviderAttempts": 0
+  },
+  "boundary": {
+    "currentIssuancePhase": "CAPACITY_BOUNDARY",
+    "otherExecutionClassesExecutable": false,
+    "isolatedCapacityRecordsIssued": 0,
+    "combinedCapacityRecordsIssued": 0,
+    "fullAutomatedCorpusExecutable": false,
+    "rendererCertified": false,
+    "rendererReady": false,
+    "ticket19Closed": false
+  }
+}

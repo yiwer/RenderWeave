@@ -1,0 +1,136 @@
+requirement_id	source_line	clause_ordinal_on_line	family	normative_summary
+RW-T14-S1-001	33	1	ASSET_CAPABILITY_CONCURRENCY	Rendering owns Evaluation Capability contracts.
+RW-T14-S1-002	33	2	WIRE_CANONICAL_DIGEST	Each exact Expression Profile permanently maps to exact capability contracts.
+RW-T14-S1-003	33	3	WIRE_CANONICAL_DIGEST	expression/1.0 maps only CLOCK and RANDOM to their frozen v1 contracts.
+RW-T14-S1-004	33	4	SECURITY_FAULT	Template, use, request, and deployment cannot add, replace, mask, or negotiate capability contracts.
+RW-T14-S1-005	34	1	WIRE_CANONICAL_DIGEST	Capability ValueSource has exactly three frozen closed wire shapes and typed outputs.
+RW-T14-S1-006	34	2	SECURITY_FAULT	Capability wire forbids args, seed, timezone, contractVersion, latest, null, and unknown members.
+RW-T14-S1-007	35	1	DESIGN_INPUT_EXPRESSION	Capability source is legal only as an explicit ExpressionDefinition input; source reads it through input alias.
+RW-T14-S1-008	35	2	SECURITY_FAULT	Capability is not a function, schema, system map, or general ValueSource and is forbidden in Binding, Mapping, default, fill, structure, and property.
+RW-T14-S1-009	36	1	DESIGN_INPUT_EXPRESSION	Save or recheck statically validates every authored closure capability source, including unused, unselected, and unreachable sources.
+RW-T14-S1-010	36	2	SECURITY_FAULT	An illegal capability contract is a non-confirmable hard error.
+RW-T14-S1-011	36	3	WIRE_CANONICAL_DIGEST	Admitted Profile support is permanent and capability declarations create no Asset-style reverse index or STALE propagation.
+RW-T14-S2-001	40	1	ASSET_CAPABILITY_CONCURRENCY	CapabilityState creation occurs only after closure, profile, input, dynamic-Asset, and authored-dependency admissions succeed.
+RW-T14-S2-002	40	2	SECURITY_FAULT	Any earlier failure performs zero Clock or entropy read.
+RW-T14-S2-003	40	3	ASSET_CAPABILITY_CONCURRENCY	CapabilityState commits before the root invocation frame.
+RW-T14-S2-004	41	1	ASSET_CAPABILITY_CONCURRENCY	Static scan covers all declared contracts in the complete closure, including unreachable or uninvoked sources.
+RW-T14-S2-005	41	2	ASSET_CAPABILITY_CONCURRENCY	Any CLOCK declaration creates one Clock snapshot; any RANDOM declaration creates one nonce.
+RW-T14-S2-006	41	3	SECURITY_FAULT	An undeclared component is not created; no capability source means no state record.
+RW-T14-S2-007	41	4	WIRE_CANONICAL_DIGEST	Deployment must nevertheless fully support every admitted Expression Profile.
+RW-T14-S2-008	42	1	ASSET_CAPABILITY_CONCURRENCY	One root Evaluation has one CapabilityState shared across actual child invocations and related output commands.
+RW-T14-S2-009	42	2	ASSET_CAPABILITY_CONCURRENCY	A different RootDocument, root Template, or batch record requires a distinct Evaluation state.
+RW-T14-S2-010	43	1	SECURITY_FAULT	Rendering creates an internal renderRequestId; the caller cannot select the state key.
+RW-T14-S2-011	43	2	ASSET_CAPABILITY_CONCURRENCY	Future public retry can resume only through an authorized server mapping or handle for the same fingerprint.
+RW-T14-S2-012	43	3	SECURITY_FAULT	Retry identity cannot select time or nonce or reuse state for another request.
+RW-T14-S3-001	47	1	ASSET_CAPABILITY_CONCURRENCY	Clock reads one UTC instant during state linearization and truncates toward the past whole second.
+RW-T14-S3-002	47	2	DESIGN_INPUT_EXPRESSION	Clock domain is proleptic Gregorian year 1 through 9999 and whole-day time range, without leap seconds.
+RW-T14-S3-003	47	3	SECURITY_FAULT	Provider error or out-of-range Clock result fails the request.
+RW-T14-S3-004	48	1	DESIGN_INPUT_EXPRESSION	UTC_DATE and UTC_TIME project canonical date and time from the same snapshot without midnight mixing.
+RW-T14-S3-005	48	2	ASSET_CAPABILITY_CONCURRENCY	Different aliases or frames remain distinct budgeted and digested call positions even if values match.
+RW-T14-S3-006	49	1	SECURITY_FAULT	Clock is UTC-only and reads no server, browser, tenant, or actor timezone.
+RW-T14-S3-007	49	2	DESIGN_INPUT_EXPRESSION	Business-local time must enter as RootDocument or Custom input.
+RW-T14-S3-008	49	3	SECURITY_FAULT	Clock exposes no datetime, instant, epoch, offset, timezone, or text.
+RW-T14-S3-009	50	1	SECURITY_FAULT	Expression Clock is isolated from deadline, timeout, latency, and expiry clocks.
+RW-T14-S3-010	50	2	ASSET_CAPABILITY_CONCURRENCY	Wall-clock changes after snapshot do not change the value; operation timing never enters Expression.
+RW-T14-S4-001	54	1	ASSET_CAPABILITY_CONCURRENCY	Random state uses exactly a 256-bit server-only nonce from a trusted OS CSPRNG.
+RW-T14-S4-002	54	2	SECURITY_FAULT	Nonce is request-derivation-only and excluded from all authored, public, log, problem, document, cache, and history surfaces.
+RW-T14-S4-003	54	3	SECURITY_FAULT	Random output has no token, identity, or security-random guarantee.
+RW-T14-S4-004	55	1	ASSET_CAPABILITY_CONCURRENCY	CallPosition binds the Definition declaration frame, not a consumer Node.
+RW-T14-S4-005	55	2	WIRE_CANONICAL_DIGEST	CallPosition path includes exact root, use, and repeat declaration segments plus definition, alias, contract, and operation.
+RW-T14-S4-006	56	1	ASSET_CAPABILITY_CONCURRENCY	An invocation-domain Definition excludes downstream consumer loops and memoizes across them.
+RW-T14-S4-007	56	2	ASSET_CAPABILITY_CONCURRENCY	A loop-domain Definition derives independently per original input item.
+RW-T14-S4-008	56	3	ASSET_CAPABILITY_CONCURRENCY	Duplicate items stay distinct and reorder changes item-to-random association.
+RW-T14-S4-009	56	4	SECURITY_FAULT	Derivation never uses item content, business key, final occurrence, or call ordinal.
+RW-T14-S4-010	57	1	WIRE_CANONICAL_DIGEST	CallPosition semantic object has the exact closed six-field v1 shape.
+RW-T14-S4-011	57	2	WIRE_CANONICAL_DIGEST	Path begins with exactly one ROOT and then only frozen TEMPLATE_USE or REPEAT segment shapes.
+RW-T14-S4-012	57	3	WIRE_CANONICAL_DIGEST	Path ends at declaration domain; all strings are required and revision and index are nonnegative integers.
+RW-T14-S4-013	58	1	WIRE_CANONICAL_DIGEST	positionBytes uses frozen canonical member, string, and integer rules and semantic path order.
+RW-T14-S4-014	58	2	WIRE_CANONICAL_DIGEST	CallPosition has no normalization, set sorting, unknown, optional, or null fields; exact byte vectors are permanent conformance.
+RW-T14-S4-015	59	1	WIRE_CANONICAL_DIGEST	Random HMAC input, domain, length framing, counter, and unsigned digest interpretation are exact.
+RW-T14-S4-016	59	2	ASSET_CAPABILITY_CONCURRENCY	Random uses M equal to 10^18 rejection sampling over counters 0 through 127.
+RW-T14-S4-017	59	3	SECURITY_FAULT	One hundred twenty-eight rejected samples return CAPABILITY_RESULT_INVALID.
+RW-T14-S4-018	60	1	DESIGN_INPUT_EXPRESSION	Uniform output domain is exactly k over 10^18 including zero and the specified maximum.
+RW-T14-S4-019	60	2	DESIGN_INPUT_EXPRESSION	Random result is exact BigDecimal with trailing-zero semantics.
+RW-T14-S4-020	60	3	WIRE_CANONICAL_DIGEST	Typed encoding is independent of binary float, locale, and object stringification.
+RW-T14-S5-001	64	1	DESIGN_INPUT_EXPRESSION	Capability demand occurs only when lazy Expression evaluation actually reads the input alias.
+RW-T14-S5-002	64	2	ASSET_CAPABILITY_CONCURRENCY	An unmaterialized Definition or unselected branch creates zero demand while remaining statically validated.
+RW-T14-S5-003	65	1	ASSET_CAPABILITY_CONCURRENCY	First demand of a CallPosition computes its unique result.
+RW-T14-S5-004	65	2	ASSET_CAPABILITY_CONCURRENCY	Same-expression alias reread and same-frame Definition memo hit do not call or recount.
+RW-T14-S5-005	65	3	ASSET_CAPABILITY_CONCURRENCY	Different aliases are distinct positions and budget entries; Random derivations differ.
+RW-T14-S5-006	66	1	ASSET_CAPABILITY_CONCURRENCY	Demand order follows the frozen argument, lazy, consumer, and frame order.
+RW-T14-S5-007	66	2	ASSET_CAPABILITY_CONCURRENCY	Evaluator serializes logical demands and stops on the first error.
+RW-T14-S5-008	66	3	ASSET_CAPABILITY_CONCURRENCY	Unobservable parallel preparation cannot change result, count, first error, or Asset order.
+RW-T14-S5-009	67	1	DESIGN_INPUT_EXPRESSION	Capability ERROR is not ABSENT and cannot be swallowed by exists or coalesce.
+RW-T14-S5-010	67	2	SECURITY_FAULT	The first demanded capability ERROR stops all later capability, Asset, lowering, and Engine work with no fallback or partial output.
+RW-T14-S6-001	71	1	ASSET_CAPABILITY_CONCURRENCY	First demand atomically reserves total and matching kind budget before producing a result.
+RW-T14-S6-002	71	2	SECURITY_FAULT	Any budget excess produces no result and returns CAPABILITY_BUDGET_EXCEEDED.
+RW-T14-S6-003	71	3	ASSET_CAPABILITY_CONCURRENCY	Alias or memo reread and state initialization do not consume demand units.
+RW-T14-S6-004	71	4	ASSET_CAPABILITY_CONCURRENCY	Physical Clock or HMAC reuse never reduces logical counts.
+RW-T14-S6-005	72	1	SECURITY_FAULT	All capability count, byte, retry, expiry, and deadline limits are exact and fail closed.
+RW-T14-S6-006	72	2	WIRE_CANONICAL_DIGEST	Profile or deployment cannot per-caller or per-Template relax limits or create unversioned differences.
+RW-T14-S6-007	73	1	SECURITY_FAULT	Clock and Random execute inside the trusted Evaluator with no network, file, plugin, Engine, or per-call fee.
+RW-T14-S6-008	73	2	SECURITY_FAULT	Internal idempotency storage is infrastructure and not capability-visible I/O.
+RW-T14-S6-009	74	1	SECURITY_FAULT	Cancel or total deadline yields zero RenderDocument and zero Output.
+RW-T14-S6-010	74	2	SECURITY_FAULT	Deadline or state cannot extend, renew, become an Expression input, or be reused for a new request.
+RW-T14-S7-001	78	1	ASSET_CAPABILITY_CONCURRENCY	One linearized state operation reads required providers and commits an encrypted short-term record.
+RW-T14-S7-002	78	2	WIRE_CANONICAL_DIGEST	Record key and bound fingerprint, contracts, snapshot or nonce, and timestamps are exact.
+RW-T14-S7-003	78	3	ASSET_CAPABILITY_CONCURRENCY	The root frame starts only after record commit.
+RW-T14-S7-004	79	1	WIRE_CANONICAL_DIGEST	Evaluation fingerprint includes frozen scope, authorization, closure, input, contract, and budget fields.
+RW-T14-S7-005	79	2	WIRE_CANONICAL_DIGEST	Fingerprint excludes request id, state, results, Asset selection, URL, output, and timing.
+RW-T14-S7-006	79	3	SECURITY_FAULT	Fingerprint and state record are not returned to the caller.
+RW-T14-S7-007	80	1	ASSET_CAPABILITY_CONCURRENCY	The same request and fingerprint replays committed state; a different fingerprint conflicts.
+RW-T14-S7-008	80	2	ASSET_CAPABILITY_CONCURRENCY	A precommit transient failure may bounded-retry; unknown commit queries the record first.
+RW-T14-S7-009	80	3	SECURITY_FAULT	Postcommit never resamples.
+RW-T14-S7-010	80	4	ASSET_CAPABILITY_CONCURRENCY	A different requestId always creates new state even with the same fingerprint.
+RW-T14-S7-011	81	1	ASSET_CAPABILITY_CONCURRENCY	expiresAt is fixed at creation and covers render deadline plus retry margin.
+RW-T14-S7-012	81	2	SECURITY_FAULT	Retry, cancel, or downstream failure never extends expiry.
+RW-T14-S7-013	81	3	SECURITY_FAULT	Expired failure records are not audit, history, backup, or public-query objects.
+RW-T14-S8-001	85	1	SECURITY_FAULT	Capability provider failures map only to the frozen stable request codes and safe parameters.
+RW-T14-S8-002	86	1	DESIGN_INPUT_EXPRESSION	Unknown or invalid capability shape, type, or location is a non-confirmable DesignDSL hard error.
+RW-T14-S8-003	86	2	SECURITY_FAULT	An admitted-profile provider or state transient failure affects the request only and creates no readiness or revision state.
+RW-T14-S8-004	87	1	SECURITY_FAULT	Public errors expose a stable code and safe request locator only by default.
+RW-T14-S8-005	87	2	SECURITY_FAULT	Authorized Template diagnostics may expose definition, alias, and bounded segment-authorized InvocationPath.
+RW-T14-S8-006	87	3	SECURITY_FAULT	Unauthorized child path segments are redacted.
+RW-T14-S8-007	87	4	SECURITY_FAULT	No layer exposes result, nonce, fingerprint, input, provider, stack, or raw error.
+RW-T14-S9-001	91	1	WIRE_CANONICAL_DIGEST	Successful Evaluation digests actual demanded results in encounter order with exact closed typed entry encoding.
+RW-T14-S9-002	91	2	WIRE_CANONICAL_DIGEST	Each entry is uint64-length framed and hashed with the frozen capability-results domain.
+RW-T14-S9-003	91	3	WIRE_CANONICAL_DIGEST	Undemanded state, nonce, unprojected Clock, physical execution, cache, and timing are excluded.
+RW-T14-S9-004	92	1	WIRE_CANONICAL_DIGEST	Capability and Asset result digests are distinct runtime components of complete Evaluation identity.
+RW-T14-S9-005	92	2	SECURITY_FAULT	Content hash or capability declaration cannot replace actual result identity.
+RW-T14-S9-006	92	3	ASSET_CAPABILITY_CONCURRENCY	Downstream cache is allowed only after the full admission and Evaluation identity exists.
+RW-T14-S9-007	93	1	SECURITY_FAULT	Successful metadata may persist only digest, contract IDs, aggregate counts, result code, and timing.
+RW-T14-S9-008	93	2	SECURITY_FAULT	Failure produces no partial digest or transcript; only aggregate consumption, timing, and code may remain.
+RW-T14-S9-009	93	3	SECURITY_FAULT	Call positions, snapshot, nonce, and typed results are never retained long term.
+RW-T14-S9-010	94	1	ASSET_CAPABILITY_CONCURRENCY	State, digest, handle, or cache cannot skip unproven recovery stages or become cross-request replay.
+RW-T14-S10-001	98	1	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	Evaluator writes only capability-affected concrete typed Node values.
+RW-T14-S10-002	98	2	SECURITY_FAULT	RenderDocument, resources, and Engine contain no capability state, contract, path, digest, value, handle, or source label.
+RW-T14-S10-003	98	3	SECURITY_FAULT	Engine cannot distinguish literal, context, or capability origin.
+RW-T14-S10-004	99	1	ASSET_CAPABILITY_CONCURRENCY	Every new authoritative preview creates a new Evaluation and state; only same-operation internal recovery replays.
+RW-T14-S10-005	99	2	EDITOR_AUTOMATED	v1 offers no EditorSession time or seed pin.
+RW-T14-S10-006	99	3	EDITOR_AUTOMATED	Draft simulation or placeholder is explicitly non-authoritative, nonpersistent, and cannot preserve old authority.
+RW-T14-S10-007	100	1	EDITOR_AUTOMATED	The editor picker exposes only three typed operations for the exact Profile and does not call them system data sources.
+RW-T14-S10-008	100	2	EDITOR_AUTOMATED	The editor exposes no seed, timezone, version, or free args and warns that previews vary and Random is non-security.
+RW-T14-S10-009	101	1	SECURITY_FAULT	Fixed instant or nonce injection exists only at an internal conformance seam.
+RW-T14-S10-010	101	2	SECURITY_FAULT	Conformance injection never appears in production protocol, content, metadata, or configuration.
+RW-T14-S10-011	101	3	EDITOR_AUTOMATED	Web validates authored shape only; runtime simulation is labeled non-authoritative.
+RW-T14-S11-001	105	1	SECURITY_FAULT	Metrics use bounded contract, operation, and status labels and aggregate counts, timing, and failures only.
+RW-T14-S11-002	105	2	SECURITY_FAULT	Logs and traces prohibit high-cardinality author identity, results, state, fingerprints, input, and provider raw errors.
+RW-T14-S11-003	105	3	SECURITY_FAULT	Authorized location is available only through a bounded structured problem.
+RW-T14-S11-004	106	1	SECURITY_FAULT	Capability cannot observe tenant, actor, request, authorization, credential, Connector, Asset, or environment facts.
+RW-T14-S11-005	106	2	SECURITY_FAULT	Those facts may affect internal authorization or fingerprint only.
+RW-T14-S11-006	107	1	SECURITY_FAULT	HMAC output promises distribution only, not unpredictability or security.
+RW-T14-S11-007	107	2	SECURITY_FAULT	Expression cannot convert Random into UUID, token, or arbitrary bytes; product domains generate security identity.
+RW-T14-S12-001	111	1	WIRE_CANONICAL_DIGEST	Every future capability is explicit-input, closed typed, readonly, request-scoped, credentialless, target-closed, and side-effect-free.
+RW-T14-S12-002	111	2	WIRE_CANONICAL_DIGEST	A new contract freezes operation, payload, output, position, stability, errors, budgets, diagnostics, and conformance.
+RW-T14-S12-003	111	3	WIRE_CANONICAL_DIGEST	A new capability requires a new exact Expression Profile plus explicit migration and save.
+RW-T14-S12-004	112	1	ASSET_CAPABILITY_CONCURRENCY	Mixed supported Expression Profiles use their own exact capability contracts over shared base state.
+RW-T14-S12-005	112	2	WIRE_CANONICAL_DIGEST	CallPosition and HMAC domain include each contract ID; root cannot override child and child cannot negotiate or mask.
+RW-T14-S12-006	113	1	SECURITY_FAULT	Network, paid, business-read, mutation, credential, or dynamic-tool features belong outside Evaluation Capability.
+RW-T14-S12-007	113	2	SECURITY_FAULT	TOOL, plugin, and general wrappers are forbidden.
+RW-T14-S13-001	117	1	ASSET_CAPABILITY_CONCURRENCY	Conformance covers all listed Clock, Random exact-vector, identity, lazy, state, budget, deadline, digest, and document-residue cases.
+RW-T14-S13-002	118	1	SECURITY_FAULT	Negative corpus hard-fails invalid capability shapes, locations, and caller state injection.
+RW-T14-S13-003	118	2	SECURITY_FAULT	No Random declaration means an entropy failure is unobservable.
+RW-T14-S13-004	118	3	SECURITY_FAULT	No frontend, serializer, migration, or Engine path can relax the closed capability contract.
+RW-T14-S13-005	118	4	SECURITY_FAULT	Problems, logs, traces, and responses never leak results or internal state.
+RW-T14-S13-006	119	1	SECURITY_FAULT	v1 excludes all listed extra time, random, system, tool, network, mutation, replay, fallback, and latest capabilities.
+RW-T14-S13-007	120	1	SECURITY_FAULT	Ticket14 creates no product implementation or placeholder surfaces.

@@ -1,0 +1,16 @@
+{
+  "artifactVersion": "renderweave-editor-input-fixture/1.0",
+  "candidateId": "EDC::J02::007",
+  "executionClass": "EXEC::EDITOR_AUTOMATED::1.0",
+  "baselineId": "EditorStructuredWithOrderedChildren",
+  "parameters": {},
+  "actionScript": [
+    {
+      "action": "REORDER_ENTITY",
+      "parameters": {
+        "entityId": "node-order-b",
+        "targetIndex": 0
+      }
+    }
+  ]
+}

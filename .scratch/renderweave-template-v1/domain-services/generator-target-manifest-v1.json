@@ -1,0 +1,110 @@
+{
+  "artifactVersion": "renderweave-domain-services-generator-target/1.0",
+  "targetId": "DOMAIN_SERVICES_GENERATOR_TARGET::FIXTURE::1.0",
+  "generatorProfile": "renderweave-domain-services-generator/1.0",
+  "status": "FROZEN_STATIC_GENERATOR_TARGET",
+  "implementationRevision": "domain-services-fixture-generator/1.0",
+  "entrypoint": {
+    "path": "domain-services/generate-domain-services-fixtures.mjs",
+    "sha256": "sha256:b360c06a668d3cd65ca5d07dafd96d87b1010d843bc170cbfddca199b24633fc",
+    "byteLength": 18928
+  },
+  "baseline": {
+    "path": "domain-services/baseline-v1.json",
+    "sha256": "sha256:be84f240724b5ea50ae8921b1ffc4daa318fce52189fd0f8b2669c5ec562cf16",
+    "byteLength": 814
+  },
+  "fixtureContract": {
+    "path": "domain-services/fixture-contract-v1.json",
+    "sha256": "sha256:d04fd28556619a26d5c3ed6653510da73815153791c8ae7b3e86e30158297657",
+    "byteLength": 3273
+  },
+  "observationAdapter": {
+    "path": "domain-services/observation-adapter-v1.json",
+    "sha256": "sha256:4bda561d8628461b783796e38acb9066e840c307479603e39afa6c241393ea06",
+    "byteLength": 6006
+  },
+  "scenarioCatalog": {
+    "path": "domain-services/capacity-scenarios-v1.json",
+    "sha256": "sha256:c856206b3403c3a85fb0953f5179ed1870cecba7059280dae1a486297b7f4797",
+    "byteLength": 39135
+  },
+  "goldenVectors": {
+    "path": "domain-services/generator-goldens-v1.json",
+    "sha256": "sha256:97501ec24f2c9dc4ca78774d92d37d23010afffe635453666aa77cb2f56e8b60",
+    "byteLength": 40861
+  },
+  "fixtureArtifacts": [
+    {
+      "path": "domain-services/fixtures/cap-accepted-image-bytes-per-content-below.json",
+      "sha256": "sha256:97254adbe256d5c1d5f94daa59b330a6314cfc74fb58acde2b3104d6df2d4a88",
+      "byteLength": 1753
+    },
+    {
+      "path": "domain-services/fixtures/cap-accepted-image-bytes-per-content-at.json",
+      "sha256": "sha256:a60e8b34ff08bc611c97219e9dbecde018bbe233204849c45166d812b87c00ed",
+      "byteLength": 1747
+    },
+    {
+      "path": "domain-services/fixtures/cap-accepted-image-bytes-per-content-above.json",
+      "sha256": "sha256:80f74af2401bb68348c9c0f0ebcfb71ce1de05e06c70b9a396583d8ca1f6a7bc",
+      "byteLength": 1753
+    },
+    {
+      "path": "domain-services/fixtures/cap-accepted-image-edge-pixels-per-content-below.json",
+      "sha256": "sha256:ecc5f1be6e72b756590d08b845d308067368529ce65d7e386cac2550d4fa0210",
+      "byteLength": 1760
+    },
+    {
+      "path": "domain-services/fixtures/cap-accepted-image-edge-pixels-per-content-at.json",
+      "sha256": "sha256:7c88a46d208e4bc43f00922db79ddf493de7838121ca059432571b00ebdb633d",
+      "byteLength": 1754
+    },
+    {
+      "path": "domain-services/fixtures/cap-accepted-image-edge-pixels-per-content-above.json",
+      "sha256": "sha256:8690c3ce20dd1cb38f8f7074d7d1871cbd9890b0e1277eb63b21d3d5648199d4",
+      "byteLength": 1760
+    },
+    {
+      "path": "domain-services/fixtures/cap-accepted-image-pixels-per-content-below.json",
+      "sha256": "sha256:9b2566c5fa8d84b004bb256982534a1ec8e2d3be5119134083639e81e5b8751f",
+      "byteLength": 1755
+    },
+    {
+      "path": "domain-services/fixtures/cap-accepted-image-pixels-per-content-at.json",
+      "sha256": "sha256:40414d653fda69ad6e3e751ea2263c52b411b6b137950d4c9a08931352cbd4db",
+      "byteLength": 1750
+    },
+    {
+      "path": "domain-services/fixtures/cap-accepted-image-pixels-per-content-above.json",
+      "sha256": "sha256:110739ebd4a7ff04ddb44854c2874e8184fa617696b802f92bbb58449b913788",
+      "byteLength": 1756
+    },
+    {
+      "path": "domain-services/fixtures/cap-accepted-font-bytes-per-content-below.json",
+      "sha256": "sha256:9b1de931eb44862143b2877bb137cb00495a1e0efcb0df7aea25ab31d1c123cf",
+      "byteLength": 1751
+    },
+    {
+      "path": "domain-services/fixtures/cap-accepted-font-bytes-per-content-at.json",
+      "sha256": "sha256:8fdb9567ad1957bd9a265dd1a59d2c845347bc343000709a3ddc552aaf63efa5",
+      "byteLength": 1745
+    },
+    {
+      "path": "domain-services/fixtures/cap-accepted-font-bytes-per-content-above.json",
+      "sha256": "sha256:ba908ff1a49e2d2e8a33ce560c729806f2dac45beeb5651fa4350f034f1abe3a",
+      "byteLength": 1751
+    },
+    {
+      "path": "domain-services/fixtures/named-domain-baseline-noop.json",
+      "sha256": "sha256:152848e36dcdbf7f567d00c3b5c253ef966c1544faf15a66a44f2a1678ddb829",
+      "byteLength": 1180
+    }
+  ],
+  "expectedScenarioCount": 13,
+  "productTarget": false,
+  "productExecutionAllowed": false,
+  "networkReadsAllowed": false,
+  "environmentReadsAllowed": false,
+  "currentTimeReadsAllowed": false
+}

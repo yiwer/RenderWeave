@@ -1,0 +1,101 @@
+{
+  "artifactVersion": "renderweave-editor-repository-readiness-audit/1.0",
+  "auditId": "EDITOR_AUTOMATION_REPOSITORY_AUDIT::2026-08-17::000001",
+  "status": "NOT_ADMITTED_EXACT_TARGET_AND_RUNNER_ABSENT",
+  "executionClass": "EXEC::EDITOR_AUTOMATED::1.0",
+  "sourceRevision": "b14c2d7d4978c679e7ab8e7a2bace3da7af884de",
+  "auditScope": "repository facts only; no browser, Web server, product build, product code, network, J1, or external environment was executed",
+  "repositoryFacts": {
+    "webPackage": {
+      "path": "web/package.json",
+      "sha256": "sha256:2523f90c60f34ad4e3b5b804eb26c894d798a131b707f333e84dffbc685d0a84",
+      "byteLength": 1645
+    },
+    "webPackageLock": {
+      "path": "web/package-lock.json",
+      "sha256": "sha256:eae24a189f4124f071b50a42d26920b5513bc1096c7ae4b3e71586fbd49ca836",
+      "byteLength": 196179
+    },
+    "playwrightConfig": {
+      "path": "web/playwright.config.ts",
+      "sha256": "sha256:0b87ed8a35facde7619fb511deb24ff344cbccb334e30ee6eae06abfb1700968",
+      "byteLength": 949
+    },
+    "nodeEngineRange": ">=24 <25",
+    "playwrightDependency": "1.62.1",
+    "lockedPlaywrightPackageVersion": "1.62.1",
+    "configuredProject": "chromium-canary",
+    "configuredDeviceAlias": "Desktop Chrome",
+    "configuredViewport": {
+      "width": 1280,
+      "height": 720
+    },
+    "reuseExistingServer": true
+  },
+  "observedButInadmissibleSubstitutes": [
+    "The package lock pins the Playwright library but does not bind a supported-browser policy entry or exact browser artifact.",
+    "The chromium-canary project name and Desktop Chrome device alias are configuration labels, not browser binary identity.",
+    "reuseExistingServer permits ambient service drift and therefore cannot satisfy an exact product target runner.",
+    "Ticket17 prototype A1 and screenshots do not bind the Ticket18 product build, exact browser/OS target, complete automated corpus, or independent replay."
+  ],
+  "missingManifestPaths": [
+    {
+      "kind": "supportedTargetMatrix",
+      "path": "editor-automated/supported-targets-v1.json"
+    },
+    {
+      "kind": "productBuild",
+      "path": "editor-automated/product-build-manifest-v1.json"
+    },
+    {
+      "kind": "targetCatalog",
+      "path": "editor-automated/exact-target-manifests-v1.json"
+    },
+    {
+      "kind": "runnerCatalog",
+      "path": "editor-automated/automation-runner-manifests-v1.json"
+    },
+    {
+      "kind": "assignedCorpus",
+      "path": "editor-automated/assigned-active-corpus-v1.json"
+    },
+    {
+      "kind": "independentReplay",
+      "path": "editor-automated/independent-product-replay-v1.json"
+    }
+  ],
+  "predecessorExecutionClassesPending": [
+    "EXEC::DOMAIN_SERVICES::1.0",
+    "EXEC::DESIGN_INPUT_EXPRESSION::1.0",
+    "EXEC::RENDERING_PIPELINE::1.0",
+    "EXEC::RENDERER_EXACT_OUTPUT::1.0"
+  ],
+  "admissionDecision": {
+    "result": "REJECTED",
+    "rejectionCodes": [
+      "EDITOR_BOOTSTRAP_PREDECESSOR_PENDING",
+      "EDITOR_SUPPORT_MATRIX_MISSING",
+      "EDITOR_PRODUCT_BUILD_MANIFEST_MISSING",
+      "EDITOR_BROWSER_BINARY_IDENTITY_MISSING",
+      "EDITOR_OS_TARGET_IDENTITY_MISSING",
+      "EDITOR_ENVIRONMENT_PROFILE_INCOMPLETE",
+      "EDITOR_RUNNER_MANIFEST_MISSING",
+      "EDITOR_CORPUS_ASSIGNMENT_INCOMPLETE",
+      "EDITOR_INDEPENDENT_REPLAY_MISSING"
+    ],
+    "exactTargetManifestIssued": false,
+    "automationRunnerManifestIssued": false,
+    "formalEditorCaseCount": 0,
+    "formalEditorOracleCount": 0,
+    "browserAutomationExecuted": false,
+    "productExecutionEvidence": false,
+    "recordIssuanceAllowed": false,
+    "executable": false
+  },
+  "j1Boundary": {
+    "status": "PENDING_SEPARATE_HUMAN_RECORD",
+    "evaluatedByThisAudit": false,
+    "blocksAutomatedEvidenceSubstitution": true
+  },
+  "nextSafeStep": "Split the routed inventory into exact non-capacity candidate inputs, fault schedules, terminals, and assertion mappings while leaving formal records unissued; exact targets require an explicit supported-target policy and an immutable product build."
+}

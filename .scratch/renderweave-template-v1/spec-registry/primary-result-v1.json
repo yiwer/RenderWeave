@@ -1,0 +1,22 @@
+{
+  "evidenceVersion": "renderweave-spec-registry-replay-result/1.0",
+  "executorId": "SPEC_EXECUTOR::NODE::1.0",
+  "role": "primary-registry-validator",
+  "runtime": "v24.18.0",
+  "mode": "TARGET_REPLAY",
+  "targetManifest": {
+    "path": "spec-registry/target-manifest-v1.json",
+    "sha256": "sha256:122577f0dc84713897e5d7803b21d94fd283fff067aa54cbdc9d20b29e767e84",
+    "byteLength": 77305
+  },
+  "status": "PASS",
+  "checkCount": 22838,
+  "failureCount": 0,
+  "failures": [],
+  "implementationRevision": "spec-registry-bootstrap/1.13",
+  "executorManifest": {
+    "path": "spec-registry/primary-executor-manifest-v1.json",
+    "sha256": "sha256:6a2e8ff105aac4532cf7686365d934c1e71e991d49ea523aad09ab3cf450a5a7",
+    "byteLength": 950
+  }
+}

@@ -1,0 +1,319 @@
+{
+  "artifactVersion": "renderweave-conformance-safe-baselines/1.0",
+  "status": "ALL_SIX_EXECUTION_CLASS_FIXTURES_REFERENCEABLE_STATIC_ONLY_PRODUCT_GATES_PENDING",
+  "authority": "Ticket19 execution-class safe-baseline layering; definition digests are not substitutes for validated fixture artifact digests",
+  "digestDomain": "SHA-256 over the exact UTF-8 definition string stored in each entry",
+  "fragments": [
+    {
+      "fragmentId": "fragment.strict-json-empty-object-v1",
+      "definition": "{\"kind\":\"strict-json\",\"value\":{}}",
+      "definitionSha256": "sha256:460caf22c9eec544b99584b8c8e36c6e8e12b45bfe05caebec580bc898cd9a7e",
+      "fixtureStatus": "DEFINITION_ONLY"
+    },
+    {
+      "fragmentId": "fragment.no-fault-schedule-v1",
+      "definition": "{\"kind\":\"fault-schedule\",\"value\":\"NONE\"}",
+      "definitionSha256": "sha256:b8242ba9c238d477b07cdc38ab8be7e0e801275f77864ec5d274e2e9da927021",
+      "fixtureStatus": "DEFINITION_ONLY"
+    },
+    {
+      "fragmentId": "fragment.system-empty-context-v1",
+      "definition": "{\"kind\":\"typed-context\",\"schema\":\"system-empty@v1\",\"value\":{}}",
+      "definitionSha256": "sha256:89b45dd3a4ebe9487f85f4f6d3d477a5be57757cf220d1b3b2508805f1153c24",
+      "fixtureStatus": "DEFINITION_ONLY"
+    },
+    {
+      "fragmentId": "fragment.requirement-registry-set-v1",
+      "definition": "{\"kind\":\"spec-artifact-set\",\"members\":[\"requirements-v1.json\",\"requirements/04.tsv..19.tsv\"]}",
+      "definitionSha256": "sha256:8a46ccd07689e977a0c65543fe969d36638b2bbbcd4b31c76e6eb03b07454508",
+      "fixtureStatus": "DEFINITION_ONLY"
+    },
+    {
+      "fragmentId": "fragment.conformance-contract-set-v1",
+      "definition": "{\"kind\":\"spec-artifact-set\",\"members\":[\"case-schema\",\"oracle-schema\",\"canonical-profile\",\"probe-profile\",\"execution-classes\",\"oracle-families\"]}",
+      "definitionSha256": "sha256:a3df23ed5e59dcb46db5746a2c52d9e027846584d25653e84b1068b3e74f48df",
+      "fixtureStatus": "DEFINITION_ONLY"
+    },
+    {
+      "fragmentId": "fragment.minimal-owner-scope-v1",
+      "definition": "{\"kind\":\"domain-scope\",\"ownerScopeId\":\"00000000-0000-4000-8000-000000000001\"}",
+      "definitionSha256": "sha256:4b7df8d494e44a129ca8dac0bc48b69ef048e17715fd6eed9547700e9c55fba9",
+      "fixtureStatus": "DEFINITION_ONLY"
+    },
+    {
+      "fragmentId": "fragment.minimal-active-template-r0-v1",
+      "definition": "{\"kind\":\"template-state\",\"lifecycle\":\"ACTIVE\",\"revision\":0,\"readiness\":\"READY\",\"schema\":\"system-empty@v1\"}",
+      "definitionSha256": "sha256:9cf29ade4468f54475a8672ceee223d91053af7a0cfdc1fc20087bb450b5080c",
+      "fixtureStatus": "DEFINITION_ONLY"
+    },
+    {
+      "fragmentId": "fragment.minimal-design-v1",
+      "definition": "{\"kind\":\"design\",\"profile\":\"renderweave-design/1.0\",\"expressionProfile\":\"renderweave-expression/1.0\",\"definitions\":[],\"canvas\":\"minimal-empty-canvas\"}",
+      "definitionSha256": "sha256:c27d692e0b869a4275ed426a92553ed44964d17280740dbd2f340ebe08afcfd3",
+      "fixtureStatus": "DEFINITION_ONLY"
+    },
+    {
+      "fragmentId": "fragment.minimal-render-input-v1",
+      "definition": "{\"kind\":\"render-input\",\"rootDocument\":{},\"customValues\":[]}",
+      "definitionSha256": "sha256:03bf8f691e6bb68c3d3e9f33a90131f9b12c8ee87a1e5428b63c87250623faf7",
+      "fixtureStatus": "DEFINITION_ONLY"
+    },
+    {
+      "fragmentId": "fragment.empty-resource-manifest-v1",
+      "definition": "{\"kind\":\"render-resources\",\"resources\":[]}",
+      "definitionSha256": "sha256:f9a432992fa62caab9f6632e5adcb4dde00d19250f8795be1c28e7e8e024e5a8",
+      "fixtureStatus": "DEFINITION_ONLY"
+    },
+    {
+      "fragmentId": "fragment.minimal-render-command-v1",
+      "definition": "{\"kind\":\"render-command\",\"output\":{\"kind\":\"PNG\",\"dpi\":96},\"trace\":false}",
+      "definitionSha256": "sha256:6831acce50d045d965dd8c7cb5bad6bf8c542cf96fdde82e307a1aa7382d0816",
+      "fixtureStatus": "DEFINITION_ONLY"
+    },
+    {
+      "fragmentId": "fragment.editor-supported-current-v1",
+      "definition": "{\"kind\":\"editor-current\",\"lifecycle\":\"ACTIVE\",\"readiness\":\"READY\",\"revision\":0,\"profileSupport\":\"EXACT\"}",
+      "definitionSha256": "sha256:9b2a7e5741f7862e8befc221bb019ffde42247b9cee0c4907fee593522a0269f",
+      "fixtureStatus": "DEFINITION_ONLY"
+    },
+    {
+      "fragmentId": "fragment.editor-desktop-environment-v1",
+      "definition": "{\"kind\":\"editor-environment\",\"viewport\":\"supported-desktop\",\"zoomPercent\":100,\"reducedMotion\":false,\"highContrast\":false}",
+      "definitionSha256": "sha256:96e77de2f9d0dd7d9bfaa8c0b1867dc2ffc4733c1591ec43321528e67bdc5456",
+      "fixtureStatus": "DEFINITION_ONLY"
+    }
+  ],
+  "baselines": [
+    {
+      "baselineId": "baseline.spec-registry.empty-v1",
+      "executionClass": "EXEC::SPEC_REGISTRY::1.0",
+      "purpose": "exact specification artifact set",
+      "fragments": [
+        {
+          "fragmentId": "fragment.requirement-registry-set-v1",
+          "definitionSha256": "sha256:8a46ccd07689e977a0c65543fe969d36638b2bbbcd4b31c76e6eb03b07454508"
+        },
+        {
+          "fragmentId": "fragment.conformance-contract-set-v1",
+          "definitionSha256": "sha256:a3df23ed5e59dcb46db5746a2c52d9e027846584d25653e84b1068b3e74f48df"
+        },
+        {
+          "fragmentId": "fragment.no-fault-schedule-v1",
+          "definitionSha256": "sha256:b8242ba9c238d477b07cdc38ab8be7e0e801275f77864ec5d274e2e9da927021"
+        }
+      ],
+      "rootDefinition": "{\"baselineId\":\"baseline.spec-registry.empty-v1\",\"executionClass\":\"EXEC::SPEC_REGISTRY::1.0\",\"fragments\":[{\"fragmentId\":\"fragment.requirement-registry-set-v1\",\"definitionSha256\":\"sha256:8a46ccd07689e977a0c65543fe969d36638b2bbbcd4b31c76e6eb03b07454508\"},{\"fragmentId\":\"fragment.conformance-contract-set-v1\",\"definitionSha256\":\"sha256:a3df23ed5e59dcb46db5746a2c52d9e027846584d25653e84b1068b3e74f48df\"},{\"fragmentId\":\"fragment.no-fault-schedule-v1\",\"definitionSha256\":\"sha256:b8242ba9c238d477b07cdc38ab8be7e0e801275f77864ec5d274e2e9da927021\"}]}",
+      "rootDefinitionSha256": "sha256:a5f40ecc6259fb696841ca35655912e756401b3e9b1d237fe0fd0f90f966f164",
+      "fixtureArtifactStatus": "FROZEN_DUAL_VALIDATED",
+      "fixtureArtifact": {
+        "path": "spec-registry/baseline-v1.json",
+        "mediaType": "application/json",
+        "sha256": "sha256:66439fec0bb7f78809ef991180098f73b556899e41ff326c49d0f452136ce629",
+        "byteLength": 322
+      },
+      "observationAdapter": {
+        "path": "spec-registry/observation-adapter-v1.json",
+        "sha256": "sha256:066c8c15e1c5d1a547e3c557e011aa407699741d262de2bf1e0856e07323d963"
+      },
+      "recordMayReference": true
+    },
+    {
+      "baselineId": "baseline.domain-services.minimal-v1",
+      "executionClass": "EXEC::DOMAIN_SERVICES::1.0",
+      "purpose": "minimal isolated domain state",
+      "fragments": [
+        {
+          "fragmentId": "fragment.minimal-owner-scope-v1",
+          "definitionSha256": "sha256:4b7df8d494e44a129ca8dac0bc48b69ef048e17715fd6eed9547700e9c55fba9"
+        },
+        {
+          "fragmentId": "fragment.minimal-active-template-r0-v1",
+          "definitionSha256": "sha256:9cf29ade4468f54475a8672ceee223d91053af7a0cfdc1fc20087bb450b5080c"
+        },
+        {
+          "fragmentId": "fragment.no-fault-schedule-v1",
+          "definitionSha256": "sha256:b8242ba9c238d477b07cdc38ab8be7e0e801275f77864ec5d274e2e9da927021"
+        }
+      ],
+      "rootDefinition": "{\"baselineId\":\"baseline.domain-services.minimal-v1\",\"executionClass\":\"EXEC::DOMAIN_SERVICES::1.0\",\"fragments\":[{\"fragmentId\":\"fragment.minimal-owner-scope-v1\",\"definitionSha256\":\"sha256:4b7df8d494e44a129ca8dac0bc48b69ef048e17715fd6eed9547700e9c55fba9\"},{\"fragmentId\":\"fragment.minimal-active-template-r0-v1\",\"definitionSha256\":\"sha256:9cf29ade4468f54475a8672ceee223d91053af7a0cfdc1fc20087bb450b5080c\"},{\"fragmentId\":\"fragment.no-fault-schedule-v1\",\"definitionSha256\":\"sha256:b8242ba9c238d477b07cdc38ab8be7e0e801275f77864ec5d274e2e9da927021\"}]}",
+      "rootDefinitionSha256": "sha256:49d086ee04b8d1db090b4d4776fd2d2d21a02d8af3f711d22beb7d9988647a97",
+      "fixtureArtifactStatus": "FROZEN_DUAL_VALIDATED_STATIC_ONLY",
+      "fixtureArtifact": {
+        "path": "domain-services/baseline-v1.json",
+        "mediaType": "application/json",
+        "sha256": "sha256:be84f240724b5ea50ae8921b1ffc4daa318fce52189fd0f8b2669c5ec562cf16",
+        "byteLength": 814
+      },
+      "observationAdapter": {
+        "path": "domain-services/observation-adapter-v1.json",
+        "sha256": "sha256:4bda561d8628461b783796e38acb9066e840c307479603e39afa6c241393ea06"
+      },
+      "recordMayReference": true
+    },
+    {
+      "baselineId": "baseline.design-input-expression.minimal-v1",
+      "executionClass": "EXEC::DESIGN_INPUT_EXPRESSION::1.0",
+      "purpose": "minimal valid authoring semantic input",
+      "fragments": [
+        {
+          "fragmentId": "fragment.system-empty-context-v1",
+          "definitionSha256": "sha256:89b45dd3a4ebe9487f85f4f6d3d477a5be57757cf220d1b3b2508805f1153c24"
+        },
+        {
+          "fragmentId": "fragment.minimal-design-v1",
+          "definitionSha256": "sha256:c27d692e0b869a4275ed426a92553ed44964d17280740dbd2f340ebe08afcfd3"
+        },
+        {
+          "fragmentId": "fragment.strict-json-empty-object-v1",
+          "definitionSha256": "sha256:460caf22c9eec544b99584b8c8e36c6e8e12b45bfe05caebec580bc898cd9a7e"
+        },
+        {
+          "fragmentId": "fragment.no-fault-schedule-v1",
+          "definitionSha256": "sha256:b8242ba9c238d477b07cdc38ab8be7e0e801275f77864ec5d274e2e9da927021"
+        }
+      ],
+      "rootDefinition": "{\"baselineId\":\"baseline.design-input-expression.minimal-v1\",\"executionClass\":\"EXEC::DESIGN_INPUT_EXPRESSION::1.0\",\"fragments\":[{\"fragmentId\":\"fragment.system-empty-context-v1\",\"definitionSha256\":\"sha256:89b45dd3a4ebe9487f85f4f6d3d477a5be57757cf220d1b3b2508805f1153c24\"},{\"fragmentId\":\"fragment.minimal-design-v1\",\"definitionSha256\":\"sha256:c27d692e0b869a4275ed426a92553ed44964d17280740dbd2f340ebe08afcfd3\"},{\"fragmentId\":\"fragment.strict-json-empty-object-v1\",\"definitionSha256\":\"sha256:460caf22c9eec544b99584b8c8e36c6e8e12b45bfe05caebec580bc898cd9a7e\"},{\"fragmentId\":\"fragment.no-fault-schedule-v1\",\"definitionSha256\":\"sha256:b8242ba9c238d477b07cdc38ab8be7e0e801275f77864ec5d274e2e9da927021\"}]}",
+      "rootDefinitionSha256": "sha256:1303d85fbd7e4ab6357d9e82f87f97512204108daeaa39553b9f8dc1de0b9e30",
+      "fixtureArtifactStatus": "FROZEN_DUAL_VALIDATED_STATIC_ONLY",
+      "fixtureArtifact": {
+        "path": "design-input-expression/baseline-v1.json",
+        "mediaType": "application/json",
+        "sha256": "sha256:30bd8a0ff27310a89c1a837a0dd7b056556ab9401b3c9d549010ec035e5980ef",
+        "byteLength": 934
+      },
+      "observationAdapter": {
+        "path": "design-input-expression/observation-adapter-v1.json",
+        "sha256": "sha256:e46af856d38c1844d1c3b222479e25208c0f5297caabdfea16ccd779301d77e9"
+      },
+      "recordMayReference": true
+    },
+    {
+      "baselineId": "baseline.rendering-pipeline.minimal-v1",
+      "executionClass": "EXEC::RENDERING_PIPELINE::1.0",
+      "purpose": "minimal valid root rendering request",
+      "fragments": [
+        {
+          "fragmentId": "fragment.minimal-active-template-r0-v1",
+          "definitionSha256": "sha256:9cf29ade4468f54475a8672ceee223d91053af7a0cfdc1fc20087bb450b5080c"
+        },
+        {
+          "fragmentId": "fragment.minimal-design-v1",
+          "definitionSha256": "sha256:c27d692e0b869a4275ed426a92553ed44964d17280740dbd2f340ebe08afcfd3"
+        },
+        {
+          "fragmentId": "fragment.minimal-render-input-v1",
+          "definitionSha256": "sha256:03bf8f691e6bb68c3d3e9f33a90131f9b12c8ee87a1e5428b63c87250623faf7"
+        },
+        {
+          "fragmentId": "fragment.empty-resource-manifest-v1",
+          "definitionSha256": "sha256:f9a432992fa62caab9f6632e5adcb4dde00d19250f8795be1c28e7e8e024e5a8"
+        },
+        {
+          "fragmentId": "fragment.no-fault-schedule-v1",
+          "definitionSha256": "sha256:b8242ba9c238d477b07cdc38ab8be7e0e801275f77864ec5d274e2e9da927021"
+        }
+      ],
+      "rootDefinition": "{\"baselineId\":\"baseline.rendering-pipeline.minimal-v1\",\"executionClass\":\"EXEC::RENDERING_PIPELINE::1.0\",\"fragments\":[{\"fragmentId\":\"fragment.minimal-active-template-r0-v1\",\"definitionSha256\":\"sha256:9cf29ade4468f54475a8672ceee223d91053af7a0cfdc1fc20087bb450b5080c\"},{\"fragmentId\":\"fragment.minimal-design-v1\",\"definitionSha256\":\"sha256:c27d692e0b869a4275ed426a92553ed44964d17280740dbd2f340ebe08afcfd3\"},{\"fragmentId\":\"fragment.minimal-render-input-v1\",\"definitionSha256\":\"sha256:03bf8f691e6bb68c3d3e9f33a90131f9b12c8ee87a1e5428b63c87250623faf7\"},{\"fragmentId\":\"fragment.empty-resource-manifest-v1\",\"definitionSha256\":\"sha256:f9a432992fa62caab9f6632e5adcb4dde00d19250f8795be1c28e7e8e024e5a8\"},{\"fragmentId\":\"fragment.no-fault-schedule-v1\",\"definitionSha256\":\"sha256:b8242ba9c238d477b07cdc38ab8be7e0e801275f77864ec5d274e2e9da927021\"}]}",
+      "rootDefinitionSha256": "sha256:a4ffbc7798cd118f330b3ae34c7c202f44260aff0dd4d42fe958ccb7de819dff",
+      "fixtureArtifactStatus": "FROZEN_DUAL_VALIDATED_STATIC_ONLY",
+      "fixtureArtifact": {
+        "path": "rendering-pipeline/baseline-v1.json",
+        "mediaType": "application/json",
+        "sha256": "sha256:9efddc6a2cfe43be255828bf32e3ef6e126fd188a61f2cfda6a9d101e06ddbfb",
+        "byteLength": 1545
+      },
+      "observationAdapter": {
+        "path": "rendering-pipeline/observation-adapter-v1.json",
+        "sha256": "sha256:bc16d95de8cf80da63a071c246692ecbe37ad86a53ffa21500dcaf1c595c48fa"
+      },
+      "recordMayReference": true
+    },
+    {
+      "baselineId": "baseline.renderer-exact-output.minimal-v1",
+      "executionClass": "EXEC::RENDERER_EXACT_OUTPUT::1.0",
+      "purpose": "minimal fixture-only effective Renderer Command context",
+      "fragments": [
+        {
+          "fragmentId": "fragment.minimal-render-command-v1",
+          "definitionSha256": "sha256:6831acce50d045d965dd8c7cb5bad6bf8c542cf96fdde82e307a1aa7382d0816"
+        },
+        {
+          "fragmentId": "fragment.empty-resource-manifest-v1",
+          "definitionSha256": "sha256:f9a432992fa62caab9f6632e5adcb4dde00d19250f8795be1c28e7e8e024e5a8"
+        },
+        {
+          "fragmentId": "fragment.no-fault-schedule-v1",
+          "definitionSha256": "sha256:b8242ba9c238d477b07cdc38ab8be7e0e801275f77864ec5d274e2e9da927021"
+        }
+      ],
+      "rootDefinition": "{\"baselineId\":\"baseline.renderer-exact-output.minimal-v1\",\"executionClass\":\"EXEC::RENDERER_EXACT_OUTPUT::1.0\",\"fragments\":[{\"fragmentId\":\"fragment.minimal-render-command-v1\",\"definitionSha256\":\"sha256:6831acce50d045d965dd8c7cb5bad6bf8c542cf96fdde82e307a1aa7382d0816\"},{\"fragmentId\":\"fragment.empty-resource-manifest-v1\",\"definitionSha256\":\"sha256:f9a432992fa62caab9f6632e5adcb4dde00d19250f8795be1c28e7e8e024e5a8\"},{\"fragmentId\":\"fragment.no-fault-schedule-v1\",\"definitionSha256\":\"sha256:b8242ba9c238d477b07cdc38ab8be7e0e801275f77864ec5d274e2e9da927021\"}]}",
+      "rootDefinitionSha256": "sha256:db99af5a91d1f67ad8cb51fa75be6933a387e0933f5af6faf40da20db8aa2a08",
+      "fixtureArtifactStatus": "FROZEN_DUAL_VALIDATED_STATIC_ONLY",
+      "fixtureArtifact": {
+        "path": "renderer-exact-output/baseline-v1.json",
+        "mediaType": "application/json",
+        "sha256": "sha256:ece9f8a4d5befe4bcc0bbe6e9719e4b9b0c51462c7b6348991e237993bff69db",
+        "byteLength": 1289
+      },
+      "observationAdapter": {
+        "path": "renderer-exact-output/observation-adapter-v1.json",
+        "sha256": "sha256:13e18a0222deb2d0e91cc5ab5d8a711e25823be1d1b20cc68787de841a006adc"
+      },
+      "recordMayReference": true
+    },
+    {
+      "baselineId": "baseline.editor-automated.minimal-v1",
+      "executionClass": "EXEC::EDITOR_AUTOMATED::1.0",
+      "purpose": "fixture-only supported Structured Editor baseline context; not a browser or product session",
+      "fragments": [
+        {
+          "fragmentId": "fragment.editor-supported-current-v1",
+          "definitionSha256": "sha256:9b2a7e5741f7862e8befc221bb019ffde42247b9cee0c4907fee593522a0269f"
+        },
+        {
+          "fragmentId": "fragment.minimal-design-v1",
+          "definitionSha256": "sha256:c27d692e0b869a4275ed426a92553ed44964d17280740dbd2f340ebe08afcfd3"
+        },
+        {
+          "fragmentId": "fragment.editor-desktop-environment-v1",
+          "definitionSha256": "sha256:96e77de2f9d0dd7d9bfaa8c0b1867dc2ffc4733c1591ec43321528e67bdc5456"
+        },
+        {
+          "fragmentId": "fragment.no-fault-schedule-v1",
+          "definitionSha256": "sha256:b8242ba9c238d477b07cdc38ab8be7e0e801275f77864ec5d274e2e9da927021"
+        }
+      ],
+      "rootDefinition": "{\"baselineId\":\"baseline.editor-automated.minimal-v1\",\"executionClass\":\"EXEC::EDITOR_AUTOMATED::1.0\",\"fragments\":[{\"fragmentId\":\"fragment.editor-supported-current-v1\",\"definitionSha256\":\"sha256:9b2a7e5741f7862e8befc221bb019ffde42247b9cee0c4907fee593522a0269f\"},{\"fragmentId\":\"fragment.minimal-design-v1\",\"definitionSha256\":\"sha256:c27d692e0b869a4275ed426a92553ed44964d17280740dbd2f340ebe08afcfd3\"},{\"fragmentId\":\"fragment.editor-desktop-environment-v1\",\"definitionSha256\":\"sha256:96e77de2f9d0dd7d9bfaa8c0b1867dc2ffc4733c1591ec43321528e67bdc5456\"},{\"fragmentId\":\"fragment.no-fault-schedule-v1\",\"definitionSha256\":\"sha256:b8242ba9c238d477b07cdc38ab8be7e0e801275f77864ec5d274e2e9da927021\"}]}",
+      "rootDefinitionSha256": "sha256:ec60e4e299bea1b357eea0538d7bd10e7b7239edd79859375815a7c209e67d23",
+      "fixtureArtifactStatus": "FROZEN_DUAL_VALIDATED_STATIC_ONLY",
+      "fixtureArtifact": {
+        "path": "editor-automated/baseline-v1.json",
+        "mediaType": "application/json",
+        "sha256": "sha256:35c29750076654c559b3663995d0f17e15cf038d61feb66aedc0d77005788f9f",
+        "byteLength": 1956
+      },
+      "observationAdapter": {
+        "path": "editor-automated/observation-adapter-v1.json",
+        "sha256": "sha256:7f65c78c0d390e7ab972275b43341e94174d267ec4dadd28b71c60223fbe45d7"
+      },
+      "recordMayReference": true
+    }
+  ],
+  "fragmentCount": 13,
+  "baselineCount": 6,
+  "classCoverage": "exactly one root safe baseline definition per execution class",
+  "caseBindingRule": "Every GENERATED Case binds one baselineId plus the complete safe-baseline manifest SHA-256; no implicit, latest, inherited, or cross-class fallback exists.",
+  "mutationRule": "Any definition, fragment order, or fixture-byte change issues a new baselineId or artifact version; an issued digest never changes meaning.",
+  "fixtureGate": "A baseline remains non-referenceable until exact fixture bytes, artifact SHA-256, schema validation, and its class executor adapter are frozen.",
+  "crossClassFallbackAllowed": false,
+  "referenceableBaselineIds": [
+    "baseline.spec-registry.empty-v1",
+    "baseline.domain-services.minimal-v1",
+    "baseline.design-input-expression.minimal-v1",
+    "baseline.rendering-pipeline.minimal-v1",
+    "baseline.renderer-exact-output.minimal-v1",
+    "baseline.editor-automated.minimal-v1"
+  ],
+  "referenceableBaselineCount": 6,
+  "recordsMayReference": true
+}

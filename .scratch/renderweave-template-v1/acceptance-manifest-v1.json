@@ -1,0 +1,1113 @@
+{
+  "artifactVersion": "renderweave-template-v1-acceptance-manifest/1.0",
+  "status": "frontier-open",
+  "authority": "Ticket19 planning evidence; this artifact does not claim implementation acceptance or READY",
+  "specSources": [
+    "issues/04-mutable-template-lifecycle.md",
+    "issues/05-asset-management-domain.md",
+    "issues/06-render-input-and-scope.md",
+    "issues/07-value-binding-expression-model.md",
+    "issues/08-designdsl-envelope-and-evolution.md",
+    "issues/09-node-property-slot-model.md",
+    "issues/10-geometry-and-layout.md",
+    "issues/11-repeat-and-conditional-structure.md",
+    "issues/12-nested-template-composition.md",
+    "issues/13-asset-reference-and-resolution.md",
+    "issues/14-evaluation-capabilities.md",
+    "issues/15-evaluator-and-render-document.md",
+    "issues/16-renderer-and-image-output.md",
+    "issues/17-authoring-workflow-prototype.md",
+    "issues/18-editor-preview-and-recovery.md",
+    "issues/19-security-capacity-acceptance.md"
+  ],
+  "requirementRegistry": {
+    "path": "requirements-v1.json",
+    "sha256": "f038abf56d2db6168c1eac2b64ac26fdd3ada7d8e21e0c018e4bb27a6cd88bab",
+    "status": "requirements-frozen-spec-registry-issued-capacity-mapping-complete-other-case-mapping-pending",
+    "ticketFileCount": 16,
+    "requirementCount": 3651,
+    "semanticAuthorityRequirementCount": 3650,
+    "trackingRequirementCount": 1,
+    "integrityRule": "The registry hashes every 04.tsv through 19.tsv source-bound requirement inventory; case and oracle traceability remains a separate incomplete layer."
+  },
+  "identityModel": {
+    "requirementId": {
+      "pattern": "RW-T<ticket>-S<section>-<three-digit-local-ordinal>",
+      "meaning": "one immutable source-bound normative atomic clause",
+      "sourceLocator": "mutable metadata containing source path, heading anchor, current line, and clause ordinal"
+    },
+    "caseId": {
+      "meaning": "one immutable input plus fault schedule plus expected terminal scenario"
+    },
+    "oracleId": {
+      "meaning": "one immutable set of code, stage, digest or bytes, side-effect, and state assertions"
+    },
+    "runId": {
+      "pattern": "<caseId>@<executorId>@<targetId>@<implementationRevision>",
+      "meaning": "one immutable execution evidence record"
+    },
+    "evolution": {
+      "reuseWithChangedMeaning": false,
+      "deleteIssuedIdentity": false,
+      "replacementModels": {
+        "requirementAndRendererCandidateMetadata": "an issued record may retain a non-semantic supersededBy locator",
+        "appendOnlyConformanceRegistry": "a new record lists replaced identities in supersedes and ACTIVE or SUPERSEDED is derived"
+      },
+      "requiredEvidenceBindings": [
+        "specRevision",
+        "acceptanceManifestSha256",
+        "fixtureSha256",
+        "executorManifestSha256",
+        "targetManifestSha256",
+        "implementationRevision"
+      ]
+    }
+  },
+  "conformanceRegistries": {
+    "status": "spec-registry-issued-a2-replayed-all-six-class-fixture-generators-static-a2-editor-admission-interface-static-a2-capacity-shapes-static-a2-record-issuance-blocked",
+    "canonicalProfile": {
+      "path": "conformance-canonical-profile-v1.json",
+      "profileId": "renderweave-conformance-c14n/1.0",
+      "sha256": "3611feeb88f8e92cb1fb47e36db2ce53a4f44335acff7b62c9986b67815299c8",
+      "status": "frozen-vectors-dual-replayed"
+    },
+    "canonicalVectors": {
+      "path": "conformance-canonical-vectors-v1.json",
+      "sha256": "b1eac8c052288cadab5f890189868111aa96afa0c4f5b91d8fc34419686793b5",
+      "positiveVectorCount": 13,
+      "negativeVectorCount": 8,
+      "status": "frozen-dual-replayed"
+    },
+    "executionClassCatalog": {
+      "path": "conformance-execution-classes-v1.json",
+      "sha256": "a984d9327dd880f1c4b10d4dc4351fa102d75d8167df08464281516ffbdecfbd",
+      "classCount": 6,
+      "executorManifestStatus": "SPEC_REGISTRY_FROZEN_OTHER_CLASSES_PENDING",
+      "targetManifestStatus": "SPEC_REGISTRY_FROZEN_OTHER_CLASSES_PENDING"
+    },
+    "bootstrapOrder": {
+      "path": "conformance-bootstrap-order-v1.json",
+      "sha256": "d3487a85839282f64050606bad17ff87b801a71e456524c63f1dd257dd152825",
+      "currentPhase": "CAPACITY_BOUNDARY",
+      "status": "capacity-boundary-all-six-class-fixtures-static-a2-editor-admission-interface-static-a2-product-execution-gates-pending"
+    },
+    "probeProfile": {
+      "path": "conformance-probe-profile-v1.json",
+      "sha256": "f800eb1e6e138215c26c7761ed80e0fc9cf77fc3ce051be4e3c5ba530cd6053d",
+      "candidateProbeProfileId": "renderweave-conformance-probes/1.0",
+      "probeCount": 110,
+      "recordMayReference": true,
+      "status": "issued-assertion-vectors-dual-replayed"
+    },
+    "oracleFamilyCatalog": {
+      "path": "conformance-oracle-family-catalog-v1.json",
+      "sha256": "38965fa4cc29e86799703d2d68f386884ac9bd3aa7abf2f0291459a0987a2aff",
+      "familyCount": 10,
+      "status": "frozen"
+    },
+    "safeBaselines": {
+      "path": "conformance-safe-baselines-v1.json",
+      "sha256": "7ce057b57600c639e15a6e5055689efcb170af037e24515126ccdf94f9039569",
+      "fragmentCount": 13,
+      "baselineCount": 6,
+      "recordsMayReference": true,
+      "referenceableBaselineCount": 6,
+      "status": "all-six-execution-class-fixtures-referenceable-static-only-product-gates-pending"
+    },
+    "generatorManifests": {
+      "path": "conformance-generator-manifests-v1.json",
+      "sha256": "d117a993462c022ee1810fc7e200a38a90d4a274c2a72e6f1e4090d121f80645",
+      "generatorCount": 6,
+      "recordsMayReference": true,
+      "referenceableGeneratorCount": 6,
+      "status": "all-six-execution-class-generators-referenceable-static-only-product-gates-pending"
+    },
+    "manifestSnapshots": {
+      "policyPath": "conformance-manifest-snapshot-policy-v1.json",
+      "policySha256": "60b2dde31826ba766b7a8fe5e3ea6aa98ef1162e216069d739e475581490b327",
+      "seedSnapshotCount": 13,
+      "currentCatalogSnapshotCount": 2,
+      "resolution": "exact digest only",
+      "latestFallbackAllowed": false,
+      "overwriteAllowed": false
+    },
+    "capacityCoverage": {
+      "path": "conformance-capacity-coverage-v1.json",
+      "sha256": "d9662c79464f0fe726ff9067068d9317565e4f4d1caa13b04cf5c0b2e0e60582",
+      "axisCount": 175,
+      "plannedCaseCount": 525,
+      "plannedOracleCount": 525,
+      "recordsMayReference": false,
+      "status": "mapping-frozen-shape-candidates-static-replayed-all-assigned-class-fixtures-referenceable-product-gates-pending"
+    },
+    "capacityBoundaryMaterialization": {
+      "status": "A2_STATIC_SHAPE_CANDIDATES_READY_RECORD_ISSUANCE_BLOCKED",
+      "manifest": {
+        "path": "capacity-boundary/materialization-manifest-v1.json",
+        "sha256": "0e7a5b8d1b2b8e9b816dc4434456b0c0c0868a9aff8c4dfa5c1dc60092669252"
+      },
+      "candidateCases": {
+        "path": "capacity-boundary/candidate/conformance-cases-v1.jsonl",
+        "sha256": "30ee645c8dd472cfaf66550f26dd9234371d3f797d34c90df9de16de0569d284",
+        "recordCount": 525
+      },
+      "candidateOracles": {
+        "path": "capacity-boundary/candidate/conformance-oracles-v1.jsonl",
+        "sha256": "271ce23304e246f7a03ceee25385888de49620607ce8a5cc597429026f8833c2",
+        "recordCount": 525
+      },
+      "primaryStaticReplay": {
+        "path": "capacity-boundary/primary-result-v1.json",
+        "sha256": "55c5b9f411fbb8a3404e0a8556d70d64be40afab3d2d65838e4e8160cd17c873",
+        "checkCount": 38246,
+        "failureCount": 0
+      },
+      "independentStaticReplay": {
+        "path": "capacity-boundary/independent-result-v1.json",
+        "sha256": "c7855e2f8a834ab9dde8991e7fe6ddd4e862cf46c78177a60d1c80284b305158",
+        "checkCount": 39401,
+        "failureCount": 0
+      },
+      "evidence": "capacity-boundary/capacity-boundary-static-a2-2026-08-17.json",
+      "formalCapacityCaseCount": 0,
+      "formalCapacityOracleCount": 0,
+      "productExecutionEvidence": false,
+      "recordIssuanceAllowed": false
+    },
+    "domainServicesFixtureBootstrap": {
+      "status": "FIXTURE_GENERATOR_A2_STATIC_REPLAYED_PRODUCT_TARGET_PENDING",
+      "executionClass": "EXEC::DOMAIN_SERVICES::1.0",
+      "capacityAxisCount": 4,
+      "capacityFixtureCount": 12,
+      "namedFixtureCount": 1,
+      "baseline": {
+        "path": "domain-services/baseline-v1.json",
+        "sha256": "be84f240724b5ea50ae8921b1ffc4daa318fce52189fd0f8b2669c5ec562cf16"
+      },
+      "observationAdapter": {
+        "path": "domain-services/observation-adapter-v1.json",
+        "sha256": "4bda561d8628461b783796e38acb9066e840c307479603e39afa6c241393ea06"
+      },
+      "generatorImplementation": {
+        "path": "domain-services/generator-implementation-manifest-v1.json",
+        "sha256": "3742082a47b57ec3635094f8953a3d0cff1d4097ce277966196b276d63491462"
+      },
+      "generatorTarget": {
+        "path": "domain-services/generator-target-manifest-v1.json",
+        "sha256": "3f6d2df37c776262e328f5159b2ff38bb89c9882d60a82a67c48a42efb487dd9"
+      },
+      "generatorGoldens": {
+        "path": "domain-services/generator-goldens-v1.json",
+        "sha256": "97501ec24f2c9dc4ca78774d92d37d23010afffe635453666aa77cb2f56e8b60"
+      },
+      "primaryStaticReplay": {
+        "path": "domain-services/primary-result-v1.json",
+        "sha256": "aeaad4d2a057a0c3b1e0eb608453276d189d9c60ec59d414340b9614d15e2c0c",
+        "checkCount": 138,
+        "failureCount": 0
+      },
+      "independentStaticReplay": {
+        "path": "domain-services/independent-result-v1.json",
+        "sha256": "df5d62cbb8baefe1ae9663801978f276053845ea36bf8605d0809e9aa3f3705d",
+        "checkCount": 246,
+        "failureCount": 0
+      },
+      "evidence": "domain-services/domain-services-fixture-static-a2-2026-08-17.json",
+      "remainingBlockers": [
+        "EXACT_TARGET_MANIFEST_PENDING",
+        "REQUIRED_EXECUTOR_MANIFESTS_PENDING",
+        "INDEPENDENT_EXECUTION_REPLAY_PENDING"
+      ],
+      "productExecutionEvidence": false,
+      "formalCapacityRecordCount": 0,
+      "recordIssuanceAllowed": false,
+      "executable": false
+    },
+    "designInputExpressionFixtureBootstrap": {
+      "status": "FIXTURE_GENERATOR_A2_STATIC_REPLAYED_PRODUCT_TARGET_PENDING",
+      "executionClass": "EXEC::DESIGN_INPUT_EXPRESSION::1.0",
+      "capacityAxisCount": 65,
+      "capacityFixtureCount": 195,
+      "namedFixtureCount": 1,
+      "baseline": {
+        "path": "design-input-expression/baseline-v1.json",
+        "sha256": "30bd8a0ff27310a89c1a837a0dd7b056556ab9401b3c9d549010ec035e5980ef"
+      },
+      "observationAdapter": {
+        "path": "design-input-expression/observation-adapter-v1.json",
+        "sha256": "e46af856d38c1844d1c3b222479e25208c0f5297caabdfea16ccd779301d77e9"
+      },
+      "generatorImplementation": {
+        "path": "design-input-expression/generator-implementation-manifest-v1.json",
+        "sha256": "382f599e43999e6b7ab285e8b0b4ed1579cc4c00f3757a6766d18ec96d2bba10"
+      },
+      "generatorTarget": {
+        "path": "design-input-expression/generator-target-manifest-v1.json",
+        "sha256": "2de5c33e7f03c3c1354426882960200344e232ad12ec12d5eae20d80483760c8"
+      },
+      "generatorGoldens": {
+        "path": "design-input-expression/generator-goldens-v1.json",
+        "sha256": "de59d7a3f8f953c77115060a076e6ea73d697f7bf9aa838a813c18a865589498"
+      },
+      "primaryStaticReplay": {
+        "path": "design-input-expression/primary-result-v1.json",
+        "sha256": "e23f809a0587da9d307e41694aade5256f9d1158a8aa17c8c63079e69ea30dd4",
+        "checkCount": 2163,
+        "failureCount": 0
+      },
+      "independentStaticReplay": {
+        "path": "design-input-expression/independent-result-v1.json",
+        "sha256": "76791afa331e4a6f812daba59152959da9052d1de181e2bea943ce4c5f747ce7",
+        "checkCount": 2529,
+        "failureCount": 0
+      },
+      "evidence": "design-input-expression/design-input-expression-fixture-static-a2-2026-08-17.json",
+      "remainingBlockers": [
+        "EXACT_TARGET_MANIFEST_PENDING",
+        "REQUIRED_EXECUTOR_MANIFESTS_PENDING",
+        "INDEPENDENT_EXECUTION_REPLAY_PENDING"
+      ],
+      "productExecutionEvidence": false,
+      "formalCapacityRecordCount": 0,
+      "recordIssuanceAllowed": false,
+      "executable": false
+    },
+    "renderingPipelineFixtureBootstrap": {
+      "status": "FIXTURE_GENERATOR_A2_STATIC_REPLAYED_PRODUCT_TARGET_PENDING",
+      "executionClass": "EXEC::RENDERING_PIPELINE::1.0",
+      "capacityAxisCount": 52,
+      "capacityFixtureCount": 156,
+      "namedFixtureCount": 1,
+      "baseline": {
+        "path": "rendering-pipeline/baseline-v1.json",
+        "sha256": "9efddc6a2cfe43be255828bf32e3ef6e126fd188a61f2cfda6a9d101e06ddbfb"
+      },
+      "observationAdapter": {
+        "path": "rendering-pipeline/observation-adapter-v1.json",
+        "sha256": "bc16d95de8cf80da63a071c246692ecbe37ad86a53ffa21500dcaf1c595c48fa"
+      },
+      "generatorImplementation": {
+        "path": "rendering-pipeline/generator-implementation-manifest-v1.json",
+        "sha256": "dec9f8d56d1fc972edf40b0b0d6c1ed4338d6c624cad33086ee6e3c276f2a06f"
+      },
+      "generatorTarget": {
+        "path": "rendering-pipeline/generator-target-manifest-v1.json",
+        "sha256": "8b792d30b96ad567fd01325ee1447d86b8b1f65737a4eef51fd51b5477800b8b"
+      },
+      "generatorGoldens": {
+        "path": "rendering-pipeline/generator-goldens-v1.json",
+        "sha256": "a8380f233c823654b0609af4df2e4c41e7974e4dacfe5d9e1b2b595db661c6f8"
+      },
+      "primaryStaticReplay": {
+        "path": "rendering-pipeline/primary-result-v1.json",
+        "sha256": "c50ec3f5c5a7a411f17649a74704ce75403d0762be0b11bf55d3a92204489671",
+        "checkCount": 1734,
+        "failureCount": 0
+      },
+      "independentStaticReplay": {
+        "path": "rendering-pipeline/independent-result-v1.json",
+        "sha256": "7fe4a127007b76ee8fa636b907a67423289903ac202d0afb09da06a3908a9b15",
+        "checkCount": 2072,
+        "failureCount": 0
+      },
+      "evidence": "rendering-pipeline/rendering-pipeline-fixture-static-a2-2026-08-17.json",
+      "remainingBlockers": [
+        "EXACT_TARGET_MANIFEST_PENDING",
+        "REQUIRED_EXECUTOR_MANIFESTS_PENDING",
+        "INDEPENDENT_EXECUTION_REPLAY_PENDING"
+      ],
+      "productExecutionEvidence": false,
+      "formalCapacityRecordCount": 0,
+      "recordIssuanceAllowed": false,
+      "executable": false
+    },
+    "rendererExactOutputFixtureBootstrap": {
+      "status": "FIXTURE_GENERATOR_A2_STATIC_REPLAYED_PRODUCT_TARGET_PENDING",
+      "executionClass": "EXEC::RENDERER_EXACT_OUTPUT::1.0",
+      "capacityAxisCount": 54,
+      "capacityFixtureCount": 162,
+      "namedFixtureCount": 1,
+      "baseline": {
+        "path": "renderer-exact-output/baseline-v1.json",
+        "sha256": "ece9f8a4d5befe4bcc0bbe6e9719e4b9b0c51462c7b6348991e237993bff69db"
+      },
+      "observationAdapter": {
+        "path": "renderer-exact-output/observation-adapter-v1.json",
+        "sha256": "13e18a0222deb2d0e91cc5ab5d8a711e25823be1d1b20cc68787de841a006adc"
+      },
+      "generatorImplementation": {
+        "path": "renderer-exact-output/generator-implementation-manifest-v1.json",
+        "sha256": "af3cef6a03b15a590b6b9cee0d3cd6429883099aad2c916d879cd02c6d254c32"
+      },
+      "generatorTarget": {
+        "path": "renderer-exact-output/generator-target-manifest-v1.json",
+        "sha256": "ec00e210d6963bb375337bfdcd7fd243bb099f6df151e6ca9cd556dd92c64c56"
+      },
+      "generatorGoldens": {
+        "path": "renderer-exact-output/generator-goldens-v1.json",
+        "sha256": "2fdb4c1d9ded1d464c1942d3c0979702733be7cc98f930be1bb6e1f131d6de18"
+      },
+      "primaryStaticReplay": {
+        "path": "renderer-exact-output/primary-result-v1.json",
+        "sha256": "841e9694321c6ab7f98aab354175ab56ea454549b96b9ec6039d93c6e6d6de26",
+        "checkCount": 1800,
+        "failureCount": 0
+      },
+      "independentStaticReplay": {
+        "path": "renderer-exact-output/independent-result-v1.json",
+        "sha256": "1742b916061b66d0bc97a40d774827379bff173c7ece07815d96d441cbec6873",
+        "checkCount": 2211,
+        "failureCount": 0
+      },
+      "evidence": "renderer-exact-output/renderer-exact-output-fixture-static-a2-2026-08-17.json",
+      "remainingBlockers": [
+        "EXACT_TARGET_MANIFEST_PENDING",
+        "REQUIRED_EXECUTOR_MANIFESTS_PENDING",
+        "INDEPENDENT_EXECUTION_REPLAY_PENDING"
+      ],
+      "productExecutionEvidence": false,
+      "physicalLinuxCertificationEvidence": false,
+      "formalCapacityRecordCount": 0,
+      "recordIssuanceAllowed": false,
+      "executable": false
+    },
+    "editorAutomatedFixtureBootstrap": {
+      "status": "FIXTURE_ADMISSION_AND_ATOMIC_CANDIDATE_A2_STATIC_REPLAYED_BROWSER_AND_PRODUCT_TARGETS_PENDING",
+      "executionClass": "EXEC::EDITOR_AUTOMATED::1.0",
+      "capacityAxisCount": 0,
+      "capacityFixtureCount": 0,
+      "namedFixtureCount": 1,
+      "admittedProbeCount": 31,
+      "baseline": {
+        "path": "editor-automated/baseline-v1.json",
+        "sha256": "35c29750076654c559b3663995d0f17e15cf038d61feb66aedc0d77005788f9f"
+      },
+      "observationAdapter": {
+        "path": "editor-automated/observation-adapter-v1.json",
+        "sha256": "7f65c78c0d390e7ab972275b43341e94174d267ec4dadd28b71c60223fbe45d7"
+      },
+      "generatorImplementation": {
+        "path": "editor-automated/generator-implementation-manifest-v1.json",
+        "sha256": "ce83c15f770b48a33fa58509def35acd682cf6e9722f4066a4b2218eecf25a0d"
+      },
+      "generatorTarget": {
+        "path": "editor-automated/generator-target-manifest-v1.json",
+        "sha256": "6a2540e7bd86bd827e386a0f05680f225591ec58e9ed962dda0c35f43c39cbeb"
+      },
+      "generatorGoldens": {
+        "path": "editor-automated/generator-goldens-v1.json",
+        "sha256": "11d4396f2fc2ea6d4d02ecff05e4533347f88c8177c891ecfe0bdee95e40c5ae"
+      },
+      "primaryStaticReplay": {
+        "path": "editor-automated/primary-result-v1.json",
+        "sha256": "f605dd929448d9babf3c97dcc7cb9147078fda1d2904450866dbcc92c4c5023b",
+        "checkCount": 186,
+        "failureCount": 0
+      },
+      "independentStaticReplay": {
+        "path": "editor-automated/independent-result-v1.json",
+        "sha256": "a1b4d80ab6ce954a19443c098f3e5ae938766f2239520e0439c1b847170028bf",
+        "checkCount": 189,
+        "failureCount": 0
+      },
+      "evidence": "editor-automated/editor-automated-fixture-static-a2-2026-08-17.json",
+      "executionAdmissionContract": {
+        "path": "editor-automated/execution-admission-contract-v1.json",
+        "sha256": "5e38203fcf952e6b195e26c88386f4731072a59ba0b20f546ab93dea40678dd9"
+      },
+      "nonCapacityAssignment": {
+        "path": "editor-automated/non-capacity-assignment-v1.json",
+        "sha256": "4c993b03077e32dc6ae80cf7f7ce15c6c681fd017578919130f95032fcfb4807",
+        "assignedRequirementCount": 414,
+        "routingGroupCount": 45,
+        "journeySeedCount": 12,
+        "formalCaseCount": 0,
+        "formalOracleCount": 0
+      },
+      "repositoryReadinessAudit": {
+        "path": "editor-automated/repository-readiness-audit-v1.json",
+        "sha256": "a0d059516430994ffed1bfaf1a1f7140844af64c83a72ef1316f91ef8fb1aaf7",
+        "result": "REJECTED"
+      },
+      "admissionPrimaryStaticReplay": {
+        "path": "editor-automated/admission-primary-result-v1.json",
+        "sha256": "b53b7c4f23a37a4c78cce29ef892791cb4e1a07b38b81bae2f0655146b0d1175",
+        "checkCount": 27,
+        "failureCount": 0
+      },
+      "admissionIndependentStaticReplay": {
+        "path": "editor-automated/admission-independent-result-v1.json",
+        "sha256": "d8be9ad80d80dee430cab5841bf4eeb0dda873e7a81a8bd7dc374324c4b4beab",
+        "checkCount": 5385,
+        "failureCount": 0
+      },
+      "admissionEvidence": {
+        "path": "editor-automated/editor-automation-admission-static-a2-2026-08-17.json",
+        "sha256": "0e59273db6172355e75e93baf8d471976d701b7daead727bd78755c3113bff13"
+      },
+      "probeProfileAdjudication": {
+        "path": "editor-automated/probe-profile-adjudication-v1.json",
+        "sha256": "7564fcf2606b5c74e5abd590e4870b99b683b54c13122b376cdac57e609f00b7",
+        "sourceProposalCount": 12,
+        "approvedUnchangedSourceCount": 7,
+        "consolidatedSourceCount": 5,
+        "candidateAddedProbeCount": 9
+      },
+      "probeProfileCandidate": {
+        "path": "editor-automated/probe-profile-candidate-v1_1.json",
+        "sha256": "f76cae2b80a4205d7bf73b0e79d69611f2b95880a399fc5808d624ce7741f53f",
+        "profileId": "renderweave-conformance-probes/1.1",
+        "status": "COMPLETE_CANDIDATE_NOT_ISSUED",
+        "recordMayReference": false,
+        "totalProbeCount": 119,
+        "editorProbeCount": 40
+      },
+      "probeAssertionVectorsCandidate": {
+        "path": "editor-automated/probe-assertion-vectors-candidate-v1_1.json",
+        "sha256": "c1d9ba770f28fcefa0e6280e506b9618942cbfd14de6c57ea3372bb4795cead5",
+        "acceptedVectorCount": 157,
+        "rejectedVectorCount": 119,
+        "completeProbeOperatorCoverage": true
+      },
+      "observationAdapterCandidate": {
+        "path": "editor-automated/observation-adapter-candidate-v1_1.json",
+        "sha256": "90648f1a60cf2faabc4fb89ffc2608ecac7c67e9b4210ab0ca21bdc58c93018c",
+        "mappingCount": 40
+      },
+      "probeProfileCandidateReadinessAudit": {
+        "path": "editor-automated/probe-profile-candidate-readiness-audit-v1_1.json",
+        "sha256": "206fea591cf06ce9dfc173ac7f3bd997cfb6195b66ad6dbc3a0d46f570e8a615",
+        "result": "STATIC_CANDIDATE_COMPLETE_NOT_ISSUED"
+      },
+      "probeProfileCandidatePrimaryStaticReplay": {
+        "path": "editor-automated/probe-profile-candidate-primary-result-v1_1.json",
+        "sha256": "8a22cc8359042c9cba5d1945e4ae09c88206af82c22989a3b91ab291bea0ceab",
+        "checkCount": 17,
+        "failureCount": 0
+      },
+      "probeProfileCandidateIndependentStaticReplay": {
+        "path": "editor-automated/probe-profile-candidate-independent-result-v1_1.json",
+        "sha256": "b4dfe8be32d0c5150d7638dc33d4b0ff97b2927face917666de254bf445d39a2",
+        "checkCount": 29,
+        "failureCount": 0
+      },
+      "probeProfileCandidateEvidence": {
+        "path": "editor-automated/editor-probe-profile-candidate-static-a2-2026-08-17.json",
+        "sha256": "34cd6cfd68bbe3f2a82aac8662f6abf279d72aacf14e5f3b5c7e13f005c1d098",
+        "result": "A2_STATIC_PROBE_PROFILE_CANDIDATE_REPLAYED_NOT_ISSUED"
+      },
+      "terminalAdjudication": {
+        "path": "editor-automated/terminal-adjudication-v1.json",
+        "sha256": "4df1ec215851ada8818deaa94d239e6780181cb56068ef4dd72ffb04e87f3c43",
+        "result": "EXACT_PLANNING_BINDINGS_PRODUCT_UNPROVEN",
+        "adjudicatedFromPendingCount": 33,
+        "pendingCodeOrStageCount": 0
+      },
+      "faultScheduleContract": {
+        "path": "editor-automated/fault-schedule-contract-v1.json",
+        "sha256": "7a1b131f572a1c443e9154b6f72c18df4f478ba2313817e5f953102ac6972c9d",
+        "profileId": "renderweave-editor-fault-schedule/1.0"
+      },
+      "faultScheduleCatalog": {
+        "path": "editor-automated/fault-schedule-catalog-v1.json",
+        "sha256": "6ae1383877f2a04d1c79babc880fd406661a8d24b61b05d8cb0afb10ed42cd62",
+        "artifactCandidateCount": 37,
+        "noneCandidateCount": 71,
+        "productAdapterObserved": false
+      },
+      "inputFixtureContract": {
+        "path": "editor-automated/input-fixture-contract-v1.json",
+        "sha256": "d42c7544527d74e70f06fec07a6c320c45aa8dfc4884401c1378792290a60d62",
+        "profileId": "renderweave-editor-input-fixture/1.0"
+      },
+      "inputFixtureCatalog": {
+        "path": "editor-automated/input-fixture-catalog-v1.json",
+        "sha256": "6df083648df4da6dfe3aaff406b9f6ef99dcd5118bed04611689f3f7afdb7f44",
+        "artifactCandidateCount": 108,
+        "productAdapterObserved": false
+      },
+      "semanticProjectionContract": {
+        "path": "editor-automated/semantic-projection-contract-v1.json",
+        "sha256": "bbafb420c5f149d849410b83bf44b09a0f6587d3e0723b1f8d227f8fa118c34a",
+        "module": "EditorSemanticProjection"
+      },
+      "semanticProjectionCatalog": {
+        "path": "editor-automated/semantic-projection-catalog-v1.json",
+        "sha256": "6754fb53dc412c7711e8d67254cc915db56caf527f256985ca9f8d5cd53e4f6a",
+        "exactLiteralBindingCount": 42,
+        "contentDerivedPendingCount": 58,
+        "excludedUiObservedCount": 62,
+        "productObservationPerformed": false
+      },
+      "contentSourceContract": {
+        "path": "editor-automated/content-source-contract-v1.json",
+        "sha256": "4099e713bc8b7dececce6d9902bd6e1c6d2b5a340dec86d093012328a090ae48",
+        "module": "EditorContentSource"
+      },
+      "contentSourceCatalog": {
+        "path": "editor-automated/content-source-catalog-v1.json",
+        "sha256": "882d3f4928fefd114662a827d26cf25ddcec675b3cc89f099ce58e41c482d310",
+        "sourceSlotCount": 47,
+        "exactSourceBindingCount": 1,
+        "unboundSourceBindingCount": 46,
+        "sourceRecordArtifactCount": 1,
+        "canonicalDesignDslArtifactCount": 2,
+        "sourceArtifactCount": 3
+      },
+      "boundContentSourceArtifacts": [
+        {
+          "role": "CANONICAL_BASELINE_DESIGN_DSL",
+          "path": "editor-automated/content-sources/dirty-guard-clean-baseline.design.json",
+          "sha256": "eebf61d7025416476990adda79caeb6d66fe30f19acf90faa0447aa44a0c949c",
+          "byteLength": 272
+        },
+        {
+          "role": "PRE_AND_POST_ACTION_WORKING_COPY_DESIGN_DSL",
+          "path": "editor-automated/content-sources/dirty-guard-working-copy.design.json",
+          "sha256": "ee0e5678114d1c725d6669c0f354562f273a56124d1541f3abae688696e18b26",
+          "byteLength": 282
+        },
+        {
+          "role": "CONTENT_SOURCE_RECORD",
+          "path": "editor-automated/content-sources/ecs-j10-012-pa011.json",
+          "sha256": "fd6b4f3a120ed98ef31f56409140ef31d34c012a4628f700c1eff57f79177d5f",
+          "byteLength": 2456
+        }
+      ],
+      "targetBindingContract": {
+        "path": "editor-automated/target-binding-contract-v1.json",
+        "sha256": "aa9d1a2cea81a49f95395c4c941d17c8be4b490ab7139603d8737c8791602f4b"
+      },
+      "targetBindingCatalog": {
+        "path": "editor-automated/target-binding-catalog-v1.json",
+        "sha256": "ce2504aa4c5093a657a8487a9df77fde0c9af2e7e44217b4ea02cfd935ea2f93",
+        "originalPendingExpectationCount": 308,
+        "exactArtifactBindingCount": 108,
+        "exactLiteralBindingCount": 81,
+        "remainingPendingCount": 119,
+        "productObservationPerformed": false
+      },
+      "atomicCandidateContract": {
+        "path": "editor-automated/atomic-candidate-contract-v1.json",
+        "sha256": "36cff271af05b0c8c3b8de7b88879d5779530ebb6cfd107143a4342d18932326"
+      },
+      "atomicScenarioCandidates": {
+        "path": "editor-automated/atomic-scenario-candidates-v1.json",
+        "sha256": "fd82c16ec133388fa25806c26160660152b54e9d8fc54ec32da3dc70091f47c6",
+        "candidateCount": 108,
+        "journeySeedCount": 12,
+        "plannedRequirementUnionCount": 138,
+        "assertionPlanCount": 1265,
+        "formalCaseCount": 0,
+        "formalOracleCount": 0
+      },
+      "atomicCandidateReadinessAudit": {
+        "path": "editor-automated/atomic-candidate-readiness-audit-v1.json",
+        "sha256": "97834621cd815a7fa6536934bccd1d1d4d87badfda1251225a4defa15714156c",
+        "result": "ONE_CONTENT_SOURCE_AND_DETERMINISTIC_TARGETS_BOUND_PREISSUANCE_BLOCKED",
+        "exactLiteralAssertionPlanCount": 749,
+        "exactArtifactAssertionPlanCount": 108,
+        "exactAbsentAssertionPlanCount": 289,
+        "exactExpectationAssertionPlanCount": 1146,
+        "pendingExpectationAssertionPlanCount": 119,
+        "inputFixtureArtifactBindingCount": 108,
+        "targetArtifactBindingCount": 108,
+        "targetLiteralAdjudicatedFromPendingCount": 81,
+        "semanticProjectionExactLiteralBindingCount": 42,
+        "semanticProjectionContentPrerequisiteCount": 58,
+        "contentPrerequisiteResolvedBySourceCount": 1,
+        "contentPrerequisiteRemainingCount": 57,
+        "contentSourceSlotCount": 47,
+        "contentSourceExactBindingCount": 1,
+        "contentSourceUnboundBindingCount": 46,
+        "contentSourceRecordArtifactCount": 1,
+        "contentSourceCanonicalDesignDslArtifactCount": 2,
+        "uiObservationPendingCount": 62,
+        "terminalAdjudicatedFromPendingCount": 33,
+        "pendingTerminalBindingCount": 0,
+        "faultArtifactBindingCount": 37,
+        "faultNoneBindingCount": 71,
+        "proposedProbeCount": 0,
+        "candidateProfileProbeUsageCount": 9,
+        "candidateProfileBindingAssertionCount": 109,
+        "candidateProfileBoundCandidateCount": 82
+      },
+      "atomicCandidatePrimaryStaticReplay": {
+        "path": "editor-automated/atomic-candidate-primary-result-v1.json",
+        "sha256": "77d0fd4e5e21a4a276262ed1db4b3b61d006a323f0a84c41fc71a05acb47a273",
+        "checkCount": 37,
+        "failureCount": 0
+      },
+      "atomicCandidateIndependentStaticReplay": {
+        "path": "editor-automated/atomic-candidate-independent-result-v1.json",
+        "sha256": "9cdf842b9391141d423331ad51c2fc7da1b5ac7214e3fa63dd890ebeeb7493db",
+        "checkCount": 21141,
+        "failureCount": 0
+      },
+      "atomicCandidateEvidence": {
+        "path": "editor-automated/editor-atomic-candidates-static-a2-2026-08-17.json",
+        "sha256": "34958ee81fb889520b7372ca4b98c41bff182348b9d8a667a54a86e54e942370",
+        "result": "A2_STATIC_ONE_CONTENT_SOURCE_AND_189_DETERMINISTIC_TARGETS_REPLAYED_46_SOURCE_SLOTS_UNBOUND_119_TARGETS_PENDING"
+      },
+      "remainingBlockers": [
+        "BOOTSTRAP_PREDECESSORS_PENDING",
+        "SUPPORTED_TARGET_MATRIX_PENDING",
+        "EXACT_BROWSER_AND_OPERATING_SYSTEM_TARGET_MANIFESTS_PENDING",
+        "EXACT_PRODUCT_BUILD_MANIFEST_PENDING",
+        "EXACT_ENVIRONMENT_PROFILES_PENDING",
+        "REQUIRED_BROWSER_AUTOMATION_EXECUTOR_MANIFEST_PENDING",
+        "PRODUCT_FIXTURE_ADAPTER_BINDING_PENDING",
+        "PRODUCT_FAULT_ADAPTER_BINDING_PENDING",
+        "46_FIRST_LAYER_EDITOR_CONTENT_SOURCE_SLOTS_UNBOUND",
+        "11_DOWNSTREAM_CONTENT_DERIVED_TARGET_PREREQUISITE_GRAPHS_PENDING",
+        "62_UI_OBSERVATION_TARGETS_PENDING",
+        "EDITOR_PROBE_PROFILE_CANDIDATE_ISSUANCE_PENDING",
+        "FORMAL_ATOMIC_CASE_AND_ORACLE_ISSUANCE_PENDING",
+        "INDEPENDENT_PRODUCT_EXECUTION_REPLAY_PENDING"
+      ],
+      "browserAutomationEvidence": false,
+      "productExecutionEvidence": false,
+      "j1Status": "PENDING_SEPARATE_HUMAN_RECORD",
+      "formalAutomatedRecordCount": 0,
+      "recordIssuanceAllowed": false,
+      "executable": false
+    },
+    "specRegistryBootstrap": {
+      "status": "EXECUTABLE_A2_REPLAYED",
+      "executionClass": "EXEC::SPEC_REGISTRY::1.0",
+      "assignedRequirementCount": 363,
+      "caseRecordCount": 46,
+      "oracleRecordCount": 46,
+      "activeCorpusDigest": "sha256:96d5bc83d51820c698fcb98db5ca6416a655186c1420f9d92ef06db0449906e7",
+      "assertionVectors": {
+        "path": "spec-registry/assertion-vectors-v1.json",
+        "sha256": "291d450f0a1bfa84124664827b2e83fb562545561de9c9fd973070d0eb26762c"
+      },
+      "observationAdapter": {
+        "path": "spec-registry/observation-adapter-v1.json",
+        "sha256": "066c8c15e1c5d1a547e3c557e011aa407699741d262de2bf1e0856e07323d963"
+      },
+      "generatorImplementation": {
+        "path": "spec-registry/generator-implementation-manifest-v1.json",
+        "sha256": "94cd7f6ae9fc8162cd619130f0117fb85d2df433182f422d4f718cb43ee06b42"
+      },
+      "generatorTarget": {
+        "path": "spec-registry/generator-target-manifest-v1.json",
+        "sha256": "896869c11803feda55f5d3fe964047a79dc1ff1c7f4cddd99edce4a4e9136950"
+      },
+      "generatorGoldens": {
+        "path": "spec-registry/generator-goldens-v1.json",
+        "sha256": "ee6b23b0e603866bb504395582391755423076ddbc816a7ea4933426abb69a9b"
+      },
+      "coverage": {
+        "path": "spec-registry/coverage-v1.json",
+        "sha256": "cee064438155142b69dfe076ac7395f85bfef380024ee8ac9de73420197dba57"
+      },
+      "implementationRevision": "spec-registry-bootstrap/1.13",
+      "targetManifest": {
+        "path": "spec-registry/target-manifest-v1.json",
+        "sha256": "122577f0dc84713897e5d7803b21d94fd283fff067aa54cbdc9d20b29e767e84",
+        "byteLength": 77305,
+        "artifactCount": 382
+      },
+      "executorManifests": [
+        {
+          "role": "primary-registry-validator",
+          "path": "spec-registry/primary-executor-manifest-v1.json",
+          "sha256": "6a2e8ff105aac4532cf7686365d934c1e71e991d49ea523aad09ab3cf450a5a7",
+          "byteLength": 950
+        },
+        {
+          "role": "independent-schema-and-graph-replayer",
+          "path": "spec-registry/independent-executor-manifest-v1.json",
+          "sha256": "a0788cbc90fde6d1510cf105facf787a9dfe88ec56f29c5ab02714632888b900",
+          "byteLength": 973
+        }
+      ],
+      "evidence": "spec-registry/spec-registry-a2-2026-08-17.json",
+      "primaryReplayCheckCount": 22838,
+      "independentReplayCheckCount": 22746,
+      "targetAndExecutorHashesBoundByEvidence": true
+    },
+    "caseRegistry": {
+      "path": "conformance-cases-v1.jsonl",
+      "recordSchema": "conformance-case-record-schema-v1.json",
+      "recordSchemaSha256": "e5d3b07f88776f821f5971e7b591205b1a93bef522021fe71e6dad8db8405038",
+      "format": "UTF-8 JSON Lines without BOM; one immutable case record per nonblank line",
+      "recordCount": 46,
+      "sha256": "ebe58e84977ee84befe89f8c126f37fbec7076cd7725b29f1b7609448fe7ef16",
+      "appendOnly": true,
+      "idPatterns": [
+        "CAP::<limitId>::<below|at|above>",
+        "CAP::COMBINED::<three-digit-ordinal>",
+        "CONF::<one exact non-capacity family including SPEC_REGISTRY>::<six-digit-ordinal>"
+      ],
+      "semanticIdentity": [
+        "stimulus.input",
+        "stimulus.faultSchedule",
+        "expectedTerminals"
+      ],
+      "traceabilityFields": [
+        "coverage.requirementId",
+        "coverage.evidence.oracleId",
+        "coverage.evidence.assertionIds"
+      ],
+      "forbiddenParallelTraceabilityFields": [
+        "requirementIds",
+        "oracleIds"
+      ],
+      "supersessionField": "supersedes",
+      "derivedStatus": true
+    },
+    "oracleRegistry": {
+      "path": "conformance-oracles-v1.jsonl",
+      "recordSchema": "conformance-oracle-record-schema-v1.json",
+      "recordSchemaSha256": "950de19b858ebe1b2a1ce2de613199f338ceb2fb980e7300eb1b75eff424b936",
+      "format": "UTF-8 JSON Lines without BOM; one immutable oracle record per nonblank line",
+      "recordCount": 46,
+      "sha256": "3825b9fb40c1b43c484da3ebdf29429ed749e622012212ca79f9cea5b9cb9339",
+      "appendOnly": true,
+      "idPattern": "ORC::<one of the ten exact Oracle families>::<six-digit-ordinal>",
+      "assertionIdPattern": "A<three-digit-oracle-local-ordinal>",
+      "operatorEnum": [
+        "EQ",
+        "ABSENT",
+        "SEQUENCE_EQ",
+        "BYTES_EQ",
+        "WITHIN"
+      ],
+      "probeCatalogStatus": "issued-profile-110-probes-record-reference-allowed",
+      "supersessionField": "supersedes",
+      "derivedStatus": true
+    },
+    "groupingRule": "Multiple requirements may share one case only when input, fault schedule, and expected terminal are all identical.",
+    "oracleReuseRule": "Reuse one oracle exactly when the observation boundary and canonical assertion set are identical; templates, wildcards, scripts, natural-language predicates, and default fallback are forbidden.",
+    "activeGraphRules": [
+      "every active requirement has an active requirement-to-case-to-oracle-assertion path",
+      "every active case covers a requirement and assertion and proves each expected terminal",
+      "every active oracle has an active case reference",
+      "active case semantic signatures are unique",
+      "active oracle assertion signatures are unique",
+      "historical duplicate signatures occur only within one valid supersession chain with exactly one active record",
+      "supersession is acyclic, non-dangling, and followed by complete no-orphan validation"
+    ],
+    "inverseTraceability": "generated validator output only; never a second fact source",
+    "oneCasePerRequirementRequired": false,
+    "j1MaySubstituteAutomatedCoverage": false
+  },
+  "rendererCertification": {
+    "spikeCandidateManifest": "renderer-spike-candidate-v1.json",
+    "candidateId": "rw-renderer-spike-linux-x86_64-v2-000001",
+    "candidateStatus": "SPIKE_CANDIDATE",
+    "sourceIntegrityEvidence": "renderer-source-integrity-a1-2026-08-16.json",
+    "sourceIntegrityGrade": "A1_TOOL_CAPTURED_SOURCE_ONLY",
+    "sourceIntegrityExecutorManifest": {
+      "path": "renderer-spike/source-integrity-executor-manifest-v1.json",
+      "sha256": "8f9269083986674743350ecd0c872826c8fd6d19969f0dd1adb5948f64d27dee"
+    },
+    "sourceIntegrityTargetManifest": {
+      "path": "renderer-spike/source-integrity-target-manifest-v1.json",
+      "sha256": "d51bf5bf279a18d43604da90d21e0762c8151398555eae5e5243c3c6fe94962e"
+    },
+    "hermeticBuildPrerequisites": {
+      "path": "renderer-spike/hermetic-linux-build-prerequisites-v1.json",
+      "sha256": "db79db2b39df447309547dc09ac254527e6ac2853d2e61d6cbb0780f1f5aab58",
+      "buildAuthorized": false,
+      "buildAttemptedByThisDecision": false,
+      "status": "prerequisites-frozen-build-not-authorized"
+    },
+    "certified": false,
+    "ready": false,
+    "ticket19MayClose": false,
+    "certificationGate": "Complete transitive pins, patch/build/ICC/golden identity, ELF audit, and exact replay on two different-family non-virtualized physical Linux hosts are all mandatory."
+  },
+  "contractBoundaryCorpus": {
+    "budgetMatrix": "capacity-budgets-v1.json",
+    "oracleMap": "capacity-oracles-v1.json",
+    "boundaryMap": "capacity-boundaries-v1.json",
+    "safeBaselineManifest": {
+      "path": "conformance-safe-baselines-v1.json",
+      "sha256": "7ce057b57600c639e15a6e5055689efcb170af037e24515126ccdf94f9039569"
+    },
+    "generatorManifest": {
+      "path": "conformance-generator-manifests-v1.json",
+      "sha256": "d117a993462c022ee1810fc7e200a38a90d4a274c2a72e6f1e4090d121f80645"
+    },
+    "coverageMapping": {
+      "path": "conformance-capacity-coverage-v1.json",
+      "sha256": "d9662c79464f0fe726ff9067068d9317565e4f4d1caa13b04cf5c0b2e0e60582",
+      "axisCount": 175,
+      "plannedOracleCount": 525
+    },
+    "contractCellCount": 175,
+    "variantsPerCell": [
+      "below",
+      "at",
+      "above"
+    ],
+    "caseIdPattern": "CAP::<limitId>::<variant>",
+    "plannedGeneratedBoundaryCaseCount": 525,
+    "executableBoundaryCaseCount": 0,
+    "materializationStatus": "mapping-frozen-shape-candidates-static-a2-replayed-all-four-capacity-assigned-class-fixtures-referenceable-product-gates-and-formal-record-issuance-pending",
+    "isolationRule": "Each generated case targets exactly one limitId; every other contract cell retains explicit safe margin.",
+    "comparatorAssignmentStatus": "planning-frozen",
+    "requiredOracleAssertions": [
+      "acceptedOrRejected",
+      "stableCode",
+      "stage",
+      "reservationBeforeAllocationOrCall",
+      "zeroWriteBoundary",
+      "zeroRenderDocumentBoundary",
+      "zeroRenderOutputBoundary",
+      "downstreamSideEffectCounts"
+    ]
+  },
+  "combinedWorstPathCorpus": {
+    "minimumUniqueCaseCount": 18,
+    "executableCaseCount": 0,
+    "caseIdPattern": "CAP::COMBINED::<three-digit-ordinal>",
+    "definitionStatus": "planning-frozen-materialization-prerequisites-pending",
+    "rule": "Mutually exclusive endpoints or independently observable failure order require additional cases and can never reduce this minimum.",
+    "cases": [
+      {
+        "caseId": "CAP::COMBINED::001",
+        "title": "RenderInput admission and bounded problem truncation",
+        "groups": ["renderInput", "problems"],
+        "objective": "Exercise global request limits before grouping while semantic collection reaches the reserved marker boundary.",
+        "expectedTerminal": "bounded validation failure ending with PROBLEM_LIMIT_REACHED and no Evaluation"
+      },
+      {
+        "caseId": "CAP::COMBINED::002",
+        "title": "Design structure, Expression, and canonical bytes",
+        "groups": ["designDslParser", "designDslSemantics", "expression"],
+        "objective": "Reach jointly valid authored structure and expression boundaries while the pre-dependency canonical counting sink remains at its exact limit.",
+        "expectedTerminal": "dependency-free READY Save success with exactly one appended immutable revision"
+      },
+      {
+        "caseId": "CAP::COMBINED::003",
+        "title": "Closure with authored Assets and static capabilities",
+        "groups": ["closureAndExpansion", "assetsAndFetch", "capabilityRuntime"],
+        "objective": "Freeze the maximum valid closure together with static Asset atoms and capability sources before runtime state.",
+        "expectedTerminal": "successful closure admission with no hidden deduplication of authored units"
+      },
+      {
+        "caseId": "CAP::COMBINED::004",
+        "title": "Repeat frames, materialized nodes, and operations",
+        "groups": ["closureAndExpansion"],
+        "objective": "Combine Repeat collection, nesting, loop-frame, occurrence, node, generated-entry, and logical-operation boundaries without truncation.",
+        "expectedTerminal": "successful materialization at all selected exact limits"
+      },
+      {
+        "caseId": "CAP::COMBINED::005",
+        "title": "Template invocations, viewports, and occurrences",
+        "groups": ["closureAndExpansion", "renderDocument"],
+        "objective": "Combine actual TemplateUse invocation depth/count, composition viewports, and final occurrence/document structure.",
+        "expectedTerminal": "successful RenderDocument seal with continuous opaque occurrence ordinals"
+      },
+      {
+        "caseId": "CAP::COMBINED::006",
+        "title": "RenderDocument, manifest, and diagnostic sidecar seal",
+        "groups": ["renderDocument", "diagnostics", "assetsAndFetch"],
+        "objective": "Reach document, one-to-one manifest, and complete sidecar boundaries in the same atomic pre-seal writer.",
+        "expectedTerminal": "successful atomic seal with no partial builder or sidecar exposure"
+      },
+      {
+        "caseId": "CAP::COMBINED::007",
+        "title": "Asset occurrence and exact-content aggregates",
+        "groups": ["assetsAndFetch"],
+        "objective": "Combine authored and resolved occurrences, unique logical/exact content, raw bytes, pixels, fonts, manifest, and URL budgets.",
+        "expectedTerminal": "successful ordered resolution with cache-independent accounting"
+      },
+      {
+        "caseId": "CAP::COMBINED::008",
+        "title": "Capability state and demand aggregates",
+        "groups": ["capabilityRuntime"],
+        "objective": "Combine static sources, state bytes, logical total/kind demands, call-position bytes, result digest bytes, and retry bounds.",
+        "expectedTerminal": "successful deterministic CapabilityState and result digest at exact limits"
+      },
+      {
+        "caseId": "CAP::COMBINED::009",
+        "title": "Surface and request working set",
+        "groups": ["rendererSurfaceAndOutput", "assetsAndFetch"],
+        "objective": "Combine maximum legal surface with raw/decoded cache, decoder/encoder scratch, encoded buffer, and live RAM reservation.",
+        "expectedTerminal": "accepted execution and successful output without a hidden lower memory ceiling"
+      },
+      {
+        "caseId": "CAP::COMBINED::010",
+        "title": "Font parsing and shaping aggregates",
+        "groups": ["layoutFontAndRaster", "assetsAndFetch"],
+        "objective": "Combine unique fonts, tables, outlines, graphemes, glyph attempts/finals, lines, and font byte budgets.",
+        "expectedTerminal": "successful exact shaping with no system fallback"
+      },
+      {
+        "caseId": "CAP::COMBINED::011",
+        "title": "Layout operations and paint structure",
+        "groups": ["layoutFontAndRaster", "renderDocument"],
+        "objective": "Combine measure, remeasure, layout operations, generated structure, paint items, and clip depth.",
+        "expectedTerminal": "successful layout at exact limits with deterministic order"
+      },
+      {
+        "caseId": "CAP::COMBINED::012",
+        "title": "Raster overdraw and code modules",
+        "groups": ["rendererSurfaceAndOutput", "layoutFontAndRaster"],
+        "objective": "Combine legal surface pixels, painted pixel visits, paint chunks, QR/Barcode module cells, and final transforms.",
+        "expectedTerminal": "successful exact raster with no approximation or partial paint"
+      },
+      {
+        "caseId": "CAP::COMBINED::013",
+        "title": "Encoded image, trace, multipart, and ephemeral bytes",
+        "groups": ["rendererSurfaceAndOutput", "diagnostics"],
+        "objective": "Reach image, trace, framing, multipart total, encoder scratch, and request ephemeral boundaries together.",
+        "expectedTerminal": "successful atomic two-part response with exact digests"
+      },
+      {
+        "caseId": "CAP::COMBINED::014",
+        "title": "Fetch retry, lease, and resource deadline",
+        "groups": ["assetsAndFetch", "deadlineAndRetention"],
+        "objective": "Use one retryable first-attempt failure, fixed backoff, a successful second attempt, exact byte accounting, and a lease valid through deadline plus margin.",
+        "expectedTerminal": "successful resource preparation without lease renewal or deadline reset"
+      },
+      {
+        "caseId": "CAP::COMBINED::015",
+        "title": "Same-command registry join and replay",
+        "groups": ["referenceDeployment", "deadlineAndRetention"],
+        "objective": "Submit concurrent and post-seal copies of one requestId and canonical digest.",
+        "expectedTerminal": "one execution and byte-identical joined or replayed terminal responses"
+      },
+      {
+        "caseId": "CAP::COMBINED::016",
+        "title": "Registry identity conflict",
+        "groups": ["deadlineAndRetention"],
+        "objective": "Reuse one requestId with a changed digest or deadline while the original reservation exists.",
+        "expectedTerminal": "RENDER_REQUEST_CONFLICT for the changed command and no second execution"
+      },
+      {
+        "caseId": "CAP::COMBINED::017",
+        "title": "Queue-full BUSY and accepted queue timeout",
+        "groups": ["referenceDeployment", "rendererSurfaceAndOutput", "deadlineAndRetention"],
+        "objective": "Fill one active slot and four FIFO positions, observe pre-accept BUSY for another command, then withhold a slot from an already accepted queued command for five seconds.",
+        "expectedTerminal": "nonterminal RENDER_ENGINE_BUSY before acceptance and terminal RENDER_DEADLINE_EXCEEDED after acceptance"
+      },
+      {
+        "caseId": "CAP::COMBINED::018",
+        "title": "Cancel, seal, cleanup, and sealed replay",
+        "groups": ["deadlineAndRetention", "diagnostics"],
+        "objective": "Linearize cancel immediately before seal for one request and immediately after seal for another, then replay only the sealed response within the fixed retention window.",
+        "expectedTerminal": "pre-seal RENDER_CANCELLED with zero output; post-seal success remains byte-identical; raw artifacts are not retained"
+      }
+    ]
+  },
+  "nonCapacityAtomicCorpus": {
+    "families": [
+      "WIRE_CANONICAL_DIGEST",
+      "DESIGN_INPUT_EXPRESSION",
+      "CLOSURE_REPEAT_COMPOSITION_EVALUATOR",
+      "ASSET_CAPABILITY_CONCURRENCY",
+      "LAYOUT_SHAPING",
+      "RENDERER_OUTPUT",
+      "SECURITY_FAULT",
+      "EDITOR_AUTOMATED"
+    ],
+    "decompositionStatus": "requirements-issued-editor-108-semantic-input-fixtures-and-189-deterministic-target-bindings-frozen-two-no-working-copy-absences-exact-one-immutable-dirty-guard-content-source-bound-46-first-layer-content-source-slots-unbound-remaining-content-prerequisites-and-62-ui-observations-pending-probe-profile-1.1-candidate-unissued-formal-case-and-oracle-issuance-pending",
+    "registeredRequirementCount": 3651,
+    "requirementRegistry": "requirements-v1.json",
+    "issuedSpecRegistryCaseCount": 46,
+    "editorRoutingInventory": {
+      "path": "editor-automated/non-capacity-assignment-v1.json",
+      "sha256": "4c993b03077e32dc6ae80cf7f7ce15c6c681fd017578919130f95032fcfb4807",
+      "assignedRequirementCount": 414,
+      "routingGroupCount": 45,
+      "journeySeedCount": 12,
+      "atomicCandidateContract": "editor-automated/atomic-candidate-contract-v1.json",
+      "atomicCandidateCatalog": "editor-automated/atomic-scenario-candidates-v1.json",
+      "atomicCandidateReadinessAudit": "editor-automated/atomic-candidate-readiness-audit-v1.json",
+      "atomicCandidateEvidence": "editor-automated/editor-atomic-candidates-static-a2-2026-08-17.json",
+      "terminalAdjudication": "editor-automated/terminal-adjudication-v1.json",
+      "faultScheduleContract": "editor-automated/fault-schedule-contract-v1.json",
+      "faultScheduleCatalog": "editor-automated/fault-schedule-catalog-v1.json",
+      "inputFixtureContract": "editor-automated/input-fixture-contract-v1.json",
+      "inputFixtureCatalog": "editor-automated/input-fixture-catalog-v1.json",
+      "semanticProjectionContract": "editor-automated/semantic-projection-contract-v1.json",
+      "semanticProjectionCatalog": "editor-automated/semantic-projection-catalog-v1.json",
+      "contentSourceContract": "editor-automated/content-source-contract-v1.json",
+      "contentSourceCatalog": "editor-automated/content-source-catalog-v1.json",
+      "targetBindingContract": "editor-automated/target-binding-contract-v1.json",
+      "targetBindingCatalog": "editor-automated/target-binding-catalog-v1.json",
+      "atomicCandidateCount": 108,
+      "plannedRequirementUnionCount": 138,
+      "assertionPlanCount": 1265,
+      "exactLiteralAssertionPlanCount": 749,
+      "exactArtifactAssertionPlanCount": 108,
+      "exactAbsentAssertionPlanCount": 289,
+      "exactExpectationAssertionPlanCount": 1146,
+      "pendingExpectationAssertionPlanCount": 119,
+      "inputFixtureArtifactBindingCount": 108,
+      "targetArtifactBindingCount": 108,
+      "targetLiteralAdjudicatedFromPendingCount": 81,
+      "semanticProjectionExactLiteralBindingCount": 42,
+      "semanticProjectionContentPrerequisiteCount": 58,
+      "contentPrerequisiteResolvedBySourceCount": 1,
+      "contentPrerequisiteRemainingCount": 57,
+      "contentSourceSlotCount": 47,
+      "contentSourceExactBindingCount": 1,
+      "contentSourceUnboundBindingCount": 46,
+      "contentSourceRecordArtifactCount": 1,
+      "contentSourceCanonicalDesignDslArtifactCount": 2,
+      "uiObservationPendingCount": 62,
+      "terminalAdjudicatedFromPendingCount": 33,
+      "pendingTerminalBindingCount": 0,
+      "faultArtifactBindingCount": 37,
+      "faultNoneBindingCount": 71,
+      "proposedProbeCount": 0,
+      "probeProfileAdjudication": "editor-automated/probe-profile-adjudication-v1.json",
+      "probeProfileCandidate": "editor-automated/probe-profile-candidate-v1_1.json",
+      "probeProfileCandidateId": "renderweave-conformance-probes/1.1",
+      "probeProfileCandidateStatus": "COMPLETE_CANDIDATE_NOT_ISSUED",
+      "probeProfileCandidateAddedProbeCount": 9,
+      "candidateProfileBindingAssertionCount": 109,
+      "candidateProfileBoundCandidateCount": 82,
+      "formalCaseCount": 0,
+      "formalOracleCount": 0,
+      "meaning": "routing, journey seeds, structurally split planning candidates, exact planning terminal/fault bindings, immutable semantic input fixtures, 189 mechanically determined target bindings, two exact no-working-copy absences, and one Editor-owned immutable dirty-guard source binding only; 46 first-layer source slots, 57 content-derived targets, and 62 UI observations remain pending, it issues no Case or Oracle, and proves no product or browser behavior"
+    },
+    "caseCount": null,
+    "countRule": "Count unique atomic caseId entries after every normative requirement is mapped to at least one oracle-bearing case."
+  },
+  "counts": {
+    "registeredRequirements": 3651,
+    "issuedSpecRegistryCases": 46,
+    "issuedSpecRegistryOracles": 46,
+    "plannedContractBoundaryCases": 525,
+    "staticShapeCandidateContractBoundaryCases": 525,
+    "staticShapeCandidateCapacityOracles": 525,
+    "executableContractBoundaryCases": 0,
+    "minimumCombinedWorstPathCases": 18,
+    "strictContractBoundaryFloor": 543,
+    "editorAtomicScenarioCandidates": 108,
+    "nonCapacityAtomicCases": null,
+    "fullAutomatedCorpus": "46 executable SPEC_REGISTRY cases plus planned 543 contract-boundary cases plus 108 non-issued Editor atomic scenario candidates plus still-unmapped nonCapacityAtomicCases and any additional combined cases required by newly discovered incompatible endpoints; the complete corpus remains non-executable"
+  },
+  "executionMatrix": {
+    "catalog": "conformance-execution-classes-v1.json",
+    "bootstrapOrder": {
+      "path": "conformance-bootstrap-order-v1.json",
+      "sha256": "d3487a85839282f64050606bad17ff87b801a71e456524c63f1dd257dd152825",
+      "currentPhase": "CAPACITY_BOUNDARY"
+    },
+    "classes": [
+      "EXEC::SPEC_REGISTRY::1.0",
+      "EXEC::DOMAIN_SERVICES::1.0",
+      "EXEC::DESIGN_INPUT_EXPRESSION::1.0",
+      "EXEC::RENDERING_PIPELINE::1.0",
+      "EXEC::RENDERER_EXACT_OUTPUT::1.0",
+      "EXEC::EDITOR_AUTOMATED::1.0"
+    ],
+    "assignmentRule": "Every case declares exactly one most-downstream class; executor roles, targets, implementation revisions, runs, and evidence grades remain manifest-bound facts.",
+    "executorManifestStatus": "SPEC_REGISTRY_FROZEN_OTHER_CLASSES_PENDING",
+    "targetManifestStatus": "SPEC_REGISTRY_FROZEN_OTHER_CLASSES_PENDING",
+    "readyRule": "Every approved target replays its complete assigned corpus; additional executors and targets create runId records, not new caseId semantics.",
+    "a3Rule": "CI fixes target, manifest, case inventory, revisions, and artifact hashes and cannot skip profile corpus.",
+    "j1Manifest": "j1-editor-checklist-v1.json",
+    "j1CountedInAutomatedCorpus": false
+  }
+}

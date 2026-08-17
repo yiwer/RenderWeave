@@ -1,0 +1,21 @@
+{
+  "artifactVersion": "renderweave-editor-input-fixture/1.0",
+  "candidateId": "EDC::J01::002",
+  "executionClass": "EXEC::EDITOR_AUTOMATED::1.0",
+  "baselineId": "EditorStructuredWithSelectableCanvasEntity",
+  "parameters": {
+    "selectedEntityId": "node-focus-a"
+  },
+  "actionScript": [
+    {
+      "action": "ROVE_TREE_AND_ENTER_CANVAS_EQUIVALENT",
+      "parameters": {
+        "keys": [
+          "ARROW_DOWN",
+          "ARROW_UP",
+          "ENTER"
+        ]
+      }
+    }
+  ]
+}

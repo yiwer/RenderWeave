@@ -1,0 +1,9 @@
+{
+  "fixtureVersion": "renderweave-spec-registry-scenario/1.0",
+  "scenarioId": "SPEC-MUT-019",
+  "scenarioKind": "NAMED_MUTATION",
+  "expectedOutcome": "PROBLEM",
+  "expectedCode": "SPEC_REGISTRY_GENERATOR_INVALID",
+  "expectedStage": "SPEC_REGISTRY",
+  "mutationKind": "GENERATOR_GOLDEN_MISMATCH"
+}

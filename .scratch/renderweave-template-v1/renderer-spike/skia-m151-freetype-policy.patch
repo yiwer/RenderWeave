@@ -1,0 +1,108 @@
+diff --git a/src/ports/SkFontHost_FreeType.cpp b/src/ports/SkFontHost_FreeType.cpp
+index f8043f2..c93fa26 100644
+--- a/src/ports/SkFontHost_FreeType.cpp
++++ b/src/ports/SkFontHost_FreeType.cpp
+@@ -945,6 +945,15 @@ SkScalerContext_FreeType::SkScalerContext_FreeType(const SkTypeface_FreeType& re
+         return;
+     }
+ 
++    // RenderWeave admits only scalable outline faces without fixed-size strikes and uses one
++    // no-hinting path.  Reject here before Skia can clear NO_BITMAP or add COLOR below.
++    if (!FT_IS_SCALABLE(fFaceRec->fFace) || fFaceRec->fFace->num_fixed_sizes != 0 ||
++        fRec.getHinting() != SkFontHinting::kNone ||
++        (fRec.fFlags & SkScalerContext::kForceAutohinting_Flag)) {
++        LOG_INFO("RenderWeave rejected an unsupported FreeType face or hinting mode.\n");
++        return;
++    }
++
+     fLCDIsVert = SkToBool(fRec.fFlags & SkScalerContext::kLCD_Vertical_Flag);
+ 
+     // compute the flags we send to Load_Glyph
+@@ -1000,6 +1009,15 @@ SkScalerContext_FreeType::SkScalerContext_FreeType(const SkTypeface_FreeType& re
+             loadFlags |= FT_LOAD_NO_BITMAP;
+         }
+ 
++        // FreeType's tricky-font exception can re-enable native hinting when NO_HINTING is used
++        // alone.  The exact Renderer path also forbids bitmap, SVG, color, and auto-hint loads.
++        loadFlags |= FT_LOAD_NO_HINTING;
++        loadFlags |= FT_LOAD_NO_AUTOHINT;
++        loadFlags |= FT_LOAD_NO_BITMAP;
++        loadFlags |= FT_LOAD_NO_SVG;
++        loadFlags &= ~FT_LOAD_FORCE_AUTOHINT;
++        loadFlags &= ~FT_LOAD_COLOR;
++
+         // Always using FT_LOAD_IGNORE_GLOBAL_ADVANCE_WIDTH to get correct
+         // advances, as fontconfig and cairo do.
+         // See http://code.google.com/p/skia/issues/detail?id=222.
+@@ -1102,6 +1120,17 @@ SkScalerContext_FreeType::SkScalerContext_FreeType(const SkTypeface_FreeType& re
+         return;
+     }
+ 
++    constexpr FT_Int32 kRenderWeaveRequiredLoadFlags =
++            FT_LOAD_NO_HINTING | FT_LOAD_NO_AUTOHINT | FT_LOAD_NO_BITMAP | FT_LOAD_NO_SVG;
++    constexpr FT_Int32 kRenderWeaveForbiddenLoadFlags =
++            FT_LOAD_FORCE_AUTOHINT | FT_LOAD_COLOR;
++    if ((fLoadGlyphFlags & kRenderWeaveRequiredLoadFlags) !=
++                kRenderWeaveRequiredLoadFlags ||
++        (fLoadGlyphFlags & kRenderWeaveForbiddenLoadFlags) != 0) {
++        LOG_INFO("RenderWeave FreeType load-flag invariant failed.\n");
++        return;
++    }
++
+     fMatrix22.xx = SkScalarToFixed(fMatrix22Scalar.getScaleX());
+     fMatrix22.xy = SkScalarToFixed(-fMatrix22Scalar.getSkewX());
+     fMatrix22.yx = SkScalarToFixed(-fMatrix22Scalar.getSkewY());
+diff --git a/third_party/freetype2/BUILD.gn b/third_party/freetype2/BUILD.gn
+index 631b909..af93c20 100644
+--- a/third_party/freetype2/BUILD.gn
++++ b/third_party/freetype2/BUILD.gn
+@@ -36,19 +36,11 @@ if (skia_use_system_freetype2) {
+     deps = [ "//third_party/libpng" ]
+ 
+     defines = [ "FT2_BUILD_LIBRARY" ]
+-    if (target_cpu == "wasm") {
+-      public_defines += [
+-        "FT_CONFIG_MODULES_H=<freetype-no-type1/freetype/config/ftmodule.h>",
+-        "FT_CONFIG_OPTIONS_H=<freetype-no-type1/freetype/config/ftoption.h>",
+-      ]
+-      public_include_dirs += [ "include/freetype-no-type1" ]
+-    } else {
+-      public_defines += [
+-        "FT_CONFIG_MODULES_H=<freetype-android/freetype/config/ftmodule.h>",
+-        "FT_CONFIG_OPTIONS_H=<freetype-android/freetype/config/ftoption.h>",
+-      ]
+-      public_include_dirs += [ "include/freetype-android" ]
+-    }
++    public_defines += [
++      "FT_CONFIG_MODULES_H=<renderweave-freetype/freetype/config/ftmodule.h>",
++      "FT_CONFIG_OPTIONS_H=<renderweave-freetype/freetype/config/ftoption.h>",
++    ]
++    public_include_dirs += [ "include/renderweave-freetype" ]
+     public_include_dirs += [ "../externals/freetype/include" ]
+ 
+     if (skia_use_freetype_zlib) {
+@@ -65,7 +57,6 @@ if (skia_use_system_freetype2) {
+     }
+ 
+     sources = [
+-      "../externals/freetype/src/autofit/autofit.c",
+       "../externals/freetype/src/base/ftbase.c",
+       "../externals/freetype/src/base/ftbbox.c",
+       "../externals/freetype/src/base/ftbitmap.c",
+@@ -82,16 +73,12 @@ if (skia_use_system_freetype2) {
+       "../externals/freetype/src/base/fttype1.c",
+       "../externals/freetype/src/base/ftwinfnt.c",
+       "../externals/freetype/src/cff/cff.c",
+-      "../externals/freetype/src/cid/type1cid.c",
+       "../externals/freetype/src/gzip/ftgzip.c",
+       "../externals/freetype/src/psaux/psaux.c",
+-      "../externals/freetype/src/pshinter/pshinter.c",
+       "../externals/freetype/src/psnames/psnames.c",
+-      "../externals/freetype/src/raster/raster.c",
+       "../externals/freetype/src/sfnt/sfnt.c",
+       "../externals/freetype/src/smooth/smooth.c",
+       "../externals/freetype/src/truetype/truetype.c",
+-      "../externals/freetype/src/type1/type1.c",
+     ]
+ 
+     if (skia_use_freetype_svg) {

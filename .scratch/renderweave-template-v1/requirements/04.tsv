@@ -1,0 +1,93 @@
+requirement_id	source_line	clause_ordinal_on_line	family	normative_summary
+RW-T04-S1-001	14	1	WIRE_CANONICAL_DIGEST	Template 以全局唯一 opaque templateId 标识。
+RW-T04-S1-002	14	2	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	ownerScope 创建后永久不可变。
+RW-T04-S1-003	14	3	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	Template 永久绑定一个 exact StaticSchemaRef。
+RW-T04-S1-004	14	4	WIRE_CANONICAL_DIGEST	displayName 等作者 metadata 属于 DesignDSL，而非 Template envelope。
+RW-T04-S1-005	14	5	WIRE_CANONICAL_DIGEST	Template 自有事实限于 identity、scope/Schema binding、current、lifecycle 与 derived availability。
+RW-T04-S1-006	14	6	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	生命周期精确为 ACTIVE→DELETED。
+RW-T04-S1-007	14	7	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	Template 不存在 publish、archive 或 reactivate 状态/命令。
+RW-T04-S1-008	14	8	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	DELETED 是保留全部事实且不可恢复的终态。
+RW-T04-S1-009	16	1	DESIGN_INPUT_EXPRESSION	Create 必须提交结构及全部依赖合法的完整 DesignDSL。
+RW-T04-S1-010	16	2	ASSET_CAPABILITY_CONCURRENCY	Create 原子产生 READY revision 0。
+RW-T04-S1-011	16	3	EDITOR_AUTOMATED	DesignDSL import 只进入可暂时 invalid 的本地 EditorSession。
+RW-T04-S1-012	16	4	EDITOR_AUTOMATED	Import 不改变服务端 current。
+RW-T04-S1-013	16	5	ASSET_CAPABILITY_CONCURRENCY	Save 必须提交完整 DesignDSL 与 expectedRevision。
+RW-T04-S1-014	16	6	WIRE_CANONICAL_DIGEST	成功 Save 追加完整 immutable revision。
+RW-T04-S1-015	16	7	ASSET_CAPABILITY_CONCURRENCY	成功 Save 将 current 推进到最新 revision number。
+RW-T04-S1-016	16	8	WIRE_CANONICAL_DIGEST	内容 hash 未变的 accepted Save 仍追加 revision。
+RW-T04-S1-017	16	9	SECURITY_FAULT	服务端不接受 JSON Patch 保存。
+RW-T04-S1-018	16	10	ASSET_CAPABILITY_CONCURRENCY	服务端不执行自动 merge。
+RW-T04-S1-019	16	11	ASSET_CAPABILITY_CONCURRENCY	服务端不采用 last-write-wins。
+RW-T04-S1-020	16	12	EDITOR_AUTOMATED	服务端不持久化 invalid editing draft。
+RW-T04-S1-021	18	1	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	Copy 必须 pin exact {templateId,revision} source。
+RW-T04-S1-022	18	2	WIRE_CANONICAL_DIGEST	Copy 复制完整 DesignDSL。
+RW-T04-S1-023	18	3	WIRE_CANONICAL_DIGEST	Copy 不复制 revision history 或 source lineage。
+RW-T04-S1-024	18	4	WIRE_CANONICAL_DIGEST	Copy 目标从 revision 0 开始。
+RW-T04-S1-025	18	5	SECURITY_FAULT	v1 Copy 只能在 source ownerScope 内创建目标。
+RW-T04-S1-026	18	6	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	Copy 可显式选择另一 StaticSchemaRef。
+RW-T04-S1-027	18	7	DESIGN_INPUT_EXPRESSION	跨 Schema Copy 不执行 field 自动 migration。
+RW-T04-S1-028	18	8	SECURITY_FAULT	跨 scope 搬运只留给未来 explicit export/import 与 TemplateRef/AssetRef mapping。
+RW-T04-S1-029	18	9	SECURITY_FAULT	Copy 不得静默保留 cross-scope reference。
+RW-T04-S1-030	18	10	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	Revision restore 只允许 ACTIVE Template。
+RW-T04-S1-031	18	11	WIRE_CANONICAL_DIGEST	Restore 将 exact old-revision DesignDSL 复制并追加为新 revision。
+RW-T04-S1-032	18	12	ASSET_CAPABILITY_CONCURRENCY	Restore 推进新 current，绝不回拨 current pointer。
+RW-T04-S1-033	18	13	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	DELETED Template 不可 restore。
+RW-T04-S1-034	18	14	EDITOR_AUTOMATED	DELETED Template 不可 edit。
+RW-T04-S1-035	18	15	EDITOR_AUTOMATED	DELETED Template 仍允许只读查看历史。
+RW-T04-S1-036	18	16	WIRE_CANONICAL_DIGEST	DELETED Template 仍允许 export history。
+RW-T04-S1-037	18	17	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	DELETED Template 的 exact history revision 可 Copy 为新 Template。
+RW-T04-S1-038	20	1	SECURITY_FAULT	unknown DSL version/member/kind、structural fault、TemplateRef cycle、security/budget breach 均为 hard error。
+RW-T04-S1-039	20	2	SECURITY_FAULT	Hard error 永远 zero-write。
+RW-T04-S1-040	20	3	SECURITY_FAULT	Hard error 不可通过 confirmation 绕过。
+RW-T04-S1-041	20	4	DESIGN_INPUT_EXPRESSION	结构合法但 field-path/AssetRef/TemplateRef dependency ERROR 可经二阶段确认 Save 为 INVALID。
+RW-T04-S1-042	20	5	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	Dependency ERROR 可经二阶段确认 Copy 为 INVALID。
+RW-T04-S1-043	20	6	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	Dependency ERROR 可经二阶段确认 Restore 为 INVALID。
+RW-T04-S1-044	20	7	SECURITY_FAULT	首次 dependency-error 响应返回完整且有界的问题集。
+RW-T04-S1-045	20	8	SECURITY_FAULT	首次响应签发短期 confirmation token。
+RW-T04-S1-046	20	9	SECURITY_FAULT	Token 绑定 operation、DesignDSL hash、source/target、dependency snapshot 与 problem fingerprint。
+RW-T04-S1-047	20	10	ASSET_CAPABILITY_CONCURRENCY	确认时任一绑定事实漂移都要求重新确认。
+RW-T04-S1-048	20	11	SECURITY_FAULT	禁止裸 force=true。
+RW-T04-S1-049	22	1	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	TemplateReadiness exact enum 为 READY|INVALID|STALE。
+RW-T04-S1-050	22	2	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	Readiness 是 current-facing、eventually-consistent UI projection。
+RW-T04-S1-051	22	3	SECURITY_FAULT	Readiness 不是 Render authorization fact。
+RW-T04-S1-052	22	4	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	Template 只保留一份不绑定 revision 的 current validation report。
+RW-T04-S1-053	22	5	ASSET_CAPABILITY_CONCURRENCY	最近完成的异步检查可直接覆盖 current report。
+RW-T04-S1-054	22	6	EDITOR_AUTOMATED	打开 Editor 时必须重新权威检查 latest current。
+RW-T04-S1-055	22	7	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	每个 Render request 必须重新权威检查 latest current。
+RW-T04-S1-056	22	8	EDITOR_AUTOMATED	INVALID/STALE 仍可 view/edit/import 并使用 local draft canvas。
+RW-T04-S1-057	22	9	EDITOR_AUTOMATED	INVALID/STALE 可继续经二阶段确认保存 INVALID revision。
+RW-T04-S1-058	22	10	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	INVALID/STALE 不得产生 TemplateSnapshot。
+RW-T04-S1-059	22	11	EDITOR_AUTOMATED	INVALID/STALE 不得产生 authoritative preview。
+RW-T04-S1-060	22	12	RENDERER_OUTPUT	INVALID/STALE 不得产生 RenderOutput。
+RW-T04-S1-061	22	13	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	strict create 与正常通过的 save/copy/restore 进入 READY。
+RW-T04-S1-062	22	14	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	confirmed dependency ERROR 进入 INVALID。
+RW-T04-S1-063	22	15	ASSET_CAPABILITY_CONCURRENCY	dependency change 先将 Template 置 STALE。
+RW-T04-S1-064	22	16	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	重检只将 STALE 收敛为 READY 或 INVALID。
+RW-T04-S1-065	24	1	ASSET_CAPABILITY_CONCURRENCY	StaticSchema immutable，field path 不建 reverse invalidation index。
+RW-T04-S1-066	24	2	DESIGN_INPUT_EXPRESSION	StaticSchema field path 仅在 create/save/cross-Schema copy/restore 校验。
+RW-T04-S1-067	24	3	ASSET_CAPABILITY_CONCURRENCY	Dependency projection 只包含 ACTIVE-current DesignDSL 的 AssetRef/TemplateRef。
+RW-T04-S1-068	24	4	ASSET_CAPABILITY_CONCURRENCY	Current dependency projection 事务性保存，并在 current 改变时整体替换。
+RW-T04-S1-069	24	5	ASSET_CAPABILITY_CONCURRENCY	Historical revision 不进入 dependency index。
+RW-T04-S1-070	24	6	ASSET_CAPABILITY_CONCURRENCY	Asset/child Template 变化经 reverse index 递归重检 parent Template。
+RW-T04-S1-071	26	1	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	Authored TemplateRef 仅以 templateId 跟随 same-ownerScope target current。
+RW-T04-S1-072	26	2	WIRE_CANONICAL_DIGEST	Authored TemplateRef 禁止 exact revision；exact revision 仅用于 history/copy/restore。
+RW-T04-S1-073	26	3	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	TemplateRef graph 必须是 DAG。
+RW-T04-S1-074	26	4	SECURITY_FAULT	TemplateRef cycle 是不可确认 hard error。
+RW-T04-S1-075	26	5	ASSET_CAPABILITY_CONCURRENCY	每次 current Save 与 DAG check 必须原子完成。
+RW-T04-S1-076	26	6	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	Evaluation 开始时一次冻结全部 authored reachable current，形成 consistent closure snapshot。
+RW-T04-S1-077	26	7	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	Static pruning 不改变 closure membership。
+RW-T04-S1-078	26	8	ASSET_CAPABILITY_CONCURRENCY	Closure resolution 中任一 current drift 必须 retry 或 fail。
+RW-T04-S1-079	26	9	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	不得产生 mixed-time closure。
+RW-T04-S1-080	28	1	ASSET_CAPABILITY_CONCURRENCY	Delete 必须携带 expectedRevision。
+RW-T04-S1-081	28	2	ASSET_CAPABILITY_CONCURRENCY	Delete 在一致性边界检查 ACTIVE 与 incoming ACTIVE-current TemplateRef。
+RW-T04-S1-082	28	3	SECURITY_FAULT	存在 incoming reference 时 Delete zero-write。
+RW-T04-S1-083	28	4	SECURITY_FAULT	被阻塞 Delete 返回有界 reference summary。
+RW-T04-S1-084	28	5	SECURITY_FAULT	Delete 不提供 force 或 cascade。
+RW-T04-S1-085	28	6	WIRE_CANONICAL_DIGEST	Delete 后永久保留 templateId、StaticSchemaRef、current、全部 revision 与 audit facts。
+RW-T04-S1-086	28	7	SECURITY_FAULT	Template 不提供 purge 或 identity reuse。
+RW-T04-S1-087	30	1	ASSET_CAPABILITY_CONCURRENCY	每次本地 Template 变更对 revision/current/current-only projection/readiness/report 全成或全不成。
+RW-T04-S1-088	30	2	SECURITY_FAULT	revision conflict、confirmation drift、dependency unavailable、delete block 均 zero-write，并返回 stable code 与 bounded structured issues。
+RW-T04-S1-089	30	3	ASSET_CAPABILITY_CONCURRENCY	服务端只提供 best-effort API debounce。
+RW-T04-S1-090	30	4	ASSET_CAPABILITY_CONCURRENCY	服务端不保证 command-key idempotency。
+RW-T04-S1-091	30	5	ASSET_CAPABILITY_CONCURRENCY	网络超时后重试 Create/Copy 可能生成 duplicate objects。
+RW-T04-S1-092	30	6	ASSET_CAPABILITY_CONCURRENCY	调用方负责查询并协调 unknown Create/Copy outcome。

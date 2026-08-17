@@ -1,0 +1,16 @@
+{
+  "artifactVersion": "renderweave-editor-input-fixture/1.0",
+  "candidateId": "EDC::J02::005",
+  "executionClass": "EXEC::EDITOR_AUTOMATED::1.0",
+  "baselineId": "EditorStructuredWithMovableNode",
+  "parameters": {},
+  "actionScript": [
+    {
+      "action": "MOVE_ENTITY",
+      "parameters": {
+        "entityId": "node-move-a",
+        "beforeEntityId": "node-anchor-b"
+      }
+    }
+  ]
+}

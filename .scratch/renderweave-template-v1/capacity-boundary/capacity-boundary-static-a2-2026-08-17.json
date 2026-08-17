@@ -1,0 +1,221 @@
+{
+  "evidenceVersion": "renderweave-capacity-boundary-static-a2/1.5",
+  "evidenceId": "CAPACITY_BOUNDARY_STATIC_A2::2026-08-17::000006",
+  "status": "PASS",
+  "grade": "A2_INDEPENDENT_STATIC_REPLAY",
+  "predecessorEvidenceId": "CAPACITY_BOUNDARY_STATIC_A2::2026-08-17::000005",
+  "scope": "Specification-only 175-axis to 525 Case-shape and 525 Oracle-shape materialization; no product executor, target, capacity terminal, Renderer, or formal record issuance is covered.",
+  "specRevision": {
+    "branch": "spec/template-v1",
+    "baseCommit": "b14c2d7d4978c679e7ab8e7a2bace3da7af884de",
+    "materializerRevision": "capacity-boundary-materializer/1.5"
+  },
+  "authorityBindings": {
+    "acceptanceManifest": {
+      "path": "acceptance-manifest-v1.json",
+      "sha256": "sha256:186c4de3351a5b794eb47294ac4f787aa47f1a19ea213a66c4ddd60ef28b620f",
+      "byteLength": 48336
+    },
+    "materializationManifest": {
+      "path": "capacity-boundary/materialization-manifest-v1.json",
+      "sha256": "sha256:0e7a5b8d1b2b8e9b816dc4434456b0c0c0868a9aff8c4dfa5c1dc60092669252",
+      "byteLength": 5211
+    },
+    "capacityCoverage": {
+      "path": "conformance-capacity-coverage-v1.json",
+      "sha256": "sha256:d9662c79464f0fe726ff9067068d9317565e4f4d1caa13b04cf5c0b2e0e60582",
+      "byteLength": 318460
+    },
+    "requirementsRegistry": {
+      "path": "requirements-v1.json",
+      "sha256": "sha256:f038abf56d2db6168c1eac2b64ac26fdd3ada7d8e21e0c018e4bb27a6cd88bab",
+      "byteLength": 9646
+    },
+    "probeProfile": {
+      "path": "conformance-probe-profile-v1.json",
+      "sha256": "sha256:f800eb1e6e138215c26c7761ed80e0fc9cf77fc3ce051be4e3c5ba530cd6053d",
+      "byteLength": 51328
+    },
+    "generatorManifest": {
+      "path": "conformance-generator-manifests-v1.json",
+      "sha256": "sha256:d117a993462c022ee1810fc7e200a38a90d4a274c2a72e6f1e4090d121f80645",
+      "byteLength": 14326
+    },
+    "safeBaselineManifest": {
+      "path": "conformance-safe-baselines-v1.json",
+      "sha256": "sha256:7ce057b57600c639e15a6e5055689efcb170af037e24515126ccdf94f9039569",
+      "byteLength": 19435
+    },
+    "executionClassCatalog": {
+      "path": "conformance-execution-classes-v1.json",
+      "sha256": "sha256:a984d9327dd880f1c4b10d4dc4351fa102d75d8167df08464281516ffbdecfbd",
+      "byteLength": 9456
+    },
+    "manifestSnapshotPolicy": {
+      "path": "conformance-manifest-snapshot-policy-v1.json",
+      "sha256": "sha256:60b2dde31826ba766b7a8fe5e3ea6aa98ef1162e216069d739e475581490b327",
+      "byteLength": 6380
+    }
+  },
+  "candidateBindings": {
+    "cases": {
+      "path": "capacity-boundary/candidate/conformance-cases-v1.jsonl",
+      "sha256": "sha256:30ee645c8dd472cfaf66550f26dd9234371d3f797d34c90df9de16de0569d284",
+      "byteLength": 1773865,
+      "recordCount": 525
+    },
+    "oracles": {
+      "path": "capacity-boundary/candidate/conformance-oracles-v1.jsonl",
+      "sha256": "sha256:271ce23304e246f7a03ceee25385888de49620607ce8a5cc597429026f8833c2",
+      "byteLength": 603573,
+      "recordCount": 525
+    },
+    "axisCount": 175,
+    "variantCount": 3,
+    "caseCount": 525,
+    "oracleCount": 525
+  },
+  "replay": {
+    "primary": {
+      "result": {
+        "path": "capacity-boundary/primary-result-v1.json",
+        "sha256": "sha256:55c5b9f411fbb8a3404e0a8556d70d64be40afab3d2d65838e4e8160cd17c873",
+        "byteLength": 743
+      },
+      "entrypoint": {
+        "path": "capacity-boundary/validate-capacity-boundary-primary.mjs",
+        "sha256": "sha256:f4fb2604dde51dccb591e725aa001cce234bd48d9334481028949a073e76fdbb",
+        "byteLength": 22072
+      },
+      "executorId": "CAPACITY_STATIC_EXECUTOR::NODE::1.0",
+      "runtime": "Node.js v24.18.0",
+      "checkCount": 38246,
+      "failureCount": 0
+    },
+    "independent": {
+      "result": {
+        "path": "capacity-boundary/independent-result-v1.json",
+        "sha256": "sha256:c7855e2f8a834ab9dde8991e7fe6ddd4e862cf46c78177a60d1c80284b305158",
+        "byteLength": 747
+      },
+      "entrypoint": {
+        "path": "capacity-boundary/validate_capacity_boundary_independent.py",
+        "sha256": "sha256:e474db9cf1d1fc34b7c050648845dc7b90e1902bd050b204039347e495f0427a",
+        "byteLength": 25819
+      },
+      "executorId": "CAPACITY_STATIC_EXECUTOR::PYTHON::1.0",
+      "runtime": "CPython 3.12.13",
+      "checkCount": 39401,
+      "failureCount": 0
+    },
+    "sharedSemanticLibrary": null,
+    "differentRuntimeAndParserImplementations": true,
+    "candidateDigestAgreement": true
+  },
+  "normalizationFindings": {
+    "evidenceGrade": "A1_TOOL_CAPTURED_THEN_A2_CURRENT_STATE_REPLAYED",
+    "currentCatalogDigestRefreshCount": 2,
+    "singletonTextSequenceCountCorrectedInPredecessor": 354,
+    "singletonTextSequenceCountChangedThisRevision": 0
+  },
+  "catalogEvolution": {
+    "domainServicesFixtureBootstrapEvidence": "domain-services/domain-services-fixture-static-a2-2026-08-17.json",
+    "designInputExpressionFixtureBootstrapEvidence": "design-input-expression/design-input-expression-fixture-static-a2-2026-08-17.json",
+    "renderingPipelineFixtureBootstrapEvidence": "rendering-pipeline/rendering-pipeline-fixture-static-a2-2026-08-17.json",
+    "rendererExactOutputFixtureBootstrapEvidence": "renderer-exact-output/renderer-exact-output-fixture-static-a2-2026-08-17.json",
+    "editorAutomatedFixtureBootstrapEvidence": "editor-automated/editor-automated-fixture-static-a2-2026-08-17.json",
+    "retainedCatalogSnapshotCount": 13,
+    "currentSafeBaselineManifestSha256": "sha256:7ce057b57600c639e15a6e5055689efcb170af037e24515126ccdf94f9039569",
+    "currentGeneratorManifestSha256": "sha256:d117a993462c022ee1810fc7e200a38a90d4a274c2a72e6f1e4090d121f80645",
+    "domainCapacityCandidatesBindExactGeneratorGoldens": true,
+    "designCapacityCandidatesBindExactGeneratorGoldens": true,
+    "renderingCapacityCandidatesBindExactGeneratorGoldens": true,
+    "rendererCapacityCandidatesBindExactGeneratorGoldens": true,
+    "allSixExecutionClassFixtureCatalogsReferenceable": true,
+    "formalRecordBytesChanged": false
+  },
+  "classReadiness": [
+    {
+      "executionClass": "EXEC::DOMAIN_SERVICES::1.0",
+      "axisCount": 4,
+      "candidateCaseCount": 12,
+      "candidateOracleCount": 12,
+      "blockers": [
+        "EXACT_TARGET_MANIFEST_PENDING",
+        "REQUIRED_EXECUTOR_MANIFESTS_PENDING",
+        "INDEPENDENT_EXECUTION_REPLAY_PENDING"
+      ],
+      "recordIssuanceAllowed": false
+    },
+    {
+      "executionClass": "EXEC::DESIGN_INPUT_EXPRESSION::1.0",
+      "axisCount": 65,
+      "candidateCaseCount": 195,
+      "candidateOracleCount": 195,
+      "blockers": [
+        "EXACT_TARGET_MANIFEST_PENDING",
+        "REQUIRED_EXECUTOR_MANIFESTS_PENDING",
+        "INDEPENDENT_EXECUTION_REPLAY_PENDING"
+      ],
+      "recordIssuanceAllowed": false
+    },
+    {
+      "executionClass": "EXEC::RENDERING_PIPELINE::1.0",
+      "axisCount": 52,
+      "candidateCaseCount": 156,
+      "candidateOracleCount": 156,
+      "blockers": [
+        "EXACT_TARGET_MANIFEST_PENDING",
+        "REQUIRED_EXECUTOR_MANIFESTS_PENDING",
+        "INDEPENDENT_EXECUTION_REPLAY_PENDING"
+      ],
+      "recordIssuanceAllowed": false
+    },
+    {
+      "executionClass": "EXEC::RENDERER_EXACT_OUTPUT::1.0",
+      "axisCount": 54,
+      "candidateCaseCount": 162,
+      "candidateOracleCount": 162,
+      "blockers": [
+        "EXACT_TARGET_MANIFEST_PENDING",
+        "REQUIRED_EXECUTOR_MANIFESTS_PENDING",
+        "INDEPENDENT_EXECUTION_REPLAY_PENDING"
+      ],
+      "recordIssuanceAllowed": false
+    }
+  ],
+  "formalRegistryBoundary": {
+    "cases": {
+      "path": "conformance-cases-v1.jsonl",
+      "sha256": "sha256:ebe58e84977ee84befe89f8c126f37fbec7076cd7725b29f1b7609448fe7ef16",
+      "byteLength": 146309,
+      "recordCount": 46
+    },
+    "oracles": {
+      "path": "conformance-oracles-v1.jsonl",
+      "sha256": "sha256:3825b9fb40c1b43c484da3ebdf29429ed749e622012212ca79f9cea5b9cb9339",
+      "byteLength": 63191,
+      "recordCount": 46
+    },
+    "appendPerformed": false,
+    "issuedCapacityCaseCount": 0,
+    "issuedCapacityOracleCount": 0
+  },
+  "sideEffects": {
+    "productCodeFilesChanged": 0,
+    "productExecutorInvocations": 0,
+    "rendererInvocations": 0,
+    "networkAttempts": 0,
+    "externalProviderAttempts": 0
+  },
+  "boundary": {
+    "currentPhase": "CAPACITY_BOUNDARY",
+    "staticShapeCandidatesReady": true,
+    "assignedExecutionClassesExecutable": false,
+    "recordIssuanceAllowed": false,
+    "fullAutomatedCorpusExecutable": false,
+    "rendererCertified": false,
+    "rendererReady": false,
+    "ticket19Closed": false
+  }
+}

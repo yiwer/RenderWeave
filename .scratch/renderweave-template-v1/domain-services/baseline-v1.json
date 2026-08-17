@@ -1,0 +1,28 @@
+{
+  "fixtureVersion": "renderweave-domain-services-baseline/1.0",
+  "baselineId": "baseline.domain-services.minimal-v1",
+  "executionClass": "EXEC::DOMAIN_SERVICES::1.0",
+  "ownerScopeId": "00000000-0000-4000-8000-000000000001",
+  "actorId": "00000000-0000-4000-8000-000000000002",
+  "templateState": {
+    "templateId": "00000000-0000-4000-8000-000000000003",
+    "lifecycle": "ACTIVE",
+    "revision": 0,
+    "readiness": "READY",
+    "staticSchemaRef": "system-empty@v1"
+  },
+  "assetState": {
+    "assets": [],
+    "blobs": [],
+    "idempotencyRecords": [],
+    "auditEvents": [],
+    "domainEvents": []
+  },
+  "faultSchedule": {
+    "kind": "NONE"
+  },
+  "externalReadsAllowed": false,
+  "networkReadsAllowed": false,
+  "currentTimeReadsAllowed": false,
+  "productMutationAllowedByFixtureGeneration": false
+}

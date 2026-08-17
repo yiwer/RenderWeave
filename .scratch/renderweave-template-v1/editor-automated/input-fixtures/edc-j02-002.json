@@ -1,0 +1,15 @@
+{
+  "artifactVersion": "renderweave-editor-input-fixture/1.0",
+  "candidateId": "EDC::J02::002",
+  "executionClass": "EXEC::EDITOR_AUTOMATED::1.0",
+  "baselineId": "EditorStructuredWithRepeatTemplateUseBindings",
+  "parameters": {},
+  "actionScript": [
+    {
+      "action": "DUPLICATE_ENTITY",
+      "parameters": {
+        "entityId": "node-repeat-a"
+      }
+    }
+  ]
+}

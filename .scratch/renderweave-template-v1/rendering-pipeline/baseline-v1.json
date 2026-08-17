@@ -1,0 +1,56 @@
+{
+  "fixtureVersion": "renderweave-rendering-pipeline-baseline/1.0",
+  "baselineId": "baseline.rendering-pipeline.minimal-v1",
+  "executionClass": "EXEC::RENDERING_PIPELINE::1.0",
+  "authorityContext": {
+    "ownerScopeId": "00000000-0000-4000-8000-000000000001",
+    "rootTemplate": {
+      "templateId": "00000000-0000-4000-8000-000000000002",
+      "lifecycle": "ACTIVE",
+      "revision": 0,
+      "readiness": "READY",
+      "staticSchemaRef": "system-empty@v1",
+      "designDsl": {
+        "dslVersion": "renderweave-design/1.0",
+        "expressionProfile": "renderweave-expression/1.0",
+        "displayName": "Baseline",
+        "definitions": [],
+        "designRoot": {
+          "nodeId": "00000000-0000-4000-8000-000000000001",
+          "kind": "canvas",
+          "widthMm": 210,
+          "heightMm": 297,
+          "bindings": [],
+          "children": []
+        }
+      }
+    }
+  },
+  "renderInput": {
+    "rootDocument": {},
+    "customValues": []
+  },
+  "effectiveRendererParameters": {
+    "rendererProfile": "renderweave-renderer/1.0",
+    "output": {
+      "profile": "renderweave-output-png/1.0",
+      "dpi": 96
+    },
+    "diagnostics": {
+      "layoutTrace": false
+    }
+  },
+  "resourceState": {
+    "authoredAssets": [],
+    "renderResources": [],
+    "capabilityStateRecords": [],
+    "resolverRecords": []
+  },
+  "faultSchedule": {
+    "kind": "NONE"
+  },
+  "externalReadsAllowed": false,
+  "networkReadsAllowed": false,
+  "currentTimeReadsAllowed": false,
+  "productMutationAllowedByFixtureGeneration": false
+}

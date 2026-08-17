@@ -1,0 +1,13 @@
+{
+  "artifactVersion": "renderweave-editor-input-fixture/1.0",
+  "candidateId": "EDC::J10::010",
+  "executionClass": "EXEC::EDITOR_AUTOMATED::1.0",
+  "baselineId": "EditorCompleteUnsupportedExactWire",
+  "parameters": {},
+  "actionScript": [
+    {
+      "action": "IMPORT_UNSUPPORTED_COMPLETE_CONTENT",
+      "parameters": {}
+    }
+  ]
+}

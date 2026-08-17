@@ -1,0 +1,24 @@
+{
+  "resultVersion": "renderweave-rendering-pipeline-fixture-generator-result/1.0",
+  "executorId": "RENDERING_PIPELINE_FIXTURE_GENERATOR::NODE::1.0",
+  "role": "primary-rendering-pipeline-fixture-generator-replayer",
+  "status": "PASS",
+  "checkCount": 1734,
+  "failureCount": 0,
+  "runtime": "Node.js v24.18.0",
+  "generatorTargetSha256": "sha256:8b792d30b96ad567fd01325ee1447d86b8b1f65737a4eef51fd51b5477800b8b",
+  "fixtureCount": 157,
+  "productExecutionObserved": false,
+  "recordIssuanceAllowed": false,
+  "implementationRevision": "rendering-pipeline-fixture-generator/1.0",
+  "targetManifest": {
+    "path": "rendering-pipeline/generator-target-manifest-v1.json",
+    "sha256": "sha256:8b792d30b96ad567fd01325ee1447d86b8b1f65737a4eef51fd51b5477800b8b",
+    "byteLength": 38604
+  },
+  "entrypoint": {
+    "path": "rendering-pipeline/generate-rendering-pipeline-fixtures.mjs",
+    "sha256": "sha256:aaf424e8b726b7fd832b538d52bf6cf1a2d269fc3e0a37215dd34a98694a42ee",
+    "byteLength": 21603
+  }
+}

@@ -1,0 +1,202 @@
+{
+  "artifactVersion": "renderweave-editor-fault-schedule-contract/1.0",
+  "profileId": "renderweave-editor-fault-schedule/1.0",
+  "status": "FROZEN_PLANNING_ARTIFACT_INTERFACE_PRODUCT_ADAPTER_PENDING",
+  "executionClass": "EXEC::EDITOR_AUTOMATED::1.0",
+  "module": {
+    "name": "EditorFaultSchedule",
+    "interface": "one immutable SHA-256-bound artifact selecting an ordered exact-once sequence at named Editor seams",
+    "seam": "the future admitted runner adapter maps only a catalogued artifact hash to product-owned injection points; candidates never address DOM, transport implementation, persistence internals, clocks, or arbitrary scripts",
+    "adapter": "a product runner adapter must consume every event once in array order and fail the run on missing, duplicate, reordered, or unrecognized injection"
+  },
+  "artifactMembersInOrder": [
+    "artifactVersion",
+    "candidateId",
+    "executionClass",
+    "events",
+    "expectedTerminal"
+  ],
+  "eventMembersInOrder": [
+    "at",
+    "action",
+    "parameters"
+  ],
+  "eventOrderSemantic": true,
+  "exactOnce": true,
+  "allowedEventSignatures": [
+    {
+      "at": "CURRENT_EVENT",
+      "action": "ADVANCE_REVISION_OR_CHANGE_READINESS",
+      "parameterMembers": []
+    },
+    {
+      "at": "AFTER_LATEST_READ_BEFORE_SAVE",
+      "action": "ADVANCE_SERVER_CURRENT",
+      "parameterMembers": []
+    },
+    {
+      "at": "BEFORE_SAVE",
+      "action": "ADVANCE_SERVER_CURRENT",
+      "parameterMembers": []
+    },
+    {
+      "at": "CANCEL_REQUEST",
+      "action": "BEST_EFFORT_CANCEL_PREVIOUS",
+      "parameterMembers": []
+    },
+    {
+      "at": "RESULT_DELIVERY",
+      "action": "DELIVER_LATE_PREVIEW_FAILURE",
+      "parameterMembers": [
+        "generation"
+      ]
+    },
+    {
+      "at": "RESULT_DELIVERY",
+      "action": "DELIVER_LATE_PREVIEW_SUCCESS",
+      "parameterMembers": [
+        "generation"
+      ]
+    },
+    {
+      "at": "RESULT_DELIVERY",
+      "action": "DELIVER_STALE_PROBLEM_GENERATION",
+      "parameterMembers": [
+        "generation"
+      ]
+    },
+    {
+      "at": "AFTER_SERVER_MAY_COMMIT_BEFORE_RESPONSE",
+      "action": "DROP_RESPONSE",
+      "parameterMembers": []
+    },
+    {
+      "at": "CANCEL_REQUEST",
+      "action": "ENGINE_MAY_ALREADY_SEAL",
+      "parameterMembers": []
+    },
+    {
+      "at": "LATEST_CURRENT_READ",
+      "action": "RETURN_ADVANCED_CURRENT",
+      "parameterMembers": []
+    },
+    {
+      "at": "CURRENT_READ",
+      "action": "RETURN_ADVANCED_CURRENT_WITH_DIFFERENT_HASH",
+      "parameterMembers": []
+    },
+    {
+      "at": "CURRENT_READ",
+      "action": "RETURN_ADVANCED_CURRENT_WITH_PROPOSED_HASH",
+      "parameterMembers": []
+    },
+    {
+      "at": "SAVE_RESPONSE",
+      "action": "RETURN_CANONICAL_INVALID_SUCCESS",
+      "parameterMembers": []
+    },
+    {
+      "at": "SAVE_RESPONSE",
+      "action": "RETURN_CANONICAL_NORMALIZED_SUCCESS",
+      "parameterMembers": []
+    },
+    {
+      "at": "CREATE_RESPONSE",
+      "action": "RETURN_CANONICAL_SUCCESS",
+      "parameterMembers": [
+        "revision"
+      ]
+    },
+    {
+      "at": "RESTORE_RESPONSE",
+      "action": "RETURN_CANONICAL_SUCCESS",
+      "parameterMembers": [
+        "revisionDelta"
+      ]
+    },
+    {
+      "at": "SAVE_RESPONSE",
+      "action": "RETURN_CANONICAL_SUCCESS",
+      "parameterMembers": [
+        "revisionDelta"
+      ]
+    },
+    {
+      "at": "SAVE_RESPONSE",
+      "action": "RETURN_CANONICAL_SUCCESS",
+      "parameterMembers": []
+    },
+    {
+      "at": "SAVE_RESPONSE",
+      "action": "RETURN_COMPLETE_DEPENDENCY_ERROR_SET",
+      "parameterMembers": []
+    },
+    {
+      "at": "CURRENT_READ",
+      "action": "RETURN_ORIGINAL_EXPECTED_REVISION",
+      "parameterMembers": []
+    },
+    {
+      "at": "SAVE_RESPONSE",
+      "action": "RETURN_PROBLEM_LIMIT_REACHED",
+      "parameterMembers": []
+    },
+    {
+      "at": "AUTHORITATIVE_RECHECK",
+      "action": "RETURN_READY",
+      "parameterMembers": []
+    },
+    {
+      "at": "PREVIEW_RESPONSE",
+      "action": "RETURN_RENDER_OUTPUT",
+      "parameterMembers": []
+    },
+    {
+      "at": "SAVE_RESPONSE",
+      "action": "RETURN_REVISION_CONFLICT",
+      "parameterMembers": []
+    },
+    {
+      "at": "CURRENT_READ",
+      "action": "RETURN_REVISION_REGRESSION_OR_INTEGRITY_MISMATCH",
+      "parameterMembers": []
+    },
+    {
+      "at": "PREVIEW_RESPONSE",
+      "action": "RETURN_RUNTIME_PROBLEM",
+      "parameterMembers": []
+    },
+    {
+      "at": "PREVIEW_RESPONSE",
+      "action": "RETURN_STRUCTURED_PROBLEM",
+      "parameterMembers": []
+    },
+    {
+      "at": "SAVE_RESPONSE",
+      "action": "RETURN_STRUCTURED_PROBLEM",
+      "parameterMembers": []
+    },
+    {
+      "at": "CURRENT_READ",
+      "action": "RETURN_TEMPLATE_DELETED",
+      "parameterMembers": []
+    },
+    {
+      "at": "CURRENT_READ",
+      "action": "RETURN_UNAVAILABLE",
+      "parameterMembers": []
+    }
+  ],
+  "forbiddenMechanisms": [
+    "wildcard",
+    "regex trigger",
+    "arbitrary script",
+    "ambient time",
+    "ambient entropy",
+    "network lookup",
+    "hidden default",
+    "unspecified extra event"
+  ],
+  "evolutionRule": "Any new event point, action, parameter member, ordering rule, or injection semantic requires a new exact fault schedule Profile.",
+  "boundary": "These artifacts define deterministic planning stimuli only; they do not prove a product seam, runner adapter, browser execution, injected fault, or observed terminal."
+}

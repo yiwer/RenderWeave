@@ -1,0 +1,18 @@
+{
+  "artifactVersion": "renderweave-editor-input-fixture/1.0",
+  "candidateId": "EDC::J02::012",
+  "executionClass": "EXEC::EDITOR_AUTOMATED::1.0",
+  "baselineId": "EditorStructuredDirtyWithRestoreTarget",
+  "parameters": {
+    "undoDepth": 1,
+    "redoDepth": 1
+  },
+  "actionScript": [
+    {
+      "action": "RESTORE_TEMPLATE_REVISION",
+      "parameters": {
+        "sourceRevision": 2
+      }
+    }
+  ]
+}

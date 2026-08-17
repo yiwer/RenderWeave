@@ -1,0 +1,62 @@
+{
+  "artifactVersion": "renderweave-editor-automated-generator-implementation/1.0",
+  "generatorProfile": "renderweave-editor-automated-generator/1.0",
+  "status": "FROZEN_GOLDENS_PRESENT_STATIC_ONLY",
+  "implementationRevision": "editor-automated-fixture-generator/1.0",
+  "runtime": "Node.js >=24",
+  "entrypoint": {
+    "path": "editor-automated/generate-editor-automated-fixtures.mjs",
+    "sha256": "sha256:81942984cbbd84ab8a9d627c993991d76644a5cc1ce0c531c4795353b0b1ef0b",
+    "byteLength": 20941
+  },
+  "probeProfile": {
+    "path": "conformance-probe-profile-v1.json",
+    "sha256": "sha256:f800eb1e6e138215c26c7761ed80e0fc9cf77fc3ce051be4e3c5ba530cd6053d",
+    "byteLength": 51328
+  },
+  "baseline": {
+    "path": "editor-automated/baseline-v1.json",
+    "sha256": "sha256:35c29750076654c559b3663995d0f17e15cf038d61feb66aedc0d77005788f9f",
+    "byteLength": 1956
+  },
+  "fixtureContract": {
+    "path": "editor-automated/fixture-contract-v1.json",
+    "sha256": "sha256:c5ebeb106d41d549f6c313648829d8841cb466e9778f4d7143b18e77b4555a9c",
+    "byteLength": 2355
+  },
+  "observationAdapter": {
+    "path": "editor-automated/observation-adapter-v1.json",
+    "sha256": "sha256:7f65c78c0d390e7ab972275b43341e94174d267ec4dadd28b71c60223fbe45d7",
+    "byteLength": 7049
+  },
+  "scenarioCatalog": {
+    "path": "editor-automated/capacity-scenarios-v1.json",
+    "sha256": "sha256:8138aff0e56bb16d2e014ff1449a09d9f753ad838e62769225453afbf6b64f4f",
+    "byteLength": 1606
+  },
+  "goldenVectors": {
+    "path": "editor-automated/generator-goldens-v1.json",
+    "sha256": "sha256:11d4396f2fc2ea6d4d02ecff05e4533347f88c8177c891ecfe0bdee95e40c5ae",
+    "byteLength": 1174
+  },
+  "targetManifest": {
+    "path": "editor-automated/generator-target-manifest-v1.json",
+    "sha256": "sha256:6a2540e7bd86bd827e386a0f05680f225591ec58e9ed962dda0c35f43c39cbeb",
+    "byteLength": 2233
+  },
+  "omittedExpectationKeys": [
+    "expectedTerminal",
+    "expectedAssertions",
+    "plannedAssertions",
+    "plannedOracleId",
+    "requirementIds",
+    "resolvedCode",
+    "resolvedKind"
+  ],
+  "productExecutionAllowed": false,
+  "browserAutomationAllowed": false,
+  "environmentReadsAllowed": false,
+  "networkReadsAllowed": false,
+  "currentTimeReadsAllowed": false,
+  "hiddenDefaultsAllowed": false
+}

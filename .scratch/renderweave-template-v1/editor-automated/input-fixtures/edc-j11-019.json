@@ -1,0 +1,13 @@
+{
+  "artifactVersion": "renderweave-editor-input-fixture/1.0",
+  "candidateId": "EDC::J11::019",
+  "executionClass": "EXEC::EDITOR_AUTOMATED::1.0",
+  "baselineId": "EditorCanonicalReadyAfterCommittedSave",
+  "parameters": {},
+  "actionScript": [
+    {
+      "action": "START_PREVIEW_AFTER_SAVE_PHASE",
+      "parameters": {}
+    }
+  ]
+}

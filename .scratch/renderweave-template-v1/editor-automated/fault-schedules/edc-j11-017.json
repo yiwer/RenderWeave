@@ -1,0 +1,18 @@
+{
+  "artifactVersion": "renderweave-editor-fault-schedule/1.0",
+  "candidateId": "EDC::J11::017",
+  "executionClass": "EXEC::EDITOR_AUTOMATED::1.0",
+  "events": [
+    {
+      "at": "RESULT_DELIVERY",
+      "action": "DELIVER_LATE_PREVIEW_SUCCESS",
+      "parameters": {
+        "generation": 8
+      }
+    }
+  ],
+  "expectedTerminal": {
+    "operationId": "late-success-discarded",
+    "outcome": "SUCCESS"
+  }
+}

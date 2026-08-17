@@ -1,0 +1,8 @@
+[
+  {
+    "operationId": "saveTemplate",
+    "outcome": "PROBLEM",
+    "code": "TEMPLATE_DEPENDENCY_ERROR",
+    "stage": "DESIGN_DEPENDENCY_VALIDATION"
+  }
+]

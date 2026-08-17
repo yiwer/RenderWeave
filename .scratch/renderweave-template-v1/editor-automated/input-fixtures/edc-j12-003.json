@@ -1,0 +1,13 @@
+{
+  "artifactVersion": "renderweave-editor-input-fixture/1.0",
+  "candidateId": "EDC::J12::003",
+  "executionClass": "EXEC::EDITOR_AUTOMATED::1.0",
+  "baselineId": "EditorStructuredWithProgressAndBlockingProblem",
+  "parameters": {},
+  "actionScript": [
+    {
+      "action": "TRIGGER_PROGRESS_THEN_BLOCKING_ERROR",
+      "parameters": {}
+    }
+  ]
+}

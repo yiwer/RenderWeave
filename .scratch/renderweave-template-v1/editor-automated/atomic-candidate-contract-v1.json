@@ -1,0 +1,189 @@
+{
+  "artifactVersion": "renderweave-editor-atomic-candidate-contract/1.5",
+  "contractId": "renderweave-editor-atomic-candidate/1.5",
+  "status": "FROZEN_PLANNING_INTERFACE_FORMAL_ISSUANCE_FORBIDDEN",
+  "executionClass": "EXEC::EDITOR_AUTOMATED::1.0",
+  "module": {
+    "name": "EditorAtomicCandidateDecomposition",
+    "interface": "journey seed to finite candidate plans with one immutable semantic input fixture, one exact fault schedule, one expected terminal vector, one closed semantic projection, an explicit content-source slot where required, and one partially exact assertion plan",
+    "seam": "the candidate observes only the frozen EditorAutomationAdmission boundary and named observation probes; target, runner, DOM, transport, and persistence internals cannot enter Case identity",
+    "adapter": "a future admitted Editor runner binds each abstract plan to one immutable product fixture, fault artifact, target literal set, and observation adapter without changing the candidate semantics"
+  },
+  "candidateIdentity": {
+    "pattern": "^EDC::J(?:0[1-9]|1[0-2])::[0-9]{3}$",
+    "namespaceMeaning": "planning-only Editor Decomposition Candidate",
+    "formalCasePatternMatchAllowed": false,
+    "formalOraclePatternMatchAllowed": false,
+    "identityDigestDomain": "renderweave-editor-atomic-candidate-identity/1",
+    "digestMembers": [
+      "inputPlan",
+      "faultSchedulePlan",
+      "expectedTerminalPlan",
+      "assertionPlan"
+    ]
+  },
+  "requiredCandidateMembers": [
+    "candidateId",
+    "journeySeedId",
+    "sourceJ1CaseId",
+    "title",
+    "status",
+    "stimulusPlan",
+    "expectedTerminalPlan",
+    "assertionPlan",
+    "coveragePlan",
+    "identityDigest",
+    "blockers",
+    "formalIssuanceAllowed"
+  ],
+  "splitRule": "A different input plan, fault schedule, expected terminal vector, observation boundary, or assertion set always creates a different candidate.",
+  "inputPlan": {
+    "profile": "renderweave-editor-atomic-input-plan/1.1",
+    "required": [
+      "baselineId",
+      "parameters",
+      "actionScript",
+      "formalBinding",
+      "planIdentityDigest"
+    ],
+    "artifactContract": {
+      "path": "editor-automated/input-fixture-contract-v1.json",
+      "sha256": "sha256:d42c7544527d74e70f06fec07a6c320c45aa8dfc4884401c1378792290a60d62",
+      "byteLength": 12414
+    },
+    "artifactCatalog": {
+      "path": "editor-automated/input-fixture-catalog-v1.json",
+      "sha256": "sha256:6df083648df4da6dfe3aaff406b9f6ef99dcd5118bed04611689f3f7afdb7f44",
+      "byteLength": 76371
+    },
+    "preissuanceBindings": [
+      "immutable semantic fixture artifact path, mediaType, sha256, and formal identitySha256"
+    ],
+    "executionBoundary": "Exact semantic fixture bytes and identity do not prove that a product adapter constructed the baseline or executed any action."
+  },
+  "faultSchedulePlan": {
+    "profile": "renderweave-editor-atomic-fault-plan/1.1",
+    "kinds": [
+      "NONE",
+      "PLANNED_SEQUENCE"
+    ],
+    "required": [
+      "kind",
+      "events",
+      "formalBinding",
+      "planIdentityDigest"
+    ],
+    "artifactContract": {
+      "path": "editor-automated/fault-schedule-contract-v1.json",
+      "sha256": "sha256:7a1b131f572a1c443e9154b6f72c18df4f478ba2313817e5f953102ac6972c9d",
+      "byteLength": 5450
+    },
+    "artifactCatalog": {
+      "path": "editor-automated/fault-schedule-catalog-v1.json",
+      "sha256": "sha256:6ae1383877f2a04d1c79babc880fd406661a8d24b61b05d8cb0afb10ed42cd62",
+      "byteLength": 25421
+    },
+    "preissuanceBindings": [
+      "formal NONE identitySha256 or immutable fault artifact path, sha256, and identitySha256"
+    ],
+    "executionBoundary": "Exact planning artifact bytes and identity do not prove that a product runner exposes or injected the named fault seam."
+  },
+  "expectedTerminalPlan": {
+    "outcomes": [
+      "SUCCESS",
+      "PROBLEM",
+      "NONTERMINAL_REJECTION"
+    ],
+    "terminalCount": 1,
+    "adjudication": {
+      "path": "editor-automated/terminal-adjudication-v1.json",
+      "sha256": "sha256:4df1ec215851ada8818deaa94d239e6780181cb56068ef4dd72ffb04e87f3c43",
+      "byteLength": 24704
+    },
+    "allowedBindingStatuses": [
+      "EXACT",
+      "NOT_REQUIRED"
+    ],
+    "rule": "Every ordinary Editor candidate has exactly one terminal. Sequential save, confirmation, and preview phases use separate candidate identities. Code and stage are exact literals or an exact NOT_REQUIRED decision; generic fallback and pending terminal binding are forbidden."
+  },
+  "assertionPlan": {
+    "currentProbeBinding": "CURRENT_PROFILE requires a probe exposed to EXEC::EDITOR_AUTOMATED::1.0 by renderweave-conformance-probes/1.0",
+    "candidateProbeBinding": "CANDIDATE_PROFILE_NOT_ISSUED binds a real probe in the complete renderweave-conformance-probes/1.1 candidate, but remains planning-only and cannot appear in an Oracle until that exact Profile is explicitly issued",
+    "candidateProbeProfile": {
+      "path": "editor-automated/probe-profile-candidate-v1_1.json",
+      "sha256": "sha256:f76cae2b80a4205d7bf73b0e79d69611f2b95880a399fc5808d624ce7741f53f",
+      "byteLength": 57149
+    },
+    "candidateProbeAdjudication": {
+      "path": "editor-automated/probe-profile-adjudication-v1.json",
+      "sha256": "sha256:7564fcf2606b5c74e5abd590e4870b99b683b54c13122b376cdac57e609f00b7",
+      "byteLength": 5605
+    },
+    "expectationStatuses": [
+      "EXACT_LITERAL",
+      "EXACT_ARTIFACT",
+      "EXACT_ABSENT",
+      "PENDING_TARGET_LITERAL",
+      "PENDING_TARGET_ARTIFACT"
+    ],
+    "semanticProjectionContract": {
+      "path": "editor-automated/semantic-projection-contract-v1.json",
+      "sha256": "sha256:bbafb420c5f149d849410b83bf44b09a0f6587d3e0723b1f8d227f8fa118c34a",
+      "byteLength": 5909
+    },
+    "semanticProjectionCatalog": {
+      "path": "editor-automated/semantic-projection-catalog-v1.json",
+      "sha256": "sha256:6754fb53dc412c7711e8d67254cc915db56caf527f256985ca9f8d5cd53e4f6a",
+      "byteLength": 66525
+    },
+    "contentSourceContract": {
+      "path": "editor-automated/content-source-contract-v1.json",
+      "sha256": "sha256:4099e713bc8b7dececce6d9902bd6e1c6d2b5a340dec86d093012328a090ae48",
+      "byteLength": 6011
+    },
+    "contentSourceCatalog": {
+      "path": "editor-automated/content-source-catalog-v1.json",
+      "sha256": "sha256:882d3f4928fefd114662a827d26cf25ddcec675b3cc89f099ce58e41c482d310",
+      "byteLength": 41449
+    },
+    "targetBindingContract": {
+      "path": "editor-automated/target-binding-contract-v1.json",
+      "sha256": "sha256:aa9d1a2cea81a49f95395c4c941d17c8be4b490ab7139603d8737c8791602f4b",
+      "byteLength": 5214
+    },
+    "targetBindingCatalog": {
+      "path": "editor-automated/target-binding-catalog-v1.json",
+      "sha256": "sha256:ce2504aa4c5093a657a8487a9df77fde0c9af2e7e44217b4ea02cfd935ea2f93",
+      "byteLength": 221704
+    },
+    "coverageMeaning": "planned assertion linkage only; no assertion has been executed and no requirement is covered until a formal active Case and Oracle replay it"
+  },
+  "closedBlockers": [
+    "EXACT_PRODUCT_FIXTURE_ARTIFACT_MISSING",
+    "EXACT_BROWSER_OS_TARGET_MISSING",
+    "EXECUTOR_MANIFEST_MISSING",
+    "INDEPENDENT_PRODUCT_REPLAY_MISSING",
+    "FAULT_SCHEDULE_ARTIFACT_MISSING",
+    "EXPECTED_TERMINAL_CODE_OR_STAGE_UNBOUND",
+    "TARGET_LITERAL_OR_ARTIFACT_MISSING",
+    "EDITOR_PROBE_PROFILE_CANDIDATE_NOT_ISSUED"
+  ],
+  "issuanceGate": [
+    "Every input and fault schedule is bound to immutable formal artifacts and identity digests, and an admitted product fixture adapter proves the semantic baseline/action mapping.",
+    "Every expected terminal code and stage required by the scenario is exact and independently aligned with the terminal adjudication catalog.",
+    "Every assertion uses an issued probe for this execution class and an exact literal or digest-bound artifact.",
+    "The exact product build, browser and OS target, runner, active corpus, adapter, and independent replay are admitted.",
+    "The candidate is converted to a schema-valid CONF::EDITOR_AUTOMATED identity and reusable ORC::EDITOR_AUTOMATED assertion set without mutating this planning artifact."
+  ],
+  "appendBoundary": {
+    "formalCasesPath": "conformance-cases-v1.jsonl",
+    "formalOraclesPath": "conformance-oracles-v1.jsonl",
+    "appendAllowedByThisContract": false,
+    "candidateFilesAreNotRegistryRecords": true
+  },
+  "j1Boundary": {
+    "sourceChecklistOnly": true,
+    "browserOrHumanExecutionPerformed": false,
+    "mayCountAsJ1": false
+  }
+}

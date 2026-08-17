@@ -1,0 +1,9 @@
+{
+  "fixtureVersion": "renderweave-spec-registry-scenario/1.0",
+  "scenarioId": "SPEC-MUT-012",
+  "scenarioKind": "NAMED_MUTATION",
+  "expectedOutcome": "PROBLEM",
+  "expectedCode": "SPEC_REGISTRY_SIGNATURE_DUPLICATE",
+  "expectedStage": "SPEC_REGISTRY",
+  "mutationKind": "DUPLICATE_CASE_SIGNATURE"
+}

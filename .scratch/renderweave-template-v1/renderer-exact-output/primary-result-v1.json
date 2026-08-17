@@ -1,0 +1,24 @@
+{
+  "resultVersion": "renderweave-renderer-exact-output-fixture-generator-result/1.0",
+  "executorId": "RENDERER_EXACT_OUTPUT_FIXTURE_GENERATOR::NODE::1.0",
+  "role": "primary-renderer-exact-output-fixture-generator-replayer",
+  "status": "PASS",
+  "checkCount": 1800,
+  "failureCount": 0,
+  "runtime": "Node.js v24.18.0",
+  "generatorTargetSha256": "sha256:ec00e210d6963bb375337bfdcd7fd243bb099f6df151e6ca9cd556dd92c64c56",
+  "fixtureCount": 163,
+  "productExecutionObserved": false,
+  "recordIssuanceAllowed": false,
+  "implementationRevision": "renderer-exact-output-fixture-generator/1.0",
+  "targetManifest": {
+    "path": "renderer-exact-output/generator-target-manifest-v1.json",
+    "sha256": "sha256:ec00e210d6963bb375337bfdcd7fd243bb099f6df151e6ca9cd556dd92c64c56",
+    "byteLength": 40713
+  },
+  "entrypoint": {
+    "path": "renderer-exact-output/generate-renderer-exact-output-fixtures.mjs",
+    "sha256": "sha256:500c4391f274e4b01cc6a9d74b0ffa47b07e1c2e454b642b7d295fc0de86afe1",
+    "byteLength": 22726
+  }
+}

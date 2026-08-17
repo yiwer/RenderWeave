@@ -1,0 +1,38 @@
+{
+  "fixtureVersion": "renderweave-editor-automated-fixture/1.0",
+  "generatorProfile": "renderweave-editor-automated-generator/1.0",
+  "executionClass": "EXEC::EDITOR_AUTOMATED::1.0",
+  "baseline": {
+    "path": "editor-automated/baseline-v1.json",
+    "sha256": "sha256:35c29750076654c559b3663995d0f17e15cf038d61feb66aedc0d77005788f9f",
+    "byteLength": 1956
+  },
+  "scenario": {
+    "mode": "NAMED_SCENARIO",
+    "scenarioId": "EDITOR-AUTOMATED-STRUCTURED-CLEAN-RECHECK-PENDING",
+    "operationId": "main",
+    "entrypoint": "EDITOR_SESSION_BASELINE_CONTRACT_CHECK",
+    "faultSchedule": {
+      "kind": "NONE"
+    }
+  },
+  "observationAdapter": {
+    "adapterId": "renderweave-editor-automated-observation-adapter/1.0",
+    "path": "editor-automated/observation-adapter-v1.json",
+    "sha256": "sha256:7f65c78c0d390e7ab972275b43341e94174d267ec4dadd28b71c60223fbe45d7",
+    "byteLength": 7049
+  },
+  "targetContract": {
+    "fixtureOnlyContext": true,
+    "exactSupportedBrowserAndOperatingSystemTargetRequired": true,
+    "exactTargetBoundByThisFixture": false,
+    "browserAutomationExecutedByThisFixture": false,
+    "accessibilityTreeObservedByThisFixture": false,
+    "focusOrAnnouncementObservedByThisFixture": false,
+    "editorCommandExecutedByThisFixture": false,
+    "productSessionCreatedByThisFixture": false,
+    "productWriteExecutedByThisFixture": false,
+    "authoritativePreviewExecutedByThisFixture": false,
+    "j1ExecutedByThisFixture": false
+  }
+}

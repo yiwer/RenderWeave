@@ -1,0 +1,148 @@
+{
+  "artifactVersion": "renderweave-capacity-boundary-materialization/1.0",
+  "status": "STATIC_SHAPE_CANDIDATES_READY_RECORD_ISSUANCE_BLOCKED",
+  "authority": "Specification-only materialization of the frozen 175-axis mapping; candidates are not issued records and do not prove any product executor, target, capacity terminal, Renderer certification, or READY state.",
+  "sourceRevision": {
+    "branch": "spec/template-v1",
+    "baseCommit": "b14c2d7d4978c679e7ab8e7a2bace3da7af884de"
+  },
+  "inputs": {
+    "capacityCoverage": {
+      "path": "conformance-capacity-coverage-v1.json",
+      "sha256": "sha256:d9662c79464f0fe726ff9067068d9317565e4f4d1caa13b04cf5c0b2e0e60582",
+      "byteLength": 318460
+    },
+    "probeProfile": {
+      "path": "conformance-probe-profile-v1.json",
+      "sha256": "sha256:f800eb1e6e138215c26c7761ed80e0fc9cf77fc3ce051be4e3c5ba530cd6053d",
+      "byteLength": 51328
+    },
+    "requirementsRegistry": {
+      "path": "requirements-v1.json",
+      "sha256": "sha256:f038abf56d2db6168c1eac2b64ac26fdd3ada7d8e21e0c018e4bb27a6cd88bab",
+      "byteLength": 9646
+    },
+    "generatorManifest": {
+      "path": "conformance-generator-manifests-v1.json",
+      "sha256": "sha256:d117a993462c022ee1810fc7e200a38a90d4a274c2a72e6f1e4090d121f80645",
+      "byteLength": 14326
+    },
+    "safeBaselineManifest": {
+      "path": "conformance-safe-baselines-v1.json",
+      "sha256": "sha256:7ce057b57600c639e15a6e5055689efcb170af037e24515126ccdf94f9039569",
+      "byteLength": 19435
+    },
+    "executionClassCatalog": {
+      "path": "conformance-execution-classes-v1.json",
+      "sha256": "sha256:a984d9327dd880f1c4b10d4dc4351fa102d75d8167df08464281516ffbdecfbd",
+      "byteLength": 9456
+    },
+    "manifestSnapshotPolicy": {
+      "path": "conformance-manifest-snapshot-policy-v1.json",
+      "sha256": "sha256:60b2dde31826ba766b7a8fe5e3ea6aa98ef1162e216069d739e475581490b327",
+      "byteLength": 6380
+    }
+  },
+  "outputs": {
+    "candidateCases": {
+      "path": "capacity-boundary/candidate/conformance-cases-v1.jsonl",
+      "sha256": "sha256:30ee645c8dd472cfaf66550f26dd9234371d3f797d34c90df9de16de0569d284",
+      "byteLength": 1773865,
+      "recordCount": 525
+    },
+    "candidateOracles": {
+      "path": "capacity-boundary/candidate/conformance-oracles-v1.jsonl",
+      "sha256": "sha256:271ce23304e246f7a03ceee25385888de49620607ce8a5cc597429026f8833c2",
+      "byteLength": 603573,
+      "recordCount": 525
+    }
+  },
+  "counts": {
+    "axisCount": 175,
+    "variantCount": 3,
+    "shapeCandidateCaseCount": 525,
+    "shapeCandidateOracleCount": 525,
+    "formallyIssuedCapacityCaseCount": 0,
+    "formallyIssuedCapacityOracleCount": 0
+  },
+  "classReadiness": [
+    {
+      "executionClass": "EXEC::DOMAIN_SERVICES::1.0",
+      "axisCount": 4,
+      "candidateCaseCount": 12,
+      "candidateOracleCount": 12,
+      "blockers": [
+        "EXACT_TARGET_MANIFEST_PENDING",
+        "REQUIRED_EXECUTOR_MANIFESTS_PENDING",
+        "INDEPENDENT_EXECUTION_REPLAY_PENDING"
+      ],
+      "recordIssuanceAllowed": false
+    },
+    {
+      "executionClass": "EXEC::DESIGN_INPUT_EXPRESSION::1.0",
+      "axisCount": 65,
+      "candidateCaseCount": 195,
+      "candidateOracleCount": 195,
+      "blockers": [
+        "EXACT_TARGET_MANIFEST_PENDING",
+        "REQUIRED_EXECUTOR_MANIFESTS_PENDING",
+        "INDEPENDENT_EXECUTION_REPLAY_PENDING"
+      ],
+      "recordIssuanceAllowed": false
+    },
+    {
+      "executionClass": "EXEC::RENDERING_PIPELINE::1.0",
+      "axisCount": 52,
+      "candidateCaseCount": 156,
+      "candidateOracleCount": 156,
+      "blockers": [
+        "EXACT_TARGET_MANIFEST_PENDING",
+        "REQUIRED_EXECUTOR_MANIFESTS_PENDING",
+        "INDEPENDENT_EXECUTION_REPLAY_PENDING"
+      ],
+      "recordIssuanceAllowed": false
+    },
+    {
+      "executionClass": "EXEC::RENDERER_EXACT_OUTPUT::1.0",
+      "axisCount": 54,
+      "candidateCaseCount": 162,
+      "candidateOracleCount": 162,
+      "blockers": [
+        "EXACT_TARGET_MANIFEST_PENDING",
+        "REQUIRED_EXECUTOR_MANIFESTS_PENDING",
+        "INDEPENDENT_EXECUTION_REPLAY_PENDING"
+      ],
+      "recordIssuanceAllowed": false
+    }
+  ],
+  "formalRegistries": {
+    "cases": {
+      "path": "conformance-cases-v1.jsonl",
+      "sha256": "sha256:ebe58e84977ee84befe89f8c126f37fbec7076cd7725b29f1b7609448fe7ef16",
+      "byteLength": 146309,
+      "recordCount": 46
+    },
+    "oracles": {
+      "path": "conformance-oracles-v1.jsonl",
+      "sha256": "sha256:3825b9fb40c1b43c484da3ebdf29429ed749e622012212ca79f9cea5b9cb9339",
+      "byteLength": 63191,
+      "recordCount": 46
+    },
+    "appendPerformedByThisMaterialization": false
+  },
+  "identityBoundary": {
+    "candidatesBindCurrentPendingCatalogSnapshots": true,
+    "candidateInputIdentityWillChangeWhenAReferenceableCatalogSnapshotIsIssued": true,
+    "reservedCaseAndOracleIdsRemainUnissued": true,
+    "exactCandidateBytesMayBeRebuiltBeforePreissuance": true
+  },
+  "evidenceBoundary": {
+    "staticMaterializationOnly": true,
+    "productExecutorInvocations": 0,
+    "rendererInvocations": 0,
+    "networkAttempts": 0,
+    "externalProviderAttempts": 0,
+    "recordIssuanceAllowed": false,
+    "ticket19MayClose": false
+  }
+}

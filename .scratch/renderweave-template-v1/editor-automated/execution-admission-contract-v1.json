@@ -1,0 +1,229 @@
+{
+  "artifactVersion": "renderweave-editor-execution-admission-contract/1.0",
+  "contractId": "renderweave-editor-execution-admission/1.0",
+  "status": "FROZEN_STATIC_INTERFACE",
+  "executionClass": "EXEC::EDITOR_AUTOMATED::1.0",
+  "seam": {
+    "name": "EditorAutomationAdmission",
+    "interface": "one all-or-nothing admission decision over digest-bound support, build, target, runner, corpus, adapter, and replay manifests",
+    "adapterRole": "supported-browser-automation-runner",
+    "resultUnion": [
+      "ADMITTED",
+      "REJECTED"
+    ],
+    "ambientDiscoveryAllowed": false,
+    "partialAdmissionAllowed": false
+  },
+  "admissionOrder": [
+    "BOOTSTRAP_PREDECESSORS",
+    "SUPPORTED_TARGET_MATRIX",
+    "PRODUCT_BUILD",
+    "BROWSER_OS_TARGET",
+    "ENVIRONMENT_PROFILES",
+    "AUTOMATION_RUNNER",
+    "ASSIGNED_ACTIVE_CORPUS",
+    "OBSERVATION_ADAPTER",
+    "INDEPENDENT_REPLAY"
+  ],
+  "requiredManifestKinds": [
+    {
+      "kind": "SUPPORTED_TARGET_MATRIX",
+      "requiredFacts": [
+        "supportMatrixId",
+        "supportDecisionRevision",
+        "entryId",
+        "browserProduct",
+        "browserChannelPolicy",
+        "operatingSystemFamily",
+        "versionPolicy"
+      ],
+      "forbiddenSubstitutes": [
+        "one local browser run",
+        "Playwright device alias",
+        "project name containing canary",
+        "package semver range"
+      ]
+    },
+    {
+      "kind": "PRODUCT_BUILD",
+      "requiredFacts": [
+        "sourceRevision",
+        "cleanSource",
+        "packageLockSha256",
+        "artifactManifestSha256",
+        "webAssetSetSha256",
+        "serviceTopologyManifestSha256",
+        "profileCatalogDigest"
+      ],
+      "forbiddenSubstitutes": [
+        "development server",
+        "source tree without build",
+        "prototype screenshot",
+        "green unit test summary"
+      ]
+    },
+    {
+      "kind": "BROWSER_OS_TARGET",
+      "requiredFacts": [
+        "targetId",
+        "supportMatrixEntryId",
+        "productBuildId",
+        "browserProduct",
+        "browserVersion",
+        "browserBuildRevision",
+        "browserArtifactSha256",
+        "operatingSystemFamily",
+        "operatingSystemVersion",
+        "operatingSystemBuild",
+        "architecture",
+        "hostOrImageManifestSha256",
+        "fontSetSha256",
+        "locale",
+        "timeZone",
+        "colorProfile",
+        "deviceScaleFactor",
+        "viewport"
+      ],
+      "forbiddenSubstitutes": [
+        "browser channel name alone",
+        "unversioned host browser",
+        "OS family alone",
+        "latest",
+        "default"
+      ]
+    },
+    {
+      "kind": "AUTOMATION_RUNNER",
+      "requiredFacts": [
+        "executorId",
+        "role",
+        "targetId",
+        "implementationRevision",
+        "entrypointSha256",
+        "runtimeExactVersion",
+        "dependencyLockSha256",
+        "playwrightExactVersion",
+        "observationAdapterSha256",
+        "assignedCorpusDigest",
+        "launchPolicy"
+      ],
+      "forbiddenSubstitutes": [
+        "generic playwright.config.ts",
+        "reuseExistingServer",
+        "browser download during run",
+        "channel fallback",
+        "arbitrary page script"
+      ]
+    },
+    {
+      "kind": "ASSIGNED_ACTIVE_CORPUS",
+      "requiredFacts": [
+        "probeProfileId",
+        "activeCaseIds",
+        "activeOracleIds",
+        "activeCorpusDigest",
+        "requirementCoverageDigest",
+        "supersessionClosureDigest"
+      ],
+      "forbiddenSubstitutes": [
+        "routing inventory",
+        "J1 checklist",
+        "fixture catalog",
+        "case count without identities"
+      ]
+    },
+    {
+      "kind": "INDEPENDENT_REPLAY",
+      "requiredFacts": [
+        "runId",
+        "executorId",
+        "targetId",
+        "implementationRevision",
+        "activeCorpusDigest",
+        "observationAdapterSha256",
+        "caseResultSetDigest",
+        "failureCount",
+        "capturedRuntimeVersions"
+      ],
+      "forbiddenSubstitutes": [
+        "self-reported pass",
+        "fixture-only replay",
+        "screenshot-only evidence",
+        "J1 result"
+      ]
+    }
+  ],
+  "requiredEnvironmentProfiles": [
+    {
+      "profileId": "DEFAULT_100",
+      "exactFacts": [
+        "zoomPercent=100",
+        "reducedMotion=false",
+        "highContrast=false"
+      ]
+    },
+    {
+      "profileId": "ZOOM_200",
+      "exactFacts": [
+        "zoomPercent=200",
+        "viewport and deviceScaleFactor remain target-bound"
+      ]
+    },
+    {
+      "profileId": "REDUCED_MOTION",
+      "exactFacts": [
+        "reducedMotion=true",
+        "all other target identity facts unchanged"
+      ]
+    },
+    {
+      "profileId": "SUPPORTED_HIGH_CONTRAST",
+      "exactFacts": [
+        "named OS-supported high-contrast or forced-colors setting",
+        "all other target identity facts unchanged"
+      ]
+    }
+  ],
+  "targetRules": [
+    "One targetId binds exactly one support-matrix entry, product build, browser artifact, OS host or image manifest, and environment identity.",
+    "Changing any target identity fact creates a new targetId and a new runId; it never mutates an earlier run.",
+    "Every supported browser and operating-system matrix entry is replayed independently; one target cannot stand in for another.",
+    "The target provides no expected Oracle values to the product under observation."
+  ],
+  "runnerRules": [
+    "The runner launches only the browser artifact and product build named by the target; runtime download, channel fallback, and reuse of an ambient server are forbidden.",
+    "The runner observes only the frozen closed observation adapter and cannot evaluate generic JSONPath, arbitrary scripts, wildcards, or natural-language predicates.",
+    "The runner records exact runtime versions, launch arguments, target identity, corpus digest, and every terminal before issuing replay evidence.",
+    "A failed or incomplete case remains failed or incomplete; the runner cannot repair, skip, reinterpret, or replace it with J1."
+  ],
+  "independentReplayRules": [
+    "Independent replay starts from the same immutable product, target, runner, corpus, and adapter manifests.",
+    "Replay evidence binds the complete case result set and cannot summarize only passing cases.",
+    "Fixture-generator A2 proves only fixture bytes and cannot satisfy product replay."
+  ],
+  "closedRejectionCodes": [
+    "EDITOR_BOOTSTRAP_PREDECESSOR_PENDING",
+    "EDITOR_SUPPORT_MATRIX_MISSING",
+    "EDITOR_PRODUCT_BUILD_MANIFEST_MISSING",
+    "EDITOR_BROWSER_BINARY_IDENTITY_MISSING",
+    "EDITOR_OS_TARGET_IDENTITY_MISSING",
+    "EDITOR_ENVIRONMENT_PROFILE_INCOMPLETE",
+    "EDITOR_RUNNER_MANIFEST_MISSING",
+    "EDITOR_CORPUS_ASSIGNMENT_INCOMPLETE",
+    "EDITOR_OBSERVATION_ADAPTER_MISMATCH",
+    "EDITOR_INDEPENDENT_REPLAY_MISSING"
+  ],
+  "issuanceBoundary": {
+    "routingInventoryMayExistBeforeAdmission": true,
+    "formalCaseOrOracleIssuanceBeforeAtomicSplit": false,
+    "formalRecordIssuanceBeforeTargetAndRunnerAdmission": false,
+    "executableClaimBeforeIndependentReplay": false
+  },
+  "j1Boundary": {
+    "separateHumanRecord": true,
+    "requiredCaseCount": 12,
+    "countedInAutomatedCorpus": false,
+    "maySubstituteAutomatedCoverage": false,
+    "automatedAdmissionMaySubstituteJ1": false
+  }
+}

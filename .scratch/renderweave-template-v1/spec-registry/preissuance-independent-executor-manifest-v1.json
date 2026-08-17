@@ -1,0 +1,23 @@
+{
+  "artifactVersion": "renderweave-spec-registry-executor-manifest/1.0",
+  "executorId": "SPEC_EXECUTOR::PYTHON::1.0",
+  "role": "independent-schema-and-graph-replayer",
+  "executionClass": "EXEC::SPEC_REGISTRY::1.0",
+  "targetId": "SPEC_TARGET::REGISTRY::1.0",
+  "targetManifest": {
+    "path": "spec-registry/preissuance-target-manifest-v1.json",
+    "sha256": "sha256:76b0a60125fdc6f91f83212b6503a616933077b0c1684d29b186b759656ab2e1",
+    "byteLength": 14909
+  },
+  "implementationRevision": "spec-registry-bootstrap/1.0",
+  "runtime": "CPython 3.12.x",
+  "entrypoint": {
+    "path": "spec-registry/validate-spec-registry-independent.py",
+    "sha256": "sha256:9880e0d6c4067e79ae5270f2da40582e6c5812c135659782d22bcc19a74274cc",
+    "byteLength": 29822
+  },
+  "command": "python spec-registry/validate-spec-registry-independent.py --target spec-registry/preissuance-target-manifest-v1.json",
+  "sharedSemanticLibrary": null,
+  "networkReadsAllowed": false,
+  "productMutationAllowed": false
+}

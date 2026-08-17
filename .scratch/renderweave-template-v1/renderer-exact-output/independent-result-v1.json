@@ -1,0 +1,24 @@
+{
+  "resultVersion": "renderweave-renderer-exact-output-fixture-generator-result/1.0",
+  "executorId": "RENDERER_EXACT_OUTPUT_FIXTURE_GENERATOR::PYTHON::1.0",
+  "role": "independent-renderer-exact-output-fixture-generator-replayer",
+  "status": "PASS",
+  "checkCount": 2211,
+  "failureCount": 0,
+  "runtime": "CPython 3.12.13",
+  "generatorTargetSha256": "sha256:ec00e210d6963bb375337bfdcd7fd243bb099f6df151e6ca9cd556dd92c64c56",
+  "fixtureCount": 163,
+  "productExecutionObserved": false,
+  "recordIssuanceAllowed": false,
+  "implementationRevision": "renderer-exact-output-fixture-generator/1.0",
+  "targetManifest": {
+    "path": "renderer-exact-output/generator-target-manifest-v1.json",
+    "sha256": "sha256:ec00e210d6963bb375337bfdcd7fd243bb099f6df151e6ca9cd556dd92c64c56",
+    "byteLength": 40713
+  },
+  "entrypoint": {
+    "path": "renderer-exact-output/validate_renderer_exact_output_fixtures_independent.py",
+    "sha256": "sha256:67193fa9949571ecd3ad7d2f7af30824ad894fccab5dc568078653f0d79019c7",
+    "byteLength": 21674
+  }
+}

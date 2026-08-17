@@ -1,0 +1,105 @@
+{
+  "artifactVersion": "renderweave-rendering-pipeline-fixture-contract/1.0",
+  "fixtureVersion": "renderweave-rendering-pipeline-fixture/1.0",
+  "status": "FROZEN_STATIC_FIXTURE_CONTRACT",
+  "executionClass": "EXEC::RENDERING_PIPELINE::1.0",
+  "serialization": {
+    "encoding": "UTF-8 without BOM",
+    "lineEnding": "LF",
+    "indentationSpaces": 2,
+    "finalLfRequired": true,
+    "memberOrder": "exactly the contract order emitted by renderweave-rendering-pipeline-generator/1.0"
+  },
+  "allowedModes": [
+    "CAPACITY_BOUNDARY",
+    "NAMED_SCENARIO"
+  ],
+  "capacityBoundary": {
+    "entrypoint": "RENDERING_PIPELINE_CAPACITY_GUARD",
+    "guardContractId": "renderweave-rendering-pipeline-capacity-guard/1.0",
+    "allowedLimitSource": "all 52 axes assigned to EXEC::RENDERING_PIPELINE::1.0 in conformance-capacity-coverage-v1.json, in source order",
+    "allowedValueEncodings": [
+      "CANONICAL_INTEGER"
+    ],
+    "allowedComparators": [
+      "EXACT",
+      "MAX_INCLUSIVE"
+    ],
+    "allowedVariants": [
+      "below",
+      "at",
+      "above"
+    ],
+    "observedValueWire": "exact canonical integer string copied from the expanded capacity coverage variant",
+    "targetContract": {
+      "exactProductionGuardRequired": true,
+      "duplicateGuardImplementationForbidden": true,
+      "productApiSurfaceCreated": false,
+      "closureFreezeExecutedByThisProbe": false,
+      "capabilityOrAssetResolutionExecutedByThisProbe": false,
+      "evaluatorOrSealerExecutedByThisProbe": false,
+      "rendererOrOutputExecutedByThisProbe": false,
+      "fullRenderingPipelineProvenByThisProbe": false,
+      "futureIntegrationProofRequired": "The exact RENDERING_PIPELINE target must separately prove that each authoritative closure, materialization, capability, Asset, document, deadline, or retention counter derives the observed value from its frozen stage and invokes this same limit-specific guard at the frozen reservation point."
+    }
+  },
+  "namedScenario": {
+    "parameterSchemaId": "renderweave-named-scenario-parameters/1.0",
+    "allowedScenarioIds": [
+      "RENDERING-PIPELINE-BASELINE-NOOP"
+    ],
+    "entrypoint": "BASELINE_CONTRACT_CHECK",
+    "expectedObservationProfile": "renderweave-rendering-pipeline-observation-adapter/1.0",
+    "parametersReferenceExactFixtureBytes": true,
+    "productMutationAllowed": false
+  },
+  "fixtureTopLevelOrder": [
+    "fixtureVersion",
+    "generatorProfile",
+    "executionClass",
+    "baseline",
+    "scenario",
+    "observationAdapter",
+    "targetContract"
+  ],
+  "capacityScenarioOrder": [
+    "mode",
+    "scenarioId",
+    "operationId",
+    "entrypoint",
+    "guardContractId",
+    "limitId",
+    "observedValue",
+    "valueEncoding",
+    "comparator",
+    "variant",
+    "contractStage",
+    "publicRenderStage",
+    "reservationPoint",
+    "zeroBoundary",
+    "faultSchedule"
+  ],
+  "namedScenarioOrder": [
+    "mode",
+    "scenarioId",
+    "operationId",
+    "entrypoint",
+    "faultSchedule"
+  ],
+  "forbiddenFixtureMembers": [
+    "expectedTerminal",
+    "expectedAssertions",
+    "plannedAssertions",
+    "plannedOracleId",
+    "requirementIds",
+    "resolvedCode",
+    "resolvedKind",
+    "latest",
+    "default",
+    "script"
+  ],
+  "evidenceBoundary": {
+    "fixtureGenerationMayProve": "deterministic closed fixture bytes, exact canonical-integer preservation, and one-axis target-input isolation",
+    "fixtureGenerationCannotProve": "closure consistency, capability initialization or demand, Asset admission or resolution, evaluator materialization, RenderDocument seal, Renderer Command handoff, deadline or retention enforcement, terminal output, record issuance, or execution-class readiness"
+  }
+}

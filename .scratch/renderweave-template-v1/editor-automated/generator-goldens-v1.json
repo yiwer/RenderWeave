@@ -1,0 +1,27 @@
+{
+  "artifactVersion": "renderweave-editor-automated-generator-goldens/1.0",
+  "status": "FROZEN_STATIC_GOLDENS",
+  "generatorProfile": "renderweave-editor-automated-generator/1.0",
+  "implementationRevision": "editor-automated-fixture-generator/1.0",
+  "vectors": [
+    {
+      "scenarioId": "EDITOR-AUTOMATED-STRUCTURED-CLEAN-RECHECK-PENDING",
+      "mode": "NAMED_SCENARIO",
+      "parameters": {
+        "mode": "NAMED_SCENARIO",
+        "scenarioId": "EDITOR-AUTOMATED-STRUCTURED-CLEAN-RECHECK-PENDING",
+        "fixtureArtifactPath": "editor-automated/fixtures/named-editor-structured-clean-recheck-pending.json",
+        "fixtureArtifactSha256": "sha256:af401b7102cc6f9e32645b97322e05c561ec5f415545ea8c288cd46e97a43115",
+        "expectedObservationProfile": "renderweave-editor-automated-observation-adapter/1.0"
+      },
+      "expectedFixtureArtifact": {
+        "path": "editor-automated/fixtures/named-editor-structured-clean-recheck-pending.json",
+        "sha256": "sha256:af401b7102cc6f9e32645b97322e05c561ec5f415545ea8c288cd46e97a43115",
+        "byteLength": 1473
+      }
+    }
+  ],
+  "goldenCount": 1,
+  "capacityGoldenCount": 0,
+  "namedGoldenCount": 1
+}

@@ -1,0 +1,8 @@
+[
+  {
+    "operationId": "saveTemplate",
+    "outcome": "PROBLEM",
+    "code": "TEMPLATE_REVISION_CONFLICT",
+    "stage": "TEMPLATE_MUTATION"
+  }
+]

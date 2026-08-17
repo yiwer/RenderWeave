@@ -1,0 +1,8 @@
+[
+  {
+    "operationId": "saveTemplate",
+    "outcome": "PROBLEM",
+    "code": "DESIGN_DSL_SECURITY_VIOLATION",
+    "stage": "DESIGN_SEMANTIC_VALIDATION"
+  }
+]

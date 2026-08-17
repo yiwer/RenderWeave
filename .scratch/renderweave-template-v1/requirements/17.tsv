@@ -1,0 +1,89 @@
+requirement_id	source_line	clause_ordinal_on_line	family	normative_summary
+RW-T17-S1-001	65	1	EDITOR_AUTOMATED	Template v1 authoring uses Option B Canvas Focus as its information-architecture baseline.
+RW-T17-S1-002	65	2	EDITOR_AUTOMATED	Options A and C remain comparison prototypes only.
+RW-T17-S1-003	65	3	EDITOR_AUTOMATED	The comparison prototypes do not define three product modes.
+RW-T17-S1-004	65	4	EDITOR_AUTOMATED	Later implementation need not maintain three pages.
+RW-T17-S1-005	66	1	EDITOR_AUTOMATED	The fixed-physical-size Canvas continuously occupies the visual center.
+RW-T17-S1-006	66	2	EDITOR_AUTOMATED	Structure, node catalog, Asset, Definition, and exchange share a collapsible left navigation panel.
+RW-T17-S1-007	66	3	EDITOR_AUTOMATED	Properties use a collapsible right inspector.
+RW-T17-S1-008	66	4	EDITOR_AUTOMATED	Data, Authoritative Preview, problems, and save are invoked through a compact dock.
+RW-T17-S1-009	66	5	EDITOR_AUTOMATED	A selected node may expose a lightweight contextual toolbar.
+RW-T17-S1-010	66	6	EDITOR_AUTOMATED	The contextual toolbar triggers only the same DesignDSL editing commands and cannot create a second property fact source.
+RW-T17-S1-011	67	1	EDITOR_AUTOMATED	The top bar continuously shows Template identity, permanent exact StaticSchema binding, readiness or revision, and save status.
+RW-T17-S1-012	67	2	EDITOR_AUTOMATED	The scenario switcher is a controlled throwaway-prototype fixture for invalid, drift, binding, conflict, and preview-failure states.
+RW-T17-S1-013	67	3	EDITOR_AUTOMATED	The scenario switcher is not permanent author-workbench business navigation.
+RW-T17-S1-014	68	1	EDITOR_AUTOMATED	The Canvas provides only non-authoritative editing feedback.
+RW-T17-S1-015	68	2	EDITOR_AUTOMATED	Authoritative Preview is an independent action that runs the complete Evaluator and RenderEngine path.
+RW-T17-S1-016	68	3	EDITOR_AUTOMATED	Authoritative Preview and formal image output reuse the same Profile path.
+RW-T17-S1-017	68	4	EDITOR_AUTOMATED	Browser draft graphics, Asset placeholders, and LayoutTrace cannot be presented as final RenderOutput.
+RW-T17-S1-018	69	1	EDITOR_AUTOMATED	Ticket17 freezes workflow, information architecture, and interaction projection only.
+RW-T17-S1-019	69	2	EDITOR_AUTOMATED	Ticket17 adds no Template or Asset API, database, product route, or runtime semantics.
+RW-T17-S1-020	69	3	EDITOR_AUTOMATED	Later product visual tokens may evolve.
+RW-T17-S1-021	69	4	EDITOR_AUTOMATED	Visual evolution cannot break Ticket17 authority boundaries or information hierarchy.
+RW-T17-S2-001	73	1	EDITOR_AUTOMATED	Left navigation exposes Structure, Nodes, Assets, Definitions, and Exchange task entries in Chinese.
+RW-T17-S2-002	73	2	EDITOR_AUTOMATED	Structure tree, create panel, and inspector derive from the same NodeContractCatalog projection.
+RW-T17-S2-003	73	3	EDITOR_AUTOMATED	Asset, Definition, and Exchange panels obey their own contracts and cannot mix references, sample input, or import source into DesignDSL.
+RW-T17-S2-004	74	1	EDITOR_AUTOMATED	The central Canvas explicitly displays authored millimeter geometry and non-authoritative status.
+RW-T17-S2-005	74	2	EDITOR_AUTOMATED	Text font size is displayed in points.
+RW-T17-S2-006	74	3	EDITOR_AUTOMATED	DPI appears only in Authoritative Preview requests.
+RW-T17-S2-007	74	4	EDITOR_AUTOMATED	Stack and Grid proportional or constraint feedback is responsive only within the fixed Canvas.
+RW-T17-S2-008	74	5	EDITOR_AUTOMATED	The editor cannot explain DesignDSL layout with web breakpoints or CSS responsive semantics.
+RW-T17-S2-009	75	1	EDITOR_AUTOMATED	The right property inspector is the primary node-editing entry point.
+RW-T17-S2-010	75	2	EDITOR_AUTOMATED	Binding, resource, TemplateUse, Repeat, problem, and preview-detail editors open on demand rather than permanently compressing the Canvas.
+RW-T17-S2-011	75	3	EDITOR_AUTOMATED	Collapsing a panel changes only author view and cannot change authored values or Binding.
+RW-T17-S2-012	76	1	EDITOR_AUTOMATED	The bottom dock can explicitly switch navigation, properties, data, and problems and can start Authoritative Preview and save.
+RW-T17-S2-013	76	2	EDITOR_AUTOMATED	An INVALID Template remains editable.
+RW-T17-S2-014	76	3	EDITOR_AUTOMATED	An INVALID Template may be saved only after secondary confirmation.
+RW-T17-S2-015	76	4	EDITOR_AUTOMATED	INVALID state disables Authoritative Preview and Render.
+RW-T17-S2-016	76	5	EDITOR_AUTOMATED	Only a new server revalidation can restore usability after repair.
+RW-T17-S2-017	77	1	EDITOR_AUTOMATED	A viewport below the desktop editing threshold shows an explicit unsupported-width state.
+RW-T17-S2-018	77	2	EDITOR_AUTOMATED	The editor cannot compress panels into an unusable mobile editor.
+RW-T17-S2-019	77	3	EDITOR_AUTOMATED	The v1 prototype targets a desktop online-design workbench.
+RW-T17-S2-020	77	4	EDITOR_AUTOMATED	Viewport adaptation cannot alter DesignDSL physical-layout semantics.
+RW-T17-S3-001	81	1	EDITOR_AUTOMATED	The inspector does not expose wire or property identifiers as ordinary labels.
+RW-T17-S3-002	81	2	EDITOR_AUTOMATED	Each exact Property Identity projects to a dedicated Chinese label through client display metadata.
+RW-T17-S3-003	81	3	EDITOR_AUTOMATED	The initial property-label projection is Chinese-only and makes no localization commitment.
+RW-T17-S3-004	81	4	EDITOR_AUTOMATED	Display labels are not persisted into DesignDSL.
+RW-T17-S3-005	81	5	EDITOR_AUTOMATED	Display labels do not participate in Binding addressing and cannot become UI-only semantic aliases.
+RW-T17-S3-006	81	6	EDITOR_AUTOMATED	Display metadata cannot expand NodeContract.
+RW-T17-S3-007	82	1	EDITOR_AUTOMATED	Properties use the fixed Content, Text, Layout, Appearance, Data, Behavior, Subtemplate, and Advanced groups.
+RW-T17-S3-008	82	2	EDITOR_AUTOMATED	The inspector shows only groups and properties actually present in the current NodeContract.
+RW-T17-S3-009	82	3	EDITOR_AUTOMATED	Unknown or unconfigured property-display metadata enters a controlled Extended Properties diagnostic projection.
+RW-T17-S3-010	82	4	EDITOR_AUTOMATED	Unknown display metadata cannot fall back to showing wire IDs as normal author labels.
+RW-T17-S3-011	83	1	EDITOR_AUTOMATED	Control selection follows property type and constraints across the listed text, numeric, boolean, enum, color, picker, and read-only controls.
+RW-T17-S3-012	83	2	EDITOR_AUTOMATED	Numeric controls show their real millimeter or point unit and legal step and range.
+RW-T17-S3-013	83	3	EDITOR_AUTOMATED	Enum controls show Chinese labels while submitting exact wire values.
+RW-T17-S3-014	84	1	EDITOR_AUTOMATED	Every property row uses Chinese label, adaptive control, and fixed-width Binding action columns.
+RW-T17-S3-015	84	2	EDITOR_AUTOMATED	Long help, validation issues, and bound-source summaries appear below their property row.
+RW-T17-S3-016	84	3	EDITOR_AUTOMATED	Actions cannot wrap into a second row or destroy vertical alignment between controls in one group.
+RW-T17-S3-017	85	1	EDITOR_AUTOMATED	A static-baseline control always exists and remains editable.
+RW-T17-S3-018	85	2	EDITOR_AUTOMATED	Binding controls only whether evaluation overrides the authored baseline.
+RW-T17-S3-019	85	3	EDITOR_AUTOMATED	The UI adds no separate static-versus-bound property-mode field.
+RW-T17-S3-020	85	4	EDITOR_AUTOMATED	Bound state cannot be interpreted as deleting or replacing the authored baseline.
+RW-T17-S4-001	89	1	EDITOR_AUTOMATED	Only the global append-only BindingPolicyCatalog decides whether an exact node-kind and Property Identity can bind for the source and target types.
+RW-T17-S4-002	89	2	EDITOR_AUTOMATED	Chinese display metadata cannot grant bindability.
+RW-T17-S4-003	89	3	EDITOR_AUTOMATED	A Template cannot locally enable Binding.
+RW-T17-S4-004	90	1	EDITOR_AUTOMATED	An unbound property uses the outlined Chinese Bound action label.
+RW-T17-S4-005	90	2	EDITOR_AUTOMATED	A valid Binding uses a high-contrast filled bound-state label.
+RW-T17-S4-006	90	3	EDITOR_AUTOMATED	A Binding that evaluates ABSENT or ERROR uses a filled error-state label.
+RW-T17-S4-007	90	4	EDITOR_AUTOMATED	A redacted source summary and baseline-override explanation appear only for a bound property.
+RW-T17-S4-008	90	5	EDITOR_AUTOMATED	An abnormal Binding explicitly states that Authoritative Preview fails.
+RW-T17-S4-009	90	6	EDITOR_AUTOMATED	An abnormal Binding never implies fallback to static baseline.
+RW-T17-S4-010	91	1	EDITOR_AUTOMATED	The action on a property row opens the existing Binding editor.
+RW-T17-S4-011	91	2	EDITOR_AUTOMATED	Ordinary property lists use only Chinese display names.
+RW-T17-S4-012	91	3	EDITOR_AUTOMATED	The Binding editor shows exact node-local targetPropertyRef, target type, and allowed selector shape.
+RW-T17-S4-013	91	4	EDITOR_AUTOMATED	Exact Binding-repair semantics cannot be replaced by property display labels.
+RW-T17-S4-014	92	1	EDITOR_AUTOMATED	Binding mode filters current properties through the global Binding policy.
+RW-T17-S4-015	92	2	EDITOR_AUTOMATED	Binding mode reuses the same Chinese grouping, property rows, and status feedback.
+RW-T17-S4-016	92	3	EDITOR_AUTOMATED	The client cannot maintain an independent bindable-property table.
+RW-T17-S4-017	92	4	EDITOR_AUTOMATED	Binding mode cannot introduce Slots, nodeId links, or hidden fallback values.
+RW-T17-S5-001	96	1	EDITOR_AUTOMATED	The recorded prototype commit is the provenance for all three comparison layouts and their shared inspector.
+RW-T17-S5-002	96	2	EDITOR_AUTOMATED	Option B evidence covers the desktop workspace, panel visibility, scenario fixtures, save and preview entries, and specified property and Binding feedback.
+RW-T17-S5-003	97	1	EDITOR_AUTOMATED	The Web gate evidence covers 14 test files, 76 tests, and a production build.
+RW-T17-S5-004	97	2	EDITOR_AUTOMATED	Browser evidence covers A, B, C, a 1024-pixel desktop width, and 320, 375, 414, and 768-pixel unsupported-width states.
+RW-T17-S5-005	97	3	EDITOR_AUTOMATED	The recorded browser checks require no console errors or axe violations.
+RW-T17-S5-006	97	4	EDITOR_AUTOMATED	The specified evidence directory is the A1 local evidence location.
+RW-T17-S5-007	97	5	EDITOR_AUTOMATED	Temporary screenshots and inspection scripts are not specification facts and do not enter the handoff commit.
+RW-T17-S5-008	98	1	EDITOR_AUTOMATED	Ticket18 must reuse Option B and Ticket17 property projection.
+RW-T17-S5-009	98	2	EDITOR_AUTOMATED	Ticket18 cannot reopen the frozen information-architecture selection.
+RW-T17-S5-010	98	3	EDITOR_AUTOMATED	Ticket18 must refine Authoritative Preview, cancel, failure image removal, canonical-save resynchronization, and conflict recovery.

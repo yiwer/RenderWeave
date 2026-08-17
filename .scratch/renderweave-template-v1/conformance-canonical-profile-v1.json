@@ -1,0 +1,115 @@
+{
+  "artifactVersion": "renderweave-conformance-canonical-profile-artifact/1.0",
+  "profileId": "renderweave-conformance-c14n/1.0",
+  "status": "FROZEN",
+  "authority": "Ticket19 conformance-record identity semantics; this profile does not make an empty registry executable",
+  "inputBoundary": {
+    "encoding": "UTF-8 without BOM",
+    "syntax": "strict JSON",
+    "reject": [
+      "invalid UTF-8",
+      "duplicate object members at any depth",
+      "comments",
+      "trailing commas",
+      "NaN or Infinity",
+      "lone surrogate code points"
+    ],
+    "numberParsing": "arbitrary-precision decimal; generic binary floating-point binding before canonicalization is forbidden"
+  },
+  "primitiveEncoding": {
+    "document": "UTF-8 without BOM or insignificant whitespace",
+    "strings": "preserve the exact Unicode scalar sequence without normalization; use the unique JSON escape for quote, backslash, and control characters; emit every other scalar directly as UTF-8; never escape slash",
+    "numbers": "emit the arbitrary-precision mathematical value in plain notation without exponent or leading plus; remove insignificant leading and trailing zeroes; emit negative zero as 0; omit the decimal point for an integer value",
+    "booleans": "lowercase true or false",
+    "null": "lowercase null only where the selected record schema and probe ValueType permit it"
+  },
+  "objectMemberOrder": {
+    "closedRecordObjects": "the exact member order declared by the selected record schema, omitting absent optional members without changing the relative order of present members",
+    "mapLikeObjects": "sort member names by unsigned UTF-8 byte sequence",
+    "mapLikeLocations": [
+      "stimulus.input.parameters",
+      "expectedTerminals[].parameters",
+      "expected.kind=LITERAL value objects at every depth"
+    ],
+    "forbidden": [
+      "transport member order as authority",
+      "locale collation",
+      "Unicode normalization",
+      "implementation hash-map iteration order"
+    ]
+  },
+  "arrayOrder": {
+    "namedCanonicalSets": [
+      {
+        "path": "expectedTerminals",
+        "sortKey": "operationId unsigned UTF-8 bytes"
+      },
+      {
+        "path": "coverage",
+        "sortKey": "requirementId unsigned UTF-8 bytes"
+      },
+      {
+        "path": "coverage[].evidence",
+        "sortKey": "oracleId unsigned UTF-8 bytes"
+      },
+      {
+        "path": "coverage[].evidence[].assertionIds",
+        "sortKey": "assertionId unsigned UTF-8 bytes"
+      },
+      {
+        "path": "assertions",
+        "sortKey": "assertionId unsigned UTF-8 bytes"
+      },
+      {
+        "path": "supersedes",
+        "sortKey": "issued identity unsigned UTF-8 bytes"
+      }
+    ],
+    "allOtherArrays": "preserve semantic input order exactly",
+    "duplicateNamedKey": "reject before hashing even when JSON array items are otherwise distinct"
+  },
+  "identityDigests": {
+    "wire": "sha256:<64 lowercase hexadecimal characters>",
+    "algorithm": "SHA-256",
+    "concatenation": "UTF-8 domain bytes followed immediately by canonical projection bytes",
+    "caseSignature": {
+      "domain": "renderweave-conformance-case-signature/1\u0000",
+      "projectionMemberOrder": [
+        "stimulus",
+        "expectedTerminals"
+      ],
+      "meaning": "active-case duplicate and supersession-chain identity comparison"
+    },
+    "oracleSignature": {
+      "domain": "renderweave-conformance-oracle-signature/1\u0000",
+      "projectionMemberOrder": [
+        "probeProfile",
+        "assertions"
+      ],
+      "meaning": "active-oracle reuse and supersession-chain identity comparison"
+    },
+    "inputIdentity": {
+      "domain": "renderweave-conformance-input-identity/1\u0000",
+      "projection": "the selected closed input union after removing identitySha256"
+    },
+    "faultIdentity": {
+      "domain": "renderweave-conformance-fault-identity/1\u0000",
+      "projection": "the selected closed faultSchedule union after removing identitySha256"
+    }
+  },
+  "signatureCollisionPolicy": {
+    "unrelatedIssuedRecordsMayShareSignature": false,
+    "historicalDuplicateAllowedOnlyWithinOneValidSupersessionChain": true,
+    "activeRecordsPerSignature": 1,
+    "changedMeaningRequiresNewIdentity": true,
+    "oldRecordMutationAllowed": false
+  },
+  "conformanceVectors": {
+    "path": "conformance-canonical-vectors-v1.json",
+    "sha256": "b1eac8c052288cadab5f890189868111aa96afa0c4f5b91d8fc34419686793b5",
+    "positiveVectorCount": 13,
+    "negativeVectorCount": 8,
+    "status": "FROZEN_DUAL_REPLAYED"
+  },
+  "conformanceVectorsRequiredBeforeRecordIssuance": true
+}

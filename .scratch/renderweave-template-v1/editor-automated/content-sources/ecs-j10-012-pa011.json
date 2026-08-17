@@ -1,0 +1,52 @@
+{
+  "artifactVersion": "renderweave-editor-content-source-record/1.0",
+  "sourceSlotId": "ECS::J10::012::PA011",
+  "candidateId": "EDC::J10::012",
+  "planAssertionId": "PA011",
+  "executionClass": "EXEC::EDITOR_AUTOMATED::1.0",
+  "sourceKind": "WORKING_COPY_CANONICAL_DESIGN_DSL",
+  "adapterKind": "IMMUTABLE_SPEC_FIXTURE",
+  "acquisitionMode": "ATOMIC_REJECTION_PRESERVES_INITIAL_WORKING_COPY",
+  "semanticInputFixture": {
+    "path": "editor-automated/input-fixtures/edc-j10-012.json",
+    "sha256": "sha256:b1be775873ad272b6dffab3aa6139401fadfc0d86225e35ba62fffe1f1ddcae6",
+    "byteLength": 370
+  },
+  "stateProof": {
+    "proofKind": "DIRTY_GUARD_ATOMIC_REJECTION",
+    "canonicalBaseline": {
+      "revision": 0,
+      "contentHash": "sha256:2d567534cc6046da753216035ad99d4e356fc871b1f69cc2bab49932fbad4635",
+      "workingCopyDigest": "sha256:eebf61d7025416476990adda79caeb6d66fe30f19acf90faa0447aa44a0c949c",
+      "canonicalDesignDslArtifact": {
+        "path": "editor-automated/content-sources/dirty-guard-clean-baseline.design.json",
+        "sha256": "sha256:eebf61d7025416476990adda79caeb6d66fe30f19acf90faa0447aa44a0c949c",
+        "byteLength": 272
+      }
+    },
+    "preActionWorkingCopy": {
+      "canonicalDesignDslArtifact": {
+        "path": "editor-automated/content-sources/dirty-guard-working-copy.design.json",
+        "sha256": "sha256:ee0e5678114d1c725d6669c0f354562f273a56124d1541f3abae688696e18b26",
+        "byteLength": 282
+      },
+      "workingCopyDigest": "sha256:ee0e5678114d1c725d6669c0f354562f273a56124d1541f3abae688696e18b26"
+    },
+    "dirtyStateRule": "PRE_ACTION_WORKING_COPY_DIGEST_DIFFERS_FROM_CANONICAL_BASELINE_DIGEST",
+    "expectedTerminal": {
+      "operationId": "replaceWorkingDraft",
+      "outcome": "NONTERMINAL_REJECTION",
+      "code": "EDITOR_DIRTY_DRAFT_REPLACEMENT_BLOCKED"
+    },
+    "postActionRule": "BYTE_IDENTICAL_TO_PRE_ACTION"
+  },
+  "result": {
+    "canonicalDesignDslArtifact": {
+      "path": "editor-automated/content-sources/dirty-guard-working-copy.design.json",
+      "sha256": "sha256:ee0e5678114d1c725d6669c0f354562f273a56124d1541f3abae688696e18b26",
+      "byteLength": 282
+    },
+    "workingCopyDigest": "sha256:ee0e5678114d1c725d6669c0f354562f273a56124d1541f3abae688696e18b26"
+  },
+  "boundary": "Editor-owned immutable planning fixture and expected atomic-rejection state proof only; no product action, capture, browser observation, formal record, J1, or READY evidence."
+}

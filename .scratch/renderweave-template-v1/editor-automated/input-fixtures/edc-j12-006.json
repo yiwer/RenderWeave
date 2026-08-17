@@ -1,0 +1,16 @@
+{
+  "artifactVersion": "renderweave-editor-input-fixture/1.0",
+  "candidateId": "EDC::J12::006",
+  "executionClass": "EXEC::EDITOR_AUTOMATED::1.0",
+  "baselineId": "EditorUnsupportedWidth",
+  "parameters": {
+    "viewportClass": "BELOW_DESKTOP_THRESHOLD",
+    "assistiveMode": "SCREEN_READER"
+  },
+  "actionScript": [
+    {
+      "action": "TRAVERSE_UNSUPPORTED_WIDTH_STATE",
+      "parameters": {}
+    }
+  ]
+}

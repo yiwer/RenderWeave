@@ -1,0 +1,197 @@
+{
+  "artifactVersion": "renderweave-capacity-boundaries/1.0",
+  "status": "planning-frozen",
+  "budgetMatrix": "capacity-budgets-v1.json",
+  "oracleMap": "capacity-oracles-v1.json",
+  "limitIdRule": "<groupName>.<limitName> for every entry under groups.<groupName>.limits",
+  "resolutionRule": "Merge exact groupDefaults[groupName] with overrides[limitId] when present. No wildcard or implementation-specific epsilon is allowed.",
+  "deltaCatalog": {
+    "INTEGER_UNIT": {
+      "value": 1,
+      "appliesTo": "integer counts, bytes, pixels, attempts, and milliseconds"
+    },
+    "DESIGN_DECIMAL_SCALE_64": {
+      "value": "0.0000000000000000000000000000000000000000000000000000000000000001",
+      "appliesTo": "authored exact decimal geometry measured at the admitted scale-64 quantum"
+    }
+  },
+  "comparatorCatalog": {
+    "MAX_INCLUSIVE": {
+      "below": "L-delta MUST pass this axis",
+      "at": "L MUST pass this axis",
+      "above": "L+delta MUST fail with the resolved oracle"
+    },
+    "MIN_INCLUSIVE": {
+      "below": "L-delta MUST fail with the resolved oracle",
+      "at": "L MUST pass this axis",
+      "above": "L+delta MUST pass this axis"
+    },
+    "MIN_EXCLUSIVE": {
+      "below": "L-delta MUST fail with the resolved oracle",
+      "at": "L MUST fail with the resolved oracle",
+      "above": "L+delta MUST pass this axis"
+    },
+    "EXACT": {
+      "below": "L-delta MUST fail certification or the resolved invariant",
+      "at": "L MUST pass",
+      "above": "L+delta MUST fail certification or the resolved invariant"
+    },
+    "ENUM_EXACT": {
+      "below": "the exact declared lower control value MUST be rejected",
+      "at": "the exact admitted enum value MUST pass",
+      "above": "the exact declared upper control value MUST be rejected"
+    },
+    "READY_MINIMUM": {
+      "below": "L-delta MUST be NOT_READY and accept no execution",
+      "at": "L MUST be eligible for READY when all other evidence passes",
+      "above": "L+delta MUST remain eligible only when the certified execution path is unchanged"
+    },
+    "FORMULA_MAX": {
+      "below": "n observable units MUST pass",
+      "at": "n+1 observable units MUST pass",
+      "above": "n+2 observable units MUST fail certification or the resolved terminal rule"
+    }
+  },
+  "groupDefaults": {
+    "renderInput": {
+      "comparator": "MAX_INCLUSIVE",
+      "deltaId": "INTEGER_UNIT"
+    },
+    "problems": {
+      "comparator": "MAX_INCLUSIVE",
+      "deltaId": "INTEGER_UNIT"
+    },
+    "designDslParser": {
+      "comparator": "MAX_INCLUSIVE",
+      "deltaId": "INTEGER_UNIT"
+    },
+    "designDslSemantics": {
+      "comparator": "MAX_INCLUSIVE",
+      "deltaId": "INTEGER_UNIT"
+    },
+    "expression": {
+      "comparator": "MAX_INCLUSIVE",
+      "deltaId": "INTEGER_UNIT"
+    },
+    "closureAndExpansion": {
+      "comparator": "MAX_INCLUSIVE",
+      "deltaId": "INTEGER_UNIT"
+    },
+    "renderDocument": {
+      "comparator": "MAX_INCLUSIVE",
+      "deltaId": "INTEGER_UNIT"
+    },
+    "diagnostics": {
+      "comparator": "MAX_INCLUSIVE",
+      "deltaId": "INTEGER_UNIT"
+    },
+    "geometry": {
+      "comparator": "MAX_INCLUSIVE",
+      "deltaId": "DESIGN_DECIMAL_SCALE_64"
+    },
+    "referenceDeployment": {
+      "comparator": "READY_MINIMUM",
+      "deltaId": "INTEGER_UNIT"
+    },
+    "assetsAndFetch": {
+      "comparator": "MAX_INCLUSIVE",
+      "deltaId": "INTEGER_UNIT"
+    },
+    "capabilityRuntime": {
+      "comparator": "MAX_INCLUSIVE",
+      "deltaId": "INTEGER_UNIT"
+    },
+    "rendererSurfaceAndOutput": {
+      "comparator": "MAX_INCLUSIVE",
+      "deltaId": "INTEGER_UNIT"
+    },
+    "deadlineAndRetention": {
+      "comparator": "EXACT",
+      "deltaId": "INTEGER_UNIT"
+    },
+    "layoutFontAndRaster": {
+      "comparator": "MAX_INCLUSIVE",
+      "deltaId": "INTEGER_UNIT"
+    }
+  },
+  "overrides": {
+    "renderInput.contentEncoding": {
+      "comparator": "ENUM_EXACT",
+      "deltaId": null,
+      "variantValues": {
+        "below": "gzip",
+        "at": "identity",
+        "above": "br"
+      }
+    },
+    "problems.ordinaryItemsWhenTruncated": {
+      "comparator": "EXACT"
+    },
+    "problems.limitMarkerReservedBytes": {
+      "comparator": "EXACT"
+    },
+    "expression.admittedDecimalScaleMin": {
+      "comparator": "MIN_INCLUSIVE"
+    },
+    "expression.intermediateDecimalScaleMin": {
+      "comparator": "MIN_INCLUSIVE"
+    },
+    "closureAndExpansion.closureFreezeAttempts": {
+      "comparator": "EXACT"
+    },
+    "geometry.canvasTrimMmPerAxisExclusiveMin": {
+      "comparator": "MIN_EXCLUSIVE"
+    },
+    "geometry.bleedMmPerSideMin": {
+      "comparator": "MIN_INCLUSIVE"
+    },
+    "geometry.fontSizePtExclusiveMin": {
+      "comparator": "MIN_EXCLUSIVE"
+    },
+    "geometry.rotationDegreesMin": {
+      "comparator": "MIN_INCLUSIVE"
+    },
+    "referenceDeployment.activeSlots": {
+      "comparator": "EXACT"
+    },
+    "referenceDeployment.fifoQueuePositions": {
+      "comparator": "EXACT"
+    },
+    "capabilityRuntime.initializationAttempts": {
+      "comparator": "EXACT"
+    },
+    "capabilityRuntime.randomRejectionAttempts": {
+      "comparator": "EXACT"
+    },
+    "deadlineAndRetention.leaseSafetyMarginMillis": {
+      "comparator": "MIN_INCLUSIVE"
+    },
+    "deadlineAndRetention.cooperativeCheckpointMillis": {
+      "comparator": "MAX_INCLUSIVE"
+    },
+    "deadlineAndRetention.cancelStopMillis": {
+      "comparator": "MAX_INCLUSIVE"
+    },
+    "layoutFontAndRaster.paintChunkPixelVisits": {
+      "comparator": "MAX_INCLUSIVE"
+    },
+    "layoutFontAndRaster.byteChunkBytes": {
+      "comparator": "MAX_INCLUSIVE"
+    },
+    "layoutFontAndRaster.textShrinkIterations": {
+      "comparator": "MAX_INCLUSIVE"
+    },
+    "layoutFontAndRaster.stackWaterFillRoundsPerContainer": {
+      "comparator": "FORMULA_MAX",
+      "deltaId": null,
+      "variantValues": {
+        "below": "fillChildCount",
+        "at": "fillChildCount+1",
+        "above": "fillChildCount+2"
+      }
+    },
+    "layoutFontAndRaster.gridSpanPassesPerConstraint": {
+      "comparator": "EXACT"
+    }
+  }
+}

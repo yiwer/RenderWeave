@@ -1,0 +1,15 @@
+{
+  "artifactVersion": "renderweave-editor-input-fixture/1.0",
+  "candidateId": "EDC::J02::004",
+  "executionClass": "EXEC::EDITOR_AUTOMATED::1.0",
+  "baselineId": "EditorStructuredWithUnsafeDeleteReference",
+  "parameters": {},
+  "actionScript": [
+    {
+      "action": "DELETE_ENTITY",
+      "parameters": {
+        "entityId": "definition-required-a"
+      }
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "artifactVersion": "renderweave-editor-input-fixture/1.0",
+  "candidateId": "EDC::J03::008",
+  "executionClass": "EXEC::EDITOR_AUTOMATED::1.0",
+  "baselineId": "EditorStructuredCleanWithLocalCanvasFeedback",
+  "parameters": {},
+  "actionScript": [
+    {
+      "action": "START_AUTHORITATIVE_PREVIEW",
+      "parameters": {}
+    }
+  ]
+}

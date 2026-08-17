@@ -1,0 +1,119 @@
+{
+  "artifactVersion": "renderweave-conformance-manifest-snapshot-policy/1.0",
+  "status": "FROZEN_DIGEST_ADDRESSED_SEED_SNAPSHOTS",
+  "authority": "Existing issued GENERATED inputs resolve generator and safe-baseline manifests by exact digest; catalog evolution never overwrites or removes digest-addressed historical bytes.",
+  "digestPathRule": "conformance-manifest-snapshots/sha256-<64 lowercase hexadecimal>.json",
+  "resolutionRule": "Resolve the exact Case-bound digest only; current, latest, path-only, or cross-kind fallback is forbidden.",
+  "mutationRule": "Snapshot bytes are immutable. A new catalog state creates a new digest-addressed file; an existing digest path is never overwritten.",
+  "requiredSeedSnapshots": [
+    {
+      "kind": "GENERATOR_CATALOG",
+      "sourcePathAtCapture": "conformance-generator-manifests-v1.json",
+      "snapshotPath": "conformance-manifest-snapshots/sha256-60ca9eee8cddd1251bb11b893d87a00ad89837e8cea7f9cfc2aeda8b8b77ec80.json",
+      "sha256": "sha256:60ca9eee8cddd1251bb11b893d87a00ad89837e8cea7f9cfc2aeda8b8b77ec80",
+      "byteLength": 10707
+    },
+    {
+      "kind": "GENERATOR_CATALOG",
+      "sourcePathAtCapture": "conformance-generator-manifests-v1.json",
+      "snapshotPath": "conformance-manifest-snapshots/sha256-b5f90daa8c17d231253131fdb0ceef2c28143de798ac2b7939f944a4a6c63a3f.json",
+      "sha256": "sha256:b5f90daa8c17d231253131fdb0ceef2c28143de798ac2b7939f944a4a6c63a3f",
+      "byteLength": 11392
+    },
+    {
+      "kind": "GENERATOR_CATALOG",
+      "sourcePathAtCapture": "conformance-generator-manifests-v1.json",
+      "snapshotPath": "conformance-manifest-snapshots/sha256-bc29964a7b0add4d1ceaca3d0a868df62242bfa96f8ab4b1579be01d70fa459c.json",
+      "sha256": "sha256:bc29964a7b0add4d1ceaca3d0a868df62242bfa96f8ab4b1579be01d70fa459c",
+      "byteLength": 13686
+    },
+    {
+      "kind": "GENERATOR_CATALOG",
+      "sourcePathAtCapture": "conformance-generator-manifests-v1.json",
+      "snapshotPath": "conformance-manifest-snapshots/sha256-c69b114f842e331be78266896ce1639d5e0250722f2610d681288288b91e63b3.json",
+      "sha256": "sha256:c69b114f842e331be78266896ce1639d5e0250722f2610d681288288b91e63b3",
+      "byteLength": 12096
+    },
+    {
+      "kind": "GENERATOR_CATALOG",
+      "sourcePathAtCapture": "conformance-generator-manifests-v1.json",
+      "snapshotPath": "conformance-manifest-snapshots/sha256-d117a993462c022ee1810fc7e200a38a90d4a274c2a72e6f1e4090d121f80645.json",
+      "sha256": "sha256:d117a993462c022ee1810fc7e200a38a90d4a274c2a72e6f1e4090d121f80645",
+      "byteLength": 14326
+    },
+    {
+      "kind": "GENERATOR_CATALOG",
+      "sourcePathAtCapture": "conformance-generator-manifests-v1.json",
+      "snapshotPath": "conformance-manifest-snapshots/sha256-ee02c06ed2c2ef3b7df7af7d300d08e6eed0fc24735d90c4045154cb45ead387.json",
+      "sha256": "sha256:ee02c06ed2c2ef3b7df7af7d300d08e6eed0fc24735d90c4045154cb45ead387",
+      "byteLength": 13686
+    },
+    {
+      "kind": "GENERATOR_CATALOG",
+      "sourcePathAtCapture": "conformance-generator-manifests-v1.json",
+      "snapshotPath": "conformance-manifest-snapshots/sha256-f8e67b09c626e6bf861dafa7109e265a7d3ac386cc24701e2eb09e2a70d46ff8.json",
+      "sha256": "sha256:f8e67b09c626e6bf861dafa7109e265a7d3ac386cc24701e2eb09e2a70d46ff8",
+      "byteLength": 12946
+    },
+    {
+      "kind": "SAFE_BASELINE_CATALOG",
+      "sourcePathAtCapture": "conformance-safe-baselines-v1.json",
+      "snapshotPath": "conformance-manifest-snapshots/sha256-0a3f71ecf5fc409a2d16445d315737f7c110b839ba6a039da8268b88b0d2ea12.json",
+      "sha256": "sha256:0a3f71ecf5fc409a2d16445d315737f7c110b839ba6a039da8268b88b0d2ea12",
+      "byteLength": 18314
+    },
+    {
+      "kind": "SAFE_BASELINE_CATALOG",
+      "sourcePathAtCapture": "conformance-safe-baselines-v1.json",
+      "snapshotPath": "conformance-manifest-snapshots/sha256-27250f27697a78be05c6592ff7a45344c016d8def75679d90f7a5b639b460bc7.json",
+      "sha256": "sha256:27250f27697a78be05c6592ff7a45344c016d8def75679d90f7a5b639b460bc7",
+      "byteLength": 17200
+    },
+    {
+      "kind": "SAFE_BASELINE_CATALOG",
+      "sourcePathAtCapture": "conformance-safe-baselines-v1.json",
+      "snapshotPath": "conformance-manifest-snapshots/sha256-3c107d951365206ce6012e9a821119296c4facc17ef0f6371c63f497195604ee.json",
+      "sha256": "sha256:3c107d951365206ce6012e9a821119296c4facc17ef0f6371c63f497195604ee",
+      "byteLength": 18869
+    },
+    {
+      "kind": "SAFE_BASELINE_CATALOG",
+      "sourcePathAtCapture": "conformance-safe-baselines-v1.json",
+      "snapshotPath": "conformance-manifest-snapshots/sha256-72687bcffc1ac15883dc483d96710c7eace5bdb320f8ef03aff5540ad3f5adc2.json",
+      "sha256": "sha256:72687bcffc1ac15883dc483d96710c7eace5bdb320f8ef03aff5540ad3f5adc2",
+      "byteLength": 16722
+    },
+    {
+      "kind": "SAFE_BASELINE_CATALOG",
+      "sourcePathAtCapture": "conformance-safe-baselines-v1.json",
+      "snapshotPath": "conformance-manifest-snapshots/sha256-7ce057b57600c639e15a6e5055689efcb170af037e24515126ccdf94f9039569.json",
+      "sha256": "sha256:7ce057b57600c639e15a6e5055689efcb170af037e24515126ccdf94f9039569",
+      "byteLength": 19435
+    },
+    {
+      "kind": "SAFE_BASELINE_CATALOG",
+      "sourcePathAtCapture": "conformance-safe-baselines-v1.json",
+      "snapshotPath": "conformance-manifest-snapshots/sha256-cc8d7a799cfc0dabe1ec5a9d0619305cfc5c44a7cabeeaa03a47a66717c6e3ef.json",
+      "sha256": "sha256:cc8d7a799cfc0dabe1ec5a9d0619305cfc5c44a7cabeeaa03a47a66717c6e3ef",
+      "byteLength": 17690
+    }
+  ],
+  "seedSnapshotCount": 13,
+  "currentCatalogSnapshots": [
+    {
+      "kind": "SAFE_BASELINE_CATALOG",
+      "sourcePathAtCapture": "conformance-safe-baselines-v1.json",
+      "snapshotPath": "conformance-manifest-snapshots/sha256-7ce057b57600c639e15a6e5055689efcb170af037e24515126ccdf94f9039569.json",
+      "sha256": "sha256:7ce057b57600c639e15a6e5055689efcb170af037e24515126ccdf94f9039569",
+      "byteLength": 19435
+    },
+    {
+      "kind": "GENERATOR_CATALOG",
+      "sourcePathAtCapture": "conformance-generator-manifests-v1.json",
+      "snapshotPath": "conformance-manifest-snapshots/sha256-d117a993462c022ee1810fc7e200a38a90d4a274c2a72e6f1e4090d121f80645.json",
+      "sha256": "sha256:d117a993462c022ee1810fc7e200a38a90d4a274c2a72e6f1e4090d121f80645",
+      "byteLength": 14326
+    }
+  ],
+  "currentCatalogSnapshotCount": 2
+}

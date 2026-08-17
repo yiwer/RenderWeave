@@ -1,0 +1,8 @@
+[
+  {
+    "operationId": "saveTemplate",
+    "outcome": "PROBLEM",
+    "code": "DESIGN_DSL_MEMBER_OR_KIND_UNKNOWN",
+    "stage": "DESIGN_SEMANTIC_VALIDATION"
+  }
+]

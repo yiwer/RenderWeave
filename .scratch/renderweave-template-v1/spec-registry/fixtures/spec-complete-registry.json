@@ -1,0 +1,8 @@
+{
+  "fixtureVersion": "renderweave-spec-registry-scenario/1.0",
+  "scenarioId": "SPEC-COMPLETE-REGISTRY",
+  "scenarioKind": "COMPLETE_REGISTRY",
+  "expectedOutcome": "SUCCESS",
+  "expectedCode": null,
+  "expectedStage": null
+}

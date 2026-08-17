@@ -1,0 +1,135 @@
+{
+  "artifactVersion": "renderweave-capacity-rehearsal/1.0",
+  "capturedAt": "2026-08-15",
+  "evidenceLevel": "A1_TOOL_CAPTURED_VIRTUALIZED_REHEARSAL",
+  "status": "planning-signal-only",
+  "baseRevision": "b14c2d7d4978c679e7ab8e7a2bace3da7af884de",
+  "inputHashes": {
+    "main.rs": "sha256:d1e9cd40f1675fd707571865d7960d6e48a4a511094b89f98a8d0f2611464330",
+    "README.md": "sha256:cd1476b68a33559891a191cfe5699f6059c540059ab9a9bc43dbe4b60f5a5b15",
+    "capacity-budgets-v1.json": "sha256:7ef58a7d8a299b37de7153db137544706d3f3df2f20b89dc665f143eeadf48ea"
+  },
+  "target": {
+    "image": "docker.io/library/rust@sha256:8fa55b2f3ddf97471ab6a767bfa3f37e6bad0986ba823e75fea57e2a2a5c3073",
+    "imageId": "sha256:7ea53b11a01d2d52b4af8fa073cd76ecbaf7dc385b88cc9d0ce8205a7c941ff1",
+    "platform": "linux/amd64",
+    "rustc": "1.97.0 (2d8144b78 2026-07-07)",
+    "llvm": "22.1.6",
+    "targetCpu": "x86-64-v2",
+    "network": "none",
+    "pidsLimit": 512,
+    "cgroupCpuMax": "400000 100000",
+    "cgroupMemoryMax": "8589934592"
+  },
+  "compile": {
+    "command": "rustc -C opt-level=3 -C codegen-units=1 -C target-cpu=x86-64-v2 /src/main.rs -o /tmp/build/capacity-harness"
+  },
+  "runs": [
+    {
+      "name": "smoke",
+      "input": {
+        "surfacePixels": 1000000,
+        "decodedBytes": 67108864,
+        "rawBytes": 33554432,
+        "encodedBytes": 33554432,
+        "paintPasses": 2,
+        "layoutOperations": 1000000,
+        "glyphOperations": 200000
+      },
+      "result": {
+        "allocationMillis": 81,
+        "decodeMillis": 22,
+        "paintMicros": 657,
+        "operationMicros": 795,
+        "encodeCopyMillis": 39,
+        "finalHwmKiB": 136972,
+        "checksum": "c6bdd62e4debd7f7"
+      }
+    },
+    {
+      "name": "candidate-1",
+      "inputRef": "candidate",
+      "result": {
+        "allocationMillis": 1084,
+        "decodeMillis": 368,
+        "paintMillis": 118,
+        "operationMillis": 4,
+        "encodeCopyMillis": 357,
+        "finalHwmKiB": 1245900,
+        "checksum": "df138b7a1bd40b5b"
+      }
+    },
+    {
+      "name": "candidate-2",
+      "inputRef": "candidate",
+      "result": {
+        "allocationMillis": 1948,
+        "decodeMillis": 344,
+        "paintMillis": 73,
+        "operationMillis": 4,
+        "encodeCopyMillis": 327,
+        "finalHwmKiB": 1245916,
+        "checksum": "df138b7a1bd40b5b"
+      }
+    },
+    {
+      "name": "candidate-3",
+      "inputRef": "candidate",
+      "result": {
+        "allocationMillis": 1082,
+        "decodeMillis": 178,
+        "paintMillis": 66,
+        "operationMillis": 4,
+        "encodeCopyMillis": 317,
+        "finalHwmKiB": 1245820,
+        "checksum": "df138b7a1bd40b5b"
+      }
+    },
+    {
+      "name": "pressure-512m-encoded",
+      "input": {
+        "surfacePixels": 50000000,
+        "decodedBytes": 536870912,
+        "rawBytes": 268435456,
+        "encodedBytes": 536870912,
+        "paintPasses": 4,
+        "layoutOperations": 10000000,
+        "glyphOperations": 8000000
+      },
+      "result": {
+        "surfaceBytes": 200000000,
+        "allocationMillis": 1125,
+        "decodeMillis": 182,
+        "paintMillis": 65,
+        "operationMillis": 11,
+        "encodeCopyMillis": 640,
+        "finalHwmKiB": 1508032,
+        "checksum": "3976162a0d2b8f44"
+      }
+    }
+  ],
+  "sharedInputs": {
+    "candidate": {
+      "surfacePixels": 50000000,
+      "decodedBytes": 536870912,
+      "rawBytes": 268435456,
+      "encodedBytes": 268435456,
+      "paintPasses": 4,
+      "layoutOperations": 5000000,
+      "glyphOperations": 2000000
+    }
+  },
+  "observations": {
+    "candidateHwmKiBMin": 1245820,
+    "candidateHwmKiBMax": 1245916,
+    "pressureHwmKiB": 1508032,
+    "pressureHwmFractionOf8GiB": 0.179772,
+    "deterministicChecksumsWithinEqualInputs": true
+  },
+  "limitations": [
+    "The harness commits pages and runs coarse integer loops; it does not implement RenderWeave layout, shaping, raster, PNG, JPEG, fetch, cancellation, or fault handling.",
+    "Timing is a virtualized A1 planning signal and cannot certify READY latency, exact pixels, exact encoded bytes, or checkpoint behavior.",
+    "The 4 GiB ephemeral limit was not kernel-enforced in this run.",
+    "Final limits still require user decision, static bound calculations, boundary fixtures, and later A2 replay on a physical certified target."
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "artifactVersion": "renderweave-editor-input-fixture/1.0",
+  "candidateId": "EDC::J11::018",
+  "executionClass": "EXEC::EDITOR_AUTOMATED::1.0",
+  "baselineId": "EditorNewerPreviewGenerationActive",
+  "parameters": {
+    "currentGeneration": 9,
+    "deliveredGeneration": 8
+  },
+  "actionScript": [
+    {
+      "action": "DELIVER_OLD_PREVIEW_FAILURE",
+      "parameters": {}
+    }
+  ]
+}

@@ -1,0 +1,69 @@
+{
+  "fixtureVersion": "renderweave-editor-automated-baseline/1.0",
+  "baselineId": "baseline.editor-automated.minimal-v1",
+  "executionClass": "EXEC::EDITOR_AUTOMATED::1.0",
+  "authorityBoundary": "fixture-only EditorSession context; not a product payload, browser session, or authoritative preview",
+  "informationArchitecture": {
+    "variant": "B_CANVAS_FOCUS",
+    "canvasAuthority": "NON_AUTHORITATIVE_AUTHORING_FEEDBACK",
+    "leftNavigationEntries": [
+      "STRUCTURE",
+      "NODES",
+      "ASSETS",
+      "DEFINITIONS",
+      "EXCHANGE"
+    ],
+    "rightInspector": "COLLAPSIBLE",
+    "bottomDockActions": [
+      "NAVIGATION",
+      "INSPECTOR",
+      "DATA",
+      "PROBLEMS",
+      "AUTHORITATIVE_PREVIEW",
+      "SAVE"
+    ]
+  },
+  "trustedCurrentContext": {
+    "lifecycle": "ACTIVE",
+    "readiness": "READY",
+    "revision": 0,
+    "exactProfileSupport": "SUPPORTED",
+    "canonicalIntegrity": "PASS",
+    "productContentHashConstructed": false
+  },
+  "editorSessionContext": {
+    "mode": "STRUCTURED",
+    "dirty": false,
+    "canonicalSemanticDiffCount": 0,
+    "authoredMutationState": "IDLE",
+    "currentRecheckState": "PENDING",
+    "saveEnabled": false,
+    "undoDepth": 0,
+    "redoDepth": 0,
+    "selectedEntityIds": [],
+    "problemPanelState": "EMPTY",
+    "localRecoveryDraft": "ABSENT",
+    "authoritativePreview": {
+      "enabled": false,
+      "resultSlot": "EMPTY",
+      "activeOperation": "ABSENT",
+      "basisDigest": "ABSENT"
+    }
+  },
+  "environmentContext": {
+    "targetKind": "SUPPORTED_DESKTOP_FIXTURE_ONLY",
+    "zoomPercent": 100,
+    "reducedMotion": false,
+    "highContrast": false,
+    "exactBrowserAndOperatingSystemTargetBound": false
+  },
+  "faultSchedule": {
+    "kind": "NONE"
+  },
+  "browserAutomationInvoked": false,
+  "webServerInvoked": false,
+  "productCodeInvoked": false,
+  "externalReadsAllowed": false,
+  "networkReadsAllowed": false,
+  "productMutationAllowedByFixtureGeneration": false
+}

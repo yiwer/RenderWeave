@@ -1,0 +1,243 @@
+{
+  "evidenceVersion": "renderweave-domain-services-fixture-static-a2/1.0",
+  "evidenceId": "DOMAIN_SERVICES_FIXTURE_STATIC_A2::2026-08-17::000001",
+  "status": "PASS",
+  "grade": "A2_INDEPENDENT_STATIC_REPLAY",
+  "scope": "DOMAIN_SERVICES safe-baseline, closed observation-adapter, deterministic generator, thirteen fixture artifacts, and twelve isolated capacity-guard inputs only; no product target or terminal was executed.",
+  "specRevision": {
+    "branch": "spec/template-v1",
+    "baseCommit": "b14c2d7d4978c679e7ab8e7a2bace3da7af884de",
+    "implementationRevision": "domain-services-fixture-generator/1.0"
+  },
+  "authorityBindings": {
+    "acceptanceManifest": {
+      "path": "acceptance-manifest-v1.json",
+      "sha256": "sha256:186c4de3351a5b794eb47294ac4f787aa47f1a19ea213a66c4ddd60ef28b620f",
+      "byteLength": 48336
+    },
+    "safeBaselineCatalog": {
+      "path": "conformance-safe-baselines-v1.json",
+      "sha256": "sha256:7ce057b57600c639e15a6e5055689efcb170af037e24515126ccdf94f9039569",
+      "byteLength": 19435
+    },
+    "generatorCatalog": {
+      "path": "conformance-generator-manifests-v1.json",
+      "sha256": "sha256:d117a993462c022ee1810fc7e200a38a90d4a274c2a72e6f1e4090d121f80645",
+      "byteLength": 14326
+    },
+    "executionClassCatalog": {
+      "path": "conformance-execution-classes-v1.json",
+      "sha256": "sha256:a984d9327dd880f1c4b10d4dc4351fa102d75d8167df08464281516ffbdecfbd",
+      "byteLength": 9456
+    },
+    "capacityCoverage": {
+      "path": "conformance-capacity-coverage-v1.json",
+      "sha256": "sha256:d9662c79464f0fe726ff9067068d9317565e4f4d1caa13b04cf5c0b2e0e60582",
+      "byteLength": 318460
+    },
+    "capacityMaterialization": {
+      "path": "capacity-boundary/materialization-manifest-v1.json",
+      "sha256": "sha256:0e7a5b8d1b2b8e9b816dc4434456b0c0c0868a9aff8c4dfa5c1dc60092669252",
+      "byteLength": 5211
+    },
+    "manifestSnapshotPolicy": {
+      "path": "conformance-manifest-snapshot-policy-v1.json",
+      "sha256": "sha256:60b2dde31826ba766b7a8fe5e3ea6aa98ef1162e216069d739e475581490b327",
+      "byteLength": 6380,
+      "retainedSnapshotCount": 13,
+      "currentCatalogSnapshotCount": 2
+    },
+    "baseline": {
+      "path": "domain-services/baseline-v1.json",
+      "sha256": "sha256:be84f240724b5ea50ae8921b1ffc4daa318fce52189fd0f8b2669c5ec562cf16",
+      "byteLength": 814
+    },
+    "fixtureContract": {
+      "path": "domain-services/fixture-contract-v1.json",
+      "sha256": "sha256:d04fd28556619a26d5c3ed6653510da73815153791c8ae7b3e86e30158297657",
+      "byteLength": 3273
+    },
+    "observationAdapter": {
+      "path": "domain-services/observation-adapter-v1.json",
+      "sha256": "sha256:4bda561d8628461b783796e38acb9066e840c307479603e39afa6c241393ea06",
+      "byteLength": 6006
+    },
+    "scenarioCatalog": {
+      "path": "domain-services/capacity-scenarios-v1.json",
+      "sha256": "sha256:c856206b3403c3a85fb0953f5179ed1870cecba7059280dae1a486297b7f4797",
+      "byteLength": 39135
+    },
+    "generatorGoldens": {
+      "path": "domain-services/generator-goldens-v1.json",
+      "sha256": "sha256:97501ec24f2c9dc4ca78774d92d37d23010afffe635453666aa77cb2f56e8b60",
+      "byteLength": 40861
+    },
+    "generatorTarget": {
+      "path": "domain-services/generator-target-manifest-v1.json",
+      "sha256": "sha256:3f6d2df37c776262e328f5159b2ff38bb89c9882d60a82a67c48a42efb487dd9",
+      "byteLength": 4562
+    },
+    "generatorImplementation": {
+      "path": "domain-services/generator-implementation-manifest-v1.json",
+      "sha256": "sha256:3742082a47b57ec3635094f8953a3d0cff1d4097ce277966196b276d63491462",
+      "byteLength": 2049
+    }
+  },
+  "fixtureInventory": {
+    "fixtureCount": 13,
+    "capacityFixtureCount": 12,
+    "namedFixtureCount": 1,
+    "artifacts": [
+      {
+        "path": "domain-services/fixtures/cap-accepted-image-bytes-per-content-below.json",
+        "sha256": "sha256:97254adbe256d5c1d5f94daa59b330a6314cfc74fb58acde2b3104d6df2d4a88",
+        "byteLength": 1753
+      },
+      {
+        "path": "domain-services/fixtures/cap-accepted-image-bytes-per-content-at.json",
+        "sha256": "sha256:a60e8b34ff08bc611c97219e9dbecde018bbe233204849c45166d812b87c00ed",
+        "byteLength": 1747
+      },
+      {
+        "path": "domain-services/fixtures/cap-accepted-image-bytes-per-content-above.json",
+        "sha256": "sha256:80f74af2401bb68348c9c0f0ebcfb71ce1de05e06c70b9a396583d8ca1f6a7bc",
+        "byteLength": 1753
+      },
+      {
+        "path": "domain-services/fixtures/cap-accepted-image-edge-pixels-per-content-below.json",
+        "sha256": "sha256:ecc5f1be6e72b756590d08b845d308067368529ce65d7e386cac2550d4fa0210",
+        "byteLength": 1760
+      },
+      {
+        "path": "domain-services/fixtures/cap-accepted-image-edge-pixels-per-content-at.json",
+        "sha256": "sha256:7c88a46d208e4bc43f00922db79ddf493de7838121ca059432571b00ebdb633d",
+        "byteLength": 1754
+      },
+      {
+        "path": "domain-services/fixtures/cap-accepted-image-edge-pixels-per-content-above.json",
+        "sha256": "sha256:8690c3ce20dd1cb38f8f7074d7d1871cbd9890b0e1277eb63b21d3d5648199d4",
+        "byteLength": 1760
+      },
+      {
+        "path": "domain-services/fixtures/cap-accepted-image-pixels-per-content-below.json",
+        "sha256": "sha256:9b2566c5fa8d84b004bb256982534a1ec8e2d3be5119134083639e81e5b8751f",
+        "byteLength": 1755
+      },
+      {
+        "path": "domain-services/fixtures/cap-accepted-image-pixels-per-content-at.json",
+        "sha256": "sha256:40414d653fda69ad6e3e751ea2263c52b411b6b137950d4c9a08931352cbd4db",
+        "byteLength": 1750
+      },
+      {
+        "path": "domain-services/fixtures/cap-accepted-image-pixels-per-content-above.json",
+        "sha256": "sha256:110739ebd4a7ff04ddb44854c2874e8184fa617696b802f92bbb58449b913788",
+        "byteLength": 1756
+      },
+      {
+        "path": "domain-services/fixtures/cap-accepted-font-bytes-per-content-below.json",
+        "sha256": "sha256:9b1de931eb44862143b2877bb137cb00495a1e0efcb0df7aea25ab31d1c123cf",
+        "byteLength": 1751
+      },
+      {
+        "path": "domain-services/fixtures/cap-accepted-font-bytes-per-content-at.json",
+        "sha256": "sha256:8fdb9567ad1957bd9a265dd1a59d2c845347bc343000709a3ddc552aaf63efa5",
+        "byteLength": 1745
+      },
+      {
+        "path": "domain-services/fixtures/cap-accepted-font-bytes-per-content-above.json",
+        "sha256": "sha256:ba908ff1a49e2d2e8a33ce560c729806f2dac45beeb5651fa4350f034f1abe3a",
+        "byteLength": 1751
+      },
+      {
+        "path": "domain-services/fixtures/named-domain-baseline-noop.json",
+        "sha256": "sha256:152848e36dcdbf7f567d00c3b5c253ef966c1544faf15a66a44f2a1678ddb829",
+        "byteLength": 1180
+      }
+    ],
+    "expectationDataPresentInTargetFixtures": false,
+    "mediaPayloadsPresent": false
+  },
+  "replay": {
+    "primary": {
+      "result": {
+        "path": "domain-services/primary-result-v1.json",
+        "sha256": "sha256:aeaad4d2a057a0c3b1e0eb608453276d189d9c60ec59d414340b9614d15e2c0c",
+        "byteLength": 978
+      },
+      "executorId": "DOMAIN_SERVICES_FIXTURE_GENERATOR::NODE::1.0",
+      "runtime": "Node.js v24.18.0",
+      "checkCount": 138,
+      "failureCount": 0
+    },
+    "independent": {
+      "result": {
+        "path": "domain-services/independent-result-v1.json",
+        "sha256": "sha256:df5d62cbb8baefe1ae9663801978f276053845ea36bf8605d0809e9aa3f3705d",
+        "byteLength": 994
+      },
+      "executorId": "DOMAIN_SERVICES_FIXTURE_GENERATOR::PYTHON::1.0",
+      "runtime": "CPython 3.12.13",
+      "checkCount": 246,
+      "failureCount": 0
+    },
+    "sharedSemanticLibrary": null,
+    "differentRuntimeAndParserImplementations": true,
+    "fixtureByteAgreement": true
+  },
+  "findings": {
+    "domainCapacityAxisCount": 4,
+    "generatedCapacityVariantCount": 12,
+    "namedBaselineScenarioCount": 1,
+    "globalNamedScenarioParameterShapeAligned": true,
+    "capacityParameterMemberOrderAlignedToCanonicalMapOrder": true,
+    "guardSeamReason": "The isolated scalar guard avoids unrepresentable media-file combinations while requiring a future exact product target to prove authoritative byte or decoded-descriptor derivation and reuse the same guard."
+  },
+  "formalRegistryBoundary": {
+    "cases": {
+      "path": "conformance-cases-v1.jsonl",
+      "sha256": "sha256:ebe58e84977ee84befe89f8c126f37fbec7076cd7725b29f1b7609448fe7ef16",
+      "byteLength": 146309,
+      "recordCount": 46
+    },
+    "oracles": {
+      "path": "conformance-oracles-v1.jsonl",
+      "sha256": "sha256:3825b9fb40c1b43c484da3ebdf29429ed749e622012212ca79f9cea5b9cb9339",
+      "byteLength": 63191,
+      "recordCount": 46
+    },
+    "issuedDomainCapacityCaseCount": 0,
+    "issuedDomainCapacityOracleCount": 0,
+    "appendPerformed": false
+  },
+  "classReadiness": {
+    "executionClass": "EXEC::DOMAIN_SERVICES::1.0",
+    "axisCount": 4,
+    "candidateCaseCount": 12,
+    "candidateOracleCount": 12,
+    "blockers": [
+      "EXACT_TARGET_MANIFEST_PENDING",
+      "REQUIRED_EXECUTOR_MANIFESTS_PENDING",
+      "INDEPENDENT_EXECUTION_REPLAY_PENDING"
+    ],
+    "recordIssuanceAllowed": false
+  },
+  "sideEffects": {
+    "productCodeFilesChanged": 0,
+    "productTargetInvocations": 0,
+    "databaseInvocations": 0,
+    "mediaDecoderInvocations": 0,
+    "networkAttempts": 0,
+    "externalProviderAttempts": 0
+  },
+  "boundary": {
+    "fixtureAndGeneratorReferenceable": true,
+    "exactProductTargetPresent": false,
+    "requiredProductExecutorManifestsPresent": false,
+    "independentProductExecutionReplayPresent": false,
+    "executionClassExecutable": false,
+    "capacityTerminalProven": false,
+    "recordIssuanceAllowed": false,
+    "rendererReady": false,
+    "ticket19Closed": false
+  }
+}

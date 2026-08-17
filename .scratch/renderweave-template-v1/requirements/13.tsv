@@ -1,0 +1,150 @@
+requirement_id	source_line	clause_ordinal_on_line	family	normative_summary
+RW-T13-S1-001	41	1	SECURITY_FAULT	Asset Management alone generates canonical lowercase UUID-v4 assetId; clients only reference it.
+RW-T13-S1-002	41	2	WIRE_CANONICAL_DIGEST	imageRef and fontRef are atomic ValueTypes with exact closed {assetId} wire.
+RW-T13-S1-003	41	3	DESIGN_INPUT_EXPRESSION	Missing, non-v4, noncanonical, null, or unknown AssetRef structure is a non-confirmable hard error.
+RW-T13-S1-004	41	4	DESIGN_INPUT_EXPRESSION	Expected Asset kind derives only from declared ValueType.
+RW-T13-S1-005	41	5	SECURITY_FAULT	DesignDSL forbids content version, hash, URL, file, Profile, or dynamic selector in AssetRef.
+RW-T13-S1-006	42	1	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	Save or recheck recursively extracts every authored AssetRef atom from the authoritative AST.
+RW-T13-S1-007	42	2	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	Extraction includes baselines, defaults, literals, mapping cases, and list atoms regardless of override, use, or reachability.
+RW-T13-S1-008	43	1	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	Every atom creates a distinct dependency occurrence with asset, kind, pointer, and available stable entity locators.
+RW-T13-S1-009	43	2	SECURITY_FAULT	Repeated assetId occurrences cannot be collapsed away.
+RW-T13-S1-010	43	3	ASSET_CAPABILITY_CONCURRENCY	Active-current dependency projection atomically replaces current occurrences; history is excluded.
+RW-T13-S1-011	43	4	SECURITY_FAULT	Authoritative recheck always re-extracts the AST; projection is never a second fact source.
+RW-T13-S1-012	44	1	ASSET_CAPABILITY_CONCURRENCY	Delete proof may batch queries but retains every occurrence and hashes a stable sorted tuple set.
+RW-T13-S1-013	44	2	SECURITY_FAULT	Runtime pruning or resolved current never rewrites authored projection or report facts.
+RW-T13-S2-001	48	1	ASSET_CAPABILITY_CONCURRENCY	After closure freeze, Render re-admits every authored Asset occurrence of each unique snapshot.
+RW-T13-S2-002	48	2	ASSET_CAPABILITY_CONCURRENCY	A shared snapshot is admitted once, not per invocation.
+RW-T13-S2-003	48	3	SECURITY_FAULT	Closure Asset admission checks same scope, existence, ACTIVE, and immutable kind.
+RW-T13-S2-004	48	4	SECURITY_FAULT	Closure admission reads no user metadata, pins no contentVersion, and creates no snapshot, lock, or long lease.
+RW-T13-S2-005	49	1	ASSET_CAPABILITY_CONCURRENCY	Physical reads may merge by scope, asset, and kind while diagnostics retain every occurrence.
+RW-T13-S2-006	49	2	SECURITY_FAULT	Problems use stable bounded root, edge, and pointer order and do not leak unreadable child Asset identities.
+RW-T13-S2-007	50	1	ASSET_CAPABILITY_CONCURRENCY	Admission releases its read boundary; later resolves independently observe later current state.
+RW-T13-S2-008	50	2	SECURITY_FAULT	Readiness or STALE projection is not request authorization truth.
+RW-T13-S3-001	54	1	SECURITY_FAULT	Every root PUBLIC override Asset atom is admitted even if unused.
+RW-T13-S3-002	54	2	SECURITY_FAULT	Override admission requires same scope, existence, ACTIVE, kind, and caller asset.read.
+RW-T13-S3-003	54	3	SECURITY_FAULT	Cross-scope, missing, or unreadable override returns NOT_FOUND.
+RW-T13-S3-004	54	4	DESIGN_INPUT_EXPRESSION	A valid override produces a request-only nonpersistent AdmittedAssetValue.
+RW-T13-S3-005	55	1	DESIGN_INPUT_EXPRESSION	AdmittedAssetValue may traverse definitions, mappings, bindings, and fills without repeated actor authorization.
+RW-T13-S3-006	55	2	ASSET_CAPABILITY_CONCURRENCY	Every final property consumer independently resolves Asset current.
+RW-T13-S3-007	55	3	SECURITY_FAULT	Authored Asset values use internal same-scope Resolver after root Render authorization, without per-Asset caller read.
+RW-T13-S3-008	56	1	SECURITY_FAULT	Root render and external override authorization are checked once at request admission.
+RW-T13-S3-009	56	2	ASSET_CAPABILITY_CONCURRENCY	Later permission drift does not cancel the admitted request or reauthorize Resolver or lease.
+RW-T13-S3-010	56	3	SECURITY_FAULT	A new request reauthorizes; actor-specific failure never changes TemplateReadiness.
+RW-T13-S4-001	60	1	ASSET_CAPABILITY_CONCURRENCY	Only a concrete validated AssetRef consumed by a materialized Node property creates a resolve occurrence.
+RW-T13-S4-002	60	2	ASSET_CAPABILITY_CONCURRENCY	Unused definitions, defaults, or branches do not resolve.
+RW-T13-S4-003	60	3	ASSET_CAPABILITY_CONCURRENCY	One memoized Asset value consumed by multiple properties creates one occurrence per property.
+RW-T13-S4-004	60	4	ASSET_CAPABILITY_CONCURRENCY	Every Text Run fontRef is independently resolved.
+RW-T13-S4-005	61	1	WIRE_CANONICAL_DIGEST	Resolve occurrence locator is closed OccurrencePath plus ConsumerPropertyRef.
+RW-T13-S4-006	61	2	WIRE_CANONICAL_DIGEST	ConsumerPropertyRef reuses closed TargetPropertyRef shape and selector-depth constraints without requiring BindingPolicy.
+RW-T13-S4-007	62	1	ASSET_CAPABILITY_CONCURRENCY	Resolve order is materialized authored DFS, property declaration order, then Run index.
+RW-T13-S4-008	62	2	ASSET_CAPABILITY_CONCURRENCY	Resolution occurs immediately after concrete value and aggregate validation.
+RW-T13-S4-009	62	3	SECURITY_FAULT	Speculative or unordered resolution is forbidden; first demanded failure stops later Resolver, capability, and Asset work.
+RW-T13-S4-010	62	4	WIRE_CANONICAL_DIGEST	RenderResource manifest preserves resolve encounter order.
+RW-T13-S4-011	63	1	CLOSURE_REPEAT_COMPOSITION_EVALUATOR	render:false, false Conditional, zero Repeat, and SKIP structures prune before resolve.
+RW-T13-S4-012	63	2	SECURITY_FAULT	visible:false and opacity:0 still resolve, fetch, decode, and measure and retain failures.
+RW-T13-S5-001	67	1	ASSET_CAPABILITY_CONCURRENCY	AssetResolver is a narrow internal Asset Management interface, not a capability or downloader.
+RW-T13-S5-002	67	2	SECURITY_FAULT	Resolver input is limited to request, scope, resource, asset, kind, audience, and deadline.
+RW-T13-S5-003	67	3	SECURITY_FAULT	Occurrence, Template, actor, runtime data, and expression results cannot cross into Asset Management.
+RW-T13-S5-004	68	1	ASSET_CAPABILITY_CONCURRENCY	Resolve linearization atomically validates scope, lifecycle, and kind, selects current immutable content, and commits idempotency record.
+RW-T13-S5-005	68	2	ASSET_CAPABILITY_CONCURRENCY	Record key is requestId and resourceId and binds fingerprint, exact selection, lease, issuedAt, and expiresAt.
+RW-T13-S5-006	68	3	ASSET_CAPABILITY_CONCURRENCY	Selection succeeds only after record commit.
+RW-T13-S5-007	69	1	ASSET_CAPABILITY_CONCURRENCY	Same key and fingerprint retry reconstructs identical contentVersion and lease.
+RW-T13-S5-008	69	2	SECURITY_FAULT	The same key with different input conflicts.
+RW-T13-S5-009	69	3	ASSET_CAPABILITY_CONCURRENCY	Only bounded same-key, fingerprint, and deadline retries are allowed for precommit transient failures.
+RW-T13-S5-010	69	4	ASSET_CAPABILITY_CONCURRENCY	Unknown commit must query the record before retry.
+RW-T13-S5-011	69	5	ASSET_CAPABILITY_CONCURRENCY	Precommit retry may see new current; postcommit retry never reselects current.
+RW-T13-S5-012	70	1	SECURITY_FAULT	Resolver records are encrypted and expire after lease plus retry margin.
+RW-T13-S5-013	70	2	SECURITY_FAULT	A Resolver record is not audit, history, transcript, query, log, or backup data.
+RW-T13-S5-014	70	3	ASSET_CAPABILITY_CONCURRENCY	Cancel does not revoke a lease; record and lease expire together.
+RW-T13-S6-001	74	1	SECURITY_FAULT	Successful resolve issues a short-lived Renderer-only HTTPS lease.
+RW-T13-S6-002	74	2	WIRE_CANONICAL_DIGEST	Lease claims bind audience, request, resource, asset, content identities, hash, length, and expiry.
+RW-T13-S6-003	74	3	SECURITY_FAULT	Expiry uses UTC RFC3339 and covers render deadline plus exact safety margin; otherwise resolve fails.
+RW-T13-S6-004	75	1	ASSET_CAPABILITY_CONCURRENCY	A lease reads exact immutable bytes without rechecking current, lifecycle, or actor authorization.
+RW-T13-S6-005	75	2	ASSET_CAPABILITY_CONCURRENCY	Replace or delete does not revoke a lease; verified pre-expiry bytes remain usable.
+RW-T13-S6-006	75	3	SECURITY_FAULT	Expiry or deadline causes whole Render failure with no renewal or logical re-resolution.
+RW-T13-S6-007	76	1	SECURITY_FAULT	Fetch URL is a request-local bearer secret.
+RW-T13-S6-008	76	2	SECURITY_FAULT	Fetch URL never reaches caller, browser, diagnostic, log, trace, cache, or evaluation identity.
+RW-T13-S7-001	80	1	DESIGN_INPUT_EXPRESSION	The only domain chain is AssetRef to ResolvedAsset to RenderResource.
+RW-T13-S7-002	80	2	WIRE_CANONICAL_DIGEST	ResolvedAsset closed fields are exactly the frozen identity, content, descriptor, lease, and locator set.
+RW-T13-S7-003	80	3	SECURITY_FAULT	OccurrencePath and ConsumerPropertyRef are attached by Rendering after Resolver response.
+RW-T13-S7-004	81	1	ASSET_CAPABILITY_CONCURRENCY	Every resolve occurrence maps one-to-one to ResolvedAsset and RenderResource without content deduplication.
+RW-T13-S7-005	81	2	WIRE_CANONICAL_DIGEST	resourceId is rwres_ plus 64 lowercase SHA-256 hex over the versioned canonical path, property, and kind locator.
+RW-T13-S7-006	81	3	SECURITY_FAULT	A duplicate or colliding resourceId in one manifest is a hard error.
+RW-T13-S7-007	82	1	WIRE_CANONICAL_DIGEST	resourceId uniqueness scope is one RenderDocument.
+RW-T13-S7-008	82	2	SECURITY_FAULT	resourceId is not secret, authorization, Asset or global identity, cache key, or cross-request idempotency key.
+RW-T13-S7-009	83	1	WIRE_CANONICAL_DIGEST	RenderResource is a closed one-to-one projection with exact frozen Engine fields.
+RW-T13-S7-010	83	2	SECURITY_FAULT	RenderResource excludes asset, content, scope, Template, and business identities.
+RW-T13-S7-011	83	3	WIRE_CANONICAL_DIGEST	Node references and manifest entries form an exact one-to-one set and preserve encounter order.
+RW-T13-S7-012	83	4	SECURITY_FAULT	Unknown, null, unused, missing, or duplicate resources fail closed.
+RW-T13-S7-013	84	1	WIRE_CANONICAL_DIGEST	sha256 is exactly 64 lowercase hex and acceptanceProfileId is exact v1.
+RW-T13-S7-014	84	2	WIRE_CANONICAL_DIGEST	Media type is restricted to frozen image and font values and must match kind.
+RW-T13-S8-001	88	1	WIRE_CANONICAL_DIGEST	IMAGE descriptor is closed with exact dimensions, orientation, frame, and color fields.
+RW-T13-S8-002	88	2	RENDERER_OUTPUT	Image dimensions are positive, frameCount is one, colorEncoding is SRGB_8BIT, and logical size reflects one orientation application.
+RW-T13-S8-003	88	3	WIRE_CANONICAL_DIGEST	Image descriptor excludes DPI, metadata bag, raw profile, and filename.
+RW-T13-S8-004	89	1	WIRE_CANONICAL_DIGEST	FONT descriptor is closed faceIndex, flavor, and unitsPerEm with faceIndex zero and allowed glyf or CFF flavor.
+RW-T13-S8-005	89	2	WIRE_CANONICAL_DIGEST	Font descriptor excludes display, family, license, and system identity.
+RW-T13-S8-006	90	1	SECURITY_FAULT	Stored descriptor is immutable proof while exact bytes remain rendering authority.
+RW-T13-S8-007	90	2	RENDERER_OUTPUT	Engine fetches, hashes, fully parses, and compares exact image and font bytes before measure or shaping.
+RW-T13-S8-008	90	3	SECURITY_FAULT	Descriptor and byte mismatch is an internal integrity or Profile failure with zero output and no silent choice.
+RW-T13-S8-009	90	4	RENDERER_OUTPUT	Image pipeline applies orientation and deterministic sRGB to straight RGBA8 before Profile premultiplication.
+RW-T13-S8-010	90	5	LAYOUT_SHAPING	Font pipeline permits only frozen monochrome single-face outlines and approved layout tables.
+RW-T13-S8-011	91	1	LAYOUT_SHAPING	Image layout uses oriented logical aspect only and ignores Asset DPI.
+RW-T13-S8-012	91	2	LAYOUT_SHAPING	Font layout and shaping use only exact bytes and exact Profiles; no system, family, or built-in fallback.
+RW-T13-S8-013	91	3	SECURITY_FAULT	Missing glyph is request runtime failure and does not mutate Asset or Template validity.
+RW-T13-S8-014	92	1	SECURITY_FAULT	User metadata is available only through asset.read product interfaces.
+RW-T13-S8-015	92	2	SECURITY_FAULT	Resolver, ResolvedAsset, RenderResource, digests, and Engine cannot read or carry user metadata.
+RW-T13-S8-016	92	3	WIRE_CANONICAL_DIGEST	Metadata changes do not affect selection, digest, readiness, or cache key.
+RW-T13-S9-001	96	1	SECURITY_FAULT	Engine fetch allows canonical HTTPS exact-origin and path-prefix allowlist with segment-boundary matching.
+RW-T13-S9-002	96	2	SECURITY_FAULT	Fetch rejects userinfo, fragment, noncanonical host or port, dot or percent bypass; an empty production allowlist fails closed.
+RW-T13-S9-003	96	3	SECURITY_FAULT	Every connect rechecks DNS and egress policy.
+RW-T13-S9-004	96	4	SECURITY_FAULT	Redirect, proxy, cookie, caller header, range, compression, and fallback are forbidden.
+RW-T13-S9-005	96	5	SECURITY_FAULT	Fetch accepts only a 200 identity body with one matching Content-Length.
+RW-T13-S9-006	96	6	RENDERER_OUTPUT	The stream verifies budget, actual length, hash, kind, media, magic, and complete decode or parse.
+RW-T13-S9-007	97	1	ASSET_CAPABILITY_CONCURRENCY	Only transport or 5xx retries are allowed on the same URL, expiry, and deadline.
+RW-T13-S9-008	97	2	SECURITY_FAULT	4xx, expiry, integrity, decode, or Profile failures do not retry.
+RW-T13-S9-009	97	3	SECURITY_FAULT	Engine cannot renew a lease, reread Asset current, or fall back to another URL, font, or content.
+RW-T13-S9-010	98	1	ASSET_CAPABILITY_CONCURRENCY	Logical current and Resolver result are never shared caches.
+RW-T13-S9-011	98	2	SECURITY_FAULT	Trusted scope cache key is scope, kind, hash, length, and media; decoded cache also keys exact Renderer Profile.
+RW-T13-S9-012	98	3	SECURITY_FAULT	Cross-scope cache sharing is forbidden; Engine without trusted partition is request-local only.
+RW-T13-S9-013	99	1	ASSET_CAPABILITY_CONCURRENCY	A cache hit never reduces occurrence, budget, or first-error accounting and must validate each lease.
+RW-T13-S9-014	99	2	SECURITY_FAULT	resourceId, unsigned URL, and assetId are not content cache keys.
+RW-T13-S9-015	99	3	SECURITY_FAULT	Cache corruption evicts and fails without fallback or re-resolution.
+RW-T13-S10-001	103	1	SECURITY_FAULT	Resolver selection, descriptor, or lease failure prevents a complete RenderDocument.
+RW-T13-S10-002	103	2	SECURITY_FAULT	Post-seal Engine resource or shaping failure may retain only an internal transient document and returns zero public document or output.
+RW-T13-S10-003	104	1	SECURITY_FAULT	Template dependency uses the frozen TEMPLATE_ASSET codes.
+RW-T13-S10-004	104	2	SECURITY_FAULT	Resolver uses the frozen ASSET_RESOLVE codes.
+RW-T13-S10-005	104	3	SECURITY_FAULT	Engine uses the frozen lease, fetch, integrity, decode, and font codes.
+RW-T13-S10-006	104	4	DESIGN_INPUT_EXPRESSION	Malformed wire, manifest mismatch, and duplicate or collision are non-confirmable hard errors.
+RW-T13-S10-007	105	1	SECURITY_FAULT	Authored cross-scope ref publicly folds to TEMPLATE_ASSET_NOT_FOUND and may only save INVALID through dependency confirmation.
+RW-T13-S10-008	105	2	SECURITY_FAULT	Runtime failure does not change TemplateReadiness.
+RW-T13-S10-009	105	3	SECURITY_FAULT	Integrity or Profile failure emits a redacted ops signal and never mutates Asset lifecycle or content.
+RW-T13-S10-010	106	1	SECURITY_FAULT	Engine errors expose only stable code, resourceId, and safe parameters.
+RW-T13-S10-011	106	2	SECURITY_FAULT	Rendering maps resourceId to authorized occurrence or property diagnostics; Engine never receives author identities.
+RW-T13-S10-012	107	1	SECURITY_FAULT	Authored assetId is shown only under Template read; a submitted override may echo to its submitter.
+RW-T13-S10-013	107	2	SECURITY_FAULT	Runtime assetId is appended only when the caller also has asset.read.
+RW-T13-S10-014	107	3	SECURITY_FAULT	Problems, logs, and traces prohibit URL, token, hash, version, blob, name, bytes, metadata, and raw-network details.
+RW-T13-S11-001	111	1	ASSET_CAPABILITY_CONCURRENCY	STALE and Asset lifecycle or content events do not cancel an active Evaluation.
+RW-T13-S11-002	111	2	ASSET_CAPABILITY_CONCURRENCY	Resolved occurrences stay exact; unresolved occurrences observe later state.
+RW-T13-S11-003	111	3	ASSET_CAPABILITY_CONCURRENCY	Changes after final resolve do not affect current output; the next Render re-admits.
+RW-T13-S11-004	112	1	RENDERER_OUTPUT	Authoritative preview always uses the complete Evaluator and Engine.
+RW-T13-S11-005	112	2	SECURITY_FAULT	Draft Asset preview is a separate asset.read interface and the browser never receives a Renderer lease.
+RW-T13-S11-006	112	3	EDITOR_AUTOMATED	A missing, deleted, or kind placeholder is diagnostic-only and is never persisted or auto-substituted.
+RW-T13-S11-007	113	1	SECURITY_FAULT	A lease-bearing RenderDocument is request-only, Renderer-only, nonpersistent, nonpublic, and nonreusable.
+RW-T13-S11-008	113	2	SECURITY_FAULT	Cancel, deadline, or expiry yields zero output with no renewal or document return.
+RW-T13-S12-001	117	1	WIRE_CANONICAL_DIGEST	assetSelectionDigest canonically covers each successful selection in encounter order with frozen fields.
+RW-T13-S12-002	117	2	WIRE_CANONICAL_DIGEST	URL, token, expiry, cache, and network timing are excluded from selection digest.
+RW-T13-S12-003	117	3	WIRE_CANONICAL_DIGEST	A different contentVersion remains different selection identity even for identical bytes.
+RW-T13-S12-004	118	1	SECURITY_FAULT	The ResolvedAsset transcript is request-only.
+RW-T13-S12-005	118	2	SECURITY_FAULT	Persisted Evaluation metadata may retain only digest, count, code, and timing; Asset audit does not log each resolve.
+RW-T13-S12-006	119	1	SECURITY_FAULT	Capacity independently limits all frozen authored, resolved, content, bytes, pixels, fonts, manifest, URL, and fetch dimensions.
+RW-T13-S12-007	119	2	ASSET_CAPABILITY_CONCURRENCY	Cache cannot reduce occurrence accounting.
+RW-T13-S12-008	119	3	SECURITY_FAULT	Predictable excess fails before the document; Engine independently enforces actual byte and decode hard limits.
+RW-T13-S12-009	120	1	RENDERER_OUTPUT	A READY Renderer proves the exact acceptance-profile compatible superset with machine manifest and golden corpus.
+RW-T13-S12-010	120	2	RENDERER_OUTPUT	Renderer Profile owns color, orientation, decoder, OpenType, and raster; Layout Profile owns shaping and layout.
+RW-T13-S12-011	120	3	WIRE_CANONICAL_DIGEST	Upgrades cannot silently alter old Profile semantics.
+RW-T13-S12-012	121	1	WIRE_CANONICAL_DIGEST	Implementation must support the exact new Render Command, Document, and Layout contracts and missing fields and viewport primitive.
+RW-T13-S12-013	121	2	SECURITY_FAULT	Implementation cannot reuse an old version while dropping fields, guessing versions, or adding placeholders.
+RW-T13-S13-001	125	1	ASSET_CAPABILITY_CONCURRENCY	Ticket19 conformance covers all listed concurrent selection, retry, lifecycle, pruning, authorization, cache, manifest, integrity, font, path, redaction, and capacity cases.
+RW-T13-S13-002	126	1	SECURITY_FAULT	v1 excludes dynamic content selectors, URL or data refs, public or cross-scope refs, arbitrary HTTP, current cache, redirect, fallback, font fallback, auto replacement, transform, recovery, renewal, skipping, and partial output.
+RW-T13-S13-003	126	2	SECURITY_FAULT	SVG, animation, DOCUMENT, and other media remain out of scope.
+RW-T13-S13-004	127	1	SECURITY_FAULT	Ticket13 creates no product code, API, table, route, placeholder, or implementation phase.

@@ -1,0 +1,21 @@
+{
+  "artifactVersion": "renderweave-editor-fault-schedule/1.0",
+  "candidateId": "EDC::J09::003",
+  "executionClass": "EXEC::EDITOR_AUTOMATED::1.0",
+  "events": [
+    {
+      "at": "CURRENT_READ",
+      "action": "RETURN_ORIGINAL_EXPECTED_REVISION",
+      "parameters": {}
+    },
+    {
+      "at": "SAVE_RESPONSE",
+      "action": "RETURN_CANONICAL_SUCCESS",
+      "parameters": {}
+    }
+  ],
+  "expectedTerminal": {
+    "operationId": "reconcile-safe-explicit-retry",
+    "outcome": "SUCCESS"
+  }
+}

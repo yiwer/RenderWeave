@@ -1,0 +1,323 @@
+{
+  "artifactVersion": "renderweave-editor-automated-observation-adapter/1.1-candidate",
+  "adapterId": "renderweave-editor-automated-observation-adapter/1.1-candidate",
+  "status": "COMPLETE_CANDIDATE_BROWSER_TARGET_PENDING_NOT_ISSUED",
+  "executionClass": "EXEC::EDITOR_AUTOMATED::1.0",
+  "probeProfile": "renderweave-conformance-probes/1.1",
+  "closedObservationVersion": "renderweave-editor-automated-closed-observation/1.1-candidate",
+  "observationBoundary": "one exact supported-browser and operating-system target after one named user-visible command or state transition settles",
+  "genericJsonPathAllowed": false,
+  "arbitraryScriptAllowed": false,
+  "fallbackAllowed": false,
+  "expectedValuesVisibleToTarget": false,
+  "mappings": [
+    {
+      "probeId": "operation.accepted",
+      "valueType": "BOOLEAN",
+      "source": "closedObservation.operation.accepted",
+      "absentPolicy": "MUST_BE_PRESENT"
+    },
+    {
+      "probeId": "operation.terminalCode",
+      "valueType": "CODE",
+      "source": "closedObservation.operation.terminalCode",
+      "absentPolicy": "EXPLICIT_ABSENT"
+    },
+    {
+      "probeId": "operation.terminalStage",
+      "valueType": "STAGE",
+      "source": "closedObservation.operation.terminalStage",
+      "absentPolicy": "EXPLICIT_ABSENT"
+    },
+    {
+      "probeId": "operation.terminalParametersBytes",
+      "valueType": "BYTE_SEQUENCE",
+      "source": "closedObservation.operation.terminalParametersBytes",
+      "absentPolicy": "EXPLICIT_ABSENT"
+    },
+    {
+      "probeId": "operation.writeCount",
+      "valueType": "INTEGER",
+      "source": "closedObservation.operation.writeCount",
+      "absentPolicy": "MUST_BE_PRESENT"
+    },
+    {
+      "probeId": "operation.renderDocumentCount",
+      "valueType": "INTEGER",
+      "source": "closedObservation.operation.renderDocumentCount",
+      "absentPolicy": "MUST_BE_PRESENT"
+    },
+    {
+      "probeId": "operation.renderOutputCount",
+      "valueType": "INTEGER",
+      "source": "closedObservation.operation.renderOutputCount",
+      "absentPolicy": "MUST_BE_PRESENT"
+    },
+    {
+      "probeId": "operation.downstreamEffects",
+      "valueType": "TEXT_SEQUENCE",
+      "source": "closedObservation.operation.downstreamEffects",
+      "absentPolicy": "MUST_BE_PRESENT"
+    },
+    {
+      "probeId": "operation.terminalsBytes",
+      "valueType": "BYTE_SEQUENCE",
+      "source": "closedObservation.operation.terminalsBytes",
+      "absentPolicy": "MUST_BE_PRESENT"
+    },
+    {
+      "probeId": "capacity.limitId",
+      "valueType": "TEXT",
+      "source": "closedObservation.capacity.limitId",
+      "absentPolicy": "MUST_BE_PRESENT"
+    },
+    {
+      "probeId": "capacity.observedValue",
+      "valueType": "TEXT",
+      "source": "closedObservation.capacity.observedValue",
+      "absentPolicy": "MUST_BE_PRESENT"
+    },
+    {
+      "probeId": "capacity.reservationReached",
+      "valueType": "BOOLEAN",
+      "source": "closedObservation.capacity.reservationReached",
+      "absentPolicy": "MUST_BE_PRESENT"
+    },
+    {
+      "probeId": "capacity.zeroBoundary",
+      "valueType": "CODE",
+      "source": "closedObservation.capacity.zeroBoundary",
+      "absentPolicy": "EXPLICIT_ABSENT"
+    },
+    {
+      "probeId": "editor.mode",
+      "valueType": "CODE",
+      "source": "closedObservation.editor.mode",
+      "absentPolicy": "MUST_BE_PRESENT"
+    },
+    {
+      "probeId": "editor.accessibilityTreeBytes",
+      "valueType": "BYTE_SEQUENCE",
+      "source": "closedObservation.editor.accessibilityTreeBytes",
+      "absentPolicy": "MUST_BE_PRESENT"
+    },
+    {
+      "probeId": "editor.focusSequence",
+      "valueType": "TEXT_SEQUENCE",
+      "source": "closedObservation.editor.focusSequence",
+      "absentPolicy": "MUST_BE_PRESENT"
+    },
+    {
+      "probeId": "editor.announcementSequence",
+      "valueType": "TEXT_SEQUENCE",
+      "source": "closedObservation.editor.announcementSequence",
+      "absentPolicy": "MUST_BE_PRESENT"
+    },
+    {
+      "probeId": "editor.commandResult",
+      "valueType": "CODE",
+      "source": "closedObservation.editor.commandResult",
+      "absentPolicy": "MUST_BE_PRESENT"
+    },
+    {
+      "probeId": "editor.undoDepth",
+      "valueType": "INTEGER",
+      "source": "closedObservation.editor.undoDepth",
+      "absentPolicy": "MUST_BE_PRESENT"
+    },
+    {
+      "probeId": "editor.redoDepth",
+      "valueType": "INTEGER",
+      "source": "closedObservation.editor.redoDepth",
+      "absentPolicy": "MUST_BE_PRESENT"
+    },
+    {
+      "probeId": "editor.selectedEntityIds",
+      "valueType": "TEXT_SEQUENCE",
+      "source": "closedObservation.editor.selectedEntityIds",
+      "absentPolicy": "MUST_BE_PRESENT"
+    },
+    {
+      "probeId": "editor.problemPanelBytes",
+      "valueType": "BYTE_SEQUENCE",
+      "source": "closedObservation.editor.problemPanelBytes",
+      "absentPolicy": "MUST_BE_PRESENT"
+    },
+    {
+      "probeId": "editor.previewBasisDigest",
+      "valueType": "DIGEST",
+      "source": "closedObservation.editor.previewBasisDigest",
+      "absentPolicy": "EXPLICIT_ABSENT"
+    },
+    {
+      "probeId": "editor.previewVisible",
+      "valueType": "BOOLEAN",
+      "source": "closedObservation.editor.previewVisible",
+      "absentPolicy": "MUST_BE_PRESENT"
+    },
+    {
+      "probeId": "editor.saveEnabled",
+      "valueType": "BOOLEAN",
+      "source": "closedObservation.editor.saveEnabled",
+      "absentPolicy": "MUST_BE_PRESENT"
+    },
+    {
+      "probeId": "editor.networkRequestSequence",
+      "valueType": "TEXT_SEQUENCE",
+      "source": "closedObservation.editor.networkRequestSequence",
+      "absentPolicy": "MUST_BE_PRESENT"
+    },
+    {
+      "probeId": "editor.semanticDiffCount",
+      "valueType": "INTEGER",
+      "source": "closedObservation.editor.semanticDiffCount",
+      "absentPolicy": "MUST_BE_PRESENT"
+    },
+    {
+      "probeId": "editor.keyboardTrapDetected",
+      "valueType": "BOOLEAN",
+      "source": "closedObservation.editor.keyboardTrapDetected",
+      "absentPolicy": "MUST_BE_PRESENT"
+    },
+    {
+      "probeId": "editor.highContrastOperable",
+      "valueType": "BOOLEAN",
+      "source": "closedObservation.editor.highContrastOperable",
+      "absentPolicy": "MUST_BE_PRESENT"
+    },
+    {
+      "probeId": "editor.reducedMotionHonored",
+      "valueType": "BOOLEAN",
+      "source": "closedObservation.editor.reducedMotionHonored",
+      "absentPolicy": "MUST_BE_PRESENT"
+    },
+    {
+      "probeId": "editor.zoom200Operable",
+      "valueType": "BOOLEAN",
+      "source": "closedObservation.editor.zoom200Operable",
+      "absentPolicy": "MUST_BE_PRESENT"
+    },
+    {
+      "probeId": "editor.canonicalBaselineBytes",
+      "valueType": "BYTE_SEQUENCE",
+      "source": "closedObservation.editor.canonicalBaselineBytes",
+      "absentPolicy": "EXPLICIT_ABSENT"
+    },
+    {
+      "probeId": "editor.compatibilityOriginalDigest",
+      "valueType": "DIGEST",
+      "source": "closedObservation.editor.compatibilityOriginalDigest",
+      "absentPolicy": "EXPLICIT_ABSENT"
+    },
+    {
+      "probeId": "editor.confirmationAvailable",
+      "valueType": "BOOLEAN",
+      "source": "closedObservation.editor.confirmationAvailable",
+      "absentPolicy": "MUST_BE_PRESENT"
+    },
+    {
+      "probeId": "editor.dirty",
+      "valueType": "BOOLEAN",
+      "source": "closedObservation.editor.dirty",
+      "absentPolicy": "MUST_BE_PRESENT"
+    },
+    {
+      "probeId": "editor.mutationLockActive",
+      "valueType": "BOOLEAN",
+      "source": "closedObservation.editor.mutationLockActive",
+      "absentPolicy": "MUST_BE_PRESENT"
+    },
+    {
+      "probeId": "editor.normalizationSummaryBytes",
+      "valueType": "BYTE_SEQUENCE",
+      "source": "closedObservation.editor.normalizationSummaryBytes",
+      "absentPolicy": "EXPLICIT_ABSENT"
+    },
+    {
+      "probeId": "editor.previewEligibilityGeneration",
+      "valueType": "INTEGER",
+      "source": "closedObservation.editor.previewEligibilityGeneration",
+      "absentPolicy": "MUST_BE_PRESENT"
+    },
+    {
+      "probeId": "editor.recoveryDraftEnvelopeBytes",
+      "valueType": "BYTE_SEQUENCE",
+      "source": "closedObservation.editor.recoveryDraftEnvelopeBytes",
+      "absentPolicy": "EXPLICIT_ABSENT"
+    },
+    {
+      "probeId": "editor.workingCopyDigest",
+      "valueType": "DIGEST",
+      "source": "closedObservation.editor.workingCopyDigest",
+      "absentPolicy": "EXPLICIT_ABSENT"
+    }
+  ],
+  "mappingCount": 40,
+  "fixtureOnlyBoundary": {
+    "closedObservationProduced": false,
+    "browserTargetBound": false,
+    "browserAutomationExecuted": false,
+    "accessibilityAssertionsEvaluated": false,
+    "j1Evaluated": false
+  },
+  "evidenceBoundary": "This candidate Adapter closes the 1.1 extraction seam only. It neither changes product code nor produces observations; an exact product target and browser runner must later populate and replay every field.",
+  "probeProfileArtifact": {
+    "path": "editor-automated/probe-profile-candidate-v1_1.json",
+    "sha256": "sha256:f76cae2b80a4205d7bf73b0e79d69611f2b95880a399fc5808d624ce7741f53f",
+    "byteLength": 57149
+  },
+  "baseAdapter": {
+    "path": "editor-automated/observation-adapter-v1.json",
+    "sha256": "sha256:7f65c78c0d390e7ab972275b43341e94174d267ec4dadd28b71c60223fbe45d7",
+    "byteLength": 7049
+  },
+  "projectionContracts": {
+    "canonicalBaselineBytes": {
+      "profile": "renderweave-editor-canonical-baseline-projection/1.0",
+      "exactMembersInOrder": [
+        "profile",
+        "revision",
+        "contentHash",
+        "workingCopyDigest"
+      ],
+      "rawDesignDslAllowed": false
+    },
+    "normalizationSummaryBytes": {
+      "profile": "renderweave-editor-normalization-summary/1.0",
+      "exactMembersInOrder": [
+        "profile",
+        "categories"
+      ],
+      "categoryExactMembersInOrder": [
+        "categoryId",
+        "count"
+      ],
+      "businessContentAllowed": false
+    },
+    "recoveryDraftEnvelopeBytes": {
+      "profile": "renderweave-editor-recovery-draft-envelope/1.0",
+      "exactMembersInOrder": [
+        "profile",
+        "workingCopyDigest",
+        "baseRevision",
+        "baseContentHash",
+        "containsRootDocument",
+        "containsCustomValues",
+        "containsPreviewImage",
+        "containsAssetBytes"
+      ],
+      "nullableMembers": [],
+      "optionalMembers": [
+        "baseRevision",
+        "baseContentHash"
+      ],
+      "requiredFalseMembers": [
+        "containsRootDocument",
+        "containsCustomValues",
+        "containsPreviewImage",
+        "containsAssetBytes"
+      ],
+      "rawRecoveryDraftAllowed": false
+    }
+  }
+}
