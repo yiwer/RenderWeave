@@ -30,6 +30,8 @@ class BindingPolicyCatalogTest {
         assertTrue(BindingPolicyCatalog.allows("barcode", "value"));
         assertTrue(BindingPolicyCatalog.allows("group", "render"));
         assertTrue(BindingPolicyCatalog.allows("group", "placement.xMm"));
+        assertTrue(BindingPolicyCatalog.allows("templateUse", "placement.xMm"));
+        assertTrue(BindingPolicyCatalog.allows("templateUse", "transform.rotationDeg"));
     }
 
     @Test
@@ -60,7 +62,8 @@ class BindingPolicyCatalogTest {
         for (var kind : java.util.List.of(
                 "group", "frame", "stack", "grid", "repeat",
                 "text", "image", "rect", "ellipse", "line",
-                "polygon", "polyline", "path", "qrCode", "barcode")) {
+                "polygon", "polyline", "path", "qrCode", "barcode",
+                "templateUse")) {
             assertTrue(BindingPolicyCatalog.allows(kind, "render"), kind);
             assertTrue(BindingPolicyCatalog.allows(kind, "visible"), kind);
             assertTrue(BindingPolicyCatalog.allows(kind, "opacity"), kind);

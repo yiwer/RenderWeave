@@ -80,6 +80,8 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
         }
         // bindingId namespace is Template-wide across canvas and all nodes.
         var seenBindingIds = new java.util.HashSet<String>();
+        // useId namespace is Template-wide across all templateUse nodes.
+        var seenUseIds = new java.util.HashSet<String>();
         exactVersion(root, "dslVersion", "renderweave-design/1.0", "/dslVersion");
         exactVersion(
                 root,
@@ -142,6 +144,7 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
                 new java.util.HashSet<>(),
                 new java.util.HashSet<>(),
                 seenBindingIds,
+                seenUseIds,
                 definitionsResult.outputTypes(),
                 loopIds
         );
@@ -763,6 +766,7 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
             Set<String> seenNodeIds,
             Set<String> seenLoopIds,
             Set<String> seenBindingIds,
+            Set<String> seenUseIds,
             Map<String, String> definitionsOutputTypes,
             Set<String> loopIds
     ) throws DesignDslFailureException {
@@ -772,7 +776,7 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
             var child = object(children.items().get(index), childPointer);
             normalized.add(validateNonCanvasNode(
                     child, childPointer, parentKind, parentDirection, seenNodeIds, seenLoopIds,
-                    seenBindingIds, definitionsOutputTypes, loopIds));
+                    seenBindingIds, seenUseIds, definitionsOutputTypes, loopIds));
         }
         return new JsonValue.ArrayValue(normalized);
     }
@@ -785,6 +789,7 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
             Set<String> seenNodeIds,
             Set<String> seenLoopIds,
             Set<String> seenBindingIds,
+            Set<String> seenUseIds,
             Map<String, String> definitionsOutputTypes,
             Set<String> loopIds
     ) throws DesignDslFailureException {
@@ -837,7 +842,7 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
         switch (kind) {
             case FRAME, STACK, GRID -> validateAppearanceMembers(node, pointer);
             case CANVAS, GROUP, REPEAT, TEXT, IMAGE, RECT, ELLIPSE, LINE, POLYGON, POLYLINE,
-                    PATH, QRCODE, BARCODE -> {
+                    PATH, QRCODE, BARCODE, TEMPLATE_USE -> {
             }
         }
         switch (kind) {
@@ -845,6 +850,11 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
             case GRID -> validateGridMembers(node, pointer);
             case REPEAT -> validateRepeatMembers(node, pointer, seenLoopIds,
                     definitionsOutputTypes, loopIds);
+            case TEMPLATE_USE -> normalized.put(
+                    "fills",
+                    validateTemplateUseMembers(node, pointer, seenUseIds,
+                            definitionsOutputTypes, loopIds)
+            );
             case TEXT -> validateTextMembers(node, pointer);
             case IMAGE -> validateImageMembers(node, pointer);
             case RECT -> validateRectMembers(node, pointer);
@@ -867,7 +877,7 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
             normalized.put(
                     "children",
                     validateChildren(children, pointer + "/children", kind, ownDirection,
-                            seenNodeIds, seenLoopIds, seenBindingIds,
+                            seenNodeIds, seenLoopIds, seenBindingIds, seenUseIds,
                             definitionsOutputTypes, loopIds)
             );
         }
@@ -1012,13 +1022,14 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
         switch (kind) {
             case FRAME, STACK, GRID -> members.addAll(NodeContractCatalog.APPEARANCE_MEMBERS);
             case CANVAS, GROUP, REPEAT, TEXT, IMAGE, RECT, ELLIPSE, LINE, POLYGON, POLYLINE,
-                    PATH, QRCODE, BARCODE -> {
+                    PATH, QRCODE, BARCODE, TEMPLATE_USE -> {
             }
         }
         switch (kind) {
             case STACK -> members.addAll(NodeContractCatalog.STACK_MEMBERS);
             case GRID -> members.addAll(NodeContractCatalog.GRID_MEMBERS);
             case REPEAT -> members.addAll(NodeContractCatalog.REPEAT_MEMBERS);
+            case TEMPLATE_USE -> members.addAll(NodeContractCatalog.TEMPLATE_USE_MEMBERS);
             case TEXT -> members.addAll(NodeContractCatalog.TEXT_MEMBERS);
             case IMAGE -> members.addAll(NodeContractCatalog.IMAGE_MEMBERS);
             case RECT -> members.addAll(NodeContractCatalog.RECT_MEMBERS);
@@ -1187,9 +1198,122 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
     }
 
     /**
-     * Binding source kinds are context | loopIndex | definition only (ticket 07 §45):
-     * literal belongs in the static tree and capability is Expression-input-only.
+     * TemplateUse structural members (ticket 12 §1, §3, §4): useId Template-unique,
+     * templateRef {@code {templateId}} current-only, closed contextSelector union, and
+     * fills sorted canonically by targetDefinitionId. Child-side existence/type checks
+     * are dependency ERRORs resolved against the child Template current.
      */
+    private JsonValue.ArrayValue validateTemplateUseMembers(
+            JsonValue.ObjectValue node,
+            String pointer,
+            Set<String> seenUseIds,
+            Map<String, String> definitionsOutputTypes,
+            Set<String> loopIds
+    ) throws DesignDslFailureException {
+        var useId = string(required(node, "useId", pointer + "/useId"), pointer + "/useId");
+        if (!UUID_V4.matcher(useId).matches() || !seenUseIds.add(useId)) {
+            throw failure(FailureCode.DESIGN_VALUE_INVALID, pointer + "/useId");
+        }
+        var templateRef = object(required(node, "templateRef", pointer + "/templateRef"),
+                pointer + "/templateRef");
+        rejectUnknown(templateRef, NodeContractCatalog.TEMPLATE_REF_MEMBERS,
+                pointer + "/templateRef");
+        var templateId = string(required(templateRef, "templateId",
+                pointer + "/templateRef/templateId"), pointer + "/templateRef/templateId");
+        if (!UUID_V4.matcher(templateId).matches()) {
+            throw failure(FailureCode.DESIGN_VALUE_INVALID, pointer + "/templateRef/templateId");
+        }
+        validateTemplateUseContextSelector(
+                required(node, "contextSelector", pointer + "/contextSelector"),
+                pointer + "/contextSelector",
+                loopIds
+        );
+        var fills = array(required(node, "fills", pointer + "/fills"), pointer + "/fills");
+        var normalizedFills = new ArrayList<JsonValue>();
+        var seenTargets = new HashSet<String>();
+        for (int index = 0; index < fills.items().size(); index++) {
+            var fillPointer = pointer + "/fills/" + index;
+            var fill = object(fills.items().get(index), fillPointer);
+            rejectUnknown(fill, NodeContractCatalog.USE_FILL_MEMBERS, fillPointer);
+            var targetDefinitionId = string(required(fill, "targetDefinitionId",
+                    fillPointer + "/targetDefinitionId"), fillPointer + "/targetDefinitionId");
+            if (!UUID_V4.matcher(targetDefinitionId).matches()
+                    || !seenTargets.add(targetDefinitionId)) {
+                throw failure(FailureCode.DESIGN_VALUE_INVALID,
+                        fillPointer + "/targetDefinitionId");
+            }
+            validateBindingSource(
+                    required(fill, "source", fillPointer + "/source"),
+                    fillPointer + "/source",
+                    definitionsOutputTypes,
+                    loopIds
+            );
+            normalizedFills.add(fill);
+        }
+        normalizedFills.sort(Comparator.comparing(a -> ((JsonValue.ObjectValue) a).members()
+                .get("targetDefinitionId") instanceof JsonValue.StringValue target
+                ? target.value() : ""));
+        return new JsonValue.ArrayValue(normalizedFills);
+    }
+
+    /**
+     * Closed contextSelector union (ticket 12 §3): {@code {kind:"context",domain,pointer?,
+     * contextAbsentPolicy}} with the selector-specific {@code {kind:"invocation"}} domain
+     * object, or {@code {kind:"empty"}} (system-empty-only; no absent policy).
+     */
+    private void validateTemplateUseContextSelector(
+            JsonValue value,
+            String pointer,
+            Set<String> loopIds
+    ) throws DesignDslFailureException {
+        var selector = object(value, pointer);
+        var kind = string(required(selector, "kind", pointer + "/kind"), pointer + "/kind");
+        switch (kind) {
+            case "context" -> {
+                rejectUnknown(selector, NodeContractCatalog.CONTEXT_SELECTOR_MEMBERS, pointer);
+                validateTemplateUseSelectorDomain(
+                        required(selector, "domain", pointer + "/domain"),
+                        pointer + "/domain",
+                        loopIds
+                );
+                if (selector.members().containsKey("pointer")) {
+                    var selectorPointer = string(selector.members().get("pointer"),
+                            pointer + "/pointer");
+                    if (!selectorPointer.isEmpty()) {
+                        validateContextPointer(selectorPointer, pointer + "/pointer");
+                    }
+                }
+                enumMember(selector, "contextAbsentPolicy",
+                        NodeContractCatalog.CONTEXT_ABSENT_POLICY_TOKENS,
+                        pointer + "/contextAbsentPolicy");
+            }
+            case "empty" -> rejectUnknown(selector, NodeContractCatalog.EMPTY_SELECTOR_MEMBERS,
+                    pointer);
+            default -> throw failure(FailureCode.DESIGN_VALUE_INVALID, pointer + "/kind");
+        }
+    }
+
+    private void validateTemplateUseSelectorDomain(
+            JsonValue value,
+            String pointer,
+            Set<String> loopIds
+    ) throws DesignDslFailureException {
+        var domain = object(value, pointer);
+        rejectUnknown(domain, NodeContractCatalog.SELECTOR_DOMAIN_MEMBERS, pointer);
+        var kind = string(required(domain, "kind", pointer + "/kind"), pointer + "/kind");
+        switch (kind) {
+            case "invocation" -> {
+            }
+            case "loop" -> {
+                var loopId = string(required(domain, "loopId", pointer + "/loopId"),
+                        pointer + "/loopId");
+                if (!UUID_V4.matcher(loopId).matches() || !loopIds.contains(loopId)) {
+                    throw failure(FailureCode.DESIGN_VALUE_INVALID, pointer + "/loopId");
+                }
+            }
+            default -> throw failure(FailureCode.DESIGN_VALUE_INVALID, pointer + "/kind");
+        }
+    }
     private void validateBindingSource(
             JsonValue value,
             String pointer,

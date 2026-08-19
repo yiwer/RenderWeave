@@ -29,7 +29,8 @@ final class NodeContractCatalog {
         POLYLINE,
         PATH,
         QRCODE,
-        BARCODE
+        BARCODE,
+        TEMPLATE_USE
     }
 
     enum PlacementVariant {
@@ -62,7 +63,8 @@ final class NodeContractCatalog {
             Map.entry("polyline", NodeKind.POLYLINE),
             Map.entry("path", NodeKind.PATH),
             Map.entry("qrCode", NodeKind.QRCODE),
-            Map.entry("barcode", NodeKind.BARCODE)
+            Map.entry("barcode", NodeKind.BARCODE),
+            Map.entry("templateUse", NodeKind.TEMPLATE_USE)
     );
 
     /**
@@ -70,9 +72,7 @@ final class NodeContractCatalog {
      * DESIGN_KERNEL_SCOPE_UNSUPPORTED until their atoms tickets land; anything else is an unknown
      * kind value.
      */
-    static final Set<String> FUTURE_KINDS = Set.of(
-            "conditional", "templateUse"
-    );
+    static final Set<String> FUTURE_KINDS = Set.of("conditional");
 
     static final Set<String> COMMON_NODE_MEMBERS = Set.of(
             "nodeId", "kind", "displayName", "bindings", "placement",
@@ -186,6 +186,20 @@ final class NodeContractCatalog {
     static final Set<String> MEMBER_SELECTOR_MEMBERS = Set.of("kind", "name");
     static final Set<String> INDEX_SELECTOR_MEMBERS = Set.of("kind", "index");
     static final Set<String> SELECTOR_KINDS = Set.of("member", "index");
+
+    // --- TemplateUse contract (ticket 12 §1, §3, §4) ----------------------------
+
+    static final Set<String> TEMPLATE_USE_MEMBERS = Set.of(
+            "useId", "templateRef", "contextSelector", "fills"
+    );
+    static final Set<String> TEMPLATE_REF_MEMBERS = Set.of("templateId");
+    static final Set<String> CONTEXT_SELECTOR_MEMBERS = Set.of(
+            "kind", "domain", "pointer", "contextAbsentPolicy"
+    );
+    static final Set<String> EMPTY_SELECTOR_MEMBERS = Set.of("kind");
+    static final Set<String> SELECTOR_DOMAIN_MEMBERS = Set.of("kind", "loopId");
+    static final Set<String> CONTEXT_ABSENT_POLICY_TOKENS = Set.of("ERROR", "SKIP");
+    static final Set<String> USE_FILL_MEMBERS = Set.of("targetDefinitionId", "source");
     static final List<String> PADDING_MEMBER_ORDER = List.of(
             "topMm", "rightMm", "bottomMm", "leftMm"
     );
@@ -245,9 +259,9 @@ final class NodeContractCatalog {
      */
     static PlacementVariant expectedVariant(NodeKind parentKind) {
         return switch (parentKind) {
-            // Visual leaves never host children; ABSOLUTE keeps the switch total.
+            // Visual leaves and TemplateUse never host children; ABSOLUTE keeps the switch total.
             case CANVAS, FRAME, GROUP, TEXT, IMAGE, RECT, ELLIPSE, LINE, POLYGON, POLYLINE,
-                    PATH, QRCODE, BARCODE -> PlacementVariant.ABSOLUTE;
+                    PATH, QRCODE, BARCODE, TEMPLATE_USE -> PlacementVariant.ABSOLUTE;
             case STACK -> PlacementVariant.STACK;
             case GRID -> PlacementVariant.GRID;
             case REPEAT -> PlacementVariant.PACK;
@@ -259,29 +273,31 @@ final class NodeContractCatalog {
         return switch (kind) {
             case GROUP -> Set.of(SizeMode.HUG_CONTENT);
             case RECT, ELLIPSE, QRCODE, BARCODE -> Set.of(SizeMode.FIXED, SizeMode.FILL);
-            case CANVAS, FRAME, STACK, GRID, REPEAT, TEXT, LINE, POLYGON, POLYLINE, PATH ->
-                    Set.of(SizeMode.FIXED, SizeMode.HUG_CONTENT, SizeMode.FILL);
+            case CANVAS, FRAME, STACK, GRID, REPEAT, TEXT, LINE, POLYGON, POLYLINE, PATH,
+                    TEMPLATE_USE -> Set.of(SizeMode.FIXED, SizeMode.HUG_CONTENT, SizeMode.FILL);
             case IMAGE -> Set.of(SizeMode.FIXED, SizeMode.HUG_CONTENT, SizeMode.FILL);
         };
     }
 
     /**
-     * Containers may nest (except Canvas, which is root-only); visual leaves and Repeat
-     * children have their own ContentModels, so the generic children member is forbidden.
+     * Containers may nest (except Canvas, which is root-only); visual leaves, TemplateUse
+     * and Repeat children have their own ContentModels, so the generic children member is
+     * forbidden where not allowed.
      */
     static boolean allowsChildren(NodeKind kind) {
         return switch (kind) {
             case CANVAS, TEXT, IMAGE, RECT, ELLIPSE, LINE, POLYGON, POLYLINE, PATH,
-                    QRCODE, BARCODE -> false;
+                    QRCODE, BARCODE, TEMPLATE_USE -> false;
             case GROUP, FRAME, STACK, GRID, REPEAT -> true;
         };
     }
 
-    /** Authored wire name of a kind (lowerCamelCase; qrCode/barcode are not plain lower). */
+    /** Authored wire name of a kind (lowerCamelCase; qrCode/barcode/templateUse are not plain lower). */
     static String wireName(NodeKind kind) {
         return switch (kind) {
             case QRCODE -> "qrCode";
             case BARCODE -> "barcode";
+            case TEMPLATE_USE -> "templateUse";
             default -> kind.name().toLowerCase();
         };
     }

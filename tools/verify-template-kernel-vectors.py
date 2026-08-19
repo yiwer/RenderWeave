@@ -66,8 +66,9 @@ KIND_BY_NAME = {
     "path": "PATH",
     "qrCode": "QRCODE",
     "barcode": "BARCODE",
+    "templateUse": "TEMPLATE_USE",
 }
-FUTURE_KINDS = {"conditional", "templateUse"}
+FUTURE_KINDS = {"conditional"}
 COMMON_NODE_MEMBERS = {
     "nodeId",
     "kind",
@@ -181,8 +182,15 @@ TARGET_PROPERTY_REF_MEMBERS = {"rootPropertyId", "selectors"}
 MEMBER_SELECTOR_MEMBERS = {"kind", "name"}
 INDEX_SELECTOR_MEMBERS = {"kind", "index"}
 SELECTOR_KINDS = {"member", "index"}
+TEMPLATE_USE_MEMBERS = {"useId", "templateRef", "contextSelector", "fills"}
+TEMPLATE_REF_MEMBERS = {"templateId"}
+CONTEXT_SELECTOR_MEMBERS = {"kind", "domain", "pointer", "contextAbsentPolicy"}
+EMPTY_SELECTOR_MEMBERS = {"kind"}
+SELECTOR_DOMAIN_MEMBERS = {"kind", "loopId"}
+CONTEXT_ABSENT_POLICY_TOKENS = {"ERROR", "SKIP"}
+USE_FILL_MEMBERS = {"targetDefinitionId", "source"}
 
-_WIRE_KIND_OVERRIDES = {"QRCODE": "qrCode", "BARCODE": "barcode"}
+_WIRE_KIND_OVERRIDES = {"QRCODE": "qrCode", "BARCODE": "barcode", "TEMPLATE_USE": "templateUse"}
 NON_CANVAS_KINDS_WIRE = [
     "group",
     "frame",
@@ -199,6 +207,7 @@ NON_CANVAS_KINDS_WIRE = [
     "path",
     "qrCode",
     "barcode",
+    "templateUse",
 ]
 _NON_CANVAS_NON_GROUP_WIRE = [kind for kind in NON_CANVAS_KINDS_WIRE if kind != "group"]
 
@@ -531,6 +540,7 @@ SIZE_MODES = {
     "POLYLINE": {"FIXED", "HUG_CONTENT", "FILL"},
     "PATH": {"FIXED", "HUG_CONTENT", "FILL"},
     "IMAGE": {"FIXED", "HUG_CONTENT", "FILL"},
+    "TEMPLATE_USE": {"FIXED", "HUG_CONTENT", "FILL"},
 }
 ALLOWS_CHILDREN_KINDS = {"GROUP", "FRAME", "STACK", "GRID", "REPEAT"}
 
@@ -1295,6 +1305,8 @@ def allowed_members(kind: str) -> set[str]:
         members |= GRID_MEMBERS
     elif kind == "REPEAT":
         members |= REPEAT_MEMBERS
+    elif kind == "TEMPLATE_USE":
+        members |= TEMPLATE_USE_MEMBERS
     elif kind == "TEXT":
         members |= TEXT_MEMBERS
     elif kind == "IMAGE":
@@ -1469,6 +1481,101 @@ def validate_binding_source(
         raise semantic_rejection("DESIGN_VALUE_INVALID", pointer + "/kind")
 
 
+def validate_template_use_members(
+    node: dict[str, Any],
+    pointer: str,
+    seen_use_ids: set[str],
+    output_types: dict[str, str],
+    loop_ids: set[str],
+) -> list[Any]:
+    use_id = require_string(require_member(node, "useId", pointer + "/useId"), pointer + "/useId")
+    if UUID_V4.fullmatch(use_id) is None or use_id in seen_use_ids:
+        raise semantic_rejection("DESIGN_VALUE_INVALID", pointer + "/useId")
+    seen_use_ids.add(use_id)
+    template_ref = require_object(
+        require_member(node, "templateRef", pointer + "/templateRef"), pointer + "/templateRef"
+    )
+    reject_unknown(template_ref, TEMPLATE_REF_MEMBERS, pointer + "/templateRef")
+    template_id = require_string(
+        require_member(template_ref, "templateId", pointer + "/templateRef/templateId"),
+        pointer + "/templateRef/templateId",
+    )
+    if UUID_V4.fullmatch(template_id) is None:
+        raise semantic_rejection("DESIGN_VALUE_INVALID", pointer + "/templateRef/templateId")
+    validate_template_use_context_selector(
+        require_member(node, "contextSelector", pointer + "/contextSelector"),
+        pointer + "/contextSelector",
+        loop_ids,
+    )
+    fills = require_array(require_member(node, "fills", pointer + "/fills"), pointer + "/fills")
+    normalized_fills: list[Any] = []
+    seen_targets: set[str] = set()
+    for index, item in enumerate(fills):
+        fill_pointer = pointer + "/fills/" + str(index)
+        fill = require_object(item, fill_pointer)
+        reject_unknown(fill, USE_FILL_MEMBERS, fill_pointer)
+        target_definition_id = require_string(
+            require_member(fill, "targetDefinitionId", fill_pointer + "/targetDefinitionId"),
+            fill_pointer + "/targetDefinitionId",
+        )
+        if UUID_V4.fullmatch(target_definition_id) is None or target_definition_id in seen_targets:
+            raise semantic_rejection(
+                "DESIGN_VALUE_INVALID", fill_pointer + "/targetDefinitionId"
+            )
+        seen_targets.add(target_definition_id)
+        validate_binding_source(
+            require_member(fill, "source", fill_pointer + "/source"),
+            fill_pointer + "/source",
+            output_types,
+            loop_ids,
+        )
+        normalized_fills.append(fill)
+    normalized_fills.sort(key=lambda item: require_string(item["targetDefinitionId"], ""))
+    return normalized_fills
+
+
+def validate_template_use_context_selector(
+    value: Any, pointer: str, loop_ids: set[str]
+) -> None:
+    selector = require_object(value, pointer)
+    kind = require_string(require_member(selector, "kind", pointer + "/kind"), pointer + "/kind")
+    if kind == "context":
+        reject_unknown(selector, CONTEXT_SELECTOR_MEMBERS, pointer)
+        validate_template_use_selector_domain(
+            require_member(selector, "domain", pointer + "/domain"), pointer + "/domain", loop_ids
+        )
+        if "pointer" in selector:
+            selector_pointer = require_string(selector["pointer"], pointer + "/pointer")
+            if selector_pointer:
+                validate_context_pointer(selector_pointer, pointer + "/pointer")
+        enum_member(
+            selector, "contextAbsentPolicy", CONTEXT_ABSENT_POLICY_TOKENS,
+            pointer + "/contextAbsentPolicy",
+        )
+    elif kind == "empty":
+        reject_unknown(selector, EMPTY_SELECTOR_MEMBERS, pointer)
+    else:
+        raise semantic_rejection("DESIGN_VALUE_INVALID", pointer + "/kind")
+
+
+def validate_template_use_selector_domain(
+    value: Any, pointer: str, loop_ids: set[str]
+) -> None:
+    domain = require_object(value, pointer)
+    reject_unknown(domain, SELECTOR_DOMAIN_MEMBERS, pointer)
+    kind = require_string(require_member(domain, "kind", pointer + "/kind"), pointer + "/kind")
+    if kind == "invocation":
+        return
+    if kind == "loop":
+        loop_id = require_string(
+            require_member(domain, "loopId", pointer + "/loopId"), pointer + "/loopId"
+        )
+        if UUID_V4.fullmatch(loop_id) is None or loop_id not in loop_ids:
+            raise semantic_rejection("DESIGN_VALUE_INVALID", pointer + "/loopId")
+        return
+    raise semantic_rejection("DESIGN_VALUE_INVALID", pointer + "/kind")
+
+
 def collect_loop_ids(value: Any, loop_ids: set[str]) -> None:
     if isinstance(value, dict):
         kind = value.get("kind")
@@ -1490,6 +1597,7 @@ def validate_children(
     seen_node_ids: set[str],
     seen_loop_ids: set[str],
     seen_binding_ids: set[str],
+    seen_use_ids: set[str],
     output_types: dict[str, str],
     loop_ids: set[str],
 ) -> list[Any]:
@@ -1500,7 +1608,7 @@ def validate_children(
         normalized.append(
             validate_non_canvas_node(
                 child, child_pointer, parent_kind, parent_direction, seen_node_ids,
-                seen_loop_ids, seen_binding_ids, output_types, loop_ids
+                seen_loop_ids, seen_binding_ids, seen_use_ids, output_types, loop_ids
             )
         )
     return normalized
@@ -1514,6 +1622,7 @@ def validate_non_canvas_node(
     seen_node_ids: set[str],
     seen_loop_ids: set[str],
     seen_binding_ids: set[str],
+    seen_use_ids: set[str],
     output_types: dict[str, str],
     loop_ids: set[str],
 ) -> dict[str, Any]:
@@ -1561,6 +1670,10 @@ def validate_non_canvas_node(
         validate_grid_members(node, pointer)
     elif kind == "REPEAT":
         validate_repeat_members(node, pointer, seen_loop_ids, output_types, loop_ids)
+    elif kind == "TEMPLATE_USE":
+        normalized["fills"] = validate_template_use_members(
+            node, pointer, seen_use_ids, output_types, loop_ids
+        )
     elif kind == "TEXT":
         validate_text_members(node, pointer)
     elif kind == "IMAGE":
@@ -1590,7 +1703,7 @@ def validate_non_canvas_node(
             raise semantic_rejection("DESIGN_VALUE_INVALID", pointer + "/children")
         normalized["children"] = validate_children(
             children, pointer + "/children", kind, own_direction, seen_node_ids,
-            seen_loop_ids, seen_binding_ids, output_types, loop_ids
+            seen_loop_ids, seen_binding_ids, seen_use_ids, output_types, loop_ids
         )
     return normalized
 
@@ -2491,7 +2604,7 @@ def validate_and_normalize(parsed: Any) -> dict[str, Any]:
     )
     normalized_children = validate_children(
         children, "/designRoot/children", "CANVAS", None, set(), set(), seen_binding_ids,
-        output_types, loop_ids
+        set(), output_types, loop_ids
     )
 
     normalized_canvas = dict(canvas)
@@ -2811,13 +2924,13 @@ def main() -> int:
 
     vector_bytes, manifest = load_json(args.vectors)
     _, primary = load_json(args.primary_report)
-    if manifest["vectorVersion"] != "renderweave-template-canonical-kernel-v1/6":
+    if manifest["vectorVersion"] != "renderweave-template-canonical-kernel-v1/7":
         raise AssertionError("Unexpected vector version")
     if manifest["authorityContext"]["staticSchemaProfile"] != "system-empty@v1":
         raise AssertionError("Unexpected external StaticSchema context")
     if manifest["authorityContext"]["profileAvailability"] != "NOT_REGISTERED":
         raise AssertionError("Partial DesignDSL Profile must remain unavailable")
-    if len(manifest["cases"]) != 176:
+    if len(manifest["cases"]) != 197:
         raise AssertionError("Vector case count drift")
 
     results = [replay_case(vector) for vector in manifest["cases"]]

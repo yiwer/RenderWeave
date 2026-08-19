@@ -22,7 +22,8 @@ final class BindingPolicyCatalog {
     private static final List<String> NON_CANVAS_KINDS = List.of(
             "group", "frame", "stack", "grid", "repeat",
             "text", "image", "rect", "ellipse", "line",
-            "polygon", "polyline", "path", "qrCode", "barcode"
+            "polygon", "polyline", "path", "qrCode", "barcode",
+            "templateUse"
     );
 
     private static final List<String> NON_CANVAS_NON_GROUP_KINDS = NON_CANVAS_KINDS.stream()
