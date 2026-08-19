@@ -2,7 +2,7 @@
 
 **Parent:** N9 / R1
 
-**Anchor:** approved successor spec、ADR-0036、commit 19e22854e0be236d0068336a32969356a6befaf8
+**Anchor:** approved successor spec、ADR-0036、commit c12f23d76a6fc76a6a38042ff89bbd166e6012b5
 
 **What to build:** Java evaluator 从 acquisition、三个语义阶段和 Candidate 的受控记录生成完整分层 report，使维护者能判断质量损失发生在 OCR、布局、顺序、重复组、语义阶段还是 Candidate。
 

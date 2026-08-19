@@ -2,7 +2,7 @@
 
 **Parent:** N9 / R1
 
-**Anchor:** approved successor spec、ADR-0036、commit 19e22854e0be236d0068336a32969356a6befaf8
+**Anchor:** approved successor spec、ADR-0036、commit c12f23d76a6fc76a6a38042ff89bbd166e6012b5
 
 **What to build:** 建立与 Java scorer 独立的 Python verifier，依据稳定合同重新计算 identity 和全部指标。它可以与 ticket 09 独立实现，但只能在 ticket 12 与 Java 结果汇合。
 

@@ -32,6 +32,10 @@ GATE = load("layered_gate_verifier", TOOLS / "verify_layered_evaluation_gate.py"
 class LayeredEvaluationGateVerifierTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
+        if GATE.ANCHOR_REVISION != "c12f23d76a6fc76a6a38042ff89bbd166e6012b5":
+            raise AssertionError(
+                f"unexpected R1 anchor revision: {GATE.ANCHOR_REVISION}"
+            )
         cls.protected = GATE.protected_file_rows(REPOSITORY)
         cls.revision = subprocess.run(
             ["git", "rev-parse", "HEAD"], cwd=REPOSITORY, check=True,

@@ -2,7 +2,7 @@
 
 **Parent:** N8 / R0
 
-**Anchor:** approved successor spec、ADR-0036、commit 19e22854e0be236d0068336a32969356a6befaf8
+**Anchor:** approved successor spec、ADR-0036、commit c12f23d76a6fc76a6a38042ff89bbd166e6012b5
 
 **What to build:** 形成 N8/R0 的正式完成门，证明 successor 架构不是只会序列化 IR，而是完整保持 product-v45 行为。此 ticket 完成后才允许任何 R1 ticket 开始。
 

@@ -15,7 +15,7 @@ from typing import Any, Iterable
 
 
 REPORT_VERSION = "renderweave-document-observation-r0-gate/1.0"
-ANCHOR_REVISION = "19e22854e0be236d0068336a32969356a6befaf8"
+ANCHOR_REVISION = "c12f23d76a6fc76a6a38042ff89bbd166e6012b5"
 SHAPE_VERSION = "renderweave-stage-response-shape-catalog/1.0"
 SUCCESSOR_VERSION = "renderweave-document-observation-successor/1.0"
 EXPECTED_SHAPE_IDENTITY = "ad46adfbf6dc9e200f4736e693646ee485de5530af35b2f12802f561faa16557"

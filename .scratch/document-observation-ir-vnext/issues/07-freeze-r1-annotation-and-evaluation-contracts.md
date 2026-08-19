@@ -2,7 +2,7 @@
 
 **Parent:** N9 / R1
 
-**Anchor:** approved successor spec、ADR-0036、commit 19e22854e0be236d0068336a32969356a6befaf8
+**Anchor:** approved successor spec、ADR-0036、commit c12f23d76a6fc76a6a38042ff89bbd166e6012b5
 
 **What to build:** 定义 R1 的 strict annotation、ephemeral scorer input、payload-safe evaluation record 和 report identity，使 Java 与 Python 可以依据同一合同独立实现。不发布半成品 corpus 2.0 manifest。
 

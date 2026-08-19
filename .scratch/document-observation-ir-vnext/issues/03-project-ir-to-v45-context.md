@@ -2,7 +2,7 @@
 
 **Parent:** N8 / R0
 
-**Anchor:** approved successor spec、ADR-0036、commit 19e22854e0be236d0068336a32969356a6befaf8
+**Anchor:** approved successor spec、ADR-0036、commit c12f23d76a6fc76a6a38042ff89bbd166e6012b5
 
 **What to build:** 提供确定性、无副作用的 compatibility projection，把合法 DocumentObservationIR/1.0 转换为 v45 三阶段消费的 Document Vision context，同时保留旧路径作为行为 oracle。
 

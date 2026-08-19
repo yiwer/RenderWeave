@@ -2,7 +2,7 @@
 
 **Parent:** N9 / R1
 
-**Anchor:** approved successor spec、ADR-0036、commit 19e22854e0be236d0068336a32969356a6befaf8
+**Anchor:** approved successor spec、ADR-0036、commit c12f23d76a6fc76a6a38042ff89bbd166e6012b5
 
 **What to build:** 形成 N9/R1 的正式完成证据：完整 corpus v2、Java/Python 一致报告、受控 visual diff 和 full gate，同时保持 product-v45 的真实生命周期状态。
 

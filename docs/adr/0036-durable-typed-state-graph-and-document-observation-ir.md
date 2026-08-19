@@ -2,6 +2,10 @@
 
 - 状态：accepted
 - 日期：2026-08-13
+- 可移植性修订：2026-08-18；经用户明确批准，把本 ADR 的 R0/R1 protected-byte gate 从不可由本地或
+  `origin` 获取的 `19e22854e0be236d0068336a32969356a6befaf8` 重锚到引入本 ADR 的可达提交
+  `c12f23d76a6fc76a6a38042ff89bbd166e6012b5`。14 个 protected paths 对新旧预期均 byte-identical；
+  Profile、Prompt、corpus、pipeline、Provider/live 与生命周期语义不变。
 - 决策来源：用户批准图片识别 vNext successor spec delta，并要求单独记录控制结构
 - 关联：P6/T6-5、AC-DOIR-001..012、ADR-0004、ADR-0020、ADR-0022、ADR-0026、ADR-0028、ADR-0034、ADR-0035
 

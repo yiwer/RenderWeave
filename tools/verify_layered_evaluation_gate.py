@@ -17,7 +17,7 @@ GATE_VERSION = "renderweave-layered-r1-gate/1.0"
 SCANNER_VERSION = "renderweave-layered-evidence-scanner/1.0"
 INDEPENDENT_VERSION = "renderweave-layered-r1-independent-verifier/1.0"
 R0_PROOF_VERSION = "renderweave-layered-r0-prerequisite-proof/1.0"
-ANCHOR_REVISION = "19e22854e0be236d0068336a32969356a6befaf8"
+ANCHOR_REVISION = "c12f23d76a6fc76a6a38042ff89bbd166e6012b5"
 
 PRIMARY_SEAM = "normalized ArtifactSet + AcquisitionPolicy -> DocumentObservationIR/1.0"
 HIGHEST_ACCEPTANCE_SEAM = "complete IMAGE_ONLY scripted replay -> REVIEW_REQUIRED"

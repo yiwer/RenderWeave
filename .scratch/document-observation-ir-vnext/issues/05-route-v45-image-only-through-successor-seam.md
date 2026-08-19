@@ -2,7 +2,7 @@
 
 **Parent:** N8 / R0
 
-**Anchor:** approved successor spec、ADR-0036、commit 19e22854e0be236d0068336a32969356a6befaf8
+**Anchor:** approved successor spec、ADR-0036、commit c12f23d76a6fc76a6a38042ff89bbd166e6012b5
 
 **What to build:** 将一条代表性的 scripted IMAGE_ONLY 流程从旧 DocumentVisionPreprocessor 调用边界切换到 VisualEvidenceAcquisition，经串行三阶段和本地物化到达 REVIEW_REQUIRED。
 

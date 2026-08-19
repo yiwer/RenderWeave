@@ -2,7 +2,7 @@
 
 **Parent:** N9 / R1
 
-**Anchor:** approved successor spec、ADR-0036、commit 19e22854e0be236d0068336a32969356a6befaf8
+**Anchor:** approved successor spec、ADR-0036、commit c12f23d76a6fc76a6a38042ff89bbd166e6012b5
 
 **What to build:** 建立仅供受控本地评测使用的 visual diff，叠加 gold/predicted box、region、order edge 和 evidence owner，帮助人工定位漏检、错检与顺序错误。
 

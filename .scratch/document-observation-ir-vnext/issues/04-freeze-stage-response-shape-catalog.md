@@ -2,7 +2,7 @@
 
 **Parent:** N8 / R0
 
-**Anchor:** approved successor spec、ADR-0036、commit 19e22854e0be236d0068336a32969356a6befaf8
+**Anchor:** approved successor spec、ADR-0036、commit c12f23d76a6fc76a6a38042ff89bbd166e6012b5
 
 **What to build:** 为 OBSERVE、HIERARCHY、ELEMENT_BINDING 建立 canonical、byte-stable、机器可读的 shape catalog、JSON Schema 文档和正负 fixtures。
 

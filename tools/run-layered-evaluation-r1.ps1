@@ -240,7 +240,7 @@ try {
         reportVersion = 'renderweave-layered-r1-gate/1.0'
         result = 'passed'
         assurance = 'A1+A2-strict-input'
-        anchorRevision = '19e22854e0be236d0068336a32969356a6befaf8'
+        anchorRevision = 'c12f23d76a6fc76a6a38042ff89bbd166e6012b5'
         revision = $revision
         seams = [ordered]@{
             primary = 'normalized ArtifactSet + AcquisitionPolicy -> DocumentObservationIR/1.0'

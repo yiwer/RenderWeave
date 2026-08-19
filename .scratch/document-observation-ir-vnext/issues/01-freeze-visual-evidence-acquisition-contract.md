@@ -2,7 +2,7 @@
 
 **Parent:** N8 / R0
 
-**Anchor:** approved successor spec、ADR-0036、commit 19e22854e0be236d0068336a32969356a6befaf8
+**Anchor:** approved successor spec、ADR-0036、commit c12f23d76a6fc76a6a38042ff89bbd166e6012b5
 
 **What to build:** 建立 additive 的深 Module 合同，使调用方通过唯一主 seam
 normalized ArtifactSet + AcquisitionPolicy -> DocumentObservationIR/1.0

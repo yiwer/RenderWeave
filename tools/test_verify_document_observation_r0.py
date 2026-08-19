@@ -47,6 +47,10 @@ class DocumentObservationR0VerifierTest(unittest.TestCase):
             })
 
     def test_active_authorization_slots_can_advance_without_weakening_product_snapshot_protection(self) -> None:
+        self.assertEqual(
+            "c12f23d76a6fc76a6a38042ff89bbd166e6012b5",
+            VERIFIER.ANCHOR_REVISION,
+        )
         rows = VERIFIER.protected_file_rows(REPOSITORY)
         paths = {row["path"] for row in rows}
 
