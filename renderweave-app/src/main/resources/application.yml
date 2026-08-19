@@ -41,6 +41,23 @@ renderweave:
       enabled: ${RENDERWEAVE_TEMPLATE_SINGLE_OWNER_ENABLED:false}
       owner-scope: ${RENDERWEAVE_TEMPLATE_SINGLE_OWNER_SCOPE:}
       capabilities: ${RENDERWEAVE_TEMPLATE_SINGLE_OWNER_CAPABILITIES:}
+  asset:
+    single-owner:
+      # Development/test host adapter only. Production remains fail-closed by default.
+      enabled: ${RENDERWEAVE_ASSET_SINGLE_OWNER_ENABLED:false}
+      owner-scope: ${RENDERWEAVE_ASSET_SINGLE_OWNER_SCOPE:}
+      capabilities: ${RENDERWEAVE_ASSET_SINGLE_OWNER_CAPABILITIES:}
+    capacity:
+      hard-limit-bytes: ${RENDERWEAVE_ASSET_CAPACITY_HARD_LIMIT_BYTES:107374182400}
+    idempotency:
+      ttl: ${RENDERWEAVE_ASSET_IDEMPOTENCY_TTL:PT24H}
+    s3:
+      endpoint: ${RENDERWEAVE_ASSET_S3_ENDPOINT:}
+      region: ${RENDERWEAVE_ASSET_S3_REGION:us-east-1}
+      bucket: ${RENDERWEAVE_ASSET_S3_BUCKET:renderweave-assets}
+      access-key: ${RENDERWEAVE_ASSET_S3_ACCESS_KEY:}
+      secret-key: ${RENDERWEAVE_ASSET_S3_SECRET_KEY:}
+      path-style: ${RENDERWEAVE_ASSET_S3_PATH_STYLE:true}
   inference:
     blob-root: ${RENDERWEAVE_BLOB_ROOT:./var/renderweave/blobs}
     live-enabled: ${RENDERWEAVE_LIVE_AI_ENABLED:false}

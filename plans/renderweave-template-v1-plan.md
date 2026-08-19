@@ -1,6 +1,6 @@
 # RenderWeave Template v1 Implementation Plan
 
-- 状态：`in_progress`；TV1-T01/T02/T03/T04/T05/T06/T10/T10b=`automated_verified`，下一 frontier TV1-T11
+- 状态：`in_progress`；TV1-T01/T02/T03/T04/T05/T06/T10/T10b=`automated_verified`，TV1-T11=`in_progress`（task，claimed）
 - 日期：2026-08-19
 - Approved delta：[`specs/changes/20260817-template-v1-implementation-authority.md`](../specs/changes/20260817-template-v1-implementation-authority.md)
 - Frozen checkpoint：`0b485f4a13de9d754a81d07f464730776e13c14b`
@@ -99,7 +99,7 @@ flowchart LR
 | 09 | prototype | `open` | 06, 07, 08 | Editor 状态/恢复/预览架构验证；不进产品 route |
 | 10 | task | `resolved` / `automated_verified` | 05 | Asset acceptance kernel；38 vectors Java/Python 38/38（A2）；`asset` gate 入 full |
 | 10b | task | `resolved` / `automated_verified` | 10 | canonical sRGB ICC 字节等值接受原子；41 vectors Java/Python 41/41 |
-| 11 | task | `open` | 05, 10, 10b | Asset create/current/catalog PostgreSQL+S3 纵切；V019 + OpenAPI/Web SDK + MinIO |
+| 11 | task | `in_progress` / claimed by Codex `/root` | 05, 10, 10b | Asset create/current/catalog PostgreSQL+S3 纵切；V019 + OpenAPI/Web SDK + MinIO |
 | 12a | task | `open` | 05, 11 | content replace/旧内容恢复 + 审计与 STALE 事实 |
 | 12b | task | `open` | 05, 11, Template 依赖投影票 | delete/restore + AssetReferencePort/确认 token 编排 |
 | 13 | task | `open` | 05, 07, 08, 11 | AssetResolver/Renderer-only lease 纵切 |
@@ -107,9 +107,9 @@ flowchart LR
 每次只 claim 一个 unblocked ticket；一票 resolved 后才由其 `Blocked by` 关系产生下一 frontier。未知实现切片留在
 map 的 `Not yet specified`，不为排满计划提前发明接口、migration 或 Profile identity。
 
-TV1-T10 与 TV1-T10b 已完成；TV1-T11（Asset persistence 纵切）成为唯一 unblocked frontier。TV1-T12b 另以
-Template 依赖投影票（未建，随 DesignDSL full-Profile 拆分登记）为 blocker；TV1-T13 被 TV1-T07/T08/T11 阻塞。
-single-writer 不顺带 claim 或预建 Asset persistence 之外的 surface。
+TV1-T10 与 TV1-T10b 已完成；TV1-T11（Asset persistence 纵切）是唯一 unblocked frontier 并已被 claim（task）。
+TV1-T12b 另以 Template 依赖投影票（未建，随 DesignDSL full-Profile 拆分登记）为 blocker；TV1-T13 被
+TV1-T07/T08/T11 阻塞。single-writer 不顺带 claim 或预建 replace/delete/restore/Resolver。
 
 ## 5. TV1-T01 执行卡
 

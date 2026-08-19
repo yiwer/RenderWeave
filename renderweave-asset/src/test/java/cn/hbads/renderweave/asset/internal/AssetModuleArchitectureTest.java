@@ -13,6 +13,7 @@ class AssetModuleArchitectureTest {
     private static final String API = "cn.hbads.renderweave.asset.api..";
     private static final String INTERNAL = "cn.hbads.renderweave.asset.internal..";
     private static final String SPI = "cn.hbads.renderweave.asset.spi..";
+    private static final String ASSEMBLY = "cn.hbads.renderweave.asset.internal.AssetModule";
 
     private final com.tngtech.archunit.core.domain.JavaClasses production =
             new ClassFileImporter()
@@ -29,17 +30,32 @@ class AssetModuleArchitectureTest {
     }
 
     @Test
+    void outboundSpiAnchorIsRealAndCannotReachInternalImplementation() {
+        classes()
+                .that().resideInAPackage(SPI)
+                .should().bePublic()
+                .allowEmptyShould(false)
+                .check(production);
+        noClasses()
+                .that().resideInAPackage(SPI)
+                .should().dependOnClassesThat().resideInAPackage(INTERNAL)
+                .allowEmptyShould(false)
+                .check(production);
+    }
+
+    @Test
     void internalImplementationAnchorIsRealAndNotPublic() {
         noClasses()
                 .that().resideInAPackage(INTERNAL)
                 .and().areTopLevelClasses()
+                .and().doNotHaveFullyQualifiedName(ASSEMBLY)
                 .should().bePublic()
                 .allowEmptyShould(false)
                 .check(production);
     }
 
     @Test
-    void publicApiCannotReachInternalOrFutureOutboundPackages() {
+    void publicApiCannotReachInternalOrOutboundPackages() {
         noClasses()
                 .that().resideInAPackage(API)
                 .should().dependOnClassesThat().resideInAnyPackage(INTERNAL, SPI)
@@ -61,6 +77,7 @@ class AssetModuleArchitectureTest {
                         "javax.persistence..",
                         "java.sql..",
                         "javax.sql..",
+                        "software.amazon.awssdk..",
                         "java.lang.foreign..",
                         "com.sun.jna..",
                         "jnr.ffi.."
@@ -80,7 +97,8 @@ class AssetModuleArchitectureTest {
                 .that().resideInAPackage(ROOT)
                 .and().areTopLevelClasses()
                 .and().arePublic()
-                .should().resideInAPackage(API)
+                .and().doNotHaveFullyQualifiedName(ASSEMBLY)
+                .should().resideInAnyPackage(API, SPI)
                 .allowEmptyShould(false)
                 .check(production);
     }

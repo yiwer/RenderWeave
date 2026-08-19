@@ -20,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class AssetAcceptancePublicSurfaceTest {
 
     @Test
-    void exposesOnlyTheAcceptanceContractAsTopLevelPublicType() {
+    void exposesOnlyTheOwnedContractsAsTopLevelPublicTypes() {
         var production = new ClassFileImporter()
                 .withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
                 .importPackages("cn.hbads.renderweave.asset");
@@ -30,7 +30,14 @@ class AssetAcceptancePublicSurfaceTest {
                 .map(javaClass -> javaClass.getName())
                 .collect(Collectors.toUnmodifiableSet());
 
-        assertEquals(Set.of(AssetAcceptanceAuthority.class.getName()), publicTopLevel);
+        assertEquals(Set.of(
+                AssetAcceptanceAuthority.class.getName(),
+                "cn.hbads.renderweave.asset.api.AssetApplication",
+                "cn.hbads.renderweave.asset.spi.AssetOwnerScopeAuthority",
+                "cn.hbads.renderweave.asset.spi.AssetPersistence",
+                "cn.hbads.renderweave.asset.spi.AssetBlobPersistence",
+                "cn.hbads.renderweave.asset.internal.AssetModule"
+        ), publicTopLevel);
     }
 
     @Test
