@@ -29,6 +29,7 @@ $oldEnvironment = @{}
 $journeyStarted = Get-Date
 $journeyResult = 'failed'
 $journeyFailure = $null
+$script:cimUnavailable = $false
 $revision = (& git -C $repoRoot rev-parse --verify HEAD)
 $status = (& git -C $repoRoot status --porcelain=v1 2>&1) -join "`n"
 
@@ -85,19 +86,53 @@ function Wait-ForHttp {
 
 function Get-JourneyProcessIds {
     $result = @()
+    $processNames = @()
     if ($apiPort) {
-        $result += @(Get-CimInstance Win32_Process | Where-Object {
-            $_.Name -eq 'java.exe' `
-                -and $_.CommandLine -like "*$jarPath*" `
-                -and $_.CommandLine -like "*--server.port=$apiPort*"
-        } | Select-Object -ExpandProperty ProcessId)
+        $processNames += 'java.exe'
     }
     if ($viteCli -and $webPort) {
-        $result += @(Get-CimInstance Win32_Process | Where-Object {
-            $_.Name -eq 'node.exe' `
-                -and $_.CommandLine -like "*$viteCli*" `
-                -and $_.CommandLine -like "*--port $webPort*"
-        } | Select-Object -ExpandProperty ProcessId)
+        $processNames += 'node.exe'
+    }
+    if (-not $processNames) {
+        return @()
+    }
+    $filter = "Name = '" + ($processNames -join "' OR Name = '") + "'"
+    $instances = @()
+    $previousErrorAction = $ErrorActionPreference
+    $ErrorActionPreference = 'SilentlyContinue'
+    try {
+        foreach ($attempt in 1..3) {
+            try {
+                $instances = @(Get-CimInstance Win32_Process -Filter $filter -ErrorAction Stop)
+                break
+            }
+            catch {
+                if ($attempt -ge 3) {
+                    $script:cimUnavailable = $true
+                    return @()
+                }
+                Start-Sleep -Milliseconds 300
+            }
+        }
+        foreach ($instance in $instances) {
+            $commandLine = $instance.CommandLine
+            if ($null -eq $commandLine) {
+                continue
+            }
+            if ($instance.Name -eq 'java.exe' `
+                    -and $commandLine -like "*$jarPath*" `
+                    -and $commandLine -like "*--server.port=$apiPort*") {
+                $result += $instance.ProcessId
+            }
+            elseif ($instance.Name -eq 'node.exe' `
+                    -and $commandLine -like "*$viteCli*" `
+                    -and $commandLine -like "*--port $webPort*") {
+                $result += $instance.ProcessId
+            }
+        }
+    }
+    finally {
+        $ErrorActionPreference = $previousErrorAction
     }
     return @($result | Sort-Object -Unique)
 }
@@ -237,6 +272,7 @@ catch {
     throw
 }
 finally {
+    $cleanupWarnings = @()
     $ownedProcessIds = @()
     foreach ($process in @($webProcess, $apiProcess)) {
         if ($process) {
@@ -247,8 +283,13 @@ finally {
     foreach ($processId in ($ownedProcessIds | Sort-Object -Unique)) {
         $ownedProcess = Get-Process -Id $processId -ErrorAction SilentlyContinue
         if ($ownedProcess) {
-            Stop-Process -InputObject $ownedProcess -Force
-            $null = $ownedProcess.WaitForExit(5000)
+            Stop-Process -InputObject $ownedProcess -Force -ErrorAction SilentlyContinue
+            try {
+                $null = $ownedProcess.WaitForExit(5000)
+            }
+            catch {
+                # The process exited between the handle check and the wait; nothing left to stop.
+            }
         }
     }
     foreach ($cleanupAttempt in 1..3) {
@@ -260,12 +301,22 @@ finally {
         foreach ($processId in $lateProcessIds) {
             $lateProcess = Get-Process -Id $processId -ErrorAction SilentlyContinue
             if ($lateProcess) {
-                Stop-Process -InputObject $lateProcess -Force
-                $null = $lateProcess.WaitForExit(5000)
+                Stop-Process -InputObject $lateProcess -Force -ErrorAction SilentlyContinue
+                try {
+                    $null = $lateProcess.WaitForExit(5000)
+                }
+                catch {
+                }
             }
         }
     }
     $remainingProcessIds = @(Get-JourneyProcessIds)
+    if ($script:cimUnavailable) {
+        $cleanupWarnings += 'Get-CimInstance unavailable during cleanup; only owned process handles were reaped, so the leaked-process sweep could not be verified.'
+    }
+    if ($remainingProcessIds) {
+        $cleanupWarnings += "process cleanup failed for PID(s): $($remainingProcessIds -join ', ')."
+    }
     if ($containerId) {
         & docker stop $containerName *> $null
     }
@@ -281,6 +332,8 @@ finally {
         workingTreeDirty = [bool]$status
         startedAt = $journeyStarted.ToString('o')
         finishedAt = (Get-Date).ToString('o')
+        cleanupMode = if ($script:cimUnavailable) { 'owned-handles-only' } else { 'cim-sweep' }
+        cleanupWarning = $cleanupWarnings -join '; '
         failure = $journeyFailure
     }
     $encoding = New-Object System.Text.UTF8Encoding($false)
@@ -290,7 +343,10 @@ finally {
         $encoding
     )
     Write-ArtifactManifest
-    if ($remainingProcessIds) {
+    if ($remainingProcessIds -and $null -eq $journeyFailure) {
         throw "E2E process cleanup failed for PID(s): $($remainingProcessIds -join ', ')."
+    }
+    if ($remainingProcessIds -and $journeyFailure) {
+        Write-Warning "E2E process cleanup failed for PID(s): $($remainingProcessIds -join ', '); journey failure is the primary result."
     }
 }
