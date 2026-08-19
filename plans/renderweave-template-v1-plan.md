@@ -1,7 +1,7 @@
 # RenderWeave Template v1 Implementation Plan
 
-- 状态：`in_progress`；TV1-T01/T02/T03/T04/T05/T06/T07/T10/T10b/T11/T12a=`automated_verified`，
-  TV1-T08=`open`（grilling）
+- 状态：`in_progress`；TV1-T01/T02/T03/T04/T05/T06/T07/T08/T10/T10b/T11/T12a=`automated_verified`，
+  TV1-T09/T12b/T13=`open`
 - 日期：2026-08-19
 - Approved delta：[`specs/changes/20260817-template-v1-implementation-authority.md`](../specs/changes/20260817-template-v1-implementation-authority.md)
 - Frozen checkpoint：`0b485f4a13de9d754a81d07f464730776e13c14b`
@@ -96,7 +96,7 @@ flowchart LR
 | 05 | grilling | `resolved` / `automated_verified` | 01, 02 | ADR-0043 Asset admission/resolution deep interface 与 S3 Blob seam；无 Java/migration/route |
 | 06 | task | `resolved` / `automated_verified` | 03, 04 | Template create/read/save PostgreSQL 纵切；V018 + OpenAPI 0.10.0 + Web SDK + `full` 15/15 |
 | 07 | grilling | `resolved` / `automated_verified` | 03, 04, 05 | ADR-0044：closure authority/Evaluator/RenderOutput/CapabilityStateStore/RenderEngine port/语料纪律与 T08 边界 |
-| 08 | grilling | `open` | 02, 07 | Rust process protocol与外部认证计划 |
+| 08 | grilling | `resolved` / `automated_verified` | 02, 07 | ADR-0045：常驻 daemon/UDS 帧协议/registry/fetch/cancel/构建与四级认证计划 |
 | 09 | prototype | `open` | 06, 07, 08 | Editor 状态/恢复/预览架构验证；不进产品 route |
 | 10 | task | `resolved` / `automated_verified` | 05 | Asset acceptance kernel；38 vectors Java/Python 38/38（A2）；`asset` gate 入 full |
 | 10b | task | `resolved` / `automated_verified` | 10 | canonical sRGB ICC 字节等值接受原子；41 vectors Java/Python 41/41 |
@@ -108,10 +108,11 @@ flowchart LR
 每次只 claim 一个 unblocked ticket；一票 resolved 后才由其 `Blocked by` 关系产生下一 frontier。未知实现切片留在
 map 的 `Not yet specified`，不为排满计划提前发明接口、migration 或 Profile identity。
 
-TV1-T07 已 resolve（ADR-0044），TV1-T08（Rust Renderer process protocol grilling）是唯一 unblocked
-frontier；TV1-T12b 仍以 Template 依赖投影票（未建，随 DesignDSL full-Profile 拆分登记）为 blocker；
-TV1-T13 被 TV1-T08/T11 阻塞（T07 已解锁）；TV1-T09 被 T08 阻塞。single-writer 不顺带 claim 或预建
-delete/restore/Resolver/Rust wire。
+TV1-T07/T08 已 resolve（ADR-0044/0045），Rendering 侧再无 unblocked grilling；TV1-T12b 仍以 Template
+依赖投影票（未建，随 DesignDSL full-Profile 拆分登记）为 blocker；TV1-T13 以首个 Rendering 实现票与
+T08 为前置；TV1-T09（Editor prototype）继续被 07/08 阻塞。single-writer 不顺带 claim 或预建
+delete/restore/Resolver/Rust wire；首个 Rendering/Rust 实现 task 票与 DesignDSL full-Profile 拆分票在
+各自前置满足后另行登记。
 
 ## 5. TV1-T01 执行卡
 
@@ -306,3 +307,26 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
   本票没有 Rendering 产品执行、A3 或 J1。
 - 完成信号：Ticket 07 resolved/`automated_verified`、T08 成为唯一 unblocked frontier、形成一个 verified
   `agent-commit` 且 worktree clean；不 push/tag/PR。
+
+## 18. TV1-T08 执行卡
+
+- 决策：ADR-0045（两轮 HITL 对答 Q1–Q12 逐项按推荐采纳）：常驻 Rust daemon + UDS（单连接 requestId
+  多路复用）、握手（协议版本 + certified manifest + capability）+ 类型化 4 字节大端 length 前缀帧
+  （COMMAND/CANCEL strict JSON、RESULT closed JSON + 分帧 raw image bytes、PROBLEM closed JSON；
+  stdout/stderr 仅日志、exit code 固定）、registry 全在 daemon 内存（Java 只映射 ADR-0044 五态，崩溃=
+  Unknown→原 deadline 重发→terminal）、FIFO queue/slot 全在 daemon（数值归 Ticket 19）、daemon 侧
+  manifest order HTTPS fetch app origin（rustls/allowlist/复验/5xx backoff，app 只经 AssetFetchEndpoint）、
+  CANCEL 帧 + 固定 cooperative checkpoint + 原子 seal 后单一 RESULT 帧、adapter 监督生命周期 + 握手
+  manifest 校验 + 固定 backoff 重启、仓库内 `renderer/` cargo workspace（不进 Maven reactor）钉死
+  工具链/lockfile/vendor/manifest/唯一 CPU 路径、Linux-only 认证、四级认证阶梯（仓库内 replay →
+  双物理 Linux CPU-family → J1/A3 → Ticket 19 数值）、Windows/WSL/scripted 永不升级 READY、帧编码
+  向量格式冻结（实际向量随首个实现票）。
+- 允许影响：ADR、CONTEXT 术语核对、tracker/plan/log/NOTES。
+- 禁止影响：Rust/Java/Web 产品源码、OpenAPI、migration、route/page、gate 组成、Profile available
+  注册、DB/网络/浏览器/Provider/J1/物理机认证执行。
+- 局部验证：ADR/tracker/plan/NOTES 交叉一致、`git diff --check`、product-surface inventory（零新增）。
+- 受影响验证：`template` composite 与 `fast`（docs-only，输入未变可复用既有绿）。
+- 保证等级：文档/静态 gate A1；既有 kernel/registry exact inputs 的独立 replay 仍只在原边界为 A2；
+  本票没有 Rendering/Rust 产品执行、A3 或 J1。
+- 完成信号：Ticket 08 resolved/`automated_verified`、Rendering 侧无 unblocked grilling、形成一个
+  verified `agent-commit` 且 worktree clean；不 push/tag/PR。

@@ -1249,3 +1249,29 @@
 - 本票零产品代码（无 Java Interface/migration/route/gate 组成）；`template` 与 `fast` 通过（docs-only，
   kernel 33/33、asset kernel 41/41、registry counts 不变）。T08 成为唯一 unblocked frontier（grilling，
   HITL）；T13 仍以 T08 为 blocker；push 待用户另行授权（分支 ahead 7）。
+
+### Template v1 TV1-T08 Rust Renderer process protocol 与认证计划
+
+- 两轮 HITL 对答（Q1–Q12）逐项按推荐采纳后冻结 ADR-0045：常驻 Rust daemon + Unix domain socket（app
+  Adapter 单常驻连接、帧按 requestId 多路复用；registry/join/replay/cancel 常驻语义成立，不使用
+  JNI/FFI）；握手帧（协议版本 + certified manifest identity + capability，不匹配拒绝服务）+ 类型化
+  4 字节大端 length 前缀帧（COMMAND/CANCEL strict JSON、RESULT = closed 结果 JSON 帧 + 独立 raw image
+  bytes 帧逐帧核验 length/digest、PROBLEM closed JSON；stdout/stderr 仅日志、exit code 固定语义）。
+- registry（reservation/active/terminal replay/cancel tombstone）全在 daemon 内存（保留窗口按规格
+  max(sealedAt,deadlineAt)+5min 与 60s tombstone）；Java 只映射 ADR-0044 五态 outcome，崩溃=Unknown→
+  原 deadline 内同 canonical Command 重发→RENDER_REQUEST_STATE_LOST/RENDER_INTERNAL_ERROR；FIFO
+  queue/slot 全在 daemon（queue wait ≤5s 计入 deadline、超时固定 RENDER_DEADLINE_EXCEEDED、无法取位非
+  terminal RENDER_ENGINE_BUSY，数值归 Ticket 19）。
+- 资源 fetch 在 daemon：manifest order HTTPS fetch app origin（rustls、canonical allowlist/无 redirect/
+  proxy env/cookie/range/caller header、length/lowercase SHA-256/media/magic/descriptor 复验、transport/
+  5xx 固定 backoff 无 jitter、4xx/expiry/integrity/decode 零重试）；app 只经 AssetFetchEndpoint 核验
+  lease claims 供给，daemon 绝不直发 S3。CANCEL 帧 + 固定 cooperative checkpoint + 原子 seal 后单一
+  RESULT 帧，任何路径零 partial output。
+- 构建与认证：仓库内新 `renderer/` cargo workspace（独立于 Maven reactor，不进架构测试）钉死
+  rust-toolchain/cargo.lock/vendor/机器可读 manifest/唯一 CPU 路径（x86-64-v2 无 runtime SIMD
+  dispatch）；Linux 唯一生产/认证目标，Windows 仅 dev 永不入证据；旧 busbox 只作参考基础不宣称
+  haibo 兼容；四级认证阶梯（仓库内 corpus replay → 双物理 Linux CPU-family → 人工 J1 + 外部 A3 →
+  Ticket 19 数值）；Windows/WSL/scripted 任一等级不计，`render` gate 随首个实现票纳入 `full`。
+- 本票零产品代码；`template` 与 `fast` 通过（docs-only）。Rendering 侧再无 unblocked grilling；T13 以
+  首个 Rendering 实现票与 T08 为前置，T09 继续被 07/08 阻塞；Profile 未注册，Renderer 不 READY，
+  Ticket 19 open；push 待用户另行授权（分支 ahead 8）。

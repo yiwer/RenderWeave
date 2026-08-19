@@ -88,6 +88,17 @@ Label: wayfinder:map
   sidecar 内部持有 + 有权限投影、problem 基础形态与九值 stage enum（容量 oracle 归 Ticket 19）、
   跨语言 RenderNodeContract/向量语料纪律（首 task 票落向量，T08 后 Rust independent + `render` gate）、
   T07/T08 边界与 READY 纪律。无 Java/migration/route，Profile 未注册，Renderer 不 READY，Ticket 19 open。
+- [冻结 Rust Renderer process protocol 与认证计划](issues/08-freeze-rust-renderer-protocol.md) —
+  ADR-0045 经两轮 HITL 对答（Q1–Q12 逐项按推荐）冻结：常驻 Rust daemon + UDS（单连接 requestId 多路
+  复用）、握手（版本 + certified manifest + capability）+ 类型化 length 前缀帧（COMMAND/CANCEL/RESULT
+  分帧/raw image bytes/PROBLEM）、registry 全在 daemon 内存（Java 只映射五态 outcome，崩溃=Unknown→
+  原 deadline 重发→terminal）、FIFO queue/slot 全在 daemon（数值归 Ticket 19）、daemon 侧 HTTPS fetch
+  app origin（rustls/allowlist/复验/5xx backoff，app 只经 AssetFetchEndpoint）、CANCEL 帧 + cooperative
+  checkpoint + 零 partial output、adapter 监督生命周期 + 握手 manifest 校验 + backoff 重启、仓库内
+  `renderer/` cargo workspace（不进 Maven reactor）钉死工具链/manifest/唯一 CPU 路径、Linux-only 认证、
+  四级认证阶梯（仓库内 replay → 双物理 Linux CPU-family → J1/A3 → Ticket 19 数值）、Windows/WSL/
+  scripted 永不升级 READY、帧向量随首个实现票落地。无 Rust/Java 产品代码，Profile 未注册，Renderer
+  不 READY，Ticket 19 open。
 
 ## Not yet specified
 
@@ -101,7 +112,10 @@ Label: wayfinder:map
   Rendering task 票将同时物化 `TemplateClosureAuthority`/`Evaluator`/seal 纵切与 RenderNodeContract/
   向量语料（Java primary；Rust independent 与 `render` gate 随 T08）；AssetRef-atom 预准入提取随
   DesignDSL full-Profile 拆分实现。
-- Rust layout、font shaping、resource decode、raster、PNG/JPEG encoding 与 exact pixel replay 的切片，要等 process protocol 和 build/certification contract 冻结后再登记。
+- Rust layout、font shaping、resource decode、raster、PNG/JPEG encoding 与 exact pixel replay 的切片，
+  要等 process protocol 和 build/certification contract 冻结后再登记——ADR-0045 已给出该合同：首个
+  Rust/process task 票将同时物化 daemon、帧编解码、certified manifest 与仓库内 replay harness；
+  `render` gate 随实现票纳入 `full`，物理 Linux 双 CPU-family 认证与 J1/A3 属届时另行授权的执行级门控。
 - Product Editor 的 save/recovery/conflict/preview/browser automation 与 accessibility 实施票，要等状态架构
   prototype 结论后再登记；Asset picker/catalog UI 随 Editor 实施票同批。
 - 正式 Case/Oracle、execution-class product target、Profile 发行、Editor J1、Renderer 双物理 Linux CPU-family 认证与最终生命周期升级，必须以届时真实产品 artifact 和 executor 为输入另行切票；Ticket 19 保持 open。
