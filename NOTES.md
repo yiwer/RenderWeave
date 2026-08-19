@@ -1173,3 +1173,34 @@
 - T10b（canonical sRGB ICC 等值原子）已并入：sRGB IEC 61966-2.1 profile（3144B，sha256 `2b3aa164…af7e`，
   ICC 头 acsp/mntr/RGB/XYZ）冻结为模块资源并接线 PNG iCCP/JPEG APP2/WebP ICCP 字节等值接受；manifest 41
   vectors，asset `20260819-135503-asset` Java=41/41 Python=41/41（A2）。T11 解锁。
+
+### Template v1 TV1-T11 Asset create/current/catalog PostgreSQL+S3 纵切
+
+- `renderweave-asset` 新增 `AssetApplication` 六个 closed 方法（create/getCurrent/updateMetadata/catalog/
+  listContentVersions/downloadExact），`AssetModule` 成为 app 可 import 的唯一 Asset `.internal` assembly
+  seam（ADR-0041 窄例外，与 `TemplateModule` 一起进入 `TemplateV1ArchitectureTest.APP_ASSEMBLY_EXCEPTIONS`）；
+  ownerScope/capability 只取 Host authority，幂等 create 按 scope+key+完整请求指纹 replay/conflict（24h），
+  容量水位在新增 Blob 时 fail-closed，download 复验 sha256/length。
+- V019（forward-only）建 `asset_aggregate`/`asset_content_revision`/`asset_idempotency`/`asset_capacity`；
+  任何 revision 无 UPDATE/DELETE 路径。HTTP 面 `/api/v1/assets`：multipart 幂等 create（`Idempotency-Key`
+  header + 表单字段 + content part）→ 201、GET catalog（`updatedAt DESC, assetId ASC` 稳定游标 +
+  kind/tagsAll/tagsAny/displayName/sourceFileName/includeDeleted 过滤）、GET current、PUT
+  `/{id}/metadata?expectedAssetRevision`（409 `ASSET_REVISION_CONFLICT` 带 currentAssetRevision）、GET
+  versions/download（精确版本，复验后返回）/preview（内部只读）；problem+json 全覆盖（400/403/404/409/410/
+  413/422/507/503）。OpenAPI 0.11.0 与 Web SDK 已再生成，`SystemStatusController`/`EnvironmentCanaryTest`/
+  `ResourceFrame.tsx` contractVersion 同步 0.11.0。
+- `compose.yaml` 增 `minio`（`RELEASE.2024-12-18T13-15-44Z`，镜像自带 curl/mc，healthcheck 用
+  `/minio/health/live`）与 `minio-init` 同镜像建桶，api 注入 `RENDERWEAVE_ASSET_S3_*`；multipart transport
+  上限 65MB/66MB（略高于 admission 64MiB 图片上限），`InferenceController.createLive` 在 app 层按权威预算
+  （10 MiB item / 32 MiB batch）拒绝超限上传，仍为 413 `INFERENCE_PAYLOAD_TOO_LARGE`（`LiveInferenceApiTest`
+  的 transport 断言同步更新）。
+- 无 S3 endpoint 时 `AssetApplication`/`AssetController` 都不装配（`@ConditionalOnExpression` 属性条件；
+  Boot 4.1 对同批 `@Bean` 的 `@ConditionalOnBean` 求值时机不可靠，实测会误装配/误跳过）。验证中同票修复
+  三个从未被覆盖的隐藏缺陷：`tagsAny` 的 `jsonb_exists_any` 第二参应为 `text[]`（改 `String[]` JDBC
+  绑定）、Spring 7 `RequestMappingHandlerMapping.isHandler` 只认 `@Controller`、Spring 7 MockMvc 对
+  `@RequestPart List<String>` 文本 part 报 415（表单字段改 `@RequestParam`，与真实 Tomcat multipart 语义
+  一致）。
+- 完整 `full` 16/16 通过（evidence `.sdlc/evidence/20260819-160012-full/`；server-verify 285+ tests、
+  web-node24、offline-eval、P0 providerAttempts=0、prototype/draft/inference browser E2E 全部通过），
+  DesignDSL kernel 33/33、asset kernel 41/41（Java primary/Python independent，A2，Profile 均
+  `NOT_REGISTERED`）。Ticket 19 open，Asset/Editor/Renderer 未 READY；push 待用户另行授权（分支 ahead 5）。

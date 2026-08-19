@@ -33,6 +33,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import tools.jackson.core.JacksonException;
@@ -67,6 +68,8 @@ final class InferenceController {
     private final JsonStructuralProfiler structuralProfiler = new JsonStructuralProfiler();
     private static final long MAXIMUM_RUN_COST_LIMIT_MICROS_CNY = 5_000_000L;
     private static final int MAXIMUM_EXECUTION_LOG_EVENTS = 1_000;
+    private static final long MAXIMUM_UPLOAD_ITEM_BYTES = 10L * 1024 * 1024;
+    private static final long MAXIMUM_UPLOAD_BATCH_BYTES = 32L * 1024 * 1024;
 
     InferenceController(
             InferenceRunService runService,
@@ -234,6 +237,7 @@ final class InferenceController {
                     "costLimitMicrosCny must be 1.." + MAXIMUM_RUN_COST_LIMIT_MICROS_CNY
             );
         }
+        enforceUploadBudgets(images, jsonSamples);
         var input = new InferenceInput(
                 mode, profile.profile().profileId(), "user-upload", true,
                 binaryInputs(images, false), binaryInputs(jsonSamples, true)
@@ -495,6 +499,29 @@ final class InferenceController {
             return InferenceMode.valueOf(value);
         } catch (IllegalArgumentException ignored) {
             return InferenceMode.fromWireName(value);
+        }
+    }
+
+    private static void enforceUploadBudgets(
+            List<MultipartFile> images,
+            List<MultipartFile> jsonSamples
+    ) {
+        var files = new java.util.ArrayList<MultipartFile>();
+        if (images != null) {
+            files.addAll(images);
+        }
+        if (jsonSamples != null) {
+            files.addAll(jsonSamples);
+        }
+        long totalBytes = 0;
+        for (var file : files) {
+            if (file.getSize() > MAXIMUM_UPLOAD_ITEM_BYTES) {
+                throw new MaxUploadSizeExceededException(MAXIMUM_UPLOAD_ITEM_BYTES);
+            }
+            totalBytes += file.getSize();
+        }
+        if (totalBytes > MAXIMUM_UPLOAD_BATCH_BYTES) {
+            throw new MaxUploadSizeExceededException(MAXIMUM_UPLOAD_BATCH_BYTES);
         }
     }
 

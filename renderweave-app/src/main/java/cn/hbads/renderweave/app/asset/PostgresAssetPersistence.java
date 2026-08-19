@@ -212,7 +212,7 @@ public class PostgresAssetPersistence implements AssetPersistence {
                 sql.append(" and tags::jsonb @> :tagsAll::jsonb");
             }
             if (!query.tagsAny().isEmpty()) {
-                sql.append(" and jsonb_exists_any(tags, :tagsAny::jsonb)");
+                sql.append(" and jsonb_exists_any(tags, :tagsAny)");
             }
             if (query.displayNameContains() != null) {
                 sql.append(" and display_name ilike :displayNameContains");
@@ -237,7 +237,7 @@ public class PostgresAssetPersistence implements AssetPersistence {
                 spec.param("tagsAll", writeTags(query.tagsAll()));
             }
             if (!query.tagsAny().isEmpty()) {
-                spec.param("tagsAny", writeTags(query.tagsAny()));
+                spec.param("tagsAny", query.tagsAny().toArray(new String[0]));
             }
             if (query.displayNameContains() != null) {
                 spec.param("displayNameContains", "%" + query.displayNameContains() + "%");

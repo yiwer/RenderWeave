@@ -1,12 +1,12 @@
 openapi: 3.1.2
 info:
   title: RenderWeave API
-  version: 0.10.0
+  version: 0.11.0
   description: >-
     Contract-first API for RenderWeave Schema Drafts, immutable StaticSchemas,
-    exact compiled artifacts, admitted Template revision authoring, authoritative RootDocument
-    validation, deterministic replay, guarded live inference Candidate review and create-only
-    atomic Draft application.
+    exact compiled artifacts, admitted Template revision authoring, owner-scoped Asset
+    upload/detail/catalog/versioning, authoritative RootDocument validation, deterministic
+    replay, guarded live inference Candidate review and create-only atomic Draft application.
 servers:
   - url: /
 tags:
@@ -18,6 +18,8 @@ tags:
     description: Immutable, exact-version publication artifacts and system presets.
   - name: Templates
     description: Owner-scoped mutable Templates with immutable complete DesignDSL revisions.
+  - name: Assets
+    description: Owner-scoped admitted IMAGE/FONT Assets with immutable content versions.
   - name: RootDocument Validation
     description: Strict, deterministic batch validation against one frozen Schema graph.
   - name: Inference Runs
@@ -532,6 +534,264 @@ paths:
           $ref: '#/components/responses/InternalProblem'
         '503':
           $ref: '#/components/responses/TemplateServiceUnavailableProblem'
+  /api/v1/assets:
+    post:
+      operationId: createAsset
+      tags: [Assets]
+      summary: Admit and create one Asset at content version 0 from an uploaded IMAGE/FONT file
+      description: >-
+        The multipart request carries kind, displayName, optional tags and sourceFileName plus
+        the raw content bytes. ownerScope and Host capability are resolved exclusively from
+        trusted server context and are not request fields. The same Idempotency-Key within
+        24 hours replays the original result for identical input and conflicts for different
+        input. Multi-select uploads are independent creates and may partially succeed.
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [kind, displayName, content]
+              properties:
+                kind:
+                  type: string
+                  enum: [IMAGE, FONT]
+                displayName:
+                  type: string
+                  minLength: 1
+                  maxLength: 200
+                tags:
+                  type: array
+                  maxItems: 20
+                  description: Repeated form parts; each is 1-64 Unicode scalars.
+                  items:
+                    type: string
+                    minLength: 1
+                    maxLength: 64
+                sourceFileName:
+                  type: string
+                  maxLength: 255
+                content:
+                  type: string
+                  format: binary
+                  description: >-
+                    Raw IMAGE (PNG/JPEG/WebP, at most 64 MiB) or FONT (TTF/OTF, at most 32 MiB)
+                    bytes admitted by renderweave-asset-acceptance/1.0.
+      responses:
+        '201':
+          description: Content version 0 committed; disclosure depends on the caller's independent read capability.
+          headers:
+            Location:
+              description: Canonical URL of the created Asset.
+              schema:
+                type: string
+                format: uri-reference
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssetCommitResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestProblem'
+        '403':
+          $ref: '#/components/responses/AssetForbiddenProblem'
+        '409':
+          $ref: '#/components/responses/ConflictProblem'
+        '413':
+          $ref: '#/components/responses/AssetPayloadTooLargeProblem'
+        '415':
+          description: The request is not multipart/form-data.
+        '422':
+          $ref: '#/components/responses/ValidationProblem'
+        '507':
+          $ref: '#/components/responses/AssetCapacityExceededProblem'
+        '503':
+          $ref: '#/components/responses/AssetServiceUnavailableProblem'
+    get:
+      operationId: listAssets
+      tags: [Assets]
+      summary: Page through Assets by stable cursor with closed filters
+      description: >-
+        Defaults to ACTIVE Assets and may explicitly include DELETED ones. The stable cursor
+        orders by updatedAt DESC, assetId ASC and never shifts between pages.
+      parameters:
+        - $ref: '#/components/parameters/AssetKind'
+        - $ref: '#/components/parameters/AssetTagsAll'
+        - $ref: '#/components/parameters/AssetTagsAny'
+        - $ref: '#/components/parameters/AssetDisplayNameContains'
+        - $ref: '#/components/parameters/AssetSourceFileNameContains'
+        - $ref: '#/components/parameters/AssetIncludeDeleted'
+        - $ref: '#/components/parameters/AssetCursor'
+        - $ref: '#/components/parameters/AssetLimit'
+      responses:
+        '200':
+          description: One stable-cursor page of Asset catalog entries.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssetCatalogResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestProblem'
+        '403':
+          $ref: '#/components/responses/AssetForbiddenProblem'
+        '503':
+          $ref: '#/components/responses/AssetServiceUnavailableProblem'
+  /api/v1/assets/{assetId}:
+    parameters:
+      - $ref: '#/components/parameters/AssetId'
+    get:
+      operationId: getAssetCurrent
+      tags: [Assets]
+      summary: Read the ACTIVE Asset detail with its current content version
+      responses:
+        '200':
+          description: Current Asset detail.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssetReadableResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestProblem'
+        '403':
+          $ref: '#/components/responses/AssetForbiddenProblem'
+        '404':
+          $ref: '#/components/responses/AssetNotFoundProblem'
+        '410':
+          description: The authorized Asset exists but is terminally deleted.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '503':
+          $ref: '#/components/responses/AssetServiceUnavailableProblem'
+  /api/v1/assets/{assetId}/metadata:
+    parameters:
+      - $ref: '#/components/parameters/AssetId'
+    put:
+      operationId: updateAssetMetadata
+      tags: [Assets]
+      summary: Replace displayName and tags when expectedAssetRevision is current
+      description: >-
+        Tags are replaced as a whole set. ownerScope and kind are permanent stored facts and
+        cannot be supplied or rebound by this request. A no-op update succeeds without
+        advancing the Asset revision.
+      parameters:
+        - $ref: '#/components/parameters/AssetExpectedAssetRevision'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateAssetMetadataRequest'
+      responses:
+        '200':
+          description: Metadata replaced and the Asset revision advanced unless no-op.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssetReadableResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestProblem'
+        '403':
+          $ref: '#/components/responses/AssetForbiddenProblem'
+        '404':
+          $ref: '#/components/responses/AssetNotFoundProblem'
+        '409':
+          $ref: '#/components/responses/ConflictProblem'
+        '503':
+          $ref: '#/components/responses/AssetServiceUnavailableProblem'
+  /api/v1/assets/{assetId}/versions:
+    parameters:
+      - $ref: '#/components/parameters/AssetId'
+    get:
+      operationId: listAssetContentVersions
+      tags: [Assets]
+      summary: List immutable content versions of an ACTIVE Asset
+      responses:
+        '200':
+          description: Content versions in ascending order.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssetVersionsResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestProblem'
+        '403':
+          $ref: '#/components/responses/AssetForbiddenProblem'
+        '404':
+          $ref: '#/components/responses/AssetNotFoundProblem'
+        '410':
+          description: The authorized Asset exists but is terminally deleted.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '503':
+          $ref: '#/components/responses/AssetServiceUnavailableProblem'
+  /api/v1/assets/{assetId}/download:
+    parameters:
+      - $ref: '#/components/parameters/AssetId'
+      - $ref: '#/components/parameters/AssetContentVersion'
+    get:
+      operationId: downloadAssetContentVersion
+      tags: [Assets]
+      summary: Download the exact immutable content version bytes
+      responses:
+        '200':
+          description: Exact content version bytes re-verified against the stored sha256.
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '400':
+          $ref: '#/components/responses/BadRequestProblem'
+        '403':
+          $ref: '#/components/responses/AssetForbiddenProblem'
+        '404':
+          $ref: '#/components/responses/AssetNotFoundProblem'
+        '410':
+          description: The authorized Asset exists but is terminally deleted.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '503':
+          $ref: '#/components/responses/AssetServiceUnavailableProblem'
+  /api/v1/assets/{assetId}/preview:
+    parameters:
+      - $ref: '#/components/parameters/AssetId'
+    get:
+      operationId: previewAssetCurrent
+      tags: [Assets]
+      summary: Stream the current content version for read-only internal preview
+      description: >-
+        Internal preview of the current content; requires asset.read and never mutates the
+        Asset. Not a thumbnail or derived artifact.
+      responses:
+        '200':
+          description: Current content version bytes.
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '400':
+          $ref: '#/components/responses/BadRequestProblem'
+        '403':
+          $ref: '#/components/responses/AssetForbiddenProblem'
+        '404':
+          $ref: '#/components/responses/AssetNotFoundProblem'
+        '410':
+          description: The authorized Asset exists but is terminally deleted.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '503':
+          $ref: '#/components/responses/AssetServiceUnavailableProblem'
   /api/v1/root-document-validations:
     post:
       operationId: validateRootDocuments
@@ -1039,6 +1299,106 @@ components:
       schema:
         type: string
         pattern: '^[a-z0-9][a-z0-9._-]{0,63}$'
+    AssetId:
+      name: assetId
+      in: path
+      required: true
+      description: Server-generated canonical UUID v4 Asset identity; clients must not parse its encoding.
+      schema:
+        type: string
+        pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'
+    AssetKind:
+      name: kind
+      in: query
+      required: false
+      description: Exact Asset kind filter; absent means all kinds.
+      schema:
+        type: string
+        enum: [IMAGE, FONT]
+    AssetTagsAll:
+      name: tagsAll
+      in: query
+      required: false
+      description: Repeated filter; an entry must carry every tag (case-folded).
+      schema:
+        type: array
+        maxItems: 20
+        items:
+          type: string
+          minLength: 1
+          maxLength: 64
+    AssetTagsAny:
+      name: tagsAny
+      in: query
+      required: false
+      description: Repeated filter; an entry must carry at least one tag (case-folded).
+      schema:
+        type: array
+        maxItems: 20
+        items:
+          type: string
+          minLength: 1
+          maxLength: 64
+    AssetDisplayNameContains:
+      name: displayName
+      in: query
+      required: false
+      description: Case-insensitive substring matched against the display name.
+      schema:
+        type: string
+        maxLength: 200
+    AssetSourceFileNameContains:
+      name: sourceFileName
+      in: query
+      required: false
+      description: Case-insensitive substring matched against the current source file name.
+      schema:
+        type: string
+        maxLength: 255
+    AssetIncludeDeleted:
+      name: includeDeleted
+      in: query
+      required: false
+      description: Explicitly include DELETED Assets alongside ACTIVE ones. Defaults to ACTIVE only.
+      schema:
+        type: boolean
+        default: false
+    AssetCursor:
+      name: cursor
+      in: query
+      required: false
+      description: Opaque stable-cursor token returned by the previous page.
+      schema:
+        type: string
+        maxLength: 512
+    AssetLimit:
+      name: limit
+      in: query
+      required: false
+      description: Maximum entries on this page.
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+    AssetExpectedAssetRevision:
+      name: expectedAssetRevision
+      in: query
+      required: true
+      schema:
+        type: integer
+        format: int64
+        minimum: 0
+        maximum: 9223372036854775806
+    AssetContentVersion:
+      name: contentVersion
+      in: query
+      required: true
+      description: Exact immutable content version to download.
+      schema:
+        type: integer
+        format: int64
+        minimum: 0
     Revision:
       name: revision
       in: path
@@ -1129,7 +1489,7 @@ components:
           enum: [ready]
         contractVersion:
           type: string
-          const: 0.10.0
+          const: 0.11.0
     CreateDraftRequest:
       type: object
       additionalProperties: false
@@ -1754,6 +2114,247 @@ components:
       oneOf:
         - $ref: '#/components/schemas/TemplateReadableResponse'
         - $ref: '#/components/schemas/TemplateOpaqueCommitResponse'
+    AssetReadableResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - assetId
+        - disclosure
+        - kind
+        - lifecycle
+        - assetRevision
+        - currentContentVersion
+        - displayName
+        - tags
+        - mediaType
+        - byteLength
+        - sha256
+        - descriptor
+        - createdAt
+        - updatedAt
+      properties:
+        assetId:
+          type: string
+          pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'
+        disclosure:
+          type: string
+          const: READABLE
+        kind:
+          type: string
+          enum: [IMAGE, FONT]
+        lifecycle:
+          type: string
+          enum: [ACTIVE, DELETED]
+        assetRevision:
+          type: integer
+          format: int64
+          minimum: 0
+        currentContentVersion:
+          type: integer
+          format: int64
+          minimum: 0
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 200
+        tags:
+          type: array
+          maxItems: 20
+          items:
+            type: string
+            minLength: 1
+            maxLength: 64
+        sourceFileName:
+          type: string
+          nullable: true
+          maxLength: 255
+        mediaType:
+          type: string
+        byteLength:
+          type: integer
+          format: int64
+          minimum: 1
+        sha256:
+          type: string
+          pattern: '^[0-9a-f]{64}$'
+        descriptor:
+          $ref: '#/components/schemas/AssetTechnicalDescriptor'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    AssetOpaqueCommitResponse:
+      type: object
+      additionalProperties: false
+      required: [assetId, disclosure]
+      properties:
+        assetId:
+          type: string
+          pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'
+        disclosure:
+          type: string
+          const: OPAQUE
+    AssetCommitResponse:
+      oneOf:
+        - $ref: '#/components/schemas/AssetReadableResponse'
+        - $ref: '#/components/schemas/AssetOpaqueCommitResponse'
+    AssetTechnicalDescriptor:
+      oneOf:
+        - $ref: '#/components/schemas/AssetImageDescriptor'
+        - $ref: '#/components/schemas/AssetFontDescriptor'
+    AssetImageDescriptor:
+      type: object
+      additionalProperties: false
+      required:
+        - encodedWidthPx
+        - encodedHeightPx
+        - orientation
+        - logicalWidthPx
+        - logicalHeightPx
+        - frameCount
+        - colorEncoding
+      properties:
+        encodedWidthPx:
+          type: integer
+          minimum: 1
+        encodedHeightPx:
+          type: integer
+          minimum: 1
+        orientation:
+          type: string
+          enum:
+            - IDENTITY
+            - MIRROR_HORIZONTAL
+            - ROTATE_180
+            - MIRROR_VERTICAL
+            - TRANSPOSE
+            - ROTATE_90_CW
+            - TRANSVERSE
+            - ROTATE_270_CW
+        logicalWidthPx:
+          type: integer
+          minimum: 1
+        logicalHeightPx:
+          type: integer
+          minimum: 1
+        frameCount:
+          type: integer
+          const: 1
+        colorEncoding:
+          type: string
+          const: SRGB_8BIT
+    AssetFontDescriptor:
+      type: object
+      additionalProperties: false
+      required: [faceIndex, flavor, unitsPerEm]
+      properties:
+        faceIndex:
+          type: integer
+          const: 0
+        flavor:
+          type: string
+          enum: [TRUETYPE_GLYF, CFF]
+        unitsPerEm:
+          type: integer
+          minimum: 16
+          maximum: 16384
+    AssetCatalogEntry:
+      type: object
+      additionalProperties: false
+      required: [assetId, kind, lifecycle, displayName, tags, updatedAt]
+      properties:
+        assetId:
+          type: string
+          pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'
+        kind:
+          type: string
+          enum: [IMAGE, FONT]
+        lifecycle:
+          type: string
+          enum: [ACTIVE, DELETED]
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 200
+        tags:
+          type: array
+          maxItems: 20
+          items:
+            type: string
+            minLength: 1
+            maxLength: 64
+        sourceFileName:
+          type: string
+          nullable: true
+          maxLength: 255
+        updatedAt:
+          type: string
+          format: date-time
+    AssetCatalogResponse:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AssetCatalogEntry'
+        nextCursor:
+          type: string
+          nullable: true
+          description: Opaque token for the next page; absent when the catalog is exhausted.
+    AssetContentVersionEntry:
+      type: object
+      additionalProperties: false
+      required: [contentVersion, sha256, mediaType, byteLength, createdAt]
+      properties:
+        contentVersion:
+          type: integer
+          format: int64
+          minimum: 0
+        sha256:
+          type: string
+          pattern: '^[0-9a-f]{64}$'
+        mediaType:
+          type: string
+        byteLength:
+          type: integer
+          format: int64
+          minimum: 1
+        sourceFileName:
+          type: string
+          nullable: true
+          maxLength: 255
+        createdAt:
+          type: string
+          format: date-time
+    AssetVersionsResponse:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AssetContentVersionEntry'
+    UpdateAssetMetadataRequest:
+      type: object
+      additionalProperties: false
+      required: [displayName, tags]
+      properties:
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 200
+        tags:
+          type: array
+          maxItems: 20
+          items:
+            type: string
+            minLength: 1
+            maxLength: 64
     ArrayValue:
       type: object
       additionalProperties: false
@@ -2722,6 +3323,36 @@ components:
             $ref: '#/components/schemas/Problem'
     TemplateServiceUnavailableProblem:
       description: Template authorization or persistence is temporarily unavailable.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    AssetForbiddenProblem:
+      description: The caller lacks the required Asset operation capability.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    AssetNotFoundProblem:
+      description: The visible Asset required by this operation does not exist.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    AssetPayloadTooLargeProblem:
+      description: The complete Asset multipart body or admitted content exceeds an authoritative limit.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    AssetCapacityExceededProblem:
+      description: The deployment-level Asset capacity watermark would be exceeded by a new blob.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    AssetServiceUnavailableProblem:
+      description: Asset authorization or persistence is temporarily unavailable.
       content:
         application/problem+json:
           schema:

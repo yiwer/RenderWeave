@@ -2,7 +2,7 @@
 
 import { type Client, type ClientMeta, formDataBodySerializer, type Options as Options2, type RequestResult, type ServerSentEventsResult, type TDataShape } from './client';
 import { client } from './client.gen';
-import type { ApplyInferenceCandidateData, ApplyInferenceCandidateErrors, ApplyInferenceCandidateResponses, CancelInferenceRunData, CancelInferenceRunErrors, CancelInferenceRunResponses, CopyDraftData, CopyDraftErrors, CopyDraftResponses, CopyStaticSchemaToDraftData, CopyStaticSchemaToDraftErrors, CopyStaticSchemaToDraftResponses, CreateDraftData, CreateDraftErrors, CreateDraftResponses, CreateLiveInferenceRunData, CreateLiveInferenceRunErrors, CreateLiveInferenceRunResponses, CreateReplayInferenceRunData, CreateReplayInferenceRunErrors, CreateReplayInferenceRunResponses, CreateTemplateData, CreateTemplateErrors, CreateTemplateResponses, DeleteDraftData, DeleteDraftErrors, DeleteDraftResponses, DownloadCompiledJsonSchemaData, DownloadCompiledJsonSchemaErrors, DownloadCompiledJsonSchemaResponses, DownloadStaticSchemaDefinitionData, DownloadStaticSchemaDefinitionErrors, DownloadStaticSchemaDefinitionResponses, GetDraftData, GetDraftErrors, GetDraftResponses, GetDraftRevisionData, GetDraftRevisionErrors, GetDraftRevisionResponses, GetInferenceCandidateData, GetInferenceCandidateErrors, GetInferenceCandidateResponses, GetInferenceExecutionLogData, GetInferenceExecutionLogErrors, GetInferenceExecutionLogResponses, GetInferenceImageArtifactData, GetInferenceImageArtifactErrors, GetInferenceImageArtifactResponses, GetInferenceRunData, GetInferenceRunErrors, GetInferenceRunResponses, GetLiveInferenceAvailabilityData, GetLiveInferenceAvailabilityErrors, GetLiveInferenceAvailabilityResponses, GetStaticSchemaData, GetStaticSchemaErrors, GetStaticSchemaResponses, GetSystemStatusData, GetSystemStatusErrors, GetSystemStatusResponses, GetTemplateCurrentData, GetTemplateCurrentErrors, GetTemplateCurrentResponses, ListDraftRevisionsData, ListDraftRevisionsErrors, ListDraftRevisionsResponses, ListDraftsData, ListDraftsErrors, ListDraftsResponses, ListInferenceRunsData, ListInferenceRunsErrors, ListInferenceRunsResponses, ListReplayFixturesData, ListReplayFixturesErrors, ListReplayFixturesResponses, ListStaticSchemasData, ListStaticSchemasErrors, ListStaticSchemasResponses, PublishStaticSchemaData, PublishStaticSchemaErrors, PublishStaticSchemaResponses, RestoreDraftRevisionData, RestoreDraftRevisionErrors, RestoreDraftRevisionResponses, RetryInferenceRunData, RetryInferenceRunErrors, RetryInferenceRunResponses, SaveDraftData, SaveDraftErrors, SaveDraftResponses, SaveInferenceCandidateData, SaveInferenceCandidateErrors, SaveInferenceCandidateResponses, SaveTemplateData, SaveTemplateErrors, SaveTemplateResponses, StreamInferenceRunEventsData, StreamInferenceRunEventsErrors, StreamInferenceRunEventsResponse, StreamInferenceRunEventsResponses, ValidateRootDocumentsData, ValidateRootDocumentsErrors, ValidateRootDocumentsResponses } from './types.gen';
+import type { ApplyInferenceCandidateData, ApplyInferenceCandidateErrors, ApplyInferenceCandidateResponses, CancelInferenceRunData, CancelInferenceRunErrors, CancelInferenceRunResponses, CopyDraftData, CopyDraftErrors, CopyDraftResponses, CopyStaticSchemaToDraftData, CopyStaticSchemaToDraftErrors, CopyStaticSchemaToDraftResponses, CreateAssetData, CreateAssetErrors, CreateAssetResponses, CreateDraftData, CreateDraftErrors, CreateDraftResponses, CreateLiveInferenceRunData, CreateLiveInferenceRunErrors, CreateLiveInferenceRunResponses, CreateReplayInferenceRunData, CreateReplayInferenceRunErrors, CreateReplayInferenceRunResponses, CreateTemplateData, CreateTemplateErrors, CreateTemplateResponses, DeleteDraftData, DeleteDraftErrors, DeleteDraftResponses, DownloadAssetContentVersionData, DownloadAssetContentVersionErrors, DownloadAssetContentVersionResponses, DownloadCompiledJsonSchemaData, DownloadCompiledJsonSchemaErrors, DownloadCompiledJsonSchemaResponses, DownloadStaticSchemaDefinitionData, DownloadStaticSchemaDefinitionErrors, DownloadStaticSchemaDefinitionResponses, GetAssetCurrentData, GetAssetCurrentErrors, GetAssetCurrentResponses, GetDraftData, GetDraftErrors, GetDraftResponses, GetDraftRevisionData, GetDraftRevisionErrors, GetDraftRevisionResponses, GetInferenceCandidateData, GetInferenceCandidateErrors, GetInferenceCandidateResponses, GetInferenceExecutionLogData, GetInferenceExecutionLogErrors, GetInferenceExecutionLogResponses, GetInferenceImageArtifactData, GetInferenceImageArtifactErrors, GetInferenceImageArtifactResponses, GetInferenceRunData, GetInferenceRunErrors, GetInferenceRunResponses, GetLiveInferenceAvailabilityData, GetLiveInferenceAvailabilityErrors, GetLiveInferenceAvailabilityResponses, GetStaticSchemaData, GetStaticSchemaErrors, GetStaticSchemaResponses, GetSystemStatusData, GetSystemStatusErrors, GetSystemStatusResponses, GetTemplateCurrentData, GetTemplateCurrentErrors, GetTemplateCurrentResponses, ListAssetContentVersionsData, ListAssetContentVersionsErrors, ListAssetContentVersionsResponses, ListAssetsData, ListAssetsErrors, ListAssetsResponses, ListDraftRevisionsData, ListDraftRevisionsErrors, ListDraftRevisionsResponses, ListDraftsData, ListDraftsErrors, ListDraftsResponses, ListInferenceRunsData, ListInferenceRunsErrors, ListInferenceRunsResponses, ListReplayFixturesData, ListReplayFixturesErrors, ListReplayFixturesResponses, ListStaticSchemasData, ListStaticSchemasErrors, ListStaticSchemasResponses, PreviewAssetCurrentData, PreviewAssetCurrentErrors, PreviewAssetCurrentResponses, PublishStaticSchemaData, PublishStaticSchemaErrors, PublishStaticSchemaResponses, RestoreDraftRevisionData, RestoreDraftRevisionErrors, RestoreDraftRevisionResponses, RetryInferenceRunData, RetryInferenceRunErrors, RetryInferenceRunResponses, SaveDraftData, SaveDraftErrors, SaveDraftResponses, SaveInferenceCandidateData, SaveInferenceCandidateErrors, SaveInferenceCandidateResponses, SaveTemplateData, SaveTemplateErrors, SaveTemplateResponses, StreamInferenceRunEventsData, StreamInferenceRunEventsErrors, StreamInferenceRunEventsResponse, StreamInferenceRunEventsResponses, UpdateAssetMetadataData, UpdateAssetMetadataErrors, UpdateAssetMetadataResponses, ValidateRootDocumentsData, ValidateRootDocumentsErrors, ValidateRootDocumentsResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -172,6 +172,64 @@ export const saveTemplate = <ThrowOnError extends boolean = false>(options: Opti
         ...options.headers
     }
 });
+
+/**
+ * Page through Assets by stable cursor with closed filters
+ *
+ * Defaults to ACTIVE Assets and may explicitly include DELETED ones. The stable cursor orders by updatedAt DESC, assetId ASC and never shifts between pages.
+ */
+export const listAssets = <ThrowOnError extends boolean = false>(options?: Options<ListAssetsData, ThrowOnError>): RequestResult<ListAssetsResponses, ListAssetsErrors, ThrowOnError> => (options?.client ?? client).get<ListAssetsResponses, ListAssetsErrors, ThrowOnError>({ url: '/api/v1/assets', ...options });
+
+/**
+ * Admit and create one Asset at content version 0 from an uploaded IMAGE/FONT file
+ *
+ * The multipart request carries kind, displayName, optional tags and sourceFileName plus the raw content bytes. ownerScope and Host capability are resolved exclusively from trusted server context and are not request fields. The same Idempotency-Key within 24 hours replays the original result for identical input and conflicts for different input. Multi-select uploads are independent creates and may partially succeed.
+ */
+export const createAsset = <ThrowOnError extends boolean = false>(options: Options<CreateAssetData, ThrowOnError>): RequestResult<CreateAssetResponses, CreateAssetErrors, ThrowOnError> => (options.client ?? client).post<CreateAssetResponses, CreateAssetErrors, ThrowOnError>({
+    ...formDataBodySerializer,
+    url: '/api/v1/assets',
+    ...options,
+    headers: {
+        'Content-Type': null,
+        ...options.headers
+    }
+});
+
+/**
+ * Read the ACTIVE Asset detail with its current content version
+ */
+export const getAssetCurrent = <ThrowOnError extends boolean = false>(options: Options<GetAssetCurrentData, ThrowOnError>): RequestResult<GetAssetCurrentResponses, GetAssetCurrentErrors, ThrowOnError> => (options.client ?? client).get<GetAssetCurrentResponses, GetAssetCurrentErrors, ThrowOnError>({ url: '/api/v1/assets/{assetId}', ...options });
+
+/**
+ * Replace displayName and tags when expectedAssetRevision is current
+ *
+ * Tags are replaced as a whole set. ownerScope and kind are permanent stored facts and cannot be supplied or rebound by this request. A no-op update succeeds without advancing the Asset revision.
+ */
+export const updateAssetMetadata = <ThrowOnError extends boolean = false>(options: Options<UpdateAssetMetadataData, ThrowOnError>): RequestResult<UpdateAssetMetadataResponses, UpdateAssetMetadataErrors, ThrowOnError> => (options.client ?? client).put<UpdateAssetMetadataResponses, UpdateAssetMetadataErrors, ThrowOnError>({
+    url: '/api/v1/assets/{assetId}/metadata',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * List immutable content versions of an ACTIVE Asset
+ */
+export const listAssetContentVersions = <ThrowOnError extends boolean = false>(options: Options<ListAssetContentVersionsData, ThrowOnError>): RequestResult<ListAssetContentVersionsResponses, ListAssetContentVersionsErrors, ThrowOnError> => (options.client ?? client).get<ListAssetContentVersionsResponses, ListAssetContentVersionsErrors, ThrowOnError>({ url: '/api/v1/assets/{assetId}/versions', ...options });
+
+/**
+ * Download the exact immutable content version bytes
+ */
+export const downloadAssetContentVersion = <ThrowOnError extends boolean = false>(options: Options<DownloadAssetContentVersionData, ThrowOnError>): RequestResult<DownloadAssetContentVersionResponses, DownloadAssetContentVersionErrors, ThrowOnError> => (options.client ?? client).get<DownloadAssetContentVersionResponses, DownloadAssetContentVersionErrors, ThrowOnError>({ url: '/api/v1/assets/{assetId}/download', ...options });
+
+/**
+ * Stream the current content version for read-only internal preview
+ *
+ * Internal preview of the current content; requires asset.read and never mutates the Asset. Not a thumbnail or derived artifact.
+ */
+export const previewAssetCurrent = <ThrowOnError extends boolean = false>(options: Options<PreviewAssetCurrentData, ThrowOnError>): RequestResult<PreviewAssetCurrentResponses, PreviewAssetCurrentErrors, ThrowOnError> => (options.client ?? client).get<PreviewAssetCurrentResponses, PreviewAssetCurrentErrors, ThrowOnError>({ url: '/api/v1/assets/{assetId}/preview', ...options });
 
 /**
  * Validate 1–20 RootDocuments against one frozen Draft or exact StaticSchema graph

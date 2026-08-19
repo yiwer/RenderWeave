@@ -66,7 +66,7 @@ class AssetApplicationConfiguration {
     }
 
     @Bean
-    @ConditionalOnBean(AssetBlobPersistence.class)
+    @ConditionalOnExpression("'${renderweave.asset.s3.endpoint:}' != ''")
     AssetApplication assetApplication(
             AssetOwnerScopeAuthority ownerScopes,
             AssetPersistence persistence,

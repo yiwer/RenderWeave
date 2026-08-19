@@ -63,6 +63,15 @@ Label: wayfinder:map
   assembly seam、V018 aggregate/revision、ownerScope 只取 Host authority、expectedRevision 409；
   Testcontainers PostgreSQL + OpenAPI 0.10.0 + Web SDK + `full` 15/15；无 Editor/Asset/Evaluator/Renderer，
   Profile 未注册，Ticket 19 open。
+- [实现 Asset create/current/catalog PostgreSQL+S3 纵切](issues/11-implement-asset-persistence-slice.md) — 首个
+  真实 Asset 纵切：`AssetApplication` 六 closed 方法 + `AssetModule` exact assembly seam、V019 四表
+  forward-only、幂等 create（24h、指纹 replay/conflict）、catalog 稳定游标 + closed 过滤、metadata
+  expectedAssetRevision 409、版本列表/精确下载/内部预览、容量水位 fail-closed；`AssetController` HTTP 面 +
+  problem+json + OpenAPI 0.11.0 + Web SDK + compose MinIO（同镜像建桶）+ 65MB transport（inference 权威预算
+  改 app 层）；无 S3 endpoint 时 AssetApplication/Controller 都不装配（属性条件，Boot 4.1
+  `@ConditionalOnBean` 同批求值不可靠）；Testcontainers PostgreSQL+MinIO + `full` 16/16；tagsAny
+  `text[]` 绑定、Spring 7 `isHandler` 只认 `@Controller`、表单字段 `@RequestParam` 绑定等隐藏缺陷同票修复。
+  无 replace/delete/restore/Resolver/UI，acceptance/1.0 未登记，Ticket 19 open。
 
 ## Not yet specified
 

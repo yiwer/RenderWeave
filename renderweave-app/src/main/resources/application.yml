@@ -14,9 +14,11 @@ spring:
     placeholder-replacement: false
   servlet:
     multipart:
-      # Keep transport slightly above the authoritative 10 MiB item / 32 MiB batch limits.
-      max-file-size: 11MB
-      max-request-size: 34MB
+      # Transport is sized slightly above the authoritative Asset single-item admission
+      # limit (64 MiB images / 32 MiB fonts); per-endpoint authoritative budgets
+      # (Asset admission, inference 10 MiB item / 32 MiB batch) are enforced in controllers.
+      max-file-size: 65MB
+      max-request-size: 66MB
   threads:
     virtual:
       enabled: true

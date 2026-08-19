@@ -8,7 +8,7 @@ export type SystemStatus = {
     service: 'renderweave-api';
     status: 'ready';
     database: 'ready';
-    contractVersion: '0.10.0';
+    contractVersion: '0.11.0';
 };
 
 export type CreateDraftRequest = {
@@ -271,6 +271,85 @@ export type TemplateOpaqueCommitResponse = {
 };
 
 export type TemplateCommitResponse = TemplateReadableResponse | TemplateOpaqueCommitResponse;
+
+export type AssetReadableResponse = {
+    assetId: string;
+    disclosure: 'READABLE';
+    kind: 'IMAGE' | 'FONT';
+    lifecycle: 'ACTIVE' | 'DELETED';
+    assetRevision: number;
+    currentContentVersion: number;
+    displayName: string;
+    tags: Array<string>;
+    sourceFileName?: string;
+    mediaType: string;
+    byteLength: number;
+    sha256: string;
+    descriptor: AssetTechnicalDescriptor;
+    createdAt: string;
+    updatedAt: string;
+};
+
+export type AssetOpaqueCommitResponse = {
+    assetId: string;
+    disclosure: 'OPAQUE';
+};
+
+export type AssetCommitResponse = AssetReadableResponse | AssetOpaqueCommitResponse;
+
+export type AssetTechnicalDescriptor = AssetImageDescriptor | AssetFontDescriptor;
+
+export type AssetImageDescriptor = {
+    encodedWidthPx: number;
+    encodedHeightPx: number;
+    orientation: 'IDENTITY' | 'MIRROR_HORIZONTAL' | 'ROTATE_180' | 'MIRROR_VERTICAL' | 'TRANSPOSE' | 'ROTATE_90_CW' | 'TRANSVERSE' | 'ROTATE_270_CW';
+    logicalWidthPx: number;
+    logicalHeightPx: number;
+    frameCount: 1;
+    colorEncoding: 'SRGB_8BIT';
+};
+
+export type AssetFontDescriptor = {
+    faceIndex: 0;
+    flavor: 'TRUETYPE_GLYF' | 'CFF';
+    unitsPerEm: number;
+};
+
+export type AssetCatalogEntry = {
+    assetId: string;
+    kind: 'IMAGE' | 'FONT';
+    lifecycle: 'ACTIVE' | 'DELETED';
+    displayName: string;
+    tags: Array<string>;
+    sourceFileName?: string;
+    updatedAt: string;
+};
+
+export type AssetCatalogResponse = {
+    items: Array<AssetCatalogEntry>;
+    /**
+     * Opaque token for the next page; absent when the catalog is exhausted.
+     */
+    nextCursor?: string;
+};
+
+export type AssetContentVersionEntry = {
+    contentVersion: number;
+    sha256: string;
+    mediaType: string;
+    byteLength: number;
+    sourceFileName?: string;
+    createdAt: string;
+};
+
+export type AssetVersionsResponse = {
+    items: Array<AssetContentVersionEntry>;
+};
+
+export type UpdateAssetMetadataRequest = {
+    displayName: string;
+    tags: Array<string>;
+};
 
 export type ArrayValue = {
     type: 'array';
@@ -761,6 +840,58 @@ export type TemplateSchemaKey = string;
  * Exact permanent StaticSchema version selected during Template creation.
  */
 export type TemplateVersionTag = string;
+
+/**
+ * Server-generated canonical UUID v4 Asset identity; clients must not parse its encoding.
+ */
+export type AssetId = string;
+
+/**
+ * Exact Asset kind filter; absent means all kinds.
+ */
+export type AssetKind = 'IMAGE' | 'FONT';
+
+/**
+ * Repeated filter; an entry must carry every tag (case-folded).
+ */
+export type AssetTagsAll = Array<string>;
+
+/**
+ * Repeated filter; an entry must carry at least one tag (case-folded).
+ */
+export type AssetTagsAny = Array<string>;
+
+/**
+ * Case-insensitive substring matched against the display name.
+ */
+export type AssetDisplayNameContains = string;
+
+/**
+ * Case-insensitive substring matched against the current source file name.
+ */
+export type AssetSourceFileNameContains = string;
+
+/**
+ * Explicitly include DELETED Assets alongside ACTIVE ones. Defaults to ACTIVE only.
+ */
+export type AssetIncludeDeleted = boolean;
+
+/**
+ * Opaque stable-cursor token returned by the previous page.
+ */
+export type AssetCursor = string;
+
+/**
+ * Maximum entries on this page.
+ */
+export type AssetLimit = number;
+
+export type AssetExpectedAssetRevision = number;
+
+/**
+ * Exact immutable content version to download.
+ */
+export type AssetContentVersion = number;
 
 export type Revision = number;
 
@@ -1597,6 +1728,377 @@ export type SaveTemplateResponses = {
 };
 
 export type SaveTemplateResponse = SaveTemplateResponses[keyof SaveTemplateResponses];
+
+export type ListAssetsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Exact Asset kind filter; absent means all kinds.
+         */
+        kind?: 'IMAGE' | 'FONT';
+        /**
+         * Repeated filter; an entry must carry every tag (case-folded).
+         */
+        tagsAll?: Array<string>;
+        /**
+         * Repeated filter; an entry must carry at least one tag (case-folded).
+         */
+        tagsAny?: Array<string>;
+        /**
+         * Case-insensitive substring matched against the display name.
+         */
+        displayName?: string;
+        /**
+         * Case-insensitive substring matched against the current source file name.
+         */
+        sourceFileName?: string;
+        /**
+         * Explicitly include DELETED Assets alongside ACTIVE ones. Defaults to ACTIVE only.
+         */
+        includeDeleted?: boolean;
+        /**
+         * Opaque stable-cursor token returned by the previous page.
+         */
+        cursor?: string;
+        /**
+         * Maximum entries on this page.
+         */
+        limit?: number;
+    };
+    url: '/api/v1/assets';
+};
+
+export type ListAssetsErrors = {
+    /**
+     * Request JSON, key syntax or envelope is invalid.
+     */
+    400: Problem;
+    /**
+     * The caller lacks the required Asset operation capability.
+     */
+    403: Problem;
+    /**
+     * Asset authorization or persistence is temporarily unavailable.
+     */
+    503: Problem;
+};
+
+export type ListAssetsError = ListAssetsErrors[keyof ListAssetsErrors];
+
+export type ListAssetsResponses = {
+    /**
+     * One stable-cursor page of Asset catalog entries.
+     */
+    200: AssetCatalogResponse;
+};
+
+export type ListAssetsResponse = ListAssetsResponses[keyof ListAssetsResponses];
+
+export type CreateAssetData = {
+    body: {
+        kind: 'IMAGE' | 'FONT';
+        displayName: string;
+        /**
+         * Repeated form parts; each is 1-64 Unicode scalars.
+         */
+        tags?: Array<string>;
+        sourceFileName?: string;
+        /**
+         * Raw IMAGE (PNG/JPEG/WebP, at most 64 MiB) or FONT (TTF/OTF, at most 32 MiB) bytes admitted by renderweave-asset-acceptance/1.0.
+         */
+        content: Blob | File;
+    };
+    headers: {
+        'Idempotency-Key': string;
+    };
+    path?: never;
+    query?: never;
+    url: '/api/v1/assets';
+};
+
+export type CreateAssetErrors = {
+    /**
+     * Request JSON, key syntax or envelope is invalid.
+     */
+    400: Problem;
+    /**
+     * The caller lacks the required Asset operation capability.
+     */
+    403: Problem;
+    /**
+     * Natural identity or expected revision conflicts with current state.
+     */
+    409: Problem;
+    /**
+     * The complete Asset multipart body or admitted content exceeds an authoritative limit.
+     */
+    413: Problem;
+    /**
+     * The request is not multipart/form-data.
+     */
+    415: unknown;
+    /**
+     * The complete RenderWeave definition is not valid and nothing was written.
+     */
+    422: Problem;
+    /**
+     * Asset authorization or persistence is temporarily unavailable.
+     */
+    503: Problem;
+    /**
+     * The deployment-level Asset capacity watermark would be exceeded by a new blob.
+     */
+    507: Problem;
+};
+
+export type CreateAssetError = CreateAssetErrors[keyof CreateAssetErrors];
+
+export type CreateAssetResponses = {
+    /**
+     * Content version 0 committed; disclosure depends on the caller's independent read capability.
+     */
+    201: AssetCommitResponse;
+};
+
+export type CreateAssetResponse = CreateAssetResponses[keyof CreateAssetResponses];
+
+export type GetAssetCurrentData = {
+    body?: never;
+    path: {
+        /**
+         * Server-generated canonical UUID v4 Asset identity; clients must not parse its encoding.
+         */
+        assetId: string;
+    };
+    query?: never;
+    url: '/api/v1/assets/{assetId}';
+};
+
+export type GetAssetCurrentErrors = {
+    /**
+     * Request JSON, key syntax or envelope is invalid.
+     */
+    400: Problem;
+    /**
+     * The caller lacks the required Asset operation capability.
+     */
+    403: Problem;
+    /**
+     * The visible Asset required by this operation does not exist.
+     */
+    404: Problem;
+    /**
+     * The authorized Asset exists but is terminally deleted.
+     */
+    410: Problem;
+    /**
+     * Asset authorization or persistence is temporarily unavailable.
+     */
+    503: Problem;
+};
+
+export type GetAssetCurrentError = GetAssetCurrentErrors[keyof GetAssetCurrentErrors];
+
+export type GetAssetCurrentResponses = {
+    /**
+     * Current Asset detail.
+     */
+    200: AssetReadableResponse;
+};
+
+export type GetAssetCurrentResponse = GetAssetCurrentResponses[keyof GetAssetCurrentResponses];
+
+export type UpdateAssetMetadataData = {
+    body: UpdateAssetMetadataRequest;
+    path: {
+        /**
+         * Server-generated canonical UUID v4 Asset identity; clients must not parse its encoding.
+         */
+        assetId: string;
+    };
+    query: {
+        expectedAssetRevision: number;
+    };
+    url: '/api/v1/assets/{assetId}/metadata';
+};
+
+export type UpdateAssetMetadataErrors = {
+    /**
+     * Request JSON, key syntax or envelope is invalid.
+     */
+    400: Problem;
+    /**
+     * The caller lacks the required Asset operation capability.
+     */
+    403: Problem;
+    /**
+     * The visible Asset required by this operation does not exist.
+     */
+    404: Problem;
+    /**
+     * Natural identity or expected revision conflicts with current state.
+     */
+    409: Problem;
+    /**
+     * Asset authorization or persistence is temporarily unavailable.
+     */
+    503: Problem;
+};
+
+export type UpdateAssetMetadataError = UpdateAssetMetadataErrors[keyof UpdateAssetMetadataErrors];
+
+export type UpdateAssetMetadataResponses = {
+    /**
+     * Metadata replaced and the Asset revision advanced unless no-op.
+     */
+    200: AssetReadableResponse;
+};
+
+export type UpdateAssetMetadataResponse = UpdateAssetMetadataResponses[keyof UpdateAssetMetadataResponses];
+
+export type ListAssetContentVersionsData = {
+    body?: never;
+    path: {
+        /**
+         * Server-generated canonical UUID v4 Asset identity; clients must not parse its encoding.
+         */
+        assetId: string;
+    };
+    query?: never;
+    url: '/api/v1/assets/{assetId}/versions';
+};
+
+export type ListAssetContentVersionsErrors = {
+    /**
+     * Request JSON, key syntax or envelope is invalid.
+     */
+    400: Problem;
+    /**
+     * The caller lacks the required Asset operation capability.
+     */
+    403: Problem;
+    /**
+     * The visible Asset required by this operation does not exist.
+     */
+    404: Problem;
+    /**
+     * The authorized Asset exists but is terminally deleted.
+     */
+    410: Problem;
+    /**
+     * Asset authorization or persistence is temporarily unavailable.
+     */
+    503: Problem;
+};
+
+export type ListAssetContentVersionsError = ListAssetContentVersionsErrors[keyof ListAssetContentVersionsErrors];
+
+export type ListAssetContentVersionsResponses = {
+    /**
+     * Content versions in ascending order.
+     */
+    200: AssetVersionsResponse;
+};
+
+export type ListAssetContentVersionsResponse = ListAssetContentVersionsResponses[keyof ListAssetContentVersionsResponses];
+
+export type DownloadAssetContentVersionData = {
+    body?: never;
+    path: {
+        /**
+         * Server-generated canonical UUID v4 Asset identity; clients must not parse its encoding.
+         */
+        assetId: string;
+    };
+    query: {
+        /**
+         * Exact immutable content version to download.
+         */
+        contentVersion: number;
+    };
+    url: '/api/v1/assets/{assetId}/download';
+};
+
+export type DownloadAssetContentVersionErrors = {
+    /**
+     * Request JSON, key syntax or envelope is invalid.
+     */
+    400: Problem;
+    /**
+     * The caller lacks the required Asset operation capability.
+     */
+    403: Problem;
+    /**
+     * The visible Asset required by this operation does not exist.
+     */
+    404: Problem;
+    /**
+     * The authorized Asset exists but is terminally deleted.
+     */
+    410: Problem;
+    /**
+     * Asset authorization or persistence is temporarily unavailable.
+     */
+    503: Problem;
+};
+
+export type DownloadAssetContentVersionError = DownloadAssetContentVersionErrors[keyof DownloadAssetContentVersionErrors];
+
+export type DownloadAssetContentVersionResponses = {
+    /**
+     * Exact content version bytes re-verified against the stored sha256.
+     */
+    200: Blob | File;
+};
+
+export type DownloadAssetContentVersionResponse = DownloadAssetContentVersionResponses[keyof DownloadAssetContentVersionResponses];
+
+export type PreviewAssetCurrentData = {
+    body?: never;
+    path: {
+        /**
+         * Server-generated canonical UUID v4 Asset identity; clients must not parse its encoding.
+         */
+        assetId: string;
+    };
+    query?: never;
+    url: '/api/v1/assets/{assetId}/preview';
+};
+
+export type PreviewAssetCurrentErrors = {
+    /**
+     * Request JSON, key syntax or envelope is invalid.
+     */
+    400: Problem;
+    /**
+     * The caller lacks the required Asset operation capability.
+     */
+    403: Problem;
+    /**
+     * The visible Asset required by this operation does not exist.
+     */
+    404: Problem;
+    /**
+     * The authorized Asset exists but is terminally deleted.
+     */
+    410: Problem;
+    /**
+     * Asset authorization or persistence is temporarily unavailable.
+     */
+    503: Problem;
+};
+
+export type PreviewAssetCurrentError = PreviewAssetCurrentErrors[keyof PreviewAssetCurrentErrors];
+
+export type PreviewAssetCurrentResponses = {
+    /**
+     * Current content version bytes.
+     */
+    200: Blob | File;
+};
+
+export type PreviewAssetCurrentResponse = PreviewAssetCurrentResponses[keyof PreviewAssetCurrentResponses];
 
 export type ValidateRootDocumentsData = {
     body: RootDocumentValidationRequest;

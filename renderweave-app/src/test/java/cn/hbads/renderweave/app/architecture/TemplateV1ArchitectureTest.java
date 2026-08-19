@@ -92,7 +92,8 @@ class TemplateV1ArchitectureTest {
             "renderweave-rendering", "cn.hbads.renderweave.rendering"
     );
     private static final Set<String> APP_ASSEMBLY_EXCEPTIONS = Set.of(
-            "cn.hbads.renderweave.template.internal.TemplateModule"
+            "cn.hbads.renderweave.template.internal.TemplateModule",
+            "cn.hbads.renderweave.asset.internal.AssetModule"
     );
     private static final Set<String> FORBIDDEN_DOMAIN_REFERENCES = Set.of(
             "cn.hbads.renderweave.app",

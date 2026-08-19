@@ -95,8 +95,10 @@ class LiveInferenceApiTest {
                 .andExpect(jsonPath("$.profiles[*].unavailabilityCode",
                         org.hamcrest.Matchers.everyItem(org.hamcrest.Matchers.nullValue())));
 
-        assertThat(multipartProperties.getMaxFileSize().toBytes()).isEqualTo(11L * 1024 * 1024);
-        assertThat(multipartProperties.getMaxRequestSize().toBytes()).isEqualTo(34L * 1024 * 1024);
+        // Transport is sized slightly above the authoritative Asset single-item admission limit
+        // (64 MiB images); inference item/batch budgets are enforced in the controller.
+        assertThat(multipartProperties.getMaxFileSize().toBytes()).isEqualTo(65L * 1024 * 1024);
+        assertThat(multipartProperties.getMaxRequestSize().toBytes()).isEqualTo(66L * 1024 * 1024);
         var imageBytes = largeValidPng();
         assertThat(imageBytes.length).isBetween(1024 * 1024 + 1, 10 * 1024 * 1024);
         var metadata = new MockMultipartFile(
