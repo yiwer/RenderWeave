@@ -34,7 +34,7 @@ class CanonicalKernelVectorTest {
         var manifestBytes = readManifest();
         var manifest = json.readTree(manifestBytes);
         assertEquals(
-                "renderweave-template-canonical-kernel-v1/5",
+                "renderweave-template-canonical-kernel-v1/6",
                 manifest.required("vectorVersion").asString()
         );
         assertEquals(
@@ -45,7 +45,7 @@ class CanonicalKernelVectorTest {
                 "NOT_REGISTERED",
                 manifest.required("authorityContext").required("profileAvailability").asString()
         );
-        assertEquals(152, manifest.required("cases").size());
+        assertEquals(176, manifest.required("cases").size());
 
         var results = new ArrayList<Map<String, Object>>();
         for (var vector : manifest.required("cases")) {
@@ -108,6 +108,7 @@ class CanonicalKernelVectorTest {
             case "HEX" -> HexFormat.of().parseHex(spec.required("hex").asString());
             case "UTF8_BOM" -> withUtf8Bom(spec.required("text").asString());
             case "CANVAS" -> canvas(spec, "210");
+            case "CANVAS_BINDINGS" -> canvasWithBindings(spec, "210");
             case "PADDED_CANVAS" -> paddedCanvas(spec.required("totalBytes").asInt());
             case "NESTED_ARRAY" -> nestedArray(spec.required("depth").asInt());
             case "OBJECT_MEMBERS" -> objectMembers(spec.required("count").asInt());
@@ -145,6 +146,24 @@ class CanonicalKernelVectorTest {
                 + "\"kind\":\"" + nodeKind + "\",\"widthMm\":" + widthToken + ","
                 + "\"heightMm\":297,\"bindings\":[],\"children\":" + children + "}"
                 + rootSuffix + "}";
+        return raw.getBytes(StandardCharsets.UTF_8);
+    }
+
+    private byte[] canvasWithBindings(JsonNode spec, String widthToken) {
+        var dslVersion = spec.path("dslVersion").asString("renderweave-design/1.0");
+        var definitions = spec.path("definitions").asString("[]");
+        var children = spec.path("children").asString("[]");
+        var canvasPrefix = spec.path("canvasPrefix").asString("");
+        var canvasBindings = spec.path("canvasBindings").asString("[]");
+        var raw = "{\"dslVersion\":\"" + dslVersion + "\","
+                + "\"expressionProfile\":\"renderweave-expression/1.0\","
+                + "\"displayName\":\"Baseline\","
+                + "\"definitions\":" + definitions + ","
+                + "\"designRoot\":{" + canvasPrefix
+                + "\"nodeId\":\"00000000-0000-4000-8000-000000000001\","
+                + "\"kind\":\"canvas\",\"widthMm\":" + widthToken + ","
+                + "\"heightMm\":297,\"bindings\":" + canvasBindings + ",\"children\":" + children
+                + "}}";
         return raw.getBytes(StandardCharsets.UTF_8);
     }
 

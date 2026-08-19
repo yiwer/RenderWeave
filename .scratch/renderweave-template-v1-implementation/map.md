@@ -124,10 +124,13 @@ Label: wayfinder:map
   resolve（nodeId+loopId 双身份、items 结构 ValueSource 静态类型证明、PACK placement、STACK/GRID
   RepeatPackingSpec、loopId 唯一与 loop-domain/loopIndex 解锁，manifest
   `renderweave-template-canonical-kernel-v1/4` 116 vectors）；
-  DesignDSL full-Profile 拆分登记为 T16（Binding/Policy）→ T18（Conditional）→
-  T19（TemplateUse）→ T20（Template 依赖投影，T12b 的 blocker）；admission/canonical 增量逐票带
-  exact vectors + template gate 扩展，全部 exact 语义原子通过前不登记 Profile available，也不把本
-  kernel 的 fail-closed non-empty array 当作 set ordering 已实现。
+  DesignDSL full-Profile 拆分登记为 T18（Conditional）→
+  T19（TemplateUse）→ T20（Template 依赖投影，T12b 的 blocker）；T16 Binding 与
+  BindingPolicyCatalog 消费已 resolve（bindingId 唯一、targetPropertyRef 解析/存在性/policy、
+  source kinds context/loopIndex/definition、canonical sort，manifest
+  `renderweave-template-canonical-kernel-v1/6` 176 vectors，Java/Python 176/176）；
+  admission/canonical 增量逐票带 exact vectors + template gate 扩展，全部 exact 语义原子通过前不登记
+  Profile available，也不把本 kernel 的 fail-closed non-empty array 当作 set ordering 已实现。
 - Asset persistence、replace/delete/restore、依赖影响确认、Asset UI 与 Renderer-only lease 的实施顺序已由
   Ticket 05 冻结为 T10 → T11 → T12a → T12b → T13；T10/T10b/T11/T12a 已完成。Template
   依赖投影（从 DesignDSL 提取 authored AssetRef atom 的 current-only 投影、`AssetReferenceAuthority` 物化与

@@ -173,6 +173,255 @@ NON_CANVAS_KINDS = {
     "QRCODE",
     "BARCODE",
 }
+
+# --- Binding contract (ticket 07 §6-§9, ticket 09 §8) --------------------------
+
+BINDING_MEMBERS = {"bindingId", "targetPropertyRef", "source"}
+TARGET_PROPERTY_REF_MEMBERS = {"rootPropertyId", "selectors"}
+MEMBER_SELECTOR_MEMBERS = {"kind", "name"}
+INDEX_SELECTOR_MEMBERS = {"kind", "index"}
+SELECTOR_KINDS = {"member", "index"}
+
+_WIRE_KIND_OVERRIDES = {"QRCODE": "qrCode", "BARCODE": "barcode"}
+NON_CANVAS_KINDS_WIRE = [
+    "group",
+    "frame",
+    "stack",
+    "grid",
+    "repeat",
+    "text",
+    "image",
+    "rect",
+    "ellipse",
+    "line",
+    "polygon",
+    "polyline",
+    "path",
+    "qrCode",
+    "barcode",
+]
+_NON_CANVAS_NON_GROUP_WIRE = [kind for kind in NON_CANVAS_KINDS_WIRE if kind != "group"]
+
+
+def wire_name(kind: str) -> str:
+    return _WIRE_KIND_OVERRIDES.get(kind, kind.lower())
+
+
+# BindingPolicyCatalog base registration (independent re-expansion of ticket 09 §8).
+_POLICY_ENTRIES: set[tuple[str, str]] = set()
+
+
+def _add_policies(node_kind: str, patterns: list[str]) -> None:
+    for pattern in patterns:
+        _POLICY_ENTRIES.add((node_kind, pattern))
+
+
+_add_policies("canvas", ["backgroundColor"])
+for _kind in NON_CANVAS_KINDS_WIRE:
+    _add_policies(
+        _kind,
+        [
+            "render",
+            "visible",
+            "opacity",
+            "transform.rotationDeg",
+            "transform.scaleX",
+            "transform.scaleY",
+            "transform.originX",
+            "transform.originY",
+        ],
+    )
+    _add_policies(_kind, ["placement.xMm", "placement.yMm"])
+    _add_policies(
+        _kind,
+        [
+            "placement.marginTopMm",
+            "placement.marginRightMm",
+            "placement.marginBottomMm",
+            "placement.marginLeftMm",
+        ],
+    )
+    _add_policies(_kind, ["placement.alignSelf"])
+    _add_policies(
+        _kind,
+        [
+            "placement.row",
+            "placement.column",
+            "placement.rowSpan",
+            "placement.columnSpan",
+            "placement.horizontalAlignSelf",
+            "placement.verticalAlignSelf",
+        ],
+    )
+for _kind in _NON_CANVAS_NON_GROUP_WIRE:
+    _add_policies(_kind, ["placement.fillWeight"])
+    _add_policies(
+        _kind,
+        [
+            "placement.widthMm",
+            "placement.heightMm",
+            "placement.minWidthMm",
+            "placement.minHeightMm",
+            "placement.maxWidthMm",
+            "placement.maxHeightMm",
+        ],
+    )
+    _add_policies(_kind, ["placement.rightInsetMm", "placement.bottomInsetMm"])
+for _kind in ("frame", "stack", "grid"):
+    _add_policies(
+        _kind,
+        [
+            "fill.color",
+            "stroke.color",
+            "stroke.widthMm",
+            "stroke.cap",
+            "stroke.join",
+            "cornerRadii.topLeftMm",
+            "cornerRadii.topRightMm",
+            "cornerRadii.bottomRightMm",
+            "cornerRadii.bottomLeftMm",
+            "padding.topMm",
+            "padding.rightMm",
+            "padding.bottomMm",
+            "padding.leftMm",
+            "clipContent",
+        ],
+    )
+_add_policies("stack", ["direction", "gapMm", "justifyContent", "alignItems"])
+_add_policies(
+    "grid",
+    [
+        "rowGapMm",
+        "columnGapMm",
+        "rows[*].valueMm",
+        "rows[*].weight",
+        "columns[*].valueMm",
+        "columns[*].weight",
+    ],
+)
+_add_policies(
+    "repeat",
+    [
+        "itemLayout.direction",
+        "itemLayout.gapMm",
+        "itemLayout.columns",
+        "itemLayout.columnGapMm",
+        "itemLayout.rowGapMm",
+        "instanceLayout.direction",
+        "instanceLayout.gapMm",
+        "instanceLayout.columns",
+        "instanceLayout.columnGapMm",
+        "instanceLayout.rowGapMm",
+    ],
+)
+_add_policies(
+    "text",
+    [
+        "runs[*].text",
+        "runs[*].fontRef",
+        "runs[*].fontSizePt",
+        "runs[*].color",
+        "runs[*].letterSpacingPt",
+        "runs[*].letterSpacingFactor",
+        "runs[*].decoration",
+        "writingMode",
+        "horizontalAlign",
+        "verticalAlign",
+        "lineBreak",
+        "overflow",
+        "lineHeight.factor",
+        "lineHeight.valuePt",
+        "maxLines",
+        "padding.topMm",
+        "padding.rightMm",
+        "padding.bottomMm",
+        "padding.leftMm",
+        "stroke.color",
+        "stroke.widthPt",
+        "stroke.cap",
+        "stroke.join",
+        "minScale",
+    ],
+)
+_add_policies("image", ["imageRef", "fit", "sampling"])
+_add_policies(
+    "rect",
+    [
+        "fill.color",
+        "stroke.color",
+        "stroke.widthMm",
+        "stroke.cap",
+        "stroke.join",
+        "cornerRadii.topLeftMm",
+        "cornerRadii.topRightMm",
+        "cornerRadii.bottomRightMm",
+        "cornerRadii.bottomLeftMm",
+    ],
+)
+_add_policies(
+    "ellipse", ["fill.color", "stroke.color", "stroke.widthMm", "stroke.cap", "stroke.join"]
+)
+_add_policies(
+    "line",
+    [
+        "start.xMm",
+        "start.yMm",
+        "end.xMm",
+        "end.yMm",
+        "stroke.color",
+        "stroke.widthMm",
+        "stroke.cap",
+        "stroke.join",
+    ],
+)
+_add_policies(
+    "polygon",
+    [
+        "points[*].xMm",
+        "points[*].yMm",
+        "fill.color",
+        "stroke.color",
+        "stroke.widthMm",
+        "stroke.cap",
+        "stroke.join",
+    ],
+)
+_add_policies(
+    "polyline",
+    [
+        "points[*].xMm",
+        "points[*].yMm",
+        "stroke.color",
+        "stroke.widthMm",
+        "stroke.cap",
+        "stroke.join",
+    ],
+)
+_add_policies(
+    "path",
+    [
+        "commands[*].xMm",
+        "commands[*].yMm",
+        "commands[*].cxMm",
+        "commands[*].cyMm",
+        "commands[*].c1xMm",
+        "commands[*].c1yMm",
+        "commands[*].c2xMm",
+        "commands[*].c2yMm",
+        "fill.color",
+        "stroke.color",
+        "stroke.widthMm",
+        "stroke.cap",
+        "stroke.join",
+        "fillRule",
+    ],
+)
+_add_policies("qrCode", ["content", "errorCorrectionLevel", "foregroundColor", "backgroundColor"])
+_add_policies("barcode", ["format", "value", "foregroundColor", "backgroundColor"])
+
+
+def binding_policy_allows(node_kind: str, pattern: str) -> bool:
+    return (node_kind, pattern) in _POLICY_ENTRIES
 FILL_MEMBERS = {"color"}
 STROKE_MM_MEMBERS = {"color", "widthMm", "cap", "join"}
 PADDING_MEMBER_ORDER = ("topMm", "rightMm", "bottomMm", "leftMm")
@@ -1069,6 +1318,157 @@ def allowed_members(kind: str) -> set[str]:
     return members
 
 
+def validate_bindings(
+    node: dict[str, Any],
+    node_pointer: str,
+    kind: str,
+    seen_binding_ids: set[str],
+    output_types: dict[str, str],
+    loop_ids: set[str],
+) -> list[Any]:
+    pointer = node_pointer + "/bindings"
+    bindings = require_array(require_member(node, "bindings", pointer), pointer)
+    normalized: list[Any] = []
+    seen_targets: set[str] = set()
+    for index, item in enumerate(bindings):
+        binding_pointer = pointer + "/" + str(index)
+        binding = require_object(item, binding_pointer)
+        reject_unknown(binding, BINDING_MEMBERS, binding_pointer)
+        binding_id = require_string(
+            require_member(binding, "bindingId", binding_pointer + "/bindingId"),
+            binding_pointer + "/bindingId",
+        )
+        if UUID_V4.fullmatch(binding_id) is None or binding_id in seen_binding_ids:
+            raise semantic_rejection("DESIGN_VALUE_INVALID", binding_pointer + "/bindingId")
+        seen_binding_ids.add(binding_id)
+        target = require_object(
+            require_member(binding, "targetPropertyRef", binding_pointer + "/targetPropertyRef"),
+            binding_pointer + "/targetPropertyRef",
+        )
+        resolved = validate_target_property_ref(
+            target, binding_pointer + "/targetPropertyRef", node, kind
+        )
+        if resolved in seen_targets:
+            raise semantic_rejection(
+                "DESIGN_VALUE_INVALID", binding_pointer + "/targetPropertyRef"
+            )
+        seen_targets.add(resolved)
+        validate_binding_source(
+            require_member(binding, "source", binding_pointer + "/source"),
+            binding_pointer + "/source",
+            output_types,
+            loop_ids,
+        )
+        normalized.append(binding)
+    normalized.sort(key=lambda item: require_string(item["bindingId"], ""))
+    return normalized
+
+
+def validate_target_property_ref(
+    target: dict[str, Any],
+    pointer: str,
+    node: dict[str, Any],
+    kind: str,
+) -> str:
+    reject_unknown(target, TARGET_PROPERTY_REF_MEMBERS, pointer)
+    root_property_id = require_string(
+        require_member(target, "rootPropertyId", pointer + "/rootPropertyId"),
+        pointer + "/rootPropertyId",
+    )
+    selectors = require_array(
+        require_member(target, "selectors", pointer + "/selectors"), pointer + "/selectors"
+    )
+    if len(selectors) > 2:
+        raise semantic_rejection("DESIGN_VALUE_INVALID", pointer + "/selectors")
+    member: str | None = None
+    member_pointer: str | None = None
+    index_token: str | None = None
+    index_pointer: str | None = None
+    for index, item in enumerate(selectors):
+        selector_pointer = pointer + "/selectors/" + str(index)
+        selector = require_object(item, selector_pointer)
+        selector_kind = require_string(
+            require_member(selector, "kind", selector_pointer + "/kind"), selector_pointer + "/kind"
+        )
+        if selector_kind == "member":
+            reject_unknown(selector, MEMBER_SELECTOR_MEMBERS, selector_pointer)
+            if member is not None:
+                raise semantic_rejection("DESIGN_VALUE_INVALID", selector_pointer + "/kind")
+            member = require_string(
+                require_member(selector, "name", selector_pointer + "/name"),
+                selector_pointer + "/name",
+            )
+            member_pointer = selector_pointer
+        elif selector_kind == "index":
+            reject_unknown(selector, INDEX_SELECTOR_MEMBERS, selector_pointer)
+            if index_token is not None:
+                raise semantic_rejection("DESIGN_VALUE_INVALID", selector_pointer + "/kind")
+            non_negative_integer_member(selector, "index", selector_pointer + "/index")
+            index_token = require_member(selector, "index", selector_pointer + "/index").token
+            index_pointer = selector_pointer
+        else:
+            raise semantic_rejection("DESIGN_VALUE_INVALID", selector_pointer + "/kind")
+    container = node.get(root_property_id)
+    if container is None:
+        raise semantic_rejection("DESIGN_VALUE_INVALID", pointer + "/rootPropertyId")
+    if index_token is not None:
+        if not isinstance(container, list) or int(index_token) >= len(container):
+            raise semantic_rejection("DESIGN_VALUE_INVALID", index_pointer)
+        container = container[int(index_token)]
+    if member is not None:
+        if not isinstance(container, dict) or member not in container:
+            raise semantic_rejection("DESIGN_VALUE_INVALID", member_pointer)
+    pattern = root_property_id + ("[*]" if index_token is not None else "")
+    if member is not None:
+        pattern += "." + member
+    if not binding_policy_allows(wire_name(kind), pattern):
+        raise semantic_rejection("DESIGN_VALUE_INVALID", pointer)
+    resolved = root_property_id
+    if index_token is not None:
+        resolved += "[" + index_token + "]"
+    if member is not None:
+        resolved += "." + member
+    return resolved
+
+
+def validate_binding_source(
+    value: Any,
+    pointer: str,
+    output_types: dict[str, str],
+    loop_ids: set[str],
+) -> None:
+    source = require_object(value, pointer)
+    kind = require_string(require_member(source, "kind", pointer + "/kind"), pointer + "/kind")
+    if kind == "context":
+        reject_unknown(source, CONTEXT_SOURCE_MEMBERS, pointer)
+        validate_domain(
+            require_member(source, "domain", pointer + "/domain"), pointer + "/domain", loop_ids
+        )
+        validate_context_pointer(
+            require_string(
+                require_member(source, "pointer", pointer + "/pointer"), pointer + "/pointer"
+            ),
+            pointer + "/pointer",
+        )
+    elif kind == "loopIndex":
+        reject_unknown(source, LOOP_INDEX_SOURCE_MEMBERS, pointer)
+        loop_id = require_string(
+            require_member(source, "loopId", pointer + "/loopId"), pointer + "/loopId"
+        )
+        if UUID_V4.fullmatch(loop_id) is None or loop_id not in loop_ids:
+            raise semantic_rejection("DESIGN_VALUE_INVALID", pointer + "/loopId")
+    elif kind == "definition":
+        reject_unknown(source, DEFINITION_SOURCE_MEMBERS, pointer)
+        target = require_string(
+            require_member(source, "definitionId", pointer + "/definitionId"),
+            pointer + "/definitionId",
+        )
+        if UUID_V4.fullmatch(target) is None or target not in output_types:
+            raise semantic_rejection("DESIGN_VALUE_INVALID", pointer + "/definitionId")
+    else:
+        raise semantic_rejection("DESIGN_VALUE_INVALID", pointer + "/kind")
+
+
 def collect_loop_ids(value: Any, loop_ids: set[str]) -> None:
     if isinstance(value, dict):
         kind = value.get("kind")
@@ -1089,6 +1489,7 @@ def validate_children(
     parent_direction: str | None,
     seen_node_ids: set[str],
     seen_loop_ids: set[str],
+    seen_binding_ids: set[str],
     output_types: dict[str, str],
     loop_ids: set[str],
 ) -> list[Any]:
@@ -1099,7 +1500,7 @@ def validate_children(
         normalized.append(
             validate_non_canvas_node(
                 child, child_pointer, parent_kind, parent_direction, seen_node_ids,
-                seen_loop_ids, output_types, loop_ids
+                seen_loop_ids, seen_binding_ids, output_types, loop_ids
             )
         )
     return normalized
@@ -1112,6 +1513,7 @@ def validate_non_canvas_node(
     parent_direction: str | None,
     seen_node_ids: set[str],
     seen_loop_ids: set[str],
+    seen_binding_ids: set[str],
     output_types: dict[str, str],
     loop_ids: set[str],
 ) -> dict[str, Any]:
@@ -1128,14 +1530,11 @@ def validate_non_canvas_node(
     if UUID_V4.fullmatch(node_id) is None or node_id in seen_node_ids:
         raise semantic_rejection("DESIGN_VALUE_INVALID", pointer + "/nodeId")
     seen_node_ids.add(node_id)
-    bindings = require_array(
-        require_member(node, "bindings", pointer + "/bindings"),
-        pointer + "/bindings",
-    )
-    if bindings:
-        raise semantic_rejection("DESIGN_KERNEL_SCOPE_UNSUPPORTED", pointer + "/bindings")
 
     normalized = dict(node)
+    normalized["bindings"] = validate_bindings(
+        node, pointer, kind, seen_binding_ids, output_types, loop_ids
+    )
     if "displayName" in node:
         normalized["displayName"] = metadata(
             node, "displayName", 128, False, pointer + "/displayName"
@@ -1191,7 +1590,7 @@ def validate_non_canvas_node(
             raise semantic_rejection("DESIGN_VALUE_INVALID", pointer + "/children")
         normalized["children"] = validate_children(
             children, pointer + "/children", kind, own_direction, seen_node_ids,
-            seen_loop_ids, output_types, loop_ids
+            seen_loop_ids, seen_binding_ids, output_types, loop_ids
         )
     return normalized
 
@@ -2047,6 +2446,7 @@ def validate_and_normalize(parsed: Any) -> dict[str, Any]:
         pre_children = pre_canvas.get("children")
         if pre_children is not None:
             collect_loop_ids(pre_children, loop_ids)
+    seen_binding_ids: set[str] = set()
     dsl_version = require_string(require_member(root, "dslVersion", "/dslVersion"), "/dslVersion")
     if dsl_version != "renderweave-design/1.0":
         raise semantic_rejection("DESIGN_VERSION_UNSUPPORTED", "/dslVersion")
@@ -2082,21 +2482,20 @@ def validate_and_normalize(parsed: Any) -> dict[str, Any]:
         reject_unknown(bleed, BLEED_MEMBERS, "/designRoot/bleed")
         for name in BLEED_MEMBER_ORDER:
             decimal_member(bleed, name, "/designRoot/bleed/" + name, True)
-    bindings = require_array(
-        require_member(canvas, "bindings", "/designRoot/bindings"),
-        "/designRoot/bindings",
+    normalized_canvas_bindings = validate_bindings(
+        canvas, "/designRoot", "CANVAS", seen_binding_ids, output_types, loop_ids
     )
     children = require_array(
         require_member(canvas, "children", "/designRoot/children"),
         "/designRoot/children",
     )
-    if bindings:
-        raise semantic_rejection("DESIGN_KERNEL_SCOPE_UNSUPPORTED", "/designRoot/bindings")
     normalized_children = validate_children(
-        children, "/designRoot/children", "CANVAS", None, set(), set(), output_types, loop_ids
+        children, "/designRoot/children", "CANVAS", None, set(), set(), seen_binding_ids,
+        output_types, loop_ids
     )
 
     normalized_canvas = dict(canvas)
+    normalized_canvas["bindings"] = normalized_canvas_bindings
     normalized_canvas["children"] = normalized_children
     if "displayName" in canvas:
         normalized_canvas["displayName"] = metadata(
@@ -2284,6 +2683,31 @@ def canvas(spec: dict[str, Any], width_token: str = "210") -> bytes:
     return raw.encode("utf-8")
 
 
+def canvas_with_bindings(spec: dict[str, Any]) -> bytes:
+    dsl_version = spec.get("dslVersion", "renderweave-design/1.0")
+    definitions = spec.get("definitions", "[]")
+    children = spec.get("children", "[]")
+    canvas_prefix = spec.get("canvasPrefix", "")
+    canvas_bindings = spec.get("canvasBindings", "[]")
+    raw = (
+        '{"dslVersion":"'
+        + dsl_version
+        + '","expressionProfile":"renderweave-expression/1.0",'
+        + '"displayName":"Baseline","definitions":'
+        + definitions
+        + ',"designRoot":{'
+        + canvas_prefix
+        + '"nodeId":"00000000-0000-4000-8000-000000000001",'
+        + '"kind":"canvas","widthMm":210,'
+        + '"heightMm":297,"bindings":'
+        + canvas_bindings
+        + ',"children":'
+        + children
+        + "}}"
+    )
+    return raw.encode("utf-8")
+
+
 def comma_zeros(count: int) -> str:
     if count == 0:
         return ""
@@ -2300,6 +2724,8 @@ def vector_input(spec: dict[str, Any]) -> bytes:
         return b"\xef\xbb\xbf" + spec["text"].encode("utf-8")
     if kind == "CANVAS":
         return canvas(spec)
+    if kind == "CANVAS_BINDINGS":
+        return canvas_with_bindings(spec)
     if kind == "PADDED_CANVAS":
         raw = canvas(spec)
         return raw + b" " * (spec["totalBytes"] - len(raw))
@@ -2385,13 +2811,13 @@ def main() -> int:
 
     vector_bytes, manifest = load_json(args.vectors)
     _, primary = load_json(args.primary_report)
-    if manifest["vectorVersion"] != "renderweave-template-canonical-kernel-v1/5":
+    if manifest["vectorVersion"] != "renderweave-template-canonical-kernel-v1/6":
         raise AssertionError("Unexpected vector version")
     if manifest["authorityContext"]["staticSchemaProfile"] != "system-empty@v1":
         raise AssertionError("Unexpected external StaticSchema context")
     if manifest["authorityContext"]["profileAvailability"] != "NOT_REGISTERED":
         raise AssertionError("Partial DesignDSL Profile must remain unavailable")
-    if len(manifest["cases"]) != 152:
+    if len(manifest["cases"]) != 176:
         raise AssertionError("Vector case count drift")
 
     results = [replay_case(vector) for vector in manifest["cases"]]

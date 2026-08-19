@@ -174,6 +174,18 @@ final class NodeContractCatalog {
 
     /** StrokePt: Text-only glyph stroke with pt unit (ticket 09 §3, §6). */
     static final Set<String> STROKE_PT_MEMBERS = Set.of("color", "widthPt", "cap", "join");
+
+    // --- Binding contract (ticket 07 §6-§9, ticket 09 §8) -----------------------
+
+    static final Set<String> BINDING_MEMBERS = Set.of(
+            "bindingId", "targetPropertyRef", "source"
+    );
+    static final Set<String> TARGET_PROPERTY_REF_MEMBERS = Set.of(
+            "rootPropertyId", "selectors"
+    );
+    static final Set<String> MEMBER_SELECTOR_MEMBERS = Set.of("kind", "name");
+    static final Set<String> INDEX_SELECTOR_MEMBERS = Set.of("kind", "index");
+    static final Set<String> SELECTOR_KINDS = Set.of("member", "index");
     static final List<String> PADDING_MEMBER_ORDER = List.of(
             "topMm", "rightMm", "bottomMm", "leftMm"
     );
@@ -262,6 +274,15 @@ final class NodeContractCatalog {
             case CANVAS, TEXT, IMAGE, RECT, ELLIPSE, LINE, POLYGON, POLYLINE, PATH,
                     QRCODE, BARCODE -> false;
             case GROUP, FRAME, STACK, GRID, REPEAT -> true;
+        };
+    }
+
+    /** Authored wire name of a kind (lowerCamelCase; qrCode/barcode are not plain lower). */
+    static String wireName(NodeKind kind) {
+        return switch (kind) {
+            case QRCODE -> "qrCode";
+            case BARCODE -> "barcode";
+            default -> kind.name().toLowerCase();
         };
     }
 

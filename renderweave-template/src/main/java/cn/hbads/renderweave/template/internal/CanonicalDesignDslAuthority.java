@@ -78,6 +78,8 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
                 collectLoopIds(preChildren, loopIds);
             }
         }
+        // bindingId namespace is Template-wide across canvas and all nodes.
+        var seenBindingIds = new java.util.HashSet<String>();
         exactVersion(root, "dslVersion", "renderweave-design/1.0", "/dslVersion");
         exactVersion(
                 root,
@@ -127,9 +129,9 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
         }
         var bindings = array(required(canvas, "bindings", "/designRoot/bindings"),
                 "/designRoot/bindings");
-        if (!bindings.items().isEmpty()) {
-            throw failure(FailureCode.DESIGN_KERNEL_SCOPE_UNSUPPORTED, "/designRoot/bindings");
-        }
+        var normalizedCanvasBindings = validateBindings(
+                canvas, "/designRoot", NodeContractCatalog.NodeKind.CANVAS, seenBindingIds,
+                definitionsResult.outputTypes(), loopIds);
         var children = array(required(canvas, "children", "/designRoot/children"),
                 "/designRoot/children");
         var normalizedChildren = validateChildren(
@@ -139,11 +141,13 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
                 null,
                 new java.util.HashSet<>(),
                 new java.util.HashSet<>(),
+                seenBindingIds,
                 definitionsResult.outputTypes(),
                 loopIds
         );
 
         var normalizedCanvas = new LinkedHashMap<>(canvas.members());
+        normalizedCanvas.put("bindings", normalizedCanvasBindings);
         normalizedCanvas.put("children", normalizedChildren);
         if (canvas.members().containsKey("displayName")) {
             normalizedCanvas.put(
@@ -758,6 +762,7 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
             String parentDirection,
             Set<String> seenNodeIds,
             Set<String> seenLoopIds,
+            Set<String> seenBindingIds,
             Map<String, String> definitionsOutputTypes,
             Set<String> loopIds
     ) throws DesignDslFailureException {
@@ -767,7 +772,7 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
             var child = object(children.items().get(index), childPointer);
             normalized.add(validateNonCanvasNode(
                     child, childPointer, parentKind, parentDirection, seenNodeIds, seenLoopIds,
-                    definitionsOutputTypes, loopIds));
+                    seenBindingIds, definitionsOutputTypes, loopIds));
         }
         return new JsonValue.ArrayValue(normalized);
     }
@@ -779,6 +784,7 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
             String parentDirection,
             Set<String> seenNodeIds,
             Set<String> seenLoopIds,
+            Set<String> seenBindingIds,
             Map<String, String> definitionsOutputTypes,
             Set<String> loopIds
     ) throws DesignDslFailureException {
@@ -798,11 +804,12 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
         if (!UUID_V4.matcher(nodeId).matches() || !seenNodeIds.add(nodeId)) {
             throw failure(FailureCode.DESIGN_VALUE_INVALID, pointer + "/nodeId");
         }
-        var bindings = array(required(node, "bindings", pointer + "/bindings"), pointer + "/bindings");
-        if (!bindings.items().isEmpty()) {
-            throw failure(FailureCode.DESIGN_KERNEL_SCOPE_UNSUPPORTED, pointer + "/bindings");
-        }
         var normalized = new LinkedHashMap<>(node.members());
+        normalized.put(
+                "bindings",
+                validateBindings(node, pointer, kind, seenBindingIds,
+                        definitionsOutputTypes, loopIds)
+        );
         if (node.members().containsKey("displayName")) {
             normalized.put(
                     "displayName",
@@ -860,7 +867,8 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
             normalized.put(
                     "children",
                     validateChildren(children, pointer + "/children", kind, ownDirection,
-                            seenNodeIds, seenLoopIds, definitionsOutputTypes, loopIds)
+                            seenNodeIds, seenLoopIds, seenBindingIds,
+                            definitionsOutputTypes, loopIds)
             );
         }
         return new JsonValue.ObjectValue(normalized);
@@ -1042,6 +1050,183 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
             for (var item : array.items()) {
                 collectLoopIds(item, loopIds);
             }
+        }
+    }
+
+    /**
+     * Node-local bindings[] (ticket 07 §7): bindingId Template-unique, closed
+     * targetPropertyRef resolved against the authored static tree with a unique
+     * BindingPolicyCatalog entry, source restricted to context/loopIndex/definition.
+     * Returns the canonical array sorted by bindingId.
+     */
+    private JsonValue.ArrayValue validateBindings(
+            JsonValue.ObjectValue node,
+            String nodePointer,
+            NodeContractCatalog.NodeKind kind,
+            Set<String> seenBindingIds,
+            Map<String, String> definitionsOutputTypes,
+            Set<String> loopIds
+    ) throws DesignDslFailureException {
+        var pointer = nodePointer + "/bindings";
+        var bindings = array(required(node, "bindings", pointer), pointer);
+        var normalized = new ArrayList<JsonValue>();
+        var seenTargets = new HashSet<String>();
+        for (int index = 0; index < bindings.items().size(); index++) {
+            var bindingPointer = pointer + "/" + index;
+            var binding = object(bindings.items().get(index), bindingPointer);
+            rejectUnknown(binding, NodeContractCatalog.BINDING_MEMBERS, bindingPointer);
+            var bindingId = string(required(binding, "bindingId", bindingPointer + "/bindingId"),
+                    bindingPointer + "/bindingId");
+            if (!UUID_V4.matcher(bindingId).matches() || !seenBindingIds.add(bindingId)) {
+                throw failure(FailureCode.DESIGN_VALUE_INVALID, bindingPointer + "/bindingId");
+            }
+            var target = object(required(binding, "targetPropertyRef",
+                    bindingPointer + "/targetPropertyRef"), bindingPointer + "/targetPropertyRef");
+            var resolved = validateTargetPropertyRef(
+                    target, bindingPointer + "/targetPropertyRef", node, kind);
+            if (!seenTargets.add(resolved)) {
+                throw failure(FailureCode.DESIGN_VALUE_INVALID,
+                        bindingPointer + "/targetPropertyRef");
+            }
+            validateBindingSource(
+                    required(binding, "source", bindingPointer + "/source"),
+                    bindingPointer + "/source",
+                    definitionsOutputTypes,
+                    loopIds
+            );
+            normalized.add(binding);
+        }
+        normalized.sort(Comparator.comparing(a -> ((JsonValue.ObjectValue) a).members()
+                .get("bindingId") instanceof JsonValue.StringValue bindingId
+                ? bindingId.value() : ""));
+        return new JsonValue.ArrayValue(normalized);
+    }
+
+    /**
+     * Resolve a targetPropertyRef against the authored node: root must be authored,
+     * at most one member and one fixed non-negative index selector, containers and the
+     * final leaf must exist, and the derived {@code root[*].member} pattern must have a
+     * unique BindingPolicyCatalog entry. Returns the resolved target identity.
+     */
+    private String validateTargetPropertyRef(
+            JsonValue.ObjectValue target,
+            String pointer,
+            JsonValue.ObjectValue node,
+            NodeContractCatalog.NodeKind kind
+    ) throws DesignDslFailureException {
+        rejectUnknown(target, NodeContractCatalog.TARGET_PROPERTY_REF_MEMBERS, pointer);
+        var rootPropertyId = string(required(target, "rootPropertyId", pointer + "/rootPropertyId"),
+                pointer + "/rootPropertyId");
+        var selectors = array(required(target, "selectors", pointer + "/selectors"),
+                pointer + "/selectors");
+        if (selectors.items().size() > 2) {
+            throw failure(FailureCode.DESIGN_VALUE_INVALID, pointer + "/selectors");
+        }
+        String member = null;
+        String memberPointer = null;
+        String indexToken = null;
+        String indexPointer = null;
+        for (int index = 0; index < selectors.items().size(); index++) {
+            var selectorPointer = pointer + "/selectors/" + index;
+            var selector = object(selectors.items().get(index), selectorPointer);
+            var selectorKind = string(required(selector, "kind", selectorPointer + "/kind"),
+                    selectorPointer + "/kind");
+            switch (selectorKind) {
+                case "member" -> {
+                    rejectUnknown(selector, NodeContractCatalog.MEMBER_SELECTOR_MEMBERS,
+                            selectorPointer);
+                    if (member != null) {
+                        throw failure(FailureCode.DESIGN_VALUE_INVALID, selectorPointer + "/kind");
+                    }
+                    member = string(required(selector, "name", selectorPointer + "/name"),
+                            selectorPointer + "/name");
+                    memberPointer = selectorPointer;
+                }
+                case "index" -> {
+                    rejectUnknown(selector, NodeContractCatalog.INDEX_SELECTOR_MEMBERS,
+                            selectorPointer);
+                    if (indexToken != null) {
+                        throw failure(FailureCode.DESIGN_VALUE_INVALID, selectorPointer + "/kind");
+                    }
+                    nonNegativeIntegerMember(selector, "index", selectorPointer + "/index");
+                    indexToken = tokenOf(required(selector, "index", selectorPointer + "/index"));
+                    indexPointer = selectorPointer;
+                }
+                default -> throw failure(FailureCode.DESIGN_VALUE_INVALID, selectorPointer + "/kind");
+            }
+        }
+        var container = node.members().get(rootPropertyId);
+        if (container == null) {
+            throw failure(FailureCode.DESIGN_VALUE_INVALID, pointer + "/rootPropertyId");
+        }
+        if (indexToken != null) {
+            if (!(container instanceof JsonValue.ArrayValue array)
+                    || new BigDecimal(indexToken).compareTo(
+                    new BigDecimal(array.items().size())) >= 0) {
+                throw failure(FailureCode.DESIGN_VALUE_INVALID, indexPointer);
+            }
+            container = array.items().get(Integer.parseInt(indexToken));
+        }
+        if (member != null) {
+            if (!(container instanceof JsonValue.ObjectValue objectValue)
+                    || !objectValue.members().containsKey(member)) {
+                throw failure(FailureCode.DESIGN_VALUE_INVALID, memberPointer);
+            }
+        }
+        var pattern = rootPropertyId + (indexToken != null ? "[*]" : "")
+                + (member != null ? "." + member : "");
+        if (!BindingPolicyCatalog.allows(NodeContractCatalog.wireName(kind), pattern)) {
+            throw failure(FailureCode.DESIGN_VALUE_INVALID, pointer);
+        }
+        return rootPropertyId + (indexToken != null ? "[" + indexToken + "]" : "")
+                + (member != null ? "." + member : "");
+    }
+
+    private String tokenOf(JsonValue value) {
+        return ((JsonValue.NumberValue) value).token();
+    }
+
+    /**
+     * Binding source kinds are context | loopIndex | definition only (ticket 07 §45):
+     * literal belongs in the static tree and capability is Expression-input-only.
+     */
+    private void validateBindingSource(
+            JsonValue value,
+            String pointer,
+            Map<String, String> definitionsOutputTypes,
+            Set<String> loopIds
+    ) throws DesignDslFailureException {
+        var source = object(value, pointer);
+        var kind = string(required(source, "kind", pointer + "/kind"), pointer + "/kind");
+        switch (kind) {
+            case "context" -> {
+                rejectUnknown(source, DefinitionContractCatalog.CONTEXT_SOURCE_MEMBERS, pointer);
+                validateDomain(required(source, "domain", pointer + "/domain"),
+                        pointer + "/domain", loopIds);
+                validateContextPointer(
+                        string(required(source, "pointer", pointer + "/pointer"),
+                                pointer + "/pointer"),
+                        pointer + "/pointer"
+                );
+            }
+            case "loopIndex" -> {
+                rejectUnknown(source, DefinitionContractCatalog.LOOP_INDEX_SOURCE_MEMBERS, pointer);
+                var loopId = string(required(source, "loopId", pointer + "/loopId"),
+                        pointer + "/loopId");
+                if (!UUID_V4.matcher(loopId).matches() || !loopIds.contains(loopId)) {
+                    throw failure(FailureCode.DESIGN_VALUE_INVALID, pointer + "/loopId");
+                }
+            }
+            case "definition" -> {
+                rejectUnknown(source, DefinitionContractCatalog.DEFINITION_SOURCE_MEMBERS, pointer);
+                var target = string(required(source, "definitionId", pointer + "/definitionId"),
+                        pointer + "/definitionId");
+                if (!UUID_V4.matcher(target).matches()
+                        || !definitionsOutputTypes.containsKey(target)) {
+                    throw failure(FailureCode.DESIGN_VALUE_INVALID, pointer + "/definitionId");
+                }
+            }
+            default -> throw failure(FailureCode.DESIGN_VALUE_INVALID, pointer + "/kind");
         }
     }
 

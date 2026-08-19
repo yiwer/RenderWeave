@@ -1446,3 +1446,35 @@
   Evaluator/Rendering（ticket 10/16）；Asset current 存在性/kind 属 Template dependency readiness。
   T14b resolve 为 automated_verified；T16/T18 成为 unblocked frontier。Ticket 19 open，Editor/
   Renderer 未 READY；push 待用户另行授权（分支 ahead 13）。
+
+### Template v1 TV1-T16 Binding 与 BindingPolicyCatalog 原子
+
+- `NodeContractCatalog`：BINDING_MEMBERS（bindingId/targetPropertyRef/source）、
+  TARGET_PROPERTY_REF_MEMBERS（rootPropertyId/selectors）、MEMBER/INDEX_SELECTOR_MEMBERS、
+  SELECTOR_KINDS、`wireName(kind)`（qrCode/barcode 非纯小写）。
+- `CanonicalDesignDslAuthority`：`validateBindings`（bindingId UUID v4 + Template 全树唯一，canvas
+  与全部 node 共享 namespace；同 node 重复 target hard error；canonical 按 bindingId 排序）与
+  `validateTargetPropertyRef`（rootPropertyId 必须 authored——NodeContract default 未 materialize
+  不可 Binding；≤2 selectors 且至多一个 member + 一个固定非负 index；index 必须在 authored array
+  范围内；member 必须存在于解析后容器；policy pattern（index→`[*]`）必须命中
+  `BindingPolicyCatalog` 唯一 entry；`property[index].member` 与 `property.member[index]` 归一为
+  同一 resolved identity）；`validateBindingSource`（source kinds 只允许 context/loopIndex/
+  definition——literal 属静态树、capability 仅 Expression input；definition 引用必须存在）。
+  canvas 与 node 的 bindings 非空不再 KERNEL_SCOPE_UNSUPPORTED，改为全量 admission；测试 harness
+  新增 CANVAS_BINDINGS input kind（Java primary 与 Python independent 同步）。
+- 冻结向量：manifest `renderweave-template-canonical-kernel-v1/6`，176 cases（152 原样 + 24 新：
+  6 admit 冻结 exact canonical bytes/hash——bindings sorted、context/loopIndex/definition source、
+  canvas backgroundColor、runs[*].text、rows[*].valueMm；18 reject 冻结精确 code/stage/pointer——
+  缺/重/非法 bindingId、unknown member、缺 target/source、literal/capability source、dangling
+  definition、root 缺失、无 policy、member 缺失、index 越界/非数组、重复 target、extra selectors、
+  双 member、未知 selector kind、负 index）；`reject-bindings-nonempty` 如实改写为
+  `reject-binding-missing-binding-id`。Python independent（176/176，A2）独立重展开
+  BindingPolicyCatalog（ticket 09 §8 逐 kind 表，无 wildcard）并镜像全部 binding 校验。
+- 验证：`template` gate 绿（Java=176/176 Python=176/176、vector sha256 a0b1c0d2…、static
+  authorityDiff=0，evidence `.sdlc/evidence/20260819-201717-template/`）、`fast` 绿
+  （`.sdlc/evidence/20260819-201748-fast/`）。Profile 保持 NOT_REGISTERED；plan §12 kernel report
+  已更新为 176/176。诚实边界：Binding overlay 的 typed static tree 求值、targetType/
+  propertyValidation 重验、ABSENT/ERROR 传播属 Evaluator；target type 由 NodeContract 派生，
+  catalog 不携带类型字段（ticket 09 §8 冻结）。T16 resolve 为 automated_verified；T19 解锁，
+  T18/T19 成为 unblocked frontier。Ticket 19 open，Editor/Renderer 未 READY；push 待用户另行授权
+  （分支 ahead 14）。
