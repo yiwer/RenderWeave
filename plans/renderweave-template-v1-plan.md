@@ -1,7 +1,7 @@
 # RenderWeave Template v1 Implementation Plan
 
-- 状态：`in_progress`；TV1-T01/T02/T03/T04=`automated_verified`，TV1-T05/T06 已解锁
-- 日期：2026-08-18
+- 状态：`in_progress`；TV1-T01/T02/T03/T04/T06=`automated_verified`，TV1-T05 open
+- 日期：2026-08-19
 - Approved delta：[`specs/changes/20260817-template-v1-implementation-authority.md`](../specs/changes/20260817-template-v1-implementation-authority.md)
 - Frozen checkpoint：`0b485f4a13de9d754a81d07f464730776e13c14b`
 - Code base anchor：`main@7848c821aa9b809dd8cadb2b5e28f40f6947a90e`
@@ -82,7 +82,7 @@ flowchart LR
 | 03 | task | `resolved` / `automated_verified` | 01, 02 | 最小 canonical kernel；TDD + independent replay |
 | 04 | grilling | `resolved` / `automated_verified` | 02, 03 | ADR-0042 与 Template aggregate/persistence contract；无 migration |
 | 05 | grilling | `open` | 01, 02 | Asset admission/resolution deep interface |
-| 06 | task | `open` | 03, 04 | Template create/read/save 真正 PostgreSQL 纵切 |
+| 06 | task | `resolved` / `automated_verified` | 03, 04 | Template create/read/save PostgreSQL 纵切；V018 + OpenAPI 0.10.0 + Web SDK + `full` 15/15 |
 | 07 | grilling | `open` | 03, 04, 05 | Evaluator/RenderDocument seam |
 | 08 | grilling | `open` | 02, 07 | Rust process protocol与外部认证计划 |
 | 09 | prototype | `open` | 06, 07, 08 | Editor 状态/恢复/预览架构验证；不进产品 route |
@@ -90,8 +90,8 @@ flowchart LR
 每次只 claim 一个 unblocked ticket；一票 resolved 后才由其 `Blocked by` 关系产生下一 frontier。未知实现切片留在
 map 的 `Not yet specified`，不为排满计划提前发明接口、migration 或 Profile identity。
 
-TV1-T04 已完成并释放 TV1-T06。当前未 claim 的安全 frontier 为 TV1-T05 与 TV1-T06；single-writer 下一票
-优先选择能形成首个 aggregate 产品纵切的 TV1-T06，但不在本票顺带 claim 或预建 Interface/migration/route。
+TV1-T06 已完成；下一个 unblocked frontier 是 TV1-T05（Asset interface）。TV1-T07 仍被 TV1-T05 阻塞，
+single-writer 下一票不顺带 claim 或预建 Asset Interface/product surface。
 
 ## 5. TV1-T01 执行卡
 
@@ -153,7 +153,24 @@ TV1-T04 已完成并释放 TV1-T06。当前未 claim 的安全 frontier 为 TV1-
 - 完成信号：Ticket 04 resolved/`automated_verified`、ADR/CONTEXT/plan 一致、零新增 product surface，形成一个
   verified `agent-commit` 且 worktree clean；不 push/tag/PR。
 
-## 9. Gate 与证据策略
+## 9. TV1-T06 执行卡
+
+- 决策：物化 ADR-0042 已冻结且真实接线的 Template create/current-read/save 纵切；`TemplateModule` 是 app 可
+  import 的唯一 Template `.internal` assembly seam（ADR-0041 窄例外）。
+- 允许影响：renderweave-template api/internal/spi、renderweave-schema `StaticSchemaAuthority`、
+  renderweave-app Adapter/Controller/Config、V018 migration、OpenAPI/Web SDK、contract/public-surface/
+  architecture/API/persistence 测试、E2E 清理加固、tracker/plan/log/NOTES/evidence。
+- 禁止影响：Editor/Asset/Evaluator/Renderer 产品 surface、placeholder 表/接口/route、DesignDSL Profile
+  available 注册、Workspace/org auth、付费 provider/真实数据。
+- 局部验证：Template module contract/public-surface/architecture；app API permission/媒体类型/冲突、
+  persistence same-hash 追加/并发只一胜/零部分写入/terminal DELETED；Testcontainers PostgreSQL。
+- 受影响验证：`template`、`server`、`web` 与完整 `full` 15/15；draft-browser-e2e 与 inference-browser-e2e
+  旅程和进程清理均通过（清理已加固为 CIM 瞬断可重试且不吞旅程结果）。
+- 保证等级：自动 gate A1；kernel/registry exact replay 在原边界为 A2；无 A3/J1。
+- 完成信号：Ticket 06 resolved/`automated_verified`、full gate 绿、形成 verified `agent-commit` 且 worktree
+  clean；push 已获用户明确授权，在收口提交后执行（不建 tag/PR）。
+
+## 10. Gate 与证据策略
 
 `template` gate 顺序固定为 repository diff → DesignDSL kernel Java primary/Python independent exact-vector replay
 → 临时副本 Editor generator/independent/A2 → registry target refresh/Node primary/Python independent/A2 → 全树
@@ -164,7 +181,7 @@ byte comparison → frozen counts/readiness assertions。任何命令失败或�
 process protocol 或 `full` 组成变化属于共享面，必须提前扩大回归。自动 green 只把对应任务推进到
 `automated_verified`；体验/业务选择是 J0/J1，独立机器 replay 是 A2，物理 Linux/CI policy 才可能形成外部门。
 
-## 10. Version、恢复与熔断
+## 11. Version、恢复与熔断
 
 - 每个已验证 Template ticket 在 `feature/template-v1` 独立提交；不 rewrite/cherry-pick 到 dirty main，不 push/tag/PR。
 - Ticket 01/02 无数据或外部副作用，恢复为回退对应单一提交或删除新 worktree；不得用 `reset --hard` 清理用户 worktree。
@@ -174,7 +191,7 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
 - 触发熔断：authority replay diff、产品语义冲突、依赖循环、test-only bypass、partial Profile availability、
   migration/route placeholder、越界外部副作用或 readiness 夸大。停止受影响票，保留证据；其他安全 frontier 继续。
 
-## 11. 当前边界
+## 12. 当前边界
 
 - Ticket 19 保持 open；Capacity formal records=0。
 - Formal Editor Case/Oracle=0/0；47 个 EditorContentSource slots 仅 1 exact、46 UNBOUND。

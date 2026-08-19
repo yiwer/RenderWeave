@@ -1,11 +1,12 @@
 openapi: 3.1.2
 info:
   title: RenderWeave API
-  version: 0.9.0
+  version: 0.10.0
   description: >-
     Contract-first API for RenderWeave Schema Drafts, immutable StaticSchemas,
-    exact compiled artifacts, authoritative RootDocument validation, deterministic replay,
-    guarded live inference Candidate review and create-only atomic Draft application.
+    exact compiled artifacts, admitted Template revision authoring, authoritative RootDocument
+    validation, deterministic replay, guarded live inference Candidate review and create-only
+    atomic Draft application.
 servers:
   - url: /
 tags:
@@ -15,6 +16,8 @@ tags:
     description: Mutable Schema definitions with append-only revisions.
   - name: Static Schemas
     description: Immutable, exact-version publication artifacts and system presets.
+  - name: Templates
+    description: Owner-scoped mutable Templates with immutable complete DesignDSL revisions.
   - name: RootDocument Validation
     description: Strict, deterministic batch validation against one frozen Schema graph.
   - name: Inference Runs
@@ -416,6 +419,119 @@ paths:
           $ref: '#/components/responses/ValidationProblem'
         '500':
           $ref: '#/components/responses/InternalProblem'
+  /api/v1/templates:
+    post:
+      operationId: createTemplate
+      tags: [Templates]
+      summary: Create a Template at revision 0 from one complete admitted DesignDSL
+      description: >-
+        The DesignDSL bytes are the complete request body. ownerScope and Host capability are
+        resolved exclusively from trusted server context and are not request fields. The currently
+        admitted kernel is deliberately narrower than the unreleased full DesignDSL Profile.
+      parameters:
+        - $ref: '#/components/parameters/TemplateSchemaKey'
+        - $ref: '#/components/parameters/TemplateVersionTag'
+      requestBody:
+        required: true
+        content:
+          application/vnd.renderweave.design+json:
+            schema:
+              $ref: '#/components/schemas/DesignDslKernel'
+      responses:
+        '201':
+          description: Revision 0 committed; disclosure depends on the caller's independent read capability.
+          headers:
+            Location:
+              description: Canonical URL of the created Template.
+              schema:
+                type: string
+                format: uri-reference
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TemplateCommitResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestProblem'
+        '403':
+          $ref: '#/components/responses/TemplateForbiddenProblem'
+        '404':
+          $ref: '#/components/responses/TemplateNotFoundProblem'
+        '413':
+          $ref: '#/components/responses/TemplatePayloadTooLargeProblem'
+        '415':
+          description: The body is not the exact DesignDSL media type.
+        '422':
+          $ref: '#/components/responses/ValidationProblem'
+        '503':
+          $ref: '#/components/responses/TemplateServiceUnavailableProblem'
+  /api/v1/templates/{templateId}:
+    parameters:
+      - $ref: '#/components/parameters/TemplateId'
+    get:
+      operationId: getTemplateCurrent
+      tags: [Templates]
+      summary: Read and integrity-check the active Template current revision
+      responses:
+        '200':
+          description: Canonical current editor baseline.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TemplateReadableResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestProblem'
+        '404':
+          $ref: '#/components/responses/TemplateNotFoundProblem'
+        '410':
+          description: The authorized Template exists but is terminally deleted.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '500':
+          $ref: '#/components/responses/InternalProblem'
+        '503':
+          $ref: '#/components/responses/TemplateServiceUnavailableProblem'
+    put:
+      operationId: saveTemplate
+      tags: [Templates]
+      summary: Append a complete immutable DesignDSL revision if expectedRevision is current
+      description: >-
+        StaticSchema and ownerScope are permanent stored facts and cannot be supplied or rebound by
+        this request. A same-content save still appends the next revision.
+      parameters:
+        - $ref: '#/components/parameters/ExpectedRevision'
+      requestBody:
+        required: true
+        content:
+          application/vnd.renderweave.design+json:
+            schema:
+              $ref: '#/components/schemas/DesignDslKernel'
+      responses:
+        '200':
+          description: The next immutable revision committed; disclosure remains capability-bounded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TemplateCommitResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestProblem'
+        '403':
+          $ref: '#/components/responses/TemplateForbiddenProblem'
+        '404':
+          $ref: '#/components/responses/TemplateNotFoundProblem'
+        '409':
+          $ref: '#/components/responses/ConflictProblem'
+        '413':
+          $ref: '#/components/responses/TemplatePayloadTooLargeProblem'
+        '415':
+          description: The body is not the exact DesignDSL media type.
+        '422':
+          $ref: '#/components/responses/ValidationProblem'
+        '500':
+          $ref: '#/components/responses/InternalProblem'
+        '503':
+          $ref: '#/components/responses/TemplateServiceUnavailableProblem'
   /api/v1/root-document-validations:
     post:
       operationId: validateRootDocuments
@@ -897,6 +1013,32 @@ components:
         type: integer
         format: int64
         minimum: 0
+        maximum: 9223372036854775806
+    TemplateId:
+      name: templateId
+      in: path
+      required: true
+      description: Server-generated opaque Template identity; clients must not parse its encoding.
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 128
+    TemplateSchemaKey:
+      name: schemaKey
+      in: query
+      required: true
+      description: Exact permanent StaticSchema key selected during Template creation.
+      schema:
+        type: string
+        pattern: '^[a-z0-9][a-z0-9-]{0,62}$'
+    TemplateVersionTag:
+      name: versionTag
+      in: query
+      required: true
+      description: Exact permanent StaticSchema version selected during Template creation.
+      schema:
+        type: string
+        pattern: '^[a-z0-9][a-z0-9._-]{0,63}$'
     Revision:
       name: revision
       in: path
@@ -987,7 +1129,7 @@ components:
           enum: [ready]
         contractVersion:
           type: string
-          const: 0.9.0
+          const: 0.10.0
     CreateDraftRequest:
       type: object
       additionalProperties: false
@@ -1491,6 +1633,127 @@ components:
         versionTag:
           type: string
           pattern: '^[a-z0-9][a-z0-9._-]{0,63}$'
+    DesignDslKernel:
+      type: object
+      additionalProperties: false
+      description: >-
+        The real minimal DesignDSL kernel admitted by TV1-T03/T06. This schema does not register
+        renderweave-design/1.0 as an available full Profile; non-empty definitions, bindings and
+        children remain fail-closed until their semantic slices are implemented.
+      required: [dslVersion, expressionProfile, displayName, definitions, designRoot]
+      properties:
+        dslVersion:
+          type: string
+          const: renderweave-design/1.0
+        expressionProfile:
+          type: string
+          const: renderweave-expression/1.0
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 128
+        description:
+          type: string
+          maxLength: 2048
+        definitions:
+          type: array
+          maxItems: 0
+          items: {}
+        designRoot:
+          $ref: '#/components/schemas/DesignCanvasKernel'
+    DesignCanvasKernel:
+      type: object
+      additionalProperties: false
+      required: [nodeId, kind, widthMm, heightMm, bindings, children]
+      properties:
+        nodeId:
+          type: string
+          pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'
+        kind:
+          type: string
+          const: canvas
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 128
+        widthMm:
+          type: number
+          exclusiveMinimum: 0
+        heightMm:
+          type: number
+          exclusiveMinimum: 0
+        backgroundColor:
+          type: string
+          pattern: '^#[0-9A-F]{8}$'
+        bleed:
+          $ref: '#/components/schemas/DesignBleedKernel'
+        bindings:
+          type: array
+          maxItems: 0
+          items: {}
+        children:
+          type: array
+          maxItems: 0
+          items: {}
+    DesignBleedKernel:
+      type: object
+      additionalProperties: false
+      required: [topMm, rightMm, bottomMm, leftMm]
+      properties:
+        topMm:
+          type: number
+          minimum: 0
+        rightMm:
+          type: number
+          minimum: 0
+        bottomMm:
+          type: number
+          minimum: 0
+        leftMm:
+          type: number
+          minimum: 0
+    TemplateReadableResponse:
+      type: object
+      additionalProperties: false
+      required: [templateId, disclosure, revision, staticSchema, contentHash, readiness, designDsl]
+      properties:
+        templateId:
+          type: string
+          minLength: 1
+          maxLength: 128
+        disclosure:
+          type: string
+          const: READABLE
+        revision:
+          type: integer
+          format: int64
+          minimum: 0
+        staticSchema:
+          $ref: '#/components/schemas/StaticSchemaRef'
+        contentHash:
+          type: string
+          pattern: '^sha256:[0-9a-f]{64}$'
+        readiness:
+          type: string
+          enum: [READY]
+        designDsl:
+          $ref: '#/components/schemas/DesignDslKernel'
+    TemplateOpaqueCommitResponse:
+      type: object
+      additionalProperties: false
+      required: [templateId, disclosure]
+      properties:
+        templateId:
+          type: string
+          minLength: 1
+          maxLength: 128
+        disclosure:
+          type: string
+          const: OPAQUE
+    TemplateCommitResponse:
+      oneOf:
+        - $ref: '#/components/schemas/TemplateReadableResponse'
+        - $ref: '#/components/schemas/TemplateOpaqueCommitResponse'
     ArrayValue:
       type: object
       additionalProperties: false
@@ -2379,6 +2642,17 @@ components:
           type: integer
           format: int64
           minimum: 0
+        stage:
+          type: string
+        pointer:
+          type: string
+          description: RFC 6901 pointer into the rejected DesignDSL when applicable.
+        limit:
+          type: string
+        currentRevision:
+          type: integer
+          format: int64
+          minimum: 0
   responses:
     BadRequestProblem:
       description: Request JSON, key syntax or envelope is invalid.
@@ -2424,6 +2698,30 @@ components:
             $ref: '#/components/schemas/Problem'
     InternalProblem:
       description: RFC 9457 problem response.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    TemplateForbiddenProblem:
+      description: The caller lacks the required Template operation capability.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    TemplateNotFoundProblem:
+      description: The exact StaticSchema or visible Template required by this operation does not exist.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    TemplatePayloadTooLargeProblem:
+      description: The complete DesignDSL exceeds an authoritative byte or canonical-count limit.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    TemplateServiceUnavailableProblem:
+      description: Template authorization or persistence is temporarily unavailable.
       content:
         application/problem+json:
           schema:

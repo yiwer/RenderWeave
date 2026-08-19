@@ -1125,3 +1125,20 @@
 - `template` composite `20260818-005721-template` 与 fast `20260818-005739-fast` 通过；authority diff=0、kernel
   Java/Python 33/33、SPEC_REGISTRY 22,838/22,746。只有 ADR/CONTEXT/plan/tracker/log 变化，无 Java/Web/Rust、
   OpenAPI、migration/table/route/page 或 Provider/J1；Ticket 19 open，Template/Editor/Renderer 未 READY。
+
+### Template v1 TV1-T06 Template create/read/save PostgreSQL 纵切
+
+- `TemplateApplication.create/getCurrent/save` 三个 closed 方法与 `TemplateModule.application(...)` exact
+  assembly seam 落地；ownerScope 只取 Host authority（生产默认 fail-closed，dev/test 配置固定 single-owner）；
+  `StaticSchemaAuthority` 成为 renderweave-schema 的 provider-owned Interface。
+- V018（forward-only）建 `template_aggregate`/`template_revision`：canonical BYTEA 1..16 MiB、content_hash
+  sha256:64 只读、current_revision DEFERRABLE FK、revision 无 UPDATE/DELETE/重编译路径。
+- HTTP `POST/GET/PUT /api/v1/templates`（`application/vnd.renderweave.design+json`）与 problem+json 错误面、
+  OpenAPI 0.10.0 与 Web SDK 已再生成；expectedRevision 冲突 409、权限拒绝 403，TemplateApiTest/
+  TemplatePersistenceTest/TemplateOwnerScopeAuthorityTest 等运行于 Testcontainers PostgreSQL（18 migrations）。
+- 两次获授权治理重锚（ADR-0036 R0/R1 anchor→`c12f23d7`、ADR-0037 N7 successor anchor→`3c1e4d3a`）已在本
+  worktree 完成且各自独立 verifier 通过；`tools/run-draft-e2e.ps1` 清理加固为 CIM 瞬断可重试、只降级不吞
+  旅程结果。
+- 完整 `full` 15/15 通过（evidence `.sdlc/evidence/20260819-111831-full/`；draft/inference browser E2E 旅程与
+  清理均通过，kernel 33/33、registry 22,838/22,746、IMAGE_ONLY P0 providerAttempts=0）。Ticket 19 open，
+  Template/Editor/Renderer 未 READY；push 经用户明确授权，在收口提交后执行。

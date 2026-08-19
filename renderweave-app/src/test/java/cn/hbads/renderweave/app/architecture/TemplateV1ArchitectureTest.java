@@ -91,6 +91,9 @@ class TemplateV1ArchitectureTest {
             "renderweave-template", "cn.hbads.renderweave.template",
             "renderweave-rendering", "cn.hbads.renderweave.rendering"
     );
+    private static final Set<String> APP_ASSEMBLY_EXCEPTIONS = Set.of(
+            "cn.hbads.renderweave.template.internal.TemplateModule"
+    );
     private static final Set<String> FORBIDDEN_DOMAIN_REFERENCES = Set.of(
             "cn.hbads.renderweave.app",
             "org.springframework",
@@ -246,6 +249,7 @@ class TemplateV1ArchitectureTest {
                 }
             }
             verifyStagedCrossModuleImports(source);
+            verifyAppStagedInternalImports(source);
         }
     }
 
@@ -290,6 +294,21 @@ class TemplateV1ArchitectureTest {
         assertThrows(
                 ArchitectureViolation.class,
                 () -> verifyDomainCapabilityIsolation(List.of(nativeAdapter))
+        );
+
+        var appInternalBypass = new SourceUnit(
+                APP,
+                Path.of("SyntheticTemplateBypass.java"),
+                "cn.hbads.renderweave.app.template",
+                """
+                        package cn.hbads.renderweave.app.template;
+                        import cn.hbads.renderweave.template.internal.CanonicalTemplateApplication;
+                        final class SyntheticTemplateBypass {}
+                        """
+        );
+        assertThrows(
+                ArchitectureViolation.class,
+                () -> verifyAppStagedInternalImports(appInternalBypass)
         );
     }
 
@@ -448,6 +467,22 @@ class TemplateV1ArchitectureTest {
                         || importedType.startsWith(foreignRoot + ".api."))) {
                     throw new ArchitectureViolation(
                             source + " imports a foreign non-api package: " + importedType
+                    );
+                }
+            }
+        }
+    }
+
+    private static void verifyAppStagedInternalImports(SourceUnit source) {
+        if (!source.module().equals(APP)) {
+            return;
+        }
+        for (var importedType : imports(source.content())) {
+            for (var domainRoot : STAGED_PACKAGE_ROOTS.values()) {
+                if (importedType.startsWith(domainRoot + ".internal.")
+                        && !APP_ASSEMBLY_EXCEPTIONS.contains(importedType)) {
+                    throw new ArchitectureViolation(
+                            source + " imports a foreign internal implementation: " + importedType
                     );
                 }
             }

@@ -13,6 +13,7 @@ class TemplateModuleArchitectureTest {
     private static final String API = "cn.hbads.renderweave.template.api..";
     private static final String INTERNAL = "cn.hbads.renderweave.template.internal..";
     private static final String SPI = "cn.hbads.renderweave.template.spi..";
+    private static final String ASSEMBLY = "cn.hbads.renderweave.template.internal.TemplateModule";
 
     private final com.tngtech.archunit.core.domain.JavaClasses production =
             new ClassFileImporter()
@@ -29,10 +30,25 @@ class TemplateModuleArchitectureTest {
     }
 
     @Test
+    void outboundSpiAnchorIsRealAndCannotReachInternalImplementation() {
+        classes()
+                .that().resideInAPackage(SPI)
+                .should().bePublic()
+                .allowEmptyShould(false)
+                .check(production);
+        noClasses()
+                .that().resideInAPackage(SPI)
+                .should().dependOnClassesThat().resideInAPackage(INTERNAL)
+                .allowEmptyShould(false)
+                .check(production);
+    }
+
+    @Test
     void internalImplementationAnchorIsRealAndNotPublic() {
         noClasses()
                 .that().resideInAPackage(INTERNAL)
                 .and().areTopLevelClasses()
+                .and().doNotHaveFullyQualifiedName(ASSEMBLY)
                 .should().bePublic()
                 .allowEmptyShould(false)
                 .check(production);
@@ -73,12 +89,13 @@ class TemplateModuleArchitectureTest {
     }
 
     @Test
-    void everyPublicProductionTypeRemainsInTheOwnedApiPackage() {
+    void everyPublicProductionTypeRemainsInAnOwnedContractPackage() {
         classes()
                 .that().resideInAPackage(ROOT)
                 .and().areTopLevelClasses()
                 .and().arePublic()
-                .should().resideInAPackage(API)
+                .and().doNotHaveFullyQualifiedName(ASSEMBLY)
+                .should().resideInAnyPackage(API, SPI)
                 .allowEmptyShould(false)
                 .check(production);
     }

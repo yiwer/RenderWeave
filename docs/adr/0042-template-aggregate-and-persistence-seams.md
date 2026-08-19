@@ -39,6 +39,8 @@ copy/restore/delete/confirmation/history/export 或 closure 提前增加抛出 u
 
 `DesignDslAuthority` 继续是同一 Module 内 canonical admission 的独立 Interface。`TemplateApplication` 必须
 通过它取得 canonical bytes 与 content hash，不复制 parser/canonicalizer，也不接受调用者自报 hash。
+Ticket 06 的 app assembly 通过 ADR-0041 所述 exact `TemplateModule.application(...)` factory 取得
+`TemplateApplication`；factory 不是第四个 behavioral Interface，也不向 app 暴露 canonical Implementation。
 
 ### 2. 聚合与 revision 的事实边界
 

@@ -46,6 +46,11 @@ Label: wayfinder:map
   revision/current、trusted read、closed disclosure/confirmation、zero-partial-write 与 forward-only invariants。
   本设计票没有创建 Java Interface、migration/table、OpenAPI/route 或产品执行；T06 才能物化真实
   create/current-read/save surface。
+- [实现 Template create/read/save PostgreSQL 纵切](issues/06-implement-template-crud-slice.md) — 首个真实
+  Template 纵切：`TemplateApplication.create/getCurrent/save` closed outcomes、ADR-0041 exact `TemplateModule`
+  assembly seam、V018 aggregate/revision、ownerScope 只取 Host authority、expectedRevision 409；
+  Testcontainers PostgreSQL + OpenAPI 0.10.0 + Web SDK + `full` 15/15；无 Editor/Asset/Evaluator/Renderer，
+  Profile 未注册，Ticket 19 open。
 
 ## Not yet specified
 

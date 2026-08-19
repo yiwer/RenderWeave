@@ -58,8 +58,9 @@ Inference→Validation 边保持不变；本 ADR 不重写 Schema/Inference v1 �
 - Rendering 独占 Evaluator、`RenderResource`、RenderDocument、Renderer Command、RenderOutput 及最终
   Rendering problem。
 
-跨 artifact 只能 import provider 的 `cn.hbads.renderweave.<context>.api` package。不得复制 provider identity、
-返回 aggregate、store、JDBC row、Spring type 或 import foreign `.internal`/`.spi`。Java package 不添加
+bounded-context artifact 之间只能 import provider 的 `cn.hbads.renderweave.<context>.api` package。app 为实现
+consumer-owned seam 可以 import 对应 `.spi`；除此之外不得复制 provider identity、返回 aggregate、store、
+JDBC row、Spring type 或 import foreign `.internal`。Java package 不添加
 `v1` 后缀；Maven artifact version 管理 in-process compatibility，DesignDSL、RenderDSL、Command 与 process
 wire 继续使用各自 exact Profile identity。需要两个 Java Interface generation 并存时必须另立 ADR。
 
@@ -72,9 +73,17 @@ cn.hbads.renderweave.<context>.internal  module-owned Implementation
 cn.hbads.renderweave.app.<context>       production Adapter, HTTP/JDBC/process wiring and assembly
 ```
 
-`.internal` 永不跨 artifact import；`.spi` 只由所属 Module 的 Implementation 消费、由 app Adapter 实现。
+`.internal` 默认永不跨 artifact import；`.spi` 只由所属 Module 的 Implementation 消费、由 app Adapter 实现。
 不创建 `common`、`shared`、泛型全局 ID、泛型 capability registry 或跨上下文 persistence model。一个 Maven
 artifact 可以容纳多个 codebase-design Module，但每个 Module 对调用者只呈现一个 coherent Interface。
+
+Ticket 06 落地时增加一个由 architecture/public-surface test 精确锁定的 Java assembly 例外：app 只可 import
+`cn.hbads.renderweave.template.internal.TemplateModule`，且该 `final` 类型只公开一个静态 `application(...)`
+factory，用于把 app-owned `OwnerScopeAuthority`/`TemplatePersistence` Adapter 和 Schema authority 注入 internal
+Implementation。它不暴露新的领域行为、Implementation 类型或可旁路 admission 的 constructor；除这个 exact
+类型外，app 对 Template/Asset/Rendering `.internal` 的任何 import 都由正向与 synthetic-negative guard 拒绝。
+这是 Java package visibility 下保持 Implementation/constructor 非 public 与不引入 Spring/反射/service-locator
+依赖之间的窄 assembly seam，不推广为其他 Module 的默认模式。
 
 ### 3. 反向协作与外部能力使用 consumer-owned Seam
 

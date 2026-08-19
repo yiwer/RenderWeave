@@ -2,7 +2,7 @@
 
 import { type Client, type ClientMeta, formDataBodySerializer, type Options as Options2, type RequestResult, type ServerSentEventsResult, type TDataShape } from './client';
 import { client } from './client.gen';
-import type { ApplyInferenceCandidateData, ApplyInferenceCandidateErrors, ApplyInferenceCandidateResponses, CancelInferenceRunData, CancelInferenceRunErrors, CancelInferenceRunResponses, CopyDraftData, CopyDraftErrors, CopyDraftResponses, CopyStaticSchemaToDraftData, CopyStaticSchemaToDraftErrors, CopyStaticSchemaToDraftResponses, CreateDraftData, CreateDraftErrors, CreateDraftResponses, CreateLiveInferenceRunData, CreateLiveInferenceRunErrors, CreateLiveInferenceRunResponses, CreateReplayInferenceRunData, CreateReplayInferenceRunErrors, CreateReplayInferenceRunResponses, DeleteDraftData, DeleteDraftErrors, DeleteDraftResponses, DownloadCompiledJsonSchemaData, DownloadCompiledJsonSchemaErrors, DownloadCompiledJsonSchemaResponses, DownloadStaticSchemaDefinitionData, DownloadStaticSchemaDefinitionErrors, DownloadStaticSchemaDefinitionResponses, GetDraftData, GetDraftErrors, GetDraftResponses, GetDraftRevisionData, GetDraftRevisionErrors, GetDraftRevisionResponses, GetInferenceCandidateData, GetInferenceCandidateErrors, GetInferenceCandidateResponses, GetInferenceExecutionLogData, GetInferenceExecutionLogErrors, GetInferenceExecutionLogResponses, GetInferenceImageArtifactData, GetInferenceImageArtifactErrors, GetInferenceImageArtifactResponses, GetInferenceRunData, GetInferenceRunErrors, GetInferenceRunResponses, GetLiveInferenceAvailabilityData, GetLiveInferenceAvailabilityErrors, GetLiveInferenceAvailabilityResponses, GetStaticSchemaData, GetStaticSchemaErrors, GetStaticSchemaResponses, GetSystemStatusData, GetSystemStatusErrors, GetSystemStatusResponses, ListDraftRevisionsData, ListDraftRevisionsErrors, ListDraftRevisionsResponses, ListDraftsData, ListDraftsErrors, ListDraftsResponses, ListInferenceRunsData, ListInferenceRunsErrors, ListInferenceRunsResponses, ListReplayFixturesData, ListReplayFixturesErrors, ListReplayFixturesResponses, ListStaticSchemasData, ListStaticSchemasErrors, ListStaticSchemasResponses, PublishStaticSchemaData, PublishStaticSchemaErrors, PublishStaticSchemaResponses, RestoreDraftRevisionData, RestoreDraftRevisionErrors, RestoreDraftRevisionResponses, RetryInferenceRunData, RetryInferenceRunErrors, RetryInferenceRunResponses, SaveDraftData, SaveDraftErrors, SaveDraftResponses, SaveInferenceCandidateData, SaveInferenceCandidateErrors, SaveInferenceCandidateResponses, StreamInferenceRunEventsData, StreamInferenceRunEventsErrors, StreamInferenceRunEventsResponse, StreamInferenceRunEventsResponses, ValidateRootDocumentsData, ValidateRootDocumentsErrors, ValidateRootDocumentsResponses } from './types.gen';
+import type { ApplyInferenceCandidateData, ApplyInferenceCandidateErrors, ApplyInferenceCandidateResponses, CancelInferenceRunData, CancelInferenceRunErrors, CancelInferenceRunResponses, CopyDraftData, CopyDraftErrors, CopyDraftResponses, CopyStaticSchemaToDraftData, CopyStaticSchemaToDraftErrors, CopyStaticSchemaToDraftResponses, CreateDraftData, CreateDraftErrors, CreateDraftResponses, CreateLiveInferenceRunData, CreateLiveInferenceRunErrors, CreateLiveInferenceRunResponses, CreateReplayInferenceRunData, CreateReplayInferenceRunErrors, CreateReplayInferenceRunResponses, CreateTemplateData, CreateTemplateErrors, CreateTemplateResponses, DeleteDraftData, DeleteDraftErrors, DeleteDraftResponses, DownloadCompiledJsonSchemaData, DownloadCompiledJsonSchemaErrors, DownloadCompiledJsonSchemaResponses, DownloadStaticSchemaDefinitionData, DownloadStaticSchemaDefinitionErrors, DownloadStaticSchemaDefinitionResponses, GetDraftData, GetDraftErrors, GetDraftResponses, GetDraftRevisionData, GetDraftRevisionErrors, GetDraftRevisionResponses, GetInferenceCandidateData, GetInferenceCandidateErrors, GetInferenceCandidateResponses, GetInferenceExecutionLogData, GetInferenceExecutionLogErrors, GetInferenceExecutionLogResponses, GetInferenceImageArtifactData, GetInferenceImageArtifactErrors, GetInferenceImageArtifactResponses, GetInferenceRunData, GetInferenceRunErrors, GetInferenceRunResponses, GetLiveInferenceAvailabilityData, GetLiveInferenceAvailabilityErrors, GetLiveInferenceAvailabilityResponses, GetStaticSchemaData, GetStaticSchemaErrors, GetStaticSchemaResponses, GetSystemStatusData, GetSystemStatusErrors, GetSystemStatusResponses, GetTemplateCurrentData, GetTemplateCurrentErrors, GetTemplateCurrentResponses, ListDraftRevisionsData, ListDraftRevisionsErrors, ListDraftRevisionsResponses, ListDraftsData, ListDraftsErrors, ListDraftsResponses, ListInferenceRunsData, ListInferenceRunsErrors, ListInferenceRunsResponses, ListReplayFixturesData, ListReplayFixturesErrors, ListReplayFixturesResponses, ListStaticSchemasData, ListStaticSchemasErrors, ListStaticSchemasResponses, PublishStaticSchemaData, PublishStaticSchemaErrors, PublishStaticSchemaResponses, RestoreDraftRevisionData, RestoreDraftRevisionErrors, RestoreDraftRevisionResponses, RetryInferenceRunData, RetryInferenceRunErrors, RetryInferenceRunResponses, SaveDraftData, SaveDraftErrors, SaveDraftResponses, SaveInferenceCandidateData, SaveInferenceCandidateErrors, SaveInferenceCandidateResponses, SaveTemplateData, SaveTemplateErrors, SaveTemplateResponses, StreamInferenceRunEventsData, StreamInferenceRunEventsErrors, StreamInferenceRunEventsResponse, StreamInferenceRunEventsResponses, ValidateRootDocumentsData, ValidateRootDocumentsErrors, ValidateRootDocumentsResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -136,6 +136,39 @@ export const copyStaticSchemaToDraft = <ThrowOnError extends boolean = false>(op
     ...options,
     headers: {
         'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Create a Template at revision 0 from one complete admitted DesignDSL
+ *
+ * The DesignDSL bytes are the complete request body. ownerScope and Host capability are resolved exclusively from trusted server context and are not request fields. The currently admitted kernel is deliberately narrower than the unreleased full DesignDSL Profile.
+ */
+export const createTemplate = <ThrowOnError extends boolean = false>(options: Options<CreateTemplateData, ThrowOnError>): RequestResult<CreateTemplateResponses, CreateTemplateErrors, ThrowOnError> => (options.client ?? client).post<CreateTemplateResponses, CreateTemplateErrors, ThrowOnError>({
+    url: '/api/v1/templates',
+    ...options,
+    headers: {
+        'Content-Type': 'application/vnd.renderweave.design+json',
+        ...options.headers
+    }
+});
+
+/**
+ * Read and integrity-check the active Template current revision
+ */
+export const getTemplateCurrent = <ThrowOnError extends boolean = false>(options: Options<GetTemplateCurrentData, ThrowOnError>): RequestResult<GetTemplateCurrentResponses, GetTemplateCurrentErrors, ThrowOnError> => (options.client ?? client).get<GetTemplateCurrentResponses, GetTemplateCurrentErrors, ThrowOnError>({ url: '/api/v1/templates/{templateId}', ...options });
+
+/**
+ * Append a complete immutable DesignDSL revision if expectedRevision is current
+ *
+ * StaticSchema and ownerScope are permanent stored facts and cannot be supplied or rebound by this request. A same-content save still appends the next revision.
+ */
+export const saveTemplate = <ThrowOnError extends boolean = false>(options: Options<SaveTemplateData, ThrowOnError>): RequestResult<SaveTemplateResponses, SaveTemplateErrors, ThrowOnError> => (options.client ?? client).put<SaveTemplateResponses, SaveTemplateErrors, ThrowOnError>({
+    url: '/api/v1/templates/{templateId}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/vnd.renderweave.design+json',
         ...options.headers
     }
 });

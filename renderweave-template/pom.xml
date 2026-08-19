@@ -13,6 +13,11 @@
 
     <dependencies>
         <dependency>
+            <groupId>cn.hbads</groupId>
+            <artifactId>renderweave-schema</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
             <groupId>tools.jackson.core</groupId>
             <artifactId>jackson-core</artifactId>
         </dependency>

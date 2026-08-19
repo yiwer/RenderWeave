@@ -35,6 +35,12 @@ management:
         include: health,info
 
 renderweave:
+  template:
+    single-owner:
+      # Development/test host adapter only. Production remains fail-closed by default.
+      enabled: ${RENDERWEAVE_TEMPLATE_SINGLE_OWNER_ENABLED:false}
+      owner-scope: ${RENDERWEAVE_TEMPLATE_SINGLE_OWNER_SCOPE:}
+      capabilities: ${RENDERWEAVE_TEMPLATE_SINGLE_OWNER_CAPABILITIES:}
   inference:
     blob-root: ${RENDERWEAVE_BLOB_ROOT:./var/renderweave/blobs}
     live-enabled: ${RENDERWEAVE_LIVE_AI_ENABLED:false}

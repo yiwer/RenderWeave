@@ -8,7 +8,7 @@ export type SystemStatus = {
     service: 'renderweave-api';
     status: 'ready';
     database: 'ready';
-    contractVersion: '0.9.0';
+    contractVersion: '0.10.0';
 };
 
 export type CreateDraftRequest = {
@@ -223,6 +223,54 @@ export type StaticSchemaRef = {
     schemaKey: string;
     versionTag: string;
 };
+
+/**
+ * The real minimal DesignDSL kernel admitted by TV1-T03/T06. This schema does not register renderweave-design/1.0 as an available full Profile; non-empty definitions, bindings and children remain fail-closed until their semantic slices are implemented.
+ */
+export type DesignDslKernel = {
+    dslVersion: 'renderweave-design/1.0';
+    expressionProfile: 'renderweave-expression/1.0';
+    displayName: string;
+    description?: string;
+    definitions: Array<unknown>;
+    designRoot: DesignCanvasKernel;
+};
+
+export type DesignCanvasKernel = {
+    nodeId: string;
+    kind: 'canvas';
+    displayName?: string;
+    widthMm: number;
+    heightMm: number;
+    backgroundColor?: string;
+    bleed?: DesignBleedKernel;
+    bindings: Array<unknown>;
+    children: Array<unknown>;
+};
+
+export type DesignBleedKernel = {
+    topMm: number;
+    rightMm: number;
+    bottomMm: number;
+    leftMm: number;
+};
+
+export type TemplateReadableResponse = {
+    templateId: string;
+    disclosure: 'READABLE';
+    revision: number;
+    staticSchema: StaticSchemaRef;
+    contentHash: string;
+    readiness: 'READY';
+    designDsl: DesignDslKernel;
+};
+
+export type TemplateOpaqueCommitResponse = {
+    templateId: string;
+    disclosure: 'OPAQUE';
+};
+
+export type TemplateCommitResponse = TemplateReadableResponse | TemplateOpaqueCommitResponse;
 
 export type ArrayValue = {
     type: 'array';
@@ -676,6 +724,13 @@ export type Problem = {
     traceId: string;
     violations?: Array<Violation>;
     revision?: number;
+    stage?: string;
+    /**
+     * RFC 6901 pointer into the rejected DesignDSL when applicable.
+     */
+    pointer?: string;
+    limit?: string;
+    currentRevision?: number;
     [key: string]: unknown;
 };
 
@@ -691,6 +746,21 @@ export type InferenceArtifactId = string;
 export type SchemaKey = string;
 
 export type ExpectedRevision = number;
+
+/**
+ * Server-generated opaque Template identity; clients must not parse its encoding.
+ */
+export type TemplateId = string;
+
+/**
+ * Exact permanent StaticSchema key selected during Template creation.
+ */
+export type TemplateSchemaKey = string;
+
+/**
+ * Exact permanent StaticSchema version selected during Template creation.
+ */
+export type TemplateVersionTag = string;
 
 export type Revision = number;
 
@@ -1359,6 +1429,174 @@ export type CopyStaticSchemaToDraftResponses = {
 };
 
 export type CopyStaticSchemaToDraftResponse = CopyStaticSchemaToDraftResponses[keyof CopyStaticSchemaToDraftResponses];
+
+export type CreateTemplateData = {
+    body: DesignDslKernel;
+    path?: never;
+    query: {
+        /**
+         * Exact permanent StaticSchema key selected during Template creation.
+         */
+        schemaKey: string;
+        /**
+         * Exact permanent StaticSchema version selected during Template creation.
+         */
+        versionTag: string;
+    };
+    url: '/api/v1/templates';
+};
+
+export type CreateTemplateErrors = {
+    /**
+     * Request JSON, key syntax or envelope is invalid.
+     */
+    400: Problem;
+    /**
+     * The caller lacks the required Template operation capability.
+     */
+    403: Problem;
+    /**
+     * The exact StaticSchema or visible Template required by this operation does not exist.
+     */
+    404: Problem;
+    /**
+     * The complete DesignDSL exceeds an authoritative byte or canonical-count limit.
+     */
+    413: Problem;
+    /**
+     * The body is not the exact DesignDSL media type.
+     */
+    415: unknown;
+    /**
+     * The complete RenderWeave definition is not valid and nothing was written.
+     */
+    422: Problem;
+    /**
+     * Template authorization or persistence is temporarily unavailable.
+     */
+    503: Problem;
+};
+
+export type CreateTemplateError = CreateTemplateErrors[keyof CreateTemplateErrors];
+
+export type CreateTemplateResponses = {
+    /**
+     * Revision 0 committed; disclosure depends on the caller's independent read capability.
+     */
+    201: TemplateCommitResponse;
+};
+
+export type CreateTemplateResponse = CreateTemplateResponses[keyof CreateTemplateResponses];
+
+export type GetTemplateCurrentData = {
+    body?: never;
+    path: {
+        /**
+         * Server-generated opaque Template identity; clients must not parse its encoding.
+         */
+        templateId: string;
+    };
+    query?: never;
+    url: '/api/v1/templates/{templateId}';
+};
+
+export type GetTemplateCurrentErrors = {
+    /**
+     * Request JSON, key syntax or envelope is invalid.
+     */
+    400: Problem;
+    /**
+     * The exact StaticSchema or visible Template required by this operation does not exist.
+     */
+    404: Problem;
+    /**
+     * The authorized Template exists but is terminally deleted.
+     */
+    410: Problem;
+    /**
+     * RFC 9457 problem response.
+     */
+    500: Problem;
+    /**
+     * Template authorization or persistence is temporarily unavailable.
+     */
+    503: Problem;
+};
+
+export type GetTemplateCurrentError = GetTemplateCurrentErrors[keyof GetTemplateCurrentErrors];
+
+export type GetTemplateCurrentResponses = {
+    /**
+     * Canonical current editor baseline.
+     */
+    200: TemplateReadableResponse;
+};
+
+export type GetTemplateCurrentResponse = GetTemplateCurrentResponses[keyof GetTemplateCurrentResponses];
+
+export type SaveTemplateData = {
+    body: DesignDslKernel;
+    path: {
+        /**
+         * Server-generated opaque Template identity; clients must not parse its encoding.
+         */
+        templateId: string;
+    };
+    query: {
+        expectedRevision: number;
+    };
+    url: '/api/v1/templates/{templateId}';
+};
+
+export type SaveTemplateErrors = {
+    /**
+     * Request JSON, key syntax or envelope is invalid.
+     */
+    400: Problem;
+    /**
+     * The caller lacks the required Template operation capability.
+     */
+    403: Problem;
+    /**
+     * The exact StaticSchema or visible Template required by this operation does not exist.
+     */
+    404: Problem;
+    /**
+     * Natural identity or expected revision conflicts with current state.
+     */
+    409: Problem;
+    /**
+     * The complete DesignDSL exceeds an authoritative byte or canonical-count limit.
+     */
+    413: Problem;
+    /**
+     * The body is not the exact DesignDSL media type.
+     */
+    415: unknown;
+    /**
+     * The complete RenderWeave definition is not valid and nothing was written.
+     */
+    422: Problem;
+    /**
+     * RFC 9457 problem response.
+     */
+    500: Problem;
+    /**
+     * Template authorization or persistence is temporarily unavailable.
+     */
+    503: Problem;
+};
+
+export type SaveTemplateError = SaveTemplateErrors[keyof SaveTemplateErrors];
+
+export type SaveTemplateResponses = {
+    /**
+     * The next immutable revision committed; disclosure remains capability-bounded.
+     */
+    200: TemplateCommitResponse;
+};
+
+export type SaveTemplateResponse = SaveTemplateResponses[keyof SaveTemplateResponses];
 
 export type ValidateRootDocumentsData = {
     body: RootDocumentValidationRequest;

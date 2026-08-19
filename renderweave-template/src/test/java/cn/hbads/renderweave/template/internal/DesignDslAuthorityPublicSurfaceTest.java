@@ -20,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class DesignDslAuthorityPublicSurfaceTest {
 
     @Test
-    void exposesOnlyTheFrozenTopLevelInterface() {
+    void exposesOnlyTheTicketThreeAndTicketSixTopLevelContracts() {
         var production = new ClassFileImporter()
                 .withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
                 .importPackages("cn.hbads.renderweave.template");
@@ -30,7 +30,13 @@ class DesignDslAuthorityPublicSurfaceTest {
                 .map(javaClass -> javaClass.getName())
                 .collect(Collectors.toUnmodifiableSet());
 
-        assertEquals(Set.of(DesignDslAuthority.class.getName()), publicTopLevel);
+        assertEquals(Set.of(
+                DesignDslAuthority.class.getName(),
+                "cn.hbads.renderweave.template.api.TemplateApplication",
+                "cn.hbads.renderweave.template.spi.OwnerScopeAuthority",
+                "cn.hbads.renderweave.template.spi.TemplatePersistence",
+                "cn.hbads.renderweave.template.internal.TemplateModule"
+        ), publicTopLevel);
     }
 
     @Test
