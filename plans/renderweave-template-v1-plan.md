@@ -1,8 +1,8 @@
 # RenderWeave Template v1 Implementation Plan
 
-- 状态：`in_progress`；TV1-T01/T02/T03/T04/T05/T06/T07/T08/T09/T10/T10b/T11/T12a/T14/T14b/T15/T16/T17/T18/T19/T20=`automated_verified`
-  （T09 另含人工 J1），TV1-T12b/T13=`open`（T12b 为唯一 unblocked frontier——T20 的
-  blocker 已 resolve，single-writer 下一轮只 claim T12b）
+- 状态：`in_progress`；TV1-T01/T02/T03/T04/T05/T06/T07/T08/T09/T10/T10b/T11/T12a/T12b/T14/T14b/T15/T16/T17/T18/T19/T20=`automated_verified`
+  （T09 另含人工 J1），TV1-T13=`open`（T12b 的 blocker 已 resolve；TV1-T13 以首个 Rendering
+  实现票与 T08 为前置，当前无 unblocked frontier）
 - 日期：2026-08-19
 - Approved delta：[`specs/changes/20260817-template-v1-implementation-authority.md`](../specs/changes/20260817-template-v1-implementation-authority.md)
 - Frozen checkpoint：`0b485f4a13de9d754a81d07f464730776e13c14b`
@@ -117,7 +117,7 @@ flowchart LR
 | 10b | task | `resolved` / `automated_verified` | 10 | canonical sRGB ICC 字节等值接受原子；41 vectors Java/Python 41/41 |
 | 11 | task | `resolved` / `automated_verified` | 05, 10, 10b | Asset create/current/catalog PostgreSQL+S3 纵切；V019 + OpenAPI 0.11.0/Web SDK + MinIO + `full` 15/15 |
 | 12a | task | `resolved` / `automated_verified` | 05, 11 | content replace/旧内容恢复；V020 审计事件 + OpenAPI 0.12.0 + `full` 16/16 |
-| 12b | task | `open` | 05, 11, Template 依赖投影票 | delete/restore + AssetReferencePort/确认 token 编排 |
+| 12b | task | `resolved` / `automated_verified` | 05, 11, 20 | delete/restore + AssetReferencePort/确认 token 编排 |
 | 13 | task | `open` | 05, 07, 08, 11 | AssetResolver/Renderer-only lease 纵切 |
 | 14 | task | `resolved` | 03 | NodeContractCatalog 与 Node/Property Identity 原子（容器增量：canvas/group/frame/stack/grid 递归 admission/canonical，manifest v2 57 vectors） |
 | 14b | task | `resolved` | 03, 14 | visual leaf Node kinds（text/image/rect/ellipse/line/polygon/polyline/path/qrCode/barcode）与 BindingPolicyCatalog 基础登记，manifest v5 152 vectors |
@@ -140,10 +140,11 @@ BindingPolicyCatalog 消费已 resolve（manifest v6 176 vectors）；TV1-T19 Te
 （manifest v7 197 vectors）；TV1-T18 Conditional 原子已 resolve（manifest v8 211 vectors——v1 全部
 kind 已 admission，Java/Python 211/211，Profile 仍 NOT_REGISTERED）；TV1-T20（Template 依赖投影，
 T12b 的 blocker）已 resolve（AssetRef/TemplateUse 原子提取 + current-only 投影物化 + 反向 proof +
-STALE 消费 + readiness recheck，template gate 含 A2 提取重放，V021）；TV1-T12b 成为唯一 unblocked
-frontier，single-writer 下一轮只 claim T12b；TV1-T13 以首个 Rendering 实现票与 T08 为前置。
-single-writer 不顺带 claim 或预建 delete/restore/Resolver/Rust wire/Editor 产品 route；Editor E1–E9
-切片在各自前置满足后另行登记。
+STALE 消费 + readiness recheck，template gate 含 A2 提取重放，V021）；TV1-T12b（被引用 Asset 删除
+确认与恢复编排）已 resolve（AssetReferencePort 桥接 + 5 分钟单次确认 token + 独占 reservation 零写
+重验 + 软删除/恢复 + assetId 排序读 reservation，V022 + OpenAPI 0.13.0 + Web SDK）；TV1-T13 以首个
+Rendering 实现票与 T08 为前置，当前无 unblocked frontier。single-writer 不顺带 claim 或预建
+delete/restore/Resolver/Rust wire/Editor 产品 route；Editor E1–E9 切片在各自前置满足后另行登记。
 
 ## 5. TV1-T01 执行卡
 

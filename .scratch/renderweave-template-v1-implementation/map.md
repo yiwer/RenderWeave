@@ -79,6 +79,16 @@ Label: wayfinder:map
   STALE 事实流（Template 依赖投影票消费）；`PUT /{id}/content` + `POST /{id}/restore` HTTP 面 + OpenAPI
   0.12.0/Web SDK；Testcontainers PostgreSQL+MinIO + `full` 16/16。无 delete/restore/Resolver/UI，
   acceptance/1.0 未登记，Ticket 19 open。
+- [实现被引用 Asset 删除确认与恢复编排](issues/12b-delete-restore-reference-confirmation.md) — Asset-owned
+  `AssetReferencePort`（app Adapter 桥接 T20 `AssetReferenceAuthority`，完整计数 + 可读 TemplateId 明细 +
+  redactedCount + 完整排序引用集合 fingerprint）；`deletePrecheck` 签发 5 分钟单次确认 token（绑定稳定
+  actorId/ownerScope/assetId/assetRevision/fingerprint，V022 表）；`delete` 单事务内独占 reservation +
+  token 校验 + 重算 proof 比对，任一漂移零写（REQUIRED/EXPIRED/STALE/DEPENDENCY_UNAVAILABLE）；
+  Template current 变更对引用 asset 行按 assetId 升序 FOR SHARE 读 reservation 线性化；`restore` 重新
+  激活 DELETED 同 current 不新建 contentVersion；DELETE/RESTORE 审计事件经 T20 consumer 驱动
+  STALE→INVALID/READY；HTTP delete-precheck/delete/restore-lifecycle + OpenAPI 0.13.0/Web SDK；
+  Testcontainers PostgreSQL+MinIO + app 全量 302 tests + asset/template/fast gate 绿。无 Resolver/lease/UI，
+  acceptance/1.0 未登记，Ticket 19 open。
 - [冻结 Evaluator 与 RenderDocument 产品 seam](issues/07-freeze-evaluator-renderdocument-seam.md) —
   ADR-0044 经两轮 HITL 对答（Q1–Q12 逐项按推荐）冻结：Template-owned `TemplateClosureAuthority`
   （render 专用 `freezeClosure`，AssetRef-atom 提取依赖 DesignDSL full-Profile）、单一窄
@@ -136,13 +146,16 @@ Label: wayfinder:map
   Java/Python 211/211）；T20 Template 依赖投影已 resolve（AssetRef/TemplateUse 原子提取 + current-only
   投影物化（V021 整体替换）+ `AssetReferenceAuthority` 反向 proof + asset_audit_event 可重放 STALE
   消费 + `TemplateReadinessAuthority.recheck` READY/INVALID 重算持久化，Java primary/Python
-  independent 提取 A2 与 `template` gate 全绿）；T12b 为唯一 unblocked frontier；
+  independent 提取 A2 与 `template` gate 全绿）；T12b 被引用 Asset 删除确认与恢复已 resolve
+  （`AssetReferencePort` 桥接 + 5 分钟单次 token + 独占 reservation 重验零写 + 软删除/恢复 + assetId
+  排序 FOR SHARE 读 reservation，V022 + OpenAPI 0.13.0 + Web SDK，app 全量 302 tests 绿）；
   admission/canonical 增量逐票带 exact vectors + template gate 扩展，全部 exact 语义原子通过前不登记
   Profile available，也不把本 kernel 的 fail-closed non-empty array 当作 set ordering 已实现。
 - Asset persistence、replace/delete/restore、依赖影响确认、Asset UI 与 Renderer-only lease 的实施顺序已由
-  Ticket 05 冻结为 T10 → T11 → T12a → T12b → T13；T10/T10b/T11/T12a 已完成。Template
+  Ticket 05 冻结为 T10 → T11 → T12a → T12b → T13；T10/T10b/T11/T12a/T12b 已完成。Template
   依赖投影（从 DesignDSL 提取 authored AssetRef atom 的 current-only 投影、`AssetReferenceAuthority` 物化与
-  STALE 消费）已登记为 T20 并已 resolve，T12b 以其为 blocker 已解锁。
+  STALE 消费）已登记为 T20 并已 resolve，T12b 以其为 blocker 已 resolve；T13 以首个 Rendering
+  实现票与 T08 为前置，当前无 unblocked frontier。
 - Expression/value binding、closure、capability、nested Template、layout lowering 与正式 RenderDocument 的
   实现切片，要等 Evaluator seam 给出稳定 ownership 和错误面后再登记——ADR-0044 已给出该 seam：首个
   Rendering task 票将同时物化 `TemplateClosureAuthority`/`Evaluator`/seal 纵切与 RenderNodeContract/

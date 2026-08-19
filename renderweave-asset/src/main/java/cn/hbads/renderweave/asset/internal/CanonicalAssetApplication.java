@@ -5,11 +5,15 @@ import cn.hbads.renderweave.asset.api.AssetApplication;
 import cn.hbads.renderweave.asset.spi.AssetBlobPersistence;
 import cn.hbads.renderweave.asset.spi.AssetOwnerScopeAuthority;
 import cn.hbads.renderweave.asset.spi.AssetPersistence;
+import cn.hbads.renderweave.asset.spi.AssetReferencePort;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.text.Normalizer;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HexFormat;
 import java.util.LinkedHashSet;
@@ -20,19 +24,25 @@ import java.util.UUID;
 
 final class CanonicalAssetApplication implements AssetApplication {
 
+    private static final Duration CONFIRMATION_TTL = Duration.ofMinutes(5);
+
     private final AssetOwnerScopeAuthority ownerScopeAuthority;
     private final AssetPersistence persistence;
     private final AssetBlobPersistence blobs;
+    private final AssetReferencePort referencePort;
     private final AssetAcceptanceAuthority acceptance = new CanonicalAssetAcceptanceAuthority();
+    private final SecureRandom secureRandom = new SecureRandom();
 
     CanonicalAssetApplication(
             AssetOwnerScopeAuthority ownerScopeAuthority,
             AssetPersistence persistence,
-            AssetBlobPersistence blobs
+            AssetBlobPersistence blobs,
+            AssetReferencePort referencePort
     ) {
         this.ownerScopeAuthority = Objects.requireNonNull(ownerScopeAuthority, "ownerScopeAuthority");
         this.persistence = Objects.requireNonNull(persistence, "persistence");
         this.blobs = Objects.requireNonNull(blobs, "blobs");
+        this.referencePort = Objects.requireNonNull(referencePort, "referencePort");
     }
 
     @Override
@@ -605,6 +615,207 @@ final class CanonicalAssetApplication implements AssetApplication {
         return new RestorePersistenceUnavailable();
     }
 
+    @Override
+    public DeletePrecheckOutcome deletePrecheck(InvocationRef invocation, AssetId assetId) {
+        Objects.requireNonNull(invocation, "invocation");
+        Objects.requireNonNull(assetId, "assetId");
+        var located = persistence.locate(assetId);
+        if (located instanceof AssetPersistence.LocateNotFound) {
+            return new DeletePrecheckNotFound();
+        }
+        if (located instanceof AssetPersistence.LocateUnavailable) {
+            return new DeletePrecheckPersistenceUnavailable();
+        }
+        var metadata = ((AssetPersistence.Located) located).metadata();
+        if (metadata.lifecycle() == AssetApplication.Lifecycle.DELETED) {
+            return new DeletePrecheckDeleted();
+        }
+        var decision = ownerScopeAuthority.authorizeExisting(
+                invocation,
+                metadata.ownerScope(),
+                AssetOwnerScopeAuthority.AssetOperation.DELETE
+        );
+        if (decision instanceof AssetOwnerScopeAuthority.ExistingHidden) {
+            return new DeletePrecheckNotFound();
+        }
+        if (decision instanceof AssetOwnerScopeAuthority.ExistingForbidden) {
+            return new DeletePrecheckForbidden();
+        }
+        if (decision instanceof AssetOwnerScopeAuthority.ExistingUnavailable) {
+            return new DeletePrecheckAuthorityUnavailable();
+        }
+        var recheck = ownerScopeAuthority.recheck(
+                ((AssetOwnerScopeAuthority.ExistingGranted) decision).recheckIdentity()
+        );
+        if (recheck instanceof AssetOwnerScopeAuthority.RecheckDenied) {
+            return new DeletePrecheckForbidden();
+        }
+        if (recheck instanceof AssetOwnerScopeAuthority.RecheckUnavailable) {
+            return new DeletePrecheckAuthorityUnavailable();
+        }
+
+        var references = referencePort.references(invocation, assetId);
+        if (references instanceof AssetReferencePort.ReferencesUnavailable) {
+            return new DeletePrecheckDependencyUnavailable();
+        }
+        var proof = ((AssetReferencePort.ReferencesReadable) references).proof();
+        var impact = new DeleteImpactReport(
+                proof.totalCount(),
+                proof.readableTemplateIds(),
+                proof.redactedCount()
+        );
+
+        var token = new ConfirmationToken(randomToken());
+        var expiresAt = Instant.now().plus(CONFIRMATION_TTL);
+        var issued = persistence.issueDeleteConfirmation(new IssueDeleteConfirmationCommitImpl(
+                token,
+                metadata.ownerScope(),
+                assetId,
+                ((AssetOwnerScopeAuthority.ExistingGranted) decision).actorId(),
+                metadata.assetRevision(),
+                proof.referenceFingerprint(),
+                expiresAt
+        ));
+        if (issued instanceof AssetPersistence.ConfirmationUnavailable) {
+            return new DeletePrecheckPersistenceUnavailable();
+        }
+        return new DeletePrecheckReadable(impact, token, expiresAt);
+    }
+
+    @Override
+    public DeleteOutcome delete(InvocationRef invocation, DeleteCommand command) {
+        Objects.requireNonNull(invocation, "invocation");
+        Objects.requireNonNull(command, "command");
+        var located = persistence.locate(command.assetId());
+        if (located instanceof AssetPersistence.LocateNotFound) {
+            return new DeleteNotFound();
+        }
+        if (located instanceof AssetPersistence.LocateUnavailable) {
+            return new DeletePersistenceUnavailable();
+        }
+        var metadata = ((AssetPersistence.Located) located).metadata();
+        if (metadata.lifecycle() == AssetApplication.Lifecycle.DELETED) {
+            return new DeleteDeleted();
+        }
+        var decision = ownerScopeAuthority.authorizeExisting(
+                invocation,
+                metadata.ownerScope(),
+                AssetOwnerScopeAuthority.AssetOperation.DELETE
+        );
+        if (decision instanceof AssetOwnerScopeAuthority.ExistingHidden) {
+            return new DeleteNotFound();
+        }
+        if (decision instanceof AssetOwnerScopeAuthority.ExistingForbidden) {
+            return new DeleteForbidden();
+        }
+        if (decision instanceof AssetOwnerScopeAuthority.ExistingUnavailable) {
+            return new DeleteAuthorityUnavailable();
+        }
+        var recheck = ownerScopeAuthority.recheck(
+                ((AssetOwnerScopeAuthority.ExistingGranted) decision).recheckIdentity()
+        );
+        if (recheck instanceof AssetOwnerScopeAuthority.RecheckDenied) {
+            return new DeleteForbidden();
+        }
+        if (recheck instanceof AssetOwnerScopeAuthority.RecheckUnavailable) {
+            return new DeleteAuthorityUnavailable();
+        }
+
+        var deleted = persistence.delete(new DeleteCommitImpl(
+                command.assetId(),
+                metadata.ownerScope(),
+                command.confirmationToken(),
+                ((AssetOwnerScopeAuthority.ExistingGranted) decision).actorId()
+        ));
+        return switch (deleted) {
+            case AssetPersistence.Deleted ignored -> {
+                var refreshed = loadCurrentDetail(command.assetId());
+                if (refreshed instanceof CurrentReadable readable) {
+                    yield new DeleteApplied(readable.detail());
+                }
+                yield new DeletePersistenceUnavailable();
+            }
+            case AssetPersistence.DeleteNotFound ignored -> new DeleteNotFound();
+            case AssetPersistence.DeleteDeleted ignored -> new DeleteDeleted();
+            case AssetPersistence.DeleteConfirmationRequired ignored ->
+                    new DeleteConfirmationRequired();
+            case AssetPersistence.DeleteConfirmationExpired ignored ->
+                    new DeleteConfirmationExpired();
+            case AssetPersistence.DeleteConfirmationStale ignored -> new DeleteConfirmationStale();
+            case AssetPersistence.DeleteDependencyUnavailable ignored ->
+                    new DeleteDependencyUnavailable();
+            case AssetPersistence.DeleteUnavailable ignored -> new DeletePersistenceUnavailable();
+        };
+    }
+
+    @Override
+    public RestoreLifecycleOutcome restore(InvocationRef invocation, RestoreLifecycleCommand command) {
+        Objects.requireNonNull(invocation, "invocation");
+        Objects.requireNonNull(command, "command");
+        var located = persistence.locate(command.assetId());
+        if (located instanceof AssetPersistence.LocateNotFound) {
+            return new RestoreLifecycleNotFound();
+        }
+        if (located instanceof AssetPersistence.LocateUnavailable) {
+            return new RestoreLifecyclePersistenceUnavailable();
+        }
+        var metadata = ((AssetPersistence.Located) located).metadata();
+        if (metadata.lifecycle() == AssetApplication.Lifecycle.ACTIVE) {
+            return new RestoreLifecycleActive();
+        }
+        var decision = ownerScopeAuthority.authorizeExisting(
+                invocation,
+                metadata.ownerScope(),
+                AssetOwnerScopeAuthority.AssetOperation.RESTORE
+        );
+        if (decision instanceof AssetOwnerScopeAuthority.ExistingHidden) {
+            return new RestoreLifecycleNotFound();
+        }
+        if (decision instanceof AssetOwnerScopeAuthority.ExistingForbidden) {
+            return new RestoreLifecycleForbidden();
+        }
+        if (decision instanceof AssetOwnerScopeAuthority.ExistingUnavailable) {
+            return new RestoreLifecycleAuthorityUnavailable();
+        }
+        var recheck = ownerScopeAuthority.recheck(
+                ((AssetOwnerScopeAuthority.ExistingGranted) decision).recheckIdentity()
+        );
+        if (recheck instanceof AssetOwnerScopeAuthority.RecheckDenied) {
+            return new RestoreLifecycleForbidden();
+        }
+        if (recheck instanceof AssetOwnerScopeAuthority.RecheckUnavailable) {
+            return new RestoreLifecycleAuthorityUnavailable();
+        }
+
+        var restored = persistence.restore(new RestoreLifecycleCommitImpl(
+                command.assetId(),
+                metadata.ownerScope(),
+                command.expectedAssetRevision(),
+                ((AssetOwnerScopeAuthority.ExistingGranted) decision).actorId()
+        ));
+        return switch (restored) {
+            case AssetPersistence.Restored ignored -> {
+                var refreshed = loadCurrentDetail(command.assetId());
+                if (refreshed instanceof CurrentReadable readable) {
+                    yield new RestoreLifecycleApplied(readable.detail());
+                }
+                yield new RestoreLifecyclePersistenceUnavailable();
+            }
+            case AssetPersistence.RestoreNotFound ignored -> new RestoreLifecycleNotFound();
+            case AssetPersistence.RestoreActive ignored -> new RestoreLifecycleActive();
+            case AssetPersistence.RestoreRevisionConflict conflict ->
+                    new RestoreLifecycleRevisionConflict(conflict.currentAssetRevision());
+            case AssetPersistence.RestoreUnavailable ignored ->
+                    new RestoreLifecyclePersistenceUnavailable();
+        };
+    }
+
+    private static String randomToken() {
+        byte[] bytes = new byte[32];
+        new SecureRandom().nextBytes(bytes);
+        return HexFormat.of().formatHex(bytes);
+    }
+
     private CreateOutcome replayResult(
             InvocationRef invocation,
             AssetApplication.OwnerScope scope,
@@ -878,5 +1089,40 @@ final class CanonicalAssetApplication implements AssetApplication {
             AssetPersistence.AuditOperation operation,
             String actorId
     ) implements AssetPersistence.AppendContentCommit {
+    }
+
+    private record IssueDeleteConfirmationCommitImpl(
+            ConfirmationToken token,
+            AssetApplication.OwnerScope ownerScope,
+            AssetId assetId,
+            String actorId,
+            long assetRevision,
+            String referenceFingerprint,
+            Instant expiresAt
+    ) implements AssetPersistence.IssueDeleteConfirmationCommit {
+        @Override
+        public String confirmationToken() {
+            return token.value();
+        }
+    }
+
+    private record DeleteCommitImpl(
+            AssetId assetId,
+            AssetApplication.OwnerScope ownerScope,
+            ConfirmationToken token,
+            String actorId
+    ) implements AssetPersistence.DeleteCommit {
+        @Override
+        public String confirmationToken() {
+            return token.value();
+        }
+    }
+
+    private record RestoreLifecycleCommitImpl(
+            AssetId assetId,
+            AssetApplication.OwnerScope ownerScope,
+            long expectedAssetRevision,
+            String actorId
+    ) implements AssetPersistence.RestoreLifecycleCommit {
     }
 }

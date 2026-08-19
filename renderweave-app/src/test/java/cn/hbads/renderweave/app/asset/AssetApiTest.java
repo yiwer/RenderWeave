@@ -89,7 +89,7 @@ class AssetApiTest {
 
     @BeforeEach
     void clearAssets() {
-        jdbc.sql("truncate table asset_audit_event, asset_idempotency, asset_content_revision, "
+        jdbc.sql("truncate table asset_audit_event, asset_idempotency, asset_delete_confirmation, asset_content_revision, "
                 + "asset_aggregate").update();
         jdbc.sql("update asset_capacity set used_bytes = 0").update();
     }
@@ -447,5 +447,125 @@ class AssetApiTest {
         assertThat(
                 jdbc.sql("select count(*) from asset_aggregate").query(Long.class).single()
         ).isZero();
+    }
+
+    @Test
+    void deletePrecheckDeleteAndRestoreLifecycleThroughHttp() throws Exception {
+        var created = mockMvc.perform(multipart("/api/v1/assets")
+                        .contentType(MediaType.MULTIPART_FORM_DATA)
+                        .header("Idempotency-Key", "api-delete-key-1")
+                        .param("kind", "IMAGE")
+                        .param("displayName", "Deleteable asset")
+                        .file(contentPart()))
+                .andExpect(status().isCreated())
+                .andReturn();
+        var assetId = tools.jackson.databind.json.JsonMapper.builder().build()
+                .readTree(created.getResponse().getContentAsByteArray())
+                .path("assetId")
+                .asText();
+
+        var precheck = mockMvc.perform(post(
+                        "/api/v1/assets/{assetId}/delete-precheck", assetId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalCount").value(0))
+                .andExpect(jsonPath("$.readableTemplates").isArray())
+                .andExpect(jsonPath("$.readableTemplates.length()").value(0))
+                .andExpect(jsonPath("$.redactedCount").value(0))
+                .andExpect(jsonPath("$.confirmationToken").isNotEmpty())
+                .andExpect(jsonPath("$.expiresAt").isNotEmpty())
+                .andReturn();
+        var token = tools.jackson.databind.json.JsonMapper.builder().build()
+                .readTree(precheck.getResponse().getContentAsByteArray())
+                .path("confirmationToken")
+                .asText();
+
+        // Missing confirmation is rejected with zero writes.
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .delete("/api/v1/assets/{assetId}", assetId))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("ASSET_DELETE_CONFIRMATION_REQUIRED"));
+        mockMvc.perform(get("/api/v1/assets/{assetId}", assetId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.lifecycle").value("ACTIVE"));
+
+        // Confirmed delete applies.
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .delete("/api/v1/assets/{assetId}", assetId)
+                        .header("X-Confirmation-Token", token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.lifecycle").value("DELETED"))
+                .andExpect(jsonPath("$.assetRevision").value(1));
+
+        // The same token is single-use: replay is rejected as stale (asset already deleted).
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .delete("/api/v1/assets/{assetId}", assetId)
+                        .header("X-Confirmation-Token", token))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("ASSET_DELETED"));
+
+        // Restore with the correct revision reactivates; restore of an ACTIVE Asset conflicts.
+        mockMvc.perform(post("/api/v1/assets/{assetId}/restore-lifecycle", assetId)
+                        .queryParam("expectedAssetRevision", "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.lifecycle").value("ACTIVE"))
+                .andExpect(jsonPath("$.assetRevision").value(2));
+
+        mockMvc.perform(post("/api/v1/assets/{assetId}/restore-lifecycle", assetId)
+                        .queryParam("expectedAssetRevision", "2"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("ASSET_RESTORE_CONFLICT"));
+
+        assertThat(jdbc.sql("""
+                        select operation_type from asset_audit_event
+                        where asset_id = :assetId
+                        order by event_id
+                        """)
+                .param("assetId", assetId)
+                .query(String.class)
+                .list()).containsExactly("CREATE", "DELETE", "RESTORE");
+    }
+
+    @Test
+    void deletePrecheckOnMissingAssetIsNotFound() throws Exception {
+        mockMvc.perform(post("/api/v1/assets/{assetId}/delete-precheck",
+                        "123e4567-e89b-42d3-a456-426614174000"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("ASSET_NOT_FOUND"));
+    }
+
+    @Test
+    void deleteWithUnknownTokenIsConfirmationRequiredWithoutWrites() throws Exception {
+        var created = mockMvc.perform(multipart("/api/v1/assets")
+                        .contentType(MediaType.MULTIPART_FORM_DATA)
+                        .header("Idempotency-Key", "api-delete-key-2")
+                        .param("kind", "IMAGE")
+                        .param("displayName", "No-token asset")
+                        .file(contentPart()))
+                .andExpect(status().isCreated())
+                .andReturn();
+        var assetId = tools.jackson.databind.json.JsonMapper.builder().build()
+                .readTree(created.getResponse().getContentAsByteArray())
+                .path("assetId")
+                .asText();
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .delete("/api/v1/assets/{assetId}", assetId)
+                        .header("X-Confirmation-Token", "f".repeat(64)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("ASSET_DELETE_CONFIRMATION_REQUIRED"));
+
+        assertThat(jdbc.sql("""
+                        select lifecycle from asset_aggregate where asset_id = :assetId
+                        """)
+                .param("assetId", assetId)
+                .query(String.class)
+                .single()).isEqualTo("ACTIVE");
+        assertThat(jdbc.sql("""
+                        select count(*) from asset_delete_confirmation
+                        where confirmation_token = :token
+                        """)
+                .param("token", "f".repeat(64))
+                .query(Long.class)
+                .single()).isZero();
     }
 }

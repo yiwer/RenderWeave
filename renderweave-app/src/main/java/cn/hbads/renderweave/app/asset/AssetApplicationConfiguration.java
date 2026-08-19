@@ -5,6 +5,7 @@ import cn.hbads.renderweave.asset.internal.AssetModule;
 import cn.hbads.renderweave.asset.spi.AssetBlobPersistence;
 import cn.hbads.renderweave.asset.spi.AssetOwnerScopeAuthority;
 import cn.hbads.renderweave.asset.spi.AssetPersistence;
+import cn.hbads.renderweave.asset.spi.AssetReferencePort;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
@@ -70,9 +71,10 @@ class AssetApplicationConfiguration {
     AssetApplication assetApplication(
             AssetOwnerScopeAuthority ownerScopes,
             AssetPersistence persistence,
-            AssetBlobPersistence blobs
+            AssetBlobPersistence blobs,
+            AssetReferencePort referencePort
     ) {
-        return AssetModule.application(ownerScopes, persistence, blobs);
+        return AssetModule.application(ownerScopes, persistence, blobs, referencePort);
     }
 
     private static Set<String> parseCapabilities(String raw) {

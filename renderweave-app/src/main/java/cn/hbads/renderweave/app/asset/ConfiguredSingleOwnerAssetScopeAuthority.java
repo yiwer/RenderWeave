@@ -3,12 +3,26 @@ package cn.hbads.renderweave.app.asset;
 import cn.hbads.renderweave.asset.api.AssetApplication;
 import cn.hbads.renderweave.asset.spi.AssetOwnerScopeAuthority;
 
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
 /** Dev/test single-owner adapter: one config-fixed ownerScope with a capability set. */
 public class ConfiguredSingleOwnerAssetScopeAuthority implements AssetOwnerScopeAuthority {
+    private static final int MAX_OUTSTANDING_RECHECKS = 4096;
+
     private final AssetApplication.OwnerScope ownerScope;
     private final Set<String> capabilities;
+    private final Map<String, String> issuedRechecks = Collections.synchronizedMap(
+            new LinkedHashMap<>(128, 0.75f, true) {
+                @Override
+                protected boolean removeEldestEntry(Map.Entry<String, String> eldest) {
+                    return size() > MAX_OUTSTANDING_RECHECKS;
+                }
+            }
+    );
 
     ConfiguredSingleOwnerAssetScopeAuthority(
             AssetApplication.OwnerScope ownerScope,
@@ -25,7 +39,7 @@ public class ConfiguredSingleOwnerAssetScopeAuthority implements AssetOwnerScope
         }
         return new CreateGranted(
                 ownerScope,
-                new RecheckIdentity(ownerScope.value()),
+                issue("asset.create"),
                 capabilities.contains("asset.read") ? Disclosure.READABLE : Disclosure.OPAQUE
         );
     }
@@ -39,13 +53,19 @@ public class ConfiguredSingleOwnerAssetScopeAuthority implements AssetOwnerScope
         if (!ownerScope.equals(storedOwnerScope)) {
             return new ExistingHidden();
         }
-        String capability = operation == AssetOperation.READ ? "asset.read" : "asset.update";
+        String capability = switch (operation) {
+            case READ -> "asset.read";
+            case UPDATE -> "asset.update";
+            case DELETE -> "asset.delete";
+            case RESTORE -> "asset.restore";
+        };
         if (!capabilities.contains(capability)) {
             return new ExistingForbidden();
         }
         return new ExistingGranted(
                 capabilities.contains("asset.read") ? Disclosure.READABLE : Disclosure.OPAQUE,
-                new RecheckIdentity(ownerScope.value())
+                issue(capability),
+                ownerScope.value()
         );
     }
 
@@ -59,10 +79,18 @@ public class ConfiguredSingleOwnerAssetScopeAuthority implements AssetOwnerScope
 
     @Override
     public RecheckDecision recheck(RecheckIdentity identity) {
-        if (!ownerScope.value().equals(identity.value())
-                || (!capabilities.contains("asset.create") && !capabilities.contains("asset.update"))) {
+        var capability = issuedRechecks.remove(identity.value());
+        if (capability == null) {
             return new RecheckDenied();
         }
-        return new RecheckGranted();
+        return capabilities.contains(capability)
+                ? new RecheckGranted()
+                : new RecheckDenied();
+    }
+
+    private RecheckIdentity issue(String capability) {
+        var identity = UUID.randomUUID().toString();
+        issuedRechecks.put(identity, capability);
+        return new RecheckIdentity(identity);
     }
 }

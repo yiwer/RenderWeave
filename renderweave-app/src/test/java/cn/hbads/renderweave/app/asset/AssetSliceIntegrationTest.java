@@ -49,7 +49,7 @@ class AssetSliceIntegrationTest {
 
     @BeforeEach
     void clearAssets() {
-        jdbc.sql("truncate table asset_audit_event, asset_idempotency, asset_content_revision, "
+        jdbc.sql("truncate table asset_audit_event, asset_idempotency, asset_delete_confirmation, asset_content_revision, "
                 + "asset_aggregate").update();
         jdbc.sql("update asset_capacity set used_bytes = 0").update();
     }

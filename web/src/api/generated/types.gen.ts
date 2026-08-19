@@ -8,7 +8,27 @@ export type SystemStatus = {
     service: 'renderweave-api';
     status: 'ready';
     database: 'ready';
-    contractVersion: '0.12.0';
+    contractVersion: '0.13.0';
+};
+
+export type AssetDeletePrecheckResponse = {
+    /**
+     * Complete current-only count of ACTIVE Templates referencing the Asset.
+     */
+    totalCount: number;
+    readableTemplates: Array<string>;
+    /**
+     * Referencing Templates the caller may not read.
+     */
+    redactedCount: number;
+    /**
+     * Single-use delete confirmation token valid for 5 minutes.
+     */
+    confirmationToken: string;
+    /**
+     * Instant the confirmation token expires.
+     */
+    expiresAt: string;
 };
 
 export type CreateDraftRequest = {
@@ -897,6 +917,11 @@ export type AssetContentVersion = number;
  * Exact immutable historical content version whose bytes are restored as a new current.
  */
 export type AssetSourceContentVersion = number;
+
+/**
+ * Single-use confirmation token issued by the delete precheck.
+ */
+export type AssetConfirmationToken = string;
 
 export type Revision = number;
 
@@ -1868,6 +1893,58 @@ export type CreateAssetResponses = {
 
 export type CreateAssetResponse = CreateAssetResponses[keyof CreateAssetResponses];
 
+export type DeleteAssetData = {
+    body?: never;
+    headers: {
+        /**
+         * Single-use confirmation token issued by the delete precheck.
+         */
+        'X-Confirmation-Token': string;
+    };
+    path: {
+        /**
+         * Server-generated canonical UUID v4 Asset identity; clients must not parse its encoding.
+         */
+        assetId: string;
+    };
+    query?: never;
+    url: '/api/v1/assets/{assetId}';
+};
+
+export type DeleteAssetErrors = {
+    /**
+     * Request JSON, key syntax or envelope is invalid.
+     */
+    400: Problem;
+    /**
+     * The caller lacks the required Asset operation capability.
+     */
+    403: Problem;
+    /**
+     * The visible Asset required by this operation does not exist.
+     */
+    404: Problem;
+    /**
+     * Natural identity or expected revision conflicts with current state.
+     */
+    409: Problem;
+    /**
+     * Asset authorization or persistence is temporarily unavailable.
+     */
+    503: Problem;
+};
+
+export type DeleteAssetError = DeleteAssetErrors[keyof DeleteAssetErrors];
+
+export type DeleteAssetResponses = {
+    /**
+     * The Asset is soft-deleted (lifecycle DELETED, revision advanced).
+     */
+    200: AssetReadableResponse;
+};
+
+export type DeleteAssetResponse = DeleteAssetResponses[keyof DeleteAssetResponses];
+
 export type GetAssetCurrentData = {
     body?: never;
     path: {
@@ -1913,6 +1990,96 @@ export type GetAssetCurrentResponses = {
 };
 
 export type GetAssetCurrentResponse = GetAssetCurrentResponses[keyof GetAssetCurrentResponses];
+
+export type PrecheckDeleteAssetData = {
+    body?: never;
+    path: {
+        /**
+         * Server-generated canonical UUID v4 Asset identity; clients must not parse its encoding.
+         */
+        assetId: string;
+    };
+    query?: never;
+    url: '/api/v1/assets/{assetId}/delete-precheck';
+};
+
+export type PrecheckDeleteAssetErrors = {
+    /**
+     * The caller lacks the required Asset operation capability.
+     */
+    403: Problem;
+    /**
+     * The visible Asset required by this operation does not exist.
+     */
+    404: Problem;
+    /**
+     * Natural identity or expected revision conflicts with current state.
+     */
+    409: Problem;
+    /**
+     * Asset authorization or persistence is temporarily unavailable.
+     */
+    503: Problem;
+};
+
+export type PrecheckDeleteAssetError = PrecheckDeleteAssetErrors[keyof PrecheckDeleteAssetErrors];
+
+export type PrecheckDeleteAssetResponses = {
+    /**
+     * Impact report and a single-use confirmation token.
+     */
+    200: AssetDeletePrecheckResponse;
+};
+
+export type PrecheckDeleteAssetResponse = PrecheckDeleteAssetResponses[keyof PrecheckDeleteAssetResponses];
+
+export type RestoreAssetLifecycleData = {
+    body?: never;
+    path: {
+        /**
+         * Server-generated canonical UUID v4 Asset identity; clients must not parse its encoding.
+         */
+        assetId: string;
+    };
+    query: {
+        expectedAssetRevision: number;
+    };
+    url: '/api/v1/assets/{assetId}/restore-lifecycle';
+};
+
+export type RestoreAssetLifecycleErrors = {
+    /**
+     * Request JSON, key syntax or envelope is invalid.
+     */
+    400: Problem;
+    /**
+     * The caller lacks the required Asset operation capability.
+     */
+    403: Problem;
+    /**
+     * The visible Asset required by this operation does not exist.
+     */
+    404: Problem;
+    /**
+     * Natural identity or expected revision conflicts with current state.
+     */
+    409: Problem;
+    /**
+     * Asset authorization or persistence is temporarily unavailable.
+     */
+    503: Problem;
+};
+
+export type RestoreAssetLifecycleError = RestoreAssetLifecycleErrors[keyof RestoreAssetLifecycleErrors];
+
+export type RestoreAssetLifecycleResponses = {
+    /**
+     * The Asset is reactivated (lifecycle ACTIVE, revision advanced).
+     */
+    200: AssetReadableResponse;
+};
+
+export type RestoreAssetLifecycleResponse = RestoreAssetLifecycleResponses[keyof RestoreAssetLifecycleResponses];
 
 export type UpdateAssetMetadataData = {
     body: UpdateAssetMetadataRequest;

@@ -49,11 +49,17 @@ public interface AssetOwnerScopeAuthority {
 
     record ExistingGranted(
             Disclosure disclosure,
-            RecheckIdentity recheckIdentity
+            RecheckIdentity recheckIdentity,
+            String actorId
     ) implements ExistingDecision {
         public ExistingGranted {
             Objects.requireNonNull(disclosure, "disclosure");
             Objects.requireNonNull(recheckIdentity, "recheckIdentity");
+            if (actorId == null || actorId.isBlank() || actorId.length() > 256) {
+                throw new IllegalArgumentException(
+                        "actorId must be non-blank and at most 256 characters"
+                );
+            }
         }
     }
 
@@ -113,6 +119,8 @@ public interface AssetOwnerScopeAuthority {
 
     enum AssetOperation {
         READ,
-        UPDATE
+        UPDATE,
+        DELETE,
+        RESTORE
     }
 }

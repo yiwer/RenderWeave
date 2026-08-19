@@ -97,6 +97,7 @@ public class PostgresTemplatePersistence implements TemplatePersistence {
                         .param("readiness", commit.readiness().name())
                         .update();
                 insertRevision(commit);
+                acquireAssetReadReservations(commit.projection());
                 replaceProjection(commit.templateId(), commit.ownerScope(), commit.projection());
                 return new Created();
             }));
@@ -137,6 +138,7 @@ public class PostgresTemplatePersistence implements TemplatePersistence {
                 }
 
                 insertRevision(commit);
+                acquireAssetReadReservations(commit.projection());
                 replaceProjection(commit.templateId(), commit.ownerScope(), commit.projection());
                 var updated = jdbc.sql("""
                                 update template_aggregate
@@ -227,13 +229,39 @@ public class PostgresTemplatePersistence implements TemplatePersistence {
         }
     }
 
+    /**
+     * T12b read reservations: FOR SHARE on every referenced Asset aggregate row, acquired
+     * in ascending assetId order, so a confirmed Asset delete's exclusive reservation
+     * serializes against Template current changes (CONTEXT AssetReferenceAuthority
+     * reservation contract). Missing Assets have no row to lock; they are INVALID anyway.
+     */
+    private void acquireAssetReadReservations(TemplateDependencyProjection projection) {
+        var assetIds = projection.assetAtoms().stream()
+                .map(TemplateDependencyProjection.AssetRefAtom::assetId)
+                .distinct()
+                .sorted()
+                .toList();
+        if (assetIds.isEmpty()) {
+            return;
+        }
+        jdbc.sql("""
+                        select asset_id
+                        from asset_aggregate
+                        where asset_id in (:assetIds)
+                        order by asset_id
+                        for share
+                        """)
+                .param("assetIds", assetIds)
+                .query((resultSet, rowNumber) -> resultSet.getString("asset_id"))
+                .list();
+    }
+
     /** Current-only projection replace: delete and re-insert within the same transaction. */
     private void replaceProjection(
             TemplateApplication.TemplateId templateId,
             OwnerScopeAuthority.OwnerScope ownerScope,
             TemplateDependencyProjection projection
-    ) {
-        jdbc.sql("delete from template_use_reference where template_id = :templateId")
+    ) {        jdbc.sql("delete from template_use_reference where template_id = :templateId")
                 .param("templateId", templateId.value())
                 .update();
         jdbc.sql("delete from template_asset_reference where template_id = :templateId")

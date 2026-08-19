@@ -5,6 +5,7 @@ import cn.hbads.renderweave.asset.api.AssetApplication;
 import cn.hbads.renderweave.asset.spi.AssetBlobPersistence;
 import cn.hbads.renderweave.asset.spi.AssetOwnerScopeAuthority;
 import cn.hbads.renderweave.asset.spi.AssetPersistence;
+import cn.hbads.renderweave.asset.spi.AssetReferencePort;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -25,7 +26,9 @@ class AssetApplicationContractTest {
     private final ScriptedOwnerScopeAuthority authority = new ScriptedOwnerScopeAuthority();
     private final InMemoryAssetPersistence persistence = new InMemoryAssetPersistence();
     private final InMemoryBlobs blobs = new InMemoryBlobs();
-    private final AssetApplication application = AssetModule.application(authority, persistence, blobs);
+    private final ScriptedAssetReferencePort referencePort = new ScriptedAssetReferencePort();
+    private final AssetApplication application =
+            AssetModule.application(authority, persistence, blobs, referencePort);
 
     private static byte[] jpegFixture() {
         try (var stream = AssetApplicationContractTest.class.getResourceAsStream(
@@ -98,7 +101,8 @@ class AssetApplicationContractTest {
         authority.recheckDecision = new AssetOwnerScopeAuthority.RecheckGranted();
         authority.existingDecision = new AssetOwnerScopeAuthority.ExistingGranted(
                 AssetOwnerScopeAuthority.Disclosure.READABLE,
-                new AssetOwnerScopeAuthority.RecheckIdentity("recheck-1")
+                new AssetOwnerScopeAuthority.RecheckIdentity("recheck-1"),
+                "actor-1"
         );
         var invocation = AssetApplication.InvocationRef.serverCreated("inv-1");
         var command = createCommand(jpegFixture(), "key-1");
@@ -168,7 +172,8 @@ class AssetApplicationContractTest {
         authority.recheckDecision = new AssetOwnerScopeAuthority.RecheckGranted();
         authority.existingDecision = new AssetOwnerScopeAuthority.ExistingGranted(
                 AssetOwnerScopeAuthority.Disclosure.READABLE,
-                new AssetOwnerScopeAuthority.RecheckIdentity("recheck-1")
+                new AssetOwnerScopeAuthority.RecheckIdentity("recheck-1"),
+                "actor-1"
         );
         var created = assertInstanceOf(
                 AssetApplication.CreatedReadable.class,
@@ -204,7 +209,8 @@ class AssetApplicationContractTest {
         authority.recheckDecision = new AssetOwnerScopeAuthority.RecheckGranted();
         authority.existingDecision = new AssetOwnerScopeAuthority.ExistingGranted(
                 AssetOwnerScopeAuthority.Disclosure.READABLE,
-                new AssetOwnerScopeAuthority.RecheckIdentity("recheck-1")
+                new AssetOwnerScopeAuthority.RecheckIdentity("recheck-1"),
+                "actor-1"
         );
         var created = assertInstanceOf(
                 AssetApplication.CreatedReadable.class,
@@ -249,7 +255,8 @@ class AssetApplicationContractTest {
         authority.recheckDecision = new AssetOwnerScopeAuthority.RecheckGranted();
         authority.existingDecision = new AssetOwnerScopeAuthority.ExistingGranted(
                 AssetOwnerScopeAuthority.Disclosure.READABLE,
-                new AssetOwnerScopeAuthority.RecheckIdentity("recheck-1")
+                new AssetOwnerScopeAuthority.RecheckIdentity("recheck-1"),
+                "actor-1"
         );
         var created = assertInstanceOf(
                 AssetApplication.CreatedReadable.class,
@@ -278,7 +285,8 @@ class AssetApplicationContractTest {
         authority.recheckDecision = new AssetOwnerScopeAuthority.RecheckGranted();
         authority.existingDecision = new AssetOwnerScopeAuthority.ExistingGranted(
                 AssetOwnerScopeAuthority.Disclosure.READABLE,
-                new AssetOwnerScopeAuthority.RecheckIdentity("recheck-1")
+                new AssetOwnerScopeAuthority.RecheckIdentity("recheck-1"),
+                "actor-1"
         );
         var created = assertInstanceOf(
                 AssetApplication.CreatedReadable.class,
@@ -317,7 +325,8 @@ class AssetApplicationContractTest {
         authority.recheckDecision = new AssetOwnerScopeAuthority.RecheckGranted();
         authority.existingDecision = new AssetOwnerScopeAuthority.ExistingGranted(
                 AssetOwnerScopeAuthority.Disclosure.READABLE,
-                new AssetOwnerScopeAuthority.RecheckIdentity("recheck-1")
+                new AssetOwnerScopeAuthority.RecheckIdentity("recheck-1"),
+                "actor-1"
         );
         var raw = jpegFixture();
         var created = assertInstanceOf(
@@ -388,7 +397,8 @@ class AssetApplicationContractTest {
         authority.recheckDecision = new AssetOwnerScopeAuthority.RecheckGranted();
         authority.existingDecision = new AssetOwnerScopeAuthority.ExistingGranted(
                 AssetOwnerScopeAuthority.Disclosure.READABLE,
-                new AssetOwnerScopeAuthority.RecheckIdentity("recheck-1")
+                new AssetOwnerScopeAuthority.RecheckIdentity("recheck-1"),
+                "actor-1"
         );
         var invocation = AssetApplication.InvocationRef.serverCreated("inv-replace-1");
         var created = assertInstanceOf(
@@ -425,7 +435,8 @@ class AssetApplicationContractTest {
         authority.recheckDecision = new AssetOwnerScopeAuthority.RecheckGranted();
         authority.existingDecision = new AssetOwnerScopeAuthority.ExistingGranted(
                 AssetOwnerScopeAuthority.Disclosure.READABLE,
-                new AssetOwnerScopeAuthority.RecheckIdentity("recheck-1")
+                new AssetOwnerScopeAuthority.RecheckIdentity("recheck-1"),
+                "actor-1"
         );
         var invocation = AssetApplication.InvocationRef.serverCreated("inv-replace-2");
         var created = assertInstanceOf(
@@ -452,7 +463,8 @@ class AssetApplicationContractTest {
         authority.recheckDecision = new AssetOwnerScopeAuthority.RecheckGranted();
         authority.existingDecision = new AssetOwnerScopeAuthority.ExistingGranted(
                 AssetOwnerScopeAuthority.Disclosure.READABLE,
-                new AssetOwnerScopeAuthority.RecheckIdentity("recheck-1")
+                new AssetOwnerScopeAuthority.RecheckIdentity("recheck-1"),
+                "actor-1"
         );
         var invocation = AssetApplication.InvocationRef.serverCreated("inv-replace-3");
         var created = assertInstanceOf(
@@ -477,7 +489,8 @@ class AssetApplicationContractTest {
         authority.recheckDecision = new AssetOwnerScopeAuthority.RecheckGranted();
         authority.existingDecision = new AssetOwnerScopeAuthority.ExistingGranted(
                 AssetOwnerScopeAuthority.Disclosure.READABLE,
-                new AssetOwnerScopeAuthority.RecheckIdentity("recheck-1")
+                new AssetOwnerScopeAuthority.RecheckIdentity("recheck-1"),
+                "actor-1"
         );
         var invocation = AssetApplication.InvocationRef.serverCreated("inv-replace-4");
         var created = assertInstanceOf(
@@ -516,7 +529,8 @@ class AssetApplicationContractTest {
         authority.recheckDecision = new AssetOwnerScopeAuthority.RecheckGranted();
         authority.existingDecision = new AssetOwnerScopeAuthority.ExistingGranted(
                 AssetOwnerScopeAuthority.Disclosure.READABLE,
-                new AssetOwnerScopeAuthority.RecheckIdentity("recheck-1")
+                new AssetOwnerScopeAuthority.RecheckIdentity("recheck-1"),
+                "actor-1"
         );
         var invocation = AssetApplication.InvocationRef.serverCreated("inv-replace-5");
         var created = assertInstanceOf(
@@ -563,7 +577,8 @@ class AssetApplicationContractTest {
         authority.recheckDecision = new AssetOwnerScopeAuthority.RecheckGranted();
         authority.existingDecision = new AssetOwnerScopeAuthority.ExistingGranted(
                 AssetOwnerScopeAuthority.Disclosure.READABLE,
-                new AssetOwnerScopeAuthority.RecheckIdentity("recheck-1")
+                new AssetOwnerScopeAuthority.RecheckIdentity("recheck-1"),
+                "actor-1"
         );
         var invocation = AssetApplication.InvocationRef.serverCreated("inv-restore-1");
         var created = assertInstanceOf(
@@ -610,7 +625,8 @@ class AssetApplicationContractTest {
         authority.recheckDecision = new AssetOwnerScopeAuthority.RecheckGranted();
         authority.existingDecision = new AssetOwnerScopeAuthority.ExistingGranted(
                 AssetOwnerScopeAuthority.Disclosure.READABLE,
-                new AssetOwnerScopeAuthority.RecheckIdentity("recheck-1")
+                new AssetOwnerScopeAuthority.RecheckIdentity("recheck-1"),
+                "actor-1"
         );
         var invocation = AssetApplication.InvocationRef.serverCreated("inv-restore-2");
         var created = assertInstanceOf(
@@ -649,7 +665,8 @@ class AssetApplicationContractTest {
         authority.recheckDecision = new AssetOwnerScopeAuthority.RecheckGranted();
         authority.existingDecision = new AssetOwnerScopeAuthority.ExistingGranted(
                 AssetOwnerScopeAuthority.Disclosure.READABLE,
-                new AssetOwnerScopeAuthority.RecheckIdentity("recheck-1")
+                new AssetOwnerScopeAuthority.RecheckIdentity("recheck-1"),
+                "actor-1"
         );
         var invocation = AssetApplication.InvocationRef.serverCreated("inv-audit-1");
         var created = assertInstanceOf(
@@ -677,6 +694,229 @@ class AssetApplicationContractTest {
         assertEquals(0L, events.get(1).beforeAssetRevision());
         assertEquals(1L, events.get(1).afterAssetRevision());
         assertEquals(0L, events.get(1).contentVersion());
+    }
+
+    @Test
+    void deletePrecheckReturnsImpactAndIssuesToken() {
+        seedAsset("00000000-0000-4000-8000-0000000000aa");
+        authority.existingDecision = grantedExisting();
+        authority.recheckDecision = new AssetOwnerScopeAuthority.RecheckGranted();
+        referencePort.outcome = new AssetReferencePort.ReferencesReadable(new AssetReferencePort.ReferenceProof(
+                3,
+                List.of("template-1"),
+                2,
+                "a".repeat(64)
+        ));
+
+        var outcome = application.deletePrecheck(
+                AssetApplication.InvocationRef.serverCreated("inv-delete-1"),
+                AssetApplication.AssetId.of("00000000-0000-4000-8000-0000000000aa")
+        );
+        var readable = assertInstanceOf(AssetApplication.DeletePrecheckReadable.class, outcome);
+        assertEquals(3, readable.impact().totalCount());
+        assertEquals(List.of("template-1"), readable.impact().readableTemplateIds());
+        assertEquals(2, readable.impact().redactedCount());
+        assertEquals(64, readable.confirmationToken().value().length());
+        assertTrue(readable.expiresAt().isAfter(Instant.now()));
+        assertEquals("actor-1", persistence.lastConfirmationActor());
+    }
+
+    @Test
+    void deletePrecheckForbiddenWhenCapabilityMissing() {
+        seedAsset("00000000-0000-4000-8000-0000000000aa");
+        authority.existingDecision = new AssetOwnerScopeAuthority.ExistingForbidden();
+        var outcome = application.deletePrecheck(
+                AssetApplication.InvocationRef.serverCreated("inv-delete-1"),
+                AssetApplication.AssetId.of("00000000-0000-4000-8000-0000000000aa")
+        );
+        assertInstanceOf(AssetApplication.DeletePrecheckForbidden.class, outcome);
+    }
+
+    @Test
+    void deletePrecheckDependencyUnavailableWhenPortFails() {
+        seedAsset("00000000-0000-4000-8000-0000000000aa");
+        authority.existingDecision = grantedExisting();
+        authority.recheckDecision = new AssetOwnerScopeAuthority.RecheckGranted();
+        referencePort.outcome = new AssetReferencePort.ReferencesUnavailable();
+        var outcome = application.deletePrecheck(
+                AssetApplication.InvocationRef.serverCreated("inv-delete-1"),
+                AssetApplication.AssetId.of("00000000-0000-4000-8000-0000000000aa")
+        );
+        assertInstanceOf(AssetApplication.DeletePrecheckDependencyUnavailable.class, outcome);
+    }
+
+    @Test
+    void deletePrecheckOnDeletedAssetIsRejected() {
+        seedAsset("00000000-0000-4000-8000-0000000000aa");
+        persistence.markDeleted(AssetApplication.AssetId.of("00000000-0000-4000-8000-0000000000aa"));
+        var outcome = application.deletePrecheck(
+                AssetApplication.InvocationRef.serverCreated("inv-delete-1"),
+                AssetApplication.AssetId.of("00000000-0000-4000-8000-0000000000aa")
+        );
+        assertInstanceOf(AssetApplication.DeletePrecheckDeleted.class, outcome);
+    }
+
+    @Test
+    void deleteWithValidTokenSoftDeletesAndConsumesToken() {
+        seedAsset("00000000-0000-4000-8000-0000000000aa");
+        authority.existingDecision = grantedExisting();
+        authority.recheckDecision = new AssetOwnerScopeAuthority.RecheckGranted();
+        referencePort.outcome = new AssetReferencePort.ReferencesReadable(new AssetReferencePort.ReferenceProof(
+                1,
+                List.of("template-1"),
+                0,
+                "b".repeat(64)
+        ));
+        var precheck = (AssetApplication.DeletePrecheckReadable) application.deletePrecheck(
+                AssetApplication.InvocationRef.serverCreated("inv-delete-1"),
+                AssetApplication.AssetId.of("00000000-0000-4000-8000-0000000000aa")
+        );
+
+        var outcome = application.delete(
+                AssetApplication.InvocationRef.serverCreated("inv-delete-1"),
+                new AssetApplication.DeleteCommand(
+                        AssetApplication.AssetId.of("00000000-0000-4000-8000-0000000000aa"),
+                        precheck.confirmationToken()
+                )
+        );
+        var applied = assertInstanceOf(AssetApplication.DeleteApplied.class, outcome);
+        assertEquals(AssetApplication.Lifecycle.DELETED, applied.detail().lifecycle());
+        assertEquals(1L, applied.detail().assetRevision());
+        assertEquals("actor-1", persistence.lastAuditActor());
+        assertEquals(AssetPersistence.AuditOperation.DELETE, persistence.lastAuditOperation());
+        assertTrue(persistence.confirmationUsed(precheck.confirmationToken().value()));
+    }
+
+    @Test
+    void deleteWithoutTokenIsConfirmationRequired() {
+        seedAsset("00000000-0000-4000-8000-0000000000aa");
+        authority.existingDecision = grantedExisting();
+        authority.recheckDecision = new AssetOwnerScopeAuthority.RecheckGranted();
+        var outcome = application.delete(
+                AssetApplication.InvocationRef.serverCreated("inv-delete-1"),
+                new AssetApplication.DeleteCommand(
+                        AssetApplication.AssetId.of("00000000-0000-4000-8000-0000000000aa"),
+                        new AssetApplication.ConfirmationToken("0".repeat(64))
+                )
+        );
+        assertInstanceOf(AssetApplication.DeleteConfirmationRequired.class, outcome);
+    }
+
+    @Test
+    void deleteWithUsedTokenIsStale() {
+        seedAsset("00000000-0000-4000-8000-0000000000aa");
+        authority.existingDecision = grantedExisting();
+        authority.recheckDecision = new AssetOwnerScopeAuthority.RecheckGranted();
+        referencePort.outcome = new AssetReferencePort.ReferencesReadable(new AssetReferencePort.ReferenceProof(
+                0,
+                List.of(),
+                0,
+                "c".repeat(64)
+        ));
+        var precheck = (AssetApplication.DeletePrecheckReadable) application.deletePrecheck(
+                AssetApplication.InvocationRef.serverCreated("inv-delete-1"),
+                AssetApplication.AssetId.of("00000000-0000-4000-8000-0000000000aa")
+        );
+        // Single-use: a token already consumed must not delete again even while ACTIVE.
+        persistence.consumeConfirmation(precheck.confirmationToken().value());
+        var second = application.delete(
+                AssetApplication.InvocationRef.serverCreated("inv-delete-1"),
+                new AssetApplication.DeleteCommand(
+                        AssetApplication.AssetId.of("00000000-0000-4000-8000-0000000000aa"),
+                        precheck.confirmationToken()
+                )
+        );
+        assertInstanceOf(AssetApplication.DeleteConfirmationStale.class, second);
+        assertEquals(AssetApplication.Lifecycle.ACTIVE, persistence.lifecycleOf(
+                AssetApplication.AssetId.of("00000000-0000-4000-8000-0000000000aa")));
+    }
+
+    @Test
+    void restoreLifecycleReactivatesDeletedAssetAtSameContent() {
+        seedAsset("00000000-0000-4000-8000-0000000000aa");
+        authority.existingDecision = grantedExisting();
+        authority.recheckDecision = new AssetOwnerScopeAuthority.RecheckGranted();
+        persistence.markDeleted(AssetApplication.AssetId.of("00000000-0000-4000-8000-0000000000aa"));
+        var outcome = application.restore(
+                AssetApplication.InvocationRef.serverCreated("inv-restore-1"),
+                new AssetApplication.RestoreLifecycleCommand(
+                        AssetApplication.AssetId.of("00000000-0000-4000-8000-0000000000aa"),
+                        0L
+                )
+        );
+        var applied = assertInstanceOf(AssetApplication.RestoreLifecycleApplied.class, outcome);
+        assertEquals(AssetApplication.Lifecycle.ACTIVE, applied.detail().lifecycle());
+        assertEquals(1L, applied.detail().assetRevision());
+        assertEquals(0L, applied.detail().currentContentVersion());
+        assertEquals(AssetPersistence.AuditOperation.RESTORE, persistence.lastAuditOperation());
+    }
+
+    @Test
+    void restoreLifecycleOnActiveAssetIsRejected() {
+        seedAsset("00000000-0000-4000-8000-0000000000aa");
+        var outcome = application.restore(
+                AssetApplication.InvocationRef.serverCreated("inv-restore-1"),
+                new AssetApplication.RestoreLifecycleCommand(
+                        AssetApplication.AssetId.of("00000000-0000-4000-8000-0000000000aa"),
+                        0L
+                )
+        );
+        assertInstanceOf(AssetApplication.RestoreLifecycleActive.class, outcome);
+    }
+
+    @Test
+    void restoreLifecycleWrongRevisionConflicts() {
+        seedAsset("00000000-0000-4000-8000-0000000000aa");
+        authority.existingDecision = grantedExisting();
+        authority.recheckDecision = new AssetOwnerScopeAuthority.RecheckGranted();
+        persistence.markDeleted(AssetApplication.AssetId.of("00000000-0000-4000-8000-0000000000aa"));
+        var outcome = application.restore(
+                AssetApplication.InvocationRef.serverCreated("inv-restore-1"),
+                new AssetApplication.RestoreLifecycleCommand(
+                        AssetApplication.AssetId.of("00000000-0000-4000-8000-0000000000aa"),
+                        5L
+                )
+        );
+        assertInstanceOf(AssetApplication.RestoreLifecycleRevisionConflict.class, outcome);
+    }
+
+    private AssetOwnerScopeAuthority.ExistingGranted grantedExisting() {
+        return new AssetOwnerScopeAuthority.ExistingGranted(
+                AssetOwnerScopeAuthority.Disclosure.READABLE,
+                new AssetOwnerScopeAuthority.RecheckIdentity("recheck-1"),
+                "actor-1"
+        );
+    }
+
+    private void seedAsset(String assetId) {
+        var id = AssetApplication.AssetId.of(assetId);
+        var now = Instant.now();
+        var metadata = new AssetPersistence.AssetMetadata(
+                id,
+                new AssetApplication.OwnerScope("scope-1"),
+                AssetAcceptanceAuthority.AssetKind.IMAGE,
+                AssetApplication.Lifecycle.ACTIVE,
+                0,
+                0,
+                "Seeded Asset",
+                List.of(),
+                "seeded.jpg",
+                now,
+                now
+        );
+        var content = new AssetPersistence.StoredContent(
+                0,
+                sha256Of(new byte[]{1, 2, 3}),
+                "image/jpeg",
+                3,
+                "seeded.jpg",
+                new AssetAcceptanceAuthority.ImageDescriptor(
+                        1, 1, AssetAcceptanceAuthority.Orientation.IDENTITY,
+                        1, 1, 1, AssetAcceptanceAuthority.ColorEncoding.SRGB_8BIT
+                ),
+                now
+        );
+        persistence.putAsset(metadata, content);
     }
 
     private static byte[] ycbcrFixture() {
@@ -734,6 +974,18 @@ class AssetApplicationContractTest {
         @Override
         public RecheckDecision recheck(RecheckIdentity identity) {
             return recheckDecision;
+        }
+    }
+
+    private static final class ScriptedAssetReferencePort implements AssetReferencePort {
+        ReferenceOutcome outcome = new ReferencesUnavailable();
+
+        @Override
+        public ReferenceOutcome references(
+                AssetApplication.InvocationRef invocation,
+                AssetApplication.AssetId assetId
+        ) {
+            return outcome;
         }
     }
 
@@ -798,6 +1050,52 @@ class AssetApplicationContractTest {
                     ),
                     current.content()
             ));
+        }
+
+        void putAsset(AssetMetadata metadata, StoredContent content) {
+            assets.put(metadata.assetId(), new StoredCurrent(metadata, content));
+            history.computeIfAbsent(metadata.assetId(), ignored -> new ArrayList<>()).add(content);
+        }
+
+        AssetApplication.Lifecycle lifecycleOf(AssetApplication.AssetId assetId) {
+            var current = assets.get(assetId);
+            return current == null ? null : current.metadata().lifecycle();
+        }
+
+        String lastConfirmationActor() {
+            if (confirmations.isEmpty()) {
+                return null;
+            }
+            var values = confirmations.values().toArray(new ConfirmationRecord[0]);
+            return values[values.length - 1].actorId();
+        }
+
+        boolean confirmationUsed(String token) {
+            var record = confirmations.get(token);
+            return record != null && record.usedAt() != null;
+        }
+
+        void consumeConfirmation(String token) {
+            var record = confirmations.get(token);
+            if (record != null) {
+                confirmations.put(token, new ConfirmationRecord(
+                        record.ownerScope(),
+                        record.assetId(),
+                        record.actorId(),
+                        record.assetRevision(),
+                        record.referenceFingerprint(),
+                        record.expiresAt(),
+                        Instant.now()
+                ));
+            }
+        }
+
+        String lastAuditActor() {
+            return audit.isEmpty() ? null : audit.get(audit.size() - 1).actorId();
+        }
+
+        AssetPersistence.AuditOperation lastAuditOperation() {
+            return audit.isEmpty() ? null : audit.get(audit.size() - 1).operation();
         }
 
         void markDeleted(AssetApplication.AssetId assetId) {
@@ -1070,5 +1368,136 @@ class AssetApplicationContractTest {
         public CapacityOutcome capacity() {
             return new Capacity(hardLimitBytes, usedBytes);
         }
+
+        @Override
+        public IssueDeleteConfirmationOutcome issueDeleteConfirmation(
+                IssueDeleteConfirmationCommit commit
+        ) {
+            confirmations.put(commit.confirmationToken(), new ConfirmationRecord(
+                    commit.ownerScope(),
+                    commit.assetId(),
+                    commit.actorId(),
+                    commit.assetRevision(),
+                    commit.referenceFingerprint(),
+                    commit.expiresAt(),
+                    null
+            ));
+            return new ConfirmationIssued();
+        }
+
+        @Override
+        public DeleteOutcome delete(DeleteCommit commit) {
+            var current = assets.get(commit.assetId());
+            if (current == null) {
+                return new DeleteNotFound();
+            }
+            if (current.metadata().lifecycle() == AssetApplication.Lifecycle.DELETED) {
+                return new DeleteDeleted();
+            }
+            var confirmation = confirmations.get(commit.confirmationToken());
+            if (confirmation == null) {
+                return new DeleteConfirmationRequired();
+            }
+            if (confirmation.usedAt() != null) {
+                return new DeleteConfirmationStale();
+            }
+            if (!confirmation.expiresAt().isAfter(Instant.now())) {
+                return new DeleteConfirmationExpired();
+            }
+            if (!commit.ownerScope().equals(confirmation.ownerScope())
+                    || !commit.assetId().equals(confirmation.assetId())
+                    || !commit.actorId().equals(confirmation.actorId())
+                    || current.metadata().assetRevision() != confirmation.assetRevision()) {
+                return new DeleteConfirmationStale();
+            }
+            long next = current.metadata().assetRevision() + 1;
+            assets.put(commit.assetId(), new StoredCurrent(
+                    new AssetMetadata(
+                            commit.assetId(),
+                            commit.ownerScope(),
+                            current.metadata().kind(),
+                            AssetApplication.Lifecycle.DELETED,
+                            next,
+                            current.metadata().currentContentVersion(),
+                            current.metadata().displayName(),
+                            current.metadata().tags(),
+                            current.metadata().sourceFileName(),
+                            current.metadata().createdAt(),
+                            Instant.now()
+                    ),
+                    current.content()
+            ));
+            confirmations.put(commit.confirmationToken(), new ConfirmationRecord(
+                    confirmation.ownerScope(),
+                    confirmation.assetId(),
+                    confirmation.actorId(),
+                    confirmation.assetRevision(),
+                    confirmation.referenceFingerprint(),
+                    confirmation.expiresAt(),
+                    Instant.now()
+            ));
+            audit.add(new AuditRecord(
+                    commit.assetId(),
+                    current.metadata().assetRevision(),
+                    next,
+                    commit.actorId(),
+                    AssetPersistence.AuditOperation.DELETE,
+                    current.metadata().currentContentVersion()
+            ));
+            return new Deleted();
+        }
+
+        @Override
+        public RestoreLifecycleOutcome restore(RestoreLifecycleCommit commit) {
+            var current = assets.get(commit.assetId());
+            if (current == null) {
+                return new RestoreNotFound();
+            }
+            if (current.metadata().lifecycle() == AssetApplication.Lifecycle.ACTIVE) {
+                return new RestoreActive();
+            }
+            if (current.metadata().assetRevision() != commit.expectedAssetRevision()) {
+                return new RestoreRevisionConflict(current.metadata().assetRevision());
+            }
+            long next = current.metadata().assetRevision() + 1;
+            assets.put(commit.assetId(), new StoredCurrent(
+                    new AssetMetadata(
+                            commit.assetId(),
+                            commit.ownerScope(),
+                            current.metadata().kind(),
+                            AssetApplication.Lifecycle.ACTIVE,
+                            next,
+                            current.metadata().currentContentVersion(),
+                            current.metadata().displayName(),
+                            current.metadata().tags(),
+                            current.metadata().sourceFileName(),
+                            current.metadata().createdAt(),
+                            Instant.now()
+                    ),
+                    current.content()
+            ));
+            audit.add(new AuditRecord(
+                    commit.assetId(),
+                    current.metadata().assetRevision(),
+                    next,
+                    commit.actorId(),
+                    AssetPersistence.AuditOperation.RESTORE,
+                    current.metadata().currentContentVersion()
+            ));
+            return new Restored();
+        }
+
+        record ConfirmationRecord(
+                AssetApplication.OwnerScope ownerScope,
+                AssetApplication.AssetId assetId,
+                String actorId,
+                long assetRevision,
+                String referenceFingerprint,
+                Instant expiresAt,
+                Instant usedAt
+        ) {
+        }
+
+        private final Map<String, ConfirmationRecord> confirmations = new HashMap<>();
     }
 }

@@ -20,6 +20,12 @@ public interface AssetPersistence {
 
     AppendContentOutcome appendContent(AppendContentCommit commit);
 
+    IssueDeleteConfirmationOutcome issueDeleteConfirmation(IssueDeleteConfirmationCommit commit);
+
+    DeleteOutcome delete(DeleteCommit commit);
+
+    RestoreLifecycleOutcome restore(RestoreLifecycleCommit commit);
+
     ContentVersionOutcome loadContentVersion(
             AssetApplication.AssetId assetId,
             long contentVersion
@@ -301,6 +307,45 @@ public interface AssetPersistence {
         String fingerprint();
     }
 
+    /** One single-use delete-confirmation token bound to the precheck facts. */
+    interface IssueDeleteConfirmationCommit {
+        String confirmationToken();
+
+        AssetApplication.OwnerScope ownerScope();
+
+        AssetApplication.AssetId assetId();
+
+        String actorId();
+
+        long assetRevision();
+
+        String referenceFingerprint();
+
+        java.time.Instant expiresAt();
+    }
+
+    /** Soft-delete commit; the adapter validates the token bindings and re-derives the proof. */
+    interface DeleteCommit {
+        AssetApplication.AssetId assetId();
+
+        AssetApplication.OwnerScope ownerScope();
+
+        String confirmationToken();
+
+        String actorId();
+    }
+
+    /** Lifecycle restore commit: reactivates a DELETED Asset at the same current content. */
+    interface RestoreLifecycleCommit {
+        AssetApplication.AssetId assetId();
+
+        AssetApplication.OwnerScope ownerScope();
+
+        long expectedAssetRevision();
+
+        String actorId();
+    }
+
     sealed interface LocateOutcome permits Located, LocateNotFound, LocateUnavailable {
     }
 
@@ -485,6 +530,80 @@ public interface AssetPersistence {
     }
 
     record IdempotencyUnavailable() implements IdempotencyOutcome {
+    }
+
+    sealed interface IssueDeleteConfirmationOutcome permits
+            ConfirmationIssued,
+            ConfirmationUnavailable {
+    }
+
+    record ConfirmationIssued() implements IssueDeleteConfirmationOutcome {
+    }
+
+    record ConfirmationUnavailable() implements IssueDeleteConfirmationOutcome {
+    }
+
+    sealed interface DeleteOutcome permits
+            Deleted,
+            DeleteNotFound,
+            DeleteDeleted,
+            DeleteConfirmationRequired,
+            DeleteConfirmationExpired,
+            DeleteConfirmationStale,
+            DeleteDependencyUnavailable,
+            DeleteUnavailable {
+    }
+
+    record Deleted() implements DeleteOutcome {
+    }
+
+    record DeleteNotFound() implements DeleteOutcome {
+    }
+
+    record DeleteDeleted() implements DeleteOutcome {
+    }
+
+    record DeleteConfirmationRequired() implements DeleteOutcome {
+    }
+
+    record DeleteConfirmationExpired() implements DeleteOutcome {
+    }
+
+    record DeleteConfirmationStale() implements DeleteOutcome {
+    }
+
+    record DeleteDependencyUnavailable() implements DeleteOutcome {
+    }
+
+    record DeleteUnavailable() implements DeleteOutcome {
+    }
+
+    sealed interface RestoreLifecycleOutcome permits
+            Restored,
+            RestoreNotFound,
+            RestoreActive,
+            RestoreRevisionConflict,
+            RestoreUnavailable {
+    }
+
+    record Restored() implements RestoreLifecycleOutcome {
+    }
+
+    record RestoreNotFound() implements RestoreLifecycleOutcome {
+    }
+
+    record RestoreActive() implements RestoreLifecycleOutcome {
+    }
+
+    record RestoreRevisionConflict(long currentAssetRevision) implements RestoreLifecycleOutcome {
+        public RestoreRevisionConflict {
+            if (currentAssetRevision < 0) {
+                throw new IllegalArgumentException("currentAssetRevision must not be negative");
+            }
+        }
+    }
+
+    record RestoreUnavailable() implements RestoreLifecycleOutcome {
     }
 
     sealed interface CapacityOutcome permits Capacity, CapacityUnavailable {

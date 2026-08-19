@@ -4,6 +4,7 @@ import cn.hbads.renderweave.asset.api.AssetApplication;
 import cn.hbads.renderweave.asset.spi.AssetBlobPersistence;
 import cn.hbads.renderweave.asset.spi.AssetOwnerScopeAuthority;
 import cn.hbads.renderweave.asset.spi.AssetPersistence;
+import cn.hbads.renderweave.asset.spi.AssetReferencePort;
 
 import java.util.Objects;
 
@@ -19,11 +20,14 @@ public final class AssetModule {
     public static AssetApplication application(
             AssetOwnerScopeAuthority ownerScopeAuthority,
             AssetPersistence persistence,
-            AssetBlobPersistence blobs
+            AssetBlobPersistence blobs,
+            AssetReferencePort referencePort
     ) {
         Objects.requireNonNull(ownerScopeAuthority, "ownerScopeAuthority");
         Objects.requireNonNull(persistence, "persistence");
         Objects.requireNonNull(blobs, "blobs");
-        return new CanonicalAssetApplication(ownerScopeAuthority, persistence, blobs);
+        Objects.requireNonNull(referencePort, "referencePort");
+        return new CanonicalAssetApplication(
+                ownerScopeAuthority, persistence, blobs, referencePort);
     }
 }

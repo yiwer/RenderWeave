@@ -6,6 +6,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -596,6 +597,176 @@ final class AssetController {
         };
     }
 
+    @PostMapping(value = "/{assetId}/delete-precheck", produces = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<?> deletePrecheck(@PathVariable String assetId) {
+        var outcome = assets.deletePrecheck(invocation(), assetId(assetId));
+        return switch (outcome) {
+            case AssetApplication.DeletePrecheckReadable readable -> ResponseEntity.ok(
+                    new DeletePrecheckResponse(
+                            readable.impact().totalCount(),
+                            readable.impact().readableTemplateIds(),
+                            readable.impact().redactedCount(),
+                            readable.confirmationToken().value(),
+                            readable.expiresAt().toString()
+                    )
+            );
+            case AssetApplication.DeletePrecheckNotFound ignored -> problem(
+                    HttpStatus.NOT_FOUND,
+                    "ASSET_NOT_FOUND",
+                    "Asset was not found"
+            );
+            case AssetApplication.DeletePrecheckDeleted ignored -> problem(
+                    HttpStatus.CONFLICT,
+                    "ASSET_DELETED",
+                    "Deleted Assets cannot be prechecked for another delete"
+            );
+            case AssetApplication.DeletePrecheckForbidden ignored -> problem(
+                    HttpStatus.FORBIDDEN,
+                    "ASSET_FORBIDDEN",
+                    "Asset delete is not permitted"
+            );
+            case AssetApplication.DeletePrecheckDependencyUnavailable ignored -> problem(
+                    HttpStatus.SERVICE_UNAVAILABLE,
+                    "ASSET_DEPENDENCY_UNAVAILABLE",
+                    "Template reference proof is unavailable"
+            );
+            case AssetApplication.DeletePrecheckAuthorityUnavailable ignored -> problem(
+                    HttpStatus.SERVICE_UNAVAILABLE,
+                    "ASSET_AUTHORITY_UNAVAILABLE",
+                    "Asset authorization is unavailable"
+            );
+            case AssetApplication.DeletePrecheckPersistenceUnavailable ignored -> problem(
+                    HttpStatus.SERVICE_UNAVAILABLE,
+                    "ASSET_PERSISTENCE_UNAVAILABLE",
+                    "Asset persistence is unavailable"
+            );
+        };
+    }
+
+    @DeleteMapping(value = "/{assetId}", produces = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<?> delete(
+            @PathVariable String assetId,
+            @RequestHeader(name = "X-Confirmation-Token", required = false)
+            String confirmationToken
+    ) {
+        if (confirmationToken == null || confirmationToken.isBlank()
+                || confirmationToken.length() > 64) {
+            return problem(
+                    HttpStatus.BAD_REQUEST,
+                    "ASSET_DELETE_CONFIRMATION_REQUIRED",
+                    "A valid confirmation token from the delete precheck is required"
+            );
+        }
+        var outcome = assets.delete(
+                invocation(),
+                new AssetApplication.DeleteCommand(
+                        assetId(assetId),
+                        new AssetApplication.ConfirmationToken(confirmationToken)
+                )
+        );
+        return switch (outcome) {
+            case AssetApplication.DeleteApplied applied -> ResponseEntity.ok(
+                    readable(applied.detail())
+            );
+            case AssetApplication.DeleteNotFound ignored -> problem(
+                    HttpStatus.NOT_FOUND,
+                    "ASSET_NOT_FOUND",
+                    "Asset was not found"
+            );
+            case AssetApplication.DeleteDeleted ignored -> problem(
+                    HttpStatus.CONFLICT,
+                    "ASSET_DELETED",
+                    "Asset is already deleted"
+            );
+            case AssetApplication.DeleteForbidden ignored -> problem(
+                    HttpStatus.FORBIDDEN,
+                    "ASSET_FORBIDDEN",
+                    "Asset delete is not permitted"
+            );
+            case AssetApplication.DeleteConfirmationRequired ignored -> problem(
+                    HttpStatus.BAD_REQUEST,
+                    "ASSET_DELETE_CONFIRMATION_REQUIRED",
+                    "A confirmation token from the delete precheck is required"
+            );
+            case AssetApplication.DeleteConfirmationExpired ignored -> problem(
+                    HttpStatus.CONFLICT,
+                    "ASSET_DELETE_CONFIRMATION_EXPIRED",
+                    "The delete confirmation has expired; run the delete precheck again"
+            );
+            case AssetApplication.DeleteConfirmationStale ignored -> problem(
+                    HttpStatus.CONFLICT,
+                    "ASSET_DELETE_CONFIRMATION_STALE",
+                    "The delete confirmation facts drifted; run the delete precheck again"
+            );
+            case AssetApplication.DeleteDependencyUnavailable ignored -> problem(
+                    HttpStatus.SERVICE_UNAVAILABLE,
+                    "ASSET_DEPENDENCY_UNAVAILABLE",
+                    "Template reference proof is unavailable"
+            );
+            case AssetApplication.DeleteAuthorityUnavailable ignored -> problem(
+                    HttpStatus.SERVICE_UNAVAILABLE,
+                    "ASSET_AUTHORITY_UNAVAILABLE",
+                    "Asset authorization is unavailable"
+            );
+            case AssetApplication.DeletePersistenceUnavailable ignored -> problem(
+                    HttpStatus.SERVICE_UNAVAILABLE,
+                    "ASSET_PERSISTENCE_UNAVAILABLE",
+                    "Asset persistence is unavailable"
+            );
+        };
+    }
+
+    @PostMapping(value = "/{assetId}/restore-lifecycle", produces = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<?> restoreLifecycle(
+            @PathVariable String assetId,
+            @RequestParam long expectedAssetRevision
+    ) {
+        if (expectedAssetRevision < 0 || expectedAssetRevision == Long.MAX_VALUE) {
+            throw new InvalidAssetApiRequestException(
+                    "expectedAssetRevision must be non-negative and have a successor"
+            );
+        }
+        var outcome = assets.restore(
+                invocation(),
+                new AssetApplication.RestoreLifecycleCommand(
+                        assetId(assetId),
+                        expectedAssetRevision
+                )
+        );
+        return switch (outcome) {
+            case AssetApplication.RestoreLifecycleApplied applied -> ResponseEntity.ok(
+                    readable(applied.detail())
+            );
+            case AssetApplication.RestoreLifecycleNotFound ignored -> problem(
+                    HttpStatus.NOT_FOUND,
+                    "ASSET_NOT_FOUND",
+                    "Asset was not found"
+            );
+            case AssetApplication.RestoreLifecycleActive ignored -> problem(
+                    HttpStatus.CONFLICT,
+                    "ASSET_RESTORE_CONFLICT",
+                    "Only deleted Assets can be restored"
+            );
+            case AssetApplication.RestoreLifecycleForbidden ignored -> problem(
+                    HttpStatus.FORBIDDEN,
+                    "ASSET_FORBIDDEN",
+                    "Asset restore is not permitted"
+            );
+            case AssetApplication.RestoreLifecycleRevisionConflict conflict ->
+                    conflictProblem(conflict.currentAssetRevision());
+            case AssetApplication.RestoreLifecycleAuthorityUnavailable ignored -> problem(
+                    HttpStatus.SERVICE_UNAVAILABLE,
+                    "ASSET_AUTHORITY_UNAVAILABLE",
+                    "Asset authorization is unavailable"
+            );
+            case AssetApplication.RestoreLifecyclePersistenceUnavailable ignored -> problem(
+                    HttpStatus.SERVICE_UNAVAILABLE,
+                    "ASSET_PERSISTENCE_UNAVAILABLE",
+                    "Asset persistence is unavailable"
+            );
+        };
+    }
+
     private AssetResponse readable(AssetApplication.AssetDetail detail) {
         return new AssetResponse(
                 detail.assetId().value(),
@@ -877,6 +1048,15 @@ final class AssetController {
     }
 
     record AssetVersionsResponse(List<AssetContentVersionResponse> items) {
+    }
+
+    record DeletePrecheckResponse(
+            int totalCount,
+            List<String> readableTemplates,
+            int redactedCount,
+            String confirmationToken,
+            String expiresAt
+    ) {
     }
 
     record AssetProblemResponse(

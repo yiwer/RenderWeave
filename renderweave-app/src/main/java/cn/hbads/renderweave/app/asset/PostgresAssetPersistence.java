@@ -3,6 +3,7 @@ package cn.hbads.renderweave.app.asset;
 import cn.hbads.renderweave.asset.api.AssetAcceptanceAuthority;
 import cn.hbads.renderweave.asset.api.AssetApplication;
 import cn.hbads.renderweave.asset.spi.AssetPersistence;
+import cn.hbads.renderweave.asset.spi.AssetReferencePort;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DuplicateKeyException;
@@ -38,19 +39,22 @@ public class PostgresAssetPersistence implements AssetPersistence {
     private final ObjectMapper json;
     private final long hardLimitBytes;
     private final Duration idempotencyTtl;
+    private final AssetReferencePort referencePort;
 
     PostgresAssetPersistence(
             JdbcClient jdbc,
             PlatformTransactionManager transactionManager,
             ObjectMapper json,
             @Value("${renderweave.asset.capacity.hard-limit-bytes:107374182400}") long hardLimitBytes,
-            @Value("${renderweave.asset.idempotency.ttl:PT24H}") Duration idempotencyTtl
+            @Value("${renderweave.asset.idempotency.ttl:PT24H}") Duration idempotencyTtl,
+            AssetReferencePort referencePort
     ) {
         this.jdbc = jdbc;
         this.transactions = new TransactionTemplate(transactionManager);
         this.json = json;
         this.hardLimitBytes = hardLimitBytes;
         this.idempotencyTtl = idempotencyTtl;
+        this.referencePort = Objects.requireNonNull(referencePort, "referencePort");
     }
 
     @Override
@@ -409,8 +413,7 @@ public class PostgresAssetPersistence implements AssetPersistence {
     }
 
     @Override
-    public IdempotencyOutcome resolveIdempotency(IdempotencyQuery query) {
-        try {
+    public IdempotencyOutcome resolveIdempotency(IdempotencyQuery query) {        try {
             return jdbc.sql("""
                             select asset_id, fingerprint
                             from asset_idempotency
@@ -440,6 +443,197 @@ public class PostgresAssetPersistence implements AssetPersistence {
             return new Capacity(hardLimitBytes, readUsedBytes());
         } catch (DataAccessException unavailable) {
             return new CapacityUnavailable();
+        }
+    }
+
+    @Override
+    public IssueDeleteConfirmationOutcome issueDeleteConfirmation(
+            IssueDeleteConfirmationCommit commit
+    ) {
+        try {
+            jdbc.sql("""
+                            insert into asset_delete_confirmation (
+                                confirmation_token, owner_scope, asset_id, actor_id,
+                                asset_revision, reference_fingerprint, expires_at
+                            ) values (
+                                :confirmationToken, :ownerScope, :assetId, :actorId,
+                                :assetRevision, :referenceFingerprint, :expiresAt
+                            )
+                            """)
+                    .param("confirmationToken", commit.confirmationToken())
+                    .param("ownerScope", commit.ownerScope().value())
+                    .param("assetId", commit.assetId().value())
+                    .param("actorId", commit.actorId())
+                    .param("assetRevision", commit.assetRevision())
+                    .param("referenceFingerprint", commit.referenceFingerprint())
+                    .param("expiresAt", java.sql.Timestamp.from(commit.expiresAt()))
+                    .update();
+            return new ConfirmationIssued();
+        } catch (DuplicateKeyException collision) {
+            return new ConfirmationUnavailable();
+        } catch (DataAccessException unavailable) {
+            return new ConfirmationUnavailable();
+        }
+    }
+
+    @Override
+    public DeleteOutcome delete(DeleteCommit commit) {
+        try {
+            return Objects.requireNonNull(transactions.execute(status -> {
+                // Exclusive reservation: the confirmed delete linearizes against every
+                // Template current change that references this Asset (they hold FOR SHARE
+                // on the same row in ascending assetId order).
+                var assetRow = jdbc.sql("""
+                                select lifecycle, asset_revision, current_content_version
+                                from asset_aggregate
+                                where asset_id = :assetId
+                                for update
+                                """)
+                        .param("assetId", commit.assetId().value())
+                        .query((rs, rowNum) -> new long[]{
+                                "ACTIVE".equals(rs.getString("lifecycle")) ? 0 : 1,
+                                rs.getLong("asset_revision"),
+                                rs.getLong("current_content_version")
+                        })
+                        .optional();
+                if (assetRow.isEmpty()) {
+                    return new DeleteNotFound();
+                }
+                long[] assetFacts = assetRow.get();
+                if (assetFacts[0] == 1) {
+                    return new DeleteDeleted();
+                }
+
+                var tokenRow = jdbc.sql("""
+                                select owner_scope, asset_id, actor_id, asset_revision,
+                                       reference_fingerprint, expires_at, used_at
+                                from asset_delete_confirmation
+                                where confirmation_token = :confirmationToken
+                                for update
+                                """)
+                        .param("confirmationToken", commit.confirmationToken())
+                        .query((rs, rowNum) -> new Object[]{
+                                rs.getString("owner_scope"),
+                                rs.getString("asset_id"),
+                                rs.getString("actor_id"),
+                                rs.getLong("asset_revision"),
+                                rs.getString("reference_fingerprint"),
+                                rs.getObject("expires_at", OffsetDateTime.class).toInstant(),
+                                rs.getObject("used_at", OffsetDateTime.class)
+                        })
+                        .optional();
+                if (tokenRow.isEmpty()) {
+                    return new DeleteConfirmationRequired();
+                }
+                Object[] tokenFacts = tokenRow.get();
+                if (tokenFacts[6] != null) {
+                    return new DeleteConfirmationStale();
+                }
+                if (!((Instant) tokenFacts[5]).isAfter(Instant.now())) {
+                    return new DeleteConfirmationExpired();
+                }
+                if (!commit.ownerScope().value().equals(tokenFacts[0])
+                        || !commit.assetId().value().equals(tokenFacts[1])
+                        || !commit.actorId().equals(tokenFacts[2])
+                        || assetFacts[1] != (Long) tokenFacts[3]) {
+                    return new DeleteConfirmationStale();
+                }
+
+                // Recompute the reference proof under the exclusive reservation; any
+                // reference drift invalidates the confirmation with zero writes.
+                var recomputed = referencePort.references(
+                        AssetApplication.InvocationRef.serverCreated(commit.actorId()),
+                        commit.assetId()
+                );
+                if (recomputed instanceof AssetReferencePort.ReferencesUnavailable) {
+                    return new DeleteDependencyUnavailable();
+                }
+                var fingerprint = ((AssetReferencePort.ReferencesReadable) recomputed)
+                        .proof()
+                        .referenceFingerprint();
+                if (!fingerprint.equals(tokenFacts[4])) {
+                    return new DeleteConfirmationStale();
+                }
+
+                jdbc.sql("""
+                                update asset_delete_confirmation
+                                set used_at = clock_timestamp()
+                                where confirmation_token = :confirmationToken
+                                """)
+                        .param("confirmationToken", commit.confirmationToken())
+                        .update();
+                jdbc.sql("""
+                                update asset_aggregate
+                                set lifecycle = 'DELETED',
+                                    asset_revision = asset_revision + 1,
+                                    updated_at = clock_timestamp()
+                                where asset_id = :assetId
+                                """)
+                        .param("assetId", commit.assetId().value())
+                        .update();
+                insertAuditEvent(
+                        commit.assetId(),
+                        assetFacts[1],
+                        assetFacts[1] + 1,
+                        commit.actorId(),
+                        AuditOperation.DELETE,
+                        assetFacts[2]
+                );
+                return new Deleted();
+            }));
+        } catch (DataAccessException unavailable) {
+            return new DeleteUnavailable();
+        }
+    }
+
+    @Override
+    public RestoreLifecycleOutcome restore(RestoreLifecycleCommit commit) {
+        try {
+            return Objects.requireNonNull(transactions.execute(status -> {
+                var assetRow = jdbc.sql("""
+                                select lifecycle, asset_revision, current_content_version
+                                from asset_aggregate
+                                where asset_id = :assetId
+                                for update
+                                """)
+                        .param("assetId", commit.assetId().value())
+                        .query((rs, rowNum) -> new long[]{
+                                "ACTIVE".equals(rs.getString("lifecycle")) ? 0 : 1,
+                                rs.getLong("asset_revision"),
+                                rs.getLong("current_content_version")
+                        })
+                        .optional();
+                if (assetRow.isEmpty()) {
+                    return new RestoreNotFound();
+                }
+                long[] assetFacts = assetRow.get();
+                if (assetFacts[0] == 0) {
+                    return new RestoreActive();
+                }
+                if (assetFacts[1] != commit.expectedAssetRevision()) {
+                    return new RestoreRevisionConflict(assetFacts[1]);
+                }
+                jdbc.sql("""
+                                update asset_aggregate
+                                set lifecycle = 'ACTIVE',
+                                    asset_revision = asset_revision + 1,
+                                    updated_at = clock_timestamp()
+                                where asset_id = :assetId
+                                """)
+                        .param("assetId", commit.assetId().value())
+                        .update();
+                insertAuditEvent(
+                        commit.assetId(),
+                        assetFacts[1],
+                        assetFacts[1] + 1,
+                        commit.actorId(),
+                        AuditOperation.RESTORE,
+                        assetFacts[2]
+                );
+                return new Restored();
+            }));
+        } catch (DataAccessException unavailable) {
+            return new RestoreUnavailable();
         }
     }
 

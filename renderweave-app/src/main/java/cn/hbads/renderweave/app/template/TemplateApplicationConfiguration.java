@@ -1,5 +1,6 @@
 package cn.hbads.renderweave.app.template;
 
+import cn.hbads.renderweave.asset.spi.AssetReferencePort;
 import cn.hbads.renderweave.schema.api.StaticSchemaAuthority;
 import cn.hbads.renderweave.template.api.AssetReferenceAuthority;
 import cn.hbads.renderweave.template.api.TemplateApplication;
@@ -67,6 +68,15 @@ class TemplateApplicationConfiguration {
             DependencyResolution dependencyResolution
     ) {
         return TemplateModule.readinessAuthority(persistence, dependencyResolution);
+    }
+
+    @Bean
+    AssetReferencePort templateAssetReferencePort(
+            AssetReferenceAuthority authority,
+            TemplatePersistence persistence,
+            OwnerScopeAuthority ownerScopes
+    ) {
+        return new TemplateAssetReferencePortAdapter(authority, persistence, ownerScopes);
     }
 
     @Bean

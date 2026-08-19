@@ -1,12 +1,13 @@
 openapi: 3.1.2
 info:
   title: RenderWeave API
-  version: 0.12.0
+  version: 0.13.0
   description: >-
     Contract-first API for RenderWeave Schema Drafts, immutable StaticSchemas,
     exact compiled artifacts, admitted Template revision authoring, owner-scoped Asset
-    upload/detail/catalog/versioning, authoritative RootDocument validation, deterministic
-    replay, guarded live inference Candidate review and create-only atomic Draft application.
+    upload/detail/catalog/versioning/delete-confirmation/restore, authoritative RootDocument
+    validation, deterministic replay, guarded live inference Candidate review and
+    create-only atomic Draft application.
 servers:
   - url: /
 tags:
@@ -664,6 +665,97 @@ paths:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/Problem'
+        '503':
+          $ref: '#/components/responses/AssetServiceUnavailableProblem'
+    delete:
+      operationId: deleteAsset
+      tags: [Assets]
+      summary: Soft-delete the ACTIVE Asset with a single-use confirmation token
+      description: >-
+        Deletes the Asset only when the confirmation token from the delete precheck is
+        still valid: the token must be unused, unexpired and bind the same actor, owner
+        scope, Asset id, Asset revision and complete reference fingerprint. The delete
+        takes the exclusive Asset reservation and re-derives the reference proof inside
+        the same transaction; any drift is rejected with zero writes and the caller must
+        run the delete precheck again. Deleting never revokes issued fetch leases.
+        Templates referencing the Asset are marked STALE and rechecked to INVALID by the
+        Template dependency projection consumer.
+      parameters:
+        - $ref: '#/components/parameters/AssetConfirmationToken'
+      responses:
+        '200':
+          description: The Asset is soft-deleted (lifecycle DELETED, revision advanced).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssetReadableResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestProblem'
+        '403':
+          $ref: '#/components/responses/AssetForbiddenProblem'
+        '404':
+          $ref: '#/components/responses/AssetNotFoundProblem'
+        '409':
+          $ref: '#/components/responses/ConflictProblem'
+        '503':
+          $ref: '#/components/responses/AssetServiceUnavailableProblem'
+  /api/v1/assets/{assetId}/delete-precheck:
+    parameters:
+      - $ref: '#/components/parameters/AssetId'
+    post:
+      operationId: precheckDeleteAsset
+      tags: [Assets]
+      summary: Resolve the delete impact and issue a 5-minute single-use confirmation token
+      description: >-
+        Returns the current-only Template reference impact (total count, the Template ids
+        the caller may read, and the redacted count) and issues a single-use confirmation
+        token valid for 5 minutes. The token binds the actor, owner scope, Asset id, the
+        exact Asset revision and a fingerprint over the complete reference set; any of
+        these facts drifting before the delete rejects the delete with zero writes.
+      responses:
+        '200':
+          description: Impact report and a single-use confirmation token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssetDeletePrecheckResponse'
+        '403':
+          $ref: '#/components/responses/AssetForbiddenProblem'
+        '404':
+          $ref: '#/components/responses/AssetNotFoundProblem'
+        '409':
+          $ref: '#/components/responses/ConflictProblem'
+        '503':
+          $ref: '#/components/responses/AssetServiceUnavailableProblem'
+  /api/v1/assets/{assetId}/restore-lifecycle:
+    parameters:
+      - $ref: '#/components/parameters/AssetId'
+    post:
+      operationId: restoreAssetLifecycle
+      tags: [Assets]
+      summary: Reactivate a DELETED Asset at its pre-delete current content version
+      description: >-
+        Restores the Asset lifecycle to ACTIVE with the same Asset id and the pre-delete
+        current content version; no new content version is created. The request carries
+        expectedAssetRevision. Templates referencing the Asset are marked STALE and
+        rechecked to READY/INVALID by the Template dependency projection consumer.
+      parameters:
+        - $ref: '#/components/parameters/AssetExpectedAssetRevision'
+      responses:
+        '200':
+          description: The Asset is reactivated (lifecycle ACTIVE, revision advanced).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssetReadableResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestProblem'
+        '403':
+          $ref: '#/components/responses/AssetForbiddenProblem'
+        '404':
+          $ref: '#/components/responses/AssetNotFoundProblem'
+        '409':
+          $ref: '#/components/responses/ConflictProblem'
         '503':
           $ref: '#/components/responses/AssetServiceUnavailableProblem'
   /api/v1/assets/{assetId}/metadata:
@@ -1486,6 +1578,15 @@ components:
         type: integer
         format: int64
         minimum: 0
+    AssetConfirmationToken:
+      name: X-Confirmation-Token
+      in: header
+      required: true
+      description: Single-use confirmation token issued by the delete precheck.
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 64
     Revision:
       name: revision
       in: path
@@ -1576,7 +1677,34 @@ components:
           enum: [ready]
         contractVersion:
           type: string
-          const: 0.12.0
+          const: 0.13.0
+    AssetDeletePrecheckResponse:
+      type: object
+      additionalProperties: false
+      required: [totalCount, readableTemplates, redactedCount, confirmationToken, expiresAt]
+      properties:
+        totalCount:
+          type: integer
+          minimum: 0
+          description: Complete current-only count of ACTIVE Templates referencing the Asset.
+        readableTemplates:
+          type: array
+          items:
+            type: string
+            description: Template id the caller may read.
+        redactedCount:
+          type: integer
+          minimum: 0
+          description: Referencing Templates the caller may not read.
+        confirmationToken:
+          type: string
+          minLength: 64
+          maxLength: 64
+          description: Single-use delete confirmation token valid for 5 minutes.
+        expiresAt:
+          type: string
+          format: date-time
+          description: Instant the confirmation token expires.
     CreateDraftRequest:
       type: object
       additionalProperties: false

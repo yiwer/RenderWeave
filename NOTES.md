@@ -1581,3 +1581,40 @@
   templateIds（caller-scope 属 T12b）。Profile 保持 NOT_REGISTERED；plan/map/issue 20 已更新为
   resolved。T20 resolve 为 automated_verified；T12b 成为唯一 unblocked frontier。Ticket 19 open，
   Editor/Renderer 未 READY；push 待用户另行授权（分支 ahead 18）。
+
+### Template v1 TV1-T12b 被引用 Asset 删除确认与恢复编排
+
+- `AssetReferencePort`（asset spi，Asset-owned outbound）：`references(invocation, assetId)` 返回
+  current-only 影响 proof——完整引用总数、调用者有权读取的 TemplateId 明细、`redactedCount`、完整
+  （未 redact）排序引用集合的 SHA-256 fingerprint；app `TemplateAssetReferencePortAdapter` 桥接 T20
+  `AssetReferenceAuthority`，逐 TemplateId locate ownerScope + Template `OwnerScopeAuthority` READ
+  判定可读性，ExistingUnavailable 上抛为依赖不可用（compile edge 仍为零，无共享聚合/表/事务）。
+- 确认 token：`deletePrecheck` 在 DELETE 授权 + recheck 后签发 64-hex 随机 token（V022
+  `asset_delete_confirmation` 表），绑定 ownerScope/assetId/authority 解析的稳定 actorId/assetRevision/
+  完整引用 fingerprint，TTL 5 分钟；`ConfiguredSingleOwnerAssetScopeAuthority` 的
+  `ExistingGranted` 新增 authority 解析 actorId（不是每次请求随机 invocation），recheck 改为
+  capability-scoped 单次身份。
+- 软删除：`delete` 单事务内 asset 行 FOR UPDATE 独占 reservation → token 行 FOR UPDATE 校验
+  （存在/未用/未过期/actor+ownerScope+assetId+assetRevision 绑定）→ reservation 下经 port 重算 proof
+  比对 fingerprint → 任一漂移零写（ConfirmationRequired/Expired/Stale/DependencyUnavailable）→
+  通过后标记 token 已用、lifecycle→DELETED、assetRevision+1、追加 DELETE 审计事件（T20 consumer →
+  引用 Template STALE → recheck INVALID）。
+- 读 reservation：`PostgresTemplatePersistence.create/append` 同一事务内对投影引用的 asset_aggregate 行
+  按 assetId 升序 FOR SHARE，与删除的独占 reservation 按 assetId 线性化（死锁自由：删除单行、保存升序
+  多行）。
+- 恢复：`restore`（`RestoreLifecycleOutcome`）RESTORE 授权 + recheck 后，事务内 FOR UPDATE 校验 DELETED
+  与 expectedAssetRevision，lifecycle→ACTIVE、assetRevision+1、current content version 不变（不新建
+  contentVersion）、追加 RESTORE 审计事件（T20 consumer → STALE → recheck READY）；ACTIVE 恢复为
+  ASSET_RESTORE_CONFLICT。
+- HTTP/契约：`POST /{id}/delete-precheck`、`DELETE /{id}`（X-Confirmation-Token）、
+  `POST /{id}/restore-lifecycle?expectedAssetRevision=`；OpenAPI 0.13.0 + Web SDK 再生成
+  （deleteAsset/precheckDeleteAsset/restoreAssetLifecycle）+ contractVersion 0.13.0 + canary 迁移数 22。
+- 验证：asset 模块 86/86（11 个新 delete/restore contract 场景）；app 纵切 `AssetDeleteRestoreSliceTest`
+  5/5（Testcontainers PG+MinIO：precheck→delete→STALE→INVALID→restore→READY、过期拒绝、assetRevision
+  漂移 Stale 零写、引用漂移 Stale 零写、恢复 ACTIVE 冲突）；`AssetApiTest` +4 场景（全流程 +
+  缺失/未知 token、删除后 GET 410）；app 全量 302 tests 绿；`asset`/`template`/`fast` gate 绿。
+- 诚实边界：删除不撤销已签发 fetch lease（T13 尚未签发 lease，本票零 lease 交互）；redactedCount 只
+  统计调用者不可读引用，fingerprint 始终覆盖完整集合；恢复只针对 DELETED。Profile 保持
+  NOT_REGISTERED；plan/map/issue 12b 已更新为 resolved。T12b resolve 为 automated_verified；T13 以首个
+  Rendering 实现票与 T08 为前置，当前无 unblocked frontier。Ticket 19 open，Editor/Renderer 未 READY；
+  push 待用户另行授权（分支 ahead 19）。

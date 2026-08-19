@@ -25,6 +25,20 @@ public interface AssetApplication {
 
     RestoreOutcome restoreContent(InvocationRef invocation, RestoreContentCommand command);
 
+    /**
+     * Delete precheck: resolves the current-only reference impact through the
+     * {@code AssetReferencePort} and issues a 5-minute single-use confirmation token bound
+     * to the actor, owner scope, asset id, the exact asset revision and the complete
+     * reference fingerprint.
+     */
+    DeletePrecheckOutcome deletePrecheck(InvocationRef invocation, AssetId assetId);
+
+    /** Confirmed soft delete; every token binding and the reference proof must still match. */
+    DeleteOutcome delete(InvocationRef invocation, DeleteCommand command);
+
+    /** Lifecycle restore: reactivates a DELETED Asset at its pre-delete current. */
+    RestoreLifecycleOutcome restore(InvocationRef invocation, RestoreLifecycleCommand command);
+
     record OwnerScope(String value) {
         public OwnerScope {
             if (value == null || value.isBlank() || value.length() > 256) {
@@ -222,6 +236,56 @@ public interface AssetApplication {
 
         public long sourceContentVersion() {
             return sourceContentVersion;
+        }
+    }
+
+    final class DeleteCommand {
+        private final AssetId assetId;
+        private final ConfirmationToken confirmationToken;
+
+        public DeleteCommand(AssetId assetId, ConfirmationToken confirmationToken) {
+            this.assetId = Objects.requireNonNull(assetId, "assetId");
+            this.confirmationToken = Objects.requireNonNull(confirmationToken, "confirmationToken");
+        }
+
+        public AssetId assetId() {
+            return assetId;
+        }
+
+        public ConfirmationToken confirmationToken() {
+            return confirmationToken;
+        }
+    }
+
+    final class RestoreLifecycleCommand {
+        private final AssetId assetId;
+        private final long expectedAssetRevision;
+
+        public RestoreLifecycleCommand(AssetId assetId, long expectedAssetRevision) {
+            this.assetId = Objects.requireNonNull(assetId, "assetId");
+            if (expectedAssetRevision < 0) {
+                throw new IllegalArgumentException("expectedAssetRevision must not be negative");
+            }
+            this.expectedAssetRevision = expectedAssetRevision;
+        }
+
+        public AssetId assetId() {
+            return assetId;
+        }
+
+        public long expectedAssetRevision() {
+            return expectedAssetRevision;
+        }
+    }
+
+    /** Opaque single-use confirmation token issued by the delete precheck. */
+    record ConfirmationToken(String value) {
+        public ConfirmationToken {
+            if (value == null || value.isBlank() || value.length() > 64) {
+                throw new IllegalArgumentException(
+                        "confirmationToken must be non-blank and at most 64 characters"
+                );
+            }
         }
     }
 
@@ -702,6 +766,148 @@ public interface AssetApplication {
     }
 
     record RestorePersistenceUnavailable() implements RestoreOutcome {
+    }
+
+    /** Caller-scoped impact of deleting the Asset (current-only Template references). */
+    record DeleteImpactReport(
+            int totalCount,
+            List<String> readableTemplateIds,
+            int redactedCount
+    ) {
+        public DeleteImpactReport {
+            if (totalCount < 0 || redactedCount < 0
+                    || totalCount != readableTemplateIds.size() + redactedCount) {
+                throw new IllegalArgumentException("inconsistent delete impact report");
+            }
+            readableTemplateIds = List.copyOf(
+                    Objects.requireNonNull(readableTemplateIds, "readableTemplateIds"));
+        }
+    }
+
+    sealed interface DeletePrecheckOutcome permits
+            DeletePrecheckReadable,
+            DeletePrecheckNotFound,
+            DeletePrecheckDeleted,
+            DeletePrecheckForbidden,
+            DeletePrecheckDependencyUnavailable,
+            DeletePrecheckAuthorityUnavailable,
+            DeletePrecheckPersistenceUnavailable {
+    }
+
+    record DeletePrecheckReadable(
+            DeleteImpactReport impact,
+            ConfirmationToken confirmationToken,
+            java.time.Instant expiresAt
+    ) implements DeletePrecheckOutcome {
+        public DeletePrecheckReadable {
+            Objects.requireNonNull(impact, "impact");
+            Objects.requireNonNull(confirmationToken, "confirmationToken");
+            Objects.requireNonNull(expiresAt, "expiresAt");
+        }
+    }
+
+    record DeletePrecheckNotFound() implements DeletePrecheckOutcome {
+    }
+
+    record DeletePrecheckDeleted() implements DeletePrecheckOutcome {
+    }
+
+    record DeletePrecheckForbidden() implements DeletePrecheckOutcome {
+    }
+
+    record DeletePrecheckDependencyUnavailable() implements DeletePrecheckOutcome {
+    }
+
+    record DeletePrecheckAuthorityUnavailable() implements DeletePrecheckOutcome {
+    }
+
+    record DeletePrecheckPersistenceUnavailable() implements DeletePrecheckOutcome {
+    }
+
+    sealed interface DeleteOutcome permits
+            DeleteApplied,
+            DeleteNotFound,
+            DeleteDeleted,
+            DeleteForbidden,
+            DeleteConfirmationRequired,
+            DeleteConfirmationExpired,
+            DeleteConfirmationStale,
+            DeleteDependencyUnavailable,
+            DeleteAuthorityUnavailable,
+            DeletePersistenceUnavailable {
+    }
+
+    record DeleteApplied(AssetDetail detail) implements DeleteOutcome {
+        public DeleteApplied {
+            Objects.requireNonNull(detail, "detail");
+        }
+    }
+
+    record DeleteNotFound() implements DeleteOutcome {
+    }
+
+    record DeleteDeleted() implements DeleteOutcome {
+    }
+
+    record DeleteForbidden() implements DeleteOutcome {
+    }
+
+    record DeleteConfirmationRequired() implements DeleteOutcome {
+    }
+
+    record DeleteConfirmationExpired() implements DeleteOutcome {
+    }
+
+    record DeleteConfirmationStale() implements DeleteOutcome {
+    }
+
+    record DeleteDependencyUnavailable() implements DeleteOutcome {
+    }
+
+    record DeleteAuthorityUnavailable() implements DeleteOutcome {
+    }
+
+    record DeletePersistenceUnavailable() implements DeleteOutcome {
+    }
+
+    sealed interface RestoreLifecycleOutcome permits
+            RestoreLifecycleApplied,
+            RestoreLifecycleNotFound,
+            RestoreLifecycleActive,
+            RestoreLifecycleForbidden,
+            RestoreLifecycleRevisionConflict,
+            RestoreLifecycleAuthorityUnavailable,
+            RestoreLifecyclePersistenceUnavailable {
+    }
+
+    record RestoreLifecycleApplied(AssetDetail detail) implements RestoreLifecycleOutcome {
+        public RestoreLifecycleApplied {
+            Objects.requireNonNull(detail, "detail");
+        }
+    }
+
+    record RestoreLifecycleNotFound() implements RestoreLifecycleOutcome {
+    }
+
+    record RestoreLifecycleActive() implements RestoreLifecycleOutcome {
+    }
+
+    record RestoreLifecycleForbidden() implements RestoreLifecycleOutcome {
+    }
+
+    record RestoreLifecycleRevisionConflict(long currentAssetRevision)
+            implements RestoreLifecycleOutcome {
+        public RestoreLifecycleRevisionConflict {
+            if (currentAssetRevision < 0) {
+                throw new IllegalArgumentException("currentAssetRevision must not be negative");
+            }
+        }
+    }
+
+    record RestoreLifecycleAuthorityUnavailable() implements RestoreLifecycleOutcome {
+    }
+
+    record RestoreLifecyclePersistenceUnavailable() implements RestoreLifecycleOutcome {
     }
 
     private static String requireNonBlank(String value, int maximum, String name) {

@@ -36,6 +36,7 @@ class AssetAcceptancePublicSurfaceTest {
                 "cn.hbads.renderweave.asset.spi.AssetOwnerScopeAuthority",
                 "cn.hbads.renderweave.asset.spi.AssetPersistence",
                 "cn.hbads.renderweave.asset.spi.AssetBlobPersistence",
+                "cn.hbads.renderweave.asset.spi.AssetReferencePort",
                 "cn.hbads.renderweave.asset.internal.AssetModule"
         ), publicTopLevel);
     }
