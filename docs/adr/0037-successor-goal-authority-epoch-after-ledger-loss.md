@@ -2,6 +2,10 @@
 
 - 状态：accepted
 - 日期：2026-08-13
+- 可移植性修订：2026-08-18；经用户明确批准，把不可从本地或 `origin` 获取的 source revision
+  `e3230398b7d6978d93527813af29df98fa7b35e6` 重锚到可达祖先
+  `3c1e4d3a62382eb79b46fa644a20690aaea03497`。四个 source SHA-256、historical baseline、epoch limits、
+  `liveAuthorizationInherited=false` 与零退款语义均保持不变。
 - 关联：P6/T6-5/N7、N7-03、ADR-0029、ADR-0036
 
 ## 背景
@@ -11,10 +15,15 @@ worktree、回收站、归档或 IDE Local History 精确恢复。旧 v1/v4 状�
 为事实源；直接创建空文件会清零历史消费，按汇总数字伪造 418 个 UUID、run、时间戳和 usage 又会制造不存在的
 历史事实。ADR-0029 同时要求无法证明实际 usage 的 reservation 不得释放，而应继续按保守上界计费。
 
-固定 revision `e3230398b7d6978d93527813af29df98fa7b35e6` 上四份独立提交材料一致记录最后已验证状态：418 个
+固定 revision `3c1e4d3a62382eb79b46fa644a20690aaea03497` 上四份独立提交材料一致记录最后已验证状态：418 个
 reservations，其中 412 SETTLED、6 个无法结算的历史 reservation、0 BREACHED；Flash、Plus、Max 分别为
 157/179/82 attempts，1,148,324/1,087,500/491,919 exposed tokens，¥0.560618/¥4.159620/¥10.289316。
 用户在确认原始文件不可恢复后批准改用 successor re-anchor，而不是继续磁盘恢复。
+
+最初登记的 `e3230398b7d6978d93527813af29df98fa7b35e6` 对象后来既不在完整本地对象库，也不在 `origin`
+advertised history 中，导致 clean clone 无法执行 `git show` 并使独立 full gate fail closed。可达祖先
+`3c1e4d3a62382eb79b46fa644a20690aaea03497` 对四个受控路径逐一产生与原 manifest 完全相同的 SHA-256；
+因此本修订只恢复 source-byte 可重放性，不重算或重解释任何预算事实，也不产生或继承 live 授权。
 
 ## 决策
 

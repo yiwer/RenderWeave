@@ -30,6 +30,17 @@ EVIDENCE_VERIFIER = load("visual_evidence_verifier_for_reanchor",
 
 
 class N7GoalAuthorityReanchorTest(unittest.TestCase):
+    def test_reanchor_uses_reachable_byte_identical_source_revision(self) -> None:
+        manifest, _identity = VERIFIER.verify_reanchor_manifest(REPOSITORY)
+
+        self.assertEqual(
+            "3c1e4d3a62382eb79b46fa644a20690aaea03497",
+            manifest["anchorRevision"],
+        )
+        self.assertEqual(VERIFIER.EXPECTED_SOURCE_ANCHORS, manifest["sourceAnchors"])
+        self.assertEqual(VERIFIER.EXPECTED_BASELINE, manifest["baseline"])
+        self.assertFalse(manifest["decision"]["liveAuthorizationInherited"])
+
     def test_materializes_once_and_independent_admission_reconstructs(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             goal = pathlib.Path(temporary) / "goal"

@@ -13,7 +13,9 @@ import tools.jackson.databind.json.JsonMapper;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.MessageDigest;
 import java.time.Instant;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -26,6 +28,20 @@ class N7LiveAdmissionGateTest {
     private static final Instant NOW = Instant.parse("2026-08-13T04:00:00Z");
     private static final String EVALUATION_IDENTITY =
             "renderweave-visual-evaluation-tree-sha256/2:" + "a".repeat(64);
+
+    @Test
+    void successorAuthorityManifestIdentityMatchesRepositoryFixture() throws Exception {
+        var resource = N7LiveAdmissionGateTest.class.getResourceAsStream(
+                "/visual-eval/n7/goal-authority/n7-closeout-successor-20260813.json");
+        assertTrue(resource != null);
+        try (resource) {
+            var identity = HexFormat.of().formatHex(
+                    MessageDigest.getInstance("SHA-256").digest(resource.readAllBytes()));
+            assertEquals("d2ff2e0e47d368b6c8d4a40ab137e5645a8509db8d721cfec7292de5be3e2ce4",
+                    identity);
+            assertEquals(identity, VisualEvaluationGoalBudget.REANCHOR_MANIFEST_SHA256);
+        }
+    }
 
     @Test
     void plusCanaryContractBindsEveryExactJ1Dimension() {
@@ -359,7 +375,7 @@ class N7LiveAdmissionGateTest {
                   "guardVersion": "renderweave-visual-evaluation-goal-guard/5.0",
                   "goalId": "renderweave-visual-recognition-vnext-20260810",
                   "authorityEpochId": "n7-closeout-successor-20260813",
-                  "reanchorManifestSha256": "541f5efd137cd13009db5b722584c1353c1d3f6b0de39685ef161a1e3696efaa",
+                  "reanchorManifestSha256": "d2ff2e0e47d368b6c8d4a40ab137e5645a8509db8d721cfec7292de5be3e2ce4",
                   "epochMaximumTokensPerModel": 500000,
                   "epochMaximumAttemptsPerModel": 180,
                   "epochMaximumCostMicrosCnyByModel": {
@@ -379,7 +395,7 @@ class N7LiveAdmissionGateTest {
                     "kind": "CONSERVATIVE_REANCHOR",
                     "predecessorEpochId": "legacy-through-product-v40",
                     "predecessorDisposition": "LOST_UNRECOVERABLE",
-                    "reanchorManifestSha256": "541f5efd137cd13009db5b722584c1353c1d3f6b0de39685ef161a1e3696efaa"
+                    "reanchorManifestSha256": "d2ff2e0e47d368b6c8d4a40ab137e5645a8509db8d721cfec7292de5be3e2ce4"
                   },
                   "historicalBaseline": {
                     "baselineVersion": "renderweave-visual-evaluation-goal-baseline/1.0",

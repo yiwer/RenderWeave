@@ -39,7 +39,7 @@ final class VisualEvaluationGoalBudget {
     static final String GOAL_ID = "renderweave-visual-recognition-vnext-20260810";
     static final String SUCCESSOR_AUTHORITY_EPOCH_ID = "n7-closeout-successor-20260813";
     static final String REANCHOR_MANIFEST_SHA256 =
-            "541f5efd137cd13009db5b722584c1353c1d3f6b0de39685ef161a1e3696efaa";
+            "d2ff2e0e47d368b6c8d4a40ab137e5645a8509db8d721cfec7292de5be3e2ce4";
     private final Path stateFile;
     private final Path guardFile;
     private final Path lockFile;

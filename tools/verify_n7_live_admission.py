@@ -40,7 +40,7 @@ BASELINE_VERSION = "renderweave-visual-evaluation-goal-baseline/1.0"
 REANCHOR_VERSION = "renderweave-visual-evaluation-goal-reanchor/1.0"
 SUCCESSOR_AUTHORITY_EPOCH_ID = "n7-closeout-successor-20260813"
 REANCHOR_MANIFEST_SHA256 = (
-    "541f5efd137cd13009db5b722584c1353c1d3f6b0de39685ef161a1e3696efaa"
+    "d2ff2e0e47d368b6c8d4a40ab137e5645a8509db8d721cfec7292de5be3e2ce4"
 )
 LEDGERS = {
     "qwen37-flash": pathlib.PurePosixPath(".sdlc/live/visual-evaluation-qwen37-flash.json"),
@@ -162,7 +162,7 @@ def verify_reanchor_manifest(repository: pathlib.Path) -> tuple[dict[str, Any], 
         "authorityEpochId": SUCCESSOR_AUTHORITY_EPOCH_ID,
         "predecessorEpochId": "legacy-through-product-v40",
         "predecessorDisposition": "LOST_UNRECOVERABLE",
-        "anchorRevision": "e3230398b7d6978d93527813af29df98fa7b35e6",
+        "anchorRevision": "3c1e4d3a62382eb79b46fa644a20690aaea03497",
         "sourceAnchors": EXPECTED_SOURCE_ANCHORS,
         "baseline": EXPECTED_BASELINE,
         "epochLimits": SUCCESSOR_EPOCH_LIMITS,

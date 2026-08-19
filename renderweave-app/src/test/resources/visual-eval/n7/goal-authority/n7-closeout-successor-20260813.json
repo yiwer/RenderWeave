@@ -4,7 +4,7 @@
   "authorityEpochId": "n7-closeout-successor-20260813",
   "predecessorEpochId": "legacy-through-product-v40",
   "predecessorDisposition": "LOST_UNRECOVERABLE",
-  "anchorRevision": "e3230398b7d6978d93527813af29df98fa7b35e6",
+  "anchorRevision": "3c1e4d3a62382eb79b46fa644a20690aaea03497",
   "sourceAnchors": [
     {
       "path": "docs/adr/0029-pinned-flash-snapshot-and-additive-goal-budget.md",
