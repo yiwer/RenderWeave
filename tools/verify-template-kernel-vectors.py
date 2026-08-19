@@ -8,7 +8,7 @@ import hashlib
 import json
 import re
 from dataclasses import dataclass
-from decimal import Decimal, InvalidOperation
+from decimal import Decimal, InvalidOperation, localcontext
 from pathlib import Path
 from typing import Any
 
@@ -56,21 +56,18 @@ KIND_BY_NAME = {
     "stack": "STACK",
     "grid": "GRID",
     "repeat": "REPEAT",
+    "text": "TEXT",
+    "image": "IMAGE",
+    "rect": "RECT",
+    "ellipse": "ELLIPSE",
+    "line": "LINE",
+    "polygon": "POLYGON",
+    "polyline": "POLYLINE",
+    "path": "PATH",
+    "qrCode": "QRCODE",
+    "barcode": "BARCODE",
 }
-FUTURE_KINDS = {
-    "text",
-    "image",
-    "rect",
-    "ellipse",
-    "line",
-    "polygon",
-    "polyline",
-    "path",
-    "qrCode",
-    "barcode",
-    "conditional",
-    "templateUse",
-}
+FUTURE_KINDS = {"conditional", "templateUse"}
 COMMON_NODE_MEMBERS = {
     "nodeId",
     "kind",
@@ -91,6 +88,91 @@ ABSENT_POLICY_TOKENS = {"ERROR", "EMPTY"}
 REPEAT_ITEM_TYPES = {"text", "decimal", "date", "time", "boolean"}
 STACK_PACKING_SPEC_MEMBERS = {"kind", "direction", "gapMm"}
 GRID_PACKING_SPEC_MEMBERS = {"kind", "columns", "columnGapMm", "rowGapMm"}
+
+# --- Visual leaf members (ticket 09 §6-§7) -------------------------------------
+
+TEXT_MEMBERS = {
+    "runs",
+    "writingMode",
+    "horizontalAlign",
+    "verticalAlign",
+    "lineBreak",
+    "overflow",
+    "lineHeight",
+    "maxLines",
+    "padding",
+    "stroke",
+    "fitMode",
+    "minScale",
+}
+RUN_MEMBERS = {
+    "text",
+    "fontRef",
+    "fontSizePt",
+    "color",
+    "decoration",
+    "letterSpacingPt",
+    "letterSpacingFactor",
+}
+LINE_HEIGHT_MEMBERS = {"type", "factor", "valuePt"}
+IMAGE_MEMBERS = {"imageRef", "fit", "sampling"}
+RECT_MEMBERS = {"fill", "stroke", "cornerRadii"}
+ELLIPSE_MEMBERS = {"fill", "stroke"}
+LINE_MEMBERS = {"start", "end", "stroke"}
+POLYGON_MEMBERS = {"points", "fill", "stroke"}
+POLYLINE_MEMBERS = {"points", "stroke"}
+PATH_MEMBERS = {"commands", "fill", "stroke", "fillRule"}
+QRCODE_MEMBERS = {"content", "errorCorrectionLevel", "foregroundColor", "backgroundColor"}
+BARCODE_MEMBERS = {"format", "value", "foregroundColor", "backgroundColor"}
+POINT_MM_MEMBERS = {"xMm", "yMm"}
+MOVE_TO_COMMAND_MEMBERS = {"type", "xMm", "yMm"}
+LINE_TO_COMMAND_MEMBERS = {"type", "xMm", "yMm"}
+QUAD_TO_COMMAND_MEMBERS = {"type", "cxMm", "cyMm", "xMm", "yMm"}
+CUBIC_TO_COMMAND_MEMBERS = {"type", "c1xMm", "c1yMm", "c2xMm", "c2yMm", "xMm", "yMm"}
+CLOSE_COMMAND_MEMBERS = {"type"}
+WRITING_MODE_TOKENS = {"HORIZONTAL_TB", "VERTICAL_RL"}
+HORIZONTAL_ALIGN_TOKENS = {"LEFT", "CENTER", "RIGHT", "JUSTIFY", "SPACE_EVENLY"}
+VERTICAL_ALIGN_TOKENS = {"TOP", "CENTER", "BOTTOM", "JUSTIFY", "SPACE_EVENLY"}
+LINE_BREAK_TOKENS = {"NONE", "WORD", "CHAR"}
+TEXT_OVERFLOW_TOKENS = {"VISIBLE", "CLIP", "ELLIPSIS", "FAIL"}
+DECORATION_TOKENS = {"NONE", "UNDERLINE", "LINE_THROUGH"}
+LINE_HEIGHT_TYPE_TOKENS = {"FACTOR", "FIXED"}
+FIT_MODE_TOKENS = {"NONE", "SHRINK_TO_FIT"}
+IMAGE_FIT_TOKENS = {"CONTAIN", "COVER", "FILL"}
+IMAGE_SAMPLING_TOKENS = {"LINEAR", "NEAREST"}
+FILL_RULE_TOKENS = {"NONZERO", "EVEN_ODD"}
+QR_ERROR_CORRECTION_TOKENS = {"L", "M", "Q", "H"}
+BARCODE_FORMAT_TOKENS = {"EAN_8", "EAN_13", "UPC_A", "CODE_128"}
+PATH_COMMAND_TYPES = {"MOVE_TO", "LINE_TO", "QUAD_TO", "CUBIC_TO", "CLOSE"}
+LEAF_KINDS = {
+    "TEXT",
+    "IMAGE",
+    "RECT",
+    "ELLIPSE",
+    "LINE",
+    "POLYGON",
+    "POLYLINE",
+    "PATH",
+    "QRCODE",
+    "BARCODE",
+}
+NON_CANVAS_KINDS = {
+    "GROUP",
+    "FRAME",
+    "STACK",
+    "GRID",
+    "REPEAT",
+    "TEXT",
+    "IMAGE",
+    "RECT",
+    "ELLIPSE",
+    "LINE",
+    "POLYGON",
+    "POLYLINE",
+    "PATH",
+    "QRCODE",
+    "BARCODE",
+}
 FILL_MEMBERS = {"color"}
 STROKE_MM_MEMBERS = {"color", "widthMm", "cap", "join"}
 PADDING_MEMBER_ORDER = ("topMm", "rightMm", "bottomMm", "leftMm")
@@ -185,12 +267,23 @@ EXPECTED_VARIANT = {
 }
 SIZE_MODES = {
     "GROUP": {"HUG_CONTENT"},
+    "RECT": {"FIXED", "FILL"},
+    "ELLIPSE": {"FIXED", "FILL"},
+    "QRCODE": {"FIXED", "FILL"},
+    "BARCODE": {"FIXED", "FILL"},
     "CANVAS": {"FIXED", "HUG_CONTENT", "FILL"},
     "FRAME": {"FIXED", "HUG_CONTENT", "FILL"},
     "STACK": {"FIXED", "HUG_CONTENT", "FILL"},
     "GRID": {"FIXED", "HUG_CONTENT", "FILL"},
     "REPEAT": {"FIXED", "HUG_CONTENT", "FILL"},
+    "TEXT": {"FIXED", "HUG_CONTENT", "FILL"},
+    "LINE": {"FIXED", "HUG_CONTENT", "FILL"},
+    "POLYGON": {"FIXED", "HUG_CONTENT", "FILL"},
+    "POLYLINE": {"FIXED", "HUG_CONTENT", "FILL"},
+    "PATH": {"FIXED", "HUG_CONTENT", "FILL"},
+    "IMAGE": {"FIXED", "HUG_CONTENT", "FILL"},
 }
+ALLOWS_CHILDREN_KINDS = {"GROUP", "FRAME", "STACK", "GRID", "REPEAT"}
 
 # --- Definition contract (T15: custom/mapping/expression + ValueSource) ----------
 
@@ -642,6 +735,12 @@ def ranged_decimal_member(
         raise semantic_rejection("DESIGN_VALUE_INVALID", pointer)
 
 
+def ranged_decimal_value(value: Any, pointer: str, minimum: int, maximum: int) -> None:
+    number = decimal_value(value, pointer)
+    if number < minimum or number > maximum:
+        raise semantic_rejection("DESIGN_VALUE_INVALID", pointer)
+
+
 def non_negative_integer_member(value: dict[str, Any], name: str, pointer: str) -> None:
     number = decimal_value(require_member(value, name, pointer), pointer)
     if number < 0 or number != number.to_integral_value():
@@ -880,6 +979,8 @@ def validate_placement(
         raise semantic_rejection("DESIGN_VALUE_INVALID", pointer + "/widthMode")
     if height_mode not in modes:
         raise semantic_rejection("DESIGN_VALUE_INVALID", pointer + "/heightMode")
+    if kind == "IMAGE" and width_mode == "HUG_CONTENT" and height_mode == "HUG_CONTENT":
+        raise semantic_rejection("DESIGN_VALUE_INVALID", pointer + "/heightMode")
     if width_mode == "FIXED":
         positive_decimal_member(placement, "widthMm", pointer + "/widthMm")
     elif "widthMm" in placement:
@@ -934,7 +1035,9 @@ def validate_placement(
 
 
 def allowed_members(kind: str) -> set[str]:
-    members = set(COMMON_NODE_MEMBERS) | CONTAINER_MEMBERS
+    members = set(COMMON_NODE_MEMBERS)
+    if kind in ALLOWS_CHILDREN_KINDS:
+        members |= CONTAINER_MEMBERS
     if kind in ("FRAME", "STACK", "GRID"):
         members |= APPEARANCE_MEMBERS
     if kind == "STACK":
@@ -943,6 +1046,26 @@ def allowed_members(kind: str) -> set[str]:
         members |= GRID_MEMBERS
     elif kind == "REPEAT":
         members |= REPEAT_MEMBERS
+    elif kind == "TEXT":
+        members |= TEXT_MEMBERS
+    elif kind == "IMAGE":
+        members |= IMAGE_MEMBERS
+    elif kind == "RECT":
+        members |= RECT_MEMBERS
+    elif kind == "ELLIPSE":
+        members |= ELLIPSE_MEMBERS
+    elif kind == "LINE":
+        members |= LINE_MEMBERS
+    elif kind == "POLYGON":
+        members |= POLYGON_MEMBERS
+    elif kind == "POLYLINE":
+        members |= POLYLINE_MEMBERS
+    elif kind == "PATH":
+        members |= PATH_MEMBERS
+    elif kind == "QRCODE":
+        members |= QRCODE_MEMBERS
+    elif kind == "BARCODE":
+        members |= BARCODE_MEMBERS
     return members
 
 
@@ -1039,16 +1162,37 @@ def validate_non_canvas_node(
         validate_grid_members(node, pointer)
     elif kind == "REPEAT":
         validate_repeat_members(node, pointer, seen_loop_ids, output_types, loop_ids)
-    children = require_array(
-        require_member(node, "children", pointer + "/children"),
-        pointer + "/children",
-    )
-    if kind == "REPEAT" and not children:
-        raise semantic_rejection("DESIGN_VALUE_INVALID", pointer + "/children")
-    normalized["children"] = validate_children(
-        children, pointer + "/children", kind, own_direction, seen_node_ids,
-        seen_loop_ids, output_types, loop_ids
-    )
+    elif kind == "TEXT":
+        validate_text_members(node, pointer)
+    elif kind == "IMAGE":
+        validate_image_members(node, pointer)
+    elif kind == "RECT":
+        validate_rect_members(node, pointer)
+    elif kind == "ELLIPSE":
+        validate_ellipse_members(node, pointer)
+    elif kind == "LINE":
+        validate_line_members(node, pointer)
+    elif kind == "POLYGON":
+        validate_polygon_members(node, pointer)
+    elif kind == "POLYLINE":
+        validate_polyline_members(node, pointer)
+    elif kind == "PATH":
+        validate_path_members(node, pointer)
+    elif kind == "QRCODE":
+        validate_qrcode_members(node, pointer)
+    elif kind == "BARCODE":
+        validate_barcode_members(node, pointer)
+    if kind in ALLOWS_CHILDREN_KINDS:
+        children = require_array(
+            require_member(node, "children", pointer + "/children"),
+            pointer + "/children",
+        )
+        if kind == "REPEAT" and not children:
+            raise semantic_rejection("DESIGN_VALUE_INVALID", pointer + "/children")
+        normalized["children"] = validate_children(
+            children, pointer + "/children", kind, own_direction, seen_node_ids,
+            seen_loop_ids, output_types, loop_ids
+        )
     return normalized
 
 
@@ -1601,6 +1745,296 @@ def definition_id_of(value: Any) -> str:
     return require_string(value["definitionId"], "")
 
 
+def validate_text_members(node: dict[str, Any], pointer: str) -> None:
+    runs = require_array(require_member(node, "runs", pointer + "/runs"), pointer + "/runs")
+    if not runs:
+        raise semantic_rejection("DESIGN_VALUE_INVALID", pointer + "/runs")
+    for index, item in enumerate(runs):
+        run_pointer = pointer + "/runs/" + str(index)
+        run = require_object(item, run_pointer)
+        reject_unknown(run, RUN_MEMBERS, run_pointer)
+        text = require_string(require_member(run, "text", run_pointer + "/text"), run_pointer + "/text")
+        for character in text:
+            if ord(character) < 0x20 and character != "\n":
+                raise semantic_rejection("DESIGN_VALUE_INVALID", run_pointer + "/text")
+        validate_asset_ref(require_member(run, "fontRef", run_pointer + "/fontRef"), run_pointer + "/fontRef")
+        positive_decimal_member(run, "fontSizePt", run_pointer + "/fontSizePt")
+        color_member(run, "color", run_pointer + "/color")
+        enum_member(run, "decoration", DECORATION_TOKENS, run_pointer + "/decoration")
+        has_pt = "letterSpacingPt" in run
+        has_factor = "letterSpacingFactor" in run
+        if not has_pt and not has_factor:
+            raise semantic_rejection("DESIGN_STRUCTURE_INVALID", run_pointer + "/letterSpacingPt")
+        if has_pt and has_factor:
+            raise semantic_rejection("DESIGN_VALUE_INVALID", run_pointer + "/letterSpacingFactor")
+        if has_pt:
+            any_decimal_member(run, "letterSpacingPt", run_pointer + "/letterSpacingPt")
+        else:
+            any_decimal_member(run, "letterSpacingFactor", run_pointer + "/letterSpacingFactor")
+    if "writingMode" in node:
+        enum_member(node, "writingMode", WRITING_MODE_TOKENS, pointer + "/writingMode")
+    if "horizontalAlign" in node:
+        enum_member(node, "horizontalAlign", HORIZONTAL_ALIGN_TOKENS, pointer + "/horizontalAlign")
+    if "verticalAlign" in node:
+        enum_member(node, "verticalAlign", VERTICAL_ALIGN_TOKENS, pointer + "/verticalAlign")
+    if "lineBreak" in node:
+        enum_member(node, "lineBreak", LINE_BREAK_TOKENS, pointer + "/lineBreak")
+    overflow = "CLIP"
+    if "overflow" in node:
+        enum_member(node, "overflow", TEXT_OVERFLOW_TOKENS, pointer + "/overflow")
+        overflow = require_string(node["overflow"], pointer + "/overflow")
+    if "lineHeight" in node:
+        validate_line_height(node["lineHeight"], pointer + "/lineHeight")
+    if "maxLines" in node:
+        positive_integer_member(node, "maxLines", pointer + "/maxLines")
+        if overflow == "VISIBLE":
+            raise semantic_rejection("DESIGN_VALUE_INVALID", pointer + "/maxLines")
+    if "padding" in node:
+        validate_padding(node["padding"], pointer + "/padding")
+    if "stroke" in node:
+        validate_stroke_pt(node["stroke"], pointer + "/stroke")
+    if "fitMode" in node:
+        enum_member(node, "fitMode", FIT_MODE_TOKENS, pointer + "/fitMode")
+        fit_mode = require_string(node["fitMode"], pointer + "/fitMode")
+        if fit_mode == "SHRINK_TO_FIT":
+            min_scale = require_member(node, "minScale", pointer + "/minScale")
+            ranged_decimal_value(min_scale, pointer + "/minScale", 0, 1)
+            if decimal_value(min_scale, pointer + "/minScale") == 0:
+                raise semantic_rejection("DESIGN_VALUE_INVALID", pointer + "/minScale")
+        elif "minScale" in node:
+            raise semantic_rejection("DESIGN_VALUE_INVALID", pointer + "/minScale")
+    elif "minScale" in node:
+        raise semantic_rejection("DESIGN_VALUE_INVALID", pointer + "/minScale")
+
+
+def validate_line_height(value: Any, pointer: str) -> None:
+    line_height = require_object(value, pointer)
+    reject_unknown(line_height, LINE_HEIGHT_MEMBERS, pointer)
+    type_token = require_string(
+        require_member(line_height, "type", pointer + "/type"), pointer + "/type"
+    )
+    if type_token == "FACTOR":
+        if "valuePt" in line_height:
+            raise semantic_rejection("DESIGN_VALUE_INVALID", pointer + "/valuePt")
+        positive_decimal_member(line_height, "factor", pointer + "/factor")
+    elif type_token == "FIXED":
+        if "factor" in line_height:
+            raise semantic_rejection("DESIGN_VALUE_INVALID", pointer + "/factor")
+        positive_decimal_member(line_height, "valuePt", pointer + "/valuePt")
+    else:
+        raise semantic_rejection("DESIGN_VALUE_INVALID", pointer + "/type")
+
+
+def validate_stroke_pt(value: Any, pointer: str) -> None:
+    stroke = require_object(value, pointer)
+    reject_unknown(stroke, {"color", "widthPt", "cap", "join"}, pointer)
+    color_member(stroke, "color", pointer + "/color")
+    positive_decimal_member(stroke, "widthPt", pointer + "/widthPt")
+    enum_member(stroke, "cap", STROKE_CAP_TOKENS, pointer + "/cap")
+    enum_member(stroke, "join", STROKE_JOIN_TOKENS, pointer + "/join")
+
+
+def validate_image_members(node: dict[str, Any], pointer: str) -> None:
+    validate_asset_ref(require_member(node, "imageRef", pointer + "/imageRef"), pointer + "/imageRef")
+    if "fit" in node:
+        enum_member(node, "fit", IMAGE_FIT_TOKENS, pointer + "/fit")
+    if "sampling" in node:
+        enum_member(node, "sampling", IMAGE_SAMPLING_TOKENS, pointer + "/sampling")
+
+
+def validate_rect_members(node: dict[str, Any], pointer: str) -> None:
+    validate_optional_fill_stroke(node, pointer)
+    if "cornerRadii" in node:
+        validate_corner_radii(node["cornerRadii"], pointer + "/cornerRadii")
+
+
+def validate_ellipse_members(node: dict[str, Any], pointer: str) -> None:
+    validate_optional_fill_stroke(node, pointer)
+
+
+def validate_line_members(node: dict[str, Any], pointer: str) -> None:
+    start = validate_point_mm(require_member(node, "start", pointer + "/start"), pointer + "/start")
+    end = validate_point_mm(require_member(node, "end", pointer + "/end"), pointer + "/end")
+    if start[0] == end[0] and start[1] == end[1]:
+        raise semantic_rejection("DESIGN_VALUE_INVALID", pointer + "/end")
+    validate_stroke_mm(require_member(node, "stroke", pointer + "/stroke"), pointer + "/stroke")
+
+
+def validate_polygon_members(node: dict[str, Any], pointer: str) -> None:
+    points = validate_point_array(node, pointer, "points", 3)
+    if points[0][0] == points[-1][0] and points[0][1] == points[-1][1]:
+        raise semantic_rejection(
+            "DESIGN_VALUE_INVALID", pointer + "/points/" + str(len(points) - 1)
+        )
+    collinear = True
+    with localcontext() as context:
+        context.prec = 100
+        for index in range(2, len(points)):
+            cross = (points[1][0] - points[0][0]) * (points[index][1] - points[0][1]) - (
+                points[1][1] - points[0][1]
+            ) * (points[index][0] - points[0][0])
+            if cross != 0:
+                collinear = False
+                break
+    if collinear:
+        raise semantic_rejection("DESIGN_VALUE_INVALID", pointer + "/points")
+    validate_optional_fill_stroke(node, pointer)
+
+
+def validate_polyline_members(node: dict[str, Any], pointer: str) -> None:
+    validate_point_array(node, pointer, "points", 2)
+    validate_stroke_mm(require_member(node, "stroke", pointer + "/stroke"), pointer + "/stroke")
+
+
+def validate_path_members(node: dict[str, Any], pointer: str) -> None:
+    commands = require_array(
+        require_member(node, "commands", pointer + "/commands"), pointer + "/commands"
+    )
+    if not commands:
+        raise semantic_rejection("DESIGN_VALUE_INVALID", pointer + "/commands")
+    has_drawing = False
+    for index, item in enumerate(commands):
+        command_pointer = pointer + "/commands/" + str(index)
+        command = require_object(item, command_pointer)
+        type_token = require_string(
+            require_member(command, "type", command_pointer + "/type"), command_pointer + "/type"
+        )
+        if type_token == "MOVE_TO":
+            reject_unknown(command, MOVE_TO_COMMAND_MEMBERS, command_pointer)
+            any_decimal_member(command, "xMm", command_pointer + "/xMm")
+            any_decimal_member(command, "yMm", command_pointer + "/yMm")
+        elif type_token == "LINE_TO":
+            reject_unknown(command, LINE_TO_COMMAND_MEMBERS, command_pointer)
+            any_decimal_member(command, "xMm", command_pointer + "/xMm")
+            any_decimal_member(command, "yMm", command_pointer + "/yMm")
+            has_drawing = True
+        elif type_token == "QUAD_TO":
+            reject_unknown(command, QUAD_TO_COMMAND_MEMBERS, command_pointer)
+            any_decimal_member(command, "cxMm", command_pointer + "/cxMm")
+            any_decimal_member(command, "cyMm", command_pointer + "/cyMm")
+            any_decimal_member(command, "xMm", command_pointer + "/xMm")
+            any_decimal_member(command, "yMm", command_pointer + "/yMm")
+            has_drawing = True
+        elif type_token == "CUBIC_TO":
+            reject_unknown(command, CUBIC_TO_COMMAND_MEMBERS, command_pointer)
+            any_decimal_member(command, "c1xMm", command_pointer + "/c1xMm")
+            any_decimal_member(command, "c1yMm", command_pointer + "/c1yMm")
+            any_decimal_member(command, "c2xMm", command_pointer + "/c2xMm")
+            any_decimal_member(command, "c2yMm", command_pointer + "/c2yMm")
+            any_decimal_member(command, "xMm", command_pointer + "/xMm")
+            any_decimal_member(command, "yMm", command_pointer + "/yMm")
+            has_drawing = True
+        elif type_token == "CLOSE":
+            reject_unknown(command, CLOSE_COMMAND_MEMBERS, command_pointer)
+            if index == 0:
+                raise semantic_rejection("DESIGN_VALUE_INVALID", command_pointer + "/type")
+            if index + 1 < len(commands) and peek_command_type(commands[index + 1]) != "MOVE_TO":
+                raise semantic_rejection(
+                    "DESIGN_VALUE_INVALID", pointer + "/commands/" + str(index + 1) + "/type"
+                )
+        else:
+            raise semantic_rejection("DESIGN_VALUE_INVALID", command_pointer + "/type")
+    first_type = peek_command_type(commands[0])
+    if first_type != "MOVE_TO":
+        raise semantic_rejection("DESIGN_VALUE_INVALID", pointer + "/commands/0/type")
+    if not has_drawing:
+        raise semantic_rejection("DESIGN_VALUE_INVALID", pointer + "/commands")
+    validate_optional_fill_stroke(node, pointer)
+    if "fillRule" in node:
+        enum_member(node, "fillRule", FILL_RULE_TOKENS, pointer + "/fillRule")
+
+
+def peek_command_type(command: Any) -> str | None:
+    if isinstance(command, dict) and isinstance(command.get("type"), str):
+        return command["type"]
+    return None
+
+
+def validate_qrcode_members(node: dict[str, Any], pointer: str) -> None:
+    content = require_string(require_member(node, "content", pointer + "/content"), pointer + "/content")
+    if not content:
+        raise semantic_rejection("DESIGN_VALUE_INVALID", pointer + "/content")
+    if "errorCorrectionLevel" in node:
+        enum_member(node, "errorCorrectionLevel", QR_ERROR_CORRECTION_TOKENS, pointer + "/errorCorrectionLevel")
+    if "foregroundColor" in node:
+        color_member(node, "foregroundColor", pointer + "/foregroundColor")
+    if "backgroundColor" in node:
+        color_member(node, "backgroundColor", pointer + "/backgroundColor")
+
+
+def validate_barcode_members(node: dict[str, Any], pointer: str) -> None:
+    format_token = require_string(require_member(node, "format", pointer + "/format"), pointer + "/format")
+    if format_token not in BARCODE_FORMAT_TOKENS:
+        raise semantic_rejection("DESIGN_VALUE_INVALID", pointer + "/format")
+    value = require_string(require_member(node, "value", pointer + "/value"), pointer + "/value")
+    if format_token == "CODE_128":
+        if not value or len(value) > 128:
+            raise semantic_rejection("DESIGN_VALUE_INVALID", pointer + "/value")
+        for character in value:
+            if ord(character) < 0x20 or ord(character) > 0x7E:
+                raise semantic_rejection("DESIGN_VALUE_INVALID", pointer + "/value")
+    else:
+        expected_length = {"EAN_8": 8, "EAN_13": 13, "UPC_A": 12}[format_token]
+        if len(value) != expected_length or not value.isdigit():
+            raise semantic_rejection("DESIGN_VALUE_INVALID", pointer + "/value")
+        total = 0
+        for at in range(expected_length - 1):
+            digit = int(value[at])
+            odd_position = at % 2 == 0
+            weight_three = (not odd_position) if format_token == "EAN_13" else odd_position
+            total += digit * (3 if weight_three else 1)
+        check = (10 - total % 10) % 10
+        if int(value[expected_length - 1]) != check:
+            raise semantic_rejection("DESIGN_VALUE_INVALID", pointer + "/value")
+    if "foregroundColor" in node:
+        color_member(node, "foregroundColor", pointer + "/foregroundColor")
+    if "backgroundColor" in node:
+        color_member(node, "backgroundColor", pointer + "/backgroundColor")
+
+
+def validate_point_array(
+    node: dict[str, Any], pointer: str, name: str, minimum: int
+) -> list[tuple[Decimal, Decimal]]:
+    points = require_array(require_member(node, name, pointer + "/" + name), pointer + "/" + name)
+    if len(points) < minimum:
+        raise semantic_rejection("DESIGN_VALUE_INVALID", pointer + "/" + name)
+    parsed: list[tuple[Decimal, Decimal]] = []
+    for index, item in enumerate(points):
+        point_pointer = pointer + "/" + name + "/" + str(index)
+        parsed_point = validate_point_mm(item, point_pointer)
+        if index > 0:
+            previous = parsed[index - 1]
+            if previous[0] == parsed_point[0] and previous[1] == parsed_point[1]:
+                raise semantic_rejection("DESIGN_VALUE_INVALID", point_pointer)
+        parsed.append(parsed_point)
+    return parsed
+
+
+def validate_point_mm(value: Any, pointer: str) -> tuple[Decimal, Decimal]:
+    point = require_object(value, pointer)
+    reject_unknown(point, POINT_MM_MEMBERS, pointer)
+    x = decimal_value(require_member(point, "xMm", pointer + "/xMm"), pointer + "/xMm")
+    y = decimal_value(require_member(point, "yMm", pointer + "/yMm"), pointer + "/yMm")
+    return x, y
+
+
+def validate_asset_ref(value: Any, pointer: str) -> None:
+    ref = require_object(value, pointer)
+    reject_unknown(ref, ASSET_REF_MEMBERS, pointer)
+    asset_id = require_string(require_member(ref, "assetId", pointer + "/assetId"), pointer + "/assetId")
+    if UUID_V4.fullmatch(asset_id) is None:
+        raise semantic_rejection("DESIGN_VALUE_INVALID", pointer + "/assetId")
+
+
+def validate_optional_fill_stroke(node: dict[str, Any], pointer: str) -> None:
+    if "fill" in node:
+        validate_fill(node["fill"], pointer + "/fill")
+    if "stroke" in node:
+        validate_stroke_mm(node["stroke"], pointer + "/stroke")
+    if "fill" not in node and "stroke" not in node:
+        raise semantic_rejection("DESIGN_VALUE_INVALID", pointer + "/fill")
+
+
 def validate_and_normalize(parsed: Any) -> dict[str, Any]:
     reject_null(parsed)
     root = require_object(parsed, "")
@@ -1951,13 +2385,13 @@ def main() -> int:
 
     vector_bytes, manifest = load_json(args.vectors)
     _, primary = load_json(args.primary_report)
-    if manifest["vectorVersion"] != "renderweave-template-canonical-kernel-v1/4":
+    if manifest["vectorVersion"] != "renderweave-template-canonical-kernel-v1/5":
         raise AssertionError("Unexpected vector version")
     if manifest["authorityContext"]["staticSchemaProfile"] != "system-empty@v1":
         raise AssertionError("Unexpected external StaticSchema context")
     if manifest["authorityContext"]["profileAvailability"] != "NOT_REGISTERED":
         raise AssertionError("Partial DesignDSL Profile must remain unavailable")
-    if len(manifest["cases"]) != 116:
+    if len(manifest["cases"]) != 152:
         raise AssertionError("Vector case count drift")
 
     results = [replay_case(vector) for vector in manifest["cases"]]

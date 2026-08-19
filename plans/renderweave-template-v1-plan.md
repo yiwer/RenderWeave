@@ -1,8 +1,8 @@
 # RenderWeave Template v1 Implementation Plan
 
-- 状态：`in_progress`；TV1-T01/T02/T03/T04/T05/T06/T07/T08/T09/T10/T10b/T11/T12a/T14/T15/T17=`automated_verified`
-  （T09 另含人工 J1），TV1-T12b/T13/T14b/T16/T18=`open`（T14b/T16/T18 为当前 unblocked frontier，
-  single-writer 下一轮只 claim 其一）
+- 状态：`in_progress`；TV1-T01/T02/T03/T04/T05/T06/T07/T08/T09/T10/T10b/T11/T12a/T14/T14b/T15/T17=`automated_verified`
+  （T09 另含人工 J1），TV1-T12b/T13/T16/T18=`open`（T16/T18 为当前 unblocked frontier，single-writer
+  下一轮只 claim 其一）
 - 日期：2026-08-19
 - Approved delta：[`specs/changes/20260817-template-v1-implementation-authority.md`](../specs/changes/20260817-template-v1-implementation-authority.md)
 - Frozen checkpoint：`0b485f4a13de9d754a81d07f464730776e13c14b`
@@ -120,7 +120,7 @@ flowchart LR
 | 12b | task | `open` | 05, 11, Template 依赖投影票 | delete/restore + AssetReferencePort/确认 token 编排 |
 | 13 | task | `open` | 05, 07, 08, 11 | AssetResolver/Renderer-only lease 纵切 |
 | 14 | task | `resolved` | 03 | NodeContractCatalog 与 Node/Property Identity 原子（容器增量：canvas/group/frame/stack/grid 递归 admission/canonical，manifest v2 57 vectors） |
-| 14b | task | `open` | 03, 14 | visual leaf Node kinds（text/image/rect/ellipse/line/polygon/polyline/path/qrCode/barcode）与 BindingPolicyCatalog 基础登记（T14 第二增量拆分） |
+| 14b | task | `resolved` | 03, 14 | visual leaf Node kinds（text/image/rect/ellipse/line/polygon/polyline/path/qrCode/barcode）与 BindingPolicyCatalog 基础登记，manifest v5 152 vectors |
 | 15 | task | `resolved` | 03, 14 | Definition/ValueSource 原子（custom/mapping/expression + lexical domains，manifest v3 94 vectors） |
 | 16 | task | `open` | 03, 14 | Binding 与 BindingPolicyCatalog 原子 |
 | 17 | task | `resolved` | 03, 14, 15 | Repeat 原子（items/PACK/packing/loopId，manifest v4 116 vectors） |
@@ -133,14 +133,14 @@ map 的 `Not yet specified`，不为排满计划提前发明接口、migration �
 
 TV1-T07/T08/T09 已 resolve（ADR-0044/0045 与 Editor 状态原型，T09 含人工 J1）；TV1-T14 容器增量已
 resolve（NodeContractCatalog + 递归容器 admission/canonical，manifest v2 57 vectors，Java/Python
-57/57，Profile 仍 NOT_REGISTERED），visual leaf 增量拆分为 TV1-T14b（open）；TV1-T15 Definition/
-ValueSource 原子已 resolve（manifest v3 94 vectors，Java/Python 94/94）；TV1-T17 Repeat 原子已
-resolve（PACK placement + loopId namespace + RepeatPackingSpec，manifest v4 116 vectors，Java/Python
-116/116，Profile 仍 NOT_REGISTERED）；DesignDSL full-Profile 拆分已登记（T14b/T16 → T18 → T19 →
-T20 依赖投影），TV1-T14b/T16/T18 是当前 unblocked frontier，single-writer 下一轮只 claim 其一；
-TV1-T12b 以 T20 为 blocker；TV1-T13 以首个 Rendering 实现票与 T08 为前置。single-writer 不顺带
-claim 或预建 delete/restore/Resolver/Rust wire/Editor 产品 route；Editor E1–E9 切片在各自前置满足后
-另行登记。
+57/57，Profile 仍 NOT_REGISTERED）；TV1-T14b visual leaf kinds 与 BindingPolicyCatalog 基础登记已
+resolve（manifest v5 152 vectors，Java/Python 152/152，Profile 仍 NOT_REGISTERED）；TV1-T15
+Definition/ValueSource 原子已 resolve（manifest v3 94 vectors）；TV1-T17 Repeat 原子已 resolve（PACK
+placement + loopId namespace + RepeatPackingSpec，manifest v4 116 vectors）；DesignDSL full-Profile
+拆分已登记（T16 → T18 → T19 → T20 依赖投影），TV1-T16/T18 是当前 unblocked frontier，single-writer
+下一轮只 claim 其一；TV1-T12b 以 T20 为 blocker；TV1-T13 以首个 Rendering 实现票与 T08 为前置。
+single-writer 不顺带 claim 或预建 delete/restore/Resolver/Rust wire/Editor 产品 route；Editor E1–E9
+切片在各自前置满足后另行登记。
 
 ## 5. TV1-T01 执行卡
 
@@ -255,9 +255,9 @@ claim 或预建 delete/restore/Resolver/Rust wire/Editor 产品 route；Editor E
 `template` gate 顺序固定为 repository diff → DesignDSL kernel Java primary/Python independent exact-vector replay
 → 临时副本 Editor generator/independent/A2 → registry target refresh/Node primary/Python independent/A2 → 全树
 byte comparison → frozen counts/readiness assertions。任何命令失败或相同输入生成 diff 都失败；仓库 authority
-不被重写。kernel report 必须保持 116/116（vectorVersion `renderweave-template-canonical-kernel-v1/4`，
-容器 Node contract、Definition/ValueSource 与 Repeat/PACK 已 admission）、Profile=`NOT_REGISTERED`；
-static replay 的冻结 counts 不变。
+不被重写。kernel report 必须保持 152/152（vectorVersion `renderweave-template-canonical-kernel-v1/5`，
+容器 Node contract、Definition/ValueSource、Repeat/PACK 与 visual leaf kinds 已 admission）、
+Profile=`NOT_REGISTERED`；static replay 的冻结 counts 不变。
 
 后续票据遵守 focused → affected → Phase → Goal。新增 Maven module、root POM、OpenAPI、lockfile、migration、
 process protocol 或 `full` 组成变化属于共享面，必须提前扩大回归。自动 green 只把对应任务推进到

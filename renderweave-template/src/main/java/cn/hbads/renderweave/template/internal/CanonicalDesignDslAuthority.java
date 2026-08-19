@@ -829,7 +829,8 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
         String ownDirection = null;
         switch (kind) {
             case FRAME, STACK, GRID -> validateAppearanceMembers(node, pointer);
-            case CANVAS, GROUP, REPEAT -> {
+            case CANVAS, GROUP, REPEAT, TEXT, IMAGE, RECT, ELLIPSE, LINE, POLYGON, POLYLINE,
+                    PATH, QRCODE, BARCODE -> {
             }
         }
         switch (kind) {
@@ -837,18 +838,31 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
             case GRID -> validateGridMembers(node, pointer);
             case REPEAT -> validateRepeatMembers(node, pointer, seenLoopIds,
                     definitionsOutputTypes, loopIds);
-            case CANVAS, FRAME, GROUP -> {
+            case TEXT -> validateTextMembers(node, pointer);
+            case IMAGE -> validateImageMembers(node, pointer);
+            case RECT -> validateRectMembers(node, pointer);
+            case ELLIPSE -> validateEllipseMembers(node, pointer);
+            case LINE -> validateLineMembers(node, pointer);
+            case POLYGON -> validatePolygonMembers(node, pointer);
+            case POLYLINE -> validatePolylineMembers(node, pointer);
+            case PATH -> validatePathMembers(node, pointer);
+            case QRCODE -> validateQrCodeMembers(node, pointer);
+            case BARCODE -> validateBarcodeMembers(node, pointer);
+            case CANVAS, GROUP, FRAME -> {
             }
         }
-        var children = array(required(node, "children", pointer + "/children"), pointer + "/children");
-        if (kind == NodeContractCatalog.NodeKind.REPEAT && children.items().isEmpty()) {
-            throw failure(FailureCode.DESIGN_VALUE_INVALID, pointer + "/children");
+        if (NodeContractCatalog.allowsChildren(kind)) {
+            var children = array(required(node, "children", pointer + "/children"),
+                    pointer + "/children");
+            if (kind == NodeContractCatalog.NodeKind.REPEAT && children.items().isEmpty()) {
+                throw failure(FailureCode.DESIGN_VALUE_INVALID, pointer + "/children");
+            }
+            normalized.put(
+                    "children",
+                    validateChildren(children, pointer + "/children", kind, ownDirection,
+                            seenNodeIds, seenLoopIds, definitionsOutputTypes, loopIds)
+            );
         }
-        normalized.put(
-                "children",
-                validateChildren(children, pointer + "/children", kind, ownDirection,
-                        seenNodeIds, seenLoopIds, definitionsOutputTypes, loopIds)
-        );
         return new JsonValue.ObjectValue(normalized);
     }
 
@@ -984,17 +998,30 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
 
     private Set<String> allowedMembers(NodeContractCatalog.NodeKind kind) {
         var members = new java.util.HashSet<>(NodeContractCatalog.COMMON_NODE_MEMBERS);
-        members.addAll(NodeContractCatalog.CONTAINER_MEMBERS);
+        if (NodeContractCatalog.allowsChildren(kind)) {
+            members.addAll(NodeContractCatalog.CONTAINER_MEMBERS);
+        }
         switch (kind) {
             case FRAME, STACK, GRID -> members.addAll(NodeContractCatalog.APPEARANCE_MEMBERS);
-            case CANVAS, GROUP, REPEAT -> {
+            case CANVAS, GROUP, REPEAT, TEXT, IMAGE, RECT, ELLIPSE, LINE, POLYGON, POLYLINE,
+                    PATH, QRCODE, BARCODE -> {
             }
         }
         switch (kind) {
             case STACK -> members.addAll(NodeContractCatalog.STACK_MEMBERS);
             case GRID -> members.addAll(NodeContractCatalog.GRID_MEMBERS);
             case REPEAT -> members.addAll(NodeContractCatalog.REPEAT_MEMBERS);
-            case CANVAS, FRAME, GROUP -> {
+            case TEXT -> members.addAll(NodeContractCatalog.TEXT_MEMBERS);
+            case IMAGE -> members.addAll(NodeContractCatalog.IMAGE_MEMBERS);
+            case RECT -> members.addAll(NodeContractCatalog.RECT_MEMBERS);
+            case ELLIPSE -> members.addAll(NodeContractCatalog.ELLIPSE_MEMBERS);
+            case LINE -> members.addAll(NodeContractCatalog.LINE_MEMBERS);
+            case POLYGON -> members.addAll(NodeContractCatalog.POLYGON_MEMBERS);
+            case POLYLINE -> members.addAll(NodeContractCatalog.POLYLINE_MEMBERS);
+            case PATH -> members.addAll(NodeContractCatalog.PATH_MEMBERS);
+            case QRCODE -> members.addAll(NodeContractCatalog.QRCODE_MEMBERS);
+            case BARCODE -> members.addAll(NodeContractCatalog.BARCODE_MEMBERS);
+            case CANVAS, GROUP, FRAME -> {
             }
         }
         return Set.copyOf(members);
@@ -1130,6 +1157,458 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
         }
     }
 
+    // --- Visual leaf members (ticket 09 §6-§7) -----------------------------------
+
+    private void validateTextMembers(
+            JsonValue.ObjectValue node,
+            String pointer
+    ) throws DesignDslFailureException {
+        var runs = array(required(node, "runs", pointer + "/runs"), pointer + "/runs");
+        if (runs.items().isEmpty()) {
+            throw failure(FailureCode.DESIGN_VALUE_INVALID, pointer + "/runs");
+        }
+        for (int index = 0; index < runs.items().size(); index++) {
+            var runPointer = pointer + "/runs/" + index;
+            var run = object(runs.items().get(index), runPointer);
+            rejectUnknown(run, NodeContractCatalog.RUN_MEMBERS, runPointer);
+            var text = string(required(run, "text", runPointer + "/text"), runPointer + "/text");
+            for (int at = 0; at < text.length(); at++) {
+                if (text.charAt(at) < 0x20 && text.charAt(at) != '\n') {
+                    throw failure(FailureCode.DESIGN_VALUE_INVALID, runPointer + "/text");
+                }
+            }
+            validateAssetRef(required(run, "fontRef", runPointer + "/fontRef"),
+                    runPointer + "/fontRef");
+            positiveDecimal(run, "fontSizePt", runPointer + "/fontSizePt");
+            colorMember(run, "color", runPointer + "/color");
+            enumMember(run, "decoration", NodeContractCatalog.DECORATION_TOKENS,
+                    runPointer + "/decoration");
+            var hasPt = run.members().containsKey("letterSpacingPt");
+            var hasFactor = run.members().containsKey("letterSpacingFactor");
+            if (!hasPt && !hasFactor) {
+                throw failure(FailureCode.DESIGN_STRUCTURE_INVALID,
+                        runPointer + "/letterSpacingPt");
+            }
+            if (hasPt && hasFactor) {
+                throw failure(FailureCode.DESIGN_VALUE_INVALID,
+                        runPointer + "/letterSpacingFactor");
+            }
+            if (hasPt) {
+                decimalMember(run, "letterSpacingPt", runPointer + "/letterSpacingPt");
+            } else {
+                decimalMember(run, "letterSpacingFactor", runPointer + "/letterSpacingFactor");
+            }
+        }
+        if (node.members().containsKey("writingMode")) {
+            enumMember(node, "writingMode", NodeContractCatalog.WRITING_MODE_TOKENS,
+                    pointer + "/writingMode");
+        }
+        if (node.members().containsKey("horizontalAlign")) {
+            enumMember(node, "horizontalAlign", NodeContractCatalog.HORIZONTAL_ALIGN_TOKENS,
+                    pointer + "/horizontalAlign");
+        }
+        if (node.members().containsKey("verticalAlign")) {
+            enumMember(node, "verticalAlign", NodeContractCatalog.VERTICAL_ALIGN_TOKENS,
+                    pointer + "/verticalAlign");
+        }
+        if (node.members().containsKey("lineBreak")) {
+            enumMember(node, "lineBreak", NodeContractCatalog.LINE_BREAK_TOKENS,
+                    pointer + "/lineBreak");
+        }
+        var overflow = "CLIP";
+        if (node.members().containsKey("overflow")) {
+            enumMember(node, "overflow", NodeContractCatalog.TEXT_OVERFLOW_TOKENS,
+                    pointer + "/overflow");
+            overflow = string(node.members().get("overflow"), pointer + "/overflow");
+        }
+        if (node.members().containsKey("lineHeight")) {
+            validateLineHeight(node.members().get("lineHeight"), pointer + "/lineHeight");
+        }
+        if (node.members().containsKey("maxLines")) {
+            positiveIntegerMember(node, "maxLines", pointer + "/maxLines");
+            if ("VISIBLE".equals(overflow)) {
+                throw failure(FailureCode.DESIGN_VALUE_INVALID, pointer + "/maxLines");
+            }
+        }
+        if (node.members().containsKey("padding")) {
+            validatePadding(node.members().get("padding"), pointer + "/padding");
+        }
+        if (node.members().containsKey("stroke")) {
+            validateStrokePt(node.members().get("stroke"), pointer + "/stroke");
+        }
+        if (node.members().containsKey("fitMode")) {
+            enumMember(node, "fitMode", NodeContractCatalog.FIT_MODE_TOKENS, pointer + "/fitMode");
+            var fitMode = string(node.members().get("fitMode"), pointer + "/fitMode");
+            if ("SHRINK_TO_FIT".equals(fitMode)) {
+                var minScale = required(node, "minScale", pointer + "/minScale");
+                rangedDecimalValue(minScale, pointer + "/minScale", 0, 1);
+                if (decimalValue(minScale, pointer + "/minScale").signum() == 0) {
+                    throw failure(FailureCode.DESIGN_VALUE_INVALID, pointer + "/minScale");
+                }
+            } else if (node.members().containsKey("minScale")) {
+                throw failure(FailureCode.DESIGN_VALUE_INVALID, pointer + "/minScale");
+            }
+        } else if (node.members().containsKey("minScale")) {
+            throw failure(FailureCode.DESIGN_VALUE_INVALID, pointer + "/minScale");
+        }
+    }
+
+    private void validateLineHeight(JsonValue value, String pointer)
+            throws DesignDslFailureException {
+        var lineHeight = object(value, pointer);
+        rejectUnknown(lineHeight, NodeContractCatalog.LINE_HEIGHT_MEMBERS, pointer);
+        var type = string(required(lineHeight, "type", pointer + "/type"), pointer + "/type");
+        switch (type) {
+            case "FACTOR" -> {
+                if (lineHeight.members().containsKey("valuePt")) {
+                    throw failure(FailureCode.DESIGN_VALUE_INVALID, pointer + "/valuePt");
+                }
+                positiveDecimal(lineHeight, "factor", pointer + "/factor");
+            }
+            case "FIXED" -> {
+                if (lineHeight.members().containsKey("factor")) {
+                    throw failure(FailureCode.DESIGN_VALUE_INVALID, pointer + "/factor");
+                }
+                positiveDecimal(lineHeight, "valuePt", pointer + "/valuePt");
+            }
+            default -> throw failure(FailureCode.DESIGN_VALUE_INVALID, pointer + "/type");
+        }
+    }
+
+    private void validateStrokePt(JsonValue value, String pointer)
+            throws DesignDslFailureException {
+        var stroke = object(value, pointer);
+        rejectUnknown(stroke, NodeContractCatalog.STROKE_PT_MEMBERS, pointer);
+        colorMember(stroke, "color", pointer + "/color");
+        positiveDecimal(stroke, "widthPt", pointer + "/widthPt");
+        enumMember(stroke, "cap", NodeContractCatalog.STROKE_CAP_TOKENS, pointer + "/cap");
+        enumMember(stroke, "join", NodeContractCatalog.STROKE_JOIN_TOKENS, pointer + "/join");
+    }
+
+    private void validateImageMembers(
+            JsonValue.ObjectValue node,
+            String pointer
+    ) throws DesignDslFailureException {
+        validateAssetRef(required(node, "imageRef", pointer + "/imageRef"), pointer + "/imageRef");
+        if (node.members().containsKey("fit")) {
+            enumMember(node, "fit", NodeContractCatalog.IMAGE_FIT_TOKENS, pointer + "/fit");
+        }
+        if (node.members().containsKey("sampling")) {
+            enumMember(node, "sampling", NodeContractCatalog.IMAGE_SAMPLING_TOKENS,
+                    pointer + "/sampling");
+        }
+    }
+
+    private void validateRectMembers(
+            JsonValue.ObjectValue node,
+            String pointer
+    ) throws DesignDslFailureException {
+        if (node.members().containsKey("fill")) {
+            validateFill(node.members().get("fill"), pointer + "/fill");
+        }
+        if (node.members().containsKey("stroke")) {
+            validateStrokeMm(node.members().get("stroke"), pointer + "/stroke");
+        }
+        if (node.members().containsKey("cornerRadii")) {
+            validateCornerRadii(node.members().get("cornerRadii"), pointer + "/cornerRadii");
+        }
+        if (!node.members().containsKey("fill") && !node.members().containsKey("stroke")) {
+            throw failure(FailureCode.DESIGN_VALUE_INVALID, pointer + "/fill");
+        }
+    }
+
+    private void validateEllipseMembers(
+            JsonValue.ObjectValue node,
+            String pointer
+    ) throws DesignDslFailureException {
+        if (node.members().containsKey("fill")) {
+            validateFill(node.members().get("fill"), pointer + "/fill");
+        }
+        if (node.members().containsKey("stroke")) {
+            validateStrokeMm(node.members().get("stroke"), pointer + "/stroke");
+        }
+        if (!node.members().containsKey("fill") && !node.members().containsKey("stroke")) {
+            throw failure(FailureCode.DESIGN_VALUE_INVALID, pointer + "/fill");
+        }
+    }
+
+    private void validateLineMembers(
+            JsonValue.ObjectValue node,
+            String pointer
+    ) throws DesignDslFailureException {
+        var start = validatePointMm(required(node, "start", pointer + "/start"),
+                pointer + "/start");
+        var end = validatePointMm(required(node, "end", pointer + "/end"), pointer + "/end");
+        if (start[0].compareTo(end[0]) == 0 && start[1].compareTo(end[1]) == 0) {
+            throw failure(FailureCode.DESIGN_VALUE_INVALID, pointer + "/end");
+        }
+        validateStrokeMm(required(node, "stroke", pointer + "/stroke"), pointer + "/stroke");
+    }
+
+    private void validatePolygonMembers(
+            JsonValue.ObjectValue node,
+            String pointer
+    ) throws DesignDslFailureException {
+        var points = validatePointArray(node, pointer, "points", 3);
+        if (points.get(0)[0].compareTo(points.get(points.size() - 1)[0]) == 0
+                && points.get(0)[1].compareTo(points.get(points.size() - 1)[1]) == 0) {
+            throw failure(FailureCode.DESIGN_VALUE_INVALID, pointer + "/points/"
+                    + (points.size() - 1));
+        }
+        boolean collinear = true;
+        for (int index = 2; index < points.size(); index++) {
+            var cross = points.get(1)[0].subtract(points.get(0)[0])
+                    .multiply(points.get(index)[1].subtract(points.get(0)[1]))
+                    .subtract(points.get(1)[1].subtract(points.get(0)[1])
+                            .multiply(points.get(index)[0].subtract(points.get(0)[0])));
+            if (cross.signum() != 0) {
+                collinear = false;
+                break;
+            }
+        }
+        if (collinear) {
+            throw failure(FailureCode.DESIGN_VALUE_INVALID, pointer + "/points");
+        }
+        validateOptionalFillStroke(node, pointer);
+    }
+
+    private void validatePolylineMembers(
+            JsonValue.ObjectValue node,
+            String pointer
+    ) throws DesignDslFailureException {
+        validatePointArray(node, pointer, "points", 2);
+        validateStrokeMm(required(node, "stroke", pointer + "/stroke"), pointer + "/stroke");
+    }
+
+    private void validatePathMembers(
+            JsonValue.ObjectValue node,
+            String pointer
+    ) throws DesignDslFailureException {
+        var commands = array(required(node, "commands", pointer + "/commands"),
+                pointer + "/commands");
+        if (commands.items().isEmpty()) {
+            throw failure(FailureCode.DESIGN_VALUE_INVALID, pointer + "/commands");
+        }
+        boolean hasDrawing = false;
+        for (int index = 0; index < commands.items().size(); index++) {
+            var commandPointer = pointer + "/commands/" + index;
+            var command = object(commands.items().get(index), commandPointer);
+            var type = string(required(command, "type", commandPointer + "/type"),
+                    commandPointer + "/type");
+            switch (type) {
+                case "MOVE_TO" -> {
+                    rejectUnknown(command, NodeContractCatalog.MOVE_TO_COMMAND_MEMBERS,
+                            commandPointer);
+                    decimalMember(command, "xMm", commandPointer + "/xMm");
+                    decimalMember(command, "yMm", commandPointer + "/yMm");
+                }
+                case "LINE_TO" -> {
+                    rejectUnknown(command, NodeContractCatalog.LINE_TO_COMMAND_MEMBERS,
+                            commandPointer);
+                    decimalMember(command, "xMm", commandPointer + "/xMm");
+                    decimalMember(command, "yMm", commandPointer + "/yMm");
+                    hasDrawing = true;
+                }
+                case "QUAD_TO" -> {
+                    rejectUnknown(command, NodeContractCatalog.QUAD_TO_COMMAND_MEMBERS,
+                            commandPointer);
+                    decimalMember(command, "cxMm", commandPointer + "/cxMm");
+                    decimalMember(command, "cyMm", commandPointer + "/cyMm");
+                    decimalMember(command, "xMm", commandPointer + "/xMm");
+                    decimalMember(command, "yMm", commandPointer + "/yMm");
+                    hasDrawing = true;
+                }
+                case "CUBIC_TO" -> {
+                    rejectUnknown(command, NodeContractCatalog.CUBIC_TO_COMMAND_MEMBERS,
+                            commandPointer);
+                    decimalMember(command, "c1xMm", commandPointer + "/c1xMm");
+                    decimalMember(command, "c1yMm", commandPointer + "/c1yMm");
+                    decimalMember(command, "c2xMm", commandPointer + "/c2xMm");
+                    decimalMember(command, "c2yMm", commandPointer + "/c2yMm");
+                    decimalMember(command, "xMm", commandPointer + "/xMm");
+                    decimalMember(command, "yMm", commandPointer + "/yMm");
+                    hasDrawing = true;
+                }
+                case "CLOSE" -> {
+                    rejectUnknown(command, NodeContractCatalog.CLOSE_COMMAND_MEMBERS,
+                            commandPointer);
+                    if (index == 0) {
+                        throw failure(FailureCode.DESIGN_VALUE_INVALID, commandPointer + "/type");
+                    }
+                    if (index + 1 < commands.items().size()
+                            && !"MOVE_TO".equals(peekCommandType(commands.items().get(index + 1)))) {
+                        throw failure(FailureCode.DESIGN_VALUE_INVALID,
+                                pointer + "/commands/" + (index + 1) + "/type");
+                    }
+                }
+                default -> throw failure(FailureCode.DESIGN_VALUE_INVALID, commandPointer + "/type");
+            }
+        }
+        var firstType = commandType(commands.items().get(0), pointer + "/commands/0");
+        if (!"MOVE_TO".equals(firstType)) {
+            throw failure(FailureCode.DESIGN_VALUE_INVALID, pointer + "/commands/0/type");
+        }
+        if (!hasDrawing) {
+            throw failure(FailureCode.DESIGN_VALUE_INVALID, pointer + "/commands");
+        }
+        validateOptionalFillStroke(node, pointer);
+        if (node.members().containsKey("fillRule")) {
+            enumMember(node, "fillRule", NodeContractCatalog.FILL_RULE_TOKENS, pointer + "/fillRule");
+        }
+    }
+
+    private String commandType(JsonValue command, String pointer)
+            throws DesignDslFailureException {
+        return string(required(object(command, pointer), "type", pointer + "/type"),
+                pointer + "/type");
+    }
+
+    /** Defensive peek at the next command's type; never rejects. */
+    private String peekCommandType(JsonValue command) {
+        if (command instanceof JsonValue.ObjectValue object
+                && object.members().get("type") instanceof JsonValue.StringValue type) {
+            return type.value();
+        }
+        return null;
+    }
+
+    private void validateQrCodeMembers(
+            JsonValue.ObjectValue node,
+            String pointer
+    ) throws DesignDslFailureException {
+        var content = string(required(node, "content", pointer + "/content"),
+                pointer + "/content");
+        if (content.isEmpty()) {
+            throw failure(FailureCode.DESIGN_VALUE_INVALID, pointer + "/content");
+        }
+        if (node.members().containsKey("errorCorrectionLevel")) {
+            enumMember(node, "errorCorrectionLevel",
+                    NodeContractCatalog.QR_ERROR_CORRECTION_TOKENS,
+                    pointer + "/errorCorrectionLevel");
+        }
+        if (node.members().containsKey("foregroundColor")) {
+            colorMember(node, "foregroundColor", pointer + "/foregroundColor");
+        }
+        if (node.members().containsKey("backgroundColor")) {
+            colorMember(node, "backgroundColor", pointer + "/backgroundColor");
+        }
+    }
+
+    private void validateBarcodeMembers(
+            JsonValue.ObjectValue node,
+            String pointer
+    ) throws DesignDslFailureException {
+        var format = string(required(node, "format", pointer + "/format"), pointer + "/format");
+        if (!NodeContractCatalog.BARCODE_FORMAT_TOKENS.contains(format)) {
+            throw failure(FailureCode.DESIGN_VALUE_INVALID, pointer + "/format");
+        }
+        var value = string(required(node, "value", pointer + "/value"), pointer + "/value");
+        if ("CODE_128".equals(format)) {
+            if (value.isEmpty() || value.length() > 128) {
+                throw failure(FailureCode.DESIGN_VALUE_INVALID, pointer + "/value");
+            }
+            for (int at = 0; at < value.length(); at++) {
+                char current = value.charAt(at);
+                if (current < 0x20 || current > 0x7e) {
+                    throw failure(FailureCode.DESIGN_VALUE_INVALID, pointer + "/value");
+                }
+            }
+        } else {
+            var expectedLength = switch (format) {
+                case "EAN_8" -> 8;
+                case "EAN_13" -> 13;
+                case "UPC_A" -> 12;
+                default -> throw new IllegalStateException("unreachable format");
+            };
+            if (value.length() != expectedLength || !value.chars().allMatch(
+                    Character::isDigit)) {
+                throw failure(FailureCode.DESIGN_VALUE_INVALID, pointer + "/value");
+            }
+            int sum = 0;
+            for (int at = 0; at < expectedLength - 1; at++) {
+                int digit = value.charAt(at) - '0';
+                boolean oddPosition = (at % 2 == 0);
+                boolean weightThree = "EAN_13".equals(format) ? !oddPosition : oddPosition;
+                sum += digit * (weightThree ? 3 : 1);
+            }
+            int check = (10 - sum % 10) % 10;
+            if (value.charAt(expectedLength - 1) - '0' != check) {
+                throw failure(FailureCode.DESIGN_VALUE_INVALID, pointer + "/value");
+            }
+        }
+        if (node.members().containsKey("foregroundColor")) {
+            colorMember(node, "foregroundColor", pointer + "/foregroundColor");
+        }
+        if (node.members().containsKey("backgroundColor")) {
+            colorMember(node, "backgroundColor", pointer + "/backgroundColor");
+        }
+    }
+
+    /** points array: min size, each a PointMm, no adjacent duplicates. */
+    private List<BigDecimal[]> validatePointArray(
+            JsonValue.ObjectValue node,
+            String pointer,
+            String name,
+            int minimum
+    ) throws DesignDslFailureException {
+        var points = array(required(node, name, pointer + "/" + name), pointer + "/" + name);
+        if (points.items().size() < minimum) {
+            throw failure(FailureCode.DESIGN_VALUE_INVALID, pointer + "/" + name);
+        }
+        var parsed = new ArrayList<BigDecimal[]>();
+        for (int index = 0; index < points.items().size(); index++) {
+            var pointPointer = pointer + "/" + name + "/" + index;
+            var parsedPoint = validatePointMm(points.items().get(index), pointPointer);
+            if (index > 0) {
+                var previous = parsed.get(index - 1);
+                if (previous[0].compareTo(parsedPoint[0]) == 0
+                        && previous[1].compareTo(parsedPoint[1]) == 0) {
+                    throw failure(FailureCode.DESIGN_VALUE_INVALID, pointPointer);
+                }
+            }
+            parsed.add(parsedPoint);
+        }
+        return parsed;
+    }
+
+    /** PointMm composite; coordinates may be negative. */
+    private BigDecimal[] validatePointMm(JsonValue value, String pointer)
+            throws DesignDslFailureException {
+        var point = object(value, pointer);
+        rejectUnknown(point, NodeContractCatalog.POINT_MM_MEMBERS, pointer);
+        var x = decimalValue(required(point, "xMm", pointer + "/xMm"), pointer + "/xMm");
+        var y = decimalValue(required(point, "yMm", pointer + "/yMm"), pointer + "/yMm");
+        return new BigDecimal[]{x, y};
+    }
+
+    /** AssetRef atomic value: closed {assetId} with server-generated canonical UUID v4. */
+    private void validateAssetRef(JsonValue value, String pointer)
+            throws DesignDslFailureException {
+        var refValue = object(value, pointer);
+        rejectUnknown(refValue, DefinitionContractCatalog.ASSET_REF_MEMBERS, pointer);
+        var assetId = string(required(refValue, "assetId", pointer + "/assetId"),
+                pointer + "/assetId");
+        if (!UUID_V4.matcher(assetId).matches()) {
+            throw failure(FailureCode.DESIGN_VALUE_INVALID, pointer + "/assetId");
+        }
+    }
+
+    /** Shared rect/ellipse/polygon/path rule: fill and/or stroke must be present. */
+    private void validateOptionalFillStroke(
+            JsonValue.ObjectValue node,
+            String pointer
+    ) throws DesignDslFailureException {
+        if (node.members().containsKey("fill")) {
+            validateFill(node.members().get("fill"), pointer + "/fill");
+        }
+        if (node.members().containsKey("stroke")) {
+            validateStrokeMm(node.members().get("stroke"), pointer + "/stroke");
+        }
+        if (!node.members().containsKey("fill") && !node.members().containsKey("stroke")) {
+            throw failure(FailureCode.DESIGN_VALUE_INVALID, pointer + "/fill");
+        }
+    }
+
     private void validatePlacement(
             JsonValue.ObjectValue placement,
             String pointer,
@@ -1196,6 +1675,11 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
             throw failure(FailureCode.DESIGN_VALUE_INVALID, pointer + "/widthMode");
         }
         if (!modes.contains(heightMode)) {
+            throw failure(FailureCode.DESIGN_VALUE_INVALID, pointer + "/heightMode");
+        }
+        if (kind == NodeContractCatalog.NodeKind.IMAGE
+                && widthMode == NodeContractCatalog.SizeMode.HUG_CONTENT
+                && heightMode == NodeContractCatalog.SizeMode.HUG_CONTENT) {
             throw failure(FailureCode.DESIGN_VALUE_INVALID, pointer + "/heightMode");
         }
         if (widthMode == NodeContractCatalog.SizeMode.FIXED) {
@@ -1523,6 +2007,18 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
                 throw failure(FailureCode.DESIGN_VALUE_INVALID, pointer);
             }
         } catch (NumberFormatException exception) {
+            throw failure(FailureCode.DESIGN_VALUE_INVALID, pointer);
+        }
+    }
+
+    private void rangedDecimalValue(
+            JsonValue value,
+            String pointer,
+            int minimum,
+            int maximum
+    ) throws DesignDslFailureException {
+        var number = decimalValue(value, pointer);
+        if (number.signum() < minimum || number.compareTo(new BigDecimal(maximum)) > 0) {
             throw failure(FailureCode.DESIGN_VALUE_INVALID, pointer);
         }
     }

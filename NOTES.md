@@ -1407,3 +1407,42 @@
   词法祖先 domain 证明、packing 容量上限（Ticket 19）与 lowering 属 Evaluator/Rendering。T17
   resolve 为 automated_verified；T18 解锁，T14b/T16/T18 成为 unblocked frontier。Ticket 19 open，
   Editor/Renderer 未 READY；push 待用户另行授权（分支 ahead 12）。
+
+### Template v1 TV1-T14b visual leaf kinds 与 BindingPolicyCatalog 基础登记
+
+- `NodeContractCatalog`：NodeKind/KIND_BY_NAME 增 10 个 visual leaf kind（text/image/rect/ellipse/
+  line/polygon/polyline/path/qrCode/barcode）、FUTURE_KINDS 只余 conditional/templateUse、各 kind
+  member/token 集、`allowsChildren`（leaf 全部 false）、`sizeModes` 表（rect/ellipse/qrCode/barcode
+  仅 FIXED/FILL；image 双轴 HUG 非法）。
+- `CanonicalDesignDslAuthority` leaf admission：visual leaf 无 children member（出现即
+  DESIGN_MEMBER_UNKNOWN）；text = 必填非空有序 runs（Run：text 只允许 LF 控制符、fontRef AssetRef、
+  fontSizePt>0、color RGBA、decoration、letterSpacingPt XOR letterSpacingFactor）+ writingMode/
+  horizontalAlign/verticalAlign/lineBreak/overflow/lineHeight（FACTOR|FIXED union）/maxLines
+  （VISIBLE+maxLines hard error）/padding/stroke（StrokePt：widthPt>0）/fitMode（SHRINK_TO_FIT 必带
+  0<minScale<=1，NONE 禁 minScale）；image = imageRef + fit/sampling；rect/ellipse = fill/stroke 至少
+  其一；line = start/end 不得相同 + 必填 stroke；polygon = ≥3 点、首尾/相邻不重复、至少三个不共线
+  （cross product）；polyline = ≥2 点 + 必填 stroke；path = 必填非空 commands（首条 MOVE_TO、至少
+  一个 drawing command、CLOSE 不可连续、CLOSE 后 drawing 必须先 MOVE_TO）+ fill/stroke 至少其一；
+  qrCode = 必填非空 content + errorCorrectionLevel/前景/背景色；barcode = 必填 format
+  （EAN_8/EAN_13/UPC_A/CODE_128）+ value（EAN/UPC 长度+全数字+check digit 算术验证，CODE_128
+  1–128 printable ASCII）。
+- `BindingPolicyCatalog`（新 internal 只追加注册表）：ticket 09 §8 首批授权逐 kind 展开（无
+  node-kind wildcard）：canvas backgroundColor；每个 non-Canvas kind 的 render/visible/opacity/
+  transform.*/ABSOLUTE x/y/STACK+GRID margin/alignSelf/GRID row/column/span/alignSelf；non-Canvas
+  non-Group 的 fillWeight/widthMm/heightMm/min/max/inset；frame/stack/grid appearance 全叶子；stack
+  direction/gap/justify/align；grid rowGap/columnGap/rows[*]/columns[*]；repeat itemLayout/
+  instanceLayout 十项；text/image/rect/ellipse/line/polygon/polyline/path/qrCode/barcode 全叶子；
+  nodeId/kind/displayName/children/bindings/placement.type/widthMode/heightMode/结构字段永不授权。
+  bindability 判定消费属 T16；`BindingPolicyCatalogTest` 3 tests 钉住冻结 entries 与永不授权面。
+- 冻结向量：manifest `renderweave-template-canonical-kernel-v1/5`，152 cases（116 原样 + 36 新：
+  12 admit 冻结 exact canonical bytes/hash + 24 reject 冻结精确 code/stage/pointer；
+  `reject-visual-leaf-kind` 如实改写为 `reject-future-kind-conditional`——text 已 admission，
+  conditional 仍 fail closed）。Python independent（152/152，A2）镜像 Java 检查顺序（含 EAN check
+  digit 与 polygon cross product）。
+- 验证：`template` gate 绿（Java=152/152 Python=152/152、vector sha256 a801b78c…、static
+  authorityDiff=0，evidence `.sdlc/evidence/20260819-200756-template/`）、`fast` 绿
+  （`.sdlc/evidence/20260819-200827-fast/`）。Profile 保持 NOT_REGISTERED；plan §12 kernel report
+  已更新为 152/152。诚实边界：text shaping/vector HUG bounds/QR 容量/布局与像素语义属
+  Evaluator/Rendering（ticket 10/16）；Asset current 存在性/kind 属 Template dependency readiness。
+  T14b resolve 为 automated_verified；T16/T18 成为 unblocked frontier。Ticket 19 open，Editor/
+  Renderer 未 READY；push 待用户另行授权（分支 ahead 13）。

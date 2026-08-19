@@ -114,15 +114,17 @@ Label: wayfinder:map
 - minimal canonical kernel 已完成；T14 容器增量已 resolve（NodeContractCatalog 与 Node/Property
   Identity 原子：canvas/group/frame/stack/grid 递归 admission/canonical，manifest
   `renderweave-template-canonical-kernel-v1/2` 57 vectors，Java primary/Python independent 57/57，
-  Profile 仍 NOT_REGISTERED）；visual leaf 增量拆分为
-  [14b（visual leaf kinds + BindingPolicyCatalog 基础）](issues/14b-visual-leaf-kinds.md)（open）；
+  Profile 仍 NOT_REGISTERED）；T14b visual leaf kinds 与 BindingPolicyCatalog 基础登记已 resolve
+  （text/image/rect/ellipse/line/polygon/polyline/path/qrCode/barcode 全 property 树 + 只追加
+  (nodeKind, propertyPathPattern) 授权集，manifest `renderweave-template-canonical-kernel-v1/5`
+  152 vectors，Java/Python 152/152，bindability 消费属 T16）；
   T15 Definition/ValueSource 原子已 resolve（custom/mapping/expression + ValueSource closed union +
   词法 domain + graph cycle/dangling + canonical set sorting，manifest
-  `renderweave-template-canonical-kernel-v1/3` 94 vectors，Java/Python 94/94）；T17 Repeat 原子已
+  `renderweave-template-canonical-kernel-v1/3` 94 vectors）；T17 Repeat 原子已
   resolve（nodeId+loopId 双身份、items 结构 ValueSource 静态类型证明、PACK placement、STACK/GRID
   RepeatPackingSpec、loopId 唯一与 loop-domain/loopIndex 解锁，manifest
-  `renderweave-template-canonical-kernel-v1/4` 116 vectors，Java/Python 116/116）；
-  DesignDSL full-Profile 拆分登记为 14b → T16（Binding/Policy）→ T18（Conditional）→
+  `renderweave-template-canonical-kernel-v1/4` 116 vectors）；
+  DesignDSL full-Profile 拆分登记为 T16（Binding/Policy）→ T18（Conditional）→
   T19（TemplateUse）→ T20（Template 依赖投影，T12b 的 blocker）；admission/canonical 增量逐票带
   exact vectors + template gate 扩展，全部 exact 语义原子通过前不登记 Profile available，也不把本
   kernel 的 fail-closed non-empty array 当作 set ordering 已实现。

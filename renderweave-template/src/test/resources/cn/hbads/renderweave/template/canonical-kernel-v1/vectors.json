@@ -1,5 +1,5 @@
 {
-  "vectorVersion": "renderweave-template-canonical-kernel-v1/4",
+  "vectorVersion": "renderweave-template-canonical-kernel-v1/5",
   "authorityContext": {
     "staticSchemaProfile": "system-empty@v1",
     "designDslProfile": "renderweave-design/1.0",
@@ -630,9 +630,9 @@
       }
     },
     {
-      "id": "reject-visual-leaf-kind",
+      "id": "reject-future-kind-conditional",
       "input": {
-        "children": "[{\"nodeId\":\"00000000-0000-4000-8000-000000000024\",\"kind\":\"text\",\"bindings\":[],\"placement\":{\"type\":\"ABSOLUTE\",\"xMm\":0,\"yMm\":0,\"widthMode\":\"HUG_CONTENT\",\"heightMode\":\"HUG_CONTENT\"},\"children\":[]}]",
+        "children": "[{\"nodeId\":\"00000000-0000-4000-8000-000000000024\",\"kind\":\"conditional\",\"bindings\":[],\"placement\":{\"type\":\"ABSOLUTE\",\"xMm\":0,\"yMm\":0,\"widthMode\":\"HUG_CONTENT\",\"heightMode\":\"HUG_CONTENT\"},\"children\":[]}]",
         "kind": "CANVAS"
       },
       "expected": {
@@ -1637,6 +1637,510 @@
         "code": "DESIGN_VALUE_INVALID",
         "stage": "DESIGN_SEMANTIC_VALIDATION",
         "pointer": "/designRoot/children/0/placement/type",
+        "limit": null
+      }
+    },
+    {
+      "id": "admit-text-with-runs",
+      "input": {
+        "kind": "CANVAS",
+        "children": "[{\"nodeId\":\"00000000-0000-4000-8000-000000000011\",\"kind\":\"text\",\"bindings\":[],\"placement\":{\"type\":\"ABSOLUTE\",\"xMm\":0,\"yMm\":0,\"widthMode\":\"FIXED\",\"widthMm\":80,\"heightMode\":\"HUG_CONTENT\"},\"runs\":[{\"text\":\"Hello\",\"fontRef\":{\"assetId\":\"00000000-0000-4000-8000-0000000000a1\"},\"fontSizePt\":12,\"color\":\"#FF000000\",\"decoration\":\"NONE\",\"letterSpacingPt\":0.5},{\"text\":\"World\",\"fontRef\":{\"assetId\":\"00000000-0000-4000-8000-0000000000a1\"},\"fontSizePt\":12,\"color\":\"#FF000000\",\"decoration\":\"UNDERLINE\",\"letterSpacingFactor\":0.1}],\"writingMode\":\"HORIZONTAL_TB\",\"horizontalAlign\":\"CENTER\",\"verticalAlign\":\"TOP\",\"lineBreak\":\"WORD\",\"overflow\":\"CLIP\",\"lineHeight\":{\"type\":\"FACTOR\",\"factor\":1.2},\"maxLines\":2,\"padding\":{\"topMm\":1,\"rightMm\":1,\"bottomMm\":1,\"leftMm\":1},\"stroke\":{\"color\":\"#FFFFFFFF\",\"widthPt\":0.5,\"cap\":\"ROUND\",\"join\":\"MITER\"},\"fitMode\":\"SHRINK_TO_FIT\",\"minScale\":0.5}]"
+      },
+      "expected": {
+        "outcome": "ADMITTED",
+        "canonicalUtf8": "{\"definitions\":[],\"designRoot\":{\"bindings\":[],\"children\":[{\"bindings\":[],\"fitMode\":\"SHRINK_TO_FIT\",\"horizontalAlign\":\"CENTER\",\"kind\":\"text\",\"lineBreak\":\"WORD\",\"lineHeight\":{\"factor\":1.2,\"type\":\"FACTOR\"},\"maxLines\":2,\"minScale\":0.5,\"nodeId\":\"00000000-0000-4000-8000-000000000011\",\"overflow\":\"CLIP\",\"padding\":{\"bottomMm\":1,\"leftMm\":1,\"rightMm\":1,\"topMm\":1},\"placement\":{\"heightMode\":\"HUG_CONTENT\",\"type\":\"ABSOLUTE\",\"widthMm\":80,\"widthMode\":\"FIXED\",\"xMm\":0,\"yMm\":0},\"runs\":[{\"color\":\"#FF000000\",\"decoration\":\"NONE\",\"fontRef\":{\"assetId\":\"00000000-0000-4000-8000-0000000000a1\"},\"fontSizePt\":12,\"letterSpacingPt\":0.5,\"text\":\"Hello\"},{\"color\":\"#FF000000\",\"decoration\":\"UNDERLINE\",\"fontRef\":{\"assetId\":\"00000000-0000-4000-8000-0000000000a1\"},\"fontSizePt\":12,\"letterSpacingFactor\":0.1,\"text\":\"World\"}],\"stroke\":{\"cap\":\"ROUND\",\"color\":\"#FFFFFFFF\",\"join\":\"MITER\",\"widthPt\":0.5},\"verticalAlign\":\"TOP\",\"writingMode\":\"HORIZONTAL_TB\"}],\"heightMm\":297,\"kind\":\"canvas\",\"nodeId\":\"00000000-0000-4000-8000-000000000001\",\"widthMm\":210},\"displayName\":\"Baseline\",\"dslVersion\":\"renderweave-design/1.0\",\"expressionProfile\":\"renderweave-expression/1.0\"}",
+        "canonicalBytes": 1127,
+        "canonicalSha256": "0c5dfd1bcbf37796dcdf839deb66908545cc9caed7dd912cabf4f96aca277833",
+        "contentHash": "sha256:190bb6315f67d3fd7144c36bfd2007e68677700c737aebf6e00d0a1222c6847a"
+      }
+    },
+    {
+      "id": "admit-image-fixed",
+      "input": {
+        "kind": "CANVAS",
+        "children": "[{\"nodeId\":\"00000000-0000-4000-8000-000000000012\",\"kind\":\"image\",\"bindings\":[],\"placement\":{\"type\":\"ABSOLUTE\",\"xMm\":0,\"yMm\":0,\"widthMode\":\"FIXED\",\"widthMm\":60,\"heightMode\":\"FIXED\",\"heightMm\":40},\"imageRef\":{\"assetId\":\"00000000-0000-4000-8000-0000000000a3\"},\"fit\":\"COVER\",\"sampling\":\"NEAREST\"}]"
+      },
+      "expected": {
+        "outcome": "ADMITTED",
+        "canonicalUtf8": "{\"definitions\":[],\"designRoot\":{\"bindings\":[],\"children\":[{\"bindings\":[],\"fit\":\"COVER\",\"imageRef\":{\"assetId\":\"00000000-0000-4000-8000-0000000000a3\"},\"kind\":\"image\",\"nodeId\":\"00000000-0000-4000-8000-000000000012\",\"placement\":{\"heightMm\":40,\"heightMode\":\"FIXED\",\"type\":\"ABSOLUTE\",\"widthMm\":60,\"widthMode\":\"FIXED\",\"xMm\":0,\"yMm\":0},\"sampling\":\"NEAREST\"}],\"heightMm\":297,\"kind\":\"canvas\",\"nodeId\":\"00000000-0000-4000-8000-000000000001\",\"widthMm\":210},\"displayName\":\"Baseline\",\"dslVersion\":\"renderweave-design/1.0\",\"expressionProfile\":\"renderweave-expression/1.0\"}",
+        "canonicalBytes": 557,
+        "canonicalSha256": "cf7bf93091c30ed8a6d5e0f399ecead9d3fac8de224e45eaa29c4dc48331dfd4",
+        "contentHash": "sha256:7e429f25c6e9519eb5fcab4dac48d9f78ada6f8c5a9b001bb52995314daa3ace"
+      }
+    },
+    {
+      "id": "admit-image-hug-with-fixed-other-axis",
+      "input": {
+        "kind": "CANVAS",
+        "children": "[{\"nodeId\":\"00000000-0000-4000-8000-000000000013\",\"kind\":\"image\",\"bindings\":[],\"placement\":{\"type\":\"ABSOLUTE\",\"xMm\":0,\"yMm\":0,\"widthMode\":\"HUG_CONTENT\",\"heightMode\":\"FIXED\",\"heightMm\":40},\"imageRef\":{\"assetId\":\"00000000-0000-4000-8000-0000000000a3\"}}]"
+      },
+      "expected": {
+        "outcome": "ADMITTED",
+        "canonicalUtf8": "{\"definitions\":[],\"designRoot\":{\"bindings\":[],\"children\":[{\"bindings\":[],\"imageRef\":{\"assetId\":\"00000000-0000-4000-8000-0000000000a3\"},\"kind\":\"image\",\"nodeId\":\"00000000-0000-4000-8000-000000000013\",\"placement\":{\"heightMm\":40,\"heightMode\":\"FIXED\",\"type\":\"ABSOLUTE\",\"widthMode\":\"HUG_CONTENT\",\"xMm\":0,\"yMm\":0}}],\"heightMm\":297,\"kind\":\"canvas\",\"nodeId\":\"00000000-0000-4000-8000-000000000001\",\"widthMm\":210},\"displayName\":\"Baseline\",\"dslVersion\":\"renderweave-design/1.0\",\"expressionProfile\":\"renderweave-expression/1.0\"}",
+        "canonicalBytes": 515,
+        "canonicalSha256": "bb9847033cf2a615934f1713650a21847e9b1bf342c629174aebc058c82ffc10",
+        "contentHash": "sha256:9a18929ba9475aa477369af326573e25bc5f093799bf9a9695bbf2fb22a55f5a"
+      }
+    },
+    {
+      "id": "admit-rect-with-fill-stroke",
+      "input": {
+        "kind": "CANVAS",
+        "children": "[{\"nodeId\":\"00000000-0000-4000-8000-000000000014\",\"kind\":\"rect\",\"bindings\":[],\"placement\":{\"type\":\"ABSOLUTE\",\"xMm\":0,\"yMm\":0,\"widthMode\":\"FIXED\",\"widthMm\":30,\"heightMode\":\"FIXED\",\"heightMm\":30},\"fill\":{\"color\":\"#11223344\"},\"stroke\":{\"color\":\"#FFFFFFFF\",\"widthMm\":1,\"cap\":\"BUTT\",\"join\":\"BEVEL\"},\"cornerRadii\":{\"topLeftMm\":2,\"topRightMm\":2,\"bottomRightMm\":2,\"bottomLeftMm\":2}}]"
+      },
+      "expected": {
+        "outcome": "ADMITTED",
+        "canonicalUtf8": "{\"definitions\":[],\"designRoot\":{\"bindings\":[],\"children\":[{\"bindings\":[],\"cornerRadii\":{\"bottomLeftMm\":2,\"bottomRightMm\":2,\"topLeftMm\":2,\"topRightMm\":2},\"fill\":{\"color\":\"#11223344\"},\"kind\":\"rect\",\"nodeId\":\"00000000-0000-4000-8000-000000000014\",\"placement\":{\"heightMm\":30,\"heightMode\":\"FIXED\",\"type\":\"ABSOLUTE\",\"widthMm\":30,\"widthMode\":\"FIXED\",\"xMm\":0,\"yMm\":0},\"stroke\":{\"cap\":\"BUTT\",\"color\":\"#FFFFFFFF\",\"join\":\"BEVEL\",\"widthMm\":1}}],\"heightMm\":297,\"kind\":\"canvas\",\"nodeId\":\"00000000-0000-4000-8000-000000000001\",\"widthMm\":210},\"displayName\":\"Baseline\",\"dslVersion\":\"renderweave-design/1.0\",\"expressionProfile\":\"renderweave-expression/1.0\"}",
+        "canonicalBytes": 639,
+        "canonicalSha256": "3564f938b3ded5a64e258ea376063a6908aab1f4735f8e3c8f408acca62e4718",
+        "contentHash": "sha256:edd7fac06f1611623b0bcc775f1e91e62031bf8f614b97d0306b66b93d6d0a9c"
+      }
+    },
+    {
+      "id": "admit-ellipse-stroke-only",
+      "input": {
+        "kind": "CANVAS",
+        "children": "[{\"nodeId\":\"00000000-0000-4000-8000-000000000015\",\"kind\":\"ellipse\",\"bindings\":[],\"placement\":{\"type\":\"ABSOLUTE\",\"xMm\":0,\"yMm\":0,\"widthMode\":\"FIXED\",\"widthMm\":40,\"heightMode\":\"FIXED\",\"heightMm\":20},\"stroke\":{\"color\":\"#FFFFFFFF\",\"widthMm\":2,\"cap\":\"ROUND\",\"join\":\"ROUND\"}}]"
+      },
+      "expected": {
+        "outcome": "ADMITTED",
+        "canonicalUtf8": "{\"definitions\":[],\"designRoot\":{\"bindings\":[],\"children\":[{\"bindings\":[],\"kind\":\"ellipse\",\"nodeId\":\"00000000-0000-4000-8000-000000000015\",\"placement\":{\"heightMm\":20,\"heightMode\":\"FIXED\",\"type\":\"ABSOLUTE\",\"widthMm\":40,\"widthMode\":\"FIXED\",\"xMm\":0,\"yMm\":0},\"stroke\":{\"cap\":\"ROUND\",\"color\":\"#FFFFFFFF\",\"join\":\"ROUND\",\"widthMm\":2}}],\"heightMm\":297,\"kind\":\"canvas\",\"nodeId\":\"00000000-0000-4000-8000-000000000001\",\"widthMm\":210},\"displayName\":\"Baseline\",\"dslVersion\":\"renderweave-design/1.0\",\"expressionProfile\":\"renderweave-expression/1.0\"}",
+        "canonicalBytes": 534,
+        "canonicalSha256": "99ac21802f493a5aa26180028f7f24b4f3125c8a0df7b0faaa47e9c15d991d5d",
+        "contentHash": "sha256:f28bffc47d1ce568f3629a16ad30a5bd978e464bb62c0ac3c6004fd59fef86b9"
+      }
+    },
+    {
+      "id": "admit-line",
+      "input": {
+        "kind": "CANVAS",
+        "children": "[{\"nodeId\":\"00000000-0000-4000-8000-000000000016\",\"kind\":\"line\",\"bindings\":[],\"placement\":{\"type\":\"ABSOLUTE\",\"xMm\":0,\"yMm\":0,\"widthMode\":\"FIXED\",\"widthMm\":50,\"heightMode\":\"FIXED\",\"heightMm\":10},\"start\":{\"xMm\":0,\"yMm\":0},\"end\":{\"xMm\":50,\"yMm\":5},\"stroke\":{\"color\":\"#FF000000\",\"widthMm\":1,\"cap\":\"SQUARE\",\"join\":\"MITER\"}}]"
+      },
+      "expected": {
+        "outcome": "ADMITTED",
+        "canonicalUtf8": "{\"definitions\":[],\"designRoot\":{\"bindings\":[],\"children\":[{\"bindings\":[],\"end\":{\"xMm\":50,\"yMm\":5},\"kind\":\"line\",\"nodeId\":\"00000000-0000-4000-8000-000000000016\",\"placement\":{\"heightMm\":10,\"heightMode\":\"FIXED\",\"type\":\"ABSOLUTE\",\"widthMm\":50,\"widthMode\":\"FIXED\",\"xMm\":0,\"yMm\":0},\"start\":{\"xMm\":0,\"yMm\":0},\"stroke\":{\"cap\":\"SQUARE\",\"color\":\"#FF000000\",\"join\":\"MITER\",\"widthMm\":1}}],\"heightMm\":297,\"kind\":\"canvas\",\"nodeId\":\"00000000-0000-4000-8000-000000000001\",\"widthMm\":210},\"displayName\":\"Baseline\",\"dslVersion\":\"renderweave-design/1.0\",\"expressionProfile\":\"renderweave-expression/1.0\"}",
+        "canonicalBytes": 583,
+        "canonicalSha256": "16d25fde052238468db57115e6cd997226f7fb714c3cd9f01521af1f6aa0941f",
+        "contentHash": "sha256:d15013606aded891d600230e2a0ffc0e657899e82299912d927aa944e50d225a"
+      }
+    },
+    {
+      "id": "admit-polygon",
+      "input": {
+        "kind": "CANVAS",
+        "children": "[{\"nodeId\":\"00000000-0000-4000-8000-000000000017\",\"kind\":\"polygon\",\"bindings\":[],\"placement\":{\"type\":\"ABSOLUTE\",\"xMm\":0,\"yMm\":0,\"widthMode\":\"FIXED\",\"widthMm\":40,\"heightMode\":\"FIXED\",\"heightMm\":40},\"points\":[{\"xMm\":0,\"yMm\":0},{\"xMm\":40,\"yMm\":0},{\"xMm\":40,\"yMm\":40},{\"xMm\":0,\"yMm\":40}],\"fill\":{\"color\":\"#FFAABBCC\"}}]"
+      },
+      "expected": {
+        "outcome": "ADMITTED",
+        "canonicalUtf8": "{\"definitions\":[],\"designRoot\":{\"bindings\":[],\"children\":[{\"bindings\":[],\"fill\":{\"color\":\"#FFAABBCC\"},\"kind\":\"polygon\",\"nodeId\":\"00000000-0000-4000-8000-000000000017\",\"placement\":{\"heightMm\":40,\"heightMode\":\"FIXED\",\"type\":\"ABSOLUTE\",\"widthMm\":40,\"widthMode\":\"FIXED\",\"xMm\":0,\"yMm\":0},\"points\":[{\"xMm\":0,\"yMm\":0},{\"xMm\":40,\"yMm\":0},{\"xMm\":40,\"yMm\":40},{\"xMm\":0,\"yMm\":40}]}],\"heightMm\":297,\"kind\":\"canvas\",\"nodeId\":\"00000000-0000-4000-8000-000000000001\",\"widthMm\":210},\"displayName\":\"Baseline\",\"dslVersion\":\"renderweave-design/1.0\",\"expressionProfile\":\"renderweave-expression/1.0\"}",
+        "canonicalBytes": 578,
+        "canonicalSha256": "bbf194e187703cb36d513b43e52c859c9482d78eb32ebf6d8d0a435d35a35fc2",
+        "contentHash": "sha256:e976ca46d050a2b7a5adac6e361ea37d579296e9b415238a6cddf1c72430f4a5"
+      }
+    },
+    {
+      "id": "admit-polyline",
+      "input": {
+        "kind": "CANVAS",
+        "children": "[{\"nodeId\":\"00000000-0000-4000-8000-000000000018\",\"kind\":\"polyline\",\"bindings\":[],\"placement\":{\"type\":\"ABSOLUTE\",\"xMm\":0,\"yMm\":0,\"widthMode\":\"FIXED\",\"widthMm\":40,\"heightMode\":\"FIXED\",\"heightMm\":20},\"points\":[{\"xMm\":0,\"yMm\":0},{\"xMm\":20,\"yMm\":20},{\"xMm\":40,\"yMm\":0}],\"stroke\":{\"color\":\"#FF000000\",\"widthMm\":1,\"cap\":\"ROUND\",\"join\":\"ROUND\"}}]"
+      },
+      "expected": {
+        "outcome": "ADMITTED",
+        "canonicalUtf8": "{\"definitions\":[],\"designRoot\":{\"bindings\":[],\"children\":[{\"bindings\":[],\"kind\":\"polyline\",\"nodeId\":\"00000000-0000-4000-8000-000000000018\",\"placement\":{\"heightMm\":20,\"heightMode\":\"FIXED\",\"type\":\"ABSOLUTE\",\"widthMm\":40,\"widthMode\":\"FIXED\",\"xMm\":0,\"yMm\":0},\"points\":[{\"xMm\":0,\"yMm\":0},{\"xMm\":20,\"yMm\":20},{\"xMm\":40,\"yMm\":0}],\"stroke\":{\"cap\":\"ROUND\",\"color\":\"#FF000000\",\"join\":\"ROUND\",\"widthMm\":1}}],\"heightMm\":297,\"kind\":\"canvas\",\"nodeId\":\"00000000-0000-4000-8000-000000000001\",\"widthMm\":210},\"displayName\":\"Baseline\",\"dslVersion\":\"renderweave-design/1.0\",\"expressionProfile\":\"renderweave-expression/1.0\"}",
+        "canonicalBytes": 603,
+        "canonicalSha256": "9beca64357c7b1d1ff6d6ee3dfb6549895daa73b75ddc8a8ed1f3cb9b15dcbd3",
+        "contentHash": "sha256:fb83db73b42857944f6b290179f622f9b18539922652c3b2c0403aa75b17e73f"
+      }
+    },
+    {
+      "id": "admit-path",
+      "input": {
+        "kind": "CANVAS",
+        "children": "[{\"nodeId\":\"00000000-0000-4000-8000-000000000019\",\"kind\":\"path\",\"bindings\":[],\"placement\":{\"type\":\"ABSOLUTE\",\"xMm\":0,\"yMm\":0,\"widthMode\":\"FIXED\",\"widthMm\":40,\"heightMode\":\"FIXED\",\"heightMm\":40},\"commands\":[{\"type\":\"MOVE_TO\",\"xMm\":0,\"yMm\":0},{\"type\":\"LINE_TO\",\"xMm\":40,\"yMm\":0},{\"type\":\"CLOSE\"},{\"type\":\"MOVE_TO\",\"xMm\":5,\"yMm\":5},{\"type\":\"CUBIC_TO\",\"c1xMm\":10,\"c1yMm\":0,\"c2xMm\":20,\"c2yMm\":0,\"xMm\":25,\"yMm\":5}],\"fill\":{\"color\":\"#FF000000\"},\"fillRule\":\"EVEN_ODD\"}]"
+      },
+      "expected": {
+        "outcome": "ADMITTED",
+        "canonicalUtf8": "{\"definitions\":[],\"designRoot\":{\"bindings\":[],\"children\":[{\"bindings\":[],\"commands\":[{\"type\":\"MOVE_TO\",\"xMm\":0,\"yMm\":0},{\"type\":\"LINE_TO\",\"xMm\":40,\"yMm\":0},{\"type\":\"CLOSE\"},{\"type\":\"MOVE_TO\",\"xMm\":5,\"yMm\":5},{\"c1xMm\":10,\"c1yMm\":0,\"c2xMm\":20,\"c2yMm\":0,\"type\":\"CUBIC_TO\",\"xMm\":25,\"yMm\":5}],\"fill\":{\"color\":\"#FF000000\"},\"fillRule\":\"EVEN_ODD\",\"kind\":\"path\",\"nodeId\":\"00000000-0000-4000-8000-000000000019\",\"placement\":{\"heightMm\":40,\"heightMode\":\"FIXED\",\"type\":\"ABSOLUTE\",\"widthMm\":40,\"widthMode\":\"FIXED\",\"xMm\":0,\"yMm\":0}}],\"heightMm\":297,\"kind\":\"canvas\",\"nodeId\":\"00000000-0000-4000-8000-000000000001\",\"widthMm\":210},\"displayName\":\"Baseline\",\"dslVersion\":\"renderweave-design/1.0\",\"expressionProfile\":\"renderweave-expression/1.0\"}",
+        "canonicalBytes": 725,
+        "canonicalSha256": "265631de325bf947fbe46db2fb2e3c29b188069bb8f6bc6967dd39032ea9ac2d",
+        "contentHash": "sha256:a0fe5eeadd8d8fcb6280d69c5a563a1e84146c35ebc9b2482e7bdca41f1d8cc8"
+      }
+    },
+    {
+      "id": "admit-qrcode",
+      "input": {
+        "kind": "CANVAS",
+        "children": "[{\"nodeId\":\"00000000-0000-4000-8000-00000000001a\",\"kind\":\"qrCode\",\"bindings\":[],\"placement\":{\"type\":\"ABSOLUTE\",\"xMm\":0,\"yMm\":0,\"widthMode\":\"FIXED\",\"widthMm\":30,\"heightMode\":\"FIXED\",\"heightMm\":30},\"content\":\"https://example.cn/p/42\",\"errorCorrectionLevel\":\"H\",\"foregroundColor\":\"#000000FF\",\"backgroundColor\":\"#FFFFFFFF\"}]"
+      },
+      "expected": {
+        "outcome": "ADMITTED",
+        "canonicalUtf8": "{\"definitions\":[],\"designRoot\":{\"bindings\":[],\"children\":[{\"backgroundColor\":\"#FFFFFFFF\",\"bindings\":[],\"content\":\"https://example.cn/p/42\",\"errorCorrectionLevel\":\"H\",\"foregroundColor\":\"#000000FF\",\"kind\":\"qrCode\",\"nodeId\":\"00000000-0000-4000-8000-00000000001a\",\"placement\":{\"heightMm\":30,\"heightMode\":\"FIXED\",\"type\":\"ABSOLUTE\",\"widthMm\":30,\"widthMode\":\"FIXED\",\"xMm\":0,\"yMm\":0}}],\"heightMm\":297,\"kind\":\"canvas\",\"nodeId\":\"00000000-0000-4000-8000-000000000001\",\"widthMm\":210},\"displayName\":\"Baseline\",\"dslVersion\":\"renderweave-design/1.0\",\"expressionProfile\":\"renderweave-expression/1.0\"}",
+        "canonicalBytes": 584,
+        "canonicalSha256": "5c27f5393adf070756936528517f226e87937be5c95a755d707fad656b2eea2c",
+        "contentHash": "sha256:4817d3d48f0755cc0199248c731c2da00939bd6398db28ec3b5777b8b8fbb161"
+      }
+    },
+    {
+      "id": "admit-barcode-ean13",
+      "input": {
+        "kind": "CANVAS",
+        "children": "[{\"nodeId\":\"00000000-0000-4000-8000-00000000001b\",\"kind\":\"barcode\",\"bindings\":[],\"placement\":{\"type\":\"ABSOLUTE\",\"xMm\":0,\"yMm\":0,\"widthMode\":\"FIXED\",\"widthMm\":60,\"heightMode\":\"FIXED\",\"heightMm\":20},\"format\":\"EAN_13\",\"value\":\"5901234123457\"}]"
+      },
+      "expected": {
+        "outcome": "ADMITTED",
+        "canonicalUtf8": "{\"definitions\":[],\"designRoot\":{\"bindings\":[],\"children\":[{\"bindings\":[],\"format\":\"EAN_13\",\"kind\":\"barcode\",\"nodeId\":\"00000000-0000-4000-8000-00000000001b\",\"placement\":{\"heightMm\":20,\"heightMode\":\"FIXED\",\"type\":\"ABSOLUTE\",\"widthMm\":60,\"widthMode\":\"FIXED\",\"xMm\":0,\"yMm\":0},\"value\":\"5901234123457\"}],\"heightMm\":297,\"kind\":\"canvas\",\"nodeId\":\"00000000-0000-4000-8000-000000000001\",\"widthMm\":210},\"displayName\":\"Baseline\",\"dslVersion\":\"renderweave-design/1.0\",\"expressionProfile\":\"renderweave-expression/1.0\"}",
+        "canonicalBytes": 504,
+        "canonicalSha256": "685707869c9b64aa779b2e7bd6c165ecd8459cfaba57afe23bb4491d46e36610",
+        "contentHash": "sha256:31d78d646d25a7c259a3a3bbb5f5e8987f58fc0eb9be78064810943e824efa95"
+      }
+    },
+    {
+      "id": "admit-barcode-code128",
+      "input": {
+        "kind": "CANVAS",
+        "children": "[{\"nodeId\":\"00000000-0000-4000-8000-00000000001c\",\"kind\":\"barcode\",\"bindings\":[],\"placement\":{\"type\":\"ABSOLUTE\",\"xMm\":0,\"yMm\":0,\"widthMode\":\"FIXED\",\"widthMm\":60,\"heightMode\":\"FIXED\",\"heightMm\":20},\"format\":\"CODE_128\",\"value\":\"HB-2026/42\"}]"
+      },
+      "expected": {
+        "outcome": "ADMITTED",
+        "canonicalUtf8": "{\"definitions\":[],\"designRoot\":{\"bindings\":[],\"children\":[{\"bindings\":[],\"format\":\"CODE_128\",\"kind\":\"barcode\",\"nodeId\":\"00000000-0000-4000-8000-00000000001c\",\"placement\":{\"heightMm\":20,\"heightMode\":\"FIXED\",\"type\":\"ABSOLUTE\",\"widthMm\":60,\"widthMode\":\"FIXED\",\"xMm\":0,\"yMm\":0},\"value\":\"HB-2026/42\"}],\"heightMm\":297,\"kind\":\"canvas\",\"nodeId\":\"00000000-0000-4000-8000-000000000001\",\"widthMm\":210},\"displayName\":\"Baseline\",\"dslVersion\":\"renderweave-design/1.0\",\"expressionProfile\":\"renderweave-expression/1.0\"}",
+        "canonicalBytes": 503,
+        "canonicalSha256": "f4f3be9337d4c82ad1ea508067e1c68833d78493e34dee2e8c7c36351a2c3dbd",
+        "contentHash": "sha256:25550955faf31035dd478276cb02d5dcddaa71cfeb048c15ac7e30dd3900a153"
+      }
+    },
+    {
+      "id": "reject-text-empty-runs",
+      "input": {
+        "kind": "CANVAS",
+        "children": "[{\"nodeId\":\"00000000-0000-4000-8000-000000000021\",\"kind\":\"text\",\"bindings\":[],\"placement\":{\"type\":\"ABSOLUTE\",\"xMm\":0,\"yMm\":0,\"widthMode\":\"FIXED\",\"widthMm\":60,\"heightMode\":\"HUG_CONTENT\"},\"runs\":[],\"lineHeight\":{\"type\":\"FIXED\",\"valuePt\":14}}]"
+      },
+      "expected": {
+        "outcome": "REJECTED",
+        "code": "DESIGN_VALUE_INVALID",
+        "stage": "DESIGN_SEMANTIC_VALIDATION",
+        "pointer": "/designRoot/children/0/runs",
+        "limit": null
+      }
+    },
+    {
+      "id": "reject-text-run-missing-letter-spacing",
+      "input": {
+        "kind": "CANVAS",
+        "children": "[{\"nodeId\":\"00000000-0000-4000-8000-000000000022\",\"kind\":\"text\",\"bindings\":[],\"placement\":{\"type\":\"ABSOLUTE\",\"xMm\":0,\"yMm\":0,\"widthMode\":\"FIXED\",\"widthMm\":60,\"heightMode\":\"HUG_CONTENT\"},\"runs\":[{\"text\":\"x\",\"fontRef\":{\"assetId\":\"00000000-0000-4000-8000-0000000000a1\"},\"fontSizePt\":12,\"color\":\"#FF000000\",\"decoration\":\"NONE\"}],\"lineHeight\":{\"type\":\"FIXED\",\"valuePt\":14}}]"
+      },
+      "expected": {
+        "outcome": "REJECTED",
+        "code": "DESIGN_STRUCTURE_INVALID",
+        "stage": "DESIGN_SEMANTIC_VALIDATION",
+        "pointer": "/designRoot/children/0/runs/0/letterSpacingPt",
+        "limit": null
+      }
+    },
+    {
+      "id": "reject-text-run-both-letter-spacing",
+      "input": {
+        "kind": "CANVAS",
+        "children": "[{\"nodeId\":\"00000000-0000-4000-8000-000000000023\",\"kind\":\"text\",\"bindings\":[],\"placement\":{\"type\":\"ABSOLUTE\",\"xMm\":0,\"yMm\":0,\"widthMode\":\"FIXED\",\"widthMm\":60,\"heightMode\":\"HUG_CONTENT\"},\"runs\":[{\"text\":\"x\",\"fontRef\":{\"assetId\":\"00000000-0000-4000-8000-0000000000a1\"},\"fontSizePt\":12,\"color\":\"#FF000000\",\"decoration\":\"NONE\",\"letterSpacingPt\":1,\"letterSpacingFactor\":0.1}],\"lineHeight\":{\"type\":\"FIXED\",\"valuePt\":14}}]"
+      },
+      "expected": {
+        "outcome": "REJECTED",
+        "code": "DESIGN_VALUE_INVALID",
+        "stage": "DESIGN_SEMANTIC_VALIDATION",
+        "pointer": "/designRoot/children/0/runs/0/letterSpacingFactor",
+        "limit": null
+      }
+    },
+    {
+      "id": "reject-text-run-control-char",
+      "input": {
+        "kind": "CANVAS",
+        "children": "[{\"nodeId\":\"00000000-0000-4000-8000-000000000024\",\"kind\":\"text\",\"bindings\":[],\"placement\":{\"type\":\"ABSOLUTE\",\"xMm\":0,\"yMm\":0,\"widthMode\":\"FIXED\",\"widthMm\":60,\"heightMode\":\"HUG_CONTENT\"},\"runs\":[{\"text\":\"a\\tb\",\"fontRef\":{\"assetId\":\"00000000-0000-4000-8000-0000000000a1\"},\"fontSizePt\":12,\"color\":\"#FF000000\",\"decoration\":\"NONE\",\"letterSpacingPt\":0}],\"lineHeight\":{\"type\":\"FIXED\",\"valuePt\":14}}]"
+      },
+      "expected": {
+        "outcome": "REJECTED",
+        "code": "DESIGN_VALUE_INVALID",
+        "stage": "DESIGN_SEMANTIC_VALIDATION",
+        "pointer": "/designRoot/children/0/runs/0/text",
+        "limit": null
+      }
+    },
+    {
+      "id": "reject-text-overflow-visible-with-max-lines",
+      "input": {
+        "kind": "CANVAS",
+        "children": "[{\"nodeId\":\"00000000-0000-4000-8000-000000000025\",\"kind\":\"text\",\"bindings\":[],\"placement\":{\"type\":\"ABSOLUTE\",\"xMm\":0,\"yMm\":0,\"widthMode\":\"FIXED\",\"widthMm\":60,\"heightMode\":\"HUG_CONTENT\"},\"runs\":[{\"text\":\"x\",\"fontRef\":{\"assetId\":\"00000000-0000-4000-8000-0000000000a1\"},\"fontSizePt\":12,\"color\":\"#FF000000\",\"decoration\":\"NONE\",\"letterSpacingPt\":0}],\"overflow\":\"VISIBLE\",\"maxLines\":2,\"lineHeight\":{\"type\":\"FIXED\",\"valuePt\":14}}]"
+      },
+      "expected": {
+        "outcome": "REJECTED",
+        "code": "DESIGN_VALUE_INVALID",
+        "stage": "DESIGN_SEMANTIC_VALIDATION",
+        "pointer": "/designRoot/children/0/maxLines",
+        "limit": null
+      }
+    },
+    {
+      "id": "reject-text-fit-none-with-min-scale",
+      "input": {
+        "kind": "CANVAS",
+        "children": "[{\"nodeId\":\"00000000-0000-4000-8000-000000000026\",\"kind\":\"text\",\"bindings\":[],\"placement\":{\"type\":\"ABSOLUTE\",\"xMm\":0,\"yMm\":0,\"widthMode\":\"FIXED\",\"widthMm\":60,\"heightMode\":\"HUG_CONTENT\"},\"runs\":[{\"text\":\"x\",\"fontRef\":{\"assetId\":\"00000000-0000-4000-8000-0000000000a1\"},\"fontSizePt\":12,\"color\":\"#FF000000\",\"decoration\":\"NONE\",\"letterSpacingPt\":0}],\"fitMode\":\"NONE\",\"minScale\":0.5,\"lineHeight\":{\"type\":\"FIXED\",\"valuePt\":14}}]"
+      },
+      "expected": {
+        "outcome": "REJECTED",
+        "code": "DESIGN_VALUE_INVALID",
+        "stage": "DESIGN_SEMANTIC_VALIDATION",
+        "pointer": "/designRoot/children/0/minScale",
+        "limit": null
+      }
+    },
+    {
+      "id": "reject-text-shrink-without-min-scale",
+      "input": {
+        "kind": "CANVAS",
+        "children": "[{\"nodeId\":\"00000000-0000-4000-8000-000000000027\",\"kind\":\"text\",\"bindings\":[],\"placement\":{\"type\":\"ABSOLUTE\",\"xMm\":0,\"yMm\":0,\"widthMode\":\"FIXED\",\"widthMm\":60,\"heightMode\":\"HUG_CONTENT\"},\"runs\":[{\"text\":\"x\",\"fontRef\":{\"assetId\":\"00000000-0000-4000-8000-0000000000a1\"},\"fontSizePt\":12,\"color\":\"#FF000000\",\"decoration\":\"NONE\",\"letterSpacingPt\":0}],\"fitMode\":\"SHRINK_TO_FIT\",\"lineHeight\":{\"type\":\"FIXED\",\"valuePt\":14}}]"
+      },
+      "expected": {
+        "outcome": "REJECTED",
+        "code": "DESIGN_STRUCTURE_INVALID",
+        "stage": "DESIGN_SEMANTIC_VALIDATION",
+        "pointer": "/designRoot/children/0/minScale",
+        "limit": null
+      }
+    },
+    {
+      "id": "reject-image-double-hug",
+      "input": {
+        "kind": "CANVAS",
+        "children": "[{\"nodeId\":\"00000000-0000-4000-8000-000000000028\",\"kind\":\"image\",\"bindings\":[],\"placement\":{\"type\":\"ABSOLUTE\",\"xMm\":0,\"yMm\":0,\"widthMode\":\"HUG_CONTENT\",\"heightMode\":\"HUG_CONTENT\"},\"imageRef\":{\"assetId\":\"00000000-0000-4000-8000-0000000000a3\"}}]"
+      },
+      "expected": {
+        "outcome": "REJECTED",
+        "code": "DESIGN_VALUE_INVALID",
+        "stage": "DESIGN_SEMANTIC_VALIDATION",
+        "pointer": "/designRoot/children/0/placement/heightMode",
+        "limit": null
+      }
+    },
+    {
+      "id": "reject-rect-without-fill-or-stroke",
+      "input": {
+        "kind": "CANVAS",
+        "children": "[{\"nodeId\":\"00000000-0000-4000-8000-000000000029\",\"kind\":\"rect\",\"bindings\":[],\"placement\":{\"type\":\"ABSOLUTE\",\"xMm\":0,\"yMm\":0,\"widthMode\":\"FIXED\",\"widthMm\":10,\"heightMode\":\"FIXED\",\"heightMm\":10}}]"
+      },
+      "expected": {
+        "outcome": "REJECTED",
+        "code": "DESIGN_VALUE_INVALID",
+        "stage": "DESIGN_SEMANTIC_VALIDATION",
+        "pointer": "/designRoot/children/0/fill",
+        "limit": null
+      }
+    },
+    {
+      "id": "reject-rect-with-padding",
+      "input": {
+        "kind": "CANVAS",
+        "children": "[{\"nodeId\":\"00000000-0000-4000-8000-00000000002a\",\"kind\":\"rect\",\"bindings\":[],\"placement\":{\"type\":\"ABSOLUTE\",\"xMm\":0,\"yMm\":0,\"widthMode\":\"FIXED\",\"widthMm\":10,\"heightMode\":\"FIXED\",\"heightMm\":10},\"fill\":{\"color\":\"#FF000000\"},\"padding\":{\"topMm\":1,\"rightMm\":1,\"bottomMm\":1,\"leftMm\":1}}]"
+      },
+      "expected": {
+        "outcome": "REJECTED",
+        "code": "DESIGN_MEMBER_UNKNOWN",
+        "stage": "DESIGN_SEMANTIC_VALIDATION",
+        "pointer": "/designRoot/children/0/padding",
+        "limit": null
+      }
+    },
+    {
+      "id": "reject-rect-hug-mode",
+      "input": {
+        "kind": "CANVAS",
+        "children": "[{\"nodeId\":\"00000000-0000-4000-8000-00000000002b\",\"kind\":\"rect\",\"bindings\":[],\"placement\":{\"type\":\"ABSOLUTE\",\"xMm\":0,\"yMm\":0,\"widthMode\":\"HUG_CONTENT\",\"heightMode\":\"FIXED\",\"heightMm\":10},\"fill\":{\"color\":\"#FF000000\"}}]"
+      },
+      "expected": {
+        "outcome": "REJECTED",
+        "code": "DESIGN_VALUE_INVALID",
+        "stage": "DESIGN_SEMANTIC_VALIDATION",
+        "pointer": "/designRoot/children/0/placement/widthMode",
+        "limit": null
+      }
+    },
+    {
+      "id": "reject-line-same-points",
+      "input": {
+        "kind": "CANVAS",
+        "children": "[{\"nodeId\":\"00000000-0000-4000-8000-00000000002c\",\"kind\":\"line\",\"bindings\":[],\"placement\":{\"type\":\"ABSOLUTE\",\"xMm\":0,\"yMm\":0,\"widthMode\":\"FIXED\",\"widthMm\":10,\"heightMode\":\"FIXED\",\"heightMm\":10},\"start\":{\"xMm\":0,\"yMm\":0},\"end\":{\"xMm\":0,\"yMm\":0},\"stroke\":{\"color\":\"#FF000000\",\"widthMm\":1,\"cap\":\"BUTT\",\"join\":\"MITER\"}}]"
+      },
+      "expected": {
+        "outcome": "REJECTED",
+        "code": "DESIGN_VALUE_INVALID",
+        "stage": "DESIGN_SEMANTIC_VALIDATION",
+        "pointer": "/designRoot/children/0/end",
+        "limit": null
+      }
+    },
+    {
+      "id": "reject-line-missing-stroke",
+      "input": {
+        "kind": "CANVAS",
+        "children": "[{\"nodeId\":\"00000000-0000-4000-8000-00000000002d\",\"kind\":\"line\",\"bindings\":[],\"placement\":{\"type\":\"ABSOLUTE\",\"xMm\":0,\"yMm\":0,\"widthMode\":\"FIXED\",\"widthMm\":10,\"heightMode\":\"FIXED\",\"heightMm\":10},\"start\":{\"xMm\":0,\"yMm\":0},\"end\":{\"xMm\":10,\"yMm\":10}}]"
+      },
+      "expected": {
+        "outcome": "REJECTED",
+        "code": "DESIGN_STRUCTURE_INVALID",
+        "stage": "DESIGN_SEMANTIC_VALIDATION",
+        "pointer": "/designRoot/children/0/stroke",
+        "limit": null
+      }
+    },
+    {
+      "id": "reject-polygon-too-few-points",
+      "input": {
+        "kind": "CANVAS",
+        "children": "[{\"nodeId\":\"00000000-0000-4000-8000-00000000002e\",\"kind\":\"polygon\",\"bindings\":[],\"placement\":{\"type\":\"ABSOLUTE\",\"xMm\":0,\"yMm\":0,\"widthMode\":\"FIXED\",\"widthMm\":20,\"heightMode\":\"FIXED\",\"heightMm\":20},\"points\":[{\"xMm\":0,\"yMm\":0},{\"xMm\":10,\"yMm\":10}],\"fill\":{\"color\":\"#FF000000\"}}]"
+      },
+      "expected": {
+        "outcome": "REJECTED",
+        "code": "DESIGN_VALUE_INVALID",
+        "stage": "DESIGN_SEMANTIC_VALIDATION",
+        "pointer": "/designRoot/children/0/points",
+        "limit": null
+      }
+    },
+    {
+      "id": "reject-polygon-adjacent-duplicate",
+      "input": {
+        "kind": "CANVAS",
+        "children": "[{\"nodeId\":\"00000000-0000-4000-8000-00000000002f\",\"kind\":\"polygon\",\"bindings\":[],\"placement\":{\"type\":\"ABSOLUTE\",\"xMm\":0,\"yMm\":0,\"widthMode\":\"FIXED\",\"widthMm\":20,\"heightMode\":\"FIXED\",\"heightMm\":20},\"points\":[{\"xMm\":0,\"yMm\":0},{\"xMm\":0,\"yMm\":0},{\"xMm\":10,\"yMm\":10}],\"fill\":{\"color\":\"#FF000000\"}}]"
+      },
+      "expected": {
+        "outcome": "REJECTED",
+        "code": "DESIGN_VALUE_INVALID",
+        "stage": "DESIGN_SEMANTIC_VALIDATION",
+        "pointer": "/designRoot/children/0/points/1",
+        "limit": null
+      }
+    },
+    {
+      "id": "reject-polygon-collinear",
+      "input": {
+        "kind": "CANVAS",
+        "children": "[{\"nodeId\":\"00000000-0000-4000-8000-000000000030\",\"kind\":\"polygon\",\"bindings\":[],\"placement\":{\"type\":\"ABSOLUTE\",\"xMm\":0,\"yMm\":0,\"widthMode\":\"FIXED\",\"widthMm\":20,\"heightMode\":\"FIXED\",\"heightMm\":20},\"points\":[{\"xMm\":0,\"yMm\":0},{\"xMm\":1,\"yMm\":1},{\"xMm\":2,\"yMm\":2}],\"fill\":{\"color\":\"#FF000000\"}}]"
+      },
+      "expected": {
+        "outcome": "REJECTED",
+        "code": "DESIGN_VALUE_INVALID",
+        "stage": "DESIGN_SEMANTIC_VALIDATION",
+        "pointer": "/designRoot/children/0/points",
+        "limit": null
+      }
+    },
+    {
+      "id": "reject-polyline-single-point",
+      "input": {
+        "kind": "CANVAS",
+        "children": "[{\"nodeId\":\"00000000-0000-4000-8000-000000000031\",\"kind\":\"polyline\",\"bindings\":[],\"placement\":{\"type\":\"ABSOLUTE\",\"xMm\":0,\"yMm\":0,\"widthMode\":\"FIXED\",\"widthMm\":10,\"heightMode\":\"FIXED\",\"heightMm\":10},\"points\":[{\"xMm\":0,\"yMm\":0}],\"stroke\":{\"color\":\"#FF000000\",\"widthMm\":1,\"cap\":\"BUTT\",\"join\":\"MITER\"}}]"
+      },
+      "expected": {
+        "outcome": "REJECTED",
+        "code": "DESIGN_VALUE_INVALID",
+        "stage": "DESIGN_SEMANTIC_VALIDATION",
+        "pointer": "/designRoot/children/0/points",
+        "limit": null
+      }
+    },
+    {
+      "id": "reject-path-first-not-move-to",
+      "input": {
+        "kind": "CANVAS",
+        "children": "[{\"nodeId\":\"00000000-0000-4000-8000-000000000032\",\"kind\":\"path\",\"bindings\":[],\"placement\":{\"type\":\"ABSOLUTE\",\"xMm\":0,\"yMm\":0,\"widthMode\":\"FIXED\",\"widthMm\":20,\"heightMode\":\"FIXED\",\"heightMm\":20},\"commands\":[{\"type\":\"LINE_TO\",\"xMm\":1,\"yMm\":1}],\"fill\":{\"color\":\"#FF000000\"}}]"
+      },
+      "expected": {
+        "outcome": "REJECTED",
+        "code": "DESIGN_VALUE_INVALID",
+        "stage": "DESIGN_SEMANTIC_VALIDATION",
+        "pointer": "/designRoot/children/0/commands/0/type",
+        "limit": null
+      }
+    },
+    {
+      "id": "reject-path-close-consecutive",
+      "input": {
+        "kind": "CANVAS",
+        "children": "[{\"nodeId\":\"00000000-0000-4000-8000-000000000033\",\"kind\":\"path\",\"bindings\":[],\"placement\":{\"type\":\"ABSOLUTE\",\"xMm\":0,\"yMm\":0,\"widthMode\":\"FIXED\",\"widthMm\":20,\"heightMode\":\"FIXED\",\"heightMm\":20},\"commands\":[{\"type\":\"MOVE_TO\",\"xMm\":0,\"yMm\":0},{\"type\":\"CLOSE\"},{\"type\":\"CLOSE\"}],\"fill\":{\"color\":\"#FF000000\"}}]"
+      },
+      "expected": {
+        "outcome": "REJECTED",
+        "code": "DESIGN_VALUE_INVALID",
+        "stage": "DESIGN_SEMANTIC_VALIDATION",
+        "pointer": "/designRoot/children/0/commands/2/type",
+        "limit": null
+      }
+    },
+    {
+      "id": "reject-path-no-drawing-command",
+      "input": {
+        "kind": "CANVAS",
+        "children": "[{\"nodeId\":\"00000000-0000-4000-8000-000000000034\",\"kind\":\"path\",\"bindings\":[],\"placement\":{\"type\":\"ABSOLUTE\",\"xMm\":0,\"yMm\":0,\"widthMode\":\"FIXED\",\"widthMm\":20,\"heightMode\":\"FIXED\",\"heightMm\":20},\"commands\":[{\"type\":\"MOVE_TO\",\"xMm\":0,\"yMm\":0},{\"type\":\"CLOSE\"}],\"fill\":{\"color\":\"#FF000000\"}}]"
+      },
+      "expected": {
+        "outcome": "REJECTED",
+        "code": "DESIGN_VALUE_INVALID",
+        "stage": "DESIGN_SEMANTIC_VALIDATION",
+        "pointer": "/designRoot/children/0/commands",
+        "limit": null
+      }
+    },
+    {
+      "id": "reject-qrcode-empty-content",
+      "input": {
+        "kind": "CANVAS",
+        "children": "[{\"nodeId\":\"00000000-0000-4000-8000-000000000035\",\"kind\":\"qrCode\",\"bindings\":[],\"placement\":{\"type\":\"ABSOLUTE\",\"xMm\":0,\"yMm\":0,\"widthMode\":\"FIXED\",\"widthMm\":30,\"heightMode\":\"FIXED\",\"heightMm\":30},\"content\":\"\"}]"
+      },
+      "expected": {
+        "outcome": "REJECTED",
+        "code": "DESIGN_VALUE_INVALID",
+        "stage": "DESIGN_SEMANTIC_VALIDATION",
+        "pointer": "/designRoot/children/0/content",
+        "limit": null
+      }
+    },
+    {
+      "id": "reject-barcode-bad-check-digit",
+      "input": {
+        "kind": "CANVAS",
+        "children": "[{\"nodeId\":\"00000000-0000-4000-8000-000000000036\",\"kind\":\"barcode\",\"bindings\":[],\"placement\":{\"type\":\"ABSOLUTE\",\"xMm\":0,\"yMm\":0,\"widthMode\":\"FIXED\",\"widthMm\":60,\"heightMode\":\"FIXED\",\"heightMm\":20},\"format\":\"EAN_13\",\"value\":\"5901234123458\"}]"
+      },
+      "expected": {
+        "outcome": "REJECTED",
+        "code": "DESIGN_VALUE_INVALID",
+        "stage": "DESIGN_SEMANTIC_VALIDATION",
+        "pointer": "/designRoot/children/0/value",
+        "limit": null
+      }
+    },
+    {
+      "id": "reject-barcode-bad-format",
+      "input": {
+        "kind": "CANVAS",
+        "children": "[{\"nodeId\":\"00000000-0000-4000-8000-000000000037\",\"kind\":\"barcode\",\"bindings\":[],\"placement\":{\"type\":\"ABSOLUTE\",\"xMm\":0,\"yMm\":0,\"widthMode\":\"FIXED\",\"widthMm\":60,\"heightMode\":\"FIXED\",\"heightMm\":20},\"format\":\"QR\",\"value\":\"x\"}]"
+      },
+      "expected": {
+        "outcome": "REJECTED",
+        "code": "DESIGN_VALUE_INVALID",
+        "stage": "DESIGN_SEMANTIC_VALIDATION",
+        "pointer": "/designRoot/children/0/format",
+        "limit": null
+      }
+    },
+    {
+      "id": "reject-leaf-with-children",
+      "input": {
+        "kind": "CANVAS",
+        "children": "[{\"nodeId\":\"00000000-0000-4000-8000-000000000038\",\"kind\":\"text\",\"bindings\":[],\"placement\":{\"type\":\"ABSOLUTE\",\"xMm\":0,\"yMm\":0,\"widthMode\":\"FIXED\",\"widthMm\":10,\"heightMode\":\"FIXED\",\"heightMm\":10},\"runs\":[{\"text\":\"x\",\"fontRef\":{\"assetId\":\"00000000-0000-4000-8000-0000000000a1\"},\"fontSizePt\":12,\"color\":\"#FF000000\",\"decoration\":\"NONE\",\"letterSpacingPt\":0}],\"children\":[]}]"
+      },
+      "expected": {
+        "outcome": "REJECTED",
+        "code": "DESIGN_MEMBER_UNKNOWN",
+        "stage": "DESIGN_SEMANTIC_VALIDATION",
+        "pointer": "/designRoot/children/0/children",
         "limit": null
       }
     }

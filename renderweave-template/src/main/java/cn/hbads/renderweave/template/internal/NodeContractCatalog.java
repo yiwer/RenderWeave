@@ -19,7 +19,17 @@ final class NodeContractCatalog {
         FRAME,
         STACK,
         GRID,
-        REPEAT
+        REPEAT,
+        TEXT,
+        IMAGE,
+        RECT,
+        ELLIPSE,
+        LINE,
+        POLYGON,
+        POLYLINE,
+        PATH,
+        QRCODE,
+        BARCODE
     }
 
     enum PlacementVariant {
@@ -36,23 +46,32 @@ final class NodeContractCatalog {
     }
 
     /** Kind names as authored on the wire (lowerCamelCase). */
-    static final Map<String, NodeKind> KIND_BY_NAME = Map.of(
-            "canvas", NodeKind.CANVAS,
-            "group", NodeKind.GROUP,
-            "frame", NodeKind.FRAME,
-            "stack", NodeKind.STACK,
-            "grid", NodeKind.GRID,
-            "repeat", NodeKind.REPEAT
+    static final Map<String, NodeKind> KIND_BY_NAME = Map.ofEntries(
+            Map.entry("canvas", NodeKind.CANVAS),
+            Map.entry("group", NodeKind.GROUP),
+            Map.entry("frame", NodeKind.FRAME),
+            Map.entry("stack", NodeKind.STACK),
+            Map.entry("grid", NodeKind.GRID),
+            Map.entry("repeat", NodeKind.REPEAT),
+            Map.entry("text", NodeKind.TEXT),
+            Map.entry("image", NodeKind.IMAGE),
+            Map.entry("rect", NodeKind.RECT),
+            Map.entry("ellipse", NodeKind.ELLIPSE),
+            Map.entry("line", NodeKind.LINE),
+            Map.entry("polygon", NodeKind.POLYGON),
+            Map.entry("polyline", NodeKind.POLYLINE),
+            Map.entry("path", NodeKind.PATH),
+            Map.entry("qrCode", NodeKind.QRCODE),
+            Map.entry("barcode", NodeKind.BARCODE)
     );
 
     /**
-     * Known-but-not-yet-admitted kinds (visual leaves and structural kinds). They fail closed with
+     * Known-but-not-yet-admitted kinds (structural kinds). They fail closed with
      * DESIGN_KERNEL_SCOPE_UNSUPPORTED until their atoms tickets land; anything else is an unknown
      * kind value.
      */
     static final Set<String> FUTURE_KINDS = Set.of(
-            "text", "image", "rect", "ellipse", "line", "polygon", "polyline", "path",
-            "qrCode", "barcode", "conditional", "templateUse"
+            "conditional", "templateUse"
     );
 
     static final Set<String> COMMON_NODE_MEMBERS = Set.of(
@@ -80,6 +99,63 @@ final class NodeContractCatalog {
             "loopId", "items", "absentPolicy", "itemLayout", "instanceLayout"
     );
 
+    // --- Visual leaf members (ticket 09 §6-§7) ---------------------------------
+
+    static final Set<String> TEXT_MEMBERS = Set.of(
+            "runs", "writingMode", "horizontalAlign", "verticalAlign", "lineBreak",
+            "overflow", "lineHeight", "maxLines", "padding", "stroke", "fitMode", "minScale"
+    );
+    static final Set<String> RUN_MEMBERS = Set.of(
+            "text", "fontRef", "fontSizePt", "color", "decoration",
+            "letterSpacingPt", "letterSpacingFactor"
+    );
+    static final Set<String> LINE_HEIGHT_MEMBERS = Set.of("type", "factor", "valuePt");
+    static final Set<String> IMAGE_MEMBERS = Set.of("imageRef", "fit", "sampling");
+    static final Set<String> RECT_MEMBERS = Set.of("fill", "stroke", "cornerRadii");
+    static final Set<String> ELLIPSE_MEMBERS = Set.of("fill", "stroke");
+    static final Set<String> LINE_MEMBERS = Set.of("start", "end", "stroke");
+    static final Set<String> POLYGON_MEMBERS = Set.of("points", "fill", "stroke");
+    static final Set<String> POLYLINE_MEMBERS = Set.of("points", "stroke");
+    static final Set<String> PATH_MEMBERS = Set.of("commands", "fill", "stroke", "fillRule");
+    static final Set<String> QRCODE_MEMBERS = Set.of(
+            "content", "errorCorrectionLevel", "foregroundColor", "backgroundColor"
+    );
+    static final Set<String> BARCODE_MEMBERS = Set.of(
+            "format", "value", "foregroundColor", "backgroundColor"
+    );
+    static final Set<String> POINT_MM_MEMBERS = Set.of("xMm", "yMm");
+
+    static final Set<String> MOVE_TO_COMMAND_MEMBERS = Set.of("type", "xMm", "yMm");
+    static final Set<String> LINE_TO_COMMAND_MEMBERS = Set.of("type", "xMm", "yMm");
+    static final Set<String> QUAD_TO_COMMAND_MEMBERS = Set.of(
+            "type", "cxMm", "cyMm", "xMm", "yMm"
+    );
+    static final Set<String> CUBIC_TO_COMMAND_MEMBERS = Set.of(
+            "type", "c1xMm", "c1yMm", "c2xMm", "c2yMm", "xMm", "yMm"
+    );
+    static final Set<String> CLOSE_COMMAND_MEMBERS = Set.of("type");
+
+    static final Set<String> WRITING_MODE_TOKENS = Set.of("HORIZONTAL_TB", "VERTICAL_RL");
+    static final Set<String> HORIZONTAL_ALIGN_TOKENS = Set.of(
+            "LEFT", "CENTER", "RIGHT", "JUSTIFY", "SPACE_EVENLY"
+    );
+    static final Set<String> VERTICAL_ALIGN_TOKENS = Set.of(
+            "TOP", "CENTER", "BOTTOM", "JUSTIFY", "SPACE_EVENLY"
+    );
+    static final Set<String> LINE_BREAK_TOKENS = Set.of("NONE", "WORD", "CHAR");
+    static final Set<String> TEXT_OVERFLOW_TOKENS = Set.of("VISIBLE", "CLIP", "ELLIPSIS", "FAIL");
+    static final Set<String> DECORATION_TOKENS = Set.of("NONE", "UNDERLINE", "LINE_THROUGH");
+    static final Set<String> LINE_HEIGHT_TYPE_TOKENS = Set.of("FACTOR", "FIXED");
+    static final Set<String> FIT_MODE_TOKENS = Set.of("NONE", "SHRINK_TO_FIT");
+    static final Set<String> IMAGE_FIT_TOKENS = Set.of("CONTAIN", "COVER", "FILL");
+    static final Set<String> IMAGE_SAMPLING_TOKENS = Set.of("LINEAR", "NEAREST");
+    static final Set<String> FILL_RULE_TOKENS = Set.of("NONZERO", "EVEN_ODD");
+    static final Set<String> QR_ERROR_CORRECTION_TOKENS = Set.of("L", "M", "Q", "H");
+    static final Set<String> BARCODE_FORMAT_TOKENS = Set.of("EAN_8", "EAN_13", "UPC_A", "CODE_128");
+    static final Set<String> PATH_COMMAND_TYPES = Set.of(
+            "MOVE_TO", "LINE_TO", "QUAD_TO", "CUBIC_TO", "CLOSE"
+    );
+
     static final Set<String> ABSENT_POLICY_TOKENS = Set.of("ERROR", "EMPTY");
 
     /**
@@ -95,6 +171,9 @@ final class NodeContractCatalog {
 
     static final Set<String> FILL_MEMBERS = Set.of("color");
     static final Set<String> STROKE_MM_MEMBERS = Set.of("color", "widthMm", "cap", "join");
+
+    /** StrokePt: Text-only glyph stroke with pt unit (ticket 09 §3, §6). */
+    static final Set<String> STROKE_PT_MEMBERS = Set.of("color", "widthPt", "cap", "join");
     static final List<String> PADDING_MEMBER_ORDER = List.of(
             "topMm", "rightMm", "bottomMm", "leftMm"
     );
@@ -154,25 +233,36 @@ final class NodeContractCatalog {
      */
     static PlacementVariant expectedVariant(NodeKind parentKind) {
         return switch (parentKind) {
-            case CANVAS, FRAME, GROUP -> PlacementVariant.ABSOLUTE;
+            // Visual leaves never host children; ABSOLUTE keeps the switch total.
+            case CANVAS, FRAME, GROUP, TEXT, IMAGE, RECT, ELLIPSE, LINE, POLYGON, POLYLINE,
+                    PATH, QRCODE, BARCODE -> PlacementVariant.ABSOLUTE;
             case STACK -> PlacementVariant.STACK;
             case GRID -> PlacementVariant.GRID;
             case REPEAT -> PlacementVariant.PACK;
         };
     }
 
-    /** Per-kind width/height mode capability. */
+    /** Per-kind width/height mode capability (ticket 09 §4 table). */
     static Set<SizeMode> sizeModes(NodeKind kind) {
         return switch (kind) {
             case GROUP -> Set.of(SizeMode.HUG_CONTENT);
-            case CANVAS, FRAME, STACK, GRID, REPEAT ->
+            case RECT, ELLIPSE, QRCODE, BARCODE -> Set.of(SizeMode.FIXED, SizeMode.FILL);
+            case CANVAS, FRAME, STACK, GRID, REPEAT, TEXT, LINE, POLYGON, POLYLINE, PATH ->
                     Set.of(SizeMode.FIXED, SizeMode.HUG_CONTENT, SizeMode.FILL);
+            case IMAGE -> Set.of(SizeMode.FIXED, SizeMode.HUG_CONTENT, SizeMode.FILL);
         };
     }
 
-    /** Containers may nest other containers (except Canvas, which is root-only). */
+    /**
+     * Containers may nest (except Canvas, which is root-only); visual leaves and Repeat
+     * children have their own ContentModels, so the generic children member is forbidden.
+     */
     static boolean allowsChildren(NodeKind kind) {
-        return kind != NodeKind.CANVAS;
+        return switch (kind) {
+            case CANVAS, TEXT, IMAGE, RECT, ELLIPSE, LINE, POLYGON, POLYLINE, PATH,
+                    QRCODE, BARCODE -> false;
+            case GROUP, FRAME, STACK, GRID, REPEAT -> true;
+        };
     }
 
     private NodeContractCatalog() {
