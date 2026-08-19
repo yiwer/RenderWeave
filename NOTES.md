@@ -1299,3 +1299,38 @@
   reconciliation、save-and-preview+失败撤下、recovery、import+三模式、a11y）登记为后续 Editor 实施票
   的前置分解，Editor 产品 route 不开放。Ticket 19 open，Editor 未 READY；push 待用户另行授权（分支
   ahead 9）。
+
+### Template v1 TV1-T14 NodeContractCatalog 与 Node/Property Identity 原子（增量 1：容器）
+
+- 新增 internal `NodeContractCatalog`（唯一机器权威）：NodeKind/PlacementVariant/SizeMode 枚举、
+  KIND_BY_NAME（canvas/group/frame/stack/grid）、FUTURE_KINDS（text/image/rect/ellipse/line/polygon/
+  polyline/path/qrCode/barcode/repeat/conditional/templateUse，admission 时 fail closed）、
+  COMMON/CONTAINER/APPEARANCE（fill/stroke/cornerRadii/padding/clipContent 仅 FRAME/STACK/GRID）/
+  STACK/GRID member 集、FILL/STROKE_MM/TRANSFORM 集、PADDING/CORNER_RADII 有序列表（确定性 reject
+  pointer）、ABSOLUTE/STACK/GRID placement member 集（含 widthMm/heightMm）、token 枚举集
+  （sizeMode/cap/join/direction/justifyContent/alignItems/trackType）、expectedVariant(parentKind)
+  （canvas/frame/group→ABSOLUTE、stack→STACK、grid→GRID）、sizeModes(kind)（group 仅 HUG_CONTENT）。
+- `CanonicalDesignDslAuthority` 扩展递归容器 admission/canonical：`validateChildren`/
+  `validateNonCanvasNode`（seenNodeIds 树内唯一、Canvas 不可为子、FUTURE_KINDS 与 bindings 非空 →
+  DESIGN_KERNEL_SCOPE_UNSUPPORTED、displayName trim、render/visible/opacity/transform、必填
+  placement 按 parent 期望 variant、appearance 成员、stack direction/gapMm/justifyContent/alignItems、
+  grid 必填非空 rows/columns + FIXED/FRACTION/AUTO track、children 规范化保序 = paint z-order）；
+  `validatePlacement`（ABSOLUTE xMm/yMm/rightInsetMm/bottomInsetMm、STACK margin/alignSelf（交叉轴
+  FILL 禁）/fillWeight（主轴非 FILL 禁）、GRID row/column/rowSpan/columnSpan/alignSelf（FILL 轴禁）、
+  FIXED 必填正 widthMm/heightMm、HUG/FILL 禁 widthMm、min/max 与 FIXED 交叉检查、group 禁 min/max）；
+  闭合复合对象 Fill/StrokeMm/PaddingMm/CornerRadiiMm/Transform 逐 member；children 顺序永不重排。
+- 冻结向量：manifest 升级 `renderweave-template-canonical-kernel-v1/2`，57 cases（33 原样保留 +
+  `reject-empty-object-child` 重写为 children=[{}] → DESIGN_STRUCTURE_INVALID
+  `/designRoot/children/0/kind` + 24 新：5 admit 冻结 exact canonical bytes/sha256/contentHash +
+  19 reject 冻结精确 code/stage/pointer）；`CanonicalKernelVectorTest`（Java primary 写 report）与
+  `tools/verify-template-kernel-vectors.py`（独立 A2 实现，新增容器/placement/复合对象/ContentModel
+  校验镜像 Java 检查顺序）与 gate 断言同步 57/57；`tools/run-template-kernel-gate.ps1` 边界同步。
+- 验证：Template module 27 tests 全绿、`template` gate 绿（Java=57/57 Python=57/57、
+  vector sha256 0f20c477…、static editor 37/21141 registry 22838/22746 authorityDiff=0，evidence
+  `.sdlc/evidence/20260819-191833-template/`）、`fast` 绿（`.sdlc/evidence/20260819-192312-fast/`）、
+  `server` 绿（BUILD SUCCESS，`.sdlc/evidence/20260819-191804-server/`；shared surface 未变——
+  无 POM/OpenAPI/lockfile/migration/process protocol 改动，未重复运行 full 的其余步骤）。Profile
+  保持 NOT_REGISTERED；plan §12 kernel report 已更新为 57/57。visual leaf 增量按票内拆分登记为新票
+  14b（`issues/14b-visual-leaf-kinds.md`，open，Blocked by 03/14），T14 容器增量 resolve 为
+  automated_verified；T14b/T15/T16 成为 unblocked frontier。Ticket 19 open，Editor/Renderer 未
+  READY；push 待用户另行授权（分支 ahead 10）。

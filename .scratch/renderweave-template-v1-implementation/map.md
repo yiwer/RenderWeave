@@ -111,8 +111,12 @@ Label: wayfinder:map
 
 ## Not yet specified
 
-- minimal canonical kernel 已完成；DesignDSL full-Profile 拆分已登记为 T14（NodeContractCatalog 与
-  Node/Property Identity 原子，claimed）→ T15（Definition/ValueSource）→ T16（Binding/Policy）→ T17
+- minimal canonical kernel 已完成；T14 容器增量已 resolve（NodeContractCatalog 与 Node/Property
+  Identity 原子：canvas/group/frame/stack/grid 递归 admission/canonical，manifest
+  `renderweave-template-canonical-kernel-v1/2` 57 vectors，Java primary/Python independent 57/57，
+  Profile 仍 NOT_REGISTERED）；visual leaf 增量拆分为
+  [14b（visual leaf kinds + BindingPolicyCatalog 基础）](issues/14b-visual-leaf-kinds.md)（open）；
+  DesignDSL full-Profile 拆分登记为 14b → T15（Definition/ValueSource）→ T16（Binding/Policy）→ T17
   （Repeat）→ T18（Conditional）→ T19（TemplateUse）→ T20（Template 依赖投影，T12b 的 blocker）；
   admission/canonical 增量逐票带 exact vectors + template gate 扩展，全部 exact 语义原子通过前不登记
   Profile available，也不把本 kernel 的 fail-closed non-empty array 当作 set ordering 已实现。

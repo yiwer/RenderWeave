@@ -47,6 +47,133 @@ CANVAS_MEMBERS = {
 BLEED_MEMBER_ORDER = ("topMm", "rightMm", "bottomMm", "leftMm")
 BLEED_MEMBERS = set(BLEED_MEMBER_ORDER)
 
+# --- Node contract (T14 increment 1: containers) ------------------------------
+
+KIND_BY_NAME = {
+    "canvas": "CANVAS",
+    "group": "GROUP",
+    "frame": "FRAME",
+    "stack": "STACK",
+    "grid": "GRID",
+}
+FUTURE_KINDS = {
+    "text",
+    "image",
+    "rect",
+    "ellipse",
+    "line",
+    "polygon",
+    "polyline",
+    "path",
+    "qrCode",
+    "barcode",
+    "repeat",
+    "conditional",
+    "templateUse",
+}
+COMMON_NODE_MEMBERS = {
+    "nodeId",
+    "kind",
+    "displayName",
+    "bindings",
+    "placement",
+    "render",
+    "visible",
+    "opacity",
+    "transform",
+}
+CONTAINER_MEMBERS = {"children"}
+APPEARANCE_MEMBERS = {"fill", "stroke", "cornerRadii", "padding", "clipContent"}
+STACK_MEMBERS = {"direction", "gapMm", "justifyContent", "alignItems"}
+GRID_MEMBERS = {"rows", "columns", "rowGapMm", "columnGapMm"}
+FILL_MEMBERS = {"color"}
+STROKE_MM_MEMBERS = {"color", "widthMm", "cap", "join"}
+PADDING_MEMBER_ORDER = ("topMm", "rightMm", "bottomMm", "leftMm")
+PADDING_MEMBERS = set(PADDING_MEMBER_ORDER)
+CORNER_RADII_MEMBER_ORDER = ("topLeftMm", "topRightMm", "bottomRightMm", "bottomLeftMm")
+CORNER_RADII_MEMBERS = set(CORNER_RADII_MEMBER_ORDER)
+TRANSFORM_MEMBERS = {"rotationDeg", "scaleX", "scaleY", "originX", "originY"}
+ABSOLUTE_PLACEMENT_MEMBERS = {
+    "type",
+    "xMm",
+    "yMm",
+    "widthMode",
+    "heightMode",
+    "widthMm",
+    "heightMm",
+    "minWidthMm",
+    "minHeightMm",
+    "maxWidthMm",
+    "maxHeightMm",
+    "rightInsetMm",
+    "bottomInsetMm",
+}
+STACK_PLACEMENT_MEMBERS = {
+    "type",
+    "widthMode",
+    "heightMode",
+    "widthMm",
+    "heightMm",
+    "minWidthMm",
+    "minHeightMm",
+    "maxWidthMm",
+    "maxHeightMm",
+    "marginTopMm",
+    "marginRightMm",
+    "marginBottomMm",
+    "marginLeftMm",
+    "alignSelf",
+    "fillWeight",
+}
+GRID_PLACEMENT_MEMBERS = {
+    "type",
+    "widthMode",
+    "heightMode",
+    "widthMm",
+    "heightMm",
+    "minWidthMm",
+    "minHeightMm",
+    "maxWidthMm",
+    "maxHeightMm",
+    "row",
+    "column",
+    "rowSpan",
+    "columnSpan",
+    "marginTopMm",
+    "marginRightMm",
+    "marginBottomMm",
+    "marginLeftMm",
+    "horizontalAlignSelf",
+    "verticalAlignSelf",
+}
+SIZE_MODE_TOKENS = {"FIXED", "HUG_CONTENT", "FILL"}
+STROKE_CAP_TOKENS = {"BUTT", "ROUND", "SQUARE"}
+STROKE_JOIN_TOKENS = {"MITER", "ROUND", "BEVEL"}
+STACK_DIRECTION_TOKENS = {"ROW", "COLUMN"}
+JUSTIFY_CONTENT_TOKENS = {
+    "START",
+    "CENTER",
+    "END",
+    "SPACE_BETWEEN",
+    "SPACE_AROUND",
+    "SPACE_EVENLY",
+}
+ALIGN_ITEMS_TOKENS = {"START", "CENTER", "END"}
+EXPECTED_VARIANT = {
+    "CANVAS": "ABSOLUTE",
+    "FRAME": "ABSOLUTE",
+    "GROUP": "ABSOLUTE",
+    "STACK": "STACK",
+    "GRID": "GRID",
+}
+SIZE_MODES = {
+    "GROUP": {"HUG_CONTENT"},
+    "CANVAS": {"FIXED", "HUG_CONTENT", "FILL"},
+    "FRAME": {"FIXED", "HUG_CONTENT", "FILL"},
+    "STACK": {"FIXED", "HUG_CONTENT", "FILL"},
+    "GRID": {"FIXED", "HUG_CONTENT", "FILL"},
+}
+
 
 @dataclass(frozen=True)
 class NumberToken:
@@ -395,6 +522,430 @@ def decimal_member(
         raise semantic_rejection("DESIGN_VALUE_INVALID", pointer)
 
 
+def decimal_value(value: Any, pointer: str) -> Decimal:
+    if not isinstance(value, NumberToken):
+        raise semantic_rejection("DESIGN_STRUCTURE_INVALID", pointer)
+    try:
+        return Decimal(value.token)
+    except InvalidOperation as error:
+        raise semantic_rejection("DESIGN_VALUE_INVALID", pointer) from error
+
+
+def any_decimal_member(value: dict[str, Any], name: str, pointer: str) -> None:
+    decimal_value(require_member(value, name, pointer), pointer)
+
+
+def positive_decimal_member(value: dict[str, Any], name: str, pointer: str) -> None:
+    number = decimal_value(require_member(value, name, pointer), pointer)
+    if number <= 0:
+        raise semantic_rejection("DESIGN_VALUE_INVALID", pointer)
+
+
+def non_negative_decimal_member(value: dict[str, Any], name: str, pointer: str) -> None:
+    number = decimal_value(require_member(value, name, pointer), pointer)
+    if number < 0:
+        raise semantic_rejection("DESIGN_VALUE_INVALID", pointer)
+
+
+def non_zero_decimal_member(value: dict[str, Any], name: str, pointer: str) -> None:
+    number = decimal_value(require_member(value, name, pointer), pointer)
+    if number == 0:
+        raise semantic_rejection("DESIGN_VALUE_INVALID", pointer)
+
+
+def ranged_decimal_member(
+    value: dict[str, Any],
+    name: str,
+    pointer: str,
+    minimum: int,
+    maximum: int,
+) -> None:
+    number = decimal_value(require_member(value, name, pointer), pointer)
+    if number < minimum or number > maximum:
+        raise semantic_rejection("DESIGN_VALUE_INVALID", pointer)
+
+
+def non_negative_integer_member(value: dict[str, Any], name: str, pointer: str) -> None:
+    number = decimal_value(require_member(value, name, pointer), pointer)
+    if number < 0 or number != number.to_integral_value():
+        raise semantic_rejection("DESIGN_VALUE_INVALID", pointer)
+
+
+def positive_integer_member(value: dict[str, Any], name: str, pointer: str) -> None:
+    number = decimal_value(require_member(value, name, pointer), pointer)
+    if number <= 0 or number != number.to_integral_value():
+        raise semantic_rejection("DESIGN_VALUE_INVALID", pointer)
+
+
+def boolean_member(value: dict[str, Any], name: str, pointer: str) -> None:
+    member = require_member(value, name, pointer)
+    if not isinstance(member, bool):
+        raise semantic_rejection("DESIGN_STRUCTURE_INVALID", pointer)
+
+
+def enum_member(value: dict[str, Any], name: str, allowed: set[str], pointer: str) -> None:
+    token = require_string(require_member(value, name, pointer), pointer)
+    if token not in allowed:
+        raise semantic_rejection("DESIGN_VALUE_INVALID", pointer)
+
+
+def size_mode_member(value: dict[str, Any], name: str, pointer: str) -> str:
+    token = require_string(require_member(value, name, pointer), pointer)
+    if token not in SIZE_MODE_TOKENS:
+        raise semantic_rejection("DESIGN_VALUE_INVALID", pointer)
+    return token
+
+
+def color_member(value: dict[str, Any], name: str, pointer: str) -> None:
+    color = require_string(require_member(value, name, pointer), pointer)
+    if RGBA.fullmatch(color) is None:
+        raise semantic_rejection("DESIGN_VALUE_INVALID", pointer)
+
+
+def validate_fill(value: Any, pointer: str) -> None:
+    fill = require_object(value, pointer)
+    reject_unknown(fill, FILL_MEMBERS, pointer)
+    color_member(fill, "color", pointer + "/color")
+
+
+def validate_stroke_mm(value: Any, pointer: str) -> None:
+    stroke = require_object(value, pointer)
+    reject_unknown(stroke, STROKE_MM_MEMBERS, pointer)
+    color_member(stroke, "color", pointer + "/color")
+    positive_decimal_member(stroke, "widthMm", pointer + "/widthMm")
+    enum_member(stroke, "cap", STROKE_CAP_TOKENS, pointer + "/cap")
+    enum_member(stroke, "join", STROKE_JOIN_TOKENS, pointer + "/join")
+
+
+def validate_padding(value: Any, pointer: str) -> None:
+    padding = require_object(value, pointer)
+    reject_unknown(padding, PADDING_MEMBERS, pointer)
+    for member in PADDING_MEMBER_ORDER:
+        non_negative_decimal_member(padding, member, pointer + "/" + member)
+
+
+def validate_corner_radii(value: Any, pointer: str) -> None:
+    radii = require_object(value, pointer)
+    reject_unknown(radii, CORNER_RADII_MEMBERS, pointer)
+    for member in CORNER_RADII_MEMBER_ORDER:
+        non_negative_decimal_member(radii, member, pointer + "/" + member)
+
+
+def validate_appearance_members(node: dict[str, Any], pointer: str) -> None:
+    if "fill" in node:
+        validate_fill(node["fill"], pointer + "/fill")
+    if "stroke" in node:
+        validate_stroke_mm(node["stroke"], pointer + "/stroke")
+    if "cornerRadii" in node:
+        validate_corner_radii(node["cornerRadii"], pointer + "/cornerRadii")
+    if "padding" in node:
+        validate_padding(node["padding"], pointer + "/padding")
+    if "clipContent" in node:
+        boolean_member(node, "clipContent", pointer + "/clipContent")
+
+
+def validate_tracks(node: dict[str, Any], name: str, pointer: str) -> None:
+    tracks = require_array(require_member(node, name, pointer), pointer)
+    if not tracks:
+        raise semantic_rejection("DESIGN_VALUE_INVALID", pointer)
+    for index, item in enumerate(tracks):
+        track_pointer = pointer + "/" + str(index)
+        track = require_object(item, track_pointer)
+        type_token = require_string(
+            require_member(track, "type", track_pointer + "/type"),
+            track_pointer + "/type",
+        )
+        if type_token == "FIXED":
+            reject_unknown(track, {"type", "valueMm"}, track_pointer)
+            positive_decimal_member(track, "valueMm", track_pointer + "/valueMm")
+        elif type_token == "FRACTION":
+            reject_unknown(track, {"type", "weight"}, track_pointer)
+            positive_decimal_member(track, "weight", track_pointer + "/weight")
+        elif type_token == "AUTO":
+            reject_unknown(track, {"type"}, track_pointer)
+        else:
+            raise semantic_rejection("DESIGN_VALUE_INVALID", track_pointer + "/type")
+
+
+def validate_stack_members(node: dict[str, Any], pointer: str) -> str:
+    direction = "COLUMN"
+    if "direction" in node:
+        enum_member(node, "direction", STACK_DIRECTION_TOKENS, pointer + "/direction")
+        direction = node["direction"]
+    if "gapMm" in node:
+        non_negative_decimal_member(node, "gapMm", pointer + "/gapMm")
+    if "justifyContent" in node:
+        enum_member(node, "justifyContent", JUSTIFY_CONTENT_TOKENS, pointer + "/justifyContent")
+    if "alignItems" in node:
+        enum_member(node, "alignItems", ALIGN_ITEMS_TOKENS, pointer + "/alignItems")
+    return direction
+
+
+def validate_grid_members(node: dict[str, Any], pointer: str) -> None:
+    if "rowGapMm" in node:
+        non_negative_decimal_member(node, "rowGapMm", pointer + "/rowGapMm")
+    if "columnGapMm" in node:
+        non_negative_decimal_member(node, "columnGapMm", pointer + "/columnGapMm")
+    validate_tracks(node, "rows", pointer + "/rows")
+    validate_tracks(node, "columns", pointer + "/columns")
+
+
+def validate_min_max(placement: dict[str, Any], pointer: str) -> None:
+    for axis in ("Width", "Height"):
+        min_name = "min" + axis + "Mm"
+        max_name = "max" + axis + "Mm"
+        if min_name in placement:
+            non_negative_decimal_member(placement, min_name, pointer + "/" + min_name)
+        if max_name in placement:
+            positive_decimal_member(placement, max_name, pointer + "/" + max_name)
+        if min_name in placement and max_name in placement:
+            minimum = decimal_value(placement[min_name], pointer + "/" + min_name)
+            maximum = decimal_value(placement[max_name], pointer + "/" + max_name)
+            if minimum > maximum:
+                raise semantic_rejection("DESIGN_VALUE_INVALID", pointer + "/" + min_name)
+        if "widthMm" in placement and axis == "Width":
+            fixed = decimal_value(placement["widthMm"], pointer + "/widthMm")
+            minimum = (
+                decimal_value(placement[min_name], pointer + "/" + min_name)
+                if min_name in placement
+                else None
+            )
+            maximum = (
+                decimal_value(placement[max_name], pointer + "/" + max_name)
+                if max_name in placement
+                else None
+            )
+            if minimum is not None and fixed < minimum:
+                raise semantic_rejection("DESIGN_VALUE_INVALID", pointer + "/widthMm")
+            if maximum is not None and fixed > maximum:
+                raise semantic_rejection("DESIGN_VALUE_INVALID", pointer + "/widthMm")
+        if "heightMm" in placement and axis == "Height":
+            fixed = decimal_value(placement["heightMm"], pointer + "/heightMm")
+            minimum = (
+                decimal_value(placement[min_name], pointer + "/" + min_name)
+                if min_name in placement
+                else None
+            )
+            maximum = (
+                decimal_value(placement[max_name], pointer + "/" + max_name)
+                if max_name in placement
+                else None
+            )
+            if minimum is not None and fixed < minimum:
+                raise semantic_rejection("DESIGN_VALUE_INVALID", pointer + "/heightMm")
+            if maximum is not None and fixed > maximum:
+                raise semantic_rejection("DESIGN_VALUE_INVALID", pointer + "/heightMm")
+
+
+def validate_transform(value: Any, pointer: str) -> None:
+    transform = require_object(value, pointer)
+    reject_unknown(transform, TRANSFORM_MEMBERS, pointer)
+    any_decimal_member(transform, "rotationDeg", pointer + "/rotationDeg")
+    non_zero_decimal_member(transform, "scaleX", pointer + "/scaleX")
+    non_zero_decimal_member(transform, "scaleY", pointer + "/scaleY")
+    ranged_decimal_member(transform, "originX", pointer + "/originX", 0, 1)
+    ranged_decimal_member(transform, "originY", pointer + "/originY", 0, 1)
+
+
+def validate_placement(
+    placement: dict[str, Any],
+    pointer: str,
+    kind: str,
+    parent_kind: str,
+    parent_direction: str | None,
+) -> None:
+    variant_token = require_string(
+        require_member(placement, "type", pointer + "/type"),
+        pointer + "/type",
+    )
+    expected = EXPECTED_VARIANT[parent_kind]
+    if variant_token == "PACK":
+        raise semantic_rejection("DESIGN_KERNEL_SCOPE_UNSUPPORTED", pointer + "/type")
+    if variant_token not in ("ABSOLUTE", "STACK", "GRID"):
+        raise semantic_rejection("DESIGN_VALUE_INVALID", pointer + "/type")
+    if variant_token != expected:
+        raise semantic_rejection("DESIGN_VALUE_INVALID", pointer + "/type")
+    if variant_token == "ABSOLUTE":
+        reject_unknown(placement, ABSOLUTE_PLACEMENT_MEMBERS, pointer)
+        any_decimal_member(placement, "xMm", pointer + "/xMm")
+        any_decimal_member(placement, "yMm", pointer + "/yMm")
+    elif variant_token == "STACK":
+        reject_unknown(placement, STACK_PLACEMENT_MEMBERS, pointer)
+    else:
+        reject_unknown(placement, GRID_PLACEMENT_MEMBERS, pointer)
+        non_negative_integer_member(placement, "row", pointer + "/row")
+        non_negative_integer_member(placement, "column", pointer + "/column")
+        if "rowSpan" in placement:
+            positive_integer_member(placement, "rowSpan", pointer + "/rowSpan")
+        if "columnSpan" in placement:
+            positive_integer_member(placement, "columnSpan", pointer + "/columnSpan")
+        if "horizontalAlignSelf" in placement:
+            enum_member(
+                placement,
+                "horizontalAlignSelf",
+                ALIGN_ITEMS_TOKENS,
+                pointer + "/horizontalAlignSelf",
+            )
+        if "verticalAlignSelf" in placement:
+            enum_member(
+                placement,
+                "verticalAlignSelf",
+                ALIGN_ITEMS_TOKENS,
+                pointer + "/verticalAlignSelf",
+            )
+
+    width_mode = size_mode_member(placement, "widthMode", pointer + "/widthMode")
+    height_mode = size_mode_member(placement, "heightMode", pointer + "/heightMode")
+    modes = SIZE_MODES[kind]
+    if width_mode not in modes:
+        raise semantic_rejection("DESIGN_VALUE_INVALID", pointer + "/widthMode")
+    if height_mode not in modes:
+        raise semantic_rejection("DESIGN_VALUE_INVALID", pointer + "/heightMode")
+    if width_mode == "FIXED":
+        positive_decimal_member(placement, "widthMm", pointer + "/widthMm")
+    elif "widthMm" in placement:
+        raise semantic_rejection("DESIGN_VALUE_INVALID", pointer + "/widthMm")
+    if height_mode == "FIXED":
+        positive_decimal_member(placement, "heightMm", pointer + "/heightMm")
+    elif "heightMm" in placement:
+        raise semantic_rejection("DESIGN_VALUE_INVALID", pointer + "/heightMm")
+
+    if kind == "GROUP":
+        for member in ("minWidthMm", "minHeightMm", "maxWidthMm", "maxHeightMm"):
+            if member in placement:
+                raise semantic_rejection("DESIGN_VALUE_INVALID", pointer + "/" + member)
+    else:
+        validate_min_max(placement, pointer)
+
+    if variant_token == "ABSOLUTE":
+        if "rightInsetMm" in placement:
+            if width_mode != "FILL":
+                raise semantic_rejection("DESIGN_VALUE_INVALID", pointer + "/rightInsetMm")
+            any_decimal_member(placement, "rightInsetMm", pointer + "/rightInsetMm")
+        if "bottomInsetMm" in placement:
+            if height_mode != "FILL":
+                raise semantic_rejection("DESIGN_VALUE_INVALID", pointer + "/bottomInsetMm")
+            any_decimal_member(placement, "bottomInsetMm", pointer + "/bottomInsetMm")
+    if variant_token == "STACK":
+        for member in ("marginTopMm", "marginRightMm", "marginBottomMm", "marginLeftMm"):
+            if member in placement:
+                any_decimal_member(placement, member, pointer + "/" + member)
+        if "alignSelf" in placement:
+            enum_member(placement, "alignSelf", ALIGN_ITEMS_TOKENS, pointer + "/alignSelf")
+            cross_axis_fill = (
+                height_mode == "FILL" if parent_direction == "ROW" else width_mode == "FILL"
+            )
+            if cross_axis_fill:
+                raise semantic_rejection("DESIGN_VALUE_INVALID", pointer + "/alignSelf")
+        if "fillWeight" in placement:
+            main_axis_fill = (
+                width_mode == "FILL" if parent_direction == "ROW" else height_mode == "FILL"
+            )
+            if not main_axis_fill:
+                raise semantic_rejection("DESIGN_VALUE_INVALID", pointer + "/fillWeight")
+            positive_decimal_member(placement, "fillWeight", pointer + "/fillWeight")
+    if variant_token == "GRID":
+        for member in ("marginTopMm", "marginRightMm", "marginBottomMm", "marginLeftMm"):
+            if member in placement:
+                any_decimal_member(placement, member, pointer + "/" + member)
+        if width_mode == "FILL" and "horizontalAlignSelf" in placement:
+            raise semantic_rejection("DESIGN_VALUE_INVALID", pointer + "/horizontalAlignSelf")
+        if height_mode == "FILL" and "verticalAlignSelf" in placement:
+            raise semantic_rejection("DESIGN_VALUE_INVALID", pointer + "/verticalAlignSelf")
+
+
+def allowed_members(kind: str) -> set[str]:
+    members = set(COMMON_NODE_MEMBERS) | CONTAINER_MEMBERS
+    if kind in ("FRAME", "STACK", "GRID"):
+        members |= APPEARANCE_MEMBERS
+    if kind == "STACK":
+        members |= STACK_MEMBERS
+    elif kind == "GRID":
+        members |= GRID_MEMBERS
+    return members
+
+
+def validate_children(
+    children: list[Any],
+    pointer: str,
+    parent_kind: str,
+    parent_direction: str | None,
+    seen_node_ids: set[str],
+) -> list[Any]:
+    normalized: list[Any] = []
+    for index, item in enumerate(children):
+        child_pointer = pointer + "/" + str(index)
+        child = require_object(item, child_pointer)
+        normalized.append(
+            validate_non_canvas_node(
+                child, child_pointer, parent_kind, parent_direction, seen_node_ids
+            )
+        )
+    return normalized
+
+
+def validate_non_canvas_node(
+    node: dict[str, Any],
+    pointer: str,
+    parent_kind: str,
+    parent_direction: str | None,
+    seen_node_ids: set[str],
+) -> dict[str, Any]:
+    kind_token = require_string(require_member(node, "kind", pointer + "/kind"), pointer + "/kind")
+    kind = KIND_BY_NAME.get(kind_token)
+    if kind is None:
+        if kind_token in FUTURE_KINDS:
+            raise semantic_rejection("DESIGN_KERNEL_SCOPE_UNSUPPORTED", pointer + "/kind")
+        raise semantic_rejection("DESIGN_VALUE_INVALID", pointer + "/kind")
+    if kind == "CANVAS":
+        raise semantic_rejection("DESIGN_VALUE_INVALID", pointer + "/kind")
+    reject_unknown(node, allowed_members(kind), pointer)
+    node_id = require_string(require_member(node, "nodeId", pointer + "/nodeId"), pointer + "/nodeId")
+    if UUID_V4.fullmatch(node_id) is None or node_id in seen_node_ids:
+        raise semantic_rejection("DESIGN_VALUE_INVALID", pointer + "/nodeId")
+    seen_node_ids.add(node_id)
+    bindings = require_array(
+        require_member(node, "bindings", pointer + "/bindings"),
+        pointer + "/bindings",
+    )
+    if bindings:
+        raise semantic_rejection("DESIGN_KERNEL_SCOPE_UNSUPPORTED", pointer + "/bindings")
+
+    normalized = dict(node)
+    if "displayName" in node:
+        normalized["displayName"] = metadata(
+            node, "displayName", 128, False, pointer + "/displayName"
+        )
+    if "render" in node:
+        boolean_member(node, "render", pointer + "/render")
+    if "visible" in node:
+        boolean_member(node, "visible", pointer + "/visible")
+    if "opacity" in node:
+        ranged_decimal_member(node, "opacity", pointer + "/opacity", 0, 1)
+    if "transform" in node:
+        validate_transform(node["transform"], pointer + "/transform")
+    placement = require_object(
+        require_member(node, "placement", pointer + "/placement"),
+        pointer + "/placement",
+    )
+    validate_placement(placement, pointer + "/placement", kind, parent_kind, parent_direction)
+    own_direction = None
+    if kind in ("FRAME", "STACK", "GRID"):
+        validate_appearance_members(node, pointer)
+    if kind == "STACK":
+        own_direction = validate_stack_members(node, pointer)
+    elif kind == "GRID":
+        validate_grid_members(node, pointer)
+    children = require_array(
+        require_member(node, "children", pointer + "/children"),
+        pointer + "/children",
+    )
+    normalized["children"] = validate_children(
+        children, pointer + "/children", kind, own_direction, seen_node_ids
+    )
+    return normalized
+
+
 def validate_and_normalize(parsed: Any) -> dict[str, Any]:
     reject_null(parsed)
     root = require_object(parsed, "")
@@ -445,10 +996,10 @@ def validate_and_normalize(parsed: Any) -> dict[str, Any]:
     )
     if bindings:
         raise semantic_rejection("DESIGN_KERNEL_SCOPE_UNSUPPORTED", "/designRoot/bindings")
-    if children:
-        raise semantic_rejection("DESIGN_KERNEL_SCOPE_UNSUPPORTED", "/designRoot/children")
+    normalized_children = validate_children(children, "/designRoot/children", "CANVAS", None, set())
 
     normalized_canvas = dict(canvas)
+    normalized_canvas["children"] = normalized_children
     if "displayName" in canvas:
         normalized_canvas["displayName"] = metadata(
             canvas,
@@ -735,13 +1286,13 @@ def main() -> int:
 
     vector_bytes, manifest = load_json(args.vectors)
     _, primary = load_json(args.primary_report)
-    if manifest["vectorVersion"] != "renderweave-template-canonical-kernel-v1/1":
+    if manifest["vectorVersion"] != "renderweave-template-canonical-kernel-v1/2":
         raise AssertionError("Unexpected vector version")
     if manifest["authorityContext"]["staticSchemaProfile"] != "system-empty@v1":
         raise AssertionError("Unexpected external StaticSchema context")
     if manifest["authorityContext"]["profileAvailability"] != "NOT_REGISTERED":
         raise AssertionError("Partial DesignDSL Profile must remain unavailable")
-    if len(manifest["cases"]) != 33:
+    if len(manifest["cases"]) != 57:
         raise AssertionError("Vector case count drift")
 
     results = [replay_case(vector) for vector in manifest["cases"]]
