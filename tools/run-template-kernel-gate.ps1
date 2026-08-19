@@ -82,8 +82,8 @@ try {
     $independent = Get-Content -Raw -Encoding UTF8 -LiteralPath $independentReport | ConvertFrom-Json
     if ($primary.reportVersion -ne 'renderweave-template-kernel-primary/1' `
             -or $primary.engine -ne 'java-primary' `
-            -or $primary.cases -ne 94 `
-            -or $primary.passed -ne 94 `
+            -or $primary.cases -ne 116 `
+            -or $primary.passed -ne 116 `
             -or $primary.failed -ne 0 `
             -or $primary.profileAvailability -ne 'NOT_REGISTERED') {
         throw 'Template kernel Java primary report boundary drifted.'
@@ -91,8 +91,8 @@ try {
     if ($independent.reportVersion -ne 'renderweave-template-kernel-independent/1' `
             -or $independent.engine -ne 'python-independent' `
             -or $independent.assurance -ne 'A2' `
-            -or $independent.cases -ne 94 `
-            -or $independent.passed -ne 94 `
+            -or $independent.cases -ne 116 `
+            -or $independent.passed -ne 116 `
             -or $independent.failed -ne 0 `
             -or $independent.profileAvailability -ne 'NOT_REGISTERED' `
             -or $independent.vectorSha256 -ne $primary.vectorSha256) {

@@ -118,8 +118,11 @@ Label: wayfinder:map
   [14b（visual leaf kinds + BindingPolicyCatalog 基础）](issues/14b-visual-leaf-kinds.md)（open）；
   T15 Definition/ValueSource 原子已 resolve（custom/mapping/expression + ValueSource closed union +
   词法 domain + graph cycle/dangling + canonical set sorting，manifest
-  `renderweave-template-canonical-kernel-v1/3` 94 vectors，Java/Python 94/94）；
-  DesignDSL full-Profile 拆分登记为 14b → T16（Binding/Policy）→ T17（Repeat）→ T18（Conditional）→
+  `renderweave-template-canonical-kernel-v1/3` 94 vectors，Java/Python 94/94）；T17 Repeat 原子已
+  resolve（nodeId+loopId 双身份、items 结构 ValueSource 静态类型证明、PACK placement、STACK/GRID
+  RepeatPackingSpec、loopId 唯一与 loop-domain/loopIndex 解锁，manifest
+  `renderweave-template-canonical-kernel-v1/4` 116 vectors，Java/Python 116/116）；
+  DesignDSL full-Profile 拆分登记为 14b → T16（Binding/Policy）→ T18（Conditional）→
   T19（TemplateUse）→ T20（Template 依赖投影，T12b 的 blocker）；admission/canonical 增量逐票带
   exact vectors + template gate 扩展，全部 exact 语义原子通过前不登记 Profile available，也不把本
   kernel 的 fail-closed non-empty array 当作 set ordering 已实现。

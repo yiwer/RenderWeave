@@ -55,6 +55,7 @@ KIND_BY_NAME = {
     "frame": "FRAME",
     "stack": "STACK",
     "grid": "GRID",
+    "repeat": "REPEAT",
 }
 FUTURE_KINDS = {
     "text",
@@ -67,7 +68,6 @@ FUTURE_KINDS = {
     "path",
     "qrCode",
     "barcode",
-    "repeat",
     "conditional",
     "templateUse",
 }
@@ -86,6 +86,11 @@ CONTAINER_MEMBERS = {"children"}
 APPEARANCE_MEMBERS = {"fill", "stroke", "cornerRadii", "padding", "clipContent"}
 STACK_MEMBERS = {"direction", "gapMm", "justifyContent", "alignItems"}
 GRID_MEMBERS = {"rows", "columns", "rowGapMm", "columnGapMm"}
+REPEAT_MEMBERS = {"loopId", "items", "absentPolicy", "itemLayout", "instanceLayout"}
+ABSENT_POLICY_TOKENS = {"ERROR", "EMPTY"}
+REPEAT_ITEM_TYPES = {"text", "decimal", "date", "time", "boolean"}
+STACK_PACKING_SPEC_MEMBERS = {"kind", "direction", "gapMm"}
+GRID_PACKING_SPEC_MEMBERS = {"kind", "columns", "columnGapMm", "rowGapMm"}
 FILL_MEMBERS = {"color"}
 STROKE_MM_MEMBERS = {"color", "widthMm", "cap", "join"}
 PADDING_MEMBER_ORDER = ("topMm", "rightMm", "bottomMm", "leftMm")
@@ -146,6 +151,17 @@ GRID_PLACEMENT_MEMBERS = {
     "horizontalAlignSelf",
     "verticalAlignSelf",
 }
+PACK_PLACEMENT_MEMBERS = {
+    "type",
+    "widthMode",
+    "heightMode",
+    "widthMm",
+    "heightMm",
+    "minWidthMm",
+    "minHeightMm",
+    "maxWidthMm",
+    "maxHeightMm",
+}
 SIZE_MODE_TOKENS = {"FIXED", "HUG_CONTENT", "FILL"}
 STROKE_CAP_TOKENS = {"BUTT", "ROUND", "SQUARE"}
 STROKE_JOIN_TOKENS = {"MITER", "ROUND", "BEVEL"}
@@ -165,6 +181,7 @@ EXPECTED_VARIANT = {
     "GROUP": "ABSOLUTE",
     "STACK": "STACK",
     "GRID": "GRID",
+    "REPEAT": "PACK",
 }
 SIZE_MODES = {
     "GROUP": {"HUG_CONTENT"},
@@ -172,6 +189,7 @@ SIZE_MODES = {
     "FRAME": {"FIXED", "HUG_CONTENT", "FILL"},
     "STACK": {"FIXED", "HUG_CONTENT", "FILL"},
     "GRID": {"FIXED", "HUG_CONTENT", "FILL"},
+    "REPEAT": {"FIXED", "HUG_CONTENT", "FILL"},
 }
 
 # --- Definition contract (T15: custom/mapping/expression + ValueSource) ----------
@@ -818,9 +836,7 @@ def validate_placement(
         pointer + "/type",
     )
     expected = EXPECTED_VARIANT[parent_kind]
-    if variant_token == "PACK":
-        raise semantic_rejection("DESIGN_KERNEL_SCOPE_UNSUPPORTED", pointer + "/type")
-    if variant_token not in ("ABSOLUTE", "STACK", "GRID"):
+    if variant_token not in ("ABSOLUTE", "STACK", "GRID", "PACK"):
         raise semantic_rejection("DESIGN_VALUE_INVALID", pointer + "/type")
     if variant_token != expected:
         raise semantic_rejection("DESIGN_VALUE_INVALID", pointer + "/type")
@@ -830,7 +846,7 @@ def validate_placement(
         any_decimal_member(placement, "yMm", pointer + "/yMm")
     elif variant_token == "STACK":
         reject_unknown(placement, STACK_PLACEMENT_MEMBERS, pointer)
-    else:
+    elif variant_token == "GRID":
         reject_unknown(placement, GRID_PLACEMENT_MEMBERS, pointer)
         non_negative_integer_member(placement, "row", pointer + "/row")
         non_negative_integer_member(placement, "column", pointer + "/column")
@@ -852,10 +868,14 @@ def validate_placement(
                 ALIGN_ITEMS_TOKENS,
                 pointer + "/verticalAlignSelf",
             )
+    else:
+        reject_unknown(placement, PACK_PLACEMENT_MEMBERS, pointer)
 
     width_mode = size_mode_member(placement, "widthMode", pointer + "/widthMode")
     height_mode = size_mode_member(placement, "heightMode", pointer + "/heightMode")
     modes = SIZE_MODES[kind]
+    if variant_token == "PACK" and "FILL" in modes:
+        modes = {"FIXED", "HUG_CONTENT"}
     if width_mode not in modes:
         raise semantic_rejection("DESIGN_VALUE_INVALID", pointer + "/widthMode")
     if height_mode not in modes:
@@ -921,7 +941,22 @@ def allowed_members(kind: str) -> set[str]:
         members |= STACK_MEMBERS
     elif kind == "GRID":
         members |= GRID_MEMBERS
+    elif kind == "REPEAT":
+        members |= REPEAT_MEMBERS
     return members
+
+
+def collect_loop_ids(value: Any, loop_ids: set[str]) -> None:
+    if isinstance(value, dict):
+        kind = value.get("kind")
+        loop_id = value.get("loopId")
+        if isinstance(kind, str) and kind == "repeat" and isinstance(loop_id, str):
+            loop_ids.add(loop_id)
+        for member in value.values():
+            collect_loop_ids(member, loop_ids)
+    elif isinstance(value, list):
+        for item in value:
+            collect_loop_ids(item, loop_ids)
 
 
 def validate_children(
@@ -930,6 +965,9 @@ def validate_children(
     parent_kind: str,
     parent_direction: str | None,
     seen_node_ids: set[str],
+    seen_loop_ids: set[str],
+    output_types: dict[str, str],
+    loop_ids: set[str],
 ) -> list[Any]:
     normalized: list[Any] = []
     for index, item in enumerate(children):
@@ -937,7 +975,8 @@ def validate_children(
         child = require_object(item, child_pointer)
         normalized.append(
             validate_non_canvas_node(
-                child, child_pointer, parent_kind, parent_direction, seen_node_ids
+                child, child_pointer, parent_kind, parent_direction, seen_node_ids,
+                seen_loop_ids, output_types, loop_ids
             )
         )
     return normalized
@@ -949,6 +988,9 @@ def validate_non_canvas_node(
     parent_kind: str,
     parent_direction: str | None,
     seen_node_ids: set[str],
+    seen_loop_ids: set[str],
+    output_types: dict[str, str],
+    loop_ids: set[str],
 ) -> dict[str, Any]:
     kind_token = require_string(require_member(node, "kind", pointer + "/kind"), pointer + "/kind")
     kind = KIND_BY_NAME.get(kind_token)
@@ -995,34 +1037,139 @@ def validate_non_canvas_node(
         own_direction = validate_stack_members(node, pointer)
     elif kind == "GRID":
         validate_grid_members(node, pointer)
+    elif kind == "REPEAT":
+        validate_repeat_members(node, pointer, seen_loop_ids, output_types, loop_ids)
     children = require_array(
         require_member(node, "children", pointer + "/children"),
         pointer + "/children",
     )
+    if kind == "REPEAT" and not children:
+        raise semantic_rejection("DESIGN_VALUE_INVALID", pointer + "/children")
     normalized["children"] = validate_children(
-        children, pointer + "/children", kind, own_direction, seen_node_ids
+        children, pointer + "/children", kind, own_direction, seen_node_ids,
+        seen_loop_ids, output_types, loop_ids
     )
     return normalized
 
 
+def validate_repeat_members(
+    node: dict[str, Any],
+    pointer: str,
+    seen_loop_ids: set[str],
+    output_types: dict[str, str],
+    loop_ids: set[str],
+) -> None:
+    loop_id = require_string(
+        require_member(node, "loopId", pointer + "/loopId"), pointer + "/loopId"
+    )
+    if UUID_V4.fullmatch(loop_id) is None or loop_id in seen_loop_ids:
+        raise semantic_rejection("DESIGN_VALUE_INVALID", pointer + "/loopId")
+    seen_loop_ids.add(loop_id)
+    validate_repeat_items(
+        require_member(node, "items", pointer + "/items"),
+        pointer + "/items",
+        output_types,
+        loop_ids,
+    )
+    enum_member(node, "absentPolicy", ABSENT_POLICY_TOKENS, pointer + "/absentPolicy")
+    validate_repeat_packing_spec(
+        require_member(node, "itemLayout", pointer + "/itemLayout"), pointer + "/itemLayout"
+    )
+    validate_repeat_packing_spec(
+        require_member(node, "instanceLayout", pointer + "/instanceLayout"),
+        pointer + "/instanceLayout",
+    )
+
+
+def validate_repeat_items(
+    value: Any,
+    pointer: str,
+    output_types: dict[str, str],
+    loop_ids: set[str],
+) -> None:
+    source = require_object(value, pointer)
+    kind = require_string(require_member(source, "kind", pointer + "/kind"), pointer + "/kind")
+    if kind == "literal":
+        reject_unknown(source, LITERAL_SOURCE_MEMBERS, pointer)
+        value_type = validate_value_type(
+            require_member(source, "valueType", pointer + "/valueType"),
+            pointer + "/valueType",
+        )
+        if not is_repeat_list_type(value_type):
+            raise semantic_rejection("DESIGN_VALUE_INVALID", pointer + "/valueType")
+        validate_literal(
+            require_member(source, "value", pointer + "/value"), value_type, pointer + "/value"
+        )
+    elif kind == "definition":
+        reject_unknown(source, DEFINITION_SOURCE_MEMBERS, pointer)
+        target = require_string(
+            require_member(source, "definitionId", pointer + "/definitionId"),
+            pointer + "/definitionId",
+        )
+        if UUID_V4.fullmatch(target) is None:
+            raise semantic_rejection("DESIGN_VALUE_INVALID", pointer + "/definitionId")
+        output = output_types.get(target)
+        if output is None or not is_repeat_list_type(output):
+            raise semantic_rejection("DESIGN_VALUE_INVALID", pointer + "/definitionId")
+    elif kind == "context":
+        reject_unknown(source, CONTEXT_SOURCE_MEMBERS, pointer)
+        validate_domain(
+            require_member(source, "domain", pointer + "/domain"), pointer + "/domain", loop_ids
+        )
+        validate_context_pointer(
+            require_string(
+                require_member(source, "pointer", pointer + "/pointer"), pointer + "/pointer"
+            ),
+            pointer + "/pointer",
+        )
+    else:
+        raise semantic_rejection("DESIGN_VALUE_INVALID", pointer + "/kind")
+
+
+def is_repeat_list_type(type_key: str) -> bool:
+    if not type_key.startswith("list<") or not type_key.endswith(">"):
+        return False
+    return type_key[len("list<") : -1] in REPEAT_ITEM_TYPES
+
+
+def validate_repeat_packing_spec(value: Any, pointer: str) -> None:
+    spec = require_object(value, pointer)
+    kind = require_string(require_member(spec, "kind", pointer + "/kind"), pointer + "/kind")
+    if kind == "STACK":
+        reject_unknown(spec, STACK_PACKING_SPEC_MEMBERS, pointer)
+        enum_member(spec, "direction", STACK_DIRECTION_TOKENS, pointer + "/direction")
+        if "gapMm" in spec:
+            non_negative_decimal_member(spec, "gapMm", pointer + "/gapMm")
+    elif kind == "GRID":
+        reject_unknown(spec, GRID_PACKING_SPEC_MEMBERS, pointer)
+        positive_integer_member(spec, "columns", pointer + "/columns")
+        if "columnGapMm" in spec:
+            non_negative_decimal_member(spec, "columnGapMm", pointer + "/columnGapMm")
+        if "rowGapMm" in spec:
+            non_negative_decimal_member(spec, "rowGapMm", pointer + "/rowGapMm")
+    else:
+        raise semantic_rejection("DESIGN_VALUE_INVALID", pointer + "/kind")
+
+
 def validate_definitions(
     definitions: list[Any], loop_ids: set[str]
-) -> list[Any]:
+) -> tuple[list[Any], dict[str, str]]:
     seen_ids: set[str] = set()
     ids: list[str] = []
     edges_by_definition: list[list[tuple[str, str]]] = []
     normalized: list[Any] = []
+    output_types: dict[str, str] = {}
     for index, item in enumerate(definitions):
         pointer = "/definitions/" + str(index)
         entry = require_object(item, pointer)
         normalized.append(
             validate_definition(
-                entry, pointer, seen_ids, ids, edges_by_definition, loop_ids
+                entry, pointer, seen_ids, ids, edges_by_definition, loop_ids, output_types
             )
         )
     validate_definition_graph(ids, edges_by_definition)
     normalized.sort(key=definition_id_of)
-    return normalized
+    return normalized, output_types
 
 
 def validate_definition(
@@ -1032,6 +1179,7 @@ def validate_definition(
     ids: list[str],
     edges_by_definition: list[list[tuple[str, str]]],
     loop_ids: set[str],
+    output_types: dict[str, str],
 ) -> dict[str, Any]:
     kind_token = require_string(require_member(entry, "kind", pointer + "/kind"), pointer + "/kind")
     if kind_token not in DEFINITION_KINDS:
@@ -1058,10 +1206,19 @@ def validate_definition(
     edges: list[tuple[str, str]] = []
     if kind_token == "custom":
         validate_custom_definition(entry, pointer)
+        output_types[definition_id] = validate_value_type(
+            require_member(entry, "valueType", pointer + "/valueType"), pointer + "/valueType"
+        )
     elif kind_token == "mapping":
         validate_mapping_definition(entry, pointer, edges, loop_ids)
+        output_types[definition_id] = validate_value_type(
+            require_member(entry, "output", pointer + "/output"), pointer + "/output"
+        )
     else:
         normalized["inputs"] = validate_expression_definition(entry, pointer, edges, loop_ids)
+        output_types[definition_id] = validate_value_type(
+            require_member(entry, "output", pointer + "/output"), pointer + "/output"
+        )
     ids.append(definition_id)
     edges_by_definition.append(edges)
     return normalized
@@ -1448,6 +1605,14 @@ def validate_and_normalize(parsed: Any) -> dict[str, Any]:
     reject_null(parsed)
     root = require_object(parsed, "")
     reject_unknown(root, ROOT_MEMBERS, "")
+    # Best-effort pre-pass: collect authored Repeat loopIds so Definition loop
+    # domains / loopIndex sources can resolve before tree validation runs.
+    loop_ids: set[str] = set()
+    pre_canvas = root.get("designRoot")
+    if isinstance(pre_canvas, dict):
+        pre_children = pre_canvas.get("children")
+        if pre_children is not None:
+            collect_loop_ids(pre_children, loop_ids)
     dsl_version = require_string(require_member(root, "dslVersion", "/dslVersion"), "/dslVersion")
     if dsl_version != "renderweave-design/1.0":
         raise semantic_rejection("DESIGN_VERSION_UNSUPPORTED", "/dslVersion")
@@ -1459,7 +1624,7 @@ def validate_and_normalize(parsed: Any) -> dict[str, Any]:
         raise semantic_rejection("DESIGN_VERSION_UNSUPPORTED", "/expressionProfile")
     display_name = metadata(root, "displayName", 128, False, "/displayName")
     definitions = require_array(require_member(root, "definitions", "/definitions"), "/definitions")
-    normalized_definitions = validate_definitions(definitions, set())
+    normalized_definitions, output_types = validate_definitions(definitions, loop_ids)
 
     canvas = require_object(require_member(root, "designRoot", "/designRoot"), "/designRoot")
     reject_unknown(canvas, CANVAS_MEMBERS, "/designRoot")
@@ -1493,7 +1658,9 @@ def validate_and_normalize(parsed: Any) -> dict[str, Any]:
     )
     if bindings:
         raise semantic_rejection("DESIGN_KERNEL_SCOPE_UNSUPPORTED", "/designRoot/bindings")
-    normalized_children = validate_children(children, "/designRoot/children", "CANVAS", None, set())
+    normalized_children = validate_children(
+        children, "/designRoot/children", "CANVAS", None, set(), set(), output_types, loop_ids
+    )
 
     normalized_canvas = dict(canvas)
     normalized_canvas["children"] = normalized_children
@@ -1784,13 +1951,13 @@ def main() -> int:
 
     vector_bytes, manifest = load_json(args.vectors)
     _, primary = load_json(args.primary_report)
-    if manifest["vectorVersion"] != "renderweave-template-canonical-kernel-v1/3":
+    if manifest["vectorVersion"] != "renderweave-template-canonical-kernel-v1/4":
         raise AssertionError("Unexpected vector version")
     if manifest["authorityContext"]["staticSchemaProfile"] != "system-empty@v1":
         raise AssertionError("Unexpected external StaticSchema context")
     if manifest["authorityContext"]["profileAvailability"] != "NOT_REGISTERED":
         raise AssertionError("Partial DesignDSL Profile must remain unavailable")
-    if len(manifest["cases"]) != 94:
+    if len(manifest["cases"]) != 116:
         raise AssertionError("Vector case count drift")
 
     results = [replay_case(vector) for vector in manifest["cases"]]

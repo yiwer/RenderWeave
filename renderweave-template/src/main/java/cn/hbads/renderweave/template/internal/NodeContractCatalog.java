@@ -18,7 +18,8 @@ final class NodeContractCatalog {
         GROUP,
         FRAME,
         STACK,
-        GRID
+        GRID,
+        REPEAT
     }
 
     enum PlacementVariant {
@@ -40,7 +41,8 @@ final class NodeContractCatalog {
             "group", NodeKind.GROUP,
             "frame", NodeKind.FRAME,
             "stack", NodeKind.STACK,
-            "grid", NodeKind.GRID
+            "grid", NodeKind.GRID,
+            "repeat", NodeKind.REPEAT
     );
 
     /**
@@ -50,7 +52,7 @@ final class NodeContractCatalog {
      */
     static final Set<String> FUTURE_KINDS = Set.of(
             "text", "image", "rect", "ellipse", "line", "polygon", "polyline", "path",
-            "qrCode", "barcode", "repeat", "conditional", "templateUse"
+            "qrCode", "barcode", "conditional", "templateUse"
     );
 
     static final Set<String> COMMON_NODE_MEMBERS = Set.of(
@@ -71,6 +73,24 @@ final class NodeContractCatalog {
 
     static final Set<String> GRID_MEMBERS = Set.of(
             "rows", "columns", "rowGapMm", "columnGapMm"
+    );
+
+    /** Repeat structural members (ticket 11 §1); no appearance/box members. */
+    static final Set<String> REPEAT_MEMBERS = Set.of(
+            "loopId", "items", "absentPolicy", "itemLayout", "instanceLayout"
+    );
+
+    static final Set<String> ABSENT_POLICY_TOKENS = Set.of("ERROR", "EMPTY");
+
+    /**
+     * Repeat items list element types: only the five StaticSchema scalars (ticket 11 §2);
+     * color/imageRef/fontRef lists are not iterable.
+     */
+    static final Set<String> REPEAT_ITEM_TYPES = Set.of("text", "decimal", "date", "time", "boolean");
+
+    static final Set<String> STACK_PACKING_SPEC_MEMBERS = Set.of("kind", "direction", "gapMm");
+    static final Set<String> GRID_PACKING_SPEC_MEMBERS = Set.of(
+            "kind", "columns", "columnGapMm", "rowGapMm"
     );
 
     static final Set<String> FILL_MEMBERS = Set.of("color");
@@ -106,6 +126,15 @@ final class NodeContractCatalog {
             "horizontalAlignSelf", "verticalAlignSelf"
     );
 
+    /**
+     * PACK placement (ticket 11 §7): Repeat-direct-child only; width/height modes restricted
+     * to FIXED|HUG_CONTENT at validation time; no FILL/margins/insets/hints.
+     */
+    static final Set<String> PACK_PLACEMENT_MEMBERS = Set.of(
+            "type", "widthMode", "heightMode", "widthMm", "heightMm",
+            "minWidthMm", "minHeightMm", "maxWidthMm", "maxHeightMm"
+    );
+
     static final Set<String> SIZE_MODE_TOKENS = Set.of(
             "FIXED", "HUG_CONTENT", "FILL"
     );
@@ -121,13 +150,14 @@ final class NodeContractCatalog {
 
     /**
      * Placement variant required for a direct child of the given parent kind. The root Canvas has
-     * no placement; Repeat children use PACK (registered with the Repeat atoms ticket).
+     * no placement; Repeat children use PACK (ticket 11 §7).
      */
     static PlacementVariant expectedVariant(NodeKind parentKind) {
         return switch (parentKind) {
             case CANVAS, FRAME, GROUP -> PlacementVariant.ABSOLUTE;
             case STACK -> PlacementVariant.STACK;
             case GRID -> PlacementVariant.GRID;
+            case REPEAT -> PlacementVariant.PACK;
         };
     }
 
@@ -135,7 +165,8 @@ final class NodeContractCatalog {
     static Set<SizeMode> sizeModes(NodeKind kind) {
         return switch (kind) {
             case GROUP -> Set.of(SizeMode.HUG_CONTENT);
-            case CANVAS, FRAME, STACK, GRID -> Set.of(SizeMode.FIXED, SizeMode.HUG_CONTENT, SizeMode.FILL);
+            case CANVAS, FRAME, STACK, GRID, REPEAT ->
+                    Set.of(SizeMode.FIXED, SizeMode.HUG_CONTENT, SizeMode.FILL);
         };
     }
 

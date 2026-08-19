@@ -1373,3 +1373,37 @@
   catalog，enum ValueType fail closed）。T15 resolve 为 automated_verified；T17/T18 解锁，
   T14b/T16/T17/T18 成为 unblocked frontier。Ticket 19 open，Editor/Renderer 未 READY；push 待用户
   另行授权（分支 ahead 11）。
+
+### Template v1 TV1-T17 Repeat 原子
+
+- `NodeContractCatalog`：NodeKind 增 REPEAT（同时拥有 nodeId 与独立 loopId）、FUTURE_KINDS 移除
+  repeat（conditional/templateUse 仍 fail closed）、REPEAT_MEMBERS（loopId/items/absentPolicy/
+  itemLayout/instanceLayout，无 appearance/box）、ABSENT_POLICY_TOKENS（ERROR|EMPTY）、
+  REPEAT_ITEM_TYPES（text/decimal/date/time/boolean 五种 StaticSchema scalar）、STACK/GRID
+  RepeatPackingSpec member 集、PACK_PLACEMENT_MEMBERS、expectedVariant(REPEAT)=PACK、
+  sizeModes(REPEAT)=FIXED/HUG/FILL（PACK 模式另限 FIXED/HUG）。
+- `CanonicalDesignDslAuthority`：loopIds 预收集 pass（best-effort）→ definitions 校验用真实
+  loopIds → T15 的 loop domain/loopIndex 悬空拒绝自然解锁（loop-domain mapping + loopIndex source
+  可 admission；树校验另持 seenLoopIds 保证 loopId Template 内唯一）。Repeat admission：items 结构
+  ValueSource（literal/context/definition；capability/loopIndex 直接拒绝；literal 与 definition
+  source 静态类型证明必须为五种 scalar 的 `list<T>`——definitions 校验新增 definitionId→output
+  type 映射——context 类型证明延后到 StaticSchema 依赖解析）、absentPolicy、itemLayout/instanceLayout
+  RepeatPackingSpec（STACK 必填 direction + 可选 gapMm；GRID 必填正整数 columns + 可选 gap）、
+  children 必填非空、item subtree 全部 PACK placement。PACK placement 从 KERNEL_SCOPE_UNSUPPORTED
+  变为真实 variant：members 仅 type/widthMode/heightMode/widthMm/heightMm/min*/max*（无
+  FILL/margin/x/y/inset/alignSelf/fillWeight/row/column），每轴 FIXED|HUG_CONTENT（group 仍双轴
+  HUG），FIXED 必填正 size、HUG 禁 size。
+- 冻结向量：manifest `renderweave-template-canonical-kernel-v1/4`，116 cases（94 原样 + 22 新：
+  5 admit 冻结 exact canonical bytes/hash——PACK children、items definition source、loop-domain
+  definition、nested repeat 经 ancestor loop context、GRID/STACK packing spec；17 reject 冻结精确
+  code/stage/pointer——缺/重 loopId、空 children、absentPolicy、items 类型/kind、PACK FILL/xMm、
+  packing spec 非法、PACK 越位）；`reject-pack-placement` 的 expected 如实从
+  KERNEL_SCOPE_UNSUPPORTED 更新为 VALUE_INVALID（PACK 已是真实 variant）。Python independent
+  （116/116，A2）镜像 Java 检查顺序（预收集 loopIds、REPEAT 成员、PACK placement、packing spec）。
+- 验证：`template` gate 绿（Java=116/116 Python=116/116、vector sha256 51ca62b5…、static
+  authorityDiff=0，evidence `.sdlc/evidence/20260819-195735-template/`）、`fast` 绿
+  （`.sdlc/evidence/20260819-195806-fast/`）。Profile 保持 NOT_REGISTERED；plan §12 kernel report
+  已更新为 116/116。诚实边界：loop frame 物化/求值、packing 布局、system-basic-* context shape、
+  词法祖先 domain 证明、packing 容量上限（Ticket 19）与 lowering 属 Evaluator/Rendering。T17
+  resolve 为 automated_verified；T18 解锁，T14b/T16/T18 成为 unblocked frontier。Ticket 19 open，
+  Editor/Renderer 未 READY；push 待用户另行授权（分支 ahead 12）。

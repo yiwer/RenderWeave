@@ -69,6 +69,15 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
         rejectNull(parsed, "");
         var root = object(parsed, "");
         rejectUnknown(root, ROOT_MEMBERS, "");
+        // Best-effort pre-pass: collect authored Repeat loopIds so Definition loop
+        // domains / loopIndex sources can resolve before tree validation runs.
+        var loopIds = new java.util.HashSet<String>();
+        if (root.members().get("designRoot") instanceof JsonValue.ObjectValue preCanvas) {
+            var preChildren = preCanvas.members().get("children");
+            if (preChildren != null) {
+                collectLoopIds(preChildren, loopIds);
+            }
+        }
         exactVersion(root, "dslVersion", "renderweave-design/1.0", "/dslVersion");
         exactVersion(
                 root,
@@ -78,7 +87,7 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
         );
         var displayName = metadata(root, "displayName", 128, false, "/displayName");
         var definitions = array(required(root, "definitions", "/definitions"), "/definitions");
-        var normalizedDefinitions = validateDefinitions(definitions, new java.util.HashSet<>());
+        var definitionsResult = validateDefinitions(definitions, loopIds);
 
         var canvas = object(required(root, "designRoot", "/designRoot"), "/designRoot");
         rejectUnknown(canvas, CANVAS_MEMBERS, "/designRoot");
@@ -128,7 +137,10 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
                 "/designRoot/children",
                 NodeContractCatalog.NodeKind.CANVAS,
                 null,
-                new java.util.HashSet<>()
+                new java.util.HashSet<>(),
+                new java.util.HashSet<>(),
+                definitionsResult.outputTypes(),
+                loopIds
         );
 
         var normalizedCanvas = new LinkedHashMap<>(canvas.members());
@@ -142,7 +154,7 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
             );
         }
         var normalizedRoot = new LinkedHashMap<>(root.members());
-        normalizedRoot.put("definitions", normalizedDefinitions);
+        normalizedRoot.put("definitions", definitionsResult.normalized());
         normalizedRoot.put("displayName", new JsonValue.StringValue(displayName));
         if (root.members().containsKey("description")) {
             var description = metadata(root, "description", 2048, true, "/description");
@@ -160,13 +172,21 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
     private record DefinitionEdge(String targetId, String pointer) {
     }
 
+    /** Definitions validation result: canonical sorted array plus per-definition output types. */
+    private record DefinitionsResult(
+            JsonValue.ArrayValue normalized,
+            Map<String, String> outputTypes
+    ) {
+    }
+
     /**
      * Validate the top-level definitions[] closed union and return the canonical array
-     * sorted by definitionId (set sorting; ticket 08 §108). Repeat loopId namespaces
-     * cannot resolve until the Repeat atoms ticket lands, so loop domains/loopIndex
-     * sources fail closed as dangling references.
+     * sorted by definitionId (set sorting; ticket 08 §108) plus the declared output type
+     * of every definition (Repeat items static type proof). Repeat loopId namespaces come
+     * from the tree pre-pass; unresolvable loop domains/loopIndex sources fail closed as
+     * dangling references.
      */
-    private JsonValue.ArrayValue validateDefinitions(
+    private DefinitionsResult validateDefinitions(
             JsonValue.ArrayValue definitions,
             Set<String> loopIds
     ) throws DesignDslFailureException {
@@ -174,14 +194,16 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
         var ids = new ArrayList<String>();
         var edgesByDefinition = new ArrayList<List<DefinitionEdge>>();
         var normalized = new ArrayList<JsonValue>();
+        var outputTypes = new LinkedHashMap<String, String>();
         for (int index = 0; index < definitions.items().size(); index++) {
             var pointer = "/definitions/" + index;
             var entry = object(definitions.items().get(index), pointer);
-            normalized.add(validateDefinition(entry, pointer, seenIds, ids, edgesByDefinition, loopIds));
+            normalized.add(validateDefinition(entry, pointer, seenIds, ids, edgesByDefinition,
+                    loopIds, outputTypes));
         }
         validateDefinitionGraph(ids, edgesByDefinition);
         normalized.sort(Comparator.comparing(CanonicalDesignDslAuthority::definitionIdOf));
-        return new JsonValue.ArrayValue(normalized);
+        return new DefinitionsResult(new JsonValue.ArrayValue(normalized), outputTypes);
     }
 
     private JsonValue.ObjectValue validateDefinition(
@@ -190,7 +212,8 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
             Set<String> seenIds,
             List<String> ids,
             List<List<DefinitionEdge>> edgesByDefinition,
-            Set<String> loopIds
+            Set<String> loopIds,
+            Map<String, String> outputTypes
     ) throws DesignDslFailureException {
         var kindToken = string(required(entry, "kind", pointer + "/kind"), pointer + "/kind");
         if (!DefinitionContractCatalog.DEFINITION_KINDS.contains(kindToken)) {
@@ -217,12 +240,28 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
         )));
         var edges = new ArrayList<DefinitionEdge>();
         switch (kindToken) {
-            case "custom" -> validateCustomDefinition(entry, pointer);
-            case "mapping" -> validateMappingDefinition(entry, pointer, edges, loopIds);
-            case "expression" -> normalized.put(
-                    "inputs",
-                    validateExpressionDefinition(entry, pointer, edges, loopIds)
-            );
+            case "custom" -> {
+                validateCustomDefinition(entry, pointer);
+                outputTypes.put(definitionId, validateValueType(
+                        required(entry, "valueType", pointer + "/valueType"),
+                        pointer + "/valueType"
+                ));
+            }
+            case "mapping" -> {
+                validateMappingDefinition(entry, pointer, edges, loopIds);
+                outputTypes.put(definitionId, validateValueType(
+                        required(entry, "output", pointer + "/output"), pointer + "/output"
+                ));
+            }
+            case "expression" -> {
+                normalized.put(
+                        "inputs",
+                        validateExpressionDefinition(entry, pointer, edges, loopIds)
+                );
+                outputTypes.put(definitionId, validateValueType(
+                        required(entry, "output", pointer + "/output"), pointer + "/output"
+                ));
+            }
             default -> {
                 // unreachable
             }
@@ -717,14 +756,18 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
             String pointer,
             NodeContractCatalog.NodeKind parentKind,
             String parentDirection,
-            Set<String> seenNodeIds
+            Set<String> seenNodeIds,
+            Set<String> seenLoopIds,
+            Map<String, String> definitionsOutputTypes,
+            Set<String> loopIds
     ) throws DesignDslFailureException {
         var normalized = new ArrayList<JsonValue>();
         for (int index = 0; index < children.items().size(); index++) {
             var childPointer = pointer + "/" + index;
             var child = object(children.items().get(index), childPointer);
             normalized.add(validateNonCanvasNode(
-                    child, childPointer, parentKind, parentDirection, seenNodeIds));
+                    child, childPointer, parentKind, parentDirection, seenNodeIds, seenLoopIds,
+                    definitionsOutputTypes, loopIds));
         }
         return new JsonValue.ArrayValue(normalized);
     }
@@ -734,7 +777,10 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
             String pointer,
             NodeContractCatalog.NodeKind parentKind,
             String parentDirection,
-            Set<String> seenNodeIds
+            Set<String> seenNodeIds,
+            Set<String> seenLoopIds,
+            Map<String, String> definitionsOutputTypes,
+            Set<String> loopIds
     ) throws DesignDslFailureException {
         var kindToken = string(required(node, "kind", pointer + "/kind"), pointer + "/kind");
         var kind = NodeContractCatalog.KIND_BY_NAME.get(kindToken);
@@ -783,19 +829,25 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
         String ownDirection = null;
         switch (kind) {
             case FRAME, STACK, GRID -> validateAppearanceMembers(node, pointer);
-            case CANVAS, GROUP -> {
+            case CANVAS, GROUP, REPEAT -> {
             }
         }
         switch (kind) {
             case STACK -> ownDirection = validateStackMembers(node, pointer);
             case GRID -> validateGridMembers(node, pointer);
+            case REPEAT -> validateRepeatMembers(node, pointer, seenLoopIds,
+                    definitionsOutputTypes, loopIds);
             case CANVAS, FRAME, GROUP -> {
             }
         }
         var children = array(required(node, "children", pointer + "/children"), pointer + "/children");
+        if (kind == NodeContractCatalog.NodeKind.REPEAT && children.items().isEmpty()) {
+            throw failure(FailureCode.DESIGN_VALUE_INVALID, pointer + "/children");
+        }
         normalized.put(
                 "children",
-                validateChildren(children, pointer + "/children", kind, ownDirection, seenNodeIds)
+                validateChildren(children, pointer + "/children", kind, ownDirection,
+                        seenNodeIds, seenLoopIds, definitionsOutputTypes, loopIds)
         );
         return new JsonValue.ObjectValue(normalized);
     }
@@ -935,16 +987,147 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
         members.addAll(NodeContractCatalog.CONTAINER_MEMBERS);
         switch (kind) {
             case FRAME, STACK, GRID -> members.addAll(NodeContractCatalog.APPEARANCE_MEMBERS);
-            case CANVAS, GROUP -> {
+            case CANVAS, GROUP, REPEAT -> {
             }
         }
         switch (kind) {
             case STACK -> members.addAll(NodeContractCatalog.STACK_MEMBERS);
             case GRID -> members.addAll(NodeContractCatalog.GRID_MEMBERS);
+            case REPEAT -> members.addAll(NodeContractCatalog.REPEAT_MEMBERS);
             case CANVAS, FRAME, GROUP -> {
             }
         }
         return Set.copyOf(members);
+    }
+
+    /** Best-effort pre-pass that collects authored Repeat loopIds (never rejects). */
+    private void collectLoopIds(JsonValue value, Set<String> loopIds) {
+        if (value instanceof JsonValue.ObjectValue object) {
+            if (object.members().get("kind") instanceof JsonValue.StringValue kind
+                    && "repeat".equals(kind.value())
+                    && object.members().get("loopId") instanceof JsonValue.StringValue loopId) {
+                loopIds.add(loopId.value());
+            }
+            for (var member : object.members().values()) {
+                collectLoopIds(member, loopIds);
+            }
+        } else if (value instanceof JsonValue.ArrayValue array) {
+            for (var item : array.items()) {
+                collectLoopIds(item, loopIds);
+            }
+        }
+    }
+
+    /** Repeat structural members: loopId, items, absentPolicy, itemLayout, instanceLayout. */
+    private void validateRepeatMembers(
+            JsonValue.ObjectValue node,
+            String pointer,
+            Set<String> seenLoopIds,
+            Map<String, String> definitionsOutputTypes,
+            Set<String> loopIds
+    ) throws DesignDslFailureException {
+        var loopId = string(required(node, "loopId", pointer + "/loopId"), pointer + "/loopId");
+        if (!UUID_V4.matcher(loopId).matches() || !seenLoopIds.add(loopId)) {
+            throw failure(FailureCode.DESIGN_VALUE_INVALID, pointer + "/loopId");
+        }
+        validateRepeatItems(node.members().get("items"), pointer + "/items",
+                definitionsOutputTypes, loopIds);
+        enumMember(node, "absentPolicy", NodeContractCatalog.ABSENT_POLICY_TOKENS,
+                pointer + "/absentPolicy");
+        validateRepeatPackingSpec(
+                required(node, "itemLayout", pointer + "/itemLayout"), pointer + "/itemLayout");
+        validateRepeatPackingSpec(
+                required(node, "instanceLayout", pointer + "/instanceLayout"),
+                pointer + "/instanceLayout");
+    }
+
+    /**
+     * Repeat items structural ValueSource (ticket 11 §2): literal/context/definition only.
+     * Literal and definition sources must be statically provable as {@code list<T>} with
+     * T one of the five StaticSchema scalars; context type proof is deferred to dependency
+     * resolution (StaticSchema), not an admission hard error.
+     */
+    private void validateRepeatItems(
+            JsonValue value,
+            String pointer,
+            Map<String, String> definitionsOutputTypes,
+            Set<String> loopIds
+    ) throws DesignDslFailureException {
+        var source = object(value, pointer);
+        var kind = string(required(source, "kind", pointer + "/kind"), pointer + "/kind");
+        switch (kind) {
+            case "literal" -> {
+                rejectUnknown(source, DefinitionContractCatalog.LITERAL_SOURCE_MEMBERS, pointer);
+                var valueType = validateValueType(
+                        required(source, "valueType", pointer + "/valueType"),
+                        pointer + "/valueType"
+                );
+                if (!isRepeatListType(valueType)) {
+                    throw failure(FailureCode.DESIGN_VALUE_INVALID, pointer + "/valueType");
+                }
+                validateLiteral(required(source, "value", pointer + "/value"), valueType,
+                        pointer + "/value");
+            }
+            case "definition" -> {
+                rejectUnknown(source, DefinitionContractCatalog.DEFINITION_SOURCE_MEMBERS, pointer);
+                var target = string(required(source, "definitionId", pointer + "/definitionId"),
+                        pointer + "/definitionId");
+                if (!UUID_V4.matcher(target).matches()) {
+                    throw failure(FailureCode.DESIGN_VALUE_INVALID, pointer + "/definitionId");
+                }
+                var output = definitionsOutputTypes.get(target);
+                if (output == null || !isRepeatListType(output)) {
+                    throw failure(FailureCode.DESIGN_VALUE_INVALID, pointer + "/definitionId");
+                }
+            }
+            case "context" -> {
+                rejectUnknown(source, DefinitionContractCatalog.CONTEXT_SOURCE_MEMBERS, pointer);
+                validateDomain(required(source, "domain", pointer + "/domain"),
+                        pointer + "/domain", loopIds);
+                validateContextPointer(
+                        string(required(source, "pointer", pointer + "/pointer"),
+                                pointer + "/pointer"),
+                        pointer + "/pointer"
+                );
+            }
+            default -> throw failure(FailureCode.DESIGN_VALUE_INVALID, pointer + "/kind");
+        }
+    }
+
+    private boolean isRepeatListType(String typeKey) {
+        if (!typeKey.startsWith("list<") || !typeKey.endsWith(">")) {
+            return false;
+        }
+        var itemType = typeKey.substring("list<".length(), typeKey.length() - 1);
+        return NodeContractCatalog.REPEAT_ITEM_TYPES.contains(itemType);
+    }
+
+    /** Closed RepeatPackingSpec union: STACK{direction,gapMm?} | GRID{columns,columnGapMm?,rowGapMm?}. */
+    private void validateRepeatPackingSpec(JsonValue value, String pointer)
+            throws DesignDslFailureException {
+        var spec = object(value, pointer);
+        var kind = string(required(spec, "kind", pointer + "/kind"), pointer + "/kind");
+        switch (kind) {
+            case "STACK" -> {
+                rejectUnknown(spec, NodeContractCatalog.STACK_PACKING_SPEC_MEMBERS, pointer);
+                enumMember(spec, "direction", NodeContractCatalog.STACK_DIRECTION_TOKENS,
+                        pointer + "/direction");
+                if (spec.members().containsKey("gapMm")) {
+                    nonNegativeDecimal(spec, "gapMm", pointer + "/gapMm");
+                }
+            }
+            case "GRID" -> {
+                rejectUnknown(spec, NodeContractCatalog.GRID_PACKING_SPEC_MEMBERS, pointer);
+                positiveIntegerMember(spec, "columns", pointer + "/columns");
+                if (spec.members().containsKey("columnGapMm")) {
+                    nonNegativeDecimal(spec, "columnGapMm", pointer + "/columnGapMm");
+                }
+                if (spec.members().containsKey("rowGapMm")) {
+                    nonNegativeDecimal(spec, "rowGapMm", pointer + "/rowGapMm");
+                }
+            }
+            default -> throw failure(FailureCode.DESIGN_VALUE_INVALID, pointer + "/kind");
+        }
     }
 
     private void validatePlacement(
@@ -956,13 +1139,11 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
     ) throws DesignDslFailureException {
         var variantToken = string(required(placement, "type", pointer + "/type"), pointer + "/type");
         var expected = NodeContractCatalog.expectedVariant(parentKind);
-        if ("PACK".equals(variantToken)) {
-            throw failure(FailureCode.DESIGN_KERNEL_SCOPE_UNSUPPORTED, pointer + "/type");
-        }
         var variant = switch (variantToken) {
             case "ABSOLUTE" -> NodeContractCatalog.PlacementVariant.ABSOLUTE;
             case "STACK" -> NodeContractCatalog.PlacementVariant.STACK;
             case "GRID" -> NodeContractCatalog.PlacementVariant.GRID;
+            case "PACK" -> NodeContractCatalog.PlacementVariant.PACK;
             default -> throw failure(FailureCode.DESIGN_VALUE_INVALID, pointer + "/type");
         };
         if (variant != expected) {
@@ -1000,14 +1181,17 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
                     );
                 }
             }
-            case PACK -> {
-                // unreachable: PACK rejected above
-            }
+            case PACK -> rejectUnknown(placement, NodeContractCatalog.PACK_PLACEMENT_MEMBERS, pointer);
         }
 
         var widthMode = sizeModeMember(placement, "widthMode", pointer + "/widthMode");
         var heightMode = sizeModeMember(placement, "heightMode", pointer + "/heightMode");
         var modes = NodeContractCatalog.sizeModes(kind);
+        if (variant == NodeContractCatalog.PlacementVariant.PACK && modes.contains(
+                NodeContractCatalog.SizeMode.FILL)) {
+            modes = Set.of(
+                    NodeContractCatalog.SizeMode.FIXED, NodeContractCatalog.SizeMode.HUG_CONTENT);
+        }
         if (!modes.contains(widthMode)) {
             throw failure(FailureCode.DESIGN_VALUE_INVALID, pointer + "/widthMode");
         }
