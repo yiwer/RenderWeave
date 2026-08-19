@@ -30,6 +30,8 @@ MAX_TOTAL = 100_000_000
 CHECKSUM_MAGIC = 0xB1B0AFBA
 HEAD_MAGIC = 0x5F0F3CF5
 
+CANONICAL_ICC: bytes = b""
+
 ORIENTATIONS = [
     "IDENTITY",
     "MIRROR_HORIZONTAL",
@@ -173,7 +175,7 @@ def png_admit(raw: bytes) -> dict[str, Any]:
     color = -1
     saw_plte = False
     srgb = False
-    iccp = False
+    iccp_profile: bytes | None = None
     orientation = 0
     while position < len(raw):
         if len(raw) - position < 12:
@@ -236,7 +238,16 @@ def png_admit(raw: bytes) -> dict[str, Any]:
         elif chunk_type == b"sRGB":
             srgb = True
         elif chunk_type == b"iCCP":
-            iccp = True
+            payload = raw[position + 8 : position + 8 + length]
+            name_end = payload.index(0)
+            if payload[name_end + 1] != 0:
+                raise Malformed(rejected("ASSET_CONTENT_INVALID", "ASSET_STRUCTURE", "/iCCP"))
+            try:
+                iccp_profile = zlib.decompress(payload[name_end + 2 :])
+            except Exception:
+                raise Malformed(
+                    rejected("ASSET_CONTENT_INVALID", "ASSET_STRUCTURE", "/iCCP")
+                ) from None
         elif chunk_type == b"eXIf":
             orientation = exif_orientation(raw[position + 8 : position + 8 + length])
         elif chunk_type == b"IEND":
@@ -250,9 +261,9 @@ def png_admit(raw: bytes) -> dict[str, Any]:
                 )
             )
         position += 12 + length
-    if srgb and iccp:
+    if srgb and iccp_profile is not None:
         raise Malformed(rejected("ASSET_CONTENT_UNSUPPORTED", "ASSET_DESCRIPTOR", "/iCCP"))
-    if iccp:
+    if iccp_profile is not None and iccp_profile != CANONICAL_ICC:
         raise Malformed(rejected("ASSET_CONTENT_UNSUPPORTED", "ASSET_DESCRIPTOR", "/iCCP"))
     if color == 3 and not saw_plte:
         raise Malformed(rejected("ASSET_CONTENT_INVALID", "ASSET_STRUCTURE", "/PLTE"))
@@ -277,7 +288,8 @@ def jpeg_admit(raw: bytes) -> dict[str, Any]:
     components = 0
     adobe = -1
     orientation = 0
-    iccp = False
+    icc_segments: dict[int, bytes] = {}
+    icc_count = -1
     while position < len(raw):
         if raw[position] != 0xFF or position + 1 >= len(raw):
             raise Malformed(rejected("ASSET_CONTENT_INVALID", "ASSET_STRUCTURE", "/"))
@@ -337,14 +349,30 @@ def jpeg_admit(raw: bytes) -> dict[str, Any]:
             if payload.startswith(b"Exif\x00\x00"):
                 orientation = exif_orientation(payload[6:])
             elif payload.startswith(b"ICC_PROFILE\x00"):
-                iccp = True
+                if len(payload) < 14:
+                    raise Malformed(rejected("ASSET_CONTENT_INVALID", "ASSET_STRUCTURE", "/app2"))
+                seq = payload[12]
+                count = payload[13]
+                if count == 0 or seq < 1 or seq > count:
+                    raise Malformed(rejected("ASSET_CONTENT_INVALID", "ASSET_STRUCTURE", "/app2"))
+                if icc_count == -1:
+                    icc_count = count
+                elif icc_count != count:
+                    raise Malformed(rejected("ASSET_CONTENT_INVALID", "ASSET_STRUCTURE", "/app2"))
+                if seq in icc_segments:
+                    raise Malformed(rejected("ASSET_CONTENT_INVALID", "ASSET_STRUCTURE", "/app2"))
+                icc_segments[seq] = payload[14:]
             elif payload.startswith(b"Adobe") and len(payload) >= 12:
                 adobe = payload[11]
         position += 2 + length
     if not (saw_sof and saw_sos and saw_eoi):
         raise Malformed(rejected("ASSET_CONTENT_INVALID", "ASSET_STRUCTURE", "/"))
-    if iccp:
-        raise Malformed(rejected("ASSET_CONTENT_UNSUPPORTED", "ASSET_DESCRIPTOR", "/ICC"))
+    if icc_segments:
+        if len(icc_segments) != icc_count:
+            raise Malformed(rejected("ASSET_CONTENT_INVALID", "ASSET_STRUCTURE", "/app2"))
+        assembled = b"".join(icc_segments[i] for i in range(1, icc_count + 1))
+        if assembled != CANONICAL_ICC:
+            raise Malformed(rejected("ASSET_CONTENT_UNSUPPORTED", "ASSET_DESCRIPTOR", "/ICC"))
     if components == 3 and adobe == 0:
         raise Malformed(rejected("ASSET_CONTENT_UNSUPPORTED", "ASSET_STRUCTURE", "/sof"))
     if adobe == 2:
@@ -373,7 +401,7 @@ def webp_admit(raw: bytes) -> dict[str, Any]:
     saw_image = False
     width = height = 0
     orientation = 0
-    iccp = False
+    iccp_bytes: bytes | None = None
     while position < len(raw):
         if position + 8 > len(raw):
             raise Malformed(rejected("ASSET_CONTENT_INVALID", "ASSET_STRUCTURE", "/"))
@@ -399,7 +427,7 @@ def webp_admit(raw: bytes) -> dict[str, Any]:
                 )
             )
         elif four_cc == b"ICCP":
-            iccp = True
+            iccp_bytes = raw[position + 8 : position + 8 + size]
         elif four_cc == b"EXIF":
             orientation = exif_orientation(raw[position + 8 : position + 8 + size])
         elif four_cc in (b"VP8 ", b"VP8L"):
@@ -438,7 +466,7 @@ def webp_admit(raw: bytes) -> dict[str, Any]:
         position = padded
     if not saw_image:
         raise Malformed(rejected("ASSET_CONTENT_INVALID", "ASSET_STRUCTURE", "/"))
-    if iccp:
+    if iccp_bytes is not None and iccp_bytes != CANONICAL_ICC:
         raise Malformed(rejected("ASSET_CONTENT_UNSUPPORTED", "ASSET_DESCRIPTOR", "/ICCP"))
     try:
         image = Image.open(_BytesIO(raw))
@@ -667,7 +695,11 @@ def main() -> int:
     parser.add_argument("--vectors", required=True, type=Path)
     parser.add_argument("--primary-report", required=True, type=Path)
     parser.add_argument("--report", required=True, type=Path)
+    parser.add_argument("--canonical-icc", required=True, type=Path)
     args = parser.parse_args()
+
+    global CANONICAL_ICC
+    CANONICAL_ICC = args.canonical_icc.read_bytes()
 
     vector_bytes, manifest = load_json(args.vectors)
     _, primary = load_json(args.primary_report)
@@ -675,7 +707,7 @@ def main() -> int:
         raise AssertionError("Unexpected vector version")
     if manifest["authorityContext"]["profileAvailability"] != "NOT_REGISTERED":
         raise AssertionError("Partial acceptance Profile must remain unavailable")
-    if len(manifest["cases"]) != 38:
+    if len(manifest["cases"]) != 41:
         raise AssertionError("Vector case count drift")
 
     results = [replay_case(vector) for vector in manifest["cases"]]

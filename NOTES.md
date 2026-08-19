@@ -1170,3 +1170,6 @@
 - 诚实边界：嵌入 ICC 暂时一律 UNSUPPORTED（canonical sRGB ICC 字节等值登记为 T10b，T11 create 前补齐）；
   WebP 像素解码依赖 libwebp 原生绑定（无纯 Java 替代）；acceptance/1.0 未登记 available。无 DB/网络/UI/
   route/S3/MinIO 或 Asset 聚合。Ticket 19 open，Asset/Editor/Renderer 未 READY；push 待用户另行授权。
+- T10b（canonical sRGB ICC 等值原子）已并入：sRGB IEC 61966-2.1 profile（3144B，sha256 `2b3aa164…af7e`，
+  ICC 头 acsp/mntr/RGB/XYZ）冻结为模块资源并接线 PNG iCCP/JPEG APP2/WebP ICCP 字节等值接受；manifest 41
+  vectors，asset `20260819-135503-asset` Java=41/41 Python=41/41（A2）。T11 解锁。

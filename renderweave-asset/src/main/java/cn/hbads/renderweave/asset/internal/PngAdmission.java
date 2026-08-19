@@ -54,11 +54,10 @@ final class PngAdmission {
 
         // Color contract is decided from chunk facts before decoding, because the JDK PNG
         // reader parses iCCP itself and may fail on profiles the policy already rejects.
-        if (scan.srgbSeen && scan.iccpSeen) {
+        if (scan.srgbSeen && scan.iccpProfile != null) {
             return rejected(FailureCode.ASSET_CONTENT_UNSUPPORTED, FailureStage.ASSET_DESCRIPTOR, "/iCCP");
         }
-        if (scan.iccpSeen) {
-            // Canonical sRGB ICC byte equality lands with the frozen acceptance manifest.
+        if (scan.iccpProfile != null && !IccPolicy.isCanonicalSrgb(scan.iccpProfile)) {
             return rejected(FailureCode.ASSET_CONTENT_UNSUPPORTED, FailureStage.ASSET_DESCRIPTOR, "/iCCP");
         }
 
@@ -97,7 +96,7 @@ final class PngAdmission {
         boolean sawIend = false;
         boolean sawPlte = false;
         boolean srgbSeen = false;
-        boolean iccpSeen = false;
+        byte[] iccpProfile = null;
         int width = -1;
         int height = -1;
         int colorType = -1;
@@ -242,7 +241,17 @@ final class PngAdmission {
                 }
                 srgbSeen = true;
             } else if (type == TYPE_ICCP) {
-                iccpSeen = true;
+                byte[] decompressed = inflateIccp(raw, position + 8, length);
+                if (decompressed == null) {
+                    return Scan.rejected(
+                            rejected(
+                                    FailureCode.ASSET_CONTENT_INVALID,
+                                    FailureStage.ASSET_STRUCTURE,
+                                    "/iCCP"
+                            )
+                    );
+                }
+                iccpProfile = decompressed;
             } else if (type == TYPE_EXIF) {
                 int parsed = ExifOrientationReader.orientation(
                         Arrays.copyOfRange(raw, position + 8, position + 8 + length)
@@ -282,7 +291,7 @@ final class PngAdmission {
                     rejected(FailureCode.ASSET_CONTENT_INVALID, FailureStage.ASSET_STRUCTURE, "/PLTE")
             );
         }
-        return Scan.complete(width, height, srgbSeen, iccpSeen, orientation);
+        return Scan.complete(width, height, srgbSeen, iccpProfile, orientation);
     }
 
     private static boolean legalDepthAndColor(int bitDepth, int colorType) {
@@ -324,6 +333,38 @@ final class PngAdmission {
         return (int) crc.getValue();
     }
 
+    private static byte[] inflateIccp(byte[] raw, int dataOffset, int length) {
+        int end = dataOffset + length;
+        int nameEnd = dataOffset;
+        while (nameEnd < end && raw[nameEnd] != 0) {
+            nameEnd++;
+        }
+        if (nameEnd >= end || nameEnd - dataOffset > 79 || nameEnd + 1 >= end) {
+            return null;
+        }
+        if ((raw[nameEnd + 1] & 0xFF) != 0) {
+            return null;
+        }
+        var inflater = new java.util.zip.Inflater();
+        inflater.setInput(raw, nameEnd + 2, end - nameEnd - 2);
+        var out = new java.io.ByteArrayOutputStream(4096);
+        var buffer = new byte[4096];
+        try {
+            while (!inflater.finished()) {
+                int count = inflater.inflate(buffer);
+                if (count == 0 && (inflater.needsInput() || inflater.needsDictionary())) {
+                    return null;
+                }
+                out.write(buffer, 0, count);
+            }
+            return out.toByteArray();
+        } catch (java.util.zip.DataFormatException malformed) {
+            return null;
+        } finally {
+            inflater.end();
+        }
+    }
+
     private static Admitted admitted(byte[] raw, ImageDescriptor descriptor) {
         return CanonicalAssetAcceptanceAuthority.admitted(AssetKind.IMAGE, raw, descriptor);
     }
@@ -349,7 +390,7 @@ final class PngAdmission {
             int width,
             int height,
             boolean srgbSeen,
-            boolean iccpSeen,
+            byte[] iccpProfile,
             int orientation,
             Acceptance rejection
     ) {
@@ -357,14 +398,14 @@ final class PngAdmission {
                 int width,
                 int height,
                 boolean srgbSeen,
-                boolean iccpSeen,
+                byte[] iccpProfile,
                 int orientation
         ) {
-            return new Scan(width, height, srgbSeen, iccpSeen, orientation, null);
+            return new Scan(width, height, srgbSeen, iccpProfile, orientation, null);
         }
 
         static Scan rejected(Acceptance rejection) {
-            return new Scan(-1, -1, false, false, 0, rejection);
+            return new Scan(-1, -1, false, null, 0, rejection);
         }
     }
 }

@@ -54,8 +54,10 @@ final class JpegAdmission {
         }
 
         if (scan.iccSegments != null && !scan.iccSegments.isEmpty()) {
-            // Canonical sRGB ICC byte equality lands with the frozen acceptance manifest.
-            return rejected(FailureCode.ASSET_CONTENT_UNSUPPORTED, FailureStage.ASSET_DESCRIPTOR, "/ICC");
+            byte[] assembled = assembleIcc(scan.iccSegments);
+            if (assembled == null || !IccPolicy.isCanonicalSrgb(assembled)) {
+                return rejected(FailureCode.ASSET_CONTENT_UNSUPPORTED, FailureStage.ASSET_DESCRIPTOR, "/ICC");
+            }
         }
 
         BufferedImage image;
@@ -521,6 +523,25 @@ final class JpegAdmission {
             }
             out.write(raw, position, raw.length - position);
             break;
+        }
+        return out.toByteArray();
+    }
+
+    private static byte[] assembleIcc(Map<Integer, byte[]> segments) {
+        long total = 0;
+        for (byte[] segment : segments.values()) {
+            total += segment.length;
+        }
+        if (total > 16 * 1024 * 1024) {
+            return null;
+        }
+        var out = new java.io.ByteArrayOutputStream((int) total);
+        for (int sequence = 1; sequence <= segments.size(); sequence++) {
+            byte[] segment = segments.get(sequence);
+            if (segment == null) {
+                return null;
+            }
+            out.writeBytes(segment);
         }
         return out.toByteArray();
     }

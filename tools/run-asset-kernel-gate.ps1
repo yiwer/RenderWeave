@@ -72,7 +72,8 @@ try {
     & $pythonExe 'tools\verify-asset-kernel-vectors.py' `
         '--vectors' 'renderweave-asset\src\test\resources\cn\hbads\renderweave\asset\acceptance-kernel-v1\vectors.json' `
         '--primary-report' $primaryReport `
-        '--report' $independentReport
+        '--report' $independentReport `
+        '--canonical-icc' 'renderweave-asset\src\main\resources\cn\hbads\renderweave\asset\acceptance\sRGB-IEC61966-2.1.icc'
     if ($LASTEXITCODE -ne 0) {
         throw "Asset kernel independent replay failed with exit code $LASTEXITCODE."
     }
@@ -84,8 +85,8 @@ try {
     $independent = Get-Content -Raw -Encoding UTF8 -LiteralPath $independentReport | ConvertFrom-Json
     if ($primary.reportVersion -ne 'renderweave-asset-kernel-primary/1' `
             -or $primary.engine -ne 'java-primary' `
-            -or $primary.cases -ne 38 `
-            -or $primary.passed -ne 38 `
+            -or $primary.cases -ne 41 `
+            -or $primary.passed -ne 41 `
             -or $primary.failed -ne 0 `
             -or $primary.acceptanceProfileAvailability -ne 'NOT_REGISTERED') {
         throw 'Asset kernel Java primary report boundary drifted.'
@@ -93,8 +94,8 @@ try {
     if ($independent.reportVersion -ne 'renderweave-asset-kernel-independent/1' `
             -or $independent.engine -ne 'python-independent' `
             -or $independent.assurance -ne 'A2' `
-            -or $independent.cases -ne 38 `
-            -or $independent.passed -ne 38 `
+            -or $independent.cases -ne 41 `
+            -or $independent.passed -ne 41 `
             -or $independent.failed -ne 0 `
             -or $independent.acceptanceProfileAvailability -ne 'NOT_REGISTERED' `
             -or $independent.vectorSha256 -ne $primary.vectorSha256) {

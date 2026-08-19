@@ -9,11 +9,14 @@ Run: python tools/generate-asset-vectors.py <fixtures-dir> <manifest-path>
 """
 import base64
 import binascii
+import io
 import json
 import struct
 import sys
 import zlib
 from pathlib import Path
+
+from PIL import Image
 
 IMAGE_LIMIT = 64 * 1024 * 1024
 FONT_LIMIT = 32 * 1024 * 1024
@@ -151,6 +154,17 @@ def vp8x_chunk(flags: int, width: int, height: int) -> bytes:
     return bytes(data)
 
 
+def insert_webp_vp8x_and_chunk(data: bytes, four_cc: str, payload: bytes, flags: int) -> bytes:
+    image = find_image_chunk(data)
+    body = data[8:image]
+    body += b"VP8X" + struct.pack("<I", 10) + vp8x_chunk(flags, 2, 3)
+    body += four_cc.encode("ascii") + struct.pack("<I", len(payload)) + payload
+    if len(payload) % 2:
+        body += b"\x00"
+    body += data[image:]
+    return data[:4] + struct.pack("<I", len(body)) + body
+
+
 def insert_webp_vp8x_and_exif(data: bytes, tiff: bytes) -> bytes:
     image = find_image_chunk(data)
     body = data[8:image]
@@ -251,11 +265,12 @@ def rejected(case_id: str, raw: bytes, code: str, stage: str, pointer: str, limi
 
 
 def main() -> int:
-    if len(sys.argv) != 3:
+    if len(sys.argv) != 4:
         print(__doc__)
         return 2
     fixtures = Path(sys.argv[1])
     manifest_path = Path(sys.argv[2])
+    canonical = Path(sys.argv[3]).read_bytes()
 
     def load(name: str) -> bytes:
         return (fixtures / name).read_bytes()
@@ -292,6 +307,8 @@ def main() -> int:
     cases.append(rejected("png-srgb-iccp-conflict-unsupported", conflict, "ASSET_CONTENT_UNSUPPORTED", "ASSET_DESCRIPTOR", "/iCCP"))
     no_plte = minimal_png(1, 1, 8, 3, scanline=b"\x00\x00")
     cases.append(rejected("png-indexed-no-plte-invalid", no_plte, "ASSET_CONTENT_INVALID", "ASSET_STRUCTURE", "/PLTE"))
+    canonical_png = minimal_png(extra=[iccp("sRGB", zlib.compress(canonical))])
+    cases.append(image_admitted("png-canonical-icc-admitted", canonical_png, 1, 1, "IDENTITY", 1, 1))
 
     # JPEG
     cases.append(image_admitted("jpeg-gray-admitted", load("grayscale-baseline.jpg"), 2, 3, "IDENTITY", 2, 3))
@@ -306,6 +323,13 @@ def main() -> int:
     cases.append(rejected("jpeg-truncated-invalid", load("grayscale-baseline.jpg")[:20], "ASSET_CONTENT_INVALID", "ASSET_STRUCTURE", "/"))
     exif_jpeg = insert_app1(load("grayscale-baseline.jpg"), exif_tiff(6))
     cases.append(image_admitted("jpeg-exif-admitted", exif_jpeg, 2, 3, "ROTATE_90_CW", 3, 2))
+    canonical_jpeg_buffer = io.BytesIO()
+    Image.new("RGB", (2, 3), color=(10, 20, 30)).save(
+        canonical_jpeg_buffer, "JPEG", quality=90, icc_profile=canonical
+    )
+    cases.append(
+        image_admitted("jpeg-canonical-icc-admitted", canonical_jpeg_buffer.getvalue(), 2, 3, "IDENTITY", 2, 3)
+    )
 
     # WebP
     cases.append(image_admitted("webp-lossy-admitted", load("lossy.webp"), 2, 3, "IDENTITY", 2, 3))
@@ -321,6 +345,8 @@ def main() -> int:
     cases.append(rejected("webp-truncated-invalid", load("lossy.webp")[:20], "ASSET_CONTENT_INVALID", "ASSET_STRUCTURE", "/"))
     webp_exif = insert_webp_vp8x_and_exif(load("lossy.webp"), exif_tiff(6))
     cases.append(image_admitted("webp-exif-admitted", webp_exif, 2, 3, "ROTATE_90_CW", 3, 2))
+    webp_canonical = insert_webp_vp8x_and_chunk(load("lossy.webp"), "ICCP", canonical, 0x10)
+    cases.append(image_admitted("webp-canonical-icc-admitted", webp_canonical, 2, 3, "IDENTITY", 2, 3))
 
     # FONT
     cases.append(font_admitted("font-ttf-admitted", load("minimal-ttf.ttf"), "TRUETYPE_GLYF", 1000))

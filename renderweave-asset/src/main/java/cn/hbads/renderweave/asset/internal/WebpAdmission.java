@@ -43,8 +43,7 @@ final class WebpAdmission {
         if (scan.rejection != null) {
             return scan.rejection;
         }
-        if (scan.iccpSeen) {
-            // Canonical sRGB ICC byte equality lands with the frozen acceptance manifest.
+        if (scan.iccpBytes != null && !IccPolicy.isCanonicalSrgb(scan.iccpBytes)) {
             return rejected(FailureCode.ASSET_CONTENT_UNSUPPORTED, FailureStage.ASSET_DESCRIPTOR, "/ICCP");
         }
 
@@ -97,7 +96,7 @@ final class WebpAdmission {
         int position = 12;
         boolean sawVp8x = false;
         boolean sawImage = false;
-        boolean iccpSeen = false;
+        byte[] iccpBytes = null;
         int width = -1;
         int height = -1;
         int orientation = 0;
@@ -301,7 +300,7 @@ final class WebpAdmission {
                     }
                     sawImage = true;
                 }
-                case "ICCP" -> iccpSeen = true;
+                case "ICCP" -> iccpBytes = copyOf(raw, position + 8, (int) chunkSize);
                 case "EXIF" -> {
                     int parsed = ExifOrientationReader.orientation(
                             copyOf(raw, position + 8, (int) chunkSize)
@@ -349,7 +348,7 @@ final class WebpAdmission {
                     rejected(FailureCode.ASSET_CONTENT_INVALID, FailureStage.ASSET_STRUCTURE, "/")
             );
         }
-        return Scan.complete(width, height, iccpSeen, orientation);
+        return Scan.complete(width, height, iccpBytes, orientation);
     }
 
     private static String fourCc(byte[] raw, int offset) {
@@ -392,13 +391,13 @@ final class WebpAdmission {
         return new Rejected(code, stage, pointer, Optional.of(limit));
     }
 
-    private record Scan(int width, int height, boolean iccpSeen, int orientation, Acceptance rejection) {
-        static Scan complete(int width, int height, boolean iccpSeen, int orientation) {
-            return new Scan(width, height, iccpSeen, orientation, null);
+    private record Scan(int width, int height, byte[] iccpBytes, int orientation, Acceptance rejection) {
+        static Scan complete(int width, int height, byte[] iccpBytes, int orientation) {
+            return new Scan(width, height, iccpBytes, orientation, null);
         }
 
         static Scan rejected(Acceptance rejection) {
-            return new Scan(-1, -1, false, 0, rejection);
+            return new Scan(-1, -1, null, 0, rejection);
         }
     }
 }
