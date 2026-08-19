@@ -1540,3 +1540,44 @@
   Evaluator；condition context 的 boolean 类型证明延后到 StaticSchema 依赖解析。T18 resolve 为
   automated_verified；T20 为唯一 unblocked frontier（T12b 的 blocker）。Ticket 19 open，Editor/
   Renderer 未 READY；push 待用户另行授权（分支 ahead 16）。
+
+### Template v1 TV1-T20 Template 依赖投影
+
+- 提取（`AssetRefAtomExtractor`，internal）：在 admitted canonical DesignDSL 上按冻结契约提取
+  current-only 投影——member 集恰为 `{assetId}` 且值为 canonical UUID v4 的对象即 AssetRef atom；
+  kind 来自宿主 member（imageRef/fontRef）或 typing valueType（literal value/defaultValue、mapping
+  操作数、asset-ref list 项，含 list 元素逐项）；TemplateUse occurrence 来自
+  `kind:"templateUse"` + `templateRef.templateId`；walk 按 canonical 树序，指针 RFC 6901 转义；
+  解析失败包装为 invariant fault（输入已是 admitted canonical）。
+- api/spi 面：`TemplateDependencyProjection`（AssetRefAtom/TemplateUseOccurrence + EMPTY）、
+  `AssetReferenceAuthority.references(assetId)`（raw current-only ACTIVE TemplateId proof；
+  redactedCount 与 caller-scope 属 T12b，不在本票越权）、`TemplateReadinessAuthority.recheck(templateId)`
+  （系统级、无 invocation，READY/INVALID 重算并持久化，乐观 revision 冲突自动重试一次）、
+  `DependencyResolution`（checkAsset/checkTemplateUse：ACTIVE/kind 匹配/环探测事实面）；TemplateModule
+  增加 assetReferenceAuthority/readinessAuthority 工厂，application 增 4-arg 变体。
+- 评估（`TemplateDependencyEvaluator`）：AssetRef atom 与 TemplateUse 目标逐项核对（NOT_FOUND/
+  KIND_MISMATCH/NOT_ACTIVE→INVALID；UNAVAILABLE→Unavailable），并以 use-closure 传递 walk（path/done
+  两集合）做 DAG 环检测；create/save 在提交前计算 readiness（Unavailable→Create/SaveAuthorityUnavailable），
+  Current/Saved 结果如实携带 readiness。
+- 物化（V021，只追加）：`template_aggregate.readiness` CHECK 扩为 READY/INVALID/STALE；
+  `template_asset_reference`（template_id+owner_scope+canonical_pointer+asset_id+asset_kind，
+  PK(template_id,canonical_pointer)，FK CASCADE，asset_id 索引）、`template_use_reference`
+  （PK(template_id,canonical_pointer)，target 索引）；create/append 同一事务内整体替换投影
+  （delete 旧行 + insert 新行），历史 revision 永不参与；`template_asset_stale_cursor` 单例游标。
+- STALE 消费（`TemplateAssetStaleConsumer`，app）：以游标可重放消费 `asset_audit_event`，仅
+  CONTENT_REPLACE/CONTENT_RESTORE/DELETE/RESTORE 触发（METADATA_UPDATE 永不），把引用该 asset 的
+  ACTIVE Template 置 STALE（同事务推进游标），再对全部 STALE 调 recheck 落 READY/INVALID；
+  `@Scheduled` 轮询生产接线（`renderweave.template.stale-consumer.delay-ms`，默认 5000ms）。
+- 验证：模板模块 31/31 绿；app 纵切 `TemplateDependencyProjectionTest` 6/6（Testcontainers PG：
+  投影+反向 proof、缺 asset→INVALID、kind 不匹配 INVALID/匹配 READY、内容事件→STALE→recheck
+  READY/INVALID（METADATA_UPDATE 不触发）、TemplateUse 边持久化+环→save INVALID、authority recheck
+  落库）；提取 fixtures 3 份（container 2 atom/definition 5 atom/templateUse 1 atom+1 use）Java
+  primary/Python independent 全等（A2）；app 全量 294 tests 绿（canary 迁移数 21）；`template` gate 全绿
+  （kernel 211/211 + 提取 A2 + static authorityDiff=0，evidence
+  `.sdlc/evidence/20260819-213252-template/`）、`fast` 绿（`.sdlc/evidence/20260819-213329-fast/`）。
+- 诚实边界：Asset 物理行删除不在本票（aggregate→content_revision FK 为 ON DELETE RESTRICT，删除语义
+  走 lifecycle=DELETED 软删，属 T12b）；child current 存在性/PUBLIC fill/StaticSchemaRef 匹配是依赖
+  ERROR 重检面（recheck 路径），不在 admission；AssetReferenceAuthority 返回 raw 未 redact 的
+  templateIds（caller-scope 属 T12b）。Profile 保持 NOT_REGISTERED；plan/map/issue 20 已更新为
+  resolved。T20 resolve 为 automated_verified；T12b 成为唯一 unblocked frontier。Ticket 19 open，
+  Editor/Renderer 未 READY；push 待用户另行授权（分支 ahead 18）。

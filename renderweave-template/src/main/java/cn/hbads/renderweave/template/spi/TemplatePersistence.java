@@ -2,6 +2,7 @@ package cn.hbads.renderweave.template.spi;
 
 import cn.hbads.renderweave.schema.definition.StaticSchemaRef;
 import cn.hbads.renderweave.template.api.TemplateApplication;
+import cn.hbads.renderweave.template.api.TemplateDependencyProjection;
 
 /** Transaction-sized persistence seam; it is not a generic repository. */
 public interface TemplatePersistence {
@@ -13,6 +14,72 @@ public interface TemplatePersistence {
     CreateOutcome create(CreateCommit commit);
 
     AppendOutcome append(AppendCommit commit);
+
+    /** Current-only TemplateUse targets of a template's current (for DAG recheck). */
+    LoadUseTargetsOutcome loadUseTargets(TemplateApplication.TemplateId templateId);
+
+    /** Current-only reverse lookup: ACTIVE templates whose current references an asset. */
+    FindAssetReferencesOutcome findAssetReferences(String assetId);
+
+    /** Persist a recomputed readiness for the current revision (recheck path). */
+    UpdateReadinessOutcome updateReadiness(
+            TemplateApplication.TemplateId templateId,
+            long currentRevision,
+            TemplateApplication.Readiness readiness
+    );
+
+    sealed interface LoadUseTargetsOutcome permits
+            UseTargetsLoaded,
+            UseTargetsNotFound,
+            UseTargetsUnavailable {
+    }
+
+    record UseTargetsLoaded(java.util.List<String> targetTemplateIds)
+            implements LoadUseTargetsOutcome {
+        public UseTargetsLoaded {
+            java.util.Objects.requireNonNull(targetTemplateIds, "targetTemplateIds");
+        }
+    }
+
+    record UseTargetsNotFound() implements LoadUseTargetsOutcome {
+    }
+
+    record UseTargetsUnavailable() implements LoadUseTargetsOutcome {
+    }
+
+    sealed interface FindAssetReferencesOutcome permits
+            AssetReferencesLoaded,
+            AssetReferencesUnavailable {
+    }
+
+    record AssetReferencesLoaded(java.util.List<TemplateApplication.TemplateId> templateIds)
+            implements FindAssetReferencesOutcome {
+        public AssetReferencesLoaded {
+            java.util.Objects.requireNonNull(templateIds, "templateIds");
+        }
+    }
+
+    record AssetReferencesUnavailable() implements FindAssetReferencesOutcome {
+    }
+
+    sealed interface UpdateReadinessOutcome permits
+            ReadinessUpdated,
+            ReadinessNotFound,
+            ReadinessRevisionConflict,
+            ReadinessUnavailable {
+    }
+
+    record ReadinessUpdated() implements UpdateReadinessOutcome {
+    }
+
+    record ReadinessNotFound() implements UpdateReadinessOutcome {
+    }
+
+    record ReadinessRevisionConflict() implements UpdateReadinessOutcome {
+    }
+
+    record ReadinessUnavailable() implements UpdateReadinessOutcome {
+    }
 
     sealed interface LocateOutcome permits Located, LocateNotFound, LocateUnavailable {
     }
@@ -132,6 +199,8 @@ public interface TemplatePersistence {
         String contentHash();
 
         TemplateApplication.Readiness readiness();
+
+        TemplateDependencyProjection projection();
     }
 
     sealed interface CreateOutcome permits Created, IdCollision, CreateUnavailable {
@@ -162,6 +231,8 @@ public interface TemplatePersistence {
         String contentHash();
 
         TemplateApplication.Readiness readiness();
+
+        TemplateDependencyProjection projection();
     }
 
     sealed interface AppendOutcome permits

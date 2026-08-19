@@ -5,6 +5,7 @@ import cn.hbads.renderweave.schema.definition.StaticSchemaRef;
 import cn.hbads.renderweave.schema.identity.SchemaKey;
 import cn.hbads.renderweave.schema.identity.VersionTag;
 import cn.hbads.renderweave.template.api.TemplateApplication;
+import cn.hbads.renderweave.template.spi.DependencyResolution;
 import cn.hbads.renderweave.template.spi.OwnerScopeAuthority;
 import cn.hbads.renderweave.template.spi.TemplatePersistence;
 import org.junit.jupiter.api.Test;
@@ -22,6 +23,30 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
 class TemplateApplicationContractTest {
+
+    /**
+     * The contract fixtures carry no AssetRef atoms or TemplateUse occurrences, so the
+     * dependency probe must never be consulted on these paths.
+     */
+    private static TemplateApplication application(
+            OwnerScopeAuthority ownerScopes,
+            TemplatePersistence persistence,
+            StaticSchemaAuthority schemas
+    ) {
+        return TemplateModule.application(ownerScopes, persistence, schemas,
+                new DependencyResolution() {
+                    @Override
+                    public AssetCheck checkAsset(String assetId, String kind) {
+                        throw new AssertionError("no dependency probe expected: asset " + assetId);
+                    }
+
+                    @Override
+                    public TemplateCheck checkTemplateUse(String targetTemplateId) {
+                        throw new AssertionError(
+                                "no dependency probe expected: template use " + targetTemplateId);
+                    }
+                });
+    }
 
     private static final byte[] DESIGN = """
             {
@@ -62,7 +87,7 @@ class TemplateApplicationContractTest {
             assertEquals(schema, reference);
             return new StaticSchemaAuthority.Resolved(reference);
         };
-        var application = TemplateModule.application(authority, persistence, schemas);
+        var application = application(authority, persistence, schemas);
 
         var outcome = application.create(
                 invocation,
@@ -107,7 +132,7 @@ class TemplateApplicationContractTest {
         StaticSchemaAuthority schemas = reference -> {
             throw new AssertionError("read must not resolve the permanent StaticSchema again");
         };
-        var application = TemplateModule.application(authority, persistence, schemas);
+        var application = application(authority, persistence, schemas);
 
         var outcome = application.getCurrent(invocation, templateId);
 
@@ -149,7 +174,7 @@ class TemplateApplicationContractTest {
             assertEquals(schema, reference);
             return new StaticSchemaAuthority.Resolved(reference);
         };
-        var application = TemplateModule.application(authority, persistence, schemas);
+        var application = application(authority, persistence, schemas);
 
         var outcome = application.save(
                 invocation,
@@ -204,7 +229,7 @@ class TemplateApplicationContractTest {
                 throw new AssertionError("read must not recheck");
             }
         };
-        var application = TemplateModule.application(
+        var application = application(
                 authority,
                 persistence,
                 reference -> {
@@ -235,7 +260,7 @@ class TemplateApplicationContractTest {
                 )
         );
         var persistence = new CollisionPersistenceScript();
-        var application = TemplateModule.application(
+        var application = application(
                 authority,
                 persistence,
                 reference -> new StaticSchemaAuthority.Resolved(reference)
@@ -283,7 +308,7 @@ class TemplateApplicationContractTest {
                 admitted.contentHash(),
                 calls
         );
-        var application = TemplateModule.application(
+        var application = application(
                 authority,
                 persistence,
                 reference -> {
@@ -346,6 +371,24 @@ class TemplateApplicationContractTest {
     }
 
     private static final class CreatePersistenceScript implements TemplatePersistence {
+        @Override
+        public LoadUseTargetsOutcome loadUseTargets(TemplateApplication.TemplateId templateId) {
+            throw new AssertionError("unexpected loadUseTargets");
+        }
+
+        @Override
+        public FindAssetReferencesOutcome findAssetReferences(String assetId) {
+            throw new AssertionError("unexpected findAssetReferences");
+        }
+
+        @Override
+        public UpdateReadinessOutcome updateReadiness(
+                TemplateApplication.TemplateId templateId,
+                long currentRevision,
+                TemplateApplication.Readiness readiness
+        ) {
+            throw new AssertionError("unexpected updateReadiness");
+        }
         private final OwnerScopeAuthority.OwnerScope expectedScope;
         private final StaticSchemaRef expectedSchema;
         private byte[] canonicalUtf8;
@@ -437,6 +480,24 @@ class TemplateApplicationContractTest {
     }
 
     private static final class ReadPersistenceScript implements TemplatePersistence {
+        @Override
+        public LoadUseTargetsOutcome loadUseTargets(TemplateApplication.TemplateId templateId) {
+            throw new AssertionError("unexpected loadUseTargets");
+        }
+
+        @Override
+        public FindAssetReferencesOutcome findAssetReferences(String assetId) {
+            throw new AssertionError("unexpected findAssetReferences");
+        }
+
+        @Override
+        public UpdateReadinessOutcome updateReadiness(
+                TemplateApplication.TemplateId templateId,
+                long currentRevision,
+                TemplateApplication.Readiness readiness
+        ) {
+            throw new AssertionError("unexpected updateReadiness");
+        }
         private final TemplateApplication.TemplateId expectedTemplateId;
         private final TemplateMetadata metadata;
         private final StoredCurrent current;
@@ -548,6 +609,24 @@ class TemplateApplicationContractTest {
     }
 
     private static final class SavePersistenceScript implements TemplatePersistence {
+        @Override
+        public LoadUseTargetsOutcome loadUseTargets(TemplateApplication.TemplateId templateId) {
+            throw new AssertionError("unexpected loadUseTargets");
+        }
+
+        @Override
+        public FindAssetReferencesOutcome findAssetReferences(String assetId) {
+            throw new AssertionError("unexpected findAssetReferences");
+        }
+
+        @Override
+        public UpdateReadinessOutcome updateReadiness(
+                TemplateApplication.TemplateId templateId,
+                long currentRevision,
+                TemplateApplication.Readiness readiness
+        ) {
+            throw new AssertionError("unexpected updateReadiness");
+        }
         private final TemplateApplication.TemplateId expectedTemplateId;
         private final TemplateMetadata metadata;
         private final StoredCurrent current;
@@ -636,6 +715,24 @@ class TemplateApplicationContractTest {
     }
 
     private static final class MetadataOnlyPersistenceScript implements TemplatePersistence {
+        @Override
+        public LoadUseTargetsOutcome loadUseTargets(TemplateApplication.TemplateId templateId) {
+            throw new AssertionError("unexpected loadUseTargets");
+        }
+
+        @Override
+        public FindAssetReferencesOutcome findAssetReferences(String assetId) {
+            throw new AssertionError("unexpected findAssetReferences");
+        }
+
+        @Override
+        public UpdateReadinessOutcome updateReadiness(
+                TemplateApplication.TemplateId templateId,
+                long currentRevision,
+                TemplateApplication.Readiness readiness
+        ) {
+            throw new AssertionError("unexpected updateReadiness");
+        }
         private final TemplateMetadata metadata;
         private boolean loaded;
 
@@ -671,6 +768,24 @@ class TemplateApplicationContractTest {
     }
 
     private static final class CollisionPersistenceScript implements TemplatePersistence {
+        @Override
+        public LoadUseTargetsOutcome loadUseTargets(TemplateApplication.TemplateId templateId) {
+            throw new AssertionError("unexpected loadUseTargets");
+        }
+
+        @Override
+        public FindAssetReferencesOutcome findAssetReferences(String assetId) {
+            throw new AssertionError("unexpected findAssetReferences");
+        }
+
+        @Override
+        public UpdateReadinessOutcome updateReadiness(
+                TemplateApplication.TemplateId templateId,
+                long currentRevision,
+                TemplateApplication.Readiness readiness
+        ) {
+            throw new AssertionError("unexpected updateReadiness");
+        }
         private TemplateApplication.TemplateId first;
         private TemplateApplication.TemplateId second;
         private int calls;

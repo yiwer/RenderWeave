@@ -47,7 +47,15 @@ class TemplateApplicationPublicSurfaceTest {
     @Test
     void outboundInterfacesAreTransactionSizedAndContainNoMutationBypass() {
         assertEquals(
-                Set.of("locate", "loadCurrent", "create", "append"),
+                Set.of(
+                        "locate",
+                        "loadCurrent",
+                        "create",
+                        "append",
+                        "loadUseTargets",
+                        "findAssetReferences",
+                        "updateReadiness"
+                ),
                 methodNames(TemplatePersistence.class)
         );
         assertEquals(
@@ -58,22 +66,32 @@ class TemplateApplicationPublicSurfaceTest {
                 .flatMap(type -> Arrays.stream(type.getDeclaredMethods()))
                 .map(Method::getName)
                 .collect(Collectors.toUnmodifiableSet());
+        // No generic repository verbs: updateReadiness is a narrow recheck projection op,
+        // never a generic update/delete/purge/rebind/executeSql escape hatch.
         assertFalse(allPersistenceNames.contains("update"));
         assertFalse(allPersistenceNames.contains("delete"));
         assertFalse(allPersistenceNames.contains("purge"));
         assertFalse(allPersistenceNames.contains("rebind"));
         assertFalse(allPersistenceNames.contains("executeSql"));
+        assertEquals(
+                Set.of("checkAsset", "checkTemplateUse"),
+                methodNames(cn.hbads.renderweave.template.spi.DependencyResolution.class)
+        );
     }
 
     @Test
-    void exactAssemblyExceptionExposesOnlyTheStaticApplicationFactory() throws Exception {
+    void exactAssemblyExceptionExposesOnlyTheStaticFactories() throws Exception {
         assertTrue(Modifier.isFinal(TemplateModule.class.getModifiers()));
-        assertEquals(Set.of("application"), methodNames(TemplateModule.class));
+        assertEquals(
+                Set.of("application", "assetReferenceAuthority", "readinessAuthority"),
+                methodNames(TemplateModule.class)
+        );
         var application = TemplateModule.class.getDeclaredMethod(
                 "application",
                 OwnerScopeAuthority.class,
                 TemplatePersistence.class,
-                StaticSchemaAuthority.class
+                StaticSchemaAuthority.class,
+                cn.hbads.renderweave.template.spi.DependencyResolution.class
         );
         assertTrue(Modifier.isPublic(application.getModifiers()));
         assertTrue(Modifier.isStatic(application.getModifiers()));
@@ -82,7 +100,8 @@ class TemplateApplicationPublicSurfaceTest {
                 List.of(
                         OwnerScopeAuthority.class,
                         TemplatePersistence.class,
-                        StaticSchemaAuthority.class
+                        StaticSchemaAuthority.class,
+                        cn.hbads.renderweave.template.spi.DependencyResolution.class
                 ),
                 Arrays.asList(application.getParameterTypes())
         );

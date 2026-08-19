@@ -4,6 +4,7 @@ import cn.hbads.renderweave.schema.definition.StaticSchemaRef;
 import cn.hbads.renderweave.schema.identity.SchemaKey;
 import cn.hbads.renderweave.schema.identity.VersionTag;
 import cn.hbads.renderweave.template.api.TemplateApplication;
+import cn.hbads.renderweave.template.api.TemplateDependencyProjection;
 import cn.hbads.renderweave.template.spi.OwnerScopeAuthority;
 import cn.hbads.renderweave.template.spi.TemplatePersistence;
 import org.springframework.dao.DataAccessException;
@@ -16,6 +17,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 import java.nio.charset.StandardCharsets;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Objects;
 
 @Repository
@@ -95,6 +97,7 @@ public class PostgresTemplatePersistence implements TemplatePersistence {
                         .param("readiness", commit.readiness().name())
                         .update();
                 insertRevision(commit);
+                replaceProjection(commit.templateId(), commit.ownerScope(), commit.projection());
                 return new Created();
             }));
         } catch (DuplicateKeyException collision) {
@@ -134,6 +137,7 @@ public class PostgresTemplatePersistence implements TemplatePersistence {
                 }
 
                 insertRevision(commit);
+                replaceProjection(commit.templateId(), commit.ownerScope(), commit.projection());
                 var updated = jdbc.sql("""
                                 update template_aggregate
                                 set current_revision = :nextRevision,
@@ -155,6 +159,109 @@ public class PostgresTemplatePersistence implements TemplatePersistence {
             }));
         } catch (DataAccessException | PersistenceFault unavailable) {
             return new AppendUnavailable();
+        }
+    }
+
+    @Override
+    public LoadUseTargetsOutcome loadUseTargets(TemplateApplication.TemplateId templateId) {
+        try {
+            var targets = jdbc.sql("""
+                            select target_template_id
+                            from template_use_reference
+                            where template_id = :templateId
+                            order by canonical_pointer
+                            """)
+                    .param("templateId", templateId.value())
+                    .query((resultSet, rowNumber) -> resultSet.getString("target_template_id"))
+                    .list();
+            return new UseTargetsLoaded(targets);
+        } catch (DataAccessException unavailable) {
+            return new UseTargetsUnavailable();
+        }
+    }
+
+    @Override
+    public FindAssetReferencesOutcome findAssetReferences(String assetId) {
+        try {
+            var templateIds = jdbc.sql("""
+                            select distinct r.template_id
+                            from template_asset_reference r
+                            join template_aggregate a
+                              on a.template_id = r.template_id
+                             and a.lifecycle = 'ACTIVE'
+                            where r.asset_id = :assetId
+                            order by r.template_id
+                            """)
+                    .param("assetId", assetId)
+                    .query((resultSet, rowNumber) ->
+                            TemplateApplication.TemplateId.of(resultSet.getString("template_id")))
+                    .list();
+            return new AssetReferencesLoaded(templateIds);
+        } catch (DataAccessException unavailable) {
+            return new AssetReferencesUnavailable();
+        }
+    }
+
+    @Override
+    public UpdateReadinessOutcome updateReadiness(
+            TemplateApplication.TemplateId templateId,
+            long currentRevision,
+            TemplateApplication.Readiness readiness
+    ) {
+        try {
+            var updated = jdbc.sql("""
+                            update template_aggregate
+                            set readiness = :readiness,
+                                updated_at = clock_timestamp()
+                            where template_id = :templateId
+                              and current_revision = :currentRevision
+                              and lifecycle = 'ACTIVE'
+                            """)
+                    .param("readiness", readiness.name())
+                    .param("templateId", templateId.value())
+                    .param("currentRevision", currentRevision)
+                    .update();
+            return updated == 1 ? new ReadinessUpdated() : new ReadinessRevisionConflict();
+        } catch (DataAccessException unavailable) {
+            return new ReadinessUnavailable();
+        }
+    }
+
+    /** Current-only projection replace: delete and re-insert within the same transaction. */
+    private void replaceProjection(
+            TemplateApplication.TemplateId templateId,
+            OwnerScopeAuthority.OwnerScope ownerScope,
+            TemplateDependencyProjection projection
+    ) {
+        jdbc.sql("delete from template_use_reference where template_id = :templateId")
+                .param("templateId", templateId.value())
+                .update();
+        jdbc.sql("delete from template_asset_reference where template_id = :templateId")
+                .param("templateId", templateId.value())
+                .update();
+        for (var use : projection.templateUses()) {
+            jdbc.sql("""
+                            insert into template_use_reference (
+                                template_id, canonical_pointer, target_template_id
+                            ) values (:templateId, :canonicalPointer, :targetTemplateId)
+                            """)
+                    .param("templateId", templateId.value())
+                    .param("canonicalPointer", use.canonicalPointer())
+                    .param("targetTemplateId", use.targetTemplateId())
+                    .update();
+        }
+        for (var atom : projection.assetAtoms()) {
+            jdbc.sql("""
+                            insert into template_asset_reference (
+                                template_id, owner_scope, canonical_pointer, asset_id, asset_kind
+                            ) values (:templateId, :ownerScope, :canonicalPointer, :assetId, :assetKind)
+                            """)
+                    .param("templateId", templateId.value())
+                    .param("ownerScope", ownerScope.value())
+                    .param("canonicalPointer", atom.canonicalPointer())
+                    .param("assetId", atom.assetId())
+                    .param("assetKind", atom.kind())
+                    .update();
         }
     }
 

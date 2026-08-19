@@ -2,6 +2,7 @@ package cn.hbads.renderweave.template.internal;
 
 import cn.hbads.renderweave.schema.definition.StaticSchemaRef;
 import cn.hbads.renderweave.template.api.TemplateApplication;
+import cn.hbads.renderweave.template.api.TemplateDependencyProjection;
 import cn.hbads.renderweave.template.spi.OwnerScopeAuthority;
 import cn.hbads.renderweave.template.spi.TemplatePersistence;
 
@@ -13,13 +14,17 @@ final class AdmittedCreateCommit implements TemplatePersistence.CreateCommit {
     private final StaticSchemaRef staticSchema;
     private final byte[] canonicalDesignDslUtf8;
     private final String contentHash;
+    private final TemplateApplication.Readiness readiness;
+    private final TemplateDependencyProjection projection;
 
     AdmittedCreateCommit(
             TemplateApplication.TemplateId templateId,
             OwnerScopeAuthority.OwnerScope ownerScope,
             StaticSchemaRef staticSchema,
             byte[] canonicalDesignDslUtf8,
-            String contentHash
+            String contentHash,
+            TemplateApplication.Readiness readiness,
+            TemplateDependencyProjection projection
     ) {
         this.templateId = Objects.requireNonNull(templateId, "templateId");
         this.ownerScope = Objects.requireNonNull(ownerScope, "ownerScope");
@@ -29,6 +34,8 @@ final class AdmittedCreateCommit implements TemplatePersistence.CreateCommit {
                 "canonicalDesignDslUtf8"
         ).clone();
         this.contentHash = Objects.requireNonNull(contentHash, "contentHash");
+        this.readiness = Objects.requireNonNull(readiness, "readiness");
+        this.projection = Objects.requireNonNull(projection, "projection");
     }
 
     @Override
@@ -63,6 +70,11 @@ final class AdmittedCreateCommit implements TemplatePersistence.CreateCommit {
 
     @Override
     public TemplateApplication.Readiness readiness() {
-        return TemplateApplication.Readiness.READY;
+        return readiness;
+    }
+
+    @Override
+    public TemplateDependencyProjection projection() {
+        return projection;
     }
 }

@@ -1,8 +1,8 @@
 # RenderWeave Template v1 Implementation Plan
 
-- 状态：`in_progress`；TV1-T01/T02/T03/T04/T05/T06/T07/T08/T09/T10/T10b/T11/T12a/T14/T14b/T15/T16/T17/T18/T19=`automated_verified`
-  （T09 另含人工 J1），TV1-T12b/T13/T20=`open`（T20 为唯一 unblocked frontier——T12b 的
-  blocker，single-writer 下一轮只 claim T20）
+- 状态：`in_progress`；TV1-T01/T02/T03/T04/T05/T06/T07/T08/T09/T10/T10b/T11/T12a/T14/T14b/T15/T16/T17/T18/T19/T20=`automated_verified`
+  （T09 另含人工 J1），TV1-T12b/T13=`open`（T12b 为唯一 unblocked frontier——T20 的
+  blocker 已 resolve，single-writer 下一轮只 claim T12b）
 - 日期：2026-08-19
 - Approved delta：[`specs/changes/20260817-template-v1-implementation-authority.md`](../specs/changes/20260817-template-v1-implementation-authority.md)
 - Frozen checkpoint：`0b485f4a13de9d754a81d07f464730776e13c14b`
@@ -126,7 +126,7 @@ flowchart LR
 | 17 | task | `resolved` | 03, 14, 15 | Repeat 原子（items/PACK/packing/loopId，manifest v4 116 vectors） |
 | 18 | task | `resolved` | 03, 14, 15 | Conditional 原子（condition/absent policy/剪枝，manifest v8 211 vectors） |
 | 19 | task | `resolved` | 03, 14, 15, 16 | TemplateUse 原子（ContextSelector/fills/closure 边，manifest v7 197 vectors） |
-| 20 | task | `open` | 04, 05, 14, 19 | Template 依赖投影（AssetRef/反向索引/STALE 消费）；T12b 的 blocker |
+| 20 | task | `resolved` / `automated_verified` | 04, 05, 14, 19 | Template 依赖投影（AssetRef/反向索引/STALE 消费）；T12b 的 blocker |
 
 每次只 claim 一个 unblocked ticket；一票 resolved 后才由其 `Blocked by` 关系产生下一 frontier。未知实现切片留在
 map 的 `Not yet specified`，不为排满计划提前发明接口、migration 或 Profile identity。
@@ -139,9 +139,11 @@ placement + loopId namespace + RepeatPackingSpec，manifest v4 116 vectors）；
 BindingPolicyCatalog 消费已 resolve（manifest v6 176 vectors）；TV1-T19 TemplateUse 原子已 resolve
 （manifest v7 197 vectors）；TV1-T18 Conditional 原子已 resolve（manifest v8 211 vectors——v1 全部
 kind 已 admission，Java/Python 211/211，Profile 仍 NOT_REGISTERED）；TV1-T20（Template 依赖投影，
-T12b 的 blocker）为唯一 unblocked frontier，single-writer 下一轮只 claim T20；TV1-T13 以首个
-Rendering 实现票与 T08 为前置。single-writer 不顺带 claim 或预建 delete/restore/Resolver/Rust wire/
-Editor 产品 route；Editor E1–E9 切片在各自前置满足后另行登记。
+T12b 的 blocker）已 resolve（AssetRef/TemplateUse 原子提取 + current-only 投影物化 + 反向 proof +
+STALE 消费 + readiness recheck，template gate 含 A2 提取重放，V021）；TV1-T12b 成为唯一 unblocked
+frontier，single-writer 下一轮只 claim T12b；TV1-T13 以首个 Rendering 实现票与 T08 为前置。
+single-writer 不顺带 claim 或预建 delete/restore/Resolver/Rust wire/Editor 产品 route；Editor E1–E9
+切片在各自前置满足后另行登记。
 
 ## 5. TV1-T01 执行卡
 
@@ -254,6 +256,7 @@ Editor 产品 route；Editor E1–E9 切片在各自前置满足后另行登记�
 ## 12. Gate 与证据策略
 
 `template` gate 顺序固定为 repository diff → DesignDSL kernel Java primary/Python independent exact-vector replay
+（T20 起追加 AssetRef/TemplateUse 依赖投影提取的 Java primary/Python independent exact-fixture replay）
 → 临时副本 Editor generator/independent/A2 → registry target refresh/Node primary/Python independent/A2 → 全树
 byte comparison → frozen counts/readiness assertions。任何命令失败或相同输入生成 diff 都失败；仓库 authority
 不被重写。kernel report 必须保持 211/211（vectorVersion `renderweave-template-canonical-kernel-v1/8`，

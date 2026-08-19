@@ -35,7 +35,9 @@ if (-not $resolvedEvidenceDir.StartsWith(
 
 $primaryReport = Join-Path $resolvedEvidenceDir 'template-kernel-primary.json'
 $independentReport = Join-Path $resolvedEvidenceDir 'template-kernel-independent.json'
-foreach ($report in @($primaryReport, $independentReport)) {
+$assetRefPrimaryReport = Join-Path $resolvedEvidenceDir 'template-asset-ref-primary.json'
+$assetRefIndependentReport = Join-Path $resolvedEvidenceDir 'template-asset-ref-independent.json'
+foreach ($report in @($primaryReport, $independentReport, $assetRefPrimaryReport, $assetRefIndependentReport)) {
     if (Test-Path -LiteralPath $report) {
         throw "Template kernel evidence already exists: $report"
     }
@@ -77,6 +79,31 @@ try {
     if (-not (Test-Path -LiteralPath $independentReport -PathType Leaf)) {
         throw 'Template kernel independent replay did not write its report.'
     }
+
+    # T20 dependency-projection extraction: Java primary over the fixture corpus, then the
+    # independent Python re-extraction (A2) over the same fixtures.
+    & mvn.cmd -B -ntp -pl renderweave-template -am `
+        "-Dtest=AssetRefAtomExtractionTest" `
+        "-Drenderweave.template.assetRefReport=$assetRefPrimaryReport" `
+        "-Dsurefire.failIfNoSpecifiedTests=false" test
+    if ($LASTEXITCODE -ne 0) {
+        throw "Template asset-ref extraction Java primary failed with exit code $LASTEXITCODE."
+    }
+    if (-not (Test-Path -LiteralPath $assetRefPrimaryReport -PathType Leaf)) {
+        throw 'Template asset-ref extraction Java primary did not write its report.'
+    }
+
+    & python.exe 'tools\verify-template-asset-ref-extraction.py' `
+        '--fixtures' 'renderweave-template\src\test\resources\cn\hbads\renderweave\template\asset-ref-extraction\fixtures.json' `
+        '--primary-report' $assetRefPrimaryReport `
+        '--report' $assetRefIndependentReport
+    if ($LASTEXITCODE -ne 0) {
+        throw "Template asset-ref extraction independent replay failed with exit code $LASTEXITCODE."
+    }
+    if (-not (Test-Path -LiteralPath $assetRefIndependentReport -PathType Leaf)) {
+        throw 'Template asset-ref extraction independent replay did not write its report.'
+    }
+    Write-Host "Template asset-ref extraction evidence: $assetRefIndependentReport"
 
     $primary = Get-Content -Raw -Encoding UTF8 -LiteralPath $primaryReport | ConvertFrom-Json
     $independent = Get-Content -Raw -Encoding UTF8 -LiteralPath $independentReport | ConvertFrom-Json

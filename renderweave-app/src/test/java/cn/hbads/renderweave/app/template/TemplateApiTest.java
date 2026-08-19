@@ -52,7 +52,13 @@ class TemplateApiTest {
 
     @BeforeEach
     void clearTemplates() {
-        jdbc.sql("truncate table template_revision, template_aggregate").update();
+        jdbc.sql("""
+                truncate table template_use_reference,
+                                 template_asset_reference,
+                                 template_revision,
+                                 template_aggregate
+                cascade
+                """).update();
     }
 
     @Test

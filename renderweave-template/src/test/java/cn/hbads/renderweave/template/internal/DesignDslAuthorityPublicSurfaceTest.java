@@ -33,8 +33,12 @@ class DesignDslAuthorityPublicSurfaceTest {
         assertEquals(Set.of(
                 DesignDslAuthority.class.getName(),
                 "cn.hbads.renderweave.template.api.TemplateApplication",
+                "cn.hbads.renderweave.template.api.TemplateDependencyProjection",
+                "cn.hbads.renderweave.template.api.AssetReferenceAuthority",
+                "cn.hbads.renderweave.template.api.TemplateReadinessAuthority",
                 "cn.hbads.renderweave.template.spi.OwnerScopeAuthority",
                 "cn.hbads.renderweave.template.spi.TemplatePersistence",
+                "cn.hbads.renderweave.template.spi.DependencyResolution",
                 "cn.hbads.renderweave.template.internal.TemplateModule"
         ), publicTopLevel);
     }

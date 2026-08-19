@@ -1,8 +1,11 @@
 package cn.hbads.renderweave.app.template;
 
 import cn.hbads.renderweave.schema.api.StaticSchemaAuthority;
+import cn.hbads.renderweave.template.api.AssetReferenceAuthority;
 import cn.hbads.renderweave.template.api.TemplateApplication;
+import cn.hbads.renderweave.template.api.TemplateReadinessAuthority;
 import cn.hbads.renderweave.template.internal.TemplateModule;
+import cn.hbads.renderweave.template.spi.DependencyResolution;
 import cn.hbads.renderweave.template.spi.OwnerScopeAuthority;
 import cn.hbads.renderweave.template.spi.TemplatePersistence;
 import org.springframework.beans.factory.annotation.Value;
@@ -10,6 +13,8 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.jdbc.core.simple.JdbcClient;
+import org.springframework.transaction.PlatformTransactionManager;
 
 import java.util.Arrays;
 import java.util.Set;
@@ -36,12 +41,41 @@ class TemplateApplicationConfiguration {
     }
 
     @Bean
+    DependencyResolution templateDependencyResolution(JdbcClient jdbc) {
+        return new TemplateDependencyResolutionAdapter(jdbc);
+    }
+
+    @Bean
     TemplateApplication templateApplication(
             OwnerScopeAuthority ownerScopes,
             TemplatePersistence persistence,
-            StaticSchemaAuthority schemas
+            StaticSchemaAuthority schemas,
+            DependencyResolution dependencyResolution
     ) {
-        return TemplateModule.application(ownerScopes, persistence, schemas);
+        return TemplateModule.application(
+                ownerScopes, persistence, schemas, dependencyResolution);
+    }
+
+    @Bean
+    AssetReferenceAuthority templateAssetReferenceAuthority(TemplatePersistence persistence) {
+        return TemplateModule.assetReferenceAuthority(persistence);
+    }
+
+    @Bean
+    TemplateReadinessAuthority templateReadinessAuthority(
+            TemplatePersistence persistence,
+            DependencyResolution dependencyResolution
+    ) {
+        return TemplateModule.readinessAuthority(persistence, dependencyResolution);
+    }
+
+    @Bean
+    TemplateAssetStaleConsumer templateAssetStaleConsumer(
+            JdbcClient jdbc,
+            PlatformTransactionManager transactionManager,
+            TemplateReadinessAuthority readinessAuthority
+    ) {
+        return new TemplateAssetStaleConsumer(jdbc, transactionManager, readinessAuthority);
     }
 
     private static Set<String> parseCapabilities(String raw) {

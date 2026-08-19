@@ -133,13 +133,16 @@ Label: wayfinder:map
   `renderweave-template-canonical-kernel-v1/7` 197 vectors，T20 解锁）；T18 Conditional 原子已
   resolve（condition boolean 静态证明/absentPolicy FALSE|ERROR/非空 ABSOLUTE children，manifest
   `renderweave-template-canonical-kernel-v1/8` 211 vectors——DesignDSL v1 全部 kind 已 admission，
-  Java/Python 211/211）；T20 为唯一 unblocked frontier；
+  Java/Python 211/211）；T20 Template 依赖投影已 resolve（AssetRef/TemplateUse 原子提取 + current-only
+  投影物化（V021 整体替换）+ `AssetReferenceAuthority` 反向 proof + asset_audit_event 可重放 STALE
+  消费 + `TemplateReadinessAuthority.recheck` READY/INVALID 重算持久化，Java primary/Python
+  independent 提取 A2 与 `template` gate 全绿）；T12b 为唯一 unblocked frontier；
   admission/canonical 增量逐票带 exact vectors + template gate 扩展，全部 exact 语义原子通过前不登记
   Profile available，也不把本 kernel 的 fail-closed non-empty array 当作 set ordering 已实现。
 - Asset persistence、replace/delete/restore、依赖影响确认、Asset UI 与 Renderer-only lease 的实施顺序已由
   Ticket 05 冻结为 T10 → T11 → T12a → T12b → T13；T10/T10b/T11/T12a 已完成。Template
   依赖投影（从 DesignDSL 提取 authored AssetRef atom 的 current-only 投影、`AssetReferenceAuthority` 物化与
-  STALE 消费）已登记为 T20，T12b 以其为 blocker。
+  STALE 消费）已登记为 T20 并已 resolve，T12b 以其为 blocker 已解锁。
 - Expression/value binding、closure、capability、nested Template、layout lowering 与正式 RenderDocument 的
   实现切片，要等 Evaluator seam 给出稳定 ownership 和错误面后再登记——ADR-0044 已给出该 seam：首个
   Rendering task 票将同时物化 `TemplateClosureAuthority`/`Evaluator`/seal 纵切与 RenderNodeContract/

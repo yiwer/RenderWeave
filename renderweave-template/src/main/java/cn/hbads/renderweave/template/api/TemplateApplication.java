@@ -155,7 +155,9 @@ public interface TemplateApplication {
     }
 
     enum Readiness {
-        READY
+        READY,
+        INVALID,
+        STALE
     }
 
     sealed interface CreateOutcome permits

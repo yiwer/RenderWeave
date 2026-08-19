@@ -3,6 +3,8 @@ package cn.hbads.renderweave.template.internal;
 import cn.hbads.renderweave.schema.api.StaticSchemaAuthority;
 import cn.hbads.renderweave.template.api.DesignDslAuthority;
 import cn.hbads.renderweave.template.api.TemplateApplication;
+import cn.hbads.renderweave.template.api.TemplateDependencyProjection;
+import cn.hbads.renderweave.template.spi.DependencyResolution;
 import cn.hbads.renderweave.template.spi.OwnerScopeAuthority;
 import cn.hbads.renderweave.template.spi.TemplatePersistence;
 
@@ -16,17 +18,44 @@ final class CanonicalTemplateApplication implements TemplateApplication {
     private final OwnerScopeAuthority ownerScopes;
     private final TemplatePersistence persistence;
     private final StaticSchemaAuthority schemas;
+    private final AssetRefAtomExtractor extractor;
+    private final TemplateDependencyEvaluator dependencies;
 
     CanonicalTemplateApplication(
             DesignDslAuthority designs,
             OwnerScopeAuthority ownerScopes,
             TemplatePersistence persistence,
-            StaticSchemaAuthority schemas
+            StaticSchemaAuthority schemas,
+            DependencyResolution resolution
     ) {
         this.designs = Objects.requireNonNull(designs, "designs");
         this.ownerScopes = Objects.requireNonNull(ownerScopes, "ownerScopes");
         this.persistence = Objects.requireNonNull(persistence, "persistence");
         this.schemas = Objects.requireNonNull(schemas, "schemas");
+        this.extractor = new AssetRefAtomExtractor();
+        this.dependencies = new TemplateDependencyEvaluator(
+                Objects.requireNonNull(resolution, "resolution"),
+                this::useTargetsOf
+        );
+    }
+
+    private java.util.List<String> useTargetsOf(String templateId) {
+        var outcome = persistence.loadUseTargets(TemplateId.of(templateId));
+        if (outcome instanceof TemplatePersistence.UseTargetsLoaded loaded) {
+            return loaded.targetTemplateIds();
+        }
+        throw new TemplateDependencyEvaluator.Unavailable();
+    }
+
+    private TemplateDependencyProjection projectionOf(byte[] canonicalUtf8) {
+        return extractor.extract(canonicalUtf8);
+    }
+
+    private TemplateApplication.Readiness readinessOf(
+            TemplateDependencyProjection projection,
+            String templateId
+    ) {
+        return dependencies.evaluate(projection, templateId);
     }
 
     @Override
@@ -69,15 +98,26 @@ final class CanonicalTemplateApplication implements TemplateApplication {
             return new CreateAuthorityUnavailable();
         }
 
+        var projection = projectionOf(admitted.canonicalUtf8());
         TemplateId templateId = null;
+        TemplateApplication.Readiness computedReadiness = null;
         for (int attempt = 0; attempt < 3; attempt++) {
             var candidate = TemplateId.of(UUID.randomUUID().toString());
+            TemplateApplication.Readiness readiness;
+            try {
+                readiness = readinessOf(projection, candidate.value());
+            } catch (TemplateDependencyEvaluator.Unavailable unavailable) {
+                return new CreateAuthorityUnavailable();
+            }
+            computedReadiness = readiness;
             var committed = persistence.create(new AdmittedCreateCommit(
                     candidate,
                     granted.ownerScope(),
                     command.staticSchema(),
                     admitted.canonicalUtf8(),
-                    admitted.contentHash()
+                    admitted.contentHash(),
+                    readiness,
+                    projection
             ));
             if (committed instanceof TemplatePersistence.Created) {
                 templateId = candidate;
@@ -100,7 +140,7 @@ final class CanonicalTemplateApplication implements TemplateApplication {
                 command.staticSchema(),
                 admitted.canonicalUtf8(),
                 admitted.contentHash(),
-                Readiness.READY
+                computedReadiness
         ));
     }
 
@@ -237,13 +277,23 @@ final class CanonicalTemplateApplication implements TemplateApplication {
             return new SaveAuthorityUnavailable();
         }
 
+        var projection = projectionOf(admitted.canonicalUtf8());
+        TemplateApplication.Readiness readiness;
+        try {
+            readiness = readinessOf(projection, command.templateId().value());
+        } catch (TemplateDependencyEvaluator.Unavailable unavailable) {
+            return new SaveAuthorityUnavailable();
+        }
+
         var appended = persistence.append(new AdmittedAppendCommit(
                 command.templateId(),
                 metadata.ownerScope(),
                 metadata.staticSchema(),
                 command.expectedRevision(),
                 admitted.canonicalUtf8(),
-                admitted.contentHash()
+                admitted.contentHash(),
+                readiness,
+                projection
         ));
         if (appended instanceof TemplatePersistence.AppendNotFound) {
             return new SaveNotFound();
@@ -267,7 +317,7 @@ final class CanonicalTemplateApplication implements TemplateApplication {
                 metadata.staticSchema(),
                 admitted.canonicalUtf8(),
                 admitted.contentHash(),
-                Readiness.READY
+                readiness
         ));
     }
 

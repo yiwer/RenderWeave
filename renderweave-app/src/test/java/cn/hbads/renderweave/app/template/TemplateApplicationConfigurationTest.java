@@ -6,6 +6,8 @@ import cn.hbads.renderweave.template.spi.OwnerScopeAuthority;
 import cn.hbads.renderweave.template.spi.TemplatePersistence;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.springframework.jdbc.core.simple.JdbcClient;
+import org.springframework.transaction.PlatformTransactionManager;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -14,7 +16,9 @@ class TemplateApplicationConfigurationTest {
     private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
             .withUserConfiguration(TemplateApplicationConfiguration.class)
             .withBean(TemplatePersistence.class, () -> mock(TemplatePersistence.class))
-            .withBean(StaticSchemaAuthority.class, () -> mock(StaticSchemaAuthority.class));
+            .withBean(StaticSchemaAuthority.class, () -> mock(StaticSchemaAuthority.class))
+            .withBean(JdbcClient.class, () -> mock(JdbcClient.class))
+            .withBean(PlatformTransactionManager.class, () -> mock(PlatformTransactionManager.class));
 
     @Test
     void missingHostConfigurationSelectsTheFailClosedAuthority() {
