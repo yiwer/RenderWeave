@@ -174,6 +174,65 @@ SIZE_MODES = {
     "GRID": {"FIXED", "HUG_CONTENT", "FILL"},
 }
 
+# --- Definition contract (T15: custom/mapping/expression + ValueSource) ----------
+
+DEFINITION_KINDS = {"custom", "mapping", "expression"}
+COMMON_DEFINITION_MEMBERS = {"definitionId", "kind", "displayName"}
+CUSTOM_MEMBERS = {"exposure", "valueType", "defaultValue"}
+MAPPING_MEMBERS = {"domain", "output", "input", "cases", "otherwise"}
+EXPRESSION_MEMBERS = {"domain", "output", "inputs", "source"}
+EXPOSURE_TOKENS = {"PUBLIC", "PRIVATE"}
+BASE_VALUE_TYPES = {
+    "text",
+    "decimal",
+    "boolean",
+    "date",
+    "time",
+    "color",
+    "imageRef",
+    "fontRef",
+}
+LIST_ITEM_TYPES = {"text", "decimal", "boolean", "date", "time", "imageRef", "fontRef"}
+VALUE_TYPE_MEMBERS = {"type", "items", "catalogId"}
+VALUE_SOURCE_KINDS = {"literal", "context", "loopIndex", "definition", "capability"}
+LITERAL_SOURCE_MEMBERS = {"kind", "valueType", "value"}
+CONTEXT_SOURCE_MEMBERS = {"kind", "domain", "pointer"}
+LOOP_INDEX_SOURCE_MEMBERS = {"kind", "loopId"}
+DEFINITION_SOURCE_MEMBERS = {"kind", "definitionId"}
+CAPABILITY_SOURCE_MEMBERS = {"kind", "capability", "operation"}
+MAPPING_OPERATORS = {
+    "IS_ABSENT",
+    "IS_PRESENT",
+    "EQ",
+    "NOT_EQ",
+    "GT",
+    "GTE",
+    "LT",
+    "LTE",
+    "CONTAINS",
+    "STARTS_WITH",
+    "ENDS_WITH",
+    "PATTERN_MATCH",
+    "IS_BLANK",
+    "IS_NOT_BLANK",
+}
+NO_OPERAND_OPERATORS = {"IS_ABSENT", "IS_PRESENT"}
+CAPABILITY_OPERATIONS = {
+    "CLOCK": {"UTC_DATE", "UTC_TIME"},
+    "RANDOM": {"UNIFORM_DECIMAL_0_1"},
+}
+CASE_MEMBERS = {"operator", "operand", "then"}
+OPERAND_MEMBERS = {"valueType", "value"}
+EXPRESSION_INPUT_MEMBERS = {"alias", "source"}
+DOMAIN_LOOP_MEMBERS = {"kind", "loopId"}
+ASSET_REF_MEMBERS = {"assetId"}
+ALIAS_PATTERN = re.compile(r"^[A-Za-z_][A-Za-z0-9_]{0,63}$")
+DATE_PATTERN = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+TIME_PATTERN = re.compile(r"^\d{2}:\d{2}:\d{2}$")
+COLOR_PATTERN = re.compile(r"^#[0-9A-F]{8}$")
+MAX_CONTEXT_POINTER_SEGMENTS = 32
+MAX_CONTEXT_POINTER_UTF8_BYTES = 1024
+
 
 @dataclass(frozen=True)
 class NumberToken:
@@ -946,6 +1005,445 @@ def validate_non_canvas_node(
     return normalized
 
 
+def validate_definitions(
+    definitions: list[Any], loop_ids: set[str]
+) -> list[Any]:
+    seen_ids: set[str] = set()
+    ids: list[str] = []
+    edges_by_definition: list[list[tuple[str, str]]] = []
+    normalized: list[Any] = []
+    for index, item in enumerate(definitions):
+        pointer = "/definitions/" + str(index)
+        entry = require_object(item, pointer)
+        normalized.append(
+            validate_definition(
+                entry, pointer, seen_ids, ids, edges_by_definition, loop_ids
+            )
+        )
+    validate_definition_graph(ids, edges_by_definition)
+    normalized.sort(key=definition_id_of)
+    return normalized
+
+
+def validate_definition(
+    entry: dict[str, Any],
+    pointer: str,
+    seen_ids: set[str],
+    ids: list[str],
+    edges_by_definition: list[list[tuple[str, str]]],
+    loop_ids: set[str],
+) -> dict[str, Any]:
+    kind_token = require_string(require_member(entry, "kind", pointer + "/kind"), pointer + "/kind")
+    if kind_token not in DEFINITION_KINDS:
+        raise semantic_rejection("DESIGN_VALUE_INVALID", pointer + "/kind")
+    allowed = set(COMMON_DEFINITION_MEMBERS)
+    if kind_token == "custom":
+        allowed |= CUSTOM_MEMBERS
+    elif kind_token == "mapping":
+        allowed |= MAPPING_MEMBERS
+    else:
+        allowed |= EXPRESSION_MEMBERS
+    reject_unknown(entry, allowed, pointer)
+    definition_id = require_string(
+        require_member(entry, "definitionId", pointer + "/definitionId"),
+        pointer + "/definitionId",
+    )
+    if UUID_V4.fullmatch(definition_id) is None or definition_id in seen_ids:
+        raise semantic_rejection("DESIGN_VALUE_INVALID", pointer + "/definitionId")
+    seen_ids.add(definition_id)
+    normalized = dict(entry)
+    normalized["displayName"] = metadata(
+        entry, "displayName", 128, False, pointer + "/displayName"
+    )
+    edges: list[tuple[str, str]] = []
+    if kind_token == "custom":
+        validate_custom_definition(entry, pointer)
+    elif kind_token == "mapping":
+        validate_mapping_definition(entry, pointer, edges, loop_ids)
+    else:
+        normalized["inputs"] = validate_expression_definition(entry, pointer, edges, loop_ids)
+    ids.append(definition_id)
+    edges_by_definition.append(edges)
+    return normalized
+
+
+def validate_custom_definition(entry: dict[str, Any], pointer: str) -> None:
+    enum_member(entry, "exposure", EXPOSURE_TOKENS, pointer + "/exposure")
+    value_type = validate_value_type(
+        require_member(entry, "valueType", pointer + "/valueType"), pointer + "/valueType"
+    )
+    validate_literal(
+        require_member(entry, "defaultValue", pointer + "/defaultValue"),
+        value_type,
+        pointer + "/defaultValue",
+    )
+
+
+def validate_mapping_definition(
+    entry: dict[str, Any],
+    pointer: str,
+    edges: list[tuple[str, str]],
+    loop_ids: set[str],
+) -> None:
+    validate_domain(require_member(entry, "domain", pointer + "/domain"), pointer + "/domain", loop_ids)
+    output = validate_value_type(require_member(entry, "output", pointer + "/output"), pointer + "/output")
+    validate_value_source(
+        require_member(entry, "input", pointer + "/input"),
+        pointer + "/input",
+        False,
+        edges,
+        loop_ids,
+    )
+    cases = require_array(require_member(entry, "cases", pointer + "/cases"), pointer + "/cases")
+    if not cases:
+        raise semantic_rejection("DESIGN_VALUE_INVALID", pointer + "/cases")
+    for index, item in enumerate(cases):
+        case_pointer = pointer + "/cases/" + str(index)
+        case_entry = require_object(item, case_pointer)
+        reject_unknown(case_entry, CASE_MEMBERS, case_pointer)
+        operator = require_string(
+            require_member(case_entry, "operator", case_pointer + "/operator"),
+            case_pointer + "/operator",
+        )
+        if operator not in MAPPING_OPERATORS:
+            raise semantic_rejection("DESIGN_VALUE_INVALID", case_pointer + "/operator")
+        if operator in NO_OPERAND_OPERATORS:
+            if "operand" in case_entry:
+                raise semantic_rejection("DESIGN_VALUE_INVALID", case_pointer + "/operand")
+        else:
+            operand_pointer = case_pointer + "/operand"
+            operand = require_object(require_member(case_entry, "operand", operand_pointer), operand_pointer)
+            reject_unknown(operand, OPERAND_MEMBERS, operand_pointer)
+            operand_type = validate_value_type(
+                require_member(operand, "valueType", operand_pointer + "/valueType"),
+                operand_pointer + "/valueType",
+            )
+            validate_literal(
+                require_member(operand, "value", operand_pointer + "/value"),
+                operand_type,
+                operand_pointer + "/value",
+            )
+        then_type = validate_value_source(
+            require_member(case_entry, "then", case_pointer + "/then"),
+            case_pointer + "/then",
+            False,
+            edges,
+            loop_ids,
+        )
+        if then_type is not None and then_type != output:
+            raise semantic_rejection("DESIGN_VALUE_INVALID", case_pointer + "/then/valueType")
+    otherwise_type = validate_value_source(
+        require_member(entry, "otherwise", pointer + "/otherwise"),
+        pointer + "/otherwise",
+        False,
+        edges,
+        loop_ids,
+    )
+    if otherwise_type is not None and otherwise_type != output:
+        raise semantic_rejection("DESIGN_VALUE_INVALID", pointer + "/otherwise/valueType")
+
+
+def validate_expression_definition(
+    entry: dict[str, Any],
+    pointer: str,
+    edges: list[tuple[str, str]],
+    loop_ids: set[str],
+) -> list[Any]:
+    validate_domain(require_member(entry, "domain", pointer + "/domain"), pointer + "/domain", loop_ids)
+    validate_value_type(require_member(entry, "output", pointer + "/output"), pointer + "/output")
+    inputs = require_array(require_member(entry, "inputs", pointer + "/inputs"), pointer + "/inputs")
+    aliases: dict[str, str] = {}
+    normalized_inputs: list[Any] = []
+    for index, item in enumerate(inputs):
+        input_pointer = pointer + "/inputs/" + str(index)
+        input_entry = require_object(item, input_pointer)
+        reject_unknown(input_entry, EXPRESSION_INPUT_MEMBERS, input_pointer)
+        alias = require_string(
+            require_member(input_entry, "alias", input_pointer + "/alias"), input_pointer + "/alias"
+        )
+        if ALIAS_PATTERN.fullmatch(alias) is None or alias in aliases:
+            raise semantic_rejection("DESIGN_VALUE_INVALID", input_pointer + "/alias")
+        aliases[alias] = input_pointer + "/alias"
+        validate_value_source(
+            require_member(input_entry, "source", input_pointer + "/source"),
+            input_pointer + "/source",
+            True,
+            edges,
+            loop_ids,
+        )
+        normalized_inputs.append(input_entry)
+    source = require_string(require_member(entry, "source", pointer + "/source"), pointer + "/source")
+    used: set[str] = set()
+    scan_expression_input_usage(source, used)
+    for alias in aliases:
+        if alias not in used:
+            raise semantic_rejection("DESIGN_VALUE_INVALID", aliases[alias])
+    normalized_inputs.sort(key=lambda item: require_string(item["alias"], ""))
+    return normalized_inputs
+
+
+def scan_expression_input_usage(source: str, used: set[str]) -> None:
+    index = 0
+    length = len(source)
+    while index < length:
+        current = source[index]
+        if current == "'":
+            index = skip_expression_string(source, index + 1)
+            continue
+        if is_ascii_identifier_start(current):
+            token_start = index
+            while index < length and is_ascii_identifier_part(source[index]):
+                index += 1
+            if source[token_start:index] == "input":
+                index = skip_expression_whitespace(source, index)
+                if index < length and source[index] == ".":
+                    index = skip_expression_whitespace(source, index + 1)
+                    alias_start = index
+                    while index < length and is_ascii_identifier_part(source[index]):
+                        index += 1
+                    if index > alias_start:
+                        used.add(source[alias_start:index])
+            continue
+        index += 1
+
+
+def skip_expression_string(source: str, index: int) -> int:
+    length = len(source)
+    while index < length:
+        current = source[index]
+        if current == "\\":
+            index += 2
+            continue
+        if current == "'":
+            return index + 1
+        index += 1
+    return index
+
+
+def skip_expression_whitespace(source: str, index: int) -> int:
+    length = len(source)
+    while index < length and source[index] in " \t\r\n":
+        index += 1
+    return index
+
+
+def is_ascii_identifier_start(value: str) -> bool:
+    return "a" <= value <= "z" or "A" <= value <= "Z" or value == "_"
+
+
+def is_ascii_identifier_part(value: str) -> bool:
+    return is_ascii_identifier_start(value) or "0" <= value <= "9"
+
+
+def validate_domain(value: Any, pointer: str, loop_ids: set[str]) -> None:
+    if isinstance(value, str):
+        if value != "invocation":
+            raise semantic_rejection("DESIGN_VALUE_INVALID", pointer)
+        return
+    domain = require_object(value, pointer)
+    reject_unknown(domain, DOMAIN_LOOP_MEMBERS, pointer)
+    kind = require_string(require_member(domain, "kind", pointer + "/kind"), pointer + "/kind")
+    if kind != "loop":
+        raise semantic_rejection("DESIGN_VALUE_INVALID", pointer + "/kind")
+    loop_id = require_string(
+        require_member(domain, "loopId", pointer + "/loopId"), pointer + "/loopId"
+    )
+    if UUID_V4.fullmatch(loop_id) is None or loop_id not in loop_ids:
+        raise semantic_rejection("DESIGN_VALUE_INVALID", pointer + "/loopId")
+
+
+def validate_value_type(value: Any, pointer: str) -> str:
+    if isinstance(value, str):
+        if value not in BASE_VALUE_TYPES:
+            raise semantic_rejection("DESIGN_VALUE_INVALID", pointer)
+        return value
+    object_value = require_object(value, pointer)
+    reject_unknown(object_value, VALUE_TYPE_MEMBERS, pointer)
+    type_token = require_string(
+        require_member(object_value, "type", pointer + "/type"), pointer + "/type"
+    )
+    if type_token == "list":
+        items = require_string(
+            require_member(object_value, "items", pointer + "/items"), pointer + "/items"
+        )
+        if items not in LIST_ITEM_TYPES:
+            raise semantic_rejection("DESIGN_VALUE_INVALID", pointer + "/items")
+        return "list<" + items + ">"
+    if type_token == "enum":
+        require_string(
+            require_member(object_value, "catalogId", pointer + "/catalogId"),
+            pointer + "/catalogId",
+        )
+        raise semantic_rejection("DESIGN_VALUE_INVALID", pointer + "/catalogId")
+    raise semantic_rejection("DESIGN_VALUE_INVALID", pointer + "/type")
+
+
+def validate_literal(value: Any, type_key: str, pointer: str) -> None:
+    if type_key.startswith("list<"):
+        item_type = type_key[len("list<") : -1]
+        if not isinstance(value, list):
+            raise semantic_rejection("DESIGN_VALUE_INVALID", pointer)
+        for index, item in enumerate(value):
+            validate_literal(item, item_type, pointer + "/" + str(index))
+        return
+    if type_key == "text":
+        if not isinstance(value, str):
+            raise semantic_rejection("DESIGN_VALUE_INVALID", pointer)
+    elif type_key == "decimal":
+        if not isinstance(value, NumberToken):
+            raise semantic_rejection("DESIGN_VALUE_INVALID", pointer)
+    elif type_key == "boolean":
+        if not isinstance(value, bool):
+            raise semantic_rejection("DESIGN_VALUE_INVALID", pointer)
+    elif type_key == "date":
+        if not isinstance(value, str) or DATE_PATTERN.fullmatch(value) is None:
+            raise semantic_rejection("DESIGN_VALUE_INVALID", pointer)
+    elif type_key == "time":
+        if not isinstance(value, str) or TIME_PATTERN.fullmatch(value) is None:
+            raise semantic_rejection("DESIGN_VALUE_INVALID", pointer)
+    elif type_key == "color":
+        if not isinstance(value, str) or COLOR_PATTERN.fullmatch(value) is None:
+            raise semantic_rejection("DESIGN_VALUE_INVALID", pointer)
+    elif type_key in ("imageRef", "fontRef"):
+        if not isinstance(value, dict):
+            raise semantic_rejection("DESIGN_VALUE_INVALID", pointer)
+        reject_unknown(value, ASSET_REF_MEMBERS, pointer)
+        asset_id = require_string(
+            require_member(value, "assetId", pointer + "/assetId"), pointer + "/assetId"
+        )
+        if UUID_V4.fullmatch(asset_id) is None:
+            raise semantic_rejection("DESIGN_VALUE_INVALID", pointer + "/assetId")
+    else:
+        raise AssertionError(f"Unreachable value type: {type_key}")
+
+
+def validate_value_source(
+    value: Any,
+    pointer: str,
+    capability_allowed: bool,
+    edges: list[tuple[str, str]],
+    loop_ids: set[str],
+) -> str | None:
+    source = require_object(value, pointer)
+    kind = require_string(require_member(source, "kind", pointer + "/kind"), pointer + "/kind")
+    if kind == "literal":
+        reject_unknown(source, LITERAL_SOURCE_MEMBERS, pointer)
+        value_type = validate_value_type(
+            require_member(source, "valueType", pointer + "/valueType"),
+            pointer + "/valueType",
+        )
+        validate_literal(
+            require_member(source, "value", pointer + "/value"), value_type, pointer + "/value"
+        )
+        return value_type
+    if kind == "context":
+        reject_unknown(source, CONTEXT_SOURCE_MEMBERS, pointer)
+        validate_domain(
+            require_member(source, "domain", pointer + "/domain"), pointer + "/domain", loop_ids
+        )
+        validate_context_pointer(
+            require_string(require_member(source, "pointer", pointer + "/pointer"), pointer + "/pointer"),
+            pointer + "/pointer",
+        )
+        return None
+    if kind == "loopIndex":
+        reject_unknown(source, LOOP_INDEX_SOURCE_MEMBERS, pointer)
+        loop_id = require_string(
+            require_member(source, "loopId", pointer + "/loopId"), pointer + "/loopId"
+        )
+        if UUID_V4.fullmatch(loop_id) is None or loop_id not in loop_ids:
+            raise semantic_rejection("DESIGN_VALUE_INVALID", pointer + "/loopId")
+        return None
+    if kind == "definition":
+        reject_unknown(source, DEFINITION_SOURCE_MEMBERS, pointer)
+        target = require_string(
+            require_member(source, "definitionId", pointer + "/definitionId"),
+            pointer + "/definitionId",
+        )
+        if UUID_V4.fullmatch(target) is None:
+            raise semantic_rejection("DESIGN_VALUE_INVALID", pointer + "/definitionId")
+        edges.append((target, pointer + "/definitionId"))
+        return None
+    if kind == "capability":
+        if not capability_allowed:
+            raise semantic_rejection("DESIGN_VALUE_INVALID", pointer + "/kind")
+        reject_unknown(source, CAPABILITY_SOURCE_MEMBERS, pointer)
+        capability = require_string(
+            require_member(source, "capability", pointer + "/capability"),
+            pointer + "/capability",
+        )
+        operations = CAPABILITY_OPERATIONS.get(capability)
+        if operations is None:
+            raise semantic_rejection("DESIGN_VALUE_INVALID", pointer + "/capability")
+        operation = require_string(
+            require_member(source, "operation", pointer + "/operation"), pointer + "/operation"
+        )
+        if operation not in operations:
+            raise semantic_rejection("DESIGN_VALUE_INVALID", pointer + "/operation")
+        return None
+    raise semantic_rejection("DESIGN_VALUE_INVALID", pointer + "/kind")
+
+
+def validate_context_pointer(context_pointer: str, pointer: str) -> None:
+    if (
+        not context_pointer
+        or not context_pointer.startswith("/")
+        or context_pointer == "/"
+    ):
+        raise semantic_rejection("DESIGN_VALUE_INVALID", pointer)
+    segments = 0
+    for index, current in enumerate(context_pointer):
+        if current == "/":
+            segments += 1
+            continue
+        if current == "~" and (
+            index + 1 >= len(context_pointer)
+            or (context_pointer[index + 1] != "0" and context_pointer[index + 1] != "1")
+        ):
+            raise semantic_rejection("DESIGN_VALUE_INVALID", pointer)
+    if segments > MAX_CONTEXT_POINTER_SEGMENTS:
+        raise semantic_rejection("DESIGN_VALUE_INVALID", pointer)
+    decoded = context_pointer.replace("~1", "/").replace("~0", "~")
+    if len(decoded.encode("utf-8")) > MAX_CONTEXT_POINTER_UTF8_BYTES:
+        raise semantic_rejection("DESIGN_VALUE_INVALID", pointer)
+
+
+def validate_definition_graph(
+    ids: list[str], edges_by_definition: list[list[tuple[str, str]]]
+) -> None:
+    index_by_id = {definition_id: index for index, definition_id in enumerate(ids)}
+    state = [0] * len(ids)
+    for start in range(len(ids)):
+        if state[start] != 0:
+            continue
+        path: list[int] = [start]
+        cursors: list[int] = [0]
+        state[start] = 1
+        while path:
+            node = path[-1]
+            edges = edges_by_definition[node]
+            cursor = cursors.pop()
+            if cursor >= len(edges):
+                state[node] = 2
+                path.pop()
+                continue
+            cursors.append(cursor + 1)
+            target, edge_pointer = edges[cursor]
+            target_index = index_by_id.get(target)
+            if target_index is None:
+                raise semantic_rejection("DESIGN_VALUE_INVALID", edge_pointer)
+            if state[target_index] == 1:
+                raise semantic_rejection("DESIGN_VALUE_INVALID", edge_pointer)
+            if state[target_index] == 0:
+                state[target_index] = 1
+                path.append(target_index)
+                cursors.append(0)
+
+
+def definition_id_of(value: Any) -> str:
+    return require_string(value["definitionId"], "")
+
+
 def validate_and_normalize(parsed: Any) -> dict[str, Any]:
     reject_null(parsed)
     root = require_object(parsed, "")
@@ -961,8 +1459,7 @@ def validate_and_normalize(parsed: Any) -> dict[str, Any]:
         raise semantic_rejection("DESIGN_VERSION_UNSUPPORTED", "/expressionProfile")
     display_name = metadata(root, "displayName", 128, False, "/displayName")
     definitions = require_array(require_member(root, "definitions", "/definitions"), "/definitions")
-    if definitions:
-        raise semantic_rejection("DESIGN_KERNEL_SCOPE_UNSUPPORTED", "/definitions")
+    normalized_definitions = validate_definitions(definitions, set())
 
     canvas = require_object(require_member(root, "designRoot", "/designRoot"), "/designRoot")
     reject_unknown(canvas, CANVAS_MEMBERS, "/designRoot")
@@ -1009,6 +1506,7 @@ def validate_and_normalize(parsed: Any) -> dict[str, Any]:
             "/designRoot/displayName",
         )
     normalized_root = dict(root)
+    normalized_root["definitions"] = normalized_definitions
     normalized_root["displayName"] = display_name
     if "description" in root:
         description = metadata(root, "description", 2048, True, "/description")
@@ -1286,13 +1784,13 @@ def main() -> int:
 
     vector_bytes, manifest = load_json(args.vectors)
     _, primary = load_json(args.primary_report)
-    if manifest["vectorVersion"] != "renderweave-template-canonical-kernel-v1/2":
+    if manifest["vectorVersion"] != "renderweave-template-canonical-kernel-v1/3":
         raise AssertionError("Unexpected vector version")
     if manifest["authorityContext"]["staticSchemaProfile"] != "system-empty@v1":
         raise AssertionError("Unexpected external StaticSchema context")
     if manifest["authorityContext"]["profileAvailability"] != "NOT_REGISTERED":
         raise AssertionError("Partial DesignDSL Profile must remain unavailable")
-    if len(manifest["cases"]) != 57:
+    if len(manifest["cases"]) != 94:
         raise AssertionError("Vector case count drift")
 
     results = [replay_case(vector) for vector in manifest["cases"]]

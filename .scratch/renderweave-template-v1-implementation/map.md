@@ -116,10 +116,13 @@ Label: wayfinder:map
   `renderweave-template-canonical-kernel-v1/2` 57 vectors，Java primary/Python independent 57/57，
   Profile 仍 NOT_REGISTERED）；visual leaf 增量拆分为
   [14b（visual leaf kinds + BindingPolicyCatalog 基础）](issues/14b-visual-leaf-kinds.md)（open）；
-  DesignDSL full-Profile 拆分登记为 14b → T15（Definition/ValueSource）→ T16（Binding/Policy）→ T17
-  （Repeat）→ T18（Conditional）→ T19（TemplateUse）→ T20（Template 依赖投影，T12b 的 blocker）；
-  admission/canonical 增量逐票带 exact vectors + template gate 扩展，全部 exact 语义原子通过前不登记
-  Profile available，也不把本 kernel 的 fail-closed non-empty array 当作 set ordering 已实现。
+  T15 Definition/ValueSource 原子已 resolve（custom/mapping/expression + ValueSource closed union +
+  词法 domain + graph cycle/dangling + canonical set sorting，manifest
+  `renderweave-template-canonical-kernel-v1/3` 94 vectors，Java/Python 94/94）；
+  DesignDSL full-Profile 拆分登记为 14b → T16（Binding/Policy）→ T17（Repeat）→ T18（Conditional）→
+  T19（TemplateUse）→ T20（Template 依赖投影，T12b 的 blocker）；admission/canonical 增量逐票带
+  exact vectors + template gate 扩展，全部 exact 语义原子通过前不登记 Profile available，也不把本
+  kernel 的 fail-closed non-empty array 当作 set ordering 已实现。
 - Asset persistence、replace/delete/restore、依赖影响确认、Asset UI 与 Renderer-only lease 的实施顺序已由
   Ticket 05 冻结为 T10 → T11 → T12a → T12b → T13；T10/T10b/T11/T12a 已完成。Template
   依赖投影（从 DesignDSL 提取 authored AssetRef atom 的 current-only 投影、`AssetReferenceAuthority` 物化与

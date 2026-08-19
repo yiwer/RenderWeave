@@ -1334,3 +1334,42 @@
   14b（`issues/14b-visual-leaf-kinds.md`，open，Blocked by 03/14），T14 容器增量 resolve 为
   automated_verified；T14b/T15/T16 成为 unblocked frontier。Ticket 19 open，Editor/Renderer 未
   READY；push 待用户另行授权（分支 ahead 10）。
+
+### Template v1 TV1-T15 Definition/ValueSource 原子
+
+- 新增 internal `DefinitionContractCatalog`（唯一机器权威）：DEFINITION_KINDS closed union
+  （custom/mapping/expression）、common/kind member 集、EXPOSURE_TOKENS、BASE_VALUE_TYPES（8 种
+  base：text/decimal/boolean/date/time/color/imageRef/fontRef）、LIST_ITEM_TYPES（五种 StaticSchema
+  scalar + imageRef/fontRef，无 color/嵌套）、VALUE_SOURCE_KINDS 五种 closed variant 与各自 member
+  集、MAPPING_OPERATORS（14 operator）、NO_OPERAND_OPERATORS（IS_ABSENT/IS_PRESENT）、
+  CAPABILITY_OPERATIONS（CLOCK UTC_DATE/UTC_TIME + RANDOM UNIFORM_DECIMAL_0_1 恰三对）、
+  ALIAS/DATE/TIME/COLOR pattern、context pointer 预算（≤32 段、解码 ≤1024 UTF-8 字节）。
+- `CanonicalDesignDslAuthority.validateDefinitions` 替代非空 definitions 的
+  DESIGN_KERNEL_SCOPE_UNSUPPORTED：definitionId（UUID v4 + Template 内唯一）+ 必填 displayName；
+  custom = exposure + valueType + 必填非 null typed defaultValue（typed literal decoder 共享
+  Mapping operand/literal source）；mapping = domain + output + 单 input ValueSource + ordered cases
+  （≥1；operator closed；IS_ABSENT/IS_PRESENT 禁 operand、其它 operator 必填 operand；then/otherwise
+  ValueSource，literal 结果 valueType 必须精确等于 output）；expression = domain + output +
+  inputs（alias ASCII 标识符 ≤64 且唯一）+ exact source 无损保留（whitespace 参与 hash）+ 有界词法
+  扫描强制 input.<alias> 全部被使用（跳过单引号字符串；完整 grammar/usage proof 属 Evaluator）。
+- ValueSource closed union：literal/context（domain + RFC 6901 pointer 非空、首 /、合法 ~0/~1）/、
+  loopIndex/definition（记 edge）/capability（仅 Expression input）。domain 为 `"invocation"` 或
+  `{"kind":"loop","loopId"}`；Repeat 未实现前 loopIds 恒空 → loop domain/loopIndex 作为 dangling
+  引用 fail closed。definition graph 允许 forward reference、必须无环且引用存在（迭代 DFS，cycle/
+  dangling 指向闭合边的 source definitionId）。canonical set sorting：definitions 按 definitionId、
+  Expression inputs 按 alias；Mapping cases 保持 authored first-match 顺序。
+- 冻结向量：manifest `renderweave-template-canonical-kernel-v1/3`，94 cases（57 原样 + 1 重写
+  `reject-nonempty-set-array-until-definition-contract-is-implemented` →
+  `reject-empty-object-definition`（definitions=[{}] → /definitions/0/kind）+ 37 新：5 admit 冻结
+  exact canonical bytes/hash（sorted definitions、全 base 类型 literal、ordered mapping cases、
+  inputs sorted by alias、forward reference）+ 32 reject 冻结精确 code/stage/pointer）；Java
+  primary（27/27 module tests）与 Python independent（94/94，A2，镜像 Java 检查顺序含 alias 词法
+  扫描与 graph DFS）与 gate 断言同步 94/94。
+- 验证：`template` gate 绿（Java=94/94 Python=94/94、vector sha256 5e394276…、static
+  authorityDiff=0，evidence `.sdlc/evidence/20260819-194737-template/`）、`fast` 绿
+  （`.sdlc/evidence/20260819-194818-fast/`）。Profile 保持 NOT_REGISTERED；plan §12 kernel report
+  已更新为 94/94。诚实边界：Expression 语法/求值、context Schema path/type/presence 解析、operator
+  operand 类型域、definition 祖先词法规则、enum catalog 注册属 Evaluator/后续票（v1 kernel 零
+  catalog，enum ValueType fail closed）。T15 resolve 为 automated_verified；T17/T18 解锁，
+  T14b/T16/T17/T18 成为 unblocked frontier。Ticket 19 open，Editor/Renderer 未 READY；push 待用户
+  另行授权（分支 ahead 11）。
