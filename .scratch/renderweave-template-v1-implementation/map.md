@@ -51,6 +51,10 @@ Label: wayfinder:map
   与 Pillow/fontTools 独立 replay、S3 协议 Blob seam（生产 OSS、本地与测试 MinIO、AWS SDK v2）、app 侧事务
   容量计数器、Asset-owned Host facet、`AssetFetchEndpoint` Port 与 T10–T13 切片；无 Java/migration/route
   物化。
+- [实现 Asset acceptance kernel 与独立 replay](issues/10-implement-asset-acceptance-kernel.md) — 首个真实
+  `renderweave-asset` artifact：`AssetAcceptanceAuthority.admit` closed admission 覆盖 PNG/JPEG/WebP 与
+  TTF/OTF 全切片；38 冻结 vectors Java=38/38 + Pillow/fontTools Python=38/38（A2）；`asset` gate 纳入 `full`；
+  嵌入 ICC 暂时 fail-closed（T10b 补齐 canonical sRGB 等值），Profile 未注册，T10b/T11 解锁。
 - [实现 Template create/read/save PostgreSQL 纵切](issues/06-implement-template-crud-slice.md) — 首个真实
   Template 纵切：`TemplateApplication.create/getCurrent/save` closed outcomes、ADR-0041 exact `TemplateModule`
   assembly seam、V018 aggregate/revision、ownerScope 只取 Host authority、expectedRevision 409；
@@ -61,9 +65,9 @@ Label: wayfinder:map
 
 - minimal canonical kernel 已完成；依据其真实接口和差异拆分完整 DesignDSL Profile 的 Node、Definition、Binding、Repeat、Conditional、TemplateUse 与 Property Identity 实施票。在全部 exact 语义原子通过前不登记 Profile available，且不得把本 kernel 的 fail-closed non-empty array 当作 set ordering 已实现。
 - Asset persistence、replace/delete/restore、依赖影响确认、Asset UI 与 Renderer-only lease 的实施顺序已由
-  Ticket 05 冻结为 T10 → T11 → T12a → T12b → T13；Template 依赖投影（从 DesignDSL 提取 authored AssetRef
-  atom 的 current-only 投影、`AssetReferenceAuthority` 物化与 STALE 消费）随 DesignDSL full-Profile 拆分时
-  登记，T12b 以其为 blocker。
+  Ticket 05 冻结为 T10 → T11 → T12a → T12b → T13；T10 已完成，T10b（canonical sRGB ICC 等值原子）在 T11
+  create 纵切前补齐。Template 依赖投影（从 DesignDSL 提取 authored AssetRef atom 的 current-only 投影、
+  `AssetReferenceAuthority` 物化与 STALE 消费）随 DesignDSL full-Profile 拆分时登记，T12b 以其为 blocker。
 - Expression/value binding、closure、capability、nested Template、layout lowering 与正式 RenderDocument 的实现切片，要等 Evaluator seam 给出稳定 ownership 和错误面后再登记。
 - Rust layout、font shaping、resource decode、raster、PNG/JPEG encoding 与 exact pixel replay 的切片，要等 process protocol 和 build/certification contract 冻结后再登记。
 - Product Editor 的 save/recovery/conflict/preview/browser automation 与 accessibility 实施票，要等状态架构

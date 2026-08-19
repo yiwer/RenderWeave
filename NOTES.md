@@ -1156,3 +1156,17 @@
 - `template` `20260819-122240-template`（kernel 33/33、authorityDiff=0、registry 22,838/22,746）与 fast
   `20260819-122240-fast` 通过；只有 ADR/tracker/plan/log 变化，无 Java/Web/Rust、OpenAPI、migration/route、
   gate 组成或依赖物化。Ticket 19 open，Asset/Editor/Renderer 未 READY；push 待用户另行授权。
+
+### Template v1 TV1-T10 Asset acceptance kernel
+
+- `renderweave-asset` 成为 reactor 第 6 个 artifact：唯一 public Interface
+  `AssetAcceptanceAuthority.admit(rawBytes, kind)` closed union；PNG（CRC/IHDR/APNG/PLTE/tRNS/ICC/EXIF +
+  ImageIO 全解码）、JPEG（marker/SOF/DHT/DQT/Adobe/ICC/EXIF + 全解码）、WebP（RIFF/VP8X/ANIM/VP8/VP8L/ICCP/
+  EXIF + webp-imageio 0.2.0/libwebp 全解码）、FONT（sfnt 逐表 checksum/head/glyf 走查/CFF Type 2 解析）全切片。
+- 38 冻结 vectors（`renderweave-asset-acceptance-kernel-v1/1`）Java primary 经正式 Interface 重放，独立
+  Python verifier（Pillow/fontTools + 独立结构实现）逐 case 重算：asset `20260819-134638-asset`
+  Java=38/38 Python=38/38（A2，vector sha256:2b690cce…bb7d）；新 `asset` gate 纳入 `full`；fast
+  `20260819-134704-fast` 通过。
+- 诚实边界：嵌入 ICC 暂时一律 UNSUPPORTED（canonical sRGB ICC 字节等值登记为 T10b，T11 create 前补齐）；
+  WebP 像素解码依赖 libwebp 原生绑定（无纯 Java 替代）；acceptance/1.0 未登记 available。无 DB/网络/UI/
+  route/S3/MinIO 或 Asset 聚合。Ticket 19 open，Asset/Editor/Renderer 未 READY；push 待用户另行授权。

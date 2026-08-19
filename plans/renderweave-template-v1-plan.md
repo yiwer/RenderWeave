@@ -1,6 +1,6 @@
 # RenderWeave Template v1 Implementation Plan
 
-- 状态：`in_progress`；TV1-T01/T02/T03/T04/T05/T06=`automated_verified`，TV1-T10 为下一 unblocked frontier
+- 状态：`in_progress`；TV1-T01/T02/T03/T04/T05/T06/T10=`automated_verified`，下一 frontier TV1-T10b → TV1-T11
 - 日期：2026-08-19
 - Approved delta：[`specs/changes/20260817-template-v1-implementation-authority.md`](../specs/changes/20260817-template-v1-implementation-authority.md)
 - Frozen checkpoint：`0b485f4a13de9d754a81d07f464730776e13c14b`
@@ -76,7 +76,9 @@ flowchart LR
   T08 --> T09
   T05 --> T10[10 Asset kernel]
   T05 --> T11[11 Asset persistence]
+  T10 --> T10b[10b canonical sRGB ICC]
   T10 --> T11
+  T10b --> T11
   T11 --> T12a[12a replace/restore]
   T11 --> T12b[12b delete/restore]
   T11 --> T13[13 Resolver/lease]
@@ -95,8 +97,9 @@ flowchart LR
 | 07 | grilling | `open` | 03, 04, 05 | Evaluator/RenderDocument seam |
 | 08 | grilling | `open` | 02, 07 | Rust process protocol与外部认证计划 |
 | 09 | prototype | `open` | 06, 07, 08 | Editor 状态/恢复/预览架构验证；不进产品 route |
-| 10 | task | `open` | 05 | Asset acceptance kernel；Java primary + Pillow/fontTools independent replay |
-| 11 | task | `open` | 05, 10 | Asset create/current/catalog PostgreSQL+S3 纵切；V019 + OpenAPI/Web SDK + MinIO |
+| 10 | task | `resolved` / `automated_verified` | 05 | Asset acceptance kernel；38 vectors Java/Python 38/38（A2）；`asset` gate 入 full |
+| 10b | task | `open` | 10 | canonical sRGB ICC 字节等值接受原子；T11 create 前补齐 |
+| 11 | task | `open` | 05, 10, 10b | Asset create/current/catalog PostgreSQL+S3 纵切；V019 + OpenAPI/Web SDK + MinIO |
 | 12a | task | `open` | 05, 11 | content replace/旧内容恢复 + 审计与 STALE 事实 |
 | 12b | task | `open` | 05, 11, Template 依赖投影票 | delete/restore + AssetReferencePort/确认 token 编排 |
 | 13 | task | `open` | 05, 07, 08, 11 | AssetResolver/Renderer-only lease 纵切 |
@@ -104,9 +107,9 @@ flowchart LR
 每次只 claim 一个 unblocked ticket；一票 resolved 后才由其 `Blocked by` 关系产生下一 frontier。未知实现切片留在
 map 的 `Not yet specified`，不为排满计划提前发明接口、migration 或 Profile identity。
 
-TV1-T05 已完成；TV1-T10（Asset acceptance kernel）成为唯一 unblocked frontier。TV1-T11 被 TV1-T10 阻塞；
-TV1-T12b 另以 Template 依赖投影票（未建，随 DesignDSL full-Profile 拆分登记）为 blocker；TV1-T13 被
-TV1-T07/T08/T11 阻塞。single-writer 下一票只 claim TV1-T10。
+TV1-T10 已完成；TV1-T10b（canonical sRGB ICC 等值原子）成为下一 unblocked frontier，其后 TV1-T11（Asset
+persistence 纵切）。TV1-T12b 另以 Template 依赖投影票（未建，随 DesignDSL full-Profile 拆分登记）为 blocker；
+TV1-T13 被 TV1-T07/T08/T11 阻塞。single-writer 不顺带 claim 或预建 Asset persistence。
 
 ## 5. TV1-T01 执行卡
 
@@ -199,7 +202,23 @@ TV1-T07/T08/T11 阻塞。single-writer 下一票只 claim TV1-T10。
 - 完成信号：Ticket 05 resolved/`automated_verified`、T10 成为唯一 unblocked frontier、形成一个 verified
   `agent-commit` 且 worktree clean；push 待用户另行授权。
 
-## 11. Gate 与证据策略
+## 11. TV1-T10 执行卡
+
+- 决策：ADR-0043 的 admission kernel 物化为 renderweave-asset 首个 artifact；唯一 public Interface
+  `AssetAcceptanceAuthority.admit(rawBytes, kind)` closed union；PNG/JPEG/WebP/TTF/OTF 全切片；WebP 像素解码
+  用 webp-imageio 0.2.0（libwebp 绑定，无纯 Java 替代）；38 冻结 vectors + `asset` gate（Java primary +
+  Pillow/fontTools 独立重放 A2）纳入 `full`。
+- 允许影响：root reactor、renderweave-asset 源码/测试/vectors、tools（ensure/generate/verify/run-asset-kernel-
+  gate、run-gate 组成）、CONTEXT/tracker/plan/log/NOTES/evidence。
+- 禁止影响：DB、网络、S3/MinIO、Template/Asset 聚合、产品 route/OpenAPI、acceptance Profile available
+  注册、T11 的 Adapter/迁移。
+- 局部验证：TDD red/green、module 53 tests、public-surface/ArchUnit 锁、冻结 vectors Java primary 重放。
+- 受影响验证：`asset` composite（Java=38/38 Python=38/38，A2）与 `fast`；`full` 已含 asset-kernel-replay。
+- 保证等级：gate A1；exact vectors 的独立 Python 重放为 A2；无 A3/J1。
+- 完成信号：Ticket 10 resolved/`automated_verified`、T10b/T11 解锁、形成一个 verified `agent-commit` 且
+  worktree clean；push 待用户另行授权。已知窄化：嵌入 ICC fail-closed（T10b 补齐），WebP 依赖 libwebp 绑定。
+
+## 12. Gate 与证据策略
 
 `template` gate 顺序固定为 repository diff → DesignDSL kernel Java primary/Python independent exact-vector replay
 → 临时副本 Editor generator/independent/A2 → registry target refresh/Node primary/Python independent/A2 → 全树
@@ -210,7 +229,7 @@ byte comparison → frozen counts/readiness assertions。任何命令失败或�
 process protocol 或 `full` 组成变化属于共享面，必须提前扩大回归。自动 green 只把对应任务推进到
 `automated_verified`；体验/业务选择是 J0/J1，独立机器 replay 是 A2，物理 Linux/CI policy 才可能形成外部门。
 
-## 12. Version、恢复与熔断
+## 13. Version、恢复与熔断
 
 - 每个已验证 Template ticket 在 `feature/template-v1` 独立提交；不 rewrite/cherry-pick 到 dirty main，不 push/tag/PR。
 - Ticket 01/02 无数据或外部副作用，恢复为回退对应单一提交或删除新 worktree；不得用 `reset --hard` 清理用户 worktree。
@@ -220,7 +239,7 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
 - 触发熔断：authority replay diff、产品语义冲突、依赖循环、test-only bypass、partial Profile availability、
   migration/route placeholder、越界外部副作用或 readiness 夸大。停止受影响票，保留证据；其他安全 frontier 继续。
 
-## 13. 当前边界
+## 14. 当前边界
 
 - Ticket 19 保持 open；Capacity formal records=0。
 - Formal Editor Case/Oracle=0/0；47 个 EditorContentSource slots 仅 1 exact、46 UNBOUND。

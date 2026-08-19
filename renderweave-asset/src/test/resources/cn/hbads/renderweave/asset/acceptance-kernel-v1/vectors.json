@@ -1,0 +1,705 @@
+{
+  "vectorVersion": "renderweave-asset-acceptance-kernel-v1/1",
+  "authorityContext": {
+    "acceptanceProfile": "renderweave-asset-acceptance/1.0",
+    "profileAvailability": "NOT_REGISTERED",
+    "imageRawByteLimit": 67108864,
+    "fontRawByteLimit": 33554432,
+    "imageEdgePixelLimit": 20000,
+    "imageTotalPixelLimit": 100000000
+  },
+  "cases": [
+    {
+      "id": "png-rgba-admitted",
+      "assetKind": "IMAGE",
+      "input": {
+        "kind": "BASE64",
+        "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGMQMgmrAAACDQEVqX6lxgAAAABJRU5ErkJggg=="
+      },
+      "expected": {
+        "outcome": "ADMITTED",
+        "kind": "IMAGE",
+        "byteLength": 70,
+        "sha256": "7bab3dc79240cb795432412f3e01c906fabd58d4f67e11b1ed9fdbb9782f0c04",
+        "acceptanceProfileId": "renderweave-asset-acceptance/1.0",
+        "descriptor": {
+          "type": "IMAGE",
+          "encodedWidthPx": 1,
+          "encodedHeightPx": 1,
+          "orientation": "IDENTITY",
+          "logicalWidthPx": 1,
+          "logicalHeightPx": 1,
+          "frameCount": 1,
+          "colorEncoding": "SRGB_8BIT"
+        }
+      }
+    },
+    {
+      "id": "png-gray-admitted",
+      "assetKind": "IMAGE",
+      "input": {
+        "kind": "BASE64",
+        "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAAAAAA6fptVAAAACklEQVR4nGNwAAAAQgBBKTf07wAAAABJRU5ErkJggg=="
+      },
+      "expected": {
+        "outcome": "ADMITTED",
+        "kind": "IMAGE",
+        "byteLength": 67,
+        "sha256": "867ccba653be2ff941ddb46a30fddca1f706f37c083f9f57a98ed3e1698b8c58",
+        "acceptanceProfileId": "renderweave-asset-acceptance/1.0",
+        "descriptor": {
+          "type": "IMAGE",
+          "encodedWidthPx": 1,
+          "encodedHeightPx": 1,
+          "orientation": "IDENTITY",
+          "logicalWidthPx": 1,
+          "logicalHeightPx": 1,
+          "frameCount": 1,
+          "colorEncoding": "SRGB_8BIT"
+        }
+      }
+    },
+    {
+      "id": "png-indexed-admitted",
+      "assetKind": "IMAGE",
+      "input": {
+        "kind": "BASE64",
+        "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAMAAAAoyzS7AAAAA1BMVEUQIDAIAYqkAAAACklEQVR4nGNgAAAAAgABSK+kcQAAAABJRU5ErkJggg=="
+      },
+      "expected": {
+        "outcome": "ADMITTED",
+        "kind": "IMAGE",
+        "byteLength": 82,
+        "sha256": "5f864f5f0a9146c8bc442ec8e9b9e2f11286870cd044840a412982a842c5c830",
+        "acceptanceProfileId": "renderweave-asset-acceptance/1.0",
+        "descriptor": {
+          "type": "IMAGE",
+          "encodedWidthPx": 1,
+          "encodedHeightPx": 1,
+          "orientation": "IDENTITY",
+          "logicalWidthPx": 1,
+          "logicalHeightPx": 1,
+          "frameCount": 1,
+          "colorEncoding": "SRGB_8BIT"
+        }
+      }
+    },
+    {
+      "id": "png-srgb-admitted",
+      "assetKind": "IMAGE",
+      "input": {
+        "kind": "BASE64",
+        "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs4c6QAAAA1JREFUeJxjEDIJqwAAAg0BFal+pcYAAAAASUVORK5CYII="
+      },
+      "expected": {
+        "outcome": "ADMITTED",
+        "kind": "IMAGE",
+        "byteLength": 83,
+        "sha256": "da85f65ebf2fd4902775a305a50e0f9c3f7cad858a6dd27fd828087ca5c03da0",
+        "acceptanceProfileId": "renderweave-asset-acceptance/1.0",
+        "descriptor": {
+          "type": "IMAGE",
+          "encodedWidthPx": 1,
+          "encodedHeightPx": 1,
+          "orientation": "IDENTITY",
+          "logicalWidthPx": 1,
+          "logicalHeightPx": 1,
+          "frameCount": 1,
+          "colorEncoding": "SRGB_8BIT"
+        }
+      }
+    },
+    {
+      "id": "png-exif-orientation-admitted",
+      "assetKind": "IMAGE",
+      "input": {
+        "kind": "BASE64",
+        "data": "iVBORw0KGgoAAAANSUhEUgAAAAIAAAABCAYAAAD0In+KAAAAGmVYSWZNTQAqAAAACAABARIAAwAAAAEABgAAAAAAANZnS2kAAAARSURBVHicY2BgZGJmYWVjBwAAXQAds7qlCgAAAABJRU5ErkJggg=="
+      },
+      "expected": {
+        "outcome": "ADMITTED",
+        "kind": "IMAGE",
+        "byteLength": 112,
+        "sha256": "5d4c58d541cdce4ca1c264289df2c01e63108c89eaf7dfcdfb01c26ccb6a6c2e",
+        "acceptanceProfileId": "renderweave-asset-acceptance/1.0",
+        "descriptor": {
+          "type": "IMAGE",
+          "encodedWidthPx": 2,
+          "encodedHeightPx": 1,
+          "orientation": "ROTATE_90_CW",
+          "logicalWidthPx": 1,
+          "logicalHeightPx": 2,
+          "frameCount": 1,
+          "colorEncoding": "SRGB_8BIT"
+        }
+      }
+    },
+    {
+      "id": "png-16bit-unsupported",
+      "assetKind": "IMAGE",
+      "input": {
+        "kind": "BASE64",
+        "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABEAYAAABPhRjKAAAADUlEQVR4nGMQMgmrAAACDQEVqX6lxgAAAABJRU5ErkJggg=="
+      },
+      "expected": {
+        "outcome": "REJECTED",
+        "code": "ASSET_CONTENT_UNSUPPORTED",
+        "stage": "ASSET_STRUCTURE",
+        "pointer": "/ihdr",
+        "limit": null
+      }
+    },
+    {
+      "id": "png-apng-unsupported",
+      "assetKind": "IMAGE",
+      "input": {
+        "kind": "BASE64",
+        "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAACGFjVEwAAAABAAAAALQt6aAAAAANSURBVHicYxAyCasAAAINARWpfqXGAAAAAElFTkSuQmCC"
+      },
+      "expected": {
+        "outcome": "REJECTED",
+        "code": "ASSET_CONTENT_UNSUPPORTED",
+        "stage": "ASSET_STRUCTURE",
+        "pointer": "/acTL",
+        "limit": null
+      }
+    },
+    {
+      "id": "png-bad-crc-invalid",
+      "assetKind": "IMAGE",
+      "input": {
+        "kind": "BASE64",
+        "data": "iVBORw0KGgoAAAANSUhEUgEAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGMQMgmrAAACDQEVqX6lxgAAAABJRU5ErkJggg=="
+      },
+      "expected": {
+        "outcome": "REJECTED",
+        "code": "ASSET_CONTENT_INVALID",
+        "stage": "ASSET_STRUCTURE",
+        "pointer": "/IHDR",
+        "limit": null
+      }
+    },
+    {
+      "id": "png-corrupt-idat-invalid",
+      "assetKind": "IMAGE",
+      "input": {
+        "kind": "BASE64",
+        "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAACUlEQVR4nGMAAAABAAFe/335AAAAAElFTkSuQmCC"
+      },
+      "expected": {
+        "outcome": "REJECTED",
+        "code": "ASSET_CONTENT_INVALID",
+        "stage": "ASSET_DECODE",
+        "pointer": "/IDAT",
+        "limit": null
+      }
+    },
+    {
+      "id": "png-edge-limit",
+      "assetKind": "IMAGE",
+      "input": {
+        "kind": "BASE64",
+        "data": "iVBORw0KGgoAAAANSUhEUgAATiEAAAABCAYAAADUdvWwAAAACUlEQVR4nGMAAAABAAFe/335AAAAAElFTkSuQmCC"
+      },
+      "expected": {
+        "outcome": "REJECTED",
+        "code": "ASSET_CONTENT_LIMIT_EXCEEDED",
+        "stage": "ASSET_STRUCTURE",
+        "pointer": "/ihdr",
+        "limit": "assetAcceptance.imageEdgePixels"
+      }
+    },
+    {
+      "id": "png-total-limit",
+      "assetKind": "IMAGE",
+      "input": {
+        "kind": "BASE64",
+        "data": "iVBORw0KGgoAAAANSUhEUgAAJxEAACcRCAYAAACe0Nq8AAAACUlEQVR4nGMAAAABAAFe/335AAAAAElFTkSuQmCC"
+      },
+      "expected": {
+        "outcome": "REJECTED",
+        "code": "ASSET_CONTENT_LIMIT_EXCEEDED",
+        "stage": "ASSET_STRUCTURE",
+        "pointer": "/ihdr",
+        "limit": "assetAcceptance.imageTotalPixels"
+      }
+    },
+    {
+      "id": "png-iccp-unsupported",
+      "assetKind": "IMAGE",
+      "input": {
+        "kind": "BASE64",
+        "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAFGlDQ1Bwcm9maWxlAAB4nGNkYgYAAA0ABwhY6OoAAAANSURBVHicYxAyCasAAAINARWpfqXGAAAAAElFTkSuQmCC"
+      },
+      "expected": {
+        "outcome": "REJECTED",
+        "code": "ASSET_CONTENT_UNSUPPORTED",
+        "stage": "ASSET_DESCRIPTOR",
+        "pointer": "/iCCP",
+        "limit": null
+      }
+    },
+    {
+      "id": "png-srgb-iccp-conflict-unsupported",
+      "assetKind": "IMAGE",
+      "input": {
+        "kind": "BASE64",
+        "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs4c6QAAABRpQ0NQcHJvZmlsZQAAeJxjZGIGAAANAAcIWOjqAAAADUlEQVR4nGMQMgmrAAACDQEVqX6lxgAAAABJRU5ErkJggg=="
+      },
+      "expected": {
+        "outcome": "REJECTED",
+        "code": "ASSET_CONTENT_UNSUPPORTED",
+        "stage": "ASSET_DESCRIPTOR",
+        "pointer": "/iCCP",
+        "limit": null
+      }
+    },
+    {
+      "id": "png-indexed-no-plte-invalid",
+      "assetKind": "IMAGE",
+      "input": {
+        "kind": "BASE64",
+        "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAMAAAAoyzS7AAAACklEQVR4nGNgAAAAAgABSK+kcQAAAABJRU5ErkJggg=="
+      },
+      "expected": {
+        "outcome": "REJECTED",
+        "code": "ASSET_CONTENT_INVALID",
+        "stage": "ASSET_STRUCTURE",
+        "pointer": "/PLTE",
+        "limit": null
+      }
+    },
+    {
+      "id": "jpeg-gray-admitted",
+      "assetKind": "IMAGE",
+      "input": {
+        "kind": "BASE64",
+        "data": "/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAMCAgMCAgMDAwMEAwMEBQgFBQQEBQoHBwYIDAoMDAsKCwsNDhIQDQ4RDgsLEBYQERMUFRUVDA8XGBYUGBIUFRT/wAALCAADAAIBAREA/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/9oACAEBAAA/AGV//9k="
+      },
+      "expected": {
+        "outcome": "ADMITTED",
+        "kind": "IMAGE",
+        "byteLength": 332,
+        "sha256": "b29991075957f91ad9daf12fb6a2ded189258bc3f177cd7a21b2ee29be540764",
+        "acceptanceProfileId": "renderweave-asset-acceptance/1.0",
+        "descriptor": {
+          "type": "IMAGE",
+          "encodedWidthPx": 2,
+          "encodedHeightPx": 3,
+          "orientation": "IDENTITY",
+          "logicalWidthPx": 2,
+          "logicalHeightPx": 3,
+          "frameCount": 1,
+          "colorEncoding": "SRGB_8BIT"
+        }
+      }
+    },
+    {
+      "id": "jpeg-progressive-admitted",
+      "assetKind": "IMAGE",
+      "input": {
+        "kind": "BASE64",
+        "data": "/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAMCAgMCAgMDAwMEAwMEBQgFBQQEBQoHBwYIDAoMDAsKCwsNDhIQDQ4RDgsLEBYQERMUFRUVDA8XGBYUGBIUFRT/2wBDAQMEBAUEBQkFBQkUDQsNFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBT/wgARCAADAAIDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAj/xAAUAQEAAAAAAAAAAAAAAAAAAAAE/9oADAMBAAIQAxAAAAGbAk//xAAUEAEAAAAAAAAAAAAAAAAAAAAA/9oACAEBAAEFAn//xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oACAEDAQE/AX//xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oACAECAQE/AX//xAAUEAEAAAAAAAAAAAAAAAAAAAAA/9oACAEBAAY/An//xAAUEAEAAAAAAAAAAAAAAAAAAAAA/9oACAEBAAE/IX//2gAMAwEAAgADAAAAEPv/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oACAEDAQE/EH//xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oACAECAQE/EH//xAAUEAEAAAAAAAAAAAAAAAAAAAAA/9oACAEBAAE/EH//2Q=="
+      },
+      "expected": {
+        "outcome": "ADMITTED",
+        "kind": "IMAGE",
+        "byteLength": 520,
+        "sha256": "14220f240a408eb62efcfa4bef6e6a9c7f2499464b5b9089670f3619a89812bd",
+        "acceptanceProfileId": "renderweave-asset-acceptance/1.0",
+        "descriptor": {
+          "type": "IMAGE",
+          "encodedWidthPx": 2,
+          "encodedHeightPx": 3,
+          "orientation": "IDENTITY",
+          "logicalWidthPx": 2,
+          "logicalHeightPx": 3,
+          "frameCount": 1,
+          "colorEncoding": "SRGB_8BIT"
+        }
+      }
+    },
+    {
+      "id": "jpeg-cmyk-unsupported",
+      "assetKind": "IMAGE",
+      "input": {
+        "kind": "BASE64",
+        "data": "/9j/7gAOQWRvYmUAZAAAAAAA/9sAQwADAgIDAgIDAwMDBAMDBAUIBQUEBAUKBwcGCAwKDAwLCgsLDQ4SEA0OEQ4LCxAWEBETFBUVFQwPFxgWFBgSFBUU/8AAFAgAAwACBEMRAE0RAFkRAEsRAP/EAB8AAAEFAQEBAQEBAAAAAAAAAAABAgMEBQYHCAkKC//EALUQAAIBAwMCBAMFBQQEAAABfQECAwAEEQUSITFBBhNRYQcicRQygZGhCCNCscEVUtHwJDNicoIJChYXGBkaJSYnKCkqNDU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6g4SFhoeIiYqSk5SVlpeYmZqio6Slpqeoqaqys7S1tre4ubrCw8TFxsfIycrS09TV1tfY2drh4uPk5ebn6Onq8fLz9PX29/j5+v/aAA4EQwBNAFkASwAAPwD9U6/VOv1Tr9U6/9k="
+      },
+      "expected": {
+        "outcome": "REJECTED",
+        "code": "ASSET_CONTENT_UNSUPPORTED",
+        "stage": "ASSET_STRUCTURE",
+        "pointer": "/sof",
+        "limit": null
+      }
+    },
+    {
+      "id": "jpeg-icc-unsupported",
+      "assetKind": "IMAGE",
+      "input": {
+        "kind": "BASE64",
+        "data": "/9j/4AAQSkZJRgABAQAAAQABAAD/4gA8SUNDX1BST0ZJTEUAAQFnYXJiYWdlLWljYy1wcm9maWxlLWJ5dGVzLW5vdC1hLXJlYWwtcHJvZmlsZf/bAEMAAwICAwICAwMDAwQDAwQFCAUFBAQFCgcHBggMCgwMCwoLCw0OEhANDhEOCwsQFhARExQVFRUMDxcYFhQYEhQVFP/bAEMBAwQEBQQFCQUFCRQNCw0UFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFP/AABEIAAMAAgMBIgACEQEDEQH/xAAfAAABBQEBAQEBAQAAAAAAAAAAAQIDBAUGBwgJCgv/xAC1EAACAQMDAgQDBQUEBAAAAX0BAgMABBEFEiExQQYTUWEHInEUMoGRoQgjQrHBFVLR8CQzYnKCCQoWFxgZGiUmJygpKjQ1Njc4OTpDREVGR0hJSlNUVVZXWFlaY2RlZmdoaWpzdHV2d3h5eoOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4eLj5OXm5+jp6vHy8/T19vf4+fr/xAAfAQADAQEBAQEBAQEBAAAAAAAAAQIDBAUGBwgJCgv/xAC1EQACAQIEBAMEBwUEBAABAncAAQIDEQQFITEGEkFRB2FxEyIygQgUQpGhscEJIzNS8BVictEKFiQ04SXxFxgZGiYnKCkqNTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqCg4SFhoeIiYqSk5SVlpeYmZqio6Slpqeoqaqys7S1tre4ubrCw8TFxsfIycrS09TV1tfY2dri4+Tl5ufo6ery8/T19vf4+fr/2gAMAwEAAhEDEQA/APzaooor0zzz/9k="
+      },
+      "expected": {
+        "outcome": "REJECTED",
+        "code": "ASSET_CONTENT_UNSUPPORTED",
+        "stage": "ASSET_DESCRIPTOR",
+        "pointer": "/ICC",
+        "limit": null
+      }
+    },
+    {
+      "id": "jpeg-precision12-unsupported",
+      "assetKind": "IMAGE",
+      "input": {
+        "kind": "BASE64",
+        "data": "/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAMCAgMCAgMDAwMEAwMEBQgFBQQEBQoHBwYIDAoMDAsKCwsNDhIQDQ4RDgsLEBYQERMUFRUVDA8XGBYUGBIUFRT/wAALDAADAAIBAREA/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/9oACAEBAAA/AGV//9k="
+      },
+      "expected": {
+        "outcome": "REJECTED",
+        "code": "ASSET_CONTENT_UNSUPPORTED",
+        "stage": "ASSET_STRUCTURE",
+        "pointer": "/sof",
+        "limit": null
+      }
+    },
+    {
+      "id": "jpeg-dac-unsupported",
+      "assetKind": "IMAGE",
+      "input": {
+        "kind": "BASE64",
+        "data": "/9j/zAAEAAD/4AAQSkZJRgABAQAAAQABAAD/2wBDAAMCAgMCAgMDAwMEAwMEBQgFBQQEBQoHBwYIDAoMDAsKCwsNDhIQDQ4RDgsLEBYQERMUFRUVDA8XGBYUGBIUFRT/wAALCAADAAIBAREA/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/9oACAEBAAA/AGV//9k="
+      },
+      "expected": {
+        "outcome": "REJECTED",
+        "code": "ASSET_CONTENT_UNSUPPORTED",
+        "stage": "ASSET_STRUCTURE",
+        "pointer": "/dac",
+        "limit": null
+      }
+    },
+    {
+      "id": "jpeg-truncated-invalid",
+      "assetKind": "IMAGE",
+      "input": {
+        "kind": "BASE64",
+        "data": "/9j/4AAQSkZJRgABAQAAAQABAAA="
+      },
+      "expected": {
+        "outcome": "REJECTED",
+        "code": "ASSET_CONTENT_INVALID",
+        "stage": "ASSET_STRUCTURE",
+        "pointer": "/",
+        "limit": null
+      }
+    },
+    {
+      "id": "jpeg-exif-admitted",
+      "assetKind": "IMAGE",
+      "input": {
+        "kind": "BASE64",
+        "data": "/9j/4QAiRXhpZgAATU0AKgAAAAgAAQESAAMAAAABAAYAAAAAAAD/4AAQSkZJRgABAQAAAQABAAD/2wBDAAMCAgMCAgMDAwMEAwMEBQgFBQQEBQoHBwYIDAoMDAsKCwsNDhIQDQ4RDgsLEBYQERMUFRUVDA8XGBYUGBIUFRT/wAALCAADAAIBAREA/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/9oACAEBAAA/AGV//9k="
+      },
+      "expected": {
+        "outcome": "ADMITTED",
+        "kind": "IMAGE",
+        "byteLength": 368,
+        "sha256": "a78c7e7b2f39c6158d26c621fa0967add3118f4c9692645623a30c8c9bac736b",
+        "acceptanceProfileId": "renderweave-asset-acceptance/1.0",
+        "descriptor": {
+          "type": "IMAGE",
+          "encodedWidthPx": 2,
+          "encodedHeightPx": 3,
+          "orientation": "ROTATE_90_CW",
+          "logicalWidthPx": 3,
+          "logicalHeightPx": 2,
+          "frameCount": 1,
+          "colorEncoding": "SRGB_8BIT"
+        }
+      }
+    },
+    {
+      "id": "webp-lossy-admitted",
+      "assetKind": "IMAGE",
+      "input": {
+        "kind": "BASE64",
+        "data": "UklGRi4AAABXRUJQVlA4ICIAAABwAQCdASoCAAMAAUAmJZQCdAFAAAD+/DeBV/fU6D4r4AAA"
+      },
+      "expected": {
+        "outcome": "ADMITTED",
+        "kind": "IMAGE",
+        "byteLength": 54,
+        "sha256": "4459ada899fc53789cdff4ef32e623ae04da84187b1f30266d4bf12f89e8e720",
+        "acceptanceProfileId": "renderweave-asset-acceptance/1.0",
+        "descriptor": {
+          "type": "IMAGE",
+          "encodedWidthPx": 2,
+          "encodedHeightPx": 3,
+          "orientation": "IDENTITY",
+          "logicalWidthPx": 2,
+          "logicalHeightPx": 3,
+          "frameCount": 1,
+          "colorEncoding": "SRGB_8BIT"
+        }
+      }
+    },
+    {
+      "id": "webp-lossless-admitted",
+      "assetKind": "IMAGE",
+      "input": {
+        "kind": "BASE64",
+        "data": "UklGRh4AAABXRUJQVlA4TBEAAAAvAYAAAAdQiirUo/+BiOh/AAA="
+      },
+      "expected": {
+        "outcome": "ADMITTED",
+        "kind": "IMAGE",
+        "byteLength": 38,
+        "sha256": "a12ef05dace26ee31342d1855f9b90b0e8c4574da3bd4f06029a9020130d0e33",
+        "acceptanceProfileId": "renderweave-asset-acceptance/1.0",
+        "descriptor": {
+          "type": "IMAGE",
+          "encodedWidthPx": 2,
+          "encodedHeightPx": 3,
+          "orientation": "IDENTITY",
+          "logicalWidthPx": 2,
+          "logicalHeightPx": 3,
+          "frameCount": 1,
+          "colorEncoding": "SRGB_8BIT"
+        }
+      }
+    },
+    {
+      "id": "webp-animated-unsupported",
+      "assetKind": "IMAGE",
+      "input": {
+        "kind": "BASE64",
+        "data": "UklGRrYAAABXRUJQVlA4WAoAAAACAAAAAQAAAgAAQU5JTQYAAAAAAAAAAABBTk1GOgAAAAAAAAAAAAEAAAIAAGQAAAJWUDggIgAAADABAJ0BKgIAAwABQCYllAADcAD+/DeL22WiUD7k/RGAAABBTk1GSAAAAAAAAAAAAAEAAAIAAGQAAABWUDggMAAAADQBAJ0BKgIAAwAAACYloAADcAD+xO///zYH/kH/yD7/f//pNn/9Js//pNnxzAAAAA=="
+      },
+      "expected": {
+        "outcome": "REJECTED",
+        "code": "ASSET_CONTENT_UNSUPPORTED",
+        "stage": "ASSET_STRUCTURE",
+        "pointer": "/ANIM",
+        "limit": null
+      }
+    },
+    {
+      "id": "webp-iccp-unsupported",
+      "assetKind": "IMAGE",
+      "input": {
+        "kind": "BASE64",
+        "data": "UklGRjoAAABXRUJQSUNDUAMAAAABAgMAVlA4ICIAAABwAQCdASoCAAMAAUAmJZQCdAFAAAD+/DeBV/fU6D4r4AAA"
+      },
+      "expected": {
+        "outcome": "REJECTED",
+        "code": "ASSET_CONTENT_UNSUPPORTED",
+        "stage": "ASSET_DESCRIPTOR",
+        "pointer": "/ICCP",
+        "limit": null
+      }
+    },
+    {
+      "id": "webp-unknown-fourcc-invalid",
+      "assetKind": "IMAGE",
+      "input": {
+        "kind": "BASE64",
+        "data": "UklGRjgAAABXRUJQSlVOSwIAAAAAAFZQOCAiAAAAcAEAnQEqAgADAAFAJiWUAnQBQAAA/vw3gVf31Og+K+AAAA=="
+      },
+      "expected": {
+        "outcome": "REJECTED",
+        "code": "ASSET_CONTENT_INVALID",
+        "stage": "ASSET_STRUCTURE",
+        "pointer": "/JUNK",
+        "limit": null
+      }
+    },
+    {
+      "id": "webp-magic-invalid",
+      "assetKind": "IMAGE",
+      "input": {
+        "kind": "BASE64",
+        "data": "UklGRi4AAABXRUJDVlA4ICIAAABwAQCdASoCAAMAAUAmJZQCdAFAAAD+/DeBV/fU6D4r4AAA"
+      },
+      "expected": {
+        "outcome": "REJECTED",
+        "code": "ASSET_CONTENT_INVALID",
+        "stage": "ASSET_STRUCTURE",
+        "pointer": "/",
+        "limit": null
+      }
+    },
+    {
+      "id": "webp-truncated-invalid",
+      "assetKind": "IMAGE",
+      "input": {
+        "kind": "BASE64",
+        "data": "UklGRi4AAABXRUJQVlA4ICIAAAA="
+      },
+      "expected": {
+        "outcome": "REJECTED",
+        "code": "ASSET_CONTENT_INVALID",
+        "stage": "ASSET_STRUCTURE",
+        "pointer": "/",
+        "limit": null
+      }
+    },
+    {
+      "id": "webp-exif-admitted",
+      "assetKind": "IMAGE",
+      "input": {
+        "kind": "BASE64",
+        "data": "UklGRmIAAABXRUJQVlA4WAoAAAAIAAAAAQAAAgAARVhJRhoAAABNTQAqAAAACAABARIAAwAAAAEABgAAAAAAAFZQOCAiAAAAcAEAnQEqAgADAAFAJiWUAnQBQAAA/vw3gVf31Og+K+AAAA=="
+      },
+      "expected": {
+        "outcome": "ADMITTED",
+        "kind": "IMAGE",
+        "byteLength": 106,
+        "sha256": "0953781301e8b536c0f3cbfe0f62041703e4c4abf17dbb81c10a40a34a29ba37",
+        "acceptanceProfileId": "renderweave-asset-acceptance/1.0",
+        "descriptor": {
+          "type": "IMAGE",
+          "encodedWidthPx": 2,
+          "encodedHeightPx": 3,
+          "orientation": "ROTATE_90_CW",
+          "logicalWidthPx": 3,
+          "logicalHeightPx": 2,
+          "frameCount": 1,
+          "colorEncoding": "SRGB_8BIT"
+        }
+      }
+    },
+    {
+      "id": "font-ttf-admitted",
+      "assetKind": "FONT",
+      "input": {
+        "kind": "BASE64",
+        "data": "AAEAAAAKAIAAAwAgT1MvMkUhQzsAAAEoAAAAYGNtYXAADACUAAABkAAAADRnbHlm0VGn6AAAAcwAAAAuaGVhZC5eH6wAAACsAAAANmhoZWEFKwGJAAAA5AAAACRobXR4ArwAFAAAAYgAAAAIbG9jYQAXAAsAAAHEAAAABm1heHAABAAFAAABCAAAACBuYW1l1ET/SwAAAfwAAABvcG9zdAAoAAAAAAJsAAAAJgABAAAAAQAAYwCDxl8PPPUAAQPoAAAAAOaq7ggAAAAA5qruCAAAAAAB9AK8AAAAAwACAAAAAAAAAAEAAAMg/zgAAAJYAAr/9gH+AAEAAAAAAAAAAAAAAAAAAAACAAEAAAACAAQAAQAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAwFeAZAABQAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAPz8/PwAAAEEAQQMg/zgAAAMgAMgAAAAAAAAAAAAAAAAAAAAgAAAAZAAKAlgACgAAAAIAAAADAAAAFAADAAEAAAAUAAQAIAAAAAQABAABAAAAQf//AAAAQf///8AAAQAAAAAAAAALABcAAAABAAAAAABkAGQAAwAAMTM1I2RkZAAAAQAAAAAB9AK8AAMAADEhESEB9P4MArwAAAAAAAQANgABAAAAAAABAAwAAAABAAAAAAACAAcADAADAAEECQABABgAEwADAAEECQACAA4AK0Fzc2V0Rml4dHVyZVJlZ3VsYXIAQQBzAHMAZQB0AEYAaQB4AHQAdQByAGUAUgBlAGcAdQBsAGEAcgAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAAJAAA"
+      },
+      "expected": {
+        "outcome": "ADMITTED",
+        "kind": "FONT",
+        "byteLength": 660,
+        "sha256": "563f77993d3eaf2f74734c13f768afd178383cbf180d33e69b7c35df35779ceb",
+        "acceptanceProfileId": "renderweave-asset-acceptance/1.0",
+        "descriptor": {
+          "type": "FONT",
+          "faceIndex": 0,
+          "flavor": "TRUETYPE_GLYF",
+          "unitsPerEm": 1000
+        }
+      }
+    },
+    {
+      "id": "font-otf-admitted",
+      "assetKind": "FONT",
+      "input": {
+        "kind": "BASE64",
+        "data": "T1RUTwAJAIAAAwAQQ0ZGIDzIagoAAAIkAAAAbU9TLzJFIUM7AAABAAAAAGBjbWFwAAwAlAAAAdAAAAA0aGVhZC5gH6wAAACcAAAANmhoZWEFKwGJAAAA1AAAACRobXR4ArwAFAAAApQAAAAIbWF4cAACUAAAAAD4AAAABm5hbWXURP9LAAABYAAAAG9wb3N0AAMAAAAAAgQAAAAgAAEAAAABAADNzaNtXw889QADA+gAAAAA5qruCAAAAADmqu4IAAAAAAH0ArwAAAADAAIAAAAAAAAAAQAAAyD/OAAAAlgACv/2Af4AAQAAAAAAAAAAAAAAAAAAAAIAAFAAAAIAAAADAV4BkAAFAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAA/Pz8/AAAAQQBBAyD/OAAAAyAAyAAAAAAAAAAAAAAAAAAAACAAAAAAAAQANgABAAAAAAABAAwAAAABAAAAAAACAAcADAADAAEECQABABgAEwADAAEECQACAA4AK0Fzc2V0Rml4dHVyZVJlZ3VsYXIAQQBzAHMAZQB0AEYAaQB4AHQAdQByAGUAUgBlAGcAdQBsAGEAcgAAAAACAAAAAwAAABQAAwABAAAAFAAEACAAAAAEAAQAAQAAAEH//wAAAEH////AAAEAAAAAAAMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAQBAAEBARVBc3NldEZpeHR1cmUtUmVndWxhcgABAQET+BsCi4v4iPlQBdoPi/cBEt0RAAEBARVBc3NldEZpeHR1cmUgUmVndWxhcgAAAAAiAAIBAQoW+nyLFu/vJwYO+nyLFviI+VD8iAYOAAAAAGQACgJYAAo="
+      },
+      "expected": {
+        "outcome": "ADMITTED",
+        "kind": "FONT",
+        "byteLength": 668,
+        "sha256": "eeef766ac75aecac694bbd82fbb3cd2b9a315075db14d91ff0cbe1bdec20f77f",
+        "acceptanceProfileId": "renderweave-asset-acceptance/1.0",
+        "descriptor": {
+          "type": "FONT",
+          "faceIndex": 0,
+          "flavor": "CFF",
+          "unitsPerEm": 1000
+        }
+      }
+    },
+    {
+      "id": "font-woff-magic-invalid",
+      "assetKind": "FONT",
+      "input": {
+        "kind": "BASE64",
+        "data": "d09GRgAKAIAAAwAgT1MvMkUhQzsAAAEoAAAAYGNtYXAADACUAAABkAAAADRnbHlm0VGn6AAAAcwAAAAuaGVhZC5eH6wAAACsAAAANmhoZWEFKwGJAAAA5AAAACRobXR4ArwAFAAAAYgAAAAIbG9jYQAXAAsAAAHEAAAABm1heHAABAAFAAABCAAAACBuYW1l1ET/SwAAAfwAAABvcG9zdAAoAAAAAAJsAAAAJgABAAAAAQAAYwCDxl8PPPUAAQPoAAAAAOaq7ggAAAAA5qruCAAAAAAB9AK8AAAAAwACAAAAAAAAAAEAAAMg/zgAAAJYAAr/9gH+AAEAAAAAAAAAAAAAAAAAAAACAAEAAAACAAQAAQAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAwFeAZAABQAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAPz8/PwAAAEEAQQMg/zgAAAMgAMgAAAAAAAAAAAAAAAAAAAAgAAAAZAAKAlgACgAAAAIAAAADAAAAFAADAAEAAAAUAAQAIAAAAAQABAABAAAAQf//AAAAQf///8AAAQAAAAAAAAALABcAAAABAAAAAABkAGQAAwAAMTM1I2RkZAAAAQAAAAAB9AK8AAMAADEhESEB9P4MArwAAAAAAAQANgABAAAAAAABAAwAAAABAAAAAAACAAcADAADAAEECQABABgAEwADAAEECQACAA4AK0Fzc2V0Rml4dHVyZVJlZ3VsYXIAQQBzAHMAZQB0AEYAaQB4AHQAdQByAGUAUgBlAGcAdQBsAGEAcgAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAAJAAA"
+      },
+      "expected": {
+        "outcome": "REJECTED",
+        "code": "ASSET_CONTENT_INVALID",
+        "stage": "ASSET_STRUCTURE",
+        "pointer": "/",
+        "limit": null
+      }
+    },
+    {
+      "id": "font-ttcf-magic-invalid",
+      "assetKind": "FONT",
+      "input": {
+        "kind": "BASE64",
+        "data": "dHRjZgAKAIAAAwAgT1MvMkUhQzsAAAEoAAAAYGNtYXAADACUAAABkAAAADRnbHlm0VGn6AAAAcwAAAAuaGVhZC5eH6wAAACsAAAANmhoZWEFKwGJAAAA5AAAACRobXR4ArwAFAAAAYgAAAAIbG9jYQAXAAsAAAHEAAAABm1heHAABAAFAAABCAAAACBuYW1l1ET/SwAAAfwAAABvcG9zdAAoAAAAAAJsAAAAJgABAAAAAQAAYwCDxl8PPPUAAQPoAAAAAOaq7ggAAAAA5qruCAAAAAAB9AK8AAAAAwACAAAAAAAAAAEAAAMg/zgAAAJYAAr/9gH+AAEAAAAAAAAAAAAAAAAAAAACAAEAAAACAAQAAQAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAwFeAZAABQAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAPz8/PwAAAEEAQQMg/zgAAAMgAMgAAAAAAAAAAAAAAAAAAAAgAAAAZAAKAlgACgAAAAIAAAADAAAAFAADAAEAAAAUAAQAIAAAAAQABAABAAAAQf//AAAAQf///8AAAQAAAAAAAAALABcAAAABAAAAAABkAGQAAwAAMTM1I2RkZAAAAQAAAAAB9AK8AAMAADEhESEB9P4MArwAAAAAAAQANgABAAAAAAABAAwAAAABAAAAAAACAAcADAADAAEECQABABgAEwADAAEECQACAA4AK0Fzc2V0Rml4dHVyZVJlZ3VsYXIAQQBzAHMAZQB0AEYAaQB4AHQAdQByAGUAUgBlAGcAdQBsAGEAcgAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAAJAAA"
+      },
+      "expected": {
+        "outcome": "REJECTED",
+        "code": "ASSET_CONTENT_INVALID",
+        "stage": "ASSET_STRUCTURE",
+        "pointer": "/",
+        "limit": null
+      }
+    },
+    {
+      "id": "font-fvar-unsupported",
+      "assetKind": "FONT",
+      "input": {
+        "kind": "BASE64",
+        "data": "AAEAAAAKAIAAAwAgT1MvMkUhQzsAAAEoAAAAYGNtYXAADACUAAABkAAAADRnbHlm0VGn6AAAAcwAAAAuaGVhZC5eH6wAAACsAAAANmhoZWEFKwGJAAAA5AAAACRobXR4ArwAFAAAAYgAAAAIbG9jYQAXAAsAAAHEAAAABm1heHAABAAFAAABCAAAACBuYW1l1ET/SwAAAfwAAABvZnZhcgAoAAAAAAJsAAAAJgABAAAAAQAAYwCDxl8PPPUAAQPoAAAAAOaq7ggAAAAA5qruCAAAAAAB9AK8AAAAAwACAAAAAAAAAAEAAAMg/zgAAAJYAAr/9gH+AAEAAAAAAAAAAAAAAAAAAAACAAEAAAACAAQAAQAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAwFeAZAABQAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAPz8/PwAAAEEAQQMg/zgAAAMgAMgAAAAAAAAAAAAAAAAAAAAgAAAAZAAKAlgACgAAAAIAAAADAAAAFAADAAEAAAAUAAQAIAAAAAQABAABAAAAQf//AAAAQf///8AAAQAAAAAAAAALABcAAAABAAAAAABkAGQAAwAAMTM1I2RkZAAAAQAAAAAB9AK8AAMAADEhESEB9P4MArwAAAAAAAQANgABAAAAAAABAAwAAAABAAAAAAACAAcADAADAAEECQABABgAEwADAAEECQACAA4AK0Fzc2V0Rml4dHVyZVJlZ3VsYXIAQQBzAHMAZQB0AEYAaQB4AHQAdQByAGUAUgBlAGcAdQBsAGEAcgAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAAJAAA"
+      },
+      "expected": {
+        "outcome": "REJECTED",
+        "code": "ASSET_CONTENT_UNSUPPORTED",
+        "stage": "ASSET_STRUCTURE",
+        "pointer": "/tables",
+        "limit": null
+      }
+    },
+    {
+      "id": "font-glyf-checksum-invalid",
+      "assetKind": "FONT",
+      "input": {
+        "kind": "BASE64",
+        "data": "AAEAAAAKAIAAAwAgT1MvMkUhQzsAAAEoAAAAYGNtYXAADACUAAABkAAAADRnbHlm0VGn6AAAAcwAAAAuaGVhZC5eH6wAAACsAAAANmhoZWEFKwGJAAAA5AAAACRobXR4ArwAFAAAAYgAAAAIbG9jYQAXAAsAAAHEAAAABm1heHAABAAFAAABCAAAACBuYW1l1ET/SwAAAfwAAABvcG9zdAAoAAAAAAJsAAAAJgABAAAAAQAAYwCDxl8PPPUAAQPoAAAAAOaq7ggAAAAA5qruCAAAAAAB9AK8AAAAAwACAAAAAAAAAAEAAAMg/zgAAAJYAAr/9gH+AAEAAAAAAAAAAAAAAAAAAAACAAEAAAACAAQAAQAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAwFeAZAABQAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAPz8/PwAAAEEAQQMg/zgAAAMgAMgAAAAAAAAAAAAAAAAAAAAgAAAAZAAKAlgACgAAAAIAAAADAAAAFAADAAEAAAAUAAQAIAAAAAQABAABAAAAQf//AAAAQf///8AAAQAAAAAAAAALABcAAAABAAAAAABkAGQAAwAAMTM1I2RkZQAAAQAAAAAB9AK8AAMAADEhESEB9P4MArwAAAAAAAQANgABAAAAAAABAAwAAAABAAAAAAACAAcADAADAAEECQABABgAEwADAAEECQACAA4AK0Fzc2V0Rml4dHVyZVJlZ3VsYXIAQQBzAHMAZQB0AEYAaQB4AHQAdQByAGUAUgBlAGcAdQBsAGEAcgAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAAJAAA"
+      },
+      "expected": {
+        "outcome": "REJECTED",
+        "code": "ASSET_CONTENT_INVALID",
+        "stage": "ASSET_STRUCTURE",
+        "pointer": "/glyf",
+        "limit": null
+      }
+    },
+    {
+      "id": "font-unitsperem-invalid",
+      "assetKind": "FONT",
+      "input": {
+        "kind": "BASE64",
+        "data": "AAEAAAAKAIAAAwAgT1MvMkUhQzsAAAEoAAAAYGNtYXAADACUAAABkAAAADRnbHlm0VGn6AAAAcwAAAAuaGVhZC5eW8UAAACsAAAANmhoZWEFKwGJAAAA5AAAACRobXR4ArwAFAAAAYgAAAAIbG9jYQAXAAsAAAHEAAAABm1heHAABAAFAAABCAAAACBuYW1l1ET/SwAAAfwAAABvcG9zdAAoAAAAAAJsAAAAJgABAAAAAQAAYwALlF8PPPUAAUABAAAAAOaq7ggAAAAA5qruCAAAAAAB9AK8AAAAAwACAAAAAAAAAAEAAAMg/zgAAAJYAAr/9gH+AAEAAAAAAAAAAAAAAAAAAAACAAEAAAACAAQAAQAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAwFeAZAABQAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAPz8/PwAAAEEAQQMg/zgAAAMgAMgAAAAAAAAAAAAAAAAAAAAgAAAAZAAKAlgACgAAAAIAAAADAAAAFAADAAEAAAAUAAQAIAAAAAQABAABAAAAQf//AAAAQf///8AAAQAAAAAAAAALABcAAAABAAAAAABkAGQAAwAAMTM1I2RkZAAAAQAAAAAB9AK8AAMAADEhESEB9P4MArwAAAAAAAQANgABAAAAAAABAAwAAAABAAAAAAACAAcADAADAAEECQABABgAEwADAAEECQACAA4AK0Fzc2V0Rml4dHVyZVJlZ3VsYXIAQQBzAHMAZQB0AEYAaQB4AHQAdQByAGUAUgBlAGcAdQBsAGEAcgAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAAJAAA"
+      },
+      "expected": {
+        "outcome": "REJECTED",
+        "code": "ASSET_CONTENT_INVALID",
+        "stage": "ASSET_STRUCTURE",
+        "pointer": "/head",
+        "limit": null
+      }
+    },
+    {
+      "id": "font-cff-charstrings-invalid",
+      "assetKind": "FONT",
+      "input": {
+        "kind": "BASE64",
+        "data": "T1RUTwAJAIAAAwAQQ0ZGIDzIagoAAAIkAAAAbU9TLzJFIUM7AAABAAAAAGBjbWFwAAwAlAAAAdAAAAA0aGVhZC5gH6wAAACcAAAANmhoZWEFKwGJAAAA1AAAACRobXR4ArwAFAAAApQAAAAIbWF4cAADUAAAAAD4AAAABm5hbWXURP9LAAABYAAAAG9wb3N0AAMAAAAAAgQAAAAgAAEAAAABAADNy6NtXw889QADA+gAAAAA5qruCAAAAADmqu4IAAAAAAH0ArwAAAADAAIAAAAAAAAAAQAAAyD/OAAAAlgACv/2Af4AAQAAAAAAAAAAAAAAAAAAAAIAAFAAAAMAAAADAV4BkAAFAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAA/Pz8/AAAAQQBBAyD/OAAAAyAAyAAAAAAAAAAAAAAAAAAAACAAAAAAAAQANgABAAAAAAABAAwAAAABAAAAAAACAAcADAADAAEECQABABgAEwADAAEECQACAA4AK0Fzc2V0Rml4dHVyZVJlZ3VsYXIAQQBzAHMAZQB0AEYAaQB4AHQAdQByAGUAUgBlAGcAdQBsAGEAcgAAAAACAAAAAwAAABQAAwABAAAAFAAEACAAAAAEAAQAAQAAAEH//wAAAEH////AAAEAAAAAAAMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAQBAAEBARVBc3NldEZpeHR1cmUtUmVndWxhcgABAQET+BsCi4v4iPlQBdoPi/cBEt0RAAEBARVBc3NldEZpeHR1cmUgUmVndWxhcgAAAAAiAAIBAQoW+nyLFu/vJwYO+nyLFviI+VD8iAYOAAAAAGQACgJYAAo="
+      },
+      "expected": {
+        "outcome": "REJECTED",
+        "code": "ASSET_CONTENT_INVALID",
+        "stage": "ASSET_STRUCTURE",
+        "pointer": "/CFF ",
+        "limit": null
+      }
+    }
+  ]
+}
