@@ -1228,3 +1228,24 @@
   超时，原样重跑 19/19 通过，失败 evidence `20260819-163856-full` 保留）。Ticket 19 open，
   Asset/Editor/Renderer 未 READY；T12b 以 Template 依赖投影票为 blocker，T13 随 T07/T08；push 待用户另行
   授权（分支 ahead 6）。
+
+### Template v1 TV1-T07 Evaluator/RenderDocument 产品 seam
+
+- 两轮 HITL 对答（Q1–Q12）逐项按推荐采纳后冻结 ADR-0044：Template-owned `TemplateClosureAuthority`
+  （render 专用 `freezeClosure(renderRequestId, rootTemplateId)` closed 操作，收口 integrity 复核/闭包/
+  重检/漂移有界重试；AssetRef-atom 提取依赖 DesignDSL full-Profile，登记不预建）、单一窄
+  `Evaluator.evaluate(EvaluationCommand)` → sealed `EvaluationOutcome`（input admission 在 Rendering
+  内部）、caller 只选 bounded output（PNG{dpi}/JPEG{dpi,quality}）而 rendererProfile 服务端冻结、
+  `RenderOutput` = sealed 图片 bytes + 有界描述、Rendering.spi `CapabilityStateStore` closed 三操作 +
+  app 侧加密落盘（nonce 不明文入库）、`RenderEngine.execute` 单次五态
+  （SealedOutput|Joined|Replayed|TerminalProblem|Unknown，Unknown 在原 deadline/lease 内同 canonical
+  Command 重发）、诊断 sidecar 内部持有 + 有权限投影、problem 基础形态 `{code,stage,safeLocation,
+  parameters}` + 九值 stage enum（容量 oracle 归 Ticket 19，内部违约折叠 `RENDER_INTERNAL_ERROR`）、
+  跨语言 RenderNodeContract/向量语料纪律（首 task 票落向量，T08 后 Rust independent + `render` gate）。
+- T07/T08 边界：本票只冻结 Java 侧合同形状、failure boundaries、语料计划与 port outcome；T08 冻结
+  process framing/codec/wire、hermetic build、ELF closure、tricky-font、byte/pixel replay 与双物理
+  Linux CPU-family 外部认证；Windows/WSL/scripted adapter 结果永不升级 Renderer READY，Profile 持续
+  NOT_REGISTERED，Ticket 19 open。
+- 本票零产品代码（无 Java Interface/migration/route/gate 组成）；`template` 与 `fast` 通过（docs-only，
+  kernel 33/33、asset kernel 41/41、registry counts 不变）。T08 成为唯一 unblocked frontier（grilling，
+  HITL）；T13 仍以 T08 为 blocker；push 待用户另行授权（分支 ahead 7）。

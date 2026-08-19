@@ -1,6 +1,7 @@
 # RenderWeave Template v1 Implementation Plan
 
-- 状态：`in_progress`；TV1-T01/T02/T03/T04/T05/T06/T10/T10b/T11/T12a=`automated_verified`，TV1-T12b=`open`（task）
+- 状态：`in_progress`；TV1-T01/T02/T03/T04/T05/T06/T07/T10/T10b/T11/T12a=`automated_verified`，
+  TV1-T08=`open`（grilling）
 - 日期：2026-08-19
 - Approved delta：[`specs/changes/20260817-template-v1-implementation-authority.md`](../specs/changes/20260817-template-v1-implementation-authority.md)
 - Frozen checkpoint：`0b485f4a13de9d754a81d07f464730776e13c14b`
@@ -94,7 +95,7 @@ flowchart LR
 | 04 | grilling | `resolved` / `automated_verified` | 02, 03 | ADR-0042 与 Template aggregate/persistence contract；无 migration |
 | 05 | grilling | `resolved` / `automated_verified` | 01, 02 | ADR-0043 Asset admission/resolution deep interface 与 S3 Blob seam；无 Java/migration/route |
 | 06 | task | `resolved` / `automated_verified` | 03, 04 | Template create/read/save PostgreSQL 纵切；V018 + OpenAPI 0.10.0 + Web SDK + `full` 15/15 |
-| 07 | grilling | `open` | 03, 04, 05 | Evaluator/RenderDocument seam |
+| 07 | grilling | `resolved` / `automated_verified` | 03, 04, 05 | ADR-0044：closure authority/Evaluator/RenderOutput/CapabilityStateStore/RenderEngine port/语料纪律与 T08 边界 |
 | 08 | grilling | `open` | 02, 07 | Rust process protocol与外部认证计划 |
 | 09 | prototype | `open` | 06, 07, 08 | Editor 状态/恢复/预览架构验证；不进产品 route |
 | 10 | task | `resolved` / `automated_verified` | 05 | Asset acceptance kernel；38 vectors Java/Python 38/38（A2）；`asset` gate 入 full |
@@ -107,9 +108,10 @@ flowchart LR
 每次只 claim 一个 unblocked ticket；一票 resolved 后才由其 `Blocked by` 关系产生下一 frontier。未知实现切片留在
 map 的 `Not yet specified`，不为排满计划提前发明接口、migration 或 Profile identity。
 
-TV1-T10/T10b/T11/T12a 已完成；TV1-T12b（delete/restore + 确认 token）仍以 Template 依赖投影票（未建，随
-DesignDSL full-Profile 拆分登记）为 blocker，其自身尚未 unblocked；TV1-T13 被 TV1-T07/T08/T11 阻塞。
-single-writer 不顺带 claim 或预建 delete/restore/Resolver。
+TV1-T07 已 resolve（ADR-0044），TV1-T08（Rust Renderer process protocol grilling）是唯一 unblocked
+frontier；TV1-T12b 仍以 Template 依赖投影票（未建，随 DesignDSL full-Profile 拆分登记）为 blocker；
+TV1-T13 被 TV1-T08/T11 阻塞（T07 已解锁）；TV1-T09 被 T08 阻塞。single-writer 不顺带 claim 或预建
+delete/restore/Resolver/Rust wire。
 
 ## 5. TV1-T01 执行卡
 
@@ -285,3 +287,22 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
 - 保证等级：自动 gate A1；kernel/registry exact replay 在原边界为 A2；无 A3/J1。
 - 完成信号：Ticket 12a resolved/`automated_verified`、形成一个 verified `agent-commit` 且 worktree clean；
   T12b 仍以 Template 依赖投影票为 blocker；push 待用户另行授权。
+
+## 17. TV1-T07 执行卡
+
+- 决策：ADR-0044（两轮 HITL 对答 Q1–Q12 逐项按推荐采纳）：Template-owned `TemplateClosureAuthority`
+  （render 专用 `freezeClosure`；AssetRef-atom 提取依赖 DesignDSL full-Profile，不预建方法）、单一窄
+  `Evaluator.evaluate` → closed outcome（input admission 在 Rendering 内部）、caller 只选 bounded output
+  而 rendererProfile 服务端冻结、`RenderOutput` 携带最终图片 bytes+描述、`CapabilityStateStore` spi
+  closed 三操作 + app 加密落盘、`RenderEngine.execute` 单次五态 outcome、诊断 sidecar 内部持有 + 有权限
+  投影、problem 基础形态 + 九值 stage enum（容量 oracle 归 Ticket 19）、跨语言 contract/向量语料纪律
+  （首 task 票落向量，T08 后 Rust independent + `render` gate）、T07/T08 边界与 READY 纪律。
+- 允许影响：ADR、CONTEXT 术语核对、tracker/plan/log/NOTES。
+- 禁止影响：Java/Web/Rust 产品源码、OpenAPI、migration、route/page、gate 组成、Profile available
+  注册、DB/网络/浏览器/Provider/J1。
+- 局部验证：ADR/tracker/plan/NOTES 交叉一致、`git diff --check`、product-surface inventory（零新增）。
+- 受影响验证：`template` composite 与 `fast`（docs-only，输入未变可复用既有绿）。
+- 保证等级：文档/静态 gate A1；既有 kernel/registry exact inputs 的独立 replay 仍只在原边界为 A2；
+  本票没有 Rendering 产品执行、A3 或 J1。
+- 完成信号：Ticket 07 resolved/`automated_verified`、T08 成为唯一 unblocked frontier、形成一个 verified
+  `agent-commit` 且 worktree clean；不 push/tag/PR。
