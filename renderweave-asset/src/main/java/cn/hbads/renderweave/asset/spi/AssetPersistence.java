@@ -18,6 +18,13 @@ public interface AssetPersistence {
 
     UpdateMetadataOutcome updateMetadata(UpdateMetadataCommit commit);
 
+    AppendContentOutcome appendContent(AppendContentCommit commit);
+
+    ContentVersionOutcome loadContentVersion(
+            AssetApplication.AssetId assetId,
+            long contentVersion
+    );
+
     CatalogOutcome catalog(CatalogQuery query);
 
     VersionsOutcome listContentVersions(AssetApplication.AssetId assetId);
@@ -25,6 +32,16 @@ public interface AssetPersistence {
     IdempotencyOutcome resolveIdempotency(IdempotencyQuery query);
 
     CapacityOutcome capacity();
+
+    /** Bounded audit operations recorded for every effective Asset mutation. */
+    enum AuditOperation {
+        CREATE,
+        METADATA_UPDATE,
+        CONTENT_REPLACE,
+        CONTENT_RESTORE,
+        DELETE,
+        RESTORE
+    }
 
     record AssetMetadata(
             AssetApplication.AssetId assetId,
@@ -232,6 +249,8 @@ public interface AssetPersistence {
         String idempotencyFingerprint();
 
         boolean blobCreated();
+
+        String actorId();
     }
 
     interface UpdateMetadataCommit {
@@ -244,6 +263,34 @@ public interface AssetPersistence {
         String displayName();
 
         List<String> tags();
+
+        String actorId();
+    }
+
+    interface AppendContentCommit {
+        AssetApplication.AssetId assetId();
+
+        AssetApplication.OwnerScope ownerScope();
+
+        long expectedAssetRevision();
+
+        long contentVersion();
+
+        String sha256();
+
+        String mediaType();
+
+        long byteLength();
+
+        String sourceFileName();
+
+        AssetAcceptanceAuthority.TechnicalDescriptor descriptor();
+
+        boolean blobCreated();
+
+        AuditOperation operation();
+
+        String actorId();
     }
 
     interface IdempotencyQuery {
@@ -332,6 +379,56 @@ public interface AssetPersistence {
     }
 
     record UpdateUnavailable() implements UpdateMetadataOutcome {
+    }
+
+    sealed interface AppendContentOutcome permits
+            ContentAppended,
+            AppendNotFound,
+            AppendDeleted,
+            AppendRevisionConflict,
+            AppendStorageCapacityExceeded,
+            AppendUnavailable {
+    }
+
+    record ContentAppended() implements AppendContentOutcome {
+    }
+
+    record AppendNotFound() implements AppendContentOutcome {
+    }
+
+    record AppendDeleted() implements AppendContentOutcome {
+    }
+
+    record AppendRevisionConflict(long currentAssetRevision) implements AppendContentOutcome {
+        public AppendRevisionConflict {
+            if (currentAssetRevision < 0) {
+                throw new IllegalArgumentException("currentAssetRevision must not be negative");
+            }
+        }
+    }
+
+    record AppendStorageCapacityExceeded() implements AppendContentOutcome {
+    }
+
+    record AppendUnavailable() implements AppendContentOutcome {
+    }
+
+    sealed interface ContentVersionOutcome permits
+            ContentVersionLoaded,
+            ContentVersionNotFound,
+            ContentVersionUnavailable {
+    }
+
+    record ContentVersionLoaded(StoredContent content) implements ContentVersionOutcome {
+        public ContentVersionLoaded {
+            Objects.requireNonNull(content, "content");
+        }
+    }
+
+    record ContentVersionNotFound() implements ContentVersionOutcome {
+    }
+
+    record ContentVersionUnavailable() implements ContentVersionOutcome {
     }
 
     sealed interface CatalogOutcome permits

@@ -124,6 +124,14 @@ public class PostgresAssetPersistence implements AssetPersistence {
                         .param("sourceFileName", commit.sourceFileName())
                         .update();
                 insertContentRevision(commit);
+                insertAuditEvent(
+                        commit.assetId(),
+                        null,
+                        0,
+                        commit.actorId(),
+                        AuditOperation.CREATE,
+                        0
+                );
                 jdbc.sql("""
                                 insert into asset_idempotency (
                                     owner_scope, idempotency_key, asset_id, fingerprint, expires_at
@@ -154,7 +162,7 @@ public class PostgresAssetPersistence implements AssetPersistence {
         try {
             return Objects.requireNonNull(transactions.execute(status -> {
                 var rows = jdbc.sql("""
-                                select lifecycle, asset_revision
+                                select lifecycle, asset_revision, current_content_version
                                 from asset_aggregate
                                 where asset_id = :assetId
                                 for update
@@ -162,7 +170,8 @@ public class PostgresAssetPersistence implements AssetPersistence {
                         .param("assetId", commit.assetId().value())
                         .query((rs, rowNum) -> new long[]{
                                 "ACTIVE".equals(rs.getString("lifecycle")) ? 0 : 1,
-                                rs.getLong("asset_revision")
+                                rs.getLong("asset_revision"),
+                                rs.getLong("current_content_version")
                         })
                         .optional();
                 if (rows.isEmpty()) {
@@ -187,10 +196,118 @@ public class PostgresAssetPersistence implements AssetPersistence {
                         .param("displayName", commit.displayName())
                         .param("tags", writeTags(commit.tags()))
                         .update();
+                insertAuditEvent(
+                        commit.assetId(),
+                        commit.expectedAssetRevision(),
+                        commit.expectedAssetRevision() + 1,
+                        commit.actorId(),
+                        AuditOperation.METADATA_UPDATE,
+                        values[2]
+                );
                 return new MetadataUpdated(true);
             }));
         } catch (DataAccessException unavailable) {
             return new UpdateUnavailable();
+        }
+    }
+
+    @Override
+    public AppendContentOutcome appendContent(AppendContentCommit commit) {
+        try {
+            return Objects.requireNonNull(transactions.execute(status -> {
+                long usedBytes = readUsedBytes();
+                if (commit.blobCreated() && usedBytes + commit.byteLength() > hardLimitBytes) {
+                    return new AppendStorageCapacityExceeded();
+                }
+                var rows = jdbc.sql("""
+                                select lifecycle, asset_revision
+                                from asset_aggregate
+                                where asset_id = :assetId
+                                for update
+                                """)
+                        .param("assetId", commit.assetId().value())
+                        .query((rs, rowNum) -> new long[]{
+                                "ACTIVE".equals(rs.getString("lifecycle")) ? 0 : 1,
+                                rs.getLong("asset_revision")
+                        })
+                        .optional();
+                if (rows.isEmpty()) {
+                    return new AppendNotFound();
+                }
+                long[] values = rows.get();
+                if (values[0] == 1) {
+                    return new AppendDeleted();
+                }
+                if (values[1] != commit.expectedAssetRevision()) {
+                    return new AppendRevisionConflict(values[1]);
+                }
+                jdbc.sql("""
+                                insert into asset_content_revision (
+                                    asset_id, content_version, sha256, media_type, byte_length,
+                                    source_file_name, descriptor_kind, descriptor_json
+                                ) values (
+                                    :assetId, :contentVersion, :sha256, :mediaType, :byteLength,
+                                    :sourceFileName, :descriptorKind, :descriptorJson::jsonb
+                                )
+                                """)
+                        .param("assetId", commit.assetId().value())
+                        .param("contentVersion", commit.contentVersion())
+                        .param("sha256", commit.sha256())
+                        .param("mediaType", commit.mediaType())
+                        .param("byteLength", commit.byteLength())
+                        .param("sourceFileName", commit.sourceFileName())
+                        .param("descriptorKind", descriptorKind(commit.descriptor()))
+                        .param("descriptorJson", writeDescriptor(commit.descriptor()))
+                        .update();
+                jdbc.sql("""
+                                update asset_aggregate
+                                set current_content_version = :contentVersion,
+                                    asset_revision = asset_revision + 1,
+                                    updated_at = clock_timestamp()
+                                where asset_id = :assetId
+                                """)
+                        .param("contentVersion", commit.contentVersion())
+                        .param("assetId", commit.assetId().value())
+                        .update();
+                insertAuditEvent(
+                        commit.assetId(),
+                        commit.expectedAssetRevision(),
+                        commit.expectedAssetRevision() + 1,
+                        commit.actorId(),
+                        commit.operation(),
+                        commit.contentVersion()
+                );
+                if (commit.blobCreated()) {
+                    addUsedBytes(commit.byteLength());
+                }
+                return new ContentAppended();
+            }));
+        } catch (DataAccessException unavailable) {
+            return new AppendUnavailable();
+        }
+    }
+
+    @Override
+    public ContentVersionOutcome loadContentVersion(
+            AssetApplication.AssetId assetId,
+            long contentVersion
+    ) {
+        try {
+            return jdbc.sql("""
+                            select content_version, sha256, media_type, byte_length,
+                                   source_file_name, descriptor_kind, descriptor_json, created_at
+                            from asset_content_revision
+                            where asset_id = :assetId
+                              and content_version = :contentVersion
+                            """)
+                    .param("assetId", assetId.value())
+                    .param("contentVersion", contentVersion)
+                    .query(PostgresAssetPersistence::storedContentRow)
+                    .optional()
+                    .<ContentVersionOutcome>map(ContentVersionLoaded::new)
+                    .orElseGet(ContentVersionNotFound::new);
+        } catch (DataAccessException unavailable) {
+            return new ContentVersionUnavailable();
         }
     }
 
@@ -374,6 +491,32 @@ public class PostgresAssetPersistence implements AssetPersistence {
                 .update();
     }
 
+    private void insertAuditEvent(
+            AssetApplication.AssetId assetId,
+            Long beforeAssetRevision,
+            long afterAssetRevision,
+            String actorId,
+            AuditOperation operation,
+            long contentVersion
+    ) {
+        jdbc.sql("""
+                        insert into asset_audit_event (
+                            asset_id, before_asset_revision, after_asset_revision,
+                            actor_id, operation_type, content_version
+                        ) values (
+                            :assetId, :beforeAssetRevision, :afterAssetRevision,
+                            :actorId, :operationType, :contentVersion
+                        )
+                        """)
+                .param("assetId", assetId.value())
+                .param("beforeAssetRevision", beforeAssetRevision)
+                .param("afterAssetRevision", afterAssetRevision)
+                .param("actorId", actorId)
+                .param("operationType", operation.name())
+                .param("contentVersion", contentVersion)
+                .update();
+    }
+
     private String writeTags(List<String> tags) {
         try {
             return json.writeValueAsString(tags);
@@ -455,6 +598,18 @@ public class PostgresAssetPersistence implements AssetPersistence {
                 rs.getString("media_type"),
                 rs.getLong("byte_length"),
                 rs.getString("source_file_name"),
+                rs.getObject("created_at", OffsetDateTime.class).toInstant()
+        );
+    }
+
+    private static StoredContent storedContentRow(ResultSet rs, int rowNum) throws SQLException {
+        return new StoredContent(
+                rs.getLong("content_version"),
+                rs.getString("sha256"),
+                rs.getString("media_type"),
+                rs.getLong("byte_length"),
+                rs.getString("source_file_name"),
+                readDescriptor(rs.getString("descriptor_kind"), rs.getString("descriptor_json")),
                 rs.getObject("created_at", OffsetDateTime.class).toInstant()
         );
     }

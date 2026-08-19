@@ -30,6 +30,7 @@ import java.nio.charset.StandardCharsets;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
@@ -88,7 +89,8 @@ class AssetApiTest {
 
     @BeforeEach
     void clearAssets() {
-        jdbc.sql("truncate table asset_idempotency, asset_content_revision, asset_aggregate").update();
+        jdbc.sql("truncate table asset_audit_event, asset_idempotency, asset_content_revision, "
+                + "asset_aggregate").update();
         jdbc.sql("update asset_capacity set used_bytes = 0").update();
     }
 
@@ -109,6 +111,25 @@ class AssetApiTest {
                 "image/jpeg",
                 jpegBytes()
         );
+    }
+
+    private static byte[] ycbcrBytes() {
+        try (var stream = AssetApiTest.class.getResourceAsStream(
+                "/asset-fixtures/ycbcr-progressive.jpg")) {
+            assertThat(stream).isNotNull();
+            return stream.readAllBytes();
+        } catch (IOException failure) {
+            throw new AssertionError(failure);
+        }
+    }
+
+    private static String sha256Of(byte[] bytes) {
+        try {
+            var digest = java.security.MessageDigest.getInstance("SHA-256");
+            return java.util.HexFormat.of().formatHex(digest.digest(bytes));
+        } catch (java.security.NoSuchAlgorithmException impossible) {
+            throw new IllegalStateException(impossible);
+        }
     }
 
     @Test
@@ -257,6 +278,107 @@ class AssetApiTest {
                 .andExpect(status().isConflict())
                 .andExpect(content().contentTypeCompatibleWith("application/problem+json"))
                 .andExpect(jsonPath("$.code").value("ASSET_IDEMPOTENCY_CONFLICT"));
+    }
+
+    @Test
+    void replaceAndRestoreContentThroughHttp() throws Exception {
+        var created = mockMvc.perform(multipart("/api/v1/assets")
+                        .contentType(MediaType.MULTIPART_FORM_DATA)
+                        .header("Idempotency-Key", "api-key-9")
+                        .param("kind", "IMAGE")
+                        .param("displayName", "Replaceable")
+                        .param("sourceFileName", "fixture.jpg")
+                        .file(contentPart()))
+                .andExpect(status().isCreated())
+                .andReturn();
+        var mapper = tools.jackson.databind.json.JsonMapper.builder().build();
+        var assetId = mapper.readTree(created.getResponse().getContentAsByteArray())
+                .path("assetId")
+                .asText();
+
+        var replacement = ycbcrBytes();
+        mockMvc.perform(put("/api/v1/assets/{assetId}/content", assetId)
+                        .queryParam("expectedAssetRevision", "0")
+                        .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                        .content(replacement))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.assetRevision").value(1))
+                .andExpect(jsonPath("$.currentContentVersion").value(1))
+                .andExpect(jsonPath("$.sha256").value(sha256Of(replacement)));
+
+        // Identical content succeeds as a no-op even without advancing any revision.
+        mockMvc.perform(put("/api/v1/assets/{assetId}/content", assetId)
+                        .queryParam("expectedAssetRevision", "1")
+                        .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                        .content(replacement))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.assetRevision").value(1))
+                .andExpect(jsonPath("$.currentContentVersion").value(1));
+
+        mockMvc.perform(post("/api/v1/assets/{assetId}/restore", assetId)
+                        .queryParam("expectedAssetRevision", "1")
+                        .queryParam("sourceContentVersion", "0"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.assetRevision").value(2))
+                .andExpect(jsonPath("$.currentContentVersion").value(2))
+                .andExpect(jsonPath("$.sourceFileName").value("fixture.jpg"));
+
+        // Stale expectedAssetRevision with content different from current conflicts.
+        mockMvc.perform(put("/api/v1/assets/{assetId}/content", assetId)
+                        .queryParam("expectedAssetRevision", "1")
+                        .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                        .content(replacement))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("ASSET_REVISION_CONFLICT"))
+                .andExpect(jsonPath("$.currentAssetRevision").value(2));
+
+        mockMvc.perform(post("/api/v1/assets/{assetId}/restore", assetId)
+                        .queryParam("expectedAssetRevision", "2")
+                        .queryParam("sourceContentVersion", "7"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("ASSET_CONTENT_VERSION_NOT_FOUND"));
+
+        mockMvc.perform(get("/api/v1/assets/{assetId}/versions", assetId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items.length()").value(3))
+                .andExpect(jsonPath("$.items[0].contentVersion").value(0))
+                .andExpect(jsonPath("$.items[2].contentVersion").value(2));
+
+        assertThat(jdbc.sql("""
+                        select count(*) from asset_audit_event
+                        where operation_type in ('CONTENT_REPLACE', 'CONTENT_RESTORE')
+                        """)
+                .query(Long.class).single()).isEqualTo(2);
+    }
+
+    @Test
+    void invalidReplaceAndRestoreRequestsFailWithoutWrites() throws Exception {
+        mockMvc.perform(put("/api/v1/assets/{assetId}/content",
+                        "123e4567-e89b-42d3-a456-426614174000")
+                        .queryParam("expectedAssetRevision", "0")
+                        .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                        .content(new byte[]{0x01, 0x02}))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("ASSET_NOT_FOUND"));
+
+        mockMvc.perform(put("/api/v1/assets/{assetId}/content",
+                        "123e4567-e89b-42d3-a456-426614174000")
+                        .queryParam("expectedAssetRevision", "-1")
+                        .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                        .content(ycbcrBytes()))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("ASSET_REQUEST_INVALID"));
+
+        mockMvc.perform(post("/api/v1/assets/{assetId}/restore",
+                        "123e4567-e89b-42d3-a456-426614174000")
+                        .queryParam("expectedAssetRevision", "0")
+                        .queryParam("sourceContentVersion", "-1"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("ASSET_REQUEST_INVALID"));
+
+        assertThat(
+                jdbc.sql("select count(*) from asset_audit_event").query(Long.class).single()
+        ).isZero();
     }
 
     @Test

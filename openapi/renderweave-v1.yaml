@@ -1,7 +1,7 @@
 openapi: 3.1.2
 info:
   title: RenderWeave API
-  version: 0.11.0
+  version: 0.12.0
   description: >-
     Contract-first API for RenderWeave Schema Drafts, immutable StaticSchemas,
     exact compiled artifacts, admitted Template revision authoring, owner-scoped Asset
@@ -792,6 +792,84 @@ paths:
                 $ref: '#/components/schemas/Problem'
         '503':
           $ref: '#/components/responses/AssetServiceUnavailableProblem'
+  /api/v1/assets/{assetId}/content:
+    parameters:
+      - $ref: '#/components/parameters/AssetId'
+      - $ref: '#/components/parameters/AssetExpectedAssetRevision'
+    put:
+      operationId: replaceAssetContent
+      tags: [Assets]
+      summary: Append the admitted bytes as a new content version and advance current
+      description: >-
+        The raw content bytes are the complete request body; the Asset kind is permanent and the
+        replacement must pass the same acceptance authority. When the admitted content is
+        byte-identical to the current content version the replace succeeds as a no-op without
+        advancing the Asset revision or emitting audit/STALE facts. A new Blob is only stored when
+        the deployment capacity watermark allows it; reusing an existing Blob never counts against
+        the watermark.
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
+      responses:
+        '200':
+          description: The next immutable content version committed (or a no-op when content is unchanged).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssetReadableResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestProblem'
+        '403':
+          $ref: '#/components/responses/AssetForbiddenProblem'
+        '404':
+          $ref: '#/components/responses/AssetNotFoundProblem'
+        '409':
+          $ref: '#/components/responses/ConflictProblem'
+        '413':
+          $ref: '#/components/responses/AssetPayloadTooLargeProblem'
+        '415':
+          description: The body is not application/octet-stream.
+        '422':
+          $ref: '#/components/responses/ValidationProblem'
+        '507':
+          $ref: '#/components/responses/AssetCapacityExceededProblem'
+        '503':
+          $ref: '#/components/responses/AssetServiceUnavailableProblem'
+  /api/v1/assets/{assetId}/restore:
+    parameters:
+      - $ref: '#/components/parameters/AssetId'
+    post:
+      operationId: restoreAssetContent
+      tags: [Assets]
+      summary: Append a new content version that reuses an exact historical version's bytes
+      description: >-
+        The historical Blob is reused as-is (no re-admission, no capacity charge) and a new
+        immutable content version is appended, switching current. Restoring the current content
+        version succeeds as a no-op. Historical versions are never rewritten or removed.
+      parameters:
+        - $ref: '#/components/parameters/AssetExpectedAssetRevision'
+        - $ref: '#/components/parameters/AssetSourceContentVersion'
+      responses:
+        '200':
+          description: The historical content restored as the new current content version (or a no-op).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssetReadableResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestProblem'
+        '403':
+          $ref: '#/components/responses/AssetForbiddenProblem'
+        '404':
+          $ref: '#/components/responses/AssetNotFoundProblem'
+        '409':
+          $ref: '#/components/responses/ConflictProblem'
+        '503':
+          $ref: '#/components/responses/AssetServiceUnavailableProblem'
   /api/v1/root-document-validations:
     post:
       operationId: validateRootDocuments
@@ -1399,6 +1477,15 @@ components:
         type: integer
         format: int64
         minimum: 0
+    AssetSourceContentVersion:
+      name: sourceContentVersion
+      in: query
+      required: true
+      description: Exact immutable historical content version whose bytes are restored as a new current.
+      schema:
+        type: integer
+        format: int64
+        minimum: 0
     Revision:
       name: revision
       in: path
@@ -1489,7 +1576,7 @@ components:
           enum: [ready]
         contractVersion:
           type: string
-          const: 0.11.0
+          const: 0.12.0
     CreateDraftRequest:
       type: object
       additionalProperties: false

@@ -121,7 +121,8 @@ final class CanonicalAssetApplication implements AssetApplication {
                 admitted.descriptor(),
                 command.idempotencyKey(),
                 fingerprint,
-                blobCreated
+                blobCreated,
+                invocation.value()
         );
         var created = persistence.create(commit);
         if (created instanceof AssetPersistence.StorageCapacityExceeded) {
@@ -217,7 +218,8 @@ final class CanonicalAssetApplication implements AssetApplication {
                 metadata.ownerScope(),
                 command.expectedAssetRevision(),
                 displayName,
-                tags
+                tags,
+                invocation.value()
         ));
         if (updated instanceof AssetPersistence.UpdateNotFound) {
             return new UpdateNotFound();
@@ -398,6 +400,209 @@ final class CanonicalAssetApplication implements AssetApplication {
                 byteLength,
                 bytes
         ));
+    }
+
+    @Override
+    public ReplaceOutcome replaceContent(InvocationRef invocation, ReplaceContentCommand command) {
+        var located = persistence.locate(command.assetId());
+        if (located instanceof AssetPersistence.LocateNotFound) {
+            return new ReplaceNotFound();
+        }
+        if (located instanceof AssetPersistence.LocateUnavailable) {
+            return new ReplacePersistenceUnavailable();
+        }
+        var metadata = ((AssetPersistence.Located) located).metadata();
+        if (metadata.lifecycle() == AssetApplication.Lifecycle.DELETED) {
+            return new ReplaceDeleted();
+        }
+        var decision = ownerScopeAuthority.authorizeExisting(
+                invocation,
+                metadata.ownerScope(),
+                AssetOwnerScopeAuthority.AssetOperation.UPDATE
+        );
+        if (decision instanceof AssetOwnerScopeAuthority.ExistingHidden) {
+            return new ReplaceNotFound();
+        }
+        if (decision instanceof AssetOwnerScopeAuthority.ExistingForbidden) {
+            return new ReplaceForbidden();
+        }
+        if (decision instanceof AssetOwnerScopeAuthority.ExistingUnavailable) {
+            return new ReplaceAuthorityUnavailable();
+        }
+
+        var admission = acceptance.admit(command.rawContent(), metadata.kind());
+        if (admission instanceof AssetAcceptanceAuthority.Rejected rejected) {
+            return new ReplaceContentRejected(rejected);
+        }
+        var admitted = (AssetAcceptanceAuthority.Admitted) admission;
+
+        var current = loadCurrentDetail(command.assetId());
+        if (current instanceof CurrentReadable readable
+                && readable.detail().sha256().equals(admitted.sha256())) {
+            return new ReplaceNoOp(readable.detail());
+        }
+        if (current instanceof CurrentNotFound) {
+            return new ReplaceNotFound();
+        }
+        if (current instanceof CurrentPersistenceUnavailable) {
+            return new ReplacePersistenceUnavailable();
+        }
+
+        var recheck = ownerScopeAuthority.recheck(
+                ((AssetOwnerScopeAuthority.ExistingGranted) decision).recheckIdentity()
+        );
+        if (recheck instanceof AssetOwnerScopeAuthority.RecheckDenied) {
+            return new ReplaceForbidden();
+        }
+        if (recheck instanceof AssetOwnerScopeAuthority.RecheckUnavailable) {
+            return new ReplaceAuthorityUnavailable();
+        }
+
+        var stored = blobs.store(metadata.ownerScope().value(), admitted.sha256(), command.rawContent());
+        if (stored instanceof AssetBlobPersistence.StoreUnavailable) {
+            return new ReplacePersistenceUnavailable();
+        }
+        boolean blobCreated = ((AssetBlobPersistence.Stored) stored).created();
+
+        if (blobCreated) {
+            var capacity = persistence.capacity();
+            if (capacity instanceof AssetPersistence.CapacityUnavailable) {
+                return new ReplacePersistenceUnavailable();
+            }
+            var capacityValue = (AssetPersistence.Capacity) capacity;
+            if (capacityValue.usedBytes() + admitted.byteLength() > capacityValue.hardLimitBytes()) {
+                return new ReplaceStorageCapacityExceeded();
+            }
+        }
+
+        var appended = persistence.appendContent(new AppendCommitImpl(
+                command.assetId(),
+                metadata.ownerScope(),
+                command.expectedAssetRevision(),
+                metadata.currentContentVersion() + 1,
+                admitted.sha256(),
+                mediaTypeOf(command.rawContent(), metadata.kind()),
+                admitted.byteLength(),
+                metadata.sourceFileName(),
+                admitted.descriptor(),
+                blobCreated,
+                AssetPersistence.AuditOperation.CONTENT_REPLACE,
+                invocation.value()
+        ));
+        if (appended instanceof AssetPersistence.AppendNotFound) {
+            return new ReplaceNotFound();
+        }
+        if (appended instanceof AssetPersistence.AppendDeleted) {
+            return new ReplaceDeleted();
+        }
+        if (appended instanceof AssetPersistence.AppendRevisionConflict conflict) {
+            return new ReplaceRevisionConflict(conflict.currentAssetRevision());
+        }
+        if (appended instanceof AssetPersistence.AppendStorageCapacityExceeded) {
+            return new ReplaceStorageCapacityExceeded();
+        }
+        if (appended instanceof AssetPersistence.AppendUnavailable) {
+            return new ReplacePersistenceUnavailable();
+        }
+        var refreshed = loadCurrentDetail(command.assetId());
+        if (refreshed instanceof CurrentReadable readable) {
+            return new ReplaceApplied(readable.detail());
+        }
+        return new ReplacePersistenceUnavailable();
+    }
+
+    @Override
+    public RestoreOutcome restoreContent(InvocationRef invocation, RestoreContentCommand command) {
+        var located = persistence.locate(command.assetId());
+        if (located instanceof AssetPersistence.LocateNotFound) {
+            return new RestoreNotFound();
+        }
+        if (located instanceof AssetPersistence.LocateUnavailable) {
+            return new RestorePersistenceUnavailable();
+        }
+        var metadata = ((AssetPersistence.Located) located).metadata();
+        if (metadata.lifecycle() == AssetApplication.Lifecycle.DELETED) {
+            return new RestoreDeleted();
+        }
+        var decision = ownerScopeAuthority.authorizeExisting(
+                invocation,
+                metadata.ownerScope(),
+                AssetOwnerScopeAuthority.AssetOperation.UPDATE
+        );
+        if (decision instanceof AssetOwnerScopeAuthority.ExistingHidden) {
+            return new RestoreNotFound();
+        }
+        if (decision instanceof AssetOwnerScopeAuthority.ExistingForbidden) {
+            return new RestoreForbidden();
+        }
+        if (decision instanceof AssetOwnerScopeAuthority.ExistingUnavailable) {
+            return new RestoreAuthorityUnavailable();
+        }
+
+        if (command.sourceContentVersion() == metadata.currentContentVersion()) {
+            var current = loadCurrentDetail(command.assetId());
+            if (current instanceof CurrentReadable readable) {
+                return new RestoreNoOp(readable.detail());
+            }
+            if (current instanceof CurrentNotFound) {
+                return new RestoreNotFound();
+            }
+            return new RestorePersistenceUnavailable();
+        }
+
+        var source = persistence.loadContentVersion(command.assetId(), command.sourceContentVersion());
+        if (source instanceof AssetPersistence.ContentVersionNotFound) {
+            return new RestoreVersionNotFound();
+        }
+        if (source instanceof AssetPersistence.ContentVersionUnavailable) {
+            return new RestorePersistenceUnavailable();
+        }
+        var sourceContent = ((AssetPersistence.ContentVersionLoaded) source).content();
+
+        var recheck = ownerScopeAuthority.recheck(
+                ((AssetOwnerScopeAuthority.ExistingGranted) decision).recheckIdentity()
+        );
+        if (recheck instanceof AssetOwnerScopeAuthority.RecheckDenied) {
+            return new RestoreForbidden();
+        }
+        if (recheck instanceof AssetOwnerScopeAuthority.RecheckUnavailable) {
+            return new RestoreAuthorityUnavailable();
+        }
+
+        var appended = persistence.appendContent(new AppendCommitImpl(
+                command.assetId(),
+                metadata.ownerScope(),
+                command.expectedAssetRevision(),
+                metadata.currentContentVersion() + 1,
+                sourceContent.sha256(),
+                sourceContent.mediaType(),
+                sourceContent.byteLength(),
+                sourceContent.sourceFileName(),
+                sourceContent.descriptor(),
+                false,
+                AssetPersistence.AuditOperation.CONTENT_RESTORE,
+                invocation.value()
+        ));
+        if (appended instanceof AssetPersistence.AppendNotFound) {
+            return new RestoreNotFound();
+        }
+        if (appended instanceof AssetPersistence.AppendDeleted) {
+            return new RestoreDeleted();
+        }
+        if (appended instanceof AssetPersistence.AppendRevisionConflict conflict) {
+            return new RestoreRevisionConflict(conflict.currentAssetRevision());
+        }
+        if (appended instanceof AssetPersistence.AppendStorageCapacityExceeded) {
+            return new RestorePersistenceUnavailable();
+        }
+        if (appended instanceof AssetPersistence.AppendUnavailable) {
+            return new RestorePersistenceUnavailable();
+        }
+        var refreshed = loadCurrentDetail(command.assetId());
+        if (refreshed instanceof CurrentReadable readable) {
+            return new RestoreApplied(readable.detail());
+        }
+        return new RestorePersistenceUnavailable();
     }
 
     private CreateOutcome replayResult(
@@ -637,7 +842,8 @@ final class CanonicalAssetApplication implements AssetApplication {
             AssetAcceptanceAuthority.TechnicalDescriptor descriptor,
             String idempotencyKey,
             String idempotencyFingerprint,
-            boolean blobCreated
+            boolean blobCreated,
+            String actorId
     ) implements AssetPersistence.CreateCommit {
     }
 
@@ -653,7 +859,24 @@ final class CanonicalAssetApplication implements AssetApplication {
             AssetApplication.OwnerScope ownerScope,
             long expectedAssetRevision,
             String displayName,
-            List<String> tags
+            List<String> tags,
+            String actorId
     ) implements AssetPersistence.UpdateMetadataCommit {
+    }
+
+    private record AppendCommitImpl(
+            AssetId assetId,
+            AssetApplication.OwnerScope ownerScope,
+            long expectedAssetRevision,
+            long contentVersion,
+            String sha256,
+            String mediaType,
+            long byteLength,
+            String sourceFileName,
+            AssetAcceptanceAuthority.TechnicalDescriptor descriptor,
+            boolean blobCreated,
+            AssetPersistence.AuditOperation operation,
+            String actorId
+    ) implements AssetPersistence.AppendContentCommit {
     }
 }

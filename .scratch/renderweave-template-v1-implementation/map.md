@@ -72,14 +72,21 @@ Label: wayfinder:map
   `@ConditionalOnBean` 同批求值不可靠）；Testcontainers PostgreSQL+MinIO + `full` 16/16；tagsAny
   `text[]` 绑定、Spring 7 `isHandler` 只认 `@Controller`、表单字段 `@RequestParam` 绑定等隐藏缺陷同票修复。
   无 replace/delete/restore/Resolver/UI，acceptance/1.0 未登记，Ticket 19 open。
+- [实现 Asset content replace 与旧内容恢复](issues/12a-replace-and-restore-content.md) — `replaceContent`/
+  `restoreContent` closed 方法：admission 按永久 kind 复验、与 current 相同字节成功 no-op（先于 revision
+  校验）、restore 复用旧 Blob/descriptor 追加新 contentVersion、容量只对新建 Blob 计数；V020
+  `asset_audit_event` 有界审计（create/metadata/replace/restore 逐事务追加，no-op 不产生）作为可靠可重放
+  STALE 事实流（Template 依赖投影票消费）；`PUT /{id}/content` + `POST /{id}/restore` HTTP 面 + OpenAPI
+  0.12.0/Web SDK；Testcontainers PostgreSQL+MinIO + `full` 16/16。无 delete/restore/Resolver/UI，
+  acceptance/1.0 未登记，Ticket 19 open。
 
 ## Not yet specified
 
 - minimal canonical kernel 已完成；依据其真实接口和差异拆分完整 DesignDSL Profile 的 Node、Definition、Binding、Repeat、Conditional、TemplateUse 与 Property Identity 实施票。在全部 exact 语义原子通过前不登记 Profile available，且不得把本 kernel 的 fail-closed non-empty array 当作 set ordering 已实现。
 - Asset persistence、replace/delete/restore、依赖影响确认、Asset UI 与 Renderer-only lease 的实施顺序已由
-  Ticket 05 冻结为 T10 → T11 → T12a → T12b → T13；T10/T10b 已完成，下一 frontier 为 T11。Template 依赖投影
-  （从 DesignDSL 提取 authored AssetRef atom 的 current-only 投影、`AssetReferenceAuthority` 物化与 STALE
-  消费）随 DesignDSL full-Profile 拆分时登记，T12b 以其为 blocker。
+  Ticket 05 冻结为 T10 → T11 → T12a → T12b → T13；T10/T10b/T11/T12a 已完成，下一 frontier 为 T12b。Template
+  依赖投影（从 DesignDSL 提取 authored AssetRef atom 的 current-only 投影、`AssetReferenceAuthority` 物化与
+  STALE 消费）随 DesignDSL full-Profile 拆分时登记，T12b 以其为 blocker。
 - Expression/value binding、closure、capability、nested Template、layout lowering 与正式 RenderDocument 的实现切片，要等 Evaluator seam 给出稳定 ownership 和错误面后再登记。
 - Rust layout、font shaping、resource decode、raster、PNG/JPEG encoding 与 exact pixel replay 的切片，要等 process protocol 和 build/certification contract 冻结后再登记。
 - Product Editor 的 save/recovery/conflict/preview/browser automation 与 accessibility 实施票，要等状态架构

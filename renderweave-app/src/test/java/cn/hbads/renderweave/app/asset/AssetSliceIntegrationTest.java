@@ -49,7 +49,8 @@ class AssetSliceIntegrationTest {
 
     @BeforeEach
     void clearAssets() {
-        jdbc.sql("truncate table asset_idempotency, asset_content_revision, asset_aggregate").update();
+        jdbc.sql("truncate table asset_audit_event, asset_idempotency, asset_content_revision, "
+                + "asset_aggregate").update();
         jdbc.sql("update asset_capacity set used_bytes = 0").update();
     }
 
@@ -197,5 +198,103 @@ class AssetSliceIntegrationTest {
                 )
         );
         assertInstanceOf(AssetApplication.CreateIdempotencyConflict.class, conflict);
+    }
+
+    @Test
+    void replaceAndRestoreAppendContentVersionsAndRecordBoundedAuditEvents() throws IOException {
+        var invocation = AssetApplication.InvocationRef.serverCreated("inv-it-3");
+        var raw = jpegBytes();
+        var created = assertInstanceOf(
+                AssetApplication.CreatedReadable.class,
+                assets.create(invocation, createCommand(raw, "it-key-3"))
+        );
+        var assetId = created.detail().assetId();
+        var replacement = ycbcrBytes();
+
+        var replaced = assertInstanceOf(
+                AssetApplication.ReplaceApplied.class,
+                assets.replaceContent(
+                        invocation,
+                        new AssetApplication.ReplaceContentCommand(assetId, 0, replacement)
+                )
+        );
+        assertEquals(1, replaced.detail().assetRevision());
+        assertEquals(1, replaced.detail().currentContentVersion());
+
+        var noOp = assertInstanceOf(
+                AssetApplication.ReplaceNoOp.class,
+                assets.replaceContent(
+                        invocation,
+                        new AssetApplication.ReplaceContentCommand(assetId, 1, replacement)
+                )
+        );
+        assertEquals(1, noOp.detail().assetRevision());
+
+        var restored = assertInstanceOf(
+                AssetApplication.RestoreApplied.class,
+                assets.restoreContent(
+                        invocation,
+                        new AssetApplication.RestoreContentCommand(assetId, 1, 0)
+                )
+        );
+        assertEquals(2, restored.detail().assetRevision());
+        assertEquals(2, restored.detail().currentContentVersion());
+        assertEquals(created.detail().sha256(), restored.detail().sha256());
+
+        var versions = assertInstanceOf(
+                AssetApplication.VersionsReadable.class,
+                assets.listContentVersions(invocation, assetId)
+        );
+        assertEquals(3, versions.entries().size());
+        assertEquals(List.of(0L, 1L, 2L), versions.entries().stream()
+                .map(AssetApplication.ContentVersionEntry::contentVersion)
+                .toList());
+        assertEquals(
+                versions.entries().get(2).sha256(),
+                versions.entries().get(0).sha256()
+        );
+
+        var restoredDownload = assertInstanceOf(
+                AssetApplication.DownloadReadable.class,
+                assets.downloadExact(invocation, assetId, 2)
+        );
+        assertEquals(raw.length, restoredDownload.content().bytes().length);
+        assertEquals(raw[0], restoredDownload.content().bytes()[0]);
+
+        var audit = jdbc.sql("""
+                        select operation_type, before_asset_revision, after_asset_revision,
+                               actor_id, content_version
+                        from asset_audit_event
+                        where asset_id = :assetId
+                        order by event_id
+                        """)
+                .param("assetId", assetId.value())
+                .query((rs, rowNum) -> new String[]{
+                        rs.getString("operation_type"),
+                        rs.getString("before_asset_revision"),
+                        rs.getString("after_asset_revision"),
+                        rs.getString("actor_id"),
+                        rs.getString("content_version")
+                })
+                .list();
+        assertEquals(3, audit.size());
+        assertEquals("CREATE", audit.get(0)[0]);
+        assertEquals("inv-it-3", audit.get(0)[3]);
+        assertEquals("CONTENT_REPLACE", audit.get(1)[0]);
+        assertEquals("0", audit.get(1)[1]);
+        assertEquals("1", audit.get(1)[2]);
+        assertEquals("1", audit.get(1)[4]);
+        assertEquals("CONTENT_RESTORE", audit.get(2)[0]);
+        assertEquals("1", audit.get(2)[1]);
+        assertEquals("2", audit.get(2)[2]);
+        assertEquals("2", audit.get(2)[4]);
+    }
+
+    private static byte[] ycbcrBytes() throws IOException {
+        try (var stream = AssetSliceIntegrationTest.class.getResourceAsStream(
+                "/asset-fixtures/ycbcr-progressive.jpg")) {
+            assertTrue(stream != null);
+            return stream.readAllBytes();
+        }
     }
 }

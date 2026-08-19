@@ -382,6 +382,322 @@ class AssetApplicationContractTest {
         assertEquals("photo.jpg", created.detail().sourceFileName());
     }
 
+    @Test
+    void replaceAppendsContentVersionAdvancesRevisionAndEmitsAuditEvent() {
+        authority.createDecision = granted();
+        authority.recheckDecision = new AssetOwnerScopeAuthority.RecheckGranted();
+        authority.existingDecision = new AssetOwnerScopeAuthority.ExistingGranted(
+                AssetOwnerScopeAuthority.Disclosure.READABLE,
+                new AssetOwnerScopeAuthority.RecheckIdentity("recheck-1")
+        );
+        var invocation = AssetApplication.InvocationRef.serverCreated("inv-replace-1");
+        var created = assertInstanceOf(
+                AssetApplication.CreatedReadable.class,
+                application.create(invocation, createCommand(jpegFixture(), "key-r-1"))
+        );
+        var replacement = ycbcrFixture();
+        var outcome = application.replaceContent(
+                invocation,
+                new AssetApplication.ReplaceContentCommand(
+                        created.detail().assetId(),
+                        0,
+                        replacement
+                )
+        );
+        var applied = assertInstanceOf(AssetApplication.ReplaceApplied.class, outcome);
+        assertEquals(1, applied.detail().assetRevision());
+        assertEquals(1, applied.detail().currentContentVersion());
+        assertEquals(sha256Of(replacement), applied.detail().sha256());
+
+        var replaceEvents = persistence.auditEvents().stream()
+                .filter(event -> event.operation() == AssetPersistence.AuditOperation.CONTENT_REPLACE)
+                .toList();
+        assertEquals(1, replaceEvents.size());
+        assertEquals(0L, replaceEvents.get(0).beforeAssetRevision());
+        assertEquals(1L, replaceEvents.get(0).afterAssetRevision());
+        assertEquals("inv-replace-1", replaceEvents.get(0).actorId());
+        assertEquals(1L, replaceEvents.get(0).contentVersion());
+    }
+
+    @Test
+    void replaceWithIdenticalContentIsNoOpWithoutRevisionOrAuditEvent() {
+        authority.createDecision = granted();
+        authority.recheckDecision = new AssetOwnerScopeAuthority.RecheckGranted();
+        authority.existingDecision = new AssetOwnerScopeAuthority.ExistingGranted(
+                AssetOwnerScopeAuthority.Disclosure.READABLE,
+                new AssetOwnerScopeAuthority.RecheckIdentity("recheck-1")
+        );
+        var invocation = AssetApplication.InvocationRef.serverCreated("inv-replace-2");
+        var created = assertInstanceOf(
+                AssetApplication.CreatedReadable.class,
+                application.create(invocation, createCommand(jpegFixture(), "key-r-2"))
+        );
+        var outcome = application.replaceContent(
+                invocation,
+                new AssetApplication.ReplaceContentCommand(
+                        created.detail().assetId(),
+                        0,
+                        jpegFixture()
+                )
+        );
+        assertInstanceOf(AssetApplication.ReplaceNoOp.class, outcome);
+        assertEquals(0, persistence.appendCount);
+        assertEquals(1, persistence.auditEvents().size());
+        assertEquals(AssetPersistence.AuditOperation.CREATE, persistence.auditEvents().get(0).operation());
+    }
+
+    @Test
+    void replaceConflictsOnStaleExpectedRevision() {
+        authority.createDecision = granted();
+        authority.recheckDecision = new AssetOwnerScopeAuthority.RecheckGranted();
+        authority.existingDecision = new AssetOwnerScopeAuthority.ExistingGranted(
+                AssetOwnerScopeAuthority.Disclosure.READABLE,
+                new AssetOwnerScopeAuthority.RecheckIdentity("recheck-1")
+        );
+        var invocation = AssetApplication.InvocationRef.serverCreated("inv-replace-3");
+        var created = assertInstanceOf(
+                AssetApplication.CreatedReadable.class,
+                application.create(invocation, createCommand(jpegFixture(), "key-r-3"))
+        );
+        var outcome = application.replaceContent(
+                invocation,
+                new AssetApplication.ReplaceContentCommand(
+                        created.detail().assetId(),
+                        5,
+                        ycbcrFixture()
+                )
+        );
+        var conflict = assertInstanceOf(AssetApplication.ReplaceRevisionConflict.class, outcome);
+        assertEquals(0, conflict.currentAssetRevision());
+    }
+
+    @Test
+    void replaceRejectsInvalidContentAndDeniedUpdate() {
+        authority.createDecision = granted();
+        authority.recheckDecision = new AssetOwnerScopeAuthority.RecheckGranted();
+        authority.existingDecision = new AssetOwnerScopeAuthority.ExistingGranted(
+                AssetOwnerScopeAuthority.Disclosure.READABLE,
+                new AssetOwnerScopeAuthority.RecheckIdentity("recheck-1")
+        );
+        var invocation = AssetApplication.InvocationRef.serverCreated("inv-replace-4");
+        var created = assertInstanceOf(
+                AssetApplication.CreatedReadable.class,
+                application.create(invocation, createCommand(jpegFixture(), "key-r-4"))
+        );
+        assertInstanceOf(
+                AssetApplication.ReplaceContentRejected.class,
+                application.replaceContent(
+                        invocation,
+                        new AssetApplication.ReplaceContentCommand(
+                                created.detail().assetId(),
+                                0,
+                                new byte[]{0x01, 0x02, 0x03}
+                        )
+                )
+        );
+
+        authority.existingDecision = new AssetOwnerScopeAuthority.ExistingForbidden();
+        assertInstanceOf(
+                AssetApplication.ReplaceForbidden.class,
+                application.replaceContent(
+                        invocation,
+                        new AssetApplication.ReplaceContentCommand(
+                                created.detail().assetId(),
+                                0,
+                                ycbcrFixture()
+                        )
+                )
+        );
+    }
+
+    @Test
+    void replaceOnDeletedAssetIsDeletedAndCapacityWatermarkRejectsNewBlob() {
+        authority.createDecision = granted();
+        authority.recheckDecision = new AssetOwnerScopeAuthority.RecheckGranted();
+        authority.existingDecision = new AssetOwnerScopeAuthority.ExistingGranted(
+                AssetOwnerScopeAuthority.Disclosure.READABLE,
+                new AssetOwnerScopeAuthority.RecheckIdentity("recheck-1")
+        );
+        var invocation = AssetApplication.InvocationRef.serverCreated("inv-replace-5");
+        var created = assertInstanceOf(
+                AssetApplication.CreatedReadable.class,
+                application.create(invocation, createCommand(jpegFixture(), "key-r-5"))
+        );
+        persistence.markDeleted(created.detail().assetId());
+        assertInstanceOf(
+                AssetApplication.ReplaceDeleted.class,
+                application.replaceContent(
+                        invocation,
+                        new AssetApplication.ReplaceContentCommand(
+                                created.detail().assetId(),
+                                0,
+                                ycbcrFixture()
+                        )
+                )
+        );
+
+        var active = assertInstanceOf(
+                AssetApplication.CreatedReadable.class,
+                application.create(
+                        AssetApplication.InvocationRef.serverCreated("inv-replace-6"),
+                        createCommand(jpegFixture(), "key-r-6")
+                )
+        );
+        persistence.hardLimitBytes = 400;
+        assertInstanceOf(
+                AssetApplication.ReplaceStorageCapacityExceeded.class,
+                application.replaceContent(
+                        invocation,
+                        new AssetApplication.ReplaceContentCommand(
+                                active.detail().assetId(),
+                                0,
+                                ycbcrFixture()
+                        )
+                )
+        );
+    }
+
+    @Test
+    void restoreAppendsReusedBlobAsNewCurrentAndEmitsAuditEvent() {
+        authority.createDecision = granted();
+        authority.recheckDecision = new AssetOwnerScopeAuthority.RecheckGranted();
+        authority.existingDecision = new AssetOwnerScopeAuthority.ExistingGranted(
+                AssetOwnerScopeAuthority.Disclosure.READABLE,
+                new AssetOwnerScopeAuthority.RecheckIdentity("recheck-1")
+        );
+        var invocation = AssetApplication.InvocationRef.serverCreated("inv-restore-1");
+        var created = assertInstanceOf(
+                AssetApplication.CreatedReadable.class,
+                application.create(invocation, createCommand(jpegFixture(), "key-s-1"))
+        );
+        application.replaceContent(
+                invocation,
+                new AssetApplication.ReplaceContentCommand(
+                        created.detail().assetId(),
+                        0,
+                        ycbcrFixture()
+                )
+        );
+        long usedBefore = persistence.usedBytes;
+
+        var outcome = application.restoreContent(
+                invocation,
+                new AssetApplication.RestoreContentCommand(
+                        created.detail().assetId(),
+                        1,
+                        0
+                )
+        );
+        var applied = assertInstanceOf(AssetApplication.RestoreApplied.class, outcome);
+        assertEquals(2, applied.detail().assetRevision());
+        assertEquals(2, applied.detail().currentContentVersion());
+        assertEquals(created.detail().sha256(), applied.detail().sha256());
+        assertEquals("photo.jpg", applied.detail().sourceFileName());
+        assertEquals(usedBefore, persistence.usedBytes);
+
+        var restoreEvents = persistence.auditEvents().stream()
+                .filter(event -> event.operation() == AssetPersistence.AuditOperation.CONTENT_RESTORE)
+                .toList();
+        assertEquals(1, restoreEvents.size());
+        assertEquals(1L, restoreEvents.get(0).beforeAssetRevision());
+        assertEquals(2L, restoreEvents.get(0).afterAssetRevision());
+        assertEquals(2L, restoreEvents.get(0).contentVersion());
+    }
+
+    @Test
+    void restoreOfCurrentVersionIsNoOpAndMissingVersionIsNotFound() {
+        authority.createDecision = granted();
+        authority.recheckDecision = new AssetOwnerScopeAuthority.RecheckGranted();
+        authority.existingDecision = new AssetOwnerScopeAuthority.ExistingGranted(
+                AssetOwnerScopeAuthority.Disclosure.READABLE,
+                new AssetOwnerScopeAuthority.RecheckIdentity("recheck-1")
+        );
+        var invocation = AssetApplication.InvocationRef.serverCreated("inv-restore-2");
+        var created = assertInstanceOf(
+                AssetApplication.CreatedReadable.class,
+                application.create(invocation, createCommand(jpegFixture(), "key-s-2"))
+        );
+        assertInstanceOf(
+                AssetApplication.RestoreNoOp.class,
+                application.restoreContent(
+                        invocation,
+                        new AssetApplication.RestoreContentCommand(
+                                created.detail().assetId(),
+                                0,
+                                0
+                        )
+                )
+        );
+        assertEquals(0, persistence.appendCount);
+
+        assertInstanceOf(
+                AssetApplication.RestoreVersionNotFound.class,
+                application.restoreContent(
+                        invocation,
+                        new AssetApplication.RestoreContentCommand(
+                                created.detail().assetId(),
+                                0,
+                                9
+                        )
+                )
+        );
+    }
+
+    @Test
+    void createAndMetadataUpdateEmitBoundedAuditEvents() {
+        authority.createDecision = granted();
+        authority.recheckDecision = new AssetOwnerScopeAuthority.RecheckGranted();
+        authority.existingDecision = new AssetOwnerScopeAuthority.ExistingGranted(
+                AssetOwnerScopeAuthority.Disclosure.READABLE,
+                new AssetOwnerScopeAuthority.RecheckIdentity("recheck-1")
+        );
+        var invocation = AssetApplication.InvocationRef.serverCreated("inv-audit-1");
+        var created = assertInstanceOf(
+                AssetApplication.CreatedReadable.class,
+                application.create(invocation, createCommand(jpegFixture(), "key-a-1"))
+        );
+        application.updateMetadata(
+                invocation,
+                new AssetApplication.UpdateMetadataCommand(
+                        created.detail().assetId(),
+                        0,
+                        "Renamed",
+                        List.of("slice")
+                )
+        );
+
+        var events = persistence.auditEvents();
+        assertEquals(2, events.size());
+        assertEquals(AssetPersistence.AuditOperation.CREATE, events.get(0).operation());
+        assertEquals(null, events.get(0).beforeAssetRevision());
+        assertEquals(0L, events.get(0).afterAssetRevision());
+        assertEquals(0L, events.get(0).contentVersion());
+        assertEquals("inv-audit-1", events.get(0).actorId());
+        assertEquals(AssetPersistence.AuditOperation.METADATA_UPDATE, events.get(1).operation());
+        assertEquals(0L, events.get(1).beforeAssetRevision());
+        assertEquals(1L, events.get(1).afterAssetRevision());
+        assertEquals(0L, events.get(1).contentVersion());
+    }
+
+    private static byte[] ycbcrFixture() {
+        try (var stream = AssetApplicationContractTest.class.getResourceAsStream(
+                "/asset-fixtures/ycbcr-progressive.jpg")) {
+            assertTrue(stream != null);
+            return stream.readAllBytes();
+        } catch (IOException failure) {
+            throw new AssertionError(failure);
+        }
+    }
+
+    private static String sha256Of(byte[] bytes) {
+        try {
+            var digest = java.security.MessageDigest.getInstance("SHA-256");
+            return java.util.HexFormat.of().formatHex(digest.digest(bytes));
+        } catch (java.security.NoSuchAlgorithmException impossible) {
+            throw new IllegalStateException(impossible);
+        }
+    }
+
     private AssetOwnerScopeAuthority.CreateGranted granted() {
         return new AssetOwnerScopeAuthority.CreateGranted(
                 new AssetApplication.OwnerScope("scope-1"),
@@ -440,11 +756,29 @@ class AssetApplicationContractTest {
 
     private static final class InMemoryAssetPersistence implements AssetPersistence {
         private final Map<AssetApplication.AssetId, StoredCurrent> assets = new LinkedHashMap<>();
+        private final Map<AssetApplication.AssetId, List<StoredContent>> history =
+                new LinkedHashMap<>();
         private final Map<String, AssetApplication.AssetId> idempotency = new HashMap<>();
+        private final List<AuditRecord> audit = new ArrayList<>();
         int commitCount = 0;
         int updateCount = 0;
+        int appendCount = 0;
         long hardLimitBytes = Long.MAX_VALUE;
         long usedBytes = 0;
+
+        record AuditRecord(
+                AssetApplication.AssetId assetId,
+                Long beforeAssetRevision,
+                long afterAssetRevision,
+                String actorId,
+                AssetPersistence.AuditOperation operation,
+                long contentVersion
+        ) {
+        }
+
+        List<AuditRecord> auditEvents() {
+            return List.copyOf(audit);
+        }
 
         void putAsset(AssetApplication.AssetId assetId, long assetRevision) {
             var current = assets.get(assetId);
@@ -455,6 +789,26 @@ class AssetApplicationContractTest {
                             current.metadata().kind(),
                             AssetApplication.Lifecycle.ACTIVE,
                             assetRevision,
+                            current.metadata().currentContentVersion(),
+                            current.metadata().displayName(),
+                            current.metadata().tags(),
+                            current.metadata().sourceFileName(),
+                            current.metadata().createdAt(),
+                            current.metadata().updatedAt()
+                    ),
+                    current.content()
+            ));
+        }
+
+        void markDeleted(AssetApplication.AssetId assetId) {
+            var current = assets.get(assetId);
+            assets.put(assetId, new StoredCurrent(
+                    new AssetMetadata(
+                            assetId,
+                            current.metadata().ownerScope(),
+                            current.metadata().kind(),
+                            AssetApplication.Lifecycle.DELETED,
+                            current.metadata().assetRevision(),
                             current.metadata().currentContentVersion(),
                             current.metadata().displayName(),
                             current.metadata().tags(),
@@ -508,7 +862,16 @@ class AssetApplicationContractTest {
                     now
             );
             assets.put(commit.assetId(), new StoredCurrent(metadata, content));
+            history.computeIfAbsent(commit.assetId(), ignored -> new ArrayList<>()).add(content);
             usedBytes += commit.byteLength();
+            audit.add(new AuditRecord(
+                    commit.assetId(),
+                    null,
+                    0,
+                    commit.actorId(),
+                    AssetPersistence.AuditOperation.CREATE,
+                    0
+            ));
             idempotency.put(
                     commit.ownerScope().value() + "/" + commit.idempotencyKey(),
                     commit.assetId()
@@ -550,7 +913,89 @@ class AssetApplicationContractTest {
                     ),
                     current.content()
             ));
+            audit.add(new AuditRecord(
+                    commit.assetId(),
+                    commit.expectedAssetRevision(),
+                    next,
+                    commit.actorId(),
+                    AssetPersistence.AuditOperation.METADATA_UPDATE,
+                    current.metadata().currentContentVersion()
+            ));
             return new MetadataUpdated(true);
+        }
+
+        @Override
+        public AppendContentOutcome appendContent(AppendContentCommit commit) {
+            var current = assets.get(commit.assetId());
+            if (current == null) {
+                return new AppendNotFound();
+            }
+            if (current.metadata().lifecycle() == AssetApplication.Lifecycle.DELETED) {
+                return new AppendDeleted();
+            }
+            if (current.metadata().assetRevision() != commit.expectedAssetRevision()) {
+                return new AppendRevisionConflict(current.metadata().assetRevision());
+            }
+            if (commit.blobCreated() && usedBytes + commit.byteLength() > hardLimitBytes) {
+                return new AppendStorageCapacityExceeded();
+            }
+            appendCount++;
+            long nextRevision = current.metadata().assetRevision() + 1;
+            var content = new StoredContent(
+                    commit.contentVersion(),
+                    commit.sha256(),
+                    commit.mediaType(),
+                    commit.byteLength(),
+                    commit.sourceFileName(),
+                    commit.descriptor(),
+                    Instant.now()
+            );
+            assets.put(commit.assetId(), new StoredCurrent(
+                    new AssetMetadata(
+                            commit.assetId(),
+                            commit.ownerScope(),
+                            current.metadata().kind(),
+                            current.metadata().lifecycle(),
+                            nextRevision,
+                            commit.contentVersion(),
+                            current.metadata().displayName(),
+                            current.metadata().tags(),
+                            commit.sourceFileName(),
+                            current.metadata().createdAt(),
+                            Instant.now()
+                    ),
+                    content
+            ));
+            history.computeIfAbsent(commit.assetId(), ignored -> new ArrayList<>()).add(content);
+            if (commit.blobCreated()) {
+                usedBytes += commit.byteLength();
+            }
+            audit.add(new AuditRecord(
+                    commit.assetId(),
+                    commit.expectedAssetRevision(),
+                    nextRevision,
+                    commit.actorId(),
+                    commit.operation(),
+                    commit.contentVersion()
+            ));
+            return new ContentAppended();
+        }
+
+        @Override
+        public ContentVersionOutcome loadContentVersion(
+                AssetApplication.AssetId assetId,
+                long contentVersion
+        ) {
+            var versions = history.get(assetId);
+            if (versions == null) {
+                return new ContentVersionNotFound();
+            }
+            for (StoredContent version : versions) {
+                if (version.contentVersion() == contentVersion) {
+                    return new ContentVersionLoaded(version);
+                }
+            }
+            return new ContentVersionNotFound();
         }
 
         @Override
@@ -589,18 +1034,20 @@ class AssetApplicationContractTest {
 
         @Override
         public VersionsOutcome listContentVersions(AssetApplication.AssetId assetId) {
-            var current = assets.get(assetId);
-            if (current == null) {
+            var versions = history.get(assetId);
+            if (versions == null) {
                 return new VersionsNotFound();
             }
-            return new VersionsListed(List.of(new ContentVersionEntry(
-                    current.content().contentVersion(),
-                    current.content().sha256(),
-                    current.content().mediaType(),
-                    current.content().byteLength(),
-                    current.content().sourceFileName(),
-                    current.content().createdAt()
-            )));
+            return new VersionsListed(versions.stream()
+                    .map(version -> new ContentVersionEntry(
+                            version.contentVersion(),
+                            version.sha256(),
+                            version.mediaType(),
+                            version.byteLength(),
+                            version.sourceFileName(),
+                            version.createdAt()
+                    ))
+                    .toList());
         }
 
         @Override

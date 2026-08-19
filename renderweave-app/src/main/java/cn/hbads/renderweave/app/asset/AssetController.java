@@ -282,7 +282,8 @@ final class AssetController {
                     "ASSET_FORBIDDEN",
                     "Asset update is not permitted"
             );
-            case AssetApplication.UpdateRevisionConflict conflict -> conflictProblem(conflict);
+            case AssetApplication.UpdateRevisionConflict conflict ->
+                    conflictProblem(conflict.currentAssetRevision());
             case AssetApplication.UpdateAuthorityUnavailable ignored -> problem(
                     HttpStatus.SERVICE_UNAVAILABLE,
                     "ASSET_AUTHORITY_UNAVAILABLE",
@@ -461,6 +462,140 @@ final class AssetController {
         };
     }
 
+    @PutMapping(
+            value = "/{assetId}/content",
+            consumes = MediaType.APPLICATION_OCTET_STREAM_VALUE,
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    ResponseEntity<?> replaceContent(
+            @PathVariable String assetId,
+            @RequestParam long expectedAssetRevision,
+            @RequestBody byte[] rawContent
+    ) {
+        if (expectedAssetRevision < 0 || expectedAssetRevision == Long.MAX_VALUE) {
+            throw new InvalidAssetApiRequestException(
+                    "expectedAssetRevision must be non-negative and have a successor"
+            );
+        }
+        if (rawContent == null || rawContent.length == 0) {
+            throw new InvalidAssetApiRequestException("content body must carry non-empty bytes");
+        }
+        var outcome = assets.replaceContent(
+                invocation(),
+                new AssetApplication.ReplaceContentCommand(
+                        assetId(assetId),
+                        expectedAssetRevision,
+                        rawContent
+                )
+        );
+        return switch (outcome) {
+            case AssetApplication.ReplaceApplied applied -> ResponseEntity.ok(
+                    readable(applied.detail())
+            );
+            case AssetApplication.ReplaceNoOp noOp -> ResponseEntity.ok(
+                    readable(noOp.detail())
+            );
+            case AssetApplication.ReplaceContentRejected rejected ->
+                    contentProblem(rejected.rejection());
+            case AssetApplication.ReplaceNotFound ignored -> problem(
+                    HttpStatus.NOT_FOUND,
+                    "ASSET_NOT_FOUND",
+                    "Asset was not found"
+            );
+            case AssetApplication.ReplaceDeleted ignored -> problem(
+                    HttpStatus.CONFLICT,
+                    "ASSET_DELETED",
+                    "Deleted Asset content cannot be replaced"
+            );
+            case AssetApplication.ReplaceForbidden ignored -> problem(
+                    HttpStatus.FORBIDDEN,
+                    "ASSET_FORBIDDEN",
+                    "Asset update is not permitted"
+            );
+            case AssetApplication.ReplaceRevisionConflict conflict ->
+                    conflictProblem(conflict.currentAssetRevision());
+            case AssetApplication.ReplaceStorageCapacityExceeded ignored -> problem(
+                    HttpStatus.INSUFFICIENT_STORAGE,
+                    "ASSET_STORAGE_CAPACITY_EXCEEDED",
+                    "The deployment-level Asset capacity watermark would be exceeded"
+            );
+            case AssetApplication.ReplaceAuthorityUnavailable ignored -> problem(
+                    HttpStatus.SERVICE_UNAVAILABLE,
+                    "ASSET_AUTHORITY_UNAVAILABLE",
+                    "Asset authorization is unavailable"
+            );
+            case AssetApplication.ReplacePersistenceUnavailable ignored -> problem(
+                    HttpStatus.SERVICE_UNAVAILABLE,
+                    "ASSET_PERSISTENCE_UNAVAILABLE",
+                    "Asset persistence is unavailable"
+            );
+        };
+    }
+
+    @PostMapping(value = "/{assetId}/restore", produces = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<?> restoreContent(
+            @PathVariable String assetId,
+            @RequestParam long expectedAssetRevision,
+            @RequestParam long sourceContentVersion
+    ) {
+        if (expectedAssetRevision < 0 || expectedAssetRevision == Long.MAX_VALUE) {
+            throw new InvalidAssetApiRequestException(
+                    "expectedAssetRevision must be non-negative and have a successor"
+            );
+        }
+        if (sourceContentVersion < 0) {
+            throw new InvalidAssetApiRequestException("sourceContentVersion must be non-negative");
+        }
+        var outcome = assets.restoreContent(
+                invocation(),
+                new AssetApplication.RestoreContentCommand(
+                        assetId(assetId),
+                        expectedAssetRevision,
+                        sourceContentVersion
+                )
+        );
+        return switch (outcome) {
+            case AssetApplication.RestoreApplied applied -> ResponseEntity.ok(
+                    readable(applied.detail())
+            );
+            case AssetApplication.RestoreNoOp noOp -> ResponseEntity.ok(
+                    readable(noOp.detail())
+            );
+            case AssetApplication.RestoreNotFound ignored -> problem(
+                    HttpStatus.NOT_FOUND,
+                    "ASSET_NOT_FOUND",
+                    "Asset was not found"
+            );
+            case AssetApplication.RestoreDeleted ignored -> problem(
+                    HttpStatus.CONFLICT,
+                    "ASSET_DELETED",
+                    "Deleted Asset content cannot be restored"
+            );
+            case AssetApplication.RestoreForbidden ignored -> problem(
+                    HttpStatus.FORBIDDEN,
+                    "ASSET_FORBIDDEN",
+                    "Asset update is not permitted"
+            );
+            case AssetApplication.RestoreRevisionConflict conflict ->
+                    conflictProblem(conflict.currentAssetRevision());
+            case AssetApplication.RestoreVersionNotFound ignored -> problem(
+                    HttpStatus.NOT_FOUND,
+                    "ASSET_CONTENT_VERSION_NOT_FOUND",
+                    "The exact source content version does not exist"
+            );
+            case AssetApplication.RestoreAuthorityUnavailable ignored -> problem(
+                    HttpStatus.SERVICE_UNAVAILABLE,
+                    "ASSET_AUTHORITY_UNAVAILABLE",
+                    "Asset authorization is unavailable"
+            );
+            case AssetApplication.RestorePersistenceUnavailable ignored -> problem(
+                    HttpStatus.SERVICE_UNAVAILABLE,
+                    "ASSET_PERSISTENCE_UNAVAILABLE",
+                    "Asset persistence is unavailable"
+            );
+        };
+    }
+
     private AssetResponse readable(AssetApplication.AssetDetail detail) {
         return new AssetResponse(
                 detail.assetId().value(),
@@ -508,9 +643,7 @@ final class AssetController {
         ));
     }
 
-    private ResponseEntity<AssetProblemResponse> conflictProblem(
-            AssetApplication.UpdateRevisionConflict conflict
-    ) {
+    private ResponseEntity<AssetProblemResponse> conflictProblem(long currentAssetRevision) {
         var status = HttpStatus.CONFLICT;
         return ResponseEntity.status(status)
                 .contentType(MediaType.APPLICATION_PROBLEM_JSON)
@@ -525,7 +658,7 @@ final class AssetController {
                 null,
                 null,
                 null,
-                conflict.currentAssetRevision()
+                currentAssetRevision
         ));
     }
 

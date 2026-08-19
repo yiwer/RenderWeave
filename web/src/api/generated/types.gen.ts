@@ -8,7 +8,7 @@ export type SystemStatus = {
     service: 'renderweave-api';
     status: 'ready';
     database: 'ready';
-    contractVersion: '0.11.0';
+    contractVersion: '0.12.0';
 };
 
 export type CreateDraftRequest = {
@@ -892,6 +892,11 @@ export type AssetExpectedAssetRevision = number;
  * Exact immutable content version to download.
  */
 export type AssetContentVersion = number;
+
+/**
+ * Exact immutable historical content version whose bytes are restored as a new current.
+ */
+export type AssetSourceContentVersion = number;
 
 export type Revision = number;
 
@@ -2099,6 +2104,122 @@ export type PreviewAssetCurrentResponses = {
 };
 
 export type PreviewAssetCurrentResponse = PreviewAssetCurrentResponses[keyof PreviewAssetCurrentResponses];
+
+export type ReplaceAssetContentData = {
+    body: Blob | File;
+    path: {
+        /**
+         * Server-generated canonical UUID v4 Asset identity; clients must not parse its encoding.
+         */
+        assetId: string;
+    };
+    query: {
+        expectedAssetRevision: number;
+    };
+    url: '/api/v1/assets/{assetId}/content';
+};
+
+export type ReplaceAssetContentErrors = {
+    /**
+     * Request JSON, key syntax or envelope is invalid.
+     */
+    400: Problem;
+    /**
+     * The caller lacks the required Asset operation capability.
+     */
+    403: Problem;
+    /**
+     * The visible Asset required by this operation does not exist.
+     */
+    404: Problem;
+    /**
+     * Natural identity or expected revision conflicts with current state.
+     */
+    409: Problem;
+    /**
+     * The complete Asset multipart body or admitted content exceeds an authoritative limit.
+     */
+    413: Problem;
+    /**
+     * The body is not application/octet-stream.
+     */
+    415: unknown;
+    /**
+     * The complete RenderWeave definition is not valid and nothing was written.
+     */
+    422: Problem;
+    /**
+     * Asset authorization or persistence is temporarily unavailable.
+     */
+    503: Problem;
+    /**
+     * The deployment-level Asset capacity watermark would be exceeded by a new blob.
+     */
+    507: Problem;
+};
+
+export type ReplaceAssetContentError = ReplaceAssetContentErrors[keyof ReplaceAssetContentErrors];
+
+export type ReplaceAssetContentResponses = {
+    /**
+     * The next immutable content version committed (or a no-op when content is unchanged).
+     */
+    200: AssetReadableResponse;
+};
+
+export type ReplaceAssetContentResponse = ReplaceAssetContentResponses[keyof ReplaceAssetContentResponses];
+
+export type RestoreAssetContentData = {
+    body?: never;
+    path: {
+        /**
+         * Server-generated canonical UUID v4 Asset identity; clients must not parse its encoding.
+         */
+        assetId: string;
+    };
+    query: {
+        expectedAssetRevision: number;
+        /**
+         * Exact immutable historical content version whose bytes are restored as a new current.
+         */
+        sourceContentVersion: number;
+    };
+    url: '/api/v1/assets/{assetId}/restore';
+};
+
+export type RestoreAssetContentErrors = {
+    /**
+     * Request JSON, key syntax or envelope is invalid.
+     */
+    400: Problem;
+    /**
+     * The caller lacks the required Asset operation capability.
+     */
+    403: Problem;
+    /**
+     * The visible Asset required by this operation does not exist.
+     */
+    404: Problem;
+    /**
+     * Natural identity or expected revision conflicts with current state.
+     */
+    409: Problem;
+    /**
+     * Asset authorization or persistence is temporarily unavailable.
+     */
+    503: Problem;
+};
+
+export type RestoreAssetContentError = RestoreAssetContentErrors[keyof RestoreAssetContentErrors];
+
+export type RestoreAssetContentResponses = {
+    /**
+     * The historical content restored as the new current content version (or a no-op).
+     */
+    200: AssetReadableResponse;
+};
+
+export type RestoreAssetContentResponse = RestoreAssetContentResponses[keyof RestoreAssetContentResponses];
 
 export type ValidateRootDocumentsData = {
     body: RootDocumentValidationRequest;

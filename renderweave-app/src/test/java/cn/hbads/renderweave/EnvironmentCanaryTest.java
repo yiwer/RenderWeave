@@ -38,13 +38,13 @@ class EnvironmentCanaryTest {
                 .andExpect(jsonPath("$.service").value("renderweave-api"))
                 .andExpect(jsonPath("$.status").value("ready"))
                 .andExpect(jsonPath("$.database").value("ready"))
-                .andExpect(jsonPath("$.contractVersion").value("0.11.0"));
+                .andExpect(jsonPath("$.contractVersion").value("0.12.0"));
 
         Integer appliedMigrations = jdbcClient
                 .sql("select count(*) from flyway_schema_history where success = true")
                 .query(Integer.class)
                 .single();
-        assertThat(appliedMigrations).isEqualTo(19);
+        assertThat(appliedMigrations).isEqualTo(20);
 
         Integer capacityIndexes = jdbcClient.sql("""
                         select count(*)

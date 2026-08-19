@@ -21,6 +21,10 @@ public interface AssetApplication {
 
     DownloadOutcome downloadExact(InvocationRef invocation, AssetId assetId, long contentVersion);
 
+    ReplaceOutcome replaceContent(InvocationRef invocation, ReplaceContentCommand command);
+
+    RestoreOutcome restoreContent(InvocationRef invocation, RestoreContentCommand command);
+
     record OwnerScope(String value) {
         public OwnerScope {
             if (value == null || value.isBlank() || value.length() > 256) {
@@ -154,6 +158,70 @@ public interface AssetApplication {
 
         public List<String> tags() {
             return tags;
+        }
+    }
+
+    final class ReplaceContentCommand {
+        private final AssetId assetId;
+        private final long expectedAssetRevision;
+        private final byte[] rawContent;
+
+        public ReplaceContentCommand(
+                AssetId assetId,
+                long expectedAssetRevision,
+                byte[] rawContent
+        ) {
+            this.assetId = Objects.requireNonNull(assetId, "assetId");
+            if (expectedAssetRevision < 0) {
+                throw new IllegalArgumentException("expectedAssetRevision must not be negative");
+            }
+            this.expectedAssetRevision = expectedAssetRevision;
+            this.rawContent = Objects.requireNonNull(rawContent, "rawContent").clone();
+        }
+
+        public AssetId assetId() {
+            return assetId;
+        }
+
+        public long expectedAssetRevision() {
+            return expectedAssetRevision;
+        }
+
+        public byte[] rawContent() {
+            return rawContent.clone();
+        }
+    }
+
+    final class RestoreContentCommand {
+        private final AssetId assetId;
+        private final long expectedAssetRevision;
+        private final long sourceContentVersion;
+
+        public RestoreContentCommand(
+                AssetId assetId,
+                long expectedAssetRevision,
+                long sourceContentVersion
+        ) {
+            this.assetId = Objects.requireNonNull(assetId, "assetId");
+            if (expectedAssetRevision < 0 || sourceContentVersion < 0) {
+                throw new IllegalArgumentException(
+                        "expectedAssetRevision and sourceContentVersion must not be negative"
+                );
+            }
+            this.expectedAssetRevision = expectedAssetRevision;
+            this.sourceContentVersion = sourceContentVersion;
+        }
+
+        public AssetId assetId() {
+            return assetId;
+        }
+
+        public long expectedAssetRevision() {
+            return expectedAssetRevision;
+        }
+
+        public long sourceContentVersion() {
+            return sourceContentVersion;
         }
     }
 
@@ -526,6 +594,114 @@ public interface AssetApplication {
     }
 
     record DownloadPersistenceUnavailable() implements DownloadOutcome {
+    }
+
+    sealed interface ReplaceOutcome permits
+            ReplaceApplied,
+            ReplaceNoOp,
+            ReplaceContentRejected,
+            ReplaceNotFound,
+            ReplaceDeleted,
+            ReplaceForbidden,
+            ReplaceRevisionConflict,
+            ReplaceStorageCapacityExceeded,
+            ReplaceAuthorityUnavailable,
+            ReplacePersistenceUnavailable {
+    }
+
+    record ReplaceApplied(AssetDetail detail) implements ReplaceOutcome {
+        public ReplaceApplied {
+            Objects.requireNonNull(detail, "detail");
+        }
+    }
+
+    record ReplaceNoOp(AssetDetail detail) implements ReplaceOutcome {
+        public ReplaceNoOp {
+            Objects.requireNonNull(detail, "detail");
+        }
+    }
+
+    record ReplaceContentRejected(AssetAcceptanceAuthority.Rejected rejection)
+            implements ReplaceOutcome {
+        public ReplaceContentRejected {
+            Objects.requireNonNull(rejection, "rejection");
+        }
+    }
+
+    record ReplaceNotFound() implements ReplaceOutcome {
+    }
+
+    record ReplaceDeleted() implements ReplaceOutcome {
+    }
+
+    record ReplaceForbidden() implements ReplaceOutcome {
+    }
+
+    record ReplaceRevisionConflict(long currentAssetRevision) implements ReplaceOutcome {
+        public ReplaceRevisionConflict {
+            if (currentAssetRevision < 0) {
+                throw new IllegalArgumentException("currentAssetRevision must not be negative");
+            }
+        }
+    }
+
+    record ReplaceStorageCapacityExceeded() implements ReplaceOutcome {
+    }
+
+    record ReplaceAuthorityUnavailable() implements ReplaceOutcome {
+    }
+
+    record ReplacePersistenceUnavailable() implements ReplaceOutcome {
+    }
+
+    sealed interface RestoreOutcome permits
+            RestoreApplied,
+            RestoreNoOp,
+            RestoreNotFound,
+            RestoreDeleted,
+            RestoreForbidden,
+            RestoreRevisionConflict,
+            RestoreVersionNotFound,
+            RestoreAuthorityUnavailable,
+            RestorePersistenceUnavailable {
+    }
+
+    record RestoreApplied(AssetDetail detail) implements RestoreOutcome {
+        public RestoreApplied {
+            Objects.requireNonNull(detail, "detail");
+        }
+    }
+
+    record RestoreNoOp(AssetDetail detail) implements RestoreOutcome {
+        public RestoreNoOp {
+            Objects.requireNonNull(detail, "detail");
+        }
+    }
+
+    record RestoreNotFound() implements RestoreOutcome {
+    }
+
+    record RestoreDeleted() implements RestoreOutcome {
+    }
+
+    record RestoreForbidden() implements RestoreOutcome {
+    }
+
+    record RestoreRevisionConflict(long currentAssetRevision) implements RestoreOutcome {
+        public RestoreRevisionConflict {
+            if (currentAssetRevision < 0) {
+                throw new IllegalArgumentException("currentAssetRevision must not be negative");
+            }
+        }
+    }
+
+    record RestoreVersionNotFound() implements RestoreOutcome {
+    }
+
+    record RestoreAuthorityUnavailable() implements RestoreOutcome {
+    }
+
+    record RestorePersistenceUnavailable() implements RestoreOutcome {
     }
 
     private static String requireNonBlank(String value, int maximum, String name) {

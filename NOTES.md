@@ -1204,3 +1204,27 @@
   web-node24、offline-eval、P0 providerAttempts=0、prototype/draft/inference browser E2E 全部通过），
   DesignDSL kernel 33/33、asset kernel 41/41（Java primary/Python independent，A2，Profile 均
   `NOT_REGISTERED`）。Ticket 19 open，Asset/Editor/Renderer 未 READY；push 待用户另行授权（分支 ahead 5）。
+
+### Template v1 TV1-T12a Asset content replace 与旧内容恢复
+
+- `AssetApplication` 新增 `replaceContent/restoreContent` closed 方法：replace 按 Asset 永久 kind 复验
+  admission，与 current 字节相同时成功 no-op（不增加 revision/事件/STALE，且 no-op 判定先于
+  expectedAssetRevision 校验——陈旧令牌 + 相同内容仍 200，陈旧令牌 + 不同内容才 409）；restore 复用目标
+  历史版本的 Blob/descriptor/sourceFileName 追加新 contentVersion 并推进 current，绝不回拨改写旧版本，
+  restore 当前版本同样 no-op；容量水位只对新建 Blob 计数（恢复永不触发容量拒绝）；appendContent 单事务
+  零部分写入（select-for-update 校验 → 插 revision → 切 current → 递增 revision → 写审计）。
+- V020（forward-only）建 `asset_audit_event` 有界审计（assetId、前后 assetRevision、actorId、时间、
+  operation_type ∈ CREATE/METADATA_UPDATE/CONTENT_REPLACE/CONTENT_RESTORE/DELETE/RESTORE、content_version，
+  不记原始字节/标签/请求）：create/metadata update/replace/restore 各在自身事务内追加，同内容 no-op 不产生；
+  该表即可靠可重放 STALE 事实流，Template 依赖投影票消费其中内容变化事件驱动 STALE 重检。
+- HTTP 面（OpenAPI 0.12.0 + Web SDK 再生成，contractVersion 三处同步 0.12.0）：`PUT
+  /api/v1/assets/{id}/content?expectedAssetRevision=N`（raw octet-stream body）与 `POST
+  /api/v1/assets/{id}/restore?expectedAssetRevision=N&sourceContentVersion=M`；problem+json 全覆盖
+  （409 带 currentAssetRevision、404 `ASSET_CONTENT_VERSION_NOT_FOUND`、413/422 admission、507 容量）。
+- 验证：Asset module `AssetApplicationContractTest` 22 tests、`AssetSliceIntegrationTest`（PG+MinIO：
+  replace→no-op→restore 全链路 + 审计行逐字段）、`AssetApiTest`（HTTP 面 5 tests）、
+  `EnvironmentCanaryTest`（20 migrations）；完整 `full` 16/16 通过（evidence
+  `.sdlc/evidence/20260819-170357-full/`；首轮 prototype-e2e 有一个与 T12a 无关的 inference-review 瞬断
+  超时，原样重跑 19/19 通过，失败 evidence `20260819-163856-full` 保留）。Ticket 19 open，
+  Asset/Editor/Renderer 未 READY；T12b 以 Template 依赖投影票为 blocker，T13 随 T07/T08；push 待用户另行
+  授权（分支 ahead 6）。

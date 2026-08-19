@@ -1,6 +1,6 @@
 # RenderWeave Template v1 Implementation Plan
 
-- 状态：`in_progress`；TV1-T01/T02/T03/T04/T05/T06/T10/T10b/T11=`automated_verified`，TV1-T12a=`open`（task）
+- 状态：`in_progress`；TV1-T01/T02/T03/T04/T05/T06/T10/T10b/T11/T12a=`automated_verified`，TV1-T12b=`open`（task）
 - 日期：2026-08-19
 - Approved delta：[`specs/changes/20260817-template-v1-implementation-authority.md`](../specs/changes/20260817-template-v1-implementation-authority.md)
 - Frozen checkpoint：`0b485f4a13de9d754a81d07f464730776e13c14b`
@@ -100,16 +100,16 @@ flowchart LR
 | 10 | task | `resolved` / `automated_verified` | 05 | Asset acceptance kernel；38 vectors Java/Python 38/38（A2）；`asset` gate 入 full |
 | 10b | task | `resolved` / `automated_verified` | 10 | canonical sRGB ICC 字节等值接受原子；41 vectors Java/Python 41/41 |
 | 11 | task | `resolved` / `automated_verified` | 05, 10, 10b | Asset create/current/catalog PostgreSQL+S3 纵切；V019 + OpenAPI 0.11.0/Web SDK + MinIO + `full` 15/15 |
-| 12a | task | `open` | 05, 11 | content replace/旧内容恢复 + 审计与 STALE 事实 |
+| 12a | task | `resolved` / `automated_verified` | 05, 11 | content replace/旧内容恢复；V020 审计事件 + OpenAPI 0.12.0 + `full` 16/16 |
 | 12b | task | `open` | 05, 11, Template 依赖投影票 | delete/restore + AssetReferencePort/确认 token 编排 |
 | 13 | task | `open` | 05, 07, 08, 11 | AssetResolver/Renderer-only lease 纵切 |
 
 每次只 claim 一个 unblocked ticket；一票 resolved 后才由其 `Blocked by` 关系产生下一 frontier。未知实现切片留在
 map 的 `Not yet specified`，不为排满计划提前发明接口、migration 或 Profile identity。
 
-TV1-T10/T10b/T11 已完成；TV1-T12a（content replace/旧内容恢复）是唯一 unblocked frontier（task）。
-TV1-T12b 另以 Template 依赖投影票（未建，随 DesignDSL full-Profile 拆分登记）为 blocker；TV1-T13 被
-TV1-T07/T08/T11 阻塞。single-writer 不顺带 claim 或预建 delete/restore/Resolver。
+TV1-T10/T10b/T11/T12a 已完成；TV1-T12b（delete/restore + 确认 token）仍以 Template 依赖投影票（未建，随
+DesignDSL full-Profile 拆分登记）为 blocker，其自身尚未 unblocked；TV1-T13 被 TV1-T07/T08/T11 阻塞。
+single-writer 不顺带 claim 或预建 delete/restore/Resolver。
 
 ## 5. TV1-T01 执行卡
 
@@ -265,3 +265,23 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
 - 保证等级：自动 gate A1；kernel/registry exact replay 在原边界为 A2；无 A3/J1。
 - 完成信号：Ticket 11 resolved/`automated_verified`、T12a 成为唯一 unblocked frontier、形成一个 verified
   `agent-commit` 且 worktree clean；push 待用户另行授权。
+
+## 16. TV1-T12a 执行卡
+
+- 决策：物化 ADR-0043 §7 的 content replace/旧内容恢复切片；`appendContent` 事务内零部分写入并逐事务追加
+  有界审计事件（`asset_audit_event` 即可靠可重放 STALE 事实流，Template 依赖投影票消费）；相同内容
+  no-op 不增加 revision/事件/STALE，且 no-op 判定先于 revision 校验。
+- 允许影响：renderweave-asset api/internal/spi、renderweave-app Adapter/Controller/Config、V020 migration、
+  OpenAPI/Web SDK（0.12.0）、contract/public-surface/architecture/API/persistence 测试、
+  tracker/plan/log/NOTES/evidence。
+- 禁止影响：delete/restore、确认 token、AssetReferencePort、AssetResolver/lease、Asset UI、
+  placeholder 表/接口/route、acceptance Profile available 注册、Template/Evaluator/Renderer surface、
+  付费 provider/真实数据。
+- 局部验证：Asset module contract（replace/restore closed outcomes、no-op、audit 事件）、app HTTP API
+  （PUT content/POST restore、409/404/422/507、无效请求零写入）、persistence（事务内追加/切换/审计、
+  容量只计新建 Blob、恢复复用不计数）；Testcontainers PostgreSQL+MinIO。
+- 受影响验证：`asset`、`server`、`web` 与完整 `full` 16/16；draft/inference browser E2E 旅程与进程清理
+  均通过。
+- 保证等级：自动 gate A1；kernel/registry exact replay 在原边界为 A2；无 A3/J1。
+- 完成信号：Ticket 12a resolved/`automated_verified`、形成一个 verified `agent-commit` 且 worktree clean；
+  T12b 仍以 Template 依赖投影票为 blocker；push 待用户另行授权。
