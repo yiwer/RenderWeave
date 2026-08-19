@@ -46,6 +46,11 @@ Label: wayfinder:map
   revision/current、trusted read、closed disclosure/confirmation、zero-partial-write 与 forward-only invariants。
   本设计票没有创建 Java Interface、migration/table、OpenAPI/route 或产品执行；T06 才能物化真实
   create/current-read/save surface。
+- [冻结 Asset admission 与 resolution 首个增量](issues/05-freeze-asset-admission-resolution.md) — ADR-0043
+  冻结三个 Asset Interface（AssetApplication/AssetResolver/AssetAcceptanceAuthority）、acceptance kernel 先行
+  与 Pillow/fontTools 独立 replay、S3 协议 Blob seam（生产 OSS、本地与测试 MinIO、AWS SDK v2）、app 侧事务
+  容量计数器、Asset-owned Host facet、`AssetFetchEndpoint` Port 与 T10–T13 切片；无 Java/migration/route
+  物化。
 - [实现 Template create/read/save PostgreSQL 纵切](issues/06-implement-template-crud-slice.md) — 首个真实
   Template 纵切：`TemplateApplication.create/getCurrent/save` closed outcomes、ADR-0041 exact `TemplateModule`
   assembly seam、V018 aggregate/revision、ownerScope 只取 Host authority、expectedRevision 409；
@@ -55,10 +60,14 @@ Label: wayfinder:map
 ## Not yet specified
 
 - minimal canonical kernel 已完成；依据其真实接口和差异拆分完整 DesignDSL Profile 的 Node、Definition、Binding、Repeat、Conditional、TemplateUse 与 Property Identity 实施票。在全部 exact 语义原子通过前不登记 Profile available，且不得把本 kernel 的 fail-closed non-empty array 当作 set ordering 已实现。
-- Asset persistence、replace/delete/restore、依赖影响确认、Asset UI 与 Renderer-only lease 的实施顺序，要等 Asset deep interface 和 Template persistence pattern 后再切票。
+- Asset persistence、replace/delete/restore、依赖影响确认、Asset UI 与 Renderer-only lease 的实施顺序已由
+  Ticket 05 冻结为 T10 → T11 → T12a → T12b → T13；Template 依赖投影（从 DesignDSL 提取 authored AssetRef
+  atom 的 current-only 投影、`AssetReferenceAuthority` 物化与 STALE 消费）随 DesignDSL full-Profile 拆分时
+  登记，T12b 以其为 blocker。
 - Expression/value binding、closure、capability、nested Template、layout lowering 与正式 RenderDocument 的实现切片，要等 Evaluator seam 给出稳定 ownership 和错误面后再登记。
 - Rust layout、font shaping、resource decode、raster、PNG/JPEG encoding 与 exact pixel replay 的切片，要等 process protocol 和 build/certification contract 冻结后再登记。
-- Product Editor 的 save/recovery/conflict/preview/browser automation 与 accessibility 实施票，要等状态架构 prototype 结论后再登记。
+- Product Editor 的 save/recovery/conflict/preview/browser automation 与 accessibility 实施票，要等状态架构
+  prototype 结论后再登记；Asset picker/catalog UI 随 Editor 实施票同批。
 - 正式 Case/Oracle、execution-class product target、Profile 发行、Editor J1、Renderer 双物理 Linux CPU-family 认证与最终生命周期升级，必须以届时真实产品 artifact 和 executor 为输入另行切票；Ticket 19 保持 open。
 
 ## Out of scope

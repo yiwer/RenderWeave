@@ -1142,3 +1142,17 @@
 - 完整 `full` 15/15 通过（evidence `.sdlc/evidence/20260819-111831-full/`；draft/inference browser E2E 旅程与
   清理均通过，kernel 33/33、registry 22,838/22,746、IMAGE_ONLY P0 providerAttempts=0）。Ticket 19 open，
   Template/Editor/Renderer 未 READY；push 经用户明确授权，在收口提交后执行。
+
+### Template v1 TV1-T05 Asset admission/resolution deep interface
+
+- ADR-0043：renderweave-asset 收成三个 provider-owned Interface（`AssetApplication`/`AssetResolver`/
+  `AssetAcceptanceAuthority`）+ `AssetPersistence`/`AssetBlobPersistence` SPI、Asset-owned
+  `AssetOwnerScopeAuthority` facet 与 `AssetFetchEndpoint` Port；HITL 两轮对答（Q1–Q10）逐项确认。
+- Blob 存储走 S3 协议：生产 OSS、本地 compose 与 E2E MinIO、测试 Testcontainers MinIO 同一 Adapter（AWS
+  SDK v2）；容量水位 = app 侧 PostgreSQL 事务字节计数；Engine fetch 只对 app origin，绝不直发 S3 URL。
+- 首个增量 = `AssetAcceptanceAuthority` kernel（T10，Pillow/fontTools 独立 replay），随后 T11 持久化纵切、
+  T12a replace/恢复、T12b delete/restore（等 Template 依赖投影票）、T13 Resolver/lease（随 T07/T08）；
+  acceptance/1.0 available 以 T11 真实 create 纵切为界。T10–T13 已登记为 tracker 票。
+- `template` `20260819-122240-template`（kernel 33/33、authorityDiff=0、registry 22,838/22,746）与 fast
+  `20260819-122240-fast` 通过；只有 ADR/tracker/plan/log 变化，无 Java/Web/Rust、OpenAPI、migration/route、
+  gate 组成或依赖物化。Ticket 19 open，Asset/Editor/Renderer 未 READY；push 待用户另行授权。

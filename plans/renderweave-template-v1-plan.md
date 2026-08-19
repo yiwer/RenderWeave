@@ -1,6 +1,6 @@
 # RenderWeave Template v1 Implementation Plan
 
-- 状态：`in_progress`；TV1-T01/T02/T03/T04/T06=`automated_verified`，TV1-T05 open
+- 状态：`in_progress`；TV1-T01/T02/T03/T04/T05/T06=`automated_verified`，TV1-T10 为下一 unblocked frontier
 - 日期：2026-08-19
 - Approved delta：[`specs/changes/20260817-template-v1-implementation-authority.md`](../specs/changes/20260817-template-v1-implementation-authority.md)
 - Frozen checkpoint：`0b485f4a13de9d754a81d07f464730776e13c14b`
@@ -49,6 +49,7 @@ binding: generic + project-local tools/run-gate.ps1 + Wayfinder markdown tracker
 | TV1-P0 Authority | 01 | 隔离分支、additive spec、LF authority、离线 static gate 与恢复边界 | G-TV1-AUTHORITY：`template` + `fast` + Git/product-surface audit；A1，registry 范围 A2 |
 | TV1-P1 Kernel | 02 → 03 | deep interface/依赖 ADR 后，最小 DesignDSL canonical kernel 和独立 vectors | G-TV1-KERNEL：focused TDD + Java primary/Python replay + `template`；不得登记 partial Profile available |
 | TV1-P2 Aggregates | 04、05、06 | Template/Asset interface 决策；随后仅实现 Template create/read/save PostgreSQL 纵切 | G-TV1-TEMPLATE：server/Testcontainers/OpenAPI + contract/full；无占位 Asset 产品 |
+| TV1-P2b Asset slices | 10 → 11 → 12a → 12b、13 | Asset acceptance kernel、S3/PostgreSQL 持久化纵切、replace/delete/restore 与 Resolver/lease 纵切 | 逐票 gate：T10 kernel replay；T11 Testcontainers PostgreSQL+MinIO/OpenAPI；12b 依赖 Template 投影票；13 随 P3；gate 组成由各票冻结，不预建 |
 | TV1-P3 Rendering seam | 07 → 08 | Evaluator/RenderDocument ownership 与独立 Rust process/certification protocol | G-TV1-RENDER-SEAM：closed protocol vectors、failure boundaries、supply-chain plan；不等于 Renderer READY |
 | TV1-P4 Editor validation | 09 | 基于真实 Template/Rendering seam 的 throwaway Product Editor 状态原型结论 | G-TV1-EDITOR-ARCH：自动观察 A1/A2 + 人工 J1；不开放产品 route |
 | TV1-P5+ Product completion | 待上述真实 seam 后另切票 | 完整 DSL、Asset、Evaluator、Renderer、Product Editor 与 formal registry records | 逐纵切 gate + product target/executor + J1/A3/物理 Linux 认证；当前未调度 |
@@ -73,6 +74,14 @@ flowchart LR
   T06 --> T09[09 Editor architecture]
   T07 --> T09
   T08 --> T09
+  T05 --> T10[10 Asset kernel]
+  T05 --> T11[11 Asset persistence]
+  T10 --> T11
+  T11 --> T12a[12a replace/restore]
+  T11 --> T12b[12b delete/restore]
+  T11 --> T13[13 Resolver/lease]
+  T07 --> T13
+  T08 --> T13
 ```
 
 | Ticket | 类型 | 状态 | Blocked by | 本票退出事实 |
@@ -81,17 +90,23 @@ flowchart LR
 | 02 | grilling | `resolved` / `automated_verified` | 01 | ADR-0041、零 split package 与非空转 architecture test |
 | 03 | task | `resolved` / `automated_verified` | 01, 02 | 最小 canonical kernel；TDD + independent replay |
 | 04 | grilling | `resolved` / `automated_verified` | 02, 03 | ADR-0042 与 Template aggregate/persistence contract；无 migration |
-| 05 | grilling | `open` | 01, 02 | Asset admission/resolution deep interface |
+| 05 | grilling | `resolved` / `automated_verified` | 01, 02 | ADR-0043 Asset admission/resolution deep interface 与 S3 Blob seam；无 Java/migration/route |
 | 06 | task | `resolved` / `automated_verified` | 03, 04 | Template create/read/save PostgreSQL 纵切；V018 + OpenAPI 0.10.0 + Web SDK + `full` 15/15 |
 | 07 | grilling | `open` | 03, 04, 05 | Evaluator/RenderDocument seam |
 | 08 | grilling | `open` | 02, 07 | Rust process protocol与外部认证计划 |
 | 09 | prototype | `open` | 06, 07, 08 | Editor 状态/恢复/预览架构验证；不进产品 route |
+| 10 | task | `open` | 05 | Asset acceptance kernel；Java primary + Pillow/fontTools independent replay |
+| 11 | task | `open` | 05, 10 | Asset create/current/catalog PostgreSQL+S3 纵切；V019 + OpenAPI/Web SDK + MinIO |
+| 12a | task | `open` | 05, 11 | content replace/旧内容恢复 + 审计与 STALE 事实 |
+| 12b | task | `open` | 05, 11, Template 依赖投影票 | delete/restore + AssetReferencePort/确认 token 编排 |
+| 13 | task | `open` | 05, 07, 08, 11 | AssetResolver/Renderer-only lease 纵切 |
 
 每次只 claim 一个 unblocked ticket；一票 resolved 后才由其 `Blocked by` 关系产生下一 frontier。未知实现切片留在
 map 的 `Not yet specified`，不为排满计划提前发明接口、migration 或 Profile identity。
 
-TV1-T06 已完成；下一个 unblocked frontier 是 TV1-T05（Asset interface）。TV1-T07 仍被 TV1-T05 阻塞，
-single-writer 下一票不顺带 claim 或预建 Asset Interface/product surface。
+TV1-T05 已完成；TV1-T10（Asset acceptance kernel）成为唯一 unblocked frontier。TV1-T11 被 TV1-T10 阻塞；
+TV1-T12b 另以 Template 依赖投影票（未建，随 DesignDSL full-Profile 拆分登记）为 blocker；TV1-T13 被
+TV1-T07/T08/T11 阻塞。single-writer 下一票只 claim TV1-T10。
 
 ## 5. TV1-T01 执行卡
 
@@ -170,7 +185,21 @@ single-writer 下一票不顺带 claim 或预建 Asset Interface/product surface
 - 完成信号：Ticket 06 resolved/`automated_verified`、full gate 绿、形成 verified `agent-commit` 且 worktree
   clean；push 已获用户明确授权，在收口提交后执行（不建 tag/PR）。
 
-## 10. Gate 与证据策略
+## 10. TV1-T05 执行卡
+
+- 决策：ADR-0043；renderweave-asset 三个 provider-owned Interface + `AssetPersistence`/`AssetBlobPersistence`
+  SPI + Asset-owned Host facet；acceptance kernel 先行（独立 Python replay）；S3 协议 Blob seam（生产 OSS、
+  本地与测试 MinIO、AWS SDK v2）；事务容量计数器；`AssetFetchEndpoint` Port；T10–T13 切片顺序。
+- 允许影响：ADR、tracker/plan/log/NOTES、新票 T10–T13 登记、CONTEXT 术语核对。
+- 禁止影响：Java/Web/Rust 产品源码、OpenAPI、migration、route/page、gate 组成、S3/MinIO/compose、AWS SDK
+  依赖、Profile available 注册。
+- 局部验证：ADR/tracker/plan/NOTES 交叉一致、`git diff --check`、product-surface inventory（零新增）。
+- 受影响验证：`template` composite 与 `fast`（docs-only，输入未变复用已有绿）。
+- 保证等级：文档/静态 gate A1；本票没有产品 execution-class A2、A3 或 J1。
+- 完成信号：Ticket 05 resolved/`automated_verified`、T10 成为唯一 unblocked frontier、形成一个 verified
+  `agent-commit` 且 worktree clean；push 待用户另行授权。
+
+## 11. Gate 与证据策略
 
 `template` gate 顺序固定为 repository diff → DesignDSL kernel Java primary/Python independent exact-vector replay
 → 临时副本 Editor generator/independent/A2 → registry target refresh/Node primary/Python independent/A2 → 全树
@@ -181,7 +210,7 @@ byte comparison → frozen counts/readiness assertions。任何命令失败或�
 process protocol 或 `full` 组成变化属于共享面，必须提前扩大回归。自动 green 只把对应任务推进到
 `automated_verified`；体验/业务选择是 J0/J1，独立机器 replay 是 A2，物理 Linux/CI policy 才可能形成外部门。
 
-## 11. Version、恢复与熔断
+## 12. Version、恢复与熔断
 
 - 每个已验证 Template ticket 在 `feature/template-v1` 独立提交；不 rewrite/cherry-pick 到 dirty main，不 push/tag/PR。
 - Ticket 01/02 无数据或外部副作用，恢复为回退对应单一提交或删除新 worktree；不得用 `reset --hard` 清理用户 worktree。
@@ -191,7 +220,7 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
 - 触发熔断：authority replay diff、产品语义冲突、依赖循环、test-only bypass、partial Profile availability、
   migration/route placeholder、越界外部副作用或 readiness 夸大。停止受影响票，保留证据；其他安全 frontier 继续。
 
-## 12. 当前边界
+## 13. 当前边界
 
 - Ticket 19 保持 open；Capacity formal records=0。
 - Formal Editor Case/Oracle=0/0；47 个 EditorContentSource slots 仅 1 exact、46 UNBOUND。
