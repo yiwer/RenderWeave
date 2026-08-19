@@ -99,6 +99,15 @@ Label: wayfinder:map
   四级认证阶梯（仓库内 replay → 双物理 Linux CPU-family → J1/A3 → Ticket 19 数值）、Windows/WSL/
   scripted 永不升级 READY、帧向量随首个实现票落地。无 Rust/Java 产品代码，Profile 未注册，Renderer
   不 READY，Ticket 19 open。
+- [验证 Product Editor 状态、恢复与权威预览架构](issues/09-validate-product-editor-architecture.md) —
+  throwaway 逻辑原型（`/prototype/editor-state-model`，不进产品 route）把冻结编辑器规则编码为确定性
+  fixture 状态机：10 个引导走查场景 37/37 断言 + 自由操作冒烟 + 键盘焦点检查全部通过（Playwright A1，
+  evidence `.sdlc/evidence/t09-prototype-observation/`），人工 J1 验收。结论：复用 T17 Canvas Focus
+  IA/视觉决定（画布居中 + 五入口左导航 + 右检视器 + dock + 顶栏身份/readiness/revision + 非权威画布 +
+  独立权威预览）；丢弃无 baseline/无 generation guard/无 reconciliation/无模式边界/场景切换器当导航的
+  内存状态模型；验证通过 canonical baseline + mutation 单飞 + conflict/reconciliation + current-only
+  preview（含 save-and-preview 顺序非原子）+ Local recovery + dirty guard + 三模式架构；E1–E9 占位-free
+  实施纵切登记为后续 Editor 实施票的前置分解。无 Editor 产品代码，Editor 未 READY，Ticket 19 open。
 
 ## Not yet specified
 
@@ -117,7 +126,11 @@ Label: wayfinder:map
   Rust/process task 票将同时物化 daemon、帧编解码、certified manifest 与仓库内 replay harness；
   `render` gate 随实现票纳入 `full`，物理 Linux 双 CPU-family 认证与 J1/A3 属届时另行授权的执行级门控。
 - Product Editor 的 save/recovery/conflict/preview/browser automation 与 accessibility 实施票，要等状态架构
-  prototype 结论后再登记；Asset picker/catalog UI 随 Editor 实施票同批。
+  prototype 结论后再登记——T09 已给出结论与 E1–E9 占位-free 纵切分解（open/baseline、本地编辑+undo+
+  canonical dirty+preview guard、save+conflict overwrite、依赖二次确认、reconciliation、save-and-preview+
+  失败撤下、Local recovery、import+三模式+dirty guard、a11y+问题定位投影）；各切片在自身前置满足后按
+  single-writer 登记，Editor 产品 route 在 E1–E9 真实存在前不开放。Asset picker/catalog UI 随 Editor
+  实施票同批。
 - 正式 Case/Oracle、execution-class product target、Profile 发行、Editor J1、Renderer 双物理 Linux CPU-family 认证与最终生命周期升级，必须以届时真实产品 artifact 和 executor 为输入另行切票；Ticket 19 保持 open。
 
 ## Out of scope

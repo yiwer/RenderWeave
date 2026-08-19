@@ -1275,3 +1275,27 @@
 - 本票零产品代码；`template` 与 `fast` 通过（docs-only）。Rendering 侧再无 unblocked grilling；T13 以
   首个 Rendering 实现票与 T08 为前置，T09 继续被 07/08 阻塞；Profile 未注册，Renderer 不 READY，
   Ticket 19 open；push 待用户另行授权（分支 ahead 8）。
+
+### Template v1 TV1-T09 Product Editor 状态/恢复/预览架构原型
+
+- throwaway 逻辑原型 `/prototype/editor-state-model`（`web/src/prototype/editor-state-model/`，明确
+  非产品代码、无持久化、无真实 API）：`model.ts` 确定性 fixture 状态机 + 10 个引导走查场景（每步可执行
+  断言）+ 自由操作面板（每次动作全量状态 + 事件日志）+ 结论页。覆盖冻结编辑器规则：revision-aware
+  canonical baseline、Structured/Raw Repair/Compatibility 三模式、dirty replacement guard、Local
+  recovery（base==current 直恢复否则先显示基线变化再确认）、conflict overwrite（确认前/后再次漂移必须
+  重新确认，无静默 last-write-wins）、unknown→Save reconciliation 全分支（adopted/retryable/conflict/
+  deleted/fail closed）、current-only 权威预览（basis 含 revision/hash/样例/format/DPI/quality、单槽
+  单活跃、save-and-preview 顺序非原子、generation guard 丢弃迟到结果）、失败撤下旧权威图 + 问题摘要聚焦、
+  hard error 零写、依赖 ERROR 二次确认绑定完整问题集。
+- 验证：`tools/editor_state_model_audit.py`（Playwright 独立 python 工具链）驱动 10 场景 37/37 断言 +
+  自由操作冒烟 + 键盘 Tab 焦点检查，console/page 零错误；证据与截图
+  `.sdlc/evidence/t09-prototype-observation/`（A1）；web typecheck/lint/unit tests（76/76）与 `fast`/
+  `web` gates 绿；**人工 J1 通过**。原型验证中修复的模型缺陷如实记录（场景间 fixture 重置、在途预览
+  失去展示资格而非取消、canonical hash 对齐、模式判定顺序）。
+- 结论（Verdict）：复用 T17 Canvas Focus IA/视觉决定（画布居中 + 五入口左导航 + 右检视器 + dock +
+  顶栏身份/readiness/revision + 非权威画布 + 独立权威预览 + 问题面板聚焦）；丢弃无 baseline/无
+  generation guard/无 reconciliation/无模式边界/场景切换器当导航/本地 UUID 职责不分的内存状态模型；
+  E1–E9 占位-free 实施纵切（open/baseline、本地编辑+undo+guard、save+conflict、二次确认、
+  reconciliation、save-and-preview+失败撤下、recovery、import+三模式、a11y）登记为后续 Editor 实施票
+  的前置分解，Editor 产品 route 不开放。Ticket 19 open，Editor 未 READY；push 待用户另行授权（分支
+  ahead 9）。

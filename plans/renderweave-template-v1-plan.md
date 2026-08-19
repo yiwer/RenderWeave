@@ -1,7 +1,7 @@
 # RenderWeave Template v1 Implementation Plan
 
-- 状态：`in_progress`；TV1-T01/T02/T03/T04/T05/T06/T07/T08/T10/T10b/T11/T12a=`automated_verified`，
-  TV1-T09/T12b/T13=`open`
+- 状态：`in_progress`；TV1-T01/T02/T03/T04/T05/T06/T07/T08/T09/T10/T10b/T11/T12a=`automated_verified`
+  （T09 另含人工 J1），TV1-T12b/T13=`open`
 - 日期：2026-08-19
 - Approved delta：[`specs/changes/20260817-template-v1-implementation-authority.md`](../specs/changes/20260817-template-v1-implementation-authority.md)
 - Frozen checkpoint：`0b485f4a13de9d754a81d07f464730776e13c14b`
@@ -97,7 +97,7 @@ flowchart LR
 | 06 | task | `resolved` / `automated_verified` | 03, 04 | Template create/read/save PostgreSQL 纵切；V018 + OpenAPI 0.10.0 + Web SDK + `full` 15/15 |
 | 07 | grilling | `resolved` / `automated_verified` | 03, 04, 05 | ADR-0044：closure authority/Evaluator/RenderOutput/CapabilityStateStore/RenderEngine port/语料纪律与 T08 边界 |
 | 08 | grilling | `resolved` / `automated_verified` | 02, 07 | ADR-0045：常驻 daemon/UDS 帧协议/registry/fetch/cancel/构建与四级认证计划 |
-| 09 | prototype | `open` | 06, 07, 08 | Editor 状态/恢复/预览架构验证；不进产品 route |
+| 09 | prototype | `resolved` / `automated_verified`（J1） | 06, 07, 08 | throwaway 状态机原型 10 场景 37/37 断言 + 人工 J1；Verdict 与 E1–E9 纵切分解 |
 | 10 | task | `resolved` / `automated_verified` | 05 | Asset acceptance kernel；38 vectors Java/Python 38/38（A2）；`asset` gate 入 full |
 | 10b | task | `resolved` / `automated_verified` | 10 | canonical sRGB ICC 字节等值接受原子；41 vectors Java/Python 41/41 |
 | 11 | task | `resolved` / `automated_verified` | 05, 10, 10b | Asset create/current/catalog PostgreSQL+S3 纵切；V019 + OpenAPI 0.11.0/Web SDK + MinIO + `full` 15/15 |
@@ -108,11 +108,11 @@ flowchart LR
 每次只 claim 一个 unblocked ticket；一票 resolved 后才由其 `Blocked by` 关系产生下一 frontier。未知实现切片留在
 map 的 `Not yet specified`，不为排满计划提前发明接口、migration 或 Profile identity。
 
-TV1-T07/T08 已 resolve（ADR-0044/0045），Rendering 侧再无 unblocked grilling；TV1-T12b 仍以 Template
+TV1-T07/T08/T09 已 resolve（ADR-0044/0045 与 Editor 状态原型，T09 含人工 J1）；TV1-T12b 仍以 Template
 依赖投影票（未建，随 DesignDSL full-Profile 拆分登记）为 blocker；TV1-T13 以首个 Rendering 实现票与
-T08 为前置；TV1-T09（Editor prototype）继续被 07/08 阻塞。single-writer 不顺带 claim 或预建
-delete/restore/Resolver/Rust wire；首个 Rendering/Rust 实现 task 票与 DesignDSL full-Profile 拆分票在
-各自前置满足后另行登记。
+T08 为前置。single-writer 不顺带 claim 或预建 delete/restore/Resolver/Rust wire/Editor 产品 route；
+首个 Rendering/Rust 实现 task 票、DesignDSL full-Profile 拆分票与 Editor E1–E9 切片在各自前置满足后
+另行登记。
 
 ## 5. TV1-T01 执行卡
 
@@ -330,3 +330,21 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
   本票没有 Rendering/Rust 产品执行、A3 或 J1。
 - 完成信号：Ticket 08 resolved/`automated_verified`、Rendering 侧无 unblocked grilling、形成一个
   verified `agent-commit` 且 worktree clean；不 push/tag/PR。
+
+## 19. TV1-T09 执行卡
+
+- 决策：throwaway 逻辑原型（`web/src/prototype/editor-state-model/`，路由 `/prototype/editor-state-model`，
+  明确非产品代码）把冻结编辑器规则编码为确定性 fixture 状态机；验证 revision-aware baseline、
+  三模式、dirty guard、Local recovery、conflict/unknown reconciliation、current-only 权威预览与
+  generation guard、失败撤下与可访问性流；结论复用 T17 Canvas Focus IA/视觉决定、丢弃无契约内存状态
+  模型、给出 E1–E9 占位-free 实施纵切分解。
+- 允许影响：`web/src/prototype/editor-state-model/`、`web/src/app/App.tsx`（仅 throwaway route）、
+  `tools/editor_state_model_audit.py`、tracker/plan/log/NOTES/evidence。
+- 禁止影响：产品 route/page/组件、Template/Asset/Rendering API、migration、OpenAPI、gate 组成、
+  Editor 产品代码或 READY 声明。
+- 局部验证：web typecheck/lint/unit tests；Playwright 驱动 10 场景 37/37 断言 + 自由操作冒烟 + 键盘
+  焦点检查（A1，evidence `.sdlc/evidence/t09-prototype-observation/`）；人工 J1。
+- 受影响验证：`fast` 与 `web`（web-node24：npm ci + api:generate + typecheck + lint + test + build）。
+- 保证等级：浏览器自动观察 A1；叠加人工 J1；无独立 A2 重放、无 A3；不开放产品 route。
+- 完成信号：Ticket 09 resolved/`automated_verified`（J1）、E1–E9 作为后续 Editor 实施票的前置分解登记、
+  形成一个 verified `agent-commit` 且 worktree clean；不 push/tag/PR。
