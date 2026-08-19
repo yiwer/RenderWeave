@@ -34,7 +34,7 @@ class CanonicalKernelVectorTest {
         var manifestBytes = readManifest();
         var manifest = json.readTree(manifestBytes);
         assertEquals(
-                "renderweave-template-canonical-kernel-v1/7",
+                "renderweave-template-canonical-kernel-v1/8",
                 manifest.required("vectorVersion").asString()
         );
         assertEquals(
@@ -45,7 +45,7 @@ class CanonicalKernelVectorTest {
                 "NOT_REGISTERED",
                 manifest.required("authorityContext").required("profileAvailability").asString()
         );
-        assertEquals(197, manifest.required("cases").size());
+        assertEquals(211, manifest.required("cases").size());
 
         var results = new ArrayList<Map<String, Object>>();
         for (var vector : manifest.required("cases")) {

@@ -1512,3 +1512,31 @@
   投影票；compositionViewport/contain lowering 属 Rendering；OccurrencePath 属 Evaluator。T19
   resolve 为 automated_verified；T20 解锁，T18/T20 成为 unblocked frontier。Ticket 19 open，
   Editor/Renderer 未 READY；push 待用户另行授权（分支 ahead 15）。
+
+### Template v1 TV1-T18 Conditional 原子
+
+- `NodeContractCatalog`：NodeKind/KIND_BY_NAME 增 CONDITIONAL（`FUTURE_KINDS` 清空——DesignDSL v1
+  全部 kind 已 admission，未来 wire kind 必须带新 dslVersion）、CONDITIONAL_MEMBERS
+  （condition/absentPolicy）、CONDITIONAL_ABSENT_POLICY_TOKENS（FALSE|ERROR）、
+  allowsChildren(true)、sizeModes FIXED/HUG/FILL、expectedVariant(CONDITIONAL)=ABSOLUTE。
+- `CanonicalDesignDslAuthority.validateConditionalMembers`：condition 结构 ValueSource（literal →
+  valueType 必须 "boolean"；definition → output 必须 "boolean"（dangling 同拒）；context 形状校验、
+  类型证明延后依赖解析；loopIndex（decimal）/capability（date/time/decimal）静态非 boolean →
+  /condition/kind 拒绝）+ absentPolicy 必填 FALSE|ERROR；children 必填非空且统一 ABSOLUTE（child
+  用 PACK → variant mismatch hard error）；无 appearance/box 成员。
+- `BindingPolicyCatalog` 只追加 conditional 的 common/placement entries（ticket 09 §8），
+  `BindingPolicyCatalogTest` 同步钉住（condition/absentPolicy 永不授权）。
+- 冻结向量：manifest `renderweave-template-canonical-kernel-v1/8`，211 cases（197 原样 + 15 新：
+  4 admit 冻结 exact canonical bytes/hash——literal/definition/context condition、
+  conditional-in-stack（STACK placement）；11 reject 冻结精确 code/stage/pointer——缺 condition、
+  缺/非法 absentPolicy、literal/definition 非 boolean、dangling definition、loopIndex/capability
+  condition、空 children、child PACK、appearance 越位）；`reject-future-kind-conditional` 如实改写
+  为 `reject-conditional-missing-condition`（conditional 已 admission，FUTURE_KINDS 已空）。
+  Python independent（211/211，A2）镜像全部校验。
+- 验证：`template` gate 绿（Java=211/211 Python=211/211、vector sha256 b46cf335…、static
+  authorityDiff=0，evidence `.sdlc/evidence/20260819-202947-template/`）、`fast` 绿
+  （`.sdlc/evidence/20260819-203018-fast/`）。Profile 保持 NOT_REGISTERED；plan §12 kernel report
+  已更新为 211/211。诚实边界：false 剪枝物化、true-frame lowering、runtime ABSENT/ERROR 传播属
+  Evaluator；condition context 的 boolean 类型证明延后到 StaticSchema 依赖解析。T18 resolve 为
+  automated_verified；T20 为唯一 unblocked frontier（T12b 的 blocker）。Ticket 19 open，Editor/
+  Renderer 未 READY；push 待用户另行授权（分支 ahead 16）。

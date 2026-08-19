@@ -32,6 +32,9 @@ class BindingPolicyCatalogTest {
         assertTrue(BindingPolicyCatalog.allows("group", "placement.xMm"));
         assertTrue(BindingPolicyCatalog.allows("templateUse", "placement.xMm"));
         assertTrue(BindingPolicyCatalog.allows("templateUse", "transform.rotationDeg"));
+        assertTrue(BindingPolicyCatalog.allows("conditional", "placement.xMm"));
+        assertFalse(BindingPolicyCatalog.allows("conditional", "condition"));
+        assertFalse(BindingPolicyCatalog.allows("conditional", "absentPolicy"));
     }
 
     @Test
@@ -63,7 +66,7 @@ class BindingPolicyCatalogTest {
                 "group", "frame", "stack", "grid", "repeat",
                 "text", "image", "rect", "ellipse", "line",
                 "polygon", "polyline", "path", "qrCode", "barcode",
-                "templateUse")) {
+                "templateUse", "conditional")) {
             assertTrue(BindingPolicyCatalog.allows(kind, "render"), kind);
             assertTrue(BindingPolicyCatalog.allows(kind, "visible"), kind);
             assertTrue(BindingPolicyCatalog.allows(kind, "opacity"), kind);

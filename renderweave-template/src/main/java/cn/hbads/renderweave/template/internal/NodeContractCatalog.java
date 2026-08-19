@@ -30,7 +30,8 @@ final class NodeContractCatalog {
         PATH,
         QRCODE,
         BARCODE,
-        TEMPLATE_USE
+        TEMPLATE_USE,
+        CONDITIONAL
     }
 
     enum PlacementVariant {
@@ -64,15 +65,15 @@ final class NodeContractCatalog {
             Map.entry("path", NodeKind.PATH),
             Map.entry("qrCode", NodeKind.QRCODE),
             Map.entry("barcode", NodeKind.BARCODE),
-            Map.entry("templateUse", NodeKind.TEMPLATE_USE)
+            Map.entry("templateUse", NodeKind.TEMPLATE_USE),
+            Map.entry("conditional", NodeKind.CONDITIONAL)
     );
 
     /**
-     * Known-but-not-yet-admitted kinds (structural kinds). They fail closed with
-     * DESIGN_KERNEL_SCOPE_UNSUPPORTED until their atoms tickets land; anything else is an unknown
-     * kind value.
+     * Known-but-not-yet-admitted kinds. Empty for {@code renderweave-design/1.0}: every
+     * v1 kind is now admitted; future wire kinds must come with a new dslVersion.
      */
-    static final Set<String> FUTURE_KINDS = Set.of("conditional");
+    static final Set<String> FUTURE_KINDS = Set.of();
 
     static final Set<String> COMMON_NODE_MEMBERS = Set.of(
             "nodeId", "kind", "displayName", "bindings", "placement",
@@ -200,6 +201,11 @@ final class NodeContractCatalog {
     static final Set<String> SELECTOR_DOMAIN_MEMBERS = Set.of("kind", "loopId");
     static final Set<String> CONTEXT_ABSENT_POLICY_TOKENS = Set.of("ERROR", "SKIP");
     static final Set<String> USE_FILL_MEMBERS = Set.of("targetDefinitionId", "source");
+
+    // --- Conditional contract (ticket 11 §1, §5, §7) ----------------------------
+
+    static final Set<String> CONDITIONAL_MEMBERS = Set.of("condition", "absentPolicy");
+    static final Set<String> CONDITIONAL_ABSENT_POLICY_TOKENS = Set.of("FALSE", "ERROR");
     static final List<String> PADDING_MEMBER_ORDER = List.of(
             "topMm", "rightMm", "bottomMm", "leftMm"
     );
@@ -261,7 +267,7 @@ final class NodeContractCatalog {
         return switch (parentKind) {
             // Visual leaves and TemplateUse never host children; ABSOLUTE keeps the switch total.
             case CANVAS, FRAME, GROUP, TEXT, IMAGE, RECT, ELLIPSE, LINE, POLYGON, POLYLINE,
-                    PATH, QRCODE, BARCODE, TEMPLATE_USE -> PlacementVariant.ABSOLUTE;
+                    PATH, QRCODE, BARCODE, TEMPLATE_USE, CONDITIONAL -> PlacementVariant.ABSOLUTE;
             case STACK -> PlacementVariant.STACK;
             case GRID -> PlacementVariant.GRID;
             case REPEAT -> PlacementVariant.PACK;
@@ -274,7 +280,7 @@ final class NodeContractCatalog {
             case GROUP -> Set.of(SizeMode.HUG_CONTENT);
             case RECT, ELLIPSE, QRCODE, BARCODE -> Set.of(SizeMode.FIXED, SizeMode.FILL);
             case CANVAS, FRAME, STACK, GRID, REPEAT, TEXT, LINE, POLYGON, POLYLINE, PATH,
-                    TEMPLATE_USE -> Set.of(SizeMode.FIXED, SizeMode.HUG_CONTENT, SizeMode.FILL);
+                    TEMPLATE_USE, CONDITIONAL -> Set.of(SizeMode.FIXED, SizeMode.HUG_CONTENT, SizeMode.FILL);
             case IMAGE -> Set.of(SizeMode.FIXED, SizeMode.HUG_CONTENT, SizeMode.FILL);
         };
     }
@@ -288,7 +294,7 @@ final class NodeContractCatalog {
         return switch (kind) {
             case CANVAS, TEXT, IMAGE, RECT, ELLIPSE, LINE, POLYGON, POLYLINE, PATH,
                     QRCODE, BARCODE, TEMPLATE_USE -> false;
-            case GROUP, FRAME, STACK, GRID, REPEAT -> true;
+            case GROUP, FRAME, STACK, GRID, REPEAT, CONDITIONAL -> true;
         };
     }
 

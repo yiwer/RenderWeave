@@ -1,8 +1,8 @@
 # RenderWeave Template v1 Implementation Plan
 
-- 状态：`in_progress`；TV1-T01/T02/T03/T04/T05/T06/T07/T08/T09/T10/T10b/T11/T12a/T14/T14b/T15/T16/T17/T19=`automated_verified`
-  （T09 另含人工 J1），TV1-T12b/T13/T18/T20=`open`（T18/T20 为当前 unblocked frontier，
-  single-writer 下一轮只 claim 其一）
+- 状态：`in_progress`；TV1-T01/T02/T03/T04/T05/T06/T07/T08/T09/T10/T10b/T11/T12a/T14/T14b/T15/T16/T17/T18/T19=`automated_verified`
+  （T09 另含人工 J1），TV1-T12b/T13/T20=`open`（T20 为唯一 unblocked frontier——T12b 的
+  blocker，single-writer 下一轮只 claim T20）
 - 日期：2026-08-19
 - Approved delta：[`specs/changes/20260817-template-v1-implementation-authority.md`](../specs/changes/20260817-template-v1-implementation-authority.md)
 - Frozen checkpoint：`0b485f4a13de9d754a81d07f464730776e13c14b`
@@ -124,7 +124,7 @@ flowchart LR
 | 15 | task | `resolved` | 03, 14 | Definition/ValueSource 原子（custom/mapping/expression + lexical domains，manifest v3 94 vectors） |
 | 16 | task | `resolved` | 03, 14 | Binding 与 BindingPolicyCatalog 原子（manifest v6 176 vectors） |
 | 17 | task | `resolved` | 03, 14, 15 | Repeat 原子（items/PACK/packing/loopId，manifest v4 116 vectors） |
-| 18 | task | `open` | 03, 14, 15 | Conditional 原子（condition/absent policy/剪枝） |
+| 18 | task | `resolved` | 03, 14, 15 | Conditional 原子（condition/absent policy/剪枝，manifest v8 211 vectors） |
 | 19 | task | `resolved` | 03, 14, 15, 16 | TemplateUse 原子（ContextSelector/fills/closure 边，manifest v7 197 vectors） |
 | 20 | task | `open` | 04, 05, 14, 19 | Template 依赖投影（AssetRef/反向索引/STALE 消费）；T12b 的 blocker |
 
@@ -137,9 +137,9 @@ leaf kinds 与 BindingPolicyCatalog 基础登记已 resolve（manifest v5 152 ve
 Definition/ValueSource 原子已 resolve（manifest v3 94 vectors）；TV1-T17 Repeat 原子已 resolve（PACK
 placement + loopId namespace + RepeatPackingSpec，manifest v4 116 vectors）；TV1-T16 Binding 与
 BindingPolicyCatalog 消费已 resolve（manifest v6 176 vectors）；TV1-T19 TemplateUse 原子已 resolve
-（useId/templateRef/contextSelector/fills，manifest v7 197 vectors，Java/Python 197/197，Profile 仍
-NOT_REGISTERED）；DesignDSL full-Profile 拆分已登记（T18 → T20 依赖投影），TV1-T18/T20 是当前
-unblocked frontier，single-writer 下一轮只 claim 其一；TV1-T12b 以 T20 为 blocker；TV1-T13 以首个
+（manifest v7 197 vectors）；TV1-T18 Conditional 原子已 resolve（manifest v8 211 vectors——v1 全部
+kind 已 admission，Java/Python 211/211，Profile 仍 NOT_REGISTERED）；TV1-T20（Template 依赖投影，
+T12b 的 blocker）为唯一 unblocked frontier，single-writer 下一轮只 claim T20；TV1-T13 以首个
 Rendering 实现票与 T08 为前置。single-writer 不顺带 claim 或预建 delete/restore/Resolver/Rust wire/
 Editor 产品 route；Editor E1–E9 切片在各自前置满足后另行登记。
 
@@ -256,9 +256,9 @@ Editor 产品 route；Editor E1–E9 切片在各自前置满足后另行登记�
 `template` gate 顺序固定为 repository diff → DesignDSL kernel Java primary/Python independent exact-vector replay
 → 临时副本 Editor generator/independent/A2 → registry target refresh/Node primary/Python independent/A2 → 全树
 byte comparison → frozen counts/readiness assertions。任何命令失败或相同输入生成 diff 都失败；仓库 authority
-不被重写。kernel report 必须保持 197/197（vectorVersion `renderweave-template-canonical-kernel-v1/7`，
-容器 Node contract、Definition/ValueSource、Repeat/PACK、visual leaf kinds、Binding 与 TemplateUse
-已 admission）、Profile=`NOT_REGISTERED`；static replay 的冻结 counts 不变。
+不被重写。kernel report 必须保持 211/211（vectorVersion `renderweave-template-canonical-kernel-v1/8`，
+v1 全部 DesignDSL kind 已 admission——容器、visual leaves、Definition/ValueSource、Repeat/PACK、
+Binding、TemplateUse 与 Conditional）、Profile=`NOT_REGISTERED`；static replay 的冻结 counts 不变。
 
 后续票据遵守 focused → affected → Phase → Goal。新增 Maven module、root POM、OpenAPI、lockfile、migration、
 process protocol 或 `full` 组成变化属于共享面，必须提前扩大回归。自动 green 只把对应任务推进到

@@ -67,8 +67,9 @@ KIND_BY_NAME = {
     "qrCode": "QRCODE",
     "barcode": "BARCODE",
     "templateUse": "TEMPLATE_USE",
+    "conditional": "CONDITIONAL",
 }
-FUTURE_KINDS = {"conditional"}
+FUTURE_KINDS: set[str] = set()
 COMMON_NODE_MEMBERS = {
     "nodeId",
     "kind",
@@ -189,6 +190,8 @@ EMPTY_SELECTOR_MEMBERS = {"kind"}
 SELECTOR_DOMAIN_MEMBERS = {"kind", "loopId"}
 CONTEXT_ABSENT_POLICY_TOKENS = {"ERROR", "SKIP"}
 USE_FILL_MEMBERS = {"targetDefinitionId", "source"}
+CONDITIONAL_MEMBERS = {"condition", "absentPolicy"}
+CONDITIONAL_ABSENT_POLICY_TOKENS = {"FALSE", "ERROR"}
 
 _WIRE_KIND_OVERRIDES = {"QRCODE": "qrCode", "BARCODE": "barcode", "TEMPLATE_USE": "templateUse"}
 NON_CANVAS_KINDS_WIRE = [
@@ -208,6 +211,7 @@ NON_CANVAS_KINDS_WIRE = [
     "qrCode",
     "barcode",
     "templateUse",
+    "conditional",
 ]
 _NON_CANVAS_NON_GROUP_WIRE = [kind for kind in NON_CANVAS_KINDS_WIRE if kind != "group"]
 
@@ -522,6 +526,7 @@ EXPECTED_VARIANT = {
     "STACK": "STACK",
     "GRID": "GRID",
     "REPEAT": "PACK",
+    "CONDITIONAL": "ABSOLUTE",
 }
 SIZE_MODES = {
     "GROUP": {"HUG_CONTENT"},
@@ -541,8 +546,9 @@ SIZE_MODES = {
     "PATH": {"FIXED", "HUG_CONTENT", "FILL"},
     "IMAGE": {"FIXED", "HUG_CONTENT", "FILL"},
     "TEMPLATE_USE": {"FIXED", "HUG_CONTENT", "FILL"},
+    "CONDITIONAL": {"FIXED", "HUG_CONTENT", "FILL"},
 }
-ALLOWS_CHILDREN_KINDS = {"GROUP", "FRAME", "STACK", "GRID", "REPEAT"}
+ALLOWS_CHILDREN_KINDS = {"GROUP", "FRAME", "STACK", "GRID", "REPEAT", "CONDITIONAL"}
 
 # --- Definition contract (T15: custom/mapping/expression + ValueSource) ----------
 
@@ -1307,6 +1313,8 @@ def allowed_members(kind: str) -> set[str]:
         members |= REPEAT_MEMBERS
     elif kind == "TEMPLATE_USE":
         members |= TEMPLATE_USE_MEMBERS
+    elif kind == "CONDITIONAL":
+        members |= CONDITIONAL_MEMBERS
     elif kind == "TEXT":
         members |= TEXT_MEMBERS
     elif kind == "IMAGE":
@@ -1576,6 +1584,67 @@ def validate_template_use_selector_domain(
     raise semantic_rejection("DESIGN_VALUE_INVALID", pointer + "/kind")
 
 
+def validate_conditional_members(
+    node: dict[str, Any],
+    pointer: str,
+    output_types: dict[str, str],
+    loop_ids: set[str],
+) -> None:
+    validate_conditional_condition(
+        require_member(node, "condition", pointer + "/condition"),
+        pointer + "/condition",
+        output_types,
+        loop_ids,
+    )
+    enum_member(
+        node, "absentPolicy", CONDITIONAL_ABSENT_POLICY_TOKENS, pointer + "/absentPolicy"
+    )
+
+
+def validate_conditional_condition(
+    value: Any,
+    pointer: str,
+    output_types: dict[str, str],
+    loop_ids: set[str],
+) -> None:
+    source = require_object(value, pointer)
+    kind = require_string(require_member(source, "kind", pointer + "/kind"), pointer + "/kind")
+    if kind == "literal":
+        reject_unknown(source, LITERAL_SOURCE_MEMBERS, pointer)
+        value_type = validate_value_type(
+            require_member(source, "valueType", pointer + "/valueType"), pointer + "/valueType"
+        )
+        if value_type != "boolean":
+            raise semantic_rejection("DESIGN_VALUE_INVALID", pointer + "/valueType")
+        validate_literal(
+            require_member(source, "value", pointer + "/value"), value_type, pointer + "/value"
+        )
+    elif kind == "definition":
+        reject_unknown(source, DEFINITION_SOURCE_MEMBERS, pointer)
+        target = require_string(
+            require_member(source, "definitionId", pointer + "/definitionId"),
+            pointer + "/definitionId",
+        )
+        if UUID_V4.fullmatch(target) is None:
+            raise semantic_rejection("DESIGN_VALUE_INVALID", pointer + "/definitionId")
+        output = output_types.get(target)
+        if output is None or output != "boolean":
+            raise semantic_rejection("DESIGN_VALUE_INVALID", pointer + "/definitionId")
+    elif kind == "context":
+        reject_unknown(source, CONTEXT_SOURCE_MEMBERS, pointer)
+        validate_domain(
+            require_member(source, "domain", pointer + "/domain"), pointer + "/domain", loop_ids
+        )
+        validate_context_pointer(
+            require_string(
+                require_member(source, "pointer", pointer + "/pointer"), pointer + "/pointer"
+            ),
+            pointer + "/pointer",
+        )
+    else:
+        raise semantic_rejection("DESIGN_VALUE_INVALID", pointer + "/kind")
+
+
 def collect_loop_ids(value: Any, loop_ids: set[str]) -> None:
     if isinstance(value, dict):
         kind = value.get("kind")
@@ -1674,6 +1743,8 @@ def validate_non_canvas_node(
         normalized["fills"] = validate_template_use_members(
             node, pointer, seen_use_ids, output_types, loop_ids
         )
+    elif kind == "CONDITIONAL":
+        validate_conditional_members(node, pointer, output_types, loop_ids)
     elif kind == "TEXT":
         validate_text_members(node, pointer)
     elif kind == "IMAGE":
@@ -1699,7 +1770,7 @@ def validate_non_canvas_node(
             require_member(node, "children", pointer + "/children"),
             pointer + "/children",
         )
-        if kind == "REPEAT" and not children:
+        if kind in ("REPEAT", "CONDITIONAL") and not children:
             raise semantic_rejection("DESIGN_VALUE_INVALID", pointer + "/children")
         normalized["children"] = validate_children(
             children, pointer + "/children", kind, own_direction, seen_node_ids,
@@ -2924,13 +2995,13 @@ def main() -> int:
 
     vector_bytes, manifest = load_json(args.vectors)
     _, primary = load_json(args.primary_report)
-    if manifest["vectorVersion"] != "renderweave-template-canonical-kernel-v1/7":
+    if manifest["vectorVersion"] != "renderweave-template-canonical-kernel-v1/8":
         raise AssertionError("Unexpected vector version")
     if manifest["authorityContext"]["staticSchemaProfile"] != "system-empty@v1":
         raise AssertionError("Unexpected external StaticSchema context")
     if manifest["authorityContext"]["profileAvailability"] != "NOT_REGISTERED":
         raise AssertionError("Partial DesignDSL Profile must remain unavailable")
-    if len(manifest["cases"]) != 197:
+    if len(manifest["cases"]) != 211:
         raise AssertionError("Vector case count drift")
 
     results = [replay_case(vector) for vector in manifest["cases"]]

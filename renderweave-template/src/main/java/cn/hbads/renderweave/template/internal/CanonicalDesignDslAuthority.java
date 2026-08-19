@@ -842,7 +842,7 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
         switch (kind) {
             case FRAME, STACK, GRID -> validateAppearanceMembers(node, pointer);
             case CANVAS, GROUP, REPEAT, TEXT, IMAGE, RECT, ELLIPSE, LINE, POLYGON, POLYLINE,
-                    PATH, QRCODE, BARCODE, TEMPLATE_USE -> {
+                    PATH, QRCODE, BARCODE, TEMPLATE_USE, CONDITIONAL -> {
             }
         }
         switch (kind) {
@@ -855,6 +855,8 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
                     validateTemplateUseMembers(node, pointer, seenUseIds,
                             definitionsOutputTypes, loopIds)
             );
+            case CONDITIONAL -> validateConditionalMembers(node, pointer,
+                    definitionsOutputTypes, loopIds);
             case TEXT -> validateTextMembers(node, pointer);
             case IMAGE -> validateImageMembers(node, pointer);
             case RECT -> validateRectMembers(node, pointer);
@@ -871,7 +873,9 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
         if (NodeContractCatalog.allowsChildren(kind)) {
             var children = array(required(node, "children", pointer + "/children"),
                     pointer + "/children");
-            if (kind == NodeContractCatalog.NodeKind.REPEAT && children.items().isEmpty()) {
+            if (kind == NodeContractCatalog.NodeKind.REPEAT && children.items().isEmpty()
+                    || kind == NodeContractCatalog.NodeKind.CONDITIONAL
+                    && children.items().isEmpty()) {
                 throw failure(FailureCode.DESIGN_VALUE_INVALID, pointer + "/children");
             }
             normalized.put(
@@ -1022,7 +1026,7 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
         switch (kind) {
             case FRAME, STACK, GRID -> members.addAll(NodeContractCatalog.APPEARANCE_MEMBERS);
             case CANVAS, GROUP, REPEAT, TEXT, IMAGE, RECT, ELLIPSE, LINE, POLYGON, POLYLINE,
-                    PATH, QRCODE, BARCODE, TEMPLATE_USE -> {
+                    PATH, QRCODE, BARCODE, TEMPLATE_USE, CONDITIONAL -> {
             }
         }
         switch (kind) {
@@ -1030,6 +1034,7 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
             case GRID -> members.addAll(NodeContractCatalog.GRID_MEMBERS);
             case REPEAT -> members.addAll(NodeContractCatalog.REPEAT_MEMBERS);
             case TEMPLATE_USE -> members.addAll(NodeContractCatalog.TEMPLATE_USE_MEMBERS);
+            case CONDITIONAL -> members.addAll(NodeContractCatalog.CONDITIONAL_MEMBERS);
             case TEXT -> members.addAll(NodeContractCatalog.TEXT_MEMBERS);
             case IMAGE -> members.addAll(NodeContractCatalog.IMAGE_MEMBERS);
             case RECT -> members.addAll(NodeContractCatalog.RECT_MEMBERS);
@@ -1310,6 +1315,80 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
                 if (!UUID_V4.matcher(loopId).matches() || !loopIds.contains(loopId)) {
                     throw failure(FailureCode.DESIGN_VALUE_INVALID, pointer + "/loopId");
                 }
+            }
+            default -> throw failure(FailureCode.DESIGN_VALUE_INVALID, pointer + "/kind");
+        }
+    }
+
+    /**
+     * Conditional structural members (ticket 11 §1, §5): condition must be statically
+     * boolean, absentPolicy exactly FALSE|ERROR, children non-empty with ABSOLUTE
+     * placement (expectedVariant(CONDITIONAL)).
+     */
+    private void validateConditionalMembers(
+            JsonValue.ObjectValue node,
+            String pointer,
+            Map<String, String> definitionsOutputTypes,
+            Set<String> loopIds
+    ) throws DesignDslFailureException {
+        validateConditionalCondition(
+                required(node, "condition", pointer + "/condition"),
+                pointer + "/condition",
+                definitionsOutputTypes,
+                loopIds
+        );
+        enumMember(node, "absentPolicy", NodeContractCatalog.CONDITIONAL_ABSENT_POLICY_TOKENS,
+                pointer + "/absentPolicy");
+    }
+
+    /**
+     * Condition structural ValueSource (ticket 11 §2, §5): literal/definition sources
+     * must be statically boolean; context type proof is deferred to dependency
+     * resolution; loopIndex (decimal) and capability (date/time/decimal) are statically
+     * non-boolean.
+     */
+    private void validateConditionalCondition(
+            JsonValue value,
+            String pointer,
+            Map<String, String> definitionsOutputTypes,
+            Set<String> loopIds
+    ) throws DesignDslFailureException {
+        var source = object(value, pointer);
+        var kind = string(required(source, "kind", pointer + "/kind"), pointer + "/kind");
+        switch (kind) {
+            case "literal" -> {
+                rejectUnknown(source, DefinitionContractCatalog.LITERAL_SOURCE_MEMBERS, pointer);
+                var valueType = validateValueType(
+                        required(source, "valueType", pointer + "/valueType"),
+                        pointer + "/valueType"
+                );
+                if (!"boolean".equals(valueType)) {
+                    throw failure(FailureCode.DESIGN_VALUE_INVALID, pointer + "/valueType");
+                }
+                validateLiteral(required(source, "value", pointer + "/value"), valueType,
+                        pointer + "/value");
+            }
+            case "definition" -> {
+                rejectUnknown(source, DefinitionContractCatalog.DEFINITION_SOURCE_MEMBERS, pointer);
+                var target = string(required(source, "definitionId", pointer + "/definitionId"),
+                        pointer + "/definitionId");
+                if (!UUID_V4.matcher(target).matches()) {
+                    throw failure(FailureCode.DESIGN_VALUE_INVALID, pointer + "/definitionId");
+                }
+                var output = definitionsOutputTypes.get(target);
+                if (output == null || !"boolean".equals(output)) {
+                    throw failure(FailureCode.DESIGN_VALUE_INVALID, pointer + "/definitionId");
+                }
+            }
+            case "context" -> {
+                rejectUnknown(source, DefinitionContractCatalog.CONTEXT_SOURCE_MEMBERS, pointer);
+                validateDomain(required(source, "domain", pointer + "/domain"),
+                        pointer + "/domain", loopIds);
+                validateContextPointer(
+                        string(required(source, "pointer", pointer + "/pointer"),
+                                pointer + "/pointer"),
+                        pointer + "/pointer"
+                );
             }
             default -> throw failure(FailureCode.DESIGN_VALUE_INVALID, pointer + "/kind");
         }
