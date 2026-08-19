@@ -1,7 +1,7 @@
 # RenderWeave Template v1 Implementation Plan
 
 - 状态：`in_progress`；TV1-T01/T02/T03/T04/T05/T06/T07/T08/T09/T10/T10b/T11/T12a=`automated_verified`
-  （T09 另含人工 J1），TV1-T12b/T13=`open`
+  （T09 另含人工 J1），TV1-T12b/T13=`open`，TV1-T14=`in_progress`（task，claimed）
 - 日期：2026-08-19
 - Approved delta：[`specs/changes/20260817-template-v1-implementation-authority.md`](../specs/changes/20260817-template-v1-implementation-authority.md)
 - Frozen checkpoint：`0b485f4a13de9d754a81d07f464730776e13c14b`
@@ -51,6 +51,7 @@ binding: generic + project-local tools/run-gate.ps1 + Wayfinder markdown tracker
 | TV1-P1 Kernel | 02 → 03 | deep interface/依赖 ADR 后，最小 DesignDSL canonical kernel 和独立 vectors | G-TV1-KERNEL：focused TDD + Java primary/Python replay + `template`；不得登记 partial Profile available |
 | TV1-P2 Aggregates | 04、05、06 | Template/Asset interface 决策；随后仅实现 Template create/read/save PostgreSQL 纵切 | G-TV1-TEMPLATE：server/Testcontainers/OpenAPI + contract/full；无占位 Asset 产品 |
 | TV1-P2b Asset slices | 10 → 11 → 12a → 12b、13 | Asset acceptance kernel、S3/PostgreSQL 持久化纵切、replace/delete/restore 与 Resolver/lease 纵切 | 逐票 gate：T10 kernel replay；T11 Testcontainers PostgreSQL+MinIO/OpenAPI；12b 依赖 Template 投影票；13 随 P3；gate 组成由各票冻结，不预建 |
+| TV1-P2c DesignDSL full-Profile atoms | 14 → 15/16 → 17/18 → 19 → 20 | NodeContract/Property Identity、Definition、Binding、Repeat、Conditional、TemplateUse 的静态 admission/canonical 原子与 Template 依赖投影 | 逐票 exact vectors + template gate 扩展；全部语义原子通过前 Profile 不登记 available |
 | TV1-P3 Rendering seam | 07 → 08 | Evaluator/RenderDocument ownership 与独立 Rust process/certification protocol | G-TV1-RENDER-SEAM：closed protocol vectors、failure boundaries、supply-chain plan；不等于 Renderer READY |
 | TV1-P4 Editor validation | 09 | 基于真实 Template/Rendering seam 的 throwaway Product Editor 状态原型结论 | G-TV1-EDITOR-ARCH：自动观察 A1/A2 + 人工 J1；不开放产品 route |
 | TV1-P5+ Product completion | 待上述真实 seam 后另切票 | 完整 DSL、Asset、Evaluator、Renderer、Product Editor 与 formal registry records | 逐纵切 gate + product target/executor + J1/A3/物理 Linux 认证；当前未调度 |
@@ -85,6 +86,19 @@ flowchart LR
   T11 --> T13[13 Resolver/lease]
   T07 --> T13
   T08 --> T13
+  T03 --> T14[14 NodeContract/Property Identity]
+  T14 --> T15[15 Definition/ValueSource]
+  T14 --> T16[16 Binding/Policy]
+  T14 --> T17[17 Repeat]
+  T14 --> T18[18 Conditional]
+  T15 --> T17
+  T15 --> T18
+  T14 --> T19[19 TemplateUse]
+  T15 --> T19
+  T16 --> T19
+  T14 --> T20[20 依赖投影]
+  T19 --> T20
+  T20 --> T12b
 ```
 
 | Ticket | 类型 | 状态 | Blocked by | 本票退出事实 |
@@ -104,15 +118,22 @@ flowchart LR
 | 12a | task | `resolved` / `automated_verified` | 05, 11 | content replace/旧内容恢复；V020 审计事件 + OpenAPI 0.12.0 + `full` 16/16 |
 | 12b | task | `open` | 05, 11, Template 依赖投影票 | delete/restore + AssetReferencePort/确认 token 编排 |
 | 13 | task | `open` | 05, 07, 08, 11 | AssetResolver/Renderer-only lease 纵切 |
+| 14 | task | `in_progress` / claimed by Codex `/root` | 03 | NodeContractCatalog 与 Node/Property Identity 原子（容器 + visual leaf admission/canonical/vectors） |
+| 15 | task | `open` | 03, 14 | Definition/ValueSource 原子（custom/mapping/expression + lexical domains） |
+| 16 | task | `open` | 03, 14 | Binding 与 BindingPolicyCatalog 原子 |
+| 17 | task | `open` | 03, 14, 15 | Repeat 原子（items/PACK/packing/loopId） |
+| 18 | task | `open` | 03, 14, 15 | Conditional 原子（condition/absent policy/剪枝） |
+| 19 | task | `open` | 03, 14, 15, 16 | TemplateUse 原子（ContextSelector/fills/closure 边） |
+| 20 | task | `open` | 04, 05, 14, 19 | Template 依赖投影（AssetRef/反向索引/STALE 消费）；T12b 的 blocker |
 
 每次只 claim 一个 unblocked ticket；一票 resolved 后才由其 `Blocked by` 关系产生下一 frontier。未知实现切片留在
 map 的 `Not yet specified`，不为排满计划提前发明接口、migration 或 Profile identity。
 
-TV1-T07/T08/T09 已 resolve（ADR-0044/0045 与 Editor 状态原型，T09 含人工 J1）；TV1-T12b 仍以 Template
-依赖投影票（未建，随 DesignDSL full-Profile 拆分登记）为 blocker；TV1-T13 以首个 Rendering 实现票与
-T08 为前置。single-writer 不顺带 claim 或预建 delete/restore/Resolver/Rust wire/Editor 产品 route；
-首个 Rendering/Rust 实现 task 票、DesignDSL full-Profile 拆分票与 Editor E1–E9 切片在各自前置满足后
-另行登记。
+TV1-T07/T08/T09 已 resolve（ADR-0044/0045 与 Editor 状态原型，T09 含人工 J1）；DesignDSL full-Profile
+拆分已登记（T14 NodeContract/Property Identity → T15/T16 → T17/T18 → T19 → T20 依赖投影），TV1-T14 是
+当前唯一 unblocked frontier（task，claimed）；TV1-T12b 以 T20 为 blocker；TV1-T13 以首个 Rendering
+实现票与 T08 为前置。single-writer 不顺带 claim 或预建 delete/restore/Resolver/Rust wire/Editor 产品
+route；Editor E1–E9 切片在各自前置满足后另行登记。
 
 ## 5. TV1-T01 执行卡
 

@@ -111,11 +111,15 @@ Label: wayfinder:map
 
 ## Not yet specified
 
-- minimal canonical kernel 已完成；依据其真实接口和差异拆分完整 DesignDSL Profile 的 Node、Definition、Binding、Repeat、Conditional、TemplateUse 与 Property Identity 实施票。在全部 exact 语义原子通过前不登记 Profile available，且不得把本 kernel 的 fail-closed non-empty array 当作 set ordering 已实现。
+- minimal canonical kernel 已完成；DesignDSL full-Profile 拆分已登记为 T14（NodeContractCatalog 与
+  Node/Property Identity 原子，claimed）→ T15（Definition/ValueSource）→ T16（Binding/Policy）→ T17
+  （Repeat）→ T18（Conditional）→ T19（TemplateUse）→ T20（Template 依赖投影，T12b 的 blocker）；
+  admission/canonical 增量逐票带 exact vectors + template gate 扩展，全部 exact 语义原子通过前不登记
+  Profile available，也不把本 kernel 的 fail-closed non-empty array 当作 set ordering 已实现。
 - Asset persistence、replace/delete/restore、依赖影响确认、Asset UI 与 Renderer-only lease 的实施顺序已由
-  Ticket 05 冻结为 T10 → T11 → T12a → T12b → T13；T10/T10b/T11/T12a 已完成，下一 frontier 为 T12b。Template
+  Ticket 05 冻结为 T10 → T11 → T12a → T12b → T13；T10/T10b/T11/T12a 已完成。Template
   依赖投影（从 DesignDSL 提取 authored AssetRef atom 的 current-only 投影、`AssetReferenceAuthority` 物化与
-  STALE 消费）随 DesignDSL full-Profile 拆分时登记，T12b 以其为 blocker。
+  STALE 消费）已登记为 T20，T12b 以其为 blocker。
 - Expression/value binding、closure、capability、nested Template、layout lowering 与正式 RenderDocument 的
   实现切片，要等 Evaluator seam 给出稳定 ownership 和错误面后再登记——ADR-0044 已给出该 seam：首个
   Rendering task 票将同时物化 `TemplateClosureAuthority`/`Evaluator`/seal 纵切与 RenderNodeContract/
