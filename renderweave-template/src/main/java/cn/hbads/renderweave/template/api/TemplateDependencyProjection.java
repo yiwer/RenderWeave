@@ -44,9 +44,14 @@ public final class TemplateDependencyProjection {
     }
 
     /** One authored TemplateUse logical TemplateRef; resolves to the target's current. */
-    public record TemplateUseOccurrence(String targetTemplateId, String canonicalPointer) {
+    public record TemplateUseOccurrence(
+            String targetTemplateId,
+            String useId,
+            String canonicalPointer
+    ) {
         public TemplateUseOccurrence {
             Objects.requireNonNull(targetTemplateId, "targetTemplateId");
+            Objects.requireNonNull(useId, "useId");
             Objects.requireNonNull(canonicalPointer, "canonicalPointer");
         }
     }

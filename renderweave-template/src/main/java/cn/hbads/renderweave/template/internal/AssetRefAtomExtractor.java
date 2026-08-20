@@ -76,8 +76,13 @@ final class AssetRefAtomExtractor {
                     && "templateUse".equals(kind.value())
                     && object.members().get("templateRef") instanceof JsonValue.ObjectValue ref
                     && ref.members().get("templateId") instanceof JsonValue.StringValue target) {
+                if (!(object.members().get("useId") instanceof JsonValue.StringValue useId)) {
+                    // Admitted TemplateUse nodes always carry a useId (ticket 19 atom);
+                    // its absence in an admitted canonical document is an invariant fault.
+                    throw new IllegalStateException("admitted templateUse is missing useId");
+                }
                 uses.add(new TemplateDependencyProjection.TemplateUseOccurrence(
-                        target.value(), pointer + "/templateRef/templateId"));
+                        target.value(), useId.value(), pointer + "/templateRef/templateId"));
             }
             for (var entry : object.members().entrySet()) {
                 walk(entry.getValue(), pointer + "/" + escape(entry.getKey()), null);

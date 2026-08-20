@@ -83,7 +83,7 @@ class TemplateApplicationPublicSurfaceTest {
     void exactAssemblyExceptionExposesOnlyTheStaticFactories() throws Exception {
         assertTrue(Modifier.isFinal(TemplateModule.class.getModifiers()));
         assertEquals(
-                Set.of("application", "assetReferenceAuthority", "readinessAuthority"),
+                Set.of("application", "assetReferenceAuthority", "closureAuthority", "readinessAuthority"),
                 methodNames(TemplateModule.class)
         );
         var application = TemplateModule.class.getDeclaredMethod(
@@ -104,6 +104,16 @@ class TemplateApplicationPublicSurfaceTest {
                         cn.hbads.renderweave.template.spi.DependencyResolution.class
                 ),
                 Arrays.asList(application.getParameterTypes())
+        );
+        var closureAuthority = TemplateModule.class.getDeclaredMethod(
+                "closureAuthority",
+                TemplatePersistence.class
+        );
+        assertTrue(Modifier.isPublic(closureAuthority.getModifiers()));
+        assertTrue(Modifier.isStatic(closureAuthority.getModifiers()));
+        assertEquals(
+                cn.hbads.renderweave.template.api.TemplateClosureAuthority.class,
+                closureAuthority.getReturnType()
         );
         assertEquals(1, TemplateModule.class.getDeclaredConstructors().length);
         assertTrue(Modifier.isPrivate(

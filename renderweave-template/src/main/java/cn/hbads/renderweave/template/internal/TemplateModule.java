@@ -3,6 +3,7 @@ package cn.hbads.renderweave.template.internal;
 import cn.hbads.renderweave.schema.api.StaticSchemaAuthority;
 import cn.hbads.renderweave.template.api.AssetReferenceAuthority;
 import cn.hbads.renderweave.template.api.TemplateApplication;
+import cn.hbads.renderweave.template.api.TemplateClosureAuthority;
 import cn.hbads.renderweave.template.api.TemplateReadinessAuthority;
 import cn.hbads.renderweave.template.spi.DependencyResolution;
 import cn.hbads.renderweave.template.spi.OwnerScopeAuthority;
@@ -35,6 +36,13 @@ public final class TemplateModule {
             TemplatePersistence persistence
     ) {
         return new CanonicalAssetReferenceAuthority(Objects.requireNonNull(persistence, "persistence"));
+    }
+
+    /** Template-owned render-only closure freeze consumed by Rendering (ADR-0044 §1). */
+    public static TemplateClosureAuthority closureAuthority(
+            TemplatePersistence persistence
+    ) {
+        return new CanonicalTemplateClosureAuthority(Objects.requireNonNull(persistence, "persistence"));
     }
 
     /** System-level readiness recheck consumed by the app STALE consumer. */
