@@ -1,5 +1,6 @@
 package cn.hbads.renderweave.app.rendering;
 
+import cn.hbads.renderweave.asset.api.AssetResolver;
 import cn.hbads.renderweave.rendering.api.CapabilityDerivation;
 import cn.hbads.renderweave.rendering.api.Evaluator;
 import cn.hbads.renderweave.rendering.internal.RenderingModule;
@@ -74,14 +75,19 @@ class RenderingApplicationConfiguration {
     }
 
     @Bean
+    @ConditionalOnBean(AssetResolver.class)
+    AssetResolutionPort renderingAssetResolutionPort(AssetResolver resolver) {
+        return new AssetResolverToRenderingAdapter(resolver);
+    }
+
+    @Bean
     Evaluator renderingEvaluator(
             TemplateClosureAuthority closureAuthority,
             DesignSemanticAuthority semantics,
             DesignDslAuthority dslAuthority,
             ObjectProvider<AssetResolutionPort> assets,
             RenderingCapabilityRuntime capabilities,
-            ValidationTargetResolver validationResolver,
-            @Value("${renderweave.rendering.evaluation.deadline-ms:60000}") long deadlineEpochMilli
+            ValidationTargetResolver validationResolver
     ) {
         return RenderingModule.evaluator(
                 closureAuthority,
@@ -90,7 +96,7 @@ class RenderingApplicationConfiguration {
                 assets.getIfAvailable(),
                 capabilities,
                 validationResolver,
-                deadlineEpochMilli);
+                Clock.systemUTC());
     }
 
     /**

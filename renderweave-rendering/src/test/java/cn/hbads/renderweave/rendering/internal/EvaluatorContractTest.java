@@ -8,6 +8,7 @@ import cn.hbads.renderweave.rendering.api.Evaluator.OutputSelection;
 import cn.hbads.renderweave.rendering.api.Evaluator.OwnerScope;
 import cn.hbads.renderweave.rendering.api.Evaluator.RenderRequestId;
 import cn.hbads.renderweave.rendering.api.RenderingProblem;
+import cn.hbads.renderweave.rendering.spi.AssetResolutionPort;
 import cn.hbads.renderweave.rendering.spi.RenderingCapabilityRuntime;
 import cn.hbads.renderweave.schema.definition.StaticSchemaRef;
 import cn.hbads.renderweave.schema.identity.SchemaKey;
@@ -28,6 +29,9 @@ import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
 
@@ -79,7 +83,7 @@ class EvaluatorContractTest {
                 null,
                 scriptedRuntime(),
                 resolver(),
-                1_000L);
+                Clock.fixed(Instant.ofEpochMilli(1_000L), ZoneOffset.UTC));
 
         var outcome = evaluator.evaluate(new EvaluationCommand(
                 new RenderRequestId("render-1"),
@@ -101,7 +105,7 @@ class EvaluatorContractTest {
                 null,
                 scriptedRuntime(),
                 resolver(),
-                1_000L);
+                Clock.fixed(Instant.ofEpochMilli(1_000L), ZoneOffset.UTC));
 
         var outcome = evaluator.evaluate(command("{\"rootDocument\":{}}"));
 
@@ -120,6 +124,26 @@ class EvaluatorContractTest {
         var rejected = assertInstanceOf(EvaluationOutcome.Rejected.class, outcome);
         // envelope 结构拒绝属于 stage 1（REQUEST_ADMISSION）。
         assertEquals(EvaluationStage.REQUEST_ADMISSION, rejected.stage());
+    }
+
+    @Test
+    void eachEvaluationFreezesAnAbsoluteSixtySecondRenderDeadline() {
+        var now = Instant.parse("2026-08-20T08:00:00Z");
+        var assets = new CapturingAssetPort();
+        var evaluator = new CanonicalEvaluator(
+                scriptedClosure(closureWith(canvasWithImage())),
+                TemplateModule.designSemanticAuthority(),
+                TemplateModule.designDslAuthority(),
+                assets,
+                scriptedRuntime(),
+                resolver(),
+                Clock.fixed(now, ZoneOffset.UTC));
+
+        var outcome = evaluator.evaluate(command("{\"rootDocument\":{}}"));
+
+        assertInstanceOf(EvaluationOutcome.SealedDocument.class, outcome);
+        assertEquals(now.plusSeconds(60).toEpochMilli(),
+                assets.lastRequest.deadlineEpochMilli());
     }
 
     // ------------------------------------------------------------------
@@ -144,7 +168,7 @@ class EvaluatorContractTest {
                 null,
                 scriptedRuntime(),
                 resolver,
-                1_000L);
+                Clock.fixed(Instant.ofEpochMilli(1_000L), ZoneOffset.UTC));
     }
 
     private static TemplateClosureAuthority scriptedClosure(ClosureSnapshot closure) {
@@ -197,6 +221,50 @@ class EvaluatorContractTest {
                 + "\"xMm\":0,\"yMm\":0,\"widthMode\":\"FIXED\",\"widthMm\":10,"
                 + "\"heightMode\":\"FIXED\",\"heightMm\":10},"
                 + "\"fill\":{\"color\":\"#FF000000\"}}]}}";
+    }
+
+    private static String canvasWithImage() {
+        return "{\"dslVersion\":\"renderweave-design/1.0\","
+                + "\"expressionProfile\":\"renderweave-expression/1.0\","
+                + "\"displayName\":\"R\",\"definitions\":[],"
+                + "\"designRoot\":{\"nodeId\":\"00000000-0000-4000-8000-000000000001\","
+                + "\"kind\":\"canvas\",\"widthMm\":210,\"heightMm\":297,\"bindings\":[],"
+                + "\"children\":[{\"nodeId\":\"00000000-0000-4000-8000-000000000011\","
+                + "\"kind\":\"image\",\"bindings\":[],\"placement\":{\"type\":\"ABSOLUTE\","
+                + "\"xMm\":0,\"yMm\":0,\"widthMode\":\"FIXED\",\"widthMm\":10,"
+                + "\"heightMode\":\"FIXED\",\"heightMm\":10},"
+                + "\"imageRef\":{\"assetId\":\"00000000-0000-4000-8000-0000000000aa\"}}]}}";
+    }
+
+    private static final class CapturingAssetPort implements AssetResolutionPort {
+        private ResolveRequest lastRequest;
+
+        @Override
+        public PrecheckOutcome precheckAdmission(
+                cn.hbads.renderweave.asset.api.AssetApplication.OwnerScope ownerScope,
+                cn.hbads.renderweave.asset.api.AssetApplication.AssetId assetId,
+                cn.hbads.renderweave.asset.api.AssetAcceptanceAuthority.AssetKind expectedKind
+        ) {
+            return new PrecheckOutcome.PrecheckPassed();
+        }
+
+        @Override
+        public ResolveOutcome resolve(ResolveRequest request) {
+            lastRequest = request;
+            return new ResolveOutcome.Resolved(new ResolvedAssetFact(
+                    "0",
+                    "b".repeat(64),
+                    "image/png",
+                    128,
+                    "renderweave-asset-acceptance/1.0",
+                    new cn.hbads.renderweave.asset.api.AssetAcceptanceAuthority.ImageDescriptor(
+                            1, 1,
+                            cn.hbads.renderweave.asset.api.AssetAcceptanceAuthority.Orientation.IDENTITY,
+                            1, 1, 1,
+                            cn.hbads.renderweave.asset.api.AssetAcceptanceAuthority.ColorEncoding.SRGB_8BIT),
+                    "https://assets.internal/fetch/lease",
+                    request.deadlineEpochMilli() / 1_000));
+        }
     }
 
     private static ValidationTargetResolver resolver() {

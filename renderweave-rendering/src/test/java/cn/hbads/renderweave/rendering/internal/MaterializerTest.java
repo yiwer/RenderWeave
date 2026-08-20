@@ -190,6 +190,35 @@ class MaterializerTest {
         assertEquals(EvaluationStage.ASSET_ADMISSION, failed.stage());
     }
 
+    @Test
+    void assetResolutionFailuresKeepTheirFrozenProblemCodes() {
+        assertResolutionProblem(
+                new AssetResolutionPort.ResolveOutcome.ResolveRejected(
+                        AssetResolutionPort.AdmissionRejection.NOT_FOUND),
+                RenderingProblem.ProblemCode.ASSET_RESOLVE_NOT_FOUND);
+        assertResolutionProblem(
+                new AssetResolutionPort.ResolveOutcome.ResolveRejected(
+                        AssetResolutionPort.AdmissionRejection.SCOPE_MISMATCH),
+                RenderingProblem.ProblemCode.ASSET_RESOLVE_NOT_FOUND);
+        assertResolutionProblem(
+                new AssetResolutionPort.ResolveOutcome.ResolveRejected(
+                        AssetResolutionPort.AdmissionRejection.NOT_ACTIVE),
+                RenderingProblem.ProblemCode.ASSET_RESOLVE_DELETED);
+        assertResolutionProblem(
+                new AssetResolutionPort.ResolveOutcome.ResolveRejected(
+                        AssetResolutionPort.AdmissionRejection.KIND_MISMATCH),
+                RenderingProblem.ProblemCode.ASSET_RESOLVE_KIND_MISMATCH);
+        assertResolutionProblem(
+                new AssetResolutionPort.ResolveOutcome.ResolveConflict(),
+                RenderingProblem.ProblemCode.RENDER_REQUEST_CONFLICT);
+        assertResolutionProblem(
+                new AssetResolutionPort.ResolveOutcome.ResolveTimedOut(),
+                RenderingProblem.ProblemCode.ASSET_RESOLVE_TIMEOUT);
+        assertResolutionProblem(
+                new AssetResolutionPort.ResolveOutcome.ResolveUnavailable(),
+                RenderingProblem.ProblemCode.ASSET_RESOLVE_UNAVAILABLE);
+    }
+
     // ------------------------------------------------------------------
     // fixtures
     // ------------------------------------------------------------------
@@ -303,6 +332,28 @@ class MaterializerTest {
                 new RenderRequestId("render-1"),
                 new AssetResolutionPort.RendererAudience("test-audience"),
                 1_000L);
+    }
+
+    private static void assertResolutionProblem(
+            AssetResolutionPort.ResolveOutcome resolveOutcome,
+            RenderingProblem.ProblemCode expectedCode
+    ) {
+        var port = new AssetResolutionPort() {
+            @Override
+            public PrecheckOutcome precheckAdmission(
+                    OwnerScope ownerScope, AssetId assetId, AssetKind expectedKind) {
+                return new PrecheckOutcome.PrecheckPassed();
+            }
+
+            @Override
+            public ResolveOutcome resolve(ResolveRequest request) {
+                return resolveOutcome;
+            }
+        };
+        var outcome = materialize(canvasWith(imageNode()), Map.of(), port);
+        var failed = assertInstanceOf(Materializer.MaterializationFailed.class, outcome);
+        assertEquals(EvaluationStage.ASSET_RESOLUTION, failed.stage());
+        assertEquals(expectedCode, failed.problem().code());
     }
 
     private static DefinitionEngine.CapabilityProvider absentCapability() {

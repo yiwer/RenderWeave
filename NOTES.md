@@ -1681,3 +1681,25 @@
   canonical/seal 两处 JSON 转义合并为 CanonicalJson.escapedContent 单点；random 派生 domain 经核
   对为冻结票据 14 §59 原文（非自造），asset-selection domain 为已记录的命名家族推断值。修复后
   rendering 102 + app slice 9 全绿。
+
+### Template v1 TV1-T13 AssetResolver / Renderer-only lease 纵切
+
+- 2026-08-20 恢复长期 goal“持续推进 Template v1 直到完成”；T21 已由最终 full gate 的 exact input
+  manifest 复核并以 `c91a128` 收口，未 push。
+- Asset-owned `AssetResolver`/`AssetFetchEndpoint` 已物化：precheck 只读 scope/existence/lifecycle/kind；resolve
+  以完整 fingerprint 和 `(renderRequestId, resourceId)` 在一个 PostgreSQL 事务内 linearize，先重放已提交
+  exact selection，再读取 current；同 key 异输入冲突。V024 只明文保存 opaque key/fingerprint/expiry，
+  selection 用随机 nonce AES-GCM 加密且 AAD 绑定 key/fingerprint；lease 到 deadline+5s，record 到
+  deadline+5min，不续签，replace/delete 不撤销。
+- app 用 domain-separated HMAC 派生 signing key，签发 canonical HTTPS app-origin bearer URL；internal route
+  验 token/expiry/record 后从 S3 读取 exact blob，在输出前验证 length+sha256，再按固定 1 MiB chunk 返回
+  `200 identity`/精确 Content-Length/no-store。token/记录无效 404、后端不可用 503、完整性失败 500；拒绝
+  cookie/range/compression，无公开下载/preview route，URL/密钥不写日志、审计或明文持久化。
+- Rendering app Adapter 穷尽映射 resolver outcome；新增 `ASSET_RESOLVE_DELETED/KIND_MISMATCH/UNAVAILABLE/
+  TIMEOUT`，异 fingerprint 使用 `RENDER_REQUEST_CONFLICT`。Evaluator 每次请求从 UTC Clock 冻结 60 秒绝对
+  deadline；修复 nested child failure 被 generic MATERIALIZATION 覆盖的问题。
+- TDD/纵切：AssetResolver contract 4/4、Rendering bridge 3/3、AssetSliceIntegration 8/8（PG+MinIO：重放/
+  conflict/并发、replace/delete 后旧字节、密文、token tamper/range、blob corruption、Evaluator 端到端）。
+  `asset`（90/90 + independent 41/41）、`server`（全 Reactor；app 319，0 failure/error）、`fast` 已绿；
+  exact evidence 与最终 full 收口策略见 `plans/logs/TV1-T13.md`。T13=`automated_verified`；无 J1/A3，
+  Profile/Renderer/Editor 不 READY，无 Rust Engine/公开 render 产品面，未 push/tag/PR。

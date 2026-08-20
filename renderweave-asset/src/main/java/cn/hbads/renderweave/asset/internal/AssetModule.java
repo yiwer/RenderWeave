@@ -1,11 +1,14 @@
 package cn.hbads.renderweave.asset.internal;
 
 import cn.hbads.renderweave.asset.api.AssetApplication;
+import cn.hbads.renderweave.asset.api.AssetResolver;
 import cn.hbads.renderweave.asset.spi.AssetBlobPersistence;
+import cn.hbads.renderweave.asset.spi.AssetFetchEndpoint;
 import cn.hbads.renderweave.asset.spi.AssetOwnerScopeAuthority;
 import cn.hbads.renderweave.asset.spi.AssetPersistence;
 import cn.hbads.renderweave.asset.spi.AssetReferencePort;
 
+import java.time.Clock;
 import java.util.Objects;
 
 /**
@@ -29,5 +32,16 @@ public final class AssetModule {
         Objects.requireNonNull(referencePort, "referencePort");
         return new CanonicalAssetApplication(
                 ownerScopeAuthority, persistence, blobs, referencePort);
+    }
+
+    public static AssetResolver resolver(
+            AssetPersistence persistence,
+            AssetFetchEndpoint fetchEndpoint,
+            Clock clock
+    ) {
+        Objects.requireNonNull(persistence, "persistence");
+        Objects.requireNonNull(fetchEndpoint, "fetchEndpoint");
+        Objects.requireNonNull(clock, "clock");
+        return new CanonicalAssetResolver(persistence, fetchEndpoint, clock);
     }
 }

@@ -39,6 +39,27 @@ public interface AssetPersistence {
 
     CapacityOutcome capacity();
 
+    /** Narrow metadata-free admission lookup used only by renderer Asset resolution. */
+    default RenderPrecheckOutcome precheckForRender(RenderPrecheckQuery query) {
+        Objects.requireNonNull(query, "query");
+        return new RenderPrecheckUnavailable();
+    }
+
+    /**
+     * Linearizes current selection and recovery-record creation for one
+     * {@code (renderRequestId, resourceId)} key in a single transaction.
+     */
+    default RenderSelectionOutcome resolveForRender(RenderSelectionQuery query) {
+        Objects.requireNonNull(query, "query");
+        return new RenderSelectionUnavailable();
+    }
+
+    /** Loads an already committed exact selection by its opaque lease handle. */
+    default RenderLeaseLoadOutcome loadRenderSelection(RenderLeaseLookup lookup) {
+        Objects.requireNonNull(lookup, "lookup");
+        return new RenderLeaseNotFound();
+    }
+
     /** Bounded audit operations recorded for every effective Asset mutation. */
     enum AuditOperation {
         CREATE,
@@ -618,5 +639,177 @@ public interface AssetPersistence {
     }
 
     record CapacityUnavailable() implements CapacityOutcome {
+    }
+
+    record RenderPrecheckQuery(
+            AssetApplication.OwnerScope ownerScope,
+            AssetApplication.AssetId assetId,
+            AssetAcceptanceAuthority.AssetKind expectedKind
+    ) {
+        public RenderPrecheckQuery {
+            Objects.requireNonNull(ownerScope, "ownerScope");
+            Objects.requireNonNull(assetId, "assetId");
+            Objects.requireNonNull(expectedKind, "expectedKind");
+        }
+    }
+
+    enum RenderRejection {
+        SCOPE_MISMATCH,
+        NOT_FOUND,
+        DELETED,
+        KIND_MISMATCH
+    }
+
+    sealed interface RenderPrecheckOutcome permits RenderPrecheckPassed,
+            RenderPrecheckRejected, RenderPrecheckUnavailable {
+    }
+
+    record RenderPrecheckPassed() implements RenderPrecheckOutcome {
+    }
+
+    record RenderPrecheckRejected(RenderRejection reason) implements RenderPrecheckOutcome {
+        public RenderPrecheckRejected {
+            Objects.requireNonNull(reason, "reason");
+        }
+    }
+
+    record RenderPrecheckUnavailable() implements RenderPrecheckOutcome {
+    }
+
+    record RenderSelectionQuery(
+            String renderRequestId,
+            AssetApplication.OwnerScope ownerScope,
+            String resourceId,
+            AssetApplication.AssetId assetId,
+            AssetAcceptanceAuthority.AssetKind expectedKind,
+            String rendererAudience,
+            long renderDeadlineEpochMilli,
+            String requestFingerprint,
+            long issuedAtEpochMilli,
+            long leaseExpiresAtEpochSecond,
+            long recordExpiresAtEpochMilli
+    ) {
+        public RenderSelectionQuery {
+            requireText(renderRequestId, "renderRequestId");
+            Objects.requireNonNull(ownerScope, "ownerScope");
+            requireText(resourceId, "resourceId");
+            Objects.requireNonNull(assetId, "assetId");
+            Objects.requireNonNull(expectedKind, "expectedKind");
+            requireText(rendererAudience, "rendererAudience");
+            requireSha256(requestFingerprint, "requestFingerprint");
+            long deadlineEpochSecond = Math.floorDiv(renderDeadlineEpochMilli, 1_000);
+            if (Math.floorMod(renderDeadlineEpochMilli, 1_000) != 0) {
+                deadlineEpochSecond = Math.addExact(deadlineEpochSecond, 1);
+            }
+            if (renderDeadlineEpochMilli <= issuedAtEpochMilli
+                    || leaseExpiresAtEpochSecond < deadlineEpochSecond
+                    || recordExpiresAtEpochMilli <= renderDeadlineEpochMilli) {
+                throw new IllegalArgumentException("invalid render selection deadlines");
+            }
+        }
+    }
+
+    record ResolutionContent(
+            long contentVersion,
+            String sha256,
+            String mediaType,
+            long byteLength,
+            AssetAcceptanceAuthority.TechnicalDescriptor descriptor
+    ) {
+        public ResolutionContent {
+            if (contentVersion < 0 || byteLength <= 0) {
+                throw new IllegalArgumentException("invalid resolution content");
+            }
+            requireSha256(sha256, "sha256");
+            requireText(mediaType, "mediaType");
+            Objects.requireNonNull(descriptor, "descriptor");
+        }
+    }
+
+    record RenderSelection(
+            String renderRequestId,
+            AssetApplication.OwnerScope ownerScope,
+            String resourceId,
+            AssetApplication.AssetId assetId,
+            AssetAcceptanceAuthority.AssetKind kind,
+            String rendererAudience,
+            String requestFingerprint,
+            String leaseHandle,
+            ResolutionContent content,
+            long issuedAtEpochMilli,
+            long leaseExpiresAtEpochSecond,
+            long recordExpiresAtEpochMilli
+    ) {
+        public RenderSelection {
+            requireText(renderRequestId, "renderRequestId");
+            Objects.requireNonNull(ownerScope, "ownerScope");
+            requireText(resourceId, "resourceId");
+            Objects.requireNonNull(assetId, "assetId");
+            Objects.requireNonNull(kind, "kind");
+            requireText(rendererAudience, "rendererAudience");
+            requireSha256(requestFingerprint, "requestFingerprint");
+            requireText(leaseHandle, "leaseHandle");
+            Objects.requireNonNull(content, "content");
+            if (issuedAtEpochMilli <= 0 || leaseExpiresAtEpochSecond <= 0
+                    || recordExpiresAtEpochMilli <= issuedAtEpochMilli) {
+                throw new IllegalArgumentException("invalid render selection lifecycle");
+            }
+        }
+    }
+
+    sealed interface RenderSelectionOutcome permits RenderSelectionResolved,
+            RenderSelectionRejected, RenderSelectionConflict, RenderSelectionUnavailable {
+    }
+
+    record RenderSelectionResolved(RenderSelection selection) implements RenderSelectionOutcome {
+        public RenderSelectionResolved {
+            Objects.requireNonNull(selection, "selection");
+        }
+    }
+
+    record RenderSelectionRejected(RenderRejection reason) implements RenderSelectionOutcome {
+        public RenderSelectionRejected {
+            Objects.requireNonNull(reason, "reason");
+        }
+    }
+
+    record RenderSelectionConflict() implements RenderSelectionOutcome {
+    }
+
+    record RenderSelectionUnavailable() implements RenderSelectionOutcome {
+    }
+
+    record RenderLeaseLookup(String leaseHandle) {
+        public RenderLeaseLookup {
+            requireText(leaseHandle, "leaseHandle");
+        }
+    }
+
+    sealed interface RenderLeaseLoadOutcome permits RenderLeaseLoaded, RenderLeaseNotFound,
+            RenderLeaseUnavailable {
+    }
+
+    record RenderLeaseLoaded(RenderSelection selection) implements RenderLeaseLoadOutcome {
+        public RenderLeaseLoaded {
+            Objects.requireNonNull(selection, "selection");
+        }
+    }
+
+    record RenderLeaseNotFound() implements RenderLeaseLoadOutcome {
+    }
+
+    record RenderLeaseUnavailable() implements RenderLeaseLoadOutcome {
+    }
+
+    private static void requireText(String value, String name) {
+        if (value == null || value.isBlank()) {
+            throw new IllegalArgumentException(name + " must be non-blank");
+        }
+    }
+
+    private static void requireSha256(String value, String name) {
+        if (value == null || !value.matches("[0-9a-f]{64}")) {
+            throw new IllegalArgumentException(name + " must be 64 lowercase hex chars");
+        }
     }
 }

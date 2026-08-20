@@ -7,6 +7,7 @@ import cn.hbads.renderweave.asset.api.AssetApplication.OwnerScope;
 import cn.hbads.renderweave.rendering.api.Evaluator.RenderRequestId;
 
 import java.util.Objects;
+import java.util.regex.Pattern;
 
 /**
  * Rendering-owned consumer seam：Evaluator 对 Asset 侧事实的唯一消费面（ADR-0041 consumer-owned
@@ -71,6 +72,9 @@ public interface AssetResolutionPort {
             Objects.requireNonNull(assetId, "assetId");
             Objects.requireNonNull(expectedKind, "expectedKind");
             Objects.requireNonNull(rendererAudience, "rendererAudience");
+            if (deadlineEpochMilli <= 0) {
+                throw new IllegalArgumentException("deadlineEpochMilli must be positive");
+            }
         }
     }
 
@@ -104,6 +108,7 @@ public interface AssetResolutionPort {
 
     sealed interface ResolveOutcome
             permits ResolveOutcome.Resolved, ResolveOutcome.ResolveRejected,
+                    ResolveOutcome.ResolveConflict, ResolveOutcome.ResolveTimedOut,
                     ResolveOutcome.ResolveUnavailable {
 
         record Resolved(ResolvedAssetFact fact) implements ResolveOutcome {
@@ -118,16 +123,25 @@ public interface AssetResolutionPort {
             }
         }
 
+        record ResolveConflict() implements ResolveOutcome {
+        }
+
+        record ResolveTimedOut() implements ResolveOutcome {
+        }
+
         record ResolveUnavailable() implements ResolveOutcome {
         }
     }
 
     /** 请求级资源身份：{@code rwres_} + 64 位小写十六进制 SHA-256。 */
     record ResourceId(String value) {
+        private static final Pattern FORMAT = Pattern.compile("^rwres_[0-9a-f]{64}$");
+
         public ResourceId {
             Objects.requireNonNull(value, "value");
-            if (!value.startsWith("rwres_") || value.length() != "rwres_".length() + 64) {
-                throw new IllegalArgumentException("resourceId must be rwres_ + 64 hex chars");
+            if (!FORMAT.matcher(value).matches()) {
+                throw new IllegalArgumentException(
+                        "resourceId must be rwres_ + 64 lowercase hex chars");
             }
         }
     }

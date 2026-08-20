@@ -12,6 +12,7 @@ import cn.hbads.renderweave.template.api.TemplateClosureAuthority;
 import cn.hbads.renderweave.template.api.TemplateClosureAuthority.ClosureOutcome;
 import cn.hbads.renderweave.validation.ValidationTargetResolver;
 
+import java.time.Clock;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -24,13 +25,15 @@ import java.util.Optional;
  */
 final class CanonicalEvaluator implements Evaluator {
 
+    private static final long RENDER_DEADLINE_MILLIS = 60_000L;
+
     private final TemplateClosureAuthority closureAuthority;
     private final DesignSemanticAuthority semantics;
     private final DesignDslAuthority dslAuthority;
     private final AssetResolutionPort assets;
     private final cn.hbads.renderweave.rendering.spi.RenderingCapabilityRuntime capabilities;
     private final ValidationTargetResolver validationResolver;
-    private final long deadlineEpochMilli;
+    private final Clock clock;
 
     CanonicalEvaluator(
             TemplateClosureAuthority closureAuthority,
@@ -39,7 +42,7 @@ final class CanonicalEvaluator implements Evaluator {
             AssetResolutionPort assets,
             cn.hbads.renderweave.rendering.spi.RenderingCapabilityRuntime capabilities,
             ValidationTargetResolver validationResolver,
-            long deadlineEpochMilli
+            Clock clock
     ) {
         this.closureAuthority = Objects.requireNonNull(closureAuthority, "closureAuthority");
         this.semantics = Objects.requireNonNull(semantics, "semantics");
@@ -47,12 +50,20 @@ final class CanonicalEvaluator implements Evaluator {
         this.assets = assets;
         this.capabilities = Objects.requireNonNull(capabilities, "capabilities");
         this.validationResolver = Objects.requireNonNull(validationResolver, "validationResolver");
-        this.deadlineEpochMilli = deadlineEpochMilli;
+        this.clock = Objects.requireNonNull(clock, "clock");
     }
 
     @Override
     public EvaluationOutcome evaluate(EvaluationCommand command) {
         Objects.requireNonNull(command, "command");
+
+        final long deadlineEpochMilli;
+        try {
+            deadlineEpochMilli = Math.addExact(clock.millis(), RENDER_DEADLINE_MILLIS);
+        } catch (ArithmeticException unavailableDeadline) {
+            return rejected(EvaluationStage.REQUEST_ADMISSION,
+                    ProblemCode.RENDER_DEADLINE_EXCEEDED, null);
+        }
 
         var closureOutcome = closureAuthority.freezeClosure(
                 new TemplateClosureAuthority.RenderRequestId(command.renderRequestId().value()),

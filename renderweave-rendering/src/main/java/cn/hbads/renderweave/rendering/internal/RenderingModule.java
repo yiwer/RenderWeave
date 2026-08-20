@@ -8,6 +8,7 @@ import cn.hbads.renderweave.template.api.DesignSemanticAuthority;
 import cn.hbads.renderweave.template.api.TemplateClosureAuthority;
 import cn.hbads.renderweave.validation.ValidationTargetResolver;
 
+import java.time.Clock;
 import java.util.Objects;
 
 /**
@@ -32,7 +33,7 @@ public final class RenderingModule {
             AssetResolutionPort assets,
             RenderingCapabilityRuntime capabilities,
             ValidationTargetResolver validationResolver,
-            long deadlineEpochMilli
+            Clock clock
     ) {
         return new CanonicalEvaluator(
                 Objects.requireNonNull(closureAuthority, "closureAuthority"),
@@ -41,6 +42,6 @@ public final class RenderingModule {
                 assets,
                 Objects.requireNonNull(capabilities, "capabilities"),
                 Objects.requireNonNull(validationResolver, "validationResolver"),
-                deadlineEpochMilli);
+                Objects.requireNonNull(clock, "clock"));
     }
 }

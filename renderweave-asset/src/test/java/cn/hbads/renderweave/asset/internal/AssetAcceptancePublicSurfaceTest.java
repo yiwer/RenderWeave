@@ -33,9 +33,11 @@ class AssetAcceptancePublicSurfaceTest {
         assertEquals(Set.of(
                 AssetAcceptanceAuthority.class.getName(),
                 "cn.hbads.renderweave.asset.api.AssetApplication",
+                "cn.hbads.renderweave.asset.api.AssetResolver",
                 "cn.hbads.renderweave.asset.spi.AssetOwnerScopeAuthority",
                 "cn.hbads.renderweave.asset.spi.AssetPersistence",
                 "cn.hbads.renderweave.asset.spi.AssetBlobPersistence",
+                "cn.hbads.renderweave.asset.spi.AssetFetchEndpoint",
                 "cn.hbads.renderweave.asset.spi.AssetReferencePort",
                 "cn.hbads.renderweave.asset.internal.AssetModule"
         ), publicTopLevel);

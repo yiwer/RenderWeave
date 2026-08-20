@@ -441,9 +441,10 @@ final class Materializer {
     private MaterializationOutcome expandFrame(
             ObjectNode node, TemplateSnapshot snapshot, InvocationScope scope,
             String path, List<MaterializedNode> output) {
-        var children = expandChildList(node, snapshot, scope, path);
-        if (children == null) {
-            return failed(EvaluationStage.MATERIALIZATION, ProblemCode.RENDER_INTERNAL_ERROR, null);
+        var children = new ArrayList<MaterializedNode>();
+        var failure = expandChildList(node, snapshot, scope, path, children);
+        if (failure != null) {
+            return failure;
         }
         output.add(new MaterializedNode(
                 "frame", new ObjectNode(Map.of("kind", new Text("frame"))), children, path));
@@ -451,21 +452,26 @@ final class Materializer {
         return null;
     }
 
-    private List<MaterializedNode> expandChildList(
-            ObjectNode node, TemplateSnapshot snapshot, InvocationScope scope, String path) {
-        var children = new ArrayList<MaterializedNode>();
+    private MaterializationOutcome expandChildList(
+            ObjectNode node,
+            TemplateSnapshot snapshot,
+            InvocationScope scope,
+            String path,
+            List<MaterializedNode> children
+    ) {
         if (node.members().get("children") instanceof ArrayNode childArray) {
             for (var child : childArray.items()) {
                 if (!(child instanceof ObjectNode childObject)) {
-                    return null;
+                    return failed(EvaluationStage.MATERIALIZATION,
+                            ProblemCode.RENDER_INTERNAL_ERROR, null);
                 }
                 var failure = expandNode(childObject, snapshot, scope, path, children);
                 if (failure != null) {
-                    return null;
+                    return failure;
                 }
             }
         }
-        return children;
+        return null;
     }
 
     private MaterializationOutcome expandTemplateUse(
@@ -611,9 +617,10 @@ final class Materializer {
             return resolveFailure;
         }
         var finalMembers = ((ResolvedMembers) resolvedMembers).members();
-        var children = expandChildList(node, snapshot, scope, path);
-        if (children == null) {
-            return failed(EvaluationStage.MATERIALIZATION, ProblemCode.RENDER_INTERNAL_ERROR, null);
+        var children = new ArrayList<MaterializedNode>();
+        var childFailure = expandChildList(node, snapshot, scope, path, children);
+        if (childFailure != null) {
+            return childFailure;
         }
         output.add(new MaterializedNode(kind, finalMembers, children, path));
         recordSidecar(path, node);
@@ -870,9 +877,29 @@ final class Materializer {
                 kind,
                 audience,
                 deadlineEpochMilli));
+        if (outcome instanceof AssetResolutionPort.ResolveOutcome.ResolveRejected rejected) {
+            var problem = switch (rejected.reason()) {
+                case SCOPE_MISMATCH, NOT_FOUND -> ProblemCode.ASSET_RESOLVE_NOT_FOUND;
+                case NOT_ACTIVE -> ProblemCode.ASSET_RESOLVE_DELETED;
+                case KIND_MISMATCH -> ProblemCode.ASSET_RESOLVE_KIND_MISMATCH;
+            };
+            return failed(EvaluationStage.ASSET_RESOLUTION, problem, null);
+        }
+        if (outcome instanceof AssetResolutionPort.ResolveOutcome.ResolveConflict) {
+            return failed(EvaluationStage.ASSET_RESOLUTION,
+                    ProblemCode.RENDER_REQUEST_CONFLICT, null);
+        }
+        if (outcome instanceof AssetResolutionPort.ResolveOutcome.ResolveTimedOut) {
+            return failed(EvaluationStage.ASSET_RESOLUTION,
+                    ProblemCode.ASSET_RESOLVE_TIMEOUT, null);
+        }
+        if (outcome instanceof AssetResolutionPort.ResolveOutcome.ResolveUnavailable) {
+            return failed(EvaluationStage.ASSET_RESOLUTION,
+                    ProblemCode.ASSET_RESOLVE_UNAVAILABLE, null);
+        }
         if (!(outcome instanceof AssetResolutionPort.ResolveOutcome.Resolved resolved)) {
             return failed(EvaluationStage.ASSET_RESOLUTION,
-                    ProblemCode.ASSET_RESOLVE_NOT_FOUND, null);
+                    ProblemCode.RENDER_INTERNAL_ERROR, null);
         }
         if (resources.size() == MAX_RESOURCE_ENTRIES) {
             return failed(EvaluationStage.ASSET_RESOLUTION,

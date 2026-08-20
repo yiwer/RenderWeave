@@ -5,6 +5,7 @@ import cn.hbads.renderweave.asset.api.AssetApplication;
 import cn.hbads.renderweave.asset.spi.AssetPersistence;
 import cn.hbads.renderweave.asset.spi.AssetReferencePort;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.jdbc.core.simple.JdbcClient;
@@ -40,6 +41,7 @@ public class PostgresAssetPersistence implements AssetPersistence {
     private final long hardLimitBytes;
     private final Duration idempotencyTtl;
     private final AssetReferencePort referencePort;
+    private final ObjectProvider<AssetResolutionSecrets> resolutionSecrets;
 
     PostgresAssetPersistence(
             JdbcClient jdbc,
@@ -47,7 +49,8 @@ public class PostgresAssetPersistence implements AssetPersistence {
             ObjectMapper json,
             @Value("${renderweave.asset.capacity.hard-limit-bytes:107374182400}") long hardLimitBytes,
             @Value("${renderweave.asset.idempotency.ttl:PT24H}") Duration idempotencyTtl,
-            AssetReferencePort referencePort
+            AssetReferencePort referencePort,
+            ObjectProvider<AssetResolutionSecrets> resolutionSecrets
     ) {
         this.jdbc = jdbc;
         this.transactions = new TransactionTemplate(transactionManager);
@@ -55,6 +58,7 @@ public class PostgresAssetPersistence implements AssetPersistence {
         this.hardLimitBytes = hardLimitBytes;
         this.idempotencyTtl = idempotencyTtl;
         this.referencePort = Objects.requireNonNull(referencePort, "referencePort");
+        this.resolutionSecrets = Objects.requireNonNull(resolutionSecrets, "resolutionSecrets");
     }
 
     @Override
@@ -637,6 +641,234 @@ public class PostgresAssetPersistence implements AssetPersistence {
         }
     }
 
+    @Override
+    public RenderPrecheckOutcome precheckForRender(RenderPrecheckQuery query) {
+        try {
+            var found = jdbc.sql("""
+                            select owner_scope, kind, lifecycle
+                            from asset_aggregate
+                            where asset_id = :assetId
+                            """)
+                    .param("assetId", query.assetId().value())
+                    .query((rs, rowNum) -> new String[]{
+                            rs.getString("owner_scope"),
+                            rs.getString("kind"),
+                            rs.getString("lifecycle")
+                    })
+                    .optional();
+            if (found.isEmpty()) {
+                return new RenderPrecheckRejected(RenderRejection.NOT_FOUND);
+            }
+            String[] facts = found.get();
+            if (!query.ownerScope().value().equals(facts[0])) {
+                return new RenderPrecheckRejected(RenderRejection.SCOPE_MISMATCH);
+            }
+            if (!"ACTIVE".equals(facts[2])) {
+                return new RenderPrecheckRejected(RenderRejection.DELETED);
+            }
+            if (!query.expectedKind().name().equals(facts[1])) {
+                return new RenderPrecheckRejected(RenderRejection.KIND_MISMATCH);
+            }
+            return new RenderPrecheckPassed();
+        } catch (DataAccessException unavailable) {
+            return new RenderPrecheckUnavailable();
+        }
+    }
+
+    @Override
+    public RenderSelectionOutcome resolveForRender(RenderSelectionQuery query) {
+        AssetResolutionSecrets secrets = resolutionSecrets.getIfAvailable();
+        if (secrets == null) {
+            return new RenderSelectionUnavailable();
+        }
+        try {
+            return Objects.requireNonNull(transactions.execute(status -> {
+                // The advisory lock closes the absent-row race; the table PK remains the
+                // durable uniqueness authority. A hash collision only serializes unrelated keys.
+                jdbc.sql("select pg_advisory_xact_lock(hashtextextended(:selectionKey, 0))")
+                        .param(
+                                "selectionKey",
+                                query.renderRequestId().length() + ":" + query.renderRequestId()
+                                        + query.resourceId()
+                        )
+                        .query((rs, rowNum) -> 1)
+                        .single();
+
+                var existing = findSelection(query.renderRequestId(), query.resourceId());
+                if (existing.isPresent()) {
+                    var row = existing.get();
+                    if (row.header().recordExpiresAtEpochMilli() <= query.issuedAtEpochMilli()) {
+                        jdbc.sql("""
+                                        delete from asset_render_selection
+                                        where render_request_id = :renderRequestId
+                                          and resource_id = :resourceId
+                                        """)
+                                .param("renderRequestId", query.renderRequestId())
+                                .param("resourceId", query.resourceId())
+                                .update();
+                    } else if (!row.header().requestFingerprint()
+                            .equals(query.requestFingerprint())) {
+                        return new RenderSelectionConflict();
+                    } else {
+                        try {
+                            return new RenderSelectionResolved(secrets.open(
+                                    row.header(), row.nonce(), row.ciphertext()));
+                        } catch (AssetResolutionSecrets.SecretFailure corrupt) {
+                            return new RenderSelectionUnavailable();
+                        }
+                    }
+                }
+
+                var candidate = jdbc.sql("""
+                                select a.owner_scope, a.kind, a.lifecycle,
+                                       r.content_version, r.sha256, r.media_type, r.byte_length,
+                                       r.descriptor_kind, r.descriptor_json
+                                from asset_aggregate a
+                                join asset_content_revision r
+                                  on r.asset_id = a.asset_id
+                                 and r.content_version = a.current_content_version
+                                where a.asset_id = :assetId
+                                for share of a
+                                """)
+                        .param("assetId", query.assetId().value())
+                        .query((rs, rowNum) -> new ResolutionCandidate(
+                                rs.getString("owner_scope"),
+                                AssetAcceptanceAuthority.AssetKind.valueOf(rs.getString("kind")),
+                                AssetApplication.Lifecycle.valueOf(rs.getString("lifecycle")),
+                                new ResolutionContent(
+                                        rs.getLong("content_version"),
+                                        rs.getString("sha256"),
+                                        rs.getString("media_type"),
+                                        rs.getLong("byte_length"),
+                                        readDescriptor(
+                                                rs.getString("descriptor_kind"),
+                                                rs.getString("descriptor_json"))
+                                )
+                        ))
+                        .optional();
+                if (candidate.isEmpty()) {
+                    return new RenderSelectionRejected(RenderRejection.NOT_FOUND);
+                }
+                ResolutionCandidate facts = candidate.get();
+                if (!query.ownerScope().value().equals(facts.ownerScope())) {
+                    return new RenderSelectionRejected(RenderRejection.SCOPE_MISMATCH);
+                }
+                if (facts.lifecycle() != AssetApplication.Lifecycle.ACTIVE) {
+                    return new RenderSelectionRejected(RenderRejection.DELETED);
+                }
+                if (facts.kind() != query.expectedKind()) {
+                    return new RenderSelectionRejected(RenderRejection.KIND_MISMATCH);
+                }
+
+                var selection = new RenderSelection(
+                        query.renderRequestId(),
+                        query.ownerScope(),
+                        query.resourceId(),
+                        query.assetId(),
+                        query.expectedKind(),
+                        query.rendererAudience(),
+                        query.requestFingerprint(),
+                        secrets.newLeaseHandle(),
+                        facts.content(),
+                        query.issuedAtEpochMilli(),
+                        query.leaseExpiresAtEpochSecond(),
+                        query.recordExpiresAtEpochMilli()
+                );
+                AssetResolutionSecrets.SealedSelection sealed;
+                try {
+                    sealed = secrets.seal(selection);
+                } catch (AssetResolutionSecrets.SecretFailure unavailable) {
+                    return new RenderSelectionUnavailable();
+                }
+                jdbc.sql("""
+                                insert into asset_render_selection (
+                                    render_request_id, resource_id, request_fingerprint,
+                                    lease_handle, selection_nonce, selection_cipher,
+                                    issued_at, lease_expires_at, record_expires_at
+                                ) values (
+                                    :renderRequestId, :resourceId, :requestFingerprint,
+                                    :leaseHandle, :selectionNonce, :selectionCipher,
+                                    :issuedAt, :leaseExpiresAt, :recordExpiresAt
+                                )
+                                """)
+                        .param("renderRequestId", selection.renderRequestId())
+                        .param("resourceId", selection.resourceId())
+                        .param("requestFingerprint", selection.requestFingerprint())
+                        .param("leaseHandle", selection.leaseHandle())
+                        .param("selectionNonce", sealed.nonce())
+                        .param("selectionCipher", sealed.ciphertext())
+                        .param("issuedAt", selection.issuedAtEpochMilli())
+                        .param("leaseExpiresAt", selection.leaseExpiresAtEpochSecond())
+                        .param("recordExpiresAt", selection.recordExpiresAtEpochMilli())
+                        .update();
+                return new RenderSelectionResolved(selection);
+            }));
+        } catch (RuntimeException unavailable) {
+            return new RenderSelectionUnavailable();
+        }
+    }
+
+    @Override
+    public RenderLeaseLoadOutcome loadRenderSelection(RenderLeaseLookup lookup) {
+        AssetResolutionSecrets secrets = resolutionSecrets.getIfAvailable();
+        if (secrets == null) {
+            return new RenderLeaseUnavailable();
+        }
+        try {
+            var found = jdbc.sql("""
+                            select render_request_id, resource_id, request_fingerprint,
+                                   lease_handle, selection_nonce, selection_cipher,
+                                   issued_at, lease_expires_at, record_expires_at
+                            from asset_render_selection
+                            where lease_handle = :leaseHandle
+                            """)
+                    .param("leaseHandle", lookup.leaseHandle())
+                    .query(PostgresAssetPersistence::encryptedSelectionRow)
+                    .optional();
+            if (found.isEmpty()
+                    || found.get().header().recordExpiresAtEpochMilli()
+                    <= System.currentTimeMillis()) {
+                return new RenderLeaseNotFound();
+            }
+            try {
+                return new RenderLeaseLoaded(secrets.open(
+                        found.get().header(), found.get().nonce(), found.get().ciphertext()));
+            } catch (AssetResolutionSecrets.SecretFailure corrupt) {
+                return new RenderLeaseNotFound();
+            }
+        } catch (DataAccessException unavailable) {
+            return new RenderLeaseUnavailable();
+        }
+    }
+
+    int sweepExpiredRenderSelections() {
+        return jdbc.sql("""
+                        delete from asset_render_selection
+                        where record_expires_at <= :now
+                        """)
+                .param("now", System.currentTimeMillis())
+                .update();
+    }
+
+    private Optional<EncryptedSelectionRow> findSelection(
+            String renderRequestId,
+            String resourceId
+    ) {
+        return jdbc.sql("""
+                        select render_request_id, resource_id, request_fingerprint,
+                               lease_handle, selection_nonce, selection_cipher,
+                               issued_at, lease_expires_at, record_expires_at
+                        from asset_render_selection
+                        where render_request_id = :renderRequestId
+                          and resource_id = :resourceId
+                        for update
+                        """)
+                .param("renderRequestId", renderRequestId)
+                .param("resourceId", resourceId)
+                .query(PostgresAssetPersistence::encryptedSelectionRow)
+                .optional();
+    }
+
     private void insertContentRevision(CreateCommit commit) {
         jdbc.sql("""
                         insert into asset_content_revision (
@@ -808,6 +1040,23 @@ public class PostgresAssetPersistence implements AssetPersistence {
         );
     }
 
+    private static EncryptedSelectionRow encryptedSelectionRow(ResultSet rs, int rowNum)
+            throws SQLException {
+        return new EncryptedSelectionRow(
+                new AssetResolutionSecrets.RecordHeader(
+                        rs.getString("render_request_id"),
+                        rs.getString("resource_id"),
+                        rs.getString("request_fingerprint"),
+                        rs.getString("lease_handle"),
+                        rs.getLong("issued_at"),
+                        rs.getLong("lease_expires_at"),
+                        rs.getLong("record_expires_at")
+                ),
+                rs.getBytes("selection_nonce"),
+                rs.getBytes("selection_cipher")
+        );
+    }
+
     private static List<String> readTags(String raw) {
         try {
             return STATIC_JSON.readValue(raw, STRING_LIST);
@@ -850,6 +1099,21 @@ public class PostgresAssetPersistence implements AssetPersistence {
     }
 
     private record Cursor(Instant updatedAt, String assetId) {
+    }
+
+    private record ResolutionCandidate(
+            String ownerScope,
+            AssetAcceptanceAuthority.AssetKind kind,
+            AssetApplication.Lifecycle lifecycle,
+            ResolutionContent content
+    ) {
+    }
+
+    private record EncryptedSelectionRow(
+            AssetResolutionSecrets.RecordHeader header,
+            byte[] nonce,
+            byte[] ciphertext
+    ) {
     }
 
     private static Cursor decodeCursor(String cursor) {
