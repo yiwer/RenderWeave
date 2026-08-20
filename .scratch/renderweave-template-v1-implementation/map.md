@@ -25,6 +25,9 @@ Label: wayfinder:map
 - `fast`、`server`、`web`、`runtime`、`full`、`e2e` 继续服从仓库 gate 约定；证据按 A0–A3/J0–J1 如实标注。静态 fixture、A1/A2 replay 不等于浏览器行为、人工验收、产品执行或物理 Linux 认证。
 - grilling 票据使用 `grilling`、`domain-modeling` 与 `codebase-design`；task 票据使用 `agent-sdlc-workflow`，涉及实现时采用 `tdd`；prototype 票据使用 `prototype`。若后续出现必须查外部事实的明确问题，再登记独立 research 票据并使用 `research`，不得把模糊调研藏进实现票。
 - 付费 provider、真实数据、API Key、生产部署和新的外部授权均不在自动执行范围。局部受阻时继续其他安全 frontier；只有产品语义必须改变、需要新授权或确实无安全路径时才询问用户。
+- Goal（2026-08-20 重置，用户明确指示）：持续推进 Template v1 直到完成。本会话 harness 无
+  get_goal/update_goal 工具，goal 状态以本 tracker 为记账面；rounds 自 T21 起继续计数，单 writer
+  纪律不变。
 
 ## Decisions so far
 
@@ -154,13 +157,14 @@ Label: wayfinder:map
 - Asset persistence、replace/delete/restore、依赖影响确认、Asset UI 与 Renderer-only lease 的实施顺序已由
   Ticket 05 冻结为 T10 → T11 → T12a → T12b → T13；T10/T10b/T11/T12a/T12b 已完成。Template
   依赖投影（从 DesignDSL 提取 authored AssetRef atom 的 current-only 投影、`AssetReferenceAuthority` 物化与
-  STALE 消费）已登记为 T20 并已 resolve，T12b 以其为 blocker 已 resolve；T13 以首个 Rendering
-  实现票与 T08 为前置，当前无 unblocked frontier。
+  STALE 消费）已登记为 T20 并已 resolve，T12b 以其为 blocker 已 resolve；首个 Rendering 实现票已
+  登记为 T21 并 claim（唯一 unblocked frontier），T13 以 T21 为前置。
 - Expression/value binding、closure、capability、nested Template、layout lowering 与正式 RenderDocument 的
   实现切片，要等 Evaluator seam 给出稳定 ownership 和错误面后再登记——ADR-0044 已给出该 seam：首个
-  Rendering task 票将同时物化 `TemplateClosureAuthority`/`Evaluator`/seal 纵切与 RenderNodeContract/
-  向量语料（Java primary；Rust independent 与 `render` gate 随 T08）；AssetRef-atom 预准入提取随
-  DesignDSL full-Profile 拆分实现。
+  Rendering task 票已登记为 T21 并 claim，同时物化 `TemplateClosureAuthority`/`Evaluator`/seal 纵切与
+  RenderNodeContract/向量语料（Java primary；Rust independent 与 `render` gate 随 T08 实现票）；
+  AssetRef-atom 预准入提取所依赖的 DesignDSL full-Profile 原子（T14–T20）已落地；Engine 执行、
+  公开 render/preview 面与 AssetResolver/lease 物化分别是 T08 实现票、Engine 产品面票与 T13 的后续切片。
 - Rust layout、font shaping、resource decode、raster、PNG/JPEG encoding 与 exact pixel replay 的切片，
   要等 process protocol 和 build/certification contract 冻结后再登记——ADR-0045 已给出该合同：首个
   Rust/process task 票将同时物化 daemon、帧编解码、certified manifest 与仓库内 replay harness；

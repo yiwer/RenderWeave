@@ -24,6 +24,7 @@
         <module>renderweave-inference</module>
         <module>renderweave-template</module>
         <module>renderweave-asset</module>
+        <module>renderweave-rendering</module>
         <module>renderweave-app</module>
     </modules>
 

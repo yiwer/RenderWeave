@@ -1,9 +1,10 @@
 # RenderWeave Template v1 Implementation Plan
 
 - 状态：`in_progress`；TV1-T01/T02/T03/T04/T05/T06/T07/T08/T09/T10/T10b/T11/T12a/T12b/T14/T14b/T15/T16/T17/T18/T19/T20=`automated_verified`
-  （T09 另含人工 J1），TV1-T13=`open`（T12b 的 blocker 已 resolve；TV1-T13 以首个 Rendering
-  实现票与 T08 为前置，当前无 unblocked frontier）
-- 日期：2026-08-19
+  （T09 另含人工 J1），TV1-T21=`open`（claimed：首个 Rendering 纵切——TemplateClosureAuthority/
+  Evaluator stage 1–8/seal + RenderNodeContract 向量语料，Java primary），TV1-T13=`open`（以
+  TV1-T21 为前置）
+- 日期：2026-08-20
 - Approved delta：[`specs/changes/20260817-template-v1-implementation-authority.md`](../specs/changes/20260817-template-v1-implementation-authority.md)
 - Frozen checkpoint：`0b485f4a13de9d754a81d07f464730776e13c14b`
 - Code base anchor：`main@7848c821aa9b809dd8cadb2b5e28f40f6947a90e`
@@ -100,6 +101,10 @@ flowchart LR
   T14 --> T20[20 依赖投影]
   T19 --> T20
   T20 --> T12b
+  T07 --> T21[21 Rendering seam 物化]
+  T08 --> T21
+  T20 --> T21
+  T21 --> T13
 ```
 
 | Ticket | 类型 | 状态 | Blocked by | 本票退出事实 |
@@ -127,6 +132,7 @@ flowchart LR
 | 18 | task | `resolved` | 03, 14, 15 | Conditional 原子（condition/absent policy/剪枝，manifest v8 211 vectors） |
 | 19 | task | `resolved` | 03, 14, 15, 16 | TemplateUse 原子（ContextSelector/fills/closure 边，manifest v7 197 vectors） |
 | 20 | task | `resolved` / `automated_verified` | 04, 05, 14, 19 | Template 依赖投影（AssetRef/反向索引/STALE 消费）；T12b 的 blocker |
+| 21 | task | `open`（claimed） | 07, 08, 20 | 首个 Rendering 纵切：TemplateClosureAuthority/Evaluator stage 1–8/seal + RenderNodeContractCatalog 与向量语料（Java primary）；V023 + app Adapter；无公开 route |
 
 每次只 claim 一个 unblocked ticket；一票 resolved 后才由其 `Blocked by` 关系产生下一 frontier。未知实现切片留在
 map 的 `Not yet specified`，不为排满计划提前发明接口、migration 或 Profile identity。
@@ -142,9 +148,11 @@ kind 已 admission，Java/Python 211/211，Profile 仍 NOT_REGISTERED）；TV1-T
 T12b 的 blocker）已 resolve（AssetRef/TemplateUse 原子提取 + current-only 投影物化 + 反向 proof +
 STALE 消费 + readiness recheck，template gate 含 A2 提取重放，V021）；TV1-T12b（被引用 Asset 删除
 确认与恢复编排）已 resolve（AssetReferencePort 桥接 + 5 分钟单次确认 token + 独占 reservation 零写
-重验 + 软删除/恢复 + assetId 排序读 reservation，V022 + OpenAPI 0.13.0 + Web SDK）；TV1-T13 以首个
-Rendering 实现票与 T08 为前置，当前无 unblocked frontier。single-writer 不顺带 claim 或预建
-delete/restore/Resolver/Rust wire/Editor 产品 route；Editor E1–E9 切片在各自前置满足后另行登记。
+重验 + 软删除/恢复 + assetId 排序读 reservation，V022 + OpenAPI 0.13.0 + Web SDK）；首个 Rendering
+实现票已登记为 TV1-T21（TemplateClosureAuthority/Evaluator stage 1–8/seal + RenderNodeContract
+向量语料，Java primary）并 claim，成为唯一 unblocked frontier；TV1-T13 以 TV1-T21 为前置。
+single-writer 不顺带 claim 或预建 Resolver/Rust wire/公开 render route/Editor 产品 route；
+Editor E1–E9 切片在各自前置满足后另行登记。
 
 ## 5. TV1-T01 执行卡
 
@@ -383,3 +391,34 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
 - 保证等级：浏览器自动观察 A1；叠加人工 J1；无独立 A2 重放、无 A3；不开放产品 route。
 - 完成信号：Ticket 09 resolved/`automated_verified`（J1）、E1–E9 作为后续 Editor 实施票的前置分解登记、
   形成一个 verified `agent-commit` 且 worktree clean；不 push/tag/PR。
+
+## 20. TV1-T21 执行卡
+
+- 决策：物化 ADR-0044 冻结 seam 的首个 Rendering 纵切（`renderweave-rendering` 首个 artifact）：
+  Template-owned `TemplateClosureAuthority.freezeClosure`（integrity 复核/递归闭包/逐 snapshot 权威
+  重检/漂移有界重试）、单一窄 `Evaluator.evaluate` stage 1–8 first-fail 串行（REQUEST_ADMISSION →
+  DOCUMENT_SEAL，含 expression 完整求值、Repeat/Conditional/TemplateUse 展开、Asset 预准入与串行
+  resolve、CapabilityState Clock/Random exact 派生）、RenderNodeContractCatalog 驱动的 lowering 与
+  原子 seal（occurrenceId 先序/c14n canonical/四个 domain digest/Renderer Command 构造）、
+  `CapabilityStateStore` 三操作 + app AES-GCM 加密落盘（派生 nonce，V023）、`RenderEngine` 五态 port
+  合同（scripted adapter）、Rendering-owned `AssetResolutionPort` consumer seam（生产 bridge 随
+  T13）、problem 基础形态 + 九值 stage enum + closed limitId 结构容量、请求级诊断 sidecar；
+  RenderDSL canonical/digest/Command/capability 向量语料镜像 T03/T10 manifest 格式，Java primary
+  重放（A1；Rust independent 与 `render` gate 入 `full` 随 T08 实现票）。
+- 允许影响：root reactor 与 app POM compile edges、renderweave-rendering 源码/测试/vectors、
+  renderweave-template api/internal（closure authority + TemplateModule factory）、renderweave-app
+  Adapter/Configuration/V023 migration、contract/public-surface/architecture/canary 测试、
+  CONTEXT/tracker/plan/log/NOTES/evidence。
+- 禁止影响：公开 render/preview/diagnostic route 与 OpenAPI/Web SDK 变更（contractVersion 保持
+  0.13.0）、AssetResolver/lease/fetch endpoint 实现（T13）、Rust 工程与 process adapter（T08 实现
+  票）、`render` gate 入 `full`、Profile available 注册、容量数值 oracle/registry（Ticket 19）、
+  Editor 产品代码、真实 Engine 执行或 synthetic raster、付费 provider/真实数据。
+- 局部验证：TDD red/green；rendering 模块 contract/public-surface/architecture；closure integrity/
+  漂移重试/`TEMPLATE_CLOSURE_UNSTABLE`；input admission typed-view 与 Custom 消解；expression exact
+  语义（typing/ERROR/lazy/memoize）；Repeat/Conditional/TemplateUse 展开与剪枝；capability HMAC
+  exact 派生/demand/fingerprint/conflict；seal occurrenceId/c14n/digests/Command；scripted engine
+  Unknown 重发；Asset port 缺席 fail-closed 与 scripted 在场全链路；Testcontainers PostgreSQL。
+- 受影响验证：`template`、`asset`、`server`、`web` 与完整 `full` 16/16（canary 迁移数 22→23）。
+- 保证等级：gate A1；向量 Java primary 重放（独立重放缺位，A2 随 Rust independent）；无 A3/J1。
+- 完成信号：Ticket 21 resolved/`automated_verified`、T13 成为唯一 unblocked frontier、形成 verified
+  commit 且 worktree clean；push 待用户另行授权。
