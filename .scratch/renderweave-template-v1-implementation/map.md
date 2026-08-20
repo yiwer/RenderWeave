@@ -144,6 +144,11 @@ Label: wayfinder:map
   frozen size/min-max、HUG/FILL cycle、Stack/Grid、Text 与 statically-decidable QR 约束，并在 daemon 的
   document-admission 边界 fail closed；7 positive + 25 negative 由 Rust/Python 共同重放，独立验证 32/32、
   77 checks。未产生 box/scene，未选择 tolerance，未注册 Profile 或接线 RESULT。
+- [实现资源无关的确定尺寸 ABSOLUTE box 布局内核](issues/26-definite-absolute-box-layout-kernel.md) —
+  **resolved / automated_verified**；在不选择 Layout tolerance、不接 daemon success 的边界内深化现有 Rust
+  layout crate，只对 Canvas→Frame/8 种资源无关视觉叶子的 FIXED/FILL + ABSOLUTE 闭包计算 binary64
+  pre-transform local LayoutBox/ContentBox；6 laid-out + 9 unsupported 由 Rust/Python 共同重放，独立验证
+  15/15、50 checks。合法未覆盖面继续返回 internal unsupported，不冒充 public problem。
 - [验证 Product Editor 状态、恢复与权威预览架构](issues/09-validate-product-editor-architecture.md) —
   throwaway 逻辑原型（`/prototype/editor-state-model`，不进产品 route）把冻结编辑器规则编码为确定性
   fixture 状态机：10 个引导走查场景 37/37 断言 + 自由操作冒烟 + 键盘焦点检查全部通过（Playwright A1，
@@ -197,8 +202,9 @@ Label: wayfinder:map
   T23 也已 resolve（automated_verified）：exact RenderDocument/default/lowering 与跨语言 validator 已形成纵切。
   T24 也已 resolve（automated_verified）：surface preflight 与 exact PNG encoder kernel 已形成独立纵切，但未接线
   daemon success path、未生成 raster，也未注册 Renderer/Output Profile。T25 现也已 resolve
-  （automated_verified）：static layout preflight deep kernel 与 daemon defensive admission 已形成纵切，仍未做
-  measure/arrange 或 Profile 注册。下一个实现 frontier 必须从真实剩余依赖单独登记并 claim，不提前预建接口。
+  （automated_verified）：static layout preflight deep kernel 与 daemon defensive admission 已形成纵切。T26 现也已
+  resolve（automated_verified）：资源无关 definite ABSOLUTE local boxes 已形成真实 arrange 子闭包，仍未提前实现
+  tolerance-dependent HUG/Stack/Grid、资源、world scene 或 daemon output。
 - Expression/value binding、closure、capability、nested Template、layout lowering 与正式 RenderDocument 的
   实现切片由 T21 物化首个 Rendering 纵切（`TemplateClosureAuthority`/`Evaluator` stage 1–8/seal 与
   RenderNodeContract/向量语料 Java primary，已 resolve）；仍待后续票：Engine 执行（Rust daemon +
@@ -212,8 +218,8 @@ Label: wayfinder:map
   Rust/process task T22 已 resolve，已物化 daemon、帧编解码、machine manifest 与仓库内 replay
   harness；`render` gate 已随 T22 纳入 `full`。T23 已补齐 Engine 不得猜测的 exact document/default 前置；
   T24 已单独登记 exact surface/PNG kernel，但不等于 layout/raster/daemon output；T25 已完成
-  statically-decidable layout preflight，也不等于 measure/arrange。其余实际 layout/resource/raster/JPEG/Engine
-  接线仍须另行登记，物理 Linux
+  statically-decidable layout preflight，T26 也已完成 definite ABSOLUTE local box 子闭包；其余
+  HUG/Stack/Grid/resource/world scene/raster/JPEG/Engine 接线仍须另行登记，物理 Linux
   双 CPU-family 认证与 J1/A3 属届时另行授权的执行级门控。
 - Product Editor 的 save/recovery/conflict/preview/browser automation 与 accessibility 实施票，要等状态架构
   prototype 结论后再登记——T09 已给出结论与 E1–E9 占位-free 纵切分解（open/baseline、本地编辑+undo+

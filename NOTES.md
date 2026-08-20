@@ -1782,3 +1782,21 @@
   `.sdlc/evidence/20260821-035919-server/` 与 `fast` `.sdlc/evidence/20260821-041051-fast/` 全绿；最终 full
   在记录冻结后捕获并只在提交交接报告。process manifest/HELLO SHA 链已同步但 capability inventory 未增加；
   T25 不升级 Renderer/Template v1 READY，不 push/tag/PR。
+
+### Template v1 TV1-T26 definite ABSOLUTE local boxes（resolved / automated_verified）
+
+- 2026-08-21：T25 已以 verified local commit `7fdadc9` 收口且 worktree clean；从剩余 layout 依赖单独登记并由
+  Codex `/root` single-writer claim T26（blocked by T23/T25，均 resolved）。
+- 完整 HUG/FILL water filling、Grid 与 transform conformance 仍依赖未冻结的 Layout Profile tolerance；本票不替
+  产品选择 epsilon。首个真实 arrange 切片只覆盖 Canvas→Frame/无资源视觉叶子的 FIXED/FILL + ABSOLUTE
+  闭包，以 binary64 固定运算顺序产生 pre-transform local LayoutBox/ContentBox。
+- 合法但未覆盖的 HUG、Group、Stack/Grid、compositionViewport、Text/Image 与退化 content inset 只返回
+  closed internal unsupported，不映射 public problem、不接 daemon。没有 resource/shaping/world scene/paint/raster/
+  codec/RESULT/Profile/formal record/physical Linux/J1/A3/provider/真实数据/API Key 副作用。
+- 先冻结 shared fixtures/vectors并捕获缺位 Rust API 与 Python stub RED；实现后 Rust primary 3 tests 与 Python
+  stdlib independent replay 共同验证 6 laid-out + 9 unsupported，后者 15/15、50 checks、A2。提交前审阅又消除
+  了 canonical decimal 从 binary64 转回文本再解析的第二次转换，使 T25 preflight 与 T26 layout 复用同一次解析。
+- `render` `.sdlc/evidence/20260821-055509-render/`、`server`
+  `.sdlc/evidence/20260821-053225-server/` 与 `fast` `.sdlc/evidence/20260821-055925-fast/` 全绿；最终 full
+  在记录冻结后捕获并只在提交交接报告。`render` gate 1.3 硬断言 definite report与
+  NOT_REGISTERED/NOT_CERTIFIED/world scene+raster ABSENT/daemon UNWIRED/provider attempts 0。

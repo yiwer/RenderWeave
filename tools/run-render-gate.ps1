@@ -36,12 +36,14 @@ if (-not $resolvedEvidenceDir.StartsWith(
 $independentReport = Join-Path $resolvedEvidenceDir 'renderer-process-independent.json'
 $documentReport = Join-Path $resolvedEvidenceDir 'render-document-independent.json'
 $layoutPreflightReport = Join-Path $resolvedEvidenceDir 'layout-preflight-independent.json'
+$definiteLayoutReport = Join-Path $resolvedEvidenceDir 'definite-layout-independent.json'
 $outputPngReport = Join-Path $resolvedEvidenceDir 'output-png-independent.json'
 $summaryPath = Join-Path $resolvedEvidenceDir 'renderer-process-summary.json'
 foreach ($report in @(
         $independentReport,
         $documentReport,
         $layoutPreflightReport,
+        $definiteLayoutReport,
         $outputPngReport,
         $summaryPath)) {
     if (Test-Path -LiteralPath $report) {
@@ -253,6 +255,40 @@ try {
         throw 'Layout preflight independent report boundary drifted.'
     }
 
+    Invoke-Checked 'definite-layout-python-independent-replay' {
+        & python.exe 'tools\verify-definite-layout-vectors.py' `
+            '--vectors' 'renderer\definite-layout-vectors-v1.json' `
+            '--fixtures' 'renderer\definite-layout-fixtures-v1.json' `
+            '--layout-preflight-fixtures' 'renderer\layout-preflight-fixtures-v1.json' `
+            '--all-kinds' 'renderer\render-document-all-kinds-v1.json' `
+            '--report' $definiteLayoutReport
+    }
+    if (-not (Test-Path -LiteralPath $definiteLayoutReport -PathType Leaf)) {
+        throw 'Definite layout independent replay did not write its report.'
+    }
+    $definiteLayoutIndependent = Get-Content -Raw -Encoding UTF8 -LiteralPath $definiteLayoutReport |
+        ConvertFrom-Json
+    if ($definiteLayoutIndependent.verifier -ne 'renderweave-definite-layout-python-independent/1' `
+            -or $definiteLayoutIndependent.result -ne 'PASS' `
+            -or $definiteLayoutIndependent.assurance -ne 'A2' `
+            -or $definiteLayoutIndependent.laidOutCases -ne 6 `
+            -or $definiteLayoutIndependent.unsupportedCases -ne 9 `
+            -or $definiteLayoutIndependent.passed -ne 15 `
+            -or $definiteLayoutIndependent.total -ne 15 `
+            -or $definiteLayoutIndependent.failed -ne 0 `
+            -or $definiteLayoutIndependent.checks -ne 50 `
+            -or $definiteLayoutIndependent.layoutProfile -ne 'renderweave-layout/1.0' `
+            -or $definiteLayoutIndependent.profileAvailability -ne 'NOT_REGISTERED' `
+            -or $definiteLayoutIndependent.certificationStatus -ne 'NOT_CERTIFIED' `
+            -or $definiteLayoutIndependent.layoutImplementation -ne 'DEFINITE_ABSOLUTE_LOCAL_BOX_KERNEL_ONLY' `
+            -or $definiteLayoutIndependent.worldTransformImplementation -ne 'ABSENT' `
+            -or $definiteLayoutIndependent.sceneImplementation -ne 'ABSENT' `
+            -or $definiteLayoutIndependent.rasterImplementation -ne 'ABSENT' `
+            -or $definiteLayoutIndependent.daemonOutputPath -ne 'UNWIRED' `
+            -or $definiteLayoutIndependent.providerAttempts -ne 0) {
+        throw 'Definite layout independent report boundary drifted.'
+    }
+
     Invoke-Checked 'output-png-python-independent-replay' {
         & python.exe 'tools\verify-output-png-vectors.py' `
             '--vectors' 'renderer\output-png-vectors-v1.json' `
@@ -321,7 +357,7 @@ try {
     }
 
     $summary = [ordered]@{
-        gateVersion = 'renderweave-renderer-process-gate/1.2'
+        gateVersion = 'renderweave-renderer-process-gate/1.3'
         status = 'PASS'
         processContractVersion = 'renderweave-renderer-process/1.0'
         java = $java
@@ -369,6 +405,16 @@ try {
             fixturesSha256 = $layoutPreflightIndependent.fixturesSha256
             layoutProfile = $layoutPreflightIndependent.layoutProfile
         }
+        definiteLayoutIndependent = [ordered]@{
+            verifier = $definiteLayoutIndependent.verifier
+            assurance = $definiteLayoutIndependent.assurance
+            laidOutCases = $definiteLayoutIndependent.laidOutCases
+            unsupportedCases = $definiteLayoutIndependent.unsupportedCases
+            checks = $definiteLayoutIndependent.checks
+            vectorSha256 = $definiteLayoutIndependent.vectorSha256
+            fixturesSha256 = $definiteLayoutIndependent.fixturesSha256
+            layoutProfile = $definiteLayoutIndependent.layoutProfile
+        }
         outputPngIndependent = [ordered]@{
             verifier = $outputPngIndependent.verifier
             assurance = $outputPngIndependent.assurance
@@ -383,7 +429,7 @@ try {
             profileAvailability = 'NOT_REGISTERED'
             certificationStatus = 'NOT_CERTIFIED'
             rasterImplementation = 'ABSENT'
-            layoutKernel = 'STATIC_PREFLIGHT_AUTOMATED_VERIFIED_DOCUMENT_ADMISSION_ONLY'
+            layoutKernel = 'DEFINITE_ABSOLUTE_LOCAL_BOX_AUTOMATED_VERIFIED_UNWIRED'
             outputPngKernel = 'AUTOMATED_VERIFIED_UNWIRED'
             daemonOutputPath = 'UNWIRED'
             rendererReady = $false
@@ -395,10 +441,11 @@ try {
         }
     }
     Write-Utf8File -Path $summaryPath -Content ($summary | ConvertTo-Json -Depth 6)
-    Write-Host (('Renderer process: Java={0} Python={1}+{2}+{3}+{4} Rust Windows=PASS ' +
+    Write-Host (('Renderer process: Java={0} Python={1}+{2}+{3}+{4}+{5} Rust Windows=PASS ' +
                 'Linux UDS=PASS Profile=NOT_REGISTERED Certification=NOT_CERTIFIED Raster=ABSENT') -f
             $java.tests, $independent.checks, $documentIndependent.total,
-            $layoutPreflightIndependent.total, $outputPngIndependent.total)
+            $layoutPreflightIndependent.total, $definiteLayoutIndependent.total,
+            $outputPngIndependent.total)
     Write-Host "Renderer process evidence: $summaryPath"
 }
 finally {

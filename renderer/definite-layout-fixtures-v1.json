@@ -1,0 +1,135 @@
+{
+  "fixtureVersion": "renderweave-definite-layout-fixtures/1",
+  "documents": {
+    "fixedRect": {
+      "canvas": {
+        "backgroundColor": "#00000000",
+        "bleed": {"bottomPt": 0, "leftPt": 0, "rightPt": 0, "topPt": 0},
+        "children": [
+          {
+            "cornerRadii": {"bottomLeftPt": 0, "bottomRightPt": 0, "topLeftPt": 0, "topRightPt": 0},
+            "fill": {"color": "#000000FF"},
+            "kind": "rect",
+            "occurrenceId": "rwocc_0000000000000001",
+            "opacity": 1,
+            "placement": {"heightMode": "FIXED", "heightPt": 20.25, "type": "ABSOLUTE", "widthMode": "FIXED", "widthPt": 10.5, "xPt": 1.25, "yPt": -2.5},
+            "transform": {"originX": 0.25, "originY": 0.75, "rotationDeg": 37, "scaleX": 2, "scaleY": 0.5},
+            "visible": true
+          }
+        ],
+        "heightPt": 80,
+        "kind": "canvas",
+        "occurrenceId": "rwocc_0000000000000000",
+        "widthPt": 100
+      },
+      "dslVersion": "renderweave-render/1.0",
+      "layoutProfile": "renderweave-layout/1.0",
+      "resources": []
+    },
+    "nestedFrame": {
+      "canvas": {
+        "backgroundColor": "#00000000",
+        "bleed": {"bottomPt": 0, "leftPt": 0, "rightPt": 0, "topPt": 0},
+        "children": [
+          {
+            "children": [
+              {
+                "cornerRadii": {"bottomLeftPt": 0, "bottomRightPt": 0, "topLeftPt": 0, "topRightPt": 0},
+                "fill": {"color": "#000000FF"},
+                "kind": "rect",
+                "occurrenceId": "rwocc_0000000000000002",
+                "opacity": 1,
+                "placement": {"heightMode": "FIXED", "heightPt": 11, "type": "ABSOLUTE", "widthMode": "FIXED", "widthPt": 10, "xPt": 1, "yPt": 2},
+                "transform": {"originX": 0.5, "originY": 0.5, "rotationDeg": 0, "scaleX": 1, "scaleY": 1},
+                "visible": true
+              }
+            ],
+            "clipContent": false,
+            "cornerRadii": {"bottomLeftPt": 0, "bottomRightPt": 0, "topLeftPt": 0, "topRightPt": 0},
+            "kind": "frame",
+            "occurrenceId": "rwocc_0000000000000001",
+            "opacity": 1,
+            "padding": {"bottomPt": 5, "leftPt": 7, "rightPt": 3, "topPt": 1},
+            "placement": {"heightMode": "FIXED", "heightPt": 60, "type": "ABSOLUTE", "widthMode": "FIXED", "widthPt": 80, "xPt": 10, "yPt": 20},
+            "stroke": {"cap": "BUTT", "color": "#000000FF", "join": "MITER", "widthPt": 2},
+            "transform": {"originX": 0.5, "originY": 0.5, "rotationDeg": 0, "scaleX": 1, "scaleY": 1},
+            "visible": true
+          }
+        ],
+        "heightPt": 100,
+        "kind": "canvas",
+        "occurrenceId": "rwocc_0000000000000000",
+        "widthPt": 100
+      },
+      "dslVersion": "renderweave-render/1.0",
+      "layoutProfile": "renderweave-layout/1.0",
+      "resources": []
+    },
+    "fillNested": {
+      "canvas": {
+        "backgroundColor": "#00000000",
+        "bleed": {"bottomPt": 0, "leftPt": 0, "rightPt": 0, "topPt": 0},
+        "children": [
+          {
+            "children": [
+              {
+                "cornerRadii": {"bottomLeftPt": 0, "bottomRightPt": 0, "topLeftPt": 0, "topRightPt": 0},
+                "fill": {"color": "#000000FF"},
+                "kind": "rect",
+                "occurrenceId": "rwocc_0000000000000002",
+                "opacity": 1,
+                "placement": {"bottomInsetPt": 4, "heightMode": "FILL", "minWidthPt": 65, "rightInsetPt": 8, "type": "ABSOLUTE", "widthMode": "FILL", "xPt": -2, "yPt": 3},
+                "transform": {"originX": 0.5, "originY": 0.5, "rotationDeg": 0, "scaleX": 1, "scaleY": 1},
+                "visible": true
+              }
+            ],
+            "clipContent": false,
+            "cornerRadii": {"bottomLeftPt": 0, "bottomRightPt": 0, "topLeftPt": 0, "topRightPt": 0},
+            "kind": "frame",
+            "occurrenceId": "rwocc_0000000000000001",
+            "opacity": 1,
+            "padding": {"bottomPt": 0, "leftPt": 0, "rightPt": 0, "topPt": 0},
+            "placement": {"bottomInsetPt": 20, "heightMode": "FILL", "maxWidthPt": 70, "minHeightPt": 55, "rightInsetPt": 15, "type": "ABSOLUTE", "widthMode": "FILL", "xPt": 5, "yPt": 10},
+            "transform": {"originX": 0.5, "originY": 0.5, "rotationDeg": 0, "scaleX": 1, "scaleY": 1},
+            "visible": true
+          }
+        ],
+        "heightPt": 80,
+        "kind": "canvas",
+        "occurrenceId": "rwocc_0000000000000000",
+        "widthPt": 100
+      },
+      "dslVersion": "renderweave-render/1.0",
+      "layoutProfile": "renderweave-layout/1.0",
+      "resources": []
+    },
+    "degenerateFrame": {
+      "canvas": {
+        "backgroundColor": "#00000000",
+        "bleed": {"bottomPt": 0, "leftPt": 0, "rightPt": 0, "topPt": 0},
+        "children": [
+          {
+            "children": [],
+            "clipContent": false,
+            "cornerRadii": {"bottomLeftPt": 0, "bottomRightPt": 0, "topLeftPt": 0, "topRightPt": 0},
+            "kind": "frame",
+            "occurrenceId": "rwocc_0000000000000001",
+            "opacity": 1,
+            "padding": {"bottomPt": 0, "leftPt": 0, "rightPt": 0, "topPt": 0},
+            "placement": {"heightMode": "FIXED", "heightPt": 10, "type": "ABSOLUTE", "widthMode": "FIXED", "widthPt": 10, "xPt": 0, "yPt": 0},
+            "stroke": {"cap": "BUTT", "color": "#000000FF", "join": "MITER", "widthPt": 6},
+            "transform": {"originX": 0.5, "originY": 0.5, "rotationDeg": 0, "scaleX": 1, "scaleY": 1},
+            "visible": true
+          }
+        ],
+        "heightPt": 100,
+        "kind": "canvas",
+        "occurrenceId": "rwocc_0000000000000000",
+        "widthPt": 100
+      },
+      "dslVersion": "renderweave-render/1.0",
+      "layoutProfile": "renderweave-layout/1.0",
+      "resources": []
+    }
+  }
+}

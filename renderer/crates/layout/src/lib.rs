@@ -1,9 +1,12 @@
-//! Static, exactly decidable preflight for `renderweave-layout/1.0`.
+//! Static preflight and a resource-independent definite box kernel for
+//! `renderweave-layout/1.0`.
 //!
-//! This crate deliberately stops before resource preparation, binary64 measure/arrange,
-//! shaping, paint, rasterization, and encoding. It consumes only a document already admitted by
-//! `renderweave-renderer-document` and returns either bounded structural counts or one stable DFS
-//! problem. It never constructs a partial scene.
+//! The crate consumes only a document already admitted by `renderweave-renderer-document`.
+//! Preflight returns bounded structural counts or one stable DFS problem. The definite kernel
+//! additionally computes local LayoutBox/ContentBox entries for resource-independent ABSOLUTE
+//! nodes whose two axes are already definite. It deliberately stops before resource preparation,
+//! HUG/Stack/Grid solving, world transforms, shaping, paint, rasterization, and encoding, and it
+//! never exposes a partial layout on failure.
 
 use renderweave_renderer_document::AdmittedRenderDocument;
 use serde_json::{Map, Number, Value};
@@ -126,6 +129,178 @@ impl LayoutPreflight {
     }
 }
 
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct LocalLayoutBox {
+    x: f64,
+    y: f64,
+    width: f64,
+    height: f64,
+}
+
+impl LocalLayoutBox {
+    pub const fn x(&self) -> f64 {
+        self.x
+    }
+
+    pub const fn y(&self) -> f64 {
+        self.y
+    }
+
+    pub const fn width(&self) -> f64 {
+        self.width
+    }
+
+    pub const fn height(&self) -> f64 {
+        self.height
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub struct DefiniteLayoutEntry {
+    occurrence_id: String,
+    kind: String,
+    layout_box: LocalLayoutBox,
+    content_box: Option<LocalLayoutBox>,
+}
+
+impl DefiniteLayoutEntry {
+    pub fn occurrence_id(&self) -> &str {
+        &self.occurrence_id
+    }
+
+    pub fn kind(&self) -> &str {
+        &self.kind
+    }
+
+    pub const fn layout_box(&self) -> &LocalLayoutBox {
+        &self.layout_box
+    }
+
+    pub const fn content_box(&self) -> Option<&LocalLayoutBox> {
+        self.content_box.as_ref()
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub struct DefiniteLayout {
+    entries: Vec<DefiniteLayoutEntry>,
+}
+
+impl DefiniteLayout {
+    pub fn entries(&self) -> &[DefiniteLayoutEntry] {
+        &self.entries
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum DefiniteLayoutUnsupported {
+    HugContent,
+    Group,
+    Stack,
+    Grid,
+    CompositionViewport,
+    ResourceDependentKind,
+    NonAbsolutePlacement,
+    DegenerateContentInset,
+}
+
+impl DefiniteLayoutUnsupported {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::HugContent => "HUG_CONTENT",
+            Self::Group => "GROUP",
+            Self::Stack => "STACK",
+            Self::Grid => "GRID",
+            Self::CompositionViewport => "COMPOSITION_VIEWPORT",
+            Self::ResourceDependentKind => "RESOURCE_DEPENDENT_KIND",
+            Self::NonAbsolutePlacement => "NON_ABSOLUTE_PLACEMENT",
+            Self::DegenerateContentInset => "DEGENERATE_CONTENT_INSET",
+        }
+    }
+}
+
+#[derive(Debug)]
+enum DefiniteLayoutErrorKind {
+    Preflight(LayoutProblem),
+    Unsupported(DefiniteLayoutUnsupported),
+    Invariant(String),
+}
+
+#[derive(Debug)]
+pub struct DefiniteLayoutError {
+    occurrence_id: String,
+    kind: DefiniteLayoutErrorKind,
+}
+
+impl DefiniteLayoutError {
+    pub fn occurrence_id(&self) -> &str {
+        &self.occurrence_id
+    }
+
+    pub const fn unsupported_feature(&self) -> Option<DefiniteLayoutUnsupported> {
+        match self.kind {
+            DefiniteLayoutErrorKind::Unsupported(feature) => Some(feature),
+            DefiniteLayoutErrorKind::Preflight(_) | DefiniteLayoutErrorKind::Invariant(_) => None,
+        }
+    }
+
+    pub const fn preflight_problem(&self) -> Option<&LayoutProblem> {
+        match &self.kind {
+            DefiniteLayoutErrorKind::Preflight(problem) => Some(problem),
+            DefiniteLayoutErrorKind::Unsupported(_) | DefiniteLayoutErrorKind::Invariant(_) => None,
+        }
+    }
+
+    fn unsupported(occurrence_id: &str, feature: DefiniteLayoutUnsupported) -> Self {
+        Self {
+            occurrence_id: occurrence_id.to_owned(),
+            kind: DefiniteLayoutErrorKind::Unsupported(feature),
+        }
+    }
+
+    fn invariant(occurrence_id: &str, property: impl Into<String>) -> Self {
+        Self {
+            occurrence_id: occurrence_id.to_owned(),
+            kind: DefiniteLayoutErrorKind::Invariant(property.into()),
+        }
+    }
+}
+
+impl From<LayoutProblem> for DefiniteLayoutError {
+    fn from(problem: LayoutProblem) -> Self {
+        Self {
+            occurrence_id: problem.occurrence_id.clone(),
+            kind: DefiniteLayoutErrorKind::Preflight(problem),
+        }
+    }
+}
+
+impl Display for DefiniteLayoutError {
+    fn fmt(&self, formatter: &mut Formatter<'_>) -> std::fmt::Result {
+        match &self.kind {
+            DefiniteLayoutErrorKind::Preflight(problem) => Display::fmt(problem, formatter),
+            DefiniteLayoutErrorKind::Unsupported(feature) => write!(
+                formatter,
+                "definite layout unsupported {} at {}",
+                feature.as_str(),
+                self.occurrence_id
+            ),
+            DefiniteLayoutErrorKind::Invariant(property) => write!(
+                formatter,
+                "definite layout invariant failed at {} {}",
+                self.occurrence_id, property
+            ),
+        }
+    }
+}
+
+impl std::error::Error for DefiniteLayoutError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        self.preflight_problem()
+            .map(|problem| problem as &(dyn std::error::Error + 'static))
+    }
+}
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 enum SizeMode {
     Fixed,
@@ -168,9 +343,20 @@ struct Preflight {
     grid_cell_count: usize,
 }
 
+struct DefiniteLayouter {
+    entries: Vec<DefiniteLayoutEntry>,
+}
+
 pub fn preflight_layout(
     document: &AdmittedRenderDocument,
 ) -> Result<LayoutPreflight, LayoutProblem> {
+    parse_and_preflight(document).map(|(_, preflight)| preflight)
+}
+
+fn parse_and_preflight(
+    document: &AdmittedRenderDocument,
+) -> Result<(Value, LayoutPreflight), LayoutProblem> {
+    // Definite layout reuses this tree so each decimal enters binary64 only in this parse.
     let root: Value = serde_json::from_str(document.canonical_document()).map_err(|_| {
         LayoutProblem::new(
             LayoutProblemCode::NumericError,
@@ -188,14 +374,319 @@ pub fn preflight_layout(
             "occurrenceCount",
         ));
     }
-    Ok(LayoutPreflight {
-        occurrence_count: state.occurrence_count,
-        tree_edge_count: state.tree_edge_count,
-        max_depth: state.max_depth,
-        grid_count: state.grid_count,
-        grid_track_count: state.grid_track_count,
-        grid_cell_count: state.grid_cell_count,
+    Ok((
+        root,
+        LayoutPreflight {
+            occurrence_count: state.occurrence_count,
+            tree_edge_count: state.tree_edge_count,
+            max_depth: state.max_depth,
+            grid_count: state.grid_count,
+            grid_track_count: state.grid_track_count,
+            grid_cell_count: state.grid_cell_count,
+        },
+    ))
+}
+
+pub fn layout_definite_absolute(
+    document: &AdmittedRenderDocument,
+) -> Result<DefiniteLayout, DefiniteLayoutError> {
+    let (root, _) = parse_and_preflight(document)?;
+    let canvas = object_member(root.as_object(), "canvas", "rwocc_0000000000000000")?;
+    let occurrence = occurrence_id(canvas)?;
+    let width = binary64_member(canvas, "widthPt", occurrence, "widthPt")?;
+    let height = binary64_member(canvas, "heightPt", occurrence, "heightPt")?;
+    let canvas_box = LocalLayoutBox {
+        x: 0.0,
+        y: 0.0,
+        width,
+        height,
+    };
+    let mut state = DefiniteLayouter {
+        entries: Vec::with_capacity(document.occurrence_count()),
+    };
+    state.entries.push(DefiniteLayoutEntry {
+        occurrence_id: occurrence.to_owned(),
+        kind: "canvas".to_owned(),
+        layout_box: canvas_box,
+        content_box: Some(canvas_box),
+    });
+    for child in array_member(canvas, "children", occurrence)? {
+        state.visit_node(object(child, occurrence, "children")?, &canvas_box)?;
+    }
+    if state.entries.len() != document.occurrence_count() {
+        return Err(DefiniteLayoutError::invariant(
+            occurrence,
+            "occurrenceCount",
+        ));
+    }
+    Ok(DefiniteLayout {
+        entries: state.entries,
     })
+}
+
+impl DefiniteLayouter {
+    fn visit_node(
+        &mut self,
+        node: &Map<String, Value>,
+        parent_content: &LocalLayoutBox,
+    ) -> Result<(), DefiniteLayoutError> {
+        let occurrence = occurrence_id(node)?;
+        let kind = text_member(node, "kind", occurrence, "kind")?;
+        let supported_container = match kind {
+            "frame" => true,
+            "rect" | "ellipse" | "line" | "polygon" | "polyline" | "path" | "qrCode"
+            | "barcode" => false,
+            "group" => {
+                return Err(DefiniteLayoutError::unsupported(
+                    occurrence,
+                    DefiniteLayoutUnsupported::Group,
+                ));
+            }
+            "stack" => {
+                return Err(DefiniteLayoutError::unsupported(
+                    occurrence,
+                    DefiniteLayoutUnsupported::Stack,
+                ));
+            }
+            "grid" => {
+                return Err(DefiniteLayoutError::unsupported(
+                    occurrence,
+                    DefiniteLayoutUnsupported::Grid,
+                ));
+            }
+            "compositionViewport" => {
+                return Err(DefiniteLayoutError::unsupported(
+                    occurrence,
+                    DefiniteLayoutUnsupported::CompositionViewport,
+                ));
+            }
+            "text" | "image" => {
+                return Err(DefiniteLayoutError::unsupported(
+                    occurrence,
+                    DefiniteLayoutUnsupported::ResourceDependentKind,
+                ));
+            }
+            _ => return Err(DefiniteLayoutError::invariant(occurrence, "kind")),
+        };
+
+        let placement = object_member(Some(node), "placement", occurrence)?;
+        if text_member(placement, "type", occurrence, "placement.type")? != "ABSOLUTE" {
+            return Err(DefiniteLayoutError::unsupported(
+                occurrence,
+                DefiniteLayoutUnsupported::NonAbsolutePlacement,
+            ));
+        }
+        let width_mode = size_mode(placement, "widthMode", occurrence)?;
+        let height_mode = size_mode(placement, "heightMode", occurrence)?;
+        if width_mode == SizeMode::Hug || height_mode == SizeMode::Hug {
+            return Err(DefiniteLayoutError::unsupported(
+                occurrence,
+                DefiniteLayoutUnsupported::HugContent,
+            ));
+        }
+
+        let authored_x = binary64_member(placement, "xPt", occurrence, "placement.xPt")?;
+        let authored_y = binary64_member(placement, "yPt", occurrence, "placement.yPt")?;
+        let width = definite_axis_size(
+            placement,
+            width_mode,
+            parent_content.width,
+            authored_x,
+            "Width",
+            "rightInsetPt",
+            occurrence,
+        )?;
+        let height = definite_axis_size(
+            placement,
+            height_mode,
+            parent_content.height,
+            authored_y,
+            "Height",
+            "bottomInsetPt",
+            occurrence,
+        )?;
+        let layout_box = LocalLayoutBox {
+            x: parent_content.x + authored_x,
+            y: parent_content.y + authored_y,
+            width,
+            height,
+        };
+
+        if supported_container {
+            let content_box = frame_content_box(node, &layout_box, occurrence)?;
+            self.entries.push(DefiniteLayoutEntry {
+                occurrence_id: occurrence.to_owned(),
+                kind: kind.to_owned(),
+                layout_box,
+                content_box: Some(content_box),
+            });
+            for child in array_member(node, "children", occurrence)? {
+                self.visit_node(object(child, occurrence, "children")?, &content_box)?;
+            }
+        } else {
+            self.entries.push(DefiniteLayoutEntry {
+                occurrence_id: occurrence.to_owned(),
+                kind: kind.to_owned(),
+                layout_box,
+                content_box: None,
+            });
+        }
+        Ok(())
+    }
+}
+
+fn definite_axis_size(
+    placement: &Map<String, Value>,
+    mode: SizeMode,
+    parent_size: f64,
+    start: f64,
+    axis: &str,
+    end_inset_member: &str,
+    occurrence: &str,
+) -> Result<f64, DefiniteLayoutError> {
+    let size_member = format!("{}Pt", axis.to_ascii_lowercase());
+    if mode == SizeMode::Fixed {
+        return binary64_member(
+            placement,
+            &size_member,
+            occurrence,
+            format!("placement.{size_member}"),
+        );
+    }
+    if mode != SizeMode::Fill {
+        return Err(DefiniteLayoutError::invariant(
+            occurrence,
+            format!("placement.{axis}Mode"),
+        ));
+    }
+
+    let end_inset = binary64_member(
+        placement,
+        end_inset_member,
+        occurrence,
+        format!("placement.{end_inset_member}"),
+    )?;
+    let remaining = (parent_size - start) - end_inset;
+    let mut size = if remaining > 0.0 { remaining } else { 0.0 };
+    let minimum_member = format!("min{axis}Pt");
+    if let Some(minimum) = optional_binary64_member(
+        placement,
+        &minimum_member,
+        occurrence,
+        format!("placement.{minimum_member}"),
+    )? && size < minimum
+    {
+        size = minimum;
+    }
+    let maximum_member = format!("max{axis}Pt");
+    if let Some(maximum) = optional_binary64_member(
+        placement,
+        &maximum_member,
+        occurrence,
+        format!("placement.{maximum_member}"),
+    )? && size > maximum
+    {
+        size = maximum;
+    }
+    Ok(size)
+}
+
+fn frame_content_box(
+    node: &Map<String, Value>,
+    layout_box: &LocalLayoutBox,
+    occurrence: &str,
+) -> Result<LocalLayoutBox, DefiniteLayoutError> {
+    let stroke_width = if let Some(stroke) = node.get("stroke") {
+        let stroke = stroke
+            .as_object()
+            .ok_or_else(|| DefiniteLayoutError::invariant(occurrence, "stroke"))?;
+        nonnegative_binary64_member(stroke, "widthPt", occurrence, "stroke.widthPt")?
+    } else {
+        0.0
+    };
+    let inner_width = subtract_content_inset(layout_box.width, stroke_width, occurrence)?;
+    let inner_width = subtract_content_inset(inner_width, stroke_width, occurrence)?;
+    let inner_height = subtract_content_inset(layout_box.height, stroke_width, occurrence)?;
+    let inner_height = subtract_content_inset(inner_height, stroke_width, occurrence)?;
+    let inner_x = layout_box.x + stroke_width;
+    let inner_y = layout_box.y + stroke_width;
+
+    let padding = object_member(Some(node), "padding", occurrence)?;
+    let top = nonnegative_binary64_member(padding, "topPt", occurrence, "padding.topPt")?;
+    let right = nonnegative_binary64_member(padding, "rightPt", occurrence, "padding.rightPt")?;
+    let bottom = nonnegative_binary64_member(padding, "bottomPt", occurrence, "padding.bottomPt")?;
+    let left = nonnegative_binary64_member(padding, "leftPt", occurrence, "padding.leftPt")?;
+    let content_width = subtract_content_inset(inner_width, left, occurrence)?;
+    let content_width = subtract_content_inset(content_width, right, occurrence)?;
+    let content_height = subtract_content_inset(inner_height, top, occurrence)?;
+    let content_height = subtract_content_inset(content_height, bottom, occurrence)?;
+    Ok(LocalLayoutBox {
+        x: inner_x + left,
+        y: inner_y + top,
+        width: content_width,
+        height: content_height,
+    })
+}
+
+fn subtract_content_inset(
+    size: f64,
+    inset: f64,
+    occurrence: &str,
+) -> Result<f64, DefiniteLayoutError> {
+    let remaining = size - inset;
+    if remaining < 0.0 {
+        return Err(DefiniteLayoutError::unsupported(
+            occurrence,
+            DefiniteLayoutUnsupported::DegenerateContentInset,
+        ));
+    }
+    Ok(remaining)
+}
+
+fn nonnegative_binary64_member(
+    object: &Map<String, Value>,
+    member: &str,
+    occurrence: &str,
+    property: impl Into<String>,
+) -> Result<f64, DefiniteLayoutError> {
+    let property = property.into();
+    let value = binary64_member(object, member, occurrence, &property)?;
+    if value < 0.0 {
+        return Err(
+            LayoutProblem::new(LayoutProblemCode::ConstraintInvalid, occurrence, property).into(),
+        );
+    }
+    Ok(value)
+}
+
+fn optional_binary64_member(
+    object: &Map<String, Value>,
+    member: &str,
+    occurrence: &str,
+    property: impl Into<String>,
+) -> Result<Option<f64>, DefiniteLayoutError> {
+    let property = property.into();
+    object
+        .contains_key(member)
+        .then(|| binary64_member(object, member, occurrence, property))
+        .transpose()
+}
+
+fn binary64_member(
+    object: &Map<String, Value>,
+    member: &str,
+    occurrence: &str,
+    property: impl AsRef<str>,
+) -> Result<f64, DefiniteLayoutError> {
+    let property = property.as_ref();
+    let number = object.get(member).and_then(Value::as_number);
+    decimal6(number, occurrence, property)?;
+    number
+        .and_then(Number::as_f64)
+        .filter(|value| value.is_finite())
+        .ok_or_else(|| {
+            LayoutProblem::new(LayoutProblemCode::NumericError, occurrence, property).into()
+        })
 }
 
 impl Preflight {
