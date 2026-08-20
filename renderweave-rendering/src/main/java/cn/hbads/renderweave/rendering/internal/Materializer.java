@@ -70,7 +70,12 @@ final class Materializer {
             String sha256,
             String mediaType,
             long byteLength,
-            String acceptanceProfileId
+            String acceptanceProfileId,
+            String assetId,
+            String contentVersion,
+            String occurrencePath,
+            String consumerPropertyRef,
+            cn.hbads.renderweave.asset.api.AssetAcceptanceAuthority.TechnicalDescriptor technicalDescriptor
     ) {
     }
 
@@ -825,7 +830,12 @@ final class Materializer {
                 fact.sha256(),
                 fact.mediaType(),
                 fact.byteLength(),
-                fact.acceptanceProfileId()));
+                fact.acceptanceProfileId(),
+                assetId,
+                fact.contentVersion(),
+                path,
+                memberName,
+                fact.technicalDescriptor()));
         return new ResolvedValue(new ObjectNode(Map.of("resourceId", new Text(resourceId.value()))));
     }
 

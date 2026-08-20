@@ -306,7 +306,7 @@ class MaterializerTest {
     }
 
     private static DefinitionEngine.CapabilityProvider absentCapability() {
-        return (capability, operation) -> new ExpressionEvaluator.EvalError(
+        return (capability, operation, callPosition) -> new ExpressionEvaluator.EvalError(
                 new ExpressionEvaluator.RuntimeFailure(
                         ExpressionEvaluator.RuntimeFailureKind.TYPE_FAULT, null));
     }

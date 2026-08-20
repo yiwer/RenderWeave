@@ -28,9 +28,9 @@ import java.util.regex.Pattern;
  */
 final class DefinitionEngine {
 
-    /** capability 输入供给（Clock/Random 由 CapabilityState 物化，S8 接线）。 */
+    /** capability 输入供给（Clock/Random 由 CapabilityState 物化）；position 参与派生与 digest。 */
     interface CapabilityProvider {
-        EvalOutcome supply(String capability, String operation);
+        EvalOutcome supply(String capability, String operation, byte[] callPosition);
     }
 
     /** 词法 frame 上下文：invocation typed context/customs + 活跃 loop frames。 */
@@ -128,7 +128,9 @@ final class DefinitionEngine {
                         || !(source.members().get("operation") instanceof Text operation)) {
                     yield dependencyError();
                 }
-                yield scope.capabilities().supply(capability.value(), operation.value());
+                yield scope.capabilities().supply(
+                        capability.value(), operation.value(),
+                        callPositionOf(source, frameKey));
             }
             default -> dependencyError();
         };
@@ -137,6 +139,17 @@ final class DefinitionEngine {
     /** definition source 的消费 frame：loop-domain definition 在其声明 loop frame 求值。 */
     private String frameKeyOf(ObjectNode source, ResolutionScope scope, String consumerFrameKey) {
         return consumerFrameKey;
+    }
+
+    /** capability demand 位置 canonical bytes：source wire + 消费 frame。 */
+    static byte[] callPositionOf(ObjectNode source, String frameKey) {
+        var wire = DesignJsonWriter.write(source);
+        var framed = new byte[wire.length + 1 + frameKey.length()];
+        System.arraycopy(wire, 0, framed, 0, wire.length);
+        framed[wire.length] = 0;
+        var keyBytes = frameKey.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        System.arraycopy(keyBytes, 0, framed, wire.length + 1, keyBytes.length);
+        return framed;
     }
 
     private EvalOutcome decodeLiteral(ObjectNode literal) {
