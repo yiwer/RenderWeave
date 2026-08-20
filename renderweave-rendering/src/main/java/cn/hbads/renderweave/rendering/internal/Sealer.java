@@ -103,17 +103,31 @@ final class Sealer {
             Materializer.MaterializedTree tree,
             String capabilityResultDigest
     ) {
-        var selectionDigest = assetSelectionDigest(tree.resources());
+        return evaluationResultDigest(
+                closure.ownerScope().value(),
+                ClosureManifests.digest(closure),
+                AdmittedInputCanonicalizer.digest(admittedInput),
+                assetSelectionDigest(tree.resources()),
+                capabilityResultDigest);
+    }
+
+    /** closed 输入组合 → evaluationResultDigest（向量重放使用同一组合路径）。 */
+    static String evaluationResultDigest(
+            String ownerScope,
+            String closureDigest,
+            String admittedInputDigest,
+            String assetSelectionDigest,
+            String capabilityResultDigest
+    ) {
         var members = new TreeMap<String, String>();
-        members.put("admittedInputDigest",
-                CanonicalJson.string(AdmittedInputCanonicalizer.digest(admittedInput)));
+        members.put("admittedInputDigest", CanonicalJson.string(admittedInputDigest));
         members.put("assetAcceptanceProfile",
                 CanonicalJson.string("renderweave-asset-acceptance/1.0"));
-        members.put("assetSelectionDigest", CanonicalJson.string(selectionDigest));
+        members.put("assetSelectionDigest", CanonicalJson.string(assetSelectionDigest));
         members.put("capabilityResultDigest", CanonicalJson.string(capabilityResultDigest));
-        members.put("closureDigest", CanonicalJson.string(ClosureManifests.digest(closure)));
+        members.put("closureDigest", CanonicalJson.string(closureDigest));
         members.put("layoutProfile", CanonicalJson.string(LAYOUT_PROFILE));
-        members.put("ownerScope", CanonicalJson.string(closure.ownerScope().value()));
+        members.put("ownerScope", CanonicalJson.string(ownerScope));
         members.put("renderDslVersion", CanonicalJson.string(RENDER_DSL_VERSION));
         return RenderingDigests.digestWithDomain(
                 RESULT_DOMAIN, CanonicalJson.object(members).getBytes(StandardCharsets.UTF_8));

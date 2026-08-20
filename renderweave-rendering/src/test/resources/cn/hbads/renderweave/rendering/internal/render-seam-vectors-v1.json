@@ -1,0 +1,71 @@
+{
+  "vectorVersion": "renderweave-render-seam-v1/1",
+  "authorityContext": {
+    "renderDslProfile": "renderweave-render/1.0",
+    "layoutProfile": "renderweave-layout/1.0",
+    "profileAvailability": "NOT_REGISTERED"
+  },
+  "cases": [
+    {
+      "id": "random-derivation-fixed-nonce-pos-1",
+      "kind": "randomDerivation",
+      "nonceHex": "0101010101010101010101010101010101010101010101010101010101010101",
+      "positionBase64": "cG9zLTE=",
+      "expectedDecimal": "0.737982028364641989"
+    },
+    {
+      "id": "random-derivation-fixed-nonce-pos-42",
+      "kind": "randomDerivation",
+      "nonceHex": "0202020202020202020202020202020202020202020202020202020202020202",
+      "positionBase64": "cG9zLTQy",
+      "expectedDecimal": "0.803482511207808105"
+    },
+    {
+      "id": "closure-manifest-canonical-and-digest",
+      "kind": "closureDigest",
+      "ownerScope": "owner-a",
+      "rootTemplateId": "00000000-0000-4000-8000-0000000000a1",
+      "rootRevision": 1,
+      "snapshot": {
+        "templateId": "00000000-0000-4000-8000-0000000000a1",
+        "revision": 1,
+        "schemaKey": "system-empty",
+        "versionTag": "v1",
+        "dslVersion": "renderweave-design/1.0",
+        "expressionProfile": "renderweave-expression/1.0",
+        "contentHash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "expectedCanonical": "{\"edges\":[],\"ownerScope\":\"owner-a\",\"root\":{\"revision\":1,\"templateId\":\"00000000-0000-4000-8000-0000000000a1\"},\"snapshots\":[{\"contentHash\":\"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"dslVersion\":\"renderweave-design/1.0\",\"expressionProfile\":\"renderweave-expression/1.0\",\"revision\":1,\"staticSchemaRef\":{\"schemaKey\":\"system-empty\",\"versionTag\":\"v1\"},\"templateId\":\"00000000-0000-4000-8000-0000000000a1\"}]}",
+      "expectedDigest": "sha256:ba36b451e9313d88042d5f88b350b78c19b034bc755853ed5815d50d005469a8"
+    },
+    {
+      "id": "admitted-input-canonical-and-digest",
+      "kind": "admittedInputDigest",
+      "schemaKey": "system-empty",
+      "versionTag": "v1",
+      "expectedCanonical": "{\"customValues\":[],\"rootDocument\":{},\"staticSchemaRef\":{\"schemaKey\":\"system-empty\",\"versionTag\":\"v1\"}}",
+      "expectedDigest": "sha256:7977a39f71e3c3874e353e9b4a843d1d741e5ff0150ef1016eb595176305491a"
+    },
+    {
+      "id": "evaluation-result-digest-components",
+      "kind": "resultDigest",
+      "ownerScope": "owner-a",
+      "closureDigest": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+      "admittedInputDigest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "assetSelectionDigest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+      "capabilityResultDigest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+      "expectedDigest": "sha256:dc9506306a79ff8f18c69ffd39d959e1667bcd9862166e2e0645154de09b7e27"
+    },
+    {
+      "id": "evaluation-fingerprint-components",
+      "kind": "fingerprint",
+      "ownerScope": "owner-a",
+      "authorizationContextDigest": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+      "closureDigest": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+      "admittedInputDigest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "capabilityContracts": "renderweave-capability-clock/1.0,renderweave-capability-random/1.0",
+      "effectiveBudgetVector": "closureAndExpansion/canonicalBytes:67108864",
+      "expectedDigest": "sha256:6290ea6b37ee28a69421fcc25dff5116c83e2f59d94da858e6dd60a05d8d04c1"
+    }
+  ]
+}

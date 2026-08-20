@@ -59,10 +59,18 @@ final class CapabilityValues {
     }
 
     private final CapabilityState state;
+    private final cn.hbads.renderweave.rendering.spi.RenderingCapabilityRuntime externalRuntime;
     private final List<DemandEntry> demands = new ArrayList<>();
 
     private CapabilityValues(CapabilityState state) {
         this.state = state;
+        this.externalRuntime = null;
+    }
+
+    private CapabilityValues(
+            cn.hbads.renderweave.rendering.spi.RenderingCapabilityRuntime externalRuntime) {
+        this.state = null;
+        this.externalRuntime = externalRuntime;
     }
 
     static CapabilityState establish(Clock clock, SecureRandom entropy) {
@@ -76,6 +84,12 @@ final class CapabilityValues {
         return new CapabilityValues(state);
     }
 
+    /** 包装外部 spi runtime：demand 记账与 result digest 留在 Rendering 内部。 */
+    static CapabilityValues wrapping(
+            cn.hbads.renderweave.rendering.spi.RenderingCapabilityRuntime runtime) {
+        return new CapabilityValues(runtime);
+    }
+
     record DemandEntry(String capability, String operation, byte[] callPosition, DesignValue result) {
     }
 
@@ -84,6 +98,15 @@ final class CapabilityValues {
     }
 
     private EvalOutcome supply(String capability, String operation, byte[] callPosition) {
+        if (externalRuntime != null) {
+            var outcome = externalRuntime.supply(capability, operation, callPosition);
+            if (outcome
+                    instanceof cn.hbads.renderweave.rendering.spi.RenderingCapabilityRuntime.ProviderUnavailable) {
+                return new EvalError(new RuntimeFailure(RuntimeFailureKind.TYPE_FAULT, null));
+            }
+            var value = ((cn.hbads.renderweave.rendering.spi.RenderingCapabilityRuntime.Supplied) outcome).value();
+            return record(toDesignValue(value), capability, operation, callPosition);
+        }
         return switch (capability + "/" + operation) {
             case "CLOCK/UTC_DATE" -> record(new DesignValue.Date(utcDate(state.clockEpochSecond())),
                     capability, operation, callPosition);
@@ -100,6 +123,23 @@ final class CapabilityValues {
             }
             default -> new EvalError(new RuntimeFailure(RuntimeFailureKind.TYPE_FAULT, null));
         };
+    }
+
+    private static DesignValue toDesignValue(
+            cn.hbads.renderweave.rendering.spi.RenderingCapabilityRuntime.CapabilityValue value) {
+        if (value instanceof cn.hbads.renderweave.rendering.spi.RenderingCapabilityRuntime.TextResult text) {
+            return new DesignValue.Text(text.value());
+        }
+        if (value instanceof cn.hbads.renderweave.rendering.spi.RenderingCapabilityRuntime.DecimalResult decimal) {
+            return new DesignValue.Decimal(decimal.value());
+        }
+        if (value instanceof cn.hbads.renderweave.rendering.spi.RenderingCapabilityRuntime.DateResult date) {
+            return new DesignValue.Date(date.value());
+        }
+        if (value instanceof cn.hbads.renderweave.rendering.spi.RenderingCapabilityRuntime.TimeResult time) {
+            return new DesignValue.Time(time.value());
+        }
+        throw new IllegalStateException("unknown capability value");
     }
 
     private EvalOutcome record(DesignValue result, String capability, String operation,
