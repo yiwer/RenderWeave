@@ -104,8 +104,8 @@ final class AssetResolutionSecrets {
 
     boolean verifies(AssetFetchEndpoint.IssueRequest request, String encodedSignature) {
         try {
-            byte[] supplied = Base64.getUrlDecoder().decode(encodedSignature);
-            byte[] expected = Base64.getUrlDecoder().decode(sign(request));
+            byte[] supplied = encodedSignature.getBytes(StandardCharsets.US_ASCII);
+            byte[] expected = sign(request).getBytes(StandardCharsets.US_ASCII);
             return MessageDigest.isEqual(expected, supplied);
         } catch (RuntimeException | SecretFailure invalid) {
             return false;
