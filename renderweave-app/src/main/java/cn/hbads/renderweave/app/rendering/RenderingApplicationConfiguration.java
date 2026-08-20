@@ -14,6 +14,7 @@ import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.core.simple.JdbcClient;
@@ -22,8 +23,10 @@ import org.springframework.scheduling.annotation.Scheduled;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import java.math.BigDecimal;
+import java.nio.file.Path;
 import java.security.SecureRandom;
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
@@ -32,7 +35,8 @@ import java.util.Base64;
 /**
  * Rendering app 装配（ADR-0044）：CapabilityStateStore 加密落盘 Adapter、capability 运行时
  * 与 Evaluator assembly。部署未配置 AES-256 key 时 store Adapter 不装配（失败封闭）；
- * AssetResolutionPort 在 T13 物化前缺省（含 Asset 的 Evaluation fail-closed）。
+ * AssetResolutionPort 由 T13 bridge 提供；Renderer process 只有在全部 exact deployment identity
+ * 显式配置时才装配，默认没有 Engine bean 并保持失败封闭。
  */
 @Configuration(proxyBeanMethods = false)
 class RenderingApplicationConfiguration {
@@ -96,6 +100,38 @@ class RenderingApplicationConfiguration {
                 assets.getIfAvailable(),
                 capabilities,
                 validationResolver,
+                Clock.systemUTC());
+    }
+
+    @Bean(destroyMethod = "close")
+    @ConditionalOnProperty(
+            prefix = "renderweave.rendering.engine.process",
+            name = "enabled",
+            havingValue = "true")
+    RendererProcessAdapter rendererProcessEngine(
+            @Value("${renderweave.rendering.engine.process.executable}") String executable,
+            @Value("${renderweave.rendering.engine.process.socket}") String socket,
+            @Value("${renderweave.rendering.engine.process.manifest}") String manifest,
+            @Value("${renderweave.rendering.engine.process.manifest-sha256}") String manifestSha256,
+            @Value("${renderweave.rendering.engine.process.max-frame-bytes}") int maximumFramedBytes,
+            @Value("${renderweave.rendering.engine.process.startup-timeout-ms}") long startupTimeoutMillis,
+            @Value("${renderweave.rendering.engine.process.restart-backoff-ms}") long restartBackoffMillis,
+            @Value("${renderweave.rendering.engine.process.handshake-timeout-ms}") long handshakeTimeoutMillis
+    ) {
+        var supervisor = new RendererProcessSupervisor(
+                Path.of(executable),
+                Path.of(socket),
+                Path.of(manifest),
+                manifestSha256,
+                maximumFramedBytes,
+                Duration.ofMillis(startupTimeoutMillis),
+                Duration.ofMillis(restartBackoffMillis),
+                Clock.systemUTC());
+        return new RendererProcessAdapter(
+                supervisor,
+                manifestSha256,
+                maximumFramedBytes,
+                Duration.ofMillis(handshakeTimeoutMillis),
                 Clock.systemUTC());
     }
 

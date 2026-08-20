@@ -1,0 +1,13 @@
+[package]
+name = "renderweave-renderer-daemon"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[dependencies]
+renderweave-renderer-protocol = { path = "../protocol" }
+
+[dev-dependencies]
+serde_json.workspace = true

@@ -86,7 +86,7 @@ class EvaluatorContractTest {
                 Clock.fixed(Instant.ofEpochMilli(1_000L), ZoneOffset.UTC));
 
         var outcome = evaluator.evaluate(new EvaluationCommand(
-                new RenderRequestId("render-1"),
+                new RenderRequestId("00000000-0000-4000-8000-000000000001"),
                 new OwnerScope("intruder-scope"),
                 new TemplateApplication.TemplateId(ROOT_ID),
                 "{\"rootDocument\":{}}".getBytes(StandardCharsets.UTF_8),
@@ -152,7 +152,7 @@ class EvaluatorContractTest {
 
     private static EvaluationCommand command(String envelope) {
         return new EvaluationCommand(
-                new RenderRequestId("render-1"),
+                new RenderRequestId("00000000-0000-4000-8000-000000000001"),
                 new OwnerScope("owner-a"),
                 new TemplateApplication.TemplateId(ROOT_ID),
                 envelope.getBytes(StandardCharsets.UTF_8),

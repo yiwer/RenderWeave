@@ -119,7 +119,7 @@ class MaterializerTest {
                 null,
                 absentCapability(),
                 admitted(Map.of()),
-                new RenderRequestId("render-1"),
+                new RenderRequestId("00000000-0000-4000-8000-000000000001"),
                 new AssetResolutionPort.RendererAudience("test-audience"),
                 1_000L);
         var materialized = assertInstanceOf(Materializer.Materialized.class, outcome);
@@ -329,7 +329,7 @@ class MaterializerTest {
                 port,
                 absentCapability(),
                 admitted(customs),
-                new RenderRequestId("render-1"),
+                new RenderRequestId("00000000-0000-4000-8000-000000000001"),
                 new AssetResolutionPort.RendererAudience("test-audience"),
                 1_000L);
     }

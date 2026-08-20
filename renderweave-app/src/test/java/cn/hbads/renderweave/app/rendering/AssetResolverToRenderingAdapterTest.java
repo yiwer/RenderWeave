@@ -49,7 +49,8 @@ class AssetResolverToRenderingAdapterTest {
         assertInstanceOf(AssetResolutionPort.PrecheckOutcome.PrecheckPassed.class, precheck);
         assertEquals(new AssetResolver.PrecheckRequest(OWNER, ASSET_ID, AssetKind.IMAGE),
                 resolver.lastPrecheck);
-        assertEquals("render-1", resolver.lastResolve.renderRequestId());
+        assertEquals("00000000-0000-4000-8000-000000000001",
+                resolver.lastResolve.renderRequestId());
         assertEquals(OWNER, resolver.lastResolve.ownerScope());
         assertEquals(RESOURCE_ID, resolver.lastResolve.resourceId());
         assertEquals(ASSET_ID, resolver.lastResolve.assetId());
@@ -136,7 +137,7 @@ class AssetResolverToRenderingAdapterTest {
 
     private static AssetResolutionPort.ResolveRequest request() {
         return new AssetResolutionPort.ResolveRequest(
-                new RenderRequestId("render-1"),
+                new RenderRequestId("00000000-0000-4000-8000-000000000001"),
                 OWNER,
                 new AssetResolutionPort.ResourceId(RESOURCE_ID),
                 ASSET_ID,

@@ -487,11 +487,11 @@ class AssetSliceIntegrationTest {
         var first = assertInstanceOf(
                 Evaluator.EvaluationOutcome.SealedDocument.class,
                 evaluator.evaluate(evaluationCommand(
-                        "render-asset-bridge-1", createdTemplate.current().templateId())));
+                        "00000000-0000-4000-8000-000000000201", createdTemplate.current().templateId())));
         var second = assertInstanceOf(
                 Evaluator.EvaluationOutcome.SealedDocument.class,
                 evaluator.evaluate(evaluationCommand(
-                        "render-asset-bridge-2", createdTemplate.current().templateId())));
+                        "00000000-0000-4000-8000-000000000202", createdTemplate.current().templateId())));
 
         String firstDocument = new String(
                 first.renderDocumentCanonicalUtf8(), StandardCharsets.UTF_8);

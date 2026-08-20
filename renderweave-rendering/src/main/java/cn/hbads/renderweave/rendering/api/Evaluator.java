@@ -1,6 +1,7 @@
 package cn.hbads.renderweave.rendering.api;
 
 import java.util.Objects;
+import java.util.regex.Pattern;
 
 /**
  * Rendering 上下文的唯一动态语义权威（ADR-0044 §2）。
@@ -19,10 +20,14 @@ public interface Evaluator {
 
     /** Rendering 创建的请求级不透明身份；不跨请求复用。 */
     record RenderRequestId(String value) {
+        private static final Pattern CANONICAL_UUID_V4 = Pattern.compile(
+                "[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}");
+
         public RenderRequestId {
             Objects.requireNonNull(value, "value");
-            if (value.isBlank() || value.length() > 256) {
-                throw new IllegalArgumentException("renderRequestId must be non-blank and at most 256 chars");
+            if (!CANONICAL_UUID_V4.matcher(value).matches()) {
+                throw new IllegalArgumentException(
+                        "renderRequestId must be a canonical lowercase UUID v4");
             }
         }
     }

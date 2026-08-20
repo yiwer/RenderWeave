@@ -1,0 +1,14 @@
+[workspace]
+members = ["crates/protocol", "crates/daemon"]
+resolver = "2"
+
+[workspace.package]
+edition = "2024"
+rust-version = "1.89"
+license = "Proprietary"
+
+[workspace.dependencies]
+hex = "=0.4.3"
+serde = { version = "=1.0.228", features = ["derive"] }
+serde_json = { version = "=1.0.149", features = ["raw_value"] }
+sha2 = "=0.10.9"

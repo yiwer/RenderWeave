@@ -123,6 +123,12 @@ Label: wayfinder:map
   四级认证阶梯（仓库内 replay → 双物理 Linux CPU-family → J1/A3 → Ticket 19 数值）、Windows/WSL/
   scripted 永不升级 READY、帧向量随首个实现票落地。无 Rust/Java 产品代码，Profile 未注册，Renderer
   不 READY，Ticket 19 open。
+- [物化首个 Rust Renderer process protocol 纵切与 `render` gate](issues/22-renderer-process-protocol-vertical.md) —
+  **resolved / automated_verified**；T08/T13/T21 解锁后已原子物化仓库内 offline Cargo workspace、
+  常驻 Linux UDS daemon、严格握手/typed frame/内存 registry、Java `RenderEngine` process Adapter 与
+  Supervisor、exact machine manifest、Java/Rust/Python vectors 和 Linux 容器 UDS replay；`render` gate
+  已随票纳入 17-step `full`。本票 manifest 明确 Profile `NOT_REGISTERED`/certification `NOT_CERTIFIED`，
+  合法 Command 只产生稳定 terminal problem；未实现 synthetic raster、公开 route、物理 Linux 认证或 READY。
 - [验证 Product Editor 状态、恢复与权威预览架构](issues/09-validate-product-editor-architecture.md) —
   throwaway 逻辑原型（`/prototype/editor-state-model`，不进产品 route）把冻结编辑器规则编码为确定性
   fixture 状态机：10 个引导走查场景 37/37 断言 + 自由操作冒烟 + 键盘焦点检查全部通过（Playwright A1，
@@ -171,18 +177,21 @@ Label: wayfinder:map
   STALE 消费）已登记为 T20 并已 resolve，T12b 以其为 blocker 已 resolve；首个 Rendering 实现票已
   登记为 T21 并已 resolve（automated_verified）；T13 以 T21 为前置，现也已 resolve
   （automated_verified）：AssetResolver、加密 selection recovery record、Renderer-only signed fetch lease、
-  app internal exact-byte endpoint 与 Rendering production bridge 已形成纵切。现有已登记 ticket 全部 resolved；
-  下一 implementation frontier 必须从下述未登记切片中单独登记并 claim，不能顺带扩张本票。
+  app internal exact-byte endpoint 与 Rendering production bridge 已形成纵切。T22 也已 resolve
+  （automated_verified）：首个 Rust daemon/process Adapter/manifest/replay 与 `render` gate 已形成纵切。
+  现有已登记 ticket 全部 resolved；下一 implementation frontier 必须从下述未登记切片中单独登记并 claim。
 - Expression/value binding、closure、capability、nested Template、layout lowering 与正式 RenderDocument 的
   实现切片由 T21 物化首个 Rendering 纵切（`TemplateClosureAuthority`/`Evaluator` stage 1–8/seal 与
   RenderNodeContract/向量语料 Java primary，已 resolve）；仍待后续票：Engine 执行（Rust daemon +
-  process adapter + `render` gate 入 full，T08 实现票）、AssetResolver/lease/fetch endpoint 生产
-  bridge（T13，已 resolve）、公开 render/preview 产品面（Engine 产品面票）、capability callPosition 完整
+  process adapter + `render` gate 入 full，T22 已 resolve）、AssetResolver/lease/fetch endpoint 生产
+  bridge（T13，已 resolve）、Rust daemon/process Adapter/`render` gate（T22，已 resolve）、公开
+  render/preview 产品面（Engine 产品面票）、capability callPosition 完整
   OccurrencePath 硬化与节点 default 展开（catalog 数据深化票）、Editor E1–E9 实施票。
 - Rust layout、font shaping、resource decode、raster、PNG/JPEG encoding 与 exact pixel replay 的切片，
-  要等 process protocol 和 build/certification contract 冻结后再登记——ADR-0045 已给出该合同：首个
-  Rust/process task 票将同时物化 daemon、帧编解码、certified manifest 与仓库内 replay harness；
-  `render` gate 随实现票纳入 `full`，物理 Linux 双 CPU-family 认证与 J1/A3 属届时另行授权的执行级门控。
+  要等 process protocol 和 build/certification contract 冻结后再登记——ADR-0045 已给出该合同；首个
+  Rust/process task T22 已 resolve，已物化 daemon、帧编解码、machine manifest 与仓库内 replay
+  harness；`render` gate 已随 T22 纳入 `full`。实际 layout/raster/encoding 仍须在 T22 后单独登记，物理 Linux
+  双 CPU-family 认证与 J1/A3 属届时另行授权的执行级门控。
 - Product Editor 的 save/recovery/conflict/preview/browser automation 与 accessibility 实施票，要等状态架构
   prototype 结论后再登记——T09 已给出结论与 E1–E9 占位-free 纵切分解（open/baseline、本地编辑+undo+
   canonical dirty+preview guard、save+conflict overwrite、依赖二次确认、reconciliation、save-and-preview+

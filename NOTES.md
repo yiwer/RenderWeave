@@ -1703,3 +1703,21 @@
   `asset`（90/90 + independent 41/41）、`server`（全 Reactor；app 319，0 failure/error）、`fast` 已绿；
   exact evidence 与最终 full 收口策略见 `plans/logs/TV1-T13.md`。T13=`automated_verified`；无 J1/A3，
   Profile/Renderer/Editor 不 READY，无 Rust Engine/公开 render 产品面，未 push/tag/PR。
+
+### Template v1 TV1-T22 Rust Renderer process protocol 纵切（automated_verified）
+
+- 2026-08-20：T13 最终 full 16/16 与 local commit `2a11eee` 后重算 DAG，单独登记并由 Codex single-writer
+  claim T22（blocked by T08/T13/T21，均 resolved）；现按冻结边界完成并记为 `automated_verified`。
+- 新增独立 `renderer/` Cargo workspace，钉死 Rust 1.89.0、`Cargo.lock`、offline vendor 与 machine manifest；
+  strict frame/hello/command/cancel/problem codec 对 canonical UUID v4、四位年 RFC3339 UTC 毫秒、closed JSON、
+  duplicate/unknown/null/noncanonical、frame length 与 domain-separated digests 失败封闭。
+- Linux-only daemon 以 0600 UDS 常驻单 app connection，内存 registry 对同 request/digest replay、异 digest
+  conflict 与 cancel tombstone 给出 closed 结果；空 Profile manifest 下合法 Command 稳定 terminal problem，
+  不生成 image。Java Adapter 提供 persistent session、reader dispatch、完整 result integrity、Unknown 重试与
+  写失败换新连接；Supervisor 只接受预配置的无 symlink、POSIX 0700 socket parent，不创建部署目录。
+- `render` gate 已纳入 17-step `full`：`.sdlc/evidence/20260820-211102-render/` 为 Java 22、独立 Python
+  110 checks / 7 vectors、Windows Rust workspace 与 `--network none` Linux Docker UDS replay 全绿；`server`
+  `.sdlc/evidence/20260820-211336-server/` 8/8 Reactor 全绿，`fast`
+  `.sdlc/evidence/20260820-212527-fast/` 全绿。详见 `plans/logs/TV1-T22.md`。
+- manifest 固定 Profile `NOT_REGISTERED`、certification `NOT_CERTIFIED`、raster `ABSENT`；无 synthetic image、
+  公开 route、Ticket 19 数值、物理 Linux/J1/A3/READY、provider/真实数据/API Key；未 push/tag/PR。

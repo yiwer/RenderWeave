@@ -89,7 +89,7 @@ class EvaluatorAssemblyTest {
                 new TemplateApplication.CreateCommand(SYSTEM_EMPTY, DESIGN));
 
         var outcome = evaluator.evaluate(new EvaluationCommand(
-                new RenderRequestId("render-assembly-1"),
+                new RenderRequestId("00000000-0000-4000-8000-000000000101"),
                 new OwnerScope("owner-a"),
                 created.current().templateId(),
                 "{\"rootDocument\":{}}".getBytes(StandardCharsets.UTF_8),
@@ -110,7 +110,7 @@ class EvaluatorAssemblyTest {
     @Test
     void evaluatingUnknownTemplateRejectsAtClosureStage() {
         var outcome = evaluator.evaluate(new EvaluationCommand(
-                new RenderRequestId("render-assembly-2"),
+                new RenderRequestId("00000000-0000-4000-8000-000000000102"),
                 new OwnerScope("owner-a"),
                 new TemplateApplication.TemplateId("00000000-0000-4000-8000-0000000000f9"),
                 "{\"rootDocument\":{}}".getBytes(StandardCharsets.UTF_8),
