@@ -134,6 +134,11 @@ Label: wayfinder:map
   全部可表达 default，Java Materializer/Sealer 完成 Binding/Repeat PACK/lowering，Rust document crate 在 daemon
   Profile lookup 前执行 strict admission，Java/Rust/Python 与 Linux UDS 共同重放 2 positive + 12 negative。
   不含 layout/resource decode/raster/codec，Profile 仍未注册，合法 Command 仍 terminal fail-closed。
+- [实现 surface preflight 与 exact PNG encoder kernel](issues/24-surface-preflight-png-encoder-kernel.md) —
+  **resolved / automated_verified**；在不接线 daemon success path、不注册 Profile 且保持 raster ABSENT 的边界内，
+  以 Rust deep kernel + Python stdlib independent replay 物化 Canvas/bleed/DPI exact surface arithmetic、Ticket 19
+  输出容量与 `renderweave-output-png/1.0` stored-DEFLATE/chunk/CRC/Adler bytes；10 surface + 6 PNG cases / 90
+  independent checks 已纳入 `render` gate。
 - [验证 Product Editor 状态、恢复与权威预览架构](issues/09-validate-product-editor-architecture.md) —
   throwaway 逻辑原型（`/prototype/editor-state-model`，不进产品 route）把冻结编辑器规则编码为确定性
   fixture 状态机：10 个引导走查场景 37/37 断言 + 自由操作冒烟 + 键盘焦点检查全部通过（Playwright A1，
@@ -185,7 +190,9 @@ Label: wayfinder:map
   app internal exact-byte endpoint 与 Rendering production bridge 已形成纵切。T22 也已 resolve
   （automated_verified）：首个 Rust daemon/process Adapter/manifest/replay 与 `render` gate 已形成纵切。
   T23 也已 resolve（automated_verified）：exact RenderDocument/default/lowering 与跨语言 validator 已形成纵切。
-  当前没有已 claim 的下游 implementation ticket；下一 frontier 仍须从下述切片中单独登记并 claim。
+  T24 也已 resolve（automated_verified）：surface preflight 与 exact PNG encoder kernel 已形成独立纵切，但未接线
+  daemon success path、未生成 raster，也未注册 Renderer/Output Profile。当前没有已 claim 的下游 implementation
+  ticket；下一 frontier 必须从剩余真实依赖中单独登记并 claim。
 - Expression/value binding、closure、capability、nested Template、layout lowering 与正式 RenderDocument 的
   实现切片由 T21 物化首个 Rendering 纵切（`TemplateClosureAuthority`/`Evaluator` stage 1–8/seal 与
   RenderNodeContract/向量语料 Java primary，已 resolve）；仍待后续票：Engine 执行（Rust daemon +
@@ -194,11 +201,12 @@ Label: wayfinder:map
   RenderDocument/default/跨语言 validator（T23，已 resolve）、公开
   render/preview 产品面（Engine 产品面票）、capability callPosition 完整
   OccurrencePath 硬化、Editor E1–E9 实施票。节点 default 展开已由 T23 catalog 数据深化票完成。
-- Rust layout、font shaping、resource decode、raster、PNG/JPEG encoding 与 exact pixel replay 的切片，
+- Rust layout、font shaping、resource decode、raster、JPEG encoding 与 exact pixel replay 的切片，
   要等 process protocol 和 build/certification contract 冻结后再登记——ADR-0045 已给出该合同；首个
   Rust/process task T22 已 resolve，已物化 daemon、帧编解码、machine manifest 与仓库内 replay
   harness；`render` gate 已随 T22 纳入 `full`。T23 已补齐 Engine 不得猜测的 exact document/default 前置；
-  实际 layout/raster/encoding 仍须另行单独登记，物理 Linux
+  T24 已单独登记 exact surface/PNG kernel，但不等于 layout/raster/daemon output；其余实际
+  layout/resource/raster/JPEG/Engine 接线仍须另行登记，物理 Linux
   双 CPU-family 认证与 J1/A3 属届时另行授权的执行级门控。
 - Product Editor 的 save/recovery/conflict/preview/browser automation 与 accessibility 实施票，要等状态架构
   prototype 结论后再登记——T09 已给出结论与 E1–E9 占位-free 纵切分解（open/baseline、本地编辑+undo+

@@ -35,8 +35,9 @@ if (-not $resolvedEvidenceDir.StartsWith(
 
 $independentReport = Join-Path $resolvedEvidenceDir 'renderer-process-independent.json'
 $documentReport = Join-Path $resolvedEvidenceDir 'render-document-independent.json'
+$outputPngReport = Join-Path $resolvedEvidenceDir 'output-png-independent.json'
 $summaryPath = Join-Path $resolvedEvidenceDir 'renderer-process-summary.json'
-foreach ($report in @($independentReport, $documentReport, $summaryPath)) {
+foreach ($report in @($independentReport, $documentReport, $outputPngReport, $summaryPath)) {
     if (Test-Path -LiteralPath $report) {
         throw "Renderer process evidence already exists: $report"
     }
@@ -215,6 +216,35 @@ try {
         throw 'RenderDocument independent report boundary drifted.'
     }
 
+    Invoke-Checked 'output-png-python-independent-replay' {
+        & python.exe 'tools\verify-output-png-vectors.py' `
+            '--vectors' 'renderer\output-png-vectors-v1.json' `
+            '--report' $outputPngReport
+    }
+    if (-not (Test-Path -LiteralPath $outputPngReport -PathType Leaf)) {
+        throw 'Output PNG independent replay did not write its report.'
+    }
+    $outputPngIndependent = Get-Content -Raw -Encoding UTF8 -LiteralPath $outputPngReport |
+        ConvertFrom-Json
+    if ($outputPngIndependent.verifier -ne 'renderweave-output-png-python-independent/1' `
+            -or $outputPngIndependent.result -ne 'PASS' `
+            -or $outputPngIndependent.assurance -ne 'A2' `
+            -or $outputPngIndependent.surfaceCases -ne 10 `
+            -or $outputPngIndependent.pngCases -ne 6 `
+            -or $outputPngIndependent.passed -ne 16 `
+            -or $outputPngIndependent.total -ne 16 `
+            -or $outputPngIndependent.failed -ne 0 `
+            -or $outputPngIndependent.checks -ne 90 `
+            -or $outputPngIndependent.outputProfile -ne 'renderweave-output-png/1.0' `
+            -or $outputPngIndependent.profileAvailability -ne 'NOT_REGISTERED' `
+            -or $outputPngIndependent.certificationStatus -ne 'NOT_CERTIFIED' `
+            -or $outputPngIndependent.rasterImplementation -ne 'ABSENT' `
+            -or $outputPngIndependent.daemonOutputPath -ne 'UNWIRED' `
+            -or $outputPngIndependent.physicalHostCertification -ne $false `
+            -or $outputPngIndependent.providerAttempts -ne 0) {
+        throw 'Output PNG independent report boundary drifted.'
+    }
+
     $dockerImageId = (& docker.exe image inspect $dockerImage --format '{{.Id}}' 2>&1) -join "`n"
     if ($LASTEXITCODE -ne 0 -or $dockerImageId -notmatch '^sha256:[0-9a-f]{64}$') {
         throw "Pinned renderer Linux image is not present locally: $dockerImage"
@@ -254,7 +284,7 @@ try {
     }
 
     $summary = [ordered]@{
-        gateVersion = 'renderweave-renderer-process-gate/1.0'
+        gateVersion = 'renderweave-renderer-process-gate/1.1'
         status = 'PASS'
         processContractVersion = 'renderweave-renderer-process/1.0'
         java = $java
@@ -292,11 +322,22 @@ try {
             vectorsSha256 = $documentIndependent.vectorsSha256
             allKindsCanonicalSha256 = $documentIndependent.allKindsCanonicalSha256
         }
+        outputPngIndependent = [ordered]@{
+            verifier = $outputPngIndependent.verifier
+            assurance = $outputPngIndependent.assurance
+            surfaceCases = $outputPngIndependent.surfaceCases
+            pngCases = $outputPngIndependent.pngCases
+            checks = $outputPngIndependent.checks
+            vectorSha256 = $outputPngIndependent.vectorSha256
+            outputProfile = $outputPngIndependent.outputProfile
+        }
         boundary = [ordered]@{
             rendererProfiles = @()
             profileAvailability = 'NOT_REGISTERED'
             certificationStatus = 'NOT_CERTIFIED'
             rasterImplementation = 'ABSENT'
+            outputPngKernel = 'AUTOMATED_VERIFIED_UNWIRED'
+            daemonOutputPath = 'UNWIRED'
             rendererReady = $false
             ticket19Closed = $false
             providerAttempts = 0
@@ -306,9 +347,9 @@ try {
         }
     }
     Write-Utf8File -Path $summaryPath -Content ($summary | ConvertTo-Json -Depth 6)
-    Write-Host (('Renderer process: Java={0} Python={1}+{2} Rust Windows=PASS ' +
+    Write-Host (('Renderer process: Java={0} Python={1}+{2}+{3} Rust Windows=PASS ' +
                 'Linux UDS=PASS Profile=NOT_REGISTERED Certification=NOT_CERTIFIED Raster=ABSENT') -f
-            $java.tests, $independent.checks, $documentIndependent.total)
+            $java.tests, $independent.checks, $documentIndependent.total, $outputPngIndependent.total)
     Write-Host "Renderer process evidence: $summaryPath"
 }
 finally {

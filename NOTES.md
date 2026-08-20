@@ -1739,3 +1739,20 @@
 - 本票不实现 layout/shaping/fetch/decode/raster/PNG/JPEG，不注册 Profile、不开放 route；manifest 继续
   NOT_REGISTERED/NOT_CERTIFIED/raster ABSENT，provider attempts/cost/key reads 均为 0。
 - 最终整树 full 在记录冻结后捕获，目录只在提交交接中报告以避免证据自指；详见 `plans/logs/TV1-T23.md`。
+
+### Template v1 TV1-T24 surface preflight + exact PNG kernel（resolved / automated_verified）
+
+- 2026-08-21：T23 已以 verified local commit `3da6d0a` 收口且 worktree clean；按真实 DAG 重算后，Codex
+  single-writer 单独登记并 claim T24（blocked by T22/T23，均 resolved）。
+- 本票只实现 Canvas/bleed/DPI exact surface arithmetic、冻结 Ticket 19 输出容量与
+  `renderweave-output-png/1.0` byte-exact encoder kernel，并以 Rust primary + Python stdlib independent
+  verifier重放同一 vectors。
+- daemon success/RESULT、process capability与manifest Profile集合保持不变；不实现 layout/resource/shaping/
+  raster/JPEG，不开放公开route，不发行formal Case/Oracle。Profile继续NOT_REGISTERED、certification
+  NOT_CERTIFIED、raster ABSENT；生成RGBA fixture只作encoder输入，不冒充Renderer认证。
+- Rust kernel 已以 decimal6/checked i128 完成 whole-surface half-up preflight，并以单一结果 buffer 流式实现固定
+  PNG chunk/filter/stored-DEFLATE/IDAT/CRC/Adler bytes；共享语料为 10 surface + 6 PNG cases，Python stdlib
+  independent 16/16、90 checks，向量 SHA `78d63f97...1c56`。
+- `render` `.sdlc/evidence/20260821-021837-render/`、`server`
+  `.sdlc/evidence/20260821-022145-server/` 与 `fast` `.sdlc/evidence/20260821-023312-fast/` 全绿；最终 full
+  在记录冻结后捕获并只在提交交接报告。T24 不升级 Renderer/Template v1 READY，不 push/tag/PR。

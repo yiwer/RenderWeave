@@ -1,0 +1,200 @@
+{
+  "manifestVersion": "renderweave-output-png-vectors/1.0",
+  "outputProfile": "renderweave-output-png/1.0",
+  "inputContract": "canonical-straight-rgba8-row-major",
+  "limits": {
+    "dpi": 600,
+    "surfaceEdgePixels": 16384,
+    "surfacePixels": 50000000,
+    "rgba8SurfaceBytes": 200000000,
+    "encoderScratchBytes": 67108864,
+    "encodedImageBytes": 536870912,
+    "storedDeflateBlockBytes": 65535,
+    "idatPayloadBytes": 1048576
+  },
+  "surfaceCases": [
+    {
+      "id": "a4-no-bleed-96",
+      "widthPt": "595.275591",
+      "heightPt": "841.889764",
+      "bleedPt": {"top": "0", "right": "0", "bottom": "0", "left": "0"},
+      "dpi": 96,
+      "expected": {"status": "ADMITTED", "widthPx": 794, "heightPx": 1123, "rgba8Bytes": 3566648, "pngEncodedBytes": 3568179}
+    },
+    {
+      "id": "bleed-summed-before-half-up",
+      "widthPt": "0.125",
+      "heightPt": "0.375",
+      "bleedPt": {"top": "0", "right": "0.125", "bottom": "0", "left": "0.125"},
+      "dpi": 96,
+      "expected": {"status": "ADMITTED", "widthPx": 1, "heightPx": 1, "rgba8Bytes": 4, "pngEncodedBytes": 107}
+    },
+    {
+      "id": "positive-half-rounds-up",
+      "widthPt": "0.375",
+      "heightPt": "0.375",
+      "bleedPt": {"top": "0", "right": "0", "bottom": "0", "left": "0"},
+      "dpi": 96,
+      "expected": {"status": "ADMITTED", "widthPx": 1, "heightPx": 1, "rgba8Bytes": 4, "pngEncodedBytes": 107}
+    },
+    {
+      "id": "rounded-zero-rejected",
+      "widthPt": "0.374999",
+      "heightPt": "0.375",
+      "bleedPt": {"top": "0", "right": "0", "bottom": "0", "left": "0"},
+      "dpi": 96,
+      "expected": {"status": "REJECTED", "code": "OUTPUT_BUDGET_EXCEEDED", "stage": "OUTPUT_PREFLIGHT", "limitId": "rendererSurfaceAndOutput.surfacePixels"}
+    },
+    {
+      "id": "dpi-at-limit",
+      "widthPt": "0.06",
+      "heightPt": "0.06",
+      "bleedPt": {"top": "0", "right": "0", "bottom": "0", "left": "0"},
+      "dpi": 600,
+      "expected": {"status": "ADMITTED", "widthPx": 1, "heightPx": 1, "rgba8Bytes": 4, "pngEncodedBytes": 107}
+    },
+    {
+      "id": "dpi-above-limit",
+      "widthPt": "1",
+      "heightPt": "1",
+      "bleedPt": {"top": "0", "right": "0", "bottom": "0", "left": "0"},
+      "dpi": 601,
+      "expected": {"status": "REJECTED", "code": "OUTPUT_BUDGET_EXCEEDED", "stage": "OUTPUT_PREFLIGHT", "limitId": "rendererSurfaceAndOutput.dpi"}
+    },
+    {
+      "id": "edge-at-limit",
+      "widthPt": "16384",
+      "heightPt": "1",
+      "bleedPt": {"top": "0", "right": "0", "bottom": "0", "left": "0"},
+      "dpi": 72,
+      "expected": {"status": "ADMITTED", "widthPx": 16384, "heightPx": 1, "rgba8Bytes": 65536, "pngEncodedBytes": 65644}
+    },
+    {
+      "id": "edge-above-limit",
+      "widthPt": "16385",
+      "heightPt": "1",
+      "bleedPt": {"top": "0", "right": "0", "bottom": "0", "left": "0"},
+      "dpi": 72,
+      "expected": {"status": "REJECTED", "code": "OUTPUT_BUDGET_EXCEEDED", "stage": "OUTPUT_PREFLIGHT", "limitId": "rendererSurfaceAndOutput.surfaceEdgePixels"}
+    },
+    {
+      "id": "pixels-and-rgba-at-limit",
+      "widthPt": "10000",
+      "heightPt": "5000",
+      "bleedPt": {"top": "0", "right": "0", "bottom": "0", "left": "0"},
+      "dpi": 72,
+      "expected": {"status": "ADMITTED", "widthPx": 10000, "heightPx": 5000, "rgba8Bytes": 200000000, "pngEncodedBytes": 200022637}
+    },
+    {
+      "id": "pixels-above-limit",
+      "widthPt": "10000",
+      "heightPt": "5001",
+      "bleedPt": {"top": "0", "right": "0", "bottom": "0", "left": "0"},
+      "dpi": 72,
+      "expected": {"status": "REJECTED", "code": "OUTPUT_BUDGET_EXCEEDED", "stage": "OUTPUT_PREFLIGHT", "limitId": "rendererSurfaceAndOutput.surfacePixels"}
+    }
+  ],
+  "pngCases": [
+    {
+      "id": "transparent-1x1-96",
+      "widthPx": 1,
+      "heightPx": 1,
+      "dpi": 96,
+      "pixels": {"kind": "EXACT_HEX", "hex": "00000000"},
+      "expected": {
+        "byteLength": 107,
+        "sha256": "sha256:8e0404bc52f2c4caa851f25520493cefae5b1ccc1fafa43c9d19539fe97f83f9",
+        "pixelsPerMeter": 3780,
+        "chunkTypes": ["IHDR", "sRGB", "pHYs", "IDAT", "IEND"],
+        "storedBlockLengths": [5],
+        "idatPayloadLengths": [16],
+        "exactHex": "89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c489000000017352474200aece1ce9000000097048597300000ec400000ec401952b0e1b00000010494441547801010500faff000000000000050001647895380000000049454e44ae426082"
+      }
+    },
+    {
+      "id": "opaque-white-1x1-600",
+      "widthPx": 1,
+      "heightPx": 1,
+      "dpi": 600,
+      "pixels": {"kind": "SOLID_RGBA", "hex": "ffffffff"},
+      "expected": {
+        "byteLength": 107,
+        "sha256": "sha256:35a8eae80a73dfaf363e9b9bebf36bdf4f9ed004d70898058de43920dc72cdbc",
+        "pixelsPerMeter": 23622,
+        "chunkTypes": ["IHDR", "sRGB", "pHYs", "IDAT", "IEND"],
+        "storedBlockLengths": [5],
+        "idatPayloadLengths": [16],
+        "exactHex": "89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c489000000017352474200aece1ce9000000097048597300005c4600005c46011494434100000010494441547801010500faff00ffffffff09fb03fda3d1490a0000000049454e44ae426082"
+      }
+    },
+    {
+      "id": "rgba-2x2-300",
+      "widthPx": 2,
+      "heightPx": 2,
+      "dpi": 300,
+      "pixels": {"kind": "EXACT_HEX", "hex": "ff0000ff00ff00800000ff4000000000"},
+      "expected": {
+        "byteLength": 120,
+        "sha256": "sha256:35c4954376295727ff2f1c9574e40523313cd47d46edf3913f0a365da9a94e2b",
+        "pixelsPerMeter": 11811,
+        "chunkTypes": ["IHDR", "sRGB", "pHYs", "IDAT", "IEND"],
+        "storedBlockLengths": [18],
+        "idatPayloadLengths": [29],
+        "exactHex": "89504e470d0a1a0a0000000d494844520000000200000002080600000072b60d24000000017352474200aece1ce9000000097048597300002e2300002e230178a53f760000001d494441547801011200edff00ff0000ff00ff0080000000ff4000000000372104bd122494310000000049454e44ae426082"
+      }
+    },
+    {
+      "id": "deflate-single-block-edge",
+      "widthPx": 16383,
+      "heightPx": 1,
+      "dpi": 96,
+      "pixels": {"kind": "SOLID_RGBA", "hex": "010203ff"},
+      "expected": {
+        "byteLength": 65635,
+        "sha256": "sha256:ff84965931395a2ccf4a5ab58b7affcc882341ed1efb5db881ef815d4a18739d",
+        "pixelsPerMeter": 3780,
+        "chunkTypes": ["IHDR", "sRGB", "pHYs", "IDAT", "IEND"],
+        "storedBlockLengths": [65533],
+        "idatPayloadLengths": [65544]
+      }
+    },
+    {
+      "id": "deflate-two-block-edge",
+      "widthPx": 16384,
+      "heightPx": 1,
+      "dpi": 96,
+      "pixels": {"kind": "SOLID_RGBA", "hex": "010203ff"},
+      "expected": {
+        "byteLength": 65644,
+        "sha256": "sha256:36298b3ca252d5fa1e18e81153662daa307d9eb4821b4e6ec53734b95f631077",
+        "pixelsPerMeter": 3780,
+        "chunkTypes": ["IHDR", "sRGB", "pHYs", "IDAT", "IEND"],
+        "storedBlockLengths": [65535, 2],
+        "idatPayloadLengths": [65553]
+      }
+    },
+    {
+      "id": "idat-two-chunks",
+      "widthPx": 16384,
+      "heightPx": 16,
+      "dpi": 96,
+      "pixels": {"kind": "SOLID_RGBA", "hex": "102030ff"},
+      "expected": {
+        "byteLength": 1048786,
+        "sha256": "sha256:c6e9b35414effc2dd514c892be9fafb819e2c52d8b1f5354f775943fae740b7f",
+        "pixelsPerMeter": 3780,
+        "chunkTypes": ["IHDR", "sRGB", "pHYs", "IDAT", "IDAT", "IEND"],
+        "storedBlockLengths": [65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 32],
+        "idatPayloadLengths": [1048576, 107]
+      }
+    }
+  ],
+  "boundary": {
+    "profileAvailability": "NOT_REGISTERED",
+    "certificationStatus": "NOT_CERTIFIED",
+    "rasterImplementation": "ABSENT",
+    "daemonOutputPath": "UNWIRED",
+    "physicalHostCertification": false,
+    "providerAttempts": 0
+  }
+}
