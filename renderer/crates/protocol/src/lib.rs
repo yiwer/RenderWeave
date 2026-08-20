@@ -20,9 +20,10 @@ pub const RESULT_CONTRACT_VERSION: &str = "renderweave-render-result/1.0";
 pub const PROCESS_MANIFEST_VERSION: &str = "renderweave-renderer-process-manifest/1.0";
 pub const COMMAND_DIGEST_DOMAIN: &[u8] = b"renderweave-render-command/1\0";
 pub const DOCUMENT_DIGEST_DOMAIN: &[u8] = b"renderweave-render-document/1\0";
-pub const PROTOCOL_CAPABILITIES: [&str; 4] = [
+pub const PROTOCOL_CAPABILITIES: [&str; 5] = [
     "render-command-v1",
     "render-cancel-v1",
+    "render-document-v1",
     "render-result-v1",
     "render-problem-v1",
 ];
@@ -925,8 +926,8 @@ mod tests {
             parse_command(
                 command
                     .replace(
-                        "sha256:7ffcc57acaadbaec18281b9461bb204654f151f20fbff25ea8971f723b64c304",
-                        "sha256:0ffcc57acaadbaec18281b9461bb204654f151f20fbff25ea8971f723b64c304",
+                        "sha256:7c6308ebf6c6be199587f42265a586bd346f0e26f13e67c67503a7ce08395883",
+                        "sha256:0c6308ebf6c6be199587f42265a586bd346f0e26f13e67c67503a7ce08395883",
                     )
                     .as_bytes()
             )

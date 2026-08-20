@@ -33,7 +33,7 @@ class SealerTest {
                         "kind", new Text("rect"),
                         "nodeId", new Text("00000000-0000-4000-8000-000000000011"),
                         "fill", new ObjectNode(Map.of("color", new Text("#FF000000"))),
-                        "widthMm", new NumberToken("10"))),
+                        "placement", absoluteFixedPlacement("10", "10"))),
                 List.of(),
                 "/rect");
         var canvas = new Materializer.MaterializedNode(
@@ -77,7 +77,10 @@ class SealerTest {
     void viewportAssignsSourceCanvasOccurrenceBeforeItsChildren() {
         var leaf = new Materializer.MaterializedNode(
                 "rect",
-                new ObjectNode(Map.of("kind", new Text("rect"))),
+                new ObjectNode(Map.of(
+                        "kind", new Text("rect"),
+                        "placement", absoluteFixedPlacement("10", "10"),
+                        "fill", new ObjectNode(Map.of("color", new Text("#FF000000"))))),
                 List.of(),
                 "/use/leaf");
         var childCanvas = new Materializer.MaterializedNode(
@@ -90,7 +93,9 @@ class SealerTest {
                 "/use");
         var viewport = new Materializer.MaterializedNode(
                 "compositionViewport",
-                new ObjectNode(Map.of("kind", new Text("compositionViewport"))),
+                new ObjectNode(Map.of(
+                        "kind", new Text("compositionViewport"),
+                        "placement", absoluteFixedPlacement("100", "50"))),
                 List.of(childCanvas),
                 "/use");
         var canvas = new Materializer.MaterializedNode(
@@ -206,6 +211,17 @@ class SealerTest {
                 1,
                 List.of(snapshot),
                 List.of());
+    }
+
+    private static ObjectNode absoluteFixedPlacement(String widthMm, String heightMm) {
+        return new ObjectNode(Map.of(
+                "type", new Text("ABSOLUTE"),
+                "xMm", new NumberToken("0"),
+                "yMm", new NumberToken("0"),
+                "widthMode", new Text("FIXED"),
+                "heightMode", new Text("FIXED"),
+                "widthMm", new NumberToken(widthMm),
+                "heightMm", new NumberToken(heightMm)));
     }
 
     private static AdmittedRenderInput admitted() {

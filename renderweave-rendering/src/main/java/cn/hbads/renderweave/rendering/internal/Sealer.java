@@ -24,8 +24,8 @@ import java.util.TreeMap;
  * commit bytes 与 digest。RenderDocument 不携带 nodeId/displayName/Binding/逻辑 AssetRef/
  * 动态结构判别；资源 manifest 与树 resourceId 引用双射。
  *
- * <p>T21 边界：节点 default 展开随 RenderNodeContract catalog 数据深化逐 kind 物化，本票
- * seal 保留 authored + 已求值 + 量化后的成员；catalog 未含 default 数据的成员不虚构。
+ * <p>T23 边界：每个 static node 在 seal 时按 RenderNodeContract catalog 逐 kind 展开冻结 default；
+ * catalog 未声明的成员不虚构，最终 canonical bytes 只含 renderer 合同允许的成员。
  */
 final class Sealer {
 
@@ -57,6 +57,7 @@ final class Sealer {
 
     private long occurrenceCounter;
     private final List<String> occurrenceIdsInPreorder = new ArrayList<>();
+    private final RenderNodeContractCatalog nodeContracts = RenderNodeContractCatalog.instance();
 
     private Sealer() {
     }
@@ -196,53 +197,63 @@ final class Sealer {
         if (!"canvas".equals(node.kind())) {
             throw new IllegalStateException("render document root must be the canvas");
         }
+        var expanded = nodeContracts.expandNodeDefaults("canvas", node.members());
         var members = new TreeMap<String, String>();
         members.put("occurrenceId", CanonicalJson.string(nextOccurrenceId()));
-        for (var entry : node.members().members().entrySet()) {
+        members.put("kind", CanonicalJson.string("canvas"));
+        for (var entry : expanded.members().entrySet()) {
             if (AUTHORING_ONLY_MEMBERS.contains(entry.getKey())
                     || "kind".equals(entry.getKey())) {
                 continue;
             }
             putLowered(members, entry.getKey(), entry.getValue());
         }
-        members.put("children", CanonicalJson.array(sealChildren(node.children())));
+        members.put("children", CanonicalJson.array(sealChildren(node.children(), expanded)));
         return CanonicalJson.object(members);
     }
 
-    private List<String> sealChildren(List<Materializer.MaterializedNode> children) {
+    private List<String> sealChildren(
+            List<Materializer.MaterializedNode> children,
+            ObjectNode expandedParent) {
         var items = new ArrayList<String>(children.size());
         for (var child : children) {
-            items.add(sealNode(child));
+            items.add(sealNode(child, expandedParent));
         }
         return items;
     }
 
-    private String sealNode(Materializer.MaterializedNode node) {
+    private String sealNode(
+            Materializer.MaterializedNode node,
+            ObjectNode expandedParent) {
         if ("compositionViewport".equals(node.kind())) {
-            return sealViewport(node);
+            return sealViewport(node, expandedParent);
         }
+        var expanded = expandNode(node, expandedParent);
         var members = new TreeMap<String, String>();
         members.put("kind", CanonicalJson.string(node.kind()));
         members.put("occurrenceId", CanonicalJson.string(nextOccurrenceId()));
-        for (var entry : node.members().members().entrySet()) {
+        for (var entry : expanded.members().entrySet()) {
             if (AUTHORING_ONLY_MEMBERS.contains(entry.getKey())
                     || "kind".equals(entry.getKey())) {
                 continue;
             }
             putLowered(members, entry.getKey(), entry.getValue());
         }
-        if (!node.children().isEmpty()) {
-            members.put("children", CanonicalJson.array(sealChildren(node.children())));
+        if (nodeContracts.isContainer(node.kind())) {
+            members.put("children", CanonicalJson.array(sealChildren(node.children(), expanded)));
         }
         return CanonicalJson.object(members);
     }
 
     /** viewport：occurrenceId 先分配，sourceCanvas 在 children 之前分配。 */
-    private String sealViewport(Materializer.MaterializedNode node) {
+    private String sealViewport(
+            Materializer.MaterializedNode node,
+            ObjectNode expandedParent) {
+        var expanded = expandNode(node, expandedParent);
         var members = new TreeMap<String, String>();
         members.put("kind", CanonicalJson.string("compositionViewport"));
         members.put("occurrenceId", CanonicalJson.string(nextOccurrenceId()));
-        for (var entry : node.members().members().entrySet()) {
+        for (var entry : expanded.members().entrySet()) {
             if (AUTHORING_ONLY_MEMBERS.contains(entry.getKey())
                     || "kind".equals(entry.getKey())) {
                 continue;
@@ -251,22 +262,53 @@ final class Sealer {
         }
         if (!node.children().isEmpty() && "canvas".equals(node.children().get(0).kind())) {
             var source = node.children().get(0);
+            var expandedSource = nodeContracts.expandNodeDefaults("canvas", source.members());
             var sourceMembers = new TreeMap<String, String>();
             sourceMembers.put("occurrenceId", CanonicalJson.string(nextOccurrenceId()));
-            for (var entry : source.members().members().entrySet()) {
+            for (var entry : expandedSource.members().entrySet()) {
                 if (AUTHORING_ONLY_MEMBERS.contains(entry.getKey())
-                        || "kind".equals(entry.getKey())) {
+                        || "kind".equals(entry.getKey())
+                        || "bleed".equals(entry.getKey())) {
                     continue;
                 }
                 putLowered(sourceMembers, entry.getKey(), entry.getValue());
             }
-            sourceMembers.put("children", CanonicalJson.array(sealChildren(source.children())));
+            sourceMembers.put("children", CanonicalJson.array(
+                    sealChildren(source.children(), expandedSource)));
             members.put("sourceCanvas", CanonicalJson.object(sourceMembers));
+        } else {
+            throw new IllegalStateException("compositionViewport requires one source Canvas");
         }
         return CanonicalJson.object(members);
     }
 
+    private ObjectNode expandNode(
+            Materializer.MaterializedNode node,
+            ObjectNode expandedParent) {
+        var expanded = nodeContracts.expandNodeDefaults(node.kind(), node.members());
+        if (!(expanded.members().get("placement") instanceof ObjectNode placement)) {
+            throw new IllegalStateException("non-Canvas RenderDSL node requires placement");
+        }
+        var parentKind = expandedParent.members().get("kind") instanceof Text text
+                ? text.value()
+                : null;
+        var members = new java.util.LinkedHashMap<String, DesignNodeValue>(expanded.members());
+        members.put("placement", nodeContracts.expandPlacementDefaults(
+                placement, parentKind, expandedParent));
+        return new ObjectNode(members);
+    }
+
     private void putLowered(TreeMap<String, String> members, String key, DesignNodeValue value) {
+        var resourceMember = nodeContracts.loweredResourceMember(key);
+        if (resourceMember != null) {
+            if (!(value instanceof ObjectNode resource)
+                    || resource.members().size() != 1
+                    || !(resource.members().get("resourceId") instanceof Text resourceId)) {
+                throw new IllegalStateException("logical AssetRef survived RenderDocument lowering");
+            }
+            members.put(resourceMember, CanonicalJson.string(resourceId.value()));
+            return;
+        }
         if (value instanceof NumberToken number && key.endsWith("Mm")) {
             var ptKey = key.substring(0, key.length() - 2) + "Pt";
             members.put(ptKey, CanonicalJson.decimal(convertMmToPt(number.rawToken())));
@@ -288,13 +330,7 @@ final class Sealer {
         if (value instanceof ObjectNode object) {
             var members = new TreeMap<String, String>();
             for (var entry : object.members().entrySet()) {
-                if (entry.getValue() instanceof NumberToken number
-                        && entry.getKey().endsWith("Mm")) {
-                    var ptKey = entry.getKey().substring(0, entry.getKey().length() - 2) + "Pt";
-                    members.put(ptKey, CanonicalJson.decimal(convertMmToPt(number.rawToken())));
-                } else {
-                    members.put(entry.getKey(), lowerValue(entry.getValue()));
-                }
+                putLowered(members, entry.getKey(), entry.getValue());
             }
             return CanonicalJson.object(members);
         }

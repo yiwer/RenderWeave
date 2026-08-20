@@ -34,8 +34,9 @@ if (-not $resolvedEvidenceDir.StartsWith(
 }
 
 $independentReport = Join-Path $resolvedEvidenceDir 'renderer-process-independent.json'
+$documentReport = Join-Path $resolvedEvidenceDir 'render-document-independent.json'
 $summaryPath = Join-Path $resolvedEvidenceDir 'renderer-process-summary.json'
-foreach ($report in @($independentReport, $summaryPath)) {
+foreach ($report in @($independentReport, $documentReport, $summaryPath)) {
     if (Test-Path -LiteralPath $report) {
         throw "Renderer process evidence already exists: $report"
     }
@@ -109,7 +110,7 @@ $env:RENDERWEAVE_LIVE_UPLOAD_ENABLED = 'false'
 $rendererRoot = Join-Path $repoRoot 'renderer'
 $dockerImage = 'rust:1.89-slim'
 $javaTestSelector = 'RendererProcessProtocolTest,RendererProcessAdapterTest,' +
-    'RendererProcessSupervisorTest,RenderEnginePortTest'
+    'RendererProcessSupervisorTest,RenderEnginePortTest,RenderDocumentContractTest'
 
 Push-Location $repoRoot
 try {
@@ -153,6 +154,7 @@ try {
     }
     $java = Get-TestCount -ReportPaths @(
         (Join-Path $repoRoot 'renderweave-rendering\target\surefire-reports\TEST-cn.hbads.renderweave.rendering.internal.RenderEnginePortTest.xml'),
+        (Join-Path $repoRoot 'renderweave-rendering\target\surefire-reports\TEST-cn.hbads.renderweave.rendering.internal.RenderDocumentContractTest.xml'),
         (Join-Path $repoRoot 'renderweave-app\target\surefire-reports\TEST-cn.hbads.renderweave.app.rendering.RendererProcessProtocolTest.xml'),
         (Join-Path $repoRoot 'renderweave-app\target\surefire-reports\TEST-cn.hbads.renderweave.app.rendering.RendererProcessAdapterTest.xml'),
         (Join-Path $repoRoot 'renderweave-app\target\surefire-reports\TEST-cn.hbads.renderweave.app.rendering.RendererProcessSupervisorTest.xml')
@@ -187,6 +189,30 @@ try {
             -or $independent.rasterImplementation -ne 'ABSENT' `
             -or $independent.providerAttempts -ne 0) {
         throw 'Renderer independent report boundary drifted.'
+    }
+
+    Invoke-Checked 'render-document-python-independent-replay' {
+        & python.exe 'tools\verify-render-document-vectors.py' `
+            '--catalog' 'renderweave-rendering\src\main\resources\cn\hbads\renderweave\rendering\render-node-contract-v1.json' `
+            '--vectors' 'renderer\render-document-vectors-v1.json' `
+            '--all-kinds' 'renderer\render-document-all-kinds-v1.json' `
+            '--protocol-vectors' 'renderer\protocol-vectors-v1.json' `
+            '--report' $documentReport
+    }
+    if (-not (Test-Path -LiteralPath $documentReport -PathType Leaf)) {
+        throw 'RenderDocument independent replay did not write its report.'
+    }
+    $documentIndependent = Get-Content -Raw -Encoding UTF8 -LiteralPath $documentReport |
+        ConvertFrom-Json
+    if ($documentIndependent.verifier -ne 'renderweave-render-document-python-independent/1' `
+            -or $documentIndependent.result -ne 'PASS' `
+            -or $documentIndependent.passed -ne 14 `
+            -or $documentIndependent.total -ne 14 `
+            -or $documentIndependent.profileAvailability -ne 'NOT_REGISTERED' `
+            -or $documentIndependent.certificationStatus -ne 'NOT_CERTIFIED' `
+            -or $documentIndependent.rasterImplementation -ne 'ABSENT' `
+            -or $documentIndependent.providerAttempts -ne 0) {
+        throw 'RenderDocument independent report boundary drifted.'
     }
 
     $dockerImageId = (& docker.exe image inspect $dockerImage --format '{{.Id}}' 2>&1) -join "`n"
@@ -259,6 +285,13 @@ try {
             vendorTreeSha256 = $independent.vendorTreeSha256
             vendorFileCount = $independent.vendorFileCount
         }
+        renderDocumentIndependent = [ordered]@{
+            verifier = $documentIndependent.verifier
+            cases = $documentIndependent.total
+            catalogSha256 = $documentIndependent.catalogSha256
+            vectorsSha256 = $documentIndependent.vectorsSha256
+            allKindsCanonicalSha256 = $documentIndependent.allKindsCanonicalSha256
+        }
         boundary = [ordered]@{
             rendererProfiles = @()
             profileAvailability = 'NOT_REGISTERED'
@@ -273,9 +306,9 @@ try {
         }
     }
     Write-Utf8File -Path $summaryPath -Content ($summary | ConvertTo-Json -Depth 6)
-    Write-Host (('Renderer process: Java={0} Python={1} Rust Windows=PASS ' +
+    Write-Host (('Renderer process: Java={0} Python={1}+{2} Rust Windows=PASS ' +
                 'Linux UDS=PASS Profile=NOT_REGISTERED Certification=NOT_CERTIFIED Raster=ABSENT') -f
-            $java.tests, $independent.checks)
+            $java.tests, $independent.checks, $documentIndependent.total)
     Write-Host "Renderer process evidence: $summaryPath"
 }
 finally {

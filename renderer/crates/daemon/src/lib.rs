@@ -4,6 +4,8 @@
 //! the in-memory registry and receives one stable terminal problem; no image or partial result can
 //! be produced by this crate.
 
+#[cfg(any(unix, test))]
+use renderweave_renderer_document::validate_render_document;
 use renderweave_renderer_protocol::ProtocolError;
 #[cfg(any(unix, test))]
 use renderweave_renderer_protocol::{
@@ -310,6 +312,8 @@ impl RequestRegistry {
 
         let (code, stage) = if admitted.deadline_epoch_millis <= now_epoch_millis {
             ("RENDER_DEADLINE_EXCEEDED", EngineStage::RequestControl)
+        } else if validate_render_document(admitted.command.document.get()).is_err() {
+            ("RENDER_INTERNAL_ERROR", EngineStage::DocumentAdmission)
         } else {
             // The exact T22 manifest has no registered raster profile. This is a real, stable,
             // fail-closed terminal admission result, never a synthetic image implementation.
@@ -442,6 +446,35 @@ mod tests {
     }
 
     #[test]
+    fn registry_rejects_digest_valid_but_contract_invalid_document_before_profile_lookup() {
+        let command = vector_json("png-command");
+        let document = vector_document("png-command");
+        let invalid_document = document.replace("\"backgroundColor\":\"#00000000\",", "");
+        let invalid_digest = renderweave_renderer_protocol::digest_with_domain(
+            renderweave_renderer_protocol::DOCUMENT_DIGEST_DOMAIN,
+            invalid_document.as_bytes(),
+        );
+        let old_digest = vector_value("png-command", "renderDocumentDigest");
+        let invalid_command = command
+            .replace(&document, &invalid_document)
+            .replace(&old_digest, &invalid_digest);
+
+        let mut registry = RequestRegistry::default();
+        let response = registry
+            .handle(
+                Frame {
+                    frame_type: FrameType::Command,
+                    payload: invalid_command.into_bytes(),
+                },
+                1_800_000_000_000,
+            )
+            .unwrap();
+        let problem: Value = serde_json::from_slice(&response.payload).unwrap();
+        assert_eq!(problem["code"], "RENDER_INTERNAL_ERROR");
+        assert_eq!(problem["engineStage"], "DOCUMENT_ADMISSION");
+    }
+
+    #[test]
     fn pre_command_cancel_is_terminal_and_never_emits_result() {
         let mut registry = RequestRegistry::default();
         let cancel = vector_json("cancel");
@@ -524,6 +557,23 @@ mod tests {
             .iter()
             .find(|case| case["id"] == id)
             .unwrap()["canonicalJson"]
+            .as_str()
+            .unwrap()
+            .to_owned()
+    }
+
+    fn vector_document(id: &str) -> String {
+        vector_value(id, "documentCanonicalJson")
+    }
+
+    fn vector_value(id: &str, member: &str) -> String {
+        let vectors: Value = serde_json::from_str(VECTORS).unwrap();
+        vectors["cases"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|case| case["id"] == id)
+            .unwrap()[member]
             .as_str()
             .unwrap()
             .to_owned()

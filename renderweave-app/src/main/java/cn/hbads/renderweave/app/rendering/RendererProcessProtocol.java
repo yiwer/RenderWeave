@@ -50,6 +50,7 @@ final class RendererProcessProtocol {
     static final List<String> CAPABILITIES = List.of(
             "render-command-v1",
             "render-cancel-v1",
+            "render-document-v1",
             "render-result-v1",
             "render-problem-v1");
 

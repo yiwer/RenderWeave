@@ -6,7 +6,8 @@
   RenderNodeContract 向量语料 Java primary、端到端 assembly 证明）；TV1-T13 已完成 AssetResolver、加密
   selection recovery record、Renderer-only signed fetch lease、内部 exact-byte endpoint 与 Rendering bridge。
   TV1-T22 已完成首个 Rust daemon/process protocol/manifest/replay 与 `render` gate 纵切；Profile 保持
-  NOT_REGISTERED，raster 仍 ABSENT，物理 Linux/J1/A3 不在本票
+  NOT_REGISTERED，raster 仍 ABSENT，物理 Linux/J1/A3 不在本票。TV1-T23=`resolved/automated_verified`：exact
+  RenderDocument/default/lowering 与 Java/Rust/Python validator 已完成；当前没有已 claim 的下游 implementation ticket
 - 日期：2026-08-20
 - Approved delta：[`specs/changes/20260817-template-v1-implementation-authority.md`](../specs/changes/20260817-template-v1-implementation-authority.md)
 - Frozen checkpoint：`0b485f4a13de9d754a81d07f464730776e13c14b`
@@ -60,7 +61,8 @@ binding: generic + project-local tools/run-gate.ps1 + Wayfinder markdown tracker
 | TV1-P3 Rendering seam | 07 → 08 | Evaluator/RenderDocument ownership 与独立 Rust process/certification protocol | G-TV1-RENDER-SEAM：closed protocol vectors、failure boundaries、supply-chain plan；不等于 Renderer READY |
 | TV1-P4 Editor validation | 09 | 基于真实 Template/Rendering seam 的 throwaway Product Editor 状态原型结论 | G-TV1-EDITOR-ARCH：自动观察 A1/A2 + 人工 J1；不开放产品 route |
 | TV1-P5a Renderer process | 22 | Rust UDS daemon、Java process Adapter、machine manifest、跨语言 replay 与 `render` gate | 协议纵切 A1/A2；Profile NOT_REGISTERED；不等于 raster/物理 Linux certification |
-| TV1-P5+ Product completion | 22 后按真实依赖另切票 | 完整 Renderer layout/raster/output、公开产品面、Product Editor 与 formal registry records | 逐纵切 gate + product target/executor + J1/A3/物理 Linux 认证；当前未调度 |
+| TV1-P5b Document handoff | 23 | exact RenderDocument/default/lowering + Java/Rust/Python validator | 文档合同 A1/A2；Profile 仍 NOT_REGISTERED；无 layout/raster |
+| TV1-P5+ Product completion | 23 后按真实依赖另切票 | 完整 Renderer layout/raster/output、公开产品面、Product Editor 与 formal registry records | 逐纵切 gate + product target/executor + J1/A3/物理 Linux 认证；当前无下游票已 claim |
 
 ## 4. 当前 ticket DAG
 
@@ -112,6 +114,9 @@ flowchart LR
   T08 --> T22[22 Renderer process vertical]
   T13 --> T22
   T21 --> T22
+  T13 --> T23[23 RenderDocument contract/defaults]
+  T21 --> T23
+  T22 --> T23
 ```
 
 | Ticket | 类型 | 状态 | Blocked by | 本票退出事实 |
@@ -141,6 +146,7 @@ flowchart LR
 | 20 | task | `resolved` / `automated_verified` | 04, 05, 14, 19 | Template 依赖投影（AssetRef/反向索引/STALE 消费）；T12b 的 blocker |
 | 21 | task | `resolved` / `automated_verified` | 07, 08, 20 | 首个 Rendering 纵切：TemplateClosureAuthority/Evaluator stage 1–8/seal + RenderNodeContractCatalog 与向量语料（Java primary）；V023 + app Adapter；无公开 route |
 | 22 | task | `resolved` / `automated_verified` | 08, 13, 21 | Rust UDS daemon + strict frame/manifest/registry + Java process Adapter + Java/Rust/Python/Linux replay；`render` gate 入 full；Profile NOT_REGISTERED |
+| 23 | task | `resolved` / `automated_verified` | 13, 21, 22 | exact RenderDocument catalog/default/lowering + Java/Rust/Python validator；无 layout/raster/Profile registration |
 
 每次只 claim 一个 unblocked ticket；一票 resolved 后才由其 `Blocked by` 关系产生下一 frontier。未知实现切片留在
 map 的 `Not yet specified`，不为排满计划提前发明接口、migration 或 Profile identity。
@@ -162,9 +168,10 @@ Evaluator stage 1–8/seal + RenderNodeContract 向量语料 Java primary + Capa
 端到端 assembly 证明）；TV1-T13（AssetResolver/Renderer-only lease 纵切）已 resolve（单事务 selection
 幂等 + AES-GCM recovery record + signed internal exact-byte fetch + Rendering bridge，V024）；TV1-T22 已
 resolve（offline Cargo workspace + Linux UDS daemon + strict frame/manifest/registry + Java process Adapter/
-Supervisor + Java/Rust/Python/Linux replay，`render` 已入 17-step `full`）。现有登记票全部 resolved；下一唯一
-frontier 需从 map 的未登记切片另行建票并 claim。single-writer 不顺带预建公开 render route、layout/raster/
-output Profile 或 Editor 产品 route；Editor E1–E9 在各自前置满足后另行登记。
+Supervisor + Java/Rust/Python/Linux replay，`render` 已入 17-step `full`）。TV1-T23 已 resolve：同一 catalog
+驱动 Java default/lowering，Rust daemon 在 Profile lookup 前独立验证 exact document，Python 再以标准库重放
+共同语料，Rust Engine 不再需要猜测 DesignDSL default。single-writer 未预建公开 render route、layout/raster/
+output Profile 或 Editor 产品 route；下一 frontier 需重算 DAG 后另行登记，Editor E1–E9 仍按各自前置拆票。
 
 ## 5. TV1-T01 执行卡
 
@@ -452,3 +459,21 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
 - 完成信号：Ticket 22 `resolved / automated_verified`、`render` 已入 full、合法 Command 在空 Profile manifest
   下稳定 terminal fail-closed、verified local commit 且 worktree clean；不 push/tag/PR。
 - 结果：已按上述边界完成；分级证据与不可自指的最终 full 记录策略见 `plans/logs/TV1-T22.md`。
+
+## 22. TV1-T23 执行卡
+
+- 决策：以同一 machine-readable RenderNodeContract 驱动 Java default/lowering 与 Rust specialized validator，
+  补齐 Ticket 15 已冻结但 T21 明确保留的 exact RenderDocument handoff；daemon path 仍无成功图片。
+- 允许影响：Rendering catalog/sealer/materializer、共享 vectors、Rust document crate/daemon、render gate/独立
+  verifier、tracker/plan/log/NOTES/evidence。
+- 禁止影响：layout/shaping/fetch/decode/raster/PNG/JPEG、公开 route/OpenAPI/Editor、Profile registration、
+  Ticket 19 records、物理 Linux/J1/A3/READY、provider/真实数据/API Key。
+- TDD：共同语料 Java/Rust/Python 先 RED；随后 catalog/default materialization、完整 lowering、Rust closed
+  validator 与 daemon 接线；最后 Linux `--network none` replay。
+- 受影响验证：focused Rendering/app + Cargo → `render` → `server`/`fast` → 完整 `full`。
+- 保证上限：文档合同工具 A1、三实现 exact replay + Linux daemon path A2；无 A3/J1，Profile 始终
+  NOT_REGISTERED、certification NOT_CERTIFIED、raster ABSENT。
+- 完成信号：Ticket 23 `resolved / automated_verified`、document 无 default omission/authored residue、validator
+  接入真实 daemon path、verified local commit 且 worktree clean；不 push/tag/PR。
+- 结果：已按上述边界完成；catalog/default/lowering、三实现共同语料、daemon admission、分级 gate 与 exact
+  identity 见 `plans/logs/TV1-T23.md`。最终 full 目录按不可自指策略只在提交交接中报告。

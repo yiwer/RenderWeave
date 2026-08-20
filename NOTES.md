@@ -1721,3 +1721,21 @@
   `.sdlc/evidence/20260820-212527-fast/` 全绿。详见 `plans/logs/TV1-T22.md`。
 - manifest 固定 Profile `NOT_REGISTERED`、certification `NOT_CERTIFIED`、raster `ABSENT`；无 synthetic image、
   公开 route、Ticket 19 数值、物理 Linux/J1/A3/READY、provider/真实数据/API Key；未 push/tag/PR。
+
+### Template v1 TV1-T23 exact RenderDocument/default 合同（resolved / automated_verified）
+
+- 2026-08-20：T22 最终 17-step full 通过并以 `50e60cf` 收口后重算 DAG；发现 T21 sealer 明确保留节点
+  default catalog 深化，而冻结 Ticket 15 要求 Engine 接收的 RenderDocument 不含 default omission，故 Rust
+  layout 不能先行猜测默认值。
+- Codex single-writer 已完成 T23（blocked by T13/T21/T22，均 resolved）：唯一机器 RenderNodeContract 深化为
+  `/2`，冻结 16 static kinds、closed members、default/object/placement/source Canvas/resource 合同；Java
+  Materializer/Sealer 完成结构 Binding、Repeat PACK→Stack/Grid、default/resource/occurrence lowering。
+- 新增 Rust document crate 并接入 daemon 的 Command digest 后、Profile lookup 前 admission；digest-valid 但
+  文档合同非法时返回 `DOCUMENT_ADMISSION` terminal problem。Java/Rust/Python 共同重放 2 positive + 12
+  negative，catalog SHA `55e9062e...a3b9752`，16-kind canonical SHA `1b83a605...f9b031`。
+- 首轮 render gate 捕获 app HELLO 漏列 `render-document-v1`，补齐后聚焦协议 8/8 转绿；最终 render
+  `.sdlc/evidence/20260821-005446-render/`（Java 26、Python 110+14、Windows Rust + Linux no-network UDS）、
+  server `.sdlc/evidence/20260821-005605-server/` 与 fast `.sdlc/evidence/20260821-010746-fast/` 全绿。
+- 本票不实现 layout/shaping/fetch/decode/raster/PNG/JPEG，不注册 Profile、不开放 route；manifest 继续
+  NOT_REGISTERED/NOT_CERTIFIED/raster ABSENT，provider attempts/cost/key reads 均为 0。
+- 最终整树 full 在记录冻结后捕获，目录只在提交交接中报告以避免证据自指；详见 `plans/logs/TV1-T23.md`。

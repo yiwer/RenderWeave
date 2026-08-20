@@ -7,6 +7,7 @@ license.workspace = true
 publish = false
 
 [dependencies]
+renderweave-renderer-document = { path = "../document" }
 renderweave-renderer-protocol = { path = "../protocol" }
 
 [dev-dependencies]

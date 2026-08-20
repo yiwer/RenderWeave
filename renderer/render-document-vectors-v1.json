@@ -1,0 +1,47 @@
+{
+  "vectorVersion": "renderweave-render-document-vectors/1",
+  "authorityContext": {
+    "catalogVersion": "renderweave-render-node-contract-v1/2",
+    "catalogPath": "renderweave-rendering/src/main/resources/cn/hbads/renderweave/rendering/render-node-contract-v1.json",
+    "catalogSha256": "sha256:55e9062e2b988c1bc878d216c850e3ada7e6584b19ae2aca7ce2765d2a3b9752",
+    "renderDslVersion": "renderweave-render/1.0",
+    "layoutProfile": "renderweave-layout/1.0",
+    "profileAvailability": "NOT_REGISTERED",
+    "certificationStatus": "NOT_CERTIFIED",
+    "rasterImplementation": "ABSENT"
+  },
+  "positiveCases": [
+    {
+      "id": "minimal-default-explicit",
+      "source": "renderer/protocol-vectors-v1.json#png-command.documentCanonicalJson",
+      "renderDocumentDigest": "sha256:7c6308ebf6c6be199587f42265a586bd346f0e26f13e67c67503a7ce08395883",
+      "occurrenceCount": 1,
+      "resourceCount": 0,
+      "staticKinds": ["canvas"]
+    },
+    {
+      "id": "all-static-kinds-default-explicit",
+      "source": "renderer/render-document-all-kinds-v1.json",
+      "canonicalBytes": 7960,
+      "canonicalSha256": "sha256:1b83a605c13837b0fa6d3a3cbf5e84fb97c71116ba8a81942cf97a3d7df9b031",
+      "renderDocumentDigest": "sha256:d059aa1303f0fa66c96ee186e2b4f763f5292dd6c63d53cd30eee7d34f2ba612",
+      "occurrenceCount": 17,
+      "resourceCount": 2,
+      "staticKinds": ["canvas", "group", "frame", "stack", "grid", "text", "image", "rect", "ellipse", "line", "polygon", "polyline", "path", "qrCode", "barcode", "compositionViewport"]
+    }
+  ],
+  "negativeCases": [
+    {"id": "missing-root-default", "baseCase": "minimal-default-explicit", "operation": "remove", "pointer": "/canvas/backgroundColor"},
+    {"id": "missing-common-default", "baseCase": "all-static-kinds-default-explicit", "operation": "remove", "pointer": "/canvas/children/6/visible"},
+    {"id": "unknown-node-member", "baseCase": "minimal-default-explicit", "operation": "add", "pointer": "/canvas/unknown", "value": true},
+    {"id": "null-member", "baseCase": "minimal-default-explicit", "operation": "replace", "pointer": "/canvas/backgroundColor", "value": null},
+    {"id": "dynamic-residue", "baseCase": "minimal-default-explicit", "operation": "add", "pointer": "/canvas/bindings", "value": []},
+    {"id": "pack-residue", "baseCase": "all-static-kinds-default-explicit", "operation": "replace", "pointer": "/canvas/children/0/placement/type", "value": "PACK"},
+    {"id": "root-kind-mismatch", "baseCase": "minimal-default-explicit", "operation": "replace", "pointer": "/canvas/kind", "value": "group"},
+    {"id": "content-model-omission", "baseCase": "all-static-kinds-default-explicit", "operation": "remove", "pointer": "/canvas/children/0/children"},
+    {"id": "source-canvas-kind-residue", "baseCase": "all-static-kinds-default-explicit", "operation": "add", "pointer": "/canvas/children/14/sourceCanvas/kind", "value": "canvas"},
+    {"id": "occurrence-sequence-drift", "baseCase": "all-static-kinds-default-explicit", "operation": "replace", "pointer": "/canvas/children/0/occurrenceId", "value": "rwocc_0000000000000002"},
+    {"id": "resource-bijection-drift", "baseCase": "all-static-kinds-default-explicit", "operation": "replace", "pointer": "/resources/0/resourceId", "value": "rwres_cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"},
+    {"id": "noncanonical-prefix", "baseCase": "minimal-default-explicit", "operation": "rawPrefix", "value": " "}
+  ]
+}

@@ -360,11 +360,21 @@ final class Materializer {
         if (node.members().get("render") instanceof Bool render && !render.value()) {
             return null;
         }
+        var evaluatedNode = overlayBindings(node, snapshot, scope);
+        if (evaluatedNode == null) {
+            return failed(EvaluationStage.MATERIALIZATION, ProblemCode.EVALUATION_FAILED, null);
+        }
+        if (evaluatedNode.members().get("render") instanceof Bool render && !render.value()) {
+            return null;
+        }
         return switch (kind) {
-            case "conditional" -> expandConditional(node, snapshot, scope, path, output);
-            case "repeat" -> expandRepeat(node, snapshot, scope, path, output);
-            case "templateUse" -> expandTemplateUse(node, snapshot, scope, path, output);
-            default -> materializeNode(node, snapshot, scope, path, output, kind);
+            case "conditional" -> expandConditional(
+                    evaluatedNode, snapshot, scope, path, output);
+            case "repeat" -> expandRepeat(evaluatedNode, snapshot, scope, path, output);
+            case "templateUse" -> expandTemplateUse(
+                    evaluatedNode, snapshot, scope, path, output);
+            default -> materializeNode(
+                    evaluatedNode, snapshot, scope, path, output, kind);
         };
     }
 
@@ -422,34 +432,211 @@ final class Materializer {
         } else {
             return failed(EvaluationStage.MATERIALIZATION, ProblemCode.EVALUATION_FAILED, null);
         }
+        if (!(node.members().get("itemLayout") instanceof ObjectNode itemLayout)
+                || !(node.members().get("instanceLayout") instanceof ObjectNode instanceLayout)) {
+            return failed(EvaluationStage.MATERIALIZATION, ProblemCode.RENDER_INTERNAL_ERROR, null);
+        }
+        if (itemList.isEmpty()) {
+            return null;
+        }
+        var capacityFailure = reserveMaterializedNode();
+        if (capacityFailure != null) {
+            return capacityFailure;
+        }
+        var itemNodes = new ArrayList<MaterializedNode>(itemList.size());
         var index = 0;
         for (var item : itemList) {
+            capacityFailure = reserveMaterializedNode();
+            if (capacityFailure != null) {
+                return capacityFailure;
+            }
             var frames = new HashMap<>(scope.loopFrames().frames());
             frames.put(loopId, new DefinitionEngine.LoopFrame(toTypedValue(item), index));
             var itemScope = scope.withLoopFrames(new DefinitionEngine.LoopFrames(frames));
             var itemPath = path + "/repeat(" + loopId + ")[" + index + "]";
-            var failure = expandFrame(node, snapshot, itemScope, itemPath, output);
+            var expandedChildren = new ArrayList<MaterializedNode>();
+            var failure = expandChildList(
+                    node, snapshot, itemScope, itemPath, expandedChildren);
             if (failure != null) {
                 return failure;
             }
+            var packedChildren = lowerPackedChildren(expandedChildren, itemLayout);
+            var itemKind = renderPackingKind(itemLayout);
+            var itemMembers = packingNodeMembers(
+                    itemKind,
+                    itemLayout,
+                    generatedPackingPlacement(instanceLayout, index),
+                    packedChildren.size(),
+                    null);
+            itemNodes.add(new MaterializedNode(
+                    itemKind, itemMembers, packedChildren, itemPath));
             index++;
         }
+        var instanceKind = renderPackingKind(instanceLayout);
+        var instanceMembers = packingNodeMembers(
+                instanceKind,
+                instanceLayout,
+                null,
+                itemNodes.size(),
+                node);
+        output.add(new MaterializedNode(
+                instanceKind, instanceMembers, itemNodes, path));
+        recordSidecar(path, node);
         return null;
+    }
+
+    private static List<MaterializedNode> lowerPackedChildren(
+            List<MaterializedNode> children, ObjectNode packing) {
+        var lowered = new ArrayList<MaterializedNode>(children.size());
+        var parentKind = renderPackingKind(packing);
+        for (var index = 0; index < children.size(); index++) {
+            var child = children.get(index);
+            if (!(child.members().members().get("placement") instanceof ObjectNode placement)
+                    || !"PACK".equals(textMember(placement, "type"))) {
+                throw new IllegalStateException(
+                        "Repeat expansion requires PACK on every surviving direct child");
+            }
+            var members = new LinkedHashMap<>(child.members().members());
+            members.put("placement", convertedPackingPlacement(
+                    placement, packing, index));
+            lowered.add(new MaterializedNode(
+                    child.kind(), new ObjectNode(members), child.children(), child.occurrencePath()));
+        }
+        return List.copyOf(lowered);
+    }
+
+    private static ObjectNode convertedPackingPlacement(
+            ObjectNode authored, ObjectNode packing, int index) {
+        var members = new LinkedHashMap<String, DesignNodeValue>();
+        members.put("type", new Text(renderPackingKind(packing).toUpperCase(java.util.Locale.ROOT)));
+        for (var entry : authored.members().entrySet()) {
+            if (!"type".equals(entry.getKey())) {
+                members.put(entry.getKey(), entry.getValue());
+            }
+        }
+        addGridCell(members, packing, index);
+        return new ObjectNode(members);
+    }
+
+    private static ObjectNode generatedPackingPlacement(ObjectNode packing, int index) {
+        var members = new LinkedHashMap<String, DesignNodeValue>();
+        members.put("type", new Text(renderPackingKind(packing).toUpperCase(java.util.Locale.ROOT)));
+        members.put("widthMode", new Text("HUG_CONTENT"));
+        members.put("heightMode", new Text("HUG_CONTENT"));
+        addGridCell(members, packing, index);
+        return new ObjectNode(members);
+    }
+
+    private static void addGridCell(
+            LinkedHashMap<String, DesignNodeValue> members,
+            ObjectNode packing,
+            int index) {
+        if (!"grid".equals(renderPackingKind(packing))) {
+            return;
+        }
+        var columns = positiveIntegerMember(packing, "columns");
+        members.put("row", new NumberToken(Integer.toString(index / columns)));
+        members.put("column", new NumberToken(Integer.toString(index % columns)));
+    }
+
+    private static ObjectNode packingNodeMembers(
+            String kind,
+            ObjectNode packing,
+            ObjectNode placement,
+            int childCount,
+            ObjectNode host) {
+        var members = host == null
+                ? new LinkedHashMap<String, DesignNodeValue>()
+                : new LinkedHashMap<>(loweredStructuralMembers(kind, host).members());
+        members.put("kind", new Text(kind));
+        if (placement != null) {
+            members.put("placement", placement);
+        }
+        if ("stack".equals(kind)) {
+            members.put("direction", requiredMember(packing, "direction"));
+            copyIfPresent(packing, members, "gapMm");
+        } else {
+            var columns = positiveIntegerMember(packing, "columns");
+            var rows = Math.max(1, (childCount + columns - 1) / columns);
+            members.put("rows", autoTracks(rows));
+            members.put("columns", autoTracks(columns));
+            copyIfPresent(packing, members, "rowGapMm");
+            copyIfPresent(packing, members, "columnGapMm");
+        }
+        return new ObjectNode(members);
+    }
+
+    private static ArrayNode autoTracks(int count) {
+        var tracks = new ArrayList<DesignNodeValue>(count);
+        for (var index = 0; index < count; index++) {
+            tracks.add(new ObjectNode(Map.of("type", new Text("AUTO"))));
+        }
+        return new ArrayNode(tracks);
+    }
+
+    private static String renderPackingKind(ObjectNode packing) {
+        var kind = textMember(packing, "kind");
+        return switch (kind) {
+            case "STACK" -> "stack";
+            case "GRID" -> "grid";
+            default -> throw new IllegalStateException("unknown Repeat packing kind");
+        };
+    }
+
+    private static int positiveIntegerMember(ObjectNode object, String member) {
+        if (!(object.members().get(member) instanceof NumberToken number)) {
+            throw new IllegalStateException("Repeat grid packing requires columns");
+        }
+        return new java.math.BigDecimal(number.rawToken()).intValueExact();
+    }
+
+    private static DesignNodeValue requiredMember(ObjectNode object, String member) {
+        var value = object.members().get(member);
+        if (value == null) {
+            throw new IllegalStateException("Repeat packing member is absent");
+        }
+        return value;
+    }
+
+    private static void copyIfPresent(
+            ObjectNode source,
+            LinkedHashMap<String, DesignNodeValue> destination,
+            String member) {
+        var value = source.members().get(member);
+        if (value != null) {
+            destination.put(member, value);
+        }
     }
 
     /** conditional/repeat 生成的普通 frame 容器：展开 children，无 authored 外观成员。 */
     private MaterializationOutcome expandFrame(
             ObjectNode node, TemplateSnapshot snapshot, InvocationScope scope,
             String path, List<MaterializedNode> output) {
+        var capacityFailure = reserveMaterializedNode();
+        if (capacityFailure != null) {
+            return capacityFailure;
+        }
         var children = new ArrayList<MaterializedNode>();
         var failure = expandChildList(node, snapshot, scope, path, children);
         if (failure != null) {
             return failure;
         }
         output.add(new MaterializedNode(
-                "frame", new ObjectNode(Map.of("kind", new Text("frame"))), children, path));
+                "frame", loweredStructuralMembers("frame", node), children, path));
         recordSidecar(path, node);
         return null;
+    }
+
+    private static ObjectNode loweredStructuralMembers(String kind, ObjectNode source) {
+        var members = new LinkedHashMap<String, DesignNodeValue>();
+        members.put("kind", new Text(kind));
+        for (var memberName : List.of("placement", "visible", "opacity", "transform")) {
+            var member = source.members().get(memberName);
+            if (member != null) {
+                members.put(memberName, member);
+            }
+        }
+        return new ObjectNode(members);
     }
 
     private MaterializationOutcome expandChildList(
@@ -569,6 +756,10 @@ final class Materializer {
             return failed(EvaluationStage.MATERIALIZATION, ProblemCode.RENDER_INTERNAL_ERROR, null);
         }
         var usePath = path + "/templateUse(" + targetId.value() + ")";
+        var capacityFailure = reserveMaterializedNode();
+        if (capacityFailure != null) {
+            return capacityFailure;
+        }
         var viewportChildren = new ArrayList<MaterializedNode>();
         var failure = expandNode(childRoot, childSnapshot, childScope, usePath, viewportChildren);
         if (failure != null) {
@@ -576,9 +767,11 @@ final class Materializer {
         }
         var viewportMembers = new LinkedHashMap<String, DesignNodeValue>();
         viewportMembers.put("kind", new Text("compositionViewport"));
-        var placement = node.members().get("placement");
-        if (placement != null) {
-            viewportMembers.put("placement", placement);
+        for (var memberName : List.of("placement", "visible", "opacity", "transform")) {
+            var member = node.members().get(memberName);
+            if (member != null) {
+                viewportMembers.put(memberName, member);
+            }
         }
         output.add(new MaterializedNode(
                 "compositionViewport", new ObjectNode(viewportMembers), viewportChildren, usePath));
@@ -596,6 +789,26 @@ final class Materializer {
     private MaterializationOutcome materializeNode(
             ObjectNode node, TemplateSnapshot snapshot, InvocationScope scope,
             String path, List<MaterializedNode> output, String kind) {
+        var capacityFailure = reserveMaterializedNode();
+        if (capacityFailure != null) {
+            return capacityFailure;
+        }
+        var resolvedMembers = resolveAssetsIn(node, path);
+        if (resolvedMembers instanceof MaterializationFailed resolveFailure) {
+            return resolveFailure;
+        }
+        var finalMembers = ((ResolvedMembers) resolvedMembers).members();
+        var children = new ArrayList<MaterializedNode>();
+        var childFailure = expandChildList(node, snapshot, scope, path, children);
+        if (childFailure != null) {
+            return childFailure;
+        }
+        output.add(new MaterializedNode(kind, finalMembers, children, path));
+        recordSidecar(path, node);
+        return null;
+    }
+
+    private MaterializationOutcome reserveMaterializedNode() {
         nodes++;
         if (nodes > MAX_MATERIALIZED_NODES) {
             return failed(EvaluationStage.MATERIALIZATION,
@@ -608,22 +821,6 @@ final class Materializer {
                     ProblemCode.RENDER_DOCUMENT_LIMIT_EXCEEDED,
                     "closureAndExpansion.renderOccurrences");
         }
-        var overlaid = overlayBindings(node, snapshot, scope);
-        if (overlaid == null) {
-            return failed(EvaluationStage.MATERIALIZATION, ProblemCode.EVALUATION_FAILED, null);
-        }
-        var resolvedMembers = resolveAssetsIn(overlaid, path);
-        if (resolvedMembers instanceof MaterializationFailed resolveFailure) {
-            return resolveFailure;
-        }
-        var finalMembers = ((ResolvedMembers) resolvedMembers).members();
-        var children = new ArrayList<MaterializedNode>();
-        var childFailure = expandChildList(node, snapshot, scope, path, children);
-        if (childFailure != null) {
-            return childFailure;
-        }
-        output.add(new MaterializedNode(kind, finalMembers, children, path));
-        recordSidecar(path, node);
         return null;
     }
 

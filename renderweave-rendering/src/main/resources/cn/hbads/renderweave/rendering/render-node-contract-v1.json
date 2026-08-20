@@ -1,72 +1,208 @@
 {
-  "catalogVersion": "renderweave-render-node-contract-v1/1",
+  "catalogVersion": "renderweave-render-node-contract-v1/2",
   "renderDslVersion": "renderweave-render/1.0",
+  "layoutProfile": "renderweave-layout/1.0",
+  "renderDocumentContract": {
+    "members": ["canvas", "dslVersion", "layoutProfile", "resources"],
+    "requiredMembers": ["canvas", "dslVersion", "layoutProfile", "resources"]
+  },
+  "sourceCanvasContract": {
+    "members": ["occurrenceId", "widthPt", "heightPt", "backgroundColor", "children"],
+    "requiredMembers": ["occurrenceId", "widthPt", "heightPt", "backgroundColor", "children"]
+  },
+  "renderPlacementContracts": {
+    "ABSOLUTE": {
+      "members": ["type", "xPt", "yPt", "widthMode", "heightMode", "widthPt", "heightPt", "minWidthPt", "minHeightPt", "maxWidthPt", "maxHeightPt", "rightInsetPt", "bottomInsetPt"],
+      "requiredMembers": ["type", "xPt", "yPt", "widthMode", "heightMode"]
+    },
+    "STACK": {
+      "members": ["type", "widthMode", "heightMode", "widthPt", "heightPt", "minWidthPt", "minHeightPt", "maxWidthPt", "maxHeightPt", "marginTopPt", "marginRightPt", "marginBottomPt", "marginLeftPt", "alignSelf", "fillWeight"],
+      "requiredMembers": ["type", "widthMode", "heightMode", "marginTopPt", "marginRightPt", "marginBottomPt", "marginLeftPt", "alignSelf"]
+    },
+    "GRID": {
+      "members": ["type", "widthMode", "heightMode", "widthPt", "heightPt", "minWidthPt", "minHeightPt", "maxWidthPt", "maxHeightPt", "row", "column", "rowSpan", "columnSpan", "marginTopPt", "marginRightPt", "marginBottomPt", "marginLeftPt", "horizontalAlignSelf", "verticalAlignSelf"],
+      "requiredMembers": ["type", "widthMode", "heightMode", "row", "column", "rowSpan", "columnSpan", "marginTopPt", "marginRightPt", "marginBottomPt", "marginLeftPt", "horizontalAlignSelf", "verticalAlignSelf"]
+    }
+  },
+  "renderResourceContract": {
+    "members": ["resourceId", "kind", "fetchUrl", "expiresAt", "sha256", "mediaType", "byteLength", "acceptanceProfileId", "technicalDescriptor"],
+    "requiredMembers": ["resourceId", "kind", "fetchUrl", "expiresAt", "sha256", "mediaType", "byteLength", "acceptanceProfileId", "technicalDescriptor"]
+  },
+  "dynamicResidueMembers": ["nodeId", "displayName", "bindings", "render", "imageRef", "fontRef", "assetId", "templateRef", "useId", "contextSelector", "contextAbsentPolicy", "fills", "loopId", "items", "absentPolicy", "itemLayout", "instanceLayout", "condition"],
+  "commonNodeDefaults": {
+    "visible": true,
+    "opacity": 1,
+    "transform": {
+      "rotationDeg": 0,
+      "scaleX": 1,
+      "scaleY": 1,
+      "originX": 0.5,
+      "originY": 0.5
+    }
+  },
+  "objectDefaults": {
+    "bleed": {
+      "topMm": 0,
+      "rightMm": 0,
+      "bottomMm": 0,
+      "leftMm": 0
+    },
+    "padding": {
+      "topMm": 0,
+      "rightMm": 0,
+      "bottomMm": 0,
+      "leftMm": 0
+    },
+    "cornerRadii": {
+      "topLeftMm": 0,
+      "topRightMm": 0,
+      "bottomRightMm": 0,
+      "bottomLeftMm": 0
+    }
+  },
+  "placementDefaults": {
+    "ABSOLUTE": {},
+    "STACK": {
+      "marginTopMm": 0,
+      "marginRightMm": 0,
+      "marginBottomMm": 0,
+      "marginLeftMm": 0
+    },
+    "GRID": {
+      "rowSpan": 1,
+      "columnSpan": 1,
+      "marginTopMm": 0,
+      "marginRightMm": 0,
+      "marginBottomMm": 0,
+      "marginLeftMm": 0,
+      "horizontalAlignSelf": "START",
+      "verticalAlignSelf": "START"
+    }
+  },
+  "conditionalPlacementDefaults": {
+    "absoluteWidthFill": {"member": "rightInsetMm", "value": 0},
+    "absoluteHeightFill": {"member": "bottomInsetMm", "value": 0},
+    "stackAlignSelf": "PARENT_ALIGN_ITEMS",
+    "stackMainFillWeight": 1
+  },
+  "resourceLowering": {
+    "imageRef": "imageResourceId",
+    "fontRef": "fontResourceId"
+  },
   "kinds": {
     "canvas": {
       "container": true,
       "rootOnly": true,
-      "properties": ["widthMm", "heightMm", "backgroundColor", "bleed"]
+      "properties": ["widthMm", "heightMm", "backgroundColor", "bleed"],
+      "requiredProperties": ["widthMm", "heightMm"],
+      "defaults": {"backgroundColor": "#00000000"},
+      "defaultObjects": ["bleed"]
     },
     "group": {
       "container": true,
-      "properties": ["placement", "render", "visible", "opacity", "transform"]
+      "properties": ["placement", "render", "visible", "opacity", "transform"],
+      "requiredProperties": ["placement"],
+      "defaults": {},
+      "defaultObjects": []
     },
     "frame": {
       "container": true,
-      "properties": ["placement", "render", "visible", "opacity", "transform", "fill", "stroke", "cornerRadii", "padding", "clipContent"]
+      "properties": ["placement", "render", "visible", "opacity", "transform", "fill", "stroke", "cornerRadii", "padding", "clipContent"],
+      "requiredProperties": ["placement"],
+      "defaults": {"clipContent": false},
+      "defaultObjects": ["cornerRadii", "padding"]
     },
     "stack": {
       "container": true,
-      "properties": ["placement", "render", "visible", "opacity", "transform", "fill", "stroke", "cornerRadii", "padding", "clipContent", "direction", "gapMm", "justifyContent", "alignItems"]
+      "properties": ["placement", "render", "visible", "opacity", "transform", "fill", "stroke", "cornerRadii", "padding", "clipContent", "direction", "gapMm", "justifyContent", "alignItems"],
+      "requiredProperties": ["placement"],
+      "defaults": {"clipContent": false, "direction": "COLUMN", "gapMm": 0, "justifyContent": "START", "alignItems": "START"},
+      "defaultObjects": ["cornerRadii", "padding"]
     },
     "grid": {
       "container": true,
-      "properties": ["placement", "render", "visible", "opacity", "transform", "fill", "stroke", "cornerRadii", "padding", "clipContent", "rows", "columns", "rowGapMm", "columnGapMm"]
+      "properties": ["placement", "render", "visible", "opacity", "transform", "fill", "stroke", "cornerRadii", "padding", "clipContent", "rows", "columns", "rowGapMm", "columnGapMm"],
+      "requiredProperties": ["placement", "rows", "columns"],
+      "defaults": {"clipContent": false, "rowGapMm": 0, "columnGapMm": 0},
+      "defaultObjects": ["cornerRadii", "padding"]
     },
     "text": {
       "container": false,
-      "properties": ["placement", "render", "visible", "opacity", "transform", "runs", "writingMode", "horizontalAlign", "verticalAlign", "lineBreak", "overflow", "lineHeight", "maxLines", "padding", "stroke", "fitMode", "minScale"]
+      "properties": ["placement", "render", "visible", "opacity", "transform", "runs", "writingMode", "horizontalAlign", "verticalAlign", "lineBreak", "overflow", "lineHeight", "maxLines", "padding", "stroke", "fitMode", "minScale"],
+      "requiredProperties": ["placement", "runs"],
+      "defaults": {"writingMode": "HORIZONTAL_TB", "horizontalAlign": "LEFT", "verticalAlign": "TOP", "lineBreak": "WORD", "overflow": "CLIP", "lineHeight": {"type": "FACTOR", "factor": 1.2}, "fitMode": "NONE"},
+      "defaultObjects": ["padding"]
     },
     "image": {
       "container": false,
-      "properties": ["placement", "render", "visible", "opacity", "transform", "imageRef", "fit", "sampling"]
+      "properties": ["placement", "render", "visible", "opacity", "transform", "imageRef", "fit", "sampling"],
+      "requiredProperties": ["placement", "imageRef"],
+      "defaults": {"fit": "CONTAIN", "sampling": "LINEAR"},
+      "defaultObjects": []
     },
     "rect": {
       "container": false,
-      "properties": ["placement", "render", "visible", "opacity", "transform", "fill", "stroke", "cornerRadii"]
+      "properties": ["placement", "render", "visible", "opacity", "transform", "fill", "stroke", "cornerRadii"],
+      "requiredProperties": ["placement"],
+      "defaults": {},
+      "defaultObjects": ["cornerRadii"]
     },
     "ellipse": {
       "container": false,
-      "properties": ["placement", "render", "visible", "opacity", "transform", "fill", "stroke"]
+      "properties": ["placement", "render", "visible", "opacity", "transform", "fill", "stroke"],
+      "requiredProperties": ["placement"],
+      "defaults": {},
+      "defaultObjects": []
     },
     "line": {
       "container": false,
-      "properties": ["placement", "render", "visible", "opacity", "transform", "start", "end", "stroke"]
+      "properties": ["placement", "render", "visible", "opacity", "transform", "start", "end", "stroke"],
+      "requiredProperties": ["placement", "start", "end", "stroke"],
+      "defaults": {},
+      "defaultObjects": []
     },
     "polygon": {
       "container": false,
-      "properties": ["placement", "render", "visible", "opacity", "transform", "points", "fill", "stroke"]
+      "properties": ["placement", "render", "visible", "opacity", "transform", "points", "fill", "stroke"],
+      "requiredProperties": ["placement", "points"],
+      "defaults": {},
+      "defaultObjects": []
     },
     "polyline": {
       "container": false,
-      "properties": ["placement", "render", "visible", "opacity", "transform", "points", "stroke"]
+      "properties": ["placement", "render", "visible", "opacity", "transform", "points", "stroke"],
+      "requiredProperties": ["placement", "points", "stroke"],
+      "defaults": {},
+      "defaultObjects": []
     },
     "path": {
       "container": false,
-      "properties": ["placement", "render", "visible", "opacity", "transform", "commands", "fill", "stroke", "fillRule"]
+      "properties": ["placement", "render", "visible", "opacity", "transform", "commands", "fill", "stroke", "fillRule"],
+      "requiredProperties": ["placement", "commands"],
+      "defaults": {"fillRule": "NONZERO"},
+      "defaultObjects": []
     },
     "qrCode": {
       "container": false,
-      "properties": ["placement", "render", "visible", "opacity", "transform", "content", "errorCorrectionLevel", "foregroundColor", "backgroundColor"]
+      "properties": ["placement", "render", "visible", "opacity", "transform", "content", "errorCorrectionLevel", "foregroundColor", "backgroundColor"],
+      "requiredProperties": ["placement", "content"],
+      "defaults": {"errorCorrectionLevel": "M", "foregroundColor": "#000000FF", "backgroundColor": "#FFFFFFFF"},
+      "defaultObjects": []
     },
     "barcode": {
       "container": false,
-      "properties": ["placement", "render", "visible", "opacity", "transform", "format", "value", "foregroundColor", "backgroundColor"]
+      "properties": ["placement", "render", "visible", "opacity", "transform", "format", "value", "foregroundColor", "backgroundColor"],
+      "requiredProperties": ["placement", "format", "value"],
+      "defaults": {"foregroundColor": "#000000FF", "backgroundColor": "#FFFFFFFF"},
+      "defaultObjects": []
     },
     "compositionViewport": {
       "container": true,
       "loweringOnly": true,
-      "properties": ["placement", "visible", "opacity", "sourceCanvas"]
+      "properties": ["placement", "visible", "opacity", "transform", "sourceCanvas"],
+      "requiredProperties": ["placement", "sourceCanvas"],
+      "defaults": {},
+      "defaultObjects": []
     }
   }
 }

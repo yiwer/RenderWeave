@@ -19,6 +19,7 @@ PROCESS_VERSION = "renderweave-renderer-process/1.0"
 CAPABILITIES = [
     "render-command-v1",
     "render-cancel-v1",
+    "render-document-v1",
     "render-result-v1",
     "render-problem-v1",
 ]

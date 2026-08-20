@@ -66,7 +66,7 @@ class MaterializerTest {
     }
 
     @Test
-    void repeatExpandsOneFramePerItem() {
+    void repeatLowersPackingIntoInstanceAndItemContainers() {
         var document = "{\"dslVersion\":\"renderweave-design/1.0\","
                 + "\"expressionProfile\":\"renderweave-expression/1.0\","
                 + "\"displayName\":\"R\",\"definitions\":[],"
@@ -83,9 +83,53 @@ class MaterializerTest {
                 + "\"instanceLayout\":{\"kind\":\"STACK\",\"direction\":\"ROW\",\"gapMm\":2},"
                 + "\"children\":[" + packRect("00000000-0000-4000-8000-000000000031") + "]}]}}";
         var tree = materializeOk(document, Map.of(), null);
-        assertEquals(3, tree.root().children().size());
-        assertEquals("frame", tree.root().children().get(0).kind());
-        assertTrue(tree.root().children().get(1).occurrencePath().contains("[1]"));
+        assertEquals(1, tree.root().children().size());
+        var instances = tree.root().children().get(0);
+        assertEquals("stack", instances.kind());
+        assertEquals("ROW", textMember(instances.members(), "direction"));
+        assertEquals("2", numberMember(instances.members(), "gapMm"));
+        assertEquals("ABSOLUTE", placementType(instances));
+        assertEquals(3, instances.children().size());
+
+        var secondItem = instances.children().get(1);
+        assertEquals("stack", secondItem.kind());
+        assertEquals("ROW", textMember(secondItem.members(), "direction"));
+        assertEquals("1", numberMember(secondItem.members(), "gapMm"));
+        assertEquals("STACK", placementType(secondItem));
+        assertTrue(secondItem.occurrencePath().contains("[1]"));
+        assertEquals("STACK", placementType(secondItem.children().get(0)));
+    }
+
+    @Test
+    void repeatGeneratedContainersCountTowardStaticNodeLimit() {
+        var items = String.join(",", java.util.Collections.nCopies(10_000, "\"x\""));
+        var document = repeatDocument(items);
+
+        var outcome = materialize(document, Map.of(), null);
+
+        var failed = assertInstanceOf(Materializer.MaterializationFailed.class, outcome);
+        assertEquals(RenderingProblem.ProblemCode.RENDER_DOCUMENT_LIMIT_EXCEEDED,
+                failed.problem().code());
+        assertEquals("closureAndExpansion.materializedStaticNodes",
+                failed.problem().limitId().orElseThrow().value());
+    }
+
+    private static String repeatDocument(String items) {
+        return "{\"dslVersion\":\"renderweave-design/1.0\","
+                + "\"expressionProfile\":\"renderweave-expression/1.0\","
+                + "\"displayName\":\"R\",\"definitions\":[],"
+                + "\"designRoot\":{\"nodeId\":\"00000000-0000-4000-8000-000000000001\","
+                + "\"kind\":\"canvas\",\"widthMm\":210,\"heightMm\":297,\"bindings\":[],"
+                + "\"children\":[{\"nodeId\":\"00000000-0000-4000-8000-000000000021\","
+                + "\"kind\":\"repeat\",\"bindings\":[],\"placement\":" + absolute() + ","
+                + "\"loopId\":\"00000000-0000-4000-8000-0000000000b1\","
+                + "\"absentPolicy\":\"ERROR\",\"items\":{\"kind\":\"literal\","
+                + "\"valueType\":{\"type\":\"list\",\"items\":\"text\"},"
+                + "\"value\":[" + items + "]},"
+                + "\"itemLayout\":{\"kind\":\"STACK\",\"direction\":\"ROW\",\"gapMm\":1},"
+                + "\"instanceLayout\":{\"kind\":\"STACK\",\"direction\":\"ROW\",\"gapMm\":2},"
+                + "\"children\":[" + packRect("00000000-0000-4000-8000-000000000031")
+                + "]}]}}";
     }
 
     private static String packRect(String nodeId) {
@@ -103,6 +147,9 @@ class MaterializerTest {
                         + "\"useId\":\"00000000-0000-4000-8000-0000000000b2\","
                         + "\"templateRef\":{\"templateId\":\"" + CHILD_ID + "\"},"
                         + "\"contextSelector\":{\"kind\":\"empty\"},\"fills\":[],"
+                        + "\"visible\":false,\"opacity\":0.25,"
+                        + "\"transform\":{\"rotationDeg\":15,\"scaleX\":1,\"scaleY\":1,"
+                        + "\"originX\":0.5,\"originY\":0.5},"
                         + "\"placement\":" + absolute() + "}");
         var rootSnapshot = snapshot(ROOT_ID, canonical(rootDocument));
         var childSnapshot = snapshot(CHILD_ID, canonical(childDocument));
@@ -127,6 +174,18 @@ class MaterializerTest {
         assertEquals("compositionViewport", viewport.kind());
         assertEquals(1, viewport.children().size());
         assertEquals("canvas", viewport.children().get(0).kind());
+        assertEquals(false, assertInstanceOf(
+                cn.hbads.renderweave.template.api.DesignSemanticAuthority.Bool.class,
+                viewport.members().members().get("visible")).value());
+        assertEquals("0.25", assertInstanceOf(
+                cn.hbads.renderweave.template.api.DesignSemanticAuthority.NumberToken.class,
+                viewport.members().members().get("opacity")).rawToken());
+        var transform = assertInstanceOf(
+                cn.hbads.renderweave.template.api.DesignSemanticAuthority.ObjectNode.class,
+                viewport.members().members().get("transform"));
+        assertEquals("15", assertInstanceOf(
+                cn.hbads.renderweave.template.api.DesignSemanticAuthority.NumberToken.class,
+                transform.members().get("rotationDeg")).rawToken());
     }
 
     // ------------------------------------------------------------------
@@ -279,6 +338,29 @@ class MaterializerTest {
     private static String absolute() {
         return "{\"type\":\"ABSOLUTE\",\"xMm\":0,\"yMm\":0,\"widthMode\":\"FIXED\","
                 + "\"widthMm\":10,\"heightMode\":\"FIXED\",\"heightMm\":10}";
+    }
+
+    private static String placementType(Materializer.MaterializedNode node) {
+        var placement = assertInstanceOf(
+                cn.hbads.renderweave.template.api.DesignSemanticAuthority.ObjectNode.class,
+                node.members().members().get("placement"));
+        return textMember(placement, "type");
+    }
+
+    private static String textMember(
+            cn.hbads.renderweave.template.api.DesignSemanticAuthority.ObjectNode object,
+            String member) {
+        return assertInstanceOf(
+                cn.hbads.renderweave.template.api.DesignSemanticAuthority.Text.class,
+                object.members().get(member)).value();
+    }
+
+    private static String numberMember(
+            cn.hbads.renderweave.template.api.DesignSemanticAuthority.ObjectNode object,
+            String member) {
+        return assertInstanceOf(
+                cn.hbads.renderweave.template.api.DesignSemanticAuthority.NumberToken.class,
+                object.members().get(member)).rawToken();
     }
 
     private static byte[] canonical(String document) {
