@@ -54,11 +54,15 @@ final class RenderingDigests {
     }
 
     static String sha256Of(byte[]... parts) {
+        return SHA256_PREFIX + sha256Hex(parts);
+    }
+
+    static String sha256Hex(byte[]... parts) {
         var digest = newMessageDigest();
         for (var part : parts) {
             digest.update(Objects.requireNonNull(part, "part"));
         }
-        return SHA256_PREFIX + HexFormat.of().formatHex(digest.digest());
+        return HexFormat.of().formatHex(digest.digest());
     }
 
     static byte[] hmacSha256(byte[] key, byte[]... parts) {

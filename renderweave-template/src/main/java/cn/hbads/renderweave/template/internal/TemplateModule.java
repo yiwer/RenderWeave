@@ -45,6 +45,16 @@ public final class TemplateModule {
         return new CanonicalTemplateClosureAuthority(Objects.requireNonNull(persistence, "persistence"));
     }
 
+    /** Template-owned canonical DesignDSL semantic interpretation consumed by Rendering. */
+    public static cn.hbads.renderweave.template.api.DesignSemanticAuthority designSemanticAuthority() {
+        return new CanonicalDesignSemanticAuthority();
+    }
+
+    /** Template-owned DesignDSL admission authority (assembly seam for consumers). */
+    public static cn.hbads.renderweave.template.api.DesignDslAuthority designDslAuthority() {
+        return new CanonicalDesignDslAuthority();
+    }
+
     /** System-level readiness recheck consumed by the app STALE consumer. */
     public static TemplateReadinessAuthority readinessAuthority(
             TemplatePersistence persistence,

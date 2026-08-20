@@ -37,6 +37,7 @@ class DesignDslAuthorityPublicSurfaceTest {
                 "cn.hbads.renderweave.template.api.AssetReferenceAuthority",
                 "cn.hbads.renderweave.template.api.TemplateReadinessAuthority",
                 "cn.hbads.renderweave.template.api.TemplateClosureAuthority",
+                "cn.hbads.renderweave.template.api.DesignSemanticAuthority",
                 "cn.hbads.renderweave.template.spi.OwnerScopeAuthority",
                 "cn.hbads.renderweave.template.spi.TemplatePersistence",
                 "cn.hbads.renderweave.template.spi.DependencyResolution",

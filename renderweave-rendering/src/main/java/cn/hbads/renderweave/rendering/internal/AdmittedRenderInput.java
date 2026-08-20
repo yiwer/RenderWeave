@@ -31,7 +31,7 @@ record AdmittedRenderInput(
 record TypedObject(
         StaticSchemaRef reference,
         Map<String, Optional<TypedValue>> fields
-) {
+) implements TypedValue {
     TypedObject {
         Objects.requireNonNull(reference, "reference");
         fields = Map.copyOf(fields);

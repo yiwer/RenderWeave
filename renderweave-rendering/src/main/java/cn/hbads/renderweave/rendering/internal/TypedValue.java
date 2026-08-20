@@ -19,7 +19,8 @@ sealed interface TypedValue permits
         TypedValue.Date,
         TypedValue.Time,
         TypedValue.Nested,
-        TypedValue.Array {
+        TypedValue.Array,
+        TypedObject {
 
     record Text(String value) implements TypedValue {
         public Text {

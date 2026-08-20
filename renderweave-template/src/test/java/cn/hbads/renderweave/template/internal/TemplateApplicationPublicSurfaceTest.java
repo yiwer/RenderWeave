@@ -83,7 +83,8 @@ class TemplateApplicationPublicSurfaceTest {
     void exactAssemblyExceptionExposesOnlyTheStaticFactories() throws Exception {
         assertTrue(Modifier.isFinal(TemplateModule.class.getModifiers()));
         assertEquals(
-                Set.of("application", "assetReferenceAuthority", "closureAuthority", "readinessAuthority"),
+                Set.of("application", "assetReferenceAuthority", "closureAuthority",
+                        "designDslAuthority", "designSemanticAuthority", "readinessAuthority"),
                 methodNames(TemplateModule.class)
         );
         var application = TemplateModule.class.getDeclaredMethod(

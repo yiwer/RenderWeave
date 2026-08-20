@@ -1,0 +1,72 @@
+{
+  "catalogVersion": "renderweave-render-node-contract-v1/1",
+  "renderDslVersion": "renderweave-render/1.0",
+  "kinds": {
+    "canvas": {
+      "container": true,
+      "rootOnly": true,
+      "properties": ["widthMm", "heightMm", "backgroundColor", "bleed"]
+    },
+    "group": {
+      "container": true,
+      "properties": ["placement", "render", "visible", "opacity", "transform"]
+    },
+    "frame": {
+      "container": true,
+      "properties": ["placement", "render", "visible", "opacity", "transform", "fill", "stroke", "cornerRadii", "padding", "clipContent"]
+    },
+    "stack": {
+      "container": true,
+      "properties": ["placement", "render", "visible", "opacity", "transform", "fill", "stroke", "cornerRadii", "padding", "clipContent", "direction", "gapMm", "justifyContent", "alignItems"]
+    },
+    "grid": {
+      "container": true,
+      "properties": ["placement", "render", "visible", "opacity", "transform", "fill", "stroke", "cornerRadii", "padding", "clipContent", "rows", "columns", "rowGapMm", "columnGapMm"]
+    },
+    "text": {
+      "container": false,
+      "properties": ["placement", "render", "visible", "opacity", "transform", "runs", "writingMode", "horizontalAlign", "verticalAlign", "lineBreak", "overflow", "lineHeight", "maxLines", "padding", "stroke", "fitMode", "minScale"]
+    },
+    "image": {
+      "container": false,
+      "properties": ["placement", "render", "visible", "opacity", "transform", "imageRef", "fit", "sampling"]
+    },
+    "rect": {
+      "container": false,
+      "properties": ["placement", "render", "visible", "opacity", "transform", "fill", "stroke", "cornerRadii"]
+    },
+    "ellipse": {
+      "container": false,
+      "properties": ["placement", "render", "visible", "opacity", "transform", "fill", "stroke"]
+    },
+    "line": {
+      "container": false,
+      "properties": ["placement", "render", "visible", "opacity", "transform", "start", "end", "stroke"]
+    },
+    "polygon": {
+      "container": false,
+      "properties": ["placement", "render", "visible", "opacity", "transform", "points", "fill", "stroke"]
+    },
+    "polyline": {
+      "container": false,
+      "properties": ["placement", "render", "visible", "opacity", "transform", "points", "stroke"]
+    },
+    "path": {
+      "container": false,
+      "properties": ["placement", "render", "visible", "opacity", "transform", "commands", "fill", "stroke", "fillRule"]
+    },
+    "qrCode": {
+      "container": false,
+      "properties": ["placement", "render", "visible", "opacity", "transform", "content", "errorCorrectionLevel", "foregroundColor", "backgroundColor"]
+    },
+    "barcode": {
+      "container": false,
+      "properties": ["placement", "render", "visible", "opacity", "transform", "format", "value", "foregroundColor", "backgroundColor"]
+    },
+    "compositionViewport": {
+      "container": true,
+      "loweringOnly": true,
+      "properties": ["placement", "visible", "opacity", "sourceCanvas"]
+    }
+  }
+}
