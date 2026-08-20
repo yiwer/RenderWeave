@@ -138,12 +138,22 @@ final class CapabilityValues {
         return null;
     }
 
-    /** capability result digest：demand 顺序 framed entries 的 domain-separated SHA-256。 */
+    /**
+     * capability result digest（冻结票据 14 §91）：只有成功 Evaluation 才按实际 demand
+     * encounter order，对每项 closed {capabilityContractId, operation, callPosition,
+     * outputType, result} 以 canonical JSON 编码并前置 uint64be(entryBytes.length) 分帧，
+     * domain-separated SHA-256。
+     *
+     * <p>T21 边界：callPosition 使用 positionVersion + 请求内 demand 位置字节的简化
+     * canonical object；完整 OccurrencePath 语义（ROOT/TEMPLATE_USE/REPEAT 段）随后续
+     * 求值硬化票物化，届时向量一同升级。
+     */
     String capabilityResultDigest() {
         var framed = new java.io.ByteArrayOutputStream();
         for (var demand : demands) {
-            var entry = canonicalEntry(demand);
-            framed.writeBytes(entry.getBytes(StandardCharsets.UTF_8));
+            var entry = canonicalEntry(demand).getBytes(StandardCharsets.UTF_8);
+            framed.writeBytes(lengthFrame(entry.length));
+            framed.writeBytes(entry);
         }
         return RenderingDigests.digestWithDomain(RESULTS_DOMAIN, framed.toByteArray());
     }
@@ -152,27 +162,57 @@ final class CapabilityValues {
         return List.copyOf(demands);
     }
 
+    private static byte[] lengthFrame(int length) {
+        var frame = new byte[8];
+        var value = (long) length;
+        for (int index = 7; index >= 0; index--) {
+            frame[index] = (byte) (value & 0xFF);
+            value >>>= 8;
+        }
+        return frame;
+    }
+
     private static String canonicalEntry(DemandEntry demand) {
-        var resultWire = resultCanonical(demand.result());
-        return "{\"callPosition\":\""
-                + Base64.getEncoder().encodeToString(demand.callPosition())
-                + "\",\"capability\":\"" + demand.capability()
-                + "\",\"operation\":\"" + demand.operation()
-                + "\",\"result\":" + resultWire + "}";
+        var members = new java.util.TreeMap<String, String>();
+        members.put("capabilityContractId", CanonicalJson.string(contractId(demand.capability())));
+        members.put("operation", CanonicalJson.string(demand.operation()));
+        members.put("callPosition", CanonicalJson.string(
+                Base64.getEncoder().encodeToString(demand.callPosition())));
+        members.put("outputType", CanonicalJson.string(outputType(demand.result())));
+        members.put("result", resultCanonical(demand.result()));
+        return CanonicalJson.object(members);
+    }
+
+    private static String contractId(String capability) {
+        return switch (capability) {
+            case "CLOCK" -> "renderweave-capability-clock/1.0";
+            case "RANDOM" -> "renderweave-capability-random/1.0";
+            default -> throw new IllegalStateException("unknown capability " + capability);
+        };
+    }
+
+    private static String outputType(DesignValue value) {
+        if (value instanceof DesignValue.Date) {
+            return "date";
+        }
+        if (value instanceof DesignValue.Time) {
+            return "time";
+        }
+        if (value instanceof DesignValue.Decimal) {
+            return "decimal";
+        }
+        throw new IllegalStateException("capability results are date/time/decimal");
     }
 
     private static String resultCanonical(DesignValue value) {
-        if (value instanceof DesignValue.Text text) {
-            return "\"" + text.value() + "\"";
-        }
         if (value instanceof DesignValue.Date date) {
-            return "\"" + date.value() + "\"";
+            return CanonicalJson.string(date.value());
         }
         if (value instanceof DesignValue.Time time) {
-            return "\"" + time.value() + "\"";
+            return CanonicalJson.string(time.value());
         }
         if (value instanceof DesignValue.Decimal decimal) {
-            return decimal.value().toPlainString();
+            return CanonicalJson.decimal(decimal.value());
         }
         throw new IllegalStateException("capability results are date/time/decimal");
     }
@@ -192,29 +232,19 @@ final class CapabilityValues {
             String assetAcceptanceProfile,
             String effectiveBudgetVector
     ) {
-        var members = new LinkedHashMap<String, String>();
-        members.put("admittedInputDigest", admittedInputDigest);
-        members.put("assetAcceptanceProfile", assetAcceptanceProfile);
-        members.put("authorizationContextDigest", authorizationContextDigest);
-        members.put("capabilityContracts", capabilityContracts);
-        members.put("closureDigest", closureDigest);
-        members.put("effectiveBudgetVector", effectiveBudgetVector);
-        members.put("layoutProfile", layoutProfile);
-        members.put("ownerScope", ownerScope);
-        members.put("renderDslVersion", renderDslVersion);
-        var builder = new StringBuilder("{");
-        boolean first = true;
-        for (var entry : members.entrySet()) {
-            if (!first) {
-                builder.append(',');
-            }
-            first = false;
-            builder.append('"').append(entry.getKey()).append("\":\"")
-                    .append(entry.getValue()).append('"');
-        }
-        builder.append('}');
+        var members = new java.util.TreeMap<String, String>();
+        members.put("admittedInputDigest", CanonicalJson.string(admittedInputDigest));
+        members.put("assetAcceptanceProfile", CanonicalJson.string(assetAcceptanceProfile));
+        members.put("authorizationContextDigest", CanonicalJson.string(authorizationContextDigest));
+        members.put("capabilityContracts", CanonicalJson.string(capabilityContracts));
+        members.put("closureDigest", CanonicalJson.string(closureDigest));
+        members.put("effectiveBudgetVector", CanonicalJson.string(effectiveBudgetVector));
+        members.put("layoutProfile", CanonicalJson.string(layoutProfile));
+        members.put("ownerScope", CanonicalJson.string(ownerScope));
+        members.put("renderDslVersion", CanonicalJson.string(renderDslVersion));
         return RenderingDigests.digestWithDomain(
-                FINGERPRINT_DOMAIN, builder.toString().getBytes(StandardCharsets.UTF_8));
+                FINGERPRINT_DOMAIN,
+                CanonicalJson.object(members).getBytes(StandardCharsets.UTF_8));
     }
 
     private static byte[] concat(byte[]... parts) {
