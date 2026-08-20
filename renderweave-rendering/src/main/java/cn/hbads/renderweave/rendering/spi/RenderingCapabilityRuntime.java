@@ -4,16 +4,22 @@ import java.math.BigDecimal;
 import java.util.Objects;
 
 /**
- * Rendering capability 运行时 inbound seam：app（或测试）提供 Clock/Random demand 供给。
- * Rendering 内部持有 demand 记账与 capability result digest；本 seam 只负责按
- * capability/operation/位置供给具体值。供给不可用时失败封闭，Evaluation 拒绝。
+ * Rendering capability 运行时 inbound seam：app（或测试）按 Evaluation 建立运行时——每次
+ * Evaluation 恰好一个 Clock snapshot 与一个 server-only Random nonce。Rendering 内部持有
+ * demand 记账与 capability result digest；本 seam 只负责按 capability/operation/位置供给
+ * 具体值。供给不可用时失败封闭，Evaluation 拒绝。
  */
 public interface RenderingCapabilityRuntime {
 
-    CapabilityOutcome supply(String capability, String operation, byte[] callPosition);
+    /** 为一次 Evaluation 建立运行时（单一 Clock snapshot + 单一 nonce）。 */
+    Runtime establish();
 
-    /** 本运行时声明的 exact capability contracts（canonical 标识，fingerprint 输入）。 */
+    /** 本部署声明的 exact capability contracts（canonical 标识，fingerprint 输入）。 */
     String capabilityContracts();
+
+    interface Runtime {
+        CapabilityOutcome supply(String capability, String operation, byte[] callPosition);
+    }
 
     sealed interface CapabilityOutcome permits Supplied, ProviderUnavailable {
     }

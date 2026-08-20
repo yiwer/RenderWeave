@@ -151,7 +151,7 @@ final class Materializer {
                 renderRequestId, audience, deadlineEpochMilli,
                 closure.ownerScope().value());
 
-        var precheckFailure = materializer.preadmitAssetAtoms();
+        var precheckFailure = materializer.preadmitAssetAtoms(admittedInput);
         if (precheckFailure != null) {
             return precheckFailure;
         }
@@ -196,25 +196,73 @@ final class Materializer {
     // stage 5: authored AssetRef pre-admission
     // ------------------------------------------------------------------
 
-    private MaterializationOutcome preadmitAssetAtoms() {
+    private MaterializationOutcome preadmitAssetAtoms(AdmittedRenderInput admittedInput) {
+        var customAtoms = new java.util.ArrayList<DesignValue>();
+        for (var custom : admittedInput.customs().values()) {
+            if (custom instanceof DesignValue.ImageRef || custom instanceof DesignValue.FontRef) {
+                customAtoms.add(custom);
+            }
+        }
+        boolean anyAuthored = false;
         for (var snapshot : closure.snapshots()) {
             var document = documentOf(snapshot);
             if (document == null) {
                 return failed(EvaluationStage.TEMPLATE_CLOSURE,
                         ProblemCode.RENDER_INTERNAL_ERROR, null);
             }
-            if (!containsAssetAtom(document)) {
-                continue;
+            if (containsAssetAtom(document)) {
+                anyAuthored = true;
+                break;
             }
-            if (assets == null) {
-                return failed(EvaluationStage.ASSET_ADMISSION, ProblemCode.ASSET_NOT_FOUND, null);
+        }
+        if (!anyAuthored && customAtoms.isEmpty()) {
+            return null;
+        }
+        if (assets == null) {
+            // 生产 bridge 未物化（T13）：依赖不可用，失败封闭（冻结码集无 asset-unavailable
+            // 专用码，以通用 EVALUATION_FAILED + ASSET_ADMISSION stage 表达）。
+            return failed(EvaluationStage.ASSET_ADMISSION, ProblemCode.EVALUATION_FAILED, null);
+        }
+        if (anyAuthored) {
+            for (var snapshot : closure.snapshots()) {
+                var failure = preadmitAtomsIn(documentOf(snapshot));
+                if (failure != null) {
+                    return failure;
+                }
             }
-            var failure = preadmitAtomsIn(document);
+        }
+        // PUBLIC Custom override AssetRef atoms 同样预准入（冻结票据 06）。
+        for (var custom : customAtoms) {
+            var failure = precheckCustomAtom(custom);
             if (failure != null) {
                 return failure;
             }
         }
         return null;
+    }
+
+    private MaterializationOutcome precheckCustomAtom(DesignValue custom) {
+        String assetId;
+        cn.hbads.renderweave.asset.api.AssetAcceptanceAuthority.AssetKind kind;
+        if (custom instanceof DesignValue.ImageRef ref) {
+            assetId = ref.assetId();
+            kind = cn.hbads.renderweave.asset.api.AssetAcceptanceAuthority.AssetKind.IMAGE;
+        } else if (custom instanceof DesignValue.FontRef ref) {
+            assetId = ref.assetId();
+            kind = cn.hbads.renderweave.asset.api.AssetAcceptanceAuthority.AssetKind.FONT;
+        } else {
+            return null;
+        }
+        authoredAtoms++;
+        if (authoredAtoms > MAX_AUTHORED_ASSET_OCCURRENCES) {
+            return failed(EvaluationStage.ASSET_ADMISSION,
+                    ProblemCode.ASSET_BUDGET_EXCEEDED,
+                    "assetsAndFetch.authoredAssetOccurrences");
+        }
+        return precheck(assets.precheckAdmission(
+                new cn.hbads.renderweave.asset.api.AssetApplication.OwnerScope(ownerScope),
+                new cn.hbads.renderweave.asset.api.AssetApplication.AssetId(assetId),
+                kind));
     }
 
     private boolean containsAssetAtom(DesignNodeValue value) {
@@ -238,30 +286,8 @@ final class Materializer {
     }
 
     private MaterializationOutcome preadmitAtomsIn(ObjectNode node) {
-        if (isAssetRefShape(node)) {
-            authoredAtoms++;
-            if (authoredAtoms > MAX_AUTHORED_ASSET_OCCURRENCES) {
-                return failed(EvaluationStage.ASSET_ADMISSION,
-                        ProblemCode.ASSET_BUDGET_EXCEEDED,
-                        "assetsAndFetch.authoredAssetOccurrences");
-            }
-            var assetId = ((Text) node.members().get("assetId")).value();
-            var outcome = assets.precheckAdmission(
-                    new cn.hbads.renderweave.asset.api.AssetApplication.OwnerScope(ownerScope),
-                    new cn.hbads.renderweave.asset.api.AssetApplication.AssetId(assetId),
-                    cn.hbads.renderweave.asset.api.AssetAcceptanceAuthority.AssetKind.IMAGE);
-            return switch (outcome) {
-                case AssetResolutionPort.PrecheckOutcome.PrecheckPassed ignored -> null;
-                case AssetResolutionPort.PrecheckOutcome.PrecheckRejected ignored ->
-                        failed(EvaluationStage.ASSET_ADMISSION, ProblemCode.ASSET_NOT_FOUND, null);
-                case AssetResolutionPort.PrecheckOutcome.PrecheckUnavailable ignored ->
-                        failed(EvaluationStage.ASSET_ADMISSION, ProblemCode.ASSET_NOT_FOUND, null);
-            };
-        }
-        for (var member : node.members().values()) {
-            var failure = member instanceof ObjectNode object
-                    ? preadmitAtomsIn(object)
-                    : (member instanceof ArrayNode array ? preadmitArray(array) : null);
+        for (var entry : node.members().entrySet()) {
+            var failure = preadmitValue(entry.getKey(), entry.getValue());
             if (failure != null) {
                 return failure;
             }
@@ -269,16 +295,46 @@ final class Materializer {
         return null;
     }
 
-    private MaterializationOutcome preadmitArray(ArrayNode array) {
-        for (var item : array.items()) {
-            var failure = item instanceof ObjectNode object
-                    ? preadmitAtomsIn(object)
-                    : (item instanceof ArrayNode nested ? preadmitArray(nested) : null);
-            if (failure != null) {
-                return failure;
+    private MaterializationOutcome preadmitValue(String memberName, DesignNodeValue value) {
+        if (value instanceof ObjectNode object) {
+            if (isAssetRefShape(object)
+                    && ("imageRef".equals(memberName) || "fontRef".equals(memberName))) {
+                authoredAtoms++;
+                if (authoredAtoms > MAX_AUTHORED_ASSET_OCCURRENCES) {
+                    return failed(EvaluationStage.ASSET_ADMISSION,
+                            ProblemCode.ASSET_BUDGET_EXCEEDED,
+                            "assetsAndFetch.authoredAssetOccurrences");
+                }
+                var kind = "imageRef".equals(memberName)
+                        ? cn.hbads.renderweave.asset.api.AssetAcceptanceAuthority.AssetKind.IMAGE
+                        : cn.hbads.renderweave.asset.api.AssetAcceptanceAuthority.AssetKind.FONT;
+                var assetId = ((Text) object.members().get("assetId")).value();
+                return precheck(assets.precheckAdmission(
+                        new cn.hbads.renderweave.asset.api.AssetApplication.OwnerScope(ownerScope),
+                        new cn.hbads.renderweave.asset.api.AssetApplication.AssetId(assetId),
+                        kind));
+            }
+            return preadmitAtomsIn(object);
+        }
+        if (value instanceof ArrayNode array) {
+            for (var item : array.items()) {
+                var failure = preadmitValue(memberName, item);
+                if (failure != null) {
+                    return failure;
+                }
             }
         }
         return null;
+    }
+
+    private MaterializationOutcome precheck(AssetResolutionPort.PrecheckOutcome outcome) {
+        return switch (outcome) {
+            case AssetResolutionPort.PrecheckOutcome.PrecheckPassed ignored -> null;
+            case AssetResolutionPort.PrecheckOutcome.PrecheckRejected ignored ->
+                    failed(EvaluationStage.ASSET_ADMISSION, ProblemCode.ASSET_NOT_FOUND, null);
+            case AssetResolutionPort.PrecheckOutcome.PrecheckUnavailable ignored ->
+                    failed(EvaluationStage.ASSET_ADMISSION, ProblemCode.EVALUATION_FAILED, null);
+        };
     }
 
     private static boolean isAssetRefShape(ObjectNode object) {
@@ -793,17 +849,19 @@ final class Materializer {
                     "assetsAndFetch.actualResolveOccurrences");
         }
         if (assets == null) {
-            return failed(EvaluationStage.ASSET_RESOLUTION, ProblemCode.ASSET_NOT_FOUND, null);
+            // 依赖不可用（T13 前无生产 bridge）：冻结码集无 asset-unavailable 专用码。
+            return failed(EvaluationStage.ASSET_RESOLUTION, ProblemCode.EVALUATION_FAILED, null);
         }
         var assetId = ((Text) atom.members().get("assetId")).value();
         var kind = "imageRef".equals(memberName)
                 ? cn.hbads.renderweave.asset.api.AssetAcceptanceAuthority.AssetKind.IMAGE
                 : cn.hbads.renderweave.asset.api.AssetAcceptanceAuthority.AssetKind.FONT;
+        // 冻结公式：SHA-256(canonical OccurrencePath + ConsumerPropertyRef + expectedKind)。
+        // T21 边界：OccurrencePath 以物化路径字符串近似，完整语义随求值硬化票。
         var canonicalIdentity = (path + "\0" + memberName + "\0" + kind.name())
                 .getBytes(StandardCharsets.UTF_8);
         var resourceId = new AssetResolutionPort.ResourceId(
-                "rwres_" + RenderingDigests.sha256Hex(canonicalIdentity,
-                        assetId.getBytes(StandardCharsets.UTF_8)));
+                "rwres_" + RenderingDigests.sha256Hex(canonicalIdentity));
         var outcome = assets.resolve(new AssetResolutionPort.ResolveRequest(
                 renderRequestId,
                 new cn.hbads.renderweave.asset.api.AssetApplication.OwnerScope(ownerScope),

@@ -1,9 +1,10 @@
 # RenderWeave Template v1 Implementation Plan
 
 - 状态：`in_progress`；TV1-T01/T02/T03/T04/T05/T06/T07/T08/T09/T10/T10b/T11/T12a/T12b/T14/T14b/T15/T16/T17/T18/T19/T20=`automated_verified`
-  （T09 另含人工 J1），TV1-T21=`open`（claimed：首个 Rendering 纵切——TemplateClosureAuthority/
-  Evaluator stage 1–8/seal + RenderNodeContract 向量语料，Java primary），TV1-T13=`open`（以
-  TV1-T21 为前置）
+  （T09 另含人工 J1），TV1-T21=`automated_verified`（首个 Rendering 纵切——renderweave-rendering
+  首个 artifact、TemplateClosureAuthority/Evaluator stage 1–8/seal、CapabilityState 加密落盘、
+  RenderNodeContract 向量语料 Java primary、端到端 assembly 证明），TV1-T13=`open`（唯一
+  unblocked frontier，以 TV1-T21 为前置已满足）
 - 日期：2026-08-20
 - Approved delta：[`specs/changes/20260817-template-v1-implementation-authority.md`](../specs/changes/20260817-template-v1-implementation-authority.md)
 - Frozen checkpoint：`0b485f4a13de9d754a81d07f464730776e13c14b`
@@ -132,7 +133,7 @@ flowchart LR
 | 18 | task | `resolved` | 03, 14, 15 | Conditional 原子（condition/absent policy/剪枝，manifest v8 211 vectors） |
 | 19 | task | `resolved` | 03, 14, 15, 16 | TemplateUse 原子（ContextSelector/fills/closure 边，manifest v7 197 vectors） |
 | 20 | task | `resolved` / `automated_verified` | 04, 05, 14, 19 | Template 依赖投影（AssetRef/反向索引/STALE 消费）；T12b 的 blocker |
-| 21 | task | `open`（claimed） | 07, 08, 20 | 首个 Rendering 纵切：TemplateClosureAuthority/Evaluator stage 1–8/seal + RenderNodeContractCatalog 与向量语料（Java primary）；V023 + app Adapter；无公开 route |
+| 21 | task | `resolved` / `automated_verified` | 07, 08, 20 | 首个 Rendering 纵切：TemplateClosureAuthority/Evaluator stage 1–8/seal + RenderNodeContractCatalog 与向量语料（Java primary）；V023 + app Adapter；无公开 route |
 
 每次只 claim 一个 unblocked ticket；一票 resolved 后才由其 `Blocked by` 关系产生下一 frontier。未知实现切片留在
 map 的 `Not yet specified`，不为排满计划提前发明接口、migration 或 Profile identity。
@@ -149,10 +150,11 @@ T12b 的 blocker）已 resolve（AssetRef/TemplateUse 原子提取 + current-onl
 STALE 消费 + readiness recheck，template gate 含 A2 提取重放，V021）；TV1-T12b（被引用 Asset 删除
 确认与恢复编排）已 resolve（AssetReferencePort 桥接 + 5 分钟单次确认 token + 独占 reservation 零写
 重验 + 软删除/恢复 + assetId 排序读 reservation，V022 + OpenAPI 0.13.0 + Web SDK）；首个 Rendering
-实现票已登记为 TV1-T21（TemplateClosureAuthority/Evaluator stage 1–8/seal + RenderNodeContract
-向量语料，Java primary）并 claim，成为唯一 unblocked frontier；TV1-T13 以 TV1-T21 为前置。
-single-writer 不顺带 claim 或预建 Resolver/Rust wire/公开 render route/Editor 产品 route；
-Editor E1–E9 切片在各自前置满足后另行登记。
+实现票 TV1-T21 已 resolve（renderweave-rendering 首个 artifact：TemplateClosureAuthority/
+Evaluator stage 1–8/seal + RenderNodeContract 向量语料 Java primary + CapabilityState 加密落盘 +
+端到端 assembly 证明）；TV1-T13（AssetResolver/Renderer-only lease 纵切）成为唯一 unblocked
+frontier。single-writer 不顺带 claim 或预建 Resolver/Rust wire/公开 render route/Editor 产品
+route；Editor E1–E9 切片在各自前置满足后另行登记。
 
 ## 5. TV1-T01 执行卡
 

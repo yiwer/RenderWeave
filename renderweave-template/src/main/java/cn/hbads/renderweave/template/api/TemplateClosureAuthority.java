@@ -67,8 +67,8 @@ public interface TemplateClosureAuthority {
             Objects.requireNonNull(expressionProfile, "expressionProfile");
             Objects.requireNonNull(canonicalDesignDslUtf8, "canonicalDesignDslUtf8");
             Objects.requireNonNull(contentHash, "contentHash");
-            if (revision < 1) {
-                throw new IllegalArgumentException("revision must be positive");
+            if (revision < 0) {
+                throw new IllegalArgumentException("revision must not be negative");
             }
             if (canonicalDesignDslUtf8.length == 0) {
                 throw new IllegalArgumentException("canonicalDesignDslUtf8 must not be empty");
@@ -93,8 +93,8 @@ public interface TemplateClosureAuthority {
             Objects.requireNonNull(parentTemplateId, "parentTemplateId");
             Objects.requireNonNull(useId, "useId");
             Objects.requireNonNull(childTemplateId, "childTemplateId");
-            if (parentRevision < 1 || childRevision < 1) {
-                throw new IllegalArgumentException("revisions must be positive");
+            if (parentRevision < 0 || childRevision < 0) {
+                throw new IllegalArgumentException("revisions must not be negative");
             }
         }
     }
@@ -116,8 +116,8 @@ public interface TemplateClosureAuthority {
             Objects.requireNonNull(rootTemplateId, "rootTemplateId");
             Objects.requireNonNull(snapshots, "snapshots");
             Objects.requireNonNull(edges, "edges");
-            if (rootRevision < 1) {
-                throw new IllegalArgumentException("rootRevision must be positive");
+            if (rootRevision < 0) {
+                throw new IllegalArgumentException("rootRevision must not be negative");
             }
             snapshots = List.copyOf(snapshots);
             edges = List.copyOf(edges);

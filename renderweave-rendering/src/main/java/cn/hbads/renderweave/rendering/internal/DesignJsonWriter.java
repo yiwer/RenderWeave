@@ -72,37 +72,8 @@ final class DesignJsonWriter {
 
     private static void writeString(String value, ByteArrayOutputStream out) {
         out.write('"');
-        int index = 0;
-        while (index < value.length()) {
-            int codePoint = value.codePointAt(index);
-            switch (codePoint) {
-                case '"' -> writeEscape('"', out);
-                case '\\' -> writeEscape('\\', out);
-                case '\b' -> writeEscape('b', out);
-                case '\f' -> writeEscape('f', out);
-                case '\n' -> writeEscape('n', out);
-                case '\r' -> writeEscape('r', out);
-                case '\t' -> writeEscape('t', out);
-                default -> {
-                    if (codePoint < 0x20) {
-                        out.write('\\');
-                        out.write('u');
-                        var hex = String.format("%04x", codePoint);
-                        out.write(hex.getBytes(StandardCharsets.US_ASCII), 0, 4);
-                    } else {
-                        var encoded = new String(Character.toChars(codePoint))
-                                .getBytes(StandardCharsets.UTF_8);
-                        out.write(encoded, 0, encoded.length);
-                    }
-                }
-            }
-            index += Character.charCount(codePoint);
-        }
+        var escaped = CanonicalJson.escapedContent(value).getBytes(StandardCharsets.UTF_8);
+        out.write(escaped, 0, escaped.length);
         out.write('"');
-    }
-
-    private static void writeEscape(char marker, ByteArrayOutputStream out) {
-        out.write('\\');
-        out.write(marker);
     }
 }

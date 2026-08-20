@@ -59,7 +59,7 @@ final class CapabilityValues {
     }
 
     private final CapabilityState state;
-    private final cn.hbads.renderweave.rendering.spi.RenderingCapabilityRuntime externalRuntime;
+    private final cn.hbads.renderweave.rendering.spi.RenderingCapabilityRuntime.Runtime externalRuntime;
     private final List<DemandEntry> demands = new ArrayList<>();
 
     private CapabilityValues(CapabilityState state) {
@@ -68,7 +68,7 @@ final class CapabilityValues {
     }
 
     private CapabilityValues(
-            cn.hbads.renderweave.rendering.spi.RenderingCapabilityRuntime externalRuntime) {
+            cn.hbads.renderweave.rendering.spi.RenderingCapabilityRuntime.Runtime externalRuntime) {
         this.state = null;
         this.externalRuntime = externalRuntime;
     }
@@ -86,7 +86,7 @@ final class CapabilityValues {
 
     /** 包装外部 spi runtime：demand 记账与 result digest 留在 Rendering 内部。 */
     static CapabilityValues wrapping(
-            cn.hbads.renderweave.rendering.spi.RenderingCapabilityRuntime runtime) {
+            cn.hbads.renderweave.rendering.spi.RenderingCapabilityRuntime.Runtime runtime) {
         return new CapabilityValues(runtime);
     }
 
@@ -156,26 +156,10 @@ final class CapabilityValues {
         return TIME_FORMAT.format(Instant.ofEpochSecond(epochSecond));
     }
 
-    /** exact 派生：x &lt; limit 时 k = x mod M，结果 k/10^18；128 次 rejection 后返回 null。 */
+    /** exact 派生委托 api {@code CapabilityDerivation}（单点实现）。 */
     static BigDecimal uniformDecimal(byte[] nonce, byte[] positionBytes) {
-        var domain = RANDOM_DOMAIN.getBytes(StandardCharsets.UTF_8);
-        var lengthPrefix = BigInteger.valueOf(positionBytes.length).toByteArray();
-        var lengthBytes = new byte[8];
-        System.arraycopy(lengthPrefix, Math.max(0, lengthPrefix.length - 8), lengthBytes,
-                8 - Math.min(8, lengthPrefix.length), Math.min(8, lengthPrefix.length));
-        for (int counter = 0; counter < MAX_REJECTION_ATTEMPTS; counter++) {
-            var counterBytes = new byte[] {
-                    0, 0, (byte) (counter >>> 8), (byte) counter
-            };
-            var data = concat(domain, lengthBytes, positionBytes, counterBytes);
-            var mac = RenderingDigests.hmacSha256(nonce, data);
-            var x = new BigInteger(1, mac);
-            if (x.compareTo(LIMIT) < 0) {
-                var k = x.mod(M);
-                return new BigDecimal(k, 18);
-            }
-        }
-        return null;
+        return cn.hbads.renderweave.rendering.api.CapabilityDerivation.uniformDecimal(
+                nonce, positionBytes);
     }
 
     /**

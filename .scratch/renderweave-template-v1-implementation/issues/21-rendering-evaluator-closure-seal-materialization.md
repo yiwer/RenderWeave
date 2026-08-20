@@ -1,9 +1,28 @@
 # 物化首个 Rendering 纵切：TemplateClosureAuthority / Evaluator / seal 与 RenderNodeContract 向量语料（Java primary）
 
 Type: task
-Status: open
-Claimed by: Claude（single-writer，本轮唯一 frontier）
+Status: resolved / automated_verified
+Claimed by: Claude（single-writer）
 Blocked by: 07, 08, 20（均已 resolved：ADR-0044 / ADR-0045 / DesignDSL full-Profile 原子与依赖投影）
+
+## Resolution（2026-08-20）
+
+按 Answer 设计完整物化：renderweave-rendering 首个 artifact + TemplateClosureAuthority/
+DesignSemanticAuthority template seams + CanonicalEvaluator stage 1–8 + CapabilityState
+加密落盘（V023）+ Sealer canonical RenderDocument/digests + renderweave-render-seam-v1/1
+向量语料（独立 Python 期望值，Java primary 重放）+ RenderEngine 五态 port 合同。端到端
+assembly 证明：Testcontainers PostgreSQL 上 create → evaluate → SealedDocument（含量化断言）。
+rendering 102 tests + app 全量绿；template/asset 无回归；canary 22→23；contractVersion 保持
+0.13.0。审查后修复：预准入按成员名取 exact kind（imageRef→IMAGE/fontRef→FONT）、PUBLIC Custom
+override AssetRef atom 同批预准入、resourceId 哈希移除公式外的 assetId 成分、依赖缺位收口改用
+通用 EVALUATION_FAILED（冻结码集无 asset-unavailable 专用码）、canonical/seal 两处 JSON 转义
+合并单点。诚实边界（均记录于 NOTES）：无公开 route（Engine 执行随 Rust Renderer 实现票）；
+AssetResolutionPort 生产 bridge 随 T13；callPosition 简化对象待完整 OccurrencePath 硬化；
+节点 default 展开随 catalog 数据深化；asset-selection digest domain 为命名家族推断值并由向量
+锁定；CapabilityStateStore 的 save/replay/conflict 编排（stage 6 与 resend 编排绑定
+evaluationFingerprint 的完整闭环）随 Engine 时代接线——本票物化并测试 V023 加密落盘 Adapter
+合同（replay/conflict/TTL），Evaluator 尚未调用 store。Profile 保持 NOT_REGISTERED；T13 成为
+唯一 unblocked frontier。
 
 ## Question
 

@@ -112,7 +112,7 @@ final class CanonicalEvaluator implements Evaluator {
                     ProblemCode.RENDER_INTERNAL_ERROR, null);
         }
 
-        var runtime = CapabilityValues.wrapping(capabilities);
+        var runtime = CapabilityValues.wrapping(capabilities.establish());
         var audience = new AssetResolutionPort.RendererAudience("renderweave-renderer/1.0");
         var materialization = Materializer.materialize(
                 closure,

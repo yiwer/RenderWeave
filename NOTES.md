@@ -1618,3 +1618,66 @@
   NOT_REGISTERED；plan/map/issue 12b 已更新为 resolved。T12b resolve 为 automated_verified；T13 以首个
   Rendering 实现票与 T08 为前置，当前无 unblocked frontier。Ticket 19 open，Editor/Renderer 未 READY；
   push 待用户另行授权（分支 ahead 19）。
+
+### Template v1 TV1-T21 首个 Rendering 纵切：TemplateClosureAuthority / Evaluator stage 1–8 / seal
+
+- 新模块 `renderweave-rendering` 首个 artifact（ADR-0041 staged graph 落位：→ schema/validation/
+  asset/template），api/spi/internal ownership + `RenderingModule` assembly seam +
+  RenderingModuleArchitectureTest 全套锁；rendering 模块 102 tests 绿。
+- Template-owned `TemplateClosureAuthority.freezeClosure`（template.api 新 seam）：root current 解析、
+  exact parse/canonical/contentHash integrity 复核（mismatch = 内部 integrity failure，折叠
+  RENDER_INTERNAL_ERROR）、递归 TemplateUse 闭包冻结、same-scope/DAG 重检、current 漂移 3 次有界
+  重试（耗尽 TEMPLATE_CLOSURE_UNSTABLE）、closureAndExpansion 容量预算（64 snapshots/256 edges/
+  depth 16）；TemplateModule 新 factory closureAuthority/designSemanticAuthority/designDslAuthority。
+- `DesignSemanticAuthority`（template.api）：canonical DesignDSL → 不可变语义值树，解读失败为内部
+  不变量违约。
+- 单一窄 `Evaluator.evaluate` → SealedDocument | Rejected：CanonicalEvaluator first-fail 串行
+  stage 1–8（REQUEST_ADMISSION envelope + ownerScope 匹配、TEMPLATE_CLOSURE、INPUT_ADMISSION
+  typed view、ASSET_ADMISSION 预准入、MATERIALIZATION 展开、ASSET_RESOLUTION 串行 resolve、
+  DOCUMENT_SEAL 原子封存）；失败无 partial output，九值 stage 问题面。
+- RenderInput envelope：rendering-owned strict JSON 解析器 + renderInput 预算组（8 MiB/depth 32/
+  1024 members/10000 items/250000 values/1 MiB string/256B number/256 custom entries）+
+  closed envelope 结构规则；InputAdmission 复用 ValidationTargetResolver/RootDocumentValidator
+  形成 AdmittedRenderInput（typed context PRESENT/ABSENT + Custom winner/default 消解）。
+- Expression 引擎（renderweave-expression/1.0）：grammar precedence、strict typing、ERROR/ABSENT
+  传播、lazy && || if coalesce、input memoization、decimal exact + divide/round/formatDecimal
+  （compile-time literal scale/mode）；Definition 图 custom/mapping/expression + declaration-frame
+  memoize + Mapping 冻结 operator 语义（含 IS_ABSENT/IS_PRESENT/PATTERN_MATCH/blank 集合）。
+- Materializer：render:false 剪枝、Conditional absentPolicy→plain frame、Repeat loop frame +
+  原 inputIndex、TemplateUse 隔离 child invocation + fills → compositionViewport、Binding overlay
+  （仅 context/loopIndex/definition source；overlay 后按 nodeId 换入重构文档重新 admission =
+  同一 Catalog exact 重验，不复制 Node switch）、消费点 Asset 串行 resolve（rwres_ resourceId +
+  selection 身份），AssetResolutionPort consumer-owned seam（T13 前缺省 fail-closed）。
+- CapabilityState（冻结票据 14）：单一 UTC 整秒 Clock snapshot + server-only 256-bit nonce +
+  exact HMAC-SHA256 rejection-sampling 派生（M=10^18，128 attempts，独立 Python 向量验证）；
+  demand 记账 → capability result digest（uint64be framed canonical entries）；spi
+  RenderingCapabilityRuntime 按 Evaluation 建立（每次一个 snapshot/nonce）；app Adapter
+  V023 rendering_capability_state：AES-GCM-256 加密落盘，96-bit nonce 由 HMAC(record identity)
+  派生（server-only 不入库）、fingerprint replay/conflict、固定 TTL + @Scheduled 清扫、无 key
+  不装配失败封闭。
+- Sealer：rwocc_ 先序 occurrenceId（viewport 后 sourceCanvas 先于其 children）、authored-only
+  成员移除、*Mm→*Pt 量化（×360/127 HALF_EVEN ≤6 位）、compositionViewport sourceCanvas lowering、
+  canonical RenderDocument（renderweave-render/1.0 + renderweave-layout/1.0）+ renderDocumentDigest/
+  admittedInputDigest/closureDigest/assetSelectionDigest/evaluationResultDigest/fingerprint
+  （digest domain 与 canonical 结构均按冻结票据 15；asset-selection domain 为按命名家族推断的
+  renderweave-asset-selection/1\0，由向量锁定）。
+- 向量语料 renderweave-render-seam-v1/1：random 派生/closure/admitted/result/fingerprint 六族向量，
+  期望值由独立 Python 计算，Java primary 重放全过；Rust independent 与 render gate 入 full 随
+  T08 实现票。RenderEngine port 五态合同测试（TerminalProblem 固定 ENGINE stage、Unknown 同
+  canonical Command 原 deadline 重发、command 版本冻结）。
+- 端到端 assembly 证明（EvaluatorAssemblyTest，Testcontainers PostgreSQL）：TemplateApplication
+  create → Evaluator closure/admission/materialize/seal → SealedDocument（10mm→28.346457pt 量化
+  断言）；canary 迁移数 22→23；contractVersion 保持 0.13.0（本票无公开 route/OpenAPI 变更）。
+- 诚实边界：无公开 render/preview route（Engine 执行 stage 9 随 Rust Renderer 实现票）；
+  AssetResolutionPort 生产 bridge 随 T13；capability callPosition 为简化 positionVersion 对象，
+  完整 OccurrencePath 语义随求值硬化票；节点 default 展开随 RenderNodeContract catalog 数据深化；
+  CapabilityState 持久化重放流（fingerprint replay/resend 编排）随 Engine 时代接线。Profile 保持
+  NOT_REGISTERED；Ticket 19 open；Editor/Renderer 未 READY。T21 resolve 为 automated_verified；
+  T13 成为唯一 unblocked frontier。push 待用户另行授权。
+- 双轴 code-review 后修复：预准入按成员名取 exact kind（修复 imageRef/fontRef 一律按 IMAGE 预检）、
+  PUBLIC Custom override AssetRef atom 纳入 ASSET_ADMISSION 预准入、resourceId 哈希输入移除冻结
+  公式外的 assetId（OccurrencePath+ConsumerPropertyRef+expectedKind）、依赖缺位收口由
+  ASSET_NOT_FOUND 改通用 EVALUATION_FAILED（冻结码集无 asset-unavailable 码，stage 仍精确）、
+  canonical/seal 两处 JSON 转义合并为 CanonicalJson.escapedContent 单点；random 派生 domain 经核
+  对为冻结票据 14 §59 原文（非自造），asset-selection domain 为已记录的命名家族推断值。修复后
+  rendering 102 + app slice 9 全绿。

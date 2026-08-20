@@ -154,8 +154,8 @@ class EvaluatorContractTest {
     private static RenderingCapabilityRuntime scriptedRuntime() {
         return new RenderingCapabilityRuntime() {
             @Override
-            public CapabilityOutcome supply(String capability, String operation, byte[] callPosition) {
-                return new ProviderUnavailable();
+            public Runtime establish() {
+                return (capability, operation, callPosition) -> new ProviderUnavailable();
             }
 
             @Override

@@ -63,6 +63,23 @@ class TemplateApplicationConfiguration {
     }
 
     @Bean
+    cn.hbads.renderweave.template.api.DesignDslAuthority templateDesignDslAuthority() {
+        return TemplateModule.designDslAuthority();
+    }
+
+    @Bean
+    cn.hbads.renderweave.template.api.DesignSemanticAuthority templateDesignSemanticAuthority() {
+        return TemplateModule.designSemanticAuthority();
+    }
+
+    @Bean
+    cn.hbads.renderweave.template.api.TemplateClosureAuthority templateClosureAuthority(
+            TemplatePersistence persistence
+    ) {
+        return TemplateModule.closureAuthority(persistence);
+    }
+
+    @Bean
     TemplateReadinessAuthority templateReadinessAuthority(
             TemplatePersistence persistence,
             DependencyResolution dependencyResolution

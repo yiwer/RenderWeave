@@ -92,6 +92,18 @@ Label: wayfinder:map
   STALE→INVALID/READY；HTTP delete-precheck/delete/restore-lifecycle + OpenAPI 0.13.0/Web SDK；
   Testcontainers PostgreSQL+MinIO + app 全量 302 tests + asset/template/fast gate 绿。无 Resolver/lease/UI，
   acceptance/1.0 未登记，Ticket 19 open。
+- [物化首个 Rendering 纵切：closure/Evaluator stage 1–8/seal](issues/21-rendering-evaluator-closure-seal-materialization.md) —
+  renderweave-rendering 首个 artifact：Template-owned `TemplateClosureAuthority.freezeClosure`
+  （integrity 复核/递归闭包/漂移有界重试）与 `DesignSemanticAuthority` 语义树 seam；单一窄
+  `Evaluator.evaluate` first-fail 串行 stage 1–8（envelope 预算、typed-view admission、
+  Expression 引擎、结构展开、Binding overlay 后按 nodeId 换入重构文档重新 admission、
+  Asset 预准入与串行 resolve consumer seam、CapabilityState exact HMAC 派生与 AES-GCM 加密落盘
+  V023）；Sealer 产出 canonical RenderDocument（rwocc_ 先序 occurrenceId、mm→pt 量化、
+  compositionViewport lowering）与 renderDocument/admittedInput/closure/assetSelection/
+  evaluationResult digest；renderweave-render-seam-v1/1 向量语料独立 Python 期望值 Java primary
+  重放；端到端 assembly 证明（Testcontainers create→evaluate→SealedDocument）。无公开 route、
+  无 OpenAPI 变更（contractVersion 0.13.0）、Profile NOT_REGISTERED；Engine 执行与 Rust independent
+  replay/render gate 随 T08 实现票，AssetResolutionPort 生产 bridge 随 T13。
 - [冻结 Evaluator 与 RenderDocument 产品 seam](issues/07-freeze-evaluator-renderdocument-seam.md) —
   ADR-0044 经两轮 HITL 对答（Q1–Q12 逐项按推荐）冻结：Template-owned `TemplateClosureAuthority`
   （render 专用 `freezeClosure`，AssetRef-atom 提取依赖 DesignDSL full-Profile）、单一窄
@@ -158,13 +170,13 @@ Label: wayfinder:map
   Ticket 05 冻结为 T10 → T11 → T12a → T12b → T13；T10/T10b/T11/T12a/T12b 已完成。Template
   依赖投影（从 DesignDSL 提取 authored AssetRef atom 的 current-only 投影、`AssetReferenceAuthority` 物化与
   STALE 消费）已登记为 T20 并已 resolve，T12b 以其为 blocker 已 resolve；首个 Rendering 实现票已
-  登记为 T21 并 claim（唯一 unblocked frontier），T13 以 T21 为前置。
+  登记为 T21 并已 resolve（automated_verified），T13 以 T21 为前置，成为唯一 unblocked frontier。
 - Expression/value binding、closure、capability、nested Template、layout lowering 与正式 RenderDocument 的
-  实现切片，要等 Evaluator seam 给出稳定 ownership 和错误面后再登记——ADR-0044 已给出该 seam：首个
-  Rendering task 票已登记为 T21 并 claim，同时物化 `TemplateClosureAuthority`/`Evaluator`/seal 纵切与
-  RenderNodeContract/向量语料（Java primary；Rust independent 与 `render` gate 随 T08 实现票）；
-  AssetRef-atom 预准入提取所依赖的 DesignDSL full-Profile 原子（T14–T20）已落地；Engine 执行、
-  公开 render/preview 面与 AssetResolver/lease 物化分别是 T08 实现票、Engine 产品面票与 T13 的后续切片。
+  实现切片由 T21 物化首个 Rendering 纵切（`TemplateClosureAuthority`/`Evaluator` stage 1–8/seal 与
+  RenderNodeContract/向量语料 Java primary，已 resolve）；仍待后续票：Engine 执行（Rust daemon +
+  process adapter + `render` gate 入 full，T08 实现票）、AssetResolver/lease/fetch endpoint 生产
+  bridge（T13）、公开 render/preview 产品面（Engine 产品面票）、capability callPosition 完整
+  OccurrencePath 硬化与节点 default 展开（catalog 数据深化票）、Editor E1–E9 实施票。
 - Rust layout、font shaping、resource decode、raster、PNG/JPEG encoding 与 exact pixel replay 的切片，
   要等 process protocol 和 build/certification contract 冻结后再登记——ADR-0045 已给出该合同：首个
   Rust/process task 票将同时物化 daemon、帧编解码、certified manifest 与仓库内 replay harness；

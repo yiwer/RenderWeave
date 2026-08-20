@@ -45,7 +45,12 @@ final class CanonicalJson {
     }
 
     static String string(String value) {
-        var builder = new StringBuilder("\"");
+        return '"' + escapedContent(value) + '"';
+    }
+
+    /** strict JSON 转义（不含引号）；canonical writer 与 seal writer 共用单点实现。 */
+    static String escapedContent(String value) {
+        var builder = new StringBuilder();
         int index = 0;
         while (index < value.length()) {
             int codePoint = value.codePointAt(index);
@@ -67,7 +72,7 @@ final class CanonicalJson {
             }
             index += Character.charCount(codePoint);
         }
-        return builder.append('"').toString();
+        return builder.toString();
     }
 
     /** canonical decimal：plain 记法、无指数、无尾零、{@code -0} 归一为 {@code 0}。 */
