@@ -1,0 +1,184 @@
+{
+  "fixtureVersion": "renderweave-layout-preflight-fixtures/1",
+  "documents": {
+    "minimal": {
+      "canvas": {
+        "backgroundColor": "#00000000",
+        "bleed": {"bottomPt": 0, "leftPt": 0, "rightPt": 0, "topPt": 0},
+        "children": [],
+        "heightPt": 100,
+        "kind": "canvas",
+        "occurrenceId": "rwocc_0000000000000000",
+        "widthPt": 100
+      },
+      "dslVersion": "renderweave-render/1.0",
+      "layoutProfile": "renderweave-layout/1.0",
+      "resources": []
+    },
+    "group": {
+      "canvas": {
+        "backgroundColor": "#00000000",
+        "bleed": {"bottomPt": 0, "leftPt": 0, "rightPt": 0, "topPt": 0},
+        "children": [
+          {
+            "children": [
+              {
+                "children": [],
+                "clipContent": false,
+                "cornerRadii": {"bottomLeftPt": 0, "bottomRightPt": 0, "topLeftPt": 0, "topRightPt": 0},
+                "kind": "frame",
+                "occurrenceId": "rwocc_0000000000000002",
+                "opacity": 1,
+                "padding": {"bottomPt": 0, "leftPt": 0, "rightPt": 0, "topPt": 0},
+                "placement": {"heightMode": "FIXED", "heightPt": 10, "type": "ABSOLUTE", "widthMode": "FIXED", "widthPt": 10, "xPt": 0, "yPt": 0},
+                "transform": {"originX": 0.5, "originY": 0.5, "rotationDeg": 0, "scaleX": 1, "scaleY": 1},
+                "visible": true
+              }
+            ],
+            "kind": "group",
+            "occurrenceId": "rwocc_0000000000000001",
+            "opacity": 1,
+            "placement": {"heightMode": "HUG_CONTENT", "type": "ABSOLUTE", "widthMode": "HUG_CONTENT", "xPt": 0, "yPt": 0},
+            "transform": {"originX": 0.5, "originY": 0.5, "rotationDeg": 0, "scaleX": 1, "scaleY": 1},
+            "visible": true
+          }
+        ],
+        "heightPt": 100,
+        "kind": "canvas",
+        "occurrenceId": "rwocc_0000000000000000",
+        "widthPt": 100
+      },
+      "dslVersion": "renderweave-render/1.0",
+      "layoutProfile": "renderweave-layout/1.0",
+      "resources": []
+    },
+    "frame": {
+      "canvas": {
+        "backgroundColor": "#00000000",
+        "bleed": {"bottomPt": 0, "leftPt": 0, "rightPt": 0, "topPt": 0},
+        "children": [
+          {
+            "children": [
+              {
+                "children": [],
+                "clipContent": false,
+                "cornerRadii": {"bottomLeftPt": 0, "bottomRightPt": 0, "topLeftPt": 0, "topRightPt": 0},
+                "kind": "frame",
+                "occurrenceId": "rwocc_0000000000000002",
+                "opacity": 1,
+                "padding": {"bottomPt": 0, "leftPt": 0, "rightPt": 0, "topPt": 0},
+                "placement": {"heightMode": "FIXED", "heightPt": 10, "type": "ABSOLUTE", "widthMode": "FIXED", "widthPt": 10, "xPt": 0, "yPt": 0},
+                "transform": {"originX": 0.5, "originY": 0.5, "rotationDeg": 0, "scaleX": 1, "scaleY": 1},
+                "visible": true
+              }
+            ],
+            "clipContent": false,
+            "cornerRadii": {"bottomLeftPt": 0, "bottomRightPt": 0, "topLeftPt": 0, "topRightPt": 0},
+            "kind": "frame",
+            "occurrenceId": "rwocc_0000000000000001",
+            "opacity": 1,
+            "padding": {"bottomPt": 0, "leftPt": 0, "rightPt": 0, "topPt": 0},
+            "placement": {"heightMode": "FIXED", "heightPt": 50, "type": "ABSOLUTE", "widthMode": "FIXED", "widthPt": 50, "xPt": 0, "yPt": 0},
+            "transform": {"originX": 0.5, "originY": 0.5, "rotationDeg": 0, "scaleX": 1, "scaleY": 1},
+            "visible": true
+          }
+        ],
+        "heightPt": 100,
+        "kind": "canvas",
+        "occurrenceId": "rwocc_0000000000000000",
+        "widthPt": 100
+      },
+      "dslVersion": "renderweave-render/1.0",
+      "layoutProfile": "renderweave-layout/1.0",
+      "resources": []
+    },
+    "stack": {
+      "canvas": {
+        "backgroundColor": "#00000000",
+        "bleed": {"bottomPt": 0, "leftPt": 0, "rightPt": 0, "topPt": 0},
+        "children": [
+          {
+            "alignItems": "START",
+            "children": [
+              {
+                "children": [],
+                "clipContent": false,
+                "cornerRadii": {"bottomLeftPt": 0, "bottomRightPt": 0, "topLeftPt": 0, "topRightPt": 0},
+                "kind": "frame",
+                "occurrenceId": "rwocc_0000000000000002",
+                "opacity": 1,
+                "padding": {"bottomPt": 0, "leftPt": 0, "rightPt": 0, "topPt": 0},
+                "placement": {"alignSelf": "START", "heightMode": "FIXED", "heightPt": 10, "marginBottomPt": 0, "marginLeftPt": 0, "marginRightPt": 0, "marginTopPt": 0, "type": "STACK", "widthMode": "FIXED", "widthPt": 10},
+                "transform": {"originX": 0.5, "originY": 0.5, "rotationDeg": 0, "scaleX": 1, "scaleY": 1},
+                "visible": true
+              }
+            ],
+            "clipContent": false,
+            "cornerRadii": {"bottomLeftPt": 0, "bottomRightPt": 0, "topLeftPt": 0, "topRightPt": 0},
+            "direction": "ROW",
+            "gapPt": 0,
+            "justifyContent": "START",
+            "kind": "stack",
+            "occurrenceId": "rwocc_0000000000000001",
+            "opacity": 1,
+            "padding": {"bottomPt": 0, "leftPt": 0, "rightPt": 0, "topPt": 0},
+            "placement": {"heightMode": "FIXED", "heightPt": 50, "type": "ABSOLUTE", "widthMode": "FIXED", "widthPt": 50, "xPt": 0, "yPt": 0},
+            "transform": {"originX": 0.5, "originY": 0.5, "rotationDeg": 0, "scaleX": 1, "scaleY": 1},
+            "visible": true
+          }
+        ],
+        "heightPt": 100,
+        "kind": "canvas",
+        "occurrenceId": "rwocc_0000000000000000",
+        "widthPt": 100
+      },
+      "dslVersion": "renderweave-render/1.0",
+      "layoutProfile": "renderweave-layout/1.0",
+      "resources": []
+    },
+    "grid": {
+      "canvas": {
+        "backgroundColor": "#00000000",
+        "bleed": {"bottomPt": 0, "leftPt": 0, "rightPt": 0, "topPt": 0},
+        "children": [
+          {
+            "children": [
+              {
+                "children": [],
+                "clipContent": false,
+                "cornerRadii": {"bottomLeftPt": 0, "bottomRightPt": 0, "topLeftPt": 0, "topRightPt": 0},
+                "kind": "frame",
+                "occurrenceId": "rwocc_0000000000000002",
+                "opacity": 1,
+                "padding": {"bottomPt": 0, "leftPt": 0, "rightPt": 0, "topPt": 0},
+                "placement": {"column": 0, "columnSpan": 1, "heightMode": "FIXED", "heightPt": 10, "horizontalAlignSelf": "START", "marginBottomPt": 0, "marginLeftPt": 0, "marginRightPt": 0, "marginTopPt": 0, "row": 0, "rowSpan": 1, "type": "GRID", "verticalAlignSelf": "START", "widthMode": "FIXED", "widthPt": 10},
+                "transform": {"originX": 0.5, "originY": 0.5, "rotationDeg": 0, "scaleX": 1, "scaleY": 1},
+                "visible": true
+              }
+            ],
+            "clipContent": false,
+            "columnGapPt": 0,
+            "columns": [{"type": "FIXED", "valuePt": 20}],
+            "cornerRadii": {"bottomLeftPt": 0, "bottomRightPt": 0, "topLeftPt": 0, "topRightPt": 0},
+            "kind": "grid",
+            "occurrenceId": "rwocc_0000000000000001",
+            "opacity": 1,
+            "padding": {"bottomPt": 0, "leftPt": 0, "rightPt": 0, "topPt": 0},
+            "placement": {"heightMode": "FIXED", "heightPt": 50, "type": "ABSOLUTE", "widthMode": "FIXED", "widthPt": 50, "xPt": 0, "yPt": 0},
+            "rowGapPt": 0,
+            "rows": [{"type": "AUTO"}],
+            "transform": {"originX": 0.5, "originY": 0.5, "rotationDeg": 0, "scaleX": 1, "scaleY": 1},
+            "visible": true
+          }
+        ],
+        "heightPt": 100,
+        "kind": "canvas",
+        "occurrenceId": "rwocc_0000000000000000",
+        "widthPt": 100
+      },
+      "dslVersion": "renderweave-render/1.0",
+      "layoutProfile": "renderweave-layout/1.0",
+      "resources": []
+    }
+  }
+}

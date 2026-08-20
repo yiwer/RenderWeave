@@ -139,6 +139,11 @@ Label: wayfinder:map
   以 Rust deep kernel + Python stdlib independent replay 物化 Canvas/bleed/DPI exact surface arithmetic、Ticket 19
   输出容量与 `renderweave-output-png/1.0` stored-DEFLATE/chunk/CRC/Adler bytes；10 surface + 6 PNG cases / 90
   independent checks 已纳入 `render` gate。
+- [实现 Layout Profile 静态可判定预检内核](issues/25-layout-profile-static-preflight-kernel.md) —
+  **resolved / automated_verified**；只消费 T23 `AdmittedRenderDocument` 的独立 Rust deep kernel 已防御性验证
+  frozen size/min-max、HUG/FILL cycle、Stack/Grid、Text 与 statically-decidable QR 约束，并在 daemon 的
+  document-admission 边界 fail closed；7 positive + 25 negative 由 Rust/Python 共同重放，独立验证 32/32、
+  77 checks。未产生 box/scene，未选择 tolerance，未注册 Profile 或接线 RESULT。
 - [验证 Product Editor 状态、恢复与权威预览架构](issues/09-validate-product-editor-architecture.md) —
   throwaway 逻辑原型（`/prototype/editor-state-model`，不进产品 route）把冻结编辑器规则编码为确定性
   fixture 状态机：10 个引导走查场景 37/37 断言 + 自由操作冒烟 + 键盘焦点检查全部通过（Playwright A1，
@@ -191,8 +196,9 @@ Label: wayfinder:map
   （automated_verified）：首个 Rust daemon/process Adapter/manifest/replay 与 `render` gate 已形成纵切。
   T23 也已 resolve（automated_verified）：exact RenderDocument/default/lowering 与跨语言 validator 已形成纵切。
   T24 也已 resolve（automated_verified）：surface preflight 与 exact PNG encoder kernel 已形成独立纵切，但未接线
-  daemon success path、未生成 raster，也未注册 Renderer/Output Profile。当前没有已 claim 的下游 implementation
-  ticket；下一 frontier 必须从剩余真实依赖中单独登记并 claim。
+  daemon success path、未生成 raster，也未注册 Renderer/Output Profile。T25 现也已 resolve
+  （automated_verified）：static layout preflight deep kernel 与 daemon defensive admission 已形成纵切，仍未做
+  measure/arrange 或 Profile 注册。下一个实现 frontier 必须从真实剩余依赖单独登记并 claim，不提前预建接口。
 - Expression/value binding、closure、capability、nested Template、layout lowering 与正式 RenderDocument 的
   实现切片由 T21 物化首个 Rendering 纵切（`TemplateClosureAuthority`/`Evaluator` stage 1–8/seal 与
   RenderNodeContract/向量语料 Java primary，已 resolve）；仍待后续票：Engine 执行（Rust daemon +
@@ -205,8 +211,9 @@ Label: wayfinder:map
   要等 process protocol 和 build/certification contract 冻结后再登记——ADR-0045 已给出该合同；首个
   Rust/process task T22 已 resolve，已物化 daemon、帧编解码、machine manifest 与仓库内 replay
   harness；`render` gate 已随 T22 纳入 `full`。T23 已补齐 Engine 不得猜测的 exact document/default 前置；
-  T24 已单独登记 exact surface/PNG kernel，但不等于 layout/raster/daemon output；其余实际
-  layout/resource/raster/JPEG/Engine 接线仍须另行登记，物理 Linux
+  T24 已单独登记 exact surface/PNG kernel，但不等于 layout/raster/daemon output；T25 已完成
+  statically-decidable layout preflight，也不等于 measure/arrange。其余实际 layout/resource/raster/JPEG/Engine
+  接线仍须另行登记，物理 Linux
   双 CPU-family 认证与 J1/A3 属届时另行授权的执行级门控。
 - Product Editor 的 save/recovery/conflict/preview/browser automation 与 accessibility 实施票，要等状态架构
   prototype 结论后再登记——T09 已给出结论与 E1–E9 占位-free 纵切分解（open/baseline、本地编辑+undo+

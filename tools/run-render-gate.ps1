@@ -35,9 +35,15 @@ if (-not $resolvedEvidenceDir.StartsWith(
 
 $independentReport = Join-Path $resolvedEvidenceDir 'renderer-process-independent.json'
 $documentReport = Join-Path $resolvedEvidenceDir 'render-document-independent.json'
+$layoutPreflightReport = Join-Path $resolvedEvidenceDir 'layout-preflight-independent.json'
 $outputPngReport = Join-Path $resolvedEvidenceDir 'output-png-independent.json'
 $summaryPath = Join-Path $resolvedEvidenceDir 'renderer-process-summary.json'
-foreach ($report in @($independentReport, $documentReport, $outputPngReport, $summaryPath)) {
+foreach ($report in @(
+        $independentReport,
+        $documentReport,
+        $layoutPreflightReport,
+        $outputPngReport,
+        $summaryPath)) {
     if (Test-Path -LiteralPath $report) {
         throw "Renderer process evidence already exists: $report"
     }
@@ -216,6 +222,37 @@ try {
         throw 'RenderDocument independent report boundary drifted.'
     }
 
+    Invoke-Checked 'layout-preflight-python-independent-replay' {
+        & python.exe 'tools\verify-layout-preflight-vectors.py' `
+            '--vectors' 'renderer\layout-preflight-vectors-v1.json' `
+            '--fixtures' 'renderer\layout-preflight-fixtures-v1.json' `
+            '--all-kinds' 'renderer\render-document-all-kinds-v1.json' `
+            '--report' $layoutPreflightReport
+    }
+    if (-not (Test-Path -LiteralPath $layoutPreflightReport -PathType Leaf)) {
+        throw 'Layout preflight independent replay did not write its report.'
+    }
+    $layoutPreflightIndependent = Get-Content -Raw -Encoding UTF8 -LiteralPath $layoutPreflightReport |
+        ConvertFrom-Json
+    if ($layoutPreflightIndependent.verifier -ne 'renderweave-layout-preflight-python-independent/1' `
+            -or $layoutPreflightIndependent.result -ne 'PASS' `
+            -or $layoutPreflightIndependent.assurance -ne 'A2' `
+            -or $layoutPreflightIndependent.positiveCases -ne 7 `
+            -or $layoutPreflightIndependent.negativeCases -ne 25 `
+            -or $layoutPreflightIndependent.passed -ne 32 `
+            -or $layoutPreflightIndependent.total -ne 32 `
+            -or $layoutPreflightIndependent.failed -ne 0 `
+            -or $layoutPreflightIndependent.checks -ne 77 `
+            -or $layoutPreflightIndependent.layoutProfile -ne 'renderweave-layout/1.0' `
+            -or $layoutPreflightIndependent.profileAvailability -ne 'NOT_REGISTERED' `
+            -or $layoutPreflightIndependent.certificationStatus -ne 'NOT_CERTIFIED' `
+            -or $layoutPreflightIndependent.layoutImplementation -ne 'STATIC_PREFLIGHT_ONLY' `
+            -or $layoutPreflightIndependent.rasterImplementation -ne 'ABSENT' `
+            -or $layoutPreflightIndependent.daemonOutputPath -ne 'UNWIRED' `
+            -or $layoutPreflightIndependent.providerAttempts -ne 0) {
+        throw 'Layout preflight independent report boundary drifted.'
+    }
+
     Invoke-Checked 'output-png-python-independent-replay' {
         & python.exe 'tools\verify-output-png-vectors.py' `
             '--vectors' 'renderer\output-png-vectors-v1.json' `
@@ -284,7 +321,7 @@ try {
     }
 
     $summary = [ordered]@{
-        gateVersion = 'renderweave-renderer-process-gate/1.1'
+        gateVersion = 'renderweave-renderer-process-gate/1.2'
         status = 'PASS'
         processContractVersion = 'renderweave-renderer-process/1.0'
         java = $java
@@ -322,6 +359,16 @@ try {
             vectorsSha256 = $documentIndependent.vectorsSha256
             allKindsCanonicalSha256 = $documentIndependent.allKindsCanonicalSha256
         }
+        layoutPreflightIndependent = [ordered]@{
+            verifier = $layoutPreflightIndependent.verifier
+            assurance = $layoutPreflightIndependent.assurance
+            positiveCases = $layoutPreflightIndependent.positiveCases
+            negativeCases = $layoutPreflightIndependent.negativeCases
+            checks = $layoutPreflightIndependent.checks
+            vectorSha256 = $layoutPreflightIndependent.vectorSha256
+            fixturesSha256 = $layoutPreflightIndependent.fixturesSha256
+            layoutProfile = $layoutPreflightIndependent.layoutProfile
+        }
         outputPngIndependent = [ordered]@{
             verifier = $outputPngIndependent.verifier
             assurance = $outputPngIndependent.assurance
@@ -336,6 +383,7 @@ try {
             profileAvailability = 'NOT_REGISTERED'
             certificationStatus = 'NOT_CERTIFIED'
             rasterImplementation = 'ABSENT'
+            layoutKernel = 'STATIC_PREFLIGHT_AUTOMATED_VERIFIED_DOCUMENT_ADMISSION_ONLY'
             outputPngKernel = 'AUTOMATED_VERIFIED_UNWIRED'
             daemonOutputPath = 'UNWIRED'
             rendererReady = $false
@@ -347,9 +395,10 @@ try {
         }
     }
     Write-Utf8File -Path $summaryPath -Content ($summary | ConvertTo-Json -Depth 6)
-    Write-Host (('Renderer process: Java={0} Python={1}+{2}+{3} Rust Windows=PASS ' +
+    Write-Host (('Renderer process: Java={0} Python={1}+{2}+{3}+{4} Rust Windows=PASS ' +
                 'Linux UDS=PASS Profile=NOT_REGISTERED Certification=NOT_CERTIFIED Raster=ABSENT') -f
-            $java.tests, $independent.checks, $documentIndependent.total, $outputPngIndependent.total)
+            $java.tests, $independent.checks, $documentIndependent.total,
+            $layoutPreflightIndependent.total, $outputPngIndependent.total)
     Write-Host "Renderer process evidence: $summaryPath"
 }
 finally {

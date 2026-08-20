@@ -103,6 +103,7 @@ name = "renderweave-renderer-daemon"
 version = "0.1.0"
 dependencies = [
  "renderweave-renderer-document",
+ "renderweave-renderer-layout",
  "renderweave-renderer-protocol",
  "serde_json",
 ]
@@ -115,6 +116,14 @@ dependencies = [
  "serde",
  "serde_json",
  "sha2",
+]
+
+[[package]]
+name = "renderweave-renderer-layout"
+version = "0.1.0"
+dependencies = [
+ "renderweave-renderer-document",
+ "serde_json",
 ]
 
 [[package]]

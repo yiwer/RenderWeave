@@ -1756,3 +1756,29 @@
 - `render` `.sdlc/evidence/20260821-021837-render/`、`server`
   `.sdlc/evidence/20260821-022145-server/` 与 `fast` `.sdlc/evidence/20260821-023312-fast/` 全绿；最终 full
   在记录冻结后捕获并只在提交交接报告。T24 不升级 Renderer/Template v1 READY，不 push/tag/PR。
+
+### Template v1 TV1-T25 Layout Profile 静态预检（resolved / automated_verified）
+
+- 2026-08-21：T24 已以 verified local commit `6be13d3` 收口且 worktree clean；按冻结 Ticket 10/16、T23
+  exact RenderDocument seam 与真实剩余 DAG 单独登记并由 Codex single-writer claim T25（blocked by T22/T23，
+  均 resolved）。
+- 本票只物化 Rust `LayoutPreflight` deep kernel：对 admitted RenderDocument 防御性执行 size/min-max、
+  HUG/FILL cycle、Stack/Grid、Text 与 statically-decidable QR 约束，并以 Python stdlib 独立重放共同语料；
+  daemon 只在 document-admission 不变量边界调用，失败零 resource/layout/output。
+- 不选择尚未给数值的 Layout tolerance，不实现 measure/arrange/box/scene、resource/shaping/raster/codec 或
+  daemon RESULT；Profile 保持 NOT_REGISTERED、certification NOT_CERTIFIED、raster ABSENT，不开放 route，
+  不发行 formal record，不运行 provider/真实数据/API Key/physical Linux/J1/A3。
+- 新增 workspace-internal `renderweave-renderer-layout` crate；`preflight_layout` 只消费 T23
+  `AdmittedRenderDocument`，以 checked decimal6/`i128` 和 authored DFS 验证 kind/size-mode、FIXED/min-max、
+  Image/Group、HUG→FILL cycle、Stack/Grid/Text/QR 静态约束，返回 counts 或 closed stable problem，不产生
+  box/scene/trace。
+- daemon 在 strict document admission 后、Profile lookup 前调用预检；失败稳定折叠为
+  `RENDER_INTERNAL_ERROR`/`DOCUMENT_ADMISSION`，通过后仍因空 Profile registry 在 `COMMAND_ADMISSION`
+  fail closed，始终没有 RESULT/resource/layout/output。
+- 共同语料最终为 7 positive + 25 negative；Rust 对每个 negative 先证明 T23 admission 再精确拒绝，Python
+  stdlib independent replay 为 32/32、77 checks、A2，显式覆盖 64/65 tracks、sourceCanvas traversal 与双错误
+  authored DFS 首错。向量 SHA 为 `8ed92c07...8aa64`。
+- `render` `.sdlc/evidence/20260821-042237-render/`、`server`
+  `.sdlc/evidence/20260821-035919-server/` 与 `fast` `.sdlc/evidence/20260821-041051-fast/` 全绿；最终 full
+  在记录冻结后捕获并只在提交交接报告。process manifest/HELLO SHA 链已同步但 capability inventory 未增加；
+  T25 不升级 Renderer/Template v1 READY，不 push/tag/PR。

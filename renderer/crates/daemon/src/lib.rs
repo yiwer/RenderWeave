@@ -1,11 +1,13 @@
 //! Constant Linux UDS daemon for the RenderWeave renderer process seam.
 //!
-//! T22 intentionally has no registered raster profile. A fully admitted command is recorded in
-//! the in-memory registry and receives one stable terminal problem; no image or partial result can
-//! be produced by this crate.
+//! The process intentionally has no registered raster profile. A structurally admitted command is
+//! also passed through the static Layout Profile preflight, then recorded in the in-memory registry
+//! with one stable terminal problem; no image, scene, or partial result can be produced here.
 
 #[cfg(any(unix, test))]
 use renderweave_renderer_document::validate_render_document;
+#[cfg(any(unix, test))]
+use renderweave_renderer_layout::preflight_layout;
 use renderweave_renderer_protocol::ProtocolError;
 #[cfg(any(unix, test))]
 use renderweave_renderer_protocol::{
@@ -312,12 +314,21 @@ impl RequestRegistry {
 
         let (code, stage) = if admitted.deadline_epoch_millis <= now_epoch_millis {
             ("RENDER_DEADLINE_EXCEEDED", EngineStage::RequestControl)
-        } else if validate_render_document(admitted.command.document.get()).is_err() {
-            ("RENDER_INTERNAL_ERROR", EngineStage::DocumentAdmission)
         } else {
-            // The exact T22 manifest has no registered raster profile. This is a real, stable,
-            // fail-closed terminal admission result, never a synthetic image implementation.
-            ("RENDER_INTERNAL_ERROR", EngineStage::CommandAdmission)
+            match validate_render_document(admitted.command.document.get()) {
+                Err(_) => ("RENDER_INTERNAL_ERROR", EngineStage::DocumentAdmission),
+                Ok(document) if preflight_layout(&document).is_err() => {
+                    // Static layout violations contradict the Java sealing authority. Until a
+                    // Profile is registered, keep that invariant breach inside document admission
+                    // and never expose internal property paths or a partial scene.
+                    ("RENDER_INTERNAL_ERROR", EngineStage::DocumentAdmission)
+                }
+                Ok(_) => {
+                    // The exact process manifest has no registered raster profile. This is a real,
+                    // stable fail-closed terminal result, never a synthetic image implementation.
+                    ("RENDER_INTERNAL_ERROR", EngineStage::CommandAdmission)
+                }
+            }
         };
         let problem_payload = problem_bytes(&request_id, code, stage)?;
         self.entries.insert(
@@ -394,6 +405,7 @@ mod tests {
 
     const VECTORS: &str = include_str!("../../../protocol-vectors-v1.json");
     const PROCESS_MANIFEST: &[u8] = include_bytes!("../../../process-manifest.json");
+    const ALL_KINDS: &str = include_str!("../../../render-document-all-kinds-v1.json");
 
     #[test]
     fn daemon_requires_an_explicit_socket_manifest_and_frame_limit() {
@@ -457,6 +469,37 @@ mod tests {
         let old_digest = vector_value("png-command", "renderDocumentDigest");
         let invalid_command = command
             .replace(&document, &invalid_document)
+            .replace(&old_digest, &invalid_digest);
+
+        let mut registry = RequestRegistry::default();
+        let response = registry
+            .handle(
+                Frame {
+                    frame_type: FrameType::Command,
+                    payload: invalid_command.into_bytes(),
+                },
+                1_800_000_000_000,
+            )
+            .unwrap();
+        let problem: Value = serde_json::from_slice(&response.payload).unwrap();
+        assert_eq!(problem["code"], "RENDER_INTERNAL_ERROR");
+        assert_eq!(problem["engineStage"], "DOCUMENT_ADMISSION");
+    }
+
+    #[test]
+    fn registry_rejects_admitted_but_layout_invalid_document_before_profile_lookup() {
+        let command = vector_json("png-command");
+        let original_document = vector_document("png-command");
+        let layout_invalid_document = ALL_KINDS.trim_end_matches(['\r', '\n']);
+        let admitted = validate_render_document(layout_invalid_document).unwrap();
+        assert!(preflight_layout(&admitted).is_err());
+        let invalid_digest = renderweave_renderer_protocol::digest_with_domain(
+            renderweave_renderer_protocol::DOCUMENT_DIGEST_DOMAIN,
+            layout_invalid_document.as_bytes(),
+        );
+        let old_digest = vector_value("png-command", "renderDocumentDigest");
+        let invalid_command = command
+            .replace(&original_document, layout_invalid_document)
             .replace(&old_digest, &invalid_digest);
 
         let mut registry = RequestRegistry::default();

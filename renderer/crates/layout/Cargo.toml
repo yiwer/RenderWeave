@@ -1,5 +1,5 @@
 [package]
-name = "renderweave-renderer-daemon"
+name = "renderweave-renderer-layout"
 version = "0.1.0"
 edition.workspace = true
 rust-version.workspace = true
@@ -8,8 +8,4 @@ publish = false
 
 [dependencies]
 renderweave-renderer-document = { path = "../document" }
-renderweave-renderer-layout = { path = "../layout" }
-renderweave-renderer-protocol = { path = "../protocol" }
-
-[dev-dependencies]
 serde_json.workspace = true
