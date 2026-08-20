@@ -266,6 +266,11 @@ test('completes the four-step Candidate workflow with keyboard authoring and dur
     });
   }
 
+  const reviewStatusline = page.locator('.candidate-review-statusline');
+  await expect(reviewStatusline.locator('li.ready')).toHaveCount(3);
+  await reviewStatusline.evaluate(async (element) => {
+    await Promise.all(element.getAnimations().map((animation) => animation.finished));
+  });
   const accessibility = await new AxeBuilder({ page })
     .include('.resource-shell')
     .withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa'])
