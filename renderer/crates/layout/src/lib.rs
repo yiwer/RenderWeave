@@ -4,12 +4,12 @@
 //! The crate consumes only a document already admitted by `renderweave-renderer-document`.
 //! Preflight returns bounded structural counts or one stable DFS problem. The definite kernel
 //! additionally computes local LayoutBox/ContentBox entries for resource-independent ABSOLUTE
-//! nodes, Stack children with at most one main-axis FILL, and Grid children whose definite axes
-//! contain FIXED tracks, at most one FRACTION track, and resource-independent AUTO constraints
-//! that each cover at most one AUTO track. It deliberately stops before resource preparation,
-//! HUG/multi-FILL Stack water filling, cross-AUTO deficit distribution, multi-FRACTION solving,
-//! world transforms, shaping, paint, rasterization, and encoding, and it never exposes a partial
-//! layout on failure.
+//! nodes, Stack children with at most one main-axis FILL, resource-independent Stack HUG
+//! measurement, and Grid children whose definite axes contain FIXED tracks, at most one FRACTION
+//! track, and resource-independent AUTO constraints that each cover at most one AUTO track. It
+//! deliberately stops before resource preparation, Frame/Grid/Group nonempty HUG, multi-FILL
+//! Stack water filling, cross-AUTO deficit distribution, multi-FRACTION solving, world transforms,
+//! shaping, paint, rasterization, and encoding, and it never exposes a partial layout on failure.
 
 use renderweave_renderer_document::AdmittedRenderDocument;
 use serde_json::{Map, Number, Value};
@@ -617,7 +617,7 @@ impl DefiniteLayouter {
         let authored_x = binary64_member(placement, "xPt", occurrence, "placement.xPt")?;
         let authored_y = binary64_member(placement, "yPt", occurrence, "placement.yPt")?;
         let width = if width_mode == SizeMode::Hug {
-            empty_container_hug_axis(node, role, placement, "Width", occurrence)?
+            resource_free_hug_axis(node, role, placement, "Width", occurrence)?
         } else {
             definite_axis_size(
                 placement,
@@ -630,7 +630,7 @@ impl DefiniteLayouter {
             )?
         };
         let height = if height_mode == SizeMode::Hug {
-            empty_container_hug_axis(node, role, placement, "Height", occurrence)?
+            resource_free_hug_axis(node, role, placement, "Height", occurrence)?
         } else {
             definite_axis_size(
                 placement,
@@ -1157,7 +1157,7 @@ fn grid_axis_arrangement(
     occurrence: &str,
 ) -> Result<(f64, f64), DefiniteLayoutError> {
     let size = if mode == SizeMode::Hug {
-        empty_container_hug_axis(node, role, placement, axis, occurrence)?
+        resource_free_hug_axis(node, role, placement, axis, occurrence)?
     } else {
         stack_axis_size(
             placement,
@@ -1346,7 +1346,7 @@ fn measure_stack_child(
         "placement.marginLeftPt",
     )?;
     let width = if width_mode == SizeMode::Hug {
-        empty_container_hug_axis(node, role, placement, "Width", occurrence)?
+        resource_free_hug_axis(node, role, placement, "Width", occurrence)?
     } else if direction == StackDirection::Row && main_fill {
         0.0
     } else {
@@ -1361,7 +1361,7 @@ fn measure_stack_child(
         )?
     };
     let height = if height_mode == SizeMode::Hug {
-        empty_container_hug_axis(node, role, placement, "Height", occurrence)?
+        resource_free_hug_axis(node, role, placement, "Height", occurrence)?
     } else if direction == StackDirection::Column && main_fill {
         0.0
     } else {
@@ -1480,6 +1480,171 @@ fn definite_node_role(kind: &str, occurrence: &str) -> Result<NodeRole, Definite
     }
 }
 
+fn resource_free_hug_axis(
+    node: &Map<String, Value>,
+    role: NodeRole,
+    placement: &Map<String, Value>,
+    axis: &str,
+    occurrence: &str,
+) -> Result<f64, DefiniteLayoutError> {
+    let children = match role {
+        NodeRole::Group | NodeRole::Frame | NodeRole::Stack | NodeRole::Grid => {
+            array_member(node, "children", occurrence)?
+        }
+        NodeRole::Leaf => {
+            return Err(DefiniteLayoutError::unsupported(
+                occurrence,
+                DefiniteLayoutUnsupported::HugContent,
+            ));
+        }
+    };
+    if children.is_empty() {
+        return empty_container_hug_axis(node, role, placement, axis, occurrence);
+    }
+    if role != NodeRole::Stack {
+        return Err(DefiniteLayoutError::unsupported(
+            occurrence,
+            if role == NodeRole::Group {
+                DefiniteLayoutUnsupported::Group
+            } else {
+                DefiniteLayoutUnsupported::HugContent
+            },
+        ));
+    }
+
+    let content_extent = resource_free_stack_hug_content_extent(node, axis, occurrence)?;
+    let natural = container_outer_extent(node, axis, content_extent, occurrence)?;
+    clamp_flexible_axis(placement, natural, axis, occurrence)
+}
+
+fn resource_free_stack_hug_content_extent(
+    stack: &Map<String, Value>,
+    axis: &str,
+    occurrence: &str,
+) -> Result<f64, DefiniteLayoutError> {
+    let direction = stack_direction(stack, occurrence)?;
+    let axis_is_main = matches!(
+        (direction, axis),
+        (StackDirection::Row, "Width") | (StackDirection::Column, "Height")
+    );
+    if !matches!(axis, "Width" | "Height") {
+        return Err(DefiniteLayoutError::invariant(occurrence, "HUG axis"));
+    }
+    let children = array_member(stack, "children", occurrence)?;
+    let gap = nonnegative_binary64_member(stack, "gapPt", occurrence, "gapPt")?;
+    let mut extent = 0.0;
+
+    if axis_is_main {
+        let mut cursor = 0.0;
+        for (index, child) in children.iter().enumerate() {
+            let child = object(child, occurrence, "children")?;
+            let child_occurrence = occurrence_id(child)?;
+            let placement = stack_child_placement(child, child_occurrence)?;
+            let (leading_margin, trailing_margin) =
+                stack_hug_axis_margins(placement, axis, child_occurrence)?;
+            let child_size =
+                resource_free_stack_child_axis_size(child, placement, axis, child_occurrence)?;
+            for addition in [leading_margin, child_size, trailing_margin] {
+                cursor += addition;
+                if cursor > extent {
+                    extent = cursor;
+                }
+            }
+            if index + 1 < children.len() {
+                cursor += gap;
+                if cursor > extent {
+                    extent = cursor;
+                }
+            }
+        }
+        return Ok(extent);
+    }
+
+    for child in children {
+        let child = object(child, occurrence, "children")?;
+        let child_occurrence = occurrence_id(child)?;
+        let placement = stack_child_placement(child, child_occurrence)?;
+        let (leading_margin, trailing_margin) =
+            stack_hug_axis_margins(placement, axis, child_occurrence)?;
+        let child_size =
+            resource_free_stack_child_axis_size(child, placement, axis, child_occurrence)?;
+        let mut margin_extent_end = leading_margin;
+        margin_extent_end += child_size;
+        margin_extent_end += trailing_margin;
+        if margin_extent_end > extent {
+            extent = margin_extent_end;
+        }
+    }
+    Ok(extent)
+}
+
+fn stack_child_placement<'a>(
+    node: &'a Map<String, Value>,
+    occurrence: &str,
+) -> Result<&'a Map<String, Value>, DefiniteLayoutError> {
+    let placement = object_member(Some(node), "placement", occurrence)?;
+    if text_member(placement, "type", occurrence, "placement.type")? != "STACK" {
+        return Err(DefiniteLayoutError::unsupported(
+            occurrence,
+            DefiniteLayoutUnsupported::NonAbsolutePlacement,
+        ));
+    }
+    Ok(placement)
+}
+
+fn stack_hug_axis_margins(
+    placement: &Map<String, Value>,
+    axis: &str,
+    occurrence: &str,
+) -> Result<(f64, f64), DefiniteLayoutError> {
+    let (leading_member, trailing_member) = match axis {
+        "Width" => ("marginLeftPt", "marginRightPt"),
+        "Height" => ("marginTopPt", "marginBottomPt"),
+        _ => return Err(DefiniteLayoutError::invariant(occurrence, "HUG axis")),
+    };
+    Ok((
+        binary64_member(
+            placement,
+            leading_member,
+            occurrence,
+            format!("placement.{leading_member}"),
+        )?,
+        binary64_member(
+            placement,
+            trailing_member,
+            occurrence,
+            format!("placement.{trailing_member}"),
+        )?,
+    ))
+}
+
+fn resource_free_stack_child_axis_size(
+    node: &Map<String, Value>,
+    placement: &Map<String, Value>,
+    axis: &str,
+    occurrence: &str,
+) -> Result<f64, DefiniteLayoutError> {
+    let kind = text_member(node, "kind", occurrence, "kind")?;
+    let role = definite_node_role(kind, occurrence)?;
+    let mode_member = format!("{}Mode", axis.to_ascii_lowercase());
+    match size_mode(placement, &mode_member, occurrence)? {
+        SizeMode::Fixed => {
+            let size_member = format!("{}Pt", axis.to_ascii_lowercase());
+            binary64_member(
+                placement,
+                &size_member,
+                occurrence,
+                format!("placement.{size_member}"),
+            )
+        }
+        SizeMode::Hug => resource_free_hug_axis(node, role, placement, axis, occurrence),
+        SizeMode::Fill => Err(DefiniteLayoutError::invariant(
+            occurrence,
+            format!("placement.{mode_member}"),
+        )),
+    }
+}
+
 fn empty_container_hug_axis(
     node: &Map<String, Value>,
     role: NodeRole,
@@ -1517,7 +1682,7 @@ fn empty_container_hug_axis(
         NodeRole::Grid => empty_grid_track_extent(node, axis, occurrence)?,
         NodeRole::Group | NodeRole::Leaf => unreachable!(),
     };
-    let natural = empty_container_outer_extent(node, axis, content_extent, occurrence)?;
+    let natural = container_outer_extent(node, axis, content_extent, occurrence)?;
     clamp_flexible_axis(placement, natural, axis, occurrence)
 }
 
@@ -1571,7 +1736,7 @@ fn empty_grid_track_extent(
     Ok(extent)
 }
 
-fn empty_container_outer_extent(
+fn container_outer_extent(
     node: &Map<String, Value>,
     axis: &str,
     mut extent: f64,

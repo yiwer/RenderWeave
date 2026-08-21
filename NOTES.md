@@ -1,6 +1,14 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-22 **Template v1 implementation TV1-T43 已 `resolved/automated_verified`**：同一 Rust layout deep
+  module 现在可在资源无关闭包内测量非空 Stack HUG；main axis 使用 stable-zero cursor 的 signed margin/size/
+  gap 最远正端，cross axis 使用 MarginExtent 最远正端，再加 padding/stroke 并 min→max。只允许 FIXED、T42
+  空容器或递归 Stack child；shared vector/Python independent verifier 升级 `/9`，fixture `/3` 不变，Rust/Python
+  46 laid-out + 13 unsupported、59/59、178 checks。focused fmt/clippy/workspace test 与 `render`
+  `.sdlc/evidence/20260822-022705-render/`、`server` `.sdlc/evidence/20260822-022750-server/`、治理前 `fast`
+  `.sdlc/evidence/20260822-024756-fast/` 均绿。非空 Frame/Grid/Group、resource/scene/raster/daemon output/Profile/
+  E6 继续 fail closed；provider attempts/API Key reads/paid calls 均保持 0，不 push/tag/PR。
 - 2026-08-22 **Template v1 implementation TV1-T42 已 `resolved/automated_verified`**：同一 Rust layout deep
   module 现在只对空 Frame/Stack/Grid/Group 消费 HUG，并在 ABSOLUTE、STACK、GRID placement 复用精确的
   stroke/padding、FIXED/AUTO-zero track、gap、min→max 与 zero-union 退化语义。shared vector/Python independent

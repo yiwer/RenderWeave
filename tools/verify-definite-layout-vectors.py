@@ -273,7 +273,7 @@ class DefiniteLayouter:
         authored_x = required_decimal(placement, "xPt", current, "placement.xPt")
         authored_y = required_decimal(placement, "yPt", current, "placement.yPt")
         width = (
-            empty_container_hug_axis(node, role, placement, "Width", current)
+            resource_free_hug_axis(node, role, placement, "Width", current)
             if width_mode == "HUG_CONTENT"
             else definite_axis_size(
                 placement,
@@ -286,7 +286,7 @@ class DefiniteLayouter:
             )
         )
         height = (
-            empty_container_hug_axis(node, role, placement, "Height", current)
+            resource_free_hug_axis(node, role, placement, "Height", current)
             if height_mode == "HUG_CONTENT"
             else definite_axis_size(
                 placement,
@@ -763,7 +763,7 @@ def grid_axis_arrangement(
     current: str,
 ) -> tuple[float, float]:
     size = (
-        empty_container_hug_axis(node, role, placement, axis, current)
+        resource_free_hug_axis(node, role, placement, axis, current)
         if mode == "HUG_CONTENT"
         else stack_axis_size(
             placement,
@@ -920,7 +920,7 @@ def measure_stack_child(
         placement, "marginLeftPt", current, "placement.marginLeftPt"
     )
     if width_mode == "HUG_CONTENT":
-        width = empty_container_hug_axis(node, role, placement, "Width", current)
+        width = resource_free_hug_axis(node, role, placement, "Width", current)
     elif direction == "ROW" and main_fill:
         width = 0.0
     else:
@@ -934,7 +934,7 @@ def measure_stack_child(
             current,
         )
     if height_mode == "HUG_CONTENT":
-        height = empty_container_hug_axis(node, role, placement, "Height", current)
+        height = resource_free_hug_axis(node, role, placement, "Height", current)
     elif direction == "COLUMN" and main_fill:
         height = 0.0
     else:
@@ -970,6 +970,129 @@ def stack_child_has_main_fill(node: dict[str, Any], direction: str) -> bool:
     return placement.get(member) == "FILL"
 
 
+def resource_free_hug_axis(
+    node: dict[str, Any],
+    role: str,
+    placement: dict[str, Any],
+    axis: str,
+    current: str,
+) -> float:
+    if role == "LEAF":
+        raise Unsupported("HUG_CONTENT", current)
+    children = array_value(node.get("children"), f"{current} children")
+    if not children:
+        return empty_container_hug_axis(node, role, placement, axis, current)
+    if role != "STACK":
+        raise Unsupported("GROUP" if role == "GROUP" else "HUG_CONTENT", current)
+
+    content_extent = resource_free_stack_hug_content_extent(node, axis, current)
+    natural = container_outer_extent(node, axis, content_extent, current)
+    return clamp_flexible_axis(placement, natural, axis, current)
+
+
+def resource_free_stack_hug_content_extent(
+    stack: dict[str, Any], axis: str, current: str
+) -> float:
+    direction = text(stack.get("direction"), f"{current} direction")
+    if direction not in {"ROW", "COLUMN"} or axis not in {"Width", "Height"}:
+        raise VerificationFailure(f"{current} invalid Stack HUG axis")
+    main_axis = (direction == "ROW" and axis == "Width") or (
+        direction == "COLUMN" and axis == "Height"
+    )
+    children = array_value(stack.get("children"), f"{current} children")
+    gap = nonnegative_decimal(stack, "gapPt", current, "gapPt")
+
+    if main_axis:
+        cursor = 0.0
+        farthest = 0.0
+        for index, raw_child in enumerate(children):
+            child = object_value(raw_child, f"{current} child")
+            child_current = occurrence(child)
+            child_placement = stack_hug_child_placement(child, child_current)
+            leading, trailing = stack_hug_axis_margins(
+                child_placement, axis, child_current
+            )
+            child_size = resource_free_stack_child_axis_size(
+                child, child_placement, axis, child_current
+            )
+            for addition in (leading, child_size, trailing):
+                cursor += addition
+                if cursor > farthest:
+                    farthest = cursor
+            if index + 1 < len(children):
+                cursor += gap
+                if cursor > farthest:
+                    farthest = cursor
+        return farthest
+
+    farthest = 0.0
+    for raw_child in children:
+        child = object_value(raw_child, f"{current} child")
+        child_current = occurrence(child)
+        child_placement = stack_hug_child_placement(child, child_current)
+        leading, trailing = stack_hug_axis_margins(
+            child_placement, axis, child_current
+        )
+        margin_extent_end = leading
+        margin_extent_end += resource_free_stack_child_axis_size(
+            child, child_placement, axis, child_current
+        )
+        margin_extent_end += trailing
+        if margin_extent_end > farthest:
+            farthest = margin_extent_end
+    return farthest
+
+
+def stack_hug_child_placement(
+    child: dict[str, Any], current: str
+) -> dict[str, Any]:
+    placement = object_value(child.get("placement"), f"{current} placement")
+    if placement.get("type") != "STACK":
+        raise Unsupported("NON_ABSOLUTE_PLACEMENT", current)
+    return placement
+
+
+def stack_hug_axis_margins(
+    placement: dict[str, Any], axis: str, current: str
+) -> tuple[float, float]:
+    if axis == "Width":
+        leading_member, trailing_member = "marginLeftPt", "marginRightPt"
+    elif axis == "Height":
+        leading_member, trailing_member = "marginTopPt", "marginBottomPt"
+    else:
+        raise VerificationFailure(f"{current} invalid Stack HUG axis")
+    return (
+        required_decimal(
+            placement, leading_member, current, f"placement.{leading_member}"
+        ),
+        required_decimal(
+            placement, trailing_member, current, f"placement.{trailing_member}"
+        ),
+    )
+
+
+def resource_free_stack_child_axis_size(
+    child: dict[str, Any],
+    placement: dict[str, Any],
+    axis: str,
+    current: str,
+) -> float:
+    kind = text(child.get("kind"), f"{current} kind")
+    role = definite_node_role(kind, current)
+    mode_member = f"{axis.lower()}Mode"
+    mode = text(placement.get(mode_member), f"{current} {mode_member}")
+    if mode == "FIXED":
+        size_member = f"{axis.lower()}Pt"
+        return required_decimal(
+            placement, size_member, current, f"placement.{size_member}"
+        )
+    if mode == "HUG_CONTENT":
+        return resource_free_hug_axis(child, role, placement, axis, current)
+    if mode == "FILL":
+        raise VerificationFailure(f"{current} unexpected Stack HUG/FILL cycle")
+    raise VerificationFailure(f"{current} invalid Stack HUG size mode")
+
+
 def empty_container_hug_axis(
     node: dict[str, Any],
     role: str,
@@ -988,7 +1111,7 @@ def empty_container_hug_axis(
     content_extent = (
         empty_grid_track_extent(node, axis, current) if role == "GRID" else 0.0
     )
-    natural = empty_container_outer_extent(node, axis, content_extent, current)
+    natural = container_outer_extent(node, axis, content_extent, current)
     return clamp_flexible_axis(placement, natural, axis, current)
 
 
@@ -1025,7 +1148,7 @@ def empty_grid_track_extent(
     return extent
 
 
-def empty_container_outer_extent(
+def container_outer_extent(
     node: dict[str, Any], axis: str, extent: float, current: str
 ) -> float:
     raw_stroke = node.get("stroke")
@@ -1329,7 +1452,7 @@ def verify(
         "vector manifest",
     )
     verifier.require(
-        vectors["vectorVersion"] == "renderweave-definite-layout-vectors/8",
+        vectors["vectorVersion"] == "renderweave-definite-layout-vectors/9",
         "vector identity drifted",
     )
     authority = exact_members(
@@ -1382,7 +1505,7 @@ def verify(
     expected_boundary = {
         "profileAvailability": "NOT_REGISTERED",
         "certificationStatus": "NOT_CERTIFIED",
-        "layoutImplementation": "RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_SINGLE_MAIN_FILL_AND_FIXED_SINGLE_FRACTION_INDEPENDENT_MULTI_AUTO_GRID_EMPTY_INTRINSIC_CONTAINER_BOX_KERNEL",
+        "layoutImplementation": "RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_SINGLE_MAIN_FILL_AND_FIXED_SINGLE_FRACTION_INDEPENDENT_MULTI_AUTO_GRID_EMPTY_CONTAINER_AND_RESOURCE_FREE_STACK_HUG_BOX_KERNEL",
         "worldTransformImplementation": "ABSENT",
         "sceneImplementation": "ABSENT",
         "rasterImplementation": "ABSENT",
@@ -1420,7 +1543,7 @@ def verify(
         == "renderweave-layout-preflight-fixtures/1",
         "layout preflight fixture identity drifted",
     )
-    verifier.require(len(vectors["laidOutCases"]) == 40, "laid-out case count drifted")
+    verifier.require(len(vectors["laidOutCases"]) == 46, "laid-out case count drifted")
     verifier.require(
         len(vectors["unsupportedCases"]) == 13,
         "unsupported case count drifted",
@@ -1470,7 +1593,7 @@ def verify(
             raise VerificationFailure(f"{case_id}: unsupported case produced a layout")
 
     return {
-        "verifier": "renderweave-definite-layout-python-independent/8",
+        "verifier": "renderweave-definite-layout-python-independent/9",
         "result": "PASS",
         "assurance": "A2",
         "laidOutCases": len(vectors["laidOutCases"]),
