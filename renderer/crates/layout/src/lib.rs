@@ -4,9 +4,9 @@
 //! The crate consumes only a document already admitted by `renderweave-renderer-document`.
 //! Preflight returns bounded structural counts or one stable DFS problem. The definite kernel
 //! additionally computes local LayoutBox/ContentBox entries for resource-independent ABSOLUTE
-//! nodes whose two axes are already definite. It deliberately stops before resource preparation,
-//! HUG/Stack/Grid solving, world transforms, shaping, paint, rasterization, and encoding, and it
-//! never exposes a partial layout on failure.
+//! nodes and non-water-filling Stack children whose two axes are already definite. It deliberately
+//! stops before resource preparation, HUG/Stack water filling/Grid solving, world transforms,
+//! shaping, paint, rasterization, and encoding, and it never exposes a partial layout on failure.
 
 use renderweave_renderer_document::AdmittedRenderDocument;
 use serde_json::{Map, Number, Value};
@@ -196,7 +196,7 @@ impl DefiniteLayout {
 pub enum DefiniteLayoutUnsupported {
     HugContent,
     Group,
-    Stack,
+    StackMainFill,
     Grid,
     CompositionViewport,
     ResourceDependentKind,
@@ -209,7 +209,7 @@ impl DefiniteLayoutUnsupported {
         match self {
             Self::HugContent => "HUG_CONTENT",
             Self::Group => "GROUP",
-            Self::Stack => "STACK",
+            Self::StackMainFill => "STACK_MAIN_FILL",
             Self::Grid => "GRID",
             Self::CompositionViewport => "COMPOSITION_VIEWPORT",
             Self::ResourceDependentKind => "RESOURCE_DEPENDENT_KIND",
@@ -309,6 +309,70 @@ enum SizeMode {
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum NodeRole {
+    Frame,
+    Stack,
+    Leaf,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum StackDirection {
+    Row,
+    Column,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum StackAlignment {
+    Start,
+    Center,
+    End,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum StackJustification {
+    Start,
+    Center,
+    End,
+    SpaceBetween,
+    SpaceAround,
+    SpaceEvenly,
+}
+
+#[derive(Clone, Copy, Debug)]
+struct StackChildMeasurement {
+    width: f64,
+    height: f64,
+    margin_top: f64,
+    margin_right: f64,
+    margin_bottom: f64,
+    margin_left: f64,
+    align_self: StackAlignment,
+}
+
+impl StackChildMeasurement {
+    const fn main_size(self, direction: StackDirection) -> f64 {
+        match direction {
+            StackDirection::Row => self.width,
+            StackDirection::Column => self.height,
+        }
+    }
+
+    const fn main_leading_margin(self, direction: StackDirection) -> f64 {
+        match direction {
+            StackDirection::Row => self.margin_left,
+            StackDirection::Column => self.margin_top,
+        }
+    }
+
+    const fn main_trailing_margin(self, direction: StackDirection) -> f64 {
+        match direction {
+            StackDirection::Row => self.margin_right,
+            StackDirection::Column => self.margin_bottom,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 enum TrackKind {
     Fixed,
     Fraction,
@@ -387,7 +451,7 @@ fn parse_and_preflight(
     ))
 }
 
-pub fn layout_definite_absolute(
+pub fn layout_definite_resource_free(
     document: &AdmittedRenderDocument,
 ) -> Result<DefiniteLayout, DefiniteLayoutError> {
     let (root, _) = parse_and_preflight(document)?;
@@ -411,7 +475,7 @@ pub fn layout_definite_absolute(
         content_box: Some(canvas_box),
     });
     for child in array_member(canvas, "children", occurrence)? {
-        state.visit_node(object(child, occurrence, "children")?, &canvas_box)?;
+        state.visit_absolute_node(object(child, occurrence, "children")?, &canvas_box)?;
     }
     if state.entries.len() != document.occurrence_count() {
         return Err(DefiniteLayoutError::invariant(
@@ -425,49 +489,14 @@ pub fn layout_definite_absolute(
 }
 
 impl DefiniteLayouter {
-    fn visit_node(
+    fn visit_absolute_node(
         &mut self,
         node: &Map<String, Value>,
         parent_content: &LocalLayoutBox,
     ) -> Result<(), DefiniteLayoutError> {
         let occurrence = occurrence_id(node)?;
         let kind = text_member(node, "kind", occurrence, "kind")?;
-        let supported_container = match kind {
-            "frame" => true,
-            "rect" | "ellipse" | "line" | "polygon" | "polyline" | "path" | "qrCode"
-            | "barcode" => false,
-            "group" => {
-                return Err(DefiniteLayoutError::unsupported(
-                    occurrence,
-                    DefiniteLayoutUnsupported::Group,
-                ));
-            }
-            "stack" => {
-                return Err(DefiniteLayoutError::unsupported(
-                    occurrence,
-                    DefiniteLayoutUnsupported::Stack,
-                ));
-            }
-            "grid" => {
-                return Err(DefiniteLayoutError::unsupported(
-                    occurrence,
-                    DefiniteLayoutUnsupported::Grid,
-                ));
-            }
-            "compositionViewport" => {
-                return Err(DefiniteLayoutError::unsupported(
-                    occurrence,
-                    DefiniteLayoutUnsupported::CompositionViewport,
-                ));
-            }
-            "text" | "image" => {
-                return Err(DefiniteLayoutError::unsupported(
-                    occurrence,
-                    DefiniteLayoutUnsupported::ResourceDependentKind,
-                ));
-            }
-            _ => return Err(DefiniteLayoutError::invariant(occurrence, "kind")),
-        };
+        let role = definite_node_role(kind, occurrence)?;
 
         let placement = object_member(Some(node), "placement", occurrence)?;
         if text_member(placement, "type", occurrence, "placement.type")? != "ABSOLUTE" {
@@ -511,27 +540,434 @@ impl DefiniteLayouter {
             width,
             height,
         };
+        self.emit_positioned_node(node, kind, role, layout_box)
+    }
 
-        if supported_container {
-            let content_box = frame_content_box(node, &layout_box, occurrence)?;
-            self.entries.push(DefiniteLayoutEntry {
-                occurrence_id: occurrence.to_owned(),
-                kind: kind.to_owned(),
-                layout_box,
-                content_box: Some(content_box),
-            });
-            for child in array_member(node, "children", occurrence)? {
-                self.visit_node(object(child, occurrence, "children")?, &content_box)?;
+    fn visit_stack_child(
+        &mut self,
+        node: &Map<String, Value>,
+        measurement: Result<StackChildMeasurement, DefiniteLayoutError>,
+        layout_box: LocalLayoutBox,
+    ) -> Result<(), DefiniteLayoutError> {
+        let occurrence = occurrence_id(node)?;
+        let kind = text_member(node, "kind", occurrence, "kind")?;
+        let role = definite_node_role(kind, occurrence)?;
+        measurement?;
+        self.emit_positioned_node(node, kind, role, layout_box)
+    }
+
+    fn emit_positioned_node(
+        &mut self,
+        node: &Map<String, Value>,
+        kind: &str,
+        role: NodeRole,
+        layout_box: LocalLayoutBox,
+    ) -> Result<(), DefiniteLayoutError> {
+        let occurrence = occurrence_id(node)?;
+        match role {
+            NodeRole::Frame | NodeRole::Stack => {
+                let content_box = container_content_box(node, &layout_box, occurrence)?;
+                self.entries.push(DefiniteLayoutEntry {
+                    occurrence_id: occurrence.to_owned(),
+                    kind: kind.to_owned(),
+                    layout_box,
+                    content_box: Some(content_box),
+                });
+                if role == NodeRole::Frame {
+                    for child in array_member(node, "children", occurrence)? {
+                        self.visit_absolute_node(
+                            object(child, occurrence, "children")?,
+                            &content_box,
+                        )?;
+                    }
+                } else {
+                    self.visit_stack_children(node, &content_box)?;
+                }
             }
-        } else {
-            self.entries.push(DefiniteLayoutEntry {
-                occurrence_id: occurrence.to_owned(),
-                kind: kind.to_owned(),
-                layout_box,
-                content_box: None,
-            });
+            NodeRole::Leaf => {
+                self.entries.push(DefiniteLayoutEntry {
+                    occurrence_id: occurrence.to_owned(),
+                    kind: kind.to_owned(),
+                    layout_box,
+                    content_box: None,
+                });
+            }
         }
         Ok(())
+    }
+
+    fn visit_stack_children(
+        &mut self,
+        stack: &Map<String, Value>,
+        content_box: &LocalLayoutBox,
+    ) -> Result<(), DefiniteLayoutError> {
+        let occurrence = occurrence_id(stack)?;
+        let direction = stack_direction(stack, occurrence)?;
+        let justification = stack_justification(stack, occurrence)?;
+        let gap = nonnegative_binary64_member(stack, "gapPt", occurrence, "gapPt")?;
+        let children = array_member(stack, "children", occurrence)?;
+        let mut measurements = Vec::with_capacity(children.len());
+        let mut occupied = 0.0;
+
+        for (index, child) in children.iter().enumerate() {
+            let child = object(child, occurrence, "children")?;
+            let measured = measure_stack_child(child, content_box, direction);
+            if let Ok(measurement) = &measured {
+                occupied += measurement.main_leading_margin(direction);
+                occupied += measurement.main_size(direction);
+                occupied += measurement.main_trailing_margin(direction);
+            }
+            if index + 1 < children.len() {
+                occupied += gap;
+            }
+            measurements.push(measured);
+        }
+
+        let occupied = if occupied > 0.0 { occupied } else { 0.0 };
+        let available = match direction {
+            StackDirection::Row => content_box.width,
+            StackDirection::Column => content_box.height,
+        };
+        let remaining = available - occupied;
+        let free = if remaining > 0.0 { remaining } else { 0.0 };
+        let distribution = stack_distribution(justification, free, children.len());
+        let mut cursor = distribution.leading;
+
+        for (index, (child, measured)) in children.iter().zip(measurements).enumerate() {
+            let child = object(child, occurrence, "children")?;
+            let layout_box = if let Ok(measurement) = &measured {
+                cursor += measurement.main_leading_margin(direction);
+                let layout_box = stack_child_box(content_box, *measurement, direction, cursor);
+                cursor += measurement.main_size(direction);
+                cursor += measurement.main_trailing_margin(direction);
+                if index + 1 < children.len() {
+                    cursor += gap;
+                    cursor += distribution.between[index];
+                }
+                layout_box
+            } else {
+                LocalLayoutBox {
+                    x: content_box.x,
+                    y: content_box.y,
+                    width: 0.0,
+                    height: 0.0,
+                }
+            };
+            self.visit_stack_child(child, measured, layout_box)?;
+        }
+        Ok(())
+    }
+}
+
+struct StackDistribution {
+    leading: f64,
+    between: Vec<f64>,
+}
+
+fn stack_distribution(
+    justification: StackJustification,
+    free: f64,
+    child_count: usize,
+) -> StackDistribution {
+    let mut result = StackDistribution {
+        leading: 0.0,
+        between: vec![0.0; child_count.saturating_sub(1)],
+    };
+    match justification {
+        StackJustification::Start => {}
+        StackJustification::End => result.leading = free,
+        StackJustification::Center => result.leading = free / 2.0,
+        StackJustification::SpaceBetween if child_count > 1 => {
+            result.between = equal_binary64_slots(free, child_count - 1);
+        }
+        StackJustification::SpaceBetween => {}
+        StackJustification::SpaceAround if child_count > 0 => {
+            let slots = equal_binary64_slots(free, child_count);
+            result.leading = slots[0] / 2.0;
+            for index in 0..result.between.len() {
+                result.between[index] = (slots[index] / 2.0) + (slots[index + 1] / 2.0);
+            }
+        }
+        StackJustification::SpaceAround => {}
+        StackJustification::SpaceEvenly if child_count > 0 => {
+            let slots = equal_binary64_slots(free, child_count + 1);
+            result.leading = slots[0];
+            let between_len = result.between.len();
+            result.between.copy_from_slice(&slots[1..1 + between_len]);
+        }
+        StackJustification::SpaceEvenly => {}
+    }
+    result
+}
+
+fn equal_binary64_slots(total: f64, count: usize) -> Vec<f64> {
+    if count == 0 {
+        return Vec::new();
+    }
+    let unit = total / count as f64;
+    let mut remaining = total;
+    let mut result = Vec::with_capacity(count);
+    for index in 0..count {
+        let slot = if index + 1 == count { remaining } else { unit };
+        result.push(slot);
+        remaining -= slot;
+    }
+    result
+}
+
+fn stack_child_box(
+    parent: &LocalLayoutBox,
+    child: StackChildMeasurement,
+    direction: StackDirection,
+    main_position: f64,
+) -> LocalLayoutBox {
+    match direction {
+        StackDirection::Row => LocalLayoutBox {
+            x: parent.x + main_position,
+            y: aligned_cross_position(
+                parent.y,
+                parent.height,
+                child.margin_top,
+                child.margin_bottom,
+                child.height,
+                child.align_self,
+            ),
+            width: child.width,
+            height: child.height,
+        },
+        StackDirection::Column => LocalLayoutBox {
+            x: aligned_cross_position(
+                parent.x,
+                parent.width,
+                child.margin_left,
+                child.margin_right,
+                child.width,
+                child.align_self,
+            ),
+            y: parent.y + main_position,
+            width: child.width,
+            height: child.height,
+        },
+    }
+}
+
+fn aligned_cross_position(
+    parent_origin: f64,
+    parent_size: f64,
+    leading_margin: f64,
+    trailing_margin: f64,
+    child_size: f64,
+    alignment: StackAlignment,
+) -> f64 {
+    let interval = (parent_size - leading_margin) - trailing_margin;
+    let extra = match alignment {
+        StackAlignment::Start => 0.0,
+        StackAlignment::Center => (interval - child_size) / 2.0,
+        StackAlignment::End => interval - child_size,
+    };
+    (parent_origin + leading_margin) + extra
+}
+
+fn measure_stack_child(
+    node: &Map<String, Value>,
+    parent: &LocalLayoutBox,
+    direction: StackDirection,
+) -> Result<StackChildMeasurement, DefiniteLayoutError> {
+    let occurrence = occurrence_id(node)?;
+    let placement = object_member(Some(node), "placement", occurrence)?;
+    if text_member(placement, "type", occurrence, "placement.type")? != "STACK" {
+        return Err(DefiniteLayoutError::unsupported(
+            occurrence,
+            DefiniteLayoutUnsupported::NonAbsolutePlacement,
+        ));
+    }
+    let width_mode = size_mode(placement, "widthMode", occurrence)?;
+    let height_mode = size_mode(placement, "heightMode", occurrence)?;
+    if width_mode == SizeMode::Hug || height_mode == SizeMode::Hug {
+        return Err(DefiniteLayoutError::unsupported(
+            occurrence,
+            DefiniteLayoutUnsupported::HugContent,
+        ));
+    }
+    let main_mode = match direction {
+        StackDirection::Row => width_mode,
+        StackDirection::Column => height_mode,
+    };
+    if main_mode == SizeMode::Fill {
+        return Err(DefiniteLayoutError::unsupported(
+            occurrence,
+            DefiniteLayoutUnsupported::StackMainFill,
+        ));
+    }
+
+    let margin_top = binary64_member(
+        placement,
+        "marginTopPt",
+        occurrence,
+        "placement.marginTopPt",
+    )?;
+    let margin_right = binary64_member(
+        placement,
+        "marginRightPt",
+        occurrence,
+        "placement.marginRightPt",
+    )?;
+    let margin_bottom = binary64_member(
+        placement,
+        "marginBottomPt",
+        occurrence,
+        "placement.marginBottomPt",
+    )?;
+    let margin_left = binary64_member(
+        placement,
+        "marginLeftPt",
+        occurrence,
+        "placement.marginLeftPt",
+    )?;
+    let width = stack_axis_size(
+        placement,
+        width_mode,
+        parent.width,
+        margin_left,
+        margin_right,
+        "Width",
+        occurrence,
+    )?;
+    let height = stack_axis_size(
+        placement,
+        height_mode,
+        parent.height,
+        margin_top,
+        margin_bottom,
+        "Height",
+        occurrence,
+    )?;
+    Ok(StackChildMeasurement {
+        width,
+        height,
+        margin_top,
+        margin_right,
+        margin_bottom,
+        margin_left,
+        align_self: stack_alignment(placement, "alignSelf", occurrence)?,
+    })
+}
+
+fn stack_axis_size(
+    placement: &Map<String, Value>,
+    mode: SizeMode,
+    parent_size: f64,
+    leading_margin: f64,
+    trailing_margin: f64,
+    axis: &str,
+    occurrence: &str,
+) -> Result<f64, DefiniteLayoutError> {
+    let size_member = format!("{}Pt", axis.to_ascii_lowercase());
+    if mode == SizeMode::Fixed {
+        return binary64_member(
+            placement,
+            &size_member,
+            occurrence,
+            format!("placement.{size_member}"),
+        );
+    }
+    if mode != SizeMode::Fill {
+        return Err(DefiniteLayoutError::invariant(
+            occurrence,
+            format!("placement.{axis}Mode"),
+        ));
+    }
+    let remaining = (parent_size - leading_margin) - trailing_margin;
+    let mut size = if remaining > 0.0 { remaining } else { 0.0 };
+    let minimum_member = format!("min{axis}Pt");
+    if let Some(minimum) = optional_binary64_member(
+        placement,
+        &minimum_member,
+        occurrence,
+        format!("placement.{minimum_member}"),
+    )? && size < minimum
+    {
+        size = minimum;
+    }
+    let maximum_member = format!("max{axis}Pt");
+    if let Some(maximum) = optional_binary64_member(
+        placement,
+        &maximum_member,
+        occurrence,
+        format!("placement.{maximum_member}"),
+    )? && size > maximum
+    {
+        size = maximum;
+    }
+    Ok(size)
+}
+
+fn definite_node_role(kind: &str, occurrence: &str) -> Result<NodeRole, DefiniteLayoutError> {
+    match kind {
+        "frame" => Ok(NodeRole::Frame),
+        "stack" => Ok(NodeRole::Stack),
+        "rect" | "ellipse" | "line" | "polygon" | "polyline" | "path" | "qrCode" | "barcode" => {
+            Ok(NodeRole::Leaf)
+        }
+        "group" => Err(DefiniteLayoutError::unsupported(
+            occurrence,
+            DefiniteLayoutUnsupported::Group,
+        )),
+        "grid" => Err(DefiniteLayoutError::unsupported(
+            occurrence,
+            DefiniteLayoutUnsupported::Grid,
+        )),
+        "compositionViewport" => Err(DefiniteLayoutError::unsupported(
+            occurrence,
+            DefiniteLayoutUnsupported::CompositionViewport,
+        )),
+        "text" | "image" => Err(DefiniteLayoutError::unsupported(
+            occurrence,
+            DefiniteLayoutUnsupported::ResourceDependentKind,
+        )),
+        _ => Err(DefiniteLayoutError::invariant(occurrence, "kind")),
+    }
+}
+
+fn stack_direction(
+    stack: &Map<String, Value>,
+    occurrence: &str,
+) -> Result<StackDirection, DefiniteLayoutError> {
+    match text_member(stack, "direction", occurrence, "direction")? {
+        "ROW" => Ok(StackDirection::Row),
+        "COLUMN" => Ok(StackDirection::Column),
+        _ => Err(DefiniteLayoutError::invariant(occurrence, "direction")),
+    }
+}
+
+fn stack_alignment(
+    object: &Map<String, Value>,
+    member: &str,
+    occurrence: &str,
+) -> Result<StackAlignment, DefiniteLayoutError> {
+    match text_member(object, member, occurrence, format!("placement.{member}"))? {
+        "START" => Ok(StackAlignment::Start),
+        "CENTER" => Ok(StackAlignment::Center),
+        "END" => Ok(StackAlignment::End),
+        _ => Err(DefiniteLayoutError::invariant(
+            occurrence,
+            format!("placement.{member}"),
+        )),
+    }
+}
+
+fn stack_justification(
+    stack: &Map<String, Value>,
+    occurrence: &str,
+) -> Result<StackJustification, DefiniteLayoutError> {
+    match text_member(stack, "justifyContent", occurrence, "justifyContent")? {
+        "START" => Ok(StackJustification::Start),
+        "CENTER" => Ok(StackJustification::Center),
+        "END" => Ok(StackJustification::End),
+        "SPACE_BETWEEN" => Ok(StackJustification::SpaceBetween),
+        "SPACE_AROUND" => Ok(StackJustification::SpaceAround),
+        "SPACE_EVENLY" => Ok(StackJustification::SpaceEvenly),
+        _ => Err(DefiniteLayoutError::invariant(occurrence, "justifyContent")),
     }
 }
 
@@ -591,7 +1027,7 @@ fn definite_axis_size(
     Ok(size)
 }
 
-fn frame_content_box(
+fn container_content_box(
     node: &Map<String, Value>,
     layout_box: &LocalLayoutBox,
     occurrence: &str,

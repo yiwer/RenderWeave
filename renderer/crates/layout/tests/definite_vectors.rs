@@ -1,6 +1,6 @@
 use renderweave_renderer_document::validate_render_document;
 use renderweave_renderer_layout::{
-    DefiniteLayoutUnsupported, LocalLayoutBox, layout_definite_absolute, preflight_layout,
+    DefiniteLayoutUnsupported, LocalLayoutBox, layout_definite_resource_free, preflight_layout,
 };
 use serde_json::Value;
 
@@ -30,7 +30,7 @@ fn replays_exact_binary64_definite_layout_vectors() {
             )
         });
 
-        let layout = layout_definite_absolute(&admitted)
+        let layout = layout_definite_resource_free(&admitted)
             .unwrap_or_else(|error| panic!("{} unexpectedly failed: {error}", case["id"]));
         let expected_entries = case["expected"]["entries"].as_array().unwrap();
         assert_eq!(layout.entries().len(), admitted.occurrence_count());
@@ -81,7 +81,7 @@ fn returns_the_first_closed_internal_unsupported_boundary() {
             )
         });
 
-        let error = layout_definite_absolute(&admitted)
+        let error = layout_definite_resource_free(&admitted)
             .expect_err("unsupported vector unexpectedly produced a partial layout");
         let expected = &case["expected"];
         assert_eq!(
@@ -107,7 +107,7 @@ fn unsupported_feature_names_are_closed_and_stable() {
     let names = [
         DefiniteLayoutUnsupported::HugContent.as_str(),
         DefiniteLayoutUnsupported::Group.as_str(),
-        DefiniteLayoutUnsupported::Stack.as_str(),
+        DefiniteLayoutUnsupported::StackMainFill.as_str(),
         DefiniteLayoutUnsupported::Grid.as_str(),
         DefiniteLayoutUnsupported::CompositionViewport.as_str(),
         DefiniteLayoutUnsupported::ResourceDependentKind.as_str(),
@@ -119,7 +119,7 @@ fn unsupported_feature_names_are_closed_and_stable() {
         [
             "HUG_CONTENT",
             "GROUP",
-            "STACK",
+            "STACK_MAIN_FILL",
             "GRID",
             "COMPOSITION_VIEWPORT",
             "RESOURCE_DEPENDENT_KIND",

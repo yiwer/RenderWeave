@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Independent standard-library replay for definite ABSOLUTE local-box vectors."""
+"""Independent replay for resource-free definite ABSOLUTE and Stack box vectors."""
 
 from __future__ import annotations
 
@@ -116,6 +116,26 @@ class Box:
         }
 
 
+@dataclass(frozen=True)
+class StackChildMeasurement:
+    width: float
+    height: float
+    margin_top: float
+    margin_right: float
+    margin_bottom: float
+    margin_left: float
+    align_self: str
+
+    def main_size(self, direction: str) -> float:
+        return self.width if direction == "ROW" else self.height
+
+    def main_leading_margin(self, direction: str) -> float:
+        return self.margin_left if direction == "ROW" else self.margin_top
+
+    def main_trailing_margin(self, direction: str) -> float:
+        return self.margin_right if direction == "ROW" else self.margin_bottom
+
+
 PLAIN_DECIMAL6 = re.compile(r"-?(?:0|[1-9][0-9]*)(?:\.[0-9]{1,6})?")
 SUPPORTED_LEAVES = {
     "rect",
@@ -202,24 +222,13 @@ class DefiniteLayouter:
             }
         )
         for child in array_value(canvas.get("children"), f"{current} children"):
-            self.visit_node(object_value(child, f"{current} child"), canvas_box)
+            self.visit_absolute_node(object_value(child, f"{current} child"), canvas_box)
         return self.entries
 
-    def visit_node(self, node: dict[str, Any], parent_content: Box) -> None:
+    def visit_absolute_node(self, node: dict[str, Any], parent_content: Box) -> None:
         current = occurrence(node)
         kind = text(node.get("kind"), f"{current} kind")
-        if kind == "group":
-            raise Unsupported("GROUP", current)
-        if kind == "stack":
-            raise Unsupported("STACK", current)
-        if kind == "grid":
-            raise Unsupported("GRID", current)
-        if kind == "compositionViewport":
-            raise Unsupported("COMPOSITION_VIEWPORT", current)
-        if kind in {"text", "image"}:
-            raise Unsupported("RESOURCE_DEPENDENT_KIND", current)
-        if kind != "frame" and kind not in SUPPORTED_LEAVES:
-            raise VerificationFailure(f"{current} unexpected kind {kind}")
+        role = definite_node_role(kind, current)
 
         placement = object_value(node.get("placement"), f"{current} placement")
         if placement.get("type") != "ABSOLUTE":
@@ -257,8 +266,27 @@ class DefiniteLayouter:
             width,
             height,
         )
-        if kind == "frame":
-            content_box = frame_content_box(node, layout_box, current)
+        self.emit_positioned_node(node, kind, role, layout_box)
+
+    def visit_stack_child(
+        self,
+        node: dict[str, Any],
+        measured: StackChildMeasurement | Unsupported,
+        layout_box: Box,
+    ) -> None:
+        current = occurrence(node)
+        kind = text(node.get("kind"), f"{current} kind")
+        role = definite_node_role(kind, current)
+        if isinstance(measured, Unsupported):
+            raise measured
+        self.emit_positioned_node(node, kind, role, layout_box)
+
+    def emit_positioned_node(
+        self, node: dict[str, Any], kind: str, role: str, layout_box: Box
+    ) -> None:
+        current = occurrence(node)
+        if role in {"FRAME", "STACK"}:
+            content_box = container_content_box(node, layout_box, current)
             self.entries.append(
                 {
                     "occurrenceId": current,
@@ -267,8 +295,13 @@ class DefiniteLayouter:
                     "contentBox": content_box.bits(),
                 }
             )
-            for child in array_value(node.get("children"), f"{current} children"):
-                self.visit_node(object_value(child, f"{current} child"), content_box)
+            if role == "FRAME":
+                for child in array_value(node.get("children"), f"{current} children"):
+                    self.visit_absolute_node(
+                        object_value(child, f"{current} child"), content_box
+                    )
+            else:
+                self.visit_stack_children(node, content_box)
         else:
             self.entries.append(
                 {
@@ -278,6 +311,272 @@ class DefiniteLayouter:
                     "contentBox": None,
                 }
             )
+
+    def visit_stack_children(self, stack: dict[str, Any], content_box: Box) -> None:
+        current = occurrence(stack)
+        direction = text(stack.get("direction"), f"{current} direction")
+        if direction not in {"ROW", "COLUMN"}:
+            raise VerificationFailure(f"{current} invalid Stack direction")
+        justification = text(
+            stack.get("justifyContent"), f"{current} justifyContent"
+        )
+        if justification not in {
+            "START",
+            "CENTER",
+            "END",
+            "SPACE_BETWEEN",
+            "SPACE_AROUND",
+            "SPACE_EVENLY",
+        }:
+            raise VerificationFailure(f"{current} invalid Stack justification")
+        gap = nonnegative_decimal(stack, "gapPt", current, "gapPt")
+        children = array_value(stack.get("children"), f"{current} children")
+        measurements: list[StackChildMeasurement | Unsupported] = []
+        occupied = 0.0
+        for index, raw_child in enumerate(children):
+            child = object_value(raw_child, f"{current} child")
+            try:
+                measured: StackChildMeasurement | Unsupported = measure_stack_child(
+                    child, content_box, direction
+                )
+            except Unsupported as error:
+                measured = error
+            if isinstance(measured, StackChildMeasurement):
+                occupied += measured.main_leading_margin(direction)
+                occupied += measured.main_size(direction)
+                occupied += measured.main_trailing_margin(direction)
+            if index + 1 < len(children):
+                occupied += gap
+            measurements.append(measured)
+
+        occupied = occupied if occupied > 0.0 else 0.0
+        available = content_box.width if direction == "ROW" else content_box.height
+        remaining = available - occupied
+        free = remaining if remaining > 0.0 else 0.0
+        leading, between = stack_distribution(justification, free, len(children))
+        cursor = leading
+
+        for index, (raw_child, measured) in enumerate(zip(children, measurements)):
+            child = object_value(raw_child, f"{current} child")
+            if isinstance(measured, StackChildMeasurement):
+                cursor += measured.main_leading_margin(direction)
+                layout_box = stack_child_box(
+                    content_box, measured, direction, cursor
+                )
+                cursor += measured.main_size(direction)
+                cursor += measured.main_trailing_margin(direction)
+                if index + 1 < len(children):
+                    cursor += gap
+                    cursor += between[index]
+            else:
+                layout_box = Box(content_box.x, content_box.y, 0.0, 0.0)
+            self.visit_stack_child(child, measured, layout_box)
+
+
+def definite_node_role(kind: str, current: str) -> str:
+    if kind == "frame":
+        return "FRAME"
+    if kind == "stack":
+        return "STACK"
+    if kind in SUPPORTED_LEAVES:
+        return "LEAF"
+    if kind == "group":
+        raise Unsupported("GROUP", current)
+    if kind == "grid":
+        raise Unsupported("GRID", current)
+    if kind == "compositionViewport":
+        raise Unsupported("COMPOSITION_VIEWPORT", current)
+    if kind in {"text", "image"}:
+        raise Unsupported("RESOURCE_DEPENDENT_KIND", current)
+    raise VerificationFailure(f"{current} unexpected kind {kind}")
+
+
+def stack_distribution(
+    justification: str, free: float, child_count: int
+) -> tuple[float, list[float]]:
+    leading = 0.0
+    between = [0.0] * max(0, child_count - 1)
+    if justification == "END":
+        leading = free
+    elif justification == "CENTER":
+        leading = free / 2.0
+    elif justification == "SPACE_BETWEEN" and child_count > 1:
+        between = equal_binary64_slots(free, child_count - 1)
+    elif justification == "SPACE_AROUND" and child_count > 0:
+        slots = equal_binary64_slots(free, child_count)
+        leading = slots[0] / 2.0
+        between = [
+            (slots[index] / 2.0) + (slots[index + 1] / 2.0)
+            for index in range(child_count - 1)
+        ]
+    elif justification == "SPACE_EVENLY" and child_count > 0:
+        slots = equal_binary64_slots(free, child_count + 1)
+        leading = slots[0]
+        between = slots[1:child_count]
+    return leading, between
+
+
+def equal_binary64_slots(total: float, count: int) -> list[float]:
+    if count == 0:
+        return []
+    unit = total / float(count)
+    remaining = total
+    result: list[float] = []
+    for index in range(count):
+        slot = remaining if index + 1 == count else unit
+        result.append(slot)
+        remaining -= slot
+    return result
+
+
+def stack_child_box(
+    parent: Box,
+    child: StackChildMeasurement,
+    direction: str,
+    main_position: float,
+) -> Box:
+    if direction == "ROW":
+        return Box(
+            parent.x + main_position,
+            aligned_cross_position(
+                parent.y,
+                parent.height,
+                child.margin_top,
+                child.margin_bottom,
+                child.height,
+                child.align_self,
+            ),
+            child.width,
+            child.height,
+        )
+    return Box(
+        aligned_cross_position(
+            parent.x,
+            parent.width,
+            child.margin_left,
+            child.margin_right,
+            child.width,
+            child.align_self,
+        ),
+        parent.y + main_position,
+        child.width,
+        child.height,
+    )
+
+
+def aligned_cross_position(
+    parent_origin: float,
+    parent_size: float,
+    leading_margin: float,
+    trailing_margin: float,
+    child_size: float,
+    alignment: str,
+) -> float:
+    interval = (parent_size - leading_margin) - trailing_margin
+    if alignment == "START":
+        extra = 0.0
+    elif alignment == "CENTER":
+        extra = (interval - child_size) / 2.0
+    elif alignment == "END":
+        extra = interval - child_size
+    else:
+        raise VerificationFailure(f"invalid Stack alignment: {alignment}")
+    return (parent_origin + leading_margin) + extra
+
+
+def measure_stack_child(
+    node: dict[str, Any], parent: Box, direction: str
+) -> StackChildMeasurement:
+    current = occurrence(node)
+    placement = object_value(node.get("placement"), f"{current} placement")
+    if placement.get("type") != "STACK":
+        raise Unsupported("NON_ABSOLUTE_PLACEMENT", current)
+    width_mode = text(placement.get("widthMode"), f"{current} width mode")
+    height_mode = text(placement.get("heightMode"), f"{current} height mode")
+    if width_mode == "HUG_CONTENT" or height_mode == "HUG_CONTENT":
+        raise Unsupported("HUG_CONTENT", current)
+    if width_mode not in {"FIXED", "FILL"} or height_mode not in {
+        "FIXED",
+        "FILL",
+    }:
+        raise VerificationFailure(f"{current} invalid definite size mode")
+    main_mode = width_mode if direction == "ROW" else height_mode
+    if main_mode == "FILL":
+        raise Unsupported("STACK_MAIN_FILL", current)
+
+    margin_top = required_decimal(
+        placement, "marginTopPt", current, "placement.marginTopPt"
+    )
+    margin_right = required_decimal(
+        placement, "marginRightPt", current, "placement.marginRightPt"
+    )
+    margin_bottom = required_decimal(
+        placement, "marginBottomPt", current, "placement.marginBottomPt"
+    )
+    margin_left = required_decimal(
+        placement, "marginLeftPt", current, "placement.marginLeftPt"
+    )
+    width = stack_axis_size(
+        placement,
+        width_mode,
+        parent.width,
+        margin_left,
+        margin_right,
+        "Width",
+        current,
+    )
+    height = stack_axis_size(
+        placement,
+        height_mode,
+        parent.height,
+        margin_top,
+        margin_bottom,
+        "Height",
+        current,
+    )
+    align_self = text(placement.get("alignSelf"), f"{current} alignSelf")
+    if align_self not in {"START", "CENTER", "END"}:
+        raise VerificationFailure(f"{current} invalid Stack alignment")
+    return StackChildMeasurement(
+        width,
+        height,
+        margin_top,
+        margin_right,
+        margin_bottom,
+        margin_left,
+        align_self,
+    )
+
+
+def stack_axis_size(
+    placement: dict[str, Any],
+    mode: str,
+    parent_size: float,
+    leading_margin: float,
+    trailing_margin: float,
+    axis: str,
+    current: str,
+) -> float:
+    size_member = f"{axis.lower()}Pt"
+    if mode == "FIXED":
+        return required_decimal(
+            placement, size_member, current, f"placement.{size_member}"
+        )
+    remaining = (parent_size - leading_margin) - trailing_margin
+    size = remaining if remaining > 0.0 else 0.0
+    minimum_member = f"min{axis}Pt"
+    minimum = optional_decimal(
+        placement, minimum_member, current, f"placement.{minimum_member}"
+    )
+    if minimum is not None and size < minimum:
+        size = minimum
+    maximum_member = f"max{axis}Pt"
+    maximum = optional_decimal(
+        placement, maximum_member, current, f"placement.{maximum_member}"
+    )
+    if maximum is not None and size > maximum:
+        size = maximum
+    return size
 
 
 def definite_axis_size(
@@ -317,7 +616,7 @@ def definite_axis_size(
     return size
 
 
-def frame_content_box(node: dict[str, Any], layout_box: Box, current: str) -> Box:
+def container_content_box(node: dict[str, Any], layout_box: Box, current: str) -> Box:
     if "stroke" in node:
         stroke = object_value(node["stroke"], f"{current} stroke")
         stroke_width = nonnegative_decimal(
@@ -520,7 +819,7 @@ def verify(
         "vector manifest",
     )
     verifier.require(
-        vectors["vectorVersion"] == "renderweave-definite-layout-vectors/1",
+        vectors["vectorVersion"] == "renderweave-definite-layout-vectors/2",
         "vector identity drifted",
     )
     authority = exact_members(
@@ -573,7 +872,7 @@ def verify(
     expected_boundary = {
         "profileAvailability": "NOT_REGISTERED",
         "certificationStatus": "NOT_CERTIFIED",
-        "layoutImplementation": "DEFINITE_ABSOLUTE_LOCAL_BOX_KERNEL_ONLY",
+        "layoutImplementation": "RESOURCE_FREE_DEFINITE_ABSOLUTE_AND_STACK_BOX_KERNEL",
         "worldTransformImplementation": "ABSENT",
         "sceneImplementation": "ABSENT",
         "rasterImplementation": "ABSENT",
@@ -586,12 +885,23 @@ def verify(
         "provider attempts must be zero",
     )
     verifier.require(
-        fixtures["fixtureVersion"] == "renderweave-definite-layout-fixtures/1",
+        fixtures["fixtureVersion"] == "renderweave-definite-layout-fixtures/2",
         "fixture identity drifted",
     )
     verifier.require(
         set(fixtures["documents"])
-        == {"fixedRect", "nestedFrame", "fillNested", "degenerateFrame"},
+        == {
+            "fixedRect",
+            "nestedFrame",
+            "fillNested",
+            "degenerateFrame",
+            "rowStack",
+            "columnStack",
+            "nestedStack",
+            "singleStack",
+            "remainderStack",
+            "stackDfsUnsupported",
+        },
         "fixture inventory drifted",
     )
     verifier.require(
@@ -599,9 +909,9 @@ def verify(
         == "renderweave-layout-preflight-fixtures/1",
         "layout preflight fixture identity drifted",
     )
-    verifier.require(len(vectors["laidOutCases"]) == 6, "laid-out case count drifted")
+    verifier.require(len(vectors["laidOutCases"]) == 21, "laid-out case count drifted")
     verifier.require(
-        len(vectors["unsupportedCases"]) == 9,
+        len(vectors["unsupportedCases"]) == 10,
         "unsupported case count drifted",
     )
 
@@ -649,7 +959,7 @@ def verify(
             raise VerificationFailure(f"{case_id}: unsupported case produced a layout")
 
     return {
-        "verifier": "renderweave-definite-layout-python-independent/1",
+        "verifier": "renderweave-definite-layout-python-independent/2",
         "result": "PASS",
         "assurance": "A2",
         "laidOutCases": len(vectors["laidOutCases"]),

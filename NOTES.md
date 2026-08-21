@@ -1941,3 +1941,24 @@
   typecheck/lint/build，Fast `.sdlc/evidence/20260821-145156-fast/` 全绿。最终 full 目录仅在 commit handoff 记录。
 - T32 生命周期为 `resolved / automated_verified`；E7 才承担 Local recovery 持久化/跨刷新 resume。E6–E9、产品 route、
   Editor J1、Renderer/Profile/formal records/A3/READY 均未推进；provider attempts/API Key reads/open authorization=0。
+
+### Template v1 TV1-T33 definite Stack boxes（resolved / automated_verified）
+
+- 2026-08-21：T32 最终 full `.sdlc/evidence/20260821-145227-full/` 17/17 通过，并以 verified local commit
+  `7e5f3df` 收口，worktree clean；权威核对确认 E6 缺真实 Renderer output/public preview seam，因此继续安全的
+  Renderer frontier，由 Codex `/root` single-writer claim T33（blocked by T23/T25/T26，均 resolved）。
+- 本票深化同一 Rust layout deep module：唯一入口演进为 `layout_definite_resource_free`，支持 ABSOLUTE definite
+  Stack、STACK child、ROW/COLUMN、signed margin、materialized-adjacent gap、六种 justify、cross-axis
+  FILL/min-max/align 与递归 Frame/Stack/资源无关叶子；binary64 保持固定求值顺序且不作中间量化。
+- Stack main-axis FILL 仍以 `STACK_MAIN_FILL` fail closed，因为 weighted water filling 的 Profile tolerance 尚未
+  冻结；HUG/Grid/resource fetch/decode/shaping/world transform/scene/paint/raster/JPEG/daemon RESULT 也未伪造。
+- shared fixture/vector identity 升级为 `/2`；Rust primary 与 Python stdlib independent replay 共同验证
+  21 laid-out + 10 unsupported，31/31、97 checks，并覆盖 single-child、non-divisible remainder、overflow、
+  cross-fill clamp/alignment、nested Stack 与 sibling premeasure 下的 authored DFS first error。
+- `render` `.sdlc/evidence/20260821-160137-render/` 已通过 gate 1.4（Java 26、Rust Windows/Linux network-none UDS、
+  Python 110+14+32+31+16），顶层 summary 与独立报告均标记资源无关 ABSOLUTE+Stack kernel；`server`
+  `.sdlc/evidence/20260821-154146-server/` 为 8/8 reactor、App 344 tests、0 failure/15 controlled skips；`fast`
+  `.sdlc/evidence/20260821-154123-fast/` 全绿。最终 full 目录仅在 commit handoff 报告。
+- T33 生命周期为 `resolved / automated_verified`；Profile 仍 NOT_REGISTERED、certification NOT_CERTIFIED、world
+  scene/raster ABSENT、daemon output UNWIRED。无 Java/OpenAPI/migration/Web/route 差异；provider attempts、
+  API Key reads、open authorization、paid external calls 均为 0，未发送真实数据，未 push/tag/PR。

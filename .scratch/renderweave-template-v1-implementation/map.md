@@ -149,6 +149,11 @@ Label: wayfinder:map
   layout crate，只对 Canvas→Frame/8 种资源无关视觉叶子的 FIXED/FILL + ABSOLUTE 闭包计算 binary64
   pre-transform local LayoutBox/ContentBox；6 laid-out + 9 unsupported 由 Rust/Python 共同重放，独立验证
   15/15、50 checks。合法未覆盖面继续返回 internal unsupported，不冒充 public problem。
+- [实现资源无关的确定尺寸 Stack 布局内核](issues/33-definite-stack-layout-kernel.md) —
+  **resolved / automated_verified**；同一 Rust layout deep module 已在不选择 water-fill residual tolerance
+  的前提下支持 definite Stack、STACK child、signed margin/gap、六种 justify、cross-axis align/FILL 与递归
+  资源无关容器。Rust/Python `/2` shared replay 为 21 laid-out + 10 unsupported、31/31、97 checks；HUG/
+  main-axis FILL、scene/raster/daemon success 继续 fail closed。
 - [实现 Editor E1 canonical open、显式 readiness 重检与三模式工作区骨架](issues/27-editor-e1-canonical-open.md) —
   **resolved / automated_verified**；GET 保持无副作用，新增授权且绑定 current identity 的显式 readiness
   recheck；Web lossless 校验 canonical baseline、丢弃漂移结果并形成 Canvas Focus 三模式 Product shell。
@@ -230,8 +235,9 @@ Label: wayfinder:map
   T24 也已 resolve（automated_verified）：surface preflight 与 exact PNG encoder kernel 已形成独立纵切，但未接线
   daemon success path、未生成 raster，也未注册 Renderer/Output Profile。T25 现也已 resolve
   （automated_verified）：static layout preflight deep kernel 与 daemon defensive admission 已形成纵切。T26 现也已
-  resolve（automated_verified）：资源无关 definite ABSOLUTE local boxes 已形成真实 arrange 子闭包，仍未提前实现
-  tolerance-dependent HUG/Stack/Grid、资源、world scene 或 daemon output。
+  resolve（automated_verified）：资源无关 definite ABSOLUTE local boxes 已形成真实 arrange 子闭包。T33 现也已
+  resolve（automated_verified）：definite Stack 中不依赖 water-fill tolerance 的子闭包已完成；HUG/Stack
+  main-axis FILL/Grid、资源、world scene 与 daemon output 仍未提前实现。
 - Expression/value binding、closure、capability、nested Template、layout lowering 与正式 RenderDocument 的
   实现切片由 T21 物化首个 Rendering 纵切（`TemplateClosureAuthority`/`Evaluator` stage 1–8/seal 与
   RenderNodeContract/向量语料 Java primary，已 resolve）；仍待后续票：Engine 执行（Rust daemon +
@@ -245,8 +251,9 @@ Label: wayfinder:map
   Rust/process task T22 已 resolve，已物化 daemon、帧编解码、machine manifest 与仓库内 replay
   harness；`render` gate 已随 T22 纳入 `full`。T23 已补齐 Engine 不得猜测的 exact document/default 前置；
   T24 已单独登记 exact surface/PNG kernel，但不等于 layout/raster/daemon output；T25 已完成
-  statically-decidable layout preflight，T26 也已完成 definite ABSOLUTE local box 子闭包；其余
-  HUG/Stack/Grid/resource/world scene/raster/JPEG/Engine 接线仍须另行登记，物理 Linux
+  statically-decidable layout preflight，T26 也已完成 definite ABSOLUTE local box 子闭包；T33 已完成
+  definite Stack 的非 water-fill 子闭包；其余 HUG/Stack main-axis FILL/Grid/resource/world scene/raster/JPEG/
+  Engine 接线仍须另行登记，物理 Linux
   双 CPU-family 认证与 J1/A3 属届时另行授权的执行级门控。
 - Editor T27/E1、T28/E2、T29/E3、T30/E4a、T31/E4b 与 T32/E5 均已单独登记并完成；E6–E9 继续按真实依赖逐票登记，
   `/templates/:templateId` 在 save/preview/recovery 等闭环完成前仍不接入产品路由。
