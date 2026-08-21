@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   applyTemplateDisplayName,
+  adoptStructuredTemplateImport,
   authoritativePreviewGuard,
   canonicalStringifyWorkingValue,
   isCanonicalDirty,
@@ -10,6 +11,7 @@ import {
   undoStructuredCommand,
   updateStructuredReadiness,
 } from './template-editor-session';
+import type { StructuredTemplateImport } from './template-import';
 import {
   createSessionFromBaseline,
   type CanonicalTemplateBaseline,
@@ -131,6 +133,51 @@ describe('Template Editor E2 canonical local session', () => {
     expect(undoStructuredCommand(session)).toBe(session);
   });
 
+  it('adopts a Structured import as a history-free local working copy without changing target authority', () => {
+    const original = applied(applyTemplateDisplayName(structuredSession(), '旧本地草稿'));
+    const importedCanonical = original.baseline.canonicalDesignDsl.replace(
+      '"displayName":"门店价签"',
+      '"displayName":"导入草稿"',
+    );
+    const imported = structuredImport(importedCanonical, {
+      ...original.baseline.designDsl,
+      displayName: '导入草稿',
+    });
+
+    const result = adoptStructuredTemplateImport(original, imported);
+
+    expect(result.state).toBe('adopted');
+    expect(result.session.baseline).toBe(original.baseline);
+    expect(result.session.baseline.templateId).toBe(original.baseline.templateId);
+    expect(result.session.baseline.staticSchema).toEqual({ schemaKey: 'system-empty', versionTag: 'v1' });
+    expect(result.session.workingCopy.canonicalDesignDsl).toBe(importedCanonical);
+    expect(templateDisplayName(result.session.workingCopy)).toBe('导入草稿');
+    expect(result.session.history).toEqual({ past: [], future: [] });
+    expect(Object.isFrozen(result.session.workingCopy.designDsl)).toBe(true);
+    expect(Object.isFrozen(result.session.history.past)).toBe(true);
+    expect(result.session.previewGeneration).toBe(original.previewGeneration + 1);
+    expect(isCanonicalDirty(result.session)).toBe(true);
+  });
+
+  it('makes a same-working-copy import a no-op, but lets explicit replacement of a dirty draft with baseline become clean', () => {
+    const clean = structuredSession();
+    const same = adoptStructuredTemplateImport(
+      clean,
+      structuredImport(clean.workingCopy.canonicalDesignDsl, clean.workingCopy.designDsl),
+    );
+    expect(same).toEqual({ state: 'no-op', session: clean });
+
+    const dirty = applied(applyTemplateDisplayName(clean, '将被放弃'));
+    const replaced = adoptStructuredTemplateImport(
+      dirty,
+      structuredImport(clean.baseline.canonicalDesignDsl, clean.baseline.designDsl),
+    );
+    expect(replaced.state).toBe('adopted');
+    expect(isCanonicalDirty(replaced.session)).toBe(false);
+    expect(replaced.session.history).toEqual({ past: [], future: [] });
+    expect(replaced.session.previewGeneration).toBe(dirty.previewGeneration + 1);
+  });
+
   it('allows authoritative preview only for a clean current with fresh READY readiness', () => {
     const ready = structuredSession();
     expect(authoritativePreviewGuard(ready)).toEqual({
@@ -184,4 +231,23 @@ function baselineFromCanonical(canonicalDesignDsl: string): CanonicalTemplateBas
 function applied(result: ReturnType<typeof applyTemplateDisplayName>): StructuredEditorSession {
   if (result.state !== 'applied') throw new Error(`expected applied, got ${result.state}`);
   return result.session;
+}
+
+function structuredImport(
+  canonicalDesignDsl: string,
+  designDsl: Record<string, unknown>,
+): StructuredTemplateImport {
+  return {
+    mode: 'structured',
+    source: 'template-revision-export',
+    canonicalDesignDsl,
+    designDsl,
+    contentHash: `sha256:${'a'.repeat(64)}`,
+    sourceIdentity: {
+      kind: 'templateRevision',
+      templateId: 'foreign-template',
+      revision: '9223372036854775807',
+    },
+    sourceStaticSchema: { schemaKey: 'foreign-schema', versionTag: 'foreign-v7' },
+  };
 }

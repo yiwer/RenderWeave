@@ -2013,3 +2013,31 @@
 - T35 生命周期为 `resolved / automated_verified`；Local recovery 仍是浏览器 best-effort，不承诺跨设备同步或永久
   保存。E6/E8/E9、产品 route、Editor J1、Renderer/Profile/formal records/A3/READY 均未推进；provider attempts/
   API Key reads/open authorization/paid external calls=0，未发送真实数据，未 push/tag/PR。
+
+### Template v1 TV1-T36 Editor E8 strict import + modes（resolved / automated_verified）
+
+- 2026-08-21：T35 以 verified local commit `d3fb50a` 收口，最终 `full`
+  `.sdlc/evidence/20260821-180032-full/` 17/17、治理后 `fast` `.sdlc/evidence/20260821-183109-fast/` 全绿，worktree
+  clean。DAG 审计确认 E6 仍缺真实 Renderer output/public preview seam；E8 不依赖该 seam，且本地 import envelope、
+  三模式与 dirty guard 已由 T08/T09 J1 冻结，因此由 Codex `/root` single-writer 登记并 claim T36（blocked by
+  T09/T27/T28/T29/T32/T35，均 resolved）。
+- 本票 Web-only：从 `Uint8Array` 严格解析 bare DesignDSL 或 exact revision export，执行 fatal UTF-8、JSON grammar、
+  duplicate/limit、lossless decimal、canonical ordering/metadata normalization 与 exact hash；文件 template/schema identity
+  只展示，永不覆盖当前目标。结果互斥进入 Structured、Raw Repair 或 Compatibility。
+- 接受 Structured import 仍锚定 original server baseline、清 history、形成 dirty working copy且不 PUT；import/recovery
+  共享 save、export/preserve、discard、cancel replacement guard。Raw Repair 提供可恢复文本/原始下载/换文件/丢弃；
+  Compatibility 只安全 metadata 与 exact export。当前没有 registered migration profile，因此不提供 migration action。
+- 不修改 Java/OpenAPI/generated SDK/migration/API version/route/Renderer，不持久化 raw import bytes，不推进 E6/E9/
+  formal records/J1/A3/READY；provider attempts/API Key reads/open authorization/paid external calls 继续为 0，不发送真实
+  数据，不 push/tag/PR。先写 pure/DOM RED，再按 focused Editor → Node 24 Web → fast → full 分级验证。
+- 实现结果：strict import deep module 覆盖 fatal UTF-8/no-BOM、duplicate/九项预算、lossless canonical/hash、bare 与
+  exact revision export（含 revision 0..signed-int64 max）及 closed-wire 分类；文件 identity/schema 只显示。Structured
+  adoption 不 PUT，dirty guard 完成 save/export/discard/cancel，same-working no-op 保留 history/recovery，unknown 与
+  recovery offer 锁定。
+- Raw Repair 提供可编辑重检、原始/修复稿下载、换文件与丢弃；Compatibility 保留 exact bytes、只显示安全 metadata
+  并原样导出，不显示不存在的 migration action。focused 3 files/47 tests、Editor 10 files/119 tests；正式 Node 24
+  Web 为 24 files/195 tests、2144 modules，证据 `.sdlc/evidence/20260821-190823-web/`；fast 证据
+  `.sdlc/evidence/20260821-190918-fast/`。
+- T36 生命周期收口为 `resolved / automated_verified`；最终 exact diff 仍须治理后 fast 与 full 17/17。无 Java/
+  OpenAPI/generated SDK/migration/API version/route/Renderer 增量；provider attempts/API Key reads/open authorization/
+  paid external calls=0，未发送真实数据，未 push/tag/PR。

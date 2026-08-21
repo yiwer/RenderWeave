@@ -38,6 +38,7 @@ import {
   type TemplateEditorSession,
 } from './template-editor-model';
 import {
+  adoptStructuredTemplateImport,
   applyTemplateDisplayName,
   authoritativePreviewGuard,
   isCanonicalDirty,
@@ -45,6 +46,14 @@ import {
   undoStructuredCommand,
   updateStructuredReadiness,
 } from './template-editor-session';
+import {
+  BARE_DESIGN_DSL_MEDIA_TYPE,
+  inspectTemplateImport,
+  TEMPLATE_REVISION_EXPORT_MEDIA_TYPE,
+  type CompatibilityTemplateImport,
+  type RawRepairTemplateImport,
+  type StructuredTemplateImport,
+} from './template-import';
 import {
   LOCAL_RECOVERY_DEBOUNCE_MS,
   browserTemplateRecoveryStorage,
@@ -104,7 +113,16 @@ interface TemplateEditorShellProps {
   onSessionCommitted?: (session: StructuredEditorSession, saveNotice?: string) => void;
   recoveryStorage?: TemplateRecoveryStorage;
   recoveryNow?: () => number;
+  download?: TemplateEditorDownload;
 }
+
+export interface TemplateEditorDownloadArtifact {
+  filename: string;
+  mediaType: string;
+  bytes: Uint8Array;
+}
+
+export type TemplateEditorDownload = (artifact: TemplateEditorDownloadArtifact) => void;
 
 export function TemplateEditorShell({
   session,
@@ -114,12 +132,17 @@ export function TemplateEditorShell({
   onSessionCommitted,
   recoveryStorage,
   recoveryNow = Date.now,
+  download = defaultTemplateEditorDownload,
 }: TemplateEditorShellProps) {
   if (session.mode === 'raw-repair') {
-    return <RawRepairShell session={session} />;
+    return <RawRepairShell session={session} download={download} />;
   }
   if (session.mode === 'compatibility') {
-    return <CompatibilityShell session={session} onRetryReadiness={onRetryReadiness} />;
+    return <CompatibilityShell
+      session={session}
+      onRetryReadiness={onRetryReadiness}
+      download={download}
+    />;
   }
   return (
     <StructuredShell
@@ -131,6 +154,7 @@ export function TemplateEditorShell({
       onSessionCommitted={onSessionCommitted}
       recoveryStorage={recoveryStorage}
       recoveryNow={recoveryNow}
+      download={download}
     />
   );
 }
@@ -141,6 +165,7 @@ interface TemplateEditorSurfaceProps {
   saveTransport?: TemplateSaveTransport;
   recoveryStorage?: TemplateRecoveryStorage;
   recoveryNow?: () => number;
+  download?: TemplateEditorDownload;
 }
 
 type SurfaceState =
@@ -154,6 +179,7 @@ export function TemplateEditorSurface({
   saveTransport,
   recoveryStorage,
   recoveryNow = Date.now,
+  download,
 }: TemplateEditorSurfaceProps) {
   const [retryKey, setRetryKey] = useState(0);
   const [surface, setSurface] = useState<SurfaceState>({ state: 'loading' });
@@ -216,6 +242,7 @@ export function TemplateEditorSurface({
       })}
       recoveryStorage={effectiveRecoveryStorage}
       recoveryNow={recoveryNow}
+      download={download}
     />
   );
 }
@@ -265,6 +292,25 @@ type RecoveryPersistenceView =
   | { state: 'stored' }
   | { state: 'unavailable'; operation: 'write' | 'clear' };
 
+interface StructuredImportCandidate {
+  inspection: StructuredTemplateImport;
+  filename: string;
+  targetTemplateId: string;
+  baselineKey: string;
+  previewGeneration: number;
+  replacement: 'ready' | 'guard';
+}
+
+type StructuredImportView =
+  | { state: 'idle' }
+  | { state: 'inspecting'; filename: string }
+  | { state: 'candidate'; candidate: StructuredImportCandidate }
+  | { state: 'raw-repair'; inspection: RawRepairTemplateImport; filename: string }
+  | { state: 'compatibility'; inspection: CompatibilityTemplateImport; filename: string }
+  | { state: 'stale'; message: string }
+  | { state: 'notice'; message: string }
+  | { state: 'error'; message: string };
+
 function StructuredShell({
   session: incomingSession,
   onRetryReadiness,
@@ -273,6 +319,7 @@ function StructuredShell({
   onSessionCommitted,
   recoveryStorage,
   recoveryNow,
+  download,
 }: {
   session: StructuredEditorSession;
   onRetryReadiness?: () => void;
@@ -281,6 +328,7 @@ function StructuredShell({
   onSessionCommitted?: (session: StructuredEditorSession, saveNotice?: string) => void;
   recoveryStorage?: TemplateRecoveryStorage;
   recoveryNow: () => number;
+  download: TemplateEditorDownload;
 }) {
   const [localSession, setLocalSession] = useState(incomingSession);
   const [saveView, setSaveView] = useState<StructuredSaveView>(
@@ -295,11 +343,14 @@ function StructuredShell({
     state: 'idle',
   });
   const [recoveryBase, setRecoveryBase] = useState<TemplateRecoveryBase>();
+  const [importView, setImportView] = useState<StructuredImportView>({ state: 'idle' });
   const mutationId = useRef(0);
   const mutationAbort = useRef<AbortController | null>(null);
   const recoveryEpoch = useRef(0);
   const recoveryWriteEpoch = useRef(0);
   const cachedRecovery = useRef<TemplateRecoveryRecord | null>(null);
+  const importEpoch = useRef(0);
+  const pendingImportAfterSave = useRef<StructuredImportCandidate | null>(null);
   const incomingSessionRef = useRef(incomingSession);
   const incomingBaselineKey = baselineIdentity(incomingSession.baseline);
   const session = useMemo(
@@ -330,6 +381,9 @@ function StructuredShell({
     || saveView.state === 'retryable'
     || saveView.state === 'deleted'
     || saveView.state === 'failed-closed';
+  const importLocked = localLocked
+    || saveView.state === 'conflict'
+    || saveView.state === 'invalid-save-confirmation';
   const recoveryEditState: TemplateRecoveryEditState = useMemo(() => ({
     entry,
     selectedNodeId: effectiveSelectedNodeId,
@@ -342,6 +396,7 @@ function StructuredShell({
     mutationAbort.current?.abort();
     recoveryEpoch.current += 1;
     recoveryWriteEpoch.current += 1;
+    importEpoch.current += 1;
   }, []);
 
   useEffect(() => {
@@ -357,6 +412,9 @@ function StructuredShell({
 
   const acceptLocalChange = (next: StructuredEditorSession) => {
     if (localLocked) return;
+    if (importView.state === 'candidate') {
+      setImportView({ state: 'stale', message: '导入候选已因本地 generation 变化而失效。' });
+    }
     setLocalSession(next);
     setSaveView({ state: 'idle' });
   };
@@ -404,6 +462,135 @@ function StructuredShell({
     setRecoveryPersistence({ state: 'unavailable', operation: 'clear' });
     return false;
   };
+
+  const inspectImportBytes = async (bytes: Uint8Array, filename: string) => {
+    if (importLocked) return;
+    const epoch = importEpoch.current + 1;
+    importEpoch.current = epoch;
+    setImportView({ state: 'inspecting', filename });
+    const inspection = await inspectTemplateImport(bytes);
+    if (importEpoch.current !== epoch) return;
+    switch (inspection.mode) {
+      case 'structured':
+        setEntry('exchange');
+        setImportView({
+          state: 'candidate',
+          candidate: {
+            inspection,
+            filename,
+            targetTemplateId: session.baseline.templateId,
+            baselineKey: baselineIdentity(session.baseline),
+            previewGeneration: session.previewGeneration,
+            replacement: 'ready',
+          },
+        });
+        return;
+      case 'raw-repair':
+        setImportView({ state: 'raw-repair', inspection, filename });
+        return;
+      case 'compatibility':
+        setImportView({ state: 'compatibility', inspection, filename });
+    }
+  };
+
+  const inspectImportFile = async (file: File) => {
+    if (importLocked) return;
+    try {
+      await inspectImportBytes(new Uint8Array(await file.arrayBuffer()), file.name);
+    } catch {
+      setImportView({ state: 'error', message: '浏览器无法读取所选本地文件；当前工作副本未改变。' });
+    }
+  };
+
+  const candidateStillBound = (
+    candidate: StructuredImportCandidate,
+    targetSession: StructuredEditorSession,
+  ) => candidate.targetTemplateId === targetSession.baseline.templateId
+    && candidate.baselineKey === baselineIdentity(targetSession.baseline)
+    && candidate.previewGeneration === targetSession.previewGeneration;
+
+  const adoptImportCandidate = (
+    candidate: StructuredImportCandidate,
+    targetSession: StructuredEditorSession,
+    options: { rebasedAfterSave?: boolean; recoveryCleared?: boolean; committed?: boolean } = {},
+  ): boolean => {
+    if (candidate.targetTemplateId !== targetSession.baseline.templateId
+      || (!options.rebasedAfterSave && !candidateStillBound(candidate, targetSession))) {
+      pendingImportAfterSave.current = null;
+      setImportView({ state: 'stale', message: '导入候选已因本地 generation 变化而失效。' });
+      return false;
+    }
+    const adopted = adoptStructuredTemplateImport(targetSession, candidate.inspection);
+    if (adopted.state === 'no-op') {
+      pendingImportAfterSave.current = null;
+      setImportView({
+        state: 'notice',
+        message: '导入内容与当前工作副本相同；未改变本地状态。',
+      });
+      return true;
+    }
+    if (!options.recoveryCleared && !clearRecoveryNow()) {
+      setImportView({
+        state: 'error',
+        message: '旧 Local recovery 无法清除；为避免稍后恢复错误草稿，本次导入未替换工作副本。',
+      });
+      return false;
+    }
+    pendingImportAfterSave.current = null;
+    setLocalSession(adopted.session);
+    setSaveView({ state: 'idle' });
+    setRecoveryBase(undefined);
+    setRecoveryView(recoveryStorage ? { state: 'none' } : { state: 'disabled' });
+    setImportView({
+      state: 'notice',
+      message: '已接受为 canonical 本地草稿；服务器 current 未被写入。',
+    });
+    if (options.committed) onSessionCommitted?.(adopted.session);
+    return true;
+  };
+
+  const requestImportAdoption = (candidate: StructuredImportCandidate) => {
+    if (!candidateStillBound(candidate, session)) {
+      setImportView({ state: 'stale', message: '导入候选已因本地 generation 变化而失效。' });
+      return;
+    }
+    if (candidate.inspection.canonicalDesignDsl === session.workingCopy.canonicalDesignDsl) {
+      adoptImportCandidate(candidate, session);
+      return;
+    }
+    if (dirty) {
+      setImportView({
+        state: 'candidate',
+        candidate: { ...candidate, replacement: 'guard' },
+      });
+      return;
+    }
+    adoptImportCandidate(candidate, session);
+  };
+
+  const cancelImportReplacement = (candidate: StructuredImportCandidate) => {
+    pendingImportAfterSave.current = null;
+    setImportView({
+      state: 'candidate',
+      candidate: { ...candidate, replacement: 'ready' },
+    });
+  };
+
+  const exportThenAdoptImport = (candidate: StructuredImportCandidate) => {
+    downloadBareCanonical(download, session.workingCopy.canonicalDesignDsl, 'renderweave-local-draft.design.json');
+    adoptImportCandidate(candidate, session);
+  };
+
+  const discardThenAdoptImport = (candidate: StructuredImportCandidate) => {
+    adoptImportCandidate(candidate, session);
+  };
+
+  const downloadImportBytes = (
+    bytes: Uint8Array,
+    filename: string,
+    mediaType: string,
+  ) => download({ filename, mediaType, bytes: bytes.slice() });
+
 
   const restoreRecoveryOffer = (
     record: TemplateRecoveryRecord,
@@ -525,6 +712,17 @@ function StructuredShell({
         clearRecoveryNow();
         setRecoveryBase(undefined);
         setRecoveryView(recoveryStorage ? { state: 'none' } : { state: 'disabled' });
+        if (pendingImportAfterSave.current) {
+          adoptImportCandidate(pendingImportAfterSave.current, result.session, {
+            rebasedAfterSave: true,
+            recoveryCleared: true,
+            committed: true,
+          });
+          return;
+        }
+        if (importView.state === 'candidate') {
+          setImportView({ state: 'stale', message: '导入候选已因本地 generation 变化而失效。' });
+        }
         setLocalSession(result.session);
         setSaveView({ state: 'idle' });
         onSessionCommitted?.(result.session);
@@ -544,9 +742,11 @@ function StructuredShell({
         });
         return;
       case 'rejected':
+        pendingImportAfterSave.current = null;
         setSaveView({ state: 'rejected', code: result.code, message: result.message });
         return;
       case 'offer-invalidated':
+        pendingImportAfterSave.current = null;
         setSaveView({
           state: 'rejected',
           code: result.code,
@@ -566,6 +766,17 @@ function StructuredShell({
         clearRecoveryNow();
         setRecoveryBase(undefined);
         setRecoveryView(recoveryStorage ? { state: 'none' } : { state: 'disabled' });
+        if (pendingImportAfterSave.current) {
+          adoptImportCandidate(pendingImportAfterSave.current, result.session, {
+            rebasedAfterSave: true,
+            recoveryCleared: true,
+            committed: true,
+          });
+          return;
+        }
+        if (importView.state === 'candidate') {
+          setImportView({ state: 'stale', message: '导入候选已因本地 generation 变化而失效。' });
+        }
         setLocalSession(result.session);
         setSaveView({ state: 'confirmed-current', message: result.message });
         onSessionCommitted?.(result.session, result.message);
@@ -759,6 +970,20 @@ function StructuredShell({
       ),
     );
   };
+  const saveThenAdoptImport = (candidate: StructuredImportCandidate) => {
+    if (!saveTransport || !candidateStillBound(candidate, session)) {
+      setImportView({ state: 'stale', message: '导入候选已因本地 generation 变化而失效。' });
+      return;
+    }
+    pendingImportAfterSave.current = candidate;
+    save();
+  };
+  const cancelSaveOffer = () => {
+    const pending = pendingImportAfterSave.current;
+    pendingImportAfterSave.current = null;
+    setSaveView({ state: 'idle' });
+    if (pending) cancelImportReplacement(pending);
+  };
   const confirmOverwrite = (offer: TemplateConflictOffer) => {
     const transport = saveTransport;
     if (!transport) return;
@@ -802,6 +1027,61 @@ function StructuredShell({
       true,
     );
   };
+
+  if (importView.state === 'raw-repair') {
+    return (
+      <ImportedRawRepairShell
+        key={`${importView.filename}:${importView.inspection.code}`}
+        baseline={session.baseline}
+        readiness={session.readiness}
+        filename={importView.filename}
+        inspection={importView.inspection}
+        disabled={importLocked}
+        onInspect={(bytes) => inspectImportBytes(bytes, importView.filename)}
+        onInspectFile={inspectImportFile}
+        onDownload={() => downloadImportBytes(
+          importView.inspection.originalBytes,
+          importView.filename,
+          'application/octet-stream',
+        )}
+        onDownloadRepair={(text) => downloadImportBytes(
+          new TextEncoder().encode(text),
+          `repaired-${importView.filename}`,
+          BARE_DESIGN_DSL_MEDIA_TYPE,
+        )}
+        onDiscard={() => {
+          importEpoch.current += 1;
+          setEntry('exchange');
+          setImportView({ state: 'idle' });
+        }}
+      />
+    );
+  }
+  if (importView.state === 'compatibility') {
+    const mediaType = importView.inspection.source === 'template-revision-export'
+      ? TEMPLATE_REVISION_EXPORT_MEDIA_TYPE
+      : BARE_DESIGN_DSL_MEDIA_TYPE;
+    return (
+      <ImportedCompatibilityShell
+        baseline={session.baseline}
+        readiness={session.readiness}
+        filename={importView.filename}
+        inspection={importView.inspection}
+        disabled={importLocked}
+        onInspectFile={inspectImportFile}
+        onDownload={() => downloadImportBytes(
+          importView.inspection.originalBytes,
+          importView.filename,
+          mediaType,
+        )}
+        onDiscard={() => {
+          importEpoch.current += 1;
+          setEntry('exchange');
+          setImportView({ state: 'idle' });
+        }}
+      />
+    );
+  }
 
   return (
     <EditorFrame
@@ -852,6 +1132,20 @@ function StructuredShell({
                 nodes={nodes}
                 selectedNodeId={effectiveSelectedNodeId}
                 onSelectNode={setSelectedNodeId}
+                importView={importView}
+                importLocked={importLocked}
+                canSaveBeforeImport={saveTransport !== undefined}
+                onInspectImport={inspectImportFile}
+                onRequestImportAdoption={requestImportAdoption}
+                onCancelImportReplacement={cancelImportReplacement}
+                onSaveThenAdoptImport={saveThenAdoptImport}
+                onExportThenAdoptImport={exportThenAdoptImport}
+                onDiscardThenAdoptImport={discardThenAdoptImport}
+                onDiscardImportCandidate={() => {
+                  importEpoch.current += 1;
+                  pendingImportAfterSave.current = null;
+                  setImportView({ state: 'idle' });
+                }}
               />
             </section>
           </aside>
@@ -876,13 +1170,17 @@ function StructuredShell({
             onRestore={restoreRecoveryOffer}
             onDiscardOffer={discardRecoveryOffer}
             onDiscardRestored={discardRestoredRecovery}
-            onExport={exportLocalRecoveryDraft}
+            onExport={(canonical) => downloadBareCanonical(
+              download,
+              canonical,
+              'renderweave-local-draft.design.json',
+            )}
           />
           {saveView.state === 'invalid-save-confirmation' ? (
             <InvalidSaveConfirmationPanel
               view={saveView}
               onConfirm={() => confirmInvalidSave(saveView.offer)}
-              onCancel={() => setSaveView({ state: 'idle' })}
+              onCancel={cancelSaveOffer}
             />
           ) : null}
           <CanvasProjection workingCopy={session.workingCopy} nodes={nodes} />
@@ -900,10 +1198,14 @@ function StructuredShell({
             <StructuredSaveStatus
               view={saveView}
               onConfirmOverwrite={confirmOverwrite}
-              onCancelOverwrite={() => setSaveView({ state: 'idle' })}
+              onCancelOverwrite={cancelSaveOffer}
               onReconcile={runReconciliation}
               onRetry={retryUnknownSave}
-              onExport={exportReconciliationDraft}
+              onExport={(attempt) => downloadBareCanonical(
+                download,
+                attempt.draftCanonical,
+                'renderweave-local-draft.design.json',
+              )}
             />
             <NodeInspector node={selected} />
           </aside>
@@ -1480,12 +1782,32 @@ function EntryPanel({
   nodes,
   selectedNodeId,
   onSelectNode,
+  importView,
+  importLocked,
+  canSaveBeforeImport,
+  onInspectImport,
+  onRequestImportAdoption,
+  onCancelImportReplacement,
+  onSaveThenAdoptImport,
+  onExportThenAdoptImport,
+  onDiscardThenAdoptImport,
+  onDiscardImportCandidate,
 }: {
   entry: EditorEntry;
   session: StructuredEditorSession;
   nodes: EditorNodeProjection[];
   selectedNodeId: string;
   onSelectNode: (nodeId: string) => void;
+  importView: StructuredImportView;
+  importLocked: boolean;
+  canSaveBeforeImport: boolean;
+  onInspectImport: (file: File) => void;
+  onRequestImportAdoption: (candidate: StructuredImportCandidate) => void;
+  onCancelImportReplacement: (candidate: StructuredImportCandidate) => void;
+  onSaveThenAdoptImport: (candidate: StructuredImportCandidate) => void;
+  onExportThenAdoptImport: (candidate: StructuredImportCandidate) => void;
+  onDiscardThenAdoptImport: (candidate: StructuredImportCandidate) => void;
+  onDiscardImportCandidate: () => void;
 }) {
   switch (entry) {
     case 'structure':
@@ -1503,7 +1825,21 @@ function EntryPanel({
     case 'definitions':
       return <DefinitionSummary designDsl={session.workingCopy.designDsl} />;
     case 'exchange':
-      return <ExchangeSummary session={session} />;
+      return (
+        <ExchangeSummary
+          session={session}
+          view={importView}
+          disabled={importLocked}
+          canSaveBeforeImport={canSaveBeforeImport}
+          onInspect={onInspectImport}
+          onRequestAdoption={onRequestImportAdoption}
+          onCancelReplacement={onCancelImportReplacement}
+          onSaveThenAdopt={onSaveThenAdoptImport}
+          onExportThenAdopt={onExportThenAdoptImport}
+          onDiscardThenAdopt={onDiscardThenAdoptImport}
+          onDiscardCandidate={onDiscardImportCandidate}
+        />
+      );
   }
 }
 
@@ -1607,12 +1943,48 @@ function DefinitionSummary({ designDsl }: { designDsl: Record<string, unknown> }
   );
 }
 
-function ExchangeSummary({ session }: { session: StructuredEditorSession }) {
+function ExchangeSummary({
+  session,
+  view,
+  disabled,
+  canSaveBeforeImport,
+  onInspect,
+  onRequestAdoption,
+  onCancelReplacement,
+  onSaveThenAdopt,
+  onExportThenAdopt,
+  onDiscardThenAdopt,
+  onDiscardCandidate,
+}: {
+  session: StructuredEditorSession;
+  view: StructuredImportView;
+  disabled: boolean;
+  canSaveBeforeImport: boolean;
+  onInspect: (file: File) => void;
+  onRequestAdoption: (candidate: StructuredImportCandidate) => void;
+  onCancelReplacement: (candidate: StructuredImportCandidate) => void;
+  onSaveThenAdopt: (candidate: StructuredImportCandidate) => void;
+  onExportThenAdopt: (candidate: StructuredImportCandidate) => void;
+  onDiscardThenAdopt: (candidate: StructuredImportCandidate) => void;
+  onDiscardCandidate: () => void;
+}) {
   const { baseline, workingCopy } = session;
   return (
     <>
       <PanelHeading title="交换" detail={isCanonicalDirty(session) ? 'canonical local' : 'canonical current'} />
-      <p className="te-panel-copy">E2 展示 current 与 working-copy identity；不提前提供导入、导出或 migration 动作。</p>
+      <p className="te-panel-copy">只从本地字节检查 bare DesignDSL 或 exact revision export；检查本身不会替换工作副本。</p>
+      <ImportFilePicker disabled={disabled} onFile={onInspect} label="选择本地 Template 文件" />
+      <ImportExchangeStatus
+        view={view}
+        disabled={disabled}
+        canSaveBeforeImport={canSaveBeforeImport}
+        onRequestAdoption={onRequestAdoption}
+        onCancelReplacement={onCancelReplacement}
+        onSaveThenAdopt={onSaveThenAdopt}
+        onExportThenAdopt={onExportThenAdopt}
+        onDiscardThenAdopt={onDiscardThenAdopt}
+        onDiscardCandidate={onDiscardCandidate}
+      />
       <dl className="te-fact-list">
         <div><dt>revision</dt><dd>{baseline.revision}</dd></div>
         <div><dt>contentHash</dt><dd title={baseline.contentHash}>{shortHash(baseline.contentHash)}</dd></div>
@@ -1620,6 +1992,128 @@ function ExchangeSummary({ session }: { session: StructuredEditorSession }) {
         <div><dt>local UTF-8</dt><dd>{new TextEncoder().encode(workingCopy.canonicalDesignDsl).byteLength} bytes</dd></div>
       </dl>
     </>
+  );
+}
+
+function ImportFilePicker({
+  disabled,
+  onFile,
+  label,
+}: {
+  disabled: boolean;
+  onFile: (file: File) => void;
+  label: string;
+}) {
+  return (
+    <label className={`te-import-picker${disabled ? ' is-disabled' : ''}`}>
+      <FileJson aria-hidden="true" size={16} />
+      <span>{label}</span>
+      <input
+        type="file"
+        accept={`${BARE_DESIGN_DSL_MEDIA_TYPE},${TEMPLATE_REVISION_EXPORT_MEDIA_TYPE},application/json,.json`}
+        disabled={disabled}
+        onChange={(event) => {
+          const file = event.currentTarget.files?.[0];
+          event.currentTarget.value = '';
+          if (file) onFile(file);
+        }}
+      />
+    </label>
+  );
+}
+
+function ImportExchangeStatus({
+  view,
+  disabled,
+  canSaveBeforeImport,
+  onRequestAdoption,
+  onCancelReplacement,
+  onSaveThenAdopt,
+  onExportThenAdopt,
+  onDiscardThenAdopt,
+  onDiscardCandidate,
+}: {
+  view: StructuredImportView;
+  disabled: boolean;
+  canSaveBeforeImport: boolean;
+  onRequestAdoption: (candidate: StructuredImportCandidate) => void;
+  onCancelReplacement: (candidate: StructuredImportCandidate) => void;
+  onSaveThenAdopt: (candidate: StructuredImportCandidate) => void;
+  onExportThenAdopt: (candidate: StructuredImportCandidate) => void;
+  onDiscardThenAdopt: (candidate: StructuredImportCandidate) => void;
+  onDiscardCandidate: () => void;
+}) {
+  if (view.state === 'idle') {
+    return <p className="te-import-note">未选择本地文件；服务器 current 与 Local recovery 均未改变。</p>;
+  }
+  if (view.state === 'inspecting') {
+    return (
+      <div className="te-import-status" role="status">
+        <LoaderCircle className="te-loading-icon" aria-hidden="true" size={16} />
+        <span>正在严格检查本地文件…</span>
+      </div>
+    );
+  }
+  if (view.state === 'stale' || view.state === 'error') {
+    return <p className="te-import-status is-warning" role="alert">{view.message}</p>;
+  }
+  if (view.state === 'notice') {
+    return <p className="te-import-status is-success" role="status">{view.message}</p>;
+  }
+  if (view.state !== 'candidate') return null;
+  const { candidate } = view;
+  if (candidate.replacement === 'guard') {
+    return (
+      <section className="te-import-guard" role="alert">
+        <h3>替换当前本地草稿？</h3>
+        <p>导入不会自动保存；必须先明确处理当前 canonical working copy。</p>
+        <div className="te-import-actions">
+          {canSaveBeforeImport ? (
+            <button type="button" disabled={disabled} onClick={() => onSaveThenAdopt(candidate)}>
+              保存当前草稿后继续导入
+            </button>
+          ) : null}
+          <button type="button" disabled={disabled} onClick={() => onExportThenAdopt(candidate)}>
+            导出当前草稿并继续导入
+          </button>
+          <button type="button" disabled={disabled} onClick={() => onDiscardThenAdopt(candidate)}>
+            放弃当前草稿并继续导入
+          </button>
+          <button type="button" className="is-secondary" disabled={disabled} onClick={() => onCancelReplacement(candidate)}>
+            取消导入替换
+          </button>
+        </div>
+      </section>
+    );
+  }
+  const { inspection } = candidate;
+  return (
+    <section className="te-import-candidate" role="status">
+      <CheckCircle2 aria-hidden="true" size={16} />
+      <div>
+        <strong>导入检查通过</strong>
+        <span>{candidate.filename} · {encoderByteLength(inspection.canonicalDesignDsl)} UTF-8 bytes</span>
+        <span>目标仍为当前 Template 与 StaticSchema</span>
+        {inspection.sourceIdentity ? (
+          <small>
+            文件显示身份：{shortIdentity(inspection.sourceIdentity.templateId)} · revision {inspection.sourceIdentity.revision}
+          </small>
+        ) : null}
+        {inspection.sourceStaticSchema ? (
+          <small>
+            文件显示 Schema：{inspection.sourceStaticSchema.schemaKey}@{inspection.sourceStaticSchema.versionTag}
+          </small>
+        ) : null}
+        <div className="te-import-actions">
+          <button type="button" disabled={disabled} onClick={() => onRequestAdoption(candidate)}>
+            接受导入为本地草稿
+          </button>
+          <button type="button" className="is-secondary" disabled={disabled} onClick={onDiscardCandidate}>
+            丢弃导入候选
+          </button>
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -1683,12 +2177,148 @@ function NodeInspector({ node }: { node?: EditorNodeProjection }) {
   );
 }
 
+function ImportedCompatibilityShell({
+  baseline,
+  readiness,
+  filename,
+  inspection,
+  disabled,
+  onInspectFile,
+  onDownload,
+  onDiscard,
+}: {
+  baseline: CanonicalTemplateBaseline;
+  readiness: EditorReadiness;
+  filename: string;
+  inspection: CompatibilityTemplateImport;
+  disabled: boolean;
+  onInspectFile: (file: File) => void;
+  onDownload: () => void;
+  onDiscard: () => void;
+}) {
+  return (
+    <EditorFrame
+      baseline={baseline}
+      documentName={templateDisplayName(baseline)}
+      modeLabel="Compatibility Read-only"
+      readiness={readiness}
+    >
+      <main className="te-safe-mode" id="main-content" aria-label="Template 编辑工作区">
+        <section className="te-safe-card te-import-mode-card">
+          <AlertTriangle aria-hidden="true" size={24} />
+          <div>
+            <p className="te-eyebrow">完整 JSON · 未知 closed wire</p>
+            <h2>Compatibility Read-only</h2>
+            <p>{inspection.message}</p>
+            <p>当前没有已注册的 migration profile；不会显示不可执行的迁移动作。</p>
+          </div>
+          <dl className="te-fact-list">
+            <div><dt>文件</dt><dd>{filename}</dd></div>
+            <div><dt>来源合同</dt><dd>{inspection.source}</dd></div>
+            <div><dt>目标 Template</dt><dd>{shortIdentity(baseline.templateId)}</dd></div>
+            {inspection.sourceIdentity ? (
+              <div><dt>文件身份</dt><dd>{shortIdentity(inspection.sourceIdentity.templateId)} · revision {inspection.sourceIdentity.revision}</dd></div>
+            ) : null}
+            {inspection.sourceStaticSchema ? (
+              <div><dt>文件 Schema</dt><dd>{inspection.sourceStaticSchema.schemaKey}@{inspection.sourceStaticSchema.versionTag}</dd></div>
+            ) : null}
+          </dl>
+          <div className="te-import-mode-actions">
+            <button type="button" onClick={onDownload}><Download aria-hidden="true" size={16} />原样导出兼容文件</button>
+            <ImportFilePicker disabled={disabled} onFile={onInspectFile} label="替换导入文件" />
+            <button type="button" className="is-secondary" onClick={onDiscard}>丢弃导入并返回 Structured</button>
+          </div>
+        </section>
+      </main>
+    </EditorFrame>
+  );
+}
+
+function ImportedRawRepairShell({
+  baseline,
+  readiness,
+  filename,
+  inspection,
+  disabled,
+  onInspect,
+  onInspectFile,
+  onDownload,
+  onDownloadRepair,
+  onDiscard,
+}: {
+  baseline: CanonicalTemplateBaseline;
+  readiness: EditorReadiness;
+  filename: string;
+  inspection: RawRepairTemplateImport;
+  disabled: boolean;
+  onInspect: (bytes: Uint8Array) => void;
+  onInspectFile: (file: File) => void;
+  onDownload: () => void;
+  onDownloadRepair: (text: string) => void;
+  onDiscard: () => void;
+}) {
+  const [repairText, setRepairText] = useState(inspection.rawText);
+  return (
+    <EditorFrame
+      baseline={baseline}
+      documentName="本地修复缓冲"
+      modeLabel="Raw Repair"
+      readiness={readiness}
+    >
+      <main className="te-safe-mode" id="main-content" aria-label="Template 编辑工作区">
+        <section className="te-safe-card te-raw-card te-import-mode-card">
+          <Wrench aria-hidden="true" size={24} />
+          <div>
+            <p className="te-eyebrow">local bytes only</p>
+            <h2>Raw Repair</h2>
+            <p>{inspection.message}</p>
+            <small>{filename} · {inspection.originalBytes.byteLength} bytes · 未持久化 · 未建立新的 canonical working copy</small>
+          </div>
+          {repairText === undefined ? (
+            <p className="te-import-note">原始字节不是合法 UTF-8，只能原样下载或换文件。</p>
+          ) : (
+            <label className="te-raw-editor">
+              <span>Raw Repair 文本</span>
+              <textarea
+                value={repairText}
+                disabled={disabled}
+                onChange={(event) => setRepairText(event.currentTarget.value)}
+              />
+            </label>
+          )}
+          <div className="te-import-mode-actions">
+            {repairText === undefined ? null : (
+              <button
+                type="button"
+                disabled={disabled}
+                onClick={() => onInspect(new TextEncoder().encode(repairText))}
+              >
+                重新检查修复文本
+              </button>
+            )}
+            <button type="button" onClick={onDownload}><Download aria-hidden="true" size={16} />下载原始导入字节</button>
+            {repairText === undefined ? null : (
+              <button type="button" onClick={() => onDownloadRepair(repairText)}>
+                <Download aria-hidden="true" size={16} />下载当前修复稿
+              </button>
+            )}
+            <ImportFilePicker disabled={disabled} onFile={onInspectFile} label="替换导入文件" />
+            <button type="button" className="is-secondary" onClick={onDiscard}>丢弃导入并返回 Structured</button>
+          </div>
+        </section>
+      </main>
+    </EditorFrame>
+  );
+}
+
 function CompatibilityShell({
   session,
   onRetryReadiness,
+  download,
 }: {
   session: Extract<TemplateEditorSession, { mode: 'compatibility' }>;
   onRetryReadiness?: () => void;
+  download: TemplateEditorDownload;
 }) {
   return (
     <EditorFrame
@@ -1710,6 +2340,19 @@ function CompatibilityShell({
             <div><dt>Schema</dt><dd>{session.baseline.staticSchema.schemaKey}@{session.baseline.staticSchema.versionTag}</dd></div>
             <div><dt>contentHash</dt><dd>{shortHash(session.baseline.contentHash)}</dd></div>
           </dl>
+          <div className="te-import-mode-actions">
+            <button
+              type="button"
+              onClick={() => downloadBareCanonical(
+                download,
+                session.baseline.canonicalDesignDsl,
+                'renderweave-compatible-current.design.json',
+              )}
+            >
+              <Download aria-hidden="true" size={16} />导出完整 canonical 文件
+            </button>
+          </div>
+          <p className="te-import-note">当前没有已注册的 migration profile；内容保持只读，不提供迁移动作。</p>
         </section>
       </main>
     </EditorFrame>
@@ -1718,9 +2361,12 @@ function CompatibilityShell({
 
 function RawRepairShell({
   session,
+  download,
 }: {
   session: Extract<TemplateEditorSession, { mode: 'raw-repair' }>;
+  download: TemplateEditorDownload;
 }) {
+  const [rawBuffer, setRawBuffer] = useState(session.rawBuffer);
   return (
     <div className="template-editor-root">
       <a className="skip-link" href="#main-content">跳到主要内容</a>
@@ -1744,7 +2390,23 @@ function RawRepairShell({
             <p>{session.problem}</p>
             <small>{session.byteLength} UTF-8 bytes · 未持久化 · 无 canonical baseline</small>
           </div>
-          <pre aria-label="原始修复缓冲">{session.rawBuffer}</pre>
+          <label className="te-raw-editor">
+            <span>Raw Repair 文本</span>
+            <textarea value={rawBuffer} onChange={(event) => setRawBuffer(event.currentTarget.value)} />
+          </label>
+          <div className="te-import-mode-actions">
+            <button
+              type="button"
+              onClick={() => downloadBareCanonical(
+                download,
+                rawBuffer,
+                'renderweave-raw-repair.txt',
+                'text/plain',
+              )}
+            >
+              <Download aria-hidden="true" size={16} />下载修复缓冲
+            </button>
+          </div>
         </section>
       </main>
       <div className="te-unsupported-width" role="status">
@@ -1806,20 +2468,28 @@ function openingErrorMessage(error: unknown): string {
   return '无法连接到 Template 服务；请检查网络后重试。';
 }
 
-function exportReconciliationDraft(attempt: TemplateUnknownSaveAttempt) {
-  exportLocalRecoveryDraft(attempt.draftCanonical);
-}
-
-function exportLocalRecoveryDraft(canonical: string) {
-  const url = URL.createObjectURL(new Blob(
-    [canonical],
-    { type: 'application/vnd.renderweave.design+json;charset=utf-8' },
-  ));
+const defaultTemplateEditorDownload: TemplateEditorDownload = (artifact) => {
+  const buffer = new ArrayBuffer(artifact.bytes.byteLength);
+  new Uint8Array(buffer).set(artifact.bytes);
+  const url = URL.createObjectURL(new Blob([buffer], { type: artifact.mediaType }));
   const anchor = document.createElement('a');
   anchor.href = url;
-  anchor.download = 'renderweave-local-draft.design.json';
+  anchor.download = artifact.filename;
   anchor.click();
   URL.revokeObjectURL(url);
+};
+
+function downloadBareCanonical(
+  download: TemplateEditorDownload,
+  canonical: string,
+  filename: string,
+  mediaType = BARE_DESIGN_DSL_MEDIA_TYPE,
+) {
+  download({ filename, mediaType, bytes: new TextEncoder().encode(canonical) });
+}
+
+function encoderByteLength(value: string): number {
+  return new TextEncoder().encode(value).byteLength;
 }
 
 function isAbort(error: unknown): boolean {

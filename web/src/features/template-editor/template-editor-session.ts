@@ -9,6 +9,7 @@ import type {
   StructuredEditorHistory,
   StructuredEditorSession,
 } from './template-editor-model';
+import type { StructuredTemplateImport } from './template-import';
 
 const HISTORY_LIMIT = 100;
 const MAX_DISPLAY_NAME_CODE_POINTS = 128;
@@ -36,6 +37,10 @@ export type AuthoritativePreviewGuard =
     message: string;
   };
 
+export type StructuredImportAdoption =
+  | { state: 'adopted'; session: StructuredEditorSession }
+  | { state: 'no-op'; session: StructuredEditorSession };
+
 export function createStructuredEditorSession(
   baseline: CanonicalTemplateBaseline,
   readiness: EditorReadiness,
@@ -51,6 +56,27 @@ export function createStructuredEditorSession(
     readiness,
     history: emptyHistory(),
     previewGeneration: 0,
+  };
+}
+
+export function adoptStructuredTemplateImport(
+  session: StructuredEditorSession,
+  imported: StructuredTemplateImport,
+): StructuredImportAdoption {
+  if (imported.canonicalDesignDsl === session.workingCopy.canonicalDesignDsl) {
+    return { state: 'no-op', session };
+  }
+  return {
+    state: 'adopted',
+    session: {
+      ...session,
+      workingCopy: Object.freeze({
+        canonicalDesignDsl: imported.canonicalDesignDsl,
+        designDsl: deepFreeze(cloneCanonicalRecord(imported.designDsl)),
+      }),
+      history: emptyHistory(),
+      previewGeneration: session.previewGeneration + 1,
+    },
   };
 }
 
