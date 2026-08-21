@@ -233,6 +233,11 @@ Label: wayfinder:map
   contribution 与 authored gaps，再按 padding/inward stroke、min→max 求 intrinsic；Rust/Python `/11` replay
   为 51 laid-out + 13 unsupported、64/64、193 checks。FRACTION-on-HUG、跨多 AUTO 平均、非空 Frame/Group、
   resource/transform/scene/RESULT 保持 fail closed。
+- [实现 RenderResource manifest 防御性准入与静态容量内核](issues/46-render-resource-manifest-admission.md) —
+  **resolved / automated_verified**；既有 Rust document deep module 现把 sealed manifest 转为 typed resource，
+  并重验 scalar/kind-media/descriptor 与 fetch-before Ticket 19 静态容量；Rust/Python `/2` replay 为 14 document
+  + 42 scalar/descriptor + 19 aggregate、75/75、97 checks。HTTPS/allowlist、lease deadline、actual bytes/hash/
+  magic/decode/cache、scene/raster/RESULT/Profile 均留在本票之外。
 - [验证 Product Editor 状态、恢复与权威预览架构](issues/09-validate-product-editor-architecture.md) —
   throwaway 逻辑原型（`/prototype/editor-state-model`，不进产品 route）把冻结编辑器规则编码为确定性
   fixture 状态机：10 个引导走查场景 37/37 断言 + 自由操作冒烟 + 键盘焦点检查全部通过（Playwright A1，
@@ -297,8 +302,10 @@ Label: wayfinder:map
   现也已 resolve（automated_verified）：空 Frame/Stack/Grid/Group 的 HUG intrinsic 退化子闭包已完成；T43
   现也已 resolve（automated_verified）：非空 Stack 的资源无关 HUG intrinsic 子闭包已完成；T44 现也已
   resolve（automated_verified）：该 intrinsic 已接入 definite Grid independent AUTO contribution；T45 现也已
-  resolve（automated_verified）：非空 Grid 的资源无关 intrinsic 已完成；其余一般 HUG/multiple Stack main-axis FILL/
-  跨多个 AUTO 的平均 deficit/multiple FRACTION、资源、world scene 与 daemon output 仍未提前实现。
+  resolve（automated_verified）：非空 Grid 的资源无关 intrinsic 已完成；T46 现也已 resolve
+  （automated_verified）：sealed RenderResource manifest 的 typed defensive admission 与 fetch-before 静态容量已完成；
+  其余一般 HUG/multiple Stack main-axis FILL/
+  跨多个 AUTO 的平均 deficit/multiple FRACTION、actual resource fetch/decode、world scene 与 daemon output 仍未提前实现。
 - Expression/value binding、closure、capability、nested Template、layout lowering 与正式 RenderDocument 的
   实现切片由 T21 物化首个 Rendering 纵切（`TemplateClosureAuthority`/`Evaluator` stage 1–8/seal 与
   RenderNodeContract/向量语料 Java primary，已 resolve）；仍待后续票：Engine 执行（Rust daemon +
@@ -317,8 +324,9 @@ Label: wayfinder:map
   singleton Stack main-axis FILL；T39 已完成 definite Grid 每轴 singleton FRACTION；T40 也已完成
   singleton AUTO 的资源无关 FIXED-child contribution；T41 已完成 independent multi-AUTO constraints；T43 已
   完成 Stack 的资源无关非空 HUG；T44 已完成 definite Grid 的资源无关 HUG child AUTO contribution；T45 已
-  完成 owning Grid 的资源无关非空 HUG intrinsic；其余 Frame/Group HUG/multiple Stack main-axis FILL/跨多个 AUTO 的平均
-  deficit/multiple FRACTION/resource/world scene/raster/
+  完成 owning Grid 的资源无关非空 HUG intrinsic；T46 已完成 RenderResource manifest defensive admission；
+  其余 Frame/Group HUG/multiple Stack main-axis FILL/跨多个 AUTO 的平均
+  deficit/multiple FRACTION/actual resource fetch+decode/world scene/raster/
   JPEG/Engine 接线仍须另行登记，物理 Linux 双 CPU-family
   认证与 J1/A3 属届时另行授权的执行级门控。
 - Editor T27/E1、T28/E2、T29/E3、T30/E4a、T31/E4b、T32/E5、T35/E7、T36/E8 与 T37/E9 均已单独登记并完成；

@@ -1,6 +1,14 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-22 **Template v1 implementation TV1-T46 已 `resolved/automated_verified`**：sealed RenderResource
+  manifest 现由 Rust document deep module 收敛为 typed/fail-closed Engine input，并在 fetch 前重验 closed scalar/
+  kind-media/IMAGE+FONT descriptor、per-content、occurrence/unique exact-content、manifest 与 URL 静态容量。
+  shared vector/Python independent verifier 升级 `/2`，14 document + 42 scalar/descriptor + 19 aggregate、75/75、
+  97 checks；`render` `.sdlc/evidence/20260822-064735-render/`、`server`
+  `.sdlc/evidence/20260822-064836-server/`、治理前 `fast` `.sdlc/evidence/20260822-070814-fast/` 均绿。
+  HTTPS/allowlist、lease deadline、actual bytes/hash/magic/decode/cache、scene/raster/daemon output/Profile/E6 均不
+  在本票；provider/API Key/真实数据/付费调用保持 0，不 push/tag/PR。
 - 2026-08-22 **Template v1 implementation TV1-T45 已 `resolved/automated_verified`**：资源无关非空 Grid 的
   HUG 轴现复用 FIXED/independent AUTO/resource-free HUG child contribution 与 authored gaps，再按
   padding/inward stroke、min→max 求 intrinsic；递归 Grid HUG 也保持同一精确闭包。shared vector/Python

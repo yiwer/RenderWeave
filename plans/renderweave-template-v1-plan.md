@@ -39,7 +39,9 @@
   deficit、multiple FILL/FRACTION 与资源/scene/RESULT 继续 fail closed。TV1-T45=`resolved/automated_verified`：
   非空 Grid 的 HUG 轴已复用 FIXED/independent AUTO/resource-free HUG contribution 与 authored gaps 求
   intrinsic；Rust/Python 64/64、193 checks。FRACTION-on-HUG、Frame/Group、resource/transform/tolerance/
-  scene/RESULT 继续 fail closed。
+  scene/RESULT 继续 fail closed。TV1-T46=`resolved/automated_verified`：RenderResource manifest 的 typed
+  defensive admission、closed scalar/descriptor 与 fetch-before Ticket 19 静态容量已完成；Rust/Python 75/75、
+  97 checks；actual HTTPS/bytes/decode/scene/RESULT 继续 fail closed。
 - 日期：2026-08-20
 - Approved delta：[`specs/changes/20260817-template-v1-implementation-authority.md`](../specs/changes/20260817-template-v1-implementation-authority.md)
 - Frozen checkpoint：`0b485f4a13de9d754a81d07f464730776e13c14b`
@@ -107,6 +109,7 @@ binding: generic + project-local tools/run-gate.ps1 + Wayfinder markdown tracker
 | TV1-P5m Resource-free Stack HUG | 43 | 非空 Stack 的 cursor/MarginExtent intrinsic；FIXED、空容器与递归 Stack child | Rust/Python exact-bit A1/A2；Frame/Grid/Group/resource/tolerance fail closed；无 scene/RESULT |
 | TV1-P5n Grid HUG child AUTO contribution | 44 | definite Grid AUTO 消费 T42/T43 资源无关 HUG intrinsic | Rust/Python exact-bit A1/A2；跨多 AUTO/Frame/Grid/Group/resource/tolerance fail closed；无 scene/RESULT |
 | TV1-P5o Resource-free Grid HUG | 45 | 非空 Grid HUG 轴复用 FIXED/independent AUTO/HUG child contribution 与 gaps | Rust/Python exact-bit A1/A2；FRACTION-on-HUG/跨多 AUTO/Frame/Group/resource/tolerance fail closed；无 scene/RESULT |
+| TV1-P5p RenderResource manifest admission | 46 | typed sealed resource + closed scalar/descriptor + fetch-before static budgets | Rust/Python A1/A2；无 HTTPS/actual bytes/decode/cache/scene/RESULT/Profile |
 | TV1-P6a Editor E1 | 27 | trusted canonical current baseline + 显式 readiness recheck + 三模式 Canvas Focus shell | Java/Web/OpenAPI A1；组件未发布，禁止 save/preview/recovery 占位与 READY 声明 |
 | TV1-P6b Editor E2 | 28 | canonical working copy + 结构化本地编辑/undo/redo + preview generation/eligibility guard | Node 24 Web A1；无 API/route/save/preview action，baseline immutable |
 | TV1-P6c Editor E3 | 29 | lossless save + conflict overwrite offer/confirm/reconfirm + conservative unknown lock | Node 24 Web A1；复用既有 API；无 E4–E9/route/reconciliation |
@@ -187,6 +190,8 @@ flowchart LR
   T42 --> T43[43 Resource-free Stack HUG]
   T43 --> T44[44 Grid HUG child AUTO contribution]
   T44 --> T45[45 Resource-free Grid HUG]
+  T13 --> T46[46 RenderResource manifest admission]
+  T23 --> T46
   T06 --> T27[27 Editor E1 canonical open]
   T09 --> T27
   T20 --> T27
@@ -279,6 +284,7 @@ flowchart LR
 | 43 | task | `resolved` / `automated_verified` | 23, 25, 26, 33, 34, 38, 42 | 非空 Stack 的资源无关 HUG intrinsic；Rust/Python 59/59、178 checks；Frame/Grid/Group/transform/resource/tolerance 保持 fail closed |
 | 44 | task | `resolved` / `automated_verified` | 23, 25, 26, 34, 40, 41, 42, 43 | definite Grid AUTO 消费资源无关 HUG child contribution；Rust/Python 61/61、184 checks；跨多 AUTO/Frame/Grid/Group/resource/tolerance 保持 fail closed |
 | 45 | task | `resolved` / `automated_verified` | 23, 25, 26, 34, 40, 41, 42, 43, 44 | 非空 Grid 的资源无关 HUG intrinsic；Rust/Python 64/64、193 checks；FRACTION-on-HUG/跨多 AUTO/Frame/Group/resource/tolerance 保持 fail closed |
+| 46 | task | `in_progress` / claimed by Codex `/root` | 13, 23；消费 T19 已冻结资源容量 cells | RenderResource typed manifest defensive admission；closed fields/descriptors/static budgets；无 HTTPS/actual bytes/decode/RESULT |
 
 每次只 claim 一个 unblocked ticket；一票 resolved 后才由其 `Blocked by` 关系产生下一 frontier。未知实现切片留在
 map 的 `Not yet specified`，不为排满计划提前发明接口、migration 或 Profile identity。
@@ -1185,3 +1191,32 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
 - 生命周期：`resolved / automated_verified`；Profile 继续 NOT_REGISTERED、certification NOT_CERTIFIED、world
   scene/raster ABSENT、daemon output UNWIRED；非空 Frame/Group、resource/transform/tolerance 与其他剩余闭包仍
   fail closed，未推进 A3/J1/READY，未 push/tag/PR。
+
+## 45. TV1-T46 执行卡
+
+- 决策：T45 verified commit `ae2ac046` 后复算 Ticket 13/15/16/19 与当前 Rust document/daemon seam。document
+  admission 已验证 canonical/closed shape 与 resource/tree 双射，但 manifest scalar、kind/media、descriptor 和
+  fetch-before capacity 尚未成为 Engine typed invariant；这些语义与数值均已冻结，且不依赖 tolerance、网络、
+  decoder、raster dependency tree 或外部授权，因此登记为当前 single-writer frontier。
+- 允许影响：T46 tracker/plan/NOTES/log、Rust document crate/tests、RenderDocument/resource shared vectors、Python
+  independent verifier、`render` gate identity/assertions/evidence。
+- 禁止影响：canonical HTTPS/allowlist、lease 对 command deadline、actual fetch/response/retry、bytes/hash/magic/
+  decode/cache/cancel、Text shaping/Image HUG、world scene/paint/raster/JPEG、daemon RESULT/Profile、Java/OpenAPI/
+  migration/Web/route、formal records、physical Linux/J1/A3/READY 与任何外部副作用。
+- 精确语义：entry 顺序与 demand 双射不变；字段、profile、kind/media 与 IMAGE/FONT descriptor closed；以
+  `(kind,sha256,byteLength,mediaType)` 计 unique exact content，并按 encounter order checked 累计 T19 entries/
+  occurrence/unique raw+pixels+font/manifest+URL 静态预算；相同 exact-content key 的 descriptor 必须一致。
+- TDD：shared vector/verifier `/2` 先 RED，覆盖 scalar、descriptor、per-content 与 compact aggregate boundaries；
+  Rust/Python 独立重放后按 focused → `render` → `server`/`fast` → 最终 `full` 扩大。最高
+  `automated_verified`；不 push/tag/PR。
+- 实施结果：`AdmittedRenderDocument` 现携带 immutable typed resource；admission 以 checked integer 原子重验
+  closed scalar/descriptor、8 orientations、font closed facts、per-content 与 occurrence/unique exact-content/
+  manifest/URL budgets，同 exact-content key 的 descriptor 必须完全一致；不读取 actual bytes。
+- 共同语料：vector/verifier identity `/2`，14 document + 42 scalar/descriptor + 19 aggregate = 75/75 cases、
+  97 checks；vector SHA-256 `29dc9ef7f6c5430d8845fd87be3d9188e9a56ef2e9571d40cf3e5bc0a9e58e57`，
+  all-kinds fixture SHA-256 保持 `1b83a605c13837b0fa6d3a3cbf5e84fb97c71116ba8a81942cf97a3d7df9b031`。
+- 证据：focused fmt/clippy/workspace test/py_compile/JSON inventory/diff-check 全绿；`render`
+  `.sdlc/evidence/20260822-064735-render/`、`server` `.sdlc/evidence/20260822-064836-server/`、治理前 `fast`
+  `.sdlc/evidence/20260822-070814-fast/`。治理后的最终 Fast/Full exact 目录仅在 commit handoff 报告。
+- 生命周期：`resolved / automated_verified`；Profile NOT_REGISTERED、certification NOT_CERTIFIED、resource bytes
+  UNFETCHED、world scene/raster ABSENT、daemon output UNWIRED；未推进 A3/J1/READY，未 push/tag/PR。

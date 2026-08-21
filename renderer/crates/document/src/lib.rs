@@ -13,6 +13,22 @@ const CATALOG_JSON: &str = include_str!(
     "../../../../renderweave-rendering/src/main/resources/cn/hbads/renderweave/rendering/render-node-contract-v1.json"
 );
 const CATALOG_VERSION: &str = "renderweave-render-node-contract-v1/2";
+const ASSET_ACCEPTANCE_PROFILE: &str = "renderweave-asset-acceptance/1.0";
+const MAX_RENDER_RESOURCE_ENTRIES: usize = 2_048;
+const MAX_UNIQUE_EXACT_CONTENTS: usize = 128;
+const MAX_OCCURRENCE_RAW_BYTES: u64 = 2_147_483_648;
+const MAX_OCCURRENCE_IMAGE_PIXELS: u64 = 1_000_000_000;
+const MAX_OCCURRENCE_FONT_BYTES: u64 = 536_870_912;
+const MAX_UNIQUE_RAW_BYTES: u64 = 268_435_456;
+const MAX_UNIQUE_IMAGE_PIXELS: u64 = 125_000_000;
+const MAX_UNIQUE_FONT_BYTES: u64 = 67_108_864;
+const MAX_RESOURCE_MANIFEST_BYTES: usize = 4_194_304;
+const MAX_FETCH_URL_UTF8_BYTES_PER_ENTRY: usize = 2_048;
+const MAX_FETCH_URL_UTF8_BYTES_TOTAL: u64 = 4_194_304;
+const MAX_IMAGE_BYTES_PER_CONTENT: u64 = 67_108_864;
+const MAX_IMAGE_EDGE_PIXELS_PER_CONTENT: u64 = 20_000;
+const MAX_IMAGE_PIXELS_PER_CONTENT: u64 = 100_000_000;
+const MAX_FONT_BYTES_PER_CONTENT: u64 = 33_554_432;
 
 #[derive(Debug)]
 pub enum DocumentError {
@@ -37,12 +53,22 @@ impl From<serde_json::Error> for DocumentError {
     }
 }
 
-#[derive(Debug)]
 pub struct AdmittedRenderDocument {
     canonical_document: Box<str>,
     occurrence_count: usize,
-    resource_count: usize,
+    resources: Vec<AdmittedRenderResource>,
     static_kinds: BTreeSet<String>,
+}
+
+impl std::fmt::Debug for AdmittedRenderDocument {
+    fn fmt(&self, formatter: &mut Formatter<'_>) -> std::fmt::Result {
+        formatter
+            .debug_struct("AdmittedRenderDocument")
+            .field("occurrence_count", &self.occurrence_count)
+            .field("resource_count", &self.resources.len())
+            .field("static_kinds", &self.static_kinds)
+            .finish_non_exhaustive()
+    }
 }
 
 impl AdmittedRenderDocument {
@@ -55,11 +81,204 @@ impl AdmittedRenderDocument {
     }
 
     pub fn resource_count(&self) -> usize {
-        self.resource_count
+        self.resources.len()
+    }
+
+    pub fn resources(&self) -> &[AdmittedRenderResource] {
+        &self.resources
     }
 
     pub fn static_kinds(&self) -> &BTreeSet<String> {
         &self.static_kinds
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+pub enum RenderResourceKind {
+    Image,
+    Font,
+}
+
+impl RenderResourceKind {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Image => "image",
+            Self::Font => "font",
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+pub enum RenderResourceMediaType {
+    ImagePng,
+    ImageJpeg,
+    ImageWebp,
+    FontTtf,
+    FontOtf,
+}
+
+impl RenderResourceMediaType {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::ImagePng => "image/png",
+            Self::ImageJpeg => "image/jpeg",
+            Self::ImageWebp => "image/webp",
+            Self::FontTtf => "font/ttf",
+            Self::FontOtf => "font/otf",
+        }
+    }
+
+    fn kind(self) -> RenderResourceKind {
+        match self {
+            Self::ImagePng | Self::ImageJpeg | Self::ImageWebp => RenderResourceKind::Image,
+            Self::FontTtf | Self::FontOtf => RenderResourceKind::Font,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum ImageOrientation {
+    Identity,
+    MirrorHorizontal,
+    Rotate180,
+    MirrorVertical,
+    Transpose,
+    Rotate90Clockwise,
+    Transverse,
+    Rotate270Clockwise,
+}
+
+impl ImageOrientation {
+    fn swaps_dimensions(self) -> bool {
+        matches!(
+            self,
+            Self::Transpose | Self::Rotate90Clockwise | Self::Transverse | Self::Rotate270Clockwise
+        )
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum FontFlavor {
+    TrueTypeGlyf,
+    Cff,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum AdmittedTechnicalDescriptor {
+    Image {
+        encoded_width_px: u32,
+        encoded_height_px: u32,
+        orientation: ImageOrientation,
+        logical_width_px: u32,
+        logical_height_px: u32,
+    },
+    Font {
+        flavor: FontFlavor,
+        units_per_em: u16,
+    },
+}
+
+impl AdmittedTechnicalDescriptor {
+    pub fn image_dimensions(&self) -> Option<(u32, u32, ImageOrientation, u32, u32)> {
+        match self {
+            Self::Image {
+                encoded_width_px,
+                encoded_height_px,
+                orientation,
+                logical_width_px,
+                logical_height_px,
+            } => Some((
+                *encoded_width_px,
+                *encoded_height_px,
+                *orientation,
+                *logical_width_px,
+                *logical_height_px,
+            )),
+            Self::Font { .. } => None,
+        }
+    }
+
+    pub fn font_metrics(&self) -> Option<(FontFlavor, u16)> {
+        match self {
+            Self::Font {
+                flavor,
+                units_per_em,
+            } => Some((*flavor, *units_per_em)),
+            Self::Image { .. } => None,
+        }
+    }
+
+    fn image_pixels(&self) -> u64 {
+        match self {
+            Self::Image {
+                logical_width_px,
+                logical_height_px,
+                ..
+            } => u64::from(*logical_width_px) * u64::from(*logical_height_px),
+            Self::Font { .. } => 0,
+        }
+    }
+}
+
+#[derive(Clone, Eq, PartialEq)]
+pub struct AdmittedRenderResource {
+    resource_id: Box<str>,
+    kind: RenderResourceKind,
+    fetch_url: Box<str>,
+    expires_at_epoch_second: u64,
+    sha256: Box<str>,
+    media_type: RenderResourceMediaType,
+    byte_length: u64,
+    technical_descriptor: AdmittedTechnicalDescriptor,
+}
+
+impl std::fmt::Debug for AdmittedRenderResource {
+    fn fmt(&self, formatter: &mut Formatter<'_>) -> std::fmt::Result {
+        formatter
+            .debug_struct("AdmittedRenderResource")
+            .field("resource_id", &self.resource_id)
+            .field("kind", &self.kind)
+            .field("media_type", &self.media_type)
+            .field("byte_length", &self.byte_length)
+            .finish_non_exhaustive()
+    }
+}
+
+impl AdmittedRenderResource {
+    pub fn resource_id(&self) -> &str {
+        &self.resource_id
+    }
+
+    pub fn kind(&self) -> RenderResourceKind {
+        self.kind
+    }
+
+    pub fn fetch_url(&self) -> &str {
+        &self.fetch_url
+    }
+
+    pub fn expires_at_epoch_second(&self) -> u64 {
+        self.expires_at_epoch_second
+    }
+
+    pub fn sha256(&self) -> &str {
+        &self.sha256
+    }
+
+    pub fn media_type(&self) -> RenderResourceMediaType {
+        self.media_type
+    }
+
+    pub fn byte_length(&self) -> u64 {
+        self.byte_length
+    }
+
+    pub fn acceptance_profile_id(&self) -> &'static str {
+        ASSET_ACCEPTANCE_PROFILE
+    }
+
+    pub fn technical_descriptor(&self) -> &AdmittedTechnicalDescriptor {
+        &self.technical_descriptor
     }
 }
 
@@ -105,7 +324,15 @@ struct KindContract {
 #[derive(Clone, Debug, Eq, PartialEq)]
 struct ResourceDemand {
     resource_id: String,
-    kind: &'static str,
+    kind: RenderResourceKind,
+}
+
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
+struct ExactContentKey {
+    kind: RenderResourceKind,
+    sha256: Box<str>,
+    byte_length: u64,
+    media_type: RenderResourceMediaType,
 }
 
 struct Admission<'a> {
@@ -150,11 +377,11 @@ pub fn validate_render_document(
         .get("resources")
         .and_then(Value::as_array)
         .ok_or(DocumentError::Invalid("resources must be an array"))?;
-    admission.validate_resources(resources)?;
+    let resources = admission.validate_resources(resources)?;
     Ok(AdmittedRenderDocument {
         canonical_document: canonical.into_boxed_str(),
         occurrence_count: admission.next_occurrence,
-        resource_count: resources.len(),
+        resources,
         static_kinds: admission.static_kinds,
     })
 }
@@ -530,7 +757,7 @@ impl Admission<'_> {
             validate_resource_id(resource_id)?;
             self.demands.push(ResourceDemand {
                 resource_id: resource_id.to_owned(),
-                kind: "image",
+                kind: RenderResourceKind::Image,
             });
         }
         if kind == "text" {
@@ -547,20 +774,40 @@ impl Admission<'_> {
                 validate_resource_id(resource_id)?;
                 self.demands.push(ResourceDemand {
                     resource_id: resource_id.to_owned(),
-                    kind: "font",
+                    kind: RenderResourceKind::Font,
                 });
             }
         }
         Ok(())
     }
 
-    fn validate_resources(&self, resources: &[Value]) -> Result<(), DocumentError> {
+    fn validate_resources(
+        &self,
+        resources: &[Value],
+    ) -> Result<Vec<AdmittedRenderResource>, DocumentError> {
         if resources.len() != self.demands.len() {
             return Err(DocumentError::Invalid(
                 "resource manifest/reference cardinality mismatch",
             ));
         }
+        if resources.len() > MAX_RENDER_RESOURCE_ENTRIES {
+            return Err(DocumentError::Invalid("resource entry budget exceeded"));
+        }
+        if serde_json::to_vec(resources)?.len() > MAX_RESOURCE_MANIFEST_BYTES {
+            return Err(DocumentError::Invalid(
+                "resource manifest byte budget exceeded",
+            ));
+        }
         let mut seen = HashSet::new();
+        let mut exact_contents = BTreeMap::new();
+        let mut admitted = Vec::with_capacity(resources.len());
+        let mut occurrence_raw_bytes = 0_u64;
+        let mut occurrence_image_pixels = 0_u64;
+        let mut occurrence_font_bytes = 0_u64;
+        let mut unique_raw_bytes = 0_u64;
+        let mut unique_image_pixels = 0_u64;
+        let mut unique_font_bytes = 0_u64;
+        let mut fetch_url_bytes = 0_u64;
         for (resource, demand) in resources.iter().zip(&self.demands) {
             let resource = resource
                 .as_object()
@@ -572,23 +819,129 @@ impl Admission<'_> {
                 .ok_or(DocumentError::Invalid("resourceId must be text"))?;
             validate_resource_id(resource_id)?;
             if resource_id != demand.resource_id
-                || resource.get("kind").and_then(Value::as_str) != Some(demand.kind)
+                || resource.get("kind").and_then(Value::as_str) != Some(demand.kind.as_str())
                 || !seen.insert(resource_id)
             {
                 return Err(DocumentError::Invalid(
                     "resource manifest order, kind, or uniqueness mismatch",
                 ));
             }
-            if !resource.get("expiresAt").is_some_and(Value::is_number)
-                || !resource.get("byteLength").is_some_and(Value::is_number)
-            {
+            let fetch_url = resource
+                .get("fetchUrl")
+                .and_then(Value::as_str)
+                .ok_or(DocumentError::Invalid("fetchUrl must be text"))?;
+            if fetch_url.is_empty() || fetch_url.len() > MAX_FETCH_URL_UTF8_BYTES_PER_ENTRY {
+                return Err(DocumentError::Invalid("fetchUrl byte budget exceeded"));
+            }
+            fetch_url_bytes = checked_budget_add(
+                fetch_url_bytes,
+                fetch_url.len() as u64,
+                MAX_FETCH_URL_UTF8_BYTES_TOTAL,
+                "fetchUrl total byte budget exceeded",
+            )?;
+            let expires_at_epoch_second = positive_integer(resource, "expiresAt")?;
+            let sha256 = resource
+                .get("sha256")
+                .and_then(Value::as_str)
+                .ok_or(DocumentError::Invalid("resource sha256 must be text"))?;
+            validate_sha256(sha256)?;
+            require_text(resource, "acceptanceProfileId", ASSET_ACCEPTANCE_PROFILE)?;
+            let media_type = parse_media_type(resource, demand.kind)?;
+            let byte_length = positive_integer(resource, "byteLength")?;
+            let per_content_byte_limit = match demand.kind {
+                RenderResourceKind::Image => MAX_IMAGE_BYTES_PER_CONTENT,
+                RenderResourceKind::Font => MAX_FONT_BYTES_PER_CONTENT,
+            };
+            if byte_length > per_content_byte_limit {
                 return Err(DocumentError::Invalid(
-                    "resource numeric metadata must be concrete",
+                    "resource per-content byte budget exceeded",
                 ));
             }
-            validate_technical_descriptor(resource, demand.kind)?;
+            let technical_descriptor = validate_technical_descriptor(resource, demand.kind)?;
+            let image_pixels = technical_descriptor.image_pixels();
+
+            occurrence_raw_bytes = checked_budget_add(
+                occurrence_raw_bytes,
+                byte_length,
+                MAX_OCCURRENCE_RAW_BYTES,
+                "resource occurrence raw-byte budget exceeded",
+            )?;
+            match demand.kind {
+                RenderResourceKind::Image => {
+                    occurrence_image_pixels = checked_budget_add(
+                        occurrence_image_pixels,
+                        image_pixels,
+                        MAX_OCCURRENCE_IMAGE_PIXELS,
+                        "resource occurrence image-pixel budget exceeded",
+                    )?;
+                }
+                RenderResourceKind::Font => {
+                    occurrence_font_bytes = checked_budget_add(
+                        occurrence_font_bytes,
+                        byte_length,
+                        MAX_OCCURRENCE_FONT_BYTES,
+                        "resource occurrence font-byte budget exceeded",
+                    )?;
+                }
+            }
+
+            let exact_content_key = ExactContentKey {
+                kind: demand.kind,
+                sha256: sha256.into(),
+                byte_length,
+                media_type,
+            };
+            if let Some(existing) = exact_contents.get(&exact_content_key) {
+                if existing != &technical_descriptor {
+                    return Err(DocumentError::Invalid(
+                        "same exact content has inconsistent technical descriptor",
+                    ));
+                }
+            } else {
+                if exact_contents.len() >= MAX_UNIQUE_EXACT_CONTENTS {
+                    return Err(DocumentError::Invalid(
+                        "unique exact-content budget exceeded",
+                    ));
+                }
+                unique_raw_bytes = checked_budget_add(
+                    unique_raw_bytes,
+                    byte_length,
+                    MAX_UNIQUE_RAW_BYTES,
+                    "unique resource raw-byte budget exceeded",
+                )?;
+                match demand.kind {
+                    RenderResourceKind::Image => {
+                        unique_image_pixels = checked_budget_add(
+                            unique_image_pixels,
+                            image_pixels,
+                            MAX_UNIQUE_IMAGE_PIXELS,
+                            "unique resource image-pixel budget exceeded",
+                        )?;
+                    }
+                    RenderResourceKind::Font => {
+                        unique_font_bytes = checked_budget_add(
+                            unique_font_bytes,
+                            byte_length,
+                            MAX_UNIQUE_FONT_BYTES,
+                            "unique resource font-byte budget exceeded",
+                        )?;
+                    }
+                }
+                exact_contents.insert(exact_content_key, technical_descriptor.clone());
+            }
+
+            admitted.push(AdmittedRenderResource {
+                resource_id: resource_id.into(),
+                kind: demand.kind,
+                fetch_url: fetch_url.into(),
+                expires_at_epoch_second,
+                sha256: sha256.into(),
+                media_type,
+                byte_length,
+                technical_descriptor,
+            });
         }
-        Ok(())
+        Ok(admitted)
     }
 }
 
@@ -873,38 +1226,149 @@ fn validate_commands(value: &Value) -> Result<(), DocumentError> {
 
 fn validate_technical_descriptor(
     resource: &Map<String, Value>,
-    kind: &str,
-) -> Result<(), DocumentError> {
+    kind: RenderResourceKind,
+) -> Result<AdmittedTechnicalDescriptor, DocumentError> {
     let descriptor = require_object(resource, "technicalDescriptor")?;
-    if descriptor.get("kind").and_then(Value::as_str) != Some(kind) {
+    if descriptor.get("kind").and_then(Value::as_str) != Some(kind.as_str()) {
         return Err(DocumentError::Invalid("technical descriptor kind mismatch"));
     }
-    if kind == "image" {
-        let members = [
-            "colorEncoding",
-            "encodedHeightPx",
-            "encodedWidthPx",
-            "frameCount",
-            "kind",
-            "logicalHeightPx",
-            "logicalWidthPx",
-            "orientation",
-        ];
-        exact_named_members(descriptor, &members, &members, "image technical descriptor")?;
-        require_nonnegative_integers(
-            descriptor,
-            &[
+    match kind {
+        RenderResourceKind::Image => {
+            let members = [
+                "colorEncoding",
                 "encodedHeightPx",
                 "encodedWidthPx",
                 "frameCount",
+                "kind",
                 "logicalHeightPx",
                 "logicalWidthPx",
-            ],
-        )?;
-    } else {
-        let members = ["faceIndex", "flavor", "kind", "unitsPerEm"];
-        exact_named_members(descriptor, &members, &members, "font technical descriptor")?;
-        require_nonnegative_integers(descriptor, &["faceIndex", "unitsPerEm"])?;
+                "orientation",
+            ];
+            exact_named_members(descriptor, &members, &members, "image technical descriptor")?;
+            let encoded_width = positive_integer(descriptor, "encodedWidthPx")?;
+            let encoded_height = positive_integer(descriptor, "encodedHeightPx")?;
+            let logical_width = positive_integer(descriptor, "logicalWidthPx")?;
+            let logical_height = positive_integer(descriptor, "logicalHeightPx")?;
+            if encoded_width > MAX_IMAGE_EDGE_PIXELS_PER_CONTENT
+                || encoded_height > MAX_IMAGE_EDGE_PIXELS_PER_CONTENT
+                || encoded_width
+                    .checked_mul(encoded_height)
+                    .is_none_or(|pixels| pixels > MAX_IMAGE_PIXELS_PER_CONTENT)
+            {
+                return Err(DocumentError::Invalid(
+                    "image per-content pixel budget exceeded",
+                ));
+            }
+            if descriptor.get("frameCount").and_then(Value::as_u64) != Some(1) {
+                return Err(DocumentError::Invalid("image frameCount must be one"));
+            }
+            require_text(descriptor, "colorEncoding", "SRGB_8BIT")?;
+            let orientation = parse_orientation(descriptor)?;
+            let expected_logical = if orientation.swaps_dimensions() {
+                (encoded_height, encoded_width)
+            } else {
+                (encoded_width, encoded_height)
+            };
+            if (logical_width, logical_height) != expected_logical {
+                return Err(DocumentError::Invalid(
+                    "image logical dimensions disagree with orientation",
+                ));
+            }
+            Ok(AdmittedTechnicalDescriptor::Image {
+                encoded_width_px: encoded_width as u32,
+                encoded_height_px: encoded_height as u32,
+                orientation,
+                logical_width_px: logical_width as u32,
+                logical_height_px: logical_height as u32,
+            })
+        }
+        RenderResourceKind::Font => {
+            let members = ["faceIndex", "flavor", "kind", "unitsPerEm"];
+            exact_named_members(descriptor, &members, &members, "font technical descriptor")?;
+            if descriptor.get("faceIndex").and_then(Value::as_u64) != Some(0) {
+                return Err(DocumentError::Invalid("font faceIndex must be zero"));
+            }
+            let flavor = match descriptor.get("flavor").and_then(Value::as_str) {
+                Some("TRUETYPE_GLYF") => FontFlavor::TrueTypeGlyf,
+                Some("CFF") => FontFlavor::Cff,
+                _ => return Err(DocumentError::Invalid("font flavor is not admitted")),
+            };
+            let units_per_em = positive_integer(descriptor, "unitsPerEm")?;
+            if !(16..=16_384).contains(&units_per_em) {
+                return Err(DocumentError::Invalid(
+                    "font unitsPerEm is outside its range",
+                ));
+            }
+            Ok(AdmittedTechnicalDescriptor::Font {
+                flavor,
+                units_per_em: units_per_em as u16,
+            })
+        }
+    }
+}
+
+fn parse_media_type(
+    resource: &Map<String, Value>,
+    expected_kind: RenderResourceKind,
+) -> Result<RenderResourceMediaType, DocumentError> {
+    let media_type = match resource.get("mediaType").and_then(Value::as_str) {
+        Some("image/png") => RenderResourceMediaType::ImagePng,
+        Some("image/jpeg") => RenderResourceMediaType::ImageJpeg,
+        Some("image/webp") => RenderResourceMediaType::ImageWebp,
+        Some("font/ttf") => RenderResourceMediaType::FontTtf,
+        Some("font/otf") => RenderResourceMediaType::FontOtf,
+        _ => return Err(DocumentError::Invalid("resource mediaType is not admitted")),
+    };
+    if media_type.kind() != expected_kind {
+        return Err(DocumentError::Invalid("resource kind/mediaType mismatch"));
+    }
+    Ok(media_type)
+}
+
+fn parse_orientation(descriptor: &Map<String, Value>) -> Result<ImageOrientation, DocumentError> {
+    match descriptor.get("orientation").and_then(Value::as_str) {
+        Some("IDENTITY") => Ok(ImageOrientation::Identity),
+        Some("MIRROR_HORIZONTAL") => Ok(ImageOrientation::MirrorHorizontal),
+        Some("ROTATE_180") => Ok(ImageOrientation::Rotate180),
+        Some("MIRROR_VERTICAL") => Ok(ImageOrientation::MirrorVertical),
+        Some("TRANSPOSE") => Ok(ImageOrientation::Transpose),
+        Some("ROTATE_90_CW") => Ok(ImageOrientation::Rotate90Clockwise),
+        Some("TRANSVERSE") => Ok(ImageOrientation::Transverse),
+        Some("ROTATE_270_CW") => Ok(ImageOrientation::Rotate270Clockwise),
+        _ => Err(DocumentError::Invalid("image orientation is not admitted")),
+    }
+}
+
+fn positive_integer(object: &Map<String, Value>, member: &str) -> Result<u64, DocumentError> {
+    object
+        .get(member)
+        .and_then(Value::as_u64)
+        .filter(|value| *value > 0)
+        .ok_or(DocumentError::Invalid(
+            "positive integer resource member is invalid",
+        ))
+}
+
+fn checked_budget_add(
+    current: u64,
+    amount: u64,
+    limit: u64,
+    message: &'static str,
+) -> Result<u64, DocumentError> {
+    current
+        .checked_add(amount)
+        .filter(|total| *total <= limit)
+        .ok_or(DocumentError::Invalid(message))
+}
+
+fn validate_sha256(value: &str) -> Result<(), DocumentError> {
+    if value.len() != 71
+        || !value.starts_with("sha256:")
+        || !value.as_bytes()[7..]
+            .iter()
+            .all(|byte| matches!(byte, b'0'..=b'9' | b'a'..=b'f'))
+    {
+        return Err(DocumentError::Invalid("resource sha256 is not canonical"));
     }
     Ok(())
 }
@@ -1070,6 +1534,42 @@ mod tests {
     }
 
     #[test]
+    fn admits_typed_render_resources_without_business_identity() {
+        let document = ALL_KINDS.trim_end_matches(['\r', '\n']);
+        let admitted = validate_render_document(document).unwrap();
+        let resources = admitted.resources();
+        assert_eq!(resources.len(), 2);
+
+        let font = &resources[0];
+        assert_eq!(font.kind(), RenderResourceKind::Font);
+        assert_eq!(font.media_type(), RenderResourceMediaType::FontTtf);
+        assert_eq!(font.byte_length(), 256);
+        assert_eq!(font.expires_at_epoch_second(), 2_000);
+        assert_eq!(font.acceptance_profile_id(), ASSET_ACCEPTANCE_PROFILE);
+        assert_eq!(
+            font.technical_descriptor().font_metrics(),
+            Some((FontFlavor::TrueTypeGlyf, 1_000))
+        );
+
+        let image = &resources[1];
+        assert_eq!(image.kind(), RenderResourceKind::Image);
+        assert_eq!(image.media_type(), RenderResourceMediaType::ImagePng);
+        assert_eq!(image.byte_length(), 128);
+        assert_eq!(image.fetch_url(), "https://assets.internal/image");
+        assert_eq!(
+            image.technical_descriptor().image_dimensions(),
+            Some((10, 10, ImageOrientation::Identity, 10, 10))
+        );
+        assert_eq!(
+            image.sha256(),
+            "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+        );
+        let debug = format!("{admitted:?}");
+        assert!(!debug.contains("assets.internal"));
+        assert!(!debug.contains("sha256:"));
+    }
+
+    #[test]
     fn rejects_missing_default_unknown_null_duplicate_and_occurrence_drift() {
         assert!(
             validate_render_document(&MINIMAL.replace("\"backgroundColor\":\"#00000000\",", ""))
@@ -1114,6 +1614,40 @@ mod tests {
     #[test]
     fn replays_shared_positive_and_negative_vectors() {
         let vectors: Value = serde_json::from_str(VECTORS).unwrap();
+        assert_eq!(
+            vectors["vectorVersion"],
+            "renderweave-render-document-vectors/2"
+        );
+        assert_eq!(
+            vectors["authorityContext"]["resourceAdmission"],
+            "TYPED_MANIFEST_STATIC_PREFLIGHT_ONLY"
+        );
+        let limits = &vectors["authorityContext"]["resourceLimits"];
+        for (name, expected) in [
+            ("entries", MAX_RENDER_RESOURCE_ENTRIES as u64),
+            ("uniqueExactContents", MAX_UNIQUE_EXACT_CONTENTS as u64),
+            ("occurrenceRawBytes", MAX_OCCURRENCE_RAW_BYTES),
+            ("occurrenceImagePixels", MAX_OCCURRENCE_IMAGE_PIXELS),
+            ("occurrenceFontBytes", MAX_OCCURRENCE_FONT_BYTES),
+            ("uniqueRawBytes", MAX_UNIQUE_RAW_BYTES),
+            ("uniqueImagePixels", MAX_UNIQUE_IMAGE_PIXELS),
+            ("uniqueFontBytes", MAX_UNIQUE_FONT_BYTES),
+            ("manifestBytes", MAX_RESOURCE_MANIFEST_BYTES as u64),
+            (
+                "fetchUrlUtf8BytesPerEntry",
+                MAX_FETCH_URL_UTF8_BYTES_PER_ENTRY as u64,
+            ),
+            ("fetchUrlUtf8BytesTotal", MAX_FETCH_URL_UTF8_BYTES_TOTAL),
+            ("imageBytesPerContent", MAX_IMAGE_BYTES_PER_CONTENT),
+            (
+                "imageEdgePixelsPerContent",
+                MAX_IMAGE_EDGE_PIXELS_PER_CONTENT,
+            ),
+            ("imagePixelsPerContent", MAX_IMAGE_PIXELS_PER_CONTENT),
+            ("fontBytesPerContent", MAX_FONT_BYTES_PER_CONTENT),
+        ] {
+            assert_eq!(limits[name].as_u64(), Some(expected), "{name}");
+        }
         let protocol: Value = serde_json::from_str(PROTOCOL_VECTORS).unwrap();
         let minimal = protocol["cases"]
             .as_array()
@@ -1175,6 +1709,32 @@ mod tests {
                 case["id"]
             );
         }
+
+        for case in vectors["resourceCases"].as_array().unwrap() {
+            let mut value: Value = serde_json::from_str(all_kinds).unwrap();
+            for mutation in case["mutations"].as_array().unwrap() {
+                mutate_value(&mut value, mutation);
+            }
+            let document = serde_json::to_string(&value).unwrap();
+            let admitted = validate_render_document(&document).is_ok();
+            assert_eq!(
+                admitted,
+                case["expected"] == "ADMITTED",
+                "resource vector outcome drifted: {}",
+                case["id"].as_str().unwrap()
+            );
+        }
+
+        for case in vectors["resourceAggregateCases"].as_array().unwrap() {
+            let document = aggregate_resource_document(all_kinds, case);
+            let admitted = validate_render_document(&document).is_ok();
+            assert_eq!(
+                admitted,
+                case["expected"] == "ADMITTED",
+                "resource aggregate vector outcome drifted: {}",
+                case["id"].as_str().unwrap()
+            );
+        }
     }
 
     fn digest_with_domain(domain: &[u8], value: &str) -> String {
@@ -1209,5 +1769,142 @@ mod tests {
             _ => panic!("unsupported vector mutation"),
         }
         serde_json::to_string(&value).unwrap()
+    }
+
+    fn mutate_value(value: &mut Value, mutation: &Value) {
+        let pointer = mutation["pointer"].as_str().unwrap();
+        let (parent_pointer, token) = pointer.rsplit_once('/').unwrap();
+        let token = token.replace("~1", "/").replace("~0", "~");
+        let parent = value.pointer_mut(parent_pointer).unwrap();
+        match (mutation["operation"].as_str().unwrap(), parent) {
+            ("replace", Value::Object(object)) => {
+                object.insert(token, mutation["value"].clone());
+            }
+            ("stringUtf8Bytes", Value::Object(object)) => {
+                let prefix = mutation["prefix"].as_str().unwrap();
+                let length = mutation["utf8Bytes"].as_u64().unwrap() as usize;
+                assert!(prefix.len() <= length && prefix.is_ascii());
+                object.insert(
+                    token,
+                    Value::String(format!("{prefix}{}", "x".repeat(length - prefix.len()))),
+                );
+            }
+            _ => panic!("unsupported resource vector mutation"),
+        }
+    }
+
+    fn aggregate_resource_document(base: &str, case: &Value) -> String {
+        let mut document: Value = serde_json::from_str(base).unwrap();
+        let kind = case["kind"].as_str().unwrap();
+        let count = case["count"].as_u64().unwrap() as usize;
+        let unique_contents = case["uniqueContents"].as_u64().unwrap() as usize;
+        let byte_length = case["byteLength"].as_u64().unwrap();
+        let url_bytes = case
+            .get("fetchUrlUtf8Bytes")
+            .and_then(Value::as_u64)
+            .map_or(11, |value| value as usize);
+        let descriptor_drift = case
+            .get("descriptorDriftAtIndex")
+            .and_then(Value::as_u64)
+            .map(|value| value as usize);
+        let old_resources = document["resources"].as_array().unwrap().clone();
+        let canvas = document["canvas"].as_object_mut().unwrap();
+        let old_children = canvas["children"].as_array().unwrap().clone();
+        let mut resources = Vec::with_capacity(count);
+        let mut children = Vec::new();
+
+        if kind == "font" {
+            let mut text = old_children[4].clone();
+            text["occurrenceId"] = Value::String("rwocc_0000000000000001".to_owned());
+            let base_run = text["runs"][0].clone();
+            let mut runs = Vec::with_capacity(count);
+            for index in 0..count {
+                let resource_id = format!("rwres_{index:064x}");
+                let mut run = base_run.clone();
+                run["fontResourceId"] = Value::String(resource_id.clone());
+                runs.push(run);
+                resources.push(generated_resource(
+                    &old_resources[0],
+                    &resource_id,
+                    kind,
+                    index,
+                    unique_contents,
+                    byte_length,
+                    url_bytes,
+                    1,
+                    1,
+                    descriptor_drift,
+                ));
+            }
+            text["runs"] = Value::Array(runs);
+            children.push(text);
+        } else {
+            let base_image = old_children[5].clone();
+            let width = case
+                .get("imageWidthPx")
+                .and_then(Value::as_u64)
+                .unwrap_or(1);
+            let height = case
+                .get("imageHeightPx")
+                .and_then(Value::as_u64)
+                .unwrap_or(1);
+            children.reserve(count);
+            for index in 0..count {
+                let resource_id = format!("rwres_{index:064x}");
+                let mut image = base_image.clone();
+                image["occurrenceId"] = Value::String(format!("rwocc_{:016x}", index + 1));
+                image["imageResourceId"] = Value::String(resource_id.clone());
+                children.push(image);
+                resources.push(generated_resource(
+                    &old_resources[1],
+                    &resource_id,
+                    kind,
+                    index,
+                    unique_contents,
+                    byte_length,
+                    url_bytes,
+                    width,
+                    height,
+                    descriptor_drift,
+                ));
+            }
+        }
+        canvas.insert("children".to_owned(), Value::Array(children));
+        document["resources"] = Value::Array(resources);
+        serde_json::to_string(&document).unwrap()
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn generated_resource(
+        base: &Value,
+        resource_id: &str,
+        kind: &str,
+        index: usize,
+        unique_contents: usize,
+        byte_length: u64,
+        url_bytes: usize,
+        image_width: u64,
+        image_height: u64,
+        descriptor_drift: Option<usize>,
+    ) -> Value {
+        assert!(unique_contents > 0 && url_bytes >= 10);
+        let mut resource = base.clone();
+        let content = index % unique_contents;
+        resource["resourceId"] = Value::String(resource_id.to_owned());
+        resource["sha256"] = Value::String(format!("sha256:{content:064x}"));
+        resource["byteLength"] = Value::from(byte_length);
+        resource["fetchUrl"] = Value::String(format!(
+            "https://a/{}",
+            "x".repeat(url_bytes - "https://a/".len())
+        ));
+        if kind == "image" {
+            resource["technicalDescriptor"]["encodedWidthPx"] = Value::from(image_width);
+            resource["technicalDescriptor"]["logicalWidthPx"] = Value::from(image_width);
+            resource["technicalDescriptor"]["encodedHeightPx"] = Value::from(image_height);
+            resource["technicalDescriptor"]["logicalHeightPx"] = Value::from(image_height);
+        } else if descriptor_drift == Some(index) {
+            resource["technicalDescriptor"]["unitsPerEm"] = Value::from(1001);
+        }
+        resource
     }
 }
