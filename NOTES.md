@@ -1,6 +1,13 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-21 **Template v1 implementation TV1-T38 已 `resolved/automated_verified`**：同一 Rust layout deep
+  module 已实现每个 definite Stack 至多一个 main-axis FILL child 的 exact allocation/min-max/justify 退化算法；
+  max clamp 释放空间给 justify，min clamp 允许 overflow，多个 FILL 仍定位第一个 authored occurrence 并以
+  `STACK_MAIN_FILL` fail closed。vector/verifier `/4`、fixture `/3`；Rust primary + Python independent 为
+  28 laid-out + 11 unsupported、39/39、120 checks（`render` `.sdlc/evidence/20260821-211731-render/`）；Server
+  8/8 reactor 绿色（`.sdlc/evidence/20260821-205133-server/`）。HUG、Grid AUTO/FRACTION、resource/world scene/
+  raster/JPEG/daemon output/Profile/E6 仍未实现；provider attempts/API Key reads/paid calls 均为 0，未 push/tag/PR。
 - 2026-08-21 **Template v1 implementation TV1-T37 已 `resolved/automated_verified`**：新增严格、受预算约束的
   RFC 6901 problem locator，只定位 Template 名称、definitions、稳定 authored node 或 unavailable；invalid-save
   摘要 focus、roving tree、central polite live delta、44px targets、1024 drawer 与 `<1024` truthful unsupported

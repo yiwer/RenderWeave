@@ -201,6 +201,11 @@ Label: wayfinder:map
   roving tree、central live delta、1024 drawer、1440/1280/1024/等效 200% 与低于 1024 unsupported 浏览器证据。
   locator 14/14、Editor 136/136、Node 24 Web 212/212、E2E 23 passed/1 live-provider skip；测试 fixture 不开放产品
   route，真实浏览器 200% zoom/人工 keyboard J1 保持 pending。
+- [实现 definite Stack 单主轴 FILL 子闭包](issues/38-definite-single-main-fill-stack-layout.md) —
+  **resolved / automated_verified**；同一 Rust layout deep module 已实现每个 definite Stack 至多一个 main-axis
+  FILL 的 exact allocation/min-max/justify 退化算法。Rust/Python `/4` shared replay 为 28 laid-out + 11 unsupported、
+  39/39、120 checks；多个 FILL、HUG、Grid AUTO/FRACTION、资源、scene/raster、daemon output 与 Profile registration
+  继续 fail closed。
 - [验证 Product Editor 状态、恢复与权威预览架构](issues/09-validate-product-editor-architecture.md) —
   throwaway 逻辑原型（`/prototype/editor-state-model`，不进产品 route）把冻结编辑器规则编码为确定性
   fixture 状态机：10 个引导走查场景 37/37 断言 + 自由操作冒烟 + 键盘焦点检查全部通过（Playwright A1，
@@ -257,9 +262,9 @@ Label: wayfinder:map
   （automated_verified）：static layout preflight deep kernel 与 daemon defensive admission 已形成纵切。T26 现也已
   resolve（automated_verified）：资源无关 definite ABSOLUTE local boxes 已形成真实 arrange 子闭包。T33 现也已
   resolve（automated_verified）：definite Stack 中不依赖 water-fill tolerance 的子闭包已完成；T34 现也已
-  resolve（automated_verified）：FIXED-track Grid 与 ContentBox floor-zero 子闭包已完成；HUG/Stack main-axis FILL/
-  Grid AUTO/FRACTION、资源、world scene 与
-  daemon output 仍未提前实现。
+  resolve（automated_verified）：FIXED-track Grid 与 ContentBox floor-zero 子闭包已完成；T38 现也已 resolve
+  （automated_verified）：singleton Stack main-axis FILL 的无 tolerance 退化子闭包已完成；HUG/multiple Stack
+  main-axis FILL/Grid AUTO/FRACTION、资源、world scene 与 daemon output 仍未提前实现。
 - Expression/value binding、closure、capability、nested Template、layout lowering 与正式 RenderDocument 的
   实现切片由 T21 物化首个 Rendering 纵切（`TemplateClosureAuthority`/`Evaluator` stage 1–8/seal 与
   RenderNodeContract/向量语料 Java primary，已 resolve）；仍待后续票：Engine 执行（Rust daemon +
@@ -274,13 +279,13 @@ Label: wayfinder:map
   harness；`render` gate 已随 T22 纳入 `full`。T23 已补齐 Engine 不得猜测的 exact document/default 前置；
   T24 已单独登记 exact surface/PNG kernel，但不等于 layout/raster/daemon output；T25 已完成
   statically-decidable layout preflight，T26 也已完成 definite ABSOLUTE local box 子闭包；T33 已完成
-  definite Stack 的非 water-fill 子闭包；T34 已完成 FIXED-track definite Grid 与 ContentBox floor-zero；其余
-  HUG/Stack main-axis FILL/Grid AUTO/FRACTION/resource/world scene/raster/JPEG/Engine 接线仍须另行登记，物理 Linux
-  双 CPU-family 认证与 J1/A3 属届时另行授权的执行级门控。
-- Editor T27/E1、T28/E2、T29/E3、T30/E4a、T31/E4b、T32/E5、T35/E7 与 T36/E8 均已单独登记并完成；DAG 审计
-  后 T37/E9 成为唯一 unblocked frontier，现已由 single writer claim，严格实现 a11y 与问题定位投影；E6 仍被真实
-  Renderer output/public preview seam 阻塞；
-  `/templates/:templateId` 在 save/preview/recovery 等闭环完成前仍不接入产品路由。
+  definite Stack 的非 water-fill 子闭包；T34 已完成 FIXED-track definite Grid 与 ContentBox floor-zero；T38 已完成
+  singleton Stack main-axis FILL；其余 HUG/multiple Stack main-axis FILL/Grid AUTO/FRACTION/resource/world scene/
+  raster/JPEG/Engine 接线仍须另行登记，物理 Linux 双 CPU-family 认证与 J1/A3 属届时另行授权的执行级门控。
+- Editor T27/E1、T28/E2、T29/E3、T30/E4a、T31/E4b、T32/E5、T35/E7、T36/E8 与 T37/E9 均已单独登记并完成；
+  E6 仍被真实 Renderer output/public preview seam 阻塞。T38 也已完成不依赖未冻结 residual tolerance 的 definite
+  Stack singleton main-axis FILL 子闭包；下一 Renderer frontier 需在本票提交后重算，`/templates/:templateId`
+  在 save/preview/recovery 等闭环完成前仍不接入产品路由。
 - Product Editor 的 save/recovery/conflict/preview/browser automation 与 accessibility 实施票，要等状态架构
   prototype 结论后再登记——T09 已给出结论与 E1–E9 占位-free 纵切分解（open/baseline、本地编辑+undo+
   canonical dirty+preview guard、save+conflict overwrite、依赖二次确认、reconciliation、save-and-preview+

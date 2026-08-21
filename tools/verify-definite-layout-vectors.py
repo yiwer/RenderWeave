@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Independent replay for resource-free definite ABSOLUTE, Stack, and fixed Grid boxes."""
+"""Independent replay for definite ABSOLUTE, singleton-main-FILL Stack, and fixed Grid boxes."""
 
 from __future__ import annotations
 
@@ -125,6 +125,7 @@ class StackChildMeasurement:
     margin_bottom: float
     margin_left: float
     align_self: str
+    main_fill: bool
 
     def main_size(self, direction: str) -> float:
         return self.width if direction == "ROW" else self.height
@@ -134,6 +135,18 @@ class StackChildMeasurement:
 
     def main_trailing_margin(self, direction: str) -> float:
         return self.margin_right if direction == "ROW" else self.margin_bottom
+
+    def with_main_size(self, direction: str, size: float) -> StackChildMeasurement:
+        return StackChildMeasurement(
+            size if direction == "ROW" else self.width,
+            self.height if direction == "ROW" else size,
+            self.margin_top,
+            self.margin_right,
+            self.margin_bottom,
+            self.margin_left,
+            self.align_self,
+            self.main_fill,
+        )
 
 
 @dataclass(frozen=True)
@@ -349,9 +362,12 @@ class DefiniteLayouter:
         gap = nonnegative_decimal(stack, "gapPt", current, "gapPt")
         children = array_value(stack.get("children"), f"{current} children")
         measurements: list[StackChildMeasurement | Unsupported] = []
-        occupied = 0.0
+        used_without_fill = 0.0
+        fill_indices: list[int] = []
         for index, raw_child in enumerate(children):
             child = object_value(raw_child, f"{current} child")
+            if stack_child_has_main_fill(child, direction):
+                fill_indices.append(index)
             try:
                 measured: StackChildMeasurement | Unsupported = measure_stack_child(
                     child, content_box, direction
@@ -359,15 +375,51 @@ class DefiniteLayouter:
             except Unsupported as error:
                 measured = error
             if isinstance(measured, StackChildMeasurement):
-                occupied += measured.main_leading_margin(direction)
-                occupied += measured.main_size(direction)
-                occupied += measured.main_trailing_margin(direction)
+                used_without_fill += measured.main_leading_margin(direction)
+                if not measured.main_fill:
+                    used_without_fill += measured.main_size(direction)
+                used_without_fill += measured.main_trailing_margin(direction)
             if index + 1 < len(children):
-                occupied += gap
+                used_without_fill += gap
             measurements.append(measured)
 
-        occupied = occupied if occupied > 0.0 else 0.0
         available = content_box.width if direction == "ROW" else content_box.height
+        if len(fill_indices) > 1:
+            first_fill = fill_indices[0]
+            child = object_value(children[first_fill], f"{current} child")
+            measurements[first_fill] = Unsupported(
+                "STACK_MAIN_FILL", occurrence(child)
+            )
+        elif fill_indices and isinstance(
+            measurements[fill_indices[0]], StackChildMeasurement
+        ):
+            fill_index = fill_indices[0]
+            child = object_value(children[fill_index], f"{current} child")
+            child_occurrence = occurrence(child)
+            placement = object_value(
+                child.get("placement"), f"{child_occurrence} placement"
+            )
+            remaining = available - used_without_fill
+            offered = remaining if remaining > 0.0 else 0.0
+            size = clamp_flexible_axis(
+                placement,
+                offered,
+                "Width" if direction == "ROW" else "Height",
+                child_occurrence,
+            )
+            measured = measurements[fill_index]
+            if not isinstance(measured, StackChildMeasurement):
+                raise VerificationFailure(
+                    "a measurable singleton Stack main FILL must remain measurable"
+                )
+            measurements[fill_index] = measured.with_main_size(direction, size)
+
+        occupied = used_without_fill
+        if len(fill_indices) == 1:
+            measured = measurements[fill_indices[0]]
+            if isinstance(measured, StackChildMeasurement):
+                occupied += measured.main_size(direction)
+        occupied = occupied if occupied > 0.0 else 0.0
         remaining = available - occupied
         free = remaining if remaining > 0.0 else 0.0
         leading, between = stack_distribution(justification, free, len(children))
@@ -677,8 +729,7 @@ def measure_stack_child(
     }:
         raise VerificationFailure(f"{current} invalid definite size mode")
     main_mode = width_mode if direction == "ROW" else height_mode
-    if main_mode == "FILL":
-        raise Unsupported("STACK_MAIN_FILL", current)
+    main_fill = main_mode == "FILL"
 
     margin_top = required_decimal(
         placement, "marginTopPt", current, "placement.marginTopPt"
@@ -692,23 +743,31 @@ def measure_stack_child(
     margin_left = required_decimal(
         placement, "marginLeftPt", current, "placement.marginLeftPt"
     )
-    width = stack_axis_size(
-        placement,
-        width_mode,
-        parent.width,
-        margin_left,
-        margin_right,
-        "Width",
-        current,
+    width = (
+        0.0
+        if direction == "ROW" and main_fill
+        else stack_axis_size(
+            placement,
+            width_mode,
+            parent.width,
+            margin_left,
+            margin_right,
+            "Width",
+            current,
+        )
     )
-    height = stack_axis_size(
-        placement,
-        height_mode,
-        parent.height,
-        margin_top,
-        margin_bottom,
-        "Height",
-        current,
+    height = (
+        0.0
+        if direction == "COLUMN" and main_fill
+        else stack_axis_size(
+            placement,
+            height_mode,
+            parent.height,
+            margin_top,
+            margin_bottom,
+            "Height",
+            current,
+        )
     )
     align_self = text(placement.get("alignSelf"), f"{current} alignSelf")
     if align_self not in {"START", "CENTER", "END"}:
@@ -721,7 +780,16 @@ def measure_stack_child(
         margin_bottom,
         margin_left,
         align_self,
+        main_fill,
     )
+
+
+def stack_child_has_main_fill(node: dict[str, Any], direction: str) -> bool:
+    placement = node.get("placement")
+    if not isinstance(placement, dict) or placement.get("type") != "STACK":
+        return False
+    member = "widthMode" if direction == "ROW" else "heightMode"
+    return placement.get(member) == "FILL"
 
 
 def stack_axis_size(
@@ -740,6 +808,12 @@ def stack_axis_size(
         )
     remaining = (parent_size - leading_margin) - trailing_margin
     size = remaining if remaining > 0.0 else 0.0
+    return clamp_flexible_axis(placement, size, axis, current)
+
+
+def clamp_flexible_axis(
+    placement: dict[str, Any], size: float, axis: str, current: str
+) -> float:
     minimum_member = f"min{axis}Pt"
     minimum = optional_decimal(
         placement, minimum_member, current, f"placement.{minimum_member}"
@@ -993,7 +1067,7 @@ def verify(
         "vector manifest",
     )
     verifier.require(
-        vectors["vectorVersion"] == "renderweave-definite-layout-vectors/3",
+        vectors["vectorVersion"] == "renderweave-definite-layout-vectors/4",
         "vector identity drifted",
     )
     authority = exact_members(
@@ -1046,7 +1120,7 @@ def verify(
     expected_boundary = {
         "profileAvailability": "NOT_REGISTERED",
         "certificationStatus": "NOT_CERTIFIED",
-        "layoutImplementation": "RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_AND_FIXED_GRID_BOX_KERNEL",
+        "layoutImplementation": "RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_SINGLE_MAIN_FILL_AND_FIXED_GRID_BOX_KERNEL",
         "worldTransformImplementation": "ABSENT",
         "sceneImplementation": "ABSENT",
         "rasterImplementation": "ABSENT",
@@ -1084,7 +1158,7 @@ def verify(
         == "renderweave-layout-preflight-fixtures/1",
         "layout preflight fixture identity drifted",
     )
-    verifier.require(len(vectors["laidOutCases"]) == 23, "laid-out case count drifted")
+    verifier.require(len(vectors["laidOutCases"]) == 28, "laid-out case count drifted")
     verifier.require(
         len(vectors["unsupportedCases"]) == 11,
         "unsupported case count drifted",
@@ -1134,7 +1208,7 @@ def verify(
             raise VerificationFailure(f"{case_id}: unsupported case produced a layout")
 
     return {
-        "verifier": "renderweave-definite-layout-python-independent/3",
+        "verifier": "renderweave-definite-layout-python-independent/4",
         "result": "PASS",
         "assurance": "A2",
         "laidOutCases": len(vectors["laidOutCases"]),

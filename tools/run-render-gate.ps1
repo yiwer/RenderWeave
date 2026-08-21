@@ -268,19 +268,19 @@ try {
     }
     $definiteLayoutIndependent = Get-Content -Raw -Encoding UTF8 -LiteralPath $definiteLayoutReport |
         ConvertFrom-Json
-    if ($definiteLayoutIndependent.verifier -ne 'renderweave-definite-layout-python-independent/3' `
+    if ($definiteLayoutIndependent.verifier -ne 'renderweave-definite-layout-python-independent/4' `
             -or $definiteLayoutIndependent.result -ne 'PASS' `
             -or $definiteLayoutIndependent.assurance -ne 'A2' `
-            -or $definiteLayoutIndependent.laidOutCases -ne 23 `
+            -or $definiteLayoutIndependent.laidOutCases -ne 28 `
             -or $definiteLayoutIndependent.unsupportedCases -ne 11 `
-            -or $definiteLayoutIndependent.passed -ne 34 `
-            -or $definiteLayoutIndependent.total -ne 34 `
+            -or $definiteLayoutIndependent.passed -ne 39 `
+            -or $definiteLayoutIndependent.total -ne 39 `
             -or $definiteLayoutIndependent.failed -ne 0 `
-            -or $definiteLayoutIndependent.checks -ne 105 `
+            -or $definiteLayoutIndependent.checks -ne 120 `
             -or $definiteLayoutIndependent.layoutProfile -ne 'renderweave-layout/1.0' `
             -or $definiteLayoutIndependent.profileAvailability -ne 'NOT_REGISTERED' `
             -or $definiteLayoutIndependent.certificationStatus -ne 'NOT_CERTIFIED' `
-            -or $definiteLayoutIndependent.layoutImplementation -ne 'RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_AND_FIXED_GRID_BOX_KERNEL' `
+            -or $definiteLayoutIndependent.layoutImplementation -ne 'RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_SINGLE_MAIN_FILL_AND_FIXED_GRID_BOX_KERNEL' `
             -or $definiteLayoutIndependent.worldTransformImplementation -ne 'ABSENT' `
             -or $definiteLayoutIndependent.sceneImplementation -ne 'ABSENT' `
             -or $definiteLayoutIndependent.rasterImplementation -ne 'ABSENT' `
@@ -429,7 +429,7 @@ try {
             profileAvailability = 'NOT_REGISTERED'
             certificationStatus = 'NOT_CERTIFIED'
             rasterImplementation = 'ABSENT'
-            layoutKernel = 'RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_AND_FIXED_GRID_BOX_AUTOMATED_VERIFIED_UNWIRED'
+            layoutKernel = 'RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_SINGLE_MAIN_FILL_AND_FIXED_GRID_BOX_AUTOMATED_VERIFIED_UNWIRED'
             outputPngKernel = 'AUTOMATED_VERIFIED_UNWIRED'
             daemonOutputPath = 'UNWIRED'
             rendererReady = $false

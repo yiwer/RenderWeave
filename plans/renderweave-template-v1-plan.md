@@ -25,7 +25,8 @@
   outcome-unknown 跨刷新只读 reconciliation 已完成；TV1-T36=`resolved/automated_verified`：Editor E8 严格本地
   导入、Raw Repair/Compatibility 与 dirty replacement guard 已完成；TV1-T37=`resolved/automated_verified`：
   Editor E9 严格问题投影、摘要 focus、键盘树、最小 live delta 与有效宽度浏览器证据已完成；真实 200% zoom/
-  人工 keyboard J1 pending，E6 仍受真实 Renderer output/public preview seam 阻塞
+  人工 keyboard J1 pending，E6 仍受真实 Renderer output/public preview seam 阻塞；TV1-T38=
+  `resolved/automated_verified`：definite Stack singleton main-axis FILL 的无 tolerance 子闭包已完成
 - 日期：2026-08-20
 - Approved delta：[`specs/changes/20260817-template-v1-implementation-authority.md`](../specs/changes/20260817-template-v1-implementation-authority.md)
 - Frozen checkpoint：`0b485f4a13de9d754a81d07f464730776e13c14b`
@@ -85,6 +86,7 @@ binding: generic + project-local tools/run-gate.ps1 + Wayfinder markdown tracker
 | TV1-P5e Definite local boxes | 26 | Canvas→Frame/无资源叶子的 FIXED/FILL + ABSOLUTE binary64 local LayoutBox/ContentBox | Rust/Python exact-bit A1/A2；unsupported 不外泄；无 HUG/Stack/Grid/resource/world scene/RESULT |
 | TV1-P5f Definite Stack boxes | 33 | definite Stack + STACK child 的 margin/gap/justify/cross-axis arrange | Rust/Python exact-bit A1/A2；main-axis FILL/HUG fail closed；无 scene/resource/RESULT |
 | TV1-P5g Definite FIXED Grid boxes | 34 | ContentBox floor-zero + FIXED-track Grid/GRID child arrange | Rust/Python exact-bit A1/A2；AUTO/FRACTION/HUG fail closed；无 scene/resource/RESULT |
+| TV1-P5h Definite singleton Stack FILL | 38 | 每个 definite Stack 至多一个 main-axis FILL 的 exact allocation/min-max/justify | Rust/Python exact-bit A1/A2；multiple FILL/HUG/AUTO/FRACTION fail closed；无 scene/resource/RESULT |
 | TV1-P6a Editor E1 | 27 | trusted canonical current baseline + 显式 readiness recheck + 三模式 Canvas Focus shell | Java/Web/OpenAPI A1；组件未发布，禁止 save/preview/recovery 占位与 READY 声明 |
 | TV1-P6b Editor E2 | 28 | canonical working copy + 结构化本地编辑/undo/redo + preview generation/eligibility guard | Node 24 Web A1；无 API/route/save/preview action，baseline immutable |
 | TV1-P6c Editor E3 | 29 | lossless save + conflict overwrite offer/confirm/reconfirm + conservative unknown lock | Node 24 Web A1；复用既有 API；无 E4–E9/route/reconciliation |
@@ -157,6 +159,7 @@ flowchart LR
   T25 --> T26
   T26 --> T33[33 Definite Stack boxes]
   T33 --> T34[34 Definite FIXED Grid boxes]
+  T34 --> T38[38 Definite singleton Stack FILL]
   T06 --> T27[27 Editor E1 canonical open]
   T09 --> T27
   T20 --> T27
@@ -241,6 +244,7 @@ flowchart LR
 | 35 | task | `resolved` / `automated_verified` | 09, 27, 28, 29, 32 | Web-only Local recovery 生命周期与 E5 unknown 跨刷新 reconciliation；无 route/API/migration |
 | 36 | task | `resolved` / `automated_verified` | 09, 27, 28, 29, 32, 35 | Web-only strict local import、Raw Repair/Compatibility 与 dirty replacement guard；无 API/route/migration action |
 | 37 | task | `resolved` / `automated_verified` | 09, 27, 28, 30, 31, 32, 35, 36 | Web-only strict problem projection、keyboard/live-region 与有效宽度浏览器证据；Web 212、E2E 23/1 skip；无 route/E6；J1 pending |
+| 38 | task | `resolved` / `automated_verified` | 23, 25, 26, 33, 34 | definite Stack singleton main-axis FILL；Rust/Python 39/39、120 checks；multiple FILL/HUG/resource/scene/RESULT 保持 fail closed |
 
 每次只 claim 一个 unblocked ticket；一票 resolved 后才由其 `Blocked by` 关系产生下一 frontier。未知实现切片留在
 map 的 `Not yet specified`，不为排满计划提前发明接口、migration 或 Profile identity。
@@ -907,3 +911,31 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
   `plans/logs/TV1-T37.md`。
 - 生命周期：`resolved / automated_verified`；真实浏览器 200% zoom 与完整人工键盘 J1 仍 pending；未修改
   Java/OpenAPI/migration/`App.tsx`/产品 route/Renderer，未推进 E6/formal records/A3/READY，未 push/tag/PR。
+
+## 37. TV1-T38 执行卡
+
+- 决策：T37 verified commit 后复算 DAG；E6 仍受真实 Renderer output/public preview seam 阻塞。剩余 layout 中
+  multiple Stack FILL 与 Grid FRACTION/AUTO 依赖尚无数值的 residual tolerance，但每个 Stack 恰好一个 main-axis
+  FILL 是冻结 weighted water-filling 的无歧义退化形式，因此选为唯一安全 frontier。
+- 允许影响：T38 tracker/plan/NOTES/log、layout crate/tests、definite vector、Python independent verifier、`render`
+  gate identity/assertions/evidence；既有 fixture bytes 未变时保持 fixture identity `/3`。
+- 禁止影响：multiple-FILL water filling/tolerance、HUG intrinsic、Grid AUTO/FRACTION、resource/fetch/decode/font
+  shaping、world scene/paint/raster/JPEG、daemon RESULT/success、Profile registration、Java/OpenAPI/migration/Web/
+  Editor/产品 route、formal records、physical Linux certification/J1/A3/READY、provider/真实数据/API Key/付费调用。
+- 精确语义：先扣 gap、全部 signed main margins 与非 FILL definite size；唯一 FILL 获得正剩余后按 min/max clamp；
+  max 留余进入六种 justify，min overflow 时 free=0；多个 FILL 仍以第一个 authored occurrence 返回
+  `STACK_MAIN_FILL`，不得因 sibling 预量改变 DFS first error。
+- TDD：vector identity `/4` 先 RED，覆盖 row/column、min/max、justify、nested singleton 与 multiple first occurrence；
+  Rust/Python 同构但独立重放后运行 focused → `render` → `server`/`fast` → 最终 `full`。最高
+  `automated_verified`；不 push/tag/PR。
+- 结果：`resolved / automated_verified`。Rust primary 与 Python independent 均实现 singleton allocation；max clamp
+  后 justify、min overflow、row/column、nested Stack 与 multiple-FILL first authored occurrence 均被 exact vectors
+  固定，失败继续全有或全无。
+- TDD/独立重放：vector/verifier identity `/4`、fixture identity `/3`；28 laid-out + 11 unsupported，39/39、
+  120 checks。vector SHA-256 为 `640c53afb1a19605ce7318fd40d991c5934de32dae6699c79306eee1e05227d4`，
+  fixture SHA-256 为 `a11475bcebad7e1c35cb0acd7018419d94afcb4b37d7f1df7346a055ad1df669`。
+- 受影响 A1/A2：最终一致 `render` `.sdlc/evidence/20260821-211731-render/`、`server`
+  `.sdlc/evidence/20260821-205133-server/`、治理前 `fast` `.sdlc/evidence/20260821-210938-fast/`；完整细节见
+  `plans/logs/TV1-T38.md`，治理后的最终 Fast/Full exact 目录仅在 commit handoff 报告。
+- 生命周期：`resolved / automated_verified`；multiple FILL/HUG/AUTO/FRACTION/resource/world scene/raster/JPEG/
+  daemon RESULT/Profile/certification/E6 仍未实现，未推进 A3/J1/READY，未 push/tag/PR。
