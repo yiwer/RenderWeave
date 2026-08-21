@@ -12,7 +12,8 @@
   TV1-T25=`resolved/automated_verified`：Layout Profile 静态可判定预检与 daemon defensive admission 已完成；
   TV1-T26=`resolved/automated_verified`：资源无关 definite ABSOLUTE binary64 local-box kernel 已完成，不接
   daemon output，未产生 world scene 或注册 Profile；TV1-T27=`resolved/automated_verified`：Editor E1 canonical
-  open、显式 readiness 重检与未发布三模式 Product shell
+  open、显式 readiness 重检与未发布三模式 Product shell；TV1-T28=`resolved/automated_verified`：Editor E2
+  canonical working copy、有界结构化 undo/redo 与 preview eligibility guard
 - 日期：2026-08-20
 - Approved delta：[`specs/changes/20260817-template-v1-implementation-authority.md`](../specs/changes/20260817-template-v1-implementation-authority.md)
 - Frozen checkpoint：`0b485f4a13de9d754a81d07f464730776e13c14b`
@@ -71,7 +72,8 @@ binding: generic + project-local tools/run-gate.ps1 + Wayfinder markdown tracker
 | TV1-P5d Layout static preflight | 25 | exact RenderDocument 上的 size/cycle/Stack/Grid/Text/QR 静态约束 deep kernel | Rust/Python exact-vector A1/A2 + daemon defensive admission；无 measure/arrange/Profile/RESULT |
 | TV1-P5e Definite local boxes | 26 | Canvas→Frame/无资源叶子的 FIXED/FILL + ABSOLUTE binary64 local LayoutBox/ContentBox | Rust/Python exact-bit A1/A2；unsupported 不外泄；无 HUG/Stack/Grid/resource/world scene/RESULT |
 | TV1-P6a Editor E1 | 27 | trusted canonical current baseline + 显式 readiness recheck + 三模式 Canvas Focus shell | Java/Web/OpenAPI A1；组件未发布，禁止 save/preview/recovery 占位与 READY 声明 |
-| TV1-P6+ Product completion | 27 后按真实依赖另切票 | 完整 Renderer layout/resource/raster/JPEG/Engine output、公开产品面、Editor E2–E9 与 formal registry records | 逐纵切 gate + product target/executor + J1/A3/物理 Linux 认证；不预建未知下游票 |
+| TV1-P6b Editor E2 | 28 | canonical working copy + 结构化本地编辑/undo/redo + preview generation/eligibility guard | Node 24 Web A1；无 API/route/save/preview action，baseline immutable |
+| TV1-P6+ Product completion | 28 后按真实依赖另切票 | 完整 Renderer layout/resource/raster/JPEG/Engine output、公开产品面、Editor E3–E9 与 formal registry records | 逐纵切 gate + product target/executor + J1/A3/物理 Linux 认证；不预建未知下游票 |
 
 ## 4. 当前 ticket DAG
 
@@ -135,6 +137,8 @@ flowchart LR
   T06 --> T27[27 Editor E1 canonical open]
   T09 --> T27
   T20 --> T27
+  T09 --> T28[28 Editor E2 local canonical history]
+  T27 --> T28
 ```
 
 | Ticket | 类型 | 状态 | Blocked by | 本票退出事实 |
@@ -169,6 +173,7 @@ flowchart LR
 | 25 | task | `resolved` / `automated_verified` | 22, 23 | static layout constraints deep kernel + daemon defensive admission；无 measure/arrange/Profile/RESULT |
 | 26 | task | `resolved` / `automated_verified` | 23, 25 | resource-free definite ABSOLUTE binary64 local boxes；无 daemon success/Profile |
 | 27 | task | `resolved` / `automated_verified` | 06, 09, 20 | canonical baseline + 显式 readiness recheck + 未发布三模式 Product shell；无 save/preview/recovery/route |
+| 28 | task | `resolved` / `automated_verified` | 09, 27 | canonical working copy + 结构化 name edit/undo/redo + preview generation/eligibility guard；Node 24 Web/Fast/Full 17/17 |
 
 每次只 claim 一个 unblocked ticket；一票 resolved 后才由其 `Blocked by` 关系产生下一 frontier。未知实现切片留在
 map 的 `Not yet specified`，不为排满计划提前发明接口、migration 或 Profile identity。
@@ -195,7 +200,8 @@ Supervisor + Java/Rust/Python/Linux replay，`render` 已入 17-step `full`）�
   共同语料，Rust Engine 不再需要猜测 DesignDSL default。TV1-T24 也已 resolve（exact surface/PNG kernel）；
   T25 static layout preflight 与 T26 definite ABSOLUTE local-box kernel 现均已 resolve；仍未预建公开 render
   route、tolerance-dependent HUG/Stack/Grid、resource/raster/JPEG/daemon output Profile。TV1-T27 已从
-  Editor E1–E9 中单独登记并完成；产品 route 仍待后续闭环，不在 E1 提前开放。
+  Editor E1–E9 中单独登记并完成；TV1-T28 也已从 E2 frontier 单独登记并完成；产品 route 仍待后续闭环，
+  不在 E1/E2 提前开放。下一无阻塞 Editor frontier 为 E3 save + conflict overwrite。
 
 ## 5. TV1-T01 执行卡
 
@@ -581,3 +587,23 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
 - 结果：已按上述边界完成；GET side-effect-free、显式 current readiness recheck 与有界漂移重试、lossless
   canonical open/generation guard、三模式 Canvas Focus shell、OpenAPI `0.14.0` 及分级 gate 见
   `plans/logs/TV1-T27.md`。最终 full 目录按不可自指策略只在提交交接中报告；无产品 route、J1/A3 或 READY 升级。
+
+## 27. TV1-T28 执行卡
+
+- 决策：物化 T09 E2；Structured session 在 E1 immutable canonical baseline 上持有 canonical working copy，首个
+  closed structural command 只编辑 required top-level `displayName`，canonical dirty 仅比较工作/基线规范化字节；
+  history 最大 100，任何有效 edit/undo/redo 都递增 preview generation。
+- 允许影响：Web template-editor model/session/shell/tests/CSS，以及 T28 tracker/plan/log/NOTES/evidence。
+- 禁止影响：Java/OpenAPI/migration、baseline mutation、save/conflict/overwrite、dependency confirmation、
+  reconciliation、preview endpoint/action/result、recovery/import/Asset picker、产品 route、prototype 状态复用、
+  Renderer/Profile/formal record/physical Linux/J1/A3/READY、provider/真实数据/API Key。
+- TDD：先纯 session RED（canonical Unicode/decimal/int64、trim、validation、dirty/no-op、100-history、branch、
+  generation/guard），再 DOM RED（编辑/undo/redo、working projections、dirty retry 保护、same-baseline readiness 更新）。
+- 受影响验证：focused Vitest → Web test/typecheck/lint/build → `web`/`fast` → 完整 `full`。
+- 完成信号：Ticket 28 `resolved / automated_verified`、baseline 与 E3–E9 边界不变、verified local commit 且
+  worktree clean；不 push/tag/PR。
+- 结果：Structured canonical working copy、精确 name command、canonical dirty、100 条 bounded history、
+  preview generation/eligibility guard 与 Canvas Focus 本地编辑/可访问状态均已完成；同 baseline readiness 更新
+  保留 dirty draft，revision/contentHash 改变才清空 session。focused 4 files / 28 tests；正式 Node 24 Web
+  18 files / 104 tests、SDK/typecheck/lint/2144-module build、`web`/`fast` 与最终 `full` 17/17 全绿。未新增
+  Java/OpenAPI/migration/API/route 或 E3–E9 placeholder，生命周期为 `automated_verified`，不声明 READY。

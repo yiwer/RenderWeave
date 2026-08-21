@@ -1,3 +1,5 @@
+import { createStructuredEditorSession } from './template-editor-session';
+
 export type PersistedTemplateReadiness = 'READY' | 'INVALID' | 'STALE';
 export type CheckedTemplateReadiness = 'READY' | 'INVALID';
 
@@ -30,10 +32,31 @@ export interface EditorNodeProjection {
   value: Record<string, unknown>;
 }
 
+export interface CanonicalDesignWorkingCopy {
+  canonicalDesignDsl: string;
+  designDsl: Record<string, unknown>;
+}
+
+export interface SetTemplateDisplayNameCommand {
+  kind: 'set-template-display-name';
+  before: string;
+  after: string;
+}
+
+export type StructuredEditorCommand = SetTemplateDisplayNameCommand;
+
+export interface StructuredEditorHistory {
+  past: readonly StructuredEditorCommand[];
+  future: readonly StructuredEditorCommand[];
+}
+
 export interface StructuredEditorSession {
   mode: 'structured';
   baseline: CanonicalTemplateBaseline;
+  workingCopy: CanonicalDesignWorkingCopy;
   readiness: EditorReadiness;
+  history: StructuredEditorHistory;
+  previewGeneration: number;
 }
 
 export interface CompatibilityEditorSession {
@@ -91,7 +114,7 @@ export function createSessionFromBaseline(
       reason: compatibilityReason,
     };
   }
-  return { mode: 'structured', baseline, readiness };
+  return createStructuredEditorSession(baseline, readiness);
 }
 
 export function createRawRepairSession(
@@ -109,16 +132,18 @@ export function createRawRepairSession(
 export function projectStructuredNodes(
   session: StructuredEditorSession,
 ): EditorNodeProjection[] {
-  const canvas = objectOrNull(session.baseline.designDsl.designRoot);
+  const canvas = objectOrNull(session.workingCopy.designDsl.designRoot);
   if (!canvas) return [];
   const nodes: EditorNodeProjection[] = [];
   visitNode(canvas, 0, nodes);
   return nodes;
 }
 
-export function templateDisplayName(baseline: CanonicalTemplateBaseline): string {
-  const displayName = baseline.designDsl.displayName;
-  return typeof displayName === 'string' && displayName.trim()
+export function templateDisplayName(
+  source: CanonicalTemplateBaseline | CanonicalDesignWorkingCopy,
+): string {
+  const displayName = source.designDsl.displayName;
+  return typeof displayName === 'string' && displayName.length > 0
     ? displayName
     : '未命名 Template';
 }
@@ -174,7 +199,7 @@ function visitNode(
   target.push({
     nodeId,
     kind,
-    displayName: typeof node.displayName === 'string' && node.displayName.trim()
+    displayName: typeof node.displayName === 'string' && node.displayName.length > 0
       ? node.displayName
       : kindLabel(kind),
     depth,

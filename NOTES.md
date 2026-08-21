@@ -1822,3 +1822,24 @@
   `.sdlc/evidence/20260821-072956-fast/`、`server` `.sdlc/evidence/20260821-073017-server/`、Node 24 `web`
   `.sdlc/evidence/20260821-074148-web/`；最终 full 按不可自指策略只在提交交接报告。T27 为
   `automated_verified`，无已发布 route 浏览器观察、Editor J1、A3 或 Renderer certification。
+
+### Template v1 TV1-T28 Editor E2（resolved / automated_verified）
+
+- 2026-08-21：T27 最终 full 17/17 通过并以 verified local commit `e76c2eb` 收口，worktree clean；按 T09
+  已批准 E1–E9 分解从无阻塞 frontier 单独登记并由 Codex `/root` single-writer claim T28（blocked by T09/T27，
+  均 resolved）。
+- 本票只建立 Structured-only immutable canonical baseline + canonical working copy，以 required top-level
+  `displayName` 的 closed structural command 物化本地编辑、canonical dirty、100 条有界 undo/redo 与 preview
+  generation/eligibility guard；Raw Repair/Compatibility 不获得 history。
+- 冻结边界：不新增 Java/OpenAPI/migration/API/route，不实现 save/conflict/confirmation/reconciliation、preview
+  endpoint/action/result、recovery/import/Asset picker，不复用 throwaway prototype 状态，不运行 provider/真实数据/
+  API Key/physical Linux/J1/A3，不升级 Editor/Renderer/Template v1 READY。
+- TDD 已先以缺位 session module 和 DOM 行为形成 RED，再完成 lossless canonical name command、Java trim/Unicode/
+  UTF-8 ordering/decimal-int64 精确语义、canonical no-op/dirty、100-history eviction/branch、undo/redo/generation/
+  guard，以及 same-baseline readiness 保留 dirty draft 与新 revision/hash 清空 session；focused 4 files / 28 tests。
+- Canvas Focus 已接入真实本地名称表单、44px undo/redo、working-copy 五区投影、dirty 重检保护与可访问 live status；
+  Raw Repair/Compatibility 不变，且不存在 fake save/preview/import/recovery action 或产品 route。
+- 正式 Node 24 Web 为 18 files / 104 tests，SDK generation/typecheck/lint 与 2144-module build 全绿；A1 证据为
+  `web` `.sdlc/evidence/20260821-085127-web/`、`fast` `.sdlc/evidence/20260821-085203-fast/`，最终 full 17/17
+  按不可自指策略只在提交交接报告。P0/R0/R1 均确认 provider attempts=0、API Key reads/open authorization=0；
+  T28 为 `automated_verified`，无已发布 route 浏览器观察、Editor J1、A3、Renderer certification 或 READY 升级。

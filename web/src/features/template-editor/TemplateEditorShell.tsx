@@ -10,13 +10,16 @@ import {
   LoaderCircle,
   PanelLeft,
   PanelRight,
+  PencilLine,
+  Redo2,
   RefreshCw,
   ShieldCheck,
+  Undo2,
   Unplug,
   Wrench,
   type LucideIcon,
 } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 
 import {
   createSessionFromBaseline,
@@ -25,12 +28,21 @@ import {
   projectStructuredNodes,
   SUPPORTED_NODE_KIND_COUNT,
   templateDisplayName,
+  type CanonicalDesignWorkingCopy,
   type CanonicalTemplateBaseline,
   type EditorNodeProjection,
   type EditorReadiness,
   type StructuredEditorSession,
   type TemplateEditorSession,
 } from './template-editor-model';
+import {
+  applyTemplateDisplayName,
+  authoritativePreviewGuard,
+  isCanonicalDirty,
+  redoStructuredCommand,
+  undoStructuredCommand,
+  updateStructuredReadiness,
+} from './template-editor-session';
 import {
   defaultTemplateEditorTransport,
   openTemplateEditor,
@@ -66,7 +78,13 @@ export function TemplateEditorShell({
   if (session.mode === 'compatibility') {
     return <CompatibilityShell session={session} onRetryReadiness={onRetryReadiness} />;
   }
-  return <StructuredShell session={session} onRetryReadiness={onRetryReadiness} />;
+  return (
+    <StructuredShell
+      key={baselineIdentity(session.baseline)}
+      session={session}
+      onRetryReadiness={onRetryReadiness}
+    />
+  );
 }
 
 interface TemplateEditorSurfaceProps {
@@ -137,12 +155,17 @@ export function TemplateEditorSurface({
 }
 
 function StructuredShell({
-  session,
+  session: incomingSession,
   onRetryReadiness,
 }: {
   session: StructuredEditorSession;
   onRetryReadiness?: () => void;
 }) {
+  const [localSession, setLocalSession] = useState(incomingSession);
+  const session = useMemo(
+    () => updateStructuredReadiness(localSession, incomingSession.readiness),
+    [incomingSession.readiness, localSession],
+  );
   const nodes = useMemo(() => projectStructuredNodes(session), [session]);
   const [entry, setEntry] = useState<EditorEntry>('structure');
   const [selectedNodeId, setSelectedNodeId] = useState(nodes[0]?.nodeId ?? '');
@@ -152,13 +175,33 @@ function StructuredShell({
     ? selectedNodeId
     : nodes[0]?.nodeId ?? '';
   const selected = nodes.find((node) => node.nodeId === effectiveSelectedNodeId) ?? nodes[0];
+  const dirty = isCanonicalDirty(session);
+  const workingName = templateDisplayName(session.workingCopy);
+  const guard = authoritativePreviewGuard(session);
+
+  const undo = () => setLocalSession((current) => undoStructuredCommand(
+    updateStructuredReadiness(current, incomingSession.readiness),
+  ));
+  const redo = () => setLocalSession((current) => redoStructuredCommand(
+    updateStructuredReadiness(current, incomingSession.readiness),
+  ));
 
   return (
     <EditorFrame
       baseline={session.baseline}
+      documentName={workingName}
       modeLabel="Structured Editor"
       readiness={session.readiness}
-      onRetryReadiness={onRetryReadiness}
+      onRetryReadiness={dirty ? undefined : onRetryReadiness}
+      headerTools={(
+        <StructuredHeaderTools
+          dirty={dirty}
+          canUndo={session.history.past.length > 0}
+          canRedo={session.history.future.length > 0}
+          onUndo={undo}
+          onRedo={redo}
+        />
+      )}
     >
       <main
         className={`te-workbench${navigatorOpen ? '' : ' is-navigator-closed'}${inspectorOpen ? '' : ' is-inspector-closed'}`}
@@ -197,15 +240,24 @@ function StructuredShell({
           <div className="te-canvas-heading">
             <div>
               <strong>Canvas Focus</strong>
-              <span>浏览器只读投影 · 非权威</span>
+              <span>本地草稿投影 · 非权威</span>
             </div>
-            <span className="te-mode-chip"><ShieldCheck aria-hidden="true" size={14} />完整性已核验</span>
+            <span className={`te-mode-chip${dirty ? ' is-dirty' : ''}`}>
+              {dirty ? <PencilLine aria-hidden="true" size={14} /> : <ShieldCheck aria-hidden="true" size={14} />}
+              {dirty ? '本地草稿已保留' : 'Baseline 完整性已核验'}
+            </span>
           </div>
-          <CanvasProjection baseline={session.baseline} nodes={nodes} />
+          <CanvasProjection workingCopy={session.workingCopy} nodes={nodes} />
         </section>
 
         {inspectorOpen ? (
-          <aside className="te-inspector" aria-label="节点检视器">
+          <aside className="te-inspector" aria-label="属性检视器">
+            <TemplateNameEditor
+              key={workingName}
+              session={session}
+              guard={guard}
+              onSessionChange={setLocalSession}
+            />
             <NodeInspector node={selected} />
           </aside>
         ) : null}
@@ -236,15 +288,19 @@ function StructuredShell({
 
 function EditorFrame({
   baseline,
+  documentName,
   modeLabel,
   readiness,
   onRetryReadiness,
+  headerTools,
   children,
 }: {
   baseline: CanonicalTemplateBaseline;
+  documentName?: string;
   modeLabel: string;
   readiness: EditorReadiness;
   onRetryReadiness?: () => void;
+  headerTools?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
@@ -256,14 +312,15 @@ function EditorFrame({
           <span>RenderWeave</span>
         </div>
         <div className="te-document-identity">
-          <h1>{templateDisplayName(baseline)}</h1>
+          <h1>{documentName ?? templateDisplayName(baseline)}</h1>
           <span title={baseline.templateId}>{shortIdentity(baseline.templateId)}</span>
         </div>
         <div className="te-baseline-facts" aria-label="Canonical editor baseline">
-          <span>{baseline.staticSchema.schemaKey}@{baseline.staticSchema.versionTag}</span>
-          <span>revision {baseline.revision}</span>
-          <span>{modeLabel}</span>
+          <span className="te-schema-fact">{baseline.staticSchema.schemaKey}@{baseline.staticSchema.versionTag}</span>
+          <span className="te-revision-fact">revision {baseline.revision}</span>
+          <span className="te-mode-fact">{modeLabel}</span>
         </div>
+        <div className="te-header-tools">{headerTools}</div>
         <ReadinessStatus readiness={readiness} onRetry={onRetryReadiness} />
       </header>
       {children}
@@ -273,6 +330,105 @@ function EditorFrame({
         <span>请将窗口扩大到至少 1024px；当前内容没有被修改。</span>
       </div>
     </div>
+  );
+}
+
+function StructuredHeaderTools({
+  dirty,
+  canUndo,
+  canRedo,
+  onUndo,
+  onRedo,
+}: {
+  dirty: boolean;
+  canUndo: boolean;
+  canRedo: boolean;
+  onUndo: () => void;
+  onRedo: () => void;
+}) {
+  return (
+    <>
+      <span
+        className={`te-canonical-state ${dirty ? 'is-dirty' : 'is-clean'}`}
+        role="status"
+        aria-live="polite"
+      >
+        {dirty ? 'Canonical 本地草稿' : 'Canonical current'}
+      </span>
+      <button type="button" onClick={onUndo} disabled={!canUndo} aria-label="撤销本地编辑">
+        <Undo2 aria-hidden="true" size={16} />
+      </button>
+      <button type="button" onClick={onRedo} disabled={!canRedo} aria-label="重做本地编辑">
+        <Redo2 aria-hidden="true" size={16} />
+      </button>
+    </>
+  );
+}
+
+function TemplateNameEditor({
+  session,
+  guard,
+  onSessionChange,
+}: {
+  session: StructuredEditorSession;
+  guard: ReturnType<typeof authoritativePreviewGuard>;
+  onSessionChange: (session: StructuredEditorSession) => void;
+}) {
+  const id = useId();
+  const titleId = `${id}-title`;
+  const fieldId = `${id}-display-name`;
+  const helpId = `${id}-help`;
+  const problemId = `${id}-problem`;
+  const [draft, setDraft] = useState(templateDisplayName(session.workingCopy));
+  const [problem, setProblem] = useState<string | null>(null);
+  const guardMessage = guard.state === 'eligible'
+    ? `当前 current 满足权威预览前置条件 · generation ${guard.generation}`
+    : `${guard.message} · generation ${guard.generation}`;
+
+  const submit = (event: React.FormEvent) => {
+    event.preventDefault();
+    const result = applyTemplateDisplayName(session, draft);
+    if (result.state === 'invalid') {
+      setProblem(result.message);
+      return;
+    }
+    setProblem(null);
+    setDraft(templateDisplayName(result.session.workingCopy));
+    if (result.state === 'applied') onSessionChange(result.session);
+  };
+
+  return (
+    <section className="te-template-edit" aria-labelledby={titleId}>
+      <header>
+        <span><PencilLine aria-hidden="true" size={14} />Template</span>
+        <h2 id={titleId}>本地工作副本</h2>
+      </header>
+      <form onSubmit={submit} noValidate>
+        <label htmlFor={fieldId}>Template 名称</label>
+        <div className="te-name-field">
+          <input
+            id={fieldId}
+            value={draft}
+            onChange={(event) => {
+              setDraft(event.currentTarget.value);
+              setProblem(null);
+            }}
+            aria-invalid={problem ? 'true' : 'false'}
+            aria-describedby={problem ? problemId : helpId}
+          />
+          <button type="submit">应用本地名称</button>
+        </div>
+        {problem ? (
+          <p id={problemId} className="te-field-problem" role="alert">{problem}</p>
+        ) : (
+          <p id={helpId} className="te-field-help">只更新 canonical working copy，不会保存到服务器。</p>
+        )}
+      </form>
+      <div className={`te-preview-guard ${guard.state === 'eligible' ? 'is-eligible' : 'is-blocked'}`} role="status" aria-live="polite">
+        <strong>权威预览条件</strong>
+        <span>{guardMessage}</span>
+      </div>
+    </section>
   );
 }
 
@@ -344,11 +500,11 @@ function EntryPanel({
     case 'nodes':
       return <NodeCatalogSummary nodes={nodes} />;
     case 'assets':
-      return <AssetSummary designDsl={session.baseline.designDsl} />;
+      return <AssetSummary designDsl={session.workingCopy.designDsl} />;
     case 'definitions':
-      return <DefinitionSummary designDsl={session.baseline.designDsl} />;
+      return <DefinitionSummary designDsl={session.workingCopy.designDsl} />;
     case 'exchange':
-      return <ExchangeSummary baseline={session.baseline} />;
+      return <ExchangeSummary session={session} />;
   }
 }
 
@@ -403,7 +559,7 @@ function NodeCatalogSummary({ nodes }: { nodes: EditorNodeProjection[] }) {
   return (
     <>
       <PanelHeading title="节点" detail={`${SUPPORTED_NODE_KIND_COUNT} 种 v1 wire`} />
-      <p className="te-panel-copy">当前只读投影识别 exact v1 closed Node kinds；不创建或改写节点。</p>
+      <p className="te-panel-copy">本地投影识别 exact v1 closed Node kinds；E2 只改写 Template 名称，不创建或改写节点。</p>
       <ul className="te-summary-list">
         {[...counts.entries()].map(([kind, count]) => (
           <li key={kind}><span>{kind}</span><strong>{count}</strong></li>
@@ -452,15 +608,17 @@ function DefinitionSummary({ designDsl }: { designDsl: Record<string, unknown> }
   );
 }
 
-function ExchangeSummary({ baseline }: { baseline: CanonicalTemplateBaseline }) {
+function ExchangeSummary({ session }: { session: StructuredEditorSession }) {
+  const { baseline, workingCopy } = session;
   return (
     <>
-      <PanelHeading title="交换" detail="canonical current" />
-      <p className="te-panel-copy">E1 只展示已验证 identity；本票不提前提供导入、导出或 migration 动作。</p>
+      <PanelHeading title="交换" detail={isCanonicalDirty(session) ? 'canonical local' : 'canonical current'} />
+      <p className="te-panel-copy">E2 展示 current 与 working-copy identity；不提前提供导入、导出或 migration 动作。</p>
       <dl className="te-fact-list">
         <div><dt>revision</dt><dd>{baseline.revision}</dd></div>
         <div><dt>contentHash</dt><dd title={baseline.contentHash}>{shortHash(baseline.contentHash)}</dd></div>
-        <div><dt>canonical UTF-8</dt><dd>{new TextEncoder().encode(baseline.canonicalDesignDsl).byteLength} bytes</dd></div>
+        <div><dt>current UTF-8</dt><dd>{new TextEncoder().encode(baseline.canonicalDesignDsl).byteLength} bytes</dd></div>
+        <div><dt>local UTF-8</dt><dd>{new TextEncoder().encode(workingCopy.canonicalDesignDsl).byteLength} bytes</dd></div>
       </dl>
     </>
   );
@@ -476,17 +634,17 @@ function PanelHeading({ title, detail }: { title: string; detail: string }) {
 }
 
 function CanvasProjection({
-  baseline,
+  workingCopy,
   nodes,
 }: {
-  baseline: CanonicalTemplateBaseline;
+  workingCopy: CanonicalDesignWorkingCopy;
   nodes: EditorNodeProjection[];
 }) {
-  const canvas = objectOrNull(baseline.designDsl.designRoot);
+  const canvas = objectOrNull(workingCopy.designDsl.designRoot);
   const width = positiveNumber(canvas?.widthMm) ?? 210;
   const height = positiveNumber(canvas?.heightMm) ?? 297;
   return (
-    <div className="te-canvas-viewport" tabIndex={0} aria-label="只读画布视口">
+    <div className="te-canvas-viewport" tabIndex={0} aria-label="本地草稿画布视口">
       <div className="te-artboard" style={{ aspectRatio: `${width} / ${height}` }}>
         <div className="te-artboard-meta">
           <span>{formatNumber(width)} × {formatNumber(height)} mm</span>
@@ -686,4 +844,8 @@ function shortIdentity(value: string): string {
 
 function shortHash(value: string): string {
   return value.length > 24 ? `${value.slice(0, 15)}…${value.slice(-8)}` : value;
+}
+
+function baselineIdentity(baseline: CanonicalTemplateBaseline): string {
+  return `${baseline.templateId}:${baseline.revision}:${baseline.contentHash}`;
 }
