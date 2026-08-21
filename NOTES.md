@@ -1,6 +1,15 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-21 **Template v1 implementation TV1-T37 已 `resolved/automated_verified`**：新增严格、受预算约束的
+  RFC 6901 problem locator，只定位 Template 名称、definitions、稳定 authored node 或 unavailable；invalid-save
+  摘要 focus、roving tree、central polite live delta、44px targets、1024 drawer 与 `<1024` truthful unsupported
+  已落地。locator 14/14、完整 Editor 12 files/136 tests；Node 24 Web 26 files/212 tests、2144-module build
+  （`.sdlc/evidence/20260821-200839-web/`）；无产品 route fixture 的 E9 4/4、完整 E2E 23 passed/1 live-provider
+  skip（`.sdlc/evidence/20260821-200647-e2e/`），1440/1280/1024、2x effective viewport、900px 下 axe
+  serious/critical、overflow 与 console/page errors 均为 0。真实浏览器 200% zoom/人工 keyboard J1 pending；
+  E6 仍缺真实 Renderer output/public preview seam。无 Java/OpenAPI/migration/`App.tsx`/产品 route/Renderer/
+  Profile 增量；provider attempts/API Key reads/open authorization/paid calls 均为 0，未 push/tag/PR。
 - 2026-08-17 **Template v1 implementation TV1-T03 已 `automated_verified`**：新增首个真实
   `renderweave-template` artifact 与唯一 `DesignDslAuthority.admit(rawUtf8)` closed Interface；minimal kernel
   只承认 empty definitions/bindings/children 的单 Canvas，实施 strict UTF-8/JSON、九项 parser/canonical

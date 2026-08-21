@@ -23,8 +23,9 @@
   子闭包已完成；TV1-T34=`resolved/automated_verified`：ContentBox floor-zero 与 FIXED-track definite Grid 已完成；
   TV1-T35=`resolved/automated_verified`：Editor E7 versioned Local recovery、显式恢复/导出/放弃、漂移确认与
   outcome-unknown 跨刷新只读 reconciliation 已完成；TV1-T36=`resolved/automated_verified`：Editor E8 严格本地
-  导入、Raw Repair/Compatibility 与 dirty replacement guard 已完成；E6 仍受真实 Renderer output/public preview
-  seam 阻塞
+  导入、Raw Repair/Compatibility 与 dirty replacement guard 已完成；TV1-T37=`resolved/automated_verified`：
+  Editor E9 严格问题投影、摘要 focus、键盘树、最小 live delta 与有效宽度浏览器证据已完成；真实 200% zoom/
+  人工 keyboard J1 pending，E6 仍受真实 Renderer output/public preview seam 阻塞
 - 日期：2026-08-20
 - Approved delta：[`specs/changes/20260817-template-v1-implementation-authority.md`](../specs/changes/20260817-template-v1-implementation-authority.md)
 - Frozen checkpoint：`0b485f4a13de9d754a81d07f464730776e13c14b`
@@ -92,7 +93,8 @@ binding: generic + project-local tools/run-gate.ps1 + Wayfinder markdown tracker
 | TV1-P6f Editor E5 | 32 | outcome-unknown attempt + trusted-current 五分类 reconciliation + exact explicit retry/lock/export | Node 24 Web A1；复用 GET/PUT/410，无 Java/API/migration/route；E6–E9 另切 |
 | TV1-P6g Editor E7 | 35 | versioned per-Template Local recovery + 7-day lifecycle + explicit restore/export/discard + cross-refresh reconciliation | Node 24 Web A1；浏览器 best-effort，不同步/不自动提交；无 Java/API/migration/route |
 | TV1-P6h Editor E8 | 36 | strict local import + Raw Repair/Compatibility + shared dirty replacement guard | Node 24 Web A1；文件 identity/schema 不覆盖目标；无 registered migration profile/action、API/route |
-| TV1-P6+ Product completion | 33 后按真实依赖另切票 | 完整 Renderer layout/resource/raster/JPEG/Engine output、公开产品面、Editor E6–E9 与 formal registry records | 逐纵切 gate + product target/executor + J1/A3/物理 Linux 认证；不预建未知下游票 |
+| TV1-P6i Editor E9 | 37 | strict problem projection + summary focus + roving tree/live delta + 1024/1280/1440/200% effective viewport | Node 24 Web + Playwright/axe A1；无 route/E6；人工 keyboard/zoom J1 pending |
+| TV1-P6+ Product completion | 33 后按真实依赖另切票 | 完整 Renderer layout/resource/raster/JPEG/Engine output、公开产品面、Editor E6 与 formal registry records | 逐纵切 gate + product target/executor + J1/A3/物理 Linux 认证；不预建未知下游票 |
 
 ## 4. 当前 ticket DAG
 
@@ -187,6 +189,14 @@ flowchart LR
   T29 --> T36
   T32 --> T36
   T35 --> T36
+  T09 --> T37[37 Editor E9 accessibility + locator]
+  T27 --> T37
+  T28 --> T37
+  T30 --> T37
+  T31 --> T37
+  T32 --> T37
+  T35 --> T37
+  T36 --> T37
 ```
 
 | Ticket | 类型 | 状态 | Blocked by | 本票退出事实 |
@@ -230,6 +240,7 @@ flowchart LR
 | 34 | task | `resolved` / `automated_verified` | 23, 25, 26, 33 | ContentBox floor-zero + FIXED-track definite Grid；Rust/Python 34/34、105 checks；AUTO/FRACTION/HUG fail closed |
 | 35 | task | `resolved` / `automated_verified` | 09, 27, 28, 29, 32 | Web-only Local recovery 生命周期与 E5 unknown 跨刷新 reconciliation；无 route/API/migration |
 | 36 | task | `resolved` / `automated_verified` | 09, 27, 28, 29, 32, 35 | Web-only strict local import、Raw Repair/Compatibility 与 dirty replacement guard；无 API/route/migration action |
+| 37 | task | `resolved` / `automated_verified` | 09, 27, 28, 30, 31, 32, 35, 36 | Web-only strict problem projection、keyboard/live-region 与有效宽度浏览器证据；Web 212、E2E 23/1 skip；无 route/E6；J1 pending |
 
 每次只 claim 一个 unblocked ticket；一票 resolved 后才由其 `Blocked by` 关系产生下一 frontier。未知实现切片留在
 map 的 `Not yet specified`，不为排满计划提前发明接口、migration 或 Profile identity。
@@ -873,3 +884,26 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
   `.sdlc/evidence/20260821-190823-web/`、`.sdlc/evidence/20260821-190918-fast/` 和 `plans/logs/TV1-T36.md`。
 - 生命周期：`resolved / automated_verified`；无 registered migration profile/action，无 Java/API/migration/route/Renderer
   增量，不推进 E6/E9/formal records/J1/A3/READY，未 push/tag/PR。
+
+## 36. TV1-T37 执行卡
+
+- 决策：T36 verified commit 后重算 DAG；E6 仍缺真实 Renderer output/public preview seam，E9 只依赖已完成的
+  Editor 状态/保存/依赖问题/reconciliation/recovery/import 纵切，因此成为唯一安全 frontier。以 strict RFC 6901
+  closed projection 把服务端问题映射到等价 form/tree target，未知或 malformed pointer 不猜测。
+- 允许影响：T37 tracker/plan/NOTES/log、`web/src/features/template-editor` locator/session/shell/tests/CSS，以及
+  `web/e2e` 下无产品 route 的测试 fixture/spec；可使用既有 `@axe-core/playwright`，不新增运行时 UI library。
+- 禁止影响：Java/OpenAPI/generated SDK/migration/API version、`App.tsx` 产品或 prototype route、E6 preview action/result、
+  Renderer/Profile/formal records/physical Linux/J1/A3/READY、provider/真实数据/API Key/付费调用。
+- 精确语义：invalid-save 摘要程序聚焦；pointer 严格解码与 bounded exact walk，只定位 display name、最深稳定 authored
+  node、definitions 或 unavailable；tree roving tab/Arrow/Home/End；single central polite delta；1024 drawer 与 1280/1440
+  full operation；等效 200%/1024 CSS viewport；低于 1024 unsupported 且编辑控件不进入 Tab 序列。
+- TDD：pure locator RED → DOM focus/tree/live RED → Playwright/axe fixture RED；focused Node 24 → 完整 Editor → Web
+  typecheck/lint/build → `web` → `fast` → 最终 `full`。最高 `automated_verified`，人工 keyboard/zoom J1 pending；不
+  push/tag/PR。
+- 结果：strict locator 14/14、DOM E9 3/3、完整 Editor 12 files/136 tests；Node 24 Web 26 files/212 tests 与
+  2144-module build 全绿；无产品 route fixture 的 E9 浏览器 4/4，完整 E2E 23 passed/1 live-provider skip，
+  1440/1280/1024、2x effective viewport 与 900 unsupported 下 axe serious/critical、overflow、console/page error
+  均为 0。证据见 `.sdlc/evidence/20260821-200839-web/`、`.sdlc/evidence/20260821-200647-e2e/` 与
+  `plans/logs/TV1-T37.md`。
+- 生命周期：`resolved / automated_verified`；真实浏览器 200% zoom 与完整人工键盘 J1 仍 pending；未修改
+  Java/OpenAPI/migration/`App.tsx`/产品 route/Renderer，未推进 E6/formal records/A3/READY，未 push/tag/PR。

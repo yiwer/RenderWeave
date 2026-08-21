@@ -213,9 +213,9 @@
 
 .te-readiness button {
   display: grid;
-  width: 32px;
-  min-width: 32px;
-  min-height: 32px;
+  width: 44px;
+  min-width: 44px;
+  min-height: 44px;
   margin: -6px -8px -6px 0;
   place-items: center;
   border: 0;
@@ -537,7 +537,7 @@
 .te-tree button {
   display: grid;
   width: 100%;
-  min-height: 40px;
+  min-height: 44px;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: var(--space-xs);
@@ -723,6 +723,32 @@
   overflow-wrap: anywhere;
   color: var(--color-warning-ink);
   font-family: var(--font-mono);
+  font-size: var(--text-xs);
+}
+
+.te-problem-locator {
+  width: fit-content;
+  min-height: 44px;
+  margin-top: var(--space-xs);
+  padding: var(--space-xs) var(--space-sm);
+  border: 1px solid var(--color-warning-border);
+  border-radius: var(--radius-input);
+  background: var(--color-surface);
+  color: var(--color-warning-ink);
+  font: inherit;
+  font-size: var(--text-xs);
+  font-weight: 750;
+  text-align: start;
+}
+
+.te-problem-locator:hover {
+  border-color: currentColor;
+  background: var(--color-warning-soft);
+}
+
+.te-problem-unavailable {
+  margin-top: var(--space-xs);
+  color: var(--color-muted);
   font-size: var(--text-xs);
 }
 
@@ -1166,7 +1192,7 @@
 
 .te-dock button {
   gap: var(--space-xs);
-  min-height: 40px;
+  min-height: 44px;
   padding: 0 var(--space-md);
   border: 1px solid transparent;
   border-radius: var(--radius-sm);
@@ -1359,7 +1385,7 @@
 }
 
 @media (max-width: 1023px) {
-  .template-editor-root > :not(.te-unsupported-width):not(.skip-link) {
+  .template-editor-root > :not(.te-unsupported-width) {
     visibility: hidden;
   }
 

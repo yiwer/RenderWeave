@@ -45,6 +45,7 @@ test.describe('resource list controls', () => {
   });
 
   test('defaults assets to user releases and switches exclusively to system presets', async ({ page }, testInfo) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
     const assets = [
       ...Array.from({ length: 12 }, (_, index) => staticSummary(index + 1, 'DRAFT')),
       ...Array.from({ length: 6 }, (_, index) => staticSummary(index + 1, 'SYSTEM')),
@@ -86,6 +87,11 @@ test.describe('resource list controls', () => {
     await page.getByRole('option', { name: '名称 Z–A' }).click();
     await expect(page.locator('.static-card').first()).toContainText('系统预设 06');
     await expect.poll(() => lastQuery.get('sort')).toBe('NAME_DESC');
+
+    await page.locator('.static-card').evaluateAll(async (cards) => {
+      await Promise.all(cards.flatMap((card) => card.getAnimations())
+        .map((animation) => animation.finished));
+    });
 
     const accessibility = await new AxeBuilder({ page })
       .include('.resource-shell')

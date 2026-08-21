@@ -93,9 +93,15 @@ import {
   type TemplateSaveTransport,
   type TemplateUnknownSaveAttempt,
 } from './template-save';
+import {
+  locateTemplateProblem,
+  type TemplateProblemLocation,
+} from './template-problem-locator';
 import './template-editor.css';
 
 type EditorEntry = TemplateRecoveryEntry;
+type LocatedTemplateProblem = Extract<TemplateProblemLocation, { state: 'located' }>;
+type InvalidSaveProblem = TemplateInvalidSaveOffer['problems'][number];
 
 const ENTRIES: Array<{ id: EditorEntry; label: string; icon: LucideIcon }> = [
   { id: 'structure', label: '结构', icon: FolderTree },
@@ -352,6 +358,7 @@ function StructuredShell({
   const importEpoch = useRef(0);
   const pendingImportAfterSave = useRef<StructuredImportCandidate | null>(null);
   const incomingSessionRef = useRef(incomingSession);
+  const editorRootRef = useRef<HTMLDivElement>(null);
   const incomingBaselineKey = baselineIdentity(incomingSession.baseline);
   const session = useMemo(
     () => baselineIdentity(localSession.baseline) === baselineIdentity(incomingSession.baseline)
@@ -364,6 +371,7 @@ function StructuredShell({
   const [selectedNodeId, setSelectedNodeId] = useState(nodes[0]?.nodeId ?? '');
   const [navigatorOpen, setNavigatorOpen] = useState(true);
   const [inspectorOpen, setInspectorOpen] = useState(true);
+  const [announcement, setAnnouncement] = useState('');
   const effectiveSelectedNodeId = nodes.some((node) => node.nodeId === selectedNodeId)
     ? selectedNodeId
     : nodes[0]?.nodeId ?? '';
@@ -1012,6 +1020,53 @@ function StructuredShell({
       ),
     );
   };
+  const problemLocation = (canonicalPointer: string) => locateTemplateProblem(
+    session.workingCopy.designDsl,
+    nodes,
+    canonicalPointer,
+  );
+  const focusProblemLocation = (
+    problem: InvalidSaveProblem,
+    location: LocatedTemplateProblem,
+  ) => {
+    switch (location.target.kind) {
+      case 'template-display-name':
+        setInspectorOpen(true);
+        break;
+      case 'definitions':
+        setNavigatorOpen(true);
+        setEntry('definitions');
+        break;
+      case 'node':
+        setNavigatorOpen(true);
+        setEntry('structure');
+        setSelectedNodeId(location.target.nodeId);
+        break;
+    }
+    queueMicrotask(() => {
+      const root = editorRootRef.current;
+      if (!root) return;
+      let target: HTMLElement | undefined;
+      if (location.target.kind === 'template-display-name') {
+        target = root.querySelector<HTMLElement>('[data-template-editor-location="template-display-name"]')
+          ?? undefined;
+      } else if (location.target.kind === 'definitions') {
+        target = root.querySelector<HTMLElement>('[data-template-editor-location="definitions"]')
+          ?? undefined;
+      } else {
+        const nodeId = location.target.nodeId;
+        target = [...root.querySelectorAll<HTMLElement>('[data-template-editor-node-id]')]
+          .find((candidate) => candidate.dataset.templateEditorNodeId === nodeId);
+      }
+      if (target) {
+        target.focus({ preventScroll: true });
+        target.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
+        setAnnouncement(problemLocationAnnouncement(problem.code, location));
+      } else {
+        setAnnouncement(`问题 ${problem.code} 的目标当前不可用；问题仍保留在摘要中。`);
+      }
+    });
+  };
   const retryUnknownSave = (attempt: TemplateUnknownSaveAttempt) => {
     const transport = saveTransport;
     if (!transport) return;
@@ -1085,6 +1140,7 @@ function StructuredShell({
 
   return (
     <EditorFrame
+      rootRef={editorRootRef}
       baseline={session.baseline}
       documentName={workingName}
       modeLabel="Structured Editor"
@@ -1108,7 +1164,17 @@ function StructuredShell({
         className={`te-workbench${navigatorOpen ? '' : ' is-navigator-closed'}${inspectorOpen ? '' : ' is-inspector-closed'}`}
         id="main-content"
         aria-label="Template 编辑工作区"
+        tabIndex={-1}
       >
+        <p
+          className="sr-only"
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+          data-template-editor-announcer=""
+        >
+          {announcement}
+        </p>
         {navigatorOpen ? (
           <aside className="te-navigator" aria-label="结构与资源面板">
             <nav className="te-entry-nav" aria-label="编辑器入口">
@@ -1125,7 +1191,7 @@ function StructuredShell({
                 </button>
               ))}
             </nav>
-            <section className="te-entry-panel" aria-live="polite">
+            <section className="te-entry-panel">
               <EntryPanel
                 entry={entry}
                 session={session}
@@ -1179,6 +1245,8 @@ function StructuredShell({
           {saveView.state === 'invalid-save-confirmation' ? (
             <InvalidSaveConfirmationPanel
               view={saveView}
+              locate={problemLocation}
+              onLocate={focusProblemLocation}
               onConfirm={() => confirmInvalidSave(saveView.offer)}
               onCancel={cancelSaveOffer}
             />
@@ -1236,6 +1304,7 @@ function StructuredShell({
 }
 
 function EditorFrame({
+  rootRef,
   baseline,
   documentName,
   modeLabel,
@@ -1244,6 +1313,7 @@ function EditorFrame({
   headerTools,
   children,
 }: {
+  rootRef?: React.Ref<HTMLDivElement>;
   baseline: CanonicalTemplateBaseline;
   documentName?: string;
   modeLabel: string;
@@ -1253,7 +1323,7 @@ function EditorFrame({
   children: React.ReactNode;
 }) {
   return (
-    <div className="template-editor-root">
+    <div className="template-editor-root" ref={rootRef}>
       <a className="skip-link" href="#main-content">跳到主要内容</a>
       <header className="te-chrome">
         <div className="te-product-mark">
@@ -1384,6 +1454,7 @@ function TemplateNameEditor({
         <div className="te-name-field">
           <input
             id={fieldId}
+            data-template-editor-location="template-display-name"
             value={draft}
             disabled={disabled}
             onChange={(event) => {
@@ -1693,18 +1764,35 @@ function ReconciliationActions({
 
 function InvalidSaveConfirmationPanel({
   view,
+  locate,
+  onLocate,
   onConfirm,
   onCancel,
 }: {
   view: Extract<StructuredSaveView, { state: 'invalid-save-confirmation' }>;
+  locate: (canonicalPointer: string) => TemplateProblemLocation;
+  onLocate: (problem: InvalidSaveProblem, location: LocatedTemplateProblem) => void;
   onConfirm: () => void;
   onCancel: () => void;
 }) {
   const titleId = useId();
+  const summaryId = `${titleId}-summary`;
+  const summaryRef = useRef<HTMLElement>(null);
   const problemCount = view.offer.problems.length;
 
+  useEffect(() => {
+    summaryRef.current?.focus({ preventScroll: true });
+  }, [view.offer.confirmationToken, view.offer.proposedContentHash]);
+
   return (
-    <section className="te-invalid-save-confirmation" role="alert" aria-labelledby={titleId}>
+    <section
+      ref={summaryRef}
+      className="te-invalid-save-confirmation"
+      role="alert"
+      aria-labelledby={titleId}
+      aria-describedby={summaryId}
+      tabIndex={-1}
+    >
       <header>
         <AlertTriangle aria-hidden="true" size={20} />
         <div>
@@ -1712,16 +1800,31 @@ function InvalidSaveConfirmationPanel({
           <span>{view.message}</span>
         </div>
       </header>
-      <p>
+      <p id={summaryId}>
         {problemCount} 项依赖问题 · {view.offer.truncated ? '已截断' : '完整未截断'}
       </p>
       <ul>
-        {view.offer.problems.map((problem, index) => (
-          <li key={`${problem.canonicalPointer}\0${problem.code}\0${index}`}>
-            <code>{problem.code}</code>
-            <code>{problem.canonicalPointer || '(root)'}</code>
-          </li>
-        ))}
+        {view.offer.problems.map((problem, index) => {
+          const location = locate(problem.canonicalPointer);
+          return (
+            <li key={`${problem.canonicalPointer}\0${problem.code}\0${index}`}>
+              <code>{problem.code}</code>
+              <code>{problem.canonicalPointer || '(root)'}</code>
+              {location.state === 'located' ? (
+                <button
+                  type="button"
+                  className="te-problem-locator"
+                  aria-label={`${problem.code}：${problemLocationButtonLabel(location)}`}
+                  onClick={() => onLocate(problem, location)}
+                >
+                  {problemLocationButtonLabel(location)}
+                </button>
+              ) : (
+                <span className="te-problem-unavailable">只能在问题摘要中查看</span>
+              )}
+            </li>
+          );
+        })}
       </ul>
       <div className="te-invalid-save-actions">
         <button type="button" onClick={onConfirm}>仍保存为 INVALID</button>
@@ -1731,6 +1834,33 @@ function InvalidSaveConfirmationPanel({
       </div>
     </section>
   );
+}
+
+function problemLocationButtonLabel(location: LocatedTemplateProblem): string {
+  switch (location.target.kind) {
+    case 'template-display-name':
+      return '定位到 Template 名称';
+    case 'definitions':
+      return '定位到定义面板';
+    case 'node':
+      return `定位到节点“${location.target.label}”`;
+  }
+}
+
+function problemLocationAnnouncement(
+  code: string,
+  location: LocatedTemplateProblem,
+): string {
+  switch (location.target.kind) {
+    case 'template-display-name':
+      return `已定位问题 ${code} 到 Template 名称。`;
+    case 'definitions':
+      return `已定位问题 ${code} 到定义面板。`;
+    case 'node':
+      return location.precision === 'owning-node'
+        ? `已定位问题 ${code} 到所属节点“${location.target.label}”；具体属性没有独立表单控件。`
+        : `已定位问题 ${code} 到节点“${location.target.label}”。`;
+  }
 }
 
 function ReadinessStatus({
@@ -1853,7 +1983,28 @@ function NodeTree({
   onSelectNode: (nodeId: string) => void;
 }) {
   const [visibleCount, setVisibleCount] = useState(50);
-  const visibleNodes = nodes.slice(0, visibleCount);
+  const buttonRefs = useRef(new Map<string, HTMLButtonElement>());
+  const selectedIndex = nodes.findIndex((node) => node.nodeId === selectedNodeId);
+  const effectiveVisibleCount = selectedIndex >= 0
+    ? Math.max(visibleCount, selectedIndex + 1)
+    : visibleCount;
+  const visibleNodes = nodes.slice(0, effectiveVisibleCount);
+
+  const moveFocus = (currentNodeId: string, key: string) => {
+    const currentIndex = visibleNodes.findIndex((node) => node.nodeId === currentNodeId);
+    if (currentIndex < 0) return;
+    let nextIndex: number;
+    if (key === 'ArrowDown') nextIndex = Math.min(visibleNodes.length - 1, currentIndex + 1);
+    else if (key === 'ArrowUp') nextIndex = Math.max(0, currentIndex - 1);
+    else if (key === 'Home') nextIndex = 0;
+    else if (key === 'End') nextIndex = visibleNodes.length - 1;
+    else return;
+    const next = visibleNodes[nextIndex];
+    if (!next) return;
+    onSelectNode(next.nodeId);
+    buttonRefs.current.get(next.nodeId)?.focus();
+  };
+
   return (
     <>
       <PanelHeading title="结构" detail={`${nodes.length} 个节点`} />
@@ -1861,12 +2012,23 @@ function NodeTree({
         {visibleNodes.map((node) => (
           <li key={node.nodeId} role="none">
             <button
+              ref={(element) => {
+                if (element) buttonRefs.current.set(node.nodeId, element);
+                else buttonRefs.current.delete(node.nodeId);
+              }}
               type="button"
               role="treeitem"
+              data-template-editor-node-id={node.nodeId}
               aria-level={node.depth + 1}
               aria-selected={node.nodeId === selectedNodeId}
+              tabIndex={node.nodeId === selectedNodeId ? 0 : -1}
               style={{ paddingInlineStart: `${12 + node.depth * 16}px` }}
               onClick={() => onSelectNode(node.nodeId)}
+              onKeyDown={(event) => {
+                if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return;
+                event.preventDefault();
+                moveFocus(node.nodeId, event.key);
+              }}
             >
               <ChevronRight aria-hidden="true" size={13} />
               <span>{node.displayName}</span>
@@ -1875,13 +2037,13 @@ function NodeTree({
           </li>
         ))}
       </ul>
-      {visibleCount < nodes.length ? (
+      {effectiveVisibleCount < nodes.length ? (
         <button
           className="te-more-button"
           type="button"
           onClick={() => setVisibleCount((count) => Math.min(nodes.length, count + 50))}
         >
-          再显示 {Math.min(50, nodes.length - visibleCount)} 个节点
+          再显示 {Math.min(50, nodes.length - effectiveVisibleCount)} 个节点
         </button>
       ) : null}
     </>
@@ -1926,7 +2088,7 @@ function DefinitionSummary({ designDsl }: { designDsl: Record<string, unknown> }
     : [];
   return (
     <>
-      <PanelHeading title="定义" detail={`${definitions.length} 个定义`} />
+      <PanelHeading title="定义" detail={`${definitions.length} 个定义`} location="definitions" />
       {definitions.length === 0 ? (
         <p className="te-empty-state">0 个定义 · 当前 baseline 不含 Custom、Mapping 或 Expression。</p>
       ) : (
@@ -2117,9 +2279,21 @@ function ImportExchangeStatus({
   );
 }
 
-function PanelHeading({ title, detail }: { title: string; detail: string }) {
+function PanelHeading({
+  title,
+  detail,
+  location,
+}: {
+  title: string;
+  detail: string;
+  location?: string;
+}) {
   return (
-    <header className="te-panel-heading">
+    <header
+      className="te-panel-heading"
+      data-template-editor-location={location}
+      tabIndex={location ? -1 : undefined}
+    >
       <h2>{title}</h2>
       <span>{detail}</span>
     </header>

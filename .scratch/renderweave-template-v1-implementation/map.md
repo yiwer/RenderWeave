@@ -196,6 +196,11 @@ Label: wayfinder:map
   identity/schema 永不覆盖当前目标，并以 Structured、Raw Repair、Compatibility 三种互斥模式表达可信度。
   import/recovery 共享 dirty replacement guard；Node 24 Web 195 tests，当前无 registered migration profile，只允许
   Compatibility exact export，不提供伪 migration action。
+- [实现 Editor E9 键盘流、live region、有效宽度与问题定位投影](issues/37-editor-e9-accessibility-problem-locator.md) —
+  **resolved / automated_verified**；Web-only 严格投影 bounded RFC 6901 problem pointer，补齐失败摘要 focus、
+  roving tree、central live delta、1024 drawer、1440/1280/1024/等效 200% 与低于 1024 unsupported 浏览器证据。
+  locator 14/14、Editor 136/136、Node 24 Web 212/212、E2E 23 passed/1 live-provider skip；测试 fixture 不开放产品
+  route，真实浏览器 200% zoom/人工 keyboard J1 保持 pending。
 - [验证 Product Editor 状态、恢复与权威预览架构](issues/09-validate-product-editor-architecture.md) —
   throwaway 逻辑原型（`/prototype/editor-state-model`，不进产品 route）把冻结编辑器规则编码为确定性
   fixture 状态机：10 个引导走查场景 37/37 断言 + 自由操作冒烟 + 键盘焦点检查全部通过（Playwright A1，
@@ -272,9 +277,9 @@ Label: wayfinder:map
   definite Stack 的非 water-fill 子闭包；T34 已完成 FIXED-track definite Grid 与 ContentBox floor-zero；其余
   HUG/Stack main-axis FILL/Grid AUTO/FRACTION/resource/world scene/raster/JPEG/Engine 接线仍须另行登记，物理 Linux
   双 CPU-family 认证与 J1/A3 属届时另行授权的执行级门控。
-- Editor T27/E1、T28/E2、T29/E3、T30/E4a、T31/E4b、T32/E5 与 T35/E7 均已单独登记并完成；T36/E8 已在
-  T35 verified commit 后登记并由 single writer claim，严格实现本地 import、三模式与 dirty replacement guard；E6
-  仍被真实 Renderer output/public preview seam 阻塞，E9 待 T36 收口后按真实依赖审计；
+- Editor T27/E1、T28/E2、T29/E3、T30/E4a、T31/E4b、T32/E5、T35/E7 与 T36/E8 均已单独登记并完成；DAG 审计
+  后 T37/E9 成为唯一 unblocked frontier，现已由 single writer claim，严格实现 a11y 与问题定位投影；E6 仍被真实
+  Renderer output/public preview seam 阻塞；
   `/templates/:templateId` 在 save/preview/recovery 等闭环完成前仍不接入产品路由。
 - Product Editor 的 save/recovery/conflict/preview/browser automation 与 accessibility 实施票，要等状态架构
   prototype 结论后再登记——T09 已给出结论与 E1–E9 占位-free 纵切分解（open/baseline、本地编辑+undo+
