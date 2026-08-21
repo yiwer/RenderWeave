@@ -52,13 +52,37 @@ export interface TemplateInvalidSaveOffer {
   truncated: false;
 }
 
+export interface TemplateSaveExpectedCurrent {
+  readonly templateId: string;
+  readonly revision: string;
+  readonly staticSchema: {
+    readonly schemaKey: string;
+    readonly versionTag: string;
+  };
+  readonly contentHash: string;
+  readonly canonicalDesignDsl: string;
+}
+
+export interface TemplateUnknownSaveAttempt {
+  readonly expectedCurrent: TemplateSaveExpectedCurrent;
+  readonly expectedRevision: string;
+  readonly draftCanonical: string;
+  readonly proposedContentHash: string;
+  readonly previewGeneration: number;
+  readonly requiredReadiness: 'READY' | 'INVALID';
+  readonly confirmation?: {
+    readonly token: string;
+    readonly expiresAt: string;
+  };
+}
+
 export type TemplateSaveResult =
   | { state: 'saved'; session: StructuredEditorSession }
   | { state: 'conflict'; offer: TemplateConflictOffer; message: string }
   | { state: 'invalid-save-confirmation'; offer: TemplateInvalidSaveOffer; message: string }
   | { state: 'offer-invalidated'; code: string; message: string }
   | { state: 'rejected'; code: string; message: string }
-  | { state: 'unknown'; message: string };
+  | { state: 'unknown'; attempt: TemplateUnknownSaveAttempt; message: string };
 
 export const defaultTemplateSaveTransport: TemplateSaveTransport = {
   getCurrent(templateId, signal) {
@@ -107,22 +131,30 @@ export async function saveTemplateWorkingCopy(
     );
   }
 
+  const attempt = await prepareAttempt(
+    session,
+    session.baseline,
+    'READY',
+  );
+  if (attempt === null) {
+    return rejected(
+      'TEMPLATE_RECONCILIATION_CONTEXT_UNAVAILABLE',
+      '无法在写入前冻结可核验的保存上下文；本次写入未发出。',
+    );
+  }
+
   let response: TemplateSaveHttpResponse;
   try {
     response = await transport.putCurrent(
-      session.baseline.templateId,
-      session.baseline.revision,
-      session.workingCopy.canonicalDesignDsl,
+      attempt.expectedCurrent.templateId,
+      attempt.expectedRevision,
+      attempt.draftCanonical,
       signal,
     );
   } catch {
-    return unknownMutation();
+    return unknownMutation(attempt);
   }
-  return interpretMutationResponse(
-    session,
-    session.baseline.revision,
-    response,
-  );
+  return interpretMutationResponse(session, attempt, response);
 }
 
 export async function confirmTemplateOverwrite(
@@ -186,19 +218,26 @@ export async function confirmTemplateOverwrite(
       '远端 current 已没有可追加的后继 revision。',
     );
   }
+  const attempt = await prepareAttempt(session, current, 'READY');
+  if (attempt === null) {
+    return rejected(
+      'TEMPLATE_RECONCILIATION_CONTEXT_UNAVAILABLE',
+      '无法在写入前冻结可核验的覆盖上下文；覆盖写入未发出。',
+    );
+  }
 
   let response: TemplateSaveHttpResponse;
   try {
     response = await transport.putCurrent(
-      session.baseline.templateId,
-      current.revision,
-      session.workingCopy.canonicalDesignDsl,
+      attempt.expectedCurrent.templateId,
+      attempt.expectedRevision,
+      attempt.draftCanonical,
       signal,
     );
   } catch {
-    return unknownMutation();
+    return unknownMutation(attempt);
   }
-  return interpretMutationResponse(session, current.revision, response);
+  return interpretMutationResponse(session, attempt, response);
 }
 
 export async function confirmTemplateInvalidSave(
@@ -214,7 +253,18 @@ export async function confirmTemplateInvalidSave(
       message: '本地草稿、revision 或 preview generation 已变化；旧 INVALID 确认已失效。',
     };
   }
-  if (Date.parse(offer.expiresAt) <= Date.now()) {
+  const confirmationExpiresAt = Date.parse(offer.expiresAt);
+  if (
+    !/^[0-9a-f]{64}$/.test(offer.confirmationToken)
+    || !Number.isFinite(confirmationExpiresAt)
+  ) {
+    return {
+      state: 'offer-invalidated',
+      code: 'TEMPLATE_INVALID_SAVE_OFFER_INVALIDATED',
+      message: 'INVALID 保存确认凭据未通过完整性检查；旧确认已失效。',
+    };
+  }
+  if (confirmationExpiresAt <= Date.now()) {
     return {
       state: 'offer-invalidated',
       code: 'TEMPLATE_CONFIRMATION_EXPIRED',
@@ -222,41 +272,87 @@ export async function confirmTemplateInvalidSave(
     };
   }
 
+  const attempt = await prepareAttempt(
+    session,
+    session.baseline,
+    'INVALID',
+    { token: offer.confirmationToken, expiresAt: offer.expiresAt },
+  );
+  if (attempt === null || attempt.proposedContentHash !== offer.proposedContentHash) {
+    return {
+      state: 'offer-invalidated',
+      code: 'TEMPLATE_INVALID_SAVE_OFFER_INVALIDATED',
+      message: '本地草稿或 proposed contentHash 已变化；旧 INVALID 确认已失效。',
+    };
+  }
+
   let response: TemplateSaveHttpResponse;
   try {
     response = await transport.putCurrent(
-      session.baseline.templateId,
-      offer.expectedRevision,
-      session.workingCopy.canonicalDesignDsl,
+      attempt.expectedCurrent.templateId,
+      attempt.expectedRevision,
+      attempt.draftCanonical,
       signal,
-      offer.confirmationToken,
+      attempt.confirmation?.token,
     );
   } catch {
-    return unknownMutation();
+    return unknownMutation(attempt);
   }
-  if (response.status === 200) {
-    return verifiedSuccess(
-      session,
-      offer.expectedRevision,
-      response.body,
-      'INVALID',
+  return interpretMutationResponse(session, attempt, response);
+}
+
+export async function retryTemplateUnknownSave(
+  session: StructuredEditorSession,
+  attempt: TemplateUnknownSaveAttempt,
+  transport: TemplateSaveTransport,
+  signal?: AbortSignal,
+): Promise<TemplateSaveResult> {
+  if (!(await attemptMatchesSession(attempt, session))) {
+    return {
+      state: 'offer-invalidated',
+      code: 'TEMPLATE_RECONCILIATION_ATTEMPT_INVALIDATED',
+      message: '保存草稿、generation 或 trusted current identity 已变化；旧 reconciliation retry 已失效。',
+    };
+  }
+  if (attempt.confirmation && Date.parse(attempt.confirmation.expiresAt) <= Date.now()) {
+    return {
+      state: 'offer-invalidated',
+      code: 'TEMPLATE_CONFIRMATION_EXPIRED',
+      message: 'INVALID 保存确认已过期；不能重放旧 confirmation。',
+    };
+  }
+
+  let response: TemplateSaveHttpResponse;
+  try {
+    response = await transport.putCurrent(
+      attempt.expectedCurrent.templateId,
+      attempt.expectedRevision,
+      attempt.draftCanonical,
+      signal,
+      attempt.confirmation?.token,
     );
+  } catch {
+    return unknownMutation(attempt);
   }
-  return interpretMutationResponse(session, offer.expectedRevision, response);
+  return interpretMutationResponse(session, attempt, response);
 }
 
 async function interpretMutationResponse(
   session: StructuredEditorSession,
-  expectedRevision: string,
+  attempt: TemplateUnknownSaveAttempt,
   response: TemplateSaveHttpResponse,
 ): Promise<TemplateSaveResult> {
   if (response.status === 200) {
-    return verifiedSuccess(session, expectedRevision, response.body, 'READY');
+    return verifiedSuccess(attempt, response.body);
   }
 
   const problem = parseProblem(response.body);
   if (response.status === 422 && isInvalidSaveOfferCode(problem.code)) {
-    const offer = await invalidSaveOfferFor(session, expectedRevision, problem.value);
+    const offer = await invalidSaveOfferFor(
+      session,
+      attempt.expectedRevision,
+      problem.value,
+    );
     if (offer !== null) {
       return {
         state: 'invalid-save-confirmation',
@@ -295,36 +391,35 @@ async function interpretMutationResponse(
       '服务器明确拒绝本次写入；canonical 本地草稿已保留。',
     );
   }
-  return unknownMutation();
+  return unknownMutation(attempt);
 }
 
 async function verifiedSuccess(
-  session: StructuredEditorSession,
-  expectedRevision: string,
+  attempt: TemplateUnknownSaveAttempt,
   body: string,
-  requiredReadiness: 'READY' | 'INVALID',
 ): Promise<TemplateSaveResult> {
   let baseline: CanonicalTemplateBaseline;
   try {
     baseline = await parseTemplateCurrentResponse(body);
   } catch {
-    return unknownMutation();
+    return unknownMutation(attempt);
   }
-  const expectedNext = successor(expectedRevision);
+  const expectedNext = successor(attempt.expectedRevision);
   if (
     expectedNext === null
     || baseline.revision !== expectedNext
-    || !samePermanentIdentity(baseline, session.baseline)
-    || baseline.canonicalDesignDsl !== session.workingCopy.canonicalDesignDsl
-    || baseline.persistedReadiness !== requiredReadiness
+    || !samePermanentIdentity(baseline, attempt.expectedCurrent)
+    || baseline.canonicalDesignDsl !== attempt.draftCanonical
+    || baseline.contentHash !== attempt.proposedContentHash
+    || baseline.persistedReadiness !== attempt.requiredReadiness
   ) {
-    return unknownMutation();
+    return unknownMutation(attempt);
   }
   const next = createSessionFromBaseline(baseline, {
     state: 'checked',
     value: baseline.persistedReadiness,
   });
-  if (next.mode !== 'structured') return unknownMutation();
+  if (next.mode !== 'structured') return unknownMutation(attempt);
   return { state: 'saved', session: next };
 }
 
@@ -360,11 +455,79 @@ function invalidSaveOfferMatchesSession(
 
 function samePermanentIdentity(
   current: CanonicalTemplateBaseline,
-  baseline: CanonicalTemplateBaseline,
+  baseline: TemplateSaveExpectedCurrent | CanonicalTemplateBaseline,
 ): boolean {
   return current.templateId === baseline.templateId
     && current.staticSchema.schemaKey === baseline.staticSchema.schemaKey
     && current.staticSchema.versionTag === baseline.staticSchema.versionTag;
+}
+
+async function prepareAttempt(
+  session: StructuredEditorSession,
+  expectedCurrent: CanonicalTemplateBaseline,
+  requiredReadiness: 'READY' | 'INVALID',
+  confirmation?: { token: string; expiresAt: string },
+): Promise<TemplateUnknownSaveAttempt | null> {
+  try {
+    if (
+      !samePermanentIdentity(expectedCurrent, session.baseline)
+      || (requiredReadiness === 'INVALID') !== (confirmation !== undefined)
+      || (confirmation !== undefined && (
+        !/^[0-9a-f]{64}$/.test(confirmation.token)
+        || !Number.isFinite(Date.parse(confirmation.expiresAt))
+      ))
+    ) return null;
+    const expectedContentHash = await templateContentHashOf(
+      expectedCurrent.canonicalDesignDsl,
+    );
+    if (expectedContentHash !== expectedCurrent.contentHash) return null;
+    const proposedContentHash = await templateContentHashOf(
+      session.workingCopy.canonicalDesignDsl,
+    );
+    return Object.freeze({
+      expectedCurrent: Object.freeze({
+        templateId: expectedCurrent.templateId,
+        revision: expectedCurrent.revision,
+        staticSchema: Object.freeze({ ...expectedCurrent.staticSchema }),
+        contentHash: expectedCurrent.contentHash,
+        canonicalDesignDsl: expectedCurrent.canonicalDesignDsl,
+      }),
+      expectedRevision: expectedCurrent.revision,
+      draftCanonical: session.workingCopy.canonicalDesignDsl,
+      proposedContentHash,
+      previewGeneration: session.previewGeneration,
+      requiredReadiness,
+      ...(confirmation ? { confirmation: Object.freeze({ ...confirmation }) } : {}),
+    });
+  } catch {
+    return null;
+  }
+}
+
+async function attemptMatchesSession(
+  attempt: TemplateUnknownSaveAttempt,
+  session: StructuredEditorSession,
+): Promise<boolean> {
+  if (
+    attempt.expectedRevision !== attempt.expectedCurrent.revision
+    || !samePermanentIdentity(session.baseline, attempt.expectedCurrent)
+    || attempt.draftCanonical !== session.workingCopy.canonicalDesignDsl
+    || attempt.previewGeneration !== session.previewGeneration
+    || !isCanonicalDirty(session)
+    || !hasSuccessor(attempt.expectedRevision)
+    || (attempt.requiredReadiness === 'INVALID') !== (attempt.confirmation !== undefined)
+  ) return false;
+  if (attempt.confirmation && (
+    !/^[0-9a-f]{64}$/.test(attempt.confirmation.token)
+    || !Number.isFinite(Date.parse(attempt.confirmation.expiresAt))
+  )) return false;
+  try {
+    return await templateContentHashOf(attempt.draftCanonical) === attempt.proposedContentHash
+      && await templateContentHashOf(attempt.expectedCurrent.canonicalDesignDsl)
+        === attempt.expectedCurrent.contentHash;
+  } catch {
+    return false;
+  }
 }
 
 function hasSuccessor(revision: string): boolean {
@@ -498,10 +661,11 @@ function rejected(code: string, message: string): TemplateSaveResult {
   return { state: 'rejected', code, message };
 }
 
-function unknownMutation(): TemplateSaveResult {
+function unknownMutation(attempt: TemplateUnknownSaveAttempt): TemplateSaveResult {
   return {
     state: 'unknown',
-    message: '保存请求的结果不明；本地草稿已锁定，需由 E5 reconciliation 核验 current 后再继续。',
+    attempt,
+    message: '保存请求的结果不明；本地草稿已锁定，正在通过 trusted current 核验。',
   };
 }
 

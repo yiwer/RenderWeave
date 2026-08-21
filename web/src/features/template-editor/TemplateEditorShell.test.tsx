@@ -10,7 +10,7 @@ import {
 } from './template-editor-model';
 import { applyTemplateDisplayName } from './template-editor-session';
 import { TemplateEditorShell, TemplateEditorSurface } from './TemplateEditorShell';
-import type { TemplateEditorTransport } from './template-open';
+import { TemplateRequestError, type TemplateEditorTransport } from './template-open';
 import type { TemplateSaveTransport } from './template-save';
 import {
   currentResponse,
@@ -18,7 +18,11 @@ import {
   structuredBaseline,
 } from './template-editor-test-support';
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.restoreAllMocks();
+  vi.unstubAllGlobals();
+});
 
 describe('Template Editor E1/E2 Product shell', () => {
   it('renders the approved Canvas Focus workbench with only real behavior', () => {
@@ -213,7 +217,7 @@ describe('Template Editor E1/E2 Product shell', () => {
     expect(screen.getByText('保存请求进行中')).toBeTruthy();
     expect(screen.getByRole('textbox', { name: 'Template 名称' }).hasAttribute('disabled')).toBe(true);
     expect(screen.getByRole('button', { name: '撤销本地编辑' }).hasAttribute('disabled')).toBe(true);
-    expect(putCurrent).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(putCurrent).toHaveBeenCalledTimes(1));
 
     resolvePut({ status: 200, body: await saveResponse(session, '8') });
     await waitFor(() => expect(screen.getByText('revision 8')).toBeTruthy());
@@ -328,21 +332,148 @@ describe('Template Editor E1/E2 Product shell', () => {
     expect(putCurrent).toHaveBeenCalledTimes(2);
   });
 
-  it('locks an ambiguous save outcome without exposing retry or reconciliation actions', async () => {
+  it('automatically reconciles an ambiguous save and exposes only an explicit exact retry', async () => {
     const session = dirtySession('未知结果草稿');
+    const putCurrent = vi.fn()
+      .mockRejectedValueOnce(new TypeError('connection lost'))
+      .mockResolvedValueOnce({ status: 200, body: await saveResponse(session, '8') });
+    const getCurrent = vi.fn().mockResolvedValue(await saveResponse(
+      session,
+      '7',
+      'READY',
+      session.baseline.canonicalDesignDsl,
+    ));
+    render(<TemplateEditorShell
+      session={session}
+      saveTransport={saveTransport({ getCurrent, putCurrent })}
+    />);
+
+    fireEvent.click(screen.getByRole('button', { name: '保存 canonical 本地草稿' }));
+    expect(await screen.findByText('可以显式重试')).toBeTruthy();
+    expect(getCurrent).toHaveBeenCalledTimes(1);
+    expect(putCurrent).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole('textbox', { name: 'Template 名称' }).hasAttribute('disabled')).toBe(true);
+    expect(screen.getByRole('button', { name: '保存 canonical 本地草稿' }).hasAttribute('disabled')).toBe(true);
+    expect(screen.getByRole('button', { name: '显式重试原保存' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: '导出 canonical 本地草稿' })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: '显式重试原保存' }));
+    await waitFor(() => expect(screen.getByText('revision 8')).toBeTruthy());
+    expect(putCurrent).toHaveBeenCalledTimes(2);
+  });
+
+  it('adopts a converged trusted current without attributing it to the ambiguous request', async () => {
+    const session = dirtySession('服务器已收敛草稿');
+    const transport = saveTransport({
+      putCurrent: vi.fn().mockRejectedValue(new TypeError('response lost')),
+      getCurrent: vi.fn().mockResolvedValue(await saveResponse(session, '9')),
+    });
+    const onSessionCommitted = vi.fn((
+      committed: StructuredEditorSession,
+      saveNotice?: string,
+    ) => view.rerender(<TemplateEditorShell
+      session={committed}
+      saveTransport={transport}
+      initialSaveNotice={saveNotice}
+      onSessionCommitted={onSessionCommitted}
+    />));
+    const view = render(<TemplateEditorShell
+      session={session}
+      saveTransport={transport}
+      onSessionCommitted={onSessionCommitted}
+    />);
+
+    fireEvent.click(screen.getByRole('button', { name: '保存 canonical 本地草稿' }));
+    expect(await screen.findByText('内容已在服务器确认')).toBeTruthy();
+    expect(screen.getByText(/不代表具体请求归属/)).toBeTruthy();
+    expect(screen.getByText('revision 9')).toBeTruthy();
+    expect(screen.getByText('Canonical current')).toBeTruthy();
+    expect(screen.getByText('重检暂不可用')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: '显式重试原保存' })).toBeNull();
+    expect(onSessionCommitted).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps unknown locked while trusted current is unavailable, then permits re-verification', async () => {
+    const session = dirtySession('离线核验草稿');
+    const getCurrent = vi.fn()
+      .mockRejectedValueOnce(new TypeError('offline'))
+      .mockResolvedValueOnce(await saveResponse(
+        session,
+        '7',
+        'READY',
+        session.baseline.canonicalDesignDsl,
+      ));
     render(<TemplateEditorShell
       session={session}
       saveTransport={saveTransport({
-        putCurrent: vi.fn().mockRejectedValue(new TypeError('connection lost')),
+        putCurrent: vi.fn().mockRejectedValue(new TypeError('response lost')),
+        getCurrent,
       })}
     />);
 
     fireEvent.click(screen.getByRole('button', { name: '保存 canonical 本地草稿' }));
-    expect(await screen.findByText('保存结果不明')).toBeTruthy();
-    expect(screen.getByText(/E5 reconciliation/)).toBeTruthy();
+    expect(await screen.findByText('保存结果仍未知')).toBeTruthy();
+    expect(screen.getByRole('button', { name: '重新核验 trusted current' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: '显式重试原保存' })).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: '重新核验 trusted current' }));
+    expect(await screen.findByText('可以显式重试')).toBeTruthy();
+    expect(getCurrent).toHaveBeenCalledTimes(2);
+  });
+
+  it('reuses conflict overwrite after reconciliation finds a later different current', async () => {
+    const session = dirtySession('unknown conflict draft');
+    const remote = dirtySession('remote different draft');
+    render(<TemplateEditorShell
+      session={session}
+      saveTransport={saveTransport({
+        putCurrent: vi.fn().mockRejectedValue(new TypeError('response lost')),
+        getCurrent: vi.fn().mockResolvedValue(await saveResponse(remote, '11')),
+      })}
+    />);
+
+    fireEvent.click(screen.getByRole('button', { name: '保存 canonical 本地草稿' }));
+    expect(await screen.findByText('保存冲突')).toBeTruthy();
+    expect(screen.getByRole('button', { name: '重读并覆盖 revision 11' })).toBeTruthy();
+  });
+
+  it('locks terminal deletion and fail-closed reconciliation while preserving exact draft export', async () => {
+    const session = dirtySession('必须保留的草稿');
+    const createObjectURL = vi.fn().mockReturnValue('blob:recovery-draft');
+    const revokeObjectURL = vi.fn();
+    vi.stubGlobal('URL', { createObjectURL, revokeObjectURL });
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
+    const view = render(<TemplateEditorShell
+      session={session}
+      saveTransport={saveTransport({
+        putCurrent: vi.fn().mockRejectedValue(new TypeError('response lost')),
+        getCurrent: vi.fn().mockRejectedValue(
+          new TemplateRequestError(410, 'TEMPLATE_DELETED'),
+        ),
+      })}
+    />);
+
+    fireEvent.click(screen.getByRole('button', { name: '保存 canonical 本地草稿' }));
+    expect(await screen.findByText('Template 已删除')).toBeTruthy();
     expect(screen.getByRole('textbox', { name: 'Template 名称' }).hasAttribute('disabled')).toBe(true);
-    expect(screen.getByRole('button', { name: '保存 canonical 本地草稿' }).hasAttribute('disabled')).toBe(true);
-    expect(screen.queryByRole('button', { name: /重试保存|采用 current|reconciliation/ })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: '导出 canonical 本地草稿' }));
+    expect(createObjectURL).toHaveBeenCalledTimes(1);
+    const blob = createObjectURL.mock.calls[0]?.[0] as Blob;
+    expect(await blob.text()).toBe(session.workingCopy.canonicalDesignDsl);
+    expect(revokeObjectURL).toHaveBeenCalledWith('blob:recovery-draft');
+
+    view.unmount();
+    render(<TemplateEditorShell
+      session={session}
+      saveTransport={saveTransport({
+        putCurrent: vi.fn().mockRejectedValue(new TypeError('response lost')),
+        getCurrent: vi.fn().mockResolvedValue('{"not":"trusted current"}'),
+      })}
+    />);
+    fireEvent.click(screen.getByRole('button', { name: '保存 canonical 本地草稿' }));
+    expect(await screen.findByText('保存核验失败（fail closed）')).toBeTruthy();
+    expect(screen.getByRole('button', { name: '导出 canonical 本地草稿' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: '显式重试原保存' })).toBeNull();
   });
 
   it('offers a keyboard-reachable retry when the trusted current cannot be read', async () => {
@@ -424,8 +555,8 @@ async function saveResponse(
   session: StructuredEditorSession,
   revision: string,
   readiness: 'READY' | 'INVALID' = 'READY',
+  canonical = session.workingCopy.canonicalDesignDsl,
 ): Promise<string> {
-  const canonical = session.workingCopy.canonicalDesignDsl;
   const bytes = new TextEncoder().encode('renderweave-design-content/1\0' + canonical);
   const digest = new Uint8Array(await crypto.subtle.digest('SHA-256', bytes));
   const hash = `sha256:${Array.from(

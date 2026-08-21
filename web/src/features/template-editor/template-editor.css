@@ -769,6 +769,16 @@
   color: var(--color-error-ink);
 }
 
+.te-save-status.is-confirmed {
+  background: var(--color-success-soft);
+  color: var(--color-success-ink);
+}
+
+.te-save-status.is-retryable {
+  background: var(--color-warning-soft);
+  color: var(--color-warning-ink);
+}
+
 .te-save-actions {
   display: grid;
   gap: var(--space-xs);
@@ -776,7 +786,10 @@
 }
 
 .te-save-actions button {
+  display: inline-flex;
   min-height: 44px;
+  align-items: center;
+  gap: var(--space-xs);
   padding: var(--space-xs) var(--space-sm);
   border: 1px solid var(--color-warning-border);
   border-radius: var(--radius-input);

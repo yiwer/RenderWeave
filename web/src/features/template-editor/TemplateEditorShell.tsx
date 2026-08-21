@@ -4,6 +4,7 @@ import {
   Braces,
   CheckCircle2,
   ChevronRight,
+  Download,
   FileJson,
   FolderTree,
   Image,
@@ -53,14 +54,20 @@ import {
   type TemplateEditorTransport,
 } from './template-open';
 import {
+  reconcileTemplateUnknownSave,
+  type TemplateSaveReconciliationResult,
+} from './template-save-reconciliation';
+import {
   confirmTemplateInvalidSave,
   confirmTemplateOverwrite,
   defaultTemplateSaveTransport,
+  retryTemplateUnknownSave,
   saveTemplateWorkingCopy,
   type TemplateConflictOffer,
   type TemplateInvalidSaveOffer,
   type TemplateSaveResult,
   type TemplateSaveTransport,
+  type TemplateUnknownSaveAttempt,
 } from './template-save';
 import './template-editor.css';
 
@@ -78,13 +85,15 @@ interface TemplateEditorShellProps {
   session: TemplateEditorSession;
   onRetryReadiness?: () => void;
   saveTransport?: TemplateSaveTransport;
-  onSessionCommitted?: (session: StructuredEditorSession) => void;
+  initialSaveNotice?: string;
+  onSessionCommitted?: (session: StructuredEditorSession, saveNotice?: string) => void;
 }
 
 export function TemplateEditorShell({
   session,
   onRetryReadiness,
   saveTransport,
+  initialSaveNotice,
   onSessionCommitted,
 }: TemplateEditorShellProps) {
   if (session.mode === 'raw-repair') {
@@ -99,6 +108,7 @@ export function TemplateEditorShell({
       session={session}
       onRetryReadiness={onRetryReadiness}
       saveTransport={saveTransport}
+      initialSaveNotice={initialSaveNotice}
       onSessionCommitted={onSessionCommitted}
     />
   );
@@ -112,7 +122,7 @@ interface TemplateEditorSurfaceProps {
 
 type SurfaceState =
   | { state: 'loading' }
-  | { state: 'open'; session: TemplateEditorSession }
+  | { state: 'open'; session: TemplateEditorSession; saveNotice?: string }
   | { state: 'error'; message: string };
 
 export function TemplateEditorSurface({
@@ -172,7 +182,12 @@ export function TemplateEditorSurface({
       session={surface.session}
       onRetryReadiness={() => setRetryKey((value) => value + 1)}
       saveTransport={effectiveSaveTransport}
-      onSessionCommitted={(session) => setSurface({ state: 'open', session })}
+      initialSaveNotice={surface.saveNotice}
+      onSessionCommitted={(session, saveNotice) => setSurface({
+        state: 'open',
+        session,
+        ...(saveNotice ? { saveNotice } : {}),
+      })}
     />
   );
 }
@@ -183,21 +198,37 @@ type StructuredSaveView =
   | { state: 'conflict'; offer: TemplateConflictOffer; message: string }
   | { state: 'invalid-save-confirmation'; offer: TemplateInvalidSaveOffer; message: string }
   | { state: 'rejected'; code: string; message: string }
-  | { state: 'unknown'; message: string };
+  | { state: 'unknown'; attempt: TemplateUnknownSaveAttempt; message: string }
+  | { state: 'reconciling'; attempt: TemplateUnknownSaveAttempt; message: string }
+  | { state: 'retryable'; attempt: TemplateUnknownSaveAttempt; message: string }
+  | { state: 'confirmed-current'; message: string }
+  | { state: 'deleted'; attempt: TemplateUnknownSaveAttempt; message: string }
+  | {
+    state: 'failed-closed';
+    attempt: TemplateUnknownSaveAttempt;
+    code: string;
+    message: string;
+  };
 
 function StructuredShell({
   session: incomingSession,
   onRetryReadiness,
   saveTransport,
+  initialSaveNotice,
   onSessionCommitted,
 }: {
   session: StructuredEditorSession;
   onRetryReadiness?: () => void;
   saveTransport?: TemplateSaveTransport;
-  onSessionCommitted?: (session: StructuredEditorSession) => void;
+  initialSaveNotice?: string;
+  onSessionCommitted?: (session: StructuredEditorSession, saveNotice?: string) => void;
 }) {
   const [localSession, setLocalSession] = useState(incomingSession);
-  const [saveView, setSaveView] = useState<StructuredSaveView>({ state: 'idle' });
+  const [saveView, setSaveView] = useState<StructuredSaveView>(
+    initialSaveNotice
+      ? { state: 'confirmed-current', message: initialSaveNotice }
+      : { state: 'idle' },
+  );
   const mutationId = useRef(0);
   const mutationAbort = useRef<AbortController | null>(null);
   const session = useMemo(
@@ -218,7 +249,12 @@ function StructuredShell({
   const dirty = isCanonicalDirty(session);
   const workingName = templateDisplayName(session.workingCopy);
   const guard = authoritativePreviewGuard(session);
-  const localLocked = saveView.state === 'pending' || saveView.state === 'unknown';
+  const localLocked = saveView.state === 'pending'
+    || saveView.state === 'unknown'
+    || saveView.state === 'reconciling'
+    || saveView.state === 'retryable'
+    || saveView.state === 'deleted'
+    || saveView.state === 'failed-closed';
 
   useEffect(() => () => {
     mutationId.current += 1;
@@ -266,15 +302,79 @@ function StructuredShell({
         });
         return;
       case 'unknown':
-        setSaveView({ state: 'unknown', message: result.message });
+        setSaveView({ state: 'unknown', attempt: result.attempt, message: result.message });
+        void runReconciliation(result.attempt);
     }
+  };
+
+  const acceptReconciliationResult = (result: TemplateSaveReconciliationResult) => {
+    switch (result.state) {
+      case 'adopted':
+        setLocalSession(result.session);
+        setSaveView({ state: 'confirmed-current', message: result.message });
+        onSessionCommitted?.(result.session, result.message);
+        return;
+      case 'retryable':
+        setSaveView({ state: 'retryable', attempt: result.attempt, message: result.message });
+        return;
+      case 'conflict':
+        setSaveView({ state: 'conflict', offer: result.offer, message: result.message });
+        return;
+      case 'deleted':
+        setSaveView({ state: 'deleted', attempt: result.attempt, message: result.message });
+        return;
+      case 'unavailable':
+        setSaveView({ state: 'unknown', attempt: result.attempt, message: result.message });
+        return;
+      case 'failed-closed':
+        setSaveView({
+          state: 'failed-closed',
+          attempt: result.attempt,
+          code: result.code,
+          message: result.message,
+        });
+    }
+  };
+
+  const runReconciliation = async (attempt: TemplateUnknownSaveAttempt) => {
+    const transport = saveTransport;
+    if (!transport || mutationAbort.current !== null) return;
+    const id = mutationId.current + 1;
+    mutationId.current = id;
+    const controller = new AbortController();
+    mutationAbort.current = controller;
+    setSaveView({
+      state: 'reconciling',
+      attempt,
+      message: '正在读取并严格校验 trusted current；不会自动重试写入。',
+    });
+    let result: TemplateSaveReconciliationResult;
+    try {
+      result = await reconcileTemplateUnknownSave(attempt, transport, controller.signal);
+    } catch (error) {
+      if (isAbort(error)) return;
+      result = {
+        state: 'failed-closed',
+        attempt,
+        code: 'TEMPLATE_RECONCILIATION_COORDINATOR_FAILURE',
+        message: '保存核验协调器出现无法解释的失败；本地草稿继续锁定。',
+      };
+    }
+    if (mutationId.current !== id) return;
+    mutationAbort.current = null;
+    acceptReconciliationResult(result);
   };
 
   const runMutation = async (
     message: string,
     operation: (signal: AbortSignal) => Promise<TemplateSaveResult>,
+    allowReconciliationRetry = false,
   ) => {
-    if (!saveTransport || localLocked || mutationAbort.current !== null) return;
+    if (
+      !saveTransport
+      || (!allowReconciliationRetry && localLocked)
+      || mutationAbort.current !== null
+    ) return;
     const id = mutationId.current + 1;
     mutationId.current = id;
     const controller = new AbortController();
@@ -285,8 +385,9 @@ function StructuredShell({
       result = await operation(controller.signal);
     } catch {
       result = {
-        state: 'unknown',
-        message: '保存请求的结果不明；本地草稿已锁定，需由 E5 reconciliation 核验 current 后再继续。',
+        state: 'rejected',
+        code: 'TEMPLATE_EDITOR_COORDINATOR_FAILURE',
+        message: '保存协调器未能建立可核验结果；本次操作未被自动重试。',
       };
     }
     if (mutationId.current !== id) return;
@@ -316,6 +417,15 @@ function StructuredShell({
     void runMutation(
       '正在确认并保存 INVALID revision',
       (signal) => confirmTemplateInvalidSave(session, offer, transport, signal),
+    );
+  };
+  const retryUnknownSave = (attempt: TemplateUnknownSaveAttempt) => {
+    const transport = saveTransport;
+    if (!transport) return;
+    void runMutation(
+      '正在显式重试原保存',
+      (signal) => retryTemplateUnknownSave(session, attempt, transport, signal),
+      true,
     );
   };
 
@@ -407,6 +517,9 @@ function StructuredShell({
               view={saveView}
               onConfirmOverwrite={confirmOverwrite}
               onCancelOverwrite={() => setSaveView({ state: 'idle' })}
+              onReconcile={runReconciliation}
+              onRetry={retryUnknownSave}
+              onExport={exportReconciliationDraft}
             />
             <NodeInspector node={selected} />
           </aside>
@@ -614,20 +727,28 @@ function StructuredSaveStatus({
   view,
   onConfirmOverwrite,
   onCancelOverwrite,
+  onReconcile,
+  onRetry,
+  onExport,
 }: {
   view: StructuredSaveView;
   onConfirmOverwrite: (offer: TemplateConflictOffer) => void;
   onCancelOverwrite: () => void;
+  onReconcile: (attempt: TemplateUnknownSaveAttempt) => void;
+  onRetry: (attempt: TemplateUnknownSaveAttempt) => void;
+  onExport: (attempt: TemplateUnknownSaveAttempt) => void;
 }) {
   if (view.state === 'idle') return null;
   if (view.state === 'invalid-save-confirmation') return null;
-  if (view.state === 'pending') {
+  if (view.state === 'pending' || view.state === 'reconciling') {
     return (
       <section className="te-save-status is-pending" role="status" aria-live="polite">
         <LoaderCircle className="te-loading-icon" aria-hidden="true" size={18} />
         <div>
-          <strong>{view.message}</strong>
-          <span>本地编辑与历史记录已暂时锁定。</span>
+          <strong>{view.state === 'pending' ? view.message : '正在核验保存结果'}</strong>
+          <span>{view.state === 'pending'
+            ? '本地编辑与历史记录已暂时锁定。'
+            : view.message}</span>
         </div>
       </section>
     );
@@ -663,14 +784,93 @@ function StructuredSaveStatus({
       </section>
     );
   }
+  if (view.state === 'confirmed-current') {
+    return (
+      <section className="te-save-status is-confirmed" role="status" aria-live="polite">
+        <CheckCircle2 aria-hidden="true" size={18} />
+        <div>
+          <strong>内容已在服务器确认</strong>
+          <span>{view.message}</span>
+        </div>
+      </section>
+    );
+  }
+  if (view.state === 'retryable') {
+    return (
+      <section className="te-save-status is-retryable" role="alert">
+        <RefreshCw aria-hidden="true" size={18} />
+        <div>
+          <strong>可以显式重试</strong>
+          <span>{view.message}</span>
+          <ReconciliationActions
+            primaryLabel="显式重试原保存"
+            onPrimary={() => onRetry(view.attempt)}
+            onExport={() => onExport(view.attempt)}
+          />
+        </div>
+      </section>
+    );
+  }
+  if (view.state === 'deleted') {
+    return (
+      <section className="te-save-status is-unknown" role="alert">
+        <AlertTriangle aria-hidden="true" size={18} />
+        <div>
+          <strong>Template 已删除</strong>
+          <span>{view.message}</span>
+          <ReconciliationActions onExport={() => onExport(view.attempt)} />
+        </div>
+      </section>
+    );
+  }
+  if (view.state === 'failed-closed') {
+    return (
+      <section className="te-save-status is-unknown" role="alert">
+        <AlertTriangle aria-hidden="true" size={18} />
+        <div>
+          <strong>保存核验失败（fail closed）</strong>
+          <span>{view.message}</span>
+          <code>{view.code}</code>
+          <ReconciliationActions onExport={() => onExport(view.attempt)} />
+        </div>
+      </section>
+    );
+  }
   return (
     <section className="te-save-status is-unknown" role="alert">
       <Unplug aria-hidden="true" size={18} />
       <div>
-        <strong>保存结果不明</strong>
+        <strong>保存结果仍未知</strong>
         <span>{view.message}</span>
+        <ReconciliationActions
+          primaryLabel="重新核验 trusted current"
+          onPrimary={() => onReconcile(view.attempt)}
+          onExport={() => onExport(view.attempt)}
+        />
       </div>
     </section>
+  );
+}
+
+function ReconciliationActions({
+  primaryLabel,
+  onPrimary,
+  onExport,
+}: {
+  primaryLabel?: string;
+  onPrimary?: () => void;
+  onExport: () => void;
+}) {
+  return (
+    <div className="te-save-actions">
+      {primaryLabel && onPrimary ? (
+        <button type="button" onClick={onPrimary}>{primaryLabel}</button>
+      ) : null}
+      <button type="button" className="is-secondary" onClick={onExport}>
+        <Download aria-hidden="true" size={15} />
+        导出 canonical 本地草稿
+      </button>
+    </div>
   );
 }
 
@@ -1089,6 +1289,22 @@ function openingErrorMessage(error: unknown): string {
     return '服务器暂时无法读取 Template；请检查服务状态后重试。';
   }
   return '无法连接到 Template 服务；请检查网络后重试。';
+}
+
+function exportReconciliationDraft(attempt: TemplateUnknownSaveAttempt) {
+  const url = URL.createObjectURL(new Blob(
+    [attempt.draftCanonical],
+    { type: 'application/vnd.renderweave.design+json;charset=utf-8' },
+  ));
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = 'renderweave-local-draft.design.json';
+  anchor.click();
+  URL.revokeObjectURL(url);
+}
+
+function isAbort(error: unknown): boolean {
+  return error instanceof DOMException && error.name === 'AbortError';
 }
 
 function authoredAssetIds(value: unknown): string[] {

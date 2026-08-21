@@ -1919,3 +1919,25 @@
 - T30+T31 关闭 Editor E4 dependency-save 语义，但不外推 E5–E9、产品 route、Editor J1、Renderer/Profile/formal
   records、A3 或 READY。Provider attempts=0、API Key reads=0、open authorization=0；未发送真实数据、未调用付费
   外部模型，未 push/tag/PR。
+
+### Template v1 TV1-T32 Editor E5（resolved / automated_verified）
+
+- 2026-08-21：T31 最终 full `.sdlc/evidence/20260821-140853-full/` 17/17 通过，并以 verified local commit
+  `06f945b` 收口，worktree clean；交叉核对 T09 J1 结论、旧 ticket 18 与现有 GET/PUT/`410/TEMPLATE_DELETED`
+  后，由 Codex `/root` single-writer claim T32（blocked by T09/T29/T30/T31，均 resolved）。
+- 本票 Web-only：每次 PUT 前冻结 expected trusted current + expectedRevision + exact draft/proposed hash/generation/
+  required readiness/可选 INVALID token；unknown 后只 GET trusted current，完整分类 adopted/retryable/conflict/deleted/
+  fail-closed，禁止盲重试和具体请求归因。
+- unknown/reconciling/retryable/deleted/fail-closed 保持 authored mutation lock，并提供 bare canonical draft export；
+  network/503 保持 unknown，精确 `410/TEMPLATE_DELETED` 才进入删除态。E7 才实现 Local recovery 持久化与跨刷新 resume。
+- 不修改 Java/migration/OpenAPI/generated SDK/API version/route，不推进 E6–E9、Renderer/Profile/formal records/READY，
+  不运行 provider/真实数据/API Key/付费外部调用，不 push/tag/PR。
+- 2026-08-21：实现完成。三种 PUT 路径先复核 trusted baseline hash 并冻结 expected current/revision、exact draft、
+  proposed hash、generation/readiness/可选 INVALID token；unknown 后只读 trusted current，lossless 完成 adopted/
+  retryable/conflict/deleted/fail-closed，暂时不可读保持 unknown，rollback/identity/integrity 等全部 fail closed。
+- Canvas Focus 自动执行 reconciliation，所有未收敛状态保持 mutation lock；只有原 revision 未动时出现“显式重试原保存”，
+  adopted 明确不证明请求归属并在 readiness 重检前阻止 preview，删除/unknown/fail-closed 均可导出 exact bare draft。
+- TDD focused 3 files/44 tests；Node 24 Web `.sdlc/evidence/20260821-145017-web/` 为 20 files/139 tests + SDK/
+  typecheck/lint/build，Fast `.sdlc/evidence/20260821-145156-fast/` 全绿。最终 full 目录仅在 commit handoff 记录。
+- T32 生命周期为 `resolved / automated_verified`；E7 才承担 Local recovery 持久化/跨刷新 resume。E6–E9、产品 route、
+  Editor J1、Renderer/Profile/formal records/A3/READY 均未推进；provider attempts/API Key reads/open authorization=0。
