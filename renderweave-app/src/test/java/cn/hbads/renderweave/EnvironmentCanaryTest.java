@@ -38,7 +38,7 @@ class EnvironmentCanaryTest {
                 .andExpect(jsonPath("$.service").value("renderweave-api"))
                 .andExpect(jsonPath("$.status").value("ready"))
                 .andExpect(jsonPath("$.database").value("ready"))
-                .andExpect(jsonPath("$.contractVersion").value("0.13.0"));
+                .andExpect(jsonPath("$.contractVersion").value("0.14.0"));
 
         Integer appliedMigrations = jdbcClient
                 .sql("select count(*) from flyway_schema_history where success = true")

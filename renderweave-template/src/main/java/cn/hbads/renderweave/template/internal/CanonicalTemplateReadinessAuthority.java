@@ -13,6 +13,8 @@ import java.util.Objects;
  * persists the result. Used by the app's STALE consumer and Render-bound rechecks.
  */
 final class CanonicalTemplateReadinessAuthority implements TemplateReadinessAuthority {
+    private static final int MAX_RECHECK_ATTEMPTS = 3;
+
     private final TemplatePersistence persistence;
     private final AssetRefAtomExtractor extractor;
     private final TemplateDependencyEvaluator dependencies;
@@ -40,46 +42,43 @@ final class CanonicalTemplateReadinessAuthority implements TemplateReadinessAuth
     @Override
     public RecheckOutcome recheck(TemplateApplication.TemplateId templateId) {
         Objects.requireNonNull(templateId, "templateId");
-        var locate = persistence.locate(templateId);
-        if (locate instanceof TemplatePersistence.LocateNotFound) {
-            return new RecheckNotFound();
-        }
-        if (locate instanceof TemplatePersistence.LocateUnavailable) {
-            return new RecheckUnavailable();
-        }
-        if (((TemplatePersistence.Located) locate).metadata().lifecycle()
-                == TemplatePersistence.Lifecycle.DELETED) {
-            return new RecheckDeleted();
-        }
-        var loaded = persistence.loadCurrent(templateId);
-        if (loaded instanceof TemplatePersistence.CurrentNotFound) {
-            return new RecheckNotFound();
-        }
-        if (loaded instanceof TemplatePersistence.CurrentLoadUnavailable) {
-            return new RecheckUnavailable();
-        }
-        var stored = ((TemplatePersistence.CurrentLoaded) loaded).current();
-        var projection = extractor.extract(stored.canonicalDesignDslUtf8());
-        TemplateApplication.Readiness readiness;
-        try {
-            readiness = dependencies.evaluate(projection, templateId.value());
-        } catch (TemplateDependencyEvaluator.Unavailable unavailable) {
-            return new RecheckUnavailable();
-        }
-        var updated = persistence.updateReadiness(
-                templateId, stored.metadata().currentRevision(), readiness);
-        if (updated instanceof TemplatePersistence.ReadinessUpdated) {
-            return new Rechecked(readiness, stored.metadata().currentRevision());
-        }
-        if (updated instanceof TemplatePersistence.ReadinessRevisionConflict
-                || updated instanceof TemplatePersistence.ReadinessNotFound) {
-            // Current moved between load and update: the recheck is stale; retry once
-            // by re-entering the read path.
-            var retried = recheck(templateId);
-            if (retried instanceof RecheckOutcome) {
-                return retried;
+        for (int attempt = 0; attempt < MAX_RECHECK_ATTEMPTS; attempt++) {
+            var locate = persistence.locate(templateId);
+            if (locate instanceof TemplatePersistence.LocateNotFound) {
+                return new RecheckNotFound();
             }
-            return new RecheckUnavailable();
+            if (locate instanceof TemplatePersistence.LocateUnavailable) {
+                return new RecheckUnavailable();
+            }
+            if (((TemplatePersistence.Located) locate).metadata().lifecycle()
+                    == TemplatePersistence.Lifecycle.DELETED) {
+                return new RecheckDeleted();
+            }
+            var loaded = persistence.loadCurrent(templateId);
+            if (loaded instanceof TemplatePersistence.CurrentNotFound) {
+                return new RecheckNotFound();
+            }
+            if (loaded instanceof TemplatePersistence.CurrentLoadUnavailable) {
+                return new RecheckUnavailable();
+            }
+            var stored = ((TemplatePersistence.CurrentLoaded) loaded).current();
+            var projection = extractor.extract(stored.canonicalDesignDslUtf8());
+            TemplateApplication.Readiness readiness;
+            try {
+                readiness = dependencies.evaluate(projection, templateId.value());
+            } catch (TemplateDependencyEvaluator.Unavailable unavailable) {
+                return new RecheckUnavailable();
+            }
+            var updated = persistence.updateReadiness(
+                    templateId, stored.metadata().currentRevision(), readiness);
+            if (updated instanceof TemplatePersistence.ReadinessUpdated) {
+                return new Rechecked(readiness, stored.metadata().currentRevision());
+            }
+            if (updated instanceof TemplatePersistence.ReadinessUnavailable) {
+                return new RecheckUnavailable();
+            }
+            // Current moved or disappeared between load and guarded update. Re-enter the
+            // complete read path, but never recurse or spin without a hard attempt bound.
         }
         return new RecheckUnavailable();
     }

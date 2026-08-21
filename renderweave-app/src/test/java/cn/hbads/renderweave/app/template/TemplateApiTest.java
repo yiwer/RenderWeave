@@ -118,6 +118,50 @@ class TemplateApiTest {
     }
 
     @Test
+    void getIsSideEffectFreeAndExplicitReadinessRecheckBindsTheCheckedCurrent() throws Exception {
+        var create = mockMvc.perform(post("/api/v1/templates")
+                        .queryParam("schemaKey", "system-empty")
+                        .queryParam("versionTag", "v1")
+                        .contentType(DESIGN_MEDIA_TYPE)
+                        .content(DESIGN))
+                .andExpect(status().isCreated())
+                .andReturn();
+        var created = tools.jackson.databind.json.JsonMapper.builder().build()
+                .readTree(create.getResponse().getContentAsByteArray());
+        var templateId = created.path("templateId").asText();
+        var contentHash = created.path("contentHash").asText();
+        jdbc.sql("update template_aggregate set readiness = 'STALE' where template_id = :id")
+                .param("id", templateId)
+                .update();
+
+        mockMvc.perform(get("/api/v1/templates/{templateId}", templateId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.readiness").value("STALE"));
+        org.assertj.core.api.Assertions.assertThat(
+                jdbc.sql("select readiness from template_aggregate where template_id = :id")
+                        .param("id", templateId)
+                        .query(String.class)
+                        .single()
+        ).isEqualTo("STALE");
+
+        mockMvc.perform(post(
+                        "/api/v1/templates/{templateId}/readiness-recheck",
+                        templateId
+                ))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.templateId").value(templateId))
+                .andExpect(jsonPath("$.revision").value(0))
+                .andExpect(jsonPath("$.contentHash").value(contentHash))
+                .andExpect(jsonPath("$.readiness").value("READY"));
+        org.assertj.core.api.Assertions.assertThat(
+                jdbc.sql("select readiness from template_aggregate where template_id = :id")
+                        .param("id", templateId)
+                        .query(String.class)
+                        .single()
+        ).isEqualTo("READY");
+    }
+
+    @Test
     void missingSchemaAndWrongMediaTypeFailWithoutWrites() throws Exception {
         mockMvc.perform(post("/api/v1/templates")
                         .queryParam("schemaKey", "missing-schema")

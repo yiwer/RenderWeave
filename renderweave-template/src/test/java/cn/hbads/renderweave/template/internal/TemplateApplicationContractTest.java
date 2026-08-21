@@ -146,6 +146,99 @@ class TemplateApplicationContractTest {
     }
 
     @Test
+    void explicitCurrentRecheckAuthorizesReadAndReturnsTheCheckedCurrentIdentity() {
+        var invocation = TemplateApplication.TemplateInvocationRef.serverCreated("request-recheck-1");
+        var templateId = TemplateApplication.TemplateId.of("f6191fbc-84c8-4be6-b18f-e640c84e19fe");
+        var schema = new StaticSchemaRef(
+                SchemaKey.systemProvided("system-empty"),
+                VersionTag.of("v1")
+        );
+        var scope = new OwnerScopeAuthority.OwnerScope("owner-recheck");
+        var admitted = assertInstanceOf(
+                cn.hbads.renderweave.template.api.DesignDslAuthority.Admitted.class,
+                new CanonicalDesignDslAuthority().admit(DESIGN)
+        );
+        var calls = new ArrayList<String>();
+        var authority = new ReadAuthorityScript(invocation, scope, calls);
+        var persistence = new RecheckPersistenceScript(
+                templateId,
+                scope,
+                schema,
+                DESIGN,
+                admitted.canonicalUtf8(),
+                admitted.contentHash(),
+                calls
+        );
+        var application = application(
+                authority,
+                persistence,
+                reference -> {
+                    throw new AssertionError("recheck must not resolve the permanent StaticSchema again");
+                }
+        );
+
+        var outcome = application.recheckCurrent(invocation, templateId);
+
+        var current = assertInstanceOf(
+                TemplateApplication.CurrentRechecked.class,
+                outcome
+        ).current();
+        assertEquals(templateId, current.templateId());
+        assertEquals(7, current.revision());
+        assertEquals(admitted.contentHash(), current.contentHash());
+        assertEquals(TemplateApplication.Readiness.READY, current.readiness());
+        assertArrayEquals(admitted.canonicalUtf8(), current.canonicalDesignDslUtf8());
+        assertEquals(
+                List.of("locate", "authorize:READ", "load", "update:7:READY"),
+                calls
+        );
+    }
+
+    @Test
+    void explicitCurrentRecheckStopsAfterThreeGuardedRevisionDrifts() {
+        var invocation = TemplateApplication.TemplateInvocationRef.serverCreated("request-recheck-drift");
+        var templateId = TemplateApplication.TemplateId.of("f08fa76f-cc8d-4984-a0f8-f731ac1eb453");
+        var schema = new StaticSchemaRef(
+                SchemaKey.systemProvided("system-empty"),
+                VersionTag.of("v1")
+        );
+        var scope = new OwnerScopeAuthority.OwnerScope("owner-recheck-drift");
+        var admitted = assertInstanceOf(
+                cn.hbads.renderweave.template.api.DesignDslAuthority.Admitted.class,
+                new CanonicalDesignDslAuthority().admit(DESIGN)
+        );
+        var calls = new ArrayList<String>();
+        var application = application(
+                new ReadAuthorityScript(invocation, scope, calls),
+                new DriftingRecheckPersistenceScript(
+                        templateId,
+                        scope,
+                        schema,
+                        DESIGN,
+                        admitted.canonicalUtf8(),
+                        admitted.contentHash(),
+                        calls
+                ),
+                reference -> {
+                    throw new AssertionError("recheck must not resolve schema");
+                }
+        );
+
+        assertInstanceOf(
+                TemplateApplication.RecheckCurrentDrifted.class,
+                application.recheckCurrent(invocation, templateId)
+        );
+        assertEquals(
+                List.of(
+                        "locate", "authorize:READ", "load", "update:7:READY",
+                        "locate", "authorize:READ", "load", "update:7:READY",
+                        "locate", "authorize:READ", "load", "update:7:READY"
+                ),
+                calls
+        );
+    }
+
+    @Test
     void saveAppendsEvenWhenContentHashMatchesCurrentAndAdvancesExactlyOnce() {
         var invocation = TemplateApplication.TemplateInvocationRef.serverCreated("request-save-1");
         var templateId = TemplateApplication.TemplateId.of("52c78fb7-2fa2-4417-aa3f-cbd43b482f79");
@@ -605,6 +698,127 @@ class TemplateApplicationContractTest {
             calls.add("recheck");
             assertEquals(recheckIdentity, identity);
             return new RecheckGranted();
+        }
+    }
+
+    private static class RecheckPersistenceScript implements TemplatePersistence {
+        private final TemplateApplication.TemplateId expectedTemplateId;
+        private final TemplateMetadata metadata;
+        private final StoredCurrent current;
+        private final List<String> calls;
+
+        private RecheckPersistenceScript(
+                TemplateApplication.TemplateId expectedTemplateId,
+                OwnerScopeAuthority.OwnerScope scope,
+                StaticSchemaRef schema,
+                byte[] storedJsonUtf8,
+                byte[] canonicalUtf8,
+                String contentHash,
+                List<String> calls
+        ) {
+            this.expectedTemplateId = expectedTemplateId;
+            this.metadata = new TemplateMetadata(
+                    expectedTemplateId,
+                    scope,
+                    schema,
+                    7,
+                    Lifecycle.ACTIVE
+            );
+            this.current = new StoredCurrent(
+                    metadata,
+                    storedJsonUtf8,
+                    canonicalUtf8,
+                    contentHash,
+                    TemplateApplication.Readiness.STALE
+            );
+            this.calls = calls;
+        }
+
+        @Override
+        public LocateOutcome locate(TemplateApplication.TemplateId templateId) {
+            calls.add("locate");
+            assertEquals(expectedTemplateId, templateId);
+            return new Located(metadata);
+        }
+
+        @Override
+        public LoadCurrentOutcome loadCurrent(TemplateApplication.TemplateId templateId) {
+            calls.add("load");
+            assertEquals(expectedTemplateId, templateId);
+            return new CurrentLoaded(current);
+        }
+
+        @Override
+        public UpdateReadinessOutcome updateReadiness(
+                TemplateApplication.TemplateId templateId,
+                long currentRevision,
+                TemplateApplication.Readiness readiness
+        ) {
+            calls.add("update:" + currentRevision + ":" + readiness.name());
+            assertEquals(expectedTemplateId, templateId);
+            assertEquals(7, currentRevision);
+            assertEquals(TemplateApplication.Readiness.READY, readiness);
+            return new ReadinessUpdated();
+        }
+
+        @Override
+        public LoadUseTargetsOutcome loadUseTargets(TemplateApplication.TemplateId templateId) {
+            assertEquals(expectedTemplateId, templateId);
+            return new UseTargetsLoaded(List.of());
+        }
+
+        @Override
+        public FindAssetReferencesOutcome findAssetReferences(String assetId) {
+            throw new AssertionError("unexpected findAssetReferences");
+        }
+
+        @Override
+        public CreateOutcome create(CreateCommit commit) {
+            throw new AssertionError("unexpected create");
+        }
+
+        @Override
+        public AppendOutcome append(AppendCommit commit) {
+            throw new AssertionError("unexpected append");
+        }
+    }
+
+    private static final class DriftingRecheckPersistenceScript
+            extends RecheckPersistenceScript {
+        private final TemplateApplication.TemplateId expectedTemplateId;
+        private final List<String> calls;
+
+        private DriftingRecheckPersistenceScript(
+                TemplateApplication.TemplateId expectedTemplateId,
+                OwnerScopeAuthority.OwnerScope scope,
+                StaticSchemaRef schema,
+                byte[] storedJsonUtf8,
+                byte[] canonicalUtf8,
+                String contentHash,
+                List<String> calls
+        ) {
+            super(
+                    expectedTemplateId,
+                    scope,
+                    schema,
+                    storedJsonUtf8,
+                    canonicalUtf8,
+                    contentHash,
+                    calls
+            );
+            this.expectedTemplateId = expectedTemplateId;
+            this.calls = calls;
+        }
+
+        @Override
+        public UpdateReadinessOutcome updateReadiness(
+                TemplateApplication.TemplateId templateId,
+                long currentRevision,
+                TemplateApplication.Readiness readiness
+        ) {
+            calls.add("update:" + currentRevision + ":" + readiness.name());
+            assertEquals(expectedTemplateId, templateId);
+            return new ReadinessRevisionConflict();
         }
     }
 

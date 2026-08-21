@@ -115,6 +115,54 @@ final class TemplateController {
         };
     }
 
+    @PostMapping(
+            value = "/{templateId}/readiness-recheck",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    ResponseEntity<?> recheckCurrent(@PathVariable String templateId) {
+        var outcome = templates.recheckCurrent(invocation(), templateId(templateId));
+        return switch (outcome) {
+            case TemplateApplication.CurrentRechecked rechecked -> ResponseEntity.ok(
+                    readinessRecheck(rechecked.current())
+            );
+            case TemplateApplication.RecheckCurrentNotFound ignored -> problem(
+                    HttpStatus.NOT_FOUND,
+                    "TEMPLATE_NOT_FOUND",
+                    "Template was not found"
+            );
+            case TemplateApplication.RecheckCurrentDeleted ignored -> problem(
+                    HttpStatus.GONE,
+                    "TEMPLATE_DELETED",
+                    "Template is deleted"
+            );
+            case TemplateApplication.RecheckCurrentIntegrityMismatch ignored -> problem(
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    "TEMPLATE_INTEGRITY_MISMATCH",
+                    "Stored Template integrity verification failed"
+            );
+            case TemplateApplication.RecheckCurrentAuthorityUnavailable ignored -> problem(
+                    HttpStatus.SERVICE_UNAVAILABLE,
+                    "TEMPLATE_AUTHORITY_UNAVAILABLE",
+                    "Template authorization is unavailable"
+            );
+            case TemplateApplication.RecheckCurrentDependencyUnavailable ignored -> problem(
+                    HttpStatus.SERVICE_UNAVAILABLE,
+                    "TEMPLATE_DEPENDENCY_UNAVAILABLE",
+                    "Template dependencies could not be checked"
+            );
+            case TemplateApplication.RecheckCurrentPersistenceUnavailable ignored -> problem(
+                    HttpStatus.SERVICE_UNAVAILABLE,
+                    "TEMPLATE_PERSISTENCE_UNAVAILABLE",
+                    "Template persistence is unavailable"
+            );
+            case TemplateApplication.RecheckCurrentDrifted ignored -> problem(
+                    HttpStatus.CONFLICT,
+                    "TEMPLATE_CURRENT_DRIFTED",
+                    "Template current changed repeatedly during readiness recheck"
+            );
+        };
+    }
+
     @PutMapping(
             value = "/{templateId}",
             consumes = DESIGN_MEDIA_TYPE,
@@ -193,6 +241,15 @@ final class TemplateController {
                 current.contentHash(),
                 current.readiness().name(),
                 designJson(current.canonicalDesignDslUtf8())
+        );
+    }
+
+    private ReadinessRecheckResponse readinessRecheck(TemplateApplication.Current current) {
+        return new ReadinessRecheckResponse(
+                current.templateId().value(),
+                current.revision(),
+                current.contentHash(),
+                current.readiness().name()
         );
     }
 
@@ -312,6 +369,14 @@ final class TemplateController {
     }
 
     record OpaqueCommitResponse(String templateId, String disclosure) {
+    }
+
+    record ReadinessRecheckResponse(
+            String templateId,
+            long revision,
+            String contentHash,
+            String readiness
+    ) {
     }
 
     record TemplateProblemResponse(

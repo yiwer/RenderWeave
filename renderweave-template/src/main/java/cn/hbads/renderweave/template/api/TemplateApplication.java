@@ -12,6 +12,11 @@ public interface TemplateApplication {
 
     CurrentOutcome getCurrent(TemplateInvocationRef invocation, TemplateId templateId);
 
+    RecheckCurrentOutcome recheckCurrent(
+            TemplateInvocationRef invocation,
+            TemplateId templateId
+    );
+
     SaveOutcome save(TemplateInvocationRef invocation, SaveCommand command);
 
     record TemplateInvocationRef(String value) {
@@ -229,6 +234,44 @@ public interface TemplateApplication {
     }
 
     record CurrentPersistenceUnavailable() implements CurrentOutcome {
+    }
+
+    sealed interface RecheckCurrentOutcome permits
+            CurrentRechecked,
+            RecheckCurrentNotFound,
+            RecheckCurrentDeleted,
+            RecheckCurrentIntegrityMismatch,
+            RecheckCurrentAuthorityUnavailable,
+            RecheckCurrentDependencyUnavailable,
+            RecheckCurrentPersistenceUnavailable,
+            RecheckCurrentDrifted {
+    }
+
+    record CurrentRechecked(Current current) implements RecheckCurrentOutcome {
+        public CurrentRechecked {
+            Objects.requireNonNull(current, "current");
+        }
+    }
+
+    record RecheckCurrentNotFound() implements RecheckCurrentOutcome {
+    }
+
+    record RecheckCurrentDeleted() implements RecheckCurrentOutcome {
+    }
+
+    record RecheckCurrentIntegrityMismatch() implements RecheckCurrentOutcome {
+    }
+
+    record RecheckCurrentAuthorityUnavailable() implements RecheckCurrentOutcome {
+    }
+
+    record RecheckCurrentDependencyUnavailable() implements RecheckCurrentOutcome {
+    }
+
+    record RecheckCurrentPersistenceUnavailable() implements RecheckCurrentOutcome {
+    }
+
+    record RecheckCurrentDrifted() implements RecheckCurrentOutcome {
     }
 
     sealed interface SaveOutcome permits

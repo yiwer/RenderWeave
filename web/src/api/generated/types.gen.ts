@@ -8,7 +8,7 @@ export type SystemStatus = {
     service: 'renderweave-api';
     status: 'ready';
     database: 'ready';
-    contractVersion: '0.13.0';
+    contractVersion: '0.14.0';
 };
 
 export type AssetDeletePrecheckResponse = {
@@ -281,8 +281,18 @@ export type TemplateReadableResponse = {
     revision: number;
     staticSchema: StaticSchemaRef;
     contentHash: string;
-    readiness: 'READY';
+    /**
+     * Persisted current-facing projection; editor open must explicitly recheck.
+     */
+    readiness: 'READY' | 'INVALID' | 'STALE';
     designDsl: DesignDslKernel;
+};
+
+export type TemplateReadinessRecheckResponse = {
+    templateId: string;
+    revision: number;
+    contentHash: string;
+    readiness: 'READY' | 'INVALID';
 };
 
 export type TemplateOpaqueCommitResponse = {
@@ -1758,6 +1768,56 @@ export type SaveTemplateResponses = {
 };
 
 export type SaveTemplateResponse = SaveTemplateResponses[keyof SaveTemplateResponses];
+
+export type RecheckTemplateReadinessData = {
+    body?: never;
+    path: {
+        /**
+         * Server-generated opaque Template identity; clients must not parse its encoding.
+         */
+        templateId: string;
+    };
+    query?: never;
+    url: '/api/v1/templates/{templateId}/readiness-recheck';
+};
+
+export type RecheckTemplateReadinessErrors = {
+    /**
+     * Request JSON, key syntax or envelope is invalid.
+     */
+    400: Problem;
+    /**
+     * The exact StaticSchema or visible Template required by this operation does not exist.
+     */
+    404: Problem;
+    /**
+     * Natural identity or expected revision conflicts with current state.
+     */
+    409: Problem;
+    /**
+     * The authorized Template exists but is terminally deleted.
+     */
+    410: Problem;
+    /**
+     * RFC 9457 problem response.
+     */
+    500: Problem;
+    /**
+     * Template authorization or persistence is temporarily unavailable.
+     */
+    503: Problem;
+};
+
+export type RecheckTemplateReadinessError = RecheckTemplateReadinessErrors[keyof RecheckTemplateReadinessErrors];
+
+export type RecheckTemplateReadinessResponses = {
+    /**
+     * Fresh readiness projection bound to one exact current identity.
+     */
+    200: TemplateReadinessRecheckResponse;
+};
+
+export type RecheckTemplateReadinessResponse = RecheckTemplateReadinessResponses[keyof RecheckTemplateReadinessResponses];
 
 export type ListAssetsData = {
     body?: never;

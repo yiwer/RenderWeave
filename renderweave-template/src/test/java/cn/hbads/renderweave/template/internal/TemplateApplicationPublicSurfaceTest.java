@@ -20,13 +20,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class TemplateApplicationPublicSurfaceTest {
 
     @Test
-    void authoringInterfaceContainsOnlyTheThreeTicketSixBehaviors() {
+    void authoringInterfaceContainsOnlyTheFourRegisteredBehaviors() {
         assertEquals(
-                Set.of("create", "getCurrent", "save"),
+                Set.of("create", "getCurrent", "recheckCurrent", "save"),
                 methodNames(TemplateApplication.class)
         );
         assertTrue(TemplateApplication.CreateOutcome.class.isSealed());
         assertTrue(TemplateApplication.CurrentOutcome.class.isSealed());
+        assertTrue(TemplateApplication.RecheckCurrentOutcome.class.isSealed());
         assertTrue(TemplateApplication.SaveOutcome.class.isSealed());
 
         var commandSurface = Set.of(

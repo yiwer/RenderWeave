@@ -1800,3 +1800,25 @@
   `.sdlc/evidence/20260821-053225-server/` 与 `fast` `.sdlc/evidence/20260821-055925-fast/` 全绿；最终 full
   在记录冻结后捕获并只在提交交接报告。`render` gate 1.3 硬断言 definite report与
   NOT_REGISTERED/NOT_CERTIFIED/world scene+raster ABSENT/daemon UNWIRED/provider attempts 0。
+
+### Template v1 TV1-T27 Editor E1（resolved / automated_verified）
+
+- 2026-08-21：T26 最终 full 17/17 通过并以 verified local commit `6473b88` 收口；完整 HUG/Stack/Grid
+  仍被未冻结 tolerance 阻塞，raster/JPEG/物理认证也缺执行前置，因此按 RULE-USER-001 继续安全 frontier。
+- Codex `/root` single-writer 已登记并 claim T27（blocked by T06/T09/T20，均 resolved）：实现 trusted canonical
+  current baseline、显式 readiness recheck、generation guard 与三模式 Canvas Focus Product shell。
+- 冻结边界：GET 不引入隐式 mutation；OpenAPI/Web SDK 只随真实 operation 更新；Web 以 lossless int64/decimal
+  与 domain-separated contentHash 验证 current。E1 不实现 save/preview/recovery/import，不接产品 route，不复用
+  throwaway 内存状态，不运行 provider/真实数据/API Key，不升级 Editor/Renderer/Template v1 READY。
+- Template 侧已实现显式 READ-authorized recheck、完整 dependency projection、revision-guarded readiness persistence
+  与最多 3 次漂移重试；同票回归修复既有 readiness authority 无界递归重试。GET API 仍只读，PostgreSQL API
+  测试直接证明 GET 不落盘而 POST 对同一 current identity 持久化 fresh readiness。
+- OpenAPI 升至 `0.14.0` 并重新生成 Web SDK；Web raw transport 保留 int64/decimal token，按 domain-separated
+  canonical bytes 复核 hash，只对网络/503 保留可信 baseline + unavailable，其他损坏/隐藏/删除/malformed success
+  均 fail closed。Structured / Raw Repair / Compatibility Read-only 三模式互斥，generation guard 丢弃旧请求结果。
+- Canvas Focus shell 已实现真实五入口、节点选择、inspector/dock 开合、retry、skip link、键盘焦点、polite live
+  status、reduced motion 与小宽度说明；无 save/preview/import/recovery placeholder，也未挂 App 产品路由。
+- A1 证据：`template` `.sdlc/evidence/20260821-072932-template/`、`fast`
+  `.sdlc/evidence/20260821-072956-fast/`、`server` `.sdlc/evidence/20260821-073017-server/`、Node 24 `web`
+  `.sdlc/evidence/20260821-074148-web/`；最终 full 按不可自指策略只在提交交接报告。T27 为
+  `automated_verified`，无已发布 route 浏览器观察、Editor J1、A3 或 Renderer certification。

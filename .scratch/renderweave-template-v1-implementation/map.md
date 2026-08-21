@@ -149,6 +149,11 @@ Label: wayfinder:map
   layout crate，只对 Canvas→Frame/8 种资源无关视觉叶子的 FIXED/FILL + ABSOLUTE 闭包计算 binary64
   pre-transform local LayoutBox/ContentBox；6 laid-out + 9 unsupported 由 Rust/Python 共同重放，独立验证
   15/15、50 checks。合法未覆盖面继续返回 internal unsupported，不冒充 public problem。
+- [实现 Editor E1 canonical open、显式 readiness 重检与三模式工作区骨架](issues/27-editor-e1-canonical-open.md) —
+  **resolved / automated_verified**；GET 保持无副作用，新增授权且绑定 current identity 的显式 readiness
+  recheck；Web lossless 校验 canonical baseline、丢弃漂移结果并形成 Canvas Focus 三模式 Product shell。
+  Template/Fast/Server/Node 24 Web 与最终 full 均通过；按 T09 J1 决定本票不发布产品 route，也不显示尚未实现的
+  save/preview/recovery/import 占位能力。
 - [验证 Product Editor 状态、恢复与权威预览架构](issues/09-validate-product-editor-architecture.md) —
   throwaway 逻辑原型（`/prototype/editor-state-model`，不进产品 route）把冻结编辑器规则编码为确定性
   fixture 状态机：10 个引导走查场景 37/37 断言 + 自由操作冒烟 + 键盘焦点检查全部通过（Playwright A1，
@@ -221,6 +226,8 @@ Label: wayfinder:map
   statically-decidable layout preflight，T26 也已完成 definite ABSOLUTE local box 子闭包；其余
   HUG/Stack/Grid/resource/world scene/raster/JPEG/Engine 接线仍须另行登记，物理 Linux
   双 CPU-family 认证与 J1/A3 属届时另行授权的执行级门控。
+- Editor T27 已从无阻塞的 E1 frontier 单独登记并完成；E2–E9 继续按真实前置逐票登记，
+  `/templates/:templateId` 在 save/preview/recovery 等闭环完成前仍不接入产品路由。
 - Product Editor 的 save/recovery/conflict/preview/browser automation 与 accessibility 实施票，要等状态架构
   prototype 结论后再登记——T09 已给出结论与 E1–E9 占位-free 纵切分解（open/baseline、本地编辑+undo+
   canonical dirty+preview guard、save+conflict overwrite、依赖二次确认、reconciliation、save-and-preview+

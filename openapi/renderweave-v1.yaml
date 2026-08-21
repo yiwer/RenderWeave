@@ -1,7 +1,7 @@
 openapi: 3.1.2
 info:
   title: RenderWeave API
-  version: 0.13.0
+  version: 0.14.0
   description: >-
     Contract-first API for RenderWeave Schema Drafts, immutable StaticSchemas,
     exact compiled artifacts, admitted Template revision authoring, owner-scoped Asset
@@ -474,6 +474,10 @@ paths:
       operationId: getTemplateCurrent
       tags: [Templates]
       summary: Read and integrity-check the active Template current revision
+      description: >-
+        The returned readiness is the persisted current-facing projection and is not a fresh
+        editor or Render authorization conclusion. Editor open flows explicitly call the
+        readiness-recheck operation and bind its result to revision plus contentHash.
       responses:
         '200':
           description: Canonical current editor baseline.
@@ -531,6 +535,41 @@ paths:
           description: The body is not the exact DesignDSL media type.
         '422':
           $ref: '#/components/responses/ValidationProblem'
+        '500':
+          $ref: '#/components/responses/InternalProblem'
+        '503':
+          $ref: '#/components/responses/TemplateServiceUnavailableProblem'
+  /api/v1/templates/{templateId}/readiness-recheck:
+    parameters:
+      - $ref: '#/components/parameters/TemplateId'
+    post:
+      operationId: recheckTemplateReadiness
+      tags: [Templates]
+      summary: Explicitly recheck the latest active Template current against current dependencies
+      description: >-
+        Authorizes Template read, integrity-checks the latest canonical current, recomputes and
+        persists READY or INVALID through a revision-guarded update, then returns the exact
+        revision and contentHash checked. GET remains side-effect free. A repeatedly drifting
+        current returns 409 and must be reopened; old results never overwrite a newer revision.
+      responses:
+        '200':
+          description: Fresh readiness projection bound to one exact current identity.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TemplateReadinessRecheckResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestProblem'
+        '404':
+          $ref: '#/components/responses/TemplateNotFoundProblem'
+        '409':
+          $ref: '#/components/responses/ConflictProblem'
+        '410':
+          description: The authorized Template exists but is terminally deleted.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
         '500':
           $ref: '#/components/responses/InternalProblem'
         '503':
@@ -1677,7 +1716,7 @@ components:
           enum: [ready]
         contractVersion:
           type: string
-          const: 0.13.0
+          const: 0.14.0
     AssetDeletePrecheckResponse:
       type: object
       additionalProperties: false
@@ -2310,9 +2349,29 @@ components:
           pattern: '^sha256:[0-9a-f]{64}$'
         readiness:
           type: string
-          enum: [READY]
+          description: Persisted current-facing projection; editor open must explicitly recheck.
+          enum: [READY, INVALID, STALE]
         designDsl:
           $ref: '#/components/schemas/DesignDslKernel'
+    TemplateReadinessRecheckResponse:
+      type: object
+      additionalProperties: false
+      required: [templateId, revision, contentHash, readiness]
+      properties:
+        templateId:
+          type: string
+          minLength: 1
+          maxLength: 128
+        revision:
+          type: integer
+          format: int64
+          minimum: 0
+        contentHash:
+          type: string
+          pattern: '^sha256:[0-9a-f]{64}$'
+        readiness:
+          type: string
+          enum: [READY, INVALID]
     TemplateOpaqueCommitResponse:
       type: object
       additionalProperties: false

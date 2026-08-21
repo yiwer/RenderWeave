@@ -204,6 +204,65 @@ final class CanonicalTemplateApplication implements TemplateApplication {
     }
 
     @Override
+    public RecheckCurrentOutcome recheckCurrent(
+            TemplateInvocationRef invocation,
+            TemplateId templateId
+    ) {
+        Objects.requireNonNull(invocation, "invocation");
+        Objects.requireNonNull(templateId, "templateId");
+
+        for (int attempt = 0; attempt < 3; attempt++) {
+            var currentOutcome = getCurrent(invocation, templateId);
+            if (currentOutcome instanceof CurrentNotFound) {
+                return new RecheckCurrentNotFound();
+            }
+            if (currentOutcome instanceof CurrentDeleted) {
+                return new RecheckCurrentDeleted();
+            }
+            if (currentOutcome instanceof CurrentIntegrityMismatch) {
+                return new RecheckCurrentIntegrityMismatch();
+            }
+            if (currentOutcome instanceof CurrentAuthorityUnavailable) {
+                return new RecheckCurrentAuthorityUnavailable();
+            }
+            if (currentOutcome instanceof CurrentPersistenceUnavailable) {
+                return new RecheckCurrentPersistenceUnavailable();
+            }
+            var current = ((CurrentReadable) currentOutcome).current();
+            TemplateApplication.Readiness readiness;
+            try {
+                readiness = readinessOf(
+                        projectionOf(current.canonicalDesignDslUtf8()),
+                        templateId.value()
+                );
+            } catch (TemplateDependencyEvaluator.Unavailable unavailable) {
+                return new RecheckCurrentDependencyUnavailable();
+            }
+            var updated = persistence.updateReadiness(
+                    templateId,
+                    current.revision(),
+                    readiness
+            );
+            if (updated instanceof TemplatePersistence.ReadinessUpdated) {
+                return new CurrentRechecked(new Current(
+                        current.templateId(),
+                        current.revision(),
+                        current.staticSchema(),
+                        current.canonicalDesignDslUtf8(),
+                        current.contentHash(),
+                        readiness
+                ));
+            }
+            if (updated instanceof TemplatePersistence.ReadinessUnavailable) {
+                return new RecheckCurrentPersistenceUnavailable();
+            }
+            // Current moved or disappeared between the trusted read and guarded update.
+            // Re-enter the complete authorized read path, but never spin indefinitely.
+        }
+        return new RecheckCurrentDrifted();
+    }
+
+    @Override
     public SaveOutcome save(TemplateInvocationRef invocation, SaveCommand command) {
         Objects.requireNonNull(invocation, "invocation");
         Objects.requireNonNull(command, "command");
