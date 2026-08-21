@@ -108,11 +108,11 @@ fn unsupported_feature_names_are_closed_and_stable() {
         DefiniteLayoutUnsupported::HugContent.as_str(),
         DefiniteLayoutUnsupported::Group.as_str(),
         DefiniteLayoutUnsupported::StackMainFill.as_str(),
-        DefiniteLayoutUnsupported::Grid.as_str(),
+        DefiniteLayoutUnsupported::GridAutoTrack.as_str(),
+        DefiniteLayoutUnsupported::GridFractionTrack.as_str(),
         DefiniteLayoutUnsupported::CompositionViewport.as_str(),
         DefiniteLayoutUnsupported::ResourceDependentKind.as_str(),
         DefiniteLayoutUnsupported::NonAbsolutePlacement.as_str(),
-        DefiniteLayoutUnsupported::DegenerateContentInset.as_str(),
     ];
     assert_eq!(
         names,
@@ -120,11 +120,11 @@ fn unsupported_feature_names_are_closed_and_stable() {
             "HUG_CONTENT",
             "GROUP",
             "STACK_MAIN_FILL",
-            "GRID",
+            "GRID_AUTO_TRACK",
+            "GRID_FRACTION_TRACK",
             "COMPOSITION_VIEWPORT",
             "RESOURCE_DEPENDENT_KIND",
             "NON_ABSOLUTE_PLACEMENT",
-            "DEGENERATE_CONTENT_INSET",
         ]
     );
 }

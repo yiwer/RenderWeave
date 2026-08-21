@@ -268,19 +268,19 @@ try {
     }
     $definiteLayoutIndependent = Get-Content -Raw -Encoding UTF8 -LiteralPath $definiteLayoutReport |
         ConvertFrom-Json
-    if ($definiteLayoutIndependent.verifier -ne 'renderweave-definite-layout-python-independent/2' `
+    if ($definiteLayoutIndependent.verifier -ne 'renderweave-definite-layout-python-independent/3' `
             -or $definiteLayoutIndependent.result -ne 'PASS' `
             -or $definiteLayoutIndependent.assurance -ne 'A2' `
-            -or $definiteLayoutIndependent.laidOutCases -ne 21 `
-            -or $definiteLayoutIndependent.unsupportedCases -ne 10 `
-            -or $definiteLayoutIndependent.passed -ne 31 `
-            -or $definiteLayoutIndependent.total -ne 31 `
+            -or $definiteLayoutIndependent.laidOutCases -ne 23 `
+            -or $definiteLayoutIndependent.unsupportedCases -ne 11 `
+            -or $definiteLayoutIndependent.passed -ne 34 `
+            -or $definiteLayoutIndependent.total -ne 34 `
             -or $definiteLayoutIndependent.failed -ne 0 `
-            -or $definiteLayoutIndependent.checks -ne 97 `
+            -or $definiteLayoutIndependent.checks -ne 105 `
             -or $definiteLayoutIndependent.layoutProfile -ne 'renderweave-layout/1.0' `
             -or $definiteLayoutIndependent.profileAvailability -ne 'NOT_REGISTERED' `
             -or $definiteLayoutIndependent.certificationStatus -ne 'NOT_CERTIFIED' `
-            -or $definiteLayoutIndependent.layoutImplementation -ne 'RESOURCE_FREE_DEFINITE_ABSOLUTE_AND_STACK_BOX_KERNEL' `
+            -or $definiteLayoutIndependent.layoutImplementation -ne 'RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_AND_FIXED_GRID_BOX_KERNEL' `
             -or $definiteLayoutIndependent.worldTransformImplementation -ne 'ABSENT' `
             -or $definiteLayoutIndependent.sceneImplementation -ne 'ABSENT' `
             -or $definiteLayoutIndependent.rasterImplementation -ne 'ABSENT' `
@@ -357,7 +357,7 @@ try {
     }
 
     $summary = [ordered]@{
-        gateVersion = 'renderweave-renderer-process-gate/1.4'
+        gateVersion = 'renderweave-renderer-process-gate/1.5'
         status = 'PASS'
         processContractVersion = 'renderweave-renderer-process/1.0'
         java = $java
@@ -429,7 +429,7 @@ try {
             profileAvailability = 'NOT_REGISTERED'
             certificationStatus = 'NOT_CERTIFIED'
             rasterImplementation = 'ABSENT'
-            layoutKernel = 'RESOURCE_FREE_DEFINITE_ABSOLUTE_AND_STACK_BOX_AUTOMATED_VERIFIED_UNWIRED'
+            layoutKernel = 'RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_AND_FIXED_GRID_BOX_AUTOMATED_VERIFIED_UNWIRED'
             outputPngKernel = 'AUTOMATED_VERIFIED_UNWIRED'
             daemonOutputPath = 'UNWIRED'
             rendererReady = $false

@@ -1,5 +1,5 @@
 {
-  "fixtureVersion": "renderweave-definite-layout-fixtures/2",
+  "fixtureVersion": "renderweave-definite-layout-fixtures/3",
   "documents": {
     "fixedRect": {
       "canvas": {
@@ -405,6 +405,119 @@
         "kind": "canvas",
         "occurrenceId": "rwocc_0000000000000000",
         "widthPt": 100
+      },
+      "dslVersion": "renderweave-render/1.0",
+      "layoutProfile": "renderweave-layout/1.0",
+      "resources": []
+    },
+    "fixedGrid": {
+      "canvas": {
+        "backgroundColor": "#00000000",
+        "bleed": {"bottomPt": 0, "leftPt": 0, "rightPt": 0, "topPt": 0},
+        "children": [
+          {
+            "children": [
+              {
+                "cornerRadii": {"bottomLeftPt": 0, "bottomRightPt": 0, "topLeftPt": 0, "topRightPt": 0},
+                "fill": {"color": "#000000FF"},
+                "kind": "rect",
+                "occurrenceId": "rwocc_0000000000000002",
+                "opacity": 1,
+                "placement": {"column": 0, "columnSpan": 1, "heightMode": "FIXED", "heightPt": 8, "horizontalAlignSelf": "END", "marginBottomPt": 2, "marginLeftPt": 2, "marginRightPt": -1, "marginTopPt": 1, "row": 0, "rowSpan": 1, "type": "GRID", "verticalAlignSelf": "CENTER", "widthMode": "FIXED", "widthPt": 10},
+                "transform": {"originX": 0.5, "originY": 0.5, "rotationDeg": 0, "scaleX": 1, "scaleY": 1},
+                "visible": true
+              },
+              {
+                "children": [
+                  {
+                    "cornerRadii": {"bottomLeftPt": 0, "bottomRightPt": 0, "topLeftPt": 0, "topRightPt": 0},
+                    "fill": {"color": "#FFFFFFFF"},
+                    "kind": "rect",
+                    "occurrenceId": "rwocc_0000000000000004",
+                    "opacity": 1,
+                    "placement": {"heightMode": "FIXED", "heightPt": 4, "type": "ABSOLUTE", "widthMode": "FIXED", "widthPt": 3, "xPt": 1, "yPt": 2},
+                    "transform": {"originX": 0.5, "originY": 0.5, "rotationDeg": 0, "scaleX": 1, "scaleY": 1},
+                    "visible": true
+                  }
+                ],
+                "clipContent": false,
+                "cornerRadii": {"bottomLeftPt": 0, "bottomRightPt": 0, "topLeftPt": 0, "topRightPt": 0},
+                "kind": "frame",
+                "occurrenceId": "rwocc_0000000000000003",
+                "opacity": 1,
+                "padding": {"bottomPt": 0, "leftPt": 0, "rightPt": 0, "topPt": 0},
+                "placement": {"column": 1, "columnSpan": 2, "heightMode": "FILL", "horizontalAlignSelf": "START", "marginBottomPt": -1, "marginLeftPt": -2, "marginRightPt": 3, "marginTopPt": 2, "maxWidthPt": 35, "minHeightPt": 50, "row": 0, "rowSpan": 2, "type": "GRID", "verticalAlignSelf": "START", "widthMode": "FILL"},
+                "transform": {"originX": 0.5, "originY": 0.5, "rotationDeg": 0, "scaleX": 1, "scaleY": 1},
+                "visible": true
+              },
+              {
+                "children": [
+                  {
+                    "cornerRadii": {"bottomLeftPt": 0, "bottomRightPt": 0, "topLeftPt": 0, "topRightPt": 0},
+                    "fill": {"color": "#000000FF"},
+                    "kind": "rect",
+                    "occurrenceId": "rwocc_0000000000000006",
+                    "opacity": 1,
+                    "placement": {"column": 1, "columnSpan": 1, "heightMode": "FILL", "horizontalAlignSelf": "END", "marginBottomPt": 1, "marginLeftPt": 0, "marginRightPt": 0, "marginTopPt": 1, "row": 0, "rowSpan": 1, "type": "GRID", "verticalAlignSelf": "START", "widthMode": "FIXED", "widthPt": 15},
+                    "transform": {"originX": 0.5, "originY": 0.5, "rotationDeg": 0, "scaleX": 1, "scaleY": 1},
+                    "visible": true
+                  }
+                ],
+                "clipContent": false,
+                "columnGapPt": 2,
+                "columns": [{"type": "FIXED", "valuePt": 8}, {"type": "FIXED", "valuePt": 12}],
+                "cornerRadii": {"bottomLeftPt": 0, "bottomRightPt": 0, "topLeftPt": 0, "topRightPt": 0},
+                "kind": "grid",
+                "occurrenceId": "rwocc_0000000000000005",
+                "opacity": 1,
+                "padding": {"bottomPt": 0, "leftPt": 0, "rightPt": 0, "topPt": 0},
+                "placement": {"column": 0, "columnSpan": 2, "heightMode": "FIXED", "heightPt": 20, "horizontalAlignSelf": "CENTER", "marginBottomPt": 3, "marginLeftPt": 1, "marginRightPt": 4, "marginTopPt": -2, "row": 1, "rowSpan": 1, "type": "GRID", "verticalAlignSelf": "END", "widthMode": "FIXED", "widthPt": 30},
+                "rowGapPt": 0,
+                "rows": [{"type": "FIXED", "valuePt": 10}],
+                "transform": {"originX": 0.5, "originY": 0.5, "rotationDeg": 0, "scaleX": 1, "scaleY": 1},
+                "visible": true
+              },
+              {
+                "cornerRadii": {"bottomLeftPt": 0, "bottomRightPt": 0, "topLeftPt": 0, "topRightPt": 0},
+                "fill": {"color": "#FFFFFFFF"},
+                "kind": "rect",
+                "occurrenceId": "rwocc_0000000000000007",
+                "opacity": 1,
+                "placement": {"column": 0, "columnSpan": 1, "heightMode": "FIXED", "heightPt": 5, "horizontalAlignSelf": "START", "marginBottomPt": 0, "marginLeftPt": 0, "marginRightPt": 0, "marginTopPt": 0, "row": 0, "rowSpan": 1, "type": "GRID", "verticalAlignSelf": "START", "widthMode": "FIXED", "widthPt": 5},
+                "transform": {"originX": 0.5, "originY": 0.5, "rotationDeg": 0, "scaleX": 1, "scaleY": 1},
+                "visible": true
+              },
+              {
+                "cornerRadii": {"bottomLeftPt": 0, "bottomRightPt": 0, "topLeftPt": 0, "topRightPt": 0},
+                "fill": {"color": "#000000FF"},
+                "kind": "rect",
+                "occurrenceId": "rwocc_0000000000000008",
+                "opacity": 1,
+                "placement": {"column": 2, "columnSpan": 1, "heightMode": "FILL", "horizontalAlignSelf": "START", "marginBottomPt": 10, "marginLeftPt": 8, "marginRightPt": 5, "marginTopPt": 10, "row": 0, "rowSpan": 1, "type": "GRID", "verticalAlignSelf": "START", "widthMode": "FILL"},
+                "transform": {"originX": 0.5, "originY": 0.5, "rotationDeg": 0, "scaleX": 1, "scaleY": 1},
+                "visible": true
+              }
+            ],
+            "clipContent": false,
+            "columnGapPt": 5,
+            "columns": [{"type": "FIXED", "valuePt": 20}, {"type": "FIXED", "valuePt": 30}, {"type": "FIXED", "valuePt": 10}],
+            "cornerRadii": {"bottomLeftPt": 0, "bottomRightPt": 0, "topLeftPt": 0, "topRightPt": 0},
+            "kind": "grid",
+            "occurrenceId": "rwocc_0000000000000001",
+            "opacity": 1,
+            "padding": {"bottomPt": 4, "leftPt": 5, "rightPt": 3, "topPt": 2},
+            "placement": {"heightMode": "FIXED", "heightPt": 80, "type": "ABSOLUTE", "widthMode": "FIXED", "widthPt": 100, "xPt": 10, "yPt": 5},
+            "rowGapPt": 4,
+            "rows": [{"type": "FIXED", "valuePt": 15}, {"type": "FIXED", "valuePt": 25}],
+            "stroke": {"cap": "BUTT", "color": "#000000FF", "join": "MITER", "widthPt": 1},
+            "transform": {"originX": 0.5, "originY": 0.5, "rotationDeg": 0, "scaleX": 1, "scaleY": 1},
+            "visible": true
+          }
+        ],
+        "heightPt": 100,
+        "kind": "canvas",
+        "occurrenceId": "rwocc_0000000000000000",
+        "widthPt": 140
       },
       "dslVersion": "renderweave-render/1.0",
       "layoutProfile": "renderweave-layout/1.0",

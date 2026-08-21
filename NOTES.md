@@ -1962,3 +1962,28 @@
 - T33 生命周期为 `resolved / automated_verified`；Profile 仍 NOT_REGISTERED、certification NOT_CERTIFIED、world
   scene/raster ABSENT、daemon output UNWIRED。无 Java/OpenAPI/migration/Web/route 差异；provider attempts、
   API Key reads、open authorization、paid external calls 均为 0，未发送真实数据，未 push/tag/PR。
+
+### Template v1 TV1-T34 FIXED-track definite Grid（resolved / automated_verified）
+
+- 2026-08-21：T33 最终 full `.sdlc/evidence/20260821-160332-full/` 17/17 通过，并以 verified local commit
+  `e6e853d` 收口，worktree clean；Codex `/root` 继续 single-writer claim T34（blocked by T23/T25/T26/T33，
+  均 resolved）。
+- 冻结 authority 审计确认 Grid 的 FIXED→AUTO→FRACTION 顺序、span/margin/alignment 语义已明确，但 Profile
+  tolerance 只被命名而无可执行数值；因此本票只实现无 residual/intrinsic 依赖的 FIXED-track definite Grid，
+  AUTO/FRACTION/HUG 继续 fail closed，不借局部特例冒充完整 Grid。
+- 同票落实已明确的 ContentBox 规则：inward stroke 后 padding 逐项扣除，负剩余量 floor 为正零，不再误报
+  `DEGENERATE_CONTENT_INSET`。范围仍不含 resource/shaping/world scene/paint/raster/JPEG/daemon RESULT/Profile
+  registration 或产品 route；provider/API Key/真实数据/付费调用均为 0。
+- 2026-08-21：实现完成。唯一 `layout_definite_resource_free` 已支持全 FIXED Grid 的 columns-first track 求解、
+  gap/span、signed margins、两轴 FIXED/FILL/min-max/alignment、overlap 与 Frame/Stack/Grid/资源无关叶子递归；
+  ContentBox 逐项扣除对负剩余量 floor 为正零。AUTO/FRACTION/HUG 仍分别 fail closed。
+- shared fixture/vector/verifier identity 升级为 `/3`；Rust primary 与 Python stdlib independent replay 共同验证
+  23 laid-out + 11 unsupported，34/34、105 checks，并覆盖 columns-first unsupported、nested Grid、negative interval
+  FILL 与 authored DFS first error。
+- `render` `.sdlc/evidence/20260821-164544-render/` 已通过 gate 1.5（Java 26、Rust Windows/Linux network-none UDS、
+  Python 110+14+32+34+16）；`server` `.sdlc/evidence/20260821-164614-server/` 为 8/8 reactor、App 344 tests、
+  0 failure/15 controlled skips；串行 `fast` `.sdlc/evidence/20260821-170305-fast/` 全绿。首次与 server 并发的
+  fast 因共享 Maven `target` 被 `clean` 竞争而失效，不作为绿色证据；最终 full 目录仅在 commit handoff 报告。
+- T34 生命周期为 `resolved / automated_verified`；Profile 仍 NOT_REGISTERED、certification NOT_CERTIFIED、world
+  scene/raster ABSENT、daemon output UNWIRED。无 Java/OpenAPI/migration/Web/route 差异；provider attempts、
+  API Key reads、open authorization、paid external calls 均为 0，未发送真实数据，未 push/tag/PR。

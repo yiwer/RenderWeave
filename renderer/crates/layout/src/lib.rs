@@ -4,9 +4,10 @@
 //! The crate consumes only a document already admitted by `renderweave-renderer-document`.
 //! Preflight returns bounded structural counts or one stable DFS problem. The definite kernel
 //! additionally computes local LayoutBox/ContentBox entries for resource-independent ABSOLUTE
-//! nodes and non-water-filling Stack children whose two axes are already definite. It deliberately
-//! stops before resource preparation, HUG/Stack water filling/Grid solving, world transforms,
-//! shaping, paint, rasterization, and encoding, and it never exposes a partial layout on failure.
+//! nodes, non-water-filling Stack children, and fixed-track Grid children whose two axes are
+//! already definite. It deliberately stops before resource preparation, HUG/Stack water filling,
+//! Grid AUTO/FRACTION solving, world transforms, shaping, paint, rasterization, and encoding, and
+//! it never exposes a partial layout on failure.
 
 use renderweave_renderer_document::AdmittedRenderDocument;
 use serde_json::{Map, Number, Value};
@@ -197,11 +198,11 @@ pub enum DefiniteLayoutUnsupported {
     HugContent,
     Group,
     StackMainFill,
-    Grid,
+    GridAutoTrack,
+    GridFractionTrack,
     CompositionViewport,
     ResourceDependentKind,
     NonAbsolutePlacement,
-    DegenerateContentInset,
 }
 
 impl DefiniteLayoutUnsupported {
@@ -210,11 +211,11 @@ impl DefiniteLayoutUnsupported {
             Self::HugContent => "HUG_CONTENT",
             Self::Group => "GROUP",
             Self::StackMainFill => "STACK_MAIN_FILL",
-            Self::Grid => "GRID",
+            Self::GridAutoTrack => "GRID_AUTO_TRACK",
+            Self::GridFractionTrack => "GRID_FRACTION_TRACK",
             Self::CompositionViewport => "COMPOSITION_VIEWPORT",
             Self::ResourceDependentKind => "RESOURCE_DEPENDENT_KIND",
             Self::NonAbsolutePlacement => "NON_ABSOLUTE_PLACEMENT",
-            Self::DegenerateContentInset => "DEGENERATE_CONTENT_INSET",
         }
     }
 }
@@ -312,6 +313,7 @@ enum SizeMode {
 enum NodeRole {
     Frame,
     Stack,
+    Grid,
     Leaf,
 }
 
@@ -369,6 +371,26 @@ impl StackChildMeasurement {
             StackDirection::Row => self.margin_right,
             StackDirection::Column => self.margin_bottom,
         }
+    }
+}
+
+#[derive(Debug)]
+struct FixedGridAxis {
+    origins: Vec<f64>,
+    sizes: Vec<f64>,
+    gap: f64,
+}
+
+impl FixedGridAxis {
+    fn cell(&self, start: usize, span: usize) -> (f64, f64) {
+        let mut size = 0.0;
+        for index in start..start + span {
+            size += self.sizes[index];
+            if index + 1 < start + span {
+                size += self.gap;
+            }
+        }
+        (self.origins[start], size)
     }
 }
 
@@ -565,7 +587,7 @@ impl DefiniteLayouter {
     ) -> Result<(), DefiniteLayoutError> {
         let occurrence = occurrence_id(node)?;
         match role {
-            NodeRole::Frame | NodeRole::Stack => {
+            NodeRole::Frame | NodeRole::Stack | NodeRole::Grid => {
                 let content_box = container_content_box(node, &layout_box, occurrence)?;
                 self.entries.push(DefiniteLayoutEntry {
                     occurrence_id: occurrence.to_owned(),
@@ -573,15 +595,18 @@ impl DefiniteLayouter {
                     layout_box,
                     content_box: Some(content_box),
                 });
-                if role == NodeRole::Frame {
-                    for child in array_member(node, "children", occurrence)? {
-                        self.visit_absolute_node(
-                            object(child, occurrence, "children")?,
-                            &content_box,
-                        )?;
+                match role {
+                    NodeRole::Frame => {
+                        for child in array_member(node, "children", occurrence)? {
+                            self.visit_absolute_node(
+                                object(child, occurrence, "children")?,
+                                &content_box,
+                            )?;
+                        }
                     }
-                } else {
-                    self.visit_stack_children(node, &content_box)?;
+                    NodeRole::Stack => self.visit_stack_children(node, &content_box)?,
+                    NodeRole::Grid => self.visit_grid_children(node, &content_box)?,
+                    NodeRole::Leaf => unreachable!(),
                 }
             }
             NodeRole::Leaf => {
@@ -657,6 +682,214 @@ impl DefiniteLayouter {
         }
         Ok(())
     }
+
+    fn visit_grid_children(
+        &mut self,
+        grid: &Map<String, Value>,
+        content_box: &LocalLayoutBox,
+    ) -> Result<(), DefiniteLayoutError> {
+        let occurrence = occurrence_id(grid)?;
+        // The frozen profile always solves columns first, then rows.
+        let columns = fixed_grid_axis(grid, "columns", "columnGapPt", content_box.x, occurrence)?;
+        let rows = fixed_grid_axis(grid, "rows", "rowGapPt", content_box.y, occurrence)?;
+        for child in array_member(grid, "children", occurrence)? {
+            self.visit_grid_child(object(child, occurrence, "children")?, &columns, &rows)?;
+        }
+        Ok(())
+    }
+
+    fn visit_grid_child(
+        &mut self,
+        node: &Map<String, Value>,
+        columns: &FixedGridAxis,
+        rows: &FixedGridAxis,
+    ) -> Result<(), DefiniteLayoutError> {
+        let occurrence = occurrence_id(node)?;
+        let kind = text_member(node, "kind", occurrence, "kind")?;
+        let role = definite_node_role(kind, occurrence)?;
+        let placement = object_member(Some(node), "placement", occurrence)?;
+        if text_member(placement, "type", occurrence, "placement.type")? != "GRID" {
+            return Err(DefiniteLayoutError::unsupported(
+                occurrence,
+                DefiniteLayoutUnsupported::NonAbsolutePlacement,
+            ));
+        }
+        let width_mode = size_mode(placement, "widthMode", occurrence)?;
+        let height_mode = size_mode(placement, "heightMode", occurrence)?;
+        if width_mode == SizeMode::Hug || height_mode == SizeMode::Hug {
+            return Err(DefiniteLayoutError::unsupported(
+                occurrence,
+                DefiniteLayoutUnsupported::HugContent,
+            ));
+        }
+
+        let column = integer_member(placement, "column", occurrence, "placement.column")?;
+        let column_span =
+            integer_member(placement, "columnSpan", occurrence, "placement.columnSpan")?;
+        let row = integer_member(placement, "row", occurrence, "placement.row")?;
+        let row_span = integer_member(placement, "rowSpan", occurrence, "placement.rowSpan")?;
+        let (cell_x, cell_width) = columns.cell(column, column_span);
+        let (cell_y, cell_height) = rows.cell(row, row_span);
+
+        let margin_top = binary64_member(
+            placement,
+            "marginTopPt",
+            occurrence,
+            "placement.marginTopPt",
+        )?;
+        let margin_right = binary64_member(
+            placement,
+            "marginRightPt",
+            occurrence,
+            "placement.marginRightPt",
+        )?;
+        let margin_bottom = binary64_member(
+            placement,
+            "marginBottomPt",
+            occurrence,
+            "placement.marginBottomPt",
+        )?;
+        let margin_left = binary64_member(
+            placement,
+            "marginLeftPt",
+            occurrence,
+            "placement.marginLeftPt",
+        )?;
+        let (x, width) = grid_axis_arrangement(
+            placement,
+            width_mode,
+            cell_x,
+            cell_width,
+            margin_left,
+            margin_right,
+            "Width",
+            "horizontalAlignSelf",
+            occurrence,
+        )?;
+        let (y, height) = grid_axis_arrangement(
+            placement,
+            height_mode,
+            cell_y,
+            cell_height,
+            margin_top,
+            margin_bottom,
+            "Height",
+            "verticalAlignSelf",
+            occurrence,
+        )?;
+        self.emit_positioned_node(
+            node,
+            kind,
+            role,
+            LocalLayoutBox {
+                x,
+                y,
+                width,
+                height,
+            },
+        )
+    }
+}
+
+fn fixed_grid_axis(
+    grid: &Map<String, Value>,
+    tracks_member: &str,
+    gap_member: &str,
+    origin: f64,
+    occurrence: &str,
+) -> Result<FixedGridAxis, DefiniteLayoutError> {
+    let gap = nonnegative_binary64_member(grid, gap_member, occurrence, gap_member)?;
+    let tracks = array_member(grid, tracks_member, occurrence)?;
+    let mut origins = Vec::with_capacity(tracks.len());
+    let mut sizes = Vec::with_capacity(tracks.len());
+    let mut cursor = origin;
+    for (index, track) in tracks.iter().enumerate() {
+        let track = object(track, occurrence, tracks_member)?;
+        let track_type = text_member(
+            track,
+            "type",
+            occurrence,
+            format!("{tracks_member}[{index}].type"),
+        )?;
+        let size = match track_type {
+            "FIXED" => binary64_member(
+                track,
+                "valuePt",
+                occurrence,
+                format!("{tracks_member}[{index}].valuePt"),
+            )?,
+            "AUTO" => {
+                return Err(DefiniteLayoutError::unsupported(
+                    occurrence,
+                    DefiniteLayoutUnsupported::GridAutoTrack,
+                ));
+            }
+            "FRACTION" => {
+                return Err(DefiniteLayoutError::unsupported(
+                    occurrence,
+                    DefiniteLayoutUnsupported::GridFractionTrack,
+                ));
+            }
+            _ => {
+                return Err(DefiniteLayoutError::invariant(
+                    occurrence,
+                    format!("{tracks_member}[{index}].type"),
+                ));
+            }
+        };
+        origins.push(cursor);
+        sizes.push(size);
+        cursor += size;
+        if index + 1 < tracks.len() {
+            cursor += gap;
+        }
+    }
+    Ok(FixedGridAxis {
+        origins,
+        sizes,
+        gap,
+    })
+}
+
+#[allow(clippy::too_many_arguments)]
+fn grid_axis_arrangement(
+    placement: &Map<String, Value>,
+    mode: SizeMode,
+    cell_origin: f64,
+    cell_size: f64,
+    leading_margin: f64,
+    trailing_margin: f64,
+    axis: &str,
+    alignment_member: &str,
+    occurrence: &str,
+) -> Result<(f64, f64), DefiniteLayoutError> {
+    let size = stack_axis_size(
+        placement,
+        mode,
+        cell_size,
+        leading_margin,
+        trailing_margin,
+        axis,
+        occurrence,
+    )?;
+    let position = if mode == SizeMode::Fixed {
+        aligned_cross_position(
+            cell_origin,
+            cell_size,
+            leading_margin,
+            trailing_margin,
+            size,
+            stack_alignment(placement, alignment_member, occurrence)?,
+        )
+    } else if mode == SizeMode::Fill {
+        cell_origin + leading_margin
+    } else {
+        return Err(DefiniteLayoutError::invariant(
+            occurrence,
+            format!("placement.{axis}Mode"),
+        ));
+    };
+    Ok((position, size))
 }
 
 struct StackDistribution {
@@ -906,16 +1139,13 @@ fn definite_node_role(kind: &str, occurrence: &str) -> Result<NodeRole, Definite
     match kind {
         "frame" => Ok(NodeRole::Frame),
         "stack" => Ok(NodeRole::Stack),
+        "grid" => Ok(NodeRole::Grid),
         "rect" | "ellipse" | "line" | "polygon" | "polyline" | "path" | "qrCode" | "barcode" => {
             Ok(NodeRole::Leaf)
         }
         "group" => Err(DefiniteLayoutError::unsupported(
             occurrence,
             DefiniteLayoutUnsupported::Group,
-        )),
-        "grid" => Err(DefiniteLayoutError::unsupported(
-            occurrence,
-            DefiniteLayoutUnsupported::Grid,
         )),
         "compositionViewport" => Err(DefiniteLayoutError::unsupported(
             occurrence,
@@ -1040,10 +1270,10 @@ fn container_content_box(
     } else {
         0.0
     };
-    let inner_width = subtract_content_inset(layout_box.width, stroke_width, occurrence)?;
-    let inner_width = subtract_content_inset(inner_width, stroke_width, occurrence)?;
-    let inner_height = subtract_content_inset(layout_box.height, stroke_width, occurrence)?;
-    let inner_height = subtract_content_inset(inner_height, stroke_width, occurrence)?;
+    let inner_width = subtract_content_inset(layout_box.width, stroke_width);
+    let inner_width = subtract_content_inset(inner_width, stroke_width);
+    let inner_height = subtract_content_inset(layout_box.height, stroke_width);
+    let inner_height = subtract_content_inset(inner_height, stroke_width);
     let inner_x = layout_box.x + stroke_width;
     let inner_y = layout_box.y + stroke_width;
 
@@ -1052,10 +1282,10 @@ fn container_content_box(
     let right = nonnegative_binary64_member(padding, "rightPt", occurrence, "padding.rightPt")?;
     let bottom = nonnegative_binary64_member(padding, "bottomPt", occurrence, "padding.bottomPt")?;
     let left = nonnegative_binary64_member(padding, "leftPt", occurrence, "padding.leftPt")?;
-    let content_width = subtract_content_inset(inner_width, left, occurrence)?;
-    let content_width = subtract_content_inset(content_width, right, occurrence)?;
-    let content_height = subtract_content_inset(inner_height, top, occurrence)?;
-    let content_height = subtract_content_inset(content_height, bottom, occurrence)?;
+    let content_width = subtract_content_inset(inner_width, left);
+    let content_width = subtract_content_inset(content_width, right);
+    let content_height = subtract_content_inset(inner_height, top);
+    let content_height = subtract_content_inset(content_height, bottom);
     Ok(LocalLayoutBox {
         x: inner_x + left,
         y: inner_y + top,
@@ -1064,19 +1294,9 @@ fn container_content_box(
     })
 }
 
-fn subtract_content_inset(
-    size: f64,
-    inset: f64,
-    occurrence: &str,
-) -> Result<f64, DefiniteLayoutError> {
+fn subtract_content_inset(size: f64, inset: f64) -> f64 {
     let remaining = size - inset;
-    if remaining < 0.0 {
-        return Err(DefiniteLayoutError::unsupported(
-            occurrence,
-            DefiniteLayoutUnsupported::DegenerateContentInset,
-        ));
-    }
-    Ok(remaining)
+    if remaining > 0.0 { remaining } else { 0.0 }
 }
 
 fn nonnegative_binary64_member(

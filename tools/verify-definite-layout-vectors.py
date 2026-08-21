@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Independent replay for resource-free definite ABSOLUTE and Stack box vectors."""
+"""Independent replay for resource-free definite ABSOLUTE, Stack, and fixed Grid boxes."""
 
 from __future__ import annotations
 
@@ -134,6 +134,21 @@ class StackChildMeasurement:
 
     def main_trailing_margin(self, direction: str) -> float:
         return self.margin_right if direction == "ROW" else self.margin_bottom
+
+
+@dataclass(frozen=True)
+class FixedGridAxis:
+    origins: list[float]
+    sizes: list[float]
+    gap: float
+
+    def cell(self, start: int, span: int) -> tuple[float, float]:
+        size = 0.0
+        for index in range(start, start + span):
+            size += self.sizes[index]
+            if index + 1 < start + span:
+                size += self.gap
+        return self.origins[start], size
 
 
 PLAIN_DECIMAL6 = re.compile(r"-?(?:0|[1-9][0-9]*)(?:\.[0-9]{1,6})?")
@@ -285,7 +300,7 @@ class DefiniteLayouter:
         self, node: dict[str, Any], kind: str, role: str, layout_box: Box
     ) -> None:
         current = occurrence(node)
-        if role in {"FRAME", "STACK"}:
+        if role in {"FRAME", "STACK", "GRID"}:
             content_box = container_content_box(node, layout_box, current)
             self.entries.append(
                 {
@@ -300,8 +315,10 @@ class DefiniteLayouter:
                     self.visit_absolute_node(
                         object_value(child, f"{current} child"), content_box
                     )
-            else:
+            elif role == "STACK":
                 self.visit_stack_children(node, content_box)
+            else:
+                self.visit_grid_children(node, content_box)
         else:
             self.entries.append(
                 {
@@ -372,23 +389,182 @@ class DefiniteLayouter:
                 layout_box = Box(content_box.x, content_box.y, 0.0, 0.0)
             self.visit_stack_child(child, measured, layout_box)
 
+    def visit_grid_children(self, grid: dict[str, Any], content_box: Box) -> None:
+        current = occurrence(grid)
+        # The frozen profile always solves columns first, then rows.
+        columns = fixed_grid_axis(
+            grid, "columns", "columnGapPt", content_box.x, current
+        )
+        rows = fixed_grid_axis(grid, "rows", "rowGapPt", content_box.y, current)
+        for raw_child in array_value(grid.get("children"), f"{current} children"):
+            self.visit_grid_child(
+                object_value(raw_child, f"{current} child"), columns, rows
+            )
+
+    def visit_grid_child(
+        self,
+        node: dict[str, Any],
+        columns: FixedGridAxis,
+        rows: FixedGridAxis,
+    ) -> None:
+        current = occurrence(node)
+        kind = text(node.get("kind"), f"{current} kind")
+        role = definite_node_role(kind, current)
+        placement = object_value(node.get("placement"), f"{current} placement")
+        if placement.get("type") != "GRID":
+            raise Unsupported("NON_ABSOLUTE_PLACEMENT", current)
+        width_mode = text(placement.get("widthMode"), f"{current} width mode")
+        height_mode = text(placement.get("heightMode"), f"{current} height mode")
+        if width_mode == "HUG_CONTENT" or height_mode == "HUG_CONTENT":
+            raise Unsupported("HUG_CONTENT", current)
+        if width_mode not in {"FIXED", "FILL"} or height_mode not in {
+            "FIXED",
+            "FILL",
+        }:
+            raise VerificationFailure(f"{current} invalid definite size mode")
+
+        column = integer(placement.get("column"), f"{current} placement.column")
+        column_span = integer(
+            placement.get("columnSpan"), f"{current} placement.columnSpan"
+        )
+        row = integer(placement.get("row"), f"{current} placement.row")
+        row_span = integer(
+            placement.get("rowSpan"), f"{current} placement.rowSpan"
+        )
+        cell_x, cell_width = columns.cell(column, column_span)
+        cell_y, cell_height = rows.cell(row, row_span)
+        margin_top = required_decimal(
+            placement, "marginTopPt", current, "placement.marginTopPt"
+        )
+        margin_right = required_decimal(
+            placement, "marginRightPt", current, "placement.marginRightPt"
+        )
+        margin_bottom = required_decimal(
+            placement, "marginBottomPt", current, "placement.marginBottomPt"
+        )
+        margin_left = required_decimal(
+            placement, "marginLeftPt", current, "placement.marginLeftPt"
+        )
+        x, width = grid_axis_arrangement(
+            placement,
+            width_mode,
+            cell_x,
+            cell_width,
+            margin_left,
+            margin_right,
+            "Width",
+            "horizontalAlignSelf",
+            current,
+        )
+        y, height = grid_axis_arrangement(
+            placement,
+            height_mode,
+            cell_y,
+            cell_height,
+            margin_top,
+            margin_bottom,
+            "Height",
+            "verticalAlignSelf",
+            current,
+        )
+        self.emit_positioned_node(node, kind, role, Box(x, y, width, height))
+
 
 def definite_node_role(kind: str, current: str) -> str:
     if kind == "frame":
         return "FRAME"
     if kind == "stack":
         return "STACK"
+    if kind == "grid":
+        return "GRID"
     if kind in SUPPORTED_LEAVES:
         return "LEAF"
     if kind == "group":
         raise Unsupported("GROUP", current)
-    if kind == "grid":
-        raise Unsupported("GRID", current)
     if kind == "compositionViewport":
         raise Unsupported("COMPOSITION_VIEWPORT", current)
     if kind in {"text", "image"}:
         raise Unsupported("RESOURCE_DEPENDENT_KIND", current)
     raise VerificationFailure(f"{current} unexpected kind {kind}")
+
+
+def fixed_grid_axis(
+    grid: dict[str, Any],
+    tracks_member: str,
+    gap_member: str,
+    origin: float,
+    current: str,
+) -> FixedGridAxis:
+    gap = nonnegative_decimal(grid, gap_member, current, gap_member)
+    tracks = array_value(grid.get(tracks_member), f"{current} {tracks_member}")
+    origins: list[float] = []
+    sizes: list[float] = []
+    cursor = origin
+    for index, raw_track in enumerate(tracks):
+        track = object_value(raw_track, f"{current} {tracks_member}[{index}]")
+        track_type = text(
+            track.get("type"), f"{current} {tracks_member}[{index}].type"
+        )
+        if track_type == "FIXED":
+            size = required_decimal(
+                track,
+                "valuePt",
+                current,
+                f"{tracks_member}[{index}].valuePt",
+            )
+        elif track_type == "AUTO":
+            raise Unsupported("GRID_AUTO_TRACK", current)
+        elif track_type == "FRACTION":
+            raise Unsupported("GRID_FRACTION_TRACK", current)
+        else:
+            raise VerificationFailure(
+                f"{current} invalid {tracks_member}[{index}].type"
+            )
+        origins.append(cursor)
+        sizes.append(size)
+        cursor += size
+        if index + 1 < len(tracks):
+            cursor += gap
+    return FixedGridAxis(origins, sizes, gap)
+
+
+def grid_axis_arrangement(
+    placement: dict[str, Any],
+    mode: str,
+    cell_origin: float,
+    cell_size: float,
+    leading_margin: float,
+    trailing_margin: float,
+    axis: str,
+    alignment_member: str,
+    current: str,
+) -> tuple[float, float]:
+    size = stack_axis_size(
+        placement,
+        mode,
+        cell_size,
+        leading_margin,
+        trailing_margin,
+        axis,
+        current,
+    )
+    if mode == "FIXED":
+        alignment = text(
+            placement.get(alignment_member), f"{current} {alignment_member}"
+        )
+        position = aligned_cross_position(
+            cell_origin,
+            cell_size,
+            leading_margin,
+            trailing_margin,
+            size,
+            alignment,
+        )
+    elif mode == "FILL":
+        position = cell_origin + leading_margin
+    else:
+        raise VerificationFailure(f"{current} invalid placement.{axis}Mode")
+    return position, size
 
 
 def stack_distribution(
@@ -624,10 +800,10 @@ def container_content_box(node: dict[str, Any], layout_box: Box, current: str) -
         )
     else:
         stroke_width = 0.0
-    inner_width = subtract_content_inset(layout_box.width, stroke_width, current)
-    inner_width = subtract_content_inset(inner_width, stroke_width, current)
-    inner_height = subtract_content_inset(layout_box.height, stroke_width, current)
-    inner_height = subtract_content_inset(inner_height, stroke_width, current)
+    inner_width = subtract_content_inset(layout_box.width, stroke_width)
+    inner_width = subtract_content_inset(inner_width, stroke_width)
+    inner_height = subtract_content_inset(layout_box.height, stroke_width)
+    inner_height = subtract_content_inset(inner_height, stroke_width)
     inner_x = layout_box.x + stroke_width
     inner_y = layout_box.y + stroke_width
 
@@ -636,18 +812,16 @@ def container_content_box(node: dict[str, Any], layout_box: Box, current: str) -
     right = nonnegative_decimal(padding, "rightPt", current, "padding.rightPt")
     bottom = nonnegative_decimal(padding, "bottomPt", current, "padding.bottomPt")
     left = nonnegative_decimal(padding, "leftPt", current, "padding.leftPt")
-    content_width = subtract_content_inset(inner_width, left, current)
-    content_width = subtract_content_inset(content_width, right, current)
-    content_height = subtract_content_inset(inner_height, top, current)
-    content_height = subtract_content_inset(content_height, bottom, current)
+    content_width = subtract_content_inset(inner_width, left)
+    content_width = subtract_content_inset(content_width, right)
+    content_height = subtract_content_inset(inner_height, top)
+    content_height = subtract_content_inset(content_height, bottom)
     return Box(inner_x + left, inner_y + top, content_width, content_height)
 
 
-def subtract_content_inset(size: float, inset: float, current: str) -> float:
+def subtract_content_inset(size: float, inset: float) -> float:
     remaining = size - inset
-    if remaining < 0.0:
-        raise Unsupported("DEGENERATE_CONTENT_INSET", current)
-    return remaining
+    return remaining if remaining > 0.0 else 0.0
 
 
 def decode_pointer(token: str) -> str:
@@ -819,7 +993,7 @@ def verify(
         "vector manifest",
     )
     verifier.require(
-        vectors["vectorVersion"] == "renderweave-definite-layout-vectors/2",
+        vectors["vectorVersion"] == "renderweave-definite-layout-vectors/3",
         "vector identity drifted",
     )
     authority = exact_members(
@@ -872,7 +1046,7 @@ def verify(
     expected_boundary = {
         "profileAvailability": "NOT_REGISTERED",
         "certificationStatus": "NOT_CERTIFIED",
-        "layoutImplementation": "RESOURCE_FREE_DEFINITE_ABSOLUTE_AND_STACK_BOX_KERNEL",
+        "layoutImplementation": "RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_AND_FIXED_GRID_BOX_KERNEL",
         "worldTransformImplementation": "ABSENT",
         "sceneImplementation": "ABSENT",
         "rasterImplementation": "ABSENT",
@@ -885,7 +1059,7 @@ def verify(
         "provider attempts must be zero",
     )
     verifier.require(
-        fixtures["fixtureVersion"] == "renderweave-definite-layout-fixtures/2",
+        fixtures["fixtureVersion"] == "renderweave-definite-layout-fixtures/3",
         "fixture identity drifted",
     )
     verifier.require(
@@ -900,6 +1074,7 @@ def verify(
             "nestedStack",
             "singleStack",
             "remainderStack",
+            "fixedGrid",
             "stackDfsUnsupported",
         },
         "fixture inventory drifted",
@@ -909,9 +1084,9 @@ def verify(
         == "renderweave-layout-preflight-fixtures/1",
         "layout preflight fixture identity drifted",
     )
-    verifier.require(len(vectors["laidOutCases"]) == 21, "laid-out case count drifted")
+    verifier.require(len(vectors["laidOutCases"]) == 23, "laid-out case count drifted")
     verifier.require(
-        len(vectors["unsupportedCases"]) == 10,
+        len(vectors["unsupportedCases"]) == 11,
         "unsupported case count drifted",
     )
 
@@ -959,7 +1134,7 @@ def verify(
             raise VerificationFailure(f"{case_id}: unsupported case produced a layout")
 
     return {
-        "verifier": "renderweave-definite-layout-python-independent/2",
+        "verifier": "renderweave-definite-layout-python-independent/3",
         "result": "PASS",
         "assurance": "A2",
         "laidOutCases": len(vectors["laidOutCases"]),

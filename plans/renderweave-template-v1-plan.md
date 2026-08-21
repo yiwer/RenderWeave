@@ -770,3 +770,33 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
 - 保证上限：Profile 仍 NOT_REGISTERED、certification NOT_CERTIFIED、world scene/raster ABSENT、daemon output
   UNWIRED；无 Java/OpenAPI/migration/Web/route 差异，不证明 HUG/water filling/Grid/resource/scene/pixel、A3、
   J1 或 READY。Provider/API Key/真实数据/付费调用均未发生，未 push/tag/PR。
+
+## 33. TV1-T34 执行卡
+
+- 决策：继续深化唯一 Rust layout deep module；落实 frozen ContentBox 逐项扣除 floor-zero，并新增不依赖 intrinsic
+  measure 或 residual tolerance 的 FIXED-track definite Grid/GRID child 子闭包。
+- 允许影响：T34 tracker/plan/NOTES/log、layout crate/tests、definite fixture/vector、Python independent verifier、
+  `render` gate identity/assertions/evidence。
+- 禁止影响：Grid AUTO/FRACTION、HUG intrinsic、Stack main-axis FILL water filling/tolerance、resource/fetch/decode/
+  font shaping、world scene/paint/raster/JPEG、daemon RESULT/success、Profile registration、Java/OpenAPI/migration/
+  Web/Editor/产品 route、formal records、physical Linux certification/J1/A3/READY、provider/真实数据/API Key/付费调用。
+- 精确语义：FIXED tracks 按 authored order 从 ContentBox 左/上排列、相邻 gap 保留、extra 留右/下；span 含内部 gaps；
+  signed margins 定义 interval；FIXED 依各轴 START/CENTER/END 对齐，FILL 从 interval 起点取 max(0) 后 min/max；
+  overlap 与输出顺序保持 authored order。ContentBox 每次负剩余量 floor 为正零。
+- TDD：升级 shared vectors，使 Rust/Python 同时 RED；覆盖 degenerate inset、track gap/span、signed margins、双轴
+  FIXED/FILL/min-max/alignment、overlap/nesting、AUTO/FRACTION 与 DFS unsupported 后再实现。
+- 验证：focused Rust/Python → workspace fmt/clippy `-D warnings`/test → `render` → `server`/`fast` → 最终 `full`；
+  最高 `automated_verified`，不 push/tag/PR。
+- 结果：`resolved / automated_verified`。ContentBox 逐项扣除已 floor-zero；全 FIXED Grid 已实现 columns-first、
+  authored track/gap/span、signed margin、双轴 FIXED/FILL/min-max/alignment、overlap 与 nested Grid，AUTO/FRACTION/
+  HUG 继续分别 fail closed。
+- TDD/独立重放：shared fixture/vector/verifier identity `/3`，23 laid-out + 11 unsupported；Rust primary 与 Python
+  stdlib independent 为 34/34、105 checks。向量 SHA-256 为 `322adeb2...c9a5e6`，fixture SHA-256 为
+  `a11475bc...1df669`。
+- 受影响 A1/A2：`render` `.sdlc/evidence/20260821-164544-render/`（gate 1.5、Java 26、Rust Windows/Linux UDS、
+  Python 110+14+32+34+16）、`server` `.sdlc/evidence/20260821-164614-server/`（8/8 reactor、App 344、
+  0 failure/15 controlled skips）、串行 `fast` `.sdlc/evidence/20260821-170305-fast/`；最终 full 目录仅在 commit
+  handoff 报告。首次并发 fast 的共享 Maven `target` 竞争不作为绿色证据。
+- 保证上限：Profile 仍 NOT_REGISTERED、certification NOT_CERTIFIED、world scene/raster ABSENT、daemon output
+  UNWIRED；无 Java/OpenAPI/migration/Web/route 差异，不证明 AUTO/FRACTION/HUG、完整 Layout Profile、resource/
+  scene/pixel、A3、新 J1 或 READY。Provider/API Key/真实数据/付费调用均未发生，未 push/tag/PR。
