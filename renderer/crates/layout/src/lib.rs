@@ -5,10 +5,10 @@
 //! Preflight returns bounded structural counts or one stable DFS problem. The definite kernel
 //! additionally computes local LayoutBox/ContentBox entries for resource-independent ABSOLUTE
 //! nodes, Stack children with at most one main-axis FILL, and Grid children whose definite axes
-//! contain FIXED tracks plus at most one FRACTION track. It deliberately stops before resource
-//! preparation, HUG/multi-FILL Stack water filling, Grid AUTO/multi-FRACTION solving, world
-//! transforms, shaping, paint, rasterization, and encoding, and it never exposes a partial layout
-//! on failure.
+//! contain FIXED tracks plus at most one resource-independent AUTO and one FRACTION track. It
+//! deliberately stops before resource preparation, HUG/multi-FILL Stack water filling, general
+//! Grid AUTO/multi-FRACTION solving, world transforms, shaping, paint, rasterization, and encoding,
+//! and it never exposes a partial layout on failure.
 
 use renderweave_renderer_document::AdmittedRenderDocument;
 use serde_json::{Map, Number, Value};
@@ -411,6 +411,78 @@ enum TrackKind {
     Auto,
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum GridAxis {
+    Column,
+    Row,
+}
+
+impl GridAxis {
+    const fn tracks_member(self) -> &'static str {
+        match self {
+            Self::Column => "columns",
+            Self::Row => "rows",
+        }
+    }
+
+    const fn gap_member(self) -> &'static str {
+        match self {
+            Self::Column => "columnGapPt",
+            Self::Row => "rowGapPt",
+        }
+    }
+
+    const fn start_member(self) -> &'static str {
+        match self {
+            Self::Column => "column",
+            Self::Row => "row",
+        }
+    }
+
+    const fn span_member(self) -> &'static str {
+        match self {
+            Self::Column => "columnSpan",
+            Self::Row => "rowSpan",
+        }
+    }
+
+    const fn mode_member(self) -> &'static str {
+        match self {
+            Self::Column => "widthMode",
+            Self::Row => "heightMode",
+        }
+    }
+
+    const fn size_member(self) -> &'static str {
+        match self {
+            Self::Column => "widthPt",
+            Self::Row => "heightPt",
+        }
+    }
+
+    const fn leading_margin_member(self) -> &'static str {
+        match self {
+            Self::Column => "marginLeftPt",
+            Self::Row => "marginTopPt",
+        }
+    }
+
+    const fn trailing_margin_member(self) -> &'static str {
+        match self {
+            Self::Column => "marginRightPt",
+            Self::Row => "marginBottomPt",
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
+struct GridAutoConstraint {
+    start: usize,
+    span: usize,
+    materialized_order: usize,
+    contribution: f64,
+}
+
 #[derive(Clone, Debug)]
 enum ParentContext {
     Canvas,
@@ -741,24 +813,25 @@ impl DefiniteLayouter {
         content_box: &LocalLayoutBox,
     ) -> Result<(), DefiniteLayoutError> {
         let occurrence = occurrence_id(grid)?;
+        let children = array_member(grid, "children", occurrence)?;
         // The frozen profile always solves columns first, then rows.
         let columns = definite_grid_axis(
             grid,
-            "columns",
-            "columnGapPt",
+            children,
+            GridAxis::Column,
             content_box.x,
             content_box.width,
             occurrence,
         )?;
         let rows = definite_grid_axis(
             grid,
-            "rows",
-            "rowGapPt",
+            children,
+            GridAxis::Row,
             content_box.y,
             content_box.height,
             occurrence,
         )?;
-        for child in array_member(grid, "children", occurrence)? {
+        for child in children {
             self.visit_grid_child(object(child, occurrence, "children")?, &columns, &rows)?;
         }
         Ok(())
@@ -859,18 +932,19 @@ impl DefiniteLayouter {
 
 fn definite_grid_axis(
     grid: &Map<String, Value>,
-    tracks_member: &str,
-    gap_member: &str,
+    children: &[Value],
+    axis: GridAxis,
     origin: f64,
     available: f64,
     occurrence: &str,
 ) -> Result<DefiniteGridAxis, DefiniteLayoutError> {
+    let tracks_member = axis.tracks_member();
+    let gap_member = axis.gap_member();
     let gap = nonnegative_binary64_member(grid, gap_member, occurrence, gap_member)?;
     let tracks = array_member(grid, tracks_member, occurrence)?;
     let mut sizes = Vec::with_capacity(tracks.len());
+    let mut auto_indices = Vec::new();
     let mut fraction_indices = Vec::new();
-    let mut has_auto = false;
-    let mut used_without_fraction = 0.0;
 
     for (index, track) in tracks.iter().enumerate() {
         let track = object(track, occurrence, tracks_member)?;
@@ -889,10 +963,9 @@ fn definite_grid_axis(
                     format!("{tracks_member}[{index}].valuePt"),
                 )?;
                 sizes.push(size);
-                used_without_fraction += size;
             }
             "AUTO" => {
-                has_auto = true;
+                auto_indices.push(index);
                 sizes.push(0.0);
             }
             "FRACTION" => {
@@ -912,19 +985,18 @@ fn definite_grid_axis(
                 ));
             }
         }
-        if index + 1 < tracks.len() {
-            used_without_fraction += gap;
-        }
     }
 
-    // Track solving is staged by the frozen Profile: FIXED, then AUTO, then
-    // FRACTION. Scanning before rejecting preserves that stage order even when
-    // an authored FRACTION precedes an AUTO track.
-    if has_auto {
+    // Track solving is staged by the frozen Profile: FIXED, then AUTO, then FRACTION.
+    // The complete authored scan above makes that stage order independent of track order.
+    if auto_indices.len() > 1 {
         return Err(DefiniteLayoutError::unsupported(
             occurrence,
             DefiniteLayoutUnsupported::GridAutoTrack,
         ));
+    }
+    if let Some(auto_index) = auto_indices.first().copied() {
+        apply_single_grid_auto(children, axis, auto_index, &mut sizes, gap, occurrence)?;
     }
     if fraction_indices.len() > 1 {
         return Err(DefiniteLayoutError::unsupported(
@@ -933,6 +1005,7 @@ fn definite_grid_axis(
         ));
     }
     if let Some(index) = fraction_indices.first().copied() {
+        let used_without_fraction = grid_span_extent(&sizes, gap, 0, sizes.len());
         let remaining = available - used_without_fraction;
         sizes[index] = if remaining > 0.0 { remaining } else { 0.0 };
     }
@@ -952,6 +1025,115 @@ fn definite_grid_axis(
         sizes,
         gap,
     })
+}
+
+fn apply_single_grid_auto(
+    children: &[Value],
+    axis: GridAxis,
+    auto_index: usize,
+    sizes: &mut [f64],
+    gap: f64,
+    grid_occurrence: &str,
+) -> Result<(), DefiniteLayoutError> {
+    let mut constraints = Vec::new();
+    for (materialized_order, child) in children.iter().enumerate() {
+        let child = object(child, grid_occurrence, "children")?;
+        let child_occurrence = occurrence_id(child)?;
+        let placement = object_member(Some(child), "placement", child_occurrence)?;
+        if text_member(placement, "type", child_occurrence, "placement.type")? != "GRID" {
+            return Err(DefiniteLayoutError::unsupported(
+                child_occurrence,
+                DefiniteLayoutUnsupported::NonAbsolutePlacement,
+            ));
+        }
+
+        let start = integer_member(
+            placement,
+            axis.start_member(),
+            child_occurrence,
+            &format!("placement.{}", axis.start_member()),
+        )?;
+        let span = integer_member(
+            placement,
+            axis.span_member(),
+            child_occurrence,
+            &format!("placement.{}", axis.span_member()),
+        )?;
+        if auto_index < start || auto_index >= start + span {
+            continue;
+        }
+
+        let mode = size_mode(placement, axis.mode_member(), child_occurrence)?;
+        if mode == SizeMode::Hug {
+            return Err(DefiniteLayoutError::unsupported(
+                child_occurrence,
+                DefiniteLayoutUnsupported::HugContent,
+            ));
+        }
+        if mode == SizeMode::Fill {
+            return Err(DefiniteLayoutError::invariant(
+                child_occurrence,
+                format!("placement.{}", axis.mode_member()),
+            ));
+        }
+
+        let size = binary64_member(
+            placement,
+            axis.size_member(),
+            child_occurrence,
+            format!("placement.{}", axis.size_member()),
+        )?;
+        let leading_margin = binary64_member(
+            placement,
+            axis.leading_margin_member(),
+            child_occurrence,
+            format!("placement.{}", axis.leading_margin_member()),
+        )?;
+        let trailing_margin = binary64_member(
+            placement,
+            axis.trailing_margin_member(),
+            child_occurrence,
+            format!("placement.{}", axis.trailing_margin_member()),
+        )?;
+        let contribution = (size + leading_margin) + trailing_margin;
+        constraints.push(GridAutoConstraint {
+            start,
+            span,
+            materialized_order,
+            contribution: if contribution > 0.0 {
+                contribution
+            } else {
+                0.0
+            },
+        });
+    }
+
+    constraints.sort_by_key(|constraint| {
+        (
+            constraint.span,
+            constraint.start,
+            constraint.materialized_order,
+        )
+    });
+    for constraint in constraints {
+        let occupied = grid_span_extent(sizes, gap, constraint.start, constraint.span);
+        let deficit = constraint.contribution - occupied;
+        if deficit > 0.0 {
+            sizes[auto_index] += deficit;
+        }
+    }
+    Ok(())
+}
+
+fn grid_span_extent(sizes: &[f64], gap: f64, start: usize, span: usize) -> f64 {
+    let mut extent = 0.0;
+    for (offset, size) in sizes.iter().skip(start).take(span).enumerate() {
+        extent += size;
+        if offset + 1 < span {
+            extent += gap;
+        }
+    }
+    extent
 }
 
 #[allow(clippy::too_many_arguments)]

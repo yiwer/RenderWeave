@@ -443,24 +443,25 @@ class DefiniteLayouter:
 
     def visit_grid_children(self, grid: dict[str, Any], content_box: Box) -> None:
         current = occurrence(grid)
+        children = array_value(grid.get("children"), f"{current} children")
         # The frozen profile always solves columns first, then rows.
         columns = definite_grid_axis(
             grid,
-            "columns",
-            "columnGapPt",
+            children,
+            "COLUMN",
             content_box.x,
             content_box.width,
             current,
         )
         rows = definite_grid_axis(
             grid,
-            "rows",
-            "rowGapPt",
+            children,
+            "ROW",
             content_box.y,
             content_box.height,
             current,
         )
-        for raw_child in array_value(grid.get("children"), f"{current} children"):
+        for raw_child in children:
             self.visit_grid_child(
                 object_value(raw_child, f"{current} child"), columns, rows
             )
@@ -554,18 +555,25 @@ def definite_node_role(kind: str, current: str) -> str:
 
 def definite_grid_axis(
     grid: dict[str, Any],
-    tracks_member: str,
-    gap_member: str,
+    children: list[Any],
+    axis: str,
     origin: float,
     available: float,
     current: str,
 ) -> DefiniteGridAxis:
+    if axis == "COLUMN":
+        tracks_member = "columns"
+        gap_member = "columnGapPt"
+    elif axis == "ROW":
+        tracks_member = "rows"
+        gap_member = "rowGapPt"
+    else:
+        raise VerificationFailure(f"invalid Grid axis: {axis}")
     gap = nonnegative_decimal(grid, gap_member, current, gap_member)
     tracks = array_value(grid.get(tracks_member), f"{current} {tracks_member}")
     sizes: list[float] = []
+    auto_indices: list[int] = []
     fraction_indices: list[int] = []
-    has_auto = False
-    used_without_fraction = 0.0
 
     for index, raw_track in enumerate(tracks):
         track = object_value(raw_track, f"{current} {tracks_member}[{index}]")
@@ -580,9 +588,8 @@ def definite_grid_axis(
                 f"{tracks_member}[{index}].valuePt",
             )
             sizes.append(size)
-            used_without_fraction += size
         elif track_type == "AUTO":
-            has_auto = True
+            auto_indices.append(index)
             sizes.append(0.0)
         elif track_type == "FRACTION":
             required_decimal(
@@ -597,16 +604,18 @@ def definite_grid_axis(
             raise VerificationFailure(
                 f"{current} invalid {tracks_member}[{index}].type"
             )
-        if index + 1 < len(tracks):
-            used_without_fraction += gap
-
-    # The Profile solves FIXED, then AUTO, then FRACTION. Finish the authored
-    # scan before rejecting so AUTO wins even when FRACTION appears first.
-    if has_auto:
+    # The Profile solves FIXED, then AUTO, then FRACTION. The complete authored
+    # scan above keeps that stage order independent of authored track order.
+    if len(auto_indices) > 1:
         raise Unsupported("GRID_AUTO_TRACK", current)
+    if auto_indices:
+        apply_single_grid_auto(
+            children, axis, auto_indices[0], sizes, gap, current
+        )
     if len(fraction_indices) > 1:
         raise Unsupported("GRID_FRACTION_TRACK", current)
     if fraction_indices:
+        used_without_fraction = grid_span_extent(sizes, gap, 0, len(sizes))
         remaining = available - used_without_fraction
         sizes[fraction_indices[0]] = remaining if remaining > 0.0 else 0.0
 
@@ -618,6 +627,108 @@ def definite_grid_axis(
         if index + 1 < len(sizes):
             cursor += gap
     return DefiniteGridAxis(origins, sizes, gap)
+
+
+def apply_single_grid_auto(
+    children: list[Any],
+    axis: str,
+    auto_index: int,
+    sizes: list[float],
+    gap: float,
+    grid_occurrence: str,
+) -> None:
+    if axis == "COLUMN":
+        start_member = "column"
+        span_member = "columnSpan"
+        mode_member = "widthMode"
+        size_member = "widthPt"
+        leading_margin_member = "marginLeftPt"
+        trailing_margin_member = "marginRightPt"
+    elif axis == "ROW":
+        start_member = "row"
+        span_member = "rowSpan"
+        mode_member = "heightMode"
+        size_member = "heightPt"
+        leading_margin_member = "marginTopPt"
+        trailing_margin_member = "marginBottomPt"
+    else:
+        raise VerificationFailure(f"invalid Grid axis: {axis}")
+
+    constraints: list[tuple[int, int, int, float]] = []
+    for materialized_order, raw_child in enumerate(children):
+        child = object_value(raw_child, f"{grid_occurrence} child")
+        child_occurrence = occurrence(child)
+        placement = object_value(
+            child.get("placement"), f"{child_occurrence} placement"
+        )
+        if placement.get("type") != "GRID":
+            raise Unsupported("NON_ABSOLUTE_PLACEMENT", child_occurrence)
+        start = integer(
+            placement.get(start_member),
+            f"{child_occurrence} placement.{start_member}",
+        )
+        span = integer(
+            placement.get(span_member),
+            f"{child_occurrence} placement.{span_member}",
+        )
+        if auto_index < start or auto_index >= start + span:
+            continue
+
+        mode = text(
+            placement.get(mode_member),
+            f"{child_occurrence} placement.{mode_member}",
+        )
+        if mode == "HUG_CONTENT":
+            raise Unsupported("HUG_CONTENT", child_occurrence)
+        if mode != "FIXED":
+            raise VerificationFailure(
+                f"{child_occurrence} invalid placement.{mode_member} across AUTO"
+            )
+        size = required_decimal(
+            placement,
+            size_member,
+            child_occurrence,
+            f"placement.{size_member}",
+        )
+        leading_margin = required_decimal(
+            placement,
+            leading_margin_member,
+            child_occurrence,
+            f"placement.{leading_margin_member}",
+        )
+        trailing_margin = required_decimal(
+            placement,
+            trailing_margin_member,
+            child_occurrence,
+            f"placement.{trailing_margin_member}",
+        )
+        contribution = (size + leading_margin) + trailing_margin
+        constraints.append(
+            (
+                span,
+                start,
+                materialized_order,
+                contribution if contribution > 0.0 else 0.0,
+            )
+        )
+
+    constraints.sort(key=lambda constraint: constraint[:3])
+    for span, start, _materialized_order, contribution in constraints:
+        occupied = grid_span_extent(sizes, gap, start, span)
+        deficit = contribution - occupied
+        if deficit > 0.0:
+            sizes[auto_index] += deficit
+
+
+def grid_span_extent(
+    sizes: list[float], gap: float, start: int, span: int
+) -> float:
+    extent = 0.0
+    for index in range(start, start + span):
+        extent += sizes[index]
+        if index + 1 < start + span:
+            extent += gap
+    return extent
 
 
 def grid_axis_arrangement(
@@ -1107,7 +1218,7 @@ def verify(
         "vector manifest",
     )
     verifier.require(
-        vectors["vectorVersion"] == "renderweave-definite-layout-vectors/5",
+        vectors["vectorVersion"] == "renderweave-definite-layout-vectors/6",
         "vector identity drifted",
     )
     authority = exact_members(
@@ -1160,7 +1271,7 @@ def verify(
     expected_boundary = {
         "profileAvailability": "NOT_REGISTERED",
         "certificationStatus": "NOT_CERTIFIED",
-        "layoutImplementation": "RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_SINGLE_MAIN_FILL_AND_FIXED_SINGLE_FRACTION_GRID_BOX_KERNEL",
+        "layoutImplementation": "RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_SINGLE_MAIN_FILL_AND_FIXED_SINGLE_FRACTION_SINGLE_AUTO_GRID_BOX_KERNEL",
         "worldTransformImplementation": "ABSENT",
         "sceneImplementation": "ABSENT",
         "rasterImplementation": "ABSENT",
@@ -1198,7 +1309,7 @@ def verify(
         == "renderweave-layout-preflight-fixtures/1",
         "layout preflight fixture identity drifted",
     )
-    verifier.require(len(vectors["laidOutCases"]) == 30, "laid-out case count drifted")
+    verifier.require(len(vectors["laidOutCases"]) == 33, "laid-out case count drifted")
     verifier.require(
         len(vectors["unsupportedCases"]) == 12,
         "unsupported case count drifted",
@@ -1248,7 +1359,7 @@ def verify(
             raise VerificationFailure(f"{case_id}: unsupported case produced a layout")
 
     return {
-        "verifier": "renderweave-definite-layout-python-independent/5",
+        "verifier": "renderweave-definite-layout-python-independent/6",
         "result": "PASS",
         "assurance": "A2",
         "laidOutCases": len(vectors["laidOutCases"]),
