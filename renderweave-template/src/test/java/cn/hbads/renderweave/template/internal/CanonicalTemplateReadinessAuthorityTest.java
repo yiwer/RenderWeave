@@ -57,7 +57,9 @@ class CanonicalTemplateReadinessAuthorityTest {
                     public TemplateResolution resolveTemplate(String targetTemplateId) {
                         throw new AssertionError("dependency-free design must not check templates");
                     }
-                }
+                },
+                TemplateTestData::resolvedEmpty,
+                new CanonicalDesignDslAuthority()
         );
 
         assertInstanceOf(

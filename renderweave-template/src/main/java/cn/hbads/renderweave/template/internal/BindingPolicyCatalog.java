@@ -40,6 +40,18 @@ final class BindingPolicyCatalog {
         return ENTRIES.contains(new Entry(nodeKind, propertyPathPattern));
     }
 
+    /**
+     * Exact closed DesignDSL ValueType for an authorized property identity.
+     * Bindability remains owned here while the property type itself comes from
+     * the Node contract authority.
+     */
+    static String valueType(String nodeKind, String propertyPathPattern) {
+        if (!allows(nodeKind, propertyPathPattern)) {
+            return null;
+        }
+        return NodeContractCatalog.propertyValueType(propertyPathPattern);
+    }
+
     private static Set<Entry> buildEntries() {
         var entries = new HashSet<Entry>();
         add(entries, "canvas", List.of("backgroundColor"));

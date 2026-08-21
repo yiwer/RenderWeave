@@ -1890,3 +1890,32 @@
 - T30 生命周期为 `resolved / automated_verified`。完整 E4 仍缺 StaticSchema field-path 与 child PUBLIC fill/type/Schema
   compatibility validator；产品 route、E5–E9、Editor J1、Renderer/Profile/formal records/READY 均未推进。Provider
   attempts=0、API Key reads=0、open authorization=0；未发送真实数据、未调用付费外部模型，未 push/tag/PR。
+
+### Template v1 TV1-T31 Editor E4b（resolved / automated_verified）
+
+- 2026-08-21：T30 以 verified local commit `8d517b2` 收口且 worktree clean；冻结 checkpoint 的 tickets 07/11/12/18
+  与实现 T15/T17/T19/T20/T30 交叉核对后，由 Codex `/root` single-writer claim T31（全部 blocker resolved）。
+- 本票补齐 E4 的真实剩余 dependency surface：StaticSchema field-path/type/presence proof、Repeat ancestor-only lexical
+  context、TemplateUse selector exact child Schema 与 child current PUBLIC Custom fill target/type；Schema/child 漂移进入
+  T30 既有 bounded dependency confirmation，lexical/integrity/cycle/cross-scope/limit 仍 hard 零写。
+- 实施保持 Template-owned DesignDSL interpretation；Schema provider 只返回 exact immutable definition，禁止通用 JSON
+  Schema validator 代替 RenderWeave 语义。child current canonical bytes 由 admission + contentHash integrity 复核，现有
+  revision/contentHash/staticSchema snapshot fence 继续绑定确认，无 migration/OpenAPI/generated SDK 变化。
+- 不开放产品 route，不推进 E5–E9、copy/restore confirmation、Renderer/Profile/formal records/READY；provider attempts、
+  API Key reads、真实数据与付费外部调用继续为 0，不 push/tag/PR。
+- 2026-08-21：T31 实现完成。Template-owned semantic validator 在 admitted canonical DesignDSL 上完成 exact
+  StaticSchema scalar/list/reference/type/presence proof、RFC 6901 nested reference traversal、Repeat parent/ancestor-only
+  lexical context、Conditional/binding/definition consumers，以及 TemplateUse exact selector/PUBLIC fill 校验。
+- child current canonical bytes 会重新 admission 并核对 contentHash；Schema/child 漂移产生可确认 dependency ERROR，
+  lexical/integrity/cycle/cross-scope/limit 保持 hard 零写。Node Property ValueType 留在 NodeContractCatalog，
+  BindingPolicyCatalog 只决定 bindability；未引入通用 JSON Schema validator。
+- App exact-definition authority 与 child canonical resolution 已接入 PostgreSQL snapshot/recheck；Testcontainers 证明
+  StaticSchema type mismatch 要求确认后才保存 INVALID，child PUBLIC definition drift 会把 parent readiness 降为 INVALID。
+  runtime migration count 仍为 25，API contract 仍为 `0.15.0`，无 OpenAPI/generated SDK/route 差异。
+- A1 受影响证据：`template` `.sdlc/evidence/20260821-140538-template/`（Schema 20、Template 78、kernel
+  211/211）、`server` `.sdlc/evidence/20260821-134445-server/`（8/8 reactor、App 344）、Node 24 `web`
+  `.sdlc/evidence/20260821-135643-web/`（19 files/127 tests + build）、`fast`
+  `.sdlc/evidence/20260821-135722-fast/`。最终 exact-manifest `full` 目录仅在 commit handoff 报告。
+- T30+T31 关闭 Editor E4 dependency-save 语义，但不外推 E5–E9、产品 route、Editor J1、Renderer/Profile/formal
+  records、A3 或 READY。Provider attempts=0、API Key reads=0、open authorization=0；未发送真实数据、未调用付费
+  外部模型，未 push/tag/PR。

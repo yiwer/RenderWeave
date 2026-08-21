@@ -114,7 +114,7 @@ public class PostgresTemplatePersistence implements TemplatePersistence {
             });
         } catch (DuplicateKeyException collision) {
             return new IdCollision();
-        } catch (DataAccessException unavailable) {
+        } catch (DataAccessException | IllegalArgumentException unavailable) {
             return new CreateUnavailable();
         }
     }
@@ -173,7 +173,7 @@ public class PostgresTemplatePersistence implements TemplatePersistence {
                 }
                 return new Appended();
             });
-        } catch (DataAccessException | PersistenceFault unavailable) {
+        } catch (DataAccessException | PersistenceFault | IllegalArgumentException unavailable) {
             return new AppendUnavailable();
         }
     }
@@ -264,7 +264,7 @@ public class PostgresTemplatePersistence implements TemplatePersistence {
                         ? new ReadinessUpdated()
                         : new ReadinessRevisionConflict();
             });
-        } catch (DataAccessException unavailable) {
+        } catch (DataAccessException | IllegalArgumentException unavailable) {
             return new ReadinessUnavailable();
         }
     }
@@ -327,7 +327,8 @@ public class PostgresTemplatePersistence implements TemplatePersistence {
             var row = jdbc.sql("""
                             select a.template_id, a.owner_scope, a.current_revision,
                                    a.lifecycle, a.readiness, a.schema_key,
-                                   a.schema_version_tag, r.content_hash
+                                   a.schema_version_tag, r.content_hash,
+                                   r.canonical_design_dsl
                             from template_aggregate a
                             join template_revision r
                               on r.template_id = a.template_id
@@ -349,7 +350,9 @@ public class PostgresTemplatePersistence implements TemplatePersistence {
                                     schemaKey(resultSet.getString("schema_key")),
                                     VersionTag.of(resultSet.getString("schema_version_tag"))
                             ),
-                            resultSet.getString("content_hash")
+                            resultSet.getString("content_hash"),
+                            new String(resultSet.getBytes("canonical_design_dsl"),
+                                    StandardCharsets.UTF_8)
                     ))
                     .optional();
             if (row.isEmpty()) {
@@ -381,7 +384,8 @@ public class PostgresTemplatePersistence implements TemplatePersistence {
                             stored.readiness(),
                             stored.staticSchema(),
                             stored.contentHash(),
-                            uses
+                            uses,
+                            stored.canonicalDesignDsl()
                     )
             ));
         }
@@ -540,7 +544,8 @@ public class PostgresTemplatePersistence implements TemplatePersistence {
             DependencyResolution.Lifecycle lifecycle,
             TemplateApplication.Readiness readiness,
             StaticSchemaRef staticSchema,
-            String contentHash
+            String contentHash,
+            String canonicalDesignDsl
     ) {
     }
 }

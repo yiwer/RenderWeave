@@ -9,6 +9,7 @@ import cn.hbads.renderweave.template.spi.OwnerScopeAuthority;
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.simple.JdbcClient;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
 /** System-level exact dependency fact resolver over Asset and Template aggregates. */
@@ -51,7 +52,8 @@ class TemplateDependencyResolutionAdapter implements DependencyResolution {
             var row = jdbc.sql("""
                             select a.template_id, a.owner_scope, a.current_revision,
                                    a.lifecycle, a.readiness, a.schema_key,
-                                   a.schema_version_tag, r.content_hash
+                                   a.schema_version_tag, r.content_hash,
+                                   r.canonical_design_dsl
                             from template_aggregate a
                             join template_revision r
                               on r.template_id = a.template_id
@@ -71,7 +73,9 @@ class TemplateDependencyResolutionAdapter implements DependencyResolution {
                                     schemaKey(resultSet.getString("schema_key")),
                                     VersionTag.of(resultSet.getString("schema_version_tag"))
                             ),
-                            resultSet.getString("content_hash")
+                            resultSet.getString("content_hash"),
+                            new String(resultSet.getBytes("canonical_design_dsl"),
+                                    StandardCharsets.UTF_8)
                     ))
                     .optional();
             if (row.isEmpty()) {
@@ -98,7 +102,8 @@ class TemplateDependencyResolutionAdapter implements DependencyResolution {
                     stored.readiness(),
                     stored.staticSchema(),
                     stored.contentHash(),
-                    uses
+                    uses,
+                    stored.canonicalDesignDsl()
             ));
         } catch (DataAccessException | IllegalArgumentException unavailable) {
             return new TemplateUnavailable();
@@ -112,7 +117,8 @@ class TemplateDependencyResolutionAdapter implements DependencyResolution {
             Lifecycle lifecycle,
             TemplateApplication.Readiness readiness,
             StaticSchemaRef staticSchema,
-            String contentHash
+            String contentHash,
+            String canonicalDesignDsl
     ) {
     }
 

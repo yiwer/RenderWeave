@@ -3,6 +3,8 @@ package cn.hbads.renderweave.template.internal;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -84,5 +86,22 @@ class BindingPolicyCatalogTest {
         assertFalse(BindingPolicyCatalog.allows("group", "placement.rightInsetMm"));
         assertFalse(BindingPolicyCatalog.allows("group", "fill.color"));
         assertFalse(BindingPolicyCatalog.allows("group", "clipContent"));
+    }
+
+    @Test
+    void exposesTheClosedValueTypeForEveryAuthorizedIdentity() {
+        assertEquals("boolean", BindingPolicyCatalog.valueType("frame", "visible"));
+        assertEquals("decimal", BindingPolicyCatalog.valueType(
+                "frame", "transform.rotationDeg"));
+        assertEquals("color", BindingPolicyCatalog.valueType("frame", "fill.color"));
+        assertEquals("fontRef", BindingPolicyCatalog.valueType(
+                "text", "runs[*].fontRef"));
+        assertEquals("imageRef", BindingPolicyCatalog.valueType("image", "imageRef"));
+        assertEquals("text", BindingPolicyCatalog.valueType("barcode", "format"));
+        assertEquals(null, BindingPolicyCatalog.valueType("conditional", "condition"));
+        for (var entry : BindingPolicyCatalog.ENTRIES) {
+            assertNotNull(BindingPolicyCatalog.valueType(
+                    entry.nodeKind(), entry.propertyPathPattern()), entry.toString());
+        }
     }
 }

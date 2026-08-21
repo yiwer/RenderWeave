@@ -256,8 +256,8 @@ describe('Template Editor E1/E2 Product shell', () => {
     fireEvent.click(screen.getByRole('button', { name: /canonical/ }));
     expect(await screen.findByRole('heading', { name: '确认仍保存为 INVALID' })).toBeTruthy();
     expect(screen.getByText('1 项依赖问题 · 完整未截断')).toBeTruthy();
-    expect(screen.getByText('TEMPLATE_ASSET_NOT_FOUND')).toBeTruthy();
-    expect(screen.getByText('/designRoot/children/0/imageRef')).toBeTruthy();
+    expect(screen.getByText('TEMPLATE_USE_FILL_TYPE_MISMATCH')).toBeTruthy();
+    expect(screen.getByText('/designRoot/children/0/fills/0/source')).toBeTruthy();
     expect(screen.getByRole('button', { name: '仍保存为 INVALID' })).toBeTruthy();
 
     fireEvent.click(screen.getByRole('button', { name: '取消 INVALID 保存' }));
@@ -459,10 +459,10 @@ async function invalidSaveProblem(
     confirmationToken,
     expiresAt: '2099-01-01T00:00:00Z',
     problems: [{
-      code: 'TEMPLATE_ASSET_NOT_FOUND',
+      code: 'TEMPLATE_USE_FILL_TYPE_MISMATCH',
       category: 'DEPENDENCY',
       severity: 'ERROR',
-      canonicalPointer: '/designRoot/children/0/imageRef',
+      canonicalPointer: '/designRoot/children/0/fills/0/source',
       messageArgs: [],
     }],
     truncated: false,

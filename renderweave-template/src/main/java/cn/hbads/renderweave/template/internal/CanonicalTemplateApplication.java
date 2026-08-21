@@ -1,6 +1,7 @@
 package cn.hbads.renderweave.template.internal;
 
 import cn.hbads.renderweave.schema.api.StaticSchemaAuthority;
+import cn.hbads.renderweave.schema.definition.StaticSchemaRef;
 import cn.hbads.renderweave.template.api.DesignDslAuthority;
 import cn.hbads.renderweave.template.api.TemplateApplication;
 import cn.hbads.renderweave.template.api.TemplateDependencyProjection;
@@ -38,7 +39,9 @@ final class CanonicalTemplateApplication implements TemplateApplication {
         this.schemas = Objects.requireNonNull(schemas, "schemas");
         this.extractor = new AssetRefAtomExtractor();
         this.dependencies = new TemplateDependencyEvaluator(
-                Objects.requireNonNull(resolution, "resolution")
+                Objects.requireNonNull(resolution, "resolution"),
+                schemas,
+                designs
         );
         this.confirmations = Objects.requireNonNull(confirmations, "confirmations");
     }
@@ -49,10 +52,18 @@ final class CanonicalTemplateApplication implements TemplateApplication {
 
     private TemplateDependencyEvaluator.Evaluation evaluate(
             TemplateDependencyProjection projection,
+            byte[] canonicalDesignDslUtf8,
+            StaticSchemaRef rootSchema,
             String templateId,
             OwnerScopeAuthority.OwnerScope ownerScope
     ) {
-        return dependencies.evaluate(projection, templateId, ownerScope);
+        return dependencies.evaluate(
+                projection,
+                canonicalDesignDslUtf8,
+                rootSchema,
+                templateId,
+                ownerScope
+        );
     }
 
     @Override
@@ -102,7 +113,13 @@ final class CanonicalTemplateApplication implements TemplateApplication {
             var candidate = TemplateId.of(UUID.randomUUID().toString());
             TemplateDependencyEvaluator.Evaluation evaluation;
             try {
-                evaluation = evaluate(projection, candidate.value(), granted.ownerScope());
+                evaluation = evaluate(
+                        projection,
+                        admitted.canonicalUtf8(),
+                        command.staticSchema(),
+                        candidate.value(),
+                        granted.ownerScope()
+                );
             } catch (TemplateDependencyEvaluator.Unavailable unavailable) {
                 return new CreateDependencyUnavailable();
             }
@@ -267,6 +284,8 @@ final class CanonicalTemplateApplication implements TemplateApplication {
             try {
                 evaluation = evaluate(
                         projectionOf(current.canonicalDesignDslUtf8()),
+                        current.canonicalDesignDslUtf8(),
+                        current.staticSchema(),
                         templateId.value(),
                         metadata.ownerScope()
                 );
@@ -379,6 +398,8 @@ final class CanonicalTemplateApplication implements TemplateApplication {
             try {
                 evaluation = evaluate(
                         projection,
+                        admitted.canonicalUtf8(),
+                        metadata.staticSchema(),
                         command.templateId().value(),
                         metadata.ownerScope()
                 );
@@ -483,6 +504,8 @@ final class CanonicalTemplateApplication implements TemplateApplication {
         try {
             fresh = evaluate(
                     projection,
+                    admitted.canonicalUtf8(),
+                    metadata.staticSchema(),
                     command.templateId().value(),
                     metadata.ownerScope()
             );

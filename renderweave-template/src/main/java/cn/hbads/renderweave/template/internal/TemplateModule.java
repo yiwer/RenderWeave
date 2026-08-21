@@ -86,11 +86,14 @@ public final class TemplateModule {
     /** System-level readiness recheck consumed by the app STALE consumer. */
     public static TemplateReadinessAuthority readinessAuthority(
             TemplatePersistence persistence,
-            DependencyResolution dependencyResolution
+            DependencyResolution dependencyResolution,
+            StaticSchemaAuthority schemas
     ) {
         return new CanonicalTemplateReadinessAuthority(
                 Objects.requireNonNull(persistence, "persistence"),
-                Objects.requireNonNull(dependencyResolution, "dependencyResolution")
+                Objects.requireNonNull(dependencyResolution, "dependencyResolution"),
+                Objects.requireNonNull(schemas, "schemas"),
+                new CanonicalDesignDslAuthority()
         );
     }
 }

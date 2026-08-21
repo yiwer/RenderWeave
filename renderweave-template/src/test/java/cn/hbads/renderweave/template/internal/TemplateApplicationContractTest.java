@@ -85,7 +85,7 @@ class TemplateApplicationContractTest {
         var persistence = new CreatePersistenceScript(scope, schema);
         StaticSchemaAuthority schemas = reference -> {
             assertEquals(schema, reference);
-            return new StaticSchemaAuthority.Resolved(reference);
+            return TemplateTestData.resolvedEmpty(reference);
         };
         var application = application(authority, persistence, schemas);
 
@@ -265,7 +265,7 @@ class TemplateApplicationContractTest {
         StaticSchemaAuthority schemas = reference -> {
             calls.add("schema");
             assertEquals(schema, reference);
-            return new StaticSchemaAuthority.Resolved(reference);
+            return TemplateTestData.resolvedEmpty(reference);
         };
         var application = application(authority, persistence, schemas);
 
@@ -357,7 +357,7 @@ class TemplateApplicationContractTest {
         var application = application(
                 authority,
                 persistence,
-                reference -> new StaticSchemaAuthority.Resolved(reference)
+                TemplateTestData::resolvedEmpty
         );
 
         var outcome = application.create(
@@ -407,7 +407,7 @@ class TemplateApplicationContractTest {
                 persistence,
                 reference -> {
                     calls.add("schema");
-                    return new StaticSchemaAuthority.Resolved(reference);
+                    return TemplateTestData.resolvedEmpty(reference);
                 }
         );
 

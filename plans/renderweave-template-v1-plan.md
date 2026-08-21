@@ -15,7 +15,9 @@
   open、显式 readiness 重检与未发布三模式 Product shell；TV1-T28=`resolved/automated_verified`：Editor E2
   canonical working copy、有界结构化 undo/redo 与 preview eligibility guard；TV1-T29=`resolved/automated_verified`：
   Editor E3 lossless save、conflict overwrite 与 revision 漂移重确认均已完成；TV1-T30=`resolved/automated_verified`：
-  Editor E4a 当前依赖面 bounded problems、invalid-save confirmation、snapshot fence 与 hard-error 零写均已完成
+  Editor E4a 当前依赖面 bounded problems、invalid-save confirmation、snapshot fence 与 hard-error 零写均已完成；
+  TV1-T31=`resolved/automated_verified`：Editor E4b StaticSchema field-path/loop lexical context 与 child PUBLIC fill
+  semantic dependency validator 已完成；T30+T31 关闭 E4 dependency-save 语义，E5–E9 仍按真实依赖另票登记
 - 日期：2026-08-20
 - Approved delta：[`specs/changes/20260817-template-v1-implementation-authority.md`](../specs/changes/20260817-template-v1-implementation-authority.md)
 - Frozen checkpoint：`0b485f4a13de9d754a81d07f464730776e13c14b`
@@ -77,7 +79,8 @@ binding: generic + project-local tools/run-gate.ps1 + Wayfinder markdown tracker
 | TV1-P6b Editor E2 | 28 | canonical working copy + 结构化本地编辑/undo/redo + preview generation/eligibility guard | Node 24 Web A1；无 API/route/save/preview action，baseline immutable |
 | TV1-P6c Editor E3 | 29 | lossless save + conflict overwrite offer/confirm/reconfirm + conservative unknown lock | Node 24 Web A1；复用既有 API；无 E4–E9/route/reconciliation |
 | TV1-P6d Editor E4a | 30 | T20 AssetRef/TemplateRef bounded dependency problems + invalid-save confirmation + hard zero-write | Java/PostgreSQL/OpenAPI/Node 24 Web A1；完整 field-path/child-fill validator 与 E5–E9 另切 |
-| TV1-P6+ Product completion | 30 后按真实依赖另切票 | 完整 Renderer layout/resource/raster/JPEG/Engine output、完整 Editor E4 validator、公开产品面、Editor E5–E9 与 formal registry records | 逐纵切 gate + product target/executor + J1/A3/物理 Linux 认证；不预建未知下游票 |
+| TV1-P6e Editor E4b | 31 | StaticSchema field-path/type/presence、loop lexical context、TemplateUse exact Schema 与 PUBLIC fill validator | Java/Schema/PostgreSQL A1；复用 0.15.0 generic problem/confirmation，无 migration/API/route；E5–E9 另切 |
+| TV1-P6+ Product completion | 31 后按真实依赖另切票 | 完整 Renderer layout/resource/raster/JPEG/Engine output、公开产品面、Editor E5–E9 与 formal registry records | 逐纵切 gate + product target/executor + J1/A3/物理 Linux 认证；不预建未知下游票 |
 
 ## 4. 当前 ticket DAG
 
@@ -149,6 +152,12 @@ flowchart LR
   T20 --> T30
   T09 --> T30
   T29 --> T30
+  T07 --> T31[31 Editor E4b semantic dependency validator]
+  T15 --> T31
+  T17 --> T31
+  T19 --> T31
+  T20 --> T31
+  T30 --> T31
 ```
 
 | Ticket | 类型 | 状态 | Blocked by | 本票退出事实 |
@@ -186,6 +195,7 @@ flowchart LR
 | 28 | task | `resolved` / `automated_verified` | 09, 27 | canonical working copy + 结构化 name edit/undo/redo + preview generation/eligibility guard；Node 24 Web/Fast/Full 17/17 |
 | 29 | task | `resolved` / `automated_verified` | 09, 28 | lossless expectedRevision save + conflict overwrite confirm/reconfirm；Node 24 Web/Fast/Full 17/17，unknown 保守锁定，无 E5 reconciliation |
 | 30 | task | `resolved` / `automated_verified` | 04, 09, 20, 29 | 当前 AssetRef/TemplateRef dependency surface 的 bounded problems + 5 分钟 invalid-save confirmation + SERIALIZABLE snapshot fence/hard zero-write；完整 field-path/child-fill validator 另切 |
+| 31 | task | `resolved` / `automated_verified` | 07, 15, 17, 19, 20, 30 | StaticSchema field-path/type/presence、loop lexical context 与 TemplateUse exact Schema/PUBLIC fill 语义依赖校验；复用 T30 confirmation/fence，无 API/migration/route |
 
 每次只 claim 一个 unblocked ticket；一票 resolved 后才由其 `Blocked by` 关系产生下一 frontier。未知实现切片留在
 map 的 `Not yet specified`，不为排满计划提前发明接口、migration 或 Profile identity。
@@ -214,7 +224,8 @@ Supervisor + Java/Rust/Python/Linux replay，`render` 已入 17-step `full`）�
   route、tolerance-dependent HUG/Stack/Grid、resource/raster/JPEG/daemon output Profile。TV1-T27 已从
   Editor E1–E9 中单独登记并完成；TV1-T28 也已从 E2 frontier 单独登记并完成；TV1-T29 已从 E3 save +
   conflict overwrite frontier 单独登记并完成。TV1-T30 已从 E4 拆出当前真实 dependency surface 的 E4a 并完成；
-  完整 field-path/child-fill validator 仍须后续纵切。产品 route 仍待后续闭环，不在 E1–E4 提前开放。
+  TV1-T31 已完成 field-path/child-fill semantic dependency validator。产品 route 仍待后续闭环，
+  不在 E1–E4 提前开放。
 
 ## 5. TV1-T01 执行卡
 
@@ -672,3 +683,30 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
   commit handoff，不反写本卡以免改变已验证输入。
 - 生命周期：T30=`resolved/automated_verified`；完整 E4 field-path/child-fill validator、E5–E9、产品 route、Editor J1、
   Renderer/Profile/formal record/READY 均未声明完成，下一 frontier 继续按真实依赖另票登记。
+
+## 30. TV1-T31 执行卡
+
+- 决策：物化 T30 留出的 E4b dependency semantics；Template 自己解释 admitted canonical DesignDSL，Schema provider
+  提供 exact immutable `SchemaDefinition`，App/Rendering 不复制 field-path 或 child-fill 规则。
+- 语义面：全部 context source 的 exact path/type/presence proof；Repeat 父域 items 与 ancestor-only loop context；
+  Conditional boolean；TemplateUse empty/reference selector exact child StaticSchema；child current PUBLIC Custom fill
+  target/type。Schema/child 漂移为 dependency ERROR，lexical/integrity/cycle/cross-scope/limit 为 hard。
+- 并发与产品：复用 T30 problem/token/fresh revalidation/SERIALIZABLE snapshot fence；StaticSchema ref 不可变且 child
+  revision/contentHash/staticSchema 已入 snapshot，因此无 migration/API/generated SDK 变化；Web 只回归 generic problem flow。
+- 允许影响：Schema exact-definition authority、Template api/spi/internal/tests、App Template adapters/config/tests、T31
+  tracker/plan/log/NOTES/evidence。
+- 禁止影响：StaticSchema mutation/recompile、通用 JSON Schema validator 替代、E5–E9、copy/restore confirmation、产品
+  route、Renderer/Profile/formal records/J1/A3/READY、provider/真实数据/API Key/付费外部调用。
+- TDD 与验证：Template pure RED → App/Testcontainers RED → focused → `template` → `server`/Node 24 `web` → `fast` →
+  最终 `full`。完成状态最高为 `automated_verified`，不 push/tag/PR。
+- 结果：Template-owned semantic validator 已覆盖 exact StaticSchema traversal/type/presence、Repeat parent/ancestor
+  lexical scope、Conditional/binding/definition consumers、TemplateUse selector 与 PUBLIC fills；child canonical
+  admission/contentHash integrity hard，Schema/child drift 复用 T30 可确认 dependency problem。
+- App 只深化 exact definition/canonical child facts 与 snapshot fence；runtime migration count 仍为 25，API contract
+  仍为 `0.15.0`，Web 只回归 generic problem/confirmation。无产品 route、generated SDK 或 Renderer 差异。
+- 受影响 A1：`template` `.sdlc/evidence/20260821-140538-template/`（Schema 20、Template 78、Java/Python
+  211/211）、`server` `.sdlc/evidence/20260821-134445-server/`（App 344）、Node 24 `web`
+  `.sdlc/evidence/20260821-135643-web/`（19 files/127 tests + build）、`fast`
+  `.sdlc/evidence/20260821-135722-fast/`。最终 `full` 对治理收口后的 exact diff 重放，目录仅记入 commit handoff。
+- 生命周期：T31=`resolved/automated_verified`；T30+T31 只证明 E4 dependency-save 语义，不证明 E5–E9、产品
+  route、Editor J1、Renderer/Profile/formal record/READY。Provider/API Key/真实数据/付费调用均未发生。

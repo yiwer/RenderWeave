@@ -298,6 +298,40 @@ final class NodeContractCatalog {
         };
     }
 
+    /**
+     * Exact ValueType of a bindable leaf path. The binding policy separately decides
+     * which node-kind/path identities are authorized; this catalog remains the owner
+     * of permanent Node Property Identity types.
+     */
+    static String propertyValueType(String propertyPathPattern) {
+        if (Set.of("render", "visible", "clipContent").contains(propertyPathPattern)) {
+            return "boolean";
+        }
+        if (propertyPathPattern.endsWith(".color")
+                || propertyPathPattern.endsWith("Color")) {
+            return "color";
+        }
+        if ("imageRef".equals(propertyPathPattern)) {
+            return "imageRef";
+        }
+        if (propertyPathPattern.endsWith(".fontRef")) {
+            return "fontRef";
+        }
+        var leaf = propertyPathPattern.substring(
+                propertyPathPattern.lastIndexOf('.') + 1);
+        if (leaf.endsWith("Mm")
+                || leaf.endsWith("Pt")
+                || Set.of(
+                "opacity", "rotationDeg", "scaleX", "scaleY", "originX", "originY",
+                "row", "column", "rowSpan", "columnSpan", "fillWeight",
+                "weight", "columns", "letterSpacingFactor", "factor",
+                "maxLines", "minScale"
+        ).contains(leaf)) {
+            return "decimal";
+        }
+        return "text";
+    }
+
     /** Authored wire name of a kind (lowerCamelCase; qrCode/barcode/templateUse are not plain lower). */
     static String wireName(NodeKind kind) {
         return switch (kind) {

@@ -130,11 +130,12 @@ class InvalidSaveConfirmationContractTest {
                         DependencyResolution.Lifecycle.ACTIVE,
                         TemplateApplication.Readiness.READY,
                         SCHEMA,
-                        "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+                        TemplateTestData.emptyDesignContentHash(),
                         List.of(new DependencyResolution.TemplateUseEdge(
                                 TEMPLATE_ID.value(),
                                 "/designRoot/children/0/templateRef"
-                        ))
+                        )),
+                        TemplateTestData.emptyDesignCanonical()
                 )
         );
         var fixture = fixture(Verification.VERIFIED, resolution);
@@ -266,7 +267,7 @@ class InvalidSaveConfirmationContractTest {
         var application = TemplateModule.application(
                 new AuthorityScript(),
                 persistence,
-                reference -> new StaticSchemaAuthority.Resolved(reference),
+                TemplateTestData::resolvedEmpty,
                 resolution,
                 confirmations
         );

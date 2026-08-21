@@ -1,5 +1,8 @@
 package cn.hbads.renderweave.template.internal;
 
+import cn.hbads.renderweave.schema.api.StaticSchemaAuthority;
+import cn.hbads.renderweave.schema.definition.StaticSchemaRef;
+import cn.hbads.renderweave.template.api.DesignDslAuthority;
 import cn.hbads.renderweave.template.api.TemplateApplication;
 import cn.hbads.renderweave.template.api.TemplateDependencyProjection;
 import cn.hbads.renderweave.template.spi.DependencyResolution;
@@ -21,9 +24,18 @@ final class TemplateDependencyEvaluator {
     private static final int MAX_CLOSURE_DEPTH = 16;
 
     private final DependencyResolution resolution;
+    private final TemplateSemanticDependencyValidator semantics;
 
-    TemplateDependencyEvaluator(DependencyResolution resolution) {
+    TemplateDependencyEvaluator(
+            DependencyResolution resolution,
+            StaticSchemaAuthority schemas,
+            DesignDslAuthority designs
+    ) {
         this.resolution = Objects.requireNonNull(resolution, "resolution");
+        this.semantics = new TemplateSemanticDependencyValidator(
+                Objects.requireNonNull(schemas, "schemas"),
+                Objects.requireNonNull(designs, "designs")
+        );
     }
 
     static final class Unavailable extends RuntimeException {
@@ -58,16 +70,23 @@ final class TemplateDependencyEvaluator {
 
     Evaluation evaluate(
             TemplateDependencyProjection projection,
+            byte[] canonicalDesignDslUtf8,
+            StaticSchemaRef rootSchema,
             String selfTemplateId,
             OwnerScopeAuthority.OwnerScope ownerScope
     ) {
         Objects.requireNonNull(projection, "projection");
+        Objects.requireNonNull(canonicalDesignDslUtf8, "canonicalDesignDslUtf8");
+        Objects.requireNonNull(rootSchema, "rootSchema");
         Objects.requireNonNull(selfTemplateId, "selfTemplateId");
         Objects.requireNonNull(ownerScope, "ownerScope");
         var context = new EvaluationContext(selfTemplateId, ownerScope);
         context.evaluateAssets(projection.assetAtoms());
         if (!context.problemLimitReached) {
             context.evaluateRootUses(projection.templateUses());
+        }
+        if (!context.problemLimitReached) {
+            context.evaluateSemantics(canonicalDesignDslUtf8, rootSchema);
         }
         var report = TemplateProblemBudget.bounded(context.problems);
         var classification = report.truncated() || context.hard
@@ -222,6 +241,27 @@ final class TemplateDependencyEvaluator {
                         TemplateDependencySnapshot.TemplateFact.missing(templateId);
                 case DependencyResolution.TemplateUnavailable ignored -> throw new Unavailable();
             };
+        }
+
+        private void evaluateSemantics(
+                byte[] canonicalDesignDslUtf8,
+                StaticSchemaRef rootSchema
+        ) {
+            var states = new HashMap<String, DependencyResolution.TemplateState>();
+            for (var entry : templateFacts.entrySet()) {
+                entry.getValue().state()
+                        .filter(state -> entry.getKey().equals(state.templateId()))
+                        .filter(state -> ownerScope.equals(state.ownerScope()))
+                        .ifPresent(state -> states.put(entry.getKey(), state));
+            }
+            final TemplateSemanticDependencyValidator.Validation validation;
+            try {
+                validation = semantics.validate(canonicalDesignDslUtf8, rootSchema, states);
+            } catch (TemplateSemanticDependencyValidator.Unavailable unavailable) {
+                throw new Unavailable();
+            }
+            problems.addAll(validation.problems());
+            hard |= validation.hard();
         }
 
         private void dependency(String code, String pointer) {

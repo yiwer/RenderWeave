@@ -41,6 +41,14 @@ class TemplateDependencyProjectionTest {
             SchemaKey.systemProvided("system-empty"),
             VersionTag.of("v1")
     );
+    private static final StaticSchemaRef SYSTEM_BASIC_TEXT = new StaticSchemaRef(
+            SchemaKey.systemProvided("system-basic-text"),
+            VersionTag.of("v1")
+    );
+    private static final String CHILD_PUBLIC_TEXT =
+            "00000000-0000-4000-8000-0000000000c1";
+    private static final String PARENT_PRIVATE_TEXT =
+            "00000000-0000-4000-8000-0000000000d1";
 
     private static final String ASSET_IMAGE = "00000000-0000-4000-8000-0000000000aa";
     private static final String ASSET_FONT = "00000000-0000-4000-8000-0000000000ab";
@@ -340,10 +348,93 @@ class TemplateDependencyProjectionTest {
                 .isEqualTo(TemplateApplication.Readiness.INVALID);
     }
 
+    @Test
+    void exactStaticSchemaTypeProblemRequiresConfirmationAndPersistsInvalid() {
+        var created = create(SYSTEM_BASIC_TEXT, design(""));
+        var proposed = design(
+                "\"children\":[{\"nodeId\":\"00000000-0000-4000-8000-000000000071\","
+                        + "\"kind\":\"conditional\",\"bindings\":[],"
+                        + "\"condition\":{\"kind\":\"context\","
+                        + "\"domain\":\"invocation\",\"pointer\":\"/value\"},"
+                        + "\"absentPolicy\":\"FALSE\","
+                        + "\"placement\":{\"type\":\"ABSOLUTE\",\"xMm\":0,\"yMm\":0,"
+                        + "\"widthMode\":\"HUG_CONTENT\",\"heightMode\":\"HUG_CONTENT\"},"
+                        + "\"children\":[{\"nodeId\":\"00000000-0000-4000-8000-000000000072\","
+                        + "\"kind\":\"frame\",\"bindings\":[],"
+                        + "\"placement\":{\"type\":\"ABSOLUTE\",\"xMm\":0,\"yMm\":0,"
+                        + "\"widthMode\":\"HUG_CONTENT\",\"heightMode\":\"HUG_CONTENT\"},"
+                        + "\"children\":[]}]}]"
+        );
+
+        var first = templates.save(invocation(), new TemplateApplication.SaveCommand(
+                created.current().templateId(), 0, proposed));
+        assertThat(first).isInstanceOf(TemplateApplication.SaveConfirmationRequired.class);
+        var required = (TemplateApplication.SaveConfirmationRequired) first;
+        assertThat(required.offer().report().problems())
+                .extracting(TemplateApplication.ValidationProblem::code)
+                .containsExactly("TEMPLATE_CONDITION_TYPE_MISMATCH");
+        assertThat(jdbc.sql("select count(*) from template_revision")
+                .query(Long.class).single()).isEqualTo(1);
+
+        var confirmed = templates.save(invocation(), new TemplateApplication.SaveCommand(
+                created.current().templateId(),
+                0,
+                proposed,
+                required.offer().confirmationToken()
+        ));
+        assertThat(confirmed).isInstanceOf(TemplateApplication.SavedReadable.class);
+        assertThat(((TemplateApplication.SavedReadable) confirmed).current().readiness())
+                .isEqualTo(TemplateApplication.Readiness.INVALID);
+    }
+
+    @Test
+    void childCurrentDefinitionDriftMakesParentInvalidOnExactRecheck() {
+        var childDefinitions = "[{\"definitionId\":\"" + CHILD_PUBLIC_TEXT + "\","
+                + "\"kind\":\"custom\",\"displayName\":\"Public text\","
+                + "\"exposure\":\"PUBLIC\",\"valueType\":\"text\","
+                + "\"defaultValue\":\"child default\"}]";
+        var child = create(design(childDefinitions, ""));
+        var parentDefinitions = "[{\"definitionId\":\"" + PARENT_PRIVATE_TEXT + "\","
+                + "\"kind\":\"custom\",\"displayName\":\"Parent text\","
+                + "\"exposure\":\"PRIVATE\",\"valueType\":\"text\","
+                + "\"defaultValue\":\"parent default\"}]";
+        var use = "\"children\":[{\"nodeId\":\"00000000-0000-4000-8000-000000000081\","
+                + "\"kind\":\"templateUse\",\"bindings\":[],"
+                + "\"useId\":\"00000000-0000-4000-8000-000000000082\","
+                + "\"templateRef\":{\"templateId\":\""
+                + child.current().templateId().value() + "\"},"
+                + "\"contextSelector\":{\"kind\":\"empty\"},"
+                + "\"fills\":[{\"targetDefinitionId\":\"" + CHILD_PUBLIC_TEXT + "\","
+                + "\"source\":{\"kind\":\"definition\",\"definitionId\":\""
+                + PARENT_PRIVATE_TEXT + "\"}}],"
+                + "\"placement\":{\"type\":\"ABSOLUTE\",\"xMm\":0,\"yMm\":0,"
+                + "\"widthMode\":\"HUG_CONTENT\",\"heightMode\":\"HUG_CONTENT\"}}]";
+        var parent = create(design(parentDefinitions, use));
+        assertThat(parent.current().readiness()).isEqualTo(TemplateApplication.Readiness.READY);
+
+        var childSave = templates.save(invocation(), new TemplateApplication.SaveCommand(
+                child.current().templateId(), 0, design("")));
+        assertThat(childSave).isInstanceOf(TemplateApplication.SavedReadable.class);
+
+        var rechecked = readinessAuthority.recheck(parent.current().templateId());
+        assertThat(rechecked).isInstanceOf(TemplateReadinessAuthority.Rechecked.class);
+        assertThat(((TemplateReadinessAuthority.Rechecked) rechecked).readiness())
+                .isEqualTo(TemplateApplication.Readiness.INVALID);
+        assertThat(readinessOf(parent.current().templateId().value()))
+                .isEqualTo(TemplateApplication.Readiness.INVALID);
+    }
+
     private TemplateApplication.CreatedReadable create(byte[] design) {
+        return create(SYSTEM_EMPTY, design);
+    }
+
+    private TemplateApplication.CreatedReadable create(
+            StaticSchemaRef schema,
+            byte[] design
+    ) {
         var outcome = templates.create(
                 invocation(),
-                new TemplateApplication.CreateCommand(SYSTEM_EMPTY, design)
+                new TemplateApplication.CreateCommand(schema, design)
         );
         assertThat(outcome).isInstanceOf(TemplateApplication.CreatedReadable.class);
         return (TemplateApplication.CreatedReadable) outcome;
@@ -407,9 +498,13 @@ class TemplateDependencyProjectionTest {
     }
 
     private static byte[] design(String children) {
+        return design("[]", children);
+    }
+
+    private static byte[] design(String definitions, String children) {
         return ("{\"dslVersion\":\"renderweave-design/1.0\","
                 + "\"expressionProfile\":\"renderweave-expression/1.0\","
-                + "\"displayName\":\"T20 fixture\",\"definitions\":[],"
+                + "\"displayName\":\"T20 fixture\",\"definitions\":" + definitions + ","
                 + "\"designRoot\":{\"nodeId\":\"00000000-0000-4000-8000-000000000001\","
                 + "\"kind\":\"canvas\",\"widthMm\":210,\"heightMm\":297,"
                 + "\"bindings\":[]"

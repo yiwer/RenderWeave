@@ -99,9 +99,10 @@ class TemplateApplicationConfiguration {
     @Bean
     TemplateReadinessAuthority templateReadinessAuthority(
             TemplatePersistence persistence,
-            DependencyResolution dependencyResolution
+            DependencyResolution dependencyResolution,
+            StaticSchemaAuthority schemas
     ) {
-        return TemplateModule.readinessAuthority(persistence, dependencyResolution);
+        return TemplateModule.readinessAuthority(persistence, dependencyResolution, schemas);
     }
 
     @Bean

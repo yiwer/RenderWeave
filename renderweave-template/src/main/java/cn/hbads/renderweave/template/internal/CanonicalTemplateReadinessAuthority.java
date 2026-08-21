@@ -1,5 +1,7 @@
 package cn.hbads.renderweave.template.internal;
 
+import cn.hbads.renderweave.schema.api.StaticSchemaAuthority;
+import cn.hbads.renderweave.template.api.DesignDslAuthority;
 import cn.hbads.renderweave.template.api.TemplateApplication;
 import cn.hbads.renderweave.template.api.TemplateReadinessAuthority;
 import cn.hbads.renderweave.template.spi.DependencyResolution;
@@ -21,12 +23,16 @@ final class CanonicalTemplateReadinessAuthority implements TemplateReadinessAuth
 
     CanonicalTemplateReadinessAuthority(
             TemplatePersistence persistence,
-            DependencyResolution resolution
+            DependencyResolution resolution,
+            StaticSchemaAuthority schemas,
+            DesignDslAuthority designs
     ) {
         this.persistence = Objects.requireNonNull(persistence, "persistence");
         this.extractor = new AssetRefAtomExtractor();
         this.dependencies = new TemplateDependencyEvaluator(
-                Objects.requireNonNull(resolution, "resolution")
+                Objects.requireNonNull(resolution, "resolution"),
+                Objects.requireNonNull(schemas, "schemas"),
+                Objects.requireNonNull(designs, "designs")
         );
     }
 
@@ -58,6 +64,8 @@ final class CanonicalTemplateReadinessAuthority implements TemplateReadinessAuth
             try {
                 evaluation = dependencies.evaluate(
                         projection,
+                        stored.canonicalDesignDslUtf8(),
+                        stored.metadata().staticSchema(),
                         templateId.value(),
                         stored.metadata().ownerScope()
                 );

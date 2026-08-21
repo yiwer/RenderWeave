@@ -9,6 +9,7 @@ import cn.hbads.renderweave.template.spi.DependencyResolution;
 import cn.hbads.renderweave.template.spi.OwnerScopeAuthority;
 import org.junit.jupiter.api.Test;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -41,8 +42,7 @@ class TemplateDependencyEvaluatorTest {
                 List.of()
         );
 
-        var evaluated = new TemplateDependencyEvaluator(resolution)
-                .evaluate(projection, SELF, OWNER);
+        var evaluated = evaluate(resolution, projection);
 
         assertEquals(TemplateDependencyEvaluator.Classification.DEPENDENCY_ERROR,
                 evaluated.classification());
@@ -79,8 +79,8 @@ class TemplateDependencyEvaluatorTest {
         var dependencyResolution = new ResolutionScript();
         dependencyResolution.templates.put(
                 "child-invalid", new DependencyResolution.TemplateResolved(notReady));
-        var dependency = new TemplateDependencyEvaluator(dependencyResolution).evaluate(
-                uses("child-invalid", "/designRoot/children/0/templateRef"), SELF, OWNER);
+        var dependency = evaluate(dependencyResolution,
+                uses("child-invalid", "/designRoot/children/0/templateRef"));
         assertEquals(TemplateDependencyEvaluator.Classification.DEPENDENCY_ERROR,
                 dependency.classification());
         assertEquals("TEMPLATE_CHILD_NOT_READY", dependency.report().problems().getFirst().code());
@@ -88,14 +88,25 @@ class TemplateDependencyEvaluatorTest {
         var foreignResolution = new ResolutionScript();
         foreignResolution.templates.put(
                 "foreign", new DependencyResolution.TemplateResolved(
-                        template("foreign", new OwnerScopeAuthority.OwnerScope("owner-b"),
-                                TemplateApplication.Readiness.READY, List.of())));
-        var foreign = new TemplateDependencyEvaluator(foreignResolution).evaluate(
-                uses("foreign", "/designRoot/children/1/templateRef"), SELF, OWNER);
+                        new DependencyResolution.TemplateState(
+                                "foreign",
+                                new OwnerScopeAuthority.OwnerScope("owner-b"),
+                                4,
+                                DependencyResolution.Lifecycle.ACTIVE,
+                                TemplateApplication.Readiness.READY,
+                                SCHEMA,
+                                "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                                List.of(),
+                                "{}"
+                        )));
+        var foreign = evaluate(foreignResolution,
+                uses("foreign", "/designRoot/children/1/templateRef"));
         assertEquals(TemplateDependencyEvaluator.Classification.HARD_ERROR,
                 foreign.classification());
         assertEquals("TEMPLATE_DEPENDENCY_SCOPE_MISMATCH",
                 foreign.report().problems().getFirst().code());
+        assertEquals(1, foreign.report().problems().size(),
+                "foreign canonical content must never cross the owner-scope boundary");
 
         var cycleResolution = new ResolutionScript();
         cycleResolution.templates.put(
@@ -103,8 +114,8 @@ class TemplateDependencyEvaluatorTest {
                         "child", OWNER, TemplateApplication.Readiness.READY,
                         List.of(new DependencyResolution.TemplateUseEdge(
                                 SELF, "/designRoot/children/4/templateRef")))));
-        var cycle = new TemplateDependencyEvaluator(cycleResolution).evaluate(
-                uses("child", "/designRoot/children/0/templateRef"), SELF, OWNER);
+        var cycle = evaluate(cycleResolution,
+                uses("child", "/designRoot/children/0/templateRef"));
         assertEquals(TemplateDependencyEvaluator.Classification.HARD_ERROR,
                 cycle.classification());
         assertEquals("TEMPLATE_REF_CYCLE",
@@ -121,7 +132,7 @@ class TemplateDependencyEvaluatorTest {
             atoms.add(atom(assetId, "imageRef", "/designRoot/children/" + index + "/imageRef"));
         }
 
-        var evaluated = new TemplateDependencyEvaluator(resolution).evaluate(
+        var evaluated = evaluate(resolution,
                 new TemplateDependencyProjection(
                         atoms,
                         List.of(new TemplateDependencyProjection.TemplateUseOccurrence(
@@ -129,7 +140,7 @@ class TemplateDependencyEvaluatorTest {
                                 "00000000-0000-4000-8000-000000000099",
                                 "/designRoot/children/500/templateRef"
                         ))
-                ), SELF, OWNER);
+                ));
 
         assertEquals(TemplateDependencyEvaluator.Classification.HARD_ERROR,
                 evaluated.classification());
@@ -157,7 +168,7 @@ class TemplateDependencyEvaluatorTest {
             ));
         }
 
-        var evaluated = new TemplateDependencyEvaluator(resolution).evaluate(
+        var evaluated = evaluate(resolution,
                 new TemplateDependencyProjection(
                         atoms,
                         List.of(new TemplateDependencyProjection.TemplateUseOccurrence(
@@ -165,7 +176,7 @@ class TemplateDependencyEvaluatorTest {
                                 "00000000-0000-4000-8000-000000000099",
                                 "/designRoot/children/500/templateRef"
                         ))
-                ), SELF, OWNER);
+                ));
 
         assertEquals(TemplateDependencyEvaluator.Classification.HARD_ERROR,
                 evaluated.classification());
@@ -190,10 +201,8 @@ class TemplateDependencyEvaluatorTest {
                 List.of(atom("asset", "imageRef", "/designRoot/children/0/imageRef")),
                 List.of());
 
-        var first = new TemplateDependencyEvaluator(firstResolution)
-                .evaluate(projection, SELF, OWNER);
-        var second = new TemplateDependencyEvaluator(secondResolution)
-                .evaluate(projection, SELF, OWNER);
+        var first = evaluate(firstResolution, projection);
+        var second = evaluate(secondResolution, projection);
 
         assertEquals(TemplateDependencyEvaluator.Classification.READY, first.classification());
         assertEquals(TemplateDependencyEvaluator.Classification.READY, second.classification());
@@ -205,8 +214,8 @@ class TemplateDependencyEvaluatorTest {
         var withinResolution = new ResolutionScript();
         var withinUses = templateUses(64, withinResolution);
 
-        var within = new TemplateDependencyEvaluator(withinResolution).evaluate(
-                new TemplateDependencyProjection(List.of(), withinUses), SELF, OWNER);
+        var within = evaluate(withinResolution,
+                new TemplateDependencyProjection(List.of(), withinUses));
 
         assertEquals(TemplateDependencyEvaluator.Classification.READY, within.classification());
         assertEquals(64, within.snapshot().templates().size());
@@ -214,8 +223,8 @@ class TemplateDependencyEvaluatorTest {
 
         var overResolution = new ResolutionScript();
         var overUses = templateUses(65, overResolution);
-        var over = new TemplateDependencyEvaluator(overResolution).evaluate(
-                new TemplateDependencyProjection(List.of(), overUses), SELF, OWNER);
+        var over = evaluate(overResolution,
+                new TemplateDependencyProjection(List.of(), overUses));
 
         assertEquals(TemplateDependencyEvaluator.Classification.HARD_ERROR,
                 over.classification());
@@ -242,6 +251,19 @@ class TemplateDependencyEvaluatorTest {
             ));
         }
         return uses;
+    }
+
+    private static TemplateDependencyEvaluator.Evaluation evaluate(
+            DependencyResolution resolution,
+            TemplateDependencyProjection projection
+    ) {
+        var canonical = TemplateTestData.emptyDesignCanonical()
+                .getBytes(StandardCharsets.UTF_8);
+        return new TemplateDependencyEvaluator(
+                resolution,
+                TemplateTestData::resolvedEmpty,
+                new CanonicalDesignDslAuthority()
+        ).evaluate(projection, canonical, SCHEMA, SELF, OWNER);
     }
 
     private static TemplateDependencyProjection.AssetRefAtom atom(
@@ -281,8 +303,9 @@ class TemplateDependencyEvaluatorTest {
                 DependencyResolution.Lifecycle.ACTIVE,
                 readiness,
                 SCHEMA,
-                "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-                uses
+                TemplateTestData.emptyDesignContentHash(),
+                uses,
+                TemplateTestData.emptyDesignCanonical()
         );
     }
 

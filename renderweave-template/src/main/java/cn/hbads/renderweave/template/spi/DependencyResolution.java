@@ -77,7 +77,8 @@ public interface DependencyResolution {
             TemplateApplication.Readiness readiness,
             StaticSchemaRef staticSchema,
             String contentHash,
-            List<TemplateUseEdge> uses
+            List<TemplateUseEdge> uses,
+            String canonicalDesignDsl
     ) {
         public TemplateState {
             if (templateId == null || templateId.isBlank() || templateId.length() > 128) {
@@ -99,6 +100,13 @@ public interface DependencyResolution {
                     .sorted(Comparator.comparing(TemplateUseEdge::canonicalPointer)
                             .thenComparing(TemplateUseEdge::targetTemplateId))
                     .toList();
+            if (canonicalDesignDsl == null || canonicalDesignDsl.isEmpty()
+                    || canonicalDesignDsl.getBytes(java.nio.charset.StandardCharsets.UTF_8).length
+                    > 16_777_216) {
+                throw new IllegalArgumentException(
+                        "canonicalDesignDsl must be present and bounded"
+                );
+            }
         }
     }
 
