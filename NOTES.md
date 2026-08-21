@@ -1843,3 +1843,26 @@
   `web` `.sdlc/evidence/20260821-085127-web/`、`fast` `.sdlc/evidence/20260821-085203-fast/`，最终 full 17/17
   按不可自指策略只在提交交接报告。P0/R0/R1 均确认 provider attempts=0、API Key reads/open authorization=0；
   T28 为 `automated_verified`，无已发布 route 浏览器观察、Editor J1、A3、Renderer certification 或 READY 升级。
+
+### Template v1 TV1-T29 Editor E3（resolved / automated_verified）
+
+- 2026-08-21：T28 最终 full `.sdlc/evidence/20260821-085236-full/` 17/17 通过，并以 verified local commit
+  `5883a7c` 收口，worktree clean；从 T09 已批准分解登记并由 Codex `/root` single-writer claim T29（blocked by
+  T09/T28，均 resolved）。
+- 本票 Web-only 复用既有 Template PUT/GET：以 lossless int64 expectedRevision 保存 exact working canonical；成功
+  必须重新核验 READABLE response 的 hash/identity/+1 revision/permanent StaticSchema/exact body 后才采用新 baseline。
+- 409 overwrite offer 绑定 current revision + draft canonical/generation；确认后先重读 trusted current，任何漂移或
+  第二次 409 都重新确认。PUT network/500/503/malformed success 只进入 outcome-unknown lock，不盲重试、不冒充失败；
+  E5 才实现 reconciliation。
+- 冻结边界：不修改 Java/OpenAPI/generated SDK/migration/API 语义/route；不实现 E4 dependency confirmation、E5
+  reconciliation、E6 preview、E7 recovery、E8 import 或 E9 完整问题投影；不运行 provider/真实数据/API Key/
+  physical Linux/J1/A3，不升级 Editor/Renderer/Template v1 READY。
+- closed save transport/coordinator 与 Canvas Focus shell 已按 RED→GREEN 完成：lossless int64/exact body、严格成功
+  adoption、409 offer/GET→PUT/reconfirm、known rejection、generation invalidation、pending/unknown lock 均有回归；
+  focused 5 files / 43 tests。
+- 正式 Node 24 Web 为 19 files / 119 tests，SDK generation/typecheck/lint 与 2144-module build 全绿；A1 证据为
+  `web` `.sdlc/evidence/20260821-094726-web/`、`fast` `.sdlc/evidence/20260821-094809-fast/`，最终 `full`
+  `.sdlc/evidence/20260821-094832-full/` 17/17、1048.706s。
+- Full 的 Server 8/8 reactor、runtime canary、R0/R1/P0、prototype、Draft 与 inference browser journeys 均通过；
+  provider attempts/API Key reads/open authorization=0。T29 为 `automated_verified`，无 E4–E9、已发布 route、
+  Editor J1、A3、Renderer certification 或 READY 升级；verified commit hash 按不可自指策略见提交交接报告。

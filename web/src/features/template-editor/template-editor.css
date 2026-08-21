@@ -146,6 +146,26 @@
   opacity: 0.42;
 }
 
+.te-header-tools .te-save-button {
+  display: flex;
+  width: auto;
+  min-width: 98px;
+  gap: var(--space-xs);
+  padding: 0 var(--space-md);
+  border-color: var(--color-accent-deep);
+  border-radius: var(--radius-pill);
+  background: var(--color-accent);
+  color: var(--color-accent-ink);
+  font-size: var(--text-xs);
+  font-weight: 750;
+}
+
+.te-header-tools .te-save-button:hover:not(:disabled) {
+  border-color: var(--color-accent-deep);
+  background: var(--color-accent-strong);
+  color: var(--color-accent-ink);
+}
+
 .te-baseline-facts > span,
 .te-mode-chip {
   min-height: 28px;
@@ -595,6 +615,83 @@
   color: var(--color-accent-ink);
   font-size: var(--text-xs);
   font-weight: 750;
+}
+
+.te-name-field input:disabled,
+.te-name-field button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.te-save-status {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--space-sm);
+  padding: var(--space-lg);
+  border-bottom: 1px solid var(--color-hairline);
+  background: var(--color-info-soft);
+  color: var(--color-info-ink);
+  font-size: var(--text-xs);
+  line-height: 1.5;
+}
+
+.te-save-status > svg {
+  margin-top: 2px;
+}
+
+.te-save-status > div {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-2xs);
+}
+
+.te-save-status strong {
+  color: currentColor;
+  font-size: var(--text-sm);
+}
+
+.te-save-status span,
+.te-save-status code {
+  overflow-wrap: anywhere;
+}
+
+.te-save-status code {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+}
+
+.te-save-status.is-conflict,
+.te-save-status.is-rejected {
+  background: var(--color-warning-soft);
+  color: var(--color-warning-ink);
+}
+
+.te-save-status.is-unknown {
+  background: var(--color-error-soft);
+  color: var(--color-error-ink);
+}
+
+.te-save-actions {
+  display: grid;
+  gap: var(--space-xs);
+  margin-top: var(--space-xs);
+}
+
+.te-save-actions button {
+  min-height: 44px;
+  padding: var(--space-xs) var(--space-sm);
+  border: 1px solid var(--color-warning-border);
+  border-radius: var(--radius-input);
+  background: var(--color-warning-ink);
+  color: var(--color-surface);
+  font: inherit;
+  font-weight: 750;
+  text-align: start;
+}
+
+.te-save-actions button.is-secondary {
+  background: transparent;
+  color: var(--color-warning-ink);
 }
 
 .te-field-help,

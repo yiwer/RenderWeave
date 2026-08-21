@@ -13,6 +13,7 @@ import {
   PencilLine,
   Redo2,
   RefreshCw,
+  Save,
   ShieldCheck,
   Undo2,
   Unplug,
@@ -51,6 +52,14 @@ import {
   TemplateRequestError,
   type TemplateEditorTransport,
 } from './template-open';
+import {
+  confirmTemplateOverwrite,
+  defaultTemplateSaveTransport,
+  saveTemplateWorkingCopy,
+  type TemplateConflictOffer,
+  type TemplateSaveResult,
+  type TemplateSaveTransport,
+} from './template-save';
 import './template-editor.css';
 
 type EditorEntry = 'structure' | 'nodes' | 'assets' | 'definitions' | 'exchange';
@@ -66,11 +75,15 @@ const ENTRIES: Array<{ id: EditorEntry; label: string; icon: LucideIcon }> = [
 interface TemplateEditorShellProps {
   session: TemplateEditorSession;
   onRetryReadiness?: () => void;
+  saveTransport?: TemplateSaveTransport;
+  onSessionCommitted?: (session: StructuredEditorSession) => void;
 }
 
 export function TemplateEditorShell({
   session,
   onRetryReadiness,
+  saveTransport,
+  onSessionCommitted,
 }: TemplateEditorShellProps) {
   if (session.mode === 'raw-repair') {
     return <RawRepairShell session={session} />;
@@ -83,6 +96,8 @@ export function TemplateEditorShell({
       key={baselineIdentity(session.baseline)}
       session={session}
       onRetryReadiness={onRetryReadiness}
+      saveTransport={saveTransport}
+      onSessionCommitted={onSessionCommitted}
     />
   );
 }
@@ -90,6 +105,7 @@ export function TemplateEditorShell({
 interface TemplateEditorSurfaceProps {
   templateId: string;
   transport?: TemplateEditorTransport;
+  saveTransport?: TemplateSaveTransport;
 }
 
 type SurfaceState =
@@ -100,10 +116,13 @@ type SurfaceState =
 export function TemplateEditorSurface({
   templateId,
   transport = defaultTemplateEditorTransport,
+  saveTransport,
 }: TemplateEditorSurfaceProps) {
   const [retryKey, setRetryKey] = useState(0);
   const [surface, setSurface] = useState<SurfaceState>({ state: 'loading' });
   const generation = useRef(0);
+  const effectiveSaveTransport = saveTransport
+    ?? (transport === defaultTemplateEditorTransport ? defaultTemplateSaveTransport : undefined);
 
   useEffect(() => {
     const activeGeneration = generation.current + 1;
@@ -150,18 +169,34 @@ export function TemplateEditorSurface({
     <TemplateEditorShell
       session={surface.session}
       onRetryReadiness={() => setRetryKey((value) => value + 1)}
+      saveTransport={effectiveSaveTransport}
+      onSessionCommitted={(session) => setSurface({ state: 'open', session })}
     />
   );
 }
 
+type StructuredSaveView =
+  | { state: 'idle' }
+  | { state: 'pending'; message: string }
+  | { state: 'conflict'; offer: TemplateConflictOffer; message: string }
+  | { state: 'rejected'; code: string; message: string }
+  | { state: 'unknown'; message: string };
+
 function StructuredShell({
   session: incomingSession,
   onRetryReadiness,
+  saveTransport,
+  onSessionCommitted,
 }: {
   session: StructuredEditorSession;
   onRetryReadiness?: () => void;
+  saveTransport?: TemplateSaveTransport;
+  onSessionCommitted?: (session: StructuredEditorSession) => void;
 }) {
   const [localSession, setLocalSession] = useState(incomingSession);
+  const [saveView, setSaveView] = useState<StructuredSaveView>({ state: 'idle' });
+  const mutationId = useRef(0);
+  const mutationAbort = useRef<AbortController | null>(null);
   const session = useMemo(
     () => updateStructuredReadiness(localSession, incomingSession.readiness),
     [incomingSession.readiness, localSession],
@@ -178,13 +213,91 @@ function StructuredShell({
   const dirty = isCanonicalDirty(session);
   const workingName = templateDisplayName(session.workingCopy);
   const guard = authoritativePreviewGuard(session);
+  const localLocked = saveView.state === 'pending' || saveView.state === 'unknown';
 
-  const undo = () => setLocalSession((current) => undoStructuredCommand(
-    updateStructuredReadiness(current, incomingSession.readiness),
-  ));
-  const redo = () => setLocalSession((current) => redoStructuredCommand(
-    updateStructuredReadiness(current, incomingSession.readiness),
-  ));
+  useEffect(() => () => {
+    mutationId.current += 1;
+    mutationAbort.current?.abort();
+  }, []);
+
+  const acceptLocalChange = (next: StructuredEditorSession) => {
+    if (localLocked) return;
+    setLocalSession(next);
+    setSaveView({ state: 'idle' });
+  };
+
+  const undo = () => acceptLocalChange(undoStructuredCommand(session));
+  const redo = () => acceptLocalChange(redoStructuredCommand(session));
+
+  const acceptSaveResult = (result: TemplateSaveResult) => {
+    switch (result.state) {
+      case 'saved':
+        setLocalSession(result.session);
+        setSaveView({ state: 'idle' });
+        onSessionCommitted?.(result.session);
+        return;
+      case 'conflict':
+        setSaveView({
+          state: 'conflict',
+          offer: result.offer,
+          message: result.message,
+        });
+        return;
+      case 'rejected':
+        setSaveView({ state: 'rejected', code: result.code, message: result.message });
+        return;
+      case 'offer-invalidated':
+        setSaveView({
+          state: 'rejected',
+          code: 'TEMPLATE_OVERWRITE_OFFER_INVALIDATED',
+          message: result.message,
+        });
+        return;
+      case 'unknown':
+        setSaveView({ state: 'unknown', message: result.message });
+    }
+  };
+
+  const runMutation = async (
+    message: string,
+    operation: (signal: AbortSignal) => Promise<TemplateSaveResult>,
+  ) => {
+    if (!saveTransport || localLocked || mutationAbort.current !== null) return;
+    const id = mutationId.current + 1;
+    mutationId.current = id;
+    const controller = new AbortController();
+    mutationAbort.current = controller;
+    setSaveView({ state: 'pending', message });
+    let result: TemplateSaveResult;
+    try {
+      result = await operation(controller.signal);
+    } catch {
+      result = {
+        state: 'unknown',
+        message: '保存请求的结果不明；本地草稿已锁定，需由 E5 reconciliation 核验 current 后再继续。',
+      };
+    }
+    if (mutationId.current !== id) return;
+    mutationAbort.current = null;
+    acceptSaveResult(result);
+  };
+
+  const save = () => {
+    const transport = saveTransport;
+    if (!transport) return;
+    void runMutation(
+      '保存请求进行中',
+      (signal) => saveTemplateWorkingCopy(session, transport, signal),
+    );
+  };
+  const confirmOverwrite = (offer: TemplateConflictOffer) => {
+    const transport = saveTransport;
+    if (!transport) return;
+    void runMutation(
+      '正在重读 current 并提交覆盖',
+      (signal) => confirmTemplateOverwrite(session, offer, transport, signal),
+    );
+  };
 
   return (
     <EditorFrame
@@ -198,8 +311,12 @@ function StructuredShell({
           dirty={dirty}
           canUndo={session.history.past.length > 0}
           canRedo={session.history.future.length > 0}
+          localLocked={localLocked}
+          canSave={saveTransport !== undefined && dirty}
+          saving={saveView.state === 'pending'}
           onUndo={undo}
           onRedo={redo}
+          onSave={save}
         />
       )}
     >
@@ -256,7 +373,13 @@ function StructuredShell({
               key={workingName}
               session={session}
               guard={guard}
-              onSessionChange={setLocalSession}
+              disabled={localLocked}
+              onSessionChange={acceptLocalChange}
+            />
+            <StructuredSaveStatus
+              view={saveView}
+              onConfirmOverwrite={confirmOverwrite}
+              onCancelOverwrite={() => setSaveView({ state: 'idle' })}
             />
             <NodeInspector node={selected} />
           </aside>
@@ -337,14 +460,22 @@ function StructuredHeaderTools({
   dirty,
   canUndo,
   canRedo,
+  localLocked,
+  canSave,
+  saving,
   onUndo,
   onRedo,
+  onSave,
 }: {
   dirty: boolean;
   canUndo: boolean;
   canRedo: boolean;
+  localLocked: boolean;
+  canSave: boolean;
+  saving: boolean;
   onUndo: () => void;
   onRedo: () => void;
+  onSave: () => void;
 }) {
   return (
     <>
@@ -355,12 +486,28 @@ function StructuredHeaderTools({
       >
         {dirty ? 'Canonical 本地草稿' : 'Canonical current'}
       </span>
-      <button type="button" onClick={onUndo} disabled={!canUndo} aria-label="撤销本地编辑">
+      <button type="button" onClick={onUndo} disabled={localLocked || !canUndo} aria-label="撤销本地编辑">
         <Undo2 aria-hidden="true" size={16} />
       </button>
-      <button type="button" onClick={onRedo} disabled={!canRedo} aria-label="重做本地编辑">
+      <button type="button" onClick={onRedo} disabled={localLocked || !canRedo} aria-label="重做本地编辑">
         <Redo2 aria-hidden="true" size={16} />
       </button>
+      {canSave || localLocked ? (
+        <button
+          type="button"
+          className="button primary-button te-save-button"
+          onClick={onSave}
+          disabled={localLocked}
+          aria-label="保存 canonical 本地草稿"
+        >
+          {saving ? (
+            <LoaderCircle className="te-loading-icon" aria-hidden="true" size={16} />
+          ) : (
+            <Save aria-hidden="true" size={16} />
+          )}
+          <span>{saving ? '保存中' : '保存草稿'}</span>
+        </button>
+      ) : null}
     </>
   );
 }
@@ -368,10 +515,12 @@ function StructuredHeaderTools({
 function TemplateNameEditor({
   session,
   guard,
+  disabled,
   onSessionChange,
 }: {
   session: StructuredEditorSession;
   guard: ReturnType<typeof authoritativePreviewGuard>;
+  disabled: boolean;
   onSessionChange: (session: StructuredEditorSession) => void;
 }) {
   const id = useId();
@@ -387,6 +536,7 @@ function TemplateNameEditor({
 
   const submit = (event: React.FormEvent) => {
     event.preventDefault();
+    if (disabled) return;
     const result = applyTemplateDisplayName(session, draft);
     if (result.state === 'invalid') {
       setProblem(result.message);
@@ -409,6 +559,7 @@ function TemplateNameEditor({
           <input
             id={fieldId}
             value={draft}
+            disabled={disabled}
             onChange={(event) => {
               setDraft(event.currentTarget.value);
               setProblem(null);
@@ -416,17 +567,80 @@ function TemplateNameEditor({
             aria-invalid={problem ? 'true' : 'false'}
             aria-describedby={problem ? problemId : helpId}
           />
-          <button type="submit">应用本地名称</button>
+          <button type="submit" disabled={disabled}>应用本地名称</button>
         </div>
         {problem ? (
           <p id={problemId} className="te-field-problem" role="alert">{problem}</p>
         ) : (
-          <p id={helpId} className="te-field-help">只更新 canonical working copy，不会保存到服务器。</p>
+          <p id={helpId} className="te-field-help">应用先更新 canonical working copy；顶栏保存才写入服务器。</p>
         )}
       </form>
       <div className={`te-preview-guard ${guard.state === 'eligible' ? 'is-eligible' : 'is-blocked'}`} role="status" aria-live="polite">
         <strong>权威预览条件</strong>
         <span>{guardMessage}</span>
+      </div>
+    </section>
+  );
+}
+
+function StructuredSaveStatus({
+  view,
+  onConfirmOverwrite,
+  onCancelOverwrite,
+}: {
+  view: StructuredSaveView;
+  onConfirmOverwrite: (offer: TemplateConflictOffer) => void;
+  onCancelOverwrite: () => void;
+}) {
+  if (view.state === 'idle') return null;
+  if (view.state === 'pending') {
+    return (
+      <section className="te-save-status is-pending" role="status" aria-live="polite">
+        <LoaderCircle className="te-loading-icon" aria-hidden="true" size={18} />
+        <div>
+          <strong>{view.message}</strong>
+          <span>本地编辑与历史记录已暂时锁定。</span>
+        </div>
+      </section>
+    );
+  }
+  if (view.state === 'conflict') {
+    return (
+      <section className="te-save-status is-conflict" role="alert">
+        <AlertTriangle aria-hidden="true" size={18} />
+        <div>
+          <strong>保存冲突</strong>
+          <span>{view.message}</span>
+          <div className="te-save-actions">
+            <button type="button" onClick={() => onConfirmOverwrite(view.offer)}>
+              重读并覆盖 revision {view.offer.offeredRevision}
+            </button>
+            <button type="button" className="is-secondary" onClick={onCancelOverwrite}>
+              取消覆盖
+            </button>
+          </div>
+        </div>
+      </section>
+    );
+  }
+  if (view.state === 'rejected') {
+    return (
+      <section className="te-save-status is-rejected" role="alert">
+        <AlertTriangle aria-hidden="true" size={18} />
+        <div>
+          <strong>保存未写入</strong>
+          <span>{view.message}</span>
+          <code>{view.code}</code>
+        </div>
+      </section>
+    );
+  }
+  return (
+    <section className="te-save-status is-unknown" role="alert">
+      <Unplug aria-hidden="true" size={18} />
+      <div>
+        <strong>保存结果不明</strong>
+        <span>{view.message}</span>
       </div>
     </section>
   );

@@ -13,7 +13,8 @@
   TV1-T26=`resolved/automated_verified`：资源无关 definite ABSOLUTE binary64 local-box kernel 已完成，不接
   daemon output，未产生 world scene 或注册 Profile；TV1-T27=`resolved/automated_verified`：Editor E1 canonical
   open、显式 readiness 重检与未发布三模式 Product shell；TV1-T28=`resolved/automated_verified`：Editor E2
-  canonical working copy、有界结构化 undo/redo 与 preview eligibility guard
+  canonical working copy、有界结构化 undo/redo 与 preview eligibility guard；TV1-T29=`resolved/automated_verified`：
+  Editor E3 lossless save、conflict overwrite 与 revision 漂移重确认均已完成
 - 日期：2026-08-20
 - Approved delta：[`specs/changes/20260817-template-v1-implementation-authority.md`](../specs/changes/20260817-template-v1-implementation-authority.md)
 - Frozen checkpoint：`0b485f4a13de9d754a81d07f464730776e13c14b`
@@ -73,7 +74,8 @@ binding: generic + project-local tools/run-gate.ps1 + Wayfinder markdown tracker
 | TV1-P5e Definite local boxes | 26 | Canvas→Frame/无资源叶子的 FIXED/FILL + ABSOLUTE binary64 local LayoutBox/ContentBox | Rust/Python exact-bit A1/A2；unsupported 不外泄；无 HUG/Stack/Grid/resource/world scene/RESULT |
 | TV1-P6a Editor E1 | 27 | trusted canonical current baseline + 显式 readiness recheck + 三模式 Canvas Focus shell | Java/Web/OpenAPI A1；组件未发布，禁止 save/preview/recovery 占位与 READY 声明 |
 | TV1-P6b Editor E2 | 28 | canonical working copy + 结构化本地编辑/undo/redo + preview generation/eligibility guard | Node 24 Web A1；无 API/route/save/preview action，baseline immutable |
-| TV1-P6+ Product completion | 28 后按真实依赖另切票 | 完整 Renderer layout/resource/raster/JPEG/Engine output、公开产品面、Editor E3–E9 与 formal registry records | 逐纵切 gate + product target/executor + J1/A3/物理 Linux 认证；不预建未知下游票 |
+| TV1-P6c Editor E3 | 29 | lossless save + conflict overwrite offer/confirm/reconfirm + conservative unknown lock | Node 24 Web A1；复用既有 API；无 E4–E9/route/reconciliation |
+| TV1-P6+ Product completion | 29 后按真实依赖另切票 | 完整 Renderer layout/resource/raster/JPEG/Engine output、公开产品面、Editor E4–E9 与 formal registry records | 逐纵切 gate + product target/executor + J1/A3/物理 Linux 认证；不预建未知下游票 |
 
 ## 4. 当前 ticket DAG
 
@@ -139,6 +141,8 @@ flowchart LR
   T20 --> T27
   T09 --> T28[28 Editor E2 local canonical history]
   T27 --> T28
+  T09 --> T29[29 Editor E3 save/conflict overwrite]
+  T28 --> T29
 ```
 
 | Ticket | 类型 | 状态 | Blocked by | 本票退出事实 |
@@ -174,6 +178,7 @@ flowchart LR
 | 26 | task | `resolved` / `automated_verified` | 23, 25 | resource-free definite ABSOLUTE binary64 local boxes；无 daemon success/Profile |
 | 27 | task | `resolved` / `automated_verified` | 06, 09, 20 | canonical baseline + 显式 readiness recheck + 未发布三模式 Product shell；无 save/preview/recovery/route |
 | 28 | task | `resolved` / `automated_verified` | 09, 27 | canonical working copy + 结构化 name edit/undo/redo + preview generation/eligibility guard；Node 24 Web/Fast/Full 17/17 |
+| 29 | task | `resolved` / `automated_verified` | 09, 28 | lossless expectedRevision save + conflict overwrite confirm/reconfirm；Node 24 Web/Fast/Full 17/17，unknown 保守锁定，无 E5 reconciliation |
 
 每次只 claim 一个 unblocked ticket；一票 resolved 后才由其 `Blocked by` 关系产生下一 frontier。未知实现切片留在
 map 的 `Not yet specified`，不为排满计划提前发明接口、migration 或 Profile identity。
@@ -200,8 +205,9 @@ Supervisor + Java/Rust/Python/Linux replay，`render` 已入 17-step `full`）�
   共同语料，Rust Engine 不再需要猜测 DesignDSL default。TV1-T24 也已 resolve（exact surface/PNG kernel）；
   T25 static layout preflight 与 T26 definite ABSOLUTE local-box kernel 现均已 resolve；仍未预建公开 render
   route、tolerance-dependent HUG/Stack/Grid、resource/raster/JPEG/daemon output Profile。TV1-T27 已从
-  Editor E1–E9 中单独登记并完成；TV1-T28 也已从 E2 frontier 单独登记并完成；产品 route 仍待后续闭环，
-  不在 E1/E2 提前开放。下一无阻塞 Editor frontier 为 E3 save + conflict overwrite。
+  Editor E1–E9 中单独登记并完成；TV1-T28 也已从 E2 frontier 单独登记并完成；TV1-T29 已从 E3 save +
+  conflict overwrite frontier 单独登记并完成。下一 frontier 为 E4，须另行登记；产品 route 仍待后续闭环，
+  不在 E1–E4 提前开放。
 
 ## 5. TV1-T01 执行卡
 
@@ -607,3 +613,27 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
   保留 dirty draft，revision/contentHash 改变才清空 session。focused 4 files / 28 tests；正式 Node 24 Web
   18 files / 104 tests、SDK/typecheck/lint/2144-module build、`web`/`fast` 与最终 `full` 17/17 全绿。未新增
   Java/OpenAPI/migration/API/route 或 E3–E9 placeholder，生命周期为 `automated_verified`，不声明 READY。
+
+## 28. TV1-T29 执行卡
+
+- 决策：物化 T09 E3；复用既有 Template PUT/GET，但 Editor transport 以 lossless decimal token 发送 int64
+  expectedRevision。初次 save 只允许 canonical dirty + mutation idle；成功响应重新核验 hash/identity/+1 revision/
+  exact canonical 后重建 baseline并清 history。
+- conflict offer 绑定 `{offeredRevision, draftCanonical, previewGeneration}`；确认后先重读 trusted current，revision
+  漂移或第二次 409 都只更新 offer并要求重新确认。PUT 的 network/500/503/malformed success 进入不可盲重试的
+  outcome-unknown lock，E5 才增加 reconciliation。
+- 允许影响：Web template-editor save transport/coordinator/session/shell/tests/CSS，以及 T29 tracker/plan/log/NOTES/evidence。
+- 禁止影响：Java/OpenAPI/generated SDK/migration、服务端语义、E4 dependency confirmation/problem projection、E5
+  reconciliation、E6 preview、E7 recovery、E8 import、E9 完整 a11y、产品 route、Renderer/Profile/formal record/
+  physical Linux/J1/A3/READY、provider/真实数据/API Key。
+- TDD：先纯 coordinator RED（int64/body/success/conflict/GET→PUT/reconfirm/generation/known reject/unknown），再 DOM
+  RED（save/pending lock/adoption/conflict confirm/cancel/reconfirm/unknown no retry）。
+- 受影响验证：focused Vitest → Web test/typecheck/lint/build + generated diff → `web`/`fast` → 完整 `full`。
+- 结果：Ticket 29 已为 `resolved / automated_verified`。closed save coordinator 与 shell 实现 lossless int64
+  expectedRevision、exact canonical PUT、严格 success adoption、409 offer/GET→PUT/reconfirm、known rejection 和
+  outcome-unknown lock；focused 5 files / 43 tests。
+- 正式 Node 24 Web 为 19 files / 119 tests，SDK generation/typecheck/lint/2144-module build 全绿；`web`
+  `.sdlc/evidence/20260821-094726-web/`、`fast` `.sdlc/evidence/20260821-094809-fast/` 与最终 `full`
+  `.sdlc/evidence/20260821-094832-full/` 全绿，Full 17/17 steps、1048.706s。
+- E4–E9 边界保持不变；没有 Java/OpenAPI/generated SDK/migration/API/route 差异，没有 provider/真实数据/API Key
+  外部副作用，不 push/tag/PR，不声明 Editor、Renderer 或 Template v1 READY。

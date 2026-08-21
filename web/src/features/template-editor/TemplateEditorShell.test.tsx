@@ -6,9 +6,12 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   createRawRepairSession,
   createSessionFromBaseline,
+  type StructuredEditorSession,
 } from './template-editor-model';
+import { applyTemplateDisplayName } from './template-editor-session';
 import { TemplateEditorShell, TemplateEditorSurface } from './TemplateEditorShell';
 import type { TemplateEditorTransport } from './template-open';
+import type { TemplateSaveTransport } from './template-save';
 import {
   currentResponse,
   recheckResponse,
@@ -193,6 +196,100 @@ describe('Template Editor E1/E2 Product shell', () => {
     expect(screen.getByRole('button', { name: '撤销本地编辑' }).hasAttribute('disabled')).toBe(true);
   });
 
+  it('locks local controls while saving and adopts the verified next baseline', async () => {
+    const session = dirtySession('待保存版本');
+    let resolvePut!: (value: { status: number; body: string }) => void;
+    const putCurrent = vi.fn().mockReturnValue(new Promise((resolve) => {
+      resolvePut = resolve;
+    }));
+    const onSessionCommitted = vi.fn();
+    render(<TemplateEditorShell
+      session={session}
+      saveTransport={saveTransport({ putCurrent })}
+      onSessionCommitted={onSessionCommitted}
+    />);
+
+    fireEvent.click(screen.getByRole('button', { name: '保存 canonical 本地草稿' }));
+    expect(screen.getByText('保存请求进行中')).toBeTruthy();
+    expect(screen.getByRole('textbox', { name: 'Template 名称' }).hasAttribute('disabled')).toBe(true);
+    expect(screen.getByRole('button', { name: '撤销本地编辑' }).hasAttribute('disabled')).toBe(true);
+    expect(putCurrent).toHaveBeenCalledTimes(1);
+
+    resolvePut({ status: 200, body: await saveResponse(session, '8') });
+    await waitFor(() => expect(screen.getByText('revision 8')).toBeTruthy());
+    expect(screen.getByText('Canonical current')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: '保存 canonical 本地草稿' })).toBeNull();
+    expect(screen.getByRole('button', { name: '撤销本地编辑' }).hasAttribute('disabled')).toBe(true);
+    expect(onSessionCommitted).toHaveBeenCalledTimes(1);
+  });
+
+  it('offers and cancels an explicit revision-bound overwrite without losing the draft', async () => {
+    const session = dirtySession('冲突草稿');
+    const transport = saveTransport({
+      putCurrent: vi.fn().mockResolvedValue({
+        status: 409,
+        body: saveProblem('TEMPLATE_REVISION_CONFLICT', '8'),
+      }),
+    });
+    render(<TemplateEditorShell session={session} saveTransport={transport} />);
+
+    fireEvent.click(screen.getByRole('button', { name: '保存 canonical 本地草稿' }));
+    expect(await screen.findByText('保存冲突')).toBeTruthy();
+    expect(screen.getByRole('button', { name: '重读并覆盖 revision 8' })).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: '取消覆盖' }));
+
+    expect(screen.queryByText('保存冲突')).toBeNull();
+    expect(screen.getByRole('heading', { level: 1, name: '冲突草稿' })).toBeTruthy();
+    expect(screen.getByText('Canonical 本地草稿')).toBeTruthy();
+  });
+
+  it('forces re-confirmation after a trusted-current drift, then adopts the overwrite', async () => {
+    const session = dirtySession('最终覆盖草稿');
+    const remoteNine = cleanSessionAt('9');
+    const putCurrent = vi.fn()
+      .mockResolvedValueOnce({
+        status: 409,
+        body: saveProblem('TEMPLATE_REVISION_CONFLICT', '8'),
+      })
+      .mockResolvedValueOnce({ status: 200, body: await saveResponse(session, '10') });
+    const getCurrent = vi.fn()
+      .mockResolvedValueOnce(await saveResponse(remoteNine, '9'))
+      .mockResolvedValueOnce(await saveResponse(remoteNine, '9'));
+    render(<TemplateEditorShell
+      session={session}
+      saveTransport={saveTransport({ getCurrent, putCurrent })}
+    />);
+
+    fireEvent.click(screen.getByRole('button', { name: '保存 canonical 本地草稿' }));
+    await screen.findByRole('button', { name: '重读并覆盖 revision 8' });
+    fireEvent.click(screen.getByRole('button', { name: '重读并覆盖 revision 8' }));
+    expect(await screen.findByRole('button', { name: '重读并覆盖 revision 9' })).toBeTruthy();
+    expect(screen.getByText(/必须重新确认覆盖/)).toBeTruthy();
+    expect(putCurrent).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(screen.getByRole('button', { name: '重读并覆盖 revision 9' }));
+    await waitFor(() => expect(screen.getByText('revision 10')).toBeTruthy());
+    expect(getCurrent).toHaveBeenCalledTimes(2);
+    expect(putCurrent).toHaveBeenCalledTimes(2);
+  });
+
+  it('locks an ambiguous save outcome without exposing retry or reconciliation actions', async () => {
+    const session = dirtySession('未知结果草稿');
+    render(<TemplateEditorShell
+      session={session}
+      saveTransport={saveTransport({
+        putCurrent: vi.fn().mockRejectedValue(new TypeError('connection lost')),
+      })}
+    />);
+
+    fireEvent.click(screen.getByRole('button', { name: '保存 canonical 本地草稿' }));
+    expect(await screen.findByText('保存结果不明')).toBeTruthy();
+    expect(screen.getByText(/E5 reconciliation/)).toBeTruthy();
+    expect(screen.getByRole('textbox', { name: 'Template 名称' }).hasAttribute('disabled')).toBe(true);
+    expect(screen.getByRole('button', { name: '保存 canonical 本地草稿' }).hasAttribute('disabled')).toBe(true);
+    expect(screen.queryByRole('button', { name: /重试保存|采用 current|reconciliation/ })).toBeNull();
+  });
+
   it('offers a keyboard-reachable retry when the trusted current cannot be read', async () => {
     const transport: TemplateEditorTransport = {
       getCurrent: vi.fn()
@@ -243,3 +340,48 @@ describe('Template Editor E1/E2 Product shell', () => {
     expect(screen.queryByText('revision 7')).toBeNull();
   });
 });
+
+function dirtySession(name: string): StructuredEditorSession {
+  const result = applyTemplateDisplayName(cleanSessionAt('7'), name);
+  if (result.state !== 'applied') throw new Error(`expected applied, got ${result.state}`);
+  return result.session;
+}
+
+function cleanSessionAt(revision: string): StructuredEditorSession {
+  const baseline = structuredBaseline();
+  baseline.revision = revision;
+  const session = createSessionFromBaseline(baseline, { state: 'checked', value: 'READY' });
+  if (session.mode !== 'structured') throw new Error('expected Structured Editor');
+  return session;
+}
+
+function saveTransport(
+  overrides: Partial<TemplateSaveTransport>,
+): TemplateSaveTransport {
+  return {
+    getCurrent: vi.fn().mockRejectedValue(new Error('unexpected GET')),
+    putCurrent: vi.fn().mockRejectedValue(new Error('unexpected PUT')),
+    ...overrides,
+  };
+}
+
+async function saveResponse(
+  session: StructuredEditorSession,
+  revision: string,
+): Promise<string> {
+  const canonical = session.workingCopy.canonicalDesignDsl;
+  const bytes = new TextEncoder().encode('renderweave-design-content/1\0' + canonical);
+  const digest = new Uint8Array(await crypto.subtle.digest('SHA-256', bytes));
+  const hash = `sha256:${Array.from(
+    digest,
+    (byte) => byte.toString(16).padStart(2, '0'),
+  ).join('')}`;
+  const { templateId, staticSchema } = session.baseline;
+  return `{"templateId":"${templateId}","disclosure":"READABLE","revision":${revision},`
+    + `"staticSchema":{"schemaKey":"${staticSchema.schemaKey}","versionTag":"${staticSchema.versionTag}"},`
+    + `"contentHash":"${hash}","readiness":"READY","designDsl":${canonical}}`;
+}
+
+function saveProblem(code: string, currentRevision?: string): string {
+  return `{"code":"${code}"${currentRevision ? `,"currentRevision":${currentRevision}` : ''}}`;
+}
