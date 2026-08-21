@@ -1,6 +1,14 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-22 **Template v1 implementation TV1-T45 已 `resolved/automated_verified`**：资源无关非空 Grid 的
+  HUG 轴现复用 FIXED/independent AUTO/resource-free HUG child contribution 与 authored gaps，再按
+  padding/inward stroke、min→max 求 intrinsic；递归 Grid HUG 也保持同一精确闭包。shared vector/Python
+  independent verifier 升级 `/11`，fixture `/3` 不变；Rust/Python 51 laid-out + 13 unsupported、64/64、193
+  checks。focused fmt/clippy/workspace test 与 `render` `.sdlc/evidence/20260822-050553-render/`、`server`
+  `.sdlc/evidence/20260822-050639-server/`、治理前 `fast` `.sdlc/evidence/20260822-052538-fast/` 均绿。非空
+  Frame/Group、transform/resource/tolerance/scene/raster/daemon output/Profile/E6 继续 fail closed；provider
+  attempts/API Key reads/paid calls 均保持 0，不 push/tag/PR。
 - 2026-08-22 **Template v1 implementation TV1-T44 已 `resolved/automated_verified`**：definite Grid 的
   independent AUTO solver 现可消费 T42 空容器或 T43 递归 Stack 的 resource-free HUG intrinsic；贡献继续按
   size + signed margins 固定顺序、非负 clamp 与正 deficit 求解，跨多个 AUTO 仍 fail closed。shared vector/Python

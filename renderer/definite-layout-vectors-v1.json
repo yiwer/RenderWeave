@@ -1,5 +1,5 @@
 {
-  "vectorVersion": "renderweave-definite-layout-vectors/10",
+  "vectorVersion": "renderweave-definite-layout-vectors/11",
   "authorityContext": {
     "layoutProfile": "renderweave-layout/1.0",
     "documentContract": "renderweave-render-node-contract-v1/2",
@@ -9,7 +9,7 @@
   "boundary": {
     "profileAvailability": "NOT_REGISTERED",
     "certificationStatus": "NOT_CERTIFIED",
-    "layoutImplementation": "RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_SINGLE_MAIN_FILL_AND_FIXED_SINGLE_FRACTION_INDEPENDENT_MULTI_AUTO_GRID_EMPTY_CONTAINER_STACK_HUG_AND_GRID_HUG_AUTO_CONTRIBUTION_BOX_KERNEL",
+    "layoutImplementation": "RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_SINGLE_MAIN_FILL_AND_FIXED_SINGLE_FRACTION_INDEPENDENT_MULTI_AUTO_GRID_EMPTY_CONTAINER_STACK_HUG_GRID_AUTO_HUG_CONTRIBUTION_AND_GRID_HUG_BOX_KERNEL",
     "worldTransformImplementation": "ABSENT",
     "sceneImplementation": "ABSENT",
     "rasterImplementation": "ABSENT",
@@ -856,6 +856,74 @@
           {"occurrenceId": "rwocc_0000000000000001", "kind": "grid", "layoutBox": {"xBits": "0000000000000000", "yBits": "0000000000000000", "widthBits": "4049000000000000", "heightBits": "4049000000000000"}, "contentBox": {"xBits": "0000000000000000", "yBits": "0000000000000000", "widthBits": "4049000000000000", "heightBits": "4049000000000000"}},
           {"occurrenceId": "rwocc_0000000000000002", "kind": "stack", "layoutBox": {"xBits": "3ff0000000000000", "yBits": "c000000000000000", "widthBits": "4024000000000000", "heightBits": "4028000000000000"}, "contentBox": {"xBits": "3ff0000000000000", "yBits": "c000000000000000", "widthBits": "4024000000000000", "heightBits": "4028000000000000"}},
           {"occurrenceId": "rwocc_0000000000000003", "kind": "rect", "layoutBox": {"xBits": "3ff0000000000000", "yBits": "c000000000000000", "widthBits": "4010000000000000", "heightBits": "4028000000000000"}, "contentBox": null}
+        ]
+      }
+    },
+    {
+      "id": "nonempty-fixed-grid-both-axes-hug-tracks-gaps-padding-stroke",
+      "baseSource": "fixtures",
+      "baseCase": "fixedGrid",
+      "mutations": [
+        {"operation": "replace", "pointer": "/canvas/children/0/placement/widthMode", "value": "HUG_CONTENT"},
+        {"operation": "remove", "pointer": "/canvas/children/0/placement/widthPt"},
+        {"operation": "replace", "pointer": "/canvas/children/0/placement/heightMode", "value": "HUG_CONTENT"},
+        {"operation": "remove", "pointer": "/canvas/children/0/placement/heightPt"}
+      ],
+      "expected": {
+        "entries": [
+          {"occurrenceId": "rwocc_0000000000000000", "kind": "canvas", "layoutBox": {"xBits": "0000000000000000", "yBits": "0000000000000000", "widthBits": "4061800000000000", "heightBits": "4059000000000000"}, "contentBox": {"xBits": "0000000000000000", "yBits": "0000000000000000", "widthBits": "4061800000000000", "heightBits": "4059000000000000"}},
+          {"occurrenceId": "rwocc_0000000000000001", "kind": "grid", "layoutBox": {"xBits": "4024000000000000", "yBits": "4014000000000000", "widthBits": "4054000000000000", "heightBits": "404a000000000000"}, "contentBox": {"xBits": "4030000000000000", "yBits": "4020000000000000", "widthBits": "4051800000000000", "heightBits": "4046000000000000"}},
+          {"occurrenceId": "rwocc_0000000000000002", "kind": "rect", "layoutBox": {"xBits": "403b000000000000", "yBits": "4026000000000000", "widthBits": "4024000000000000", "heightBits": "4020000000000000"}, "contentBox": null},
+          {"occurrenceId": "rwocc_0000000000000003", "kind": "frame", "layoutBox": {"xBits": "4043800000000000", "yBits": "4024000000000000", "widthBits": "4041800000000000", "heightBits": "4049000000000000"}, "contentBox": {"xBits": "4043800000000000", "yBits": "4024000000000000", "widthBits": "4041800000000000", "heightBits": "4049000000000000"}},
+          {"occurrenceId": "rwocc_0000000000000004", "kind": "rect", "layoutBox": {"xBits": "4044000000000000", "yBits": "4028000000000000", "widthBits": "4008000000000000", "heightBits": "4010000000000000"}, "contentBox": null},
+          {"occurrenceId": "rwocc_0000000000000005", "kind": "grid", "layoutBox": {"xBits": "403b000000000000", "yBits": "403d000000000000", "widthBits": "403e000000000000", "heightBits": "4034000000000000"}, "contentBox": {"xBits": "403b000000000000", "yBits": "403d000000000000", "widthBits": "403e000000000000", "heightBits": "4034000000000000"}},
+          {"occurrenceId": "rwocc_0000000000000006", "kind": "rect", "layoutBox": {"xBits": "4041000000000000", "yBits": "403e000000000000", "widthBits": "402e000000000000", "heightBits": "4020000000000000"}, "contentBox": null},
+          {"occurrenceId": "rwocc_0000000000000007", "kind": "rect", "layoutBox": {"xBits": "4030000000000000", "yBits": "4020000000000000", "widthBits": "4014000000000000", "heightBits": "4014000000000000"}, "contentBox": null},
+          {"occurrenceId": "rwocc_0000000000000008", "kind": "rect", "layoutBox": {"xBits": "4055000000000000", "yBits": "4032000000000000", "widthBits": "0000000000000000", "heightBits": "0000000000000000"}, "contentBox": null}
+        ]
+      }
+    },
+    {
+      "id": "nonempty-grid-both-axes-hug-auto-stack-contribution",
+      "baseSource": "layoutPreflight",
+      "baseCase": "grid",
+      "mutations": [
+        {"operation": "replace", "pointer": "/canvas/children/0/columns", "value": [{"type":"AUTO"}]},
+        {"operation": "replace", "pointer": "/canvas/children/0/placement/widthMode", "value": "HUG_CONTENT"},
+        {"operation": "remove", "pointer": "/canvas/children/0/placement/widthPt"},
+        {"operation": "replace", "pointer": "/canvas/children/0/placement/heightMode", "value": "HUG_CONTENT"},
+        {"operation": "remove", "pointer": "/canvas/children/0/placement/heightPt"},
+        {"operation": "replace", "pointer": "/canvas/children/0/padding", "value": {"bottomPt":3,"leftPt":2,"rightPt":4,"topPt":1}},
+        {"operation": "add", "pointer": "/canvas/children/0/stroke", "value": {"cap":"BUTT","color":"#000000FF","join":"MITER","widthPt":1}},
+        {"operation": "replace", "pointer": "/canvas/children/0/children", "value": [{"alignItems":"START","children":[{"cornerRadii":{"bottomLeftPt":0,"bottomRightPt":0,"topLeftPt":0,"topRightPt":0},"fill":{"color":"#000000FF"},"kind":"rect","occurrenceId":"rwocc_0000000000000003","opacity":1,"placement":{"alignSelf":"START","heightMode":"FIXED","heightPt":8,"marginBottomPt":-1,"marginLeftPt":-2,"marginRightPt":1,"marginTopPt":2,"type":"STACK","widthMode":"FIXED","widthPt":10},"transform":{"originX":0.5,"originY":0.5,"rotationDeg":0,"scaleX":1,"scaleY":1},"visible":true}],"clipContent":false,"cornerRadii":{"bottomLeftPt":0,"bottomRightPt":0,"topLeftPt":0,"topRightPt":0},"direction":"ROW","gapPt":0,"justifyContent":"START","kind":"stack","occurrenceId":"rwocc_0000000000000002","opacity":1,"padding":{"bottomPt":1,"leftPt":2,"rightPt":3,"topPt":4},"placement":{"column":0,"columnSpan":1,"heightMode":"HUG_CONTENT","horizontalAlignSelf":"START","marginBottomPt":3,"marginLeftPt":1,"marginRightPt":2,"marginTopPt":-1,"row":0,"rowSpan":1,"type":"GRID","verticalAlignSelf":"START","widthMode":"HUG_CONTENT"},"transform":{"originX":0.5,"originY":0.5,"rotationDeg":0,"scaleX":1,"scaleY":1},"visible":true}]}
+      ],
+      "expected": {
+        "entries": [
+          {"occurrenceId": "rwocc_0000000000000000", "kind": "canvas", "layoutBox": {"xBits": "0000000000000000", "yBits": "0000000000000000", "widthBits": "4059000000000000", "heightBits": "4059000000000000"}, "contentBox": {"xBits": "0000000000000000", "yBits": "0000000000000000", "widthBits": "4059000000000000", "heightBits": "4059000000000000"}},
+          {"occurrenceId": "rwocc_0000000000000001", "kind": "grid", "layoutBox": {"xBits": "0000000000000000", "yBits": "0000000000000000", "widthBits": "4039000000000000", "heightBits": "4036000000000000"}, "contentBox": {"xBits": "4008000000000000", "yBits": "4000000000000000", "widthBits": "4031000000000000", "heightBits": "4030000000000000"}},
+          {"occurrenceId": "rwocc_0000000000000002", "kind": "stack", "layoutBox": {"xBits": "4010000000000000", "yBits": "3ff0000000000000", "widthBits": "402c000000000000", "heightBits": "402c000000000000"}, "contentBox": {"xBits": "4018000000000000", "yBits": "4014000000000000", "widthBits": "4022000000000000", "heightBits": "4022000000000000"}},
+          {"occurrenceId": "rwocc_0000000000000003", "kind": "rect", "layoutBox": {"xBits": "4010000000000000", "yBits": "401c000000000000", "widthBits": "4024000000000000", "heightBits": "4020000000000000"}, "contentBox": null}
+        ]
+      }
+    },
+    {
+      "id": "nested-grid-recursive-hug-auto-contribution",
+      "baseSource": "layoutPreflight",
+      "baseCase": "grid",
+      "mutations": [
+        {"operation": "replace", "pointer": "/canvas/children/0/columns", "value": [{"type":"AUTO"}]},
+        {"operation": "replace", "pointer": "/canvas/children/0/placement/widthMode", "value": "HUG_CONTENT"},
+        {"operation": "remove", "pointer": "/canvas/children/0/placement/widthPt"},
+        {"operation": "replace", "pointer": "/canvas/children/0/placement/heightMode", "value": "HUG_CONTENT"},
+        {"operation": "remove", "pointer": "/canvas/children/0/placement/heightPt"},
+        {"operation": "replace", "pointer": "/canvas/children/0/children", "value": [{"children":[{"children":[],"clipContent":false,"cornerRadii":{"bottomLeftPt":0,"bottomRightPt":0,"topLeftPt":0,"topRightPt":0},"kind":"frame","occurrenceId":"rwocc_0000000000000003","opacity":1,"padding":{"bottomPt":6,"leftPt":4,"rightPt":5,"topPt":3},"placement":{"column":0,"columnSpan":1,"heightMode":"HUG_CONTENT","horizontalAlignSelf":"START","marginBottomPt":4,"marginLeftPt":2,"marginRightPt":3,"marginTopPt":1,"row":0,"rowSpan":1,"type":"GRID","verticalAlignSelf":"START","widthMode":"HUG_CONTENT"},"transform":{"originX":0.5,"originY":0.5,"rotationDeg":0,"scaleX":1,"scaleY":1},"visible":true}],"clipContent":false,"columnGapPt":0,"columns":[{"type":"AUTO"}],"cornerRadii":{"bottomLeftPt":0,"bottomRightPt":0,"topLeftPt":0,"topRightPt":0},"kind":"grid","occurrenceId":"rwocc_0000000000000002","opacity":1,"padding":{"bottomPt":2,"leftPt":1,"rightPt":1,"topPt":2},"placement":{"column":0,"columnSpan":1,"heightMode":"HUG_CONTENT","horizontalAlignSelf":"START","marginBottomPt":4,"marginLeftPt":1,"marginRightPt":2,"marginTopPt":3,"row":0,"rowSpan":1,"type":"GRID","verticalAlignSelf":"START","widthMode":"HUG_CONTENT"},"rowGapPt":0,"rows":[{"type":"AUTO"}],"transform":{"originX":0.5,"originY":0.5,"rotationDeg":0,"scaleX":1,"scaleY":1},"visible":true}]}
+      ],
+      "expected": {
+        "entries": [
+          {"occurrenceId": "rwocc_0000000000000000", "kind": "canvas", "layoutBox": {"xBits": "0000000000000000", "yBits": "0000000000000000", "widthBits": "4059000000000000", "heightBits": "4059000000000000"}, "contentBox": {"xBits": "0000000000000000", "yBits": "0000000000000000", "widthBits": "4059000000000000", "heightBits": "4059000000000000"}},
+          {"occurrenceId": "rwocc_0000000000000001", "kind": "grid", "layoutBox": {"xBits": "0000000000000000", "yBits": "0000000000000000", "widthBits": "4033000000000000", "heightBits": "4039000000000000"}, "contentBox": {"xBits": "0000000000000000", "yBits": "0000000000000000", "widthBits": "4033000000000000", "heightBits": "4039000000000000"}},
+          {"occurrenceId": "rwocc_0000000000000002", "kind": "grid", "layoutBox": {"xBits": "3ff0000000000000", "yBits": "4008000000000000", "widthBits": "4030000000000000", "heightBits": "4032000000000000"}, "contentBox": {"xBits": "4000000000000000", "yBits": "4014000000000000", "widthBits": "402c000000000000", "heightBits": "402c000000000000"}},
+          {"occurrenceId": "rwocc_0000000000000003", "kind": "frame", "layoutBox": {"xBits": "4010000000000000", "yBits": "4018000000000000", "widthBits": "4022000000000000", "heightBits": "4022000000000000"}, "contentBox": {"xBits": "4020000000000000", "yBits": "4022000000000000", "widthBits": "0000000000000000", "heightBits": "0000000000000000"}}
         ]
       }
     }

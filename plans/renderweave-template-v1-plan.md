@@ -36,7 +36,10 @@
   nonempty Stack 可由 FIXED、T42 空容器或递归 Stack child 独立测得的 HUG intrinsic 已完成；Rust/Python
   59/59、178 checks。TV1-T44=`resolved/automated_verified`：T42/T43 可独立测得的资源无关 HUG child 已接入
   definite Grid AUTO contribution；Rust/Python 61/61、184 checks；非空 Frame/Grid/Group、跨多个 AUTO 的平均
-  deficit、multiple FILL/FRACTION 与资源/scene/RESULT 继续 fail closed。
+  deficit、multiple FILL/FRACTION 与资源/scene/RESULT 继续 fail closed。TV1-T45=`resolved/automated_verified`：
+  非空 Grid 的 HUG 轴已复用 FIXED/independent AUTO/resource-free HUG contribution 与 authored gaps 求
+  intrinsic；Rust/Python 64/64、193 checks。FRACTION-on-HUG、Frame/Group、resource/transform/tolerance/
+  scene/RESULT 继续 fail closed。
 - 日期：2026-08-20
 - Approved delta：[`specs/changes/20260817-template-v1-implementation-authority.md`](../specs/changes/20260817-template-v1-implementation-authority.md)
 - Frozen checkpoint：`0b485f4a13de9d754a81d07f464730776e13c14b`
@@ -103,6 +106,7 @@ binding: generic + project-local tools/run-gate.ps1 + Wayfinder markdown tracker
 | TV1-P5l Definite empty-container HUG | 42 | 空 Frame/Stack/Grid/Group 的无资源 intrinsic；Grid FIXED/AUTO-zero tracks 与 gaps | Rust/Python exact-bit A1/A2；非空 HUG/transform/resource/tolerance fail closed；无 scene/RESULT |
 | TV1-P5m Resource-free Stack HUG | 43 | 非空 Stack 的 cursor/MarginExtent intrinsic；FIXED、空容器与递归 Stack child | Rust/Python exact-bit A1/A2；Frame/Grid/Group/resource/tolerance fail closed；无 scene/RESULT |
 | TV1-P5n Grid HUG child AUTO contribution | 44 | definite Grid AUTO 消费 T42/T43 资源无关 HUG intrinsic | Rust/Python exact-bit A1/A2；跨多 AUTO/Frame/Grid/Group/resource/tolerance fail closed；无 scene/RESULT |
+| TV1-P5o Resource-free Grid HUG | 45 | 非空 Grid HUG 轴复用 FIXED/independent AUTO/HUG child contribution 与 gaps | Rust/Python exact-bit A1/A2；FRACTION-on-HUG/跨多 AUTO/Frame/Group/resource/tolerance fail closed；无 scene/RESULT |
 | TV1-P6a Editor E1 | 27 | trusted canonical current baseline + 显式 readiness recheck + 三模式 Canvas Focus shell | Java/Web/OpenAPI A1；组件未发布，禁止 save/preview/recovery 占位与 READY 声明 |
 | TV1-P6b Editor E2 | 28 | canonical working copy + 结构化本地编辑/undo/redo + preview generation/eligibility guard | Node 24 Web A1；无 API/route/save/preview action，baseline immutable |
 | TV1-P6c Editor E3 | 29 | lossless save + conflict overwrite offer/confirm/reconfirm + conservative unknown lock | Node 24 Web A1；复用既有 API；无 E4–E9/route/reconciliation |
@@ -112,7 +116,7 @@ binding: generic + project-local tools/run-gate.ps1 + Wayfinder markdown tracker
 | TV1-P6g Editor E7 | 35 | versioned per-Template Local recovery + 7-day lifecycle + explicit restore/export/discard + cross-refresh reconciliation | Node 24 Web A1；浏览器 best-effort，不同步/不自动提交；无 Java/API/migration/route |
 | TV1-P6h Editor E8 | 36 | strict local import + Raw Repair/Compatibility + shared dirty replacement guard | Node 24 Web A1；文件 identity/schema 不覆盖目标；无 registered migration profile/action、API/route |
 | TV1-P6i Editor E9 | 37 | strict problem projection + summary focus + roving tree/live delta + 1024/1280/1440/200% effective viewport | Node 24 Web + Playwright/axe A1；无 route/E6；人工 keyboard/zoom J1 pending |
-| TV1-P6+ Product completion | 44 后按真实依赖另切票 | 完整 Renderer layout/resource/raster/JPEG/Engine output、公开产品面、Editor E6 与 formal registry records | 逐纵切 gate + product target/executor + J1/A3/物理 Linux 认证；不预建未知下游票 |
+| TV1-P6+ Product completion | 45 后按真实依赖另切票 | 完整 Renderer layout/resource/raster/JPEG/Engine output、公开产品面、Editor E6 与 formal registry records | 逐纵切 gate + product target/executor + J1/A3/物理 Linux 认证；不预建未知下游票 |
 
 ## 4. 当前 ticket DAG
 
@@ -182,6 +186,7 @@ flowchart LR
   T41 --> T42[42 Definite empty-container HUG]
   T42 --> T43[43 Resource-free Stack HUG]
   T43 --> T44[44 Grid HUG child AUTO contribution]
+  T44 --> T45[45 Resource-free Grid HUG]
   T06 --> T27[27 Editor E1 canonical open]
   T09 --> T27
   T20 --> T27
@@ -273,6 +278,7 @@ flowchart LR
 | 42 | task | `resolved` / `automated_verified` | 23, 25, 26, 33, 34, 41 | 空 Frame/Stack/Grid/Group HUG intrinsic 退化子闭包；Rust/Python 53/53、160 checks；非空 HUG/transform/resource/tolerance 保持 fail closed |
 | 43 | task | `resolved` / `automated_verified` | 23, 25, 26, 33, 34, 38, 42 | 非空 Stack 的资源无关 HUG intrinsic；Rust/Python 59/59、178 checks；Frame/Grid/Group/transform/resource/tolerance 保持 fail closed |
 | 44 | task | `resolved` / `automated_verified` | 23, 25, 26, 34, 40, 41, 42, 43 | definite Grid AUTO 消费资源无关 HUG child contribution；Rust/Python 61/61、184 checks；跨多 AUTO/Frame/Grid/Group/resource/tolerance 保持 fail closed |
+| 45 | task | `resolved` / `automated_verified` | 23, 25, 26, 34, 40, 41, 42, 43, 44 | 非空 Grid 的资源无关 HUG intrinsic；Rust/Python 64/64、193 checks；FRACTION-on-HUG/跨多 AUTO/Frame/Group/resource/tolerance 保持 fail closed |
 
 每次只 claim 一个 unblocked ticket；一票 resolved 后才由其 `Blocked by` 关系产生下一 frontier。未知实现切片留在
 map 的 `Not yet specified`，不为排满计划提前发明接口、migration 或 Profile identity。
@@ -1150,3 +1156,32 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
 - 生命周期：`resolved / automated_verified`；owning Grid 的非空 HUG axis、非空 Frame/Grid/Group HUG、transform
   union、Text/Image/Vector measurement、multiple FILL/FRACTION、跨多个 AUTO 平均、resource/world scene/raster/
   JPEG/daemon RESULT/Profile/certification/E6 仍未实现，未推进 A3/J1/READY，未 push/tag/PR。
+
+## 44. TV1-T45 执行卡
+
+- 决策：T44 最终 `full` 17/17 并以 verified commit `8338e0f` 收口后复算原始 Ticket 10/16/19、当前 DAG、
+  preflight 与 Rust/Python layout deep module。multiple Stack FILL、multiple FRACTION 与跨多个 AUTO 平均仍依赖
+  未物化 residual tolerance；非空 Frame/Group HUG 仍需要 transformed child LayoutBox union，Text/Image 仍需要
+  资源准备。Grid HUG 轴已禁止 FRACTION，且 T34/T40/T41/T44 已覆盖 FIXED、independent AUTO、gap 与
+  resource-free HUG contribution，因此选择 owning Grid intrinsic 为当前 single-writer frontier。
+- 允许影响：T45 tracker/plan/NOTES/log、layout crate/tests、definite vector、Python independent verifier、
+  `render` gate identity/assertions/evidence；既有 fixture bytes 未变时保持 fixture identity `/3`。
+- 禁止影响：非空 Frame/Group HUG、child transform union、Text/Image/Vector intrinsic、multiple Stack FILL、
+  跨多个 AUTO 平均、multiple FRACTION、resource/fetch/decode/shaping、world scene/paint/raster/JPEG、daemon
+  RESULT/Profile、Java/OpenAPI/migration/Web/route、formal records、physical Linux/J1/A3/READY 与任何外部副作用。
+- 精确语义：HUG 轴完整扫描 authored FIXED/AUTO tracks；AUTO 复用 T40/T41/T44 的 stable independent
+  constraints，随后按 track size → 相邻 gap 累加 content extent，再按 padding → inward stroke → min→max 得到
+  outer size。FRACTION-on-HUG 继续由 preflight 拒绝；不使用父 offer、epsilon、FMA 或 residual tolerance。
+- TDD：vector/verifier `/11` 先 RED，覆盖 FIXED tracks/gaps/padding/stroke、both-axis AUTO/HUG contribution 与
+  recursive Grid HUG contribution；Rust/Python 独立重放后按 focused → `render` → `server`/`fast` → 最终 `full`
+  扩大。最高 `automated_verified`；不 push/tag/PR。
+- 实现与证据：shared vector/verifier identity 已升级 `/11`，fixture `/3` 不变；Rust primary 与 Python
+  independent replay 为 51 laid-out + 13 unsupported、64/64、193 checks，vector SHA-256 为
+  `6d60decd4955ba2dad26c7bf827169145ee9cd4cb9424af5996d27c72ac53530`，fixture SHA-256 为
+  `a11475bcebad7e1c35cb0acd7018419d94afcb4b37d7f1df7346a055ad1df669`。focused fmt/clippy/workspace test/
+  py_compile/JSON inventory/diff-check 全绿；`render` `.sdlc/evidence/20260822-050553-render/`、`server`
+  `.sdlc/evidence/20260822-050639-server/`、治理前 `fast` `.sdlc/evidence/20260822-052538-fast/`。治理后的最终
+  Fast/Full exact 目录仅在 commit handoff 报告。
+- 生命周期：`resolved / automated_verified`；Profile 继续 NOT_REGISTERED、certification NOT_CERTIFIED、world
+  scene/raster ABSENT、daemon output UNWIRED；非空 Frame/Group、resource/transform/tolerance 与其他剩余闭包仍
+  fail closed，未推进 A3/J1/READY，未 push/tag/PR。

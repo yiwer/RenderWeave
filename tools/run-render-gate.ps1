@@ -268,19 +268,19 @@ try {
     }
     $definiteLayoutIndependent = Get-Content -Raw -Encoding UTF8 -LiteralPath $definiteLayoutReport |
         ConvertFrom-Json
-    if ($definiteLayoutIndependent.verifier -ne 'renderweave-definite-layout-python-independent/10' `
+    if ($definiteLayoutIndependent.verifier -ne 'renderweave-definite-layout-python-independent/11' `
             -or $definiteLayoutIndependent.result -ne 'PASS' `
             -or $definiteLayoutIndependent.assurance -ne 'A2' `
-            -or $definiteLayoutIndependent.laidOutCases -ne 48 `
+            -or $definiteLayoutIndependent.laidOutCases -ne 51 `
             -or $definiteLayoutIndependent.unsupportedCases -ne 13 `
-            -or $definiteLayoutIndependent.passed -ne 61 `
-            -or $definiteLayoutIndependent.total -ne 61 `
+            -or $definiteLayoutIndependent.passed -ne 64 `
+            -or $definiteLayoutIndependent.total -ne 64 `
             -or $definiteLayoutIndependent.failed -ne 0 `
-            -or $definiteLayoutIndependent.checks -ne 184 `
+            -or $definiteLayoutIndependent.checks -ne 193 `
             -or $definiteLayoutIndependent.layoutProfile -ne 'renderweave-layout/1.0' `
             -or $definiteLayoutIndependent.profileAvailability -ne 'NOT_REGISTERED' `
             -or $definiteLayoutIndependent.certificationStatus -ne 'NOT_CERTIFIED' `
-            -or $definiteLayoutIndependent.layoutImplementation -ne 'RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_SINGLE_MAIN_FILL_AND_FIXED_SINGLE_FRACTION_INDEPENDENT_MULTI_AUTO_GRID_EMPTY_CONTAINER_STACK_HUG_AND_GRID_HUG_AUTO_CONTRIBUTION_BOX_KERNEL' `
+            -or $definiteLayoutIndependent.layoutImplementation -ne 'RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_SINGLE_MAIN_FILL_AND_FIXED_SINGLE_FRACTION_INDEPENDENT_MULTI_AUTO_GRID_EMPTY_CONTAINER_STACK_HUG_GRID_AUTO_HUG_CONTRIBUTION_AND_GRID_HUG_BOX_KERNEL' `
             -or $definiteLayoutIndependent.worldTransformImplementation -ne 'ABSENT' `
             -or $definiteLayoutIndependent.sceneImplementation -ne 'ABSENT' `
             -or $definiteLayoutIndependent.rasterImplementation -ne 'ABSENT' `
@@ -429,7 +429,7 @@ try {
             profileAvailability = 'NOT_REGISTERED'
             certificationStatus = 'NOT_CERTIFIED'
             rasterImplementation = 'ABSENT'
-            layoutKernel = 'RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_SINGLE_MAIN_FILL_AND_FIXED_SINGLE_FRACTION_INDEPENDENT_MULTI_AUTO_GRID_EMPTY_CONTAINER_STACK_HUG_AND_GRID_HUG_AUTO_CONTRIBUTION_BOX_AUTOMATED_VERIFIED_UNWIRED'
+            layoutKernel = 'RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_SINGLE_MAIN_FILL_AND_FIXED_SINGLE_FRACTION_INDEPENDENT_MULTI_AUTO_GRID_EMPTY_CONTAINER_STACK_HUG_GRID_AUTO_HUG_CONTRIBUTION_AND_GRID_HUG_BOX_AUTOMATED_VERIFIED_UNWIRED'
             outputPngKernel = 'AUTOMATED_VERIFIED_UNWIRED'
             daemonOutputPath = 'UNWIRED'
             rendererReady = $false

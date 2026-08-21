@@ -4,11 +4,11 @@
 //! The crate consumes only a document already admitted by `renderweave-renderer-document`.
 //! Preflight returns bounded structural counts or one stable DFS problem. The definite kernel
 //! additionally computes local LayoutBox/ContentBox entries for resource-independent ABSOLUTE
-//! nodes, Stack children with at most one main-axis FILL, resource-independent Stack HUG
+//! nodes, Stack children with at most one main-axis FILL, resource-independent Stack/Grid HUG
 //! measurement, and Grid children whose definite axes contain FIXED tracks, at most one FRACTION
 //! track, and resource-independent AUTO constraints that each cover at most one AUTO track and
 //! consume supported resource-free HUG contributions. It deliberately stops before resource
-//! preparation, Frame/Grid/Group nonempty HUG, multi-FILL
+//! preparation, Frame/Group nonempty HUG, multi-FILL
 //! Stack water filling, cross-AUTO deficit distribution, multi-FRACTION solving, world transforms,
 //! shaping, paint, rasterization, and encoding, and it never exposes a partial layout on failure.
 
@@ -1509,20 +1509,44 @@ fn resource_free_hug_axis(
     if children.is_empty() {
         return empty_container_hug_axis(node, role, placement, axis, occurrence);
     }
-    if role != NodeRole::Stack {
-        return Err(DefiniteLayoutError::unsupported(
-            occurrence,
-            if role == NodeRole::Group {
-                DefiniteLayoutUnsupported::Group
-            } else {
-                DefiniteLayoutUnsupported::HugContent
-            },
-        ));
-    }
-
-    let content_extent = resource_free_stack_hug_content_extent(node, axis, occurrence)?;
+    let content_extent = match role {
+        NodeRole::Stack => resource_free_stack_hug_content_extent(node, axis, occurrence)?,
+        NodeRole::Grid => resource_free_grid_hug_content_extent(node, axis, occurrence)?,
+        NodeRole::Group => {
+            return Err(DefiniteLayoutError::unsupported(
+                occurrence,
+                DefiniteLayoutUnsupported::Group,
+            ));
+        }
+        NodeRole::Frame | NodeRole::Leaf => {
+            return Err(DefiniteLayoutError::unsupported(
+                occurrence,
+                DefiniteLayoutUnsupported::HugContent,
+            ));
+        }
+    };
     let natural = container_outer_extent(node, axis, content_extent, occurrence)?;
     clamp_flexible_axis(placement, natural, axis, occurrence)
+}
+
+fn resource_free_grid_hug_content_extent(
+    grid: &Map<String, Value>,
+    axis: &str,
+    occurrence: &str,
+) -> Result<f64, DefiniteLayoutError> {
+    let grid_axis = match axis {
+        "Width" => GridAxis::Column,
+        "Height" => GridAxis::Row,
+        _ => return Err(DefiniteLayoutError::invariant(occurrence, "HUG axis")),
+    };
+    let children = array_member(grid, "children", occurrence)?;
+    let resolved = definite_grid_axis(grid, children, grid_axis, 0.0, 0.0, occurrence)?;
+    Ok(grid_span_extent(
+        &resolved.sizes,
+        resolved.gap,
+        0,
+        resolved.sizes.len(),
+    ))
 }
 
 fn resource_free_stack_hug_content_extent(

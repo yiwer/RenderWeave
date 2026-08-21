@@ -991,12 +991,28 @@ def resource_free_hug_axis(
     children = array_value(node.get("children"), f"{current} children")
     if not children:
         return empty_container_hug_axis(node, role, placement, axis, current)
-    if role != "STACK":
+    if role == "STACK":
+        content_extent = resource_free_stack_hug_content_extent(node, axis, current)
+    elif role == "GRID":
+        content_extent = resource_free_grid_hug_content_extent(node, axis, current)
+    else:
         raise Unsupported("GROUP" if role == "GROUP" else "HUG_CONTENT", current)
-
-    content_extent = resource_free_stack_hug_content_extent(node, axis, current)
     natural = container_outer_extent(node, axis, content_extent, current)
     return clamp_flexible_axis(placement, natural, axis, current)
+
+
+def resource_free_grid_hug_content_extent(
+    grid: dict[str, Any], axis: str, current: str
+) -> float:
+    if axis == "Width":
+        grid_axis = "COLUMN"
+    elif axis == "Height":
+        grid_axis = "ROW"
+    else:
+        raise VerificationFailure(f"{current} invalid Grid HUG axis")
+    children = array_value(grid.get("children"), f"{current} children")
+    resolved = definite_grid_axis(grid, children, grid_axis, 0.0, 0.0, current)
+    return grid_span_extent(resolved.sizes, resolved.gap, 0, len(resolved.sizes))
 
 
 def resource_free_stack_hug_content_extent(
@@ -1461,7 +1477,7 @@ def verify(
         "vector manifest",
     )
     verifier.require(
-        vectors["vectorVersion"] == "renderweave-definite-layout-vectors/10",
+        vectors["vectorVersion"] == "renderweave-definite-layout-vectors/11",
         "vector identity drifted",
     )
     authority = exact_members(
@@ -1514,7 +1530,7 @@ def verify(
     expected_boundary = {
         "profileAvailability": "NOT_REGISTERED",
         "certificationStatus": "NOT_CERTIFIED",
-        "layoutImplementation": "RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_SINGLE_MAIN_FILL_AND_FIXED_SINGLE_FRACTION_INDEPENDENT_MULTI_AUTO_GRID_EMPTY_CONTAINER_STACK_HUG_AND_GRID_HUG_AUTO_CONTRIBUTION_BOX_KERNEL",
+        "layoutImplementation": "RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_SINGLE_MAIN_FILL_AND_FIXED_SINGLE_FRACTION_INDEPENDENT_MULTI_AUTO_GRID_EMPTY_CONTAINER_STACK_HUG_GRID_AUTO_HUG_CONTRIBUTION_AND_GRID_HUG_BOX_KERNEL",
         "worldTransformImplementation": "ABSENT",
         "sceneImplementation": "ABSENT",
         "rasterImplementation": "ABSENT",
@@ -1552,7 +1568,7 @@ def verify(
         == "renderweave-layout-preflight-fixtures/1",
         "layout preflight fixture identity drifted",
     )
-    verifier.require(len(vectors["laidOutCases"]) == 48, "laid-out case count drifted")
+    verifier.require(len(vectors["laidOutCases"]) == 51, "laid-out case count drifted")
     verifier.require(
         len(vectors["unsupportedCases"]) == 13,
         "unsupported case count drifted",
@@ -1602,7 +1618,7 @@ def verify(
             raise VerificationFailure(f"{case_id}: unsupported case produced a layout")
 
     return {
-        "verifier": "renderweave-definite-layout-python-independent/10",
+        "verifier": "renderweave-definite-layout-python-independent/11",
         "result": "PASS",
         "assurance": "A2",
         "laidOutCases": len(vectors["laidOutCases"]),
