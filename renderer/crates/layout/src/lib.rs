@@ -6,8 +6,9 @@
 //! additionally computes local LayoutBox/ContentBox entries for resource-independent ABSOLUTE
 //! nodes, Stack children with at most one main-axis FILL, resource-independent Stack HUG
 //! measurement, and Grid children whose definite axes contain FIXED tracks, at most one FRACTION
-//! track, and resource-independent AUTO constraints that each cover at most one AUTO track. It
-//! deliberately stops before resource preparation, Frame/Grid/Group nonempty HUG, multi-FILL
+//! track, and resource-independent AUTO constraints that each cover at most one AUTO track and
+//! consume supported resource-free HUG contributions. It deliberately stops before resource
+//! preparation, Frame/Grid/Group nonempty HUG, multi-FILL
 //! Stack water filling, cross-AUTO deficit distribution, multi-FRACTION solving, world transforms,
 //! shaping, paint, rasterization, and encoding, and it never exposes a partial layout on failure.
 
@@ -459,6 +460,13 @@ impl GridAxis {
         match self {
             Self::Column => "widthPt",
             Self::Row => "heightPt",
+        }
+    }
+
+    const fn hug_axis(self) -> &'static str {
+        match self {
+            Self::Column => "Width",
+            Self::Row => "Height",
         }
     }
 
@@ -1069,25 +1077,25 @@ fn apply_independent_grid_auto(
         }
 
         let mode = size_mode(placement, axis.mode_member(), child_occurrence)?;
-        if mode == SizeMode::Hug {
-            return Err(DefiniteLayoutError::unsupported(
+        let size = match mode {
+            SizeMode::Fixed => binary64_member(
+                placement,
+                axis.size_member(),
                 child_occurrence,
-                DefiniteLayoutUnsupported::HugContent,
-            ));
-        }
-        if mode == SizeMode::Fill {
-            return Err(DefiniteLayoutError::invariant(
-                child_occurrence,
-                format!("placement.{}", axis.mode_member()),
-            ));
-        }
-
-        let size = binary64_member(
-            placement,
-            axis.size_member(),
-            child_occurrence,
-            format!("placement.{}", axis.size_member()),
-        )?;
+                format!("placement.{}", axis.size_member()),
+            )?,
+            SizeMode::Hug => {
+                let kind = text_member(child, "kind", child_occurrence, "kind")?;
+                let role = definite_node_role(kind, child_occurrence)?;
+                resource_free_hug_axis(child, role, placement, axis.hug_axis(), child_occurrence)?
+            }
+            SizeMode::Fill => {
+                return Err(DefiniteLayoutError::invariant(
+                    child_occurrence,
+                    format!("placement.{}", axis.mode_member()),
+                ));
+            }
+        };
         let leading_margin = binary64_member(
             placement,
             axis.leading_margin_member(),

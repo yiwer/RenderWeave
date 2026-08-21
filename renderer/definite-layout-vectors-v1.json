@@ -1,5 +1,5 @@
 {
-  "vectorVersion": "renderweave-definite-layout-vectors/9",
+  "vectorVersion": "renderweave-definite-layout-vectors/10",
   "authorityContext": {
     "layoutProfile": "renderweave-layout/1.0",
     "documentContract": "renderweave-render-node-contract-v1/2",
@@ -9,7 +9,7 @@
   "boundary": {
     "profileAvailability": "NOT_REGISTERED",
     "certificationStatus": "NOT_CERTIFIED",
-    "layoutImplementation": "RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_SINGLE_MAIN_FILL_AND_FIXED_SINGLE_FRACTION_INDEPENDENT_MULTI_AUTO_GRID_EMPTY_CONTAINER_AND_RESOURCE_FREE_STACK_HUG_BOX_KERNEL",
+    "layoutImplementation": "RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_SINGLE_MAIN_FILL_AND_FIXED_SINGLE_FRACTION_INDEPENDENT_MULTI_AUTO_GRID_EMPTY_CONTAINER_STACK_HUG_AND_GRID_HUG_AUTO_CONTRIBUTION_BOX_KERNEL",
     "worldTransformImplementation": "ABSENT",
     "sceneImplementation": "ABSENT",
     "rasterImplementation": "ABSENT",
@@ -813,6 +813,51 @@
           {"occurrenceId": "rwocc_0000000000000003", "kind": "rect", "layoutBox": {"xBits": "0000000000000000", "yBits": "0000000000000000", "widthBits": "4034000000000000", "heightBits": "4034000000000000"}, "contentBox": null}
         ]
       }
+    },
+    {
+      "id": "grid-auto-track-hug-child-contribution",
+      "baseSource": "layoutPreflight",
+      "baseCase": "grid",
+      "mutations": [
+        {"operation": "replace", "pointer": "/canvas/children/0/children/0/placement/heightMode", "value": "HUG_CONTENT"},
+        {"operation": "remove", "pointer": "/canvas/children/0/children/0/placement/heightPt"}
+      ],
+      "expected": {
+        "entries": [
+          {"occurrenceId": "rwocc_0000000000000000", "kind": "canvas", "layoutBox": {"xBits": "0000000000000000", "yBits": "0000000000000000", "widthBits": "4059000000000000", "heightBits": "4059000000000000"}, "contentBox": {"xBits": "0000000000000000", "yBits": "0000000000000000", "widthBits": "4059000000000000", "heightBits": "4059000000000000"}},
+          {"occurrenceId": "rwocc_0000000000000001", "kind": "grid", "layoutBox": {"xBits": "0000000000000000", "yBits": "0000000000000000", "widthBits": "4049000000000000", "heightBits": "4049000000000000"}, "contentBox": {"xBits": "0000000000000000", "yBits": "0000000000000000", "widthBits": "4049000000000000", "heightBits": "4049000000000000"}},
+          {"occurrenceId": "rwocc_0000000000000002", "kind": "frame", "layoutBox": {"xBits": "0000000000000000", "yBits": "0000000000000000", "widthBits": "4024000000000000", "heightBits": "0000000000000000"}, "contentBox": {"xBits": "0000000000000000", "yBits": "0000000000000000", "widthBits": "4024000000000000", "heightBits": "0000000000000000"}}
+        ]
+      }
+    },
+    {
+      "id": "grid-auto-track-recursive-stack-hug-signed-margin-multitrack",
+      "baseSource": "layoutPreflight",
+      "baseCase": "grid",
+      "mutations": [
+        {"operation": "replace", "pointer": "/canvas/children/0/rows", "value": [{"type":"FIXED","valuePt":5},{"type":"AUTO"}]},
+        {"operation": "replace", "pointer": "/canvas/children/0/rowGapPt", "value": 1},
+        {"operation": "replace", "pointer": "/canvas/children/0/children/0/kind", "value": "stack"},
+        {"operation": "add", "pointer": "/canvas/children/0/children/0/alignItems", "value": "START"},
+        {"operation": "add", "pointer": "/canvas/children/0/children/0/direction", "value": "COLUMN"},
+        {"operation": "add", "pointer": "/canvas/children/0/children/0/gapPt", "value": 0},
+        {"operation": "add", "pointer": "/canvas/children/0/children/0/justifyContent", "value": "START"},
+        {"operation": "replace", "pointer": "/canvas/children/0/children/0/children", "value": [{"cornerRadii":{"bottomLeftPt":0,"bottomRightPt":0,"topLeftPt":0,"topRightPt":0},"fill":{"color":"#000000FF"},"kind":"rect","occurrenceId":"rwocc_0000000000000003","opacity":1,"placement":{"alignSelf":"START","heightMode":"FIXED","heightPt":12,"marginBottomPt":0,"marginLeftPt":0,"marginRightPt":0,"marginTopPt":0,"type":"STACK","widthMode":"FIXED","widthPt":4},"transform":{"originX":0.5,"originY":0.5,"rotationDeg":0,"scaleX":1,"scaleY":1},"visible":true}]},
+        {"operation": "replace", "pointer": "/canvas/children/0/children/0/placement/heightMode", "value": "HUG_CONTENT"},
+        {"operation": "remove", "pointer": "/canvas/children/0/children/0/placement/heightPt"},
+        {"operation": "replace", "pointer": "/canvas/children/0/children/0/placement/marginBottomPt", "value": 3},
+        {"operation": "replace", "pointer": "/canvas/children/0/children/0/placement/marginLeftPt", "value": 1},
+        {"operation": "replace", "pointer": "/canvas/children/0/children/0/placement/marginTopPt", "value": -2},
+        {"operation": "replace", "pointer": "/canvas/children/0/children/0/placement/rowSpan", "value": 2}
+      ],
+      "expected": {
+        "entries": [
+          {"occurrenceId": "rwocc_0000000000000000", "kind": "canvas", "layoutBox": {"xBits": "0000000000000000", "yBits": "0000000000000000", "widthBits": "4059000000000000", "heightBits": "4059000000000000"}, "contentBox": {"xBits": "0000000000000000", "yBits": "0000000000000000", "widthBits": "4059000000000000", "heightBits": "4059000000000000"}},
+          {"occurrenceId": "rwocc_0000000000000001", "kind": "grid", "layoutBox": {"xBits": "0000000000000000", "yBits": "0000000000000000", "widthBits": "4049000000000000", "heightBits": "4049000000000000"}, "contentBox": {"xBits": "0000000000000000", "yBits": "0000000000000000", "widthBits": "4049000000000000", "heightBits": "4049000000000000"}},
+          {"occurrenceId": "rwocc_0000000000000002", "kind": "stack", "layoutBox": {"xBits": "3ff0000000000000", "yBits": "c000000000000000", "widthBits": "4024000000000000", "heightBits": "4028000000000000"}, "contentBox": {"xBits": "3ff0000000000000", "yBits": "c000000000000000", "widthBits": "4024000000000000", "heightBits": "4028000000000000"}},
+          {"occurrenceId": "rwocc_0000000000000003", "kind": "rect", "layoutBox": {"xBits": "3ff0000000000000", "yBits": "c000000000000000", "widthBits": "4010000000000000", "heightBits": "4028000000000000"}, "contentBox": null}
+        ]
+      }
     }
   ],
   "unsupportedCases": [
@@ -875,12 +920,13 @@
       "expected": {"feature": "GRID_AUTO_TRACK", "occurrenceId": "rwocc_0000000000000001"}
     },
     {
-      "id": "grid-auto-track-hug-child-contribution",
+      "id": "grid-auto-nonempty-frame-hug-contribution-remains-unsupported",
       "baseSource": "layoutPreflight",
       "baseCase": "grid",
       "mutations": [
         {"operation": "replace", "pointer": "/canvas/children/0/children/0/placement/heightMode", "value": "HUG_CONTENT"},
-        {"operation": "remove", "pointer": "/canvas/children/0/children/0/placement/heightPt"}
+        {"operation": "remove", "pointer": "/canvas/children/0/children/0/placement/heightPt"},
+        {"operation": "replace", "pointer": "/canvas/children/0/children/0/children", "value": [{"cornerRadii":{"bottomLeftPt":0,"bottomRightPt":0,"topLeftPt":0,"topRightPt":0},"fill":{"color":"#000000FF"},"kind":"rect","occurrenceId":"rwocc_0000000000000003","opacity":1,"placement":{"heightMode":"FIXED","heightPt":4,"type":"ABSOLUTE","widthMode":"FIXED","widthPt":3,"xPt":1,"yPt":2},"transform":{"originX":0.5,"originY":0.5,"rotationDeg":0,"scaleX":1,"scaleY":1},"visible":true}]}
       ],
       "expected": {"feature": "HUG_CONTENT", "occurrenceId": "rwocc_0000000000000002"}
     },

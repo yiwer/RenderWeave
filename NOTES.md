@@ -1,6 +1,14 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-22 **Template v1 implementation TV1-T44 已 `resolved/automated_verified`**：definite Grid 的
+  independent AUTO solver 现可消费 T42 空容器或 T43 递归 Stack 的 resource-free HUG intrinsic；贡献继续按
+  size + signed margins 固定顺序、非负 clamp 与正 deficit 求解，跨多个 AUTO 仍 fail closed。shared vector/Python
+  independent verifier 升级 `/10`，fixture `/3` 不变；Rust/Python 48 laid-out + 13 unsupported、61/61、184
+  checks。focused fmt/clippy/workspace test 与 `render` `.sdlc/evidence/20260822-040342-render/`、`server`
+  `.sdlc/evidence/20260822-040418-server/`、治理前 `fast` `.sdlc/evidence/20260822-042308-fast/` 均绿。非空
+  Frame/Grid/Group、transform/resource/tolerance/scene/raster/daemon output/Profile/E6 继续 fail closed；provider
+  attempts/API Key reads/paid calls 均保持 0，不 push/tag/PR。
 - 2026-08-22 **Template v1 implementation TV1-T43 已 `resolved/automated_verified`**：同一 Rust layout deep
   module 现在可在资源无关闭包内测量非空 Stack HUG；main axis 使用 stable-zero cursor 的 signed margin/size/
   gap 最远正端，cross axis 使用 MarginExtent 最远正端，再加 padding/stroke 并 min→max。只允许 FIXED、T42

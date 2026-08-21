@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Independent replay for definite ABSOLUTE, singleton-main-FILL Stack, and fixed Grid boxes."""
+"""Independent replay for resource-free definite boxes and intrinsic Grid contributions."""
 
 from __future__ import annotations
 
@@ -696,17 +696,26 @@ def apply_independent_grid_auto(
             f"{child_occurrence} placement.{mode_member}",
         )
         if mode == "HUG_CONTENT":
-            raise Unsupported("HUG_CONTENT", child_occurrence)
-        if mode != "FIXED":
+            kind = text(child.get("kind"), f"{child_occurrence} kind")
+            role = definite_node_role(kind, child_occurrence)
+            size = resource_free_hug_axis(
+                child,
+                role,
+                placement,
+                "Width" if axis == "COLUMN" else "Height",
+                child_occurrence,
+            )
+        elif mode == "FIXED":
+            size = required_decimal(
+                placement,
+                size_member,
+                child_occurrence,
+                f"placement.{size_member}",
+            )
+        else:
             raise VerificationFailure(
                 f"{child_occurrence} invalid placement.{mode_member} across AUTO"
             )
-        size = required_decimal(
-            placement,
-            size_member,
-            child_occurrence,
-            f"placement.{size_member}",
-        )
         leading_margin = required_decimal(
             placement,
             leading_margin_member,
@@ -1452,7 +1461,7 @@ def verify(
         "vector manifest",
     )
     verifier.require(
-        vectors["vectorVersion"] == "renderweave-definite-layout-vectors/9",
+        vectors["vectorVersion"] == "renderweave-definite-layout-vectors/10",
         "vector identity drifted",
     )
     authority = exact_members(
@@ -1505,7 +1514,7 @@ def verify(
     expected_boundary = {
         "profileAvailability": "NOT_REGISTERED",
         "certificationStatus": "NOT_CERTIFIED",
-        "layoutImplementation": "RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_SINGLE_MAIN_FILL_AND_FIXED_SINGLE_FRACTION_INDEPENDENT_MULTI_AUTO_GRID_EMPTY_CONTAINER_AND_RESOURCE_FREE_STACK_HUG_BOX_KERNEL",
+        "layoutImplementation": "RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_SINGLE_MAIN_FILL_AND_FIXED_SINGLE_FRACTION_INDEPENDENT_MULTI_AUTO_GRID_EMPTY_CONTAINER_STACK_HUG_AND_GRID_HUG_AUTO_CONTRIBUTION_BOX_KERNEL",
         "worldTransformImplementation": "ABSENT",
         "sceneImplementation": "ABSENT",
         "rasterImplementation": "ABSENT",
@@ -1543,7 +1552,7 @@ def verify(
         == "renderweave-layout-preflight-fixtures/1",
         "layout preflight fixture identity drifted",
     )
-    verifier.require(len(vectors["laidOutCases"]) == 46, "laid-out case count drifted")
+    verifier.require(len(vectors["laidOutCases"]) == 48, "laid-out case count drifted")
     verifier.require(
         len(vectors["unsupportedCases"]) == 13,
         "unsupported case count drifted",
@@ -1593,7 +1602,7 @@ def verify(
             raise VerificationFailure(f"{case_id}: unsupported case produced a layout")
 
     return {
-        "verifier": "renderweave-definite-layout-python-independent/9",
+        "verifier": "renderweave-definite-layout-python-independent/10",
         "result": "PASS",
         "assurance": "A2",
         "laidOutCases": len(vectors["laidOutCases"]),
