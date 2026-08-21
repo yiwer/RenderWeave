@@ -21,7 +21,7 @@ import {
   Wrench,
   type LucideIcon,
 } from 'lucide-react';
-import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { useEffect, useEffectEvent, useId, useMemo, useRef, useState } from 'react';
 
 import {
   createSessionFromBaseline,
@@ -45,6 +45,21 @@ import {
   undoStructuredCommand,
   updateStructuredReadiness,
 } from './template-editor-session';
+import {
+  LOCAL_RECOVERY_DEBOUNCE_MS,
+  browserTemplateRecoveryStorage,
+  buildTemplateRecoveryRecord,
+  clearTemplateRecovery,
+  loadTemplateRecovery,
+  persistTemplateRecovery,
+  recoveryOverwriteOffer,
+  restoreStructuredSessionFromRecovery,
+  type TemplateRecoveryBase,
+  type TemplateRecoveryEditState,
+  type TemplateRecoveryEntry,
+  type TemplateRecoveryRecord,
+  type TemplateRecoveryStorage,
+} from './template-recovery';
 import {
   defaultTemplateEditorTransport,
   openTemplateEditor,
@@ -71,7 +86,7 @@ import {
 } from './template-save';
 import './template-editor.css';
 
-type EditorEntry = 'structure' | 'nodes' | 'assets' | 'definitions' | 'exchange';
+type EditorEntry = TemplateRecoveryEntry;
 
 const ENTRIES: Array<{ id: EditorEntry; label: string; icon: LucideIcon }> = [
   { id: 'structure', label: '结构', icon: FolderTree },
@@ -87,6 +102,8 @@ interface TemplateEditorShellProps {
   saveTransport?: TemplateSaveTransport;
   initialSaveNotice?: string;
   onSessionCommitted?: (session: StructuredEditorSession, saveNotice?: string) => void;
+  recoveryStorage?: TemplateRecoveryStorage;
+  recoveryNow?: () => number;
 }
 
 export function TemplateEditorShell({
@@ -95,6 +112,8 @@ export function TemplateEditorShell({
   saveTransport,
   initialSaveNotice,
   onSessionCommitted,
+  recoveryStorage,
+  recoveryNow = Date.now,
 }: TemplateEditorShellProps) {
   if (session.mode === 'raw-repair') {
     return <RawRepairShell session={session} />;
@@ -110,6 +129,8 @@ export function TemplateEditorShell({
       saveTransport={saveTransport}
       initialSaveNotice={initialSaveNotice}
       onSessionCommitted={onSessionCommitted}
+      recoveryStorage={recoveryStorage}
+      recoveryNow={recoveryNow}
     />
   );
 }
@@ -118,6 +139,8 @@ interface TemplateEditorSurfaceProps {
   templateId: string;
   transport?: TemplateEditorTransport;
   saveTransport?: TemplateSaveTransport;
+  recoveryStorage?: TemplateRecoveryStorage;
+  recoveryNow?: () => number;
 }
 
 type SurfaceState =
@@ -129,12 +152,15 @@ export function TemplateEditorSurface({
   templateId,
   transport = defaultTemplateEditorTransport,
   saveTransport,
+  recoveryStorage,
+  recoveryNow = Date.now,
 }: TemplateEditorSurfaceProps) {
   const [retryKey, setRetryKey] = useState(0);
   const [surface, setSurface] = useState<SurfaceState>({ state: 'loading' });
   const generation = useRef(0);
   const effectiveSaveTransport = saveTransport
     ?? (transport === defaultTemplateEditorTransport ? defaultTemplateSaveTransport : undefined);
+  const effectiveRecoveryStorage = recoveryStorage ?? browserTemplateRecoveryStorage();
 
   useEffect(() => {
     const activeGeneration = generation.current + 1;
@@ -188,6 +214,8 @@ export function TemplateEditorSurface({
         session,
         ...(saveNotice ? { saveNotice } : {}),
       })}
+      recoveryStorage={effectiveRecoveryStorage}
+      recoveryNow={recoveryNow}
     />
   );
 }
@@ -210,18 +238,49 @@ type StructuredSaveView =
     message: string;
   };
 
+type StructuredRecoveryView =
+  | { state: 'disabled' }
+  | { state: 'loading' }
+  | { state: 'none' }
+  | {
+    state: 'offer';
+    baseState: 'matching' | 'drifted';
+    record: TemplateRecoveryRecord;
+  }
+  | {
+    state: 'invalid';
+    reason: string;
+    exportCanonical?: string;
+  }
+  | { state: 'unavailable'; operation: 'read' | 'write' | 'clear' }
+  | {
+    state: 'restored';
+    baseState: 'matching' | 'drifted';
+    record: TemplateRecoveryRecord;
+    resumingUnknown: boolean;
+  };
+
+type RecoveryPersistenceView =
+  | { state: 'idle' }
+  | { state: 'stored' }
+  | { state: 'unavailable'; operation: 'write' | 'clear' };
+
 function StructuredShell({
   session: incomingSession,
   onRetryReadiness,
   saveTransport,
   initialSaveNotice,
   onSessionCommitted,
+  recoveryStorage,
+  recoveryNow,
 }: {
   session: StructuredEditorSession;
   onRetryReadiness?: () => void;
   saveTransport?: TemplateSaveTransport;
   initialSaveNotice?: string;
   onSessionCommitted?: (session: StructuredEditorSession, saveNotice?: string) => void;
+  recoveryStorage?: TemplateRecoveryStorage;
+  recoveryNow: () => number;
 }) {
   const [localSession, setLocalSession] = useState(incomingSession);
   const [saveView, setSaveView] = useState<StructuredSaveView>(
@@ -229,8 +288,20 @@ function StructuredShell({
       ? { state: 'confirmed-current', message: initialSaveNotice }
       : { state: 'idle' },
   );
+  const [recoveryView, setRecoveryView] = useState<StructuredRecoveryView>(
+    recoveryStorage ? { state: 'loading' } : { state: 'disabled' },
+  );
+  const [recoveryPersistence, setRecoveryPersistence] = useState<RecoveryPersistenceView>({
+    state: 'idle',
+  });
+  const [recoveryBase, setRecoveryBase] = useState<TemplateRecoveryBase>();
   const mutationId = useRef(0);
   const mutationAbort = useRef<AbortController | null>(null);
+  const recoveryEpoch = useRef(0);
+  const recoveryWriteEpoch = useRef(0);
+  const cachedRecovery = useRef<TemplateRecoveryRecord | null>(null);
+  const incomingSessionRef = useRef(incomingSession);
+  const incomingBaselineKey = baselineIdentity(incomingSession.baseline);
   const session = useMemo(
     () => baselineIdentity(localSession.baseline) === baselineIdentity(incomingSession.baseline)
       ? updateStructuredReadiness(localSession, incomingSession.readiness)
@@ -249,17 +320,40 @@ function StructuredShell({
   const dirty = isCanonicalDirty(session);
   const workingName = templateDisplayName(session.workingCopy);
   const guard = authoritativePreviewGuard(session);
-  const localLocked = saveView.state === 'pending'
+  const recoveryChoiceLocked = recoveryView.state === 'loading'
+    || recoveryView.state === 'offer'
+    || recoveryView.state === 'invalid';
+  const localLocked = recoveryChoiceLocked
+    || saveView.state === 'pending'
     || saveView.state === 'unknown'
     || saveView.state === 'reconciling'
     || saveView.state === 'retryable'
     || saveView.state === 'deleted'
     || saveView.state === 'failed-closed';
+  const recoveryEditState: TemplateRecoveryEditState = useMemo(() => ({
+    entry,
+    selectedNodeId: effectiveSelectedNodeId,
+    navigatorOpen,
+    inspectorOpen,
+  }), [entry, effectiveSelectedNodeId, inspectorOpen, navigatorOpen]);
 
   useEffect(() => () => {
     mutationId.current += 1;
     mutationAbort.current?.abort();
+    recoveryEpoch.current += 1;
+    recoveryWriteEpoch.current += 1;
   }, []);
+
+  useEffect(() => {
+    incomingSessionRef.current = incomingSession;
+  }, [incomingSession]);
+
+  const applyRecoveredEditState = (editState: TemplateRecoveryEditState) => {
+    setEntry(editState.entry);
+    setSelectedNodeId(editState.selectedNodeId);
+    setNavigatorOpen(editState.navigatorOpen);
+    setInspectorOpen(editState.inspectorOpen);
+  };
 
   const acceptLocalChange = (next: StructuredEditorSession) => {
     if (localLocked) return;
@@ -270,9 +364,167 @@ function StructuredShell({
   const undo = () => acceptLocalChange(undoStructuredCommand(session));
   const redo = () => acceptLocalChange(redoStructuredCommand(session));
 
+  const persistRecoveryNow = async (
+    targetSession: StructuredEditorSession,
+    unknownAttempt?: TemplateUnknownSaveAttempt,
+  ) => {
+    if (!recoveryStorage || !isCanonicalDirty(targetSession)) return;
+    const epoch = recoveryWriteEpoch.current + 1;
+    recoveryWriteEpoch.current = epoch;
+    try {
+      const record = await buildTemplateRecoveryRecord(
+        targetSession,
+        recoveryEditState,
+        new Date(recoveryNow()).toISOString(),
+        unknownAttempt,
+        recoveryBase,
+      );
+      if (recoveryWriteEpoch.current !== epoch) return;
+      cachedRecovery.current = record;
+      const result = persistTemplateRecovery(recoveryStorage, record);
+      setRecoveryPersistence(result.state === 'stored'
+        ? { state: 'stored' }
+        : { state: 'unavailable', operation: 'write' });
+    } catch {
+      if (recoveryWriteEpoch.current === epoch) {
+        setRecoveryPersistence({ state: 'unavailable', operation: 'write' });
+      }
+    }
+  };
+
+  const clearRecoveryNow = (): boolean => {
+    if (!recoveryStorage) return true;
+    recoveryWriteEpoch.current += 1;
+    cachedRecovery.current = null;
+    const result = clearTemplateRecovery(recoveryStorage, session.baseline.templateId);
+    if (result.state === 'cleared') {
+      setRecoveryPersistence({ state: 'idle' });
+      return true;
+    }
+    setRecoveryPersistence({ state: 'unavailable', operation: 'clear' });
+    return false;
+  };
+
+  const restoreRecoveryOffer = (
+    record: TemplateRecoveryRecord,
+    baseState: 'matching' | 'drifted',
+  ) => {
+    const restored = restoreStructuredSessionFromRecovery(session, record);
+    if (restored.state !== 'restored') {
+      setRecoveryView({ state: 'invalid', reason: restored.reason });
+      return;
+    }
+    applyRecoveredEditState(record.editState);
+    setRecoveryBase({
+      revision: record.baseRevision,
+      contentHash: record.baseContentHash,
+    });
+    setLocalSession(restored.session);
+    setSaveView({ state: 'idle' });
+    setRecoveryView({
+      state: 'restored',
+      baseState,
+      record,
+      resumingUnknown: false,
+    });
+  };
+
+  const discardRecoveryOffer = () => {
+    if (!clearRecoveryNow()) return;
+    setRecoveryBase(undefined);
+    setRecoveryView({ state: 'none' });
+  };
+
+  const discardRestoredRecovery = () => {
+    if (!clearRecoveryNow()) return;
+    const clean = createSessionFromBaseline(session.baseline, session.readiness);
+    if (clean.mode !== 'structured') return;
+    setLocalSession({
+      ...clean,
+      previewGeneration: session.previewGeneration + 1,
+    });
+    setRecoveryBase(undefined);
+    setSaveView({ state: 'idle' });
+    setRecoveryView({ state: 'none' });
+  };
+
+  useEffect(() => {
+    if (!recoveryStorage || recoveryChoiceLocked) return;
+    if (saveView.state === 'pending'
+      || saveView.state === 'unknown'
+      || saveView.state === 'reconciling'
+      || saveView.state === 'retryable'
+      || saveView.state === 'deleted'
+      || saveView.state === 'failed-closed') return;
+    if (!dirty) {
+      if (cachedRecovery.current !== null) {
+        recoveryWriteEpoch.current += 1;
+        cachedRecovery.current = null;
+        const result = clearTemplateRecovery(recoveryStorage, session.baseline.templateId);
+        setRecoveryPersistence(result.state === 'cleared'
+          ? { state: 'idle' }
+          : { state: 'unavailable', operation: 'clear' });
+      }
+      return;
+    }
+
+    const epoch = recoveryWriteEpoch.current + 1;
+    recoveryWriteEpoch.current = epoch;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    void buildTemplateRecoveryRecord(
+      session,
+      recoveryEditState,
+      new Date(recoveryNow()).toISOString(),
+      undefined,
+      recoveryBase,
+    ).then((record) => {
+      if (recoveryWriteEpoch.current !== epoch) return;
+      cachedRecovery.current = record;
+      timer = setTimeout(() => {
+        if (recoveryWriteEpoch.current !== epoch) return;
+        const result = persistTemplateRecovery(recoveryStorage, record);
+        setRecoveryPersistence(result.state === 'stored'
+          ? { state: 'stored' }
+          : { state: 'unavailable', operation: 'write' });
+      }, LOCAL_RECOVERY_DEBOUNCE_MS);
+    }).catch(() => {
+      if (recoveryWriteEpoch.current === epoch) {
+        setRecoveryPersistence({ state: 'unavailable', operation: 'write' });
+      }
+    });
+    return () => {
+      if (timer !== undefined) clearTimeout(timer);
+      if (recoveryWriteEpoch.current === epoch) recoveryWriteEpoch.current += 1;
+    };
+  }, [
+    dirty,
+    recoveryBase,
+    recoveryChoiceLocked,
+    recoveryEditState,
+    recoveryNow,
+    recoveryStorage,
+    saveView.state,
+    session,
+  ]);
+
+  useEffect(() => {
+    if (!dirty) return;
+    const beforeUnload = (event: BeforeUnloadEvent) => {
+      const record = cachedRecovery.current;
+      if (recoveryStorage && record) persistTemplateRecovery(recoveryStorage, record);
+      event.preventDefault();
+      event.returnValue = '';
+    };
+    window.addEventListener('beforeunload', beforeUnload);
+    return () => window.removeEventListener('beforeunload', beforeUnload);
+  }, [dirty, recoveryStorage]);
+
   const acceptSaveResult = (result: TemplateSaveResult) => {
     switch (result.state) {
       case 'saved':
+        clearRecoveryNow();
+        setRecoveryBase(undefined);
+        setRecoveryView(recoveryStorage ? { state: 'none' } : { state: 'disabled' });
         setLocalSession(result.session);
         setSaveView({ state: 'idle' });
         onSessionCommitted?.(result.session);
@@ -302,6 +554,7 @@ function StructuredShell({
         });
         return;
       case 'unknown':
+        void persistRecoveryNow(session, result.attempt);
         setSaveView({ state: 'unknown', attempt: result.attempt, message: result.message });
         void runReconciliation(result.attempt);
     }
@@ -310,6 +563,9 @@ function StructuredShell({
   const acceptReconciliationResult = (result: TemplateSaveReconciliationResult) => {
     switch (result.state) {
       case 'adopted':
+        clearRecoveryNow();
+        setRecoveryBase(undefined);
+        setRecoveryView(recoveryStorage ? { state: 'none' } : { state: 'disabled' });
         setLocalSession(result.session);
         setSaveView({ state: 'confirmed-current', message: result.message });
         onSessionCommitted?.(result.session, result.message);
@@ -365,6 +621,84 @@ function StructuredShell({
     acceptReconciliationResult(result);
   };
 
+  const resumeUnknownReconciliation = useEffectEvent((attempt: TemplateUnknownSaveAttempt) => {
+    void runReconciliation(attempt);
+  });
+
+  useEffect(() => {
+    if (!recoveryStorage) return;
+    const openingSession = incomingSessionRef.current;
+    const epoch = recoveryEpoch.current + 1;
+    recoveryEpoch.current = epoch;
+    void loadTemplateRecovery(
+      recoveryStorage,
+      openingSession.baseline,
+      recoveryNow(),
+    ).then((loaded) => {
+      if (recoveryEpoch.current !== epoch) return;
+      if (loaded.state === 'available') {
+        cachedRecovery.current = loaded.record;
+        if (loaded.record.unknownAttempt) {
+          const restored = restoreStructuredSessionFromRecovery(openingSession, loaded.record);
+          if (restored.state !== 'restored') {
+            setRecoveryView({ state: 'invalid', reason: restored.reason });
+            return;
+          }
+          setEntry(loaded.record.editState.entry);
+          setSelectedNodeId(loaded.record.editState.selectedNodeId);
+          setNavigatorOpen(loaded.record.editState.navigatorOpen);
+          setInspectorOpen(loaded.record.editState.inspectorOpen);
+          setRecoveryBase({
+            revision: loaded.record.baseRevision,
+            contentHash: loaded.record.baseContentHash,
+          });
+          setLocalSession(restored.session);
+          setRecoveryView({
+            state: 'restored',
+            baseState: loaded.baseState,
+            record: loaded.record,
+            resumingUnknown: true,
+          });
+          const unknownAttempt = loaded.record.unknownAttempt;
+          setSaveView({
+            state: 'unknown',
+            attempt: unknownAttempt,
+            message: '已恢复结果不明的保存上下文；正在先核验 trusted current。',
+          });
+          queueMicrotask(() => {
+            if (recoveryEpoch.current === epoch) {
+              resumeUnknownReconciliation(unknownAttempt);
+            }
+          });
+          return;
+        }
+        setRecoveryView({
+          state: 'offer',
+          baseState: loaded.baseState,
+          record: loaded.record,
+        });
+        return;
+      }
+      cachedRecovery.current = null;
+      if (loaded.state === 'invalid') {
+        setRecoveryView({
+          state: 'invalid',
+          reason: loaded.reason,
+          ...(loaded.exportCanonical === undefined
+            ? {}
+            : { exportCanonical: loaded.exportCanonical }),
+        });
+      } else if (loaded.state === 'unavailable') {
+        setRecoveryView({ state: 'unavailable', operation: loaded.operation });
+      } else {
+        setRecoveryView({ state: 'none' });
+      }
+    });
+    return () => {
+      if (recoveryEpoch.current === epoch) recoveryEpoch.current += 1;
+    };
+  }, [incomingBaselineKey, recoveryNow, recoveryStorage]);
+
   const runMutation = async (
     message: string,
     operation: (signal: AbortSignal) => Promise<TemplateSaveResult>,
@@ -382,6 +716,7 @@ function StructuredShell({
     setSaveView({ state: 'pending', message });
     let result: TemplateSaveResult;
     try {
+      await persistRecoveryNow(session);
       result = await operation(controller.signal);
     } catch {
       result = {
@@ -398,9 +733,30 @@ function StructuredShell({
   const save = () => {
     const transport = saveTransport;
     if (!transport) return;
+    if (recoveryView.state === 'restored') {
+      const overwrite = recoveryOverwriteOffer(
+        session,
+        recoveryView.record,
+        recoveryView.baseState,
+      );
+      if (overwrite) {
+        setSaveView({
+          state: 'conflict',
+          offer: overwrite,
+          message: `本地恢复草稿基于 revision ${recoveryView.record.baseRevision}；`
+            + `trusted current 已是 revision ${session.baseline.revision}，保存前需要显式确认覆盖。`,
+        });
+        return;
+      }
+    }
     void runMutation(
       '保存请求进行中',
-      (signal) => saveTemplateWorkingCopy(session, transport, signal),
+      (signal) => saveTemplateWorkingCopy(
+        session,
+        transport,
+        signal,
+        (attempt) => persistRecoveryNow(session, attempt),
+      ),
     );
   };
   const confirmOverwrite = (offer: TemplateConflictOffer) => {
@@ -408,7 +764,13 @@ function StructuredShell({
     if (!transport) return;
     void runMutation(
       '正在重读 current 并提交覆盖',
-      (signal) => confirmTemplateOverwrite(session, offer, transport, signal),
+      (signal) => confirmTemplateOverwrite(
+        session,
+        offer,
+        transport,
+        signal,
+        (attempt) => persistRecoveryNow(session, attempt),
+      ),
     );
   };
   const confirmInvalidSave = (offer: TemplateInvalidSaveOffer) => {
@@ -416,7 +778,13 @@ function StructuredShell({
     if (!transport) return;
     void runMutation(
       '正在确认并保存 INVALID revision',
-      (signal) => confirmTemplateInvalidSave(session, offer, transport, signal),
+      (signal) => confirmTemplateInvalidSave(
+        session,
+        offer,
+        transport,
+        signal,
+        (attempt) => persistRecoveryNow(session, attempt),
+      ),
     );
   };
   const retryUnknownSave = (attempt: TemplateUnknownSaveAttempt) => {
@@ -424,7 +792,13 @@ function StructuredShell({
     if (!transport) return;
     void runMutation(
       '正在显式重试原保存',
-      (signal) => retryTemplateUnknownSave(session, attempt, transport, signal),
+      (signal) => retryTemplateUnknownSave(
+        session,
+        attempt,
+        transport,
+        signal,
+        (prepared) => persistRecoveryNow(session, prepared),
+      ),
       true,
     );
   };
@@ -494,6 +868,16 @@ function StructuredShell({
               {dirty ? '本地草稿已保留' : 'Baseline 完整性已核验'}
             </span>
           </div>
+          <TemplateRecoveryPanel
+            view={recoveryView}
+            persistence={recoveryPersistence}
+            currentRevision={session.baseline.revision}
+            currentCanonical={session.workingCopy.canonicalDesignDsl}
+            onRestore={restoreRecoveryOffer}
+            onDiscardOffer={discardRecoveryOffer}
+            onDiscardRestored={discardRestoredRecovery}
+            onExport={exportLocalRecoveryDraft}
+          />
           {saveView.state === 'invalid-save-confirmation' ? (
             <InvalidSaveConfirmationPanel
               view={saveView}
@@ -718,6 +1102,137 @@ function TemplateNameEditor({
       <div className={`te-preview-guard ${guard.state === 'eligible' ? 'is-eligible' : 'is-blocked'}`} role="status" aria-live="polite">
         <strong>权威预览条件</strong>
         <span>{guardMessage}</span>
+      </div>
+    </section>
+  );
+}
+
+function TemplateRecoveryPanel({
+  view,
+  persistence,
+  currentRevision,
+  currentCanonical,
+  onRestore,
+  onDiscardOffer,
+  onDiscardRestored,
+  onExport,
+}: {
+  view: StructuredRecoveryView;
+  persistence: RecoveryPersistenceView;
+  currentRevision: string;
+  currentCanonical: string;
+  onRestore: (record: TemplateRecoveryRecord, baseState: 'matching' | 'drifted') => void;
+  onDiscardOffer: () => void;
+  onDiscardRestored: () => void;
+  onExport: (canonical: string) => void;
+}) {
+  if (view.state === 'disabled' || view.state === 'none') {
+    return persistence.state === 'unavailable' ? (
+      <section className="te-recovery-status is-unavailable" role="alert">
+        <AlertTriangle aria-hidden="true" size={18} />
+        <div>
+          <strong>此设备上的 Local recovery 不可用</strong>
+          <span>浏览器未能{persistence.operation === 'clear' ? '清除' : '保存'}恢复记录；请导出 canonical 草稿。</span>
+          <button type="button" onClick={() => onExport(currentCanonical)}>导出当前 canonical 草稿</button>
+        </div>
+      </section>
+    ) : null;
+  }
+  if (view.state === 'loading') {
+    return (
+      <section className="te-recovery-status" role="status" aria-live="polite">
+        <LoaderCircle className="te-loading-icon" aria-hidden="true" size={18} />
+        <div>
+          <strong>正在检查此设备的本地恢复记录</strong>
+          <span>记录通过完整性与 7 天期限校验前不会装入编辑器。</span>
+        </div>
+      </section>
+    );
+  }
+  if (view.state === 'unavailable') {
+    return (
+      <section className="te-recovery-status is-unavailable" role="alert">
+        <AlertTriangle aria-hidden="true" size={18} />
+        <div>
+          <strong>无法访问此设备的 Local recovery</strong>
+          <span>浏览器存储不可用；当前会话仍可编辑，但异常关闭恢复不受保证。</span>
+        </div>
+      </section>
+    );
+  }
+  if (view.state === 'invalid') {
+    return (
+      <section className="te-recovery-status is-invalid" role="alert">
+        <AlertTriangle aria-hidden="true" size={18} />
+        <div>
+          <h2>本地恢复记录不可验证</h2>
+          <span>记录未装入 Structured Editor（{view.reason}）。</span>
+          <div className="te-recovery-actions">
+            {view.exportCanonical ? (
+              <button type="button" onClick={() => onExport(view.exportCanonical!)}>
+                导出未验证的本地草稿
+              </button>
+            ) : null}
+            <button type="button" className="is-secondary" onClick={onDiscardOffer}>
+              清除此恢复记录
+            </button>
+          </div>
+        </div>
+      </section>
+    );
+  }
+  if (view.state === 'offer') {
+    const drifted = view.baseState === 'drifted';
+    return (
+      <section className={`te-recovery-status${drifted ? ' is-drifted' : ''}`} role="alert">
+        <RefreshCw aria-hidden="true" size={18} />
+        <div>
+          <h2>发现此设备上的本地恢复草稿</h2>
+          <span>
+            {drifted
+              ? `本地草稿基于 revision ${view.record.baseRevision}；trusted current 为 revision ${currentRevision}。恢复后保存仍需显式确认覆盖。`
+              : `本地草稿与 trusted current revision ${currentRevision} 基线一致；不会自动载入或提交。`}
+          </span>
+          <small>更新于 {view.record.updatedAt} · 当前设备 best-effort</small>
+          <div className="te-recovery-actions">
+            <button
+              type="button"
+              onClick={() => onRestore(view.record, view.baseState)}
+            >
+              {drifted ? '确认恢复旧基线草稿' : '恢复本地草稿'}
+            </button>
+            <button type="button" className="is-secondary" onClick={() => onExport(view.record.draftCanonical)}>
+              导出本地恢复草稿
+            </button>
+            <button type="button" className="is-secondary" onClick={onDiscardOffer}>
+              放弃本地恢复草稿
+            </button>
+          </div>
+        </div>
+      </section>
+    );
+  }
+  return (
+    <section className="te-recovery-status is-restored" role="status" aria-live="polite">
+      <CheckCircle2 aria-hidden="true" size={18} />
+      <div>
+        <strong>{view.resumingUnknown
+          ? '已恢复结果不明的保存上下文'
+          : '已恢复此设备上的本地草稿'}</strong>
+        <span>{view.resumingUnknown
+          ? '先只读核验 trusted current；不会自动重发保存。'
+          : '恢复没有写入服务器；可继续编辑、导出或明确放弃。'}</span>
+        {!view.resumingUnknown ? (
+          <div className="te-recovery-actions">
+            <button type="button" onClick={() => onExport(currentCanonical)}>导出已恢复草稿</button>
+            <button type="button" className="is-secondary" onClick={onDiscardRestored}>
+              放弃已恢复草稿
+            </button>
+          </div>
+        ) : null}
+        {persistence.state === 'unavailable' ? (
+          <small>浏览器未能更新 Local recovery；请先导出草稿。</small>
+        ) : null}
       </div>
     </section>
   );
@@ -1292,8 +1807,12 @@ function openingErrorMessage(error: unknown): string {
 }
 
 function exportReconciliationDraft(attempt: TemplateUnknownSaveAttempt) {
+  exportLocalRecoveryDraft(attempt.draftCanonical);
+}
+
+function exportLocalRecoveryDraft(canonical: string) {
   const url = URL.createObjectURL(new Blob(
-    [attempt.draftCanonical],
+    [canonical],
     { type: 'application/vnd.renderweave.design+json;charset=utf-8' },
   ));
   const anchor = document.createElement('a');

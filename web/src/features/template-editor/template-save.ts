@@ -76,6 +76,10 @@ export interface TemplateUnknownSaveAttempt {
   };
 }
 
+export type TemplateSaveAttemptObserver = (
+  attempt: TemplateUnknownSaveAttempt,
+) => void | Promise<void>;
+
 export type TemplateSaveResult =
   | { state: 'saved'; session: StructuredEditorSession }
   | { state: 'conflict'; offer: TemplateConflictOffer; message: string }
@@ -120,6 +124,7 @@ export async function saveTemplateWorkingCopy(
   session: StructuredEditorSession,
   transport: TemplateSaveTransport,
   signal?: AbortSignal,
+  onAttemptPrepared?: TemplateSaveAttemptObserver,
 ): Promise<TemplateSaveResult> {
   if (!isCanonicalDirty(session)) {
     return rejected('TEMPLATE_EDITOR_CLEAN', 'Canonical current 没有本地变化，无需保存。');
@@ -142,6 +147,7 @@ export async function saveTemplateWorkingCopy(
       '无法在写入前冻结可核验的保存上下文；本次写入未发出。',
     );
   }
+  await observePreparedAttempt(onAttemptPrepared, attempt);
 
   let response: TemplateSaveHttpResponse;
   try {
@@ -162,6 +168,7 @@ export async function confirmTemplateOverwrite(
   offer: TemplateConflictOffer,
   transport: TemplateSaveTransport,
   signal?: AbortSignal,
+  onAttemptPrepared?: TemplateSaveAttemptObserver,
 ): Promise<TemplateSaveResult> {
   if (!offerMatchesSession(offer, session)) {
     return {
@@ -225,6 +232,7 @@ export async function confirmTemplateOverwrite(
       '无法在写入前冻结可核验的覆盖上下文；覆盖写入未发出。',
     );
   }
+  await observePreparedAttempt(onAttemptPrepared, attempt);
 
   let response: TemplateSaveHttpResponse;
   try {
@@ -245,6 +253,7 @@ export async function confirmTemplateInvalidSave(
   offer: TemplateInvalidSaveOffer,
   transport: TemplateSaveTransport,
   signal?: AbortSignal,
+  onAttemptPrepared?: TemplateSaveAttemptObserver,
 ): Promise<TemplateSaveResult> {
   if (!invalidSaveOfferMatchesSession(offer, session)) {
     return {
@@ -285,6 +294,7 @@ export async function confirmTemplateInvalidSave(
       message: '本地草稿或 proposed contentHash 已变化；旧 INVALID 确认已失效。',
     };
   }
+  await observePreparedAttempt(onAttemptPrepared, attempt);
 
   let response: TemplateSaveHttpResponse;
   try {
@@ -306,6 +316,7 @@ export async function retryTemplateUnknownSave(
   attempt: TemplateUnknownSaveAttempt,
   transport: TemplateSaveTransport,
   signal?: AbortSignal,
+  onAttemptPrepared?: TemplateSaveAttemptObserver,
 ): Promise<TemplateSaveResult> {
   if (!(await attemptMatchesSession(attempt, session))) {
     return {
@@ -321,6 +332,7 @@ export async function retryTemplateUnknownSave(
       message: 'INVALID 保存确认已过期；不能重放旧 confirmation。',
     };
   }
+  await observePreparedAttempt(onAttemptPrepared, attempt);
 
   let response: TemplateSaveHttpResponse;
   try {
@@ -659,6 +671,19 @@ function currentReadIsRetryable(error: unknown): boolean {
 
 function rejected(code: string, message: string): TemplateSaveResult {
   return { state: 'rejected', code, message };
+}
+
+async function observePreparedAttempt(
+  observer: TemplateSaveAttemptObserver | undefined,
+  attempt: TemplateUnknownSaveAttempt,
+): Promise<void> {
+  if (!observer) return;
+  try {
+    await observer(attempt);
+  } catch {
+    // Local recovery is best-effort; an unavailable browser store must not
+    // reinterpret or suppress the author's explicit server save.
+  }
 }
 
 function unknownMutation(attempt: TemplateUnknownSaveAttempt): TemplateSaveResult {

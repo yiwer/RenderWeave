@@ -18,9 +18,11 @@
   Editor E4a 当前依赖面 bounded problems、invalid-save confirmation、snapshot fence 与 hard-error 零写均已完成；
   TV1-T31=`resolved/automated_verified`：Editor E4b StaticSchema field-path/loop lexical context 与 child PUBLIC fill
   semantic dependency validator 已完成；TV1-T32=`resolved/automated_verified`：Editor E5 outcome-unknown Save
-  reconciliation、显式 exact retry、锁纪律与 bare draft export 已完成，E6–E9 仍按真实依赖另票登记；
+  reconciliation、显式 exact retry、锁纪律与 bare draft export 已完成；
   TV1-T33=`resolved/automated_verified`：资源无关 definite Stack/STACK child 的非 water-fill binary64 layout
-  子闭包已完成，HUG/main-axis FILL/Grid/resource/world scene/raster/RESULT 仍未实现
+  子闭包已完成；TV1-T34=`resolved/automated_verified`：ContentBox floor-zero 与 FIXED-track definite Grid 已完成；
+  TV1-T35=`resolved/automated_verified`：Editor E7 versioned Local recovery、显式恢复/导出/放弃、漂移确认与
+  outcome-unknown 跨刷新只读 reconciliation 已完成；E6 仍受真实 Renderer output/public preview seam 阻塞
 - 日期：2026-08-20
 - Approved delta：[`specs/changes/20260817-template-v1-implementation-authority.md`](../specs/changes/20260817-template-v1-implementation-authority.md)
 - Frozen checkpoint：`0b485f4a13de9d754a81d07f464730776e13c14b`
@@ -79,12 +81,14 @@ binding: generic + project-local tools/run-gate.ps1 + Wayfinder markdown tracker
 | TV1-P5d Layout static preflight | 25 | exact RenderDocument 上的 size/cycle/Stack/Grid/Text/QR 静态约束 deep kernel | Rust/Python exact-vector A1/A2 + daemon defensive admission；无 measure/arrange/Profile/RESULT |
 | TV1-P5e Definite local boxes | 26 | Canvas→Frame/无资源叶子的 FIXED/FILL + ABSOLUTE binary64 local LayoutBox/ContentBox | Rust/Python exact-bit A1/A2；unsupported 不外泄；无 HUG/Stack/Grid/resource/world scene/RESULT |
 | TV1-P5f Definite Stack boxes | 33 | definite Stack + STACK child 的 margin/gap/justify/cross-axis arrange | Rust/Python exact-bit A1/A2；main-axis FILL/HUG fail closed；无 scene/resource/RESULT |
+| TV1-P5g Definite FIXED Grid boxes | 34 | ContentBox floor-zero + FIXED-track Grid/GRID child arrange | Rust/Python exact-bit A1/A2；AUTO/FRACTION/HUG fail closed；无 scene/resource/RESULT |
 | TV1-P6a Editor E1 | 27 | trusted canonical current baseline + 显式 readiness recheck + 三模式 Canvas Focus shell | Java/Web/OpenAPI A1；组件未发布，禁止 save/preview/recovery 占位与 READY 声明 |
 | TV1-P6b Editor E2 | 28 | canonical working copy + 结构化本地编辑/undo/redo + preview generation/eligibility guard | Node 24 Web A1；无 API/route/save/preview action，baseline immutable |
 | TV1-P6c Editor E3 | 29 | lossless save + conflict overwrite offer/confirm/reconfirm + conservative unknown lock | Node 24 Web A1；复用既有 API；无 E4–E9/route/reconciliation |
 | TV1-P6d Editor E4a | 30 | T20 AssetRef/TemplateRef bounded dependency problems + invalid-save confirmation + hard zero-write | Java/PostgreSQL/OpenAPI/Node 24 Web A1；完整 field-path/child-fill validator 与 E5–E9 另切 |
 | TV1-P6e Editor E4b | 31 | StaticSchema field-path/type/presence、loop lexical context、TemplateUse exact Schema 与 PUBLIC fill validator | Java/Schema/PostgreSQL A1；复用 0.15.0 generic problem/confirmation，无 migration/API/route；E5–E9 另切 |
 | TV1-P6f Editor E5 | 32 | outcome-unknown attempt + trusted-current 五分类 reconciliation + exact explicit retry/lock/export | Node 24 Web A1；复用 GET/PUT/410，无 Java/API/migration/route；E6–E9 另切 |
+| TV1-P6g Editor E7 | 35 | versioned per-Template Local recovery + 7-day lifecycle + explicit restore/export/discard + cross-refresh reconciliation | Node 24 Web A1；浏览器 best-effort，不同步/不自动提交；无 Java/API/migration/route |
 | TV1-P6+ Product completion | 33 后按真实依赖另切票 | 完整 Renderer layout/resource/raster/JPEG/Engine output、公开产品面、Editor E6–E9 与 formal registry records | 逐纵切 gate + product target/executor + J1/A3/物理 Linux 认证；不预建未知下游票 |
 
 ## 4. 当前 ticket DAG
@@ -147,6 +151,7 @@ flowchart LR
   T23 --> T26[26 Definite ABSOLUTE boxes]
   T25 --> T26
   T26 --> T33[33 Definite Stack boxes]
+  T33 --> T34[34 Definite FIXED Grid boxes]
   T06 --> T27[27 Editor E1 canonical open]
   T09 --> T27
   T20 --> T27
@@ -168,6 +173,11 @@ flowchart LR
   T29 --> T32
   T30 --> T32
   T31 --> T32
+  T09 --> T35[35 Editor E7 Local recovery]
+  T27 --> T35
+  T28 --> T35
+  T29 --> T35
+  T32 --> T35
 ```
 
 | Ticket | 类型 | 状态 | Blocked by | 本票退出事实 |
@@ -208,6 +218,8 @@ flowchart LR
 | 31 | task | `resolved` / `automated_verified` | 07, 15, 17, 19, 20, 30 | StaticSchema field-path/type/presence、loop lexical context 与 TemplateUse exact Schema/PUBLIC fill 语义依赖校验；复用 T30 confirmation/fence，无 API/migration/route |
 | 32 | task | `resolved` / `automated_verified` | 09, 29, 30, 31 | outcome-unknown attempt + trusted-current adopted/retryable/conflict/deleted/fail-closed；Web-only，无 API/migration/route |
 | 33 | task | `resolved` / `automated_verified` | 23, 25, 26 | definite Stack 非 water-fill arrange；Rust/Python 31/31、97 checks；HUG/main-axis FILL 与 scene/raster/RESULT 保持 fail closed |
+| 34 | task | `resolved` / `automated_verified` | 23, 25, 26, 33 | ContentBox floor-zero + FIXED-track definite Grid；Rust/Python 34/34、105 checks；AUTO/FRACTION/HUG fail closed |
+| 35 | task | `claimed` / `in_progress` | 09, 27, 28, 29, 32 | Web-only Local recovery 生命周期与 E5 unknown 跨刷新 reconciliation；无 route/API/migration |
 
 每次只 claim 一个 unblocked ticket；一票 resolved 后才由其 `Blocked by` 关系产生下一 frontier。未知实现切片留在
 map 的 `Not yet specified`，不为排满计划提前发明接口、migration 或 Profile identity。
@@ -800,3 +812,31 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
 - 保证上限：Profile 仍 NOT_REGISTERED、certification NOT_CERTIFIED、world scene/raster ABSENT、daemon output
   UNWIRED；无 Java/OpenAPI/migration/Web/route 差异，不证明 AUTO/FRACTION/HUG、完整 Layout Profile、resource/
   scene/pixel、A3、新 J1 或 READY。Provider/API Key/真实数据/付费调用均未发生，未 push/tag/PR。
+
+## 34. TV1-T35 执行卡
+
+- 决策：E6 因真实 Renderer output/public preview seam 缺位继续阻塞；沿独立安全 frontier 实现 E7。新增 Web-owned
+  versioned Local recovery deep module，以当前设备每 Template 一份的 best-effort 记录承载 exact canonical draft、
+  base identity、最小 UI 状态、7 天生命周期与可选 E5 unknown attempt。
+- 允许影响：T35 tracker/plan/NOTES/log、`web/src/features/template-editor` recovery/session/shell/tests/CSS；不修改
+  Java、OpenAPI、generated SDK、migration、API version、产品 route 或 renderer。
+- 禁止影响：服务端 autosave/Patch、跨设备同步、自动采用/提交/覆盖 recovery、RootDocument/customValues/preview image/
+  Asset bytes 持久化、E6 preview、E8 import/migration、E9 完整问题定位/a11y、formal records、physical Linux
+  certification/J1/A3/READY、provider/真实数据/API Key/付费调用。
+- 精确语义：envelope exact-key + domain hash/identity 校验；dirty change 500ms debounce + beforeunload best-effort；
+  clean save/explicit discard/expiry 清理；普通 recovery 只显式恢复/导出/放弃，base drift 先确认且首次保存走 overwrite；
+  unknown attempt 即时持久化，刷新后先恢复锁定 session并自动只读 reconciliation，绝不自动重发 PUT。
+- TDD：先写 pure/DOM RED，再实现 storage/session/UI；focused Node 24 → `web` → `fast` → 最终 `full`。最高
+  `automated_verified`；不 push/tag/PR。
+- 结果：新增单一 `template-recovery` deep module，并把普通 recovery offer、漂移具名确认、exact bare draft export、
+  显式放弃、500ms debounce、`beforeunload` best-effort 与 E5 attempt observer 接入 Canvas Focus shell/save；strict
+  parser 在装载前复核 exact keys、identity、canonical/hash、revision/timestamp 与 unknown attempt shape，装载后深冻结。
+- TDD/审查：focused pure + DOM 2 files/17 tests，完整 Editor 8 files/79 tests；正式 Node 24 Web 为 22 files/156
+  tests，SDK generation/typecheck/lint/production build 全绿。自审与 diff audit 确认 Java/OpenAPI/generated SDK/
+  migration/API version/route 零增量，也未持久化禁区数据。
+- 证据：Web `.sdlc/evidence/20260821-175915-web/`、Fast `.sdlc/evidence/20260821-175957-fast/` 与最终 full
+  17/17 全绿；最终 full exact-manifest 目录只在 commit handoff 报告，避免治理文件反写改变已验证输入。Server
+  Testcontainers 结束后的既存 Hikari/定时任务清理噪声未改变 Maven 0 failures 与 overall exit 0。
+- 生命周期：`resolved / automated_verified`。浏览器存储仍是 best-effort，不构成跨设备或持久性承诺；不证明 E6、
+  E8/E9、产品 route、Editor J1、Renderer/Profile/formal records/A3/READY。Provider attempts、API Key reads、open
+  authorization、paid external calls 均为 0，未发送真实数据，未 push/tag/PR。

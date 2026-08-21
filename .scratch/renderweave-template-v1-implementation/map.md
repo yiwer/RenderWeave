@@ -155,9 +155,10 @@ Label: wayfinder:map
   资源无关容器。Rust/Python `/2` shared replay 为 21 laid-out + 10 unsupported、31/31、97 checks；HUG/
   main-axis FILL、scene/raster/daemon success 继续 fail closed。
 - [实现资源无关的 FIXED-track definite Grid 布局内核](issues/34-definite-fixed-grid-layout-kernel.md) —
-  **in progress**；沿用同一 layout deep module，落实 ContentBox 逐项扣除 floor-zero，并只实现不依赖 residual
-  tolerance 或 intrinsic measurement 的 FIXED-track definite Grid、GRID child span/margin/FILL/alignment/递归。
-  AUTO/FRACTION/HUG、resource/world scene/raster/daemon success 继续 fail closed。
+  **resolved / automated_verified**；沿用同一 layout deep module，落实 ContentBox 逐项扣除 floor-zero，并实现不依赖
+  residual tolerance 或 intrinsic measurement 的 FIXED-track definite Grid、GRID child span/margin/FILL/alignment/
+  递归；Rust/Python `/3` shared replay 为 23 laid-out + 11 unsupported、34/34、105 checks。AUTO/FRACTION/HUG、
+  resource/world scene/raster/daemon success 继续 fail closed。
 - [实现 Editor E1 canonical open、显式 readiness 重检与三模式工作区骨架](issues/27-editor-e1-canonical-open.md) —
   **resolved / automated_verified**；GET 保持无副作用，新增授权且绑定 current identity 的显式 readiness
   recheck；Web lossless 校验 canonical baseline、丢弃漂移结果并形成 Canvas Focus 三模式 Product shell。
@@ -185,6 +186,11 @@ Label: wayfinder:map
   **resolved / automated_verified**；Web-only 复用现有 GET/PUT/410，写前冻结 attempt，unknown 后以 trusted current
   完成 adopted/retryable/conflict/deleted/fail-closed 五分类、显式 exact retry、mutation lock 与 bare draft export。
   Node 24 Web 20 files/139 tests 与分级门控全绿；不实现 E6–E9、跨刷新 recovery、API/migration/route 或 READY。
+- [实现 Editor E7 Local recovery 生命周期与跨刷新 Save reconciliation](issues/35-editor-e7-local-recovery.md) —
+  **resolved / automated_verified**；Web-owned deep module 已实现当前设备每 Template 一份的 versioned recovery
+  envelope、严格 canonical/hash/identity 与 7 天生命周期、显式恢复/导出/放弃、漂移后 overwrite 确认，以及
+  E5 unknown attempt 写前持久化与跨刷新只读 reconciliation。Node 24 Web 156 tests、最终 full 17/17；Web-only，
+  不开放产品 route，E6 仍因真实 Renderer output/public preview seam 缺位而阻塞。
 - [验证 Product Editor 状态、恢复与权威预览架构](issues/09-validate-product-editor-architecture.md) —
   throwaway 逻辑原型（`/prototype/editor-state-model`，不进产品 route）把冻结编辑器规则编码为确定性
   fixture 状态机：10 个引导走查场景 37/37 断言 + 自由操作冒烟 + 键盘焦点检查全部通过（Playwright A1，
@@ -261,7 +267,8 @@ Label: wayfinder:map
   definite Stack 的非 water-fill 子闭包；T34 已完成 FIXED-track definite Grid 与 ContentBox floor-zero；其余
   HUG/Stack main-axis FILL/Grid AUTO/FRACTION/resource/world scene/raster/JPEG/Engine 接线仍须另行登记，物理 Linux
   双 CPU-family 认证与 J1/A3 属届时另行授权的执行级门控。
-- Editor T27/E1、T28/E2、T29/E3、T30/E4a、T31/E4b 与 T32/E5 均已单独登记并完成；E6–E9 继续按真实依赖逐票登记，
+- Editor T27/E1、T28/E2、T29/E3、T30/E4a、T31/E4b、T32/E5 与 T35/E7 均已单独登记并完成；E6 仍被真实
+  Renderer output/public preview seam 阻塞；E8–E9 在 T35 verified commit 后继续按真实依赖逐票审计与登记，
   `/templates/:templateId` 在 save/preview/recovery 等闭环完成前仍不接入产品路由。
 - Product Editor 的 save/recovery/conflict/preview/browser automation 与 accessibility 实施票，要等状态架构
   prototype 结论后再登记——T09 已给出结论与 E1–E9 占位-free 纵切分解（open/baseline、本地编辑+undo+

@@ -1987,3 +1987,29 @@
 - T34 生命周期为 `resolved / automated_verified`；Profile 仍 NOT_REGISTERED、certification NOT_CERTIFIED、world
   scene/raster ABSENT、daemon output UNWIRED。无 Java/OpenAPI/migration/Web/route 差异；provider attempts、
   API Key reads、open authorization、paid external calls 均为 0，未发送真实数据，未 push/tag/PR。
+
+### Template v1 TV1-T35 Editor E7 Local recovery（resolved / automated_verified）
+
+- 2026-08-21：T34 最终 full `.sdlc/evidence/20260821-170534-full/` 17/17 通过并以 verified local commit
+  `f3afc14` 收口，worktree clean。DAG 审计确认 E6 仍缺真实 Renderer output/public preview seam；E7 只依赖已完成
+  的 canonical session、save/conflict 与 unknown reconciliation，因此由 Codex `/root` single-writer 登记并 claim
+  T35（blocked by T09/T27/T28/T29/T32，均 resolved）。
+- 本票 Web-only：实现当前设备每 Template 一份的 versioned Local recovery envelope、strict identity/hash/shape
+  校验、500ms bounded debounce、beforeunload best-effort、7 天过期、显式恢复/导出/放弃与 base drift overwrite
+  确认；E5 unknown attempt 立即持久化并在刷新后先恢复只读 reconciliation，绝不自动重发 PUT。
+- 不持久化 RootDocument、customValues、preview image、Asset bytes、RenderDocument/sidecar/lease；不修改 Java、
+  OpenAPI、generated SDK、migration、API version 或 route，不推进 E6/E8/E9、Renderer/Profile/formal records/READY，
+  不运行 provider/真实数据/API Key/付费外部调用，不 push/tag/PR。
+- 2026-08-21：实现完成。`template-recovery` deep module 对 per-Template versioned envelope 执行 exact-key、identity、
+  canonical/hash、revision/timestamp 与 unknown-attempt 完整性校验；普通记录只提供显式恢复/导出/放弃，漂移恢复后
+  首次保存复用具名 overwrite 确认，损坏/过期记录 fail closed。storage unavailable 在 UI 如实可见且不阻断显式保存。
+- Canvas Focus 已接入 500ms dirty debounce、`beforeunload` sync best-effort、clean/discard 清理与 recovery mutation
+  lock；E5 unknown attempt 在 PUT 前 best-effort 立即落盘，刷新后重建深冻结 session 并自动只读 reconciliation，
+  永不自动重发 PUT；观察到 remote DELETED 仍保留草稿导出。
+- RED→GREEN focused 2 files/17 tests，完整 Editor 8 files/79 tests；正式 Node 24 `web`
+  `.sdlc/evidence/20260821-175915-web/` 为 22 files/156 tests + SDK/typecheck/lint/build，`fast`
+  `.sdlc/evidence/20260821-175957-fast/` 与最终 `full` 17/17 全绿。最终 full 目录仅在 commit handoff 报告；其中
+  Testcontainers 关闭后的既存 Hikari/定时任务清理噪声不影响 Maven 0 failures 与 gate exit 0。
+- T35 生命周期为 `resolved / automated_verified`；Local recovery 仍是浏览器 best-effort，不承诺跨设备同步或永久
+  保存。E6/E8/E9、产品 route、Editor J1、Renderer/Profile/formal records/A3/READY 均未推进；provider attempts/
+  API Key reads/open authorization/paid external calls=0，未发送真实数据，未 push/tag/PR。
