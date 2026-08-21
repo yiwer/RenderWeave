@@ -1,5 +1,5 @@
 {
-  "vectorVersion": "renderweave-definite-layout-vectors/6",
+  "vectorVersion": "renderweave-definite-layout-vectors/7",
   "authorityContext": {
     "layoutProfile": "renderweave-layout/1.0",
     "documentContract": "renderweave-render-node-contract-v1/2",
@@ -9,7 +9,7 @@
   "boundary": {
     "profileAvailability": "NOT_REGISTERED",
     "certificationStatus": "NOT_CERTIFIED",
-    "layoutImplementation": "RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_SINGLE_MAIN_FILL_AND_FIXED_SINGLE_FRACTION_SINGLE_AUTO_GRID_BOX_KERNEL",
+    "layoutImplementation": "RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_SINGLE_MAIN_FILL_AND_FIXED_SINGLE_FRACTION_INDEPENDENT_MULTI_AUTO_GRID_BOX_KERNEL",
     "worldTransformImplementation": "ABSENT",
     "sceneImplementation": "ABSENT",
     "rasterImplementation": "ABSENT",
@@ -531,6 +531,31 @@
           {"occurrenceId": "rwocc_0000000000000002", "kind": "frame", "layoutBox": {"xBits": "4035000000000000", "yBits": "3ff0000000000000", "widthBits": "403e000000000000", "heightBits": "4028000000000000"}, "contentBox": {"xBits": "4035000000000000", "yBits": "3ff0000000000000", "widthBits": "403e000000000000", "heightBits": "4028000000000000"}}
         ]
       }
+    },
+    {
+      "id": "grid-independent-multiple-auto-nonfirst-signed-margin-contribution",
+      "baseSource": "layoutPreflight",
+      "baseCase": "grid",
+      "mutations": [
+        {"operation": "replace", "pointer": "/canvas/children/0/columns", "value": [{"type": "AUTO"}, {"type": "AUTO"}]},
+        {"operation": "replace", "pointer": "/canvas/children/0/columnGapPt", "value": 3},
+        {"operation": "replace", "pointer": "/canvas/children/0/rows", "value": [{"type": "AUTO"}, {"type": "AUTO"}]},
+        {"operation": "replace", "pointer": "/canvas/children/0/rowGapPt", "value": 4},
+        {"operation": "replace", "pointer": "/canvas/children/0/children/0/placement/column", "value": 1},
+        {"operation": "replace", "pointer": "/canvas/children/0/children/0/placement/row", "value": 1},
+        {"operation": "replace", "pointer": "/canvas/children/0/children/0/placement/heightPt", "value": 12},
+        {"operation": "replace", "pointer": "/canvas/children/0/children/0/placement/marginLeftPt", "value": 2},
+        {"operation": "replace", "pointer": "/canvas/children/0/children/0/placement/marginRightPt", "value": -1},
+        {"operation": "replace", "pointer": "/canvas/children/0/children/0/placement/marginTopPt", "value": -2},
+        {"operation": "replace", "pointer": "/canvas/children/0/children/0/placement/marginBottomPt", "value": 3}
+      ],
+      "expected": {
+        "entries": [
+          {"occurrenceId": "rwocc_0000000000000000", "kind": "canvas", "layoutBox": {"xBits": "0000000000000000", "yBits": "0000000000000000", "widthBits": "4059000000000000", "heightBits": "4059000000000000"}, "contentBox": {"xBits": "0000000000000000", "yBits": "0000000000000000", "widthBits": "4059000000000000", "heightBits": "4059000000000000"}},
+          {"occurrenceId": "rwocc_0000000000000001", "kind": "grid", "layoutBox": {"xBits": "0000000000000000", "yBits": "0000000000000000", "widthBits": "4049000000000000", "heightBits": "4049000000000000"}, "contentBox": {"xBits": "0000000000000000", "yBits": "0000000000000000", "widthBits": "4049000000000000", "heightBits": "4049000000000000"}},
+          {"occurrenceId": "rwocc_0000000000000002", "kind": "frame", "layoutBox": {"xBits": "4014000000000000", "yBits": "4000000000000000", "widthBits": "4024000000000000", "heightBits": "4028000000000000"}, "contentBox": {"xBits": "4014000000000000", "yBits": "4000000000000000", "widthBits": "4024000000000000", "heightBits": "4028000000000000"}}
+        ]
+      }
     }
   ],
   "unsupportedCases": [
@@ -576,6 +601,18 @@
       "mutations": [
         {"operation": "replace", "pointer": "/canvas/children/0/columns", "value": [{"type": "AUTO"}, {"type": "AUTO"}]},
         {"operation": "replace", "pointer": "/canvas/children/0/rows", "value": [{"type": "FRACTION", "weight": 1}, {"type": "FRACTION", "weight": 2}]}
+      ],
+      "expected": {"feature": "GRID_FRACTION_TRACK", "occurrenceId": "rwocc_0000000000000001"}
+    },
+    {
+      "id": "grid-multiple-auto-span-remains-unsupported",
+      "baseSource": "layoutPreflight",
+      "baseCase": "grid",
+      "mutations": [
+        {"operation": "replace", "pointer": "/canvas/children/0/columns", "value": [{"type": "AUTO"}, {"type": "AUTO"}]},
+        {"operation": "replace", "pointer": "/canvas/children/0/columnGapPt", "value": 2},
+        {"operation": "replace", "pointer": "/canvas/children/0/children/0/placement/columnSpan", "value": 2},
+        {"operation": "replace", "pointer": "/canvas/children/0/children/0/placement/widthPt", "value": 30}
       ],
       "expected": {"feature": "GRID_AUTO_TRACK", "occurrenceId": "rwocc_0000000000000001"}
     },

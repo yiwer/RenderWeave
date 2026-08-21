@@ -606,11 +606,9 @@ def definite_grid_axis(
             )
     # The Profile solves FIXED, then AUTO, then FRACTION. The complete authored
     # scan above keeps that stage order independent of authored track order.
-    if len(auto_indices) > 1:
-        raise Unsupported("GRID_AUTO_TRACK", current)
     if auto_indices:
-        apply_single_grid_auto(
-            children, axis, auto_indices[0], sizes, gap, current
+        apply_independent_grid_auto(
+            children, axis, auto_indices, sizes, gap, current
         )
     if len(fraction_indices) > 1:
         raise Unsupported("GRID_FRACTION_TRACK", current)
@@ -629,10 +627,10 @@ def definite_grid_axis(
     return DefiniteGridAxis(origins, sizes, gap)
 
 
-def apply_single_grid_auto(
+def apply_independent_grid_auto(
     children: list[Any],
     axis: str,
-    auto_index: int,
+    auto_indices: list[int],
     sizes: list[float],
     gap: float,
     grid_occurrence: str,
@@ -654,7 +652,7 @@ def apply_single_grid_auto(
     else:
         raise VerificationFailure(f"invalid Grid axis: {axis}")
 
-    constraints: list[tuple[int, int, int, float]] = []
+    constraints: list[tuple[int, int, int, int, float]] = []
     for materialized_order, raw_child in enumerate(children):
         child = object_value(raw_child, f"{grid_occurrence} child")
         child_occurrence = occurrence(child)
@@ -671,8 +669,14 @@ def apply_single_grid_auto(
             placement.get(span_member),
             f"{child_occurrence} placement.{span_member}",
         )
-        if auto_index < start or auto_index >= start + span:
+        covered_auto_indices = [
+            index for index in auto_indices if start <= index < start + span
+        ]
+        if not covered_auto_indices:
             continue
+        if len(covered_auto_indices) > 1:
+            raise Unsupported("GRID_AUTO_TRACK", grid_occurrence)
+        auto_index = covered_auto_indices[0]
 
         mode = text(
             placement.get(mode_member),
@@ -708,12 +712,13 @@ def apply_single_grid_auto(
                 span,
                 start,
                 materialized_order,
+                auto_index,
                 contribution if contribution > 0.0 else 0.0,
             )
         )
 
     constraints.sort(key=lambda constraint: constraint[:3])
-    for span, start, _materialized_order, contribution in constraints:
+    for span, start, _materialized_order, auto_index, contribution in constraints:
         occupied = grid_span_extent(sizes, gap, start, span)
         deficit = contribution - occupied
         if deficit > 0.0:
@@ -1218,7 +1223,7 @@ def verify(
         "vector manifest",
     )
     verifier.require(
-        vectors["vectorVersion"] == "renderweave-definite-layout-vectors/6",
+        vectors["vectorVersion"] == "renderweave-definite-layout-vectors/7",
         "vector identity drifted",
     )
     authority = exact_members(
@@ -1271,7 +1276,7 @@ def verify(
     expected_boundary = {
         "profileAvailability": "NOT_REGISTERED",
         "certificationStatus": "NOT_CERTIFIED",
-        "layoutImplementation": "RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_SINGLE_MAIN_FILL_AND_FIXED_SINGLE_FRACTION_SINGLE_AUTO_GRID_BOX_KERNEL",
+        "layoutImplementation": "RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_SINGLE_MAIN_FILL_AND_FIXED_SINGLE_FRACTION_INDEPENDENT_MULTI_AUTO_GRID_BOX_KERNEL",
         "worldTransformImplementation": "ABSENT",
         "sceneImplementation": "ABSENT",
         "rasterImplementation": "ABSENT",
@@ -1309,9 +1314,9 @@ def verify(
         == "renderweave-layout-preflight-fixtures/1",
         "layout preflight fixture identity drifted",
     )
-    verifier.require(len(vectors["laidOutCases"]) == 33, "laid-out case count drifted")
+    verifier.require(len(vectors["laidOutCases"]) == 34, "laid-out case count drifted")
     verifier.require(
-        len(vectors["unsupportedCases"]) == 12,
+        len(vectors["unsupportedCases"]) == 13,
         "unsupported case count drifted",
     )
 
@@ -1359,7 +1364,7 @@ def verify(
             raise VerificationFailure(f"{case_id}: unsupported case produced a layout")
 
     return {
-        "verifier": "renderweave-definite-layout-python-independent/6",
+        "verifier": "renderweave-definite-layout-python-independent/7",
         "result": "PASS",
         "assurance": "A2",
         "laidOutCases": len(vectors["laidOutCases"]),

@@ -1,6 +1,15 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-22 **Template v1 implementation TV1-T41 已 `resolved/automated_verified`**：同一 Rust layout deep
+  module 已支持 definite Grid 每轴多 AUTO，但每条 FIXED-child span constraint 至多覆盖一个 AUTO；严格保持
+  FIXED → AUTO → FRACTION、columns-first、signed margins 与全局
+  `(spanLength,startIndex,materializedOrder)`。shared vector/Python independent verifier 升级 `/7`，fixture `/3`
+  不变；Rust/Python 34 laid-out + 13 unsupported、47/47、142 checks，focused fmt/clippy/workspace test 与
+  `render` `.sdlc/evidence/20260822-001001-render/`、`server` `.sdlc/evidence/20260822-001028-server/`、治理前
+  `fast` `.sdlc/evidence/20260822-002942-fast/` 均绿。跨多个 AUTO 的平均 deficit、HUG/resource、multiple
+  FRACTION、scene/raster/daemon output/Profile/E6 继续 fail closed；provider attempts/API Key reads/paid calls
+  均保持 0，不 push/tag/PR。
 - 2026-08-21 **Template v1 implementation TV1-T40 已 `resolved/automated_verified`**：同一 Rust layout deep
   module 已实现 definite Grid 每轴 singleton AUTO 的资源无关 FIXED-child contribution；严格保持
   FIXED → AUTO → FRACTION、columns-first、signed margins、`(spanLength,startIndex,materializedOrder)` 与唯一

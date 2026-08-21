@@ -211,6 +211,10 @@ Label: wayfinder:map
   与唯一 AUTO deficit 精确求解，并与 singleton FRACTION 按 FIXED → AUTO → FRACTION 组合。Rust/Python `/6`
   replay 为 33 laid-out + 12 unsupported、45/45、137 checks；一般 intrinsic/multiple AUTO/multiple FRACTION
   继续 fail closed。
+- [实现 definite Grid 多 AUTO 的独立 constraint 子闭包](issues/41-definite-independent-multi-auto-grid-layout.md) —
+  **resolved / automated_verified**；每轴允许多 AUTO，但每条资源无关 FIXED-child span constraint 至多覆盖一个
+  AUTO；Rust/Python `/7` replay 为 34 laid-out + 13 unsupported、47/47、142 checks。跨多个 AUTO 的平均
+  deficit、HUG/intrinsic、multiple FRACTION、resource/scene/RESULT 继续 fail closed。
 - [验证 Product Editor 状态、恢复与权威预览架构](issues/09-validate-product-editor-architecture.md) —
   throwaway 逻辑原型（`/prototype/editor-state-model`，不进产品 route）把冻结编辑器规则编码为确定性
   fixture 状态机：10 个引导走查场景 37/37 断言 + 自由操作冒烟 + 键盘焦点检查全部通过（Playwright A1，
@@ -270,8 +274,10 @@ Label: wayfinder:map
   resolve（automated_verified）：FIXED-track Grid 与 ContentBox floor-zero 子闭包已完成；T38 现也已 resolve
   （automated_verified）：singleton Stack main-axis FILL 的无 tolerance 退化子闭包已完成；T39 现也已 resolve
   （automated_verified）：definite Grid 每轴至多一个 FRACTION 的无 tolerance 退化子闭包已完成；T40 现也已
-  resolve（automated_verified）：singleton AUTO 的资源无关 FIXED-child contribution 子闭包已完成；HUG/
-  multiple Stack main-axis FILL/multiple AUTO/multiple FRACTION、资源、world scene 与 daemon output 仍未提前实现。
+  resolve（automated_verified）：singleton AUTO 的资源无关 FIXED-child contribution 子闭包已完成；T41 现也已
+  resolve（automated_verified）：多 AUTO 中每条 span 至多覆盖一个 AUTO 的独立 constraint 子闭包已完成；HUG/
+  multiple Stack main-axis FILL/
+  跨多个 AUTO 的平均 deficit/multiple FRACTION、资源、world scene 与 daemon output 仍未提前实现。
 - Expression/value binding、closure、capability、nested Template、layout lowering 与正式 RenderDocument 的
   实现切片由 T21 物化首个 Rendering 纵切（`TemplateClosureAuthority`/`Evaluator` stage 1–8/seal 与
   RenderNodeContract/向量语料 Java primary，已 resolve）；仍待后续票：Engine 执行（Rust daemon +
@@ -288,14 +294,15 @@ Label: wayfinder:map
   statically-decidable layout preflight，T26 也已完成 definite ABSOLUTE local box 子闭包；T33 已完成
   definite Stack 的非 water-fill 子闭包；T34 已完成 FIXED-track definite Grid 与 ContentBox floor-zero；T38 已完成
   singleton Stack main-axis FILL；T39 已完成 definite Grid 每轴 singleton FRACTION；T40 也已完成
-  singleton AUTO 的资源无关 FIXED-child contribution；其余 HUG/multiple Stack main-axis FILL/multiple AUTO/
-  multiple FRACTION/resource/world scene/raster/JPEG/Engine 接线仍须另行登记，物理 Linux 双 CPU-family
+  singleton AUTO 的资源无关 FIXED-child contribution；T41 已完成 independent multi-AUTO constraints；其余
+  HUG/multiple Stack main-axis FILL/跨多个 AUTO 的平均 deficit/multiple FRACTION/resource/world scene/raster/
+  JPEG/Engine 接线仍须另行登记，物理 Linux 双 CPU-family
   认证与 J1/A3 属届时另行授权的执行级门控。
 - Editor T27/E1、T28/E2、T29/E3、T30/E4a、T31/E4b、T32/E5、T35/E7、T36/E8 与 T37/E9 均已单独登记并完成；
   E6 仍被真实 Renderer output/public preview seam 阻塞。T38 也已完成不依赖未冻结 residual tolerance 的 definite
   Stack singleton main-axis FILL 子闭包；T39 definite Grid 每轴 singleton FRACTION 子闭包也已完成；T40
-  singleton AUTO 固定贡献子闭包现也已完成，`/templates/:templateId` 在 save/preview/recovery 等闭环完成前
-  仍不接入产品路由。
+  singleton AUTO 固定贡献子闭包现也已完成，T41 independent multi-AUTO constraint 子闭包也已完成；
+  `/templates/:templateId` 在 save/preview/recovery 等闭环完成前仍不接入产品路由。
 - Product Editor 的 save/recovery/conflict/preview/browser automation 与 accessibility 实施票，要等状态架构
   prototype 结论后再登记——T09 已给出结论与 E1–E9 占位-free 纵切分解（open/baseline、本地编辑+undo+
   canonical dirty+preview guard、save+conflict overwrite、依赖二次确认、reconciliation、save-and-preview+

@@ -5,10 +5,11 @@
 //! Preflight returns bounded structural counts or one stable DFS problem. The definite kernel
 //! additionally computes local LayoutBox/ContentBox entries for resource-independent ABSOLUTE
 //! nodes, Stack children with at most one main-axis FILL, and Grid children whose definite axes
-//! contain FIXED tracks plus at most one resource-independent AUTO and one FRACTION track. It
-//! deliberately stops before resource preparation, HUG/multi-FILL Stack water filling, general
-//! Grid AUTO/multi-FRACTION solving, world transforms, shaping, paint, rasterization, and encoding,
-//! and it never exposes a partial layout on failure.
+//! contain FIXED tracks, at most one FRACTION track, and resource-independent AUTO constraints
+//! that each cover at most one AUTO track. It deliberately stops before resource preparation,
+//! HUG/multi-FILL Stack water filling, cross-AUTO deficit distribution, multi-FRACTION solving,
+//! world transforms, shaping, paint, rasterization, and encoding, and it never exposes a partial
+//! layout on failure.
 
 use renderweave_renderer_document::AdmittedRenderDocument;
 use serde_json::{Map, Number, Value};
@@ -480,6 +481,7 @@ struct GridAutoConstraint {
     start: usize,
     span: usize,
     materialized_order: usize,
+    auto_index: usize,
     contribution: f64,
 }
 
@@ -989,14 +991,8 @@ fn definite_grid_axis(
 
     // Track solving is staged by the frozen Profile: FIXED, then AUTO, then FRACTION.
     // The complete authored scan above makes that stage order independent of track order.
-    if auto_indices.len() > 1 {
-        return Err(DefiniteLayoutError::unsupported(
-            occurrence,
-            DefiniteLayoutUnsupported::GridAutoTrack,
-        ));
-    }
-    if let Some(auto_index) = auto_indices.first().copied() {
-        apply_single_grid_auto(children, axis, auto_index, &mut sizes, gap, occurrence)?;
+    if !auto_indices.is_empty() {
+        apply_independent_grid_auto(children, axis, &auto_indices, &mut sizes, gap, occurrence)?;
     }
     if fraction_indices.len() > 1 {
         return Err(DefiniteLayoutError::unsupported(
@@ -1027,10 +1023,10 @@ fn definite_grid_axis(
     })
 }
 
-fn apply_single_grid_auto(
+fn apply_independent_grid_auto(
     children: &[Value],
     axis: GridAxis,
-    auto_index: usize,
+    auto_indices: &[usize],
     sizes: &mut [f64],
     gap: f64,
     grid_occurrence: &str,
@@ -1059,8 +1055,18 @@ fn apply_single_grid_auto(
             child_occurrence,
             &format!("placement.{}", axis.span_member()),
         )?;
-        if auto_index < start || auto_index >= start + span {
+        let mut covered_auto_indices = auto_indices
+            .iter()
+            .copied()
+            .filter(|index| *index >= start && *index < start + span);
+        let Some(auto_index) = covered_auto_indices.next() else {
             continue;
+        };
+        if covered_auto_indices.next().is_some() {
+            return Err(DefiniteLayoutError::unsupported(
+                grid_occurrence,
+                DefiniteLayoutUnsupported::GridAutoTrack,
+            ));
         }
 
         let mode = size_mode(placement, axis.mode_member(), child_occurrence)?;
@@ -1100,6 +1106,7 @@ fn apply_single_grid_auto(
             start,
             span,
             materialized_order,
+            auto_index,
             contribution: if contribution > 0.0 {
                 contribution
             } else {
@@ -1119,7 +1126,7 @@ fn apply_single_grid_auto(
         let occupied = grid_span_extent(sizes, gap, constraint.start, constraint.span);
         let deficit = constraint.contribution - occupied;
         if deficit > 0.0 {
-            sizes[auto_index] += deficit;
+            sizes[constraint.auto_index] += deficit;
         }
     }
     Ok(())

@@ -14,6 +14,10 @@ fn replays_exact_binary64_definite_layout_vectors() {
     let fixtures: Value = serde_json::from_str(FIXTURES).unwrap();
     let vectors: Value = serde_json::from_str(VECTORS).unwrap();
     let layout_preflight_fixtures: Value = serde_json::from_str(LAYOUT_PREFLIGHT_FIXTURES).unwrap();
+    assert_eq!(
+        vectors["vectorVersion"],
+        "renderweave-definite-layout-vectors/7"
+    );
 
     for case in vectors["laidOutCases"].as_array().unwrap() {
         let document = case_document(case, &fixtures, &layout_preflight_fixtures);

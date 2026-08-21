@@ -29,7 +29,9 @@
   `resolved/automated_verified`：definite Stack singleton main-axis FILL 的无 tolerance 子闭包已完成；TV1-T39=
   `resolved/automated_verified`：definite Grid 每轴至多一个 FRACTION 的无 tolerance 退化子闭包已完成；
   TV1-T40=`resolved/automated_verified`：definite Grid 每轴 singleton AUTO 的资源无关 FIXED-child contribution
-  子闭包已完成；Rust/Python 45/45、137 checks，一般 intrinsic/multiple AUTO/FRACTION 继续 fail closed
+  子闭包已完成；Rust/Python 45/45、137 checks；TV1-T41=`resolved/automated_verified`：definite Grid 每轴多
+  AUTO、每条 span 至多覆盖一个 AUTO 的独立 constraint 子闭包已完成；Rust/Python 47/47、142 checks，跨
+  多个 AUTO 的平均 deficit、一般 intrinsic/multiple FRACTION 继续 fail closed
 - 日期：2026-08-20
 - Approved delta：[`specs/changes/20260817-template-v1-implementation-authority.md`](../specs/changes/20260817-template-v1-implementation-authority.md)
 - Frozen checkpoint：`0b485f4a13de9d754a81d07f464730776e13c14b`
@@ -92,6 +94,7 @@ binding: generic + project-local tools/run-gate.ps1 + Wayfinder markdown tracker
 | TV1-P5h Definite singleton Stack FILL | 38 | 每个 definite Stack 至多一个 main-axis FILL 的 exact allocation/min-max/justify | Rust/Python exact-bit A1/A2；multiple FILL/HUG/AUTO/FRACTION fail closed；无 scene/resource/RESULT |
 | TV1-P5i Definite singleton Grid FRACTION | 39 | 每个 definite Grid 轴至多一个 FRACTION 的 exact positive-remainder allocation | Rust/Python exact-bit A1/A2；AUTO/multiple FRACTION/HUG fail closed；无 scene/resource/RESULT |
 | TV1-P5j Definite singleton Grid AUTO | 40 | 每个 definite Grid 轴至多一个 AUTO 的 FIXED-child contribution 与 singleton-FRACTION 组合 | Rust/Python exact-bit A1/A2；intrinsic/multiple AUTO/FRACTION fail closed；无 scene/resource/RESULT |
+| TV1-P5k Definite independent multi-AUTO Grid | 41 | 每个 definite Grid 轴允许多 AUTO，但每条 FIXED-child span constraint 至多覆盖一个 AUTO | Rust/Python exact-bit A1/A2；跨多个 AUTO/intrinsic/multiple FRACTION fail closed；无 scene/resource/RESULT |
 | TV1-P6a Editor E1 | 27 | trusted canonical current baseline + 显式 readiness recheck + 三模式 Canvas Focus shell | Java/Web/OpenAPI A1；组件未发布，禁止 save/preview/recovery 占位与 READY 声明 |
 | TV1-P6b Editor E2 | 28 | canonical working copy + 结构化本地编辑/undo/redo + preview generation/eligibility guard | Node 24 Web A1；无 API/route/save/preview action，baseline immutable |
 | TV1-P6c Editor E3 | 29 | lossless save + conflict overwrite offer/confirm/reconfirm + conservative unknown lock | Node 24 Web A1；复用既有 API；无 E4–E9/route/reconciliation |
@@ -254,6 +257,7 @@ flowchart LR
 | 38 | task | `resolved` / `automated_verified` | 23, 25, 26, 33, 34 | definite Stack singleton main-axis FILL；Rust/Python 39/39、120 checks；multiple FILL/HUG/resource/scene/RESULT 保持 fail closed |
 | 39 | task | `resolved` / `automated_verified` | 23, 25, 26, 33, 34, 38 | definite Grid 每轴 singleton FRACTION；Rust/Python 42/42、128 checks；AUTO/multiple FRACTION/HUG/resource/scene/RESULT 保持 fail closed |
 | 40 | task | `resolved` / `automated_verified` | 23, 25, 26, 34, 39 | definite Grid 每轴 singleton AUTO 的 FIXED-child contribution；Rust/Python 45/45、137 checks；一般 intrinsic/multiple AUTO/FRACTION/resource/scene/RESULT 保持 fail closed |
+| 41 | task | `resolved` / `automated_verified` | 23, 25, 26, 34, 40 | definite Grid 多 AUTO、每条 span 至多覆盖一个 AUTO 的独立 FIXED-child constraint 子闭包；Rust/Python 47/47、142 checks；跨多个 AUTO/intrinsic/multiple FRACTION/resource/scene/RESULT 保持 fail closed |
 
 每次只 claim 一个 unblocked ticket；一票 resolved 后才由其 `Blocked by` 关系产生下一 frontier。未知实现切片留在
 map 的 `Not yet specified`，不为排满计划提前发明接口、migration 或 Profile identity。
@@ -1008,3 +1012,34 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
 - 生命周期：`resolved / automated_verified`；一般 intrinsic/HUG、multiple AUTO/FRACTION、multiple Stack FILL、
   resource/world scene/raster/JPEG/daemon RESULT/Profile/certification/E6 仍未实现，未推进 A3/J1/READY，未
   push/tag/PR。
+
+## 40. TV1-T41 执行卡
+
+- 决策：T40 verified commit 后复算原始 Ticket 10/16/19 与实施 DAG；Group transformed union、一般 HUG/
+  resource、multiple Stack FILL 与 multiple FRACTION 仍依赖尚未物化的 transform conformance、measurement 或
+  residual tolerance。多 AUTO 中若每条 FIXED-child span constraint 至多覆盖一个 AUTO，则无需跨 AUTO 平均或
+  tolerance，因此选为当前 single-writer frontier。
+- 允许影响：T41 tracker/plan/NOTES/log、layout crate/tests、definite vector、Python independent verifier、
+  `render` gate identity/assertions/evidence；既有 fixture bytes 未变时保持 fixture identity `/3`。
+- 禁止影响：跨多个 AUTO 的 deficit 平均、一般 intrinsic/HUG、multiple-FRACTION residual tolerance、multiple
+  Stack FILL、Group/compositionViewport、Text/Image resource path、resource fetch/decode/font shaping、world
+  scene/paint/raster/JPEG、daemon RESULT/success、Profile registration、Java/OpenAPI/migration/Web/Editor/产品
+  route、formal records、physical Linux certification/J1/A3/READY、provider/真实数据/API Key/付费调用。
+- 精确语义：每轴允许多 AUTO；每条 constraint 覆盖恰好一个 AUTO 时，按全局
+  `(spanLength,startIndex,materializedOrder)` 排序，以 FIXED size + signed margins 形成非负 contribution，扣除
+  span 内已结算 tracks/gaps 后让该 AUTO 接收正 deficit。覆盖多个 AUTO 继续 `GRID_AUTO_TRACK`；全部 AUTO
+  完成后才结算 singleton FRACTION，columns-first 与 authored origins 不变。
+- TDD：vector/verifier identity `/7` 先 RED，覆盖非首 AUTO contribution、空 AUTO、跨多 AUTO unsupported 与
+  columns-first stage progression；Rust/Python 同构但独立重放后运行 focused → `render` → `server`/`fast` →
+  最终 `full`。最高 `automated_verified`；不 push/tag/PR。
+- 实施：Rust deep module 与 Python independent mirror 均完成多 AUTO 独立 constraint 的全局稳定排序与目标轨
+  deficit 更新；vector/verifier `/7`、fixture `/3`，34 laid-out + 13 unsupported、47/47、142 checks。vector
+  SHA-256 为 `f1e02f5286fcad390b2c62a9e2899dfb9ac94668e9e1e73245217dfb8b3ccbfe`，fixture SHA-256 为
+  `a11475bcebad7e1c35cb0acd7018419d94afcb4b37d7f1df7346a055ad1df669`。
+- 证据：focused fmt/clippy/workspace test/Python A2/diff-check 全绿；`render`
+  `.sdlc/evidence/20260822-001001-render/`、`server` `.sdlc/evidence/20260822-001028-server/`、治理前 `fast`
+  `.sdlc/evidence/20260822-002942-fast/`。完整执行记录见 `plans/logs/TV1-T41.md`，治理后的最终 Fast/Full exact
+  目录仅在 commit handoff 报告。
+- 生命周期：`resolved / automated_verified`；跨多个 AUTO 的平均 deficit、一般 intrinsic/HUG、multiple
+  FRACTION、multiple Stack FILL、resource/world scene/raster/JPEG/daemon RESULT/Profile/certification/E6 仍未
+  实现，未推进 A3/J1/READY，未 push/tag/PR。
