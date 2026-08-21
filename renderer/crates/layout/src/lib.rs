@@ -313,6 +313,7 @@ enum SizeMode {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 enum NodeRole {
+    Group,
     Frame,
     Stack,
     Grid,
@@ -613,33 +614,34 @@ impl DefiniteLayouter {
         }
         let width_mode = size_mode(placement, "widthMode", occurrence)?;
         let height_mode = size_mode(placement, "heightMode", occurrence)?;
-        if width_mode == SizeMode::Hug || height_mode == SizeMode::Hug {
-            return Err(DefiniteLayoutError::unsupported(
-                occurrence,
-                DefiniteLayoutUnsupported::HugContent,
-            ));
-        }
-
         let authored_x = binary64_member(placement, "xPt", occurrence, "placement.xPt")?;
         let authored_y = binary64_member(placement, "yPt", occurrence, "placement.yPt")?;
-        let width = definite_axis_size(
-            placement,
-            width_mode,
-            parent_content.width,
-            authored_x,
-            "Width",
-            "rightInsetPt",
-            occurrence,
-        )?;
-        let height = definite_axis_size(
-            placement,
-            height_mode,
-            parent_content.height,
-            authored_y,
-            "Height",
-            "bottomInsetPt",
-            occurrence,
-        )?;
+        let width = if width_mode == SizeMode::Hug {
+            empty_container_hug_axis(node, role, placement, "Width", occurrence)?
+        } else {
+            definite_axis_size(
+                placement,
+                width_mode,
+                parent_content.width,
+                authored_x,
+                "Width",
+                "rightInsetPt",
+                occurrence,
+            )?
+        };
+        let height = if height_mode == SizeMode::Hug {
+            empty_container_hug_axis(node, role, placement, "Height", occurrence)?
+        } else {
+            definite_axis_size(
+                placement,
+                height_mode,
+                parent_content.height,
+                authored_y,
+                "Height",
+                "bottomInsetPt",
+                occurrence,
+            )?
+        };
         let layout_box = LocalLayoutBox {
             x: parent_content.x + authored_x,
             y: parent_content.y + authored_y,
@@ -690,10 +692,10 @@ impl DefiniteLayouter {
                     }
                     NodeRole::Stack => self.visit_stack_children(node, &content_box)?,
                     NodeRole::Grid => self.visit_grid_children(node, &content_box)?,
-                    NodeRole::Leaf => unreachable!(),
+                    NodeRole::Group | NodeRole::Leaf => unreachable!(),
                 }
             }
-            NodeRole::Leaf => {
+            NodeRole::Group | NodeRole::Leaf => {
                 self.entries.push(DefiniteLayoutEntry {
                     occurrence_id: occurrence.to_owned(),
                     kind: kind.to_owned(),
@@ -857,13 +859,6 @@ impl DefiniteLayouter {
         }
         let width_mode = size_mode(placement, "widthMode", occurrence)?;
         let height_mode = size_mode(placement, "heightMode", occurrence)?;
-        if width_mode == SizeMode::Hug || height_mode == SizeMode::Hug {
-            return Err(DefiniteLayoutError::unsupported(
-                occurrence,
-                DefiniteLayoutUnsupported::HugContent,
-            ));
-        }
-
         let column = integer_member(placement, "column", occurrence, "placement.column")?;
         let column_span =
             integer_member(placement, "columnSpan", occurrence, "placement.columnSpan")?;
@@ -897,6 +892,8 @@ impl DefiniteLayouter {
             "placement.marginLeftPt",
         )?;
         let (x, width) = grid_axis_arrangement(
+            node,
+            role,
             placement,
             width_mode,
             cell_x,
@@ -908,6 +905,8 @@ impl DefiniteLayouter {
             occurrence,
         )?;
         let (y, height) = grid_axis_arrangement(
+            node,
+            role,
             placement,
             height_mode,
             cell_y,
@@ -1145,6 +1144,8 @@ fn grid_span_extent(sizes: &[f64], gap: f64, start: usize, span: usize) -> f64 {
 
 #[allow(clippy::too_many_arguments)]
 fn grid_axis_arrangement(
+    node: &Map<String, Value>,
+    role: NodeRole,
     placement: &Map<String, Value>,
     mode: SizeMode,
     cell_origin: f64,
@@ -1155,16 +1156,20 @@ fn grid_axis_arrangement(
     alignment_member: &str,
     occurrence: &str,
 ) -> Result<(f64, f64), DefiniteLayoutError> {
-    let size = stack_axis_size(
-        placement,
-        mode,
-        cell_size,
-        leading_margin,
-        trailing_margin,
-        axis,
-        occurrence,
-    )?;
-    let position = if mode == SizeMode::Fixed {
+    let size = if mode == SizeMode::Hug {
+        empty_container_hug_axis(node, role, placement, axis, occurrence)?
+    } else {
+        stack_axis_size(
+            placement,
+            mode,
+            cell_size,
+            leading_margin,
+            trailing_margin,
+            axis,
+            occurrence,
+        )?
+    };
+    let position = if matches!(mode, SizeMode::Fixed | SizeMode::Hug) {
         aligned_cross_position(
             cell_origin,
             cell_size,
@@ -1299,6 +1304,8 @@ fn measure_stack_child(
     direction: StackDirection,
 ) -> Result<StackChildMeasurement, DefiniteLayoutError> {
     let occurrence = occurrence_id(node)?;
+    let kind = text_member(node, "kind", occurrence, "kind")?;
+    let role = definite_node_role(kind, occurrence)?;
     let placement = object_member(Some(node), "placement", occurrence)?;
     if text_member(placement, "type", occurrence, "placement.type")? != "STACK" {
         return Err(DefiniteLayoutError::unsupported(
@@ -1308,12 +1315,6 @@ fn measure_stack_child(
     }
     let width_mode = size_mode(placement, "widthMode", occurrence)?;
     let height_mode = size_mode(placement, "heightMode", occurrence)?;
-    if width_mode == SizeMode::Hug || height_mode == SizeMode::Hug {
-        return Err(DefiniteLayoutError::unsupported(
-            occurrence,
-            DefiniteLayoutUnsupported::HugContent,
-        ));
-    }
     let main_mode = match direction {
         StackDirection::Row => width_mode,
         StackDirection::Column => height_mode,
@@ -1344,7 +1345,9 @@ fn measure_stack_child(
         occurrence,
         "placement.marginLeftPt",
     )?;
-    let width = if direction == StackDirection::Row && main_fill {
+    let width = if width_mode == SizeMode::Hug {
+        empty_container_hug_axis(node, role, placement, "Width", occurrence)?
+    } else if direction == StackDirection::Row && main_fill {
         0.0
     } else {
         stack_axis_size(
@@ -1357,7 +1360,9 @@ fn measure_stack_child(
             occurrence,
         )?
     };
-    let height = if direction == StackDirection::Column && main_fill {
+    let height = if height_mode == SizeMode::Hug {
+        empty_container_hug_axis(node, role, placement, "Height", occurrence)?
+    } else if direction == StackDirection::Column && main_fill {
         0.0
     } else {
         stack_axis_size(
@@ -1456,16 +1461,13 @@ fn clamp_flexible_axis(
 
 fn definite_node_role(kind: &str, occurrence: &str) -> Result<NodeRole, DefiniteLayoutError> {
     match kind {
+        "group" => Ok(NodeRole::Group),
         "frame" => Ok(NodeRole::Frame),
         "stack" => Ok(NodeRole::Stack),
         "grid" => Ok(NodeRole::Grid),
         "rect" | "ellipse" | "line" | "polygon" | "polyline" | "path" | "qrCode" | "barcode" => {
             Ok(NodeRole::Leaf)
         }
-        "group" => Err(DefiniteLayoutError::unsupported(
-            occurrence,
-            DefiniteLayoutUnsupported::Group,
-        )),
         "compositionViewport" => Err(DefiniteLayoutError::unsupported(
             occurrence,
             DefiniteLayoutUnsupported::CompositionViewport,
@@ -1476,6 +1478,134 @@ fn definite_node_role(kind: &str, occurrence: &str) -> Result<NodeRole, Definite
         )),
         _ => Err(DefiniteLayoutError::invariant(occurrence, "kind")),
     }
+}
+
+fn empty_container_hug_axis(
+    node: &Map<String, Value>,
+    role: NodeRole,
+    placement: &Map<String, Value>,
+    axis: &str,
+    occurrence: &str,
+) -> Result<f64, DefiniteLayoutError> {
+    let children = match role {
+        NodeRole::Group | NodeRole::Frame | NodeRole::Stack | NodeRole::Grid => {
+            array_member(node, "children", occurrence)?
+        }
+        NodeRole::Leaf => {
+            return Err(DefiniteLayoutError::unsupported(
+                occurrence,
+                DefiniteLayoutUnsupported::HugContent,
+            ));
+        }
+    };
+    if !children.is_empty() {
+        return Err(DefiniteLayoutError::unsupported(
+            occurrence,
+            if role == NodeRole::Group {
+                DefiniteLayoutUnsupported::Group
+            } else {
+                DefiniteLayoutUnsupported::HugContent
+            },
+        ));
+    }
+    if role == NodeRole::Group {
+        return Ok(0.0);
+    }
+
+    let content_extent = match role {
+        NodeRole::Frame | NodeRole::Stack => 0.0,
+        NodeRole::Grid => empty_grid_track_extent(node, axis, occurrence)?,
+        NodeRole::Group | NodeRole::Leaf => unreachable!(),
+    };
+    let natural = empty_container_outer_extent(node, axis, content_extent, occurrence)?;
+    clamp_flexible_axis(placement, natural, axis, occurrence)
+}
+
+fn empty_grid_track_extent(
+    grid: &Map<String, Value>,
+    axis: &str,
+    occurrence: &str,
+) -> Result<f64, DefiniteLayoutError> {
+    let (tracks_member, gap_member) = match axis {
+        "Width" => ("columns", "columnGapPt"),
+        "Height" => ("rows", "rowGapPt"),
+        _ => return Err(DefiniteLayoutError::invariant(occurrence, "HUG axis")),
+    };
+    let tracks = array_member(grid, tracks_member, occurrence)?;
+    let gap = nonnegative_binary64_member(grid, gap_member, occurrence, gap_member)?;
+    let mut extent = 0.0;
+    for (index, track) in tracks.iter().enumerate() {
+        let track = object(track, occurrence, tracks_member)?;
+        match text_member(
+            track,
+            "type",
+            occurrence,
+            format!("{tracks_member}[{index}].type"),
+        )? {
+            "FIXED" => {
+                extent += binary64_member(
+                    track,
+                    "valuePt",
+                    occurrence,
+                    format!("{tracks_member}[{index}].valuePt"),
+                )?;
+            }
+            "AUTO" => {}
+            "FRACTION" => {
+                return Err(DefiniteLayoutError::invariant(
+                    occurrence,
+                    format!("{tracks_member}[{index}].type"),
+                ));
+            }
+            _ => {
+                return Err(DefiniteLayoutError::invariant(
+                    occurrence,
+                    format!("{tracks_member}[{index}].type"),
+                ));
+            }
+        }
+        if index + 1 < tracks.len() {
+            extent += gap;
+        }
+    }
+    Ok(extent)
+}
+
+fn empty_container_outer_extent(
+    node: &Map<String, Value>,
+    axis: &str,
+    mut extent: f64,
+    occurrence: &str,
+) -> Result<f64, DefiniteLayoutError> {
+    let stroke_width = if let Some(stroke) = node.get("stroke") {
+        let stroke = stroke
+            .as_object()
+            .ok_or_else(|| DefiniteLayoutError::invariant(occurrence, "stroke"))?;
+        nonnegative_binary64_member(stroke, "widthPt", occurrence, "stroke.widthPt")?
+    } else {
+        0.0
+    };
+    let padding = object_member(Some(node), "padding", occurrence)?;
+    let (leading_member, trailing_member) = match axis {
+        "Width" => ("leftPt", "rightPt"),
+        "Height" => ("topPt", "bottomPt"),
+        _ => return Err(DefiniteLayoutError::invariant(occurrence, "HUG axis")),
+    };
+    extent += nonnegative_binary64_member(
+        padding,
+        leading_member,
+        occurrence,
+        format!("padding.{leading_member}"),
+    )?;
+    extent += nonnegative_binary64_member(
+        padding,
+        trailing_member,
+        occurrence,
+        format!("padding.{trailing_member}"),
+    )?;
+    extent += stroke_width;
+    extent += stroke_width;
+    Ok(extent)
 }
 
 fn stack_direction(

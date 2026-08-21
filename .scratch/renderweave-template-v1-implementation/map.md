@@ -215,6 +215,10 @@ Label: wayfinder:map
   **resolved / automated_verified**；每轴允许多 AUTO，但每条资源无关 FIXED-child span constraint 至多覆盖一个
   AUTO；Rust/Python `/7` replay 为 34 laid-out + 13 unsupported、47/47、142 checks。跨多个 AUTO 的平均
   deficit、HUG/intrinsic、multiple FRACTION、resource/scene/RESULT 继续 fail closed。
+- [实现 definite 空容器 HUG intrinsic 子闭包](issues/42-definite-empty-intrinsic-container-layout.md) —
+  **resolved / automated_verified**；只对空 Frame/Stack/Grid/Group 实现已冻结的 stroke/padding、
+  FIXED/AUTO-zero track、gap、zero-union 与 min/max 退化结果；Rust/Python `/8` replay 为 40 laid-out +
+  13 unsupported、53/53、160 checks。非空 HUG、transform union、resource/tolerance/scene/RESULT 继续 fail closed。
 - [验证 Product Editor 状态、恢复与权威预览架构](issues/09-validate-product-editor-architecture.md) —
   throwaway 逻辑原型（`/prototype/editor-state-model`，不进产品 route）把冻结编辑器规则编码为确定性
   fixture 状态机：10 个引导走查场景 37/37 断言 + 自由操作冒烟 + 键盘焦点检查全部通过（Playwright A1，
@@ -275,7 +279,8 @@ Label: wayfinder:map
   （automated_verified）：singleton Stack main-axis FILL 的无 tolerance 退化子闭包已完成；T39 现也已 resolve
   （automated_verified）：definite Grid 每轴至多一个 FRACTION 的无 tolerance 退化子闭包已完成；T40 现也已
   resolve（automated_verified）：singleton AUTO 的资源无关 FIXED-child contribution 子闭包已完成；T41 现也已
-  resolve（automated_verified）：多 AUTO 中每条 span 至多覆盖一个 AUTO 的独立 constraint 子闭包已完成；HUG/
+  resolve（automated_verified）：多 AUTO 中每条 span 至多覆盖一个 AUTO 的独立 constraint 子闭包已完成；T42
+  现也已 resolve（automated_verified）：空 Frame/Stack/Grid/Group 的 HUG intrinsic 退化子闭包已完成；一般 HUG/
   multiple Stack main-axis FILL/
   跨多个 AUTO 的平均 deficit/multiple FRACTION、资源、world scene 与 daemon output 仍未提前实现。
 - Expression/value binding、closure、capability、nested Template、layout lowering 与正式 RenderDocument 的

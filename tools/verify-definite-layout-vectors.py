@@ -263,30 +263,40 @@ class DefiniteLayouter:
             raise Unsupported("NON_ABSOLUTE_PLACEMENT", current)
         width_mode = placement.get("widthMode")
         height_mode = placement.get("heightMode")
-        if width_mode == "HUG_CONTENT" or height_mode == "HUG_CONTENT":
-            raise Unsupported("HUG_CONTENT", current)
-        if width_mode not in {"FIXED", "FILL"} or height_mode not in {"FIXED", "FILL"}:
+        if width_mode not in {"FIXED", "HUG_CONTENT", "FILL"} or height_mode not in {
+            "FIXED",
+            "HUG_CONTENT",
+            "FILL",
+        }:
             raise VerificationFailure(f"{current} invalid definite size mode")
 
         authored_x = required_decimal(placement, "xPt", current, "placement.xPt")
         authored_y = required_decimal(placement, "yPt", current, "placement.yPt")
-        width = definite_axis_size(
-            placement,
-            text(width_mode, "width mode"),
-            parent_content.width,
-            authored_x,
-            "Width",
-            "rightInsetPt",
-            current,
+        width = (
+            empty_container_hug_axis(node, role, placement, "Width", current)
+            if width_mode == "HUG_CONTENT"
+            else definite_axis_size(
+                placement,
+                text(width_mode, "width mode"),
+                parent_content.width,
+                authored_x,
+                "Width",
+                "rightInsetPt",
+                current,
+            )
         )
-        height = definite_axis_size(
-            placement,
-            text(height_mode, "height mode"),
-            parent_content.height,
-            authored_y,
-            "Height",
-            "bottomInsetPt",
-            current,
+        height = (
+            empty_container_hug_axis(node, role, placement, "Height", current)
+            if height_mode == "HUG_CONTENT"
+            else definite_axis_size(
+                placement,
+                text(height_mode, "height mode"),
+                parent_content.height,
+                authored_y,
+                "Height",
+                "bottomInsetPt",
+                current,
+            )
         )
         layout_box = Box(
             parent_content.x + authored_x,
@@ -480,10 +490,9 @@ class DefiniteLayouter:
             raise Unsupported("NON_ABSOLUTE_PLACEMENT", current)
         width_mode = text(placement.get("widthMode"), f"{current} width mode")
         height_mode = text(placement.get("heightMode"), f"{current} height mode")
-        if width_mode == "HUG_CONTENT" or height_mode == "HUG_CONTENT":
-            raise Unsupported("HUG_CONTENT", current)
-        if width_mode not in {"FIXED", "FILL"} or height_mode not in {
+        if width_mode not in {"FIXED", "HUG_CONTENT", "FILL"} or height_mode not in {
             "FIXED",
+            "HUG_CONTENT",
             "FILL",
         }:
             raise VerificationFailure(f"{current} invalid definite size mode")
@@ -511,6 +520,8 @@ class DefiniteLayouter:
             placement, "marginLeftPt", current, "placement.marginLeftPt"
         )
         x, width = grid_axis_arrangement(
+            node,
+            role,
             placement,
             width_mode,
             cell_x,
@@ -522,6 +533,8 @@ class DefiniteLayouter:
             current,
         )
         y, height = grid_axis_arrangement(
+            node,
+            role,
             placement,
             height_mode,
             cell_y,
@@ -542,10 +555,10 @@ def definite_node_role(kind: str, current: str) -> str:
         return "STACK"
     if kind == "grid":
         return "GRID"
+    if kind == "group":
+        return "GROUP"
     if kind in SUPPORTED_LEAVES:
         return "LEAF"
-    if kind == "group":
-        raise Unsupported("GROUP", current)
     if kind == "compositionViewport":
         raise Unsupported("COMPOSITION_VIEWPORT", current)
     if kind in {"text", "image"}:
@@ -737,6 +750,8 @@ def grid_span_extent(
 
 
 def grid_axis_arrangement(
+    node: dict[str, Any],
+    role: str,
     placement: dict[str, Any],
     mode: str,
     cell_origin: float,
@@ -747,16 +762,20 @@ def grid_axis_arrangement(
     alignment_member: str,
     current: str,
 ) -> tuple[float, float]:
-    size = stack_axis_size(
-        placement,
-        mode,
-        cell_size,
-        leading_margin,
-        trailing_margin,
-        axis,
-        current,
+    size = (
+        empty_container_hug_axis(node, role, placement, axis, current)
+        if mode == "HUG_CONTENT"
+        else stack_axis_size(
+            placement,
+            mode,
+            cell_size,
+            leading_margin,
+            trailing_margin,
+            axis,
+            current,
+        )
     )
-    if mode == "FIXED":
+    if mode in {"FIXED", "HUG_CONTENT"}:
         alignment = text(
             placement.get(alignment_member), f"{current} {alignment_member}"
         )
@@ -872,15 +891,16 @@ def measure_stack_child(
     node: dict[str, Any], parent: Box, direction: str
 ) -> StackChildMeasurement:
     current = occurrence(node)
+    kind = text(node.get("kind"), f"{current} kind")
+    role = definite_node_role(kind, current)
     placement = object_value(node.get("placement"), f"{current} placement")
     if placement.get("type") != "STACK":
         raise Unsupported("NON_ABSOLUTE_PLACEMENT", current)
     width_mode = text(placement.get("widthMode"), f"{current} width mode")
     height_mode = text(placement.get("heightMode"), f"{current} height mode")
-    if width_mode == "HUG_CONTENT" or height_mode == "HUG_CONTENT":
-        raise Unsupported("HUG_CONTENT", current)
-    if width_mode not in {"FIXED", "FILL"} or height_mode not in {
+    if width_mode not in {"FIXED", "HUG_CONTENT", "FILL"} or height_mode not in {
         "FIXED",
+        "HUG_CONTENT",
         "FILL",
     }:
         raise VerificationFailure(f"{current} invalid definite size mode")
@@ -899,10 +919,12 @@ def measure_stack_child(
     margin_left = required_decimal(
         placement, "marginLeftPt", current, "placement.marginLeftPt"
     )
-    width = (
-        0.0
-        if direction == "ROW" and main_fill
-        else stack_axis_size(
+    if width_mode == "HUG_CONTENT":
+        width = empty_container_hug_axis(node, role, placement, "Width", current)
+    elif direction == "ROW" and main_fill:
+        width = 0.0
+    else:
+        width = stack_axis_size(
             placement,
             width_mode,
             parent.width,
@@ -911,11 +933,12 @@ def measure_stack_child(
             "Width",
             current,
         )
-    )
-    height = (
-        0.0
-        if direction == "COLUMN" and main_fill
-        else stack_axis_size(
+    if height_mode == "HUG_CONTENT":
+        height = empty_container_hug_axis(node, role, placement, "Height", current)
+    elif direction == "COLUMN" and main_fill:
+        height = 0.0
+    else:
+        height = stack_axis_size(
             placement,
             height_mode,
             parent.height,
@@ -924,7 +947,6 @@ def measure_stack_child(
             "Height",
             current,
         )
-    )
     align_self = text(placement.get("alignSelf"), f"{current} alignSelf")
     if align_self not in {"START", "CENTER", "END"}:
         raise VerificationFailure(f"{current} invalid Stack alignment")
@@ -946,6 +968,90 @@ def stack_child_has_main_fill(node: dict[str, Any], direction: str) -> bool:
         return False
     member = "widthMode" if direction == "ROW" else "heightMode"
     return placement.get(member) == "FILL"
+
+
+def empty_container_hug_axis(
+    node: dict[str, Any],
+    role: str,
+    placement: dict[str, Any],
+    axis: str,
+    current: str,
+) -> float:
+    if role == "LEAF":
+        raise Unsupported("HUG_CONTENT", current)
+    children = array_value(node.get("children"), f"{current} children")
+    if children:
+        raise Unsupported("GROUP" if role == "GROUP" else "HUG_CONTENT", current)
+    if role == "GROUP":
+        return 0.0
+
+    content_extent = (
+        empty_grid_track_extent(node, axis, current) if role == "GRID" else 0.0
+    )
+    natural = empty_container_outer_extent(node, axis, content_extent, current)
+    return clamp_flexible_axis(placement, natural, axis, current)
+
+
+def empty_grid_track_extent(
+    grid: dict[str, Any], axis: str, current: str
+) -> float:
+    if axis == "Width":
+        tracks_member, gap_member = "columns", "columnGapPt"
+    elif axis == "Height":
+        tracks_member, gap_member = "rows", "rowGapPt"
+    else:
+        raise VerificationFailure(f"{current} invalid HUG axis")
+    tracks = array_value(grid.get(tracks_member), f"{current} {tracks_member}")
+    gap = nonnegative_decimal(grid, gap_member, current, gap_member)
+    extent = 0.0
+    for index, raw_track in enumerate(tracks):
+        track = object_value(raw_track, f"{current} {tracks_member}[{index}]")
+        track_type = text(
+            track.get("type"), f"{current} {tracks_member}[{index}].type"
+        )
+        if track_type == "FIXED":
+            extent += required_decimal(
+                track,
+                "valuePt",
+                current,
+                f"{tracks_member}[{index}].valuePt",
+            )
+        elif track_type != "AUTO":
+            raise VerificationFailure(
+                f"{current} invalid empty HUG {tracks_member}[{index}].type"
+            )
+        if index + 1 < len(tracks):
+            extent += gap
+    return extent
+
+
+def empty_container_outer_extent(
+    node: dict[str, Any], axis: str, extent: float, current: str
+) -> float:
+    raw_stroke = node.get("stroke")
+    if raw_stroke is None:
+        stroke_width = 0.0
+    else:
+        stroke = object_value(raw_stroke, f"{current} stroke")
+        stroke_width = nonnegative_decimal(
+            stroke, "widthPt", current, "stroke.widthPt"
+        )
+    padding = object_value(node.get("padding"), f"{current} padding")
+    if axis == "Width":
+        leading_member, trailing_member = "leftPt", "rightPt"
+    elif axis == "Height":
+        leading_member, trailing_member = "topPt", "bottomPt"
+    else:
+        raise VerificationFailure(f"{current} invalid HUG axis")
+    extent += nonnegative_decimal(
+        padding, leading_member, current, f"padding.{leading_member}"
+    )
+    extent += nonnegative_decimal(
+        padding, trailing_member, current, f"padding.{trailing_member}"
+    )
+    extent += stroke_width
+    extent += stroke_width
+    return extent
 
 
 def stack_axis_size(
@@ -1223,7 +1329,7 @@ def verify(
         "vector manifest",
     )
     verifier.require(
-        vectors["vectorVersion"] == "renderweave-definite-layout-vectors/7",
+        vectors["vectorVersion"] == "renderweave-definite-layout-vectors/8",
         "vector identity drifted",
     )
     authority = exact_members(
@@ -1276,7 +1382,7 @@ def verify(
     expected_boundary = {
         "profileAvailability": "NOT_REGISTERED",
         "certificationStatus": "NOT_CERTIFIED",
-        "layoutImplementation": "RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_SINGLE_MAIN_FILL_AND_FIXED_SINGLE_FRACTION_INDEPENDENT_MULTI_AUTO_GRID_BOX_KERNEL",
+        "layoutImplementation": "RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_SINGLE_MAIN_FILL_AND_FIXED_SINGLE_FRACTION_INDEPENDENT_MULTI_AUTO_GRID_EMPTY_INTRINSIC_CONTAINER_BOX_KERNEL",
         "worldTransformImplementation": "ABSENT",
         "sceneImplementation": "ABSENT",
         "rasterImplementation": "ABSENT",
@@ -1314,7 +1420,7 @@ def verify(
         == "renderweave-layout-preflight-fixtures/1",
         "layout preflight fixture identity drifted",
     )
-    verifier.require(len(vectors["laidOutCases"]) == 34, "laid-out case count drifted")
+    verifier.require(len(vectors["laidOutCases"]) == 40, "laid-out case count drifted")
     verifier.require(
         len(vectors["unsupportedCases"]) == 13,
         "unsupported case count drifted",
@@ -1364,7 +1470,7 @@ def verify(
             raise VerificationFailure(f"{case_id}: unsupported case produced a layout")
 
     return {
-        "verifier": "renderweave-definite-layout-python-independent/7",
+        "verifier": "renderweave-definite-layout-python-independent/8",
         "result": "PASS",
         "assurance": "A2",
         "laidOutCases": len(vectors["laidOutCases"]),
