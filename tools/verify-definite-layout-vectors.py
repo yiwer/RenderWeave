@@ -150,7 +150,7 @@ class StackChildMeasurement:
 
 
 @dataclass(frozen=True)
-class FixedGridAxis:
+class DefiniteGridAxis:
     origins: list[float]
     sizes: list[float]
     gap: float
@@ -444,10 +444,22 @@ class DefiniteLayouter:
     def visit_grid_children(self, grid: dict[str, Any], content_box: Box) -> None:
         current = occurrence(grid)
         # The frozen profile always solves columns first, then rows.
-        columns = fixed_grid_axis(
-            grid, "columns", "columnGapPt", content_box.x, current
+        columns = definite_grid_axis(
+            grid,
+            "columns",
+            "columnGapPt",
+            content_box.x,
+            content_box.width,
+            current,
         )
-        rows = fixed_grid_axis(grid, "rows", "rowGapPt", content_box.y, current)
+        rows = definite_grid_axis(
+            grid,
+            "rows",
+            "rowGapPt",
+            content_box.y,
+            content_box.height,
+            current,
+        )
         for raw_child in array_value(grid.get("children"), f"{current} children"):
             self.visit_grid_child(
                 object_value(raw_child, f"{current} child"), columns, rows
@@ -456,8 +468,8 @@ class DefiniteLayouter:
     def visit_grid_child(
         self,
         node: dict[str, Any],
-        columns: FixedGridAxis,
-        rows: FixedGridAxis,
+        columns: DefiniteGridAxis,
+        rows: DefiniteGridAxis,
     ) -> None:
         current = occurrence(node)
         kind = text(node.get("kind"), f"{current} kind")
@@ -540,18 +552,21 @@ def definite_node_role(kind: str, current: str) -> str:
     raise VerificationFailure(f"{current} unexpected kind {kind}")
 
 
-def fixed_grid_axis(
+def definite_grid_axis(
     grid: dict[str, Any],
     tracks_member: str,
     gap_member: str,
     origin: float,
+    available: float,
     current: str,
-) -> FixedGridAxis:
+) -> DefiniteGridAxis:
     gap = nonnegative_decimal(grid, gap_member, current, gap_member)
     tracks = array_value(grid.get(tracks_member), f"{current} {tracks_member}")
-    origins: list[float] = []
     sizes: list[float] = []
-    cursor = origin
+    fraction_indices: list[int] = []
+    has_auto = False
+    used_without_fraction = 0.0
+
     for index, raw_track in enumerate(tracks):
         track = object_value(raw_track, f"{current} {tracks_member}[{index}]")
         track_type = text(
@@ -564,20 +579,45 @@ def fixed_grid_axis(
                 current,
                 f"{tracks_member}[{index}].valuePt",
             )
+            sizes.append(size)
+            used_without_fraction += size
         elif track_type == "AUTO":
-            raise Unsupported("GRID_AUTO_TRACK", current)
+            has_auto = True
+            sizes.append(0.0)
         elif track_type == "FRACTION":
-            raise Unsupported("GRID_FRACTION_TRACK", current)
+            required_decimal(
+                track,
+                "weight",
+                current,
+                f"{tracks_member}[{index}].weight",
+            )
+            fraction_indices.append(index)
+            sizes.append(0.0)
         else:
             raise VerificationFailure(
                 f"{current} invalid {tracks_member}[{index}].type"
             )
-        origins.append(cursor)
-        sizes.append(size)
-        cursor += size
         if index + 1 < len(tracks):
+            used_without_fraction += gap
+
+    # The Profile solves FIXED, then AUTO, then FRACTION. Finish the authored
+    # scan before rejecting so AUTO wins even when FRACTION appears first.
+    if has_auto:
+        raise Unsupported("GRID_AUTO_TRACK", current)
+    if len(fraction_indices) > 1:
+        raise Unsupported("GRID_FRACTION_TRACK", current)
+    if fraction_indices:
+        remaining = available - used_without_fraction
+        sizes[fraction_indices[0]] = remaining if remaining > 0.0 else 0.0
+
+    origins: list[float] = []
+    cursor = origin
+    for index, size in enumerate(sizes):
+        origins.append(cursor)
+        cursor += size
+        if index + 1 < len(sizes):
             cursor += gap
-    return FixedGridAxis(origins, sizes, gap)
+    return DefiniteGridAxis(origins, sizes, gap)
 
 
 def grid_axis_arrangement(
@@ -1067,7 +1107,7 @@ def verify(
         "vector manifest",
     )
     verifier.require(
-        vectors["vectorVersion"] == "renderweave-definite-layout-vectors/4",
+        vectors["vectorVersion"] == "renderweave-definite-layout-vectors/5",
         "vector identity drifted",
     )
     authority = exact_members(
@@ -1120,7 +1160,7 @@ def verify(
     expected_boundary = {
         "profileAvailability": "NOT_REGISTERED",
         "certificationStatus": "NOT_CERTIFIED",
-        "layoutImplementation": "RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_SINGLE_MAIN_FILL_AND_FIXED_GRID_BOX_KERNEL",
+        "layoutImplementation": "RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_SINGLE_MAIN_FILL_AND_FIXED_SINGLE_FRACTION_GRID_BOX_KERNEL",
         "worldTransformImplementation": "ABSENT",
         "sceneImplementation": "ABSENT",
         "rasterImplementation": "ABSENT",
@@ -1158,9 +1198,9 @@ def verify(
         == "renderweave-layout-preflight-fixtures/1",
         "layout preflight fixture identity drifted",
     )
-    verifier.require(len(vectors["laidOutCases"]) == 28, "laid-out case count drifted")
+    verifier.require(len(vectors["laidOutCases"]) == 30, "laid-out case count drifted")
     verifier.require(
-        len(vectors["unsupportedCases"]) == 11,
+        len(vectors["unsupportedCases"]) == 12,
         "unsupported case count drifted",
     )
 
@@ -1208,7 +1248,7 @@ def verify(
             raise VerificationFailure(f"{case_id}: unsupported case produced a layout")
 
     return {
-        "verifier": "renderweave-definite-layout-python-independent/4",
+        "verifier": "renderweave-definite-layout-python-independent/5",
         "result": "PASS",
         "assurance": "A2",
         "laidOutCases": len(vectors["laidOutCases"]),

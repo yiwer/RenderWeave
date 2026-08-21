@@ -4,11 +4,11 @@
 //! The crate consumes only a document already admitted by `renderweave-renderer-document`.
 //! Preflight returns bounded structural counts or one stable DFS problem. The definite kernel
 //! additionally computes local LayoutBox/ContentBox entries for resource-independent ABSOLUTE
-//! nodes, Stack children with at most one main-axis FILL, and fixed-track Grid children whose two
-//! axes are already definite. It deliberately stops before resource preparation,
-//! HUG/multi-FILL Stack water filling,
-//! Grid AUTO/FRACTION solving, world transforms, shaping, paint, rasterization, and encoding, and
-//! it never exposes a partial layout on failure.
+//! nodes, Stack children with at most one main-axis FILL, and Grid children whose definite axes
+//! contain FIXED tracks plus at most one FRACTION track. It deliberately stops before resource
+//! preparation, HUG/multi-FILL Stack water filling, Grid AUTO/multi-FRACTION solving, world
+//! transforms, shaping, paint, rasterization, and encoding, and it never exposes a partial layout
+//! on failure.
 
 use renderweave_renderer_document::AdmittedRenderDocument;
 use serde_json::{Map, Number, Value};
@@ -385,13 +385,13 @@ impl StackChildMeasurement {
 }
 
 #[derive(Debug)]
-struct FixedGridAxis {
+struct DefiniteGridAxis {
     origins: Vec<f64>,
     sizes: Vec<f64>,
     gap: f64,
 }
 
-impl FixedGridAxis {
+impl DefiniteGridAxis {
     fn cell(&self, start: usize, span: usize) -> (f64, f64) {
         let mut size = 0.0;
         for index in start..start + span {
@@ -742,8 +742,22 @@ impl DefiniteLayouter {
     ) -> Result<(), DefiniteLayoutError> {
         let occurrence = occurrence_id(grid)?;
         // The frozen profile always solves columns first, then rows.
-        let columns = fixed_grid_axis(grid, "columns", "columnGapPt", content_box.x, occurrence)?;
-        let rows = fixed_grid_axis(grid, "rows", "rowGapPt", content_box.y, occurrence)?;
+        let columns = definite_grid_axis(
+            grid,
+            "columns",
+            "columnGapPt",
+            content_box.x,
+            content_box.width,
+            occurrence,
+        )?;
+        let rows = definite_grid_axis(
+            grid,
+            "rows",
+            "rowGapPt",
+            content_box.y,
+            content_box.height,
+            occurrence,
+        )?;
         for child in array_member(grid, "children", occurrence)? {
             self.visit_grid_child(object(child, occurrence, "children")?, &columns, &rows)?;
         }
@@ -753,8 +767,8 @@ impl DefiniteLayouter {
     fn visit_grid_child(
         &mut self,
         node: &Map<String, Value>,
-        columns: &FixedGridAxis,
-        rows: &FixedGridAxis,
+        columns: &DefiniteGridAxis,
+        rows: &DefiniteGridAxis,
     ) -> Result<(), DefiniteLayoutError> {
         let occurrence = occurrence_id(node)?;
         let kind = text_member(node, "kind", occurrence, "kind")?;
@@ -843,18 +857,21 @@ impl DefiniteLayouter {
     }
 }
 
-fn fixed_grid_axis(
+fn definite_grid_axis(
     grid: &Map<String, Value>,
     tracks_member: &str,
     gap_member: &str,
     origin: f64,
+    available: f64,
     occurrence: &str,
-) -> Result<FixedGridAxis, DefiniteLayoutError> {
+) -> Result<DefiniteGridAxis, DefiniteLayoutError> {
     let gap = nonnegative_binary64_member(grid, gap_member, occurrence, gap_member)?;
     let tracks = array_member(grid, tracks_member, occurrence)?;
-    let mut origins = Vec::with_capacity(tracks.len());
     let mut sizes = Vec::with_capacity(tracks.len());
-    let mut cursor = origin;
+    let mut fraction_indices = Vec::new();
+    let mut has_auto = false;
+    let mut used_without_fraction = 0.0;
+
     for (index, track) in tracks.iter().enumerate() {
         let track = object(track, occurrence, tracks_member)?;
         let track_type = text_member(
@@ -863,24 +880,30 @@ fn fixed_grid_axis(
             occurrence,
             format!("{tracks_member}[{index}].type"),
         )?;
-        let size = match track_type {
-            "FIXED" => binary64_member(
-                track,
-                "valuePt",
-                occurrence,
-                format!("{tracks_member}[{index}].valuePt"),
-            )?,
-            "AUTO" => {
-                return Err(DefiniteLayoutError::unsupported(
+        match track_type {
+            "FIXED" => {
+                let size = binary64_member(
+                    track,
+                    "valuePt",
                     occurrence,
-                    DefiniteLayoutUnsupported::GridAutoTrack,
-                ));
+                    format!("{tracks_member}[{index}].valuePt"),
+                )?;
+                sizes.push(size);
+                used_without_fraction += size;
+            }
+            "AUTO" => {
+                has_auto = true;
+                sizes.push(0.0);
             }
             "FRACTION" => {
-                return Err(DefiniteLayoutError::unsupported(
+                binary64_member(
+                    track,
+                    "weight",
                     occurrence,
-                    DefiniteLayoutUnsupported::GridFractionTrack,
-                ));
+                    format!("{tracks_member}[{index}].weight"),
+                )?;
+                fraction_indices.push(index);
+                sizes.push(0.0);
             }
             _ => {
                 return Err(DefiniteLayoutError::invariant(
@@ -888,15 +911,43 @@ fn fixed_grid_axis(
                     format!("{tracks_member}[{index}].type"),
                 ));
             }
-        };
-        origins.push(cursor);
-        sizes.push(size);
-        cursor += size;
+        }
         if index + 1 < tracks.len() {
+            used_without_fraction += gap;
+        }
+    }
+
+    // Track solving is staged by the frozen Profile: FIXED, then AUTO, then
+    // FRACTION. Scanning before rejecting preserves that stage order even when
+    // an authored FRACTION precedes an AUTO track.
+    if has_auto {
+        return Err(DefiniteLayoutError::unsupported(
+            occurrence,
+            DefiniteLayoutUnsupported::GridAutoTrack,
+        ));
+    }
+    if fraction_indices.len() > 1 {
+        return Err(DefiniteLayoutError::unsupported(
+            occurrence,
+            DefiniteLayoutUnsupported::GridFractionTrack,
+        ));
+    }
+    if let Some(index) = fraction_indices.first().copied() {
+        let remaining = available - used_without_fraction;
+        sizes[index] = if remaining > 0.0 { remaining } else { 0.0 };
+    }
+
+    let mut origins = Vec::with_capacity(tracks.len());
+    let mut cursor = origin;
+    for (index, size) in sizes.iter().enumerate() {
+        origins.push(cursor);
+        cursor += size;
+        if index + 1 < sizes.len() {
             cursor += gap;
         }
     }
-    Ok(FixedGridAxis {
+
+    Ok(DefiniteGridAxis {
         origins,
         sizes,
         gap,

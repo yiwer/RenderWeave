@@ -1,5 +1,5 @@
 {
-  "vectorVersion": "renderweave-definite-layout-vectors/4",
+  "vectorVersion": "renderweave-definite-layout-vectors/5",
   "authorityContext": {
     "layoutProfile": "renderweave-layout/1.0",
     "documentContract": "renderweave-render-node-contract-v1/2",
@@ -9,7 +9,7 @@
   "boundary": {
     "profileAvailability": "NOT_REGISTERED",
     "certificationStatus": "NOT_CERTIFIED",
-    "layoutImplementation": "RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_SINGLE_MAIN_FILL_AND_FIXED_GRID_BOX_KERNEL",
+    "layoutImplementation": "RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_SINGLE_MAIN_FILL_AND_FIXED_SINGLE_FRACTION_GRID_BOX_KERNEL",
     "worldTransformImplementation": "ABSENT",
     "sceneImplementation": "ABSENT",
     "rasterImplementation": "ABSENT",
@@ -434,6 +434,50 @@
           {"occurrenceId": "rwocc_0000000000000004", "kind": "rect", "layoutBox": {"xBits": "4034000000000000", "yBits": "0000000000000000", "widthBits": "404e000000000000", "heightBits": "4034000000000000"}, "contentBox": null}
         ]
       }
+    },
+    {
+      "id": "grid-single-fraction-per-axis-consumes-positive-remainder",
+      "baseSource": "layoutPreflight",
+      "baseCase": "grid",
+      "mutations": [
+        {"operation": "replace", "pointer": "/canvas/children/0/columns", "value": [{"type": "FIXED", "valuePt": 10}, {"type": "FRACTION", "weight": 7}, {"type": "FIXED", "valuePt": 5}]},
+        {"operation": "replace", "pointer": "/canvas/children/0/columnGapPt", "value": 2},
+        {"operation": "replace", "pointer": "/canvas/children/0/rows", "value": [{"type": "FIXED", "valuePt": 10}, {"type": "FRACTION", "weight": 3}]},
+        {"operation": "replace", "pointer": "/canvas/children/0/rowGapPt", "value": 1},
+        {"operation": "replace", "pointer": "/canvas/children/0/children/0/placement/column", "value": 1},
+        {"operation": "replace", "pointer": "/canvas/children/0/children/0/placement/row", "value": 1},
+        {"operation": "replace", "pointer": "/canvas/children/0/children/0/placement/widthMode", "value": "FILL"},
+        {"operation": "remove", "pointer": "/canvas/children/0/children/0/placement/widthPt"},
+        {"operation": "replace", "pointer": "/canvas/children/0/children/0/placement/heightMode", "value": "FILL"},
+        {"operation": "remove", "pointer": "/canvas/children/0/children/0/placement/heightPt"}
+      ],
+      "expected": {
+        "entries": [
+          {"occurrenceId": "rwocc_0000000000000000", "kind": "canvas", "layoutBox": {"xBits": "0000000000000000", "yBits": "0000000000000000", "widthBits": "4059000000000000", "heightBits": "4059000000000000"}, "contentBox": {"xBits": "0000000000000000", "yBits": "0000000000000000", "widthBits": "4059000000000000", "heightBits": "4059000000000000"}},
+          {"occurrenceId": "rwocc_0000000000000001", "kind": "grid", "layoutBox": {"xBits": "0000000000000000", "yBits": "0000000000000000", "widthBits": "4049000000000000", "heightBits": "4049000000000000"}, "contentBox": {"xBits": "0000000000000000", "yBits": "0000000000000000", "widthBits": "4049000000000000", "heightBits": "4049000000000000"}},
+          {"occurrenceId": "rwocc_0000000000000002", "kind": "frame", "layoutBox": {"xBits": "4028000000000000", "yBits": "4026000000000000", "widthBits": "403f000000000000", "heightBits": "4043800000000000"}, "contentBox": {"xBits": "4028000000000000", "yBits": "4026000000000000", "widthBits": "403f000000000000", "heightBits": "4043800000000000"}}
+        ]
+      }
+    },
+    {
+      "id": "grid-single-fraction-overflow-is-zero-and-keeps-gap",
+      "baseSource": "layoutPreflight",
+      "baseCase": "grid",
+      "mutations": [
+        {"operation": "replace", "pointer": "/canvas/children/0/columns", "value": [{"type": "FIXED", "valuePt": 30}, {"type": "FRACTION", "weight": 2}, {"type": "FIXED", "valuePt": 30}]},
+        {"operation": "replace", "pointer": "/canvas/children/0/columnGapPt", "value": 5},
+        {"operation": "replace", "pointer": "/canvas/children/0/rows", "value": [{"type": "FIXED", "valuePt": 20}]},
+        {"operation": "replace", "pointer": "/canvas/children/0/children/0/placement/column", "value": 1},
+        {"operation": "replace", "pointer": "/canvas/children/0/children/0/placement/widthMode", "value": "FILL"},
+        {"operation": "remove", "pointer": "/canvas/children/0/children/0/placement/widthPt"}
+      ],
+      "expected": {
+        "entries": [
+          {"occurrenceId": "rwocc_0000000000000000", "kind": "canvas", "layoutBox": {"xBits": "0000000000000000", "yBits": "0000000000000000", "widthBits": "4059000000000000", "heightBits": "4059000000000000"}, "contentBox": {"xBits": "0000000000000000", "yBits": "0000000000000000", "widthBits": "4059000000000000", "heightBits": "4059000000000000"}},
+          {"occurrenceId": "rwocc_0000000000000001", "kind": "grid", "layoutBox": {"xBits": "0000000000000000", "yBits": "0000000000000000", "widthBits": "4049000000000000", "heightBits": "4049000000000000"}, "contentBox": {"xBits": "0000000000000000", "yBits": "0000000000000000", "widthBits": "4049000000000000", "heightBits": "4049000000000000"}},
+          {"occurrenceId": "rwocc_0000000000000002", "kind": "frame", "layoutBox": {"xBits": "4041800000000000", "yBits": "0000000000000000", "widthBits": "0000000000000000", "heightBits": "4024000000000000"}, "contentBox": {"xBits": "4041800000000000", "yBits": "0000000000000000", "widthBits": "0000000000000000", "heightBits": "4024000000000000"}}
+        ]
+      }
     }
   ],
   "unsupportedCases": [
@@ -477,6 +521,15 @@
       "baseCase": "grid",
       "mutations": [
         {"operation": "replace", "pointer": "/canvas/children/0/columns", "value": [{"type": "FRACTION", "weight": 1}]}
+      ],
+      "expected": {"feature": "GRID_AUTO_TRACK", "occurrenceId": "rwocc_0000000000000001"}
+    },
+    {
+      "id": "grid-columns-first-multiple-fraction-before-row-auto",
+      "baseSource": "layoutPreflight",
+      "baseCase": "grid",
+      "mutations": [
+        {"operation": "replace", "pointer": "/canvas/children/0/columns", "value": [{"type": "FRACTION", "weight": 1}, {"type": "FRACTION", "weight": 2}]}
       ],
       "expected": {"feature": "GRID_FRACTION_TRACK", "occurrenceId": "rwocc_0000000000000001"}
     },

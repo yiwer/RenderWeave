@@ -1,6 +1,14 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-21 **Template v1 implementation TV1-T39 已 `resolved/automated_verified`**：同一 Rust layout deep
+  module 已实现 definite Grid 每轴至多一个 FRACTION 的 exact positive-remainder allocation；单 weight 相消，
+  AUTO 仍按 FIXED → AUTO → FRACTION 阶段优先 fail closed，multiple FRACTION 仍返回 `GRID_FRACTION_TRACK`，
+  zero remainder 保留相邻 gap 与 authored origin。vector/verifier `/5`、fixture `/3`；Rust primary + Python
+  independent 为 30 laid-out + 12 unsupported、42/42、128 checks（`render`
+  `.sdlc/evidence/20260821-215633-render/`）；Server 8/8 reactor 绿色
+  （`.sdlc/evidence/20260821-215659-server/`）。HUG、Grid AUTO/multiple FRACTION、resource/world scene/raster/JPEG/
+  daemon output/Profile/E6 仍未实现；provider attempts/API Key reads/paid calls 均为 0，未 push/tag/PR。
 - 2026-08-21 **Template v1 implementation TV1-T38 已 `resolved/automated_verified`**：同一 Rust layout deep
   module 已实现每个 definite Stack 至多一个 main-axis FILL child 的 exact allocation/min-max/justify 退化算法；
   max clamp 释放空间给 justify，min clamp 允许 overflow，多个 FILL 仍定位第一个 authored occurrence 并以
