@@ -8,7 +8,7 @@ export type SystemStatus = {
     service: 'renderweave-api';
     status: 'ready';
     database: 'ready';
-    contractVersion: '0.14.0';
+    contractVersion: '0.15.0';
 };
 
 export type AssetDeletePrecheckResponse = {
@@ -273,6 +273,33 @@ export type DesignBleedKernel = {
     rightMm: number;
     bottomMm: number;
     leftMm: number;
+};
+
+export type TemplateValidationIssue = {
+    code: string;
+    category: 'DEPENDENCY' | 'HARD' | 'LIMIT';
+    severity: 'ERROR';
+    /**
+     * Stable RFC 6901 pointer into the proposed DesignDSL; empty only for a limit marker.
+     */
+    canonicalPointer: string;
+    messageArgs: Array<string>;
+};
+
+export type TemplateAuthoringProblem = {
+    type: string;
+    title: string;
+    status: 422;
+    detail?: string;
+    instance?: string | null;
+    code: string;
+    traceId: string;
+    proposedContentHash?: string | null;
+    confirmationToken?: string | null;
+    expiresAt?: string | null;
+    problems?: Array<TemplateValidationIssue>;
+    truncated?: boolean;
+    [key: string]: unknown;
 };
 
 export type TemplateReadableResponse = {
@@ -870,6 +897,11 @@ export type TemplateSchemaKey = string;
  * Exact permanent StaticSchema version selected during Template creation.
  */
 export type TemplateVersionTag = string;
+
+/**
+ * Five-minute opaque token from TEMPLATE_DEPENDENCY_CONFIRMATION_REQUIRED. It authorizes only an exact invalid Template save bound to actor, owner, Template, StaticSchema, expectedRevision, proposed content, complete problem set and dependency snapshot.
+ */
+export type TemplateInvalidSaveConfirmationToken = string;
 
 /**
  * Server-generated canonical UUID v4 Asset identity; clients must not parse its encoding.
@@ -1639,11 +1671,11 @@ export type CreateTemplateErrors = {
      */
     415: unknown;
     /**
-     * The complete RenderWeave definition is not valid and nothing was written.
+     * Design admission or dependency validation rejected the request. A confirmable save carries the exact bounded problem set, proposed content hash, expiry and opaque confirmation token; hard or truncated sets never carry a usable token. No write occurred.
      */
-    422: Problem;
+    422: TemplateAuthoringProblem;
     /**
-     * Template authorization or persistence is temporarily unavailable.
+     * Template authorization, dependency checking, confirmation or persistence is temporarily unavailable.
      */
     503: Problem;
 };
@@ -1689,7 +1721,7 @@ export type GetTemplateCurrentErrors = {
      */
     500: Problem;
     /**
-     * Template authorization or persistence is temporarily unavailable.
+     * Template authorization, dependency checking, confirmation or persistence is temporarily unavailable.
      */
     503: Problem;
 };
@@ -1707,6 +1739,12 @@ export type GetTemplateCurrentResponse = GetTemplateCurrentResponses[keyof GetTe
 
 export type SaveTemplateData = {
     body: DesignDslKernel;
+    headers?: {
+        /**
+         * Five-minute opaque token from TEMPLATE_DEPENDENCY_CONFIRMATION_REQUIRED. It authorizes only an exact invalid Template save bound to actor, owner, Template, StaticSchema, expectedRevision, proposed content, complete problem set and dependency snapshot.
+         */
+        'X-Confirmation-Token'?: string;
+    };
     path: {
         /**
          * Server-generated opaque Template identity; clients must not parse its encoding.
@@ -1745,15 +1783,15 @@ export type SaveTemplateErrors = {
      */
     415: unknown;
     /**
-     * The complete RenderWeave definition is not valid and nothing was written.
+     * Design admission or dependency validation rejected the request. A confirmable save carries the exact bounded problem set, proposed content hash, expiry and opaque confirmation token; hard or truncated sets never carry a usable token. No write occurred.
      */
-    422: Problem;
+    422: TemplateAuthoringProblem;
     /**
      * RFC 9457 problem response.
      */
     500: Problem;
     /**
-     * Template authorization or persistence is temporarily unavailable.
+     * Template authorization, dependency checking, confirmation or persistence is temporarily unavailable.
      */
     503: Problem;
 };
@@ -1803,7 +1841,7 @@ export type RecheckTemplateReadinessErrors = {
      */
     500: Problem;
     /**
-     * Template authorization or persistence is temporarily unavailable.
+     * Template authorization, dependency checking, confirmation or persistence is temporarily unavailable.
      */
     503: Problem;
 };

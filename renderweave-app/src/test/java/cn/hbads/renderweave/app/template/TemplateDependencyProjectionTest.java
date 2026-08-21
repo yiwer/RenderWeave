@@ -69,6 +69,7 @@ class TemplateDependencyProjectionTest {
         jdbc.sql("""
                 truncate table template_use_reference,
                                  template_asset_reference,
+                                 template_invalid_commit_confirmation,
                                  template_revision,
                                  template_aggregate,
                                  asset_audit_event,
@@ -109,28 +110,36 @@ class TemplateDependencyProjectionTest {
     }
 
     @Test
-    void missingAssetMakesCreateReadinessInvalid() {
-        var created = create(design(
+    void missingAssetMakesStrictCreateRejectWithoutRows() {
+        var outcome = templates.create(invocation(), new TemplateApplication.CreateCommand(
+                SYSTEM_EMPTY,
+                design(
                 "\"children\":[{\"nodeId\":\"00000000-0000-4000-8000-000000000012\","
                         + "\"kind\":\"image\",\"bindings\":[],"
                         + "\"placement\":{\"type\":\"ABSOLUTE\",\"xMm\":0,\"yMm\":0,"
                         + "\"widthMode\":\"FIXED\",\"widthMm\":10,"
                         + "\"heightMode\":\"FIXED\",\"heightMm\":10},"
-                        + "\"imageRef\":{\"assetId\":\"" + ASSET_MISSING + "\"}}]"));
-        assertThat(created.current().readiness()).isEqualTo(TemplateApplication.Readiness.INVALID);
+                        + "\"imageRef\":{\"assetId\":\"" + ASSET_MISSING + "\"}}]")));
+        assertThat(outcome).isInstanceOf(TemplateApplication.CreateDependencyRejected.class);
+        assertThat(((TemplateApplication.CreateDependencyRejected) outcome).report().confirmable())
+                .isTrue();
+        assertThat(jdbc.sql("select count(*) from template_aggregate")
+                .query(Long.class).single()).isZero();
     }
 
     @Test
     void assetKindMismatchIsInvalidAndFontKindMatches() {
         insertAsset(ASSET_FONT, "FONT");
-        var mismatch = create(design(
+        var mismatch = templates.create(invocation(), new TemplateApplication.CreateCommand(
+                SYSTEM_EMPTY,
+                design(
                 "\"children\":[{\"nodeId\":\"00000000-0000-4000-8000-000000000013\","
                         + "\"kind\":\"image\",\"bindings\":[],"
                         + "\"placement\":{\"type\":\"ABSOLUTE\",\"xMm\":0,\"yMm\":0,"
                         + "\"widthMode\":\"FIXED\",\"widthMm\":10,"
                         + "\"heightMode\":\"FIXED\",\"heightMm\":10},"
-                        + "\"imageRef\":{\"assetId\":\"" + ASSET_FONT + "\"}}]"));
-        assertThat(mismatch.current().readiness()).isEqualTo(TemplateApplication.Readiness.INVALID);
+                        + "\"imageRef\":{\"assetId\":\"" + ASSET_FONT + "\"}}]")));
+        assertThat(mismatch).isInstanceOf(TemplateApplication.CreateDependencyRejected.class);
 
         var match = create(design(
                 "\"children\":[{\"nodeId\":\"00000000-0000-4000-8000-000000000014\","
@@ -185,7 +194,7 @@ class TemplateDependencyProjectionTest {
     }
 
     @Test
-    void templateUseEdgesPersistAndCycleMakesSaveInvalid() {
+    void templateUseEdgesPersistAndCycleIsHardZeroWrite() {
         var child = create(design(""));
         var parent = create(design(
                 "\"children\":[{\"nodeId\":\"00000000-0000-4000-8000-000000000016\","
@@ -214,9 +223,94 @@ class TemplateDependencyProjectionTest {
                                         + "\"heightMode\":\"HUG_CONTENT\"}}]")
                 )
         );
-        assertThat(cycleSave).isInstanceOf(TemplateApplication.SavedReadable.class);
-        assertThat(((TemplateApplication.SavedReadable) cycleSave).current().readiness())
+        assertThat(cycleSave).isInstanceOf(TemplateApplication.SaveDependencyRejected.class);
+        var report = ((TemplateApplication.SaveDependencyRejected) cycleSave).report();
+        assertThat(report.confirmable()).isFalse();
+        assertThat(report.problems()).extracting(TemplateApplication.ValidationProblem::code)
+                .contains("TEMPLATE_REF_CYCLE");
+        assertThat(jdbc.sql("select current_revision from template_aggregate "
+                        + "where template_id = :templateId")
+                .param("templateId", child.current().templateId().value())
+                .query(Long.class).single()).isZero();
+    }
+
+    @Test
+    void dependencyInvalidSaveRequiresPersistedOfferThenAppendsInvalidWhenExact() {
+        var created = create(design(""));
+        var proposed = missingImageDesign("00000000-0000-4000-8000-000000000019");
+
+        var first = templates.save(
+                invocation(),
+                new TemplateApplication.SaveCommand(created.current().templateId(), 0, proposed)
+        );
+        var required = (TemplateApplication.SaveConfirmationRequired) first;
+        assertThat(required.offer().confirmationToken()).matches("[0-9a-f]{64}");
+        assertThat(required.offer().report().confirmable()).isTrue();
+        assertThat(jdbc.sql("select count(*) from template_invalid_commit_confirmation")
+                .query(Long.class).single()).isEqualTo(1);
+        assertThat(jdbc.sql("select count(*) from template_revision")
+                .query(Long.class).single()).isEqualTo(1);
+
+        var confirmed = templates.save(
+                invocation(),
+                new TemplateApplication.SaveCommand(
+                        created.current().templateId(),
+                        0,
+                        proposed,
+                        required.offer().confirmationToken()
+                )
+        );
+        assertThat(confirmed).isInstanceOf(TemplateApplication.SavedReadable.class);
+        assertThat(((TemplateApplication.SavedReadable) confirmed).current().readiness())
                 .isEqualTo(TemplateApplication.Readiness.INVALID);
+        assertThat(jdbc.sql("select count(*) from template_revision")
+                .query(Long.class).single()).isEqualTo(2);
+    }
+
+    @Test
+    void invalidExpiredAndDependencyDriftConfirmationsAreZeroWrite() {
+        var created = create(design(""));
+        var proposed = missingImageDesign("00000000-0000-4000-8000-00000000001a");
+        var invalid = templates.save(
+                invocation(),
+                new TemplateApplication.SaveCommand(
+                        created.current().templateId(), 0, proposed, "f".repeat(64))
+        );
+        assertThat(invalid).isInstanceOf(TemplateApplication.SaveConfirmationInvalid.class);
+
+        var first = (TemplateApplication.SaveConfirmationRequired) templates.save(
+                invocation(),
+                new TemplateApplication.SaveCommand(created.current().templateId(), 0, proposed)
+        );
+        jdbc.sql("""
+                update template_invalid_commit_confirmation
+                set issued_at = now() - interval '10 minutes',
+                    expires_at = now() - interval '1 second'
+                """).update();
+        var expired = templates.save(
+                invocation(),
+                new TemplateApplication.SaveCommand(
+                        created.current().templateId(), 0, proposed,
+                        first.offer().confirmationToken())
+        );
+        assertThat(expired).isInstanceOf(TemplateApplication.SaveConfirmationExpired.class);
+
+        jdbc.sql("truncate table template_invalid_commit_confirmation").update();
+        var driftOffer = (TemplateApplication.SaveConfirmationRequired) templates.save(
+                invocation(),
+                new TemplateApplication.SaveCommand(created.current().templateId(), 0, proposed)
+        );
+        insertAsset(ASSET_MISSING, "IMAGE");
+        var drifted = templates.save(
+                invocation(),
+                new TemplateApplication.SaveCommand(
+                        created.current().templateId(), 0, proposed,
+                        driftOffer.offer().confirmationToken())
+        );
+        assertThat(drifted).isInstanceOf(TemplateApplication.SaveConfirmationStale.class);
+        assertThat(((TemplateApplication.SaveConfirmationStale) drifted).replacement()).isEmpty();
+        assertThat(jdbc.sql("select count(*) from template_revision")
+                .query(Long.class).single()).isEqualTo(1);
     }
 
     @Test
@@ -321,5 +415,16 @@ class TemplateDependencyProjectionTest {
                 + "\"bindings\":[]"
                 + (children.isEmpty() ? ",\"children\":[]" : "," + children) + "}}")
                 .getBytes(StandardCharsets.UTF_8);
+    }
+
+    private static byte[] missingImageDesign(String nodeId) {
+        return design(
+                "\"children\":[{\"nodeId\":\"" + nodeId + "\"," +
+                        "\"kind\":\"image\",\"bindings\":[]," +
+                        "\"placement\":{\"type\":\"ABSOLUTE\",\"xMm\":0,\"yMm\":0," +
+                        "\"widthMode\":\"FIXED\",\"widthMm\":10," +
+                        "\"heightMode\":\"FIXED\",\"heightMm\":10}," +
+                        "\"imageRef\":{\"assetId\":\"" + ASSET_MISSING + "\"}}]"
+        );
     }
 }

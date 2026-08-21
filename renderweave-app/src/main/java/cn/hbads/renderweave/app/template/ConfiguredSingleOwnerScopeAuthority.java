@@ -65,7 +65,8 @@ final class ConfiguredSingleOwnerScopeAuthority implements OwnerScopeAuthority {
                 disclosure(),
                 operation == ExistingOperation.READ
                         ? new RecheckIdentity(UUID.randomUUID().toString())
-                        : issue(required)
+                        : issue(required),
+                ownerScope.value()
         );
     }
 

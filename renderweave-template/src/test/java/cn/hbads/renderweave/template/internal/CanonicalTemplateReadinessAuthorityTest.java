@@ -49,12 +49,12 @@ class CanonicalTemplateReadinessAuthorityTest {
                 persistence,
                 new DependencyResolution() {
                     @Override
-                    public AssetCheck checkAsset(String assetId, String kind) {
+                    public AssetResolution resolveAsset(String assetId) {
                         throw new AssertionError("dependency-free design must not check assets");
                     }
 
                     @Override
-                    public TemplateCheck checkTemplateUse(String targetTemplateId) {
+                    public TemplateResolution resolveTemplate(String targetTemplateId) {
                         throw new AssertionError("dependency-free design must not check templates");
                     }
                 }
@@ -118,7 +118,8 @@ class CanonicalTemplateReadinessAuthorityTest {
         public UpdateReadinessOutcome updateReadiness(
                 TemplateApplication.TemplateId actualTemplateId,
                 long currentRevision,
-                TemplateApplication.Readiness readiness
+                TemplateApplication.Readiness readiness,
+                cn.hbads.renderweave.template.spi.TemplateDependencySnapshot dependencySnapshot
         ) {
             assertEquals(templateId, actualTemplateId);
             assertEquals(7, currentRevision);

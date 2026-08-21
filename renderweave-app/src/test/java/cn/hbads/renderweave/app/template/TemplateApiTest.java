@@ -39,6 +39,20 @@ class TemplateApiTest {
                "kind":"canvas","widthMm":210,"heightMm":297,
                "bindings":[],"children":[]}}
             """;
+    private static final String MISSING_IMAGE_DESIGN = """
+            {"dslVersion":"renderweave-design/1.0",
+             "expressionProfile":"renderweave-expression/1.0",
+             "displayName":"Missing image dependency",
+             "definitions":[],
+             "designRoot":{"nodeId":"123e4567-e89b-42d3-a456-426614174001",
+               "kind":"canvas","widthMm":210,"heightMm":297,"bindings":[],
+               "children":[{"nodeId":"123e4567-e89b-42d3-a456-426614174002",
+                 "kind":"image","bindings":[],
+                 "placement":{"type":"ABSOLUTE","xMm":0,"yMm":0,
+                   "widthMode":"FIXED","widthMm":10,
+                   "heightMode":"FIXED","heightMm":10},
+                 "imageRef":{"assetId":"00000000-0000-4000-8000-0000000000ff"}}]}}
+            """;
 
     @Container
     @ServiceConnection
@@ -162,6 +176,72 @@ class TemplateApiTest {
     }
 
     @Test
+    void dependencySaveRequiresExactNamedConfirmationAndCommitsInvalid() throws Exception {
+        mockMvc.perform(post("/api/v1/templates")
+                        .queryParam("schemaKey", "system-empty")
+                        .queryParam("versionTag", "v1")
+                        .contentType(DESIGN_MEDIA_TYPE)
+                        .content(MISSING_IMAGE_DESIGN))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(content().contentTypeCompatibleWith("application/problem+json"))
+                .andExpect(jsonPath("$.code").value("TEMPLATE_DEPENDENCY_REJECTED"))
+                .andExpect(jsonPath("$.problems[0].code").value("TEMPLATE_ASSET_NOT_FOUND"))
+                .andExpect(jsonPath("$.problems[0].category").value("DEPENDENCY"))
+                .andExpect(jsonPath("$.problems[0].severity").value("ERROR"))
+                .andExpect(jsonPath("$.problems[0].canonicalPointer")
+                        .value("/designRoot/children/0/imageRef"))
+                .andExpect(jsonPath("$.truncated").value(false));
+        org.assertj.core.api.Assertions.assertThat(
+                jdbc.sql("select count(*) from template_aggregate").query(Long.class).single()
+        ).isZero();
+
+        var create = mockMvc.perform(post("/api/v1/templates")
+                        .queryParam("schemaKey", "system-empty")
+                        .queryParam("versionTag", "v1")
+                        .contentType(DESIGN_MEDIA_TYPE)
+                        .content(DESIGN))
+                .andExpect(status().isCreated())
+                .andReturn();
+        var templateId = tools.jackson.databind.json.JsonMapper.builder().build()
+                .readTree(create.getResponse().getContentAsByteArray())
+                .path("templateId")
+                .asText();
+
+        var offerResponse = mockMvc.perform(put("/api/v1/templates/{templateId}", templateId)
+                        .queryParam("expectedRevision", "0")
+                        .contentType(DESIGN_MEDIA_TYPE)
+                        .content(MISSING_IMAGE_DESIGN))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(content().contentTypeCompatibleWith("application/problem+json"))
+                .andExpect(jsonPath("$.code")
+                        .value("TEMPLATE_DEPENDENCY_CONFIRMATION_REQUIRED"))
+                .andExpect(jsonPath("$.proposedContentHash")
+                        .value(org.hamcrest.Matchers.matchesPattern("sha256:[0-9a-f]{64}")))
+                .andExpect(jsonPath("$.confirmationToken")
+                        .value(org.hamcrest.Matchers.matchesPattern("[0-9a-f]{64}")))
+                .andExpect(jsonPath("$.expiresAt").isNotEmpty())
+                .andExpect(jsonPath("$.problems[0].code").value("TEMPLATE_ASSET_NOT_FOUND"))
+                .andExpect(jsonPath("$.truncated").value(false))
+                .andReturn();
+        var token = tools.jackson.databind.json.JsonMapper.builder().build()
+                .readTree(offerResponse.getResponse().getContentAsByteArray())
+                .path("confirmationToken")
+                .asText();
+        org.assertj.core.api.Assertions.assertThat(
+                jdbc.sql("select count(*) from template_revision").query(Long.class).single()
+        ).isEqualTo(1);
+
+        mockMvc.perform(put("/api/v1/templates/{templateId}", templateId)
+                        .queryParam("expectedRevision", "0")
+                        .header("X-Confirmation-Token", token)
+                        .contentType(DESIGN_MEDIA_TYPE)
+                        .content(MISSING_IMAGE_DESIGN))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.revision").value(1))
+                .andExpect(jsonPath("$.readiness").value("INVALID"));
+    }
+
+    @Test
     void missingSchemaAndWrongMediaTypeFailWithoutWrites() throws Exception {
         mockMvc.perform(post("/api/v1/templates")
                         .queryParam("schemaKey", "missing-schema")
@@ -198,6 +278,14 @@ class TemplateApiTest {
                 .andExpect(jsonPath("$.code").value("TEMPLATE_REQUEST_INVALID"));
         mockMvc.perform(put("/api/v1/templates/{templateId}", "opaque-id")
                         .queryParam("expectedRevision", "not-a-number")
+                        .contentType(DESIGN_MEDIA_TYPE)
+                        .content(DESIGN))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentTypeCompatibleWith("application/problem+json"))
+                .andExpect(jsonPath("$.code").value("TEMPLATE_REQUEST_INVALID"));
+        mockMvc.perform(put("/api/v1/templates/{templateId}", "opaque-id")
+                        .queryParam("expectedRevision", "0")
+                        .header("X-Confirmation-Token", "force")
                         .contentType(DESIGN_MEDIA_TYPE)
                         .content(DESIGN))
                 .andExpect(status().isBadRequest())

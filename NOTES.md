@@ -1866,3 +1866,27 @@
 - Full 的 Server 8/8 reactor、runtime canary、R0/R1/P0、prototype、Draft 与 inference browser journeys 均通过；
   provider attempts/API Key reads/open authorization=0。T29 为 `automated_verified`，无 E4–E9、已发布 route、
   Editor J1、A3、Renderer certification 或 READY 升级；verified commit hash 按不可自指策略见提交交接报告。
+
+### Template v1 TV1-T30 Editor E4a（claimed / in_progress）
+
+- 2026-08-21：T29 以 verified local commit `fdcada1` 收口且 worktree clean；从 T09 E4 拆出当前真实依赖面的
+  E4a，并由 Codex `/root` single-writer claim T30（blocked by T04/T09/T20/T29，均 resolved）。
+- 权威核对确认现状：T20 evaluator 对 dependency failure 直接返回 INVALID，save 会无二次确认追加；cycle 也被归入
+  INVALID。T30 将它收紧为 bounded problems + 5 分钟 invalid-save token + fresh revalidation + transaction snapshot
+  fence，cycle/cross-scope/hard/truncated 永远零写。
+- 本票只覆盖当前已物化的 AssetRef/TemplateRef dependency surface；StaticSchema field path 与 child PUBLIC fill/type/
+  Schema compatibility 尚无完整 validator，后续另票实现，T30 不声明完整 E4。
+- 预计 contractVersion 0.15.0、V025、generated SDK 与 Web save shell 同票更新；不开放产品 route，不实现 E5–E9，
+  不运行 provider/真实数据/API Key/付费外部调用，不升级 Editor/Renderer/Template v1 READY。
+- 2026-08-21：T30 实现完成。Template core 新增 bounded structured problems、hard/dependency 分流、五分钟 opaque
+  confirmation authority 与 exact dependency snapshot；READY 保存会对 drift 重新求值，confirmed INVALID 在任何 drift
+  下零写并要求 fresh confirmation。PostgreSQL V025/authority 以 SERIALIZABLE transaction 锁定并核对现存事实。
+- Controller/OpenAPI/generated SDK 已统一到 contractVersion `0.15.0`；Web coordinator 严格绑定 token/body/revision/
+  generation/expiry，Canvas Focus 提供具名“仍保存为 INVALID”与取消，不引入 generic force、快捷键或 E9 完整面板。
+- A1 受影响证据：`template` `.sdlc/evidence/20260821-115240-template/`（Template 67、kernel 211/211）、`web`
+  `.sdlc/evidence/20260821-115304-web/`（Node 24，19 files/127 tests）、`fast`
+  `.sdlc/evidence/20260821-120546-fast/`、`server` `.sdlc/evidence/20260821-120603-server/`（App 342 tests，
+  15 controlled skips）。最终 exact-manifest `full` 目录仅在 commit handoff 报告，避免反写改变已验证输入。
+- T30 生命周期为 `resolved / automated_verified`。完整 E4 仍缺 StaticSchema field-path 与 child PUBLIC fill/type/Schema
+  compatibility validator；产品 route、E5–E9、Editor J1、Renderer/Profile/formal records/READY 均未推进。Provider
+  attempts=0、API Key reads=0、open authorization=0；未发送真实数据、未调用付费外部模型，未 push/tag/PR。

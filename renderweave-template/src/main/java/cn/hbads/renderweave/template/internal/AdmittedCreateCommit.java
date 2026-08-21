@@ -5,6 +5,7 @@ import cn.hbads.renderweave.template.api.TemplateApplication;
 import cn.hbads.renderweave.template.api.TemplateDependencyProjection;
 import cn.hbads.renderweave.template.spi.OwnerScopeAuthority;
 import cn.hbads.renderweave.template.spi.TemplatePersistence;
+import cn.hbads.renderweave.template.spi.TemplateDependencySnapshot;
 
 import java.util.Objects;
 
@@ -16,6 +17,7 @@ final class AdmittedCreateCommit implements TemplatePersistence.CreateCommit {
     private final String contentHash;
     private final TemplateApplication.Readiness readiness;
     private final TemplateDependencyProjection projection;
+    private final TemplateDependencySnapshot dependencySnapshot;
 
     AdmittedCreateCommit(
             TemplateApplication.TemplateId templateId,
@@ -24,7 +26,8 @@ final class AdmittedCreateCommit implements TemplatePersistence.CreateCommit {
             byte[] canonicalDesignDslUtf8,
             String contentHash,
             TemplateApplication.Readiness readiness,
-            TemplateDependencyProjection projection
+            TemplateDependencyProjection projection,
+            TemplateDependencySnapshot dependencySnapshot
     ) {
         this.templateId = Objects.requireNonNull(templateId, "templateId");
         this.ownerScope = Objects.requireNonNull(ownerScope, "ownerScope");
@@ -36,6 +39,8 @@ final class AdmittedCreateCommit implements TemplatePersistence.CreateCommit {
         this.contentHash = Objects.requireNonNull(contentHash, "contentHash");
         this.readiness = Objects.requireNonNull(readiness, "readiness");
         this.projection = Objects.requireNonNull(projection, "projection");
+        this.dependencySnapshot = Objects.requireNonNull(
+                dependencySnapshot, "dependencySnapshot");
     }
 
     @Override
@@ -76,5 +81,10 @@ final class AdmittedCreateCommit implements TemplatePersistence.CreateCommit {
     @Override
     public TemplateDependencyProjection projection() {
         return projection;
+    }
+
+    @Override
+    public TemplateDependencySnapshot dependencySnapshot() {
+        return dependencySnapshot;
     }
 }

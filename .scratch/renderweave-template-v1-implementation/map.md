@@ -162,6 +162,11 @@ Label: wayfinder:map
   **resolved / automated_verified**；以 lossless expectedRevision 保存 exact working canonical，严格核验成功 adoption；
   409 覆盖 offer 绑定远端 revision 与本地 generation，确认后先重读 current，漂移必须重新确认；outcome unknown
   只锁定并留给 E5 reconciliation。Node 24 Web/Fast/Full 17/17 全绿，无 Java/OpenAPI/migration/route 差异。
+- [实现 Editor E4a 依赖问题确认与 hard-error 零写](issues/30-editor-e4a-invalid-save-confirmation.md) —
+  **resolved / automated_verified**；对 T20 已物化 AssetRef/TemplateRef dependency surface 增加 bounded problem set、
+  5 分钟 opaque invalid-save token、fresh revalidation 与 SERIALIZABLE transaction snapshot fence；cycle/cross-scope/
+  hard/truncated 永远零写，Web 提供与 draft generation 绑定的具名 INVALID 确认。Template/Web/Fast/Server/Full
+  分级门控全绿；更深 field-path/child-fill validator 仍须另票完成。
 - [验证 Product Editor 状态、恢复与权威预览架构](issues/09-validate-product-editor-architecture.md) —
   throwaway 逻辑原型（`/prototype/editor-state-model`，不进产品 route）把冻结编辑器规则编码为确定性
   fixture 状态机：10 个引导走查场景 37/37 断言 + 自由操作冒烟 + 键盘焦点检查全部通过（Playwright A1，
@@ -234,8 +239,8 @@ Label: wayfinder:map
   statically-decidable layout preflight，T26 也已完成 definite ABSOLUTE local box 子闭包；其余
   HUG/Stack/Grid/resource/world scene/raster/JPEG/Engine 接线仍须另行登记，物理 Linux
   双 CPU-family 认证与 J1/A3 属届时另行授权的执行级门控。
-- Editor T27/E1、T28/E2 与 T29/E3 均已单独登记并完成；下一 frontier 为 E4 dependency confirmation/problem
-  projection，仍须按真实前置另行登记；E5–E9 继续逐票登记，
+- Editor T27/E1、T28/E2、T29/E3 与 T30/E4a 均已单独登记并完成；完整 E4 仍需后续 field-path/child-fill
+  validator 纵切；E5–E9 继续逐票登记，
   `/templates/:templateId` 在 save/preview/recovery 等闭环完成前仍不接入产品路由。
 - Product Editor 的 save/recovery/conflict/preview/browser automation 与 accessibility 实施票，要等状态架构
   prototype 结论后再登记——T09 已给出结论与 E1–E9 占位-free 纵切分解（open/baseline、本地编辑+undo+

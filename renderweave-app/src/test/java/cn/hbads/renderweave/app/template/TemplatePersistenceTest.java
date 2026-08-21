@@ -4,6 +4,12 @@ import cn.hbads.renderweave.schema.definition.StaticSchemaRef;
 import cn.hbads.renderweave.schema.identity.SchemaKey;
 import cn.hbads.renderweave.schema.identity.VersionTag;
 import cn.hbads.renderweave.template.api.TemplateApplication;
+import cn.hbads.renderweave.template.api.DesignDslAuthority;
+import cn.hbads.renderweave.template.api.TemplateDependencyProjection;
+import cn.hbads.renderweave.template.spi.DependencyResolution;
+import cn.hbads.renderweave.template.spi.OwnerScopeAuthority;
+import cn.hbads.renderweave.template.spi.TemplateDependencySnapshot;
+import cn.hbads.renderweave.template.spi.TemplatePersistence;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,6 +53,21 @@ class TemplatePersistenceTest {
                "kind":"canvas","widthMm":210,"heightMm":297,
                "bindings":[],"children":[]}}
             """.getBytes(StandardCharsets.UTF_8);
+    private static final String FENCED_ASSET = "00000000-0000-4000-8000-0000000000f1";
+    private static final byte[] ASSET_DESIGN = ("""
+            {"dslVersion":"renderweave-design/1.0",
+             "expressionProfile":"renderweave-expression/1.0",
+             "displayName":"Snapshot fence",
+             "definitions":[],
+             "designRoot":{"nodeId":"123e4567-e89b-42d3-a456-426614174000",
+               "kind":"canvas","widthMm":210,"heightMm":297,"bindings":[],
+               "children":[{"nodeId":"00000000-0000-4000-8000-0000000000f2",
+                 "kind":"image","bindings":[],
+                 "placement":{"type":"ABSOLUTE","xMm":0,"yMm":0,
+                   "widthMode":"FIXED","widthMm":10,
+                   "heightMode":"FIXED","heightMm":10},
+                 "imageRef":{"assetId":"%s"}}]}}
+            """).formatted(FENCED_ASSET).getBytes(StandardCharsets.UTF_8);
 
     @Autowired
     private TemplateApplication templates;
@@ -54,13 +75,25 @@ class TemplatePersistenceTest {
     @Autowired
     private JdbcClient jdbc;
 
+    @Autowired
+    private TemplatePersistence persistence;
+
+    @Autowired
+    private DesignDslAuthority designs;
+
+    @Autowired
+    private org.springframework.transaction.PlatformTransactionManager transactionManager;
+
     @BeforeEach
     void clearTemplates() {
         jdbc.sql("""
                 truncate table template_use_reference,
                                  template_asset_reference,
+                                 template_invalid_commit_confirmation,
                                  template_revision,
-                                 template_aggregate
+                                 template_aggregate,
+                                 asset_content_revision,
+                                 asset_aggregate
                 cascade
                 """).update();
     }
@@ -121,8 +154,10 @@ class TemplatePersistenceTest {
         }
 
         assertThat(outcomes.stream().filter(TemplateApplication.SavedReadable.class::isInstance))
+                .as("concurrent save outcomes: %s", outcomes)
                 .hasSize(1);
         assertThat(outcomes.stream().filter(TemplateApplication.SaveRevisionConflict.class::isInstance))
+                .as("concurrent save outcomes: %s", outcomes)
                 .singleElement()
                 .satisfies(outcome -> assertThat(
                         ((TemplateApplication.SaveRevisionConflict) outcome)
@@ -226,6 +261,82 @@ class TemplatePersistenceTest {
         assertThat(revisionCount()).isEqualTo(1);
     }
 
+    @Test
+    void staleMissingRowSnapshotRejectsAppendAndRollsBackTheRevision() {
+        var created = create("pg-snapshot-create");
+        var admitted = (DesignDslAuthority.Admitted) designs.admit(ASSET_DESIGN);
+        var projection = new TemplateDependencyProjection(
+                List.of(new TemplateDependencyProjection.AssetRefAtom(
+                        FENCED_ASSET,
+                        "imageRef",
+                        "/designRoot/children/0/imageRef"
+                )),
+                List.of()
+        );
+        var staleSnapshot = new TemplateDependencySnapshot(
+                List.of(TemplateDependencySnapshot.AssetFact.missing(FENCED_ASSET)),
+                List.of()
+        );
+        insertImageAsset();
+
+        var outcome = persistence.append(new TemplatePersistence.AppendCommit() {
+            @Override
+            public TemplateApplication.TemplateId templateId() {
+                return created.current().templateId();
+            }
+
+            @Override
+            public OwnerScopeAuthority.OwnerScope ownerScope() {
+                return new OwnerScopeAuthority.OwnerScope("test-owner");
+            }
+
+            @Override
+            public StaticSchemaRef staticSchema() {
+                return SYSTEM_EMPTY;
+            }
+
+            @Override
+            public long expectedRevision() {
+                return 0;
+            }
+
+            @Override
+            public long nextRevision() {
+                return 1;
+            }
+
+            @Override
+            public byte[] canonicalDesignDslUtf8() {
+                return admitted.canonicalUtf8();
+            }
+
+            @Override
+            public String contentHash() {
+                return admitted.contentHash();
+            }
+
+            @Override
+            public TemplateApplication.Readiness readiness() {
+                return TemplateApplication.Readiness.INVALID;
+            }
+
+            @Override
+            public TemplateDependencyProjection projection() {
+                return projection;
+            }
+
+            @Override
+            public TemplateDependencySnapshot dependencySnapshot() {
+                return staleSnapshot;
+            }
+        });
+
+        assertThat(outcome).isInstanceOf(TemplatePersistence.AppendDependencyDrift.class);
+        assertThat(jdbc.sql("select current_revision from template_aggregate")
+                .query(Long.class).single()).isZero();
+        assertThat(revisionCount()).isEqualTo(1);
+    }
+
     private TemplateApplication.CreatedReadable create(String invocationId) {
         return (TemplateApplication.CreatedReadable) templates.create(
                 TemplateApplication.TemplateInvocationRef.serverCreated(invocationId),
@@ -255,6 +366,36 @@ class TemplatePersistenceTest {
 
     private long revisionCount() {
         return jdbc.sql("select count(*) from template_revision").query(Long.class).single();
+    }
+
+    private void insertImageAsset() {
+        var transactions = new org.springframework.transaction.support.TransactionTemplate(
+                transactionManager);
+        transactions.executeWithoutResult(status -> {
+            jdbc.sql("""
+                    insert into asset_aggregate (
+                        asset_id, owner_scope, kind, lifecycle, asset_revision,
+                        current_content_version, display_name, tags
+                    ) values (
+                        :assetId, 'test-owner', 'IMAGE', 'ACTIVE', 0,
+                        0, 'snapshot fixture', '[]'
+                    )
+                    """)
+                    .param("assetId", FENCED_ASSET)
+                    .update();
+            jdbc.sql("""
+                    insert into asset_content_revision (
+                        asset_id, content_version, sha256, media_type, byte_length,
+                        descriptor_kind, descriptor_json
+                    ) values (
+                        :assetId, 0,
+                        'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+                        'image/png', 4, 'IMAGE', '{}'
+                    )
+                    """)
+                    .param("assetId", FENCED_ASSET)
+                    .update();
+        });
     }
 
     private void installRevisionInsertFailure() {

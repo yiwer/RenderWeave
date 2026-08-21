@@ -36,12 +36,12 @@ class TemplateApplicationContractTest {
         return TemplateModule.application(ownerScopes, persistence, schemas,
                 new DependencyResolution() {
                     @Override
-                    public AssetCheck checkAsset(String assetId, String kind) {
+                    public AssetResolution resolveAsset(String assetId) {
                         throw new AssertionError("no dependency probe expected: asset " + assetId);
                     }
 
                     @Override
-                    public TemplateCheck checkTemplateUse(String targetTemplateId) {
+                    public TemplateResolution resolveTemplate(String targetTemplateId) {
                         throw new AssertionError(
                                 "no dependency probe expected: template use " + targetTemplateId);
                     }
@@ -313,7 +313,8 @@ class TemplateApplicationContractTest {
                 assertEquals(ExistingOperation.READ, operation);
                 return new ExistingGranted(
                         Disclosure.OPAQUE,
-                        new RecheckIdentity("opaque-read-must-not-be-used")
+                        new RecheckIdentity("opaque-read-must-not-be-used"),
+                        "opaque-reader"
                 );
             }
 
@@ -478,7 +479,8 @@ class TemplateApplicationContractTest {
         public UpdateReadinessOutcome updateReadiness(
                 TemplateApplication.TemplateId templateId,
                 long currentRevision,
-                TemplateApplication.Readiness readiness
+                TemplateApplication.Readiness readiness,
+                cn.hbads.renderweave.template.spi.TemplateDependencySnapshot dependencySnapshot
         ) {
             throw new AssertionError("unexpected updateReadiness");
         }
@@ -563,7 +565,11 @@ class TemplateApplicationContractTest {
             assertEquals(expectedInvocation, invocation);
             assertEquals(expectedScope, storedOwnerScope);
             assertEquals(ExistingOperation.READ, operation);
-            return new ExistingGranted(Disclosure.READABLE, new RecheckIdentity("unused-read"));
+            return new ExistingGranted(
+                    Disclosure.READABLE,
+                    new RecheckIdentity("unused-read"),
+                    "read-authority"
+            );
         }
 
         @Override
@@ -587,7 +593,8 @@ class TemplateApplicationContractTest {
         public UpdateReadinessOutcome updateReadiness(
                 TemplateApplication.TemplateId templateId,
                 long currentRevision,
-                TemplateApplication.Readiness readiness
+                TemplateApplication.Readiness readiness,
+                cn.hbads.renderweave.template.spi.TemplateDependencySnapshot dependencySnapshot
         ) {
             throw new AssertionError("unexpected updateReadiness");
         }
@@ -690,7 +697,7 @@ class TemplateApplicationContractTest {
             assertEquals(expectedInvocation, invocation);
             assertEquals(expectedScope, storedOwnerScope);
             assertEquals(ExistingOperation.UPDATE, operation);
-            return new ExistingGranted(disclosure, recheckIdentity);
+            return new ExistingGranted(disclosure, recheckIdentity, "save-authority");
         }
 
         @Override
@@ -752,7 +759,8 @@ class TemplateApplicationContractTest {
         public UpdateReadinessOutcome updateReadiness(
                 TemplateApplication.TemplateId templateId,
                 long currentRevision,
-                TemplateApplication.Readiness readiness
+                TemplateApplication.Readiness readiness,
+                cn.hbads.renderweave.template.spi.TemplateDependencySnapshot dependencySnapshot
         ) {
             calls.add("update:" + currentRevision + ":" + readiness.name());
             assertEquals(expectedTemplateId, templateId);
@@ -814,7 +822,8 @@ class TemplateApplicationContractTest {
         public UpdateReadinessOutcome updateReadiness(
                 TemplateApplication.TemplateId templateId,
                 long currentRevision,
-                TemplateApplication.Readiness readiness
+                TemplateApplication.Readiness readiness,
+                cn.hbads.renderweave.template.spi.TemplateDependencySnapshot dependencySnapshot
         ) {
             calls.add("update:" + currentRevision + ":" + readiness.name());
             assertEquals(expectedTemplateId, templateId);
@@ -837,7 +846,8 @@ class TemplateApplicationContractTest {
         public UpdateReadinessOutcome updateReadiness(
                 TemplateApplication.TemplateId templateId,
                 long currentRevision,
-                TemplateApplication.Readiness readiness
+                TemplateApplication.Readiness readiness,
+                cn.hbads.renderweave.template.spi.TemplateDependencySnapshot dependencySnapshot
         ) {
             throw new AssertionError("unexpected updateReadiness");
         }
@@ -943,7 +953,8 @@ class TemplateApplicationContractTest {
         public UpdateReadinessOutcome updateReadiness(
                 TemplateApplication.TemplateId templateId,
                 long currentRevision,
-                TemplateApplication.Readiness readiness
+                TemplateApplication.Readiness readiness,
+                cn.hbads.renderweave.template.spi.TemplateDependencySnapshot dependencySnapshot
         ) {
             throw new AssertionError("unexpected updateReadiness");
         }
@@ -996,7 +1007,8 @@ class TemplateApplicationContractTest {
         public UpdateReadinessOutcome updateReadiness(
                 TemplateApplication.TemplateId templateId,
                 long currentRevision,
-                TemplateApplication.Readiness readiness
+                TemplateApplication.Readiness readiness,
+                cn.hbads.renderweave.template.spi.TemplateDependencySnapshot dependencySnapshot
         ) {
             throw new AssertionError("unexpected updateReadiness");
         }

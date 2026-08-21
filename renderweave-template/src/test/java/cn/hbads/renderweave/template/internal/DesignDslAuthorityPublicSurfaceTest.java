@@ -41,6 +41,8 @@ class DesignDslAuthorityPublicSurfaceTest {
                 "cn.hbads.renderweave.template.spi.OwnerScopeAuthority",
                 "cn.hbads.renderweave.template.spi.TemplatePersistence",
                 "cn.hbads.renderweave.template.spi.DependencyResolution",
+                "cn.hbads.renderweave.template.spi.TemplateDependencySnapshot",
+                "cn.hbads.renderweave.template.spi.InvalidCommitConfirmationAuthority",
                 "cn.hbads.renderweave.template.internal.TemplateModule"
         ), publicTopLevel);
     }

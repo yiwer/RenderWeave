@@ -517,7 +517,8 @@ class TemplateClosureAuthorityTest {
         public UpdateReadinessOutcome updateReadiness(
                 TemplateApplication.TemplateId templateId,
                 long currentRevision,
-                TemplateApplication.Readiness readiness
+                TemplateApplication.Readiness readiness,
+                cn.hbads.renderweave.template.spi.TemplateDependencySnapshot dependencySnapshot
         ) {
             throw new AssertionError("not used by closure tests");
         }

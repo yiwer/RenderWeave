@@ -243,6 +243,61 @@ describe('Template Editor E1/E2 Product shell', () => {
     expect(screen.getByText('Canonical 本地草稿')).toBeTruthy();
   });
 
+  it('shows the complete dependency set in Canvas Focus and cancels without changing the draft', async () => {
+    const session = dirtySession('Dependency draft');
+    const transport = saveTransport({
+      putCurrent: vi.fn().mockResolvedValue({
+        status: 422,
+        body: await invalidSaveProblem(session, 'a'.repeat(64)),
+      }),
+    });
+    render(<TemplateEditorShell session={session} saveTransport={transport} />);
+
+    fireEvent.click(screen.getByRole('button', { name: /canonical/ }));
+    expect(await screen.findByRole('heading', { name: '确认仍保存为 INVALID' })).toBeTruthy();
+    expect(screen.getByText('1 项依赖问题 · 完整未截断')).toBeTruthy();
+    expect(screen.getByText('TEMPLATE_ASSET_NOT_FOUND')).toBeTruthy();
+    expect(screen.getByText('/designRoot/children/0/imageRef')).toBeTruthy();
+    expect(screen.getByRole('button', { name: '仍保存为 INVALID' })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: '取消 INVALID 保存' }));
+    expect(screen.queryByRole('heading', { name: '确认仍保存为 INVALID' })).toBeNull();
+    expect(screen.getByRole('heading', { level: 1, name: 'Dependency draft' })).toBeTruthy();
+  });
+
+  it('keeps one mutation lock while confirming and adopts the exact INVALID baseline', async () => {
+    const session = dirtySession('Dependency draft');
+    const token = 'a'.repeat(64);
+    const putCurrent = vi.fn()
+      .mockResolvedValueOnce({
+        status: 422,
+        body: await invalidSaveProblem(session, token),
+      })
+      .mockResolvedValueOnce({
+        status: 200,
+        body: await saveResponse(session, '8', 'INVALID'),
+      });
+    render(<TemplateEditorShell
+      session={session}
+      saveTransport={saveTransport({ putCurrent })}
+    />);
+
+    fireEvent.click(screen.getByRole('button', { name: /canonical/ }));
+    fireEvent.click(await screen.findByRole('button', { name: '仍保存为 INVALID' }));
+    expect(screen.getByRole('textbox').hasAttribute('disabled')).toBe(true);
+
+    await waitFor(() => expect(screen.getByText('revision 8')).toBeTruthy());
+    expect(screen.getByText('INVALID')).toBeTruthy();
+    expect(putCurrent).toHaveBeenNthCalledWith(
+      2,
+      session.baseline.templateId,
+      '7',
+      session.workingCopy.canonicalDesignDsl,
+      expect.any(AbortSignal),
+      token,
+    );
+  });
+
   it('forces re-confirmation after a trusted-current drift, then adopts the overwrite', async () => {
     const session = dirtySession('最终覆盖草稿');
     const remoteNine = cleanSessionAt('9');
@@ -368,6 +423,7 @@ function saveTransport(
 async function saveResponse(
   session: StructuredEditorSession,
   revision: string,
+  readiness: 'READY' | 'INVALID' = 'READY',
 ): Promise<string> {
   const canonical = session.workingCopy.canonicalDesignDsl;
   const bytes = new TextEncoder().encode('renderweave-design-content/1\0' + canonical);
@@ -379,9 +435,36 @@ async function saveResponse(
   const { templateId, staticSchema } = session.baseline;
   return `{"templateId":"${templateId}","disclosure":"READABLE","revision":${revision},`
     + `"staticSchema":{"schemaKey":"${staticSchema.schemaKey}","versionTag":"${staticSchema.versionTag}"},`
-    + `"contentHash":"${hash}","readiness":"READY","designDsl":${canonical}}`;
+    + `"contentHash":"${hash}","readiness":"${readiness}","designDsl":${canonical}}`;
 }
 
 function saveProblem(code: string, currentRevision?: string): string {
   return `{"code":"${code}"${currentRevision ? `,"currentRevision":${currentRevision}` : ''}}`;
+}
+
+async function invalidSaveProblem(
+  session: StructuredEditorSession,
+  confirmationToken: string,
+): Promise<string> {
+  const canonical = session.workingCopy.canonicalDesignDsl;
+  const bytes = new TextEncoder().encode('renderweave-design-content/1\0' + canonical);
+  const digest = new Uint8Array(await crypto.subtle.digest('SHA-256', bytes));
+  const proposedContentHash = `sha256:${Array.from(
+    digest,
+    (byte) => byte.toString(16).padStart(2, '0'),
+  ).join('')}`;
+  return JSON.stringify({
+    code: 'TEMPLATE_DEPENDENCY_CONFIRMATION_REQUIRED',
+    proposedContentHash,
+    confirmationToken,
+    expiresAt: '2099-01-01T00:00:00Z',
+    problems: [{
+      code: 'TEMPLATE_ASSET_NOT_FOUND',
+      category: 'DEPENDENCY',
+      severity: 'ERROR',
+      canonicalPointer: '/designRoot/children/0/imageRef',
+      messageArgs: [],
+    }],
+    truncated: false,
+  });
 }

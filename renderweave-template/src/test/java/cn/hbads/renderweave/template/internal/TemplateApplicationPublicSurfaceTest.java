@@ -75,7 +75,7 @@ class TemplateApplicationPublicSurfaceTest {
         assertFalse(allPersistenceNames.contains("rebind"));
         assertFalse(allPersistenceNames.contains("executeSql"));
         assertEquals(
-                Set.of("checkAsset", "checkTemplateUse"),
+                Set.of("resolveAsset", "resolveTemplate"),
                 methodNames(cn.hbads.renderweave.template.spi.DependencyResolution.class)
         );
     }

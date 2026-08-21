@@ -3,7 +3,10 @@ package cn.hbads.renderweave.template.api;
 import cn.hbads.renderweave.schema.definition.StaticSchemaRef;
 
 import java.util.Objects;
+import java.util.List;
+import java.util.Optional;
 import java.util.OptionalLong;
+import java.time.Instant;
 
 /** Authoring interface for the Template aggregate. */
 public interface TemplateApplication {
@@ -127,11 +130,21 @@ public interface TemplateApplication {
         private final TemplateId templateId;
         private final long expectedRevision;
         private final byte[] rawDesignDslUtf8;
+        private final String confirmationToken;
 
         public SaveCommand(
                 TemplateId templateId,
                 long expectedRevision,
                 byte[] rawDesignDslUtf8
+        ) {
+            this(templateId, expectedRevision, rawDesignDslUtf8, null);
+        }
+
+        public SaveCommand(
+                TemplateId templateId,
+                long expectedRevision,
+                byte[] rawDesignDslUtf8,
+                String confirmationToken
         ) {
             this.templateId = Objects.requireNonNull(templateId, "templateId");
             if (expectedRevision < 0 || expectedRevision == Long.MAX_VALUE) {
@@ -144,6 +157,13 @@ public interface TemplateApplication {
                     rawDesignDslUtf8,
                     "rawDesignDslUtf8"
             ).clone();
+            if (confirmationToken != null
+                    && !confirmationToken.matches("[0-9a-f]{64}")) {
+                throw new IllegalArgumentException(
+                        "confirmationToken must be 64 lowercase hexadecimal characters"
+                );
+            }
+            this.confirmationToken = confirmationToken;
         }
 
         public TemplateId templateId() {
@@ -157,6 +177,10 @@ public interface TemplateApplication {
         public byte[] rawDesignDslUtf8() {
             return rawDesignDslUtf8.clone();
         }
+
+        public Optional<String> confirmationToken() {
+            return Optional.ofNullable(confirmationToken);
+        }
     }
 
     enum Readiness {
@@ -165,13 +189,105 @@ public interface TemplateApplication {
         STALE
     }
 
+    enum ProblemCategory {
+        DEPENDENCY,
+        HARD,
+        LIMIT
+    }
+
+    enum ProblemSeverity {
+        ERROR
+    }
+
+    record ValidationProblem(
+            String code,
+            ProblemCategory category,
+            ProblemSeverity severity,
+            String canonicalPointer,
+            List<String> messageArgs
+    ) {
+        public ValidationProblem {
+            if (code == null || code.isBlank() || code.length() > 128) {
+                throw new IllegalArgumentException(
+                        "problem code must be non-blank and at most 128 characters"
+                );
+            }
+            Objects.requireNonNull(category, "category");
+            Objects.requireNonNull(severity, "severity");
+            if (canonicalPointer == null || canonicalPointer.length() > 2048) {
+                throw new IllegalArgumentException(
+                        "canonicalPointer must be present and at most 2048 characters"
+                );
+            }
+            messageArgs = List.copyOf(Objects.requireNonNull(messageArgs, "messageArgs"));
+            if (messageArgs.size() > 32 || messageArgs.stream().anyMatch(arg ->
+                    arg == null || arg.length() > 512)) {
+                throw new IllegalArgumentException("messageArgs exceed the closed problem bound");
+            }
+        }
+    }
+
+    record ValidationReport(
+            List<ValidationProblem> problems,
+            boolean truncated,
+            String fingerprint
+    ) {
+        public ValidationReport {
+            problems = List.copyOf(Objects.requireNonNull(problems, "problems"));
+            if (problems.size() > 200) {
+                throw new IllegalArgumentException("validation report exceeds 200 problems");
+            }
+            if (fingerprint == null || !fingerprint.matches("[0-9a-f]{64}")) {
+                throw new IllegalArgumentException(
+                        "problem fingerprint must be 64 lowercase hexadecimal characters"
+                );
+            }
+        }
+
+        public boolean confirmable() {
+            return !truncated
+                    && !problems.isEmpty()
+                    && problems.stream().allMatch(problem ->
+                    problem.category() == ProblemCategory.DEPENDENCY);
+        }
+    }
+
+    record InvalidCommitConfirmationOffer(
+            String confirmationToken,
+            Instant expiresAt,
+            String proposedContentHash,
+            ValidationReport report
+    ) {
+        public InvalidCommitConfirmationOffer {
+            if (confirmationToken == null
+                    || !confirmationToken.matches("[0-9a-f]{64}")) {
+                throw new IllegalArgumentException(
+                        "confirmationToken must be 64 lowercase hexadecimal characters"
+                );
+            }
+            Objects.requireNonNull(expiresAt, "expiresAt");
+            if (proposedContentHash == null
+                    || !proposedContentHash.matches("sha256:[0-9a-f]{64}")) {
+                throw new IllegalArgumentException(
+                        "proposedContentHash must use the sha256 wire format"
+                );
+            }
+            Objects.requireNonNull(report, "report");
+            if (!report.confirmable()) {
+                throw new IllegalArgumentException("offer report must be confirmable");
+            }
+        }
+    }
+
     sealed interface CreateOutcome permits
             CreatedReadable,
             CreatedOpaque,
             CreateDesignRejected,
+            CreateDependencyRejected,
             CreateStaticSchemaNotFound,
             CreateForbidden,
             CreateAuthorityUnavailable,
+            CreateDependencyUnavailable,
             CreatePersistenceUnavailable {
     }
 
@@ -194,6 +310,12 @@ public interface TemplateApplication {
         }
     }
 
+    record CreateDependencyRejected(ValidationReport report) implements CreateOutcome {
+        public CreateDependencyRejected {
+            Objects.requireNonNull(report, "report");
+        }
+    }
+
     record CreateStaticSchemaNotFound() implements CreateOutcome {
     }
 
@@ -201,6 +323,9 @@ public interface TemplateApplication {
     }
 
     record CreateAuthorityUnavailable() implements CreateOutcome {
+    }
+
+    record CreateDependencyUnavailable() implements CreateOutcome {
     }
 
     record CreatePersistenceUnavailable() implements CreateOutcome {
@@ -278,12 +403,19 @@ public interface TemplateApplication {
             SavedReadable,
             SavedOpaque,
             SaveDesignRejected,
+            SaveConfirmationRequired,
+            SaveDependencyRejected,
+            SaveConfirmationInvalid,
+            SaveConfirmationExpired,
+            SaveConfirmationStale,
             SaveNotFound,
             SaveForbidden,
             SaveDeleted,
             SaveRevisionConflict,
             SaveIntegrityMismatch,
             SaveAuthorityUnavailable,
+            SaveDependencyUnavailable,
+            SaveConfirmationUnavailable,
             SavePersistenceUnavailable {
     }
 
@@ -302,6 +434,32 @@ public interface TemplateApplication {
     record SaveDesignRejected(DesignDslAuthority.Rejected rejection) implements SaveOutcome {
         public SaveDesignRejected {
             Objects.requireNonNull(rejection, "rejection");
+        }
+    }
+
+    record SaveConfirmationRequired(InvalidCommitConfirmationOffer offer)
+            implements SaveOutcome {
+        public SaveConfirmationRequired {
+            Objects.requireNonNull(offer, "offer");
+        }
+    }
+
+    record SaveDependencyRejected(ValidationReport report) implements SaveOutcome {
+        public SaveDependencyRejected {
+            Objects.requireNonNull(report, "report");
+        }
+    }
+
+    record SaveConfirmationInvalid() implements SaveOutcome {
+    }
+
+    record SaveConfirmationExpired() implements SaveOutcome {
+    }
+
+    record SaveConfirmationStale(Optional<InvalidCommitConfirmationOffer> replacement)
+            implements SaveOutcome {
+        public SaveConfirmationStale {
+            Objects.requireNonNull(replacement, "replacement");
         }
     }
 
@@ -324,6 +482,12 @@ public interface TemplateApplication {
     }
 
     record SaveAuthorityUnavailable() implements SaveOutcome {
+    }
+
+    record SaveDependencyUnavailable() implements SaveOutcome {
+    }
+
+    record SaveConfirmationUnavailable() implements SaveOutcome {
     }
 
     record SavePersistenceUnavailable() implements SaveOutcome {

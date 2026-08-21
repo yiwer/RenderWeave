@@ -6,6 +6,7 @@ import cn.hbads.renderweave.template.api.TemplateApplication;
 import cn.hbads.renderweave.template.api.TemplateClosureAuthority;
 import cn.hbads.renderweave.template.api.TemplateReadinessAuthority;
 import cn.hbads.renderweave.template.spi.DependencyResolution;
+import cn.hbads.renderweave.template.spi.InvalidCommitConfirmationAuthority;
 import cn.hbads.renderweave.template.spi.OwnerScopeAuthority;
 import cn.hbads.renderweave.template.spi.TemplatePersistence;
 
@@ -22,12 +23,39 @@ public final class TemplateModule {
             StaticSchemaAuthority schemas,
             DependencyResolution dependencyResolution
     ) {
+        return application(
+                ownerScopes,
+                persistence,
+                schemas,
+                dependencyResolution,
+                new InvalidCommitConfirmationAuthority() {
+                    @Override
+                    public IssueOutcome issue(Claims claims) {
+                        return new IssueUnavailable();
+                    }
+
+                    @Override
+                    public VerifyOutcome verify(String confirmationToken, Claims expectedClaims) {
+                        return new VerifyUnavailable();
+                    }
+                }
+        );
+    }
+
+    public static TemplateApplication application(
+            OwnerScopeAuthority ownerScopes,
+            TemplatePersistence persistence,
+            StaticSchemaAuthority schemas,
+            DependencyResolution dependencyResolution,
+            InvalidCommitConfirmationAuthority confirmations
+    ) {
         return new CanonicalTemplateApplication(
                 new CanonicalDesignDslAuthority(),
                 Objects.requireNonNull(ownerScopes, "ownerScopes"),
                 Objects.requireNonNull(persistence, "persistence"),
                 Objects.requireNonNull(schemas, "schemas"),
-                Objects.requireNonNull(dependencyResolution, "dependencyResolution")
+                Objects.requireNonNull(dependencyResolution, "dependencyResolution"),
+                Objects.requireNonNull(confirmations, "confirmations")
         );
     }
 

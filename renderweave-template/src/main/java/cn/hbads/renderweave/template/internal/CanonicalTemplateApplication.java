@@ -5,6 +5,7 @@ import cn.hbads.renderweave.template.api.DesignDslAuthority;
 import cn.hbads.renderweave.template.api.TemplateApplication;
 import cn.hbads.renderweave.template.api.TemplateDependencyProjection;
 import cn.hbads.renderweave.template.spi.DependencyResolution;
+import cn.hbads.renderweave.template.spi.InvalidCommitConfirmationAuthority;
 import cn.hbads.renderweave.template.spi.OwnerScopeAuthority;
 import cn.hbads.renderweave.template.spi.TemplatePersistence;
 
@@ -12,6 +13,7 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.Arrays;
 import java.util.OptionalLong;
+import java.util.Optional;
 
 final class CanonicalTemplateApplication implements TemplateApplication {
     private final DesignDslAuthority designs;
@@ -20,13 +22,15 @@ final class CanonicalTemplateApplication implements TemplateApplication {
     private final StaticSchemaAuthority schemas;
     private final AssetRefAtomExtractor extractor;
     private final TemplateDependencyEvaluator dependencies;
+    private final InvalidCommitConfirmationAuthority confirmations;
 
     CanonicalTemplateApplication(
             DesignDslAuthority designs,
             OwnerScopeAuthority ownerScopes,
             TemplatePersistence persistence,
             StaticSchemaAuthority schemas,
-            DependencyResolution resolution
+            DependencyResolution resolution,
+            InvalidCommitConfirmationAuthority confirmations
     ) {
         this.designs = Objects.requireNonNull(designs, "designs");
         this.ownerScopes = Objects.requireNonNull(ownerScopes, "ownerScopes");
@@ -34,28 +38,21 @@ final class CanonicalTemplateApplication implements TemplateApplication {
         this.schemas = Objects.requireNonNull(schemas, "schemas");
         this.extractor = new AssetRefAtomExtractor();
         this.dependencies = new TemplateDependencyEvaluator(
-                Objects.requireNonNull(resolution, "resolution"),
-                this::useTargetsOf
+                Objects.requireNonNull(resolution, "resolution")
         );
-    }
-
-    private java.util.List<String> useTargetsOf(String templateId) {
-        var outcome = persistence.loadUseTargets(TemplateId.of(templateId));
-        if (outcome instanceof TemplatePersistence.UseTargetsLoaded loaded) {
-            return loaded.targetTemplateIds();
-        }
-        throw new TemplateDependencyEvaluator.Unavailable();
+        this.confirmations = Objects.requireNonNull(confirmations, "confirmations");
     }
 
     private TemplateDependencyProjection projectionOf(byte[] canonicalUtf8) {
         return extractor.extract(canonicalUtf8);
     }
 
-    private TemplateApplication.Readiness readinessOf(
+    private TemplateDependencyEvaluator.Evaluation evaluate(
             TemplateDependencyProjection projection,
-            String templateId
+            String templateId,
+            OwnerScopeAuthority.OwnerScope ownerScope
     ) {
-        return dependencies.evaluate(projection, templateId);
+        return dependencies.evaluate(projection, templateId, ownerScope);
     }
 
     @Override
@@ -103,21 +100,25 @@ final class CanonicalTemplateApplication implements TemplateApplication {
         TemplateApplication.Readiness computedReadiness = null;
         for (int attempt = 0; attempt < 3; attempt++) {
             var candidate = TemplateId.of(UUID.randomUUID().toString());
-            TemplateApplication.Readiness readiness;
+            TemplateDependencyEvaluator.Evaluation evaluation;
             try {
-                readiness = readinessOf(projection, candidate.value());
+                evaluation = evaluate(projection, candidate.value(), granted.ownerScope());
             } catch (TemplateDependencyEvaluator.Unavailable unavailable) {
-                return new CreateAuthorityUnavailable();
+                return new CreateDependencyUnavailable();
             }
-            computedReadiness = readiness;
+            if (evaluation.classification() != TemplateDependencyEvaluator.Classification.READY) {
+                return new CreateDependencyRejected(evaluation.report());
+            }
+            computedReadiness = TemplateApplication.Readiness.READY;
             var committed = persistence.create(new AdmittedCreateCommit(
                     candidate,
                     granted.ownerScope(),
                     command.staticSchema(),
                     admitted.canonicalUtf8(),
                     admitted.contentHash(),
-                    readiness,
-                    projection
+                    computedReadiness,
+                    projection,
+                    evaluation.snapshot()
             ));
             if (committed instanceof TemplatePersistence.Created) {
                 templateId = candidate;
@@ -125,6 +126,9 @@ final class CanonicalTemplateApplication implements TemplateApplication {
             }
             if (committed instanceof TemplatePersistence.CreateUnavailable) {
                 return new CreatePersistenceUnavailable();
+            }
+            if (committed instanceof TemplatePersistence.CreateDependencyDrift) {
+                continue;
             }
         }
         if (templateId == null) {
@@ -212,36 +216,69 @@ final class CanonicalTemplateApplication implements TemplateApplication {
         Objects.requireNonNull(templateId, "templateId");
 
         for (int attempt = 0; attempt < 3; attempt++) {
-            var currentOutcome = getCurrent(invocation, templateId);
-            if (currentOutcome instanceof CurrentNotFound) {
+            var locate = persistence.locate(templateId);
+            if (locate instanceof TemplatePersistence.LocateNotFound) {
                 return new RecheckCurrentNotFound();
             }
-            if (currentOutcome instanceof CurrentDeleted) {
-                return new RecheckCurrentDeleted();
-            }
-            if (currentOutcome instanceof CurrentIntegrityMismatch) {
-                return new RecheckCurrentIntegrityMismatch();
-            }
-            if (currentOutcome instanceof CurrentAuthorityUnavailable) {
-                return new RecheckCurrentAuthorityUnavailable();
-            }
-            if (currentOutcome instanceof CurrentPersistenceUnavailable) {
+            if (locate instanceof TemplatePersistence.LocateUnavailable) {
                 return new RecheckCurrentPersistenceUnavailable();
             }
-            var current = ((CurrentReadable) currentOutcome).current();
-            TemplateApplication.Readiness readiness;
+            var metadata = ((TemplatePersistence.Located) locate).metadata();
+            var access = ownerScopes.authorizeExisting(
+                    invocation,
+                    metadata.ownerScope(),
+                    OwnerScopeAuthority.ExistingOperation.READ
+            );
+            if (access instanceof OwnerScopeAuthority.ExistingHidden
+                    || access instanceof OwnerScopeAuthority.ExistingForbidden) {
+                return new RecheckCurrentNotFound();
+            }
+            if (access instanceof OwnerScopeAuthority.ExistingUnavailable) {
+                return new RecheckCurrentAuthorityUnavailable();
+            }
+            if (((OwnerScopeAuthority.ExistingGranted) access).disclosure()
+                    != OwnerScopeAuthority.Disclosure.READABLE) {
+                return new RecheckCurrentNotFound();
+            }
+            if (metadata.lifecycle() == TemplatePersistence.Lifecycle.DELETED) {
+                return new RecheckCurrentDeleted();
+            }
+            var loaded = persistence.loadCurrent(templateId);
+            if (loaded instanceof TemplatePersistence.CurrentNotFound) {
+                return new RecheckCurrentNotFound();
+            }
+            if (loaded instanceof TemplatePersistence.CurrentLoadUnavailable) {
+                return new RecheckCurrentPersistenceUnavailable();
+            }
+            var stored = ((TemplatePersistence.CurrentLoaded) loaded).current();
+            var admitted = verify(stored);
+            if (!metadata.equals(stored.metadata()) || admitted == null) {
+                return new RecheckCurrentIntegrityMismatch();
+            }
+            var current = new Current(
+                    templateId,
+                    metadata.currentRevision(),
+                    metadata.staticSchema(),
+                    admitted.canonicalUtf8(),
+                    admitted.contentHash(),
+                    stored.readiness()
+            );
+            TemplateDependencyEvaluator.Evaluation evaluation;
             try {
-                readiness = readinessOf(
+                evaluation = evaluate(
                         projectionOf(current.canonicalDesignDslUtf8()),
-                        templateId.value()
+                        templateId.value(),
+                        metadata.ownerScope()
                 );
             } catch (TemplateDependencyEvaluator.Unavailable unavailable) {
                 return new RecheckCurrentDependencyUnavailable();
             }
+            var readiness = evaluation.readiness();
             var updated = persistence.updateReadiness(
                     templateId,
                     current.revision(),
-                    readiness
+                    readiness,
+                    evaluation.snapshot()
             );
             if (updated instanceof TemplatePersistence.ReadinessUpdated) {
                 return new CurrentRechecked(new Current(
@@ -337,47 +374,169 @@ final class CanonicalTemplateApplication implements TemplateApplication {
         }
 
         var projection = projectionOf(admitted.canonicalUtf8());
-        TemplateApplication.Readiness readiness;
+        for (int dependencyAttempt = 0; dependencyAttempt < 3; dependencyAttempt++) {
+            TemplateDependencyEvaluator.Evaluation evaluation;
+            try {
+                evaluation = evaluate(
+                        projection,
+                        command.templateId().value(),
+                        metadata.ownerScope()
+                );
+            } catch (TemplateDependencyEvaluator.Unavailable unavailable) {
+                return new SaveDependencyUnavailable();
+            }
+
+            if (evaluation.classification()
+                    == TemplateDependencyEvaluator.Classification.HARD_ERROR) {
+                return new SaveDependencyRejected(evaluation.report());
+            }
+
+            var claims = confirmationClaims(granted, metadata, command, admitted, evaluation);
+            if (evaluation.classification()
+                    == TemplateDependencyEvaluator.Classification.DEPENDENCY_ERROR) {
+                if (command.confirmationToken().isEmpty()) {
+                    var offer = issueOffer(
+                            claims, admitted.contentHash(), evaluation.report());
+                    return offer.<SaveOutcome>map(SaveConfirmationRequired::new)
+                            .orElseGet(SaveConfirmationUnavailable::new);
+                }
+                var verified = confirmations.verify(
+                        command.confirmationToken().orElseThrow(),
+                        claims
+                );
+                if (verified instanceof InvalidCommitConfirmationAuthority.Invalid) {
+                    return new SaveConfirmationInvalid();
+                }
+                if (verified instanceof InvalidCommitConfirmationAuthority.Expired) {
+                    return new SaveConfirmationExpired();
+                }
+                if (verified instanceof InvalidCommitConfirmationAuthority.Stale) {
+                    var replacement = issueOffer(
+                            claims, admitted.contentHash(), evaluation.report());
+                    if (replacement.isEmpty()) {
+                        return new SaveConfirmationUnavailable();
+                    }
+                    return new SaveConfirmationStale(replacement);
+                }
+                if (verified instanceof InvalidCommitConfirmationAuthority.VerifyUnavailable) {
+                    return new SaveConfirmationUnavailable();
+                }
+            } else if (command.confirmationToken().isPresent()) {
+                return new SaveConfirmationStale(Optional.empty());
+            }
+
+            var readiness = evaluation.readiness();
+            var appended = persistence.append(new AdmittedAppendCommit(
+                    command.templateId(),
+                    metadata.ownerScope(),
+                    metadata.staticSchema(),
+                    command.expectedRevision(),
+                    admitted.canonicalUtf8(),
+                    admitted.contentHash(),
+                    readiness,
+                    projection,
+                    evaluation.snapshot()
+            ));
+            if (appended instanceof TemplatePersistence.AppendNotFound) {
+                return new SaveNotFound();
+            }
+            if (appended instanceof TemplatePersistence.AppendDeleted) {
+                return new SaveDeleted();
+            }
+            if (appended instanceof TemplatePersistence.AppendRevisionConflict conflict) {
+                return conflict(conflict.currentRevision(), granted.disclosure());
+            }
+            if (appended instanceof TemplatePersistence.AppendDependencyDrift) {
+                if (command.confirmationToken().isPresent()) {
+                    return freshOutcomeAfterConfirmedDependencyDrift(
+                            projection, granted, metadata, command, admitted);
+                }
+                continue;
+            }
+            if (appended instanceof TemplatePersistence.AppendUnavailable) {
+                return new SavePersistenceUnavailable();
+            }
+
+            if (granted.disclosure() == OwnerScopeAuthority.Disclosure.OPAQUE) {
+                return new SavedOpaque(command.templateId());
+            }
+            return new SavedReadable(new Current(
+                    command.templateId(),
+                    command.expectedRevision() + 1,
+                    metadata.staticSchema(),
+                    admitted.canonicalUtf8(),
+                    admitted.contentHash(),
+                    readiness
+            ));
+        }
+        return new SaveDependencyUnavailable();
+    }
+
+    private SaveOutcome freshOutcomeAfterConfirmedDependencyDrift(
+            TemplateDependencyProjection projection,
+            OwnerScopeAuthority.ExistingGranted granted,
+            TemplatePersistence.TemplateMetadata metadata,
+            SaveCommand command,
+            DesignDslAuthority.Admitted admitted
+    ) {
+        TemplateDependencyEvaluator.Evaluation fresh;
         try {
-            readiness = readinessOf(projection, command.templateId().value());
+            fresh = evaluate(
+                    projection,
+                    command.templateId().value(),
+                    metadata.ownerScope()
+            );
         } catch (TemplateDependencyEvaluator.Unavailable unavailable) {
-            return new SaveAuthorityUnavailable();
+            return new SaveDependencyUnavailable();
         }
+        if (fresh.classification() == TemplateDependencyEvaluator.Classification.HARD_ERROR) {
+            return new SaveDependencyRejected(fresh.report());
+        }
+        if (fresh.classification() == TemplateDependencyEvaluator.Classification.READY) {
+            return new SaveConfirmationStale(Optional.empty());
+        }
+        var claims = confirmationClaims(granted, metadata, command, admitted, fresh);
+        var replacement = issueOffer(claims, admitted.contentHash(), fresh.report());
+        return replacement.<SaveOutcome>map(
+                        offer -> new SaveConfirmationStale(Optional.of(offer)))
+                .orElseGet(SaveConfirmationUnavailable::new);
+    }
 
-        var appended = persistence.append(new AdmittedAppendCommit(
-                command.templateId(),
+    private InvalidCommitConfirmationAuthority.Claims confirmationClaims(
+            OwnerScopeAuthority.ExistingGranted granted,
+            TemplatePersistence.TemplateMetadata metadata,
+            SaveCommand command,
+            DesignDslAuthority.Admitted admitted,
+            TemplateDependencyEvaluator.Evaluation evaluation
+    ) {
+        return new InvalidCommitConfirmationAuthority.Claims(
+                InvalidCommitConfirmationAuthority.Operation.SAVE,
+                granted.actorId(),
                 metadata.ownerScope(),
-                metadata.staticSchema(),
-                command.expectedRevision(),
-                admitted.canonicalUtf8(),
-                admitted.contentHash(),
-                readiness,
-                projection
-        ));
-        if (appended instanceof TemplatePersistence.AppendNotFound) {
-            return new SaveNotFound();
-        }
-        if (appended instanceof TemplatePersistence.AppendDeleted) {
-            return new SaveDeleted();
-        }
-        if (appended instanceof TemplatePersistence.AppendRevisionConflict conflict) {
-            return conflict(conflict.currentRevision(), granted.disclosure());
-        }
-        if (appended instanceof TemplatePersistence.AppendUnavailable) {
-            return new SavePersistenceUnavailable();
-        }
-
-        if (granted.disclosure() == OwnerScopeAuthority.Disclosure.OPAQUE) {
-            return new SavedOpaque(command.templateId());
-        }
-        return new SavedReadable(new Current(
                 command.templateId(),
-                command.expectedRevision() + 1,
+                command.expectedRevision(),
                 metadata.staticSchema(),
-                admitted.canonicalUtf8(),
                 admitted.contentHash(),
-                readiness
-        ));
+                evaluation.report().fingerprint(),
+                evaluation.snapshot().fingerprint()
+        );
+    }
+
+    private Optional<InvalidCommitConfirmationOffer> issueOffer(
+            InvalidCommitConfirmationAuthority.Claims claims,
+            String proposedContentHash,
+            ValidationReport report
+    ) {
+        var issued = confirmations.issue(claims);
+        if (issued instanceof InvalidCommitConfirmationAuthority.Issued offer) {
+            return Optional.of(new InvalidCommitConfirmationOffer(
+                    offer.confirmationToken(),
+                    offer.expiresAt(),
+                    proposedContentHash,
+                    report
+            ));
+        }
+        return Optional.empty();
     }
 
     private SaveRevisionConflict conflict(

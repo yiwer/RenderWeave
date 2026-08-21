@@ -25,7 +25,8 @@ public interface TemplatePersistence {
     UpdateReadinessOutcome updateReadiness(
             TemplateApplication.TemplateId templateId,
             long currentRevision,
-            TemplateApplication.Readiness readiness
+            TemplateApplication.Readiness readiness,
+            TemplateDependencySnapshot dependencySnapshot
     );
 
     sealed interface LoadUseTargetsOutcome permits
@@ -66,6 +67,7 @@ public interface TemplatePersistence {
             ReadinessUpdated,
             ReadinessNotFound,
             ReadinessRevisionConflict,
+            ReadinessDependencyDrift,
             ReadinessUnavailable {
     }
 
@@ -76,6 +78,9 @@ public interface TemplatePersistence {
     }
 
     record ReadinessRevisionConflict() implements UpdateReadinessOutcome {
+    }
+
+    record ReadinessDependencyDrift() implements UpdateReadinessOutcome {
     }
 
     record ReadinessUnavailable() implements UpdateReadinessOutcome {
@@ -201,15 +206,24 @@ public interface TemplatePersistence {
         TemplateApplication.Readiness readiness();
 
         TemplateDependencyProjection projection();
+
+        TemplateDependencySnapshot dependencySnapshot();
     }
 
-    sealed interface CreateOutcome permits Created, IdCollision, CreateUnavailable {
+    sealed interface CreateOutcome permits
+            Created,
+            IdCollision,
+            CreateDependencyDrift,
+            CreateUnavailable {
     }
 
     record Created() implements CreateOutcome {
     }
 
     record IdCollision() implements CreateOutcome {
+    }
+
+    record CreateDependencyDrift() implements CreateOutcome {
     }
 
     record CreateUnavailable() implements CreateOutcome {
@@ -233,6 +247,8 @@ public interface TemplatePersistence {
         TemplateApplication.Readiness readiness();
 
         TemplateDependencyProjection projection();
+
+        TemplateDependencySnapshot dependencySnapshot();
     }
 
     sealed interface AppendOutcome permits
@@ -240,6 +256,7 @@ public interface TemplatePersistence {
             AppendNotFound,
             AppendDeleted,
             AppendRevisionConflict,
+            AppendDependencyDrift,
             AppendUnavailable {
     }
 
@@ -258,6 +275,9 @@ public interface TemplatePersistence {
                 throw new IllegalArgumentException("currentRevision must not be negative");
             }
         }
+    }
+
+    record AppendDependencyDrift() implements AppendOutcome {
     }
 
     record AppendUnavailable() implements AppendOutcome {

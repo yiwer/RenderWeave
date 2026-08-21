@@ -1,5 +1,7 @@
 import { isLosslessNumber, parse } from 'lossless-json';
 
+import type { TemplateValidationIssue } from '../../api/generated';
+
 import {
   createSessionFromBaseline,
   type CanonicalTemplateBaseline,
@@ -9,6 +11,7 @@ import { isCanonicalDirty } from './template-editor-session';
 import {
   defaultTemplateEditorTransport,
   parseTemplateCurrentResponse,
+  templateContentHashOf,
   TemplateRequestError,
 } from './template-open';
 
@@ -28,6 +31,7 @@ export interface TemplateSaveTransport {
     expectedRevision: string,
     canonicalDesignDsl: string,
     signal?: AbortSignal,
+    confirmationToken?: string,
   ): Promise<TemplateSaveHttpResponse>;
 }
 
@@ -37,10 +41,22 @@ export interface TemplateConflictOffer {
   previewGeneration: number;
 }
 
+export interface TemplateInvalidSaveOffer {
+  confirmationToken: string;
+  expectedRevision: string;
+  draftCanonical: string;
+  previewGeneration: number;
+  proposedContentHash: string;
+  expiresAt: string;
+  problems: TemplateValidationIssue[];
+  truncated: false;
+}
+
 export type TemplateSaveResult =
   | { state: 'saved'; session: StructuredEditorSession }
   | { state: 'conflict'; offer: TemplateConflictOffer; message: string }
-  | { state: 'offer-invalidated'; message: string }
+  | { state: 'invalid-save-confirmation'; offer: TemplateInvalidSaveOffer; message: string }
+  | { state: 'offer-invalidated'; code: string; message: string }
   | { state: 'rejected'; code: string; message: string }
   | { state: 'unknown'; message: string };
 
@@ -48,17 +64,27 @@ export const defaultTemplateSaveTransport: TemplateSaveTransport = {
   getCurrent(templateId, signal) {
     return defaultTemplateEditorTransport.getCurrent(templateId, signal);
   },
-  async putCurrent(templateId, expectedRevision, canonicalDesignDsl, signal) {
+  async putCurrent(
+    templateId,
+    expectedRevision,
+    canonicalDesignDsl,
+    signal,
+    confirmationToken,
+  ) {
+    const headers: Record<string, string> = {
+      Accept: 'application/json',
+      'Content-Type': DESIGN_MEDIA_TYPE,
+    };
+    if (confirmationToken !== undefined) {
+      headers['X-Confirmation-Token'] = confirmationToken;
+    }
     const response = await fetch(
       `/api/v1/templates/${encodeURIComponent(templateId)}`
         + `?expectedRevision=${encodeURIComponent(expectedRevision)}`,
       {
         method: 'PUT',
         signal,
-        headers: {
-          Accept: 'application/json',
-          'Content-Type': DESIGN_MEDIA_TYPE,
-        },
+        headers,
         body: canonicalDesignDsl,
       },
     );
@@ -108,6 +134,7 @@ export async function confirmTemplateOverwrite(
   if (!offerMatchesSession(offer, session)) {
     return {
       state: 'offer-invalidated',
+      code: 'TEMPLATE_OVERWRITE_OFFER_INVALIDATED',
       message: '本地草稿已变化；旧覆盖确认已失效，请重新保存。',
     };
   }
@@ -174,16 +201,76 @@ export async function confirmTemplateOverwrite(
   return interpretMutationResponse(session, current.revision, response);
 }
 
+export async function confirmTemplateInvalidSave(
+  session: StructuredEditorSession,
+  offer: TemplateInvalidSaveOffer,
+  transport: TemplateSaveTransport,
+  signal?: AbortSignal,
+): Promise<TemplateSaveResult> {
+  if (!invalidSaveOfferMatchesSession(offer, session)) {
+    return {
+      state: 'offer-invalidated',
+      code: 'TEMPLATE_INVALID_SAVE_OFFER_INVALIDATED',
+      message: '本地草稿、revision 或 preview generation 已变化；旧 INVALID 确认已失效。',
+    };
+  }
+  if (Date.parse(offer.expiresAt) <= Date.now()) {
+    return {
+      state: 'offer-invalidated',
+      code: 'TEMPLATE_CONFIRMATION_EXPIRED',
+      message: 'INVALID 保存确认已过期；请重新保存并审阅新的完整问题集。',
+    };
+  }
+
+  let response: TemplateSaveHttpResponse;
+  try {
+    response = await transport.putCurrent(
+      session.baseline.templateId,
+      offer.expectedRevision,
+      session.workingCopy.canonicalDesignDsl,
+      signal,
+      offer.confirmationToken,
+    );
+  } catch {
+    return unknownMutation();
+  }
+  if (response.status === 200) {
+    return verifiedSuccess(
+      session,
+      offer.expectedRevision,
+      response.body,
+      'INVALID',
+    );
+  }
+  return interpretMutationResponse(session, offer.expectedRevision, response);
+}
+
 async function interpretMutationResponse(
   session: StructuredEditorSession,
   expectedRevision: string,
   response: TemplateSaveHttpResponse,
 ): Promise<TemplateSaveResult> {
   if (response.status === 200) {
-    return verifiedSuccess(session, expectedRevision, response.body);
+    return verifiedSuccess(session, expectedRevision, response.body, 'READY');
   }
 
   const problem = parseProblem(response.body);
+  if (response.status === 422 && isInvalidSaveOfferCode(problem.code)) {
+    const offer = await invalidSaveOfferFor(session, expectedRevision, problem.value);
+    if (offer !== null) {
+      return {
+        state: 'invalid-save-confirmation',
+        offer,
+        message: problem.code === 'TEMPLATE_CONFIRMATION_STALE'
+          ? '依赖事实已变化；请审阅新的完整问题集，再次确认仍保存为 INVALID。'
+          : '依赖检查发现可确认的 ERROR；审阅完整问题集后可选择仍保存为 INVALID。',
+      };
+    }
+    return rejected(
+      problem.code,
+      '服务端未返回可验证的完整确认凭据；本次写入未发生。',
+    );
+  }
   if (
     response.status === 409
     && problem.code === 'TEMPLATE_REVISION_CONFLICT'
@@ -215,6 +302,7 @@ async function verifiedSuccess(
   session: StructuredEditorSession,
   expectedRevision: string,
   body: string,
+  requiredReadiness: 'READY' | 'INVALID',
 ): Promise<TemplateSaveResult> {
   let baseline: CanonicalTemplateBaseline;
   try {
@@ -228,7 +316,7 @@ async function verifiedSuccess(
     || baseline.revision !== expectedNext
     || !samePermanentIdentity(baseline, session.baseline)
     || baseline.canonicalDesignDsl !== session.workingCopy.canonicalDesignDsl
-    || (baseline.persistedReadiness !== 'READY' && baseline.persistedReadiness !== 'INVALID')
+    || baseline.persistedReadiness !== requiredReadiness
   ) {
     return unknownMutation();
   }
@@ -256,6 +344,16 @@ function offerMatchesSession(
   session: StructuredEditorSession,
 ): boolean {
   return offer.draftCanonical === session.workingCopy.canonicalDesignDsl
+    && offer.previewGeneration === session.previewGeneration
+    && isCanonicalDirty(session);
+}
+
+function invalidSaveOfferMatchesSession(
+  offer: TemplateInvalidSaveOffer,
+  session: StructuredEditorSession,
+): boolean {
+  return offer.expectedRevision === session.baseline.revision
+    && offer.draftCanonical === session.workingCopy.canonicalDesignDsl
     && offer.previewGeneration === session.previewGeneration
     && isCanonicalDirty(session);
 }
@@ -289,18 +387,99 @@ function revisionValue(revision: string): bigint | null {
   }
 }
 
-function parseProblem(body: string): { code: string; currentRevision: string | null } {
+interface ParsedProblem {
+  code: string;
+  currentRevision: string | null;
+  value: Record<string, unknown> | null;
+}
+
+function parseProblem(body: string): ParsedProblem {
   try {
     const value = parse(body);
-    if (!isRecord(value)) return { code: 'UNEXPECTED_RESPONSE', currentRevision: null };
+    if (!isRecord(value)) {
+      return { code: 'UNEXPECTED_RESPONSE', currentRevision: null, value: null };
+    }
     const code = typeof value.code === 'string' ? value.code : 'UNEXPECTED_RESPONSE';
     return {
       code,
       currentRevision: nonNegativeIntegerToken(value.currentRevision),
+      value,
     };
   } catch {
-    return { code: 'UNEXPECTED_RESPONSE', currentRevision: null };
+    return { code: 'UNEXPECTED_RESPONSE', currentRevision: null, value: null };
   }
+}
+
+function isInvalidSaveOfferCode(code: string): boolean {
+  return code === 'TEMPLATE_DEPENDENCY_CONFIRMATION_REQUIRED'
+    || code === 'TEMPLATE_CONFIRMATION_STALE';
+}
+
+async function invalidSaveOfferFor(
+  session: StructuredEditorSession,
+  expectedRevision: string,
+  value: Record<string, unknown> | null,
+): Promise<TemplateInvalidSaveOffer | null> {
+  if (value === null
+    || typeof value.confirmationToken !== 'string'
+    || !/^[0-9a-f]{64}$/.test(value.confirmationToken)
+    || typeof value.proposedContentHash !== 'string'
+    || !/^sha256:[0-9a-f]{64}$/.test(value.proposedContentHash)
+    || typeof value.expiresAt !== 'string'
+    || !Number.isFinite(Date.parse(value.expiresAt))
+    || Date.parse(value.expiresAt) <= Date.now()
+    || value.truncated !== false
+    || !Array.isArray(value.problems)
+    || value.problems.length === 0
+    || value.problems.length > 200) {
+    return null;
+  }
+  const problems: TemplateValidationIssue[] = [];
+  for (const candidate of value.problems) {
+    const problem = validationIssue(candidate);
+    if (problem === null || problem.category !== 'DEPENDENCY') return null;
+    problems.push(problem);
+  }
+  if (await templateContentHashOf(session.workingCopy.canonicalDesignDsl)
+    !== value.proposedContentHash) {
+    return null;
+  }
+  return {
+    confirmationToken: value.confirmationToken,
+    expectedRevision,
+    draftCanonical: session.workingCopy.canonicalDesignDsl,
+    previewGeneration: session.previewGeneration,
+    proposedContentHash: value.proposedContentHash,
+    expiresAt: value.expiresAt,
+    problems,
+    truncated: false,
+  };
+}
+
+function validationIssue(value: unknown): TemplateValidationIssue | null {
+  if (!isRecord(value)
+    || typeof value.code !== 'string'
+    || value.code.length === 0
+    || value.code.length > 128
+    || (value.category !== 'DEPENDENCY'
+      && value.category !== 'HARD'
+      && value.category !== 'LIMIT')
+    || value.severity !== 'ERROR'
+    || typeof value.canonicalPointer !== 'string'
+    || value.canonicalPointer.length > 2048
+    || !Array.isArray(value.messageArgs)
+    || value.messageArgs.length > 32
+    || value.messageArgs.some((argument) =>
+      typeof argument !== 'string' || argument.length > 512)) {
+    return null;
+  }
+  return {
+    code: value.code,
+    category: value.category,
+    severity: value.severity,
+    canonicalPointer: value.canonicalPointer,
+    messageArgs: value.messageArgs as string[],
+  };
 }
 
 function nonNegativeIntegerToken(value: unknown): string | null {

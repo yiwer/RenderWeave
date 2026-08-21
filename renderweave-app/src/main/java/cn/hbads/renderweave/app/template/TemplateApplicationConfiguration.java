@@ -7,8 +7,10 @@ import cn.hbads.renderweave.template.api.TemplateApplication;
 import cn.hbads.renderweave.template.api.TemplateReadinessAuthority;
 import cn.hbads.renderweave.template.internal.TemplateModule;
 import cn.hbads.renderweave.template.spi.DependencyResolution;
+import cn.hbads.renderweave.template.spi.InvalidCommitConfirmationAuthority;
 import cn.hbads.renderweave.template.spi.OwnerScopeAuthority;
 import cn.hbads.renderweave.template.spi.TemplatePersistence;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -51,10 +53,25 @@ class TemplateApplicationConfiguration {
             OwnerScopeAuthority ownerScopes,
             TemplatePersistence persistence,
             StaticSchemaAuthority schemas,
-            DependencyResolution dependencyResolution
+            DependencyResolution dependencyResolution,
+            ObjectProvider<InvalidCommitConfirmationAuthority> confirmationProvider
     ) {
+        var confirmations = confirmationProvider.getIfAvailable();
+        if (confirmations == null) {
+            return TemplateModule.application(
+                    ownerScopes,
+                    persistence,
+                    schemas,
+                    dependencyResolution
+            );
+        }
         return TemplateModule.application(
-                ownerScopes, persistence, schemas, dependencyResolution);
+                ownerScopes,
+                persistence,
+                schemas,
+                dependencyResolution,
+                confirmations
+        );
     }
 
     @Bean

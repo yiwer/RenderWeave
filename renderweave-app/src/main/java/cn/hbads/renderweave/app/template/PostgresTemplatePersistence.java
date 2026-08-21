@@ -6,22 +6,29 @@ import cn.hbads.renderweave.schema.identity.VersionTag;
 import cn.hbads.renderweave.template.api.TemplateApplication;
 import cn.hbads.renderweave.template.api.TemplateDependencyProjection;
 import cn.hbads.renderweave.template.spi.OwnerScopeAuthority;
+import cn.hbads.renderweave.template.spi.DependencyResolution;
+import cn.hbads.renderweave.template.spi.TemplateDependencySnapshot;
 import cn.hbads.renderweave.template.spi.TemplatePersistence;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.nio.charset.StandardCharsets;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
+import java.util.function.Supplier;
 
 @Repository
 public class PostgresTemplatePersistence implements TemplatePersistence {
+    private static final int SERIALIZABLE_ATTEMPTS = 3;
+
     private final JdbcClient jdbc;
     private final TransactionTemplate transactions;
 
@@ -31,6 +38,7 @@ public class PostgresTemplatePersistence implements TemplatePersistence {
     ) {
         this.jdbc = jdbc;
         this.transactions = new TransactionTemplate(transactionManager);
+        this.transactions.setIsolationLevel(TransactionDefinition.ISOLATION_SERIALIZABLE);
     }
 
     @Override
@@ -79,7 +87,10 @@ public class PostgresTemplatePersistence implements TemplatePersistence {
     @Override
     public CreateOutcome create(CreateCommit commit) {
         try {
-            return Objects.requireNonNull(transactions.execute(status -> {
+            return executeSerializable(() -> {
+                if (!snapshotMatches(commit.dependencySnapshot())) {
+                    return new CreateDependencyDrift();
+                }
                 jdbc.sql("""
                                 insert into template_aggregate (
                                     template_id, owner_scope, schema_key, schema_version_tag,
@@ -100,7 +111,7 @@ public class PostgresTemplatePersistence implements TemplatePersistence {
                 acquireAssetReadReservations(commit.projection());
                 replaceProjection(commit.templateId(), commit.ownerScope(), commit.projection());
                 return new Created();
-            }));
+            });
         } catch (DuplicateKeyException collision) {
             return new IdCollision();
         } catch (DataAccessException unavailable) {
@@ -111,7 +122,7 @@ public class PostgresTemplatePersistence implements TemplatePersistence {
     @Override
     public AppendOutcome append(AppendCommit commit) {
         try {
-            return Objects.requireNonNull(transactions.execute(status -> {
+            return executeSerializable(() -> {
                 var locked = jdbc.sql("""
                                 select template_id, owner_scope, schema_key, schema_version_tag,
                                        current_revision, lifecycle
@@ -136,6 +147,9 @@ public class PostgresTemplatePersistence implements TemplatePersistence {
                 if (metadata.currentRevision() != commit.expectedRevision()) {
                     return new AppendRevisionConflict(metadata.currentRevision());
                 }
+                if (!snapshotMatches(commit.dependencySnapshot())) {
+                    return new AppendDependencyDrift();
+                }
 
                 insertRevision(commit);
                 acquireAssetReadReservations(commit.projection());
@@ -158,7 +172,7 @@ public class PostgresTemplatePersistence implements TemplatePersistence {
                     throw new PersistenceFault("locked Template current changed unexpectedly");
                 }
                 return new Appended();
-            }));
+            });
         } catch (DataAccessException | PersistenceFault unavailable) {
             return new AppendUnavailable();
         }
@@ -208,25 +222,172 @@ public class PostgresTemplatePersistence implements TemplatePersistence {
     public UpdateReadinessOutcome updateReadiness(
             TemplateApplication.TemplateId templateId,
             long currentRevision,
-            TemplateApplication.Readiness readiness
+            TemplateApplication.Readiness readiness,
+            TemplateDependencySnapshot dependencySnapshot
     ) {
         try {
-            var updated = jdbc.sql("""
-                            update template_aggregate
-                            set readiness = :readiness,
-                                updated_at = clock_timestamp()
-                            where template_id = :templateId
-                              and current_revision = :currentRevision
-                              and lifecycle = 'ACTIVE'
-                            """)
-                    .param("readiness", readiness.name())
-                    .param("templateId", templateId.value())
-                    .param("currentRevision", currentRevision)
-                    .update();
-            return updated == 1 ? new ReadinessUpdated() : new ReadinessRevisionConflict();
+            return executeSerializable(() -> {
+                var locked = jdbc.sql("""
+                                select template_id, owner_scope, schema_key, schema_version_tag,
+                                       current_revision, lifecycle
+                                from template_aggregate
+                                where template_id = :templateId
+                                for update
+                                """)
+                        .param("templateId", templateId.value())
+                        .query(PostgresTemplatePersistence::metadata)
+                        .optional();
+                if (locked.isEmpty()) {
+                    return new ReadinessNotFound();
+                }
+                var metadata = locked.orElseThrow();
+                if (metadata.currentRevision() != currentRevision
+                        || metadata.lifecycle() != Lifecycle.ACTIVE) {
+                    return new ReadinessRevisionConflict();
+                }
+                if (!snapshotMatches(dependencySnapshot)) {
+                    return new ReadinessDependencyDrift();
+                }
+                var updated = jdbc.sql("""
+                                update template_aggregate
+                                set readiness = :readiness,
+                                    updated_at = clock_timestamp()
+                                where template_id = :templateId
+                                  and current_revision = :currentRevision
+                                  and lifecycle = 'ACTIVE'
+                                """)
+                        .param("readiness", readiness.name())
+                        .param("templateId", templateId.value())
+                        .param("currentRevision", currentRevision)
+                        .update();
+                return updated == 1
+                        ? new ReadinessUpdated()
+                        : new ReadinessRevisionConflict();
+            });
         } catch (DataAccessException unavailable) {
             return new ReadinessUnavailable();
         }
+    }
+
+    private <T> T executeSerializable(Supplier<T> work) {
+        for (int attempt = 1; attempt <= SERIALIZABLE_ATTEMPTS; attempt++) {
+            try {
+                return Objects.requireNonNull(transactions.execute(status -> work.get()));
+            } catch (DataAccessException conflict) {
+                if (!isSerializationFailure(conflict)
+                        || attempt == SERIALIZABLE_ATTEMPTS) {
+                    throw conflict;
+                }
+            }
+        }
+        throw new IllegalStateException("unreachable serializable retry state");
+    }
+
+    private static boolean isSerializationFailure(Throwable failure) {
+        for (var cause = failure; cause != null; cause = cause.getCause()) {
+            if (cause instanceof SQLException sqlException
+                    && "40001".equals(sqlException.getSQLState())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean snapshotMatches(TemplateDependencySnapshot expected) {
+        var assetFacts = new ArrayList<TemplateDependencySnapshot.AssetFact>();
+        for (var fact : expected.assets()) {
+            var state = jdbc.sql("""
+                            select owner_scope, kind, lifecycle, asset_revision,
+                                   current_content_version
+                            from asset_aggregate
+                            where asset_id = :assetId
+                            for share
+                            """)
+                    .param("assetId", fact.assetId())
+                    .query((resultSet, rowNumber) -> new DependencyResolution.AssetState(
+                            new OwnerScopeAuthority.OwnerScope(
+                                    resultSet.getString("owner_scope")),
+                            resultSet.getString("kind"),
+                            DependencyResolution.Lifecycle.valueOf(
+                                    resultSet.getString("lifecycle")),
+                            resultSet.getLong("asset_revision"),
+                            resultSet.getLong("current_content_version")
+                    ))
+                    .optional();
+            assetFacts.add(state
+                    .<TemplateDependencySnapshot.AssetFact>map(value ->
+                            TemplateDependencySnapshot.AssetFact.resolved(
+                                    fact.assetId(), value))
+                    .orElseGet(() -> TemplateDependencySnapshot.AssetFact.missing(
+                            fact.assetId())));
+        }
+
+        var templateFacts = new ArrayList<TemplateDependencySnapshot.TemplateFact>();
+        for (var fact : expected.templates()) {
+            var row = jdbc.sql("""
+                            select a.template_id, a.owner_scope, a.current_revision,
+                                   a.lifecycle, a.readiness, a.schema_key,
+                                   a.schema_version_tag, r.content_hash
+                            from template_aggregate a
+                            join template_revision r
+                              on r.template_id = a.template_id
+                             and r.revision = a.current_revision
+                            where a.template_id = :templateId
+                            for share of a
+                            """)
+                    .param("templateId", fact.templateId())
+                    .query((resultSet, rowNumber) -> new TemplateDependencyRow(
+                            resultSet.getString("template_id"),
+                            new OwnerScopeAuthority.OwnerScope(
+                                    resultSet.getString("owner_scope")),
+                            resultSet.getLong("current_revision"),
+                            DependencyResolution.Lifecycle.valueOf(
+                                    resultSet.getString("lifecycle")),
+                            TemplateApplication.Readiness.valueOf(
+                                    resultSet.getString("readiness")),
+                            new StaticSchemaRef(
+                                    schemaKey(resultSet.getString("schema_key")),
+                                    VersionTag.of(resultSet.getString("schema_version_tag"))
+                            ),
+                            resultSet.getString("content_hash")
+                    ))
+                    .optional();
+            if (row.isEmpty()) {
+                templateFacts.add(TemplateDependencySnapshot.TemplateFact.missing(
+                        fact.templateId()));
+                continue;
+            }
+            var stored = row.orElseThrow();
+            var uses = jdbc.sql("""
+                            select target_template_id, canonical_pointer
+                            from template_use_reference
+                            where template_id = :templateId
+                            order by canonical_pointer, target_template_id
+                            """)
+                    .param("templateId", fact.templateId())
+                    .query((resultSet, rowNumber) ->
+                            new DependencyResolution.TemplateUseEdge(
+                                    resultSet.getString("target_template_id"),
+                                    resultSet.getString("canonical_pointer")
+                            ))
+                    .list();
+            templateFacts.add(TemplateDependencySnapshot.TemplateFact.resolved(
+                    fact.templateId(),
+                    new DependencyResolution.TemplateState(
+                            stored.templateId(),
+                            stored.ownerScope(),
+                            stored.currentRevision(),
+                            stored.lifecycle(),
+                            stored.readiness(),
+                            stored.staticSchema(),
+                            stored.contentHash(),
+                            uses
+                    )
+            ));
+        }
+        return expected.fingerprint().equals(
+                new TemplateDependencySnapshot(assetFacts, templateFacts).fingerprint()
+        );
     }
 
     /**
@@ -370,5 +531,16 @@ public class PostgresTemplatePersistence implements TemplatePersistence {
         private PersistenceFault(String message) {
             super(message);
         }
+    }
+
+    private record TemplateDependencyRow(
+            String templateId,
+            OwnerScopeAuthority.OwnerScope ownerScope,
+            long currentRevision,
+            DependencyResolution.Lifecycle lifecycle,
+            TemplateApplication.Readiness readiness,
+            StaticSchemaRef staticSchema,
+            String contentHash
+    ) {
     }
 }

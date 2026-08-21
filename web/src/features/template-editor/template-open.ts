@@ -90,7 +90,7 @@ export async function parseTemplateCurrentResponse(
   if (!CONTENT_HASH_PATTERN.test(contentHash)) {
     throw new TemplateIntegrityError('Template contentHash has an invalid shape');
   }
-  const computedHash = await contentHashOf(canonicalDesignDsl);
+  const computedHash = await templateContentHashOf(canonicalDesignDsl);
   if (computedHash !== contentHash) {
     throw new TemplateIntegrityError('Canonical DesignDSL does not match contentHash');
   }
@@ -204,7 +204,7 @@ async function requestText(path: string, init: RequestInit): Promise<string> {
   return text;
 }
 
-async function contentHashOf(canonicalDesignDsl: string): Promise<string> {
+export async function templateContentHashOf(canonicalDesignDsl: string): Promise<string> {
   if (!globalThis.crypto?.subtle) {
     throw new TemplateIntegrityError('Web Crypto SHA-256 is unavailable');
   }

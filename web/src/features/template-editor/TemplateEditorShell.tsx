@@ -53,10 +53,12 @@ import {
   type TemplateEditorTransport,
 } from './template-open';
 import {
+  confirmTemplateInvalidSave,
   confirmTemplateOverwrite,
   defaultTemplateSaveTransport,
   saveTemplateWorkingCopy,
   type TemplateConflictOffer,
+  type TemplateInvalidSaveOffer,
   type TemplateSaveResult,
   type TemplateSaveTransport,
 } from './template-save';
@@ -179,6 +181,7 @@ type StructuredSaveView =
   | { state: 'idle' }
   | { state: 'pending'; message: string }
   | { state: 'conflict'; offer: TemplateConflictOffer; message: string }
+  | { state: 'invalid-save-confirmation'; offer: TemplateInvalidSaveOffer; message: string }
   | { state: 'rejected'; code: string; message: string }
   | { state: 'unknown'; message: string };
 
@@ -198,8 +201,10 @@ function StructuredShell({
   const mutationId = useRef(0);
   const mutationAbort = useRef<AbortController | null>(null);
   const session = useMemo(
-    () => updateStructuredReadiness(localSession, incomingSession.readiness),
-    [incomingSession.readiness, localSession],
+    () => baselineIdentity(localSession.baseline) === baselineIdentity(incomingSession.baseline)
+      ? updateStructuredReadiness(localSession, incomingSession.readiness)
+      : localSession,
+    [incomingSession.baseline, incomingSession.readiness, localSession],
   );
   const nodes = useMemo(() => projectStructuredNodes(session), [session]);
   const [entry, setEntry] = useState<EditorEntry>('structure');
@@ -243,13 +248,20 @@ function StructuredShell({
           message: result.message,
         });
         return;
+      case 'invalid-save-confirmation':
+        setSaveView({
+          state: 'invalid-save-confirmation',
+          offer: result.offer,
+          message: result.message,
+        });
+        return;
       case 'rejected':
         setSaveView({ state: 'rejected', code: result.code, message: result.message });
         return;
       case 'offer-invalidated':
         setSaveView({
           state: 'rejected',
-          code: 'TEMPLATE_OVERWRITE_OFFER_INVALIDATED',
+          code: result.code,
           message: result.message,
         });
         return;
@@ -296,6 +308,14 @@ function StructuredShell({
     void runMutation(
       '正在重读 current 并提交覆盖',
       (signal) => confirmTemplateOverwrite(session, offer, transport, signal),
+    );
+  };
+  const confirmInvalidSave = (offer: TemplateInvalidSaveOffer) => {
+    const transport = saveTransport;
+    if (!transport) return;
+    void runMutation(
+      '正在确认并保存 INVALID revision',
+      (signal) => confirmTemplateInvalidSave(session, offer, transport, signal),
     );
   };
 
@@ -364,6 +384,13 @@ function StructuredShell({
               {dirty ? '本地草稿已保留' : 'Baseline 完整性已核验'}
             </span>
           </div>
+          {saveView.state === 'invalid-save-confirmation' ? (
+            <InvalidSaveConfirmationPanel
+              view={saveView}
+              onConfirm={() => confirmInvalidSave(saveView.offer)}
+              onCancel={() => setSaveView({ state: 'idle' })}
+            />
+          ) : null}
           <CanvasProjection workingCopy={session.workingCopy} nodes={nodes} />
         </section>
 
@@ -593,6 +620,7 @@ function StructuredSaveStatus({
   onCancelOverwrite: () => void;
 }) {
   if (view.state === 'idle') return null;
+  if (view.state === 'invalid-save-confirmation') return null;
   if (view.state === 'pending') {
     return (
       <section className="te-save-status is-pending" role="status" aria-live="polite">
@@ -641,6 +669,48 @@ function StructuredSaveStatus({
       <div>
         <strong>保存结果不明</strong>
         <span>{view.message}</span>
+      </div>
+    </section>
+  );
+}
+
+function InvalidSaveConfirmationPanel({
+  view,
+  onConfirm,
+  onCancel,
+}: {
+  view: Extract<StructuredSaveView, { state: 'invalid-save-confirmation' }>;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  const titleId = useId();
+  const problemCount = view.offer.problems.length;
+
+  return (
+    <section className="te-invalid-save-confirmation" role="alert" aria-labelledby={titleId}>
+      <header>
+        <AlertTriangle aria-hidden="true" size={20} />
+        <div>
+          <h2 id={titleId}>确认仍保存为 INVALID</h2>
+          <span>{view.message}</span>
+        </div>
+      </header>
+      <p>
+        {problemCount} 项依赖问题 · {view.offer.truncated ? '已截断' : '完整未截断'}
+      </p>
+      <ul>
+        {view.offer.problems.map((problem, index) => (
+          <li key={`${problem.canonicalPointer}\0${problem.code}\0${index}`}>
+            <code>{problem.code}</code>
+            <code>{problem.canonicalPointer || '(root)'}</code>
+          </li>
+        ))}
+      </ul>
+      <div className="te-invalid-save-actions">
+        <button type="button" onClick={onConfirm}>仍保存为 INVALID</button>
+        <button type="button" className="is-secondary" onClick={onCancel}>
+          取消 INVALID 保存
+        </button>
       </div>
     </section>
   );

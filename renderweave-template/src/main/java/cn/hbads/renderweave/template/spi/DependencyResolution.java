@@ -1,30 +1,125 @@
 package cn.hbads.renderweave.template.spi;
 
+import cn.hbads.renderweave.schema.definition.StaticSchemaRef;
+import cn.hbads.renderweave.template.api.TemplateApplication;
+
+import java.util.Comparator;
+import java.util.List;
+import java.util.Objects;
+
 /**
- * Outbound seam for Template dependency resolution: system-level checks of the exact
- * dependency facts a Template current needs (authored AssetRef atoms and TemplateUse
- * logical refs). Implemented by the app adapter against the Asset/Template aggregates;
- * never backed by user-invocation authorization.
+ * Outbound seam for freezing exact Template dependency facts. It is a system-level
+ * aggregate probe, never a user-facing read authorization shortcut.
  */
 public interface DependencyResolution {
 
-    /** Asset current existence and kind match for one authored AssetRef atom. */
-    AssetCheck checkAsset(String assetId, String kind);
+    AssetResolution resolveAsset(String assetId);
 
-    /** TemplateUse target existence and ACTIVE lifecycle. */
-    TemplateCheck checkTemplateUse(String targetTemplateId);
+    TemplateResolution resolveTemplate(String targetTemplateId);
 
-    enum AssetCheck {
-        MATCH,
-        KIND_MISMATCH,
-        NOT_FOUND,
-        UNAVAILABLE
+    sealed interface AssetResolution permits AssetResolved, AssetMissing, AssetUnavailable {
     }
 
-    enum TemplateCheck {
+    record AssetResolved(AssetState state) implements AssetResolution {
+        public AssetResolved {
+            Objects.requireNonNull(state, "state");
+        }
+    }
+
+    record AssetMissing() implements AssetResolution {
+    }
+
+    record AssetUnavailable() implements AssetResolution {
+    }
+
+    sealed interface TemplateResolution permits
+            TemplateResolved,
+            TemplateMissing,
+            TemplateUnavailable {
+    }
+
+    record TemplateResolved(TemplateState state) implements TemplateResolution {
+        public TemplateResolved {
+            Objects.requireNonNull(state, "state");
+        }
+    }
+
+    record TemplateMissing() implements TemplateResolution {
+    }
+
+    record TemplateUnavailable() implements TemplateResolution {
+    }
+
+    record AssetState(
+            OwnerScopeAuthority.OwnerScope ownerScope,
+            String kind,
+            Lifecycle lifecycle,
+            long assetRevision,
+            long currentContentVersion
+    ) {
+        public AssetState {
+            Objects.requireNonNull(ownerScope, "ownerScope");
+            if (kind == null || kind.isBlank() || kind.length() > 64) {
+                throw new IllegalArgumentException("asset kind must be non-blank and bounded");
+            }
+            Objects.requireNonNull(lifecycle, "lifecycle");
+            if (assetRevision < 0 || currentContentVersion < 0) {
+                throw new IllegalArgumentException("asset revisions must not be negative");
+            }
+        }
+    }
+
+    record TemplateState(
+            String templateId,
+            OwnerScopeAuthority.OwnerScope ownerScope,
+            long currentRevision,
+            Lifecycle lifecycle,
+            TemplateApplication.Readiness readiness,
+            StaticSchemaRef staticSchema,
+            String contentHash,
+            List<TemplateUseEdge> uses
+    ) {
+        public TemplateState {
+            if (templateId == null || templateId.isBlank() || templateId.length() > 128) {
+                throw new IllegalArgumentException("templateId must be non-blank and bounded");
+            }
+            Objects.requireNonNull(ownerScope, "ownerScope");
+            if (currentRevision < 0) {
+                throw new IllegalArgumentException("currentRevision must not be negative");
+            }
+            Objects.requireNonNull(lifecycle, "lifecycle");
+            Objects.requireNonNull(readiness, "readiness");
+            Objects.requireNonNull(staticSchema, "staticSchema");
+            if (contentHash == null || !contentHash.matches("sha256:[0-9a-f]{64}")) {
+                throw new IllegalArgumentException(
+                        "contentHash must use the sha256 wire format"
+                );
+            }
+            uses = List.copyOf(Objects.requireNonNull(uses, "uses")).stream()
+                    .sorted(Comparator.comparing(TemplateUseEdge::canonicalPointer)
+                            .thenComparing(TemplateUseEdge::targetTemplateId))
+                    .toList();
+        }
+    }
+
+    record TemplateUseEdge(String targetTemplateId, String canonicalPointer) {
+        public TemplateUseEdge {
+            if (targetTemplateId == null || targetTemplateId.isBlank()
+                    || targetTemplateId.length() > 128) {
+                throw new IllegalArgumentException(
+                        "targetTemplateId must be non-blank and bounded"
+                );
+            }
+            if (canonicalPointer == null || canonicalPointer.length() > 2048) {
+                throw new IllegalArgumentException(
+                        "canonicalPointer must be present and bounded"
+                );
+            }
+        }
+    }
+
+    enum Lifecycle {
         ACTIVE,
-        NOT_FOUND,
-        NOT_ACTIVE,
-        UNAVAILABLE
+        DELETED
     }
 }

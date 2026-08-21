@@ -143,7 +143,7 @@ export const copyStaticSchemaToDraft = <ThrowOnError extends boolean = false>(op
 /**
  * Create a Template at revision 0 from one complete admitted DesignDSL
  *
- * The DesignDSL bytes are the complete request body. ownerScope and Host capability are resolved exclusively from trusted server context and are not request fields. The currently admitted kernel is deliberately narrower than the unreleased full DesignDSL Profile.
+ * The DesignDSL bytes are the complete request body. ownerScope and Host capability are resolved exclusively from trusted server context and are not request fields. The currently admitted kernel is deliberately narrower than the unreleased full DesignDSL Profile. Create is strict: any dependency or hard problem rejects the request without a write.
  */
 export const createTemplate = <ThrowOnError extends boolean = false>(options: Options<CreateTemplateData, ThrowOnError>): RequestResult<CreateTemplateResponses, CreateTemplateErrors, ThrowOnError> => (options.client ?? client).post<CreateTemplateResponses, CreateTemplateErrors, ThrowOnError>({
     url: '/api/v1/templates',
@@ -164,7 +164,7 @@ export const getTemplateCurrent = <ThrowOnError extends boolean = false>(options
 /**
  * Append a complete immutable DesignDSL revision if expectedRevision is current
  *
- * StaticSchema and ownerScope are permanent stored facts and cannot be supplied or rebound by this request. A same-content save still appends the next revision.
+ * StaticSchema and ownerScope are permanent stored facts and cannot be supplied or rebound by this request. A same-content save still appends the next revision. Confirmable dependency errors first return a bounded complete problem set and a five-minute opaque token. Saving INVALID requires resubmitting the exact complete body and expectedRevision with that token; it is not a generic force flag. Content, current, dependency or expiry drift writes nothing and requires a fresh confirmation when the new state remains confirmable.
  */
 export const saveTemplate = <ThrowOnError extends boolean = false>(options: Options<SaveTemplateData, ThrowOnError>): RequestResult<SaveTemplateResponses, SaveTemplateErrors, ThrowOnError> => (options.client ?? client).put<SaveTemplateResponses, SaveTemplateErrors, ThrowOnError>({
     url: '/api/v1/templates/{templateId}',

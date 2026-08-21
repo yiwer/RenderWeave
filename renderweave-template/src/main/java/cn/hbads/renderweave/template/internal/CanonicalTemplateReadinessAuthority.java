@@ -26,17 +26,8 @@ final class CanonicalTemplateReadinessAuthority implements TemplateReadinessAuth
         this.persistence = Objects.requireNonNull(persistence, "persistence");
         this.extractor = new AssetRefAtomExtractor();
         this.dependencies = new TemplateDependencyEvaluator(
-                Objects.requireNonNull(resolution, "resolution"),
-                this::useTargetsOf
+                Objects.requireNonNull(resolution, "resolution")
         );
-    }
-
-    private java.util.List<String> useTargetsOf(String templateId) {
-        var outcome = persistence.loadUseTargets(TemplateApplication.TemplateId.of(templateId));
-        if (outcome instanceof TemplatePersistence.UseTargetsLoaded loaded) {
-            return loaded.targetTemplateIds();
-        }
-        throw new TemplateDependencyEvaluator.Unavailable();
     }
 
     @Override
@@ -63,14 +54,23 @@ final class CanonicalTemplateReadinessAuthority implements TemplateReadinessAuth
             }
             var stored = ((TemplatePersistence.CurrentLoaded) loaded).current();
             var projection = extractor.extract(stored.canonicalDesignDslUtf8());
-            TemplateApplication.Readiness readiness;
+            TemplateDependencyEvaluator.Evaluation evaluation;
             try {
-                readiness = dependencies.evaluate(projection, templateId.value());
+                evaluation = dependencies.evaluate(
+                        projection,
+                        templateId.value(),
+                        stored.metadata().ownerScope()
+                );
             } catch (TemplateDependencyEvaluator.Unavailable unavailable) {
                 return new RecheckUnavailable();
             }
+            var readiness = evaluation.readiness();
             var updated = persistence.updateReadiness(
-                    templateId, stored.metadata().currentRevision(), readiness);
+                    templateId,
+                    stored.metadata().currentRevision(),
+                    readiness,
+                    evaluation.snapshot()
+            );
             if (updated instanceof TemplatePersistence.ReadinessUpdated) {
                 return new Rechecked(readiness, stored.metadata().currentRevision());
             }

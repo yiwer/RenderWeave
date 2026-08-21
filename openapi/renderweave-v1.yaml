@@ -1,10 +1,11 @@
 openapi: 3.1.2
 info:
   title: RenderWeave API
-  version: 0.14.0
+  version: 0.15.0
   description: >-
     Contract-first API for RenderWeave Schema Drafts, immutable StaticSchemas,
-    exact compiled artifacts, admitted Template revision authoring, owner-scoped Asset
+    exact compiled artifacts, dependency-checked Template revision authoring with bounded
+    invalid-save confirmation, owner-scoped Asset
     upload/detail/catalog/versioning/delete-confirmation/restore, authoritative RootDocument
     validation, deterministic replay, guarded live inference Candidate review and
     create-only atomic Draft application.
@@ -431,6 +432,7 @@ paths:
         The DesignDSL bytes are the complete request body. ownerScope and Host capability are
         resolved exclusively from trusted server context and are not request fields. The currently
         admitted kernel is deliberately narrower than the unreleased full DesignDSL Profile.
+        Create is strict: any dependency or hard problem rejects the request without a write.
       parameters:
         - $ref: '#/components/parameters/TemplateSchemaKey'
         - $ref: '#/components/parameters/TemplateVersionTag'
@@ -464,7 +466,7 @@ paths:
         '415':
           description: The body is not the exact DesignDSL media type.
         '422':
-          $ref: '#/components/responses/ValidationProblem'
+          $ref: '#/components/responses/TemplateAuthoringValidationProblem'
         '503':
           $ref: '#/components/responses/TemplateServiceUnavailableProblem'
   /api/v1/templates/{templateId}:
@@ -505,9 +507,14 @@ paths:
       summary: Append a complete immutable DesignDSL revision if expectedRevision is current
       description: >-
         StaticSchema and ownerScope are permanent stored facts and cannot be supplied or rebound by
-        this request. A same-content save still appends the next revision.
+        this request. A same-content save still appends the next revision. Confirmable dependency
+        errors first return a bounded complete problem set and a five-minute opaque token. Saving
+        INVALID requires resubmitting the exact complete body and expectedRevision with that token;
+        it is not a generic force flag. Content, current, dependency or expiry drift writes nothing
+        and requires a fresh confirmation when the new state remains confirmable.
       parameters:
         - $ref: '#/components/parameters/ExpectedRevision'
+        - $ref: '#/components/parameters/TemplateInvalidSaveConfirmationToken'
       requestBody:
         required: true
         content:
@@ -534,7 +541,7 @@ paths:
         '415':
           description: The body is not the exact DesignDSL media type.
         '422':
-          $ref: '#/components/responses/ValidationProblem'
+          $ref: '#/components/responses/TemplateAuthoringValidationProblem'
         '500':
           $ref: '#/components/responses/InternalProblem'
         '503':
@@ -1508,6 +1515,17 @@ components:
       schema:
         type: string
         pattern: '^[a-z0-9][a-z0-9._-]{0,63}$'
+    TemplateInvalidSaveConfirmationToken:
+      name: X-Confirmation-Token
+      in: header
+      required: false
+      description: >-
+        Five-minute opaque token from TEMPLATE_DEPENDENCY_CONFIRMATION_REQUIRED. It authorizes only
+        an exact invalid Template save bound to actor, owner, Template, StaticSchema,
+        expectedRevision, proposed content, complete problem set and dependency snapshot.
+      schema:
+        type: string
+        pattern: '^[0-9a-f]{64}$'
     AssetId:
       name: assetId
       in: path
@@ -1716,7 +1734,7 @@ components:
           enum: [ready]
         contractVersion:
           type: string
-          const: 0.14.0
+          const: 0.15.0
     AssetDeletePrecheckResponse:
       type: object
       additionalProperties: false
@@ -2326,6 +2344,69 @@ components:
         leftMm:
           type: number
           minimum: 0
+    TemplateValidationIssue:
+      type: object
+      additionalProperties: false
+      required: [code, category, severity, canonicalPointer, messageArgs]
+      properties:
+        code:
+          type: string
+          minLength: 1
+          maxLength: 128
+        category:
+          type: string
+          enum: [DEPENDENCY, HARD, LIMIT]
+        severity:
+          type: string
+          const: ERROR
+        canonicalPointer:
+          type: string
+          maxLength: 2048
+          description: Stable RFC 6901 pointer into the proposed DesignDSL; empty only for a limit marker.
+        messageArgs:
+          type: array
+          maxItems: 32
+          items:
+            type: string
+            maxLength: 512
+    TemplateAuthoringProblem:
+      type: object
+      additionalProperties: true
+      required: [type, title, status, code, traceId]
+      properties:
+        type:
+          type: string
+          format: uri-reference
+        title:
+          type: string
+        status:
+          type: integer
+          const: 422
+        detail:
+          type: string
+        instance:
+          type: [string, 'null']
+          format: uri-reference
+        code:
+          type: string
+        traceId:
+          type: string
+        proposedContentHash:
+          type: [string, 'null']
+          pattern: '^sha256:[0-9a-f]{64}$'
+        confirmationToken:
+          type: [string, 'null']
+          pattern: '^[0-9a-f]{64}$'
+        expiresAt:
+          type: [string, 'null']
+          format: date-time
+        problems:
+          type: array
+          maxItems: 200
+          items:
+            $ref: '#/components/schemas/TemplateValidationIssue'
+        truncated:
+          type: boolean
     TemplateReadableResponse:
       type: object
       additionalProperties: false
@@ -3595,8 +3676,17 @@ components:
         application/problem+json:
           schema:
             $ref: '#/components/schemas/Problem'
+    TemplateAuthoringValidationProblem:
+      description: >-
+        Design admission or dependency validation rejected the request. A confirmable save carries
+        the exact bounded problem set, proposed content hash, expiry and opaque confirmation token;
+        hard or truncated sets never carry a usable token. No write occurred.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/TemplateAuthoringProblem'
     TemplateServiceUnavailableProblem:
-      description: Template authorization or persistence is temporarily unavailable.
+      description: Template authorization, dependency checking, confirmation or persistence is temporarily unavailable.
       content:
         application/problem+json:
           schema:

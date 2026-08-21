@@ -426,6 +426,7 @@
 }
 
 .te-canvas-stage {
+  position: relative;
   display: grid;
   min-width: 0;
   min-height: 0;
@@ -472,6 +473,103 @@
 .te-canvas-heading .te-mode-chip.is-dirty {
   border-color: var(--color-warning-border);
   background: var(--color-warning-soft);
+  color: var(--color-warning-ink);
+}
+
+.te-invalid-save-confirmation {
+  position: absolute;
+  z-index: var(--te-z-panel);
+  inset-block-start: calc(52px + var(--space-lg));
+  inset-inline: var(--space-lg);
+  display: grid;
+  max-height: calc(100% - 52px - (2 * var(--space-lg)) - 72px);
+  gap: var(--space-md);
+  padding: var(--space-lg);
+  overflow: auto;
+  border: 1px solid var(--color-warning-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-float);
+  color: var(--color-warning-ink);
+}
+
+.te-invalid-save-confirmation header {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--space-sm);
+}
+
+.te-invalid-save-confirmation header > svg {
+  margin-top: 2px;
+}
+
+.te-invalid-save-confirmation header > div {
+  display: grid;
+  gap: var(--space-2xs);
+}
+
+.te-invalid-save-confirmation h2,
+.te-invalid-save-confirmation p {
+  margin: 0;
+}
+
+.te-invalid-save-confirmation h2 {
+  color: var(--color-ink);
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+}
+
+.te-invalid-save-confirmation header span,
+.te-invalid-save-confirmation p {
+  color: var(--color-body);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+}
+
+.te-invalid-save-confirmation ul {
+  display: grid;
+  gap: var(--space-xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.te-invalid-save-confirmation li {
+  display: grid;
+  gap: var(--space-3xs);
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-md);
+  background: var(--color-warning-soft);
+}
+
+.te-invalid-save-confirmation code {
+  overflow-wrap: anywhere;
+  color: var(--color-warning-ink);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+}
+
+.te-invalid-save-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+}
+
+.te-invalid-save-actions button {
+  min-height: 44px;
+  padding: var(--space-xs) var(--space-md);
+  border: 1px solid var(--color-error-border);
+  border-radius: var(--radius-input);
+  background: var(--color-error-ink);
+  color: var(--color-surface);
+  font: inherit;
+  font-weight: 750;
+}
+
+.te-invalid-save-actions button.is-secondary {
+  border-color: var(--color-warning-border);
+  background: transparent;
   color: var(--color-warning-ink);
 }
 

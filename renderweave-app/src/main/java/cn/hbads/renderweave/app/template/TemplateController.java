@@ -15,12 +15,15 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
 import java.net.URI;
+import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -57,6 +60,14 @@ final class TemplateController {
                     .body(new OpaqueCommitResponse(created.templateId().value(), "OPAQUE"));
             case TemplateApplication.CreateDesignRejected rejected ->
                     designProblem(rejected.rejection());
+            case TemplateApplication.CreateDependencyRejected rejected ->
+                    dependencyProblem(
+                            "TEMPLATE_DEPENDENCY_REJECTED",
+                            "Template dependencies rejected",
+                            "Strict create requires a complete READY dependency set",
+                            rejected.report(),
+                            null
+                    );
             case TemplateApplication.CreateStaticSchemaNotFound ignored -> problem(
                     HttpStatus.NOT_FOUND,
                     "TEMPLATE_STATIC_SCHEMA_NOT_FOUND",
@@ -71,6 +82,11 @@ final class TemplateController {
                     HttpStatus.SERVICE_UNAVAILABLE,
                     "TEMPLATE_AUTHORITY_UNAVAILABLE",
                     "Template authorization is unavailable"
+            );
+            case TemplateApplication.CreateDependencyUnavailable ignored -> problem(
+                    HttpStatus.SERVICE_UNAVAILABLE,
+                    "TEMPLATE_DEPENDENCY_UNAVAILABLE",
+                    "Template dependencies could not be checked"
             );
             case TemplateApplication.CreatePersistenceUnavailable ignored -> problem(
                     HttpStatus.SERVICE_UNAVAILABLE,
@@ -171,6 +187,8 @@ final class TemplateController {
     ResponseEntity<?> save(
             @PathVariable String templateId,
             @RequestParam long expectedRevision,
+            @RequestHeader(name = "X-Confirmation-Token", required = false)
+            String confirmationToken,
             @RequestBody byte[] rawDesignDslUtf8
     ) {
         if (expectedRevision < 0 || expectedRevision == Long.MAX_VALUE) {
@@ -178,12 +196,19 @@ final class TemplateController {
                     "expectedRevision must be non-negative and have a successor"
             );
         }
+        if (confirmationToken != null
+                && !confirmationToken.matches("[0-9a-f]{64}")) {
+            throw new InvalidTemplateApiRequestException(
+                    "X-Confirmation-Token must be 64 lowercase hexadecimal characters"
+            );
+        }
         var outcome = templates.save(
                 invocation(),
                 new TemplateApplication.SaveCommand(
                         templateId(templateId),
                         expectedRevision,
-                        rawDesignDslUtf8
+                        rawDesignDslUtf8,
+                        confirmationToken
                 )
         );
         return switch (outcome) {
@@ -195,6 +220,33 @@ final class TemplateController {
             );
             case TemplateApplication.SaveDesignRejected rejected ->
                     designProblem(rejected.rejection());
+            case TemplateApplication.SaveConfirmationRequired required ->
+                    dependencyProblem(
+                            "TEMPLATE_DEPENDENCY_CONFIRMATION_REQUIRED",
+                            "Template dependency confirmation required",
+                            "Confirm the exact complete dependency problem set to save INVALID",
+                            required.offer().report(),
+                            required.offer()
+                    );
+            case TemplateApplication.SaveDependencyRejected rejected ->
+                    dependencyProblem(
+                            "TEMPLATE_DEPENDENCY_REJECTED",
+                            "Template dependencies rejected",
+                            "Hard or truncated dependency problems cannot be confirmed",
+                            rejected.report(),
+                            null
+                    );
+            case TemplateApplication.SaveConfirmationInvalid ignored -> problem(
+                    HttpStatus.UNPROCESSABLE_ENTITY,
+                    "TEMPLATE_CONFIRMATION_INVALID",
+                    "The invalid-save confirmation token is not valid"
+            );
+            case TemplateApplication.SaveConfirmationExpired ignored -> problem(
+                    HttpStatus.UNPROCESSABLE_ENTITY,
+                    "TEMPLATE_CONFIRMATION_EXPIRED",
+                    "The invalid-save confirmation token has expired"
+            );
+            case TemplateApplication.SaveConfirmationStale stale -> staleProblem(stale);
             case TemplateApplication.SaveNotFound ignored -> problem(
                     HttpStatus.NOT_FOUND,
                     "TEMPLATE_NOT_FOUND",
@@ -220,6 +272,16 @@ final class TemplateController {
                     HttpStatus.SERVICE_UNAVAILABLE,
                     "TEMPLATE_AUTHORITY_UNAVAILABLE",
                     "Template authorization is unavailable"
+            );
+            case TemplateApplication.SaveDependencyUnavailable ignored -> problem(
+                    HttpStatus.SERVICE_UNAVAILABLE,
+                    "TEMPLATE_DEPENDENCY_UNAVAILABLE",
+                    "Template dependencies could not be checked"
+            );
+            case TemplateApplication.SaveConfirmationUnavailable ignored -> problem(
+                    HttpStatus.SERVICE_UNAVAILABLE,
+                    "TEMPLATE_CONFIRMATION_UNAVAILABLE",
+                    "Template invalid-save confirmation is unavailable"
             );
             case TemplateApplication.SavePersistenceUnavailable ignored -> problem(
                     HttpStatus.SERVICE_UNAVAILABLE,
@@ -297,6 +359,61 @@ final class TemplateController {
                         ? conflict.currentRevision().getAsLong()
                         : null
         ));
+    }
+
+    private ResponseEntity<TemplateDependencyProblemResponse> staleProblem(
+            TemplateApplication.SaveConfirmationStale stale
+    ) {
+        if (stale.replacement().isPresent()) {
+            var offer = stale.replacement().orElseThrow();
+            return dependencyProblem(
+                    "TEMPLATE_CONFIRMATION_STALE",
+                    "Template confirmation is stale",
+                    "Dependency facts changed; review and confirm the fresh complete problem set",
+                    offer.report(),
+                    offer
+            );
+        }
+        return dependencyProblem(
+                "TEMPLATE_CONFIRMATION_STALE",
+                "Template confirmation is stale",
+                "Bound content, current, or dependency facts changed",
+                null,
+                null
+        );
+    }
+
+    private ResponseEntity<TemplateDependencyProblemResponse> dependencyProblem(
+            String code,
+            String title,
+            String detail,
+            TemplateApplication.ValidationReport report,
+            TemplateApplication.InvalidCommitConfirmationOffer offer
+    ) {
+        var status = HttpStatus.UNPROCESSABLE_ENTITY;
+        return ResponseEntity.status(status)
+                .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .body(new TemplateDependencyProblemResponse(
+                        "urn:renderweave:problem:" + code.toLowerCase().replace('_', '-'),
+                        title,
+                        status.value(),
+                        detail,
+                        code,
+                        UUID.randomUUID().toString(),
+                        offer == null ? null : offer.proposedContentHash(),
+                        offer == null ? null : offer.confirmationToken(),
+                        offer == null ? null : offer.expiresAt(),
+                        report == null ? List.of() : report.problems().stream()
+                                .map(problem -> new ValidationProblemResponse(
+                                        problem.code(),
+                                        problem.category().name(),
+                                        problem.severity().name(),
+                                        problem.canonicalPointer(),
+                                        problem.messageArgs()
+                                ))
+                                .toList(),
+                        report != null && report.truncated()
+                ));
     }
 
     private ResponseEntity<TemplateProblemResponse> problem(
@@ -391,6 +508,30 @@ final class TemplateController {
             String pointer,
             String limit,
             Long currentRevision
+    ) {
+    }
+
+    record ValidationProblemResponse(
+            String code,
+            String category,
+            String severity,
+            String canonicalPointer,
+            List<String> messageArgs
+    ) {
+    }
+
+    record TemplateDependencyProblemResponse(
+            String type,
+            String title,
+            int status,
+            String detail,
+            String code,
+            String traceId,
+            String proposedContentHash,
+            String confirmationToken,
+            Instant expiresAt,
+            List<ValidationProblemResponse> problems,
+            boolean truncated
     ) {
     }
 }

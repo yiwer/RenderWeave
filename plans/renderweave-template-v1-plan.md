@@ -14,7 +14,8 @@
   daemon output，未产生 world scene 或注册 Profile；TV1-T27=`resolved/automated_verified`：Editor E1 canonical
   open、显式 readiness 重检与未发布三模式 Product shell；TV1-T28=`resolved/automated_verified`：Editor E2
   canonical working copy、有界结构化 undo/redo 与 preview eligibility guard；TV1-T29=`resolved/automated_verified`：
-  Editor E3 lossless save、conflict overwrite 与 revision 漂移重确认均已完成
+  Editor E3 lossless save、conflict overwrite 与 revision 漂移重确认均已完成；TV1-T30=`resolved/automated_verified`：
+  Editor E4a 当前依赖面 bounded problems、invalid-save confirmation、snapshot fence 与 hard-error 零写均已完成
 - 日期：2026-08-20
 - Approved delta：[`specs/changes/20260817-template-v1-implementation-authority.md`](../specs/changes/20260817-template-v1-implementation-authority.md)
 - Frozen checkpoint：`0b485f4a13de9d754a81d07f464730776e13c14b`
@@ -75,7 +76,8 @@ binding: generic + project-local tools/run-gate.ps1 + Wayfinder markdown tracker
 | TV1-P6a Editor E1 | 27 | trusted canonical current baseline + 显式 readiness recheck + 三模式 Canvas Focus shell | Java/Web/OpenAPI A1；组件未发布，禁止 save/preview/recovery 占位与 READY 声明 |
 | TV1-P6b Editor E2 | 28 | canonical working copy + 结构化本地编辑/undo/redo + preview generation/eligibility guard | Node 24 Web A1；无 API/route/save/preview action，baseline immutable |
 | TV1-P6c Editor E3 | 29 | lossless save + conflict overwrite offer/confirm/reconfirm + conservative unknown lock | Node 24 Web A1；复用既有 API；无 E4–E9/route/reconciliation |
-| TV1-P6+ Product completion | 29 后按真实依赖另切票 | 完整 Renderer layout/resource/raster/JPEG/Engine output、公开产品面、Editor E4–E9 与 formal registry records | 逐纵切 gate + product target/executor + J1/A3/物理 Linux 认证；不预建未知下游票 |
+| TV1-P6d Editor E4a | 30 | T20 AssetRef/TemplateRef bounded dependency problems + invalid-save confirmation + hard zero-write | Java/PostgreSQL/OpenAPI/Node 24 Web A1；完整 field-path/child-fill validator 与 E5–E9 另切 |
+| TV1-P6+ Product completion | 30 后按真实依赖另切票 | 完整 Renderer layout/resource/raster/JPEG/Engine output、完整 Editor E4 validator、公开产品面、Editor E5–E9 与 formal registry records | 逐纵切 gate + product target/executor + J1/A3/物理 Linux 认证；不预建未知下游票 |
 
 ## 4. 当前 ticket DAG
 
@@ -143,6 +145,10 @@ flowchart LR
   T27 --> T28
   T09 --> T29[29 Editor E3 save/conflict overwrite]
   T28 --> T29
+  T04 --> T30[30 Editor E4a invalid-save confirmation]
+  T20 --> T30
+  T09 --> T30
+  T29 --> T30
 ```
 
 | Ticket | 类型 | 状态 | Blocked by | 本票退出事实 |
@@ -179,6 +185,7 @@ flowchart LR
 | 27 | task | `resolved` / `automated_verified` | 06, 09, 20 | canonical baseline + 显式 readiness recheck + 未发布三模式 Product shell；无 save/preview/recovery/route |
 | 28 | task | `resolved` / `automated_verified` | 09, 27 | canonical working copy + 结构化 name edit/undo/redo + preview generation/eligibility guard；Node 24 Web/Fast/Full 17/17 |
 | 29 | task | `resolved` / `automated_verified` | 09, 28 | lossless expectedRevision save + conflict overwrite confirm/reconfirm；Node 24 Web/Fast/Full 17/17，unknown 保守锁定，无 E5 reconciliation |
+| 30 | task | `resolved` / `automated_verified` | 04, 09, 20, 29 | 当前 AssetRef/TemplateRef dependency surface 的 bounded problems + 5 分钟 invalid-save confirmation + SERIALIZABLE snapshot fence/hard zero-write；完整 field-path/child-fill validator 另切 |
 
 每次只 claim 一个 unblocked ticket；一票 resolved 后才由其 `Blocked by` 关系产生下一 frontier。未知实现切片留在
 map 的 `Not yet specified`，不为排满计划提前发明接口、migration 或 Profile identity。
@@ -206,8 +213,8 @@ Supervisor + Java/Rust/Python/Linux replay，`render` 已入 17-step `full`）�
   T25 static layout preflight 与 T26 definite ABSOLUTE local-box kernel 现均已 resolve；仍未预建公开 render
   route、tolerance-dependent HUG/Stack/Grid、resource/raster/JPEG/daemon output Profile。TV1-T27 已从
   Editor E1–E9 中单独登记并完成；TV1-T28 也已从 E2 frontier 单独登记并完成；TV1-T29 已从 E3 save +
-  conflict overwrite frontier 单独登记并完成。下一 frontier 为 E4，须另行登记；产品 route 仍待后续闭环，
-  不在 E1–E4 提前开放。
+  conflict overwrite frontier 单独登记并完成。TV1-T30 已从 E4 拆出当前真实 dependency surface 的 E4a 并完成；
+  完整 field-path/child-fill validator 仍须后续纵切。产品 route 仍待后续闭环，不在 E1–E4 提前开放。
 
 ## 5. TV1-T01 执行卡
 
@@ -637,3 +644,31 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
   `.sdlc/evidence/20260821-094832-full/` 全绿，Full 17/17 steps、1048.706s。
 - E4–E9 边界保持不变；没有 Java/OpenAPI/generated SDK/migration/API/route 差异，没有 provider/真实数据/API Key
   外部副作用，不 push/tag/PR，不声明 Editor、Renderer 或 Template v1 READY。
+
+## 29. TV1-T30 执行卡
+
+- 决策：物化 T09 E4 的首个真实 E4a；只对 T20 已物化 AssetRef/TemplateRef dependency surface 完成二阶段
+  invalid-save confirmation，不把尚未实现的 StaticSchema field-path/child-fill validator 冒充已覆盖。
+- 服务端：bounded canonical problem set（200/199+marker、4096 bytes/item、262144 total、1024 marker reserve）；
+  cycle/cross-scope/integrity/closure limit/hard/truncated 零写且无 token；完整 dependency ERROR 才签发 5 分钟 opaque
+  token，绑定 operation/actor/scope/target/Schema/revision/content/problem/dependency fingerprints。
+- concurrency：confirmed request 重交 exact body/revision/token并 fresh revalidate；PostgreSQL SERIALIZABLE commit 比较
+  exact Asset/Template dependency snapshot，drift/invalid/expired/stale 全部零写并重新确认。READY create/save/recheck 同样
+  使用 snapshot fence，修补 T20 precheck→commit race。
+- Web：confirmation offer 绑定 token/expectedRevision/draft canonical/generation/problems/expiry；具名 INVALID confirm/cancel，
+  pending lock 与 E3 success/conflict/unknown 纪律不变；不实现 generic force、shortcut、E9 locator/focus panel。
+- 允许影响：Template api/spi/internal/tests、app PostgreSQL/V025/Controller/API tests/canary、OpenAPI 0.15.0/generated SDK、
+  Web template-editor coordinator/shell/tests/CSS、tracker/plan/log/NOTES/evidence。
+- 禁止影响：完整 field-path/child-fill validator 的虚假声明、copy/restore confirmation、E5 reconciliation、E6 preview、
+  E7 recovery、E8 import、E9 完整问题面板、产品 route、Renderer/Profile/formal records/J1/A3/READY、provider/真实数据/API Key。
+- TDD 与验证：Template pure RED → Testcontainers/App/API RED → Web coordinator/DOM RED；focused → `template`/`server` →
+  Node 24 `web` → `fast` → 最终 `full`。完成状态最高为 `automated_verified`，不 push/tag/PR。
+- 结果：Template problem budget/evaluator/confirmation contract、V025 + PostgreSQL authority/snapshot fence、API 0.15.0、
+  generated SDK 与 Canvas Focus 具名确认均已实现；正常 READY drift 重算，confirmed INVALID drift 零写并重新确认。
+- 受影响 A1：`template` `.sdlc/evidence/20260821-115240-template/`（Schema 20、Template 67、Java/Python
+  211/211）、Node 24 `web` `.sdlc/evidence/20260821-115304-web/`（19 files/127 tests + SDK/typecheck/lint/build）、
+  `fast` `.sdlc/evidence/20260821-120546-fast/`、`server` `.sdlc/evidence/20260821-120603-server/`
+  （8/8 reactor、App 342 tests/15 controlled skips）。最终 `full` 用本卡与完整 diff 的 exact manifest 重放；目录仅记入
+  commit handoff，不反写本卡以免改变已验证输入。
+- 生命周期：T30=`resolved/automated_verified`；完整 E4 field-path/child-fill validator、E5–E9、产品 route、Editor J1、
+  Renderer/Profile/formal record/READY 均未声明完成，下一 frontier 继续按真实依赖另票登记。
