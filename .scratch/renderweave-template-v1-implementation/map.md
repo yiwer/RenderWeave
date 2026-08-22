@@ -269,6 +269,11 @@ Label: wayfinder:map
   Frame 链单向传播，复用 FILL inset/min-max、ContentBox floor-zero 与 T52 affine；shared `/16` Rust/Python 为
   93/93、279 checks。Stack/Grid offer、双向 HUG、非直角 rotation、resource/tolerance/scene/raster/RESULT/Profile
   继续 fail closed。
+- [实现 definite Stack cross-axis offer 下的 quarter-turn Frame HUG opposite-axis FILL 子闭包](issues/54-definite-stack-cross-offer-quarter-turn-frame-hug-layout.md) —
+  **resolved / automated_verified**；definite Stack cross-axis interval 现可解析成 direct STACK Frame 的 resolved
+  opposite outer size，开放 ROW main-HUG/cross-FILL 与 COLUMN 对称路径；shared `/17` Rust/Python 为
+  97/97、291 checks。main-FILL→cross-HUG 回馈、nested
+  Stack/Grid offer、双向 HUG、非直角 rotation、resource/tolerance/scene/raster/RESULT/Profile 继续 fail closed。
 - [验证 Product Editor 状态、恢复与权威预览架构](issues/09-validate-product-editor-architecture.md) —
   throwaway 逻辑原型（`/prototype/editor-state-model`，不进产品 route）把冻结编辑器规则编码为确定性
   fixture 状态机：10 个引导走查场景 37/37 断言 + 自由操作冒烟 + 键盘焦点检查全部通过（Playwright A1，
@@ -366,8 +371,9 @@ Label: wayfinder:map
   已完成 exact-quarter-turn affine Frame/Group HUG AABB（Rust/Python 83/83、249 checks）；T52 已完成 FIXED
   opposite-axis Frame 的 odd-quarter-turn cross-axis FILL（Rust/Python 88/88、264 checks）；T53 已完成
   already-definite ABSOLUTE parent offer 沿 HUG Frame opposite-axis FILL 的单向传播（Rust/Python 93/93、279
-  checks）；其余非直角 rotation、
-  Stack/Grid/general constraint offer、multiple
+  checks）；T54 已完成 definite Stack cross-axis offer → direct Frame main-HUG/opposite-FILL（Rust/Python
+  97/97、291 checks）；其余
+  非直角 rotation、nested Stack/Grid/general constraint offer、multiple
   Stack main-axis FILL/跨多个 AUTO 的平均
   deficit/multiple FRACTION/actual resource fetch+decode/world scene/raster/
   JPEG/Engine 接线仍须另行登记，物理 Linux 双 CPU-family

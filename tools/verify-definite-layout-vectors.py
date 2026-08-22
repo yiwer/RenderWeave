@@ -118,6 +118,12 @@ class Box:
 
 
 @dataclass(frozen=True)
+class HugOppositeAxisOffer:
+    source: str
+    size: float
+
+
+@dataclass(frozen=True)
 class StackChildMeasurement:
     width: float
     height: float
@@ -275,7 +281,12 @@ class DefiniteLayouter:
         authored_y = required_decimal(placement, "yPt", current, "placement.yPt")
         width = (
             resource_free_hug_axis(
-                node, role, placement, "Width", current, parent_content.height
+                node,
+                role,
+                placement,
+                "Width",
+                current,
+                HugOppositeAxisOffer("ABSOLUTE_PARENT_CONTENT", parent_content.height),
             )
             if width_mode == "HUG_CONTENT"
             else definite_axis_size(
@@ -290,7 +301,12 @@ class DefiniteLayouter:
         )
         height = (
             resource_free_hug_axis(
-                node, role, placement, "Height", current, parent_content.width
+                node,
+                role,
+                placement,
+                "Height",
+                current,
+                HugOppositeAxisOffer("ABSOLUTE_PARENT_CONTENT", parent_content.width),
             )
             if height_mode == "HUG_CONTENT"
             else definite_axis_size(
@@ -964,10 +980,56 @@ def measure_stack_child(
     margin_left = required_decimal(
         placement, "marginLeftPt", current, "placement.marginLeftPt"
     )
+    resolved_cross_outer_offer: float | None
+    if (
+        role == "FRAME"
+        and direction == "ROW"
+        and width_mode == "HUG_CONTENT"
+        and height_mode == "FILL"
+    ):
+        resolved_cross_outer_offer = stack_axis_size(
+            placement,
+            "FILL",
+            parent.height,
+            margin_top,
+            margin_bottom,
+            "Height",
+            current,
+        )
+    elif (
+        role == "FRAME"
+        and direction == "COLUMN"
+        and width_mode == "FILL"
+        and height_mode == "HUG_CONTENT"
+    ):
+        resolved_cross_outer_offer = stack_axis_size(
+            placement,
+            "FILL",
+            parent.width,
+            margin_left,
+            margin_right,
+            "Width",
+            current,
+        )
+    else:
+        resolved_cross_outer_offer = None
     if width_mode == "HUG_CONTENT":
-        width = resource_free_hug_axis(node, role, placement, "Width", current, None)
+        offer = (
+            HugOppositeAxisOffer("RESOLVED_OUTER", resolved_cross_outer_offer)
+            if direction == "ROW" and resolved_cross_outer_offer is not None
+            else None
+        )
+        width = resource_free_hug_axis(
+            node, role, placement, "Width", current, offer
+        )
     elif direction == "ROW" and main_fill:
         width = 0.0
+    elif (
+        direction == "COLUMN"
+        and width_mode == "FILL"
+        and resolved_cross_outer_offer is not None
+    ):
+        width = resolved_cross_outer_offer
     else:
         width = stack_axis_size(
             placement,
@@ -979,9 +1041,22 @@ def measure_stack_child(
             current,
         )
     if height_mode == "HUG_CONTENT":
-        height = resource_free_hug_axis(node, role, placement, "Height", current, None)
+        offer = (
+            HugOppositeAxisOffer("RESOLVED_OUTER", resolved_cross_outer_offer)
+            if direction == "COLUMN" and resolved_cross_outer_offer is not None
+            else None
+        )
+        height = resource_free_hug_axis(
+            node, role, placement, "Height", current, offer
+        )
     elif direction == "COLUMN" and main_fill:
         height = 0.0
+    elif (
+        direction == "ROW"
+        and height_mode == "FILL"
+        and resolved_cross_outer_offer is not None
+    ):
+        height = resolved_cross_outer_offer
     else:
         height = stack_axis_size(
             placement,
@@ -1021,7 +1096,7 @@ def resource_free_hug_axis(
     placement: dict[str, Any],
     axis: str,
     current: str,
-    opposite_parent_content_offer: float | None,
+    opposite_axis_offer: HugOppositeAxisOffer | None,
 ) -> float:
     if role == "LEAF":
         raise Unsupported("HUG_CONTENT", current)
@@ -1036,7 +1111,7 @@ def resource_free_hug_axis(
         return size
     if role == "FRAME":
         content_extent = resource_free_frame_hug_content_extent(
-            node, placement, axis, current, opposite_parent_content_offer
+            node, placement, axis, current, opposite_axis_offer
         )
     elif role == "STACK":
         content_extent = resource_free_stack_hug_content_extent(node, axis, current)
@@ -1053,10 +1128,10 @@ def resource_free_frame_hug_content_extent(
     placement: dict[str, Any],
     axis: str,
     current: str,
-    opposite_parent_content_offer: float | None,
+    opposite_axis_offer: HugOppositeAxisOffer | None,
 ) -> float:
     cross_axis_fill_offer = definite_frame_opposite_content_offer(
-        frame, placement, axis, current, opposite_parent_content_offer
+        frame, placement, axis, current, opposite_axis_offer
     )
     extent = 0.0
     for raw_child in array_value(frame.get("children"), f"{current} children"):
@@ -1074,7 +1149,7 @@ def definite_frame_opposite_content_offer(
     placement: dict[str, Any],
     hug_axis: str,
     current: str,
-    opposite_parent_content_offer: float | None,
+    opposite_axis_offer: HugOppositeAxisOffer | None,
 ) -> float | None:
     if hug_axis == "Width":
         opposite_axis = "Height"
@@ -1100,20 +1175,25 @@ def definite_frame_opposite_content_offer(
             placement, size_member, current, f"placement.{size_member}"
         )
     elif mode == "FILL":
-        if opposite_parent_content_offer is None:
+        if opposite_axis_offer is None:
             return None
-        start = required_decimal(
-            placement, start_member, current, f"placement.{start_member}"
-        )
-        outer_size = definite_axis_size(
-            placement,
-            mode,
-            opposite_parent_content_offer,
-            start,
-            opposite_axis,
-            end_inset_member,
-            current,
-        )
+        if opposite_axis_offer.source == "ABSOLUTE_PARENT_CONTENT":
+            start = required_decimal(
+                placement, start_member, current, f"placement.{start_member}"
+            )
+            outer_size = definite_axis_size(
+                placement,
+                mode,
+                opposite_axis_offer.size,
+                start,
+                opposite_axis,
+                end_inset_member,
+                current,
+            )
+        elif opposite_axis_offer.source == "RESOLVED_OUTER":
+            outer_size = opposite_axis_offer.size
+        else:
+            raise VerificationFailure(f"{current} invalid opposite-axis offer source")
     elif mode == "HUG_CONTENT":
         return None
     else:
@@ -1188,7 +1268,11 @@ def resource_free_absolute_child_axis_interval(
         child_occurrence,
         cross_axis_for_quarter_turn=False,
         axis_fill_offer=None,
-        opposite_axis_hug_offer=cross_axis_fill_offer,
+        opposite_axis_hug_offer=(
+            HugOppositeAxisOffer("ABSOLUTE_PARENT_CONTENT", cross_axis_fill_offer)
+            if cross_axis_fill_offer is not None
+            else None
+        ),
     )
     transform = object_value(child.get("transform"), f"{child_occurrence} transform")
     rotation = required_decimal(
@@ -1247,7 +1331,7 @@ def resource_free_absolute_child_axis_geometry(
     *,
     cross_axis_for_quarter_turn: bool,
     axis_fill_offer: float | None,
-    opposite_axis_hug_offer: float | None,
+    opposite_axis_hug_offer: HugOppositeAxisOffer | None,
 ) -> tuple[float, float]:
     if axis == "Width":
         position_member, mode_member, size_member, end_inset_member = (
@@ -1950,7 +2034,7 @@ def verify(
         "vector manifest",
     )
     verifier.require(
-        vectors["vectorVersion"] == "renderweave-definite-layout-vectors/16",
+        vectors["vectorVersion"] == "renderweave-definite-layout-vectors/17",
         "vector identity drifted",
     )
     authority = exact_members(
@@ -2003,7 +2087,7 @@ def verify(
     expected_boundary = {
         "profileAvailability": "NOT_REGISTERED",
         "certificationStatus": "NOT_CERTIFIED",
-        "layoutImplementation": "RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_SINGLE_MAIN_FILL_AND_FIXED_SINGLE_FRACTION_INDEPENDENT_MULTI_AUTO_GRID_EMPTY_CONTAINER_STACK_HUG_GRID_AUTO_HUG_CONTRIBUTION_GRID_HUG_EXACT_QUARTER_TURN_AFFINE_FRAME_GROUP_HUG_FIXED_OPPOSITE_AXIS_CROSS_FILL_DEFINITE_ABSOLUTE_PARENT_OFFER_NORMALIZATION_BOX_KERNEL",
+        "layoutImplementation": "RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_SINGLE_MAIN_FILL_AND_FIXED_SINGLE_FRACTION_INDEPENDENT_MULTI_AUTO_GRID_EMPTY_CONTAINER_STACK_HUG_GRID_AUTO_HUG_CONTRIBUTION_GRID_HUG_EXACT_QUARTER_TURN_AFFINE_FRAME_GROUP_HUG_FIXED_OPPOSITE_AXIS_CROSS_FILL_DEFINITE_ABSOLUTE_PARENT_OFFER_DEFINITE_STACK_CROSS_OUTER_OFFER_NORMALIZATION_BOX_KERNEL",
         "worldTransformImplementation": "ABSENT",
         "sceneImplementation": "ABSENT",
         "rasterImplementation": "ABSENT",
@@ -2041,7 +2125,7 @@ def verify(
         == "renderweave-layout-preflight-fixtures/1",
         "layout preflight fixture identity drifted",
     )
-    verifier.require(len(vectors["laidOutCases"]) == 79, "laid-out case count drifted")
+    verifier.require(len(vectors["laidOutCases"]) == 83, "laid-out case count drifted")
     verifier.require(
         len(vectors["unsupportedCases"]) == 14,
         "unsupported case count drifted",
@@ -2091,7 +2175,7 @@ def verify(
             raise VerificationFailure(f"{case_id}: unsupported case produced a layout")
 
     return {
-        "verifier": "renderweave-definite-layout-python-independent/16",
+        "verifier": "renderweave-definite-layout-python-independent/17",
         "result": "PASS",
         "assurance": "A2",
         "laidOutCases": len(vectors["laidOutCases"]),

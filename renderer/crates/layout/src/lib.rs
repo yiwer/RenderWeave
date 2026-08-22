@@ -6,16 +6,16 @@
 //! additionally computes local LayoutBox/ContentBox entries for resource-independent ABSOLUTE
 //! nodes, Stack children with at most one main-axis FILL, resource-independent Stack/Grid HUG
 //! measurement, exact-quarter-turn affine nonempty Frame/Group HUG measurement (including
-//! definite ABSOLUTE/FIXED opposite-axis Frame offers for odd-quarter-turn cross-axis FILL),
-//! Group normalization,
+//! definite ABSOLUTE/Stack/FIXED opposite-axis Frame offers for odd-quarter-turn cross-axis
+//! FILL), Group normalization,
 //! and Grid children whose
 //! definite axes contain FIXED tracks, at most one FRACTION track, and resource-independent AUTO
 //! constraints that each cover at most one AUTO track and consume supported resource-free HUG
 //! contributions. It deliberately stops before resource preparation, non-quarter-turn child
-//! rotation, Stack/Grid cell-offer propagation for quarter-turn cross-axis FILL, multi-FILL
-//! Stack water filling, cross-AUTO deficit distribution, multi-FRACTION solving, world
-//! transforms, shaping, paint, rasterization, and encoding, and it never exposes a partial layout
-//! on failure.
+//! rotation, Stack main-FILL feedback or nested Stack/Grid cell-offer propagation for
+//! quarter-turn cross-axis FILL, multi-FILL Stack water filling, cross-AUTO deficit distribution,
+//! multi-FRACTION solving, world transforms, shaping, paint, rasterization, and encoding, and it
+//! never exposes a partial layout on failure.
 
 use renderweave_renderer_document::AdmittedRenderDocument;
 use serde_json::{Map, Number, Value};
@@ -334,10 +334,16 @@ struct AffineAxisInterval {
     maximum: f64,
 }
 
+#[derive(Clone, Copy, Debug)]
+enum HugOppositeAxisOffer {
+    AbsoluteParentContent(f64),
+    ResolvedOuter(f64),
+}
+
 #[derive(Clone, Copy, Debug, Default)]
 struct AbsoluteChildMeasureOffers {
     axis_fill: Option<f64>,
-    opposite_axis_hug: Option<f64>,
+    opposite_axis_hug: Option<HugOppositeAxisOffer>,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -658,7 +664,9 @@ impl DefiniteLayouter {
                 placement,
                 "Width",
                 occurrence,
-                Some(parent_content.height),
+                Some(HugOppositeAxisOffer::AbsoluteParentContent(
+                    parent_content.height,
+                )),
             )?
         } else {
             definite_axis_size(
@@ -678,7 +686,9 @@ impl DefiniteLayouter {
                 placement,
                 "Height",
                 occurrence,
-                Some(parent_content.width),
+                Some(HugOppositeAxisOffer::AbsoluteParentContent(
+                    parent_content.width,
+                )),
             )?
         } else {
             definite_axis_size(
@@ -1434,10 +1444,45 @@ fn measure_stack_child(
         occurrence,
         "placement.marginLeftPt",
     )?;
+    let resolved_cross_outer_offer = match (role, direction, width_mode, height_mode) {
+        (NodeRole::Frame, StackDirection::Row, SizeMode::Hug, SizeMode::Fill) => {
+            Some(stack_axis_size(
+                placement,
+                SizeMode::Fill,
+                parent.height,
+                margin_top,
+                margin_bottom,
+                "Height",
+                occurrence,
+            )?)
+        }
+        (NodeRole::Frame, StackDirection::Column, SizeMode::Fill, SizeMode::Hug) => {
+            Some(stack_axis_size(
+                placement,
+                SizeMode::Fill,
+                parent.width,
+                margin_left,
+                margin_right,
+                "Width",
+                occurrence,
+            )?)
+        }
+        _ => None,
+    };
     let width = if width_mode == SizeMode::Hug {
-        resource_free_hug_axis(node, role, placement, "Width", occurrence, None)?
+        let offer = if direction == StackDirection::Row {
+            resolved_cross_outer_offer.map(HugOppositeAxisOffer::ResolvedOuter)
+        } else {
+            None
+        };
+        resource_free_hug_axis(node, role, placement, "Width", occurrence, offer)?
     } else if direction == StackDirection::Row && main_fill {
         0.0
+    } else if direction == StackDirection::Column
+        && width_mode == SizeMode::Fill
+        && let Some(size) = resolved_cross_outer_offer
+    {
+        size
     } else {
         stack_axis_size(
             placement,
@@ -1450,9 +1495,19 @@ fn measure_stack_child(
         )?
     };
     let height = if height_mode == SizeMode::Hug {
-        resource_free_hug_axis(node, role, placement, "Height", occurrence, None)?
+        let offer = if direction == StackDirection::Column {
+            resolved_cross_outer_offer.map(HugOppositeAxisOffer::ResolvedOuter)
+        } else {
+            None
+        };
+        resource_free_hug_axis(node, role, placement, "Height", occurrence, offer)?
     } else if direction == StackDirection::Column && main_fill {
         0.0
+    } else if direction == StackDirection::Row
+        && height_mode == SizeMode::Fill
+        && let Some(size) = resolved_cross_outer_offer
+    {
+        size
     } else {
         stack_axis_size(
             placement,
@@ -1575,7 +1630,7 @@ fn resource_free_hug_axis(
     placement: &Map<String, Value>,
     axis: &str,
     occurrence: &str,
-    opposite_parent_content_offer: Option<f64>,
+    opposite_axis_offer: Option<HugOppositeAxisOffer>,
 ) -> Result<f64, DefiniteLayoutError> {
     let children = match role {
         NodeRole::Group | NodeRole::Frame | NodeRole::Stack | NodeRole::Grid => {
@@ -1605,7 +1660,7 @@ fn resource_free_hug_axis(
             placement,
             axis,
             occurrence,
-            opposite_parent_content_offer,
+            opposite_axis_offer,
         )?,
         NodeRole::Stack => resource_free_stack_hug_content_extent(node, axis, occurrence)?,
         NodeRole::Grid => resource_free_grid_hug_content_extent(node, axis, occurrence)?,
@@ -1626,14 +1681,14 @@ fn resource_free_frame_hug_content_extent(
     placement: &Map<String, Value>,
     axis: &str,
     occurrence: &str,
-    opposite_parent_content_offer: Option<f64>,
+    opposite_axis_offer: Option<HugOppositeAxisOffer>,
 ) -> Result<f64, DefiniteLayoutError> {
     let cross_axis_fill_offer = definite_frame_opposite_content_offer(
         frame,
         placement,
         axis,
         occurrence,
-        opposite_parent_content_offer,
+        opposite_axis_offer,
     )?;
     let mut extent = 0.0;
     for child in array_member(frame, "children", occurrence)? {
@@ -1652,7 +1707,7 @@ fn definite_frame_opposite_content_offer(
     placement: &Map<String, Value>,
     hug_axis: &str,
     occurrence: &str,
-    opposite_parent_content_offer: Option<f64>,
+    opposite_axis_offer: Option<HugOppositeAxisOffer>,
 ) -> Result<Option<f64>, DefiniteLayoutError> {
     let (
         opposite_axis,
@@ -1692,24 +1747,29 @@ fn definite_frame_opposite_content_offer(
             format!("placement.{size_member}"),
         )?,
         SizeMode::Fill => {
-            let Some(parent_size) = opposite_parent_content_offer else {
+            let Some(offer) = opposite_axis_offer else {
                 return Ok(None);
             };
-            let start = binary64_member(
-                placement,
-                start_member,
-                occurrence,
-                format!("placement.{start_member}"),
-            )?;
-            definite_axis_size(
-                placement,
-                SizeMode::Fill,
-                parent_size,
-                start,
-                opposite_axis,
-                end_inset_member,
-                occurrence,
-            )?
+            match offer {
+                HugOppositeAxisOffer::AbsoluteParentContent(parent_size) => {
+                    let start = binary64_member(
+                        placement,
+                        start_member,
+                        occurrence,
+                        format!("placement.{start_member}"),
+                    )?;
+                    definite_axis_size(
+                        placement,
+                        SizeMode::Fill,
+                        parent_size,
+                        start,
+                        opposite_axis,
+                        end_inset_member,
+                        occurrence,
+                    )?
+                }
+                HugOppositeAxisOffer::ResolvedOuter(outer_size) => outer_size,
+            }
         }
         SizeMode::Hug => return Ok(None),
     };
@@ -1795,7 +1855,8 @@ fn resource_free_absolute_child_axis_interval(
         false,
         AbsoluteChildMeasureOffers {
             axis_fill: None,
-            opposite_axis_hug: cross_axis_fill_offer,
+            opposite_axis_hug: cross_axis_fill_offer
+                .map(HugOppositeAxisOffer::AbsoluteParentContent),
         },
     )?;
     let transform = object_member(Some(child), "transform", child_occurrence)?;
