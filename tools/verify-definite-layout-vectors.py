@@ -199,6 +199,16 @@ class StackMeasurementSpace:
             else cls(None, main_available)
         )
 
+    @classmethod
+    def main_hug(
+        cls, direction: str, cross_available: float
+    ) -> StackMeasurementSpace:
+        return (
+            cls(None, cross_available)
+            if direction == "ROW"
+            else cls(cross_available, None)
+        )
+
     def main_available(self, direction: str) -> float | None:
         return self.width if direction == "ROW" else self.height
 
@@ -1183,10 +1193,7 @@ def measure_stack_child(
     deferred_role = (
         role == "FRAME"
         or (role == "GRID" and direction == "ROW")
-        or (
-            role == "STACK"
-            and text(node.get("direction"), f"{current} direction") == direction
-        )
+        or role == "STACK"
     )
     deferred_cross_hug_after_main_fill = deferred_role and (
         (
@@ -1927,6 +1934,14 @@ def resource_free_stack_hug_content_extent(
     main_axis = (direction == "ROW" and axis == "Width") or (
         direction == "COLUMN" and axis == "Height"
     )
+    if main_axis:
+        cross_content_offer = definite_stack_cross_content_offer(
+            stack, placement, direction, current, opposite_axis_offer
+        )
+        if cross_content_offer is not None:
+            return resource_free_stack_main_hug_content_extent(
+                stack, direction, cross_content_offer
+            )
     if not main_axis:
         main_content_offer = definite_stack_main_content_offer(
             stack, placement, direction, current, opposite_axis_offer
@@ -1977,6 +1992,55 @@ def resource_free_stack_hug_content_extent(
         if margin_extent_end > farthest:
             farthest = margin_extent_end
     return farthest
+
+
+def definite_stack_cross_content_offer(
+    stack: dict[str, Any],
+    placement: dict[str, Any],
+    direction: str,
+    current: str,
+    opposite_axis_offer: HugOppositeAxisOffer | None,
+) -> float | None:
+    if direction == "ROW":
+        cross_axis, mode_member = "Height", "heightMode"
+    elif direction == "COLUMN":
+        cross_axis, mode_member = "Width", "widthMode"
+    else:
+        raise VerificationFailure(f"{current} invalid Stack direction")
+    mode = text(placement.get(mode_member), f"{current} placement.{mode_member}")
+    if mode != "FILL" or opposite_axis_offer is None:
+        return None
+    if opposite_axis_offer.source != "RESOLVED_OUTER":
+        return None
+    cross_content_size = container_axis_content_size(
+        stack, opposite_axis_offer.size, cross_axis, current
+    )
+    if not math.isfinite(cross_content_size):
+        raise VerificationFailure(
+            f"{current} invalid definite {cross_axis} content offer"
+        )
+    return cross_content_size
+
+
+def resource_free_stack_main_hug_content_extent(
+    stack: dict[str, Any], direction: str, cross_content_offer: float
+) -> float:
+    current = occurrence(stack)
+    children = array_value(stack.get("children"), f"{current} children")
+    gap = nonnegative_decimal(stack, "gapPt", current, "gapPt")
+    space = StackMeasurementSpace.main_hug(direction, cross_content_offer)
+    extent = 0.0
+    for index, raw_child in enumerate(children):
+        child = object_value(raw_child, f"{current} child")
+        measured = measure_stack_child(child, space, direction)
+        if measured.main_fill:
+            raise Unsupported("STACK_MAIN_FILL", occurrence(child))
+        extent += measured.main_leading_margin(direction)
+        extent += measured.main_size(direction)
+        extent += measured.main_trailing_margin(direction)
+        if index + 1 < len(children):
+            extent += gap
+    return extent
 
 
 def definite_stack_main_content_offer(
@@ -2459,7 +2523,7 @@ def verify(
         "vector manifest",
     )
     verifier.require(
-        vectors["vectorVersion"] == "renderweave-definite-layout-vectors/24",
+        vectors["vectorVersion"] == "renderweave-definite-layout-vectors/25",
         "vector identity drifted",
     )
     authority = exact_members(
@@ -2512,7 +2576,7 @@ def verify(
     expected_boundary = {
         "profileAvailability": "NOT_REGISTERED",
         "certificationStatus": "NOT_CERTIFIED",
-        "layoutImplementation": "RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_SINGLE_MAIN_FILL_AND_FIXED_SINGLE_FRACTION_INDEPENDENT_MULTI_AUTO_GRID_EMPTY_CONTAINER_STACK_HUG_GRID_AUTO_HUG_CONTRIBUTION_GRID_HUG_EXACT_QUARTER_TURN_AFFINE_FRAME_GROUP_HUG_FIXED_OPPOSITE_AXIS_CROSS_FILL_DEFINITE_ABSOLUTE_PARENT_OFFER_DEFINITE_STACK_CROSS_OUTER_OFFER_STACK_MAIN_FILL_CROSS_HUG_REMEASURE_NESTED_STACK_MAIN_OFFER_PROPAGATION_COLUMNS_FIRST_GRID_CELL_OUTER_OFFER_STACK_MAIN_OFFER_COLUMNS_FIRST_GRID_CROSS_HUG_ABSOLUTE_PARENT_OFFER_COLUMNS_FIRST_GRID_CROSS_HUG_GRID_CELL_OFFER_COLUMNS_FIRST_NESTED_GRID_CROSS_HUG_GRID_CELL_OFFER_STACK_MAIN_FIRST_CROSS_HUG_NORMALIZATION_BOX_KERNEL",
+        "layoutImplementation": "RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_SINGLE_MAIN_FILL_AND_FIXED_SINGLE_FRACTION_INDEPENDENT_MULTI_AUTO_GRID_EMPTY_CONTAINER_STACK_HUG_GRID_AUTO_HUG_CONTRIBUTION_GRID_HUG_EXACT_QUARTER_TURN_AFFINE_FRAME_GROUP_HUG_FIXED_OPPOSITE_AXIS_CROSS_FILL_DEFINITE_ABSOLUTE_PARENT_OFFER_DEFINITE_STACK_CROSS_OUTER_OFFER_STACK_MAIN_FILL_CROSS_HUG_REMEASURE_NESTED_STACK_MAIN_OFFER_PROPAGATION_COLUMNS_FIRST_GRID_CELL_OUTER_OFFER_STACK_MAIN_OFFER_COLUMNS_FIRST_GRID_CROSS_HUG_ABSOLUTE_PARENT_OFFER_COLUMNS_FIRST_GRID_CROSS_HUG_GRID_CELL_OFFER_COLUMNS_FIRST_NESTED_GRID_CROSS_HUG_GRID_CELL_OFFER_STACK_MAIN_FIRST_CROSS_HUG_DIRECTION_CHANGING_STACK_CROSS_OFFER_MAIN_HUG_NORMALIZATION_BOX_KERNEL",
         "worldTransformImplementation": "ABSENT",
         "sceneImplementation": "ABSENT",
         "rasterImplementation": "ABSENT",
@@ -2550,7 +2614,7 @@ def verify(
         == "renderweave-layout-preflight-fixtures/1",
         "layout preflight fixture identity drifted",
     )
-    verifier.require(len(vectors["laidOutCases"]) == 111, "laid-out case count drifted")
+    verifier.require(len(vectors["laidOutCases"]) == 114, "laid-out case count drifted")
     verifier.require(
         len(vectors["unsupportedCases"]) == 15,
         "unsupported case count drifted",
@@ -2600,7 +2664,7 @@ def verify(
             raise VerificationFailure(f"{case_id}: unsupported case produced a layout")
 
     return {
-        "verifier": "renderweave-definite-layout-python-independent/24",
+        "verifier": "renderweave-definite-layout-python-independent/25",
         "result": "PASS",
         "assurance": "A2",
         "laidOutCases": len(vectors["laidOutCases"]),

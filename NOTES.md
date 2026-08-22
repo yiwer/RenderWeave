@@ -1,6 +1,20 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-23 **Template v1 implementation TV1-T62 已由 Codex `/root` single-writer 完成，状态
+  `resolved/automated_verified`**：direct ROW→COLUMN / COLUMN→ROW nested Stack 现在把父层 singleton main-FILL
+  final outer 只解释为自己的 definite cross outer，扣除 cross ContentBox 后一次性求 main HUG，终点限定 direct
+  Frame 并复用 T54 signed margin/clamp 与 exact-quarter-turn seam。shared `/25` 的 Rust/Python 为 114 laid-out +
+  15 unsupported、129/129、386 checks，向量 SHA-256
+  `c44896325fa6ff0cd85c2143d9d9c2a4dbeeeea98153deede21e013772069bb5`，fixture SHA-256 保持
+  `a11475bcebad7e1c35cb0acd7018419d94afcb4b37d7f1df7346a055ad1df669`。Rust/Python 先在同一首个新增
+  positive 的 `CHILD_ROTATION rwocc_...0006` 共同 RED，再共同 GREEN；focused、`render`、affected `fast`、顺序
+  `server` 与 `full` 全绿。Goal 证据 `.sdlc/evidence/20260823-021028-full/` 的 17 steps 均 exit 0，Node v24.12.0
+  Web 26 files/212 tests、runtime canary、23 passed + 1 controlled skip Playwright E2E、Draft/Inference browser
+  journeys 与最终 inference replay E2E 1/1 均通过；resolution 后 `fast`
+  `.sdlc/evidence/20260823-024051-fast/` 的 3 steps 也均 exit 0。递归第二个 Stack link、main-HUG 内 FILL、Grid
+  terminal、一般 constraint/fixed point/tolerance、resource/scene/raster/RESULT/Profile 继续 fail closed；R0/R1/P0 provider
+  attempts=0，P0 API Key reads/reservations/cost=0，未推进 A3/J1/READY，未 push/tag/PR。
 - 2026-08-23 **Template v1 implementation TV1-T61 已由 Codex `/root` single-writer 完成，状态
   `resolved/automated_verified`**：row-after-columns Grid cell final `ResolvedOuter` width 现在可被 direct GRID
   `direction=ROW,widthMode=FILL,heightMode=HUG_CONTENT` Stack 消费；cell outer 逐层扣 Stack ContentBox 后复用

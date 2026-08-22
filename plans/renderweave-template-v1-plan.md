@@ -373,6 +373,7 @@ flowchart LR
 | 59 | task | `resolved / automated_verified` | 23, 25, 26, 34, 39, 40, 41, 44, 45, 49, 50, 51, 52, 53, 57, 58 | ABSOLUTE parent ContentBox width → Grid FILL outer inset/min-max → ContentBox → columns-first rows；shared `/22` Rust/Python 118/118、353 checks；Grid-in-Grid owning offer/reverse feedback/general constraint/tolerance 保持 fail closed |
 | 60 | task | `resolved / automated_verified` | 23, 25, 26, 34, 39, 40, 41, 44, 45, 49, 50, 51, 52, 53, 57, 59 | row-after-columns Grid cell resolved outer → nested Grid ContentBox → columns-first rows；shared `/23` Rust/Python 122/122、365 checks；Grid→Stack/reverse feedback/general constraint/tolerance 保持 fail closed |
 | 61 | task | `resolved / automated_verified` | 23, 25, 26, 33, 34, 38, 39, 40, 41, 43, 44, 45, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 60 | row-after-columns Grid cell resolved outer → ROW Stack main-first singleton-FILL allocation → single cross-HUG remeasure；shared `/24` Rust/Python 126/126、377 checks；direction change/reverse feedback/general constraint/tolerance 保持 fail closed |
+| 62 | task | `resolved / automated_verified` | 23, 25, 26, 33, 38, 43, 49, 50, 51, 52, 53, 54, 55, 56, 57, 61 | direct direction-changing nested Stack 把父 final main outer 当作 definite cross outer，再一次求 main HUG；shared `/25` Rust/Python 129/129、386 checks；递归第二 link/main-HUG 内 FILL/general constraint/tolerance 保持 fail closed |
 
 每次只 claim 一个 unblocked ticket；一票 resolved 后才由其 `Blocked by` 关系产生下一 frontier。未知实现切片留在
 map 的 `Not yet specified`，不为排满计划提前发明接口、migration 或 Profile identity。
@@ -1873,4 +1874,40 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
   runtime canary、23 passed + 1 skipped Playwright E2E、Draft/Inference browser journeys 与最终 inference
   replay E2E 1/1 均通过；resolution 后 fast `.sdlc/evidence/20260823-013443-fast/` 的 3 steps 也均 exit 0。
   R0/R1/P0 provider attempts=0，P0 API Key reads/reservations/cost=0。最高
+  `automated_verified`；未推进 A3/J1/READY，未 push/tag/PR。
+
+## 61. TV1-T62 执行卡
+
+- 决策：T61 以 verified commit `4fdf5e5` 收口且 worktree clean 后，复算原始 Ticket 10 §5/§7/§8、
+  `RW-T10-S5-006..010`、`RW-T10-S7-017..019`、`RW-T10-S8-001..019`、15 个 remaining unsupported cases 与
+  Stack/Grid offer call graph。multiple FILL/FRACTION、跨多 AUTO 平均、非直角 rotation 与 resource/scene 仍依赖
+  tolerance 或执行身份；现有 Grid cell→ROW→COLUMN negative 可有限组合 T61 的 parent main offer 与 T54 的
+  definite-cross consumer，不需要 fixed point，因此登记为 single-writer frontier。
+- Interface/seam：只给内部 `StackMeasurementSpace` 增加 definite-cross/main-unknown 构造，并让 Stack 的 authored
+  measurement 与 arrange 继续复用 `measure_stack_child`。public `layout_definite_resource_free` 入口、admission/
+  preflight、authored DFS、first-error 与全有或全无输出不变。
+- 允许影响：T62 tracker/plan/NOTES、layout Rust module/tests、shared definite-layout vector `/25`、Python
+  independent verifier、render gate identity/assertions/evidence。
+- 禁止影响：第二个 direction-changing Stack link、main-HUG 内 main-FILL、Grid terminal、multiple Stack FILL/
+  FRACTION、一般 `UNBOUNDED/AT_MOST/EXACT` constraint engine、双向回写/fixed point、三角函数/epsilon/tolerance、
+  Text/Image/Vector intrinsic、resource fetch/decode/cache、world scene/paint/raster/JPEG、daemon RESULT/success/
+  Profile、Java/OpenAPI/migration/Web/route、formal records、physical Linux/J1/A3/READY 与外部副作用。
+- 精确语义：owning Stack 先按 singleton main-FILL 得到 direct opposite-direction Stack 的 final main outer；该值
+  只成为子 Stack 的 definite cross outer，逐步扣 inward stroke/cross padding 并 floor-to-positive-zero 后，按
+  authored order 测量子 Stack main HUG 一次。终点 direct Frame 必须 cross-FILL/main-HUG，复用 T54 的 signed
+  margin、min→max clamp、ContentBox 与 exact-quarter-turn affine；结果不回写祖先 allocation、siblings 或 gaps。
+- TDD：shared vector/verifier `/25` 先共同 RED；既有 Grid cell→ROW→COLUMN boundary negative 转 positive，新增
+  COLUMN→ROW 对称与 ContentBox/margins/clamp positive，并新增第二个 direction-changing Stack link boundary
+  negative。Rust/Python 在首个新增 positive 的同一 `CHILD_ROTATION rwocc_...0006` 共同 RED，再共同 GREEN；
+  最终 114 laid-out + 15 unsupported、129/129 cases、386 checks，vector SHA-256
+  `c44896325fa6ff0cd85c2143d9d9c2a4dbeeeea98153deede21e013772069bb5`，fixture `/3` SHA-256 保持
+  `a11475bcebad7e1c35cb0acd7018419d94afcb4b37d7f1df7346a055ad1df669`。
+- 验证：focused Cargo/Python、fmt、clippy `-D warnings`、workspace tests、`py_compile`、JSON inventory 与
+  `git diff --check` 均通过；`render` `.sdlc/evidence/20260823-015141-render/`、affected `fast`
+  `.sdlc/evidence/20260823-015207-fast/`、顺序 `server` `.sdlc/evidence/20260823-015224-server/` 与 `full`
+  `.sdlc/evidence/20260823-021028-full/` 全绿。full 17 steps 均 exit 0，Node v24.12.0 Web 26 files/212 tests、
+  runtime canary、23 passed + 1 controlled skip Playwright E2E、Draft/Inference browser journeys 与最终 inference
+  replay E2E 1/1 均通过；resolution 后 `fast` `.sdlc/evidence/20260823-024051-fast/` 的 3 steps 也均 exit 0。
+  R0/R1/P0 provider attempts=0，P0 API Key reads/reservations/cost=0；Profile `NOT_REGISTERED`、certification
+  `NOT_CERTIFIED`、Raster `ABSENT`、daemon `UNWIRED`。最高
   `automated_verified`；未推进 A3/J1/READY，未 push/tag/PR。

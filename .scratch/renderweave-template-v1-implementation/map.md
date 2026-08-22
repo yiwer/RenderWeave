@@ -307,6 +307,11 @@ Label: wayfinder:map
   `ResolvedOuter`，复用 singleton main-FILL allocation 后的一次 cross-HUG 重测；shared `/24` 为 111
   laid-out + 15 unsupported、126 cases/377 checks。方向改变、rows→columns 与一般 constraint/tolerance 保持
   fail closed。
+- [实现方向切换 nested Stack cross offer → main HUG 单向传播子闭包](issues/62-direction-changing-stack-cross-offer-main-hug-layout.md) —
+  **resolved / automated_verified**；只让 direct ROW→COLUMN / COLUMN→ROW nested Stack 把父层 final main outer 当作自己的
+  definite cross outer，并在扣除 ContentBox 后一次性求 main HUG，终点限定 direct Frame；shared `/25`
+  为 114 laid-out + 15 unsupported、129 cases/386 checks。递归第二个 Stack link、main-HUG 内 FILL、Grid、
+  fixed point 与一般 constraint/tolerance 保持 fail closed。
 - [验证 Product Editor 状态、恢复与权威预览架构](issues/09-validate-product-editor-architecture.md) —
   throwaway 逻辑原型（`/prototype/editor-state-model`，不进产品 route）把冻结编辑器规则编码为确定性
   fixture 状态机：10 个引导走查场景 37/37 断言 + 自由操作冒烟 + 键盘焦点检查全部通过（Playwright A1，
@@ -413,7 +418,10 @@ Label: wayfinder:map
   cross-HUG 单次重测，并可经同轴 nested Stack 链组合（Rust/Python 114/114、341 checks）；T59 已完成 ABSOLUTE
   parent ContentBox width → columns-first Grid cross-HUG 单向传播（Rust/Python 118/118、353 checks）；T60 已完成
   row-after-columns Grid cell final outer width → nested Grid ContentBox → columns-first rows 的有限递归组合
-  （Rust/Python 122/122、365 checks）；其余非直角 rotation、Grid cell→Stack、general constraint、multiple Stack
+  （Rust/Python 122/122、365 checks）；T61 已完成 Grid cell→ROW Stack main-first cross HUG（Rust/Python
+  126/126、377 checks）；T62 已完成 direct direction-changing nested Stack definite-cross→main-HUG 的有限组合
+  （Rust/Python 129/129、386 checks）；
+  其余非直角 rotation、递归方向切换 Stack、general constraint、multiple Stack
   main-axis FILL/跨多个 AUTO 的平均
   deficit/multiple FRACTION/actual resource fetch+decode/world scene/raster/
   JPEG/Engine 接线仍须另行登记，物理 Linux 双 CPU-family

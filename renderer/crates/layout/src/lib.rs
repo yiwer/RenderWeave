@@ -478,6 +478,19 @@ impl StackMeasurementSpace {
         }
     }
 
+    const fn main_hug(direction: StackDirection, cross_available: f64) -> Self {
+        match direction {
+            StackDirection::Row => Self {
+                width: None,
+                height: Some(cross_available),
+            },
+            StackDirection::Column => Self {
+                width: Some(cross_available),
+                height: None,
+            },
+        }
+    }
+
     const fn main_available(self, direction: StackDirection) -> Option<f64> {
         match direction {
             StackDirection::Row => self.width,
@@ -1668,7 +1681,7 @@ fn measure_stack_child(
     let main_fill = main_mode == SizeMode::Fill;
     let deferred_role = match role {
         NodeRole::Frame => true,
-        NodeRole::Stack => stack_direction(node, occurrence)? == direction,
+        NodeRole::Stack => true,
         NodeRole::Grid => direction == StackDirection::Row,
         NodeRole::Group | NodeRole::Leaf => false,
     };
@@ -2675,6 +2688,17 @@ fn resource_free_stack_hug_content_extent(
     if !matches!(axis, "Width" | "Height") {
         return Err(DefiniteLayoutError::invariant(occurrence, "HUG axis"));
     }
+    if axis_is_main
+        && let Some(cross_content_offer) = definite_stack_cross_content_offer(
+            stack,
+            placement,
+            direction,
+            occurrence,
+            opposite_axis_offer,
+        )?
+    {
+        return resource_free_stack_main_hug_content_extent(stack, direction, cross_content_offer);
+    }
     if !axis_is_main
         && let Some(main_content_offer) = definite_stack_main_content_offer(
             stack,
@@ -2729,6 +2753,69 @@ fn resource_free_stack_hug_content_extent(
         margin_extent_end += trailing_margin;
         if margin_extent_end > extent {
             extent = margin_extent_end;
+        }
+    }
+    Ok(extent)
+}
+
+fn definite_stack_cross_content_offer(
+    stack: &Map<String, Value>,
+    placement: &Map<String, Value>,
+    direction: StackDirection,
+    occurrence: &str,
+    opposite_axis_offer: Option<HugOppositeAxisOffer>,
+) -> Result<Option<f64>, DefiniteLayoutError> {
+    let (cross_axis, mode_member) = match direction {
+        StackDirection::Row => ("Height", "heightMode"),
+        StackDirection::Column => ("Width", "widthMode"),
+    };
+    if size_mode(placement, mode_member, occurrence)? != SizeMode::Fill {
+        return Ok(None);
+    }
+    let Some(HugOppositeAxisOffer::ResolvedOuter(cross_outer_size)) = opposite_axis_offer else {
+        return Ok(None);
+    };
+    let cross_content_size =
+        container_axis_content_size(stack, cross_outer_size, cross_axis, occurrence)?;
+    if !cross_content_size.is_finite() {
+        return Err(DefiniteLayoutError::invariant(
+            occurrence,
+            format!("definite{cross_axis}ContentOffer"),
+        ));
+    }
+    Ok(Some(cross_content_size))
+}
+
+fn resource_free_stack_main_hug_content_extent(
+    stack: &Map<String, Value>,
+    direction: StackDirection,
+    cross_content_offer: f64,
+) -> Result<f64, DefiniteLayoutError> {
+    let occurrence = occurrence_id(stack)?;
+    let children = array_member(stack, "children", occurrence)?;
+    let gap = nonnegative_binary64_member(stack, "gapPt", occurrence, "gapPt")?;
+    let space = StackMeasurementSpace::main_hug(direction, cross_content_offer);
+    let mut extent = 0.0;
+
+    for (index, child) in children.iter().enumerate() {
+        let child = object(child, occurrence, "children")?;
+        let child_occurrence = occurrence_id(child)?;
+        let measurement = measure_stack_child(child, space, direction)?;
+        if measurement.main_fill {
+            return Err(DefiniteLayoutError::unsupported(
+                child_occurrence,
+                DefiniteLayoutUnsupported::StackMainFill,
+            ));
+        }
+        for addition in [
+            measurement.main_leading_margin(direction),
+            measurement.main_size(direction),
+            measurement.main_trailing_margin(direction),
+        ] {
+            extent += addition;
+        }
+        if index + 1 < children.len() {
+            extent += gap;
         }
     }
     Ok(extent)
