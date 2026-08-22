@@ -1,6 +1,14 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-22 **Template v1 implementation TV1-T52 已由 Codex `/root` single-writer 完成，状态
+  `resolved/automated_verified`**：HUG Frame 在 opposite axis 为 FIXED 时，现可为 exact odd-quarter-turn direct
+  ABSOLUTE child 提供 cross-axis FILL ContentBox offer；shared `/15` 的 Rust/Python 为 74 laid-out + 14 unsupported、
+  88/88、264 checks，SHA-256 `464cf2eb85ad0b0a03970ceb3285f7b6a0e3dc545a7ee883f5e8d8ad9c5c8da0`。
+  focused、`render`、affected `fast`、顺序 `server`、`full` 与治理后 final `fast` 全绿，Goal 证据
+  `.sdlc/evidence/20260822-151938-full/` 的 17 steps 均 exit 0。Frame 自身 opposite-axis FILL 的一般 parent-offer、
+  非直角 rotation、resource/scene/raster/daemon RESULT/Profile 继续 fail closed；provider/API Key/真实数据/费用均为
+  0，未 push/tag/PR。
 - 2026-08-22 **Template v1 implementation TV1-T51 已由 Codex `/root` single-writer 完成，状态
   `resolved/automated_verified`**：`layout_definite_resource_free` 已支持容量边界内 exact-quarter-turn
   affine Frame/Group HUG AABB；奇数 quadrant 仅消费两轴 FIXED 或 independently resource-free HUG，
