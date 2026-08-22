@@ -302,6 +302,11 @@ Label: wayfinder:map
   **resolved / automated_verified**；只让 row-after-columns 的 direct GRID Grid 消费 final cell
   `ResolvedOuter`，扣除自身 stroke/padding 后逐层严格 columns→rows；shared `/23` 为 107 laid-out + 15
   unsupported、122 cases/365 checks。Grid→Stack、rows→columns 与一般 constraint/tolerance 保持 fail closed。
+- [实现 Grid cell offer → ROW Stack main-first cross HUG 单向传播子闭包](issues/61-grid-cell-offer-row-stack-main-first-cross-hug-layout.md) —
+  **resolved / automated_verified**；只让 row-after-columns 的 direct GRID ROW Stack 消费 final cell
+  `ResolvedOuter`，复用 singleton main-FILL allocation 后的一次 cross-HUG 重测；shared `/24` 为 111
+  laid-out + 15 unsupported、126 cases/377 checks。方向改变、rows→columns 与一般 constraint/tolerance 保持
+  fail closed。
 - [验证 Product Editor 状态、恢复与权威预览架构](issues/09-validate-product-editor-architecture.md) —
   throwaway 逻辑原型（`/prototype/editor-state-model`，不进产品 route）把冻结编辑器规则编码为确定性
   fixture 状态机：10 个引导走查场景 37/37 断言 + 自由操作冒烟 + 键盘焦点检查全部通过（Playwright A1，

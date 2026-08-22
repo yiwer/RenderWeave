@@ -1,6 +1,21 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-23 **Template v1 implementation TV1-T61 已由 Codex `/root` single-writer 完成，状态
+  `resolved/automated_verified`**：row-after-columns Grid cell final `ResolvedOuter` width 现在可被 direct GRID
+  `direction=ROW,widthMode=FILL,heightMode=HUG_CONTENT` Stack 消费；cell outer 逐层扣 Stack ContentBox 后复用
+  singleton main-FILL allocation 与一次 cross-HUG 重测，同方向 nested ROW Stack 和末端 columns-first Grid 均可
+  沿既有 seam 有限组合。row AUTO writer 与 final cell arrange 复用同一 closed predicate，x/column 路径仍为
+  Frame-only。shared `/24` 的 Rust/Python 为 111 laid-out + 15 unsupported、126/126、377 checks，向量 SHA-256
+  `ffda20a3d5197fc340be6acfabe3fe4faa30ed829025a8617263e6c6c8a4df83`，fixture SHA-256 保持
+  `a11475bcebad7e1c35cb0acd7018419d94afcb4b37d7f1df7346a055ad1df669`。Rust/Python 先在同一首个新增
+  positive 的 `CHILD_ROTATION rwocc_...0004` 共同 RED，再共同 GREEN；focused、`render`、affected `fast`、顺序
+  `server` 与 `full` 全绿。Goal 证据 `.sdlc/evidence/20260823-010507-full/` 的 17 steps 均 exit 0，Node 24 Web
+  26 files/212 tests、runtime canary、23 passed + 1 skipped Playwright E2E、Draft/Inference browser journeys 与
+  最终 inference replay E2E 1/1 均通过；resolution 后 fast `.sdlc/evidence/20260823-013443-fast/` 的 3 steps
+  也均 exit 0。direction-changing Stack、rows→columns、multiple FILL/FRACTION、一般
+  constraint/tolerance、resource/scene/raster/RESULT/Profile 继续 fail closed；provider attempts/API Key reads/
+  reservations/cost、真实数据与付费调用均为 0，未 push/tag/PR。
 - 2026-08-23 **Template v1 implementation TV1-T60 已由 Codex `/root` single-writer 完成，状态
   `resolved/automated_verified`**：row-after-columns Grid cell `ResolvedOuter` 现在可被 direct nested Grid 消费，
   逐层扣 ContentBox 并严格 columns→rows；row AUTO writer 与 final cell arrange 的 y-axis closed predicate 均只从

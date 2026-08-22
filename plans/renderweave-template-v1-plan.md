@@ -76,6 +76,10 @@
   feedback 与一般 constraint/tolerance 保持 fail closed。TV1-T60=`resolved/automated_verified`：只让
   row-after-columns 的 direct GRID Grid 消费 final cell `ResolvedOuter`，逐层扣 ContentBox 并严格 columns→rows；
   shared `/23` 122 cases/365 checks。Grid→Stack、反向 feedback 与一般 constraint/tolerance 保持 fail closed。
+  TV1-T61=`resolved/automated_verified`：只让 row-after-columns 的 direct GRID ROW Stack 消费 final cell
+  `ResolvedOuter`，复用 main-first singleton-FILL allocation 后的一次 cross-HUG 重测；shared `/24` 126
+  cases/377 checks 已由 Rust/Python exact-bit A1/A2 验证。方向改变、反向 feedback 与一般 constraint/tolerance
+  保持 fail closed。
 - 日期：2026-08-20
 - Approved delta：[`specs/changes/20260817-template-v1-implementation-authority.md`](../specs/changes/20260817-template-v1-implementation-authority.md)
 - Frozen checkpoint：`0b485f4a13de9d754a81d07f464730776e13c14b`
@@ -158,6 +162,7 @@ binding: generic + project-local tools/run-gate.ps1 + Wayfinder markdown tracker
 | TV1-P5ab Stack main offer → columns-first Grid cross HUG | 58 | ROW Stack singleton main-FILL final outer width 驱动 Grid columns-first cross-HUG 单次重测 | Rust/Python exact-bit 114/114、341 checks A1/A2；ABSOLUTE parent→Grid/Grid-in-Grid owning offer/rows→columns/general constraint/tolerance fail closed；无 scene/RESULT |
 | TV1-P5ac ABSOLUTE parent offer → columns-first Grid cross HUG | 59 | ABSOLUTE FILL outer width 经 inset/min-max/ContentBox 驱动 Grid columns-first cross-HUG | Rust/Python exact-bit 118/118、353 checks A1/A2；Grid-in-Grid owning offer/rows→columns/general constraint/tolerance fail closed；无 scene/RESULT |
 | TV1-P5ad Grid cell offer → columns-first nested Grid cross HUG | 60 | row-after-columns final cell outer width 驱动 nested Grid columns-first cross-HUG | Rust/Python exact-bit 122/122、365 checks A1/A2；Grid→Stack/rows→columns/general constraint/tolerance fail closed；无 scene/RESULT |
+| TV1-P5ae Grid cell offer → ROW Stack main-first cross HUG | 61 | row-after-columns final cell outer width 驱动 ROW Stack main allocation 后单次 cross-HUG 重测 | Rust/Python exact-bit 126/126、377 checks A1/A2；direction change/rows→columns/general constraint/tolerance fail closed；无 scene/RESULT |
 | TV1-P6a Editor E1 | 27 | trusted canonical current baseline + 显式 readiness recheck + 三模式 Canvas Focus shell | Java/Web/OpenAPI A1；组件未发布，禁止 save/preview/recovery 占位与 READY 声明 |
 | TV1-P6b Editor E2 | 28 | canonical working copy + 结构化本地编辑/undo/redo + preview generation/eligibility guard | Node 24 Web A1；无 API/route/save/preview action，baseline immutable |
 | TV1-P6c Editor E3 | 29 | lossless save + conflict overwrite offer/confirm/reconfirm + conservative unknown lock | Node 24 Web A1；复用既有 API；无 E4–E9/route/reconciliation |
@@ -259,6 +264,7 @@ flowchart LR
   T57 --> T58[58 Stack main offer to Grid cross HUG]
   T58 --> T59[59 ABSOLUTE parent offer to Grid cross HUG]
   T59 --> T60[60 Grid cell offer to nested Grid cross HUG]
+  T60 --> T61[61 Grid cell offer to ROW Stack cross HUG]
   T06 --> T27[27 Editor E1 canonical open]
   T09 --> T27
   T20 --> T27
@@ -366,6 +372,7 @@ flowchart LR
 | 58 | task | `resolved / automated_verified` | 23, 25, 26, 33, 34, 38, 39, 40, 41, 44, 45, 49, 50, 51, 52, 53, 54, 55, 56, 57 | ROW Stack singleton main-FILL resolved outer width → Grid ContentBox → columns-first rows 的一次 cross-HUG 重测；shared `/21` Rust/Python 114/114、341 checks；ABSOLUTE parent→Grid/Grid-in-Grid owning offer/reverse feedback/general constraint/tolerance 保持 fail closed |
 | 59 | task | `resolved / automated_verified` | 23, 25, 26, 34, 39, 40, 41, 44, 45, 49, 50, 51, 52, 53, 57, 58 | ABSOLUTE parent ContentBox width → Grid FILL outer inset/min-max → ContentBox → columns-first rows；shared `/22` Rust/Python 118/118、353 checks；Grid-in-Grid owning offer/reverse feedback/general constraint/tolerance 保持 fail closed |
 | 60 | task | `resolved / automated_verified` | 23, 25, 26, 34, 39, 40, 41, 44, 45, 49, 50, 51, 52, 53, 57, 59 | row-after-columns Grid cell resolved outer → nested Grid ContentBox → columns-first rows；shared `/23` Rust/Python 122/122、365 checks；Grid→Stack/reverse feedback/general constraint/tolerance 保持 fail closed |
+| 61 | task | `resolved / automated_verified` | 23, 25, 26, 33, 34, 38, 39, 40, 41, 43, 44, 45, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 60 | row-after-columns Grid cell resolved outer → ROW Stack main-first singleton-FILL allocation → single cross-HUG remeasure；shared `/24` Rust/Python 126/126、377 checks；direction change/reverse feedback/general constraint/tolerance 保持 fail closed |
 
 每次只 claim 一个 unblocked ticket；一票 resolved 后才由其 `Blocked by` 关系产生下一 frontier。未知实现切片留在
 map 的 `Not yet specified`，不为排满计划提前发明接口、migration 或 Profile identity。
@@ -1830,3 +1837,40 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
   provider attempts=0，P0 API Key reads/reservations/cost=0；resolution 后 fast
   `.sdlc/evidence/20260823-003224-fast/` 也通过。Grid→Stack、reverse feedback、一般 constraint/tolerance、
   resource/scene/raster/RESULT/Profile 继续 fail closed，未推进 A3/J1/READY，未 push/tag/PR。
+
+## 60. TV1-T61 执行卡
+
+- 决策：T60 以 verified commit `5c542b9` 收口且 worktree clean 后，复算原始 Ticket 10 §5/§7/§8、
+  `RW-T10-S5-006..010`、`RW-T10-S7-017..019`、`RW-T10-S8-001..019`、15 个 remaining unsupported cases 与
+  Grid/Stack offer call graph。multiple FILL/FRACTION、跨多 AUTO 平均、非直角 rotation 与 resource/scene 分别仍
+  依赖 tolerance 或执行身份；现有 Grid cell→Stack negative 则可复用 T55/T56 main-first cross-HUG consumer 与
+  T58 Stack→Grid 组合，不需要 fixed point，因此登记为当前 single-writer frontier。
+- Interface/seam：只深化 row-after-columns Grid resolved-width offer 的 closed consumer predicate，并让 row AUTO
+  contribution 与 final cell arrange 复用同一内部判定。Frame/Grid 保持 T57/T60 行为；Stack 仅在
+  `direction=ROW,widthMode=FILL,heightMode=HUG_CONTENT` 时加入。public 入口、admission/preflight、authored DFS
+  与全有或全无输出不变。
+- 允许影响：T61 tracker/plan/NOTES、layout Rust module/tests、shared definite-layout vector `/24`、Python
+  independent verifier、render gate identity/assertions/evidence。
+- 禁止影响：direction-changing Stack、column AUTO 读取 future rows、跨多 AUTO 平均、multiple Stack FILL/
+  FRACTION、一般 `UNBOUNDED/AT_MOST/EXACT` constraint engine、双向 HUG、三角函数/epsilon/tolerance、Text/
+  Image/Vector intrinsic、resource fetch/decode/cache、world scene/paint/raster/JPEG、daemon RESULT/success/Profile、
+  Java/OpenAPI/migration/Web/route、formal records、physical Linux/J1/A3/READY 与外部副作用。
+- 精确语义：cell span、signed margins、positive-zero 与 min→max 先得到 Stack final outer width；Stack 再扣
+  inward stroke/padding 得到 definite main ContentBox width，复用既有 authored-order singleton main-FILL helper，
+  只重测 cross HUG 一次。相同方向 nested ROW Stack 与末端 Grid 可分别经 T56/T58 有限组合；任何 cross 结果不
+  回写祖先/本层 main allocation、siblings、gaps、tracks 或 outer width。
+- TDD：shared vector/verifier `/24` 先共同 RED；既有 Grid cell→Stack negative 转 positive，新增 margins/clamp/
+  ContentBox、same-direction nested Stack chain、Stack→Grid columns-first composition 三个 positive，并新增
+  direction-changing nested Stack boundary negative。Rust/Python 先在首个新增 positive 的同一
+  `CHILD_ROTATION rwocc_...0004` 边界共同 RED，再共同 GREEN；最终为 111 laid-out + 15 unsupported、
+  126/126 cases、377 checks，vector SHA-256
+  `ffda20a3d5197fc340be6acfabe3fe4faa30ed829025a8617263e6c6c8a4df83`，fixture `/3` SHA-256 保持
+  `a11475bcebad7e1c35cb0acd7018419d94afcb4b37d7f1df7346a055ad1df669`。
+- 验证：focused Cargo/Python、fmt、clippy `-D warnings`、workspace tests、`py_compile`、JSON inventory 与
+  `git diff --check` 均通过；`render` `.sdlc/evidence/20260823-004517-render/`、affected `fast`
+  `.sdlc/evidence/20260823-004600-fast/`、顺序 `server` `.sdlc/evidence/20260823-004624-server/` 与
+  `full` `.sdlc/evidence/20260823-010507-full/` 全绿。full 17 steps 均 exit 0，Node 24 Web 26 files/212 tests、
+  runtime canary、23 passed + 1 skipped Playwright E2E、Draft/Inference browser journeys 与最终 inference
+  replay E2E 1/1 均通过；resolution 后 fast `.sdlc/evidence/20260823-013443-fast/` 的 3 steps 也均 exit 0。
+  R0/R1/P0 provider attempts=0，P0 API Key reads/reservations/cost=0。最高
+  `automated_verified`；未推进 A3/J1/READY，未 push/tag/PR。

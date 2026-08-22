@@ -1017,6 +1017,8 @@ impl DefiniteLayouter {
             "Height",
             occurrence,
         )?;
+        let consumes_resolved_width_offer =
+            grid_row_hug_consumes_resolved_width_offer(node, role, placement, occurrence)?;
         let (x, width) = grid_axis_arrangement(
             node,
             role,
@@ -1048,7 +1050,7 @@ impl DefiniteLayouter {
             "Height",
             "verticalAlignSelf",
             resolved_height_fill,
-            if matches!(role, NodeRole::Frame | NodeRole::Grid) && height_mode == SizeMode::Hug {
+            if consumes_resolved_width_offer {
                 resolved_width_fill
             } else {
                 None
@@ -1228,6 +1230,7 @@ fn apply_independent_grid_auto(
                 let kind = text_member(child, "kind", child_occurrence, "kind")?;
                 let role = definite_node_role(kind, child_occurrence)?;
                 let opposite_axis_offer = grid_auto_hug_opposite_axis_offer(
+                    child,
                     placement,
                     role,
                     axis,
@@ -1294,6 +1297,7 @@ fn apply_independent_grid_auto(
 }
 
 fn grid_auto_hug_opposite_axis_offer(
+    node: &Map<String, Value>,
     placement: &Map<String, Value>,
     role: NodeRole,
     axis: GridAxis,
@@ -1304,8 +1308,7 @@ fn grid_auto_hug_opposite_axis_offer(
         return Ok(None);
     };
     if axis != GridAxis::Row
-        || !matches!(role, NodeRole::Frame | NodeRole::Grid)
-        || size_mode(placement, "widthMode", occurrence)? != SizeMode::Fill
+        || !grid_row_hug_consumes_resolved_width_offer(node, role, placement, occurrence)?
     {
         return Ok(None);
     }
@@ -1334,6 +1337,24 @@ fn grid_auto_hug_opposite_axis_offer(
         occurrence,
     )?;
     Ok(Some(HugOppositeAxisOffer::ResolvedOuter(outer_width)))
+}
+
+fn grid_row_hug_consumes_resolved_width_offer(
+    node: &Map<String, Value>,
+    role: NodeRole,
+    placement: &Map<String, Value>,
+    occurrence: &str,
+) -> Result<bool, DefiniteLayoutError> {
+    if size_mode(placement, "widthMode", occurrence)? != SizeMode::Fill
+        || size_mode(placement, "heightMode", occurrence)? != SizeMode::Hug
+    {
+        return Ok(false);
+    }
+    match role {
+        NodeRole::Frame | NodeRole::Grid => Ok(true),
+        NodeRole::Stack => Ok(stack_direction(node, occurrence)? == StackDirection::Row),
+        NodeRole::Group | NodeRole::Leaf => Ok(false),
+    }
 }
 
 fn grid_span_extent(sizes: &[f64], gap: f64, start: usize, span: usize) -> f64 {

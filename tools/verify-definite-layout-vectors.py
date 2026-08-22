@@ -573,6 +573,11 @@ class DefiniteLayouter:
             "Height",
             current,
         )
+        consumes_resolved_width_offer = (
+            grid_row_hug_consumes_resolved_width_offer(
+                node, role, placement, current
+            )
+        )
         x, width = grid_axis_arrangement(
             node,
             role,
@@ -603,9 +608,7 @@ class DefiniteLayouter:
             "verticalAlignSelf",
             current,
             resolved_height_fill,
-            resolved_width_fill
-            if role in {"FRAME", "GRID"} and height_mode == "HUG_CONTENT"
-            else None,
+            resolved_width_fill if consumes_resolved_width_offer else None,
         )
         self.emit_positioned_node(node, kind, role, Box(x, y, width, height))
 
@@ -769,6 +772,7 @@ def apply_independent_grid_auto(
             kind = text(child.get("kind"), f"{child_occurrence} kind")
             role = definite_node_role(kind, child_occurrence)
             opposite_axis_offer = grid_row_auto_opposite_offer(
+                child,
                 placement,
                 role,
                 axis,
@@ -826,6 +830,7 @@ def apply_independent_grid_auto(
 
 
 def grid_row_auto_opposite_offer(
+    node: dict[str, Any],
     placement: dict[str, Any],
     role: str,
     axis: str,
@@ -834,9 +839,10 @@ def grid_row_auto_opposite_offer(
 ) -> HugOppositeAxisOffer | None:
     if (
         axis != "ROW"
-        or role not in {"FRAME", "GRID"}
         or resolved_columns is None
-        or placement.get("widthMode") != "FILL"
+        or not grid_row_hug_consumes_resolved_width_offer(
+            node, role, placement, current
+        )
     ):
         return None
     column = integer(placement.get("column"), f"{current} placement.column")
@@ -860,6 +866,24 @@ def grid_row_auto_opposite_offer(
         current,
     )
     return HugOppositeAxisOffer("RESOLVED_OUTER", outer_width)
+
+
+def grid_row_hug_consumes_resolved_width_offer(
+    node: dict[str, Any],
+    role: str,
+    placement: dict[str, Any],
+    current: str,
+) -> bool:
+    if (
+        placement.get("widthMode") != "FILL"
+        or placement.get("heightMode") != "HUG_CONTENT"
+    ):
+        return False
+    if role in {"FRAME", "GRID"}:
+        return True
+    if role == "STACK":
+        return text(node.get("direction"), f"{current} direction") == "ROW"
+    return False
 
 
 def grid_span_extent(
@@ -2435,7 +2459,7 @@ def verify(
         "vector manifest",
     )
     verifier.require(
-        vectors["vectorVersion"] == "renderweave-definite-layout-vectors/23",
+        vectors["vectorVersion"] == "renderweave-definite-layout-vectors/24",
         "vector identity drifted",
     )
     authority = exact_members(
@@ -2488,7 +2512,7 @@ def verify(
     expected_boundary = {
         "profileAvailability": "NOT_REGISTERED",
         "certificationStatus": "NOT_CERTIFIED",
-        "layoutImplementation": "RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_SINGLE_MAIN_FILL_AND_FIXED_SINGLE_FRACTION_INDEPENDENT_MULTI_AUTO_GRID_EMPTY_CONTAINER_STACK_HUG_GRID_AUTO_HUG_CONTRIBUTION_GRID_HUG_EXACT_QUARTER_TURN_AFFINE_FRAME_GROUP_HUG_FIXED_OPPOSITE_AXIS_CROSS_FILL_DEFINITE_ABSOLUTE_PARENT_OFFER_DEFINITE_STACK_CROSS_OUTER_OFFER_STACK_MAIN_FILL_CROSS_HUG_REMEASURE_NESTED_STACK_MAIN_OFFER_PROPAGATION_COLUMNS_FIRST_GRID_CELL_OUTER_OFFER_STACK_MAIN_OFFER_COLUMNS_FIRST_GRID_CROSS_HUG_ABSOLUTE_PARENT_OFFER_COLUMNS_FIRST_GRID_CROSS_HUG_GRID_CELL_OFFER_COLUMNS_FIRST_NESTED_GRID_CROSS_HUG_NORMALIZATION_BOX_KERNEL",
+        "layoutImplementation": "RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_SINGLE_MAIN_FILL_AND_FIXED_SINGLE_FRACTION_INDEPENDENT_MULTI_AUTO_GRID_EMPTY_CONTAINER_STACK_HUG_GRID_AUTO_HUG_CONTRIBUTION_GRID_HUG_EXACT_QUARTER_TURN_AFFINE_FRAME_GROUP_HUG_FIXED_OPPOSITE_AXIS_CROSS_FILL_DEFINITE_ABSOLUTE_PARENT_OFFER_DEFINITE_STACK_CROSS_OUTER_OFFER_STACK_MAIN_FILL_CROSS_HUG_REMEASURE_NESTED_STACK_MAIN_OFFER_PROPAGATION_COLUMNS_FIRST_GRID_CELL_OUTER_OFFER_STACK_MAIN_OFFER_COLUMNS_FIRST_GRID_CROSS_HUG_ABSOLUTE_PARENT_OFFER_COLUMNS_FIRST_GRID_CROSS_HUG_GRID_CELL_OFFER_COLUMNS_FIRST_NESTED_GRID_CROSS_HUG_GRID_CELL_OFFER_STACK_MAIN_FIRST_CROSS_HUG_NORMALIZATION_BOX_KERNEL",
         "worldTransformImplementation": "ABSENT",
         "sceneImplementation": "ABSENT",
         "rasterImplementation": "ABSENT",
@@ -2526,7 +2550,7 @@ def verify(
         == "renderweave-layout-preflight-fixtures/1",
         "layout preflight fixture identity drifted",
     )
-    verifier.require(len(vectors["laidOutCases"]) == 107, "laid-out case count drifted")
+    verifier.require(len(vectors["laidOutCases"]) == 111, "laid-out case count drifted")
     verifier.require(
         len(vectors["unsupportedCases"]) == 15,
         "unsupported case count drifted",
@@ -2576,7 +2600,7 @@ def verify(
             raise VerificationFailure(f"{case_id}: unsupported case produced a layout")
 
     return {
-        "verifier": "renderweave-definite-layout-python-independent/23",
+        "verifier": "renderweave-definite-layout-python-independent/24",
         "result": "PASS",
         "assurance": "A2",
         "laidOutCases": len(vectors["laidOutCases"]),
