@@ -1717,7 +1717,7 @@ fn measure_stack_child(
         "placement.marginLeftPt",
     )?;
     let resolved_cross_outer_offer = match (role, direction, width_mode, height_mode) {
-        (NodeRole::Frame, StackDirection::Row, SizeMode::Hug, SizeMode::Fill) => {
+        (NodeRole::Frame | NodeRole::Stack, StackDirection::Row, SizeMode::Hug, SizeMode::Fill) => {
             Some(stack_axis_size_from_offer(
                 placement,
                 SizeMode::Fill,
@@ -1728,17 +1728,20 @@ fn measure_stack_child(
                 occurrence,
             )?)
         }
-        (NodeRole::Frame, StackDirection::Column, SizeMode::Fill, SizeMode::Hug) => {
-            Some(stack_axis_size_from_offer(
-                placement,
-                SizeMode::Fill,
-                space.width,
-                margin_left,
-                margin_right,
-                "Width",
-                occurrence,
-            )?)
-        }
+        (
+            NodeRole::Frame | NodeRole::Stack,
+            StackDirection::Column,
+            SizeMode::Fill,
+            SizeMode::Hug,
+        ) => Some(stack_axis_size_from_offer(
+            placement,
+            SizeMode::Fill,
+            space.width,
+            margin_left,
+            margin_right,
+            "Width",
+            occurrence,
+        )?),
         _ => None,
     };
     let width = if width_mode == SizeMode::Hug
