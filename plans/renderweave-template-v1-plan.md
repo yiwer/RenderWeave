@@ -84,7 +84,9 @@
   COLUMN Stack resolved width → columns-first Grid terminal；shared `/27` 134 cases/401 checks，rows→columns/general
   constraint/tolerance 保持 fail closed。TV1-T65=`resolved/automated_verified`：definite multi-FRACTION 已按
   authored-order 前 `n-1` weighted share + last remainder 完成 finite/nonnegative 子闭包；shared `/28` 136
-  cases/409 checks。跨多 AUTO deficit、Stack water filling 与 Profile tolerance 继续 fail closed。
+  cases/409 checks。TV1-T66=`resolved/automated_verified`：跨多 AUTO span 已按 stable constraint order 与
+  authored-order equal-share + last-remainder 完成；shared `/29` 139 cases/419 checks。Stack water filling、
+  rows→columns 与 Profile tolerance 继续 fail closed。
 - 日期：2026-08-20
 - Approved delta：[`specs/changes/20260817-template-v1-implementation-authority.md`](../specs/changes/20260817-template-v1-implementation-authority.md)
 - Frozen checkpoint：`0b485f4a13de9d754a81d07f464730776e13c14b`
@@ -382,6 +384,7 @@ flowchart LR
 | 63 | task | `resolved / automated_verified` | 23, 25, 26, 33, 38, 43, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 61, 62 | direct nested Stack 消费 already-resolved opposite-axis FILL outer，并按自身 direction 结构递归 main-HUG/cross-HUG；shared `/26` Rust/Python 132/132、395 checks；Grid/general constraint/tolerance 保持 fail closed |
 | 64 | task | `resolved / automated_verified` | 23, 25, 26, 33, 34, 38, 39, 40, 41, 43, 44, 45, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63 | COLUMN Stack already-resolved width → direct Grid ContentBox → strict columns-first HUG rows；shared `/27` Rust/Python 134/134、401 checks；rows→columns/general constraint/tolerance 保持 fail closed |
 | 65 | task | `resolved / automated_verified` | 23, 25, 26, 34, 39, 40, 41, 44, 45, 57, 58, 59, 60, 64 | definite Grid FIXED→AUTO→multi-FRACTION，authored-order 前 n-1 weighted share + last remainder；shared `/28` Rust/Python 136/136、409 checks；跨多 AUTO deficit/Stack water filling/Profile tolerance 保持 fail closed |
+| 66 | task | `resolved / automated_verified` | 23, 25, 26, 34, 40, 41, 44, 45, 65 | stable-sorted Grid span constraint 对 covered AUTO tracks 做 authored-order average increase，前 n-1 equal share + last remainder；shared `/29` Rust/Python 139/139、419 checks；不做 convergence；Stack water filling/rows→columns/Profile tolerance 保持 fail closed |
 
 每次只 claim 一个 unblocked ticket；一票 resolved 后才由其 `Blocked by` 关系产生下一 frontier。未知实现切片留在
 map 的 `Not yet specified`，不为排满计划提前发明接口、migration 或 Profile identity。
@@ -2039,3 +2042,45 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
   certification `NOT_CERTIFIED`、Raster `ABSENT`、daemon `UNWIRED`。跨多 AUTO deficit、Stack water filling、
   general constraint/tolerance、resource/scene/pixel 与完整 Renderer 保持 fail closed；最高
   `automated_verified`，未推进 A3/J1/READY，未 push/tag/PR。
+
+## 65. TV1-T66 执行卡
+
+- 决策：T65 以 verified commit `21b4d39` 收口且 worktree clean 后，复算原始 Ticket 10 §3/§8、
+  `RW-T10-S3-012..016`、`RW-T10-S8-001..019` 与 13 个 remaining unsupported cases。反向轴 feedback、非直角
+  rotation、resource/scene 与 Stack water filling 仍依赖关闭能力；既有跨两个 AUTO span negative 则可复用
+  T41/T44 constraint collector 和 T65 last-remainder 数值原语，因此登记为当前 single-writer frontier。
+- Interface/seam：只把内部 `GridAutoConstraint.auto_index` 深化为 authored/physical order 的 `auto_indices`；
+  Rust/Python 保持独立控制流但共享冻结 vectors。public API、admission/preflight、FIXED→AUTO→FRACTION、
+  columns-first、arrange、DFS first-error 与全有或全无 output 不变。
+- 精确语义：constraint 仍按 `(spanLength,startIndex,materializedOrder)` stable-sort 且各处理一次；以当前 tracks+
+  internal gaps 求 occupied。正 finite deficit 对覆盖的 AUTO tracks 平均增加，前 `n-1` 各取
+  `deficit/autoCount`，最后一项接收 `deficit-allocatedBeforeLast`；finite/nonnegative guard 失败继续 internal
+  `GRID_AUTO_TRACK`，不选择 epsilon 或迭代。
+- 允许影响：T66 tracker/plan/NOTES、layout Rust module/tests、shared definite-layout vector `/29`、Python
+  independent verifier、render gate identity/assertions/evidence。
+- 禁止影响：Stack multi-FILL/min-max water filling、rows→columns/future-row feedback、一般 fixed point/constraint、
+  tolerance/public numeric error、非直角 rotation、Text/Image intrinsic、resource fetch/decode、scene/raster/JPEG、
+  daemon RESULT/Profile、Java/OpenAPI/migration/Web/route、physical Linux/J1/A3/READY 与外部副作用。
+- TDD：既有跨两 AUTO negative 转 positive，新增三 AUTO last remainder、FIXED+gap+signed-margin 混合 span 与
+  broad-before-narrow stable-order positives；shared `/29` 先共同 RED，目标 127 laid-out + 12 unsupported、
+  139 cases/419 checks，fixture `/3` bytes 不变。
+- 验证：focused Rust/Python、fmt、clippy `-D warnings`、workspace tests、`py_compile`、JSON inventory/SHA/unique、
+  `git diff --check`；再依次 `render`、affected `fast`、顺序 `server`、Goal `full`、resolution `fast`。最高只可
+  `automated_verified`；不推进 A3/J1/READY，不 push/tag/PR，不运行 provider，不读取 API Key。
+- 实施：Rust collector 以 `auto_indices` 保存 covered AUTO tracks，并用 staged updates 实现 fixed-order equal
+  share + last remainder；Python independent verifier 以独立控制流镜像冻结语义。constraint stable-sort、每条
+  只处理一次、singleton bit behavior、FIXED → AUTO → FRACTION、columns-first 与 closed error boundary 不变。
+- TDD/identity：既有跨两 AUTO negative 与三个新增边界 positives 先令 Rust/Python 在同一案例共同 RED，再达到
+  127 laid-out + 12 unsupported、139/139 cases、419 checks。vector `/29` SHA-256
+  `9d49f578af85c73661cbee76b9115248ad6c5b966409ca86d00f43ad3b1f5435`；fixture `/3` SHA-256 保持
+  `a11475bcebad7e1c35cb0acd7018419d94afcb4b37d7f1df7346a055ad1df669`。
+- 分级 gate：`render` `.sdlc/evidence/20260823-064212-render/`、affected `fast`
+  `.sdlc/evidence/20260823-064302-fast/`、顺序 `server` `.sdlc/evidence/20260823-064318-server/` 与 Goal `full`
+  `.sdlc/evidence/20260823-070309-full/` 均通过；full 17 steps 均 exit 0、总耗时 1802.731 秒，Maven App
+  344 tests/0 failures/0 errors/15 skipped，Node 24 Web 26 files/212 tests、runtime canary、23 passed +
+  1 controlled skip Playwright、browser journeys 与最终 inference replay E2E 1/1 均通过；resolution 后 fast
+  `.sdlc/evidence/20260823-073620-fast/` 的 3 steps 也均 exit 0。
+- 边界：R0/R1/P0 provider attempts=0，P0 API Key reads/reservations/cost=0；Profile `NOT_REGISTERED`、
+  certification `NOT_CERTIFIED`、Raster `ABSENT`、daemon `UNWIRED`。Stack water filling、rows→columns、general
+  constraint/tolerance、resource/scene/pixel 与完整 Renderer 保持 fail closed；最高 `automated_verified`，未推进
+  A3/J1/READY，未 push/tag/PR。

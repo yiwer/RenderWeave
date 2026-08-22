@@ -1,6 +1,16 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-23 **Template v1 implementation TV1-T66 已由 Codex `/root` single-writer 完成，状态
+  `resolved/automated_verified`**：跨多个 AUTO span 的 stable average-deficit 子闭包现按
+  `(spanLength,startIndex,materializedOrder)` 每条处理一次，并按 AUTO authored order 前 `n-1` equal share +
+  last remainder 分配正 deficit；shared `/29` Rust/Python 为 127 laid-out + 12 unsupported、139/139 cases、
+  419 checks，vector SHA-256 `9d49f578af85c73661cbee76b9115248ad6c5b966409ca86d00f43ad3b1f5435`。
+  `render` `.sdlc/evidence/20260823-064212-render/`、`fast` `.sdlc/evidence/20260823-064302-fast/`、顺序
+  `server` `.sdlc/evidence/20260823-064318-server/`、17-step `full`
+  `.sdlc/evidence/20260823-070309-full/` 与 resolution `fast` `.sdlc/evidence/20260823-073620-fast/` 全绿；
+  provider/API Key/真实数据/费用均为 0。Stack water filling、rows→columns、general constraint/tolerance、
+  resource/scene/raster/RESULT/Profile 仍 fail closed，未推进 A3/J1/READY，未 push/tag/PR。
 - 2026-08-23 **Template v1 implementation TV1-T65 已由 Codex `/root` single-writer 完成，状态
   `resolved/automated_verified`**：definite Grid axis 现在保留 authored-order `(index,weight)`，前 `n-1`
   FRACTION 按 fixed binary64 order 求 weighted share，最后一项接收余量；singleton 与 FIXED/AUTO/gaps

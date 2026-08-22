@@ -611,12 +611,12 @@ impl GridAxis {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 struct GridAutoConstraint {
     start: usize,
     span: usize,
     materialized_order: usize,
-    auto_index: usize,
+    auto_indices: Vec<usize>,
     contribution: f64,
 }
 
@@ -1146,7 +1146,7 @@ fn definite_grid_axis(
     // Track solving is staged by the frozen Profile: FIXED, then AUTO, then FRACTION.
     // The complete authored scan above makes that stage order independent of track order.
     if !auto_indices.is_empty() {
-        apply_independent_grid_auto(
+        apply_grid_auto_constraints(
             children,
             axis,
             &auto_indices,
@@ -1219,7 +1219,7 @@ fn definite_grid_axis(
     })
 }
 
-fn apply_independent_grid_auto(
+fn apply_grid_auto_constraints(
     children: &[Value],
     axis: GridAxis,
     auto_indices: &[usize],
@@ -1252,18 +1252,13 @@ fn apply_independent_grid_auto(
             child_occurrence,
             &format!("placement.{}", axis.span_member()),
         )?;
-        let mut covered_auto_indices = auto_indices
+        let covered_auto_indices = auto_indices
             .iter()
             .copied()
-            .filter(|index| *index >= start && *index < start + span);
-        let Some(auto_index) = covered_auto_indices.next() else {
+            .filter(|index| *index >= start && *index < start + span)
+            .collect::<Vec<_>>();
+        if covered_auto_indices.is_empty() {
             continue;
-        };
-        if covered_auto_indices.next().is_some() {
-            return Err(DefiniteLayoutError::unsupported(
-                grid_occurrence,
-                DefiniteLayoutUnsupported::GridAutoTrack,
-            ));
         }
 
         let mode = size_mode(placement, axis.mode_member(), child_occurrence)?;
@@ -1318,7 +1313,7 @@ fn apply_independent_grid_auto(
             start,
             span,
             materialized_order,
-            auto_index,
+            auto_indices: covered_auto_indices,
             contribution: if contribution > 0.0 {
                 contribution
             } else {
@@ -1338,8 +1333,67 @@ fn apply_independent_grid_auto(
         let occupied = grid_span_extent(sizes, gap, constraint.start, constraint.span);
         let deficit = constraint.contribution - occupied;
         if deficit > 0.0 {
-            sizes[constraint.auto_index] += deficit;
+            apply_grid_auto_deficit(sizes, &constraint.auto_indices, deficit, grid_occurrence)?;
         }
+    }
+    Ok(())
+}
+
+fn apply_grid_auto_deficit(
+    sizes: &mut [f64],
+    auto_indices: &[usize],
+    deficit: f64,
+    grid_occurrence: &str,
+) -> Result<(), DefiniteLayoutError> {
+    if !deficit.is_finite() {
+        return Err(DefiniteLayoutError::unsupported(
+            grid_occurrence,
+            DefiniteLayoutUnsupported::GridAutoTrack,
+        ));
+    }
+    if auto_indices.len() == 1 {
+        let index = auto_indices[0];
+        let updated = sizes[index] + deficit;
+        if !updated.is_finite() {
+            return Err(DefiniteLayoutError::unsupported(
+                grid_occurrence,
+                DefiniteLayoutUnsupported::GridAutoTrack,
+            ));
+        }
+        sizes[index] = if updated > 0.0 { updated } else { 0.0 };
+        return Ok(());
+    }
+
+    let equal_share = deficit / auto_indices.len() as f64;
+    let mut allocated_before_last = 0.0;
+    let mut updates = Vec::with_capacity(auto_indices.len());
+    let last_position = auto_indices.len() - 1;
+    for (position, index) in auto_indices.iter().copied().enumerate() {
+        let share = if position == last_position {
+            deficit - allocated_before_last
+        } else {
+            equal_share
+        };
+        let updated = sizes[index] + share;
+        if !share.is_finite() || share < 0.0 || !updated.is_finite() {
+            return Err(DefiniteLayoutError::unsupported(
+                grid_occurrence,
+                DefiniteLayoutUnsupported::GridAutoTrack,
+            ));
+        }
+        updates.push((index, if updated > 0.0 { updated } else { 0.0 }));
+        if position != last_position {
+            allocated_before_last += share;
+            if !allocated_before_last.is_finite() {
+                return Err(DefiniteLayoutError::unsupported(
+                    grid_occurrence,
+                    DefiniteLayoutUnsupported::GridAutoTrack,
+                ));
+            }
+        }
+    }
+    for (index, updated) in updates {
+        sizes[index] = updated;
     }
     Ok(())
 }
