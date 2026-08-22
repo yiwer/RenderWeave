@@ -5,12 +5,12 @@
 //! Preflight returns bounded structural counts or one stable DFS problem. The definite kernel
 //! additionally computes local LayoutBox/ContentBox entries for resource-independent ABSOLUTE
 //! nodes, Stack children with at most one main-axis FILL, resource-independent Stack/Grid HUG
-//! measurement, zero-rotation affine nonempty Frame/Group HUG measurement and Group
+//! measurement, exact-quarter-turn affine nonempty Frame/Group HUG measurement and Group
 //! normalization, and Grid children whose
 //! definite axes contain FIXED tracks, at most one FRACTION track, and resource-independent AUTO
 //! constraints that each cover at most one AUTO track and consume supported resource-free HUG
-//! contributions. It deliberately stops before resource preparation, nonzero child rotation,
-//! Group nonempty HUG, multi-FILL Stack water filling, cross-AUTO deficit distribution,
+//! contributions. It deliberately stops before resource preparation, non-quarter-turn child
+//! rotation, quarter-turn cross-axis FILL, multi-FILL Stack water filling, cross-AUTO deficit distribution,
 //! multi-FRACTION solving, world transforms, shaping, paint, rasterization, and encoding, and it
 //! never exposes a partial layout on failure.
 
@@ -329,6 +329,14 @@ enum NodeRole {
 struct AffineAxisInterval {
     minimum: f64,
     maximum: f64,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum ExactQuarterTurn {
+    Zero,
+    Clockwise90,
+    HalfTurn,
+    Clockwise270,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -1626,33 +1634,130 @@ fn resource_free_absolute_child_axis_interval(
             DefiniteLayoutUnsupported::NonAbsolutePlacement,
         ));
     }
+    let (position, size) = resource_free_absolute_child_axis_geometry(
+        child,
+        role,
+        placement,
+        axis,
+        child_occurrence,
+        false,
+    )?;
+    let transform = object_member(Some(child), "transform", child_occurrence)?;
+    let rotation = binary64_member(
+        transform,
+        "rotationDeg",
+        child_occurrence,
+        "transform.rotationDeg",
+    )?;
+    let quarter_turn = exact_quarter_turn(rotation).ok_or_else(|| {
+        DefiniteLayoutError::unsupported(child_occurrence, DefiniteLayoutUnsupported::ChildRotation)
+    })?;
+
+    match quarter_turn {
+        ExactQuarterTurn::Zero if rotation == 0.0 => {
+            zero_rotation_affine_axis_interval(child, position, size, axis, child_occurrence)
+        }
+        ExactQuarterTurn::Zero => axis_preserving_affine_axis_interval(
+            transform,
+            position,
+            size,
+            axis,
+            false,
+            child_occurrence,
+        ),
+        ExactQuarterTurn::HalfTurn => axis_preserving_affine_axis_interval(
+            transform,
+            position,
+            size,
+            axis,
+            true,
+            child_occurrence,
+        ),
+        ExactQuarterTurn::Clockwise90 | ExactQuarterTurn::Clockwise270 => {
+            let cross_axis = match axis {
+                "Width" => "Height",
+                "Height" => "Width",
+                _ => {
+                    return Err(DefiniteLayoutError::invariant(child_occurrence, "HUG axis"));
+                }
+            };
+            let (cross_position, cross_size) = resource_free_absolute_child_axis_geometry(
+                child,
+                role,
+                placement,
+                cross_axis,
+                child_occurrence,
+                true,
+            )?;
+            quarter_turn_affine_axis_interval(
+                transform,
+                position,
+                size,
+                cross_position,
+                cross_size,
+                axis,
+                quarter_turn,
+                child_occurrence,
+            )
+        }
+    }
+}
+
+fn resource_free_absolute_child_axis_geometry(
+    child: &Map<String, Value>,
+    role: NodeRole,
+    placement: &Map<String, Value>,
+    axis: &str,
+    occurrence: &str,
+    cross_axis_for_quarter_turn: bool,
+) -> Result<(f64, f64), DefiniteLayoutError> {
     let (position_member, mode_member, size_member) = match axis {
         "Width" => ("xPt", "widthMode", "widthPt"),
         "Height" => ("yPt", "heightMode", "heightPt"),
-        _ => return Err(DefiniteLayoutError::invariant(child_occurrence, "HUG axis")),
+        _ => return Err(DefiniteLayoutError::invariant(occurrence, "HUG axis")),
     };
     let position = binary64_member(
         placement,
         position_member,
-        child_occurrence,
+        occurrence,
         format!("placement.{position_member}"),
     )?;
-    let size = match size_mode(placement, mode_member, child_occurrence)? {
+    let size = match size_mode(placement, mode_member, occurrence)? {
         SizeMode::Fixed => binary64_member(
             placement,
             size_member,
-            child_occurrence,
+            occurrence,
             format!("placement.{size_member}"),
         )?,
-        SizeMode::Hug => resource_free_hug_axis(child, role, placement, axis, child_occurrence)?,
+        SizeMode::Hug => resource_free_hug_axis(child, role, placement, axis, occurrence)?,
+        SizeMode::Fill if cross_axis_for_quarter_turn => {
+            return Err(DefiniteLayoutError::unsupported(
+                occurrence,
+                DefiniteLayoutUnsupported::ChildRotation,
+            ));
+        }
         SizeMode::Fill => {
             return Err(DefiniteLayoutError::invariant(
-                child_occurrence,
+                occurrence,
                 format!("placement.{mode_member}"),
             ));
         }
     };
-    zero_rotation_affine_axis_interval(child, position, size, axis, child_occurrence)
+    Ok((position, size))
+}
+
+fn exact_quarter_turn(rotation: f64) -> Option<ExactQuarterTurn> {
+    if rotation == -360.0 || rotation == 0.0 || rotation == 360.0 {
+        Some(ExactQuarterTurn::Zero)
+    } else if rotation == -270.0 || rotation == 90.0 {
+        Some(ExactQuarterTurn::Clockwise90)
+    } else if rotation == -180.0 || rotation == 180.0 {
+        Some(ExactQuarterTurn::HalfTurn)
+    } else if rotation == -90.0 || rotation == 270.0 {
+        Some(ExactQuarterTurn::Clockwise270)
+    } else {
+        None
+    }
 }
 
 fn zero_rotation_affine_axis_interval(
@@ -1712,6 +1817,130 @@ fn zero_rotation_affine_axis_interval(
         minimum: near.min(far),
         maximum: near.max(far),
     })
+}
+
+fn axis_preserving_affine_axis_interval(
+    transform: &Map<String, Value>,
+    position: f64,
+    size: f64,
+    axis: &str,
+    reverse: bool,
+    occurrence: &str,
+) -> Result<AffineAxisInterval, DefiniteLayoutError> {
+    let (origin_member, scale_member) = match axis {
+        "Width" => ("originX", "scaleX"),
+        "Height" => ("originY", "scaleY"),
+        _ => return Err(DefiniteLayoutError::invariant(occurrence, "HUG axis")),
+    };
+    let origin_ratio = binary64_member(
+        transform,
+        origin_member,
+        occurrence,
+        format!("transform.{origin_member}"),
+    )?;
+    let scale = binary64_member(
+        transform,
+        scale_member,
+        occurrence,
+        format!("transform.{scale_member}"),
+    )?;
+    if scale == 0.0 {
+        return Err(DefiniteLayoutError::invariant(
+            occurrence,
+            format!("transform.{scale_member}"),
+        ));
+    }
+
+    let origin_offset = finite_transform_value(origin_ratio * size, occurrence)?;
+    let transform_origin = finite_transform_value(position + origin_offset, occurrence)?;
+    let near_delta = finite_transform_value(position - transform_origin, occurrence)?;
+    let near_scaled = finite_transform_value(scale * near_delta, occurrence)?;
+    let near = signed_transform_endpoint(transform_origin, near_scaled, reverse, occurrence)?;
+    let far_position = finite_transform_value(position + size, occurrence)?;
+    let far_delta = finite_transform_value(far_position - transform_origin, occurrence)?;
+    let far_scaled = finite_transform_value(scale * far_delta, occurrence)?;
+    let far = signed_transform_endpoint(transform_origin, far_scaled, reverse, occurrence)?;
+    Ok(AffineAxisInterval {
+        minimum: near.min(far),
+        maximum: near.max(far),
+    })
+}
+
+#[allow(clippy::too_many_arguments)]
+fn quarter_turn_affine_axis_interval(
+    transform: &Map<String, Value>,
+    target_position: f64,
+    target_size: f64,
+    source_position: f64,
+    source_size: f64,
+    axis: &str,
+    quarter_turn: ExactQuarterTurn,
+    occurrence: &str,
+) -> Result<AffineAxisInterval, DefiniteLayoutError> {
+    let (target_origin_member, source_origin_member, source_scale_member, reverse) =
+        match (axis, quarter_turn) {
+            ("Width", ExactQuarterTurn::Clockwise90) => ("originX", "originY", "scaleY", true),
+            ("Height", ExactQuarterTurn::Clockwise90) => ("originY", "originX", "scaleX", false),
+            ("Width", ExactQuarterTurn::Clockwise270) => ("originX", "originY", "scaleY", false),
+            ("Height", ExactQuarterTurn::Clockwise270) => ("originY", "originX", "scaleX", true),
+            _ => return Err(DefiniteLayoutError::invariant(occurrence, "quarterTurn")),
+        };
+    let target_origin_ratio = binary64_member(
+        transform,
+        target_origin_member,
+        occurrence,
+        format!("transform.{target_origin_member}"),
+    )?;
+    let source_origin_ratio = binary64_member(
+        transform,
+        source_origin_member,
+        occurrence,
+        format!("transform.{source_origin_member}"),
+    )?;
+    let source_scale = binary64_member(
+        transform,
+        source_scale_member,
+        occurrence,
+        format!("transform.{source_scale_member}"),
+    )?;
+    if source_scale == 0.0 {
+        return Err(DefiniteLayoutError::invariant(
+            occurrence,
+            format!("transform.{source_scale_member}"),
+        ));
+    }
+
+    let target_origin_offset =
+        finite_transform_value(target_origin_ratio * target_size, occurrence)?;
+    let target_origin = finite_transform_value(target_position + target_origin_offset, occurrence)?;
+    let source_origin_offset =
+        finite_transform_value(source_origin_ratio * source_size, occurrence)?;
+    let source_origin = finite_transform_value(source_position + source_origin_offset, occurrence)?;
+    let near_delta = finite_transform_value(source_position - source_origin, occurrence)?;
+    let near_scaled = finite_transform_value(source_scale * near_delta, occurrence)?;
+    let near = signed_transform_endpoint(target_origin, near_scaled, reverse, occurrence)?;
+    let far_position = finite_transform_value(source_position + source_size, occurrence)?;
+    let far_delta = finite_transform_value(far_position - source_origin, occurrence)?;
+    let far_scaled = finite_transform_value(source_scale * far_delta, occurrence)?;
+    let far = signed_transform_endpoint(target_origin, far_scaled, reverse, occurrence)?;
+    Ok(AffineAxisInterval {
+        minimum: near.min(far),
+        maximum: near.max(far),
+    })
+}
+
+fn signed_transform_endpoint(
+    origin: f64,
+    scaled_delta: f64,
+    reverse: bool,
+    occurrence: &str,
+) -> Result<f64, DefiniteLayoutError> {
+    let endpoint = if reverse {
+        origin - scaled_delta
+    } else {
+        origin + scaled_delta
+    };
+    finite_transform_value(endpoint, occurrence)
 }
 
 fn finite_transform_value(value: f64, occurrence: &str) -> Result<f64, DefiniteLayoutError> {

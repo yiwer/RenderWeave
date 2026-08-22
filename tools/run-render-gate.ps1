@@ -310,19 +310,19 @@ try {
     }
     $definiteLayoutIndependent = Get-Content -Raw -Encoding UTF8 -LiteralPath $definiteLayoutReport |
         ConvertFrom-Json
-    if ($definiteLayoutIndependent.verifier -ne 'renderweave-definite-layout-python-independent/13' `
+    if ($definiteLayoutIndependent.verifier -ne 'renderweave-definite-layout-python-independent/14' `
             -or $definiteLayoutIndependent.result -ne 'PASS' `
             -or $definiteLayoutIndependent.assurance -ne 'A2' `
-            -or $definiteLayoutIndependent.laidOutCases -ne 64 `
-            -or $definiteLayoutIndependent.unsupportedCases -ne 13 `
-            -or $definiteLayoutIndependent.passed -ne 77 `
-            -or $definiteLayoutIndependent.total -ne 77 `
+            -or $definiteLayoutIndependent.laidOutCases -ne 69 `
+            -or $definiteLayoutIndependent.unsupportedCases -ne 14 `
+            -or $definiteLayoutIndependent.passed -ne 83 `
+            -or $definiteLayoutIndependent.total -ne 83 `
             -or $definiteLayoutIndependent.failed -ne 0 `
-            -or $definiteLayoutIndependent.checks -ne 232 `
+            -or $definiteLayoutIndependent.checks -ne 249 `
             -or $definiteLayoutIndependent.layoutProfile -ne 'renderweave-layout/1.0' `
             -or $definiteLayoutIndependent.profileAvailability -ne 'NOT_REGISTERED' `
             -or $definiteLayoutIndependent.certificationStatus -ne 'NOT_CERTIFIED' `
-            -or $definiteLayoutIndependent.layoutImplementation -ne 'RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_SINGLE_MAIN_FILL_AND_FIXED_SINGLE_FRACTION_INDEPENDENT_MULTI_AUTO_GRID_EMPTY_CONTAINER_STACK_HUG_GRID_AUTO_HUG_CONTRIBUTION_GRID_HUG_ZERO_ROTATION_AFFINE_FRAME_HUG_GROUP_HUG_NORMALIZATION_BOX_KERNEL' `
+            -or $definiteLayoutIndependent.layoutImplementation -ne 'RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_SINGLE_MAIN_FILL_AND_FIXED_SINGLE_FRACTION_INDEPENDENT_MULTI_AUTO_GRID_EMPTY_CONTAINER_STACK_HUG_GRID_AUTO_HUG_CONTRIBUTION_GRID_HUG_EXACT_QUARTER_TURN_AFFINE_FRAME_GROUP_HUG_NORMALIZATION_BOX_KERNEL' `
             -or $definiteLayoutIndependent.worldTransformImplementation -ne 'ABSENT' `
             -or $definiteLayoutIndependent.sceneImplementation -ne 'ABSENT' `
             -or $definiteLayoutIndependent.rasterImplementation -ne 'ABSENT' `
@@ -497,7 +497,7 @@ try {
             resourceLeaseAdmission = 'COMMAND_DEADLINE_PLUS_5000MS_AUTOMATED_VERIFIED'
             resourceBodyIntegrityKernel = 'PHYSICAL_FETCH_BUDGET_LENGTH_SHA256_AUTOMATED_VERIFIED_UNWIRED'
             resourceBytes = 'UNFETCHED'
-            layoutKernel = 'RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_SINGLE_MAIN_FILL_AND_FIXED_SINGLE_FRACTION_INDEPENDENT_MULTI_AUTO_GRID_EMPTY_CONTAINER_STACK_HUG_GRID_AUTO_HUG_CONTRIBUTION_GRID_HUG_ZERO_ROTATION_AFFINE_FRAME_HUG_GROUP_HUG_NORMALIZATION_BOX_AUTOMATED_VERIFIED_UNWIRED'
+            layoutKernel = 'RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_SINGLE_MAIN_FILL_AND_FIXED_SINGLE_FRACTION_INDEPENDENT_MULTI_AUTO_GRID_EMPTY_CONTAINER_STACK_HUG_GRID_AUTO_HUG_CONTRIBUTION_GRID_HUG_EXACT_QUARTER_TURN_AFFINE_FRAME_GROUP_HUG_NORMALIZATION_BOX_AUTOMATED_VERIFIED_UNWIRED'
             outputPngKernel = 'AUTOMATED_VERIFIED_UNWIRED'
             daemonOutputPath = 'UNWIRED'
             rendererReady = $false

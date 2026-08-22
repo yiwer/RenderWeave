@@ -1,6 +1,13 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-22 **Template v1 implementation TV1-T51 已由 Codex `/root` single-writer 完成，状态
+  `resolved/automated_verified`**：`layout_definite_resource_free` 已支持容量边界内 exact-quarter-turn
+  affine Frame/Group HUG AABB；奇数 quadrant 仅消费两轴 FIXED 或 independently resource-free HUG，
+  cross-axis FILL 与非直角 rotation 继续 `CHILD_ROTATION`。shared `/14` 的 Rust/Python 为 69 laid-out +
+  14 unsupported、83/83、249 checks；focused、`render`、`server`、affected `fast` 与完整 `full` 全绿，
+  Goal 证据 `.sdlc/evidence/20260822-141108-full/` 的 17 steps 均 exit 0。不推进 resource/scene/raster/daemon
+  RESULT/Profile/J1/A3/READY；provider/API Key/真实数据/费用均为 0，未 push/tag/PR。
 - 2026-08-22 **Template v1 implementation TV1-T50 已 `resolved/automated_verified`**：在同一
   `renderweave-renderer-layout` deep module 内完成 zero-rotation affine 非空 Group HUG；resource-free direct
   ABSOLUTE child 的 transformed interval 按 authored order 从首 child 求二维 union，Group size=`max-min`，并以

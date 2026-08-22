@@ -50,7 +50,9 @@
   非空 Frame HUG intrinsic 子闭包已完成；Rust/Python 69/69、209 checks，任意非零 rotation/Group/resource/
   tolerance/scene/RESULT 继续 fail closed。TV1-T50=`resolved/automated_verified`：复用 T49 zero-rotation affine
   interval 实现非空 Group transformed union 与 union-min normalization；Rust/Python 77/77、232 checks，非零
-  child rotation/resource/tolerance/scene/RESULT 继续 fail closed。
+  child rotation/resource/tolerance/scene/RESULT 继续 fail closed。TV1-T51=`resolved/automated_verified`：容量边界内
+  exact-quarter-turn affine Frame/Group HUG AABB 已完成，Rust/Python 83/83、249 checks；非直角 rotation 与
+  quarter-turn cross-axis FILL 继续 fail closed。
 - 日期：2026-08-20
 - Approved delta：[`specs/changes/20260817-template-v1-implementation-authority.md`](../specs/changes/20260817-template-v1-implementation-authority.md)
 - Frozen checkpoint：`0b485f4a13de9d754a81d07f464730776e13c14b`
@@ -123,6 +125,7 @@ binding: generic + project-local tools/run-gate.ps1 + Wayfinder markdown tracker
 | TV1-P5r Resource body integrity kernel | 48 | request-local physical fetch byte budget + caller-supplied body length/SHA-256 | Rust/Python A1/A2；module UNWIRED、resource bytes UNFETCHED；无 HTTPS/decode/Profile |
 | TV1-P5s Zero-rotation affine Frame HUG | 49 | 非空 Frame 以 zero-rotation direct child transformed LayoutBox 最远正端求 resource-free HUG | Rust/Python exact-bit 69/69、209 checks A1/A2；非零 rotation/Group/resource/tolerance fail closed；无 scene/RESULT |
 | TV1-P5t Zero-rotation affine Group HUG | 50 | 非空 Group 以 zero-rotation direct child transformed LayoutBox union 求 HUG，并以 union min 归一化派生 child layout | Rust/Python exact-bit 77/77、232 checks A1/A2；非零 child rotation/resource/tolerance fail closed；无 scene/RESULT |
+| TV1-P5u Exact-quarter-turn affine Frame/Group HUG | 51 | 精确 90 度倍数的 clockwise transformed LayoutBox AABB，复用 Frame extent 与 Group union/normalization | Rust/Python exact-bit 83/83、249 checks A1/A2；非直角 rotation/cross-axis FILL/resource/tolerance fail closed；无 scene/RESULT |
 | TV1-P6a Editor E1 | 27 | trusted canonical current baseline + 显式 readiness recheck + 三模式 Canvas Focus shell | Java/Web/OpenAPI A1；组件未发布，禁止 save/preview/recovery 占位与 READY 声明 |
 | TV1-P6b Editor E2 | 28 | canonical working copy + 结构化本地编辑/undo/redo + preview generation/eligibility guard | Node 24 Web A1；无 API/route/save/preview action，baseline immutable |
 | TV1-P6c Editor E3 | 29 | lossless save + conflict overwrite offer/confirm/reconfirm + conservative unknown lock | Node 24 Web A1；复用既有 API；无 E4–E9/route/reconciliation |
@@ -214,6 +217,7 @@ flowchart LR
   T43 --> T49
   T45 --> T49
   T49 --> T50[50 Zero-rotation affine Group HUG]
+  T50 --> T51[51 Exact-quarter-turn affine Frame/Group HUG]
   T06 --> T27[27 Editor E1 canonical open]
   T09 --> T27
   T20 --> T27
@@ -311,6 +315,7 @@ flowchart LR
 | 48 | task | `resolved` / `automated_verified` | 13, 22, 23, 46, 47；消费 T19 已冻结 physical fetch bytes cell | shared request-local physical-byte budget + caller-supplied body length/SHA-256 deep module；Rust/Python 15/15、34 checks；无 HTTPS/decode/daemon output/Profile |
 | 49 | task | `resolved` / `automated_verified` | 23, 25, 26, 42, 43, 45 | zero-rotation affine 非空 Frame HUG；Rust/Python 69/69、209 checks；任意非零 rotation/resource/tolerance/scene/RESULT 保持 fail closed |
 | 50 | task | `resolved` / `automated_verified` | 23, 25, 26, 42, 43, 45, 49 | zero-rotation affine 非空 Group transformed union/normalization；Rust/Python 77/77、232 checks；非零 child rotation/resource/tolerance/scene/RESULT 保持 fail closed |
+| 51 | task | `resolved` / `automated_verified` | 23, 25, 26, 42, 43, 45, 49, 50 | exact-quarter-turn affine Frame/Group HUG AABB；shared `/14` Rust/Python 83/83、249 checks；非直角 rotation/cross-axis FILL/resource/tolerance/scene/RESULT 保持 fail closed |
 
 每次只 claim 一个 unblocked ticket；一票 resolved 后才由其 `Blocked by` 关系产生下一 frontier。未知实现切片留在
 map 的 `Not yet specified`，不为排满计划提前发明接口、migration 或 Profile identity。
@@ -1385,3 +1390,37 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
   UNFETCHED、world scene/raster ABSENT、daemon output UNWIRED；provider attempts/API Key reads/真实数据/付费调用均为
   0。任意非零 rotation、multiple FILL/FRACTION、跨多 AUTO 平均、resource fetch/decode 与 tolerance-dependent
   语义仍未实现；未推进 A3/J1/READY，未 push/tag/PR。
+
+## 50. TV1-T51 执行卡
+
+- 决策：T50 以 verified commit `f90e127` 收口且 worktree clean 后，复算 Ticket 10/16/19、
+  `RW-T10-S5-011..015`、`RW-T10-S6-014..022` 与当前 layout deep module。容量已冻结 rotation 为
+  `[-360,360]`；精确 90 度倍数可完全避开三角函数与 tolerance，因此登记为当前 single-writer frontier。
+- Interface/seam：只深化 `layout_definite_resource_free(&AdmittedRenderDocument)`；从 exact authored rotation 派生
+  clockwise quadrant，计算 resource-free direct ABSOLUTE child transformed LayoutBox axis interval，并复用既有
+  Frame extent 与 Group union/normalization。返回仍是同一全有或全无 `DefiniteLayout`。
+- 允许影响：T51 tracker/plan/NOTES/log、layout Rust module/tests、shared definite-layout vector `/14`、Python
+  independent verifier、render gate identity/assertions/evidence。
+- 禁止影响：三角函数/epsilon/tolerance、quarter-turn cross-axis FILL offer 求解、Text/Image/Vector intrinsic、
+  multiple Stack FILL、跨多 AUTO 平均、multiple FRACTION、resource fetch/decode/cache、world transform/scene/paint/
+  raster/JPEG、daemon RESULT/success/Profile、Java/OpenAPI/migration/Web/route、formal records、physical Linux/J1/
+  A3/READY 与外部副作用。
+- 精确语义：只接受 `-360/-270/-180/-90/0/90/180/270/360`；top-left canvas 中 scale 后 delta 的 clockwise
+  quadrant 映射依次为 `(u,v)`、`(-v,u)`、`(-u,-v)`、`(v,-u)`。authored value 不归一化，只派生 quadrant；
+  q0 保持 T49/T50 原求值顺序。奇数 quadrant 的 cross axis 必须 FIXED 或 independently resource-free HUG，
+  FILL 稳定 `CHILD_ROTATION`。
+- TDD：shared vector/verifier `/14` 先 RED，覆盖 Frame/Group 的 ±90/180/270/±360、signed position、origin、scale/
+  flip、nested/cross-axis HUG、Frame/Stack/Grid consumption、normalization、q0 regression、cross-axis FILL 与 45 度
+  fail-closed；Rust/Python 分别实现后按 focused → `render` → `server`/`fast` → `full` 扩大。最高
+  `automated_verified`；不 push/tag/PR。
+- 实现：Rust primary 与 Python independent verifier 已分别实现精确 quadrant classifier、axis-preserving/quarter-turn
+  interval 与 cross-axis resource-free geometry；authored rotation 不归一化，q0 保持旧运算路径，odd quadrant
+  cross-axis FILL 稳定 `CHILD_ROTATION`。shared `/14` 为 69 laid-out + 14 unsupported，83/83、249 checks。
+- 验证：focused fmt/clippy `-D warnings`/workspace tests/Python/JSON/diff-check 全绿；A1 `render`
+  `20260822-135159-render`、`server` `20260822-135229-server`、affected `fast` `20260822-141047-fast` 与 Goal
+  `full` `20260822-141108-full` 全绿。full metadata `result=passed`，17 steps exit 0；其中 Node 24 Web
+  26 files/212 tests、runtime canary 与 browser E2E 均通过；resolution 后 final `fast`
+  `20260822-144154-fast` 也通过。
+- 生命周期：`resolved / automated_verified`。Profile NOT_REGISTERED、certification NOT_CERTIFIED、resource bytes
+  UNFETCHED、world scene/raster ABSENT、daemon output UNWIRED；provider attempts/API Key reads/真实数据/付费调用
+  均为 0，未推进 A3/J1/READY，未 push/tag/PR。

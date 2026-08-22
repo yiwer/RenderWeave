@@ -1078,39 +1078,104 @@ def resource_free_absolute_child_axis_interval(
     )
     if placement.get("type") != "ABSOLUTE":
         raise Unsupported("NON_ABSOLUTE_PLACEMENT", child_occurrence)
+    position, size = resource_free_absolute_child_axis_geometry(
+        child,
+        role,
+        placement,
+        axis,
+        child_occurrence,
+        cross_axis_for_quarter_turn=False,
+    )
+    transform = object_value(child.get("transform"), f"{child_occurrence} transform")
+    rotation = required_decimal(
+        transform, "rotationDeg", child_occurrence, "transform.rotationDeg"
+    )
+    quarter_turn = exact_quarter_turn(rotation)
+    if quarter_turn is None:
+        raise Unsupported("CHILD_ROTATION", child_occurrence)
+    if quarter_turn == 0 and rotation == 0.0:
+        return zero_rotation_affine_axis_interval(
+            child, position, size, axis, child_occurrence
+        )
+    if quarter_turn in (0, 2):
+        return axis_preserving_affine_axis_interval(
+            transform,
+            position,
+            size,
+            axis,
+            reverse=quarter_turn == 2,
+            current=child_occurrence,
+        )
+    if axis == "Width":
+        cross_axis = "Height"
+    elif axis == "Height":
+        cross_axis = "Width"
+    else:
+        raise VerificationFailure(f"{child_occurrence} invalid HUG axis")
+    cross_position, cross_size = resource_free_absolute_child_axis_geometry(
+        child,
+        role,
+        placement,
+        cross_axis,
+        child_occurrence,
+        cross_axis_for_quarter_turn=True,
+    )
+    return quarter_turn_affine_axis_interval(
+        transform,
+        position,
+        size,
+        cross_position,
+        cross_size,
+        axis,
+        quarter_turn,
+        child_occurrence,
+    )
+
+
+def resource_free_absolute_child_axis_geometry(
+    child: dict[str, Any],
+    role: str,
+    placement: dict[str, Any],
+    axis: str,
+    current: str,
+    *,
+    cross_axis_for_quarter_turn: bool,
+) -> tuple[float, float]:
     if axis == "Width":
         position_member, mode_member, size_member = "xPt", "widthMode", "widthPt"
     elif axis == "Height":
         position_member, mode_member, size_member = "yPt", "heightMode", "heightPt"
     else:
-        raise VerificationFailure(f"{child_occurrence} invalid HUG axis")
+        raise VerificationFailure(f"{current} invalid HUG axis")
     position = required_decimal(
-        placement,
-        position_member,
-        child_occurrence,
-        f"placement.{position_member}",
+        placement, position_member, current, f"placement.{position_member}"
     )
-    mode = text(
-        placement.get(mode_member), f"{child_occurrence} placement.{mode_member}"
-    )
+    mode = text(placement.get(mode_member), f"{current} placement.{mode_member}")
     if mode == "FIXED":
         size = required_decimal(
-            placement,
-            size_member,
-            child_occurrence,
-            f"placement.{size_member}",
+            placement, size_member, current, f"placement.{size_member}"
         )
     elif mode == "HUG_CONTENT":
-        size = resource_free_hug_axis(
-            child, role, placement, axis, child_occurrence
-        )
+        size = resource_free_hug_axis(child, role, placement, axis, current)
+    elif cross_axis_for_quarter_turn and mode == "FILL":
+        raise Unsupported("CHILD_ROTATION", current)
     else:
         raise VerificationFailure(
-            f"{child_occurrence} invalid placement.{mode_member} in HUG container"
+            f"{current} invalid placement.{mode_member} in HUG container"
         )
-    return zero_rotation_affine_axis_interval(
-        child, position, size, axis, child_occurrence
-    )
+    return position, size
+
+
+def exact_quarter_turn(rotation: float) -> int | None:
+    if rotation in (-360.0, 0.0, 360.0):
+        return 0
+    if rotation in (-270.0, 90.0):
+        return 1
+    if rotation in (-180.0, 180.0):
+        return 2
+    if rotation in (-90.0, 270.0):
+        return 3
+    return None
 
 
 def zero_rotation_affine_axis_interval(
@@ -1147,6 +1212,116 @@ def zero_rotation_affine_axis_interval(
     far_scaled = finite_transform_value(scale * far_delta, current)
     far = finite_transform_value(transform_origin + far_scaled, current)
     return min(near, far), max(near, far)
+
+
+def axis_preserving_affine_axis_interval(
+    transform: dict[str, Any],
+    position: float,
+    size: float,
+    axis: str,
+    *,
+    reverse: bool,
+    current: str,
+) -> tuple[float, float]:
+    if axis == "Width":
+        origin_member, scale_member = "originX", "scaleX"
+    elif axis == "Height":
+        origin_member, scale_member = "originY", "scaleY"
+    else:
+        raise VerificationFailure(f"{current} invalid HUG axis")
+    origin_ratio = required_decimal(
+        transform, origin_member, current, f"transform.{origin_member}"
+    )
+    scale = required_decimal(
+        transform, scale_member, current, f"transform.{scale_member}"
+    )
+    if scale == 0.0:
+        raise VerificationFailure(f"{current} transform.{scale_member} is zero")
+
+    origin_offset = finite_transform_value(origin_ratio * size, current)
+    transform_origin = finite_transform_value(position + origin_offset, current)
+    near_delta = finite_transform_value(position - transform_origin, current)
+    near_scaled = finite_transform_value(scale * near_delta, current)
+    near = signed_transform_endpoint(transform_origin, near_scaled, reverse, current)
+    far_position = finite_transform_value(position + size, current)
+    far_delta = finite_transform_value(far_position - transform_origin, current)
+    far_scaled = finite_transform_value(scale * far_delta, current)
+    far = signed_transform_endpoint(transform_origin, far_scaled, reverse, current)
+    return min(near, far), max(near, far)
+
+
+def quarter_turn_affine_axis_interval(
+    transform: dict[str, Any],
+    target_position: float,
+    target_size: float,
+    source_position: float,
+    source_size: float,
+    axis: str,
+    quarter_turn: int,
+    current: str,
+) -> tuple[float, float]:
+    members = {
+        ("Width", 1): ("originX", "originY", "scaleY", True),
+        ("Height", 1): ("originY", "originX", "scaleX", False),
+        ("Width", 3): ("originX", "originY", "scaleY", False),
+        ("Height", 3): ("originY", "originX", "scaleX", True),
+    }
+    try:
+        target_origin_member, source_origin_member, source_scale_member, reverse = (
+            members[(axis, quarter_turn)]
+        )
+    except KeyError as error:
+        raise VerificationFailure(f"{current} invalid quarter turn") from error
+
+    target_origin_ratio = required_decimal(
+        transform,
+        target_origin_member,
+        current,
+        f"transform.{target_origin_member}",
+    )
+    source_origin_ratio = required_decimal(
+        transform,
+        source_origin_member,
+        current,
+        f"transform.{source_origin_member}",
+    )
+    source_scale = required_decimal(
+        transform,
+        source_scale_member,
+        current,
+        f"transform.{source_scale_member}",
+    )
+    if source_scale == 0.0:
+        raise VerificationFailure(f"{current} transform.{source_scale_member} is zero")
+
+    target_origin_offset = finite_transform_value(
+        target_origin_ratio * target_size, current
+    )
+    target_origin = finite_transform_value(
+        target_position + target_origin_offset, current
+    )
+    source_origin_offset = finite_transform_value(
+        source_origin_ratio * source_size, current
+    )
+    source_origin = finite_transform_value(
+        source_position + source_origin_offset, current
+    )
+    near_delta = finite_transform_value(source_position - source_origin, current)
+    near_scaled = finite_transform_value(source_scale * near_delta, current)
+    near = signed_transform_endpoint(target_origin, near_scaled, reverse, current)
+    far_position = finite_transform_value(source_position + source_size, current)
+    far_delta = finite_transform_value(far_position - source_origin, current)
+    far_scaled = finite_transform_value(source_scale * far_delta, current)
+    far = signed_transform_endpoint(target_origin, far_scaled, reverse, current)
+    return min(near, far), max(near, far)
+
+
+def signed_transform_endpoint(
+    origin: float, scaled_delta: float, reverse: bool, current: str
+) -> float:
+    if reverse:
+        return finite_transform_value(origin - scaled_delta, current)
+    return finite_transform_value(origin + scaled_delta, current)
 
 
 def finite_transform_value(value: float, current: str) -> float:
@@ -1645,7 +1820,7 @@ def verify(
         "vector manifest",
     )
     verifier.require(
-        vectors["vectorVersion"] == "renderweave-definite-layout-vectors/13",
+        vectors["vectorVersion"] == "renderweave-definite-layout-vectors/14",
         "vector identity drifted",
     )
     authority = exact_members(
@@ -1698,7 +1873,7 @@ def verify(
     expected_boundary = {
         "profileAvailability": "NOT_REGISTERED",
         "certificationStatus": "NOT_CERTIFIED",
-        "layoutImplementation": "RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_SINGLE_MAIN_FILL_AND_FIXED_SINGLE_FRACTION_INDEPENDENT_MULTI_AUTO_GRID_EMPTY_CONTAINER_STACK_HUG_GRID_AUTO_HUG_CONTRIBUTION_GRID_HUG_ZERO_ROTATION_AFFINE_FRAME_HUG_GROUP_HUG_NORMALIZATION_BOX_KERNEL",
+        "layoutImplementation": "RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_SINGLE_MAIN_FILL_AND_FIXED_SINGLE_FRACTION_INDEPENDENT_MULTI_AUTO_GRID_EMPTY_CONTAINER_STACK_HUG_GRID_AUTO_HUG_CONTRIBUTION_GRID_HUG_EXACT_QUARTER_TURN_AFFINE_FRAME_GROUP_HUG_NORMALIZATION_BOX_KERNEL",
         "worldTransformImplementation": "ABSENT",
         "sceneImplementation": "ABSENT",
         "rasterImplementation": "ABSENT",
@@ -1736,9 +1911,9 @@ def verify(
         == "renderweave-layout-preflight-fixtures/1",
         "layout preflight fixture identity drifted",
     )
-    verifier.require(len(vectors["laidOutCases"]) == 64, "laid-out case count drifted")
+    verifier.require(len(vectors["laidOutCases"]) == 69, "laid-out case count drifted")
     verifier.require(
-        len(vectors["unsupportedCases"]) == 13,
+        len(vectors["unsupportedCases"]) == 14,
         "unsupported case count drifted",
     )
 
@@ -1786,7 +1961,7 @@ def verify(
             raise VerificationFailure(f"{case_id}: unsupported case produced a layout")
 
     return {
-        "verifier": "renderweave-definite-layout-python-independent/13",
+        "verifier": "renderweave-definite-layout-python-independent/14",
         "result": "PASS",
         "assurance": "A2",
         "laidOutCases": len(vectors["laidOutCases"]),

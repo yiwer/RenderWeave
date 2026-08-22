@@ -255,6 +255,11 @@ Label: wayfinder:map
   **resolved / automated_verified**；复用 T49 axis interval，对资源无关 direct ABSOLUTE child 求二维 union，以
   union min 归一化派生 child layout 并保持 Group placement 为 normalized union 左上角；shared `/13` Rust/Python
   为 77/77、232 checks。非零 child rotation、resource、tolerance、scene/raster/RESULT/Profile 继续 fail closed。
+- [实现 exact-quarter-turn affine 非空 Frame/Group HUG AABB 子闭包](issues/51-exact-quarter-turn-frame-group-hug-layout.md) —
+  **resolved / automated_verified**；只对 `[-360,360]` 内 binary64 精确 90 度倍数派生 clockwise quadrant，以
+  加减乘/min/max 扩展 T49/T50 transformed interval；shared `/14` Rust/Python 为 83/83、249 checks。奇数
+  quadrant 只接受两轴 FIXED 或 independently resource-free HUG；cross-axis FILL、非直角 rotation、
+  resource/tolerance/scene/raster/RESULT/Profile 继续 fail closed。
 - [验证 Product Editor 状态、恢复与权威预览架构](issues/09-validate-product-editor-architecture.md) —
   throwaway 逻辑原型（`/prototype/editor-state-model`，不进产品 route）把冻结编辑器规则编码为确定性
   fixture 状态机：10 个引导走查场景 37/37 断言 + 自由操作冒烟 + 键盘焦点检查全部通过（Playwright A1，
@@ -348,8 +353,9 @@ Label: wayfinder:map
   完成 Stack 的资源无关非空 HUG；T44 已完成 definite Grid 的资源无关 HUG child AUTO contribution；T45 已
   完成 owning Grid 的资源无关非空 HUG intrinsic；T46 已完成 RenderResource manifest defensive admission；
   T47 已完成 Command/resource lease coverage admission；T48 已完成 resource body integrity kernel；T49 已完成
-  zero-rotation affine 非空 Frame HUG；T50 已完成 zero-rotation affine 非空 Group HUG union/normalization；其余任意
-  非零 rotation Frame/Group HUG、multiple Stack main-axis FILL/跨多个 AUTO 的平均
+  zero-rotation affine 非空 Frame HUG；T50 已完成 zero-rotation affine 非空 Group HUG union/normalization；T51
+  已完成 exact-quarter-turn affine Frame/Group HUG AABB（Rust/Python 83/83、249 checks）；其余非直角 rotation、
+  quarter-turn cross-axis FILL、multiple Stack main-axis FILL/跨多个 AUTO 的平均
   deficit/multiple FRACTION/actual resource fetch+decode/world scene/raster/
   JPEG/Engine 接线仍须另行登记，物理 Linux 双 CPU-family
   认证与 J1/A3 属届时另行授权的执行级门控。
