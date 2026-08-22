@@ -1,6 +1,17 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-22 **Template v1 implementation TV1-T59 已由 Codex `/root` single-writer 完成，状态
+  `resolved/automated_verified`**：ABSOLUTE `widthMode=FILL,heightMode=HUG_CONTENT` Grid 现在可从 parent ContentBox
+  width 按 x/right inset、positive-zero、min→max 求 final outer width，再扣自身 stroke/padding，以 definite content
+  width 严格按 columns→rows 求 cross-HUG；T53 ABSOLUTE Frame 链可组合，Grid-in-Grid owning offer 不扩散。
+  shared `/22` 的 Rust/Python 为 103 laid-out + 15 unsupported、118/118、353 checks，SHA-256
+  `badb4f416c1d8720237e643d68d37b8c8e4df1e96c3d2b05fbfedeb6eb47e348`。focused、`render`、affected `fast`、
+  顺序 `server` 与 `full` 全绿；Goal 证据 `.sdlc/evidence/20260822-230253-full/` 的 17 steps 均 exit 0，Node 24
+  Web 26 files/212 tests、runtime canary、23 passed + 1 skipped Playwright E2E 与 browser journeys 均通过；
+  resolution 后 fast `.sdlc/evidence/20260822-233225-fast/` 也通过。
+  Grid-in-Grid owning offer、rows→columns feedback、multiple FILL/FRACTION、一般 constraint/tolerance、resource/
+  scene/raster/RESULT/Profile 继续 fail closed；provider/API Key/真实数据/费用均为 0，未 push/tag/PR。
 - 2026-08-22 **Template v1 implementation TV1-T58 已由 Codex `/root` single-writer 完成，状态
   `resolved/automated_verified`**：ROW Stack singleton main-FILL Grid 现在会在 final `ResolvedOuter` width 分配后，
   扣除自身 stroke/padding，以 definite content width 严格按 columns-first 解 columns→rows，并只执行一次

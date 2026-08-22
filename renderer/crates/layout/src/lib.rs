@@ -2611,8 +2611,23 @@ fn definite_grid_column_content_offer(
     if size_mode(placement, "widthMode", occurrence)? != SizeMode::Fill {
         return Ok(None);
     }
-    let Some(HugOppositeAxisOffer::ResolvedOuter(width)) = opposite_axis_offer else {
+    let Some(opposite_axis_offer) = opposite_axis_offer else {
         return Ok(None);
+    };
+    let width = match opposite_axis_offer {
+        HugOppositeAxisOffer::ResolvedOuter(width) => width,
+        HugOppositeAxisOffer::AbsoluteParentContent(parent_width) => {
+            let authored_x = binary64_member(placement, "xPt", occurrence, "placement.xPt")?;
+            definite_axis_size(
+                placement,
+                SizeMode::Fill,
+                parent_width,
+                authored_x,
+                "Width",
+                "rightInsetPt",
+                occurrence,
+            )?
+        }
     };
     let content_width = container_axis_content_size(grid, width, "Width", occurrence)?;
     if !content_width.is_finite() {

@@ -1861,10 +1861,27 @@ def definite_grid_column_content_offer(
 ) -> float | None:
     if placement.get("widthMode") != "FILL":
         return None
-    if opposite_axis_offer is None or opposite_axis_offer.source != "RESOLVED_OUTER":
+    if opposite_axis_offer is None:
         return None
+    if opposite_axis_offer.source == "RESOLVED_OUTER":
+        outer_width = opposite_axis_offer.size
+    elif opposite_axis_offer.source == "ABSOLUTE_PARENT_CONTENT":
+        authored_x = required_decimal(
+            placement, "xPt", current, "placement.xPt"
+        )
+        outer_width = definite_axis_size(
+            placement,
+            "FILL",
+            opposite_axis_offer.size,
+            authored_x,
+            "Width",
+            "rightInsetPt",
+            current,
+        )
+    else:
+        raise VerificationFailure(f"{current} invalid Grid column offer source")
     content_width = container_axis_content_size(
-        grid, opposite_axis_offer.size, "Width", current
+        grid, outer_width, "Width", current
     )
     if not (-float("inf") < content_width < float("inf")):
         raise VerificationFailure(
@@ -2418,7 +2435,7 @@ def verify(
         "vector manifest",
     )
     verifier.require(
-        vectors["vectorVersion"] == "renderweave-definite-layout-vectors/21",
+        vectors["vectorVersion"] == "renderweave-definite-layout-vectors/22",
         "vector identity drifted",
     )
     authority = exact_members(
@@ -2471,7 +2488,7 @@ def verify(
     expected_boundary = {
         "profileAvailability": "NOT_REGISTERED",
         "certificationStatus": "NOT_CERTIFIED",
-        "layoutImplementation": "RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_SINGLE_MAIN_FILL_AND_FIXED_SINGLE_FRACTION_INDEPENDENT_MULTI_AUTO_GRID_EMPTY_CONTAINER_STACK_HUG_GRID_AUTO_HUG_CONTRIBUTION_GRID_HUG_EXACT_QUARTER_TURN_AFFINE_FRAME_GROUP_HUG_FIXED_OPPOSITE_AXIS_CROSS_FILL_DEFINITE_ABSOLUTE_PARENT_OFFER_DEFINITE_STACK_CROSS_OUTER_OFFER_STACK_MAIN_FILL_CROSS_HUG_REMEASURE_NESTED_STACK_MAIN_OFFER_PROPAGATION_COLUMNS_FIRST_GRID_CELL_OUTER_OFFER_STACK_MAIN_OFFER_COLUMNS_FIRST_GRID_CROSS_HUG_NORMALIZATION_BOX_KERNEL",
+        "layoutImplementation": "RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_SINGLE_MAIN_FILL_AND_FIXED_SINGLE_FRACTION_INDEPENDENT_MULTI_AUTO_GRID_EMPTY_CONTAINER_STACK_HUG_GRID_AUTO_HUG_CONTRIBUTION_GRID_HUG_EXACT_QUARTER_TURN_AFFINE_FRAME_GROUP_HUG_FIXED_OPPOSITE_AXIS_CROSS_FILL_DEFINITE_ABSOLUTE_PARENT_OFFER_DEFINITE_STACK_CROSS_OUTER_OFFER_STACK_MAIN_FILL_CROSS_HUG_REMEASURE_NESTED_STACK_MAIN_OFFER_PROPAGATION_COLUMNS_FIRST_GRID_CELL_OUTER_OFFER_STACK_MAIN_OFFER_COLUMNS_FIRST_GRID_CROSS_HUG_ABSOLUTE_PARENT_OFFER_COLUMNS_FIRST_GRID_CROSS_HUG_NORMALIZATION_BOX_KERNEL",
         "worldTransformImplementation": "ABSENT",
         "sceneImplementation": "ABSENT",
         "rasterImplementation": "ABSENT",
@@ -2509,7 +2526,7 @@ def verify(
         == "renderweave-layout-preflight-fixtures/1",
         "layout preflight fixture identity drifted",
     )
-    verifier.require(len(vectors["laidOutCases"]) == 99, "laid-out case count drifted")
+    verifier.require(len(vectors["laidOutCases"]) == 103, "laid-out case count drifted")
     verifier.require(
         len(vectors["unsupportedCases"]) == 15,
         "unsupported case count drifted",
@@ -2559,7 +2576,7 @@ def verify(
             raise VerificationFailure(f"{case_id}: unsupported case produced a layout")
 
     return {
-        "verifier": "renderweave-definite-layout-python-independent/21",
+        "verifier": "renderweave-definite-layout-python-independent/22",
         "result": "PASS",
         "assurance": "A2",
         "laidOutCases": len(vectors["laidOutCases"]),

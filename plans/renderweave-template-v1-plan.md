@@ -70,7 +70,10 @@
   future-row feedback 与一般 constraint/tolerance 保持 fail closed。TV1-T58=`resolved/automated_verified`：ROW Stack
   singleton main-FILL 已解析 outer width 扣除 Grid stroke/padding 后，可驱动 columns-first Grid cross HUG 单次重测；
   shared `/21` 114 cases/341 checks。ABSOLUTE parent→Grid、Grid-in-Grid owning offer、rows→columns feedback 与一般
-  constraint/tolerance 继续 fail closed。
+  constraint/tolerance 继续 fail closed。TV1-T59=`resolved/automated_verified`：ABSOLUTE
+  `widthMode=FILL,heightMode=HUG_CONTENT` Grid 已可从 `AbsoluteParentContent` 解析 final outer width，再扣自身
+  stroke/padding 并严格 columns→rows；shared `/22` 118 cases/353 checks。Grid-in-Grid owning offer、反向
+  feedback 与一般 constraint/tolerance 保持 fail closed。
 - 日期：2026-08-20
 - Approved delta：[`specs/changes/20260817-template-v1-implementation-authority.md`](../specs/changes/20260817-template-v1-implementation-authority.md)
 - Frozen checkpoint：`0b485f4a13de9d754a81d07f464730776e13c14b`
@@ -151,6 +154,7 @@ binding: generic + project-local tools/run-gate.ps1 + Wayfinder markdown tracker
 | TV1-P5z Nested Stack main-offer propagation | 56 | 同轴 nested Stack 链逐层消费最终 main outer offer并单次重测 cross-HUG | Rust/Python exact-bit A1/A2；Grid/multiple FILL/general constraint/非直角 rotation/resource/tolerance fail closed；无 scene/RESULT |
 | TV1-P5aa Columns-first Grid cell offer | 57 | direct GRID Frame 消费 opposite-axis resolved cell outer offer；row AUTO 单向读取已完成 column width | Rust/Python exact-bit 110/110、329 checks A1/A2；column-from-row/nested Stack→Grid/general constraint/tolerance fail closed；无 scene/RESULT |
 | TV1-P5ab Stack main offer → columns-first Grid cross HUG | 58 | ROW Stack singleton main-FILL final outer width 驱动 Grid columns-first cross-HUG 单次重测 | Rust/Python exact-bit 114/114、341 checks A1/A2；ABSOLUTE parent→Grid/Grid-in-Grid owning offer/rows→columns/general constraint/tolerance fail closed；无 scene/RESULT |
+| TV1-P5ac ABSOLUTE parent offer → columns-first Grid cross HUG | 59 | ABSOLUTE FILL outer width 经 inset/min-max/ContentBox 驱动 Grid columns-first cross-HUG | Rust/Python exact-bit 118/118、353 checks A1/A2；Grid-in-Grid owning offer/rows→columns/general constraint/tolerance fail closed；无 scene/RESULT |
 | TV1-P6a Editor E1 | 27 | trusted canonical current baseline + 显式 readiness recheck + 三模式 Canvas Focus shell | Java/Web/OpenAPI A1；组件未发布，禁止 save/preview/recovery 占位与 READY 声明 |
 | TV1-P6b Editor E2 | 28 | canonical working copy + 结构化本地编辑/undo/redo + preview generation/eligibility guard | Node 24 Web A1；无 API/route/save/preview action，baseline immutable |
 | TV1-P6c Editor E3 | 29 | lossless save + conflict overwrite offer/confirm/reconfirm + conservative unknown lock | Node 24 Web A1；复用既有 API；无 E4–E9/route/reconciliation |
@@ -250,6 +254,7 @@ flowchart LR
   T55 --> T56[56 Nested Stack main-offer propagation]
   T56 --> T57[57 Columns-first Grid cell offer]
   T57 --> T58[58 Stack main offer to Grid cross HUG]
+  T58 --> T59[59 ABSOLUTE parent offer to Grid cross HUG]
   T06 --> T27[27 Editor E1 canonical open]
   T09 --> T27
   T20 --> T27
@@ -355,6 +360,7 @@ flowchart LR
 | 56 | task | `resolved` / `automated_verified` | 23, 25, 26, 33, 38, 43, 49, 50, 51, 52, 53, 54, 55 | 同轴 nested Stack 链逐层 main offer → cross-HUG 单次重测；shared `/19` Rust/Python 105/105、315 checks；Grid/multiple FILL/general constraint/非直角 rotation/resource/tolerance/scene/RESULT 保持 fail closed |
 | 57 | task | `resolved` / `automated_verified` | 23, 25, 26, 34, 39, 40, 41, 44, 45, 49, 50, 51, 52, 53, 56 | direct GRID Frame typed cell outer offer + columns-first row AUTO contribution；shared `/20` Rust/Python 110/110、329 checks；reverse feedback/nested Stack→Grid/general constraint/tolerance 保持 fail closed |
 | 58 | task | `resolved / automated_verified` | 23, 25, 26, 33, 34, 38, 39, 40, 41, 44, 45, 49, 50, 51, 52, 53, 54, 55, 56, 57 | ROW Stack singleton main-FILL resolved outer width → Grid ContentBox → columns-first rows 的一次 cross-HUG 重测；shared `/21` Rust/Python 114/114、341 checks；ABSOLUTE parent→Grid/Grid-in-Grid owning offer/reverse feedback/general constraint/tolerance 保持 fail closed |
+| 59 | task | `resolved / automated_verified` | 23, 25, 26, 34, 39, 40, 41, 44, 45, 49, 50, 51, 52, 53, 57, 58 | ABSOLUTE parent ContentBox width → Grid FILL outer inset/min-max → ContentBox → columns-first rows；shared `/22` Rust/Python 118/118、353 checks；Grid-in-Grid owning offer/reverse feedback/general constraint/tolerance 保持 fail closed |
 
 每次只 claim 一个 unblocked ticket；一票 resolved 后才由其 `Blocked by` 关系产生下一 frontier。未知实现切片留在
 map 的 `Not yet specified`，不为排满计划提前发明接口、migration 或 Profile identity。
@@ -1731,3 +1737,48 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
   `STACK_MAIN_OFFER_COLUMNS_FIRST_GRID_CROSS_HUG`；Profile NOT_REGISTERED、resource bytes UNFETCHED、scene/raster
   ABSENT、daemon output UNWIRED；provider attempts/API Key reads/reservations/cost、真实数据与付费调用均为 0，
   未推进 A3/J1/READY，未 push/tag/PR。
+
+## 58. TV1-T59 执行卡
+
+- 决策：T58 以 verified commit `c9da61f` 收口且 worktree clean 后，复算原始 Ticket 10 §5/§8、
+  `RW-T10-S5-006..009`、剩余 unsupported corpus 与 layout 调用图。multiple FILL/FRACTION、跨多 AUTO 平均、
+  arbitrary rotation 与 resource/scene 分别仍依赖 tolerance 或执行身份；already-definite ABSOLUTE parent
+  ContentBox width 则可复用 T53 typed offer 与 T57/T58 columns-first writer，不需要 fixed point，因此登记为当前
+  single-writer frontier。
+- Interface/seam：只深化 `definite_grid_column_content_offer` 的 source-specific outer-width 解析；
+  `AbsoluteParentContent` 先按 ABSOLUTE x/right inset、positive-zero、min→max 得到 Grid outer width，随后与
+  `ResolvedOuter` 共用既有 Grid ContentBox floor-zero 与 columns→rows 流程。public 入口、admission/preflight、
+  authored DFS 与全有或全无输出不变。
+- 允许影响：T59 tracker/plan/NOTES、layout Rust module/tests、shared definite-layout vector `/22`、Python
+  independent verifier、render gate identity/assertions/evidence。
+- 禁止影响：Grid-in-Grid owning offer、column AUTO 读取 future rows、跨多 AUTO 平均、multiple Stack FILL/
+  FRACTION、一般 `UNBOUNDED/AT_MOST/EXACT` constraint engine、双向 HUG、三角函数/epsilon/tolerance、
+  Text/Image/Vector intrinsic、resource fetch/decode/cache、world scene/paint/raster/JPEG、daemon RESULT/success/
+  Profile、Java/OpenAPI/migration/Web/route、formal records、physical Linux/J1/A3/READY 与外部副作用。
+- 精确语义：仅 ABSOLUTE Grid `widthMode=FILL,heightMode=HUG_CONTENT` 消费
+  `AbsoluteParentContent(parentContent.width)`；outer width 固定为
+  `clamp(max(0,parentWidth-xPt-rightInsetPt),minWidthPt,maxWidthPt)`，再扣 Grid inward stroke/padding并 floor-zero。
+  columns 完整求解后 rows 才以 `RowsAfterColumns` 求值；rows 不回写 columns/outer width。T53 ABSOLUTE Frame
+  链可组合；Grid cell `ResolvedOuter` 仍只对 direct Frame 开放。
+- TDD：shared vector/verifier `/22` 先共同 RED；既有 ABSOLUTE parent→Grid negative 转 positive，新增 final
+  inset/clamp + Grid ContentBox、nested ABSOLUTE Frame、negative remainder + min clamp 三个 positive，并新增
+  Grid-in-Grid owning offer negative。目标 103 laid-out + 15 unsupported、118 cases/353 checks。Rust/Python
+  分别实现后按 focused → `render` → 顺序 `fast`/`server` → `full` 扩大；最高 `automated_verified`，不
+  push/tag/PR。
+- 实施：Rust 只在 `definite_grid_column_content_offer` 的 `AbsoluteParentContent` source 分支复用既有
+  `definite_axis_size`，以 parent content width、x/right inset、positive-zero 与 min→max 得到 final Grid outer
+  width，再与 `ResolvedOuter` 共用 Grid ContentBox floor-zero 和 columns→`RowsAfterColumns` 流程。Python
+  independent verifier 以独立 source discriminator 与自身 `definite_axis_size` 分支复演；public API、writer role、
+  admission/preflight、authored DFS 与全有或全无输出均未改变。
+- TDD/验证：四个 positive vectors 在 Rust/Python 先共同以 `CHILD_ROTATION` RED，再分别到 exact-bit GREEN；
+  Grid-in-Grid owning offer negative 继续 fail closed。focused Rust 3/3 与 Python 118/118、353 checks，workspace
+  fmt/clippy `-D warnings`/tests、`py_compile`、JSON inventory 与 diff-check 全绿。A1 `render`
+  `20260822-224329-render`、affected `fast` `20260822-224357-fast`、顺序 `server`
+  `20260822-224415-server` 与 Goal `full` `20260822-230253-full` 全绿；full 17 steps 均 exit 0，resolution 后 fast
+  `20260822-233225-fast` 也通过。
+- identity/边界：vector SHA-256
+  `badb4f416c1d8720237e643d68d37b8c8e4df1e96c3d2b05fbfedeb6eb47e348`；fixture `/3` SHA-256 保持
+  `a11475bcebad7e1c35cb0acd7018419d94afcb4b37d7f1df7346a055ad1df669`。layout implementation identity 追加
+  `ABSOLUTE_PARENT_OFFER_COLUMNS_FIRST_GRID_CROSS_HUG`；Profile NOT_REGISTERED、resource bytes UNFETCHED、
+  scene/raster ABSENT、daemon output UNWIRED；provider attempts/API Key reads/reservations/cost、真实数据与付费调用
+  均为 0，未推进 A3/J1/READY，未 push/tag/PR。
