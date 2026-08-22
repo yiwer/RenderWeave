@@ -216,10 +216,12 @@ class RenderDocumentContractTest {
         assertEquals(frozen, canonical);
         var vectors = JSON.readTree(Files.readAllBytes(
                 repoFile("renderer/render-document-vectors-v1.json")));
-        assertEquals("renderweave-render-document-vectors/2",
+        assertEquals("renderweave-render-document-vectors/3",
                 vectors.get("vectorVersion").asText());
-        assertEquals("TYPED_MANIFEST_STATIC_PREFLIGHT_ONLY",
+        assertEquals("TYPED_MANIFEST_AND_COMMAND_LEASE_PREFLIGHT_ONLY",
                 vectors.get("authorityContext").get("resourceAdmission").asText());
+        assertEquals(5_000,
+                vectors.get("authorityContext").get("leaseSafetyMarginMillis").asInt());
         assertEquals("sha256:" + HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256")
                         .digest(Files.readAllBytes(repoFile(vectors.get("authorityContext")
                                 .get("catalogPath").asText())))),
@@ -256,6 +258,7 @@ class RenderDocumentContractTest {
         assertEquals(12, vectors.get("negativeCases").size());
         assertEquals(42, vectors.get("resourceCases").size());
         assertEquals(19, vectors.get("resourceAggregateCases").size());
+        assertEquals(8, vectors.get("resourceLeaseCases").size());
     }
 
     private static JsonNode seal(Materializer.MaterializedNode canvas) throws Exception {

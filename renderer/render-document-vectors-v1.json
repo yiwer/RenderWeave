@@ -1,5 +1,5 @@
 {
-  "vectorVersion": "renderweave-render-document-vectors/2",
+  "vectorVersion": "renderweave-render-document-vectors/3",
   "authorityContext": {
     "catalogVersion": "renderweave-render-node-contract-v1/2",
     "catalogPath": "renderweave-rendering/src/main/resources/cn/hbads/renderweave/rendering/render-node-contract-v1.json",
@@ -9,7 +9,8 @@
     "profileAvailability": "NOT_REGISTERED",
     "certificationStatus": "NOT_CERTIFIED",
     "rasterImplementation": "ABSENT",
-    "resourceAdmission": "TYPED_MANIFEST_STATIC_PREFLIGHT_ONLY",
+    "resourceAdmission": "TYPED_MANIFEST_AND_COMMAND_LEASE_PREFLIGHT_ONLY",
+    "leaseSafetyMarginMillis": 5000,
     "resourceLimits": {
       "entries": 2048,
       "uniqueExactContents": 128,
@@ -126,5 +127,15 @@
     {"id": "same-content-same-descriptor-admitted", "kind": "font", "count": 2, "uniqueContents": 1, "byteLength": 1, "expected": "ADMITTED"},
     {"id": "same-content-descriptor-drift-rejected", "kind": "font", "count": 2, "uniqueContents": 1, "byteLength": 1, "descriptorDriftAtIndex": 1, "expected": "REJECTED"},
     {"id": "manifest-and-url-envelope-rejected", "kind": "font", "count": 2048, "uniqueContents": 1, "byteLength": 1, "fetchUrlUtf8Bytes": 2048, "expected": "REJECTED"}
+  ],
+  "resourceLeaseCases": [
+    {"id": "resource-free-admitted", "baseCase": "minimal-default-explicit", "deadlineEpochMillis": 4090912496789, "expiresAtEpochSeconds": [], "expected": "ADMITTED"},
+    {"id": "margin-below-rejected", "baseCase": "all-static-kinds-default-explicit", "deadlineEpochMillis": 1800000000001, "expiresAtEpochSeconds": [1800000005, 1800000006], "expected": "REJECTED", "expectedResourceId": "rwres_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
+    {"id": "margin-at-admitted", "baseCase": "all-static-kinds-default-explicit", "deadlineEpochMillis": 1800000000000, "expiresAtEpochSeconds": [1800000005, 1800000005], "expected": "ADMITTED"},
+    {"id": "margin-above-admitted", "baseCase": "all-static-kinds-default-explicit", "deadlineEpochMillis": 1800000000999, "expiresAtEpochSeconds": [1800000006, 1800000006], "expected": "ADMITTED"},
+    {"id": "java-ceil-second-admitted", "baseCase": "all-static-kinds-default-explicit", "deadlineEpochMillis": 4090912496789, "expiresAtEpochSeconds": [4090912502, 4090912502], "expected": "ADMITTED"},
+    {"id": "manifest-first-failure-rejected", "baseCase": "all-static-kinds-default-explicit", "deadlineEpochMillis": 1800000000002, "expiresAtEpochSeconds": [1800000005, 1800000005], "expected": "REJECTED", "expectedResourceId": "rwres_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
+    {"id": "second-resource-first-failure-rejected", "baseCase": "all-static-kinds-default-explicit", "deadlineEpochMillis": 1800000000001, "expiresAtEpochSeconds": [1800000006, 1800000005], "expected": "REJECTED", "expectedResourceId": "rwres_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"},
+    {"id": "maximum-epoch-expiry-admitted", "baseCase": "all-static-kinds-default-explicit", "deadlineEpochMillis": 253402300799999, "expiresAtEpochSeconds": [18446744073709551615, 18446744073709551615], "expected": "ADMITTED"}
   ]
 }

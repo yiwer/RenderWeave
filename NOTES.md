@@ -1,6 +1,14 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-22 **Template v1 implementation TV1-T47 已 `resolved/automated_verified`**：document deep module 以
+  `i128` 精确证明每个 typed RenderResource lease 覆盖 Command deadline 后 5000ms；5000 接受、4999 拒绝，
+  daemon 在 layout/fetch/raster/RESULT 前按 manifest order 返回并缓存首个
+  `RESOURCE_LEASE_EXPIRED/COMMAND_ADMISSION` + opaque resourceId。shared vector/Python verifier `/3` 为 14
+  document + 42 scalar/descriptor + 19 aggregate + 8 lease、83/83、106 checks；`render`
+  `.sdlc/evidence/20260822-075544-render/`、`server` `.sdlc/evidence/20260822-075614-server/`、治理前 `fast`
+  `.sdlc/evidence/20260822-081600-fast/` 均绿。canonical HTTPS/app-origin、actual fetch/attempt-time checks/bytes/
+  decode/scene/raster/RESULT/Profile 仍未实现；provider/API Key/真实数据/付费调用均为 0，未 push/tag/PR。
 - 2026-08-22 **Template v1 implementation TV1-T46 已 `resolved/automated_verified`**：sealed RenderResource
   manifest 现由 Rust document deep module 收敛为 typed/fail-closed Engine input，并在 fetch 前重验 closed scalar/
   kind-media/IMAGE+FONT descriptor、per-content、occurrence/unique exact-content、manifest 与 URL 静态容量。

@@ -41,7 +41,10 @@
   intrinsic；Rust/Python 64/64、193 checks。FRACTION-on-HUG、Frame/Group、resource/transform/tolerance/
   scene/RESULT 继续 fail closed。TV1-T46=`resolved/automated_verified`：RenderResource manifest 的 typed
   defensive admission、closed scalar/descriptor 与 fetch-before Ticket 19 静态容量已完成；Rust/Python 75/75、
-  97 checks；actual HTTPS/bytes/decode/scene/RESULT 继续 fail closed。
+  97 checks；actual HTTPS/bytes/decode/scene/RESULT 继续 fail closed。TV1-T47=`resolved/automated_verified`：
+  Command deadline + 5000ms 对每个 typed resource lease 的覆盖准入与 manifest-order first error 已完成；
+  Rust/Python 83/83、106 checks；URL/fetch/attempt-time checks/actual bytes/decode/scene/RESULT/Profile 继续
+  fail closed。
 - 日期：2026-08-20
 - Approved delta：[`specs/changes/20260817-template-v1-implementation-authority.md`](../specs/changes/20260817-template-v1-implementation-authority.md)
 - Frozen checkpoint：`0b485f4a13de9d754a81d07f464730776e13c14b`
@@ -110,6 +113,7 @@ binding: generic + project-local tools/run-gate.ps1 + Wayfinder markdown tracker
 | TV1-P5n Grid HUG child AUTO contribution | 44 | definite Grid AUTO 消费 T42/T43 资源无关 HUG intrinsic | Rust/Python exact-bit A1/A2；跨多 AUTO/Frame/Grid/Group/resource/tolerance fail closed；无 scene/RESULT |
 | TV1-P5o Resource-free Grid HUG | 45 | 非空 Grid HUG 轴复用 FIXED/independent AUTO/HUG child contribution 与 gaps | Rust/Python exact-bit A1/A2；FRACTION-on-HUG/跨多 AUTO/Frame/Group/resource/tolerance fail closed；无 scene/RESULT |
 | TV1-P5p RenderResource manifest admission | 46 | typed sealed resource + closed scalar/descriptor + fetch-before static budgets | Rust/Python A1/A2；无 HTTPS/actual bytes/decode/cache/scene/RESULT/Profile |
+| TV1-P5q Command/resource lease admission | 47 | typed Command deadline 与 manifest lease 的 +5000ms 覆盖证明、first error | Rust/Python A1/A2；无 URL/fetch/attempt-time expiry/scene/RESULT/Profile |
 | TV1-P6a Editor E1 | 27 | trusted canonical current baseline + 显式 readiness recheck + 三模式 Canvas Focus shell | Java/Web/OpenAPI A1；组件未发布，禁止 save/preview/recovery 占位与 READY 声明 |
 | TV1-P6b Editor E2 | 28 | canonical working copy + 结构化本地编辑/undo/redo + preview generation/eligibility guard | Node 24 Web A1；无 API/route/save/preview action，baseline immutable |
 | TV1-P6c Editor E3 | 29 | lossless save + conflict overwrite offer/confirm/reconfirm + conservative unknown lock | Node 24 Web A1；复用既有 API；无 E4–E9/route/reconciliation |
@@ -192,6 +196,8 @@ flowchart LR
   T44 --> T45[45 Resource-free Grid HUG]
   T13 --> T46[46 RenderResource manifest admission]
   T23 --> T46
+  T22 --> T47[47 Command/resource lease admission]
+  T46 --> T47
   T06 --> T27[27 Editor E1 canonical open]
   T09 --> T27
   T20 --> T27
@@ -284,7 +290,8 @@ flowchart LR
 | 43 | task | `resolved` / `automated_verified` | 23, 25, 26, 33, 34, 38, 42 | 非空 Stack 的资源无关 HUG intrinsic；Rust/Python 59/59、178 checks；Frame/Grid/Group/transform/resource/tolerance 保持 fail closed |
 | 44 | task | `resolved` / `automated_verified` | 23, 25, 26, 34, 40, 41, 42, 43 | definite Grid AUTO 消费资源无关 HUG child contribution；Rust/Python 61/61、184 checks；跨多 AUTO/Frame/Grid/Group/resource/tolerance 保持 fail closed |
 | 45 | task | `resolved` / `automated_verified` | 23, 25, 26, 34, 40, 41, 42, 43, 44 | 非空 Grid 的资源无关 HUG intrinsic；Rust/Python 64/64、193 checks；FRACTION-on-HUG/跨多 AUTO/Frame/Group/resource/tolerance 保持 fail closed |
-| 46 | task | `in_progress` / claimed by Codex `/root` | 13, 23；消费 T19 已冻结资源容量 cells | RenderResource typed manifest defensive admission；closed fields/descriptors/static budgets；无 HTTPS/actual bytes/decode/RESULT |
+| 46 | task | `resolved` / `automated_verified` | 13, 23；消费 T19 已冻结资源容量 cells | RenderResource typed manifest defensive admission；closed fields/descriptors/static budgets；无 HTTPS/actual bytes/decode/RESULT |
+| 47 | task | `resolved` / `automated_verified` | 13, 22, 23, 46；消费 T19 已冻结 lease margin cell | Command deadline + 5000ms 对每项 typed lease 的覆盖准入与 manifest-order resourceId；Rust/Python 83/83、106 checks；无 URL/fetch/RESULT/Profile |
 
 每次只 claim 一个 unblocked ticket；一票 resolved 后才由其 `Blocked by` 关系产生下一 frontier。未知实现切片留在
 map 的 `Not yet specified`，不为排满计划提前发明接口、migration 或 Profile identity。
@@ -1220,3 +1227,35 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
   `.sdlc/evidence/20260822-070814-fast/`。治理后的最终 Fast/Full exact 目录仅在 commit handoff 报告。
 - 生命周期：`resolved / automated_verified`；Profile NOT_REGISTERED、certification NOT_CERTIFIED、resource bytes
   UNFETCHED、world scene/raster ABSENT、daemon output UNWIRED；未推进 A3/J1/READY，未 push/tag/PR。
+
+## 46. TV1-T47 执行卡
+
+- 决策：T46 verified commit `d32512f` 后复算 Ticket 13/16/19 与 Rust protocol/document/daemon seam。canonical
+  HTTPS 仍缺 daemon 侧 app-origin 部署 identity，actual fetch/decode 又依赖未注册 Renderer Profile；但
+  Command 的 exact millisecond deadline、typed resource 的 epoch-second expiry 与 Ticket 19 的 5000ms minimum
+  inclusive oracle 已全部冻结，因此把这一个跨边界 invariant 登记为唯一 single-writer frontier。
+- 允许影响：T47 tracker/plan/NOTES/log、Rust document/protocol/daemon crate/tests、RenderDocument/resource
+  shared vectors、Python independent verifier 与 `render` gate identity/assertions/evidence。
+- 禁止影响：canonical HTTPS/app-origin/path-prefix、DNS/egress、actual fetch/response/retry、attempt-time checks、
+  bytes/hash/media/magic/decode/cache/cancel、Text/Image measurement、world scene/paint/raster/JPEG、daemon RESULT/
+  Profile、Java/OpenAPI/migration/Web/route、formal records、physical Linux/J1/A3/READY 与任何外部副作用。
+- 精确语义：按 manifest order 在足够宽的整数域验证
+  `expiresAtEpochSecond * 1000 >= deadlineEpochMillis + 5000`；5000 精确接受、4999 拒绝。首个不足 lease 返回
+  `RESOURCE_LEASE_EXPIRED/COMMAND_ADMISSION` + opaque `resourceId`，parameters 为空且不泄漏 URL/时间/hash。
+- TDD：shared vector/verifier `/3` 先 RED，覆盖 resource-free、below/at/above、Java ceil-second、first-error 与
+  max-epoch overflow safety；Rust/Python 独立重放后按 focused → `render` → `server`/`fast` → 最终 `full`
+  扩大。最高 `automated_verified`；不 push/tag/PR。
+- 实施结果：document deep module 以纯函数和 `i128` 精确比较 typed expiry 与 Command deadline + 5000ms；
+  protocol 只序列化 canonical resource problem，daemon 在 layout/fetch/raster/RESULT 前按 manifest order 返回首个
+  不足 resourceId 并缓存 exact replay。未读取 Clock、网络、Resolver、Profile 或 actual bytes。
+- 共同语料：vector/verifier identity `/3`，14 document + 42 scalar/descriptor + 19 aggregate + 8 lease =
+  83/83 cases、106 checks；vector SHA-256
+  `ba0680eb5506062b887674f513ad4f9026d56a974c5b541f28ff6098c4c8de3a`，all-kinds fixture SHA-256 保持
+  `1b83a605c13837b0fa6d3a3cbf5e84fb97c71116ba8a81942cf97a3d7df9b031`。
+- 证据：focused fmt/clippy/workspace test/Java contract/py_compile/JSON inventory/diff-check 全绿；`render`
+  `.sdlc/evidence/20260822-075544-render/`、`server` `.sdlc/evidence/20260822-075614-server/`、治理前 `fast`
+  `.sdlc/evidence/20260822-081600-fast/`。完整执行记录见 `plans/logs/TV1-T47.md`，治理后的最终 Fast/Full exact
+  目录仅在 commit handoff 报告。
+- 生命周期：`resolved / automated_verified`；Profile NOT_REGISTERED、certification NOT_CERTIFIED、resource bytes
+  UNFETCHED、world scene/raster ABSENT、daemon output UNWIRED；canonical URL/fetch/attempt-time checks/actual bytes/
+  decode/cache 与其他剩余闭包仍未实现，未推进 A3/J1/READY，未 push/tag/PR。

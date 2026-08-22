@@ -29,6 +29,7 @@ const MAX_IMAGE_BYTES_PER_CONTENT: u64 = 67_108_864;
 const MAX_IMAGE_EDGE_PIXELS_PER_CONTENT: u64 = 20_000;
 const MAX_IMAGE_PIXELS_PER_CONTENT: u64 = 100_000_000;
 const MAX_FONT_BYTES_PER_CONTENT: u64 = 33_554_432;
+pub const RESOURCE_LEASE_SAFETY_MARGIN_MILLIS: i64 = 5_000;
 
 #[derive(Debug)]
 pub enum DocumentError {
@@ -280,6 +281,37 @@ impl AdmittedRenderResource {
     pub fn technical_descriptor(&self) -> &AdmittedTechnicalDescriptor {
         &self.technical_descriptor
     }
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct ResourceLeaseViolation<'a> {
+    resource_id: &'a str,
+}
+
+impl<'a> ResourceLeaseViolation<'a> {
+    pub fn resource_id(self) -> &'a str {
+        self.resource_id
+    }
+}
+
+/// Proves that every request-local resource lease covers the absolute Command deadline plus the
+/// frozen Renderer safety margin. The comparison uses `i128` so every admitted `u64` epoch-second
+/// value remains exact and cannot wrap while being converted to milliseconds.
+pub fn validate_resource_lease_coverage<'a>(
+    document: &'a AdmittedRenderDocument,
+    deadline_epoch_millis: i64,
+) -> Result<(), ResourceLeaseViolation<'a>> {
+    let required_expiry_millis =
+        i128::from(deadline_epoch_millis) + i128::from(RESOURCE_LEASE_SAFETY_MARGIN_MILLIS);
+    for resource in document.resources() {
+        let expires_at_epoch_millis = i128::from(resource.expires_at_epoch_second()) * 1_000;
+        if expires_at_epoch_millis < required_expiry_millis {
+            return Err(ResourceLeaseViolation {
+                resource_id: resource.resource_id(),
+            });
+        }
+    }
+    Ok(())
 }
 
 #[derive(Debug, Deserialize)]
@@ -1616,11 +1648,15 @@ mod tests {
         let vectors: Value = serde_json::from_str(VECTORS).unwrap();
         assert_eq!(
             vectors["vectorVersion"],
-            "renderweave-render-document-vectors/2"
+            "renderweave-render-document-vectors/3"
         );
         assert_eq!(
             vectors["authorityContext"]["resourceAdmission"],
-            "TYPED_MANIFEST_STATIC_PREFLIGHT_ONLY"
+            "TYPED_MANIFEST_AND_COMMAND_LEASE_PREFLIGHT_ONLY"
+        );
+        assert_eq!(
+            vectors["authorityContext"]["leaseSafetyMarginMillis"].as_i64(),
+            Some(RESOURCE_LEASE_SAFETY_MARGIN_MILLIS)
         );
         let limits = &vectors["authorityContext"]["resourceLimits"];
         for (name, expected) in [
@@ -1734,6 +1770,41 @@ mod tests {
                 "resource aggregate vector outcome drifted: {}",
                 case["id"].as_str().unwrap()
             );
+        }
+
+        for case in vectors["resourceLeaseCases"].as_array().unwrap() {
+            let base = match case["baseCase"].as_str().unwrap() {
+                "minimal-default-explicit" => minimal,
+                "all-static-kinds-default-explicit" => all_kinds,
+                _ => panic!("unknown resource lease base vector"),
+            };
+            let mut value: Value = serde_json::from_str(base).unwrap();
+            let resources = value["resources"].as_array_mut().unwrap();
+            let expires = case["expiresAtEpochSeconds"].as_array().unwrap();
+            assert_eq!(resources.len(), expires.len());
+            for (resource, expiry) in resources.iter_mut().zip(expires) {
+                resource["expiresAt"] = Value::from(expiry.as_u64().unwrap());
+            }
+            let document = serde_json::to_string(&value).unwrap();
+            let admitted = validate_render_document(&document).unwrap();
+            let outcome = validate_resource_lease_coverage(
+                &admitted,
+                case["deadlineEpochMillis"].as_i64().unwrap(),
+            );
+            match case["expected"].as_str().unwrap() {
+                "ADMITTED" => assert!(
+                    outcome.is_ok(),
+                    "resource lease vector unexpectedly rejected: {}",
+                    case["id"].as_str().unwrap()
+                ),
+                "REJECTED" => assert_eq!(
+                    outcome.unwrap_err().resource_id(),
+                    case["expectedResourceId"].as_str().unwrap(),
+                    "resource lease first error drifted: {}",
+                    case["id"].as_str().unwrap()
+                ),
+                _ => panic!("unknown resource lease outcome"),
+            }
         }
     }
 

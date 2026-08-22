@@ -213,16 +213,18 @@ try {
     }
     $documentIndependent = Get-Content -Raw -Encoding UTF8 -LiteralPath $documentReport |
         ConvertFrom-Json
-    if ($documentIndependent.verifier -ne 'renderweave-render-document-python-independent/2' `
+    if ($documentIndependent.verifier -ne 'renderweave-render-document-python-independent/3' `
             -or $documentIndependent.result -ne 'PASS' `
             -or $documentIndependent.assurance -ne 'A2' `
-            -or $documentIndependent.passed -ne 75 `
-            -or $documentIndependent.total -ne 75 `
+            -or $documentIndependent.passed -ne 83 `
+            -or $documentIndependent.total -ne 83 `
             -or $documentIndependent.documentCases -ne 14 `
             -or $documentIndependent.resourceCases -ne 42 `
             -or $documentIndependent.resourceAggregateCases -ne 19 `
-            -or $documentIndependent.checks -ne 97 `
-            -or $documentIndependent.resourceAdmission -ne 'TYPED_MANIFEST_STATIC_PREFLIGHT_ONLY' `
+            -or $documentIndependent.resourceLeaseCases -ne 8 `
+            -or $documentIndependent.checks -ne 106 `
+            -or $documentIndependent.resourceAdmission -ne 'TYPED_MANIFEST_AND_COMMAND_LEASE_PREFLIGHT_ONLY' `
+            -or $documentIndependent.leaseSafetyMarginMillis -ne 5000 `
             -or $documentIndependent.resourceBytes -ne 'UNFETCHED' `
             -or $documentIndependent.profileAvailability -ne 'NOT_REGISTERED' `
             -or $documentIndependent.certificationStatus -ne 'NOT_CERTIFIED' `
@@ -364,7 +366,7 @@ try {
     }
 
     $summary = [ordered]@{
-        gateVersion = 'renderweave-renderer-process-gate/1.7'
+        gateVersion = 'renderweave-renderer-process-gate/1.8'
         status = 'PASS'
         processContractVersion = 'renderweave-renderer-process/1.0'
         java = $java
@@ -402,11 +404,13 @@ try {
             documentCases = $documentIndependent.documentCases
             resourceCases = $documentIndependent.resourceCases
             resourceAggregateCases = $documentIndependent.resourceAggregateCases
+            resourceLeaseCases = $documentIndependent.resourceLeaseCases
             checks = $documentIndependent.checks
             catalogSha256 = $documentIndependent.catalogSha256
             vectorsSha256 = $documentIndependent.vectorsSha256
             allKindsCanonicalSha256 = $documentIndependent.allKindsCanonicalSha256
             resourceAdmission = $documentIndependent.resourceAdmission
+            leaseSafetyMarginMillis = $documentIndependent.leaseSafetyMarginMillis
             resourceBytes = $documentIndependent.resourceBytes
         }
         layoutPreflightIndependent = [ordered]@{
@@ -444,6 +448,7 @@ try {
             certificationStatus = 'NOT_CERTIFIED'
             rasterImplementation = 'ABSENT'
             resourceManifestAdmission = 'TYPED_STATIC_PREFLIGHT_AUTOMATED_VERIFIED'
+            resourceLeaseAdmission = 'COMMAND_DEADLINE_PLUS_5000MS_AUTOMATED_VERIFIED'
             resourceBytes = 'UNFETCHED'
             layoutKernel = 'RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_SINGLE_MAIN_FILL_AND_FIXED_SINGLE_FRACTION_INDEPENDENT_MULTI_AUTO_GRID_EMPTY_CONTAINER_STACK_HUG_GRID_AUTO_HUG_CONTRIBUTION_AND_GRID_HUG_BOX_AUTOMATED_VERIFIED_UNWIRED'
             outputPngKernel = 'AUTOMATED_VERIFIED_UNWIRED'

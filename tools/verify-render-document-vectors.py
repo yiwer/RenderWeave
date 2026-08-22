@@ -556,6 +556,17 @@ def aggregate_resource_document(base: str, case: dict[str, Any]) -> str:
     return canonical(document)
 
 
+def first_insufficient_lease(
+        resources: list[dict[str, Any]], deadline_epoch_millis: int,
+        safety_margin_millis: int) -> str | None:
+    required_expiry_millis = deadline_epoch_millis + safety_margin_millis
+    for resource in resources:
+        expires_at_epoch_second = positive_integer(resource["expiresAt"], "expiresAt")
+        if expires_at_epoch_second * 1_000 < required_expiry_millis:
+            return resource["resourceId"]
+    return None
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--catalog", type=Path, required=True)
@@ -570,16 +581,18 @@ def main() -> int:
     _, protocol = load_json_bytes(args.protocol_vectors)
     all_kinds = args.all_kinds.read_text(encoding="utf-8").rstrip("\r\n")
     authority = vectors["authorityContext"]
-    require(vectors["vectorVersion"] == "renderweave-render-document-vectors/2", "vector identity")
+    require(vectors["vectorVersion"] == "renderweave-render-document-vectors/3", "vector identity")
     require(authority["catalogVersion"] == catalog["catalogVersion"], "catalog version")
     require(authority["catalogSha256"] == sha256_prefixed(catalog_raw), "catalog digest")
     require(len(catalog["kinds"]) == 16, "kind inventory")
     require(authority["profileAvailability"] == "NOT_REGISTERED", "profile state")
     require(authority["certificationStatus"] == "NOT_CERTIFIED", "certification state")
     require(authority["rasterImplementation"] == "ABSENT", "raster state")
-    require(authority["resourceAdmission"] == "TYPED_MANIFEST_STATIC_PREFLIGHT_ONLY",
+    require(authority["resourceAdmission"]
+            == "TYPED_MANIFEST_AND_COMMAND_LEASE_PREFLIGHT_ONLY",
             "resource admission boundary")
     require(authority["resourceLimits"] == RESOURCE_LIMITS, "resource limits")
+    require(authority["leaseSafetyMarginMillis"] == 5_000, "lease safety margin")
 
     minimal = next(case for case in protocol["cases"] if case["id"] == "png-command")[
         "documentCanonicalJson"]
@@ -631,11 +644,33 @@ def main() -> int:
         require(outcome == case["expected"], "resource aggregate outcome: " + case["id"])
         passed += 1
 
+    for case in vectors["resourceLeaseCases"]:
+        value = json.loads(bases[case["baseCase"]], object_pairs_hook=strict_pairs)
+        resources = value["resources"]
+        expiries = case["expiresAtEpochSeconds"]
+        require(len(resources) == len(expiries), "resource lease vector cardinality")
+        for resource, expiry in zip(resources, expiries, strict=True):
+            resource["expiresAt"] = expiry
+        document = canonical(value)
+        admit(document, catalog)
+        offending_resource = first_insufficient_lease(
+            resources, case["deadlineEpochMillis"], authority["leaseSafetyMarginMillis"])
+        outcome = "REJECTED" if offending_resource is not None else "ADMITTED"
+        require(outcome == case["expected"], "resource lease outcome: " + case["id"])
+        if outcome == "REJECTED":
+            require(offending_resource == case["expectedResourceId"],
+                    "resource lease first error: " + case["id"])
+        else:
+            require("expectedResourceId" not in case,
+                    "admitted resource lease case carries an error identity")
+        passed += 1
+
     total = (len(vectors["positiveCases"]) + len(vectors["negativeCases"])
-             + len(vectors["resourceCases"]) + len(vectors["resourceAggregateCases"]))
+             + len(vectors["resourceCases"]) + len(vectors["resourceAggregateCases"])
+             + len(vectors["resourceLeaseCases"]))
 
     report = {
-        "verifier": "renderweave-render-document-python-independent/2",
+        "verifier": "renderweave-render-document-python-independent/3",
         "result": "PASS",
         "assurance": "A2",
         "passed": passed,
@@ -643,11 +678,13 @@ def main() -> int:
         "documentCases": len(vectors["positiveCases"]) + len(vectors["negativeCases"]),
         "resourceCases": len(vectors["resourceCases"]),
         "resourceAggregateCases": len(vectors["resourceAggregateCases"]),
-        "checks": total + len(RESOURCE_LIMITS) + 7,
+        "resourceLeaseCases": len(vectors["resourceLeaseCases"]),
+        "checks": total + len(RESOURCE_LIMITS) + 8,
         "catalogSha256": sha256_prefixed(catalog_raw),
         "vectorsSha256": sha256_prefixed(vectors_raw),
         "allKindsCanonicalSha256": sha256_prefixed(all_kinds.encode()),
         "resourceAdmission": authority["resourceAdmission"],
+        "leaseSafetyMarginMillis": authority["leaseSafetyMarginMillis"],
         "resourceBytes": "UNFETCHED",
         "profileAvailability": authority["profileAvailability"],
         "certificationStatus": authority["certificationStatus"],

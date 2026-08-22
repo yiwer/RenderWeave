@@ -368,13 +368,34 @@ pub fn problem_bytes(
 ) -> Result<Vec<u8>, ProtocolError> {
     require_uuid_v4(request_id)?;
     require_problem_code(code)?;
+    serialize_problem(request_id, code, engine_stage, None)
+}
+
+pub fn resource_problem_bytes(
+    request_id: &str,
+    code: &str,
+    engine_stage: EngineStage,
+    resource_id: &str,
+) -> Result<Vec<u8>, ProtocolError> {
+    require_uuid_v4(request_id)?;
+    require_problem_code(code)?;
+    require_resource_id(resource_id)?;
+    serialize_problem(request_id, code, engine_stage, Some(resource_id))
+}
+
+fn serialize_problem(
+    request_id: &str,
+    code: &str,
+    engine_stage: EngineStage,
+    resource_id: Option<&str>,
+) -> Result<Vec<u8>, ProtocolError> {
     Ok(serde_json::to_vec(&Problem {
         contract_version: PROBLEM_CONTRACT_VERSION.to_owned(),
         request_id: request_id.to_owned(),
         code: code.to_owned(),
         engine_stage,
         occurrence_id: None,
-        resource_id: None,
+        resource_id: resource_id.map(str::to_owned),
         parameters: BTreeMap::new(),
     })?)
 }
@@ -600,6 +621,21 @@ fn require_problem_code(code: &str) -> Result<(), ProtocolError> {
             "problem code is not in the closed catalog",
         )),
     }
+}
+
+fn require_resource_id(resource_id: &str) -> Result<(), ProtocolError> {
+    let bytes = resource_id.as_bytes();
+    if bytes.len() != 70
+        || !bytes.starts_with(b"rwres_")
+        || !bytes[6..]
+            .iter()
+            .all(|byte| matches!(byte, b'0'..=b'9' | b'a'..=b'f'))
+    {
+        return Err(ProtocolError::Invalid(
+            "problem resourceId is not a canonical RenderResource identity",
+        ));
+    }
+    Ok(())
 }
 
 fn parse_deadline_millis(value: &str) -> Result<i64, ProtocolError> {
@@ -989,6 +1025,33 @@ mod tests {
             )
             .unwrap(),
             problem["canonicalJson"].as_str().unwrap().as_bytes()
+        );
+    }
+
+    #[test]
+    fn resource_problem_is_canonical_and_rejects_noncanonical_identity() {
+        let resource_id = "rwres_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+        assert_eq!(
+            resource_problem_bytes(
+                "123e4567-e89b-42d3-a456-426614174000",
+                "RESOURCE_LEASE_EXPIRED",
+                EngineStage::CommandAdmission,
+                resource_id,
+            )
+            .unwrap(),
+            format!(
+                "{{\"contractVersion\":\"renderweave-render-problem/1.0\",\"requestId\":\"123e4567-e89b-42d3-a456-426614174000\",\"code\":\"RESOURCE_LEASE_EXPIRED\",\"engineStage\":\"COMMAND_ADMISSION\",\"resourceId\":\"{resource_id}\",\"parameters\":{{}}}}"
+            )
+            .as_bytes()
+        );
+        assert!(
+            resource_problem_bytes(
+                "123e4567-e89b-42d3-a456-426614174000",
+                "RESOURCE_LEASE_EXPIRED",
+                EngineStage::CommandAdmission,
+                "rwres_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+            )
+            .is_err()
         );
     }
 

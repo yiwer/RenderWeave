@@ -238,6 +238,11 @@ Label: wayfinder:map
   并重验 scalar/kind-media/descriptor 与 fetch-before Ticket 19 静态容量；Rust/Python `/2` replay 为 14 document
   + 42 scalar/descriptor + 19 aggregate、75/75、97 checks。HTTPS/allowlist、lease deadline、actual bytes/hash/
   magic/decode/cache、scene/raster/RESULT/Profile 均留在本票之外。
+- [实现 Command-bound RenderResource lease 覆盖准入](issues/47-command-resource-lease-admission.md) —
+  **resolved / automated_verified**；strict Command deadline、typed manifest expiry 与 Ticket 19 已冻结的 5000ms
+  minimum-inclusive oracle 已形成 `i128` 精确准入，按 manifest order 返回首个不足 lease 的稳定
+  code/resourceId；Rust/Python `/3` 为 83/83、106 checks。URL/app-origin/fetch/attempt-time expiry/bytes/decode/
+  scene/raster/RESULT/Profile 均留在本票之外。
 - [验证 Product Editor 状态、恢复与权威预览架构](issues/09-validate-product-editor-architecture.md) —
   throwaway 逻辑原型（`/prototype/editor-state-model`，不进产品 route）把冻结编辑器规则编码为确定性
   fixture 状态机：10 个引导走查场景 37/37 断言 + 自由操作冒烟 + 键盘焦点检查全部通过（Playwright A1，
@@ -304,7 +309,9 @@ Label: wayfinder:map
   resolve（automated_verified）：该 intrinsic 已接入 definite Grid independent AUTO contribution；T45 现也已
   resolve（automated_verified）：非空 Grid 的资源无关 intrinsic 已完成；T46 现也已 resolve
   （automated_verified）：sealed RenderResource manifest 的 typed defensive admission 与 fetch-before 静态容量已完成；
-  其余一般 HUG/multiple Stack main-axis FILL/
+  T47 现也已 resolve（automated_verified）：Command deadline + 5000ms 对每项 typed lease 的覆盖准入已完成；
+  下一 frontier 在本票 verified commit 后重算；其余一般
+  HUG/multiple Stack main-axis FILL/
   跨多个 AUTO 的平均 deficit/multiple FRACTION、actual resource fetch/decode、world scene 与 daemon output 仍未提前实现。
 - Expression/value binding、closure、capability、nested Template、layout lowering 与正式 RenderDocument 的
   实现切片由 T21 物化首个 Rendering 纵切（`TemplateClosureAuthority`/`Evaluator` stage 1–8/seal 与
@@ -325,7 +332,8 @@ Label: wayfinder:map
   singleton AUTO 的资源无关 FIXED-child contribution；T41 已完成 independent multi-AUTO constraints；T43 已
   完成 Stack 的资源无关非空 HUG；T44 已完成 definite Grid 的资源无关 HUG child AUTO contribution；T45 已
   完成 owning Grid 的资源无关非空 HUG intrinsic；T46 已完成 RenderResource manifest defensive admission；
-  其余 Frame/Group HUG/multiple Stack main-axis FILL/跨多个 AUTO 的平均
+  T47 已完成 Command/resource lease coverage admission；其余 Frame/Group HUG/multiple Stack main-axis FILL/
+  跨多个 AUTO 的平均
   deficit/multiple FRACTION/actual resource fetch+decode/world scene/raster/
   JPEG/Engine 接线仍须另行登记，物理 Linux 双 CPU-family
   认证与 J1/A3 属届时另行授权的执行级门控。

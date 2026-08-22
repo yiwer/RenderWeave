@@ -1,19 +1,20 @@
 //! Constant Linux UDS daemon for the RenderWeave renderer process seam.
 //!
 //! The process intentionally has no registered raster profile. A structurally admitted command is
-//! also passed through the static Layout Profile preflight, then recorded in the in-memory registry
-//! with one stable terminal problem; no image, scene, or partial result can be produced here.
+//! also passed through command-bound resource lease coverage and the static Layout Profile
+//! preflight, then recorded in the in-memory registry with one stable terminal problem; no image,
+//! scene, or partial result can be produced here.
 
 #[cfg(any(unix, test))]
-use renderweave_renderer_document::validate_render_document;
+use renderweave_renderer_document::{validate_render_document, validate_resource_lease_coverage};
 #[cfg(any(unix, test))]
 use renderweave_renderer_layout::preflight_layout;
 use renderweave_renderer_protocol::ProtocolError;
 #[cfg(any(unix, test))]
 use renderweave_renderer_protocol::{
     EngineStage, Frame, FrameType, ManifestIdentity, parse_cancel, parse_client_hello,
-    parse_command, problem_bytes, read_frame, server_hello_bytes, validate_process_manifest,
-    write_frame,
+    parse_command, problem_bytes, read_frame, resource_problem_bytes, server_hello_bytes,
+    validate_process_manifest, write_frame,
 };
 #[cfg(any(unix, test))]
 use std::collections::BTreeMap;
@@ -312,25 +313,51 @@ impl RequestRegistry {
             );
         }
 
-        let (code, stage) = if admitted.deadline_epoch_millis <= now_epoch_millis {
-            ("RENDER_DEADLINE_EXCEEDED", EngineStage::RequestControl)
+        let problem_payload = if admitted.deadline_epoch_millis <= now_epoch_millis {
+            problem_bytes(
+                &request_id,
+                "RENDER_DEADLINE_EXCEEDED",
+                EngineStage::RequestControl,
+            )?
         } else {
             match validate_render_document(admitted.command.document.get()) {
-                Err(_) => ("RENDER_INTERNAL_ERROR", EngineStage::DocumentAdmission),
-                Ok(document) if preflight_layout(&document).is_err() => {
-                    // Static layout violations contradict the Java sealing authority. Until a
-                    // Profile is registered, keep that invariant breach inside document admission
-                    // and never expose internal property paths or a partial scene.
-                    ("RENDER_INTERNAL_ERROR", EngineStage::DocumentAdmission)
-                }
-                Ok(_) => {
-                    // The exact process manifest has no registered raster profile. This is a real,
-                    // stable fail-closed terminal result, never a synthetic image implementation.
-                    ("RENDER_INTERNAL_ERROR", EngineStage::CommandAdmission)
+                Err(_) => problem_bytes(
+                    &request_id,
+                    "RENDER_INTERNAL_ERROR",
+                    EngineStage::DocumentAdmission,
+                )?,
+                Ok(document) => {
+                    if let Err(violation) =
+                        validate_resource_lease_coverage(&document, admitted.deadline_epoch_millis)
+                    {
+                        resource_problem_bytes(
+                            &request_id,
+                            "RESOURCE_LEASE_EXPIRED",
+                            EngineStage::CommandAdmission,
+                            violation.resource_id(),
+                        )?
+                    } else if preflight_layout(&document).is_err() {
+                        // Static layout violations contradict the Java sealing authority. Until a
+                        // Profile is registered, keep that invariant breach inside document
+                        // admission and never expose internal property paths or a partial scene.
+                        problem_bytes(
+                            &request_id,
+                            "RENDER_INTERNAL_ERROR",
+                            EngineStage::DocumentAdmission,
+                        )?
+                    } else {
+                        // The exact process manifest has no registered raster profile. This is a
+                        // real, stable fail-closed terminal result, never a synthetic image
+                        // implementation.
+                        problem_bytes(
+                            &request_id,
+                            "RENDER_INTERNAL_ERROR",
+                            EngineStage::CommandAdmission,
+                        )?
+                    }
                 }
             }
         };
-        let problem_payload = problem_bytes(&request_id, code, stage)?;
         self.entries.insert(
             request_id,
             RegistryEntry {
@@ -488,19 +515,10 @@ mod tests {
 
     #[test]
     fn registry_rejects_admitted_but_layout_invalid_document_before_profile_lookup() {
-        let command = vector_json("png-command");
-        let original_document = vector_document("png-command");
-        let layout_invalid_document = ALL_KINDS.trim_end_matches(['\r', '\n']);
-        let admitted = validate_render_document(layout_invalid_document).unwrap();
+        let layout_invalid_document = all_kinds_with_expiries([4_090_912_502; 2]);
+        let admitted = validate_render_document(&layout_invalid_document).unwrap();
         assert!(preflight_layout(&admitted).is_err());
-        let invalid_digest = renderweave_renderer_protocol::digest_with_domain(
-            renderweave_renderer_protocol::DOCUMENT_DIGEST_DOMAIN,
-            layout_invalid_document.as_bytes(),
-        );
-        let old_digest = vector_value("png-command", "renderDocumentDigest");
-        let invalid_command = command
-            .replace(&original_document, layout_invalid_document)
-            .replace(&old_digest, &invalid_digest);
+        let invalid_command = command_with_document(&layout_invalid_document);
 
         let mut registry = RequestRegistry::default();
         let response = registry
@@ -515,6 +533,42 @@ mod tests {
         let problem: Value = serde_json::from_slice(&response.payload).unwrap();
         assert_eq!(problem["code"], "RENDER_INTERNAL_ERROR");
         assert_eq!(problem["engineStage"], "DOCUMENT_ADMISSION");
+    }
+
+    #[test]
+    fn registry_returns_first_insufficient_resource_lease_and_replays_it() {
+        let document = all_kinds_with_expiries([4_090_912_501; 2]);
+        let command = command_with_document(&document);
+        let mut registry = RequestRegistry::default();
+        let first = registry
+            .handle(
+                Frame {
+                    frame_type: FrameType::Command,
+                    payload: command.as_bytes().to_vec(),
+                },
+                1_800_000_000_000,
+            )
+            .unwrap();
+        let problem: Value = serde_json::from_slice(&first.payload).unwrap();
+        assert_eq!(problem["code"], "RESOURCE_LEASE_EXPIRED");
+        assert_eq!(problem["engineStage"], "COMMAND_ADMISSION");
+        assert_eq!(
+            problem["resourceId"],
+            "rwres_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        );
+        assert_eq!(problem["parameters"], serde_json::json!({}));
+        assert!(problem.get("occurrenceId").is_none());
+
+        let replay = registry
+            .handle(
+                Frame {
+                    frame_type: FrameType::Command,
+                    payload: command.into_bytes(),
+                },
+                1_800_000_000_001,
+            )
+            .unwrap();
+        assert_eq!(replay.payload, first.payload);
     }
 
     #[test]
@@ -620,6 +674,29 @@ mod tests {
             .as_str()
             .unwrap()
             .to_owned()
+    }
+
+    fn all_kinds_with_expiries(expires_at_epoch_seconds: [u64; 2]) -> String {
+        let mut document: Value = serde_json::from_str(ALL_KINDS).unwrap();
+        let resources = document["resources"].as_array_mut().unwrap();
+        assert_eq!(resources.len(), expires_at_epoch_seconds.len());
+        for (resource, expires_at) in resources.iter_mut().zip(expires_at_epoch_seconds) {
+            resource["expiresAt"] = Value::from(expires_at);
+        }
+        serde_json::to_string(&document).unwrap()
+    }
+
+    fn command_with_document(document: &str) -> String {
+        let command = vector_json("png-command");
+        let original_document = vector_document("png-command");
+        let old_digest = vector_value("png-command", "renderDocumentDigest");
+        let digest = renderweave_renderer_protocol::digest_with_domain(
+            renderweave_renderer_protocol::DOCUMENT_DIGEST_DOMAIN,
+            document.as_bytes(),
+        );
+        command
+            .replace(&original_document, document)
+            .replace(&old_digest, &digest)
     }
 
     struct MemoryDuplex {
