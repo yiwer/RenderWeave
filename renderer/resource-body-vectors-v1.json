@@ -1,0 +1,206 @@
+{
+  "vectorVersion": "renderweave-resource-body-vectors/1",
+  "authorityContext": {
+    "physicalFetchBytesLimit": 536870912,
+    "physicalFetchBytesLimitId": "assetsAndFetch.physicalFetchBytesIncludingRetries",
+    "engineStage": "RESOURCE_PREPARATION",
+    "integrityOrder": [
+      "PHYSICAL_FETCH_BUDGET",
+      "DECLARED_LENGTH",
+      "LOWERCASE_SHA256"
+    ],
+    "resourceInput": "CALLER_SUPPLIED_CHUNKS",
+    "resourceBytes": "UNFETCHED",
+    "daemonOutputPath": "UNWIRED",
+    "profileAvailability": "NOT_REGISTERED",
+    "certificationStatus": "NOT_CERTIFIED",
+    "providerAttempts": 0
+  },
+  "budgetCases": [
+    {
+      "id": "below-limit",
+      "chunkByteCounts": [536870911],
+      "expected": {
+        "outcome": "ACCEPTED",
+        "acceptedBytes": 536870911
+      }
+    },
+    {
+      "id": "at-limit-across-chunks",
+      "chunkByteCounts": [536870911, 1],
+      "expected": {
+        "outcome": "ACCEPTED",
+        "acceptedBytes": 536870912
+      }
+    },
+    {
+      "id": "above-limit-is-atomic",
+      "chunkByteCounts": [536870912, 1],
+      "expected": {
+        "outcome": "RESOURCE_BUDGET_EXCEEDED",
+        "failedChunkIndex": 1,
+        "acceptedBytes": 536870912,
+        "engineStage": "RESOURCE_PREPARATION",
+        "resourceId": "rwres_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "limitId": "assetsAndFetch.physicalFetchBytesIncludingRetries"
+      }
+    },
+    {
+      "id": "crossing-chunk-is-not-partially-accepted",
+      "chunkByteCounts": [536870900, 13],
+      "expected": {
+        "outcome": "RESOURCE_BUDGET_EXCEEDED",
+        "failedChunkIndex": 1,
+        "acceptedBytes": 536870900,
+        "engineStage": "RESOURCE_PREPARATION",
+        "resourceId": "rwres_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "limitId": "assetsAndFetch.physicalFetchBytesIncludingRetries"
+      }
+    },
+    {
+      "id": "retry-bodies-share-the-counter",
+      "chunkByteCounts": [7, 5, 11],
+      "expected": {
+        "outcome": "ACCEPTED",
+        "acceptedBytes": 23
+      }
+    },
+    {
+      "id": "u64-overflow-fails-closed",
+      "chunkByteCounts": [536870912, 18446744073709551615],
+      "expected": {
+        "outcome": "RESOURCE_BUDGET_EXCEEDED",
+        "failedChunkIndex": 1,
+        "acceptedBytes": 536870912,
+        "engineStage": "RESOURCE_PREPARATION",
+        "resourceId": "rwres_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "limitId": "assetsAndFetch.physicalFetchBytesIncludingRetries"
+      }
+    }
+  ],
+  "bodyCases": [
+    {
+      "id": "exact-single-chunk",
+      "initialChunkByteCounts": [],
+      "chunksHex": ["72656e6465727765617665"],
+      "declaredByteLength": 11,
+      "declaredSha256": "sha256:06396476e9013c186af788f8032f4135dd48068e8531db9b00c088c1616b3c98",
+      "expected": {
+        "outcome": "VERIFIED",
+        "acceptedBytes": 11,
+        "resourceId": "rwres_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "byteLength": 11,
+        "sha256": "sha256:06396476e9013c186af788f8032f4135dd48068e8531db9b00c088c1616b3c98"
+      }
+    },
+    {
+      "id": "exact-multiple-chunks",
+      "initialChunkByteCounts": [],
+      "chunksHex": ["72656e646572", "7765617665"],
+      "declaredByteLength": 11,
+      "declaredSha256": "sha256:06396476e9013c186af788f8032f4135dd48068e8531db9b00c088c1616b3c98",
+      "expected": {
+        "outcome": "VERIFIED",
+        "acceptedBytes": 11,
+        "resourceId": "rwres_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "byteLength": 11,
+        "sha256": "sha256:06396476e9013c186af788f8032f4135dd48068e8531db9b00c088c1616b3c98"
+      }
+    },
+    {
+      "id": "exact-binary-body",
+      "initialChunkByteCounts": [],
+      "chunksHex": ["00ff", "1020"],
+      "declaredByteLength": 4,
+      "declaredSha256": "sha256:4033e6f229164922f1600f00a2dacd22e9b9bbdad58f82dd95095b0bb648eb83",
+      "expected": {
+        "outcome": "VERIFIED",
+        "acceptedBytes": 4,
+        "resourceId": "rwres_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "byteLength": 4,
+        "sha256": "sha256:4033e6f229164922f1600f00a2dacd22e9b9bbdad58f82dd95095b0bb648eb83"
+      }
+    },
+    {
+      "id": "short-body",
+      "initialChunkByteCounts": [],
+      "chunksHex": ["72656e646572"],
+      "declaredByteLength": 11,
+      "declaredSha256": "sha256:06396476e9013c186af788f8032f4135dd48068e8531db9b00c088c1616b3c98",
+      "expected": {
+        "outcome": "LENGTH_MISMATCH",
+        "acceptedBytes": 6,
+        "engineStage": "RESOURCE_PREPARATION",
+        "resourceId": "rwres_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    },
+    {
+      "id": "overlong-body",
+      "initialChunkByteCounts": [],
+      "chunksHex": ["72656e6465727765617665"],
+      "declaredByteLength": 10,
+      "declaredSha256": "sha256:06396476e9013c186af788f8032f4135dd48068e8531db9b00c088c1616b3c98",
+      "expected": {
+        "outcome": "LENGTH_MISMATCH",
+        "acceptedBytes": 11,
+        "engineStage": "RESOURCE_PREPARATION",
+        "resourceId": "rwres_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    },
+    {
+      "id": "equal-length-hash-mismatch",
+      "initialChunkByteCounts": [],
+      "chunksHex": ["72656e6465727765617665"],
+      "declaredByteLength": 11,
+      "declaredSha256": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+      "expected": {
+        "outcome": "HASH_MISMATCH",
+        "acceptedBytes": 11,
+        "engineStage": "RESOURCE_PREPARATION",
+        "resourceId": "rwres_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    },
+    {
+      "id": "budget-precedes-short-length",
+      "initialChunkByteCounts": [536870912],
+      "chunksHex": ["78"],
+      "declaredByteLength": 2,
+      "declaredSha256": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+      "expected": {
+        "outcome": "RESOURCE_BUDGET_EXCEEDED",
+        "acceptedBytes": 536870912,
+        "engineStage": "RESOURCE_PREPARATION",
+        "resourceId": "rwres_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "limitId": "assetsAndFetch.physicalFetchBytesIncludingRetries"
+      }
+    },
+    {
+      "id": "prior-retry-bytes-plus-body-at-limit",
+      "initialChunkByteCounts": [536870901],
+      "chunksHex": ["72656e646572", "7765617665"],
+      "declaredByteLength": 11,
+      "declaredSha256": "sha256:06396476e9013c186af788f8032f4135dd48068e8531db9b00c088c1616b3c98",
+      "expected": {
+        "outcome": "VERIFIED",
+        "acceptedBytes": 536870912,
+        "resourceId": "rwres_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "byteLength": 11,
+        "sha256": "sha256:06396476e9013c186af788f8032f4135dd48068e8531db9b00c088c1616b3c98"
+      }
+    },
+    {
+      "id": "body-crosses-shared-budget-atomically",
+      "initialChunkByteCounts": [536870902],
+      "chunksHex": ["72656e6465727765617665"],
+      "declaredByteLength": 11,
+      "declaredSha256": "sha256:06396476e9013c186af788f8032f4135dd48068e8531db9b00c088c1616b3c98",
+      "expected": {
+        "outcome": "RESOURCE_BUDGET_EXCEEDED",
+        "acceptedBytes": 536870902,
+        "engineStage": "RESOURCE_PREPARATION",
+        "resourceId": "rwres_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "limitId": "assetsAndFetch.physicalFetchBytesIncludingRetries"
+      }
+    }
+  ]
+}

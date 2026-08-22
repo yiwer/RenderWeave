@@ -243,6 +243,10 @@ Label: wayfinder:map
   minimum-inclusive oracle 已形成 `i128` 精确准入，按 manifest order 返回首个不足 lease 的稳定
   code/resourceId；Rust/Python `/3` 为 83/83、106 checks。URL/app-origin/fetch/attempt-time expiry/bytes/decode/
   scene/raster/RESULT/Profile 均留在本票之外。
+- [实现 RenderResource body 完整性内核](issues/48-resource-body-integrity-kernel.md) —
+  **resolved / automated_verified**；唯一 seam 为 typed `AdmittedRenderResource` + shared request-local physical-byte
+  budget + caller-supplied chunks，冻结 `536_870_912` inclusive budget 与 length→lowercase SHA-256；Rust/Python
+  15/15、34 checks。无 HTTPS、daemon 接线、decode/cache/Profile；`resourceBytes` 仍为 `UNFETCHED`。
 - [验证 Product Editor 状态、恢复与权威预览架构](issues/09-validate-product-editor-architecture.md) —
   throwaway 逻辑原型（`/prototype/editor-state-model`，不进产品 route）把冻结编辑器规则编码为确定性
   fixture 状态机：10 个引导走查场景 37/37 断言 + 自由操作冒烟 + 键盘焦点检查全部通过（Playwright A1，
@@ -310,7 +314,8 @@ Label: wayfinder:map
   resolve（automated_verified）：非空 Grid 的资源无关 intrinsic 已完成；T46 现也已 resolve
   （automated_verified）：sealed RenderResource manifest 的 typed defensive admission 与 fetch-before 静态容量已完成；
   T47 现也已 resolve（automated_verified）：Command deadline + 5000ms 对每项 typed lease 的覆盖准入已完成；
-  下一 frontier 在本票 verified commit 后重算；其余一般
+  T48 现也已 resolve（automated_verified）：request-local physical fetch byte budget 与 caller-supplied body
+  length/SHA-256 integrity 已完成，模块保持 UNWIRED/resource bytes UNFETCHED；其余一般
   HUG/multiple Stack main-axis FILL/
   跨多个 AUTO 的平均 deficit/multiple FRACTION、actual resource fetch/decode、world scene 与 daemon output 仍未提前实现。
 - Expression/value binding、closure、capability、nested Template、layout lowering 与正式 RenderDocument 的
@@ -332,7 +337,8 @@ Label: wayfinder:map
   singleton AUTO 的资源无关 FIXED-child contribution；T41 已完成 independent multi-AUTO constraints；T43 已
   完成 Stack 的资源无关非空 HUG；T44 已完成 definite Grid 的资源无关 HUG child AUTO contribution；T45 已
   完成 owning Grid 的资源无关非空 HUG intrinsic；T46 已完成 RenderResource manifest defensive admission；
-  T47 已完成 Command/resource lease coverage admission；其余 Frame/Group HUG/multiple Stack main-axis FILL/
+  T47 已完成 Command/resource lease coverage admission；T48 已完成 resource body integrity kernel；其余
+  Frame/Group HUG/multiple Stack main-axis FILL/
   跨多个 AUTO 的平均
   deficit/multiple FRACTION/actual resource fetch+decode/world scene/raster/
   JPEG/Engine 接线仍须另行登记，物理 Linux 双 CPU-family

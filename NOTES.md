@@ -1,6 +1,20 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-22 **Template v1 implementation TV1-T48 已 `resolved/automated_verified`**：新增 workspace-internal
+  `renderweave-renderer-resource` deep module；typed resource + shared request-local budget + caller-supplied chunks
+  严格执行 `536_870_912` physical fetch bytes inclusive limit、chunk-before-accept 原子预留及 declared length→
+  lowercase SHA-256。closed result 为 verified token 或
+  `RESOURCE_BUDGET_EXCEEDED/LENGTH_MISMATCH/HASH_MISMATCH`，不泄漏 bytes/URL/observed count。shared vector/Python
+  independent replay `/1` 为 6 budget + 9 body、15/15、34 checks；`render`
+  `.sdlc/evidence/20260822-091324-render/`、`server` `.sdlc/evidence/20260822-091356-server/`、治理前 `fast`
+  `.sdlc/evidence/20260822-093316-fast/` 均绿。首轮 Full 的产品/E2E 均绿后被 WMI cleanup `0x80041032`
+  阻断；cleanup 改为已知 Vite PID + 端口 Node listener 后，定向 E2E
+  `.sdlc/evidence/20260822-100547-e2e/` 为 23 passed/1 policy skip、三 variant audit PASS。第二轮 Full 的
+  server 8/8、App 344/0 failure/error 全绿后，被首轮旧 cleanup 遗留并映射 `lightningcss` 的 orphan Node
+  阻断 `npm ci`；精确终止该 PID 后 `web` `.sdlc/evidence/20260822-103019-web/` 为 26 files/212 tests 与 build
+  全绿。daemon/HTTPS/decode/cache/scene/raster/RESULT/Profile 均不接线，
+  `resourceBytes=UNFETCHED`；provider/API Key/真实数据/付费调用保持 0，不 push/tag/PR。
 - 2026-08-22 **Template v1 implementation TV1-T47 已 `resolved/automated_verified`**：document deep module 以
   `i128` 精确证明每个 typed RenderResource lease 覆盖 Command deadline 后 5000ms；5000 接受、4999 拒绝，
   daemon 在 layout/fetch/raster/RESULT 前按 manifest order 返回并缓存首个

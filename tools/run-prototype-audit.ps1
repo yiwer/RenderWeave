@@ -126,11 +126,15 @@ finally {
         $viteProcessIds += $startedProcess.Id
     }
     if ($webPort) {
-        $viteProcessIds += @(Get-CimInstance Win32_Process | Where-Object {
-            $_.Name -eq 'node.exe' `
-                -and $_.CommandLine -like "*$viteCli*" `
-                -and $_.CommandLine -like "*--port $webPort*"
-        } | Select-Object -ExpandProperty ProcessId)
+        $viteProcessIds += @(Get-NetTCPConnection `
+            -LocalPort $webPort `
+            -State Listen `
+            -ErrorAction SilentlyContinue | ForEach-Object {
+                $listenerProcess = Get-Process -Id $_.OwningProcess -ErrorAction SilentlyContinue
+                if ($listenerProcess -and $listenerProcess.ProcessName -eq 'node') {
+                    $_.OwningProcess
+                }
+            })
     }
     foreach ($processId in ($viteProcessIds | Sort-Object -Unique)) {
         $runningVite = Get-Process -Id $processId -ErrorAction SilentlyContinue

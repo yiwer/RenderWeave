@@ -44,7 +44,9 @@
   97 checks；actual HTTPS/bytes/decode/scene/RESULT 继续 fail closed。TV1-T47=`resolved/automated_verified`：
   Command deadline + 5000ms 对每个 typed resource lease 的覆盖准入与 manifest-order first error 已完成；
   Rust/Python 83/83、106 checks；URL/fetch/attempt-time checks/actual bytes/decode/scene/RESULT/Profile 继续
-  fail closed。
+  fail closed。TV1-T48=`resolved/automated_verified`：request-local physical fetch byte budget 与 caller-supplied
+  body 的 length→SHA-256 完整性 deep module 已完成；Rust/Python 15/15、34 checks；HTTPS/daemon/decode/Profile
+  继续不接线，resource bytes 保持 UNFETCHED。
 - 日期：2026-08-20
 - Approved delta：[`specs/changes/20260817-template-v1-implementation-authority.md`](../specs/changes/20260817-template-v1-implementation-authority.md)
 - Frozen checkpoint：`0b485f4a13de9d754a81d07f464730776e13c14b`
@@ -114,6 +116,7 @@ binding: generic + project-local tools/run-gate.ps1 + Wayfinder markdown tracker
 | TV1-P5o Resource-free Grid HUG | 45 | 非空 Grid HUG 轴复用 FIXED/independent AUTO/HUG child contribution 与 gaps | Rust/Python exact-bit A1/A2；FRACTION-on-HUG/跨多 AUTO/Frame/Group/resource/tolerance fail closed；无 scene/RESULT |
 | TV1-P5p RenderResource manifest admission | 46 | typed sealed resource + closed scalar/descriptor + fetch-before static budgets | Rust/Python A1/A2；无 HTTPS/actual bytes/decode/cache/scene/RESULT/Profile |
 | TV1-P5q Command/resource lease admission | 47 | typed Command deadline 与 manifest lease 的 +5000ms 覆盖证明、first error | Rust/Python A1/A2；无 URL/fetch/attempt-time expiry/scene/RESULT/Profile |
+| TV1-P5r Resource body integrity kernel | 48 | request-local physical fetch byte budget + caller-supplied body length/SHA-256 | Rust/Python A1/A2；module UNWIRED、resource bytes UNFETCHED；无 HTTPS/decode/Profile |
 | TV1-P6a Editor E1 | 27 | trusted canonical current baseline + 显式 readiness recheck + 三模式 Canvas Focus shell | Java/Web/OpenAPI A1；组件未发布，禁止 save/preview/recovery 占位与 READY 声明 |
 | TV1-P6b Editor E2 | 28 | canonical working copy + 结构化本地编辑/undo/redo + preview generation/eligibility guard | Node 24 Web A1；无 API/route/save/preview action，baseline immutable |
 | TV1-P6c Editor E3 | 29 | lossless save + conflict overwrite offer/confirm/reconfirm + conservative unknown lock | Node 24 Web A1；复用既有 API；无 E4–E9/route/reconciliation |
@@ -198,6 +201,8 @@ flowchart LR
   T23 --> T46
   T22 --> T47[47 Command/resource lease admission]
   T46 --> T47
+  T46 --> T48[48 Resource body integrity kernel]
+  T47 --> T48
   T06 --> T27[27 Editor E1 canonical open]
   T09 --> T27
   T20 --> T27
@@ -292,6 +297,7 @@ flowchart LR
 | 45 | task | `resolved` / `automated_verified` | 23, 25, 26, 34, 40, 41, 42, 43, 44 | 非空 Grid 的资源无关 HUG intrinsic；Rust/Python 64/64、193 checks；FRACTION-on-HUG/跨多 AUTO/Frame/Group/resource/tolerance 保持 fail closed |
 | 46 | task | `resolved` / `automated_verified` | 13, 23；消费 T19 已冻结资源容量 cells | RenderResource typed manifest defensive admission；closed fields/descriptors/static budgets；无 HTTPS/actual bytes/decode/RESULT |
 | 47 | task | `resolved` / `automated_verified` | 13, 22, 23, 46；消费 T19 已冻结 lease margin cell | Command deadline + 5000ms 对每项 typed lease 的覆盖准入与 manifest-order resourceId；Rust/Python 83/83、106 checks；无 URL/fetch/RESULT/Profile |
+| 48 | task | `claimed` / `in_progress` | 13, 22, 23, 46, 47；消费 T19 已冻结 physical fetch bytes cell | shared request-local physical-byte budget + caller-supplied body length/SHA-256 deep module；无 HTTPS/decode/daemon output/Profile |
 
 每次只 claim 一个 unblocked ticket；一票 resolved 后才由其 `Blocked by` 关系产生下一 frontier。未知实现切片留在
 map 的 `Not yet specified`，不为排满计划提前发明接口、migration 或 Profile identity。
@@ -1259,3 +1265,40 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
 - 生命周期：`resolved / automated_verified`；Profile NOT_REGISTERED、certification NOT_CERTIFIED、resource bytes
   UNFETCHED、world scene/raster ABSENT、daemon output UNWIRED；canonical URL/fetch/attempt-time checks/actual bytes/
   decode/cache 与其他剩余闭包仍未实现，未推进 A3/J1/READY，未 push/tag/PR。
+
+## 47. TV1-T48 执行卡
+
+- 决策：T47 最终 `full` 17/17 并以 verified commit `6898b2c` 收口后复算 Ticket 13/16/19、ADR-0045 与当前
+  typed resource seam。canonical HTTPS 仍缺 daemon 侧 app-origin/allowlist deployment identity，decoder/raster
+  dependency tree 与 Profile 也未注册；但 T19 的 `536_870_912` physical fetch byte inclusive limit、chunk-before-
+  accept reservation point，以及 T16 的 length→lowercase SHA-256 顺序均已冻结，可形成不依赖 I/O 的纯流式子闭包。
+- Interface/seam：新增 workspace-internal resource-preparation deep module；body Interface 只消费 typed
+  `AdmittedRenderResource`、共享 request-local `PhysicalFetchBudget` 与有序 caller-supplied chunks，返回 verified
+  token 或 closed problem。budget Interface 也可单独计入未来 5xx/transport retry body；不引入只有一个 Adapter 的
+  假 seam，不重新解析 manifest。
+- 允许影响：T48 tracker/plan/NOTES/log、Rust workspace/resource module/tests、shared resource-body vector、Python
+  independent verifier、process manifest/protocol handshake identity 与 `render` gate identity/assertions/evidence。
+- 禁止影响：canonical URL/app-origin/path-prefix、DNS/egress、HTTP/status/header/retry/backoff、Clock/attempt-time
+  expiry、magic/media/descriptor/decode/cache、Text/Image measurement、world scene/paint/raster/JPEG、daemon RESULT/
+  success/Profile、Java/OpenAPI/migration/Web/route、formal records、physical Linux/J1/A3/READY 与外部副作用。
+- 精确语义：每个 chunk 先对共享 physical-byte counter 原子预留；exact limit 接受，越界 counter 不变并返回
+  `RESOURCE_BUDGET_EXCEEDED` + 唯一 limitId。成功 body 随后累计 actual length/hash；overlong 立即、short 在 EOF
+  返回 `LENGTH_MISMATCH`，仅 exact length 才比较 SHA-256 并可能返回 `HASH_MISMATCH`。失败已接收 bytes 不退款。
+- TDD：按 budget at/above → exact body → length/hash/error-order 的纵向 slice 逐轮 RED→GREEN；Rust tests 只跨公开
+  Interface，shared literals 由 Python stdlib 独立重放。随后 focused → `render` → `server`/`fast` → 最终 `full`
+  扩大。最高 `automated_verified`；module 保持 UNWIRED/resource bytes UNFETCHED，不 push/tag/PR。
+- 实现：新增 `renderweave-renderer-resource` crate；`PhysicalFetchBudget` 在接受每个 chunk 前 checked reserve，exact
+  `536_870_912` 接受、越界与 `u64` overflow 原子拒绝。`verify_resource_body` 随后按 declared length → lowercase
+  SHA-256 返回 opaque verified token 或 closed problem；安全 review 将 budget Interface 收紧为只接受 typed resource。
+- 共同语料：resource-body vector `/1` 为 6 budget + 9 body cases；Rust primary 与 Python stdlib independent replay
+  15/15、34 checks，vector SHA-256
+  `a7273a49325f79416795ad2a1ad953464dd2449ae2174af48b026263d2aa9c7d`。Cargo.lock/process manifest SHA-256 分别为
+  `7c7130d920fe5c680cffdd474de9f2383a75110ef71a127bdbdf1cb10349497b` /
+  `6fa063ac1584295852b96846ce634ce6408e804c9aae0a790a0270b4fe227607`，process exact replay 保持 110 checks。
+- 证据：focused fmt/clippy `-D warnings`/workspace test/metadata/py_compile/JSON inventory/diff-check 全绿；`render`
+  `.sdlc/evidence/20260822-091324-render/`、`server` `.sdlc/evidence/20260822-091356-server/`、治理前 `fast`
+  `.sdlc/evidence/20260822-093316-fast/`。完整执行记录见 `plans/logs/TV1-T48.md`，治理后的最终 Fast/Full exact
+  目录仅在 commit handoff 报告。
+- 生命周期：`resolved / automated_verified`；module/daemon success path UNWIRED、resource bytes UNFETCHED、Profile
+  NOT_REGISTERED、certification NOT_CERTIFIED、world scene/raster ABSENT；canonical HTTPS/actual fetch/decode/cache 与
+  其他剩余闭包仍未实现，未推进 A3/J1/READY，未 push/tag/PR。

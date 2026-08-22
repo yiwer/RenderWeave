@@ -35,6 +35,7 @@ if (-not $resolvedEvidenceDir.StartsWith(
 
 $independentReport = Join-Path $resolvedEvidenceDir 'renderer-process-independent.json'
 $documentReport = Join-Path $resolvedEvidenceDir 'render-document-independent.json'
+$resourceBodyReport = Join-Path $resolvedEvidenceDir 'resource-body-independent.json'
 $layoutPreflightReport = Join-Path $resolvedEvidenceDir 'layout-preflight-independent.json'
 $definiteLayoutReport = Join-Path $resolvedEvidenceDir 'definite-layout-independent.json'
 $outputPngReport = Join-Path $resolvedEvidenceDir 'output-png-independent.json'
@@ -42,6 +43,7 @@ $summaryPath = Join-Path $resolvedEvidenceDir 'renderer-process-summary.json'
 foreach ($report in @(
         $independentReport,
         $documentReport,
+        $resourceBodyReport,
         $layoutPreflightReport,
         $definiteLayoutReport,
         $outputPngReport,
@@ -233,6 +235,37 @@ try {
         throw 'RenderDocument independent report boundary drifted.'
     }
 
+    Invoke-Checked 'resource-body-python-independent-replay' {
+        & python.exe 'tools\verify-resource-body-vectors.py' `
+            '--vectors' 'renderer\resource-body-vectors-v1.json' `
+            '--report' $resourceBodyReport
+    }
+    if (-not (Test-Path -LiteralPath $resourceBodyReport -PathType Leaf)) {
+        throw 'Resource body independent replay did not write its report.'
+    }
+    $resourceBodyIndependent = Get-Content -Raw -Encoding UTF8 -LiteralPath $resourceBodyReport |
+        ConvertFrom-Json
+    if ($resourceBodyIndependent.verifier -ne 'renderweave-resource-body-python-independent/1' `
+            -or $resourceBodyIndependent.result -ne 'PASS' `
+            -or $resourceBodyIndependent.assurance -ne 'A2' `
+            -or $resourceBodyIndependent.budgetCases -ne 6 `
+            -or $resourceBodyIndependent.bodyCases -ne 9 `
+            -or $resourceBodyIndependent.passed -ne 15 `
+            -or $resourceBodyIndependent.total -ne 15 `
+            -or $resourceBodyIndependent.failed -ne 0 `
+            -or $resourceBodyIndependent.checks -ne 34 `
+            -or $resourceBodyIndependent.physicalFetchBytesLimit -ne 536870912 `
+            -or $resourceBodyIndependent.physicalFetchBytesLimitId -ne 'assetsAndFetch.physicalFetchBytesIncludingRetries' `
+            -or ($resourceBodyIndependent.integrityOrder -join '|') -ne 'PHYSICAL_FETCH_BUDGET|DECLARED_LENGTH|LOWERCASE_SHA256' `
+            -or $resourceBodyIndependent.resourceInput -ne 'CALLER_SUPPLIED_CHUNKS' `
+            -or $resourceBodyIndependent.resourceBytes -ne 'UNFETCHED' `
+            -or $resourceBodyIndependent.daemonOutputPath -ne 'UNWIRED' `
+            -or $resourceBodyIndependent.profileAvailability -ne 'NOT_REGISTERED' `
+            -or $resourceBodyIndependent.certificationStatus -ne 'NOT_CERTIFIED' `
+            -or $resourceBodyIndependent.providerAttempts -ne 0) {
+        throw 'Resource body independent report boundary drifted.'
+    }
+
     Invoke-Checked 'layout-preflight-python-independent-replay' {
         & python.exe 'tools\verify-layout-preflight-vectors.py' `
             '--vectors' 'renderer\layout-preflight-vectors-v1.json' `
@@ -366,7 +399,7 @@ try {
     }
 
     $summary = [ordered]@{
-        gateVersion = 'renderweave-renderer-process-gate/1.8'
+        gateVersion = 'renderweave-renderer-process-gate/1.9'
         status = 'PASS'
         processContractVersion = 'renderweave-renderer-process/1.0'
         java = $java
@@ -413,6 +446,19 @@ try {
             leaseSafetyMarginMillis = $documentIndependent.leaseSafetyMarginMillis
             resourceBytes = $documentIndependent.resourceBytes
         }
+        resourceBodyIndependent = [ordered]@{
+            verifier = $resourceBodyIndependent.verifier
+            assurance = $resourceBodyIndependent.assurance
+            budgetCases = $resourceBodyIndependent.budgetCases
+            bodyCases = $resourceBodyIndependent.bodyCases
+            checks = $resourceBodyIndependent.checks
+            vectorSha256 = $resourceBodyIndependent.vectorSha256
+            physicalFetchBytesLimit = $resourceBodyIndependent.physicalFetchBytesLimit
+            physicalFetchBytesLimitId = $resourceBodyIndependent.physicalFetchBytesLimitId
+            integrityOrder = $resourceBodyIndependent.integrityOrder
+            resourceInput = $resourceBodyIndependent.resourceInput
+            resourceBytes = $resourceBodyIndependent.resourceBytes
+        }
         layoutPreflightIndependent = [ordered]@{
             verifier = $layoutPreflightIndependent.verifier
             assurance = $layoutPreflightIndependent.assurance
@@ -449,6 +495,7 @@ try {
             rasterImplementation = 'ABSENT'
             resourceManifestAdmission = 'TYPED_STATIC_PREFLIGHT_AUTOMATED_VERIFIED'
             resourceLeaseAdmission = 'COMMAND_DEADLINE_PLUS_5000MS_AUTOMATED_VERIFIED'
+            resourceBodyIntegrityKernel = 'PHYSICAL_FETCH_BUDGET_LENGTH_SHA256_AUTOMATED_VERIFIED_UNWIRED'
             resourceBytes = 'UNFETCHED'
             layoutKernel = 'RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_SINGLE_MAIN_FILL_AND_FIXED_SINGLE_FRACTION_INDEPENDENT_MULTI_AUTO_GRID_EMPTY_CONTAINER_STACK_HUG_GRID_AUTO_HUG_CONTRIBUTION_AND_GRID_HUG_BOX_AUTOMATED_VERIFIED_UNWIRED'
             outputPngKernel = 'AUTOMATED_VERIFIED_UNWIRED'
@@ -462,10 +509,10 @@ try {
         }
     }
     Write-Utf8File -Path $summaryPath -Content ($summary | ConvertTo-Json -Depth 6)
-    Write-Host (('Renderer process: Java={0} Python={1}+{2}+{3}+{4}+{5} Rust Windows=PASS ' +
+    Write-Host (('Renderer process: Java={0} Python={1}+{2}+{3}+{4}+{5}+{6} Rust Windows=PASS ' +
                 'Linux UDS=PASS Profile=NOT_REGISTERED Certification=NOT_CERTIFIED Raster=ABSENT') -f
             $java.tests, $independent.checks, $documentIndependent.total,
-            $layoutPreflightIndependent.total, $definiteLayoutIndependent.total,
+            $resourceBodyIndependent.total, $layoutPreflightIndependent.total, $definiteLayoutIndependent.total,
             $outputPngIndependent.total)
     Write-Host "Renderer process evidence: $summaryPath"
 }
