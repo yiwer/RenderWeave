@@ -59,7 +59,10 @@
   93/93、279 checks，Stack/Grid/general constraint/非直角 rotation/resource/tolerance/scene/RESULT 继续 fail closed。
   TV1-T54=`resolved/automated_verified`：definite Stack cross-axis resolved outer offer → direct Frame
   main-HUG/opposite-FILL 已完成；Rust/Python 97/97、291 checks，main-FILL 回馈/nested Stack/Grid/general
-  constraint/非直角 rotation/resource/tolerance/scene/RESULT 继续 fail closed。
+  constraint/非直角 rotation/resource/tolerance/scene/RESULT 继续 fail closed。TV1-T55=
+  `resolved/automated_verified`：singleton Stack main-FILL 最终 outer size → direct Frame cross-HUG 单次重测已完成；
+  Rust/Python 101/101、303 checks，multiple FILL/nested Stack/Grid/general constraint/非直角 rotation/resource/
+  tolerance/scene/RESULT 继续 fail closed。
 - 日期：2026-08-20
 - Approved delta：[`specs/changes/20260817-template-v1-implementation-authority.md`](../specs/changes/20260817-template-v1-implementation-authority.md)
 - Frozen checkpoint：`0b485f4a13de9d754a81d07f464730776e13c14b`
@@ -136,6 +139,7 @@ binding: generic + project-local tools/run-gate.ps1 + Wayfinder markdown tracker
 | TV1-P5v FIXED opposite-axis Frame cross FILL | 52 | FIXED opposite-axis ContentBox offer 驱动 odd-quarter-turn direct child cross-axis FILL | Rust/Python exact-bit 88/88、264 checks A1/A2；一般 parent-offer/非直角 rotation/resource/tolerance fail closed；无 scene/RESULT |
 | TV1-P5w Definite ABSOLUTE parent offer | 53 | already-definite parent ContentBox cross offer 驱动 HUG Frame opposite-axis FILL，并沿 ABSOLUTE Frame 链单向传播 | Rust/Python exact-bit 93/93、279 checks A1/A2；Stack/Grid/general constraint/非直角 rotation/resource/tolerance fail closed；无 scene/RESULT |
 | TV1-P5x Definite Stack cross offer | 54 | definite Stack cross interval 驱动 direct Frame main-HUG/opposite-FILL | Rust/Python exact-bit 97/97、291 checks A1/A2；main-FILL 回馈/nested Stack/Grid/general constraint/非直角 rotation/resource/tolerance fail closed；无 scene/RESULT |
+| TV1-P5y Stack main-FILL cross-HUG remeasure | 55 | singleton main-FILL 分配后以最终 outer size 单次重测 direct Frame cross-HUG | Rust/Python exact-bit A1/A2；multiple FILL/nested Stack/Grid/general constraint/非直角 rotation/resource/tolerance fail closed；无 scene/RESULT |
 | TV1-P6a Editor E1 | 27 | trusted canonical current baseline + 显式 readiness recheck + 三模式 Canvas Focus shell | Java/Web/OpenAPI A1；组件未发布，禁止 save/preview/recovery 占位与 READY 声明 |
 | TV1-P6b Editor E2 | 28 | canonical working copy + 结构化本地编辑/undo/redo + preview generation/eligibility guard | Node 24 Web A1；无 API/route/save/preview action，baseline immutable |
 | TV1-P6c Editor E3 | 29 | lossless save + conflict overwrite offer/confirm/reconfirm + conservative unknown lock | Node 24 Web A1；复用既有 API；无 E4–E9/route/reconciliation |
@@ -231,6 +235,7 @@ flowchart LR
   T51 --> T52[52 FIXED opposite-axis Frame cross FILL]
   T52 --> T53[53 Definite ABSOLUTE parent offer]
   T53 --> T54[54 Definite Stack cross offer]
+  T54 --> T55[55 Stack main-FILL cross-HUG remeasure]
   T06 --> T27[27 Editor E1 canonical open]
   T09 --> T27
   T20 --> T27
@@ -332,6 +337,7 @@ flowchart LR
 | 52 | task | `resolved` / `automated_verified` | 23, 25, 26, 42, 43, 45, 49, 50, 51 | FIXED opposite-axis Frame 的 odd-quarter-turn child cross-axis FILL；shared `/15` Rust/Python 88/88、264 checks；一般 parent-offer/非直角 rotation/resource/tolerance/scene/RESULT 保持 fail closed |
 | 53 | task | `resolved` / `automated_verified` | 23, 25, 26, 42, 43, 45, 49, 50, 51, 52 | definite ABSOLUTE parent cross offer → HUG Frame opposite-axis FILL 单向传播；shared `/16` Rust/Python 93/93、279 checks；Stack/Grid/general constraint/非直角 rotation/resource/tolerance/scene/RESULT 保持 fail closed |
 | 54 | task | `resolved` / `automated_verified` | 23, 25, 26, 33, 38, 43, 49, 50, 51, 52, 53 | definite Stack cross interval → direct Frame main-HUG/opposite-FILL；shared `/17` Rust/Python 97/97、291 checks；main-FILL 回馈/nested Stack/Grid/general constraint/非直角 rotation/resource/tolerance/scene/RESULT 保持 fail closed |
+| 55 | task | `resolved` / `automated_verified` | 23, 25, 26, 33, 38, 43, 49, 50, 51, 52, 53, 54 | singleton Stack main-FILL 最终 outer size → direct Frame cross-HUG 单次重测；shared `/18` Rust/Python 101/101、303 checks；multiple FILL/nested Stack/Grid/general constraint/非直角 rotation/resource/tolerance/scene/RESULT 保持 fail closed |
 
 每次只 claim 一个 unblocked ticket；一票 resolved 后才由其 `Blocked by` 关系产生下一 frontier。未知实现切片留在
 map 的 `Not yet specified`，不为排满计划提前发明接口、migration 或 Profile identity。
@@ -1553,3 +1559,39 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
   `RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_SINGLE_MAIN_FILL_AND_FIXED_SINGLE_FRACTION_INDEPENDENT_MULTI_AUTO_GRID_EMPTY_CONTAINER_STACK_HUG_GRID_AUTO_HUG_CONTRIBUTION_GRID_HUG_EXACT_QUARTER_TURN_AFFINE_FRAME_GROUP_HUG_FIXED_OPPOSITE_AXIS_CROSS_FILL_DEFINITE_ABSOLUTE_PARENT_OFFER_DEFINITE_STACK_CROSS_OUTER_OFFER_NORMALIZATION_BOX_KERNEL`；
   Profile NOT_REGISTERED、resource bytes UNFETCHED、scene/raster ABSENT、daemon output UNWIRED；provider attempts/API
   Key reads/reservations/cost、真实数据与付费调用均为 0，未推进 A3/J1/READY，未 push/tag/PR。
+
+## 54. TV1-T55 执行卡
+
+- 决策：T54 以 verified commit `96e73c7` 收口且 worktree clean 后，复算 Stack frozen order 与 layout 调用图。
+  `renderweave-layout/1.0` 已明确 Stack 先解主轴、再以最终主轴重测 cross HUG 一次且不反算主轴；T38 已有
+  singleton main FILL 确定性分配，因此 direct Frame 的该单向反馈不需要 residual tolerance 或 fixed point。
+- Interface/seam：在内部 `StackChildMeasurement` 中显式标记仅 direct Frame 可延迟的 cross HUG，并在 singleton
+  main FILL 完成后以 T54 closed typed `ResolvedOuter` offer 重测；`layout_definite_resource_free` public 入口、全有
+  或全无 `DefiniteLayout` 与 admission/preflight 不变。
+- 允许影响：T55 tracker/plan/NOTES/log、layout Rust module/tests、shared definite-layout vector `/18`、Python
+  independent verifier、render gate identity/assertions/evidence。
+- 禁止影响：multiple main FILL water filling/tolerance、nested Stack/Grid cell offer、一般
+  `UNBOUNDED/AT_MOST/EXACT` constraint engine、双向 HUG、三角函数/epsilon/tolerance、Text/Image/Vector intrinsic、
+  multiple AUTO/FRACTION、resource fetch/decode/cache、world scene/paint/raster/JPEG、daemon RESULT/success/Profile、
+  Java/OpenAPI/migration/Web/route、formal records、physical Linux/J1/A3/READY 与外部副作用。
+- 精确语义：ROW direct Frame width FILL + height HUG、COLUMN 对称；先按 T38 positive-zero/min→max 得到 main
+  outer size，再将其作为 `ResolvedOuter` 传入 cross HUG。Frame 扣 stroke/padding 后复用 T52/T51 child
+  FILL/AABB；cross 结果不反馈 main allocation/justify/sibling。延迟重测错误写回原 measurement slot，保持 authored
+  DFS first error。
+- TDD：shared vector/verifier `/18` 先 RED，覆盖现有 negative 转 positive、ROW/COLUMN、main min overflow、main
+  max + justify 与 nested Stack 继续 fail closed；Rust/Python 分别实现后按 focused → `render` → 顺序
+  `fast`/`server` → `full` 扩大。最高 `automated_verified`；不 push/tag/PR。
+- 实施：Rust `StackChildMeasurement` 显式携带 deferred cross-HUG 标记与 `with_cross_size` 更新；singleton main
+  FILL 分配后，helper 以最终 main outer size 调用一次 resource-free HUG axis，并把成功或错误都写回原 slot。
+  Python independent verifier 以独立 dataclass flag/helper 镜像冻结语义，保持 authored DFS first-error 顺序。
+- TDD/验证：四个新 positive vectors 在 Rust/Python 先共同以 `CHILD_ROTATION` RED，再分别到 exact-box GREEN；
+  focused Rust 3/3 与 Python 101/101、303 checks，workspace fmt/clippy `-D warnings`/tests、`py_compile`、JSON
+  inventory 与 diff-check 全绿。A1 `render` `20260822-181454-render`、affected `fast` `20260822-181539-fast`、
+  顺序 `server` `20260822-181559-server` 与 Goal `full` `20260822-183516-full` 全绿；full 17 steps 均 exit 0。
+  resolution 后 fast `20260822-190500-fast` 也通过。
+- identity/边界：vector SHA-256
+  `e21f55d9a2ac308512c4fd2b59d6e05fe7e12ff328ff9cb4f68a68d9f7dbbf0b`；fixture `/3` SHA-256 保持
+  `a11475bcebad7e1c35cb0acd7018419d94afcb4b37d7f1df7346a055ad1df669`。layout implementation identity 追加
+  `STACK_MAIN_FILL_CROSS_HUG_REMEASURE`；Profile NOT_REGISTERED、resource bytes UNFETCHED、scene/raster ABSENT、
+  daemon output UNWIRED；provider attempts/API Key reads/reservations/cost、真实数据与付费调用均为 0，未推进
+  A3/J1/READY，未 push/tag/PR。

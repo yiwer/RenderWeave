@@ -387,6 +387,7 @@ struct StackChildMeasurement {
     margin_left: f64,
     align_self: StackAlignment,
     main_fill: bool,
+    deferred_cross_hug_after_main_fill: bool,
 }
 
 impl StackChildMeasurement {
@@ -415,6 +416,14 @@ impl StackChildMeasurement {
         match direction {
             StackDirection::Row => self.width = size,
             StackDirection::Column => self.height = size,
+        }
+        self
+    }
+
+    const fn with_cross_size(mut self, direction: StackDirection, size: f64) -> Self {
+        match direction {
+            StackDirection::Row => self.height = size,
+            StackDirection::Column => self.width = size,
         }
         self
     }
@@ -860,8 +869,10 @@ impl DefiniteLayouter {
                 },
                 child_occurrence,
             )?;
-            if let Ok(measurement) = &mut measurements[fill_index] {
-                *measurement = measurement.with_main_size(direction, size);
+            if let Ok(measurement) = measurements[fill_index] {
+                let measurement = measurement.with_main_size(direction, size);
+                measurements[fill_index] =
+                    remeasure_stack_child_cross_hug_after_main_fill(child, measurement, direction);
             }
         }
 
@@ -1419,6 +1430,20 @@ fn measure_stack_child(
         StackDirection::Column => height_mode,
     };
     let main_fill = main_mode == SizeMode::Fill;
+    let deferred_cross_hug_after_main_fill = matches!(
+        (role, direction, width_mode, height_mode),
+        (
+            NodeRole::Frame,
+            StackDirection::Row,
+            SizeMode::Fill,
+            SizeMode::Hug
+        ) | (
+            NodeRole::Frame,
+            StackDirection::Column,
+            SizeMode::Hug,
+            SizeMode::Fill
+        )
+    );
 
     let margin_top = binary64_member(
         placement,
@@ -1469,7 +1494,12 @@ fn measure_stack_child(
         }
         _ => None,
     };
-    let width = if width_mode == SizeMode::Hug {
+    let width = if width_mode == SizeMode::Hug
+        && deferred_cross_hug_after_main_fill
+        && direction == StackDirection::Column
+    {
+        0.0
+    } else if width_mode == SizeMode::Hug {
         let offer = if direction == StackDirection::Row {
             resolved_cross_outer_offer.map(HugOppositeAxisOffer::ResolvedOuter)
         } else {
@@ -1494,7 +1524,12 @@ fn measure_stack_child(
             occurrence,
         )?
     };
-    let height = if height_mode == SizeMode::Hug {
+    let height = if height_mode == SizeMode::Hug
+        && deferred_cross_hug_after_main_fill
+        && direction == StackDirection::Row
+    {
+        0.0
+    } else if height_mode == SizeMode::Hug {
         let offer = if direction == StackDirection::Column {
             resolved_cross_outer_offer.map(HugOppositeAxisOffer::ResolvedOuter)
         } else {
@@ -1528,7 +1563,37 @@ fn measure_stack_child(
         margin_left,
         align_self: stack_alignment(placement, "alignSelf", occurrence)?,
         main_fill,
+        deferred_cross_hug_after_main_fill,
     })
+}
+
+fn remeasure_stack_child_cross_hug_after_main_fill(
+    node: &Map<String, Value>,
+    measurement: StackChildMeasurement,
+    direction: StackDirection,
+) -> Result<StackChildMeasurement, DefiniteLayoutError> {
+    if !measurement.deferred_cross_hug_after_main_fill {
+        return Ok(measurement);
+    }
+    let occurrence = occurrence_id(node)?;
+    let kind = text_member(node, "kind", occurrence, "kind")?;
+    let role = definite_node_role(kind, occurrence)?;
+    let placement = object_member(Some(node), "placement", occurrence)?;
+    let cross_axis = match direction {
+        StackDirection::Row => "Height",
+        StackDirection::Column => "Width",
+    };
+    let cross_size = resource_free_hug_axis(
+        node,
+        role,
+        placement,
+        cross_axis,
+        occurrence,
+        Some(HugOppositeAxisOffer::ResolvedOuter(
+            measurement.main_size(direction),
+        )),
+    )?;
+    Ok(measurement.with_cross_size(direction, cross_size))
 }
 
 fn stack_child_has_main_fill(node: &Map<String, Value>, direction: StackDirection) -> bool {

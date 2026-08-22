@@ -133,6 +133,7 @@ class StackChildMeasurement:
     margin_left: float
     align_self: str
     main_fill: bool
+    deferred_cross_hug_after_main_fill: bool
 
     def main_size(self, direction: str) -> float:
         return self.width if direction == "ROW" else self.height
@@ -153,6 +154,20 @@ class StackChildMeasurement:
             self.margin_left,
             self.align_self,
             self.main_fill,
+            self.deferred_cross_hug_after_main_fill,
+        )
+
+    def with_cross_size(self, direction: str, size: float) -> StackChildMeasurement:
+        return StackChildMeasurement(
+            self.width if direction == "ROW" else size,
+            size if direction == "ROW" else self.height,
+            self.margin_top,
+            self.margin_right,
+            self.margin_bottom,
+            self.margin_left,
+            self.align_self,
+            self.main_fill,
+            self.deferred_cross_hug_after_main_fill,
         )
 
 
@@ -473,7 +488,15 @@ class DefiniteLayouter:
                 raise VerificationFailure(
                     "a measurable singleton Stack main FILL must remain measurable"
                 )
-            measurements[fill_index] = measured.with_main_size(direction, size)
+            measured = measured.with_main_size(direction, size)
+            try:
+                measurements[fill_index] = (
+                    remeasure_stack_child_cross_hug_after_main_fill(
+                        child, measured, direction
+                    )
+                )
+            except Unsupported as error:
+                measurements[fill_index] = error
 
         occupied = used_without_fill
         if len(fill_indices) == 1:
@@ -967,6 +990,18 @@ def measure_stack_child(
         raise VerificationFailure(f"{current} invalid definite size mode")
     main_mode = width_mode if direction == "ROW" else height_mode
     main_fill = main_mode == "FILL"
+    deferred_cross_hug_after_main_fill = role == "FRAME" and (
+        (
+            direction == "ROW"
+            and width_mode == "FILL"
+            and height_mode == "HUG_CONTENT"
+        )
+        or (
+            direction == "COLUMN"
+            and width_mode == "HUG_CONTENT"
+            and height_mode == "FILL"
+        )
+    )
 
     margin_top = required_decimal(
         placement, "marginTopPt", current, "placement.marginTopPt"
@@ -1013,7 +1048,13 @@ def measure_stack_child(
         )
     else:
         resolved_cross_outer_offer = None
-    if width_mode == "HUG_CONTENT":
+    if (
+        width_mode == "HUG_CONTENT"
+        and deferred_cross_hug_after_main_fill
+        and direction == "COLUMN"
+    ):
+        width = 0.0
+    elif width_mode == "HUG_CONTENT":
         offer = (
             HugOppositeAxisOffer("RESOLVED_OUTER", resolved_cross_outer_offer)
             if direction == "ROW" and resolved_cross_outer_offer is not None
@@ -1040,7 +1081,13 @@ def measure_stack_child(
             "Width",
             current,
         )
-    if height_mode == "HUG_CONTENT":
+    if (
+        height_mode == "HUG_CONTENT"
+        and deferred_cross_hug_after_main_fill
+        and direction == "ROW"
+    ):
+        height = 0.0
+    elif height_mode == "HUG_CONTENT":
         offer = (
             HugOppositeAxisOffer("RESOLVED_OUTER", resolved_cross_outer_offer)
             if direction == "COLUMN" and resolved_cross_outer_offer is not None
@@ -1079,7 +1126,29 @@ def measure_stack_child(
         margin_left,
         align_self,
         main_fill,
+        deferred_cross_hug_after_main_fill,
     )
+
+
+def remeasure_stack_child_cross_hug_after_main_fill(
+    node: dict[str, Any], measurement: StackChildMeasurement, direction: str
+) -> StackChildMeasurement:
+    if not measurement.deferred_cross_hug_after_main_fill:
+        return measurement
+    current = occurrence(node)
+    kind = text(node.get("kind"), f"{current} kind")
+    role = definite_node_role(kind, current)
+    placement = object_value(node.get("placement"), f"{current} placement")
+    cross_axis = "Height" if direction == "ROW" else "Width"
+    cross_size = resource_free_hug_axis(
+        node,
+        role,
+        placement,
+        cross_axis,
+        current,
+        HugOppositeAxisOffer("RESOLVED_OUTER", measurement.main_size(direction)),
+    )
+    return measurement.with_cross_size(direction, cross_size)
 
 
 def stack_child_has_main_fill(node: dict[str, Any], direction: str) -> bool:
@@ -2034,7 +2103,7 @@ def verify(
         "vector manifest",
     )
     verifier.require(
-        vectors["vectorVersion"] == "renderweave-definite-layout-vectors/17",
+        vectors["vectorVersion"] == "renderweave-definite-layout-vectors/18",
         "vector identity drifted",
     )
     authority = exact_members(
@@ -2087,7 +2156,7 @@ def verify(
     expected_boundary = {
         "profileAvailability": "NOT_REGISTERED",
         "certificationStatus": "NOT_CERTIFIED",
-        "layoutImplementation": "RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_SINGLE_MAIN_FILL_AND_FIXED_SINGLE_FRACTION_INDEPENDENT_MULTI_AUTO_GRID_EMPTY_CONTAINER_STACK_HUG_GRID_AUTO_HUG_CONTRIBUTION_GRID_HUG_EXACT_QUARTER_TURN_AFFINE_FRAME_GROUP_HUG_FIXED_OPPOSITE_AXIS_CROSS_FILL_DEFINITE_ABSOLUTE_PARENT_OFFER_DEFINITE_STACK_CROSS_OUTER_OFFER_NORMALIZATION_BOX_KERNEL",
+        "layoutImplementation": "RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_SINGLE_MAIN_FILL_AND_FIXED_SINGLE_FRACTION_INDEPENDENT_MULTI_AUTO_GRID_EMPTY_CONTAINER_STACK_HUG_GRID_AUTO_HUG_CONTRIBUTION_GRID_HUG_EXACT_QUARTER_TURN_AFFINE_FRAME_GROUP_HUG_FIXED_OPPOSITE_AXIS_CROSS_FILL_DEFINITE_ABSOLUTE_PARENT_OFFER_DEFINITE_STACK_CROSS_OUTER_OFFER_STACK_MAIN_FILL_CROSS_HUG_REMEASURE_NORMALIZATION_BOX_KERNEL",
         "worldTransformImplementation": "ABSENT",
         "sceneImplementation": "ABSENT",
         "rasterImplementation": "ABSENT",
@@ -2125,7 +2194,7 @@ def verify(
         == "renderweave-layout-preflight-fixtures/1",
         "layout preflight fixture identity drifted",
     )
-    verifier.require(len(vectors["laidOutCases"]) == 83, "laid-out case count drifted")
+    verifier.require(len(vectors["laidOutCases"]) == 87, "laid-out case count drifted")
     verifier.require(
         len(vectors["unsupportedCases"]) == 14,
         "unsupported case count drifted",
@@ -2175,7 +2244,7 @@ def verify(
             raise VerificationFailure(f"{case_id}: unsupported case produced a layout")
 
     return {
-        "verifier": "renderweave-definite-layout-python-independent/17",
+        "verifier": "renderweave-definite-layout-python-independent/18",
         "result": "PASS",
         "assurance": "A2",
         "laidOutCases": len(vectors["laidOutCases"]),
