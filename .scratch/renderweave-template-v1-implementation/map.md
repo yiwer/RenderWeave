@@ -298,6 +298,10 @@ Label: wayfinder:map
   `AbsoluteParentContent` 解析最终 outer width，扣除自身 stroke/padding 后严格 columns→rows；shared `/22`
   为 103 laid-out + 15 unsupported、118 cases/353 checks。Grid-in-Grid owning offer、rows→columns 与一般
   constraint/tolerance 保持 fail closed。
+- [实现 Grid cell offer → columns-first nested Grid cross HUG 单向传播子闭包](issues/60-grid-cell-offer-columns-first-nested-grid-cross-hug-layout.md) —
+  **resolved / automated_verified**；只让 row-after-columns 的 direct GRID Grid 消费 final cell
+  `ResolvedOuter`，扣除自身 stroke/padding 后逐层严格 columns→rows；shared `/23` 为 107 laid-out + 15
+  unsupported、122 cases/365 checks。Grid→Stack、rows→columns 与一般 constraint/tolerance 保持 fail closed。
 - [验证 Product Editor 状态、恢复与权威预览架构](issues/09-validate-product-editor-architecture.md) —
   throwaway 逻辑原型（`/prototype/editor-state-model`，不进产品 route）把冻结编辑器规则编码为确定性
   fixture 状态机：10 个引导走查场景 37/37 断言 + 自由操作冒烟 + 键盘焦点检查全部通过（Playwright A1，
@@ -402,8 +406,10 @@ Label: wayfinder:map
   GRID Frame cell opposite-axis resolved outer offer 与 columns-first row AUTO 单向 contribution（Rust/Python
   110/110、329 checks）；T58 已完成 ROW Stack singleton main-FILL final outer width → columns-first Grid
   cross-HUG 单次重测，并可经同轴 nested Stack 链组合（Rust/Python 114/114、341 checks）；T59 已完成 ABSOLUTE
-  parent ContentBox width → columns-first Grid cross-HUG 单向传播（Rust/Python 118/118、353 checks）；其余非直角
-  rotation、Grid-in-Grid owning offer、general constraint、multiple Stack main-axis FILL/跨多个 AUTO 的平均
+  parent ContentBox width → columns-first Grid cross-HUG 单向传播（Rust/Python 118/118、353 checks）；T60 已完成
+  row-after-columns Grid cell final outer width → nested Grid ContentBox → columns-first rows 的有限递归组合
+  （Rust/Python 122/122、365 checks）；其余非直角 rotation、Grid cell→Stack、general constraint、multiple Stack
+  main-axis FILL/跨多个 AUTO 的平均
   deficit/multiple FRACTION/actual resource fetch+decode/world scene/raster/
   JPEG/Engine 接线仍须另行登记，物理 Linux 双 CPU-family
   认证与 J1/A3 属届时另行授权的执行级门控。

@@ -1,6 +1,17 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-23 **Template v1 implementation TV1-T60 已由 Codex `/root` single-writer 完成，状态
+  `resolved/automated_verified`**：row-after-columns Grid cell `ResolvedOuter` 现在可被 direct nested Grid 消费，
+  逐层扣 ContentBox 并严格 columns→rows；row AUTO writer 与 final cell arrange 的 y-axis closed predicate 均只从
+  Frame 扩到 Frame|Grid，x/column 路径仍为 Frame-only。shared `/23` 的 Rust/Python 为 107 laid-out + 15
+  unsupported、122/122、365 checks，SHA-256
+  `3ad9f32967855079692c890a279c0570673be3a829e92fd189be5809e236d013`。focused、`render`、affected
+  `fast`、顺序 `server` 与 `full` 全绿；Goal 证据 `.sdlc/evidence/20260823-000315-full/` 的 17 steps 均 exit 0，
+  Node v24.12.0 Web 26 files/212 tests、runtime canary、23 passed + 1 skipped Playwright E2E 与 browser journeys
+  均通过；resolution 后 fast `.sdlc/evidence/20260823-003224-fast/` 也通过。Grid→Stack、rows→columns、一般
+  constraint/tolerance、resource/scene/raster/RESULT/Profile 继续 fail closed；provider attempts/API Key reads/
+  reservations/cost、真实数据与付费调用均为 0，未 push/tag/PR。
 - 2026-08-22 **Template v1 implementation TV1-T59 已由 Codex `/root` single-writer 完成，状态
   `resolved/automated_verified`**：ABSOLUTE `widthMode=FILL,heightMode=HUG_CONTENT` Grid 现在可从 parent ContentBox
   width 按 x/right inset、positive-zero、min→max 求 final outer width，再扣自身 stroke/padding，以 definite content

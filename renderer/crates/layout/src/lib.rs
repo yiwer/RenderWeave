@@ -1048,7 +1048,7 @@ impl DefiniteLayouter {
             "Height",
             "verticalAlignSelf",
             resolved_height_fill,
-            if role == NodeRole::Frame && height_mode == SizeMode::Hug {
+            if matches!(role, NodeRole::Frame | NodeRole::Grid) && height_mode == SizeMode::Hug {
                 resolved_width_fill
             } else {
                 None
@@ -1304,7 +1304,7 @@ fn grid_auto_hug_opposite_axis_offer(
         return Ok(None);
     };
     if axis != GridAxis::Row
-        || role != NodeRole::Frame
+        || !matches!(role, NodeRole::Frame | NodeRole::Grid)
         || size_mode(placement, "widthMode", occurrence)? != SizeMode::Fill
     {
         return Ok(None);
