@@ -16,7 +16,7 @@ fn replays_exact_binary64_definite_layout_vectors() {
     let layout_preflight_fixtures: Value = serde_json::from_str(LAYOUT_PREFLIGHT_FIXTURES).unwrap();
     assert_eq!(
         vectors["vectorVersion"],
-        "renderweave-definite-layout-vectors/19"
+        "renderweave-definite-layout-vectors/20"
     );
 
     for case in vectors["laidOutCases"].as_array().unwrap() {
@@ -219,19 +219,24 @@ fn apply_mutations(document: &mut Value, mutations: &[Value]) {
         let pointer = mutation["pointer"].as_str().unwrap();
         let (parent_pointer, token) = pointer.rsplit_once('/').unwrap();
         let token = token.replace("~1", "/").replace("~0", "~");
-        let object = document
-            .pointer_mut(parent_pointer)
-            .unwrap()
-            .as_object_mut()
-            .unwrap();
-        match mutation["operation"].as_str().unwrap() {
-            "remove" => {
+        let parent = document.pointer_mut(parent_pointer).unwrap();
+        match (parent, mutation["operation"].as_str().unwrap()) {
+            (Value::Object(object), "remove") => {
                 object.remove(&token).unwrap();
             }
-            "add" | "replace" => {
+            (Value::Object(object), "add" | "replace") => {
                 object.insert(token, mutation["value"].clone());
             }
-            operation => panic!("unknown mutation operation {operation}"),
+            (Value::Array(array), "remove") => {
+                array.remove(token.parse().unwrap());
+            }
+            (Value::Array(array), "add") => {
+                array.insert(token.parse().unwrap(), mutation["value"].clone());
+            }
+            (Value::Array(array), "replace") => {
+                array[token.parse::<usize>().unwrap()] = mutation["value"].clone();
+            }
+            (_, operation) => panic!("unknown mutation operation {operation}"),
         }
     }
 }

@@ -496,6 +496,7 @@ class DefiniteLayouter:
             content_box.x,
             content_box.width,
             current,
+            None,
         )
         rows = definite_grid_axis(
             grid,
@@ -504,6 +505,7 @@ class DefiniteLayouter:
             content_box.y,
             content_box.height,
             current,
+            columns,
         )
         for raw_child in children:
             self.visit_grid_child(
@@ -553,6 +555,24 @@ class DefiniteLayouter:
         margin_left = required_decimal(
             placement, "marginLeftPt", current, "placement.marginLeftPt"
         )
+        resolved_width_fill = resolved_grid_fill_outer_size(
+            placement,
+            width_mode,
+            cell_width,
+            margin_left,
+            margin_right,
+            "Width",
+            current,
+        )
+        resolved_height_fill = resolved_grid_fill_outer_size(
+            placement,
+            height_mode,
+            cell_height,
+            margin_top,
+            margin_bottom,
+            "Height",
+            current,
+        )
         x, width = grid_axis_arrangement(
             node,
             role,
@@ -565,6 +585,10 @@ class DefiniteLayouter:
             "Width",
             "horizontalAlignSelf",
             current,
+            resolved_width_fill,
+            resolved_height_fill
+            if role == "FRAME" and width_mode == "HUG_CONTENT"
+            else None,
         )
         y, height = grid_axis_arrangement(
             node,
@@ -578,6 +602,10 @@ class DefiniteLayouter:
             "Height",
             "verticalAlignSelf",
             current,
+            resolved_height_fill,
+            resolved_width_fill
+            if role == "FRAME" and height_mode == "HUG_CONTENT"
+            else None,
         )
         self.emit_positioned_node(node, kind, role, Box(x, y, width, height))
 
@@ -607,6 +635,7 @@ def definite_grid_axis(
     origin: float,
     available: float,
     current: str,
+    resolved_columns: DefiniteGridAxis | None,
 ) -> DefiniteGridAxis:
     if axis == "COLUMN":
         tracks_member = "columns"
@@ -655,7 +684,13 @@ def definite_grid_axis(
     # scan above keeps that stage order independent of authored track order.
     if auto_indices:
         apply_independent_grid_auto(
-            children, axis, auto_indices, sizes, gap, current
+            children,
+            axis,
+            auto_indices,
+            sizes,
+            gap,
+            current,
+            resolved_columns,
         )
     if len(fraction_indices) > 1:
         raise Unsupported("GRID_FRACTION_TRACK", current)
@@ -681,6 +716,7 @@ def apply_independent_grid_auto(
     sizes: list[float],
     gap: float,
     grid_occurrence: str,
+    resolved_columns: DefiniteGridAxis | None,
 ) -> None:
     if axis == "COLUMN":
         start_member = "column"
@@ -732,13 +768,20 @@ def apply_independent_grid_auto(
         if mode == "HUG_CONTENT":
             kind = text(child.get("kind"), f"{child_occurrence} kind")
             role = definite_node_role(kind, child_occurrence)
+            opposite_axis_offer = grid_row_auto_opposite_offer(
+                placement,
+                role,
+                axis,
+                resolved_columns,
+                child_occurrence,
+            )
             size = resource_free_hug_axis(
                 child,
                 role,
                 placement,
                 "Width" if axis == "COLUMN" else "Height",
                 child_occurrence,
-                None,
+                opposite_axis_offer,
             )
         elif mode == "FIXED":
             size = required_decimal(
@@ -782,6 +825,43 @@ def apply_independent_grid_auto(
             sizes[auto_index] += deficit
 
 
+def grid_row_auto_opposite_offer(
+    placement: dict[str, Any],
+    role: str,
+    axis: str,
+    resolved_columns: DefiniteGridAxis | None,
+    current: str,
+) -> HugOppositeAxisOffer | None:
+    if (
+        axis != "ROW"
+        or role != "FRAME"
+        or resolved_columns is None
+        or placement.get("widthMode") != "FILL"
+    ):
+        return None
+    column = integer(placement.get("column"), f"{current} placement.column")
+    column_span = integer(
+        placement.get("columnSpan"), f"{current} placement.columnSpan"
+    )
+    _, cell_width = resolved_columns.cell(column, column_span)
+    margin_left = required_decimal(
+        placement, "marginLeftPt", current, "placement.marginLeftPt"
+    )
+    margin_right = required_decimal(
+        placement, "marginRightPt", current, "placement.marginRightPt"
+    )
+    outer_width = stack_axis_size(
+        placement,
+        "FILL",
+        cell_width,
+        margin_left,
+        margin_right,
+        "Width",
+        current,
+    )
+    return HugOppositeAxisOffer("RESOLVED_OUTER", outer_width)
+
+
 def grid_span_extent(
     sizes: list[float], gap: float, start: int, span: int
 ) -> float:
@@ -805,11 +885,26 @@ def grid_axis_arrangement(
     axis: str,
     alignment_member: str,
     current: str,
+    resolved_fill_outer: float | None,
+    opposite_fill_outer: float | None,
 ) -> tuple[float, float]:
-    size = (
-        resource_free_hug_axis(node, role, placement, axis, current, None)
-        if mode == "HUG_CONTENT"
-        else stack_axis_size(
+    if mode == "HUG_CONTENT":
+        size = resource_free_hug_axis(
+            node,
+            role,
+            placement,
+            axis,
+            current,
+            HugOppositeAxisOffer("RESOLVED_OUTER", opposite_fill_outer)
+            if opposite_fill_outer is not None
+            else None,
+        )
+    elif mode == "FILL":
+        if resolved_fill_outer is None:
+            raise VerificationFailure(f"{current} missing resolved Grid {axis} FILL")
+        size = resolved_fill_outer
+    else:
+        size = stack_axis_size(
             placement,
             mode,
             cell_size,
@@ -818,7 +913,6 @@ def grid_axis_arrangement(
             axis,
             current,
         )
-    )
     if mode in {"FIXED", "HUG_CONTENT"}:
         alignment = text(
             placement.get(alignment_member), f"{current} {alignment_member}"
@@ -836,6 +930,28 @@ def grid_axis_arrangement(
     else:
         raise VerificationFailure(f"{current} invalid placement.{axis}Mode")
     return position, size
+
+
+def resolved_grid_fill_outer_size(
+    placement: dict[str, Any],
+    mode: str,
+    cell_size: float,
+    leading_margin: float,
+    trailing_margin: float,
+    axis: str,
+    current: str,
+) -> float | None:
+    if mode != "FILL":
+        return None
+    return stack_axis_size(
+        placement,
+        mode,
+        cell_size,
+        leading_margin,
+        trailing_margin,
+        axis,
+        current,
+    )
 
 
 def stack_distribution(
@@ -1703,7 +1819,9 @@ def resource_free_grid_hug_content_extent(
     else:
         raise VerificationFailure(f"{current} invalid Grid HUG axis")
     children = array_value(grid.get("children"), f"{current} children")
-    resolved = definite_grid_axis(grid, children, grid_axis, 0.0, 0.0, current)
+    resolved = definite_grid_axis(
+        grid, children, grid_axis, 0.0, 0.0, current, None
+    )
     return grid_span_extent(resolved.sizes, resolved.gap, 0, len(resolved.sizes))
 
 
@@ -2101,10 +2219,13 @@ def apply_mutations(document: Any, mutations: list[Any]) -> None:
     for mutation in mutations:
         operation = mutation["operation"]
         parent, token = resolve_parent(document, mutation["pointer"])
+        key: str | int = int(token) if isinstance(parent, list) else token
         if operation == "remove":
-            del parent[token]
+            del parent[key]
+        elif operation == "add" and isinstance(parent, list):
+            parent.insert(key, copy.deepcopy(mutation["value"]))
         elif operation in {"add", "replace"}:
-            parent[token] = copy.deepcopy(mutation["value"])
+            parent[key] = copy.deepcopy(mutation["value"])
         else:
             raise VerificationFailure(f"unknown mutation operation: {operation}")
 
@@ -2249,7 +2370,7 @@ def verify(
         "vector manifest",
     )
     verifier.require(
-        vectors["vectorVersion"] == "renderweave-definite-layout-vectors/19",
+        vectors["vectorVersion"] == "renderweave-definite-layout-vectors/20",
         "vector identity drifted",
     )
     authority = exact_members(
@@ -2302,7 +2423,7 @@ def verify(
     expected_boundary = {
         "profileAvailability": "NOT_REGISTERED",
         "certificationStatus": "NOT_CERTIFIED",
-        "layoutImplementation": "RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_SINGLE_MAIN_FILL_AND_FIXED_SINGLE_FRACTION_INDEPENDENT_MULTI_AUTO_GRID_EMPTY_CONTAINER_STACK_HUG_GRID_AUTO_HUG_CONTRIBUTION_GRID_HUG_EXACT_QUARTER_TURN_AFFINE_FRAME_GROUP_HUG_FIXED_OPPOSITE_AXIS_CROSS_FILL_DEFINITE_ABSOLUTE_PARENT_OFFER_DEFINITE_STACK_CROSS_OUTER_OFFER_STACK_MAIN_FILL_CROSS_HUG_REMEASURE_NESTED_STACK_MAIN_OFFER_PROPAGATION_NORMALIZATION_BOX_KERNEL",
+        "layoutImplementation": "RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_SINGLE_MAIN_FILL_AND_FIXED_SINGLE_FRACTION_INDEPENDENT_MULTI_AUTO_GRID_EMPTY_CONTAINER_STACK_HUG_GRID_AUTO_HUG_CONTRIBUTION_GRID_HUG_EXACT_QUARTER_TURN_AFFINE_FRAME_GROUP_HUG_FIXED_OPPOSITE_AXIS_CROSS_FILL_DEFINITE_ABSOLUTE_PARENT_OFFER_DEFINITE_STACK_CROSS_OUTER_OFFER_STACK_MAIN_FILL_CROSS_HUG_REMEASURE_NESTED_STACK_MAIN_OFFER_PROPAGATION_COLUMNS_FIRST_GRID_CELL_OUTER_OFFER_NORMALIZATION_BOX_KERNEL",
         "worldTransformImplementation": "ABSENT",
         "sceneImplementation": "ABSENT",
         "rasterImplementation": "ABSENT",
@@ -2340,9 +2461,9 @@ def verify(
         == "renderweave-layout-preflight-fixtures/1",
         "layout preflight fixture identity drifted",
     )
-    verifier.require(len(vectors["laidOutCases"]) == 91, "laid-out case count drifted")
+    verifier.require(len(vectors["laidOutCases"]) == 95, "laid-out case count drifted")
     verifier.require(
-        len(vectors["unsupportedCases"]) == 14,
+        len(vectors["unsupportedCases"]) == 15,
         "unsupported case count drifted",
     )
 
@@ -2390,7 +2511,7 @@ def verify(
             raise VerificationFailure(f"{case_id}: unsupported case produced a layout")
 
     return {
-        "verifier": "renderweave-definite-layout-python-independent/19",
+        "verifier": "renderweave-definite-layout-python-independent/20",
         "result": "PASS",
         "assurance": "A2",
         "laidOutCases": len(vectors["laidOutCases"]),

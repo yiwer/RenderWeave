@@ -283,6 +283,11 @@ Label: wayfinder:map
   **resolved / automated_verified**；只沿同 direction、每层 singleton main-FILL/cross-HUG 的 nested Stack 链传播
   已解析 outer offer，并复用同一 Stack measurement/allocation helper；shared `/19` 为 91 laid-out + 14 unsupported、
   105 cases/315 checks。Grid/multiple FILL/general constraint/tolerance/scene/raster/RESULT/Profile 保持 fail closed。
+- [实现 columns-first Grid cell outer offer → Frame HUG 单向传播子闭包](issues/57-columns-first-grid-cell-offer-frame-hug-layout.md) —
+  **resolved / automated_verified**；只让 direct GRID Frame 在最终 cell arrange 消费 opposite-axis resolved outer offer，
+  并让 row AUTO contribution 单向读取已完成 columns 的 cell width；column AUTO 不读取 future rows。shared `/20`
+  为 95 laid-out + 15 unsupported、110 cases/329 checks；nested Stack→Grid、反向 feedback、tolerance 与一般
+  constraint 保持 fail closed。
 - [验证 Product Editor 状态、恢复与权威预览架构](issues/09-validate-product-editor-architecture.md) —
   throwaway 逻辑原型（`/prototype/editor-state-model`，不进产品 route）把冻结编辑器规则编码为确定性
   fixture 状态机：10 个引导走查场景 37/37 断言 + 自由操作冒烟 + 键盘焦点检查全部通过（Playwright A1，
@@ -383,8 +388,9 @@ Label: wayfinder:map
   checks）；T54 已完成 definite Stack cross-axis offer → direct Frame main-HUG/opposite-FILL（Rust/Python
   97/97、291 checks）；T55 已完成 singleton Stack main-FILL 分配后对 direct Frame cross-HUG 的单次重测
   （Rust/Python 101/101、303 checks）；T56 已完成同轴 nested Stack 链逐层消费已解析 main outer offer，每层仍只
-  执行一次 main allocation 与一次 cross-HUG remeasure（Rust/Python 105/105、315 checks）；其余非直角 rotation、Grid/
-  general constraint offer、multiple
+  执行一次 main allocation 与一次 cross-HUG remeasure（Rust/Python 105/105、315 checks）；T57 已完成 direct
+  GRID Frame cell opposite-axis resolved outer offer 与 columns-first row AUTO 单向 contribution（Rust/Python
+  110/110、329 checks）；其余非直角 rotation、nested Stack→Grid/general constraint offer、multiple
   Stack main-axis FILL/跨多个 AUTO 的平均
   deficit/multiple FRACTION/actual resource fetch+decode/world scene/raster/
   JPEG/Engine 接线仍须另行登记，物理 Linux 双 CPU-family

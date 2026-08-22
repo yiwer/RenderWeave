@@ -7,12 +7,12 @@
 //! nodes, Stack children with at most one main-axis FILL, resource-independent Stack/Grid HUG
 //! measurement, exact-quarter-turn affine nonempty Frame/Group HUG measurement (including
 //! definite ABSOLUTE/Stack/FIXED opposite-axis Frame offers for odd-quarter-turn cross-axis
-//! FILL and same-direction nested Stack main-offer propagation), Group normalization,
-//! and Grid children whose
+//! FILL, same-direction nested Stack main-offer propagation, and columns-first direct Grid cell
+//! outer offers), Group normalization, and Grid children whose
 //! definite axes contain FIXED tracks, at most one FRACTION track, and resource-independent AUTO
 //! constraints that each cover at most one AUTO track and consume supported resource-free HUG
 //! contributions. It deliberately stops before resource preparation, non-quarter-turn child
-//! rotation, Grid/general constraint-offer propagation for quarter-turn cross-axis FILL,
+//! rotation, nested Stack-to-Grid or row-to-column/general constraint-offer propagation,
 //! multi-FILL Stack water filling, cross-AUTO deficit distribution,
 //! multi-FRACTION solving, world transforms, shaping, paint, rasterization, and encoding, and it
 //! never exposes a partial layout on failure.
@@ -525,6 +525,12 @@ enum GridAxis {
     Row,
 }
 
+#[derive(Clone, Copy, Debug)]
+enum GridAxisMeasurementSpace<'a> {
+    Independent,
+    RowsAfterColumns(&'a DefiniteGridAxis),
+}
+
 impl GridAxis {
     const fn tracks_member(self) -> &'static str {
         match self {
@@ -924,6 +930,7 @@ impl DefiniteLayouter {
             GridAxis::Column,
             content_box.x,
             content_box.width,
+            GridAxisMeasurementSpace::Independent,
             occurrence,
         )?;
         let rows = definite_grid_axis(
@@ -932,6 +939,7 @@ impl DefiniteLayouter {
             GridAxis::Row,
             content_box.y,
             content_box.height,
+            GridAxisMeasurementSpace::RowsAfterColumns(&columns),
             occurrence,
         )?;
         for child in children {
@@ -990,6 +998,24 @@ impl DefiniteLayouter {
             occurrence,
             "placement.marginLeftPt",
         )?;
+        let resolved_width_fill = resolved_grid_fill_outer_size(
+            placement,
+            width_mode,
+            cell_width,
+            margin_left,
+            margin_right,
+            "Width",
+            occurrence,
+        )?;
+        let resolved_height_fill = resolved_grid_fill_outer_size(
+            placement,
+            height_mode,
+            cell_height,
+            margin_top,
+            margin_bottom,
+            "Height",
+            occurrence,
+        )?;
         let (x, width) = grid_axis_arrangement(
             node,
             role,
@@ -1001,6 +1027,12 @@ impl DefiniteLayouter {
             margin_right,
             "Width",
             "horizontalAlignSelf",
+            resolved_width_fill,
+            if role == NodeRole::Frame && width_mode == SizeMode::Hug {
+                resolved_height_fill
+            } else {
+                None
+            },
             occurrence,
         )?;
         let (y, height) = grid_axis_arrangement(
@@ -1014,6 +1046,12 @@ impl DefiniteLayouter {
             margin_bottom,
             "Height",
             "verticalAlignSelf",
+            resolved_height_fill,
+            if role == NodeRole::Frame && height_mode == SizeMode::Hug {
+                resolved_width_fill
+            } else {
+                None
+            },
             occurrence,
         )?;
         self.emit_positioned_node(
@@ -1036,6 +1074,7 @@ fn definite_grid_axis(
     axis: GridAxis,
     origin: f64,
     available: f64,
+    measurement_space: GridAxisMeasurementSpace<'_>,
     occurrence: &str,
 ) -> Result<DefiniteGridAxis, DefiniteLayoutError> {
     let tracks_member = axis.tracks_member();
@@ -1090,7 +1129,15 @@ fn definite_grid_axis(
     // Track solving is staged by the frozen Profile: FIXED, then AUTO, then FRACTION.
     // The complete authored scan above makes that stage order independent of track order.
     if !auto_indices.is_empty() {
-        apply_independent_grid_auto(children, axis, &auto_indices, &mut sizes, gap, occurrence)?;
+        apply_independent_grid_auto(
+            children,
+            axis,
+            &auto_indices,
+            &mut sizes,
+            gap,
+            measurement_space,
+            occurrence,
+        )?;
     }
     if fraction_indices.len() > 1 {
         return Err(DefiniteLayoutError::unsupported(
@@ -1127,6 +1174,7 @@ fn apply_independent_grid_auto(
     auto_indices: &[usize],
     sizes: &mut [f64],
     gap: f64,
+    measurement_space: GridAxisMeasurementSpace<'_>,
     grid_occurrence: &str,
 ) -> Result<(), DefiniteLayoutError> {
     let mut constraints = Vec::new();
@@ -1178,13 +1226,20 @@ fn apply_independent_grid_auto(
             SizeMode::Hug => {
                 let kind = text_member(child, "kind", child_occurrence, "kind")?;
                 let role = definite_node_role(kind, child_occurrence)?;
+                let opposite_axis_offer = grid_auto_hug_opposite_axis_offer(
+                    placement,
+                    role,
+                    axis,
+                    measurement_space,
+                    child_occurrence,
+                )?;
                 resource_free_hug_axis(
                     child,
                     role,
                     placement,
                     axis.hug_axis(),
                     child_occurrence,
-                    None,
+                    opposite_axis_offer,
                 )?
             }
             SizeMode::Fill => {
@@ -1237,6 +1292,49 @@ fn apply_independent_grid_auto(
     Ok(())
 }
 
+fn grid_auto_hug_opposite_axis_offer(
+    placement: &Map<String, Value>,
+    role: NodeRole,
+    axis: GridAxis,
+    measurement_space: GridAxisMeasurementSpace<'_>,
+    occurrence: &str,
+) -> Result<Option<HugOppositeAxisOffer>, DefiniteLayoutError> {
+    let GridAxisMeasurementSpace::RowsAfterColumns(columns) = measurement_space else {
+        return Ok(None);
+    };
+    if axis != GridAxis::Row
+        || role != NodeRole::Frame
+        || size_mode(placement, "widthMode", occurrence)? != SizeMode::Fill
+    {
+        return Ok(None);
+    }
+    let column = integer_member(placement, "column", occurrence, "placement.column")?;
+    let column_span = integer_member(placement, "columnSpan", occurrence, "placement.columnSpan")?;
+    let (_, cell_width) = columns.cell(column, column_span);
+    let margin_left = binary64_member(
+        placement,
+        "marginLeftPt",
+        occurrence,
+        "placement.marginLeftPt",
+    )?;
+    let margin_right = binary64_member(
+        placement,
+        "marginRightPt",
+        occurrence,
+        "placement.marginRightPt",
+    )?;
+    let outer_width = stack_axis_size(
+        placement,
+        SizeMode::Fill,
+        cell_width,
+        margin_left,
+        margin_right,
+        "Width",
+        occurrence,
+    )?;
+    Ok(Some(HugOppositeAxisOffer::ResolvedOuter(outer_width)))
+}
+
 fn grid_span_extent(sizes: &[f64], gap: f64, start: usize, span: usize) -> f64 {
     let mut extent = 0.0;
     for (offset, size) in sizes.iter().skip(start).take(span).enumerate() {
@@ -1260,12 +1358,23 @@ fn grid_axis_arrangement(
     trailing_margin: f64,
     axis: &str,
     alignment_member: &str,
+    resolved_fill_outer: Option<f64>,
+    opposite_fill_outer: Option<f64>,
     occurrence: &str,
 ) -> Result<(f64, f64), DefiniteLayoutError> {
-    let size = if mode == SizeMode::Hug {
-        resource_free_hug_axis(node, role, placement, axis, occurrence, None)?
-    } else {
-        stack_axis_size(
+    let size = match mode {
+        SizeMode::Hug => resource_free_hug_axis(
+            node,
+            role,
+            placement,
+            axis,
+            occurrence,
+            opposite_fill_outer.map(HugOppositeAxisOffer::ResolvedOuter),
+        )?,
+        SizeMode::Fill => resolved_fill_outer.ok_or_else(|| {
+            DefiniteLayoutError::invariant(occurrence, format!("resolvedGrid{axis}Fill"))
+        })?,
+        SizeMode::Fixed => stack_axis_size(
             placement,
             mode,
             cell_size,
@@ -1273,7 +1382,7 @@ fn grid_axis_arrangement(
             trailing_margin,
             axis,
             occurrence,
-        )?
+        )?,
     };
     let position = if matches!(mode, SizeMode::Fixed | SizeMode::Hug) {
         aligned_cross_position(
@@ -1293,6 +1402,31 @@ fn grid_axis_arrangement(
         ));
     };
     Ok((position, size))
+}
+
+#[allow(clippy::too_many_arguments)]
+fn resolved_grid_fill_outer_size(
+    placement: &Map<String, Value>,
+    mode: SizeMode,
+    cell_size: f64,
+    leading_margin: f64,
+    trailing_margin: f64,
+    axis: &str,
+    occurrence: &str,
+) -> Result<Option<f64>, DefiniteLayoutError> {
+    if mode != SizeMode::Fill {
+        return Ok(None);
+    }
+    stack_axis_size(
+        placement,
+        mode,
+        cell_size,
+        leading_margin,
+        trailing_margin,
+        axis,
+        occurrence,
+    )
+    .map(Some)
 }
 
 struct StackDistribution {
@@ -2386,7 +2520,15 @@ fn resource_free_grid_hug_content_extent(
         _ => return Err(DefiniteLayoutError::invariant(occurrence, "HUG axis")),
     };
     let children = array_member(grid, "children", occurrence)?;
-    let resolved = definite_grid_axis(grid, children, grid_axis, 0.0, 0.0, occurrence)?;
+    let resolved = definite_grid_axis(
+        grid,
+        children,
+        grid_axis,
+        0.0,
+        0.0,
+        GridAxisMeasurementSpace::Independent,
+        occurrence,
+    )?;
     Ok(grid_span_extent(
         &resolved.sizes,
         resolved.gap,
