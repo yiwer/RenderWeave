@@ -10,12 +10,13 @@
 //! FILL, same-direction nested Stack main-offer propagation, columns-first direct Grid cell outer
 //! offers, and ROW Stack main offers into columns-first Grid cross-HUG), Group normalization, and
 //! Grid children whose
-//! definite axes contain FIXED tracks, at most one FRACTION track, and resource-independent AUTO
+//! definite axes contain FIXED tracks, stable finite multi-FRACTION last-remainder allocation,
+//! and resource-independent AUTO
 //! constraints that each cover at most one AUTO track and consume supported resource-free HUG
 //! contributions. It deliberately stops before resource preparation, non-quarter-turn child
 //! rotation, ABSOLUTE/Grid-in-Grid owning offers or row-to-column/general constraint propagation,
-//! multi-FILL Stack water filling, cross-AUTO deficit distribution,
-//! multi-FRACTION solving, world transforms, shaping, paint, rasterization, and encoding, and it
+//! multi-FILL Stack water filling, cross-AUTO deficit distribution, FRACTION tolerance recovery,
+//! world transforms, shaping, paint, rasterization, and encoding, and it
 //! never exposes a partial layout on failure.
 
 use renderweave_renderer_document::AdmittedRenderDocument;
@@ -1099,7 +1100,7 @@ fn definite_grid_axis(
     let tracks = array_member(grid, tracks_member, occurrence)?;
     let mut sizes = Vec::with_capacity(tracks.len());
     let mut auto_indices = Vec::new();
-    let mut fraction_indices = Vec::new();
+    let mut fraction_tracks = Vec::new();
 
     for (index, track) in tracks.iter().enumerate() {
         let track = object(track, occurrence, tracks_member)?;
@@ -1124,13 +1125,13 @@ fn definite_grid_axis(
                 sizes.push(0.0);
             }
             "FRACTION" => {
-                binary64_member(
+                let weight = binary64_member(
                     track,
                     "weight",
                     occurrence,
                     format!("{tracks_member}[{index}].weight"),
                 )?;
-                fraction_indices.push(index);
+                fraction_tracks.push((index, weight));
                 sizes.push(0.0);
             }
             _ => {
@@ -1155,16 +1156,50 @@ fn definite_grid_axis(
             occurrence,
         )?;
     }
-    if fraction_indices.len() > 1 {
-        return Err(DefiniteLayoutError::unsupported(
-            occurrence,
-            DefiniteLayoutUnsupported::GridFractionTrack,
-        ));
-    }
-    if let Some(index) = fraction_indices.first().copied() {
+    if let Some((first_index, _)) = fraction_tracks.first().copied() {
         let used_without_fraction = grid_span_extent(&sizes, gap, 0, sizes.len());
         let remaining = available - used_without_fraction;
-        sizes[index] = if remaining > 0.0 { remaining } else { 0.0 };
+        let remaining = if remaining > 0.0 { remaining } else { 0.0 };
+        if fraction_tracks.len() == 1 {
+            sizes[first_index] = remaining;
+        } else {
+            let mut total_weight = 0.0;
+            for (_, weight) in &fraction_tracks {
+                total_weight += weight;
+                if !total_weight.is_finite() {
+                    return Err(DefiniteLayoutError::unsupported(
+                        occurrence,
+                        DefiniteLayoutUnsupported::GridFractionTrack,
+                    ));
+                }
+            }
+
+            let mut allocated_before_last = 0.0;
+            let last_position = fraction_tracks.len() - 1;
+            for (position, (index, weight)) in fraction_tracks.iter().copied().enumerate() {
+                let share = if position == last_position {
+                    remaining - allocated_before_last
+                } else {
+                    remaining * weight / total_weight
+                };
+                if !share.is_finite() || share < 0.0 {
+                    return Err(DefiniteLayoutError::unsupported(
+                        occurrence,
+                        DefiniteLayoutUnsupported::GridFractionTrack,
+                    ));
+                }
+                sizes[index] = if share > 0.0 { share } else { 0.0 };
+                if position != last_position {
+                    allocated_before_last += share;
+                    if !allocated_before_last.is_finite() {
+                        return Err(DefiniteLayoutError::unsupported(
+                            occurrence,
+                            DefiniteLayoutUnsupported::GridFractionTrack,
+                        ));
+                    }
+                }
+            }
+        }
     }
 
     let mut origins = Vec::with_capacity(tracks.len());

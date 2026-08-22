@@ -1,6 +1,21 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-23 **Template v1 implementation TV1-T65 已由 Codex `/root` single-writer 完成，状态
+  `resolved/automated_verified`**：definite Grid axis 现在保留 authored-order `(index,weight)`，前 `n-1`
+  FRACTION 按 fixed binary64 order 求 weighted share，最后一项接收余量；singleton 与 FIXED/AUTO/gaps
+  overflow-zero 行为不变。Rust/Python shared `/28` 先在同一首个新增 positive 共同 RED，再到 123 laid-out +
+  13 unsupported、136/136 cases、409 checks 全绿。vector SHA-256
+  `55e1f99966a386897bd3b9f727342634f11a346ff1675e2920e6ad3a751c2cd6`，fixture `/3` SHA-256 保持
+  `a11475bcebad7e1c35cb0acd7018419d94afcb4b37d7f1df7346a055ad1df669`。`render`
+  `.sdlc/evidence/20260823-053418-render/`、affected `fast` `.sdlc/evidence/20260823-053443-fast/`、顺序
+  `server` `.sdlc/evidence/20260823-053502-server/` 与 Goal `full`
+  `.sdlc/evidence/20260823-055512-full/` 全绿；full 17 steps 均 exit 0、总耗时 1749.85 秒，Maven App
+  344 tests/0 failures/0 errors/15 skipped，Node 24 Web 26 files/212 tests、runtime canary、23 passed +
+  1 controlled skip Playwright、browser journeys 与最终 inference replay E2E 1/1 均通过；resolution 后 fast
+  `.sdlc/evidence/20260823-062823-fast/` 的 3 steps 也均 exit 0。R0/R1/P0 provider attempts=0，P0 API Key
+  reads/reservations/cost=0；跨多 AUTO deficit、Stack water filling、general constraint/tolerance、resource/scene/
+  raster/RESULT/Profile、A3/J1/READY 仍未推进，未 push/tag/PR。
 - 2026-08-23 **Template v1 implementation TV1-T64 已由 Codex `/root` single-writer 完成，状态
   `resolved/automated_verified`**：COLUMN Stack measurement 中 already-resolved width offer 现在可驱动 direct
   `widthMode=FILL,heightMode=HUG_CONTENT` Grid terminal，并严格复用 ContentBox + columns→rows consumer；ROW-side

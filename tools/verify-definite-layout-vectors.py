@@ -662,7 +662,7 @@ def definite_grid_axis(
     tracks = array_value(grid.get(tracks_member), f"{current} {tracks_member}")
     sizes: list[float] = []
     auto_indices: list[int] = []
-    fraction_indices: list[int] = []
+    fraction_tracks: list[tuple[int, float]] = []
 
     for index, raw_track in enumerate(tracks):
         track = object_value(raw_track, f"{current} {tracks_member}[{index}]")
@@ -681,13 +681,13 @@ def definite_grid_axis(
             auto_indices.append(index)
             sizes.append(0.0)
         elif track_type == "FRACTION":
-            required_decimal(
+            weight = required_decimal(
                 track,
                 "weight",
                 current,
                 f"{tracks_member}[{index}].weight",
             )
-            fraction_indices.append(index)
+            fraction_tracks.append((index, weight))
             sizes.append(0.0)
         else:
             raise VerificationFailure(
@@ -705,12 +705,31 @@ def definite_grid_axis(
             current,
             resolved_columns,
         )
-    if len(fraction_indices) > 1:
-        raise Unsupported("GRID_FRACTION_TRACK", current)
-    if fraction_indices:
+    if fraction_tracks:
         used_without_fraction = grid_span_extent(sizes, gap, 0, len(sizes))
         remaining = available - used_without_fraction
-        sizes[fraction_indices[0]] = remaining if remaining > 0.0 else 0.0
+        remaining = remaining if remaining > 0.0 else 0.0
+        if len(fraction_tracks) == 1:
+            sizes[fraction_tracks[0][0]] = remaining
+        else:
+            total_weight = 0.0
+            for _, weight in fraction_tracks:
+                total_weight += weight
+                if not math.isfinite(total_weight):
+                    raise Unsupported("GRID_FRACTION_TRACK", current)
+
+            allocated_before_last = 0.0
+            for position, (index, weight) in enumerate(fraction_tracks):
+                if position + 1 == len(fraction_tracks):
+                    share = remaining - allocated_before_last
+                else:
+                    share = (remaining * weight) / total_weight
+                    allocated_before_last += share
+                if not math.isfinite(share) or share < 0.0:
+                    raise Unsupported("GRID_FRACTION_TRACK", current)
+                if not math.isfinite(allocated_before_last):
+                    raise Unsupported("GRID_FRACTION_TRACK", current)
+                sizes[index] = share if share > 0.0 else 0.0
 
     origins: list[float] = []
     cursor = origin
@@ -2523,7 +2542,7 @@ def verify(
         "vector manifest",
     )
     verifier.require(
-        vectors["vectorVersion"] == "renderweave-definite-layout-vectors/27",
+        vectors["vectorVersion"] == "renderweave-definite-layout-vectors/28",
         "vector identity drifted",
     )
     authority = exact_members(
@@ -2576,7 +2595,7 @@ def verify(
     expected_boundary = {
         "profileAvailability": "NOT_REGISTERED",
         "certificationStatus": "NOT_CERTIFIED",
-        "layoutImplementation": "RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_SINGLE_MAIN_FILL_AND_FIXED_SINGLE_FRACTION_INDEPENDENT_MULTI_AUTO_GRID_EMPTY_CONTAINER_STACK_HUG_GRID_AUTO_HUG_CONTRIBUTION_GRID_HUG_EXACT_QUARTER_TURN_AFFINE_FRAME_GROUP_HUG_FIXED_OPPOSITE_AXIS_CROSS_FILL_DEFINITE_ABSOLUTE_PARENT_OFFER_DEFINITE_STACK_CROSS_OUTER_OFFER_STACK_MAIN_FILL_CROSS_HUG_REMEASURE_NESTED_STACK_MAIN_OFFER_PROPAGATION_COLUMNS_FIRST_GRID_CELL_OUTER_OFFER_STACK_MAIN_OFFER_COLUMNS_FIRST_GRID_CROSS_HUG_ABSOLUTE_PARENT_OFFER_COLUMNS_FIRST_GRID_CROSS_HUG_GRID_CELL_OFFER_COLUMNS_FIRST_NESTED_GRID_CROSS_HUG_GRID_CELL_OFFER_STACK_MAIN_FIRST_CROSS_HUG_DIRECTION_CHANGING_STACK_CROSS_OFFER_MAIN_HUG_NESTED_STACK_RESOLVED_OPPOSITE_OFFER_RECURSION_COLUMNS_FIRST_GRID_TERMINAL_NORMALIZATION_BOX_KERNEL",
+        "layoutImplementation": "RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_SINGLE_MAIN_FILL_AND_FIXED_SINGLE_FRACTION_INDEPENDENT_MULTI_AUTO_GRID_DEFINITE_MULTI_FRACTION_LAST_REMAINDER_GRID_EMPTY_CONTAINER_STACK_HUG_GRID_AUTO_HUG_CONTRIBUTION_GRID_HUG_EXACT_QUARTER_TURN_AFFINE_FRAME_GROUP_HUG_FIXED_OPPOSITE_AXIS_CROSS_FILL_DEFINITE_ABSOLUTE_PARENT_OFFER_DEFINITE_STACK_CROSS_OUTER_OFFER_STACK_MAIN_FILL_CROSS_HUG_REMEASURE_NESTED_STACK_MAIN_OFFER_PROPAGATION_COLUMNS_FIRST_GRID_CELL_OUTER_OFFER_STACK_MAIN_OFFER_COLUMNS_FIRST_GRID_CROSS_HUG_ABSOLUTE_PARENT_OFFER_COLUMNS_FIRST_GRID_CROSS_HUG_GRID_CELL_OFFER_COLUMNS_FIRST_NESTED_GRID_CROSS_HUG_GRID_CELL_OFFER_STACK_MAIN_FIRST_CROSS_HUG_DIRECTION_CHANGING_STACK_CROSS_OFFER_MAIN_HUG_NESTED_STACK_RESOLVED_OPPOSITE_OFFER_RECURSION_COLUMNS_FIRST_GRID_TERMINAL_NORMALIZATION_BOX_KERNEL",
         "worldTransformImplementation": "ABSENT",
         "sceneImplementation": "ABSENT",
         "rasterImplementation": "ABSENT",
@@ -2614,9 +2633,9 @@ def verify(
         == "renderweave-layout-preflight-fixtures/1",
         "layout preflight fixture identity drifted",
     )
-    verifier.require(len(vectors["laidOutCases"]) == 119, "laid-out case count drifted")
+    verifier.require(len(vectors["laidOutCases"]) == 123, "laid-out case count drifted")
     verifier.require(
-        len(vectors["unsupportedCases"]) == 15,
+        len(vectors["unsupportedCases"]) == 13,
         "unsupported case count drifted",
     )
 
@@ -2664,7 +2683,7 @@ def verify(
             raise VerificationFailure(f"{case_id}: unsupported case produced a layout")
 
     return {
-        "verifier": "renderweave-definite-layout-python-independent/27",
+        "verifier": "renderweave-definite-layout-python-independent/28",
         "result": "PASS",
         "assurance": "A2",
         "laidOutCases": len(vectors["laidOutCases"]),

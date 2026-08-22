@@ -82,7 +82,9 @@
   保持 fail closed。TV1-T62/T63=`resolved/automated_verified`：direction-changing 与 recursive nested Stack 已可
   逐层消费 resolved opposite offer；shared `/26` 132 cases/395 checks。TV1-T64=`resolved/automated_verified`：只闭包
   COLUMN Stack resolved width → columns-first Grid terminal；shared `/27` 134 cases/401 checks，rows→columns/general
-  constraint/tolerance 保持 fail closed。
+  constraint/tolerance 保持 fail closed。TV1-T65=`resolved/automated_verified`：definite multi-FRACTION 已按
+  authored-order 前 `n-1` weighted share + last remainder 完成 finite/nonnegative 子闭包；shared `/28` 136
+  cases/409 checks。跨多 AUTO deficit、Stack water filling 与 Profile tolerance 继续 fail closed。
 - 日期：2026-08-20
 - Approved delta：[`specs/changes/20260817-template-v1-implementation-authority.md`](../specs/changes/20260817-template-v1-implementation-authority.md)
 - Frozen checkpoint：`0b485f4a13de9d754a81d07f464730776e13c14b`
@@ -379,6 +381,7 @@ flowchart LR
 | 62 | task | `resolved / automated_verified` | 23, 25, 26, 33, 38, 43, 49, 50, 51, 52, 53, 54, 55, 56, 57, 61 | direct direction-changing nested Stack 把父 final main outer 当作 definite cross outer，再一次求 main HUG；shared `/25` Rust/Python 129/129、386 checks；递归第二 link/main-HUG 内 FILL/general constraint/tolerance 保持 fail closed |
 | 63 | task | `resolved / automated_verified` | 23, 25, 26, 33, 38, 43, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 61, 62 | direct nested Stack 消费 already-resolved opposite-axis FILL outer，并按自身 direction 结构递归 main-HUG/cross-HUG；shared `/26` Rust/Python 132/132、395 checks；Grid/general constraint/tolerance 保持 fail closed |
 | 64 | task | `resolved / automated_verified` | 23, 25, 26, 33, 34, 38, 39, 40, 41, 43, 44, 45, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63 | COLUMN Stack already-resolved width → direct Grid ContentBox → strict columns-first HUG rows；shared `/27` Rust/Python 134/134、401 checks；rows→columns/general constraint/tolerance 保持 fail closed |
+| 65 | task | `resolved / automated_verified` | 23, 25, 26, 34, 39, 40, 41, 44, 45, 57, 58, 59, 60, 64 | definite Grid FIXED→AUTO→multi-FRACTION，authored-order 前 n-1 weighted share + last remainder；shared `/28` Rust/Python 136/136、409 checks；跨多 AUTO deficit/Stack water filling/Profile tolerance 保持 fail closed |
 
 每次只 claim 一个 unblocked ticket；一票 resolved 后才由其 `Blocked by` 关系产生下一 frontier。未知实现切片留在
 map 的 `Not yet specified`，不为排满计划提前发明接口、migration 或 Profile identity。
@@ -1991,3 +1994,48 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
   R0/R1/P0 provider attempts=0，P0 API Key reads/reservations/cost=0；Profile `NOT_REGISTERED`、certification
   `NOT_CERTIFIED`、Raster `ABSENT`、daemon `UNWIRED`。最高 `automated_verified`；未推进 A3/J1/READY，未
   push/tag/PR。
+
+## 64. TV1-T65 执行卡
+
+- 决策：T64 以 verified commit `2d29bbc` 收口且 worktree clean 后，复算原始 Ticket 10 §3/§8、
+  `RW-T10-S3-012..016`、`RW-T10-S8-001..019`、15 个 remaining unsupported cases 与 Grid axis call graph。
+  非直角 rotation、resource-dependent kinds、compositionViewport、multiple Stack FILL 与跨多 AUTO deficit 分别
+  依赖 tolerance/resource/scene 或 water filling；现有两个 multi-FRACTION negatives 只需深化既有 definite
+  FIXED→AUTO→FRACTION stage，因此登记为唯一 single-writer frontier。
+- Interface/seam：只在 `definite_grid_axis` 内把 FRACTION scan 从 indices 深化为 authored-order `(index,weight)`，
+  复用既有 independent AUTO 结果后计算 remaining；Rust/Python 保持不同控制流但共享冻结 vectors。public API、
+  admission/preflight、columns-first、arrange、DFS first-error 与全有或全无 output 不变。
+- 精确语义：finite `totalWeight`；前 `n-1` 固定按 `remaining * weight / totalWeight`，最后一项接收
+  `remaining - allocatedBeforeLast`；intermediate/last 非 finite 或 last<0 时稳定 `GRID_FRACTION_TRACK`。FIXED/
+  AUTO+gaps overflow 时 remaining=0，所有 fractions=0。
+- 允许影响：T65 tracker/plan/NOTES、layout Rust module/tests、shared definite-layout vector `/28`、Python
+  independent verifier、render gate identity/assertions/evidence。
+- 禁止影响：跨多 AUTO 平均、multiple Stack FILL/min-max water filling、epsilon/tolerance/public numeric error、
+  HUG-FRACTION、rows→columns、一般 constraints、任意非直角 rotation、Text/Image/Vector intrinsic、resource/
+  scene/raster/JPEG、daemon RESULT/Profile、Java/OpenAPI/migration/Web/route、formal records、physical Linux/J1/A3/
+  READY 与外部副作用。
+- TDD：把两个现有 multi-FRACTION boundary negatives 转 positive，并新增 mixed FIXED/gaps/weights/last remainder
+  与 fixed-overflow-zero positives；shared `/28` 先共同 RED，目标 123 laid-out + 13 unsupported、136 cases、
+  409 checks，layout-preflight fixture bytes 不变。canonical decimal6 的 checked `i128` 准入与文档容量使
+  binary64 weight-sum overflow 对 admitted document 不可达，不伪造越过准入的 shared negative。
+- 验证：focused Rust/Python、fmt、clippy `-D warnings`、workspace tests、`py_compile`、JSON inventory、SHA 与
+  `git diff --check`；再依次 `render`、affected `fast`、顺序 `server`、Goal `full`、resolution `fast`。最高只可
+  `automated_verified`；不推进 A3/J1/READY，不 push/tag/PR，不运行 provider，不读取 API Key。
+- 实施：Rust `definite_grid_axis` 保存 authored `(index,weight)` 并以稳定 last-remainder 分配 multi-FRACTION；
+  Python independent verifier 以独立控制流实现同一冻结语义。singleton、FIXED→AUTO→FRACTION stage order、
+  overflow-zero、columns-first、admission/preflight、arrange、authored DFS first-error 与全有或全无 output 不变。
+- TDD/identity：两个既有 multi-FRACTION negatives 转为 positive，补 mixed FIXED/gaps/`1fr+3fr` last remainder
+  与 fixed-overflow-zero；shared `/28` 的 Rust/Python 先共同 RED，再达到 123 laid-out + 13 unsupported、
+  136/136 cases、409 checks。vector SHA-256
+  `55e1f99966a386897bd3b9f727342634f11a346ff1675e2920e6ad3a751c2cd6`，fixture `/3` SHA-256 保持
+  `a11475bcebad7e1c35cb0acd7018419d94afcb4b37d7f1df7346a055ad1df669`。
+- 分级 gate：`render` `.sdlc/evidence/20260823-053418-render/`、affected `fast`
+  `.sdlc/evidence/20260823-053443-fast/`、顺序 `server` `.sdlc/evidence/20260823-053502-server/`、Goal `full`
+  `.sdlc/evidence/20260823-055512-full/` 均通过；full 17 steps 均 exit 0、总耗时 1749.85 秒，Maven App
+  344 tests/0 failures/0 errors/15 skipped，Node 24 Web 26 files/212 tests、runtime canary、23 passed +
+  1 controlled skip Playwright、browser journeys 与最终 inference replay E2E 1/1 均通过；resolution 后 fast
+  `.sdlc/evidence/20260823-062823-fast/` 的 3 steps 也均 exit 0。
+- 边界：R0/R1/P0 provider attempts=0，P0 API Key reads/reservations/cost=0；Profile `NOT_REGISTERED`、
+  certification `NOT_CERTIFIED`、Raster `ABSENT`、daemon `UNWIRED`。跨多 AUTO deficit、Stack water filling、
+  general constraint/tolerance、resource/scene/pixel 与完整 Renderer 保持 fail closed；最高
+  `automated_verified`，未推进 A3/J1/READY，未 push/tag/PR。
