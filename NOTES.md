@@ -1,6 +1,14 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-22 **Template v1 implementation TV1-T50 已 `resolved/automated_verified`**：在同一
+  `renderweave-renderer-layout` deep module 内完成 zero-rotation affine 非空 Group HUG；resource-free direct
+  ABSOLUTE child 的 transformed interval 按 authored order 从首 child 求二维 union，Group size=`max-min`，并以
+  `groupLayoutOrigin-unionMin` 归一化派生 child layout。shared vector/verifier `/13` 为 64 laid-out + 13 unsupported、
+  77/77、232 checks，SHA-256 `423db2e4c40095887e6be25ac921b449ec96a2105a9fa2a5be14e986288eb6d6`；
+  Rust/Python exact replay、`render`、`server`、Node 24 `fast`、`full` 与治理后 final `fast` 全绿。非零 child rotation 仍以
+  `CHILD_ROTATION` fail closed；resource、tolerance、scene/raster、daemon RESULT/Profile/J1/A3/READY 未推进，
+  provider attempts/API Key reads/真实数据/付费调用均为 0。
 - 2026-08-22 **Template v1 implementation TV1-T49 已 `resolved/automated_verified`**：在同一
   `renderweave-renderer-layout` deep module 内完成 zero-rotation affine 非空 Frame HUG；resource-free direct
   ABSOLUTE child 的 position/size/scale/flip/origin 以冻结 binary64 顺序求 transformed LayoutBox 最远正端，

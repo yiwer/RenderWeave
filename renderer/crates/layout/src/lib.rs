@@ -5,7 +5,8 @@
 //! Preflight returns bounded structural counts or one stable DFS problem. The definite kernel
 //! additionally computes local LayoutBox/ContentBox entries for resource-independent ABSOLUTE
 //! nodes, Stack children with at most one main-axis FILL, resource-independent Stack/Grid HUG
-//! measurement, zero-rotation affine nonempty Frame HUG measurement, and Grid children whose
+//! measurement, zero-rotation affine nonempty Frame/Group HUG measurement and Group
+//! normalization, and Grid children whose
 //! definite axes contain FIXED tracks, at most one FRACTION track, and resource-independent AUTO
 //! constraints that each cover at most one AUTO track and consume supported resource-free HUG
 //! contributions. It deliberately stops before resource preparation, nonzero child rotation,
@@ -322,6 +323,12 @@ enum NodeRole {
     Stack,
     Grid,
     Leaf,
+}
+
+#[derive(Clone, Copy, Debug)]
+struct AffineAxisInterval {
+    minimum: f64,
+    maximum: f64,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -706,7 +713,16 @@ impl DefiniteLayouter {
                     NodeRole::Group | NodeRole::Leaf => unreachable!(),
                 }
             }
-            NodeRole::Group | NodeRole::Leaf => {
+            NodeRole::Group => {
+                self.entries.push(DefiniteLayoutEntry {
+                    occurrence_id: occurrence.to_owned(),
+                    kind: kind.to_owned(),
+                    layout_box,
+                    content_box: None,
+                });
+                self.visit_group_children(node, &layout_box)?;
+            }
+            NodeRole::Leaf => {
                 self.entries.push(DefiniteLayoutEntry {
                     occurrence_id: occurrence.to_owned(),
                     kind: kind.to_owned(),
@@ -714,6 +730,30 @@ impl DefiniteLayouter {
                     content_box: None,
                 });
             }
+        }
+        Ok(())
+    }
+
+    fn visit_group_children(
+        &mut self,
+        group: &Map<String, Value>,
+        layout_box: &LocalLayoutBox,
+    ) -> Result<(), DefiniteLayoutError> {
+        let occurrence = occurrence_id(group)?;
+        let children = array_member(group, "children", occurrence)?;
+        if children.is_empty() {
+            return Ok(());
+        }
+        let horizontal = resource_free_group_hug_axis_union(group, "Width", occurrence)?;
+        let vertical = resource_free_group_hug_axis_union(group, "Height", occurrence)?;
+        let normalized_parent = LocalLayoutBox {
+            x: finite_group_normalization_value(layout_box.x - horizontal.minimum, occurrence)?,
+            y: finite_group_normalization_value(layout_box.y - vertical.minimum, occurrence)?,
+            width: layout_box.width,
+            height: layout_box.height,
+        };
+        for child in children {
+            self.visit_absolute_node(object(child, occurrence, "children")?, &normalized_parent)?;
         }
         Ok(())
     }
@@ -1512,16 +1552,19 @@ fn resource_free_hug_axis(
     if children.is_empty() {
         return empty_container_hug_axis(node, role, placement, axis, occurrence);
     }
+    if role == NodeRole::Group {
+        let union = resource_free_group_hug_axis_union(node, axis, occurrence)?;
+        let size = finite_group_union_value(union.maximum - union.minimum, occurrence)?;
+        if size < 0.0 {
+            return Err(DefiniteLayoutError::invariant(occurrence, "groupUnion"));
+        }
+        return Ok(size);
+    }
     let content_extent = match role {
         NodeRole::Frame => resource_free_frame_hug_content_extent(node, axis, occurrence)?,
         NodeRole::Stack => resource_free_stack_hug_content_extent(node, axis, occurrence)?,
         NodeRole::Grid => resource_free_grid_hug_content_extent(node, axis, occurrence)?,
-        NodeRole::Group => {
-            return Err(DefiniteLayoutError::unsupported(
-                occurrence,
-                DefiniteLayoutUnsupported::Group,
-            ));
-        }
+        NodeRole::Group => unreachable!(),
         NodeRole::Leaf => {
             return Err(DefiniteLayoutError::unsupported(
                 occurrence,
@@ -1538,62 +1581,87 @@ fn resource_free_frame_hug_content_extent(
     axis: &str,
     occurrence: &str,
 ) -> Result<f64, DefiniteLayoutError> {
-    let (position_member, mode_member, size_member) = match axis {
-        "Width" => ("xPt", "widthMode", "widthPt"),
-        "Height" => ("yPt", "heightMode", "heightPt"),
-        _ => return Err(DefiniteLayoutError::invariant(occurrence, "HUG axis")),
-    };
     let mut extent = 0.0;
     for child in array_member(frame, "children", occurrence)? {
         let child = object(child, occurrence, "children")?;
-        let child_occurrence = occurrence_id(child)?;
-        let kind = text_member(child, "kind", child_occurrence, "kind")?;
-        let role = definite_node_role(kind, child_occurrence)?;
-        let placement = object_member(Some(child), "placement", child_occurrence)?;
-        if text_member(placement, "type", child_occurrence, "placement.type")? != "ABSOLUTE" {
-            return Err(DefiniteLayoutError::unsupported(
-                child_occurrence,
-                DefiniteLayoutUnsupported::NonAbsolutePlacement,
-            ));
-        }
-        let position = binary64_member(
-            placement,
-            position_member,
-            child_occurrence,
-            format!("placement.{position_member}"),
-        )?;
-        let size = match size_mode(placement, mode_member, child_occurrence)? {
-            SizeMode::Fixed => binary64_member(
-                placement,
-                size_member,
-                child_occurrence,
-                format!("placement.{size_member}"),
-            )?,
-            SizeMode::Hug => {
-                resource_free_hug_axis(child, role, placement, axis, child_occurrence)?
-            }
-            SizeMode::Fill => {
-                return Err(DefiniteLayoutError::invariant(
-                    child_occurrence,
-                    format!("placement.{mode_member}"),
-                ));
-            }
-        };
-        let end = zero_rotation_affine_axis_end(child, position, size, axis, child_occurrence)?;
-        if end > extent {
-            extent = end;
+        let interval = resource_free_absolute_child_axis_interval(child, axis)?;
+        if interval.maximum > extent {
+            extent = interval.maximum;
         }
     }
     Ok(extent)
 }
 
-fn zero_rotation_affine_axis_end(
+fn resource_free_group_hug_axis_union(
+    group: &Map<String, Value>,
+    axis: &str,
+    occurrence: &str,
+) -> Result<AffineAxisInterval, DefiniteLayoutError> {
+    let mut union: Option<AffineAxisInterval> = None;
+    for child in array_member(group, "children", occurrence)? {
+        let child = object(child, occurrence, "children")?;
+        let interval = resource_free_absolute_child_axis_interval(child, axis)?;
+        union = Some(match union {
+            Some(current) => AffineAxisInterval {
+                minimum: current.minimum.min(interval.minimum),
+                maximum: current.maximum.max(interval.maximum),
+            },
+            None => interval,
+        });
+    }
+    union.ok_or_else(|| DefiniteLayoutError::invariant(occurrence, "groupUnion"))
+}
+
+fn resource_free_absolute_child_axis_interval(
+    child: &Map<String, Value>,
+    axis: &str,
+) -> Result<AffineAxisInterval, DefiniteLayoutError> {
+    let child_occurrence = occurrence_id(child)?;
+    let kind = text_member(child, "kind", child_occurrence, "kind")?;
+    let role = definite_node_role(kind, child_occurrence)?;
+    let placement = object_member(Some(child), "placement", child_occurrence)?;
+    if text_member(placement, "type", child_occurrence, "placement.type")? != "ABSOLUTE" {
+        return Err(DefiniteLayoutError::unsupported(
+            child_occurrence,
+            DefiniteLayoutUnsupported::NonAbsolutePlacement,
+        ));
+    }
+    let (position_member, mode_member, size_member) = match axis {
+        "Width" => ("xPt", "widthMode", "widthPt"),
+        "Height" => ("yPt", "heightMode", "heightPt"),
+        _ => return Err(DefiniteLayoutError::invariant(child_occurrence, "HUG axis")),
+    };
+    let position = binary64_member(
+        placement,
+        position_member,
+        child_occurrence,
+        format!("placement.{position_member}"),
+    )?;
+    let size = match size_mode(placement, mode_member, child_occurrence)? {
+        SizeMode::Fixed => binary64_member(
+            placement,
+            size_member,
+            child_occurrence,
+            format!("placement.{size_member}"),
+        )?,
+        SizeMode::Hug => resource_free_hug_axis(child, role, placement, axis, child_occurrence)?,
+        SizeMode::Fill => {
+            return Err(DefiniteLayoutError::invariant(
+                child_occurrence,
+                format!("placement.{mode_member}"),
+            ));
+        }
+    };
+    zero_rotation_affine_axis_interval(child, position, size, axis, child_occurrence)
+}
+
+fn zero_rotation_affine_axis_interval(
     node: &Map<String, Value>,
     position: f64,
     size: f64,
     axis: &str,
     occurrence: &str,
-) -> Result<f64, DefiniteLayoutError> {
+) -> Result<AffineAxisInterval, DefiniteLayoutError> {
     let transform = object_member(Some(node), "transform", occurrence)?;
     let rotation = binary64_member(
         transform,
@@ -1640,7 +1708,10 @@ fn zero_rotation_affine_axis_end(
     let far_delta = finite_transform_value(far_position - transform_origin, occurrence)?;
     let far_scaled = finite_transform_value(scale * far_delta, occurrence)?;
     let far = finite_transform_value(transform_origin + far_scaled, occurrence)?;
-    Ok(near.max(far))
+    Ok(AffineAxisInterval {
+        minimum: near.min(far),
+        maximum: near.max(far),
+    })
 }
 
 fn finite_transform_value(value: f64, occurrence: &str) -> Result<f64, DefiniteLayoutError> {
@@ -1648,6 +1719,28 @@ fn finite_transform_value(value: f64, occurrence: &str) -> Result<f64, DefiniteL
         Ok(value)
     } else {
         Err(DefiniteLayoutError::invariant(occurrence, "transform"))
+    }
+}
+
+fn finite_group_union_value(value: f64, occurrence: &str) -> Result<f64, DefiniteLayoutError> {
+    if value.is_finite() {
+        Ok(value)
+    } else {
+        Err(DefiniteLayoutError::invariant(occurrence, "groupUnion"))
+    }
+}
+
+fn finite_group_normalization_value(
+    value: f64,
+    occurrence: &str,
+) -> Result<f64, DefiniteLayoutError> {
+    if value.is_finite() {
+        Ok(value)
+    } else {
+        Err(DefiniteLayoutError::invariant(
+            occurrence,
+            "groupNormalization",
+        ))
     }
 }
 

@@ -342,6 +342,16 @@ class DefiniteLayouter:
                 self.visit_stack_children(node, content_box)
             else:
                 self.visit_grid_children(node, content_box)
+        elif role == "GROUP":
+            self.entries.append(
+                {
+                    "occurrenceId": current,
+                    "kind": kind,
+                    "layoutBox": layout_box.bits(),
+                    "contentBox": None,
+                }
+            )
+            self.visit_group_children(node, layout_box)
         else:
             self.entries.append(
                 {
@@ -350,6 +360,26 @@ class DefiniteLayouter:
                     "layoutBox": layout_box.bits(),
                     "contentBox": None,
                 }
+            )
+
+    def visit_group_children(self, group: dict[str, Any], layout_box: Box) -> None:
+        current = occurrence(group)
+        children = array_value(group.get("children"), f"{current} children")
+        if not children:
+            return
+        horizontal = resource_free_group_hug_axis_union(group, "Width", current)
+        vertical = resource_free_group_hug_axis_union(group, "Height", current)
+        normalized_parent = Box(
+            finite_group_normalization_value(
+                layout_box.x - horizontal[0], current
+            ),
+            finite_group_normalization_value(layout_box.y - vertical[0], current),
+            layout_box.width,
+            layout_box.height,
+        )
+        for raw_child in children:
+            self.visit_absolute_node(
+                object_value(raw_child, f"{current} child"), normalized_parent
             )
 
     def visit_stack_children(self, stack: dict[str, Any], content_box: Box) -> None:
@@ -991,6 +1021,12 @@ def resource_free_hug_axis(
     children = array_value(node.get("children"), f"{current} children")
     if not children:
         return empty_container_hug_axis(node, role, placement, axis, current)
+    if role == "GROUP":
+        union = resource_free_group_hug_axis_union(node, axis, current)
+        size = finite_group_union_value(union[1] - union[0], current)
+        if size < 0.0:
+            raise VerificationFailure(f"{current} invalid Group union")
+        return size
     if role == "FRAME":
         content_extent = resource_free_frame_hug_content_extent(node, axis, current)
     elif role == "STACK":
@@ -998,7 +1034,7 @@ def resource_free_hug_axis(
     elif role == "GRID":
         content_extent = resource_free_grid_hug_content_extent(node, axis, current)
     else:
-        raise Unsupported("GROUP" if role == "GROUP" else "HUG_CONTENT", current)
+        raise Unsupported("HUG_CONTENT", current)
     natural = container_outer_extent(node, axis, content_extent, current)
     return clamp_flexible_axis(placement, natural, axis, current)
 
@@ -1006,58 +1042,80 @@ def resource_free_hug_axis(
 def resource_free_frame_hug_content_extent(
     frame: dict[str, Any], axis: str, current: str
 ) -> float:
+    extent = 0.0
+    for raw_child in array_value(frame.get("children"), f"{current} children"):
+        child = object_value(raw_child, f"{current} child")
+        interval = resource_free_absolute_child_axis_interval(child, axis)
+        if interval[1] > extent:
+            extent = interval[1]
+    return extent
+
+
+def resource_free_group_hug_axis_union(
+    group: dict[str, Any], axis: str, current: str
+) -> tuple[float, float]:
+    union: tuple[float, float] | None = None
+    for raw_child in array_value(group.get("children"), f"{current} children"):
+        child = object_value(raw_child, f"{current} child")
+        interval = resource_free_absolute_child_axis_interval(child, axis)
+        if union is None:
+            union = interval
+        else:
+            union = (min(union[0], interval[0]), max(union[1], interval[1]))
+    if union is None:
+        raise VerificationFailure(f"{current} invalid empty Group union")
+    return union
+
+
+def resource_free_absolute_child_axis_interval(
+    child: dict[str, Any], axis: str
+) -> tuple[float, float]:
+    child_occurrence = occurrence(child)
+    kind = text(child.get("kind"), f"{child_occurrence} kind")
+    role = definite_node_role(kind, child_occurrence)
+    placement = object_value(
+        child.get("placement"), f"{child_occurrence} placement"
+    )
+    if placement.get("type") != "ABSOLUTE":
+        raise Unsupported("NON_ABSOLUTE_PLACEMENT", child_occurrence)
     if axis == "Width":
         position_member, mode_member, size_member = "xPt", "widthMode", "widthPt"
     elif axis == "Height":
         position_member, mode_member, size_member = "yPt", "heightMode", "heightPt"
     else:
-        raise VerificationFailure(f"{current} invalid Frame HUG axis")
-    extent = 0.0
-    for raw_child in array_value(frame.get("children"), f"{current} children"):
-        child = object_value(raw_child, f"{current} child")
-        child_occurrence = occurrence(child)
-        kind = text(child.get("kind"), f"{child_occurrence} kind")
-        role = definite_node_role(kind, child_occurrence)
-        placement = object_value(
-            child.get("placement"), f"{child_occurrence} placement"
-        )
-        if placement.get("type") != "ABSOLUTE":
-            raise Unsupported("NON_ABSOLUTE_PLACEMENT", child_occurrence)
-        position = required_decimal(
+        raise VerificationFailure(f"{child_occurrence} invalid HUG axis")
+    position = required_decimal(
+        placement,
+        position_member,
+        child_occurrence,
+        f"placement.{position_member}",
+    )
+    mode = text(
+        placement.get(mode_member), f"{child_occurrence} placement.{mode_member}"
+    )
+    if mode == "FIXED":
+        size = required_decimal(
             placement,
-            position_member,
+            size_member,
             child_occurrence,
-            f"placement.{position_member}",
+            f"placement.{size_member}",
         )
-        mode = text(
-            placement.get(mode_member), f"{child_occurrence} placement.{mode_member}"
+    elif mode == "HUG_CONTENT":
+        size = resource_free_hug_axis(
+            child, role, placement, axis, child_occurrence
         )
-        if mode == "FIXED":
-            size = required_decimal(
-                placement,
-                size_member,
-                child_occurrence,
-                f"placement.{size_member}",
-            )
-        elif mode == "HUG_CONTENT":
-            size = resource_free_hug_axis(
-                child, role, placement, axis, child_occurrence
-            )
-        else:
-            raise VerificationFailure(
-                f"{child_occurrence} invalid placement.{mode_member} in HUG Frame"
-            )
-        end = zero_rotation_affine_axis_end(
-            child, position, size, axis, child_occurrence
+    else:
+        raise VerificationFailure(
+            f"{child_occurrence} invalid placement.{mode_member} in HUG container"
         )
-        if end > extent:
-            extent = end
-    return extent
+    return zero_rotation_affine_axis_interval(
+        child, position, size, axis, child_occurrence
+    )
 
 
-def zero_rotation_affine_axis_end(
+def zero_rotation_affine_axis_interval(
     node: dict[str, Any], position: float, size: float, axis: str, current: str
-) -> float:
+) -> tuple[float, float]:
     transform = object_value(node.get("transform"), f"{current} transform")
     rotation = required_decimal(
         transform, "rotationDeg", current, "transform.rotationDeg"
@@ -1069,7 +1127,7 @@ def zero_rotation_affine_axis_end(
     elif axis == "Height":
         origin_member, scale_member = "originY", "scaleY"
     else:
-        raise VerificationFailure(f"{current} invalid Frame HUG axis")
+        raise VerificationFailure(f"{current} invalid HUG axis")
     origin_ratio = required_decimal(
         transform, origin_member, current, f"transform.{origin_member}"
     )
@@ -1088,12 +1146,26 @@ def zero_rotation_affine_axis_end(
     far_delta = finite_transform_value(far_position - transform_origin, current)
     far_scaled = finite_transform_value(scale * far_delta, current)
     far = finite_transform_value(transform_origin + far_scaled, current)
-    return max(near, far)
+    return min(near, far), max(near, far)
 
 
 def finite_transform_value(value: float, current: str) -> float:
     if not (-float("inf") < value < float("inf")):
         raise VerificationFailure(f"{current} transform produced non-finite binary64")
+    return value
+
+
+def finite_group_union_value(value: float, current: str) -> float:
+    if not (-float("inf") < value < float("inf")):
+        raise VerificationFailure(f"{current} Group union produced non-finite binary64")
+    return value
+
+
+def finite_group_normalization_value(value: float, current: str) -> float:
+    if not (-float("inf") < value < float("inf")):
+        raise VerificationFailure(
+            f"{current} Group normalization produced non-finite binary64"
+        )
     return value
 
 
@@ -1573,7 +1645,7 @@ def verify(
         "vector manifest",
     )
     verifier.require(
-        vectors["vectorVersion"] == "renderweave-definite-layout-vectors/12",
+        vectors["vectorVersion"] == "renderweave-definite-layout-vectors/13",
         "vector identity drifted",
     )
     authority = exact_members(
@@ -1626,7 +1698,7 @@ def verify(
     expected_boundary = {
         "profileAvailability": "NOT_REGISTERED",
         "certificationStatus": "NOT_CERTIFIED",
-        "layoutImplementation": "RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_SINGLE_MAIN_FILL_AND_FIXED_SINGLE_FRACTION_INDEPENDENT_MULTI_AUTO_GRID_EMPTY_CONTAINER_STACK_HUG_GRID_AUTO_HUG_CONTRIBUTION_GRID_HUG_ZERO_ROTATION_AFFINE_FRAME_HUG_BOX_KERNEL",
+        "layoutImplementation": "RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_SINGLE_MAIN_FILL_AND_FIXED_SINGLE_FRACTION_INDEPENDENT_MULTI_AUTO_GRID_EMPTY_CONTAINER_STACK_HUG_GRID_AUTO_HUG_CONTRIBUTION_GRID_HUG_ZERO_ROTATION_AFFINE_FRAME_HUG_GROUP_HUG_NORMALIZATION_BOX_KERNEL",
         "worldTransformImplementation": "ABSENT",
         "sceneImplementation": "ABSENT",
         "rasterImplementation": "ABSENT",
@@ -1664,9 +1736,9 @@ def verify(
         == "renderweave-layout-preflight-fixtures/1",
         "layout preflight fixture identity drifted",
     )
-    verifier.require(len(vectors["laidOutCases"]) == 57, "laid-out case count drifted")
+    verifier.require(len(vectors["laidOutCases"]) == 64, "laid-out case count drifted")
     verifier.require(
-        len(vectors["unsupportedCases"]) == 12,
+        len(vectors["unsupportedCases"]) == 13,
         "unsupported case count drifted",
     )
 
@@ -1714,7 +1786,7 @@ def verify(
             raise VerificationFailure(f"{case_id}: unsupported case produced a layout")
 
     return {
-        "verifier": "renderweave-definite-layout-python-independent/12",
+        "verifier": "renderweave-definite-layout-python-independent/13",
         "result": "PASS",
         "assurance": "A2",
         "laidOutCases": len(vectors["laidOutCases"]),

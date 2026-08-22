@@ -250,7 +250,11 @@ Label: wayfinder:map
 - [实现 zero-rotation affine 非空 Frame HUG intrinsic 子闭包](issues/49-zero-rotation-frame-hug-layout.md) —
   **resolved / automated_verified**；`rotationDeg == 0` 的资源无关 direct ABSOLUTE child 以 axis-local
   scale/flip/origin transformed LayoutBox 最远正端参与 Frame HUG；shared `/12` Rust/Python 为 69/69、
-  209 checks。任意非零 rotation、Group、resource、tolerance、scene/raster/RESULT/Profile 继续 fail closed。
+  209 checks。任意非零 rotation、resource、tolerance、scene/raster/RESULT/Profile 继续 fail closed。
+- [实现 zero-rotation affine 非空 Group HUG union/normalization 子闭包](issues/50-zero-rotation-group-hug-layout.md) —
+  **resolved / automated_verified**；复用 T49 axis interval，对资源无关 direct ABSOLUTE child 求二维 union，以
+  union min 归一化派生 child layout 并保持 Group placement 为 normalized union 左上角；shared `/13` Rust/Python
+  为 77/77、232 checks。非零 child rotation、resource、tolerance、scene/raster/RESULT/Profile 继续 fail closed。
 - [验证 Product Editor 状态、恢复与权威预览架构](issues/09-validate-product-editor-architecture.md) —
   throwaway 逻辑原型（`/prototype/editor-state-model`，不进产品 route）把冻结编辑器规则编码为确定性
   fixture 状态机：10 个引导走查场景 37/37 断言 + 自由操作冒烟 + 键盘焦点检查全部通过（Playwright A1，
@@ -344,8 +348,8 @@ Label: wayfinder:map
   完成 Stack 的资源无关非空 HUG；T44 已完成 definite Grid 的资源无关 HUG child AUTO contribution；T45 已
   完成 owning Grid 的资源无关非空 HUG intrinsic；T46 已完成 RenderResource manifest defensive admission；
   T47 已完成 Command/resource lease coverage admission；T48 已完成 resource body integrity kernel；T49 已完成
-  zero-rotation affine 非空 Frame HUG；其余任意 rotation Frame/Group HUG、multiple Stack main-axis FILL/
-  跨多个 AUTO 的平均
+  zero-rotation affine 非空 Frame HUG；T50 已完成 zero-rotation affine 非空 Group HUG union/normalization；其余任意
+  非零 rotation Frame/Group HUG、multiple Stack main-axis FILL/跨多个 AUTO 的平均
   deficit/multiple FRACTION/actual resource fetch+decode/world scene/raster/
   JPEG/Engine 接线仍须另行登记，物理 Linux 双 CPU-family
   认证与 J1/A3 属届时另行授权的执行级门控。
