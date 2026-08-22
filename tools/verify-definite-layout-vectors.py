@@ -1156,9 +1156,13 @@ def measure_stack_child(
         raise VerificationFailure(f"{current} invalid definite size mode")
     main_mode = width_mode if direction == "ROW" else height_mode
     main_fill = main_mode == "FILL"
-    deferred_role = role == "FRAME" or (
-        role == "STACK"
-        and text(node.get("direction"), f"{current} direction") == direction
+    deferred_role = (
+        role == "FRAME"
+        or (role == "GRID" and direction == "ROW")
+        or (
+            role == "STACK"
+            and text(node.get("direction"), f"{current} direction") == direction
+        )
     )
     deferred_cross_hug_after_main_fill = deferred_role and (
         (
@@ -1357,7 +1361,9 @@ def resource_free_hug_axis(
             node, placement, axis, current, opposite_axis_offer
         )
     elif role == "GRID":
-        content_extent = resource_free_grid_hug_content_extent(node, axis, current)
+        content_extent = resource_free_grid_hug_content_extent(
+            node, placement, axis, current, opposite_axis_offer
+        )
     else:
         raise Unsupported("HUG_CONTENT", current)
     natural = container_outer_extent(node, axis, content_extent, current)
@@ -1810,19 +1816,61 @@ def finite_group_normalization_value(value: float, current: str) -> float:
 
 
 def resource_free_grid_hug_content_extent(
-    grid: dict[str, Any], axis: str, current: str
+    grid: dict[str, Any],
+    placement: dict[str, Any],
+    axis: str,
+    current: str,
+    opposite_axis_offer: HugOppositeAxisOffer | None,
 ) -> float:
+    children = array_value(grid.get("children"), f"{current} children")
     if axis == "Width":
-        grid_axis = "COLUMN"
+        resolved = definite_grid_axis(
+            grid, children, "COLUMN", 0.0, 0.0, current, None
+        )
     elif axis == "Height":
-        grid_axis = "ROW"
+        column_content_offer = definite_grid_column_content_offer(
+            grid, placement, current, opposite_axis_offer
+        )
+        if column_content_offer is None:
+            resolved = definite_grid_axis(
+                grid, children, "ROW", 0.0, 0.0, current, None
+            )
+        else:
+            columns = definite_grid_axis(
+                grid,
+                children,
+                "COLUMN",
+                0.0,
+                column_content_offer,
+                current,
+                None,
+            )
+            resolved = definite_grid_axis(
+                grid, children, "ROW", 0.0, 0.0, current, columns
+            )
     else:
         raise VerificationFailure(f"{current} invalid Grid HUG axis")
-    children = array_value(grid.get("children"), f"{current} children")
-    resolved = definite_grid_axis(
-        grid, children, grid_axis, 0.0, 0.0, current, None
-    )
     return grid_span_extent(resolved.sizes, resolved.gap, 0, len(resolved.sizes))
+
+
+def definite_grid_column_content_offer(
+    grid: dict[str, Any],
+    placement: dict[str, Any],
+    current: str,
+    opposite_axis_offer: HugOppositeAxisOffer | None,
+) -> float | None:
+    if placement.get("widthMode") != "FILL":
+        return None
+    if opposite_axis_offer is None or opposite_axis_offer.source != "RESOLVED_OUTER":
+        return None
+    content_width = container_axis_content_size(
+        grid, opposite_axis_offer.size, "Width", current
+    )
+    if not (-float("inf") < content_width < float("inf")):
+        raise VerificationFailure(
+            f"{current} definite Grid column content offer is not finite"
+        )
+    return content_width
 
 
 def resource_free_stack_hug_content_extent(
@@ -2370,7 +2418,7 @@ def verify(
         "vector manifest",
     )
     verifier.require(
-        vectors["vectorVersion"] == "renderweave-definite-layout-vectors/20",
+        vectors["vectorVersion"] == "renderweave-definite-layout-vectors/21",
         "vector identity drifted",
     )
     authority = exact_members(
@@ -2423,7 +2471,7 @@ def verify(
     expected_boundary = {
         "profileAvailability": "NOT_REGISTERED",
         "certificationStatus": "NOT_CERTIFIED",
-        "layoutImplementation": "RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_SINGLE_MAIN_FILL_AND_FIXED_SINGLE_FRACTION_INDEPENDENT_MULTI_AUTO_GRID_EMPTY_CONTAINER_STACK_HUG_GRID_AUTO_HUG_CONTRIBUTION_GRID_HUG_EXACT_QUARTER_TURN_AFFINE_FRAME_GROUP_HUG_FIXED_OPPOSITE_AXIS_CROSS_FILL_DEFINITE_ABSOLUTE_PARENT_OFFER_DEFINITE_STACK_CROSS_OUTER_OFFER_STACK_MAIN_FILL_CROSS_HUG_REMEASURE_NESTED_STACK_MAIN_OFFER_PROPAGATION_COLUMNS_FIRST_GRID_CELL_OUTER_OFFER_NORMALIZATION_BOX_KERNEL",
+        "layoutImplementation": "RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_SINGLE_MAIN_FILL_AND_FIXED_SINGLE_FRACTION_INDEPENDENT_MULTI_AUTO_GRID_EMPTY_CONTAINER_STACK_HUG_GRID_AUTO_HUG_CONTRIBUTION_GRID_HUG_EXACT_QUARTER_TURN_AFFINE_FRAME_GROUP_HUG_FIXED_OPPOSITE_AXIS_CROSS_FILL_DEFINITE_ABSOLUTE_PARENT_OFFER_DEFINITE_STACK_CROSS_OUTER_OFFER_STACK_MAIN_FILL_CROSS_HUG_REMEASURE_NESTED_STACK_MAIN_OFFER_PROPAGATION_COLUMNS_FIRST_GRID_CELL_OUTER_OFFER_STACK_MAIN_OFFER_COLUMNS_FIRST_GRID_CROSS_HUG_NORMALIZATION_BOX_KERNEL",
         "worldTransformImplementation": "ABSENT",
         "sceneImplementation": "ABSENT",
         "rasterImplementation": "ABSENT",
@@ -2461,7 +2509,7 @@ def verify(
         == "renderweave-layout-preflight-fixtures/1",
         "layout preflight fixture identity drifted",
     )
-    verifier.require(len(vectors["laidOutCases"]) == 95, "laid-out case count drifted")
+    verifier.require(len(vectors["laidOutCases"]) == 99, "laid-out case count drifted")
     verifier.require(
         len(vectors["unsupportedCases"]) == 15,
         "unsupported case count drifted",
@@ -2511,7 +2559,7 @@ def verify(
             raise VerificationFailure(f"{case_id}: unsupported case produced a layout")
 
     return {
-        "verifier": "renderweave-definite-layout-python-independent/20",
+        "verifier": "renderweave-definite-layout-python-independent/21",
         "result": "PASS",
         "assurance": "A2",
         "laidOutCases": len(vectors["laidOutCases"]),

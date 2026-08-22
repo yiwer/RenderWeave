@@ -7,12 +7,13 @@
 //! nodes, Stack children with at most one main-axis FILL, resource-independent Stack/Grid HUG
 //! measurement, exact-quarter-turn affine nonempty Frame/Group HUG measurement (including
 //! definite ABSOLUTE/Stack/FIXED opposite-axis Frame offers for odd-quarter-turn cross-axis
-//! FILL, same-direction nested Stack main-offer propagation, and columns-first direct Grid cell
-//! outer offers), Group normalization, and Grid children whose
+//! FILL, same-direction nested Stack main-offer propagation, columns-first direct Grid cell outer
+//! offers, and ROW Stack main offers into columns-first Grid cross-HUG), Group normalization, and
+//! Grid children whose
 //! definite axes contain FIXED tracks, at most one FRACTION track, and resource-independent AUTO
 //! constraints that each cover at most one AUTO track and consume supported resource-free HUG
 //! contributions. It deliberately stops before resource preparation, non-quarter-turn child
-//! rotation, nested Stack-to-Grid or row-to-column/general constraint-offer propagation,
+//! rotation, ABSOLUTE/Grid-in-Grid owning offers or row-to-column/general constraint propagation,
 //! multi-FILL Stack water filling, cross-AUTO deficit distribution,
 //! multi-FRACTION solving, world transforms, shaping, paint, rasterization, and encoding, and it
 //! never exposes a partial layout on failure.
@@ -1647,7 +1648,8 @@ fn measure_stack_child(
     let deferred_role = match role {
         NodeRole::Frame => true,
         NodeRole::Stack => stack_direction(node, occurrence)? == direction,
-        NodeRole::Group | NodeRole::Grid | NodeRole::Leaf => false,
+        NodeRole::Grid => direction == StackDirection::Row,
+        NodeRole::Group | NodeRole::Leaf => false,
     };
     let deferred_cross_hug_after_main_fill = deferred_role
         && matches!(
@@ -1968,7 +1970,13 @@ fn resource_free_hug_axis(
             occurrence,
             opposite_axis_offer,
         )?,
-        NodeRole::Grid => resource_free_grid_hug_content_extent(node, axis, occurrence)?,
+        NodeRole::Grid => resource_free_grid_hug_content_extent(
+            node,
+            placement,
+            axis,
+            occurrence,
+            opposite_axis_offer,
+        )?,
         NodeRole::Group => unreachable!(),
         NodeRole::Leaf => {
             return Err(DefiniteLayoutError::unsupported(
@@ -2511,19 +2519,76 @@ fn finite_group_normalization_value(
 
 fn resource_free_grid_hug_content_extent(
     grid: &Map<String, Value>,
+    placement: &Map<String, Value>,
     axis: &str,
     occurrence: &str,
+    opposite_axis_offer: Option<HugOppositeAxisOffer>,
 ) -> Result<f64, DefiniteLayoutError> {
-    let grid_axis = match axis {
-        "Width" => GridAxis::Column,
-        "Height" => GridAxis::Row,
+    let children = array_member(grid, "children", occurrence)?;
+    let resolved = match axis {
+        "Width" => definite_grid_axis(
+            grid,
+            children,
+            GridAxis::Column,
+            0.0,
+            0.0,
+            GridAxisMeasurementSpace::Independent,
+            occurrence,
+        )?,
+        "Height" => {
+            let Some(column_content_offer) = definite_grid_column_content_offer(
+                grid,
+                placement,
+                occurrence,
+                opposite_axis_offer,
+            )?
+            else {
+                return resource_free_independent_grid_hug_content_extent(
+                    grid,
+                    children,
+                    GridAxis::Row,
+                    occurrence,
+                );
+            };
+            let columns = definite_grid_axis(
+                grid,
+                children,
+                GridAxis::Column,
+                0.0,
+                column_content_offer,
+                GridAxisMeasurementSpace::Independent,
+                occurrence,
+            )?;
+            definite_grid_axis(
+                grid,
+                children,
+                GridAxis::Row,
+                0.0,
+                0.0,
+                GridAxisMeasurementSpace::RowsAfterColumns(&columns),
+                occurrence,
+            )?
+        }
         _ => return Err(DefiniteLayoutError::invariant(occurrence, "HUG axis")),
     };
-    let children = array_member(grid, "children", occurrence)?;
+    Ok(grid_span_extent(
+        &resolved.sizes,
+        resolved.gap,
+        0,
+        resolved.sizes.len(),
+    ))
+}
+
+fn resource_free_independent_grid_hug_content_extent(
+    grid: &Map<String, Value>,
+    children: &[Value],
+    axis: GridAxis,
+    occurrence: &str,
+) -> Result<f64, DefiniteLayoutError> {
     let resolved = definite_grid_axis(
         grid,
         children,
-        grid_axis,
+        axis,
         0.0,
         0.0,
         GridAxisMeasurementSpace::Independent,
@@ -2535,6 +2600,28 @@ fn resource_free_grid_hug_content_extent(
         0,
         resolved.sizes.len(),
     ))
+}
+
+fn definite_grid_column_content_offer(
+    grid: &Map<String, Value>,
+    placement: &Map<String, Value>,
+    occurrence: &str,
+    opposite_axis_offer: Option<HugOppositeAxisOffer>,
+) -> Result<Option<f64>, DefiniteLayoutError> {
+    if size_mode(placement, "widthMode", occurrence)? != SizeMode::Fill {
+        return Ok(None);
+    }
+    let Some(HugOppositeAxisOffer::ResolvedOuter(width)) = opposite_axis_offer else {
+        return Ok(None);
+    };
+    let content_width = container_axis_content_size(grid, width, "Width", occurrence)?;
+    if !content_width.is_finite() {
+        return Err(DefiniteLayoutError::invariant(
+            occurrence,
+            "definiteColumnContentOffer",
+        ));
+    }
+    Ok(Some(content_width))
 }
 
 fn resource_free_stack_hug_content_extent(
