@@ -1,6 +1,16 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-22 **Template v1 implementation TV1-T56 已由 Codex `/root` single-writer 完成，状态
+  `resolved/automated_verified`**：同 direction nested Stack 现可逐层消费父层最终 main outer offer；每层复用同一
+  Stack measurement/singleton-FILL allocation helper，扣 stroke/padding 后只执行一次 cross-HUG remeasure，且零回推。
+  shared `/19` 的 Rust/Python 为 91 laid-out + 14 unsupported、105/105、315 checks，SHA-256
+  `b83a7f8c13d94262d0c403b94d89f6b92d3b96d3b6fadfaf7c4211294140644d`。focused、`render`、affected `fast`、
+  顺序 `server` 与 `full` 全绿；Goal 证据 `.sdlc/evidence/20260822-194530-full/` 的 17 steps 均 exit 0，Node 24
+  Web 26 files/212 tests、runtime canary、23 passed + 1 skipped Playwright E2E 与 browser journeys 均通过；
+  resolution 后 fast `.sdlc/evidence/20260822-201742-fast/` 也通过。
+  Grid/multiple FILL/general constraint/非直角 rotation/resource/tolerance/scene/raster/RESULT/Profile 继续 fail closed；
+  provider/API Key/真实数据/费用均为 0，未 push/tag/PR。
 - 2026-08-22 **Template v1 implementation TV1-T55 已由 Codex `/root` single-writer 完成，状态
   `resolved/automated_verified`**：T38 singleton Stack main FILL 分配后，现只以最终 main outer size 对 direct
   Frame cross HUG 重测一次且不反算主轴；延迟结果写回 authored measurement slot，保持 first-error 顺序。shared

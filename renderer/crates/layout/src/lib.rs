@@ -7,13 +7,13 @@
 //! nodes, Stack children with at most one main-axis FILL, resource-independent Stack/Grid HUG
 //! measurement, exact-quarter-turn affine nonempty Frame/Group HUG measurement (including
 //! definite ABSOLUTE/Stack/FIXED opposite-axis Frame offers for odd-quarter-turn cross-axis
-//! FILL), Group normalization,
+//! FILL and same-direction nested Stack main-offer propagation), Group normalization,
 //! and Grid children whose
 //! definite axes contain FIXED tracks, at most one FRACTION track, and resource-independent AUTO
 //! constraints that each cover at most one AUTO track and consume supported resource-free HUG
 //! contributions. It deliberately stops before resource preparation, non-quarter-turn child
-//! rotation, Stack main-FILL feedback or nested Stack/Grid cell-offer propagation for
-//! quarter-turn cross-axis FILL, multi-FILL Stack water filling, cross-AUTO deficit distribution,
+//! rotation, Grid/general constraint-offer propagation for quarter-turn cross-axis FILL,
+//! multi-FILL Stack water filling, cross-AUTO deficit distribution,
 //! multi-FRACTION solving, world transforms, shaping, paint, rasterization, and encoding, and it
 //! never exposes a partial layout on failure.
 
@@ -412,6 +412,27 @@ impl StackChildMeasurement {
         }
     }
 
+    const fn cross_size(self, direction: StackDirection) -> f64 {
+        match direction {
+            StackDirection::Row => self.height,
+            StackDirection::Column => self.width,
+        }
+    }
+
+    const fn cross_leading_margin(self, direction: StackDirection) -> f64 {
+        match direction {
+            StackDirection::Row => self.margin_top,
+            StackDirection::Column => self.margin_left,
+        }
+    }
+
+    const fn cross_trailing_margin(self, direction: StackDirection) -> f64 {
+        match direction {
+            StackDirection::Row => self.margin_bottom,
+            StackDirection::Column => self.margin_right,
+        }
+    }
+
     const fn with_main_size(mut self, direction: StackDirection, size: f64) -> Self {
         match direction {
             StackDirection::Row => self.width = size,
@@ -427,6 +448,48 @@ impl StackChildMeasurement {
         }
         self
     }
+}
+
+#[derive(Clone, Copy, Debug)]
+struct StackMeasurementSpace {
+    width: Option<f64>,
+    height: Option<f64>,
+}
+
+impl StackMeasurementSpace {
+    const fn definite(content_box: &LocalLayoutBox) -> Self {
+        Self {
+            width: Some(content_box.width),
+            height: Some(content_box.height),
+        }
+    }
+
+    const fn cross_hug(direction: StackDirection, main_available: f64) -> Self {
+        match direction {
+            StackDirection::Row => Self {
+                width: Some(main_available),
+                height: None,
+            },
+            StackDirection::Column => Self {
+                width: None,
+                height: Some(main_available),
+            },
+        }
+    }
+
+    const fn main_available(self, direction: StackDirection) -> Option<f64> {
+        match direction {
+            StackDirection::Row => self.width,
+            StackDirection::Column => self.height,
+        }
+    }
+}
+
+struct ResolvedStackChildren {
+    direction: StackDirection,
+    gap: f64,
+    distribution: StackDistribution,
+    measurements: Vec<Result<StackChildMeasurement, DefiniteLayoutError>>,
 }
 
 #[derive(Debug)]
@@ -814,91 +877,24 @@ impl DefiniteLayouter {
         content_box: &LocalLayoutBox,
     ) -> Result<(), DefiniteLayoutError> {
         let occurrence = occurrence_id(stack)?;
-        let direction = stack_direction(stack, occurrence)?;
-        let justification = stack_justification(stack, occurrence)?;
-        let gap = nonnegative_binary64_member(stack, "gapPt", occurrence, "gapPt")?;
         let children = array_member(stack, "children", occurrence)?;
-        let mut measurements = Vec::with_capacity(children.len());
-        let mut used_without_fill = 0.0;
-        let mut fill_indices = Vec::new();
+        let resolved = measure_and_allocate_stack_children(
+            stack,
+            StackMeasurementSpace::definite(content_box),
+        )?;
+        let mut cursor = resolved.distribution.leading;
 
-        for (index, child) in children.iter().enumerate() {
-            let child = object(child, occurrence, "children")?;
-            if stack_child_has_main_fill(child, direction) {
-                fill_indices.push(index);
-            }
-            let measured = measure_stack_child(child, content_box, direction);
-            if let Ok(measurement) = &measured {
-                used_without_fill += measurement.main_leading_margin(direction);
-                if !measurement.main_fill {
-                    used_without_fill += measurement.main_size(direction);
-                }
-                used_without_fill += measurement.main_trailing_margin(direction);
-            }
-            if index + 1 < children.len() {
-                used_without_fill += gap;
-            }
-            measurements.push(measured);
-        }
-
-        let available = match direction {
-            StackDirection::Row => content_box.width,
-            StackDirection::Column => content_box.height,
-        };
-        if fill_indices.len() > 1 {
-            let first_fill = fill_indices[0];
-            let child = object(&children[first_fill], occurrence, "children")?;
-            measurements[first_fill] = Err(DefiniteLayoutError::unsupported(
-                occurrence_id(child)?,
-                DefiniteLayoutUnsupported::StackMainFill,
-            ));
-        } else if let Some(&fill_index) = fill_indices.first()
-            && measurements[fill_index].is_ok()
-        {
-            let child = object(&children[fill_index], occurrence, "children")?;
-            let child_occurrence = occurrence_id(child)?;
-            let placement = object_member(Some(child), "placement", child_occurrence)?;
-            let remaining = available - used_without_fill;
-            let offered = if remaining > 0.0 { remaining } else { 0.0 };
-            let size = clamp_flexible_axis(
-                placement,
-                offered,
-                match direction {
-                    StackDirection::Row => "Width",
-                    StackDirection::Column => "Height",
-                },
-                child_occurrence,
-            )?;
-            if let Ok(measurement) = measurements[fill_index] {
-                let measurement = measurement.with_main_size(direction, size);
-                measurements[fill_index] =
-                    remeasure_stack_child_cross_hug_after_main_fill(child, measurement, direction);
-            }
-        }
-
-        let mut occupied = used_without_fill;
-        if let Some(&fill_index) = fill_indices.first()
-            && fill_indices.len() == 1
-            && let Ok(measurement) = &measurements[fill_index]
-        {
-            occupied += measurement.main_size(direction);
-        }
-        let occupied = if occupied > 0.0 { occupied } else { 0.0 };
-        let remaining = available - occupied;
-        let free = if remaining > 0.0 { remaining } else { 0.0 };
-        let distribution = stack_distribution(justification, free, children.len());
-        let mut cursor = distribution.leading;
-
-        for (index, (child, measured)) in children.iter().zip(measurements).enumerate() {
+        for (index, (child, measured)) in children.iter().zip(resolved.measurements).enumerate() {
             let child = object(child, occurrence, "children")?;
             let layout_box = if let Ok(measurement) = &measured {
-                cursor += measurement.main_leading_margin(direction);
-                let layout_box = stack_child_box(content_box, *measurement, direction, cursor);
-                cursor += measurement.main_size(direction);
-                cursor += measurement.main_trailing_margin(direction);
+                cursor += measurement.main_leading_margin(resolved.direction);
+                let layout_box =
+                    stack_child_box(content_box, *measurement, resolved.direction, cursor);
+                cursor += measurement.main_size(resolved.direction);
+                cursor += measurement.main_trailing_margin(resolved.direction);
                 if index + 1 < children.len() {
-                    cursor += gap;
-                    cursor += distribution.between[index];
+                    cursor += resolved.gap;
+                    cursor += resolved.distribution.between[index];
                 }
                 layout_box
             } else {
@@ -1408,9 +1404,93 @@ fn aligned_cross_position(
     (parent_origin + leading_margin) + extra
 }
 
+fn measure_and_allocate_stack_children(
+    stack: &Map<String, Value>,
+    space: StackMeasurementSpace,
+) -> Result<ResolvedStackChildren, DefiniteLayoutError> {
+    let occurrence = occurrence_id(stack)?;
+    let direction = stack_direction(stack, occurrence)?;
+    let justification = stack_justification(stack, occurrence)?;
+    let gap = nonnegative_binary64_member(stack, "gapPt", occurrence, "gapPt")?;
+    let children = array_member(stack, "children", occurrence)?;
+    let mut measurements = Vec::with_capacity(children.len());
+    let mut used_without_fill = 0.0;
+    let mut fill_indices = Vec::new();
+
+    for (index, child) in children.iter().enumerate() {
+        let child = object(child, occurrence, "children")?;
+        if stack_child_has_main_fill(child, direction) {
+            fill_indices.push(index);
+        }
+        let measured = measure_stack_child(child, space, direction);
+        if let Ok(measurement) = &measured {
+            used_without_fill += measurement.main_leading_margin(direction);
+            if !measurement.main_fill {
+                used_without_fill += measurement.main_size(direction);
+            }
+            used_without_fill += measurement.main_trailing_margin(direction);
+        }
+        if index + 1 < children.len() {
+            used_without_fill += gap;
+        }
+        measurements.push(measured);
+    }
+
+    let available = space
+        .main_available(direction)
+        .ok_or_else(|| DefiniteLayoutError::invariant(occurrence, "stackMainOffer"))?;
+    if fill_indices.len() > 1 {
+        let first_fill = fill_indices[0];
+        let child = object(&children[first_fill], occurrence, "children")?;
+        measurements[first_fill] = Err(DefiniteLayoutError::unsupported(
+            occurrence_id(child)?,
+            DefiniteLayoutUnsupported::StackMainFill,
+        ));
+    } else if let Some(&fill_index) = fill_indices.first()
+        && measurements[fill_index].is_ok()
+    {
+        let child = object(&children[fill_index], occurrence, "children")?;
+        let child_occurrence = occurrence_id(child)?;
+        let placement = object_member(Some(child), "placement", child_occurrence)?;
+        let remaining = available - used_without_fill;
+        let offered = if remaining > 0.0 { remaining } else { 0.0 };
+        let size = clamp_flexible_axis(
+            placement,
+            offered,
+            match direction {
+                StackDirection::Row => "Width",
+                StackDirection::Column => "Height",
+            },
+            child_occurrence,
+        )?;
+        if let Ok(measurement) = measurements[fill_index] {
+            let measurement = measurement.with_main_size(direction, size);
+            measurements[fill_index] =
+                remeasure_stack_child_cross_hug_after_main_fill(child, measurement, direction);
+        }
+    }
+
+    let mut occupied = used_without_fill;
+    if let Some(&fill_index) = fill_indices.first()
+        && fill_indices.len() == 1
+        && let Ok(measurement) = &measurements[fill_index]
+    {
+        occupied += measurement.main_size(direction);
+    }
+    let occupied = if occupied > 0.0 { occupied } else { 0.0 };
+    let remaining = available - occupied;
+    let free = if remaining > 0.0 { remaining } else { 0.0 };
+    Ok(ResolvedStackChildren {
+        direction,
+        gap,
+        distribution: stack_distribution(justification, free, children.len()),
+        measurements,
+    })
+}
+
 fn measure_stack_child(
     node: &Map<String, Value>,
-    parent: &LocalLayoutBox,
+    space: StackMeasurementSpace,
     direction: StackDirection,
 ) -> Result<StackChildMeasurement, DefiniteLayoutError> {
     let occurrence = occurrence_id(node)?;
@@ -1430,20 +1510,17 @@ fn measure_stack_child(
         StackDirection::Column => height_mode,
     };
     let main_fill = main_mode == SizeMode::Fill;
-    let deferred_cross_hug_after_main_fill = matches!(
-        (role, direction, width_mode, height_mode),
-        (
-            NodeRole::Frame,
-            StackDirection::Row,
-            SizeMode::Fill,
-            SizeMode::Hug
-        ) | (
-            NodeRole::Frame,
-            StackDirection::Column,
-            SizeMode::Hug,
-            SizeMode::Fill
-        )
-    );
+    let deferred_role = match role {
+        NodeRole::Frame => true,
+        NodeRole::Stack => stack_direction(node, occurrence)? == direction,
+        NodeRole::Group | NodeRole::Grid | NodeRole::Leaf => false,
+    };
+    let deferred_cross_hug_after_main_fill = deferred_role
+        && matches!(
+            (direction, width_mode, height_mode),
+            (StackDirection::Row, SizeMode::Fill, SizeMode::Hug)
+                | (StackDirection::Column, SizeMode::Hug, SizeMode::Fill)
+        );
 
     let margin_top = binary64_member(
         placement,
@@ -1471,10 +1548,10 @@ fn measure_stack_child(
     )?;
     let resolved_cross_outer_offer = match (role, direction, width_mode, height_mode) {
         (NodeRole::Frame, StackDirection::Row, SizeMode::Hug, SizeMode::Fill) => {
-            Some(stack_axis_size(
+            Some(stack_axis_size_from_offer(
                 placement,
                 SizeMode::Fill,
-                parent.height,
+                space.height,
                 margin_top,
                 margin_bottom,
                 "Height",
@@ -1482,10 +1559,10 @@ fn measure_stack_child(
             )?)
         }
         (NodeRole::Frame, StackDirection::Column, SizeMode::Fill, SizeMode::Hug) => {
-            Some(stack_axis_size(
+            Some(stack_axis_size_from_offer(
                 placement,
                 SizeMode::Fill,
-                parent.width,
+                space.width,
                 margin_left,
                 margin_right,
                 "Width",
@@ -1514,10 +1591,10 @@ fn measure_stack_child(
     {
         size
     } else {
-        stack_axis_size(
+        stack_axis_size_from_offer(
             placement,
             width_mode,
-            parent.width,
+            space.width,
             margin_left,
             margin_right,
             "Width",
@@ -1544,10 +1621,10 @@ fn measure_stack_child(
     {
         size
     } else {
-        stack_axis_size(
+        stack_axis_size_from_offer(
             placement,
             height_mode,
-            parent.height,
+            space.height,
             margin_top,
             margin_bottom,
             "Height",
@@ -1619,6 +1696,26 @@ fn stack_axis_size(
     axis: &str,
     occurrence: &str,
 ) -> Result<f64, DefiniteLayoutError> {
+    stack_axis_size_from_offer(
+        placement,
+        mode,
+        Some(parent_size),
+        leading_margin,
+        trailing_margin,
+        axis,
+        occurrence,
+    )
+}
+
+fn stack_axis_size_from_offer(
+    placement: &Map<String, Value>,
+    mode: SizeMode,
+    parent_size: Option<f64>,
+    leading_margin: f64,
+    trailing_margin: f64,
+    axis: &str,
+    occurrence: &str,
+) -> Result<f64, DefiniteLayoutError> {
     let size_member = format!("{}Pt", axis.to_ascii_lowercase());
     if mode == SizeMode::Fixed {
         return binary64_member(
@@ -1634,6 +1731,9 @@ fn stack_axis_size(
             format!("placement.{axis}Mode"),
         ));
     }
+    let parent_size = parent_size.ok_or_else(|| {
+        DefiniteLayoutError::invariant(occurrence, format!("definite{axis}Offer"))
+    })?;
     let remaining = (parent_size - leading_margin) - trailing_margin;
     let size = if remaining > 0.0 { remaining } else { 0.0 };
     clamp_flexible_axis(placement, size, axis, occurrence)
@@ -1727,7 +1827,13 @@ fn resource_free_hug_axis(
             occurrence,
             opposite_axis_offer,
         )?,
-        NodeRole::Stack => resource_free_stack_hug_content_extent(node, axis, occurrence)?,
+        NodeRole::Stack => resource_free_stack_hug_content_extent(
+            node,
+            placement,
+            axis,
+            occurrence,
+            opposite_axis_offer,
+        )?,
         NodeRole::Grid => resource_free_grid_hug_content_extent(node, axis, occurrence)?,
         NodeRole::Group => unreachable!(),
         NodeRole::Leaf => {
@@ -1774,33 +1880,9 @@ fn definite_frame_opposite_content_offer(
     occurrence: &str,
     opposite_axis_offer: Option<HugOppositeAxisOffer>,
 ) -> Result<Option<f64>, DefiniteLayoutError> {
-    let (
-        opposite_axis,
-        mode_member,
-        size_member,
-        start_member,
-        end_inset_member,
-        leading_padding,
-        trailing_padding,
-    ) = match hug_axis {
-        "Width" => (
-            "Height",
-            "heightMode",
-            "heightPt",
-            "yPt",
-            "bottomInsetPt",
-            "topPt",
-            "bottomPt",
-        ),
-        "Height" => (
-            "Width",
-            "widthMode",
-            "widthPt",
-            "xPt",
-            "rightInsetPt",
-            "leftPt",
-            "rightPt",
-        ),
+    let (opposite_axis, mode_member, size_member, start_member, end_inset_member) = match hug_axis {
+        "Width" => ("Height", "heightMode", "heightPt", "yPt", "bottomInsetPt"),
+        "Height" => ("Width", "widthMode", "widthPt", "xPt", "rightInsetPt"),
         _ => return Err(DefiniteLayoutError::invariant(occurrence, "HUG axis")),
     };
     let mode = size_mode(placement, mode_member, occurrence)?;
@@ -1838,7 +1920,28 @@ fn definite_frame_opposite_content_offer(
         }
         SizeMode::Hug => return Ok(None),
     };
-    let stroke_width = if let Some(stroke) = frame.get("stroke") {
+    let content_size = container_axis_content_size(frame, outer_size, opposite_axis, occurrence)?;
+    if !content_size.is_finite() {
+        return Err(DefiniteLayoutError::invariant(
+            occurrence,
+            format!("definiteOpposite{opposite_axis}ContentOffer"),
+        ));
+    }
+    Ok(Some(content_size))
+}
+
+fn container_axis_content_size(
+    node: &Map<String, Value>,
+    outer_size: f64,
+    axis: &str,
+    occurrence: &str,
+) -> Result<f64, DefiniteLayoutError> {
+    let (leading_padding, trailing_padding) = match axis {
+        "Width" => ("leftPt", "rightPt"),
+        "Height" => ("topPt", "bottomPt"),
+        _ => return Err(DefiniteLayoutError::invariant(occurrence, "contentAxis")),
+    };
+    let stroke_width = if let Some(stroke) = node.get("stroke") {
         let stroke = stroke
             .as_object()
             .ok_or_else(|| DefiniteLayoutError::invariant(occurrence, "stroke"))?;
@@ -1848,7 +1951,7 @@ fn definite_frame_opposite_content_offer(
     };
     let mut content_size = subtract_content_inset(outer_size, stroke_width);
     content_size = subtract_content_inset(content_size, stroke_width);
-    let padding = object_member(Some(frame), "padding", occurrence)?;
+    let padding = object_member(Some(node), "padding", occurrence)?;
     content_size = subtract_content_inset(
         content_size,
         nonnegative_binary64_member(
@@ -1867,13 +1970,7 @@ fn definite_frame_opposite_content_offer(
             format!("padding.{trailing_padding}"),
         )?,
     );
-    if !content_size.is_finite() {
-        return Err(DefiniteLayoutError::invariant(
-            occurrence,
-            format!("definiteOpposite{opposite_axis}ContentOffer"),
-        ));
-    }
-    Ok(Some(content_size))
+    Ok(content_size)
 }
 
 fn resource_free_group_hug_axis_union(
@@ -2300,8 +2397,10 @@ fn resource_free_grid_hug_content_extent(
 
 fn resource_free_stack_hug_content_extent(
     stack: &Map<String, Value>,
+    placement: &Map<String, Value>,
     axis: &str,
     occurrence: &str,
+    opposite_axis_offer: Option<HugOppositeAxisOffer>,
 ) -> Result<f64, DefiniteLayoutError> {
     let direction = stack_direction(stack, occurrence)?;
     let axis_is_main = matches!(
@@ -2310,6 +2409,17 @@ fn resource_free_stack_hug_content_extent(
     );
     if !matches!(axis, "Width" | "Height") {
         return Err(DefiniteLayoutError::invariant(occurrence, "HUG axis"));
+    }
+    if !axis_is_main
+        && let Some(main_content_offer) = definite_stack_main_content_offer(
+            stack,
+            placement,
+            direction,
+            occurrence,
+            opposite_axis_offer,
+        )?
+    {
+        return resource_free_stack_cross_hug_content_extent(stack, direction, main_content_offer);
     }
     let children = array_member(stack, "children", occurrence)?;
     let gap = nonnegative_binary64_member(stack, "gapPt", occurrence, "gapPt")?;
@@ -2352,6 +2462,56 @@ fn resource_free_stack_hug_content_extent(
         let mut margin_extent_end = leading_margin;
         margin_extent_end += child_size;
         margin_extent_end += trailing_margin;
+        if margin_extent_end > extent {
+            extent = margin_extent_end;
+        }
+    }
+    Ok(extent)
+}
+
+fn definite_stack_main_content_offer(
+    stack: &Map<String, Value>,
+    placement: &Map<String, Value>,
+    direction: StackDirection,
+    occurrence: &str,
+    opposite_axis_offer: Option<HugOppositeAxisOffer>,
+) -> Result<Option<f64>, DefiniteLayoutError> {
+    let (main_axis, mode_member) = match direction {
+        StackDirection::Row => ("Width", "widthMode"),
+        StackDirection::Column => ("Height", "heightMode"),
+    };
+    if size_mode(placement, mode_member, occurrence)? != SizeMode::Fill {
+        return Ok(None);
+    }
+    let Some(HugOppositeAxisOffer::ResolvedOuter(main_outer_size)) = opposite_axis_offer else {
+        return Ok(None);
+    };
+    let main_content_size =
+        container_axis_content_size(stack, main_outer_size, main_axis, occurrence)?;
+    if !main_content_size.is_finite() {
+        return Err(DefiniteLayoutError::invariant(
+            occurrence,
+            format!("definite{main_axis}ContentOffer"),
+        ));
+    }
+    Ok(Some(main_content_size))
+}
+
+fn resource_free_stack_cross_hug_content_extent(
+    stack: &Map<String, Value>,
+    direction: StackDirection,
+    main_content_offer: f64,
+) -> Result<f64, DefiniteLayoutError> {
+    let resolved = measure_and_allocate_stack_children(
+        stack,
+        StackMeasurementSpace::cross_hug(direction, main_content_offer),
+    )?;
+    let mut extent = 0.0;
+    for measured in resolved.measurements {
+        let measurement = measured?;
+        let margin_extent_end = (measurement.cross_leading_margin(direction)
+            + measurement.cross_size(direction))
+            + measurement.cross_trailing_margin(direction);
         if margin_extent_end > extent {
             extent = margin_extent_end;
         }
