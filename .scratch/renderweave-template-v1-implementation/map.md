@@ -264,6 +264,11 @@ Label: wayfinder:map
   **resolved / automated_verified**；只让 opposite axis 为 FIXED 的 HUG Frame 以现有 ContentBox floor-zero 规则向
   odd quarter-turn direct ABSOLUTE child 提供 cross-axis FILL offer；shared `/15` Rust/Python 为 88/88、264 checks。
   Frame 自身 opposite-axis FILL、非直角 rotation、resource/tolerance/scene/raster/RESULT/Profile 继续 fail closed。
+- [实现 definite ABSOLUTE parent-offer 下的 quarter-turn Frame HUG opposite-axis FILL 传播子闭包](issues/53-definite-absolute-parent-offer-quarter-turn-frame-hug-layout.md) —
+  **resolved / automated_verified**；already-definite ABSOLUTE parent ContentBox 的 cross-axis offer 现可沿 HUG
+  Frame 链单向传播，复用 FILL inset/min-max、ContentBox floor-zero 与 T52 affine；shared `/16` Rust/Python 为
+  93/93、279 checks。Stack/Grid offer、双向 HUG、非直角 rotation、resource/tolerance/scene/raster/RESULT/Profile
+  继续 fail closed。
 - [验证 Product Editor 状态、恢复与权威预览架构](issues/09-validate-product-editor-architecture.md) —
   throwaway 逻辑原型（`/prototype/editor-state-model`，不进产品 route）把冻结编辑器规则编码为确定性
   fixture 状态机：10 个引导走查场景 37/37 断言 + 自由操作冒烟 + 键盘焦点检查全部通过（Playwright A1，
@@ -359,8 +364,10 @@ Label: wayfinder:map
   T47 已完成 Command/resource lease coverage admission；T48 已完成 resource body integrity kernel；T49 已完成
   zero-rotation affine 非空 Frame HUG；T50 已完成 zero-rotation affine 非空 Group HUG union/normalization；T51
   已完成 exact-quarter-turn affine Frame/Group HUG AABB（Rust/Python 83/83、249 checks）；T52 已完成 FIXED
-  opposite-axis Frame 的 odd-quarter-turn cross-axis FILL（Rust/Python 88/88、264 checks）；其余非直角 rotation、
-  一般 parent-offer、multiple
+  opposite-axis Frame 的 odd-quarter-turn cross-axis FILL（Rust/Python 88/88、264 checks）；T53 已完成
+  already-definite ABSOLUTE parent offer 沿 HUG Frame opposite-axis FILL 的单向传播（Rust/Python 93/93、279
+  checks）；其余非直角 rotation、
+  Stack/Grid/general constraint offer、multiple
   Stack main-axis FILL/跨多个 AUTO 的平均
   deficit/multiple FRACTION/actual resource fetch+decode/world scene/raster/
   JPEG/Engine 接线仍须另行登记，物理 Linux 双 CPU-family

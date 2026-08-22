@@ -1,6 +1,15 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-22 **Template v1 implementation TV1-T53 已由 Codex `/root` single-writer 完成，状态
+  `resolved/automated_verified`**：already-definite ABSOLUTE parent ContentBox opposite-axis offer 现可沿 HUG Frame
+  链单向传播，使 Frame 自身 opposite-axis FILL 复用既有 inset/min-max、ContentBox floor-zero 与 T52
+  cross-axis FILL/AABB。shared `/16` 的 Rust/Python 为 79 laid-out + 14 unsupported、93/93、279 checks，SHA-256
+  `8b27b3c01bb8135bc62d08e33313e825b2bf3b55f6fca325e09a2aaa94c28f9b`。focused、`render`、affected `fast`、
+  顺序 `server` 与 `full` 全绿，Goal 证据 `.sdlc/evidence/20260822-162713-full/` 的 17 steps 均 exit 0。
+  resolution 后 final `fast` `.sdlc/evidence/20260822-165827-fast/` 也通过。Stack/Grid/general constraint、双向
+  HUG、非直角 rotation、resource/scene/raster/daemon RESULT/Profile 继续 fail closed；provider/API Key/真实
+  数据/费用均为 0，未 push/tag/PR。
 - 2026-08-22 **Template v1 implementation TV1-T52 已由 Codex `/root` single-writer 完成，状态
   `resolved/automated_verified`**：HUG Frame 在 opposite axis 为 FIXED 时，现可为 exact odd-quarter-turn direct
   ABSOLUTE child 提供 cross-axis FILL ContentBox offer；shared `/15` 的 Rust/Python 为 74 laid-out + 14 unsupported、

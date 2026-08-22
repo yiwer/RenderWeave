@@ -1,5 +1,5 @@
 {
-  "vectorVersion": "renderweave-definite-layout-vectors/15",
+  "vectorVersion": "renderweave-definite-layout-vectors/16",
   "authorityContext": {
     "layoutProfile": "renderweave-layout/1.0",
     "documentContract": "renderweave-render-node-contract-v1/2",
@@ -9,7 +9,7 @@
   "boundary": {
     "profileAvailability": "NOT_REGISTERED",
     "certificationStatus": "NOT_CERTIFIED",
-    "layoutImplementation": "RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_SINGLE_MAIN_FILL_AND_FIXED_SINGLE_FRACTION_INDEPENDENT_MULTI_AUTO_GRID_EMPTY_CONTAINER_STACK_HUG_GRID_AUTO_HUG_CONTRIBUTION_GRID_HUG_EXACT_QUARTER_TURN_AFFINE_FRAME_GROUP_HUG_FIXED_OPPOSITE_AXIS_CROSS_FILL_NORMALIZATION_BOX_KERNEL",
+    "layoutImplementation": "RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_SINGLE_MAIN_FILL_AND_FIXED_SINGLE_FRACTION_INDEPENDENT_MULTI_AUTO_GRID_EMPTY_CONTAINER_STACK_HUG_GRID_AUTO_HUG_CONTRIBUTION_GRID_HUG_EXACT_QUARTER_TURN_AFFINE_FRAME_GROUP_HUG_FIXED_OPPOSITE_AXIS_CROSS_FILL_DEFINITE_ABSOLUTE_PARENT_OFFER_NORMALIZATION_BOX_KERNEL",
     "worldTransformImplementation": "ABSENT",
     "sceneImplementation": "ABSENT",
     "rasterImplementation": "ABSENT",
@@ -1393,11 +1393,9 @@
           {"occurrenceId": "rwocc_0000000000000003", "kind": "rect", "layoutBox": {"xBits": "4034000000000000", "yBits": "4039000000000000", "widthBits": "4024000000000000", "heightBits": "4014000000000000"}, "contentBox": null}
         ]
       }
-    }
-  ],
-  "unsupportedCases": [
+    },
     {
-      "id": "frame-quarter-turn-cross-fill-with-owning-fill-offer-remains-unsupported",
+      "id": "frame-width-hug-own-height-fill-from-canvas-offer",
       "baseSource": "fixtures",
       "baseCase": "nestedFrame",
       "mutations": [
@@ -1411,7 +1409,121 @@
         {"operation": "add", "pointer": "/canvas/children/0/children/0/placement/bottomInsetPt", "value": 3},
         {"operation": "replace", "pointer": "/canvas/children/0/children/0/transform/rotationDeg", "value": 90}
       ],
-      "expected": {"feature": "CHILD_ROTATION", "occurrenceId": "rwocc_0000000000000002"}
+      "expected": {
+        "entries": [
+          {"occurrenceId": "rwocc_0000000000000000", "kind": "canvas", "layoutBox": {"xBits": "0000000000000000", "yBits": "0000000000000000", "widthBits": "4059000000000000", "heightBits": "4059000000000000"}, "contentBox": {"xBits": "0000000000000000", "yBits": "0000000000000000", "widthBits": "4059000000000000", "heightBits": "4059000000000000"}},
+          {"occurrenceId": "rwocc_0000000000000001", "kind": "frame", "layoutBox": {"xBits": "4024000000000000", "yBits": "4034000000000000", "widthBits": "4047c00000000000", "heightBits": "4051800000000000"}, "contentBox": {"xBits": "4033000000000000", "yBits": "4037000000000000", "widthBits": "4040c00000000000", "heightBits": "404e000000000000"}},
+          {"occurrenceId": "rwocc_0000000000000002", "kind": "rect", "layoutBox": {"xBits": "4034000000000000", "yBits": "4039000000000000", "widthBits": "4024000000000000", "heightBits": "404b800000000000"}, "contentBox": null}
+        ]
+      }
+    },
+    {
+      "id": "frame-height-hug-own-width-fill-from-canvas-offer",
+      "baseSource": "fixtures",
+      "baseCase": "nestedFrame",
+      "mutations": [
+        {"operation": "replace", "pointer": "/canvas/children/0/placement/heightMode", "value": "HUG_CONTENT"},
+        {"operation": "remove", "pointer": "/canvas/children/0/placement/heightPt"},
+        {"operation": "replace", "pointer": "/canvas/children/0/placement/widthMode", "value": "FILL"},
+        {"operation": "remove", "pointer": "/canvas/children/0/placement/widthPt"},
+        {"operation": "add", "pointer": "/canvas/children/0/placement/rightInsetPt", "value": 10},
+        {"operation": "replace", "pointer": "/canvas/children/0/children/0/placement/widthMode", "value": "FILL"},
+        {"operation": "remove", "pointer": "/canvas/children/0/children/0/placement/widthPt"},
+        {"operation": "add", "pointer": "/canvas/children/0/children/0/placement/rightInsetPt", "value": 4},
+        {"operation": "replace", "pointer": "/canvas/children/0/children/0/transform/rotationDeg", "value": -90}
+      ],
+      "expected": {
+        "entries": [
+          {"occurrenceId": "rwocc_0000000000000000", "kind": "canvas", "layoutBox": {"xBits": "0000000000000000", "yBits": "0000000000000000", "widthBits": "4059000000000000", "heightBits": "4059000000000000"}, "contentBox": {"xBits": "0000000000000000", "yBits": "0000000000000000", "widthBits": "4059000000000000", "heightBits": "4059000000000000"}},
+          {"occurrenceId": "rwocc_0000000000000001", "kind": "frame", "layoutBox": {"xBits": "4024000000000000", "yBits": "4034000000000000", "widthBits": "4054000000000000", "heightBits": "4048000000000000"}, "contentBox": {"xBits": "4033000000000000", "yBits": "4037000000000000", "widthBits": "4050800000000000", "heightBits": "4043000000000000"}},
+          {"occurrenceId": "rwocc_0000000000000002", "kind": "rect", "layoutBox": {"xBits": "4034000000000000", "yBits": "4039000000000000", "widthBits": "404e800000000000", "heightBits": "4026000000000000"}, "contentBox": null}
+        ]
+      }
+    },
+    {
+      "id": "frame-own-cross-fill-negative-remainder-min-clamp",
+      "baseSource": "fixtures",
+      "baseCase": "nestedFrame",
+      "mutations": [
+        {"operation": "replace", "pointer": "/canvas/children/0/placement/widthMode", "value": "HUG_CONTENT"},
+        {"operation": "remove", "pointer": "/canvas/children/0/placement/widthPt"},
+        {"operation": "replace", "pointer": "/canvas/children/0/placement/heightMode", "value": "FILL"},
+        {"operation": "remove", "pointer": "/canvas/children/0/placement/heightPt"},
+        {"operation": "replace", "pointer": "/canvas/children/0/placement/yPt", "value": 100},
+        {"operation": "add", "pointer": "/canvas/children/0/placement/bottomInsetPt", "value": 10},
+        {"operation": "add", "pointer": "/canvas/children/0/placement/minHeightPt", "value": 30},
+        {"operation": "replace", "pointer": "/canvas/children/0/children/0/placement/heightMode", "value": "FILL"},
+        {"operation": "remove", "pointer": "/canvas/children/0/children/0/placement/heightPt"},
+        {"operation": "add", "pointer": "/canvas/children/0/children/0/placement/bottomInsetPt", "value": 3},
+        {"operation": "replace", "pointer": "/canvas/children/0/children/0/transform/rotationDeg", "value": 90}
+      ],
+      "expected": {
+        "entries": [
+          {"occurrenceId": "rwocc_0000000000000000", "kind": "canvas", "layoutBox": {"xBits": "0000000000000000", "yBits": "0000000000000000", "widthBits": "4059000000000000", "heightBits": "4059000000000000"}, "contentBox": {"xBits": "0000000000000000", "yBits": "0000000000000000", "widthBits": "4059000000000000", "heightBits": "4059000000000000"}},
+          {"occurrenceId": "rwocc_0000000000000001", "kind": "frame", "layoutBox": {"xBits": "4024000000000000", "yBits": "4059000000000000", "widthBits": "403b800000000000", "heightBits": "403e000000000000"}, "contentBox": {"xBits": "4033000000000000", "yBits": "4059c00000000000", "widthBits": "402b000000000000", "heightBits": "4034000000000000"}},
+          {"occurrenceId": "rwocc_0000000000000002", "kind": "rect", "layoutBox": {"xBits": "4034000000000000", "yBits": "405a400000000000", "widthBits": "4024000000000000", "heightBits": "402e000000000000"}, "contentBox": null}
+        ]
+      }
+    },
+    {
+      "id": "frame-own-cross-fill-max-clamp",
+      "baseSource": "fixtures",
+      "baseCase": "nestedFrame",
+      "mutations": [
+        {"operation": "replace", "pointer": "/canvas/children/0/placement/widthMode", "value": "HUG_CONTENT"},
+        {"operation": "remove", "pointer": "/canvas/children/0/placement/widthPt"},
+        {"operation": "replace", "pointer": "/canvas/children/0/placement/heightMode", "value": "FILL"},
+        {"operation": "remove", "pointer": "/canvas/children/0/placement/heightPt"},
+        {"operation": "add", "pointer": "/canvas/children/0/placement/bottomInsetPt", "value": 10},
+        {"operation": "add", "pointer": "/canvas/children/0/placement/maxHeightPt", "value": 40},
+        {"operation": "replace", "pointer": "/canvas/children/0/children/0/placement/heightMode", "value": "FILL"},
+        {"operation": "remove", "pointer": "/canvas/children/0/children/0/placement/heightPt"},
+        {"operation": "add", "pointer": "/canvas/children/0/children/0/placement/bottomInsetPt", "value": 3},
+        {"operation": "replace", "pointer": "/canvas/children/0/children/0/transform/rotationDeg", "value": 90}
+      ],
+      "expected": {
+        "entries": [
+          {"occurrenceId": "rwocc_0000000000000000", "kind": "canvas", "layoutBox": {"xBits": "0000000000000000", "yBits": "0000000000000000", "widthBits": "4059000000000000", "heightBits": "4059000000000000"}, "contentBox": {"xBits": "0000000000000000", "yBits": "0000000000000000", "widthBits": "4059000000000000", "heightBits": "4059000000000000"}},
+          {"occurrenceId": "rwocc_0000000000000001", "kind": "frame", "layoutBox": {"xBits": "4024000000000000", "yBits": "4034000000000000", "widthBits": "4040400000000000", "heightBits": "4044000000000000"}, "contentBox": {"xBits": "4033000000000000", "yBits": "4037000000000000", "widthBits": "4032800000000000", "heightBits": "403e000000000000"}},
+          {"occurrenceId": "rwocc_0000000000000002", "kind": "rect", "layoutBox": {"xBits": "4034000000000000", "yBits": "4039000000000000", "widthBits": "4024000000000000", "heightBits": "4039000000000000"}, "contentBox": null}
+        ]
+      }
+    },
+    {
+      "id": "frame-own-cross-fill-propagates-through-nested-absolute-frame",
+      "baseSource": "fixtures",
+      "baseCase": "nestedFrame",
+      "mutations": [
+        {"operation": "replace", "pointer": "/canvas/children/0/placement/widthMode", "value": "HUG_CONTENT"},
+        {"operation": "remove", "pointer": "/canvas/children/0/placement/widthPt"},
+        {"operation": "replace", "pointer": "/canvas/children/0/placement/heightMode", "value": "FILL"},
+        {"operation": "remove", "pointer": "/canvas/children/0/placement/heightPt"},
+        {"operation": "add", "pointer": "/canvas/children/0/placement/bottomInsetPt", "value": 10},
+        {"operation": "replace", "pointer": "/canvas/children/0/children", "value": [
+          {"children":[{"cornerRadii":{"bottomLeftPt":0,"bottomRightPt":0,"topLeftPt":0,"topRightPt":0},"fill":{"color":"#000000FF"},"kind":"rect","occurrenceId":"rwocc_0000000000000003","opacity":1,"placement":{"bottomInsetPt":4,"heightMode":"FILL","type":"ABSOLUTE","widthMode":"FIXED","widthPt":10,"xPt":0,"yPt":1},"transform":{"originX":0.5,"originY":0.5,"rotationDeg":90,"scaleX":1,"scaleY":1},"visible":true}],"clipContent":false,"cornerRadii":{"bottomLeftPt":0,"bottomRightPt":0,"topLeftPt":0,"topRightPt":0},"kind":"frame","occurrenceId":"rwocc_0000000000000002","opacity":1,"padding":{"bottomPt":0,"leftPt":0,"rightPt":0,"topPt":0},"placement":{"bottomInsetPt":3,"heightMode":"FILL","type":"ABSOLUTE","widthMode":"HUG_CONTENT","xPt":1,"yPt":2},"transform":{"originX":0,"originY":0,"rotationDeg":0,"scaleX":1,"scaleY":1},"visible":true}
+        ]}
+      ],
+      "expected": {
+        "entries": [
+          {"occurrenceId": "rwocc_0000000000000000", "kind": "canvas", "layoutBox": {"xBits": "0000000000000000", "yBits": "0000000000000000", "widthBits": "4059000000000000", "heightBits": "4059000000000000"}, "contentBox": {"xBits": "0000000000000000", "yBits": "0000000000000000", "widthBits": "4059000000000000", "heightBits": "4059000000000000"}},
+          {"occurrenceId": "rwocc_0000000000000001", "kind": "frame", "layoutBox": {"xBits": "4024000000000000", "yBits": "4034000000000000", "widthBits": "4046800000000000", "heightBits": "4051800000000000"}, "contentBox": {"xBits": "4033000000000000", "yBits": "4037000000000000", "widthBits": "403f000000000000", "heightBits": "404e000000000000"}},
+          {"occurrenceId": "rwocc_0000000000000002", "kind": "frame", "layoutBox": {"xBits": "4034000000000000", "yBits": "4039000000000000", "widthBits": "403e000000000000", "heightBits": "404b800000000000"}, "contentBox": {"xBits": "4034000000000000", "yBits": "4039000000000000", "widthBits": "403e000000000000", "heightBits": "404b800000000000"}},
+          {"occurrenceId": "rwocc_0000000000000003", "kind": "rect", "layoutBox": {"xBits": "4034000000000000", "yBits": "403a000000000000", "widthBits": "4024000000000000", "heightBits": "4049000000000000"}, "contentBox": null}
+        ]
+      }
+    }
+  ],
+  "unsupportedCases": [
+    {
+      "id": "stack-cross-fill-offer-to-hug-frame-remains-unsupported",
+      "baseSource": "fixtures",
+      "baseCase": "rowStack",
+      "mutations": [
+        {"operation": "replace", "pointer": "/canvas/children/0/children", "value": [
+          {"children":[{"cornerRadii":{"bottomLeftPt":0,"bottomRightPt":0,"topLeftPt":0,"topRightPt":0},"fill":{"color":"#000000FF"},"kind":"rect","occurrenceId":"rwocc_0000000000000003","opacity":1,"placement":{"bottomInsetPt":3,"heightMode":"FILL","type":"ABSOLUTE","widthMode":"FIXED","widthPt":10,"xPt":1,"yPt":2},"transform":{"originX":0.5,"originY":0.5,"rotationDeg":90,"scaleX":1,"scaleY":1},"visible":true}],"clipContent":false,"cornerRadii":{"bottomLeftPt":0,"bottomRightPt":0,"topLeftPt":0,"topRightPt":0},"kind":"frame","occurrenceId":"rwocc_0000000000000002","opacity":1,"padding":{"bottomPt":0,"leftPt":0,"rightPt":0,"topPt":0},"placement":{"alignSelf":"START","heightMode":"FILL","marginBottomPt":0,"marginLeftPt":0,"marginRightPt":0,"marginTopPt":0,"type":"STACK","widthMode":"HUG_CONTENT"},"transform":{"originX":0,"originY":0,"rotationDeg":0,"scaleX":1,"scaleY":1},"visible":true}
+        ]}
+      ],
+      "expected": {"feature": "CHILD_ROTATION", "occurrenceId": "rwocc_0000000000000003"}
     },
     {
       "id": "nonempty-group-nonzero-child-rotation-remains-unsupported",

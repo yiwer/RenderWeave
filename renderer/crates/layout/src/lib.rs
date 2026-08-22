@@ -5,15 +5,17 @@
 //! Preflight returns bounded structural counts or one stable DFS problem. The definite kernel
 //! additionally computes local LayoutBox/ContentBox entries for resource-independent ABSOLUTE
 //! nodes, Stack children with at most one main-axis FILL, resource-independent Stack/Grid HUG
-//! measurement, exact-quarter-turn affine nonempty Frame/Group HUG measurement (including a
-//! FIXED opposite-axis Frame offer for odd-quarter-turn cross-axis FILL), Group normalization,
+//! measurement, exact-quarter-turn affine nonempty Frame/Group HUG measurement (including
+//! definite ABSOLUTE/FIXED opposite-axis Frame offers for odd-quarter-turn cross-axis FILL),
+//! Group normalization,
 //! and Grid children whose
 //! definite axes contain FIXED tracks, at most one FRACTION track, and resource-independent AUTO
 //! constraints that each cover at most one AUTO track and consume supported resource-free HUG
 //! contributions. It deliberately stops before resource preparation, non-quarter-turn child
-//! rotation, general parent-offer propagation for quarter-turn cross-axis FILL, multi-FILL Stack
-//! water filling, cross-AUTO deficit distribution, multi-FRACTION solving, world transforms,
-//! shaping, paint, rasterization, and encoding, and it never exposes a partial layout on failure.
+//! rotation, Stack/Grid cell-offer propagation for quarter-turn cross-axis FILL, multi-FILL
+//! Stack water filling, cross-AUTO deficit distribution, multi-FRACTION solving, world
+//! transforms, shaping, paint, rasterization, and encoding, and it never exposes a partial layout
+//! on failure.
 
 use renderweave_renderer_document::AdmittedRenderDocument;
 use serde_json::{Map, Number, Value};
@@ -332,6 +334,12 @@ struct AffineAxisInterval {
     maximum: f64,
 }
 
+#[derive(Clone, Copy, Debug, Default)]
+struct AbsoluteChildMeasureOffers {
+    axis_fill: Option<f64>,
+    opposite_axis_hug: Option<f64>,
+}
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 enum ExactQuarterTurn {
     Zero,
@@ -644,7 +652,14 @@ impl DefiniteLayouter {
         let authored_x = binary64_member(placement, "xPt", occurrence, "placement.xPt")?;
         let authored_y = binary64_member(placement, "yPt", occurrence, "placement.yPt")?;
         let width = if width_mode == SizeMode::Hug {
-            resource_free_hug_axis(node, role, placement, "Width", occurrence)?
+            resource_free_hug_axis(
+                node,
+                role,
+                placement,
+                "Width",
+                occurrence,
+                Some(parent_content.height),
+            )?
         } else {
             definite_axis_size(
                 placement,
@@ -657,7 +672,14 @@ impl DefiniteLayouter {
             )?
         };
         let height = if height_mode == SizeMode::Hug {
-            resource_free_hug_axis(node, role, placement, "Height", occurrence)?
+            resource_free_hug_axis(
+                node,
+                role,
+                placement,
+                "Height",
+                occurrence,
+                Some(parent_content.width),
+            )?
         } else {
             definite_axis_size(
                 placement,
@@ -1139,7 +1161,14 @@ fn apply_independent_grid_auto(
             SizeMode::Hug => {
                 let kind = text_member(child, "kind", child_occurrence, "kind")?;
                 let role = definite_node_role(kind, child_occurrence)?;
-                resource_free_hug_axis(child, role, placement, axis.hug_axis(), child_occurrence)?
+                resource_free_hug_axis(
+                    child,
+                    role,
+                    placement,
+                    axis.hug_axis(),
+                    child_occurrence,
+                    None,
+                )?
             }
             SizeMode::Fill => {
                 return Err(DefiniteLayoutError::invariant(
@@ -1217,7 +1246,7 @@ fn grid_axis_arrangement(
     occurrence: &str,
 ) -> Result<(f64, f64), DefiniteLayoutError> {
     let size = if mode == SizeMode::Hug {
-        resource_free_hug_axis(node, role, placement, axis, occurrence)?
+        resource_free_hug_axis(node, role, placement, axis, occurrence, None)?
     } else {
         stack_axis_size(
             placement,
@@ -1406,7 +1435,7 @@ fn measure_stack_child(
         "placement.marginLeftPt",
     )?;
     let width = if width_mode == SizeMode::Hug {
-        resource_free_hug_axis(node, role, placement, "Width", occurrence)?
+        resource_free_hug_axis(node, role, placement, "Width", occurrence, None)?
     } else if direction == StackDirection::Row && main_fill {
         0.0
     } else {
@@ -1421,7 +1450,7 @@ fn measure_stack_child(
         )?
     };
     let height = if height_mode == SizeMode::Hug {
-        resource_free_hug_axis(node, role, placement, "Height", occurrence)?
+        resource_free_hug_axis(node, role, placement, "Height", occurrence, None)?
     } else if direction == StackDirection::Column && main_fill {
         0.0
     } else {
@@ -1546,6 +1575,7 @@ fn resource_free_hug_axis(
     placement: &Map<String, Value>,
     axis: &str,
     occurrence: &str,
+    opposite_parent_content_offer: Option<f64>,
 ) -> Result<f64, DefiniteLayoutError> {
     let children = match role {
         NodeRole::Group | NodeRole::Frame | NodeRole::Stack | NodeRole::Grid => {
@@ -1570,9 +1600,13 @@ fn resource_free_hug_axis(
         return Ok(size);
     }
     let content_extent = match role {
-        NodeRole::Frame => {
-            resource_free_frame_hug_content_extent(node, placement, axis, occurrence)?
-        }
+        NodeRole::Frame => resource_free_frame_hug_content_extent(
+            node,
+            placement,
+            axis,
+            occurrence,
+            opposite_parent_content_offer,
+        )?,
         NodeRole::Stack => resource_free_stack_hug_content_extent(node, axis, occurrence)?,
         NodeRole::Grid => resource_free_grid_hug_content_extent(node, axis, occurrence)?,
         NodeRole::Group => unreachable!(),
@@ -1592,9 +1626,15 @@ fn resource_free_frame_hug_content_extent(
     placement: &Map<String, Value>,
     axis: &str,
     occurrence: &str,
+    opposite_parent_content_offer: Option<f64>,
 ) -> Result<f64, DefiniteLayoutError> {
-    let cross_axis_fill_offer =
-        fixed_frame_opposite_content_offer(frame, placement, axis, occurrence)?;
+    let cross_axis_fill_offer = definite_frame_opposite_content_offer(
+        frame,
+        placement,
+        axis,
+        occurrence,
+        opposite_parent_content_offer,
+    )?;
     let mut extent = 0.0;
     for child in array_member(frame, "children", occurrence)? {
         let child = object(child, occurrence, "children")?;
@@ -1607,28 +1647,72 @@ fn resource_free_frame_hug_content_extent(
     Ok(extent)
 }
 
-fn fixed_frame_opposite_content_offer(
+fn definite_frame_opposite_content_offer(
     frame: &Map<String, Value>,
     placement: &Map<String, Value>,
     hug_axis: &str,
     occurrence: &str,
+    opposite_parent_content_offer: Option<f64>,
 ) -> Result<Option<f64>, DefiniteLayoutError> {
-    let (opposite_axis, mode_member, size_member, leading_padding, trailing_padding) =
-        match hug_axis {
-            "Width" => ("Height", "heightMode", "heightPt", "topPt", "bottomPt"),
-            "Height" => ("Width", "widthMode", "widthPt", "leftPt", "rightPt"),
-            _ => return Err(DefiniteLayoutError::invariant(occurrence, "HUG axis")),
-        };
-    if size_mode(placement, mode_member, occurrence)? != SizeMode::Fixed {
-        return Ok(None);
-    }
-
-    let outer_size = binary64_member(
-        placement,
+    let (
+        opposite_axis,
+        mode_member,
         size_member,
-        occurrence,
-        format!("placement.{size_member}"),
-    )?;
+        start_member,
+        end_inset_member,
+        leading_padding,
+        trailing_padding,
+    ) = match hug_axis {
+        "Width" => (
+            "Height",
+            "heightMode",
+            "heightPt",
+            "yPt",
+            "bottomInsetPt",
+            "topPt",
+            "bottomPt",
+        ),
+        "Height" => (
+            "Width",
+            "widthMode",
+            "widthPt",
+            "xPt",
+            "rightInsetPt",
+            "leftPt",
+            "rightPt",
+        ),
+        _ => return Err(DefiniteLayoutError::invariant(occurrence, "HUG axis")),
+    };
+    let mode = size_mode(placement, mode_member, occurrence)?;
+    let outer_size = match mode {
+        SizeMode::Fixed => binary64_member(
+            placement,
+            size_member,
+            occurrence,
+            format!("placement.{size_member}"),
+        )?,
+        SizeMode::Fill => {
+            let Some(parent_size) = opposite_parent_content_offer else {
+                return Ok(None);
+            };
+            let start = binary64_member(
+                placement,
+                start_member,
+                occurrence,
+                format!("placement.{start_member}"),
+            )?;
+            definite_axis_size(
+                placement,
+                SizeMode::Fill,
+                parent_size,
+                start,
+                opposite_axis,
+                end_inset_member,
+                occurrence,
+            )?
+        }
+        SizeMode::Hug => return Ok(None),
+    };
     let stroke_width = if let Some(stroke) = frame.get("stroke") {
         let stroke = stroke
             .as_object()
@@ -1661,7 +1745,7 @@ fn fixed_frame_opposite_content_offer(
     if !content_size.is_finite() {
         return Err(DefiniteLayoutError::invariant(
             occurrence,
-            format!("fixedOpposite{opposite_axis}ContentOffer"),
+            format!("definiteOpposite{opposite_axis}ContentOffer"),
         ));
     }
     Ok(Some(content_size))
@@ -1709,7 +1793,10 @@ fn resource_free_absolute_child_axis_interval(
         axis,
         child_occurrence,
         false,
-        None,
+        AbsoluteChildMeasureOffers {
+            axis_fill: None,
+            opposite_axis_hug: cross_axis_fill_offer,
+        },
     )?;
     let transform = object_member(Some(child), "transform", child_occurrence)?;
     let rotation = binary64_member(
@@ -1757,7 +1844,10 @@ fn resource_free_absolute_child_axis_interval(
                 cross_axis,
                 child_occurrence,
                 true,
-                cross_axis_fill_offer,
+                AbsoluteChildMeasureOffers {
+                    axis_fill: cross_axis_fill_offer,
+                    opposite_axis_hug: None,
+                },
             )?;
             quarter_turn_affine_axis_interval(
                 transform,
@@ -1780,7 +1870,7 @@ fn resource_free_absolute_child_axis_geometry(
     axis: &str,
     occurrence: &str,
     cross_axis_for_quarter_turn: bool,
-    cross_axis_fill_offer: Option<f64>,
+    offers: AbsoluteChildMeasureOffers,
 ) -> Result<(f64, f64), DefiniteLayoutError> {
     let (position_member, mode_member, size_member, end_inset_member) = match axis {
         "Width" => ("xPt", "widthMode", "widthPt", "rightInsetPt"),
@@ -1800,8 +1890,15 @@ fn resource_free_absolute_child_axis_geometry(
             occurrence,
             format!("placement.{size_member}"),
         )?,
-        SizeMode::Hug => resource_free_hug_axis(child, role, placement, axis, occurrence)?,
-        SizeMode::Fill if cross_axis_for_quarter_turn => match cross_axis_fill_offer {
+        SizeMode::Hug => resource_free_hug_axis(
+            child,
+            role,
+            placement,
+            axis,
+            occurrence,
+            offers.opposite_axis_hug,
+        )?,
+        SizeMode::Fill if cross_axis_for_quarter_turn => match offers.axis_fill {
             Some(parent_size) => definite_axis_size(
                 placement,
                 SizeMode::Fill,
@@ -2195,7 +2292,7 @@ fn resource_free_stack_child_axis_size(
                 format!("placement.{size_member}"),
             )
         }
-        SizeMode::Hug => resource_free_hug_axis(node, role, placement, axis, occurrence),
+        SizeMode::Hug => resource_free_hug_axis(node, role, placement, axis, occurrence, None),
         SizeMode::Fill => Err(DefiniteLayoutError::invariant(
             occurrence,
             format!("placement.{mode_member}"),
