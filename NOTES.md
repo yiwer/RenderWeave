@@ -1,6 +1,20 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-23 **Template v1 implementation TV1-T64 已由 Codex `/root` single-writer 完成，状态
+  `resolved/automated_verified`**：COLUMN Stack measurement 中 already-resolved width offer 现在可驱动 direct
+  `widthMode=FILL,heightMode=HUG_CONTENT` Grid terminal，并严格复用 ContentBox + columns→rows consumer；ROW-side
+  rows→columns feedback 保持 fail closed。Rust/Python `/27` 先在首个新增 positive 的同一
+  `CHILD_ROTATION rwocc_0000000000000006` 共同 RED，再到 119 laid-out + 15 unsupported、134/134 cases、401 checks
+  全绿。vector SHA-256 `59af024709bddec8eefb5cae666b6a2fddeb39589ff908f357a27d8ad8e41dc5`，fixture
+  `/3` SHA-256 保持 `a11475bcebad7e1c35cb0acd7018419d94afcb4b37d7f1df7346a055ad1df669`。`render`
+  `20260823-044653-render`、affected `fast` `20260823-035754-fast`、顺序 `server` `20260823-035812-server` 与
+  `full` `20260823-044748-full` 全绿；full 17 steps 均 exit 0，Node v24.12.0 Web 26 files/212 tests、runtime
+  canary、23 passed + 1 controlled skip Playwright、browser journeys 与最终 inference replay E2E 1/1 均通过；
+  resolution 后 fast `.sdlc/evidence/20260823-051519-fast/` 的 3 steps 也均 exit 0。R0/R1/P0 provider attempts=0，
+  P0 API Key reads/reservations/cost=0；
+  rows→columns、multiple FILL/FRACTION、跨多 AUTO 平均、general constraint/tolerance、resource/scene/raster/RESULT/
+  Profile、A3/J1/READY 仍未推进，未 push/tag/PR。
 - 2026-08-23 **Template v1 implementation TV1-T63 已由 Codex `/root` single-writer 完成，状态
   `resolved/automated_verified`**：direct nested Stack 现在可消费 measurement space 中 already-resolved 的
   physical-axis FILL outer，再按自身 direction 复用 main-HUG/cross-HUG seam，沿 authored tree 严格下降且零反向

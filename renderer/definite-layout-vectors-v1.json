@@ -1,5 +1,5 @@
 {
-  "vectorVersion": "renderweave-definite-layout-vectors/26",
+  "vectorVersion": "renderweave-definite-layout-vectors/27",
   "authorityContext": {
     "layoutProfile": "renderweave-layout/1.0",
     "documentContract": "renderweave-render-node-contract-v1/2",
@@ -9,7 +9,7 @@
   "boundary": {
     "profileAvailability": "NOT_REGISTERED",
     "certificationStatus": "NOT_CERTIFIED",
-    "layoutImplementation": "RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_SINGLE_MAIN_FILL_AND_FIXED_SINGLE_FRACTION_INDEPENDENT_MULTI_AUTO_GRID_EMPTY_CONTAINER_STACK_HUG_GRID_AUTO_HUG_CONTRIBUTION_GRID_HUG_EXACT_QUARTER_TURN_AFFINE_FRAME_GROUP_HUG_FIXED_OPPOSITE_AXIS_CROSS_FILL_DEFINITE_ABSOLUTE_PARENT_OFFER_DEFINITE_STACK_CROSS_OUTER_OFFER_STACK_MAIN_FILL_CROSS_HUG_REMEASURE_NESTED_STACK_MAIN_OFFER_PROPAGATION_COLUMNS_FIRST_GRID_CELL_OUTER_OFFER_STACK_MAIN_OFFER_COLUMNS_FIRST_GRID_CROSS_HUG_ABSOLUTE_PARENT_OFFER_COLUMNS_FIRST_GRID_CROSS_HUG_GRID_CELL_OFFER_COLUMNS_FIRST_NESTED_GRID_CROSS_HUG_GRID_CELL_OFFER_STACK_MAIN_FIRST_CROSS_HUG_DIRECTION_CHANGING_STACK_CROSS_OFFER_MAIN_HUG_NESTED_STACK_RESOLVED_OPPOSITE_OFFER_RECURSION_NORMALIZATION_BOX_KERNEL",
+    "layoutImplementation": "RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_SINGLE_MAIN_FILL_AND_FIXED_SINGLE_FRACTION_INDEPENDENT_MULTI_AUTO_GRID_EMPTY_CONTAINER_STACK_HUG_GRID_AUTO_HUG_CONTRIBUTION_GRID_HUG_EXACT_QUARTER_TURN_AFFINE_FRAME_GROUP_HUG_FIXED_OPPOSITE_AXIS_CROSS_FILL_DEFINITE_ABSOLUTE_PARENT_OFFER_DEFINITE_STACK_CROSS_OUTER_OFFER_STACK_MAIN_FILL_CROSS_HUG_REMEASURE_NESTED_STACK_MAIN_OFFER_PROPAGATION_COLUMNS_FIRST_GRID_CELL_OUTER_OFFER_STACK_MAIN_OFFER_COLUMNS_FIRST_GRID_CROSS_HUG_ABSOLUTE_PARENT_OFFER_COLUMNS_FIRST_GRID_CROSS_HUG_GRID_CELL_OFFER_COLUMNS_FIRST_NESTED_GRID_CROSS_HUG_GRID_CELL_OFFER_STACK_MAIN_FIRST_CROSS_HUG_DIRECTION_CHANGING_STACK_CROSS_OFFER_MAIN_HUG_NESTED_STACK_RESOLVED_OPPOSITE_OFFER_RECURSION_COLUMNS_FIRST_GRID_TERMINAL_NORMALIZATION_BOX_KERNEL",
     "worldTransformImplementation": "ABSENT",
     "sceneImplementation": "ABSENT",
     "rasterImplementation": "ABSENT",
@@ -2178,6 +2178,42 @@
         {"occurrenceId":"rwocc_0000000000000005","kind":"frame","layoutBox":{"xBits":"4010000000000000","yBits":"4018000000000000","widthBits":"402e000000000000","heightBits":"4022000000000000"},"contentBox":{"xBits":"4010000000000000","yBits":"4018000000000000","widthBits":"402e000000000000","heightBits":"4022000000000000"}},
         {"occurrenceId":"rwocc_0000000000000006","kind":"rect","layoutBox":{"xBits":"4018000000000000","yBits":"401c000000000000","widthBits":"4024000000000000","heightBits":"4018000000000000"},"contentBox":null}
       ]}
+    },
+    {
+      "id": "nested-stack-resolved-opposite-offer-enables-columns-first-grid-terminal",
+      "baseSource": "layoutPreflight",
+      "baseCase": "grid",
+      "mutations": [
+        {"operation":"replace","pointer":"/canvas/children/0/columns","value":[{"type":"FIXED","valuePt":40}]},
+        {"operation":"replace","pointer":"/canvas/children/0/children/0","value":{"alignItems":"START","children":[{"alignItems":"START","children":[{"children":[{"children":[{"cornerRadii":{"bottomLeftPt":0,"bottomRightPt":0,"topLeftPt":0,"topRightPt":0},"fill":{"color":"#000000FF"},"kind":"rect","occurrenceId":"rwocc_0000000000000006","opacity":1,"placement":{"heightMode":"FIXED","heightPt":10,"rightInsetPt":3,"type":"ABSOLUTE","widthMode":"FILL","xPt":2,"yPt":1},"transform":{"originX":0.5,"originY":0.5,"rotationDeg":-90,"scaleX":1,"scaleY":1},"visible":true}],"clipContent":false,"cornerRadii":{"bottomLeftPt":0,"bottomRightPt":0,"topLeftPt":0,"topRightPt":0},"kind":"frame","occurrenceId":"rwocc_0000000000000005","opacity":1,"padding":{"bottomPt":0,"leftPt":0,"rightPt":0,"topPt":0},"placement":{"column":0,"columnSpan":1,"heightMode":"HUG_CONTENT","horizontalAlignSelf":"START","marginBottomPt":0,"marginLeftPt":0,"marginRightPt":0,"marginTopPt":0,"row":0,"rowSpan":1,"type":"GRID","verticalAlignSelf":"START","widthMode":"FILL"},"transform":{"originX":0,"originY":0,"rotationDeg":0,"scaleX":1,"scaleY":1},"visible":true}],"clipContent":false,"columnGapPt":0,"columns":[{"type":"FRACTION","weight":1}],"cornerRadii":{"bottomLeftPt":0,"bottomRightPt":0,"topLeftPt":0,"topRightPt":0},"kind":"grid","occurrenceId":"rwocc_0000000000000004","opacity":1,"padding":{"bottomPt":0,"leftPt":0,"rightPt":0,"topPt":0},"placement":{"alignSelf":"START","heightMode":"HUG_CONTENT","marginBottomPt":0,"marginLeftPt":0,"marginRightPt":0,"marginTopPt":0,"type":"STACK","widthMode":"FILL"},"rowGapPt":0,"rows":[{"type":"AUTO"}],"transform":{"originX":0,"originY":0,"rotationDeg":0,"scaleX":1,"scaleY":1},"visible":true}],"clipContent":false,"cornerRadii":{"bottomLeftPt":0,"bottomRightPt":0,"topLeftPt":0,"topRightPt":0},"direction":"COLUMN","gapPt":0,"justifyContent":"START","kind":"stack","occurrenceId":"rwocc_0000000000000003","opacity":1,"padding":{"bottomPt":0,"leftPt":0,"rightPt":0,"topPt":0},"placement":{"alignSelf":"START","fillWeight":1,"heightMode":"HUG_CONTENT","marginBottomPt":0,"marginLeftPt":0,"marginRightPt":0,"marginTopPt":0,"type":"STACK","widthMode":"FILL"},"transform":{"originX":0,"originY":0,"rotationDeg":0,"scaleX":1,"scaleY":1},"visible":true}],"clipContent":false,"cornerRadii":{"bottomLeftPt":0,"bottomRightPt":0,"topLeftPt":0,"topRightPt":0},"direction":"ROW","gapPt":0,"justifyContent":"START","kind":"stack","occurrenceId":"rwocc_0000000000000002","opacity":1,"padding":{"bottomPt":0,"leftPt":0,"rightPt":0,"topPt":0},"placement":{"column":0,"columnSpan":1,"heightMode":"HUG_CONTENT","horizontalAlignSelf":"START","marginBottomPt":0,"marginLeftPt":0,"marginRightPt":0,"marginTopPt":0,"row":0,"rowSpan":1,"type":"GRID","verticalAlignSelf":"START","widthMode":"FILL"},"transform":{"originX":0,"originY":0,"rotationDeg":0,"scaleX":1,"scaleY":1},"visible":true}}
+      ],
+      "expected":{"entries":[
+        {"occurrenceId":"rwocc_0000000000000000","kind":"canvas","layoutBox":{"xBits":"0000000000000000","yBits":"0000000000000000","widthBits":"4059000000000000","heightBits":"4059000000000000"},"contentBox":{"xBits":"0000000000000000","yBits":"0000000000000000","widthBits":"4059000000000000","heightBits":"4059000000000000"}},
+        {"occurrenceId":"rwocc_0000000000000001","kind":"grid","layoutBox":{"xBits":"0000000000000000","yBits":"0000000000000000","widthBits":"4049000000000000","heightBits":"4049000000000000"},"contentBox":{"xBits":"0000000000000000","yBits":"0000000000000000","widthBits":"4049000000000000","heightBits":"4049000000000000"}},
+        {"occurrenceId":"rwocc_0000000000000002","kind":"stack","layoutBox":{"xBits":"0000000000000000","yBits":"0000000000000000","widthBits":"4044000000000000","heightBits":"4037800000000000"},"contentBox":{"xBits":"0000000000000000","yBits":"0000000000000000","widthBits":"4044000000000000","heightBits":"4037800000000000"}},
+        {"occurrenceId":"rwocc_0000000000000003","kind":"stack","layoutBox":{"xBits":"0000000000000000","yBits":"0000000000000000","widthBits":"4044000000000000","heightBits":"4037800000000000"},"contentBox":{"xBits":"0000000000000000","yBits":"0000000000000000","widthBits":"4044000000000000","heightBits":"4037800000000000"}},
+        {"occurrenceId":"rwocc_0000000000000004","kind":"grid","layoutBox":{"xBits":"0000000000000000","yBits":"0000000000000000","widthBits":"4044000000000000","heightBits":"4037800000000000"},"contentBox":{"xBits":"0000000000000000","yBits":"0000000000000000","widthBits":"4044000000000000","heightBits":"4037800000000000"}},
+        {"occurrenceId":"rwocc_0000000000000005","kind":"frame","layoutBox":{"xBits":"0000000000000000","yBits":"0000000000000000","widthBits":"4044000000000000","heightBits":"4037800000000000"},"contentBox":{"xBits":"0000000000000000","yBits":"0000000000000000","widthBits":"4044000000000000","heightBits":"4037800000000000"}},
+        {"occurrenceId":"rwocc_0000000000000006","kind":"rect","layoutBox":{"xBits":"4000000000000000","yBits":"3ff0000000000000","widthBits":"4041800000000000","heightBits":"4024000000000000"},"contentBox":null}
+      ]}
+    },
+    {
+      "id": "nested-stack-grid-terminal-applies-margins-content-box-and-clamp",
+      "baseSource": "layoutPreflight",
+      "baseCase": "grid",
+      "mutations": [
+        {"operation":"replace","pointer":"/canvas/children/0/columns","value":[{"type":"FIXED","valuePt":40}]},
+        {"operation":"replace","pointer":"/canvas/children/0/children/0","value":{"alignItems":"START","children":[{"alignItems":"START","children":[{"children":[{"children":[{"cornerRadii":{"bottomLeftPt":0,"bottomRightPt":0,"topLeftPt":0,"topRightPt":0},"fill":{"color":"#000000FF"},"kind":"rect","occurrenceId":"rwocc_0000000000000006","opacity":1,"placement":{"heightMode":"FIXED","heightPt":6,"rightInsetPt":3,"type":"ABSOLUTE","widthMode":"FILL","xPt":2,"yPt":1},"transform":{"originX":0.5,"originY":0.5,"rotationDeg":-90,"scaleX":1,"scaleY":1},"visible":true}],"clipContent":false,"cornerRadii":{"bottomLeftPt":0,"bottomRightPt":0,"topLeftPt":0,"topRightPt":0},"kind":"frame","occurrenceId":"rwocc_0000000000000005","opacity":1,"padding":{"bottomPt":0,"leftPt":0,"rightPt":0,"topPt":0},"placement":{"column":0,"columnSpan":1,"heightMode":"HUG_CONTENT","horizontalAlignSelf":"START","marginBottomPt":0,"marginLeftPt":0,"marginRightPt":0,"marginTopPt":0,"row":0,"rowSpan":1,"type":"GRID","verticalAlignSelf":"START","widthMode":"FILL"},"transform":{"originX":0,"originY":0,"rotationDeg":0,"scaleX":1,"scaleY":1},"visible":true}],"clipContent":false,"columnGapPt":0,"columns":[{"type":"FRACTION","weight":1}],"cornerRadii":{"bottomLeftPt":0,"bottomRightPt":0,"topLeftPt":0,"topRightPt":0},"kind":"grid","occurrenceId":"rwocc_0000000000000004","opacity":1,"padding":{"bottomPt":2,"leftPt":2,"rightPt":3,"topPt":1},"placement":{"alignSelf":"START","heightMode":"HUG_CONTENT","marginBottomPt":2,"marginLeftPt":-1,"marginRightPt":2,"marginTopPt":1,"maxWidthPt":22,"type":"STACK","widthMode":"FILL"},"rowGapPt":0,"rows":[{"type":"AUTO"}],"stroke":{"cap":"BUTT","color":"#000000FF","join":"MITER","widthPt":1},"transform":{"originX":0,"originY":0,"rotationDeg":0,"scaleX":1,"scaleY":1},"visible":true}],"clipContent":false,"cornerRadii":{"bottomLeftPt":0,"bottomRightPt":0,"topLeftPt":0,"topRightPt":0},"direction":"COLUMN","gapPt":0,"justifyContent":"START","kind":"stack","occurrenceId":"rwocc_0000000000000003","opacity":1,"padding":{"bottomPt":4,"leftPt":3,"rightPt":5,"topPt":2},"placement":{"alignSelf":"START","fillWeight":1,"heightMode":"HUG_CONTENT","marginBottomPt":0,"marginLeftPt":-2,"marginRightPt":4,"marginTopPt":0,"maxWidthPt":35,"type":"STACK","widthMode":"FILL"},"stroke":{"cap":"BUTT","color":"#000000FF","join":"MITER","widthPt":1},"transform":{"originX":0,"originY":0,"rotationDeg":0,"scaleX":1,"scaleY":1},"visible":true}],"clipContent":false,"cornerRadii":{"bottomLeftPt":0,"bottomRightPt":0,"topLeftPt":0,"topRightPt":0},"direction":"ROW","gapPt":0,"justifyContent":"START","kind":"stack","occurrenceId":"rwocc_0000000000000002","opacity":1,"padding":{"bottomPt":0,"leftPt":0,"rightPt":0,"topPt":0},"placement":{"column":0,"columnSpan":1,"heightMode":"HUG_CONTENT","horizontalAlignSelf":"START","marginBottomPt":0,"marginLeftPt":0,"marginRightPt":0,"marginTopPt":0,"row":0,"rowSpan":1,"type":"GRID","verticalAlignSelf":"START","widthMode":"FILL"},"transform":{"originX":0,"originY":0,"rotationDeg":0,"scaleX":1,"scaleY":1},"visible":true}}
+      ],
+      "expected":{"entries":[
+        {"occurrenceId":"rwocc_0000000000000000","kind":"canvas","layoutBox":{"xBits":"0000000000000000","yBits":"0000000000000000","widthBits":"4059000000000000","heightBits":"4059000000000000"},"contentBox":{"xBits":"0000000000000000","yBits":"0000000000000000","widthBits":"4059000000000000","heightBits":"4059000000000000"}},
+        {"occurrenceId":"rwocc_0000000000000001","kind":"grid","layoutBox":{"xBits":"0000000000000000","yBits":"0000000000000000","widthBits":"4049000000000000","heightBits":"4049000000000000"},"contentBox":{"xBits":"0000000000000000","yBits":"0000000000000000","widthBits":"4049000000000000","heightBits":"4049000000000000"}},
+        {"occurrenceId":"rwocc_0000000000000002","kind":"stack","layoutBox":{"xBits":"0000000000000000","yBits":"0000000000000000","widthBits":"4044000000000000","heightBits":"4039000000000000"},"contentBox":{"xBits":"0000000000000000","yBits":"0000000000000000","widthBits":"4044000000000000","heightBits":"4039000000000000"}},
+        {"occurrenceId":"rwocc_0000000000000003","kind":"stack","layoutBox":{"xBits":"c000000000000000","yBits":"0000000000000000","widthBits":"4041800000000000","heightBits":"4039000000000000"},"contentBox":{"xBits":"4000000000000000","yBits":"4008000000000000","widthBits":"4039000000000000","heightBits":"4031000000000000"}},
+        {"occurrenceId":"rwocc_0000000000000004","kind":"grid","layoutBox":{"xBits":"3ff0000000000000","yBits":"4010000000000000","widthBits":"4036000000000000","heightBits":"402c000000000000"},"contentBox":{"xBits":"4010000000000000","yBits":"4018000000000000","widthBits":"402e000000000000","heightBits":"4022000000000000"}},
+        {"occurrenceId":"rwocc_0000000000000005","kind":"frame","layoutBox":{"xBits":"4010000000000000","yBits":"4018000000000000","widthBits":"402e000000000000","heightBits":"4022000000000000"},"contentBox":{"xBits":"4010000000000000","yBits":"4018000000000000","widthBits":"402e000000000000","heightBits":"4022000000000000"}},
+        {"occurrenceId":"rwocc_0000000000000006","kind":"rect","layoutBox":{"xBits":"4018000000000000","yBits":"401c000000000000","widthBits":"4024000000000000","heightBits":"4018000000000000"},"contentBox":null}
+      ]}
     }
   ],
   "unsupportedCases": [
@@ -2193,14 +2229,67 @@
       "expected":{"feature":"CHILD_ROTATION","occurrenceId":"rwocc_0000000000000003"}
     },
     {
-      "id": "nested-stack-resolved-opposite-offer-does-not-enable-grid-terminal",
-      "baseSource": "layoutPreflight",
-      "baseCase": "grid",
+      "id": "nested-stack-resolved-height-does-not-enable-rows-to-columns-grid-terminal",
+      "baseSource": "fixtures",
+      "baseCase": "columnStack",
       "mutations": [
-        {"operation":"replace","pointer":"/canvas/children/0/columns","value":[{"type":"FIXED","valuePt":40}]},
-        {"operation":"replace","pointer":"/canvas/children/0/children/0","value":{"alignItems":"START","children":[{"alignItems":"START","children":[{"children":[{"children":[{"cornerRadii":{"bottomLeftPt":0,"bottomRightPt":0,"topLeftPt":0,"topRightPt":0},"fill":{"color":"#000000FF"},"kind":"rect","occurrenceId":"rwocc_0000000000000006","opacity":1,"placement":{"heightMode":"FIXED","heightPt":10,"rightInsetPt":3,"type":"ABSOLUTE","widthMode":"FILL","xPt":2,"yPt":1},"transform":{"originX":0.5,"originY":0.5,"rotationDeg":-90,"scaleX":1,"scaleY":1},"visible":true}],"clipContent":false,"cornerRadii":{"bottomLeftPt":0,"bottomRightPt":0,"topLeftPt":0,"topRightPt":0},"kind":"frame","occurrenceId":"rwocc_0000000000000005","opacity":1,"padding":{"bottomPt":0,"leftPt":0,"rightPt":0,"topPt":0},"placement":{"column":0,"columnSpan":1,"heightMode":"HUG_CONTENT","horizontalAlignSelf":"START","marginBottomPt":0,"marginLeftPt":0,"marginRightPt":0,"marginTopPt":0,"row":0,"rowSpan":1,"type":"GRID","verticalAlignSelf":"START","widthMode":"FILL"},"transform":{"originX":0,"originY":0,"rotationDeg":0,"scaleX":1,"scaleY":1},"visible":true}],"clipContent":false,"columnGapPt":0,"columns":[{"type":"FRACTION","weight":1}],"cornerRadii":{"bottomLeftPt":0,"bottomRightPt":0,"topLeftPt":0,"topRightPt":0},"kind":"grid","occurrenceId":"rwocc_0000000000000004","opacity":1,"padding":{"bottomPt":0,"leftPt":0,"rightPt":0,"topPt":0},"placement":{"alignSelf":"START","heightMode":"HUG_CONTENT","marginBottomPt":0,"marginLeftPt":0,"marginRightPt":0,"marginTopPt":0,"type":"STACK","widthMode":"FILL"},"rowGapPt":0,"rows":[{"type":"AUTO"}],"transform":{"originX":0,"originY":0,"rotationDeg":0,"scaleX":1,"scaleY":1},"visible":true}],"clipContent":false,"cornerRadii":{"bottomLeftPt":0,"bottomRightPt":0,"topLeftPt":0,"topRightPt":0},"direction":"COLUMN","gapPt":0,"justifyContent":"START","kind":"stack","occurrenceId":"rwocc_0000000000000003","opacity":1,"padding":{"bottomPt":0,"leftPt":0,"rightPt":0,"topPt":0},"placement":{"alignSelf":"START","fillWeight":1,"heightMode":"HUG_CONTENT","marginBottomPt":0,"marginLeftPt":0,"marginRightPt":0,"marginTopPt":0,"type":"STACK","widthMode":"FILL"},"transform":{"originX":0,"originY":0,"rotationDeg":0,"scaleX":1,"scaleY":1},"visible":true}],"clipContent":false,"cornerRadii":{"bottomLeftPt":0,"bottomRightPt":0,"topLeftPt":0,"topRightPt":0},"direction":"ROW","gapPt":0,"justifyContent":"START","kind":"stack","occurrenceId":"rwocc_0000000000000002","opacity":1,"padding":{"bottomPt":0,"leftPt":0,"rightPt":0,"topPt":0},"placement":{"column":0,"columnSpan":1,"heightMode":"HUG_CONTENT","horizontalAlignSelf":"START","marginBottomPt":0,"marginLeftPt":0,"marginRightPt":0,"marginTopPt":0,"row":0,"rowSpan":1,"type":"GRID","verticalAlignSelf":"START","widthMode":"FILL"},"transform":{"originX":0,"originY":0,"rotationDeg":0,"scaleX":1,"scaleY":1},"visible":true}}
+        {"operation":"replace","pointer":"/canvas/children/0/justifyContent","value":"START"},
+        {
+          "operation": "replace",
+          "pointer": "/canvas/children/0/children",
+          "value": [
+            {
+              "alignItems": "START",
+              "children": [
+                {
+                  "children": [
+                    {
+                      "children": [
+                        {"cornerRadii":{"bottomLeftPt":0,"bottomRightPt":0,"topLeftPt":0,"topRightPt":0},"fill":{"color":"#000000FF"},"kind":"rect","occurrenceId":"rwocc_0000000000000005","opacity":1,"placement":{"bottomInsetPt":3,"heightMode":"FILL","type":"ABSOLUTE","widthMode":"FIXED","widthPt":10,"xPt":1,"yPt":2},"transform":{"originX":0.5,"originY":0.5,"rotationDeg":90,"scaleX":1,"scaleY":1},"visible":true}
+                      ],
+                      "clipContent": false,
+                      "cornerRadii": {"bottomLeftPt":0,"bottomRightPt":0,"topLeftPt":0,"topRightPt":0},
+                      "kind": "frame",
+                      "occurrenceId": "rwocc_0000000000000004",
+                      "opacity": 1,
+                      "padding": {"bottomPt":0,"leftPt":0,"rightPt":0,"topPt":0},
+                      "placement": {"column":0,"columnSpan":1,"heightMode":"FILL","horizontalAlignSelf":"START","marginBottomPt":0,"marginLeftPt":0,"marginRightPt":0,"marginTopPt":0,"row":0,"rowSpan":1,"type":"GRID","verticalAlignSelf":"START","widthMode":"HUG_CONTENT"},
+                      "transform": {"originX":0,"originY":0,"rotationDeg":0,"scaleX":1,"scaleY":1},
+                      "visible": true
+                    }
+                  ],
+                  "clipContent": false,
+                  "columnGapPt": 0,
+                  "columns": [{"type":"AUTO"}],
+                  "cornerRadii": {"bottomLeftPt":0,"bottomRightPt":0,"topLeftPt":0,"topRightPt":0},
+                  "kind": "grid",
+                  "occurrenceId": "rwocc_0000000000000003",
+                  "opacity": 1,
+                  "padding": {"bottomPt":0,"leftPt":0,"rightPt":0,"topPt":0},
+                  "placement": {"alignSelf":"START","heightMode":"FILL","marginBottomPt":0,"marginLeftPt":0,"marginRightPt":0,"marginTopPt":0,"type":"STACK","widthMode":"HUG_CONTENT"},
+                  "rowGapPt": 0,
+                  "rows": [{"type":"FIXED","valuePt":30}],
+                  "transform": {"originX":0,"originY":0,"rotationDeg":0,"scaleX":1,"scaleY":1},
+                  "visible": true
+                }
+              ],
+              "clipContent": false,
+              "cornerRadii": {"bottomLeftPt":0,"bottomRightPt":0,"topLeftPt":0,"topRightPt":0},
+              "direction": "ROW",
+              "gapPt": 0,
+              "justifyContent": "START",
+              "kind": "stack",
+              "occurrenceId": "rwocc_0000000000000002",
+              "opacity": 1,
+              "padding": {"bottomPt":0,"leftPt":0,"rightPt":0,"topPt":0},
+              "placement": {"alignSelf":"START","fillWeight":1,"heightMode":"FILL","marginBottomPt":0,"marginLeftPt":0,"marginRightPt":0,"marginTopPt":0,"type":"STACK","widthMode":"HUG_CONTENT"},
+              "transform": {"originX":0,"originY":0,"rotationDeg":0,"scaleX":1,"scaleY":1},
+              "visible": true
+            }
+          ]
+        }
       ],
-      "expected":{"feature":"CHILD_ROTATION","occurrenceId":"rwocc_0000000000000006"}
+      "expected":{"feature":"CHILD_ROTATION","occurrenceId":"rwocc_0000000000000005"}
     },
     {
       "id": "nonempty-group-nonzero-child-rotation-remains-unsupported",

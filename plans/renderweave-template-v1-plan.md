@@ -79,7 +79,10 @@
   TV1-T61=`resolved/automated_verified`：只让 row-after-columns 的 direct GRID ROW Stack 消费 final cell
   `ResolvedOuter`，复用 main-first singleton-FILL allocation 后的一次 cross-HUG 重测；shared `/24` 126
   cases/377 checks 已由 Rust/Python exact-bit A1/A2 验证。方向改变、反向 feedback 与一般 constraint/tolerance
-  保持 fail closed。
+  保持 fail closed。TV1-T62/T63=`resolved/automated_verified`：direction-changing 与 recursive nested Stack 已可
+  逐层消费 resolved opposite offer；shared `/26` 132 cases/395 checks。TV1-T64=`resolved/automated_verified`：只闭包
+  COLUMN Stack resolved width → columns-first Grid terminal；shared `/27` 134 cases/401 checks，rows→columns/general
+  constraint/tolerance 保持 fail closed。
 - 日期：2026-08-20
 - Approved delta：[`specs/changes/20260817-template-v1-implementation-authority.md`](../specs/changes/20260817-template-v1-implementation-authority.md)
 - Frozen checkpoint：`0b485f4a13de9d754a81d07f464730776e13c14b`
@@ -375,6 +378,7 @@ flowchart LR
 | 61 | task | `resolved / automated_verified` | 23, 25, 26, 33, 34, 38, 39, 40, 41, 43, 44, 45, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 60 | row-after-columns Grid cell resolved outer → ROW Stack main-first singleton-FILL allocation → single cross-HUG remeasure；shared `/24` Rust/Python 126/126、377 checks；direction change/reverse feedback/general constraint/tolerance 保持 fail closed |
 | 62 | task | `resolved / automated_verified` | 23, 25, 26, 33, 38, 43, 49, 50, 51, 52, 53, 54, 55, 56, 57, 61 | direct direction-changing nested Stack 把父 final main outer 当作 definite cross outer，再一次求 main HUG；shared `/25` Rust/Python 129/129、386 checks；递归第二 link/main-HUG 内 FILL/general constraint/tolerance 保持 fail closed |
 | 63 | task | `resolved / automated_verified` | 23, 25, 26, 33, 38, 43, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 61, 62 | direct nested Stack 消费 already-resolved opposite-axis FILL outer，并按自身 direction 结构递归 main-HUG/cross-HUG；shared `/26` Rust/Python 132/132、395 checks；Grid/general constraint/tolerance 保持 fail closed |
+| 64 | task | `resolved / automated_verified` | 23, 25, 26, 33, 34, 38, 39, 40, 41, 43, 44, 45, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63 | COLUMN Stack already-resolved width → direct Grid ContentBox → strict columns-first HUG rows；shared `/27` Rust/Python 134/134、401 checks；rows→columns/general constraint/tolerance 保持 fail closed |
 
 每次只 claim 一个 unblocked ticket；一票 resolved 后才由其 `Blocked by` 关系产生下一 frontier。未知实现切片留在
 map 的 `Not yet specified`，不为排满计划提前发明接口、migration 或 Profile identity。
@@ -1947,3 +1951,43 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
   inference replay E2E 1/1 均通过；resolution 后 fast `.sdlc/evidence/20260823-034326-fast/` 的 3 steps 也均 exit 0。R0/R1/P0 provider attempts=0，
   P0 API Key reads/reservations/cost=0；Profile `NOT_REGISTERED`、certification `NOT_CERTIFIED`、Raster `ABSENT`、
   daemon `UNWIRED`。最高 `automated_verified`；未推进 A3/J1/READY，未 push/tag/PR。
+
+## 63. TV1-T64 执行卡
+
+- 决策：T63 以 verified commit `d75291f` 收口且 worktree clean 后，复算原始 Ticket 10 §5/§7/§8、
+  `RW-T10-S5-006..010`、`RW-T10-S7-017..019`、`RW-T10-S8-001..019`、15 个 remaining unsupported cases 与
+  Stack/Grid offer call graph。multiple FILL/FRACTION、跨多 AUTO 平均、非直角 rotation 与 resource/scene 仍依赖
+  tolerance 或执行身份；现有 Grid-terminal negative 只需把 T63 resolved width writer 与 T59/T60 columns-first
+  Grid consumer 组合，不需要 fixed point，因此登记为 single-writer frontier。
+- Interface/seam：只把 `measure_stack_child` 中 `direction=COLUMN,widthMode=FILL,heightMode=HUG_CONTENT` 的
+  resolved-opposite closed role predicate从 `Frame | Stack` 扩为 `Frame | Stack | Grid`；ROW branch 不扩 Grid。
+  Python independent verifier 以独立控制流做同一非对称扩展；public API、admission/preflight、typed offer、authored
+  DFS、first-error 与全有或全无 output 不变。
+- 允许影响：T64 tracker/plan/NOTES、layout Rust module/tests、shared definite-layout vector `/27`、Python
+  independent verifier、render gate identity/assertions/evidence。
+- 禁止影响：ROW-side rows→columns feedback、unresolved/cyclic FILL、multiple Stack main FILL、跨多个 AUTO 的
+  平均 deficit、multiple FRACTION、一般 `UNBOUNDED/AT_MOST/EXACT` constraint engine、双向回写/fixed point、
+  三角函数/epsilon/tolerance、Text/Image/Vector intrinsic、resource fetch/decode/cache、world scene/raster/JPEG、
+  daemon RESULT/Profile、Java/OpenAPI/migration/Web/route、formal records、physical Linux/J1/A3/READY 与外部副作用。
+- 精确语义：COLUMN Stack measurement space 已解析 direct Grid 的 physical width interval 时，先按 signed margins、
+  positive-zero 与 min→max 得到 final outer width；Grid 再扣 inward stroke/padding，完整解 columns 后以
+  `RowsAfterColumns` 解 rows。每层只沿 direct authored child 下降；row result 不回写 columns、Stack allocation、
+  siblings、gaps 或 ancestors。
+- TDD：shared vector/verifier `/27` 先共同 RED；既有 Grid-terminal negative 转 positive，新增 Grid margins/
+  ContentBox/clamp positive，并新增 resolved height 不得驱动 rows→columns boundary negative。目标 119 laid-out +
+  15 unsupported、134/134 cases、401 checks，fixture `/3` bytes 不变。
+- 验证：先 focused Rust/Python、fmt、clippy `-D warnings`、workspace tests、`py_compile`、JSON inventory 与
+  `git diff --check`；再依次 `render`、affected `fast`、顺序 `server`、Goal `full`。最高只可
+  `automated_verified`；不推进 A3/J1/READY，不 push/tag/PR，不运行 provider，不读取 API Key。
+- 收口：shared `/27` 先在 `CHILD_ROTATION rwocc_0000000000000006` 共同 RED，后由 Rust/Python 达到 119 laid-out +
+  15 unsupported、134/134 cases、401 checks；vector SHA-256
+  `59af024709bddec8eefb5cae666b6a2fddeb39589ff908f357a27d8ad8e41dc5`，fixture `/3` SHA-256 保持
+  `a11475bcebad7e1c35cb0acd7018419d94afcb4b37d7f1df7346a055ad1df669`。`render`
+  `.sdlc/evidence/20260823-044653-render/`、affected `fast` `.sdlc/evidence/20260823-035754-fast/`、顺序 `server`
+  `.sdlc/evidence/20260823-035812-server/` 与 Goal `full` `.sdlc/evidence/20260823-044748-full/` 均通过；full 17
+  steps 均 exit 0，Node v24.12.0 Web 26 files/212 tests、runtime canary、23 passed + 1 controlled skip Playwright、
+  browser journeys 与最终 inference replay E2E 1/1 均通过；resolution 后 fast
+  `.sdlc/evidence/20260823-051519-fast/` 的 3 steps 也均 exit 0。
+  R0/R1/P0 provider attempts=0，P0 API Key reads/reservations/cost=0；Profile `NOT_REGISTERED`、certification
+  `NOT_CERTIFIED`、Raster `ABSENT`、daemon `UNWIRED`。最高 `automated_verified`；未推进 A3/J1/READY，未
+  push/tag/PR。

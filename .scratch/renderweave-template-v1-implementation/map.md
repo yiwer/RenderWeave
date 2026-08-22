@@ -317,6 +317,11 @@ Label: wayfinder:map
   FILL outer，再按自身 direction 复用 main-HUG/cross-HUG helper 并沿 authored tree 严格下降；shared `/26`
   为 117 laid-out + 15 unsupported、132 cases/395 checks。Grid consumer、unresolved/cyclic FILL、fixed point 与
   一般 constraint/tolerance 保持 fail closed。
+- [实现 nested Stack resolved opposite offer → columns-first Grid terminal 子闭包](issues/64-nested-stack-resolved-opposite-offer-columns-first-grid-terminal.md) —
+  **resolved / automated_verified**；只把 COLUMN Stack measurement 中 already-resolved width offer 交给 direct
+  `widthMode=FILL,heightMode=HUG_CONTENT` Grid，复用既有 ContentBox 与严格 columns→rows consumer；shared `/27`
+  为 119 laid-out + 15 unsupported、134 cases/401 checks。rows→columns、fixed point 与一般 constraint/tolerance
+  保持 fail closed。
 - [验证 Product Editor 状态、恢复与权威预览架构](issues/09-validate-product-editor-architecture.md) —
   throwaway 逻辑原型（`/prototype/editor-state-model`，不进产品 route）把冻结编辑器规则编码为确定性
   fixture 状态机：10 个引导走查场景 37/37 断言 + 自由操作冒烟 + 键盘焦点检查全部通过（Playwright A1，
@@ -426,8 +431,9 @@ Label: wayfinder:map
   （Rust/Python 122/122、365 checks）；T61 已完成 Grid cell→ROW Stack main-first cross HUG（Rust/Python
   126/126、377 checks）；T62 已完成 direct direction-changing nested Stack definite-cross→main-HUG 的有限组合
   （Rust/Python 129/129、386 checks）；T63 已完成 nested Stack resolved opposite offer 的结构递归
-  （Rust/Python 132/132、395 checks）；
-  其余非直角 rotation、递归方向切换 Stack、general constraint、multiple Stack
+  （Rust/Python 132/132、395 checks）；T64 已完成既有 resolved width offer → columns-first Grid terminal 闭包
+  （Rust/Python 134/134、401 checks），严格不开放 rows→columns；
+  其余非直角 rotation、general constraint、multiple Stack
   main-axis FILL/跨多个 AUTO 的平均
   deficit/multiple FRACTION/actual resource fetch+decode/world scene/raster/
   JPEG/Engine 接线仍须另行登记，物理 Linux 双 CPU-family

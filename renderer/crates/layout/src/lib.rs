@@ -1729,7 +1729,7 @@ fn measure_stack_child(
             )?)
         }
         (
-            NodeRole::Frame | NodeRole::Stack,
+            NodeRole::Frame | NodeRole::Stack | NodeRole::Grid,
             StackDirection::Column,
             SizeMode::Fill,
             SizeMode::Hug,
