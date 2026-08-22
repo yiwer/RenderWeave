@@ -16,7 +16,7 @@ fn replays_exact_binary64_definite_layout_vectors() {
     let layout_preflight_fixtures: Value = serde_json::from_str(LAYOUT_PREFLIGHT_FIXTURES).unwrap();
     assert_eq!(
         vectors["vectorVersion"],
-        "renderweave-definite-layout-vectors/11"
+        "renderweave-definite-layout-vectors/12"
     );
 
     for case in vectors["laidOutCases"].as_array().unwrap() {
@@ -114,6 +114,7 @@ fn unsupported_feature_names_are_closed_and_stable() {
         DefiniteLayoutUnsupported::StackMainFill.as_str(),
         DefiniteLayoutUnsupported::GridAutoTrack.as_str(),
         DefiniteLayoutUnsupported::GridFractionTrack.as_str(),
+        DefiniteLayoutUnsupported::ChildRotation.as_str(),
         DefiniteLayoutUnsupported::CompositionViewport.as_str(),
         DefiniteLayoutUnsupported::ResourceDependentKind.as_str(),
         DefiniteLayoutUnsupported::NonAbsolutePlacement.as_str(),
@@ -126,6 +127,7 @@ fn unsupported_feature_names_are_closed_and_stable() {
             "STACK_MAIN_FILL",
             "GRID_AUTO_TRACK",
             "GRID_FRACTION_TRACK",
+            "CHILD_ROTATION",
             "COMPOSITION_VIEWPORT",
             "RESOURCE_DEPENDENT_KIND",
             "NON_ABSOLUTE_PLACEMENT",

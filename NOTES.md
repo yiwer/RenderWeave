@@ -1,6 +1,18 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-22 **Template v1 implementation TV1-T49 已 `resolved/automated_verified`**：在同一
+  `renderweave-renderer-layout` deep module 内完成 zero-rotation affine 非空 Frame HUG；resource-free direct
+  ABSOLUTE child 的 position/size/scale/flip/origin 以冻结 binary64 顺序求 transformed LayoutBox 最远正端，
+  负端只 overflow，非零 rotation 以 `CHILD_ROTATION` fail closed。shared vector/verifier `/12` 为 57 laid-out +
+  12 unsupported、69/69、209 checks，SHA-256
+  `b77d4428d346af37d8f16974e522a507f07d38b092391d232c5e5a79e270a973`；`render`
+  `.sdlc/evidence/20260822-112051-render/`、`server` `.sdlc/evidence/20260822-112132-server/`、受影响 `fast`
+  `.sdlc/evidence/20260822-114137-fast/`、Goal 级 `full` `.sdlc/evidence/20260822-114421-full/` 与治理后
+  final `fast` `.sdlc/evidence/20260822-121536-fast/` 均绿。
+  Profile NOT_REGISTERED、certification NOT_CERTIFIED、resource bytes UNFETCHED、scene/raster ABSENT、daemon
+  UNWIRED、provider attempts/API Key reads/真实数据/付费调用均为 0；任意 rotation、Group、resource decode、
+  multiple FILL/FRACTION 与跨多 AUTO 平均仍未实现，未 push/tag/PR。
 - 2026-08-22 **Template v1 implementation TV1-T48 已 `resolved/automated_verified`**：新增 workspace-internal
   `renderweave-renderer-resource` deep module；typed resource + shared request-local budget + caller-supplied chunks
   严格执行 `536_870_912` physical fetch bytes inclusive limit、chunk-before-accept 原子预留及 declared length→

@@ -5,12 +5,13 @@
 //! Preflight returns bounded structural counts or one stable DFS problem. The definite kernel
 //! additionally computes local LayoutBox/ContentBox entries for resource-independent ABSOLUTE
 //! nodes, Stack children with at most one main-axis FILL, resource-independent Stack/Grid HUG
-//! measurement, and Grid children whose definite axes contain FIXED tracks, at most one FRACTION
-//! track, and resource-independent AUTO constraints that each cover at most one AUTO track and
-//! consume supported resource-free HUG contributions. It deliberately stops before resource
-//! preparation, Frame/Group nonempty HUG, multi-FILL
-//! Stack water filling, cross-AUTO deficit distribution, multi-FRACTION solving, world transforms,
-//! shaping, paint, rasterization, and encoding, and it never exposes a partial layout on failure.
+//! measurement, zero-rotation affine nonempty Frame HUG measurement, and Grid children whose
+//! definite axes contain FIXED tracks, at most one FRACTION track, and resource-independent AUTO
+//! constraints that each cover at most one AUTO track and consume supported resource-free HUG
+//! contributions. It deliberately stops before resource preparation, nonzero child rotation,
+//! Group nonempty HUG, multi-FILL Stack water filling, cross-AUTO deficit distribution,
+//! multi-FRACTION solving, world transforms, shaping, paint, rasterization, and encoding, and it
+//! never exposes a partial layout on failure.
 
 use renderweave_renderer_document::AdmittedRenderDocument;
 use serde_json::{Map, Number, Value};
@@ -203,6 +204,7 @@ pub enum DefiniteLayoutUnsupported {
     StackMainFill,
     GridAutoTrack,
     GridFractionTrack,
+    ChildRotation,
     CompositionViewport,
     ResourceDependentKind,
     NonAbsolutePlacement,
@@ -216,6 +218,7 @@ impl DefiniteLayoutUnsupported {
             Self::StackMainFill => "STACK_MAIN_FILL",
             Self::GridAutoTrack => "GRID_AUTO_TRACK",
             Self::GridFractionTrack => "GRID_FRACTION_TRACK",
+            Self::ChildRotation => "CHILD_ROTATION",
             Self::CompositionViewport => "COMPOSITION_VIEWPORT",
             Self::ResourceDependentKind => "RESOURCE_DEPENDENT_KIND",
             Self::NonAbsolutePlacement => "NON_ABSOLUTE_PLACEMENT",
@@ -1510,6 +1513,7 @@ fn resource_free_hug_axis(
         return empty_container_hug_axis(node, role, placement, axis, occurrence);
     }
     let content_extent = match role {
+        NodeRole::Frame => resource_free_frame_hug_content_extent(node, axis, occurrence)?,
         NodeRole::Stack => resource_free_stack_hug_content_extent(node, axis, occurrence)?,
         NodeRole::Grid => resource_free_grid_hug_content_extent(node, axis, occurrence)?,
         NodeRole::Group => {
@@ -1518,7 +1522,7 @@ fn resource_free_hug_axis(
                 DefiniteLayoutUnsupported::Group,
             ));
         }
-        NodeRole::Frame | NodeRole::Leaf => {
+        NodeRole::Leaf => {
             return Err(DefiniteLayoutError::unsupported(
                 occurrence,
                 DefiniteLayoutUnsupported::HugContent,
@@ -1527,6 +1531,124 @@ fn resource_free_hug_axis(
     };
     let natural = container_outer_extent(node, axis, content_extent, occurrence)?;
     clamp_flexible_axis(placement, natural, axis, occurrence)
+}
+
+fn resource_free_frame_hug_content_extent(
+    frame: &Map<String, Value>,
+    axis: &str,
+    occurrence: &str,
+) -> Result<f64, DefiniteLayoutError> {
+    let (position_member, mode_member, size_member) = match axis {
+        "Width" => ("xPt", "widthMode", "widthPt"),
+        "Height" => ("yPt", "heightMode", "heightPt"),
+        _ => return Err(DefiniteLayoutError::invariant(occurrence, "HUG axis")),
+    };
+    let mut extent = 0.0;
+    for child in array_member(frame, "children", occurrence)? {
+        let child = object(child, occurrence, "children")?;
+        let child_occurrence = occurrence_id(child)?;
+        let kind = text_member(child, "kind", child_occurrence, "kind")?;
+        let role = definite_node_role(kind, child_occurrence)?;
+        let placement = object_member(Some(child), "placement", child_occurrence)?;
+        if text_member(placement, "type", child_occurrence, "placement.type")? != "ABSOLUTE" {
+            return Err(DefiniteLayoutError::unsupported(
+                child_occurrence,
+                DefiniteLayoutUnsupported::NonAbsolutePlacement,
+            ));
+        }
+        let position = binary64_member(
+            placement,
+            position_member,
+            child_occurrence,
+            format!("placement.{position_member}"),
+        )?;
+        let size = match size_mode(placement, mode_member, child_occurrence)? {
+            SizeMode::Fixed => binary64_member(
+                placement,
+                size_member,
+                child_occurrence,
+                format!("placement.{size_member}"),
+            )?,
+            SizeMode::Hug => {
+                resource_free_hug_axis(child, role, placement, axis, child_occurrence)?
+            }
+            SizeMode::Fill => {
+                return Err(DefiniteLayoutError::invariant(
+                    child_occurrence,
+                    format!("placement.{mode_member}"),
+                ));
+            }
+        };
+        let end = zero_rotation_affine_axis_end(child, position, size, axis, child_occurrence)?;
+        if end > extent {
+            extent = end;
+        }
+    }
+    Ok(extent)
+}
+
+fn zero_rotation_affine_axis_end(
+    node: &Map<String, Value>,
+    position: f64,
+    size: f64,
+    axis: &str,
+    occurrence: &str,
+) -> Result<f64, DefiniteLayoutError> {
+    let transform = object_member(Some(node), "transform", occurrence)?;
+    let rotation = binary64_member(
+        transform,
+        "rotationDeg",
+        occurrence,
+        "transform.rotationDeg",
+    )?;
+    if rotation != 0.0 {
+        return Err(DefiniteLayoutError::unsupported(
+            occurrence,
+            DefiniteLayoutUnsupported::ChildRotation,
+        ));
+    }
+    let (origin_member, scale_member) = match axis {
+        "Width" => ("originX", "scaleX"),
+        "Height" => ("originY", "scaleY"),
+        _ => return Err(DefiniteLayoutError::invariant(occurrence, "HUG axis")),
+    };
+    let origin_ratio = binary64_member(
+        transform,
+        origin_member,
+        occurrence,
+        format!("transform.{origin_member}"),
+    )?;
+    let scale = binary64_member(
+        transform,
+        scale_member,
+        occurrence,
+        format!("transform.{scale_member}"),
+    )?;
+    if scale == 0.0 {
+        return Err(DefiniteLayoutError::invariant(
+            occurrence,
+            format!("transform.{scale_member}"),
+        ));
+    }
+
+    let origin_offset = finite_transform_value(origin_ratio * size, occurrence)?;
+    let transform_origin = finite_transform_value(position + origin_offset, occurrence)?;
+    let near_delta = finite_transform_value(position - transform_origin, occurrence)?;
+    let near_scaled = finite_transform_value(scale * near_delta, occurrence)?;
+    let near = finite_transform_value(transform_origin + near_scaled, occurrence)?;
+    let far_position = finite_transform_value(position + size, occurrence)?;
+    let far_delta = finite_transform_value(far_position - transform_origin, occurrence)?;
+    let far_scaled = finite_transform_value(scale * far_delta, occurrence)?;
+    let far = finite_transform_value(transform_origin + far_scaled, occurrence)?;
+    Ok(near.max(far))
+}
+
+fn finite_transform_value(value: f64, occurrence: &str) -> Result<f64, DefiniteLayoutError> {
+    if value.is_finite() {
+        Ok(value)
+    } else {
+        Err(DefiniteLayoutError::invariant(occurrence, "transform"))
+    }
 }
 
 fn resource_free_grid_hug_content_extent(

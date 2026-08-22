@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Independent replay for resource-free definite boxes and intrinsic Grid contributions."""
+"""Independent replay for definite boxes and resource-free intrinsic layout."""
 
 from __future__ import annotations
 
@@ -991,7 +991,9 @@ def resource_free_hug_axis(
     children = array_value(node.get("children"), f"{current} children")
     if not children:
         return empty_container_hug_axis(node, role, placement, axis, current)
-    if role == "STACK":
+    if role == "FRAME":
+        content_extent = resource_free_frame_hug_content_extent(node, axis, current)
+    elif role == "STACK":
         content_extent = resource_free_stack_hug_content_extent(node, axis, current)
     elif role == "GRID":
         content_extent = resource_free_grid_hug_content_extent(node, axis, current)
@@ -999,6 +1001,100 @@ def resource_free_hug_axis(
         raise Unsupported("GROUP" if role == "GROUP" else "HUG_CONTENT", current)
     natural = container_outer_extent(node, axis, content_extent, current)
     return clamp_flexible_axis(placement, natural, axis, current)
+
+
+def resource_free_frame_hug_content_extent(
+    frame: dict[str, Any], axis: str, current: str
+) -> float:
+    if axis == "Width":
+        position_member, mode_member, size_member = "xPt", "widthMode", "widthPt"
+    elif axis == "Height":
+        position_member, mode_member, size_member = "yPt", "heightMode", "heightPt"
+    else:
+        raise VerificationFailure(f"{current} invalid Frame HUG axis")
+    extent = 0.0
+    for raw_child in array_value(frame.get("children"), f"{current} children"):
+        child = object_value(raw_child, f"{current} child")
+        child_occurrence = occurrence(child)
+        kind = text(child.get("kind"), f"{child_occurrence} kind")
+        role = definite_node_role(kind, child_occurrence)
+        placement = object_value(
+            child.get("placement"), f"{child_occurrence} placement"
+        )
+        if placement.get("type") != "ABSOLUTE":
+            raise Unsupported("NON_ABSOLUTE_PLACEMENT", child_occurrence)
+        position = required_decimal(
+            placement,
+            position_member,
+            child_occurrence,
+            f"placement.{position_member}",
+        )
+        mode = text(
+            placement.get(mode_member), f"{child_occurrence} placement.{mode_member}"
+        )
+        if mode == "FIXED":
+            size = required_decimal(
+                placement,
+                size_member,
+                child_occurrence,
+                f"placement.{size_member}",
+            )
+        elif mode == "HUG_CONTENT":
+            size = resource_free_hug_axis(
+                child, role, placement, axis, child_occurrence
+            )
+        else:
+            raise VerificationFailure(
+                f"{child_occurrence} invalid placement.{mode_member} in HUG Frame"
+            )
+        end = zero_rotation_affine_axis_end(
+            child, position, size, axis, child_occurrence
+        )
+        if end > extent:
+            extent = end
+    return extent
+
+
+def zero_rotation_affine_axis_end(
+    node: dict[str, Any], position: float, size: float, axis: str, current: str
+) -> float:
+    transform = object_value(node.get("transform"), f"{current} transform")
+    rotation = required_decimal(
+        transform, "rotationDeg", current, "transform.rotationDeg"
+    )
+    if rotation != 0.0:
+        raise Unsupported("CHILD_ROTATION", current)
+    if axis == "Width":
+        origin_member, scale_member = "originX", "scaleX"
+    elif axis == "Height":
+        origin_member, scale_member = "originY", "scaleY"
+    else:
+        raise VerificationFailure(f"{current} invalid Frame HUG axis")
+    origin_ratio = required_decimal(
+        transform, origin_member, current, f"transform.{origin_member}"
+    )
+    scale = required_decimal(
+        transform, scale_member, current, f"transform.{scale_member}"
+    )
+    if scale == 0.0:
+        raise VerificationFailure(f"{current} transform.{scale_member} is zero")
+
+    origin_offset = finite_transform_value(origin_ratio * size, current)
+    transform_origin = finite_transform_value(position + origin_offset, current)
+    near_delta = finite_transform_value(position - transform_origin, current)
+    near_scaled = finite_transform_value(scale * near_delta, current)
+    near = finite_transform_value(transform_origin + near_scaled, current)
+    far_position = finite_transform_value(position + size, current)
+    far_delta = finite_transform_value(far_position - transform_origin, current)
+    far_scaled = finite_transform_value(scale * far_delta, current)
+    far = finite_transform_value(transform_origin + far_scaled, current)
+    return max(near, far)
+
+
+def finite_transform_value(value: float, current: str) -> float:
+    if not (-float("inf") < value < float("inf")):
+        raise VerificationFailure(f"{current} transform produced non-finite binary64")
+    return value
 
 
 def resource_free_grid_hug_content_extent(
@@ -1477,7 +1573,7 @@ def verify(
         "vector manifest",
     )
     verifier.require(
-        vectors["vectorVersion"] == "renderweave-definite-layout-vectors/11",
+        vectors["vectorVersion"] == "renderweave-definite-layout-vectors/12",
         "vector identity drifted",
     )
     authority = exact_members(
@@ -1530,7 +1626,7 @@ def verify(
     expected_boundary = {
         "profileAvailability": "NOT_REGISTERED",
         "certificationStatus": "NOT_CERTIFIED",
-        "layoutImplementation": "RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_SINGLE_MAIN_FILL_AND_FIXED_SINGLE_FRACTION_INDEPENDENT_MULTI_AUTO_GRID_EMPTY_CONTAINER_STACK_HUG_GRID_AUTO_HUG_CONTRIBUTION_AND_GRID_HUG_BOX_KERNEL",
+        "layoutImplementation": "RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_SINGLE_MAIN_FILL_AND_FIXED_SINGLE_FRACTION_INDEPENDENT_MULTI_AUTO_GRID_EMPTY_CONTAINER_STACK_HUG_GRID_AUTO_HUG_CONTRIBUTION_GRID_HUG_ZERO_ROTATION_AFFINE_FRAME_HUG_BOX_KERNEL",
         "worldTransformImplementation": "ABSENT",
         "sceneImplementation": "ABSENT",
         "rasterImplementation": "ABSENT",
@@ -1568,9 +1664,9 @@ def verify(
         == "renderweave-layout-preflight-fixtures/1",
         "layout preflight fixture identity drifted",
     )
-    verifier.require(len(vectors["laidOutCases"]) == 51, "laid-out case count drifted")
+    verifier.require(len(vectors["laidOutCases"]) == 57, "laid-out case count drifted")
     verifier.require(
-        len(vectors["unsupportedCases"]) == 13,
+        len(vectors["unsupportedCases"]) == 12,
         "unsupported case count drifted",
     )
 
@@ -1618,7 +1714,7 @@ def verify(
             raise VerificationFailure(f"{case_id}: unsupported case produced a layout")
 
     return {
-        "verifier": "renderweave-definite-layout-python-independent/11",
+        "verifier": "renderweave-definite-layout-python-independent/12",
         "result": "PASS",
         "assurance": "A2",
         "laidOutCases": len(vectors["laidOutCases"]),

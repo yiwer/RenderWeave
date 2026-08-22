@@ -46,7 +46,9 @@
   Rust/Python 83/83、106 checks；URL/fetch/attempt-time checks/actual bytes/decode/scene/RESULT/Profile 继续
   fail closed。TV1-T48=`resolved/automated_verified`：request-local physical fetch byte budget 与 caller-supplied
   body 的 length→SHA-256 完整性 deep module 已完成；Rust/Python 15/15、34 checks；HTTPS/daemon/decode/Profile
-  继续不接线，resource bytes 保持 UNFETCHED。
+  继续不接线，resource bytes 保持 UNFETCHED。TV1-T49=`resolved/automated_verified`：zero-rotation affine
+  非空 Frame HUG intrinsic 子闭包已完成；Rust/Python 69/69、209 checks，任意非零 rotation/Group/resource/
+  tolerance/scene/RESULT 继续 fail closed。
 - 日期：2026-08-20
 - Approved delta：[`specs/changes/20260817-template-v1-implementation-authority.md`](../specs/changes/20260817-template-v1-implementation-authority.md)
 - Frozen checkpoint：`0b485f4a13de9d754a81d07f464730776e13c14b`
@@ -117,6 +119,7 @@ binding: generic + project-local tools/run-gate.ps1 + Wayfinder markdown tracker
 | TV1-P5p RenderResource manifest admission | 46 | typed sealed resource + closed scalar/descriptor + fetch-before static budgets | Rust/Python A1/A2；无 HTTPS/actual bytes/decode/cache/scene/RESULT/Profile |
 | TV1-P5q Command/resource lease admission | 47 | typed Command deadline 与 manifest lease 的 +5000ms 覆盖证明、first error | Rust/Python A1/A2；无 URL/fetch/attempt-time expiry/scene/RESULT/Profile |
 | TV1-P5r Resource body integrity kernel | 48 | request-local physical fetch byte budget + caller-supplied body length/SHA-256 | Rust/Python A1/A2；module UNWIRED、resource bytes UNFETCHED；无 HTTPS/decode/Profile |
+| TV1-P5s Zero-rotation affine Frame HUG | 49 | 非空 Frame 以 zero-rotation direct child transformed LayoutBox 最远正端求 resource-free HUG | Rust/Python exact-bit 69/69、209 checks A1/A2；非零 rotation/Group/resource/tolerance fail closed；无 scene/RESULT |
 | TV1-P6a Editor E1 | 27 | trusted canonical current baseline + 显式 readiness recheck + 三模式 Canvas Focus shell | Java/Web/OpenAPI A1；组件未发布，禁止 save/preview/recovery 占位与 READY 声明 |
 | TV1-P6b Editor E2 | 28 | canonical working copy + 结构化本地编辑/undo/redo + preview generation/eligibility guard | Node 24 Web A1；无 API/route/save/preview action，baseline immutable |
 | TV1-P6c Editor E3 | 29 | lossless save + conflict overwrite offer/confirm/reconfirm + conservative unknown lock | Node 24 Web A1；复用既有 API；无 E4–E9/route/reconciliation |
@@ -126,7 +129,7 @@ binding: generic + project-local tools/run-gate.ps1 + Wayfinder markdown tracker
 | TV1-P6g Editor E7 | 35 | versioned per-Template Local recovery + 7-day lifecycle + explicit restore/export/discard + cross-refresh reconciliation | Node 24 Web A1；浏览器 best-effort，不同步/不自动提交；无 Java/API/migration/route |
 | TV1-P6h Editor E8 | 36 | strict local import + Raw Repair/Compatibility + shared dirty replacement guard | Node 24 Web A1；文件 identity/schema 不覆盖目标；无 registered migration profile/action、API/route |
 | TV1-P6i Editor E9 | 37 | strict problem projection + summary focus + roving tree/live delta + 1024/1280/1440/200% effective viewport | Node 24 Web + Playwright/axe A1；无 route/E6；人工 keyboard/zoom J1 pending |
-| TV1-P6+ Product completion | 45 后按真实依赖另切票 | 完整 Renderer layout/resource/raster/JPEG/Engine output、公开产品面、Editor E6 与 formal registry records | 逐纵切 gate + product target/executor + J1/A3/物理 Linux 认证；不预建未知下游票 |
+| TV1-P6+ Product completion | 49 后按真实依赖另切票 | 完整 Renderer layout/resource/raster/JPEG/Engine output、公开产品面、Editor E6 与 formal registry records | 逐纵切 gate + product target/executor + J1/A3/物理 Linux 认证；不预建未知下游票 |
 
 ## 4. 当前 ticket DAG
 
@@ -203,6 +206,10 @@ flowchart LR
   T46 --> T47
   T46 --> T48[48 Resource body integrity kernel]
   T47 --> T48
+  T26 --> T49[49 Zero-rotation affine Frame HUG]
+  T42 --> T49
+  T43 --> T49
+  T45 --> T49
   T06 --> T27[27 Editor E1 canonical open]
   T09 --> T27
   T20 --> T27
@@ -297,7 +304,8 @@ flowchart LR
 | 45 | task | `resolved` / `automated_verified` | 23, 25, 26, 34, 40, 41, 42, 43, 44 | 非空 Grid 的资源无关 HUG intrinsic；Rust/Python 64/64、193 checks；FRACTION-on-HUG/跨多 AUTO/Frame/Group/resource/tolerance 保持 fail closed |
 | 46 | task | `resolved` / `automated_verified` | 13, 23；消费 T19 已冻结资源容量 cells | RenderResource typed manifest defensive admission；closed fields/descriptors/static budgets；无 HTTPS/actual bytes/decode/RESULT |
 | 47 | task | `resolved` / `automated_verified` | 13, 22, 23, 46；消费 T19 已冻结 lease margin cell | Command deadline + 5000ms 对每项 typed lease 的覆盖准入与 manifest-order resourceId；Rust/Python 83/83、106 checks；无 URL/fetch/RESULT/Profile |
-| 48 | task | `claimed` / `in_progress` | 13, 22, 23, 46, 47；消费 T19 已冻结 physical fetch bytes cell | shared request-local physical-byte budget + caller-supplied body length/SHA-256 deep module；无 HTTPS/decode/daemon output/Profile |
+| 48 | task | `resolved` / `automated_verified` | 13, 22, 23, 46, 47；消费 T19 已冻结 physical fetch bytes cell | shared request-local physical-byte budget + caller-supplied body length/SHA-256 deep module；Rust/Python 15/15、34 checks；无 HTTPS/decode/daemon output/Profile |
+| 49 | task | `claimed` / `in_progress` | 23, 25, 26, 42, 43, 45 | zero-rotation affine 非空 Frame HUG；任意非零 rotation/Group/resource/tolerance/scene/RESULT 保持 fail closed |
 
 每次只 claim 一个 unblocked ticket；一票 resolved 后才由其 `Blocked by` 关系产生下一 frontier。未知实现切片留在
 map 的 `Not yet specified`，不为排满计划提前发明接口、migration 或 Profile identity。
@@ -1302,3 +1310,34 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
 - 生命周期：`resolved / automated_verified`；module/daemon success path UNWIRED、resource bytes UNFETCHED、Profile
   NOT_REGISTERED、certification NOT_CERTIFIED、world scene/raster ABSENT；canonical HTTPS/actual fetch/decode/cache 与
   其他剩余闭包仍未实现，未推进 A3/J1/READY，未 push/tag/PR。
+
+## 48. TV1-T49 执行卡
+
+- 决策：T48 最终 `full` 17/17 并以 verified commit `162dcd8` 收口后复算 Ticket 10/16/19 与当前 layout
+  deep module。multiple FILL/FRACTION、跨多 AUTO 平均仍依赖未物化 residual tolerance；actual fetch 仍缺
+  deployment identity；任意 rotation 的 transformed AABB 又依赖尚未冻结的跨平台三角函数 tolerance。冻结规格
+  对 `rotationDeg == 0` 的 direct child transformed LayoutBox 则可只用 binary64 加乘与 min/max 精确求得，因此
+  登记为当前 single-writer frontier。
+- Interface/seam：只深化 `layout_definite_resource_free(&AdmittedRenderDocument)`；非空 Frame HUG 测量 direct
+  ABSOLUTE child 的资源无关 definite/HUG size，并在当前轴应用 zero-rotation scale/flip/origin。返回仍是同一
+  全有或全无 `DefiniteLayout`，不新增 crate/parser/route/Profile/daemon seam。
+- 允许影响：T49 tracker/plan/NOTES/log、layout Rust module/tests、shared definite-layout vector `/12`、Python
+  independent verifier、render gate identity/assertions/evidence。
+- 禁止影响：任意非零 rotation 的三角函数近似/tolerance、Group union/normalization、Text/Image/Vector intrinsic、
+  multiple Stack FILL、跨多 AUTO 平均、multiple FRACTION、resource fetch/decode/cache、world transform/scene/paint/
+  raster/JPEG、daemon RESULT/success/Profile、Java/OpenAPI/migration/Web/route、formal records、physical Linux/J1/A3/
+  READY 与外部副作用。
+- 精确语义：每轴按 `originRatio×size` → `position+originOffset` → transformed near/far 的显式公式求 child
+  axis AABB 最远端；Frame 从稳定零原点按 authored order 取最远正端，负端只 overflow，再沿用 padding → inward
+  stroke → min→max。非零 rotation 在实际 direct child 返回 closed internal `CHILD_ROTATION`。
+- TDD：shared vector/verifier `/12` 先把既有 Frame unsupported case 转为 positive，并加入 scale/flip/origin、
+  signed offset、单轴/递归/min-max 与 rotation fail-closed；Rust/Python RED 后分别实现独立语义，最终为 57
+  laid-out + 12 unsupported、69/69、209 checks，vector SHA-256
+  `b77d4428d346af37d8f16974e522a507f07d38b092391d232c5e5a79e270a973`。
+- 验证：focused fmt/clippy `-D warnings`/workspace tests/py_compile/JSON inventory/diff-check 全绿；`render`
+  `.sdlc/evidence/20260822-112051-render/`、`server` `.sdlc/evidence/20260822-112132-server/`、受影响 `fast`
+  `.sdlc/evidence/20260822-114137-fast/`、Goal 级 `full` `.sdlc/evidence/20260822-114421-full/` 与治理后
+  final `fast` `.sdlc/evidence/20260822-121536-fast/` 全绿。
+- 生命周期：`resolved / automated_verified`；Profile NOT_REGISTERED、certification NOT_CERTIFIED、resource bytes
+  UNFETCHED、world scene/raster ABSENT、daemon output UNWIRED；provider attempts/API Key reads/真实数据/付费调用
+  均保持 0。未推进 A3/J1/READY，未 push/tag/PR。
