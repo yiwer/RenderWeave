@@ -1700,7 +1700,7 @@ fn measure_and_allocate_stack_children(
         .ok_or_else(|| DefiniteLayoutError::invariant(occurrence, "stackMainOffer"))?;
     if fill_indices.len() > 1 {
         let first_fill = fill_indices[0];
-        match inactive_bound_stack_main_fill_allocations(
+        match stack_main_fill_allocations(
             children,
             &fill_indices,
             direction,
@@ -1970,7 +1970,7 @@ fn stack_child_has_main_fill(node: &Map<String, Value>, direction: StackDirectio
     placement.get(member).and_then(Value::as_str) == Some("FILL")
 }
 
-fn inactive_bound_stack_main_fill_allocations(
+fn stack_main_fill_allocations(
     children: &[Value],
     fill_indices: &[usize],
     direction: StackDirection,
@@ -2044,7 +2044,9 @@ fn inactive_bound_stack_main_fill_allocations(
             }
         }
     }
-    for &(fill_index, share) in &allocations {
+    let mut bounds = Vec::with_capacity(allocations.len());
+    let mut active_bound = None;
+    for (position, &(fill_index, share)) in allocations.iter().enumerate() {
         let child = object(&children[fill_index], stack_occurrence, "children")?;
         let child_occurrence = occurrence_id(child)?;
         let placement = object_member(Some(child), "placement", child_occurrence)?;
@@ -2060,14 +2062,69 @@ fn inactive_bound_stack_main_fill_allocations(
             child_occurrence,
             format!("placement.{maximum_member}"),
         )?;
-        if minimum.is_some_and(|bound| share < bound) || maximum.is_some_and(|bound| share > bound)
-        {
-            return Err(DefiniteLayoutError::unsupported(
-                first_occurrence,
-                DefiniteLayoutUnsupported::StackMainFill,
-            ));
+        let hit = if let Some(bound) = minimum.filter(|bound| share < *bound) {
+            Some(bound)
+        } else {
+            maximum.filter(|bound| share > *bound)
+        };
+        if let Some(bound) = hit {
+            if active_bound.is_some() {
+                return Err(DefiniteLayoutError::unsupported(
+                    first_occurrence,
+                    DefiniteLayoutUnsupported::StackMainFill,
+                ));
+            }
+            active_bound = Some((position, bound));
         }
+        bounds.push((minimum, maximum));
     }
+
+    let Some((active_position, frozen_bound)) = active_bound else {
+        return Ok(allocations);
+    };
+    if allocations.len() != 2
+        || !frozen_bound.is_finite()
+        || frozen_bound < 0.0
+        || frozen_bound > remaining
+    {
+        return Err(DefiniteLayoutError::unsupported(
+            first_occurrence,
+            DefiniteLayoutUnsupported::StackMainFill,
+        ));
+    }
+    let unfrozen_position = 1 - active_position;
+    if bounds[unfrozen_position].0.is_some() || bounds[unfrozen_position].1.is_some() {
+        return Err(DefiniteLayoutError::unsupported(
+            first_occurrence,
+            DefiniteLayoutUnsupported::StackMainFill,
+        ));
+    }
+    let (minimum, maximum) = bounds[active_position];
+    if minimum.is_some_and(|bound| frozen_bound < bound)
+        || maximum.is_some_and(|bound| frozen_bound > bound)
+    {
+        return Err(DefiniteLayoutError::unsupported(
+            first_occurrence,
+            DefiniteLayoutUnsupported::StackMainFill,
+        ));
+    }
+    let unfrozen_share = remaining - frozen_bound;
+    if !unfrozen_share.is_finite() || unfrozen_share < 0.0 {
+        return Err(DefiniteLayoutError::unsupported(
+            first_occurrence,
+            DefiniteLayoutUnsupported::StackMainFill,
+        ));
+    }
+    allocations[active_position].1 = if frozen_bound > 0.0 {
+        frozen_bound
+    } else {
+        0.0
+    };
+    allocations[unfrozen_position].1 = if unfrozen_share > 0.0 {
+        unfrozen_share
+    } else {
+        0.0
+    };
     Ok(allocations)
 }
 

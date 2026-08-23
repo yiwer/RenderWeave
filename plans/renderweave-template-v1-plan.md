@@ -2168,3 +2168,49 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
   26 files/212 tests、runtime canary、23 passed + 1 controlled skip Playwright、browser journeys 与最终 inference
   replay E2E 1/1 均通过。R0/R1/P0 provider attempts=0，P0 API Key reads/reservations/cost=0；Profile 仍
   `NOT_REGISTERED`、certification `NOT_CERTIFIED`、Raster `ABSENT`、daemon `UNWIRED`，未推进 A3/J1/READY。
+
+## 68. TV1-T69 执行卡
+
+- 决策：T68 以 verified commit `a7f1ce8` 收口且 worktree clean 后，复算 Ticket 10 §3/§7、
+  `RW-T10-S3-012..016`、`RW-T10-S7-004..012` 与 12 个 remaining unsupported cases。五个 rotation/error-order、
+  四个 resource-dependent 与一个 compositionViewport 仍依赖未冻结 tolerance、资源执行身份或 scene；两个
+  active-bound two-FILL cases 在冻结唯一 bound 后只剩一个未冻结项，可直接接收 exact remainder，因此登记为
+  当前 single-writer frontier。
+- Interface/seam：只深化 T68 `inactive_bound_stack_main_fill_allocations` 内部 seam；public API、
+  admission/preflight、`StackChildMeasurement`、arrange、authored DFS first-error 与全有或全无 output 不变。
+  Rust/Python 使用独立控制流但共享冻结 vectors。
+- 精确语义：先按 T67/T68 stable weight sum + authored-order last remainder staging 首轮 shares；只接受恰好两个
+  main FILL、恰好一个 active min/max、另一项 owning-axis min/max 均 absent，且 frozen bound finite、非负并
+  `<= remaining`。active child 取 bound，唯一未冻结项取 `remaining-bound`；随后按 authored order各执行一次
+  deferred cross-HUG remeasure，不再 division 或迭代。
+- 允许影响：T69 tracker/plan/NOTES、layout Rust module/tests、shared definite-layout vector `/32`、Python
+  independent verifier、render gate identity/assertions/evidence。
+- 禁止影响：min overflow、另一项带 bound、三个及以上 FILL active-bound、多 active/cascading freeze、一般多轮
+  water filling、epsilon/tolerance/public numeric error、HUG-main FILL cycle、rows→columns、任意非直角 rotation、
+  Text/Image/compositionViewport、resource fetch/decode、scene/raster/JPEG、daemon RESULT/Profile、Java/OpenAPI/
+  migration/Web/route、J1/A3/READY 与外部副作用。
+- TDD：既有 active-min/active-max negatives 转 positives，新增 owning Height、cross-HUG remeasure、exact-total-min
+  positives，并保留 min overflow、other-bound cascade 与 three-FILL active negatives；shared `/32` 先共同 RED，
+  目标 139 laid-out + 13 unsupported、152 cases/457 checks，fixture `/3` bytes 不变。
+- 验证：focused Rust/Python、fmt、clippy `-D warnings`、workspace tests、`py_compile`、JSON inventory/SHA/unique、
+  `git diff --check`；再依次 `render`、affected `fast`、顺序 `server`、Goal `full`、resolution `fast`。最高只可
+  `automated_verified`；不推进 A3/J1/READY，不 push/tag/PR，不运行 provider，不读取 API Key。
+
+### TV1-T69 resolution evidence
+
+- shared `/32` 的 Rust primary 与 Python independent verifier 先在同一首个转正 case 共同 RED；分别实现后
+  达到 139 laid-out + 13 unsupported、152/152 cases、457 checks；vector SHA-256 为
+  `5dfe649d0583b71e342eb9ec0a6c464214fa4cbb138b0d12daaf5be582866234`，fixture `/3` SHA-256 保持
+  `a11475bcebad7e1c35cb0acd7018419d94afcb4b37d7f1df7346a055ad1df669`。
+- `stack_main_fill_allocations` 保留 inactive-bound fast path，并只对 exactly-two/one-active/other-unbounded/
+  finite-nonnegative-bound-not-exceeding-remaining 执行一次 freeze + exact remainder；min overflow、other bound、
+  three-or-more active-bound FILL 与 cascading/multiple active 继续 fail closed。
+- focused Rust 3/3、Python independent 152/152、workspace fmt/clippy/tests、`py_compile`、JSON inventory/SHA/
+  unique 与 `git diff --check` 全绿；分级证据为 `render` `.sdlc/evidence/20260823-100349-render/`、affected
+  `fast` `.sdlc/evidence/20260823-100422-fast/`、顺序 `server` `.sdlc/evidence/20260823-100439-server/` 与 Goal
+  `full` `.sdlc/evidence/20260823-102333-full/`；resolution 后 fast
+  `.sdlc/evidence/20260823-105540-fast/` 的 3 steps 也均 exit 0（A1，12.618 秒）。
+- full 17 steps 均 exit 0、总耗时 1673.539 秒；App 344 tests/0 failures/0 errors/15 skipped，Node 24 Web
+  26 files/212 tests、runtime canary、23 passed + 1 controlled skip Playwright、browser journeys 与最终
+  inference replay E2E 1/1 均通过。R0/R1/P0 provider attempts=0，P0 API Key reads/reservations/cost=0；Profile
+  仍 `NOT_REGISTERED`、certification `NOT_CERTIFIED`、Raster `ABSENT`、daemon `UNWIRED`，未推进 A3/J1/READY。

@@ -1174,7 +1174,7 @@ def measure_and_allocate_stack_children(
     if len(fill_indices) > 1:
         first_fill = fill_indices[0]
         try:
-            allocations = inactive_bound_stack_main_fill_allocations(
+            allocations = stack_main_fill_allocations(
                 children,
                 fill_indices,
                 direction,
@@ -1434,7 +1434,7 @@ def stack_child_has_main_fill(node: dict[str, Any], direction: str) -> bool:
     return placement.get(member) == "FILL"
 
 
-def inactive_bound_stack_main_fill_allocations(
+def stack_main_fill_allocations(
     children: list[Any],
     fill_indices: list[int],
     direction: str,
@@ -1486,7 +1486,9 @@ def inactive_bound_stack_main_fill_allocations(
             raise Unsupported("STACK_MAIN_FILL", first_occurrence)
         allocations.append((fill_index, share if share > 0.0 else 0.0))
 
-    for fill_index, share in allocations:
+    bounds: list[tuple[float | None, float | None]] = []
+    active_bounds: list[tuple[int, float]] = []
+    for position, (fill_index, share) in enumerate(allocations):
         child = object_value(children[fill_index], f"{stack_occurrence} child")
         current = occurrence(child)
         placement = object_value(child.get("placement"), f"{current} placement")
@@ -1496,10 +1498,47 @@ def inactive_bound_stack_main_fill_allocations(
         maximum = optional_decimal(
             placement, maximum_member, current, f"placement.{maximum_member}"
         )
-        if (minimum is not None and share < minimum) or (
-            maximum is not None and share > maximum
-        ):
-            raise Unsupported("STACK_MAIN_FILL", first_occurrence)
+        hit = None
+        if minimum is not None and share < minimum:
+            hit = minimum
+        elif maximum is not None and share > maximum:
+            hit = maximum
+        if hit is not None:
+            active_bounds.append((position, hit))
+        bounds.append((minimum, maximum))
+
+    if not active_bounds:
+        return allocations
+    if len(allocations) != 2 or len(active_bounds) != 1:
+        raise Unsupported("STACK_MAIN_FILL", first_occurrence)
+    active_position, frozen_bound = active_bounds[0]
+    unfrozen_position = 1 - active_position
+    if any(bound is not None for bound in bounds[unfrozen_position]):
+        raise Unsupported("STACK_MAIN_FILL", first_occurrence)
+    if (
+        not math.isfinite(frozen_bound)
+        or frozen_bound < 0.0
+        or frozen_bound > remaining
+    ):
+        raise Unsupported("STACK_MAIN_FILL", first_occurrence)
+    minimum, maximum = bounds[active_position]
+    if (minimum is not None and frozen_bound < minimum) or (
+        maximum is not None and frozen_bound > maximum
+    ):
+        raise Unsupported("STACK_MAIN_FILL", first_occurrence)
+    unfrozen_share = remaining - frozen_bound
+    if not math.isfinite(unfrozen_share) or unfrozen_share < 0.0:
+        raise Unsupported("STACK_MAIN_FILL", first_occurrence)
+    active_index = allocations[active_position][0]
+    unfrozen_index = allocations[unfrozen_position][0]
+    allocations[active_position] = (
+        active_index,
+        frozen_bound if frozen_bound > 0.0 else 0.0,
+    )
+    allocations[unfrozen_position] = (
+        unfrozen_index,
+        unfrozen_share if unfrozen_share > 0.0 else 0.0,
+    )
     return allocations
 
 
@@ -2662,7 +2701,7 @@ def verify(
         "vector manifest",
     )
     verifier.require(
-        vectors["vectorVersion"] == "renderweave-definite-layout-vectors/31",
+        vectors["vectorVersion"] == "renderweave-definite-layout-vectors/32",
         "vector identity drifted",
     )
     authority = exact_members(
@@ -2715,7 +2754,7 @@ def verify(
     expected_boundary = {
         "profileAvailability": "NOT_REGISTERED",
         "certificationStatus": "NOT_CERTIFIED",
-        "layoutImplementation": "RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_SINGLE_AND_INACTIVE_BOUND_MULTI_MAIN_FILL_AND_FIXED_SINGLE_FRACTION_INDEPENDENT_MULTI_AUTO_GRID_MULTI_AUTO_SPAN_STABLE_DEFICIT_GRID_DEFINITE_MULTI_FRACTION_LAST_REMAINDER_GRID_EMPTY_CONTAINER_STACK_HUG_GRID_AUTO_HUG_CONTRIBUTION_GRID_HUG_EXACT_QUARTER_TURN_AFFINE_FRAME_GROUP_HUG_FIXED_OPPOSITE_AXIS_CROSS_FILL_DEFINITE_ABSOLUTE_PARENT_OFFER_DEFINITE_STACK_CROSS_OUTER_OFFER_STACK_MAIN_FILL_CROSS_HUG_REMEASURE_NESTED_STACK_MAIN_OFFER_PROPAGATION_COLUMNS_FIRST_GRID_CELL_OUTER_OFFER_STACK_MAIN_OFFER_COLUMNS_FIRST_GRID_CROSS_HUG_ABSOLUTE_PARENT_OFFER_COLUMNS_FIRST_GRID_CROSS_HUG_GRID_CELL_OFFER_COLUMNS_FIRST_NESTED_GRID_CROSS_HUG_GRID_CELL_OFFER_STACK_MAIN_FIRST_CROSS_HUG_DIRECTION_CHANGING_STACK_CROSS_OFFER_MAIN_HUG_NESTED_STACK_RESOLVED_OPPOSITE_OFFER_RECURSION_COLUMNS_FIRST_GRID_TERMINAL_NORMALIZATION_BOX_KERNEL",
+        "layoutImplementation": "RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_SINGLE_AND_INACTIVE_BOUND_OR_EXACT_TWO_FILL_SINGLE_ACTIVE_BOUND_MULTI_MAIN_FILL_AND_FIXED_SINGLE_FRACTION_INDEPENDENT_MULTI_AUTO_GRID_MULTI_AUTO_SPAN_STABLE_DEFICIT_GRID_DEFINITE_MULTI_FRACTION_LAST_REMAINDER_GRID_EMPTY_CONTAINER_STACK_HUG_GRID_AUTO_HUG_CONTRIBUTION_GRID_HUG_EXACT_QUARTER_TURN_AFFINE_FRAME_GROUP_HUG_FIXED_OPPOSITE_AXIS_CROSS_FILL_DEFINITE_ABSOLUTE_PARENT_OFFER_DEFINITE_STACK_CROSS_OUTER_OFFER_STACK_MAIN_FILL_CROSS_HUG_REMEASURE_NESTED_STACK_MAIN_OFFER_PROPAGATION_COLUMNS_FIRST_GRID_CELL_OUTER_OFFER_STACK_MAIN_OFFER_COLUMNS_FIRST_GRID_CROSS_HUG_ABSOLUTE_PARENT_OFFER_COLUMNS_FIRST_GRID_CROSS_HUG_GRID_CELL_OFFER_COLUMNS_FIRST_NESTED_GRID_CROSS_HUG_GRID_CELL_OFFER_STACK_MAIN_FIRST_CROSS_HUG_DIRECTION_CHANGING_STACK_CROSS_OFFER_MAIN_HUG_NESTED_STACK_RESOLVED_OPPOSITE_OFFER_RECURSION_COLUMNS_FIRST_GRID_TERMINAL_NORMALIZATION_BOX_KERNEL",
         "worldTransformImplementation": "ABSENT",
         "sceneImplementation": "ABSENT",
         "rasterImplementation": "ABSENT",
@@ -2753,9 +2792,9 @@ def verify(
         == "renderweave-layout-preflight-fixtures/1",
         "layout preflight fixture identity drifted",
     )
-    verifier.require(len(vectors["laidOutCases"]) == 134, "laid-out case count drifted")
+    verifier.require(len(vectors["laidOutCases"]) == 139, "laid-out case count drifted")
     verifier.require(
-        len(vectors["unsupportedCases"]) == 12,
+        len(vectors["unsupportedCases"]) == 13,
         "unsupported case count drifted",
     )
 
@@ -2803,7 +2842,7 @@ def verify(
             raise VerificationFailure(f"{case_id}: unsupported case produced a layout")
 
     return {
-        "verifier": "renderweave-definite-layout-python-independent/31",
+        "verifier": "renderweave-definite-layout-python-independent/32",
         "result": "PASS",
         "assurance": "A2",
         "laidOutCases": len(vectors["laidOutCases"]),

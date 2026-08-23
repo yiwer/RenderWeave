@@ -455,8 +455,10 @@ Label: wayfinder:map
   stable last-remainder 与 overflow-zero 子闭包（Rust/Python 136/136、409 checks）；T66 已完成跨多个 AUTO span
   的 stable average-deficit 单调子闭包（Rust/Python 139/139、419 checks）；T67 已完成 definite Stack 无
   owning-axis bound 的 multi-FILL stable proportional/last-remainder 子闭包（Rust/Python 142/142、429 checks）；
-  T68 已完成第一轮 share 不命中 owning-axis bound 的严格退化路径（Rust/Python 146/146、440 checks）；其余非直角 rotation、active-bound Stack
-  water filling、general constraint、actual resource fetch+decode/world scene/raster/
+  T68 已完成第一轮 share 不命中 owning-axis bound 的严格退化路径（Rust/Python 146/146、440 checks）；T69 已完成
+  两项 FILL、唯一 active bound、另一项 owning-axis 无界且冻结值不超过 remaining 的单次 freeze + exact
+  remainder 子闭包（Rust/Python 152/152、457 checks）；其余非直角 rotation、一般 active-bound Stack water filling、
+  min overflow、general constraint、actual resource fetch+decode/world scene/raster/
   JPEG/Engine 接线仍须另行登记，物理 Linux 双 CPU-family
   认证与 J1/A3 属届时另行授权的执行级门控。
 - Editor T27/E1、T28/E2、T29/E3、T30/E4a、T31/E4b、T32/E5、T35/E7、T36/E8 与 T37/E9 均已单独登记并完成；
