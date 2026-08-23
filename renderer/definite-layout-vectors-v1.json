@@ -1,5 +1,5 @@
 {
-  "vectorVersion": "renderweave-definite-layout-vectors/30",
+  "vectorVersion": "renderweave-definite-layout-vectors/31",
   "authorityContext": {
     "layoutProfile": "renderweave-layout/1.0",
     "documentContract": "renderweave-render-node-contract-v1/2",
@@ -9,7 +9,7 @@
   "boundary": {
     "profileAvailability": "NOT_REGISTERED",
     "certificationStatus": "NOT_CERTIFIED",
-    "layoutImplementation": "RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_SINGLE_AND_BOUND_FREE_MULTI_MAIN_FILL_AND_FIXED_SINGLE_FRACTION_INDEPENDENT_MULTI_AUTO_GRID_MULTI_AUTO_SPAN_STABLE_DEFICIT_GRID_DEFINITE_MULTI_FRACTION_LAST_REMAINDER_GRID_EMPTY_CONTAINER_STACK_HUG_GRID_AUTO_HUG_CONTRIBUTION_GRID_HUG_EXACT_QUARTER_TURN_AFFINE_FRAME_GROUP_HUG_FIXED_OPPOSITE_AXIS_CROSS_FILL_DEFINITE_ABSOLUTE_PARENT_OFFER_DEFINITE_STACK_CROSS_OUTER_OFFER_STACK_MAIN_FILL_CROSS_HUG_REMEASURE_NESTED_STACK_MAIN_OFFER_PROPAGATION_COLUMNS_FIRST_GRID_CELL_OUTER_OFFER_STACK_MAIN_OFFER_COLUMNS_FIRST_GRID_CROSS_HUG_ABSOLUTE_PARENT_OFFER_COLUMNS_FIRST_GRID_CROSS_HUG_GRID_CELL_OFFER_COLUMNS_FIRST_NESTED_GRID_CROSS_HUG_GRID_CELL_OFFER_STACK_MAIN_FIRST_CROSS_HUG_DIRECTION_CHANGING_STACK_CROSS_OFFER_MAIN_HUG_NESTED_STACK_RESOLVED_OPPOSITE_OFFER_RECURSION_COLUMNS_FIRST_GRID_TERMINAL_NORMALIZATION_BOX_KERNEL",
+    "layoutImplementation": "RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_SINGLE_AND_INACTIVE_BOUND_MULTI_MAIN_FILL_AND_FIXED_SINGLE_FRACTION_INDEPENDENT_MULTI_AUTO_GRID_MULTI_AUTO_SPAN_STABLE_DEFICIT_GRID_DEFINITE_MULTI_FRACTION_LAST_REMAINDER_GRID_EMPTY_CONTAINER_STACK_HUG_GRID_AUTO_HUG_CONTRIBUTION_GRID_HUG_EXACT_QUARTER_TURN_AFFINE_FRAME_GROUP_HUG_FIXED_OPPOSITE_AXIS_CROSS_FILL_DEFINITE_ABSOLUTE_PARENT_OFFER_DEFINITE_STACK_CROSS_OUTER_OFFER_STACK_MAIN_FILL_CROSS_HUG_REMEASURE_NESTED_STACK_MAIN_OFFER_PROPAGATION_COLUMNS_FIRST_GRID_CELL_OUTER_OFFER_STACK_MAIN_OFFER_COLUMNS_FIRST_GRID_CROSS_HUG_ABSOLUTE_PARENT_OFFER_COLUMNS_FIRST_GRID_CROSS_HUG_GRID_CELL_OFFER_COLUMNS_FIRST_NESTED_GRID_CROSS_HUG_GRID_CELL_OFFER_STACK_MAIN_FIRST_CROSS_HUG_DIRECTION_CHANGING_STACK_CROSS_OFFER_MAIN_HUG_NESTED_STACK_RESOLVED_OPPOSITE_OFFER_RECURSION_COLUMNS_FIRST_GRID_TERMINAL_NORMALIZATION_BOX_KERNEL",
     "worldTransformImplementation": "ABSENT",
     "sceneImplementation": "ABSENT",
     "rasterImplementation": "ABSENT",
@@ -2425,6 +2425,67 @@
         {"occurrenceId":"rwocc_0000000000000003","kind":"rect","layoutBox":{"xBits":"404e000000000000","yBits":"0000000000000000","widthBits":"0000000000000000","heightBits":"4024000000000000"},"contentBox":null},
         {"occurrenceId":"rwocc_0000000000000004","kind":"rect","layoutBox":{"xBits":"405e000000000000","yBits":"0000000000000000","widthBits":"0000000000000000","heightBits":"4024000000000000"},"contentBox":null}
       ]}
+    },
+    {
+      "id": "stack-multiple-main-fills-inactive-min-bound",
+      "baseSource": "fixtures",
+      "baseCase": "rowStack",
+      "mutations": [
+        {"operation":"replace","pointer":"/canvas/children/0/children/0/placement/widthMode","value":"FILL"},
+        {"operation":"remove","pointer":"/canvas/children/0/children/0/placement/widthPt"},
+        {"operation":"add","pointer":"/canvas/children/0/children/0/placement/fillWeight","value":1},
+        {"operation":"add","pointer":"/canvas/children/0/children/1/placement/minWidthPt","value":10},
+        {"operation":"replace","pointer":"/canvas/children/0/children/1/placement/widthMode","value":"FILL"},
+        {"operation":"remove","pointer":"/canvas/children/0/children/1/placement/widthPt"},
+        {"operation":"add","pointer":"/canvas/children/0/children/1/placement/fillWeight","value":2}
+      ],
+      "expected":{"entries":[
+        {"occurrenceId":"rwocc_0000000000000000","kind":"canvas","layoutBox":{"xBits":"0000000000000000","yBits":"0000000000000000","widthBits":"405e000000000000","heightBits":"4054000000000000"},"contentBox":{"xBits":"0000000000000000","yBits":"0000000000000000","widthBits":"405e000000000000","heightBits":"4054000000000000"}},
+        {"occurrenceId":"rwocc_0000000000000001","kind":"stack","layoutBox":{"xBits":"4024000000000000","yBits":"4014000000000000","widthBits":"4059000000000000","heightBits":"4049000000000000"},"contentBox":{"xBits":"4030000000000000","yBits":"4020000000000000","widthBits":"4056800000000000","heightBits":"4045000000000000"}},
+        {"occurrenceId":"rwocc_0000000000000002","kind":"rect","layoutBox":{"xBits":"4034000000000000","yBits":"4042800000000000","widthBits":"403aaaaaaaaaaaab","heightBits":"4024000000000000"},"contentBox":null},
+        {"occurrenceId":"rwocc_0000000000000003","kind":"rect","layoutBox":{"xBits":"4049d55555555556","yBits":"4024000000000000","widthBits":"404aaaaaaaaaaaaa","heightBits":"4043000000000000"},"contentBox":null}
+      ]}
+    },
+    {
+      "id": "stack-multiple-main-fills-inactive-max-bound",
+      "baseSource": "fixtures",
+      "baseCase": "rowStack",
+      "mutations": [
+        {"operation":"replace","pointer":"/canvas/children/0/children/0/placement/widthMode","value":"FILL"},
+        {"operation":"remove","pointer":"/canvas/children/0/children/0/placement/widthPt"},
+        {"operation":"add","pointer":"/canvas/children/0/children/0/placement/fillWeight","value":1},
+        {"operation":"add","pointer":"/canvas/children/0/children/1/placement/maxWidthPt","value":60},
+        {"operation":"replace","pointer":"/canvas/children/0/children/1/placement/widthMode","value":"FILL"},
+        {"operation":"remove","pointer":"/canvas/children/0/children/1/placement/widthPt"},
+        {"operation":"add","pointer":"/canvas/children/0/children/1/placement/fillWeight","value":2}
+      ],
+      "expected":{"entries":[
+        {"occurrenceId":"rwocc_0000000000000000","kind":"canvas","layoutBox":{"xBits":"0000000000000000","yBits":"0000000000000000","widthBits":"405e000000000000","heightBits":"4054000000000000"},"contentBox":{"xBits":"0000000000000000","yBits":"0000000000000000","widthBits":"405e000000000000","heightBits":"4054000000000000"}},
+        {"occurrenceId":"rwocc_0000000000000001","kind":"stack","layoutBox":{"xBits":"4024000000000000","yBits":"4014000000000000","widthBits":"4059000000000000","heightBits":"4049000000000000"},"contentBox":{"xBits":"4030000000000000","yBits":"4020000000000000","widthBits":"4056800000000000","heightBits":"4045000000000000"}},
+        {"occurrenceId":"rwocc_0000000000000002","kind":"rect","layoutBox":{"xBits":"4034000000000000","yBits":"4042800000000000","widthBits":"403aaaaaaaaaaaab","heightBits":"4024000000000000"},"contentBox":null},
+        {"occurrenceId":"rwocc_0000000000000003","kind":"rect","layoutBox":{"xBits":"4049d55555555556","yBits":"4024000000000000","widthBits":"404aaaaaaaaaaaaa","heightBits":"4043000000000000"},"contentBox":null}
+      ]}
+    },
+    {
+      "id": "stack-multiple-main-fills-equal-min-max-bound",
+      "baseSource": "fixtures",
+      "baseCase": "rowStack",
+      "mutations": [
+        {"operation":"replace","pointer":"/canvas/children/0/children/0/placement/widthMode","value":"FILL"},
+        {"operation":"remove","pointer":"/canvas/children/0/children/0/placement/widthPt"},
+        {"operation":"add","pointer":"/canvas/children/0/children/0/placement/fillWeight","value":1},
+        {"operation":"add","pointer":"/canvas/children/0/children/1/placement/minWidthPt","value":40},
+        {"operation":"add","pointer":"/canvas/children/0/children/1/placement/maxWidthPt","value":40},
+        {"operation":"replace","pointer":"/canvas/children/0/children/1/placement/widthMode","value":"FILL"},
+        {"operation":"remove","pointer":"/canvas/children/0/children/1/placement/widthPt"},
+        {"operation":"add","pointer":"/canvas/children/0/children/1/placement/fillWeight","value":1}
+      ],
+      "expected":{"entries":[
+        {"occurrenceId":"rwocc_0000000000000000","kind":"canvas","layoutBox":{"xBits":"0000000000000000","yBits":"0000000000000000","widthBits":"405e000000000000","heightBits":"4054000000000000"},"contentBox":{"xBits":"0000000000000000","yBits":"0000000000000000","widthBits":"405e000000000000","heightBits":"4054000000000000"}},
+        {"occurrenceId":"rwocc_0000000000000001","kind":"stack","layoutBox":{"xBits":"4024000000000000","yBits":"4014000000000000","widthBits":"4059000000000000","heightBits":"4049000000000000"},"contentBox":{"xBits":"4030000000000000","yBits":"4020000000000000","widthBits":"4056800000000000","heightBits":"4045000000000000"}},
+        {"occurrenceId":"rwocc_0000000000000002","kind":"rect","layoutBox":{"xBits":"4034000000000000","yBits":"4042800000000000","widthBits":"4044000000000000","heightBits":"4024000000000000"},"contentBox":null},
+        {"occurrenceId":"rwocc_0000000000000003","kind":"rect","layoutBox":{"xBits":"4050400000000000","yBits":"4024000000000000","widthBits":"4044000000000000","heightBits":"4043000000000000"},"contentBox":null}
+      ]}
     }
   ],
   "unsupportedCases": [
@@ -2600,19 +2661,34 @@
       "expected": {"feature": "CHILD_ROTATION", "occurrenceId": "rwocc_0000000000000003"}
     },
     {
-      "id": "stack-multiple-main-fills-owning-axis-bound-remains-unsupported",
+      "id": "stack-multiple-main-fills-active-min-bound-remains-unsupported",
       "baseSource": "fixtures",
       "baseCase": "rowStack",
       "mutations": [
         {"operation": "replace", "pointer": "/canvas/children/0/children/0/placement/widthMode", "value": "FILL"},
         {"operation": "remove", "pointer": "/canvas/children/0/children/0/placement/widthPt"},
         {"operation": "add", "pointer": "/canvas/children/0/children/0/placement/fillWeight", "value": 1},
-        {"operation": "add", "pointer": "/canvas/children/0/children/1/placement/minWidthPt", "value": 10},
+        {"operation": "add", "pointer": "/canvas/children/0/children/1/placement/minWidthPt", "value": 60},
         {"operation": "replace", "pointer": "/canvas/children/0/children/1/placement/widthMode", "value": "FILL"},
         {"operation": "remove", "pointer": "/canvas/children/0/children/1/placement/widthPt"},
         {"operation": "add", "pointer": "/canvas/children/0/children/1/placement/fillWeight", "value": 2}
       ],
       "expected": {"feature": "STACK_MAIN_FILL", "occurrenceId": "rwocc_0000000000000002"}
+    },
+    {
+      "id": "stack-multiple-main-fills-active-max-bound-remains-unsupported",
+      "baseSource": "fixtures",
+      "baseCase": "rowStack",
+      "mutations": [
+        {"operation":"add","pointer":"/canvas/children/0/children/0/placement/maxWidthPt","value":20},
+        {"operation":"replace","pointer":"/canvas/children/0/children/0/placement/widthMode","value":"FILL"},
+        {"operation":"remove","pointer":"/canvas/children/0/children/0/placement/widthPt"},
+        {"operation":"add","pointer":"/canvas/children/0/children/0/placement/fillWeight","value":1},
+        {"operation":"replace","pointer":"/canvas/children/0/children/1/placement/widthMode","value":"FILL"},
+        {"operation":"remove","pointer":"/canvas/children/0/children/1/placement/widthPt"},
+        {"operation":"add","pointer":"/canvas/children/0/children/1/placement/fillWeight","value":2}
+      ],
+      "expected":{"feature":"STACK_MAIN_FILL","occurrenceId":"rwocc_0000000000000002"}
     }
   ]
 }

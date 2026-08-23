@@ -1,6 +1,21 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-23 **Template v1 implementation TV1-T68 已由 Codex `/root` single-writer 完成，状态
+  `resolved/automated_verified`**：multiple Stack main-FILL 先按 T67 求全部 weighted shares；只有每项均满足
+  owning-axis min/max（equality 接受）才继续，并各执行一次 deferred cross-HUG remeasure。任何 active bound
+  仍在首个 authored FILL occurrence fail closed，不做 clamp/freeze/redistribution，也不选择 residual tolerance。
+  shared `/31` Rust/Python 为 134 laid-out + 12 unsupported、146/146 cases、440 checks，vector SHA-256
+  `959ead298d556d2bf0d4a9e713ef37199e8c56a22bd650a1be183fa0b35e4b8f`，fixture `/3` SHA-256 保持
+  `a11475bcebad7e1c35cb0acd7018419d94afcb4b37d7f1df7346a055ad1df669`。`render`
+  `.sdlc/evidence/20260823-090018-render/`、affected `fast` `.sdlc/evidence/20260823-090045-fast/`、顺序
+  `server` `.sdlc/evidence/20260823-090110-server/` 与 17-step `full`
+  `.sdlc/evidence/20260823-092021-full/` 全绿；full 17 steps 均 exit 0、总耗时 1725.698 秒，Maven App
+  344 tests/0 failures/0 errors/15 skipped，Node 24 Web 26 files/212 tests，runtime canary、23 passed +
+  1 controlled skip Playwright、browser journeys 与最终 inference replay E2E 1/1 均通过；resolution fast
+  `.sdlc/evidence/20260823-095202-fast/` 的 3 steps 也均 exit 0。R0/R1/P0 provider
+  attempts=0，P0 API Key reads/reservations/cost=0；active-bound water filling、rows→columns、resource/scene/raster/
+  RESULT/Profile 保持 fail closed，未推进 A3/J1/READY，未 push/tag/PR。
 - 2026-08-23 **Template v1 implementation TV1-T67 已由 Codex `/root` single-writer 完成，状态
   `resolved/automated_verified`**：owning-axis 无 min/max 的多个 Stack main FILL 现按 positive fillWeight authored
   order 分配前 `n-1` weighted share、最后一项接收余量，并逐个执行一次 deferred cross-HUG remeasure；bounded

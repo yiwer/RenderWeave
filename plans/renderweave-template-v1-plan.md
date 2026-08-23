@@ -88,7 +88,9 @@
   authored-order equal-share + last-remainder 完成；shared `/29` 139 cases/419 checks。TV1-T67=
   `resolved/automated_verified`：owning-axis 无 min/max bound 的 multiple Stack main-FILL 已完成 proportional
   last-remainder 与逐项 deferred cross-HUG remeasure；shared `/30` 142 cases/429 checks。iterative bounded water
-  filling、rows→columns 与 Profile tolerance 继续 fail closed。
+  filling、rows→columns 与 Profile tolerance 继续 fail closed。TV1-T68=`resolved/automated_verified`：第一轮
+  weighted share 已满足全部 owning-axis min/max 的 inactive-bound 子闭包已完成；shared `/31` 146 cases/
+  440 checks，active bound 继续 fail closed。
 - 日期：2026-08-20
 - Approved delta：[`specs/changes/20260817-template-v1-implementation-authority.md`](../specs/changes/20260817-template-v1-implementation-authority.md)
 - Frozen checkpoint：`0b485f4a13de9d754a81d07f464730776e13c14b`
@@ -2070,6 +2072,7 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
 - 验证：focused Rust/Python、fmt、clippy `-D warnings`、workspace tests、`py_compile`、JSON inventory/SHA/unique、
   `git diff --check`；再依次 `render`、affected `fast`、顺序 `server`、Goal `full`、resolution `fast`。最高只可
   `automated_verified`；不推进 A3/J1/READY，不 push/tag/PR，不运行 provider，不读取 API Key。
+
 - Resolution evidence：shared `/30` Rust/Python 从同一首个转正 case 共同 RED 后达到 131 laid-out + 11
   unsupported、142/142 cases/429 checks exact-bit GREEN；vector SHA-256
   `af92241729657fc2cd1170c86e1d09903284fcaea69c83bb69784cdde6dd3b33`，fixture `/3` SHA-256 保持
@@ -2125,3 +2128,43 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
 - 验证：focused Rust/Python、fmt、clippy `-D warnings`、workspace tests、`py_compile`、JSON inventory/SHA/unique、
   `git diff --check`；再依次 `render`、affected `fast`、顺序 `server`、Goal `full`、resolution `fast`。最高只可
   `automated_verified`；不推进 A3/J1/READY，不 push/tag/PR，不运行 provider，不读取 API Key。
+
+## 67. TV1-T68 执行卡
+
+- 决策：T67 以 verified commit `fe108ff` 收口且 worktree clean 后，复算 Ticket 10 §3/§7、
+  `RW-T10-S3-012..016`、`RW-T10-S7-004..012` 与 11 个 remaining unsupported cases。五个任意角 rotation、
+  四个 resource-dependent 与一个 compositionViewport 仍依赖 tolerance、资源执行身份或 scene；唯一 bounded
+  multi-FILL case 的 min=10 不命中既有 weighted share，可形成无需第二轮与 residual tolerance 的严格退化闭包。
+- Interface/seam：只深化 T67 `bound_free_stack_main_fill_allocations` 的内部 bound admission；public API、
+  admission/preflight、`StackChildMeasurement`、arrange、authored DFS first-error 与全有或全无 output 不变。
+  Rust/Python 使用独立控制流但共享冻结 vectors。
+- 精确语义：先按 T67 stable weight sum + authored-order last remainder 算出全部 shares；逐项读取 owning-axis
+  optional min/max。`share < min || share > max` 即在首个 authored FILL occurrence 返回 `STACK_MAIN_FILL`；
+  equality 接受。全部 shares/bounds 通过后才逐项执行一次 deferred cross-HUG remeasure；不 clamp/freeze/redistribute。
+- 允许影响：T68 tracker/plan/NOTES、layout Rust module/tests、shared definite-layout vector `/31`、Python
+  independent verifier、render gate identity/assertions/evidence。
+- 禁止影响：active-bound freeze/redistribution、多轮 water filling、epsilon/tolerance/public numeric error、
+  HUG-main FILL cycle、rows→columns、任意非直角 rotation、Text/Image/compositionViewport、resource fetch/decode、
+  scene/raster/JPEG、daemon RESULT/Profile、Java/OpenAPI/migration/Web/route、J1/A3/READY 与外部副作用。
+- TDD：既有 inactive-min negative 转 positive，新增 inactive-max 与 exact-equality positives、active-min 与
+  active-max negatives；shared `/31` 先共同 RED，目标 134 laid-out + 12 unsupported、146 cases/440 checks，
+  fixture `/3` bytes 不变。
+- 验证：focused Rust/Python、fmt、clippy `-D warnings`、workspace tests、`py_compile`、JSON inventory/SHA/unique、
+  `git diff --check`；再依次 `render`、affected `fast`、顺序 `server`、Goal `full`、resolution `fast`。最高只可
+  `automated_verified`；不推进 A3/J1/READY，不 push/tag/PR，不运行 provider，不读取 API Key。
+
+### TV1-T68 resolution evidence
+
+- shared `/31` 的 Rust primary 与 Python independent verifier 先在同一首个转正 case 共同 RED，分别实现后
+  达到 134 laid-out + 12 unsupported、146/146 cases、440 checks；vector SHA-256 为
+  `959ead298d556d2bf0d4a9e713ef37199e8c56a22bd650a1be183fa0b35e4b8f`，fixture `/3` SHA-256 保持
+  `a11475bcebad7e1c35cb0acd7018419d94afcb4b37d7f1df7346a055ad1df669`。
+- focused Rust 3/3、Python independent 146/146、workspace fmt/clippy/tests、`py_compile`、JSON inventory/SHA/
+  unique 与 `git diff --check` 全绿；分级证据为 `render` `.sdlc/evidence/20260823-090018-render/`、affected
+  `fast` `.sdlc/evidence/20260823-090045-fast/`、顺序 `server` `.sdlc/evidence/20260823-090110-server/` 与 Goal
+  `full` `.sdlc/evidence/20260823-092021-full/`；resolution 后 fast `.sdlc/evidence/20260823-095202-fast/`
+  的 3 steps 也均 exit 0。
+- full 17 steps 均 exit 0、总耗时 1725.698 秒；App 344 tests/0 failures/0 errors/15 skipped，Node 24 Web
+  26 files/212 tests、runtime canary、23 passed + 1 controlled skip Playwright、browser journeys 与最终 inference
+  replay E2E 1/1 均通过。R0/R1/P0 provider attempts=0，P0 API Key reads/reservations/cost=0；Profile 仍
+  `NOT_REGISTERED`、certification `NOT_CERTIFIED`、Raster `ABSENT`、daemon `UNWIRED`，未推进 A3/J1/READY。

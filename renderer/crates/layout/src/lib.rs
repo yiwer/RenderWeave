@@ -4,7 +4,7 @@
 //! The crate consumes only a document already admitted by `renderweave-renderer-document`.
 //! Preflight returns bounded structural counts or one stable DFS problem. The definite kernel
 //! additionally computes local LayoutBox/ContentBox entries for resource-independent ABSOLUTE
-//! nodes, Stack children with singleton or bound-free multiple main-axis FILL,
+//! nodes, Stack children with singleton or inactive-bound multiple main-axis FILL,
 //! resource-independent Stack/Grid HUG
 //! measurement, exact-quarter-turn affine nonempty Frame/Group HUG measurement (including
 //! definite ABSOLUTE/Stack/FIXED opposite-axis Frame offers for odd-quarter-turn cross-axis
@@ -16,7 +16,7 @@
 //! consume supported resource-free HUG
 //! contributions. It deliberately stops before resource preparation, non-quarter-turn child
 //! rotation, ABSOLUTE/Grid-in-Grid owning offers or row-to-column/general constraint propagation,
-//! bounded multi-FILL Stack water filling, FRACTION tolerance recovery,
+//! active-bound multi-FILL Stack water filling, FRACTION tolerance recovery,
 //! world transforms, shaping, paint, rasterization, and encoding, and it
 //! never exposes a partial layout on failure.
 
@@ -1700,7 +1700,7 @@ fn measure_and_allocate_stack_children(
         .ok_or_else(|| DefiniteLayoutError::invariant(occurrence, "stackMainOffer"))?;
     if fill_indices.len() > 1 {
         let first_fill = fill_indices[0];
-        match bound_free_stack_main_fill_allocations(
+        match inactive_bound_stack_main_fill_allocations(
             children,
             &fill_indices,
             direction,
@@ -1970,7 +1970,7 @@ fn stack_child_has_main_fill(node: &Map<String, Value>, direction: StackDirectio
     placement.get(member).and_then(Value::as_str) == Some("FILL")
 }
 
-fn bound_free_stack_main_fill_allocations(
+fn inactive_bound_stack_main_fill_allocations(
     children: &[Value],
     fill_indices: &[usize],
     direction: StackDirection,
@@ -1993,12 +1993,6 @@ fn bound_free_stack_main_fill_allocations(
         let child = object(&children[fill_index], stack_occurrence, "children")?;
         let child_occurrence = occurrence_id(child)?;
         let placement = object_member(Some(child), "placement", child_occurrence)?;
-        if placement.contains_key(&minimum_member) || placement.contains_key(&maximum_member) {
-            return Err(DefiniteLayoutError::unsupported(
-                first_occurrence,
-                DefiniteLayoutUnsupported::StackMainFill,
-            ));
-        }
         let weight = binary64_member(
             placement,
             "fillWeight",
@@ -2048,6 +2042,30 @@ fn bound_free_stack_main_fill_allocations(
                     DefiniteLayoutUnsupported::StackMainFill,
                 ));
             }
+        }
+    }
+    for &(fill_index, share) in &allocations {
+        let child = object(&children[fill_index], stack_occurrence, "children")?;
+        let child_occurrence = occurrence_id(child)?;
+        let placement = object_member(Some(child), "placement", child_occurrence)?;
+        let minimum = optional_binary64_member(
+            placement,
+            &minimum_member,
+            child_occurrence,
+            format!("placement.{minimum_member}"),
+        )?;
+        let maximum = optional_binary64_member(
+            placement,
+            &maximum_member,
+            child_occurrence,
+            format!("placement.{maximum_member}"),
+        )?;
+        if minimum.is_some_and(|bound| share < bound) || maximum.is_some_and(|bound| share > bound)
+        {
+            return Err(DefiniteLayoutError::unsupported(
+                first_occurrence,
+                DefiniteLayoutUnsupported::StackMainFill,
+            ));
         }
     }
     Ok(allocations)
