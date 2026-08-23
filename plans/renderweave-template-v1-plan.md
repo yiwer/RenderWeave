@@ -85,8 +85,10 @@
   constraint/tolerance 保持 fail closed。TV1-T65=`resolved/automated_verified`：definite multi-FRACTION 已按
   authored-order 前 `n-1` weighted share + last remainder 完成 finite/nonnegative 子闭包；shared `/28` 136
   cases/409 checks。TV1-T66=`resolved/automated_verified`：跨多 AUTO span 已按 stable constraint order 与
-  authored-order equal-share + last-remainder 完成；shared `/29` 139 cases/419 checks。Stack water filling、
-  rows→columns 与 Profile tolerance 继续 fail closed。
+  authored-order equal-share + last-remainder 完成；shared `/29` 139 cases/419 checks。TV1-T67=
+  `resolved/automated_verified`：owning-axis 无 min/max bound 的 multiple Stack main-FILL 已完成 proportional
+  last-remainder 与逐项 deferred cross-HUG remeasure；shared `/30` 142 cases/429 checks。iterative bounded water
+  filling、rows→columns 与 Profile tolerance 继续 fail closed。
 - 日期：2026-08-20
 - Approved delta：[`specs/changes/20260817-template-v1-implementation-authority.md`](../specs/changes/20260817-template-v1-implementation-authority.md)
 - Frozen checkpoint：`0b485f4a13de9d754a81d07f464730776e13c14b`
@@ -385,6 +387,7 @@ flowchart LR
 | 64 | task | `resolved / automated_verified` | 23, 25, 26, 33, 34, 38, 39, 40, 41, 43, 44, 45, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63 | COLUMN Stack already-resolved width → direct Grid ContentBox → strict columns-first HUG rows；shared `/27` Rust/Python 134/134、401 checks；rows→columns/general constraint/tolerance 保持 fail closed |
 | 65 | task | `resolved / automated_verified` | 23, 25, 26, 34, 39, 40, 41, 44, 45, 57, 58, 59, 60, 64 | definite Grid FIXED→AUTO→multi-FRACTION，authored-order 前 n-1 weighted share + last remainder；shared `/28` Rust/Python 136/136、409 checks；跨多 AUTO deficit/Stack water filling/Profile tolerance 保持 fail closed |
 | 66 | task | `resolved / automated_verified` | 23, 25, 26, 34, 40, 41, 44, 45, 65 | stable-sorted Grid span constraint 对 covered AUTO tracks 做 authored-order average increase，前 n-1 equal share + last remainder；shared `/29` Rust/Python 139/139、419 checks；不做 convergence；Stack water filling/rows→columns/Profile tolerance 保持 fail closed |
+| 67 | task | `active / claimed` | 23, 25, 26, 33, 38, 43, 55, 56, 65, 66 | definite Stack 多 main-FILL 仅在 owning-axis 全无 min/max 时按 positive fillWeight 做 authored-order weighted share + last remainder；bound freeze/redistribution 与 residual tolerance 保持 fail closed |
 
 每次只 claim 一个 unblocked ticket；一票 resolved 后才由其 `Blocked by` 关系产生下一 frontier。未知实现切片留在
 map 的 `Not yet specified`，不为排满计划提前发明接口、migration 或 Profile identity。
@@ -2067,6 +2070,20 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
 - 验证：focused Rust/Python、fmt、clippy `-D warnings`、workspace tests、`py_compile`、JSON inventory/SHA/unique、
   `git diff --check`；再依次 `render`、affected `fast`、顺序 `server`、Goal `full`、resolution `fast`。最高只可
   `automated_verified`；不推进 A3/J1/READY，不 push/tag/PR，不运行 provider，不读取 API Key。
+- Resolution evidence：shared `/30` Rust/Python 从同一首个转正 case 共同 RED 后达到 131 laid-out + 11
+  unsupported、142/142 cases/429 checks exact-bit GREEN；vector SHA-256
+  `af92241729657fc2cd1170c86e1d09903284fcaea69c83bb69784cdde6dd3b33`，fixture `/3` SHA-256 保持
+  `a11475bcebad7e1c35cb0acd7018419d94afcb4b37d7f1df7346a055ad1df669`。focused Rust 3/3、Python 142/142、
+  workspace fmt/clippy/tests、`py_compile`、JSON inventory/hash/unique 与 `git diff --check` 全绿。
+- Gate evidence：`render` `.sdlc/evidence/20260823-075005-render/`、affected `fast`
+  `.sdlc/evidence/20260823-075139-fast/`、顺序 `server` `.sdlc/evidence/20260823-075200-server/`、17-step `full`
+  `.sdlc/evidence/20260823-081142-full/` 与 resolution `fast` `.sdlc/evidence/20260823-085000-fast/` 全绿；full
+  总耗时 1699.912 秒，App 344 tests/0 failures/0 errors/15 skipped，Node 24 Web 26 files/212 tests，runtime
+  canary、23 passed + 1 controlled skip Playwright、browser journeys 与最终 inference replay E2E 1/1 均通过。
+- 边界：R0/R1/P0 provider attempts=0，P0 API Key reads/reservations/cost=0；Profile `NOT_REGISTERED`、
+  certification `NOT_CERTIFIED`、Raster `ABSENT`、daemon `UNWIRED`。bounded Stack water filling、rows→columns、
+  general constraint/tolerance、resource/scene/pixel 与完整 Renderer 仍 fail closed；最高
+  `automated_verified`，未推进 A3/J1/READY，未 push/tag/PR。
 - 实施：Rust collector 以 `auto_indices` 保存 covered AUTO tracks，并用 staged updates 实现 fixed-order equal
   share + last remainder；Python independent verifier 以独立控制流镜像冻结语义。constraint stable-sort、每条
   只处理一次、singleton bit behavior、FIXED → AUTO → FRACTION、columns-first 与 closed error boundary 不变。
@@ -2084,3 +2101,27 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
   certification `NOT_CERTIFIED`、Raster `ABSENT`、daemon `UNWIRED`。Stack water filling、rows→columns、general
   constraint/tolerance、resource/scene/pixel 与完整 Renderer 保持 fail closed；最高 `automated_verified`，未推进
   A3/J1/READY，未 push/tag/PR。
+
+## 66. TV1-T67 执行卡
+
+- 决策：T66 以 verified commit `a6fabe5` 收口且 worktree clean 后，复算原始 Ticket 10 §3/§7、
+  `RW-T10-S3-012..016`、`RW-T10-S7-004..012` 与 12 个 remaining unsupported cases。五个任意角 rotation、四个
+  resource-dependent、一个 compositionViewport 仍依赖 tolerance、执行身份或 scene；两个 multiple-FILL
+  negatives 的 owning-axis 均无 min/max，可把 water filling 退化为一次 proportional allocation，复用 T65
+  last-remainder 而无需选择 tolerance，因此登记为当前 single-writer frontier。
+- Interface/seam：只深化 `measure_and_allocate_stack_children`；保留 `StackChildMeasurement`、同一
+  `measure_stack_child`/arrange writer 与 public admission/preflight。Rust/Python 使用独立控制流但共享冻结 vectors。
+- 精确语义：扣除 gaps、signed margins 与 non-FILL sizes 后取 nonnegative remaining；stable positive-weight sum；
+  前 `n-1` 项取 `remaining*weight/totalWeight`，最后项接收余量。finite/nonnegative guard 失败稳定
+  `STACK_MAIN_FILL`；每个分配后的 FILL 仅执行一次 deferred cross-HUG remeasure。
+- 允许影响：T67 tracker/plan/NOTES、layout Rust module/tests、shared definite-layout vector `/30`、Python
+  independent verifier、render gate identity/assertions/evidence。
+- 禁止影响：任一 owning-axis min/max 的 iterative bound freeze/redistribution、residual tolerance/public numeric
+  error、HUG-main FILL cycle、rows→columns、任意非直角 rotation、Text/Image/compositionViewport、resource fetch/
+  decode、scene/raster/JPEG、daemon RESULT/Profile、Java/OpenAPI/migration/Web/route、J1/A3/READY 与外部副作用。
+- TDD：两个既有 multiple-FILL negatives 转 positive，新增 three-way last remainder、overflow-zero 与 bounded
+  negative；shared `/30` 先共同 RED，目标 131 laid-out + 11 unsupported、142 cases/429 checks，fixture `/3`
+  bytes 不变。
+- 验证：focused Rust/Python、fmt、clippy `-D warnings`、workspace tests、`py_compile`、JSON inventory/SHA/unique、
+  `git diff --check`；再依次 `render`、affected `fast`、顺序 `server`、Goal `full`、resolution `fast`。最高只可
+  `automated_verified`；不推进 A3/J1/READY，不 push/tag/PR，不运行 provider，不读取 API Key。

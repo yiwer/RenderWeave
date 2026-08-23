@@ -332,6 +332,11 @@ Label: wayfinder:map
   order 各处理一次，对 covered AUTO tracks 按 authored order 分配前 `n-1` equal share、最后一项接收余量；
   shared `/29` 为 127 laid-out + 12 unsupported、139 cases/419 checks。不做 convergence，Stack water filling、
   rows→columns 与 general constraint/tolerance 保持 fail closed。
+- [实现 definite Stack 无 bound 多 FILL stable remainder 子闭包](issues/67-definite-stack-bound-free-multi-fill-stable-remainder.md) —
+  **resolved / automated_verified**；owning-axis 无 min/max 的多个 main FILL 已按 positive fillWeight authored
+  order 分配前 `n-1` weighted share、最后一项接收余量，并逐个执行一次 deferred cross-HUG remeasure；shared
+  `/30` 为 131 laid-out + 11 unsupported、142 cases/429 checks。bound freeze/redistribution、residual tolerance 与
+  一般 water filling 保持 fail closed。
 - [验证 Product Editor 状态、恢复与权威预览架构](issues/09-validate-product-editor-architecture.md) —
   throwaway 逻辑原型（`/prototype/editor-state-model`，不进产品 route）把冻结编辑器规则编码为确定性
   fixture 状态机：10 个引导走查场景 37/37 断言 + 自由操作冒烟 + 键盘焦点检查全部通过（Playwright A1，
@@ -444,8 +449,9 @@ Label: wayfinder:map
   （Rust/Python 132/132、395 checks）；T64 已完成既有 resolved width offer → columns-first Grid terminal 闭包
   （Rust/Python 134/134、401 checks），严格不开放 rows→columns；T65 已完成 definite multi-FRACTION authored-order
   stable last-remainder 与 overflow-zero 子闭包（Rust/Python 136/136、409 checks）；T66 已完成跨多个 AUTO span
-  的 stable average-deficit 单调子闭包（Rust/Python 139/139、419 checks）；
-  其余非直角 rotation、general constraint、multiple Stack main-axis FILL/actual resource fetch+decode/world scene/raster/
+  的 stable average-deficit 单调子闭包（Rust/Python 139/139、419 checks）；T67 已完成 definite Stack 无
+  owning-axis bound 的 multi-FILL stable proportional/last-remainder 子闭包（Rust/Python 142/142、429 checks）；
+  其余非直角 rotation、bounded Stack water filling、general constraint、actual resource fetch+decode/world scene/raster/
   JPEG/Engine 接线仍须另行登记，物理 Linux 双 CPU-family
   认证与 J1/A3 属届时另行授权的执行级门控。
 - Editor T27/E1、T28/E2、T29/E3、T30/E4a、T31/E4b、T32/E5、T35/E7、T36/E8 与 T37/E9 均已单独登记并完成；

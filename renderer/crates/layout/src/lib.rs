@@ -4,18 +4,19 @@
 //! The crate consumes only a document already admitted by `renderweave-renderer-document`.
 //! Preflight returns bounded structural counts or one stable DFS problem. The definite kernel
 //! additionally computes local LayoutBox/ContentBox entries for resource-independent ABSOLUTE
-//! nodes, Stack children with at most one main-axis FILL, resource-independent Stack/Grid HUG
+//! nodes, Stack children with singleton or bound-free multiple main-axis FILL,
+//! resource-independent Stack/Grid HUG
 //! measurement, exact-quarter-turn affine nonempty Frame/Group HUG measurement (including
 //! definite ABSOLUTE/Stack/FIXED opposite-axis Frame offers for odd-quarter-turn cross-axis
 //! FILL, same-direction nested Stack main-offer propagation, columns-first direct Grid cell outer
 //! offers, and ROW Stack main offers into columns-first Grid cross-HUG), Group normalization, and
 //! Grid children whose
 //! definite axes contain FIXED tracks, stable finite multi-FRACTION last-remainder allocation,
-//! and resource-independent AUTO
-//! constraints that each cover at most one AUTO track and consume supported resource-free HUG
+//! and resource-independent AUTO constraints, including stable multi-AUTO span deficits, that
+//! consume supported resource-free HUG
 //! contributions. It deliberately stops before resource preparation, non-quarter-turn child
 //! rotation, ABSOLUTE/Grid-in-Grid owning offers or row-to-column/general constraint propagation,
-//! multi-FILL Stack water filling, cross-AUTO deficit distribution, FRACTION tolerance recovery,
+//! bounded multi-FILL Stack water filling, FRACTION tolerance recovery,
 //! world transforms, shaping, paint, rasterization, and encoding, and it
 //! never exposes a partial layout on failure.
 
@@ -1699,11 +1700,32 @@ fn measure_and_allocate_stack_children(
         .ok_or_else(|| DefiniteLayoutError::invariant(occurrence, "stackMainOffer"))?;
     if fill_indices.len() > 1 {
         let first_fill = fill_indices[0];
-        let child = object(&children[first_fill], occurrence, "children")?;
-        measurements[first_fill] = Err(DefiniteLayoutError::unsupported(
-            occurrence_id(child)?,
-            DefiniteLayoutUnsupported::StackMainFill,
-        ));
+        match bound_free_stack_main_fill_allocations(
+            children,
+            &fill_indices,
+            direction,
+            available,
+            used_without_fill,
+            occurrence,
+        ) {
+            Ok(allocations) => {
+                for (fill_index, size) in allocations {
+                    if let Ok(measurement) = &measurements[fill_index] {
+                        let child = object(&children[fill_index], occurrence, "children")?;
+                        let measurement = measurement.with_main_size(direction, size);
+                        measurements[fill_index] = remeasure_stack_child_cross_hug_after_main_fill(
+                            child,
+                            measurement,
+                            direction,
+                        );
+                    }
+                }
+            }
+            Err(error) if measurements[first_fill].is_ok() => {
+                measurements[first_fill] = Err(error);
+            }
+            Err(_) => {}
+        }
     } else if let Some(&fill_index) = fill_indices.first()
         && measurements[fill_index].is_ok()
     {
@@ -1729,11 +1751,10 @@ fn measure_and_allocate_stack_children(
     }
 
     let mut occupied = used_without_fill;
-    if let Some(&fill_index) = fill_indices.first()
-        && fill_indices.len() == 1
-        && let Ok(measurement) = &measurements[fill_index]
-    {
-        occupied += measurement.main_size(direction);
+    for fill_index in fill_indices {
+        if let Ok(measurement) = &measurements[fill_index] {
+            occupied += measurement.main_size(direction);
+        }
     }
     let occupied = if occupied > 0.0 { occupied } else { 0.0 };
     let remaining = available - occupied;
@@ -1947,6 +1968,89 @@ fn stack_child_has_main_fill(node: &Map<String, Value>, direction: StackDirectio
         StackDirection::Column => "heightMode",
     };
     placement.get(member).and_then(Value::as_str) == Some("FILL")
+}
+
+fn bound_free_stack_main_fill_allocations(
+    children: &[Value],
+    fill_indices: &[usize],
+    direction: StackDirection,
+    available: f64,
+    used_without_fill: f64,
+    stack_occurrence: &str,
+) -> Result<Vec<(usize, f64)>, DefiniteLayoutError> {
+    let first_child = object(&children[fill_indices[0]], stack_occurrence, "children")?;
+    let first_occurrence = occurrence_id(first_child)?;
+    let axis = match direction {
+        StackDirection::Row => "Width",
+        StackDirection::Column => "Height",
+    };
+    let minimum_member = format!("min{axis}Pt");
+    let maximum_member = format!("max{axis}Pt");
+    let mut weighted_indices = Vec::with_capacity(fill_indices.len());
+    let mut total_weight = 0.0;
+
+    for &fill_index in fill_indices {
+        let child = object(&children[fill_index], stack_occurrence, "children")?;
+        let child_occurrence = occurrence_id(child)?;
+        let placement = object_member(Some(child), "placement", child_occurrence)?;
+        if placement.contains_key(&minimum_member) || placement.contains_key(&maximum_member) {
+            return Err(DefiniteLayoutError::unsupported(
+                first_occurrence,
+                DefiniteLayoutUnsupported::StackMainFill,
+            ));
+        }
+        let weight = binary64_member(
+            placement,
+            "fillWeight",
+            child_occurrence,
+            "placement.fillWeight",
+        )?;
+        total_weight += weight;
+        if !weight.is_finite() || weight <= 0.0 || !total_weight.is_finite() || total_weight <= 0.0
+        {
+            return Err(DefiniteLayoutError::unsupported(
+                first_occurrence,
+                DefiniteLayoutUnsupported::StackMainFill,
+            ));
+        }
+        weighted_indices.push((fill_index, weight));
+    }
+
+    let residual = available - used_without_fill;
+    if !residual.is_finite() {
+        return Err(DefiniteLayoutError::unsupported(
+            first_occurrence,
+            DefiniteLayoutUnsupported::StackMainFill,
+        ));
+    }
+    let remaining = if residual > 0.0 { residual } else { 0.0 };
+    let mut allocated_before_last = 0.0;
+    let mut allocations = Vec::with_capacity(weighted_indices.len());
+    let last_position = weighted_indices.len() - 1;
+    for (position, (fill_index, weight)) in weighted_indices.into_iter().enumerate() {
+        let share = if position == last_position {
+            remaining - allocated_before_last
+        } else {
+            remaining * weight / total_weight
+        };
+        if !share.is_finite() || share < 0.0 {
+            return Err(DefiniteLayoutError::unsupported(
+                first_occurrence,
+                DefiniteLayoutUnsupported::StackMainFill,
+            ));
+        }
+        allocations.push((fill_index, if share > 0.0 { share } else { 0.0 }));
+        if position != last_position {
+            allocated_before_last += share;
+            if !allocated_before_last.is_finite() {
+                return Err(DefiniteLayoutError::unsupported(
+                    first_occurrence,
+                    DefiniteLayoutUnsupported::StackMainFill,
+                ));
+            }
+        }
+    }
+    Ok(allocations)
 }
 
 fn stack_axis_size(

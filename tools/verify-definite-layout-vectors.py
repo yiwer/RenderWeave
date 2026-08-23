@@ -1173,8 +1173,32 @@ def measure_and_allocate_stack_children(
         raise VerificationFailure(f"{current} missing definite Stack main offer")
     if len(fill_indices) > 1:
         first_fill = fill_indices[0]
-        child = object_value(children[first_fill], f"{current} child")
-        measurements[first_fill] = Unsupported("STACK_MAIN_FILL", occurrence(child))
+        try:
+            allocations = bound_free_stack_main_fill_allocations(
+                children,
+                fill_indices,
+                direction,
+                available,
+                used_without_fill,
+                current,
+            )
+        except Unsupported as error:
+            if isinstance(measurements[first_fill], StackChildMeasurement):
+                measurements[first_fill] = error
+        else:
+            for fill_index, size in allocations:
+                measured = measurements[fill_index]
+                if isinstance(measured, StackChildMeasurement):
+                    child = object_value(children[fill_index], f"{current} child")
+                    measured = measured.with_main_size(direction, size)
+                    try:
+                        measurements[fill_index] = (
+                            remeasure_stack_child_cross_hug_after_main_fill(
+                                child, measured, direction
+                            )
+                        )
+                    except Unsupported as error:
+                        measurements[fill_index] = error
     elif fill_indices and isinstance(
         measurements[fill_indices[0]], StackChildMeasurement
     ):
@@ -1206,8 +1230,8 @@ def measure_and_allocate_stack_children(
             measurements[fill_index] = error
 
     occupied = used_without_fill
-    if len(fill_indices) == 1:
-        measured = measurements[fill_indices[0]]
+    for fill_index in fill_indices:
+        measured = measurements[fill_index]
         if isinstance(measured, StackChildMeasurement):
             occupied += measured.main_size(direction)
     occupied = occupied if occupied > 0.0 else 0.0
@@ -1408,6 +1432,62 @@ def stack_child_has_main_fill(node: dict[str, Any], direction: str) -> bool:
         return False
     member = "widthMode" if direction == "ROW" else "heightMode"
     return placement.get(member) == "FILL"
+
+
+def bound_free_stack_main_fill_allocations(
+    children: list[Any],
+    fill_indices: list[int],
+    direction: str,
+    available: float,
+    used_without_fill: float,
+    stack_occurrence: str,
+) -> list[tuple[int, float]]:
+    first_child = object_value(children[fill_indices[0]], f"{stack_occurrence} child")
+    first_occurrence = occurrence(first_child)
+    axis = "Width" if direction == "ROW" else "Height"
+    minimum_member = f"min{axis}Pt"
+    maximum_member = f"max{axis}Pt"
+    weights: list[tuple[int, float]] = []
+
+    for fill_index in fill_indices:
+        child = object_value(children[fill_index], f"{stack_occurrence} child")
+        current = occurrence(child)
+        placement = object_value(child.get("placement"), f"{current} placement")
+        if minimum_member in placement or maximum_member in placement:
+            raise Unsupported("STACK_MAIN_FILL", first_occurrence)
+        weight = required_decimal(
+            placement, "fillWeight", current, "placement.fillWeight"
+        )
+        if not math.isfinite(weight) or weight <= 0.0:
+            raise Unsupported("STACK_MAIN_FILL", first_occurrence)
+        weights.append((fill_index, weight))
+
+    total_weight = 0.0
+    for _, weight in weights:
+        total_weight += weight
+        if not math.isfinite(total_weight) or total_weight <= 0.0:
+            raise Unsupported("STACK_MAIN_FILL", first_occurrence)
+
+    residual = available - used_without_fill
+    if not math.isfinite(residual):
+        raise Unsupported("STACK_MAIN_FILL", first_occurrence)
+    remaining = residual if residual > 0.0 else 0.0
+    allocations: list[tuple[int, float]] = []
+    allocated = 0.0
+    for position, (fill_index, weight) in enumerate(weights):
+        if position + 1 == len(weights):
+            share = remaining - allocated
+        else:
+            share = (remaining * weight) / total_weight
+            allocated += share
+        if (
+            not math.isfinite(share)
+            or share < 0.0
+            or not math.isfinite(allocated)
+        ):
+            raise Unsupported("STACK_MAIN_FILL", first_occurrence)
+        allocations.append((fill_index, share if share > 0.0 else 0.0))
+    return allocations
 
 
 def resource_free_hug_axis(
@@ -2569,7 +2649,7 @@ def verify(
         "vector manifest",
     )
     verifier.require(
-        vectors["vectorVersion"] == "renderweave-definite-layout-vectors/29",
+        vectors["vectorVersion"] == "renderweave-definite-layout-vectors/30",
         "vector identity drifted",
     )
     authority = exact_members(
@@ -2622,7 +2702,7 @@ def verify(
     expected_boundary = {
         "profileAvailability": "NOT_REGISTERED",
         "certificationStatus": "NOT_CERTIFIED",
-        "layoutImplementation": "RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_SINGLE_MAIN_FILL_AND_FIXED_SINGLE_FRACTION_INDEPENDENT_MULTI_AUTO_GRID_MULTI_AUTO_SPAN_STABLE_DEFICIT_GRID_DEFINITE_MULTI_FRACTION_LAST_REMAINDER_GRID_EMPTY_CONTAINER_STACK_HUG_GRID_AUTO_HUG_CONTRIBUTION_GRID_HUG_EXACT_QUARTER_TURN_AFFINE_FRAME_GROUP_HUG_FIXED_OPPOSITE_AXIS_CROSS_FILL_DEFINITE_ABSOLUTE_PARENT_OFFER_DEFINITE_STACK_CROSS_OUTER_OFFER_STACK_MAIN_FILL_CROSS_HUG_REMEASURE_NESTED_STACK_MAIN_OFFER_PROPAGATION_COLUMNS_FIRST_GRID_CELL_OUTER_OFFER_STACK_MAIN_OFFER_COLUMNS_FIRST_GRID_CROSS_HUG_ABSOLUTE_PARENT_OFFER_COLUMNS_FIRST_GRID_CROSS_HUG_GRID_CELL_OFFER_COLUMNS_FIRST_NESTED_GRID_CROSS_HUG_GRID_CELL_OFFER_STACK_MAIN_FIRST_CROSS_HUG_DIRECTION_CHANGING_STACK_CROSS_OFFER_MAIN_HUG_NESTED_STACK_RESOLVED_OPPOSITE_OFFER_RECURSION_COLUMNS_FIRST_GRID_TERMINAL_NORMALIZATION_BOX_KERNEL",
+        "layoutImplementation": "RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_SINGLE_AND_BOUND_FREE_MULTI_MAIN_FILL_AND_FIXED_SINGLE_FRACTION_INDEPENDENT_MULTI_AUTO_GRID_MULTI_AUTO_SPAN_STABLE_DEFICIT_GRID_DEFINITE_MULTI_FRACTION_LAST_REMAINDER_GRID_EMPTY_CONTAINER_STACK_HUG_GRID_AUTO_HUG_CONTRIBUTION_GRID_HUG_EXACT_QUARTER_TURN_AFFINE_FRAME_GROUP_HUG_FIXED_OPPOSITE_AXIS_CROSS_FILL_DEFINITE_ABSOLUTE_PARENT_OFFER_DEFINITE_STACK_CROSS_OUTER_OFFER_STACK_MAIN_FILL_CROSS_HUG_REMEASURE_NESTED_STACK_MAIN_OFFER_PROPAGATION_COLUMNS_FIRST_GRID_CELL_OUTER_OFFER_STACK_MAIN_OFFER_COLUMNS_FIRST_GRID_CROSS_HUG_ABSOLUTE_PARENT_OFFER_COLUMNS_FIRST_GRID_CROSS_HUG_GRID_CELL_OFFER_COLUMNS_FIRST_NESTED_GRID_CROSS_HUG_GRID_CELL_OFFER_STACK_MAIN_FIRST_CROSS_HUG_DIRECTION_CHANGING_STACK_CROSS_OFFER_MAIN_HUG_NESTED_STACK_RESOLVED_OPPOSITE_OFFER_RECURSION_COLUMNS_FIRST_GRID_TERMINAL_NORMALIZATION_BOX_KERNEL",
         "worldTransformImplementation": "ABSENT",
         "sceneImplementation": "ABSENT",
         "rasterImplementation": "ABSENT",
@@ -2660,9 +2740,9 @@ def verify(
         == "renderweave-layout-preflight-fixtures/1",
         "layout preflight fixture identity drifted",
     )
-    verifier.require(len(vectors["laidOutCases"]) == 127, "laid-out case count drifted")
+    verifier.require(len(vectors["laidOutCases"]) == 131, "laid-out case count drifted")
     verifier.require(
-        len(vectors["unsupportedCases"]) == 12,
+        len(vectors["unsupportedCases"]) == 11,
         "unsupported case count drifted",
     )
 
@@ -2710,7 +2790,7 @@ def verify(
             raise VerificationFailure(f"{case_id}: unsupported case produced a layout")
 
     return {
-        "verifier": "renderweave-definite-layout-python-independent/29",
+        "verifier": "renderweave-definite-layout-python-independent/30",
         "result": "PASS",
         "assurance": "A2",
         "laidOutCases": len(vectors["laidOutCases"]),
