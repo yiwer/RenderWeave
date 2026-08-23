@@ -2106,11 +2106,15 @@ fn stack_main_fill_allocations(
                 || (bounds[0].0.is_none() && bounds[0].1.is_none()))
                 && (active_position == 1 || (bounds[1].0.is_none() && bounds[1].1.is_none()))
                 && (active_position == 2 || (bounds[2].0.is_none() && bounds[2].1.is_none()));
-            if !active_is_minimum
-                || minimum.is_none()
-                || maximum.is_some()
-                || !unfrozen_bounds_absent
-            {
+            let active_minimum_overflow_bound_shape_supported = active_is_minimum
+                && minimum.is_some()
+                && match maximum {
+                    None => true,
+                    Some(maximum) => {
+                        maximum.is_finite() && maximum >= 0.0 && frozen_bound <= maximum
+                    }
+                };
+            if !active_minimum_overflow_bound_shape_supported || !unfrozen_bounds_absent {
                 return Err(DefiniteLayoutError::unsupported(
                     first_occurrence,
                     DefiniteLayoutUnsupported::StackMainFill,

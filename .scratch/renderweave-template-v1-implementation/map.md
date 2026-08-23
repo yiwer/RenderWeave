@@ -408,6 +408,10 @@ Label: wayfinder:map
   **resolved / automated_verified**；只接受 exactly three、固定两次 min-only freeze 后 second min 严格大于第一次
   重分配余量，并以 first min、second min、terminal positive-zero 退化终止。shared `/46` 实际为 207 laid-out +
   16 unsupported、223 cases/667 checks；mixed/terminal bound、第三次 freeze 与一般循环保持 fail closed。
+- [实现 definite Stack 三 FILL mixed active-min overflow 子闭包](issues/84-definite-stack-three-fill-mixed-active-min-overflow.md) —
+  **resolved / automated_verified**；只组合 T82 的 exactly-three `min/0/0` overflow 退化与 T78 的合法 mixed
+  active-min bound shape，shared `/47` 实际为 212 laid-out + 16 unsupported、228 cases/682 checks；unfrozen bound、多个
+  active、post-freeze redistribution、four-or-more 与一般 water filling 保持 fail closed。
 - [验证 Product Editor 状态、恢复与权威预览架构](issues/09-validate-product-editor-architecture.md) —
   throwaway 逻辑原型（`/prototype/editor-state-model`，不进产品 route）把冻结编辑器规则编码为确定性
   fixture 状态机：10 个引导走查场景 37/37 断言 + 自由操作冒烟 + 键盘焦点检查全部通过（Playwright A1，
