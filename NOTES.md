@@ -1,6 +1,25 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-24 **Template v1 implementation TV1-T85 已由 Codex `/root` single-writer 完成，状态
+  `resolved/automated_verified`**：T84 exactly-three/mixed-active-min-overflow 的 `min/0/0` 路径现允许零或一个
+  unfrozen child 携带在初始 proportional share 与终止正零下都 inactive 的 finite/nonnegative max-only bound，
+  仍不计算负 residual、post-overflow share、redistribution、第二次 freeze、循环或 tolerance。能力值新增
+  `OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_INACTIVE_UNFROZEN_MAX`；shared `/48` Rust/Python 为 217
+  laid-out + 16 unsupported、233/233 cases、697 checks，vector SHA-256
+  `d3fe971d1bfd40224e371c7cd7fa2574204ea265c1b470d16ca0b7a575067156`，fixture `/3` SHA-256 保持
+  `a11475bcebad7e1c35cb0acd7018419d94afcb4b37d7f1df7346a055ad1df669`。双 RED 锁定首个转正 case 的同一
+  `STACK_MAIN_FILL` occurrence `rwocc_0000000000000002`；replacement negative 证明初始 inactive、终止正零下
+  active 的 unfrozen min 继续 fail closed。`render` `.sdlc/evidence/20260824-044428-render/`（35.11 秒）、
+  affected `fast` `.sdlc/evidence/20260824-044543-fast/`（9.566 秒）、顺序 `server`
+  `.sdlc/evidence/20260824-044604-server/`（1180.857 秒）与 17-step `full`
+  `.sdlc/evidence/20260824-050555-full/`（1710.988 秒）均 exit 0；full definite-layout independent replay 为
+  233/233、697 checks，App 344/0/0/15、Node 24 Web 26 files/212 tests、runtime canary、23 passed + 1 controlled
+  skip Playwright、prototype/Draft journeys 与 inference replay E2E 1/1 均通过。R0/R1/P0 provider attempts=0，
+  P0 API Key reads/reservations/cost=0；R1 A2 60 cases/58 metrics、J0，P0 A2 60 cases（20 holdout）/58 metrics。
+  resolution `fast` `.sdlc/evidence/20260824-053557-fast/` 的 3 steps 也均 exit 0（A1，9.689 秒）。
+  unfrozen min、两个 bounded children、mixed unfrozen、多个 active、redistribution/freeze/cycle 与一般 water filling
+  继续 fail closed；未推进 Profile/A3/J1/READY，未 push/tag/PR。
 - 2026-08-24 **Template v1 implementation TV1-T84 已由 Codex `/root` single-writer 完成，状态
   `resolved/automated_verified`**：exactly-three main FILL、首轮唯一 active finite/nonnegative min 严格大于 remaining、
   active child 同时携带合法 finite/nonnegative `min <= max`、另两项 owning-axis bound 全 absent 时，现按 authored

@@ -2660,6 +2660,58 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
 - 本状态更新后的 resolution `fast` `.sdlc/evidence/20260824-043520-fast/` 的 3 steps 也均 exit 0
   （A1，14.011 秒）。
 
+## 84. TV1-T85 执行卡
+
+- 决策：T84 以 verified commit `d28c0e7` 收口且 worktree clean 后，复算 Ticket 10 §3/§7、
+  `RW-T10-S3-012..016`、`RW-T10-S7-004..012` 与 16 个 remaining unsupported cases。rotation、rows→columns、
+  resource/composition/error-order 仍依赖关闭能力；六个 Stack cases 中，T84 replacement negative 只需允许一个
+  初始 proportional share 与终止正零都满足的 max-only unfrozen bound，不新增 active、redistribution、freeze、
+  循环或 tolerance，比双 active、four-FILL、second mixed freeze 与 terminal mixed 更窄，因此登记为当前
+  single-writer frontier。
+- Interface/seam：只深化 T84 `stack_main_fill_allocations` 的 exactly-three/mixed-min-overflow 入口；public API、
+  admission/preflight、`StackChildMeasurement`、arrange、authored DFS first-error 与全有或全无 output 不变。
+  Rust/Python 使用独立控制流但共享冻结 vectors。
+- 精确语义：恰好三个 main FILL；首轮唯一 active finite/nonnegative min，active child 同时携带合法 finite/
+  nonnegative max 且 `min <= max`，min 严格大于 remaining；另外两项中恰好一项只携带 finite/nonnegative max-only，
+  初始 share 不大于 max，另一项 bound 全 absent。按 authored position 提交 `min/0/0`；不算负 residual 或
+  post-overflow share，不执行 redistribution、第二次 freeze、循环或 tolerance，初始 `share == max` 接受。
+- 允许影响：T85 tracker/plan/NOTES、layout Rust module/tests、shared definite-layout vector `/48`、Python
+  independent verifier、render gate identity/assertions/evidence。
+- 禁止影响：任一 unfrozen min、两个 unfrozen bounded children、unfrozen mixed bound、首轮多个 active、active min
+  不大于 remaining、second mixed freeze、terminal mixed、four-or-more active-bound FILL、一般多轮 water filling、
+  epsilon/tolerance/public numeric error、HUG-main FILL cycle、rows→columns、任意非直角 rotation、Text/Image/
+  compositionViewport、resource fetch/decode、scene/raster/JPEG、daemon RESULT/Profile、Java/OpenAPI/migration/
+  Web/route、J1/A3/READY 与外部副作用。
+- TDD：把 T84 replacement negative 转为 active-first positive，新增 active-middle、active-last（覆盖初始
+  `share == max`）、COLUMN 与 cross-HUG positives，以初始 inactive、终止正零下 active 的 unfrozen min-only
+  negative 替换。能力值新增 `OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_INACTIVE_UNFROZEN_MAX`；shared `/48`
+  先共同 RED，目标 217 laid-out + 16 unsupported、233 cases/697 checks，fixture `/3` bytes 不变。
+- 验证：focused Rust/Python、fmt、clippy `-D warnings`、workspace tests、`py_compile`、JSON inventory/SHA/unique、
+  `git diff --check`；再依次 `render`、affected `fast`、顺序 `server`、Goal `full`、resolution `fast`。最高只可
+  `automated_verified`；不推进 A3/J1/READY，不 push/tag/PR，不运行 provider，不读取 API Key。
+- 结果：shared `/48` vectors/identity 先让 Rust primary 与 Python independent verifier 在首个转正
+  `stack-three-main-fills-mixed-active-min-overflow-inactive-unfrozen-max` case、同一 `STACK_MAIN_FILL` occurrence
+  `rwocc_0000000000000002` 共同 RED；分别实现后达到 217 laid-out + 16 unsupported、233/233 cases、697 checks。
+  vector SHA-256 为 `d3fe971d1bfd40224e371c7cd7fa2574204ea265c1b470d16ca0b7a575067156`，fixture `/3`
+  SHA-256 保持 `a11475bcebad7e1c35cb0acd7018419d94afcb4b37d7f1df7346a055ad1df669`。
+- `stack_main_fill_allocations` 只在 T84 mixed-min-overflow 路径接受零或一个初始 inactive 的 finite/nonnegative
+  max-only unfrozen bound，Python 使用独立控制流。active-last equality vector 采用精确 90/30/100 authored shape；
+  replacement negative 保持 unfrozen min fail closed，两个 bounded children、mixed unfrozen、多个 active、
+  redistribution/freeze/cycle 也未开放。能力值新增
+  `OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_INACTIVE_UNFROZEN_MAX`。
+- focused Rust 1/1、Python independent 233/233、workspace fmt/check/clippy `-D warnings`/tests、`py_compile`、JSON
+  inventory/SHA/unique 与 `git diff --check` 全绿；分级 A1 证据为 `render`
+  `.sdlc/evidence/20260824-044428-render/`（35.11 秒）、affected `fast`
+  `.sdlc/evidence/20260824-044543-fast/`（9.566 秒）、顺序 `server`
+  `.sdlc/evidence/20260824-044604-server/`（1180.857 秒）与 17-step `full`
+  `.sdlc/evidence/20260824-050555-full/`（1710.988 秒），全部 exit 0。
+- full 中 definite-layout independent replay 233/233、697 checks；App 344/0/0/15、Node 24 Web 26 files/212 tests、
+  runtime canary、23 passed + 1 controlled skip Playwright、prototype/Draft journeys 与 inference replay E2E 1/1
+  均通过。R0/R1/P0 provider attempts=0，P0 API Key reads/reservations/cost=0；R1 A2 60 cases/58 metrics、J0，P0
+  A2 60 cases（20 holdout）/58 metrics。Profile/scene/raster/daemon 与 A3/J1/READY 未推进，未 push/tag/PR。
+- 本状态更新后的 resolution `fast` `.sdlc/evidence/20260824-053557-fast/` 的 3 steps 也均 exit 0
+  （A1，9.689 秒）。
+
 ## 66. TV1-T67 执行卡
 
 - 决策：T66 以 verified commit `a6fabe5` 收口且 worktree clean 后，复算原始 Ticket 10 §3/§7、

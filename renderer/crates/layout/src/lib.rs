@@ -2102,10 +2102,30 @@ fn stack_main_fill_allocations(
 
     if allocations.len() == 3 {
         if frozen_bound > remaining {
-            let unfrozen_bounds_absent = (active_position == 0
-                || (bounds[0].0.is_none() && bounds[0].1.is_none()))
-                && (active_position == 1 || (bounds[1].0.is_none() && bounds[1].1.is_none()))
-                && (active_position == 2 || (bounds[2].0.is_none() && bounds[2].1.is_none()));
+            let mut inactive_unfrozen_max_count = 0;
+            let mut unfrozen_overflow_bound_shape_supported = true;
+            for (position, &(unfrozen_minimum, unfrozen_maximum)) in bounds.iter().enumerate() {
+                if position == active_position {
+                    continue;
+                }
+                match (unfrozen_minimum, unfrozen_maximum) {
+                    (None, None) => {}
+                    (None, Some(maximum))
+                        if maximum.is_finite()
+                            && maximum >= 0.0
+                            && allocations[position].1 <= maximum =>
+                    {
+                        inactive_unfrozen_max_count += 1;
+                    }
+                    _ => {
+                        unfrozen_overflow_bound_shape_supported = false;
+                        break;
+                    }
+                }
+            }
+            if inactive_unfrozen_max_count > 1 {
+                unfrozen_overflow_bound_shape_supported = false;
+            }
             let active_minimum_overflow_bound_shape_supported = active_is_minimum
                 && minimum.is_some()
                 && match maximum {
@@ -2114,7 +2134,9 @@ fn stack_main_fill_allocations(
                         maximum.is_finite() && maximum >= 0.0 && frozen_bound <= maximum
                     }
                 };
-            if !active_minimum_overflow_bound_shape_supported || !unfrozen_bounds_absent {
+            if !active_minimum_overflow_bound_shape_supported
+                || !unfrozen_overflow_bound_shape_supported
+            {
                 return Err(DefiniteLayoutError::unsupported(
                     first_occurrence,
                     DefiniteLayoutUnsupported::StackMainFill,
