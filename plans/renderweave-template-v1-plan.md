@@ -2289,6 +2289,60 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
 - 本状态更新后的 resolution `fast` `.sdlc/evidence/20260823-201920-fast/` 3 steps 也均 exit 0
   （A1，9.915 秒）。
 
+## 77. TV1-T78 执行卡
+
+- 决策：T77 以 verified commit `2eeb4e1` 收口且 worktree clean 后，复算 Ticket 10 §3/§7、
+  `RW-T10-S3-012..016`、`RW-T10-S7-004..012` 与 16 个 remaining unsupported cases。rotation、rows→columns、
+  resource/composition/error-order 仍依赖关闭能力；六个 Stack cases 中，exactly-two mixed-bound second-min
+  case 的 active child 仅在 min 上 active，其 max 在冻结前后都满足，另一 child 仍为 min-only。该路径可复用
+  T72 固定两次 min freeze + overflow，不需要新 division、循环或 tolerance，因此登记为当前 single-writer
+  frontier。
+- Interface/seam：只深化 T72 `stack_main_fill_allocations` 的 exactly-two/two-min branch；public API、admission/
+  preflight、`StackChildMeasurement`、arrange、authored DFS first-error 与全有或全无 output 不变。Rust/Python 使用
+  独立控制流但共享冻结 vectors。
+- 精确语义：恰好两个 main FILL；第一轮恰好一个 active bound，且该 child 的 finite/nonnegative
+  `min <= max`，share 严格低于 min；另一 child min-only，第一轮 share 不低于 min。冻结 first min 后，唯一
+  offer 必须严格低于 second min，随后冻结 second min，min-sum overflow 交给既有 occupied/free/justify START
+  fallback。`min == max` 接受；不做第二轮 division、epsilon/tolerance 或一般循环。
+- 允许影响：T78 tracker/plan/NOTES、layout Rust module/tests、shared definite-layout vector `/41`、Python independent
+  verifier、render gate identity/assertions/evidence。
+- 禁止影响：另一 child mixed、首轮多个 active、第二轮未严格低于 min、three-or-more cascade、second-min
+  sum overflow for three FILL、active min overflow for three FILL、terminal bound、four-or-more active-bound
+  FILL、一般多轮 water filling、epsilon/tolerance/public numeric error、HUG-main FILL cycle、rows→columns、
+  任意非直角 rotation、Text/Image/compositionViewport、resource fetch/decode、scene/raster/JPEG、daemon RESULT/
+  Profile、Java/OpenAPI/migration/Web/route、J1/A3/READY 与外部副作用。
+- TDD：既有 mixed active-min negative 转 positive，新增 active-first、COLUMN、cross-HUG 与 `min == max`
+  positives，并新增另一 child 也为 mixed 的 negative。能力值新增
+  `OR_EXACT_TWO_FILL_MIXED_ACTIVE_MIN_SECOND_MIN_FREEZE_OVERFLOW`；shared `/41` 先共同 RED，目标
+  182 laid-out + 16 unsupported、198 cases/592 checks，fixture `/3` bytes 不变。
+- 验证：focused Rust/Python、fmt、clippy `-D warnings`、workspace tests、`py_compile`、JSON inventory/SHA/unique、
+  `git diff --check`；再依次 `render`、affected `fast`、顺序 `server`、Goal `full`、resolution `fast`。最高只可
+  `automated_verified`；不推进 A3/J1/READY，不 push/tag/PR，不运行 provider，不读取 API Key。
+
+### TV1-T78 resolution evidence
+
+- shared `/41` 的 Rust primary 与 Python independent verifier 先在同一首个 mixed active-min second-min
+  转正 case 共同 RED，分别实现后达到 182 laid-out + 16 unsupported、198/198 cases、592 checks；vector
+  SHA-256 为 `5fb4ec185dd59e3f73ce1796eb93da65e280e21814885aa16c4580d40c72968d`，fixture `/3` SHA-256
+  保持 `a11475bcebad7e1c35cb0acd7018419d94afcb4b37d7f1df7346a055ad1df669`。
+- `stack_main_fill_allocations` 仅对 exactly-two/first-mixed-active-min/second-min-only 子集执行固定两次 min
+  freeze，并把 min-sum overflow 交给既有 occupied/free-space 与 justify START fallback；能力值新增
+  `OR_EXACT_TWO_FILL_MIXED_ACTIVE_MIN_SECOND_MIN_FREEZE_OVERFLOW`。另一项 mixed、第二轮 division、循环、
+  一般 water filling 与 epsilon/tolerance 继续 fail closed。
+- focused Rust 3/3、Python independent 198/198、workspace fmt/clippy `-D warnings`/tests、`py_compile`、JSON
+  inventory/SHA/unique 与 `git diff --check` 全绿；分级 A1 证据为 `render`
+  `.sdlc/evidence/20260823-203006-render/`（19.590 秒）、affected `fast`
+  `.sdlc/evidence/20260823-203033-fast/`（11.539 秒）、顺序 `server`
+  `.sdlc/evidence/20260823-203054-server/`（1144.788 秒）与 17-step `full`
+  `.sdlc/evidence/20260823-205008-full/`（1806.514 秒），均 exit 0。
+- `full` 中 App 344 tests/0 failures/0 errors/15 skipped、Node 24 Web 26 files/212 tests、runtime canary、
+  23 passed + 1 controlled skip Playwright、prototype/Draft browser journeys 与 inference replay E2E 1/1
+  均通过；R0/R1/P0 provider attempts=0，P0 API Key reads/reservations/cost=0。
+- 诚实边界保持不变：Profile `NOT_REGISTERED`、certification `NOT_CERTIFIED`、world transform/scene/raster
+  `ABSENT`、daemon output `UNWIRED`，未推进 A3/J1/READY，未 push/tag/PR。
+- 本状态更新后的 resolution `fast` `.sdlc/evidence/20260823-212141-fast/` 3 steps 也均 exit 0
+  （A1，10.985 秒）。
+
 ## 66. TV1-T67 执行卡
 
 - 决策：T66 以 verified commit `a6fabe5` 收口且 worktree clean 后，复算原始 Ticket 10 §3/§7、

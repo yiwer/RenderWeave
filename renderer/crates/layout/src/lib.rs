@@ -2248,6 +2248,10 @@ fn stack_main_fill_allocations(
         None => true,
         Some(minimum) => minimum.is_finite() && minimum >= 0.0 && minimum <= frozen_bound,
     };
+    let active_minimum_bound_shape_supported = match active_maximum {
+        None => true,
+        Some(maximum) => maximum.is_finite() && maximum >= 0.0 && maximum >= frozen_bound,
+    };
     if !active_is_minimum
         && active_maximum.is_some()
         && active_maximum_bound_shape_supported
@@ -2281,7 +2285,7 @@ fn stack_main_fill_allocations(
     }
     if active_is_minimum
         && active_minimum.is_some()
-        && active_maximum.is_none()
+        && active_minimum_bound_shape_supported
         && unfrozen_maximum.is_none()
         && frozen_bound <= remaining
         && let Some(unfrozen_minimum) = unfrozen_minimum
