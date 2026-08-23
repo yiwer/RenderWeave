@@ -1552,22 +1552,66 @@ def stack_main_fill_allocations(
         ):
             raise Unsupported("STACK_MAIN_FILL", first_occurrence)
         redistributed_shares = (first_share, second_share)
+        post_redistribution_hits: list[tuple[int, float, bool]] = []
         for position, share in zip(
             unfrozen_positions, redistributed_shares, strict=True
         ):
             minimum, maximum = bounds[position]
             invalid_minimum = minimum is not None and (
-                not math.isfinite(minimum) or minimum < 0.0 or share < minimum
+                not math.isfinite(minimum) or minimum < 0.0
             )
             invalid_maximum = maximum is not None and (
-                not math.isfinite(maximum) or maximum < 0.0 or share > maximum
+                not math.isfinite(maximum) or maximum < 0.0
             )
             if invalid_minimum or invalid_maximum:
                 raise Unsupported("STACK_MAIN_FILL", first_occurrence)
+            if minimum is not None and share < minimum:
+                post_redistribution_hits.append((position, minimum, True))
+            elif maximum is not None and share > maximum:
+                post_redistribution_hits.append((position, maximum, False))
+        if len(post_redistribution_hits) > 1:
+            raise Unsupported("STACK_MAIN_FILL", first_occurrence)
         allocations[active_position] = (
             allocations[active_position][0],
             frozen_bound if frozen_bound > 0.0 else 0.0,
         )
+        if post_redistribution_hits:
+            second_position, second_bound, second_is_minimum = (
+                post_redistribution_hits[0]
+            )
+            active_minimum, active_maximum = bounds[active_position]
+            second_minimum, second_maximum = bounds[second_position]
+            last_position = next(
+                position
+                for position in unfrozen_positions
+                if position != second_position
+            )
+            last_minimum, last_maximum = bounds[last_position]
+            if (
+                active_kind != "MIN"
+                or active_minimum is None
+                or active_maximum is not None
+                or not second_is_minimum
+                or second_minimum is None
+                or second_maximum is not None
+                or allocations[second_position][1] < second_bound
+                or last_minimum is not None
+                or last_maximum is not None
+                or second_bound > redistributed_remaining
+            ):
+                raise Unsupported("STACK_MAIN_FILL", first_occurrence)
+            last_share = redistributed_remaining - second_bound
+            if not math.isfinite(last_share) or last_share < 0.0:
+                raise Unsupported("STACK_MAIN_FILL", first_occurrence)
+            allocations[second_position] = (
+                allocations[second_position][0],
+                second_bound if second_bound > 0.0 else 0.0,
+            )
+            allocations[last_position] = (
+                allocations[last_position][0],
+                last_share if last_share > 0.0 else 0.0,
+            )
+            return allocations
         allocations[unfrozen_positions[0]] = (
             allocations[unfrozen_positions[0]][0],
             first_share if first_share > 0.0 else 0.0,
@@ -2817,7 +2861,7 @@ def verify(
         "vector manifest",
     )
     verifier.require(
-        vectors["vectorVersion"] == "renderweave-definite-layout-vectors/37",
+        vectors["vectorVersion"] == "renderweave-definite-layout-vectors/38",
         "vector identity drifted",
     )
     authority = exact_members(
@@ -2870,7 +2914,7 @@ def verify(
     expected_boundary = {
         "profileAvailability": "NOT_REGISTERED",
         "certificationStatus": "NOT_CERTIFIED",
-        "layoutImplementation": "RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_SINGLE_AND_INACTIVE_BOUND_OR_EXACT_TWO_FILL_SINGLE_ACTIVE_BOUND_WITHIN_REMAINING_OR_SINGLE_ACTIVE_MIN_OVERFLOW_OR_EXACT_TWO_FILL_TWO_MIN_SECOND_FREEZE_OVERFLOW_OR_EXACT_TWO_FILL_TWO_MAX_SECOND_FREEZE_FREE_JUSTIFY_OR_EXACT_THREE_FILL_SINGLE_ACTIVE_BOUND_ONE_REDISTRIBUTION_OR_EXACT_THREE_FILL_POST_REDISTRIBUTION_INACTIVE_BOUNDS_MULTI_MAIN_FILL_AND_FIXED_SINGLE_FRACTION_INDEPENDENT_MULTI_AUTO_GRID_MULTI_AUTO_SPAN_STABLE_DEFICIT_GRID_DEFINITE_MULTI_FRACTION_LAST_REMAINDER_GRID_EMPTY_CONTAINER_STACK_HUG_GRID_AUTO_HUG_CONTRIBUTION_GRID_HUG_EXACT_QUARTER_TURN_AFFINE_FRAME_GROUP_HUG_FIXED_OPPOSITE_AXIS_CROSS_FILL_DEFINITE_ABSOLUTE_PARENT_OFFER_DEFINITE_STACK_CROSS_OUTER_OFFER_STACK_MAIN_FILL_CROSS_HUG_REMEASURE_NESTED_STACK_MAIN_OFFER_PROPAGATION_COLUMNS_FIRST_GRID_CELL_OUTER_OFFER_STACK_MAIN_OFFER_COLUMNS_FIRST_GRID_CROSS_HUG_ABSOLUTE_PARENT_OFFER_COLUMNS_FIRST_GRID_CROSS_HUG_GRID_CELL_OFFER_COLUMNS_FIRST_NESTED_GRID_CROSS_HUG_GRID_CELL_OFFER_STACK_MAIN_FIRST_CROSS_HUG_DIRECTION_CHANGING_STACK_CROSS_OFFER_MAIN_HUG_NESTED_STACK_RESOLVED_OPPOSITE_OFFER_RECURSION_COLUMNS_FIRST_GRID_TERMINAL_NORMALIZATION_BOX_KERNEL",
+        "layoutImplementation": "RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_SINGLE_AND_INACTIVE_BOUND_OR_EXACT_TWO_FILL_SINGLE_ACTIVE_BOUND_WITHIN_REMAINING_OR_SINGLE_ACTIVE_MIN_OVERFLOW_OR_EXACT_TWO_FILL_TWO_MIN_SECOND_FREEZE_OVERFLOW_OR_EXACT_TWO_FILL_TWO_MAX_SECOND_FREEZE_FREE_JUSTIFY_OR_EXACT_THREE_FILL_SINGLE_ACTIVE_BOUND_ONE_REDISTRIBUTION_OR_EXACT_THREE_FILL_POST_REDISTRIBUTION_INACTIVE_BOUNDS_OR_EXACT_THREE_FILL_SECOND_MIN_FREEZE_LAST_REMAINDER_MULTI_MAIN_FILL_AND_FIXED_SINGLE_FRACTION_INDEPENDENT_MULTI_AUTO_GRID_MULTI_AUTO_SPAN_STABLE_DEFICIT_GRID_DEFINITE_MULTI_FRACTION_LAST_REMAINDER_GRID_EMPTY_CONTAINER_STACK_HUG_GRID_AUTO_HUG_CONTRIBUTION_GRID_HUG_EXACT_QUARTER_TURN_AFFINE_FRAME_GROUP_HUG_FIXED_OPPOSITE_AXIS_CROSS_FILL_DEFINITE_ABSOLUTE_PARENT_OFFER_DEFINITE_STACK_CROSS_OUTER_OFFER_STACK_MAIN_FILL_CROSS_HUG_REMEASURE_NESTED_STACK_MAIN_OFFER_PROPAGATION_COLUMNS_FIRST_GRID_CELL_OUTER_OFFER_STACK_MAIN_OFFER_COLUMNS_FIRST_GRID_CROSS_HUG_ABSOLUTE_PARENT_OFFER_COLUMNS_FIRST_GRID_CROSS_HUG_GRID_CELL_OFFER_COLUMNS_FIRST_NESTED_GRID_CROSS_HUG_GRID_CELL_OFFER_STACK_MAIN_FIRST_CROSS_HUG_DIRECTION_CHANGING_STACK_CROSS_OFFER_MAIN_HUG_NESTED_STACK_RESOLVED_OPPOSITE_OFFER_RECURSION_COLUMNS_FIRST_GRID_TERMINAL_NORMALIZATION_BOX_KERNEL",
         "worldTransformImplementation": "ABSENT",
         "sceneImplementation": "ABSENT",
         "rasterImplementation": "ABSENT",
@@ -2908,7 +2952,7 @@ def verify(
         == "renderweave-layout-preflight-fixtures/1",
         "layout preflight fixture identity drifted",
     )
-    verifier.require(len(vectors["laidOutCases"]) == 162, "laid-out case count drifted")
+    verifier.require(len(vectors["laidOutCases"]) == 167, "laid-out case count drifted")
     verifier.require(
         len(vectors["unsupportedCases"]) == 16,
         "unsupported case count drifted",
@@ -2958,7 +3002,7 @@ def verify(
             raise VerificationFailure(f"{case_id}: unsupported case produced a layout")
 
     return {
-        "verifier": "renderweave-definite-layout-python-independent/37",
+        "verifier": "renderweave-definite-layout-python-independent/38",
         "result": "PASS",
         "assurance": "A2",
         "laidOutCases": len(vectors["laidOutCases"]),

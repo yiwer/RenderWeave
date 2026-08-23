@@ -368,6 +368,11 @@ Label: wayfinder:map
   **resolved / automated_verified**；只接受 exactly three、首轮唯一 active bound、另外两项可带 optional bound，
   且一次 stable 重分配后的两个 share 仍全部满足各自 min/max；shared `/37` 为 162 laid-out + 16 unsupported、
   178/178 cases/532 checks，第二次 freeze、四项及以上与一般 water filling 保持 fail closed。
+- [实现 definite Stack 三 FILL 第二 min freeze 与末项余量子闭包](issues/75-definite-stack-three-fill-second-min-freeze-remainder.md) —
+  **resolved / automated_verified**；只接受 exactly three、首轮唯一 active min、一次重分配后恰好一个第二 min
+  active，且两项 min 总和不超过 remaining；第二次 freeze 后唯一无界项接收 exact remainder。shared `/38` 为
+  167 laid-out + 16 unsupported、183/183 cases/547 checks，second-max、sum overflow、第三次 freeze 与一般 water
+  filling 保持 fail closed。
 - [验证 Product Editor 状态、恢复与权威预览架构](issues/09-validate-product-editor-architecture.md) —
   throwaway 逻辑原型（`/prototype/editor-state-model`，不进产品 route）把冻结编辑器规则编码为确定性
   fixture 状态机：10 个引导走查场景 37/37 断言 + 自由操作冒烟 + 键盘焦点检查全部通过（Playwright A1，

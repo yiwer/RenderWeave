@@ -1,6 +1,23 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-23 **Template v1 implementation TV1-T75 已由 Codex `/root` single-writer 完成，状态
+  `resolved/automated_verified`**：exactly-three main FILL、首轮唯一 active min、第一次重分配后恰好一个第二 min
+  active 且最后一项无界时，现执行固定两次 min freeze，并把最终 exact remainder 直接交给唯一无界项；不做第二轮
+  division、第三次 freeze、循环、epsilon/tolerance 或一般 water filling。能力值新增
+  `OR_EXACT_THREE_FILL_SECOND_MIN_FREEZE_LAST_REMAINDER`；shared `/38` Rust/Python 为 167 laid-out +
+  16 unsupported、183/183 cases、547 checks，vector SHA-256
+  `3e0c9e682a357213ec72fcf29ec002c06939afc38def44554ec226d7da4eb15b`，fixture `/3` SHA-256 保持
+  `a11475bcebad7e1c35cb0acd7018419d94afcb4b37d7f1df7346a055ad1df669`。`render`
+  `.sdlc/evidence/20260823-165723-render/`（30.252 秒）、affected `fast`
+  `.sdlc/evidence/20260823-165806-fast/`（10.183 秒）、顺序 `server`
+  `.sdlc/evidence/20260823-165823-server/`（1110.102 秒）与 17-step `full`
+  `.sdlc/evidence/20260823-171703-full/`（1696.359 秒）全部 step 均 exit 0；full 中 App 344 tests/
+  0 failures/0 errors/15 skipped、Node 24 Web 26 files/212 tests、runtime canary、23 passed + 1 controlled skip
+  Playwright、prototype/Draft browser journeys 与 inference replay E2E 1/1 均通过。R0/R1/P0 provider attempts=0，
+  P0 API Key reads/reservations/cost=0；resolution `fast` `.sdlc/evidence/20260823-174746-fast/` 的 3 steps 也均
+  exit 0（A1，9.934 秒）。second max/mixed、two-min-sum overflow、terminal bound、首轮多个 active、四项及以上、
+  第三次 freeze 与一般 water filling 继续 fail closed；未推进 Profile/A3/J1/READY，未 push/tag/PR。
 - 2026-08-23 **Template v1 implementation TV1-T74 已由 Codex `/root` single-writer 完成，状态
   `resolved/automated_verified`**：exactly-three main FILL、首轮唯一 active finite/nonnegative bound，另外两项
   optional owning-axis bound 在一次 stable weighted-share/exact-remainder 重分配后仍全部 inactive 时，现复核后

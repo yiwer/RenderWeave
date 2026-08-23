@@ -2140,18 +2140,36 @@ fn stack_main_fill_allocations(
                 DefiniteLayoutUnsupported::StackMainFill,
             ));
         }
-        for (position, share) in [
+        let redistributed_shares = [
             (unfrozen_positions[0], first_share),
             (unfrozen_positions[1], second_share),
-        ] {
+        ];
+        let mut redistributed_active = None;
+        for (position, share) in redistributed_shares {
             let (minimum, maximum) = bounds[position];
-            if minimum.is_some_and(|bound| !bound.is_finite() || bound < 0.0 || share < bound)
-                || maximum.is_some_and(|bound| !bound.is_finite() || bound < 0.0 || share > bound)
+            if minimum.is_some_and(|bound| !bound.is_finite() || bound < 0.0)
+                || maximum.is_some_and(|bound| !bound.is_finite() || bound < 0.0)
             {
                 return Err(DefiniteLayoutError::unsupported(
                     first_occurrence,
                     DefiniteLayoutUnsupported::StackMainFill,
                 ));
+            }
+            let hit = if let Some(bound) = minimum.filter(|bound| share < *bound) {
+                Some((bound, true))
+            } else {
+                maximum
+                    .filter(|bound| share > *bound)
+                    .map(|bound| (bound, false))
+            };
+            if let Some((bound, is_minimum)) = hit {
+                if redistributed_active.is_some() {
+                    return Err(DefiniteLayoutError::unsupported(
+                        first_occurrence,
+                        DefiniteLayoutUnsupported::StackMainFill,
+                    ));
+                }
+                redistributed_active = Some((position, bound, is_minimum));
             }
         }
         allocations[active_position].1 = if frozen_bound > 0.0 {
@@ -2159,6 +2177,47 @@ fn stack_main_fill_allocations(
         } else {
             0.0
         };
+        if let Some((second_active_position, second_frozen_bound, second_active_is_minimum)) =
+            redistributed_active
+        {
+            let (active_minimum, active_maximum) = bounds[active_position];
+            let (second_minimum, second_maximum) = bounds[second_active_position];
+            let last_position = if unfrozen_positions[0] == second_active_position {
+                unfrozen_positions[1]
+            } else {
+                unfrozen_positions[0]
+            };
+            if !active_is_minimum
+                || active_minimum.is_none()
+                || active_maximum.is_some()
+                || !second_active_is_minimum
+                || second_minimum.is_none()
+                || second_maximum.is_some()
+                || allocations[second_active_position].1 < second_frozen_bound
+                || bounds[last_position].0.is_some()
+                || bounds[last_position].1.is_some()
+                || second_frozen_bound > redistributed_remaining
+            {
+                return Err(DefiniteLayoutError::unsupported(
+                    first_occurrence,
+                    DefiniteLayoutUnsupported::StackMainFill,
+                ));
+            }
+            let last_share = redistributed_remaining - second_frozen_bound;
+            if !last_share.is_finite() || last_share < 0.0 {
+                return Err(DefiniteLayoutError::unsupported(
+                    first_occurrence,
+                    DefiniteLayoutUnsupported::StackMainFill,
+                ));
+            }
+            allocations[second_active_position].1 = if second_frozen_bound > 0.0 {
+                second_frozen_bound
+            } else {
+                0.0
+            };
+            allocations[last_position].1 = if last_share > 0.0 { last_share } else { 0.0 };
+            return Ok(allocations);
+        }
         allocations[unfrozen_positions[0]].1 = if first_share > 0.0 { first_share } else { 0.0 };
         allocations[unfrozen_positions[1]].1 = if second_share > 0.0 {
             second_share
