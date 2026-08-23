@@ -1509,12 +1509,9 @@ def stack_main_fill_allocations(
 
     if not active_bounds:
         return allocations
-    if len(allocations) != 2 or len(active_bounds) != 1:
+    if len(active_bounds) != 1:
         raise Unsupported("STACK_MAIN_FILL", first_occurrence)
     active_position, active_kind, frozen_bound = active_bounds[0]
-    unfrozen_position = 1 - active_position
-    if any(bound is not None for bound in bounds[unfrozen_position]):
-        raise Unsupported("STACK_MAIN_FILL", first_occurrence)
     if (
         not math.isfinite(frozen_bound)
         or frozen_bound < 0.0
@@ -1524,6 +1521,60 @@ def stack_main_fill_allocations(
     if (minimum is not None and frozen_bound < minimum) or (
         maximum is not None and frozen_bound > maximum
     ):
+        raise Unsupported("STACK_MAIN_FILL", first_occurrence)
+
+    if len(allocations) == 3:
+        if frozen_bound > remaining:
+            raise Unsupported("STACK_MAIN_FILL", first_occurrence)
+        unfrozen_positions = [
+            position for position in range(3) if position != active_position
+        ]
+        if any(
+            bound is not None
+            for position in unfrozen_positions
+            for bound in bounds[position]
+        ):
+            raise Unsupported("STACK_MAIN_FILL", first_occurrence)
+        redistributed_remaining = remaining - frozen_bound
+        redistributed_weight = sum(
+            weights[position][1] for position in unfrozen_positions
+        )
+        if (
+            not math.isfinite(redistributed_remaining)
+            or redistributed_remaining < 0.0
+            or not math.isfinite(redistributed_weight)
+            or redistributed_weight <= 0.0
+        ):
+            raise Unsupported("STACK_MAIN_FILL", first_occurrence)
+        first_share = (
+            redistributed_remaining * weights[unfrozen_positions[0]][1]
+        ) / redistributed_weight
+        second_share = redistributed_remaining - first_share
+        if (
+            not math.isfinite(first_share)
+            or first_share < 0.0
+            or not math.isfinite(second_share)
+            or second_share < 0.0
+        ):
+            raise Unsupported("STACK_MAIN_FILL", first_occurrence)
+        allocations[active_position] = (
+            allocations[active_position][0],
+            frozen_bound if frozen_bound > 0.0 else 0.0,
+        )
+        allocations[unfrozen_positions[0]] = (
+            allocations[unfrozen_positions[0]][0],
+            first_share if first_share > 0.0 else 0.0,
+        )
+        allocations[unfrozen_positions[1]] = (
+            allocations[unfrozen_positions[1]][0],
+            second_share if second_share > 0.0 else 0.0,
+        )
+        return allocations
+
+    if len(allocations) != 2:
+        raise Unsupported("STACK_MAIN_FILL", first_occurrence)
+    unfrozen_position = 1 - active_position
+    if any(bound is not None for bound in bounds[unfrozen_position]):
         raise Unsupported("STACK_MAIN_FILL", first_occurrence)
     if frozen_bound > remaining:
         if active_kind != "MIN":
@@ -2705,7 +2756,7 @@ def verify(
         "vector manifest",
     )
     verifier.require(
-        vectors["vectorVersion"] == "renderweave-definite-layout-vectors/33",
+        vectors["vectorVersion"] == "renderweave-definite-layout-vectors/34",
         "vector identity drifted",
     )
     authority = exact_members(
@@ -2758,7 +2809,7 @@ def verify(
     expected_boundary = {
         "profileAvailability": "NOT_REGISTERED",
         "certificationStatus": "NOT_CERTIFIED",
-        "layoutImplementation": "RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_SINGLE_AND_INACTIVE_BOUND_OR_EXACT_TWO_FILL_SINGLE_ACTIVE_BOUND_WITHIN_REMAINING_OR_SINGLE_ACTIVE_MIN_OVERFLOW_MULTI_MAIN_FILL_AND_FIXED_SINGLE_FRACTION_INDEPENDENT_MULTI_AUTO_GRID_MULTI_AUTO_SPAN_STABLE_DEFICIT_GRID_DEFINITE_MULTI_FRACTION_LAST_REMAINDER_GRID_EMPTY_CONTAINER_STACK_HUG_GRID_AUTO_HUG_CONTRIBUTION_GRID_HUG_EXACT_QUARTER_TURN_AFFINE_FRAME_GROUP_HUG_FIXED_OPPOSITE_AXIS_CROSS_FILL_DEFINITE_ABSOLUTE_PARENT_OFFER_DEFINITE_STACK_CROSS_OUTER_OFFER_STACK_MAIN_FILL_CROSS_HUG_REMEASURE_NESTED_STACK_MAIN_OFFER_PROPAGATION_COLUMNS_FIRST_GRID_CELL_OUTER_OFFER_STACK_MAIN_OFFER_COLUMNS_FIRST_GRID_CROSS_HUG_ABSOLUTE_PARENT_OFFER_COLUMNS_FIRST_GRID_CROSS_HUG_GRID_CELL_OFFER_COLUMNS_FIRST_NESTED_GRID_CROSS_HUG_GRID_CELL_OFFER_STACK_MAIN_FIRST_CROSS_HUG_DIRECTION_CHANGING_STACK_CROSS_OFFER_MAIN_HUG_NESTED_STACK_RESOLVED_OPPOSITE_OFFER_RECURSION_COLUMNS_FIRST_GRID_TERMINAL_NORMALIZATION_BOX_KERNEL",
+        "layoutImplementation": "RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_SINGLE_AND_INACTIVE_BOUND_OR_EXACT_TWO_FILL_SINGLE_ACTIVE_BOUND_WITHIN_REMAINING_OR_SINGLE_ACTIVE_MIN_OVERFLOW_OR_EXACT_THREE_FILL_SINGLE_ACTIVE_BOUND_ONE_REDISTRIBUTION_MULTI_MAIN_FILL_AND_FIXED_SINGLE_FRACTION_INDEPENDENT_MULTI_AUTO_GRID_MULTI_AUTO_SPAN_STABLE_DEFICIT_GRID_DEFINITE_MULTI_FRACTION_LAST_REMAINDER_GRID_EMPTY_CONTAINER_STACK_HUG_GRID_AUTO_HUG_CONTRIBUTION_GRID_HUG_EXACT_QUARTER_TURN_AFFINE_FRAME_GROUP_HUG_FIXED_OPPOSITE_AXIS_CROSS_FILL_DEFINITE_ABSOLUTE_PARENT_OFFER_DEFINITE_STACK_CROSS_OUTER_OFFER_STACK_MAIN_FILL_CROSS_HUG_REMEASURE_NESTED_STACK_MAIN_OFFER_PROPAGATION_COLUMNS_FIRST_GRID_CELL_OUTER_OFFER_STACK_MAIN_OFFER_COLUMNS_FIRST_GRID_CROSS_HUG_ABSOLUTE_PARENT_OFFER_COLUMNS_FIRST_GRID_CROSS_HUG_GRID_CELL_OFFER_COLUMNS_FIRST_NESTED_GRID_CROSS_HUG_GRID_CELL_OFFER_STACK_MAIN_FIRST_CROSS_HUG_DIRECTION_CHANGING_STACK_CROSS_OFFER_MAIN_HUG_NESTED_STACK_RESOLVED_OPPOSITE_OFFER_RECURSION_COLUMNS_FIRST_GRID_TERMINAL_NORMALIZATION_BOX_KERNEL",
         "worldTransformImplementation": "ABSENT",
         "sceneImplementation": "ABSENT",
         "rasterImplementation": "ABSENT",
@@ -2796,9 +2847,9 @@ def verify(
         == "renderweave-layout-preflight-fixtures/1",
         "layout preflight fixture identity drifted",
     )
-    verifier.require(len(vectors["laidOutCases"]) == 144, "laid-out case count drifted")
+    verifier.require(len(vectors["laidOutCases"]) == 149, "laid-out case count drifted")
     verifier.require(
-        len(vectors["unsupportedCases"]) == 12,
+        len(vectors["unsupportedCases"]) == 15,
         "unsupported case count drifted",
     )
 
@@ -2846,7 +2897,7 @@ def verify(
             raise VerificationFailure(f"{case_id}: unsupported case produced a layout")
 
     return {
-        "verifier": "renderweave-definite-layout-python-independent/33",
+        "verifier": "renderweave-definite-layout-python-independent/34",
         "result": "PASS",
         "assurance": "A2",
         "laidOutCases": len(vectors["laidOutCases"]),

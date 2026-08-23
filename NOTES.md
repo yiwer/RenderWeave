@@ -1,6 +1,22 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-23 **Template v1 implementation TV1-T71 已由 Codex `/root` single-writer 完成，状态
+  `resolved/automated_verified`**：exactly-three main FILL、唯一 active finite/nonnegative bound、另两项
+  owning-axis 无界且 frozen bound 不超过 remaining 时，现冻结 active child，并让两项 unfrozen children 按原
+  positive fillWeight/authored order 对 `remaining-bound` 做一次 stable weighted-share + exact-remainder 重分配；
+  不重查 bound、不做第二次 freeze/循环/epsilon/tolerance，每项仍至多一次 deferred cross-HUG remeasure。
+  shared `/34` Rust/Python 为 149 laid-out + 15 unsupported、164/164 cases、491 checks，vector SHA-256
+  `455f24b380886c205e09b37279a866a0253723717a029db75c1a3c5f29150558`，fixture `/3` SHA-256 保持
+  `a11475bcebad7e1c35cb0acd7018419d94afcb4b37d7f1df7346a055ad1df669`。`render`
+  `.sdlc/evidence/20260823-130323-render/`、affected `fast` `.sdlc/evidence/20260823-121321-fast/`、顺序
+  `server` `.sdlc/evidence/20260823-121339-server/` 与 17-step `full`
+  `.sdlc/evidence/20260823-130437-full/` 均全绿；full 总耗时 1591.368 秒，App 344 tests/0 failures/0 errors/
+  15 skipped、Node 24 Web 26 files/212 tests、runtime canary、23 passed + 1 controlled skip Playwright、browser
+  journeys 与 inference replay E2E 1/1 均通过。resolution `fast`
+  `.sdlc/evidence/20260823-133203-fast/` 的 3 steps 也均 exit 0（A1，10.368 秒）。R0/R1/P0 provider
+  attempts=0，P0 API Key reads/reservations/cost=0；second freeze、unfrozen bound、多个 active、min-overflow、
+  four-or-more FILL 与一般 water filling 继续 fail closed，未推进 Profile/A3/J1/READY，未 push/tag/PR。
 - 2026-08-23 **Template v1 implementation TV1-T70 已由 Codex `/root` single-writer 完成，状态
   `resolved/automated_verified`**：exactly two main FILL、唯一 active min 严格大于 remaining、另一项 owning-axis
   无界时，现冻结 active child 到 authored min，并让唯一未冻结 child 直接取正零；不计算负 residual，不做第二次

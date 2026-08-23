@@ -2021,7 +2021,7 @@ fn stack_main_fill_allocations(
     let mut allocated_before_last = 0.0;
     let mut allocations = Vec::with_capacity(weighted_indices.len());
     let last_position = weighted_indices.len() - 1;
-    for (position, (fill_index, weight)) in weighted_indices.into_iter().enumerate() {
+    for (position, &(fill_index, weight)) in weighted_indices.iter().enumerate() {
         let share = if position == last_position {
             remaining - allocated_before_last
         } else {
@@ -2084,14 +2084,7 @@ fn stack_main_fill_allocations(
     let Some((active_position, frozen_bound, active_is_minimum)) = active_bound else {
         return Ok(allocations);
     };
-    if allocations.len() != 2 || !frozen_bound.is_finite() || frozen_bound < 0.0 {
-        return Err(DefiniteLayoutError::unsupported(
-            first_occurrence,
-            DefiniteLayoutUnsupported::StackMainFill,
-        ));
-    }
-    let unfrozen_position = 1 - active_position;
-    if bounds[unfrozen_position].0.is_some() || bounds[unfrozen_position].1.is_some() {
+    if !frozen_bound.is_finite() || frozen_bound < 0.0 {
         return Err(DefiniteLayoutError::unsupported(
             first_occurrence,
             DefiniteLayoutUnsupported::StackMainFill,
@@ -2101,6 +2094,80 @@ fn stack_main_fill_allocations(
     if minimum.is_some_and(|bound| frozen_bound < bound)
         || maximum.is_some_and(|bound| frozen_bound > bound)
     {
+        return Err(DefiniteLayoutError::unsupported(
+            first_occurrence,
+            DefiniteLayoutUnsupported::StackMainFill,
+        ));
+    }
+
+    if allocations.len() == 3 {
+        if frozen_bound > remaining {
+            return Err(DefiniteLayoutError::unsupported(
+                first_occurrence,
+                DefiniteLayoutUnsupported::StackMainFill,
+            ));
+        }
+        let mut unfrozen_positions = Vec::with_capacity(2);
+        for (position, &(minimum, maximum)) in bounds.iter().enumerate() {
+            if position == active_position {
+                continue;
+            }
+            if minimum.is_some() || maximum.is_some() {
+                return Err(DefiniteLayoutError::unsupported(
+                    first_occurrence,
+                    DefiniteLayoutUnsupported::StackMainFill,
+                ));
+            }
+            unfrozen_positions.push(position);
+        }
+        let redistributed_remaining = remaining - frozen_bound;
+        let redistributed_weight =
+            weighted_indices[unfrozen_positions[0]].1 + weighted_indices[unfrozen_positions[1]].1;
+        if !redistributed_remaining.is_finite()
+            || redistributed_remaining < 0.0
+            || !redistributed_weight.is_finite()
+            || redistributed_weight <= 0.0
+        {
+            return Err(DefiniteLayoutError::unsupported(
+                first_occurrence,
+                DefiniteLayoutUnsupported::StackMainFill,
+            ));
+        }
+        let first_share = redistributed_remaining * weighted_indices[unfrozen_positions[0]].1
+            / redistributed_weight;
+        let second_share = redistributed_remaining - first_share;
+        if !first_share.is_finite()
+            || first_share < 0.0
+            || !second_share.is_finite()
+            || second_share < 0.0
+        {
+            return Err(DefiniteLayoutError::unsupported(
+                first_occurrence,
+                DefiniteLayoutUnsupported::StackMainFill,
+            ));
+        }
+        allocations[active_position].1 = if frozen_bound > 0.0 {
+            frozen_bound
+        } else {
+            0.0
+        };
+        allocations[unfrozen_positions[0]].1 = if first_share > 0.0 { first_share } else { 0.0 };
+        allocations[unfrozen_positions[1]].1 = if second_share > 0.0 {
+            second_share
+        } else {
+            0.0
+        };
+        return Ok(allocations);
+    }
+
+    if allocations.len() != 2 {
+        return Err(DefiniteLayoutError::unsupported(
+            first_occurrence,
+            DefiniteLayoutUnsupported::StackMainFill,
+        ));
+    }
+    let unfrozen_position = 1 - active_position;
+    if bounds[unfrozen_position].0.is_some() || bounds[unfrozen_position].1.is_some() {
         return Err(DefiniteLayoutError::unsupported(
             first_occurrence,
             DefiniteLayoutUnsupported::StackMainFill,

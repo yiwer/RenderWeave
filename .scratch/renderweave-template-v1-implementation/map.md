@@ -349,6 +349,11 @@ Label: wayfinder:map
   **resolved / automated_verified**；只接受 exactly two、唯一 active min 严格大于 remaining、另一项
   owning-axis 无界，冻结 min 并让唯一未冻结项取正零；shared `/33` 为 144 laid-out + 12 unsupported、
   156 cases/470 checks，second freeze、N-FILL redistribution 与 tolerance 保持 fail closed。
+- [实现 definite Stack 三 FILL 单 bound 一次重分配子闭包](issues/71-definite-stack-three-fill-single-bound-redistribution.md) —
+  **resolved / automated_verified**；只接受 exactly three、唯一 active bound、另两项
+  owning-axis 无界且 frozen bound 不超过 remaining，冻结后按原 fillWeight/authored order 做一次 stable
+  last-remainder 重分配；shared `/34` 为 149 laid-out + 15 unsupported、164/164 cases/491 checks，第二次
+  freeze、unfrozen bound、多个 active、min-overflow、four-or-more FILL 与一般 water filling 保持 fail closed。
 - [验证 Product Editor 状态、恢复与权威预览架构](issues/09-validate-product-editor-architecture.md) —
   throwaway 逻辑原型（`/prototype/editor-state-model`，不进产品 route）把冻结编辑器规则编码为确定性
   fixture 状态机：10 个引导走查场景 37/37 断言 + 自由操作冒烟 + 键盘焦点检查全部通过（Playwright A1，
@@ -466,8 +471,11 @@ Label: wayfinder:map
   T68 已完成第一轮 share 不命中 owning-axis bound 的严格退化路径（Rust/Python 146/146、440 checks）；T69 已完成
   两项 FILL、唯一 active bound、另一项 owning-axis 无界且冻结值不超过 remaining 的单次 freeze + exact
   remainder 子闭包（Rust/Python 152/152、457 checks）；T70 已完成 exactly-two、唯一 active min 严格大于
-  remaining、另一项无界的 min-overflow → positive-zero 退化路径（Rust/Python 156/156、470 checks）；
-  其余非直角 rotation、second freeze、three-FILL redistribution、一般 active-bound Stack water filling、
+  remaining、另一项无界的 min-overflow → positive-zero 退化路径（Rust/Python 156/156、470 checks）；T71 已完成
+  exactly-three、唯一 active bound、另两项无界且 frozen bound 不超过 remaining 的一次稳定重分配
+  （Rust/Python 164/164、491 checks）；
+  其余非直角 rotation、second freeze、three-FILL 的 second freeze/overflow、four-or-more active-bound FILL、
+  一般 active-bound Stack water filling、
   general constraint、actual resource fetch+decode/world scene/raster/
   JPEG/Engine 接线仍须另行登记，物理 Linux 双 CPU-family
   认证与 J1/A3 属届时另行授权的执行级门控。
