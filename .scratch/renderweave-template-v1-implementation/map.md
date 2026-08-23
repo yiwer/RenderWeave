@@ -354,6 +354,11 @@ Label: wayfinder:map
   owning-axis 无界且 frozen bound 不超过 remaining，冻结后按原 fillWeight/authored order 做一次 stable
   last-remainder 重分配；shared `/34` 为 149 laid-out + 15 unsupported、164/164 cases/491 checks，第二次
   freeze、unfrozen bound、多个 active、min-overflow、four-or-more FILL 与一般 water filling 保持 fail closed。
+- [实现 definite Stack 两 min 第二次 freeze overflow 子闭包](issues/72-definite-stack-two-min-second-freeze-overflow.md) —
+  **resolved / automated_verified**；只接受 exactly two、双方 min-only、首轮唯一 active min 不超过 remaining，且
+  第一次冻结后的唯一余量严格低于另一 authored min，最终两项取 min 并允许 overflow；shared `/35` 为
+  153 laid-out + 16 unsupported、169/169 cases/505 checks，max/mixed、three-or-more cascade 与一般 water filling
+  保持 fail closed。
 - [验证 Product Editor 状态、恢复与权威预览架构](issues/09-validate-product-editor-architecture.md) —
   throwaway 逻辑原型（`/prototype/editor-state-model`，不进产品 route）把冻结编辑器规则编码为确定性
   fixture 状态机：10 个引导走查场景 37/37 断言 + 自由操作冒烟 + 键盘焦点检查全部通过（Playwright A1，
@@ -473,8 +478,9 @@ Label: wayfinder:map
   remainder 子闭包（Rust/Python 152/152、457 checks）；T70 已完成 exactly-two、唯一 active min 严格大于
   remaining、另一项无界的 min-overflow → positive-zero 退化路径（Rust/Python 156/156、470 checks）；T71 已完成
   exactly-three、唯一 active bound、另两项无界且 frozen bound 不超过 remaining 的一次稳定重分配
-  （Rust/Python 164/164、491 checks）；
-  其余非直角 rotation、second freeze、three-FILL 的 second freeze/overflow、four-or-more active-bound FILL、
+  （Rust/Python 164/164、491 checks）；T72 已完成 exactly-two、两项 min-only、第二次 freeze 后 min-sum
+  overflow 的固定两轮退化路径（Rust/Python 169/169、505 checks）；
+  其余非直角 rotation、max/mixed second freeze、three-FILL 的 second freeze/overflow、four-or-more active-bound FILL、
   一般 active-bound Stack water filling、
   general constraint、actual resource fetch+decode/world scene/raster/
   JPEG/Engine 接线仍须另行登记，物理 Linux 双 CPU-family

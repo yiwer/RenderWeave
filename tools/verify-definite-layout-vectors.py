@@ -1574,6 +1574,34 @@ def stack_main_fill_allocations(
     if len(allocations) != 2:
         raise Unsupported("STACK_MAIN_FILL", first_occurrence)
     unfrozen_position = 1 - active_position
+    active_minimum, active_maximum = bounds[active_position]
+    unfrozen_minimum, unfrozen_maximum = bounds[unfrozen_position]
+    if (
+        active_kind == "MIN"
+        and active_minimum is not None
+        and active_maximum is None
+        and unfrozen_minimum is not None
+        and unfrozen_maximum is None
+        and frozen_bound <= remaining
+        and math.isfinite(unfrozen_minimum)
+        and unfrozen_minimum >= 0.0
+        and allocations[unfrozen_position][1] >= unfrozen_minimum
+    ):
+        unfrozen_offer = remaining - frozen_bound
+        if not math.isfinite(unfrozen_offer) or unfrozen_offer < 0.0:
+            raise Unsupported("STACK_MAIN_FILL", first_occurrence)
+        if unfrozen_offer < unfrozen_minimum:
+            active_index = allocations[active_position][0]
+            unfrozen_index = allocations[unfrozen_position][0]
+            allocations[active_position] = (
+                active_index,
+                frozen_bound if frozen_bound > 0.0 else 0.0,
+            )
+            allocations[unfrozen_position] = (
+                unfrozen_index,
+                unfrozen_minimum if unfrozen_minimum > 0.0 else 0.0,
+            )
+            return allocations
     if any(bound is not None for bound in bounds[unfrozen_position]):
         raise Unsupported("STACK_MAIN_FILL", first_occurrence)
     if frozen_bound > remaining:
@@ -2756,7 +2784,7 @@ def verify(
         "vector manifest",
     )
     verifier.require(
-        vectors["vectorVersion"] == "renderweave-definite-layout-vectors/34",
+        vectors["vectorVersion"] == "renderweave-definite-layout-vectors/35",
         "vector identity drifted",
     )
     authority = exact_members(
@@ -2809,7 +2837,7 @@ def verify(
     expected_boundary = {
         "profileAvailability": "NOT_REGISTERED",
         "certificationStatus": "NOT_CERTIFIED",
-        "layoutImplementation": "RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_SINGLE_AND_INACTIVE_BOUND_OR_EXACT_TWO_FILL_SINGLE_ACTIVE_BOUND_WITHIN_REMAINING_OR_SINGLE_ACTIVE_MIN_OVERFLOW_OR_EXACT_THREE_FILL_SINGLE_ACTIVE_BOUND_ONE_REDISTRIBUTION_MULTI_MAIN_FILL_AND_FIXED_SINGLE_FRACTION_INDEPENDENT_MULTI_AUTO_GRID_MULTI_AUTO_SPAN_STABLE_DEFICIT_GRID_DEFINITE_MULTI_FRACTION_LAST_REMAINDER_GRID_EMPTY_CONTAINER_STACK_HUG_GRID_AUTO_HUG_CONTRIBUTION_GRID_HUG_EXACT_QUARTER_TURN_AFFINE_FRAME_GROUP_HUG_FIXED_OPPOSITE_AXIS_CROSS_FILL_DEFINITE_ABSOLUTE_PARENT_OFFER_DEFINITE_STACK_CROSS_OUTER_OFFER_STACK_MAIN_FILL_CROSS_HUG_REMEASURE_NESTED_STACK_MAIN_OFFER_PROPAGATION_COLUMNS_FIRST_GRID_CELL_OUTER_OFFER_STACK_MAIN_OFFER_COLUMNS_FIRST_GRID_CROSS_HUG_ABSOLUTE_PARENT_OFFER_COLUMNS_FIRST_GRID_CROSS_HUG_GRID_CELL_OFFER_COLUMNS_FIRST_NESTED_GRID_CROSS_HUG_GRID_CELL_OFFER_STACK_MAIN_FIRST_CROSS_HUG_DIRECTION_CHANGING_STACK_CROSS_OFFER_MAIN_HUG_NESTED_STACK_RESOLVED_OPPOSITE_OFFER_RECURSION_COLUMNS_FIRST_GRID_TERMINAL_NORMALIZATION_BOX_KERNEL",
+        "layoutImplementation": "RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_SINGLE_AND_INACTIVE_BOUND_OR_EXACT_TWO_FILL_SINGLE_ACTIVE_BOUND_WITHIN_REMAINING_OR_SINGLE_ACTIVE_MIN_OVERFLOW_OR_EXACT_TWO_FILL_TWO_MIN_SECOND_FREEZE_OVERFLOW_OR_EXACT_THREE_FILL_SINGLE_ACTIVE_BOUND_ONE_REDISTRIBUTION_MULTI_MAIN_FILL_AND_FIXED_SINGLE_FRACTION_INDEPENDENT_MULTI_AUTO_GRID_MULTI_AUTO_SPAN_STABLE_DEFICIT_GRID_DEFINITE_MULTI_FRACTION_LAST_REMAINDER_GRID_EMPTY_CONTAINER_STACK_HUG_GRID_AUTO_HUG_CONTRIBUTION_GRID_HUG_EXACT_QUARTER_TURN_AFFINE_FRAME_GROUP_HUG_FIXED_OPPOSITE_AXIS_CROSS_FILL_DEFINITE_ABSOLUTE_PARENT_OFFER_DEFINITE_STACK_CROSS_OUTER_OFFER_STACK_MAIN_FILL_CROSS_HUG_REMEASURE_NESTED_STACK_MAIN_OFFER_PROPAGATION_COLUMNS_FIRST_GRID_CELL_OUTER_OFFER_STACK_MAIN_OFFER_COLUMNS_FIRST_GRID_CROSS_HUG_ABSOLUTE_PARENT_OFFER_COLUMNS_FIRST_GRID_CROSS_HUG_GRID_CELL_OFFER_COLUMNS_FIRST_NESTED_GRID_CROSS_HUG_GRID_CELL_OFFER_STACK_MAIN_FIRST_CROSS_HUG_DIRECTION_CHANGING_STACK_CROSS_OFFER_MAIN_HUG_NESTED_STACK_RESOLVED_OPPOSITE_OFFER_RECURSION_COLUMNS_FIRST_GRID_TERMINAL_NORMALIZATION_BOX_KERNEL",
         "worldTransformImplementation": "ABSENT",
         "sceneImplementation": "ABSENT",
         "rasterImplementation": "ABSENT",
@@ -2847,9 +2875,9 @@ def verify(
         == "renderweave-layout-preflight-fixtures/1",
         "layout preflight fixture identity drifted",
     )
-    verifier.require(len(vectors["laidOutCases"]) == 149, "laid-out case count drifted")
+    verifier.require(len(vectors["laidOutCases"]) == 153, "laid-out case count drifted")
     verifier.require(
-        len(vectors["unsupportedCases"]) == 15,
+        len(vectors["unsupportedCases"]) == 16,
         "unsupported case count drifted",
     )
 
@@ -2897,7 +2925,7 @@ def verify(
             raise VerificationFailure(f"{case_id}: unsupported case produced a layout")
 
     return {
-        "verifier": "renderweave-definite-layout-python-independent/34",
+        "verifier": "renderweave-definite-layout-python-independent/35",
         "result": "PASS",
         "assurance": "A2",
         "laidOutCases": len(vectors["laidOutCases"]),

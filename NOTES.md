@@ -1,6 +1,21 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-23 **Template v1 implementation TV1-T72 已由 Codex `/root` single-writer 完成，状态
+  `resolved/automated_verified`**：exactly-two main FILL、双方 owning-axis min-only、首轮唯一 active min 不超过
+  remaining，且第一次冻结后的唯一余量严格低于另一 authored min 时，现固定两次 freeze，最终两项保持 authored
+  min 并允许 min-sum overflow；既有 occupied/free/justify 负责 free=0 与 START fallback，不做第二轮 division、
+  epsilon/tolerance 或一般循环。shared `/35` Rust/Python 为 153 laid-out + 16 unsupported、169/169 cases、
+  505 checks，vector SHA-256 `3573ca66421733dd21b6d36f55011c218b07c3326dc55835d421c0861d928ff2`，
+  fixture `/3` SHA-256 保持 `a11475bcebad7e1c35cb0acd7018419d94afcb4b37d7f1df7346a055ad1df669`。
+  `render` `.sdlc/evidence/20260823-134353-render/`、affected `fast`
+  `.sdlc/evidence/20260823-134421-fast/`、顺序 `server` `.sdlc/evidence/20260823-134438-server/` 与 17-step
+  `full` `.sdlc/evidence/20260823-140409-full/` 均全绿；full 总耗时 1710.808 秒，App 344 tests/0 failures/
+  0 errors/15 skipped、Node 24 Web 26 files/212 tests、runtime canary、23 passed + 1 controlled skip Playwright、
+  browser journeys 与 inference replay E2E 1/1 均通过。R0/R1/P0 provider attempts=0，P0 API Key reads/
+  reservations/cost=0；resolution `fast` `.sdlc/evidence/20260823-143436-fast/` 的 3 steps 也均 exit 0
+  （A1，10.035 秒）。max/mixed、three-or-more cascade、一般 water filling 与 tolerance 继续 fail closed，未推进
+  Profile/A3/J1/READY，未 push/tag/PR。
 - 2026-08-23 **Template v1 implementation TV1-T71 已由 Codex `/root` single-writer 完成，状态
   `resolved/automated_verified`**：exactly-three main FILL、唯一 active finite/nonnegative bound、另两项
   owning-axis 无界且 frozen bound 不超过 remaining 时，现冻结 active child，并让两项 unfrozen children 按原
