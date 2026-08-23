@@ -2343,6 +2343,58 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
 - 本状态更新后的 resolution `fast` `.sdlc/evidence/20260823-212141-fast/` 3 steps 也均 exit 0
   （A1，10.985 秒）。
 
+## 78. TV1-T79 执行卡
+
+- 决策：T78 以 verified commit `754addd` 收口且 worktree clean 后，复算 Ticket 10 §3/§7、
+  `RW-T10-S3-012..016`、`RW-T10-S7-004..012` 与 16 个 remaining unsupported cases。rotation、rows→columns、
+  resource/composition/error-order 仍依赖关闭能力；六个 Stack cases 中，T78 新增的 second-mixed case 是刻意
+  关闭的 bound-shape 边界。原有五项里，three-FILL second-max terminal-bound case 只需在 T76 两次 max freeze
+  后复核唯一末项 min，既不新增 division/freeze/overflow，也不扩大 FILL 数量，因此登记为当前 single-writer
+  frontier。
+- Interface/seam：只深化 T76 `stack_main_fill_allocations` 的 exactly-three/second-max branch；public API、
+  admission/preflight、`StackChildMeasurement`、arrange、authored DFS first-error 与全有或全无 output 不变。
+  Rust/Python 使用独立控制流但共享冻结 vectors。
+- 精确语义：恰好三个 main FILL；首轮唯一 active max-only，第一次重分配后唯一 second max-only active，最后
+  一项仅携带 finite/nonnegative min-only，且在重分配 share 下 inactive。第二次 freeze 后复用既有 exact
+  remainder，只有 final share 不低于 terminal min 才提交；不新增 division、第三次 freeze、循环或 tolerance。
+- 允许影响：T79 tracker/plan/NOTES、layout Rust module/tests、shared definite-layout vector `/42`、Python
+  independent verifier、render gate identity/assertions/evidence。
+- 禁止影响：terminal max/mixed/active min、首轮多个 active、重分配后多个 active、首个 active min、second
+  min/mixed、active-min overflow、second-min sum overflow、four-or-more active-bound FILL、第三次 freeze、一般
+  多轮 water filling、epsilon/tolerance/public numeric error、HUG-main FILL cycle、rows→columns、任意非直角
+  rotation、Text/Image/compositionViewport、resource fetch/decode、scene/raster/JPEG、daemon RESULT/Profile、
+  Java/OpenAPI/migration/Web/route、J1/A3/READY 与外部副作用。
+- TDD：保留 T76 五个 unbounded positives；新增 active-first、active-middle、active-last、COLUMN 与 cross-HUG
+  terminal inactive-min positives，把既有 terminal-min negative 转 positive并新增 terminal max-only negative。
+  能力值新增 `OR_EXACT_THREE_FILL_SECOND_MAX_FREEZE_TERMINAL_INACTIVE_MIN`；shared `/42` 先共同 RED，目标
+  187 laid-out + 16 unsupported、203 cases/607 checks，fixture `/3` bytes 不变。
+- 验证：focused Rust/Python、fmt、clippy `-D warnings`、workspace tests、`py_compile`、JSON inventory/SHA/unique、
+  `git diff --check`；再依次 `render`、affected `fast`、顺序 `server`、Goal `full`、resolution `fast`。最高只可
+  `automated_verified`；不推进 A3/J1/READY，不 push/tag/PR，不运行 provider，不读取 API Key。
+
+### T79 resolution evidence
+
+- shared `/42` 先在 Rust primary 与 Python independent verifier 的同一首个 terminal inactive-min case 共同
+  RED，再分别达到 187 laid-out + 16 unsupported、203/203 cases、607 checks；vector SHA-256 为
+  `871b3fe96fec15766298a9a155f314fa958fc9141231864b51e4d6b5fca5002f`，fixture `/3` SHA-256 保持
+  `a11475bcebad7e1c35cb0acd7018419d94afcb4b37d7f1df7346a055ad1df669`。
+- 实现只深化 T76 exactly-three/second-max branch：唯一 terminal min 必须 finite/nonnegative、在第二次重分配
+  share 下 inactive，且 exact final remainder 不低于该 min；terminal max/mixed/active min、第三次 freeze 与
+  一般循环继续 fail closed。能力值为 `OR_EXACT_THREE_FILL_SECOND_MAX_FREEZE_TERMINAL_INACTIVE_MIN`。
+- focused Rust 3/3、Python independent 203/203、workspace fmt/clippy `-D warnings`/tests、`py_compile`、JSON
+  inventory/SHA/unique 与 `git diff --check` 全绿；A1 `render`
+  `.sdlc/evidence/20260823-213523-render/`（36.519 秒）、affected `fast`
+  `.sdlc/evidence/20260823-213613-fast/`（12.435 秒）、顺序 `server`
+  `.sdlc/evidence/20260823-213643-server/`（1157.837 秒）与 17-step `full`
+  `.sdlc/evidence/20260823-215616-full/`（1801.285 秒）均 exit 0。
+- `full` 中 App 344 tests/0 failures/0 errors/15 skipped、Node 24 Web 26 files/212 tests、runtime canary、
+  23 passed + 1 controlled skip Playwright、prototype/Draft browser journeys 与 inference replay E2E 1/1
+  均通过；R0/R1/P0 provider attempts=0，P0 API Key reads/reservations/cost=0。
+- 状态为 `resolved / automated_verified`；Profile `NOT_REGISTERED`、certification `NOT_CERTIFIED`、world
+  transform/scene/raster `ABSENT`、daemon output `UNWIRED`。未推进 A3/J1/READY，未 push/tag/PR。
+- 本状态更新后的 resolution `fast` `.sdlc/evidence/20260823-222807-fast/` 3 steps 均 exit 0
+  （A1，12.410 秒）。
+
 ## 66. TV1-T67 执行卡
 
 - 决策：T66 以 verified commit `a6fabe5` 收口且 worktree clean 后，复算原始 Ticket 10 §3/§7、

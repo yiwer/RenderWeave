@@ -1,6 +1,24 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-23 **Template v1 implementation TV1-T79 已由 Codex `/root` single-writer 完成，状态
+  `resolved/automated_verified`**：exactly-three main FILL、首轮唯一 active max-only、第一次重分配后唯一
+  second max-only active，且唯一末项只携带 finite/nonnegative、在重分配与 final exact remainder 下始终
+  inactive 的 min-only bound 时，现复用固定两次 max freeze 并在提交前复核 terminal min；不新增 division、
+  第三次 freeze、循环或 epsilon/tolerance。能力值新增
+  `OR_EXACT_THREE_FILL_SECOND_MAX_FREEZE_TERMINAL_INACTIVE_MIN`；shared `/42` Rust/Python 为
+  187 laid-out + 16 unsupported、203/203 cases、607 checks，vector SHA-256
+  `871b3fe96fec15766298a9a155f314fa958fc9141231864b51e4d6b5fca5002f`，fixture `/3` SHA-256 保持
+  `a11475bcebad7e1c35cb0acd7018419d94afcb4b37d7f1df7346a055ad1df669`。`render`
+  `.sdlc/evidence/20260823-213523-render/`（36.519 秒）、affected `fast`
+  `.sdlc/evidence/20260823-213613-fast/`（12.435 秒）、顺序 `server`
+  `.sdlc/evidence/20260823-213643-server/`（1157.837 秒）与 17-step `full`
+  `.sdlc/evidence/20260823-215616-full/`（1801.285 秒）均 exit 0；full 中 App 344 tests/0 failures/
+  0 errors/15 skipped、Node 24 Web 26 files/212 tests、runtime canary、23 passed + 1 controlled skip Playwright、
+  prototype/Draft browser journeys 与 inference replay E2E 1/1 均通过。R0/R1/P0 provider attempts=0，P0
+  API Key reads/reservations/cost=0。terminal max/mixed/active min、多个 active、four-or-more、第三次 freeze 与
+  一般 water filling 继续 fail closed；resolution `fast` `.sdlc/evidence/20260823-222807-fast/` 的 3 steps 也均
+  exit 0（A1，12.410 秒）。未推进 Profile/A3/J1/READY，未 push/tag/PR。
 - 2026-08-23 **Template v1 implementation TV1-T78 已由 Codex `/root` single-writer 完成，状态
   `resolved/automated_verified`**：exactly-two main FILL、首轮唯一 active-min child 同时带 finite/nonnegative
   且始终 inactive 的 `min <= max`、另一项 min-only，且第一次冻结后的唯一 offer 严格低于 second min 时，
