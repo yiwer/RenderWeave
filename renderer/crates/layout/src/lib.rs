@@ -2187,13 +2187,21 @@ fn stack_main_fill_allocations(
             } else {
                 unfrozen_positions[0]
             };
-            if !active_is_minimum
-                || active_minimum.is_none()
-                || active_maximum.is_some()
-                || !second_active_is_minimum
-                || second_minimum.is_none()
-                || second_maximum.is_some()
-                || allocations[second_active_position].1 < second_frozen_bound
+            let matching_minimum_freezes = active_is_minimum
+                && active_minimum.is_some()
+                && active_maximum.is_none()
+                && second_active_is_minimum
+                && second_minimum.is_some()
+                && second_maximum.is_none()
+                && allocations[second_active_position].1 >= second_frozen_bound;
+            let matching_maximum_freezes = !active_is_minimum
+                && active_minimum.is_none()
+                && active_maximum.is_some()
+                && !second_active_is_minimum
+                && second_minimum.is_none()
+                && second_maximum.is_some()
+                && allocations[second_active_position].1 <= second_frozen_bound;
+            if (!matching_minimum_freezes && !matching_maximum_freezes)
                 || bounds[last_position].0.is_some()
                 || bounds[last_position].1.is_some()
                 || second_frozen_bound > redistributed_remaining

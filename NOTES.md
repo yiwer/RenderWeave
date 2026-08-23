@@ -1,6 +1,24 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-23 **Template v1 implementation TV1-T76 已由 Codex `/root` single-writer 完成，状态
+  `resolved/automated_verified`**：exactly-three main FILL、首轮唯一 active max、第一次重分配后恰好一个第二
+  max active 且最后一项无界时，现执行固定两次 max freeze，并把最终 exact remainder 直接交给唯一无界项；
+  不做第二轮 division、第三次 freeze、justify 特判、epsilon/tolerance 或一般 water filling。能力值新增
+  `OR_EXACT_THREE_FILL_SECOND_MAX_FREEZE_LAST_REMAINDER`；shared `/39` Rust/Python 为 172 laid-out +
+  16 unsupported、188/188 cases、562 checks，vector SHA-256
+  `c6f59cfa5bfceb366b708245b296934da8de7bf9bafe11c1806bd2ac9e99098e`，fixture `/3` SHA-256 保持
+  `a11475bcebad7e1c35cb0acd7018419d94afcb4b37d7f1df7346a055ad1df669`。`render`
+  `.sdlc/evidence/20260823-175710-render/`（19.746 秒）、affected `fast`
+  `.sdlc/evidence/20260823-175805-fast/`（10.082 秒）、顺序 `server`
+  `.sdlc/evidence/20260823-175822-server/`（1143.440 秒）与成功的 17-step `full`
+  `.sdlc/evidence/20260823-184512-full/`（1746.114 秒）均 exit 0；full 中 App 344 tests/0 failures/
+  0 errors/15 skipped、Node 24 Web 26 files/212 tests、runtime canary、23 passed + 1 controlled skip Playwright、
+  prototype/Draft browser journeys 与 inference replay E2E 1/1 均通过。初次 full 的唯一恢复页 E2E 时序失败经
+  固定 Node 24 精确复现 3/3 与完整重跑排除，未改 Web 代码。R0/R1/P0 provider attempts=0，P0 API Key reads/
+  reservations/cost=0；resolution `fast` `.sdlc/evidence/20260823-191642-fast/` 的 3 steps 也均 exit 0（A1，
+  11.044 秒）。exactly-two mixed-bound、terminal bound、首轮多个 active、四项及以上、第三次 freeze 与一般
+  water filling 继续 fail closed；未推进 Profile/A3/J1/READY，未 push/tag/PR。
 - 2026-08-23 **Template v1 implementation TV1-T75 已由 Codex `/root` single-writer 完成，状态
   `resolved/automated_verified`**：exactly-three main FILL、首轮唯一 active min、第一次重分配后恰好一个第二 min
   active 且最后一项无界时，现执行固定两次 min freeze，并把最终 exact remainder 直接交给唯一无界项；不做第二轮

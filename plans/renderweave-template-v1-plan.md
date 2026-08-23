@@ -2148,6 +2148,35 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
 - 本状态更新后的 resolution `fast` `.sdlc/evidence/20260823-174746-fast/` 3 steps 也均 exit 0
   （A1，9.934 秒）。
 
+## 75. TV1-T76 执行卡
+
+- 决策：T75 以 verified commit `a5ab09a` 收口且 worktree clean 后，复算 Ticket 10 §3/§7、
+  `RW-T10-S3-012..016`、`RW-T10-S7-004..012` 与 16 个 remaining unsupported cases。rotation、rows→columns、
+  resource/composition/error-order 仍依赖关闭能力；六个 Stack cases 中，exactly-three、首轮唯一 active max、
+  第一次重分配后恰好一个第二 max active 且最后一项无界的 case 可退化为固定两次 max freeze + 末项 exact
+  remainder，无需第三轮 division、justify 特判、residual tolerance 或一般 N 项循环，因此登记为当前
+  single-writer frontier。exactly-two mixed-bound case 保持独立，避免同票放宽 bound-shape admission。
+- Interface/seam：只深化 T75 `stack_main_fill_allocations` 的 exactly-three branch；public API、admission/
+  preflight、`StackChildMeasurement`、arrange、authored DFS first-error 与全有或全无 output 不变。Rust/Python 使用
+  独立控制流但共享冻结 vectors。
+- 精确语义：恰好三个 main FILL；第一轮恰好一个 finite/nonnegative max-only active；另外两项中恰好一项
+  max-only 且第一轮 inactive，另一项无 bound。第一次 stable 重分配后 bounded share 必须严格高于 second max；
+  随后固定第二 max，唯一无界项直接接收 `remaining - firstMax - secondMax`。两个 strict active hit 自身保证末项
+  余量有限且非负；equality 走 T74，不做第二轮 division/第三次 freeze/justify 特判/epsilon/tolerance。
+- 允许影响：T76 tracker/plan/NOTES、layout Rust module/tests、shared definite-layout vector `/39`、Python independent
+  verifier、render gate identity/assertions/evidence。
+- 禁止影响：首轮多个 active、首个 active min、第二次 min/mixed/多个 active、terminal bound、active min/max
+  overflow、four-or-more active-bound FILL、第三次 freeze、一般多轮 water filling、epsilon/tolerance/public
+  numeric error、HUG-main FILL cycle、rows→columns、任意非直角 rotation、Text/Image/compositionViewport、
+  resource fetch/decode、scene/raster/JPEG、daemon RESULT/Profile、Java/OpenAPI/migration/Web/route、J1/A3/READY
+  与外部副作用。
+- TDD：既有 second-max negative 转 positive，新增 active-middle、active-last、COLUMN 与 cross-HUG positives，并
+  新增 terminal-bound negative。shared `/39` 先共同 RED，目标 172 laid-out + 16 unsupported、188 cases/
+  562 checks，fixture `/3` bytes 不变。
+- 验证：focused Rust/Python、fmt、clippy `-D warnings`、workspace tests、`py_compile`、JSON inventory/SHA/unique、
+  `git diff --check`；再依次 `render`、affected `fast`、顺序 `server`、Goal `full`、resolution `fast`。最高只可
+  `automated_verified`；不推进 A3/J1/READY，不 push/tag/PR，不运行 provider，不读取 API Key。
+
 - Resolution evidence：shared `/30` Rust/Python 从同一首个转正 case 共同 RED 后达到 131 laid-out + 11
   unsupported、142/142 cases/429 checks exact-bit GREEN；vector SHA-256
   `af92241729657fc2cd1170c86e1d09903284fcaea69c83bb69784cdde6dd3b33`，fixture `/3` SHA-256 保持
@@ -2179,6 +2208,33 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
   certification `NOT_CERTIFIED`、Raster `ABSENT`、daemon `UNWIRED`。Stack water filling、rows→columns、general
   constraint/tolerance、resource/scene/pixel 与完整 Renderer 保持 fail closed；最高 `automated_verified`，未推进
   A3/J1/READY，未 push/tag/PR。
+
+### TV1-T76 resolution evidence
+
+- shared `/39` 共同 RED 后，Rust primary 与 Python independent verifier 分别实现并达到 172 laid-out +
+  16 unsupported、188/188 cases、562 checks；vector SHA-256 为
+  `c6f59cfa5bfceb366b708245b296934da8de7bf9bafe11c1806bd2ac9e99098e`，fixture `/3` SHA-256 保持
+  `a11475bcebad7e1c35cb0acd7018419d94afcb4b37d7f1df7346a055ad1df669`。
+- `stack_main_fill_allocations` 只对 exactly-three/first-active-max/second-active-max/terminal-unbounded 子集执行
+  固定两次 max freeze，并把最终 exact remainder 交给唯一无界项；能力值新增
+  `OR_EXACT_THREE_FILL_SECOND_MAX_FREEZE_LAST_REMAINDER`。第二轮 division、第三次 freeze、justify 特判、
+  mixed/terminal bound、一般 water filling 与 epsilon/tolerance 继续 fail closed。
+- focused Rust 3/3、Python independent 188/188、workspace fmt/clippy `-D warnings`/tests、`py_compile`、JSON
+  inventory/SHA/unique 与 `git diff --check` 全绿；分级 A1 证据为 `render`
+  `.sdlc/evidence/20260823-175710-render/`（19.746 秒）、affected `fast`
+  `.sdlc/evidence/20260823-175805-fast/`（10.082 秒）、顺序 `server`
+  `.sdlc/evidence/20260823-175822-server/`（1143.440 秒）与成功的 17-step `full`
+  `.sdlc/evidence/20260823-184512-full/`（1746.114 秒），均 exit 0。
+- 初次 `full` `.sdlc/evidence/20260823-181731-full/` 仅在并行 `prototype-e2e` 的恢复页动态 import abort
+  5 秒时序上失败；固定 Node 24、单 worker 精确用例连续 3/3 通过，随后完整 `full` 17/17 steps 全绿，
+  未修改 Web 产品或测试代码。
+- 成功 `full` 中 App 344 tests/0 failures/0 errors/15 skipped、Node 24 Web 26 files/212 tests、runtime canary、
+  23 passed + 1 controlled skip Playwright、prototype/Draft browser journeys 与 inference replay E2E 1/1 均通过；
+  R0/R1/P0 provider attempts=0，P0 API Key reads/reservations/cost=0。Profile `NOT_REGISTERED`、certification
+  `NOT_CERTIFIED`、world transform/scene/raster `ABSENT`、daemon output `UNWIRED`，未推进 A3/J1/READY，
+  未 push/tag/PR。
+- 本状态更新后的 resolution `fast` `.sdlc/evidence/20260823-191642-fast/` 3 steps 也均 exit 0
+  （A1，11.044 秒）。
 
 ## 66. TV1-T67 执行卡
 
