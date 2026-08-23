@@ -1,6 +1,21 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-23 **Template v1 implementation TV1-T70 已由 Codex `/root` single-writer 完成，状态
+  `resolved/automated_verified`**：exactly two main FILL、唯一 active min 严格大于 remaining、另一项 owning-axis
+  无界时，现冻结 active child 到 authored min，并让唯一未冻结 child 直接取正零；不计算负 residual，不做第二次
+  division/freeze/redistribution，每项仍至多一次 deferred cross-HUG remeasure。shared `/33` Rust/Python 为
+  144 laid-out + 12 unsupported、156/156 cases、470 checks，vector SHA-256
+  `478624aa567fb559364c8117a1ab55a9f1b0a7a673c8e5a00be17de18b5ddce2`，fixture `/3` SHA-256 保持
+  `a11475bcebad7e1c35cb0acd7018419d94afcb4b37d7f1df7346a055ad1df669`。`render`
+  `.sdlc/evidence/20260823-110718-render/`、affected `fast` `.sdlc/evidence/20260823-110800-fast/`、顺序
+  `server` `.sdlc/evidence/20260823-110816-server/` 与 17-step `full`
+  `.sdlc/evidence/20260823-112808-full/` 全绿；resolution fast `.sdlc/evidence/20260823-115754-fast/` 的
+  3 steps 也均 exit 0（A1，10.057 秒）。full 17 steps 均 exit 0、总耗时 1631.439 秒，Maven App
+  344 tests/0 failures/0 errors/15 skipped，Node 24 Web 26 files/212 tests，runtime canary、23 passed +
+  1 controlled skip Playwright、browser journeys 与最终 inference replay E2E 1/1 均通过。R0/R1/P0 provider
+  attempts=0，P0 API Key reads/reservations/cost=0；second freeze、three-FILL redistribution 与一般 water filling
+  继续 fail closed，未推进 A3/J1/READY，未 push/tag/PR。
 - 2026-08-23 **Template v1 implementation TV1-T69 已由 Codex `/root` single-writer 完成，状态
   `resolved/automated_verified`**：恰好两个 main-axis FILL、首轮恰好一项越过 owning-axis min/max、另一项
   该轴完全无界且冻结值不超过 remaining 时，现冻结 active child 并把 `remaining-bound` 原样给唯一未冻结

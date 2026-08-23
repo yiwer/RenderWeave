@@ -341,6 +341,14 @@ Label: wayfinder:map
   **resolved / automated_verified**；只允许第一轮 weighted shares 已满足全部 owning-axis min/max（含 equality）的 multiple main
   FILL 继续布局；任何 active bound 仍在首个 authored FILL occurrence fail closed，不做 freeze、redistribution 或
   tolerance 判定。shared `/31` 为 134 laid-out + 12 unsupported、146 cases/440 checks。
+- [实现 definite Stack 两 FILL 单 bound-freeze 子闭包](issues/69-definite-stack-two-fill-single-bound-freeze.md) —
+  **resolved / automated_verified**；exactly two main FILL、唯一 active bound、另一项 owning-axis 无界且
+  frozen bound 不超过 remaining 时，执行一次 freeze + exact remainder；shared `/32` 为 139 laid-out +
+  13 unsupported、152 cases/457 checks。
+- [实现 definite Stack 两 FILL 单 min-overflow 子闭包](issues/70-definite-stack-two-fill-single-min-overflow.md) —
+  **resolved / automated_verified**；只接受 exactly two、唯一 active min 严格大于 remaining、另一项
+  owning-axis 无界，冻结 min 并让唯一未冻结项取正零；shared `/33` 为 144 laid-out + 12 unsupported、
+  156 cases/470 checks，second freeze、N-FILL redistribution 与 tolerance 保持 fail closed。
 - [验证 Product Editor 状态、恢复与权威预览架构](issues/09-validate-product-editor-architecture.md) —
   throwaway 逻辑原型（`/prototype/editor-state-model`，不进产品 route）把冻结编辑器规则编码为确定性
   fixture 状态机：10 个引导走查场景 37/37 断言 + 自由操作冒烟 + 键盘焦点检查全部通过（Playwright A1，
@@ -457,8 +465,10 @@ Label: wayfinder:map
   owning-axis bound 的 multi-FILL stable proportional/last-remainder 子闭包（Rust/Python 142/142、429 checks）；
   T68 已完成第一轮 share 不命中 owning-axis bound 的严格退化路径（Rust/Python 146/146、440 checks）；T69 已完成
   两项 FILL、唯一 active bound、另一项 owning-axis 无界且冻结值不超过 remaining 的单次 freeze + exact
-  remainder 子闭包（Rust/Python 152/152、457 checks）；其余非直角 rotation、一般 active-bound Stack water filling、
-  min overflow、general constraint、actual resource fetch+decode/world scene/raster/
+  remainder 子闭包（Rust/Python 152/152、457 checks）；T70 已完成 exactly-two、唯一 active min 严格大于
+  remaining、另一项无界的 min-overflow → positive-zero 退化路径（Rust/Python 156/156、470 checks）；
+  其余非直角 rotation、second freeze、three-FILL redistribution、一般 active-bound Stack water filling、
+  general constraint、actual resource fetch+decode/world scene/raster/
   JPEG/Engine 接线仍须另行登记，物理 Linux 双 CPU-family
   认证与 J1/A3 属届时另行授权的执行级门控。
 - Editor T27/E1、T28/E2、T29/E3、T30/E4a、T31/E4b、T32/E5、T35/E7、T36/E8 与 T37/E9 均已单独登记并完成；

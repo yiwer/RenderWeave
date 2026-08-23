@@ -2063,30 +2063,28 @@ fn stack_main_fill_allocations(
             format!("placement.{maximum_member}"),
         )?;
         let hit = if let Some(bound) = minimum.filter(|bound| share < *bound) {
-            Some(bound)
+            Some((bound, true))
         } else {
-            maximum.filter(|bound| share > *bound)
+            maximum
+                .filter(|bound| share > *bound)
+                .map(|bound| (bound, false))
         };
-        if let Some(bound) = hit {
+        if let Some((bound, is_minimum)) = hit {
             if active_bound.is_some() {
                 return Err(DefiniteLayoutError::unsupported(
                     first_occurrence,
                     DefiniteLayoutUnsupported::StackMainFill,
                 ));
             }
-            active_bound = Some((position, bound));
+            active_bound = Some((position, bound, is_minimum));
         }
         bounds.push((minimum, maximum));
     }
 
-    let Some((active_position, frozen_bound)) = active_bound else {
+    let Some((active_position, frozen_bound, active_is_minimum)) = active_bound else {
         return Ok(allocations);
     };
-    if allocations.len() != 2
-        || !frozen_bound.is_finite()
-        || frozen_bound < 0.0
-        || frozen_bound > remaining
-    {
+    if allocations.len() != 2 || !frozen_bound.is_finite() || frozen_bound < 0.0 {
         return Err(DefiniteLayoutError::unsupported(
             first_occurrence,
             DefiniteLayoutUnsupported::StackMainFill,
@@ -2108,7 +2106,17 @@ fn stack_main_fill_allocations(
             DefiniteLayoutUnsupported::StackMainFill,
         ));
     }
-    let unfrozen_share = remaining - frozen_bound;
+    let unfrozen_share = if frozen_bound > remaining {
+        if !active_is_minimum {
+            return Err(DefiniteLayoutError::unsupported(
+                first_occurrence,
+                DefiniteLayoutUnsupported::StackMainFill,
+            ));
+        }
+        0.0
+    } else {
+        remaining - frozen_bound
+    };
     if !unfrozen_share.is_finite() || unfrozen_share < 0.0 {
         return Err(DefiniteLayoutError::unsupported(
             first_occurrence,

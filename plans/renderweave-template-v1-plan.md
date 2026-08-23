@@ -2214,3 +2214,48 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
   26 files/212 tests、runtime canary、23 passed + 1 controlled skip Playwright、browser journeys 与最终
   inference replay E2E 1/1 均通过。R0/R1/P0 provider attempts=0，P0 API Key reads/reservations/cost=0；Profile
   仍 `NOT_REGISTERED`、certification `NOT_CERTIFIED`、Raster `ABSENT`、daemon `UNWIRED`，未推进 A3/J1/READY。
+
+## 69. TV1-T70 执行卡
+
+- 决策：T69 以 verified commit `1c90b17` 收口且 worktree clean 后，复算 Ticket 10 §3/§7、
+  `RW-T10-S3-012..016`、`RW-T10-S7-004..012` 与 13 个 unsupported cases。五个 rotation/error-order、四个
+  resource-dependent 与一个 compositionViewport 仍依赖未冻结 tolerance、资源执行身份或 scene；剩余三个
+  Stack cases 中，single min > remaining 可直接应用“min 总和超空间时允许 overflow”且只有一个未冻结项，
+  比 second freeze 与 three-FILL redistribution 更窄，因此登记为当前 single-writer frontier。
+- Interface/seam：只深化 T69 `stack_main_fill_allocations`；public API、admission/preflight、
+  `StackChildMeasurement`、arrange、authored DFS first-error 与全有或全无 output 不变。Rust/Python 使用独立
+  控制流但共享冻结 vectors。
+- 精确语义：只接受恰好两个 main FILL、恰好一个 active min、另一项 owning-axis min/max 均 absent，且
+  frozen min finite、非负并严格 `> remaining`。active child 取 min，唯一未冻结项取正零；不执行负 subtraction、
+  division 或下一轮。occupied 可 overflow，既有 free-space floor-zero 使 justify extra 为零。
+- 允许影响：T70 tracker/plan/NOTES、layout Rust module/tests、shared definite-layout vector `/33`、Python
+  independent verifier、render gate identity/assertions/evidence。
+- 禁止影响：other-bound cascading/second freeze、三个及以上 FILL redistribution、多 active、一般多轮 water
+  filling、epsilon/tolerance/public numeric error、HUG-main FILL cycle、rows→columns、任意非直角 rotation、
+  Text/Image/compositionViewport、resource fetch/decode、scene/raster/JPEG、daemon RESULT/Profile、Java/
+  OpenAPI/migration/Web/route、J1/A3/READY 与外部副作用。
+- TDD：现有 min-overflow negative 转 positive，新增 active-first、COLUMN、cross-HUG remeasure 与
+  initial-remaining-zero positives；shared `/33` 先共同 RED，目标 144 laid-out + 12 unsupported、156 cases/
+  470 checks，fixture `/3` bytes 不变。
+- 验证：focused Rust/Python、fmt、clippy `-D warnings`、workspace tests、`py_compile`、JSON inventory/SHA/unique、
+  `git diff --check`；再依次 `render`、affected `fast`、顺序 `server`、Goal `full`、resolution `fast`。最高只可
+  `automated_verified`；不推进 A3/J1/READY，不 push/tag/PR，不运行 provider，不读取 API Key。
+
+### TV1-T70 resolution evidence
+
+- shared `/33` 的 Rust primary 与 Python independent verifier 先在同一首个转正 min-overflow case 共同 RED；
+  分别实现后达到 144 laid-out + 12 unsupported、156/156 cases、470 checks；vector SHA-256 为
+  `478624aa567fb559364c8117a1ab55a9f1b0a7a673c8e5a00be17de18b5ddce2`，fixture `/3` SHA-256 保持
+  `a11475bcebad7e1c35cb0acd7018419d94afcb4b37d7f1df7346a055ad1df669`。
+- `stack_main_fill_allocations` 保留 T69 within-remaining exact-remainder 路径；只对 exactly-two/one-active-min/
+  other-unbounded/min-strictly-over-remaining 执行一次 min freeze + positive-zero remainder。second freeze、
+  three-or-more FILL redistribution、multiple active 与 tolerance 继续 fail closed。
+- focused Rust 3/3、Python independent 156/156、workspace fmt/clippy/tests、`py_compile`、JSON inventory/SHA/
+  unique 与 `git diff --check` 全绿；分级证据为 `render` `.sdlc/evidence/20260823-110718-render/`、affected
+  `fast` `.sdlc/evidence/20260823-110800-fast/`、顺序 `server` `.sdlc/evidence/20260823-110816-server/` 与 Goal
+  `full` `.sdlc/evidence/20260823-112808-full/`；resolution 后 fast
+  `.sdlc/evidence/20260823-115754-fast/` 的 3 steps 也均 exit 0（A1，10.057 秒）。
+- full 17 steps 均 exit 0、总耗时 1631.439 秒；App 344 tests/0 failures/0 errors/15 skipped，Node 24 Web
+  26 files/212 tests、runtime canary、23 passed + 1 controlled skip Playwright、browser journeys 与最终
+  inference replay E2E 1/1 均通过。R0/R1/P0 provider attempts=0，P0 API Key reads/reservations/cost=0；Profile
+  仍 `NOT_REGISTERED`、certification `NOT_CERTIFIED`、Raster `ABSENT`、daemon `UNWIRED`，未推进 A3/J1/READY。
