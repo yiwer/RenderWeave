@@ -2244,9 +2244,13 @@ fn stack_main_fill_allocations(
     let unfrozen_position = 1 - active_position;
     let (active_minimum, active_maximum) = bounds[active_position];
     let (unfrozen_minimum, unfrozen_maximum) = bounds[unfrozen_position];
+    let active_maximum_bound_shape_supported = match active_minimum {
+        None => true,
+        Some(minimum) => minimum.is_finite() && minimum >= 0.0 && minimum <= frozen_bound,
+    };
     if !active_is_minimum
-        && active_minimum.is_none()
         && active_maximum.is_some()
+        && active_maximum_bound_shape_supported
         && unfrozen_minimum.is_none()
         && frozen_bound <= remaining
         && let Some(unfrozen_maximum) = unfrozen_maximum

@@ -2236,6 +2236,59 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
 - 本状态更新后的 resolution `fast` `.sdlc/evidence/20260823-191642-fast/` 3 steps 也均 exit 0
   （A1，11.044 秒）。
 
+## 76. TV1-T77 执行卡
+
+- 决策：T76 以 verified commit `ccc57ab` 收口且 worktree clean 后，复算 Ticket 10 §3/§7、
+  `RW-T10-S3-012..016`、`RW-T10-S7-004..012` 与 16 个 remaining unsupported cases。rotation、rows→columns、
+  resource/composition/error-order 仍依赖关闭能力；六个 Stack cases 中，exactly-two mixed-bound second-max
+  case 的首个 child 仅在 max 上 active，其 min 在冻结前后都满足，另一 child 仍为 max-only。该路径可复用 T73
+  固定两次 max freeze + justify，不需要新 division、循环、overflow 或 tolerance，因此登记为当前 single-writer
+  frontier。
+- Interface/seam：只深化 T73 `stack_main_fill_allocations` 的 exactly-two/two-max branch；public API、admission/
+  preflight、`StackChildMeasurement`、arrange、authored DFS first-error 与全有或全无 output 不变。Rust/Python 使用
+  独立控制流但共享冻结 vectors。
+- 精确语义：恰好两个 main FILL；第一轮恰好一个 active bound，且该 child 的 finite/nonnegative
+  `min <= max`，share 严格高于 max；另一个 child max-only，第一轮 share 不高于 max。冻结 first max 后，唯一
+  offer 必须严格高于 second max，随后冻结 second max，正余量交给既有 justify。`min == max` 接受；不做第二轮
+  division、epsilon/tolerance 或一般循环。
+- 允许影响：T77 tracker/plan/NOTES、layout Rust module/tests、shared definite-layout vector `/40`、Python independent
+  verifier、render gate identity/assertions/evidence。
+- 禁止影响：mixed active-min、第二项 mixed、首轮多个 active、第二轮未严格超过 max、three-or-more cascade、
+  terminal bound、active min/max overflow、four-or-more active-bound FILL、一般多轮 water filling、epsilon/
+  tolerance/public numeric error、HUG-main FILL cycle、rows→columns、任意非直角 rotation、Text/Image/
+  compositionViewport、resource fetch/decode、scene/raster/JPEG、daemon RESULT/Profile、Java/OpenAPI/migration/Web/
+  route、J1/A3/READY 与外部副作用。
+- TDD：既有 mixed second-max negative 转 positive，新增 active-last、COLUMN、cross-HUG 与 `min == max`
+  positives，并新增 mixed active-min second-min negative。shared `/40` 先共同 RED，目标 177 laid-out +
+  16 unsupported、193 cases/577 checks，fixture `/3` bytes 不变。
+- 验证：focused Rust/Python、fmt、clippy `-D warnings`、workspace tests、`py_compile`、JSON inventory/SHA/unique、
+  `git diff --check`；再依次 `render`、affected `fast`、顺序 `server`、Goal `full`、resolution `fast`。最高只可
+  `automated_verified`；不推进 A3/J1/READY，不 push/tag/PR，不运行 provider，不读取 API Key。
+
+### TV1-T77 resolution evidence
+
+- shared `/40` 的 Rust primary 与 Python independent verifier 先在同一首个 mixed active-max second-max
+  转正 case 共同 RED，分别实现后达到 177 laid-out + 16 unsupported、193/193 cases、577 checks；vector
+  SHA-256 为 `75c36c665d033189afba36e1cbf0ca544015172c83c579736dacff5d9d449516`，fixture `/3` SHA-256
+  保持 `a11475bcebad7e1c35cb0acd7018419d94afcb4b37d7f1df7346a055ad1df669`。
+- `stack_main_fill_allocations` 仅对 exactly-two/first-mixed-active-max/second-max-only 子集执行固定两次 max
+  freeze，并把正余量交给既有 justify；能力值新增
+  `OR_EXACT_TWO_FILL_MIXED_ACTIVE_MAX_SECOND_MAX_FREEZE_FREE_JUSTIFY`。mixed active-min、第二项 mixed、
+  第二轮 division、循环、一般 water filling 与 epsilon/tolerance 继续 fail closed。
+- focused Rust 3/3、Python independent 193/193、workspace fmt/clippy `-D warnings`/tests、`py_compile`、JSON
+  inventory/SHA/unique 与 `git diff --check` 全绿；分级 A1 证据为 `render`
+  `.sdlc/evidence/20260823-192740-render/`（20.459 秒）、affected `fast`
+  `.sdlc/evidence/20260823-192810-fast/`（9.544 秒）、顺序 `server`
+  `.sdlc/evidence/20260823-192828-server/`（1181.649 秒）与 17-step `full`
+  `.sdlc/evidence/20260823-194822-full/`（1710.624 秒），全部 step 均 exit 0。
+- `full` 中 App 344 tests/0 failures/0 errors/15 skipped、Node 24 Web 26 files/212 tests、runtime canary、
+  23 passed + 1 controlled skip Playwright、prototype/Draft browser journeys 与 inference replay E2E 1/1
+  均通过。R0/R1/P0 provider attempts=0，P0 API Key reads/reservations/cost=0；Profile 仍
+  `NOT_REGISTERED`、certification `NOT_CERTIFIED`、world transform/scene/raster `ABSENT`、daemon output
+  `UNWIRED`，未推进 A3/J1/READY，未 push/tag/PR。
+- 本状态更新后的 resolution `fast` `.sdlc/evidence/20260823-201920-fast/` 3 steps 也均 exit 0
+  （A1，9.915 秒）。
+
 ## 66. TV1-T67 执行卡
 
 - 决策：T66 以 verified commit `a6fabe5` 收口且 worktree clean 后，复算原始 Ticket 10 §3/§7、

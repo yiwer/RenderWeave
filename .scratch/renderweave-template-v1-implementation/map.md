@@ -378,6 +378,11 @@ Label: wayfinder:map
   active，且末项 owning-axis 无界；第二次 freeze 后唯一无界项接收 exact remainder。shared `/39` 实际为
   172 laid-out + 16 unsupported、188/188 cases/562 checks，terminal bound、mixed、第三次 freeze 与一般 water filling
   保持 fail closed。
+- [实现 definite Stack 两 FILL mixed active-max 第二 max freeze 子闭包](issues/77-definite-stack-two-fill-mixed-active-max-second-max-freeze.md) —
+  **resolved / automated_verified**；只接受 exactly two、首轮唯一 active-max child 同时带合法且始终 inactive
+  的 min、另一项 max-only，固定两次 max freeze 后把正余量交给既有 justify。shared `/40` 实际为 177 laid-out +
+  16 unsupported、193 cases/577 checks；mixed active-min、第二项 mixed、多个 active 与一般 water filling 保持
+  fail closed。
 - [验证 Product Editor 状态、恢复与权威预览架构](issues/09-validate-product-editor-architecture.md) —
   throwaway 逻辑原型（`/prototype/editor-state-model`，不进产品 route）把冻结编辑器规则编码为确定性
   fixture 状态机：10 个引导走查场景 37/37 断言 + 自由操作冒烟 + 键盘焦点检查全部通过（Playwright A1，
