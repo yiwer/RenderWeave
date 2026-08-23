@@ -1,6 +1,25 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-24 **Template v1 implementation TV1-T80 已由 Codex `/root` single-writer 完成，状态
+  `resolved/automated_verified`**：exactly-three main FILL、首轮唯一 active max-only、第一次重分配后唯一
+  second max-only active，且唯一末项只携带 finite/nonnegative、在重分配 share 与 final exact remainder 下
+  始终 inactive 的 max-only bound 时，现复用固定两次 max freeze 并在提交前复核 terminal max；equality
+  接受，不新增 division、第三次 freeze、循环或 epsilon/tolerance。能力值新增
+  `OR_EXACT_THREE_FILL_SECOND_MAX_FREEZE_TERMINAL_INACTIVE_MAX`；shared `/43` Rust/Python 为
+  192 laid-out + 16 unsupported、208/208 cases、622 checks，vector SHA-256
+  `c2d23177f9ea1ca745c2e604aea673ba098ee08066e48dcbc72f9da225ddbbe3`，fixture `/3` SHA-256 保持
+  `a11475bcebad7e1c35cb0acd7018419d94afcb4b37d7f1df7346a055ad1df669`。`render`
+  `.sdlc/evidence/20260823-233336-render/`（20.190 秒）、affected `fast`
+  `.sdlc/evidence/20260823-233405-fast/`（12.343 秒）、顺序 `server`
+  `.sdlc/evidence/20260823-233424-server/`（1189.469 秒）与 17-step `full`
+  `.sdlc/evidence/20260823-235429-full/`（1786.332 秒）均 exit 0；full 独立 verifier identity 为
+  `renderweave-definite-layout-python-independent/43`，App 344 tests/0 failures/0 errors/15 skipped、Node 24 Web
+  26 files/212 tests、runtime canary、23 passed + 1 controlled skip Playwright、prototype/Draft browser journeys
+  与 inference replay E2E 1/1 均通过。R0/R1/P0 provider attempts=0，P0 API Key reads/reservations/cost=0。
+  resolution `fast` `.sdlc/evidence/20260824-002615-fast/` 的 3 steps 也均 exit 0（A1，10.511 秒）。
+  terminal mixed/active max、多个 active、four-or-more、第三次 freeze 与一般 water filling 继续 fail closed；
+  未推进 Profile/A3/J1/READY，未 push/tag/PR。
 - 2026-08-23 **Template v1 implementation TV1-T79 已由 Codex `/root` single-writer 完成，状态
   `resolved/automated_verified`**：exactly-three main FILL、首轮唯一 active max-only、第一次重分配后唯一
   second max-only active，且唯一末项只携带 finite/nonnegative、在重分配与 final exact remainder 下始终

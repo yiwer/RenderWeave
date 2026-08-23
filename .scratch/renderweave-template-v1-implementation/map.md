@@ -391,6 +391,10 @@ Label: wayfinder:map
   **resolved / automated_verified**；只接受 exactly three、固定两次 max freeze 后唯一末项携带 finite/nonnegative
   且始终 inactive 的 min-only bound。shared `/42` 实际为 187 laid-out + 16 unsupported、203 cases/607 checks；
   terminal max/mixed、多个 active、四项及以上与一般 water filling 保持 fail closed。
+- [实现 definite Stack 三 FILL 第二 max freeze 末项 inactive max 子闭包](issues/80-definite-stack-three-fill-second-max-terminal-max.md) —
+  **resolved / automated_verified**；只接受 exactly three、固定两次 max freeze 后唯一末项携带 finite/nonnegative、
+  在重分配 share 与 final exact remainder 下均 inactive 的 max-only bound。shared `/43` 实际为 192 laid-out + 16
+  unsupported、208 cases/622 checks；terminal mixed/active max、第三次 freeze 与一般 water filling 保持 fail closed。
 - [验证 Product Editor 状态、恢复与权威预览架构](issues/09-validate-product-editor-architecture.md) —
   throwaway 逻辑原型（`/prototype/editor-state-model`，不进产品 route）把冻结编辑器规则编码为确定性
   fixture 状态机：10 个引导走查场景 37/37 断言 + 自由操作冒烟 + 键盘焦点检查全部通过（Playwright A1，

@@ -2202,13 +2202,16 @@ fn stack_main_fill_allocations(
                 && second_maximum.is_some()
                 && allocations[second_active_position].1 <= second_frozen_bound;
             let (last_minimum, last_maximum) = bounds[last_position];
-            let terminal_bound_shape_supported = last_maximum.is_none()
-                && match last_minimum {
-                    None => true,
-                    Some(minimum) => {
-                        matching_maximum_freezes && minimum.is_finite() && minimum >= 0.0
-                    }
-                };
+            let terminal_bound_shape_supported = match (last_minimum, last_maximum) {
+                (None, None) => true,
+                (Some(minimum), None) => {
+                    matching_maximum_freezes && minimum.is_finite() && minimum >= 0.0
+                }
+                (None, Some(maximum)) => {
+                    matching_maximum_freezes && maximum.is_finite() && maximum >= 0.0
+                }
+                (Some(_), Some(_)) => false,
+            };
             if (!matching_minimum_freezes && !matching_maximum_freezes)
                 || !terminal_bound_shape_supported
                 || second_frozen_bound > redistributed_remaining
@@ -2222,6 +2225,7 @@ fn stack_main_fill_allocations(
             if !last_share.is_finite()
                 || last_share < 0.0
                 || last_minimum.is_some_and(|minimum| last_share < minimum)
+                || last_maximum.is_some_and(|maximum| last_share > maximum)
             {
                 return Err(DefiniteLayoutError::unsupported(
                     first_occurrence,

@@ -2395,6 +2395,60 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
 - 本状态更新后的 resolution `fast` `.sdlc/evidence/20260823-222807-fast/` 3 steps 均 exit 0
   （A1，12.410 秒）。
 
+## 79. TV1-T80 执行卡
+
+- 决策：T79 以 verified commit `78681c1` 收口且 worktree clean 后，复算 Ticket 10 §3/§7、
+  `RW-T10-S3-012..016`、`RW-T10-S7-004..012` 与 16 个 remaining unsupported cases。rotation、rows→columns、
+  resource/composition/error-order 仍依赖关闭能力；六个 Stack cases 中，three-FILL second-max terminal-max
+  case 仍位于 T76/T79 同一固定两次 max-freeze 分支，只需复核 final exact remainder 未越过末项 max，既不
+  新增 division/freeze/overflow，也不扩大 FILL 数量，因此登记为当前 single-writer frontier。
+- Interface/seam：只深化 T79 `stack_main_fill_allocations` 的 exactly-three/second-max branch；public API、
+  admission/preflight、`StackChildMeasurement`、arrange、authored DFS first-error 与全有或全无 output 不变。
+  Rust/Python 使用独立控制流但共享冻结 vectors。
+- 精确语义：恰好三个 main FILL；首轮唯一 active max-only，第一次重分配后唯一 second max-only active，最后
+  一项仅携带 finite/nonnegative max-only，且在重分配 share 下 inactive。第二次 freeze 后复用既有 exact
+  remainder，只有 final share 不高于 terminal max 才提交，equality 接受；不新增 division、第三次 freeze、
+  free-space/justify 特判、循环或 tolerance。
+- 允许影响：T80 tracker/plan/NOTES、layout Rust module/tests、shared definite-layout vector `/43`、Python
+  independent verifier、render gate identity/assertions/evidence。
+- 禁止影响：terminal mixed/active max、首轮多个 active、重分配后多个 active、首个 active min、second
+  min/mixed、active-min overflow、second-min sum overflow、four-or-more active-bound FILL、第三次 freeze、一般
+  多轮 water filling、epsilon/tolerance/public numeric error、HUG-main FILL cycle、rows→columns、任意非直角
+  rotation、Text/Image/compositionViewport、resource fetch/decode、scene/raster/JPEG、daemon RESULT/Profile、
+  Java/OpenAPI/migration/Web/route、J1/A3/READY 与外部副作用。
+- TDD：保留 T79 五个 terminal-min positives；新增 active-first、active-middle、active-last、COLUMN 与 cross-HUG
+  terminal inactive-max positives，把既有 terminal-max negative 转 positive并新增 final remainder 越过 max 的
+  negative。能力值新增 `OR_EXACT_THREE_FILL_SECOND_MAX_FREEZE_TERMINAL_INACTIVE_MAX`；shared `/43` 先共同
+  RED，目标 192 laid-out + 16 unsupported、208 cases/622 checks，fixture `/3` bytes 不变。
+- 验证：focused Rust/Python、fmt、clippy `-D warnings`、workspace tests、`py_compile`、JSON inventory/SHA/unique、
+  `git diff --check`；再依次 `render`、affected `fast`、顺序 `server`、Goal `full`、resolution `fast`。最高只可
+  `automated_verified`；不推进 A3/J1/READY，不 push/tag/PR，不运行 provider，不读取 API Key。
+
+### T80 resolution evidence
+
+- shared `/43` 的 Rust primary 与 Python independent verifier 先在同一首个 terminal inactive-max 转正 case、
+  同一 `STACK_MAIN_FILL` occurrence 共同 RED，分别实现后达到 192 laid-out + 16 unsupported、208/208 cases、
+  622 checks；vector SHA-256 为 `c2d23177f9ea1ca745c2e604aea673ba098ee08066e48dcbc72f9da225ddbbe3`，
+  fixture `/3` SHA-256 保持 `a11475bcebad7e1c35cb0acd7018419d94afcb4b37d7f1df7346a055ad1df669`。
+- `stack_main_fill_allocations` 仅在 exactly-three、固定两次 max freeze、terminal max-only 在重分配 share 与
+  final exact remainder 下均 inactive 时提交，equality 接受；能力值新增
+  `OR_EXACT_THREE_FILL_SECOND_MAX_FREEZE_TERMINAL_INACTIVE_MAX`。terminal mixed/active max、第三次 freeze、
+  一般循环与 tolerance 均未开放。
+- focused Rust exact-vector 1/1、Python independent 208/208、workspace fmt/clippy `-D warnings`/tests、
+  `py_compile`、JSON inventory/SHA/unique 与 `git diff --check` 全绿；A1 证据为 `render`
+  `.sdlc/evidence/20260823-233336-render/`（20.190 秒）、affected `fast`
+  `.sdlc/evidence/20260823-233405-fast/`（12.343 秒）、顺序 `server`
+  `.sdlc/evidence/20260823-233424-server/`（1189.469 秒）与 17-step `full`
+  `.sdlc/evidence/20260823-235429-full/`（1786.332 秒），均 exit 0。
+- 本状态更新后的 resolution `fast` `.sdlc/evidence/20260824-002615-fast/` 的 3 steps 也均 exit 0
+  （A1，10.511 秒）。
+- `full` 独立 verifier identity 为 `renderweave-definite-layout-python-independent/43`；App 344 tests/0
+  failures/0 errors/15 skipped、Node 24 Web 26 files/212 tests、runtime canary、23 passed + 1 controlled skip
+  Playwright、prototype/Draft browser journeys 与 inference replay E2E 1/1 均通过；R0/R1/P0 provider
+  attempts=0，P0 API Key reads/reservations/cost=0。
+- 诚实边界保持 Profile `NOT_REGISTERED`、certification `NOT_CERTIFIED`、world transform/scene/raster `ABSENT`、
+  daemon output `UNWIRED`；未推进 A3/J1/READY，未 push/tag/PR。
+
 ## 66. TV1-T67 执行卡
 
 - 决策：T66 以 verified commit `a6fabe5` 收口且 worktree clean 后，复算原始 Ticket 10 §3/§7、
