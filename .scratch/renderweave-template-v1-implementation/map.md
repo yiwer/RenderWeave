@@ -364,6 +364,10 @@ Label: wayfinder:map
   严格高于另一 authored max，最终两项取 max，并把 `maxSum < remaining` 的正余量交给既有 justify；shared `/36`
   为 157 laid-out + 17 unsupported、174/174 cases/519 checks，mixed、three-or-more cascade 与一般 water filling
   保持 fail closed。
+- [实现 definite Stack 三 FILL 重分配后 inactive bound 子闭包](issues/74-definite-stack-three-fill-post-redistribution-inactive-bounds.md) —
+  **resolved / automated_verified**；只接受 exactly three、首轮唯一 active bound、另外两项可带 optional bound，
+  且一次 stable 重分配后的两个 share 仍全部满足各自 min/max；shared `/37` 为 162 laid-out + 16 unsupported、
+  178/178 cases/532 checks，第二次 freeze、四项及以上与一般 water filling 保持 fail closed。
 - [验证 Product Editor 状态、恢复与权威预览架构](issues/09-validate-product-editor-architecture.md) —
   throwaway 逻辑原型（`/prototype/editor-state-model`，不进产品 route）把冻结编辑器规则编码为确定性
   fixture 状态机：10 个引导走查场景 37/37 断言 + 自由操作冒烟 + 键盘焦点检查全部通过（Playwright A1，
@@ -486,7 +490,9 @@ Label: wayfinder:map
   （Rust/Python 164/164、491 checks）；T72 已完成 exactly-two、两项 min-only、第二次 freeze 后 min-sum
   overflow 的固定两轮退化路径（Rust/Python 169/169、505 checks）；T73 已完成 exactly-two、两项 max-only、
   第二次 freeze 后保留正 free space 给 justify 的固定两轮退化路径（Rust/Python 174/174、519 checks）；
-  其余非直角 rotation、mixed second freeze、three-FILL 的 second freeze/overflow、four-or-more active-bound FILL、
+  T74 已完成 exactly-three、首轮唯一 active bound、另外两项 bound 在一次重分配后仍 inactive 的复核终止路径
+  （Rust/Python 178/178、532 checks）；其余非直角 rotation、mixed second freeze、three-FILL 的 second
+  freeze/overflow、four-or-more active-bound FILL、
   一般 active-bound Stack water filling、
   general constraint、actual resource fetch+decode/world scene/raster/
   JPEG/Engine 接线仍须另行登记，物理 Linux 双 CPU-family

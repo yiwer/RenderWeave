@@ -2073,6 +2073,28 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
   `git diff --check`；再依次 `render`、affected `fast`、顺序 `server`、Goal `full`、resolution `fast`。最高只可
   `automated_verified`；不推进 A3/J1/READY，不 push/tag/PR，不运行 provider，不读取 API Key。
 
+### TV1-T74 resolution evidence
+
+- shared `/37` 共同 RED 后，Rust primary 与 Python independent verifier 分别实现并达到 162 laid-out +
+  16 unsupported、178/178 cases、532 checks；vector SHA-256 为
+  `d864606199a87879c618e110ac439308c53eb8ec63e8cd85de6245c0736e9138`，fixture `/3` SHA-256 保持
+  `a11475bcebad7e1c35cb0acd7018419d94afcb4b37d7f1df7346a055ad1df669`。
+- `stack_main_fill_allocations` 只对 exactly-three/one-first-active-bound/other-two-post-redistribution-inactive
+  执行一次 freeze、stable weighted-share/exact-remainder redistribution 与严格 bound 复核；不执行第二次
+  freeze、division loop、epsilon/tolerance 或一般 water filling。重分配后任一 active bound 继续 fail closed。
+- focused Rust 3/3、Python independent 178/178、workspace fmt/clippy `-D warnings`/tests、`py_compile`、JSON
+  inventory/SHA/unique 与 `git diff --check` 全绿；分级 A1 证据为 `render`
+  `.sdlc/evidence/20260823-155209-render/`（22.619 秒）、affected `fast`
+  `.sdlc/evidence/20260823-155240-fast/`（10.020 秒）、顺序 `server`
+  `.sdlc/evidence/20260823-155256-server/`（1137.272 秒）与 17-step `full`
+  `.sdlc/evidence/20260823-161201-full/`（1714.113 秒），全部 exit 0。
+- `full` 中 App 344 tests/0 failures/0 errors/15 skipped、Node 24 Web 26 files/212 tests、runtime canary、
+  23 passed + 1 controlled skip Playwright、browser journeys 与 inference replay E2E 1/1 均通过；R0/R1/P0
+  provider attempts=0，P0 API Key reads/reservations/cost=0。Profile `NOT_REGISTERED`、certification
+  `NOT_CERTIFIED`、world transform/scene/raster `ABSENT`、daemon output `UNWIRED`，未推进 A3/J1/READY。
+- 本状态更新后的 resolution `fast` `.sdlc/evidence/20260823-164256-fast/` 3 steps 也均 exit 0
+  （A1，9.949 秒）。
+
 - Resolution evidence：shared `/30` Rust/Python 从同一首个转正 case 共同 RED 后达到 131 laid-out + 11
   unsupported、142/142 cases/429 checks exact-bit GREEN；vector SHA-256
   `af92241729657fc2cd1170c86e1d09903284fcaea69c83bb69784cdde6dd3b33`，fixture `/3` SHA-256 保持
@@ -2404,3 +2426,30 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
   `NOT_CERTIFIED`、world transform/scene/raster `ABSENT`、daemon output `UNWIRED`，未推进 A3/J1/READY。
 - 本状态更新后的 resolution `fast` `.sdlc/evidence/20260823-154131-fast/` 3 steps 也均 exit 0
   （A1，12.359 秒）。
+
+## 73. TV1-T74 执行卡
+
+- 决策：T73 以 verified commit `7eb9259` 收口且 worktree clean 后，复算 Ticket 10 §3/§7、
+  `RW-T10-S3-012..016`、`RW-T10-S7-004..012` 与 17 个 remaining unsupported cases。rotation、rows→columns、
+  resource/composition/error-order 仍依赖关闭能力；Stack cases 中，exactly-three、首轮唯一 active bound，且另外
+  两项 bound 在一次重分配后仍 inactive 的 case 只需复核后终止，无需第二次 freeze、residual tolerance 或一般
+  N 项循环，因此登记为当前 single-writer frontier。
+- Interface/seam：只深化 T71 `stack_main_fill_allocations` 的 exactly-three branch；public API、admission/
+  preflight、`StackChildMeasurement`、arrange、authored DFS first-error 与全有或全无 output 不变。Rust/Python 使用
+  独立控制流但共享冻结 vectors。
+- 精确语义：恰好三个 main FILL、第一轮恰好一个 finite/nonnegative active min/max 且 frozen bound 不大于
+  remaining；冻结后对另外两项按原 positive fillWeight/authored order 做一次 weighted share + exact remainder，
+  随后只在两项新 share 均满足 optional `min <= share <= max`（equality 接受）时成功。任一新 active bound 继续
+  `STACK_MAIN_FILL` fail closed，不做第二次 freeze/division loop/epsilon/tolerance。
+- 允许影响：T74 tracker/plan/NOTES、layout Rust module/tests、shared definite-layout vector `/37`、Python independent
+  verifier、render gate identity/assertions/evidence。
+- 禁止影响：首轮多个 active、重分配后 active bound、active min overflow、four-or-more active-bound FILL、一般
+  多轮 water filling、epsilon/tolerance/public numeric error、HUG-main FILL cycle、rows→columns、任意非直角
+  rotation、Text/Image/compositionViewport、resource fetch/decode、scene/raster/JPEG、daemon RESULT/Profile、
+  Java/OpenAPI/migration/Web/route、J1/A3/READY 与外部副作用。
+- TDD：既有 unfrozen-inactive-bound negative 转 positive，新增 active-middle、active-last、COLUMN 与 cross-HUG
+  positives；既有 second-min/second-max negatives 保持不变。shared `/37` 先共同 RED，目标 162 laid-out +
+  16 unsupported、178 cases/532 checks，fixture `/3` bytes 不变。
+- 验证：focused Rust/Python、fmt、clippy `-D warnings`、workspace tests、`py_compile`、JSON inventory/SHA/unique、
+  `git diff --check`；再依次 `render`、affected `fast`、顺序 `server`、Goal `full`、resolution `fast`。最高只可
+  `automated_verified`；不推进 A3/J1/READY，不 push/tag/PR，不运行 provider，不读取 API Key。

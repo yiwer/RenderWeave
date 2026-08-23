@@ -2108,15 +2108,9 @@ fn stack_main_fill_allocations(
             ));
         }
         let mut unfrozen_positions = Vec::with_capacity(2);
-        for (position, &(minimum, maximum)) in bounds.iter().enumerate() {
+        for position in 0..bounds.len() {
             if position == active_position {
                 continue;
-            }
-            if minimum.is_some() || maximum.is_some() {
-                return Err(DefiniteLayoutError::unsupported(
-                    first_occurrence,
-                    DefiniteLayoutUnsupported::StackMainFill,
-                ));
             }
             unfrozen_positions.push(position);
         }
@@ -2145,6 +2139,20 @@ fn stack_main_fill_allocations(
                 first_occurrence,
                 DefiniteLayoutUnsupported::StackMainFill,
             ));
+        }
+        for (position, share) in [
+            (unfrozen_positions[0], first_share),
+            (unfrozen_positions[1], second_share),
+        ] {
+            let (minimum, maximum) = bounds[position];
+            if minimum.is_some_and(|bound| !bound.is_finite() || bound < 0.0 || share < bound)
+                || maximum.is_some_and(|bound| !bound.is_finite() || bound < 0.0 || share > bound)
+            {
+                return Err(DefiniteLayoutError::unsupported(
+                    first_occurrence,
+                    DefiniteLayoutUnsupported::StackMainFill,
+                ));
+            }
         }
         allocations[active_position].1 = if frozen_bound > 0.0 {
             frozen_bound
