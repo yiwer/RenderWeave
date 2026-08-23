@@ -2169,6 +2169,37 @@ fn stack_main_fill_allocations(
     let unfrozen_position = 1 - active_position;
     let (active_minimum, active_maximum) = bounds[active_position];
     let (unfrozen_minimum, unfrozen_maximum) = bounds[unfrozen_position];
+    if !active_is_minimum
+        && active_minimum.is_none()
+        && active_maximum.is_some()
+        && unfrozen_minimum.is_none()
+        && frozen_bound <= remaining
+        && let Some(unfrozen_maximum) = unfrozen_maximum
+        && unfrozen_maximum.is_finite()
+        && unfrozen_maximum >= 0.0
+        && allocations[unfrozen_position].1 <= unfrozen_maximum
+    {
+        let unfrozen_offer = remaining - frozen_bound;
+        if !unfrozen_offer.is_finite() || unfrozen_offer < 0.0 {
+            return Err(DefiniteLayoutError::unsupported(
+                first_occurrence,
+                DefiniteLayoutUnsupported::StackMainFill,
+            ));
+        }
+        if unfrozen_offer > unfrozen_maximum {
+            allocations[active_position].1 = if frozen_bound > 0.0 {
+                frozen_bound
+            } else {
+                0.0
+            };
+            allocations[unfrozen_position].1 = if unfrozen_maximum > 0.0 {
+                unfrozen_maximum
+            } else {
+                0.0
+            };
+            return Ok(allocations);
+        }
+    }
     if active_is_minimum
         && active_minimum.is_some()
         && active_maximum.is_none()
