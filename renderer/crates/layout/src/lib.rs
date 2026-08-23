@@ -2103,6 +2103,7 @@ fn stack_main_fill_allocations(
     if allocations.len() == 3 {
         if frozen_bound > remaining {
             let mut inactive_unfrozen_max_count = 0;
+            let mut second_minimum_freeze = None;
             let mut unfrozen_overflow_bound_shape_supported = true;
             for (position, &(unfrozen_minimum, unfrozen_maximum)) in bounds.iter().enumerate() {
                 if position == active_position {
@@ -2117,13 +2118,26 @@ fn stack_main_fill_allocations(
                     {
                         inactive_unfrozen_max_count += 1;
                     }
+                    (Some(minimum), None)
+                        if minimum.is_finite()
+                            && minimum > 0.0
+                            && allocations[position].1 >= minimum
+                            && second_minimum_freeze.is_none() =>
+                    {
+                        second_minimum_freeze = Some((position, minimum));
+                    }
                     _ => {
                         unfrozen_overflow_bound_shape_supported = false;
                         break;
                     }
                 }
             }
-            if inactive_unfrozen_max_count > 1 {
+            let inactive_max_shape_supported =
+                second_minimum_freeze.is_none() && inactive_unfrozen_max_count <= 1;
+            let second_minimum_shape_supported = second_minimum_freeze.is_some()
+                && inactive_unfrozen_max_count == 0
+                && maximum.is_some();
+            if !inactive_max_shape_supported && !second_minimum_shape_supported {
                 unfrozen_overflow_bound_shape_supported = false;
             }
             let active_minimum_overflow_bound_shape_supported = active_is_minimum
@@ -2157,6 +2171,9 @@ fn stack_main_fill_allocations(
             } else {
                 0.0
             };
+            if let Some((second_position, second_minimum)) = second_minimum_freeze {
+                allocations[second_position].1 = second_minimum;
+            }
             return Ok(allocations);
         }
         let mut unfrozen_positions = Vec::with_capacity(2);

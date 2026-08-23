@@ -2712,6 +2712,62 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
 - 本状态更新后的 resolution `fast` `.sdlc/evidence/20260824-053557-fast/` 的 3 steps 也均 exit 0
   （A1，9.689 秒）。
 
+## 85. TV1-T86 执行卡
+
+- 决策：T85 以 verified commit `ca2f1c7` 收口且 worktree clean 后，复算 Ticket 10 §3/§7、
+  `RW-T10-S3-012..016`、`RW-T10-S7-004..012` 与 16 个 remaining unsupported cases。rotation、rows→columns、
+  resource/composition/error-order 仍依赖关闭能力；六个 Stack cases 中，T85 replacement negative 的首个 mixed
+  active min 已严格大于 remaining，另一个 positive min-only 只在终止正零下 active，可直接复用 T83 固定两次
+  min freeze + overflow，且不新增 division、redistribution、第三次 freeze、循环或 tolerance，因此登记为当前
+  single-writer frontier。
+- Interface/seam：只深化 T85 `stack_main_fill_allocations` 的 exactly-three/mixed-min-overflow 入口；public API、
+  admission/preflight、`StackChildMeasurement`、arrange、authored DFS first-error 与全有或全无 output 不变。
+  Rust/Python 使用独立控制流但共享冻结 vectors。
+- 精确语义：恰好三个 main FILL；首轮唯一 active finite/nonnegative min，active child 同时携带合法 finite/
+  nonnegative max 且 `min <= max`，first min 严格大于 remaining；另外两项中恰好一项只携带 finite positive
+  min-only，初始 share 不低于 second min，另一项 bound 全 absent。按 authored position 提交
+  `firstMin/secondMin/0`；不算负 residual 或 post-overflow share，不执行 redistribution、第三次 freeze、循环或
+  tolerance，初始 `share == secondMin` 接受。
+- 允许影响：T86 tracker/plan/NOTES、layout Rust module/tests、shared definite-layout vector `/49`、Python
+  independent verifier、render gate identity/assertions/evidence。
+- 禁止影响：second min 为零/负/非 finite、second mixed/max-only、两个额外 bounded children、第三个 min、首轮
+  多个 active、active child 非 mixed 或 min 不大于 remaining、post-overflow redistribution、第三次 freeze/cascade、
+  four-or-more active-bound FILL、一般多轮 water filling、epsilon/tolerance/public numeric error、HUG-main FILL
+  cycle、rows→columns、任意非直角 rotation、Text/Image/compositionViewport、resource fetch/decode、scene/raster/
+  JPEG、daemon RESULT/Profile、Java/OpenAPI/migration/Web/route、J1/A3/READY 与外部副作用。
+- TDD：把 T85 replacement negative 转为 active-first positive，新增 active-middle、active-last（覆盖初始
+  `share == secondMin`）、COLUMN 与 cross-HUG positives，以 second min 同时携带合法 inactive max 的
+  second-mixed negative 替换。能力值新增
+  `OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_SECOND_MIN_FREEZE_OVERFLOW`；shared `/49` 先共同 RED，目标
+  222 laid-out + 16 unsupported、238 cases/712 checks，fixture `/3` bytes 不变。
+- 验证：focused Rust/Python、fmt、clippy `-D warnings`、workspace tests、`py_compile`、JSON inventory/SHA/unique、
+  `git diff --check`；再依次 `render`、affected `fast`、顺序 `server`、Goal `full`、resolution `fast`。最高只可
+  `automated_verified`；不推进 A3/J1/READY，不 push/tag/PR，不运行 provider，不读取 API Key。
+
+### TV1-T86 resolution evidence
+
+- shared `/49` 的 Rust primary 与 Python independent verifier 先在首个转正 case
+  `stack-three-main-fills-mixed-active-min-overflow-second-min-freeze-overflow`、同一 `STACK_MAIN_FILL` occurrence
+  `rwocc_0000000000000002` 共同 RED。首次实现后的 cross-HUG focused run 证明 fixture 可用主轴为 80pt，second
+  min 30 会形成两个首轮 active bound；只把该 vector 校正为 25（期望 `110/25/0`），未拓宽算法。Rust 首次
+  focused 命令误用 package `renderweave-layout` 后，已用正确的 `renderweave-renderer-layout` 重跑并捕获同位 RED。
+- Rust/Python 以严格独立控制流实现固定 second-min freeze；最终达到 222 laid-out + 16 unsupported、238/238
+  cases、712 checks。second-mixed replacement negative 保持 `STACK_MAIN_FILL` fail closed。vector SHA-256 为
+  `622167dd7bc74fc454600ac508b0072fd825717dbe8de5805d8c4d22a5cdd745`，fixture `/3` SHA-256 保持
+  `a11475bcebad7e1c35cb0acd7018419d94afcb4b37d7f1df7346a055ad1df669`。
+- focused Rust 1/1、Python 238/238、workspace fmt/check/clippy `-D warnings`/tests、`py_compile`、JSON
+  inventory/SHA/unique 与 `git diff --check` 全绿。分级 A1 证据为 `render`
+  `.sdlc/evidence/20260824-054717-render/`（19.440 秒）、affected `fast`
+  `.sdlc/evidence/20260824-054742-fast/`（15.960 秒）、顺序 `server`
+  `.sdlc/evidence/20260824-054805-server/`（1109.994 秒）与 17-step `full`
+  `.sdlc/evidence/20260824-060641-full/`（1679.041 秒），全部 exit 0。
+- full definite replay 为 238/238、712 checks；App 344/0/0/15、Node 24 Web 26 files/212 tests、runtime
+  canary、23 passed + 1 controlled skip Playwright、prototype/Draft journeys 与 inference replay E2E 1/1 均通过。
+  R0/R1/P0 provider attempts=0，P0 API Key reads/reservations/cost=0；R1 A2 60 cases/58 metrics、J0，P0 A2
+  60 cases（20 holdout）/58 metrics。Profile/A3/J1/READY 未推进，未 push/tag/PR。
+- 本状态回填后的 resolution `fast` `.sdlc/evidence/20260824-063610-fast/` 的 3 steps 均 exit 0
+  （A1，12.951 秒）。
+
 ## 66. TV1-T67 执行卡
 
 - 决策：T66 以 verified commit `a6fabe5` 收口且 worktree clean 后，复算原始 Ticket 10 §3/§7、

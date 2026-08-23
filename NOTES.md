@@ -1,6 +1,24 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-24 **Template v1 implementation TV1-T86 已由 Codex `/root` single-writer 完成，状态
+  `resolved/automated_verified`**：exactly-three main FILL 的首个合法 mixed active min 严格大于 remaining、
+  另一个 finite positive min-only 在初始 share 下 inactive 而终止正零下 active 时，现固定按 authored position
+  提交 `firstMin/secondMin/0`，不计算负 residual 或开放 redistribution、第三次 freeze、循环/tolerance。shared
+  `/49` 的 Rust/Python 在首个转正 case、同一 `STACK_MAIN_FILL` occurrence `rwocc_0000000000000002` 共同 RED；
+  cross-HUG fixture 可用主轴 80pt 导致原 second min 30 产生两个首轮 active，故只把该 vector 校正为 25、期望
+  `110/25/0`，未拓宽实现。最终为 222 laid-out + 16 unsupported、238/238 cases、712 checks；second-mixed
+  replacement negative 继续 fail closed。vector SHA-256 `622167dd7bc74fc454600ac508b0072fd825717dbe8de5805d8c4d22a5cdd745`，
+  fixture `/3` SHA-256 保持 `a11475bcebad7e1c35cb0acd7018419d94afcb4b37d7f1df7346a055ad1df669`。`render`
+  `.sdlc/evidence/20260824-054717-render/`（19.440 秒）、affected `fast`
+  `.sdlc/evidence/20260824-054742-fast/`（15.960 秒）、顺序 `server`
+  `.sdlc/evidence/20260824-054805-server/`（1109.994 秒）与 17-step `full`
+  `.sdlc/evidence/20260824-060641-full/`（1679.041 秒）均 exit 0；full definite replay 238/238、712 checks，
+  App 344/0/0/15、Node 24 Web 26 files/212 tests、runtime canary、23 passed + 1 controlled skip Playwright、
+  prototype/Draft journeys 与 inference replay E2E 1/1 均通过。R0/R1/P0 provider attempts=0，P0 API Key
+  reads/reservations/cost=0；R1 A2 60 cases/58 metrics、J0，P0 A2 60 cases（20 holdout）/58 metrics。
+  resolution `fast` `.sdlc/evidence/20260824-063610-fast/` 的 3 steps 均 exit 0（A1，12.951 秒）。
+  Profile/A3/J1/READY 未推进，未运行 provider、读取 API Key 或发送真实数据，未 push/tag/PR。
 - 2026-08-24 **Template v1 implementation TV1-T85 已由 Codex `/root` single-writer 完成，状态
   `resolved/automated_verified`**：T84 exactly-three/mixed-active-min-overflow 的 `min/0/0` 路径现允许零或一个
   unfrozen child 携带在初始 proportional share 与终止正零下都 inactive 的 finite/nonnegative max-only bound，

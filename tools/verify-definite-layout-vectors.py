@@ -1525,27 +1525,52 @@ def stack_main_fill_allocations(
 
     if len(allocations) == 3:
         if frozen_bound > remaining:
-            inactive_unfrozen_maxima: list[float] = []
+            absent_unfrozen_positions: list[int] = []
+            inactive_unfrozen_maxima: list[tuple[int, float]] = []
+            second_minimum_candidates: list[tuple[int, float]] = []
             unfrozen_overflow_bound_shape_supported = True
             for position, (unfrozen_minimum, unfrozen_maximum) in enumerate(
                 bounds
             ):
                 if position == active_position:
                     continue
-                if unfrozen_minimum is not None:
-                    unfrozen_overflow_bound_shape_supported = False
-                    break
-                if unfrozen_maximum is None:
+                if unfrozen_minimum is None and unfrozen_maximum is None:
+                    absent_unfrozen_positions.append(position)
                     continue
-                if (
-                    not math.isfinite(unfrozen_maximum)
-                    or unfrozen_maximum < 0.0
-                    or allocations[position][1] > unfrozen_maximum
-                ):
-                    unfrozen_overflow_bound_shape_supported = False
-                    break
-                inactive_unfrozen_maxima.append(unfrozen_maximum)
-            if len(inactive_unfrozen_maxima) > 1:
+                if unfrozen_minimum is None and unfrozen_maximum is not None:
+                    if (
+                        not math.isfinite(unfrozen_maximum)
+                        or unfrozen_maximum < 0.0
+                        or allocations[position][1] > unfrozen_maximum
+                    ):
+                        unfrozen_overflow_bound_shape_supported = False
+                        break
+                    inactive_unfrozen_maxima.append((position, unfrozen_maximum))
+                    continue
+                if unfrozen_minimum is not None and unfrozen_maximum is None:
+                    if (
+                        not math.isfinite(unfrozen_minimum)
+                        or unfrozen_minimum <= 0.0
+                        or allocations[position][1] < unfrozen_minimum
+                    ):
+                        unfrozen_overflow_bound_shape_supported = False
+                        break
+                    second_minimum_candidates.append((position, unfrozen_minimum))
+                    continue
+                unfrozen_overflow_bound_shape_supported = False
+                break
+            inactive_max_shape_supported = (
+                not second_minimum_candidates
+                and len(inactive_unfrozen_maxima) <= 1
+                and len(absent_unfrozen_positions) + len(inactive_unfrozen_maxima) == 2
+            )
+            second_minimum_shape_supported = (
+                len(second_minimum_candidates) == 1
+                and not inactive_unfrozen_maxima
+                and len(absent_unfrozen_positions) == 1
+                and maximum is not None
+            )
+            if not inactive_max_shape_supported and not second_minimum_shape_supported:
                 unfrozen_overflow_bound_shape_supported = False
             active_minimum_overflow_bound_shape_supported = (
                 active_kind == "MIN"
@@ -1564,19 +1589,16 @@ def stack_main_fill_allocations(
                 or not unfrozen_overflow_bound_shape_supported
             ):
                 raise Unsupported("STACK_MAIN_FILL", first_occurrence)
-            allocations[0] = (
-                allocations[0][0],
-                frozen_bound if active_position == 0 else 0.0,
-            )
-            allocations[1] = (
-                allocations[1][0],
-                frozen_bound if active_position == 1 else 0.0,
-            )
-            allocations[2] = (
-                allocations[2][0],
-                frozen_bound if active_position == 2 else 0.0,
-            )
-            return allocations
+            second_minimum_by_position = dict(second_minimum_candidates)
+            return [
+                (
+                    fill_index,
+                    frozen_bound
+                    if position == active_position
+                    else second_minimum_by_position.get(position, 0.0),
+                )
+                for position, (fill_index, _) in enumerate(allocations)
+            ]
         unfrozen_positions = [
             position for position in range(3) if position != active_position
         ]
@@ -2981,7 +3003,7 @@ def verify(
         "vector manifest",
     )
     verifier.require(
-        vectors["vectorVersion"] == "renderweave-definite-layout-vectors/48",
+        vectors["vectorVersion"] == "renderweave-definite-layout-vectors/49",
         "vector identity drifted",
     )
     authority = exact_members(
@@ -3034,7 +3056,7 @@ def verify(
     expected_boundary = {
         "profileAvailability": "NOT_REGISTERED",
         "certificationStatus": "NOT_CERTIFIED",
-        "layoutImplementation": "RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_SINGLE_AND_INACTIVE_BOUND_OR_EXACT_TWO_FILL_SINGLE_ACTIVE_BOUND_WITHIN_REMAINING_OR_SINGLE_ACTIVE_MIN_OVERFLOW_OR_EXACT_TWO_FILL_TWO_MIN_SECOND_FREEZE_OVERFLOW_OR_EXACT_TWO_FILL_MIXED_ACTIVE_MIN_SECOND_MIN_FREEZE_OVERFLOW_OR_EXACT_TWO_FILL_TWO_MAX_SECOND_FREEZE_FREE_JUSTIFY_OR_EXACT_TWO_FILL_MIXED_ACTIVE_MAX_SECOND_MAX_FREEZE_FREE_JUSTIFY_OR_EXACT_THREE_FILL_SINGLE_ACTIVE_BOUND_ONE_REDISTRIBUTION_OR_EXACT_THREE_FILL_POST_REDISTRIBUTION_INACTIVE_BOUNDS_OR_EXACT_THREE_FILL_SECOND_MIN_FREEZE_LAST_REMAINDER_OR_EXACT_THREE_FILL_SECOND_MAX_FREEZE_LAST_REMAINDER_OR_EXACT_THREE_FILL_SECOND_MAX_FREEZE_TERMINAL_INACTIVE_MIN_OR_EXACT_THREE_FILL_SECOND_MAX_FREEZE_TERMINAL_INACTIVE_MAX_OR_EXACT_THREE_FILL_THIRD_MAX_FREEZE_FREE_JUSTIFY_OR_EXACT_THREE_FILL_SINGLE_ACTIVE_MIN_OVERFLOW_OR_EXACT_THREE_FILL_SECOND_MIN_FREEZE_OVERFLOW_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_INACTIVE_UNFROZEN_MAX_MULTI_MAIN_FILL_AND_FIXED_SINGLE_FRACTION_INDEPENDENT_MULTI_AUTO_GRID_MULTI_AUTO_SPAN_STABLE_DEFICIT_GRID_DEFINITE_MULTI_FRACTION_LAST_REMAINDER_GRID_EMPTY_CONTAINER_STACK_HUG_GRID_AUTO_HUG_CONTRIBUTION_GRID_HUG_EXACT_QUARTER_TURN_AFFINE_FRAME_GROUP_HUG_FIXED_OPPOSITE_AXIS_CROSS_FILL_DEFINITE_ABSOLUTE_PARENT_OFFER_DEFINITE_STACK_CROSS_OUTER_OFFER_STACK_MAIN_FILL_CROSS_HUG_REMEASURE_NESTED_STACK_MAIN_OFFER_PROPAGATION_COLUMNS_FIRST_GRID_CELL_OUTER_OFFER_STACK_MAIN_OFFER_COLUMNS_FIRST_GRID_CROSS_HUG_ABSOLUTE_PARENT_OFFER_COLUMNS_FIRST_GRID_CROSS_HUG_GRID_CELL_OFFER_COLUMNS_FIRST_NESTED_GRID_CROSS_HUG_GRID_CELL_OFFER_STACK_MAIN_FIRST_CROSS_HUG_DIRECTION_CHANGING_STACK_CROSS_OFFER_MAIN_HUG_NESTED_STACK_RESOLVED_OPPOSITE_OFFER_RECURSION_COLUMNS_FIRST_GRID_TERMINAL_NORMALIZATION_BOX_KERNEL",
+        "layoutImplementation": "RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_SINGLE_AND_INACTIVE_BOUND_OR_EXACT_TWO_FILL_SINGLE_ACTIVE_BOUND_WITHIN_REMAINING_OR_SINGLE_ACTIVE_MIN_OVERFLOW_OR_EXACT_TWO_FILL_TWO_MIN_SECOND_FREEZE_OVERFLOW_OR_EXACT_TWO_FILL_MIXED_ACTIVE_MIN_SECOND_MIN_FREEZE_OVERFLOW_OR_EXACT_TWO_FILL_TWO_MAX_SECOND_FREEZE_FREE_JUSTIFY_OR_EXACT_TWO_FILL_MIXED_ACTIVE_MAX_SECOND_MAX_FREEZE_FREE_JUSTIFY_OR_EXACT_THREE_FILL_SINGLE_ACTIVE_BOUND_ONE_REDISTRIBUTION_OR_EXACT_THREE_FILL_POST_REDISTRIBUTION_INACTIVE_BOUNDS_OR_EXACT_THREE_FILL_SECOND_MIN_FREEZE_LAST_REMAINDER_OR_EXACT_THREE_FILL_SECOND_MAX_FREEZE_LAST_REMAINDER_OR_EXACT_THREE_FILL_SECOND_MAX_FREEZE_TERMINAL_INACTIVE_MIN_OR_EXACT_THREE_FILL_SECOND_MAX_FREEZE_TERMINAL_INACTIVE_MAX_OR_EXACT_THREE_FILL_THIRD_MAX_FREEZE_FREE_JUSTIFY_OR_EXACT_THREE_FILL_SINGLE_ACTIVE_MIN_OVERFLOW_OR_EXACT_THREE_FILL_SECOND_MIN_FREEZE_OVERFLOW_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_INACTIVE_UNFROZEN_MAX_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_SECOND_MIN_FREEZE_OVERFLOW_MULTI_MAIN_FILL_AND_FIXED_SINGLE_FRACTION_INDEPENDENT_MULTI_AUTO_GRID_MULTI_AUTO_SPAN_STABLE_DEFICIT_GRID_DEFINITE_MULTI_FRACTION_LAST_REMAINDER_GRID_EMPTY_CONTAINER_STACK_HUG_GRID_AUTO_HUG_CONTRIBUTION_GRID_HUG_EXACT_QUARTER_TURN_AFFINE_FRAME_GROUP_HUG_FIXED_OPPOSITE_AXIS_CROSS_FILL_DEFINITE_ABSOLUTE_PARENT_OFFER_DEFINITE_STACK_CROSS_OUTER_OFFER_STACK_MAIN_FILL_CROSS_HUG_REMEASURE_NESTED_STACK_MAIN_OFFER_PROPAGATION_COLUMNS_FIRST_GRID_CELL_OUTER_OFFER_STACK_MAIN_OFFER_COLUMNS_FIRST_GRID_CROSS_HUG_ABSOLUTE_PARENT_OFFER_COLUMNS_FIRST_GRID_CROSS_HUG_GRID_CELL_OFFER_COLUMNS_FIRST_NESTED_GRID_CROSS_HUG_GRID_CELL_OFFER_STACK_MAIN_FIRST_CROSS_HUG_DIRECTION_CHANGING_STACK_CROSS_OFFER_MAIN_HUG_NESTED_STACK_RESOLVED_OPPOSITE_OFFER_RECURSION_COLUMNS_FIRST_GRID_TERMINAL_NORMALIZATION_BOX_KERNEL",
         "worldTransformImplementation": "ABSENT",
         "sceneImplementation": "ABSENT",
         "rasterImplementation": "ABSENT",
@@ -3072,7 +3094,7 @@ def verify(
         == "renderweave-layout-preflight-fixtures/1",
         "layout preflight fixture identity drifted",
     )
-    verifier.require(len(vectors["laidOutCases"]) == 217, "laid-out case count drifted")
+    verifier.require(len(vectors["laidOutCases"]) == 222, "laid-out case count drifted")
     verifier.require(
         len(vectors["unsupportedCases"]) == 16,
         "unsupported case count drifted",
@@ -3122,7 +3144,7 @@ def verify(
             raise VerificationFailure(f"{case_id}: unsupported case produced a layout")
 
     return {
-        "verifier": "renderweave-definite-layout-python-independent/48",
+        "verifier": "renderweave-definite-layout-python-independent/49",
         "result": "PASS",
         "assurance": "A2",
         "laidOutCases": len(vectors["laidOutCases"]),
