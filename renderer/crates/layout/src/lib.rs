@@ -2238,6 +2238,19 @@ fn stack_main_fill_allocations(
                 }
                 (Some(_), Some(_)) => false,
             };
+            let second_minimum_overflows_remaining = matching_minimum_freezes
+                && last_minimum.is_none()
+                && last_maximum.is_none()
+                && second_frozen_bound > redistributed_remaining;
+            if second_minimum_overflows_remaining {
+                allocations[second_active_position].1 = if second_frozen_bound > 0.0 {
+                    second_frozen_bound
+                } else {
+                    0.0
+                };
+                allocations[last_position].1 = 0.0;
+                return Ok(allocations);
+            }
             if (!matching_minimum_freezes && !matching_maximum_freezes)
                 || !terminal_bound_shape_supported
                 || second_frozen_bound > redistributed_remaining
