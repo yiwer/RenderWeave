@@ -400,6 +400,10 @@ Label: wayfinder:map
   下 inactive、在 final exact remainder 下严格 active，并以第三次最终 max freeze 把剩余正空间交给既有 justify。
   shared `/44` 实际为 197 laid-out + 16 unsupported、213 cases/637 checks；terminal mixed、四项及一般循环保持
   fail closed。
+- [实现 definite Stack 三 FILL 单 min-overflow 子闭包](issues/82-definite-stack-three-fill-single-min-overflow.md) —
+  **resolved / automated_verified**；只接受 exactly three、首轮唯一 active finite/nonnegative min-only 严格大于
+  remaining、另两项 owning-axis 完全无 bound，并以 `min, 0, 0` authored-position 退化终止。shared `/45` 实际为 202
+  laid-out + 16 unsupported、218 cases/652 checks；mixed/unfrozen bound、多个 active 与一般循环保持 fail closed。
 - [验证 Product Editor 状态、恢复与权威预览架构](issues/09-validate-product-editor-architecture.md) —
   throwaway 逻辑原型（`/prototype/editor-state-model`，不进产品 route）把冻结编辑器规则编码为确定性
   fixture 状态机：10 个引导走查场景 37/37 断言 + 自由操作冒烟 + 键盘焦点检查全部通过（Playwright A1，
