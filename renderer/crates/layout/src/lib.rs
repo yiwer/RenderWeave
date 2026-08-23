@@ -2225,19 +2225,29 @@ fn stack_main_fill_allocations(
             if !last_share.is_finite()
                 || last_share < 0.0
                 || last_minimum.is_some_and(|minimum| last_share < minimum)
-                || last_maximum.is_some_and(|maximum| last_share > maximum)
             {
                 return Err(DefiniteLayoutError::unsupported(
                     first_occurrence,
                     DefiniteLayoutUnsupported::StackMainFill,
                 ));
             }
+            let last_allocation = if let Some(maximum) = last_maximum
+                && last_share > maximum
+            {
+                maximum
+            } else {
+                last_share
+            };
             allocations[second_active_position].1 = if second_frozen_bound > 0.0 {
                 second_frozen_bound
             } else {
                 0.0
             };
-            allocations[last_position].1 = if last_share > 0.0 { last_share } else { 0.0 };
+            allocations[last_position].1 = if last_allocation > 0.0 {
+                last_allocation
+            } else {
+                0.0
+            };
             return Ok(allocations);
         }
         allocations[unfrozen_positions[0]].1 = if first_share > 0.0 { first_share } else { 0.0 };
