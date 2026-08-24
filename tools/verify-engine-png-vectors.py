@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Independent stdlib replay for the TV1-T94 Engine PNG scene/raster kernel."""
+"""Independent stdlib replay for the TV1-T95 Engine PNG scene/raster kernel."""
 
 from __future__ import annotations
 
@@ -150,8 +150,78 @@ def exact_device_edge(parts: list[int], dpi: int) -> int | None:
     return edge if remainder == 0 else None
 
 
+def identity_transform(node: dict[str, Any]) -> bool:
+    transform = node.get("transform")
+    return has_exact_members(
+        transform, {"originX", "originY", "rotationDeg", "scaleX", "scaleY"}
+    ) and all((
+        number_is(transform["originX"], "0.5"),
+        number_is(transform["originY"], "0.5"),
+        number_is(transform["rotationDeg"], "0"),
+        number_is(transform["scaleX"], "1"),
+        number_is(transform["scaleY"], "1"),
+    ))
+
+
+def zero_corner_radii(node: dict[str, Any]) -> bool:
+    radii = node.get("cornerRadii")
+    members = {"bottomLeftPt", "bottomRightPt", "topLeftPt", "topRightPt"}
+    return has_exact_members(radii, members) and all(
+        number_is(radii[member], "0") for member in members
+    )
+
+
+def fixed_absolute_placement(node: dict[str, Any]) -> dict[str, Any] | None:
+    placement = node.get("placement")
+    members = {
+        "heightMode", "heightPt", "type", "widthMode", "widthPt", "xPt", "yPt"
+    }
+    if (
+        not has_exact_members(placement, members)
+        or placement["type"] != "ABSOLUTE"
+        or placement["widthMode"] != "FIXED"
+        or placement["heightMode"] != "FIXED"
+    ):
+        return None
+    return placement
+
+
+def prepare_pixel_rect(
+    origin_x: int,
+    origin_y: int,
+    rect_width: int,
+    rect_height: int,
+    color: bytes,
+    canvas: dict[str, Any],
+    dpi: int,
+    width: int,
+    height: int,
+) -> tuple[int, int, int, int, bytes] | dict[str, str]:
+    bleed = canvas["bleed"]
+    left_bleed = decimal6(bleed["leftPt"], False)
+    top_bleed = decimal6(bleed["topPt"], False)
+    edges = (
+        exact_device_edge([left_bleed, origin_x], dpi),
+        exact_device_edge([top_bleed, origin_y], dpi),
+        exact_device_edge([left_bleed, origin_x, rect_width], dpi),
+        exact_device_edge([top_bleed, origin_y, rect_height], dpi),
+    )
+    if any(edge is None for edge in edges):
+        return {"feature": "NON_PIXEL_ALIGNED_RECT"}
+    left, top, right, bottom = (int(edge) for edge in edges)
+    if right < left or bottom < top:
+        raise VerificationFailure("Paint device box is not monotonic")
+    left = min(max(left, 0), width)
+    right = min(max(right, 0), width)
+    top = min(max(top, 0), height)
+    bottom = min(max(bottom, 0), height)
+    return left, top, right, bottom, color
+
+
 def prepare_rect(
     child: Any,
+    parent_x: int,
+    parent_y: int,
     canvas: dict[str, Any],
     dpi: int,
     width: int,
@@ -166,23 +236,10 @@ def prepare_rect(
     ):
         return {"feature": "RECT_PAINT"}
 
-    transform = child.get("transform")
-    if not has_exact_members(
-        transform, {"originX", "originY", "rotationDeg", "scaleX", "scaleY"}
-    ) or not all((
-        number_is(transform["originX"], "0.5"),
-        number_is(transform["originY"], "0.5"),
-        number_is(transform["rotationDeg"], "0"),
-        number_is(transform["scaleX"], "1"),
-        number_is(transform["scaleY"], "1"),
-    )):
+    if not identity_transform(child):
         return {"feature": "RECT_PAINT"}
 
-    radii = child.get("cornerRadii")
-    radius_members = {"bottomLeftPt", "bottomRightPt", "topLeftPt", "topRightPt"}
-    if not has_exact_members(radii, radius_members) or not all(
-        number_is(radii[member], "0") for member in radius_members
-    ):
+    if not zero_corner_radii(child):
         return {"feature": "RECT_PAINT"}
 
     fill = child.get("fill")
@@ -192,41 +249,130 @@ def prepare_rect(
     if color[3] != 255:
         return {"feature": "NON_OPAQUE_RECT_ALPHA"}
 
-    placement = child.get("placement")
-    placement_members = {
-        "heightMode", "heightPt", "type", "widthMode", "widthPt", "xPt", "yPt"
-    }
-    if (
-        not has_exact_members(placement, placement_members)
-        or placement["type"] != "ABSOLUTE"
-        or placement["widthMode"] != "FIXED"
-        or placement["heightMode"] != "FIXED"
-    ):
+    placement = fixed_absolute_placement(child)
+    if placement is None:
         return {"feature": "RECT_PAINT"}
 
-    bleed = canvas["bleed"]
-    left_bleed = decimal6(bleed["leftPt"], False)
-    top_bleed = decimal6(bleed["topPt"], False)
-    x = decimal6(placement["xPt"], False)
-    y = decimal6(placement["yPt"], False)
+    x = parent_x + decimal6(placement["xPt"], False)
+    y = parent_y + decimal6(placement["yPt"], False)
     rect_width = decimal6(placement["widthPt"], True)
     rect_height = decimal6(placement["heightPt"], True)
-    edges = (
-        exact_device_edge([left_bleed, x], dpi),
-        exact_device_edge([top_bleed, y], dpi),
-        exact_device_edge([left_bleed, x, rect_width], dpi),
-        exact_device_edge([top_bleed, y, rect_height], dpi),
+    return prepare_pixel_rect(
+        x, y, rect_width, rect_height, color, canvas, dpi, width, height
     )
-    if any(edge is None for edge in edges):
-        return {"feature": "NON_PIXEL_ALIGNED_RECT"}
-    left, top, right, bottom = (int(edge) for edge in edges)
-    if right < left or bottom < top:
-        raise VerificationFailure("Rect device box is not monotonic")
-    left = min(max(left, 0), width)
-    right = min(max(right, 0), width)
-    top = min(max(top, 0), height)
-    bottom = min(max(bottom, 0), height)
-    return left, top, right, bottom, color
+
+
+def prepare_frame(
+    child: Any,
+    parent_x: int,
+    parent_y: int,
+    canvas: dict[str, Any],
+    dpi: int,
+    width: int,
+    height: int,
+) -> tuple[
+    tuple[int, int, int, int, bytes] | None, int, int
+] | dict[str, str]:
+    required = {
+        "children", "clipContent", "cornerRadii", "kind", "occurrenceId", "opacity",
+        "padding", "placement", "transform", "visible",
+    }
+    if (
+        not isinstance(child, dict)
+        or child.get("kind") != "frame"
+        or set(child) not in (required, required | {"fill"})
+        or child.get("visible") is not True
+        or not number_is(child.get("opacity"), "1")
+        or child.get("clipContent") is not False
+        or not identity_transform(child)
+        or not zero_corner_radii(child)
+    ):
+        return {"feature": "FRAME_PAINT"}
+
+    placement = fixed_absolute_placement(child)
+    if placement is None:
+        return {"feature": "FRAME_PAINT"}
+    origin_x = parent_x + decimal6(placement["xPt"], False)
+    origin_y = parent_y + decimal6(placement["yPt"], False)
+
+    padding = child.get("padding")
+    padding_members = {"bottomPt", "leftPt", "rightPt", "topPt"}
+    if not has_exact_members(padding, padding_members):
+        return {"feature": "FRAME_PAINT"}
+    padding_values = {
+        member: decimal6(padding[member], False) for member in padding_members
+    }
+    content_x = origin_x + padding_values["leftPt"]
+    content_y = origin_y + padding_values["topPt"]
+
+    paint = None
+    if "fill" in child:
+        fill = child["fill"]
+        if not has_exact_members(fill, {"color"}):
+            return {"feature": "FRAME_PAINT"}
+        color = parse_rgba(fill["color"], "Frame fill")
+        if color[3] != 255:
+            return {"feature": "FRAME_PAINT"}
+        paint = prepare_pixel_rect(
+            origin_x,
+            origin_y,
+            decimal6(placement["widthPt"], True),
+            decimal6(placement["heightPt"], True),
+            color,
+            canvas,
+            dpi,
+            width,
+            height,
+        )
+        if isinstance(paint, dict):
+            return paint
+    return paint, content_x, content_y
+
+
+def scene_kinds_supported(children: list[Any]) -> bool:
+    for child in children:
+        if not isinstance(child, dict):
+            return False
+        if child.get("kind") == "rect":
+            continue
+        if child.get("kind") == "frame" and isinstance(child.get("children"), list):
+            if scene_kinds_supported(child["children"]):
+                continue
+        return False
+    return True
+
+
+def prepare_scene(
+    children: list[Any],
+    parent_x: int,
+    parent_y: int,
+    canvas: dict[str, Any],
+    dpi: int,
+    width: int,
+    height: int,
+) -> list[tuple[int, int, int, int, bytes]] | dict[str, str]:
+    paints: list[tuple[int, int, int, int, bytes]] = []
+    for child in children:
+        if child["kind"] == "rect":
+            rect = prepare_rect(child, parent_x, parent_y, canvas, dpi, width, height)
+            if isinstance(rect, dict):
+                return rect
+            paints.append(rect)
+            continue
+
+        frame = prepare_frame(child, parent_x, parent_y, canvas, dpi, width, height)
+        if isinstance(frame, dict):
+            return frame
+        frame_paint, content_x, content_y = frame
+        if frame_paint is not None:
+            paints.append(frame_paint)
+        nested = prepare_scene(
+            child["children"], content_x, content_y, canvas, dpi, width, height
+        )
+        if isinstance(nested, dict):
+            return nested
+        paints.extend(nested)
+    return paints
 
 
 def paint_rect(
@@ -288,9 +434,8 @@ def execute(document: dict[str, Any], dpi: Any) -> dict[str, Any]:
     canvas = document["canvas"]
     if not isinstance(canvas, dict) or not isinstance(canvas.get("children"), list):
         raise VerificationFailure("Canvas shape is invalid")
-    for child in canvas["children"]:
-        if not isinstance(child, dict) or child.get("kind") != "rect":
-            return {"feature": "SCENE_STRUCTURE"}
+    if not scene_kinds_supported(canvas["children"]):
+        return {"feature": "SCENE_STRUCTURE"}
     pixel = parse_background(canvas.get("backgroundColor"))
     if isinstance(pixel, dict):
         return pixel
@@ -299,12 +444,9 @@ def execute(document: dict[str, Any], dpi: Any) -> dict[str, Any]:
         return dimensions
     width = dimensions["widthPx"]
     height = dimensions["heightPx"]
-    rects: list[tuple[int, int, int, int, bytes]] = []
-    for child in canvas["children"]:
-        rect = prepare_rect(child, canvas, dpi, width, height)
-        if isinstance(rect, dict):
-            return rect
-        rects.append(rect)
+    rects = prepare_scene(canvas["children"], 0, 0, canvas, dpi, width, height)
+    if isinstance(rects, dict):
+        return rects
     pixels = bytearray(pixel * (width * height))
     for rect in rects:
         paint_rect(pixels, width, rect)
@@ -350,14 +492,14 @@ def verify(path: Path) -> dict[str, Any]:
     verifier.require(boundary == {
         "profileAvailability": "NOT_REGISTERED",
         "certificationStatus": "NOT_CERTIFIED",
-        "enginePngKernel": "AUTHORED_ORDER_MULTI_PIXEL_ALIGNED_OPAQUE_RECT_PNG_KERNEL_UNWIRED",
+        "enginePngKernel": "PREORDER_FIXED_IDENTITY_FRAME_RECT_PIXEL_ALIGNED_OPAQUE_PNG_KERNEL_UNWIRED",
         "processRasterImplementation": "ABSENT",
         "daemonOutputPath": "UNWIRED",
         "productRoute": "CLOSED",
         "providerAttempts": 0,
     }, "Engine PNG honest boundary drifted")
-    verifier.require(len(vectors["renderedCases"]) == 8, "rendered case count drifted")
-    verifier.require(len(vectors["unsupportedCases"]) == 8, "unsupported case count drifted")
+    verifier.require(len(vectors["renderedCases"]) == 9, "rendered case count drifted")
+    verifier.require(len(vectors["unsupportedCases"]) == 10, "unsupported case count drifted")
 
     seen: set[str] = set()
     for family in ("renderedCases", "unsupportedCases"):

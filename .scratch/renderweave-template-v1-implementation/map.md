@@ -466,6 +466,13 @@ Label: wayfinder:map
   `a34a2dd5eb9874691cf2e90f2f75f49dc7d0650d6d7fb306a62ec213c51e2d45`；`render`/`fast`/`server`/17-step
   `full` 与 resolution `fast` 全绿。Profile NOT_REGISTERED、daemon UNWIRED、E6/正式产品 route CLOSED，未把
   `/prototype` 当作交付。
+- [实现 fixed identity Frame/Rect 先序真实 Engine PNG 内核](issues/95-fixed-identity-frame-rect-engine-png-kernel.md) —
+  **resolved / automated_verified**；保持同一 `render_png` Interface，把 closed scene 扩为 fixed identity
+  Frame/Rect preorder：Frame optional opaque fill 先于 descendants，padding 进入 child world origin，later sibling
+  继续覆写；全部 paint 在最终 surface 分配前准备。Rust 2/2、Python 19/19 cases/61 checks，vector SHA-256
+  `acb3adf55f8b67914918f20197e5bdb4668985759b51a2a02fe0810cb0eba363`；`render`/affected `fast`/顺序
+  `server`/17-step `full`/resolution `fast` 均绿。Profile NOT_REGISTERED、daemon UNWIRED、E6/正式产品 route
+  CLOSED，未把 `/prototype` 当作交付。
 - [验证 Product Editor 状态、恢复与权威预览架构](issues/09-validate-product-editor-architecture.md) —
   throwaway 逻辑原型（`/prototype/editor-state-model`，不进产品 route）把冻结编辑器规则编码为确定性
   fixture 状态机：10 个引导走查场景 37/37 断言 + 自由操作冒烟 + 键盘焦点检查全部通过（Playwright A1，

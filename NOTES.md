@@ -1,6 +1,20 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-24 **Template v1 implementation TV1-T95 已由 Codex `/root` single-writer 完成，状态
+  `resolved/automated_verified`**：
+  Renderer Profile 完整合同审计后确认不能用 partial/test-only 注册绕过；当前沿唯一 `render_png` deep Interface
+  新增 fixed identity Frame/Rect preorder 子闭包。Frame 支持 optional opaque fill、nonnegative padding，要求
+  no-stroke、zero-radius、`clipContent=false`；全部 Frame/Rect 先 prepare，再分配 surface。Rust 2/2、Python
+  independent 19/19 cases、61 checks，vector SHA-256
+  `acb3adf55f8b67914918f20197e5bdb4668985759b51a2a02fe0810cb0eba363`。`render`
+  `.sdlc/evidence/20260824-160735-render/`、affected `fast` `.sdlc/evidence/20260824-160810-fast/`、顺序
+  `server` `.sdlc/evidence/20260824-160833-server/` 与 17-step `full`
+  `.sdlc/evidence/20260824-162151-full/` 均绿；full 用时 1186.556 秒，App 344/0/0/15、Node 24 Web
+  26 files/212 tests、runtime canary、Playwright 23 passed + 1 controlled skip、Draft journey 与 inference replay
+  E2E 1/1 均通过；状态回填后的 resolution `fast` `.sdlc/evidence/20260824-164434-fast/` 亦为 exit 0。Profile
+  `NOT_REGISTERED`、certification `NOT_CERTIFIED`、raster `ABSENT`、daemon `UNWIRED`、E6/正式产品 route
+  `CLOSED` 不变；provider attempts/API Key reads/费用/真实数据为 0，未 push/tag/PR，`/prototype` 不计最终产品交付。
 - 2026-08-24 **Template v1 implementation TV1-T94 已由 Codex `/root` single-writer 完成，状态
   `resolved/automated_verified`**：沿唯一 `render_png` deep Interface，把 Canvas 的 direct pixel-aligned opaque Rect
   扩为零个或多个；全部 child 先 prepare，成功后才分配 surface 并按 authored order hard-clipped paint，后 child
