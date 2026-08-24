@@ -510,6 +510,12 @@ Label: wayfinder:map
   physical budget/length/SHA 核验，并按 manifest order 接入 daemon exact terminal replay。Rust/Python transport
   33/33 cases、115 checks，Java renderer 29 tests，`render`/affected `fast`/顺序 `server`/17-step `full` 均绿；
   media/decode/scene/RESULT/Profile/Product Editor route 仍关闭。
+- [实现 Renderer resource media/descriptor 复核与 request-local raw cache 内核](issues/102-resource-media-descriptor-raw-cache-kernel.md) —
+  **resolved / automated_verified**；消费 T101 exact fetched bytes，实现无 embedded ICC 的 PNG/JPEG/WebP header
+  facts、TTF/OTF sfnt facts、sealed descriptor 复核与 exact Profile identity 绑定的 256 MiB request-local verified
+  raw cache。Rust 22 tests、独立 Python 54/54 cases/239 checks，`render`/affected `fast`/顺序 `server`/17-step
+  `full` 均绿；resource bytes 只到 media/descriptor preflight，完整 IMAGE/FONT decode、decoded cache、daemon
+  RESULT/Profile 与最终 Product Editor route 仍关闭。
 - [验证 Product Editor 状态、恢复与权威预览架构](issues/09-validate-product-editor-architecture.md) —
   throwaway 逻辑原型（`/prototype/editor-state-model`，不进产品 route）把冻结编辑器规则编码为确定性
   fixture 状态机：10 个引导走查场景 37/37 断言 + 自由操作冒烟 + 键盘焦点检查全部通过（Playwright A1，

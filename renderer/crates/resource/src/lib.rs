@@ -2,12 +2,18 @@ use renderweave_renderer_document::AdmittedRenderResource;
 use sha2::{Digest, Sha256};
 
 mod fetch;
+mod media;
 
 pub use fetch::{
     FETCH_ALLOWED_IP_COUNT_MAX, FETCH_ATTEMPT_LIMIT, FETCH_ATTEMPT_MILLIS, FETCH_BACKOFF_MILLIS,
     FETCH_RESPONSE_HEADER_BYTES, FETCH_STREAM_CHUNK_BYTES, FetchEgressPolicy,
     FetchEgressPolicyError, FetchedResource, HttpsResourceFetcher, RESOURCE_PHASE_MILLIS,
     ResourceFetchProblem, ResourceFetchProblemCode, ResourceFetcher,
+};
+pub use media::{
+    MAX_REQUEST_RAW_CACHE_BYTES, PreparedRawResource, REQUEST_RAW_CACHE_BYTES_LIMIT_ID,
+    RequestRawResourceCache, ResourcePreparationProblem, ResourcePreparationProblemCode,
+    ResourcePreparationProfile, VerifiedResourceMedia, verify_resource_media,
 };
 
 pub const MAX_PHYSICAL_FETCH_BYTES: u64 = 536_870_912;

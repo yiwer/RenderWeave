@@ -2908,3 +2908,23 @@
 - T36 生命周期收口为 `resolved / automated_verified`；最终 exact diff 仍须治理后 fast 与 full 17/17。无 Java/
   OpenAPI/generated SDK/migration/API version/route/Renderer 增量；provider attempts/API Key reads/open authorization/
   paid external calls=0，未发送真实数据，未 push/tag/PR。
+# 2026-08-24 Template-v1 T102 resource media/descriptor + raw cache（resolved / automated_verified）
+
+- T101 已以 `e7a33db` verified commit 收口；下一 frontier 不是产品原型，而是最终产品权威预览所需的真实 Engine
+  资源准备链路。
+- T102 收窄为无 embedded ICC 的 PNG/JPEG/WebP media/header/descriptor 复核、TTF/OTF sfnt facts 与 256 MiB
+  request-local verified raw cache；完整 IMAGE/FONT decode 与 512 MiB decoded cache分票，避免把尚未冻结依赖闭包的
+  decoder 冒充 `renderweave-renderer/1.0` 已可用。
+- Profile 仍 `NOT_REGISTERED`、certification `NOT_CERTIFIED`、process raster `ABSENT`、daemon output `UNWIRED`、
+  最终产品 Product Editor route `CLOSED`；provider/API Key/费用/真实数据均为 0。
+- 实现结果：resource 18 unit + 2 fetch public + 2 media/cache public tests 与 Clippy `-D warnings` 全绿；独立
+  Python replay 54/54 cases、239 checks，T102 vector SHA-256
+  `e8f8869b0d41b9253a5e61939d9e517f103a0acc5f2fab58eddc5995619c044f`。Cargo.lock 无新增 dependency。
+- 分级 A1 绿色证据：`render` `.sdlc/evidence/20260825-001652-render/`、affected `fast`
+  `.sdlc/evidence/20260825-001738-fast/`、顺序 `server` `.sdlc/evidence/20260825-001757-server/`、17-step `full`
+  `.sdlc/evidence/20260825-003452-full/`。full 覆盖跨平台 Renderer、App 347/0/0/15、Node 24 Web 212 tests、
+  runtime canary、Playwright 23+1 controlled skip、Draft journey 与 inference replay E2E；provider attempts/API Key
+  reads/reservations/cost/open authorization=0。
+- 状态回填后的 resolution `fast` `.sdlc/evidence/20260825-010305-fast/` 3 steps 均 exit 0（11.003 秒）。
+- 当前只把 resource bytes 推进为 `MEDIA_DESCRIPTOR_PREFLIGHT_AUTOMATED_VERIFIED`；完整 IMAGE/FONT decode、decoded
+  cache、Profile、raster、daemon RESULT 与最终 Product Editor route 继续后续 DAG，不把 `/prototype` 当作交付。

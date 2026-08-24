@@ -1,0 +1,87 @@
+{
+  "profile": "renderweave-resource-media-raw-cache-v1",
+  "rendererProfileIdentity": "renderweave-renderer/1.0",
+  "assetKernelVectorPath": "renderweave-asset/src/test/resources/cn/hbads/renderweave/asset/acceptance-kernel-v1/vectors.json",
+  "assetKernelVectorSha256": "sha256:74638228ba0910079feb86412314361f09d1761583a58176e6449d90435e9da2",
+  "limits": {
+    "requestRawCacheBytes": 268435456,
+    "requestRawCacheLimitId": "assetsAndFetch.requestRawCacheBytes",
+    "fontTablesPerContent": 256
+  },
+  "supportedAssetCases": [
+    {"id":"png-rgba","assetCaseId":"png-rgba-admitted","declaredMediaType":"image/png"},
+    {"id":"png-gray","assetCaseId":"png-gray-admitted","declaredMediaType":"image/png"},
+    {"id":"png-indexed","assetCaseId":"png-indexed-admitted","declaredMediaType":"image/png"},
+    {"id":"png-srgb","assetCaseId":"png-srgb-admitted","declaredMediaType":"image/png"},
+    {"id":"png-exif","assetCaseId":"png-exif-orientation-admitted","declaredMediaType":"image/png"},
+    {"id":"jpeg-gray","assetCaseId":"jpeg-gray-admitted","declaredMediaType":"image/jpeg"},
+    {"id":"jpeg-progressive","assetCaseId":"jpeg-progressive-admitted","declaredMediaType":"image/jpeg"},
+    {"id":"jpeg-exif","assetCaseId":"jpeg-exif-admitted","declaredMediaType":"image/jpeg"},
+    {"id":"webp-lossy","assetCaseId":"webp-lossy-admitted","declaredMediaType":"image/webp"},
+    {"id":"webp-lossless","assetCaseId":"webp-lossless-admitted","declaredMediaType":"image/webp"},
+    {"id":"webp-exif","assetCaseId":"webp-exif-admitted","declaredMediaType":"image/webp"},
+    {"id":"font-ttf","assetCaseId":"font-ttf-admitted","declaredMediaType":"font/ttf"},
+    {"id":"font-otf","assetCaseId":"font-otf-admitted","declaredMediaType":"font/otf"}
+  ],
+  "defensiveAssetCases": [
+    {"id":"png-16bit","assetCaseId":"png-16bit-unsupported","declaredMediaType":"image/png","descriptorCaseId":"png-rgba-admitted","expectedCode":"DECODE_FAILED"},
+    {"id":"png-apng","assetCaseId":"png-apng-unsupported","declaredMediaType":"image/png","descriptorCaseId":"png-rgba-admitted","expectedCode":"DECODE_FAILED"},
+    {"id":"png-bad-crc","assetCaseId":"png-bad-crc-invalid","declaredMediaType":"image/png","descriptorCaseId":"png-rgba-admitted","expectedCode":"DECODE_FAILED"},
+    {"id":"png-edge-limit","assetCaseId":"png-edge-limit","declaredMediaType":"image/png","descriptorCaseId":"png-rgba-admitted","expectedCode":"DECODE_FAILED"},
+    {"id":"png-total-limit","assetCaseId":"png-total-limit","declaredMediaType":"image/png","descriptorCaseId":"png-rgba-admitted","expectedCode":"DECODE_FAILED"},
+    {"id":"png-noncanonical-icc","assetCaseId":"png-iccp-unsupported","declaredMediaType":"image/png","descriptorCaseId":"png-rgba-admitted","expectedCode":"DECODE_FAILED"},
+    {"id":"png-srgb-icc-conflict","assetCaseId":"png-srgb-iccp-conflict-unsupported","declaredMediaType":"image/png","descriptorCaseId":"png-rgba-admitted","expectedCode":"DECODE_FAILED"},
+    {"id":"png-indexed-no-plte","assetCaseId":"png-indexed-no-plte-invalid","declaredMediaType":"image/png","descriptorCaseId":"png-indexed-admitted","expectedCode":"DECODE_FAILED"},
+    {"id":"jpeg-cmyk","assetCaseId":"jpeg-cmyk-unsupported","declaredMediaType":"image/jpeg","descriptorCaseId":"jpeg-gray-admitted","expectedCode":"DECODE_FAILED"},
+    {"id":"jpeg-noncanonical-icc","assetCaseId":"jpeg-icc-unsupported","declaredMediaType":"image/jpeg","descriptorCaseId":"jpeg-gray-admitted","expectedCode":"DECODE_FAILED"},
+    {"id":"jpeg-precision12","assetCaseId":"jpeg-precision12-unsupported","declaredMediaType":"image/jpeg","descriptorCaseId":"jpeg-gray-admitted","expectedCode":"DECODE_FAILED"},
+    {"id":"jpeg-dac","assetCaseId":"jpeg-dac-unsupported","declaredMediaType":"image/jpeg","descriptorCaseId":"jpeg-gray-admitted","expectedCode":"DECODE_FAILED"},
+    {"id":"jpeg-truncated","assetCaseId":"jpeg-truncated-invalid","declaredMediaType":"image/jpeg","descriptorCaseId":"jpeg-gray-admitted","expectedCode":"DECODE_FAILED"},
+    {"id":"webp-animated","assetCaseId":"webp-animated-unsupported","declaredMediaType":"image/webp","descriptorCaseId":"webp-lossy-admitted","expectedCode":"DECODE_FAILED"},
+    {"id":"webp-noncanonical-icc","assetCaseId":"webp-iccp-unsupported","declaredMediaType":"image/webp","descriptorCaseId":"webp-lossy-admitted","expectedCode":"DECODE_FAILED"},
+    {"id":"webp-unknown-fourcc","assetCaseId":"webp-unknown-fourcc-invalid","declaredMediaType":"image/webp","descriptorCaseId":"webp-lossy-admitted","expectedCode":"DECODE_FAILED"},
+    {"id":"webp-magic","assetCaseId":"webp-magic-invalid","declaredMediaType":"image/webp","descriptorCaseId":"webp-lossy-admitted","expectedCode":"MEDIA_MISMATCH"},
+    {"id":"webp-truncated","assetCaseId":"webp-truncated-invalid","declaredMediaType":"image/webp","descriptorCaseId":"webp-lossy-admitted","expectedCode":"DECODE_FAILED"},
+    {"id":"font-woff-magic","assetCaseId":"font-woff-magic-invalid","declaredMediaType":"font/ttf","descriptorCaseId":"font-ttf-admitted","expectedCode":"MEDIA_MISMATCH"},
+    {"id":"font-collection-magic","assetCaseId":"font-ttcf-magic-invalid","declaredMediaType":"font/ttf","descriptorCaseId":"font-ttf-admitted","expectedCode":"MEDIA_MISMATCH"},
+    {"id":"font-variable","assetCaseId":"font-fvar-unsupported","declaredMediaType":"font/ttf","descriptorCaseId":"font-ttf-admitted","expectedCode":"DECODE_FAILED"},
+    {"id":"font-checksum","assetCaseId":"font-glyf-checksum-invalid","declaredMediaType":"font/ttf","descriptorCaseId":"font-ttf-admitted","expectedCode":"DECODE_FAILED"},
+    {"id":"font-units-per-em","assetCaseId":"font-unitsperem-invalid","declaredMediaType":"font/ttf","descriptorCaseId":"font-ttf-admitted","expectedCode":"DECODE_FAILED"},
+    {"id":"declared-jpeg-with-png-bytes","assetCaseId":"png-rgba-admitted","declaredMediaType":"image/jpeg","descriptorCaseId":"png-rgba-admitted","expectedCode":"MEDIA_MISMATCH"}
+  ],
+  "descriptorCases": [
+    {"id":"png-width-drift","assetCaseId":"png-rgba-admitted","declaredMediaType":"image/png","mutation":"IMAGE_WIDTH_PLUS_ONE","expectedCode":"RENDER_INTERNAL_ERROR"},
+    {"id":"png-orientation-drift","assetCaseId":"png-exif-orientation-admitted","declaredMediaType":"image/png","mutation":"IMAGE_ORIENTATION_IDENTITY","expectedCode":"RENDER_INTERNAL_ERROR"},
+    {"id":"jpeg-height-drift","assetCaseId":"jpeg-gray-admitted","declaredMediaType":"image/jpeg","mutation":"IMAGE_HEIGHT_PLUS_ONE","expectedCode":"RENDER_INTERNAL_ERROR"},
+    {"id":"webp-orientation-drift","assetCaseId":"webp-lossless-admitted","declaredMediaType":"image/webp","mutation":"IMAGE_ORIENTATION_ROTATE_90","expectedCode":"RENDER_INTERNAL_ERROR"},
+    {"id":"font-units-per-em-drift","assetCaseId":"font-ttf-admitted","declaredMediaType":"font/ttf","mutation":"FONT_UNITS_PER_EM_PLUS_ONE","expectedCode":"RENDER_INTERNAL_ERROR"}
+  ],
+  "deferredAssetCases": [
+    {"assetCaseId":"png-canonical-icc-admitted","reason":"CANONICAL_ICC_DECOMPRESSION"},
+    {"assetCaseId":"jpeg-canonical-icc-admitted","reason":"CANONICAL_ICC_SEGMENT_ASSEMBLY"},
+    {"assetCaseId":"webp-canonical-icc-admitted","reason":"CANONICAL_ICC_EQUALITY"},
+    {"assetCaseId":"png-corrupt-idat-invalid","reason":"FULL_IMAGE_ENTROPY_DECODE"},
+    {"assetCaseId":"font-cff-charstrings-invalid","reason":"FULL_CFF_PARSE"}
+  ],
+  "cacheCases": [
+    {"id":"first-insert","events":["MISS","INSERT"],"outcome":"INSERTED","uniqueContents":1,"retainedBytes":70},
+    {"id":"duplicate-hit","events":["MISS","INSERT","HIT"],"outcome":"HIT","uniqueContents":1,"retainedBytes":70},
+    {"id":"lease-expired-before-hit","events":["MISS","INSERT","LEASE_EXPIRED","HIT"],"outcome":"RESOURCE_LEASE_EXPIRED","uniqueContents":1,"retainedBytes":70},
+    {"id":"corruption-evicts","events":["MISS","INSERT","CORRUPT","HIT"],"outcome":"RENDER_INTERNAL_ERROR","uniqueContents":0,"retainedBytes":70},
+    {"id":"budget-below","reserveBytes":268435455,"outcome":"RESERVED","retainedBytes":268435455},
+    {"id":"budget-at","reserveBytes":268435456,"outcome":"RESERVED","retainedBytes":268435456},
+    {"id":"budget-above","reserveBytes":268435457,"outcome":"RESOURCE_BUDGET_EXCEEDED","retainedBytes":0}
+  ],
+  "boundary": {
+    "resourceBytes": "MEDIA_DESCRIPTOR_PREFLIGHT_AUTOMATED_VERIFIED",
+    "imageDecode": "DEFERRED",
+    "fontFullParse": "DEFERRED",
+    "decodedCache": "ABSENT",
+    "daemonOutputPath": "UNWIRED",
+    "profileAvailability": "NOT_REGISTERED",
+    "certificationStatus": "NOT_CERTIFIED",
+    "processRasterImplementation": "ABSENT",
+    "productRoute": "CLOSED",
+    "providerAttempts": 0
+  }
+}

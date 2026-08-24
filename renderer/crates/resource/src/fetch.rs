@@ -208,6 +208,21 @@ impl FetchedResource {
     pub fn bytes(&self) -> &[u8] {
         &self.bytes
     }
+
+    pub(crate) fn into_verified_parts(self) -> (VerifiedResourceBody, Box<[u8]>) {
+        (self.verified_body, self.bytes)
+    }
+
+    #[cfg(test)]
+    pub(crate) fn from_verified_parts_for_test(
+        verified_body: VerifiedResourceBody,
+        bytes: Box<[u8]>,
+    ) -> Self {
+        Self {
+            verified_body,
+            bytes,
+        }
+    }
 }
 
 pub trait ResourceFetcher: Send + Sync {

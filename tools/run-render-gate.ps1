@@ -38,6 +38,7 @@ $documentReport = Join-Path $resolvedEvidenceDir 'render-document-independent.js
 $resourceBodyReport = Join-Path $resolvedEvidenceDir 'resource-body-independent.json'
 $resourceFetchTargetReport = Join-Path $resolvedEvidenceDir 'resource-fetch-target-independent.json'
 $resourceFetchTransportReport = Join-Path $resolvedEvidenceDir 'resource-fetch-transport-independent.json'
+$resourceMediaRawCacheReport = Join-Path $resolvedEvidenceDir 'resource-media-raw-cache-independent.json'
 $layoutPreflightReport = Join-Path $resolvedEvidenceDir 'layout-preflight-independent.json'
 $definiteLayoutReport = Join-Path $resolvedEvidenceDir 'definite-layout-independent.json'
 $outputPngReport = Join-Path $resolvedEvidenceDir 'output-png-independent.json'
@@ -49,6 +50,7 @@ foreach ($report in @(
         $resourceBodyReport,
         $resourceFetchTargetReport,
         $resourceFetchTransportReport,
+        $resourceMediaRawCacheReport,
         $layoutPreflightReport,
         $definiteLayoutReport,
         $outputPngReport,
@@ -337,6 +339,48 @@ try {
         throw 'Resource fetch transport independent report boundary drifted.'
     }
 
+    Invoke-Checked 'resource-media-raw-cache-python-independent-replay' {
+        & python.exe 'tools\verify-resource-media-raw-cache.py' `
+            '--vectors' 'renderer\resource-media-raw-cache-vectors-v1.json' `
+            '--repo-root' $repoRoot `
+            '--report' $resourceMediaRawCacheReport
+    }
+    if (-not (Test-Path -LiteralPath $resourceMediaRawCacheReport -PathType Leaf)) {
+        throw 'Resource media/raw-cache independent replay did not write its report.'
+    }
+    $resourceMediaRawCacheIndependent =
+        Get-Content -Raw -Encoding UTF8 -LiteralPath $resourceMediaRawCacheReport |
+            ConvertFrom-Json
+    if ($resourceMediaRawCacheIndependent.verifier -ne 'renderweave-resource-media-raw-cache-python-independent/1' `
+            -or $resourceMediaRawCacheIndependent.result -ne 'PASS' `
+            -or $resourceMediaRawCacheIndependent.assurance -ne 'A2' `
+            -or $resourceMediaRawCacheIndependent.supportedCases -ne 13 `
+            -or $resourceMediaRawCacheIndependent.defensiveCases -ne 24 `
+            -or $resourceMediaRawCacheIndependent.descriptorCases -ne 5 `
+            -or $resourceMediaRawCacheIndependent.deferredCases -ne 5 `
+            -or $resourceMediaRawCacheIndependent.cacheCases -ne 7 `
+            -or $resourceMediaRawCacheIndependent.passed -ne 54 `
+            -or $resourceMediaRawCacheIndependent.total -ne 54 `
+            -or $resourceMediaRawCacheIndependent.failed -ne 0 `
+            -or $resourceMediaRawCacheIndependent.checks -ne 239 `
+            -or $resourceMediaRawCacheIndependent.vectorSha256 -ne 'sha256:e8f8869b0d41b9253a5e61939d9e517f103a0acc5f2fab58eddc5995619c044f' `
+            -or $resourceMediaRawCacheIndependent.assetKernelVectorSha256 -ne 'sha256:74638228ba0910079feb86412314361f09d1761583a58176e6449d90435e9da2' `
+            -or $resourceMediaRawCacheIndependent.rendererProfileIdentity -ne 'renderweave-renderer/1.0' `
+            -or $resourceMediaRawCacheIndependent.requestRawCacheBytes -ne 268435456 `
+            -or $resourceMediaRawCacheIndependent.requestRawCacheLimitId -ne 'assetsAndFetch.requestRawCacheBytes' `
+            -or $resourceMediaRawCacheIndependent.resourceBytes -ne 'MEDIA_DESCRIPTOR_PREFLIGHT_AUTOMATED_VERIFIED' `
+            -or $resourceMediaRawCacheIndependent.imageDecode -ne 'DEFERRED' `
+            -or $resourceMediaRawCacheIndependent.fontFullParse -ne 'DEFERRED' `
+            -or $resourceMediaRawCacheIndependent.decodedCache -ne 'ABSENT' `
+            -or $resourceMediaRawCacheIndependent.daemonOutputPath -ne 'UNWIRED' `
+            -or $resourceMediaRawCacheIndependent.profileAvailability -ne 'NOT_REGISTERED' `
+            -or $resourceMediaRawCacheIndependent.certificationStatus -ne 'NOT_CERTIFIED' `
+            -or $resourceMediaRawCacheIndependent.processRasterImplementation -ne 'ABSENT' `
+            -or $resourceMediaRawCacheIndependent.productRoute -ne 'CLOSED' `
+            -or $resourceMediaRawCacheIndependent.providerAttempts -ne 0) {
+        throw 'Resource media/raw-cache independent report boundary drifted.'
+    }
+
     Invoke-Checked 'layout-preflight-python-independent-replay' {
         & python.exe 'tools\verify-layout-preflight-vectors.py' `
             '--vectors' 'renderer\layout-preflight-vectors-v1.json' `
@@ -499,7 +543,7 @@ try {
     }
 
     $summary = [ordered]@{
-        gateVersion = 'renderweave-renderer-process-gate/2.2'
+        gateVersion = 'renderweave-renderer-process-gate/2.3'
         status = 'PASS'
         processContractVersion = 'renderweave-renderer-process/1.0'
         java = $java
@@ -583,6 +627,22 @@ try {
             transportImplementation = $resourceFetchTransportIndependent.transportImplementation
             resourceBytes = $resourceFetchTransportIndependent.resourceBytes
         }
+        resourceMediaRawCacheIndependent = [ordered]@{
+            verifier = $resourceMediaRawCacheIndependent.verifier
+            assurance = $resourceMediaRawCacheIndependent.assurance
+            supportedCases = $resourceMediaRawCacheIndependent.supportedCases
+            defensiveCases = $resourceMediaRawCacheIndependent.defensiveCases
+            descriptorCases = $resourceMediaRawCacheIndependent.descriptorCases
+            deferredCases = $resourceMediaRawCacheIndependent.deferredCases
+            cacheCases = $resourceMediaRawCacheIndependent.cacheCases
+            checks = $resourceMediaRawCacheIndependent.checks
+            vectorSha256 = $resourceMediaRawCacheIndependent.vectorSha256
+            assetKernelVectorSha256 = $resourceMediaRawCacheIndependent.assetKernelVectorSha256
+            rendererProfileIdentity = $resourceMediaRawCacheIndependent.rendererProfileIdentity
+            requestRawCacheBytes = $resourceMediaRawCacheIndependent.requestRawCacheBytes
+            requestRawCacheLimitId = $resourceMediaRawCacheIndependent.requestRawCacheLimitId
+            resourceBytes = $resourceMediaRawCacheIndependent.resourceBytes
+        }
         layoutPreflightIndependent = [ordered]@{
             verifier = $layoutPreflightIndependent.verifier
             assurance = $layoutPreflightIndependent.assurance
@@ -631,6 +691,8 @@ try {
             resourceBodyIntegrityKernel = 'PHYSICAL_FETCH_BUDGET_LENGTH_SHA256_AUTOMATED_VERIFIED_WIRED'
             resourceFetchTargetAdmission = 'CANONICAL_HTTPS_EXACT_ORIGIN_SEGMENT_PREFIX_AUTOMATED_VERIFIED'
             resourceFetchTransport = 'RUSTLS_HTTPS_AUTOMATED_VERIFIED'
+            resourceMediaDescriptor = 'MEDIA_DESCRIPTOR_PREFLIGHT_AUTOMATED_VERIFIED_UNWIRED'
+            requestRawCache = 'REQUEST_LOCAL_CONTENT_ADDRESSED_268435456_BYTES_AUTOMATED_VERIFIED_UNWIRED'
             resultSealKernel = 'CANONICAL_METADATA_LENGTH_SHA256_UUID_IMAGE_PAYLOAD_AUTOMATED_VERIFIED_UNWIRED'
             resourceBytes = 'FETCHED_AND_INTEGRITY_VERIFIED'
             layoutKernel = 'RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_SINGLE_AND_INACTIVE_BOUND_OR_EXACT_TWO_FILL_SINGLE_ACTIVE_BOUND_WITHIN_REMAINING_OR_SINGLE_ACTIVE_MIN_OVERFLOW_OR_EXACT_TWO_FILL_TWO_MIN_SECOND_FREEZE_OVERFLOW_OR_EXACT_TWO_FILL_MIXED_ACTIVE_MIN_SECOND_MIN_FREEZE_OVERFLOW_OR_EXACT_TWO_FILL_TWO_MAX_SECOND_FREEZE_FREE_JUSTIFY_OR_EXACT_TWO_FILL_MIXED_ACTIVE_MAX_SECOND_MAX_FREEZE_FREE_JUSTIFY_OR_EXACT_THREE_FILL_SINGLE_ACTIVE_BOUND_ONE_REDISTRIBUTION_OR_EXACT_THREE_FILL_POST_REDISTRIBUTION_INACTIVE_BOUNDS_OR_EXACT_THREE_FILL_SECOND_MIN_FREEZE_LAST_REMAINDER_OR_EXACT_THREE_FILL_SECOND_MAX_FREEZE_LAST_REMAINDER_OR_EXACT_THREE_FILL_SECOND_MAX_FREEZE_TERMINAL_INACTIVE_MIN_OR_EXACT_THREE_FILL_SECOND_MAX_FREEZE_TERMINAL_INACTIVE_MAX_OR_EXACT_THREE_FILL_THIRD_MAX_FREEZE_FREE_JUSTIFY_OR_EXACT_THREE_FILL_SINGLE_ACTIVE_MIN_OVERFLOW_OR_EXACT_THREE_FILL_SECOND_MIN_FREEZE_OVERFLOW_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_INACTIVE_UNFROZEN_MAX_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_SECOND_MIN_FREEZE_OVERFLOW_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_SECOND_MIXED_MIN_FREEZE_OVERFLOW_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_SECOND_MIXED_MIN_FREEZE_OVERFLOW_TERMINAL_INACTIVE_MAX_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_TWO_MIXED_MIN_FREEZES_OVERFLOW_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_MIXED_AND_MIN_ONLY_FREEZES_OVERFLOW_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_TWO_MIN_ONLY_FREEZES_OVERFLOW_MULTI_MAIN_FILL_AND_FIXED_SINGLE_FRACTION_INDEPENDENT_MULTI_AUTO_GRID_MULTI_AUTO_SPAN_STABLE_DEFICIT_GRID_DEFINITE_MULTI_FRACTION_LAST_REMAINDER_GRID_EMPTY_CONTAINER_STACK_HUG_GRID_AUTO_HUG_CONTRIBUTION_GRID_HUG_EXACT_QUARTER_TURN_AFFINE_FRAME_GROUP_HUG_FIXED_OPPOSITE_AXIS_CROSS_FILL_DEFINITE_ABSOLUTE_PARENT_OFFER_DEFINITE_STACK_CROSS_OUTER_OFFER_STACK_MAIN_FILL_CROSS_HUG_REMEASURE_NESTED_STACK_MAIN_OFFER_PROPAGATION_COLUMNS_FIRST_GRID_CELL_OUTER_OFFER_STACK_MAIN_OFFER_COLUMNS_FIRST_GRID_CROSS_HUG_ABSOLUTE_PARENT_OFFER_COLUMNS_FIRST_GRID_CROSS_HUG_GRID_CELL_OFFER_COLUMNS_FIRST_NESTED_GRID_CROSS_HUG_GRID_CELL_OFFER_STACK_MAIN_FIRST_CROSS_HUG_DIRECTION_CHANGING_STACK_CROSS_OFFER_MAIN_HUG_NESTED_STACK_RESOLVED_OPPOSITE_OFFER_RECURSION_COLUMNS_FIRST_GRID_TERMINAL_NORMALIZATION_BOX_AUTOMATED_VERIFIED_UNWIRED'
@@ -646,13 +708,14 @@ try {
         }
     }
     Write-Utf8File -Path $summaryPath -Content ($summary | ConvertTo-Json -Depth 6)
-    Write-Host (('Renderer process: Java={0} Python={1}+{2}+{3}+{4}+{5}+{6}+{7}+{8}+{9} Rust Windows=PASS ' +
+    Write-Host (('Renderer process: Java={0} Python={1}+{2}+{3}+{4}+{5}+{6}+{7}+{8}+{9}+{10} Rust Windows=PASS ' +
                 'Linux UDS=PASS Profile=NOT_REGISTERED Certification=NOT_CERTIFIED Raster=ABSENT') -f
             $java.tests, $independent.checks, $documentIndependent.total,
             $resourceBodyIndependent.total, $resourceFetchTargetIndependent.total,
             $resourceFetchTransportIndependent.total, $layoutPreflightIndependent.total,
             $definiteLayoutIndependent.total,
-            $outputPngIndependent.total, $enginePngIndependent.total)
+            $outputPngIndependent.total, $enginePngIndependent.total,
+            $resourceMediaRawCacheIndependent.total)
     Write-Host "Renderer process evidence: $summaryPath"
 }
 finally {

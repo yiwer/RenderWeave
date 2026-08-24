@@ -3351,6 +3351,52 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
   `ABSENT`、daemon output `UNWIRED`、正式产品 route `CLOSED`；未运行 provider、读取 API Key、发送真实数据或
   push/tag/PR，`/prototype` 不计最终产品交付。
 
+## 101. TV1-T102 执行卡
+
+- 决策：T101 以 verified commit `e7a33db` 收口且 worktree clean 后，按 Ticket 13/16/19 与 ADR-0045 复算
+  resource sequence。完整 IMAGE/FONT decoder 会改变 Renderer Profile dependency closure，不能与已冻结但尚未获
+  build/certification 授权的 Skia/FreeType 路径混写；但 exact fetched bytes 的 media/magic/header facts、sealed
+  descriptor 比较与 request-local raw cache 已有完整独立语义，因此登记为当前 single-writer frontier。
+- Interface/seam：只深化 `renderweave-renderer-resource`；raw preparer 消费 typed resource + owned fetched bytes，
+  cache key 固定为 exact Renderer Profile identity + kind/hash/length/media，成功返回 occurrence-local resourceId +
+  immutable shared raw content。Profile identity 不注册 availability。
+- 精确子闭包：无 embedded ICC 的静态 PNG/JPEG/WebP 重做 magic/container/header、允许颜色/帧子集、唯一 orientation
+  与 encoded/logical descriptor；TTF/OTF 重做 single-face sfnt directory/table boundary/checksum/banned+required tables、
+  flavor/unitsPerEm。wrong media=`MEDIA_MISMATCH`，结构/排除 feature=`DECODE_FAILED`，descriptor drift 内部折叠
+  `RENDER_INTERNAL_ERROR`。
+- cache：固定 256 MiB inclusive raw budget与 `assetsAndFetch.requestRawCacheBytes`；只对 verified unique key 计费，
+  duplicate reuse；每次 hit 仍重检 lease、length/hash/media/descriptor，corruption 驱逐并失败。无跨请求 cache、
+  ownerScope、negative cache 或 fallback。
+- 允许影响：T102 tracker/map/plan/NOTES、resource Rust module/tests/shared vectors、Python independent verifier、
+  render gate identity/evidence；如无 production dependency 则 Cargo/vendor/process manifest bytes保持不变。
+- 禁止影响：canonical ICC 解压等值、完整 image entropy decode/oriented RGBA8、完整 FONT outline/CFF parse/shaping、
+  decoded cache、fetch skip orchestration、daemon RESULT/Profile registration、scene/raster/JPEG/LayoutTrace、Java/OpenAPI/
+  migration/Web/Product Editor route、formal records、physical certification、J1/A3/READY 与外部副作用。
+- TDD 与 gates：shared corpus + Rust public Interface 先 RED；GREEN 后 focused/workspace/independent/offline → `render` →
+  affected `fast` → sequential `server` → Goal `full` → resolution `fast`。最高只可 `automated_verified`；provider/
+  API Key/费用/真实数据=0，不 push/tag/PR，`/prototype` 不计交付。
+
+### TV1-T102 resolution evidence
+
+- resource deep module 已形成 media/descriptor preparer 与 request-local raw cache：Rust 18 unit + 2 fetch public + 2
+  media/cache public tests 全绿，focused Clippy `-D warnings` 通过；独立 Python verifier 重放 54/54 cases、239
+  checks。T102 vector SHA-256 `e8f8869b0d41b9253a5e61939d9e517f103a0acc5f2fab58eddc5995619c044f`，Asset
+  vector SHA-256 `74638228ba0910079feb86412314361f09d1761583a58176e6449d90435e9da2`，Cargo.lock 保持 SHA-256
+  `5acd41e397411003ae3259820df73033cd9f7a048722eb38bee6c91a8cc71f82`。
+- 首次 `render` `.sdlc/evidence/20260825-001457-render/` 捕获 test-only direct dependency 引起的 lock drift；修正后
+  A1 绿色证据为 `render` `.sdlc/evidence/20260825-001652-render/`（37.673 秒）、affected `fast`
+  `.sdlc/evidence/20260825-001738-fast/`（11.244 秒）、顺序 `server`
+  `.sdlc/evidence/20260825-001757-server/`（1006.124 秒）与 17-step Goal `full`
+  `.sdlc/evidence/20260825-003452-full/`（1524.803 秒）。full 中跨平台 Renderer、App 347/0/0/15、Node 24
+  Web 26 files/212 tests、runtime canary、Playwright 23 passed + 1 controlled skip、Draft journey 与 inference replay
+  E2E 1/1 均绿；R0/R1/P0 provider attempts=0，P0 API Key reads/reservations/cost/open authorization=0。
+- 状态回填后的 resolution `fast` `.sdlc/evidence/20260825-010305-fast/` 3 steps 均 exit 0（11.003 秒）。
+- 状态为 `resolved / automated_verified`；resource bytes
+  `MEDIA_DESCRIPTOR_PREFLIGHT_AUTOMATED_VERIFIED`、raw cache
+  `REQUEST_LOCAL_CONTENT_ADDRESSED_268435456_BYTES_AUTOMATED_VERIFIED_UNWIRED`。完整 IMAGE/FONT decode、decoded
+  cache、Profile、certification、raster、daemon RESULT 与最终 Product Editor route 仍为关闭边界；未运行 provider、
+  读取 API Key、发送真实数据或 push/tag/PR，`/prototype` 不计最终产品交付。
+
 ## 66. TV1-T67 执行卡
 
 - 决策：T66 以 verified commit `a6fabe5` 收口且 worktree clean 后，复算原始 Ticket 10 §3/§7、
