@@ -197,6 +197,7 @@ impl PixelRect {
 struct PreparedContainer {
     paint: Option<PixelRect>,
     descendant_clip: PixelClip,
+    descendant_draw_enabled: bool,
 }
 
 impl EnginePngOutput {
@@ -305,6 +306,7 @@ pub fn render_png(
         children,
         layout.entries(),
         &mut layout_cursor,
+        true,
         PixelClip::surface(surface.width_px(), surface.height_px()),
         bleed_left,
         bleed_top,
@@ -371,6 +373,7 @@ fn prepare_scene(
     nodes: &[Value],
     layout_entries: &[DefiniteLayoutEntry],
     layout_cursor: &mut usize,
+    ancestor_draw_enabled: bool,
     active_clip: PixelClip,
     bleed_left: i128,
     bleed_top: i128,
@@ -395,22 +398,28 @@ fn prepare_scene(
             ))?;
 
         match text_member(node, "kind")? {
-            "rect" => paints.push(prepare_rect_paint(
-                node,
-                layout,
-                active_clip,
-                bleed_left,
-                bleed_top,
-                dpi,
-                surface_width,
-                surface_height,
-            )?),
+            "rect" => {
+                if let Some(paint) = prepare_rect_paint(
+                    node,
+                    layout,
+                    ancestor_draw_enabled,
+                    active_clip,
+                    bleed_left,
+                    bleed_top,
+                    dpi,
+                    surface_width,
+                    surface_height,
+                )? {
+                    paints.push(paint);
+                }
+            }
             "group" => {
-                prepare_group(node, layout)?;
+                let descendant_draw_enabled = prepare_group(node, layout, ancestor_draw_enabled)?;
                 prepare_scene(
                     array_member(node, "children")?,
                     layout_entries,
                     layout_cursor,
+                    descendant_draw_enabled,
                     active_clip,
                     bleed_left,
                     bleed_top,
@@ -424,6 +433,7 @@ fn prepare_scene(
                 let prepared = prepare_container(
                     node,
                     layout,
+                    ancestor_draw_enabled,
                     active_clip,
                     bleed_left,
                     bleed_top,
@@ -438,6 +448,7 @@ fn prepare_scene(
                     array_member(node, "children")?,
                     layout_entries,
                     layout_cursor,
+                    prepared.descendant_draw_enabled,
                     prepared.descendant_clip,
                     bleed_left,
                     bleed_top,
@@ -461,22 +472,24 @@ fn prepare_scene(
 fn prepare_rect_paint(
     node: &Map<String, Value>,
     layout: &DefiniteLayoutEntry,
+    ancestor_draw_enabled: bool,
     active_clip: PixelClip,
     bleed_left: i128,
     bleed_top: i128,
     dpi: u32,
     surface_width: u32,
     surface_height: u32,
-) -> Result<PixelRect, EnginePngError> {
+) -> Result<Option<PixelRect>, EnginePngError> {
     if text_member(node, "kind")? != "rect" {
         return Err(EnginePngError::Unsupported(
             EnginePngUnsupported::SceneStructure,
         ));
     }
-    if !boolean_member(node, "visible")?
-        || !number_equals(node, "opacity", 1.0)?
-        || node.contains_key("stroke")
-    {
+    require_layout_entry(node, layout, "rect", false)?;
+    if !node_draw_enabled(node, ancestor_draw_enabled, EnginePngUnsupported::RectPaint)? {
+        return Ok(None);
+    }
+    if node.contains_key("stroke") {
         return Err(EnginePngError::Unsupported(EnginePngUnsupported::RectPaint));
     }
 
@@ -498,8 +511,7 @@ fn prepare_rect_paint(
         ));
     }
 
-    require_layout_entry(node, layout, "rect", false)?;
-    Ok(active_clip.apply(prepare_layout_rect(
+    Ok(Some(active_clip.apply(prepare_layout_rect(
         layout.layout_box(),
         color,
         bleed_left,
@@ -507,29 +519,38 @@ fn prepare_rect_paint(
         dpi,
         surface_width,
         surface_height,
-    )?))
+    )?)))
 }
 
 fn prepare_group(
     node: &Map<String, Value>,
     layout: &DefiniteLayoutEntry,
-) -> Result<(), EnginePngError> {
-    if text_member(node, "kind")? != "group"
-        || !boolean_member(node, "visible")?
-        || !number_equals(node, "opacity", 1.0)?
-        || !identity_transform(node)?
-    {
+    ancestor_draw_enabled: bool,
+) -> Result<bool, EnginePngError> {
+    if text_member(node, "kind")? != "group" {
         return Err(EnginePngError::Unsupported(
             EnginePngUnsupported::SceneStructure,
         ));
     }
-    require_layout_entry(node, layout, "group", false)
+    require_layout_entry(node, layout, "group", false)?;
+    let draw_enabled = node_draw_enabled(
+        node,
+        ancestor_draw_enabled,
+        EnginePngUnsupported::SceneStructure,
+    )?;
+    if draw_enabled && !identity_transform(node)? {
+        return Err(EnginePngError::Unsupported(
+            EnginePngUnsupported::SceneStructure,
+        ));
+    }
+    Ok(draw_enabled)
 }
 
 #[allow(clippy::too_many_arguments)]
 fn prepare_container(
     node: &Map<String, Value>,
     layout: &DefiniteLayoutEntry,
+    ancestor_draw_enabled: bool,
     active_clip: PixelClip,
     bleed_left: i128,
     bleed_top: i128,
@@ -538,18 +559,29 @@ fn prepare_container(
     surface_height: u32,
 ) -> Result<PreparedContainer, EnginePngError> {
     let kind = text_member(node, "kind")?;
-    if !matches!(kind, "frame" | "stack" | "grid")
-        || !boolean_member(node, "visible")?
-        || !number_equals(node, "opacity", 1.0)?
-        || node.contains_key("stroke")
-        || !identity_transform(node)?
-        || !zero_corner_radii(node)?
-    {
+    if !matches!(kind, "frame" | "stack" | "grid") {
         return Err(EnginePngError::Unsupported(
             EnginePngUnsupported::FramePaint,
         ));
     }
     require_layout_entry(node, layout, kind, true)?;
+    let draw_enabled = node_draw_enabled(
+        node,
+        ancestor_draw_enabled,
+        EnginePngUnsupported::FramePaint,
+    )?;
+    if !draw_enabled {
+        return Ok(PreparedContainer {
+            paint: None,
+            descendant_clip: active_clip,
+            descendant_draw_enabled: false,
+        });
+    }
+    if node.contains_key("stroke") || !identity_transform(node)? || !zero_corner_radii(node)? {
+        return Err(EnginePngError::Unsupported(
+            EnginePngUnsupported::FramePaint,
+        ));
+    }
     let clip_content = boolean_member(node, "clipContent")?;
 
     let bounds = if clip_content {
@@ -615,7 +647,25 @@ fn prepare_container(
     Ok(PreparedContainer {
         paint,
         descendant_clip,
+        descendant_draw_enabled: true,
     })
+}
+
+fn node_draw_enabled(
+    node: &Map<String, Value>,
+    ancestor_draw_enabled: bool,
+    partial_opacity: EnginePngUnsupported,
+) -> Result<bool, EnginePngError> {
+    let visible = boolean_member(node, "visible")?;
+    let zero_opacity = number_equals(node, "opacity", 0.0)?;
+    let full_opacity = number_equals(node, "opacity", 1.0)?;
+    if !ancestor_draw_enabled || !visible || zero_opacity {
+        Ok(false)
+    } else if full_opacity {
+        Ok(true)
+    } else {
+        Err(EnginePngError::Unsupported(partial_opacity))
+    }
 }
 
 fn identity_transform(node: &Map<String, Value>) -> Result<bool, EnginePngError> {

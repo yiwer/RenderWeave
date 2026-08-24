@@ -3227,6 +3227,44 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
   certification NOT_CERTIFIED、process raster ABSENT、daemon UNWIRED、product route CLOSED，
   provider attempts/API Key reads/费用/真实数据=0，visual diff J0，未 push/tag/PR，`/prototype` 不计最终产品交付。
 
+## 98. TV1-T99 执行卡
+
+- 决策：T98 verified commit `4449494` 收口且 worktree clean 后，复核剩余 Engine/Profile 合同。partial alpha/
+  source-over、vector AA 与 pinned Skia build 尚无 executable Profile algorithm；但 `visible:false` / `opacity:0`
+  的 draw-stage subtree suppression 已由 Ticket 10 冻结，且无需选择这些缺位算法，因此登记为当前 frontier。
+- Interface/seam：唯一入口仍为 `render_png(&AdmittedRenderDocument, dpi)`；resource manifest admission、surface
+  preflight 与完整 `layout_definite_resource_free` 均先于 suppression。每个 occurrence 仍消费 authoritative preorder
+  layout entry；仅 draw-disabled subtree 跳过 paint-only lowering，后续 sibling 保持 authored order。
+- 允许影响：T99 tracker/plan/NOTES、shared Engine-PNG vectors、Rust Engine/tests、独立 Python verifier、render gate
+  identity/assertions/evidence。
+- 禁止影响：partial opacity/source-over/premultiply、partial background alpha、rounded/Ellipse/Vector/Text/Image/QR/
+  Barcode raster、resource fetch/decode/font/JPEG、compositionViewport、process manifest/Profile registration/daemon
+  RESULT、Java/OpenAPI/migration/Web/E6/product route、formal records、physical certification、J1/A3/READY 与外部副作用。
+- TDD：两个正例分别以 `visible:false` Frame 与 `opacity:0` Frame 抑制 self/child，exact PNG 复用既有单 Rect
+  byte oracle；hidden IMAGE 负例保持 `RESOURCE_MANIFEST`，partial node opacity 继续 `RECT_PAINT`。共同 RED 后
+  目标 13 rendered + 13 unsupported、26 cases/82 checks。focused 后依次 `render`、affected `fast`、顺序
+  `server`、Goal `full`、resolution `fast`。
+  最高只可 `automated_verified`；不运行 provider/读取 API Key，不 push/tag/PR。
+
+### TV1-T99 resolution evidence
+
+- RED：新增正例时 Rust 对 `visible:false` 与 `opacity:0` Frame 均返回 `FRAME_PAINT`，独立 Python replay 对同一
+  shared corpus 产生 expectation drift。GREEN：唯一 Engine Interface 以继承式 draw eligibility 消费完整
+  authoritative layout preorder；suppression 只跳过 paint lowering，不跳过 resource admission、surface preflight
+  或 definite layout，后续 sibling 保持 authored order，partial opacity 继续 fail closed。
+- focused Rust Engine vectors 2/2、独立 Python 13 rendered + 13 unsupported = 26/26 cases、82 checks；vector
+  SHA-256 `8c78f2863dba7033880158e409b506adf65b5a32e92379ce39988ed97a434c5a`。
+- `render` `.sdlc/evidence/20260824-200342-render/`、affected `fast`
+  `.sdlc/evidence/20260824-200412-fast/`、顺序 `server` `.sdlc/evidence/20260824-200431-server/` 与 17-step
+  `full` `.sdlc/evidence/20260824-202155-full/` 均 exit 0；full 用时 1556.353 秒，App 344/0/0/15、Node 24 Web
+  26 files/212 tests、runtime canary、Playwright 23 passed + 1 controlled skip、Draft browser journey 与 inference
+  replay E2E 1/1 均通过。状态回填后的 resolution `fast` `.sdlc/evidence/20260824-205049-fast/` 亦 exit 0
+  （9.523 秒）。
+- 状态为 `resolved/automated_verified`；renderer boundary 为
+  `PREORDER_DEFINITE_IDENTITY_GROUP_FRAME_STACK_GRID_RECT_PIXEL_ALIGNED_OPAQUE_RECTANGULAR_CLIP_VISIBILITY_ZERO_OPACITY_SUPPRESSION_PNG_KERNEL_UNWIRED`。
+  Profile NOT_REGISTERED、certification NOT_CERTIFIED、process raster ABSENT、daemon UNWIRED、正式产品 route CLOSED；
+  provider attempts/API Key reads/费用/真实数据=0，未 push/tag/PR，`/prototype` 不计最终产品交付。
+
 ## 66. TV1-T67 执行卡
 
 - 决策：T66 以 verified commit `a6fabe5` 收口且 worktree clean 后，复算原始 Ticket 10 §3/§7、

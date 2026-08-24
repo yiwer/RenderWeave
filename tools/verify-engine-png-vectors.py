@@ -336,15 +336,20 @@ def prepare_rect(
     dpi: int,
     width: int,
     height: int,
+    ancestor_draw_enabled: bool,
     active_clip: tuple[int, int, int, int],
-) -> tuple[int, int, int, int, bytes] | dict[str, str]:
+) -> tuple[int, int, int, int, bytes] | None | dict[str, str]:
     if not isinstance(child, dict) or child.get("kind") != "rect":
         return {"feature": "SCENE_STRUCTURE"}
-    if (
-        child.get("visible") is not True
-        or not number_is(child.get("opacity"), "1")
-        or "stroke" in child
-    ):
+    box = require_layout_entry(child, entry, "rect", False)
+    draw_enabled = node_draw_enabled(
+        child, ancestor_draw_enabled, "RECT_PAINT"
+    )
+    if isinstance(draw_enabled, dict):
+        return draw_enabled
+    if not draw_enabled:
+        return None
+    if "stroke" in child:
         return {"feature": "RECT_PAINT"}
 
     if not identity_transform(child):
@@ -360,23 +365,25 @@ def prepare_rect(
     if color[3] != 255:
         return {"feature": "NON_OPAQUE_RECT_ALPHA"}
 
-    box = require_layout_entry(child, entry, "rect", False)
     return prepare_layout_rect(
         box, color, canvas, dpi, width, height, active_clip
     )
 
 
-def prepare_group(child: Any, entry: Any) -> None | dict[str, str]:
-    if (
-        not isinstance(child, dict)
-        or child.get("kind") != "group"
-        or child.get("visible") is not True
-        or not number_is(child.get("opacity"), "1")
-        or not identity_transform(child)
-    ):
+def prepare_group(
+    child: Any, entry: Any, ancestor_draw_enabled: bool
+) -> bool | dict[str, str]:
+    if not isinstance(child, dict) or child.get("kind") != "group":
         return {"feature": "SCENE_STRUCTURE"}
     require_layout_entry(child, entry, "group", False)
-    return None
+    draw_enabled = node_draw_enabled(
+        child, ancestor_draw_enabled, "SCENE_STRUCTURE"
+    )
+    if isinstance(draw_enabled, dict):
+        return draw_enabled
+    if draw_enabled and not identity_transform(child):
+        return {"feature": "SCENE_STRUCTURE"}
+    return draw_enabled
 
 
 def prepare_container(
@@ -386,24 +393,34 @@ def prepare_container(
     dpi: int,
     width: int,
     height: int,
+    ancestor_draw_enabled: bool,
     active_clip: tuple[int, int, int, int],
 ) -> tuple[
     tuple[int, int, int, int, bytes] | None,
     tuple[int, int, int, int],
+    bool,
 ] | dict[str, str]:
     if (
         not isinstance(child, dict)
         or child.get("kind") not in {"frame", "stack", "grid"}
-        or child.get("visible") is not True
-        or not number_is(child.get("opacity"), "1")
-        or "stroke" in child
         or not isinstance(child.get("clipContent"), bool)
-        or not identity_transform(child)
-        or not zero_corner_radii(child)
     ):
         return {"feature": "FRAME_PAINT"}
 
     box = require_layout_entry(child, entry, child["kind"], True)
+    draw_enabled = node_draw_enabled(
+        child, ancestor_draw_enabled, "FRAME_PAINT"
+    )
+    if isinstance(draw_enabled, dict):
+        return draw_enabled
+    if not draw_enabled:
+        return None, active_clip, False
+    if (
+        "stroke" in child
+        or not identity_transform(child)
+        or not zero_corner_radii(child)
+    ):
+        return {"feature": "FRAME_PAINT"}
     clip_content = child["clipContent"]
     bounds = None
     if clip_content:
@@ -436,7 +453,24 @@ def prepare_container(
         if clip_content and bounds is not None
         else active_clip
     )
-    return paint, descendant_clip
+    return paint, descendant_clip, True
+
+
+def node_draw_enabled(
+    child: dict[str, Any],
+    ancestor_draw_enabled: bool,
+    partial_opacity_feature: str,
+) -> bool | dict[str, str]:
+    visible = child.get("visible")
+    if not isinstance(visible, bool):
+        raise VerificationFailure("Scene visibility is not boolean")
+    zero_opacity = number_is(child.get("opacity"), "0")
+    full_opacity = number_is(child.get("opacity"), "1")
+    if not ancestor_draw_enabled or not visible or zero_opacity:
+        return False
+    if full_opacity:
+        return True
+    return {"feature": partial_opacity_feature}
 
 
 def scene_kinds_supported(children: list[Any]) -> bool:
@@ -462,6 +496,7 @@ def prepare_scene(
     dpi: int,
     width: int,
     height: int,
+    ancestor_draw_enabled: bool,
     active_clip: tuple[int, int, int, int],
 ) -> list[tuple[int, int, int, int, bytes]] | dict[str, str]:
     paints: list[tuple[int, int, int, int, bytes]] = []
@@ -474,25 +509,41 @@ def prepare_scene(
         layout_cursor[0] += 1
         if child["kind"] == "rect":
             rect = prepare_rect(
-                child, entry, canvas, dpi, width, height, active_clip
+                child,
+                entry,
+                canvas,
+                dpi,
+                width,
+                height,
+                ancestor_draw_enabled,
+                active_clip,
             )
             if isinstance(rect, dict):
                 return rect
-            paints.append(rect)
+            if rect is not None:
+                paints.append(rect)
             continue
 
         if child["kind"] == "group":
-            group = prepare_group(child, entry)
+            group = prepare_group(child, entry, ancestor_draw_enabled)
             if isinstance(group, dict):
                 return group
             descendant_clip = active_clip
+            descendant_draw_enabled = group
         else:
             container = prepare_container(
-                child, entry, canvas, dpi, width, height, active_clip
+                child,
+                entry,
+                canvas,
+                dpi,
+                width,
+                height,
+                ancestor_draw_enabled,
+                active_clip,
             )
             if isinstance(container, dict):
                 return container
-            container_paint, descendant_clip = container
+            container_paint, descendant_clip, descendant_draw_enabled = container
             if container_paint is not None:
                 paints.append(container_paint)
         nested = prepare_scene(
@@ -503,6 +554,7 @@ def prepare_scene(
             dpi,
             width,
             height,
+            descendant_draw_enabled,
             descendant_clip,
         )
         if isinstance(nested, dict):
@@ -614,6 +666,7 @@ def execute(
         dpi,
         width,
         height,
+        True,
         (0, 0, width, height),
     )
     if isinstance(rects, dict):
@@ -669,14 +722,14 @@ def verify(path: Path) -> dict[str, Any]:
     verifier.require(boundary == {
         "profileAvailability": "NOT_REGISTERED",
         "certificationStatus": "NOT_CERTIFIED",
-        "enginePngKernel": "PREORDER_DEFINITE_IDENTITY_GROUP_FRAME_STACK_GRID_RECT_PIXEL_ALIGNED_OPAQUE_RECTANGULAR_CLIP_PNG_KERNEL_UNWIRED",
+        "enginePngKernel": "PREORDER_DEFINITE_IDENTITY_GROUP_FRAME_STACK_GRID_RECT_PIXEL_ALIGNED_OPAQUE_RECTANGULAR_CLIP_VISIBILITY_ZERO_OPACITY_SUPPRESSION_PNG_KERNEL_UNWIRED",
         "processRasterImplementation": "ABSENT",
         "daemonOutputPath": "UNWIRED",
         "productRoute": "CLOSED",
         "providerAttempts": 0,
     }, "Engine PNG honest boundary drifted")
-    verifier.require(len(vectors["renderedCases"]) == 11, "rendered case count drifted")
-    verifier.require(len(vectors["unsupportedCases"]) == 11, "unsupported case count drifted")
+    verifier.require(len(vectors["renderedCases"]) == 13, "rendered case count drifted")
+    verifier.require(len(vectors["unsupportedCases"]) == 13, "unsupported case count drifted")
 
     seen: set[str] = set()
     for family in ("renderedCases", "unsupportedCases"):

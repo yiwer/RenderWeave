@@ -492,6 +492,12 @@ Label: wayfinder:map
   派生 canonical RESULT metadata、length/SHA-256 与 UUID network-order image payload，Rust 直接重放既有跨语言
   RESULT vectors。focused 3/3、protocol 10 tests、Rust workspace 与 `render`/affected `fast`/顺序 `server`/
   17-step `full`/resolution `fast` 均绿；daemon/Profile/E6/正式产品 route 保持关闭。
+- [实现 Renderer visible/zero-opacity 子树绘制抑制内核](issues/99-visible-zero-opacity-draw-suppression-kernel.md) —
+  **resolved / automated_verified**；在完整 resource admission 与 authoritative definite layout 之后，以继承式
+  draw eligibility 跳过 `visible:false` / exact `opacity:0` 的 self + descendants，后续 sibling 保持 authored
+  order，hidden resource 仍先返回 `RESOURCE_MANIFEST`，partial opacity 继续 fail closed。Rust 2/2、独立 Python
+  26/26 cases/82 checks，`render`/affected `fast`/顺序 `server`/17-step `full`/resolution `fast` 均绿；Profile
+  NOT_REGISTERED、daemon UNWIRED、E6/正式产品 route CLOSED，未把 `/prototype` 当作交付。
 - [验证 Product Editor 状态、恢复与权威预览架构](issues/09-validate-product-editor-architecture.md) —
   throwaway 逻辑原型（`/prototype/editor-state-model`，不进产品 route）把冻结编辑器规则编码为确定性
   fixture 状态机：10 个引导走查场景 37/37 断言 + 自由操作冒烟 + 键盘焦点检查全部通过（Playwright A1，

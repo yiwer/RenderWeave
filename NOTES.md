@@ -1,6 +1,19 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-24 **Template v1 implementation TV1-T99 已由 Codex `/root` single-writer 完成，状态
+  `resolved/automated_verified`**：RED 时 Rust 对两个 suppression 正例均返回 `FRAME_PAINT`，独立 Python replay
+  同步 drift；现以继承式 draw eligibility 在完整 resource admission 与 authoritative definite layout 之后抑制
+  `visible:false` / exact `opacity:0` 的 self + descendants，后续 sibling 保持 authored order，hidden resource
+  仍先失败且 partial opacity 继续 fail closed。Rust 2/2、独立 Python 26/26 cases/82 checks，vector SHA-256
+  `8c78f2863dba7033880158e409b506adf65b5a32e92379ce39988ed97a434c5a`。`render`
+  `.sdlc/evidence/20260824-200342-render/`、affected `fast` `.sdlc/evidence/20260824-200412-fast/`、顺序
+  `server` `.sdlc/evidence/20260824-200431-server/` 与 17-step `full`
+  `.sdlc/evidence/20260824-202155-full/` 均绿；full 用时 1556.353 秒，App 344/0/0/15、Node 24 Web
+  26 files/212 tests、runtime canary、Playwright 23 passed + 1 controlled skip、Draft browser journey 与 inference
+  replay E2E 1/1 均通过；状态回填后的 resolution `fast` `.sdlc/evidence/20260824-205049-fast/` 亦绿
+  （9.523 秒）。Profile NOT_REGISTERED、certification NOT_CERTIFIED、process raster ABSENT、daemon UNWIRED、
+  正式产品 route CLOSED；provider/API Key/费用/真实数据=0，未 push/tag/PR，未把 `/prototype` 视为最终产品交付。
 - 2026-08-24 **Template v1 implementation TV1-T98 已由 Codex `/root` single-writer 完成，状态
   `resolved/automated_verified`**：public-interface RED 后完成唯一纯 `seal_result` deep Interface，从 closed v1
   identity/output 与 owned exact image bytes 派生 canonical metadata、raw lowercase SHA-256、byteLength 和 UUID
