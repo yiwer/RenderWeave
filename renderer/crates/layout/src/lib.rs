@@ -2126,6 +2126,17 @@ fn stack_main_fill_allocations(
                     {
                         second_minimum_freeze = Some((position, minimum));
                     }
+                    (Some(minimum), Some(maximum))
+                        if minimum.is_finite()
+                            && maximum.is_finite()
+                            && minimum > 0.0
+                            && maximum >= minimum
+                            && allocations[position].1 >= minimum
+                            && allocations[position].1 <= maximum
+                            && second_minimum_freeze.is_none() =>
+                    {
+                        second_minimum_freeze = Some((position, minimum));
+                    }
                     _ => {
                         unfrozen_overflow_bound_shape_supported = false;
                         break;

@@ -1,6 +1,25 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-24 **Template v1 implementation TV1-T87 已由 Codex `/root` single-writer 完成，状态
+  `resolved/automated_verified`**：T86 second-min child 现可再携带在初始 proportional share 与最终 second min
+  下均 inactive 的合法 finite/nonnegative max，仍固定提交 `firstMin/secondMin/0`，不新增 division、redistribution、
+  第三次 freeze、循环或 tolerance。shared `/50` 的 Rust/Python 在首个转正 case、同一 `STACK_MAIN_FILL`
+  occurrence `rwocc_0000000000000002` 共同 RED；独立实现后为 227 laid-out + 16 unsupported、243/243 cases、
+  727 checks，equality positives 全绿，额外 inactive max-only replacement negative 仍 fail closed。vector SHA-256
+  `bb8ba56c2130e72c5d0d14f42b96df777b827b8b7fb3582c597e0faabe886590`，fixture `/3` SHA-256 保持
+  `a11475bcebad7e1c35cb0acd7018419d94afcb4b37d7f1df7346a055ad1df669`。`render`
+  `.sdlc/evidence/20260824-064528-render/`（24.440 秒）、affected `fast`
+  `.sdlc/evidence/20260824-064601-fast/`（10.434 秒）、顺序 `server`
+  `.sdlc/evidence/20260824-064618-server/`（1166.890 秒）均 exit 0。首次 `full`
+  `.sdlc/evidence/20260824-070557-full/` 仅在最后 prototype E2E 因 Windows `net::ERR_NO_BUFFER_SPACE` 瞬态超时；
+  精确用例未改代码隔离重跑 `.sdlc/evidence/20260824-073509-t87-playwright-isolated/` 1/1 通过，权威重跑
+  `.sdlc/evidence/20260824-073525-full/` 17 steps 全部 exit 0（1738.701 秒）。full definite replay 243/243、
+  727 checks，App 344/0/0/15、Node 24 Web 26 files/212 tests、runtime canary、23 passed + 1 controlled skip
+  Playwright、Draft journey 与 inference replay E2E 1/1 全绿。R0/R1/P0 provider attempts=0，P0 API Key
+  reads/reservations/cost=0；R1 A2 60 cases/58 metrics、P0 A2 60 cases（20 holdout）/58 metrics。
+  resolution `fast` `.sdlc/evidence/20260824-080607-fast/` 3 steps 均 exit 0（A1，14.968 秒）。Profile/A3/J1/
+  READY 未推进，未运行 provider、读取 API Key 或发送真实数据，未 push/tag/PR。
 - 2026-08-24 **Template v1 implementation TV1-T86 已由 Codex `/root` single-writer 完成，状态
   `resolved/automated_verified`**：exactly-three main FILL 的首个合法 mixed active min 严格大于 remaining、
   另一个 finite positive min-only 在初始 share 下 inactive 而终止正零下 active 时，现固定按 authored position
