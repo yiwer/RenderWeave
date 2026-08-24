@@ -1,9 +1,9 @@
 //! Constant Linux UDS daemon for the RenderWeave renderer process seam.
 //!
 //! The process intentionally has no registered raster profile. A structurally admitted command is
-//! also passed through command-bound resource lease coverage and the static Layout Profile
-//! preflight, then recorded in the in-memory registry with one stable terminal problem; no image,
-//! scene, or partial result can be produced here.
+//! passed through command-bound resource lease coverage, static Layout Profile preflight, and the
+//! complete manifest-order resource preparation pipeline, then recorded in the in-memory registry
+//! with one stable terminal problem; no image, scene, or partial result can be produced here.
 
 #[cfg(any(unix, test))]
 use renderweave_renderer_document::{validate_render_document, validate_resource_lease_coverage};
@@ -16,16 +16,16 @@ use renderweave_renderer_protocol::{
     parse_command, problem_bytes, read_frame, resource_limit_problem_bytes, resource_problem_bytes,
     server_hello_bytes, validate_process_manifest, write_frame,
 };
-#[cfg(test)]
-use renderweave_renderer_resource::FetchedResource;
 #[cfg(target_os = "linux")]
 use renderweave_renderer_resource::HttpsResourceFetcher;
 use renderweave_renderer_resource::{
     ASSET_FETCH_PATH_PREFIX, FetchEgressPolicy, FetchTargetPolicy,
 };
+#[cfg(test)]
+use renderweave_renderer_resource::{FetchedResource, ResourceFetchProblem};
 #[cfg(any(unix, test))]
 use renderweave_renderer_resource::{
-    ResourceFetchProblem, ResourceFetchProblemCode, ResourceFetcher,
+    ManifestResourcePreparer, ResourceFetcher, ResourcePipelineProblem, ResourcePreparationProfile,
 };
 #[cfg(any(unix, test))]
 use std::collections::BTreeMap;
@@ -449,29 +449,27 @@ impl RequestRegistry {
                             EngineStage::DocumentAdmission,
                         )?
                     } else {
-                        let targets = document
-                            .resources()
-                            .iter()
-                            .map(|resource| {
-                                self.fetch_target_policy
-                                    .admit(resource)
-                                    .expect("all targets were admitted above")
-                            })
-                            .collect::<Vec<_>>();
-                        if let Err(problem) = self
-                            .resource_fetcher
-                            .fetch_resources(&targets, admitted.deadline_epoch_millis)
-                        {
-                            resource_fetch_problem_bytes(&request_id, &problem)?
-                        } else {
-                            // The exact process manifest has no registered raster profile. This is a
-                            // real, stable fail-closed terminal result, never a synthetic image
-                            // implementation.
-                            problem_bytes(
-                                &request_id,
-                                "RENDER_INTERNAL_ERROR",
-                                EngineStage::CommandAdmission,
-                            )?
+                        let preparer = ManifestResourcePreparer::new(
+                            &self.fetch_target_policy,
+                            self.resource_fetcher.as_ref(),
+                            ResourcePreparationProfile::RendererV1,
+                        );
+                        match preparer.prepare(
+                            document.resources(),
+                            admitted.deadline_epoch_millis,
+                            now_epoch_millis,
+                        ) {
+                            Err(problem) => resource_pipeline_problem_bytes(&request_id, &problem)?,
+                            Ok(_prepared_manifest) => {
+                                // The exact process manifest has no registered raster profile. This is a
+                                // real, stable fail-closed terminal result, never a synthetic image
+                                // implementation.
+                                problem_bytes(
+                                    &request_id,
+                                    "RENDER_INTERNAL_ERROR",
+                                    EngineStage::CommandAdmission,
+                                )?
+                            }
                         }
                     }
                 }
@@ -533,16 +531,15 @@ impl RequestRegistry {
 }
 
 #[cfg(any(unix, test))]
-fn resource_fetch_problem_bytes(
+fn resource_pipeline_problem_bytes(
     request_id: &str,
-    problem: &ResourceFetchProblem,
+    problem: &ResourcePipelineProblem,
 ) -> Result<Vec<u8>, ProtocolError> {
-    if problem.code() == ResourceFetchProblemCode::RenderDeadlineExceeded {
-        return problem_bytes(
-            request_id,
-            problem.code().as_str(),
-            EngineStage::ResourcePreparation,
-        );
+    if matches!(
+        problem.code(),
+        "RENDER_DEADLINE_EXCEEDED" | "RENDER_INTERNAL_ERROR"
+    ) {
+        return problem_bytes(request_id, problem.code(), EngineStage::ResourcePreparation);
     }
     let Some(resource_id) = problem.resource_id() else {
         return problem_bytes(
@@ -551,7 +548,7 @@ fn resource_fetch_problem_bytes(
             EngineStage::ResourcePreparation,
         );
     };
-    if problem.code() == ResourceFetchProblemCode::ResourceBudgetExceeded {
+    if problem.code() == "RESOURCE_BUDGET_EXCEEDED" {
         let Some(limit_id) = problem.limit_id() else {
             return problem_bytes(
                 request_id,
@@ -561,7 +558,7 @@ fn resource_fetch_problem_bytes(
         };
         return resource_limit_problem_bytes(
             request_id,
-            problem.code().as_str(),
+            problem.code(),
             EngineStage::ResourcePreparation,
             resource_id,
             limit_id,
@@ -569,7 +566,7 @@ fn resource_fetch_problem_bytes(
     }
     resource_problem_bytes(
         request_id,
-        problem.code().as_str(),
+        problem.code(),
         EngineStage::ResourcePreparation,
         resource_id,
     )
@@ -596,6 +593,9 @@ mod tests {
     const VECTORS: &str = include_str!("../../../protocol-vectors-v1.json");
     const PROCESS_MANIFEST: &[u8] = include_bytes!("../../../process-manifest.json");
     const ALL_KINDS: &str = include_str!("../../../render-document-all-kinds-v1.json");
+    const ASSET_VECTORS: &str = include_str!(
+        "../../../../renderweave-asset/src/test/resources/cn/hbads/renderweave/asset/acceptance-kernel-v1/vectors.json"
+    );
     const ASSET_FETCH_ORIGIN: &str = "https://render.internal.example";
     const ASSET_FETCH_ALLOWED_IPS: [&str; 1] = ["127.0.0.1"];
 
@@ -821,11 +821,12 @@ mod tests {
 
     #[test]
     fn registry_fetches_admitted_resources_in_manifest_order_before_profile_lookup() {
-        let document = renderable_resource_document();
+        let (document, bodies) = renderable_resource_fixture();
         let command = command_with_document(&document);
         let observations = Arc::new(Mutex::new(Vec::new()));
         let fetcher = Arc::new(RecordingResourceFetcher {
             observations: observations.clone(),
+            bodies,
             fail_first: false,
         });
         let mut registry = request_registry_with(fetcher);
@@ -844,20 +845,21 @@ mod tests {
         assert_eq!(problem["engineStage"], "COMMAND_ADMISSION");
         assert_eq!(
             observations.lock().unwrap().as_slice(),
-            &[vec![
+            &[
                 "rwres_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_owned(),
                 "rwres_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".to_owned(),
-            ]]
+            ]
         );
     }
 
     #[test]
     fn registry_maps_fetch_failure_to_safe_resource_problem_and_replays_without_refetch() {
-        let document = renderable_resource_document();
+        let (document, bodies) = renderable_resource_fixture();
         let command = command_with_document(&document);
         let observations = Arc::new(Mutex::new(Vec::new()));
         let fetcher = Arc::new(RecordingResourceFetcher {
             observations: observations.clone(),
+            bodies,
             fail_first: true,
         });
         let mut registry = request_registry_with(fetcher);
@@ -879,6 +881,49 @@ mod tests {
             "rwres_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
         );
         assert_eq!(problem["parameters"], serde_json::json!({}));
+
+        let replay = registry
+            .handle(
+                Frame {
+                    frame_type: FrameType::Command,
+                    payload: command.into_bytes(),
+                },
+                1_800_000_000_001,
+            )
+            .unwrap();
+        assert_eq!(replay.payload, first.payload);
+        assert_eq!(observations.lock().unwrap().len(), 1);
+    }
+
+    #[test]
+    fn registry_prepares_each_resource_before_fetching_the_next_and_replays_failure() {
+        let (document, bodies) = media_mismatch_resource_fixture();
+        let command = command_with_document(&document);
+        let observations = Arc::new(Mutex::new(Vec::new()));
+        let fetcher = Arc::new(RecordingResourceFetcher {
+            observations: observations.clone(),
+            bodies,
+            fail_first: false,
+        });
+        let mut registry = request_registry_with(fetcher);
+
+        let first = registry
+            .handle(
+                Frame {
+                    frame_type: FrameType::Command,
+                    payload: command.as_bytes().to_vec(),
+                },
+                1_800_000_000_000,
+            )
+            .unwrap();
+        let problem: Value = serde_json::from_slice(&first.payload).unwrap();
+        assert_eq!(problem["code"], "MEDIA_MISMATCH");
+        assert_eq!(problem["engineStage"], "RESOURCE_PREPARATION");
+        assert_eq!(
+            problem["resourceId"],
+            "rwres_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        );
+        assert_eq!(observations.lock().unwrap().len(), 1);
 
         let replay = registry
             .handle(
@@ -1033,59 +1078,164 @@ mod tests {
     struct SuccessResourceFetcher;
 
     impl ResourceFetcher for SuccessResourceFetcher {
-        fn fetch_resources(
+        fn fetch_resource(
             &self,
-            _targets: &[renderweave_renderer_resource::AdmittedFetchTarget<'_>],
+            _target: &renderweave_renderer_resource::AdmittedFetchTarget<'_>,
             _deadline_epoch_millis: i64,
-        ) -> Result<Vec<FetchedResource>, ResourceFetchProblem> {
-            Ok(Vec::new())
+            _state: &mut renderweave_renderer_resource::RequestResourceFetchState,
+        ) -> Result<FetchedResource, ResourceFetchProblem> {
+            panic!("the fixture command must not fetch a resource")
         }
     }
 
     struct RecordingResourceFetcher {
-        observations: Arc<Mutex<Vec<Vec<String>>>>,
+        observations: Arc<Mutex<Vec<String>>>,
+        bodies: BTreeMap<String, Vec<u8>>,
         fail_first: bool,
     }
 
     impl ResourceFetcher for RecordingResourceFetcher {
-        fn fetch_resources(
+        fn fetch_resource(
             &self,
-            targets: &[renderweave_renderer_resource::AdmittedFetchTarget<'_>],
+            target: &renderweave_renderer_resource::AdmittedFetchTarget<'_>,
             _deadline_epoch_millis: i64,
-        ) -> Result<Vec<FetchedResource>, ResourceFetchProblem> {
-            self.observations.lock().unwrap().push(
-                targets
-                    .iter()
-                    .map(|target| target.resource_id().to_owned())
-                    .collect(),
-            );
-            if self.fail_first {
-                return Err(ResourceFetchProblem::fetch_failed(
-                    targets.first().unwrap().resource_id(),
-                ));
+            state: &mut renderweave_renderer_resource::RequestResourceFetchState,
+        ) -> Result<FetchedResource, ResourceFetchProblem> {
+            let mut observations = self.observations.lock().unwrap();
+            let is_first = observations.is_empty();
+            observations.push(target.resource_id().to_owned());
+            drop(observations);
+            if self.fail_first && is_first {
+                return Err(ResourceFetchProblem::fetch_failed(target.resource_id()));
             }
-            Ok(Vec::new())
+            state.verify_owned_body(
+                target,
+                self.bodies
+                    .get(target.resource_id())
+                    .expect("fixture body must exist")
+                    .clone()
+                    .into_boxed_slice(),
+            )
         }
     }
 
-    fn renderable_resource_document() -> String {
+    fn renderable_resource_fixture() -> (String, BTreeMap<String, Vec<u8>>) {
         let mut document: Value = serde_json::from_str(ALL_KINDS).unwrap();
         let mut text = document["canvas"]["children"][4].clone();
         let mut image = document["canvas"]["children"][5].clone();
         text["occurrenceId"] = Value::String("rwocc_0000000000000001".to_owned());
         image["occurrenceId"] = Value::String("rwocc_0000000000000002".to_owned());
         document["canvas"]["children"] = serde_json::json!([text, image]);
-        let resources = document["resources"].as_array_mut().unwrap();
-        for (index, resource) in resources.iter_mut().enumerate() {
-            resource["expiresAt"] = Value::from(4_090_912_502_u64);
-            resource["fetchUrl"] = Value::String(format!(
-                "{ASSET_FETCH_ORIGIN}/internal/render-assets/token-{index}"
-            ));
-        }
+        let asset_vectors: Value = serde_json::from_str(ASSET_VECTORS).unwrap();
+        let font_case = asset_case(&asset_vectors, "font-ttf-admitted");
+        let image_case = asset_case(&asset_vectors, "png-rgba-admitted");
+        let font_id = "rwres_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+        let image_id = "rwres_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+        document["resources"] = serde_json::json!([
+            render_resource(
+                font_case,
+                font_id,
+                &format!("{ASSET_FETCH_ORIGIN}/internal/render-assets/token-0")
+            ),
+            render_resource(
+                image_case,
+                image_id,
+                &format!("{ASSET_FETCH_ORIGIN}/internal/render-assets/token-1")
+            )
+        ]);
         let document = serde_json::to_string(&document).unwrap();
         let admitted = validate_render_document(&document).unwrap();
         assert!(preflight_layout(&admitted).is_ok());
-        document
+        let bodies = BTreeMap::from([
+            (font_id.to_owned(), asset_body(font_case)),
+            (image_id.to_owned(), asset_body(image_case)),
+        ]);
+        (document, bodies)
+    }
+
+    fn media_mismatch_resource_fixture() -> (String, BTreeMap<String, Vec<u8>>) {
+        let (document, mut bodies) = renderable_resource_fixture();
+        let mut document: Value = serde_json::from_str(&document).unwrap();
+        let asset_vectors: Value = serde_json::from_str(ASSET_VECTORS).unwrap();
+        let image_case = asset_case(&asset_vectors, "png-rgba-admitted");
+        let image_expected = &image_case["expected"];
+        let first_id = "rwres_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+        document["resources"][0]["byteLength"] = image_expected["byteLength"].clone();
+        document["resources"][0]["sha256"] = Value::String(format!(
+            "sha256:{}",
+            image_expected["sha256"].as_str().unwrap()
+        ));
+        bodies.insert(first_id.to_owned(), asset_body(image_case));
+        let document = serde_json::to_string(&document).unwrap();
+        let admitted = validate_render_document(&document).unwrap();
+        assert!(preflight_layout(&admitted).is_ok());
+        (document, bodies)
+    }
+
+    fn asset_case<'a>(vectors: &'a Value, id: &str) -> &'a Value {
+        vectors["cases"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|case| case["id"] == id)
+            .unwrap()
+    }
+
+    fn asset_body(case: &Value) -> Vec<u8> {
+        decode_base64(case["input"]["data"].as_str().unwrap())
+    }
+
+    fn render_resource(case: &Value, resource_id: &str, fetch_url: &str) -> Value {
+        let expected = &case["expected"];
+        let mut descriptor = expected["descriptor"].as_object().unwrap().clone();
+        let descriptor_kind = descriptor.remove("type").unwrap();
+        descriptor.insert(
+            "kind".to_owned(),
+            Value::String(descriptor_kind.as_str().unwrap().to_ascii_lowercase()),
+        );
+        let media_type = if case["id"].as_str().unwrap().starts_with("font-ttf-") {
+            "font/ttf"
+        } else {
+            "image/png"
+        };
+        serde_json::json!({
+            "acceptanceProfileId": "renderweave-asset-acceptance/1.0",
+            "byteLength": expected["byteLength"],
+            "expiresAt": 4_090_912_502_u64,
+            "fetchUrl": fetch_url,
+            "kind": expected["kind"].as_str().unwrap().to_ascii_lowercase(),
+            "mediaType": media_type,
+            "resourceId": resource_id,
+            "sha256": format!("sha256:{}", expected["sha256"].as_str().unwrap()),
+            "technicalDescriptor": Value::Object(descriptor)
+        })
+    }
+
+    fn decode_base64(value: &str) -> Vec<u8> {
+        let mut output = Vec::new();
+        let mut accumulator = 0_u32;
+        let mut bits = 0_u8;
+        for byte in value.bytes() {
+            if byte == b'=' {
+                break;
+            }
+            let value = match byte {
+                b'A'..=b'Z' => byte - b'A',
+                b'a'..=b'z' => byte - b'a' + 26,
+                b'0'..=b'9' => byte - b'0' + 52,
+                b'+' => 62,
+                b'/' => 63,
+                _ => panic!("invalid base64 fixture"),
+            };
+            accumulator = (accumulator << 6) | u32::from(value);
+            bits += 6;
+            if bits >= 8 {
+                bits -= 8;
+                output.push((accumulator >> bits) as u8);
+                accumulator &= (1_u32 << bits) - 1;
+            }
+        }
+        output
     }
 
     fn command_with_document(document: &str) -> String {

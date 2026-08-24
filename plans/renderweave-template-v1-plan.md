@@ -3463,6 +3463,22 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
 - TDD/gates：public Interface 先 RED；GREEN 后 focused/workspace/independent/offline → `asset`/`render` → affected
   `fast` → sequential `server` → Goal `full` → resolution `fast`。provider/API Key/费用/真实数据=0，不
   push/tag/PR，`/prototype` 不计交付。
+- 实施结果：`ManifestResourcePreparer` 现按 manifest encounter order 完整执行 target→fetch/integrity→raw/media→
+  IMAGE decode 或 FONT prepare；唯一 `RequestResourceFetchState` 共享 512 MiB physical budget 与 20 秒 phase，
+  request-local raw/decoded/font semantic caches 只复用 exact content/Profile。失败停止后续工作且零 partial manifest，
+  成功只形成完整 immutable manifest；daemon 已真实消费该接口，未注册 Profile 时仍返回稳定既有 terminal。
+- 验证：Rust workspace/fmt/Clippy `-D warnings` 全绿，resource 39 unit + 1 public、daemon 11、protocol 11 tests；
+  Python independent 7/7 cases、102 checks，vector SHA-256
+  `4943ac9da9e44aa08607d8ddee7f4c677dcf0d9ae84f1a1b6831f2c94782ccb7`，mutation SHA-256
+  `99ec8636a6fe4826766695615a850f232736a945491e8c2ffe9a1d8dfc752e9c`。
+- 分级证据：`asset` `.sdlc/evidence/20260825-044326-asset/`、canonical `render`
+  `.sdlc/evidence/20260825-044459-render/`、affected `fast` `.sdlc/evidence/20260825-044549-fast/`、sequential
+  `server` `.sdlc/evidence/20260825-044609-server/`、Goal `full` `.sdlc/evidence/20260825-050311-full/` 均绿；full
+  17/17 steps、1509.088 秒，包含 Maven、Node 24 Web 26 files/212 tests、runtime canary、Playwright 23 passed +
+  1 controlled skip、Draft 与 inference 产品旅程；resolution `fast` `.sdlc/evidence/20260825-053323-fast/` 再次通过。
+- 状态为 `resolved / automated_verified`。font shaping/glyph consumer/scene/daemon output 仍 `UNWIRED`，native font
+  stack `BUILD_NOT_AUTHORIZED`，Profile `NOT_REGISTERED`、certification `NOT_CERTIFIED`、raster `ABSENT`、正式
+  Product Editor route `CLOSED`；继续 shaping/scene/raster/RESULT/Profile/最终产品接线，不把 `/prototype` 当交付。
 
 ### TV1-T104 resolution evidence
 
@@ -3486,6 +3502,29 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
   `BUILD_NOT_AUTHORIZED`、Profile `NOT_REGISTERED`、certification `NOT_CERTIFIED`、raster `ABSENT`、最终 Product
   Editor 权威预览 route `CLOSED`。后续继续真实 daemon/shaping/scene/raster/RESULT/Profile/产品接线，不把
   `/prototype` 当作交付。
+
+## 104. TV1-T105 执行卡
+
+- 决策：T104 以 verified commit `ce4ca255` 收口且 worktree clean 后，daemon 当前仍把 manifest 全部 fetch 后的
+  bytes 丢弃。该批量边界还会让后序 fetch failure 早于前序 decode failure，违反 Ticket 16 冻结的 manifest
+  encounter first-error 顺序；因此下一安全 frontier 是完整请求级 resource preparation pipeline，而非 UI 外壳。
+- Interface/seam：`ManifestResourcePreparer` 独占 target admission、逐 entry fetch、raw/media、IMAGE decode 与 FONT
+  prepare，成功才返回完整 immutable `PreparedResourceManifest`。`ResourceFetcher.fetch_resource` 共享
+  `RequestResourceFetchState`，不能按 entry 重置 physical bytes/resource phase；daemon 只调用这一深接口。
+- 顺序/cache：每个 resource 完整 target→fetch→integrity→raw/media→kind-specific preparation 后才进入下一项；
+  duplicate content 仍独立 fetch/lease，但 request-local raw/decoded/font cache 复用 exact semantic content。任一
+  failure 零 partial manifest、零 Scene/RenderOutput，first error 固定为 manifest order。
+- problem：扩充 closed Engine problem codec 接纳 `MEDIA_MISMATCH`/`DECODE_FAILED`；普通资源错误带安全
+  resourceId，capacity 仅带 limitId，target/descriptor/fetcher/cache invariant 漂移折叠无 locator
+  `RENDER_INTERNAL_ERROR`。
+- 允许影响：T105 tracker/map/plan/NOTES、resource fetch/pipeline/tests/shared vectors、protocol problem codec/tests、
+  daemon wiring/tests、Python independent verifier 与 render gate identity/evidence。
+- 禁止影响：Skia/FreeType/HarfBuzz build、shaping/line/glyph consumer、Image/Text intrinsic、scene/raster/JPEG、
+  daemon RESULT/Profile registration、Java/OpenAPI/migration/Web/Product Editor route、formal records、physical
+  certification、J1/A3/READY 与外部副作用。
+- TDD/gates：public Interface 先 RED；GREEN 后 focused/workspace/independent/offline → `asset`/`render` → affected
+  `fast` → sequential `server` → Goal `full` → resolution `fast`。provider/API Key/费用/真实数据=0，不
+  push/tag/PR，`/prototype` 不计交付。
 
 ## 66. TV1-T67 执行卡
 

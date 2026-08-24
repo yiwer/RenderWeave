@@ -1,0 +1,180 @@
+{
+  "profile": "renderweave-resource-preparation-pipeline-vectors/1",
+  "rendererProfileIdentity": "renderweave-renderer/1.0",
+  "assetKernelVectorPath": "renderweave-asset/src/test/resources/cn/hbads/renderweave/asset/acceptance-kernel-v1/vectors.json",
+  "assetKernelVectorSha256": "sha256:0f44fdef29d989049e77bcf3659fca4b7958b7009053c82d74c46f9f1984e4ca",
+  "imageDecodeVectorPath": "renderer/image-decode-cache-vectors-v1.json",
+  "imageDecodeVectorSha256": "sha256:dfff93643ace7658f7e07e8b661bbe1a80af9af6aa2b1fa2138d81e329729c18",
+  "fontPrepareVectorPath": "renderer/font-prepare-cache-vectors-v1.json",
+  "fontPrepareVectorSha256": "sha256:1e7b33cf8c02b1ef73b5e9094121e7e524360462200e1f74692410b36603598f",
+  "successCases": [
+    {
+      "id": "font-image-duplicate-font",
+      "resources": [
+        {
+          "resourceId": "rwres_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "documentAssetCaseId": "font-ttf-admitted",
+          "bodyAssetCaseId": "font-ttf-admitted",
+          "expectedKind": "FONT",
+          "expectedRawCacheHit": false,
+          "expectedSemanticCacheHit": false
+        },
+        {
+          "resourceId": "rwres_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "documentAssetCaseId": "png-rgba-admitted",
+          "bodyAssetCaseId": "png-rgba-admitted",
+          "expectedKind": "IMAGE",
+          "expectedRawCacheHit": false,
+          "expectedSemanticCacheHit": false
+        },
+        {
+          "resourceId": "rwres_cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "documentAssetCaseId": "font-ttf-admitted",
+          "bodyAssetCaseId": "font-ttf-admitted",
+          "expectedKind": "FONT",
+          "expectedRawCacheHit": true,
+          "expectedSemanticCacheHit": true
+        }
+      ],
+      "expectedStats": {
+        "physicalFetchBytes": 1390,
+        "rawUniqueContent": 2,
+        "rawRetainedBytes": 730,
+        "decodedImageUniqueContent": 1,
+        "decodedImageRetainedBytes": 4,
+        "preparedFontUniqueContent": 1,
+        "preparedFontRetainedTables": 10
+      }
+    },
+    {
+      "id": "empty-manifest",
+      "resources": [],
+      "expectedStats": {
+        "physicalFetchBytes": 0,
+        "rawUniqueContent": 0,
+        "rawRetainedBytes": 0,
+        "decodedImageUniqueContent": 0,
+        "decodedImageRetainedBytes": 0,
+        "preparedFontUniqueContent": 0,
+        "preparedFontRetainedTables": 0
+      }
+    }
+  ],
+  "preparationFailureCases": [
+    {
+      "id": "first-media-mismatch-stops-next-fetch",
+      "resources": [
+        {
+          "resourceId": "rwres_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "documentAssetCaseId": "png-rgba-admitted",
+          "bodyAssetCaseId": "font-ttf-admitted"
+        },
+        {
+          "resourceId": "rwres_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "documentAssetCaseId": "font-ttf-admitted",
+          "bodyAssetCaseId": "font-ttf-admitted"
+        }
+      ],
+      "expectedCode": "MEDIA_MISMATCH",
+      "expectedResourceId": "rwres_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "expectedFetchedResourceIds": [
+        "rwres_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      ]
+    },
+    {
+      "id": "first-corrupt-png-stops-next-fetch",
+      "mutation": "FLIP_LAST_BYTE",
+      "resources": [
+        {
+          "resourceId": "rwres_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "documentAssetCaseId": "png-rgba-admitted",
+          "bodyAssetCaseId": "png-rgba-admitted"
+        },
+        {
+          "resourceId": "rwres_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "documentAssetCaseId": "font-ttf-admitted",
+          "bodyAssetCaseId": "font-ttf-admitted"
+        }
+      ],
+      "expectedCode": "DECODE_FAILED",
+      "expectedResourceId": "rwres_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "expectedFetchedResourceIds": [
+        "rwres_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      ]
+    }
+  ],
+  "fetchFailureCases": [
+    {
+      "id": "second-fetch-failure-stops-third",
+      "failureIndex": 1,
+      "resources": [
+        {
+          "resourceId": "rwres_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "documentAssetCaseId": "font-ttf-admitted",
+          "bodyAssetCaseId": "font-ttf-admitted"
+        },
+        {
+          "resourceId": "rwres_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "documentAssetCaseId": "png-rgba-admitted",
+          "bodyAssetCaseId": "png-rgba-admitted"
+        },
+        {
+          "resourceId": "rwres_cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "documentAssetCaseId": "font-ttf-admitted",
+          "bodyAssetCaseId": "font-ttf-admitted"
+        }
+      ],
+      "expectedCode": "FETCH_FAILED",
+      "expectedResourceId": "rwres_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "expectedFetchedResourceIds": [
+        "rwres_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "rwres_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      ]
+    }
+  ],
+  "controlCases": [
+    {
+      "id": "deadline-before-first-fetch",
+      "expectedCode": "RENDER_DEADLINE_EXCEEDED",
+      "expectedResourceId": null,
+      "expectedFetchedResourceIds": []
+    },
+    {
+      "id": "target-policy-drift-before-first-fetch",
+      "fetchUrl": "https://evil.example/internal/render-assets/token",
+      "expectedCode": "RENDER_INTERNAL_ERROR",
+      "expectedResourceId": null,
+      "expectedFetchedResourceIds": []
+    }
+  ],
+  "problemProjection": {
+    "engineStage": "RESOURCE_PREPARATION",
+    "publicResourceCodes": [
+      "RESOURCE_LEASE_EXPIRED",
+      "RESOURCE_BUDGET_EXCEEDED",
+      "FETCH_FAILED",
+      "LENGTH_MISMATCH",
+      "HASH_MISMATCH",
+      "MEDIA_MISMATCH",
+      "DECODE_FAILED"
+    ],
+    "internalCodesWithoutLocator": [
+      "RENDER_INTERNAL_ERROR",
+      "RENDER_DEADLINE_EXCEEDED"
+    ]
+  },
+  "boundary": {
+    "resourcePreparationPipeline": "MANIFEST_ORDER_FETCH_RAW_IMAGE_FONT_AUTOMATED_VERIFIED",
+    "resourceManifest": "IMMUTABLE_COMPLETE_ONLY",
+    "fontShaping": "UNWIRED",
+    "glyphConsumer": "UNWIRED",
+    "nativeFontStack": "BUILD_NOT_AUTHORIZED",
+    "sceneConsumer": "UNWIRED",
+    "daemonOutputPath": "UNWIRED",
+    "profileAvailability": "NOT_REGISTERED",
+    "certificationStatus": "NOT_CERTIFIED",
+    "processRasterImplementation": "ABSENT",
+    "productRoute": "CLOSED",
+    "providerAttempts": 0
+  }
+}

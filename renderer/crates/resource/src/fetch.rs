@@ -225,12 +225,62 @@ impl FetchedResource {
     }
 }
 
+pub struct RequestResourceFetchState {
+    phase_started: Instant,
+    physical_budget: PhysicalFetchBudget,
+}
+
+impl RequestResourceFetchState {
+    pub fn new() -> Self {
+        Self {
+            phase_started: Instant::now(),
+            physical_budget: PhysicalFetchBudget::new(),
+        }
+    }
+
+    pub fn physical_bytes(&self) -> u64 {
+        self.physical_budget.accepted_bytes()
+    }
+
+    pub fn verify_owned_body(
+        &mut self,
+        target: &AdmittedFetchTarget<'_>,
+        bytes: Box<[u8]>,
+    ) -> Result<FetchedResource, ResourceFetchProblem> {
+        let mut verifier = ResourceBodyVerifier::new(target.resource(), &mut self.physical_budget);
+        verifier
+            .accept_chunk(&bytes)
+            .map_err(ResourceFetchProblem::from_body)?;
+        let verified_body = verifier.finish().map_err(ResourceFetchProblem::from_body)?;
+        Ok(FetchedResource {
+            verified_body,
+            bytes,
+        })
+    }
+}
+
+impl Default for RequestResourceFetchState {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl Debug for RequestResourceFetchState {
+    fn fmt(&self, formatter: &mut Formatter<'_>) -> std::fmt::Result {
+        formatter
+            .debug_struct("RequestResourceFetchState")
+            .field("physical_bytes", &self.physical_budget.accepted_bytes())
+            .finish_non_exhaustive()
+    }
+}
+
 pub trait ResourceFetcher: Send + Sync {
-    fn fetch_resources(
+    fn fetch_resource(
         &self,
-        targets: &[AdmittedFetchTarget<'_>],
+        target: &AdmittedFetchTarget<'_>,
         deadline_epoch_millis: i64,
-    ) -> Result<Vec<FetchedResource>, ResourceFetchProblem>;
+        state: &mut RequestResourceFetchState,
+    ) -> Result<FetchedResource, ResourceFetchProblem>;
 }
 
 #[derive(Clone)]
@@ -381,32 +431,18 @@ impl HttpsResourceFetcher {
 }
 
 impl ResourceFetcher for HttpsResourceFetcher {
-    fn fetch_resources(
+    fn fetch_resource(
         &self,
-        targets: &[AdmittedFetchTarget<'_>],
+        target: &AdmittedFetchTarget<'_>,
         deadline_epoch_millis: i64,
-    ) -> Result<Vec<FetchedResource>, ResourceFetchProblem> {
-        if targets.is_empty() {
-            return Ok(Vec::new());
-        }
-        let phase_started = Instant::now();
-        let mut budget = PhysicalFetchBudget::new();
-        let mut fetched = Vec::new();
-        fetched.try_reserve_exact(targets.len()).map_err(|_| {
-            ResourceFetchProblem::for_resource(
-                ResourceFetchProblemCode::FetchFailed,
-                targets[0].resource_id(),
-            )
-        })?;
-        for target in targets {
-            fetched.push(self.fetch_one(
-                target,
-                deadline_epoch_millis,
-                phase_started,
-                &mut budget,
-            )?);
-        }
-        Ok(fetched)
+        state: &mut RequestResourceFetchState,
+    ) -> Result<FetchedResource, ResourceFetchProblem> {
+        self.fetch_one(
+            target,
+            deadline_epoch_millis,
+            state.phase_started,
+            &mut state.physical_budget,
+        )
     }
 }
 
@@ -825,12 +861,13 @@ mod tests {
             )
             .to_owned()]),
         );
+        let mut state = RequestResourceFetchState::new();
         let fetched = fetcher
-            .fetch_resources(&targets, now_epoch_millis() + 10_000)
+            .fetch_resource(&targets[0], now_epoch_millis() + 10_000, &mut state)
             .unwrap();
-        assert_eq!(fetched.len(), 1);
-        assert_eq!(fetched[0].bytes(), body);
-        assert_eq!(fetched[0].verified_body().byte_length(), 11);
+        assert_eq!(fetched.bytes(), body);
+        assert_eq!(fetched.verified_body().byte_length(), 11);
+        assert_eq!(state.physical_bytes(), 11);
         server.thread.join().unwrap();
         let requests = requests.lock().unwrap();
         assert_eq!(requests.len(), 2);

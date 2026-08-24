@@ -847,6 +847,8 @@ fn require_problem_code(code: &str) -> Result<(), ProtocolError> {
         | "FETCH_FAILED"
         | "LENGTH_MISMATCH"
         | "HASH_MISMATCH"
+        | "MEDIA_MISMATCH"
+        | "DECODE_FAILED"
         | "RENDER_LAYOUT_TRACE_LIMIT_EXCEEDED" => Ok(()),
         _ => Err(ProtocolError::Invalid(
             "problem code is not in the closed catalog",
@@ -1505,7 +1507,13 @@ mod tests {
     fn fetch_and_resource_capacity_problems_have_closed_canonical_shapes() {
         let request_id = "123e4567-e89b-42d3-a456-426614174000";
         let resource_id = "rwres_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
-        for code in ["FETCH_FAILED", "LENGTH_MISMATCH", "HASH_MISMATCH"] {
+        for code in [
+            "FETCH_FAILED",
+            "LENGTH_MISMATCH",
+            "HASH_MISMATCH",
+            "MEDIA_MISMATCH",
+            "DECODE_FAILED",
+        ] {
             let bytes = resource_problem_bytes(
                 request_id,
                 code,

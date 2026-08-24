@@ -41,6 +41,7 @@ $resourceFetchTransportReport = Join-Path $resolvedEvidenceDir 'resource-fetch-t
 $resourceMediaRawCacheReport = Join-Path $resolvedEvidenceDir 'resource-media-raw-cache-independent.json'
 $imageDecodeCacheReport = Join-Path $resolvedEvidenceDir 'image-decode-cache-independent.json'
 $fontPrepareCacheReport = Join-Path $resolvedEvidenceDir 'font-prepare-cache-independent.json'
+$resourcePreparationPipelineReport = Join-Path $resolvedEvidenceDir 'resource-preparation-pipeline-independent.json'
 $layoutPreflightReport = Join-Path $resolvedEvidenceDir 'layout-preflight-independent.json'
 $definiteLayoutReport = Join-Path $resolvedEvidenceDir 'definite-layout-independent.json'
 $outputPngReport = Join-Path $resolvedEvidenceDir 'output-png-independent.json'
@@ -55,6 +56,7 @@ foreach ($report in @(
         $resourceMediaRawCacheReport,
         $imageDecodeCacheReport,
         $fontPrepareCacheReport,
+        $resourcePreparationPipelineReport,
         $layoutPreflightReport,
         $definiteLayoutReport,
         $outputPngReport,
@@ -483,6 +485,52 @@ try {
         throw 'FONT prepare/cache independent report boundary drifted.'
     }
 
+    Invoke-Checked 'resource-preparation-pipeline-python-independent-replay' {
+        & python.exe 'tools\verify-resource-preparation-pipeline.py' `
+            '--vectors' 'renderer\resource-preparation-pipeline-vectors-v1.json' `
+            '--repo-root' $repoRoot `
+            '--report' $resourcePreparationPipelineReport
+    }
+    if (-not (Test-Path -LiteralPath $resourcePreparationPipelineReport -PathType Leaf)) {
+        throw 'Resource preparation pipeline independent replay did not write its report.'
+    }
+    $resourcePreparationPipelineIndependent =
+        Get-Content -Raw -Encoding UTF8 -LiteralPath $resourcePreparationPipelineReport |
+            ConvertFrom-Json
+    if ($resourcePreparationPipelineIndependent.verifier -ne 'renderweave-resource-preparation-pipeline-python-independent/1' `
+            -or $resourcePreparationPipelineIndependent.result -ne 'PASS' `
+            -or $resourcePreparationPipelineIndependent.assurance -ne 'A2' `
+            -or $resourcePreparationPipelineIndependent.pipelineAssurance -ne 'A2_PYTHON_STDLIB_ORDER_CACHE_PROBLEM_STATE_MODEL' `
+            -or $resourcePreparationPipelineIndependent.codecAssurance -ne 'A2_EXISTING_IMAGE_FONT_INDEPENDENT_VECTORS_REUSED' `
+            -or $resourcePreparationPipelineIndependent.successCases -ne 2 `
+            -or $resourcePreparationPipelineIndependent.preparationFailureCases -ne 2 `
+            -or $resourcePreparationPipelineIndependent.fetchFailureCases -ne 1 `
+            -or $resourcePreparationPipelineIndependent.controlCases -ne 2 `
+            -or $resourcePreparationPipelineIndependent.passed -ne 7 `
+            -or $resourcePreparationPipelineIndependent.total -ne 7 `
+            -or $resourcePreparationPipelineIndependent.failed -ne 0 `
+            -or $resourcePreparationPipelineIndependent.checks -ne 102 `
+            -or $resourcePreparationPipelineIndependent.vectorSha256 -ne 'sha256:4943ac9da9e44aa08607d8ddee7f4c677dcf0d9ae84f1a1b6831f2c94782ccb7' `
+            -or $resourcePreparationPipelineIndependent.assetKernelVectorSha256 -ne 'sha256:0f44fdef29d989049e77bcf3659fca4b7958b7009053c82d74c46f9f1984e4ca' `
+            -or $resourcePreparationPipelineIndependent.imageDecodeVectorSha256 -ne 'sha256:dfff93643ace7658f7e07e8b661bbe1a80af9af6aa2b1fa2138d81e329729c18' `
+            -or $resourcePreparationPipelineIndependent.fontPrepareVectorSha256 -ne 'sha256:1e7b33cf8c02b1ef73b5e9094121e7e524360462200e1f74692410b36603598f' `
+            -or $resourcePreparationPipelineIndependent.mutationCorpusSha256 -ne 'sha256:99ec8636a6fe4826766695615a850f232736a945491e8c2ffe9a1d8dfc752e9c' `
+            -or $resourcePreparationPipelineIndependent.rendererProfileIdentity -ne 'renderweave-renderer/1.0' `
+            -or $resourcePreparationPipelineIndependent.resourcePreparationPipeline -ne 'MANIFEST_ORDER_FETCH_RAW_IMAGE_FONT_AUTOMATED_VERIFIED' `
+            -or $resourcePreparationPipelineIndependent.resourceManifest -ne 'IMMUTABLE_COMPLETE_ONLY' `
+            -or $resourcePreparationPipelineIndependent.fontShaping -ne 'UNWIRED' `
+            -or $resourcePreparationPipelineIndependent.glyphConsumer -ne 'UNWIRED' `
+            -or $resourcePreparationPipelineIndependent.nativeFontStack -ne 'BUILD_NOT_AUTHORIZED' `
+            -or $resourcePreparationPipelineIndependent.sceneConsumer -ne 'UNWIRED' `
+            -or $resourcePreparationPipelineIndependent.daemonOutputPath -ne 'UNWIRED' `
+            -or $resourcePreparationPipelineIndependent.profileAvailability -ne 'NOT_REGISTERED' `
+            -or $resourcePreparationPipelineIndependent.certificationStatus -ne 'NOT_CERTIFIED' `
+            -or $resourcePreparationPipelineIndependent.processRasterImplementation -ne 'ABSENT' `
+            -or $resourcePreparationPipelineIndependent.productRoute -ne 'CLOSED' `
+            -or $resourcePreparationPipelineIndependent.providerAttempts -ne 0) {
+        throw 'Resource preparation pipeline independent report boundary drifted.'
+    }
+
     Invoke-Checked 'layout-preflight-python-independent-replay' {
         & python.exe 'tools\verify-layout-preflight-vectors.py' `
             '--vectors' 'renderer\layout-preflight-vectors-v1.json' `
@@ -645,7 +693,7 @@ try {
     }
 
     $summary = [ordered]@{
-        gateVersion = 'renderweave-renderer-process-gate/2.5'
+        gateVersion = 'renderweave-renderer-process-gate/2.6'
         status = 'PASS'
         processContractVersion = 'renderweave-renderer-process/1.0'
         java = $java
@@ -794,6 +842,25 @@ try {
             fontShaping = $fontPrepareCacheIndependent.fontShaping
             preparedCache = $fontPrepareCacheIndependent.preparedCache
         }
+        resourcePreparationPipelineIndependent = [ordered]@{
+            verifier = $resourcePreparationPipelineIndependent.verifier
+            assurance = $resourcePreparationPipelineIndependent.assurance
+            pipelineAssurance = $resourcePreparationPipelineIndependent.pipelineAssurance
+            codecAssurance = $resourcePreparationPipelineIndependent.codecAssurance
+            successCases = $resourcePreparationPipelineIndependent.successCases
+            preparationFailureCases = $resourcePreparationPipelineIndependent.preparationFailureCases
+            fetchFailureCases = $resourcePreparationPipelineIndependent.fetchFailureCases
+            controlCases = $resourcePreparationPipelineIndependent.controlCases
+            checks = $resourcePreparationPipelineIndependent.checks
+            vectorSha256 = $resourcePreparationPipelineIndependent.vectorSha256
+            assetKernelVectorSha256 = $resourcePreparationPipelineIndependent.assetKernelVectorSha256
+            imageDecodeVectorSha256 = $resourcePreparationPipelineIndependent.imageDecodeVectorSha256
+            fontPrepareVectorSha256 = $resourcePreparationPipelineIndependent.fontPrepareVectorSha256
+            mutationCorpusSha256 = $resourcePreparationPipelineIndependent.mutationCorpusSha256
+            rendererProfileIdentity = $resourcePreparationPipelineIndependent.rendererProfileIdentity
+            resourcePreparationPipeline = $resourcePreparationPipelineIndependent.resourcePreparationPipeline
+            resourceManifest = $resourcePreparationPipelineIndependent.resourceManifest
+        }
         layoutPreflightIndependent = [ordered]@{
             verifier = $layoutPreflightIndependent.verifier
             assurance = $layoutPreflightIndependent.assurance
@@ -848,6 +915,7 @@ try {
             requestDecodedCache = 'REQUEST_LOCAL_CONTENT_ADDRESSED_536870912_BYTES_AUTOMATED_VERIFIED_UNWIRED'
             fontPrepareKernel = 'ASSET_APPROVED_TTF_GLYF_CFF_CMAP_DESCRIPTOR_FACTS_AUTOMATED_VERIFIED_UNWIRED_A2'
             requestPreparedFontCache = 'REQUEST_LOCAL_CONTENT_ADDRESSED_32_FONTS_4096_TABLES_AUTOMATED_VERIFIED_UNWIRED'
+            daemonResourcePreparation = 'MANIFEST_ORDER_FETCH_RAW_IMAGE_FONT_AUTOMATED_VERIFIED_WIRED'
             fontShaping = 'UNWIRED'
             nativeFontStack = 'BUILD_NOT_AUTHORIZED'
             resultSealKernel = 'CANONICAL_METADATA_LENGTH_SHA256_UUID_IMAGE_PAYLOAD_AUTOMATED_VERIFIED_UNWIRED'
@@ -865,7 +933,7 @@ try {
         }
     }
     Write-Utf8File -Path $summaryPath -Content ($summary | ConvertTo-Json -Depth 6)
-    Write-Host (('Renderer process: Java={0} Python={1}+{2}+{3}+{4}+{5}+{6}+{7}+{8}+{9}+{10}+{11}+{12} Rust Windows=PASS ' +
+    Write-Host (('Renderer process: Java={0} Python={1}+{2}+{3}+{4}+{5}+{6}+{7}+{8}+{9}+{10}+{11}+{12}+{13} Rust Windows=PASS ' +
                 'Linux UDS=PASS Profile=NOT_REGISTERED Certification=NOT_CERTIFIED Raster=ABSENT') -f
             $java.tests, $independent.checks, $documentIndependent.total,
             $resourceBodyIndependent.total, $resourceFetchTargetIndependent.total,
@@ -873,7 +941,7 @@ try {
             $definiteLayoutIndependent.total,
             $outputPngIndependent.total, $enginePngIndependent.total,
             $resourceMediaRawCacheIndependent.total, $imageDecodeCacheIndependent.total,
-            $fontPrepareCacheIndependent.total)
+            $fontPrepareCacheIndependent.total, $resourcePreparationPipelineIndependent.total)
     Write-Host "Renderer process evidence: $summaryPath"
 }
 finally {

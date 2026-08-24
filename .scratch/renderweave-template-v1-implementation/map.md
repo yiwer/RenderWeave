@@ -527,6 +527,12 @@ Label: wayfinder:map
   bytes。Rust resource 34 unit + 1 public tests、独立 Python 15/15 cases/184 checks，`asset`/`render`/affected
   `fast`/顺序 `server`/17-step `full` 均绿；Skia/FreeType/HarfBuzz build、shaping/raster、daemon RESULT/Profile
   registration 与 Product Editor route 继续后续 DAG。
+- [接通 daemon manifest-order resource preparation pipeline](issues/105-daemon-manifest-resource-preparation-pipeline.md) —
+  **resolved / automated_verified**；T101 transport 与 T102 raw/media、T103 IMAGE、T104 FONT 已串成每 entry
+  完整完成后才推进下一 entry 的请求级 deep Interface，共享 physical fetch 与 semantic cache budgets，并把完整
+  prepared manifest 接入 daemon。Rust resource 39 unit + 1 public、daemon 11、protocol 11 tests 与 Python 7/7 cases、
+  102 checks 全绿；`asset`/`render`/affected `fast`/sequential `server`/17-step `full` 均通过。shaping/scene/raster/
+  RESULT/Profile/Product Editor route 仍继续后续 DAG。
 - [验证 Product Editor 状态、恢复与权威预览架构](issues/09-validate-product-editor-architecture.md) —
   throwaway 逻辑原型（`/prototype/editor-state-model`，不进产品 route）把冻结编辑器规则编码为确定性
   fixture 状态机：10 个引导走查场景 37/37 断言 + 自由操作冒烟 + 键盘焦点检查全部通过（Playwright A1，

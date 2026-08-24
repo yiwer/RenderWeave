@@ -5,12 +5,13 @@ mod fetch;
 mod font;
 mod image;
 mod media;
+mod pipeline;
 
 pub use fetch::{
     FETCH_ALLOWED_IP_COUNT_MAX, FETCH_ATTEMPT_LIMIT, FETCH_ATTEMPT_MILLIS, FETCH_BACKOFF_MILLIS,
     FETCH_RESPONSE_HEADER_BYTES, FETCH_STREAM_CHUNK_BYTES, FetchEgressPolicy,
     FetchEgressPolicyError, FetchedResource, HttpsResourceFetcher, RESOURCE_PHASE_MILLIS,
-    ResourceFetchProblem, ResourceFetchProblemCode, ResourceFetcher,
+    RequestResourceFetchState, ResourceFetchProblem, ResourceFetchProblemCode, ResourceFetcher,
 };
 pub use font::{
     FONT_TABLES_PER_CONTENT_LIMIT_ID, MAX_FONT_TABLES_PER_CONTENT, MAX_REQUEST_FONT_TABLES,
@@ -25,6 +26,10 @@ pub use media::{
     MAX_REQUEST_RAW_CACHE_BYTES, PreparedRawResource, REQUEST_RAW_CACHE_BYTES_LIMIT_ID,
     RequestRawResourceCache, ResourcePreparationProblem, ResourcePreparationProblemCode,
     ResourcePreparationProfile, VerifiedResourceMedia, verify_resource_media,
+};
+pub use pipeline::{
+    ManifestResourcePreparer, PreparedRenderResource, PreparedResourceManifest,
+    PreparedResourceManifestStats, ResourcePipelineProblem,
 };
 
 pub const MAX_PHYSICAL_FETCH_BYTES: u64 = 536_870_912;

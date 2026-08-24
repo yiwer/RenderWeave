@@ -2967,3 +2967,24 @@
   `BUILD_NOT_AUTHORIZED`、daemon output `UNWIRED`、Profile `NOT_REGISTERED`、certification `NOT_CERTIFIED`、raster
   `ABSENT`、product route `CLOSED`。provider attempts/API Key reads/reservations/cost/open authorization/真实数据=0，
   不 push/tag/PR，`/prototype` 不计交付。
+
+# 2026-08-25 Template-v1 T105 daemon manifest resource preparation（resolved / automated_verified）
+
+- T104 已以 `ce4ca255` verified commit 收口且 worktree clean。用户要求最终产品 Template-v1 页面与真实功能，
+  不是 `/prototype`；下一 frontier 是把已验证资源内核接入真实 daemon，而不是先造页面外壳。
+- 已实现唯一请求级 `ManifestResourcePreparer`：每个 manifest entry 完整串行 target/fetch/integrity/raw/media/
+  IMAGE-or-FONT preparation 后才推进下一项，共享 request physical/cache budgets；失败停止后续工作且零 partial
+  manifest，成功才形成完整 immutable prepared manifest。daemon 已真实调用该 deep Interface，protocol closed codec
+  已接纳 `MEDIA_MISMATCH`/`DECODE_FAILED`。
+- Rust resource 39 unit + 1 public、daemon 11、protocol 11 tests，workspace/fmt/Clippy `-D warnings` 全绿；Python
+  independent 7/7 cases、102 checks。vector SHA-256 `4943ac9da9e44aa08607d8ddee7f4c677dcf0d9ae84f1a1b6831f2c94782ccb7`，
+  mutation SHA-256 `99ec8636a6fe4826766695615a850f232736a945491e8c2ffe9a1d8dfc752e9c`。
+- 分级证据：`asset` `.sdlc/evidence/20260825-044326-asset/`、canonical `render`
+  `.sdlc/evidence/20260825-044459-render/`、affected `fast` `.sdlc/evidence/20260825-044549-fast/`、sequential
+  `server` `.sdlc/evidence/20260825-044609-server/`、Goal `full` `.sdlc/evidence/20260825-050311-full/` 均绿；full
+  17/17 steps、1509.088 秒，Web 26 files/212 tests、runtime canary、Playwright 23 passed + 1 controlled skip、Draft 与
+  inference 产品旅程通过；resolution `fast` `.sdlc/evidence/20260825-053323-fast/` 再次通过。provider attempts/
+  API Key reads/reservations/cost/open authorization/真实数据均为 0。
+- 本票仍不实现 shaping/scene/raster/RESULT/Profile registration 或 Product Editor route；Profile
+  `NOT_REGISTERED`、certification `NOT_CERTIFIED`、raster `ABSENT`、daemon output `UNWIRED`、product route
+  `CLOSED`。provider/API Key/费用/真实数据=0，不 push/tag/PR，`/prototype` 不计交付。
