@@ -1,6 +1,24 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-24 **Template v1 implementation TV1-T90 已由 Codex `/root` single-writer 完成，状态
+  `resolved/automated_verified`**：T89 的两个 additional minimum candidates 现只要求至少一个是合法 mixed
+  min/max，因此恰好 one-mixed + one-min-only 可按 authored position 固定提交三个 minima；two-min-only
+  replacement negative 继续 fail closed，未开放 division、post-overflow redistribution、一般 water filling 或
+  tolerance。shared `/53` 的 Rust/Python 在首个转正 case、同一 `STACK_MAIN_FILL` occurrence
+  `rwocc_0000000000000002` 共同 RED；独立实现后为 242 laid-out + 16 unsupported、258/258 cases、772 checks。
+  vector SHA-256 `f2c7fbaca44f55e1396c24f25f6a4d401ee2ada012709402c5a9ff8f30fd7762`，fixture `/3` SHA-256
+  保持 `a11475bcebad7e1c35cb0acd7018419d94afcb4b37d7f1df7346a055ad1df669`。`render`
+  `.sdlc/evidence/20260824-102959-render/`（31.128 秒）、affected `fast`
+  `.sdlc/evidence/20260824-103044-fast/`（10.794 秒）、顺序 `server`
+  `.sdlc/evidence/20260824-103101-server/`（1217.038 秒）与 `full`
+  `.sdlc/evidence/20260824-105141-full/`（1880.817 秒）均 exit 0。full definite A2 replay 258/258、772 checks，
+  App 344/0/0/15、Node 24 Web 26 files/212 tests、runtime canary、23 passed + 1 controlled skip Playwright、
+  prototype/Draft journeys 与 inference replay E2E 1/1 全绿。R0/R1/P0 provider attempts=0，P0 API Key
+  reads/reservations/cost/open authorization=0；R1 A2 60 cases/58 metrics，P0 A2 60 cases（20 holdout）/58 metrics。
+  Profile/A3/J1/READY 未推进，未运行 provider、读取 API Key 或发送真实数据，未 push/tag/PR。状态回填后的
+  resolution `fast` `.sdlc/evidence/20260824-112506-fast/` 3 steps 均 exit 0（A1，11.288 秒），final A2 report
+  再确认 258/258 cases、772 checks、provider attempts 0。
 - 2026-08-24 **Template v1 implementation TV1-T89 已由 Codex `/root` single-writer 完成，状态
   `resolved/automated_verified`**：T88 early branch 现只在另外两项都是初始 inactive 的合法 mixed min/max 时，
   按 authored position 固定提交三个 minima；mixed + min-only replacement negative 继续 fail closed，未开放

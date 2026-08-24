@@ -2797,6 +2797,20 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
 - 验证：focused Rust/Python、fmt、check、clippy `-D warnings`、workspace tests、`py_compile`、JSON inventory/SHA/
   unique、`git diff --check`；再依次 `render`、affected `fast`、顺序 `server`、Goal `full`、resolution `fast`。
   最高只可 `automated_verified`；不推进 A3/J1/READY，不 push/tag/PR，不运行 provider，不读取 API Key。
+- Resolution：shared `/53` 在首个 one-mixed + one-min-only case、同一 `STACK_MAIN_FILL` occurrence 共同 RED；
+  Rust `any(is_mixed)` 与 Python 独立 mixed-count `>= 1` 实现后为 242 laid-out + 16 unsupported、258/258 cases、
+  772 checks。two-min-only replacement negative 继续 fail closed。vector SHA-256
+  `f2c7fbaca44f55e1396c24f25f6a4d401ee2ada012709402c5a9ff8f30fd7762`，fixture `/3` SHA-256 保持
+  `a11475bcebad7e1c35cb0acd7018419d94afcb4b37d7f1df7346a055ad1df669`。
+- 分级证据：`render` `.sdlc/evidence/20260824-102959-render/`（31.128 秒）、affected `fast`
+  `.sdlc/evidence/20260824-103044-fast/`（10.794 秒）、顺序 `server`
+  `.sdlc/evidence/20260824-103101-server/`（1217.038 秒）与 `full`
+  `.sdlc/evidence/20260824-105141-full/`（1880.817 秒）均 exit 0。full definite A2 258/258、772 checks；
+  App 344/0/0/15、Node 24 Web 26 files/212 tests、runtime canary、Playwright 23 passed + 1 controlled skip、
+  Draft journey 与 inference replay E2E 1/1 全绿；R0/R1/P0 provider attempts=0，P0 key reads/reservations/cost/
+  open authorization=0。状态为 `resolved / automated_verified`，Profile/A3/J1/READY 未推进。
+- 状态回填后的 resolution `fast` `.sdlc/evidence/20260824-112506-fast/` 3 steps 均 exit 0（A1，11.288 秒）；
+  同目录 final A2 report 再确认 258/258 cases、772 checks、provider attempts 0。
 
 ### TV1-T87 resolution evidence
 
@@ -2923,6 +2937,35 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
   60 cases（20 holdout）/58 metrics。Profile/A3/J1/READY 未推进，未运行 provider、读取 API Key 或发送真实数据，
   未 push/tag/PR。
 - 状态回填后的 resolution `fast` `.sdlc/evidence/20260824-101515-fast/` 3 steps 均 exit 0（A1，12.161 秒）。
+
+## 89. TV1-T90 执行卡
+
+- 决策：T89 以 verified commit `bd2a4ee` 收口且 worktree clean 后，复算 Ticket 10 §3/§7、
+  `RW-T10-S3-012..014`、`RW-T10-S7-004..012` 与 16 个 remaining unsupported cases。rotation、resource/error-order
+  与 compositionViewport 仍依赖关闭能力；六个 Stack cases 中，T89 replacement negative 只把一个 additional
+  mixed min/max 改为 positive min-only。first min 已严格大于 remaining，因此仍可直接提交三个 authored minima，
+  不需要 division、redistribution、循环或 tolerance，登记为当前 single-writer frontier。
+- Interface/seam：只深化 T89 `stack_main_fill_allocations` 的 exactly-three/mixed-min-overflow early branch；public
+  API、admission/preflight、`StackChildMeasurement`、arrange、authored DFS first-error 与全有或全无 output 不变。
+  Rust/Python 使用独立控制流但共享冻结 vectors。
+- 精确语义：恰好三个 main FILL；首轮唯一 active child 为合法 mixed min/max 且 min 严格大于 remaining；另外
+  两项都有 finite positive min，初始 share `>= min`，其中至少一项为合法 mixed min/max 且初始 share `<= max`。
+  T90 新增恰好 one-mixed + one-min-only 形状；既有 two-mixed 继续有效，two-min-only 继续拒绝。按 authored
+  position 提交三个 minima；min/max equality 均接受，尺寸和必然 overflow。
+- 允许影响：T90 tracker/plan/NOTES、layout Rust module/tests、shared definite-layout vector `/53`、Python
+  independent verifier、render gate identity/assertions/evidence。
+- 禁止影响：两个 additional min-only、mixed/max-only additional 组合、非法或初始 active additional bound、首轮
+  多个 active、active child 非 mixed 或 min 不大于 remaining、post-overflow redistribution、four-or-more
+  active-bound FILL、一般多轮 water filling、epsilon/tolerance/public numeric error、HUG-main FILL cycle、
+  rows→columns、任意非直角 rotation、Text/Image/compositionViewport、resource fetch/decode、scene/raster/JPEG、
+  daemon RESULT/Profile、Java/OpenAPI/migration/Web/route、J1/A3/READY 与外部副作用。
+- TDD：把 T89 replacement negative 转为 active-first positive，新增 active-middle、active-last equality、COLUMN
+  与 cross-HUG positives；以 two-additional-min-only negative 替换。能力值新增
+  `OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_MIXED_AND_MIN_ONLY_FREEZES_OVERFLOW`；shared `/53` 先共同 RED，
+  目标 242 laid-out + 16 unsupported、258 cases/772 checks，fixture `/3` bytes 不变。
+- 验证：focused Rust/Python、fmt、check、clippy `-D warnings`、workspace tests、`py_compile`、JSON inventory/SHA/
+  unique、`git diff --check`；再依次 `render`、affected `fast`、顺序 `server`、Goal `full`、resolution `fast`。
+  最高只可 `automated_verified`；不推进 A3/J1/READY，不 push/tag/PR，不运行 provider，不读取 API Key。
 
 ## 66. TV1-T67 执行卡
 
