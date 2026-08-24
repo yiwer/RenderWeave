@@ -12,3 +12,6 @@ hex = "=0.4.3"
 serde = { version = "=1.0.228", features = ["derive"] }
 serde_json = { version = "=1.0.149", features = ["raw_value"] }
 sha2 = "=0.10.9"
+rcgen = { version = "=0.14.5", default-features = false, features = ["crypto", "ring"] }
+rustls = { version = "=0.23.43", default-features = false, features = ["ring", "std", "tls12"] }
+ureq = { version = "=3.4.0", default-features = false, features = ["rustls"] }

@@ -14,6 +14,8 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.PosixFilePermission;
 import java.time.Clock;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -34,6 +36,7 @@ final class RendererProcessSupervisor implements RendererProcessAdapter.Connecti
     private final Path manifestPath;
     private final String expectedManifestSha256;
     private final String assetFetchOrigin;
+    private final List<String> assetFetchAllowedIps;
     private final int maximumFramedBytes;
     private final Duration startupTimeout;
     private final Duration restartBackoff;
@@ -54,6 +57,7 @@ final class RendererProcessSupervisor implements RendererProcessAdapter.Connecti
             Path manifestPath,
             String expectedManifestSha256,
             String assetFetchOrigin,
+            List<String> assetFetchAllowedIps,
             int maximumFramedBytes,
             Duration startupTimeout,
             Duration restartBackoff,
@@ -65,6 +69,7 @@ final class RendererProcessSupervisor implements RendererProcessAdapter.Connecti
         RendererProcessProtocol.requireSha256(
                 expectedManifestSha256, "expectedManifestSha256");
         this.assetFetchOrigin = requireNonBlank(assetFetchOrigin, "assetFetchOrigin");
+        this.assetFetchAllowedIps = requireAllowedIps(assetFetchAllowedIps);
         if (maximumFramedBytes < 1) {
             throw new IllegalArgumentException("maximumFramedBytes must be positive");
         }
@@ -131,12 +136,35 @@ final class RendererProcessSupervisor implements RendererProcessAdapter.Connecti
     }
 
     List<String> commandLine() {
-        return List.of(
+        var command = new ArrayList<String>();
+        command.addAll(List.of(
                 executable.toString(),
                 "--socket", socketPath.toString(),
                 "--manifest", manifestPath.toString(),
-                "--asset-fetch-origin", assetFetchOrigin,
-                "--max-frame-bytes", Integer.toString(maximumFramedBytes));
+                "--asset-fetch-origin", assetFetchOrigin));
+        for (var allowedIp : assetFetchAllowedIps) {
+            command.add("--asset-fetch-allowed-ip");
+            command.add(allowedIp);
+        }
+        command.add("--max-frame-bytes");
+        command.add(Integer.toString(maximumFramedBytes));
+        return List.copyOf(command);
+    }
+
+    private static List<String> requireAllowedIps(List<String> values) {
+        Objects.requireNonNull(values, "assetFetchAllowedIps");
+        if (values.isEmpty() || values.size() > 16) {
+            throw new IllegalArgumentException(
+                    "assetFetchAllowedIps must contain between 1 and 16 entries");
+        }
+        var unique = new LinkedHashSet<String>();
+        for (var value : values) {
+            var admitted = requireNonBlank(value, "assetFetchAllowedIp");
+            if (!unique.add(admitted)) {
+                throw new IllegalArgumentException("assetFetchAllowedIps must be unique");
+            }
+        }
+        return List.copyOf(unique);
     }
 
     private void verifyInputs() throws IOException {

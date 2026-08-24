@@ -1,0 +1,58 @@
+{
+  "profile": "renderweave-resource-fetch-transport-v1",
+  "transportImplementation": "RUSTLS_HTTPS_AUTOMATED_VERIFIED",
+  "resourceBytes": "FETCHED_AND_INTEGRITY_VERIFIED",
+  "limits": {
+    "allowedIpCountMax": 16,
+    "attempts": 2,
+    "backoffMillis": 100,
+    "attemptMillis": 5000,
+    "resourcePhaseMillis": 20000,
+    "streamChunkBytes": 1048576,
+    "physicalFetchBytes": 536870912,
+    "responseHeaderBytes": 65536
+  },
+  "fixedRequestHeaders": {
+    "accept-encoding": "identity",
+    "connection": "close"
+  },
+  "egressCases": [
+    {"id":"one-ipv4","values":["127.0.0.1"],"accepted":true},
+    {"id":"one-ipv6","values":["2001:db8::1"],"accepted":true},
+    {"id":"two-families","values":["10.20.30.40","2001:db8::2"],"accepted":true},
+    {"id":"empty","values":[],"accepted":false},
+    {"id":"duplicate","values":["127.0.0.1","127.0.0.1"],"accepted":false},
+    {"id":"ipv4-leading-zero","values":["127.000.0.1"],"accepted":false},
+    {"id":"ipv6-noncanonical","values":["2001:0db8:0:0:0:0:0:1"],"accepted":false},
+    {"id":"zone-id","values":["fe80::1%1"],"accepted":false},
+    {"id":"seventeen","values":["192.0.2.1","192.0.2.2","192.0.2.3","192.0.2.4","192.0.2.5","192.0.2.6","192.0.2.7","192.0.2.8","192.0.2.9","192.0.2.10","192.0.2.11","192.0.2.12","192.0.2.13","192.0.2.14","192.0.2.15","192.0.2.16","192.0.2.17"],"accepted":false}
+  ],
+  "responseCases": [
+    {"id":"success-implicit-identity","status":200,"contentLengths":["11"],"contentEncodings":[],"transferEncodings":[],"declaredLength":11,"outcome":"BODY","retryable":false},
+    {"id":"success-explicit-identity","status":200,"contentLengths":["11"],"contentEncodings":["identity"],"transferEncodings":[],"declaredLength":11,"outcome":"BODY","retryable":false},
+    {"id":"missing-content-length","status":200,"contentLengths":[],"contentEncodings":[],"transferEncodings":[],"declaredLength":11,"outcome":"FETCH_FAILED","retryable":false},
+    {"id":"duplicate-content-length","status":200,"contentLengths":["11","11"],"contentEncodings":[],"transferEncodings":[],"declaredLength":11,"outcome":"FETCH_FAILED","retryable":false},
+    {"id":"combined-content-length","status":200,"contentLengths":["11, 11"],"contentEncodings":[],"transferEncodings":[],"declaredLength":11,"outcome":"FETCH_FAILED","retryable":false},
+    {"id":"wrong-content-length","status":200,"contentLengths":["12"],"contentEncodings":[],"transferEncodings":[],"declaredLength":11,"outcome":"LENGTH_MISMATCH","retryable":false},
+    {"id":"gzip-rejected","status":200,"contentLengths":["11"],"contentEncodings":["gzip"],"transferEncodings":[],"declaredLength":11,"outcome":"FETCH_FAILED","retryable":false},
+    {"id":"duplicate-identity-rejected","status":200,"contentLengths":["11"],"contentEncodings":["identity","identity"],"transferEncodings":[],"declaredLength":11,"outcome":"FETCH_FAILED","retryable":false},
+    {"id":"chunked-rejected","status":200,"contentLengths":["11"],"contentEncodings":[],"transferEncodings":["chunked"],"declaredLength":11,"outcome":"FETCH_FAILED","retryable":false},
+    {"id":"redirect-rejected","status":302,"contentLengths":["0"],"contentEncodings":[],"transferEncodings":[],"declaredLength":11,"outcome":"FETCH_FAILED","retryable":false},
+    {"id":"not-found-no-retry","status":404,"contentLengths":["0"],"contentEncodings":[],"transferEncodings":[],"declaredLength":11,"outcome":"FETCH_FAILED","retryable":false},
+    {"id":"server-error-retryable","status":503,"contentLengths":["0"],"contentEncodings":[],"transferEncodings":[],"declaredLength":11,"outcome":"FETCH_FAILED","retryable":true}
+  ],
+  "scheduleCases": [
+    {"id":"first-success","events":["HTTP_200_VALID"],"outcome":"VERIFIED","attempts":1,"backoffs":0},
+    {"id":"transport-then-success","events":["TRANSPORT","HTTP_200_VALID"],"outcome":"VERIFIED","attempts":2,"backoffs":1},
+    {"id":"five-hundred-then-success","events":["HTTP_503","HTTP_200_VALID"],"outcome":"VERIFIED","attempts":2,"backoffs":1},
+    {"id":"two-transport-failures","events":["TRANSPORT","TRANSPORT"],"outcome":"FETCH_FAILED","attempts":2,"backoffs":1},
+    {"id":"two-five-hundreds","events":["HTTP_500","HTTP_503"],"outcome":"FETCH_FAILED","attempts":2,"backoffs":1},
+    {"id":"four-hundred-no-retry","events":["HTTP_404","HTTP_200_VALID"],"outcome":"FETCH_FAILED","attempts":1,"backoffs":0},
+    {"id":"length-no-retry","events":["LENGTH_MISMATCH","HTTP_200_VALID"],"outcome":"LENGTH_MISMATCH","attempts":1,"backoffs":0},
+    {"id":"hash-no-retry","events":["HASH_MISMATCH","HTTP_200_VALID"],"outcome":"HASH_MISMATCH","attempts":1,"backoffs":0},
+    {"id":"deadline-before-first","events":["DEADLINE","HTTP_200_VALID"],"outcome":"RENDER_DEADLINE_EXCEEDED","attempts":0,"backoffs":0},
+    {"id":"lease-before-first","events":["LEASE_EXPIRED","HTTP_200_VALID"],"outcome":"RESOURCE_LEASE_EXPIRED","attempts":0,"backoffs":0},
+    {"id":"deadline-before-retry","events":["TRANSPORT","DEADLINE","HTTP_200_VALID"],"outcome":"RENDER_DEADLINE_EXCEEDED","attempts":1,"backoffs":1},
+    {"id":"lease-before-retry","events":["HTTP_503","LEASE_EXPIRED","HTTP_200_VALID"],"outcome":"RESOURCE_LEASE_EXPIRED","attempts":1,"backoffs":1}
+  ]
+}

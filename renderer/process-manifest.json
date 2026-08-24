@@ -19,14 +19,15 @@
   ],
   "rustToolchain": "1.89.0",
   "rustEdition": "2024",
-  "cargoLockSha256": "sha256:be5e2b00651f1fdfc45125799dfa062f51b22276d0de3c4401ffaa499e8e7101",
-  "vendorTreeSha256": "sha256:492114491238921218d4b06a46249bef6f9d101ec700e8223f1220203e004e1a",
-  "vendorFileCount": 1057,
+  "cargoLockSha256": "sha256:5acd41e397411003ae3259820df73033cd9f7a048722eb38bee6c91a8cc71f82",
+  "vendorTreeSha256": "sha256:7764c5ca80a9e3a66b42b49ab8001ca49730f19284746eff920aa3e4218fdf5e",
+  "vendorFileCount": 2718,
   "directDependencies": [
     "hex@0.4.3",
     "serde@1.0.228",
     "serde_json@1.0.149",
-    "sha2@0.10.9"
+    "sha2@0.10.9",
+    "ureq@3.4.0"
   ],
   "supportedProductionTargets": [
     "x86_64-unknown-linux-gnu",

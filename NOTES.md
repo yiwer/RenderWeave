@@ -1,6 +1,23 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-24 **Template v1 implementation TV1-T101 已由 Codex `/root` single-writer 完成，状态
+  `resolved/automated_verified`**：目标是最终产品链路而非 `/prototype`。本票把 T100 admitted target 接到显式
+  IP egress、每 connect DNS 复核、rustls/WebPKI、strict HTTP envelope、固定 2 attempts/100 ms/5 s/20 s、
+  1 MiB streaming 与 shared 512 MiB physical budget/length/SHA 完整性，并按 manifest order 接入 daemon exact
+  terminal replay。Rust/Python transport 33/33 cases、115 checks，vector SHA-256
+  `e31976aa5483c66859b8f8cad480e742a9df812473286d2233d196ae194aca68`；Java renderer 29 tests，Windows Rust
+  workspace 与 Linux network-none/真实 UDS 均绿。分级证据为 `render`
+  `.sdlc/evidence/20260824-224815-render/`（37.422 秒）、affected `fast`
+  `.sdlc/evidence/20260824-225028-fast/`（20.572 秒）、顺序 `server`
+  `.sdlc/evidence/20260824-225057-server/`（1047.399 秒）与 17-step `full`
+  `.sdlc/evidence/20260824-230832-full/`（1610.188 秒）；full 中 App 347/0/0/15、Node 24 Web
+  26 files/212 tests、runtime canary、Playwright 23 passed + 1 controlled skip、Draft journey 与 inference replay
+  E2E 1/1 均通过；状态回填后的 resolution `fast` `.sdlc/evidence/20260824-233759-fast/` 亦绿（11.798 秒）。
+  resource bytes `FETCHED_AND_INTEGRITY_VERIFIED`、transport
+  `RUSTLS_HTTPS_AUTOMATED_VERIFIED`；media/decode/scene/RESULT/Profile/Product Editor route 尚未开放，Profile
+  `NOT_REGISTERED`、certification `NOT_CERTIFIED`、process raster `ABSENT`、daemon output `UNWIRED`、正式产品
+  route `CLOSED`。provider attempts/API Key reads/费用/真实数据=0，未 push/tag/PR，未把 `/prototype` 视为最终产品交付。
 - 2026-08-24 **Template v1 implementation TV1-T100 已由 Codex `/root` single-writer 完成，状态
   `resolved/automated_verified`**：public-interface RED 后完成唯一 `FetchTargetPolicy` → `AdmittedFetchTarget`
   deep Interface、daemon 必填 `--asset-fetch-origin` 与 Java Supervisor wiring；canonical lowercase ASCII HTTPS

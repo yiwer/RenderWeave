@@ -543,7 +543,7 @@ pub fn problem_bytes(
 ) -> Result<Vec<u8>, ProtocolError> {
     require_uuid_v4(request_id)?;
     require_problem_code(code)?;
-    serialize_problem(request_id, code, engine_stage, None)
+    serialize_problem(request_id, code, engine_stage, None, BTreeMap::new())
 }
 
 pub fn resource_problem_bytes(
@@ -555,7 +555,37 @@ pub fn resource_problem_bytes(
     require_uuid_v4(request_id)?;
     require_problem_code(code)?;
     require_resource_id(resource_id)?;
-    serialize_problem(request_id, code, engine_stage, Some(resource_id))
+    serialize_problem(
+        request_id,
+        code,
+        engine_stage,
+        Some(resource_id),
+        BTreeMap::new(),
+    )
+}
+
+pub fn resource_limit_problem_bytes(
+    request_id: &str,
+    code: &str,
+    engine_stage: EngineStage,
+    resource_id: &str,
+    limit_id: &str,
+) -> Result<Vec<u8>, ProtocolError> {
+    require_uuid_v4(request_id)?;
+    require_problem_code(code)?;
+    require_resource_id(resource_id)?;
+    if code != "RESOURCE_BUDGET_EXCEEDED" || !is_canonical_limit_id(limit_id) {
+        return Err(ProtocolError::Invalid(
+            "resource capacity problem shape is invalid",
+        ));
+    }
+    serialize_problem(
+        request_id,
+        code,
+        engine_stage,
+        Some(resource_id),
+        BTreeMap::from([("limitId".to_owned(), limit_id.to_owned())]),
+    )
 }
 
 fn serialize_problem(
@@ -563,6 +593,7 @@ fn serialize_problem(
     code: &str,
     engine_stage: EngineStage,
     resource_id: Option<&str>,
+    parameters: BTreeMap<String, String>,
 ) -> Result<Vec<u8>, ProtocolError> {
     Ok(serde_json::to_vec(&Problem {
         contract_version: PROBLEM_CONTRACT_VERSION.to_owned(),
@@ -571,7 +602,7 @@ fn serialize_problem(
         engine_stage,
         occurrence_id: None,
         resource_id: resource_id.map(str::to_owned),
-        parameters: BTreeMap::new(),
+        parameters,
     })?)
 }
 
@@ -813,11 +844,23 @@ fn require_problem_code(code: &str) -> Result<(), ProtocolError> {
         | "RENDER_ENGINE_BUSY"
         | "RESOURCE_LEASE_EXPIRED"
         | "RESOURCE_BUDGET_EXCEEDED"
+        | "FETCH_FAILED"
+        | "LENGTH_MISMATCH"
+        | "HASH_MISMATCH"
         | "RENDER_LAYOUT_TRACE_LIMIT_EXCEEDED" => Ok(()),
         _ => Err(ProtocolError::Invalid(
             "problem code is not in the closed catalog",
         )),
     }
+}
+
+fn is_canonical_limit_id(value: &str) -> bool {
+    !value.is_empty()
+        && value.len() <= 256
+        && value
+            .as_bytes()
+            .iter()
+            .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'.' | b'_' | b'-'))
 }
 
 fn require_resource_id(resource_id: &str) -> Result<(), ProtocolError> {
@@ -1453,6 +1496,52 @@ mod tests {
                 "RESOURCE_LEASE_EXPIRED",
                 EngineStage::CommandAdmission,
                 "rwres_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+            )
+            .is_err()
+        );
+    }
+
+    #[test]
+    fn fetch_and_resource_capacity_problems_have_closed_canonical_shapes() {
+        let request_id = "123e4567-e89b-42d3-a456-426614174000";
+        let resource_id = "rwres_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+        for code in ["FETCH_FAILED", "LENGTH_MISMATCH", "HASH_MISMATCH"] {
+            let bytes = resource_problem_bytes(
+                request_id,
+                code,
+                EngineStage::ResourcePreparation,
+                resource_id,
+            )
+            .unwrap();
+            assert_eq!(
+                bytes,
+                format!(
+                    "{{\"contractVersion\":\"renderweave-render-problem/1.0\",\"requestId\":\"{request_id}\",\"code\":\"{code}\",\"engineStage\":\"RESOURCE_PREPARATION\",\"resourceId\":\"{resource_id}\",\"parameters\":{{}}}}"
+                )
+                .as_bytes()
+            );
+        }
+        assert_eq!(
+            resource_limit_problem_bytes(
+                request_id,
+                "RESOURCE_BUDGET_EXCEEDED",
+                EngineStage::ResourcePreparation,
+                resource_id,
+                "assetsAndFetch.physicalFetchBytesIncludingRetries",
+            )
+            .unwrap(),
+            format!(
+                "{{\"contractVersion\":\"renderweave-render-problem/1.0\",\"requestId\":\"{request_id}\",\"code\":\"RESOURCE_BUDGET_EXCEEDED\",\"engineStage\":\"RESOURCE_PREPARATION\",\"resourceId\":\"{resource_id}\",\"parameters\":{{\"limitId\":\"assetsAndFetch.physicalFetchBytesIncludingRetries\"}}}}"
+            )
+            .as_bytes()
+        );
+        assert!(
+            resource_limit_problem_bytes(
+                request_id,
+                "FETCH_FAILED",
+                EngineStage::ResourcePreparation,
+                resource_id,
+                "assetsAndFetch.physicalFetchBytesIncludingRetries",
             )
             .is_err()
         );

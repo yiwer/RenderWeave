@@ -1,6 +1,15 @@
 use renderweave_renderer_document::AdmittedRenderResource;
 use sha2::{Digest, Sha256};
 
+mod fetch;
+
+pub use fetch::{
+    FETCH_ALLOWED_IP_COUNT_MAX, FETCH_ATTEMPT_LIMIT, FETCH_ATTEMPT_MILLIS, FETCH_BACKOFF_MILLIS,
+    FETCH_RESPONSE_HEADER_BYTES, FETCH_STREAM_CHUNK_BYTES, FetchEgressPolicy,
+    FetchEgressPolicyError, FetchedResource, HttpsResourceFetcher, RESOURCE_PHASE_MILLIS,
+    ResourceFetchProblem, ResourceFetchProblemCode, ResourceFetcher,
+};
+
 pub const MAX_PHYSICAL_FETCH_BYTES: u64 = 536_870_912;
 pub const PHYSICAL_FETCH_BYTES_LIMIT_ID: &str = "assetsAndFetch.physicalFetchBytesIncludingRetries";
 pub const RESOURCE_PREPARATION_STAGE: &str = "RESOURCE_PREPARATION";
@@ -320,6 +329,54 @@ impl VerifiedResourceBody {
     }
 }
 
+pub struct ResourceBodyVerifier<'resource, 'budget> {
+    resource: &'resource AdmittedRenderResource,
+    budget: &'budget mut PhysicalFetchBudget,
+    actual_length: u64,
+    hasher: Sha256,
+}
+
+impl<'resource, 'budget> ResourceBodyVerifier<'resource, 'budget> {
+    pub fn new(
+        resource: &'resource AdmittedRenderResource,
+        budget: &'budget mut PhysicalFetchBudget,
+    ) -> Self {
+        Self {
+            resource,
+            budget,
+            actual_length: 0,
+            hasher: Sha256::new(),
+        }
+    }
+
+    pub fn accept_chunk(&mut self, bytes: &[u8]) -> Result<(), ResourceBodyProblem> {
+        let chunk_length = u64::try_from(bytes.len()).expect("usize must fit in u64");
+        self.budget
+            .accept_chunk_bytes(self.resource, chunk_length)?;
+        self.actual_length += chunk_length;
+        if self.actual_length > self.resource.byte_length() {
+            return Err(length_mismatch_problem(self.resource.resource_id()));
+        }
+        self.hasher.update(bytes);
+        Ok(())
+    }
+
+    pub fn finish(self) -> Result<VerifiedResourceBody, ResourceBodyProblem> {
+        if self.actual_length != self.resource.byte_length() {
+            return Err(length_mismatch_problem(self.resource.resource_id()));
+        }
+        let actual_sha256 = format!("sha256:{}", hex::encode(self.hasher.finalize()));
+        if actual_sha256 != self.resource.sha256() {
+            return Err(hash_mismatch_problem(self.resource.resource_id()));
+        }
+        Ok(VerifiedResourceBody {
+            resource_id: self.resource.resource_id().into(),
+            byte_length: self.actual_length,
+            sha256: actual_sha256.into_boxed_str(),
+        })
+    }
+}
+
 pub fn verify_resource_body<I, B>(
     resource: &AdmittedRenderResource,
     budget: &mut PhysicalFetchBudget,
@@ -329,30 +386,11 @@ where
     I: IntoIterator<Item = B>,
     B: AsRef<[u8]>,
 {
-    let mut actual_length = 0_u64;
-    let mut hasher = Sha256::new();
+    let mut verifier = ResourceBodyVerifier::new(resource, budget);
     for chunk in chunks {
-        let bytes = chunk.as_ref();
-        let chunk_length = u64::try_from(bytes.len()).expect("usize must fit in u64");
-        budget.accept_chunk_bytes(resource, chunk_length)?;
-        actual_length += chunk_length;
-        if actual_length > resource.byte_length() {
-            return Err(length_mismatch_problem(resource.resource_id()));
-        }
-        hasher.update(bytes);
+        verifier.accept_chunk(chunk.as_ref())?;
     }
-    if actual_length != resource.byte_length() {
-        return Err(length_mismatch_problem(resource.resource_id()));
-    }
-    let actual_sha256 = format!("sha256:{}", hex::encode(hasher.finalize()));
-    if actual_sha256 != resource.sha256() {
-        return Err(hash_mismatch_problem(resource.resource_id()));
-    }
-    Ok(VerifiedResourceBody {
-        resource_id: resource.resource_id().into(),
-        byte_length: actual_length,
-        sha256: actual_sha256.into_boxed_str(),
-    })
+    verifier.finish()
 }
 
 #[cfg(test)]

@@ -535,6 +535,9 @@ final class RendererProcessProtocol {
                     RENDER_ENGINE_BUSY,
                     RESOURCE_LEASE_EXPIRED,
                     RESOURCE_BUDGET_EXCEEDED,
+                    FETCH_FAILED,
+                    LENGTH_MISMATCH,
+                    HASH_MISMATCH,
                     RENDER_LAYOUT_TRACE_LIMIT_EXCEEDED -> true;
             default -> false;
         };

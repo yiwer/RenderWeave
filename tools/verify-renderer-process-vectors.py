@@ -179,7 +179,13 @@ def verify_manifest(
     verifier.require(manifest["rustEdition"] == "2024", "Rust edition drifted")
     verifier.require(
         manifest["directDependencies"]
-        == ["hex@0.4.3", "serde@1.0.228", "serde_json@1.0.149", "sha2@0.10.9"],
+        == [
+            "hex@0.4.3",
+            "serde@1.0.228",
+            "serde_json@1.0.149",
+            "sha2@0.10.9",
+            "ureq@3.4.0",
+        ],
         "direct dependency pins drifted",
     )
     verifier.require(

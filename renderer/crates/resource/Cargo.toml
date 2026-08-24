@@ -10,7 +10,10 @@ publish = false
 hex.workspace = true
 renderweave-renderer-document = { path = "../document" }
 sha2.workspace = true
+ureq.workspace = true
 
 [dev-dependencies]
+rcgen.workspace = true
+rustls.workspace = true
 serde.workspace = true
 serde_json.workspace = true

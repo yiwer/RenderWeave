@@ -31,6 +31,7 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.Base64;
+import java.util.List;
 
 /**
  * Rendering app 装配（ADR-0044）：CapabilityStateStore 加密落盘 Adapter、capability 运行时
@@ -114,6 +115,8 @@ class RenderingApplicationConfiguration {
             @Value("${renderweave.rendering.engine.process.manifest}") String manifest,
             @Value("${renderweave.rendering.engine.process.manifest-sha256}") String manifestSha256,
             @Value("${renderweave.asset.fetch-base-url}") String assetFetchOrigin,
+            @Value("${renderweave.rendering.engine.process.asset-fetch-allowed-ips}")
+            List<String> assetFetchAllowedIps,
             @Value("${renderweave.rendering.engine.process.max-frame-bytes}") int maximumFramedBytes,
             @Value("${renderweave.rendering.engine.process.startup-timeout-ms}") long startupTimeoutMillis,
             @Value("${renderweave.rendering.engine.process.restart-backoff-ms}") long restartBackoffMillis,
@@ -125,6 +128,7 @@ class RenderingApplicationConfiguration {
                 Path.of(manifest),
                 manifestSha256,
                 assetFetchOrigin,
+                assetFetchAllowedIps,
                 maximumFramedBytes,
                 Duration.ofMillis(startupTimeoutMillis),
                 Duration.ofMillis(restartBackoffMillis),

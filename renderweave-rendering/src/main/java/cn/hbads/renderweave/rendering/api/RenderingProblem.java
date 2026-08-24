@@ -85,6 +85,9 @@ public record RenderingProblem(
         // ENGINE（合同冻结，执行面随 Engine 实现票物化）
         RESOURCE_BUDGET_EXCEEDED,
         RESOURCE_LEASE_EXPIRED,
+        FETCH_FAILED,
+        LENGTH_MISMATCH,
+        HASH_MISMATCH,
         RENDER_REQUEST_STATE_LOST,
         RENDER_REQUEST_CONFLICT,
         RENDER_ENGINE_BUSY,

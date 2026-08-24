@@ -3308,6 +3308,49 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
   `NOT_REGISTERED`、certification `NOT_CERTIFIED`、process raster `ABSENT`、正式产品 route `CLOSED`；provider
   attempts/API Key reads/费用/真实数据=0，未 push/tag/PR，`/prototype` 不计最终产品交付。
 
+## 100. TV1-T101 执行卡
+
+- 决策：T100 以 verified commit `0f24c99` 收口且 worktree clean 后，最终产品链路的首个未实现边界是 daemon
+  对 admitted Asset target 的真实 HTTPS fetch。Ticket 13/16/19 与 ADR-0045 已冻结 exact-origin、每 connect
+  DNS/egress、rustls、strict envelope、retry/time/byte budgets，足以形成不依赖 decoder/Profile 的严格传输子闭包。
+- Interface/seam：深化 `renderweave-renderer-resource` 为 `ResourceFetcher` deep Interface；production
+  `HttpsResourceFetcher` 只消费 `AdmittedFetchTarget`，daemon 注入该 Interface，测试注入 deterministic fake。
+  daemon/Java 新增必填 1–16 个 canonical `--asset-fetch-allowed-ip` deployment inputs。
+- 精确语义：ureq 3.4.0 default-features off + rustls/WebPKI；每 attempt 新连接并重做 DNS/allowlisted-IP 过滤；
+  no proxy/redirect/cookie/range/caller header/decompression/pooling/fallback；200 + unique matching Content-Length +
+  identity body；1 MiB streaming、512 MiB physical budget、length/lowercase SHA-256；transport/5xx 最多 2 attempts、
+  100 ms no-jitter、5 s attempt、20 s phase，并逐 attempt 重检 deadline/lease。
+- 允许影响：T101 tracker/map/plan/NOTES、resource/daemon Rust modules/tests/shared vectors、Python independent verifier、
+  Java Supervisor/config/tests、Cargo.lock/vendor/process manifest/render gate identity 与 evidence。
+- 禁止影响：media/magic/decode/descriptor、decoded cache、scene/raster/JPEG/LayoutTrace、并发 queue/CANCEL、daemon
+  RESULT/Profile registration、OpenAPI/Web/Product Editor route、formal records、physical certification、J1/A3/READY
+  与外部副作用。
+- TDD 与 gates：shared corpus + Rust public API + daemon/Java args 先 RED；GREEN 后 focused/loopback rustls → Rust
+  workspace/offline/vendor/independent replay → `render` → affected `fast` → sequential `server` → Goal `full` →
+  resolution `fast`。最高只可 `automated_verified`；不运行 provider、不读取 API Key、不发送真实数据、不
+  push/tag/PR，`/prototype` 不计交付。
+
+### TV1-T101 resolution evidence
+
+- shared transport corpus 的 Rust primary 与 Python stdlib independent verifier 为 33/33 cases、115 checks，vector
+  SHA-256 `e31976aa5483c66859b8f8cad480e742a9df812473286d2233d196ae194aca68`；真实 loopback rustls、
+  resource 10 unit + 2 public-interface、daemon Windows 10/Linux 11、Java renderer 29 tests 均绿。
+- Cargo.lock SHA-256 `5acd41e397411003ae3259820df73033cd9f7a048722eb38bee6c91a8cc71f82`，vendor tree
+  SHA-256 `7764c5ca80a9e3a66b42b49ab8001ca49730f19284746eff920aa3e4218fdf5e`（2718 files），process
+  manifest SHA-256 `294ba3626fdb2753c571852e1e121adef671f5567a949b1b8be892cf9a4c0328`；独立 process replay
+  7 vectors/110 checks，Windows workspace 与 Linux network-none/真实 UDS 均通过。
+- 分级 A1 证据：`render` `.sdlc/evidence/20260824-224815-render/`（37.422 秒）、affected `fast`
+  `.sdlc/evidence/20260824-225028-fast/`（20.572 秒）、顺序 `server`
+  `.sdlc/evidence/20260824-225057-server/`（1047.399 秒）与 17-step Goal `full`
+  `.sdlc/evidence/20260824-230832-full/`（1610.188 秒）均 exit 0。full 中 App 347/0/0/15、Node 24 Web
+  26 files/212 tests、runtime canary、Playwright 23 passed + 1 controlled skip、Draft browser journey 与 inference
+  replay E2E 1/1 均通过；R0/R1/P0 provider attempts=0，P0 API Key reads/reservations/cost/open authorization=0。
+- 状态回填后的 resolution `fast` `.sdlc/evidence/20260824-233759-fast/` 3 steps 均 exit 0（11.798 秒）。
+- 状态为 `resolved/automated_verified`；resource bytes `FETCHED_AND_INTEGRITY_VERIFIED`、transport
+  `RUSTLS_HTTPS_AUTOMATED_VERIFIED`。Profile `NOT_REGISTERED`、certification `NOT_CERTIFIED`、process raster
+  `ABSENT`、daemon output `UNWIRED`、正式产品 route `CLOSED`；未运行 provider、读取 API Key、发送真实数据或
+  push/tag/PR，`/prototype` 不计最终产品交付。
+
 ## 66. TV1-T67 执行卡
 
 - 决策：T66 以 verified commit `a6fabe5` 收口且 worktree clean 后，复算原始 Ticket 10 §3/§7、

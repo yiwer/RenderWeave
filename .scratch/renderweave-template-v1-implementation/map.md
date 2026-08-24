@@ -504,6 +504,12 @@ Label: wayfinder:map
   `/internal/render-assets/` segment-boundary 前置。独立 replay 36/36 cases、76 checks，`render`/affected `fast`/
   顺序 `server`/17-step `full` 均绿；resource bytes 仍 UNFETCHED，transport/daemon output UNWIRED，Profile 与
   正式产品 route 继续关闭。
+- [实现 Renderer 有界 rustls HTTPS 资源传输与 daemon 接线](issues/101-bounded-rustls-resource-fetch-transport.md) —
+  **resolved / automated_verified**；T100 admitted target 已推进到每 connect DNS/显式 IP egress 复核、
+  rustls/WebPKI、strict HTTP envelope、2 attempts/100 ms/5 s/20 s、1 MiB streaming 与 shared 512 MiB
+  physical budget/length/SHA 核验，并按 manifest order 接入 daemon exact terminal replay。Rust/Python transport
+  33/33 cases、115 checks，Java renderer 29 tests，`render`/affected `fast`/顺序 `server`/17-step `full` 均绿；
+  media/decode/scene/RESULT/Profile/Product Editor route 仍关闭。
 - [验证 Product Editor 状态、恢复与权威预览架构](issues/09-validate-product-editor-architecture.md) —
   throwaway 逻辑原型（`/prototype/editor-state-model`，不进产品 route）把冻结编辑器规则编码为确定性
   fixture 状态机：10 个引导走查场景 37/37 断言 + 自由操作冒烟 + 键盘焦点检查全部通过（Playwright A1，

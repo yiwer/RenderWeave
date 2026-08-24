@@ -13,16 +13,28 @@ use renderweave_renderer_protocol::ProtocolError;
 #[cfg(any(unix, test))]
 use renderweave_renderer_protocol::{
     EngineStage, Frame, FrameType, ManifestIdentity, parse_cancel, parse_client_hello,
-    parse_command, problem_bytes, read_frame, resource_problem_bytes, server_hello_bytes,
-    validate_process_manifest, write_frame,
+    parse_command, problem_bytes, read_frame, resource_limit_problem_bytes, resource_problem_bytes,
+    server_hello_bytes, validate_process_manifest, write_frame,
 };
-use renderweave_renderer_resource::{ASSET_FETCH_PATH_PREFIX, FetchTargetPolicy};
+#[cfg(test)]
+use renderweave_renderer_resource::FetchedResource;
+#[cfg(target_os = "linux")]
+use renderweave_renderer_resource::HttpsResourceFetcher;
+use renderweave_renderer_resource::{
+    ASSET_FETCH_PATH_PREFIX, FetchEgressPolicy, FetchTargetPolicy,
+};
+#[cfg(any(unix, test))]
+use renderweave_renderer_resource::{
+    ResourceFetchProblem, ResourceFetchProblemCode, ResourceFetcher,
+};
 #[cfg(any(unix, test))]
 use std::collections::BTreeMap;
 use std::ffi::{OsStr, OsString};
 use std::fmt::{Display, Formatter};
 use std::io;
 use std::path::{Path, PathBuf};
+#[cfg(any(unix, test))]
+use std::sync::Arc;
 #[cfg(any(unix, test))]
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -76,16 +88,22 @@ pub struct DaemonConfiguration {
     socket_path: PathBuf,
     manifest_path: PathBuf,
     fetch_target_policy: FetchTargetPolicy,
+    fetch_egress_policy: FetchEgressPolicy,
     maximum_framed_bytes: usize,
 }
 
 impl DaemonConfiguration {
-    pub fn new(
+    pub fn new<I, S>(
         socket_path: impl Into<PathBuf>,
         manifest_path: impl Into<PathBuf>,
         asset_fetch_origin: &str,
+        asset_fetch_allowed_ips: I,
         maximum_framed_bytes: usize,
-    ) -> Result<Self, DaemonError> {
+    ) -> Result<Self, DaemonError>
+    where
+        I: IntoIterator<Item = S>,
+        S: AsRef<str>,
+    {
         let socket_path = socket_path.into();
         let manifest_path = manifest_path.into();
         if socket_path.as_os_str().is_empty() {
@@ -109,10 +127,17 @@ impl DaemonConfiguration {
                     "renderer asset fetch origin must be a canonical HTTPS origin",
                 )
             })?;
+        let fetch_egress_policy =
+            FetchEgressPolicy::new(asset_fetch_allowed_ips).map_err(|_| {
+                DaemonError::Configuration(
+                    "renderer asset fetch allowed IPs must be 1..16 unique canonical addresses",
+                )
+            })?;
         Ok(Self {
             socket_path,
             manifest_path,
             fetch_target_policy,
+            fetch_egress_policy,
             maximum_framed_bytes,
         })
     }
@@ -132,6 +157,10 @@ impl DaemonConfiguration {
     pub fn fetch_target_policy(&self) -> &FetchTargetPolicy {
         &self.fetch_target_policy
     }
+
+    pub fn fetch_egress_policy(&self) -> &FetchEgressPolicy {
+        &self.fetch_egress_policy
+    }
 }
 
 pub fn run_from_arguments(
@@ -142,6 +171,7 @@ pub fn run_from_arguments(
     let mut socket_path = None;
     let mut manifest_path = None;
     let mut asset_fetch_origin = None;
+    let mut asset_fetch_allowed_ips = Vec::new();
     let mut maximum_framed_bytes = None;
     while let Some(argument) = arguments.next() {
         if argument == OsStr::new("--socket") {
@@ -162,6 +192,10 @@ pub fn run_from_arguments(
                 arguments.next(),
                 "--asset-fetch-origin must appear exactly once with a value",
             )?;
+        } else if argument == OsStr::new("--asset-fetch-allowed-ip") {
+            asset_fetch_allowed_ips.push(arguments.next().ok_or(DaemonError::Configuration(
+                "--asset-fetch-allowed-ip requires a value",
+            ))?);
         } else if argument == OsStr::new("--max-frame-bytes") {
             if maximum_framed_bytes.is_some() {
                 return Err(DaemonError::Configuration(
@@ -191,10 +225,19 @@ pub fn run_from_arguments(
         .ok_or(DaemonError::Configuration(
             "--asset-fetch-origin must be canonical UTF-8",
         ))?;
+    let asset_fetch_allowed_ips = asset_fetch_allowed_ips
+        .iter()
+        .map(|value| {
+            value.to_str().ok_or(DaemonError::Configuration(
+                "--asset-fetch-allowed-ip must be canonical UTF-8",
+            ))
+        })
+        .collect::<Result<Vec<_>, _>>()?;
     let configuration = DaemonConfiguration::new(
         socket_path.ok_or(DaemonError::Configuration("--socket is required"))?,
         manifest_path.ok_or(DaemonError::Configuration("--manifest is required"))?,
         asset_fetch_origin,
+        asset_fetch_allowed_ips,
         maximum_framed_bytes.ok_or(DaemonError::Configuration("--max-frame-bytes is required"))?,
     )?;
     run(configuration)
@@ -229,7 +272,13 @@ pub fn run(configuration: DaemonConfiguration) -> Result<(), DaemonError> {
         configuration.socket_path(),
         std::fs::Permissions::from_mode(0o600),
     )?;
-    let mut registry = RequestRegistry::new(configuration.fetch_target_policy().clone());
+    let resource_fetcher = Arc::new(HttpsResourceFetcher::new(
+        configuration.fetch_egress_policy().clone(),
+    ));
+    let mut registry = RequestRegistry::new(
+        configuration.fetch_target_policy().clone(),
+        resource_fetcher,
+    );
     eprintln!("renderer daemon ready");
     for accepted in listener.incoming() {
         let mut connection = accepted?;
@@ -301,14 +350,19 @@ struct RegistryEntry {
 struct RequestRegistry {
     entries: BTreeMap<String, RegistryEntry>,
     fetch_target_policy: FetchTargetPolicy,
+    resource_fetcher: Arc<dyn ResourceFetcher>,
 }
 
 #[cfg(any(unix, test))]
 impl RequestRegistry {
-    fn new(fetch_target_policy: FetchTargetPolicy) -> Self {
+    fn new(
+        fetch_target_policy: FetchTargetPolicy,
+        resource_fetcher: Arc<dyn ResourceFetcher>,
+    ) -> Self {
         Self {
             entries: BTreeMap::new(),
             fetch_target_policy,
+            resource_fetcher,
         }
     }
 
@@ -395,14 +449,30 @@ impl RequestRegistry {
                             EngineStage::DocumentAdmission,
                         )?
                     } else {
-                        // The exact process manifest has no registered raster profile. This is a
-                        // real, stable fail-closed terminal result, never a synthetic image
-                        // implementation.
-                        problem_bytes(
-                            &request_id,
-                            "RENDER_INTERNAL_ERROR",
-                            EngineStage::CommandAdmission,
-                        )?
+                        let targets = document
+                            .resources()
+                            .iter()
+                            .map(|resource| {
+                                self.fetch_target_policy
+                                    .admit(resource)
+                                    .expect("all targets were admitted above")
+                            })
+                            .collect::<Vec<_>>();
+                        if let Err(problem) = self
+                            .resource_fetcher
+                            .fetch_resources(&targets, admitted.deadline_epoch_millis)
+                        {
+                            resource_fetch_problem_bytes(&request_id, &problem)?
+                        } else {
+                            // The exact process manifest has no registered raster profile. This is a
+                            // real, stable fail-closed terminal result, never a synthetic image
+                            // implementation.
+                            problem_bytes(
+                                &request_id,
+                                "RENDER_INTERNAL_ERROR",
+                                EngineStage::CommandAdmission,
+                            )?
+                        }
                     }
                 }
             }
@@ -463,6 +533,49 @@ impl RequestRegistry {
 }
 
 #[cfg(any(unix, test))]
+fn resource_fetch_problem_bytes(
+    request_id: &str,
+    problem: &ResourceFetchProblem,
+) -> Result<Vec<u8>, ProtocolError> {
+    if problem.code() == ResourceFetchProblemCode::RenderDeadlineExceeded {
+        return problem_bytes(
+            request_id,
+            problem.code().as_str(),
+            EngineStage::ResourcePreparation,
+        );
+    }
+    let Some(resource_id) = problem.resource_id() else {
+        return problem_bytes(
+            request_id,
+            "RENDER_INTERNAL_ERROR",
+            EngineStage::ResourcePreparation,
+        );
+    };
+    if problem.code() == ResourceFetchProblemCode::ResourceBudgetExceeded {
+        let Some(limit_id) = problem.limit_id() else {
+            return problem_bytes(
+                request_id,
+                "RENDER_INTERNAL_ERROR",
+                EngineStage::ResourcePreparation,
+            );
+        };
+        return resource_limit_problem_bytes(
+            request_id,
+            problem.code().as_str(),
+            EngineStage::ResourcePreparation,
+            resource_id,
+            limit_id,
+        );
+    }
+    resource_problem_bytes(
+        request_id,
+        problem.code().as_str(),
+        EngineStage::ResourcePreparation,
+        resource_id,
+    )
+}
+
+#[cfg(any(unix, test))]
 fn now_epoch_millis() -> i64 {
     match SystemTime::now().duration_since(UNIX_EPOCH) {
         Ok(duration) => i64::try_from(duration.as_millis()).unwrap_or(i64::MAX),
@@ -478,33 +591,76 @@ mod tests {
     use renderweave_renderer_protocol::encode_frame;
     use serde_json::Value;
     use std::io::Cursor;
+    use std::sync::Mutex;
 
     const VECTORS: &str = include_str!("../../../protocol-vectors-v1.json");
     const PROCESS_MANIFEST: &[u8] = include_bytes!("../../../process-manifest.json");
     const ALL_KINDS: &str = include_str!("../../../render-document-all-kinds-v1.json");
     const ASSET_FETCH_ORIGIN: &str = "https://render.internal.example";
+    const ASSET_FETCH_ALLOWED_IPS: [&str; 1] = ["127.0.0.1"];
 
     #[test]
     fn daemon_requires_an_explicit_socket_manifest_fetch_origin_and_frame_limit() {
-        assert!(DaemonConfiguration::new("", "", "", 0).is_err());
-        assert!(DaemonConfiguration::new("/tmp/rw.sock", "", ASSET_FETCH_ORIGIN, 1).is_err());
-        assert!(DaemonConfiguration::new("/tmp/rw.sock", "/tmp/manifest", "", 1).is_err());
+        assert!(DaemonConfiguration::new("", "", "", ASSET_FETCH_ALLOWED_IPS, 0).is_err());
         assert!(
             DaemonConfiguration::new(
                 "/tmp/rw.sock",
-                "/tmp/manifest",
-                "http://render.internal.example",
+                "",
+                ASSET_FETCH_ORIGIN,
+                ASSET_FETCH_ALLOWED_IPS,
                 1
             )
             .is_err()
         );
         assert!(
-            DaemonConfiguration::new("/tmp/rw.sock", "/tmp/manifest", ASSET_FETCH_ORIGIN, 0)
-                .is_err()
+            DaemonConfiguration::new(
+                "/tmp/rw.sock",
+                "/tmp/manifest",
+                "",
+                ASSET_FETCH_ALLOWED_IPS,
+                1
+            )
+            .is_err()
         );
         assert!(
-            DaemonConfiguration::new("/tmp/rw.sock", "/tmp/manifest", ASSET_FETCH_ORIGIN, 1)
-                .is_ok()
+            DaemonConfiguration::new(
+                "/tmp/rw.sock",
+                "/tmp/manifest",
+                "http://render.internal.example",
+                ASSET_FETCH_ALLOWED_IPS,
+                1
+            )
+            .is_err()
+        );
+        assert!(
+            DaemonConfiguration::new(
+                "/tmp/rw.sock",
+                "/tmp/manifest",
+                ASSET_FETCH_ORIGIN,
+                ASSET_FETCH_ALLOWED_IPS,
+                0
+            )
+            .is_err()
+        );
+        assert!(
+            DaemonConfiguration::new(
+                "/tmp/rw.sock",
+                "/tmp/manifest",
+                ASSET_FETCH_ORIGIN,
+                std::iter::empty::<&str>(),
+                1
+            )
+            .is_err()
+        );
+        assert!(
+            DaemonConfiguration::new(
+                "/tmp/rw.sock",
+                "/tmp/manifest",
+                ASSET_FETCH_ORIGIN,
+                ASSET_FETCH_ALLOWED_IPS,
+                1
+            )
+            .is_ok()
         );
     }
 
@@ -664,6 +820,80 @@ mod tests {
     }
 
     #[test]
+    fn registry_fetches_admitted_resources_in_manifest_order_before_profile_lookup() {
+        let document = renderable_resource_document();
+        let command = command_with_document(&document);
+        let observations = Arc::new(Mutex::new(Vec::new()));
+        let fetcher = Arc::new(RecordingResourceFetcher {
+            observations: observations.clone(),
+            fail_first: false,
+        });
+        let mut registry = request_registry_with(fetcher);
+
+        let response = registry
+            .handle(
+                Frame {
+                    frame_type: FrameType::Command,
+                    payload: command.into_bytes(),
+                },
+                1_800_000_000_000,
+            )
+            .unwrap();
+        let problem: Value = serde_json::from_slice(&response.payload).unwrap();
+        assert_eq!(problem["code"], "RENDER_INTERNAL_ERROR");
+        assert_eq!(problem["engineStage"], "COMMAND_ADMISSION");
+        assert_eq!(
+            observations.lock().unwrap().as_slice(),
+            &[vec![
+                "rwres_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_owned(),
+                "rwres_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".to_owned(),
+            ]]
+        );
+    }
+
+    #[test]
+    fn registry_maps_fetch_failure_to_safe_resource_problem_and_replays_without_refetch() {
+        let document = renderable_resource_document();
+        let command = command_with_document(&document);
+        let observations = Arc::new(Mutex::new(Vec::new()));
+        let fetcher = Arc::new(RecordingResourceFetcher {
+            observations: observations.clone(),
+            fail_first: true,
+        });
+        let mut registry = request_registry_with(fetcher);
+
+        let first = registry
+            .handle(
+                Frame {
+                    frame_type: FrameType::Command,
+                    payload: command.as_bytes().to_vec(),
+                },
+                1_800_000_000_000,
+            )
+            .unwrap();
+        let problem: Value = serde_json::from_slice(&first.payload).unwrap();
+        assert_eq!(problem["code"], "FETCH_FAILED");
+        assert_eq!(problem["engineStage"], "RESOURCE_PREPARATION");
+        assert_eq!(
+            problem["resourceId"],
+            "rwres_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        );
+        assert_eq!(problem["parameters"], serde_json::json!({}));
+
+        let replay = registry
+            .handle(
+                Frame {
+                    frame_type: FrameType::Command,
+                    payload: command.into_bytes(),
+                },
+                1_800_000_000_001,
+            )
+            .unwrap();
+        assert_eq!(replay.payload, first.payload);
+        assert_eq!(observations.lock().unwrap().len(), 1);
+    }
+
+    #[test]
     fn pre_command_cancel_is_terminal_and_never_emits_result() {
         let mut registry = request_registry();
         let cancel = vector_json("cancel");
@@ -786,13 +1016,76 @@ mod tests {
     }
 
     fn request_registry() -> RequestRegistry {
+        request_registry_with(Arc::new(SuccessResourceFetcher))
+    }
+
+    fn request_registry_with(resource_fetcher: Arc<dyn ResourceFetcher>) -> RequestRegistry {
         RequestRegistry::new(
             renderweave_renderer_resource::FetchTargetPolicy::new(
                 ASSET_FETCH_ORIGIN,
                 renderweave_renderer_resource::ASSET_FETCH_PATH_PREFIX,
             )
             .unwrap(),
+            resource_fetcher,
         )
+    }
+
+    struct SuccessResourceFetcher;
+
+    impl ResourceFetcher for SuccessResourceFetcher {
+        fn fetch_resources(
+            &self,
+            _targets: &[renderweave_renderer_resource::AdmittedFetchTarget<'_>],
+            _deadline_epoch_millis: i64,
+        ) -> Result<Vec<FetchedResource>, ResourceFetchProblem> {
+            Ok(Vec::new())
+        }
+    }
+
+    struct RecordingResourceFetcher {
+        observations: Arc<Mutex<Vec<Vec<String>>>>,
+        fail_first: bool,
+    }
+
+    impl ResourceFetcher for RecordingResourceFetcher {
+        fn fetch_resources(
+            &self,
+            targets: &[renderweave_renderer_resource::AdmittedFetchTarget<'_>],
+            _deadline_epoch_millis: i64,
+        ) -> Result<Vec<FetchedResource>, ResourceFetchProblem> {
+            self.observations.lock().unwrap().push(
+                targets
+                    .iter()
+                    .map(|target| target.resource_id().to_owned())
+                    .collect(),
+            );
+            if self.fail_first {
+                return Err(ResourceFetchProblem::fetch_failed(
+                    targets.first().unwrap().resource_id(),
+                ));
+            }
+            Ok(Vec::new())
+        }
+    }
+
+    fn renderable_resource_document() -> String {
+        let mut document: Value = serde_json::from_str(ALL_KINDS).unwrap();
+        let mut text = document["canvas"]["children"][4].clone();
+        let mut image = document["canvas"]["children"][5].clone();
+        text["occurrenceId"] = Value::String("rwocc_0000000000000001".to_owned());
+        image["occurrenceId"] = Value::String("rwocc_0000000000000002".to_owned());
+        document["canvas"]["children"] = serde_json::json!([text, image]);
+        let resources = document["resources"].as_array_mut().unwrap();
+        for (index, resource) in resources.iter_mut().enumerate() {
+            resource["expiresAt"] = Value::from(4_090_912_502_u64);
+            resource["fetchUrl"] = Value::String(format!(
+                "{ASSET_FETCH_ORIGIN}/internal/render-assets/token-{index}"
+            ));
+        }
+        let document = serde_json::to_string(&document).unwrap();
+        let admitted = validate_render_document(&document).unwrap();
+        assert!(preflight_layout(&admitted).is_ok());
+        document
     }
 
     fn command_with_document(document: &str) -> String {

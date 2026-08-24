@@ -14,6 +14,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Base64;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -148,6 +149,24 @@ class RendererProcessProtocolTest {
                 () -> RendererProcessProtocol.parseProblem(problem.replace(
                                 "RENDER_INTERNAL_ERROR", "RESOURCE_BUDGET_EXCEEDED")
                         .getBytes(StandardCharsets.UTF_8)));
+    }
+
+    @Test
+    void fetchIntegrityProblemCodesAreStrictlyAdmittedAtResourcePreparation() throws Exception {
+        var resourceId =
+                "rwres_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+        for (var code : List.of("FETCH_FAILED", "LENGTH_MISMATCH", "HASH_MISMATCH")) {
+            var payload = ("{\"contractVersion\":\"renderweave-render-problem/1.0\","
+                    + "\"requestId\":\"123e4567-e89b-42d3-a456-426614174000\","
+                    + "\"code\":\"" + code + "\","
+                    + "\"engineStage\":\"RESOURCE_PREPARATION\","
+                    + "\"resourceId\":\"" + resourceId + "\",\"parameters\":{}}")
+                    .getBytes(StandardCharsets.UTF_8);
+            var parsed = RendererProcessProtocol.parseProblem(payload);
+            assertEquals(code, parsed.code().name());
+            assertEquals("RESOURCE_PREPARATION", parsed.engineStage());
+            assertEquals(resourceId, parsed.safeLocation().orElseThrow());
+        }
     }
 
     @Test
