@@ -1,0 +1,18 @@
+[package]
+name = "renderweave-renderer-engine"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[dependencies]
+hex.workspace = true
+renderweave-renderer-document = { path = "../document" }
+renderweave-renderer-layout = { path = "../layout" }
+renderweave-renderer-output-png = { path = "../output-png" }
+serde_json.workspace = true
+sha2.workspace = true
+
+[dev-dependencies]
+serde.workspace = true

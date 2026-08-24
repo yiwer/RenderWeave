@@ -3005,6 +3005,36 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
   final A2 report 为 263/263 cases、787 checks。现有 Web 仍无正式 Template 产品 route，不能以
   prototype/fixture 替代最终页面与功能交付。
 
+## 91. TV1-T92 执行卡
+
+- 决策：T91 以 verified commit `d18d2a3` 收口且 worktree clean 后，按用户要求把交付目标重新锚定为正式
+  Template-v1 产品页与真实功能。权威规格要求 E6 authoritative preview 与 formal output 复用同一
+  Evaluator/RenderEngine；现有 Web 虽已完成 E1–E5/E7–E9，但 renderer 仍无 scene/raster/RESULT。因此当前
+  frontier 不再机械选择下一个 Stack negative，而是登记首个真实 Engine PNG output kernel。
+- Interface/seam：新增 workspace-internal `renderweave-renderer-engine` deep module，唯一 Interface 为
+  `render_png(&AdmittedRenderDocument, dpi)`。它在内部组合现有 document/layout/output-png modules，调用者不接触
+  JSON traversal、surface buffer、PNG 或 digest 实现；测试与未来 daemon Adapter 经过同一 Interface。
+- 精确子集：只接受 empty-resource、empty-children Canvas，背景 alpha 仅 `00 | FF`；调用 definite layout 并要求
+  单一 Canvas entry，再按 trim+bleed+DPI exact preflight 填充真实 RGBA8 surface、alpha-zero RGB normalization、
+  exact PNG encode 与 SHA-256。任何 child/resource/partial alpha/unsupported layout 均全有或全无地 fail closed。
+- 允许影响：T92 tracker/plan/NOTES、Cargo workspace/lock/manifest inventory、Engine Rust module/tests、shared
+  Engine-PNG vectors、Python independent verifier、render gate identity/assertions/evidence。
+- 禁止影响：process advertised Profile/daemon success、shape/container paint、transform/clip/opacity、Text/Image/
+  compositionViewport、resource fetch/decode/font、JPEG/LayoutTrace、Java/OpenAPI/Web/E6/route、formal record、
+  physical certification、J1/A3/READY 与外部副作用。
+- TDD：先让透明空 Canvas tracer 在 Rust/Python 对同一 case 共同 RED，再分别实现；GREEN 后补 opaque、bleed/
+  half-up、transparent RGB normalization 与 nonempty/resource/partial-alpha/budget negatives。验证按 focused →
+  `render` → `fast` → `server` → `full` → resolution `fast` 顺序扩大，最高只到 `automated_verified`。
+- Resolution：新增 workspace-internal `renderweave-renderer-engine` 与唯一 `render_png` Interface；shared `/1` 最终
+  为 5 rendered + 4 unsupported、9/9 cases、31 checks，vector SHA-256
+  `4db688dd2136d1d83fba18ba727b6eaef909dd54902498181107e76f31d9c3c7`。`render`
+  `.sdlc/evidence/20260824-125810-render/`、affected `fast` `.sdlc/evidence/20260824-125844-fast/`、顺序
+  `server` `.sdlc/evidence/20260824-125906-server/` 与 Goal `full`
+  `.sdlc/evidence/20260824-131813-full/` 全绿，状态为 `resolved/automated_verified`；resolution `fast`
+  `.sdlc/evidence/20260824-134750-fast/` 亦为 exit 0。process manifest 只更新新增 crate 后的 Cargo.lock identity，
+  未增加 advertised Profile/raster/daemon output；E6 与正式产品 route 仍保持 CLOSED，provider attempts/API Key
+  reads/付费调用/真实数据均为 0。
+
 ## 66. TV1-T67 执行卡
 
 - 决策：T66 以 verified commit `a6fabe5` 收口且 worktree clean 后，复算原始 Ticket 10 §3/§7、

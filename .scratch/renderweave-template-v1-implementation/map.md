@@ -447,6 +447,12 @@ Label: wayfinder:map
   authored minima，active child 仍必须为合法 mixed min/max；shared `/54` 实际为 247 laid-out + 16 unsupported、
   263/263 cases/787 checks。active min-only + two min-only、post-overflow redistribution、four-or-more FILL 与
   一般 water filling 保持 fail closed；正式 Template 产品 route 仍未开放。
+- [实现空 Canvas 的真实 Engine PNG 输出内核](issues/92-empty-canvas-engine-png-kernel.md) —
+  **resolved / automated_verified**；首个真实 Engine 纵切只让已准入、无 resource、无 child、背景 alpha 为
+  0/255 的 Canvas 经过同一 layout、RGBA8 surface 与 exact PNG encoder 产生 bytes。shared `/1` 为 5 rendered +
+  4 unsupported、9/9 cases、31 checks，vector SHA-256
+  `4db688dd2136d1d83fba18ba727b6eaef909dd54902498181107e76f31d9c3c7`；Profile 仍 NOT_REGISTERED、raster
+  inventory 仍 ABSENT、daemon 仍 UNWIRED、正式产品 route 仍 CLOSED。
 - [验证 Product Editor 状态、恢复与权威预览架构](issues/09-validate-product-editor-architecture.md) —
   throwaway 逻辑原型（`/prototype/editor-state-model`，不进产品 route）把冻结编辑器规则编码为确定性
   fixture 状态机：10 个引导走查场景 37/37 断言 + 自由操作冒烟 + 键盘焦点检查全部通过（Playwright A1，

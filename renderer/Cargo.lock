@@ -119,6 +119,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "renderweave-renderer-engine"
+version = "0.1.0"
+dependencies = [
+ "hex",
+ "renderweave-renderer-document",
+ "renderweave-renderer-layout",
+ "renderweave-renderer-output-png",
+ "serde",
+ "serde_json",
+ "sha2",
+]
+
+[[package]]
 name = "renderweave-renderer-layout"
 version = "0.1.0"
 dependencies = [

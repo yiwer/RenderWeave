@@ -1,6 +1,19 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-24 **Template v1 implementation TV1-T92 已由 Codex `/root` single-writer 完成，状态
+  `resolved/automated_verified`**：新增 workspace-internal `renderweave-renderer-engine` deep module，以唯一
+  `render_png(&AdmittedRenderDocument, dpi)` Interface 把已准入、无资源、无 child、背景 alpha 为 0/255 的 Canvas
+  串入同一 definite layout、真实 RGBA8 surface、exact PNG 与最终 bytes SHA-256；其余输入全有或全无地 fail
+  closed。shared Engine-PNG `/1` 最终为 5 rendered + 4 unsupported、9/9 cases、31 checks，vector SHA-256
+  `4db688dd2136d1d83fba18ba727b6eaef909dd54902498181107e76f31d9c3c7`。`render`
+  `.sdlc/evidence/20260824-125810-render/`、affected `fast` `.sdlc/evidence/20260824-125844-fast/`、顺序
+  `server` `.sdlc/evidence/20260824-125906-server/` 与 `full` `.sdlc/evidence/20260824-131813-full/` 均绿色；full
+  App 344/0/0/15、Node 24 Web 26 files/212 tests、runtime canary、Playwright 23 passed + 1 controlled skip、最终
+  replay E2E 1/1 均通过；resolution `fast` `.sdlc/evidence/20260824-134750-fast/` 亦为 exit 0。process manifest
+  只更新 Cargo.lock identity，仍为 Profile NOT_REGISTERED、raster
+  ABSENT、daemon UNWIRED、产品 route CLOSED；provider attempts/API Key reads/付费调用/真实数据均为 0。该票不把
+  `/prototype` 当作产品交付，后续继续沿同一 Interface 完成 scene/resource/daemon/E6 与正式产品路由。
 - 2026-08-24 **Template v1 implementation TV1-T91 已由 Codex `/root` single-writer 完成，状态
   `resolved/automated_verified`**：mixed active min 严格大于 remaining、另外两项均为初始 inactive positive
   min-only 的 exactly-three FILL 形状，现可按 authored position 固定提交三个 minima；active child 仍必须为

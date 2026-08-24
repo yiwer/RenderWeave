@@ -39,6 +39,7 @@ $resourceBodyReport = Join-Path $resolvedEvidenceDir 'resource-body-independent.
 $layoutPreflightReport = Join-Path $resolvedEvidenceDir 'layout-preflight-independent.json'
 $definiteLayoutReport = Join-Path $resolvedEvidenceDir 'definite-layout-independent.json'
 $outputPngReport = Join-Path $resolvedEvidenceDir 'output-png-independent.json'
+$enginePngReport = Join-Path $resolvedEvidenceDir 'engine-png-independent.json'
 $summaryPath = Join-Path $resolvedEvidenceDir 'renderer-process-summary.json'
 foreach ($report in @(
         $independentReport,
@@ -47,6 +48,7 @@ foreach ($report in @(
         $layoutPreflightReport,
         $definiteLayoutReport,
         $outputPngReport,
+        $enginePngReport,
         $summaryPath)) {
     if (Test-Path -LiteralPath $report) {
         throw "Renderer process evidence already exists: $report"
@@ -360,6 +362,35 @@ try {
         throw 'Output PNG independent report boundary drifted.'
     }
 
+    Invoke-Checked 'engine-png-python-independent-replay' {
+        & python.exe 'tools\verify-engine-png-vectors.py' `
+            '--vectors' 'renderer\engine-png-vectors-v1.json' `
+            '--report' $enginePngReport
+    }
+    if (-not (Test-Path -LiteralPath $enginePngReport -PathType Leaf)) {
+        throw 'Engine PNG independent replay did not write its report.'
+    }
+    $enginePngIndependent = Get-Content -Raw -Encoding UTF8 -LiteralPath $enginePngReport |
+        ConvertFrom-Json
+    if ($enginePngIndependent.verifier -ne 'renderweave-engine-png-python-independent/1' `
+            -or $enginePngIndependent.result -ne 'PASS' `
+            -or $enginePngIndependent.assurance -ne 'A2' `
+            -or $enginePngIndependent.renderedCases -ne 5 `
+            -or $enginePngIndependent.unsupportedCases -ne 4 `
+            -or $enginePngIndependent.passed -ne 9 `
+            -or $enginePngIndependent.total -ne 9 `
+            -or $enginePngIndependent.failed -ne 0 `
+            -or $enginePngIndependent.checks -ne 31 `
+            -or $enginePngIndependent.profileAvailability -ne 'NOT_REGISTERED' `
+            -or $enginePngIndependent.certificationStatus -ne 'NOT_CERTIFIED' `
+            -or $enginePngIndependent.enginePngKernel -ne 'EMPTY_CANVAS_PNG_KERNEL_UNWIRED' `
+            -or $enginePngIndependent.processRasterImplementation -ne 'ABSENT' `
+            -or $enginePngIndependent.daemonOutputPath -ne 'UNWIRED' `
+            -or $enginePngIndependent.productRoute -ne 'CLOSED' `
+            -or $enginePngIndependent.providerAttempts -ne 0) {
+        throw 'Engine PNG independent report boundary drifted.'
+    }
+
     $dockerImageId = (& docker.exe image inspect $dockerImage --format '{{.Id}}' 2>&1) -join "`n"
     if ($LASTEXITCODE -ne 0 -or $dockerImageId -notmatch '^sha256:[0-9a-f]{64}$') {
         throw "Pinned renderer Linux image is not present locally: $dockerImage"
@@ -399,7 +430,7 @@ try {
     }
 
     $summary = [ordered]@{
-        gateVersion = 'renderweave-renderer-process-gate/2.0'
+        gateVersion = 'renderweave-renderer-process-gate/2.1'
         status = 'PASS'
         processContractVersion = 'renderweave-renderer-process/1.0'
         java = $java
@@ -488,6 +519,15 @@ try {
             vectorSha256 = $outputPngIndependent.vectorSha256
             outputProfile = $outputPngIndependent.outputProfile
         }
+        enginePngIndependent = [ordered]@{
+            verifier = $enginePngIndependent.verifier
+            assurance = $enginePngIndependent.assurance
+            renderedCases = $enginePngIndependent.renderedCases
+            unsupportedCases = $enginePngIndependent.unsupportedCases
+            checks = $enginePngIndependent.checks
+            vectorSha256 = $enginePngIndependent.vectorSha256
+            enginePngKernel = $enginePngIndependent.enginePngKernel
+        }
         boundary = [ordered]@{
             rendererProfiles = @()
             profileAvailability = 'NOT_REGISTERED'
@@ -499,6 +539,7 @@ try {
             resourceBytes = 'UNFETCHED'
             layoutKernel = 'RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_SINGLE_AND_INACTIVE_BOUND_OR_EXACT_TWO_FILL_SINGLE_ACTIVE_BOUND_WITHIN_REMAINING_OR_SINGLE_ACTIVE_MIN_OVERFLOW_OR_EXACT_TWO_FILL_TWO_MIN_SECOND_FREEZE_OVERFLOW_OR_EXACT_TWO_FILL_MIXED_ACTIVE_MIN_SECOND_MIN_FREEZE_OVERFLOW_OR_EXACT_TWO_FILL_TWO_MAX_SECOND_FREEZE_FREE_JUSTIFY_OR_EXACT_TWO_FILL_MIXED_ACTIVE_MAX_SECOND_MAX_FREEZE_FREE_JUSTIFY_OR_EXACT_THREE_FILL_SINGLE_ACTIVE_BOUND_ONE_REDISTRIBUTION_OR_EXACT_THREE_FILL_POST_REDISTRIBUTION_INACTIVE_BOUNDS_OR_EXACT_THREE_FILL_SECOND_MIN_FREEZE_LAST_REMAINDER_OR_EXACT_THREE_FILL_SECOND_MAX_FREEZE_LAST_REMAINDER_OR_EXACT_THREE_FILL_SECOND_MAX_FREEZE_TERMINAL_INACTIVE_MIN_OR_EXACT_THREE_FILL_SECOND_MAX_FREEZE_TERMINAL_INACTIVE_MAX_OR_EXACT_THREE_FILL_THIRD_MAX_FREEZE_FREE_JUSTIFY_OR_EXACT_THREE_FILL_SINGLE_ACTIVE_MIN_OVERFLOW_OR_EXACT_THREE_FILL_SECOND_MIN_FREEZE_OVERFLOW_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_INACTIVE_UNFROZEN_MAX_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_SECOND_MIN_FREEZE_OVERFLOW_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_SECOND_MIXED_MIN_FREEZE_OVERFLOW_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_SECOND_MIXED_MIN_FREEZE_OVERFLOW_TERMINAL_INACTIVE_MAX_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_TWO_MIXED_MIN_FREEZES_OVERFLOW_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_MIXED_AND_MIN_ONLY_FREEZES_OVERFLOW_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_TWO_MIN_ONLY_FREEZES_OVERFLOW_MULTI_MAIN_FILL_AND_FIXED_SINGLE_FRACTION_INDEPENDENT_MULTI_AUTO_GRID_MULTI_AUTO_SPAN_STABLE_DEFICIT_GRID_DEFINITE_MULTI_FRACTION_LAST_REMAINDER_GRID_EMPTY_CONTAINER_STACK_HUG_GRID_AUTO_HUG_CONTRIBUTION_GRID_HUG_EXACT_QUARTER_TURN_AFFINE_FRAME_GROUP_HUG_FIXED_OPPOSITE_AXIS_CROSS_FILL_DEFINITE_ABSOLUTE_PARENT_OFFER_DEFINITE_STACK_CROSS_OUTER_OFFER_STACK_MAIN_FILL_CROSS_HUG_REMEASURE_NESTED_STACK_MAIN_OFFER_PROPAGATION_COLUMNS_FIRST_GRID_CELL_OUTER_OFFER_STACK_MAIN_OFFER_COLUMNS_FIRST_GRID_CROSS_HUG_ABSOLUTE_PARENT_OFFER_COLUMNS_FIRST_GRID_CROSS_HUG_GRID_CELL_OFFER_COLUMNS_FIRST_NESTED_GRID_CROSS_HUG_GRID_CELL_OFFER_STACK_MAIN_FIRST_CROSS_HUG_DIRECTION_CHANGING_STACK_CROSS_OFFER_MAIN_HUG_NESTED_STACK_RESOLVED_OPPOSITE_OFFER_RECURSION_COLUMNS_FIRST_GRID_TERMINAL_NORMALIZATION_BOX_AUTOMATED_VERIFIED_UNWIRED'
             outputPngKernel = 'AUTOMATED_VERIFIED_UNWIRED'
+            enginePngKernel = 'EMPTY_CANVAS_PNG_KERNEL_AUTOMATED_VERIFIED_UNWIRED'
             daemonOutputPath = 'UNWIRED'
             rendererReady = $false
             ticket19Closed = $false
@@ -509,11 +550,11 @@ try {
         }
     }
     Write-Utf8File -Path $summaryPath -Content ($summary | ConvertTo-Json -Depth 6)
-    Write-Host (('Renderer process: Java={0} Python={1}+{2}+{3}+{4}+{5}+{6} Rust Windows=PASS ' +
+    Write-Host (('Renderer process: Java={0} Python={1}+{2}+{3}+{4}+{5}+{6}+{7} Rust Windows=PASS ' +
                 'Linux UDS=PASS Profile=NOT_REGISTERED Certification=NOT_CERTIFIED Raster=ABSENT') -f
             $java.tests, $independent.checks, $documentIndependent.total,
             $resourceBodyIndependent.total, $layoutPreflightIndependent.total, $definiteLayoutIndependent.total,
-            $outputPngIndependent.total)
+            $outputPngIndependent.total, $enginePngIndependent.total)
     Write-Host "Renderer process evidence: $summaryPath"
 }
 finally {
