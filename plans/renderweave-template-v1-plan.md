@@ -2822,6 +2822,58 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
   push/tag/PR。
 - 状态回填后的 resolution `fast` `.sdlc/evidence/20260824-080607-fast/` 3 steps 均 exit 0（A1，14.968 秒）。
 
+## 87. TV1-T88 执行卡
+
+- 决策：T87 以 verified commit `46260b3` 收口且 worktree clean 后，复算 Ticket 10 §3/§7、
+  `RW-T10-S3-012..016`、`RW-T10-S7-004..012` 与 16 个 remaining unsupported cases。rotation、rows→columns、
+  resource/composition/error-order 仍依赖关闭能力；六个 Stack cases 中，T87 replacement negative 只比已验证路径
+  多出 terminal child 的一个合法 inactive max-only bound，可直接组合 T85 与 T87 而不增加 freeze、division、
+  redistribution、循环或 tolerance，因此登记为当前 single-writer frontier。
+- Interface/seam：只深化 T87 `stack_main_fill_allocations` 的 exactly-three/mixed-min-overflow early branch；public
+  API、admission/preflight、`StackChildMeasurement`、arrange、authored DFS first-error 与全有或全无 output 不变。
+  Rust/Python 使用独立控制流但共享冻结 vectors。
+- 精确语义：恰好三个 main FILL；首轮唯一 active child 为合法 mixed min/max 且 min 严格大于 remaining；另外
+  两项中恰好一项为 finite mixed min/max，满足 `0 < secondMin <= secondMax` 且初始 share 位于闭区间，另一项
+  为 finite/nonnegative max-only 且初始 share 不超过 max。按 authored position 提交 `firstMin/secondMin/0`；
+  second mixed 与 terminal max equality 均接受。
+- 允许影响：T88 tracker/plan/NOTES、layout Rust module/tests、shared definite-layout vector `/51`、Python
+  independent verifier、render gate identity/assertions/evidence。
+- 禁止影响：second min-only + terminal max、terminal min/mixed、非法或初始 active terminal max、首轮多个 active、
+  active child 非 mixed 或 min 不大于 remaining、post-overflow redistribution、第三次 freeze/cascade、
+  four-or-more active-bound FILL、一般多轮 water filling、epsilon/tolerance/public numeric error、HUG-main FILL
+  cycle、rows→columns、任意非直角 rotation、Text/Image/compositionViewport、resource fetch/decode、scene/raster/
+  JPEG、daemon RESULT/Profile、Java/OpenAPI/migration/Web/route、J1/A3/READY 与外部副作用。
+- TDD：把 T87 replacement negative 转为 active-first positive，新增 active-middle、active-last（覆盖 second mixed/
+  terminal max equality）、COLUMN 与 cross-HUG positives；以 terminal max-only 再带 positive min 的 third-freeze
+  negative 替换。能力值新增
+  `OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_SECOND_MIXED_MIN_FREEZE_OVERFLOW_TERMINAL_INACTIVE_MAX`；shared
+  `/51` 先共同 RED，目标 232 laid-out + 16 unsupported、248 cases/742 checks，fixture `/3` bytes 不变。
+- 验证：focused Rust/Python、fmt、check、clippy `-D warnings`、workspace tests、`py_compile`、JSON inventory/SHA/
+  unique、`git diff --check`；再依次 `render`、affected `fast`、顺序 `server`、Goal `full`、resolution `fast`。
+  最高只可 `automated_verified`；不推进 A3/J1/READY，不 push/tag/PR，不运行 provider，不读取 API Key。
+
+### TV1-T88 resolution evidence
+
+- shared `/51` 的 Rust primary 与 Python independent verifier 先在首个 terminal-inactive-max case、同一
+  `STACK_MAIN_FILL` occurrence `rwocc_0000000000000002` 共同 RED；独立实现后达到 232 laid-out +
+  16 unsupported、248/248 cases、742 checks。vector SHA-256 为
+  `0585d2a5564f4a6c71d50291f2d7a8b2d30b849868bb1a57e21f370165a40bc8`，fixture `/3` SHA-256 保持
+  `a11475bcebad7e1c35cb0acd7018419d94afcb4b37d7f1df7346a055ad1df669`。
+- Rust 以 `second_minimum_is_mixed` 严格区分 second candidate，Python 以独立 `(position, min, is_mixed)`
+  classification 重放；仅 second mixed + 一个 terminal inactive max-only 可通过。second min-only + terminal max
+  仍由代码形状拒绝，terminal mixed third-min replacement negative 继续 fail closed。focused Rust/Python、workspace
+  fmt/check/clippy `-D warnings`/tests、`py_compile`、JSON inventory/SHA/unique 与 `git diff --check` 全绿。
+- 分级 A1 证据为 `render` `.sdlc/evidence/20260824-081743-render/`（19.377 秒）、affected `fast`
+  `.sdlc/evidence/20260824-081808-fast/`（14.211 秒）、顺序 `server`
+  `.sdlc/evidence/20260824-081828-server/`（1172.144 秒）与 `full`
+  `.sdlc/evidence/20260824-083810-full/`（1732.566 秒），全部 exit 0。
+- `full` definite replay 248/248、742 checks；App 344/0/0/15、Node 24 Web 26 files/212 tests、runtime canary、
+  23 passed + 1 controlled skip Playwright、三种 prototype variant、Draft journey 与 inference replay E2E 1/1
+  全绿。R0/R1/P0 provider attempts=0，P0 API Key reads/reservations/cost=0；R1 A2 60 cases/58 metrics，P0 A2
+  60 cases（20 holdout）/58 metrics。Profile/A3/J1/READY 未推进，未运行 provider、读取 API Key 或发送真实数据，
+  未 push/tag/PR。
+- 状态回填后的 resolution `fast` `.sdlc/evidence/20260824-090830-fast/` 3 steps 均 exit 0（A1，10.480 秒）。
+
 ## 66. TV1-T67 执行卡
 
 - 决策：T66 以 verified commit `a6fabe5` 收口且 worktree clean 后，复算原始 Ticket 10 §3/§7、

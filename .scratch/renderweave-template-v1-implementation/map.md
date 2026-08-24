@@ -427,6 +427,11 @@ Label: wayfinder:map
   的合法 finite/nonnegative max，并保持第三项完全无 bound；shared `/50` 实际为 227 laid-out + 16 unsupported、
   243/243 cases/727 checks。额外 bounded child、初始 multiple-active、第三次 freeze 与一般 mixed cascade 保持
   fail closed。
+- [实现 definite Stack 三 FILL mixed active-min overflow 第二 mixed-min freeze terminal inactive max 子闭包](issues/88-definite-stack-three-fill-mixed-active-min-overflow-second-mixed-min-freeze-terminal-inactive-max.md) —
+  **resolved / automated_verified**；只组合 T87 固定 second mixed-min freeze 与 T85 terminal inactive max-only，
+  仍按 authored position 提交 `firstMin/secondMin/0`；shared `/51` 实际为 232 laid-out + 16 unsupported、
+  248/248 cases/742 checks。second min-only + terminal max、terminal min/mixed、第三次 freeze 与一般 mixed
+  cascade 保持 fail closed。
 - [验证 Product Editor 状态、恢复与权威预览架构](issues/09-validate-product-editor-architecture.md) —
   throwaway 逻辑原型（`/prototype/editor-state-model`，不进产品 route）把冻结编辑器规则编码为确定性
   fixture 状态机：10 个引导走查场景 37/37 断言 + 自由操作冒烟 + 键盘焦点检查全部通过（Playwright A1，
