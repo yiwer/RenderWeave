@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
-"""Independent stdlib replay for the TV1-T95 Engine PNG scene/raster kernel."""
+"""Independent stdlib replay for the TV1-T97 Engine PNG scene/raster kernel."""
 
 from __future__ import annotations
 
 import argparse
 import binascii
 import hashlib
+import importlib.util
 import json
+import math
 import struct
 import sys
 import zlib
@@ -28,6 +30,19 @@ LIMITS = {
 
 class VerificationFailure(RuntimeError):
     pass
+
+
+def load_definite_layout_module() -> Any:
+    path = Path(__file__).with_name("verify-definite-layout-vectors.py")
+    spec = importlib.util.spec_from_file_location(
+        "renderweave_definite_layout_verifier", path
+    )
+    if spec is None or spec.loader is None:
+        raise VerificationFailure("independent definite layout verifier cannot be loaded")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
 
 
 class Verifier:
@@ -90,10 +105,6 @@ def decimal6(value: Any, positive: bool) -> int:
     return scaled
 
 
-def scene_coordinate_decimal6(value: Any) -> int:
-    return parse_decimal6(value)
-
-
 def output_failure(code: str, limit_id: str) -> dict[str, str]:
     return {"code": code, "stage": "OUTPUT_PREFLIGHT", "limitId": limit_id}
 
@@ -153,9 +164,20 @@ def has_exact_members(value: Any, expected: set[str]) -> bool:
     return isinstance(value, dict) and set(value) == expected
 
 
-def exact_device_edge(parts: list[int], dpi: int) -> int | None:
-    numerator = sum(parts) * dpi
-    edge, remainder = divmod(numerator, 72_000_000)
+def exact_layout_device_edge(
+    coordinate: float, bleed_scaled: int, dpi: int
+) -> int | None:
+    if not math.isfinite(coordinate):
+        raise VerificationFailure("Paint layout coordinate is not finite")
+    coordinate_numerator, coordinate_denominator = coordinate.as_integer_ratio()
+    point_numerator = (
+        coordinate_numerator * 1_000_000
+        + bleed_scaled * coordinate_denominator
+    )
+    point_denominator = coordinate_denominator * 1_000_000
+    device_numerator = point_numerator * dpi
+    device_denominator = point_denominator * 72
+    edge, remainder = divmod(device_numerator, device_denominator)
     return edge if remainder == 0 else None
 
 
@@ -180,19 +202,57 @@ def zero_corner_radii(node: dict[str, Any]) -> bool:
     )
 
 
-def fixed_absolute_placement(node: dict[str, Any]) -> dict[str, Any] | None:
-    placement = node.get("placement")
-    members = {
-        "heightMode", "heightPt", "type", "widthMode", "widthPt", "xPt", "yPt"
-    }
-    if (
-        not has_exact_members(placement, members)
-        or placement["type"] != "ABSOLUTE"
-        or placement["widthMode"] != "FIXED"
-        or placement["heightMode"] != "FIXED"
-    ):
-        return None
-    return placement
+def binary64_from_bits(value: Any, label: str) -> float:
+    if not isinstance(value, str) or len(value) != 16:
+        raise VerificationFailure(f"{label} is not an IEEE-754 binary64 bit string")
+    try:
+        result = struct.unpack(">d", bytes.fromhex(value))[0]
+    except (ValueError, struct.error) as error:
+        raise VerificationFailure(
+            f"{label} is not an IEEE-754 binary64 bit string"
+        ) from error
+    if not math.isfinite(result):
+        raise VerificationFailure(f"{label} is not finite")
+    return result
+
+
+def layout_box(value: Any, label: str) -> tuple[float, float, float, float]:
+    value = exact_members(
+        value, {"xBits", "yBits", "widthBits", "heightBits"}, label
+    )
+    result = (
+        binary64_from_bits(value["xBits"], f"{label}.xBits"),
+        binary64_from_bits(value["yBits"], f"{label}.yBits"),
+        binary64_from_bits(value["widthBits"], f"{label}.widthBits"),
+        binary64_from_bits(value["heightBits"], f"{label}.heightBits"),
+    )
+    if result[2] < 0.0 or result[3] < 0.0:
+        raise VerificationFailure(f"{label} has a negative extent")
+    return result
+
+
+def require_layout_entry(
+    node: dict[str, Any],
+    entry: Any,
+    kind: str,
+    has_content_box: bool,
+) -> tuple[float, float, float, float]:
+    entry = exact_members(
+        entry, {"occurrenceId", "kind", "layoutBox", "contentBox"},
+        "Definite layout entry",
+    )
+    if entry["kind"] != kind or entry["occurrenceId"] != node.get("occurrenceId"):
+        raise VerificationFailure(
+            "Engine PNG layout entry identity diverged from the admitted scene"
+        )
+    box = layout_box(entry["layoutBox"], f"{kind} LayoutBox")
+    if has_content_box:
+        layout_box(entry["contentBox"], f"{kind} ContentBox")
+    elif entry["contentBox"] is not None:
+        raise VerificationFailure(
+            "Engine PNG layout entry content shape diverged from the admitted scene"
+        )
+    return box
 
 
 def intersect_clip(
@@ -206,11 +266,8 @@ def intersect_clip(
     return clipped_left, clipped_top, clipped_right, clipped_bottom
 
 
-def prepare_pixel_bounds(
-    origin_x: int,
-    origin_y: int,
-    rect_width: int,
-    rect_height: int,
+def prepare_layout_bounds(
+    box: tuple[float, float, float, float],
     canvas: dict[str, Any],
     dpi: int,
     width: int,
@@ -220,11 +277,21 @@ def prepare_pixel_bounds(
     bleed = canvas["bleed"]
     left_bleed = decimal6(bleed["leftPt"], False)
     top_bleed = decimal6(bleed["topPt"], False)
+    origin_x, origin_y, rect_width, rect_height = box
+    right_edge = origin_x + rect_width
+    bottom_edge = origin_y + rect_height
+    if (
+        not math.isfinite(right_edge)
+        or not math.isfinite(bottom_edge)
+        or right_edge < origin_x
+        or bottom_edge < origin_y
+    ):
+        raise VerificationFailure("Paint layout box is not finite and monotonic")
     edges = (
-        exact_device_edge([left_bleed, origin_x], dpi),
-        exact_device_edge([top_bleed, origin_y], dpi),
-        exact_device_edge([left_bleed, origin_x, rect_width], dpi),
-        exact_device_edge([top_bleed, origin_y, rect_height], dpi),
+        exact_layout_device_edge(origin_x, left_bleed, dpi),
+        exact_layout_device_edge(origin_y, top_bleed, dpi),
+        exact_layout_device_edge(right_edge, left_bleed, dpi),
+        exact_layout_device_edge(bottom_edge, top_bleed, dpi),
     )
     if any(edge is None for edge in edges):
         return {"feature": misaligned_feature}
@@ -239,11 +306,8 @@ def prepare_pixel_bounds(
     )
 
 
-def prepare_pixel_rect(
-    origin_x: int,
-    origin_y: int,
-    rect_width: int,
-    rect_height: int,
+def prepare_layout_rect(
+    box: tuple[float, float, float, float],
     color: bytes,
     canvas: dict[str, Any],
     dpi: int,
@@ -251,11 +315,8 @@ def prepare_pixel_rect(
     height: int,
     active_clip: tuple[int, int, int, int],
 ) -> tuple[int, int, int, int, bytes] | dict[str, str]:
-    bounds = prepare_pixel_bounds(
-        origin_x,
-        origin_y,
-        rect_width,
-        rect_height,
+    bounds = prepare_layout_bounds(
+        box,
         canvas,
         dpi,
         width,
@@ -270,8 +331,7 @@ def prepare_pixel_rect(
 
 def prepare_rect(
     child: Any,
-    parent_x: int,
-    parent_y: int,
+    entry: Any,
     canvas: dict[str, Any],
     dpi: int,
     width: int,
@@ -300,23 +360,28 @@ def prepare_rect(
     if color[3] != 255:
         return {"feature": "NON_OPAQUE_RECT_ALPHA"}
 
-    placement = fixed_absolute_placement(child)
-    if placement is None:
-        return {"feature": "RECT_PAINT"}
-
-    x = parent_x + scene_coordinate_decimal6(placement["xPt"])
-    y = parent_y + scene_coordinate_decimal6(placement["yPt"])
-    rect_width = decimal6(placement["widthPt"], True)
-    rect_height = decimal6(placement["heightPt"], True)
-    return prepare_pixel_rect(
-        x, y, rect_width, rect_height, color, canvas, dpi, width, height, active_clip
+    box = require_layout_entry(child, entry, "rect", False)
+    return prepare_layout_rect(
+        box, color, canvas, dpi, width, height, active_clip
     )
 
 
-def prepare_frame(
+def prepare_group(child: Any, entry: Any) -> None | dict[str, str]:
+    if (
+        not isinstance(child, dict)
+        or child.get("kind") != "group"
+        or child.get("visible") is not True
+        or not number_is(child.get("opacity"), "1")
+        or not identity_transform(child)
+    ):
+        return {"feature": "SCENE_STRUCTURE"}
+    require_layout_entry(child, entry, "group", False)
+    return None
+
+
+def prepare_container(
     child: Any,
-    parent_x: int,
-    parent_y: int,
+    entry: Any,
     canvas: dict[str, Any],
     dpi: int,
     width: int,
@@ -324,93 +389,54 @@ def prepare_frame(
     active_clip: tuple[int, int, int, int],
 ) -> tuple[
     tuple[int, int, int, int, bytes] | None,
-    int,
-    int,
     tuple[int, int, int, int],
 ] | dict[str, str]:
-    required = {
-        "children", "clipContent", "cornerRadii", "kind", "occurrenceId", "opacity",
-        "padding", "placement", "transform", "visible",
-    }
     if (
         not isinstance(child, dict)
-        or child.get("kind") != "frame"
-        or set(child) not in (required, required | {"fill"})
+        or child.get("kind") not in {"frame", "stack", "grid"}
         or child.get("visible") is not True
         or not number_is(child.get("opacity"), "1")
+        or "stroke" in child
         or not isinstance(child.get("clipContent"), bool)
         or not identity_transform(child)
         or not zero_corner_radii(child)
     ):
         return {"feature": "FRAME_PAINT"}
 
-    placement = fixed_absolute_placement(child)
-    if placement is None:
-        return {"feature": "FRAME_PAINT"}
-    origin_x = parent_x + scene_coordinate_decimal6(placement["xPt"])
-    origin_y = parent_y + scene_coordinate_decimal6(placement["yPt"])
-
-    padding = child.get("padding")
-    padding_members = {"bottomPt", "leftPt", "rightPt", "topPt"}
-    if not has_exact_members(padding, padding_members):
-        return {"feature": "FRAME_PAINT"}
-    padding_values = {
-        member: decimal6(padding[member], False) for member in padding_members
-    }
-    content_x = origin_x + padding_values["leftPt"]
-    content_y = origin_y + padding_values["topPt"]
-
+    box = require_layout_entry(child, entry, child["kind"], True)
     clip_content = child["clipContent"]
-    frame_width = decimal6(placement["widthPt"], True)
-    frame_height = decimal6(placement["heightPt"], True)
-    frame_bounds = None
+    bounds = None
     if clip_content:
-        frame_bounds = prepare_pixel_bounds(
-            origin_x,
-            origin_y,
-            frame_width,
-            frame_height,
-            canvas,
-            dpi,
-            width,
-            height,
-            "NON_PIXEL_ALIGNED_CLIP",
+        bounds = prepare_layout_bounds(
+            box, canvas, dpi, width, height, "NON_PIXEL_ALIGNED_CLIP"
         )
-        if isinstance(frame_bounds, dict):
-            return frame_bounds
+        if isinstance(bounds, dict):
+            return bounds
     elif "fill" in child:
-        frame_bounds = prepare_pixel_bounds(
-            origin_x,
-            origin_y,
-            frame_width,
-            frame_height,
-            canvas,
-            dpi,
-            width,
-            height,
-            "NON_PIXEL_ALIGNED_RECT",
+        bounds = prepare_layout_bounds(
+            box, canvas, dpi, width, height, "NON_PIXEL_ALIGNED_RECT"
         )
-        if isinstance(frame_bounds, dict):
-            return frame_bounds
+        if isinstance(bounds, dict):
+            return bounds
 
     paint = None
     if "fill" in child:
         fill = child["fill"]
         if not has_exact_members(fill, {"color"}):
             return {"feature": "FRAME_PAINT"}
-        color = parse_rgba(fill["color"], "Frame fill")
+        color = parse_rgba(fill["color"], "Container fill")
         if color[3] != 255:
             return {"feature": "FRAME_PAINT"}
-        if frame_bounds is None:
-            raise VerificationFailure("Frame fill is missing prepared device bounds")
-        left, top, right, bottom = intersect_clip(frame_bounds, active_clip)
+        if bounds is None:
+            raise VerificationFailure("Container fill is missing prepared device bounds")
+        left, top, right, bottom = intersect_clip(bounds, active_clip)
         paint = left, top, right, bottom, color
     descendant_clip = (
-        intersect_clip(frame_bounds, active_clip)
-        if clip_content and frame_bounds is not None
+        intersect_clip(bounds, active_clip)
+        if clip_content and bounds is not None
         else active_clip
     )
-    return paint, content_x, content_y, descendant_clip
+    return paint, descendant_clip
 
 
 def scene_kinds_supported(children: list[Any]) -> bool:
@@ -419,7 +445,9 @@ def scene_kinds_supported(children: list[Any]) -> bool:
             return False
         if child.get("kind") == "rect":
             continue
-        if child.get("kind") == "frame" and isinstance(child.get("children"), list):
+        if child.get("kind") in {"group", "frame", "stack", "grid"} and isinstance(
+            child.get("children"), list
+        ):
             if scene_kinds_supported(child["children"]):
                 continue
         return False
@@ -428,8 +456,8 @@ def scene_kinds_supported(children: list[Any]) -> bool:
 
 def prepare_scene(
     children: list[Any],
-    parent_x: int,
-    parent_y: int,
+    layout_entries: list[dict[str, Any]],
+    layout_cursor: list[int],
     canvas: dict[str, Any],
     dpi: int,
     width: int,
@@ -438,27 +466,39 @@ def prepare_scene(
 ) -> list[tuple[int, int, int, int, bytes]] | dict[str, str]:
     paints: list[tuple[int, int, int, int, bytes]] = []
     for child in children:
+        if layout_cursor[0] >= len(layout_entries):
+            raise VerificationFailure(
+                "Engine PNG layout preorder ended before the admitted scene"
+            )
+        entry = layout_entries[layout_cursor[0]]
+        layout_cursor[0] += 1
         if child["kind"] == "rect":
             rect = prepare_rect(
-                child, parent_x, parent_y, canvas, dpi, width, height, active_clip
+                child, entry, canvas, dpi, width, height, active_clip
             )
             if isinstance(rect, dict):
                 return rect
             paints.append(rect)
             continue
 
-        frame = prepare_frame(
-            child, parent_x, parent_y, canvas, dpi, width, height, active_clip
-        )
-        if isinstance(frame, dict):
-            return frame
-        frame_paint, content_x, content_y, descendant_clip = frame
-        if frame_paint is not None:
-            paints.append(frame_paint)
+        if child["kind"] == "group":
+            group = prepare_group(child, entry)
+            if isinstance(group, dict):
+                return group
+            descendant_clip = active_clip
+        else:
+            container = prepare_container(
+                child, entry, canvas, dpi, width, height, active_clip
+            )
+            if isinstance(container, dict):
+                return container
+            container_paint, descendant_clip = container
+            if container_paint is not None:
+                paints.append(container_paint)
         nested = prepare_scene(
             child["children"],
-            content_x,
-            content_y,
+            layout_entries,
+            layout_cursor,
             canvas,
             dpi,
             width,
@@ -523,7 +563,12 @@ def encode_png(width: int, height: int, dpi: int, pixels: bytes) -> bytes:
     return encoded
 
 
-def execute(document: dict[str, Any], dpi: Any) -> dict[str, Any]:
+def execute(
+    document: dict[str, Any],
+    dpi: Any,
+    layout_document: dict[str, Any],
+    layout_module: Any,
+) -> dict[str, Any]:
     exact_members(document, {"canvas", "dslVersion", "layoutProfile", "resources"}, "RenderDocument")
     if document["resources"]:
         return {"feature": "RESOURCE_MANIFEST"}
@@ -540,11 +585,43 @@ def execute(document: dict[str, Any], dpi: Any) -> dict[str, Any]:
         return dimensions
     width = dimensions["widthPx"]
     height = dimensions["heightPx"]
+    try:
+        layout_entries = layout_module.DefiniteLayouter().run(layout_document)
+    except (layout_module.VerificationFailure, layout_module.Unsupported) as error:
+        raise VerificationFailure(f"independent definite layout failed: {error}") from error
+    if not layout_entries:
+        raise VerificationFailure("Engine PNG layout omitted the Canvas entry")
+    canvas_entry = exact_members(
+        layout_entries[0],
+        {"occurrenceId", "kind", "layoutBox", "contentBox"},
+        "Canvas layout entry",
+    )
+    if (
+        canvas_entry["kind"] != "canvas"
+        or canvas_entry["occurrenceId"] != canvas.get("occurrenceId")
+    ):
+        raise VerificationFailure(
+            "Engine PNG Canvas layout identity diverged from the admitted scene"
+        )
+    layout_box(canvas_entry["layoutBox"], "Canvas LayoutBox")
+    layout_box(canvas_entry["contentBox"], "Canvas ContentBox")
+    layout_cursor = [1]
     rects = prepare_scene(
-        canvas["children"], 0, 0, canvas, dpi, width, height, (0, 0, width, height)
+        canvas["children"],
+        layout_entries,
+        layout_cursor,
+        canvas,
+        dpi,
+        width,
+        height,
+        (0, 0, width, height),
     )
     if isinstance(rects, dict):
         return rects
+    if layout_cursor[0] != len(layout_entries):
+        raise VerificationFailure(
+            "Engine PNG layout preorder diverged from the admitted scene"
+        )
     pixels = bytearray(pixel * (width * height))
     for rect in rects:
         paint_rect(pixels, width, rect)
@@ -564,11 +641,13 @@ def execute(document: dict[str, Any], dpi: Any) -> dict[str, Any]:
 
 def verify(path: Path) -> dict[str, Any]:
     raw = path.read_bytes()
+    layout_module = load_definite_layout_module()
     try:
         vectors = json.loads(raw, object_pairs_hook=strict_pairs, parse_float=Decimal)
     except (UnicodeDecodeError, json.JSONDecodeError) as error:
         raise VerificationFailure(f"vectors are not strict UTF-8 JSON: {error}") from error
     reject_null(vectors)
+    layout_vectors = layout_module.load_strict(raw, "Engine PNG vectors")
     exact_members(
         vectors,
         {"vectorVersion", "boundary", "documents", "renderedCases", "unsupportedCases"},
@@ -590,14 +669,14 @@ def verify(path: Path) -> dict[str, Any]:
     verifier.require(boundary == {
         "profileAvailability": "NOT_REGISTERED",
         "certificationStatus": "NOT_CERTIFIED",
-        "enginePngKernel": "PREORDER_FIXED_IDENTITY_FRAME_RECT_PIXEL_ALIGNED_OPAQUE_RECTANGULAR_CLIP_PNG_KERNEL_UNWIRED",
+        "enginePngKernel": "PREORDER_DEFINITE_IDENTITY_GROUP_FRAME_STACK_GRID_RECT_PIXEL_ALIGNED_OPAQUE_RECTANGULAR_CLIP_PNG_KERNEL_UNWIRED",
         "processRasterImplementation": "ABSENT",
         "daemonOutputPath": "UNWIRED",
         "productRoute": "CLOSED",
         "providerAttempts": 0,
     }, "Engine PNG honest boundary drifted")
-    verifier.require(len(vectors["renderedCases"]) == 10, "rendered case count drifted")
-    verifier.require(len(vectors["unsupportedCases"]) == 10, "unsupported case count drifted")
+    verifier.require(len(vectors["renderedCases"]) == 11, "rendered case count drifted")
+    verifier.require(len(vectors["unsupportedCases"]) == 11, "unsupported case count drifted")
 
     seen: set[str] = set()
     for family in ("renderedCases", "unsupportedCases"):
@@ -607,7 +686,12 @@ def verify(path: Path) -> dict[str, Any]:
             seen.add(case["id"])
             document = vectors["documents"].get(case["documentId"])
             verifier.require(isinstance(document, dict), f"{case['id']}: document is absent")
-            actual = execute(document, case["dpi"])
+            layout_document = layout_vectors["documents"].get(case["documentId"])
+            if not isinstance(layout_document, dict):
+                raise VerificationFailure(f"{case['id']}: layout document is absent")
+            actual = execute(
+                document, case["dpi"], layout_document, layout_module
+            )
             verifier.require(actual == case["expected"], f"{case['id']}: result drifted")
 
     return {

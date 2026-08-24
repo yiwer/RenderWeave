@@ -1,6 +1,19 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-24 **Template v1 implementation TV1-T97 已由 Codex `/root` single-writer 完成，状态
+  `resolved/automated_verified`**：复用 authoritative definite-layout preorder 与独立 Python `DefiniteLayouter`，
+  把 identity/visible/opacity=1 的 Group/Frame/Stack/Grid/Rect 容器 scene 接入唯一 `render_png` deep Interface；
+  appearance 只消费最终 LayoutBox，exact binary64 edge 与 decimal6 bleed 以有理数降到 device space，不另写布局、
+  不 snap/round/epsilon/tolerance，全部 paint/clip 在 surface 分配前 prepare。Rust 2/2、Python independent
+  22/22 cases、70 checks，vector SHA-256 `5fd82e654f67158ef54c9835b6a02ceb42916f5c607a48cd836f3cf4275f9c2d`。
+  `render` `.sdlc/evidence/20260824-180804-render/`、affected `fast`
+  `.sdlc/evidence/20260824-180832-fast/`、顺序 `server` `.sdlc/evidence/20260824-180851-server/` 与 17-step
+  `full` `.sdlc/evidence/20260824-182148-full/` 均绿；full 用时 1103.221 秒，App 344/0/0/15、Node 24 Web
+  26 files/212 tests、runtime canary、Playwright 23 passed + 1 controlled skip、Draft journey 与 inference replay
+  E2E 1/1 均通过；状态回填后的 resolution `fast` `.sdlc/evidence/20260824-184237-fast/` 亦为 exit 0。Profile
+  `NOT_REGISTERED`、certification `NOT_CERTIFIED`、process raster `ABSENT`、daemon `UNWIRED`、E6/正式产品 route
+  `CLOSED` 不变；provider attempts/API Key reads/费用/真实数据为 0，未 push/tag/PR，`/prototype` 不计最终产品交付。
 - 2026-08-24 **Template v1 implementation TV1-T96 已由 Codex `/root` single-writer 完成，状态
   `resolved/automated_verified`**：沿唯一 `render_png` deep Interface 为 fixed identity、zero-radius、no-stroke
   Frame 增加 native pixel-aligned rectangular descendant clip；inner-border 是裁剪边界，padding 仅改变 child origin，

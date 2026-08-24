@@ -480,6 +480,13 @@ Label: wayfinder:map
   vector SHA-256 `dc55cdad90e314ff642b94c79566f42a35bb09d8464e82b964134ed49ce7fe28`；`render`/affected
   `fast`/顺序 `server`/17-step `full`/resolution `fast` 均绿。Profile NOT_REGISTERED、daemon UNWIRED、E6/正式产品 route
   CLOSED，未把 `/prototype` 当作交付。
+- [实现 definite Group/Frame/Stack/Grid/Rect 容器 scene 的真实 Engine PNG 内核](issues/97-definite-container-engine-png-kernel.md) —
+  **resolved / automated_verified**；复用既有 Rust authoritative layout 与 Python independent `DefiniteLayouter`
+  的 preorder boxes，把 identity Group/Frame/Stack/Grid/Rect 接入同一 `render_png` Interface；exact binary64 edge
+  只在原生 device-pixel aligned 时 paint/clip，绝不另写布局或选择 tolerance。Rust 2/2、Python 22/22 cases/
+  70 checks，vector SHA-256 `5fd82e654f67158ef54c9835b6a02ceb42916f5c607a48cd836f3cf4275f9c2d`；`render`/
+  affected `fast`/顺序 `server`/17-step `full`/resolution `fast` 均绿。Profile NOT_REGISTERED、daemon UNWIRED、
+  E6/正式产品 route CLOSED，未把 `/prototype` 当作交付。
 - [验证 Product Editor 状态、恢复与权威预览架构](issues/09-validate-product-editor-architecture.md) —
   throwaway 逻辑原型（`/prototype/editor-state-model`，不进产品 route）把冻结编辑器规则编码为确定性
   fixture 状态机：10 个引导走查场景 37/37 断言 + 自由操作冒烟 + 键盘焦点检查全部通过（Playwright A1，

@@ -2,7 +2,8 @@
 //!
 //! The module deliberately exposes one deep interface. Callers provide an already-admitted
 //! RenderDocument and an effective PNG DPI; document traversal, layout, surface construction,
-//! canonical transparent pixels, encoding, and output identity remain implementation details.
+//! definite container scene preparation, canonical pixels, encoding, and output identity remain
+//! implementation details.
 
 use std::fmt::{Display, Formatter};
 
@@ -192,27 +193,9 @@ impl PixelRect {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq)]
-struct SceneOrigin {
-    scaled_x: i128,
-    scaled_y: i128,
-    layout_x: f64,
-    layout_y: f64,
-}
-
-impl SceneOrigin {
-    const ROOT: Self = Self {
-        scaled_x: 0,
-        scaled_y: 0,
-        layout_x: 0.0,
-        layout_y: 0.0,
-    };
-}
-
-#[derive(Clone, Copy, Debug, PartialEq)]
-struct PreparedFrame {
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+struct PreparedContainer {
     paint: Option<PixelRect>,
-    content_origin: SceneOrigin,
     descendant_clip: PixelClip,
 }
 
@@ -322,7 +305,6 @@ pub fn render_png(
         children,
         layout.entries(),
         &mut layout_cursor,
-        SceneOrigin::ROOT,
         PixelClip::surface(surface.width_px(), surface.height_px()),
         bleed_left,
         bleed_top,
@@ -371,7 +353,9 @@ fn require_scene_kinds(nodes: &[Value]) -> Result<(), EnginePngError> {
             .ok_or(EnginePngError::Contract("Scene child is not an object"))?;
         match text_member(node, "kind")? {
             "rect" => {}
-            "frame" => require_scene_kinds(array_member(node, "children")?)?,
+            "group" | "frame" | "stack" | "grid" => {
+                require_scene_kinds(array_member(node, "children")?)?
+            }
             _ => {
                 return Err(EnginePngError::Unsupported(
                     EnginePngUnsupported::SceneStructure,
@@ -387,7 +371,6 @@ fn prepare_scene(
     nodes: &[Value],
     layout_entries: &[DefiniteLayoutEntry],
     layout_cursor: &mut usize,
-    parent_content_origin: SceneOrigin,
     active_clip: PixelClip,
     bleed_left: i128,
     bleed_top: i128,
@@ -415,7 +398,6 @@ fn prepare_scene(
             "rect" => paints.push(prepare_rect_paint(
                 node,
                 layout,
-                parent_content_origin,
                 active_clip,
                 bleed_left,
                 bleed_top,
@@ -423,11 +405,25 @@ fn prepare_scene(
                 surface_width,
                 surface_height,
             )?),
-            "frame" => {
-                let prepared = prepare_frame(
+            "group" => {
+                prepare_group(node, layout)?;
+                prepare_scene(
+                    array_member(node, "children")?,
+                    layout_entries,
+                    layout_cursor,
+                    active_clip,
+                    bleed_left,
+                    bleed_top,
+                    dpi,
+                    surface_width,
+                    surface_height,
+                    paints,
+                )?;
+            }
+            "frame" | "stack" | "grid" => {
+                let prepared = prepare_container(
                     node,
                     layout,
-                    parent_content_origin,
                     active_clip,
                     bleed_left,
                     bleed_top,
@@ -442,7 +438,6 @@ fn prepare_scene(
                     array_member(node, "children")?,
                     layout_entries,
                     layout_cursor,
-                    prepared.content_origin,
                     prepared.descendant_clip,
                     bleed_left,
                     bleed_top,
@@ -466,7 +461,6 @@ fn prepare_scene(
 fn prepare_rect_paint(
     node: &Map<String, Value>,
     layout: &DefiniteLayoutEntry,
-    parent_content_origin: SceneOrigin,
     active_clip: PixelClip,
     bleed_left: i128,
     bleed_top: i128,
@@ -486,30 +480,11 @@ fn prepare_rect_paint(
         return Err(EnginePngError::Unsupported(EnginePngUnsupported::RectPaint));
     }
 
-    let transform = object_member(Some(node), "transform")?;
-    if !has_exact_members(
-        transform,
-        &["originX", "originY", "rotationDeg", "scaleX", "scaleY"],
-    ) || !number_equals(transform, "originX", 0.5)?
-        || !number_equals(transform, "originY", 0.5)?
-        || !number_equals(transform, "rotationDeg", 0.0)?
-        || !number_equals(transform, "scaleX", 1.0)?
-        || !number_equals(transform, "scaleY", 1.0)?
-    {
+    if !identity_transform(node)? {
         return Err(EnginePngError::Unsupported(EnginePngUnsupported::RectPaint));
     }
-
-    let radii = object_member(Some(node), "cornerRadii")?;
-    if !has_exact_members(
-        radii,
-        &["bottomLeftPt", "bottomRightPt", "topLeftPt", "topRightPt"],
-    ) {
+    if !zero_corner_radii(node)? {
         return Err(EnginePngError::Unsupported(EnginePngUnsupported::RectPaint));
-    }
-    for member in ["bottomLeftPt", "bottomRightPt", "topLeftPt", "topRightPt"] {
-        if !number_equals(radii, member, 0.0)? {
-            return Err(EnginePngError::Unsupported(EnginePngUnsupported::RectPaint));
-        }
     }
 
     let fill = object_member(Some(node), "fill")?;
@@ -523,40 +498,9 @@ fn prepare_rect_paint(
         ));
     }
 
-    let placement = object_member(Some(node), "placement")?;
-    if !has_exact_members(
-        placement,
-        &[
-            "heightMode",
-            "heightPt",
-            "type",
-            "widthMode",
-            "widthPt",
-            "xPt",
-            "yPt",
-        ],
-    ) || text_member(placement, "type")? != "ABSOLUTE"
-        || text_member(placement, "widthMode")? != "FIXED"
-        || text_member(placement, "heightMode")? != "FIXED"
-    {
-        return Err(EnginePngError::Unsupported(EnginePngUnsupported::RectPaint));
-    }
-
-    let occurrence_id = text_member(node, "occurrenceId")?;
-    if layout.kind() != "rect" || layout.occurrence_id() != occurrence_id {
-        return Err(EnginePngError::Contract(
-            "Rect layout entry identity diverged from the admitted scene",
-        ));
-    }
-    let origin = child_origin(parent_content_origin, placement)?;
-    require_fixed_box(layout.layout_box(), origin, placement, "Rect")?;
-
-    let width = decimal6_member(placement, "widthPt")?;
-    let height = decimal6_member(placement, "heightPt")?;
-    Ok(active_clip.apply(prepare_pixel_rect(
-        origin,
-        width,
-        height,
+    require_layout_entry(node, layout, "rect", false)?;
+    Ok(active_clip.apply(prepare_layout_rect(
+        layout.layout_box(),
         color,
         bleed_left,
         bleed_top,
@@ -566,99 +510,51 @@ fn prepare_rect_paint(
     )?))
 }
 
-#[allow(clippy::too_many_arguments)]
-fn prepare_frame(
+fn prepare_group(
     node: &Map<String, Value>,
     layout: &DefiniteLayoutEntry,
-    parent_content_origin: SceneOrigin,
+) -> Result<(), EnginePngError> {
+    if text_member(node, "kind")? != "group"
+        || !boolean_member(node, "visible")?
+        || !number_equals(node, "opacity", 1.0)?
+        || !identity_transform(node)?
+    {
+        return Err(EnginePngError::Unsupported(
+            EnginePngUnsupported::SceneStructure,
+        ));
+    }
+    require_layout_entry(node, layout, "group", false)
+}
+
+#[allow(clippy::too_many_arguments)]
+fn prepare_container(
+    node: &Map<String, Value>,
+    layout: &DefiniteLayoutEntry,
     active_clip: PixelClip,
     bleed_left: i128,
     bleed_top: i128,
     dpi: u32,
     surface_width: u32,
     surface_height: u32,
-) -> Result<PreparedFrame, EnginePngError> {
-    const REQUIRED_MEMBERS: [&str; 10] = [
-        "children",
-        "clipContent",
-        "cornerRadii",
-        "kind",
-        "occurrenceId",
-        "opacity",
-        "padding",
-        "placement",
-        "transform",
-        "visible",
-    ];
-    if node.len() != REQUIRED_MEMBERS.len() + usize::from(node.contains_key("fill"))
-        || REQUIRED_MEMBERS
-            .iter()
-            .any(|member| !node.contains_key(*member))
-        || node
-            .keys()
-            .any(|member| !REQUIRED_MEMBERS.contains(&member.as_str()) && member.as_str() != "fill")
+) -> Result<PreparedContainer, EnginePngError> {
+    let kind = text_member(node, "kind")?;
+    if !matches!(kind, "frame" | "stack" | "grid")
         || !boolean_member(node, "visible")?
         || !number_equals(node, "opacity", 1.0)?
+        || node.contains_key("stroke")
+        || !identity_transform(node)?
+        || !zero_corner_radii(node)?
     {
         return Err(EnginePngError::Unsupported(
             EnginePngUnsupported::FramePaint,
         ));
     }
-    if !identity_transform(node)? || !zero_corner_radii(node)? {
-        return Err(EnginePngError::Unsupported(
-            EnginePngUnsupported::FramePaint,
-        ));
-    }
-
-    let placement = object_member(Some(node), "placement")?;
-    if !fixed_absolute_placement(placement)? {
-        return Err(EnginePngError::Unsupported(
-            EnginePngUnsupported::FramePaint,
-        ));
-    }
-    let occurrence_id = text_member(node, "occurrenceId")?;
-    if layout.kind() != "frame" || layout.occurrence_id() != occurrence_id {
-        return Err(EnginePngError::Contract(
-            "Frame layout entry identity diverged from the admitted scene",
-        ));
-    }
-    let origin = child_origin(parent_content_origin, placement)?;
-    require_fixed_box(layout.layout_box(), origin, placement, "Frame")?;
+    require_layout_entry(node, layout, kind, true)?;
     let clip_content = boolean_member(node, "clipContent")?;
-    let frame_width = decimal6_member(placement, "widthPt")?;
-    let frame_height = decimal6_member(placement, "heightPt")?;
 
-    let padding = object_member(Some(node), "padding")?;
-    if !has_exact_members(padding, &["bottomPt", "leftPt", "rightPt", "topPt"]) {
-        return Err(EnginePngError::Unsupported(
-            EnginePngUnsupported::FramePaint,
-        ));
-    }
-    let padding_bottom = decimal6_member(padding, "bottomPt")?;
-    let padding_left = decimal6_member(padding, "leftPt")?;
-    let padding_right = decimal6_member(padding, "rightPt")?;
-    let padding_top = decimal6_member(padding, "topPt")?;
-    if [padding_bottom, padding_left, padding_right, padding_top]
-        .into_iter()
-        .any(|value| value < 0)
-    {
-        return Err(EnginePngError::Unsupported(
-            EnginePngUnsupported::FramePaint,
-        ));
-    }
-    let content_origin = SceneOrigin {
-        scaled_x: checked_scaled_add(origin.scaled_x, padding_left)?,
-        scaled_y: checked_scaled_add(origin.scaled_y, padding_top)?,
-        layout_x: finite_layout_sum(origin.layout_x, number_member(padding, "leftPt")?)?,
-        layout_y: finite_layout_sum(origin.layout_y, number_member(padding, "topPt")?)?,
-    };
-    require_frame_content_box(layout, content_origin, placement, padding)?;
-
-    let frame_bounds = if clip_content {
-        Some(prepare_pixel_clip(
-            origin,
-            frame_width,
-            frame_height,
+    let bounds = if clip_content {
+        Some(prepare_layout_clip(
+            layout.layout_box(),
             bleed_left,
             bleed_top,
             dpi,
@@ -667,10 +563,8 @@ fn prepare_frame(
             EnginePngUnsupported::NonPixelAlignedClip,
         )?)
     } else if node.contains_key("fill") {
-        Some(prepare_pixel_clip(
-            origin,
-            frame_width,
-            frame_height,
+        Some(prepare_layout_clip(
+            layout.layout_box(),
             bleed_left,
             bleed_top,
             dpi,
@@ -685,7 +579,7 @@ fn prepare_frame(
     let paint = if let Some(fill) = node.get("fill") {
         let fill = fill
             .as_object()
-            .ok_or(EnginePngError::Contract("Frame fill is not an object"))?;
+            .ok_or(EnginePngError::Contract("Container fill is not an object"))?;
         if !has_exact_members(fill, &["color"]) {
             return Err(EnginePngError::Unsupported(
                 EnginePngUnsupported::FramePaint,
@@ -697,8 +591,8 @@ fn prepare_frame(
                 EnginePngUnsupported::FramePaint,
             ));
         }
-        let bounds = frame_bounds.ok_or(EnginePngError::Contract(
-            "Frame fill is missing prepared device bounds",
+        let bounds = bounds.ok_or(EnginePngError::Contract(
+            "Container fill is missing prepared device bounds",
         ))?;
         Some(active_clip.apply(PixelRect {
             left: bounds.left,
@@ -712,16 +606,14 @@ fn prepare_frame(
     };
 
     let descendant_clip = if clip_content {
-        active_clip.intersect(frame_bounds.ok_or(EnginePngError::Contract(
-            "Frame clip is missing prepared device bounds",
+        active_clip.intersect(bounds.ok_or(EnginePngError::Contract(
+            "Container clip is missing prepared device bounds",
         ))?)
     } else {
         active_clip
     };
-
-    Ok(PreparedFrame {
+    Ok(PreparedContainer {
         paint,
-        content_origin,
         descendant_clip,
     })
 }
@@ -752,140 +644,46 @@ fn zero_corner_radii(node: &Map<String, Value>) -> Result<bool, EnginePngError> 
     Ok(true)
 }
 
-fn fixed_absolute_placement(placement: &Map<String, Value>) -> Result<bool, EnginePngError> {
-    Ok(has_exact_members(
-        placement,
-        &[
-            "heightMode",
-            "heightPt",
-            "type",
-            "widthMode",
-            "widthPt",
-            "xPt",
-            "yPt",
-        ],
-    ) && text_member(placement, "type")? == "ABSOLUTE"
-        && text_member(placement, "widthMode")? == "FIXED"
-        && text_member(placement, "heightMode")? == "FIXED")
-}
-
-fn child_origin(
-    parent_content_origin: SceneOrigin,
-    placement: &Map<String, Value>,
-) -> Result<SceneOrigin, EnginePngError> {
-    Ok(SceneOrigin {
-        scaled_x: checked_scaled_add(
-            parent_content_origin.scaled_x,
-            decimal6_member(placement, "xPt")?,
-        )?,
-        scaled_y: checked_scaled_add(
-            parent_content_origin.scaled_y,
-            decimal6_member(placement, "yPt")?,
-        )?,
-        layout_x: finite_layout_sum(
-            parent_content_origin.layout_x,
-            number_member(placement, "xPt")?,
-        )?,
-        layout_y: finite_layout_sum(
-            parent_content_origin.layout_y,
-            number_member(placement, "yPt")?,
-        )?,
-    })
-}
-
-fn checked_scaled_add(left: i128, right: i128) -> Result<i128, EnginePngError> {
-    left.checked_add(right)
-        .ok_or(EnginePngError::Contract("Scene coordinate overflowed"))
-}
-
-fn finite_layout_sum(left: f64, right: f64) -> Result<f64, EnginePngError> {
-    let sum = left + right;
-    sum.is_finite()
-        .then_some(sum)
-        .ok_or(EnginePngError::Contract(
-            "Scene layout coordinate overflowed",
-        ))
-}
-
-fn require_fixed_box(
-    actual: &LocalLayoutBox,
-    origin: SceneOrigin,
-    placement: &Map<String, Value>,
-    label: &'static str,
-) -> Result<(), EnginePngError> {
-    let expected = [
-        origin.layout_x,
-        origin.layout_y,
-        number_member(placement, "widthPt")?,
-        number_member(placement, "heightPt")?,
-    ];
-    let actual = [actual.x(), actual.y(), actual.width(), actual.height()];
-    if actual
-        .into_iter()
-        .zip(expected)
-        .any(|(actual, expected)| actual.to_bits() != expected.to_bits())
-    {
-        return Err(EnginePngError::Contract(match label {
-            "Rect" => "Rect layout box diverged from authored FIXED geometry",
-            "Frame" => "Frame layout box diverged from authored FIXED geometry",
-            _ => "Scene layout box diverged from authored FIXED geometry",
-        }));
-    }
-    Ok(())
-}
-
-fn require_frame_content_box(
+fn require_layout_entry(
+    node: &Map<String, Value>,
     layout: &DefiniteLayoutEntry,
-    content_origin: SceneOrigin,
-    placement: &Map<String, Value>,
-    padding: &Map<String, Value>,
+    kind: &str,
+    has_content_box: bool,
 ) -> Result<(), EnginePngError> {
-    let actual = layout.content_box().ok_or(EnginePngError::Contract(
-        "Frame layout entry is missing its content box",
-    ))?;
-    let width = subtract_content_inset(
-        subtract_content_inset(
-            number_member(placement, "widthPt")?,
-            number_member(padding, "leftPt")?,
-        ),
-        number_member(padding, "rightPt")?,
-    );
-    let height = subtract_content_inset(
-        subtract_content_inset(
-            number_member(placement, "heightPt")?,
-            number_member(padding, "topPt")?,
-        ),
-        number_member(padding, "bottomPt")?,
-    );
-    let expected = [
-        content_origin.layout_x,
-        content_origin.layout_y,
-        width,
-        height,
-    ];
-    let actual = [actual.x(), actual.y(), actual.width(), actual.height()];
-    if actual
-        .into_iter()
-        .zip(expected)
-        .any(|(actual, expected)| actual.to_bits() != expected.to_bits())
-    {
+    if layout.kind() != kind || layout.occurrence_id() != text_member(node, "occurrenceId")? {
         return Err(EnginePngError::Contract(
-            "Frame content box diverged from fixed padding geometry",
+            "Engine PNG layout entry identity diverged from the admitted scene",
         ));
     }
-    Ok(())
+    require_valid_layout_box(layout.layout_box())?;
+    match (has_content_box, layout.content_box()) {
+        (true, Some(content_box)) => require_valid_layout_box(content_box),
+        (false, None) => Ok(()),
+        _ => Err(EnginePngError::Contract(
+            "Engine PNG layout entry content shape diverged from the admitted scene",
+        )),
+    }
 }
 
-fn subtract_content_inset(size: f64, inset: f64) -> f64 {
-    let remaining = size - inset;
-    if remaining > 0.0 { remaining } else { 0.0 }
+fn require_valid_layout_box(layout_box: &LocalLayoutBox) -> Result<(), EnginePngError> {
+    if layout_box.x().is_finite()
+        && layout_box.y().is_finite()
+        && layout_box.width().is_finite()
+        && layout_box.height().is_finite()
+        && layout_box.width() >= 0.0
+        && layout_box.height() >= 0.0
+    {
+        Ok(())
+    } else {
+        Err(EnginePngError::Contract(
+            "Engine PNG layout entry contains an invalid box",
+        ))
+    }
 }
 
 #[allow(clippy::too_many_arguments)]
-fn prepare_pixel_rect(
-    origin: SceneOrigin,
-    width: i128,
-    height: i128,
+fn prepare_layout_rect(
+    layout_box: &LocalLayoutBox,
     color: [u8; 4],
     bleed_left: i128,
     bleed_top: i128,
@@ -893,10 +691,8 @@ fn prepare_pixel_rect(
     surface_width: u32,
     surface_height: u32,
 ) -> Result<PixelRect, EnginePngError> {
-    let bounds = prepare_pixel_clip(
-        origin,
-        width,
-        height,
+    let bounds = prepare_layout_clip(
+        layout_box,
         bleed_left,
         bleed_top,
         dpi,
@@ -914,10 +710,8 @@ fn prepare_pixel_rect(
 }
 
 #[allow(clippy::too_many_arguments)]
-fn prepare_pixel_clip(
-    origin: SceneOrigin,
-    width: i128,
-    height: i128,
+fn prepare_layout_clip(
+    layout_box: &LocalLayoutBox,
     bleed_left: i128,
     bleed_top: i128,
     dpi: u32,
@@ -925,10 +719,23 @@ fn prepare_pixel_clip(
     surface_height: u32,
     misaligned: EnginePngUnsupported,
 ) -> Result<PixelClip, EnginePngError> {
-    let device_left = exact_device_edge(&[bleed_left, origin.scaled_x], dpi, misaligned)?;
-    let device_top = exact_device_edge(&[bleed_top, origin.scaled_y], dpi, misaligned)?;
-    let device_right = exact_device_edge(&[bleed_left, origin.scaled_x, width], dpi, misaligned)?;
-    let device_bottom = exact_device_edge(&[bleed_top, origin.scaled_y, height], dpi, misaligned)?;
+    require_valid_layout_box(layout_box)?;
+    let right = layout_box.x() + layout_box.width();
+    let bottom = layout_box.y() + layout_box.height();
+    if !right.is_finite()
+        || !bottom.is_finite()
+        || right < layout_box.x()
+        || bottom < layout_box.y()
+    {
+        return Err(EnginePngError::Contract(
+            "Paint layout box is not finite and monotonic",
+        ));
+    }
+
+    let device_left = exact_layout_device_edge(layout_box.x(), bleed_left, dpi, misaligned)?;
+    let device_top = exact_layout_device_edge(layout_box.y(), bleed_top, dpi, misaligned)?;
+    let device_right = exact_layout_device_edge(right, bleed_left, dpi, misaligned)?;
+    let device_bottom = exact_layout_device_edge(bottom, bleed_top, dpi, misaligned)?;
     if device_right < device_left || device_bottom < device_top {
         return Err(EnginePngError::Contract(
             "Paint device box is not monotonic",
@@ -942,26 +749,104 @@ fn prepare_pixel_clip(
     })
 }
 
-fn exact_device_edge(
-    parts: &[i128],
+fn exact_layout_device_edge(
+    coordinate: f64,
+    bleed_scaled: i128,
     dpi: u32,
     misaligned: EnginePngUnsupported,
 ) -> Result<i128, EnginePngError> {
-    const POINT_DENOMINATOR: i128 = 72_000_000;
-    let point = parts.iter().try_fold(0_i128, |sum, part| {
-        sum.checked_add(*part).ok_or(EnginePngError::Contract(
-            "Rect device coordinate overflowed",
-        ))
-    })?;
-    let numerator = point
-        .checked_mul(i128::from(dpi))
+    const DECIMAL_DENOMINATOR: i128 = 1_000_000;
+    const POINTS_PER_INCH: i128 = 72;
+
+    let (coordinate_numerator, coordinate_denominator) = exact_binary64_ratio(coordinate)?;
+    let point_numerator = coordinate_numerator
+        .checked_mul(DECIMAL_DENOMINATOR)
+        .and_then(|value| {
+            bleed_scaled
+                .checked_mul(coordinate_denominator)
+                .and_then(|bleed| value.checked_add(bleed))
+        })
         .ok_or(EnginePngError::Contract(
-            "Rect device coordinate overflowed",
+            "Paint device coordinate overflowed",
         ))?;
-    if numerator % POINT_DENOMINATOR != 0 {
+    let point_denominator = coordinate_denominator
+        .checked_mul(DECIMAL_DENOMINATOR)
+        .ok_or(EnginePngError::Contract(
+            "Paint device coordinate overflowed",
+        ))?;
+    let device_numerator =
+        point_numerator
+            .checked_mul(i128::from(dpi))
+            .ok_or(EnginePngError::Contract(
+                "Paint device coordinate overflowed",
+            ))?;
+    let device_denominator =
+        point_denominator
+            .checked_mul(POINTS_PER_INCH)
+            .ok_or(EnginePngError::Contract(
+                "Paint device coordinate overflowed",
+            ))?;
+    if device_numerator % device_denominator != 0 {
         return Err(EnginePngError::Unsupported(misaligned));
     }
-    Ok(numerator / POINT_DENOMINATOR)
+    Ok(device_numerator / device_denominator)
+}
+
+fn exact_binary64_ratio(value: f64) -> Result<(i128, i128), EnginePngError> {
+    if !value.is_finite() {
+        return Err(EnginePngError::Contract(
+            "Paint layout coordinate is not finite",
+        ));
+    }
+    if value == 0.0 {
+        return Ok((0, 1));
+    }
+
+    let bits = value.to_bits();
+    let negative = bits >> 63 != 0;
+    let exponent_bits = ((bits >> 52) & 0x7ff) as i32;
+    let fraction = bits & ((1_u64 << 52) - 1);
+    let (mut significand, mut exponent) = if exponent_bits == 0 {
+        (fraction, -1074)
+    } else {
+        ((1_u64 << 52) | fraction, exponent_bits - 1023 - 52)
+    };
+    if significand == 0 {
+        return Ok((0, 1));
+    }
+    if exponent < 0 {
+        let cancellation = significand.trailing_zeros().min((-exponent) as u32);
+        significand >>= cancellation;
+        exponent += cancellation as i32;
+    }
+
+    let mut numerator = i128::from(significand);
+    let denominator;
+    if exponent >= 0 {
+        let factor = 2_i128
+            .checked_pow(exponent as u32)
+            .ok_or(EnginePngError::Contract(
+                "Paint layout coordinate exceeds exact engine bounds",
+            ))?;
+        numerator = numerator
+            .checked_mul(factor)
+            .ok_or(EnginePngError::Contract(
+                "Paint layout coordinate exceeds exact engine bounds",
+            ))?;
+        denominator = 1;
+    } else {
+        denominator = 2_i128
+            .checked_pow((-exponent) as u32)
+            .ok_or(EnginePngError::Contract(
+                "Paint layout coordinate exceeds exact engine bounds",
+            ))?;
+    }
+    if negative {
+        numerator = numerator.checked_neg().ok_or(EnginePngError::Contract(
+            "Paint layout coordinate exceeds exact engine bounds",
+        ))?;
+    }
+    Ok((numerator, denominator))
 }
 
 fn clip_device_edge(edge: i128, surface_edge: u32) -> u32 {
@@ -1054,13 +939,6 @@ fn number_equals(
 
 fn has_exact_members(object: &Map<String, Value>, expected: &[&str]) -> bool {
     object.len() == expected.len() && expected.iter().all(|member| object.contains_key(*member))
-}
-
-fn decimal6_member(
-    object: &Map<String, Value>,
-    member: &'static str,
-) -> Result<i128, EnginePngError> {
-    parse_decimal6(&decimal_member(object, member)?)
 }
 
 fn parse_decimal6(raw: &str) -> Result<i128, EnginePngError> {
