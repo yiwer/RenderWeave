@@ -10,6 +10,7 @@ publish = false
 renderweave-renderer-document = { path = "../document" }
 renderweave-renderer-layout = { path = "../layout" }
 renderweave-renderer-protocol = { path = "../protocol" }
+renderweave-renderer-resource = { path = "../resource" }
 
 [dev-dependencies]
 serde_json.workspace = true

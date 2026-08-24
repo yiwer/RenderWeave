@@ -498,6 +498,12 @@ Label: wayfinder:map
   order，hidden resource 仍先返回 `RESOURCE_MANIFEST`，partial opacity 继续 fail closed。Rust 2/2、独立 Python
   26/26 cases/82 checks，`render`/affected `fast`/顺序 `server`/17-step `full`/resolution `fast` 均绿；Profile
   NOT_REGISTERED、daemon UNWIRED、E6/正式产品 route CLOSED，未把 `/prototype` 当作交付。
+- [实现 Renderer canonical Asset fetch 目标准入与 daemon 部署 identity](issues/100-canonical-asset-fetch-target-admission.md) —
+  **resolved / automated_verified**；Rust `FetchTargetPolicy` → `AdmittedFetchTarget` deep Interface、daemon
+  `--asset-fetch-origin` 与 Java Supervisor wiring 已形成 canonical lowercase ASCII HTTPS exact-origin +
+  `/internal/render-assets/` segment-boundary 前置。独立 replay 36/36 cases、76 checks，`render`/affected `fast`/
+  顺序 `server`/17-step `full` 均绿；resource bytes 仍 UNFETCHED，transport/daemon output UNWIRED，Profile 与
+  正式产品 route 继续关闭。
 - [验证 Product Editor 状态、恢复与权威预览架构](issues/09-validate-product-editor-architecture.md) —
   throwaway 逻辑原型（`/prototype/editor-state-model`，不进产品 route）把冻结编辑器规则编码为确定性
   fixture 状态机：10 个引导走查场景 37/37 断言 + 自由操作冒烟 + 键盘焦点检查全部通过（Playwright A1，

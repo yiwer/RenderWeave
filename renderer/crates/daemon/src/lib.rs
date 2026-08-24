@@ -16,6 +16,7 @@ use renderweave_renderer_protocol::{
     parse_command, problem_bytes, read_frame, resource_problem_bytes, server_hello_bytes,
     validate_process_manifest, write_frame,
 };
+use renderweave_renderer_resource::{ASSET_FETCH_PATH_PREFIX, FetchTargetPolicy};
 #[cfg(any(unix, test))]
 use std::collections::BTreeMap;
 use std::ffi::{OsStr, OsString};
@@ -74,6 +75,7 @@ impl DaemonError {
 pub struct DaemonConfiguration {
     socket_path: PathBuf,
     manifest_path: PathBuf,
+    fetch_target_policy: FetchTargetPolicy,
     maximum_framed_bytes: usize,
 }
 
@@ -81,6 +83,7 @@ impl DaemonConfiguration {
     pub fn new(
         socket_path: impl Into<PathBuf>,
         manifest_path: impl Into<PathBuf>,
+        asset_fetch_origin: &str,
         maximum_framed_bytes: usize,
     ) -> Result<Self, DaemonError> {
         let socket_path = socket_path.into();
@@ -100,9 +103,16 @@ impl DaemonConfiguration {
                 "renderer maximum frame bytes must be positive",
             ));
         }
+        let fetch_target_policy =
+            FetchTargetPolicy::new(asset_fetch_origin, ASSET_FETCH_PATH_PREFIX).map_err(|_| {
+                DaemonError::Configuration(
+                    "renderer asset fetch origin must be a canonical HTTPS origin",
+                )
+            })?;
         Ok(Self {
             socket_path,
             manifest_path,
+            fetch_target_policy,
             maximum_framed_bytes,
         })
     }
@@ -118,6 +128,10 @@ impl DaemonConfiguration {
     pub fn maximum_framed_bytes(&self) -> usize {
         self.maximum_framed_bytes
     }
+
+    pub fn fetch_target_policy(&self) -> &FetchTargetPolicy {
+        &self.fetch_target_policy
+    }
 }
 
 pub fn run_from_arguments(
@@ -127,6 +141,7 @@ pub fn run_from_arguments(
     let _program = arguments.next();
     let mut socket_path = None;
     let mut manifest_path = None;
+    let mut asset_fetch_origin = None;
     let mut maximum_framed_bytes = None;
     while let Some(argument) = arguments.next() {
         if argument == OsStr::new("--socket") {
@@ -140,6 +155,12 @@ pub fn run_from_arguments(
                 &mut manifest_path,
                 arguments.next(),
                 "--manifest must appear exactly once with a value",
+            )?;
+        } else if argument == OsStr::new("--asset-fetch-origin") {
+            set_once(
+                &mut asset_fetch_origin,
+                arguments.next(),
+                "--asset-fetch-origin must appear exactly once with a value",
             )?;
         } else if argument == OsStr::new("--max-frame-bytes") {
             if maximum_framed_bytes.is_some() {
@@ -162,9 +183,18 @@ pub fn run_from_arguments(
             ));
         }
     }
+    let asset_fetch_origin = asset_fetch_origin.ok_or(DaemonError::Configuration(
+        "--asset-fetch-origin is required",
+    ))?;
+    let asset_fetch_origin = asset_fetch_origin
+        .to_str()
+        .ok_or(DaemonError::Configuration(
+            "--asset-fetch-origin must be canonical UTF-8",
+        ))?;
     let configuration = DaemonConfiguration::new(
         socket_path.ok_or(DaemonError::Configuration("--socket is required"))?,
         manifest_path.ok_or(DaemonError::Configuration("--manifest is required"))?,
+        asset_fetch_origin,
         maximum_framed_bytes.ok_or(DaemonError::Configuration("--max-frame-bytes is required"))?,
     )?;
     run(configuration)
@@ -199,7 +229,7 @@ pub fn run(configuration: DaemonConfiguration) -> Result<(), DaemonError> {
         configuration.socket_path(),
         std::fs::Permissions::from_mode(0o600),
     )?;
-    let mut registry = RequestRegistry::default();
+    let mut registry = RequestRegistry::new(configuration.fetch_target_policy().clone());
     eprintln!("renderer daemon ready");
     for accepted in listener.incoming() {
         let mut connection = accepted?;
@@ -268,13 +298,20 @@ struct RegistryEntry {
 }
 
 #[cfg(any(unix, test))]
-#[derive(Default)]
 struct RequestRegistry {
     entries: BTreeMap<String, RegistryEntry>,
+    fetch_target_policy: FetchTargetPolicy,
 }
 
 #[cfg(any(unix, test))]
 impl RequestRegistry {
+    fn new(fetch_target_policy: FetchTargetPolicy) -> Self {
+        Self {
+            entries: BTreeMap::new(),
+            fetch_target_policy,
+        }
+    }
+
     fn handle(&mut self, frame: Frame, now_epoch_millis: i64) -> Result<Frame, ProtocolError> {
         self.entries
             .retain(|_, entry| entry.retain_until_epoch_millis > now_epoch_millis);
@@ -335,6 +372,18 @@ impl RequestRegistry {
                             "RESOURCE_LEASE_EXPIRED",
                             EngineStage::CommandAdmission,
                             violation.resource_id(),
+                        )?
+                    } else if document
+                        .resources()
+                        .iter()
+                        .any(|resource| self.fetch_target_policy.admit(resource).is_err())
+                    {
+                        // A sealed URL outside the exact deployment target policy is an internal
+                        // handoff violation. Never expose its URL, origin, path, token, or cause.
+                        problem_bytes(
+                            &request_id,
+                            "RENDER_INTERNAL_ERROR",
+                            EngineStage::ResourcePreparation,
                         )?
                     } else if preflight_layout(&document).is_err() {
                         // Static layout violations contradict the Java sealing authority. Until a
@@ -433,19 +482,36 @@ mod tests {
     const VECTORS: &str = include_str!("../../../protocol-vectors-v1.json");
     const PROCESS_MANIFEST: &[u8] = include_bytes!("../../../process-manifest.json");
     const ALL_KINDS: &str = include_str!("../../../render-document-all-kinds-v1.json");
+    const ASSET_FETCH_ORIGIN: &str = "https://render.internal.example";
 
     #[test]
-    fn daemon_requires_an_explicit_socket_manifest_and_frame_limit() {
-        assert!(DaemonConfiguration::new("", "", 0).is_err());
-        assert!(DaemonConfiguration::new("/tmp/rw.sock", "", 1).is_err());
-        assert!(DaemonConfiguration::new("/tmp/rw.sock", "/tmp/manifest", 0).is_err());
-        assert!(DaemonConfiguration::new("/tmp/rw.sock", "/tmp/manifest", 1).is_ok());
+    fn daemon_requires_an_explicit_socket_manifest_fetch_origin_and_frame_limit() {
+        assert!(DaemonConfiguration::new("", "", "", 0).is_err());
+        assert!(DaemonConfiguration::new("/tmp/rw.sock", "", ASSET_FETCH_ORIGIN, 1).is_err());
+        assert!(DaemonConfiguration::new("/tmp/rw.sock", "/tmp/manifest", "", 1).is_err());
+        assert!(
+            DaemonConfiguration::new(
+                "/tmp/rw.sock",
+                "/tmp/manifest",
+                "http://render.internal.example",
+                1
+            )
+            .is_err()
+        );
+        assert!(
+            DaemonConfiguration::new("/tmp/rw.sock", "/tmp/manifest", ASSET_FETCH_ORIGIN, 0)
+                .is_err()
+        );
+        assert!(
+            DaemonConfiguration::new("/tmp/rw.sock", "/tmp/manifest", ASSET_FETCH_ORIGIN, 1)
+                .is_ok()
+        );
     }
 
     #[test]
     fn registry_replays_exact_terminal_and_rejects_same_id_drift() {
         let command = vector_json("png-command");
-        let mut registry = RequestRegistry::default();
+        let mut registry = request_registry();
         let first = registry
             .handle(
                 Frame {
@@ -498,7 +564,7 @@ mod tests {
             .replace(&document, &invalid_document)
             .replace(&old_digest, &invalid_digest);
 
-        let mut registry = RequestRegistry::default();
+        let mut registry = request_registry();
         let response = registry
             .handle(
                 Frame {
@@ -520,7 +586,7 @@ mod tests {
         assert!(preflight_layout(&admitted).is_err());
         let invalid_command = command_with_document(&layout_invalid_document);
 
-        let mut registry = RequestRegistry::default();
+        let mut registry = request_registry();
         let response = registry
             .handle(
                 Frame {
@@ -539,7 +605,7 @@ mod tests {
     fn registry_returns_first_insufficient_resource_lease_and_replays_it() {
         let document = all_kinds_with_expiries([4_090_912_501; 2]);
         let command = command_with_document(&document);
-        let mut registry = RequestRegistry::default();
+        let mut registry = request_registry();
         let first = registry
             .handle(
                 Frame {
@@ -572,8 +638,34 @@ mod tests {
     }
 
     #[test]
+    fn registry_rejects_non_allowlisted_resource_target_before_layout() {
+        let mut document: Value =
+            serde_json::from_str(&all_kinds_with_expiries([4_090_912_502; 2])).unwrap();
+        document["resources"][0]["fetchUrl"] =
+            Value::String("https://evil.example/internal/render-assets/token".to_owned());
+        let document = serde_json::to_string(&document).unwrap();
+        let command = command_with_document(&document);
+        let mut registry = request_registry();
+
+        let response = registry
+            .handle(
+                Frame {
+                    frame_type: FrameType::Command,
+                    payload: command.into_bytes(),
+                },
+                1_800_000_000_000,
+            )
+            .unwrap();
+        let problem: Value = serde_json::from_slice(&response.payload).unwrap();
+        assert_eq!(problem["code"], "RENDER_INTERNAL_ERROR");
+        assert_eq!(problem["engineStage"], "RESOURCE_PREPARATION");
+        assert!(problem.get("resourceId").is_none());
+        assert_eq!(problem["parameters"], serde_json::json!({}));
+    }
+
+    #[test]
     fn pre_command_cancel_is_terminal_and_never_emits_result() {
-        let mut registry = RequestRegistry::default();
+        let mut registry = request_registry();
         let cancel = vector_json("cancel");
         let response = registry
             .handle(
@@ -596,7 +688,7 @@ mod tests {
         let command = vector_json("png-command");
         let input = encode_frame(FrameType::Command, command.as_bytes()).unwrap();
         let mut connection = MemoryDuplex::new(input);
-        let mut registry = RequestRegistry::default();
+        let mut registry = request_registry();
         assert!(serve_connection(&mut connection, &identity, &mut registry, 4096).is_err());
         assert!(connection.output.is_empty());
     }
@@ -619,7 +711,7 @@ mod tests {
         let server_identity = identity.clone();
         let server = thread::spawn(move || {
             let (mut stream, _) = listener.accept().unwrap();
-            let mut registry = RequestRegistry::default();
+            let mut registry = request_registry();
             serve_connection(&mut stream, &server_identity, &mut registry, 4096).unwrap();
         });
 
@@ -680,10 +772,27 @@ mod tests {
         let mut document: Value = serde_json::from_str(ALL_KINDS).unwrap();
         let resources = document["resources"].as_array_mut().unwrap();
         assert_eq!(resources.len(), expires_at_epoch_seconds.len());
-        for (resource, expires_at) in resources.iter_mut().zip(expires_at_epoch_seconds) {
+        for (index, (resource, expires_at)) in resources
+            .iter_mut()
+            .zip(expires_at_epoch_seconds)
+            .enumerate()
+        {
             resource["expiresAt"] = Value::from(expires_at);
+            resource["fetchUrl"] = Value::String(format!(
+                "{ASSET_FETCH_ORIGIN}/internal/render-assets/token-{index}"
+            ));
         }
         serde_json::to_string(&document).unwrap()
+    }
+
+    fn request_registry() -> RequestRegistry {
+        RequestRegistry::new(
+            renderweave_renderer_resource::FetchTargetPolicy::new(
+                ASSET_FETCH_ORIGIN,
+                renderweave_renderer_resource::ASSET_FETCH_PATH_PREFIX,
+            )
+            .unwrap(),
+        )
     }
 
     fn command_with_document(document: &str) -> String {

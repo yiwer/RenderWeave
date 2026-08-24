@@ -1,6 +1,20 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-24 **Template v1 implementation TV1-T100 已由 Codex `/root` single-writer 完成，状态
+  `resolved/automated_verified`**：public-interface RED 后完成唯一 `FetchTargetPolicy` → `AdmittedFetchTarget`
+  deep Interface、daemon 必填 `--asset-fetch-origin` 与 Java Supervisor wiring；canonical lowercase ASCII HTTPS
+  exact-origin + `/internal/render-assets/` segment boundary 在所有网络动作前 fail closed，安全 problem 不泄漏 URL。
+  resource Rust 7、daemon Windows 8、Linux/UDS 9、Java renderer 27 tests 全绿；独立 Python 36/36 cases、76 checks，
+  vector SHA-256 `0d02e44c57e9082452d651de28b9e6fee24ddcc94d573252a09aaece6be1b4e9`。`render`
+  `.sdlc/evidence/20260824-211301-render/`、affected `fast` `.sdlc/evidence/20260824-211337-fast/`、顺序
+  `server` `.sdlc/evidence/20260824-211353-server/` 与 17-step `full`
+  `.sdlc/evidence/20260824-213045-full/` 均绿；full 用时 1598.099 秒，App 345/0/0/15、Node 24 Web
+  26 files/212 tests、runtime canary、Playwright 23 passed + 1 controlled skip、Draft browser journey 与 inference
+  replay E2E 1/1 均通过；状态回填后的 resolution `fast` `.sdlc/evidence/20260824-215948-fast/` 亦绿
+  （9.448 秒）。resource bytes UNFETCHED、transport/daemon output UNWIRED、Profile NOT_REGISTERED、
+  certification NOT_CERTIFIED、process raster ABSENT、正式产品 route CLOSED；provider/API Key/费用/真实数据=0，
+  未 push/tag/PR，未把 `/prototype` 视为最终产品交付。
 - 2026-08-24 **Template v1 implementation TV1-T99 已由 Codex `/root` single-writer 完成，状态
   `resolved/automated_verified`**：RED 时 Rust 对两个 suppression 正例均返回 `FRAME_PAINT`，独立 Python replay
   同步 drift；现以继承式 draw eligibility 在完整 resource admission 与 authoritative definite layout 之后抑制

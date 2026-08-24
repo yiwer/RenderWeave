@@ -17,6 +17,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class RendererProcessSupervisorTest {
 
+    private static final String ASSET_FETCH_ORIGIN = "https://render.internal.example";
+
     @TempDir
     Path temporaryDirectory;
 
@@ -38,6 +40,7 @@ class RendererProcessSupervisorTest {
                 socket.toAbsolutePath(),
                 manifest.toAbsolutePath(),
                 manifestDigest,
+                ASSET_FETCH_ORIGIN,
                 4096,
                 Duration.ofMillis(50),
                 Duration.ZERO,
@@ -47,6 +50,7 @@ class RendererProcessSupervisorTest {
                             executable.toAbsolutePath().toString(),
                             "--socket", socket.toAbsolutePath().toString(),
                             "--manifest", manifest.toAbsolutePath().toString(),
+                            "--asset-fetch-origin", ASSET_FETCH_ORIGIN,
                             "--max-frame-bytes", "4096"),
                     supervisor.commandLine());
             assertThrows(IOException.class, supervisor::open);
@@ -66,6 +70,7 @@ class RendererProcessSupervisorTest {
                 socket.toAbsolutePath(),
                 manifest.toAbsolutePath(),
                 "sha256:" + "0".repeat(64),
+                ASSET_FETCH_ORIGIN,
                 4096,
                 Duration.ofMillis(50),
                 Duration.ZERO,
@@ -88,6 +93,7 @@ class RendererProcessSupervisorTest {
                 socket.toAbsolutePath(),
                 manifest.toAbsolutePath(),
                 "sha256:" + RendererProcessProtocol.rawSha256(manifestBytes),
+                ASSET_FETCH_ORIGIN,
                 4096,
                 Duration.ofMillis(50),
                 Duration.ZERO,
@@ -95,6 +101,26 @@ class RendererProcessSupervisorTest {
             assertThrows(IOException.class, supervisor::open);
             assertFalse(Files.exists(socket.getParent()));
         }
+    }
+
+    @Test
+    void blankAssetFetchOriginIsRejectedBeforeLaunch() throws Exception {
+        var executable = Files.writeString(
+                temporaryDirectory.resolve("renderer-daemon"), "not launched");
+        var manifest = Files.writeString(
+                temporaryDirectory.resolve("process-manifest.json"), "{}");
+        var socket = temporaryDirectory.resolve("runtime/renderer.sock");
+
+        assertThrows(IllegalArgumentException.class, () -> new RendererProcessSupervisor(
+                executable.toAbsolutePath(),
+                socket.toAbsolutePath(),
+                manifest.toAbsolutePath(),
+                "sha256:" + "0".repeat(64),
+                " ",
+                4096,
+                Duration.ofMillis(50),
+                Duration.ZERO,
+                Clock.systemUTC()));
     }
 
     private static Path repositoryFile(String relative) {

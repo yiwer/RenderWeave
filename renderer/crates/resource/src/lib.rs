@@ -4,6 +4,194 @@ use sha2::{Digest, Sha256};
 pub const MAX_PHYSICAL_FETCH_BYTES: u64 = 536_870_912;
 pub const PHYSICAL_FETCH_BYTES_LIMIT_ID: &str = "assetsAndFetch.physicalFetchBytesIncludingRetries";
 pub const RESOURCE_PREPARATION_STAGE: &str = "RESOURCE_PREPARATION";
+pub const ASSET_FETCH_PATH_PREFIX: &str = "/internal/render-assets";
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct FetchTargetPolicyError;
+
+#[derive(Clone, Eq, PartialEq)]
+pub struct FetchTargetPolicy {
+    canonical_origin: Box<str>,
+    path_prefix: Box<str>,
+    target_prefix: Box<str>,
+}
+
+impl std::fmt::Debug for FetchTargetPolicy {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter
+            .debug_struct("FetchTargetPolicy")
+            .field("path_prefix", &self.path_prefix)
+            .finish_non_exhaustive()
+    }
+}
+
+impl FetchTargetPolicy {
+    pub fn new(canonical_origin: &str, path_prefix: &str) -> Result<Self, FetchTargetPolicyError> {
+        if !is_canonical_https_origin(canonical_origin) || !is_canonical_absolute_path(path_prefix)
+        {
+            return Err(FetchTargetPolicyError);
+        }
+        let target_prefix = format!("{canonical_origin}{path_prefix}/").into_boxed_str();
+        Ok(Self {
+            canonical_origin: canonical_origin.into(),
+            path_prefix: path_prefix.into(),
+            target_prefix,
+        })
+    }
+
+    pub fn canonical_origin(&self) -> &str {
+        &self.canonical_origin
+    }
+
+    pub fn path_prefix(&self) -> &str {
+        &self.path_prefix
+    }
+
+    pub fn admit<'resource>(
+        &self,
+        resource: &'resource AdmittedRenderResource,
+    ) -> Result<AdmittedFetchTarget<'resource>, FetchTargetViolation> {
+        let Some(suffix) = resource.fetch_url().strip_prefix(&*self.target_prefix) else {
+            return Err(FetchTargetViolation::new(resource.resource_id()));
+        };
+        if !is_canonical_relative_path(suffix) {
+            return Err(FetchTargetViolation::new(resource.resource_id()));
+        }
+        Ok(AdmittedFetchTarget { resource })
+    }
+}
+
+#[derive(Eq, PartialEq)]
+pub struct AdmittedFetchTarget<'resource> {
+    resource: &'resource AdmittedRenderResource,
+}
+
+impl std::fmt::Debug for AdmittedFetchTarget<'_> {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter
+            .debug_struct("AdmittedFetchTarget")
+            .field("resource_id", &self.resource.resource_id())
+            .finish_non_exhaustive()
+    }
+}
+
+impl AdmittedFetchTarget<'_> {
+    pub fn resource_id(&self) -> &str {
+        self.resource.resource_id()
+    }
+
+    pub fn fetch_url(&self) -> &str {
+        self.resource.fetch_url()
+    }
+
+    pub fn resource(&self) -> &AdmittedRenderResource {
+        self.resource
+    }
+}
+
+#[derive(Clone, Eq, PartialEq)]
+pub struct FetchTargetViolation {
+    resource_id: Box<str>,
+}
+
+impl FetchTargetViolation {
+    fn new(resource_id: &str) -> Self {
+        Self {
+            resource_id: resource_id.into(),
+        }
+    }
+
+    pub fn resource_id(&self) -> &str {
+        &self.resource_id
+    }
+}
+
+impl std::fmt::Debug for FetchTargetViolation {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter
+            .debug_struct("FetchTargetViolation")
+            .field("resource_id", &self.resource_id)
+            .finish_non_exhaustive()
+    }
+}
+
+fn is_canonical_https_origin(origin: &str) -> bool {
+    if !origin.is_ascii() || origin.len() > 2_048 {
+        return false;
+    }
+    let Some(authority) = origin.strip_prefix("https://") else {
+        return false;
+    };
+    if authority.is_empty() {
+        return false;
+    }
+    let (host, port) = match authority.rsplit_once(':') {
+        Some((host, port)) => {
+            if host.contains(':') || !is_canonical_port(port) {
+                return false;
+            }
+            (host, Some(port))
+        }
+        None => (authority, None),
+    };
+    is_canonical_host(host) && port.is_none_or(|value| value != "443")
+}
+
+fn is_canonical_port(port: &str) -> bool {
+    if port.is_empty()
+        || !port.bytes().all(|byte| byte.is_ascii_digit())
+        || (port.len() > 1 && port.starts_with('0'))
+    {
+        return false;
+    }
+    matches!(port.parse::<u16>(), Ok(1..=u16::MAX))
+}
+
+fn is_canonical_host(host: &str) -> bool {
+    if host.is_empty() || host.len() > 253 || host.starts_with('.') || host.ends_with('.') {
+        return false;
+    }
+    host.split('.').all(|label| {
+        !label.is_empty()
+            && label.len() <= 63
+            && label
+                .bytes()
+                .all(|byte| byte.is_ascii_lowercase() || byte.is_ascii_digit() || byte == b'-')
+            && label
+                .as_bytes()
+                .first()
+                .is_some_and(u8::is_ascii_alphanumeric)
+            && label
+                .as_bytes()
+                .last()
+                .is_some_and(u8::is_ascii_alphanumeric)
+    })
+}
+
+fn is_canonical_absolute_path(path: &str) -> bool {
+    if !path.is_ascii()
+        || path.len() < 2
+        || path.len() > 2_048
+        || !path.starts_with('/')
+        || path.ends_with('/')
+    {
+        return false;
+    }
+    is_canonical_relative_path(&path[1..])
+}
+
+fn is_canonical_relative_path(path: &str) -> bool {
+    !path.is_empty() && path.split('/').all(is_canonical_path_segment)
+}
+
+fn is_canonical_path_segment(segment: &str) -> bool {
+    !segment.is_empty()
+        && segment != "."
+        && segment != ".."
+        && segment
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'.' | b'_' | b'~'))
+}
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum ResourceProblemCode {
@@ -174,11 +362,14 @@ mod tests {
     use serde_json::{Value, json};
 
     use super::{
-        MAX_PHYSICAL_FETCH_BYTES, PhysicalFetchBudget, ResourceProblemCode, verify_resource_body,
+        FetchTargetPolicy, MAX_PHYSICAL_FETCH_BYTES, PhysicalFetchBudget, ResourceProblemCode,
+        verify_resource_body,
     };
 
     const ALL_KINDS: &str = include_str!("../../../render-document-all-kinds-v1.json");
     const VECTORS: &str = include_str!("../../../resource-body-vectors-v1.json");
+    const FETCH_TARGET_VECTORS: &str =
+        include_str!("../../../resource-fetch-target-vectors-v1.json");
 
     const RESOURCE_ID: &str =
         "rwres_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
@@ -369,6 +560,86 @@ mod tests {
         }
     }
 
+    #[test]
+    fn shared_fetch_target_vectors_match_the_public_interface() {
+        let vectors: FetchTargetVectors = serde_json::from_str(FETCH_TARGET_VECTORS).unwrap();
+        assert_eq!(
+            vectors.vector_version,
+            "renderweave-resource-fetch-target-vectors/1"
+        );
+        assert_eq!(
+            vectors.authority_context.asset_fetch_path_prefix,
+            super::ASSET_FETCH_PATH_PREFIX
+        );
+        assert_eq!(
+            vectors.authority_context.engine_stage,
+            super::RESOURCE_PREPARATION_STAGE
+        );
+        assert_eq!(
+            vectors.authority_context.target_input,
+            "TYPED_RENDER_RESOURCE"
+        );
+        assert_eq!(
+            vectors.authority_context.transport_implementation,
+            "UNWIRED"
+        );
+        assert_eq!(vectors.authority_context.resource_bytes, "UNFETCHED");
+        assert_eq!(vectors.authority_context.daemon_output_path, "UNWIRED");
+        assert_eq!(
+            vectors.authority_context.profile_availability,
+            "NOT_REGISTERED"
+        );
+        assert_eq!(
+            vectors.authority_context.certification_status,
+            "NOT_CERTIFIED"
+        );
+        assert_eq!(
+            vectors.authority_context.process_raster_implementation,
+            "ABSENT"
+        );
+        assert_eq!(vectors.authority_context.product_route, "CLOSED");
+        assert_eq!(vectors.authority_context.provider_attempts, 0);
+
+        for case in vectors.policy_cases {
+            let actual = FetchTargetPolicy::new(
+                &case.origin,
+                &vectors.authority_context.asset_fetch_path_prefix,
+            );
+            if case.expected.outcome == "ADMITTED" {
+                let policy = actual.unwrap_or_else(|_| panic!("{}: expected admitted", case.id));
+                assert_eq!(policy.canonical_origin(), case.origin, "{}", case.id);
+                assert_eq!(
+                    policy.path_prefix(),
+                    vectors.authority_context.asset_fetch_path_prefix,
+                    "{}",
+                    case.id
+                );
+            } else {
+                assert!(actual.is_err(), "{}: expected rejected", case.id);
+            }
+        }
+
+        for case in vectors.target_cases {
+            let policy = FetchTargetPolicy::new(
+                &case.origin,
+                &vectors.authority_context.asset_fetch_path_prefix,
+            )
+            .unwrap();
+            let resource = admitted_resource_with_fetch_url(&case.fetch_url);
+            let actual = policy.admit(&resource);
+            if case.expected.outcome == "ADMITTED" {
+                let target = actual.unwrap_or_else(|_| panic!("{}: expected admitted", case.id));
+                assert_eq!(target.resource_id(), RESOURCE_ID, "{}", case.id);
+                assert_eq!(target.fetch_url(), case.fetch_url, "{}", case.id);
+            } else {
+                let violation = actual
+                    .err()
+                    .unwrap_or_else(|| panic!("{}: expected rejected", case.id));
+                assert_eq!(violation.resource_id(), RESOURCE_ID, "{}", case.id);
+            }
+        }
+    }
+
     fn assert_outcome(
         case_id: &str,
         expected: &Expected,
@@ -482,10 +753,65 @@ mod tests {
         sha256: Option<String>,
     }
 
+    #[derive(Deserialize)]
+    #[serde(rename_all = "camelCase", deny_unknown_fields)]
+    struct FetchTargetVectors {
+        vector_version: String,
+        authority_context: FetchTargetAuthorityContext,
+        policy_cases: Vec<FetchTargetPolicyCase>,
+        target_cases: Vec<FetchTargetCase>,
+    }
+
+    #[derive(Deserialize)]
+    #[serde(rename_all = "camelCase", deny_unknown_fields)]
+    struct FetchTargetAuthorityContext {
+        engine_stage: String,
+        asset_fetch_path_prefix: String,
+        target_input: String,
+        transport_implementation: String,
+        resource_bytes: String,
+        daemon_output_path: String,
+        profile_availability: String,
+        certification_status: String,
+        process_raster_implementation: String,
+        product_route: String,
+        provider_attempts: u64,
+    }
+
+    #[derive(Deserialize)]
+    #[serde(rename_all = "camelCase", deny_unknown_fields)]
+    struct FetchTargetPolicyCase {
+        id: String,
+        origin: String,
+        expected: FetchTargetExpected,
+    }
+
+    #[derive(Deserialize)]
+    #[serde(rename_all = "camelCase", deny_unknown_fields)]
+    struct FetchTargetCase {
+        id: String,
+        origin: String,
+        fetch_url: String,
+        expected: FetchTargetExpected,
+    }
+
+    #[derive(Deserialize)]
+    #[serde(rename_all = "camelCase", deny_unknown_fields)]
+    struct FetchTargetExpected {
+        outcome: String,
+    }
+
     fn admitted_resource(byte_length: u64, sha256: &str) -> AdmittedRenderResource {
         let mut document: Value = serde_json::from_str(ALL_KINDS).unwrap();
         document["resources"][0]["byteLength"] = json!(byte_length);
         document["resources"][0]["sha256"] = json!(sha256);
+        let canonical = serde_json::to_string(&document).unwrap();
+        validate_render_document(&canonical).unwrap().resources()[0].clone()
+    }
+
+    fn admitted_resource_with_fetch_url(fetch_url: &str) -> AdmittedRenderResource {
+        let mut document: Value = serde_json::from_str(ALL_KINDS).unwrap();
+        document["resources"][0]["fetchUrl"] = json!(fetch_url);
         let canonical = serde_json::to_string(&document).unwrap();
         validate_render_document(&canonical).unwrap().resources()[0].clone()
     }

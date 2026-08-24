@@ -3265,6 +3265,49 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
   Profile NOT_REGISTERED、certification NOT_CERTIFIED、process raster ABSENT、daemon UNWIRED、正式产品 route CLOSED；
   provider attempts/API Key reads/费用/真实数据=0，未 push/tag/PR，`/prototype` 不计最终产品交付。
 
+## 99. TV1-T100 执行卡
+
+- 决策：T99 以 verified commit `fa22602` 收口且 worktree clean 后，按最终产品目标复算 Ticket 13/16、ADR-0045
+  与 T46–T48 resource seam。decoder/raster/Profile 仍依赖后续完整算法与依赖清单，但 daemon 缺失 app-origin
+  deployment identity 会阻塞任何安全 HTTPS transport；canonical exact-origin/path-prefix 规则与 app endpoint 已冻结，
+  因此登记为当前 single-writer frontier。
+- Interface/seam：深化既有 `renderweave-renderer-resource`，新增 `FetchTargetPolicy` → `AdmittedFetchTarget` deep
+  Interface；future transport 只能消费 admitted target。daemon 新增必填 `--asset-fetch-origin`，Java Supervisor 从
+  `renderweave.asset.fetch-base-url` 传递；固定 path prefix `/internal/render-assets` 不进入 Command。
+- 精确子闭包：origin 只接受 canonical lowercase ASCII HTTPS DNS/IPv4-style host 与可选 non-default canonical port；
+  target 必须 exact origin + prefix segment boundary + 非空 unreserved path segment。拒绝 userinfo、`:443`、case drift、
+  host suffix、empty/dot segment、percent、query/fragment、backslash、control 与 Unicode；不 normalize/repair/fallback。
+- 允许影响：T100 tracker/plan/NOTES、resource/daemon Rust modules/tests、shared target vectors、Python independent
+  verifier、Java process Supervisor/config/tests、Cargo.lock/process manifest/protocol identity 与 render gate。
+- 禁止影响：DNS/egress/rustls/HTTP/status/header/retry/backoff、attempt-time Clock/expiry、actual fetch/body retain/cache、
+  media/magic/decode/font/Image、scene/raster/JPEG/LayoutTrace、daemon RESULT/Profile registration、OpenAPI/Web/E6/
+  product route、formal records、physical certification、J1/A3/READY 与外部副作用。
+- TDD：shared policy/target corpus 先使 Rust public Interface RED；Python stdlib 使用独立 parser/control flow。GREEN
+  后依次 focused → `render` → affected `fast` → 顺序 `server` → Goal `full` → resolution `fast`。最高只可
+  `automated_verified`；resource bytes `UNFETCHED`、transport/daemon `UNWIRED`，provider/API Key/费用/真实数据=0，
+  不 push/tag/PR，`/prototype` 不计交付。
+
+### TV1-T100 resolution evidence
+
+- RED 精确命中冻结边界：Rust resource public Interface 缺少 `FetchTargetPolicy`/`AdmittedFetchTarget`，daemon
+  registry 未消费 policy，Java Supervisor 构造参数亦不匹配。GREEN 后唯一 deep Interface 在任何网络动作前消费
+  typed resource，并以 canonical exact-origin + fixed segment prefix 返回生命周期绑定的 admitted target；daemon
+  按 manifest encounter order first-fail，安全 problem 不包含 URL/origin/path/token/expiry 或内部原因。
+- focused resource Rust 7 tests、daemon Windows 8 tests、Linux/UDS 9 tests、Java renderer 27 tests 均绿；独立
+  Python replay 为 14 policy + 22 target = 36/36 cases、76 checks，vector SHA-256
+  `0d02e44c57e9082452d651de28b9e6fee24ddcc94d573252a09aaece6be1b4e9`。Cargo.lock SHA-256
+  `be5e2b00651f1fdfc45125799dfa062f51b22276d0de3c4401ffaa499e8e7101`，process manifest SHA-256
+  `51cf3811681c478af87c241cda6df6e19cd4ab9dc3edeb28b7c3cc4bc74e8530`。
+- `render` `.sdlc/evidence/20260824-211301-render/`、affected `fast`
+  `.sdlc/evidence/20260824-211337-fast/`、顺序 `server` `.sdlc/evidence/20260824-211353-server/` 与 17-step
+  `full` `.sdlc/evidence/20260824-213045-full/` 均 exit 0；full 用时 1598.099 秒，App 345/0/0/15、Node 24 Web
+  26 files/212 tests、runtime canary、Playwright 23 passed + 1 controlled skip、Draft browser journey 与 inference
+  replay E2E 1/1 均通过。状态回填后的 resolution `fast` `.sdlc/evidence/20260824-215948-fast/` 亦 exit 0
+  （9.448 秒）。
+- 状态为 `resolved/automated_verified`；resource bytes `UNFETCHED`、transport/daemon output `UNWIRED`、Profile
+  `NOT_REGISTERED`、certification `NOT_CERTIFIED`、process raster `ABSENT`、正式产品 route `CLOSED`；provider
+  attempts/API Key reads/费用/真实数据=0，未 push/tag/PR，`/prototype` 不计最终产品交付。
+
 ## 66. TV1-T67 执行卡
 
 - 决策：T66 以 verified commit `a6fabe5` 收口且 worktree clean 后，复算原始 Ticket 10 §3/§7、

@@ -1,0 +1,222 @@
+{
+  "vectorVersion": "renderweave-resource-fetch-target-vectors/1",
+  "authorityContext": {
+    "engineStage": "RESOURCE_PREPARATION",
+    "assetFetchPathPrefix": "/internal/render-assets",
+    "targetInput": "TYPED_RENDER_RESOURCE",
+    "transportImplementation": "UNWIRED",
+    "resourceBytes": "UNFETCHED",
+    "daemonOutputPath": "UNWIRED",
+    "profileAvailability": "NOT_REGISTERED",
+    "certificationStatus": "NOT_CERTIFIED",
+    "processRasterImplementation": "ABSENT",
+    "productRoute": "CLOSED",
+    "providerAttempts": 0
+  },
+  "policyCases": [
+    {
+      "id": "canonical-lowercase-origin",
+      "origin": "https://render.internal.example",
+      "expected": {"outcome": "ADMITTED"}
+    },
+    {
+      "id": "canonical-nondefault-port-origin",
+      "origin": "https://render.internal.example:8443",
+      "expected": {"outcome": "ADMITTED"}
+    },
+    {
+      "id": "reject-empty-origin",
+      "origin": "",
+      "expected": {"outcome": "REJECTED"}
+    },
+    {
+      "id": "reject-http-origin",
+      "origin": "http://render.internal.example",
+      "expected": {"outcome": "REJECTED"}
+    },
+    {
+      "id": "reject-uppercase-host-origin",
+      "origin": "https://Render.internal.example",
+      "expected": {"outcome": "REJECTED"}
+    },
+    {
+      "id": "reject-explicit-default-port-origin",
+      "origin": "https://render.internal.example:443",
+      "expected": {"outcome": "REJECTED"}
+    },
+    {
+      "id": "reject-leading-zero-port-origin",
+      "origin": "https://render.internal.example:08443",
+      "expected": {"outcome": "REJECTED"}
+    },
+    {
+      "id": "reject-trailing-slash-origin",
+      "origin": "https://render.internal.example/",
+      "expected": {"outcome": "REJECTED"}
+    },
+    {
+      "id": "reject-origin-with-path",
+      "origin": "https://render.internal.example/internal",
+      "expected": {"outcome": "REJECTED"}
+    },
+    {
+      "id": "reject-userinfo-origin",
+      "origin": "https://user@render.internal.example",
+      "expected": {"outcome": "REJECTED"}
+    },
+    {
+      "id": "reject-query-origin",
+      "origin": "https://render.internal.example?x=1",
+      "expected": {"outcome": "REJECTED"}
+    },
+    {
+      "id": "reject-fragment-origin",
+      "origin": "https://render.internal.example#x",
+      "expected": {"outcome": "REJECTED"}
+    },
+    {
+      "id": "reject-percent-host-origin",
+      "origin": "https://r%65nder.internal.example",
+      "expected": {"outcome": "REJECTED"}
+    },
+    {
+      "id": "reject-trailing-dot-host-origin",
+      "origin": "https://render.internal.example.",
+      "expected": {"outcome": "REJECTED"}
+    }
+  ],
+  "targetCases": [
+    {
+      "id": "admit-current-renderer-token-path",
+      "origin": "https://render.internal.example",
+      "fetchUrl": "https://render.internal.example/internal/render-assets/v1.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.4090912502.ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopq",
+      "expected": {"outcome": "ADMITTED"}
+    },
+    {
+      "id": "admit-nested-unreserved-path",
+      "origin": "https://render.internal.example",
+      "fetchUrl": "https://render.internal.example/internal/render-assets/v2/token_part-1/~proof",
+      "expected": {"outcome": "ADMITTED"}
+    },
+    {
+      "id": "admit-matching-nondefault-port",
+      "origin": "https://render.internal.example:8443",
+      "fetchUrl": "https://render.internal.example:8443/internal/render-assets/token",
+      "expected": {"outcome": "ADMITTED"}
+    },
+    {
+      "id": "reject-http-target",
+      "origin": "https://render.internal.example",
+      "fetchUrl": "http://render.internal.example/internal/render-assets/token",
+      "expected": {"outcome": "REJECTED"}
+    },
+    {
+      "id": "reject-wrong-host-target",
+      "origin": "https://render.internal.example",
+      "fetchUrl": "https://other.internal.example/internal/render-assets/token",
+      "expected": {"outcome": "REJECTED"}
+    },
+    {
+      "id": "reject-host-suffix-attack",
+      "origin": "https://render.internal.example",
+      "fetchUrl": "https://render.internal.example.evil/internal/render-assets/token",
+      "expected": {"outcome": "REJECTED"}
+    },
+    {
+      "id": "reject-uppercase-host-target",
+      "origin": "https://render.internal.example",
+      "fetchUrl": "https://Render.internal.example/internal/render-assets/token",
+      "expected": {"outcome": "REJECTED"}
+    },
+    {
+      "id": "reject-explicit-default-port-target",
+      "origin": "https://render.internal.example",
+      "fetchUrl": "https://render.internal.example:443/internal/render-assets/token",
+      "expected": {"outcome": "REJECTED"}
+    },
+    {
+      "id": "reject-userinfo-target",
+      "origin": "https://render.internal.example",
+      "fetchUrl": "https://render.internal.example@evil.example/internal/render-assets/token",
+      "expected": {"outcome": "REJECTED"}
+    },
+    {
+      "id": "reject-prefix-without-suffix-boundary",
+      "origin": "https://render.internal.example",
+      "fetchUrl": "https://render.internal.example/internal/render-assets",
+      "expected": {"outcome": "REJECTED"}
+    },
+    {
+      "id": "reject-empty-suffix",
+      "origin": "https://render.internal.example",
+      "fetchUrl": "https://render.internal.example/internal/render-assets/",
+      "expected": {"outcome": "REJECTED"}
+    },
+    {
+      "id": "reject-prefix-collision",
+      "origin": "https://render.internal.example",
+      "fetchUrl": "https://render.internal.example/internal/render-assets-evil/token",
+      "expected": {"outcome": "REJECTED"}
+    },
+    {
+      "id": "reject-dot-segment",
+      "origin": "https://render.internal.example",
+      "fetchUrl": "https://render.internal.example/internal/render-assets/./token",
+      "expected": {"outcome": "REJECTED"}
+    },
+    {
+      "id": "reject-dot-dot-segment",
+      "origin": "https://render.internal.example",
+      "fetchUrl": "https://render.internal.example/internal/render-assets/../admin",
+      "expected": {"outcome": "REJECTED"}
+    },
+    {
+      "id": "reject-percent-encoded-path",
+      "origin": "https://render.internal.example",
+      "fetchUrl": "https://render.internal.example/internal/render-assets/%2e%2e/admin",
+      "expected": {"outcome": "REJECTED"}
+    },
+    {
+      "id": "reject-empty-path-segment",
+      "origin": "https://render.internal.example",
+      "fetchUrl": "https://render.internal.example/internal/render-assets/token//proof",
+      "expected": {"outcome": "REJECTED"}
+    },
+    {
+      "id": "reject-backslash-path",
+      "origin": "https://render.internal.example",
+      "fetchUrl": "https://render.internal.example/internal/render-assets/token\\admin",
+      "expected": {"outcome": "REJECTED"}
+    },
+    {
+      "id": "reject-query-target",
+      "origin": "https://render.internal.example",
+      "fetchUrl": "https://render.internal.example/internal/render-assets/token?x=1",
+      "expected": {"outcome": "REJECTED"}
+    },
+    {
+      "id": "reject-fragment-target",
+      "origin": "https://render.internal.example",
+      "fetchUrl": "https://render.internal.example/internal/render-assets/token#x",
+      "expected": {"outcome": "REJECTED"}
+    },
+    {
+      "id": "reject-unicode-path",
+      "origin": "https://render.internal.example",
+      "fetchUrl": "https://render.internal.example/internal/render-assets/令牌",
+      "expected": {"outcome": "REJECTED"}
+    },
+    {
+      "id": "reject-port-mismatch",
+      "origin": "https://render.internal.example:8443",
+      "fetchUrl": "https://render.internal.example:9443/internal/render-assets/token",
+      "expected": {"outcome": "REJECTED"}
+    },
+    {
+      "id": "reject-reserved-path-character",
+      "origin": "https://render.internal.example",
+      "fetchUrl": "https://render.internal.example/internal/render-assets/token:admin",
+      "expected": {"outcome": "REJECTED"}
+    }
+  ]
+}

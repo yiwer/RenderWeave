@@ -105,6 +105,7 @@ dependencies = [
  "renderweave-renderer-document",
  "renderweave-renderer-layout",
  "renderweave-renderer-protocol",
+ "renderweave-renderer-resource",
  "serde_json",
 ]
 

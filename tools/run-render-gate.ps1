@@ -36,6 +36,7 @@ if (-not $resolvedEvidenceDir.StartsWith(
 $independentReport = Join-Path $resolvedEvidenceDir 'renderer-process-independent.json'
 $documentReport = Join-Path $resolvedEvidenceDir 'render-document-independent.json'
 $resourceBodyReport = Join-Path $resolvedEvidenceDir 'resource-body-independent.json'
+$resourceFetchTargetReport = Join-Path $resolvedEvidenceDir 'resource-fetch-target-independent.json'
 $layoutPreflightReport = Join-Path $resolvedEvidenceDir 'layout-preflight-independent.json'
 $definiteLayoutReport = Join-Path $resolvedEvidenceDir 'definite-layout-independent.json'
 $outputPngReport = Join-Path $resolvedEvidenceDir 'output-png-independent.json'
@@ -45,6 +46,7 @@ foreach ($report in @(
         $independentReport,
         $documentReport,
         $resourceBodyReport,
+        $resourceFetchTargetReport,
         $layoutPreflightReport,
         $definiteLayoutReport,
         $outputPngReport,
@@ -268,6 +270,39 @@ try {
         throw 'Resource body independent report boundary drifted.'
     }
 
+    Invoke-Checked 'resource-fetch-target-python-independent-replay' {
+        & python.exe 'tools\verify-resource-fetch-target-vectors.py' `
+            '--vectors' 'renderer\resource-fetch-target-vectors-v1.json' `
+            '--report' $resourceFetchTargetReport
+    }
+    if (-not (Test-Path -LiteralPath $resourceFetchTargetReport -PathType Leaf)) {
+        throw 'Resource fetch target independent replay did not write its report.'
+    }
+    $resourceFetchTargetIndependent = Get-Content -Raw -Encoding UTF8 -LiteralPath $resourceFetchTargetReport |
+        ConvertFrom-Json
+    if ($resourceFetchTargetIndependent.verifier -ne 'renderweave-resource-fetch-target-python-independent/1' `
+            -or $resourceFetchTargetIndependent.result -ne 'PASS' `
+            -or $resourceFetchTargetIndependent.assurance -ne 'A2' `
+            -or $resourceFetchTargetIndependent.policyCases -ne 14 `
+            -or $resourceFetchTargetIndependent.targetCases -ne 22 `
+            -or $resourceFetchTargetIndependent.passed -ne 36 `
+            -or $resourceFetchTargetIndependent.total -ne 36 `
+            -or $resourceFetchTargetIndependent.failed -ne 0 `
+            -or $resourceFetchTargetIndependent.checks -ne 76 `
+            -or $resourceFetchTargetIndependent.engineStage -ne 'RESOURCE_PREPARATION' `
+            -or $resourceFetchTargetIndependent.assetFetchPathPrefix -ne '/internal/render-assets' `
+            -or $resourceFetchTargetIndependent.targetInput -ne 'TYPED_RENDER_RESOURCE' `
+            -or $resourceFetchTargetIndependent.transportImplementation -ne 'UNWIRED' `
+            -or $resourceFetchTargetIndependent.resourceBytes -ne 'UNFETCHED' `
+            -or $resourceFetchTargetIndependent.daemonOutputPath -ne 'UNWIRED' `
+            -or $resourceFetchTargetIndependent.profileAvailability -ne 'NOT_REGISTERED' `
+            -or $resourceFetchTargetIndependent.certificationStatus -ne 'NOT_CERTIFIED' `
+            -or $resourceFetchTargetIndependent.processRasterImplementation -ne 'ABSENT' `
+            -or $resourceFetchTargetIndependent.productRoute -ne 'CLOSED' `
+            -or $resourceFetchTargetIndependent.providerAttempts -ne 0) {
+        throw 'Resource fetch target independent report boundary drifted.'
+    }
+
     Invoke-Checked 'layout-preflight-python-independent-replay' {
         & python.exe 'tools\verify-layout-preflight-vectors.py' `
             '--vectors' 'renderer\layout-preflight-vectors-v1.json' `
@@ -430,7 +465,7 @@ try {
     }
 
     $summary = [ordered]@{
-        gateVersion = 'renderweave-renderer-process-gate/2.1'
+        gateVersion = 'renderweave-renderer-process-gate/2.2'
         status = 'PASS'
         processContractVersion = 'renderweave-renderer-process/1.0'
         java = $java
@@ -490,6 +525,19 @@ try {
             resourceInput = $resourceBodyIndependent.resourceInput
             resourceBytes = $resourceBodyIndependent.resourceBytes
         }
+        resourceFetchTargetIndependent = [ordered]@{
+            verifier = $resourceFetchTargetIndependent.verifier
+            assurance = $resourceFetchTargetIndependent.assurance
+            policyCases = $resourceFetchTargetIndependent.policyCases
+            targetCases = $resourceFetchTargetIndependent.targetCases
+            checks = $resourceFetchTargetIndependent.checks
+            vectorSha256 = $resourceFetchTargetIndependent.vectorSha256
+            engineStage = $resourceFetchTargetIndependent.engineStage
+            assetFetchPathPrefix = $resourceFetchTargetIndependent.assetFetchPathPrefix
+            targetInput = $resourceFetchTargetIndependent.targetInput
+            transportImplementation = $resourceFetchTargetIndependent.transportImplementation
+            resourceBytes = $resourceFetchTargetIndependent.resourceBytes
+        }
         layoutPreflightIndependent = [ordered]@{
             verifier = $layoutPreflightIndependent.verifier
             assurance = $layoutPreflightIndependent.assurance
@@ -536,6 +584,7 @@ try {
             resourceManifestAdmission = 'TYPED_STATIC_PREFLIGHT_AUTOMATED_VERIFIED'
             resourceLeaseAdmission = 'COMMAND_DEADLINE_PLUS_5000MS_AUTOMATED_VERIFIED'
             resourceBodyIntegrityKernel = 'PHYSICAL_FETCH_BUDGET_LENGTH_SHA256_AUTOMATED_VERIFIED_UNWIRED'
+            resourceFetchTargetAdmission = 'CANONICAL_HTTPS_EXACT_ORIGIN_SEGMENT_PREFIX_AUTOMATED_VERIFIED'
             resultSealKernel = 'CANONICAL_METADATA_LENGTH_SHA256_UUID_IMAGE_PAYLOAD_AUTOMATED_VERIFIED_UNWIRED'
             resourceBytes = 'UNFETCHED'
             layoutKernel = 'RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_SINGLE_AND_INACTIVE_BOUND_OR_EXACT_TWO_FILL_SINGLE_ACTIVE_BOUND_WITHIN_REMAINING_OR_SINGLE_ACTIVE_MIN_OVERFLOW_OR_EXACT_TWO_FILL_TWO_MIN_SECOND_FREEZE_OVERFLOW_OR_EXACT_TWO_FILL_MIXED_ACTIVE_MIN_SECOND_MIN_FREEZE_OVERFLOW_OR_EXACT_TWO_FILL_TWO_MAX_SECOND_FREEZE_FREE_JUSTIFY_OR_EXACT_TWO_FILL_MIXED_ACTIVE_MAX_SECOND_MAX_FREEZE_FREE_JUSTIFY_OR_EXACT_THREE_FILL_SINGLE_ACTIVE_BOUND_ONE_REDISTRIBUTION_OR_EXACT_THREE_FILL_POST_REDISTRIBUTION_INACTIVE_BOUNDS_OR_EXACT_THREE_FILL_SECOND_MIN_FREEZE_LAST_REMAINDER_OR_EXACT_THREE_FILL_SECOND_MAX_FREEZE_LAST_REMAINDER_OR_EXACT_THREE_FILL_SECOND_MAX_FREEZE_TERMINAL_INACTIVE_MIN_OR_EXACT_THREE_FILL_SECOND_MAX_FREEZE_TERMINAL_INACTIVE_MAX_OR_EXACT_THREE_FILL_THIRD_MAX_FREEZE_FREE_JUSTIFY_OR_EXACT_THREE_FILL_SINGLE_ACTIVE_MIN_OVERFLOW_OR_EXACT_THREE_FILL_SECOND_MIN_FREEZE_OVERFLOW_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_INACTIVE_UNFROZEN_MAX_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_SECOND_MIN_FREEZE_OVERFLOW_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_SECOND_MIXED_MIN_FREEZE_OVERFLOW_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_SECOND_MIXED_MIN_FREEZE_OVERFLOW_TERMINAL_INACTIVE_MAX_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_TWO_MIXED_MIN_FREEZES_OVERFLOW_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_MIXED_AND_MIN_ONLY_FREEZES_OVERFLOW_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_TWO_MIN_ONLY_FREEZES_OVERFLOW_MULTI_MAIN_FILL_AND_FIXED_SINGLE_FRACTION_INDEPENDENT_MULTI_AUTO_GRID_MULTI_AUTO_SPAN_STABLE_DEFICIT_GRID_DEFINITE_MULTI_FRACTION_LAST_REMAINDER_GRID_EMPTY_CONTAINER_STACK_HUG_GRID_AUTO_HUG_CONTRIBUTION_GRID_HUG_EXACT_QUARTER_TURN_AFFINE_FRAME_GROUP_HUG_FIXED_OPPOSITE_AXIS_CROSS_FILL_DEFINITE_ABSOLUTE_PARENT_OFFER_DEFINITE_STACK_CROSS_OUTER_OFFER_STACK_MAIN_FILL_CROSS_HUG_REMEASURE_NESTED_STACK_MAIN_OFFER_PROPAGATION_COLUMNS_FIRST_GRID_CELL_OUTER_OFFER_STACK_MAIN_OFFER_COLUMNS_FIRST_GRID_CROSS_HUG_ABSOLUTE_PARENT_OFFER_COLUMNS_FIRST_GRID_CROSS_HUG_GRID_CELL_OFFER_COLUMNS_FIRST_NESTED_GRID_CROSS_HUG_GRID_CELL_OFFER_STACK_MAIN_FIRST_CROSS_HUG_DIRECTION_CHANGING_STACK_CROSS_OFFER_MAIN_HUG_NESTED_STACK_RESOLVED_OPPOSITE_OFFER_RECURSION_COLUMNS_FIRST_GRID_TERMINAL_NORMALIZATION_BOX_AUTOMATED_VERIFIED_UNWIRED'
@@ -551,10 +600,11 @@ try {
         }
     }
     Write-Utf8File -Path $summaryPath -Content ($summary | ConvertTo-Json -Depth 6)
-    Write-Host (('Renderer process: Java={0} Python={1}+{2}+{3}+{4}+{5}+{6}+{7} Rust Windows=PASS ' +
+    Write-Host (('Renderer process: Java={0} Python={1}+{2}+{3}+{4}+{5}+{6}+{7}+{8} Rust Windows=PASS ' +
                 'Linux UDS=PASS Profile=NOT_REGISTERED Certification=NOT_CERTIFIED Raster=ABSENT') -f
             $java.tests, $independent.checks, $documentIndependent.total,
-            $resourceBodyIndependent.total, $layoutPreflightIndependent.total, $definiteLayoutIndependent.total,
+            $resourceBodyIndependent.total, $resourceFetchTargetIndependent.total,
+            $layoutPreflightIndependent.total, $definiteLayoutIndependent.total,
             $outputPngIndependent.total, $enginePngIndependent.total)
     Write-Host "Renderer process evidence: $summaryPath"
 }

@@ -33,6 +33,7 @@ final class RendererProcessSupervisor implements RendererProcessAdapter.Connecti
     private final Path socketPath;
     private final Path manifestPath;
     private final String expectedManifestSha256;
+    private final String assetFetchOrigin;
     private final int maximumFramedBytes;
     private final Duration startupTimeout;
     private final Duration restartBackoff;
@@ -52,6 +53,7 @@ final class RendererProcessSupervisor implements RendererProcessAdapter.Connecti
             Path socketPath,
             Path manifestPath,
             String expectedManifestSha256,
+            String assetFetchOrigin,
             int maximumFramedBytes,
             Duration startupTimeout,
             Duration restartBackoff,
@@ -62,6 +64,7 @@ final class RendererProcessSupervisor implements RendererProcessAdapter.Connecti
         this.manifestPath = requireAbsolute(manifestPath, "renderer manifest");
         RendererProcessProtocol.requireSha256(
                 expectedManifestSha256, "expectedManifestSha256");
+        this.assetFetchOrigin = requireNonBlank(assetFetchOrigin, "assetFetchOrigin");
         if (maximumFramedBytes < 1) {
             throw new IllegalArgumentException("maximumFramedBytes must be positive");
         }
@@ -132,6 +135,7 @@ final class RendererProcessSupervisor implements RendererProcessAdapter.Connecti
                 executable.toString(),
                 "--socket", socketPath.toString(),
                 "--manifest", manifestPath.toString(),
+                "--asset-fetch-origin", assetFetchOrigin,
                 "--max-frame-bytes", Integer.toString(maximumFramedBytes));
     }
 
@@ -271,6 +275,14 @@ final class RendererProcessSupervisor implements RendererProcessAdapter.Connecti
         Objects.requireNonNull(value, name);
         if (value.isNegative()) {
             throw new IllegalArgumentException(name + " must not be negative");
+        }
+        return value;
+    }
+
+    private static String requireNonBlank(String value, String name) {
+        Objects.requireNonNull(value, name);
+        if (value.isBlank() || value.indexOf('\0') >= 0) {
+            throw new IllegalArgumentException(name + " must be non-blank without NUL");
         }
         return value;
     }
