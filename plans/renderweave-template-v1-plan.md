@@ -2874,6 +2874,56 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
   未 push/tag/PR。
 - 状态回填后的 resolution `fast` `.sdlc/evidence/20260824-090830-fast/` 3 steps 均 exit 0（A1，10.480 秒）。
 
+## 88. TV1-T89 执行卡
+
+- 决策：T88 以 verified commit `8e26667` 收口且 worktree clean 后，复算 Ticket 10 §3/§7、
+  `RW-T10-S3-012..016`、`RW-T10-S7-004..012` 与 16 个 remaining unsupported cases。五个 rotation、四个
+  resource/error-order 与 compositionViewport 仍依赖关闭能力；六个 Stack cases 中，T88 replacement negative
+  只把 terminal max-only 改为合法 mixed min/max。first min 已严格大于 remaining，因此可直接提交三个 authored
+  minima，不需要 division、redistribution、循环或 tolerance，登记为当前 single-writer frontier。
+- Interface/seam：只深化 T88 `stack_main_fill_allocations` 的 exactly-three/mixed-min-overflow early branch；public
+  API、admission/preflight、`StackChildMeasurement`、arrange、authored DFS first-error 与全有或全无 output 不变。
+  Rust/Python 使用独立控制流但共享冻结 vectors。
+- 精确语义：恰好三个 main FILL；首轮唯一 active child 为合法 mixed min/max 且 min 严格大于 remaining；另外
+  两项都为 finite mixed min/max，满足 `0 < min <= max` 且初始 share 位于各自闭区间。按 authored position
+  提交三个 minima；min/max equality 均接受，尺寸和必然 overflow。
+- 允许影响：T89 tracker/plan/NOTES、layout Rust module/tests、shared definite-layout vector `/52`、Python
+  independent verifier、render gate identity/assertions/evidence。
+- 禁止影响：mixed/min-only 或 mixed/max-only additional 组合、非法或初始 active additional bound、首轮多个
+  active、active child 非 mixed 或 min 不大于 remaining、post-overflow redistribution、four-or-more active-bound
+  FILL、一般多轮 water filling、epsilon/tolerance/public numeric error、HUG-main FILL cycle、rows→columns、任意
+  非直角 rotation、Text/Image/compositionViewport、resource fetch/decode、scene/raster/JPEG、daemon RESULT/Profile、
+  Java/OpenAPI/migration/Web/route、J1/A3/READY 与外部副作用。
+- TDD：把 T88 replacement negative 转为 active-first positive，新增 active-middle、active-last equality、COLUMN
+  与 cross-HUG positives；以 additional mixed + terminal positive min-only negative 替换。能力值新增
+  `OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_TWO_MIXED_MIN_FREEZES_OVERFLOW`；shared `/52` 先共同 RED，
+  目标 237 laid-out + 16 unsupported、253 cases/757 checks，fixture `/3` bytes 不变。
+- 验证：focused Rust/Python、fmt、check、clippy `-D warnings`、workspace tests、`py_compile`、JSON inventory/SHA/
+  unique、`git diff --check`；再依次 `render`、affected `fast`、顺序 `server`、Goal `full`、resolution `fast`。
+  最高只可 `automated_verified`；不推进 A3/J1/READY，不 push/tag/PR，不运行 provider，不读取 API Key。
+
+### TV1-T89 resolution evidence
+
+- shared `/52` 的 Rust primary 与 Python independent verifier 先在首个 two-mixed-min-freezes case、同一
+  `STACK_MAIN_FILL` occurrence `rwocc_0000000000000002` 共同 RED；独立实现后达到 237 laid-out +
+  16 unsupported、253/253 cases、757 checks。vector SHA-256 为
+  `a824ad5b378cd190319a59c1cb55893d39f922de6435a9d7ac207caeeb4f864e`，fixture `/3` SHA-256 保持
+  `a11475bcebad7e1c35cb0acd7018419d94afcb4b37d7f1df7346a055ad1df669`。
+- Rust 以 authored-position `Vec` 分类 additional freezes，Python 以独立 candidate count/all-mixed/position map
+  重放；只在两个 additional candidates 都为合法 mixed bound 且 active child 自身有 max 时通过。mixed +
+  min-only replacement negative 继续 fail closed。focused Rust/Python、workspace fmt/check/clippy `-D warnings`/
+  tests、`py_compile`、JSON inventory/SHA/unique 与 `git diff --check` 全绿。
+- 分级 A1 证据为 `render` `.sdlc/evidence/20260824-092128-render/`（22.779 秒）、affected `fast`
+  `.sdlc/evidence/20260824-092158-fast/`（10.293 秒）、顺序 `server`
+  `.sdlc/evidence/20260824-092216-server/`（1149.605 秒）与 `full`
+  `.sdlc/evidence/20260824-094146-full/`（1851.526 秒），全部 exit 0。
+- `full` definite A2 replay 253/253、757 checks；App 344/0/0/15、Node 24 Web 26 files/212 tests、runtime canary、
+  23 passed + 1 controlled skip Playwright、三种 prototype variant、Draft journey 与 inference replay E2E 1/1
+  全绿。R0/R1/P0 provider attempts=0，P0 API Key reads/reservations/cost=0；R1 A2 60 cases/58 metrics，P0 A2
+  60 cases（20 holdout）/58 metrics。Profile/A3/J1/READY 未推进，未运行 provider、读取 API Key 或发送真实数据，
+  未 push/tag/PR。
+- 状态回填后的 resolution `fast` `.sdlc/evidence/20260824-101515-fast/` 3 steps 均 exit 0（A1，12.161 秒）。
+
 ## 66. TV1-T67 执行卡
 
 - 决策：T66 以 verified commit `a6fabe5` 收口且 worktree clean 后，复算原始 Ticket 10 §3/§7、

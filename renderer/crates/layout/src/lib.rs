@@ -2103,8 +2103,7 @@ fn stack_main_fill_allocations(
     if allocations.len() == 3 {
         if frozen_bound > remaining {
             let mut inactive_unfrozen_max_count = 0;
-            let mut second_minimum_freeze = None;
-            let mut second_minimum_is_mixed = false;
+            let mut additional_minimum_freezes = Vec::with_capacity(2);
             let mut unfrozen_overflow_bound_shape_supported = true;
             for (position, &(unfrozen_minimum, unfrozen_maximum)) in bounds.iter().enumerate() {
                 if position == active_position {
@@ -2122,11 +2121,9 @@ fn stack_main_fill_allocations(
                     (Some(minimum), None)
                         if minimum.is_finite()
                             && minimum > 0.0
-                            && allocations[position].1 >= minimum
-                            && second_minimum_freeze.is_none() =>
+                            && allocations[position].1 >= minimum =>
                     {
-                        second_minimum_freeze = Some((position, minimum));
-                        second_minimum_is_mixed = false;
+                        additional_minimum_freezes.push((position, minimum, false));
                     }
                     (Some(minimum), Some(maximum))
                         if minimum.is_finite()
@@ -2134,11 +2131,9 @@ fn stack_main_fill_allocations(
                             && minimum > 0.0
                             && maximum >= minimum
                             && allocations[position].1 >= minimum
-                            && allocations[position].1 <= maximum
-                            && second_minimum_freeze.is_none() =>
+                            && allocations[position].1 <= maximum =>
                     {
-                        second_minimum_freeze = Some((position, minimum));
-                        second_minimum_is_mixed = true;
+                        additional_minimum_freezes.push((position, minimum, true));
                     }
                     _ => {
                         unfrozen_overflow_bound_shape_supported = false;
@@ -2147,12 +2142,21 @@ fn stack_main_fill_allocations(
                 }
             }
             let inactive_max_shape_supported =
-                second_minimum_freeze.is_none() && inactive_unfrozen_max_count <= 1;
-            let second_minimum_shape_supported = second_minimum_freeze.is_some()
+                additional_minimum_freezes.is_empty() && inactive_unfrozen_max_count <= 1;
+            let second_minimum_shape_supported = additional_minimum_freezes.len() == 1
                 && (inactive_unfrozen_max_count == 0
-                    || (second_minimum_is_mixed && inactive_unfrozen_max_count == 1))
+                    || (additional_minimum_freezes[0].2 && inactive_unfrozen_max_count == 1))
                 && maximum.is_some();
-            if !inactive_max_shape_supported && !second_minimum_shape_supported {
+            let two_mixed_minimum_shape_supported = additional_minimum_freezes.len() == 2
+                && inactive_unfrozen_max_count == 0
+                && additional_minimum_freezes
+                    .iter()
+                    .all(|(_, _, is_mixed)| *is_mixed)
+                && maximum.is_some();
+            if !inactive_max_shape_supported
+                && !second_minimum_shape_supported
+                && !two_mixed_minimum_shape_supported
+            {
                 unfrozen_overflow_bound_shape_supported = false;
             }
             let active_minimum_overflow_bound_shape_supported = active_is_minimum
@@ -2186,8 +2190,8 @@ fn stack_main_fill_allocations(
             } else {
                 0.0
             };
-            if let Some((second_position, second_minimum)) = second_minimum_freeze {
-                allocations[second_position].1 = second_minimum;
+            for (position, minimum, _) in additional_minimum_freezes {
+                allocations[position].1 = minimum;
             }
             return Ok(allocations);
         }

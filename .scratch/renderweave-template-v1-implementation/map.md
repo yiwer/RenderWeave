@@ -432,6 +432,11 @@ Label: wayfinder:map
   仍按 authored position 提交 `firstMin/secondMin/0`；shared `/51` 实际为 232 laid-out + 16 unsupported、
   248/248 cases/742 checks。second min-only + terminal max、terminal min/mixed、第三次 freeze 与一般 mixed
   cascade 保持 fail closed。
+- [实现 definite Stack 三 FILL mixed active-min overflow 两个 mixed-min freeze 子闭包](issues/89-definite-stack-three-fill-mixed-active-min-overflow-two-mixed-min-freezes.md) —
+  **resolved / automated_verified**；只允许 T88 early branch 的另外两项都为初始 inactive 的合法 mixed min/max，
+  并按 authored position 固定提交三个 minima；shared `/52` 实际为 237 laid-out + 16 unsupported、
+  253/253 cases/757 checks。
+  mixed/min-only 组合、post-overflow redistribution、four-or-more FILL 与一般 water filling 保持 fail closed。
 - [验证 Product Editor 状态、恢复与权威预览架构](issues/09-validate-product-editor-architecture.md) —
   throwaway 逻辑原型（`/prototype/editor-state-model`，不进产品 route）把冻结编辑器规则编码为确定性
   fixture 状态机：10 个引导走查场景 37/37 断言 + 自由操作冒烟 + 键盘焦点检查全部通过（Playwright A1，
