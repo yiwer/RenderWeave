@@ -1,6 +1,20 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-24 **Template v1 implementation TV1-T93 已由 Codex `/root` single-writer 完成，状态
+  `resolved/automated_verified`**：沿用唯一 `render_png` Interface，为一个 direct ABSOLUTE/FIXED、default
+  identity、零圆角、无 stroke、opaque fill 且四条 device edge 原生精确落在整数 pixel boundary 的 Rect 完成
+  layout → device lowering → background → hard clip → RGBA8 paint → exact PNG 的首个真实非空 scene 纵切；不做
+  pixel snap，也不选择一般 vector AA/tie/blend 语义。shared Rust/Python tracer 先共同 RED 后独立 GREEN，最终
+  Engine-PNG `/1` 为 7 rendered + 8 unsupported、15/15 cases、49 checks，vector SHA-256
+  `578b2446b557059cddc49a57634c0aa65d5a3a5ba565b7963be3c854b67597ee`。`render`
+  `.sdlc/evidence/20260824-140946-render/`、affected `fast` `.sdlc/evidence/20260824-141021-fast/`、顺序
+  `server` `.sdlc/evidence/20260824-141041-server/` 与 17-step `full`
+  `.sdlc/evidence/20260824-143058-full/` 均绿色；full App 344/0/0/15、Node 24 Web 26 files/212 tests、runtime
+  canary、Playwright 23 passed + 1 controlled skip、Draft journey 与 inference replay E2E 1/1 均通过。状态回填后的
+  resolution `fast` `.sdlc/evidence/20260824-145508-fast/` 亦为 exit 0。Profile NOT_REGISTERED、certification
+  NOT_CERTIFIED、process raster ABSENT、daemon UNWIRED、E6/正式产品 route CLOSED；
+  provider attempts/API Key reads/付费调用/真实数据均为 0，未 push/tag/PR。本票不把 `/prototype` 当作产品交付。
 - 2026-08-24 **Template v1 implementation TV1-T92 已由 Codex `/root` single-writer 完成，状态
   `resolved/automated_verified`**：新增 workspace-internal `renderweave-renderer-engine` deep module，以唯一
   `render_png(&AdmittedRenderDocument, dpi)` Interface 把已准入、无资源、无 child、背景 alpha 为 0/255 的 Canvas

@@ -72,7 +72,7 @@ struct UnsupportedExpected {
 }
 
 #[test]
-fn renders_shared_empty_canvas_png_vectors() {
+fn renders_shared_engine_png_vectors() {
     let vectors = vectors();
     assert_eq!("renderweave-engine-png-vectors/1", vectors.vector_version);
     assert_honest_boundary(&vectors.boundary);
@@ -122,7 +122,7 @@ fn assert_honest_boundary(boundary: &Boundary) {
     assert_eq!("NOT_REGISTERED", boundary.profile_availability);
     assert_eq!("NOT_CERTIFIED", boundary.certification_status);
     assert_eq!(
-        "EMPTY_CANVAS_PNG_KERNEL_UNWIRED",
+        "PIXEL_ALIGNED_OPAQUE_RECT_PNG_KERNEL_UNWIRED",
         boundary.engine_png_kernel
     );
     assert_eq!("ABSENT", boundary.process_raster_implementation);
@@ -132,7 +132,7 @@ fn assert_honest_boundary(boundary: &Boundary) {
 }
 
 #[test]
-fn rejects_inputs_outside_the_frozen_empty_canvas_subset() {
+fn rejects_inputs_outside_the_frozen_engine_png_subset() {
     let vectors = vectors();
     for case in &vectors.unsupported_cases {
         let document = admitted_document(&vectors, &case.document_id);

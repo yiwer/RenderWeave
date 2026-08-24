@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Independent stdlib replay for the TV1-T92 empty-Canvas Engine PNG kernel."""
+"""Independent stdlib replay for the TV1-T93 Engine PNG scene/raster kernel."""
 
 from __future__ import annotations
 
@@ -116,18 +116,122 @@ def surface_dimensions(canvas: dict[str, Any], dpi: Any) -> dict[str, int] | dic
     return {"widthPx": width_px, "heightPx": height_px}
 
 
-def parse_background(value: Any) -> bytes | dict[str, str]:
+def parse_rgba(value: Any, label: str) -> bytes:
     if not isinstance(value, str) or len(value) != 9 or not value.startswith("#"):
-        raise VerificationFailure("Canvas background color is invalid")
+        raise VerificationFailure(f"{label} color is invalid")
     try:
-        rgba = bytes.fromhex(value[1:])
+        return bytes.fromhex(value[1:])
     except ValueError as error:
-        raise VerificationFailure("Canvas background color is invalid") from error
+        raise VerificationFailure(f"{label} color is invalid") from error
+
+
+def parse_background(value: Any) -> bytes | dict[str, str]:
+    rgba = parse_rgba(value, "Canvas background")
     if rgba[3] == 0:
         return b"\0\0\0\0"
     if rgba[3] == 255:
         return rgba
     return {"feature": "PARTIAL_BACKGROUND_ALPHA"}
+
+
+def number_is(value: Any, expected: str) -> bool:
+    if type(value) is int:
+        return Decimal(value) == Decimal(expected)
+    return isinstance(value, Decimal) and value == Decimal(expected)
+
+
+def has_exact_members(value: Any, expected: set[str]) -> bool:
+    return isinstance(value, dict) and set(value) == expected
+
+
+def exact_device_edge(parts: list[int], dpi: int) -> int | None:
+    numerator = sum(parts) * dpi
+    edge, remainder = divmod(numerator, 72_000_000)
+    return edge if remainder == 0 else None
+
+
+def paint_single_rect(
+    child: Any,
+    canvas: dict[str, Any],
+    dpi: int,
+    width: int,
+    height: int,
+    pixels: bytearray,
+) -> dict[str, str] | None:
+    if not isinstance(child, dict) or child.get("kind") != "rect":
+        return {"feature": "SCENE_STRUCTURE"}
+    if (
+        child.get("visible") is not True
+        or not number_is(child.get("opacity"), "1")
+        or "stroke" in child
+    ):
+        return {"feature": "RECT_PAINT"}
+
+    transform = child.get("transform")
+    if not has_exact_members(
+        transform, {"originX", "originY", "rotationDeg", "scaleX", "scaleY"}
+    ) or not all((
+        number_is(transform["originX"], "0.5"),
+        number_is(transform["originY"], "0.5"),
+        number_is(transform["rotationDeg"], "0"),
+        number_is(transform["scaleX"], "1"),
+        number_is(transform["scaleY"], "1"),
+    )):
+        return {"feature": "RECT_PAINT"}
+
+    radii = child.get("cornerRadii")
+    radius_members = {"bottomLeftPt", "bottomRightPt", "topLeftPt", "topRightPt"}
+    if not has_exact_members(radii, radius_members) or not all(
+        number_is(radii[member], "0") for member in radius_members
+    ):
+        return {"feature": "RECT_PAINT"}
+
+    fill = child.get("fill")
+    if not has_exact_members(fill, {"color"}):
+        return {"feature": "RECT_PAINT"}
+    color = parse_rgba(fill["color"], "Rect fill")
+    if color[3] != 255:
+        return {"feature": "NON_OPAQUE_RECT_ALPHA"}
+
+    placement = child.get("placement")
+    placement_members = {
+        "heightMode", "heightPt", "type", "widthMode", "widthPt", "xPt", "yPt"
+    }
+    if (
+        not has_exact_members(placement, placement_members)
+        or placement["type"] != "ABSOLUTE"
+        or placement["widthMode"] != "FIXED"
+        or placement["heightMode"] != "FIXED"
+    ):
+        return {"feature": "RECT_PAINT"}
+
+    bleed = canvas["bleed"]
+    left_bleed = decimal6(bleed["leftPt"], False)
+    top_bleed = decimal6(bleed["topPt"], False)
+    x = decimal6(placement["xPt"], False)
+    y = decimal6(placement["yPt"], False)
+    rect_width = decimal6(placement["widthPt"], True)
+    rect_height = decimal6(placement["heightPt"], True)
+    edges = (
+        exact_device_edge([left_bleed, x], dpi),
+        exact_device_edge([top_bleed, y], dpi),
+        exact_device_edge([left_bleed, x, rect_width], dpi),
+        exact_device_edge([top_bleed, y, rect_height], dpi),
+    )
+    if any(edge is None for edge in edges):
+        return {"feature": "NON_PIXEL_ALIGNED_RECT"}
+    left, top, right, bottom = (int(edge) for edge in edges)
+    if right < left or bottom < top:
+        raise VerificationFailure("Rect device box is not monotonic")
+    left = min(max(left, 0), width)
+    right = min(max(right, 0), width)
+    top = min(max(top, 0), height)
+    bottom = min(max(bottom, 0), height)
+    for row in range(top, bottom):
+        for column in range(left, right):
+            offset = (row * width + column) * 4
+            pixels[offset : offset + 4] = color
+    return None
 
 
 def png_chunk(kind: bytes, payload: bytes) -> bytes:
@@ -177,8 +281,8 @@ def execute(document: dict[str, Any], dpi: Any) -> dict[str, Any]:
     canvas = document["canvas"]
     if not isinstance(canvas, dict) or not isinstance(canvas.get("children"), list):
         raise VerificationFailure("Canvas shape is invalid")
-    if canvas["children"]:
-        return {"feature": "NONEMPTY_CANVAS"}
+    if len(canvas["children"]) > 1:
+        return {"feature": "SCENE_STRUCTURE"}
     pixel = parse_background(canvas.get("backgroundColor"))
     if isinstance(pixel, dict):
         return pixel
@@ -187,7 +291,12 @@ def execute(document: dict[str, Any], dpi: Any) -> dict[str, Any]:
         return dimensions
     width = dimensions["widthPx"]
     height = dimensions["heightPx"]
-    pixels = pixel * (width * height)
+    pixels = bytearray(pixel * (width * height))
+    if canvas["children"]:
+        problem = paint_single_rect(canvas["children"][0], canvas, dpi, width, height, pixels)
+        if problem is not None:
+            return problem
+    pixels = bytes(pixels)
     encoded = encode_png(width, height, dpi, pixels)
     return {
         "widthPx": width,
@@ -229,14 +338,14 @@ def verify(path: Path) -> dict[str, Any]:
     verifier.require(boundary == {
         "profileAvailability": "NOT_REGISTERED",
         "certificationStatus": "NOT_CERTIFIED",
-        "enginePngKernel": "EMPTY_CANVAS_PNG_KERNEL_UNWIRED",
+        "enginePngKernel": "PIXEL_ALIGNED_OPAQUE_RECT_PNG_KERNEL_UNWIRED",
         "processRasterImplementation": "ABSENT",
         "daemonOutputPath": "UNWIRED",
         "productRoute": "CLOSED",
         "providerAttempts": 0,
     }, "Engine PNG honest boundary drifted")
-    verifier.require(len(vectors["renderedCases"]) == 5, "rendered case count drifted")
-    verifier.require(len(vectors["unsupportedCases"]) == 4, "unsupported case count drifted")
+    verifier.require(len(vectors["renderedCases"]) == 7, "rendered case count drifted")
+    verifier.require(len(vectors["unsupportedCases"]) == 8, "unsupported case count drifted")
 
     seen: set[str] = set()
     for family in ("renderedCases", "unsupportedCases"):

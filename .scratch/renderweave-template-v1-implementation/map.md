@@ -453,6 +453,12 @@ Label: wayfinder:map
   4 unsupported、9/9 cases、31 checks，vector SHA-256
   `4db688dd2136d1d83fba18ba727b6eaef909dd54902498181107e76f31d9c3c7`；Profile 仍 NOT_REGISTERED、raster
   inventory 仍 ABSENT、daemon 仍 UNWIRED、正式产品 route 仍 CLOSED。
+- [实现像素对齐不透明 Rect 的真实 Engine PNG 输出内核](issues/93-pixel-aligned-opaque-rect-engine-png-kernel.md) —
+  **resolved / automated_verified**；沿用 T92 唯一 `render_png` Interface，为一个 direct ABSOLUTE/FIXED、
+  identity、零圆角、无 stroke、opaque fill 且 device edges 本来就精确为整数的 Rect 建立首个非空
+  scene/paint/raster 子闭包。shared `/1` 为 7 rendered + 8 unsupported、15/15 cases、49 checks，vector SHA-256
+  `578b2446b557059cddc49a57634c0aa65d5a3a5ba565b7963be3c854b67597ee`；不做 pixel snap，不选择 AA tie，
+  Profile 仍 NOT_REGISTERED、raster inventory 仍 ABSENT、daemon 仍 UNWIRED、正式产品 route 仍 CLOSED。
 - [验证 Product Editor 状态、恢复与权威预览架构](issues/09-validate-product-editor-architecture.md) —
   throwaway 逻辑原型（`/prototype/editor-state-model`，不进产品 route）把冻结编辑器规则编码为确定性
   fixture 状态机：10 个引导走查场景 37/37 断言 + 自由操作冒烟 + 键盘焦点检查全部通过（Playwright A1，

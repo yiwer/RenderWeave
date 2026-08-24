@@ -3,7 +3,7 @@
   "boundary": {
     "profileAvailability": "NOT_REGISTERED",
     "certificationStatus": "NOT_CERTIFIED",
-    "enginePngKernel": "EMPTY_CANVAS_PNG_KERNEL_UNWIRED",
+    "enginePngKernel": "PIXEL_ALIGNED_OPAQUE_RECT_PNG_KERNEL_UNWIRED",
     "processRasterImplementation": "ABSENT",
     "daemonOutputPath": "UNWIRED",
     "productRoute": "CLOSED",
@@ -16,6 +16,12 @@
     "transparentRgb3x2": {"canvas":{"backgroundColor":"#FF00AA00","bleed":{"bottomPt":0,"leftPt":0,"rightPt":0,"topPt":0},"children":[],"heightPt":1,"kind":"canvas","occurrenceId":"rwocc_0000000000000000","widthPt":1.5},"dslVersion":"renderweave-render/1.0","layoutProfile":"renderweave-layout/1.0","resources":[]},
     "microBleed1x1": {"canvas":{"backgroundColor":"#00000000","bleed":{"bottomPt":0,"leftPt":0.00001,"rightPt":0,"topPt":0},"children":[],"heightPt":0.75,"kind":"canvas","occurrenceId":"rwocc_0000000000000000","widthPt":0.75},"dslVersion":"renderweave-render/1.0","layoutProfile":"renderweave-layout/1.0","resources":[]},
     "nonemptyRect": {"canvas":{"backgroundColor":"#00000000","bleed":{"bottomPt":0,"leftPt":0,"rightPt":0,"topPt":0},"children":[{"cornerRadii":{"bottomLeftPt":0,"bottomRightPt":0,"topLeftPt":0,"topRightPt":0},"fill":{"color":"#000000FF"},"kind":"rect","occurrenceId":"rwocc_0000000000000001","opacity":1,"placement":{"heightMode":"FIXED","heightPt":0.5,"type":"ABSOLUTE","widthMode":"FIXED","widthPt":0.5,"xPt":0,"yPt":0},"transform":{"originX":0.5,"originY":0.5,"rotationDeg":0,"scaleX":1,"scaleY":1},"visible":true}],"heightPt":0.75,"kind":"canvas","occurrenceId":"rwocc_0000000000000000","widthPt":0.75},"dslVersion":"renderweave-render/1.0","layoutProfile":"renderweave-layout/1.0","resources":[]},
+    "pixelAlignedOpaqueRect": {"canvas":{"backgroundColor":"#00000000","bleed":{"bottomPt":0,"leftPt":0,"rightPt":0,"topPt":0},"children":[{"cornerRadii":{"bottomLeftPt":0,"bottomRightPt":0,"topLeftPt":0,"topRightPt":0},"fill":{"color":"#336699FF"},"kind":"rect","occurrenceId":"rwocc_0000000000000001","opacity":1,"placement":{"heightMode":"FIXED","heightPt":0.75,"type":"ABSOLUTE","widthMode":"FIXED","widthPt":1.5,"xPt":0.75,"yPt":0.75},"transform":{"originX":0.5,"originY":0.5,"rotationDeg":0,"scaleX":1,"scaleY":1},"visible":true}],"heightPt":1.5,"kind":"canvas","occurrenceId":"rwocc_0000000000000000","widthPt":2.25},"dslVersion":"renderweave-render/1.0","layoutProfile":"renderweave-layout/1.0","resources":[]},
+    "bleedClippedOpaqueRect": {"canvas":{"backgroundColor":"#FFFFFFFF","bleed":{"bottomPt":0,"leftPt":0.75,"rightPt":0,"topPt":0.75},"children":[{"cornerRadii":{"bottomLeftPt":0,"bottomRightPt":0,"topLeftPt":0,"topRightPt":0},"fill":{"color":"#FF0000FF"},"kind":"rect","occurrenceId":"rwocc_0000000000000001","opacity":1,"placement":{"heightMode":"FIXED","heightPt":1.5,"type":"ABSOLUTE","widthMode":"FIXED","widthPt":2.25,"xPt":0,"yPt":0},"transform":{"originX":0.5,"originY":0.5,"rotationDeg":0,"scaleX":1,"scaleY":1},"visible":true}],"heightPt":0.75,"kind":"canvas","occurrenceId":"rwocc_0000000000000000","widthPt":1.5},"dslVersion":"renderweave-render/1.0","layoutProfile":"renderweave-layout/1.0","resources":[]},
+    "opaqueEllipse": {"canvas":{"backgroundColor":"#00000000","bleed":{"bottomPt":0,"leftPt":0,"rightPt":0,"topPt":0},"children":[{"fill":{"color":"#336699FF"},"kind":"ellipse","occurrenceId":"rwocc_0000000000000001","opacity":1,"placement":{"heightMode":"FIXED","heightPt":0.75,"type":"ABSOLUTE","widthMode":"FIXED","widthPt":1.5,"xPt":0.75,"yPt":0.75},"transform":{"originX":0.5,"originY":0.5,"rotationDeg":0,"scaleX":1,"scaleY":1},"visible":true}],"heightPt":1.5,"kind":"canvas","occurrenceId":"rwocc_0000000000000000","widthPt":2.25},"dslVersion":"renderweave-render/1.0","layoutProfile":"renderweave-layout/1.0","resources":[]},
+    "roundedOpaqueRect": {"canvas":{"backgroundColor":"#00000000","bleed":{"bottomPt":0,"leftPt":0,"rightPt":0,"topPt":0},"children":[{"cornerRadii":{"bottomLeftPt":0,"bottomRightPt":0,"topLeftPt":0.75,"topRightPt":0},"fill":{"color":"#336699FF"},"kind":"rect","occurrenceId":"rwocc_0000000000000001","opacity":1,"placement":{"heightMode":"FIXED","heightPt":0.75,"type":"ABSOLUTE","widthMode":"FIXED","widthPt":1.5,"xPt":0.75,"yPt":0.75},"transform":{"originX":0.5,"originY":0.5,"rotationDeg":0,"scaleX":1,"scaleY":1},"visible":true}],"heightPt":1.5,"kind":"canvas","occurrenceId":"rwocc_0000000000000000","widthPt":2.25},"dslVersion":"renderweave-render/1.0","layoutProfile":"renderweave-layout/1.0","resources":[]},
+    "partialAlphaRect": {"canvas":{"backgroundColor":"#00000000","bleed":{"bottomPt":0,"leftPt":0,"rightPt":0,"topPt":0},"children":[{"cornerRadii":{"bottomLeftPt":0,"bottomRightPt":0,"topLeftPt":0,"topRightPt":0},"fill":{"color":"#33669980"},"kind":"rect","occurrenceId":"rwocc_0000000000000001","opacity":1,"placement":{"heightMode":"FIXED","heightPt":0.75,"type":"ABSOLUTE","widthMode":"FIXED","widthPt":1.5,"xPt":0.75,"yPt":0.75},"transform":{"originX":0.5,"originY":0.5,"rotationDeg":0,"scaleX":1,"scaleY":1},"visible":true}],"heightPt":1.5,"kind":"canvas","occurrenceId":"rwocc_0000000000000000","widthPt":2.25},"dslVersion":"renderweave-render/1.0","layoutProfile":"renderweave-layout/1.0","resources":[]},
+    "twoPixelAlignedRects": {"canvas":{"backgroundColor":"#00000000","bleed":{"bottomPt":0,"leftPt":0,"rightPt":0,"topPt":0},"children":[{"cornerRadii":{"bottomLeftPt":0,"bottomRightPt":0,"topLeftPt":0,"topRightPt":0},"fill":{"color":"#336699FF"},"kind":"rect","occurrenceId":"rwocc_0000000000000001","opacity":1,"placement":{"heightMode":"FIXED","heightPt":0.75,"type":"ABSOLUTE","widthMode":"FIXED","widthPt":1.5,"xPt":0.75,"yPt":0.75},"transform":{"originX":0.5,"originY":0.5,"rotationDeg":0,"scaleX":1,"scaleY":1},"visible":true},{"cornerRadii":{"bottomLeftPt":0,"bottomRightPt":0,"topLeftPt":0,"topRightPt":0},"fill":{"color":"#FF0000FF"},"kind":"rect","occurrenceId":"rwocc_0000000000000002","opacity":1,"placement":{"heightMode":"FIXED","heightPt":0.75,"type":"ABSOLUTE","widthMode":"FIXED","widthPt":0.75,"xPt":0,"yPt":0},"transform":{"originX":0.5,"originY":0.5,"rotationDeg":0,"scaleX":1,"scaleY":1},"visible":true}],"heightPt":1.5,"kind":"canvas","occurrenceId":"rwocc_0000000000000000","widthPt":2.25},"dslVersion":"renderweave-render/1.0","layoutProfile":"renderweave-layout/1.0","resources":[]},
     "resourceImage": {"canvas":{"backgroundColor":"#00000000","bleed":{"bottomPt":0,"leftPt":0,"rightPt":0,"topPt":0},"children":[{"fit":"CONTAIN","imageResourceId":"rwres_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","kind":"image","occurrenceId":"rwocc_0000000000000001","opacity":1,"placement":{"heightMode":"FIXED","heightPt":0.5,"type":"ABSOLUTE","widthMode":"FIXED","widthPt":0.5,"xPt":0,"yPt":0},"sampling":"LINEAR","transform":{"originX":0.5,"originY":0.5,"rotationDeg":0,"scaleX":1,"scaleY":1},"visible":true}],"heightPt":0.75,"kind":"canvas","occurrenceId":"rwocc_0000000000000000","widthPt":0.75},"dslVersion":"renderweave-render/1.0","layoutProfile":"renderweave-layout/1.0","resources":[{"acceptanceProfileId":"renderweave-asset-acceptance/1.0","byteLength":128,"expiresAt":2000,"fetchUrl":"https://assets.internal/image","kind":"image","mediaType":"image/png","resourceId":"rwres_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","sha256":"sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","technicalDescriptor":{"colorEncoding":"SRGB_8BIT","encodedHeightPx":10,"encodedWidthPx":10,"frameCount":1,"kind":"image","logicalHeightPx":10,"logicalWidthPx":10,"orientation":"IDENTITY"}}]},
     "partialAlpha": {"canvas":{"backgroundColor":"#33669980","bleed":{"bottomPt":0,"leftPt":0,"rightPt":0,"topPt":0},"children":[],"heightPt":0.75,"kind":"canvas","occurrenceId":"rwocc_0000000000000000","widthPt":0.75},"dslVersion":"renderweave-render/1.0","layoutProfile":"renderweave-layout/1.0","resources":[]}
   },
@@ -94,10 +100,44 @@
         "pixelSha256": "sha256:df3f619804a92fdb4057192dc43dd748ea778adc52bc498ce80524c014b81119",
         "exactHex": "89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c489000000017352474200aece1ce9000000097048597300000ec400000ec401952b0e1b00000010494441547801010500faff000000000000050001647895380000000049454e44ae426082"
       }
+    },
+    {
+      "id": "pixel-aligned-opaque-rect-paints-right-bottom",
+      "documentId": "pixelAlignedOpaqueRect",
+      "dpi": 96,
+      "expected": {
+        "widthPx": 3,
+        "heightPx": 2,
+        "mediaType": "image/png",
+        "outputProfile": "renderweave-output-png/1.0",
+        "byteLength": 128,
+        "contentSha256": "sha256:ad538ace5090564c54c0d1cd8e940e0d96955b31d253e7f674a98566577f8c4d",
+        "pixelSha256": "sha256:7f8e1df85a523539d4a13014e3b71cbd7d2b0ecb9116fadcab65d059df2554d3",
+        "exactHex": "89504e470d0a1a0a0000000d49484452000000030000000208060000009d74661a000000017352474200aece1ce9000000097048597300000ec400000ec401952b0e1b00000025494441547801011a00e5ff000000000000000000000000000000000000336699ff336699ff113c0463d0eff6330000000049454e44ae426082"
+      }
+    },
+    {
+      "id": "bleed-translation-and-hard-clip-preserve-background",
+      "documentId": "bleedClippedOpaqueRect",
+      "dpi": 96,
+      "expected": {
+        "widthPx": 3,
+        "heightPx": 2,
+        "mediaType": "image/png",
+        "outputProfile": "renderweave-output-png/1.0",
+        "byteLength": 128,
+        "contentSha256": "sha256:5ca58a2148bd6c24667d7a9c960facc0a235b0849309fe034771067497b4ce1e",
+        "pixelSha256": "sha256:e855ce3a9ed62bccd4669cfbb99676285d967d95572c087b4bd22cace78c54b4",
+        "exactHex": "89504e470d0a1a0a0000000d49484452000000030000000208060000009d74661a000000017352474200aece1ce9000000097048597300000ec400000ec401952b0e1b00000025494441547801011a00e5ff00ffffffffffffffffffffffff00ffffffffff0000ffff0000ff250313edef41524b0000000049454e44ae426082"
+      }
     }
   ],
   "unsupportedCases": [
-    {"id":"nonempty-canvas-fails-closed","documentId":"nonemptyRect","dpi":96,"expected":{"feature":"NONEMPTY_CANVAS"}},
+    {"id":"subpixel-rect-fails-closed","documentId":"nonemptyRect","dpi":96,"expected":{"feature":"NON_PIXEL_ALIGNED_RECT"}},
+    {"id":"non-rect-scene-fails-closed","documentId":"opaqueEllipse","dpi":96,"expected":{"feature":"SCENE_STRUCTURE"}},
+    {"id":"rounded-rect-fails-closed","documentId":"roundedOpaqueRect","dpi":96,"expected":{"feature":"RECT_PAINT"}},
+    {"id":"non-opaque-rect-fails-closed","documentId":"partialAlphaRect","dpi":96,"expected":{"feature":"NON_OPAQUE_RECT_ALPHA"}},
+    {"id":"multiple-children-fail-before-partial-paint","documentId":"twoPixelAlignedRects","dpi":96,"expected":{"feature":"SCENE_STRUCTURE"}},
     {"id":"resource-manifest-fails-before-content","documentId":"resourceImage","dpi":96,"expected":{"feature":"RESOURCE_MANIFEST"}},
     {"id":"partial-background-alpha-fails-closed","documentId":"partialAlpha","dpi":96,"expected":{"feature":"PARTIAL_BACKGROUND_ALPHA"}},
     {"id":"dpi-above-fails-output-preflight","documentId":"transparent1x1","dpi":601,"expected":{"code":"OUTPUT_BUDGET_EXCEEDED","stage":"OUTPUT_PREFLIGHT","limitId":"rendererSurfaceAndOutput.dpi"}}

@@ -375,15 +375,15 @@ try {
     if ($enginePngIndependent.verifier -ne 'renderweave-engine-png-python-independent/1' `
             -or $enginePngIndependent.result -ne 'PASS' `
             -or $enginePngIndependent.assurance -ne 'A2' `
-            -or $enginePngIndependent.renderedCases -ne 5 `
-            -or $enginePngIndependent.unsupportedCases -ne 4 `
-            -or $enginePngIndependent.passed -ne 9 `
-            -or $enginePngIndependent.total -ne 9 `
+            -or $enginePngIndependent.renderedCases -ne 7 `
+            -or $enginePngIndependent.unsupportedCases -ne 8 `
+            -or $enginePngIndependent.passed -ne 15 `
+            -or $enginePngIndependent.total -ne 15 `
             -or $enginePngIndependent.failed -ne 0 `
-            -or $enginePngIndependent.checks -ne 31 `
+            -or $enginePngIndependent.checks -ne 49 `
             -or $enginePngIndependent.profileAvailability -ne 'NOT_REGISTERED' `
             -or $enginePngIndependent.certificationStatus -ne 'NOT_CERTIFIED' `
-            -or $enginePngIndependent.enginePngKernel -ne 'EMPTY_CANVAS_PNG_KERNEL_UNWIRED' `
+            -or $enginePngIndependent.enginePngKernel -ne 'PIXEL_ALIGNED_OPAQUE_RECT_PNG_KERNEL_UNWIRED' `
             -or $enginePngIndependent.processRasterImplementation -ne 'ABSENT' `
             -or $enginePngIndependent.daemonOutputPath -ne 'UNWIRED' `
             -or $enginePngIndependent.productRoute -ne 'CLOSED' `
