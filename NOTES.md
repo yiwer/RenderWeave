@@ -1,6 +1,14 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-24 **Template v1 implementation TV1-T98 已由 Codex `/root` single-writer 完成，状态
+  `resolved/automated_verified`**：public-interface RED 后完成唯一纯 `seal_result` deep Interface，从 closed v1
+  identity/output 与 owned exact image bytes 派生 canonical metadata、raw lowercase SHA-256、byteLength 和 UUID
+  network-order image payload；Rust 直接重放既有 RESULT shared vectors，focused 3/3、protocol 10 tests、workspace
+  Rust 及 `render`/affected `fast`/顺序 `server`/17-step `full` 均绿。证据分别为
+  `.sdlc/evidence/20260824-190140-render/`、`20260824-190221-fast/`、`20260824-190237-server/`、
+  `20260824-191952-full/`，状态回填后的 resolution `fast` 为 `20260824-194702-fast/`。Profile NOT_REGISTERED、
+  daemon UNWIRED、product route CLOSED；provider/API Key/费用/真实数据=0，未把 `/prototype` 视为最终产品交付。
 - 2026-08-24 **Template v1 implementation TV1-T97 已由 Codex `/root` single-writer 完成，状态
   `resolved/automated_verified`**：复用 authoritative definite-layout preorder 与独立 Python `DefiniteLayouter`，
   把 identity/visible/opacity=1 的 Group/Frame/Stack/Grid/Rect 容器 scene 接入唯一 `render_png` deep Interface；

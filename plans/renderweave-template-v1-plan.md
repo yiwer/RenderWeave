@@ -3199,6 +3199,34 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
   ABSENT、daemon UNWIRED、product route CLOSED，provider attempts/API Key reads/费用/真实数据=0，visual diff J0，
   未 push/tag/PR，`/prototype` 不计最终产品交付。
 
+## 97. TV1-T98 执行卡
+
+- 决策：T97 verified commit `ffd269c` 收口且 worktree clean 后，审计发现 shared process corpus 与 Java Adapter
+  已验证 RESULT 双帧消费，但 Rust protocol 仅封装 caller-supplied vector bytes，没有可由真实 daemon success path
+  复用的原子结果封存 Interface；先补齐该窄 seam，不以 partial Renderer 注册 Profile。
+- Interface/seam：唯一 `seal_result(ResultSealInput) -> SealedResult` 从 closed v1 identities、正 dimensions/DPI、
+  PNG/JPEG output selection 与 exact image bytes 派生 canonical metadata、raw lowercase SHA-256、byteLength 和
+  `UUID network bytes || image bytes`；caller 不提供 derived facts。Debug 不含 raw payload。
+- 允许影响：T98 tracker/plan/NOTES、Rust protocol module/tests、render gate boundary/evidence。
+- 禁止影响：process manifest/HELLO Profile、daemon handler/registry success、Engine/raster/resource/decode/font/JPEG
+  encoder、Java/OpenAPI/migration/Web/E6/product route、formal record、physical certification、J1/A3/READY 与外部副作用。
+- TDD：新增 Rust semantic replay 直接消费既有 `png-result-metadata` / `png-result-image` shared vectors，先因 API
+  不存在 RED；GREEN 后覆盖 UUID/identity/zero/empty/JPEG quality/closed member shape。既有 7-case Python 110 checks
+  与 Java consumer replay保持不变。
+- 验证：focused → workspace Rust → `render` → affected `fast` → sequential `server` → Goal `full` → resolution
+  `fast`。最高只可 `automated_verified`；不运行 provider/读取 API Key，不 push/tag/PR。
+- 2026-08-24 resolution：public-interface RED 后 GREEN；focused protocol 3/3、protocol 累计 10 tests，Rust workspace
+  fmt/check/clippy/tests 全绿。Rust 直接重放 frozen RESULT shared vectors，唯一 `seal_result` 从 owned exact image
+  bytes 派生 canonical metadata、raw lowercase SHA-256、byteLength 与 UUID network-order payload；render boundary 为
+  `CANONICAL_METADATA_LENGTH_SHA256_UUID_IMAGE_PAYLOAD_AUTOMATED_VERIFIED_UNWIRED`。`render`
+  `.sdlc/evidence/20260824-190140-render/`、affected `fast` `.sdlc/evidence/20260824-190221-fast/`、顺序 `server`
+  `.sdlc/evidence/20260824-190237-server/` 与 17-step `full` `.sdlc/evidence/20260824-191952-full/` 均 exit 0；full
+  用时 1543.248 秒，App 344/0/0/15、Node 24 Web 26 files/212 tests、runtime canary、Playwright 23 passed + 1
+  controlled skip、Draft journey 与 inference replay E2E 1/1 均通过；状态回填后的 resolution `fast`
+  `.sdlc/evidence/20260824-194702-fast/` 亦 exit 0。状态为 `resolved/automated_verified`；Profile NOT_REGISTERED、
+  certification NOT_CERTIFIED、process raster ABSENT、daemon UNWIRED、product route CLOSED，
+  provider attempts/API Key reads/费用/真实数据=0，visual diff J0，未 push/tag/PR，`/prototype` 不计最终产品交付。
+
 ## 66. TV1-T67 执行卡
 
 - 决策：T66 以 verified commit `a6fabe5` 收口且 worktree clean 后，复算原始 Ticket 10 §3/§7、

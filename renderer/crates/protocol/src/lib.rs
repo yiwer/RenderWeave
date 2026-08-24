@@ -1,7 +1,8 @@
 //! Exact codec and closed payloads for `renderweave-renderer-process/1.0`.
 //!
 //! This crate is deliberately independent of layout, resource fetching, raster, and encoding.
-//! It admits bytes at the process boundary and never manufactures a render result.
+//! It admits bytes at the process boundary and atomically seals already-encoded image bytes into
+//! the closed result payload pair without interpreting or manufacturing image content.
 
 use serde::de::{DeserializeOwned, Error as DeError, MapAccess, SeqAccess, Visitor};
 use serde::{Deserialize, Deserializer, Serialize};
@@ -249,6 +250,180 @@ pub struct JpegOutput {
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct Diagnostics {
     pub layout_trace: bool,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum ResultOutputSelection {
+    Png { dpi: u32 },
+    Jpeg { dpi: u32, quality: u8 },
+}
+
+pub struct ResultSealInput<'a> {
+    pub request_id: &'a str,
+    pub renderer_profile: &'a str,
+    pub dsl_version: &'a str,
+    pub layout_profile: &'a str,
+    pub width_px: u32,
+    pub height_px: u32,
+    pub output: ResultOutputSelection,
+    pub image_bytes: Vec<u8>,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct ResultMetadata<'a> {
+    contract_version: &'static str,
+    request_id: &'a str,
+    renderer_profile: &'a str,
+    dsl_version: &'a str,
+    layout_profile: &'a str,
+    output_profile: &'static str,
+    format: &'static str,
+    media_type: &'static str,
+    width_px: u32,
+    height_px: u32,
+    dpi: u32,
+    byte_length: u64,
+    content_sha256: &'a str,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    quality: Option<u8>,
+}
+
+pub struct SealedResult {
+    request_id: Box<str>,
+    format: &'static str,
+    byte_length: u64,
+    content_sha256: Box<str>,
+    metadata_payload: Vec<u8>,
+    image_payload: Vec<u8>,
+}
+
+impl std::fmt::Debug for SealedResult {
+    fn fmt(&self, formatter: &mut Formatter<'_>) -> std::fmt::Result {
+        formatter
+            .debug_struct("SealedResult")
+            .field("request_id", &self.request_id)
+            .field("format", &self.format)
+            .field("byte_length", &self.byte_length)
+            .field("content_sha256", &self.content_sha256)
+            .finish_non_exhaustive()
+    }
+}
+
+impl SealedResult {
+    pub fn metadata_payload(&self) -> &[u8] {
+        &self.metadata_payload
+    }
+
+    pub fn image_payload(&self) -> &[u8] {
+        &self.image_payload
+    }
+
+    pub const fn byte_length(&self) -> u64 {
+        self.byte_length
+    }
+
+    pub fn content_sha256(&self) -> &str {
+        &self.content_sha256
+    }
+}
+
+pub fn seal_result(input: ResultSealInput<'_>) -> Result<SealedResult, ProtocolError> {
+    require_uuid_v4(input.request_id)?;
+    require_exact(
+        input.renderer_profile,
+        "renderweave-renderer/1.0",
+        "result renderer profile mismatch",
+    )?;
+    require_exact(
+        input.dsl_version,
+        "renderweave-render/1.0",
+        "result DSL version mismatch",
+    )?;
+    require_exact(
+        input.layout_profile,
+        "renderweave-layout/1.0",
+        "result layout profile mismatch",
+    )?;
+    if input.width_px == 0 || input.height_px == 0 {
+        return Err(ProtocolError::Invalid(
+            "result pixel dimensions must be positive",
+        ));
+    }
+    if input.image_bytes.is_empty() {
+        return Err(ProtocolError::Invalid(
+            "result image bytes must be nonempty",
+        ));
+    }
+    let byte_length = u64::try_from(input.image_bytes.len())
+        .map_err(|_| ProtocolError::Invalid("result image length exceeds uint64"))?;
+    if byte_length > i64::MAX as u64 {
+        return Err(ProtocolError::Invalid(
+            "result image length exceeds signed transport range",
+        ));
+    }
+
+    let (output_profile, format, media_type, dpi, quality) = match input.output {
+        ResultOutputSelection::Png { dpi } if dpi > 0 => {
+            ("renderweave-output-png/1.0", "PNG", "image/png", dpi, None)
+        }
+        ResultOutputSelection::Jpeg { dpi, quality } if dpi > 0 && (1..=100).contains(&quality) => {
+            (
+                "renderweave-output-jpeg/1.0",
+                "JPEG",
+                "image/jpeg",
+                dpi,
+                Some(quality),
+            )
+        }
+        ResultOutputSelection::Png { .. } => {
+            return Err(ProtocolError::Invalid("result PNG dpi must be positive"));
+        }
+        ResultOutputSelection::Jpeg { .. } => {
+            return Err(ProtocolError::Invalid(
+                "result JPEG dpi/quality is outside the closed shape",
+            ));
+        }
+    };
+
+    let content_sha256 = raw_sha256(&input.image_bytes);
+    let metadata_payload = serde_json::to_vec(&ResultMetadata {
+        contract_version: RESULT_CONTRACT_VERSION,
+        request_id: input.request_id,
+        renderer_profile: input.renderer_profile,
+        dsl_version: input.dsl_version,
+        layout_profile: input.layout_profile,
+        output_profile,
+        format,
+        media_type,
+        width_px: input.width_px,
+        height_px: input.height_px,
+        dpi,
+        byte_length,
+        content_sha256: &content_sha256,
+        quality,
+    })?;
+
+    let image_length = input.image_bytes.len();
+    let image_payload_length = image_length.checked_add(16).ok_or(ProtocolError::Invalid(
+        "result image payload length overflow",
+    ))?;
+    let mut image_payload = input.image_bytes;
+    image_payload
+        .try_reserve_exact(16)
+        .map_err(|_| ProtocolError::Invalid("result image payload allocation failed"))?;
+    image_payload.resize(image_payload_length, 0);
+    image_payload.copy_within(0..image_length, 16);
+    image_payload[..16].copy_from_slice(&uuid_network_bytes(input.request_id)?);
+
+    Ok(SealedResult {
+        request_id: input.request_id.into(),
+        format,
+        byte_length,
+        content_sha256: content_sha256.into_boxed_str(),
+        metadata_payload,
+        image_payload,
+    })
 }
 
 #[derive(Debug)]
@@ -571,6 +746,28 @@ fn require_uuid_v4(value: &str) -> Result<(), ProtocolError> {
         }
     }
     Ok(())
+}
+
+fn uuid_network_bytes(value: &str) -> Result<[u8; 16], ProtocolError> {
+    require_uuid_v4(value)?;
+    let mut output = [0_u8; 16];
+    let mut nibble_index = 0_usize;
+    for byte in value.bytes().filter(|byte| *byte != b'-') {
+        let nibble = match byte {
+            b'0'..=b'9' => byte - b'0',
+            b'a'..=b'f' => byte - b'a' + 10,
+            _ => unreachable!("canonical UUID validation admits lowercase hexadecimal only"),
+        };
+        let output_index = nibble_index / 2;
+        if nibble_index.is_multiple_of(2) {
+            output[output_index] = nibble << 4;
+        } else {
+            output[output_index] |= nibble;
+        }
+        nibble_index += 1;
+    }
+    debug_assert_eq!(nibble_index, 32);
+    Ok(output)
 }
 
 fn require_sha256(value: &str) -> Result<(), ProtocolError> {
@@ -1026,6 +1223,212 @@ mod tests {
             .unwrap(),
             problem["canonicalJson"].as_str().unwrap().as_bytes()
         );
+    }
+
+    #[test]
+    fn result_seal_matches_shared_png_metadata_and_image_payload_vectors() {
+        let vectors: Value = serde_json::from_str(VECTORS).unwrap();
+        let metadata = vectors["cases"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|case| case["id"] == "png-result-metadata")
+            .unwrap();
+        let image_case = vectors["cases"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|case| case["id"] == "png-result-image")
+            .unwrap();
+        let image = decode_base64(metadata["imageBase64"].as_str().unwrap());
+
+        let sealed = seal_result(ResultSealInput {
+            request_id: "123e4567-e89b-42d3-a456-426614174000",
+            renderer_profile: "renderweave-renderer/1.0",
+            dsl_version: "renderweave-render/1.0",
+            layout_profile: "renderweave-layout/1.0",
+            width_px: 1,
+            height_px: 1,
+            output: ResultOutputSelection::Png { dpi: 96 },
+            image_bytes: image,
+        })
+        .unwrap();
+
+        assert_eq!(
+            sealed.metadata_payload(),
+            metadata["canonicalJson"].as_str().unwrap().as_bytes()
+        );
+        assert_eq!(
+            sealed.image_payload(),
+            decode_base64(image_case["payloadBase64"].as_str().unwrap())
+        );
+        assert_eq!(sealed.byte_length(), 68);
+        assert_eq!(
+            sealed.content_sha256(),
+            "431ced6916a2a21a156e38701afe55bbd7f88969fbbfc56d7fe099d47f265460"
+        );
+        let debug = format!("{sealed:?}");
+        assert!(!debug.contains("iVBOR"));
+        assert!(!debug.contains("137, 80, 78, 71"));
+    }
+
+    #[test]
+    fn result_seal_rejects_invalid_identity_dimensions_output_and_empty_bytes() {
+        let png = |request_id, renderer_profile, width_px, height_px, dpi, image_bytes: &[u8]| {
+            seal_result(ResultSealInput {
+                request_id,
+                renderer_profile,
+                dsl_version: "renderweave-render/1.0",
+                layout_profile: "renderweave-layout/1.0",
+                width_px,
+                height_px,
+                output: ResultOutputSelection::Png { dpi },
+                image_bytes: image_bytes.to_vec(),
+            })
+        };
+        let bytes = [1_u8];
+        assert!(png("not-a-uuid", "renderweave-renderer/1.0", 1, 1, 96, &bytes).is_err());
+        assert!(
+            png(
+                "123e4567-e89b-42d3-a456-426614174000",
+                "renderweave-renderer/2.0",
+                1,
+                1,
+                96,
+                &bytes
+            )
+            .is_err()
+        );
+        assert!(
+            png(
+                "123e4567-e89b-42d3-a456-426614174000",
+                "renderweave-renderer/1.0",
+                0,
+                1,
+                96,
+                &bytes
+            )
+            .is_err()
+        );
+        assert!(
+            png(
+                "123e4567-e89b-42d3-a456-426614174000",
+                "renderweave-renderer/1.0",
+                1,
+                0,
+                96,
+                &bytes
+            )
+            .is_err()
+        );
+        assert!(
+            png(
+                "123e4567-e89b-42d3-a456-426614174000",
+                "renderweave-renderer/1.0",
+                1,
+                1,
+                0,
+                &bytes
+            )
+            .is_err()
+        );
+        assert!(
+            png(
+                "123e4567-e89b-42d3-a456-426614174000",
+                "renderweave-renderer/1.0",
+                1,
+                1,
+                96,
+                &[]
+            )
+            .is_err()
+        );
+        assert!(
+            seal_result(ResultSealInput {
+                request_id: "123e4567-e89b-42d3-a456-426614174000",
+                renderer_profile: "renderweave-renderer/1.0",
+                dsl_version: "renderweave-render/1.0",
+                layout_profile: "renderweave-layout/1.0",
+                width_px: 1,
+                height_px: 1,
+                output: ResultOutputSelection::Jpeg {
+                    dpi: 96,
+                    quality: 0,
+                },
+                image_bytes: bytes.to_vec(),
+            })
+            .is_err()
+        );
+        assert!(
+            seal_result(ResultSealInput {
+                request_id: "123e4567-e89b-42d3-a456-426614174000",
+                renderer_profile: "renderweave-renderer/1.0",
+                dsl_version: "renderweave-render/2.0",
+                layout_profile: "renderweave-layout/1.0",
+                width_px: 1,
+                height_px: 1,
+                output: ResultOutputSelection::Png { dpi: 96 },
+                image_bytes: bytes.to_vec(),
+            })
+            .is_err()
+        );
+        assert!(
+            seal_result(ResultSealInput {
+                request_id: "123e4567-e89b-42d3-a456-426614174000",
+                renderer_profile: "renderweave-renderer/1.0",
+                dsl_version: "renderweave-render/1.0",
+                layout_profile: "renderweave-layout/2.0",
+                width_px: 1,
+                height_px: 1,
+                output: ResultOutputSelection::Png { dpi: 96 },
+                image_bytes: bytes.to_vec(),
+            })
+            .is_err()
+        );
+        for (dpi, quality) in [(0, 90), (96, 101)] {
+            assert!(
+                seal_result(ResultSealInput {
+                    request_id: "123e4567-e89b-42d3-a456-426614174000",
+                    renderer_profile: "renderweave-renderer/1.0",
+                    dsl_version: "renderweave-render/1.0",
+                    layout_profile: "renderweave-layout/1.0",
+                    width_px: 1,
+                    height_px: 1,
+                    output: ResultOutputSelection::Jpeg { dpi, quality },
+                    image_bytes: bytes.to_vec(),
+                })
+                .is_err()
+            );
+        }
+    }
+
+    #[test]
+    fn result_seal_emits_closed_jpeg_shape_with_quality_last() {
+        let image = [0xff_u8, 0xd8, 0xff, 0xd9];
+        let digest = raw_sha256(&image);
+        let sealed = seal_result(ResultSealInput {
+            request_id: "123e4567-e89b-42d3-a456-426614174000",
+            renderer_profile: "renderweave-renderer/1.0",
+            dsl_version: "renderweave-render/1.0",
+            layout_profile: "renderweave-layout/1.0",
+            width_px: 7,
+            height_px: 5,
+            output: ResultOutputSelection::Jpeg {
+                dpi: 300,
+                quality: 90,
+            },
+            image_bytes: image.to_vec(),
+        })
+        .unwrap();
+
+        assert_eq!(
+            sealed.metadata_payload(),
+            format!(
+                "{{\"contractVersion\":\"renderweave-render-result/1.0\",\"requestId\":\"123e4567-e89b-42d3-a456-426614174000\",\"rendererProfile\":\"renderweave-renderer/1.0\",\"dslVersion\":\"renderweave-render/1.0\",\"layoutProfile\":\"renderweave-layout/1.0\",\"outputProfile\":\"renderweave-output-jpeg/1.0\",\"format\":\"JPEG\",\"mediaType\":\"image/jpeg\",\"widthPx\":7,\"heightPx\":5,\"dpi\":300,\"byteLength\":4,\"contentSha256\":\"{digest}\",\"quality\":90}}"
+            )
+            .as_bytes()
+        );
+        assert_eq!(&sealed.image_payload()[16..], image);
     }
 
     #[test]
