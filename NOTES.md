@@ -2944,3 +2944,26 @@
 - FONT、Image layout/scene/raster、daemon RESULT/Profile registration、Java/OpenAPI/Web Product Editor route 与
   J1/A3/READY 仍未完成；当前 truthful boundary 为 Profile `NOT_REGISTERED`、certification `NOT_CERTIFIED`、raster
   `ABSENT`、daemon output `UNWIRED`、product route `CLOSED`，继续后续 DAG，不把 `/prototype` 当交付。
+
+# 2026-08-25 Template-v1 T104 FONT outline/cmap/prepared cache（resolved / automated_verified）
+
+- T103 已以 `e157e5b7` verified commit 收口且 worktree clean。下一 frontier 是最终产品 Text shaping 前必须存在的
+  FONT resource preparation，而不是原型或提前做 UI 外壳。
+- T104 以 public Interface RED 起步，现已完成 approved TTF simple/composite `glyf`/DAG、CFF CharStrings/subr、
+  Unicode cmap 0/4/6/12 与 request-local prepared cache；执行 Engine-owned unique fonts 32、tables/font 256、
+  tables/request 4096，64 MiB FONT bytes/256 MiB raw cache 继续复用既有唯一 guards。prepared/raw cache 共享同一
+  immutable bytes，hit 复核 lease/media/profile/integrity/facts，corruption 驱逐且不退款。
+- Rust resource 34 unit + 1 public Interface tests 与 Windows/Linux workspace 全绿；Python independent replay
+  15/15 cases、184 checks。FONT vector SHA-256 `1e7b33cf8c02b1ef73b5e9094121e7e524360462200e1f74692410b36603598f`，
+  Asset FONT corpus SHA-256 `0f44fdef29d989049e77bcf3659fca4b7958b7009053c82d74c46f9f1984e4ca`，mutation
+  corpus SHA-256 `1c9b677d253719b053693dd94b7cb31cd362ff58d3e2cee6d69efcb107ed7db7`。
+- 分级 A1/A2 证据：`asset` `.sdlc/evidence/20260825-031650-asset/`、`render`
+  `.sdlc/evidence/20260825-031712-render/`、affected `fast` `.sdlc/evidence/20260825-031829-fast/`、sequential
+  `server` `.sdlc/evidence/20260825-031847-server/`（App 347/0/15）、Goal `full`
+  `.sdlc/evidence/20260825-033613-full/` 17 steps 全绿；full 覆盖 Node 24 Web 26 files/212 tests、runtime canary、
+  Playwright 23 passed + 1 controlled skip、Draft 与 inference 产品旅程。
+- Skia/FreeType/HarfBuzz build、实际 shaping/line break/missing-glyph consumer、glyph raster、daemon RESULT/Profile、
+  Java/OpenAPI/Web Product Editor route 与 J1/A3/READY 仍未完成；truthful boundary 为 native font stack
+  `BUILD_NOT_AUTHORIZED`、daemon output `UNWIRED`、Profile `NOT_REGISTERED`、certification `NOT_CERTIFIED`、raster
+  `ABSENT`、product route `CLOSED`。provider attempts/API Key reads/reservations/cost/open authorization/真实数据=0，
+  不 push/tag/PR，`/prototype` 不计交付。

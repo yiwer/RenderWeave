@@ -1,0 +1,183 @@
+{
+  "profile": "renderweave-font-prepare-cache-v1",
+  "rendererProfileIdentity": "renderweave-renderer/1.0",
+  "assetKernelVectorPath": "renderweave-asset/src/test/resources/cn/hbads/renderweave/asset/acceptance-kernel-v1/vectors.json",
+  "assetKernelVectorSha256": "sha256:0f44fdef29d989049e77bcf3659fca4b7958b7009053c82d74c46f9f1984e4ca",
+  "limits": {
+    "requestUniqueFonts": 32,
+    "requestUniqueFontsLimitId": "layoutFontAndRaster.uniqueFonts",
+    "fontTablesPerContent": 256,
+    "fontTablesPerContentLimitId": "layoutFontAndRaster.tablesPerFont",
+    "requestFontTables": 4096,
+    "requestFontTablesLimitId": "layoutFontAndRaster.fontTablesTotal"
+  },
+  "preparedCases": [
+    {
+      "id": "ttf-glyf",
+      "assetCaseId": "font-ttf-admitted",
+      "declaredMediaType": "font/ttf",
+      "facts": {
+        "flavor": "TRUETYPE_GLYF",
+        "unitsPerEm": 1000,
+        "tableCount": 10,
+        "glyphCount": 2,
+        "nonEmptyOutlineCount": 2,
+        "supportedCmapSubtableCount": 2,
+        "layoutTables": []
+      }
+    },
+    {
+      "id": "otf-cff",
+      "assetCaseId": "font-otf-admitted",
+      "declaredMediaType": "font/otf",
+      "facts": {
+        "flavor": "CFF",
+        "unitsPerEm": 1000,
+        "tableCount": 9,
+        "glyphCount": 2,
+        "nonEmptyOutlineCount": 2,
+        "supportedCmapSubtableCount": 2,
+        "layoutTables": []
+      }
+    }
+  ],
+  "failureCases": [
+    {
+      "id": "ttf-glyf-contour-invalid",
+      "sourceAssetCaseId": "font-ttf-admitted",
+      "descriptorCaseId": "font-ttf-admitted",
+      "declaredMediaType": "font/ttf",
+      "mutation": "GLYF_CONTOUR",
+      "expectedCode": "DECODE_FAILED"
+    },
+    {
+      "id": "ttf-cmap-version-invalid",
+      "sourceAssetCaseId": "font-ttf-admitted",
+      "descriptorCaseId": "font-ttf-admitted",
+      "declaredMediaType": "font/ttf",
+      "mutation": "CMAP_VERSION",
+      "expectedCode": "DECODE_FAILED"
+    },
+    {
+      "id": "otf-cff-charstrings-invalid",
+      "sourceAssetCaseId": "font-cff-charstrings-invalid",
+      "descriptorCaseId": "font-otf-admitted",
+      "declaredMediaType": "font/otf",
+      "mutation": "NONE",
+      "expectedCode": "DECODE_FAILED"
+    }
+  ],
+  "cacheCases": [
+    {
+      "id": "first-prepare",
+      "events": ["MISS", "PARSE", "INSERT"],
+      "outcome": "INSERTED",
+      "uniqueContents": 1,
+      "consumedUniqueFonts": 1,
+      "retainedTables": 10
+    },
+    {
+      "id": "duplicate-hit",
+      "events": ["MISS", "PARSE", "INSERT", "HIT"],
+      "outcome": "HIT",
+      "uniqueContents": 1,
+      "consumedUniqueFonts": 1,
+      "retainedTables": 10
+    },
+    {
+      "id": "lease-expired-before-hit",
+      "events": ["MISS", "PARSE", "INSERT", "LEASE_EXPIRED", "HIT"],
+      "outcome": "RESOURCE_LEASE_EXPIRED",
+      "uniqueContents": 1,
+      "consumedUniqueFonts": 1,
+      "retainedTables": 10
+    },
+    {
+      "id": "fact-corruption-evicts-without-refund",
+      "events": ["MISS", "PARSE", "INSERT", "CORRUPT_FACTS", "HIT"],
+      "outcome": "RENDER_INTERNAL_ERROR",
+      "uniqueContents": 0,
+      "consumedUniqueFonts": 1,
+      "retainedTables": 10
+    }
+  ],
+  "budgetCases": [
+    {
+      "id": "per-font-at",
+      "consumedUniqueFontsBefore": 0,
+      "retainedTablesBefore": 0,
+      "reserveTables": 256,
+      "outcome": "RESERVED",
+      "consumedUniqueFontsAfter": 1,
+      "retainedTablesAfter": 256
+    },
+    {
+      "id": "per-font-above",
+      "consumedUniqueFontsBefore": 0,
+      "retainedTablesBefore": 0,
+      "reserveTables": 257,
+      "outcome": "RESOURCE_BUDGET_EXCEEDED",
+      "limitId": "layoutFontAndRaster.tablesPerFont",
+      "consumedUniqueFontsAfter": 0,
+      "retainedTablesAfter": 0
+    },
+    {
+      "id": "request-fonts-and-tables-at",
+      "consumedUniqueFontsBefore": 31,
+      "retainedTablesBefore": 3840,
+      "reserveTables": 256,
+      "outcome": "RESERVED",
+      "consumedUniqueFontsAfter": 32,
+      "retainedTablesAfter": 4096
+    },
+    {
+      "id": "request-fonts-above",
+      "consumedUniqueFontsBefore": 32,
+      "retainedTablesBefore": 0,
+      "reserveTables": 1,
+      "outcome": "RESOURCE_BUDGET_EXCEEDED",
+      "limitId": "layoutFontAndRaster.uniqueFonts",
+      "consumedUniqueFontsAfter": 32,
+      "retainedTablesAfter": 0
+    },
+    {
+      "id": "request-tables-above",
+      "consumedUniqueFontsBefore": 0,
+      "retainedTablesBefore": 4096,
+      "reserveTables": 1,
+      "outcome": "RESOURCE_BUDGET_EXCEEDED",
+      "limitId": "layoutFontAndRaster.fontTablesTotal",
+      "consumedUniqueFontsAfter": 0,
+      "retainedTablesAfter": 4096
+    },
+    {
+      "id": "first-error-unique-fonts-before-total-tables",
+      "consumedUniqueFontsBefore": 32,
+      "retainedTablesBefore": 4096,
+      "reserveTables": 1,
+      "outcome": "RESOURCE_BUDGET_EXCEEDED",
+      "limitId": "layoutFontAndRaster.uniqueFonts",
+      "consumedUniqueFontsAfter": 32,
+      "retainedTablesAfter": 4096
+    }
+  ],
+  "independentReplayScope": {
+    "fontStructureAndFacts": "A2_PYTHON_STDLIB_INDEPENDENT",
+    "assetAcceptanceCorpus": "A2_EXISTING_FONTTOOLS_AND_STDLIB_GATE_REUSED",
+    "cacheAndBudgetModel": "A2_PYTHON_STDLIB_INDEPENDENT"
+  },
+  "boundary": {
+    "resourceBytes": "FULL_FONT_PARSE_AUTOMATED_VERIFIED_UNWIRED",
+    "fontPreparation": "ASSET_APPROVED_TTF_GLYF_CFF_CMAP_DESCRIPTOR_FACTS",
+    "fontShaping": "UNWIRED",
+    "glyphConsumer": "UNWIRED",
+    "nativeFontStack": "BUILD_NOT_AUTHORIZED",
+    "preparedCache": "REQUEST_LOCAL_CONTENT_ADDRESSED_32_FONTS_4096_TABLES",
+    "daemonOutputPath": "UNWIRED",
+    "profileAvailability": "NOT_REGISTERED",
+    "certificationStatus": "NOT_CERTIFIED",
+    "processRasterImplementation": "ABSENT",
+    "productRoute": "CLOSED",
+    "providerAttempts": 0
+  }
+}

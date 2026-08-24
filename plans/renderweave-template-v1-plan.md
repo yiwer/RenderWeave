@@ -3442,6 +3442,51 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
   `UNWIRED`、Profile `NOT_REGISTERED`、certification `NOT_CERTIFIED`、raster `ABSENT`、Product Editor 权威预览
   route `CLOSED`；FONT、scene/raster/RESULT/Profile 与最终产品接线继续后续 DAG，不把 `/prototype` 当作交付。
 
+## 103. TV1-T104 执行卡
+
+- 决策：T103 以 verified commit `e157e5b7` 收口且 worktree clean 后，最终产品 Text/权威预览链路的下一安全
+  frontier 是 FONT resource preparation。Skia/FreeType/HarfBuzz hermetic Linux build 仍需新鲜授权且不是本票
+  前置，因此先完成不依赖该 build 的 outline/cmap parser 与 request-local prepared cache。
+- Interface/seam：`RequestPreparedFontCache.prepare_or_lookup` 只消费同 occurrence typed FONT + T102
+  `PreparedRawResource` + exact Profile + wall snapshot，输出 occurrence-local immutable `PreparedFontResource`；
+  bytes 与 raw cache 共享所有权，不复制 body，不接受系统 font/family/locale/fallback。
+- 精确子闭包：TTF simple/composite `glyf` + composite DAG、CFF header/INDEX/DICT/CharStrings/bounded subrs、Unicode
+  cmap 0/4/6/12；descriptor 与 exact bytes 一致。optional shaping tables 保留 exact bytes但不在本票执行 shaping。
+- budgets/cache：inclusive unique fonts `32`、tables/font `256`、tables/request `4_096`；key 为
+  Profile+kind/hash/length/media，hit 重检 lease/raw/media/descriptor/fact digest，corruption 驱逐且不退款。
+  unique FONT bytes 64 MiB 与 raw cache 256 MiB 继续由既有唯一 guards 执行，不在此重复。
+- 允许影响：T104 tracker/map/plan/NOTES、resource Rust module/tests/shared vectors、Python verifier、必要的 render
+  gate assertions/process identity/evidence。
+- 禁止影响：Skia/FreeType/HarfBuzz/GN/Clang/Linux build、script/BiDi/grapheme/line/shaping、consumer missing-glyph/
+  decoration decision、glyph raster、daemon success/RESULT/Profile registration、Java/OpenAPI/migration/Web/Product
+  Editor route、formal records、physical certification、J1/A3/READY 与外部副作用。
+- TDD/gates：public Interface 先 RED；GREEN 后 focused/workspace/independent/offline → `asset`/`render` → affected
+  `fast` → sequential `server` → Goal `full` → resolution `fast`。provider/API Key/费用/真实数据=0，不
+  push/tag/PR，`/prototype` 不计交付。
+
+### TV1-T104 resolution evidence
+
+- RED→GREEN：缺失的 public FONT preparation/cache Interface 先红；GREEN 后新增 `PreparedFontResource` 与
+  `RequestPreparedFontCache`，完成 approved TTF simple/composite `glyf`/DAG、CFF CharStrings/subr、Unicode cmap
+  0/4/6/12、descriptor facts、cache hit/corruption 及 inclusive 32/256/4096 budgets。prepared/raw cache 共享同一
+  immutable `Arc` bytes，hit 重检 lease/media/profile/integrity/facts，corruption 驱逐且不退款。
+- Rust resource 34 unit + 1 public Interface tests，Windows/Linux workspace fmt/check/clippy `-D warnings`/tests 全绿。
+  FONT vector SHA-256 `1e7b33cf8c02b1ef73b5e9094121e7e524360462200e1f74692410b36603598f`，既有 Asset
+  FONT corpus SHA-256 `0f44fdef29d989049e77bcf3659fca4b7958b7009053c82d74c46f9f1984e4ca`，mutation corpus
+  SHA-256 `1c9b677d253719b053693dd94b7cb31cd362ff58d3e2cee6d69efcb107ed7db7`；Python independent replay
+  15/15 cases、184 checks，Asset gate 复用 fontTools/stdlib A2 语料。
+- 分级证据：`asset` `.sdlc/evidence/20260825-031650-asset/`（41/41）、`render`
+  `.sdlc/evidence/20260825-031712-render/`、affected `fast` `.sdlc/evidence/20260825-031829-fast/`、sequential
+  `server` `.sdlc/evidence/20260825-031847-server/`（App 347 tests，0 failures，15 controlled skips）、Goal `full`
+  `.sdlc/evidence/20260825-033613-full/` 17 steps 全绿；full 包含完整 Maven、Node 24 Web 26 files/212 tests、
+  runtime canary、Playwright 23 passed + 1 controlled skip、Draft 与 inference 产品旅程。provider attempts/API Key
+  reads/reservations/cost/open authorization=0。
+- 状态为 `resolved / automated_verified`；FONT resource preparation 为
+  `FULL_FONT_PARSE_AUTOMATED_VERIFIED_UNWIRED`，但 shaping/glyph consumer/daemon output 仍 `UNWIRED`、native font stack
+  `BUILD_NOT_AUTHORIZED`、Profile `NOT_REGISTERED`、certification `NOT_CERTIFIED`、raster `ABSENT`、最终 Product
+  Editor 权威预览 route `CLOSED`。后续继续真实 daemon/shaping/scene/raster/RESULT/Profile/产品接线，不把
+  `/prototype` 当作交付。
+
 ## 66. TV1-T67 执行卡
 
 - 决策：T66 以 verified commit `a6fabe5` 收口且 worktree clean 后，复算原始 Ticket 10 §3/§7、

@@ -40,6 +40,7 @@ $resourceFetchTargetReport = Join-Path $resolvedEvidenceDir 'resource-fetch-targ
 $resourceFetchTransportReport = Join-Path $resolvedEvidenceDir 'resource-fetch-transport-independent.json'
 $resourceMediaRawCacheReport = Join-Path $resolvedEvidenceDir 'resource-media-raw-cache-independent.json'
 $imageDecodeCacheReport = Join-Path $resolvedEvidenceDir 'image-decode-cache-independent.json'
+$fontPrepareCacheReport = Join-Path $resolvedEvidenceDir 'font-prepare-cache-independent.json'
 $layoutPreflightReport = Join-Path $resolvedEvidenceDir 'layout-preflight-independent.json'
 $definiteLayoutReport = Join-Path $resolvedEvidenceDir 'definite-layout-independent.json'
 $outputPngReport = Join-Path $resolvedEvidenceDir 'output-png-independent.json'
@@ -53,6 +54,7 @@ foreach ($report in @(
         $resourceFetchTransportReport,
         $resourceMediaRawCacheReport,
         $imageDecodeCacheReport,
+        $fontPrepareCacheReport,
         $layoutPreflightReport,
         $definiteLayoutReport,
         $outputPngReport,
@@ -430,6 +432,57 @@ try {
         throw 'IMAGE decode/cache independent report boundary drifted.'
     }
 
+    Invoke-Checked 'font-prepare-cache-python-independent-replay' {
+        & python.exe 'tools\verify-font-prepare-cache-vectors.py' `
+            '--vectors' 'renderer\font-prepare-cache-vectors-v1.json' `
+            '--repo-root' $repoRoot `
+            '--report' $fontPrepareCacheReport
+    }
+    if (-not (Test-Path -LiteralPath $fontPrepareCacheReport -PathType Leaf)) {
+        throw 'FONT prepare/cache independent replay did not write its report.'
+    }
+    $fontPrepareCacheIndependent =
+        Get-Content -Raw -Encoding UTF8 -LiteralPath $fontPrepareCacheReport |
+            ConvertFrom-Json
+    if ($fontPrepareCacheIndependent.verifier -ne 'renderweave-font-prepare-cache-python-independent/1' `
+            -or $fontPrepareCacheIndependent.result -ne 'PASS' `
+            -or $fontPrepareCacheIndependent.assurance -ne 'A2' `
+            -or $fontPrepareCacheIndependent.structuralAssurance -ne 'A2_PYTHON_STDLIB_INDEPENDENT' `
+            -or $fontPrepareCacheIndependent.assetCorpusAssurance -ne 'A2_EXISTING_FONTTOOLS_AND_STDLIB_GATE_REUSED' `
+            -or $fontPrepareCacheIndependent.cacheBudgetAssurance -ne 'A2_PYTHON_STDLIB_INDEPENDENT' `
+            -or $fontPrepareCacheIndependent.preparedCases -ne 2 `
+            -or $fontPrepareCacheIndependent.failureCases -ne 3 `
+            -or $fontPrepareCacheIndependent.cacheCases -ne 4 `
+            -or $fontPrepareCacheIndependent.budgetCases -ne 6 `
+            -or $fontPrepareCacheIndependent.passed -ne 15 `
+            -or $fontPrepareCacheIndependent.total -ne 15 `
+            -or $fontPrepareCacheIndependent.failed -ne 0 `
+            -or $fontPrepareCacheIndependent.checks -ne 184 `
+            -or $fontPrepareCacheIndependent.vectorSha256 -ne 'sha256:1e7b33cf8c02b1ef73b5e9094121e7e524360462200e1f74692410b36603598f' `
+            -or $fontPrepareCacheIndependent.assetKernelVectorSha256 -ne 'sha256:0f44fdef29d989049e77bcf3659fca4b7958b7009053c82d74c46f9f1984e4ca' `
+            -or $fontPrepareCacheIndependent.mutationCorpusSha256 -ne 'sha256:1c9b677d253719b053693dd94b7cb31cd362ff58d3e2cee6d69efcb107ed7db7' `
+            -or $fontPrepareCacheIndependent.rendererProfileIdentity -ne 'renderweave-renderer/1.0' `
+            -or $fontPrepareCacheIndependent.requestUniqueFonts -ne 32 `
+            -or $fontPrepareCacheIndependent.requestUniqueFontsLimitId -ne 'layoutFontAndRaster.uniqueFonts' `
+            -or $fontPrepareCacheIndependent.fontTablesPerContent -ne 256 `
+            -or $fontPrepareCacheIndependent.fontTablesPerContentLimitId -ne 'layoutFontAndRaster.tablesPerFont' `
+            -or $fontPrepareCacheIndependent.requestFontTables -ne 4096 `
+            -or $fontPrepareCacheIndependent.requestFontTablesLimitId -ne 'layoutFontAndRaster.fontTablesTotal' `
+            -or $fontPrepareCacheIndependent.resourceBytes -ne 'FULL_FONT_PARSE_AUTOMATED_VERIFIED_UNWIRED' `
+            -or $fontPrepareCacheIndependent.fontPreparation -ne 'ASSET_APPROVED_TTF_GLYF_CFF_CMAP_DESCRIPTOR_FACTS' `
+            -or $fontPrepareCacheIndependent.fontShaping -ne 'UNWIRED' `
+            -or $fontPrepareCacheIndependent.glyphConsumer -ne 'UNWIRED' `
+            -or $fontPrepareCacheIndependent.nativeFontStack -ne 'BUILD_NOT_AUTHORIZED' `
+            -or $fontPrepareCacheIndependent.preparedCache -ne 'REQUEST_LOCAL_CONTENT_ADDRESSED_32_FONTS_4096_TABLES' `
+            -or $fontPrepareCacheIndependent.daemonOutputPath -ne 'UNWIRED' `
+            -or $fontPrepareCacheIndependent.profileAvailability -ne 'NOT_REGISTERED' `
+            -or $fontPrepareCacheIndependent.certificationStatus -ne 'NOT_CERTIFIED' `
+            -or $fontPrepareCacheIndependent.processRasterImplementation -ne 'ABSENT' `
+            -or $fontPrepareCacheIndependent.productRoute -ne 'CLOSED' `
+            -or $fontPrepareCacheIndependent.providerAttempts -ne 0) {
+        throw 'FONT prepare/cache independent report boundary drifted.'
+    }
+
     Invoke-Checked 'layout-preflight-python-independent-replay' {
         & python.exe 'tools\verify-layout-preflight-vectors.py' `
             '--vectors' 'renderer\layout-preflight-vectors-v1.json' `
@@ -592,7 +645,7 @@ try {
     }
 
     $summary = [ordered]@{
-        gateVersion = 'renderweave-renderer-process-gate/2.4'
+        gateVersion = 'renderweave-renderer-process-gate/2.5'
         status = 'PASS'
         processContractVersion = 'renderweave-renderer-process/1.0'
         java = $java
@@ -715,6 +768,32 @@ try {
             imageDecode = $imageDecodeCacheIndependent.imageDecode
             decodedCache = $imageDecodeCacheIndependent.decodedCache
         }
+        fontPrepareCacheIndependent = [ordered]@{
+            verifier = $fontPrepareCacheIndependent.verifier
+            assurance = $fontPrepareCacheIndependent.assurance
+            structuralAssurance = $fontPrepareCacheIndependent.structuralAssurance
+            assetCorpusAssurance = $fontPrepareCacheIndependent.assetCorpusAssurance
+            cacheBudgetAssurance = $fontPrepareCacheIndependent.cacheBudgetAssurance
+            preparedCases = $fontPrepareCacheIndependent.preparedCases
+            failureCases = $fontPrepareCacheIndependent.failureCases
+            cacheCases = $fontPrepareCacheIndependent.cacheCases
+            budgetCases = $fontPrepareCacheIndependent.budgetCases
+            checks = $fontPrepareCacheIndependent.checks
+            vectorSha256 = $fontPrepareCacheIndependent.vectorSha256
+            assetKernelVectorSha256 = $fontPrepareCacheIndependent.assetKernelVectorSha256
+            mutationCorpusSha256 = $fontPrepareCacheIndependent.mutationCorpusSha256
+            rendererProfileIdentity = $fontPrepareCacheIndependent.rendererProfileIdentity
+            requestUniqueFonts = $fontPrepareCacheIndependent.requestUniqueFonts
+            requestUniqueFontsLimitId = $fontPrepareCacheIndependent.requestUniqueFontsLimitId
+            fontTablesPerContent = $fontPrepareCacheIndependent.fontTablesPerContent
+            fontTablesPerContentLimitId = $fontPrepareCacheIndependent.fontTablesPerContentLimitId
+            requestFontTables = $fontPrepareCacheIndependent.requestFontTables
+            requestFontTablesLimitId = $fontPrepareCacheIndependent.requestFontTablesLimitId
+            resourceBytes = $fontPrepareCacheIndependent.resourceBytes
+            fontPreparation = $fontPrepareCacheIndependent.fontPreparation
+            fontShaping = $fontPrepareCacheIndependent.fontShaping
+            preparedCache = $fontPrepareCacheIndependent.preparedCache
+        }
         layoutPreflightIndependent = [ordered]@{
             verifier = $layoutPreflightIndependent.verifier
             assurance = $layoutPreflightIndependent.assurance
@@ -767,6 +846,10 @@ try {
             requestRawCache = 'REQUEST_LOCAL_CONTENT_ADDRESSED_268435456_BYTES_AUTOMATED_VERIFIED_UNWIRED'
             imageDecodeKernel = 'STATIC_PNG_JPEG_WEBP_STRAIGHT_RGBA8_ORIENTED_AUTOMATED_VERIFIED_UNWIRED_A1_CODEC_PIXELS'
             requestDecodedCache = 'REQUEST_LOCAL_CONTENT_ADDRESSED_536870912_BYTES_AUTOMATED_VERIFIED_UNWIRED'
+            fontPrepareKernel = 'ASSET_APPROVED_TTF_GLYF_CFF_CMAP_DESCRIPTOR_FACTS_AUTOMATED_VERIFIED_UNWIRED_A2'
+            requestPreparedFontCache = 'REQUEST_LOCAL_CONTENT_ADDRESSED_32_FONTS_4096_TABLES_AUTOMATED_VERIFIED_UNWIRED'
+            fontShaping = 'UNWIRED'
+            nativeFontStack = 'BUILD_NOT_AUTHORIZED'
             resultSealKernel = 'CANONICAL_METADATA_LENGTH_SHA256_UUID_IMAGE_PAYLOAD_AUTOMATED_VERIFIED_UNWIRED'
             resourceBytes = 'FETCHED_AND_INTEGRITY_VERIFIED'
             layoutKernel = 'RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_SINGLE_AND_INACTIVE_BOUND_OR_EXACT_TWO_FILL_SINGLE_ACTIVE_BOUND_WITHIN_REMAINING_OR_SINGLE_ACTIVE_MIN_OVERFLOW_OR_EXACT_TWO_FILL_TWO_MIN_SECOND_FREEZE_OVERFLOW_OR_EXACT_TWO_FILL_MIXED_ACTIVE_MIN_SECOND_MIN_FREEZE_OVERFLOW_OR_EXACT_TWO_FILL_TWO_MAX_SECOND_FREEZE_FREE_JUSTIFY_OR_EXACT_TWO_FILL_MIXED_ACTIVE_MAX_SECOND_MAX_FREEZE_FREE_JUSTIFY_OR_EXACT_THREE_FILL_SINGLE_ACTIVE_BOUND_ONE_REDISTRIBUTION_OR_EXACT_THREE_FILL_POST_REDISTRIBUTION_INACTIVE_BOUNDS_OR_EXACT_THREE_FILL_SECOND_MIN_FREEZE_LAST_REMAINDER_OR_EXACT_THREE_FILL_SECOND_MAX_FREEZE_LAST_REMAINDER_OR_EXACT_THREE_FILL_SECOND_MAX_FREEZE_TERMINAL_INACTIVE_MIN_OR_EXACT_THREE_FILL_SECOND_MAX_FREEZE_TERMINAL_INACTIVE_MAX_OR_EXACT_THREE_FILL_THIRD_MAX_FREEZE_FREE_JUSTIFY_OR_EXACT_THREE_FILL_SINGLE_ACTIVE_MIN_OVERFLOW_OR_EXACT_THREE_FILL_SECOND_MIN_FREEZE_OVERFLOW_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_INACTIVE_UNFROZEN_MAX_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_SECOND_MIN_FREEZE_OVERFLOW_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_SECOND_MIXED_MIN_FREEZE_OVERFLOW_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_SECOND_MIXED_MIN_FREEZE_OVERFLOW_TERMINAL_INACTIVE_MAX_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_TWO_MIXED_MIN_FREEZES_OVERFLOW_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_MIXED_AND_MIN_ONLY_FREEZES_OVERFLOW_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_TWO_MIN_ONLY_FREEZES_OVERFLOW_MULTI_MAIN_FILL_AND_FIXED_SINGLE_FRACTION_INDEPENDENT_MULTI_AUTO_GRID_MULTI_AUTO_SPAN_STABLE_DEFICIT_GRID_DEFINITE_MULTI_FRACTION_LAST_REMAINDER_GRID_EMPTY_CONTAINER_STACK_HUG_GRID_AUTO_HUG_CONTRIBUTION_GRID_HUG_EXACT_QUARTER_TURN_AFFINE_FRAME_GROUP_HUG_FIXED_OPPOSITE_AXIS_CROSS_FILL_DEFINITE_ABSOLUTE_PARENT_OFFER_DEFINITE_STACK_CROSS_OUTER_OFFER_STACK_MAIN_FILL_CROSS_HUG_REMEASURE_NESTED_STACK_MAIN_OFFER_PROPAGATION_COLUMNS_FIRST_GRID_CELL_OUTER_OFFER_STACK_MAIN_OFFER_COLUMNS_FIRST_GRID_CROSS_HUG_ABSOLUTE_PARENT_OFFER_COLUMNS_FIRST_GRID_CROSS_HUG_GRID_CELL_OFFER_COLUMNS_FIRST_NESTED_GRID_CROSS_HUG_GRID_CELL_OFFER_STACK_MAIN_FIRST_CROSS_HUG_DIRECTION_CHANGING_STACK_CROSS_OFFER_MAIN_HUG_NESTED_STACK_RESOLVED_OPPOSITE_OFFER_RECURSION_COLUMNS_FIRST_GRID_TERMINAL_NORMALIZATION_BOX_AUTOMATED_VERIFIED_UNWIRED'
@@ -782,14 +865,15 @@ try {
         }
     }
     Write-Utf8File -Path $summaryPath -Content ($summary | ConvertTo-Json -Depth 6)
-    Write-Host (('Renderer process: Java={0} Python={1}+{2}+{3}+{4}+{5}+{6}+{7}+{8}+{9}+{10}+{11} Rust Windows=PASS ' +
+    Write-Host (('Renderer process: Java={0} Python={1}+{2}+{3}+{4}+{5}+{6}+{7}+{8}+{9}+{10}+{11}+{12} Rust Windows=PASS ' +
                 'Linux UDS=PASS Profile=NOT_REGISTERED Certification=NOT_CERTIFIED Raster=ABSENT') -f
             $java.tests, $independent.checks, $documentIndependent.total,
             $resourceBodyIndependent.total, $resourceFetchTargetIndependent.total,
             $resourceFetchTransportIndependent.total, $layoutPreflightIndependent.total,
             $definiteLayoutIndependent.total,
             $outputPngIndependent.total, $enginePngIndependent.total,
-            $resourceMediaRawCacheIndependent.total, $imageDecodeCacheIndependent.total)
+            $resourceMediaRawCacheIndependent.total, $imageDecodeCacheIndependent.total,
+            $fontPrepareCacheIndependent.total)
     Write-Host "Renderer process evidence: $summaryPath"
 }
 finally {

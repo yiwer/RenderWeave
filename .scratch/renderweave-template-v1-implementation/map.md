@@ -521,6 +521,12 @@ Label: wayfinder:map
   canonical sRGB ICC equality、straight RGBA8、EXIF 八 orientation 与 inclusive 512 MiB request-local decoded
   cache。Rust 64 tests、独立 IMAGE 33/33 cases/394 checks，`render`/affected `fast`/顺序 `server`/Goal `full`
   均绿；codec pixels 最高 A1，daemon RESULT/Profile/raster/Product Editor 权威预览 route 仍关闭并继续后续 DAG。
+- [实现 Renderer FONT outline/cmap 完整解析与 request-local prepared cache 内核](issues/104-font-outline-cmap-cache-kernel.md) —
+  **resolved / automated_verified**；消费 T102 prepared raw FONT，完整重放 approved TTF `glyf`/CFF outlines、
+  Unicode cmap 0/4/6/12 与 Engine-owned 32 fonts/256-per-font/4096-total table budgets，共享 raw cache immutable
+  bytes。Rust resource 34 unit + 1 public tests、独立 Python 15/15 cases/184 checks，`asset`/`render`/affected
+  `fast`/顺序 `server`/17-step `full` 均绿；Skia/FreeType/HarfBuzz build、shaping/raster、daemon RESULT/Profile
+  registration 与 Product Editor route 继续后续 DAG。
 - [验证 Product Editor 状态、恢复与权威预览架构](issues/09-validate-product-editor-architecture.md) —
   throwaway 逻辑原型（`/prototype/editor-state-model`，不进产品 route）把冻结编辑器规则编码为确定性
   fixture 状态机：10 个引导走查场景 37/37 断言 + 自由操作冒烟 + 键盘焦点检查全部通过（Playwright A1，

@@ -163,7 +163,7 @@ impl RequestDecodedImageCache {
         now_epoch_millis: i64,
     ) -> Result<PreparedDecodedImage, ResourcePreparationProblem> {
         ensure_lease_active(resource, now_epoch_millis)?;
-        if raw.resource_id() != resource.resource_id() {
+        if raw.resource_id() != resource.resource_id() || raw.profile() != profile {
             return Err(internal_problem(resource));
         }
         let media = verify_resource_media(resource, raw.bytes())?;

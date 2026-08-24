@@ -1083,6 +1083,7 @@ impl VerifiedRawContent {
 #[derive(Clone)]
 pub struct PreparedRawResource {
     resource_id: Box<str>,
+    profile: ResourcePreparationProfile,
     media: VerifiedResourceMedia,
     content: Arc<VerifiedRawContent>,
     cache_hit: bool,
@@ -1099,6 +1100,14 @@ impl PreparedRawResource {
 
     pub fn media(&self) -> &VerifiedResourceMedia {
         &self.media
+    }
+
+    pub(crate) fn profile(&self) -> ResourcePreparationProfile {
+        self.profile
+    }
+
+    pub(super) fn shared_bytes(&self) -> Arc<[u8]> {
+        Arc::clone(&self.content.bytes)
     }
 
     pub fn cache_hit(&self) -> bool {
@@ -1173,6 +1182,7 @@ impl RequestRawResourceCache {
         match verify_resource_media(resource, &content.bytes) {
             Ok(media) if content.matches(&media) => Ok(Some(PreparedRawResource {
                 resource_id: resource.resource_id().into(),
+                profile,
                 media,
                 content,
                 cache_hit: true,
@@ -1212,6 +1222,7 @@ impl RequestRawResourceCache {
             .insert(RawCacheKey::new(resource, profile), Arc::clone(&content));
         Ok(PreparedRawResource {
             resource_id: resource.resource_id().into(),
+            profile,
             media,
             content,
             cache_hit: false,

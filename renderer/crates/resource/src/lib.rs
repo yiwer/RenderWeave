@@ -2,6 +2,7 @@ use renderweave_renderer_document::AdmittedRenderResource;
 use sha2::{Digest, Sha256};
 
 mod fetch;
+mod font;
 mod image;
 mod media;
 
@@ -10,6 +11,11 @@ pub use fetch::{
     FETCH_RESPONSE_HEADER_BYTES, FETCH_STREAM_CHUNK_BYTES, FetchEgressPolicy,
     FetchEgressPolicyError, FetchedResource, HttpsResourceFetcher, RESOURCE_PHASE_MILLIS,
     ResourceFetchProblem, ResourceFetchProblemCode, ResourceFetcher,
+};
+pub use font::{
+    FONT_TABLES_PER_CONTENT_LIMIT_ID, MAX_FONT_TABLES_PER_CONTENT, MAX_REQUEST_FONT_TABLES,
+    MAX_REQUEST_UNIQUE_FONTS, PreparedFontResource, REQUEST_FONT_TABLES_LIMIT_ID,
+    REQUEST_UNIQUE_FONTS_LIMIT_ID, RequestPreparedFontCache,
 };
 pub use image::{
     DECODER_SCRATCH_BYTES_LIMIT_ID, MAX_DECODER_SCRATCH_BYTES, MAX_REQUEST_DECODED_CACHE_BYTES,
