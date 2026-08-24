@@ -1,6 +1,24 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-24 **Template v1 implementation TV1-T91 已由 Codex `/root` single-writer 完成，状态
+  `resolved/automated_verified`**：mixed active min 严格大于 remaining、另外两项均为初始 inactive positive
+  min-only 的 exactly-three FILL 形状，现可按 authored position 固定提交三个 minima；active child 仍必须为
+  合法 mixed min/max，active min-only + two min-only replacement negative 继续 fail closed，未开放 division、
+  post-overflow redistribution、一般 water filling 或 tolerance。shared `/54` 的 Rust/Python 在首个转正 case、
+  同一 `STACK_MAIN_FILL` occurrence `rwocc_0000000000000002` 共同 RED；独立实现后为 247 laid-out + 16
+  unsupported、263/263 cases、787 checks。vector SHA-256
+  `fc3b06ff5691b538ed95d1c43437ec89d23ab14965d0237363fb8226611e6bec`，fixture `/3` SHA-256 保持
+  `a11475bcebad7e1c35cb0acd7018419d94afcb4b37d7f1df7346a055ad1df669`。`render`
+  `.sdlc/evidence/20260824-114308-render/`、affected `fast` `.sdlc/evidence/20260824-114342-fast/`、顺序
+  `server` `.sdlc/evidence/20260824-114400-server/` 与 `full` `.sdlc/evidence/20260824-120412-full/` 均 exit 0。
+  full definite A2 replay 263/263、787 checks，App 344/0/0/15、Node 24 Web 26 files/212 tests、runtime canary、
+  23 passed + 1 controlled skip Playwright、Draft 与 inference browser E2E 全绿；R0/R1/P0 provider attempts=0，
+  P0 API Key reads/reservations/cost/open authorization=0。Profile/A3/J1/READY 未推进，未运行 provider、读取
+  API Key、发送真实数据或 push/tag/PR。状态回填后的 resolution `fast`
+  `.sdlc/evidence/20260824-122543-fast/` 三步均 exit 0，final A2 report 再确认 263/263 cases、787 checks、
+  provider attempts 0。现有 Web 构建仍只有 Template prototype/fixture，没有正式 Template 产品 route；本票
+  不把 `/prototype` 当成最终产品交付。
 - 2026-08-24 **Template v1 implementation TV1-T90 已由 Codex `/root` single-writer 完成，状态
   `resolved/automated_verified`**：T89 的两个 additional minimum candidates 现只要求至少一个是合法 mixed
   min/max，因此恰好 one-mixed + one-min-only 可按 authored position 固定提交三个 minima；two-min-only

@@ -2149,9 +2149,6 @@ fn stack_main_fill_allocations(
                 && maximum.is_some();
             let two_additional_minimum_shape_supported = additional_minimum_freezes.len() == 2
                 && inactive_unfrozen_max_count == 0
-                && additional_minimum_freezes
-                    .iter()
-                    .any(|(_, _, is_mixed)| *is_mixed)
                 && maximum.is_some();
             if !inactive_max_shape_supported
                 && !second_minimum_shape_supported

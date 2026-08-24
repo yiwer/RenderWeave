@@ -2967,6 +2967,44 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
   unique、`git diff --check`；再依次 `render`、affected `fast`、顺序 `server`、Goal `full`、resolution `fast`。
   最高只可 `automated_verified`；不推进 A3/J1/READY，不 push/tag/PR，不运行 provider，不读取 API Key。
 
+## 90. TV1-T91 执行卡
+
+- 决策：T90 以 verified commit `848be13` 收口且 worktree clean 后，复算 Ticket 10 §3/§7、
+  `RW-T10-S3-012..014`、`RW-T10-S7-004..012` 与 16 个 remaining unsupported cases。rotation、resource/error-order
+  与 compositionViewport 仍依赖关闭能力；六个 Stack cases 中，T90 replacement negative 只把 remaining
+  additional mixed min/max 改为 positive min-only。first min 已严格大于 remaining，因此仍可直接提交三个
+  authored minima，不需要 division、redistribution、循环或 tolerance，登记为当前 single-writer frontier。
+- Interface/seam：只深化 T90 `stack_main_fill_allocations` 的 exactly-three/mixed-min-overflow early branch；
+  public API、admission/preflight、`StackChildMeasurement`、arrange、authored DFS first-error 与全有或全无 output
+  不变。Rust/Python 使用独立控制流但共享冻结 vectors。
+- 精确语义：恰好三个 main FILL；首轮唯一 active child 为合法 mixed min/max 且 min 严格大于 remaining；
+  另外两项都有 finite positive min、无 max，初始 share `>= min`。按 authored position 提交三个 minima；
+  equality 接受，尺寸和必然 overflow。
+- 允许影响：T91 tracker/plan/NOTES、layout Rust module/tests、shared definite-layout vector `/54`、Python
+  independent verifier、render gate identity/assertions/evidence。
+- 禁止影响：active child 为 min-only、max-only/absent/非法 additional bound、初始 multiple-active、active min
+  不大于 remaining、post-overflow redistribution、four-or-more active-bound FILL、一般多轮 water filling、
+  epsilon/tolerance/public numeric error、HUG-main FILL cycle、rows→columns、任意非直角 rotation、Text/Image/
+  compositionViewport、resource fetch/decode、scene/raster/JPEG、daemon RESULT/Profile、Java/OpenAPI/migration/Web/
+  route、J1/A3/READY 与外部副作用。
+- TDD：先把 T90 replacement negative 转为 active-first tracer positive并共同 RED；最小实现 GREEN 后新增
+  active-middle、active-last equality、COLUMN 与 cross-HUG regressions，并以 active min-only + two min-only
+  negative 替换。能力值新增
+  `OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_TWO_MIN_ONLY_FREEZES_OVERFLOW`；shared `/54` 目标 247
+  laid-out + 16 unsupported、263 cases/787 checks，fixture `/3` bytes 不变。
+- 验证：focused Rust/Python、fmt、check、clippy `-D warnings`、workspace tests、`py_compile`、JSON inventory/SHA/
+  unique、`git diff --check`；再依次 `render`、affected `fast`、顺序 `server`、Goal `full`、resolution `fast`。
+  最高只可 `automated_verified`；不推进 A3/J1/READY，不 push/tag/PR，不运行 provider，不读取 API Key。最终
+  Template 产品 route 仍须等权威 preview/output 与产品面纵切完成，不能以 prototype 代替。
+- 收口：shared `/54` 已以 Rust/Python 共同 RED → 独立最小 GREEN 完成，最终 247 laid-out + 16 unsupported、
+  263/263 cases/787 checks，vector SHA-256
+  `fc3b06ff5691b538ed95d1c43437ec89d23ab14965d0237363fb8226611e6bec`；`render`
+  `.sdlc/evidence/20260824-114308-render/`、affected `fast` `.sdlc/evidence/20260824-114342-fast/`、顺序
+  `server` `.sdlc/evidence/20260824-114400-server/` 与 `full` `.sdlc/evidence/20260824-120412-full/` 均绿色，
+  状态为 `resolved/automated_verified`；resolution `fast` `.sdlc/evidence/20260824-122543-fast/` 亦绿色，
+  final A2 report 为 263/263 cases、787 checks。现有 Web 仍无正式 Template 产品 route，不能以
+  prototype/fixture 替代最终页面与功能交付。
+
 ## 66. TV1-T67 执行卡
 
 - 决策：T66 以 verified commit `a6fabe5` 收口且 worktree clean 后，复算原始 Ticket 10 §3/§7、

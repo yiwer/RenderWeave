@@ -442,6 +442,11 @@ Label: wayfinder:map
   additional min-only 组合转为固定 authored minima，既有 two-mixed 继续有效；shared `/53` 实际为
   242 laid-out + 16 unsupported、258/258 cases/772 checks。两个 additional min-only、post-overflow
   redistribution、four-or-more FILL 与一般 water filling 保持 fail closed。
+- [实现 definite Stack 三 FILL mixed active-min overflow 两个 min-only freezes 子闭包](issues/91-definite-stack-three-fill-mixed-active-min-overflow-two-min-only-freezes.md) —
+  **resolved / automated_verified**；只把 T90 replacement negative 的两个 additional min-only 组合转为固定
+  authored minima，active child 仍必须为合法 mixed min/max；shared `/54` 实际为 247 laid-out + 16 unsupported、
+  263/263 cases/787 checks。active min-only + two min-only、post-overflow redistribution、four-or-more FILL 与
+  一般 water filling 保持 fail closed；正式 Template 产品 route 仍未开放。
 - [验证 Product Editor 状态、恢复与权威预览架构](issues/09-validate-product-editor-architecture.md) —
   throwaway 逻辑原型（`/prototype/editor-state-model`，不进产品 route）把冻结编辑器规则编码为确定性
   fixture 状态机：10 个引导走查场景 37/37 断言 + 自由操作冒烟 + 键盘焦点检查全部通过（Playwright A1，
