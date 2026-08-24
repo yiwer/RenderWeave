@@ -414,8 +414,6 @@ def webp_admit(raw: bytes) -> dict[str, Any]:
             raise Malformed(rejected("ASSET_CONTENT_INVALID", "ASSET_STRUCTURE", "/"))
         if four_cc == b"VP8X":
             flags = raw[position + 8]
-            if flags & 0x20:
-                raise Malformed(rejected("ASSET_CONTENT_UNSUPPORTED", "ASSET_STRUCTURE", "/VP8X"))
             width = int.from_bytes(raw[position + 12 : position + 15], "little") + 1
             height = int.from_bytes(raw[position + 15 : position + 18], "little") + 1
         elif four_cc in (b"ANIM", b"ANMF"):

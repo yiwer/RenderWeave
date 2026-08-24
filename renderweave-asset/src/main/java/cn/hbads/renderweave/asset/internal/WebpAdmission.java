@@ -146,15 +146,6 @@ final class WebpAdmission {
                                 )
                         );
                     }
-                    if ((flags & 0x20) != 0) {
-                        return Scan.rejected(
-                                rejected(
-                                        FailureCode.ASSET_CONTENT_UNSUPPORTED,
-                                        FailureStage.ASSET_STRUCTURE,
-                                        "/VP8X"
-                                )
-                        );
-                    }
                     sawVp8x = true;
                     long canvasWidth = leU24(raw, position + 12) + 1;
                     long canvasHeight = leU24(raw, position + 15) + 1;

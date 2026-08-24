@@ -753,9 +753,9 @@ def verify(vectors_path: Path, repo_root: Path) -> dict[str, Any]:
         asset_index[case_id] = asset_case
 
     supported = exact_cases(vectors["supportedAssetCases"], 13, "supported")
-    defensive = exact_cases(vectors["defensiveAssetCases"], 24, "defensive")
+    defensive = exact_cases(vectors["defensiveAssetCases"], 22, "defensive")
     descriptors = exact_cases(vectors["descriptorCases"], 5, "descriptor")
-    deferred = exact_cases(vectors["deferredAssetCases"], 5, "deferred")
+    deferred = exact_cases(vectors["deferredAssetCases"], 7, "deferred")
     cache_cases = exact_cases(vectors["cacheCases"], 7, "cache")
     seen_ids: set[str] = set()
     partition_ids: set[str] = set()
@@ -818,6 +818,8 @@ def verify(vectors_path: Path, repo_root: Path) -> dict[str, Any]:
         "jpeg-canonical-icc-admitted": "CANONICAL_ICC_SEGMENT_ASSEMBLY",
         "webp-canonical-icc-admitted": "CANONICAL_ICC_EQUALITY",
         "png-corrupt-idat-invalid": "FULL_IMAGE_ENTROPY_DECODE",
+        "png-iccp-unsupported": "FULL_IMAGE_CANONICAL_ICC_EQUALITY",
+        "jpeg-icc-unsupported": "FULL_IMAGE_CANONICAL_ICC_EQUALITY",
         "font-cff-charstrings-invalid": "FULL_CFF_PARSE",
     }
     for case in deferred:

@@ -2,7 +2,7 @@
   "profile": "renderweave-resource-media-raw-cache-v1",
   "rendererProfileIdentity": "renderweave-renderer/1.0",
   "assetKernelVectorPath": "renderweave-asset/src/test/resources/cn/hbads/renderweave/asset/acceptance-kernel-v1/vectors.json",
-  "assetKernelVectorSha256": "sha256:74638228ba0910079feb86412314361f09d1761583a58176e6449d90435e9da2",
+  "assetKernelVectorSha256": "sha256:0f44fdef29d989049e77bcf3659fca4b7958b7009053c82d74c46f9f1984e4ca",
   "limits": {
     "requestRawCacheBytes": 268435456,
     "requestRawCacheLimitId": "assetsAndFetch.requestRawCacheBytes",
@@ -29,11 +29,9 @@
     {"id":"png-bad-crc","assetCaseId":"png-bad-crc-invalid","declaredMediaType":"image/png","descriptorCaseId":"png-rgba-admitted","expectedCode":"DECODE_FAILED"},
     {"id":"png-edge-limit","assetCaseId":"png-edge-limit","declaredMediaType":"image/png","descriptorCaseId":"png-rgba-admitted","expectedCode":"DECODE_FAILED"},
     {"id":"png-total-limit","assetCaseId":"png-total-limit","declaredMediaType":"image/png","descriptorCaseId":"png-rgba-admitted","expectedCode":"DECODE_FAILED"},
-    {"id":"png-noncanonical-icc","assetCaseId":"png-iccp-unsupported","declaredMediaType":"image/png","descriptorCaseId":"png-rgba-admitted","expectedCode":"DECODE_FAILED"},
     {"id":"png-srgb-icc-conflict","assetCaseId":"png-srgb-iccp-conflict-unsupported","declaredMediaType":"image/png","descriptorCaseId":"png-rgba-admitted","expectedCode":"DECODE_FAILED"},
     {"id":"png-indexed-no-plte","assetCaseId":"png-indexed-no-plte-invalid","declaredMediaType":"image/png","descriptorCaseId":"png-indexed-admitted","expectedCode":"DECODE_FAILED"},
     {"id":"jpeg-cmyk","assetCaseId":"jpeg-cmyk-unsupported","declaredMediaType":"image/jpeg","descriptorCaseId":"jpeg-gray-admitted","expectedCode":"DECODE_FAILED"},
-    {"id":"jpeg-noncanonical-icc","assetCaseId":"jpeg-icc-unsupported","declaredMediaType":"image/jpeg","descriptorCaseId":"jpeg-gray-admitted","expectedCode":"DECODE_FAILED"},
     {"id":"jpeg-precision12","assetCaseId":"jpeg-precision12-unsupported","declaredMediaType":"image/jpeg","descriptorCaseId":"jpeg-gray-admitted","expectedCode":"DECODE_FAILED"},
     {"id":"jpeg-dac","assetCaseId":"jpeg-dac-unsupported","declaredMediaType":"image/jpeg","descriptorCaseId":"jpeg-gray-admitted","expectedCode":"DECODE_FAILED"},
     {"id":"jpeg-truncated","assetCaseId":"jpeg-truncated-invalid","declaredMediaType":"image/jpeg","descriptorCaseId":"jpeg-gray-admitted","expectedCode":"DECODE_FAILED"},
@@ -61,6 +59,8 @@
     {"assetCaseId":"jpeg-canonical-icc-admitted","reason":"CANONICAL_ICC_SEGMENT_ASSEMBLY"},
     {"assetCaseId":"webp-canonical-icc-admitted","reason":"CANONICAL_ICC_EQUALITY"},
     {"assetCaseId":"png-corrupt-idat-invalid","reason":"FULL_IMAGE_ENTROPY_DECODE"},
+    {"assetCaseId":"png-iccp-unsupported","reason":"FULL_IMAGE_CANONICAL_ICC_EQUALITY"},
+    {"assetCaseId":"jpeg-icc-unsupported","reason":"FULL_IMAGE_CANONICAL_ICC_EQUALITY"},
     {"assetCaseId":"font-cff-charstrings-invalid","reason":"FULL_CFF_PARSE"}
   ],
   "cacheCases": [

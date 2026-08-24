@@ -1,0 +1,84 @@
+{
+  "profile": "renderweave-image-decode-cache-v1",
+  "rendererProfileIdentity": "renderweave-renderer/1.0",
+  "assetKernelVectorPath": "renderweave-asset/src/test/resources/cn/hbads/renderweave/asset/acceptance-kernel-v1/vectors.json",
+  "assetKernelVectorSha256": "sha256:0f44fdef29d989049e77bcf3659fca4b7958b7009053c82d74c46f9f1984e4ca",
+  "canonicalSrgbIcc": {
+    "path": "renderweave-asset/src/main/resources/cn/hbads/renderweave/asset/acceptance/sRGB-IEC61966-2.1.icc",
+    "byteLength": 3144,
+    "sha256": "sha256:2b3aa1645779a9e634744faf9b01e9102b0c9b88fd6deced7934df86b949af7e"
+  },
+  "dependencyClosure": {
+    "png": "0.18.1",
+    "jpegDecoder": "0.3.2+platform_independent",
+    "imageWebp": "0.2.4"
+  },
+  "limits": {
+    "requestDecodedCacheBytes": 536870912,
+    "requestDecodedCacheLimitId": "assetsAndFetch.requestDecodedCacheBytes",
+    "decoderScratchBytes": 134217728,
+    "decoderScratchLimitId": "rendererSurfaceAndOutput.decoderScratchBytes"
+  },
+  "decodeCases": [
+    {"id":"png-rgba","assetCaseId":"png-rgba-admitted","declaredMediaType":"image/png","logicalWidthPx":1,"logicalHeightPx":1,"rgba8Hex":"12345678"},
+    {"id":"png-gray","assetCaseId":"png-gray-admitted","declaredMediaType":"image/png","logicalWidthPx":1,"logicalHeightPx":1,"rgba8Hex":"404040ff"},
+    {"id":"png-indexed","assetCaseId":"png-indexed-admitted","declaredMediaType":"image/png","logicalWidthPx":1,"logicalHeightPx":1,"rgba8Hex":"102030ff"},
+    {"id":"png-srgb","assetCaseId":"png-srgb-admitted","declaredMediaType":"image/png","logicalWidthPx":1,"logicalHeightPx":1,"rgba8Hex":"12345678"},
+    {"id":"png-exif","assetCaseId":"png-exif-orientation-admitted","declaredMediaType":"image/png","logicalWidthPx":1,"logicalHeightPx":2,"rgba8Hex":"0001020304050607"},
+    {"id":"png-canonical-icc","assetCaseId":"png-canonical-icc-admitted","declaredMediaType":"image/png","logicalWidthPx":1,"logicalHeightPx":1,"rgba8Hex":"12345678"},
+    {"id":"jpeg-gray","assetCaseId":"jpeg-gray-admitted","declaredMediaType":"image/jpeg","logicalWidthPx":2,"logicalHeightPx":3,"rgba8Hex":"7f7f7fff7f7f7fff7f7f7fff7f7f7fff7f7f7fff7f7f7fff"},
+    {"id":"jpeg-progressive","assetCaseId":"jpeg-progressive-admitted","declaredMediaType":"image/jpeg","logicalWidthPx":2,"logicalHeightPx":3,"rgba8Hex":"0a141eff0a141eff0a141eff0a141eff0a141eff0a141eff"},
+    {"id":"jpeg-exif","assetCaseId":"jpeg-exif-admitted","declaredMediaType":"image/jpeg","logicalWidthPx":3,"logicalHeightPx":2,"rgba8Hex":"7f7f7fff7f7f7fff7f7f7fff7f7f7fff7f7f7fff7f7f7fff"},
+    {"id":"jpeg-canonical-icc","assetCaseId":"jpeg-canonical-icc-admitted","declaredMediaType":"image/jpeg","logicalWidthPx":2,"logicalHeightPx":3,"rgba8Hex":"0a141eff0a141eff0a141eff0a141eff0a141eff0a141eff"},
+    {"id":"webp-lossy","assetCaseId":"webp-lossy-admitted","declaredMediaType":"image/webp","logicalWidthPx":2,"logicalHeightPx":3,"rgba8Hex":"0b151dff0b151dff0b151dff0b151dff0b151dff0b151dff"},
+    {"id":"webp-lossless","assetCaseId":"webp-lossless-admitted","declaredMediaType":"image/webp","logicalWidthPx":2,"logicalHeightPx":3,"rgba8Hex":"0a141eff0a141eff0a141eff0a141eff0a141eff0a141eff"},
+    {"id":"webp-exif","assetCaseId":"webp-exif-admitted","declaredMediaType":"image/webp","logicalWidthPx":3,"logicalHeightPx":2,"rgba8Hex":"0b151dff0b151dff0b151dff0b151dff0b151dff0b151dff"},
+    {"id":"webp-canonical-icc","assetCaseId":"webp-canonical-icc-admitted","declaredMediaType":"image/webp","logicalWidthPx":2,"logicalHeightPx":3,"rgba8Hex":"0b151dff0b151dff0b151dff0b151dff0b151dff0b151dff"}
+  ],
+  "failureCases": [
+    {"id":"png-corrupt-entropy","assetCaseId":"png-corrupt-idat-invalid","declaredMediaType":"image/png","descriptorCaseId":"png-rgba-admitted","expectedCode":"DECODE_FAILED"},
+    {"id":"png-noncanonical-icc","assetCaseId":"png-iccp-unsupported","declaredMediaType":"image/png","descriptorCaseId":"png-rgba-admitted","expectedCode":"DECODE_FAILED"},
+    {"id":"jpeg-noncanonical-icc","assetCaseId":"jpeg-icc-unsupported","declaredMediaType":"image/jpeg","descriptorCaseId":"jpeg-gray-admitted","expectedCode":"DECODE_FAILED"},
+    {"id":"webp-noncanonical-icc","assetCaseId":"webp-iccp-unsupported","declaredMediaType":"image/webp","descriptorCaseId":"webp-lossy-admitted","expectedCode":"DECODE_FAILED"}
+  ],
+  "orientationSource": {
+    "encodedWidthPx": 3,
+    "encodedHeightPx": 2,
+    "straightRgba8Hex": "0102030405060708090a0b0c0d0e0f101112131415161718"
+  },
+  "orientationCases": [
+    {"orientation":"IDENTITY","logicalWidthPx":3,"logicalHeightPx":2,"rgba8Hex":"0102030405060708090a0b0c0d0e0f101112131415161718"},
+    {"orientation":"MIRROR_HORIZONTAL","logicalWidthPx":3,"logicalHeightPx":2,"rgba8Hex":"090a0b0c050607080102030415161718111213140d0e0f10"},
+    {"orientation":"ROTATE_180","logicalWidthPx":3,"logicalHeightPx":2,"rgba8Hex":"15161718111213140d0e0f10090a0b0c0506070801020304"},
+    {"orientation":"MIRROR_VERTICAL","logicalWidthPx":3,"logicalHeightPx":2,"rgba8Hex":"0d0e0f1011121314151617180102030405060708090a0b0c"},
+    {"orientation":"TRANSPOSE","logicalWidthPx":2,"logicalHeightPx":3,"rgba8Hex":"010203040d0e0f100506070811121314090a0b0c15161718"},
+    {"orientation":"ROTATE_90_CW","logicalWidthPx":2,"logicalHeightPx":3,"rgba8Hex":"0d0e0f1001020304111213140506070815161718090a0b0c"},
+    {"orientation":"TRANSVERSE","logicalWidthPx":2,"logicalHeightPx":3,"rgba8Hex":"15161718090a0b0c11121314050607080d0e0f1001020304"},
+    {"orientation":"ROTATE_270_CW","logicalWidthPx":2,"logicalHeightPx":3,"rgba8Hex":"090a0b0c151617180506070811121314010203040d0e0f10"}
+  ],
+  "cacheCases": [
+    {"id":"first-decode","events":["MISS","DECODE","INSERT"],"outcome":"INSERTED","uniqueContents":1,"retainedBytes":4},
+    {"id":"duplicate-hit","events":["MISS","DECODE","INSERT","HIT"],"outcome":"HIT","uniqueContents":1,"retainedBytes":4},
+    {"id":"lease-expired-before-hit","events":["MISS","DECODE","INSERT","LEASE_EXPIRED","HIT"],"outcome":"RESOURCE_LEASE_EXPIRED","uniqueContents":1,"retainedBytes":4},
+    {"id":"corruption-evicts","events":["MISS","DECODE","INSERT","CORRUPT","HIT"],"outcome":"RENDER_INTERNAL_ERROR","uniqueContents":0,"retainedBytes":4},
+    {"id":"budget-below","reserveBytes":536870911,"outcome":"RESERVED","retainedBytes":536870911},
+    {"id":"budget-at","reserveBytes":536870912,"outcome":"RESERVED","retainedBytes":536870912},
+    {"id":"budget-above","reserveBytes":536870913,"outcome":"RESOURCE_BUDGET_EXCEEDED","retainedBytes":0}
+  ],
+  "independentReplayScope": {
+    "codecPixels": "A1_RUST_PRIMARY_WITH_FROZEN_EXPECTED_BYTES",
+    "vectorIdentityOrientationDigestAndCache": "A2_PYTHON_STDLIB_INDEPENDENT"
+  },
+  "boundary": {
+    "resourceBytes": "FULL_IMAGE_DECODE_AUTOMATED_VERIFIED_UNWIRED",
+    "imageDecode": "STATIC_PNG_JPEG_WEBP_STRAIGHT_RGBA8_ORIENTED",
+    "fontFullParse": "DEFERRED",
+    "decodedCache": "REQUEST_LOCAL_CONTENT_ADDRESSED_536870912_BYTES",
+    "daemonOutputPath": "UNWIRED",
+    "profileAvailability": "NOT_REGISTERED",
+    "certificationStatus": "NOT_CERTIFIED",
+    "processRasterImplementation": "ABSENT",
+    "productRoute": "CLOSED",
+    "providerAttempts": 0
+  }
+}

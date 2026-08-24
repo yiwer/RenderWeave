@@ -75,7 +75,7 @@ impl ResourcePreparationProblem {
         self.limit_id
     }
 
-    fn for_resource(code: ResourcePreparationProblemCode, resource_id: &str) -> Self {
+    pub(super) fn for_resource(code: ResourcePreparationProblemCode, resource_id: &str) -> Self {
         Self {
             code,
             resource_id: resource_id.into(),
@@ -84,10 +84,14 @@ impl ResourcePreparationProblem {
     }
 
     fn budget(resource_id: &str) -> Self {
+        Self::budget_for_limit(resource_id, REQUEST_RAW_CACHE_BYTES_LIMIT_ID)
+    }
+
+    pub(super) fn budget_for_limit(resource_id: &str, limit_id: &'static str) -> Self {
         Self {
             code: ResourcePreparationProblemCode::ResourceBudgetExceeded,
             resource_id: resource_id.into(),
-            limit_id: Some(REQUEST_RAW_CACHE_BYTES_LIMIT_ID),
+            limit_id: Some(limit_id),
         }
     }
 }
@@ -111,6 +115,7 @@ enum ParsedDescriptor {
         orientation: ImageOrientation,
         logical_width_px: u32,
         logical_height_px: u32,
+        embedded_icc: bool,
     },
     Font {
         flavor: FontFlavor,
@@ -137,6 +142,13 @@ impl VerifiedResourceMedia {
 
     pub fn byte_length(&self) -> u64 {
         self.byte_length
+    }
+
+    pub(crate) fn has_embedded_icc(&self) -> Option<bool> {
+        match self.descriptor {
+            ParsedDescriptor::Image { embedded_icc, .. } => Some(embedded_icc),
+            ParsedDescriptor::Font { .. } => None,
+        }
     }
 }
 
@@ -237,6 +249,7 @@ fn descriptor_matches(resource: &AdmittedRenderResource, parsed: ParsedDescripto
             orientation,
             logical_width_px,
             logical_height_px,
+            embedded_icc: _,
         } => {
             resource.kind() == RenderResourceKind::Image
                 && resource.technical_descriptor().image_dimensions()
@@ -262,6 +275,7 @@ fn image_descriptor(
     width: u32,
     height: u32,
     orientation: ImageOrientation,
+    embedded_icc: bool,
 ) -> Result<ParsedDescriptor, ()> {
     if width == 0
         || height == 0
@@ -289,6 +303,7 @@ fn image_descriptor(
         orientation,
         logical_width_px,
         logical_height_px,
+        embedded_icc,
     })
 }
 
@@ -309,6 +324,7 @@ fn parse_png(bytes: &[u8]) -> Result<ParsedDescriptor, ()> {
     let mut ended_idat = false;
     let mut saw_iend = false;
     let mut saw_srgb = false;
+    let mut saw_iccp = false;
     let mut saw_exif = false;
     let mut orientation = ImageOrientation::Identity;
 
@@ -358,7 +374,7 @@ fn parse_png(bytes: &[u8]) -> Result<ParsedDescriptor, ()> {
                 {
                     return Err(());
                 }
-                image_descriptor(width, height, ImageOrientation::Identity)?;
+                image_descriptor(width, height, ImageOrientation::Identity, false)?;
             }
             b"PLTE" => {
                 if !saw_ihdr
@@ -393,14 +409,25 @@ fn parse_png(bytes: &[u8]) -> Result<ParsedDescriptor, ()> {
                 saw_trns = true;
             }
             b"sRGB" => {
-                if saw_srgb || length != 1 || payload[0] > 3 {
+                if saw_srgb || saw_iccp || length != 1 || payload[0] > 3 {
                     return Err(());
                 }
                 saw_srgb = true;
             }
             b"iCCP" => {
-                // Exact canonical ICC decompression/equality belongs to the IMAGE decoder slice.
-                return Err(());
+                let separator = payload.iter().position(|byte| *byte == 0).ok_or(())?;
+                if saw_iccp
+                    || saw_srgb
+                    || saw_plte
+                    || saw_idat
+                    || separator == 0
+                    || separator > 79
+                    || payload.get(separator + 1) != Some(&0)
+                    || payload.len() <= separator + 2
+                {
+                    return Err(());
+                }
+                saw_iccp = true;
             }
             b"eXIf" => {
                 if saw_exif {
@@ -444,7 +471,7 @@ fn parse_png(bytes: &[u8]) -> Result<ParsedDescriptor, ()> {
     {
         return Err(());
     }
-    image_descriptor(width, height, orientation)
+    image_descriptor(width, height, orientation, saw_iccp)
 }
 
 fn parse_jpeg(bytes: &[u8]) -> Result<ParsedDescriptor, ()> {
@@ -461,6 +488,7 @@ fn parse_jpeg(bytes: &[u8]) -> Result<ParsedDescriptor, ()> {
     let mut saw_dqt = false;
     let mut saw_dht = false;
     let mut saw_exif = false;
+    let mut saw_icc = false;
     let mut saw_adobe = false;
     let mut orientation = ImageOrientation::Identity;
 
@@ -546,7 +574,7 @@ fn parse_jpeg(bytes: &[u8]) -> Result<ParsedDescriptor, ()> {
                 if components == 3 && component_ids != [1, 2, 3] {
                     return Err(());
                 }
-                image_descriptor(width, height, ImageOrientation::Identity)?;
+                image_descriptor(width, height, ImageOrientation::Identity, false)?;
             }
             0xc1 | 0xc3 | 0xc5 | 0xc6 | 0xc7 | 0xc9 | 0xca | 0xcb | 0xcd | 0xce | 0xcf | 0xcc
             | 0xdc | 0xde | 0xdf => return Err(()),
@@ -560,8 +588,10 @@ fn parse_jpeg(bytes: &[u8]) -> Result<ParsedDescriptor, ()> {
                 orientation = parse_exif_orientation(&payload[6..])?;
             }
             0xe2 if payload.starts_with(b"ICC_PROFILE\0") => {
-                // Exact canonical ICC segment assembly belongs to the IMAGE decoder slice.
-                return Err(());
+                if payload.len() <= 14 || payload[12] == 0 || payload[13] == 0 {
+                    return Err(());
+                }
+                saw_icc = true;
             }
             0xee if payload.starts_with(b"Adobe") => {
                 if saw_adobe || payload.len() < 12 {
@@ -590,7 +620,7 @@ fn parse_jpeg(bytes: &[u8]) -> Result<ParsedDescriptor, ()> {
     {
         return Err(());
     }
-    image_descriptor(width, height, orientation)
+    image_descriptor(width, height, orientation, saw_icc)
 }
 
 fn parse_webp(bytes: &[u8]) -> Result<ParsedDescriptor, ()> {
@@ -608,6 +638,8 @@ fn parse_webp(bytes: &[u8]) -> Result<ParsedDescriptor, ()> {
     let mut saw_image = false;
     let mut saw_alpha = false;
     let mut saw_exif = false;
+    let mut saw_iccp = false;
+    let mut expects_iccp = false;
     let mut orientation = ImageOrientation::Identity;
 
     while position < bytes.len() {
@@ -630,14 +662,20 @@ fn parse_webp(bytes: &[u8]) -> Result<ParsedDescriptor, ()> {
                 }
                 saw_vp8x = true;
                 let flags = payload[0];
-                if flags & 0xc3 != 0 || flags & 0x20 != 0 {
+                if flags & 0xc3 != 0 {
                     return Err(());
                 }
+                expects_iccp = flags & 0x20 != 0;
                 let width = little_u24(payload, 4).ok_or(())?.checked_add(1).ok_or(())?;
                 let height = little_u24(payload, 7).ok_or(())?.checked_add(1).ok_or(())?;
                 canvas_dimensions = Some((width, height));
             }
-            b"ICCP" => return Err(()),
+            b"ICCP" => {
+                if saw_iccp || !saw_vp8x || saw_image || payload.is_empty() {
+                    return Err(());
+                }
+                saw_iccp = true;
+            }
             b"ANIM" | b"ANMF" => return Err(()),
             b"EXIF" => {
                 if saw_exif || saw_image {
@@ -687,10 +725,11 @@ fn parse_webp(bytes: &[u8]) -> Result<ParsedDescriptor, ()> {
     if !saw_image
         || position != bytes.len()
         || canvas_dimensions.is_some_and(|v| v != (width, height))
+        || saw_iccp != expects_iccp
     {
         return Err(());
     }
-    image_descriptor(width, height, orientation)
+    image_descriptor(width, height, orientation, saw_iccp)
 }
 
 fn parse_font(bytes: &[u8], expected_flavor: FontFlavor) -> Result<ParsedDescriptor, ()> {
@@ -1190,7 +1229,7 @@ impl Debug for RequestRawResourceCache {
     }
 }
 
-fn ensure_lease_active(
+pub(super) fn ensure_lease_active(
     resource: &AdmittedRenderResource,
     now_epoch_millis: i64,
 ) -> Result<(), ResourcePreparationProblem> {
@@ -1314,7 +1353,7 @@ mod tests {
                 .as_array()
                 .unwrap()
                 .len(),
-            24
+            22
         );
         assert_eq!(
             media_vectors["descriptorCases"].as_array().unwrap().len(),
@@ -1325,7 +1364,7 @@ mod tests {
                 .as_array()
                 .unwrap()
                 .len(),
-            5
+            7
         );
         assert_eq!(media_vectors["cacheCases"].as_array().unwrap().len(), 7);
     }
@@ -1363,7 +1402,7 @@ mod tests {
         let media_vectors: Value = serde_json::from_str(MEDIA_VECTORS).unwrap();
         let asset_vectors: Value = serde_json::from_str(ASSET_VECTORS).unwrap();
         let cases = media_vectors["defensiveAssetCases"].as_array().unwrap();
-        assert_eq!(cases.len(), 24);
+        assert_eq!(cases.len(), 22);
 
         for case in cases {
             let asset = asset_case(&asset_vectors, case["assetCaseId"].as_str().unwrap());

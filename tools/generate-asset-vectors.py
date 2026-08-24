@@ -345,7 +345,7 @@ def main() -> int:
     cases.append(rejected("webp-truncated-invalid", load("lossy.webp")[:20], "ASSET_CONTENT_INVALID", "ASSET_STRUCTURE", "/"))
     webp_exif = insert_webp_vp8x_and_exif(load("lossy.webp"), exif_tiff(6))
     cases.append(image_admitted("webp-exif-admitted", webp_exif, 2, 3, "ROTATE_90_CW", 3, 2))
-    webp_canonical = insert_webp_vp8x_and_chunk(load("lossy.webp"), "ICCP", canonical, 0x10)
+    webp_canonical = insert_webp_vp8x_and_chunk(load("lossy.webp"), "ICCP", canonical, 0x20)
     cases.append(image_admitted("webp-canonical-icc-admitted", webp_canonical, 2, 3, "IDENTITY", 2, 3))
 
     # FONT

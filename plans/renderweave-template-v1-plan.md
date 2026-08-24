@@ -3397,6 +3397,51 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
   cache、Profile、certification、raster、daemon RESULT 与最终 Product Editor route 仍为关闭边界；未运行 provider、
   读取 API Key、发送真实数据或 push/tag/PR，`/prototype` 不计最终产品交付。
 
+## 102. TV1-T103 执行卡
+
+- 决策：T102 以 verified commit `590d07f` 收口且 worktree clean 后，最终产品权威预览链路的下一真实缺口是
+  IMAGE full decode。按 Ticket 13/16/19 与 ADR-0045，把 FONT/Skia/scene/daemon/UI 留在后续票，只深化
+  `renderweave-renderer-resource` 的 IMAGE decoder/cache deep module。
+- Interface/seam：只消费同 occurrence typed resource + T102 `PreparedRawResource` + exact Profile + wall snapshot；
+  输出 occurrence-local resourceId、logical dimensions 与 immutable straight RGBA8。decoded cache key 不含
+  resourceId/URL/assetId，固定为 Profile + exact content facts。
+- 精确语义：pure-Rust PNG `0.18.1`、platform-independent JPEG `0.3.2` 与 WebP `0.2.4` exact pin/vendor；
+  canonical ICC byte equality、14 个 admitted IMAGE 完整 entropy decode、八 orientation、logical dimensions 与
+  RGBA8 pixels。malformed/unsupported=`DECODE_FAILED`，decoder/descriptor drift=`RENDER_INTERNAL_ERROR`。
+- cache/capacity：inclusive 512 MiB `assetsAndFetch.requestDecodedCacheBytes`，candidate decoder scratch 128 MiB；
+  allocation 前 checked reservation，duplicate reuse；hit 仍重检 lease/raw/media/descriptor/pixel digest，corruption
+  驱逐且不退款。
+- 允许影响：T103 tracker/map/plan/NOTES、resource Rust module/tests/shared vectors、Python independent structural
+  verifier、Cargo.lock/vendor/process manifest/render gate identity/evidence。
+- 禁止影响：FONT full parse/shaping、Image intrinsic/layout、scene image paint/sampling/blend、daemon RESULT/Profile
+  registration、Java/OpenAPI/migration/Web/Product Editor route、formal record、physical certification、J1/A3/READY
+  与外部副作用。
+- TDD/gates：public Interface +首个 PNG pixel 共同 RED；GREEN 后 focused/workspace/independent/offline → `render` →
+  affected `fast` → sequential `server` → Goal `full` → resolution `fast`。codec pixel 最高 A1，Python 对 vector/
+  orientation/cache 为独立 replay；不把它们合并宣称物理 certified。provider/API Key/费用/真实数据=0，不
+  push/tag/PR，`/prototype` 不计交付。
+
+### TV1-T103 resolution evidence
+
+- RED→GREEN：缺失的 public IMAGE decoder/cache Interface 与首个 PNG exact-pixel case 先红；最终 exact-pinned
+  PNG/JPEG/WebP、canonical ICC、straight RGBA8、八 orientation、logical dimensions、512 MiB decoded cache 与
+  corruption/budget failure semantics 全绿。Rust workspace 64 tests，fmt/check/clippy `-D warnings` 均绿。
+- WebP corpus 修正：frozen canonical VP8X ICC bit 从错误 alpha bit 修正为规范 `0x20`，ANIM/ANMF 拒绝边界不变；
+  Asset gate `.sdlc/evidence/20260825-013807-asset/` Java/Python 41/41。
+- 独立证据：IMAGE 33/33 cases、394 checks（structure/orientation/cache A2；codec pixels A1），resource media/raw
+  54/54 cases、239 checks，process 7 vectors、110 checks、3067 vendor files；IMAGE vector SHA-256
+  `dfff93643ace7658f7e07e8b661bbe1a80af9af6aa2b1fa2138d81e329729c18`，process manifest SHA-256
+  `293df9d26d8a7d884721d7f7314eac80ecee300a20b736645aab533b69b555e1`。
+- 分级 gate：`render` `.sdlc/evidence/20260825-015039-render/`、affected `fast`
+  `.sdlc/evidence/20260825-015224-fast/`、sequential `server`
+  `.sdlc/evidence/20260825-015257-server/`（347/0）、Goal `full`
+  `.sdlc/evidence/20260825-021032-full/` 全绿；full 覆盖跨平台 Renderer、Maven、Node 24 Web 212 tests、runtime
+  canary、Playwright 23+1 controlled skip、Draft/inference 产品旅程，外部 provider/API Key/费用/真实数据=0；
+  状态回填后的 resolution `fast` `.sdlc/evidence/20260825-023720-fast/` 3 steps 均 exit 0。
+- 状态为 `resolved / automated_verified`。IMAGE kernel/decoded cache 已形成后续消费 seam，但 daemon output
+  `UNWIRED`、Profile `NOT_REGISTERED`、certification `NOT_CERTIFIED`、raster `ABSENT`、Product Editor 权威预览
+  route `CLOSED`；FONT、scene/raster/RESULT/Profile 与最终产品接线继续后续 DAG，不把 `/prototype` 当作交付。
+
 ## 66. TV1-T67 执行卡
 
 - 决策：T66 以 verified commit `a6fabe5` 收口且 worktree clean 后，复算原始 Ticket 10 §3/§7、

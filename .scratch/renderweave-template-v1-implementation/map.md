@@ -516,6 +516,11 @@ Label: wayfinder:map
   raw cache。Rust 22 tests、独立 Python 54/54 cases/239 checks，`render`/affected `fast`/顺序 `server`/17-step
   `full` 均绿；resource bytes 只到 media/descriptor preflight，完整 IMAGE/FONT decode、decoded cache、daemon
   RESULT/Profile 与最终 Product Editor route 仍关闭。
+- [实现 Renderer IMAGE 完整解码、orientation 与 request-local decoded cache 内核](issues/103-image-decode-orientation-cache-kernel.md) —
+  **resolved / automated_verified**；消费 T102 prepared raw IMAGE，完成 exact-pinned pure-Rust PNG/JPEG/WebP、
+  canonical sRGB ICC equality、straight RGBA8、EXIF 八 orientation 与 inclusive 512 MiB request-local decoded
+  cache。Rust 64 tests、独立 IMAGE 33/33 cases/394 checks，`render`/affected `fast`/顺序 `server`/Goal `full`
+  均绿；codec pixels 最高 A1，daemon RESULT/Profile/raster/Product Editor 权威预览 route 仍关闭并继续后续 DAG。
 - [验证 Product Editor 状态、恢复与权威预览架构](issues/09-validate-product-editor-architecture.md) —
   throwaway 逻辑原型（`/prototype/editor-state-model`，不进产品 route）把冻结编辑器规则编码为确定性
   fixture 状态机：10 个引导走查场景 37/37 断言 + 自由操作冒烟 + 键盘焦点检查全部通过（Playwright A1，

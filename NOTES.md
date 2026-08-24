@@ -2928,3 +2928,19 @@
 - 状态回填后的 resolution `fast` `.sdlc/evidence/20260825-010305-fast/` 3 steps 均 exit 0（11.003 秒）。
 - 当前只把 resource bytes 推进为 `MEDIA_DESCRIPTOR_PREFLIGHT_AUTOMATED_VERIFIED`；完整 IMAGE/FONT decode、decoded
   cache、Profile、raster、daemon RESULT 与最终 Product Editor route 继续后续 DAG，不把 `/prototype` 当作交付。
+
+# 2026-08-25 Template-v1 T103 IMAGE decode/orientation/decoded cache（resolved / automated_verified）
+
+- T102 已以 `590d07f` verified commit 收口且 worktree clean；用户确认交付目标是最终产品 Template-v1 页面与功能，
+  不是 `/prototype`。下一 frontier 是 Product Editor 权威预览真正需要的完整 IMAGE resource seam。
+- T103 只深化 Renderer resource：public Interface/PNG pixel 先 RED，随后 exact-pinned pure-Rust PNG/JPEG/WebP、
+  canonical sRGB ICC、straight RGBA8、八 orientation 与 inclusive 512 MiB request-local decoded cache 全部 GREEN；
+  Rust workspace 64 tests，独立 IMAGE 33/33 cases/394 checks，codec pixels 如实保持 A1。
+- 发现并修正 frozen canonical WebP 的 VP8X ICC bit；Asset gate `.sdlc/evidence/20260825-013807-asset/` 41/41，
+  animation 拒绝边界不变。分级证据：`render` `.sdlc/evidence/20260825-015039-render/`、affected `fast`
+  `.sdlc/evidence/20260825-015224-fast/`、sequential `server` `.sdlc/evidence/20260825-015257-server/` 347/0、
+  Goal `full` `.sdlc/evidence/20260825-021032-full/` 全绿；provider attempts/API Key reads/reservations/cost/open
+  authorization=0。状态回填后的 resolution `fast` `.sdlc/evidence/20260825-023720-fast/` 3 steps 均 exit 0。
+- FONT、Image layout/scene/raster、daemon RESULT/Profile registration、Java/OpenAPI/Web Product Editor route 与
+  J1/A3/READY 仍未完成；当前 truthful boundary 为 Profile `NOT_REGISTERED`、certification `NOT_CERTIFIED`、raster
+  `ABSENT`、daemon output `UNWIRED`、product route `CLOSED`，继续后续 DAG，不把 `/prototype` 当交付。

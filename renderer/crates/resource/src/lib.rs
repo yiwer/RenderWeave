@@ -2,6 +2,7 @@ use renderweave_renderer_document::AdmittedRenderResource;
 use sha2::{Digest, Sha256};
 
 mod fetch;
+mod image;
 mod media;
 
 pub use fetch::{
@@ -9,6 +10,10 @@ pub use fetch::{
     FETCH_RESPONSE_HEADER_BYTES, FETCH_STREAM_CHUNK_BYTES, FetchEgressPolicy,
     FetchEgressPolicyError, FetchedResource, HttpsResourceFetcher, RESOURCE_PHASE_MILLIS,
     ResourceFetchProblem, ResourceFetchProblemCode, ResourceFetcher,
+};
+pub use image::{
+    DECODER_SCRATCH_BYTES_LIMIT_ID, MAX_DECODER_SCRATCH_BYTES, MAX_REQUEST_DECODED_CACHE_BYTES,
+    PreparedDecodedImage, REQUEST_DECODED_CACHE_BYTES_LIMIT_ID, RequestDecodedImageCache,
 };
 pub use media::{
     MAX_REQUEST_RAW_CACHE_BYTES, PreparedRawResource, REQUEST_RAW_CACHE_BYTES_LIMIT_ID,

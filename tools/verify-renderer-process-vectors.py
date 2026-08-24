@@ -181,6 +181,9 @@ def verify_manifest(
         manifest["directDependencies"]
         == [
             "hex@0.4.3",
+            "image-webp@0.2.4",
+            "jpeg-decoder@0.3.2+platform_independent",
+            "png@0.18.1",
             "serde@1.0.228",
             "serde_json@1.0.149",
             "sha2@0.10.9",
