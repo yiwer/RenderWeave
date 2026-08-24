@@ -459,6 +459,13 @@ Label: wayfinder:map
   scene/paint/raster 子闭包。shared `/1` 为 7 rendered + 8 unsupported、15/15 cases、49 checks，vector SHA-256
   `578b2446b557059cddc49a57634c0aa65d5a3a5ba565b7963be3c854b67597ee`；不做 pixel snap，不选择 AA tie，
   Profile 仍 NOT_REGISTERED、raster inventory 仍 ABSENT、daemon 仍 UNWIRED、正式产品 route 仍 CLOSED。
+- [实现 authored-order 多不透明 Rect 的真实 Engine PNG 输出内核](issues/94-authored-order-multi-opaque-rect-engine-png-kernel.md) —
+  **resolved / automated_verified**；保持唯一 `render_png` Interface，把 direct pixel-aligned opaque Rect 扩为
+  零个或多个，先 prepare 全部 child 再按 authored order hard-clipped paint，后 child 覆盖重叠 pixel。shared `/1`
+  为 8 rendered + 8 unsupported、16/16 cases、52 checks，vector SHA-256
+  `a34a2dd5eb9874691cf2e90f2f75f49dc7d0650d6d7fb306a62ec213c51e2d45`；`render`/`fast`/`server`/17-step
+  `full` 与 resolution `fast` 全绿。Profile NOT_REGISTERED、daemon UNWIRED、E6/正式产品 route CLOSED，未把
+  `/prototype` 当作交付。
 - [验证 Product Editor 状态、恢复与权威预览架构](issues/09-validate-product-editor-architecture.md) —
   throwaway 逻辑原型（`/prototype/editor-state-model`，不进产品 route）把冻结编辑器规则编码为确定性
   fixture 状态机：10 个引导走查场景 37/37 断言 + 自由操作冒烟 + 键盘焦点检查全部通过（Playwright A1，

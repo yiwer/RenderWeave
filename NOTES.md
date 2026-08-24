@@ -1,6 +1,19 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-24 **Template v1 implementation TV1-T94 已由 Codex `/root` single-writer 完成，状态
+  `resolved/automated_verified`**：沿唯一 `render_png` deep Interface，把 Canvas 的 direct pixel-aligned opaque Rect
+  扩为零个或多个；全部 child 先 prepare，成功后才分配 surface 并按 authored order hard-clipped paint，后 child
+  覆盖重叠 pixel，second-subpixel 后续错误仍全有或全无 fail closed。Rust/Python 共同 RED 后独立 GREEN，shared
+  Engine-PNG `/1` 最终为 8 rendered + 8 unsupported、16/16 cases、52 checks，vector SHA-256
+  `a34a2dd5eb9874691cf2e90f2f75f49dc7d0650d6d7fb306a62ec213c51e2d45`。`render`
+  `.sdlc/evidence/20260824-150832-render/`、affected `fast` `.sdlc/evidence/20260824-150858-fast/`、顺序
+  `server` `.sdlc/evidence/20260824-150916-server/` 与 17-step `full`
+  `.sdlc/evidence/20260824-152240-full/` 均绿；full 用时 1438.987 秒，App 344/0/0/15、Node 24 Web
+  26 files/212 tests、runtime canary、Playwright 23 passed + 1 controlled skip、Draft journey 与 inference replay
+  E2E 1/1 均通过；状态回填后的 resolution `fast` `.sdlc/evidence/20260824-154857-fast/` 亦为 exit 0。Profile
+  NOT_REGISTERED、certification NOT_CERTIFIED、process raster ABSENT、daemon UNWIRED、E6/正式产品 route CLOSED；
+  provider attempts/API Key reads/费用/真实数据为 0，未 push/tag/PR，`/prototype` 不计最终产品交付。
 - 2026-08-24 **Template v1 implementation TV1-T93 已由 Codex `/root` single-writer 完成，状态
   `resolved/automated_verified`**：沿用唯一 `render_png` Interface，为一个 direct ABSOLUTE/FIXED、default
   identity、零圆角、无 stroke、opaque fill 且四条 device edge 原生精确落在整数 pixel boundary 的 Rect 完成

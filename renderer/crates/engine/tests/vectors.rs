@@ -122,7 +122,7 @@ fn assert_honest_boundary(boundary: &Boundary) {
     assert_eq!("NOT_REGISTERED", boundary.profile_availability);
     assert_eq!("NOT_CERTIFIED", boundary.certification_status);
     assert_eq!(
-        "PIXEL_ALIGNED_OPAQUE_RECT_PNG_KERNEL_UNWIRED",
+        "AUTHORED_ORDER_MULTI_PIXEL_ALIGNED_OPAQUE_RECT_PNG_KERNEL_UNWIRED",
         boundary.engine_png_kernel
     );
     assert_eq!("ABSENT", boundary.process_raster_implementation);

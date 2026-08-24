@@ -178,10 +178,15 @@ pub fn render_png(
         .map_err(|_| EnginePngError::Contract("admitted RenderDocument could not be parsed"))?;
     let canvas = object_member(root.as_object(), "canvas")?;
     let children = array_member(canvas, "children")?;
-    if children.len() > 1 {
-        return Err(EnginePngError::Unsupported(
-            EnginePngUnsupported::SceneStructure,
-        ));
+    for child in children {
+        let child = child
+            .as_object()
+            .ok_or(EnginePngError::Contract("Canvas child is not an object"))?;
+        if text_member(child, "kind")? != "rect" {
+            return Err(EnginePngError::Unsupported(
+                EnginePngUnsupported::SceneStructure,
+            ));
+        }
     }
 
     let background = color_member(canvas, "backgroundColor")?;
@@ -223,6 +228,24 @@ pub fn render_png(
         ));
     }
 
+    let mut rects = Vec::new();
+    rects
+        .try_reserve_exact(children.len())
+        .map_err(|_| EnginePngError::RasterAllocation)?;
+    for (child, layout_entry) in children.iter().zip(&layout.entries()[1..]) {
+        rects.push(prepare_rect_paint(
+            child
+                .as_object()
+                .ok_or(EnginePngError::Contract("Canvas child is not an object"))?,
+            layout_entry,
+            &bleed_left,
+            &bleed_top,
+            dpi,
+            surface.width_px(),
+            surface.height_px(),
+        )?);
+    }
+
     let raster_length =
         usize::try_from(surface.rgba8_bytes()).map_err(|_| EnginePngError::RasterAllocation)?;
     let mut pixels = Vec::new();
@@ -233,18 +256,7 @@ pub fn render_png(
     for target in pixels.chunks_exact_mut(4) {
         target.copy_from_slice(&pixel);
     }
-    if let Some(child) = children.first() {
-        let rect = prepare_rect_paint(
-            child
-                .as_object()
-                .ok_or(EnginePngError::Contract("Canvas child is not an object"))?,
-            &layout.entries()[1],
-            &bleed_left,
-            &bleed_top,
-            dpi,
-            surface.width_px(),
-            surface.height_px(),
-        )?;
+    for rect in rects {
         paint_rect(&mut pixels, surface.width_px(), rect)?;
     }
     let pixel_sha256 = raw_sha256_prefixed(&pixels);

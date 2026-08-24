@@ -3066,6 +3066,40 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
   状态为 `resolved/automated_verified`；Profile NOT_REGISTERED、certification NOT_CERTIFIED、process raster ABSENT、
   daemon UNWIRED、E6/正式产品 route CLOSED 均未推进，provider attempts/API Key reads/付费调用/真实数据为 0。
 
+## 93. TV1-T94 执行卡
+
+- 决策：T93 以 verified commit `cc74429` 收口且 worktree clean 后，daemon RESULT 的正式成功路径仍被真实
+  Renderer Profile 注册与认证记录阻塞，不能通过 partial/test-only Profile 绕过。现有 Engine 已能执行单个原生
+  pixel-aligned opaque Rect；把相同叶子扩为 authored-order 多节点不需要 AA、blend 或新外部授权，因此登记为当前
+  single-writer frontier。
+- Interface/seam：保持唯一 `render_png(&AdmittedRenderDocument, dpi)`；先要求 definite layout preorder 与 Canvas +
+  direct children 一一对应，随后准备全部 `PixelRect`，成功后才分配/填充 surface 并按 authored order paint。
+  Rust/Python 使用独立控制流但共享冻结 vectors。
+- 精确子集：Canvas 接受零个或多个 direct Rect，每个都沿用 T93 的 visible、opacity=1、ABSOLUTE/FIXED、identity、
+  zero-radius、no-stroke、opaque fill 与 exact integer device-edge 条件；后 child 在 overlap 上覆盖前 child。任一 child
+  不满足条件则全有或全无地 fail closed，不编码 partial output。
+- 允许影响：T94 tracker/plan/NOTES、Engine Rust module/tests、shared Engine-PNG vectors、Python independent verifier、
+  render gate identity/assertions/evidence；同票修正 render summary 中仍写 T92 empty-Canvas 的旧 boundary。
+- 禁止影响：nested/container/z-index/clip/general transform/partial opacity/AA/blend、Text/Image/resource/font、JPEG/
+  LayoutTrace、daemon RESULT/Profile registration、Java/OpenAPI/migration/Web/E6/route、formal records、physical
+  certification、J1/A3/READY 与外部副作用。
+- TDD：现有 two-Rect negative 改为 3×2 overlap positive，使后绘制红 Rect 覆盖先前蓝 Rect 的一个 pixel；新增
+  first-supported/second-subpixel negative。shared `/1` 先在 Rust/Python 共同 RED，目标 8 rendered + 8 unsupported、
+  16/16 cases、52 checks。验证按 focused → `render` → `fast` → `server` → `full` → resolution `fast` 扩大，最高
+  只到 `automated_verified`；不 push/tag/PR，不运行 provider，不读取 API Key。
+- Resolution：Rust focused vectors 先以 overlap `SCENE_STRUCTURE` 与 second-subpixel problem drift 共同 RED，Python
+  independent 同时报 overlap drift；最小实现后 Rust 2/2、Python 16/16 cases、52 checks GREEN。shared `/1` 最终为
+  8 rendered + 8 unsupported，vector SHA-256
+  `a34a2dd5eb9874691cf2e90f2f75f49dc7d0650d6d7fb306a62ec213c51e2d45`。`render`
+  `.sdlc/evidence/20260824-150832-render/`、affected `fast` `.sdlc/evidence/20260824-150858-fast/`、顺序
+  `server` `.sdlc/evidence/20260824-150916-server/` 与 17-step `full`
+  `.sdlc/evidence/20260824-152240-full/` 均 exit 0；full 用时 1438.987 秒，App 344/0/0/15、Node 24 Web
+  26 files/212 tests、runtime canary、Playwright 23 passed + 1 controlled skip 与 inference replay E2E 1/1 均通过。
+  状态回填后的 resolution `fast` `.sdlc/evidence/20260824-154857-fast/` 亦为 exit 0。状态为
+  `resolved/automated_verified`；Profile NOT_REGISTERED、certification NOT_CERTIFIED、process raster ABSENT、daemon
+  UNWIRED、E6/正式产品 route CLOSED，provider attempts/API Key reads/费用/真实数据为 0，未 push/tag/PR，
+  `/prototype` 不计产品交付。
+
 ## 66. TV1-T67 执行卡
 
 - 决策：T66 以 verified commit `a6fabe5` 收口且 worktree clean 后，复算原始 Ticket 10 §3/§7、

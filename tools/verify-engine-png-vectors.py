@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Independent stdlib replay for the TV1-T93 Engine PNG scene/raster kernel."""
+"""Independent stdlib replay for the TV1-T94 Engine PNG scene/raster kernel."""
 
 from __future__ import annotations
 
@@ -150,14 +150,13 @@ def exact_device_edge(parts: list[int], dpi: int) -> int | None:
     return edge if remainder == 0 else None
 
 
-def paint_single_rect(
+def prepare_rect(
     child: Any,
     canvas: dict[str, Any],
     dpi: int,
     width: int,
     height: int,
-    pixels: bytearray,
-) -> dict[str, str] | None:
+) -> tuple[int, int, int, int, bytes] | dict[str, str]:
     if not isinstance(child, dict) or child.get("kind") != "rect":
         return {"feature": "SCENE_STRUCTURE"}
     if (
@@ -227,11 +226,19 @@ def paint_single_rect(
     right = min(max(right, 0), width)
     top = min(max(top, 0), height)
     bottom = min(max(bottom, 0), height)
+    return left, top, right, bottom, color
+
+
+def paint_rect(
+    pixels: bytearray,
+    width: int,
+    rect: tuple[int, int, int, int, bytes],
+) -> None:
+    left, top, right, bottom, color = rect
     for row in range(top, bottom):
         for column in range(left, right):
             offset = (row * width + column) * 4
             pixels[offset : offset + 4] = color
-    return None
 
 
 def png_chunk(kind: bytes, payload: bytes) -> bytes:
@@ -281,8 +288,9 @@ def execute(document: dict[str, Any], dpi: Any) -> dict[str, Any]:
     canvas = document["canvas"]
     if not isinstance(canvas, dict) or not isinstance(canvas.get("children"), list):
         raise VerificationFailure("Canvas shape is invalid")
-    if len(canvas["children"]) > 1:
-        return {"feature": "SCENE_STRUCTURE"}
+    for child in canvas["children"]:
+        if not isinstance(child, dict) or child.get("kind") != "rect":
+            return {"feature": "SCENE_STRUCTURE"}
     pixel = parse_background(canvas.get("backgroundColor"))
     if isinstance(pixel, dict):
         return pixel
@@ -291,11 +299,15 @@ def execute(document: dict[str, Any], dpi: Any) -> dict[str, Any]:
         return dimensions
     width = dimensions["widthPx"]
     height = dimensions["heightPx"]
+    rects: list[tuple[int, int, int, int, bytes]] = []
+    for child in canvas["children"]:
+        rect = prepare_rect(child, canvas, dpi, width, height)
+        if isinstance(rect, dict):
+            return rect
+        rects.append(rect)
     pixels = bytearray(pixel * (width * height))
-    if canvas["children"]:
-        problem = paint_single_rect(canvas["children"][0], canvas, dpi, width, height, pixels)
-        if problem is not None:
-            return problem
+    for rect in rects:
+        paint_rect(pixels, width, rect)
     pixels = bytes(pixels)
     encoded = encode_png(width, height, dpi, pixels)
     return {
@@ -338,13 +350,13 @@ def verify(path: Path) -> dict[str, Any]:
     verifier.require(boundary == {
         "profileAvailability": "NOT_REGISTERED",
         "certificationStatus": "NOT_CERTIFIED",
-        "enginePngKernel": "PIXEL_ALIGNED_OPAQUE_RECT_PNG_KERNEL_UNWIRED",
+        "enginePngKernel": "AUTHORED_ORDER_MULTI_PIXEL_ALIGNED_OPAQUE_RECT_PNG_KERNEL_UNWIRED",
         "processRasterImplementation": "ABSENT",
         "daemonOutputPath": "UNWIRED",
         "productRoute": "CLOSED",
         "providerAttempts": 0,
     }, "Engine PNG honest boundary drifted")
-    verifier.require(len(vectors["renderedCases"]) == 7, "rendered case count drifted")
+    verifier.require(len(vectors["renderedCases"]) == 8, "rendered case count drifted")
     verifier.require(len(vectors["unsupportedCases"]) == 8, "unsupported case count drifted")
 
     seen: set[str] = set()
