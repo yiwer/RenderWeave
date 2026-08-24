@@ -26,6 +26,7 @@ pub enum EnginePngUnsupported {
     FramePaint,
     RectPaint,
     NonOpaqueRectAlpha,
+    NonPixelAlignedClip,
     NonPixelAlignedRect,
     PartialBackgroundAlpha,
 }
@@ -38,6 +39,7 @@ impl EnginePngUnsupported {
             Self::FramePaint => "FRAME_PAINT",
             Self::RectPaint => "RECT_PAINT",
             Self::NonOpaqueRectAlpha => "NON_OPAQUE_RECT_ALPHA",
+            Self::NonPixelAlignedClip => "NON_PIXEL_ALIGNED_CLIP",
             Self::NonPixelAlignedRect => "NON_PIXEL_ALIGNED_RECT",
             Self::PartialBackgroundAlpha => "PARTIAL_BACKGROUND_ALPHA",
         }
@@ -128,6 +130,68 @@ struct PixelRect {
     color: [u8; 4],
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+struct PixelClip {
+    left: u32,
+    top: u32,
+    right: u32,
+    bottom: u32,
+}
+
+impl PixelClip {
+    const fn surface(width: u32, height: u32) -> Self {
+        Self {
+            left: 0,
+            top: 0,
+            right: width,
+            bottom: height,
+        }
+    }
+
+    fn intersect(self, other: Self) -> Self {
+        Self {
+            left: self.left.max(other.left),
+            top: self.top.max(other.top),
+            right: self.right.min(other.right),
+            bottom: self.bottom.min(other.bottom),
+        }
+        .normalized_empty()
+    }
+
+    fn apply(self, rect: PixelRect) -> PixelRect {
+        PixelRect {
+            left: rect.left.max(self.left),
+            top: rect.top.max(self.top),
+            right: rect.right.min(self.right),
+            bottom: rect.bottom.min(self.bottom),
+            color: rect.color,
+        }
+        .normalized_empty()
+    }
+
+    fn normalized_empty(mut self) -> Self {
+        if self.right < self.left {
+            self.right = self.left;
+        }
+        if self.bottom < self.top {
+            self.bottom = self.top;
+        }
+        self
+    }
+}
+
+impl PixelRect {
+    fn normalized_empty(mut self) -> Self {
+        if self.right < self.left {
+            self.right = self.left;
+        }
+        if self.bottom < self.top {
+            self.bottom = self.top;
+        }
+        self
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct SceneOrigin {
     scaled_x: i128,
@@ -149,6 +213,7 @@ impl SceneOrigin {
 struct PreparedFrame {
     paint: Option<PixelRect>,
     content_origin: SceneOrigin,
+    descendant_clip: PixelClip,
 }
 
 impl EnginePngOutput {
@@ -258,6 +323,7 @@ pub fn render_png(
         layout.entries(),
         &mut layout_cursor,
         SceneOrigin::ROOT,
+        PixelClip::surface(surface.width_px(), surface.height_px()),
         bleed_left,
         bleed_top,
         dpi,
@@ -322,6 +388,7 @@ fn prepare_scene(
     layout_entries: &[DefiniteLayoutEntry],
     layout_cursor: &mut usize,
     parent_content_origin: SceneOrigin,
+    active_clip: PixelClip,
     bleed_left: i128,
     bleed_top: i128,
     dpi: u32,
@@ -349,6 +416,7 @@ fn prepare_scene(
                 node,
                 layout,
                 parent_content_origin,
+                active_clip,
                 bleed_left,
                 bleed_top,
                 dpi,
@@ -360,6 +428,7 @@ fn prepare_scene(
                     node,
                     layout,
                     parent_content_origin,
+                    active_clip,
                     bleed_left,
                     bleed_top,
                     dpi,
@@ -374,6 +443,7 @@ fn prepare_scene(
                     layout_entries,
                     layout_cursor,
                     prepared.content_origin,
+                    prepared.descendant_clip,
                     bleed_left,
                     bleed_top,
                     dpi,
@@ -397,6 +467,7 @@ fn prepare_rect_paint(
     node: &Map<String, Value>,
     layout: &DefiniteLayoutEntry,
     parent_content_origin: SceneOrigin,
+    active_clip: PixelClip,
     bleed_left: i128,
     bleed_top: i128,
     dpi: u32,
@@ -482,7 +553,7 @@ fn prepare_rect_paint(
 
     let width = decimal6_member(placement, "widthPt")?;
     let height = decimal6_member(placement, "heightPt")?;
-    prepare_pixel_rect(
+    Ok(active_clip.apply(prepare_pixel_rect(
         origin,
         width,
         height,
@@ -492,7 +563,7 @@ fn prepare_rect_paint(
         dpi,
         surface_width,
         surface_height,
-    )
+    )?))
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -500,6 +571,7 @@ fn prepare_frame(
     node: &Map<String, Value>,
     layout: &DefiniteLayoutEntry,
     parent_content_origin: SceneOrigin,
+    active_clip: PixelClip,
     bleed_left: i128,
     bleed_top: i128,
     dpi: u32,
@@ -527,7 +599,6 @@ fn prepare_frame(
             .any(|member| !REQUIRED_MEMBERS.contains(&member.as_str()) && member.as_str() != "fill")
         || !boolean_member(node, "visible")?
         || !number_equals(node, "opacity", 1.0)?
-        || boolean_member(node, "clipContent")?
     {
         return Err(EnginePngError::Unsupported(
             EnginePngUnsupported::FramePaint,
@@ -553,6 +624,9 @@ fn prepare_frame(
     }
     let origin = child_origin(parent_content_origin, placement)?;
     require_fixed_box(layout.layout_box(), origin, placement, "Frame")?;
+    let clip_content = boolean_member(node, "clipContent")?;
+    let frame_width = decimal6_member(placement, "widthPt")?;
+    let frame_height = decimal6_member(placement, "heightPt")?;
 
     let padding = object_member(Some(node), "padding")?;
     if !has_exact_members(padding, &["bottomPt", "leftPt", "rightPt", "topPt"]) {
@@ -580,6 +654,34 @@ fn prepare_frame(
     };
     require_frame_content_box(layout, content_origin, placement, padding)?;
 
+    let frame_bounds = if clip_content {
+        Some(prepare_pixel_clip(
+            origin,
+            frame_width,
+            frame_height,
+            bleed_left,
+            bleed_top,
+            dpi,
+            surface_width,
+            surface_height,
+            EnginePngUnsupported::NonPixelAlignedClip,
+        )?)
+    } else if node.contains_key("fill") {
+        Some(prepare_pixel_clip(
+            origin,
+            frame_width,
+            frame_height,
+            bleed_left,
+            bleed_top,
+            dpi,
+            surface_width,
+            surface_height,
+            EnginePngUnsupported::NonPixelAlignedRect,
+        )?)
+    } else {
+        None
+    };
+
     let paint = if let Some(fill) = node.get("fill") {
         let fill = fill
             .as_object()
@@ -595,24 +697,32 @@ fn prepare_frame(
                 EnginePngUnsupported::FramePaint,
             ));
         }
-        Some(prepare_pixel_rect(
-            origin,
-            decimal6_member(placement, "widthPt")?,
-            decimal6_member(placement, "heightPt")?,
+        let bounds = frame_bounds.ok_or(EnginePngError::Contract(
+            "Frame fill is missing prepared device bounds",
+        ))?;
+        Some(active_clip.apply(PixelRect {
+            left: bounds.left,
+            top: bounds.top,
+            right: bounds.right,
+            bottom: bounds.bottom,
             color,
-            bleed_left,
-            bleed_top,
-            dpi,
-            surface_width,
-            surface_height,
-        )?)
+        }))
     } else {
         None
+    };
+
+    let descendant_clip = if clip_content {
+        active_clip.intersect(frame_bounds.ok_or(EnginePngError::Contract(
+            "Frame clip is missing prepared device bounds",
+        ))?)
+    } else {
+        active_clip
     };
 
     Ok(PreparedFrame {
         paint,
         content_origin,
+        descendant_clip,
     })
 }
 
@@ -783,25 +893,60 @@ fn prepare_pixel_rect(
     surface_width: u32,
     surface_height: u32,
 ) -> Result<PixelRect, EnginePngError> {
-    let device_left = exact_device_edge(&[bleed_left, origin.scaled_x], dpi)?;
-    let device_top = exact_device_edge(&[bleed_top, origin.scaled_y], dpi)?;
-    let device_right = exact_device_edge(&[bleed_left, origin.scaled_x, width], dpi)?;
-    let device_bottom = exact_device_edge(&[bleed_top, origin.scaled_y, height], dpi)?;
+    let bounds = prepare_pixel_clip(
+        origin,
+        width,
+        height,
+        bleed_left,
+        bleed_top,
+        dpi,
+        surface_width,
+        surface_height,
+        EnginePngUnsupported::NonPixelAlignedRect,
+    )?;
+    Ok(PixelRect {
+        left: bounds.left,
+        top: bounds.top,
+        right: bounds.right,
+        bottom: bounds.bottom,
+        color,
+    })
+}
+
+#[allow(clippy::too_many_arguments)]
+fn prepare_pixel_clip(
+    origin: SceneOrigin,
+    width: i128,
+    height: i128,
+    bleed_left: i128,
+    bleed_top: i128,
+    dpi: u32,
+    surface_width: u32,
+    surface_height: u32,
+    misaligned: EnginePngUnsupported,
+) -> Result<PixelClip, EnginePngError> {
+    let device_left = exact_device_edge(&[bleed_left, origin.scaled_x], dpi, misaligned)?;
+    let device_top = exact_device_edge(&[bleed_top, origin.scaled_y], dpi, misaligned)?;
+    let device_right = exact_device_edge(&[bleed_left, origin.scaled_x, width], dpi, misaligned)?;
+    let device_bottom = exact_device_edge(&[bleed_top, origin.scaled_y, height], dpi, misaligned)?;
     if device_right < device_left || device_bottom < device_top {
         return Err(EnginePngError::Contract(
             "Paint device box is not monotonic",
         ));
     }
-    Ok(PixelRect {
+    Ok(PixelClip {
         left: clip_device_edge(device_left, surface_width),
         top: clip_device_edge(device_top, surface_height),
         right: clip_device_edge(device_right, surface_width),
         bottom: clip_device_edge(device_bottom, surface_height),
-        color,
     })
 }
 
-fn exact_device_edge(parts: &[i128], dpi: u32) -> Result<i128, EnginePngError> {
+fn exact_device_edge(
+    parts: &[i128],
+    dpi: u32,
+    misaligned: EnginePngUnsupported,
+) -> Result<i128, EnginePngError> {
     const POINT_DENOMINATOR: i128 = 72_000_000;
     let point = parts.iter().try_fold(0_i128, |sum, part| {
         sum.checked_add(*part).ok_or(EnginePngError::Contract(
@@ -814,9 +959,7 @@ fn exact_device_edge(parts: &[i128], dpi: u32) -> Result<i128, EnginePngError> {
             "Rect device coordinate overflowed",
         ))?;
     if numerator % POINT_DENOMINATOR != 0 {
-        return Err(EnginePngError::Unsupported(
-            EnginePngUnsupported::NonPixelAlignedRect,
-        ));
+        return Err(EnginePngError::Unsupported(misaligned));
     }
     Ok(numerator / POINT_DENOMINATOR)
 }

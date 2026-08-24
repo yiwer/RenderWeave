@@ -1,6 +1,20 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-24 **Template v1 implementation TV1-T96 已由 Codex `/root` single-writer 完成，状态
+  `resolved/automated_verified`**：沿唯一 `render_png` deep Interface 为 fixed identity、zero-radius、no-stroke
+  Frame 增加 native pixel-aligned rectangular descendant clip；inner-border 是裁剪边界，padding 仅改变 child origin，
+  Frame self fill 只继承 ancestor clip，nested clip 逐层求交，全部 clip/paint 在 surface 分配前完成。subpixel clip
+  fail closed 为 `NON_PIXEL_ALIGNED_CLIP`，不产生 partial output。Rust 2/2、Python independent 20/20 cases、
+  64 checks，vector SHA-256 `dc55cdad90e314ff642b94c79566f42a35bb09d8464e82b964134ed49ce7fe28`。
+  `render` `.sdlc/evidence/20260824-170349-render/`、affected `fast`
+  `.sdlc/evidence/20260824-170419-fast/`、顺序 `server` `.sdlc/evidence/20260824-170439-server/` 与 17-step
+  `full` `.sdlc/evidence/20260824-171757-full/` 均绿；full 用时 1166.572 秒，App 344/0/0/15、Node 24 Web
+  26 files/212 tests、runtime canary、Playwright 23 passed + 1 controlled skip、Draft journey 与 inference replay
+  E2E 1/1 均通过；状态回填后的 resolution `fast` `.sdlc/evidence/20260824-173920-fast/` 亦为 exit 0。Profile
+  `NOT_REGISTERED`、certification `NOT_CERTIFIED`、raster `ABSENT`、daemon `UNWIRED`、
+  E6/正式产品 route `CLOSED` 不变；provider attempts/API Key reads/费用/真实数据为 0，未 push/tag/PR，
+  `/prototype` 不计最终产品交付。
 - 2026-08-24 **Template v1 implementation TV1-T95 已由 Codex `/root` single-writer 完成，状态
   `resolved/automated_verified`**：
   Renderer Profile 完整合同审计后确认不能用 partial/test-only 注册绕过；当前沿唯一 `render_png` deep Interface

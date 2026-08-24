@@ -473,6 +473,13 @@ Label: wayfinder:map
   `acb3adf55f8b67914918f20197e5bdb4668985759b51a2a02fe0810cb0eba363`；`render`/affected `fast`/顺序
   `server`/17-step `full`/resolution `fast` 均绿。Profile NOT_REGISTERED、daemon UNWIRED、E6/正式产品 route
   CLOSED，未把 `/prototype` 当作交付。
+- [实现 pixel-aligned 矩形 Frame descendant clip 的真实 Engine PNG 内核](issues/96-pixel-aligned-rectangular-frame-clip-engine-png-kernel.md) —
+  **resolved / automated_verified**；沿同一 `render_png` Interface，把 zero-stroke/zero-radius Frame 的
+  `clipContent=true` 限定为 native pixel-aligned inner-border rectangle；padding 不是 clip boundary，nested clip
+  与 ancestor/surface 求交，全部 clip/paint 仍在 surface 分配前 prepare。Rust 2/2、Python 20/20 cases/64 checks，
+  vector SHA-256 `dc55cdad90e314ff642b94c79566f42a35bb09d8464e82b964134ed49ce7fe28`；`render`/affected
+  `fast`/顺序 `server`/17-step `full`/resolution `fast` 均绿。Profile NOT_REGISTERED、daemon UNWIRED、E6/正式产品 route
+  CLOSED，未把 `/prototype` 当作交付。
 - [验证 Product Editor 状态、恢复与权威预览架构](issues/09-validate-product-editor-architecture.md) —
   throwaway 逻辑原型（`/prototype/editor-state-model`，不进产品 route）把冻结编辑器规则编码为确定性
   fixture 状态机：10 个引导走查场景 37/37 断言 + 自由操作冒烟 + 键盘焦点检查全部通过（Playwright A1，

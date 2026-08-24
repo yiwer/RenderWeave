@@ -66,7 +66,7 @@ def exact_members(value: Any, expected: set[str], label: str) -> dict[str, Any]:
     return value
 
 
-def decimal6(value: Any, positive: bool) -> int:
+def parse_decimal6(value: Any) -> int:
     if isinstance(value, bool) or not isinstance(value, (int, float, Decimal)):
         raise VerificationFailure("surface decimal is not numeric")
     raw = str(value)
@@ -80,9 +80,18 @@ def decimal6(value: Any, positive: bool) -> int:
     scaled = int(whole) * 1_000_000 + int(fraction.ljust(6, "0") or "0")
     if negative:
         scaled = -scaled
+    return scaled
+
+
+def decimal6(value: Any, positive: bool) -> int:
+    scaled = parse_decimal6(value)
     if scaled < 0 or (positive and scaled == 0):
         raise VerificationFailure("surface decimal sign is invalid")
     return scaled
+
+
+def scene_coordinate_decimal6(value: Any) -> int:
+    return parse_decimal6(value)
 
 
 def output_failure(code: str, limit_id: str) -> dict[str, str]:
@@ -186,17 +195,28 @@ def fixed_absolute_placement(node: dict[str, Any]) -> dict[str, Any] | None:
     return placement
 
 
-def prepare_pixel_rect(
+def intersect_clip(
+    left: tuple[int, int, int, int],
+    right: tuple[int, int, int, int],
+) -> tuple[int, int, int, int]:
+    clipped_left = max(left[0], right[0])
+    clipped_top = max(left[1], right[1])
+    clipped_right = max(clipped_left, min(left[2], right[2]))
+    clipped_bottom = max(clipped_top, min(left[3], right[3]))
+    return clipped_left, clipped_top, clipped_right, clipped_bottom
+
+
+def prepare_pixel_bounds(
     origin_x: int,
     origin_y: int,
     rect_width: int,
     rect_height: int,
-    color: bytes,
     canvas: dict[str, Any],
     dpi: int,
     width: int,
     height: int,
-) -> tuple[int, int, int, int, bytes] | dict[str, str]:
+    misaligned_feature: str,
+) -> tuple[int, int, int, int] | dict[str, str]:
     bleed = canvas["bleed"]
     left_bleed = decimal6(bleed["leftPt"], False)
     top_bleed = decimal6(bleed["topPt"], False)
@@ -207,14 +227,44 @@ def prepare_pixel_rect(
         exact_device_edge([top_bleed, origin_y, rect_height], dpi),
     )
     if any(edge is None for edge in edges):
-        return {"feature": "NON_PIXEL_ALIGNED_RECT"}
+        return {"feature": misaligned_feature}
     left, top, right, bottom = (int(edge) for edge in edges)
     if right < left or bottom < top:
         raise VerificationFailure("Paint device box is not monotonic")
-    left = min(max(left, 0), width)
-    right = min(max(right, 0), width)
-    top = min(max(top, 0), height)
-    bottom = min(max(bottom, 0), height)
+    return (
+        min(max(left, 0), width),
+        min(max(top, 0), height),
+        min(max(right, 0), width),
+        min(max(bottom, 0), height),
+    )
+
+
+def prepare_pixel_rect(
+    origin_x: int,
+    origin_y: int,
+    rect_width: int,
+    rect_height: int,
+    color: bytes,
+    canvas: dict[str, Any],
+    dpi: int,
+    width: int,
+    height: int,
+    active_clip: tuple[int, int, int, int],
+) -> tuple[int, int, int, int, bytes] | dict[str, str]:
+    bounds = prepare_pixel_bounds(
+        origin_x,
+        origin_y,
+        rect_width,
+        rect_height,
+        canvas,
+        dpi,
+        width,
+        height,
+        "NON_PIXEL_ALIGNED_RECT",
+    )
+    if isinstance(bounds, dict):
+        return bounds
+    left, top, right, bottom = intersect_clip(bounds, active_clip)
     return left, top, right, bottom, color
 
 
@@ -226,6 +276,7 @@ def prepare_rect(
     dpi: int,
     width: int,
     height: int,
+    active_clip: tuple[int, int, int, int],
 ) -> tuple[int, int, int, int, bytes] | dict[str, str]:
     if not isinstance(child, dict) or child.get("kind") != "rect":
         return {"feature": "SCENE_STRUCTURE"}
@@ -253,12 +304,12 @@ def prepare_rect(
     if placement is None:
         return {"feature": "RECT_PAINT"}
 
-    x = parent_x + decimal6(placement["xPt"], False)
-    y = parent_y + decimal6(placement["yPt"], False)
+    x = parent_x + scene_coordinate_decimal6(placement["xPt"])
+    y = parent_y + scene_coordinate_decimal6(placement["yPt"])
     rect_width = decimal6(placement["widthPt"], True)
     rect_height = decimal6(placement["heightPt"], True)
     return prepare_pixel_rect(
-        x, y, rect_width, rect_height, color, canvas, dpi, width, height
+        x, y, rect_width, rect_height, color, canvas, dpi, width, height, active_clip
     )
 
 
@@ -270,8 +321,12 @@ def prepare_frame(
     dpi: int,
     width: int,
     height: int,
+    active_clip: tuple[int, int, int, int],
 ) -> tuple[
-    tuple[int, int, int, int, bytes] | None, int, int
+    tuple[int, int, int, int, bytes] | None,
+    int,
+    int,
+    tuple[int, int, int, int],
 ] | dict[str, str]:
     required = {
         "children", "clipContent", "cornerRadii", "kind", "occurrenceId", "opacity",
@@ -283,7 +338,7 @@ def prepare_frame(
         or set(child) not in (required, required | {"fill"})
         or child.get("visible") is not True
         or not number_is(child.get("opacity"), "1")
-        or child.get("clipContent") is not False
+        or not isinstance(child.get("clipContent"), bool)
         or not identity_transform(child)
         or not zero_corner_radii(child)
     ):
@@ -292,8 +347,8 @@ def prepare_frame(
     placement = fixed_absolute_placement(child)
     if placement is None:
         return {"feature": "FRAME_PAINT"}
-    origin_x = parent_x + decimal6(placement["xPt"], False)
-    origin_y = parent_y + decimal6(placement["yPt"], False)
+    origin_x = parent_x + scene_coordinate_decimal6(placement["xPt"])
+    origin_y = parent_y + scene_coordinate_decimal6(placement["yPt"])
 
     padding = child.get("padding")
     padding_members = {"bottomPt", "leftPt", "rightPt", "topPt"}
@@ -305,6 +360,39 @@ def prepare_frame(
     content_x = origin_x + padding_values["leftPt"]
     content_y = origin_y + padding_values["topPt"]
 
+    clip_content = child["clipContent"]
+    frame_width = decimal6(placement["widthPt"], True)
+    frame_height = decimal6(placement["heightPt"], True)
+    frame_bounds = None
+    if clip_content:
+        frame_bounds = prepare_pixel_bounds(
+            origin_x,
+            origin_y,
+            frame_width,
+            frame_height,
+            canvas,
+            dpi,
+            width,
+            height,
+            "NON_PIXEL_ALIGNED_CLIP",
+        )
+        if isinstance(frame_bounds, dict):
+            return frame_bounds
+    elif "fill" in child:
+        frame_bounds = prepare_pixel_bounds(
+            origin_x,
+            origin_y,
+            frame_width,
+            frame_height,
+            canvas,
+            dpi,
+            width,
+            height,
+            "NON_PIXEL_ALIGNED_RECT",
+        )
+        if isinstance(frame_bounds, dict):
+            return frame_bounds
+
     paint = None
     if "fill" in child:
         fill = child["fill"]
@@ -313,20 +401,16 @@ def prepare_frame(
         color = parse_rgba(fill["color"], "Frame fill")
         if color[3] != 255:
             return {"feature": "FRAME_PAINT"}
-        paint = prepare_pixel_rect(
-            origin_x,
-            origin_y,
-            decimal6(placement["widthPt"], True),
-            decimal6(placement["heightPt"], True),
-            color,
-            canvas,
-            dpi,
-            width,
-            height,
-        )
-        if isinstance(paint, dict):
-            return paint
-    return paint, content_x, content_y
+        if frame_bounds is None:
+            raise VerificationFailure("Frame fill is missing prepared device bounds")
+        left, top, right, bottom = intersect_clip(frame_bounds, active_clip)
+        paint = left, top, right, bottom, color
+    descendant_clip = (
+        intersect_clip(frame_bounds, active_clip)
+        if clip_content and frame_bounds is not None
+        else active_clip
+    )
+    return paint, content_x, content_y, descendant_clip
 
 
 def scene_kinds_supported(children: list[Any]) -> bool:
@@ -350,24 +434,36 @@ def prepare_scene(
     dpi: int,
     width: int,
     height: int,
+    active_clip: tuple[int, int, int, int],
 ) -> list[tuple[int, int, int, int, bytes]] | dict[str, str]:
     paints: list[tuple[int, int, int, int, bytes]] = []
     for child in children:
         if child["kind"] == "rect":
-            rect = prepare_rect(child, parent_x, parent_y, canvas, dpi, width, height)
+            rect = prepare_rect(
+                child, parent_x, parent_y, canvas, dpi, width, height, active_clip
+            )
             if isinstance(rect, dict):
                 return rect
             paints.append(rect)
             continue
 
-        frame = prepare_frame(child, parent_x, parent_y, canvas, dpi, width, height)
+        frame = prepare_frame(
+            child, parent_x, parent_y, canvas, dpi, width, height, active_clip
+        )
         if isinstance(frame, dict):
             return frame
-        frame_paint, content_x, content_y = frame
+        frame_paint, content_x, content_y, descendant_clip = frame
         if frame_paint is not None:
             paints.append(frame_paint)
         nested = prepare_scene(
-            child["children"], content_x, content_y, canvas, dpi, width, height
+            child["children"],
+            content_x,
+            content_y,
+            canvas,
+            dpi,
+            width,
+            height,
+            descendant_clip,
         )
         if isinstance(nested, dict):
             return nested
@@ -444,7 +540,9 @@ def execute(document: dict[str, Any], dpi: Any) -> dict[str, Any]:
         return dimensions
     width = dimensions["widthPx"]
     height = dimensions["heightPx"]
-    rects = prepare_scene(canvas["children"], 0, 0, canvas, dpi, width, height)
+    rects = prepare_scene(
+        canvas["children"], 0, 0, canvas, dpi, width, height, (0, 0, width, height)
+    )
     if isinstance(rects, dict):
         return rects
     pixels = bytearray(pixel * (width * height))
@@ -492,13 +590,13 @@ def verify(path: Path) -> dict[str, Any]:
     verifier.require(boundary == {
         "profileAvailability": "NOT_REGISTERED",
         "certificationStatus": "NOT_CERTIFIED",
-        "enginePngKernel": "PREORDER_FIXED_IDENTITY_FRAME_RECT_PIXEL_ALIGNED_OPAQUE_PNG_KERNEL_UNWIRED",
+        "enginePngKernel": "PREORDER_FIXED_IDENTITY_FRAME_RECT_PIXEL_ALIGNED_OPAQUE_RECTANGULAR_CLIP_PNG_KERNEL_UNWIRED",
         "processRasterImplementation": "ABSENT",
         "daemonOutputPath": "UNWIRED",
         "productRoute": "CLOSED",
         "providerAttempts": 0,
     }, "Engine PNG honest boundary drifted")
-    verifier.require(len(vectors["renderedCases"]) == 9, "rendered case count drifted")
+    verifier.require(len(vectors["renderedCases"]) == 10, "rendered case count drifted")
     verifier.require(len(vectors["unsupportedCases"]) == 10, "unsupported case count drifted")
 
     seen: set[str] = set()

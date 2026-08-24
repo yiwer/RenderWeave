@@ -2072,7 +2072,6 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
 - 验证：focused Rust/Python、fmt、clippy `-D warnings`、workspace tests、`py_compile`、JSON inventory/SHA/unique、
   `git diff --check`；再依次 `render`、affected `fast`、顺序 `server`、Goal `full`、resolution `fast`。最高只可
   `automated_verified`；不推进 A3/J1/READY，不 push/tag/PR，不运行 provider，不读取 API Key。
-
 ### TV1-T74 resolution evidence
 
 - shared `/37` 共同 RED 后，Rust primary 与 Python independent verifier 分别实现并达到 162 laid-out +
@@ -3135,6 +3134,38 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
   certification NOT_CERTIFIED、process raster ABSENT、daemon UNWIRED、product route CLOSED；P0/R0/R1 均为离线
   严格重放，provider attempts/API Key reads/provider reservations/paid/real-data 均为 0，visual diff 为 J0，未
   push/tag/PR，`/prototype` 不计最终产品交付。
+
+## 95. TV1-T96 执行卡
+
+- 决策：T95 verified commit `ccee822` 收口且 worktree clean 后，复核 Ticket 10 §4/§6 与 Renderer Profile 完整
+  合同。Profile 不能以 partial/test-only 注册；当前最短真实 frontier 是同一 Engine Interface 内、无需 AA/blend
+  的 pixel-aligned rectangular Frame descendant clip。
+- Interface/seam：唯一入口仍为 `render_png(&AdmittedRenderDocument, dpi)`；prepare 阶段携带有效矩形 clip，
+  先准备完整 paint/clip list，再分配 RGBA8 surface。Rust/Python 控制流独立但重放同一 frozen vectors。
+- 精确语义：只对 T95 fixed ABSOLUTE、identity、visible、opacity=1、zero-radius、no-stroke Frame/Rect 闭包允许
+  `clipContent=true`；clip 是 inner-border/LayoutBox rectangle，padding 不是边界。Frame self fill 只继承 ancestor clip，
+  descendants 使用 ancestor ∩ current clip；clip edge 必须原生 pixel-aligned，subpixel 稳定
+  `NON_PIXEL_ALIGNED_CLIP`。
+- 允许影响：T96 tracker/plan/NOTES、Engine Rust module/tests、shared Engine-PNG vectors、Python independent verifier、
+  render gate identity/assertions/evidence。
+- 禁止影响：rounded/stroked clip、opacity/AA/blend/general transform、Stack/Grid/Group、Text/Image/resource/font、
+  JPEG/LayoutTrace、Profile registration/process manifest/daemon RESULT、Java/OpenAPI/migration/Web/E6/product route、
+  formal records、physical certification、J1/A3/READY 与外部副作用。
+- TDD：既有 clip negative 改为 outer+nested clip、padding-area child 与越界 Rect 的 5×3 exact PNG 正例；新增
+  no-fill subpixel clip negative。shared `/1` 先共同 RED，目标 10 rendered + 10 unsupported、20 cases/64 checks。
+- 验证：focused Rust/Python、fmt、clippy `-D warnings`、workspace tests、`py_compile`、JSON inventory/SHA/unique、
+  `git diff --check`；再依次 `render`、affected `fast`、顺序 `server`、Goal `full`、resolution `fast`。最高只可
+  `automated_verified`；不推进 A3/J1/READY，不 push/tag/PR，不运行 provider，不读取 API Key。
+- 2026-08-24 resolution：Rust/Python 共同 RED 后独立 GREEN；Engine vectors 2/2、Python 20/20 cases/64 checks，
+  shared vector SHA-256 `dc55cdad90e314ff642b94c79566f42a35bb09d8464e82b964134ed49ce7fe28`。`render`
+  `.sdlc/evidence/20260824-170349-render/`、affected `fast` `.sdlc/evidence/20260824-170419-fast/`、顺序
+  `server` `.sdlc/evidence/20260824-170439-server/` 与 17-step `full`
+  `.sdlc/evidence/20260824-171757-full/` 均 exit 0；full App 344/0/0/15、Node 24 Web 26 files/212 tests、
+  runtime canary、Playwright 23 passed + 1 controlled skip、Draft journey 与 inference replay E2E 1/1 通过。
+  状态回填后的 resolution `fast` `.sdlc/evidence/20260824-173920-fast/` 亦为 exit 0，状态为
+  `resolved/automated_verified`；诚实边界保持 Profile NOT_REGISTERED、certification NOT_CERTIFIED、
+  process raster ABSENT、daemon UNWIRED、product route CLOSED，provider attempts/API Key reads/费用/真实数据=0，
+  visual diff J0，未 push/tag/PR，`/prototype` 不计最终产品交付。
 
 ## 66. TV1-T67 执行卡
 
