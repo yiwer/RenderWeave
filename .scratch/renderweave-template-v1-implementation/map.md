@@ -533,6 +533,12 @@ Label: wayfinder:map
   prepared manifest 接入 daemon。Rust resource 39 unit + 1 public、daemon 11、protocol 11 tests 与 Python 7/7 cases、
   102 checks 全绿；`asset`/`render`/affected `fast`/sequential `server`/17-step `full` 均通过。shaping/scene/raster/
   RESULT/Profile/Product Editor route 仍继续后续 DAG。
+- [接通 prepared IMAGE intrinsic definite layout](issues/106-prepared-image-intrinsic-layout-bridge.md) —
+  **resolved / automated_verified**；唯一 public layout deep Interface 只接受 T105 完整 immutable prepared
+  manifest，复用同一 writer 完成 Image fixed/FILL、单轴 HUG logical-pixel-ratio、HUG-only clamp，并沿既有
+  ABSOLUTE/Group/Frame/Stack/Grid definite offer 传播。Rust primary + Python A2 为 12/12 cases、81 checks，
+  canonical `render`、affected `fast`、sequential `server` 与 17-step `full` 均绿；Text、scene/raster、daemon
+  RESULT/Profile 与正式 Product route 保持关闭。
 - [验证 Product Editor 状态、恢复与权威预览架构](issues/09-validate-product-editor-architecture.md) —
   throwaway 逻辑原型（`/prototype/editor-state-model`，不进产品 route）把冻结编辑器规则编码为确定性
   fixture 状态机：10 个引导走查场景 37/37 断言 + 自由操作冒烟 + 键盘焦点检查全部通过（Playwright A1，

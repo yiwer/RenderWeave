@@ -330,7 +330,9 @@ dependencies = [
 name = "renderweave-renderer-layout"
 version = "0.1.0"
 dependencies = [
+ "hex",
  "renderweave-renderer-document",
+ "renderweave-renderer-resource",
  "serde_json",
 ]
 

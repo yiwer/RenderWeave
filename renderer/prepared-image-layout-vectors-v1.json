@@ -1,0 +1,253 @@
+{
+  "vectorVersion": "renderweave-prepared-image-layout-vectors/1",
+  "authorityContext": {
+    "layoutProfile": "renderweave-layout/1.0",
+    "resourcePreparationProfile": "renderweave-renderer/1.0",
+    "intrinsicSource": "EXACT_BYTES_ORIENTATION_NORMALIZED_LOGICAL_PIXELS",
+    "arithmetic": "IEEE-754-binary64-ratio-then-multiply-hug-axis-clamp-only",
+    "profileAvailability": "NOT_REGISTERED",
+    "certificationStatus": "NOT_CERTIFIED",
+    "sceneImplementation": "ABSENT",
+    "rasterImplementation": "ABSENT",
+    "daemonOutputPath": "UNWIRED",
+    "productRoute": "CLOSED",
+    "providerAttempts": 0
+  },
+  "resourceFixture": {
+    "bodyHex": "89504e470d0a1a0a0000000d4948445200000002000000010806000000f4227f8a0000001a655849664d4d002a00000008000101120003000000010006000000000000d6674b690000001149444154789c6360606462666165630700005d001db3baa50a0000000049454e44ae426082",
+    "sha256": "sha256:5d4c58d541cdce4ca1c264289df2c01e63108c89eaf7dfcdfb01c26ccb6a6c2e",
+    "encodedWidthPx": 2,
+    "encodedHeightPx": 1,
+    "orientation": "ROTATE_90_CW",
+    "logicalWidthPx": 1,
+    "logicalHeightPx": 2
+  },
+  "documentTemplate": {
+    "canvas": {
+      "backgroundColor": "#00000000",
+      "bleed": {"bottomPt": 0, "leftPt": 0, "rightPt": 0, "topPt": 0},
+      "children": [
+        {
+          "fit": "CONTAIN",
+          "imageResourceId": "rwres_5d4c58d541cdce4ca1c264289df2c01e63108c89eaf7dfcdfb01c26ccb6a6c2e",
+          "kind": "image",
+          "occurrenceId": "rwocc_0000000000000001",
+          "opacity": 1,
+          "placement": {"heightMode": "FIXED", "heightPt": 40, "type": "ABSOLUTE", "widthMode": "FIXED", "widthPt": 30, "xPt": 5, "yPt": 7},
+          "sampling": "LINEAR",
+          "transform": {"originX": 0.5, "originY": 0.5, "rotationDeg": 0, "scaleX": 1, "scaleY": 1},
+          "visible": true
+        }
+      ],
+      "heightPt": 100,
+      "kind": "canvas",
+      "occurrenceId": "rwocc_0000000000000000",
+      "widthPt": 200
+    },
+    "dslVersion": "renderweave-render/1.0",
+    "layoutProfile": "renderweave-layout/1.0",
+    "resources": [
+      {
+        "acceptanceProfileId": "renderweave-asset-acceptance/1.0",
+        "byteLength": 112,
+        "expiresAt": 2100000000,
+        "fetchUrl": "https://render.internal.example/internal/render-assets/image",
+        "kind": "image",
+        "mediaType": "image/png",
+        "resourceId": "rwres_5d4c58d541cdce4ca1c264289df2c01e63108c89eaf7dfcdfb01c26ccb6a6c2e",
+        "sha256": "sha256:5d4c58d541cdce4ca1c264289df2c01e63108c89eaf7dfcdfb01c26ccb6a6c2e",
+        "technicalDescriptor": {"colorEncoding": "SRGB_8BIT", "encodedHeightPx": 1, "encodedWidthPx": 2, "frameCount": 1, "kind": "image", "logicalHeightPx": 2, "logicalWidthPx": 1, "orientation": "ROTATE_90_CW"}
+      }
+    ]
+  },
+  "successCases": [
+    {
+      "id": "absolute-fixed-image-requires-prepared-identity",
+      "mutations": [],
+      "expectedEntryCount": 2,
+      "expectedEntries": [
+        {"occurrenceId": "rwocc_0000000000000001", "kind": "image", "layoutBox": {"x": 5, "y": 7, "width": 30, "height": 40}, "contentBox": null}
+      ]
+    },
+    {
+      "id": "absolute-width-hug-from-oriented-logical-ratio",
+      "mutations": [
+        {"operation": "replace", "pointer": "/canvas/children/0/placement/widthMode", "value": "HUG_CONTENT"},
+        {"operation": "remove", "pointer": "/canvas/children/0/placement/widthPt"}
+      ],
+      "expectedEntryCount": 2,
+      "expectedEntries": [
+        {"occurrenceId": "rwocc_0000000000000001", "kind": "image", "layoutBox": {"x": 5, "y": 7, "width": 20, "height": 40}, "contentBox": null}
+      ]
+    },
+    {
+      "id": "absolute-height-hug-from-oriented-logical-ratio",
+      "mutations": [
+        {"operation": "replace", "pointer": "/canvas/children/0/placement/heightMode", "value": "HUG_CONTENT"},
+        {"operation": "remove", "pointer": "/canvas/children/0/placement/heightPt"}
+      ],
+      "expectedEntryCount": 2,
+      "expectedEntries": [
+        {"occurrenceId": "rwocc_0000000000000001", "kind": "image", "layoutBox": {"x": 5, "y": 7, "width": 30, "height": 60}, "contentBox": null}
+      ]
+    },
+    {
+      "id": "absolute-hug-clamps-only-derived-axis",
+      "mutations": [
+        {"operation": "replace", "pointer": "/canvas/children/0/placement/widthMode", "value": "HUG_CONTENT"},
+        {"operation": "remove", "pointer": "/canvas/children/0/placement/widthPt"},
+        {"operation": "add", "pointer": "/canvas/children/0/placement/minWidthPt", "value": 25}
+      ],
+      "expectedEntryCount": 2,
+      "expectedEntries": [
+        {"occurrenceId": "rwocc_0000000000000001", "kind": "image", "layoutBox": {"x": 5, "y": 7, "width": 25, "height": 40}, "contentBox": null}
+      ]
+    },
+    {
+      "id": "absolute-hug-consumes-opposite-fill-offer",
+      "mutations": [
+        {"operation": "replace", "pointer": "/canvas/children/0/placement/widthMode", "value": "HUG_CONTENT"},
+        {"operation": "remove", "pointer": "/canvas/children/0/placement/widthPt"},
+        {"operation": "replace", "pointer": "/canvas/children/0/placement/heightMode", "value": "FILL"},
+        {"operation": "remove", "pointer": "/canvas/children/0/placement/heightPt"},
+        {"operation": "replace", "pointer": "/canvas/children/0/placement/yPt", "value": 10},
+        {"operation": "add", "pointer": "/canvas/children/0/placement/bottomInsetPt", "value": 20}
+      ],
+      "expectedEntryCount": 2,
+      "expectedEntries": [
+        {"occurrenceId": "rwocc_0000000000000001", "kind": "image", "layoutBox": {"x": 5, "y": 10, "width": 35, "height": 70}, "contentBox": null}
+      ]
+    },
+    {
+      "id": "frame-hug-consumes-prepared-image-intrinsic",
+      "mutations": [
+        {"operation": "replace", "pointer": "/canvas/children", "value": [
+          {
+            "children": [{
+              "fit": "CONTAIN", "imageResourceId": "rwres_5d4c58d541cdce4ca1c264289df2c01e63108c89eaf7dfcdfb01c26ccb6a6c2e", "kind": "image", "occurrenceId": "rwocc_0000000000000002", "opacity": 1,
+              "placement": {"heightMode": "FIXED", "heightPt": 40, "type": "ABSOLUTE", "widthMode": "HUG_CONTENT", "xPt": 5, "yPt": 0},
+              "sampling": "LINEAR", "transform": {"originX": 0.5, "originY": 0.5, "rotationDeg": 0, "scaleX": 1, "scaleY": 1}, "visible": true
+            }],
+            "clipContent": false,
+            "cornerRadii": {"bottomLeftPt": 0, "bottomRightPt": 0, "topLeftPt": 0, "topRightPt": 0},
+            "kind": "frame", "occurrenceId": "rwocc_0000000000000001", "opacity": 1,
+            "padding": {"bottomPt": 0, "leftPt": 3, "rightPt": 7, "topPt": 0},
+            "placement": {"heightMode": "FIXED", "heightPt": 100, "type": "ABSOLUTE", "widthMode": "HUG_CONTENT", "xPt": 10, "yPt": 0},
+            "transform": {"originX": 0.5, "originY": 0.5, "rotationDeg": 0, "scaleX": 1, "scaleY": 1}, "visible": true
+          }
+        ]}
+      ],
+      "expectedEntryCount": 3,
+      "expectedEntries": [
+        {"occurrenceId": "rwocc_0000000000000001", "kind": "frame", "layoutBox": {"x": 10, "y": 0, "width": 35, "height": 100}, "contentBox": {"x": 13, "y": 0, "width": 25, "height": 100}},
+        {"occurrenceId": "rwocc_0000000000000002", "kind": "image", "layoutBox": {"x": 18, "y": 0, "width": 20, "height": 40}, "contentBox": null}
+      ]
+    },
+    {
+      "id": "group-hug-normalizes-prepared-image-child",
+      "mutations": [
+        {"operation": "replace", "pointer": "/canvas/children", "value": [
+          {
+            "children": [{
+              "fit": "CONTAIN", "imageResourceId": "rwres_5d4c58d541cdce4ca1c264289df2c01e63108c89eaf7dfcdfb01c26ccb6a6c2e", "kind": "image", "occurrenceId": "rwocc_0000000000000002", "opacity": 1,
+              "placement": {"heightMode": "FIXED", "heightPt": 40, "type": "ABSOLUTE", "widthMode": "HUG_CONTENT", "xPt": -5, "yPt": 10},
+              "sampling": "LINEAR", "transform": {"originX": 0.5, "originY": 0.5, "rotationDeg": 0, "scaleX": 1, "scaleY": 1}, "visible": true
+            }],
+            "kind": "group", "occurrenceId": "rwocc_0000000000000001", "opacity": 1,
+            "placement": {"heightMode": "HUG_CONTENT", "type": "ABSOLUTE", "widthMode": "HUG_CONTENT", "xPt": 20, "yPt": 30},
+            "transform": {"originX": 0.5, "originY": 0.5, "rotationDeg": 0, "scaleX": 1, "scaleY": 1}, "visible": true
+          }
+        ]}
+      ],
+      "expectedEntryCount": 3,
+      "expectedEntries": [
+        {"occurrenceId": "rwocc_0000000000000001", "kind": "group", "layoutBox": {"x": 20, "y": 30, "width": 20, "height": 40}, "contentBox": null},
+        {"occurrenceId": "rwocc_0000000000000002", "kind": "image", "layoutBox": {"x": 20, "y": 30, "width": 20, "height": 40}, "contentBox": null}
+      ]
+    },
+    {
+      "id": "stack-main-fill-remeasures-image-cross-hug",
+      "mutations": [
+        {"operation": "replace", "pointer": "/canvas/children", "value": [
+          {
+            "alignItems": "START",
+            "children": [{
+              "fit": "CONTAIN", "imageResourceId": "rwres_5d4c58d541cdce4ca1c264289df2c01e63108c89eaf7dfcdfb01c26ccb6a6c2e", "kind": "image", "occurrenceId": "rwocc_0000000000000002", "opacity": 1,
+              "placement": {"alignSelf": "START", "fillWeight": 1, "heightMode": "HUG_CONTENT", "marginBottomPt": 0, "marginLeftPt": 0, "marginRightPt": 0, "marginTopPt": 0, "type": "STACK", "widthMode": "FILL"},
+              "sampling": "LINEAR", "transform": {"originX": 0.5, "originY": 0.5, "rotationDeg": 0, "scaleX": 1, "scaleY": 1}, "visible": true
+            }],
+            "clipContent": false,
+            "cornerRadii": {"bottomLeftPt": 0, "bottomRightPt": 0, "topLeftPt": 0, "topRightPt": 0},
+            "direction": "ROW", "gapPt": 0, "justifyContent": "START", "kind": "stack", "occurrenceId": "rwocc_0000000000000001", "opacity": 1,
+            "padding": {"bottomPt": 0, "leftPt": 0, "rightPt": 0, "topPt": 0},
+            "placement": {"heightMode": "FIXED", "heightPt": 100, "type": "ABSOLUTE", "widthMode": "FIXED", "widthPt": 100, "xPt": 0, "yPt": 0},
+            "transform": {"originX": 0.5, "originY": 0.5, "rotationDeg": 0, "scaleX": 1, "scaleY": 1}, "visible": true
+          }
+        ]}
+      ],
+      "expectedEntryCount": 3,
+      "expectedEntries": [
+        {"occurrenceId": "rwocc_0000000000000002", "kind": "image", "layoutBox": {"x": 0, "y": 0, "width": 100, "height": 200}, "contentBox": null}
+      ]
+    },
+    {
+      "id": "grid-width-fill-offer-drives-image-height-hug",
+      "mutations": [
+        {"operation": "replace", "pointer": "/canvas/children", "value": [
+          {
+            "children": [{
+              "fit": "CONTAIN", "imageResourceId": "rwres_5d4c58d541cdce4ca1c264289df2c01e63108c89eaf7dfcdfb01c26ccb6a6c2e", "kind": "image", "occurrenceId": "rwocc_0000000000000002", "opacity": 1,
+              "placement": {"column": 0, "columnSpan": 1, "heightMode": "HUG_CONTENT", "horizontalAlignSelf": "START", "marginBottomPt": 0, "marginLeftPt": 0, "marginRightPt": 0, "marginTopPt": 0, "row": 0, "rowSpan": 1, "type": "GRID", "verticalAlignSelf": "START", "widthMode": "FILL"},
+              "sampling": "LINEAR", "transform": {"originX": 0.5, "originY": 0.5, "rotationDeg": 0, "scaleX": 1, "scaleY": 1}, "visible": true
+            }],
+            "clipContent": false, "columnGapPt": 0, "columns": [{"type": "FIXED", "valuePt": 100}],
+            "cornerRadii": {"bottomLeftPt": 0, "bottomRightPt": 0, "topLeftPt": 0, "topRightPt": 0},
+            "kind": "grid", "occurrenceId": "rwocc_0000000000000001", "opacity": 1,
+            "padding": {"bottomPt": 0, "leftPt": 0, "rightPt": 0, "topPt": 0},
+            "placement": {"heightMode": "FIXED", "heightPt": 250, "type": "ABSOLUTE", "widthMode": "FIXED", "widthPt": 100, "xPt": 0, "yPt": 0},
+            "rowGapPt": 0, "rows": [{"type": "FIXED", "valuePt": 250}],
+            "transform": {"originX": 0.5, "originY": 0.5, "rotationDeg": 0, "scaleX": 1, "scaleY": 1}, "visible": true
+          }
+        ]}
+      ],
+      "expectedEntryCount": 3,
+      "expectedEntries": [
+        {"occurrenceId": "rwocc_0000000000000002", "kind": "image", "layoutBox": {"x": 0, "y": 0, "width": 100, "height": 200}, "contentBox": null}
+      ]
+    },
+    {
+      "id": "grid-auto-track-consumes-image-width-hug",
+      "mutations": [
+        {"operation": "replace", "pointer": "/canvas/children", "value": [
+          {
+            "children": [{
+              "fit": "CONTAIN", "imageResourceId": "rwres_5d4c58d541cdce4ca1c264289df2c01e63108c89eaf7dfcdfb01c26ccb6a6c2e", "kind": "image", "occurrenceId": "rwocc_0000000000000002", "opacity": 1,
+              "placement": {"column": 0, "columnSpan": 1, "heightMode": "FIXED", "heightPt": 40, "horizontalAlignSelf": "START", "marginBottomPt": 0, "marginLeftPt": 0, "marginRightPt": 0, "marginTopPt": 0, "row": 0, "rowSpan": 1, "type": "GRID", "verticalAlignSelf": "START", "widthMode": "HUG_CONTENT"},
+              "sampling": "LINEAR", "transform": {"originX": 0.5, "originY": 0.5, "rotationDeg": 0, "scaleX": 1, "scaleY": 1}, "visible": true
+            }],
+            "clipContent": false, "columnGapPt": 0, "columns": [{"type": "AUTO"}],
+            "cornerRadii": {"bottomLeftPt": 0, "bottomRightPt": 0, "topLeftPt": 0, "topRightPt": 0},
+            "kind": "grid", "occurrenceId": "rwocc_0000000000000001", "opacity": 1,
+            "padding": {"bottomPt": 0, "leftPt": 0, "rightPt": 0, "topPt": 0},
+            "placement": {"heightMode": "FIXED", "heightPt": 100, "type": "ABSOLUTE", "widthMode": "FIXED", "widthPt": 100, "xPt": 0, "yPt": 0},
+            "rowGapPt": 0, "rows": [{"type": "FIXED", "valuePt": 100}],
+            "transform": {"originX": 0.5, "originY": 0.5, "rotationDeg": 0, "scaleX": 1, "scaleY": 1}, "visible": true
+          }
+        ]}
+      ],
+      "expectedEntryCount": 3,
+      "expectedEntries": [
+        {"occurrenceId": "rwocc_0000000000000002", "kind": "image", "layoutBox": {"x": 0, "y": 0, "width": 20, "height": 40}, "contentBox": null}
+      ]
+    }
+  ],
+  "manifestMismatchCase": {
+    "replacementResourceId": "rwres_cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "expectedOccurrenceId": "rwocc_0000000000000000",
+    "expectedInvariant": "preparedResourceManifest"
+  },
+  "resourceFreeBoundary": {
+    "expectedOccurrenceId": "rwocc_0000000000000001",
+    "expectedFeature": "RESOURCE_DEPENDENT_KIND"
+  }
+}

@@ -1,6 +1,20 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-25 **Template v1 implementation TV1-T106 已由 Codex `/root` single-writer 完成，状态
+  `resolved/automated_verified`**：用户明确最终目标是正式产品 Template-v1 页面与真实功能，`/prototype` 不计
+  交付。本票新增唯一 `layout_definite_with_prepared_resources` deep Interface，只消费 T105 完整 immutable
+  manifest，并完成 Profile/整份 manifest/Image logical dimensions 防御复核、fixed/FILL、单轴 HUG
+  logical-pixel-ratio、HUG-only clamp 及既有 ABSOLUTE/Group/Frame/Stack/Grid definite offer 传播。Rust primary 与
+  Python A2 为 10 success + 2 negative、81 checks，vector SHA-256
+  `275579debd1ba894a64836258da402ea0e974046895ae985642be832cf430b14`。canonical `render`
+  `.sdlc/evidence/20260825-061340-render/`、affected `fast` `.sdlc/evidence/20260825-061452-fast/`、sequential
+  `server` `.sdlc/evidence/20260825-061512-server/` 与 Goal `full`
+  `.sdlc/evidence/20260825-063343-full/` 均绿；full 17/17 steps、1542.353 秒，含 Node 24 Web 26 files/212 tests、
+  runtime canary、Playwright 23 passed + 1 controlled skip。Profile `NOT_REGISTERED`、certification
+  `NOT_CERTIFIED`、scene/raster `ABSENT`、daemon output `UNWIRED`、正式产品 route `CLOSED`；Text/RESULT/Profile/
+  最终产品接线继续后续 DAG。provider attempts/API Key reads/费用/真实数据=0，未 push/tag/PR；状态回填后的
+  resolution `fast` `.sdlc/evidence/20260825-070236-fast/` 亦通过。
 - 2026-08-24 **Template v1 implementation TV1-T101 已由 Codex `/root` single-writer 完成，状态
   `resolved/automated_verified`**：目标是最终产品链路而非 `/prototype`。本票把 T100 admitted target 接到显式
   IP egress、每 connect DNS 复核、rustls/WebPKI、strict HTTP envelope、固定 2 attempts/100 ms/5 s/20 s、

@@ -44,6 +44,7 @@ $fontPrepareCacheReport = Join-Path $resolvedEvidenceDir 'font-prepare-cache-ind
 $resourcePreparationPipelineReport = Join-Path $resolvedEvidenceDir 'resource-preparation-pipeline-independent.json'
 $layoutPreflightReport = Join-Path $resolvedEvidenceDir 'layout-preflight-independent.json'
 $definiteLayoutReport = Join-Path $resolvedEvidenceDir 'definite-layout-independent.json'
+$preparedImageLayoutReport = Join-Path $resolvedEvidenceDir 'prepared-image-layout-independent.json'
 $outputPngReport = Join-Path $resolvedEvidenceDir 'output-png-independent.json'
 $enginePngReport = Join-Path $resolvedEvidenceDir 'engine-png-independent.json'
 $summaryPath = Join-Path $resolvedEvidenceDir 'renderer-process-summary.json'
@@ -59,6 +60,7 @@ foreach ($report in @(
         $resourcePreparationPipelineReport,
         $layoutPreflightReport,
         $definiteLayoutReport,
+        $preparedImageLayoutReport,
         $outputPngReport,
         $enginePngReport,
         $summaryPath)) {
@@ -596,6 +598,41 @@ try {
         throw 'Definite layout independent report boundary drifted.'
     }
 
+    Invoke-Checked 'prepared-image-layout-python-independent-replay' {
+        & python.exe 'tools\verify-prepared-image-layout-vectors.py' `
+            '--vectors' 'renderer\prepared-image-layout-vectors-v1.json' `
+            '--report' $preparedImageLayoutReport
+    }
+    if (-not (Test-Path -LiteralPath $preparedImageLayoutReport -PathType Leaf)) {
+        throw 'Prepared IMAGE layout independent replay did not write its report.'
+    }
+    $preparedImageLayoutIndependent =
+        Get-Content -Raw -Encoding UTF8 -LiteralPath $preparedImageLayoutReport |
+            ConvertFrom-Json
+    if ($preparedImageLayoutIndependent.verifier -ne 'renderweave-prepared-image-layout-python-independent/1' `
+            -or $preparedImageLayoutIndependent.result -ne 'PASS' `
+            -or $preparedImageLayoutIndependent.assurance -ne 'A2' `
+            -or $preparedImageLayoutIndependent.successCases -ne 10 `
+            -or $preparedImageLayoutIndependent.negativeCases -ne 2 `
+            -or $preparedImageLayoutIndependent.passed -ne 12 `
+            -or $preparedImageLayoutIndependent.total -ne 12 `
+            -or $preparedImageLayoutIndependent.failed -ne 0 `
+            -or $preparedImageLayoutIndependent.checks -ne 81 `
+            -or $preparedImageLayoutIndependent.vectorSha256 -ne '275579debd1ba894a64836258da402ea0e974046895ae985642be832cf430b14' `
+            -or $preparedImageLayoutIndependent.layoutProfile -ne 'renderweave-layout/1.0' `
+            -or $preparedImageLayoutIndependent.resourcePreparationProfile -ne 'renderweave-renderer/1.0' `
+            -or $preparedImageLayoutIndependent.intrinsicSource -ne 'EXACT_BYTES_ORIENTATION_NORMALIZED_LOGICAL_PIXELS' `
+            -or $preparedImageLayoutIndependent.layoutImplementation -ne 'PREPARED_IMAGE_FIXED_FILL_SINGLE_AXIS_HUG_LOGICAL_RATIO_ABSOLUTE_STACK_GRID_CONTAINER_AUTOMATED_VERIFIED_UNWIRED' `
+            -or $preparedImageLayoutIndependent.profileAvailability -ne 'NOT_REGISTERED' `
+            -or $preparedImageLayoutIndependent.certificationStatus -ne 'NOT_CERTIFIED' `
+            -or $preparedImageLayoutIndependent.sceneImplementation -ne 'ABSENT' `
+            -or $preparedImageLayoutIndependent.rasterImplementation -ne 'ABSENT' `
+            -or $preparedImageLayoutIndependent.daemonOutputPath -ne 'UNWIRED' `
+            -or $preparedImageLayoutIndependent.productRoute -ne 'CLOSED' `
+            -or $preparedImageLayoutIndependent.providerAttempts -ne 0) {
+        throw 'Prepared IMAGE layout independent report boundary drifted.'
+    }
+
     Invoke-Checked 'output-png-python-independent-replay' {
         & python.exe 'tools\verify-output-png-vectors.py' `
             '--vectors' 'renderer\output-png-vectors-v1.json' `
@@ -693,7 +730,7 @@ try {
     }
 
     $summary = [ordered]@{
-        gateVersion = 'renderweave-renderer-process-gate/2.6'
+        gateVersion = 'renderweave-renderer-process-gate/2.7'
         status = 'PASS'
         processContractVersion = 'renderweave-renderer-process/1.0'
         java = $java
@@ -881,6 +918,18 @@ try {
             fixturesSha256 = $definiteLayoutIndependent.fixturesSha256
             layoutProfile = $definiteLayoutIndependent.layoutProfile
         }
+        preparedImageLayoutIndependent = [ordered]@{
+            verifier = $preparedImageLayoutIndependent.verifier
+            assurance = $preparedImageLayoutIndependent.assurance
+            successCases = $preparedImageLayoutIndependent.successCases
+            negativeCases = $preparedImageLayoutIndependent.negativeCases
+            checks = $preparedImageLayoutIndependent.checks
+            vectorSha256 = $preparedImageLayoutIndependent.vectorSha256
+            layoutProfile = $preparedImageLayoutIndependent.layoutProfile
+            resourcePreparationProfile = $preparedImageLayoutIndependent.resourcePreparationProfile
+            intrinsicSource = $preparedImageLayoutIndependent.intrinsicSource
+            layoutImplementation = $preparedImageLayoutIndependent.layoutImplementation
+        }
         outputPngIndependent = [ordered]@{
             verifier = $outputPngIndependent.verifier
             assurance = $outputPngIndependent.assurance
@@ -921,6 +970,7 @@ try {
             resultSealKernel = 'CANONICAL_METADATA_LENGTH_SHA256_UUID_IMAGE_PAYLOAD_AUTOMATED_VERIFIED_UNWIRED'
             resourceBytes = 'FETCHED_AND_INTEGRITY_VERIFIED'
             layoutKernel = 'RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_SINGLE_AND_INACTIVE_BOUND_OR_EXACT_TWO_FILL_SINGLE_ACTIVE_BOUND_WITHIN_REMAINING_OR_SINGLE_ACTIVE_MIN_OVERFLOW_OR_EXACT_TWO_FILL_TWO_MIN_SECOND_FREEZE_OVERFLOW_OR_EXACT_TWO_FILL_MIXED_ACTIVE_MIN_SECOND_MIN_FREEZE_OVERFLOW_OR_EXACT_TWO_FILL_TWO_MAX_SECOND_FREEZE_FREE_JUSTIFY_OR_EXACT_TWO_FILL_MIXED_ACTIVE_MAX_SECOND_MAX_FREEZE_FREE_JUSTIFY_OR_EXACT_THREE_FILL_SINGLE_ACTIVE_BOUND_ONE_REDISTRIBUTION_OR_EXACT_THREE_FILL_POST_REDISTRIBUTION_INACTIVE_BOUNDS_OR_EXACT_THREE_FILL_SECOND_MIN_FREEZE_LAST_REMAINDER_OR_EXACT_THREE_FILL_SECOND_MAX_FREEZE_LAST_REMAINDER_OR_EXACT_THREE_FILL_SECOND_MAX_FREEZE_TERMINAL_INACTIVE_MIN_OR_EXACT_THREE_FILL_SECOND_MAX_FREEZE_TERMINAL_INACTIVE_MAX_OR_EXACT_THREE_FILL_THIRD_MAX_FREEZE_FREE_JUSTIFY_OR_EXACT_THREE_FILL_SINGLE_ACTIVE_MIN_OVERFLOW_OR_EXACT_THREE_FILL_SECOND_MIN_FREEZE_OVERFLOW_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_INACTIVE_UNFROZEN_MAX_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_SECOND_MIN_FREEZE_OVERFLOW_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_SECOND_MIXED_MIN_FREEZE_OVERFLOW_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_SECOND_MIXED_MIN_FREEZE_OVERFLOW_TERMINAL_INACTIVE_MAX_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_TWO_MIXED_MIN_FREEZES_OVERFLOW_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_MIXED_AND_MIN_ONLY_FREEZES_OVERFLOW_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_TWO_MIN_ONLY_FREEZES_OVERFLOW_MULTI_MAIN_FILL_AND_FIXED_SINGLE_FRACTION_INDEPENDENT_MULTI_AUTO_GRID_MULTI_AUTO_SPAN_STABLE_DEFICIT_GRID_DEFINITE_MULTI_FRACTION_LAST_REMAINDER_GRID_EMPTY_CONTAINER_STACK_HUG_GRID_AUTO_HUG_CONTRIBUTION_GRID_HUG_EXACT_QUARTER_TURN_AFFINE_FRAME_GROUP_HUG_FIXED_OPPOSITE_AXIS_CROSS_FILL_DEFINITE_ABSOLUTE_PARENT_OFFER_DEFINITE_STACK_CROSS_OUTER_OFFER_STACK_MAIN_FILL_CROSS_HUG_REMEASURE_NESTED_STACK_MAIN_OFFER_PROPAGATION_COLUMNS_FIRST_GRID_CELL_OUTER_OFFER_STACK_MAIN_OFFER_COLUMNS_FIRST_GRID_CROSS_HUG_ABSOLUTE_PARENT_OFFER_COLUMNS_FIRST_GRID_CROSS_HUG_GRID_CELL_OFFER_COLUMNS_FIRST_NESTED_GRID_CROSS_HUG_GRID_CELL_OFFER_STACK_MAIN_FIRST_CROSS_HUG_DIRECTION_CHANGING_STACK_CROSS_OFFER_MAIN_HUG_NESTED_STACK_RESOLVED_OPPOSITE_OFFER_RECURSION_COLUMNS_FIRST_GRID_TERMINAL_NORMALIZATION_BOX_AUTOMATED_VERIFIED_UNWIRED'
+            preparedImageLayout = 'PREPARED_IMAGE_FIXED_FILL_SINGLE_AXIS_HUG_LOGICAL_RATIO_ABSOLUTE_STACK_GRID_CONTAINER_AUTOMATED_VERIFIED_UNWIRED'
             outputPngKernel = 'AUTOMATED_VERIFIED_UNWIRED'
             enginePngKernel = 'PREORDER_DEFINITE_IDENTITY_GROUP_FRAME_STACK_GRID_RECT_PIXEL_ALIGNED_OPAQUE_RECTANGULAR_CLIP_VISIBILITY_ZERO_OPACITY_SUPPRESSION_PNG_KERNEL_UNWIRED'
             daemonOutputPath = 'UNWIRED'
@@ -933,12 +983,12 @@ try {
         }
     }
     Write-Utf8File -Path $summaryPath -Content ($summary | ConvertTo-Json -Depth 6)
-    Write-Host (('Renderer process: Java={0} Python={1}+{2}+{3}+{4}+{5}+{6}+{7}+{8}+{9}+{10}+{11}+{12}+{13} Rust Windows=PASS ' +
+    Write-Host (('Renderer process: Java={0} Python={1}+{2}+{3}+{4}+{5}+{6}+{7}+{8}+{9}+{10}+{11}+{12}+{13}+{14} Rust Windows=PASS ' +
                 'Linux UDS=PASS Profile=NOT_REGISTERED Certification=NOT_CERTIFIED Raster=ABSENT') -f
             $java.tests, $independent.checks, $documentIndependent.total,
             $resourceBodyIndependent.total, $resourceFetchTargetIndependent.total,
             $resourceFetchTransportIndependent.total, $layoutPreflightIndependent.total,
-            $definiteLayoutIndependent.total,
+            $definiteLayoutIndependent.total, $preparedImageLayoutIndependent.total,
             $outputPngIndependent.total, $enginePngIndependent.total,
             $resourceMediaRawCacheIndependent.total, $imageDecodeCacheIndependent.total,
             $fontPrepareCacheIndependent.total, $resourcePreparationPipelineIndependent.total)

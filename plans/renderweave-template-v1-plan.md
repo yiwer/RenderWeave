@@ -3526,6 +3526,48 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
   `fast` → sequential `server` → Goal `full` → resolution `fast`。provider/API Key/费用/真实数据=0，不
   push/tag/PR，`/prototype` 不计交付。
 
+## 105. TV1-T106 执行卡
+
+- 决策：T105 以 verified commit `f1802910` 收口且 worktree clean 后，完整 prepared IMAGE 已真实进入 daemon
+  请求生命周期，但 layout 仍统一拒绝 Image。Ticket 10 要求 intrinsic 只取 exact-byte 复核并 orientation 归一化后的
+  logical pixels；因此下一安全 frontier 是 prepared manifest → definite layout，而非原型或产品 UI 外壳。
+- Interface/seam：新增 `layout_definite_with_prepared_resources(document, manifest)`，只接受 T105 immutable token；
+  复用既有唯一 layouter，resource-free API 不变。入口复核 Profile 与整份 resource count/order/id/kind，IMAGE 再核对
+  admitted logical descriptor 与 prepared pixels，禁止裸宽高 map/test bypass。
+- 精确语义：fixed/FILL Image 也要求完整 prepared identity；单轴 HUG 由另一 definite outer axis × prepared logical
+  ratio 推出，只 clamp HUG 轴。资源 context 贯穿既有 ABSOLUTE、Group/Frame、Stack measure/FILL 后 cross-HUG、
+  Grid columns-first/AUTO/arrange；没有 definite opposite offer 的形状继续 fail closed。
+- 允许影响：T106 tracker/map/plan/NOTES、layout/resource Cargo seam、layout Rust module/public tests、新 shared Image
+  layout vectors、Python independent verifier 与 render gate identity/evidence。
+- 禁止影响：Text shaping、fit/sampling/paint/scene/raster/JPEG、Skia/FreeType/HarfBuzz build、daemon RESULT/Profile、
+  Java/OpenAPI/migration/Web/Product route、formal records、physical certification、J1/A3/READY 与外部副作用。
+- TDD/gates：public Interface 先 RED；GREEN 后 focused/workspace/independent/offline → `asset`/`render` → affected
+  `fast` → sequential `server` → Goal `full` → resolution `fast`。provider/API Key/费用/真实数据=0，不
+  push/tag/PR，`/prototype` 不计交付。
+
+### TV1-T106 resolution evidence
+
+- RED→GREEN：缺失的 prepared-resource public layout Interface 与首个 ABSOLUTE Image HUG case 先红；GREEN 后
+  `layout_definite_with_prepared_resources` 只接受真实 T105 `PreparedResourceManifest`，复核 Profile、整份 manifest
+  count/order/id/kind、IMAGE admitted logical dimensions 与 prepared oriented pixels，旧 resource-free API 不变。
+- Image fixed/FILL 与单轴 HUG 已复用唯一 definite writer；HUG 以 prepared logical ratio、固定 binary64 次序推导，
+  只 clamp HUG 轴。resource context 贯穿 ABSOLUTE、Group/Frame、Stack measure/FILL 后 cross-HUG 与 Grid
+  columns-first/AUTO/arrange。Rust public replay 经真实 prepare；Python stdlib A2 独立重放 10 success + 2 negative、
+  81 checks，vector SHA-256 `275579debd1ba894a64836258da402ea0e974046895ae985642be832cf430b14`。
+- layout 新增 production resource dependency 后，Cargo lock SHA-256 轮换为
+  `48d2ae407c941e746ef1bd425b04e4f69258c2f1e122d25a53ac2b61c4e3655c`，machine manifest SHA-256 轮换为
+  `689d6e198193249c72af9f524021e4a2899aa72a592d5285f8bee9e2909f978c`；protocol HELLO vectors 原子轮换，
+  renderer process independent 7 vectors/110 checks 与 vendor 3067 files 全绿。
+- 分级证据：canonical `render` `.sdlc/evidence/20260825-061340-render/`、affected `fast`
+  `.sdlc/evidence/20260825-061452-fast/`、sequential `server` `.sdlc/evidence/20260825-061512-server/`、Goal
+  `full` `.sdlc/evidence/20260825-063343-full/` 均绿；full 17/17 steps、1542.353 秒，覆盖 Maven、Node 24 Web
+  26 files/212 tests、runtime canary、Playwright 23 passed + 1 controlled skip、Draft 与 inference browser journeys；
+  状态回填后的 resolution `fast` `.sdlc/evidence/20260825-070236-fast/` 亦通过。
+- 状态为 `resolved / automated_verified`。Text shaping、scene/raster、daemon RESULT/Profile 与正式产品页面继续后续
+  DAG；Profile `NOT_REGISTERED`、certification `NOT_CERTIFIED`、scene/raster `ABSENT`、daemon output `UNWIRED`、
+  Product route `CLOSED`、native font stack `BUILD_NOT_AUTHORIZED`。provider attempts/API Key reads/费用/真实数据=0，
+  未 push/tag/PR，`/prototype` 不计最终产品交付。
+
 ## 66. TV1-T67 执行卡
 
 - 决策：T66 以 verified commit `a6fabe5` 收口且 worktree clean 后，复算原始 Ticket 10 §3/§7、
