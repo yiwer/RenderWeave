@@ -38,6 +38,9 @@ management:
 
 renderweave:
   template:
+    stale-consumer:
+      enabled: ${RENDERWEAVE_TEMPLATE_STALE_CONSUMER_ENABLED:true}
+      delay-ms: ${RENDERWEAVE_TEMPLATE_STALE_CONSUMER_DELAY_MS:5000}
     single-owner:
       # Development/test host adapter only. Production remains fail-closed by default.
       enabled: ${RENDERWEAVE_TEMPLATE_SINGLE_OWNER_ENABLED:false}

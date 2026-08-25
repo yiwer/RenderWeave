@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
+import org.springframework.context.ApplicationContext;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
@@ -72,6 +73,9 @@ class TemplateDependencyProjectionTest {
     @Autowired
     private org.springframework.transaction.PlatformTransactionManager transactionManager;
 
+    @Autowired
+    private ApplicationContext applicationContext;
+
     @BeforeEach
     void resetState() {
         jdbc.sql("""
@@ -115,6 +119,13 @@ class TemplateDependencyProjectionTest {
         assertThat(missingOutcome).isInstanceOf(AssetReferenceAuthority.ReferencesReadable.class);
         assertThat(((AssetReferenceAuthority.ReferencesReadable) missingOutcome)
                 .references().templateIds()).isEmpty();
+    }
+
+    @Test
+    void testRuntimeDisablesOnlyTheBackgroundPoller() {
+        assertThat(applicationContext.getBeansOfType(
+                TemplateApplicationConfiguration.TemplateAssetStalePoller.class)).isEmpty();
+        assertThat(staleConsumer).isNotNull();
     }
 
     @Test

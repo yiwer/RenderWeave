@@ -17,9 +17,11 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.core.simple.JdbcClient;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -123,10 +125,36 @@ class TemplateApplicationConfiguration {
         return new TemplateAssetStaleConsumer(jdbc, transactionManager, readinessAuthority);
     }
 
+    @Bean
+    @ConditionalOnProperty(
+            prefix = "renderweave.template.stale-consumer",
+            name = "enabled",
+            havingValue = "true",
+            matchIfMissing = true
+    )
+    TemplateAssetStalePoller templateAssetStalePoller(TemplateAssetStaleConsumer consumer) {
+        return new TemplateAssetStalePoller(consumer);
+    }
+
     private static Set<String> parseCapabilities(String raw) {
         return Arrays.stream(raw.split(","))
                 .map(String::strip)
                 .filter(value -> !value.isEmpty())
                 .collect(Collectors.toUnmodifiableSet());
+    }
+
+    /** Production scheduling adapter; the replayable consumer remains directly testable. */
+    static final class TemplateAssetStalePoller {
+        private final TemplateAssetStaleConsumer consumer;
+
+        TemplateAssetStalePoller(TemplateAssetStaleConsumer consumer) {
+            this.consumer = Objects.requireNonNull(consumer, "consumer");
+        }
+
+        @Scheduled(fixedDelayString = "${renderweave.template.stale-consumer.delay-ms:5000}")
+        void poll() {
+            consumer.consumePending();
+            consumer.recheckStale();
+        }
     }
 }

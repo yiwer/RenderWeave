@@ -2155,6 +2155,39 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
   raster `ABSENT`、native stack `BUILD_NOT_AUTHORIZED`、public Rendering API 与正式产品 route `CLOSED`；
   provider attempts/API Key reads/reservations/cost/真实数据=0，未推进 J1/A3/READY，未 push/tag/PR。
 
+## 116. TV1-T116 执行卡
+
+- 触发：T115 的 sequential `server` 与 Goal `full` 断言虽绿，但缓存 Spring 测试上下文中的
+  `TemplateAssetStaleConsumer.@Scheduled` 在各自 Testcontainers PostgreSQL 停止后继续运行，产生 transaction/
+  connection-refused 错误，并令 Surefire 在正常 `System.exit(0)` 后强制结束 fork JVM。
+- Interface/seam：保持 `TemplateAssetStaleConsumer.consumePending/recheckStale` 为可重放 work；新建只负责
+  consume→recheck 的窄 poller adapter。`renderweave.template.stale-consumer.enabled` 缺省 true，生产 delay property
+  不变；test resources 显式 false。
+- TDD：轻量 context test 先冻结默认启用/显式禁用/consumer 常驻与调用顺序，再由真实 PostgreSQL Template slice
+  证明 test property 生效且手动消费语义不变。先 RED 后最小 GREEN。
+- 分级：focused configuration + Template dependency/delete-restore slices → `fast` → sequential `server` → Goal
+  `full` → resolution `fast`。server/full 日志必须同时满足 stale scheduled exception=0、Surefire forced-kill=0。
+- 边界：不修改 cursor/transaction/readiness、API/OpenAPI/Web/Renderer/Profile/正式产品 route；provider/API Key/
+  费用/真实数据=0，不推进 J1/A3/READY，不 push/tag/PR。
+
+### TV1-T116 收口
+
+- `TemplateAssetStaleConsumer` 不再直接调度；`TemplateAssetStalePoller` 成为唯一窄 scheduling adapter，并按
+  consume→recheck 顺序调用可重放 work。production 缺省/true 装配 poller，false 只移除 poller 而保留 consumer；
+  主配置显式映射 enabled/delay，test resources 显式 false。
+- TDD RED 为 production poller 尚不存在时 4 个 missing-symbol 编译错误；GREEN 为 configuration + projection
+  16/16 与 delete/restore PostgreSQL+MinIO slice 5/5。affected `fast`
+  `.sdlc/evidence/20260825-182011-fast/` 3/3 steps exit 0。
+- sequential `server` `.sdlc/evidence/20260825-182031-server/` 为 `passed/A1`，354/0/0/15；Goal `full`
+  `.sdlc/evidence/20260825-183237-full/` 为 17/17 steps、`passed/A1`、1133.441 秒，Node 24 Web
+  217/217 + production build、runtime canary 与 Playwright 23 passed + 1 controlled skip 均绿。两份 server log 中
+  stale consumer、scheduled-task error、Surefire forced-kill 与 `CannotCreateTransactionException` 计数均为 0。
+- 状态与证据回填后的 resolution `fast` `.sdlc/evidence/20260825-185343-fast/` 以 3/3 steps exit 0。
+- 状态为 `resolved / automated_verified`。既有一般 Hikari housekeeper 旧连接警告未由 STALE poller 触发，留作
+  独立测试上下文清理问题；本票不改变 API/OpenAPI/Web/Renderer/Profile/正式产品 route。Profile
+  `NOT_REGISTERED`、certification `NOT_CERTIFIED`、process raster `ABSENT`、public Rendering API 与产品 route
+  `CLOSED`；最终产品 Template-v1 页面与真实功能仍未交付，`/prototype` 不计交付，未推进 J1/A3/READY。
+
 ## 111. TV1-T111 执行卡
 
 - 决策：T110 以 verified commit `4cbc3b68` 收口且 worktree clean 后，复核 Ticket 10 §6、Ticket 16 §8 与

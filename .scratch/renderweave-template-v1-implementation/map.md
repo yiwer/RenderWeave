@@ -596,6 +596,12 @@ Label: wayfinder:map
   mixed child 的唯一 offer 仍位于 `[min,max]` 时直接终止。shared `/56` 为 256 laid-out + 16 unsupported、
   272/272 cases、814 checks；`render`/`fast`/顺序 `server`/17-step `full` 与 resolution `fast` 均绿。一般 water
   filling、Profile/native build/public Rendering API/正式产品 route 继续关闭，`/prototype` 不计最终交付。
+- [隔离 Template STALE production poller 与测试上下文生命周期](issues/116-template-stale-poller-test-lifecycle.md) —
+  **resolved / automated_verified**；保持生产 poller 缺省开启与既有 delay，把可重放 work bean 和窄
+  `@Scheduled` adapter 分离，测试默认关闭后台 poller、仍显式验证 STALE 语义与生产接线。focused、`fast`、
+  sequential `server` 与 17-step `full` 均绿；server/full 中 stale scheduled exception、forced-kill 与
+  `CannotCreateTransactionException` 均为 0，resolution `fast` 也以 3/3 steps 通过。不改变 API/Renderer/Profile/
+  正式产品 route。
 - [验证 Product Editor 状态、恢复与权威预览架构](issues/09-validate-product-editor-architecture.md) —
   throwaway 逻辑原型（`/prototype/editor-state-model`，不进产品 route）把冻结编辑器规则编码为确定性
   fixture 状态机：10 个引导走查场景 37/37 断言 + 自由操作冒烟 + 键盘焦点检查全部通过（Playwright A1，

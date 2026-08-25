@@ -3,8 +3,6 @@ package cn.hbads.renderweave.app.template;
 import cn.hbads.renderweave.template.api.TemplateApplication;
 import cn.hbads.renderweave.template.api.TemplateReadinessAuthority;
 import org.springframework.jdbc.core.simple.JdbcClient;
-import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Component;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -19,7 +17,6 @@ import java.util.Set;
  * rechecks them (STALE is the transient fact; the recheck lands READY or INVALID).
  * Metadata-only events never trigger STALE; same-content no-ops emit no event at all.
  */
-@Component
 class TemplateAssetStaleConsumer {
 
     private static final Set<String> CONTENT_CHANGING_OPERATIONS = Set.of(
@@ -119,10 +116,4 @@ class TemplateAssetStaleConsumer {
         }
     }
 
-    /** Production poll: consume then recheck (bounded, replayable on restart). */
-    @Scheduled(fixedDelayString = "${renderweave.template.stale-consumer.delay-ms:5000}")
-    void poll() {
-        consumePending();
-        recheckStale();
-    }
 }

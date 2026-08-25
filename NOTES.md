@@ -1,6 +1,19 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-25 **Template v1 implementation TV1-T116 已由 Codex `/root` single-writer 完成，状态
+  `resolved/automated_verified`**：`TemplateAssetStaleConsumer` 现只承载可显式重放的 consume/recheck work，
+  生产缺省开启的窄 poller 依次调用两步；test resources 只关闭后台 poller，真实 PostgreSQL slice 仍直接验证
+  STALE 语义。focused configuration/projection 16/16、delete/restore 5/5、`fast`
+  `.sdlc/evidence/20260825-182011-fast/`、sequential `server`
+  `.sdlc/evidence/20260825-182031-server/` 与 17-step `full`
+  `.sdlc/evidence/20260825-183237-full/` 均绿。server/full 的 stale consumer、scheduled-task error、Surefire
+  forced-kill 与 `CannotCreateTransactionException` 日志计数均为 0；full 为 1133.441 秒，Node 24 Web 217/217、
+  runtime canary passed、Playwright 23 passed + 1 controlled skip；resolution `fast`
+  `.sdlc/evidence/20260825-185343-fast/` 也以 3/3 steps 通过。一般 Hikari 旧连接 housekeeper 警告仍是独立测试
+  上下文清理噪声，不属于本票扩张范围。最终交付仍是正式产品 Template-v1 页面与真实功能，`/prototype`
+  不计交付；Profile `NOT_REGISTERED`、certification `NOT_CERTIFIED`、process raster `ABSENT`、public Rendering API
+  与正式产品 route `CLOSED`，provider/API Key/真实数据=0，未推进 J1/A3/READY，未 push/tag/PR。
 - 2026-08-25 **Template v1 implementation TV1-T115 已由 Codex `/root` single-writer 完成，状态
   `resolved/automated_verified`**：最终交付仍是正式产品 Template-v1 页面与真实功能，`/prototype` 不计交付。
   exactly-two main FILL 现支持首轮唯一 mixed active-min 冻结后，另一 mixed child 的唯一 offer 仍在 authored
