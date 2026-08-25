@@ -1,6 +1,21 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-26 **Template v1 implementation TV1-T122 已由 Codex `/root` single-writer 完成，状态
+  `resolved/automated_verified`**：最终交付仍是正式 `/templates` 页面、真实后端、public Rendering API、
+  Authoritative Preview 与失败撤图，`/prototype` 不计交付。本票物化生产 `RenderingApplication`、Rendering-owned
+  Host authority 与 exact Renderer Profile authority；public/Engine identity 分离，单 60 秒 absolute deadline 与
+  exact Profile 贯穿 Evaluator/Asset lease/唯一 immutable Command，Evaluator exactly-once，Unknown/BUSY 只重发同一
+  Command，所有 authorized result 在释放前执行一次 authority recheck。focused Rendering 10 项、app adapter/
+  configuration 11 项、Rendering module 119 项与完整 app reactor 均绿；affected `fast`
+  `.sdlc/evidence/20260826-010326-fast/`（23.363 秒）、sequential `server`
+  `.sdlc/evidence/20260826-010400-server/`（987.113 秒）及 17-step Goal `full`
+  `.sdlc/evidence/20260826-012058-full/`（17/17，1520.040 秒）均 passed/A1。full 覆盖 Windows/Linux Renderer、
+  Node 24 Web 28 files/217 tests、runtime canary、Playwright 23 passed + 1 controlled skip、Draft/inference browser
+  journeys；provider attempts/API Key reads/reservations/cost/open authorization=0。状态回填后的 resolution `fast`
+  `.sdlc/evidence/20260826-014841-fast/` 亦以 3/3 steps 通过。Profile `NOT_REGISTERED`、
+  certification `NOT_CERTIFIED`、process raster `ABSENT`、native stack `BUILD_NOT_AUTHORIZED`、daemon success/public
+  Rendering API/E6/正式 `/templates` route `CLOSED`，未推进 J1/A3/READY。
 - 2026-08-26 **Template v1 implementation TV1-T121 已由 Codex `/root` single-writer 完成，状态
   `resolved/automated_verified`**：最终交付仍固定为正式 `/templates` 页面、真实后端、public Rendering API 与
   Authoritative Preview，`/prototype` 不计交付。本票在唯一 prepared-resource Engine Interface 内实现零旋转整数

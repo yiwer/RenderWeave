@@ -13,8 +13,10 @@ final class ConfiguredSingleOwnerScopeAuthority implements OwnerScopeAuthority {
     static final String CREATE = "template.create";
     static final String READ = "template.read";
     static final String UPDATE = "template.update";
+    static final String DELETE = "template.delete";
+    static final String RENDER = "template.render";
     private static final int MAX_OUTSTANDING_RECHECKS = 4096;
-    private static final Set<String> KNOWN = Set.of(CREATE, READ, UPDATE);
+    private static final Set<String> KNOWN = Set.of(CREATE, READ, UPDATE, DELETE, RENDER);
 
     private final OwnerScope ownerScope;
     private final Set<String> capabilities;

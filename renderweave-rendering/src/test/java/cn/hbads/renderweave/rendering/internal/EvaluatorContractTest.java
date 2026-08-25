@@ -90,7 +90,9 @@ class EvaluatorContractTest {
                 new OwnerScope("intruder-scope"),
                 new TemplateApplication.TemplateId(ROOT_ID),
                 "{\"rootDocument\":{}}".getBytes(StandardCharsets.UTF_8),
-                OutputSelection.defaultPng()));
+                OutputSelection.defaultPng(),
+                "renderweave-renderer/1.0",
+                61_000L));
 
         var rejected = assertInstanceOf(EvaluationOutcome.Rejected.class, outcome);
         assertEquals(EvaluationStage.REQUEST_ADMISSION, rejected.stage());
@@ -127,7 +129,7 @@ class EvaluatorContractTest {
     }
 
     @Test
-    void eachEvaluationFreezesAnAbsoluteSixtySecondRenderDeadline() {
+    void evaluationUsesTheApplicationFrozenAbsoluteRenderDeadline() {
         var now = Instant.parse("2026-08-20T08:00:00Z");
         var assets = new CapturingAssetPort();
         var evaluator = new CanonicalEvaluator(
@@ -139,11 +141,11 @@ class EvaluatorContractTest {
                 resolver(),
                 Clock.fixed(now, ZoneOffset.UTC));
 
-        var outcome = evaluator.evaluate(command("{\"rootDocument\":{}}"));
+        var deadline = now.plusSeconds(60).toEpochMilli();
+        var outcome = evaluator.evaluate(command("{\"rootDocument\":{}}", deadline));
 
         assertInstanceOf(EvaluationOutcome.SealedDocument.class, outcome);
-        assertEquals(now.plusSeconds(60).toEpochMilli(),
-                assets.lastRequest.deadlineEpochMilli());
+        assertEquals(deadline, assets.lastRequest.deadlineEpochMilli());
     }
 
     // ------------------------------------------------------------------
@@ -151,12 +153,18 @@ class EvaluatorContractTest {
     // ------------------------------------------------------------------
 
     private static EvaluationCommand command(String envelope) {
+        return command(envelope, 61_000L);
+    }
+
+    private static EvaluationCommand command(String envelope, long deadlineAtEpochMilli) {
         return new EvaluationCommand(
                 new RenderRequestId("00000000-0000-4000-8000-000000000001"),
                 new OwnerScope("owner-a"),
                 new TemplateApplication.TemplateId(ROOT_ID),
                 envelope.getBytes(StandardCharsets.UTF_8),
-                OutputSelection.defaultPng());
+                OutputSelection.defaultPng(),
+                "renderweave-renderer/1.0",
+                deadlineAtEpochMilli);
     }
 
     private static cn.hbads.renderweave.rendering.internal.CanonicalEvaluator evaluator(

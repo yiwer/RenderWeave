@@ -1,7 +1,11 @@
 package cn.hbads.renderweave.rendering.internal;
 
 import cn.hbads.renderweave.rendering.api.Evaluator;
+import cn.hbads.renderweave.rendering.api.RenderingApplication;
 import cn.hbads.renderweave.rendering.spi.AssetResolutionPort;
+import cn.hbads.renderweave.rendering.spi.RenderEngine;
+import cn.hbads.renderweave.rendering.spi.RendererProfileAuthority;
+import cn.hbads.renderweave.rendering.spi.RenderingAuthority;
 import cn.hbads.renderweave.rendering.spi.RenderingCapabilityRuntime;
 import cn.hbads.renderweave.template.api.DesignDslAuthority;
 import cn.hbads.renderweave.template.api.DesignSemanticAuthority;
@@ -9,6 +13,7 @@ import cn.hbads.renderweave.template.api.TemplateClosureAuthority;
 import cn.hbads.renderweave.validation.ValidationTargetResolver;
 
 import java.time.Clock;
+import java.time.Duration;
 import java.util.Objects;
 
 /**
@@ -43,5 +48,25 @@ public final class RenderingModule {
                 Objects.requireNonNull(capabilities, "capabilities"),
                 Objects.requireNonNull(validationResolver, "validationResolver"),
                 Objects.requireNonNull(clock, "clock"));
+    }
+
+    /**
+     * 正式 Rendering 产品操作 assembly：授权、Profile availability、一次 Evaluation、同 Command
+     * 恢复与结果释放前 recheck。没有 available Profile 时在 payload work 前失败封闭。
+     */
+    public static RenderingApplication application(
+            Evaluator evaluator,
+            RenderEngine engine,
+            RenderingAuthority authority,
+            RendererProfileAuthority profiles,
+            Clock clock
+    ) {
+        return new CanonicalRenderingApplication(
+                Objects.requireNonNull(evaluator, "evaluator"),
+                Objects.requireNonNull(engine, "engine"),
+                Objects.requireNonNull(authority, "authority"),
+                Objects.requireNonNull(profiles, "profiles"),
+                Objects.requireNonNull(clock, "clock"),
+                Duration.ofMillis(10));
     }
 }

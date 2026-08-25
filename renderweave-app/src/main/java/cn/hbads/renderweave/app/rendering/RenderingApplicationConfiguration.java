@@ -2,18 +2,27 @@ package cn.hbads.renderweave.app.rendering;
 
 import cn.hbads.renderweave.asset.api.AssetResolver;
 import cn.hbads.renderweave.rendering.api.CapabilityDerivation;
+import cn.hbads.renderweave.rendering.api.EvaluationStage;
 import cn.hbads.renderweave.rendering.api.Evaluator;
+import cn.hbads.renderweave.rendering.api.RenderingApplication;
+import cn.hbads.renderweave.rendering.api.RenderingProblem;
 import cn.hbads.renderweave.rendering.internal.RenderingModule;
 import cn.hbads.renderweave.rendering.spi.AssetResolutionPort;
+import cn.hbads.renderweave.rendering.spi.RenderEngine;
+import cn.hbads.renderweave.rendering.spi.RendererProfileAuthority;
+import cn.hbads.renderweave.rendering.spi.RenderingAuthority;
 import cn.hbads.renderweave.rendering.spi.RenderingCapabilityRuntime;
 import cn.hbads.renderweave.template.api.DesignDslAuthority;
 import cn.hbads.renderweave.template.api.DesignSemanticAuthority;
 import cn.hbads.renderweave.template.api.TemplateClosureAuthority;
+import cn.hbads.renderweave.template.spi.TemplatePersistence;
 import cn.hbads.renderweave.validation.ValidationTargetResolver;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -30,8 +39,11 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Rendering app 装配（ADR-0044）：CapabilityStateStore 加密落盘 Adapter、capability 运行时
@@ -46,6 +58,38 @@ class RenderingApplicationConfiguration {
             DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneOffset.UTC);
     private static final DateTimeFormatter TIME_FORMAT =
             DateTimeFormatter.ofPattern("HH:mm:ss").withZone(ZoneOffset.UTC);
+
+    @Bean("renderingClock")
+    Clock renderingClock() {
+        return Clock.systemUTC();
+    }
+
+    @Bean
+    @ConditionalOnProperty(
+            name = "renderweave.template.single-owner.enabled",
+            havingValue = "true")
+    RenderingAuthority configuredRenderingAuthority(
+            @Value("${renderweave.template.single-owner.owner-scope:}") String ownerScope,
+            @Value("${renderweave.template.single-owner.capabilities:}") String capabilities,
+            TemplatePersistence templates
+    ) {
+        return new ConfiguredSingleOwnerRenderingAuthority(
+                ownerScope,
+                parseCapabilities(capabilities),
+                templates);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(RenderingAuthority.class)
+    RenderingAuthority failClosedRenderingAuthority() {
+        return new FailClosedRenderingAuthority();
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(RendererProfileAuthority.class)
+    RendererProfileAuthority failClosedRendererProfileAuthority() {
+        return new FailClosedRendererProfileAuthority();
+    }
 
     @Bean
     @ConditionalOnExpression("'${renderweave.rendering.capability-state.key:}' != ''")
@@ -92,7 +136,8 @@ class RenderingApplicationConfiguration {
             DesignDslAuthority dslAuthority,
             ObjectProvider<AssetResolutionPort> assets,
             RenderingCapabilityRuntime capabilities,
-            ValidationTargetResolver validationResolver
+            ValidationTargetResolver validationResolver,
+            @Qualifier("renderingClock") Clock renderingClock
     ) {
         return RenderingModule.evaluator(
                 closureAuthority,
@@ -101,7 +146,38 @@ class RenderingApplicationConfiguration {
                 assets.getIfAvailable(),
                 capabilities,
                 validationResolver,
-                Clock.systemUTC());
+                renderingClock);
+    }
+
+    @Bean
+    RenderingApplication renderingApplication(
+            Evaluator evaluator,
+            ObjectProvider<RenderEngine> engines,
+            RenderingAuthority authority,
+            RendererProfileAuthority profiles,
+            @Qualifier("renderingClock") Clock renderingClock
+    ) {
+        var availableEngine = engines.getIfAvailable();
+        if (availableEngine == null) {
+            RenderEngine unavailableEngine = command ->
+                    new RenderEngine.EngineOutcome.TerminalProblem(RenderingProblem.of(
+                            RenderingProblem.ProblemCode.RENDER_INTERNAL_ERROR,
+                            EvaluationStage.ENGINE));
+            RendererProfileAuthority unavailableProfiles = output ->
+                    new RendererProfileAuthority.Unavailable();
+            return RenderingModule.application(
+                    evaluator,
+                    unavailableEngine,
+                    authority,
+                    unavailableProfiles,
+                    renderingClock);
+        }
+        return RenderingModule.application(
+                evaluator,
+                availableEngine,
+                authority,
+                profiles,
+                renderingClock);
     }
 
     @Bean(destroyMethod = "close")
@@ -120,7 +196,8 @@ class RenderingApplicationConfiguration {
             @Value("${renderweave.rendering.engine.process.max-frame-bytes}") int maximumFramedBytes,
             @Value("${renderweave.rendering.engine.process.startup-timeout-ms}") long startupTimeoutMillis,
             @Value("${renderweave.rendering.engine.process.restart-backoff-ms}") long restartBackoffMillis,
-            @Value("${renderweave.rendering.engine.process.handshake-timeout-ms}") long handshakeTimeoutMillis
+            @Value("${renderweave.rendering.engine.process.handshake-timeout-ms}") long handshakeTimeoutMillis,
+            @Qualifier("renderingClock") Clock renderingClock
     ) {
         var supervisor = new RendererProcessSupervisor(
                 Path.of(executable),
@@ -132,13 +209,20 @@ class RenderingApplicationConfiguration {
                 maximumFramedBytes,
                 Duration.ofMillis(startupTimeoutMillis),
                 Duration.ofMillis(restartBackoffMillis),
-                Clock.systemUTC());
+                renderingClock);
         return new RendererProcessAdapter(
                 supervisor,
                 manifestSha256,
                 maximumFramedBytes,
                 Duration.ofMillis(handshakeTimeoutMillis),
-                Clock.systemUTC());
+                renderingClock);
+    }
+
+    private static Set<String> parseCapabilities(String raw) {
+        return Arrays.stream(raw.split(","))
+                .map(String::strip)
+                .filter(value -> !value.isEmpty())
+                .collect(Collectors.toUnmodifiableSet());
     }
 
     /**

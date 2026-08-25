@@ -33,7 +33,11 @@ class TemplateOwnerScopeAuthorityTest {
     void configuredSingleOwnerKeepsReadIndependentAndRechecksMutationsOnce() {
         var updateOnly = new ConfiguredSingleOwnerScopeAuthority(
                 "owner-a",
-                Set.of("template.create", "template.update")
+                Set.of(
+                        "template.create",
+                        "template.update",
+                        "template.delete",
+                        "template.render")
         );
         var create = (OwnerScopeAuthority.CreateGranted) updateOnly.authorizeCreate(INVOCATION);
         assertThat(create.disclosure()).isEqualTo(OwnerScopeAuthority.Disclosure.OPAQUE);

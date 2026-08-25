@@ -50,13 +50,17 @@ public interface Evaluator {
      * @param rootTemplateId      根 Template 身份；Schema 目标只来自其 TemplateSnapshot
      * @param rawRenderInputUtf8  原始 RenderInput strict-JSON envelope bytes
      * @param outputSelection     bounded output 选择；缺省已在构造前展开为 96/90
+     * @param rendererProfile     availability authority 服务端选择的 exact Renderer Profile
+     * @param deadlineAtEpochMilli public admission 一次展开且不可延长的 absolute deadline
      */
     record EvaluationCommand(
             RenderRequestId renderRequestId,
             OwnerScope ownerScope,
             cn.hbads.renderweave.template.api.TemplateApplication.TemplateId rootTemplateId,
             byte[] rawRenderInputUtf8,
-            OutputSelection outputSelection
+            OutputSelection outputSelection,
+            String rendererProfile,
+            long deadlineAtEpochMilli
     ) {
         public EvaluationCommand {
             Objects.requireNonNull(renderRequestId, "renderRequestId");
@@ -64,6 +68,14 @@ public interface Evaluator {
             Objects.requireNonNull(rootTemplateId, "rootTemplateId");
             Objects.requireNonNull(rawRenderInputUtf8, "rawRenderInputUtf8");
             Objects.requireNonNull(outputSelection, "outputSelection");
+            Objects.requireNonNull(rendererProfile, "rendererProfile");
+            if (rendererProfile.isBlank() || rendererProfile.length() > 256) {
+                throw new IllegalArgumentException(
+                        "rendererProfile must be non-blank and at most 256 chars");
+            }
+            if (deadlineAtEpochMilli <= 0) {
+                throw new IllegalArgumentException("deadlineAtEpochMilli must be positive");
+            }
             rawRenderInputUtf8 = rawRenderInputUtf8.clone();
         }
 
@@ -122,12 +134,14 @@ public interface Evaluator {
          * @param renderDocumentCanonicalUtf8 canonical RenderDocument strict-JSON bytes（含 fetch lease）
          * @param renderDocumentDigest        {@code sha256:} 前缀的 RenderDocument digest
          * @param evaluationResultDigest      成功语义身份（domain-separated SHA-256）
+         * @param layoutProfile               sealed document 内的 exact Layout Profile
          */
         record SealedDocument(
                 RenderRequestId renderRequestId,
                 byte[] renderDocumentCanonicalUtf8,
                 String renderDocumentDigest,
                 String evaluationResultDigest,
+                String layoutProfile,
                 OutputSelection outputSelection
         ) implements EvaluationOutcome {
             public SealedDocument {
@@ -135,9 +149,14 @@ public interface Evaluator {
                 Objects.requireNonNull(renderDocumentCanonicalUtf8, "renderDocumentCanonicalUtf8");
                 Objects.requireNonNull(renderDocumentDigest, "renderDocumentDigest");
                 Objects.requireNonNull(evaluationResultDigest, "evaluationResultDigest");
+                Objects.requireNonNull(layoutProfile, "layoutProfile");
                 Objects.requireNonNull(outputSelection, "outputSelection");
                 if (renderDocumentCanonicalUtf8.length == 0) {
                     throw new IllegalArgumentException("renderDocumentCanonicalUtf8 must not be empty");
+                }
+                if (layoutProfile.isBlank() || layoutProfile.length() > 256) {
+                    throw new IllegalArgumentException(
+                            "layoutProfile must be non-blank and at most 256 chars");
                 }
                 renderDocumentCanonicalUtf8 = renderDocumentCanonicalUtf8.clone();
             }

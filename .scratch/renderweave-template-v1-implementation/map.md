@@ -635,6 +635,13 @@ Label: wayfinder:map
   33/33 cases、195 checks，vector SHA-256 `0165159dba1ad90c75faaef7e1e5d7254c8adff6e1c0e388fbea44d715148295`；
   `render`/`fast`/sequential `server`/17-step Goal `full` 均绿。Profile、daemon success/public Rendering API、E6、
   正式 `/templates` route 与 native build 继续关闭，`/prototype` 不计最终交付。
+- [实现 Rendering 应用编排与结果释放边界](issues/122-rendering-application-orchestration.md) —
+  **resolved / automated_verified**；正式 `RenderingApplication` deep Interface 已原子编排 Rendering-owned Host
+  authorization、Certified Profile availability-before-payload、public/Engine 双 identity、单 absolute deadline、
+  Evaluator exactly-once、Unknown/BUSY 同一 immutable Command 恢复与结果释放前 authority recheck。focused
+  Rendering/app、`fast`、sequential `server` 与 17-step Goal `full` 均绿；默认无 Certified Profile 时仍在 payload
+  work 前 fail closed。Profile/daemon success/public Rendering API/E6/正式 `/templates` route 与 native build 保持
+  关闭，`/prototype` 不计最终交付。
 - [验证 Product Editor 状态、恢复与权威预览架构](issues/09-validate-product-editor-architecture.md) —
   throwaway 逻辑原型（`/prototype/editor-state-model`，不进产品 route）把冻结编辑器规则编码为确定性
   fixture 状态机：10 个引导走查场景 37/37 断言 + 自由操作冒烟 + 键盘焦点检查全部通过（Playwright A1，

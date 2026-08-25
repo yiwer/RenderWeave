@@ -25,8 +25,6 @@ import java.util.Optional;
  */
 final class CanonicalEvaluator implements Evaluator {
 
-    private static final long RENDER_DEADLINE_MILLIS = 60_000L;
-
     private final TemplateClosureAuthority closureAuthority;
     private final DesignSemanticAuthority semantics;
     private final DesignDslAuthority dslAuthority;
@@ -57,10 +55,7 @@ final class CanonicalEvaluator implements Evaluator {
     public EvaluationOutcome evaluate(EvaluationCommand command) {
         Objects.requireNonNull(command, "command");
 
-        final long deadlineEpochMilli;
-        try {
-            deadlineEpochMilli = Math.addExact(clock.millis(), RENDER_DEADLINE_MILLIS);
-        } catch (ArithmeticException unavailableDeadline) {
+        if (clock.millis() >= command.deadlineAtEpochMilli()) {
             return rejected(EvaluationStage.REQUEST_ADMISSION,
                     ProblemCode.RENDER_DEADLINE_EXCEEDED, null);
         }
@@ -124,7 +119,7 @@ final class CanonicalEvaluator implements Evaluator {
         }
 
         var runtime = CapabilityValues.wrapping(capabilities.establish());
-        var audience = new AssetResolutionPort.RendererAudience("renderweave-renderer/1.0");
+        var audience = new AssetResolutionPort.RendererAudience(command.rendererProfile());
         var materialization = Materializer.materialize(
                 closure,
                 semantics,
@@ -134,7 +129,7 @@ final class CanonicalEvaluator implements Evaluator {
                 admitted.input(),
                 command.renderRequestId(),
                 audience,
-                deadlineEpochMilli);
+                command.deadlineAtEpochMilli());
         if (materialization instanceof Materializer.MaterializationFailed failed) {
             return new EvaluationOutcome.Rejected(failed.stage(), failed.problem());
         }
@@ -163,6 +158,7 @@ final class CanonicalEvaluator implements Evaluator {
                 sealed.renderDocumentCanonicalUtf8(),
                 sealed.renderDocumentDigest(),
                 sealed.evaluationResultDigest(),
+                Sealer.LAYOUT_PROFILE,
                 command.outputSelection());
     }
 

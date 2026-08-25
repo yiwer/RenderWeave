@@ -2386,6 +2386,50 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
   `ABSENT`、native stack `BUILD_NOT_AUTHORIZED`、daemon success/public Rendering API/E6/正式 `/templates` route
   `CLOSED`；Text shaping、world scene、JPEG 与最终产品接线继续后续 DAG，`/prototype` 不计交付。
 
+## 122. TV1-T122 执行卡
+
+- 决策：T121 以 verified commit `9a09a14b` 收口且 worktree clean 后，按最终产品门槛复算 Java Rendering 路径。
+  `Evaluator` 与 `RenderEngine` port 均真实存在，但 app 尚无授权→Profile availability→一次 Evaluation→同 Command
+  恢复→结果释放前 recheck 的深编排；public API/E6 因而不能安全接线。该编排完全由既有冻结合同决定、不依赖
+  未授权 native build，登记为当前 single-writer frontier。
+- Interface/seam：新增 `RenderingApplication.render` closed public API；新增 Rendering-owned
+  `RenderingAuthority` 与 `RendererProfileAuthority` outbound SPI；`RenderingModule` 只增加 assembly factory。
+  app 提供 single-owner/fail-closed Host adapter 与默认 unavailable Profile adapter，不注册可用 Profile。
+- 精确语义：public `renderOperationId` 与 Engine UUID v4 分离；public admission 一次展开 60 秒 absolute deadline，
+  exact rendererProfile/deadline 同时进入 Evaluator 的 Asset lease audience 与唯一 immutable Renderer Command。
+  Evaluator exactly once；`Unknown`/`RENDER_ENGINE_BUSY` 只在原 deadline 内重发同一 Command；所有内部结果释放前
+  消费一次 recheck，权限漂移丢弃 bytes。Authoritative Preview 要求 `template.read + template.render`，正式输出只
+  要求 `template.render`，opaque disclosure 不泄漏只读事实。
+- 允许影响：T122 tracker/map/plan/NOTES、rendering api/spi/internal/tests、app rendering/template Host adapter、
+  configuration/tests 与受影响 architecture contract。
+- 禁止影响：HTTP/OpenAPI/generated SDK/Web/E6、cancel/LayoutTrace、daemon success、Profile registration/
+  certification、native build、JPEG/Text/剩余 raster、formal conformance records、正式 `/templates` route、
+  physical J1/A3/READY、provider/API Key/真实数据/费用与 push/tag/PR。
+- TDD/gates：application contract 先 RED，覆盖授权矩阵、availability-before-evaluation、deadline/Profile 贯穿、
+  identity 分离、Evaluator exactly once、Unknown/BUSY same-object resend、closed result mapping 与 auth drift；
+  focused rendering/app → architecture/public surface → `fast` → sequential `server` → Goal `full` → resolution
+  `fast`。最高只可 `automated_verified`，`/prototype` 不计最终产品交付。
+
+### TV1-T122 收口
+
+- `RenderingApplication`、`RenderingAuthority`、`RendererProfileAuthority` 与 `CanonicalRenderingApplication` 已物化；
+  app 的 single-owner adapter 从 Template persistence 复核 ACTIVE/exact ownerScope/capability，默认 authority/Profile
+  装配继续 fail closed。该 seam 是后续 public controller 可直接调用的生产业务服务，不是测试桩或占位 route。
+- public operation/Engine request 使用独立 UUID v4；application admission 只生成一个 60 秒 absolute deadline，exact
+  Layout/Renderer Profile 贯穿 Evaluation、Asset lease audience 与唯一 immutable Renderer Command。Evaluator 只调用
+  一次；Unknown/`RENDER_ENGINE_BUSY` 只在原 deadline 内重发同一 Command；每个 authorized result 在释放前只消费一次
+  recheck，权限或 metadata 漂移均丢弃内部 bytes 并折叠为有界结果。
+- focused Rendering application 10 项、app authority/configuration 11 项、Rendering module 119 项与完整 app reactor
+  回归均通过。A1 evidence：affected `fast` `.sdlc/evidence/20260826-010326-fast/`（23.363 秒）、sequential
+  `server` `.sdlc/evidence/20260826-010400-server/`（987.113 秒）与 17-step Goal `full`
+  `.sdlc/evidence/20260826-012058-full/`（17/17，1520.040 秒）均 passed。full 覆盖 Windows/Linux Renderer、8 个
+  Maven modules、Node 24 Web 28 files/217 tests、runtime canary、Playwright 23 passed + 1 controlled skip、Draft 与
+  inference browser journeys；R0/R1/P0 provider attempts=0，P0 API Key reads/reservations/cost/open authorization=0。
+  状态回填后的 resolution `fast` `.sdlc/evidence/20260826-014841-fast/` 也以 3/3 steps 通过。
+- 状态为 `resolved / automated_verified`。Profile `NOT_REGISTERED`、certification `NOT_CERTIFIED`、process raster
+  `ABSENT`、native stack `BUILD_NOT_AUTHORIZED`、daemon success/public Rendering API/E6/正式 `/templates` route
+  `CLOSED`；最终产品 Template-v1 页面与真实功能仍未交付，`/prototype` 不计交付，未推进 J1/A3/READY。
+
 ## 111. TV1-T111 执行卡
 
 - 决策：T110 以 verified commit `4cbc3b68` 收口且 worktree clean 后，复核 Ticket 10 §6、Ticket 16 §8 与
