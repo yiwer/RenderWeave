@@ -884,6 +884,38 @@ export type Problem = {
     [key: string]: unknown;
 };
 
+/**
+ * Strict UTF-8 JSON input for one Evaluation. Duplicate members, trailing content and values beyond the authoritative RenderInput budgets are rejected even when not expressible here. The complete entity is limited to 8 MiB.
+ */
+export type RenderInput = {
+    /**
+     * RootDocument validated against the saved Template current's StaticSchema.
+     */
+    rootDocument: {
+        [key: string]: unknown;
+    };
+    customValues?: Array<{
+        definitionId: string;
+        value: unknown;
+    }>;
+};
+
+export type RenderProblemParameters = {
+    limitId?: string;
+};
+
+export type RenderProblem = {
+    contractVersion: 'renderweave-render-problem/1.0';
+    /**
+     * Public operation identity; absent only when HTTP admission fails before application invocation.
+     */
+    renderOperationId?: string;
+    code: string;
+    stage: 'REQUEST_ADMISSION' | 'TEMPLATE_CLOSURE' | 'INPUT_ADMISSION' | 'ASSET_ADMISSION' | 'CAPABILITY_STATE' | 'MATERIALIZATION' | 'ASSET_RESOLUTION' | 'DOCUMENT_SEAL' | 'ENGINE';
+    safeLocation?: string;
+    parameters: RenderProblemParameters;
+};
+
 export type IdempotencyKey = string;
 
 export type InferenceRunId = string;
@@ -928,6 +960,26 @@ export type TemplateVersionTag = string;
  * Five-minute opaque token from TEMPLATE_DEPENDENCY_CONFIRMATION_REQUIRED. It authorizes only an exact invalid Template save bound to actor, owner, Template, StaticSchema, expectedRevision, proposed content, complete problem set and dependency snapshot.
  */
 export type TemplateInvalidSaveConfirmationToken = string;
+
+/**
+ * Bounded public output format; callers cannot select an exact Output Profile.
+ */
+export type RenderFormat = 'PNG' | 'JPEG';
+
+/**
+ * Positive effective output DPI; omission expands to 96 before Evaluation.
+ */
+export type RenderDpi = number;
+
+/**
+ * JPEG-only quality; omission for JPEG expands to 90 and presence for PNG is rejected.
+ */
+export type RenderJpegQuality = number;
+
+/**
+ * The only accepted content coding is identity; compressed RenderInput is rejected.
+ */
+export type RenderContentEncoding = 'identity';
 
 /**
  * Server-generated canonical UUID v4 Asset identity; clients must not parse its encoding.
@@ -1925,6 +1977,184 @@ export type RecheckTemplateReadinessResponses = {
 };
 
 export type RecheckTemplateReadinessResponse = RecheckTemplateReadinessResponses[keyof RecheckTemplateReadinessResponses];
+
+export type RenderTemplateData = {
+    body: RenderInput;
+    headers?: {
+        /**
+         * The only accepted content coding is identity; compressed RenderInput is rejected.
+         */
+        'Content-Encoding'?: 'identity';
+    };
+    path: {
+        /**
+         * Server-generated opaque Template identity; clients must not parse its encoding.
+         */
+        templateId: string;
+    };
+    query: {
+        /**
+         * Bounded public output format; callers cannot select an exact Output Profile.
+         */
+        format: 'PNG' | 'JPEG';
+        /**
+         * Positive effective output DPI; omission expands to 96 before Evaluation.
+         */
+        dpi?: number;
+        /**
+         * JPEG-only quality; omission for JPEG expands to 90 and presence for PNG is rejected.
+         */
+        quality?: number;
+    };
+    url: '/api/v1/templates/{templateId}/render';
+};
+
+export type RenderTemplateErrors = {
+    /**
+     * Closed Rendering failure with zero image bytes and no success metadata.
+     */
+    400: RenderProblem;
+    /**
+     * Closed Rendering failure with zero image bytes and no success metadata.
+     */
+    403: RenderProblem;
+    /**
+     * Closed Rendering failure with zero image bytes and no success metadata.
+     */
+    404: RenderProblem;
+    /**
+     * Closed Rendering failure with zero image bytes and no success metadata.
+     */
+    409: RenderProblem;
+    /**
+     * Closed Rendering failure with zero image bytes and no success metadata.
+     */
+    413: RenderProblem;
+    /**
+     * Closed Rendering failure with zero image bytes and no success metadata.
+     */
+    415: RenderProblem;
+    /**
+     * Closed Rendering failure with zero image bytes and no success metadata.
+     */
+    422: RenderProblem;
+    /**
+     * Closed Rendering failure with zero image bytes and no success metadata.
+     */
+    500: RenderProblem;
+    /**
+     * Closed Rendering failure with zero image bytes and no success metadata.
+     */
+    502: RenderProblem;
+    /**
+     * Closed Rendering failure with zero image bytes and no success metadata.
+     */
+    503: RenderProblem;
+    /**
+     * Closed Rendering failure with zero image bytes and no success metadata.
+     */
+    504: RenderProblem;
+};
+
+export type RenderTemplateError = RenderTemplateErrors[keyof RenderTemplateErrors];
+
+export type RenderTemplateResponses = {
+    /**
+     * One complete, digest-verified PNG or JPEG; no partial bytes or stale fallback.
+     */
+    200: Blob | File;
+};
+
+export type RenderTemplateResponse = RenderTemplateResponses[keyof RenderTemplateResponses];
+
+export type CreateAuthoritativeTemplatePreviewData = {
+    body: RenderInput;
+    headers?: {
+        /**
+         * The only accepted content coding is identity; compressed RenderInput is rejected.
+         */
+        'Content-Encoding'?: 'identity';
+    };
+    path: {
+        /**
+         * Server-generated opaque Template identity; clients must not parse its encoding.
+         */
+        templateId: string;
+    };
+    query: {
+        /**
+         * Bounded public output format; callers cannot select an exact Output Profile.
+         */
+        format: 'PNG' | 'JPEG';
+        /**
+         * Positive effective output DPI; omission expands to 96 before Evaluation.
+         */
+        dpi?: number;
+        /**
+         * JPEG-only quality; omission for JPEG expands to 90 and presence for PNG is rejected.
+         */
+        quality?: number;
+    };
+    url: '/api/v1/templates/{templateId}/authoritative-preview';
+};
+
+export type CreateAuthoritativeTemplatePreviewErrors = {
+    /**
+     * Closed Rendering failure with zero image bytes and no success metadata.
+     */
+    400: RenderProblem;
+    /**
+     * Closed Rendering failure with zero image bytes and no success metadata.
+     */
+    403: RenderProblem;
+    /**
+     * Closed Rendering failure with zero image bytes and no success metadata.
+     */
+    404: RenderProblem;
+    /**
+     * Closed Rendering failure with zero image bytes and no success metadata.
+     */
+    409: RenderProblem;
+    /**
+     * Closed Rendering failure with zero image bytes and no success metadata.
+     */
+    413: RenderProblem;
+    /**
+     * Closed Rendering failure with zero image bytes and no success metadata.
+     */
+    415: RenderProblem;
+    /**
+     * Closed Rendering failure with zero image bytes and no success metadata.
+     */
+    422: RenderProblem;
+    /**
+     * Closed Rendering failure with zero image bytes and no success metadata.
+     */
+    500: RenderProblem;
+    /**
+     * Closed Rendering failure with zero image bytes and no success metadata.
+     */
+    502: RenderProblem;
+    /**
+     * Closed Rendering failure with zero image bytes and no success metadata.
+     */
+    503: RenderProblem;
+    /**
+     * Closed Rendering failure with zero image bytes and no success metadata.
+     */
+    504: RenderProblem;
+};
+
+export type CreateAuthoritativeTemplatePreviewError = CreateAuthoritativeTemplatePreviewErrors[keyof CreateAuthoritativeTemplatePreviewErrors];
+
+export type CreateAuthoritativeTemplatePreviewResponses = {
+    /**
+     * One complete, digest-verified PNG or JPEG; no partial bytes or stale fallback.
+     */
+    200: Blob | File;
+};
+
+export type CreateAuthoritativeTemplatePreviewResponse = CreateAuthoritativeTemplatePreviewResponses[keyof CreateAuthoritativeTemplatePreviewResponses];
 
 export type ListAssetsData = {
     body?: never;

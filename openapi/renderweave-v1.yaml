@@ -1,14 +1,14 @@
 openapi: 3.1.2
 info:
   title: RenderWeave API
-  version: 0.16.0
+  version: 0.17.0
   description: >-
     Contract-first API for RenderWeave Schema Drafts, immutable StaticSchemas,
     exact compiled artifacts, owner-scoped active Template catalogs, dependency-checked
     Template revision authoring with bounded invalid-save confirmation, owner-scoped Asset
     upload/detail/catalog/versioning/delete-confirmation/restore, authoritative RootDocument
-    validation, deterministic replay, guarded live inference Candidate review and
-    create-only atomic Draft application.
+    validation, atomic single-image Rendering delivery, deterministic replay, guarded live
+    inference Candidate review and create-only atomic Draft application.
 servers:
   - url: /
 tags:
@@ -20,6 +20,8 @@ tags:
     description: Immutable, exact-version publication artifacts and system presets.
   - name: Templates
     description: Owner-scoped mutable Templates with immutable complete DesignDSL revisions.
+  - name: Rendering
+    description: Atomic formal Render and Authoritative Preview delivery through one evaluator and engine path.
   - name: Assets
     description: Owner-scoped admitted IMAGE/FONT Assets with immutable content versions.
   - name: RootDocument Validation
@@ -606,6 +608,101 @@ paths:
           $ref: '#/components/responses/InternalProblem'
         '503':
           $ref: '#/components/responses/TemplateServiceUnavailableProblem'
+  /api/v1/templates/{templateId}/render:
+    parameters:
+      - $ref: '#/components/parameters/TemplateId'
+      - $ref: '#/components/parameters/RenderFormat'
+      - $ref: '#/components/parameters/RenderDpi'
+      - $ref: '#/components/parameters/RenderJpegQuality'
+      - $ref: '#/components/parameters/RenderContentEncoding'
+    post:
+      operationId: renderTemplate
+      tags: [Rendering]
+      summary: Atomically render one complete image from the saved Template current
+      description: >-
+        The server selects the formal-output purpose and exact certified compatibility profile.
+        The caller supplies only a strict RenderInput body plus bounded output format, DPI and
+        JPEG quality. Engine request identity, RenderDocument, leases and partial bytes are never
+        public. The RenderWeave-Request-Id success header carries the public renderOperationId,
+        never the Engine requestId. No successful response is persisted as an Artifact or history.
+      requestBody:
+        required: true
+        content:
+          'application/vnd.renderweave.render-input+json;version=1.0':
+            schema:
+              $ref: '#/components/schemas/RenderInput'
+      responses:
+        '200':
+          $ref: '#/components/responses/RenderedImage'
+        '400':
+          $ref: '#/components/responses/RenderProblem'
+        '403':
+          $ref: '#/components/responses/RenderProblem'
+        '404':
+          $ref: '#/components/responses/RenderProblem'
+        '409':
+          $ref: '#/components/responses/RenderProblem'
+        '413':
+          $ref: '#/components/responses/RenderProblem'
+        '415':
+          $ref: '#/components/responses/RenderProblem'
+        '422':
+          $ref: '#/components/responses/RenderProblem'
+        '500':
+          $ref: '#/components/responses/RenderProblem'
+        '502':
+          $ref: '#/components/responses/RenderProblem'
+        '503':
+          $ref: '#/components/responses/RenderProblem'
+        '504':
+          $ref: '#/components/responses/RenderProblem'
+  /api/v1/templates/{templateId}/authoritative-preview:
+    parameters:
+      - $ref: '#/components/parameters/TemplateId'
+      - $ref: '#/components/parameters/RenderFormat'
+      - $ref: '#/components/parameters/RenderDpi'
+      - $ref: '#/components/parameters/RenderJpegQuality'
+      - $ref: '#/components/parameters/RenderContentEncoding'
+    post:
+      operationId: createAuthoritativeTemplatePreview
+      tags: [Rendering]
+      summary: Atomically render an Authoritative Preview of the saved Template current
+      description: >-
+        The server fixes the Authoritative Preview purpose, which requires both template.read and
+        template.render. This operation otherwise uses the same Evaluation, certified profile and
+        RenderEngine path as formal output. It accepts no unsaved DesignDSL, local canvas,
+        caller-selected profile, placeholder, stale result, LayoutTrace or Engine control value.
+      requestBody:
+        required: true
+        content:
+          'application/vnd.renderweave.render-input+json;version=1.0':
+            schema:
+              $ref: '#/components/schemas/RenderInput'
+      responses:
+        '200':
+          $ref: '#/components/responses/RenderedImage'
+        '400':
+          $ref: '#/components/responses/RenderProblem'
+        '403':
+          $ref: '#/components/responses/RenderProblem'
+        '404':
+          $ref: '#/components/responses/RenderProblem'
+        '409':
+          $ref: '#/components/responses/RenderProblem'
+        '413':
+          $ref: '#/components/responses/RenderProblem'
+        '415':
+          $ref: '#/components/responses/RenderProblem'
+        '422':
+          $ref: '#/components/responses/RenderProblem'
+        '500':
+          $ref: '#/components/responses/RenderProblem'
+        '502':
+          $ref: '#/components/responses/RenderProblem'
+        '503':
+          $ref: '#/components/responses/RenderProblem'
+        '504':
+          $ref: '#/components/responses/RenderProblem'
   /api/v1/assets:
     post:
       operationId: createAsset
@@ -1577,6 +1674,42 @@ components:
       schema:
         type: string
         pattern: '^[0-9a-f]{64}$'
+    RenderFormat:
+      name: format
+      in: query
+      required: true
+      description: Bounded public output format; callers cannot select an exact Output Profile.
+      schema:
+        type: string
+        enum: [PNG, JPEG]
+    RenderDpi:
+      name: dpi
+      in: query
+      required: false
+      description: Positive effective output DPI; omission expands to 96 before Evaluation.
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 600
+        default: 96
+    RenderJpegQuality:
+      name: quality
+      in: query
+      required: false
+      description: JPEG-only quality; omission for JPEG expands to 90 and presence for PNG is rejected.
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 90
+    RenderContentEncoding:
+      name: Content-Encoding
+      in: header
+      required: false
+      description: The only accepted content coding is identity; compressed RenderInput is rejected.
+      schema:
+        type: string
+        enum: [identity]
     AssetId:
       name: assetId
       in: path
@@ -3699,7 +3832,158 @@ components:
           type: integer
           format: int64
           minimum: 0
+    RenderInput:
+      type: object
+      additionalProperties: false
+      required: [rootDocument]
+      description: >-
+        Strict UTF-8 JSON input for one Evaluation. Duplicate members, trailing content and values
+        beyond the authoritative RenderInput budgets are rejected even when not expressible here.
+        The complete entity is limited to 8 MiB.
+      properties:
+        rootDocument:
+          type: object
+          description: RootDocument validated against the saved Template current's StaticSchema.
+        customValues:
+          type: array
+          maxItems: 256
+          items:
+            type: object
+            additionalProperties: false
+            required: [definitionId, value]
+            properties:
+              definitionId:
+                type: string
+                format: uuid
+              value: {}
+    RenderProblemParameters:
+      type: object
+      additionalProperties: false
+      properties:
+        limitId:
+          type: string
+          minLength: 1
+          maxLength: 256
+    RenderProblem:
+      type: object
+      additionalProperties: false
+      required: [contractVersion, code, stage, parameters]
+      properties:
+        contractVersion:
+          type: string
+          const: renderweave-render-problem/1.0
+        renderOperationId:
+          type: string
+          pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'
+          description: Public operation identity; absent only when HTTP admission fails before application invocation.
+        code:
+          type: string
+          minLength: 1
+          maxLength: 128
+        stage:
+          type: string
+          enum:
+            - REQUEST_ADMISSION
+            - TEMPLATE_CLOSURE
+            - INPUT_ADMISSION
+            - ASSET_ADMISSION
+            - CAPABILITY_STATE
+            - MATERIALIZATION
+            - ASSET_RESOLUTION
+            - DOCUMENT_SEAL
+            - ENGINE
+        safeLocation:
+          type: string
+          minLength: 1
+          maxLength: 1024
+        parameters:
+          $ref: '#/components/schemas/RenderProblemParameters'
   responses:
+    RenderedImage:
+      description: One complete, digest-verified PNG or JPEG; no partial bytes or stale fallback.
+      headers:
+        Content-Length:
+          required: true
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+        Content-Digest:
+          required: true
+          schema:
+            type: string
+            pattern: '^sha-256=:[A-Za-z0-9+/]+={0,2}:$'
+        RenderWeave-Result-Version:
+          required: true
+          schema:
+            type: string
+            const: renderweave-render-result/1.0
+        RenderWeave-Request-Id:
+          required: true
+          description: Public renderOperationId; never the Engine requestId.
+          schema:
+            type: string
+            pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'
+        RenderWeave-Renderer-Profile:
+          required: true
+          schema:
+            type: string
+        RenderWeave-DSL-Version:
+          required: true
+          schema:
+            type: string
+            const: renderweave-render/1.0
+        RenderWeave-Layout-Profile:
+          required: true
+          schema:
+            type: string
+        RenderWeave-Output-Profile:
+          required: true
+          schema:
+            type: string
+        RenderWeave-Format:
+          required: true
+          schema:
+            type: string
+            enum: [PNG, JPEG]
+        RenderWeave-Width-Px:
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+        RenderWeave-Height-Px:
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+        RenderWeave-DPI:
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 600
+        RenderWeave-Quality:
+          required: false
+          description: Present only for JPEG.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+      content:
+        image/png:
+          schema:
+            type: string
+            format: binary
+        image/jpeg:
+          schema:
+            type: string
+            format: binary
+    RenderProblem:
+      description: Closed Rendering failure with zero image bytes and no success metadata.
+      content:
+        'application/vnd.renderweave.render-problem+json;version=1.0':
+          schema:
+            $ref: '#/components/schemas/RenderProblem'
     BadRequestProblem:
       description: Request JSON, key syntax or envelope is invalid.
       content:

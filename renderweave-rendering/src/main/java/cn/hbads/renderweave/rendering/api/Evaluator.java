@@ -96,8 +96,8 @@ public interface Evaluator {
         /** 缺省展开为 96 dpi 的 PNG。 */
         record Png(int dpi) implements OutputSelection {
             public Png {
-                if (dpi < 1 || dpi > 100_000) {
-                    throw new IllegalArgumentException("dpi must be within 1..100000");
+                if (dpi < 1 || dpi > 600) {
+                    throw new IllegalArgumentException("dpi must be within 1..600");
                 }
             }
         }
@@ -105,8 +105,8 @@ public interface Evaluator {
         /** 缺省展开为 96 dpi / quality 90 的 JPEG。 */
         record Jpeg(int dpi, int quality) implements OutputSelection {
             public Jpeg {
-                if (dpi < 1 || dpi > 100_000) {
-                    throw new IllegalArgumentException("dpi must be within 1..100000");
+                if (dpi < 1 || dpi > 600) {
+                    throw new IllegalArgumentException("dpi must be within 1..600");
                 }
                 if (quality < 1 || quality > 100) {
                     throw new IllegalArgumentException("quality must be within 1..100");

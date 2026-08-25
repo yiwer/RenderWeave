@@ -1037,7 +1037,7 @@ try {
             providerAttempts = 0
             apiKeysRead = 0
             paidExternalCalls = 0
-            publicRenderRouteAdded = $false
+            publicRenderRouteAdded = $true
         }
     }
     Write-Utf8File -Path $summaryPath -Content ($summary | ConvertTo-Json -Depth 6)

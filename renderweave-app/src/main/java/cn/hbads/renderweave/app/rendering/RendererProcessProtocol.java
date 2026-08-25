@@ -30,6 +30,7 @@ import java.util.HexFormat;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.UUID;
 import java.util.regex.Pattern;
 
@@ -135,14 +136,27 @@ final class RendererProcessProtocol {
     }
 
     record ParsedResult(
+            String contractVersion,
             String requestId,
             String rendererProfile,
-            OutputSelection outputSelection,
+            String dslVersion,
+            String layoutProfile,
+            String outputProfile,
+            String format,
+            String mediaType,
             int widthPx,
             int heightPx,
+            int dpi,
+            OptionalInt quality,
             long byteLength,
             String contentSha256
     ) {
+        OutputSelection outputSelection() {
+            if ("PNG".equals(format)) {
+                return new OutputSelection.Png(dpi);
+            }
+            return new OutputSelection.Jpeg(dpi, quality.orElseThrow());
+        }
     }
 
     record ParsedImage(String requestId, byte[] imageBytes) {
@@ -376,6 +390,9 @@ final class RendererProcessProtocol {
         var dpi = positiveInt(node, "dpi");
         var byteLength = positiveLong(node, "byteLength");
         var contentSha256 = requiredText(node, "contentSha256");
+        if (dpi > 600) {
+            throw new ProtocolException("renderer RESULT dpi is outside the public bound");
+        }
         if (!RESULT_CONTRACT_VERSION.equals(contractVersion)
                 || !"renderweave-render/1.0".equals(dslVersion)
                 || !"renderweave-layout/1.0".equals(layoutProfile)) {
@@ -386,23 +403,23 @@ final class RendererProcessProtocol {
         if (!contentSha256.matches("[0-9a-f]{64}")) {
             throw new ProtocolException("renderer RESULT contentSha256 is invalid");
         }
-        OutputSelection outputSelection;
+        OptionalInt quality;
         String qualityMember = "";
         if ("renderweave-output-png/1.0".equals(outputProfile)) {
             if (hasQuality || !"PNG".equals(format) || !"image/png".equals(mediaType)) {
                 throw new ProtocolException("renderer PNG RESULT shape mismatch");
             }
-            outputSelection = new OutputSelection.Png(dpi);
+            quality = OptionalInt.empty();
         } else if ("renderweave-output-jpeg/1.0".equals(outputProfile)) {
             if (!hasQuality || !"JPEG".equals(format) || !"image/jpeg".equals(mediaType)) {
                 throw new ProtocolException("renderer JPEG RESULT shape mismatch");
             }
-            var quality = positiveInt(node, "quality");
-            if (quality > 100) {
+            var qualityValue = positiveInt(node, "quality");
+            if (qualityValue > 100) {
                 throw new ProtocolException("renderer JPEG quality is invalid");
             }
-            outputSelection = new OutputSelection.Jpeg(dpi, quality);
-            qualityMember = ",\"quality\":" + quality;
+            quality = OptionalInt.of(qualityValue);
+            qualityMember = ",\"quality\":" + qualityValue;
         } else {
             throw new ProtocolException("renderer RESULT output profile is unknown");
         }
@@ -422,11 +439,18 @@ final class RendererProcessProtocol {
                 + qualityMember + "}";
         requireCanonical(payload, canonical, "RESULT_METADATA");
         return new ParsedResult(
+                contractVersion,
                 requestId,
                 rendererProfile,
-                outputSelection,
+                dslVersion,
+                layoutProfile,
+                outputProfile,
+                format,
+                mediaType,
                 widthPx,
                 heightPx,
+                dpi,
+                quality,
                 byteLength,
                 contentSha256);
     }

@@ -148,7 +148,10 @@ final class CanonicalRenderingApplication implements RenderingApplication {
                         terminal.problem()));
             }
             var output = outputOf(engineOutcome);
-            if (output == null || !output.outputProfile().equals(command.outputSelection())) {
+            if (output == null
+                    || !output.outputSelection().equals(command.outputSelection())
+                    || !output.rendererProfile().equals(available.rendererProfile())
+                    || !output.layoutProfile().equals(available.layoutProfile())) {
                 return release(authorized, rejected(
                         operationId,
                         EvaluationStage.ENGINE,

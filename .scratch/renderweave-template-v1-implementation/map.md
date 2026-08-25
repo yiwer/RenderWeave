@@ -649,6 +649,12 @@ Label: wayfinder:map
   17-step Goal `full` 均绿。默认 manifest 继续 `NOT_REGISTERED/NOT_CERTIFIED/ABSENT`，T108 success kernel/output path
   仍 `UNWIRED`，不声称 50ms/250ms cooperative stop，不开放 public Rendering API/E6/正式 `/templates` route，
   native build 仍 `BUILD_NOT_AUTHORIZED`。
+- [实现 Public Rendering HTTP 交付纵切](issues/124-public-rendering-http-delivery.md) —
+  **resolved / automated_verified**；正式 Render 与 Authoritative Preview 的 server-selected HTTP/OpenAPI seam、
+  完整 sealed result metadata/digest headers、public/Engine identity 隔离与 closed problem 映射已物化；focused
+  Rendering/App、OpenAPI/Node 24、`fast`、顺序 `server` 与 clean 17-step Goal `full` 均绿。公共 Rendering API 已
+  开放，但默认无 Certified Profile 时仍真实失败封闭；Profile/daemon success/E6 UI/正式 `/templates` route 与
+  native build 继续关闭，不制造图片或 fallback。
 - [验证 Product Editor 状态、恢复与权威预览架构](issues/09-validate-product-editor-architecture.md) —
   throwaway 逻辑原型（`/prototype/editor-state-model`，不进产品 route）把冻结编辑器规则编码为确定性
   fixture 状态机：10 个引导走查场景 37/37 断言 + 自由操作冒烟 + 键盘焦点检查全部通过（Playwright A1，

@@ -131,6 +131,11 @@ class RendererProcessProtocolTest {
         assertEquals(result.requestId(), image.requestId());
         assertEquals(result.byteLength(), image.imageBytes().length);
         assertEquals(result.contentSha256(), RendererProcessProtocol.rawSha256(image.imageBytes()));
+        var abovePublicDpi = caseById("png-result-metadata").path("canonicalJson").asText()
+                .replace("\"dpi\":96", "\"dpi\":601");
+        assertThrows(RendererProcessProtocol.ProtocolException.class,
+                () -> RendererProcessProtocol.parseResult(
+                        abovePublicDpi.getBytes(StandardCharsets.UTF_8)));
     }
 
     @Test

@@ -11,8 +11,12 @@ import cn.hbads.renderweave.rendering.spi.RenderEngine.RendererCommand;
 import org.junit.jupiter.api.Test;
 
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.HexFormat;
 import java.util.List;
+import java.util.OptionalInt;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -40,12 +44,30 @@ class RenderEnginePortTest {
     }
 
     private static RenderOutput output() {
+        var bytes = new byte[] { 1, 2, 3 };
         return new RenderOutput(
-                new byte[] { 1, 2, 3 },
-                OutputSelection.defaultPng(),
+                bytes,
+                "renderweave-render-result/1.0",
+                "renderweave-renderer/1.0",
+                "renderweave-render/1.0",
+                "renderweave-layout/1.0",
+                "renderweave-output-png/1.0",
+                "PNG",
+                "image/png",
                 10,
                 20,
-                3);
+                96,
+                OptionalInt.empty(),
+                bytes.length,
+                sha256(bytes));
+    }
+
+    private static String sha256(byte[] bytes) {
+        try {
+            return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(bytes));
+        } catch (NoSuchAlgorithmException impossible) {
+            throw new IllegalStateException(impossible);
+        }
     }
 
     @Test

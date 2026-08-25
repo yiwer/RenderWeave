@@ -365,10 +365,19 @@ final class RendererProcessAdapter implements RenderEngine, AutoCloseable {
         try {
             output = new RenderOutput(
                     bytes,
-                    metadata.outputSelection(),
+                    metadata.contractVersion(),
+                    metadata.rendererProfile(),
+                    metadata.dslVersion(),
+                    metadata.layoutProfile(),
+                    metadata.outputProfile(),
+                    metadata.format(),
+                    metadata.mediaType(),
                     metadata.widthPx(),
                     metadata.heightPx(),
-                    metadata.byteLength());
+                    metadata.dpi(),
+                    metadata.quality(),
+                    metadata.byteLength(),
+                    metadata.contentSha256());
         } catch (IllegalArgumentException e) {
             throw new RendererProcessProtocol.ProtocolException(
                     "renderer RESULT output is invalid", e);

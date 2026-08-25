@@ -4605,3 +4605,43 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
 - 验证：focused Rust/Python、fmt、clippy `-D warnings`、workspace tests、`py_compile`、JSON inventory/SHA/unique、
   `git diff --check`；再依次 `render`、affected `fast`、顺序 `server`、Goal `full`、resolution `fast`。最高只可
   `automated_verified`；不推进 A3/J1/READY，不 push/tag/PR，不运行 provider，不读取 API Key。
+
+## 124. TV1-T124 执行卡
+
+- 决策：T123 已以 commit `bce47273` 合入并 push `main`；全部既有 123 张实施票均 resolved。完整 Renderer
+  Profile 仍受 `NOT_REGISTERED/NOT_CERTIFIED/ABSENT` 与 native `BUILD_NOT_AUTHORIZED` 阻塞，因此不能把 T108
+  success kernel偷渡进daemon。T122 已物化正式 application orchestration，当前最短安全最终产品 frontier 是补齐
+  Public Rendering HTTP delivery，而不是继续原型或虚假成功路径。
+- Interface/seam：新增两个 server-selected purpose route：正式 Render 与 Authoritative Preview；两者消费原始
+  strict RenderInput bytes和bounded output query，统一调用同一个 `RenderingApplication`。public
+  `renderOperationId` 与 Engine requestId继续隔离；成功只释放完整 raw PNG/JPEG与固定metadata/digest headers。
+- 精确语义：identity-only Content-Encoding、8 MiB有界entity、PNG/JPEG + DPI/JPEG quality closed admission；
+  `RenderOutput`保留并自证完整result/profile/media/hash metadata，process Adapter与application逐层核验；所有失败
+  返回closed render problem且零图片。默认无Certified Profile仍返回truthful renderer unavailable。
+- 允许影响：T124 tracker/map/plan、rendering API/internal/tests、app rendering controller/problem/Adapter/tests、
+  OpenAPI与生成SDK，以及必要gate identity/evidence。
+- 禁止影响：Renderer/Profile registration/certification、T108 daemon success接线、native build、JPEG/trace/cancel
+  新算法、E6 Web preview行为、`App`导航与正式 `/templates` route、formal records、physical J1/A3/READY、provider/
+  API Key/真实数据/费用及部署。
+- TDD/gates：standalone MockMvc + metadata/application drift tests先RED，GREEN后focused Maven与OpenAPI generation/
+  Web typecheck；再依次 `fast → server → full → resolution fast`。Maven串行、精确staging，不纳入既有Image-Only
+  dirty work；最高只报`automated_verified`。
+
+### TV1-T124 resolution evidence
+
+- 旧 `RenderOutput` 因缺少冻结 success metadata 在 test compile 阶段有效 RED；GREEN 后两个 public route 分别固定
+  `FORMAL_OUTPUT` 与 `AUTHORITATIVE_PREVIEW`，传输准入、output query、完整 metadata/digest headers、
+  public/Engine identity 隔离与 closed failure/zero-image 语义均由 standalone MockMvc 和 application/Adapter 合同覆盖。
+- Rendering focused 12、App focused 20、Rendering 全量 121 tests 全绿；OpenAPI 0.17.0 clean generation、Node 24
+  typecheck 与 `git diff --check` 通过。生成 SDK 暴露正式 Render 与 Authoritative Preview，不引入 UI fallback 或
+  caller-selected Profile/RenderDocument/Engine control。
+- clean snapshot A1 evidence：`fast` `.sdlc/evidence/20260826-064107-fast/`（3/3，34.571 秒）、顺序 `server`
+  `.sdlc/evidence/20260826-064151-server/`（982.743 秒）、17-step Goal `full`
+  `.sdlc/evidence/20260826-065824-full/`（17/17，1588.628 秒）全部 passed；`full` 覆盖 App 367 tests/
+  0 failures/0 errors/15 skipped、Node 24 Web 28 files/217 tests、runtime canary、Playwright 23 passed + 1 controlled
+  skip、Draft browser journey 与 inference browser journey 1/1，R0/R1/P0 provider attempts=0。
+- renderer evidence 全局边界已把 `publicRenderRouteAdded` 同步为 true；Profile 仍 `NOT_REGISTERED`、certification
+  `NOT_CERTIFIED`、process raster `ABSENT`、daemon output `UNWIRED`、native stack `BUILD_NOT_AUTHORIZED`。状态为
+  `resolved / automated_verified`；E6 Web preview、正式 `/templates` product route、J1/A3/READY 与外部副作用未推进。
+  最终状态更新后的 affected `render` `.sdlc/evidence/20260826-072836-render/`（2/2，86.570 秒）与 resolution
+  `fast` `.sdlc/evidence/20260826-073019-fast/`（3/3，27.707 秒）也均 passed。

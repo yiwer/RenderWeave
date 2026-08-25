@@ -21,6 +21,8 @@ import cn.hbads.renderweave.template.api.TemplateApplication.TemplateId;
 import org.junit.jupiter.api.Test;
 
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
@@ -28,7 +30,9 @@ import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.HexFormat;
 import java.util.List;
+import java.util.OptionalInt;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -285,6 +289,22 @@ class RenderingApplicationContractTest {
         assertEquals(RenderingProblem.ProblemCode.RENDER_INTERNAL_ERROR,
                 outputRejected.problem().code());
         assertEquals(EvaluationStage.ENGINE, outputRejected.problem().stage());
+
+        var third = application(
+                new ScriptedEvaluator(),
+                new ScriptedEngine(new EngineOutcome.SealedOutput(output(
+                        OUTPUT,
+                        "renderweave-renderer/2.0",
+                        "renderweave-layout/1.0"))),
+                grantedAuthority(RenderPurpose.FORMAL_OUTPUT),
+                availableProfiles());
+
+        var profileOutcome = third.render(INVOCATION, command(RenderPurpose.FORMAL_OUTPUT));
+
+        var profileRejected = assertInstanceOf(RenderOutcome.Rejected.class, profileOutcome);
+        assertEquals(RenderingProblem.ProblemCode.RENDER_INTERNAL_ERROR,
+                profileRejected.problem().code());
+        assertEquals(EvaluationStage.ENGINE, profileRejected.problem().stage());
     }
 
     private static RenderingApplication application(
@@ -335,7 +355,48 @@ class RenderingApplicationContractTest {
     }
 
     private static RenderOutput output(OutputSelection selection) {
-        return new RenderOutput(new byte[] { 1, 2, 3 }, selection, 10, 20, 3);
+        return output(
+                selection,
+                "renderweave-renderer/1.0",
+                "renderweave-layout/1.0");
+    }
+
+    private static RenderOutput output(
+            OutputSelection selection,
+            String rendererProfile,
+            String layoutProfile
+    ) {
+        var bytes = new byte[] { 1, 2, 3 };
+        var png = selection instanceof OutputSelection.Png;
+        var dpi = png
+                ? ((OutputSelection.Png) selection).dpi()
+                : ((OutputSelection.Jpeg) selection).dpi();
+        var quality = png
+                ? OptionalInt.empty()
+                : OptionalInt.of(((OutputSelection.Jpeg) selection).quality());
+        return new RenderOutput(
+                bytes,
+                "renderweave-render-result/1.0",
+                rendererProfile,
+                "renderweave-render/1.0",
+                layoutProfile,
+                png ? "renderweave-output-png/1.0" : "renderweave-output-jpeg/1.0",
+                png ? "PNG" : "JPEG",
+                png ? "image/png" : "image/jpeg",
+                10,
+                20,
+                dpi,
+                quality,
+                bytes.length,
+                sha256(bytes));
+    }
+
+    private static String sha256(byte[] bytes) {
+        try {
+            return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(bytes));
+        } catch (NoSuchAlgorithmException impossible) {
+            throw new IllegalStateException(impossible);
+        }
     }
 
     private static final class ScriptedEvaluator implements Evaluator {

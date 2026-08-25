@@ -76,6 +76,13 @@ class RendererProcessAdapterTest {
             assertEquals(1, outcome.output().widthPx());
             assertEquals(1, outcome.output().heightPx());
             assertEquals(68, outcome.output().byteLength());
+            assertEquals("renderweave-render-result/1.0", outcome.output().contractVersion());
+            assertEquals("renderweave-renderer/1.0", outcome.output().rendererProfile());
+            assertEquals("renderweave-layout/1.0", outcome.output().layoutProfile());
+            assertEquals("renderweave-output-png/1.0", outcome.output().outputProfile());
+            assertEquals("PNG", outcome.output().format());
+            assertEquals("image/png", outcome.output().mediaType());
+            assertEquals(96, outcome.output().dpi());
             assertArrayEquals(
                     Base64.getDecoder().decode(caseById("png-result-metadata")
                             .path("imageBase64").asText()),
