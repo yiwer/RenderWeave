@@ -310,14 +310,11 @@ def prepare_image(
     dpi: int,
     surface_width: int,
     surface_height: int,
-    ancestor_draw_enabled: bool,
+    draw_enabled: bool,
     active_clip: tuple[int, int, int, int],
     engine: Any,
 ) -> tuple[Any, ...] | None | dict[str, str]:
     box = engine.require_layout_entry(child, entry, "image", False)
-    draw_enabled = engine.node_draw_enabled(child, ancestor_draw_enabled, "IMAGE_PAINT")
-    if isinstance(draw_enabled, dict):
-        return draw_enabled
     if not draw_enabled:
         return None
     if not engine.identity_transform(child):
@@ -393,13 +390,18 @@ def prepare_scene(
     active_clip: tuple[int, int, int, int],
     engine: Any,
 ) -> list[tuple[Any, ...]] | dict[str, str]:
-    paints: list[tuple[Any, ...]] = []
+    commands: list[tuple[Any, ...]] = []
     for child in children:
         if layout_cursor[0] >= len(layout_entries):
             raise VerificationFailure("layout preorder ended before scene")
         entry = layout_entries[layout_cursor[0]]
         layout_cursor[0] += 1
         kind = child.get("kind")
+        draw_enabled, layer_opacity = engine.node_draw_state(
+            child, ancestor_draw_enabled
+        )
+        if layer_opacity is not None:
+            commands.append(("begin-opacity",))
         if kind == "rect":
             rect = engine.prepare_rect(
                 child,
@@ -408,13 +410,15 @@ def prepare_scene(
                 dpi,
                 width,
                 height,
-                ancestor_draw_enabled,
+                draw_enabled,
                 active_clip,
             )
             if isinstance(rect, dict):
                 return rect
             if rect is not None:
-                paints.append(("rect", rect))
+                commands.append(("rect", rect))
+            if layer_opacity is not None:
+                commands.append(("end-opacity", layer_opacity))
             continue
         if kind == "image":
             image = prepare_image(
@@ -425,17 +429,19 @@ def prepare_scene(
                 dpi,
                 width,
                 height,
-                ancestor_draw_enabled,
+                draw_enabled,
                 active_clip,
                 engine,
             )
             if isinstance(image, dict):
                 return image
             if image is not None:
-                paints.append(image)
+                commands.append(image)
+            if layer_opacity is not None:
+                commands.append(("end-opacity", layer_opacity))
             continue
         if kind == "group":
-            group = engine.prepare_group(child, entry, ancestor_draw_enabled)
+            group = engine.prepare_group(child, entry, draw_enabled)
             if isinstance(group, dict):
                 return group
             descendant_clip = active_clip
@@ -448,14 +454,14 @@ def prepare_scene(
                 dpi,
                 width,
                 height,
-                ancestor_draw_enabled,
+                draw_enabled,
                 active_clip,
             )
             if isinstance(container, dict):
                 return container
             container_paint, descendant_clip, descendant_draw_enabled = container
             if container_paint is not None:
-                paints.append(("rect", container_paint))
+                commands.append(("rect", container_paint))
         else:
             return {"feature": "SCENE_STRUCTURE"}
         nested = prepare_scene(
@@ -473,8 +479,10 @@ def prepare_scene(
         )
         if isinstance(nested, dict):
             return nested
-        paints.extend(nested)
-    return paints
+        commands.extend(nested)
+        if layer_opacity is not None:
+            commands.append(("end-opacity", layer_opacity))
+    return commands
 
 
 def multiply_divide_255_round_half_up(value: int, alpha: int) -> int:
@@ -594,7 +602,7 @@ def execute(
     engine.layout_box(canvas_entry["layoutBox"], "Canvas LayoutBox")
     engine.layout_box(canvas_entry["contentBox"], "Canvas ContentBox")
     cursor = [1]
-    paints = prepare_scene(
+    commands = prepare_scene(
         canvas["children"],
         entries,
         cursor,
@@ -607,18 +615,12 @@ def execute(
         (0, 0, width, height),
         engine,
     )
-    if isinstance(paints, dict):
-        return paints
+    if isinstance(commands, dict):
+        return commands
     if cursor[0] != len(entries):
         raise VerificationFailure("layout preorder diverged from scene")
-    pixels = bytearray(premultiply_straight_rgba8(background) * (width * height))
-    for paint in paints:
-        if paint[0] == "rect":
-            engine.paint_rect(pixels, width, paint[1])
-        elif paint[0] == "image":
-            paint_image(pixels, width, paint)
-        else:
-            raise VerificationFailure("unknown paint command")
+    pixels = bytearray(background * (width * height))
+    engine.rasterize_commands(pixels, width, height, commands)
     unpremultiply_rgba8_surface(pixels)
     raw_pixels = bytes(pixels)
     encoded = engine.encode_png(width, height, dpi, raw_pixels)
@@ -683,8 +685,8 @@ def verify(path: Path) -> dict[str, Any]:
         "resourcePreparationProfile": "renderweave-renderer/1.0",
         "imagePixels": "EXACT_ORIENTATION_NORMALIZED_STRAIGHT_RGBA8",
         "degenerateMapping": "SOURCE_AND_INTEGER_DEVICE_BOX_EXACT_1_TO_1_NO_RESAMPLE",
-        "alphaArithmetic": "STRAIGHT_TO_PREMULTIPLIED_MUL255_SOURCE_OVER_AUTHORED_ORDER_SINGLE_FINAL_UNPREMULTIPLY",
-        "enginePreparedImageKernel": "PREPARED_IMAGE_ALPHA_1_TO_1_PREMULTIPLIED_SOURCE_OVER_EXACT_PNG_AUTOMATED_VERIFIED_PROFILE_GATED",
+        "alphaArithmetic": "STRAIGHT_TO_PREMULTIPLIED_MUL255_SOURCE_OVER_AUTHORED_ORDER_SUBTREE_OPACITY_ROUND_HALF_UP_255_SINGLE_FINAL_UNPREMULTIPLY",
+        "enginePreparedImageKernel": "PREPARED_IMAGE_ALPHA_1_TO_1_PREMULTIPLIED_SOURCE_OVER_SUBTREE_OPACITY_ROUND_HALF_UP_ISOLATION_EXACT_PNG_AUTOMATED_VERIFIED_PROFILE_GATED",
         "profileAvailability": "NOT_REGISTERED",
         "certificationStatus": "NOT_CERTIFIED",
         "processRasterImplementation": "ABSENT",
@@ -777,8 +779,8 @@ def verify(path: Path) -> dict[str, Any]:
     )
     rendered_cases = vectors["renderedCases"]
     unsupported_cases = vectors["unsupportedCases"]
-    verifier.require(len(rendered_cases) == 14, "rendered case count drifted")
-    verifier.require(len(unsupported_cases) == 4, "unsupported case count drifted")
+    verifier.require(len(rendered_cases) == 18, "rendered case count drifted")
+    verifier.require(len(unsupported_cases) == 3, "unsupported case count drifted")
     seen: set[str] = set()
     for family, cases in (("rendered", rendered_cases), ("unsupported", unsupported_cases)):
         for case in cases:

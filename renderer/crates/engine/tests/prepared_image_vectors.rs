@@ -188,11 +188,11 @@ fn assert_contract(vectors: &Vectors) {
         authority.degenerate_mapping
     );
     assert_eq!(
-        "STRAIGHT_TO_PREMULTIPLIED_MUL255_SOURCE_OVER_AUTHORED_ORDER_SINGLE_FINAL_UNPREMULTIPLY",
+        "STRAIGHT_TO_PREMULTIPLIED_MUL255_SOURCE_OVER_AUTHORED_ORDER_SUBTREE_OPACITY_ROUND_HALF_UP_255_SINGLE_FINAL_UNPREMULTIPLY",
         authority.alpha_arithmetic
     );
     assert_eq!(
-        "PREPARED_IMAGE_ALPHA_1_TO_1_PREMULTIPLIED_SOURCE_OVER_EXACT_PNG_AUTOMATED_VERIFIED_PROFILE_GATED",
+        "PREPARED_IMAGE_ALPHA_1_TO_1_PREMULTIPLIED_SOURCE_OVER_SUBTREE_OPACITY_ROUND_HALF_UP_ISOLATION_EXACT_PNG_AUTOMATED_VERIFIED_PROFILE_GATED",
         authority.engine_prepared_image_kernel
     );
     assert_eq!("NOT_REGISTERED", authority.profile_availability);
@@ -201,8 +201,8 @@ fn assert_contract(vectors: &Vectors) {
     assert_eq!("UNWIRED", authority.daemon_output_path);
     assert_eq!("CLOSED", authority.product_route);
     assert_eq!(0, authority.provider_attempts);
-    assert_eq!(14, vectors.rendered_cases.len());
-    assert_eq!(4, vectors.unsupported_cases.len());
+    assert_eq!(18, vectors.rendered_cases.len());
+    assert_eq!(3, vectors.unsupported_cases.len());
 }
 
 fn vectors() -> Vectors {

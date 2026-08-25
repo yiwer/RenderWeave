@@ -2072,6 +2072,52 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
 - 验证：focused Rust/Python、fmt、clippy `-D warnings`、workspace tests、`py_compile`、JSON inventory/SHA/unique、
   `git diff --check`；再依次 `render`、affected `fast`、顺序 `server`、Goal `full`、resolution `fast`。最高只可
   `automated_verified`；不推进 A3/J1/READY，不 push/tag/PR，不运行 provider，不读取 API Key。
+
+## 111. TV1-T111 执行卡
+
+- 决策：T110 以 verified commit `4cbc3b68` 收口且 worktree clean 后，复核 Ticket 10 §6、Ticket 16 §8 与
+  Ticket 19 raster/RAM 预算；选择在同一 Engine deep Interface 一次完成当前支持场景的真实 subtree opacity
+  isolation，不采用 leaf-only 特例、逐图元 opacity 或 partial/test-only Profile。
+- Interface/seam：`render_png`、`render_png_with_prepared_resources` 与 T108 result seal 不变；内部 flat paint stream
+  深化为 balanced begin-layer/paint/end-layer command stream。全部 resource/layout/scene prepare 成功后才分配 surface
+  与 `surfaceWidth × 4 × maxPartialOpacityDepth` scanline scratch。
+- 精确语义：exact 0 suppress、exact 1 fast path；其余六位 canonical decimal 按
+  `floor((scaled6 × 255 + 500000) / 1000000)` 形成 opacity8。Rect/Image/Group/Frame/Stack/Grid 在透明层内完成
+  self→clipped descendants，再统一缩放 premultiplied RGBA 四通道并 source-over 到父层；nested layers、authored
+  sibling order、solid/image alpha 与 final single unpremultiply 保持确定。
+- 允许影响：T111 tracker/map/plan/NOTES、Engine Rust module/tests、resource-free 与 prepared IMAGE shared vectors、
+  两套 Python independent verifiers、render-gate frozen identity/assertions/evidence。
+- 禁止影响：subpixel/rounded/stroke/vector/Text/QR/Barcode、resampling/transform、JPEG/LayoutTrace、Profile
+  registration/certification、RequestRegistry 网络 success、Java/OpenAPI/migration/Web/正式 route、native build、
+  physical certification、J1/A3/READY、provider/API Key/真实数据，以及 push/tag/PR。
+- TDD：现有 Rect 与 prepared IMAGE partial-opacity negatives 先转 positive，并增加 overlapping group children、
+  container fill→child、nested opacity、clip、transparent/opaque underlay exact vectors；Rust public Interface 必须先 RED，
+  再由 Rust 与 Python 独立实现共同 GREEN。
+- 验证：focused Rust/Python、daemon regression、fmt、clippy `-D warnings`、workspace tests、`py_compile`、JSON
+  inventory/SHA/unique、`git diff --check`；再依次 `render`、affected `fast`、顺序 `server`、Goal `full`、resolution
+  `fast`。最高只可 `automated_verified`，产品交付仍以最终正式 Template-v1 页面和真实功能为准。
+
+### TV1-T111 收口
+
+- Engine scene 已深化为 balanced begin-layer/paint/end-layer command stream；exact 0 suppression、exact 1 fast path 与
+  authored partial isolation 分离。六位 decimal 按冻结公式降低到 opacity8，包含量化到 0/255 的 authored partial
+  仍建立隔离层；scanline scratch 仅按 surface width × 最大嵌套深度分配并以 dirty interval 复用。
+- resource-free corpus 为 23 rendered + 10 unsupported、33 cases/103 independent checks，vector SHA-256
+  `b44706f739e08e464816d49a0a203050a36f0e8dba2d1b393796a7d69b9dc5a3`；prepared IMAGE corpus 为
+  18 rendered + 3 unsupported、21 cases/135 independent checks，vector SHA-256
+  `61b03097b1999942051785bb4754b488478ad3290de5f53faf2327db5ad5ea36`。focused Rust、两套 Python independent
+  replay、daemon prepared-result integration 3/3、Windows/Linux workspace/fmt/clippy 均绿。
+- 分级 A1 证据：canonical `render` `.sdlc/evidence/20260825-122036-render/`（55.458 秒）、affected `fast`
+  `.sdlc/evidence/20260825-122142-fast/`（19.816 秒）、sequential `server`
+  `.sdlc/evidence/20260825-122210-server/`（860.526 秒）与 Goal `full`
+  `.sdlc/evidence/20260825-123646-full/`（17/17 steps，1222.540 秒）均通过。full 覆盖 8 个 Maven modules、
+  Node 24 Web 26 files/212 tests、runtime canary、Playwright 23 passed + 1 controlled skip、Draft 与 inference browser journeys；
+  状态回填后的 resolution `fast` `.sdlc/evidence/20260825-125907-fast/`（12.432 秒）亦通过；provider
+  attempts/API Key reads/费用/真实数据=0。
+- 状态为 `resolved / automated_verified`。Profile `NOT_REGISTERED`、certification `NOT_CERTIFIED`、process raster
+  `ABSENT`、Product route `CLOSED`、native stack `BUILD_NOT_AUTHORIZED`；subpixel/rounded/stroke coverage、
+  resampling/transform 与最终产品接线继续后续 DAG，`/prototype` 不计交付。
+
 ### TV1-T74 resolution evidence
 
 - shared `/37` 共同 RED 后，Rust primary 与 Python independent verifier 分别实现并达到 162 laid-out +

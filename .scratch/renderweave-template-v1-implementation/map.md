@@ -563,6 +563,12 @@ Label: wayfinder:map
   29 cases/91 independent checks，prepared IMAGE 18/18 cases/120 checks、daemon integration 3/3 全绿；vector
   SHA-256 `2d5835e2e5e30935f9f2e17f5e70983a428211aa1997253c7036aaad0b6c093a`，`render`/`fast`/`server`/17-step
   `full` 均通过。AA/rounded/stroke/subtree opacity/resampling/transform/Profile/正式产品 route 保持关闭。
+- [接通子树 opacity isolation Engine PNG 内核](issues/111-subtree-opacity-isolation-engine-png-kernel.md) —
+  **resolved / automated_verified**；沿现有 Engine deep Interface 为 Rect/Image/Group/Frame/Stack/Grid 建立有界
+  scanline transparent-layer stack，冻结六位 decimal → 8-bit `ROUND_HALF_UP` opacity lowering，并以整体 subtree
+  composite 取代错误的逐图元 opacity。resource-free 33 cases/103 checks、prepared IMAGE 21 cases/135 checks、
+  daemon integration 3/3 与 `render`/`fast`/`server`/17-step `full` 均绿；Profile `NOT_REGISTERED`、certification
+  `NOT_CERTIFIED`、process raster `ABSENT`、RequestRegistry/正式产品 route `CLOSED`。
 - [验证 Product Editor 状态、恢复与权威预览架构](issues/09-validate-product-editor-architecture.md) —
   throwaway 逻辑原型（`/prototype/editor-state-model`，不进产品 route）把冻结编辑器规则编码为确定性
   fixture 状态机：10 个引导走查场景 37/37 断言 + 自由操作冒烟 + 键盘焦点检查全部通过（Playwright A1，

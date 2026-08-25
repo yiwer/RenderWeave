@@ -1,6 +1,21 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-25 **Template v1 implementation TV1-T111 已由 Codex `/root` single-writer 完成，状态
+  `resolved/automated_verified`**：最终交付仍是正式产品 Template-v1 页面与真实功能，`/prototype` 不计交付。
+  Rect/Image/Group/Frame/Stack/Grid 已沿唯一 Engine deep Interface 建立有界 scanline subtree opacity isolation；
+  exact 0/1 保持 suppression/fast path，其余六位 decimal 按 `ROUND_HALF_UP(opacity×255)` lowering，先完成 self、
+  clipped descendants 与 nested layers，再整体缩放 premultiplied RGBA 并一次 source-over。resource-free corpus
+  23 rendered + 10 unsupported、33 cases/103 checks，vector SHA-256
+  `b44706f739e08e464816d49a0a203050a36f0e8dba2d1b393796a7d69b9dc5a3`；prepared IMAGE corpus
+  18 rendered + 3 unsupported、21 cases/135 checks，vector SHA-256
+  `61b03097b1999942051785bb4754b488478ad3290de5f53faf2327db5ad5ea36`，daemon integration 3/3。
+  canonical `render` `.sdlc/evidence/20260825-122036-render/`、affected `fast`
+  `.sdlc/evidence/20260825-122142-fast/`、sequential `server` `.sdlc/evidence/20260825-122210-server/` 与
+  17-step Goal `full` `.sdlc/evidence/20260825-123646-full/`、状态回填后的 resolution `fast`
+  `.sdlc/evidence/20260825-125907-fast/` 均绿。Profile `NOT_REGISTERED`、certification
+  `NOT_CERTIFIED`、process raster `ABSENT`、正式产品 route `CLOSED`、native stack `BUILD_NOT_AUTHORIZED` 与
+  provider/API Key/费用/真实数据=0 边界不变，不 push/tag/PR。
 - 2026-08-25 **Template v1 implementation TV1-T110 已由 Codex `/root` single-writer 完成，状态
   `resolved/automated_verified`**：最终交付仍是正式产品 Template-v1 页面与真实功能，`/prototype` 不计交付。
   Canvas 任意 alpha 与 pixel-aligned、identity、node opacity 1 的 Rect/Frame/Stack/Grid solid fill 已接入 fixed

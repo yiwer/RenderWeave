@@ -165,6 +165,14 @@ def premultiply(straight: bytes) -> bytes:
 
 def source_over(destination: bytearray, offset: int, source_straight: bytes) -> None:
     source = premultiply(source_straight)
+    source_over_premultiplied(destination, offset, source)
+
+
+def source_over_premultiplied(
+    destination: bytearray, offset: int, source: bytes
+) -> None:
+    if len(source) != 4:
+        raise VerificationFailure("premultiplied source is not RGBA8")
     inverse_source_alpha = 255 - source[3]
     for channel in range(4):
         destination[offset + channel] = min(
@@ -374,17 +382,12 @@ def prepare_rect(
     dpi: int,
     width: int,
     height: int,
-    ancestor_draw_enabled: bool,
+    draw_enabled: bool,
     active_clip: tuple[int, int, int, int],
 ) -> tuple[int, int, int, int, bytes] | None | dict[str, str]:
     if not isinstance(child, dict) or child.get("kind") != "rect":
         return {"feature": "SCENE_STRUCTURE"}
     box = require_layout_entry(child, entry, "rect", False)
-    draw_enabled = node_draw_enabled(
-        child, ancestor_draw_enabled, "RECT_PAINT"
-    )
-    if isinstance(draw_enabled, dict):
-        return draw_enabled
     if not draw_enabled:
         return None
     if "stroke" in child:
@@ -407,16 +410,11 @@ def prepare_rect(
 
 
 def prepare_group(
-    child: Any, entry: Any, ancestor_draw_enabled: bool
+    child: Any, entry: Any, draw_enabled: bool
 ) -> bool | dict[str, str]:
     if not isinstance(child, dict) or child.get("kind") != "group":
         return {"feature": "SCENE_STRUCTURE"}
     require_layout_entry(child, entry, "group", False)
-    draw_enabled = node_draw_enabled(
-        child, ancestor_draw_enabled, "SCENE_STRUCTURE"
-    )
-    if isinstance(draw_enabled, dict):
-        return draw_enabled
     if draw_enabled and not identity_transform(child):
         return {"feature": "SCENE_STRUCTURE"}
     return draw_enabled
@@ -429,7 +427,7 @@ def prepare_container(
     dpi: int,
     width: int,
     height: int,
-    ancestor_draw_enabled: bool,
+    draw_enabled: bool,
     active_clip: tuple[int, int, int, int],
 ) -> tuple[
     tuple[int, int, int, int, bytes] | None,
@@ -444,11 +442,6 @@ def prepare_container(
         return {"feature": "FRAME_PAINT"}
 
     box = require_layout_entry(child, entry, child["kind"], True)
-    draw_enabled = node_draw_enabled(
-        child, ancestor_draw_enabled, "FRAME_PAINT"
-    )
-    if isinstance(draw_enabled, dict):
-        return draw_enabled
     if not draw_enabled:
         return None, active_clip, False
     if (
@@ -490,21 +483,23 @@ def prepare_container(
     return paint, descendant_clip, True
 
 
-def node_draw_enabled(
-    child: dict[str, Any],
-    ancestor_draw_enabled: bool,
-    partial_opacity_feature: str,
-) -> bool | dict[str, str]:
+def node_draw_state(
+    child: dict[str, Any], ancestor_draw_enabled: bool
+) -> tuple[bool, int | None]:
     visible = child.get("visible")
     if not isinstance(visible, bool):
         raise VerificationFailure("Scene visibility is not boolean")
-    zero_opacity = number_is(child.get("opacity"), "0")
-    full_opacity = number_is(child.get("opacity"), "1")
-    if not ancestor_draw_enabled or not visible or zero_opacity:
-        return False
-    if full_opacity:
-        return True
-    return {"feature": partial_opacity_feature}
+    opacity = child.get("opacity")
+    if type(opacity) is int:
+        opacity = Decimal(opacity)
+    if not isinstance(opacity, Decimal) or opacity < 0 or opacity > 1:
+        raise VerificationFailure("Node opacity is outside 0..1")
+    scaled = decimal6(opacity, False)
+    if not ancestor_draw_enabled or not visible or scaled == 0:
+        return False, None
+    if scaled == 1_000_000:
+        return True, None
+    return True, (scaled * 255 + 500_000) // 1_000_000
 
 
 def scene_kinds_supported(children: list[Any]) -> bool:
@@ -532,8 +527,8 @@ def prepare_scene(
     height: int,
     ancestor_draw_enabled: bool,
     active_clip: tuple[int, int, int, int],
-) -> list[tuple[int, int, int, int, bytes]] | dict[str, str]:
-    paints: list[tuple[int, int, int, int, bytes]] = []
+) -> list[tuple[Any, ...]] | dict[str, str]:
+    commands: list[tuple[Any, ...]] = []
     for child in children:
         if layout_cursor[0] >= len(layout_entries):
             raise VerificationFailure(
@@ -541,6 +536,11 @@ def prepare_scene(
             )
         entry = layout_entries[layout_cursor[0]]
         layout_cursor[0] += 1
+        draw_enabled, layer_opacity = node_draw_state(
+            child, ancestor_draw_enabled
+        )
+        if layer_opacity is not None:
+            commands.append(("begin-opacity",))
         if child["kind"] == "rect":
             rect = prepare_rect(
                 child,
@@ -549,17 +549,19 @@ def prepare_scene(
                 dpi,
                 width,
                 height,
-                ancestor_draw_enabled,
+                draw_enabled,
                 active_clip,
             )
             if isinstance(rect, dict):
                 return rect
             if rect is not None:
-                paints.append(rect)
+                commands.append(("rect", rect))
+            if layer_opacity is not None:
+                commands.append(("end-opacity", layer_opacity))
             continue
 
         if child["kind"] == "group":
-            group = prepare_group(child, entry, ancestor_draw_enabled)
+            group = prepare_group(child, entry, draw_enabled)
             if isinstance(group, dict):
                 return group
             descendant_clip = active_clip
@@ -572,14 +574,14 @@ def prepare_scene(
                 dpi,
                 width,
                 height,
-                ancestor_draw_enabled,
+                draw_enabled,
                 active_clip,
             )
             if isinstance(container, dict):
                 return container
             container_paint, descendant_clip, descendant_draw_enabled = container
             if container_paint is not None:
-                paints.append(container_paint)
+                commands.append(("rect", container_paint))
         nested = prepare_scene(
             child["children"],
             layout_entries,
@@ -593,8 +595,10 @@ def prepare_scene(
         )
         if isinstance(nested, dict):
             return nested
-        paints.extend(nested)
-    return paints
+        commands.extend(nested)
+        if layer_opacity is not None:
+            commands.append(("end-opacity", layer_opacity))
+    return commands
 
 
 def paint_rect(
@@ -607,6 +611,144 @@ def paint_rect(
         for column in range(left, right):
             offset = (row * width + column) * 4
             source_over(pixels, offset, color)
+
+
+def paint_command_row(
+    row: bytearray, width: int, row_index: int, command: tuple[Any, ...]
+) -> tuple[int, int] | None:
+    if command[0] == "rect":
+        left, top, right, bottom, color = command[1]
+        if row_index < top or row_index >= bottom or left >= right:
+            return None
+        for column in range(left, right):
+            source_over(row, column * 4, color)
+        return left, right
+    if command[0] == "image":
+        (
+            _, destination, source_left, source_top,
+            source_width, source_height, source,
+        ) = command
+        left, top, right, bottom = destination
+        if row_index < top or row_index >= bottom or left >= right:
+            return None
+        source_y = source_top + row_index - top
+        if source_y < 0 or source_y >= source_height:
+            raise VerificationFailure("Image source row exceeds prepared pixels")
+        for destination_x in range(left, right):
+            source_x = source_left + destination_x - left
+            if source_x < 0 or source_x >= source_width:
+                raise VerificationFailure("Image source column exceeds prepared pixels")
+            source_offset = (source_y * source_width + source_x) * 4
+            source_over(
+                row,
+                destination_x * 4,
+                source[source_offset : source_offset + 4],
+            )
+        return left, right
+    raise VerificationFailure("unknown paint command")
+
+
+def union_dirty_range(
+    current: tuple[int, int] | None, added: tuple[int, int]
+) -> tuple[int, int] | None:
+    if added[0] >= added[1]:
+        return current
+    if current is None:
+        return added
+    return min(current[0], added[0]), max(current[1], added[1])
+
+
+def composite_opacity_row(
+    destination: bytearray,
+    source: bytearray,
+    dirty: tuple[int, int],
+    opacity: int,
+) -> None:
+    if opacity < 0 or opacity > 255:
+        raise VerificationFailure("opacity8 is outside 0..255")
+    for column in range(dirty[0], dirty[1]):
+        offset = column * 4
+        scaled = bytes(
+            mul255(source[offset + channel], opacity) for channel in range(4)
+        )
+        source_over_premultiplied(destination, offset, scaled)
+
+
+def maximum_opacity_depth(commands: list[tuple[Any, ...]]) -> int:
+    depth = 0
+    maximum = 0
+    for command in commands:
+        if command[0] == "begin-opacity":
+            depth += 1
+            maximum = max(maximum, depth)
+        elif command[0] == "end-opacity":
+            depth -= 1
+            if depth < 0:
+                raise VerificationFailure("opacity command stack underflowed")
+    if depth != 0:
+        raise VerificationFailure("opacity command stack remained open")
+    return maximum
+
+
+def rasterize_commands(
+    pixels: bytearray,
+    width: int,
+    height: int,
+    commands: list[tuple[Any, ...]],
+) -> None:
+    row_bytes = width * 4
+    if len(pixels) != row_bytes * height:
+        raise VerificationFailure("surface length diverged from dimensions")
+    maximum_depth = maximum_opacity_depth(commands)
+    layer_rows = [bytearray(row_bytes) for _ in range(maximum_depth)]
+    layer_dirty: list[tuple[int, int] | None] = [None] * maximum_depth
+    for row_index in range(height):
+        row_start = row_index * row_bytes
+        surface_row = bytearray(pixels[row_start : row_start + row_bytes])
+        active_depth = 0
+        for command in commands:
+            if command[0] == "begin-opacity":
+                if active_depth >= maximum_depth:
+                    raise VerificationFailure("opacity depth exceeded scratch")
+                previous = layer_dirty[active_depth]
+                if previous is not None:
+                    layer_rows[active_depth][previous[0] * 4 : previous[1] * 4] = (
+                        b"\0" * ((previous[1] - previous[0]) * 4)
+                    )
+                layer_dirty[active_depth] = None
+                active_depth += 1
+                continue
+            if command[0] == "end-opacity":
+                active_depth -= 1
+                if active_depth < 0:
+                    raise VerificationFailure("opacity command stack underflowed")
+                source_index = active_depth
+                dirty = layer_dirty[source_index]
+                if dirty is not None:
+                    destination = (
+                        surface_row
+                        if active_depth == 0
+                        else layer_rows[active_depth - 1]
+                    )
+                    composite_opacity_row(
+                        destination, layer_rows[source_index], dirty, command[1]
+                    )
+                    if active_depth > 0:
+                        destination_index = active_depth - 1
+                        layer_dirty[destination_index] = union_dirty_range(
+                            layer_dirty[destination_index], dirty
+                        )
+                continue
+            target = surface_row if active_depth == 0 else layer_rows[active_depth - 1]
+            dirty = paint_command_row(target, width, row_index, command)
+            if dirty is not None and active_depth > 0:
+                layer_index = active_depth - 1
+                layer_dirty[layer_index] = union_dirty_range(
+                    layer_dirty[layer_index], dirty
+                )
+        if active_depth != 0:
+            raise VerificationFailure("opacity command stack remained open")
+        pixels[row_start : row_start + row_bytes] = surface_row
 
 
 def png_chunk(kind: bytes, payload: bytes) -> bytes:
@@ -690,7 +832,7 @@ def execute(
     layout_box(canvas_entry["layoutBox"], "Canvas LayoutBox")
     layout_box(canvas_entry["contentBox"], "Canvas ContentBox")
     layout_cursor = [1]
-    rects = prepare_scene(
+    commands = prepare_scene(
         canvas["children"],
         layout_entries,
         layout_cursor,
@@ -701,15 +843,14 @@ def execute(
         True,
         (0, 0, width, height),
     )
-    if isinstance(rects, dict):
-        return rects
+    if isinstance(commands, dict):
+        return commands
     if layout_cursor[0] != len(layout_entries):
         raise VerificationFailure(
             "Engine PNG layout preorder diverged from the admitted scene"
         )
     pixels = bytearray(pixel * (width * height))
-    for rect in rects:
-        paint_rect(pixels, width, rect)
+    rasterize_commands(pixels, width, height, commands)
     pixels = unpremultiply_surface(pixels)
     encoded = encode_png(width, height, dpi, pixels)
     return {
@@ -754,14 +895,14 @@ def verify(path: Path) -> dict[str, Any]:
     verifier.require(boundary == {
         "profileAvailability": "NOT_REGISTERED",
         "certificationStatus": "NOT_CERTIFIED",
-        "enginePngKernel": "PREORDER_DEFINITE_IDENTITY_GROUP_FRAME_STACK_GRID_RECT_PIXEL_ALIGNED_SOLID_ALPHA_PREMULTIPLIED_SOURCE_OVER_RECTANGULAR_CLIP_VISIBILITY_ZERO_OPACITY_SUPPRESSION_PNG_KERNEL_PROFILE_GATED",
+        "enginePngKernel": "PREORDER_DEFINITE_IDENTITY_GROUP_FRAME_STACK_GRID_RECT_PIXEL_ALIGNED_SOLID_ALPHA_PREMULTIPLIED_SOURCE_OVER_SUBTREE_OPACITY_ROUND_HALF_UP_ISOLATION_RECTANGULAR_CLIP_VISIBILITY_ZERO_OPACITY_SUPPRESSION_PNG_KERNEL_PROFILE_GATED",
         "processRasterImplementation": "ABSENT",
         "daemonOutputPath": "UNWIRED",
         "productRoute": "CLOSED",
         "providerAttempts": 0,
     }, "Engine PNG honest boundary drifted")
-    verifier.require(len(vectors["renderedCases"]) == 18, "rendered case count drifted")
-    verifier.require(len(vectors["unsupportedCases"]) == 11, "unsupported case count drifted")
+    verifier.require(len(vectors["renderedCases"]) == 23, "rendered case count drifted")
+    verifier.require(len(vectors["unsupportedCases"]) == 10, "unsupported case count drifted")
 
     seen: set[str] = set()
     for family in ("renderedCases", "unsupportedCases"):

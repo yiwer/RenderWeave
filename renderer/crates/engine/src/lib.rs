@@ -161,6 +161,33 @@ enum PixelPaint<'resource> {
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum PaintCommand<'resource> {
+    BeginOpacity,
+    Paint(PixelPaint<'resource>),
+    EndOpacity(u8),
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum NodeDrawState {
+    Suppressed,
+    FullOpacity,
+    PartialOpacity(u8),
+}
+
+impl NodeDrawState {
+    const fn enabled(self) -> bool {
+        !matches!(self, Self::Suppressed)
+    }
+
+    const fn partial_opacity(self) -> Option<u8> {
+        match self {
+            Self::PartialOpacity(opacity) => Some(opacity),
+            Self::Suppressed | Self::FullOpacity => None,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 struct PixelClip {
     left: u32,
     top: u32,
@@ -341,9 +368,15 @@ fn render_png_internal(
 
     let bleed_left = parse_decimal6(&bleed_left)?;
     let bleed_top = parse_decimal6(&bleed_top)?;
-    let mut paints = Vec::new();
-    paints
-        .try_reserve_exact(layout.entries().len().saturating_sub(1))
+    let command_capacity = layout
+        .entries()
+        .len()
+        .saturating_sub(1)
+        .checked_mul(3)
+        .ok_or(EnginePngError::RasterAllocation)?;
+    let mut commands = Vec::new();
+    commands
+        .try_reserve_exact(command_capacity)
         .map_err(|_| EnginePngError::RasterAllocation)?;
     let mut layout_cursor = 1;
     prepare_scene(
@@ -358,7 +391,7 @@ fn render_png_internal(
         surface.width_px(),
         surface.height_px(),
         prepared_resources,
-        &mut paints,
+        &mut commands,
     )?;
     if layout_cursor != layout.entries().len() {
         return Err(EnginePngError::Contract(
@@ -376,12 +409,12 @@ fn render_png_internal(
     for target in pixels.chunks_exact_mut(4) {
         target.copy_from_slice(&pixel);
     }
-    for paint in paints {
-        match paint {
-            PixelPaint::Rect(rect) => paint_rect(&mut pixels, surface.width_px(), rect)?,
-            PixelPaint::Image(image) => paint_image(&mut pixels, surface.width_px(), image)?,
-        }
-    }
+    rasterize_commands(
+        &mut pixels,
+        surface.width_px(),
+        surface.height_px(),
+        &commands,
+    )?;
     unpremultiply_rgba8_surface(&mut pixels)?;
     let pixel_sha256 = raw_sha256_prefixed(&pixels);
     let bytes = encode_straight_rgba8(surface.width_px(), surface.height_px(), dpi, &pixels)?;
@@ -431,7 +464,7 @@ fn prepare_scene<'resource>(
     surface_width: u32,
     surface_height: u32,
     prepared_resources: Option<&'resource PreparedResourceManifest>,
-    paints: &mut Vec<PixelPaint<'resource>>,
+    commands: &mut Vec<PaintCommand<'resource>>,
 ) -> Result<(), EnginePngError> {
     for node in nodes {
         let node = node
@@ -448,12 +481,17 @@ fn prepare_scene<'resource>(
                 "Engine PNG layout cursor overflowed",
             ))?;
 
+        let draw_state = node_draw_state(node, ancestor_draw_enabled)?;
+        if draw_state.partial_opacity().is_some() {
+            commands.push(PaintCommand::BeginOpacity);
+        }
+
         match text_member(node, "kind")? {
             "rect" => {
                 if let Some(paint) = prepare_rect_paint(
                     node,
                     layout,
-                    ancestor_draw_enabled,
+                    draw_state.enabled(),
                     active_clip,
                     bleed_left,
                     bleed_top,
@@ -461,7 +499,7 @@ fn prepare_scene<'resource>(
                     surface_width,
                     surface_height,
                 )? {
-                    paints.push(PixelPaint::Rect(paint));
+                    commands.push(PaintCommand::Paint(PixelPaint::Rect(paint)));
                 }
             }
             "image" => {
@@ -472,7 +510,7 @@ fn prepare_scene<'resource>(
                     node,
                     layout,
                     resources,
-                    ancestor_draw_enabled,
+                    draw_state.enabled(),
                     active_clip,
                     bleed_left,
                     bleed_top,
@@ -480,11 +518,11 @@ fn prepare_scene<'resource>(
                     surface_width,
                     surface_height,
                 )? {
-                    paints.push(PixelPaint::Image(paint));
+                    commands.push(PaintCommand::Paint(PixelPaint::Image(paint)));
                 }
             }
             "group" => {
-                let descendant_draw_enabled = prepare_group(node, layout, ancestor_draw_enabled)?;
+                let descendant_draw_enabled = prepare_group(node, layout, draw_state.enabled())?;
                 prepare_scene(
                     array_member(node, "children")?,
                     layout_entries,
@@ -497,14 +535,14 @@ fn prepare_scene<'resource>(
                     surface_width,
                     surface_height,
                     prepared_resources,
-                    paints,
+                    commands,
                 )?;
             }
             "frame" | "stack" | "grid" => {
                 let prepared = prepare_container(
                     node,
                     layout,
-                    ancestor_draw_enabled,
+                    draw_state.enabled(),
                     active_clip,
                     bleed_left,
                     bleed_top,
@@ -513,7 +551,7 @@ fn prepare_scene<'resource>(
                     surface_height,
                 )?;
                 if let Some(paint) = prepared.paint {
-                    paints.push(PixelPaint::Rect(paint));
+                    commands.push(PaintCommand::Paint(PixelPaint::Rect(paint)));
                 }
                 prepare_scene(
                     array_member(node, "children")?,
@@ -527,7 +565,7 @@ fn prepare_scene<'resource>(
                     surface_width,
                     surface_height,
                     prepared_resources,
-                    paints,
+                    commands,
                 )?;
             }
             _ => {
@@ -535,6 +573,9 @@ fn prepare_scene<'resource>(
                     EnginePngUnsupported::SceneStructure,
                 ));
             }
+        }
+        if let Some(opacity) = draw_state.partial_opacity() {
+            commands.push(PaintCommand::EndOpacity(opacity));
         }
     }
     Ok(())
@@ -544,7 +585,7 @@ fn prepare_scene<'resource>(
 fn prepare_rect_paint(
     node: &Map<String, Value>,
     layout: &DefiniteLayoutEntry,
-    ancestor_draw_enabled: bool,
+    draw_enabled: bool,
     active_clip: PixelClip,
     bleed_left: i128,
     bleed_top: i128,
@@ -558,7 +599,7 @@ fn prepare_rect_paint(
         ));
     }
     require_layout_entry(node, layout, "rect", false)?;
-    if !node_draw_enabled(node, ancestor_draw_enabled, EnginePngUnsupported::RectPaint)? {
+    if !draw_enabled {
         return Ok(None);
     }
     if node.contains_key("stroke") {
@@ -594,7 +635,7 @@ fn prepare_image_paint<'resource>(
     node: &Map<String, Value>,
     layout: &DefiniteLayoutEntry,
     prepared_resources: &'resource PreparedResourceManifest,
-    ancestor_draw_enabled: bool,
+    draw_enabled: bool,
     active_clip: PixelClip,
     bleed_left: i128,
     bleed_top: i128,
@@ -608,11 +649,7 @@ fn prepare_image_paint<'resource>(
         ));
     }
     require_layout_entry(node, layout, "image", false)?;
-    if !node_draw_enabled(
-        node,
-        ancestor_draw_enabled,
-        EnginePngUnsupported::ImagePaint,
-    )? {
+    if !draw_enabled {
         return Ok(None);
     }
     if !identity_transform(node)? {
@@ -746,7 +783,7 @@ fn prepare_image_paint<'resource>(
 fn prepare_group(
     node: &Map<String, Value>,
     layout: &DefiniteLayoutEntry,
-    ancestor_draw_enabled: bool,
+    draw_enabled: bool,
 ) -> Result<bool, EnginePngError> {
     if text_member(node, "kind")? != "group" {
         return Err(EnginePngError::Unsupported(
@@ -754,11 +791,6 @@ fn prepare_group(
         ));
     }
     require_layout_entry(node, layout, "group", false)?;
-    let draw_enabled = node_draw_enabled(
-        node,
-        ancestor_draw_enabled,
-        EnginePngUnsupported::SceneStructure,
-    )?;
     if draw_enabled && !identity_transform(node)? {
         return Err(EnginePngError::Unsupported(
             EnginePngUnsupported::SceneStructure,
@@ -771,7 +803,7 @@ fn prepare_group(
 fn prepare_container(
     node: &Map<String, Value>,
     layout: &DefiniteLayoutEntry,
-    ancestor_draw_enabled: bool,
+    draw_enabled: bool,
     active_clip: PixelClip,
     bleed_left: i128,
     bleed_top: i128,
@@ -786,11 +818,6 @@ fn prepare_container(
         ));
     }
     require_layout_entry(node, layout, kind, true)?;
-    let draw_enabled = node_draw_enabled(
-        node,
-        ancestor_draw_enabled,
-        EnginePngUnsupported::FramePaint,
-    )?;
     if !draw_enabled {
         return Ok(PreparedContainer {
             paint: None,
@@ -867,21 +894,30 @@ fn prepare_container(
     })
 }
 
-fn node_draw_enabled(
+fn node_draw_state(
     node: &Map<String, Value>,
     ancestor_draw_enabled: bool,
-    partial_opacity: EnginePngUnsupported,
-) -> Result<bool, EnginePngError> {
+) -> Result<NodeDrawState, EnginePngError> {
     let visible = boolean_member(node, "visible")?;
-    let zero_opacity = number_equals(node, "opacity", 0.0)?;
-    let full_opacity = number_equals(node, "opacity", 1.0)?;
-    if !ancestor_draw_enabled || !visible || zero_opacity {
-        Ok(false)
-    } else if full_opacity {
-        Ok(true)
-    } else {
-        Err(EnginePngError::Unsupported(partial_opacity))
+    let opacity = parse_decimal6(&decimal_member(node, "opacity")?)?;
+    if !(0..=1_000_000).contains(&opacity) {
+        return Err(EnginePngError::Contract("Node opacity is outside 0..1"));
     }
+    if !ancestor_draw_enabled || !visible || opacity == 0 {
+        return Ok(NodeDrawState::Suppressed);
+    }
+    if opacity == 1_000_000 {
+        return Ok(NodeDrawState::FullOpacity);
+    }
+    let opacity = opacity
+        .checked_mul(255)
+        .and_then(|value| value.checked_add(500_000))
+        .map(|value| value / 1_000_000)
+        .and_then(|value| u8::try_from(value).ok())
+        .ok_or(EnginePngError::Contract(
+            "Node opacity could not be lowered",
+        ))?;
+    Ok(NodeDrawState::PartialOpacity(opacity))
 }
 
 fn identity_transform(node: &Map<String, Value>) -> Result<bool, EnginePngError> {
@@ -1119,72 +1155,305 @@ fn clip_device_edge(edge: i128, surface_edge: u32) -> u32 {
     edge.clamp(0, i128::from(surface_edge)) as u32
 }
 
-fn paint_rect(
+fn rasterize_commands(
     pixels: &mut [u8],
     surface_width: u32,
-    rect: PixelRect,
+    surface_height: u32,
+    commands: &[PaintCommand<'_>],
 ) -> Result<(), EnginePngError> {
-    for y in rect.top..rect.bottom {
-        let start = (u64::from(y) * u64::from(surface_width) + u64::from(rect.left))
-            .checked_mul(4)
-            .and_then(|value| usize::try_from(value).ok())
+    let row_bytes = usize::try_from(surface_width)
+        .ok()
+        .and_then(|width| width.checked_mul(4))
+        .ok_or(EnginePngError::RasterAllocation)?;
+    let expected_surface_bytes = row_bytes
+        .checked_mul(usize::try_from(surface_height).map_err(|_| EnginePngError::RasterAllocation)?)
+        .ok_or(EnginePngError::RasterAllocation)?;
+    if pixels.len() != expected_surface_bytes {
+        return Err(EnginePngError::Contract(
+            "Raster surface length diverged from its dimensions",
+        ));
+    }
+
+    let maximum_depth = maximum_opacity_depth(commands)?;
+    let scratch_bytes = row_bytes
+        .checked_mul(maximum_depth)
+        .ok_or(EnginePngError::RasterAllocation)?;
+    let mut layer_pixels = Vec::new();
+    layer_pixels
+        .try_reserve_exact(scratch_bytes)
+        .map_err(|_| EnginePngError::RasterAllocation)?;
+    layer_pixels.resize(scratch_bytes, 0);
+    let mut layer_dirty = Vec::new();
+    layer_dirty
+        .try_reserve_exact(maximum_depth)
+        .map_err(|_| EnginePngError::RasterAllocation)?;
+    layer_dirty.resize(maximum_depth, None);
+
+    for row_index in 0..surface_height {
+        let row_start = usize::try_from(row_index)
+            .ok()
+            .and_then(|row| row.checked_mul(row_bytes))
             .ok_or(EnginePngError::RasterAllocation)?;
-        let end = (u64::from(y) * u64::from(surface_width) + u64::from(rect.right))
-            .checked_mul(4)
-            .and_then(|value| usize::try_from(value).ok())
+        let surface_row = pixels
+            .get_mut(row_start..row_start + row_bytes)
             .ok_or(EnginePngError::RasterAllocation)?;
-        let row = pixels
-            .get_mut(start..end)
-            .ok_or(EnginePngError::RasterAllocation)?;
-        for target in row.chunks_exact_mut(4) {
-            source_over_straight_rgba8(target, &rect.color)?;
+        let mut active_depth = 0_usize;
+
+        for command in commands {
+            match *command {
+                PaintCommand::BeginOpacity => {
+                    if active_depth >= maximum_depth {
+                        return Err(EnginePngError::Contract(
+                            "Opacity command depth exceeded prepared scratch",
+                        ));
+                    }
+                    let layer_start = active_depth
+                        .checked_mul(row_bytes)
+                        .ok_or(EnginePngError::RasterAllocation)?;
+                    let layer = layer_pixels
+                        .get_mut(layer_start..layer_start + row_bytes)
+                        .ok_or(EnginePngError::RasterAllocation)?;
+                    if let Some((left, right)) = layer_dirty[active_depth].take() {
+                        let clear_start = usize::try_from(left)
+                            .ok()
+                            .and_then(|value| value.checked_mul(4))
+                            .ok_or(EnginePngError::RasterAllocation)?;
+                        let clear_end = usize::try_from(right)
+                            .ok()
+                            .and_then(|value| value.checked_mul(4))
+                            .ok_or(EnginePngError::RasterAllocation)?;
+                        layer
+                            .get_mut(clear_start..clear_end)
+                            .ok_or(EnginePngError::RasterAllocation)?
+                            .fill(0);
+                    }
+                    active_depth += 1;
+                }
+                PaintCommand::Paint(paint) => {
+                    if active_depth == 0 {
+                        paint_command_row(surface_row, surface_width, row_index, paint)?;
+                    } else {
+                        let layer_index = active_depth - 1;
+                        let layer_start = layer_index
+                            .checked_mul(row_bytes)
+                            .ok_or(EnginePngError::RasterAllocation)?;
+                        let layer = layer_pixels
+                            .get_mut(layer_start..layer_start + row_bytes)
+                            .ok_or(EnginePngError::RasterAllocation)?;
+                        if let Some(range) =
+                            paint_command_row(layer, surface_width, row_index, paint)?
+                        {
+                            layer_dirty[layer_index] =
+                                union_dirty_range(layer_dirty[layer_index], range);
+                        }
+                    }
+                }
+                PaintCommand::EndOpacity(opacity) => {
+                    active_depth = active_depth.checked_sub(1).ok_or(EnginePngError::Contract(
+                        "Opacity command stack underflowed",
+                    ))?;
+                    let source_index = active_depth;
+                    let Some(range) = layer_dirty[source_index] else {
+                        continue;
+                    };
+                    let source_start = source_index
+                        .checked_mul(row_bytes)
+                        .ok_or(EnginePngError::RasterAllocation)?;
+                    if active_depth == 0 {
+                        let source = layer_pixels
+                            .get(source_start..source_start + row_bytes)
+                            .ok_or(EnginePngError::RasterAllocation)?;
+                        composite_opacity_row(surface_row, source, range, opacity)?;
+                    } else {
+                        let destination_index = active_depth - 1;
+                        let destination_start = destination_index
+                            .checked_mul(row_bytes)
+                            .ok_or(EnginePngError::RasterAllocation)?;
+                        let (destination_layers, source_layers) =
+                            layer_pixels.split_at_mut(source_start);
+                        let destination = destination_layers
+                            .get_mut(destination_start..destination_start + row_bytes)
+                            .ok_or(EnginePngError::RasterAllocation)?;
+                        let source = source_layers
+                            .get(..row_bytes)
+                            .ok_or(EnginePngError::RasterAllocation)?;
+                        composite_opacity_row(destination, source, range, opacity)?;
+                        layer_dirty[destination_index] =
+                            union_dirty_range(layer_dirty[destination_index], range);
+                    }
+                }
+            }
+        }
+        if active_depth != 0 {
+            return Err(EnginePngError::Contract(
+                "Opacity command stack remained open",
+            ));
         }
     }
     Ok(())
 }
 
-fn paint_image(
-    pixels: &mut [u8],
-    surface_width: u32,
-    image: PixelImage<'_>,
-) -> Result<(), EnginePngError> {
-    for destination_y in image.top..image.bottom {
-        let source_y = image
-            .source_top
-            .checked_add(destination_y - image.top)
-            .filter(|row| *row < image.source_height)
-            .ok_or(EnginePngError::Contract(
-                "Image source row exceeds prepared pixels",
-            ))?;
-        for destination_x in image.left..image.right {
-            let source_x = image
-                .source_left
-                .checked_add(destination_x - image.left)
-                .filter(|column| *column < image.source_width)
-                .ok_or(EnginePngError::Contract(
-                    "Image source column exceeds prepared pixels",
+fn maximum_opacity_depth(commands: &[PaintCommand<'_>]) -> Result<usize, EnginePngError> {
+    let mut depth = 0_usize;
+    let mut maximum = 0_usize;
+    for command in commands {
+        match command {
+            PaintCommand::BeginOpacity => {
+                depth = depth
+                    .checked_add(1)
+                    .ok_or(EnginePngError::RasterAllocation)?;
+                maximum = maximum.max(depth);
+            }
+            PaintCommand::EndOpacity(_) => {
+                depth = depth.checked_sub(1).ok_or(EnginePngError::Contract(
+                    "Opacity command stack underflowed",
                 ))?;
-            let source_offset = (u64::from(source_y) * u64::from(image.source_width)
-                + u64::from(source_x))
-            .checked_mul(4)
-            .and_then(|value| usize::try_from(value).ok())
-            .ok_or(EnginePngError::RasterAllocation)?;
-            let source = image
-                .straight_rgba8
-                .get(source_offset..source_offset + 4)
-                .ok_or(EnginePngError::Contract(
-                    "Image source pixel exceeds prepared pixels",
-                ))?;
-            let destination_offset = (u64::from(destination_y) * u64::from(surface_width)
-                + u64::from(destination_x))
-            .checked_mul(4)
-            .and_then(|value| usize::try_from(value).ok())
-            .ok_or(EnginePngError::RasterAllocation)?;
-            let destination = pixels
-                .get_mut(destination_offset..destination_offset + 4)
-                .ok_or(EnginePngError::RasterAllocation)?;
-            source_over_straight_rgba8(destination, source)?;
+            }
+            PaintCommand::Paint(_) => {}
         }
+    }
+    if depth != 0 {
+        return Err(EnginePngError::Contract(
+            "Opacity command stack remained open",
+        ));
+    }
+    Ok(maximum)
+}
+
+fn union_dirty_range(current: Option<(u32, u32)>, added: (u32, u32)) -> Option<(u32, u32)> {
+    if added.0 >= added.1 {
+        return current;
+    }
+    Some(match current {
+        Some((left, right)) => (left.min(added.0), right.max(added.1)),
+        None => added,
+    })
+}
+
+fn paint_command_row(
+    row: &mut [u8],
+    surface_width: u32,
+    row_index: u32,
+    paint: PixelPaint<'_>,
+) -> Result<Option<(u32, u32)>, EnginePngError> {
+    match paint {
+        PixelPaint::Rect(rect) => paint_rect_row(row, row_index, rect),
+        PixelPaint::Image(image) => paint_image_row(row, surface_width, row_index, image),
+    }
+}
+
+fn paint_rect_row(
+    row: &mut [u8],
+    row_index: u32,
+    rect: PixelRect,
+) -> Result<Option<(u32, u32)>, EnginePngError> {
+    if row_index < rect.top || row_index >= rect.bottom || rect.left >= rect.right {
+        return Ok(None);
+    }
+    let start = usize::try_from(rect.left)
+        .ok()
+        .and_then(|value| value.checked_mul(4))
+        .ok_or(EnginePngError::RasterAllocation)?;
+    let end = usize::try_from(rect.right)
+        .ok()
+        .and_then(|value| value.checked_mul(4))
+        .ok_or(EnginePngError::RasterAllocation)?;
+    for target in row
+        .get_mut(start..end)
+        .ok_or(EnginePngError::RasterAllocation)?
+        .chunks_exact_mut(4)
+    {
+        source_over_straight_rgba8(target, &rect.color)?;
+    }
+    Ok(Some((rect.left, rect.right)))
+}
+
+fn paint_image_row(
+    row: &mut [u8],
+    surface_width: u32,
+    destination_y: u32,
+    image: PixelImage<'_>,
+) -> Result<Option<(u32, u32)>, EnginePngError> {
+    if destination_y < image.top || destination_y >= image.bottom || image.left >= image.right {
+        return Ok(None);
+    }
+    let expected_row_bytes = usize::try_from(surface_width)
+        .ok()
+        .and_then(|width| width.checked_mul(4))
+        .ok_or(EnginePngError::RasterAllocation)?;
+    if row.len() != expected_row_bytes {
+        return Err(EnginePngError::Contract(
+            "Raster row length diverged from surface width",
+        ));
+    }
+    let source_y = image
+        .source_top
+        .checked_add(destination_y - image.top)
+        .filter(|source_row| *source_row < image.source_height)
+        .ok_or(EnginePngError::Contract(
+            "Image source row exceeds prepared pixels",
+        ))?;
+    for destination_x in image.left..image.right {
+        let source_x = image
+            .source_left
+            .checked_add(destination_x - image.left)
+            .filter(|column| *column < image.source_width)
+            .ok_or(EnginePngError::Contract(
+                "Image source column exceeds prepared pixels",
+            ))?;
+        let source_offset = (u64::from(source_y) * u64::from(image.source_width)
+            + u64::from(source_x))
+        .checked_mul(4)
+        .and_then(|value| usize::try_from(value).ok())
+        .ok_or(EnginePngError::RasterAllocation)?;
+        let source = image
+            .straight_rgba8
+            .get(source_offset..source_offset + 4)
+            .ok_or(EnginePngError::Contract(
+                "Image source pixel exceeds prepared pixels",
+            ))?;
+        let destination_offset = usize::try_from(destination_x)
+            .ok()
+            .and_then(|value| value.checked_mul(4))
+            .ok_or(EnginePngError::RasterAllocation)?;
+        let destination = row
+            .get_mut(destination_offset..destination_offset + 4)
+            .ok_or(EnginePngError::RasterAllocation)?;
+        source_over_straight_rgba8(destination, source)?;
+    }
+    Ok(Some((image.left, image.right)))
+}
+
+fn composite_opacity_row(
+    destination: &mut [u8],
+    source: &[u8],
+    range: (u32, u32),
+    opacity: u8,
+) -> Result<(), EnginePngError> {
+    let start = usize::try_from(range.0)
+        .ok()
+        .and_then(|value| value.checked_mul(4))
+        .ok_or(EnginePngError::RasterAllocation)?;
+    let end = usize::try_from(range.1)
+        .ok()
+        .and_then(|value| value.checked_mul(4))
+        .ok_or(EnginePngError::RasterAllocation)?;
+    let source = source
+        .get(start..end)
+        .ok_or(EnginePngError::RasterAllocation)?;
+    let destination = destination
+        .get_mut(start..end)
+        .ok_or(EnginePngError::RasterAllocation)?;
+    for (source_pixel, destination_pixel) in
+        source.chunks_exact(4).zip(destination.chunks_exact_mut(4))
+    {
+        let source = [
+            multiply_divide_255_round_half_up(source_pixel[0], opacity),
+            multiply_divide_255_round_half_up(source_pixel[1], opacity),
+            multiply_divide_255_round_half_up(source_pixel[2], opacity),
+            multiply_divide_255_round_half_up(source_pixel[3], opacity),
+        ];
+        source_over_premultiplied_rgba8(destination_pixel, &source)?;
     }
     Ok(())
 }
@@ -1215,6 +1484,16 @@ fn source_over_straight_rgba8(
             .try_into()
             .map_err(|_| EnginePngError::Contract("Paint source pixel is not RGBA8"))?,
     );
+    source_over_premultiplied_rgba8(destination_premultiplied, &source)
+}
+
+fn source_over_premultiplied_rgba8(
+    destination_premultiplied: &mut [u8],
+    source_premultiplied: &[u8],
+) -> Result<(), EnginePngError> {
+    let source: &[u8; 4] = source_premultiplied
+        .try_into()
+        .map_err(|_| EnginePngError::Contract("Paint source pixel is not RGBA8"))?;
     let destination: &mut [u8; 4] = destination_premultiplied
         .try_into()
         .map_err(|_| EnginePngError::Contract("Raster destination pixel is not RGBA8"))?;
@@ -1382,4 +1661,36 @@ fn array_member<'a>(
         .and_then(Value::as_array)
         .map(Vec::as_slice)
         .ok_or(EnginePngError::Contract("Canvas array member is absent"))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{NodeDrawState, node_draw_state};
+    use serde_json::Value;
+
+    #[test]
+    fn authored_partial_opacity_keeps_isolation_at_u8_quantization_edges() {
+        assert_eq!(
+            NodeDrawState::PartialOpacity(0),
+            draw_state(r#"{"visible":true,"opacity":0.001}"#)
+        );
+        assert_eq!(
+            NodeDrawState::PartialOpacity(255),
+            draw_state(r#"{"visible":true,"opacity":0.999}"#)
+        );
+        assert_eq!(
+            NodeDrawState::Suppressed,
+            draw_state(r#"{"visible":true,"opacity":0}"#)
+        );
+        assert_eq!(
+            NodeDrawState::FullOpacity,
+            draw_state(r#"{"visible":true,"opacity":1}"#)
+        );
+    }
+
+    fn draw_state(json: &str) -> NodeDrawState {
+        let node: Value = serde_json::from_str(json).expect("test node must be valid JSON");
+        node_draw_state(node.as_object().expect("test node must be an object"), true)
+            .expect("test node opacity must lower")
+    }
 }

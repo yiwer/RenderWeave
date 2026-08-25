@@ -677,16 +677,16 @@ try {
     if ($enginePngIndependent.verifier -ne 'renderweave-engine-png-python-independent/1' `
             -or $enginePngIndependent.result -ne 'PASS' `
             -or $enginePngIndependent.assurance -ne 'A2' `
-            -or $enginePngIndependent.renderedCases -ne 18 `
-            -or $enginePngIndependent.unsupportedCases -ne 11 `
-            -or $enginePngIndependent.passed -ne 29 `
-            -or $enginePngIndependent.total -ne 29 `
+            -or $enginePngIndependent.renderedCases -ne 23 `
+            -or $enginePngIndependent.unsupportedCases -ne 10 `
+            -or $enginePngIndependent.passed -ne 33 `
+            -or $enginePngIndependent.total -ne 33 `
             -or $enginePngIndependent.failed -ne 0 `
-            -or $enginePngIndependent.checks -ne 91 `
-            -or $enginePngIndependent.vectorSha256 -ne 'sha256:2d5835e2e5e30935f9f2e17f5e70983a428211aa1997253c7036aaad0b6c093a' `
+            -or $enginePngIndependent.checks -ne 103 `
+            -or $enginePngIndependent.vectorSha256 -ne 'sha256:b44706f739e08e464816d49a0a203050a36f0e8dba2d1b393796a7d69b9dc5a3' `
             -or $enginePngIndependent.profileAvailability -ne 'NOT_REGISTERED' `
             -or $enginePngIndependent.certificationStatus -ne 'NOT_CERTIFIED' `
-            -or $enginePngIndependent.enginePngKernel -ne 'PREORDER_DEFINITE_IDENTITY_GROUP_FRAME_STACK_GRID_RECT_PIXEL_ALIGNED_SOLID_ALPHA_PREMULTIPLIED_SOURCE_OVER_RECTANGULAR_CLIP_VISIBILITY_ZERO_OPACITY_SUPPRESSION_PNG_KERNEL_PROFILE_GATED' `
+            -or $enginePngIndependent.enginePngKernel -ne 'PREORDER_DEFINITE_IDENTITY_GROUP_FRAME_STACK_GRID_RECT_PIXEL_ALIGNED_SOLID_ALPHA_PREMULTIPLIED_SOURCE_OVER_SUBTREE_OPACITY_ROUND_HALF_UP_ISOLATION_RECTANGULAR_CLIP_VISIBILITY_ZERO_OPACITY_SUPPRESSION_PNG_KERNEL_PROFILE_GATED' `
             -or $enginePngIndependent.processRasterImplementation -ne 'ABSENT' `
             -or $enginePngIndependent.daemonOutputPath -ne 'UNWIRED' `
             -or $enginePngIndependent.productRoute -ne 'CLOSED' `
@@ -708,19 +708,19 @@ try {
     if ($enginePreparedImagePngIndependent.verifier -ne 'renderweave-engine-prepared-image-png-python-independent/2' `
             -or $enginePreparedImagePngIndependent.result -ne 'PASS' `
             -or $enginePreparedImagePngIndependent.assurance -ne 'A2' `
-            -or $enginePreparedImagePngIndependent.renderedCases -ne 14 `
-            -or $enginePreparedImagePngIndependent.unsupportedCases -ne 4 `
-            -or $enginePreparedImagePngIndependent.passed -ne 18 `
-            -or $enginePreparedImagePngIndependent.total -ne 18 `
+            -or $enginePreparedImagePngIndependent.renderedCases -ne 18 `
+            -or $enginePreparedImagePngIndependent.unsupportedCases -ne 3 `
+            -or $enginePreparedImagePngIndependent.passed -ne 21 `
+            -or $enginePreparedImagePngIndependent.total -ne 21 `
             -or $enginePreparedImagePngIndependent.failed -ne 0 `
-            -or $enginePreparedImagePngIndependent.checks -ne 120 `
-            -or $enginePreparedImagePngIndependent.vectorSha256 -ne '837c98e418cf5d40586e048296825b04be33c7a2d5e2184384878d763584ac52' `
+            -or $enginePreparedImagePngIndependent.checks -ne 135 `
+            -or $enginePreparedImagePngIndependent.vectorSha256 -ne '61b03097b1999942051785bb4754b488478ad3290de5f53faf2327db5ad5ea36' `
             -or $enginePreparedImagePngIndependent.layoutProfile -ne 'renderweave-layout/1.0' `
             -or $enginePreparedImagePngIndependent.resourcePreparationProfile -ne 'renderweave-renderer/1.0' `
             -or $enginePreparedImagePngIndependent.imagePixels -ne 'EXACT_ORIENTATION_NORMALIZED_STRAIGHT_RGBA8' `
             -or $enginePreparedImagePngIndependent.degenerateMapping -ne 'SOURCE_AND_INTEGER_DEVICE_BOX_EXACT_1_TO_1_NO_RESAMPLE' `
-            -or $enginePreparedImagePngIndependent.alphaArithmetic -ne 'STRAIGHT_TO_PREMULTIPLIED_MUL255_SOURCE_OVER_AUTHORED_ORDER_SINGLE_FINAL_UNPREMULTIPLY' `
-            -or $enginePreparedImagePngIndependent.enginePreparedImageKernel -ne 'PREPARED_IMAGE_ALPHA_1_TO_1_PREMULTIPLIED_SOURCE_OVER_EXACT_PNG_AUTOMATED_VERIFIED_PROFILE_GATED' `
+            -or $enginePreparedImagePngIndependent.alphaArithmetic -ne 'STRAIGHT_TO_PREMULTIPLIED_MUL255_SOURCE_OVER_AUTHORED_ORDER_SUBTREE_OPACITY_ROUND_HALF_UP_255_SINGLE_FINAL_UNPREMULTIPLY' `
+            -or $enginePreparedImagePngIndependent.enginePreparedImageKernel -ne 'PREPARED_IMAGE_ALPHA_1_TO_1_PREMULTIPLIED_SOURCE_OVER_SUBTREE_OPACITY_ROUND_HALF_UP_ISOLATION_EXACT_PNG_AUTOMATED_VERIFIED_PROFILE_GATED' `
             -or $enginePreparedImagePngIndependent.profileAvailability -ne 'NOT_REGISTERED' `
             -or $enginePreparedImagePngIndependent.certificationStatus -ne 'NOT_CERTIFIED' `
             -or $enginePreparedImagePngIndependent.processRasterImplementation -ne 'ABSENT' `
@@ -1023,8 +1023,8 @@ try {
             layoutKernel = 'RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_SINGLE_AND_INACTIVE_BOUND_OR_EXACT_TWO_FILL_SINGLE_ACTIVE_BOUND_WITHIN_REMAINING_OR_SINGLE_ACTIVE_MIN_OVERFLOW_OR_EXACT_TWO_FILL_TWO_MIN_SECOND_FREEZE_OVERFLOW_OR_EXACT_TWO_FILL_MIXED_ACTIVE_MIN_SECOND_MIN_FREEZE_OVERFLOW_OR_EXACT_TWO_FILL_TWO_MAX_SECOND_FREEZE_FREE_JUSTIFY_OR_EXACT_TWO_FILL_MIXED_ACTIVE_MAX_SECOND_MAX_FREEZE_FREE_JUSTIFY_OR_EXACT_THREE_FILL_SINGLE_ACTIVE_BOUND_ONE_REDISTRIBUTION_OR_EXACT_THREE_FILL_POST_REDISTRIBUTION_INACTIVE_BOUNDS_OR_EXACT_THREE_FILL_SECOND_MIN_FREEZE_LAST_REMAINDER_OR_EXACT_THREE_FILL_SECOND_MAX_FREEZE_LAST_REMAINDER_OR_EXACT_THREE_FILL_SECOND_MAX_FREEZE_TERMINAL_INACTIVE_MIN_OR_EXACT_THREE_FILL_SECOND_MAX_FREEZE_TERMINAL_INACTIVE_MAX_OR_EXACT_THREE_FILL_THIRD_MAX_FREEZE_FREE_JUSTIFY_OR_EXACT_THREE_FILL_SINGLE_ACTIVE_MIN_OVERFLOW_OR_EXACT_THREE_FILL_SECOND_MIN_FREEZE_OVERFLOW_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_INACTIVE_UNFROZEN_MAX_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_SECOND_MIN_FREEZE_OVERFLOW_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_SECOND_MIXED_MIN_FREEZE_OVERFLOW_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_SECOND_MIXED_MIN_FREEZE_OVERFLOW_TERMINAL_INACTIVE_MAX_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_TWO_MIXED_MIN_FREEZES_OVERFLOW_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_MIXED_AND_MIN_ONLY_FREEZES_OVERFLOW_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_TWO_MIN_ONLY_FREEZES_OVERFLOW_MULTI_MAIN_FILL_AND_FIXED_SINGLE_FRACTION_INDEPENDENT_MULTI_AUTO_GRID_MULTI_AUTO_SPAN_STABLE_DEFICIT_GRID_DEFINITE_MULTI_FRACTION_LAST_REMAINDER_GRID_EMPTY_CONTAINER_STACK_HUG_GRID_AUTO_HUG_CONTRIBUTION_GRID_HUG_EXACT_QUARTER_TURN_AFFINE_FRAME_GROUP_HUG_FIXED_OPPOSITE_AXIS_CROSS_FILL_DEFINITE_ABSOLUTE_PARENT_OFFER_DEFINITE_STACK_CROSS_OUTER_OFFER_STACK_MAIN_FILL_CROSS_HUG_REMEASURE_NESTED_STACK_MAIN_OFFER_PROPAGATION_COLUMNS_FIRST_GRID_CELL_OUTER_OFFER_STACK_MAIN_OFFER_COLUMNS_FIRST_GRID_CROSS_HUG_ABSOLUTE_PARENT_OFFER_COLUMNS_FIRST_GRID_CROSS_HUG_GRID_CELL_OFFER_COLUMNS_FIRST_NESTED_GRID_CROSS_HUG_GRID_CELL_OFFER_STACK_MAIN_FIRST_CROSS_HUG_DIRECTION_CHANGING_STACK_CROSS_OFFER_MAIN_HUG_NESTED_STACK_RESOLVED_OPPOSITE_OFFER_RECURSION_COLUMNS_FIRST_GRID_TERMINAL_NORMALIZATION_BOX_AUTOMATED_VERIFIED_UNWIRED'
             preparedImageLayout = 'PREPARED_IMAGE_FIXED_FILL_SINGLE_AXIS_HUG_LOGICAL_RATIO_ABSOLUTE_STACK_GRID_CONTAINER_AUTOMATED_VERIFIED_UNWIRED'
             outputPngKernel = 'AUTOMATED_VERIFIED_UNWIRED'
-            enginePngKernel = 'PREORDER_DEFINITE_IDENTITY_GROUP_FRAME_STACK_GRID_RECT_PIXEL_ALIGNED_SOLID_ALPHA_PREMULTIPLIED_SOURCE_OVER_RECTANGULAR_CLIP_VISIBILITY_ZERO_OPACITY_SUPPRESSION_PNG_KERNEL_PROFILE_GATED'
-            preparedImageEnginePngKernel = 'PREPARED_IMAGE_ALPHA_1_TO_1_PREMULTIPLIED_SOURCE_OVER_EXACT_PNG_AUTOMATED_VERIFIED_PROFILE_GATED'
+            enginePngKernel = 'PREORDER_DEFINITE_IDENTITY_GROUP_FRAME_STACK_GRID_RECT_PIXEL_ALIGNED_SOLID_ALPHA_PREMULTIPLIED_SOURCE_OVER_SUBTREE_OPACITY_ROUND_HALF_UP_ISOLATION_RECTANGULAR_CLIP_VISIBILITY_ZERO_OPACITY_SUPPRESSION_PNG_KERNEL_PROFILE_GATED'
+            preparedImageEnginePngKernel = 'PREPARED_IMAGE_ALPHA_1_TO_1_PREMULTIPLIED_SOURCE_OVER_SUBTREE_OPACITY_ROUND_HALF_UP_ISOLATION_EXACT_PNG_AUTOMATED_VERIFIED_PROFILE_GATED'
             daemonOutputPath = 'UNWIRED'
             rendererReady = $false
             ticket19Closed = $false
