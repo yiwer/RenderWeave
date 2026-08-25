@@ -10,6 +10,13 @@ final class FailClosedOwnerScopeAuthority implements OwnerScopeAuthority {
     }
 
     @Override
+    public CatalogDecision authorizeCatalog(
+            TemplateApplication.TemplateInvocationRef invocation
+    ) {
+        return new CatalogUnavailable();
+    }
+
+    @Override
     public ExistingDecision authorizeExisting(
             TemplateApplication.TemplateInvocationRef invocation,
             OwnerScope storedOwnerScope,

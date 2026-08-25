@@ -44,6 +44,16 @@ final class ConfiguredSingleOwnerScopeAuthority implements OwnerScopeAuthority {
     }
 
     @Override
+    public CatalogDecision authorizeCatalog(
+            TemplateApplication.TemplateInvocationRef invocation
+    ) {
+        if (!capabilities.contains(READ)) {
+            return new CatalogDenied();
+        }
+        return new CatalogGranted(ownerScope);
+    }
+
+    @Override
     public ExistingDecision authorizeExisting(
             TemplateApplication.TemplateInvocationRef invocation,
             OwnerScope storedOwnerScope,

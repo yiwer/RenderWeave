@@ -10,11 +10,12 @@ import cn.hbads.renderweave.template.spi.InvalidCommitConfirmationAuthority;
 import cn.hbads.renderweave.template.spi.OwnerScopeAuthority;
 import cn.hbads.renderweave.template.spi.TemplatePersistence;
 
-import java.util.Objects;
-import java.util.UUID;
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.OptionalLong;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.OptionalLong;
+import java.util.UUID;
 
 final class CanonicalTemplateApplication implements TemplateApplication {
     private final DesignDslAuthority designs;
@@ -163,6 +164,50 @@ final class CanonicalTemplateApplication implements TemplateApplication {
                 admitted.contentHash(),
                 computedReadiness
         ));
+    }
+
+    @Override
+    public CatalogOutcome catalog(TemplateInvocationRef invocation, CatalogCommand command) {
+        Objects.requireNonNull(invocation, "invocation");
+        Objects.requireNonNull(command, "command");
+
+        var decision = ownerScopes.authorizeCatalog(invocation);
+        if (decision instanceof OwnerScopeAuthority.CatalogDenied) {
+            return new CatalogForbidden();
+        }
+        if (decision instanceof OwnerScopeAuthority.CatalogUnavailable) {
+            return new CatalogAuthorityUnavailable();
+        }
+        var granted = (OwnerScopeAuthority.CatalogGranted) decision;
+        var persisted = persistence.catalog(new TemplatePersistence.CatalogQuery(
+                granted.ownerScope(),
+                command.search(),
+                command.cursor(),
+                command.limit()
+        ));
+        if (persisted instanceof TemplatePersistence.CatalogInvalidCursor) {
+            return new CatalogInvalidCursor();
+        }
+        if (persisted instanceof TemplatePersistence.CatalogUnavailable) {
+            return new CatalogPersistenceUnavailable();
+        }
+        var page = (TemplatePersistence.CatalogPage) persisted;
+        var entries = new ArrayList<TemplateApplication.CatalogEntry>();
+        for (var entry : page.entries()) {
+            if (!granted.ownerScope().equals(entry.ownerScope())
+                    || entry.lifecycle() != TemplatePersistence.Lifecycle.ACTIVE) {
+                return new CatalogPersistenceUnavailable();
+            }
+            entries.add(new TemplateApplication.CatalogEntry(
+                    entry.templateId(),
+                    entry.displayName(),
+                    entry.staticSchema(),
+                    entry.currentRevision(),
+                    entry.readiness(),
+                    entry.updatedAt()
+            ));
+        }
+        return new TemplateApplication.CatalogPage(entries, page.nextCursor());
     }
 
     @Override

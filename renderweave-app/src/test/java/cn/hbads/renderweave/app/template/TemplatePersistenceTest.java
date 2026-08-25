@@ -3,8 +3,8 @@ package cn.hbads.renderweave.app.template;
 import cn.hbads.renderweave.schema.definition.StaticSchemaRef;
 import cn.hbads.renderweave.schema.identity.SchemaKey;
 import cn.hbads.renderweave.schema.identity.VersionTag;
-import cn.hbads.renderweave.template.api.TemplateApplication;
 import cn.hbads.renderweave.template.api.DesignDslAuthority;
+import cn.hbads.renderweave.template.api.TemplateApplication;
 import cn.hbads.renderweave.template.api.TemplateDependencyProjection;
 import cn.hbads.renderweave.template.spi.DependencyResolution;
 import cn.hbads.renderweave.template.spi.OwnerScopeAuthority;
@@ -259,6 +259,65 @@ class TemplatePersistenceTest {
         assertThat(jdbc.sql("select current_revision from template_aggregate")
                 .query(Long.class).single()).isZero();
         assertThat(revisionCount()).isEqualTo(1);
+    }
+
+    @Test
+    void catalogExcludesDeletedAndCrossOwnerRowsAndCanSearchByOpaqueIdentity() {
+        var visible = create("pg-catalog-visible");
+        var deleted = create("pg-catalog-deleted");
+        var crossOwner = create("pg-catalog-cross-owner");
+        jdbc.sql("""
+                        update template_aggregate
+                        set lifecycle = 'DELETED'
+                        where template_id = :templateId
+                        """)
+                .param("templateId", deleted.current().templateId().value())
+                .update();
+        jdbc.sql("""
+                        update template_aggregate
+                        set owner_scope = 'another-owner'
+                        where template_id = :templateId
+                        """)
+                .param("templateId", crossOwner.current().templateId().value())
+                .update();
+
+        var outcome = persistence.catalog(new TemplatePersistence.CatalogQuery(
+                new OwnerScopeAuthority.OwnerScope("test-owner"),
+                visible.current().templateId().value(),
+                null,
+                50
+        ));
+
+        var page = (TemplatePersistence.CatalogPage) outcome;
+        assertThat(page.entries())
+                .extracting(entry -> entry.templateId().value())
+                .containsExactly(visible.current().templateId().value());
+        assertThat(page.entries()).allSatisfy(entry -> {
+            assertThat(entry.ownerScope().value()).isEqualTo("test-owner");
+            assertThat(entry.lifecycle()).isEqualTo(TemplatePersistence.Lifecycle.ACTIVE);
+        });
+        assertThat(page.nextCursor()).isEmpty();
+    }
+
+    @Test
+    void catalogTreatsCorruptStoredSummaryAsPersistenceFailureNotClientCursorError() {
+        var created = create("pg-catalog-corrupt");
+        jdbc.sql("""
+                        update template_revision
+                        set design_dsl = jsonb_set(design_dsl, '{displayName}', '\"\"'::jsonb)
+                        where template_id = :templateId
+                        """)
+                .param("templateId", created.current().templateId().value())
+                .update();
+
+        var outcome = persistence.catalog(new TemplatePersistence.CatalogQuery(
+                new OwnerScopeAuthority.OwnerScope("test-owner"),
+                null,
+                null,
+                20
+        ));
+
+        assertThat(outcome).isInstanceOf(TemplatePersistence.CatalogUnavailable.class);
     }
 
     @Test

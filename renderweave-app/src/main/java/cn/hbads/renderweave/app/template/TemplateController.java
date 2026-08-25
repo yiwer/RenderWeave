@@ -13,9 +13,9 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.JsonNode;
@@ -36,6 +36,51 @@ final class TemplateController {
     TemplateController(TemplateApplication templates, ObjectMapper json) {
         this.templates = templates;
         this.json = json;
+    }
+
+    @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<?> catalog(
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String cursor,
+            @RequestParam(defaultValue = "20") int limit
+    ) {
+        TemplateApplication.CatalogCommand command;
+        try {
+            command = new TemplateApplication.CatalogCommand(search, cursor, limit);
+        } catch (IllegalArgumentException invalid) {
+            throw new InvalidTemplateApiRequestException(invalid.getMessage());
+        }
+        var outcome = templates.catalog(invocation(), command);
+        return switch (outcome) {
+            case TemplateApplication.CatalogPage page -> ResponseEntity.ok(
+                    new TemplateCatalogResponse(
+                            page.entries().stream()
+                                    .map(TemplateController::catalogEntry)
+                                    .toList(),
+                            page.nextCursor().orElse(null)
+                    )
+            );
+            case TemplateApplication.CatalogForbidden ignored -> problem(
+                    HttpStatus.FORBIDDEN,
+                    "TEMPLATE_FORBIDDEN",
+                    "Template catalog access is not permitted"
+            );
+            case TemplateApplication.CatalogInvalidCursor ignored -> problem(
+                    HttpStatus.BAD_REQUEST,
+                    "TEMPLATE_REQUEST_INVALID",
+                    "Template catalog cursor is invalid"
+            );
+            case TemplateApplication.CatalogAuthorityUnavailable ignored -> problem(
+                    HttpStatus.SERVICE_UNAVAILABLE,
+                    "TEMPLATE_AUTHORITY_UNAVAILABLE",
+                    "Template authorization is unavailable"
+            );
+            case TemplateApplication.CatalogPersistenceUnavailable ignored -> problem(
+                    HttpStatus.SERVICE_UNAVAILABLE,
+                    "TEMPLATE_PERSISTENCE_UNAVAILABLE",
+                    "Template persistence is unavailable"
+            );
+        };
     }
 
     @PostMapping(consumes = DESIGN_MEDIA_TYPE, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -306,6 +351,22 @@ final class TemplateController {
         );
     }
 
+    private static TemplateCatalogEntryResponse catalogEntry(
+            TemplateApplication.CatalogEntry entry
+    ) {
+        return new TemplateCatalogEntryResponse(
+                entry.templateId().value(),
+                entry.displayName(),
+                new StaticSchemaResponse(
+                        entry.staticSchema().schemaKey().value(),
+                        entry.staticSchema().versionTag().value()
+                ),
+                entry.revision(),
+                entry.readiness().name(),
+                entry.updatedAt()
+        );
+    }
+
     private ReadinessRecheckResponse readinessRecheck(TemplateApplication.Current current) {
         return new ReadinessRecheckResponse(
                 current.templateId().value(),
@@ -482,6 +543,22 @@ final class TemplateController {
             String contentHash,
             String readiness,
             JsonNode designDsl
+    ) {
+    }
+
+    record TemplateCatalogEntryResponse(
+            String templateId,
+            String displayName,
+            StaticSchemaResponse staticSchema,
+            long revision,
+            String readiness,
+            Instant updatedAt
+    ) {
+    }
+
+    record TemplateCatalogResponse(
+            List<TemplateCatalogEntryResponse> items,
+            String nextCursor
     ) {
     }
 

@@ -5,8 +5,8 @@ import cn.hbads.renderweave.schema.identity.SchemaKey;
 import cn.hbads.renderweave.schema.identity.VersionTag;
 import cn.hbads.renderweave.template.api.TemplateApplication;
 import cn.hbads.renderweave.template.api.TemplateDependencyProjection;
-import cn.hbads.renderweave.template.spi.OwnerScopeAuthority;
 import cn.hbads.renderweave.template.spi.DependencyResolution;
+import cn.hbads.renderweave.template.spi.OwnerScopeAuthority;
 import cn.hbads.renderweave.template.spi.TemplateDependencySnapshot;
 import cn.hbads.renderweave.template.spi.TemplatePersistence;
 import org.springframework.dao.DataAccessException;
@@ -20,9 +20,12 @@ import org.springframework.transaction.support.TransactionTemplate;
 import java.nio.charset.StandardCharsets;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Supplier;
 
 @Repository
@@ -81,6 +84,68 @@ public class PostgresTemplatePersistence implements TemplatePersistence {
                     .orElseGet(CurrentNotFound::new);
         } catch (DataAccessException unavailable) {
             return new CurrentLoadUnavailable();
+        }
+    }
+
+    @Override
+    public CatalogOutcome catalog(CatalogQuery query) {
+        Cursor cursor = null;
+        if (query.cursor() != null) {
+            try {
+                cursor = decodeCursor(query.cursor());
+            } catch (IllegalArgumentException malformedCursor) {
+                return new CatalogInvalidCursor();
+            }
+        }
+        try {
+            StringBuilder sql = new StringBuilder("""
+                    select a.template_id, a.owner_scope, a.schema_key,
+                           a.schema_version_tag, a.current_revision, a.lifecycle,
+                           a.readiness, a.updated_at,
+                           r.design_dsl ->> 'displayName' as display_name
+                    from template_aggregate a
+                    join template_revision r
+                      on r.template_id = a.template_id
+                     and r.revision = a.current_revision
+                    where a.owner_scope = :ownerScope
+                      and a.lifecycle = 'ACTIVE'
+                    """);
+            if (query.search() != null) {
+                sql.append(" and (position(lower(:search) in lower(a.template_id)) > 0"
+                        + " or position(lower(:search) in lower(r.design_dsl ->> 'displayName')) > 0)");
+            }
+            if (cursor != null) {
+                sql.append(" and (a.updated_at < cast(:cursorUpdatedAt as timestamptz)"
+                        + " or (a.updated_at = cast(:cursorUpdatedAt as timestamptz)"
+                        + " and a.template_id > :cursorTemplateId))");
+            }
+            sql.append(" order by a.updated_at desc, a.template_id asc limit :limit");
+
+            var statement = jdbc.sql(sql.toString())
+                    .param("ownerScope", query.ownerScope().value())
+                    .param("limit", query.limit() + 1);
+            if (query.search() != null) {
+                statement.param("search", query.search());
+            }
+            if (cursor != null) {
+                statement.param("cursorUpdatedAt", cursor.updatedAt().toString());
+                statement.param("cursorTemplateId", cursor.templateId());
+            }
+            List<CatalogEntry> entries = statement
+                    .query(PostgresTemplatePersistence::catalogEntry)
+                    .list();
+            Optional<String> nextCursor = Optional.empty();
+            if (entries.size() > query.limit()) {
+                entries = new ArrayList<>(entries.subList(0, query.limit()));
+                var last = entries.get(entries.size() - 1);
+                nextCursor = Optional.of(encodeCursor(
+                        last.updatedAt(),
+                        last.templateId().value()
+                ));
+            }
+            return new CatalogPage(entries, nextCursor);
+        } catch (DataAccessException | IllegalArgumentException unavailable) {
+            return new CatalogUnavailable();
         }
     }
 
@@ -523,6 +588,53 @@ public class PostgresTemplatePersistence implements TemplatePersistence {
                 resultSet.getString("content_hash"),
                 TemplateApplication.Readiness.valueOf(resultSet.getString("readiness"))
         );
+    }
+
+    private static CatalogEntry catalogEntry(ResultSet resultSet, int rowNumber)
+            throws SQLException {
+        return new CatalogEntry(
+                TemplateApplication.TemplateId.of(resultSet.getString("template_id")),
+                new OwnerScopeAuthority.OwnerScope(resultSet.getString("owner_scope")),
+                new StaticSchemaRef(
+                        schemaKey(resultSet.getString("schema_key")),
+                        VersionTag.of(resultSet.getString("schema_version_tag"))
+                ),
+                resultSet.getLong("current_revision"),
+                Lifecycle.valueOf(resultSet.getString("lifecycle")),
+                resultSet.getString("display_name"),
+                TemplateApplication.Readiness.valueOf(resultSet.getString("readiness")),
+                resultSet.getTimestamp("updated_at").toInstant()
+        );
+    }
+
+    private static String encodeCursor(Instant updatedAt, String templateId) {
+        var payload = updatedAt + "|" + templateId;
+        return Base64.getUrlEncoder().withoutPadding()
+                .encodeToString(payload.getBytes(StandardCharsets.UTF_8));
+    }
+
+    private static Cursor decodeCursor(String encoded) {
+        try {
+            var payload = new String(
+                    Base64.getUrlDecoder().decode(encoded),
+                    StandardCharsets.UTF_8
+            );
+            var separator = payload.indexOf('|');
+            if (separator <= 0 || separator == payload.length() - 1
+                    || payload.indexOf('|', separator + 1) >= 0) {
+                throw new IllegalArgumentException("malformed Template catalog cursor");
+            }
+            var updatedAt = Instant.parse(payload.substring(0, separator));
+            var templateId = TemplateApplication.TemplateId.of(
+                    payload.substring(separator + 1)
+            ).value();
+            return new Cursor(updatedAt, templateId);
+        } catch (RuntimeException malformed) {
+            throw new IllegalArgumentException("malformed Template catalog cursor", malformed);
+        }
+    }
+
+    private record Cursor(Instant updatedAt, String templateId) {
     }
 
     private static SchemaKey schemaKey(String raw) {

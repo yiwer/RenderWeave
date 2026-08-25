@@ -1,6 +1,18 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-25 **Template v1 implementation TV1-T114 已由 Codex `/root` single-writer 完成，状态
+  `resolved/automated_verified`**：用户要求的最终交付是正式产品 Template-v1 页面与真实功能，不是
+  `/prototype`。本票已补 same-ownerScope、`template.read` 授权的 ACTIVE Template 稳定 cursor 目录、
+  `GET /api/v1/templates`、OpenAPI/SDK，以及使用真实 StaticSchema/Template API 的列表、创建和 editor wrapper
+  产品组件；TDD 同时修正了损坏持久化摘要被误报为 malformed cursor 400 的边界，现在按 catalog unavailable
+  返回 503。`template` `.sdlc/evidence/20260825-161820-template/`、顺序 `server`
+  `.sdlc/evidence/20260825-161854-server/`、Node 24 `web` `.sdlc/evidence/20260825-163341-web/`、`fast`
+  `.sdlc/evidence/20260825-163427-fast/` 与 17-step Goal `full` `.sdlc/evidence/20260825-163448-full/` 均绿。
+  状态与证据回填后的 resolution `fast` `.sdlc/evidence/20260825-170428-fast/` 也以 3/3 steps 通过。
+  冻结的 E6 门槛仍保持：完整 `renderweave-renderer/1.0` Profile、公共 Rendering API 与权威预览失败撤图闭环完成
+  前，不把 `/templates/:templateId` 接入 `App`。Profile `NOT_REGISTERED`、certification `NOT_CERTIFIED`、process
+  raster `ABSENT`、正式产品 route `CLOSED`；provider/API Key/费用/真实数据=0，不 push/tag/PR。
 - 2026-08-25 **Template v1 implementation TV1-T113 已由 Codex `/root` single-writer 完成，状态
   `resolved/automated_verified`**：最终交付仍是正式产品 Template-v1 页面与真实后端功能，`/prototype` 不计交付。
   prepared IMAGE 既有 integer-aligned 1:1 方形路径已接受 centered origin、positive unit scale 与 exact

@@ -1,0 +1,260 @@
+.template-list-toolbar {
+  display: grid;
+  grid-template-columns: minmax(280px, 1fr) auto;
+}
+
+.template-list-toolbar .resource-search {
+  width: 100%;
+  min-width: 0;
+}
+
+.template-card-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-md);
+}
+
+.template-card {
+  display: flex;
+  min-width: 0;
+  min-height: 236px;
+  flex-direction: column;
+  gap: var(--space-md);
+  padding: var(--space-xl);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: 0 7px 22px color-mix(in oklab, var(--color-ink) 4%, transparent);
+  color: var(--color-body);
+  text-decoration: none;
+  transition:
+    transform var(--dur-slow) var(--ease-spring),
+    box-shadow var(--dur-slow) var(--ease-spring),
+    border-color var(--dur-fast) var(--ease-out),
+    background-color var(--dur-fast) var(--ease-out);
+}
+
+.template-card:hover {
+  border-color: var(--color-accent-border);
+  background: var(--color-accent-wash);
+  box-shadow: var(--shadow-card);
+  transform: translateY(-4px);
+}
+
+.template-card:active {
+  transform: translateY(1px);
+  transition-duration: var(--dur-press);
+}
+
+.template-card-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+}
+
+.template-readiness {
+  display: inline-flex;
+  min-height: 26px;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: 0 var(--space-sm);
+  border: 1px solid var(--color-success-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-success-soft);
+  color: var(--color-success-ink);
+  font-size: var(--text-xs);
+  font-weight: 750;
+}
+
+.template-readiness.is-invalid {
+  border-color: var(--color-error-border);
+  background: var(--color-error-soft);
+  color: var(--color-error-ink);
+}
+
+.template-readiness.is-stale {
+  border-color: var(--color-warning-border);
+  background: var(--color-warning-soft);
+  color: var(--color-warning-ink);
+}
+
+.template-card > strong {
+  overflow-wrap: anywhere;
+  color: var(--color-ink);
+  font-family: var(--font-display);
+  font-size: var(--text-2xl);
+  font-weight: 650;
+}
+
+.template-card > code {
+  overflow: hidden;
+  color: var(--color-accent-ink);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.template-card dl {
+  display: grid;
+  gap: var(--space-sm);
+  margin: auto 0 0;
+}
+
+.template-card dl > div {
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr);
+  gap: var(--space-sm);
+  font-size: var(--text-sm);
+}
+
+.template-card dt {
+  color: var(--color-muted);
+}
+
+.template-card dd {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: var(--color-body);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+}
+
+.template-load-more {
+  display: flex;
+  justify-content: center;
+  margin-top: var(--space-xl);
+}
+
+.template-create-form {
+  width: min(760px, 100%);
+  margin: 0 auto;
+  overflow: hidden;
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
+}
+
+.template-create-form > header {
+  padding: var(--space-2xl) var(--space-2xl) var(--space-xl);
+  border-bottom: 1px solid var(--color-hairline);
+  background: var(--color-accent-wash);
+}
+
+.template-create-form > header > span {
+  color: var(--color-accent-ink);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-weight: 750;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.template-create-form h2 {
+  margin: var(--space-xs) 0 var(--space-sm);
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+}
+
+.template-create-form header p {
+  max-width: 62ch;
+  margin: 0;
+  color: var(--color-muted);
+  font-size: var(--text-md);
+}
+
+.template-create-fields {
+  display: grid;
+  gap: var(--space-xl);
+  padding: var(--space-2xl);
+}
+
+.template-form-field {
+  display: grid;
+  gap: var(--space-sm);
+  color: var(--color-body);
+  font-size: var(--text-md);
+  font-weight: 650;
+}
+
+.template-form-field > input,
+.template-schema-field .select-field {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 var(--space-md);
+  border: 1px solid var(--color-hairline-strong);
+  border-radius: var(--radius-input);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font-weight: 500;
+}
+
+.template-form-field > input:focus,
+.template-schema-field .select-field:focus-visible {
+  border-color: var(--color-focus);
+  outline: 2px solid color-mix(in oklab, var(--color-focus) 22%, transparent);
+  outline-offset: 1px;
+}
+
+.template-form-field small {
+  color: var(--color-muted);
+  font-size: var(--text-xs);
+  font-weight: 500;
+}
+
+.template-canvas-size {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-lg);
+  margin: 0;
+  padding: var(--space-lg);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-soft);
+}
+
+.template-canvas-size legend {
+  padding: 0 var(--space-xs);
+  color: var(--color-muted);
+  font-size: var(--text-sm);
+  font-weight: 700;
+}
+
+.template-form-error {
+  margin: 0 var(--space-2xl) var(--space-lg);
+  padding: var(--space-md);
+  border: 1px solid var(--color-error-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-error-soft);
+  color: var(--color-error-ink);
+  font-size: var(--text-md);
+}
+
+.template-create-form > footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-md);
+  padding: var(--space-lg) var(--space-2xl) var(--space-xl);
+  border-top: 1px solid var(--color-hairline);
+}
+
+@media (max-width: 1279px) {
+  .template-card-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .template-card {
+    transition: none;
+  }
+
+  .template-card:hover,
+  .template-card:active {
+    transform: none;
+  }
+}

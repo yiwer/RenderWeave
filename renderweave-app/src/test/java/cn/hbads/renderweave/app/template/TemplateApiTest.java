@@ -176,6 +176,75 @@ class TemplateApiTest {
     }
 
     @Test
+    void catalogReturnsOnlySafeActiveCurrentSummariesWithStableCursorAndSearch() throws Exception {
+        var mapper = tools.jackson.databind.json.JsonMapper.builder().build();
+        var alpha = mapper.readTree(mockMvc.perform(post("/api/v1/templates")
+                        .queryParam("schemaKey", "system-empty")
+                        .queryParam("versionTag", "v1")
+                        .contentType(DESIGN_MEDIA_TYPE)
+                        .content(DESIGN.replace("  API template  ", "Alpha layout")))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsByteArray());
+        var beta = mapper.readTree(mockMvc.perform(post("/api/v1/templates")
+                        .queryParam("schemaKey", "system-empty")
+                        .queryParam("versionTag", "v1")
+                        .contentType(DESIGN_MEDIA_TYPE)
+                        .content(DESIGN.replace("  API template  ", "Beta layout")))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsByteArray());
+        jdbc.sql("update template_aggregate set updated_at = cast(:updatedAt as timestamptz) where template_id = :id")
+                .param("updatedAt", "2026-08-25T01:00:00Z")
+                .param("id", alpha.path("templateId").asText())
+                .update();
+        jdbc.sql("update template_aggregate set updated_at = cast(:updatedAt as timestamptz) where template_id = :id")
+                .param("updatedAt", "2026-08-25T02:00:00Z")
+                .param("id", beta.path("templateId").asText())
+                .update();
+
+        var firstPage = mockMvc.perform(get("/api/v1/templates")
+                        .queryParam("limit", "1"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith("application/json"))
+                .andExpect(jsonPath("$.items.length()").value(1))
+                .andExpect(jsonPath("$.items[0].templateId")
+                        .value(beta.path("templateId").asText()))
+                .andExpect(jsonPath("$.items[0].displayName").value("Beta layout"))
+                .andExpect(jsonPath("$.items[0].revision").value(0))
+                .andExpect(jsonPath("$.items[0].staticSchema.schemaKey").value("system-empty"))
+                .andExpect(jsonPath("$.items[0].staticSchema.versionTag").value("v1"))
+                .andExpect(jsonPath("$.items[0].readiness").value("READY"))
+                .andExpect(jsonPath("$.items[0].updatedAt").isNotEmpty())
+                .andExpect(jsonPath("$.items[0].designDsl").doesNotExist())
+                .andExpect(jsonPath("$.items[0].contentHash").doesNotExist())
+                .andExpect(jsonPath("$.items[0].ownerScope").doesNotExist())
+                .andExpect(jsonPath("$.nextCursor").isNotEmpty())
+                .andReturn();
+        var cursor = mapper.readTree(firstPage.getResponse().getContentAsByteArray())
+                .path("nextCursor").asText();
+
+        mockMvc.perform(get("/api/v1/templates")
+                        .queryParam("limit", "1")
+                        .queryParam("cursor", cursor))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items.length()").value(1))
+                .andExpect(jsonPath("$.items[0].templateId")
+                        .value(alpha.path("templateId").asText()))
+                .andExpect(jsonPath("$.nextCursor").doesNotExist());
+
+        mockMvc.perform(get("/api/v1/templates")
+                        .queryParam("search", "  beta  "))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items.length()").value(1))
+                .andExpect(jsonPath("$.items[0].templateId")
+                        .value(beta.path("templateId").asText()));
+
+        mockMvc.perform(get("/api/v1/templates")
+                        .queryParam("cursor", "not-a-cursor"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("TEMPLATE_REQUEST_INVALID"));
+    }
+
+    @Test
     void dependencySaveRequiresExactNamedConfirmationAndCommitsInvalid() throws Exception {
         mockMvc.perform(post("/api/v1/templates")
                         .queryParam("schemaKey", "system-empty")

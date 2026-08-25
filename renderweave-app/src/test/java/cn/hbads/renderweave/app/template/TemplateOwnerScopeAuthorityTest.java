@@ -18,6 +18,8 @@ class TemplateOwnerScopeAuthorityTest {
 
         assertThat(authority.authorizeCreate(INVOCATION))
                 .isInstanceOf(OwnerScopeAuthority.CreateUnavailable.class);
+        assertThat(authority.authorizeCatalog(INVOCATION))
+                .isInstanceOf(OwnerScopeAuthority.CatalogUnavailable.class);
         assertThat(authority.authorizeExisting(
                 INVOCATION,
                 new OwnerScopeAuthority.OwnerScope("owner"),
@@ -45,6 +47,8 @@ class TemplateOwnerScopeAuthorityTest {
                 new OwnerScopeAuthority.OwnerScope("owner-a"),
                 OwnerScopeAuthority.ExistingOperation.READ
         )).isInstanceOf(OwnerScopeAuthority.ExistingHidden.class);
+        assertThat(updateOnly.authorizeCatalog(INVOCATION))
+                .isInstanceOf(OwnerScopeAuthority.CatalogDenied.class);
         var update = (OwnerScopeAuthority.ExistingGranted) updateOnly.authorizeExisting(
                 INVOCATION,
                 new OwnerScopeAuthority.OwnerScope("owner-a"),
@@ -56,6 +60,15 @@ class TemplateOwnerScopeAuthorityTest {
                 new OwnerScopeAuthority.OwnerScope("another-owner"),
                 OwnerScopeAuthority.ExistingOperation.UPDATE
         )).isInstanceOf(OwnerScopeAuthority.ExistingHidden.class);
+
+        var readOnly = new ConfiguredSingleOwnerScopeAuthority(
+                "owner-a",
+                Set.of("template.read")
+        );
+        assertThat(readOnly.authorizeCatalog(INVOCATION))
+                .isEqualTo(new OwnerScopeAuthority.CatalogGranted(
+                        new OwnerScopeAuthority.OwnerScope("owner-a")
+                ));
     }
 
     @Test

@@ -20,11 +20,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class TemplateApplicationPublicSurfaceTest {
 
     @Test
-    void authoringInterfaceContainsOnlyTheFourRegisteredBehaviors() {
+    void authoringInterfaceContainsOnlyTheFiveRegisteredBehaviors() {
         assertEquals(
-                Set.of("create", "getCurrent", "recheckCurrent", "save"),
+                Set.of("create", "catalog", "getCurrent", "recheckCurrent", "save"),
                 methodNames(TemplateApplication.class)
         );
+        assertTrue(TemplateApplication.CatalogOutcome.class.isSealed());
         assertTrue(TemplateApplication.CreateOutcome.class.isSealed());
         assertTrue(TemplateApplication.CurrentOutcome.class.isSealed());
         assertTrue(TemplateApplication.RecheckCurrentOutcome.class.isSealed());
@@ -32,6 +33,7 @@ class TemplateApplicationPublicSurfaceTest {
 
         var commandSurface = Set.of(
                 TemplateApplication.CreateCommand.class,
+                TemplateApplication.CatalogCommand.class,
                 TemplateApplication.SaveCommand.class
         ).stream()
                 .flatMap(type -> Arrays.stream(type.getDeclaredMethods()))
@@ -51,6 +53,7 @@ class TemplateApplicationPublicSurfaceTest {
                 Set.of(
                         "locate",
                         "loadCurrent",
+                        "catalog",
                         "create",
                         "append",
                         "loadUseTargets",
@@ -60,7 +63,7 @@ class TemplateApplicationPublicSurfaceTest {
                 methodNames(TemplatePersistence.class)
         );
         assertEquals(
-                Set.of("authorizeCreate", "authorizeExisting", "recheck"),
+                Set.of("authorizeCreate", "authorizeCatalog", "authorizeExisting", "recheck"),
                 methodNames(OwnerScopeAuthority.class)
         );
         var allPersistenceNames = Arrays.stream(TemplatePersistence.class.getDeclaredClasses())

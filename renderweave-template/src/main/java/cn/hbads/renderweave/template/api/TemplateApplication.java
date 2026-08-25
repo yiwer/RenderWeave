@@ -2,16 +2,18 @@ package cn.hbads.renderweave.template.api;
 
 import cn.hbads.renderweave.schema.definition.StaticSchemaRef;
 
-import java.util.Objects;
+import java.time.Instant;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalLong;
-import java.time.Instant;
 
 /** Authoring interface for the Template aggregate. */
 public interface TemplateApplication {
 
     CreateOutcome create(TemplateInvocationRef invocation, CreateCommand command);
+
+    CatalogOutcome catalog(TemplateInvocationRef invocation, CatalogCommand command);
 
     CurrentOutcome getCurrent(TemplateInvocationRef invocation, TemplateId templateId);
 
@@ -68,6 +70,45 @@ public interface TemplateApplication {
 
         public byte[] rawDesignDslUtf8() {
             return rawDesignDslUtf8.clone();
+        }
+    }
+
+    final class CatalogCommand {
+        private final String search;
+        private final String cursor;
+        private final int limit;
+
+        public CatalogCommand(String search, String cursor, int limit) {
+            var normalizedSearch = search == null ? null : search.trim();
+            if (normalizedSearch != null && normalizedSearch.isEmpty()) {
+                normalizedSearch = null;
+            }
+            if (normalizedSearch != null && normalizedSearch.length() > 200) {
+                throw new IllegalArgumentException("search must be at most 200 characters");
+            }
+            if (cursor != null && (cursor.isBlank() || cursor.length() > 2048)) {
+                throw new IllegalArgumentException(
+                        "cursor must be non-blank and at most 2048 characters"
+                );
+            }
+            if (limit < 1 || limit > 50) {
+                throw new IllegalArgumentException("limit must be between 1 and 50");
+            }
+            this.search = normalizedSearch;
+            this.cursor = cursor;
+            this.limit = limit;
+        }
+
+        public String search() {
+            return search;
+        }
+
+        public String cursor() {
+            return cursor;
+        }
+
+        public int limit() {
+            return limit;
         }
     }
 
@@ -329,6 +370,58 @@ public interface TemplateApplication {
     }
 
     record CreatePersistenceUnavailable() implements CreateOutcome {
+    }
+
+    record CatalogEntry(
+            TemplateId templateId,
+            String displayName,
+            StaticSchemaRef staticSchema,
+            long revision,
+            Readiness readiness,
+            Instant updatedAt
+    ) {
+        public CatalogEntry {
+            Objects.requireNonNull(templateId, "templateId");
+            if (displayName == null || displayName.isBlank() || displayName.length() > 200) {
+                throw new IllegalArgumentException(
+                        "displayName must be non-blank and at most 200 characters"
+                );
+            }
+            Objects.requireNonNull(staticSchema, "staticSchema");
+            if (revision < 0) {
+                throw new IllegalArgumentException("revision must not be negative");
+            }
+            Objects.requireNonNull(readiness, "readiness");
+            Objects.requireNonNull(updatedAt, "updatedAt");
+        }
+    }
+
+    sealed interface CatalogOutcome permits
+            CatalogPage,
+            CatalogForbidden,
+            CatalogInvalidCursor,
+            CatalogAuthorityUnavailable,
+            CatalogPersistenceUnavailable {
+    }
+
+    record CatalogPage(List<CatalogEntry> entries, Optional<String> nextCursor)
+            implements CatalogOutcome {
+        public CatalogPage {
+            entries = List.copyOf(Objects.requireNonNull(entries, "entries"));
+            nextCursor = Objects.requireNonNull(nextCursor, "nextCursor");
+        }
+    }
+
+    record CatalogForbidden() implements CatalogOutcome {
+    }
+
+    record CatalogInvalidCursor() implements CatalogOutcome {
+    }
+
+    record CatalogAuthorityUnavailable() implements CatalogOutcome {
+    }
+
+    record CatalogPersistenceUnavailable() implements CatalogOutcome {
     }
 
     sealed interface CurrentOutcome permits

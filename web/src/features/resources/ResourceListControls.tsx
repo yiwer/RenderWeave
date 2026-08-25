@@ -19,12 +19,14 @@ export function ResourceSearchInput({
   value,
   label,
   placeholder,
+  maxLength = 128,
   onChange,
 }: {
   id: string;
   value: string;
   label: string;
   placeholder: string;
+  maxLength?: number;
   onChange: (value: string) => void;
 }) {
   return (
@@ -35,7 +37,7 @@ export function ResourceSearchInput({
         id={id}
         value={value}
         type="search"
-        maxLength={128}
+        maxLength={maxLength}
         placeholder={placeholder}
         onChange={(event) => onChange(event.target.value)}
       />

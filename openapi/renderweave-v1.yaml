@@ -1,11 +1,11 @@
 openapi: 3.1.2
 info:
   title: RenderWeave API
-  version: 0.15.0
+  version: 0.16.0
   description: >-
     Contract-first API for RenderWeave Schema Drafts, immutable StaticSchemas,
-    exact compiled artifacts, dependency-checked Template revision authoring with bounded
-    invalid-save confirmation, owner-scoped Asset
+    exact compiled artifacts, owner-scoped active Template catalogs, dependency-checked
+    Template revision authoring with bounded invalid-save confirmation, owner-scoped Asset
     upload/detail/catalog/versioning/delete-confirmation/restore, authoritative RootDocument
     validation, deterministic replay, guarded live inference Candidate review and
     create-only atomic Draft application.
@@ -424,6 +424,31 @@ paths:
         '500':
           $ref: '#/components/responses/InternalProblem'
   /api/v1/templates:
+    get:
+      operationId: listTemplates
+      tags: [Templates]
+      summary: Page through active Templates visible in the caller's owner scope
+      description: >-
+        Returns only safe current-revision summaries ordered by updatedAt descending and
+        templateId ascending. The opaque cursor preserves that order across pages. Deleted,
+        cross-owner and DesignDSL content are never disclosed by this catalog.
+      parameters:
+        - $ref: '#/components/parameters/TemplateSearch'
+        - $ref: '#/components/parameters/TemplateCursor'
+        - $ref: '#/components/parameters/TemplateLimit'
+      responses:
+        '200':
+          description: Active Template summary page.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TemplateCatalogResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestProblem'
+        '403':
+          $ref: '#/components/responses/TemplateForbiddenProblem'
+        '503':
+          $ref: '#/components/responses/TemplateServiceUnavailableProblem'
     post:
       operationId: createTemplate
       tags: [Templates]
@@ -1499,6 +1524,32 @@ components:
         type: string
         minLength: 1
         maxLength: 128
+    TemplateSearch:
+      name: search
+      in: query
+      required: false
+      description: Literal case-insensitive contains match against the current display name or Template identity.
+      schema:
+        type: string
+        maxLength: 200
+    TemplateCursor:
+      name: cursor
+      in: query
+      required: false
+      description: Opaque stable cursor returned by the preceding Template catalog page.
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 2048
+    TemplateLimit:
+      name: limit
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 50
+        default: 20
     TemplateSchemaKey:
       name: schemaKey
       in: query
@@ -2407,6 +2458,45 @@ components:
             $ref: '#/components/schemas/TemplateValidationIssue'
         truncated:
           type: boolean
+    TemplateCatalogEntry:
+      type: object
+      additionalProperties: false
+      required: [templateId, displayName, staticSchema, revision, readiness, updatedAt]
+      properties:
+        templateId:
+          type: string
+          minLength: 1
+          maxLength: 128
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 200
+        staticSchema:
+          $ref: '#/components/schemas/StaticSchemaRef'
+        revision:
+          type: integer
+          format: int64
+          minimum: 0
+        readiness:
+          type: string
+          enum: [READY, INVALID, STALE]
+        updatedAt:
+          type: string
+          format: date-time
+    TemplateCatalogResponse:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          maxItems: 50
+          items:
+            $ref: '#/components/schemas/TemplateCatalogEntry'
+        nextCursor:
+          type: string
+          minLength: 1
+          maxLength: 2048
     TemplateReadableResponse:
       type: object
       additionalProperties: false

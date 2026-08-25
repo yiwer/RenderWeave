@@ -11,6 +11,11 @@ public interface TemplatePersistence {
 
     LoadCurrentOutcome loadCurrent(TemplateApplication.TemplateId templateId);
 
+    default CatalogOutcome catalog(CatalogQuery query) {
+        java.util.Objects.requireNonNull(query, "query");
+        return new CatalogUnavailable();
+    }
+
     CreateOutcome create(CreateCommit commit);
 
     AppendOutcome append(AppendCommit commit);
@@ -117,6 +122,80 @@ public interface TemplatePersistence {
     }
 
     record CurrentLoadUnavailable() implements LoadCurrentOutcome {
+    }
+
+    record CatalogQuery(
+            OwnerScopeAuthority.OwnerScope ownerScope,
+            String search,
+            String cursor,
+            int limit
+    ) {
+        public CatalogQuery {
+            java.util.Objects.requireNonNull(ownerScope, "ownerScope");
+            if (search != null && (search.isBlank() || search.length() > 200)) {
+                throw new IllegalArgumentException(
+                        "search must be non-blank and at most 200 characters"
+                );
+            }
+            if (cursor != null && (cursor.isBlank() || cursor.length() > 2048)) {
+                throw new IllegalArgumentException(
+                        "cursor must be non-blank and at most 2048 characters"
+                );
+            }
+            if (limit < 1 || limit > 50) {
+                throw new IllegalArgumentException("limit must be between 1 and 50");
+            }
+        }
+    }
+
+    record CatalogEntry(
+            TemplateApplication.TemplateId templateId,
+            OwnerScopeAuthority.OwnerScope ownerScope,
+            StaticSchemaRef staticSchema,
+            long currentRevision,
+            Lifecycle lifecycle,
+            String displayName,
+            TemplateApplication.Readiness readiness,
+            java.time.Instant updatedAt
+    ) {
+        public CatalogEntry {
+            java.util.Objects.requireNonNull(templateId, "templateId");
+            java.util.Objects.requireNonNull(ownerScope, "ownerScope");
+            java.util.Objects.requireNonNull(staticSchema, "staticSchema");
+            if (currentRevision < 0) {
+                throw new IllegalArgumentException("currentRevision must not be negative");
+            }
+            java.util.Objects.requireNonNull(lifecycle, "lifecycle");
+            if (displayName == null || displayName.isBlank() || displayName.length() > 200) {
+                throw new IllegalArgumentException(
+                        "displayName must be non-blank and at most 200 characters"
+                );
+            }
+            java.util.Objects.requireNonNull(readiness, "readiness");
+            java.util.Objects.requireNonNull(updatedAt, "updatedAt");
+        }
+    }
+
+    sealed interface CatalogOutcome permits
+            CatalogPage,
+            CatalogInvalidCursor,
+            CatalogUnavailable {
+    }
+
+    record CatalogPage(
+            java.util.List<CatalogEntry> entries,
+            java.util.Optional<String> nextCursor
+    ) implements CatalogOutcome {
+        public CatalogPage {
+            entries = java.util.List.copyOf(java.util.Objects.requireNonNull(entries, "entries"));
+            nextCursor = java.util.Objects.requireNonNull(nextCursor, "nextCursor");
+        }
+    }
+
+    record CatalogInvalidCursor() implements CatalogOutcome {
+    }
+
+    record CatalogUnavailable() implements CatalogOutcome {
     }
 
     record TemplateMetadata(

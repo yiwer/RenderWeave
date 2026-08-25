@@ -184,6 +184,7 @@ binding: generic + project-local tools/run-gate.ps1 + Wayfinder markdown tracker
 | TV1-P6h Editor E8 | 36 | strict local import + Raw Repair/Compatibility + shared dirty replacement guard | Node 24 Web A1；文件 identity/schema 不覆盖目标；无 registered migration profile/action、API/route |
 | TV1-P6i Editor E9 | 37 | strict problem projection + summary focus + roving tree/live delta + 1024/1280/1440/200% effective viewport | Node 24 Web + Playwright/axe A1；无 route/E6；人工 keyboard/zoom J1 pending |
 | TV1-P6+ Product completion | 49 后按真实依赖另切票 | 完整 Renderer layout/resource/raster/JPEG/Engine output、公开产品面、Editor E6 与 formal registry records | 逐纵切 gate + product target/executor + J1/A3/物理 Linux 认证；不预建未知下游票 |
+| TV1-P6j Product surface substrate | 114 | Template ACTIVE catalog + 真实 list/create/editor page components（暂不接 App route） | Java/PostgreSQL/OpenAPI/Node 24 A1；E6 前 route CLOSED，无 fake preview |
 
 ## 4. 当前 ticket DAG
 
@@ -2072,6 +2073,47 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
 - 验证：focused Rust/Python、fmt、clippy `-D warnings`、workspace tests、`py_compile`、JSON inventory/SHA/unique、
   `git diff --check`；再依次 `render`、affected `fast`、顺序 `server`、Goal `full`、resolution `fast`。最高只可
   `automated_verified`；不推进 A3/J1/READY，不 push/tag/PR，不运行 provider，不读取 API Key。
+
+## 114. TV1-T114 执行卡
+
+- 决策：T113 以 verified commit `e5c04a01` 收口且 worktree clean 后，按用户最终交付口径复算 E1–E9 与产品
+  route 门槛。`TemplateEditorSurface` 已有真实 open/recheck/save/recovery/import/a11y 行为，但同 ownerScope
+  Template 目录和正式 list/create/editor page wrapper 缺位；E6 仍被完整 Renderer Profile 阻塞。因此先登记不
+  改变发布门的产品基座纵切，避免继续只扩张 renderer 边角，也不以半成品 route 冒充最终页面。
+- Interface/seam：在 `TemplateApplication`、`OwnerScopeAuthority` 与 `TemplatePersistence` 内新增独立 catalog
+  deep operation；`template.read` + trusted ownerScope 授权，ACTIVE-only，`updatedAt DESC/templateId ASC` 稳定
+  cursor，返回安全 current 摘要。HTTP 为既有 `/api/v1/templates` GET；不新增表或 migration。
+- Web：新增真实 `TemplateListPage`、`TemplateCreatePage` 与 `TemplateEditorPage` wrapper，复用 `design.md`、
+  `ResourceFrame`、真实 StaticSchema 目录与 Template API。创建生成 exact minimal Canvas DesignDSL；本票不把组件
+  加入 `App` 或导航，E6 后由独立激活票一次性开放正式 routes。
+- 允许影响：T114 tracker/map/plan/NOTES、Template api/spi/internal、app authority/persistence/controller/tests、
+  OpenAPI/generated Web SDK、web Template product components/tests/styles，以及对应 gate/evidence。
+- 禁止影响：Template delete/history/copy/restore、Asset UI、public Render API、Authoritative Preview、Renderer
+  manifest/Profile registration/certification、native build、migration/table、prototype 复用、fixture/fake data、
+  disabled placeholder、App route activation、provider/API Key/真实数据/生产/J1/A3/READY。
+- TDD/gates：Java contract/persistence/API 与 Web component tests 先 RED，再 GREEN；focused/local → `template` →
+  sequential `server` → Node 24 `web` → `fast` → Goal `full` → resolution `fast`。Maven 不并发，精确 staging，
+  不 push/tag/PR，`/prototype` 不计最终产品交付。
+
+### TV1-T114 收口
+
+- Template application/SPI、configured/fail-closed authority 与 PostgreSQL adapter 已形成真实 catalog deep
+  operation：独立 `template.read`、trusted same-ownerScope、ACTIVE current only、`updatedAt DESC/templateId ASC`
+  keyset cursor 与 `limit + 1` 查询；HTTP/OpenAPI 0.16.0/生成 SDK 已接通 `GET /api/v1/templates`。
+- Web 新增真实 `TemplateListPage`、`TemplateCreatePage` 与 `TemplateEditorPage`。列表消费真实 cursor catalog；
+  创建页消费真实 StaticSchema catalog、提交 exact minimal Canvas DSL 后导航 exact editor URL；wrapper 复用既有
+  `TemplateEditorSurface`。因 E6 仍关闭，组件没有接入 `App` 或导航，也没有 fixture、fake raster、disabled
+  preview、placeholder route 或 prototype 复用。
+- focused TDD 覆盖 catalog contract/public surface、authority、PostgreSQL/API 与 Web 状态；其间捕获并修正损坏
+  persistence summary 被 cursor parser 的宽 catch 误映射为 400 的问题，现在 storage corruption 为 503，而
+  malformed client cursor 仍为 400 且零写入。
+- 分级 A1 证据：`template` `.sdlc/evidence/20260825-161820-template/`、sequential `server`
+  `.sdlc/evidence/20260825-161854-server/`、Node 24 `web` `.sdlc/evidence/20260825-163341-web/`、`fast`
+  `.sdlc/evidence/20260825-163427-fast/` 与 17-step Goal `full` `.sdlc/evidence/20260825-163448-full/` 全部 exit 0。
+  full 中 Web 217/217、Playwright 23 passed + 1 controlled skip，provider attempts/API Key reads/reservations/cost=0。
+- 状态与证据回填后的 resolution `fast` `.sdlc/evidence/20260825-170428-fast/` 也以 3/3 steps exit 0。
+- 状态为 `resolved / automated_verified`。完整 Profile `NOT_REGISTERED`、certification `NOT_CERTIFIED`、process
+  raster `ABSENT`、public Rendering API 与正式产品 route `CLOSED`；未推进 J1/A3/READY，未 push/tag/PR。
 
 ## 111. TV1-T111 执行卡
 

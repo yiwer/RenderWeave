@@ -9,6 +9,13 @@ public interface OwnerScopeAuthority {
 
     CreateDecision authorizeCreate(TemplateApplication.TemplateInvocationRef invocation);
 
+    default CatalogDecision authorizeCatalog(
+            TemplateApplication.TemplateInvocationRef invocation
+    ) {
+        Objects.requireNonNull(invocation, "invocation");
+        return new CatalogUnavailable();
+    }
+
     ExistingDecision authorizeExisting(
             TemplateApplication.TemplateInvocationRef invocation,
             OwnerScope storedOwnerScope,
@@ -36,6 +43,24 @@ public interface OwnerScopeAuthority {
     }
 
     record CreateUnavailable() implements CreateDecision {
+    }
+
+    sealed interface CatalogDecision permits
+            CatalogGranted,
+            CatalogDenied,
+            CatalogUnavailable {
+    }
+
+    record CatalogGranted(OwnerScope ownerScope) implements CatalogDecision {
+        public CatalogGranted {
+            Objects.requireNonNull(ownerScope, "ownerScope");
+        }
+    }
+
+    record CatalogDenied() implements CatalogDecision {
+    }
+
+    record CatalogUnavailable() implements CatalogDecision {
     }
 
     sealed interface ExistingDecision permits

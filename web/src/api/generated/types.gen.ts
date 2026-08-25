@@ -302,6 +302,20 @@ export type TemplateAuthoringProblem = {
     [key: string]: unknown;
 };
 
+export type TemplateCatalogEntry = {
+    templateId: string;
+    displayName: string;
+    staticSchema: StaticSchemaRef;
+    revision: number;
+    readiness: 'READY' | 'INVALID' | 'STALE';
+    updatedAt: string;
+};
+
+export type TemplateCatalogResponse = {
+    items: Array<TemplateCatalogEntry>;
+    nextCursor?: string;
+};
+
 export type TemplateReadableResponse = {
     templateId: string;
     disclosure: 'READABLE';
@@ -887,6 +901,18 @@ export type ExpectedRevision = number;
  * Server-generated opaque Template identity; clients must not parse its encoding.
  */
 export type TemplateId = string;
+
+/**
+ * Literal case-insensitive contains match against the current display name or Template identity.
+ */
+export type TemplateSearch = string;
+
+/**
+ * Opaque stable cursor returned by the preceding Template catalog page.
+ */
+export type TemplateCursor = string;
+
+export type TemplateLimit = number;
 
 /**
  * Exact permanent StaticSchema key selected during Template creation.
@@ -1632,6 +1658,49 @@ export type CopyStaticSchemaToDraftResponses = {
 };
 
 export type CopyStaticSchemaToDraftResponse = CopyStaticSchemaToDraftResponses[keyof CopyStaticSchemaToDraftResponses];
+
+export type ListTemplatesData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Literal case-insensitive contains match against the current display name or Template identity.
+         */
+        search?: string;
+        /**
+         * Opaque stable cursor returned by the preceding Template catalog page.
+         */
+        cursor?: string;
+        limit?: number;
+    };
+    url: '/api/v1/templates';
+};
+
+export type ListTemplatesErrors = {
+    /**
+     * Request JSON, key syntax or envelope is invalid.
+     */
+    400: Problem;
+    /**
+     * The caller lacks the required Template operation capability.
+     */
+    403: Problem;
+    /**
+     * Template authorization, dependency checking, confirmation or persistence is temporarily unavailable.
+     */
+    503: Problem;
+};
+
+export type ListTemplatesError = ListTemplatesErrors[keyof ListTemplatesErrors];
+
+export type ListTemplatesResponses = {
+    /**
+     * Active Template summary page.
+     */
+    200: TemplateCatalogResponse;
+};
+
+export type ListTemplatesResponse = ListTemplatesResponses[keyof ListTemplatesResponses];
 
 export type CreateTemplateData = {
     body: DesignDslKernel;
