@@ -2204,7 +2204,7 @@ fn stack_main_fill_allocations(
         }
     }
     let mut bounds = Vec::with_capacity(allocations.len());
-    let mut active_bound = None;
+    let mut active_bounds = Vec::with_capacity(2);
     for (position, &(fill_index, share)) in allocations.iter().enumerate() {
         let child = object(&children[fill_index], stack_occurrence, "children")?;
         let child_occurrence = occurrence_id(child)?;
@@ -2229,20 +2229,59 @@ fn stack_main_fill_allocations(
                 .map(|bound| (bound, false))
         };
         if let Some((bound, is_minimum)) = hit {
-            if active_bound.is_some() {
+            active_bounds.push((position, bound, is_minimum));
+        }
+        bounds.push((minimum, maximum));
+    }
+
+    if active_bounds.is_empty() {
+        return Ok(allocations);
+    }
+    if active_bounds.len() == 2 && allocations.len() == 2 {
+        let mut minimum_sum = 0.0;
+        for &(position, frozen_bound, is_minimum) in &active_bounds {
+            let (Some(minimum), Some(maximum)) = bounds[position] else {
+                return Err(DefiniteLayoutError::unsupported(
+                    first_occurrence,
+                    DefiniteLayoutUnsupported::StackMainFill,
+                ));
+            };
+            if !is_minimum
+                || !minimum.is_finite()
+                || minimum < 0.0
+                || !maximum.is_finite()
+                || maximum < minimum
+                || frozen_bound != minimum
+            {
                 return Err(DefiniteLayoutError::unsupported(
                     first_occurrence,
                     DefiniteLayoutUnsupported::StackMainFill,
                 ));
             }
-            active_bound = Some((position, bound, is_minimum));
+            minimum_sum += minimum;
+            if !minimum_sum.is_finite() {
+                return Err(DefiniteLayoutError::unsupported(
+                    first_occurrence,
+                    DefiniteLayoutUnsupported::StackMainFill,
+                ));
+            }
+            allocations[position].1 = if minimum > 0.0 { minimum } else { 0.0 };
         }
-        bounds.push((minimum, maximum));
+        if minimum_sum > remaining {
+            return Ok(allocations);
+        }
+        return Err(DefiniteLayoutError::unsupported(
+            first_occurrence,
+            DefiniteLayoutUnsupported::StackMainFill,
+        ));
     }
-
-    let Some((active_position, frozen_bound, active_is_minimum)) = active_bound else {
-        return Ok(allocations);
-    };
+    if active_bounds.len() != 1 {
+        return Err(DefiniteLayoutError::unsupported(
+            first_occurrence,
+            DefiniteLayoutUnsupported::StackMainFill,
+        ));
+    }
+    let (active_position, frozen_bound, active_is_minimum) = active_bounds[0];
     if !frozen_bound.is_finite() || frozen_bound < 0.0 {
         return Err(DefiniteLayoutError::unsupported(
             first_occurrence,

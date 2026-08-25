@@ -1,6 +1,21 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-25 **Template v1 implementation TV1-T117 已由 Codex `/root` single-writer 完成，状态
+  `resolved/automated_verified`**：exactly-two main FILL 中两个合法 mixed child 的首轮 weighted share 若都
+  严格低于各自 min，现按 authored position 同轮冻结两个 minima，并接受由既有 occupied/free-space 消费的
+  min-sum overflow；simultaneous min/max 与一般 water filling 仍 fail closed。Rust/Python 在同一 occurrence 共同
+  RED 后，shared `/57` 达到 261 laid-out + 16 unsupported、277/277 cases、829 checks，vector SHA-256
+  `26af3dceeab1dded86828037851af19d076ec3a45b65cc69f54ef0225b63ff94`。canonical `render`
+  `.sdlc/evidence/20260825-191413-render/`、affected `fast`
+  `.sdlc/evidence/20260825-191504-fast/`、sequential `server`
+  `.sdlc/evidence/20260825-191522-server/` 与 17-step Goal `full`
+  `.sdlc/evidence/20260825-192555-full/` 均绿；full 为 1036.002 秒，Node 24 Web 217/217、runtime canary、
+  Playwright 23 passed + 1 controlled skip；resolution `fast`
+  `.sdlc/evidence/20260825-194552-fast/` 也以 3/3 steps、12.559 秒通过。最终交付仍是正式产品 Template-v1
+  页面与真实功能，`/prototype` 不计交付；Profile `NOT_REGISTERED`、certification `NOT_CERTIFIED`、process
+  raster `ABSENT`、native stack `BUILD_NOT_AUTHORIZED`、public Rendering API/正式产品 route `CLOSED`，
+  provider/API Key/费用/真实数据=0，未推进 J1/A3/READY，未 push/tag/PR。
 - 2026-08-25 **Template v1 implementation TV1-T116 已由 Codex `/root` single-writer 完成，状态
   `resolved/automated_verified`**：`TemplateAssetStaleConsumer` 现只承载可显式重放的 consume/recheck work，
   生产缺省开启的窄 poller 依次调用两步；test resources 只关闭后台 poller，真实 PostgreSQL slice 仍直接验证

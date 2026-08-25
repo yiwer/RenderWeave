@@ -2188,6 +2188,48 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
   `NOT_REGISTERED`、certification `NOT_CERTIFIED`、process raster `ABSENT`、public Rendering API 与产品 route
   `CLOSED`；最终产品 Template-v1 页面与真实功能仍未交付，`/prototype` 不计交付，未推进 J1/A3/READY。
 
+## 117. TV1-T117 执行卡
+
+- 决策：T116 以 verified commit `a50e2122` 收口且 worktree clean 后，按最终产品门槛复算完整 Renderer
+  frontier。16 个 Layout unsupported 中，exactly-two mixed FILL 的首轮两个 share 同时严格命中各自 min，
+  可直接按 authored position 冻结两个 minima；该终态不需要 native stack、第二轮 division、循环或 residual
+  tolerance，因此登记为当前 single-writer frontier。
+- Interface/seam：只深化既有 `stack_main_fill_allocations`；public layout/Engine Interface、admission/preflight、
+  measurement/arrange、authored DFS first-error 与全有或全无 output 不变。Rust/Python 使用独立控制流但共享冻结
+  vectors。
+- 精确语义：恰好两个 positive-weight main FILL；两项都携带合法 finite/nonnegative mixed min/max 且
+  `min <= max`；首轮 weighted share 都严格低于各自 min。按 authored position 提交两个 minima，max 必须继续
+  满足；min-sum overflow 由既有 occupied/free/justify START fallback 消费。不计算负 residual，不做第二轮
+  division、redistribution、epsilon 或 tolerance。
+- 允许影响：T117 tracker/map/plan/NOTES、layout Rust module/tests、shared definite-layout vector `/57`、Python
+  independent verifier、render-gate exact identity/assertions/evidence。
+- 禁止影响：simultaneous min/max 或 max/max、three-or-more/four-or-more 一般 water filling、rows→columns、
+  任意非直角 rotation、Text/compositionViewport、scene/JPEG、Profile registration、native build、Java/OpenAPI/Web/
+  正式产品 route、formal records、physical certification、J1/A3/READY 与外部副作用。
+- TDD/gates：既有 simultaneous-min negative 转 positive，新增 authored reverse、COLUMN、cross-HUG 与
+  `min == max` positives，并新增 simultaneous min/max replacement negative；shared `/57` 先共同 RED，目标
+  261 laid-out + 16 unsupported、277 cases/829 checks。focused/local → `render` → affected `fast` → sequential
+  `server` → Goal `full` → resolution `fast`；Maven 不并发，精确 staging，不 push/tag/PR。
+
+### TV1-T117 收口
+
+- shared tracer 先令 Rust/Python 在同一 `STACK_MAIN_FILL` occurrence 共同 RED；最小 GREEN 只在 exactly-two、
+  two-active-min、合法 mixed bounds 且 min-sum 严格 overflow 时按 authored position 提交两个 minima。reverse、
+  COLUMN、deferred cross-HUG 与 `min == max` positives 通过，simultaneous min/max 仍 unsupported。
+- vector `/57` 为 261 laid-out + 16 unsupported、277/277 cases、829 checks，SHA-256
+  `26af3dceeab1dded86828037851af19d076ec3a45b65cc69f54ef0225b63ff94`；local Cargo workspace/
+  Clippy `-D warnings`、Python independent replay、inventory/unique/SHA 与 diff checks 均绿。
+- canonical `render` `.sdlc/evidence/20260825-191413-render/`、affected `fast`
+  `.sdlc/evidence/20260825-191504-fast/`、sequential `server`
+  `.sdlc/evidence/20260825-191522-server/` 与 Goal `full`
+  `.sdlc/evidence/20260825-192555-full/` 均为 passed/A1；full 17/17 steps、1036.002 秒，Node 24 Web
+  217/217、runtime canary 与 Playwright 23 passed + 1 controlled skip 均绿。状态与证据回填后的 resolution
+  `fast` `.sdlc/evidence/20260825-194552-fast/` 也以 3/3 steps、passed/A1、12.559 秒通过。
+- 状态为 `resolved / automated_verified`。Profile `NOT_REGISTERED`、certification `NOT_CERTIFIED`、process
+  raster `ABSENT`、native stack `BUILD_NOT_AUTHORIZED`、public Rendering API 与正式产品 route `CLOSED`；
+  最终产品 Template-v1 页面与真实功能仍未交付，`/prototype` 不计交付，provider/API Key/费用/真实数据=0，
+  未推进 J1/A3/READY，未 push/tag/PR。
+
 ## 111. TV1-T111 执行卡
 
 - 决策：T110 以 verified commit `4cbc3b68` 收口且 worktree clean 后，复核 Ticket 10 §6、Ticket 16 §8 与

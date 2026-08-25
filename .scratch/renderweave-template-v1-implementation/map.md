@@ -602,6 +602,13 @@ Label: wayfinder:map
   sequential `server` 与 17-step `full` 均绿；server/full 中 stale scheduled exception、forced-kill 与
   `CannotCreateTransactionException` 均为 0，resolution `fast` 也以 3/3 steps 通过。不改变 API/Renderer/Profile/
   正式产品 route。
+- [实现 definite Stack 两 FILL simultaneous mixed-min freeze 子闭包](issues/117-definite-stack-two-fill-simultaneous-mixed-min-freeze.md) —
+  **resolved / automated_verified**；exactly-two main FILL 的两个合法 mixed child 若首轮 share 都严格低于各自
+  min，现按 authored position 同轮冻结两个 minima，并由既有 occupied/free-space 处理 min-sum overflow。
+  shared `/57` 为 261 laid-out + 16 unsupported、277/277 cases、829 checks；canonical `render`、affected
+  `fast`、sequential `server`、17-step Goal `full` 与 resolution `fast` 均绿。simultaneous min/max、
+  三个以上 FILL、一般循环/tolerance、Profile/native build/public Rendering API/正式产品 route 继续关闭，
+  `/prototype` 不计最终交付。
 - [验证 Product Editor 状态、恢复与权威预览架构](issues/09-validate-product-editor-architecture.md) —
   throwaway 逻辑原型（`/prototype/editor-state-model`，不进产品 route）把冻结编辑器规则编码为确定性
   fixture 状态机：10 个引导走查场景 37/37 断言 + 自由操作冒烟 + 键盘焦点检查全部通过（Playwright A1，
