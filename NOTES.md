@@ -1,6 +1,19 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-25 **Template v1 implementation TV1-T110 已由 Codex `/root` single-writer 完成，状态
+  `resolved/automated_verified`**：最终交付仍是正式产品 Template-v1 页面与真实功能，`/prototype` 不计交付。
+  Canvas 任意 alpha 与 pixel-aligned、identity、node opacity 1 的 Rect/Frame/Stack/Grid solid fill 已接入 fixed
+  premultiplied RGBA8/source-over；opaque bytes 不变，transparent hidden RGB 归零。Engine 18 rendered + 11
+  unsupported、29 cases/91 independent checks，prepared IMAGE 18/18 cases/120 checks、daemon integration 3/3；
+  vector SHA-256 `2d5835e2e5e30935f9f2e17f5e70983a428211aa1997253c7036aaad0b6c093a`。canonical `render`
+  `.sdlc/evidence/20260825-110659-render/`、affected `fast` `.sdlc/evidence/20260825-110857-fast/`、sequential
+  `server` `.sdlc/evidence/20260825-110918-server/` 与 17-step Goal `full`
+  `.sdlc/evidence/20260825-112257-full/`、状态回填后的 resolution `fast`
+  `.sdlc/evidence/20260825-114508-fast/` 均绿。精确能力标签为
+  `PREORDER_DEFINITE_IDENTITY_GROUP_FRAME_STACK_GRID_RECT_PIXEL_ALIGNED_SOLID_ALPHA_PREMULTIPLIED_SOURCE_OVER_RECTANGULAR_CLIP_VISIBILITY_ZERO_OPACITY_SUPPRESSION_PNG_KERNEL_PROFILE_GATED`；
+  partial subtree opacity、AA/rounded/stroke、resampling/transform、Profile/RequestRegistry/正式产品 route 与 native
+  stack 保持关闭。provider attempts/API Key reads/费用/真实数据=0；不 push/tag/PR。
 - 2026-08-25 **Template v1 implementation TV1-T109 已由 Codex `/root` single-writer 完成，状态
   `resolved/automated_verified`**：最终交付口径仍是正式产品 Template-v1 页面与真实功能，`/prototype` 不计交付。
   Engine internal surface 已固定为 premultiplied RGBA8，prepared IMAGE 支持 integer-device 1:1、identity transform、

@@ -303,15 +303,7 @@ fn render_png_internal(
     require_scene_kinds(children, prepared_resources.is_some())?;
 
     let background = color_member(canvas, "backgroundColor")?;
-    let pixel = match background[3] {
-        0 => [0, 0, 0, 0],
-        255 => premultiply_straight_rgba8(background),
-        _ => {
-            return Err(EnginePngError::Unsupported(
-                EnginePngUnsupported::PartialBackgroundAlpha,
-            ));
-        }
-    };
+    let pixel = premultiply_straight_rgba8(background);
 
     let width_pt = decimal_member(canvas, "widthPt")?;
     let height_pt = decimal_member(canvas, "heightPt")?;
@@ -585,11 +577,6 @@ fn prepare_rect_paint(
         return Err(EnginePngError::Unsupported(EnginePngUnsupported::RectPaint));
     }
     let color = color_member(fill, "color")?;
-    if color[3] != 255 {
-        return Err(EnginePngError::Unsupported(
-            EnginePngUnsupported::NonOpaqueRectAlpha,
-        ));
-    }
 
     Ok(Some(active_clip.apply(prepare_layout_rect(
         layout.layout_box(),
@@ -852,11 +839,6 @@ fn prepare_container(
             ));
         }
         let color = color_member(fill, "color")?;
-        if color[3] != 255 {
-            return Err(EnginePngError::Unsupported(
-                EnginePngUnsupported::FramePaint,
-            ));
-        }
         let bounds = bounds.ok_or(EnginePngError::Contract(
             "Container fill is missing prepared device bounds",
         ))?;
@@ -1155,7 +1137,7 @@ fn paint_rect(
             .get_mut(start..end)
             .ok_or(EnginePngError::RasterAllocation)?;
         for target in row.chunks_exact_mut(4) {
-            target.copy_from_slice(&rect.color);
+            source_over_straight_rgba8(target, &rect.color)?;
         }
     }
     Ok(())
@@ -1231,7 +1213,7 @@ fn source_over_straight_rgba8(
     let source = premultiply_straight_rgba8(
         source_straight
             .try_into()
-            .map_err(|_| EnginePngError::Contract("Image source pixel is not RGBA8"))?,
+            .map_err(|_| EnginePngError::Contract("Paint source pixel is not RGBA8"))?,
     );
     let destination: &mut [u8; 4] = destination_premultiplied
         .try_into()

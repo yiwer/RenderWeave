@@ -3696,6 +3696,47 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
   `BUILD_NOT_AUTHORIZED`；resampling/coverage/node opacity/transform 与最终产品接线继续后续 DAG。provider
   attempts/API Key reads/费用/真实数据=0，未 push/tag/PR，`/prototype` 不计最终产品交付。
 
+## 109. TV1-T110 执行卡
+
+- 决策：T109 以 verified commit `433809e4` 收口且 worktree clean 后，Engine 已拥有 fixed premultiplied RGBA8 与
+  exact IMAGE source-over，但旧 resource-free scene 仍对 partial Canvas/Rect alpha fail closed。该缺口可完全复用
+  T109 算术，不依赖 native AA/sampling/font stack，因此登记为当前 single-writer frontier。
+- Interface/seam：`render_png`、`render_png_with_prepared_resources` 与 T108 daemon seal 均不变；Canvas 任意 alpha
+  直接 premultiply 成初始 surface，Rect/Frame/Stack/Grid pixel-aligned solid fill 统一经同一 source-over primitive。
+  完整 prepare、authored paint order、rectangular clip 与 final single unpremultiply 不变。
+- 精确子集：只新增 identity、zero-radius/no-stroke、full pixel coverage、node opacity=1 的 solid alpha；opaque source
+  必须 byte-identical，alpha=0 隐藏 RGB 必须归零且不改变 destination。partial subtree opacity 仍需 isolation layer，
+  subpixel/rounded/stroke 仍需 coverage/AA，均不在本票内。
+- 允许影响：T110 tracker/map/plan/NOTES、shared Engine PNG vectors/tests/private paint kernel、独立 Python replay、
+  render gate exact authority label/count/hash 与 evidence。
+- 禁止影响：prepared IMAGE sampling/geometry、Text/Ellipse/Vector/QR/Barcode/JPEG/layoutTrace、Profile registration、
+  RequestRegistry、Java/OpenAPI/migration/Web/Product route、native build、physical certification、J1/A3/READY 与
+  外部副作用。
+- TDD/gates：现有 partial background/Rect negatives 转 positive，并新增 opaque underlay、repeated partial Rect、
+  partial container fill + child exact vectors；focused Rust 先 RED，GREEN 后 Python independent 与 prepared
+  IMAGE/daemon regression → canonical `render` → affected `fast` → sequential `server` → Goal `full` → resolution
+  `fast`。provider/API Key/费用/真实数据=0，不 push/tag/PR，`/prototype` 不计最终产品交付。
+
+### TV1-T110 收口
+
+- focused Rust public Interface 先在 `partial-canvas-background-alpha-premultiplies` 取得 `PARTIAL_BACKGROUND_ALPHA`
+  RED；GREEN 后 Canvas 任意 alpha 与 Rect/Frame/Stack/Grid 的 pixel-aligned solid alpha 共用 T109 fixed
+  premultiplied RGBA8/source-over，opaque bytes、prepare 原子性、authored order、rectangular clip 与 daemon seal 不变。
+- frozen Engine corpus 为 18 rendered + 11 unsupported、29 cases/91 independent checks；prepared IMAGE 18/18
+  cases/120 checks、daemon prepared-result integration 3/3、Windows/Linux workspace/fmt/clippy 回归全绿。vector
+  SHA-256 为 `2d5835e2e5e30935f9f2e17f5e70983a428211aa1997253c7036aaad0b6c093a`。
+- 分级证据：canonical `render` `.sdlc/evidence/20260825-110659-render/`（45.416 秒）、affected `fast`
+  `.sdlc/evidence/20260825-110857-fast/`（11.918 秒）、sequential `server`
+  `.sdlc/evidence/20260825-110918-server/`（807.971 秒）与 Goal `full`
+  `.sdlc/evidence/20260825-112257-full/`（17/17 steps，1217.692 秒）均绿；full 覆盖 8 个 Maven modules、Node 24
+  Web 26 files/212 tests、runtime canary、Playwright 23 passed + 1 controlled skip、Draft 与 inference browser journeys；
+  状态回填后的 resolution `fast` `.sdlc/evidence/20260825-114508-fast/`（11.173 秒）亦通过。
+- 状态为 `resolved / automated_verified`，精确能力标签为
+  `PREORDER_DEFINITE_IDENTITY_GROUP_FRAME_STACK_GRID_RECT_PIXEL_ALIGNED_SOLID_ALPHA_PREMULTIPLIED_SOURCE_OVER_RECTANGULAR_CLIP_VISIBILITY_ZERO_OPACITY_SUPPRESSION_PNG_KERNEL_PROFILE_GATED`。
+  Profile `NOT_REGISTERED`、certification `NOT_CERTIFIED`、process raster `ABSENT`、Product route `CLOSED`、native
+  stack `BUILD_NOT_AUTHORIZED`；partial subtree opacity isolation、subpixel/rounded/stroke coverage、resampling/transform
+  与最终产品接线继续后续 DAG。provider attempts/API Key reads/费用/真实数据=0，未 push/tag/PR，`/prototype` 不计交付。
+
 ## 66. TV1-T67 执行卡
 
 - 决策：T66 以 verified commit `a6fabe5` 收口且 worktree clean 后，复算原始 Ticket 10 §3/§7、

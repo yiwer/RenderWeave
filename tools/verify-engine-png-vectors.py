@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Independent stdlib replay for the TV1-T97 Engine PNG scene/raster kernel."""
+"""Independent stdlib replay for the TV1-T110 solid-alpha Engine PNG kernel."""
 
 from __future__ import annotations
 
@@ -145,13 +145,51 @@ def parse_rgba(value: Any, label: str) -> bytes:
         raise VerificationFailure(f"{label} color is invalid") from error
 
 
-def parse_background(value: Any) -> bytes | dict[str, str]:
-    rgba = parse_rgba(value, "Canvas background")
-    if rgba[3] == 0:
+def mul255(value: int, alpha: int) -> int:
+    return (value * alpha + 127) // 255
+
+
+def premultiply(straight: bytes) -> bytes:
+    alpha = straight[3]
+    if alpha == 0:
         return b"\0\0\0\0"
-    if rgba[3] == 255:
-        return rgba
-    return {"feature": "PARTIAL_BACKGROUND_ALPHA"}
+    return bytes(
+        (
+            mul255(straight[0], alpha),
+            mul255(straight[1], alpha),
+            mul255(straight[2], alpha),
+            alpha,
+        )
+    )
+
+
+def source_over(destination: bytearray, offset: int, source_straight: bytes) -> None:
+    source = premultiply(source_straight)
+    inverse_source_alpha = 255 - source[3]
+    for channel in range(4):
+        destination[offset + channel] = min(
+            255,
+            source[channel]
+            + mul255(destination[offset + channel], inverse_source_alpha),
+        )
+
+
+def unpremultiply_surface(pixels: bytearray) -> bytes:
+    for offset in range(0, len(pixels), 4):
+        alpha = pixels[offset + 3]
+        if alpha == 0:
+            pixels[offset : offset + 4] = b"\0\0\0\0"
+            continue
+        for channel in range(3):
+            pixels[offset + channel] = min(
+                255,
+                (pixels[offset + channel] * 255 + alpha // 2) // alpha,
+            )
+    return bytes(pixels)
+
+
+def parse_background(value: Any) -> bytes:
+    return premultiply(parse_rgba(value, "Canvas background"))
 
 
 def number_is(value: Any, expected: str) -> bool:
@@ -362,8 +400,6 @@ def prepare_rect(
     if not has_exact_members(fill, {"color"}):
         return {"feature": "RECT_PAINT"}
     color = parse_rgba(fill["color"], "Rect fill")
-    if color[3] != 255:
-        return {"feature": "NON_OPAQUE_RECT_ALPHA"}
 
     return prepare_layout_rect(
         box, color, canvas, dpi, width, height, active_clip
@@ -442,8 +478,6 @@ def prepare_container(
         if not has_exact_members(fill, {"color"}):
             return {"feature": "FRAME_PAINT"}
         color = parse_rgba(fill["color"], "Container fill")
-        if color[3] != 255:
-            return {"feature": "FRAME_PAINT"}
         if bounds is None:
             raise VerificationFailure("Container fill is missing prepared device bounds")
         left, top, right, bottom = intersect_clip(bounds, active_clip)
@@ -572,7 +606,7 @@ def paint_rect(
     for row in range(top, bottom):
         for column in range(left, right):
             offset = (row * width + column) * 4
-            pixels[offset : offset + 4] = color
+            source_over(pixels, offset, color)
 
 
 def png_chunk(kind: bytes, payload: bytes) -> bytes:
@@ -630,8 +664,6 @@ def execute(
     if not scene_kinds_supported(canvas["children"]):
         return {"feature": "SCENE_STRUCTURE"}
     pixel = parse_background(canvas.get("backgroundColor"))
-    if isinstance(pixel, dict):
-        return pixel
     dimensions = surface_dimensions(canvas, dpi)
     if "code" in dimensions:
         return dimensions
@@ -678,7 +710,7 @@ def execute(
     pixels = bytearray(pixel * (width * height))
     for rect in rects:
         paint_rect(pixels, width, rect)
-    pixels = bytes(pixels)
+    pixels = unpremultiply_surface(pixels)
     encoded = encode_png(width, height, dpi, pixels)
     return {
         "widthPx": width,
@@ -722,14 +754,14 @@ def verify(path: Path) -> dict[str, Any]:
     verifier.require(boundary == {
         "profileAvailability": "NOT_REGISTERED",
         "certificationStatus": "NOT_CERTIFIED",
-        "enginePngKernel": "PREORDER_DEFINITE_IDENTITY_GROUP_FRAME_STACK_GRID_RECT_PIXEL_ALIGNED_OPAQUE_RECTANGULAR_CLIP_VISIBILITY_ZERO_OPACITY_SUPPRESSION_PNG_KERNEL_UNWIRED",
+        "enginePngKernel": "PREORDER_DEFINITE_IDENTITY_GROUP_FRAME_STACK_GRID_RECT_PIXEL_ALIGNED_SOLID_ALPHA_PREMULTIPLIED_SOURCE_OVER_RECTANGULAR_CLIP_VISIBILITY_ZERO_OPACITY_SUPPRESSION_PNG_KERNEL_PROFILE_GATED",
         "processRasterImplementation": "ABSENT",
         "daemonOutputPath": "UNWIRED",
         "productRoute": "CLOSED",
         "providerAttempts": 0,
     }, "Engine PNG honest boundary drifted")
-    verifier.require(len(vectors["renderedCases"]) == 13, "rendered case count drifted")
-    verifier.require(len(vectors["unsupportedCases"]) == 13, "unsupported case count drifted")
+    verifier.require(len(vectors["renderedCases"]) == 18, "rendered case count drifted")
+    verifier.require(len(vectors["unsupportedCases"]) == 11, "unsupported case count drifted")
 
     seen: set[str] = set()
     for family in ("renderedCases", "unsupportedCases"):

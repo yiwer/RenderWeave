@@ -557,6 +557,12 @@ Label: wayfinder:map
   unpremultiply。Rust focused 2/2、Python independent 18/18 cases/120 checks、daemon integration 3/3 与旧 Engine
   26/26 cases/82 checks 全绿；`render`/`fast`/`server`/17-step `full` 均通过。general sampling/coverage/node
   opacity/transform/Profile/RequestRegistry/正式产品 route 保持关闭。
+- [接通 pixel-aligned solid alpha source-over Engine PNG 内核](issues/110-partial-solid-alpha-source-over-engine-png-kernel.md) —
+  **resolved / automated_verified**；任意 Canvas background alpha 与 pixel-aligned、identity、node opacity 1 的
+  Rect/Frame/Stack/Grid solid fill 已接入 fixed premultiplied RGBA8/source-over。Engine 18 rendered + 11 unsupported、
+  29 cases/91 independent checks，prepared IMAGE 18/18 cases/120 checks、daemon integration 3/3 全绿；vector
+  SHA-256 `2d5835e2e5e30935f9f2e17f5e70983a428211aa1997253c7036aaad0b6c093a`，`render`/`fast`/`server`/17-step
+  `full` 均通过。AA/rounded/stroke/subtree opacity/resampling/transform/Profile/正式产品 route 保持关闭。
 - [验证 Product Editor 状态、恢复与权威预览架构](issues/09-validate-product-editor-architecture.md) —
   throwaway 逻辑原型（`/prototype/editor-state-model`，不进产品 route）把冻结编辑器规则编码为确定性
   fixture 状态机：10 个引导走查场景 37/37 断言 + 自由操作冒烟 + 键盘焦点检查全部通过（Playwright A1，
