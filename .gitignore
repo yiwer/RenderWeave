@@ -61,3 +61,7 @@ build/
 ### Mac OS ###
 .DS_Store
 /promo/
+
+# Cargo vendor is a checksum-addressed source snapshot; workspace ignores do not apply.
+!renderer/vendor/
+!renderer/vendor/**
