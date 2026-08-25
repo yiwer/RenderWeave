@@ -1,6 +1,21 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-25 **Template v1 implementation TV1-T109 已由 Codex `/root` single-writer 完成，状态
+  `resolved/automated_verified`**：最终交付口径仍是正式产品 Template-v1 页面与真实功能，`/prototype` 不计交付。
+  Engine internal surface 已固定为 premultiplied RGBA8，prepared IMAGE 支持 integer-device 1:1、identity transform、
+  draw opacity 1 下的 exact authored-order source-over 与最终 fixed unpremultiply；T108 daemon 真实透明 IMAGE 的
+  fetch/verify/decode→PNG→RESULT 路径亦全绿。Rust focused 2/2、Python independent 18/18 cases/120 checks、daemon
+  integration 3/3、旧 Engine 26/26 cases/82 checks；vector SHA-256
+  `837c98e418cf5d40586e048296825b04be33c7a2d5e2184384878d763584ac52`。canonical `render`
+  `.sdlc/evidence/20260825-100437-render/`、affected `fast` `.sdlc/evidence/20260825-100549-fast/`、sequential
+  `server` `.sdlc/evidence/20260825-100613-server/` 与 17-step Goal `full`
+  `.sdlc/evidence/20260825-102429-full/` 与状态回填后的 resolution `fast`
+  `.sdlc/evidence/20260825-105202-fast/` 均绿。精确能力标签为
+  `PREPARED_IMAGE_ALPHA_1_TO_1_PREMULTIPLIED_SOURCE_OVER_EXACT_PNG_AUTOMATED_VERIFIED_PROFILE_GATED`；Profile
+  `NOT_REGISTERED`、certification `NOT_CERTIFIED`、process raster `ABSENT`、正式产品 route `CLOSED`、native stack
+  `BUILD_NOT_AUTHORIZED`，general resampling/coverage/node opacity/transform 与最终产品接线继续后续 DAG。
+  provider attempts/API Key reads/费用/真实数据=0；不 push/tag/PR。
 - 2026-08-25 **Template v1 implementation TV1-T108 已由 Codex `/root` single-writer 完成，状态
   `resolved/automated_verified`**：唯一 `seal_prepared_png_result` 已用 admitted typed tokens 串接 T105 prepared
   manifest、T107 Engine PNG 与 T98 result seal，daemon immutable terminal/replay 可全有或全无表达 PROBLEM 或

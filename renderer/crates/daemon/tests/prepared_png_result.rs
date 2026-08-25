@@ -41,11 +41,13 @@ fn seals_real_engine_png_into_exact_result_payloads_through_the_public_interface
 }
 
 #[test]
-fn seals_a_real_fetched_and_decoded_image_result_without_a_profile_bypass() {
+fn seals_a_real_fetched_decoded_and_alpha_composited_image_without_a_profile_bypass() {
     let vectors: Value = serde_json::from_str(PREPARED_IMAGE_VECTORS).unwrap();
-    let fixture = &vectors["resourceFixtures"]["opaque2x2"];
+    let fixture = &vectors["resourceFixtures"]["alpha2x2"];
     let mut document_value = vectors["documentTemplate"].clone();
     document_value["resources"] = serde_json::json!([fixture["resource"].clone()]);
+    document_value["canvas"]["children"][0]["imageResourceId"] =
+        fixture["resource"]["resourceId"].clone();
     let document_json = serde_json::to_string(&document_value).unwrap();
     let document = validate_render_document(&document_json).unwrap();
     let command_json =
@@ -62,7 +64,7 @@ fn seals_a_real_fetched_and_decoded_image_result_without_a_profile_bypass() {
         .as_array()
         .unwrap()
         .iter()
-        .find(|case| case["id"] == "contain-linear-degenerates-to-exact-copy")
+        .find(|case| case["id"] == "alpha-source-over-opaque-background")
         .unwrap();
     assert_sealed_png(sealed, &expected_case["expected"]);
 }

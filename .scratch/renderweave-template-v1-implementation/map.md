@@ -551,6 +551,12 @@ Label: wayfinder:map
   RESULT_METADATA+RESULT_IMAGE。真实 empty/fetched IMAGE 路径与 pre-result negatives 共 3 项 integration tests、
   daemon 12 项单测及 canonical `render`/`fast`/`server`/17-step `full` 均绿；RequestRegistry、Profile 与正式产品
   route 继续关闭，不伪造 partial/test-only Profile。
+- [接通 prepared IMAGE alpha premultiplication/source-over Engine PNG 内核](issues/109-prepared-image-alpha-source-over-engine-png-kernel.md) —
+  **resolved / automated_verified**；在 T107/T108 同一 public deep Interface 内把 internal surface 深化为固定
+  premultiplied RGBA8，开放 integer-device 1:1 IMAGE source alpha 的 exact authored-order source-over 与最终一次
+  unpremultiply。Rust focused 2/2、Python independent 18/18 cases/120 checks、daemon integration 3/3 与旧 Engine
+  26/26 cases/82 checks 全绿；`render`/`fast`/`server`/17-step `full` 均通过。general sampling/coverage/node
+  opacity/transform/Profile/RequestRegistry/正式产品 route 保持关闭。
 - [验证 Product Editor 状态、恢复与权威预览架构](issues/09-validate-product-editor-architecture.md) —
   throwaway 逻辑原型（`/prototype/editor-state-model`，不进产品 route）把冻结编辑器规则编码为确定性
   fixture 状态机：10 个引导走查场景 37/37 断言 + 自由操作冒烟 + 键盘焦点检查全部通过（Playwright A1，

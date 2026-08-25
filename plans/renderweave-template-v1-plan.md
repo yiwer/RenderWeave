@@ -3654,6 +3654,48 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
   stack `BUILD_NOT_AUTHORIZED`。provider attempts/API Key reads/费用/真实数据=0，未 push/tag/PR，`/prototype`
   不计最终产品交付。
 
+## 108. TV1-T109 执行卡
+
+- 决策：T108 以 verified commit `b4278b66` 收口且 worktree clean 后，完整 prepared IMAGE 已能进入 Engine→RESULT，
+  但 T107 对任一非 opaque source 稳定返回 `NON_OPAQUE_IMAGE_ALPHA`。Ticket 16 已冻结 straight RGBA8 → fixed
+  integer premultiplication → premultiplied source-over → seal 前 unpremultiply 的顺序；该闭包不依赖尚未获授权的
+  native raster stack，因此登记为当前 single-writer frontier。
+- Interface/seam：不新增 public API；只深化同一 Engine 内部 surface representation 与 `PixelImage` paint。Canvas
+  初始化进入 premultiplied surface，Image 按 authored order source-over，PNG encoder前一次转换回 canonical
+  straight RGBA8；T108 daemon seal 无旁路复用同一 output。
+- 精确算术：`mul255(x,a)=floor((x*a+127)/255)`；`outA=srcA+mul255(dstA,255-srcA)`；每个 premultiplied color
+  channel 同式 source-over；最终 `alpha=0` 输出全 0，否则用
+  `floor((premul*255+floor(alpha/2))/alpha)` unpremultiply。只用有界整数，透明 source RGB 不泄漏。
+- 允许影响：T109 tracker/map/plan/NOTES、prepared IMAGE Engine vectors/tests/private raster kernel、独立 Python replay、
+  daemon/gate 中受 exact authority label/count/hash 影响的断言与 evidence。
+- 禁止影响：resampling/coverage/AA/node opacity/transform、partial Rect/background alpha、Text/vector/QR/barcode、
+  JPEG/layoutTrace、Profile registration、RequestRegistry、Java/OpenAPI/migration/Web/Product route、native build、
+  physical certification、J1/A3/READY 与外部副作用。
+- TDD/gates：既有 partial-alpha negative 转 positive并新增 alpha=0/64/128/255、透明 background、opaque underlay、
+  repeated authored source-over vectors；focused Rust 先 RED，GREEN 后 Python independent 与旧 Engine/daemon
+  regression → canonical `render` → affected `fast` → sequential `server` → Goal `full` → resolution `fast`。
+  provider/API Key/费用/真实数据=0，不 push/tag/PR，`/prototype` 不计最终产品交付。
+
+### TV1-T109 收口
+
+- 既有 partial-alpha negative 先按 public Interface 得到 `NON_OPAQUE_IMAGE_ALPHA` RED；GREEN 后 internal surface
+  固定为 premultiplied RGBA8，Canvas/background、Rect 与 prepared IMAGE 共用 authored-order paint，IMAGE 使用冻结
+  integer source-over，PNG seal 前只做一次 fixed unpremultiply。public API 与 T108 daemon seal 均未扩张。
+- frozen vectors 已升级为 14 rendered + 4 unsupported：覆盖 alpha=0/64/128/255、透明 background、opaque Rect
+  underlay、orientation 与 repeated source-over；Rust focused 2/2、Python independent 18/18 cases/120 checks、
+  daemon prepared-result integration 3/3、旧 Engine 26/26 cases/82 checks 全绿。vector SHA-256 为
+  `837c98e418cf5d40586e048296825b04be33c7a2d5e2184384878d763584ac52`。
+- 分级证据：canonical `render` `.sdlc/evidence/20260825-100437-render/`、affected `fast`
+  `.sdlc/evidence/20260825-100549-fast/`、sequential `server` `.sdlc/evidence/20260825-100613-server/` 与 Goal
+  `full` `.sdlc/evidence/20260825-102429-full/` 均绿；full 17/17 steps、1433.909 秒，覆盖 8 个 Maven modules、
+  Node 24 Web 26 files/212 tests、runtime canary、Playwright 23 passed + 1 controlled skip、Draft 与 inference
+  browser journeys。状态回填后的 resolution `fast` `.sdlc/evidence/20260825-105202-fast/`（11.845 秒）亦通过。
+- 状态为 `resolved / automated_verified`，精确能力标签为
+  `PREPARED_IMAGE_ALPHA_1_TO_1_PREMULTIPLIED_SOURCE_OVER_EXACT_PNG_AUTOMATED_VERIFIED_PROFILE_GATED`。Profile
+  `NOT_REGISTERED`、certification `NOT_CERTIFIED`、process raster `ABSENT`、Product route `CLOSED`、native stack
+  `BUILD_NOT_AUTHORIZED`；resampling/coverage/node opacity/transform 与最终产品接线继续后续 DAG。provider
+  attempts/API Key reads/费用/真实数据=0，未 push/tag/PR，`/prototype` 不计最终产品交付。
+
 ## 66. TV1-T67 执行卡
 
 - 决策：T66 以 verified commit `a6fabe5` 收口且 worktree clean 后，复算原始 Ticket 10 §3/§7、

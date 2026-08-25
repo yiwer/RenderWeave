@@ -305,7 +305,7 @@ fn render_png_internal(
     let background = color_member(canvas, "backgroundColor")?;
     let pixel = match background[3] {
         0 => [0, 0, 0, 0],
-        255 => background,
+        255 => premultiply_straight_rgba8(background),
         _ => {
             return Err(EnginePngError::Unsupported(
                 EnginePngUnsupported::PartialBackgroundAlpha,
@@ -390,6 +390,7 @@ fn render_png_internal(
             PixelPaint::Image(image) => paint_image(&mut pixels, surface.width_px(), image)?,
         }
     }
+    unpremultiply_rgba8_surface(&mut pixels)?;
     let pixel_sha256 = raw_sha256_prefixed(&pixels);
     let bytes = encode_straight_rgba8(surface.width_px(), surface.height_px(), dpi, &pixels)?;
     let content_sha256 = raw_sha256_prefixed(&bytes);
@@ -665,12 +666,6 @@ fn prepare_image_paint<'resource>(
             "prepared IMAGE pixel length diverged from its dimensions",
         ));
     }
-    if source.chunks_exact(4).any(|pixel| pixel[3] != 255) {
-        return Err(EnginePngError::Unsupported(
-            EnginePngUnsupported::NonOpaqueImageAlpha,
-        ));
-    }
-
     let layout_box = layout.layout_box();
     require_valid_layout_box(layout_box)?;
     let right = layout_box.x() + layout_box.width();
@@ -1171,7 +1166,6 @@ fn paint_image(
     surface_width: u32,
     image: PixelImage<'_>,
 ) -> Result<(), EnginePngError> {
-    let copied_width = image.right - image.left;
     for destination_y in image.top..image.bottom {
         let source_y = image
             .source_top
@@ -1180,38 +1174,96 @@ fn paint_image(
             .ok_or(EnginePngError::Contract(
                 "Image source row exceeds prepared pixels",
             ))?;
-        let source_start = (u64::from(source_y) * u64::from(image.source_width)
-            + u64::from(image.source_left))
-        .checked_mul(4)
-        .and_then(|value| usize::try_from(value).ok())
-        .ok_or(EnginePngError::RasterAllocation)?;
-        let source_end = u64::try_from(source_start)
-            .ok()
-            .and_then(|value| value.checked_add(u64::from(copied_width) * 4))
-            .and_then(|value| usize::try_from(value).ok())
-            .ok_or(EnginePngError::RasterAllocation)?;
-        let source =
-            image
-                .straight_rgba8
-                .get(source_start..source_end)
+        for destination_x in image.left..image.right {
+            let source_x = image
+                .source_left
+                .checked_add(destination_x - image.left)
+                .filter(|column| *column < image.source_width)
                 .ok_or(EnginePngError::Contract(
-                    "Image source row exceeds prepared pixels",
+                    "Image source column exceeds prepared pixels",
                 ))?;
-
-        let destination_start = (u64::from(destination_y) * u64::from(surface_width)
-            + u64::from(image.left))
-        .checked_mul(4)
-        .and_then(|value| usize::try_from(value).ok())
-        .ok_or(EnginePngError::RasterAllocation)?;
-        let destination_end = u64::try_from(destination_start)
-            .ok()
-            .and_then(|value| value.checked_add(u64::from(copied_width) * 4))
+            let source_offset = (u64::from(source_y) * u64::from(image.source_width)
+                + u64::from(source_x))
+            .checked_mul(4)
             .and_then(|value| usize::try_from(value).ok())
             .ok_or(EnginePngError::RasterAllocation)?;
-        pixels
-            .get_mut(destination_start..destination_end)
-            .ok_or(EnginePngError::RasterAllocation)?
-            .copy_from_slice(source);
+            let source = image
+                .straight_rgba8
+                .get(source_offset..source_offset + 4)
+                .ok_or(EnginePngError::Contract(
+                    "Image source pixel exceeds prepared pixels",
+                ))?;
+            let destination_offset = (u64::from(destination_y) * u64::from(surface_width)
+                + u64::from(destination_x))
+            .checked_mul(4)
+            .and_then(|value| usize::try_from(value).ok())
+            .ok_or(EnginePngError::RasterAllocation)?;
+            let destination = pixels
+                .get_mut(destination_offset..destination_offset + 4)
+                .ok_or(EnginePngError::RasterAllocation)?;
+            source_over_straight_rgba8(destination, source)?;
+        }
+    }
+    Ok(())
+}
+
+fn multiply_divide_255_round_half_up(value: u8, alpha: u8) -> u8 {
+    ((u16::from(value) * u16::from(alpha) + 127) / 255) as u8
+}
+
+fn premultiply_straight_rgba8(straight: [u8; 4]) -> [u8; 4] {
+    let alpha = straight[3];
+    if alpha == 0 {
+        return [0, 0, 0, 0];
+    }
+    [
+        multiply_divide_255_round_half_up(straight[0], alpha),
+        multiply_divide_255_round_half_up(straight[1], alpha),
+        multiply_divide_255_round_half_up(straight[2], alpha),
+        alpha,
+    ]
+}
+
+fn source_over_straight_rgba8(
+    destination_premultiplied: &mut [u8],
+    source_straight: &[u8],
+) -> Result<(), EnginePngError> {
+    let source = premultiply_straight_rgba8(
+        source_straight
+            .try_into()
+            .map_err(|_| EnginePngError::Contract("Image source pixel is not RGBA8"))?,
+    );
+    let destination: &mut [u8; 4] = destination_premultiplied
+        .try_into()
+        .map_err(|_| EnginePngError::Contract("Raster destination pixel is not RGBA8"))?;
+    let inverse_source_alpha = 255 - source[3];
+    for channel in 0..4 {
+        let value = u16::from(source[channel])
+            + u16::from(multiply_divide_255_round_half_up(
+                destination[channel],
+                inverse_source_alpha,
+            ));
+        destination[channel] = value.min(255) as u8;
+    }
+    Ok(())
+}
+
+fn unpremultiply_rgba8_surface(pixels: &mut [u8]) -> Result<(), EnginePngError> {
+    if pixels.len() % 4 != 0 {
+        return Err(EnginePngError::Contract(
+            "Raster surface length is not RGBA8 aligned",
+        ));
+    }
+    for pixel in pixels.chunks_exact_mut(4) {
+        let alpha = pixel[3];
+        if alpha == 0 {
+            pixel.copy_from_slice(&[0, 0, 0, 0]);
+            continue;
+        }
+        for channel in &mut pixel[..3] {
+            let straight = (u32::from(*channel) * 255 + u32::from(alpha / 2)) / u32::from(alpha);
+            *channel = straight.min(255) as u8;
+        }
     }
     Ok(())
 }

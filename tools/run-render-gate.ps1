@@ -704,21 +704,22 @@ try {
     $enginePreparedImagePngIndependent =
         Get-Content -Raw -Encoding UTF8 -LiteralPath $enginePreparedImagePngReport |
             ConvertFrom-Json
-    if ($enginePreparedImagePngIndependent.verifier -ne 'renderweave-engine-prepared-image-png-python-independent/1' `
+    if ($enginePreparedImagePngIndependent.verifier -ne 'renderweave-engine-prepared-image-png-python-independent/2' `
             -or $enginePreparedImagePngIndependent.result -ne 'PASS' `
             -or $enginePreparedImagePngIndependent.assurance -ne 'A2' `
-            -or $enginePreparedImagePngIndependent.renderedCases -ne 9 `
-            -or $enginePreparedImagePngIndependent.unsupportedCases -ne 5 `
-            -or $enginePreparedImagePngIndependent.passed -ne 14 `
-            -or $enginePreparedImagePngIndependent.total -ne 14 `
+            -or $enginePreparedImagePngIndependent.renderedCases -ne 14 `
+            -or $enginePreparedImagePngIndependent.unsupportedCases -ne 4 `
+            -or $enginePreparedImagePngIndependent.passed -ne 18 `
+            -or $enginePreparedImagePngIndependent.total -ne 18 `
             -or $enginePreparedImagePngIndependent.failed -ne 0 `
-            -or $enginePreparedImagePngIndependent.checks -ne 59 `
-            -or $enginePreparedImagePngIndependent.vectorSha256 -ne 'b9b473ec9b4fc39ac1fa39185f62ac3a52f685f7dc5f72431408d5c06daf57d7' `
+            -or $enginePreparedImagePngIndependent.checks -ne 120 `
+            -or $enginePreparedImagePngIndependent.vectorSha256 -ne '837c98e418cf5d40586e048296825b04be33c7a2d5e2184384878d763584ac52' `
             -or $enginePreparedImagePngIndependent.layoutProfile -ne 'renderweave-layout/1.0' `
             -or $enginePreparedImagePngIndependent.resourcePreparationProfile -ne 'renderweave-renderer/1.0' `
             -or $enginePreparedImagePngIndependent.imagePixels -ne 'EXACT_ORIENTATION_NORMALIZED_STRAIGHT_RGBA8' `
             -or $enginePreparedImagePngIndependent.degenerateMapping -ne 'SOURCE_AND_INTEGER_DEVICE_BOX_EXACT_1_TO_1_NO_RESAMPLE' `
-            -or $enginePreparedImagePngIndependent.enginePreparedImageKernel -ne 'PREPARED_IMAGE_OPAQUE_1_TO_1_AUTHORED_ORDER_RECTANGULAR_CLIP_EXACT_PNG_AUTOMATED_VERIFIED_UNWIRED' `
+            -or $enginePreparedImagePngIndependent.alphaArithmetic -ne 'STRAIGHT_TO_PREMULTIPLIED_MUL255_SOURCE_OVER_AUTHORED_ORDER_SINGLE_FINAL_UNPREMULTIPLY' `
+            -or $enginePreparedImagePngIndependent.enginePreparedImageKernel -ne 'PREPARED_IMAGE_ALPHA_1_TO_1_PREMULTIPLIED_SOURCE_OVER_EXACT_PNG_AUTOMATED_VERIFIED_PROFILE_GATED' `
             -or $enginePreparedImagePngIndependent.profileAvailability -ne 'NOT_REGISTERED' `
             -or $enginePreparedImagePngIndependent.certificationStatus -ne 'NOT_CERTIFIED' `
             -or $enginePreparedImagePngIndependent.processRasterImplementation -ne 'ABSENT' `
@@ -994,6 +995,7 @@ try {
             vectorSha256 = $enginePreparedImagePngIndependent.vectorSha256
             imagePixels = $enginePreparedImagePngIndependent.imagePixels
             degenerateMapping = $enginePreparedImagePngIndependent.degenerateMapping
+            alphaArithmetic = $enginePreparedImagePngIndependent.alphaArithmetic
             enginePreparedImageKernel = $enginePreparedImagePngIndependent.enginePreparedImageKernel
         }
         boundary = [ordered]@{
@@ -1021,7 +1023,7 @@ try {
             preparedImageLayout = 'PREPARED_IMAGE_FIXED_FILL_SINGLE_AXIS_HUG_LOGICAL_RATIO_ABSOLUTE_STACK_GRID_CONTAINER_AUTOMATED_VERIFIED_UNWIRED'
             outputPngKernel = 'AUTOMATED_VERIFIED_UNWIRED'
             enginePngKernel = 'PREORDER_DEFINITE_IDENTITY_GROUP_FRAME_STACK_GRID_RECT_PIXEL_ALIGNED_OPAQUE_RECTANGULAR_CLIP_VISIBILITY_ZERO_OPACITY_SUPPRESSION_PNG_KERNEL_UNWIRED'
-            preparedImageEnginePngKernel = 'PREPARED_IMAGE_OPAQUE_1_TO_1_AUTHORED_ORDER_RECTANGULAR_CLIP_EXACT_PNG_AUTOMATED_VERIFIED_UNWIRED'
+            preparedImageEnginePngKernel = 'PREPARED_IMAGE_ALPHA_1_TO_1_PREMULTIPLIED_SOURCE_OVER_EXACT_PNG_AUTOMATED_VERIFIED_PROFILE_GATED'
             daemonOutputPath = 'UNWIRED'
             rendererReady = $false
             ticket19Closed = $false

@@ -32,6 +32,7 @@ struct AuthorityContext {
     resource_preparation_profile: String,
     image_pixels: String,
     degenerate_mapping: String,
+    alpha_arithmetic: String,
     engine_prepared_image_kernel: String,
     profile_availability: String,
     certification_status: String,
@@ -56,6 +57,8 @@ struct ResourceFixture {
 struct RenderedCase {
     id: String,
     resource_fixture_id: String,
+    #[serde(default)]
+    additional_resource_fixture_ids: Vec<String>,
     mutations: Vec<Mutation>,
     dpi: u32,
     expected: RenderedExpected,
@@ -97,10 +100,14 @@ fn renders_prepared_image_vectors_through_the_public_engine_interface() {
     let vectors = vectors();
     assert_contract(&vectors);
     for case in &vectors.rendered_cases {
-        let fixture = fixture(&vectors, &case.resource_fixture_id);
-        let document = admitted_document(&vectors, fixture, &case.mutations);
-        let manifest = prepared_manifest(&document, fixture);
-        assert_prepared_fixture(&manifest, fixture, &case.id);
+        let fixtures = fixtures_for(
+            &vectors,
+            &case.resource_fixture_id,
+            &case.additional_resource_fixture_ids,
+        );
+        let document = admitted_document(&vectors, &fixtures, &case.mutations);
+        let manifest = prepared_manifest(&document, &fixtures);
+        assert_prepared_fixtures(&manifest, &fixtures, &case.id);
 
         let output = render_png_with_prepared_resources(&document, &manifest, case.dpi)
             .unwrap_or_else(|error| panic!("{} unexpectedly rejected: {error}", case.id));
@@ -142,13 +149,13 @@ fn renders_prepared_image_vectors_through_the_public_engine_interface() {
 }
 
 #[test]
-fn rejects_prepared_images_outside_the_frozen_exact_copy_subset() {
+fn rejects_prepared_images_outside_the_frozen_alpha_1_to_1_subset() {
     let vectors = vectors();
     for case in &vectors.unsupported_cases {
-        let fixture = fixture(&vectors, &case.resource_fixture_id);
-        let document = admitted_document(&vectors, fixture, &case.mutations);
-        let manifest = prepared_manifest(&document, fixture);
-        assert_prepared_fixture(&manifest, fixture, &case.id);
+        let fixtures = fixtures_for(&vectors, &case.resource_fixture_id, &[]);
+        let document = admitted_document(&vectors, &fixtures, &case.mutations);
+        let manifest = prepared_manifest(&document, &fixtures);
+        assert_prepared_fixtures(&manifest, &fixtures, &case.id);
 
         let error =
             render_png_with_prepared_resources(&document, &manifest, case.dpi).expect_err(&case.id);
@@ -163,7 +170,7 @@ fn rejects_prepared_images_outside_the_frozen_exact_copy_subset() {
 
 fn assert_contract(vectors: &Vectors) {
     assert_eq!(
-        "renderweave-engine-prepared-image-png-vectors/1",
+        "renderweave-engine-prepared-image-png-vectors/2",
         vectors.vector_version
     );
     let authority = &vectors.authority_context;
@@ -181,7 +188,11 @@ fn assert_contract(vectors: &Vectors) {
         authority.degenerate_mapping
     );
     assert_eq!(
-        "PREPARED_IMAGE_OPAQUE_1_TO_1_AUTHORED_ORDER_RECTANGULAR_CLIP_EXACT_PNG_AUTOMATED_VERIFIED_UNWIRED",
+        "STRAIGHT_TO_PREMULTIPLIED_MUL255_SOURCE_OVER_AUTHORED_ORDER_SINGLE_FINAL_UNPREMULTIPLY",
+        authority.alpha_arithmetic
+    );
+    assert_eq!(
+        "PREPARED_IMAGE_ALPHA_1_TO_1_PREMULTIPLIED_SOURCE_OVER_EXACT_PNG_AUTOMATED_VERIFIED_PROFILE_GATED",
         authority.engine_prepared_image_kernel
     );
     assert_eq!("NOT_REGISTERED", authority.profile_availability);
@@ -190,8 +201,8 @@ fn assert_contract(vectors: &Vectors) {
     assert_eq!("UNWIRED", authority.daemon_output_path);
     assert_eq!("CLOSED", authority.product_route);
     assert_eq!(0, authority.provider_attempts);
-    assert_eq!(9, vectors.rendered_cases.len());
-    assert_eq!(5, vectors.unsupported_cases.len());
+    assert_eq!(14, vectors.rendered_cases.len());
+    assert_eq!(4, vectors.unsupported_cases.len());
 }
 
 fn vectors() -> Vectors {
@@ -208,15 +219,29 @@ fn fixture<'vectors>(vectors: &'vectors Vectors, id: &str) -> &'vectors Resource
         .unwrap_or_else(|| panic!("missing resource fixture {id}"))
 }
 
+fn fixtures_for<'vectors>(
+    vectors: &'vectors Vectors,
+    primary_id: &str,
+    additional_ids: &[String],
+) -> Vec<&'vectors ResourceFixture> {
+    let mut fixtures = Vec::with_capacity(1 + additional_ids.len());
+    fixtures.push(fixture(vectors, primary_id));
+    fixtures.extend(additional_ids.iter().map(|id| fixture(vectors, id)));
+    fixtures
+}
+
 fn admitted_document(
     vectors: &Vectors,
-    fixture: &ResourceFixture,
+    fixtures: &[&ResourceFixture],
     mutations: &[Mutation],
 ) -> AdmittedRenderDocument {
     let mut document: Value = serde_json::from_str(vectors.document_template.get()).unwrap();
-    let resource: Value = serde_json::from_str(fixture.resource.get()).unwrap();
-    let resource_id = resource["resourceId"].as_str().unwrap().to_owned();
-    document["resources"] = Value::Array(vec![resource]);
+    let resources = fixtures
+        .iter()
+        .map(|fixture| serde_json::from_str(fixture.resource.get()).unwrap())
+        .collect::<Vec<Value>>();
+    let resource_id = resources[0]["resourceId"].as_str().unwrap().to_owned();
+    document["resources"] = Value::Array(resources);
     replace_image_resource_ids(&mut document["canvas"], &resource_id);
     for mutation in mutations {
         assert_eq!("replace", mutation.operation, "unsupported vector mutation");
@@ -251,12 +276,20 @@ fn replace_image_resource_ids(value: &mut Value, resource_id: &str) {
 
 fn prepared_manifest(
     document: &AdmittedRenderDocument,
-    fixture: &ResourceFixture,
+    fixtures: &[&ResourceFixture],
 ) -> PreparedResourceManifest {
     let policy = FetchTargetPolicy::new(FETCH_ORIGIN, ASSET_FETCH_PATH_PREFIX).unwrap();
-    let fetcher = FixtureFetcher {
-        body: hex::decode(&fixture.body_hex).unwrap(),
-    };
+    let bodies = fixtures
+        .iter()
+        .map(|fixture| {
+            let resource: Value = serde_json::from_str(fixture.resource.get()).unwrap();
+            (
+                resource["resourceId"].as_str().unwrap().to_owned(),
+                hex::decode(&fixture.body_hex).unwrap(),
+            )
+        })
+        .collect();
+    let fetcher = FixtureFetcher { bodies };
     ManifestResourcePreparer::new(&policy, &fetcher, ResourcePreparationProfile::RendererV1)
         .prepare(
             document.resources(),
@@ -266,26 +299,30 @@ fn prepared_manifest(
         .expect("prepared IMAGE manifest")
 }
 
-fn assert_prepared_fixture(
+fn assert_prepared_fixtures(
     manifest: &PreparedResourceManifest,
-    fixture: &ResourceFixture,
+    fixtures: &[&ResourceFixture],
     case_id: &str,
 ) {
-    assert_eq!(1, manifest.resources().len(), "{case_id}");
-    let PreparedRenderResource::Image { image, .. } = &manifest.resources()[0] else {
-        panic!("{case_id}: prepared resource is not an IMAGE");
-    };
-    assert_eq!(fixture.logical_width_px, image.width_px(), "{case_id}");
-    assert_eq!(fixture.logical_height_px, image.height_px(), "{case_id}");
-    assert_eq!(
-        fixture.straight_rgba8_hex,
-        hex::encode(image.straight_rgba8()),
-        "{case_id}"
-    );
+    assert_eq!(fixtures.len(), manifest.resources().len(), "{case_id}");
+    for fixture in fixtures {
+        let resource: Value = serde_json::from_str(fixture.resource.get()).unwrap();
+        let resource_id = resource["resourceId"].as_str().unwrap();
+        let Some(PreparedRenderResource::Image { image, .. }) = manifest.get(resource_id) else {
+            panic!("{case_id}: prepared resource is not an IMAGE");
+        };
+        assert_eq!(fixture.logical_width_px, image.width_px(), "{case_id}");
+        assert_eq!(fixture.logical_height_px, image.height_px(), "{case_id}");
+        assert_eq!(
+            fixture.straight_rgba8_hex,
+            hex::encode(image.straight_rgba8()),
+            "{case_id}"
+        );
+    }
 }
 
 struct FixtureFetcher {
-    body: Vec<u8>,
+    bodies: BTreeMap<String, Vec<u8>>,
 }
 
 impl ResourceFetcher for FixtureFetcher {
@@ -295,6 +332,9 @@ impl ResourceFetcher for FixtureFetcher {
         _deadline_epoch_millis: i64,
         state: &mut RequestResourceFetchState,
     ) -> Result<renderweave_renderer_resource::FetchedResource, ResourceFetchProblem> {
-        state.verify_owned_body(target, self.body.clone().into_boxed_slice())
+        state.verify_owned_body(
+            target,
+            self.bodies[target.resource_id()].clone().into_boxed_slice(),
+        )
     }
 }

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Independent stdlib replay for the TV1-T107 prepared IMAGE Engine PNG kernel."""
+"""Independent stdlib replay for the TV1-T109 prepared IMAGE alpha Engine PNG kernel."""
 
 from __future__ import annotations
 
@@ -258,17 +258,17 @@ def replace_pointer(document: Any, pointer: str, replacement: Any) -> None:
 
 
 def materialize_document(
-    template: dict[str, Any], fixture: dict[str, Any], mutations: list[Any]
+    template: dict[str, Any], fixtures: list[dict[str, Any]], mutations: list[Any]
 ) -> dict[str, Any]:
     document = copy.deepcopy(template)
-    resource = copy.deepcopy(fixture["resource"])
-    document["resources"] = [resource]
+    resources = [copy.deepcopy(fixture["resource"]) for fixture in fixtures]
+    document["resources"] = resources
+    replace_image_resource_ids(document["canvas"], resources[0]["resourceId"])
     for mutation in mutations:
         exact_members(mutation, {"operation", "pointer", "value"}, "mutation")
         if mutation["operation"] != "replace":
             raise VerificationFailure("unsupported vector mutation")
         replace_pointer(document, mutation["pointer"], mutation["value"])
-    replace_image_resource_ids(document["canvas"], resource["resourceId"])
     return document
 
 
@@ -330,9 +330,6 @@ def prepare_image(
     if resource_id not in prepared_images:
         raise VerificationFailure("prepared IMAGE identity diverged from scene")
     source_width, source_height, source = prepared_images[resource_id]
-    if any(source[index] != 255 for index in range(3, len(source), 4)):
-        return {"feature": "NON_OPAQUE_IMAGE_ALPHA"}
-
     origin_x, origin_y, width, height = box
     right = origin_x + width
     bottom = origin_y + height
@@ -480,6 +477,60 @@ def prepare_scene(
     return paints
 
 
+def multiply_divide_255_round_half_up(value: int, alpha: int) -> int:
+    return (value * alpha + 127) // 255
+
+
+def premultiply_straight_rgba8(straight: bytes | bytearray) -> bytes:
+    if len(straight) != 4:
+        raise VerificationFailure("straight pixel is not RGBA8")
+    alpha = straight[3]
+    if alpha == 0:
+        return b"\0\0\0\0"
+    return bytes(
+        [
+            multiply_divide_255_round_half_up(straight[0], alpha),
+            multiply_divide_255_round_half_up(straight[1], alpha),
+            multiply_divide_255_round_half_up(straight[2], alpha),
+            alpha,
+        ]
+    )
+
+
+def source_over_straight_rgba8(
+    destination_premultiplied: bytes | bytearray, source_straight: bytes
+) -> bytes:
+    if len(destination_premultiplied) != 4:
+        raise VerificationFailure("destination pixel is not RGBA8")
+    source = premultiply_straight_rgba8(source_straight)
+    inverse_source_alpha = 255 - source[3]
+    return bytes(
+        min(
+            255,
+            source[channel]
+            + multiply_divide_255_round_half_up(
+                destination_premultiplied[channel], inverse_source_alpha
+            ),
+        )
+        for channel in range(4)
+    )
+
+
+def unpremultiply_rgba8_surface(pixels: bytearray) -> None:
+    if len(pixels) % 4 != 0:
+        raise VerificationFailure("surface is not RGBA8 aligned")
+    for offset in range(0, len(pixels), 4):
+        alpha = pixels[offset + 3]
+        if alpha == 0:
+            pixels[offset : offset + 4] = b"\0\0\0\0"
+            continue
+        for channel in range(3):
+            premultiplied = pixels[offset + channel]
+            pixels[offset + channel] = min(
+                255, (premultiplied * 255 + alpha // 2) // alpha
+            )
+
+
 def paint_image(pixels: bytearray, surface_width: int, command: tuple[Any, ...]) -> None:
     _, destination, source_left, source_top, source_width, source_height, source = command
     left, top, right, bottom = destination
@@ -487,11 +538,16 @@ def paint_image(pixels: bytearray, surface_width: int, command: tuple[Any, ...])
         source_y = source_top + destination_y - top
         if source_y >= source_height:
             raise VerificationFailure("Image source row exceeds prepared pixels")
-        source_start = (source_y * source_width + source_left) * 4
-        source_end = source_start + (right - left) * 4
-        destination_start = (destination_y * surface_width + left) * 4
-        destination_end = destination_start + (right - left) * 4
-        pixels[destination_start:destination_end] = source[source_start:source_end]
+        for destination_x in range(left, right):
+            source_x = source_left + destination_x - left
+            if source_x >= source_width:
+                raise VerificationFailure("Image source column exceeds prepared pixels")
+            source_offset = (source_y * source_width + source_x) * 4
+            destination_offset = (destination_y * surface_width + destination_x) * 4
+            pixels[destination_offset : destination_offset + 4] = source_over_straight_rgba8(
+                pixels[destination_offset : destination_offset + 4],
+                source[source_offset : source_offset + 4],
+            )
 
 
 def execute(
@@ -555,7 +611,7 @@ def execute(
         return paints
     if cursor[0] != len(entries):
         raise VerificationFailure("layout preorder diverged from scene")
-    pixels = bytearray(background * (width * height))
+    pixels = bytearray(premultiply_straight_rgba8(background) * (width * height))
     for paint in paints:
         if paint[0] == "rect":
             engine.paint_rect(pixels, width, paint[1])
@@ -563,6 +619,7 @@ def execute(
             paint_image(pixels, width, paint)
         else:
             raise VerificationFailure("unknown paint command")
+    unpremultiply_rgba8_surface(pixels)
     raw_pixels = bytes(pixels)
     encoded = engine.encode_png(width, height, dpi, raw_pixels)
     return {
@@ -600,7 +657,7 @@ def verify(path: Path) -> dict[str, Any]:
     )
     verifier = Verifier()
     verifier.require(
-        vectors["vectorVersion"] == "renderweave-engine-prepared-image-png-vectors/1",
+        vectors["vectorVersion"] == "renderweave-engine-prepared-image-png-vectors/2",
         "vector identity drifted",
     )
     authority = exact_members(
@@ -610,6 +667,7 @@ def verify(path: Path) -> dict[str, Any]:
             "resourcePreparationProfile",
             "imagePixels",
             "degenerateMapping",
+            "alphaArithmetic",
             "enginePreparedImageKernel",
             "profileAvailability",
             "certificationStatus",
@@ -625,7 +683,8 @@ def verify(path: Path) -> dict[str, Any]:
         "resourcePreparationProfile": "renderweave-renderer/1.0",
         "imagePixels": "EXACT_ORIENTATION_NORMALIZED_STRAIGHT_RGBA8",
         "degenerateMapping": "SOURCE_AND_INTEGER_DEVICE_BOX_EXACT_1_TO_1_NO_RESAMPLE",
-        "enginePreparedImageKernel": "PREPARED_IMAGE_OPAQUE_1_TO_1_AUTHORED_ORDER_RECTANGULAR_CLIP_EXACT_PNG_AUTOMATED_VERIFIED_UNWIRED",
+        "alphaArithmetic": "STRAIGHT_TO_PREMULTIPLIED_MUL255_SOURCE_OVER_AUTHORED_ORDER_SINGLE_FINAL_UNPREMULTIPLY",
+        "enginePreparedImageKernel": "PREPARED_IMAGE_ALPHA_1_TO_1_PREMULTIPLIED_SOURCE_OVER_EXACT_PNG_AUTOMATED_VERIFIED_PROFILE_GATED",
         "profileAvailability": "NOT_REGISTERED",
         "certificationStatus": "NOT_CERTIFIED",
         "processRasterImplementation": "ABSENT",
@@ -644,7 +703,9 @@ def verify(path: Path) -> dict[str, Any]:
     layout_module = engine.load_definite_layout_module()
     fixtures = vectors["resourceFixtures"]
     verifier.require(
-        isinstance(fixtures, dict) and set(fixtures) == {"opaque2x2", "orientedPartial1x2"},
+        isinstance(fixtures, dict)
+        and set(fixtures)
+        == {"opaque2x2", "orientedPartial1x2", "alpha2x2", "alpha2x2Second"},
         "resource fixture set drifted",
     )
     prepared_images: dict[str, tuple[int, int, bytes]] = {}
@@ -716,12 +777,14 @@ def verify(path: Path) -> dict[str, Any]:
     )
     rendered_cases = vectors["renderedCases"]
     unsupported_cases = vectors["unsupportedCases"]
-    verifier.require(len(rendered_cases) == 9, "rendered case count drifted")
-    verifier.require(len(unsupported_cases) == 5, "unsupported case count drifted")
+    verifier.require(len(rendered_cases) == 14, "rendered case count drifted")
+    verifier.require(len(unsupported_cases) == 4, "unsupported case count drifted")
     seen: set[str] = set()
     for family, cases in (("rendered", rendered_cases), ("unsupported", unsupported_cases)):
         for case in cases:
             expected_members = {"id", "resourceFixtureId", "mutations", "dpi"}
+            if family == "rendered" and "additionalResourceFixtureIds" in case:
+                expected_members.add("additionalResourceFixtureIds")
             expected_members.add("expected" if family == "rendered" else "expectedFeature")
             exact_members(case, expected_members, f"{family} case")
             case_id = case["id"]
@@ -732,12 +795,35 @@ def verify(path: Path) -> dict[str, Any]:
             seen.add(case_id)
             fixture = fixtures.get(case["resourceFixtureId"])
             verifier.require(isinstance(fixture, dict), f"{case_id} fixture is absent")
-            document = materialize_document(template, fixture, case["mutations"])
-            resource_id = fixture["resource"]["resourceId"]
+            additional_ids = case.get("additionalResourceFixtureIds", [])
+            verifier.require(
+                isinstance(additional_ids, list)
+                and all(isinstance(item, str) for item in additional_ids),
+                f"{case_id} additional fixture ids are invalid",
+            )
+            case_fixtures = [fixture]
+            for fixture_id in additional_ids:
+                additional = fixtures.get(fixture_id)
+                verifier.require(
+                    isinstance(additional, dict),
+                    f"{case_id} additional fixture is absent",
+                )
+                case_fixtures.append(additional)
+            document = materialize_document(template, case_fixtures, case["mutations"])
+            case_resource_ids = [
+                selected["resource"]["resourceId"] for selected in case_fixtures
+            ]
+            verifier.require(
+                len(case_resource_ids) == len(set(case_resource_ids)),
+                f"{case_id} resource identities are duplicated",
+            )
             actual = execute(
                 document,
                 case["dpi"],
-                {resource_id: prepared_images[resource_id]},
+                {
+                    resource_id: prepared_images[resource_id]
+                    for resource_id in case_resource_ids
+                },
                 layout_module,
                 prepared_module,
                 engine,
@@ -749,7 +835,7 @@ def verify(path: Path) -> dict[str, Any]:
             )
             verifier.require(actual == expected, f"{case_id} result drifted")
     return {
-        "verifier": "renderweave-engine-prepared-image-png-python-independent/1",
+        "verifier": "renderweave-engine-prepared-image-png-python-independent/2",
         "result": "PASS",
         "assurance": "A2",
         "renderedCases": len(rendered_cases),
