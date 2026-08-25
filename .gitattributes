@@ -13,5 +13,16 @@ renderweave-inference/src/main/resources/visual-eval/r5p2/raw/*.png binary
 renderweave-inference/src/test/resources/visual-eval/r5p2/*.json text eol=lf
 specs/changes/20260815-r5p2-source-line-reconciliation-successor.md text eol=lf
 
+# Rendering contracts, replay vectors, and hermetic Rust inputs are byte-addressed.
+renderweave-rendering/src/main/resources/**/*.json text eol=lf
+renderweave-rendering/src/test/resources/**/*.json text eol=lf
+renderer/*.json text eol=lf
+renderer/Cargo.lock text eol=lf
+renderer/Cargo.toml text eol=lf
+renderer/rust-toolchain.toml text eol=lf
+renderer/.cargo/*.toml text eol=lf
+renderer/crates/**/Cargo.toml text eol=lf
+renderer/crates/**/*.rs text eol=lf
+
 # Cargo vendor bytes are checksum-addressed upstream artifacts; never normalize or lint them.
 renderer/vendor/** -text -whitespace
