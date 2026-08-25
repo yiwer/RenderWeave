@@ -17,6 +17,7 @@ specs/changes/20260815-r5p2-source-line-reconciliation-successor.md text eol=lf
 renderweave-rendering/src/main/resources/**/*.json text eol=lf
 renderweave-rendering/src/test/resources/**/*.json text eol=lf
 renderweave-asset/src/test/resources/**/*.json text eol=lf
+renderweave-app/src/test/resources/visual-eval/**/*.json text eol=lf
 renderer/*.json text eol=lf
 renderer/Cargo.lock text eol=lf
 renderer/Cargo.toml text eol=lf
