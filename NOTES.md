@@ -1,6 +1,18 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-25 **Template v1 implementation TV1-T112 已由 Codex `/root` single-writer 完成，状态
+  `resolved/automated_verified`**：最终交付仍是正式产品 Template-v1 页面与真实后端功能，`/prototype` 不计交付。
+  exactly-two Stack main FILL 中 mixed active-min + second mixed-min 的固定两次 freeze 子闭包已接通；shared
+  vectors `/55` 的 Rust primary/Python independent verifier 在同一 `STACK_MAIN_FILL` occurrence 共同 RED 后达到
+  252 laid-out + 16 unsupported、268/268 cases/802 checks，vector SHA-256
+  `d9c5b29a51f27a19f914b21eaad0512a12367161852fb6a4d1b6506880461116`。canonical `render`
+  `.sdlc/evidence/20260825-131815-render/`、affected `fast` `.sdlc/evidence/20260825-131909-fast/`、sequential
+  `server` `.sdlc/evidence/20260825-131931-server/` 与 17-step Goal `full`
+  `.sdlc/evidence/20260825-133248-full/`、状态回填后的 resolution `fast`
+  `.sdlc/evidence/20260825-135544-fast/` 均绿。Profile `NOT_REGISTERED`、certification `NOT_CERTIFIED`、process
+  raster `ABSENT`、正式产品 route `CLOSED`、native stack `BUILD_NOT_AUTHORIZED` 与 provider/API Key/费用/
+  真实数据=0 边界不变，不 push/tag/PR。
 - 2026-08-25 **Template v1 implementation TV1-T111 已由 Codex `/root` single-writer 完成，状态
   `resolved/automated_verified`**：最终交付仍是正式产品 Template-v1 页面与真实功能，`/prototype` 不计交付。
   Rect/Image/Group/Frame/Stack/Grid 已沿唯一 Engine deep Interface 建立有界 scanline subtree opacity isolation；

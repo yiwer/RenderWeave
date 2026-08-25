@@ -569,6 +569,14 @@ Label: wayfinder:map
   composite 取代错误的逐图元 opacity。resource-free 33 cases/103 checks、prepared IMAGE 21 cases/135 checks、
   daemon integration 3/3 与 `render`/`fast`/`server`/17-step `full` 均绿；Profile `NOT_REGISTERED`、certification
   `NOT_CERTIFIED`、process raster `ABSENT`、RequestRegistry/正式产品 route `CLOSED`。
+- [实现 definite Stack 两 FILL mixed active-min + second mixed-min freeze 子闭包](issues/112-definite-stack-two-fill-mixed-active-min-second-mixed-min-freeze.md) —
+  **resolved / automated_verified**；只深化既有 `stack_main_fill_allocations`：恰好两项 main FILL、首轮唯一
+  mixed active-min、另一项 mixed 且首轮 bounds inactive，第一次 freeze 后余量严格低于其 min 时执行固定第二次
+  min freeze。shared `/55` 已由 Rust/Python 在同一 tracer occurrence 共同 RED 后达到 252 laid-out +
+  16 unsupported、268/268 cases/802 checks，vector SHA-256
+  `d9c5b29a51f27a19f914b21eaad0512a12367161852fb6a4d1b6506880461116`；`render`/`fast`/`server`/17-step
+  `full` 与状态回填后的 resolution `fast` 均绿。Profile、native stack 与正式产品 route 保持关闭，
+  `/prototype` 不计最终交付。
 - [验证 Product Editor 状态、恢复与权威预览架构](issues/09-validate-product-editor-architecture.md) —
   throwaway 逻辑原型（`/prototype/editor-state-model`，不进产品 route）把冻结编辑器规则编码为确定性
   fixture 状态机：10 个引导走查场景 37/37 断言 + 自由操作冒烟 + 键盘焦点检查全部通过（Playwright A1，

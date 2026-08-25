@@ -2118,6 +2118,53 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
   `ABSENT`、Product route `CLOSED`、native stack `BUILD_NOT_AUTHORIZED`；subpixel/rounded/stroke coverage、
   resampling/transform 与最终产品接线继续后续 DAG，`/prototype` 不计交付。
 
+## 112. TV1-T112 执行卡
+
+- 决策：T111 以 verified commit `c59f3566` 收口且 worktree clean 后，复算 Ticket 10 §3/§7、Ticket 16/19
+  native/Profile 约束与 definite-layout 16 个 unsupported cases。rotation、resource、compositionViewport、subpixel/
+  AA/sampling cases 依赖尚未授权能力；Stack 中 exactly-two mixed active-min + second mixed-min 可退化为固定两次
+  freeze，不需 native stack、循环或 residual tolerance，因此登记为当前 single-writer frontier。
+- Interface/seam：只深化 T78 `stack_main_fill_allocations`；public API、admission/preflight、measurement/arrange、
+  authored DFS first-error 与全有或全无 output 不变。Rust/Python 使用独立控制流但共享冻结 vectors。
+- 精确语义：恰好两项 positive-weight main FILL；首轮恰好一个合法 mixed child 严格命中 min，另一合法 mixed
+  child 的 share 初始位于 `[min,max]`。冻结 active min 后唯一 offer 严格低于另一 min 时，再冻结到该 min；两项
+  max 均保持满足，min-sum overflow 交给既有 occupied/free/justify START fallback。不做第二轮 division、循环、
+  epsilon 或 tolerance。
+- 允许影响：T112 tracker/map/plan/NOTES、layout Rust/tests、shared definite-layout vectors `/55`、Python independent
+  verifier、render-gate exact identity/assertions/evidence。
+- 禁止影响：second offer 未命中 min、active-max mixed cascade、首轮多个 active、three/four-or-more 一般
+  active-bound FILL、rows→columns、任意非直角 rotation、Text/Image/compositionViewport、native raster/Profile
+  registration/certification、Java/OpenAPI/Web/正式 route、J1/A3/READY 与外部副作用。
+- TDD/gates：既有 mixed/mixed negative 先转 positive，使 Rust/Python 在同一 occurrence 共同 RED；GREEN 后补
+  active-first、COLUMN、cross-HUG、equality positives 与 replacement negative。随后 focused/local → canonical
+  `render` → affected `fast` → sequential `server` → Goal `full` → resolution `fast`。provider/API Key/费用/
+  真实数据=0，不 push/tag/PR，`/prototype` 不计最终产品交付。
+
+### TV1-T112 resolution evidence
+
+- shared `/55` 的 Rust primary 与 Python independent verifier 先在首个转正 case、同一 `STACK_MAIN_FILL`
+  occurrence `rwocc_0000000000000002` 共同 RED；独立实现后达到 252 laid-out + 16 unsupported、268/268 cases、
+  802 checks。vector SHA-256 为 `d9c5b29a51f27a19f914b21eaad0512a12367161852fb6a4d1b6506880461116`，
+  fixture `/3` SHA-256 保持 `a11475bcebad7e1c35cb0acd7018419d94afcb4b37d7f1df7346a055ad1df669`。
+- exact branch 只接受 exactly-two、首轮唯一 mixed active-min、另一 mixed child 首轮 inactive 且 freeze 后 offer
+  严格低于其 min；最终按 authored position 提交两个 minima。active-first、COLUMN、deferred cross-HUG、
+  `min == max` positives 与“freeze 后仍 inactive”replacement negative 均已覆盖，未开放循环/tolerance/general
+  water filling。
+- focused Rust 3/3、Python 268/268、workspace fmt/check/clippy `-D warnings`/tests、`py_compile`、JSON
+  inventory/SHA/unique 与 `git diff --check` 全绿。分级 A1 证据为 `render`
+  `.sdlc/evidence/20260825-131815-render/`（46.932 秒）、affected `fast`
+  `.sdlc/evidence/20260825-131909-fast/`（11.296 秒）、顺序 `server`
+  `.sdlc/evidence/20260825-131931-server/`（788.337 秒）与 17-step `full`
+  `.sdlc/evidence/20260825-133248-full/`（1181.533 秒），全部 exit 0。
+- `full` 中 App 347 tests/0 failures/0 errors/15 skipped、Node 24 Web 26 files/212 tests、runtime canary、
+  Playwright 23 passed + 1 controlled skip、Draft 与 inference browser journeys、inference E2E 1/1 均通过；
+  R0/R1/P0 provider attempts=0，P0 API Key reads/reservations/cost=0。
+- 本状态更新后的 resolution `fast` `.sdlc/evidence/20260825-135544-fast/` 3 steps 也均 exit 0
+  （A1，11.633 秒）。
+- 状态为 `resolved / automated_verified`。Profile `NOT_REGISTERED`、certification `NOT_CERTIFIED`、process raster
+  `ABSENT`、Product route `CLOSED`、native stack `BUILD_NOT_AUTHORIZED`；最终产品接线继续后续 DAG，
+  `/prototype` 不计交付。
+
 ### TV1-T74 resolution evidence
 
 - shared `/37` 共同 RED 后，Rust primary 与 Python independent verifier 分别实现并达到 162 laid-out +
