@@ -539,6 +539,12 @@ Label: wayfinder:map
   ABSOLUTE/Group/Frame/Stack/Grid definite offer 传播。Rust primary + Python A2 为 12/12 cases、81 checks，
   canonical `render`、affected `fast`、sequential `server` 与 17-step `full` 均绿；Text、scene/raster、daemon
   RESULT/Profile 与正式 Product route 保持关闭。
+- [接通 prepared IMAGE Engine PNG kernel](issues/107-prepared-image-engine-png-kernel.md) —
+  **resolved / automated_verified**；保留旧 resource-free `render_png`，新增只消费完整 prepared manifest 的
+  Engine 深接口。首个 scene/raster 闭包仅允许 source 与 integer device box 精确 1:1、全 opaque、identity
+  transform，复用 authored order、ancestor/surface clip 与 exact PNG。Rust primary + Python A2 为 9 rendered +
+  5 unsupported、14/14 cases、59 checks；canonical `render`、affected `fast`、sequential `server` 与 17-step
+  `full` 均绿。general sampling/blend、daemon RESULT/Profile 和正式产品 route 继续关闭。
 - [验证 Product Editor 状态、恢复与权威预览架构](issues/09-validate-product-editor-architecture.md) —
   throwaway 逻辑原型（`/prototype/editor-state-model`，不进产品 route）把冻结编辑器规则编码为确定性
   fixture 状态机：10 个引导走查场景 37/37 断言 + 自由操作冒烟 + 键盘焦点检查全部通过（Playwright A1，

@@ -3568,6 +3568,47 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
   Product route `CLOSED`、native font stack `BUILD_NOT_AUTHORIZED`。provider attempts/API Key reads/费用/真实数据=0，
   未 push/tag/PR，`/prototype` 不计最终产品交付。
 
+## 106. TV1-T107 执行卡
+
+- 决策：T106 以 verified commit `f22b56a8` 收口且 worktree clean 后，prepared IMAGE 已有 exact bytes、orientation-
+  normalized RGBA8 与权威 definite LayoutBox，但现有 Engine 仍在 manifest 入口 fail closed。下一安全 frontier 是
+  prepared IMAGE → authored-order scene → exact PNG pixels，而非提前接 daemon Profile 或构建产品 UI 外壳。
+- Interface/seam：保留 `render_png(document,dpi)` resource-free bytes/error order；新增
+  `render_png_with_prepared_resources(document,manifest,dpi)`，只消费 T105 manifest 并复用 T106 layout。Rect/Image
+  进入同一内部 paint command 顺序，调用者不能传裸 pixels/尺寸或绕过 resource preparation。
+- 精确语义：只接受 identity、draw opacity 1、source 全 opaque、四边 integer pixel aligned，且 target device
+  width/height 等于 oriented source logical width/height。此时三种 fit 与两种 sampling 均为无重采样退化等价；按
+  row-major 原像素复制，并保留 self/ancestor/surface clip 的 exact source offset。其余 sampling、alpha blend、
+  subpixel 与 transform fail closed，surface allocation 前零 partial output。
+- 允许影响：T107 tracker/map/plan/NOTES、Engine/resource Cargo seam、Engine Rust module/public tests、新 shared
+  prepared-IMAGE Engine vectors、Python stdlib independent verifier、render gate identity/evidence。
+- 禁止影响：general nearest/bilinear/premultiplied source-over、Text/vector/QR/barcode/JPEG、native Skia/FreeType/
+  HarfBuzz build、daemon RESULT/Profile、Java/OpenAPI/migration/Web/Product route、formal records、physical
+  certification、J1/A3/READY 与外部副作用。
+- TDD/gates：缺失 public Interface 与 prepared IMAGE vectors 先 RED；GREEN 后 focused/workspace/independent/offline
+  → `asset`/`render` → affected `fast` → sequential `server` → Goal `full` → resolution `fast`。provider/API Key/
+  费用/真实数据=0，不 push/tag/PR，`/prototype` 不计交付。
+- 实现结果：resource-free API bytes/error order 不变；新增
+  `render_png_with_prepared_resources(document,manifest,dpi)` 并复用 T105/T106 权威 resource/layout seam。
+  Rect/Image 已进入同一 authored-order paint stream；opaque exact 1:1 pixels 与 self/ancestor/surface clip 进入
+  exact PNG，三种 fit/两种 sampling 只在无重采样退化等价时开放，其余稳定 fail closed。
+- TDD/独立重放：缺失 public Interface 先 RED 后 GREEN；Rust primary 与 Python stdlib A2 覆盖 9 rendered +
+  5 unsupported、14/14 cases、59 checks，vector SHA-256
+  `b9b473ec9b4fc39ac1fa39185f62ac3a52f685f7dc5f72431408d5c06daf57d7`；旧 Engine 26/26 cases、82 checks，
+  process independent 7 vectors/110 checks 与 vendor 3067 files 均绿。
+- identity：Cargo lock SHA-256 `dcd02daa3bc4298e92da6d4c72961725d3e24fdef0d32e654030b030791cdd5f`，machine
+  manifest SHA-256 `8e1f5114bc5a2a08dc6834b4c81b175f4614a519ab03a705ed0d43209c8cda2d`，protocol vectors
+  SHA-256 `ee13576063c93cf5a7bf7ac85ac34a99b47f3016441f121d3e34d0345c2cef1c`。
+- 分级证据：canonical `render` `.sdlc/evidence/20260825-073242-render/`、affected `fast`
+  `.sdlc/evidence/20260825-073337-fast/`、sequential `server` `.sdlc/evidence/20260825-073358-server/`、Goal
+  `full` `.sdlc/evidence/20260825-075209-full/` 均绿；full 17/17 steps、1558.348 秒，覆盖 Maven、Node 24 Web
+  26 files/212 tests、runtime canary、Playwright 23 passed + 1 controlled skip、Draft 与 inference browser journeys。
+  状态回填后的 resolution `fast` `.sdlc/evidence/20260825-082841-fast/` 亦通过。
+- 状态为 `resolved / automated_verified`。Profile `NOT_REGISTERED`、certification `NOT_CERTIFIED`、process raster
+  `ABSENT`、daemon output `UNWIRED`、Product route `CLOSED`、native font stack `BUILD_NOT_AUTHORIZED`；general
+  sampling/blend/Text/RESULT/Profile/最终产品接线继续后续 DAG。provider attempts/API Key reads/费用/真实数据=0，
+  未 push/tag/PR，`/prototype` 不计最终产品交付。
+
 ## 66. TV1-T67 执行卡
 
 - 决策：T66 以 verified commit `a6fabe5` 收口且 worktree clean 后，复算原始 Ticket 10 §3/§7、

@@ -1,19 +1,21 @@
 //! RenderWeave RenderEngine execution kernel.
 //!
-//! The module deliberately exposes one deep interface. Callers provide an already-admitted
-//! RenderDocument and an effective PNG DPI; document traversal, layout, surface construction,
-//! definite container scene preparation, canonical pixels, encoding, and output identity remain
-//! implementation details.
+//! The module deliberately exposes narrow resource-free and prepared-resource entry points into
+//! one deep kernel. Callers provide an already-admitted RenderDocument and an effective PNG DPI;
+//! document traversal, layout, surface construction, definite scene preparation, canonical
+//! pixels, encoding, and output identity remain implementation details.
 
 use std::fmt::{Display, Formatter};
 
 use renderweave_renderer_document::AdmittedRenderDocument;
 use renderweave_renderer_layout::{
     DefiniteLayoutEntry, LocalLayoutBox, layout_definite_resource_free,
+    layout_definite_with_prepared_resources,
 };
 use renderweave_renderer_output_png::{
     BleedPt, OutputPngError, SurfaceSpec, encode_straight_rgba8, preflight_surface,
 };
+use renderweave_renderer_resource::{PreparedRenderResource, PreparedResourceManifest};
 use serde_json::{Map, Value};
 use sha2::{Digest, Sha256};
 
@@ -26,8 +28,12 @@ pub enum EnginePngUnsupported {
     SceneStructure,
     FramePaint,
     RectPaint,
+    ImagePaint,
+    ImageResampling,
     NonOpaqueRectAlpha,
+    NonOpaqueImageAlpha,
     NonPixelAlignedClip,
+    NonPixelAlignedImage,
     NonPixelAlignedRect,
     PartialBackgroundAlpha,
 }
@@ -39,8 +45,12 @@ impl EnginePngUnsupported {
             Self::SceneStructure => "SCENE_STRUCTURE",
             Self::FramePaint => "FRAME_PAINT",
             Self::RectPaint => "RECT_PAINT",
+            Self::ImagePaint => "IMAGE_PAINT",
+            Self::ImageResampling => "IMAGE_RESAMPLING",
             Self::NonOpaqueRectAlpha => "NON_OPAQUE_RECT_ALPHA",
+            Self::NonOpaqueImageAlpha => "NON_OPAQUE_IMAGE_ALPHA",
             Self::NonPixelAlignedClip => "NON_PIXEL_ALIGNED_CLIP",
+            Self::NonPixelAlignedImage => "NON_PIXEL_ALIGNED_IMAGE",
             Self::NonPixelAlignedRect => "NON_PIXEL_ALIGNED_RECT",
             Self::PartialBackgroundAlpha => "PARTIAL_BACKGROUND_ALPHA",
         }
@@ -129,6 +139,25 @@ struct PixelRect {
     right: u32,
     bottom: u32,
     color: [u8; 4],
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+struct PixelImage<'resource> {
+    left: u32,
+    top: u32,
+    right: u32,
+    bottom: u32,
+    source_left: u32,
+    source_top: u32,
+    source_width: u32,
+    source_height: u32,
+    straight_rgba8: &'resource [u8],
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum PixelPaint<'resource> {
+    Rect(PixelRect),
+    Image(PixelImage<'resource>),
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -247,12 +276,27 @@ pub fn render_png(
             EnginePngUnsupported::ResourceManifest,
         ));
     }
+    render_png_internal(document, None, dpi)
+}
 
+pub fn render_png_with_prepared_resources(
+    document: &AdmittedRenderDocument,
+    prepared_resources: &PreparedResourceManifest,
+    dpi: u32,
+) -> Result<EnginePngOutput, EnginePngError> {
+    render_png_internal(document, Some(prepared_resources), dpi)
+}
+
+fn render_png_internal(
+    document: &AdmittedRenderDocument,
+    prepared_resources: Option<&PreparedResourceManifest>,
+    dpi: u32,
+) -> Result<EnginePngOutput, EnginePngError> {
     let root: Value = serde_json::from_str(document.canonical_document())
         .map_err(|_| EnginePngError::Contract("admitted RenderDocument could not be parsed"))?;
     let canvas = object_member(root.as_object(), "canvas")?;
     let children = array_member(canvas, "children")?;
-    require_scene_kinds(children)?;
+    require_scene_kinds(children, prepared_resources.is_some())?;
 
     let background = color_member(canvas, "backgroundColor")?;
     let pixel = match background[3] {
@@ -286,7 +330,11 @@ pub fn render_png(
         dpi,
     )?;
 
-    let layout = layout_definite_resource_free(document).map_err(|_| EnginePngError::Layout)?;
+    let layout = match prepared_resources {
+        Some(resources) => layout_definite_with_prepared_resources(document, resources),
+        None => layout_definite_resource_free(document),
+    }
+    .map_err(|_| EnginePngError::Layout)?;
     if layout.entries().len() != document.occurrence_count()
         || layout.entries()[0].kind() != "canvas"
     {
@@ -313,6 +361,7 @@ pub fn render_png(
         dpi,
         surface.width_px(),
         surface.height_px(),
+        prepared_resources,
         &mut paints,
     )?;
     if layout_cursor != layout.entries().len() {
@@ -331,8 +380,11 @@ pub fn render_png(
     for target in pixels.chunks_exact_mut(4) {
         target.copy_from_slice(&pixel);
     }
-    for rect in paints {
-        paint_rect(&mut pixels, surface.width_px(), rect)?;
+    for paint in paints {
+        match paint {
+            PixelPaint::Rect(rect) => paint_rect(&mut pixels, surface.width_px(), rect)?,
+            PixelPaint::Image(image) => paint_image(&mut pixels, surface.width_px(), image)?,
+        }
     }
     let pixel_sha256 = raw_sha256_prefixed(&pixels);
     let bytes = encode_straight_rgba8(surface.width_px(), surface.height_px(), dpi, &pixels)?;
@@ -348,15 +400,16 @@ pub fn render_png(
     })
 }
 
-fn require_scene_kinds(nodes: &[Value]) -> Result<(), EnginePngError> {
+fn require_scene_kinds(nodes: &[Value], prepared_images: bool) -> Result<(), EnginePngError> {
     for node in nodes {
         let node = node
             .as_object()
             .ok_or(EnginePngError::Contract("Scene child is not an object"))?;
         match text_member(node, "kind")? {
             "rect" => {}
+            "image" if prepared_images => {}
             "group" | "frame" | "stack" | "grid" => {
-                require_scene_kinds(array_member(node, "children")?)?
+                require_scene_kinds(array_member(node, "children")?, prepared_images)?
             }
             _ => {
                 return Err(EnginePngError::Unsupported(
@@ -369,7 +422,7 @@ fn require_scene_kinds(nodes: &[Value]) -> Result<(), EnginePngError> {
 }
 
 #[allow(clippy::too_many_arguments)]
-fn prepare_scene(
+fn prepare_scene<'resource>(
     nodes: &[Value],
     layout_entries: &[DefiniteLayoutEntry],
     layout_cursor: &mut usize,
@@ -380,7 +433,8 @@ fn prepare_scene(
     dpi: u32,
     surface_width: u32,
     surface_height: u32,
-    paints: &mut Vec<PixelRect>,
+    prepared_resources: Option<&'resource PreparedResourceManifest>,
+    paints: &mut Vec<PixelPaint<'resource>>,
 ) -> Result<(), EnginePngError> {
     for node in nodes {
         let node = node
@@ -410,7 +464,26 @@ fn prepare_scene(
                     surface_width,
                     surface_height,
                 )? {
-                    paints.push(paint);
+                    paints.push(PixelPaint::Rect(paint));
+                }
+            }
+            "image" => {
+                let resources = prepared_resources.ok_or(EnginePngError::Unsupported(
+                    EnginePngUnsupported::SceneStructure,
+                ))?;
+                if let Some(paint) = prepare_image_paint(
+                    node,
+                    layout,
+                    resources,
+                    ancestor_draw_enabled,
+                    active_clip,
+                    bleed_left,
+                    bleed_top,
+                    dpi,
+                    surface_width,
+                    surface_height,
+                )? {
+                    paints.push(PixelPaint::Image(paint));
                 }
             }
             "group" => {
@@ -426,6 +499,7 @@ fn prepare_scene(
                     dpi,
                     surface_width,
                     surface_height,
+                    prepared_resources,
                     paints,
                 )?;
             }
@@ -442,7 +516,7 @@ fn prepare_scene(
                     surface_height,
                 )?;
                 if let Some(paint) = prepared.paint {
-                    paints.push(paint);
+                    paints.push(PixelPaint::Rect(paint));
                 }
                 prepare_scene(
                     array_member(node, "children")?,
@@ -455,6 +529,7 @@ fn prepare_scene(
                     dpi,
                     surface_width,
                     surface_height,
+                    prepared_resources,
                     paints,
                 )?;
             }
@@ -520,6 +595,166 @@ fn prepare_rect_paint(
         surface_width,
         surface_height,
     )?)))
+}
+
+#[allow(clippy::too_many_arguments)]
+fn prepare_image_paint<'resource>(
+    node: &Map<String, Value>,
+    layout: &DefiniteLayoutEntry,
+    prepared_resources: &'resource PreparedResourceManifest,
+    ancestor_draw_enabled: bool,
+    active_clip: PixelClip,
+    bleed_left: i128,
+    bleed_top: i128,
+    dpi: u32,
+    surface_width: u32,
+    surface_height: u32,
+) -> Result<Option<PixelImage<'resource>>, EnginePngError> {
+    if text_member(node, "kind")? != "image" {
+        return Err(EnginePngError::Unsupported(
+            EnginePngUnsupported::SceneStructure,
+        ));
+    }
+    require_layout_entry(node, layout, "image", false)?;
+    if !node_draw_enabled(
+        node,
+        ancestor_draw_enabled,
+        EnginePngUnsupported::ImagePaint,
+    )? {
+        return Ok(None);
+    }
+    if !identity_transform(node)? {
+        return Err(EnginePngError::Unsupported(
+            EnginePngUnsupported::ImagePaint,
+        ));
+    }
+    if !matches!(text_member(node, "fit")?, "CONTAIN" | "COVER" | "FILL")
+        || !matches!(text_member(node, "sampling")?, "LINEAR" | "NEAREST")
+    {
+        return Err(EnginePngError::Contract(
+            "admitted Image fit or sampling token is invalid",
+        ));
+    }
+
+    let resource_id = text_member(node, "imageResourceId")?;
+    let Some(PreparedRenderResource::Image { image, .. }) = prepared_resources.get(resource_id)
+    else {
+        return Err(EnginePngError::Contract(
+            "prepared IMAGE resource identity diverged from the admitted scene",
+        ));
+    };
+    if image.resource_id() != resource_id {
+        return Err(EnginePngError::Contract(
+            "prepared IMAGE resource identity diverged from the admitted scene",
+        ));
+    }
+    let source_length = u64::from(image.width_px())
+        .checked_mul(u64::from(image.height_px()))
+        .and_then(|pixels| pixels.checked_mul(4))
+        .and_then(|bytes| usize::try_from(bytes).ok())
+        .ok_or(EnginePngError::Contract(
+            "prepared IMAGE pixel length overflowed",
+        ))?;
+    let source = image.straight_rgba8();
+    if source.len() != source_length {
+        return Err(EnginePngError::Contract(
+            "prepared IMAGE pixel length diverged from its dimensions",
+        ));
+    }
+    if source.chunks_exact(4).any(|pixel| pixel[3] != 255) {
+        return Err(EnginePngError::Unsupported(
+            EnginePngUnsupported::NonOpaqueImageAlpha,
+        ));
+    }
+
+    let layout_box = layout.layout_box();
+    require_valid_layout_box(layout_box)?;
+    let right = layout_box.x() + layout_box.width();
+    let bottom = layout_box.y() + layout_box.height();
+    if !right.is_finite()
+        || !bottom.is_finite()
+        || right < layout_box.x()
+        || bottom < layout_box.y()
+    {
+        return Err(EnginePngError::Contract(
+            "Image layout box is not finite and monotonic",
+        ));
+    }
+    let device_left = exact_layout_device_edge(
+        layout_box.x(),
+        bleed_left,
+        dpi,
+        EnginePngUnsupported::NonPixelAlignedImage,
+    )?;
+    let device_top = exact_layout_device_edge(
+        layout_box.y(),
+        bleed_top,
+        dpi,
+        EnginePngUnsupported::NonPixelAlignedImage,
+    )?;
+    let device_right = exact_layout_device_edge(
+        right,
+        bleed_left,
+        dpi,
+        EnginePngUnsupported::NonPixelAlignedImage,
+    )?;
+    let device_bottom = exact_layout_device_edge(
+        bottom,
+        bleed_top,
+        dpi,
+        EnginePngUnsupported::NonPixelAlignedImage,
+    )?;
+    if device_right < device_left || device_bottom < device_top {
+        return Err(EnginePngError::Contract(
+            "Image device box is not monotonic",
+        ));
+    }
+    if device_right - device_left != i128::from(image.width_px())
+        || device_bottom - device_top != i128::from(image.height_px())
+    {
+        return Err(EnginePngError::Unsupported(
+            EnginePngUnsupported::ImageResampling,
+        ));
+    }
+
+    let self_clip = PixelClip {
+        left: clip_device_edge(device_left, surface_width),
+        top: clip_device_edge(device_top, surface_height),
+        right: clip_device_edge(device_right, surface_width),
+        bottom: clip_device_edge(device_bottom, surface_height),
+    };
+    let destination = active_clip.intersect(self_clip);
+    if destination.left == destination.right || destination.top == destination.bottom {
+        return Ok(None);
+    }
+    let source_left = u32::try_from(i128::from(destination.left) - device_left)
+        .map_err(|_| EnginePngError::Contract("Image source clip offset is invalid"))?;
+    let source_top = u32::try_from(i128::from(destination.top) - device_top)
+        .map_err(|_| EnginePngError::Contract("Image source clip offset is invalid"))?;
+    let copied_width = destination.right - destination.left;
+    let copied_height = destination.bottom - destination.top;
+    if source_left
+        .checked_add(copied_width)
+        .is_none_or(|right| right > image.width_px())
+        || source_top
+            .checked_add(copied_height)
+            .is_none_or(|bottom| bottom > image.height_px())
+    {
+        return Err(EnginePngError::Contract(
+            "Image source clip exceeds prepared pixels",
+        ));
+    }
+    Ok(Some(PixelImage {
+        left: destination.left,
+        top: destination.top,
+        right: destination.right,
+        bottom: destination.bottom,
+        source_left,
+        source_top,
+        source_width: image.width_px(),
+        source_height: image.height_px(),
+        straight_rgba8: source,
+    }))
 }
 
 fn prepare_group(
@@ -923,6 +1158,56 @@ fn paint_rect(
         for target in row.chunks_exact_mut(4) {
             target.copy_from_slice(&rect.color);
         }
+    }
+    Ok(())
+}
+
+fn paint_image(
+    pixels: &mut [u8],
+    surface_width: u32,
+    image: PixelImage<'_>,
+) -> Result<(), EnginePngError> {
+    let copied_width = image.right - image.left;
+    for destination_y in image.top..image.bottom {
+        let source_y = image
+            .source_top
+            .checked_add(destination_y - image.top)
+            .filter(|row| *row < image.source_height)
+            .ok_or(EnginePngError::Contract(
+                "Image source row exceeds prepared pixels",
+            ))?;
+        let source_start = (u64::from(source_y) * u64::from(image.source_width)
+            + u64::from(image.source_left))
+        .checked_mul(4)
+        .and_then(|value| usize::try_from(value).ok())
+        .ok_or(EnginePngError::RasterAllocation)?;
+        let source_end = u64::try_from(source_start)
+            .ok()
+            .and_then(|value| value.checked_add(u64::from(copied_width) * 4))
+            .and_then(|value| usize::try_from(value).ok())
+            .ok_or(EnginePngError::RasterAllocation)?;
+        let source =
+            image
+                .straight_rgba8
+                .get(source_start..source_end)
+                .ok_or(EnginePngError::Contract(
+                    "Image source row exceeds prepared pixels",
+                ))?;
+
+        let destination_start = (u64::from(destination_y) * u64::from(surface_width)
+            + u64::from(image.left))
+        .checked_mul(4)
+        .and_then(|value| usize::try_from(value).ok())
+        .ok_or(EnginePngError::RasterAllocation)?;
+        let destination_end = u64::try_from(destination_start)
+            .ok()
+            .and_then(|value| value.checked_add(u64::from(copied_width) * 4))
+            .and_then(|value| usize::try_from(value).ok())
+            .ok_or(EnginePngError::RasterAllocation)?;
+        pixels
+            .get_mut(destination_start..destination_end)
+            .ok_or(EnginePngError::RasterAllocation)?
+            .copy_from_slice(source);
     }
     Ok(())
 }

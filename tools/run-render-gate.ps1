@@ -47,6 +47,7 @@ $definiteLayoutReport = Join-Path $resolvedEvidenceDir 'definite-layout-independ
 $preparedImageLayoutReport = Join-Path $resolvedEvidenceDir 'prepared-image-layout-independent.json'
 $outputPngReport = Join-Path $resolvedEvidenceDir 'output-png-independent.json'
 $enginePngReport = Join-Path $resolvedEvidenceDir 'engine-png-independent.json'
+$enginePreparedImagePngReport = Join-Path $resolvedEvidenceDir 'engine-prepared-image-png-independent.json'
 $summaryPath = Join-Path $resolvedEvidenceDir 'renderer-process-summary.json'
 foreach ($report in @(
         $independentReport,
@@ -63,6 +64,7 @@ foreach ($report in @(
         $preparedImageLayoutReport,
         $outputPngReport,
         $enginePngReport,
+        $enginePreparedImagePngReport,
         $summaryPath)) {
     if (Test-Path -LiteralPath $report) {
         throw "Renderer process evidence already exists: $report"
@@ -691,6 +693,41 @@ try {
         throw 'Engine PNG independent report boundary drifted.'
     }
 
+    Invoke-Checked 'engine-prepared-image-png-python-independent-replay' {
+        & python.exe 'tools\verify-engine-prepared-image-png-vectors.py' `
+            '--vectors' 'renderer\engine-prepared-image-png-vectors-v1.json' `
+            '--report' $enginePreparedImagePngReport
+    }
+    if (-not (Test-Path -LiteralPath $enginePreparedImagePngReport -PathType Leaf)) {
+        throw 'Prepared IMAGE Engine PNG independent replay did not write its report.'
+    }
+    $enginePreparedImagePngIndependent =
+        Get-Content -Raw -Encoding UTF8 -LiteralPath $enginePreparedImagePngReport |
+            ConvertFrom-Json
+    if ($enginePreparedImagePngIndependent.verifier -ne 'renderweave-engine-prepared-image-png-python-independent/1' `
+            -or $enginePreparedImagePngIndependent.result -ne 'PASS' `
+            -or $enginePreparedImagePngIndependent.assurance -ne 'A2' `
+            -or $enginePreparedImagePngIndependent.renderedCases -ne 9 `
+            -or $enginePreparedImagePngIndependent.unsupportedCases -ne 5 `
+            -or $enginePreparedImagePngIndependent.passed -ne 14 `
+            -or $enginePreparedImagePngIndependent.total -ne 14 `
+            -or $enginePreparedImagePngIndependent.failed -ne 0 `
+            -or $enginePreparedImagePngIndependent.checks -ne 59 `
+            -or $enginePreparedImagePngIndependent.vectorSha256 -ne 'b9b473ec9b4fc39ac1fa39185f62ac3a52f685f7dc5f72431408d5c06daf57d7' `
+            -or $enginePreparedImagePngIndependent.layoutProfile -ne 'renderweave-layout/1.0' `
+            -or $enginePreparedImagePngIndependent.resourcePreparationProfile -ne 'renderweave-renderer/1.0' `
+            -or $enginePreparedImagePngIndependent.imagePixels -ne 'EXACT_ORIENTATION_NORMALIZED_STRAIGHT_RGBA8' `
+            -or $enginePreparedImagePngIndependent.degenerateMapping -ne 'SOURCE_AND_INTEGER_DEVICE_BOX_EXACT_1_TO_1_NO_RESAMPLE' `
+            -or $enginePreparedImagePngIndependent.enginePreparedImageKernel -ne 'PREPARED_IMAGE_OPAQUE_1_TO_1_AUTHORED_ORDER_RECTANGULAR_CLIP_EXACT_PNG_AUTOMATED_VERIFIED_UNWIRED' `
+            -or $enginePreparedImagePngIndependent.profileAvailability -ne 'NOT_REGISTERED' `
+            -or $enginePreparedImagePngIndependent.certificationStatus -ne 'NOT_CERTIFIED' `
+            -or $enginePreparedImagePngIndependent.processRasterImplementation -ne 'ABSENT' `
+            -or $enginePreparedImagePngIndependent.daemonOutputPath -ne 'UNWIRED' `
+            -or $enginePreparedImagePngIndependent.productRoute -ne 'CLOSED' `
+            -or $enginePreparedImagePngIndependent.providerAttempts -ne 0) {
+        throw 'Prepared IMAGE Engine PNG independent report boundary drifted.'
+    }
+
     $dockerImageId = (& docker.exe image inspect $dockerImage --format '{{.Id}}' 2>&1) -join "`n"
     if ($LASTEXITCODE -ne 0 -or $dockerImageId -notmatch '^sha256:[0-9a-f]{64}$') {
         throw "Pinned renderer Linux image is not present locally: $dockerImage"
@@ -948,6 +985,17 @@ try {
             vectorSha256 = $enginePngIndependent.vectorSha256
             enginePngKernel = $enginePngIndependent.enginePngKernel
         }
+        enginePreparedImagePngIndependent = [ordered]@{
+            verifier = $enginePreparedImagePngIndependent.verifier
+            assurance = $enginePreparedImagePngIndependent.assurance
+            renderedCases = $enginePreparedImagePngIndependent.renderedCases
+            unsupportedCases = $enginePreparedImagePngIndependent.unsupportedCases
+            checks = $enginePreparedImagePngIndependent.checks
+            vectorSha256 = $enginePreparedImagePngIndependent.vectorSha256
+            imagePixels = $enginePreparedImagePngIndependent.imagePixels
+            degenerateMapping = $enginePreparedImagePngIndependent.degenerateMapping
+            enginePreparedImageKernel = $enginePreparedImagePngIndependent.enginePreparedImageKernel
+        }
         boundary = [ordered]@{
             rendererProfiles = @()
             profileAvailability = 'NOT_REGISTERED'
@@ -973,6 +1021,7 @@ try {
             preparedImageLayout = 'PREPARED_IMAGE_FIXED_FILL_SINGLE_AXIS_HUG_LOGICAL_RATIO_ABSOLUTE_STACK_GRID_CONTAINER_AUTOMATED_VERIFIED_UNWIRED'
             outputPngKernel = 'AUTOMATED_VERIFIED_UNWIRED'
             enginePngKernel = 'PREORDER_DEFINITE_IDENTITY_GROUP_FRAME_STACK_GRID_RECT_PIXEL_ALIGNED_OPAQUE_RECTANGULAR_CLIP_VISIBILITY_ZERO_OPACITY_SUPPRESSION_PNG_KERNEL_UNWIRED'
+            preparedImageEnginePngKernel = 'PREPARED_IMAGE_OPAQUE_1_TO_1_AUTHORED_ORDER_RECTANGULAR_CLIP_EXACT_PNG_AUTOMATED_VERIFIED_UNWIRED'
             daemonOutputPath = 'UNWIRED'
             rendererReady = $false
             ticket19Closed = $false
@@ -983,7 +1032,7 @@ try {
         }
     }
     Write-Utf8File -Path $summaryPath -Content ($summary | ConvertTo-Json -Depth 6)
-    Write-Host (('Renderer process: Java={0} Python={1}+{2}+{3}+{4}+{5}+{6}+{7}+{8}+{9}+{10}+{11}+{12}+{13}+{14} Rust Windows=PASS ' +
+    Write-Host (('Renderer process: Java={0} Python={1}+{2}+{3}+{4}+{5}+{6}+{7}+{8}+{9}+{10}+{11}+{12}+{13}+{14}+{15} Rust Windows=PASS ' +
                 'Linux UDS=PASS Profile=NOT_REGISTERED Certification=NOT_CERTIFIED Raster=ABSENT') -f
             $java.tests, $independent.checks, $documentIndependent.total,
             $resourceBodyIndependent.total, $resourceFetchTargetIndependent.total,
@@ -991,7 +1040,8 @@ try {
             $definiteLayoutIndependent.total, $preparedImageLayoutIndependent.total,
             $outputPngIndependent.total, $enginePngIndependent.total,
             $resourceMediaRawCacheIndependent.total, $imageDecodeCacheIndependent.total,
-            $fontPrepareCacheIndependent.total, $resourcePreparationPipelineIndependent.total)
+            $fontPrepareCacheIndependent.total, $resourcePreparationPipelineIndependent.total,
+            $enginePreparedImagePngIndependent.total)
     Write-Host "Renderer process evidence: $summaryPath"
 }
 finally {

@@ -321,6 +321,7 @@ dependencies = [
  "renderweave-renderer-document",
  "renderweave-renderer-layout",
  "renderweave-renderer-output-png",
+ "renderweave-renderer-resource",
  "serde",
  "serde_json",
  "sha2",

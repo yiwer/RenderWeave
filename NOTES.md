@@ -1,6 +1,23 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-25 **Template v1 implementation TV1-T107 已由 Codex `/root` single-writer 完成，状态
+  `resolved/automated_verified`**：最终目标仍是正式产品 Template-v1 页面与真实功能，`/prototype` 不计交付。
+  本票保留旧 resource-free `render_png` bytes/error order，新增只消费 T105 完整 immutable prepared manifest 并
+  复用 T106 layout 的 Engine PNG 深接口；Rect/Image 已进入同一 authored-order paint stream。首个 IMAGE
+  scene/raster 闭包只允许 orientation-normalized source 与 integer device LayoutBox 精确 1:1、source 全 opaque、
+  identity transform/draw opacity 1，复用 self/ancestor/surface clip 与 exact PNG encoder；三种 fit/两种 sampling
+  只在无重采样退化等价时开放。Rust primary + Python A2 为 9 rendered + 5 unsupported、14/14 cases、59 checks，
+  vector SHA-256 `b9b473ec9b4fc39ac1fa39185f62ac3a52f685f7dc5f72431408d5c06daf57d7`；旧 Engine
+  26/26 cases、82 checks，process 7 vectors/110 checks 与 vendor 3067 files 全绿。canonical `render`
+  `.sdlc/evidence/20260825-073242-render/`、affected `fast` `.sdlc/evidence/20260825-073337-fast/`、sequential
+  `server` `.sdlc/evidence/20260825-073358-server/` 与 Goal `full` `.sdlc/evidence/20260825-075209-full/` 均绿；
+  full 17/17 steps、1558.348 秒，含 Node 24 Web 26 files/212 tests、runtime canary、Playwright 23 passed +
+  1 controlled skip、Draft 与 inference browser journeys；状态回填后的 resolution `fast`
+  `.sdlc/evidence/20260825-082841-fast/` 亦通过。Profile `NOT_REGISTERED`、certification
+  `NOT_CERTIFIED`、process raster `ABSENT`、daemon output `UNWIRED`、正式产品 route `CLOSED`、native font stack
+  `BUILD_NOT_AUTHORIZED`；general sampling/blend/Text/RESULT/Profile/最终产品接线继续后续 DAG。provider attempts/
+  API Key reads/费用/真实数据=0，未 push/tag/PR。
 - 2026-08-25 **Template v1 implementation TV1-T106 已由 Codex `/root` single-writer 完成，状态
   `resolved/automated_verified`**：用户明确最终目标是正式产品 Template-v1 页面与真实功能，`/prototype` 不计
   交付。本票新增唯一 `layout_definite_with_prepared_resources` deep Interface，只消费 T105 完整 immutable
