@@ -142,15 +142,50 @@ struct PixelRect {
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum PixelQuarterTurn {
+    Zero,
+    Clockwise90,
+    Half,
+    Clockwise270,
+}
+
+impl PixelQuarterTurn {
+    fn source_coordinate(
+        self,
+        destination_x: u32,
+        destination_y: u32,
+        source_width: u32,
+        source_height: u32,
+    ) -> Option<(u32, u32)> {
+        match self {
+            Self::Zero => Some((destination_x, destination_y)),
+            Self::Clockwise90 => Some((
+                destination_y,
+                source_height.checked_sub(1)?.checked_sub(destination_x)?,
+            )),
+            Self::Half => Some((
+                source_width.checked_sub(1)?.checked_sub(destination_x)?,
+                source_height.checked_sub(1)?.checked_sub(destination_y)?,
+            )),
+            Self::Clockwise270 => Some((
+                source_width.checked_sub(1)?.checked_sub(destination_y)?,
+                destination_x,
+            )),
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 struct PixelImage<'resource> {
     left: u32,
     top: u32,
     right: u32,
     bottom: u32,
-    source_left: u32,
-    source_top: u32,
+    destination_x_offset: u32,
+    destination_y_offset: u32,
     source_width: u32,
     source_height: u32,
+    quarter_turn: PixelQuarterTurn,
     straight_rgba8: &'resource [u8],
 }
 
@@ -652,11 +687,11 @@ fn prepare_image_paint<'resource>(
     if !draw_enabled {
         return Ok(None);
     }
-    if !identity_transform(node)? {
+    let Some(quarter_turn) = centered_unit_quarter_turn(node)? else {
         return Err(EnginePngError::Unsupported(
             EnginePngUnsupported::ImagePaint,
         ));
-    }
+    };
     if !matches!(text_member(node, "fit")?, "CONTAIN" | "COVER" | "FILL")
         || !matches!(text_member(node, "sampling")?, "LINEAR" | "NEAREST")
     {
@@ -739,6 +774,11 @@ fn prepare_image_paint<'resource>(
             EnginePngUnsupported::ImageResampling,
         ));
     }
+    if quarter_turn != PixelQuarterTurn::Zero && image.width_px() != image.height_px() {
+        return Err(EnginePngError::Unsupported(
+            EnginePngUnsupported::ImagePaint,
+        ));
+    }
 
     let self_clip = PixelClip {
         left: clip_device_edge(device_left, surface_width),
@@ -750,21 +790,21 @@ fn prepare_image_paint<'resource>(
     if destination.left == destination.right || destination.top == destination.bottom {
         return Ok(None);
     }
-    let source_left = u32::try_from(i128::from(destination.left) - device_left)
-        .map_err(|_| EnginePngError::Contract("Image source clip offset is invalid"))?;
-    let source_top = u32::try_from(i128::from(destination.top) - device_top)
-        .map_err(|_| EnginePngError::Contract("Image source clip offset is invalid"))?;
+    let destination_x_offset = u32::try_from(i128::from(destination.left) - device_left)
+        .map_err(|_| EnginePngError::Contract("Image destination clip offset is invalid"))?;
+    let destination_y_offset = u32::try_from(i128::from(destination.top) - device_top)
+        .map_err(|_| EnginePngError::Contract("Image destination clip offset is invalid"))?;
     let copied_width = destination.right - destination.left;
     let copied_height = destination.bottom - destination.top;
-    if source_left
+    if destination_x_offset
         .checked_add(copied_width)
         .is_none_or(|right| right > image.width_px())
-        || source_top
+        || destination_y_offset
             .checked_add(copied_height)
             .is_none_or(|bottom| bottom > image.height_px())
     {
         return Err(EnginePngError::Contract(
-            "Image source clip exceeds prepared pixels",
+            "Image destination clip exceeds prepared pixels",
         ));
     }
     Ok(Some(PixelImage {
@@ -772,10 +812,11 @@ fn prepare_image_paint<'resource>(
         top: destination.top,
         right: destination.right,
         bottom: destination.bottom,
-        source_left,
-        source_top,
+        destination_x_offset,
+        destination_y_offset,
         source_width: image.width_px(),
         source_height: image.height_px(),
+        quarter_turn,
         straight_rgba8: source,
     }))
 }
@@ -930,6 +971,35 @@ fn identity_transform(node: &Map<String, Value>) -> Result<bool, EnginePngError>
         && number_equals(transform, "rotationDeg", 0.0)?
         && number_equals(transform, "scaleX", 1.0)?
         && number_equals(transform, "scaleY", 1.0)?)
+}
+
+fn centered_unit_quarter_turn(
+    node: &Map<String, Value>,
+) -> Result<Option<PixelQuarterTurn>, EnginePngError> {
+    let transform = object_member(Some(node), "transform")?;
+    if !has_exact_members(
+        transform,
+        &["originX", "originY", "rotationDeg", "scaleX", "scaleY"],
+    ) || !number_equals(transform, "originX", 0.5)?
+        || !number_equals(transform, "originY", 0.5)?
+        || !number_equals(transform, "scaleX", 1.0)?
+        || !number_equals(transform, "scaleY", 1.0)?
+    {
+        return Ok(None);
+    }
+    let rotation = number_member(transform, "rotationDeg")?;
+    let equals = |expected: f64| rotation.to_bits() == expected.to_bits();
+    Ok(if equals(-360.0) || equals(0.0) || equals(360.0) {
+        Some(PixelQuarterTurn::Zero)
+    } else if equals(-270.0) || equals(90.0) {
+        Some(PixelQuarterTurn::Clockwise90)
+    } else if equals(-180.0) || equals(180.0) {
+        Some(PixelQuarterTurn::Half)
+    } else if equals(-90.0) || equals(270.0) {
+        Some(PixelQuarterTurn::Clockwise270)
+    } else {
+        None
+    })
 }
 
 fn zero_corner_radii(node: &Map<String, Value>) -> Result<bool, EnginePngError> {
@@ -1386,20 +1456,34 @@ fn paint_image_row(
             "Raster row length diverged from surface width",
         ));
     }
-    let source_y = image
-        .source_top
+    let destination_local_y = image
+        .destination_y_offset
         .checked_add(destination_y - image.top)
-        .filter(|source_row| *source_row < image.source_height)
+        .filter(|destination_row| *destination_row < image.source_height)
         .ok_or(EnginePngError::Contract(
-            "Image source row exceeds prepared pixels",
+            "Image destination row exceeds prepared pixels",
         ))?;
     for destination_x in image.left..image.right {
-        let source_x = image
-            .source_left
+        let destination_local_x = image
+            .destination_x_offset
             .checked_add(destination_x - image.left)
-            .filter(|column| *column < image.source_width)
+            .filter(|destination_column| *destination_column < image.source_width)
             .ok_or(EnginePngError::Contract(
-                "Image source column exceeds prepared pixels",
+                "Image destination column exceeds prepared pixels",
+            ))?;
+        let (source_x, source_y) = image
+            .quarter_turn
+            .source_coordinate(
+                destination_local_x,
+                destination_local_y,
+                image.source_width,
+                image.source_height,
+            )
+            .filter(|(source_x, source_y)| {
+                *source_x < image.source_width && *source_y < image.source_height
+            })
+            .ok_or(EnginePngError::Contract(
+                "Image quarter-turn source coordinate exceeds prepared pixels",
             ))?;
         let source_offset = (u64::from(source_y) * u64::from(image.source_width)
             + u64::from(source_x))

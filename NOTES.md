@@ -1,6 +1,21 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-25 **Template v1 implementation TV1-T113 已由 Codex `/root` single-writer 完成，状态
+  `resolved/automated_verified`**：最终交付仍是正式产品 Template-v1 页面与真实后端功能，`/prototype` 不计交付。
+  prepared IMAGE 既有 integer-aligned 1:1 方形路径已接受 centered origin、positive unit scale 与 exact
+  quarter turn，以 inverse integer mapping 保持 ancestor clip、alpha、subtree opacity 与 authored source-over。
+  shared `/3` 的 Rust primary/Python independent verifier 在同一 90° case 共同 RED 后达到 23 rendered +
+  3 unsupported、26/26 cases/160 checks，vector SHA-256
+  `a9f849611f0075e413eda281e0b40c4cec8efbae9bf607122e4d8975c0c480ec`。canonical `render`
+  `.sdlc/evidence/20260825-141348-render/`、affected `fast` `.sdlc/evidence/20260825-141542-fast/`、sequential
+  `server` `.sdlc/evidence/20260825-141603-server/` 与第二次 17-step Goal `full`
+  `.sdlc/evidence/20260825-150934-full/` 均绿；状态回填后的 resolution `fast`
+  `.sdlc/evidence/20260825-153729-fast/` 也以 3/3 steps、11.146 秒通过。第一次 `full`
+  `.sdlc/evidence/20260825-143420-full/` 的 product chunk-recovery 5 秒超时已如实保留，26 次完整退出的诊断重放
+  与另 100 个逐例 `ok` 均未复现，未做推测性修补。任意角度、non-square rotation、resampling、native build、
+  Profile `NOT_REGISTERED`、certification `NOT_CERTIFIED`、process raster `ABSENT` 与正式产品 route `CLOSED`
+  边界不变；provider/API Key/费用/真实数据=0，不 push/tag/PR。
 - 2026-08-25 **Template v1 implementation TV1-T112 已由 Codex `/root` single-writer 完成，状态
   `resolved/automated_verified`**：最终交付仍是正式产品 Template-v1 页面与真实后端功能，`/prototype` 不计交付。
   exactly-two Stack main FILL 中 mixed active-min + second mixed-min 的固定两次 freeze 子闭包已接通；shared

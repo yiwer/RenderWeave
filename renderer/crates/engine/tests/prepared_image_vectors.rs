@@ -149,7 +149,7 @@ fn renders_prepared_image_vectors_through_the_public_engine_interface() {
 }
 
 #[test]
-fn rejects_prepared_images_outside_the_frozen_alpha_1_to_1_subset() {
+fn rejects_prepared_images_outside_the_frozen_quarter_turn_1_to_1_subset() {
     let vectors = vectors();
     for case in &vectors.unsupported_cases {
         let fixtures = fixtures_for(&vectors, &case.resource_fixture_id, &[]);
@@ -170,7 +170,7 @@ fn rejects_prepared_images_outside_the_frozen_alpha_1_to_1_subset() {
 
 fn assert_contract(vectors: &Vectors) {
     assert_eq!(
-        "renderweave-engine-prepared-image-png-vectors/2",
+        "renderweave-engine-prepared-image-png-vectors/3",
         vectors.vector_version
     );
     let authority = &vectors.authority_context;
@@ -184,7 +184,7 @@ fn assert_contract(vectors: &Vectors) {
         authority.image_pixels
     );
     assert_eq!(
-        "SOURCE_AND_INTEGER_DEVICE_BOX_EXACT_1_TO_1_NO_RESAMPLE",
+        "SOURCE_AND_INTEGER_DEVICE_BOX_EXACT_1_TO_1_CENTERED_UNIT_QUARTER_TURN_NO_RESAMPLE",
         authority.degenerate_mapping
     );
     assert_eq!(
@@ -192,7 +192,7 @@ fn assert_contract(vectors: &Vectors) {
         authority.alpha_arithmetic
     );
     assert_eq!(
-        "PREPARED_IMAGE_ALPHA_1_TO_1_PREMULTIPLIED_SOURCE_OVER_SUBTREE_OPACITY_ROUND_HALF_UP_ISOLATION_EXACT_PNG_AUTOMATED_VERIFIED_PROFILE_GATED",
+        "PREPARED_IMAGE_ALPHA_1_TO_1_CENTERED_UNIT_QUARTER_TURN_PREMULTIPLIED_SOURCE_OVER_SUBTREE_OPACITY_ROUND_HALF_UP_ISOLATION_EXACT_PNG_AUTOMATED_VERIFIED_PROFILE_GATED",
         authority.engine_prepared_image_kernel
     );
     assert_eq!("NOT_REGISTERED", authority.profile_availability);
@@ -201,7 +201,7 @@ fn assert_contract(vectors: &Vectors) {
     assert_eq!("UNWIRED", authority.daemon_output_path);
     assert_eq!("CLOSED", authority.product_route);
     assert_eq!(0, authority.provider_attempts);
-    assert_eq!(18, vectors.rendered_cases.len());
+    assert_eq!(23, vectors.rendered_cases.len());
     assert_eq!(3, vectors.unsupported_cases.len());
 }
 

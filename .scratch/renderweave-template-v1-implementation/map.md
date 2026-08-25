@@ -577,6 +577,13 @@ Label: wayfinder:map
   `d9c5b29a51f27a19f914b21eaad0512a12367161852fb6a4d1b6506880461116`；`render`/`fast`/`server`/17-step
   `full` 与状态回填后的 resolution `fast` 均绿。Profile、native stack 与正式产品 route 保持关闭，
   `/prototype` 不计最终交付。
+- [实现 prepared IMAGE 精确直角旋转 Engine PNG 子闭包](issues/113-prepared-image-exact-quarter-turn-png-kernel.md) —
+  **resolved / automated_verified**；只接受 prepared IMAGE 既有 integer-aligned 1:1 方形路径上的中心原点、
+  正单位缩放与 exact 90° 倍数 rotation，以 inverse integer mapping 保持 clip/alpha/opacity/source-over。shared
+  `/3` 已由 Rust/Python 在同一 90° case 共同 RED 后达到 23 rendered + 3 unsupported、26/26 cases/160 checks，
+  vector SHA-256 `a9f849611f0075e413eda281e0b40c4cec8efbae9bf607122e4d8975c0c480ec`；`render`/`fast`/
+  `server`/17-step `full` 与状态回填后的 resolution `fast` 均绿。任意角度、非方形旋转、resampling、native
+  build、Profile registration 与正式产品 route 保持关闭，`/prototype` 不计最终交付。
 - [验证 Product Editor 状态、恢复与权威预览架构](issues/09-validate-product-editor-architecture.md) —
   throwaway 逻辑原型（`/prototype/editor-state-model`，不进产品 route）把冻结编辑器规则编码为确定性
   fixture 状态机：10 个引导走查场景 37/37 断言 + 自由操作冒烟 + 键盘焦点检查全部通过（Playwright A1，

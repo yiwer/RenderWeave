@@ -2165,6 +2165,58 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
   `ABSENT`、Product route `CLOSED`、native stack `BUILD_NOT_AUTHORIZED`；最终产品接线继续后续 DAG，
   `/prototype` 不计交付。
 
+## 113. TV1-T113 执行卡
+
+- 决策：T112 以 verified commit `aab76e07` 收口且 worktree clean 后，复算 Ticket 10 §5/§6、Ticket 16
+  §5/§8/§12 与 Renderer/Profile 缺口。剩余 Stack cases继续改善 layout 边角，但 prepared IMAGE 的非零 transform
+  是真实输出能力缺口；exact quarter turn 可完全复用 T51、T107–T111 的整数 device box、PNG、alpha、clip 与
+  opacity 内核，不依赖未授权 native stack，因此登记为当前 single-writer frontier。
+- Interface/seam：只深化 `render_png_with_prepared_resources` 内部 `PixelImage` paint command；resource prepare、
+  layout、surface、PNG output 与 daemon seal public Interface 不变。Rust/Python 使用独立 inverse-coordinate control
+  flow，共享 frozen input/output vectors。
+- 精确语义：既有 exact 1:1、integer-aligned prepared IMAGE；`origin=(0.5,0.5)`、`scale=(1,1)`、rotation 为
+  `-360..360` 内 90° 倍数。非零 rotation 当前要求 source/device box 同尺寸方形；对 clipped destination 恢复
+  unclipped local coordinate 后执行 clockwise inverse quarter-turn mapping，不做 resampling、trigonometry、AA 或
+  tolerance。
+- 允许影响：T113 tracker/map/plan/NOTES、Engine Rust private command/raster/tests、prepared IMAGE shared vectors
+  `/3`、Python independent verifier 与 render-gate exact identity/count/hash/evidence。
+- 禁止影响：non-square nonzero rotation、非中心 origin、negative/non-unit scale、任意角度、ancestor transform、
+  resampling、subpixel/rounded/stroke/vector/Text/QR/Barcode、JPEG、native Skia/FreeType/HarfBuzz build、Profile
+  registration/certification、RequestRegistry 网络 success、Java/OpenAPI/migration/Web/正式产品 route、formal
+  records、physical certification、J1/A3/READY 与外部副作用。
+- TDD/gates：既有 90° negative 先转 positive，使 Rust/Python 在同一 case 共同 RED；GREEN 后补 180°、270°、
+  负 90°、ancestor clip + partial opacity positives 与 45° replacement negative。随后 focused/local → canonical
+  `render` → affected `fast` → sequential `server` → Goal `full` → resolution `fast`。provider/API Key/费用/
+  真实数据=0，不 push/tag/PR，`/prototype` 不计最终产品交付。
+
+### TV1-T113 resolution evidence
+
+- shared `/3` 的 Rust primary 与 Python independent verifier 先在
+  `centered-unit-square-image-quarter-turn-clockwise` 共同 RED；独立实现后达到 23 rendered + 3 unsupported、
+  26/26 cases、160 checks，vector SHA-256 为
+  `a9f849611f0075e413eda281e0b40c4cec8efbae9bf607122e4d8975c0c480ec`。
+- exact branch 只接受 centered origin、positive unit scale、integer-aligned exact 1:1 square 与
+  `[-360,360]` 内 quarter turn；90°/180°/270°/-90°、surface clip + partial opacity 均有 positive regression，
+  45° replacement negative 继续 `IMAGE_PAINT` fail closed。未开放 resampling/trigonometry/tolerance、arbitrary
+  angle、non-square rotation、ancestor transform 或第二套 raster。
+- focused Rust/Python、workspace fmt/check/clippy `-D warnings`/tests、`py_compile`、JSON inventory/SHA/unique 与
+  `git diff --check` 全绿。分级 A1 证据为 `render` `.sdlc/evidence/20260825-141348-render/`（40.489 秒）、
+  affected `fast` `.sdlc/evidence/20260825-141542-fast/`（11.958 秒）、顺序 `server`
+  `.sdlc/evidence/20260825-141603-server/`（1084.247 秒）与重新执行的 17-step `full`
+  `.sdlc/evidence/20260825-150934-full/`（1471.031 秒），全部 exit 0。
+- 第一次 `full` `.sdlc/evidence/20260825-143420-full/` 在前 14 steps 通过后，产品 chunk-recovery heading 出现
+  5 秒超时；isolated 1 次、exact parallel 20 次及 full-suite 5 轮均未复现，另 100 个 exact executions 均输出
+  `ok` 后诊断进程在 teardown 挂起并被中止。未把该 teardown 诊断计作正式绿证据，也未做推测性代码修改；
+  随后的 canonical `full` 中该用例 1.6 秒通过。
+- `full` 中 App 347 tests/0 failures/0 errors/15 skipped、Node 24 Web 26 files/212 tests、runtime canary、
+  Playwright 23 passed + 1 controlled skip、Draft 与 inference browser journeys、inference E2E 1/1 均通过；
+  R0/R1/P0 provider attempts=0，P0 API Key reads/reservations/cost=0。
+- 本状态更新后的 resolution `fast` `.sdlc/evidence/20260825-153729-fast/` 3 steps 均 exit 0
+  （A1，11.146 秒）。
+- 状态为 `resolved / automated_verified`。Profile `NOT_REGISTERED`、certification `NOT_CERTIFIED`、process raster
+  `ABSENT`、Product route `CLOSED`、native stack `BUILD_NOT_AUTHORIZED`；最终产品接线继续后续 DAG，
+  `/prototype` 不计交付。
+
 ### TV1-T74 resolution evidence
 
 - shared `/37` 共同 RED 后，Rust primary 与 Python independent verifier 分别实现并达到 162 laid-out +

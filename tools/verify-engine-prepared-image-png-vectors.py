@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Independent stdlib replay for the TV1-T109 prepared IMAGE alpha Engine PNG kernel."""
+"""Independent stdlib replay for the TV1-T113 prepared IMAGE Engine PNG kernel."""
 
 from __future__ import annotations
 
@@ -302,6 +302,56 @@ def scene_kinds_supported(children: list[Any]) -> bool:
     return True
 
 
+def centered_unit_quarter_turn(child: dict[str, Any]) -> int | None:
+    transform = child.get("transform")
+    if not isinstance(transform, dict) or set(transform) != {
+        "originX",
+        "originY",
+        "rotationDeg",
+        "scaleX",
+        "scaleY",
+    }:
+        return None
+    if (
+        transform["originX"] != Decimal("0.5")
+        or transform["originY"] != Decimal("0.5")
+        or transform["scaleX"] != 1
+        or transform["scaleY"] != 1
+    ):
+        return None
+    return {
+        -360: 0,
+        0: 0,
+        360: 0,
+        -270: 1,
+        90: 1,
+        -180: 2,
+        180: 2,
+        -90: 3,
+        270: 3,
+    }.get(transform["rotationDeg"])
+
+
+def rotate_square_rgba8(source: bytes, edge: int, quarter_turn: int) -> bytes:
+    if edge < 1 or len(source) != edge * edge * 4 or quarter_turn not in {0, 1, 2, 3}:
+        raise VerificationFailure("quarter-turn source shape is invalid")
+    if quarter_turn == 0:
+        return source
+    target = bytearray(len(source))
+    for destination_y in range(edge):
+        for destination_x in range(edge):
+            if quarter_turn == 1:
+                source_x, source_y = destination_y, edge - 1 - destination_x
+            elif quarter_turn == 2:
+                source_x, source_y = edge - 1 - destination_x, edge - 1 - destination_y
+            else:
+                source_x, source_y = edge - 1 - destination_y, destination_x
+            source_offset = (source_y * edge + source_x) * 4
+            target_offset = (destination_y * edge + destination_x) * 4
+            target[target_offset : target_offset + 4] = source[source_offset : source_offset + 4]
+    return bytes(target)
+
+
 def prepare_image(
     child: dict[str, Any],
     entry: Any,
@@ -317,7 +367,8 @@ def prepare_image(
     box = engine.require_layout_entry(child, entry, "image", False)
     if not draw_enabled:
         return None
-    if not engine.identity_transform(child):
+    quarter_turn = centered_unit_quarter_turn(child)
+    if quarter_turn is None:
         return {"feature": "IMAGE_PAINT"}
     if child.get("fit") not in {"CONTAIN", "COVER", "FILL"} or child.get(
         "sampling"
@@ -346,6 +397,10 @@ def prepare_image(
     left, top, device_right, device_bottom = (int(edge) for edge in edges)
     if device_right - left != source_width or device_bottom - top != source_height:
         return {"feature": "IMAGE_RESAMPLING"}
+    if quarter_turn != 0:
+        if source_width != source_height:
+            return {"feature": "IMAGE_PAINT"}
+        source = rotate_square_rgba8(source, source_width, quarter_turn)
     self_clip = (
         min(max(left, 0), surface_width),
         min(max(top, 0), surface_height),
@@ -659,7 +714,7 @@ def verify(path: Path) -> dict[str, Any]:
     )
     verifier = Verifier()
     verifier.require(
-        vectors["vectorVersion"] == "renderweave-engine-prepared-image-png-vectors/2",
+        vectors["vectorVersion"] == "renderweave-engine-prepared-image-png-vectors/3",
         "vector identity drifted",
     )
     authority = exact_members(
@@ -684,9 +739,9 @@ def verify(path: Path) -> dict[str, Any]:
         "layoutProfile": "renderweave-layout/1.0",
         "resourcePreparationProfile": "renderweave-renderer/1.0",
         "imagePixels": "EXACT_ORIENTATION_NORMALIZED_STRAIGHT_RGBA8",
-        "degenerateMapping": "SOURCE_AND_INTEGER_DEVICE_BOX_EXACT_1_TO_1_NO_RESAMPLE",
+        "degenerateMapping": "SOURCE_AND_INTEGER_DEVICE_BOX_EXACT_1_TO_1_CENTERED_UNIT_QUARTER_TURN_NO_RESAMPLE",
         "alphaArithmetic": "STRAIGHT_TO_PREMULTIPLIED_MUL255_SOURCE_OVER_AUTHORED_ORDER_SUBTREE_OPACITY_ROUND_HALF_UP_255_SINGLE_FINAL_UNPREMULTIPLY",
-        "enginePreparedImageKernel": "PREPARED_IMAGE_ALPHA_1_TO_1_PREMULTIPLIED_SOURCE_OVER_SUBTREE_OPACITY_ROUND_HALF_UP_ISOLATION_EXACT_PNG_AUTOMATED_VERIFIED_PROFILE_GATED",
+        "enginePreparedImageKernel": "PREPARED_IMAGE_ALPHA_1_TO_1_CENTERED_UNIT_QUARTER_TURN_PREMULTIPLIED_SOURCE_OVER_SUBTREE_OPACITY_ROUND_HALF_UP_ISOLATION_EXACT_PNG_AUTOMATED_VERIFIED_PROFILE_GATED",
         "profileAvailability": "NOT_REGISTERED",
         "certificationStatus": "NOT_CERTIFIED",
         "processRasterImplementation": "ABSENT",
@@ -779,7 +834,7 @@ def verify(path: Path) -> dict[str, Any]:
     )
     rendered_cases = vectors["renderedCases"]
     unsupported_cases = vectors["unsupportedCases"]
-    verifier.require(len(rendered_cases) == 18, "rendered case count drifted")
+    verifier.require(len(rendered_cases) == 23, "rendered case count drifted")
     verifier.require(len(unsupported_cases) == 3, "unsupported case count drifted")
     seen: set[str] = set()
     for family, cases in (("rendered", rendered_cases), ("unsupported", unsupported_cases)):
@@ -837,7 +892,7 @@ def verify(path: Path) -> dict[str, Any]:
             )
             verifier.require(actual == expected, f"{case_id} result drifted")
     return {
-        "verifier": "renderweave-engine-prepared-image-png-python-independent/2",
+        "verifier": "renderweave-engine-prepared-image-png-python-independent/3",
         "result": "PASS",
         "assurance": "A2",
         "renderedCases": len(rendered_cases),
