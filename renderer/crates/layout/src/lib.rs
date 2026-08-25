@@ -2238,7 +2238,9 @@ fn stack_main_fill_allocations(
         return Ok(allocations);
     }
     if active_bounds.len() == 2 && allocations.len() == 2 {
-        let mut minimum_sum = 0.0;
+        let mut frozen_sum = 0.0;
+        let mut minimum_count = 0;
+        let mut maximum_count = 0;
         for &(position, frozen_bound, is_minimum) in &active_bounds {
             let (Some(minimum), Some(maximum)) = bounds[position] else {
                 return Err(DefiniteLayoutError::unsupported(
@@ -2246,28 +2248,41 @@ fn stack_main_fill_allocations(
                     DefiniteLayoutUnsupported::StackMainFill,
                 ));
             };
-            if !is_minimum
-                || !minimum.is_finite()
-                || minimum < 0.0
-                || !maximum.is_finite()
-                || maximum < minimum
-                || frozen_bound != minimum
-            {
+            if !minimum.is_finite() || minimum < 0.0 || !maximum.is_finite() || maximum < minimum {
                 return Err(DefiniteLayoutError::unsupported(
                     first_occurrence,
                     DefiniteLayoutUnsupported::StackMainFill,
                 ));
             }
-            minimum_sum += minimum;
-            if !minimum_sum.is_finite() {
+            let expected_bound = if is_minimum {
+                minimum_count += 1;
+                minimum
+            } else {
+                maximum_count += 1;
+                maximum
+            };
+            if frozen_bound != expected_bound {
                 return Err(DefiniteLayoutError::unsupported(
                     first_occurrence,
                     DefiniteLayoutUnsupported::StackMainFill,
                 ));
             }
-            allocations[position].1 = if minimum > 0.0 { minimum } else { 0.0 };
+            frozen_sum += frozen_bound;
+            if !frozen_sum.is_finite() {
+                return Err(DefiniteLayoutError::unsupported(
+                    first_occurrence,
+                    DefiniteLayoutUnsupported::StackMainFill,
+                ));
+            }
+            allocations[position].1 = if frozen_bound > 0.0 {
+                frozen_bound
+            } else {
+                0.0
+            };
         }
-        if minimum_sum > remaining {
+        if (minimum_count == 2 && frozen_sum > remaining)
+            || (minimum_count == 1 && maximum_count == 1 && frozen_sum == remaining)
+        {
             return Ok(allocations);
         }
         return Err(DefiniteLayoutError::unsupported(

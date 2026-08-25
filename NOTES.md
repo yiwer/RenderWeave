@@ -1,6 +1,21 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-25 **Template v1 implementation TV1-T118 已由 Codex `/root` single-writer 完成，状态
+  `resolved/automated_verified`**：exactly-two mixed main FILL 首轮一项严格命中 min、另一项严格命中 max，
+  且两个 frozen bound 的 authored-order binary64 和精确等于 remaining 时，现可无 residual 终止。Rust/Python
+  tracer 在同一 `STACK_MAIN_FILL` occurrence 共同 RED 后独立 GREEN；reverse、COLUMN、cross-HUG、exact-bound
+  positives 与 bound-sum/free-residual negatives 均已冻结。shared `/58` 为 266 laid-out + 17 unsupported、
+  283/283 cases、846 checks，vector SHA-256
+  `e556839c623a820c3dfe9277e604a8b9b79cde02f67e764c4dc7c36a0b55219f`。canonical `render`
+  `.sdlc/evidence/20260825-200559-render/`、affected `fast` `.sdlc/evidence/20260825-200708-fast/`、sequential
+  `server` `.sdlc/evidence/20260825-200727-server/` 与 17-step Goal `full`
+  `.sdlc/evidence/20260825-201835-full/` 均 passed/A1；full 1069.938 秒，Node 24 Web 217/217、runtime canary、
+  Playwright 23 passed + 1 controlled skip、Draft/inference browser journeys 均绿；resolution `fast`
+  `.sdlc/evidence/20260825-203838-fast/` 也以 3/3 steps、passed/A1、11.064 秒通过。Profile `NOT_REGISTERED`、
+  certification `NOT_CERTIFIED`、process raster `ABSENT`、native stack `BUILD_NOT_AUTHORIZED`、public Rendering
+  API/正式产品 route `CLOSED`，provider/API Key/费用/真实数据=0；最终交付仍是正式 Template-v1 页面与真实
+  功能，`/prototype` 不计交付，未推进 J1/A3/READY，未 push/tag/PR。
 - 2026-08-25 **Template v1 implementation TV1-T117 已由 Codex `/root` single-writer 完成，状态
   `resolved/automated_verified`**：exactly-two main FILL 中两个合法 mixed child 的首轮 weighted share 若都
   严格低于各自 min，现按 authored position 同轮冻结两个 minima，并接受由既有 occupied/free-space 消费的

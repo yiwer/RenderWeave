@@ -609,6 +609,12 @@ Label: wayfinder:map
   `fast`、sequential `server`、17-step Goal `full` 与 resolution `fast` 均绿。simultaneous min/max、
   三个以上 FILL、一般循环/tolerance、Profile/native build/public Rendering API/正式产品 route 继续关闭，
   `/prototype` 不计最终交付。
+- [实现 definite Stack 两 FILL simultaneous mixed min/max exact-terminal 子闭包](issues/118-definite-stack-two-fill-simultaneous-mixed-min-max-exact-terminal.md) —
+  **resolved / automated_verified**；两个合法 mixed child 首轮分别命中 min/max，且两个 frozen bound 按
+  authored position 的 binary64 和精确等于 remaining 时，现可无 residual 终止。shared `/58` 为 266
+  laid-out + 17 unsupported、283/283 cases、846 checks；canonical `render`、affected `fast`、sequential
+  `server` 与 17-step Goal `full` 均绿。非零 residual、三个以上 FILL、一般循环/tolerance、Profile/native
+  build/public Rendering API/正式产品 route 继续关闭，`/prototype` 不计最终交付。
 - [验证 Product Editor 状态、恢复与权威预览架构](issues/09-validate-product-editor-architecture.md) —
   throwaway 逻辑原型（`/prototype/editor-state-model`，不进产品 route）把冻结编辑器规则编码为确定性
   fixture 状态机：10 个引导走查场景 37/37 断言 + 自由操作冒烟 + 键盘焦点检查全部通过（Playwright A1，

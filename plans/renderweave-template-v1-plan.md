@@ -2230,6 +2230,49 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
   最终产品 Template-v1 页面与真实功能仍未交付，`/prototype` 不计交付，provider/API Key/费用/真实数据=0，
   未推进 J1/A3/READY，未 push/tag/PR。
 
+## 118. TV1-T118 执行卡
+
+- 决策：T117 以 verified commit `4c58ba31` 收口且 worktree clean 后，复算 16 个 Layout unsupported。当前首项
+  是 exactly-two mixed main FILL 的首轮一项 active-min、另一项 active-max，两个命中 bound 的和精确等于
+  remaining；可形成无 residual 的确定终态，因此登记为当前 single-writer frontier。
+- Interface/seam：继续只深化 `stack_main_fill_allocations`，经 public `layout_definite_resource_free` shared
+  vector seam 与 Python independent replay 观察；不新增 solver、public API 或内部 mock。
+- 精确语义：两项 positive-weight FILL 均有合法 finite/nonnegative mixed min/max；首轮恰好一个 MIN hit 与一个
+  MAX hit。按 authored position 冻结到各自 bound，且顺序和必须 binary64 exact-equal remaining；不做第二次
+  division、redistribution、epsilon、tolerance 或 residual clamp。
+- 允许影响：T118 tracker/map/plan/NOTES、layout Rust module/tests、shared definite-layout vector `/58`、Python
+  independent verifier、render-gate exact identity/assertions/evidence。
+- 禁止影响：bound-sum 非 exact、simultaneous max/max、three-or-more/four-or-more 一般 water filling、
+  rows→columns、任意非直角 rotation、Text/compositionViewport、native raster/Profile、Java/OpenAPI/Web/正式
+  产品 route、formal records、physical certification、J1/A3/READY 与外部副作用。
+- TDD/gates：先只转正现有 simultaneous mixed min/max tracer，让 Rust/Python 在同一 occurrence 共同 RED；最小
+  GREEN 后逐项补 reverse、COLUMN、cross-HUG、exact-bound 与两类 residual negative。focused/local →
+  `render` → affected `fast` → sequential `server` → Goal `full` → resolution `fast`；Maven 不并发，精确
+  staging，不 push/tag/PR。
+
+### TV1-T118 收口
+
+- shared tracer 先令 Rust/Python 在同一 `STACK_MAIN_FILL` occurrence `rwocc_0000000000000002` 共同 RED；
+  最小 GREEN 只接受 exactly-two、合法 mixed bounds、首轮恰好一项 MIN hit 与一项 MAX hit，且两个 frozen
+  bound 按 authored position 顺序累加后 binary64 exact-equal remaining。未新增第二 solver、循环、第二次
+  division、redistribution、epsilon、tolerance 或 residual clamp。
+- reverse、COLUMN、deferred cross-HUG 与 `min == max` positives 均通过；bound-sum overflow 与 free-residual
+  replacement negatives 继续 fail closed。shared vector `/58` 为 266 laid-out + 17 unsupported、283/283 cases、
+  846 checks，SHA-256 `e556839c623a820c3dfe9277e604a8b9b79cde02f67e764c4dc7c36a0b55219f`；fixture
+  SHA-256 `a11475bcebad7e1c35cb0acd7018419d94afcb4b37d7f1df7346a055ad1df669`。
+- local Rust/Python independent/inventory/diff checks 均绿；canonical `render`
+  `.sdlc/evidence/20260825-200559-render/`（42.299 秒）、affected `fast`
+  `.sdlc/evidence/20260825-200708-fast/`（11.493 秒）、sequential `server`
+  `.sdlc/evidence/20260825-200727-server/`（653.722 秒）与 Goal `full`
+  `.sdlc/evidence/20260825-201835-full/`（17/17 steps、1069.938 秒）均 passed/A1。full 中 Node 24 Web
+  217/217、runtime canary、Playwright 23 passed + 1 controlled skip、Draft 与 inference browser journeys 均绿；
+  provider attempts/API Key reads/reservations/cost/open authorization=0。状态与证据回填后的 resolution `fast`
+  `.sdlc/evidence/20260825-203838-fast/` 也以 3/3 steps、passed/A1、11.064 秒通过。
+- 状态为 `resolved / automated_verified`。Profile `NOT_REGISTERED`、certification `NOT_CERTIFIED`、process
+  raster `ABSENT`、native stack `BUILD_NOT_AUTHORIZED`、public Rendering API 与正式产品 route `CLOSED`；
+  最终产品 Template-v1 页面与真实功能仍未交付，`/prototype` 不计交付，未推进 J1/A3/READY，未
+  push/tag/PR。
+
 ## 111. TV1-T111 执行卡
 
 - 决策：T110 以 verified commit `4cbc3b68` 收口且 worktree clean 后，复核 Ticket 10 §6、Ticket 16 §8 与
