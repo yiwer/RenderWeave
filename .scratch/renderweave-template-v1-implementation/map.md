@@ -615,6 +615,13 @@ Label: wayfinder:map
   laid-out + 17 unsupported、283/283 cases、846 checks；canonical `render`、affected `fast`、sequential
   `server` 与 17-step Goal `full` 均绿。非零 residual、三个以上 FILL、一般循环/tolerance、Profile/native
   build/public Rendering API/正式产品 route 继续关闭，`/prototype` 不计最终交付。
+- [实现 definite compositionViewport CONTAIN/CENTER 布局与资源无关 Engine PNG 纵切](issues/119-definite-composition-viewport-layout-engine-png.md) —
+  **resolved / automated_verified**；沿既有 public Layout/Engine deep Interface，source Canvas 已先在原始 trim
+  中递归布局，再以固定 binary64 CONTAIN/CENTER 映射并执行 source/host 双裁剪；Engine 已支持 source background、
+  descendant hard clip、host subtree opacity、nested viewport 与 Stack host。shared layout `/59` 为 271 laid-out +
+  17 unsupported、288/288 cases、861 checks；Engine `/1` 为 27 rendered + 11 unsupported、38/38 cases、118 checks。
+  `render`/`fast`/sequential `server`/17-step Goal `full` 均绿。Profile/public Rendering API/E6/正式产品 route 保持
+  关闭，`/prototype` 不计最终交付。
 - [验证 Product Editor 状态、恢复与权威预览架构](issues/09-validate-product-editor-architecture.md) —
   throwaway 逻辑原型（`/prototype/editor-state-model`，不进产品 route）把冻结编辑器规则编码为确定性
   fixture 状态机：10 个引导走查场景 37/37 断言 + 自由操作冒烟 + 键盘焦点检查全部通过（Playwright A1，

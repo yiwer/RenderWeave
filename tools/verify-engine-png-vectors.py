@@ -508,6 +508,14 @@ def scene_kinds_supported(children: list[Any]) -> bool:
             return False
         if child.get("kind") == "rect":
             continue
+        if child.get("kind") == "compositionViewport":
+            source = child.get("sourceCanvas")
+            if (
+                isinstance(source, dict)
+                and isinstance(source.get("children"), list)
+                and scene_kinds_supported(source["children"])
+            ):
+                continue
         if child.get("kind") in {"group", "frame", "stack", "grid"} and isinstance(
             child.get("children"), list
         ):
@@ -556,6 +564,71 @@ def prepare_scene(
                 return rect
             if rect is not None:
                 commands.append(("rect", rect))
+            if layer_opacity is not None:
+                commands.append(("end-opacity", layer_opacity))
+            continue
+
+        if child["kind"] == "compositionViewport":
+            require_layout_entry(child, entry, "compositionViewport", False)
+            source = child.get("sourceCanvas")
+            if not isinstance(source, dict) or not isinstance(source.get("children"), list):
+                return {"feature": "SCENE_STRUCTURE"}
+            if layout_cursor[0] >= len(layout_entries):
+                raise VerificationFailure(
+                    "Engine PNG layout preorder ended before the composition source Canvas"
+                )
+            source_entry = layout_entries[layout_cursor[0]]
+            layout_cursor[0] += 1
+            source_box = require_layout_entry(source, source_entry, "canvas", True)
+            descendant_clip = active_clip
+            descendant_draw_enabled = False
+            if draw_enabled:
+                if not identity_transform(child):
+                    return {"feature": "SCENE_STRUCTURE"}
+                host_box = layout_box(entry["layoutBox"], "compositionViewport LayoutBox")
+                host_bounds = prepare_layout_bounds(
+                    host_box,
+                    canvas,
+                    dpi,
+                    width,
+                    height,
+                    "NON_PIXEL_ALIGNED_CLIP",
+                )
+                if isinstance(host_bounds, dict):
+                    return host_bounds
+                source_bounds = prepare_layout_bounds(
+                    source_box,
+                    canvas,
+                    dpi,
+                    width,
+                    height,
+                    "NON_PIXEL_ALIGNED_CLIP",
+                )
+                if isinstance(source_bounds, dict):
+                    return source_bounds
+                descendant_clip = intersect_clip(
+                    intersect_clip(active_clip, host_bounds), source_bounds
+                )
+                source_color = parse_rgba(
+                    source.get("backgroundColor"), "composition source Canvas background"
+                )
+                left, top, right, bottom = descendant_clip
+                commands.append(("rect", (left, top, right, bottom, source_color)))
+                descendant_draw_enabled = True
+            nested = prepare_scene(
+                source["children"],
+                layout_entries,
+                layout_cursor,
+                canvas,
+                dpi,
+                width,
+                height,
+                descendant_draw_enabled,
+                descendant_clip,
+            )
+            if isinstance(nested, dict):
+                return nested
+            commands.extend(nested)
             if layer_opacity is not None:
                 commands.append(("end-opacity", layer_opacity))
             continue
@@ -895,14 +968,14 @@ def verify(path: Path) -> dict[str, Any]:
     verifier.require(boundary == {
         "profileAvailability": "NOT_REGISTERED",
         "certificationStatus": "NOT_CERTIFIED",
-        "enginePngKernel": "PREORDER_DEFINITE_IDENTITY_GROUP_FRAME_STACK_GRID_RECT_PIXEL_ALIGNED_SOLID_ALPHA_PREMULTIPLIED_SOURCE_OVER_SUBTREE_OPACITY_ROUND_HALF_UP_ISOLATION_RECTANGULAR_CLIP_VISIBILITY_ZERO_OPACITY_SUPPRESSION_PNG_KERNEL_PROFILE_GATED",
+        "enginePngKernel": "PREORDER_DEFINITE_IDENTITY_GROUP_FRAME_STACK_GRID_COMPOSITION_VIEWPORT_SOURCE_CANVAS_BACKGROUND_CONTAIN_CENTER_HOST_SOURCE_HARD_CLIP_RECT_PIXEL_ALIGNED_SOLID_ALPHA_PREMULTIPLIED_SOURCE_OVER_SUBTREE_OPACITY_ROUND_HALF_UP_ISOLATION_RECTANGULAR_CLIP_VISIBILITY_ZERO_OPACITY_SUPPRESSION_PNG_KERNEL_PROFILE_GATED",
         "processRasterImplementation": "ABSENT",
         "daemonOutputPath": "UNWIRED",
         "productRoute": "CLOSED",
         "providerAttempts": 0,
     }, "Engine PNG honest boundary drifted")
-    verifier.require(len(vectors["renderedCases"]) == 23, "rendered case count drifted")
-    verifier.require(len(vectors["unsupportedCases"]) == 10, "unsupported case count drifted")
+    verifier.require(len(vectors["renderedCases"]) == 27, "rendered case count drifted")
+    verifier.require(len(vectors["unsupportedCases"]) == 11, "unsupported case count drifted")
 
     seen: set[str] = set()
     for family in ("renderedCases", "unsupportedCases"):

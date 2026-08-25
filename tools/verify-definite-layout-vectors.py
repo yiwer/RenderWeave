@@ -410,6 +410,9 @@ class DefiniteLayouter:
         self, node: dict[str, Any], kind: str, role: str, layout_box: Box
     ) -> None:
         current = occurrence(node)
+        if kind == "compositionViewport":
+            self.emit_composition_viewport(node, layout_box)
+            return
         if role in {"FRAME", "STACK", "GRID"}:
             content_box = container_content_box(node, layout_box, current)
             self.entries.append(
@@ -446,6 +449,71 @@ class DefiniteLayouter:
                     "kind": kind,
                     "layoutBox": layout_box.bits(),
                     "contentBox": None,
+                }
+            )
+
+    def emit_composition_viewport(
+        self, viewport: dict[str, Any], host_box: Box
+    ) -> None:
+        current = occurrence(viewport)
+        self.entries.append(
+            {
+                "occurrenceId": current,
+                "kind": "compositionViewport",
+                "layoutBox": host_box.bits(),
+                "contentBox": None,
+            }
+        )
+
+        source = object_value(viewport.get("sourceCanvas"), f"{current} sourceCanvas")
+        source_current = occurrence(source)
+        source_width = required_decimal(source, "widthPt", source_current, "widthPt")
+        source_height = required_decimal(source, "heightPt", source_current, "heightPt")
+        if source_width <= 0.0 or source_height <= 0.0:
+            raise VerificationFailure(f"{source_current} source Canvas size is invalid")
+
+        width_scale = finite_viewport_value(host_box.width / source_width, current)
+        height_scale = finite_viewport_value(host_box.height / source_height, current)
+        if width_scale <= height_scale:
+            scale = width_scale
+            mapped_width = host_box.width
+            mapped_height = finite_viewport_value(source_height * scale, current)
+        else:
+            scale = height_scale
+            mapped_width = finite_viewport_value(source_width * scale, current)
+            mapped_height = host_box.height
+        if scale < 0.0 or mapped_width < 0.0 or mapped_height < 0.0:
+            raise VerificationFailure(f"{current} contain geometry is negative")
+        mapped_x = finite_viewport_value(
+            host_box.x + (host_box.width - mapped_width) / 2.0, current
+        )
+        mapped_y = finite_viewport_value(
+            host_box.y + (host_box.height - mapped_height) / 2.0, current
+        )
+
+        source_entries = DefiniteLayouter().run({"canvas": source})
+        for source_entry in source_entries:
+            layout = map_viewport_box(
+                box_from_bits(source_entry["layoutBox"]),
+                scale,
+                mapped_x,
+                mapped_y,
+                current,
+            )
+            content_bits = source_entry["contentBox"]
+            content = (
+                None
+                if content_bits is None
+                else map_viewport_box(
+                    box_from_bits(content_bits), scale, mapped_x, mapped_y, current
+                ).bits()
+            )
+            self.entries.append(
+                {
+                    "occurrenceId": source_entry["occurrenceId"],
+                    "kind": source_entry["kind"],
+                    "layoutBox": layout.bits(),
+                    "contentBox": content,
                 }
             )
 
@@ -635,7 +703,7 @@ def definite_node_role(kind: str, current: str) -> str:
     if kind in SUPPORTED_LEAVES:
         return "LEAF"
     if kind == "compositionViewport":
-        raise Unsupported("COMPOSITION_VIEWPORT", current)
+        return "LEAF"
     if kind in {"text", "image"}:
         raise Unsupported("RESOURCE_DEPENDENT_KIND", current)
     raise VerificationFailure(f"{current} unexpected kind {kind}")
@@ -2423,6 +2491,38 @@ def finite_transform_value(value: float, current: str) -> float:
     return value
 
 
+def finite_viewport_value(value: float, current: str) -> float:
+    if not math.isfinite(value):
+        raise VerificationFailure(f"{current} viewport produced non-finite binary64")
+    return value
+
+
+def box_from_bits(bits: dict[str, str]) -> Box:
+    def decode(member: str) -> float:
+        encoded = text(bits.get(member), f"layout {member}")
+        if not re.fullmatch(r"[0-9a-f]{16}", encoded):
+            raise VerificationFailure(f"layout {member} bits are invalid")
+        return struct.unpack(">d", bytes.fromhex(encoded))[0]
+
+    return Box(
+        decode("xBits"),
+        decode("yBits"),
+        decode("widthBits"),
+        decode("heightBits"),
+    )
+
+
+def map_viewport_box(
+    source: Box, scale: float, mapped_x: float, mapped_y: float, current: str
+) -> Box:
+    return Box(
+        finite_viewport_value(mapped_x + source.x * scale, current),
+        finite_viewport_value(mapped_y + source.y * scale, current),
+        finite_viewport_value(source.width * scale, current),
+        finite_viewport_value(source.height * scale, current),
+    )
+
+
 def finite_group_union_value(value: float, current: str) -> float:
     if not (-float("inf") < value < float("inf")):
         raise VerificationFailure(f"{current} Group union produced non-finite binary64")
@@ -3114,7 +3214,7 @@ def verify(
         "vector manifest",
     )
     verifier.require(
-        vectors["vectorVersion"] == "renderweave-definite-layout-vectors/58",
+        vectors["vectorVersion"] == "renderweave-definite-layout-vectors/59",
         "vector identity drifted",
     )
     authority = exact_members(
@@ -3167,7 +3267,7 @@ def verify(
     expected_boundary = {
         "profileAvailability": "NOT_REGISTERED",
         "certificationStatus": "NOT_CERTIFIED",
-        "layoutImplementation": "RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_SINGLE_AND_INACTIVE_BOUND_OR_EXACT_TWO_FILL_SINGLE_ACTIVE_BOUND_WITHIN_REMAINING_OR_SINGLE_ACTIVE_MIN_OVERFLOW_OR_EXACT_TWO_FILL_TWO_MIN_SECOND_FREEZE_OVERFLOW_OR_EXACT_TWO_FILL_MIXED_ACTIVE_MIN_SECOND_MIN_FREEZE_OVERFLOW_OR_EXACT_TWO_FILL_MIXED_ACTIVE_MIN_SECOND_MIXED_MIN_FREEZE_OVERFLOW_OR_EXACT_TWO_FILL_MIXED_ACTIVE_MIN_SECOND_MIXED_TERMINAL_INACTIVE_OR_EXACT_TWO_FILL_SIMULTANEOUS_MIXED_MIN_FREEZE_OVERFLOW_OR_EXACT_TWO_FILL_SIMULTANEOUS_MIXED_MIN_MAX_EXACT_TERMINAL_OR_EXACT_TWO_FILL_TWO_MAX_SECOND_FREEZE_FREE_JUSTIFY_OR_EXACT_TWO_FILL_MIXED_ACTIVE_MAX_SECOND_MAX_FREEZE_FREE_JUSTIFY_OR_EXACT_THREE_FILL_SINGLE_ACTIVE_BOUND_ONE_REDISTRIBUTION_OR_EXACT_THREE_FILL_POST_REDISTRIBUTION_INACTIVE_BOUNDS_OR_EXACT_THREE_FILL_SECOND_MIN_FREEZE_LAST_REMAINDER_OR_EXACT_THREE_FILL_SECOND_MAX_FREEZE_LAST_REMAINDER_OR_EXACT_THREE_FILL_SECOND_MAX_FREEZE_TERMINAL_INACTIVE_MIN_OR_EXACT_THREE_FILL_SECOND_MAX_FREEZE_TERMINAL_INACTIVE_MAX_OR_EXACT_THREE_FILL_THIRD_MAX_FREEZE_FREE_JUSTIFY_OR_EXACT_THREE_FILL_SINGLE_ACTIVE_MIN_OVERFLOW_OR_EXACT_THREE_FILL_SECOND_MIN_FREEZE_OVERFLOW_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_INACTIVE_UNFROZEN_MAX_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_SECOND_MIN_FREEZE_OVERFLOW_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_SECOND_MIXED_MIN_FREEZE_OVERFLOW_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_SECOND_MIXED_MIN_FREEZE_OVERFLOW_TERMINAL_INACTIVE_MAX_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_TWO_MIXED_MIN_FREEZES_OVERFLOW_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_MIXED_AND_MIN_ONLY_FREEZES_OVERFLOW_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_TWO_MIN_ONLY_FREEZES_OVERFLOW_MULTI_MAIN_FILL_AND_FIXED_SINGLE_FRACTION_INDEPENDENT_MULTI_AUTO_GRID_MULTI_AUTO_SPAN_STABLE_DEFICIT_GRID_DEFINITE_MULTI_FRACTION_LAST_REMAINDER_GRID_EMPTY_CONTAINER_STACK_HUG_GRID_AUTO_HUG_CONTRIBUTION_GRID_HUG_EXACT_QUARTER_TURN_AFFINE_FRAME_GROUP_HUG_FIXED_OPPOSITE_AXIS_CROSS_FILL_DEFINITE_ABSOLUTE_PARENT_OFFER_DEFINITE_STACK_CROSS_OUTER_OFFER_STACK_MAIN_FILL_CROSS_HUG_REMEASURE_NESTED_STACK_MAIN_OFFER_PROPAGATION_COLUMNS_FIRST_GRID_CELL_OUTER_OFFER_STACK_MAIN_OFFER_COLUMNS_FIRST_GRID_CROSS_HUG_ABSOLUTE_PARENT_OFFER_COLUMNS_FIRST_GRID_CROSS_HUG_GRID_CELL_OFFER_COLUMNS_FIRST_NESTED_GRID_CROSS_HUG_GRID_CELL_OFFER_STACK_MAIN_FIRST_CROSS_HUG_DIRECTION_CHANGING_STACK_CROSS_OFFER_MAIN_HUG_NESTED_STACK_RESOLVED_OPPOSITE_OFFER_RECURSION_COLUMNS_FIRST_GRID_TERMINAL_NORMALIZATION_BOX_KERNEL",
+        "layoutImplementation": "RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_SINGLE_AND_INACTIVE_BOUND_OR_EXACT_TWO_FILL_SINGLE_ACTIVE_BOUND_WITHIN_REMAINING_OR_SINGLE_ACTIVE_MIN_OVERFLOW_OR_EXACT_TWO_FILL_TWO_MIN_SECOND_FREEZE_OVERFLOW_OR_EXACT_TWO_FILL_MIXED_ACTIVE_MIN_SECOND_MIN_FREEZE_OVERFLOW_OR_EXACT_TWO_FILL_MIXED_ACTIVE_MIN_SECOND_MIXED_MIN_FREEZE_OVERFLOW_OR_EXACT_TWO_FILL_MIXED_ACTIVE_MIN_SECOND_MIXED_TERMINAL_INACTIVE_OR_EXACT_TWO_FILL_SIMULTANEOUS_MIXED_MIN_FREEZE_OVERFLOW_OR_EXACT_TWO_FILL_SIMULTANEOUS_MIXED_MIN_MAX_EXACT_TERMINAL_OR_EXACT_TWO_FILL_TWO_MAX_SECOND_FREEZE_FREE_JUSTIFY_OR_EXACT_TWO_FILL_MIXED_ACTIVE_MAX_SECOND_MAX_FREEZE_FREE_JUSTIFY_OR_EXACT_THREE_FILL_SINGLE_ACTIVE_BOUND_ONE_REDISTRIBUTION_OR_EXACT_THREE_FILL_POST_REDISTRIBUTION_INACTIVE_BOUNDS_OR_EXACT_THREE_FILL_SECOND_MIN_FREEZE_LAST_REMAINDER_OR_EXACT_THREE_FILL_SECOND_MAX_FREEZE_LAST_REMAINDER_OR_EXACT_THREE_FILL_SECOND_MAX_FREEZE_TERMINAL_INACTIVE_MIN_OR_EXACT_THREE_FILL_SECOND_MAX_FREEZE_TERMINAL_INACTIVE_MAX_OR_EXACT_THREE_FILL_THIRD_MAX_FREEZE_FREE_JUSTIFY_OR_EXACT_THREE_FILL_SINGLE_ACTIVE_MIN_OVERFLOW_OR_EXACT_THREE_FILL_SECOND_MIN_FREEZE_OVERFLOW_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_INACTIVE_UNFROZEN_MAX_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_SECOND_MIN_FREEZE_OVERFLOW_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_SECOND_MIXED_MIN_FREEZE_OVERFLOW_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_SECOND_MIXED_MIN_FREEZE_OVERFLOW_TERMINAL_INACTIVE_MAX_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_TWO_MIXED_MIN_FREEZES_OVERFLOW_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_MIXED_AND_MIN_ONLY_FREEZES_OVERFLOW_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_TWO_MIN_ONLY_FREEZES_OVERFLOW_MULTI_MAIN_FILL_AND_FIXED_SINGLE_FRACTION_INDEPENDENT_MULTI_AUTO_GRID_MULTI_AUTO_SPAN_STABLE_DEFICIT_GRID_DEFINITE_MULTI_FRACTION_LAST_REMAINDER_GRID_EMPTY_CONTAINER_STACK_HUG_GRID_AUTO_HUG_CONTRIBUTION_GRID_HUG_EXACT_QUARTER_TURN_AFFINE_FRAME_GROUP_HUG_FIXED_OPPOSITE_AXIS_CROSS_FILL_DEFINITE_ABSOLUTE_PARENT_OFFER_DEFINITE_STACK_CROSS_OUTER_OFFER_STACK_MAIN_FILL_CROSS_HUG_REMEASURE_NESTED_STACK_MAIN_OFFER_PROPAGATION_COLUMNS_FIRST_GRID_CELL_OUTER_OFFER_STACK_MAIN_OFFER_COLUMNS_FIRST_GRID_CROSS_HUG_ABSOLUTE_PARENT_OFFER_COLUMNS_FIRST_GRID_CROSS_HUG_GRID_CELL_OFFER_COLUMNS_FIRST_NESTED_GRID_CROSS_HUG_GRID_CELL_OFFER_STACK_MAIN_FIRST_CROSS_HUG_DIRECTION_CHANGING_STACK_CROSS_OFFER_MAIN_HUG_NESTED_STACK_RESOLVED_OPPOSITE_OFFER_RECURSION_COLUMNS_FIRST_GRID_TERMINAL_NORMALIZATION_BOX_KERNEL_DEFINITE_COMPOSITION_VIEWPORT_SOURCE_TRIM_CONTAIN_CENTER_MAPPING_BOX_KERNEL",
         "worldTransformImplementation": "ABSENT",
         "sceneImplementation": "ABSENT",
         "rasterImplementation": "ABSENT",
@@ -3205,7 +3305,7 @@ def verify(
         == "renderweave-layout-preflight-fixtures/1",
         "layout preflight fixture identity drifted",
     )
-    verifier.require(len(vectors["laidOutCases"]) == 266, "laid-out case count drifted")
+    verifier.require(len(vectors["laidOutCases"]) == 271, "laid-out case count drifted")
     verifier.require(
         len(vectors["unsupportedCases"]) == 17,
         "unsupported case count drifted",
@@ -3255,7 +3355,7 @@ def verify(
             raise VerificationFailure(f"{case_id}: unsupported case produced a layout")
 
     return {
-        "verifier": "renderweave-definite-layout-python-independent/58",
+        "verifier": "renderweave-definite-layout-python-independent/59",
         "result": "PASS",
         "assurance": "A2",
         "laidOutCases": len(vectors["laidOutCases"]),

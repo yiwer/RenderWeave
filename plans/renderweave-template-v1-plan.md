@@ -2273,6 +2273,46 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
   最终产品 Template-v1 页面与真实功能仍未交付，`/prototype` 不计交付，未推进 J1/A3/READY，未
   push/tag/PR。
 
+## 119. TV1-T119 执行卡
+
+- 决策：T118 以 verified commit `63527f52` 收口且 worktree clean 后，按用户“最终产品 Template-v1 页面与
+  真实功能、非 prototype”口径复算链路。`compositionViewport` 已由 Evaluator/Sealer 真实 lowering，却仍是
+  Layout 首个整 kind 缺口并直接阻断 TemplateUse authoritative render；它不依赖尚未授权的 native font/raster
+  build，故优先于继续扩张 Stack residual 特例。
+- Interface/seam：只深化既有 public `layout_definite_resource_free` 与 `render_png`；source child 在原始 trim
+  子布局中完成，再以固定 binary64 CONTAIN/CENTER 映射至 host。Engine 按 viewport→sourceCanvas→children
+  preorder 绘制 background/descendants，并执行 ancestor∩host∩source 双裁剪与 host opacity isolation。
+- 允许影响：T119 tracker/map/plan/NOTES、Layout/Engine Rust module与 tests、shared definite-layout `/59`、
+  resource-free Engine PNG `/1`、两套 Python independent verifiers、render-gate identity/assertions/evidence。
+- 禁止影响：HUG host、任意 rotation、subpixel/AA、IMAGE resampling、Text/shape/vector/QR/Barcode、JPEG/
+  LayoutTrace、daemon RequestRegistry success、partial/test-only Profile、native build、Java/OpenAPI/Web/正式 route、
+  public Rendering API/E6、physical certification、J1/A3/READY 与外部副作用。
+- TDD/gates：既有 composition layout negative 与新增 Engine tracer 先分别通过公开 seam RED，再最小 GREEN；
+  后续每个 clip/opacity/nested/STACK/error-order regression 单独推进。focused/local → canonical `render` → affected
+  `fast` → sequential `server` → Goal `full` → resolution `fast`；Maven 不并发，精确 staging，不 push/tag/PR。
+
+### TV1-T119 收口
+
+- Layout 已按 source Canvas 原始 trim 独立递归后统一执行 fixed binary64 CONTAIN/CENTER 映射；viewport、sourceCanvas
+  与 descendants 保持 preorder，source overflow 在布局阶段不被错误 clamp，nested viewport、Stack host 与 authored
+  DFS first-error 均已冻结。shared `/59` 的 Rust primary/Python independent replay 达到 271 laid-out + 17 unsupported、
+  288/288 cases、861 checks；vector SHA-256 为
+  `6c1b6dd1172a10bf223a477a4945a2b1fbe6e5d2bbe2dce8dc996e9196f4eadf`。
+- Engine 在同一 public `render_png` seam 中按 viewport→sourceCanvas→children 消费布局，先绘制 source background，
+  descendant clip 为 ancestor∩host∩mapped source trim，host opacity 只隔离整个 subtree 一次；nested/Stack-hosted
+  viewport 与 subpixel fail-closed 已回归。resource-free `/1` 为 27 rendered + 11 unsupported、38/38 cases、118 checks；
+  vector SHA-256 为 `55b76d93490c3ed8c01b3c81084781dea3d0856af81a8d495d92017ed28163e1`。
+- 分级 A1 证据：canonical `render` `.sdlc/evidence/20260825-212203-render/`（46.647 秒）、affected `fast`
+  `.sdlc/evidence/20260825-212302-fast/`（12.613 秒）、sequential `server`
+  `.sdlc/evidence/20260825-212323-server/`（691.056 秒）与 17-step Goal `full`
+  `.sdlc/evidence/20260825-213503-full/`（1156.803 秒）均通过。full 覆盖 Windows/Linux Renderer、8 个 Maven modules、
+  Node 24 Web 28 files/217 tests、runtime canary、Playwright 23 passed + 1 controlled skip、Draft 与 inference browser
+  journeys；provider attempts/API Key reads/reservations/cost/open authorization=0。状态回填后的 resolution `fast`
+  `.sdlc/evidence/20260825-215741-fast/` 也以 3/3 steps、passed/A1、11.546 秒通过。
+- 状态为 `resolved / automated_verified`。Profile `NOT_REGISTERED`、certification `NOT_CERTIFIED`、process raster
+  `ABSENT`、native stack `BUILD_NOT_AUTHORIZED`、public Rendering API/E6/正式产品 route `CLOSED`；HUG host、任意
+  rotation、subpixel/AA、IMAGE resampling、Text shaping 与最终产品接线继续后续 DAG，`/prototype` 不计交付。
+
 ## 111. TV1-T111 执行卡
 
 - 决策：T110 以 verified commit `4cbc3b68` 收口且 worktree clean 后，复核 Ticket 10 §6、Ticket 16 §8 与

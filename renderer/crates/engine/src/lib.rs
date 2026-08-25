@@ -473,6 +473,10 @@ fn require_scene_kinds(nodes: &[Value], prepared_images: bool) -> Result<(), Eng
         match text_member(node, "kind")? {
             "rect" => {}
             "image" if prepared_images => {}
+            "compositionViewport" => {
+                let source = object_member(Some(node), "sourceCanvas")?;
+                require_scene_kinds(array_member(source, "children")?, prepared_images)?
+            }
             "group" | "frame" | "stack" | "grid" => {
                 require_scene_kinds(array_member(node, "children")?, prepared_images)?
             }
@@ -556,6 +560,50 @@ fn prepare_scene<'resource>(
                     commands.push(PaintCommand::Paint(PixelPaint::Image(paint)));
                 }
             }
+            "compositionViewport" => {
+                let source = object_member(Some(node), "sourceCanvas")?;
+                let source_layout =
+                    layout_entries
+                        .get(*layout_cursor)
+                        .ok_or(EnginePngError::Contract(
+                            "Engine PNG layout preorder ended before the composition source Canvas",
+                        ))?;
+                *layout_cursor = layout_cursor
+                    .checked_add(1)
+                    .ok_or(EnginePngError::Contract(
+                        "Engine PNG layout cursor overflowed",
+                    ))?;
+                let prepared = prepare_composition_viewport(
+                    node,
+                    source,
+                    layout,
+                    source_layout,
+                    draw_state.enabled(),
+                    active_clip,
+                    bleed_left,
+                    bleed_top,
+                    dpi,
+                    surface_width,
+                    surface_height,
+                )?;
+                if let Some(paint) = prepared.paint {
+                    commands.push(PaintCommand::Paint(PixelPaint::Rect(paint)));
+                }
+                prepare_scene(
+                    array_member(source, "children")?,
+                    layout_entries,
+                    layout_cursor,
+                    prepared.descendant_draw_enabled,
+                    prepared.descendant_clip,
+                    bleed_left,
+                    bleed_top,
+                    dpi,
+                    surface_width,
+                    surface_height,
+                    prepared_resources,
+                    commands,
+                )?;
+            }
             "group" => {
                 let descendant_draw_enabled = prepare_group(node, layout, draw_state.enabled())?;
                 prepare_scene(
@@ -614,6 +662,69 @@ fn prepare_scene<'resource>(
         }
     }
     Ok(())
+}
+
+#[allow(clippy::too_many_arguments)]
+fn prepare_composition_viewport(
+    viewport: &Map<String, Value>,
+    source: &Map<String, Value>,
+    host_layout: &DefiniteLayoutEntry,
+    source_layout: &DefiniteLayoutEntry,
+    draw_enabled: bool,
+    active_clip: PixelClip,
+    bleed_left: i128,
+    bleed_top: i128,
+    dpi: u32,
+    surface_width: u32,
+    surface_height: u32,
+) -> Result<PreparedContainer, EnginePngError> {
+    require_layout_entry(viewport, host_layout, "compositionViewport", false)?;
+    require_layout_entry(source, source_layout, "canvas", true)?;
+    if !draw_enabled {
+        return Ok(PreparedContainer {
+            paint: None,
+            descendant_clip: active_clip,
+            descendant_draw_enabled: false,
+        });
+    }
+    if !identity_transform(viewport)? {
+        return Err(EnginePngError::Unsupported(
+            EnginePngUnsupported::SceneStructure,
+        ));
+    }
+
+    let host_clip = prepare_layout_clip(
+        host_layout.layout_box(),
+        bleed_left,
+        bleed_top,
+        dpi,
+        surface_width,
+        surface_height,
+        EnginePngUnsupported::NonPixelAlignedClip,
+    )?;
+    let source_clip = prepare_layout_clip(
+        source_layout.layout_box(),
+        bleed_left,
+        bleed_top,
+        dpi,
+        surface_width,
+        surface_height,
+        EnginePngUnsupported::NonPixelAlignedClip,
+    )?;
+    let descendant_clip = active_clip.intersect(host_clip).intersect(source_clip);
+    let color = color_member(source, "backgroundColor")?;
+    let paint = descendant_clip.apply(PixelRect {
+        left: source_clip.left,
+        top: source_clip.top,
+        right: source_clip.right,
+        bottom: source_clip.bottom,
+        color,
+    });
+    Ok(PreparedContainer {
+        paint: Some(paint),
+        descendant_clip,
+        descendant_draw_enabled: true,
+    })
 }
 
 #[allow(clippy::too_many_arguments)]

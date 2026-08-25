@@ -927,6 +927,9 @@ impl DefiniteLayouter<'_> {
         layout_box: LocalLayoutBox,
     ) -> Result<(), DefiniteLayoutError> {
         let occurrence = occurrence_id(node)?;
+        if kind == "compositionViewport" {
+            return self.emit_composition_viewport(node, layout_box);
+        }
         match role {
             NodeRole::Frame | NodeRole::Stack | NodeRole::Grid => {
                 let content_box = container_content_box(node, &layout_box, occurrence)?;
@@ -967,6 +970,104 @@ impl DefiniteLayouter<'_> {
                     content_box: None,
                 });
             }
+        }
+        Ok(())
+    }
+
+    fn emit_composition_viewport(
+        &mut self,
+        viewport: &Map<String, Value>,
+        host_box: LocalLayoutBox,
+    ) -> Result<(), DefiniteLayoutError> {
+        let occurrence = occurrence_id(viewport)?;
+        self.entries.push(DefiniteLayoutEntry {
+            occurrence_id: occurrence.to_owned(),
+            kind: "compositionViewport".to_owned(),
+            layout_box: host_box,
+            content_box: None,
+        });
+
+        let source = object_member(Some(viewport), "sourceCanvas", occurrence)?;
+        let source_occurrence = occurrence_id(source)?;
+        let source_width = binary64_member(source, "widthPt", source_occurrence, "widthPt")?;
+        let source_height = binary64_member(source, "heightPt", source_occurrence, "heightPt")?;
+        if source_width <= 0.0 || source_height <= 0.0 {
+            return Err(DefiniteLayoutError::invariant(
+                source_occurrence,
+                "sourceCanvasSize",
+            ));
+        }
+
+        let source_box = LocalLayoutBox {
+            x: 0.0,
+            y: 0.0,
+            width: source_width,
+            height: source_height,
+        };
+        let mut source_layouter = DefiniteLayouter {
+            entries: vec![DefiniteLayoutEntry {
+                occurrence_id: source_occurrence.to_owned(),
+                kind: "canvas".to_owned(),
+                layout_box: source_box,
+                content_box: Some(source_box),
+            }],
+            prepared_resources: self.prepared_resources,
+        };
+        for child in array_member(source, "children", source_occurrence)? {
+            source_layouter
+                .visit_absolute_node(object(child, source_occurrence, "children")?, &source_box)?;
+        }
+
+        let width_scale = finite_viewport_value(
+            host_box.width / source_width,
+            occurrence,
+            "containWidthScale",
+        )?;
+        let height_scale = finite_viewport_value(
+            host_box.height / source_height,
+            occurrence,
+            "containHeightScale",
+        )?;
+        let (scale, mapped_width, mapped_height) = if width_scale <= height_scale {
+            (
+                width_scale,
+                host_box.width,
+                finite_viewport_value(source_height * width_scale, occurrence, "mappedHeight")?,
+            )
+        } else {
+            (
+                height_scale,
+                finite_viewport_value(source_width * height_scale, occurrence, "mappedWidth")?,
+                host_box.height,
+            )
+        };
+        if scale < 0.0 || mapped_width < 0.0 || mapped_height < 0.0 {
+            return Err(DefiniteLayoutError::invariant(
+                occurrence,
+                "containGeometry",
+            ));
+        }
+        let mapped_x = finite_viewport_value(
+            host_box.x + (host_box.width - mapped_width) / 2.0,
+            occurrence,
+            "mappedX",
+        )?;
+        let mapped_y = finite_viewport_value(
+            host_box.y + (host_box.height - mapped_height) / 2.0,
+            occurrence,
+            "mappedY",
+        )?;
+
+        for mut entry in source_layouter.entries {
+            entry.layout_box =
+                map_viewport_box(&entry.layout_box, scale, mapped_x, mapped_y, occurrence)?;
+            entry.content_box = entry
+                .content_box
+                .map(|content_box| {
+                    map_viewport_box(&content_box, scale, mapped_x, mapped_y, occurrence)
+                })
+                .transpose()?;
+            self.entries.push(entry);
         }
         Ok(())
     }
@@ -2823,10 +2924,7 @@ fn definite_node_role(kind: &str, occurrence: &str) -> Result<NodeRole, Definite
         "rect" | "ellipse" | "line" | "polygon" | "polyline" | "path" | "qrCode" | "barcode" => {
             Ok(NodeRole::Leaf)
         }
-        "compositionViewport" => Err(DefiniteLayoutError::unsupported(
-            occurrence,
-            DefiniteLayoutUnsupported::CompositionViewport,
-        )),
+        "compositionViewport" => Ok(NodeRole::Leaf),
         "text" | "image" => Err(DefiniteLayoutError::unsupported(
             occurrence,
             DefiniteLayoutUnsupported::ResourceDependentKind,
@@ -3541,6 +3639,33 @@ fn finite_transform_value(value: f64, occurrence: &str) -> Result<f64, DefiniteL
     } else {
         Err(DefiniteLayoutError::invariant(occurrence, "transform"))
     }
+}
+
+fn finite_viewport_value(
+    value: f64,
+    occurrence: &str,
+    property: &str,
+) -> Result<f64, DefiniteLayoutError> {
+    if value.is_finite() {
+        Ok(value)
+    } else {
+        Err(DefiniteLayoutError::invariant(occurrence, property))
+    }
+}
+
+fn map_viewport_box(
+    source: &LocalLayoutBox,
+    scale: f64,
+    mapped_x: f64,
+    mapped_y: f64,
+    occurrence: &str,
+) -> Result<LocalLayoutBox, DefiniteLayoutError> {
+    Ok(LocalLayoutBox {
+        x: finite_viewport_value(mapped_x + source.x * scale, occurrence, "mappedLayoutX")?,
+        y: finite_viewport_value(mapped_y + source.y * scale, occurrence, "mappedLayoutY")?,
+        width: finite_viewport_value(source.width * scale, occurrence, "mappedLayoutWidth")?,
+        height: finite_viewport_value(source.height * scale, occurrence, "mappedLayoutHeight")?,
+    })
 }
 
 fn finite_group_union_value(value: f64, occurrence: &str) -> Result<f64, DefiniteLayoutError> {

@@ -1,5 +1,5 @@
 {
-  "vectorVersion": "renderweave-definite-layout-vectors/58",
+  "vectorVersion": "renderweave-definite-layout-vectors/59",
   "authorityContext": {
     "layoutProfile": "renderweave-layout/1.0",
     "documentContract": "renderweave-render-node-contract-v1/2",
@@ -9,7 +9,7 @@
   "boundary": {
     "profileAvailability": "NOT_REGISTERED",
     "certificationStatus": "NOT_CERTIFIED",
-    "layoutImplementation": "RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_SINGLE_AND_INACTIVE_BOUND_OR_EXACT_TWO_FILL_SINGLE_ACTIVE_BOUND_WITHIN_REMAINING_OR_SINGLE_ACTIVE_MIN_OVERFLOW_OR_EXACT_TWO_FILL_TWO_MIN_SECOND_FREEZE_OVERFLOW_OR_EXACT_TWO_FILL_MIXED_ACTIVE_MIN_SECOND_MIN_FREEZE_OVERFLOW_OR_EXACT_TWO_FILL_MIXED_ACTIVE_MIN_SECOND_MIXED_MIN_FREEZE_OVERFLOW_OR_EXACT_TWO_FILL_MIXED_ACTIVE_MIN_SECOND_MIXED_TERMINAL_INACTIVE_OR_EXACT_TWO_FILL_SIMULTANEOUS_MIXED_MIN_FREEZE_OVERFLOW_OR_EXACT_TWO_FILL_SIMULTANEOUS_MIXED_MIN_MAX_EXACT_TERMINAL_OR_EXACT_TWO_FILL_TWO_MAX_SECOND_FREEZE_FREE_JUSTIFY_OR_EXACT_TWO_FILL_MIXED_ACTIVE_MAX_SECOND_MAX_FREEZE_FREE_JUSTIFY_OR_EXACT_THREE_FILL_SINGLE_ACTIVE_BOUND_ONE_REDISTRIBUTION_OR_EXACT_THREE_FILL_POST_REDISTRIBUTION_INACTIVE_BOUNDS_OR_EXACT_THREE_FILL_SECOND_MIN_FREEZE_LAST_REMAINDER_OR_EXACT_THREE_FILL_SECOND_MAX_FREEZE_LAST_REMAINDER_OR_EXACT_THREE_FILL_SECOND_MAX_FREEZE_TERMINAL_INACTIVE_MIN_OR_EXACT_THREE_FILL_SECOND_MAX_FREEZE_TERMINAL_INACTIVE_MAX_OR_EXACT_THREE_FILL_THIRD_MAX_FREEZE_FREE_JUSTIFY_OR_EXACT_THREE_FILL_SINGLE_ACTIVE_MIN_OVERFLOW_OR_EXACT_THREE_FILL_SECOND_MIN_FREEZE_OVERFLOW_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_INACTIVE_UNFROZEN_MAX_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_SECOND_MIN_FREEZE_OVERFLOW_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_SECOND_MIXED_MIN_FREEZE_OVERFLOW_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_SECOND_MIXED_MIN_FREEZE_OVERFLOW_TERMINAL_INACTIVE_MAX_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_TWO_MIXED_MIN_FREEZES_OVERFLOW_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_MIXED_AND_MIN_ONLY_FREEZES_OVERFLOW_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_TWO_MIN_ONLY_FREEZES_OVERFLOW_MULTI_MAIN_FILL_AND_FIXED_SINGLE_FRACTION_INDEPENDENT_MULTI_AUTO_GRID_MULTI_AUTO_SPAN_STABLE_DEFICIT_GRID_DEFINITE_MULTI_FRACTION_LAST_REMAINDER_GRID_EMPTY_CONTAINER_STACK_HUG_GRID_AUTO_HUG_CONTRIBUTION_GRID_HUG_EXACT_QUARTER_TURN_AFFINE_FRAME_GROUP_HUG_FIXED_OPPOSITE_AXIS_CROSS_FILL_DEFINITE_ABSOLUTE_PARENT_OFFER_DEFINITE_STACK_CROSS_OUTER_OFFER_STACK_MAIN_FILL_CROSS_HUG_REMEASURE_NESTED_STACK_MAIN_OFFER_PROPAGATION_COLUMNS_FIRST_GRID_CELL_OUTER_OFFER_STACK_MAIN_OFFER_COLUMNS_FIRST_GRID_CROSS_HUG_ABSOLUTE_PARENT_OFFER_COLUMNS_FIRST_GRID_CROSS_HUG_GRID_CELL_OFFER_COLUMNS_FIRST_NESTED_GRID_CROSS_HUG_GRID_CELL_OFFER_STACK_MAIN_FIRST_CROSS_HUG_DIRECTION_CHANGING_STACK_CROSS_OFFER_MAIN_HUG_NESTED_STACK_RESOLVED_OPPOSITE_OFFER_RECURSION_COLUMNS_FIRST_GRID_TERMINAL_NORMALIZATION_BOX_KERNEL",
+    "layoutImplementation": "RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_SINGLE_AND_INACTIVE_BOUND_OR_EXACT_TWO_FILL_SINGLE_ACTIVE_BOUND_WITHIN_REMAINING_OR_SINGLE_ACTIVE_MIN_OVERFLOW_OR_EXACT_TWO_FILL_TWO_MIN_SECOND_FREEZE_OVERFLOW_OR_EXACT_TWO_FILL_MIXED_ACTIVE_MIN_SECOND_MIN_FREEZE_OVERFLOW_OR_EXACT_TWO_FILL_MIXED_ACTIVE_MIN_SECOND_MIXED_MIN_FREEZE_OVERFLOW_OR_EXACT_TWO_FILL_MIXED_ACTIVE_MIN_SECOND_MIXED_TERMINAL_INACTIVE_OR_EXACT_TWO_FILL_SIMULTANEOUS_MIXED_MIN_FREEZE_OVERFLOW_OR_EXACT_TWO_FILL_SIMULTANEOUS_MIXED_MIN_MAX_EXACT_TERMINAL_OR_EXACT_TWO_FILL_TWO_MAX_SECOND_FREEZE_FREE_JUSTIFY_OR_EXACT_TWO_FILL_MIXED_ACTIVE_MAX_SECOND_MAX_FREEZE_FREE_JUSTIFY_OR_EXACT_THREE_FILL_SINGLE_ACTIVE_BOUND_ONE_REDISTRIBUTION_OR_EXACT_THREE_FILL_POST_REDISTRIBUTION_INACTIVE_BOUNDS_OR_EXACT_THREE_FILL_SECOND_MIN_FREEZE_LAST_REMAINDER_OR_EXACT_THREE_FILL_SECOND_MAX_FREEZE_LAST_REMAINDER_OR_EXACT_THREE_FILL_SECOND_MAX_FREEZE_TERMINAL_INACTIVE_MIN_OR_EXACT_THREE_FILL_SECOND_MAX_FREEZE_TERMINAL_INACTIVE_MAX_OR_EXACT_THREE_FILL_THIRD_MAX_FREEZE_FREE_JUSTIFY_OR_EXACT_THREE_FILL_SINGLE_ACTIVE_MIN_OVERFLOW_OR_EXACT_THREE_FILL_SECOND_MIN_FREEZE_OVERFLOW_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_INACTIVE_UNFROZEN_MAX_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_SECOND_MIN_FREEZE_OVERFLOW_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_SECOND_MIXED_MIN_FREEZE_OVERFLOW_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_SECOND_MIXED_MIN_FREEZE_OVERFLOW_TERMINAL_INACTIVE_MAX_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_TWO_MIXED_MIN_FREEZES_OVERFLOW_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_MIXED_AND_MIN_ONLY_FREEZES_OVERFLOW_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_TWO_MIN_ONLY_FREEZES_OVERFLOW_MULTI_MAIN_FILL_AND_FIXED_SINGLE_FRACTION_INDEPENDENT_MULTI_AUTO_GRID_MULTI_AUTO_SPAN_STABLE_DEFICIT_GRID_DEFINITE_MULTI_FRACTION_LAST_REMAINDER_GRID_EMPTY_CONTAINER_STACK_HUG_GRID_AUTO_HUG_CONTRIBUTION_GRID_HUG_EXACT_QUARTER_TURN_AFFINE_FRAME_GROUP_HUG_FIXED_OPPOSITE_AXIS_CROSS_FILL_DEFINITE_ABSOLUTE_PARENT_OFFER_DEFINITE_STACK_CROSS_OUTER_OFFER_STACK_MAIN_FILL_CROSS_HUG_REMEASURE_NESTED_STACK_MAIN_OFFER_PROPAGATION_COLUMNS_FIRST_GRID_CELL_OUTER_OFFER_STACK_MAIN_OFFER_COLUMNS_FIRST_GRID_CROSS_HUG_ABSOLUTE_PARENT_OFFER_COLUMNS_FIRST_GRID_CROSS_HUG_GRID_CELL_OFFER_COLUMNS_FIRST_NESTED_GRID_CROSS_HUG_GRID_CELL_OFFER_STACK_MAIN_FIRST_CROSS_HUG_DIRECTION_CHANGING_STACK_CROSS_OFFER_MAIN_HUG_NESTED_STACK_RESOLVED_OPPOSITE_OFFER_RECURSION_COLUMNS_FIRST_GRID_TERMINAL_NORMALIZATION_BOX_KERNEL_DEFINITE_COMPOSITION_VIEWPORT_SOURCE_TRIM_CONTAIN_CENTER_MAPPING_BOX_KERNEL",
     "worldTransformImplementation": "ABSENT",
     "sceneImplementation": "ABSENT",
     "rasterImplementation": "ABSENT",
@@ -6983,6 +6983,91 @@
         {"occurrenceId":"rwocc_0000000000000002","kind":"rect","layoutBox":{"xBits":"4034000000000000","yBits":"4042800000000000","widthBits":"4049000000000000","heightBits":"4024000000000000"},"contentBox":null},
         {"occurrenceId":"rwocc_0000000000000003","kind":"rect","layoutBox":{"xBits":"4052c00000000000","yBits":"4024000000000000","widthBits":"403e000000000000","heightBits":"4043000000000000"},"contentBox":null}
       ]}
+    },
+    {
+      "id": "composition-viewport-empty-source-contain-center",
+      "baseSource": "allKinds",
+      "retainCanvasChildren": [14],
+      "retainResources": [],
+      "renumberOccurrences": true,
+      "expected": {"entries":[
+        {"occurrenceId":"rwocc_0000000000000000","kind":"canvas","layoutBox":{"xBits":"0000000000000000","yBits":"0000000000000000","widthBits":"40829a34690de093","heightBits":"408a4f1e3c968944"},"contentBox":{"xBits":"0000000000000000","yBits":"0000000000000000","widthBits":"40829a34690de093","heightBits":"408a4f1e3c968944"}},
+        {"occurrenceId":"rwocc_0000000000000001","kind":"compositionViewport","layoutBox":{"xBits":"0000000000000000","yBits":"0000000000000000","widthBits":"403c58b167ec7864","heightBits":"403c58b167ec7864"},"contentBox":null},
+        {"occurrenceId":"rwocc_0000000000000002","kind":"canvas","layoutBox":{"xBits":"40109b6558ff835c","yBits":"0000000000000000","widthBits":"40340afebb6cb6b6","heightBits":"403c58b167ec7864"},"contentBox":{"xBits":"40109b6558ff835c","yBits":"0000000000000000","widthBits":"40340afebb6cb6b6","heightBits":"403c58b167ec7864"}}
+      ]}
+    },
+    {
+      "id": "composition-viewport-source-child-layout-precedes-contain-center",
+      "baseSource": "allKinds",
+      "retainCanvasChildren": [14],
+      "retainResources": [],
+      "renumberOccurrences": true,
+      "mutations": [
+        {"operation":"replace","pointer":"/canvas/children/0/placement","value":{"heightMode":"FIXED","heightPt":40,"type":"ABSOLUTE","widthMode":"FIXED","widthPt":40,"xPt":10,"yPt":20}},
+        {"operation":"replace","pointer":"/canvas/children/0/sourceCanvas/widthPt","value":20},
+        {"operation":"replace","pointer":"/canvas/children/0/sourceCanvas/heightPt","value":10},
+        {"operation":"add","pointer":"/canvas/children/0/sourceCanvas/children/0","value":{"cornerRadii":{"bottomLeftPt":0,"bottomRightPt":0,"topLeftPt":0,"topRightPt":0},"fill":{"color":"#FF0000FF"},"kind":"rect","occurrenceId":"rwocc_0000000000000003","opacity":1,"placement":{"heightMode":"FIXED","heightPt":3,"type":"ABSOLUTE","widthMode":"FIXED","widthPt":4,"xPt":2,"yPt":1},"transform":{"originX":0.5,"originY":0.5,"rotationDeg":0,"scaleX":1,"scaleY":1},"visible":true}}
+      ],
+      "expected":{"entries":[
+        {"occurrenceId":"rwocc_0000000000000000","kind":"canvas","layoutBox":{"xBits":"0000000000000000","yBits":"0000000000000000","widthBits":"40829a34690de093","heightBits":"408a4f1e3c968944"},"contentBox":{"xBits":"0000000000000000","yBits":"0000000000000000","widthBits":"40829a34690de093","heightBits":"408a4f1e3c968944"}},
+        {"occurrenceId":"rwocc_0000000000000001","kind":"compositionViewport","layoutBox":{"xBits":"4024000000000000","yBits":"4034000000000000","widthBits":"4044000000000000","heightBits":"4044000000000000"},"contentBox":null},
+        {"occurrenceId":"rwocc_0000000000000002","kind":"canvas","layoutBox":{"xBits":"4024000000000000","yBits":"403e000000000000","widthBits":"4044000000000000","heightBits":"4034000000000000"},"contentBox":{"xBits":"4024000000000000","yBits":"403e000000000000","widthBits":"4044000000000000","heightBits":"4034000000000000"}},
+        {"occurrenceId":"rwocc_0000000000000003","kind":"rect","layoutBox":{"xBits":"402c000000000000","yBits":"4040000000000000","widthBits":"4020000000000000","heightBits":"4018000000000000"},"contentBox":null}
+      ]}
+    },
+    {
+      "id": "composition-viewport-source-overflow-layout-remains-unclamped",
+      "baseSource": "allKinds",
+      "retainCanvasChildren": [14],
+      "retainResources": [],
+      "renumberOccurrences": true,
+      "mutations": [
+        {"operation":"replace","pointer":"/canvas/children/0/placement","value":{"heightMode":"FIXED","heightPt":40,"type":"ABSOLUTE","widthMode":"FIXED","widthPt":40,"xPt":10,"yPt":20}},
+        {"operation":"replace","pointer":"/canvas/children/0/sourceCanvas/widthPt","value":20},
+        {"operation":"replace","pointer":"/canvas/children/0/sourceCanvas/heightPt","value":10},
+        {"operation":"add","pointer":"/canvas/children/0/sourceCanvas/children/0","value":{"cornerRadii":{"bottomLeftPt":0,"bottomRightPt":0,"topLeftPt":0,"topRightPt":0},"fill":{"color":"#FF0000FF"},"kind":"rect","occurrenceId":"rwocc_0000000000000003","opacity":1,"placement":{"heightMode":"FIXED","heightPt":6,"type":"ABSOLUTE","widthMode":"FIXED","widthPt":30,"xPt":-5,"yPt":8},"transform":{"originX":0.5,"originY":0.5,"rotationDeg":0,"scaleX":1,"scaleY":1},"visible":true}}
+      ],
+      "expected":{"entries":[
+        {"occurrenceId":"rwocc_0000000000000000","kind":"canvas","layoutBox":{"xBits":"0000000000000000","yBits":"0000000000000000","widthBits":"40829a34690de093","heightBits":"408a4f1e3c968944"},"contentBox":{"xBits":"0000000000000000","yBits":"0000000000000000","widthBits":"40829a34690de093","heightBits":"408a4f1e3c968944"}},
+        {"occurrenceId":"rwocc_0000000000000001","kind":"compositionViewport","layoutBox":{"xBits":"4024000000000000","yBits":"4034000000000000","widthBits":"4044000000000000","heightBits":"4044000000000000"},"contentBox":null},
+        {"occurrenceId":"rwocc_0000000000000002","kind":"canvas","layoutBox":{"xBits":"4024000000000000","yBits":"403e000000000000","widthBits":"4044000000000000","heightBits":"4034000000000000"},"contentBox":{"xBits":"4024000000000000","yBits":"403e000000000000","widthBits":"4044000000000000","heightBits":"4034000000000000"}},
+        {"occurrenceId":"rwocc_0000000000000003","kind":"rect","layoutBox":{"xBits":"0000000000000000","yBits":"4047000000000000","widthBits":"404e000000000000","heightBits":"4028000000000000"},"contentBox":null}
+      ]}
+    },
+    {
+      "id": "composition-viewport-nested-contain-center-recurses-in-source-space",
+      "baseSource": "allKinds",
+      "retainCanvasChildren": [14],
+      "retainResources": [],
+      "renumberOccurrences": true,
+      "mutations": [
+        {"operation":"replace","pointer":"/canvas/children/0/placement","value":{"heightMode":"FIXED","heightPt":40,"type":"ABSOLUTE","widthMode":"FIXED","widthPt":40,"xPt":10,"yPt":20}},
+        {"operation":"replace","pointer":"/canvas/children/0/sourceCanvas/widthPt","value":20},
+        {"operation":"replace","pointer":"/canvas/children/0/sourceCanvas/heightPt","value":10},
+        {"operation":"add","pointer":"/canvas/children/0/sourceCanvas/children/0","value":{"kind":"compositionViewport","occurrenceId":"rwocc_0000000000000003","opacity":1,"placement":{"heightMode":"FIXED","heightPt":5,"type":"ABSOLUTE","widthMode":"FIXED","widthPt":10,"xPt":5,"yPt":2},"sourceCanvas":{"backgroundColor":"#00000000","children":[{"cornerRadii":{"bottomLeftPt":0,"bottomRightPt":0,"topLeftPt":0,"topRightPt":0},"fill":{"color":"#FF0000FF"},"kind":"rect","occurrenceId":"rwocc_0000000000000005","opacity":1,"placement":{"heightMode":"FIXED","heightPt":2,"type":"ABSOLUTE","widthMode":"FIXED","widthPt":2,"xPt":1,"yPt":1},"transform":{"originX":0.5,"originY":0.5,"rotationDeg":0,"scaleX":1,"scaleY":1},"visible":true}],"heightPt":4,"occurrenceId":"rwocc_0000000000000004","widthPt":4},"transform":{"originX":0.5,"originY":0.5,"rotationDeg":0,"scaleX":1,"scaleY":1},"visible":true}}
+      ],
+      "expected":{"entries":[
+        {"occurrenceId":"rwocc_0000000000000000","kind":"canvas","layoutBox":{"xBits":"0000000000000000","yBits":"0000000000000000","widthBits":"40829a34690de093","heightBits":"408a4f1e3c968944"},"contentBox":{"xBits":"0000000000000000","yBits":"0000000000000000","widthBits":"40829a34690de093","heightBits":"408a4f1e3c968944"}},
+        {"occurrenceId":"rwocc_0000000000000001","kind":"compositionViewport","layoutBox":{"xBits":"4024000000000000","yBits":"4034000000000000","widthBits":"4044000000000000","heightBits":"4044000000000000"},"contentBox":null},
+        {"occurrenceId":"rwocc_0000000000000002","kind":"canvas","layoutBox":{"xBits":"4024000000000000","yBits":"403e000000000000","widthBits":"4044000000000000","heightBits":"4034000000000000"},"contentBox":{"xBits":"4024000000000000","yBits":"403e000000000000","widthBits":"4044000000000000","heightBits":"4034000000000000"}},
+        {"occurrenceId":"rwocc_0000000000000003","kind":"compositionViewport","layoutBox":{"xBits":"4034000000000000","yBits":"4041000000000000","widthBits":"4034000000000000","heightBits":"4024000000000000"},"contentBox":null},
+        {"occurrenceId":"rwocc_0000000000000004","kind":"canvas","layoutBox":{"xBits":"4039000000000000","yBits":"4041000000000000","widthBits":"4024000000000000","heightBits":"4024000000000000"},"contentBox":{"xBits":"4039000000000000","yBits":"4041000000000000","widthBits":"4024000000000000","heightBits":"4024000000000000"}},
+        {"occurrenceId":"rwocc_0000000000000005","kind":"rect","layoutBox":{"xBits":"403b800000000000","yBits":"4042400000000000","widthBits":"4014000000000000","heightBits":"4014000000000000"},"contentBox":null}
+      ]}
+    },
+    {
+      "id": "composition-viewport-fixed-stack-host-uses-resolved-offer",
+      "baseSource": "fixtures",
+      "baseCase": "rowStack",
+      "mutations": [
+        {"operation":"replace","pointer":"/canvas/children/0/children","value":[{"kind":"compositionViewport","occurrenceId":"rwocc_0000000000000002","opacity":1,"placement":{"alignSelf":"START","heightMode":"FIXED","heightPt":40,"marginBottomPt":0,"marginLeftPt":0,"marginRightPt":0,"marginTopPt":0,"type":"STACK","widthMode":"FIXED","widthPt":40},"sourceCanvas":{"backgroundColor":"#00000000","children":[],"heightPt":10,"occurrenceId":"rwocc_0000000000000003","widthPt":20},"transform":{"originX":0.5,"originY":0.5,"rotationDeg":0,"scaleX":1,"scaleY":1},"visible":true}]}
+      ],
+      "expected":{"entries":[
+        {"occurrenceId":"rwocc_0000000000000000","kind":"canvas","layoutBox":{"xBits":"0000000000000000","yBits":"0000000000000000","widthBits":"405e000000000000","heightBits":"4054000000000000"},"contentBox":{"xBits":"0000000000000000","yBits":"0000000000000000","widthBits":"405e000000000000","heightBits":"4054000000000000"}},
+        {"occurrenceId":"rwocc_0000000000000001","kind":"stack","layoutBox":{"xBits":"4024000000000000","yBits":"4014000000000000","widthBits":"4059000000000000","heightBits":"4049000000000000"},"contentBox":{"xBits":"4030000000000000","yBits":"4020000000000000","widthBits":"4056800000000000","heightBits":"4045000000000000"}},
+        {"occurrenceId":"rwocc_0000000000000002","kind":"compositionViewport","layoutBox":{"xBits":"4050800000000000","yBits":"4020000000000000","widthBits":"4044000000000000","heightBits":"4044000000000000"},"contentBox":null},
+        {"occurrenceId":"rwocc_0000000000000003","kind":"canvas","layoutBox":{"xBits":"4050800000000000","yBits":"4032000000000000","widthBits":"4044000000000000","heightBits":"4034000000000000"},"contentBox":{"xBits":"4050800000000000","yBits":"4032000000000000","widthBits":"4044000000000000","heightBits":"4034000000000000"}}
+      ]}
     }
   ],
   "unsupportedCases": [
@@ -7155,14 +7240,6 @@
       "expected": {"feature": "RESOURCE_DEPENDENT_KIND", "occurrenceId": "rwocc_0000000000000002"}
     },
     {
-      "id": "composition-viewport",
-      "baseSource": "allKinds",
-      "retainCanvasChildren": [14],
-      "retainResources": [],
-      "renumberOccurrences": true,
-      "expected": {"feature": "COMPOSITION_VIEWPORT", "occurrenceId": "rwocc_0000000000000001"}
-    },
-    {
       "id": "text",
       "baseSource": "allKinds",
       "retainCanvasChildren": [4],
@@ -7291,6 +7368,18 @@
         {"operation":"add","pointer":"/canvas/children/0/children/2/placement/maxWidthPt","value":42}
       ],
       "expected":{"feature":"STACK_MAIN_FILL","occurrenceId":"rwocc_0000000000000002"}
+    },
+    {
+      "id": "composition-viewport-source-preserves-authored-dfs-first-error",
+      "baseSource": "allKinds",
+      "retainCanvasChildren": [14],
+      "retainResources": [0],
+      "renumberOccurrences": true,
+      "mutations": [
+        {"operation":"add","pointer":"/canvas/children/0/sourceCanvas/children/0","value":{"fitMode":"NONE","horizontalAlign":"LEFT","kind":"text","lineBreak":"WORD","lineHeight":{"factor":1.2,"type":"FACTOR"},"occurrenceId":"rwocc_0000000000000003","opacity":1,"overflow":"CLIP","padding":{"bottomPt":0,"leftPt":0,"rightPt":0,"topPt":0},"placement":{"heightMode":"FIXED","heightPt":5,"type":"ABSOLUTE","widthMode":"FIXED","widthPt":5,"xPt":0,"yPt":0},"runs":[{"color":"#000000FF","decoration":"NONE","fontResourceId":"rwres_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","fontSizePt":12,"letterSpacingPt":0,"text":"A"}],"transform":{"originX":0.5,"originY":0.5,"rotationDeg":0,"scaleX":1,"scaleY":1},"verticalAlign":"TOP","visible":true,"writingMode":"HORIZONTAL_TB"}},
+        {"operation":"add","pointer":"/canvas/children/0/sourceCanvas/children/1","value":{"cornerRadii":{"bottomLeftPt":0,"bottomRightPt":0,"topLeftPt":0,"topRightPt":0},"fill":{"color":"#000000FF"},"kind":"rect","occurrenceId":"rwocc_0000000000000004","opacity":1,"placement":{"heightMode":"FIXED","heightPt":4,"type":"ABSOLUTE","widthMode":"FIXED","widthPt":3,"xPt":1,"yPt":2},"transform":{"originX":0.5,"originY":0.5,"rotationDeg":15,"scaleX":1,"scaleY":1},"visible":true}}
+      ],
+      "expected":{"feature":"RESOURCE_DEPENDENT_KIND","occurrenceId":"rwocc_0000000000000003"}
     }
   ]
 }

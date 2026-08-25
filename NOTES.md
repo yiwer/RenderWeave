@@ -1,6 +1,24 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-25 **Template v1 implementation TV1-T119 已由 Codex `/root` single-writer 完成，状态
+  `resolved/automated_verified`**：正式交付仍固定为最终 `/templates` 产品页面、真实后端与 Authoritative Preview，
+  `/prototype` 不计交付。本票沿既有 public Layout/Engine Interface 接通首个真实 TemplateUse 纵切：source Canvas
+  先在原始 trim 内递归布局，再以固定 binary64 CONTAIN/CENTER 映射；Engine 按 viewport→sourceCanvas→children
+  preorder 绘制 source background，并执行 ancestor∩host∩source hard clip、host subtree opacity isolation、nested
+  viewport 与 Stack-hosted viewport。shared layout `/59` 为 271 laid-out + 17 unsupported、288/288 cases、861 checks，
+  vector SHA-256 `6c1b6dd1172a10bf223a477a4945a2b1fbe6e5d2bbe2dce8dc996e9196f4eadf`；Engine `/1` 为
+  27 rendered + 11 unsupported、38/38 cases、118 checks，vector SHA-256
+  `55b76d93490c3ed8c01b3c81084781dea3d0856af81a8d495d92017ed28163e1`。canonical `render`
+  `.sdlc/evidence/20260825-212203-render/`（46.647 秒）、affected `fast`
+  `.sdlc/evidence/20260825-212302-fast/`（12.613 秒）、sequential `server`
+  `.sdlc/evidence/20260825-212323-server/`（691.056 秒）与 17-step Goal `full`
+  `.sdlc/evidence/20260825-213503-full/`（1156.803 秒）均 passed/A1；full 覆盖 Windows/Linux Renderer、Node 24
+  Web 217/217、runtime canary、Playwright 23 passed + 1 controlled skip、Draft/inference browser journeys，且
+  provider attempts/API Key reads/reservations/cost/open authorization=0。状态回填后的 resolution `fast`
+  `.sdlc/evidence/20260825-215741-fast/` 也以 3/3 steps、passed/A1、11.546 秒通过。Profile `NOT_REGISTERED`、certification
+  `NOT_CERTIFIED`、process raster `ABSENT`、native stack `BUILD_NOT_AUTHORIZED`、public Rendering API/E6/正式产品
+  route `CLOSED`；未推进 J1/A3/READY，未 push/tag/PR。
 - 2026-08-25 **Template v1 implementation TV1-T118 已由 Codex `/root` single-writer 完成，状态
   `resolved/automated_verified`**：exactly-two mixed main FILL 首轮一项严格命中 min、另一项严格命中 max，
   且两个 frozen bound 的 authored-order binary64 和精确等于 remaining 时，现可无 residual 终止。Rust/Python
