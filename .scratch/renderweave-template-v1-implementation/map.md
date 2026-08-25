@@ -642,6 +642,13 @@ Label: wayfinder:map
   Rendering/app、`fast`、sequential `server` 与 17-step Goal `full` 均绿；默认无 Certified Profile 时仍在 payload
   work 前 fail closed。Profile/daemon success/public Rendering API/E6/正式 `/templates` route 与 native build 保持
   关闭，`/prototype` 不计最终交付。
+- [实现 Renderer daemon 单槽 FIFO 与并发控制帧纵切](issues/123-renderer-daemon-fifo-control.md) —
+  **resolved / automated_verified**；ADR-0045 UDS 生产路径现以持续 reader、单槽 worker/FIFO scheduler 与串行 writer
+  物化 1 active + 4 waiting、5 秒 queue wait、同连接并发 `CANCEL`、join/replay/conflict、deadline/cancel final fence 与
+  不交错 terminal frame groups；Linux daemon 22 + prepared-result 3 tests、`render`/`fast`/sequential `server` 与 clean
+  17-step Goal `full` 均绿。默认 manifest 继续 `NOT_REGISTERED/NOT_CERTIFIED/ABSENT`，T108 success kernel/output path
+  仍 `UNWIRED`，不声称 50ms/250ms cooperative stop，不开放 public Rendering API/E6/正式 `/templates` route，
+  native build 仍 `BUILD_NOT_AUTHORIZED`。
 - [验证 Product Editor 状态、恢复与权威预览架构](issues/09-validate-product-editor-architecture.md) —
   throwaway 逻辑原型（`/prototype/editor-state-model`，不进产品 route）把冻结编辑器规则编码为确定性
   fixture 状态机：10 个引导走查场景 37/37 断言 + 自由操作冒烟 + 键盘焦点检查全部通过（Playwright A1，

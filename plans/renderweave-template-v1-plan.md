@@ -2430,6 +2430,46 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
   `ABSENT`、native stack `BUILD_NOT_AUTHORIZED`、daemon success/public Rendering API/E6/正式 `/templates` route
   `CLOSED`；最终产品 Template-v1 页面与真实功能仍未交付，`/prototype` 不计交付，未推进 J1/A3/READY。
 
+## 123. TV1-T123 执行卡
+
+- 决策：T122 已以 verified commit `777f8b6f` 收口并安全合入/push `main@df096e5d`；复算冻结 Ticket 16/19 与
+  ADR-0045 后，完整 Renderer Profile 仍受未授权 native font/AA/JPEG build 阻塞，但 daemon 的同步
+  `read → prepare → write` 也尚未兑现既已冻结的 requestId 多路复用、1 active slot、4 FIFO positions、5 秒
+  queue wait 与处理中 `CANCEL`。该控制面不依赖 native build，登记为当前 single-writer frontier。
+- Interface/seam：唯一可观察 seam 保持 UDS typed frames；内部改为持续 reader、单-slot worker与串行 writer。
+  active identity lookup先于queue admission；accepted waiting严格FIFO；terminal response frame group不可交错。
+- 精确语义：同digest join/replay、异digest conflict、queue满时nonterminal `RENDER_ENGINE_BUSY` reservation、原
+  absolute deadline与5秒queue timeout、pre-command/queued/active cancel fence均按ADR/Ticket 19执行。active底层工作
+  尚未具备50ms cooperative checkpoint时，本票只保证seal前丢弃与零RESULT，不虚报250ms物理停止。
+- 允许影响：T123 tracker/map/plan/NOTES、daemon Rust implementation与UDS frame integration tests、必要的process
+  vectors/gate identity/evidence。
+- 禁止影响：T108 success kernel接入、process/Profile registration/certification、native build、Text/AA/JPEG/
+  LayoutTrace、Java/OpenAPI/Web/E6/正式route、formal records、physical J1/A3/READY及外部副作用。
+- TDD/gates：已由ADR-0045预确认的public seam上，以受控外部fetch延迟构造同连接`COMMAND → CANCEL` tracer，先RED；
+  GREEN后逐条增加queue容量/FIFO/deadline/join/replay/conflict/frame-group原子性。focused Linux/Rust → canonical
+  `render` → affected `fast` → sequential `server` → Goal `full` → resolution `fast`。Maven不并发、精确staging，
+  用户Image-Only dirty work不进入提交；最高只报`automated_verified`。
+- 实现：Linux UDS 已改为持续 reader、单槽 FIFO scheduler 与串行 writer；registry 跨 connection session 保持
+  request identity、terminal replay、pre-command tombstone 与 BUSY reservation。1 active + 4 waiting、5 秒 queue wait/
+  原 deadline 较早者、queued/active cancel、final deadline fence、same-digest join/replay 与 drift conflict 均经真实
+  frame bytes 验证；active work 只保证 seal 前丢弃，不宣称 50ms checkpoint 或 250ms physical stop。
+- TDD RED 观察包含 internal-before-CANCEL、second-request-BUSY、queued cancel duplicate terminal、约 7 秒 queue wait、
+  drift-BUSY、late `FETCH_FAILED`、expired-BUSY、active-deadline `CANCELLED` 与 BUSY stage 非 `REQUEST_CONTROL`；GREEN
+  后 Linux daemon 22 tests + prepared-result integration 3 tests 均通过，Windows workspace/fmt/clippy/Java/A2 replay
+  同时保持绿色。
+- A1 evidence：canonical `render` `.sdlc/evidence/20260826-040703-render/`、affected `fast`
+  `.sdlc/evidence/20260826-040933-fast/`、clean snapshot sequential `server`
+  `.sdlc/evidence/20260826-044232-server/` 与 clean-checkout 17-step Goal `full`
+  `.sdlc/evidence/20260826-053343-full/`（17/17，1514.434 秒）均 passed。full 覆盖 App 362 tests/0 failures/0
+  errors/15 skipped、Node 24 Web 28 files/217 tests、runtime canary、Playwright 23 passed + 1 controlled skip、生产
+  Draft 与 inference browser journeys；R0/R1/P0 provider attempts=0，P0 API Key reads/reservations/cost/open
+  authorization=0。状态回填后的 resolution `fast` `.sdlc/evidence/20260826-060147-fast/` 也以 3/3 steps 通过。
+- Windows fresh checkout 曾把 strict replay JSON 转成 CRLF；仓库级 `.gitattributes` 现固定
+  `.scratch/renderweave-template-v1/**` 为 LF、`.bin` 为 binary，fresh worktree 已验证目标 JSON `w/lf` 且 full 绿色。
+- 状态为 `resolved / automated_verified`。Profile `NOT_REGISTERED`、certification `NOT_CERTIFIED`、process raster
+  `ABSENT`、daemon success output path `UNWIRED`、native stack `BUILD_NOT_AUTHORIZED`；T108 success kernel、public
+  Rendering API/E6/正式 `/templates` route 仍 `CLOSED`，最终产品页面与真实功能尚未交付，未推进 J1/A3/READY。
+
 ## 111. TV1-T111 执行卡
 
 - 决策：T110 以 verified commit `4cbc3b68` 收口且 worktree clean 后，复核 Ticket 10 §6、Ticket 16 §8 与

@@ -28,3 +28,7 @@ renderer/crates/**/*.rs text eol=lf
 
 # Cargo vendor bytes are checksum-addressed upstream artifacts; never normalize or lint them.
 renderer/vendor/** -text -whitespace
+
+# Template v1 replay artifacts are byte-addressed and must survive Windows checkout unchanged.
+.scratch/renderweave-template-v1/** text eol=lf
+.scratch/renderweave-template-v1/**/*.bin binary

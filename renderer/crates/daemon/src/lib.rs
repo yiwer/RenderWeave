@@ -35,12 +35,18 @@ use renderweave_renderer_resource::{
 };
 #[cfg(any(unix, test))]
 use std::collections::BTreeMap;
+#[cfg(target_os = "linux")]
+use std::collections::VecDeque;
 use std::ffi::{OsStr, OsString};
 use std::fmt::{Display, Formatter};
 use std::io;
 use std::path::{Path, PathBuf};
 #[cfg(any(unix, test))]
 use std::sync::Arc;
+#[cfg(target_os = "linux")]
+use std::sync::{Mutex, mpsc};
+#[cfg(target_os = "linux")]
+use std::time::Duration;
 #[cfg(any(unix, test))]
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -48,6 +54,10 @@ use std::time::{SystemTime, UNIX_EPOCH};
 const TERMINAL_RETENTION_MILLIS: i64 = 5 * 60 * 1_000;
 #[cfg(any(unix, test))]
 const PRE_COMMAND_CANCEL_RETENTION_MILLIS: i64 = 60 * 1_000;
+#[cfg(target_os = "linux")]
+const WAITING_QUEUE_CAPACITY: usize = 4;
+#[cfg(target_os = "linux")]
+const WAITING_QUEUE_MILLIS: i64 = 5 * 1_000;
 
 #[derive(Debug)]
 pub enum DaemonError {
@@ -389,17 +399,17 @@ pub fn run(configuration: DaemonConfiguration) -> Result<(), DaemonError> {
     let resource_fetcher = Arc::new(HttpsResourceFetcher::new(
         configuration.fetch_egress_policy().clone(),
     ));
-    let mut registry = RequestRegistry::new(
+    let registry = ConcurrentRequestRegistry::new(
         configuration.fetch_target_policy().clone(),
         resource_fetcher,
     );
     eprintln!("renderer daemon ready");
     for accepted in listener.incoming() {
-        let mut connection = accepted?;
-        if serve_connection(
-            &mut connection,
+        let connection = accepted?;
+        if serve_unix_connection(
+            connection,
             &identity,
-            &mut registry,
+            &registry,
             configuration.maximum_framed_bytes(),
         )
         .is_err()
@@ -418,7 +428,7 @@ pub fn run(_configuration: DaemonConfiguration) -> Result<(), DaemonError> {
     ))
 }
 
-#[cfg(any(unix, test))]
+#[cfg(test)]
 fn serve_connection<S: io::Read + io::Write>(
     connection: &mut S,
     identity: &ManifestIdentity,
@@ -449,6 +459,56 @@ fn serve_connection<S: io::Read + io::Write>(
         let response = registry.handle(frame, now_epoch_millis())?;
         response.write_to(connection)?;
     }
+}
+
+#[cfg(target_os = "linux")]
+fn serve_unix_connection(
+    mut connection: std::os::unix::net::UnixStream,
+    identity: &ManifestIdentity,
+    registry: &ConcurrentRequestRegistry,
+    maximum_framed_bytes: usize,
+) -> Result<(), DaemonError> {
+    let hello = read_frame(&mut connection, maximum_framed_bytes)?;
+    if hello.frame_type != FrameType::ClientHello {
+        return Err(DaemonError::Protocol(ProtocolError::Invalid(
+            "first renderer frame must be CLIENT_HELLO",
+        )));
+    }
+    parse_client_hello(&hello.payload, &identity.manifest_sha256)?;
+    write_frame(
+        &mut connection,
+        FrameType::ServerHello,
+        &server_hello_bytes(identity)?,
+    )?;
+
+    let mut writer = connection.try_clone()?;
+    let (response_sender, response_receiver) = mpsc::channel::<TerminalResponse>();
+    let writer_thread = std::thread::spawn(move || -> Result<(), ProtocolError> {
+        for response in response_receiver {
+            response.write_to(&mut writer)?;
+        }
+        Ok(())
+    });
+
+    let reader_result = loop {
+        let frame = match read_frame(&mut connection, maximum_framed_bytes) {
+            Ok(frame) => frame,
+            Err(ProtocolError::Io(error)) if error.kind() == io::ErrorKind::UnexpectedEof => {
+                break Ok(());
+            }
+            Err(error) => break Err(DaemonError::Protocol(error)),
+        };
+        if let Err(error) = registry.handle(frame, now_epoch_millis(), &response_sender) {
+            break Err(DaemonError::Protocol(error));
+        }
+    };
+    drop(response_sender);
+    let writer_result = writer_thread
+        .join()
+        .map_err(|_| DaemonError::Io(io::Error::other("renderer writer thread panicked")))?;
+    reader_result?;
+    writer_result?;
+    Ok(())
 }
 
 #[derive(Clone, Debug)]
@@ -505,14 +565,13 @@ struct RegistryEntry {
     terminal_response: TerminalResponse,
 }
 
-#[cfg(any(unix, test))]
+#[cfg(test)]
 struct RequestRegistry {
     entries: BTreeMap<String, RegistryEntry>,
-    fetch_target_policy: FetchTargetPolicy,
-    resource_fetcher: Arc<dyn ResourceFetcher>,
+    executor: RequestExecutor,
 }
 
-#[cfg(any(unix, test))]
+#[cfg(test)]
 impl RequestRegistry {
     fn new(
         fetch_target_policy: FetchTargetPolicy,
@@ -520,8 +579,10 @@ impl RequestRegistry {
     ) -> Self {
         Self {
             entries: BTreeMap::new(),
-            fetch_target_policy,
-            resource_fetcher,
+            executor: RequestExecutor {
+                fetch_target_policy,
+                resource_fetcher,
+            },
         }
     }
 
@@ -561,78 +622,7 @@ impl RequestRegistry {
             )?));
         }
 
-        let problem_payload = if admitted.deadline_epoch_millis <= now_epoch_millis {
-            problem_bytes(
-                &request_id,
-                "RENDER_DEADLINE_EXCEEDED",
-                EngineStage::RequestControl,
-            )?
-        } else {
-            match validate_render_document(admitted.command.document.get()) {
-                Err(_) => problem_bytes(
-                    &request_id,
-                    "RENDER_INTERNAL_ERROR",
-                    EngineStage::DocumentAdmission,
-                )?,
-                Ok(document) => {
-                    if let Err(violation) =
-                        validate_resource_lease_coverage(&document, admitted.deadline_epoch_millis)
-                    {
-                        resource_problem_bytes(
-                            &request_id,
-                            "RESOURCE_LEASE_EXPIRED",
-                            EngineStage::CommandAdmission,
-                            violation.resource_id(),
-                        )?
-                    } else if document
-                        .resources()
-                        .iter()
-                        .any(|resource| self.fetch_target_policy.admit(resource).is_err())
-                    {
-                        // A sealed URL outside the exact deployment target policy is an internal
-                        // handoff violation. Never expose its URL, origin, path, token, or cause.
-                        problem_bytes(
-                            &request_id,
-                            "RENDER_INTERNAL_ERROR",
-                            EngineStage::ResourcePreparation,
-                        )?
-                    } else if preflight_layout(&document).is_err() {
-                        // Static layout violations contradict the Java sealing authority. Until a
-                        // Profile is registered, keep that invariant breach inside document
-                        // admission and never expose internal property paths or a partial scene.
-                        problem_bytes(
-                            &request_id,
-                            "RENDER_INTERNAL_ERROR",
-                            EngineStage::DocumentAdmission,
-                        )?
-                    } else {
-                        let preparer = ManifestResourcePreparer::new(
-                            &self.fetch_target_policy,
-                            self.resource_fetcher.as_ref(),
-                            ResourcePreparationProfile::RendererV1,
-                        );
-                        match preparer.prepare(
-                            document.resources(),
-                            admitted.deadline_epoch_millis,
-                            now_epoch_millis,
-                        ) {
-                            Err(problem) => resource_pipeline_problem_bytes(&request_id, &problem)?,
-                            Ok(_prepared_manifest) => {
-                                // The exact process manifest has no registered raster profile. This is a
-                                // real, stable fail-closed terminal result, never a synthetic image
-                                // implementation.
-                                problem_bytes(
-                                    &request_id,
-                                    "RENDER_INTERNAL_ERROR",
-                                    EngineStage::CommandAdmission,
-                                )?
-                            }
-                        }
-                    }
-                }
-            }
-        };
-        let terminal_response = TerminalResponse::problem(problem_payload);
+        let terminal_response = self.executor.execute(&admitted, now_epoch_millis)?;
         self.entries.insert(
             request_id,
             RegistryEntry {
@@ -686,6 +676,683 @@ impl RequestRegistry {
             },
         );
         Ok(terminal_response)
+    }
+}
+
+#[cfg(any(unix, test))]
+#[derive(Clone)]
+struct RequestExecutor {
+    fetch_target_policy: FetchTargetPolicy,
+    resource_fetcher: Arc<dyn ResourceFetcher>,
+}
+
+#[cfg(any(unix, test))]
+impl RequestExecutor {
+    fn execute(
+        &self,
+        admitted: &AdmittedCommand,
+        now_epoch_millis: i64,
+    ) -> Result<TerminalResponse, ProtocolError> {
+        let request_id = &admitted.command.request_id;
+        let problem_payload = if admitted.deadline_epoch_millis <= now_epoch_millis {
+            problem_bytes(
+                request_id,
+                "RENDER_DEADLINE_EXCEEDED",
+                EngineStage::RequestControl,
+            )?
+        } else {
+            match validate_render_document(admitted.command.document.get()) {
+                Err(_) => problem_bytes(
+                    request_id,
+                    "RENDER_INTERNAL_ERROR",
+                    EngineStage::DocumentAdmission,
+                )?,
+                Ok(document) => {
+                    if let Err(violation) =
+                        validate_resource_lease_coverage(&document, admitted.deadline_epoch_millis)
+                    {
+                        resource_problem_bytes(
+                            request_id,
+                            "RESOURCE_LEASE_EXPIRED",
+                            EngineStage::CommandAdmission,
+                            violation.resource_id(),
+                        )?
+                    } else if document
+                        .resources()
+                        .iter()
+                        .any(|resource| self.fetch_target_policy.admit(resource).is_err())
+                    {
+                        // A sealed URL outside the exact deployment target policy is an internal
+                        // handoff violation. Never expose its URL, origin, path, token, or cause.
+                        problem_bytes(
+                            request_id,
+                            "RENDER_INTERNAL_ERROR",
+                            EngineStage::ResourcePreparation,
+                        )?
+                    } else if preflight_layout(&document).is_err() {
+                        // Static layout violations contradict the Java sealing authority. Until a
+                        // Profile is registered, keep that invariant breach inside document
+                        // admission and never expose internal property paths or a partial scene.
+                        problem_bytes(
+                            request_id,
+                            "RENDER_INTERNAL_ERROR",
+                            EngineStage::DocumentAdmission,
+                        )?
+                    } else {
+                        let preparer = ManifestResourcePreparer::new(
+                            &self.fetch_target_policy,
+                            self.resource_fetcher.as_ref(),
+                            ResourcePreparationProfile::RendererV1,
+                        );
+                        match preparer.prepare(
+                            document.resources(),
+                            admitted.deadline_epoch_millis,
+                            now_epoch_millis,
+                        ) {
+                            Err(problem) => resource_pipeline_problem_bytes(request_id, &problem)?,
+                            Ok(_prepared_manifest) => {
+                                // The exact process manifest has no registered raster profile.
+                                // Keep this as a stable fail-closed terminal until one is certified.
+                                problem_bytes(
+                                    request_id,
+                                    "RENDER_INTERNAL_ERROR",
+                                    EngineStage::CommandAdmission,
+                                )?
+                            }
+                        }
+                    }
+                }
+            }
+        };
+        Ok(TerminalResponse::problem(problem_payload))
+    }
+}
+
+#[cfg(target_os = "linux")]
+struct ActiveRequest {
+    request_id: String,
+    command_digest: String,
+    deadline_epoch_millis: i64,
+    cancelled: bool,
+}
+
+#[cfg(target_os = "linux")]
+struct QueuedRequest {
+    admitted: AdmittedCommand,
+    accepted_at_epoch_millis: i64,
+    response_sender: mpsc::Sender<TerminalResponse>,
+}
+
+#[cfg(target_os = "linux")]
+struct BusyReservation {
+    command_digest: String,
+    deadline_epoch_millis: i64,
+}
+
+#[cfg(target_os = "linux")]
+#[derive(Default)]
+struct ConcurrentRegistryState {
+    entries: BTreeMap<String, RegistryEntry>,
+    active: Option<ActiveRequest>,
+    waiting: VecDeque<QueuedRequest>,
+    busy_reservations: BTreeMap<String, BusyReservation>,
+}
+
+#[cfg(target_os = "linux")]
+#[derive(Clone)]
+struct ConcurrentRequestRegistry {
+    state: Arc<Mutex<ConcurrentRegistryState>>,
+    executor: RequestExecutor,
+}
+
+#[cfg(target_os = "linux")]
+impl ConcurrentRequestRegistry {
+    fn new(
+        fetch_target_policy: FetchTargetPolicy,
+        resource_fetcher: Arc<dyn ResourceFetcher>,
+    ) -> Self {
+        Self {
+            state: Arc::new(Mutex::new(ConcurrentRegistryState::default())),
+            executor: RequestExecutor {
+                fetch_target_policy,
+                resource_fetcher,
+            },
+        }
+    }
+
+    fn handle(
+        &self,
+        frame: Frame,
+        now_epoch_millis: i64,
+        response_sender: &mpsc::Sender<TerminalResponse>,
+    ) -> Result<(), ProtocolError> {
+        match frame.frame_type {
+            FrameType::Command => {
+                self.handle_command(&frame.payload, now_epoch_millis, response_sender)
+            }
+            FrameType::Cancel => {
+                self.handle_cancel(&frame.payload, now_epoch_millis, response_sender)
+            }
+            _ => Err(ProtocolError::Invalid(
+                "post-handshake client frame must be COMMAND or CANCEL",
+            )),
+        }
+    }
+
+    fn handle_command(
+        &self,
+        payload: &[u8],
+        now_epoch_millis: i64,
+        response_sender: &mpsc::Sender<TerminalResponse>,
+    ) -> Result<(), ProtocolError> {
+        let admitted = parse_command(payload)?;
+        let request_id = admitted.command.request_id.clone();
+        let mut state = self.state.lock().expect("request registry mutex poisoned");
+        state
+            .entries
+            .retain(|_, entry| entry.retain_until_epoch_millis > now_epoch_millis);
+        state
+            .busy_reservations
+            .retain(|_, reservation| reservation.deadline_epoch_millis > now_epoch_millis);
+        if let Some(existing) = state.entries.get(&request_id) {
+            let response = if existing.command_digest == admitted.command_digest
+                && existing.deadline_epoch_millis == admitted.deadline_epoch_millis
+            {
+                existing.terminal_response.clone()
+            } else {
+                TerminalResponse::problem(problem_bytes(
+                    &request_id,
+                    "RENDER_REQUEST_CONFLICT",
+                    EngineStage::RequestControl,
+                )?)
+            };
+            drop(state);
+            let _ = response_sender.send(response);
+            return Ok(());
+        }
+        if let Some(active) = state.active.as_ref() {
+            if active.request_id == request_id {
+                if active.command_digest == admitted.command_digest
+                    && active.deadline_epoch_millis == admitted.deadline_epoch_millis
+                {
+                    return Ok(());
+                }
+                let response = TerminalResponse::problem(problem_bytes(
+                    &request_id,
+                    "RENDER_REQUEST_CONFLICT",
+                    EngineStage::RequestControl,
+                )?);
+                drop(state);
+                let _ = response_sender.send(response);
+                return Ok(());
+            }
+        }
+        if let Some(waiting) = state
+            .waiting
+            .iter()
+            .find(|waiting| waiting.admitted.command.request_id == request_id)
+        {
+            if waiting.admitted.command_digest == admitted.command_digest
+                && waiting.admitted.deadline_epoch_millis == admitted.deadline_epoch_millis
+            {
+                return Ok(());
+            }
+            let response = TerminalResponse::problem(problem_bytes(
+                &request_id,
+                "RENDER_REQUEST_CONFLICT",
+                EngineStage::RequestControl,
+            )?);
+            drop(state);
+            let _ = response_sender.send(response);
+            return Ok(());
+        }
+        if let Some(reservation) = state.busy_reservations.get(&request_id) {
+            if reservation.command_digest != admitted.command_digest
+                || reservation.deadline_epoch_millis != admitted.deadline_epoch_millis
+            {
+                let response = TerminalResponse::problem(problem_bytes(
+                    &request_id,
+                    "RENDER_REQUEST_CONFLICT",
+                    EngineStage::RequestControl,
+                )?);
+                drop(state);
+                let _ = response_sender.send(response);
+                return Ok(());
+            }
+        }
+        if admitted.deadline_epoch_millis <= now_epoch_millis {
+            state.busy_reservations.remove(&request_id);
+            let response = TerminalResponse::problem(problem_bytes(
+                &request_id,
+                "RENDER_DEADLINE_EXCEEDED",
+                EngineStage::RequestControl,
+            )?);
+            state.entries.insert(
+                request_id,
+                RegistryEntry {
+                    command_digest: admitted.command_digest,
+                    deadline_epoch_millis: admitted.deadline_epoch_millis,
+                    retain_until_epoch_millis: now_epoch_millis
+                        .saturating_add(TERMINAL_RETENTION_MILLIS),
+                    terminal_response: response.clone(),
+                },
+            );
+            drop(state);
+            let _ = response_sender.send(response);
+            return Ok(());
+        }
+        if state.active.is_some() {
+            if state.waiting.len() == WAITING_QUEUE_CAPACITY {
+                state
+                    .busy_reservations
+                    .entry(request_id.clone())
+                    .or_insert_with(|| BusyReservation {
+                        command_digest: admitted.command_digest.clone(),
+                        deadline_epoch_millis: admitted.deadline_epoch_millis,
+                    });
+                let response = TerminalResponse::problem(problem_bytes(
+                    &request_id,
+                    "RENDER_ENGINE_BUSY",
+                    EngineStage::CommandAdmission,
+                )?);
+                drop(state);
+                let _ = response_sender.send(response);
+                return Ok(());
+            }
+            state.busy_reservations.remove(&request_id);
+            let queue_expires_at_epoch_millis = admitted
+                .deadline_epoch_millis
+                .min(now_epoch_millis.saturating_add(WAITING_QUEUE_MILLIS));
+            let command_digest = admitted.command_digest.clone();
+            let deadline_epoch_millis = admitted.deadline_epoch_millis;
+            state.waiting.push_back(QueuedRequest {
+                admitted,
+                accepted_at_epoch_millis: now_epoch_millis,
+                response_sender: response_sender.clone(),
+            });
+            drop(state);
+            self.spawn_queue_expiry(
+                request_id,
+                command_digest,
+                deadline_epoch_millis,
+                queue_expires_at_epoch_millis,
+            );
+            return Ok(());
+        }
+        state.busy_reservations.remove(&request_id);
+        state.active = Some(ActiveRequest {
+            request_id: request_id.clone(),
+            command_digest: admitted.command_digest.clone(),
+            deadline_epoch_millis: admitted.deadline_epoch_millis,
+            cancelled: false,
+        });
+        drop(state);
+
+        self.spawn_execution(admitted, now_epoch_millis, response_sender.clone());
+        Ok(())
+    }
+
+    fn spawn_execution(
+        &self,
+        admitted: AdmittedCommand,
+        started_at_epoch_millis: i64,
+        response_sender: mpsc::Sender<TerminalResponse>,
+    ) {
+        let registry = self.clone();
+        let request_id = admitted.command.request_id.clone();
+        std::thread::spawn(move || {
+            let response = registry
+                .executor
+                .execute(&admitted, started_at_epoch_millis)
+                .unwrap_or_else(|_| {
+                    TerminalResponse::problem(
+                        problem_bytes(
+                            &request_id,
+                            "RENDER_INTERNAL_ERROR",
+                            EngineStage::CommandAdmission,
+                        )
+                        .expect("admitted request id must produce a canonical problem"),
+                    )
+                });
+            registry.finish_active(
+                &request_id,
+                &admitted.command_digest,
+                admitted.deadline_epoch_millis,
+                response,
+                crate::now_epoch_millis(),
+                &response_sender,
+            );
+        });
+    }
+
+    fn spawn_queue_expiry(
+        &self,
+        request_id: String,
+        command_digest: String,
+        deadline_epoch_millis: i64,
+        queue_expires_at_epoch_millis: i64,
+    ) {
+        let registry = self.clone();
+        std::thread::spawn(move || {
+            let delay_millis =
+                queue_expires_at_epoch_millis.saturating_sub(crate::now_epoch_millis());
+            if delay_millis > 0 {
+                std::thread::sleep(Duration::from_millis(delay_millis as u64));
+            }
+            registry.expire_waiting(
+                &request_id,
+                &command_digest,
+                deadline_epoch_millis,
+                crate::now_epoch_millis(),
+            );
+        });
+    }
+
+    fn handle_cancel(
+        &self,
+        payload: &[u8],
+        now_epoch_millis: i64,
+        response_sender: &mpsc::Sender<TerminalResponse>,
+    ) -> Result<(), ProtocolError> {
+        let cancel = parse_cancel(payload)?;
+        let request_id = cancel.cancel.request_id.clone();
+        let mut state = self.state.lock().expect("request registry mutex poisoned");
+        state
+            .entries
+            .retain(|_, entry| entry.retain_until_epoch_millis > now_epoch_millis);
+        state
+            .busy_reservations
+            .retain(|_, reservation| reservation.deadline_epoch_millis > now_epoch_millis);
+        if let Some(existing) = state.entries.get(&request_id) {
+            let response = if existing.command_digest == cancel.cancel.renderer_command_digest
+                && existing.deadline_epoch_millis == cancel.deadline_epoch_millis
+            {
+                existing.terminal_response.clone()
+            } else {
+                TerminalResponse::problem(problem_bytes(
+                    &request_id,
+                    "RENDER_REQUEST_CONFLICT",
+                    EngineStage::RequestControl,
+                )?)
+            };
+            drop(state);
+            let _ = response_sender.send(response);
+            return Ok(());
+        }
+
+        if let Some(reservation) = state.busy_reservations.get(&request_id) {
+            if reservation.command_digest != cancel.cancel.renderer_command_digest
+                || reservation.deadline_epoch_millis != cancel.deadline_epoch_millis
+            {
+                let response = TerminalResponse::problem(problem_bytes(
+                    &request_id,
+                    "RENDER_REQUEST_CONFLICT",
+                    EngineStage::RequestControl,
+                )?);
+                drop(state);
+                let _ = response_sender.send(response);
+                return Ok(());
+            }
+            state.busy_reservations.remove(&request_id);
+            let code = if cancel.deadline_epoch_millis <= now_epoch_millis {
+                "RENDER_DEADLINE_EXCEEDED"
+            } else {
+                "RENDER_CANCELLED"
+            };
+            let response = TerminalResponse::problem(problem_bytes(
+                &request_id,
+                code,
+                EngineStage::RequestControl,
+            )?);
+            state.entries.insert(
+                request_id,
+                RegistryEntry {
+                    command_digest: cancel.cancel.renderer_command_digest,
+                    deadline_epoch_millis: cancel.deadline_epoch_millis,
+                    retain_until_epoch_millis: cancel
+                        .deadline_epoch_millis
+                        .max(now_epoch_millis)
+                        .saturating_add(TERMINAL_RETENTION_MILLIS),
+                    terminal_response: response.clone(),
+                },
+            );
+            drop(state);
+            let _ = response_sender.send(response);
+            return Ok(());
+        }
+
+        if let Some(active) = state.active.as_ref() {
+            if active.request_id == request_id {
+                if active.command_digest != cancel.cancel.renderer_command_digest
+                    || active.deadline_epoch_millis != cancel.deadline_epoch_millis
+                {
+                    let response = TerminalResponse::problem(problem_bytes(
+                        &request_id,
+                        "RENDER_REQUEST_CONFLICT",
+                        EngineStage::RequestControl,
+                    )?);
+                    drop(state);
+                    let _ = response_sender.send(response);
+                    return Ok(());
+                }
+                let code = if cancel.deadline_epoch_millis <= now_epoch_millis {
+                    "RENDER_DEADLINE_EXCEEDED"
+                } else {
+                    "RENDER_CANCELLED"
+                };
+                let response = TerminalResponse::problem(problem_bytes(
+                    &request_id,
+                    code,
+                    EngineStage::RequestControl,
+                )?);
+                state
+                    .active
+                    .as_mut()
+                    .expect("active request must still exist")
+                    .cancelled = true;
+                state.entries.insert(
+                    request_id,
+                    RegistryEntry {
+                        command_digest: cancel.cancel.renderer_command_digest,
+                        deadline_epoch_millis: cancel.deadline_epoch_millis,
+                        retain_until_epoch_millis: cancel
+                            .deadline_epoch_millis
+                            .max(now_epoch_millis)
+                            .saturating_add(TERMINAL_RETENTION_MILLIS),
+                        terminal_response: response.clone(),
+                    },
+                );
+                drop(state);
+                let _ = response_sender.send(response);
+                return Ok(());
+            }
+        }
+
+        if let Some(position) = state
+            .waiting
+            .iter()
+            .position(|waiting| waiting.admitted.command.request_id == request_id)
+        {
+            let waiting = &state.waiting[position];
+            if waiting.admitted.command_digest != cancel.cancel.renderer_command_digest
+                || waiting.admitted.deadline_epoch_millis != cancel.deadline_epoch_millis
+            {
+                let response = TerminalResponse::problem(problem_bytes(
+                    &request_id,
+                    "RENDER_REQUEST_CONFLICT",
+                    EngineStage::RequestControl,
+                )?);
+                drop(state);
+                let _ = response_sender.send(response);
+                return Ok(());
+            }
+            state
+                .waiting
+                .remove(position)
+                .expect("located queued request must remain removable");
+            let code = if cancel.deadline_epoch_millis <= now_epoch_millis {
+                "RENDER_DEADLINE_EXCEEDED"
+            } else {
+                "RENDER_CANCELLED"
+            };
+            let response = TerminalResponse::problem(problem_bytes(
+                &request_id,
+                code,
+                EngineStage::RequestControl,
+            )?);
+            state.entries.insert(
+                request_id,
+                RegistryEntry {
+                    command_digest: cancel.cancel.renderer_command_digest,
+                    deadline_epoch_millis: cancel.deadline_epoch_millis,
+                    retain_until_epoch_millis: cancel
+                        .deadline_epoch_millis
+                        .max(now_epoch_millis)
+                        .saturating_add(TERMINAL_RETENTION_MILLIS),
+                    terminal_response: response.clone(),
+                },
+            );
+            drop(state);
+            let _ = response_sender.send(response);
+            return Ok(());
+        }
+
+        let code = if cancel.deadline_epoch_millis <= now_epoch_millis {
+            "RENDER_DEADLINE_EXCEEDED"
+        } else {
+            "RENDER_CANCELLED"
+        };
+        let response = TerminalResponse::problem(problem_bytes(
+            &request_id,
+            code,
+            EngineStage::RequestControl,
+        )?);
+        state.entries.insert(
+            request_id,
+            RegistryEntry {
+                command_digest: cancel.cancel.renderer_command_digest,
+                deadline_epoch_millis: cancel.deadline_epoch_millis,
+                retain_until_epoch_millis: now_epoch_millis
+                    .saturating_add(PRE_COMMAND_CANCEL_RETENTION_MILLIS),
+                terminal_response: response.clone(),
+            },
+        );
+        drop(state);
+        let _ = response_sender.send(response);
+        Ok(())
+    }
+
+    fn finish_active(
+        &self,
+        request_id: &str,
+        command_digest: &str,
+        deadline_epoch_millis: i64,
+        response: TerminalResponse,
+        sealed_at_epoch_millis: i64,
+        response_sender: &mpsc::Sender<TerminalResponse>,
+    ) {
+        let mut state = self.state.lock().expect("request registry mutex poisoned");
+        let Some(active) = state.active.as_ref() else {
+            return;
+        };
+        if active.request_id != request_id
+            || active.command_digest != command_digest
+            || active.deadline_epoch_millis != deadline_epoch_millis
+        {
+            return;
+        }
+        let cancelled = active.cancelled;
+        state.active = None;
+        let completed_response = if cancelled {
+            None
+        } else {
+            let response = if deadline_epoch_millis <= sealed_at_epoch_millis {
+                TerminalResponse::problem(
+                    problem_bytes(
+                        request_id,
+                        "RENDER_DEADLINE_EXCEEDED",
+                        EngineStage::RequestControl,
+                    )
+                    .expect("admitted request id must produce a canonical problem"),
+                )
+            } else {
+                response
+            };
+            state.entries.insert(
+                request_id.to_owned(),
+                RegistryEntry {
+                    command_digest: command_digest.to_owned(),
+                    deadline_epoch_millis,
+                    retain_until_epoch_millis: deadline_epoch_millis
+                        .max(sealed_at_epoch_millis)
+                        .saturating_add(TERMINAL_RETENTION_MILLIS),
+                    terminal_response: response.clone(),
+                },
+            );
+            Some(response)
+        };
+        let next = state.waiting.pop_front();
+        if let Some(next) = next.as_ref() {
+            state.active = Some(ActiveRequest {
+                request_id: next.admitted.command.request_id.clone(),
+                command_digest: next.admitted.command_digest.clone(),
+                deadline_epoch_millis: next.admitted.deadline_epoch_millis,
+                cancelled: false,
+            });
+        }
+        drop(state);
+        if let Some(completed_response) = completed_response {
+            let _ = response_sender.send(completed_response);
+        }
+        if let Some(next) = next {
+            self.spawn_execution(
+                next.admitted,
+                sealed_at_epoch_millis.max(next.accepted_at_epoch_millis),
+                next.response_sender,
+            );
+        }
+    }
+
+    fn expire_waiting(
+        &self,
+        request_id: &str,
+        command_digest: &str,
+        deadline_epoch_millis: i64,
+        sealed_at_epoch_millis: i64,
+    ) {
+        let mut state = self.state.lock().expect("request registry mutex poisoned");
+        let Some(position) = state.waiting.iter().position(|waiting| {
+            waiting.admitted.command.request_id == request_id
+                && waiting.admitted.command_digest == command_digest
+                && waiting.admitted.deadline_epoch_millis == deadline_epoch_millis
+        }) else {
+            return;
+        };
+        let waiting = state
+            .waiting
+            .remove(position)
+            .expect("located queued request must remain removable");
+        let response = TerminalResponse::problem(
+            problem_bytes(
+                request_id,
+                "RENDER_DEADLINE_EXCEEDED",
+                EngineStage::RequestControl,
+            )
+            .expect("admitted request id must produce a canonical problem"),
+        );
+        state.entries.insert(
+            request_id.to_owned(),
+            RegistryEntry {
+                command_digest: command_digest.to_owned(),
+                deadline_epoch_millis,
+                retain_until_epoch_millis: deadline_epoch_millis
+                    .max(sealed_at_epoch_millis)
+                    .saturating_add(TERMINAL_RETENTION_MILLIS),
+                terminal_response: response.clone(),
+            },
+        );
+        drop(state);
+        let _ = waiting.response_sender.send(response);
     }
 }
 
@@ -748,6 +1415,10 @@ mod tests {
     use serde_json::Value;
     use std::io::Cursor;
     use std::sync::Mutex;
+    #[cfg(target_os = "linux")]
+    use std::sync::mpsc;
+    #[cfg(target_os = "linux")]
+    use std::time::Duration;
 
     const VECTORS: &str = include_str!("../../../protocol-vectors-v1.json");
     const PROCESS_MANIFEST: &[u8] = include_bytes!("../../../process-manifest.json");
@@ -1182,9 +1853,9 @@ mod tests {
         let listener = UnixListener::bind(&socket).unwrap();
         let server_identity = identity.clone();
         let server = thread::spawn(move || {
-            let (mut stream, _) = listener.accept().unwrap();
-            let mut registry = request_registry();
-            serve_connection(&mut stream, &server_identity, &mut registry, 4096).unwrap();
+            let (stream, _) = listener.accept().unwrap();
+            let registry = concurrent_request_registry_with(Arc::new(SuccessResourceFetcher));
+            serve_unix_connection(stream, &server_identity, &registry, 4096).unwrap();
         });
 
         let mut client = UnixStream::connect(&socket).unwrap();
@@ -1208,6 +1879,693 @@ mod tests {
         client.shutdown(Shutdown::Both).unwrap();
         server.join().unwrap();
         std::fs::remove_file(&socket).unwrap();
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn linux_uds_active_cancel_seals_cancel_before_blocked_work_can_finish() {
+        use std::net::Shutdown;
+        use std::os::unix::net::{UnixListener, UnixStream};
+        use std::thread;
+
+        let identity = validate_process_manifest(PROCESS_MANIFEST).unwrap();
+        let socket = std::env::temp_dir().join(format!(
+            "renderweave-t123-active-cancel-{}-{}.sock",
+            std::process::id(),
+            now_epoch_millis()
+        ));
+        assert!(!socket.exists());
+        let listener = UnixListener::bind(&socket).unwrap();
+        let (document, bodies) = renderable_resource_fixture();
+        let command = command_with_document(&document);
+        let admitted = parse_command(command.as_bytes()).unwrap();
+        let cancel = serde_json::to_vec(&renderweave_renderer_protocol::Cancel {
+            contract_version: "renderweave-render-cancel/1.0".to_owned(),
+            request_id: admitted.command.request_id.clone(),
+            renderer_command_digest: admitted.command_digest.clone(),
+            deadline_at: admitted.command.deadline_at.clone(),
+        })
+        .unwrap();
+        let (started_sender, started_receiver) = mpsc::channel();
+        let (release_sender, release_receiver) = mpsc::channel();
+        let fetcher = Arc::new(BlockingResourceFetcher {
+            bodies,
+            started_sender: Mutex::new(Some(started_sender)),
+            release_receiver: Mutex::new(Some(release_receiver)),
+        });
+        let server_identity = identity.clone();
+        let server = thread::spawn(move || {
+            let (stream, _) = listener.accept().unwrap();
+            let registry = concurrent_request_registry_with(fetcher);
+            let _ = serve_unix_connection(stream, &server_identity, &registry, 4096);
+        });
+
+        let mut client = UnixStream::connect(&socket).unwrap();
+        write_frame(
+            &mut client,
+            FrameType::ClientHello,
+            &client_hello_bytes(&identity.manifest_sha256).unwrap(),
+        )
+        .unwrap();
+        assert_eq!(
+            read_frame(&mut client, 4096).unwrap().frame_type,
+            FrameType::ServerHello
+        );
+        write_frame(&mut client, FrameType::Command, command.as_bytes()).unwrap();
+        started_receiver
+            .recv_timeout(Duration::from_secs(5))
+            .expect("resource fetch must start before cancellation");
+        write_frame(&mut client, FrameType::Cancel, &cancel).unwrap();
+        release_sender.send(()).unwrap();
+
+        let terminal = read_frame(&mut client, 4096).unwrap();
+        let terminal_payload: Value = serde_json::from_slice(&terminal.payload).unwrap();
+        let _ = client.shutdown(Shutdown::Both);
+        server.join().unwrap();
+        std::fs::remove_file(&socket).unwrap();
+
+        assert_eq!(terminal.frame_type, FrameType::Problem);
+        assert_eq!(terminal_payload["code"], "RENDER_CANCELLED");
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn linux_uds_reserves_four_fifo_positions_before_reporting_engine_busy() {
+        use std::net::Shutdown;
+        use std::os::unix::net::{UnixListener, UnixStream};
+        use std::thread;
+
+        let identity = validate_process_manifest(PROCESS_MANIFEST).unwrap();
+        let socket = std::env::temp_dir().join(format!(
+            "renderweave-t123-capacity-{}-{}.sock",
+            std::process::id(),
+            now_epoch_millis()
+        ));
+        assert!(!socket.exists());
+        let listener = UnixListener::bind(&socket).unwrap();
+        let (document, bodies) = renderable_resource_fixture();
+        let base_command = command_with_document(&document);
+        let commands = (0..6)
+            .map(|index| {
+                command_with_request_id(
+                    &base_command,
+                    &format!("123e4567-e89b-42d3-a456-42661417400{index}"),
+                )
+            })
+            .collect::<Vec<_>>();
+        let expected_busy_request_id = parse_command(commands.last().unwrap().as_bytes())
+            .unwrap()
+            .command
+            .request_id;
+        let (started_sender, started_receiver) = mpsc::channel();
+        let (release_sender, release_receiver) = mpsc::channel();
+        let fetcher = Arc::new(BlockingResourceFetcher {
+            bodies,
+            started_sender: Mutex::new(Some(started_sender)),
+            release_receiver: Mutex::new(Some(release_receiver)),
+        });
+        let server_identity = identity.clone();
+        let server = thread::spawn(move || {
+            let (stream, _) = listener.accept().unwrap();
+            let registry = concurrent_request_registry_with(fetcher);
+            let _ = serve_unix_connection(stream, &server_identity, &registry, 4096);
+        });
+
+        let mut client = UnixStream::connect(&socket).unwrap();
+        write_frame(
+            &mut client,
+            FrameType::ClientHello,
+            &client_hello_bytes(&identity.manifest_sha256).unwrap(),
+        )
+        .unwrap();
+        assert_eq!(
+            read_frame(&mut client, 4096).unwrap().frame_type,
+            FrameType::ServerHello
+        );
+        write_frame(&mut client, FrameType::Command, commands[0].as_bytes()).unwrap();
+        started_receiver
+            .recv_timeout(Duration::from_secs(5))
+            .expect("the active request must occupy the execution slot");
+        for command in &commands[1..] {
+            write_frame(&mut client, FrameType::Command, command.as_bytes()).unwrap();
+        }
+
+        let busy = read_frame(&mut client, 4096).unwrap();
+        let busy_payload: Value = serde_json::from_slice(&busy.payload).unwrap();
+        release_sender.send(()).unwrap();
+        let _ = client.shutdown(Shutdown::Both);
+        server.join().unwrap();
+        std::fs::remove_file(&socket).unwrap();
+
+        assert_eq!(busy.frame_type, FrameType::Problem);
+        assert_eq!(busy_payload["code"], "RENDER_ENGINE_BUSY");
+        assert_eq!(busy_payload["engineStage"], "COMMAND_ADMISSION");
+        assert_eq!(busy_payload["requestId"], expected_busy_request_id);
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn linux_uds_queued_cancel_removes_request_before_fifo_execution() {
+        use std::net::Shutdown;
+        use std::os::unix::net::{UnixListener, UnixStream};
+        use std::thread;
+
+        let identity = validate_process_manifest(PROCESS_MANIFEST).unwrap();
+        let socket = std::env::temp_dir().join(format!(
+            "renderweave-t123-queued-cancel-{}-{}.sock",
+            std::process::id(),
+            now_epoch_millis()
+        ));
+        assert!(!socket.exists());
+        let listener = UnixListener::bind(&socket).unwrap();
+        let (document, bodies) = renderable_resource_fixture();
+        let base_command = command_with_document(&document);
+        let active_command =
+            command_with_request_id(&base_command, "123e4567-e89b-42d3-a456-426614174010");
+        let cancelled_command =
+            command_with_request_id(&base_command, "123e4567-e89b-42d3-a456-426614174011");
+        let next_command =
+            command_with_request_id(&base_command, "123e4567-e89b-42d3-a456-426614174012");
+        let cancel = cancel_for_command(&cancelled_command);
+        let active_request_id = parse_command(active_command.as_bytes())
+            .unwrap()
+            .command
+            .request_id;
+        let cancelled_request_id = parse_command(cancelled_command.as_bytes())
+            .unwrap()
+            .command
+            .request_id;
+        let next_request_id = parse_command(next_command.as_bytes())
+            .unwrap()
+            .command
+            .request_id;
+        let (started_sender, started_receiver) = mpsc::channel();
+        let (release_sender, release_receiver) = mpsc::channel();
+        let fetcher = Arc::new(BlockingResourceFetcher {
+            bodies,
+            started_sender: Mutex::new(Some(started_sender)),
+            release_receiver: Mutex::new(Some(release_receiver)),
+        });
+        let server_identity = identity.clone();
+        let server = thread::spawn(move || {
+            let (stream, _) = listener.accept().unwrap();
+            let registry = concurrent_request_registry_with(fetcher);
+            let _ = serve_unix_connection(stream, &server_identity, &registry, 4096);
+        });
+
+        let mut client = UnixStream::connect(&socket).unwrap();
+        write_frame(
+            &mut client,
+            FrameType::ClientHello,
+            &client_hello_bytes(&identity.manifest_sha256).unwrap(),
+        )
+        .unwrap();
+        assert_eq!(
+            read_frame(&mut client, 4096).unwrap().frame_type,
+            FrameType::ServerHello
+        );
+        write_frame(&mut client, FrameType::Command, active_command.as_bytes()).unwrap();
+        started_receiver
+            .recv_timeout(Duration::from_secs(5))
+            .expect("the active request must occupy the execution slot");
+        write_frame(
+            &mut client,
+            FrameType::Command,
+            cancelled_command.as_bytes(),
+        )
+        .unwrap();
+        write_frame(&mut client, FrameType::Command, next_command.as_bytes()).unwrap();
+        write_frame(&mut client, FrameType::Cancel, &cancel).unwrap();
+
+        let cancelled = read_frame(&mut client, 4096).unwrap();
+        let cancelled_payload: Value = serde_json::from_slice(&cancelled.payload).unwrap();
+        release_sender.send(()).unwrap();
+        let active = read_frame(&mut client, 4096).unwrap();
+        let active_payload: Value = serde_json::from_slice(&active.payload).unwrap();
+        let next = read_frame(&mut client, 4096).unwrap();
+        let next_payload: Value = serde_json::from_slice(&next.payload).unwrap();
+        let _ = client.shutdown(Shutdown::Both);
+        server.join().unwrap();
+        std::fs::remove_file(&socket).unwrap();
+
+        assert_eq!(cancelled_payload["code"], "RENDER_CANCELLED");
+        assert_eq!(cancelled_payload["requestId"], cancelled_request_id);
+        assert_eq!(active_payload["requestId"], active_request_id);
+        assert_eq!(next_payload["requestId"], next_request_id);
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn linux_uds_queued_request_expires_after_five_second_wait_without_slot() {
+        use std::net::Shutdown;
+        use std::os::unix::net::{UnixListener, UnixStream};
+        use std::thread;
+
+        let identity = validate_process_manifest(PROCESS_MANIFEST).unwrap();
+        let socket = std::env::temp_dir().join(format!(
+            "renderweave-t123-queue-timeout-{}-{}.sock",
+            std::process::id(),
+            now_epoch_millis()
+        ));
+        assert!(!socket.exists());
+        let listener = UnixListener::bind(&socket).unwrap();
+        let (document, bodies) = renderable_resource_fixture();
+        let base_command = command_with_document(&document);
+        let active_command =
+            command_with_request_id(&base_command, "123e4567-e89b-42d3-a456-426614174020");
+        let queued_command =
+            command_with_request_id(&base_command, "123e4567-e89b-42d3-a456-426614174021");
+        let queued_request_id = parse_command(queued_command.as_bytes())
+            .unwrap()
+            .command
+            .request_id;
+        let (started_sender, started_receiver) = mpsc::channel();
+        let (release_sender, release_receiver) = mpsc::channel();
+        let fetcher = Arc::new(BlockingResourceFetcher {
+            bodies,
+            started_sender: Mutex::new(Some(started_sender)),
+            release_receiver: Mutex::new(Some(release_receiver)),
+        });
+        let server_identity = identity.clone();
+        let server = thread::spawn(move || {
+            let (stream, _) = listener.accept().unwrap();
+            let registry = concurrent_request_registry_with(fetcher);
+            let _ = serve_unix_connection(stream, &server_identity, &registry, 4096);
+        });
+
+        let mut client = UnixStream::connect(&socket).unwrap();
+        client
+            .set_read_timeout(Some(Duration::from_secs(7)))
+            .unwrap();
+        write_frame(
+            &mut client,
+            FrameType::ClientHello,
+            &client_hello_bytes(&identity.manifest_sha256).unwrap(),
+        )
+        .unwrap();
+        assert_eq!(
+            read_frame(&mut client, 4096).unwrap().frame_type,
+            FrameType::ServerHello
+        );
+        write_frame(&mut client, FrameType::Command, active_command.as_bytes()).unwrap();
+        started_receiver
+            .recv_timeout(Duration::from_secs(5))
+            .expect("the active request must occupy the execution slot");
+        write_frame(&mut client, FrameType::Command, queued_command.as_bytes()).unwrap();
+
+        let queued_terminal = read_frame(&mut client, 4096);
+        release_sender.send(()).unwrap();
+        let _ = client.shutdown(Shutdown::Both);
+        server.join().unwrap();
+        std::fs::remove_file(&socket).unwrap();
+        let queued_terminal =
+            queued_terminal.expect("queued request must expire while the slot remains occupied");
+        let queued_payload: Value = serde_json::from_slice(&queued_terminal.payload).unwrap();
+
+        assert_eq!(queued_terminal.frame_type, FrameType::Problem);
+        assert_eq!(queued_payload["code"], "RENDER_DEADLINE_EXCEEDED");
+        assert_eq!(queued_payload["requestId"], queued_request_id);
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn linux_uds_busy_reservation_rejects_same_request_id_digest_drift() {
+        use std::net::Shutdown;
+        use std::os::unix::net::{UnixListener, UnixStream};
+        use std::thread;
+
+        let identity = validate_process_manifest(PROCESS_MANIFEST).unwrap();
+        let socket = std::env::temp_dir().join(format!(
+            "renderweave-t123-busy-reservation-{}-{}.sock",
+            std::process::id(),
+            now_epoch_millis()
+        ));
+        assert!(!socket.exists());
+        let listener = UnixListener::bind(&socket).unwrap();
+        let (document, bodies) = renderable_resource_fixture();
+        let base_command = command_with_document(&document);
+        let commands = (0..6)
+            .map(|index| {
+                command_with_request_id(
+                    &base_command,
+                    &format!("123e4567-e89b-42d3-a456-42661417403{index}"),
+                )
+            })
+            .collect::<Vec<_>>();
+        let drifted_busy_command = commands[5].replace(r#""dpi":96"#, r#""dpi":97"#);
+        assert_ne!(
+            parse_command(commands[5].as_bytes())
+                .unwrap()
+                .command_digest,
+            parse_command(drifted_busy_command.as_bytes())
+                .unwrap()
+                .command_digest
+        );
+        let (started_sender, started_receiver) = mpsc::channel();
+        let (release_sender, release_receiver) = mpsc::channel();
+        let fetcher = Arc::new(BlockingResourceFetcher {
+            bodies,
+            started_sender: Mutex::new(Some(started_sender)),
+            release_receiver: Mutex::new(Some(release_receiver)),
+        });
+        let server_identity = identity.clone();
+        let server = thread::spawn(move || {
+            let (stream, _) = listener.accept().unwrap();
+            let registry = concurrent_request_registry_with(fetcher);
+            let _ = serve_unix_connection(stream, &server_identity, &registry, 4096);
+        });
+
+        let mut client = UnixStream::connect(&socket).unwrap();
+        write_frame(
+            &mut client,
+            FrameType::ClientHello,
+            &client_hello_bytes(&identity.manifest_sha256).unwrap(),
+        )
+        .unwrap();
+        assert_eq!(
+            read_frame(&mut client, 4096).unwrap().frame_type,
+            FrameType::ServerHello
+        );
+        write_frame(&mut client, FrameType::Command, commands[0].as_bytes()).unwrap();
+        started_receiver
+            .recv_timeout(Duration::from_secs(5))
+            .expect("the active request must occupy the execution slot");
+        for command in &commands[1..5] {
+            write_frame(&mut client, FrameType::Command, command.as_bytes()).unwrap();
+        }
+        write_frame(&mut client, FrameType::Command, commands[5].as_bytes()).unwrap();
+        let busy = read_frame(&mut client, 4096).unwrap();
+        let busy_payload: Value = serde_json::from_slice(&busy.payload).unwrap();
+        write_frame(
+            &mut client,
+            FrameType::Command,
+            drifted_busy_command.as_bytes(),
+        )
+        .unwrap();
+        let conflict = read_frame(&mut client, 4096).unwrap();
+        let conflict_payload: Value = serde_json::from_slice(&conflict.payload).unwrap();
+        release_sender.send(()).unwrap();
+        let _ = client.shutdown(Shutdown::Both);
+        server.join().unwrap();
+        std::fs::remove_file(&socket).unwrap();
+
+        assert_eq!(busy_payload["code"], "RENDER_ENGINE_BUSY");
+        assert_eq!(conflict_payload["code"], "RENDER_REQUEST_CONFLICT");
+        assert_eq!(conflict_payload["requestId"], busy_payload["requestId"]);
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn linux_uds_active_work_cannot_seal_after_absolute_deadline() {
+        use std::net::Shutdown;
+        use std::os::unix::net::{UnixListener, UnixStream};
+        use std::thread;
+
+        let identity = validate_process_manifest(PROCESS_MANIFEST).unwrap();
+        let socket = std::env::temp_dir().join(format!(
+            "renderweave-t123-active-deadline-{}-{}.sock",
+            std::process::id(),
+            now_epoch_millis()
+        ));
+        assert!(!socket.exists());
+        let listener = UnixListener::bind(&socket).unwrap();
+        let (document, _) = renderable_resource_fixture();
+        let command = command_with_document(&document);
+        let deadline_epoch_millis = now_epoch_millis().saturating_add(3_000);
+        let command = command_with_deadline(&command, &rfc3339_utc_millis(deadline_epoch_millis));
+        let request_id = parse_command(command.as_bytes())
+            .unwrap()
+            .command
+            .request_id;
+        let (started_sender, started_receiver) = mpsc::channel();
+        let (release_sender, release_receiver) = mpsc::channel();
+        let fetcher = Arc::new(BlockingFailureResourceFetcher {
+            started_sender: Mutex::new(Some(started_sender)),
+            release_receiver: Mutex::new(Some(release_receiver)),
+        });
+        let server_identity = identity.clone();
+        let server = thread::spawn(move || {
+            let (stream, _) = listener.accept().unwrap();
+            let registry = concurrent_request_registry_with(fetcher);
+            let _ = serve_unix_connection(stream, &server_identity, &registry, 4096);
+        });
+
+        let mut client = UnixStream::connect(&socket).unwrap();
+        client
+            .set_read_timeout(Some(Duration::from_secs(5)))
+            .unwrap();
+        write_frame(
+            &mut client,
+            FrameType::ClientHello,
+            &client_hello_bytes(&identity.manifest_sha256).unwrap(),
+        )
+        .unwrap();
+        assert_eq!(
+            read_frame(&mut client, 4096).unwrap().frame_type,
+            FrameType::ServerHello
+        );
+        write_frame(&mut client, FrameType::Command, command.as_bytes()).unwrap();
+        started_receiver
+            .recv_timeout(Duration::from_secs(5))
+            .expect("resource work must start before its absolute deadline");
+        let remaining_millis = deadline_epoch_millis
+            .saturating_sub(now_epoch_millis())
+            .saturating_add(100);
+        if remaining_millis > 0 {
+            thread::sleep(Duration::from_millis(remaining_millis as u64));
+        }
+        release_sender.send(()).unwrap();
+
+        let terminal = read_frame(&mut client, 4096).unwrap();
+        let terminal_payload: Value = serde_json::from_slice(&terminal.payload).unwrap();
+        let _ = client.shutdown(Shutdown::Both);
+        server.join().unwrap();
+        std::fs::remove_file(&socket).unwrap();
+
+        assert_eq!(terminal_payload["code"], "RENDER_DEADLINE_EXCEEDED");
+        assert_eq!(terminal_payload["requestId"], request_id);
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn linux_uds_expired_command_is_terminal_before_queue_capacity_admission() {
+        use std::net::Shutdown;
+        use std::os::unix::net::{UnixListener, UnixStream};
+        use std::thread;
+
+        let identity = validate_process_manifest(PROCESS_MANIFEST).unwrap();
+        let socket = std::env::temp_dir().join(format!(
+            "renderweave-t123-expired-admission-{}-{}.sock",
+            std::process::id(),
+            now_epoch_millis()
+        ));
+        assert!(!socket.exists());
+        let listener = UnixListener::bind(&socket).unwrap();
+        let (document, bodies) = renderable_resource_fixture();
+        let base_command = command_with_document(&document);
+        let commands = (0..5)
+            .map(|index| {
+                command_with_request_id(
+                    &base_command,
+                    &format!("123e4567-e89b-42d3-a456-42661417404{index}"),
+                )
+            })
+            .collect::<Vec<_>>();
+        let expired_command = command_with_deadline(
+            &command_with_request_id(&base_command, "123e4567-e89b-42d3-a456-426614174045"),
+            "2000-01-01T00:00:00.000Z",
+        );
+        let expired_request_id = parse_command(expired_command.as_bytes())
+            .unwrap()
+            .command
+            .request_id;
+        let (started_sender, started_receiver) = mpsc::channel();
+        let (release_sender, release_receiver) = mpsc::channel();
+        let fetcher = Arc::new(BlockingResourceFetcher {
+            bodies,
+            started_sender: Mutex::new(Some(started_sender)),
+            release_receiver: Mutex::new(Some(release_receiver)),
+        });
+        let server_identity = identity.clone();
+        let server = thread::spawn(move || {
+            let (stream, _) = listener.accept().unwrap();
+            let registry = concurrent_request_registry_with(fetcher);
+            let _ = serve_unix_connection(stream, &server_identity, &registry, 4096);
+        });
+
+        let mut client = UnixStream::connect(&socket).unwrap();
+        write_frame(
+            &mut client,
+            FrameType::ClientHello,
+            &client_hello_bytes(&identity.manifest_sha256).unwrap(),
+        )
+        .unwrap();
+        assert_eq!(
+            read_frame(&mut client, 4096).unwrap().frame_type,
+            FrameType::ServerHello
+        );
+        write_frame(&mut client, FrameType::Command, commands[0].as_bytes()).unwrap();
+        started_receiver
+            .recv_timeout(Duration::from_secs(5))
+            .expect("the active request must occupy the execution slot");
+        for command in &commands[1..] {
+            write_frame(&mut client, FrameType::Command, command.as_bytes()).unwrap();
+        }
+        write_frame(&mut client, FrameType::Command, expired_command.as_bytes()).unwrap();
+
+        let expired = read_frame(&mut client, 4096).unwrap();
+        let expired_payload: Value = serde_json::from_slice(&expired.payload).unwrap();
+        release_sender.send(()).unwrap();
+        let _ = client.shutdown(Shutdown::Both);
+        server.join().unwrap();
+        std::fs::remove_file(&socket).unwrap();
+
+        assert_eq!(expired_payload["code"], "RENDER_DEADLINE_EXCEEDED");
+        assert_eq!(expired_payload["engineStage"], "REQUEST_CONTROL");
+        assert_eq!(expired_payload["requestId"], expired_request_id);
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn linux_uds_active_same_digest_joins_drift_conflicts_and_terminal_replays() {
+        use std::net::Shutdown;
+        use std::os::unix::net::{UnixListener, UnixStream};
+        use std::thread;
+
+        let identity = validate_process_manifest(PROCESS_MANIFEST).unwrap();
+        let socket = std::env::temp_dir().join(format!(
+            "renderweave-t123-join-replay-{}-{}.sock",
+            std::process::id(),
+            now_epoch_millis()
+        ));
+        assert!(!socket.exists());
+        let listener = UnixListener::bind(&socket).unwrap();
+        let (document, bodies) = renderable_resource_fixture();
+        let command = command_with_document(&document);
+        let drifted_command = command.replace(r#""dpi":96"#, r#""dpi":97"#);
+        let request_id = parse_command(command.as_bytes())
+            .unwrap()
+            .command
+            .request_id;
+        let (started_sender, started_receiver) = mpsc::channel();
+        let (release_sender, release_receiver) = mpsc::channel();
+        let fetcher = Arc::new(BlockingResourceFetcher {
+            bodies,
+            started_sender: Mutex::new(Some(started_sender)),
+            release_receiver: Mutex::new(Some(release_receiver)),
+        });
+        let server_identity = identity.clone();
+        let server = thread::spawn(move || {
+            let (stream, _) = listener.accept().unwrap();
+            let registry = concurrent_request_registry_with(fetcher);
+            let _ = serve_unix_connection(stream, &server_identity, &registry, 4096);
+        });
+
+        let mut client = UnixStream::connect(&socket).unwrap();
+        write_frame(
+            &mut client,
+            FrameType::ClientHello,
+            &client_hello_bytes(&identity.manifest_sha256).unwrap(),
+        )
+        .unwrap();
+        assert_eq!(
+            read_frame(&mut client, 4096).unwrap().frame_type,
+            FrameType::ServerHello
+        );
+        write_frame(&mut client, FrameType::Command, command.as_bytes()).unwrap();
+        started_receiver
+            .recv_timeout(Duration::from_secs(5))
+            .expect("resource work must remain active for join");
+        write_frame(&mut client, FrameType::Command, command.as_bytes()).unwrap();
+        write_frame(&mut client, FrameType::Command, drifted_command.as_bytes()).unwrap();
+        let conflict = read_frame(&mut client, 4096).unwrap();
+        let conflict_payload: Value = serde_json::from_slice(&conflict.payload).unwrap();
+        release_sender.send(()).unwrap();
+        let terminal = read_frame(&mut client, 4096).unwrap();
+        write_frame(&mut client, FrameType::Command, command.as_bytes()).unwrap();
+        let replay = read_frame(&mut client, 4096).unwrap();
+        let _ = client.shutdown(Shutdown::Both);
+        server.join().unwrap();
+        std::fs::remove_file(&socket).unwrap();
+
+        assert_eq!(conflict_payload["code"], "RENDER_REQUEST_CONFLICT");
+        assert_eq!(conflict_payload["requestId"], request_id);
+        assert_eq!(terminal.frame_type, FrameType::Problem);
+        assert_eq!(replay.frame_type, terminal.frame_type);
+        assert_eq!(replay.payload, terminal.payload);
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn linux_uds_active_cancel_after_deadline_seals_deadline_and_discards_work() {
+        use std::net::Shutdown;
+        use std::os::unix::net::{UnixListener, UnixStream};
+        use std::thread;
+
+        let identity = validate_process_manifest(PROCESS_MANIFEST).unwrap();
+        let socket = std::env::temp_dir().join(format!(
+            "renderweave-t123-cancel-after-deadline-{}-{}.sock",
+            std::process::id(),
+            now_epoch_millis()
+        ));
+        assert!(!socket.exists());
+        let listener = UnixListener::bind(&socket).unwrap();
+        let (document, _) = renderable_resource_fixture();
+        let deadline_epoch_millis = now_epoch_millis().saturating_add(3_000);
+        let command = command_with_deadline(
+            &command_with_document(&document),
+            &rfc3339_utc_millis(deadline_epoch_millis),
+        );
+        let cancel = cancel_for_command(&command);
+        let request_id = parse_command(command.as_bytes())
+            .unwrap()
+            .command
+            .request_id;
+        let (started_sender, started_receiver) = mpsc::channel();
+        let (release_sender, release_receiver) = mpsc::channel();
+        let fetcher = Arc::new(BlockingFailureResourceFetcher {
+            started_sender: Mutex::new(Some(started_sender)),
+            release_receiver: Mutex::new(Some(release_receiver)),
+        });
+        let server_identity = identity.clone();
+        let server = thread::spawn(move || {
+            let (stream, _) = listener.accept().unwrap();
+            let registry = concurrent_request_registry_with(fetcher);
+            let _ = serve_unix_connection(stream, &server_identity, &registry, 4096);
+        });
+
+        let mut client = UnixStream::connect(&socket).unwrap();
+        write_frame(
+            &mut client,
+            FrameType::ClientHello,
+            &client_hello_bytes(&identity.manifest_sha256).unwrap(),
+        )
+        .unwrap();
+        assert_eq!(
+            read_frame(&mut client, 4096).unwrap().frame_type,
+            FrameType::ServerHello
+        );
+        write_frame(&mut client, FrameType::Command, command.as_bytes()).unwrap();
+        started_receiver
+            .recv_timeout(Duration::from_secs(5))
+            .expect("resource work must start before its absolute deadline");
+        let remaining_millis = deadline_epoch_millis
+            .saturating_sub(now_epoch_millis())
+            .saturating_add(100);
+        if remaining_millis > 0 {
+            thread::sleep(Duration::from_millis(remaining_millis as u64));
+        }
+        write_frame(&mut client, FrameType::Cancel, &cancel).unwrap();
+        let terminal = read_frame(&mut client, 4096).unwrap();
+        let terminal_payload: Value = serde_json::from_slice(&terminal.payload).unwrap();
+        release_sender.send(()).unwrap();
+        let _ = client.shutdown(Shutdown::Both);
+        server.join().unwrap();
+        std::fs::remove_file(&socket).unwrap();
+
+        assert_eq!(terminal_payload["code"], "RENDER_DEADLINE_EXCEEDED");
+        assert_eq!(terminal_payload["engineStage"], "REQUEST_CONTROL");
+        assert_eq!(terminal_payload["requestId"], request_id);
     }
 
     fn vector_json(id: &str) -> String {
@@ -1272,6 +2630,20 @@ mod tests {
         )
     }
 
+    #[cfg(target_os = "linux")]
+    fn concurrent_request_registry_with(
+        resource_fetcher: Arc<dyn ResourceFetcher>,
+    ) -> ConcurrentRequestRegistry {
+        ConcurrentRequestRegistry::new(
+            renderweave_renderer_resource::FetchTargetPolicy::new(
+                ASSET_FETCH_ORIGIN,
+                renderweave_renderer_resource::ASSET_FETCH_PATH_PREFIX,
+            )
+            .unwrap(),
+            resource_fetcher,
+        )
+    }
+
     struct SuccessResourceFetcher;
 
     impl ResourceFetcher for SuccessResourceFetcher {
@@ -1289,6 +2661,74 @@ mod tests {
         observations: Arc<Mutex<Vec<String>>>,
         bodies: BTreeMap<String, Vec<u8>>,
         fail_first: bool,
+    }
+
+    #[cfg(target_os = "linux")]
+    struct BlockingResourceFetcher {
+        bodies: BTreeMap<String, Vec<u8>>,
+        started_sender: Mutex<Option<mpsc::Sender<()>>>,
+        release_receiver: Mutex<Option<mpsc::Receiver<()>>>,
+    }
+
+    #[cfg(target_os = "linux")]
+    struct BlockingFailureResourceFetcher {
+        started_sender: Mutex<Option<mpsc::Sender<()>>>,
+        release_receiver: Mutex<Option<mpsc::Receiver<()>>>,
+    }
+
+    #[cfg(target_os = "linux")]
+    impl ResourceFetcher for BlockingFailureResourceFetcher {
+        fn fetch_resource(
+            &self,
+            target: &renderweave_renderer_resource::AdmittedFetchTarget<'_>,
+            _deadline_epoch_millis: i64,
+            _state: &mut renderweave_renderer_resource::RequestResourceFetchState,
+        ) -> Result<FetchedResource, ResourceFetchProblem> {
+            self.started_sender
+                .lock()
+                .unwrap()
+                .take()
+                .expect("blocking failure sender must exist")
+                .send(())
+                .unwrap();
+            self.release_receiver
+                .lock()
+                .unwrap()
+                .take()
+                .expect("blocking failure release receiver must exist")
+                .recv_timeout(Duration::from_secs(15))
+                .expect("test must release the failed resource fetch");
+            Err(ResourceFetchProblem::fetch_failed(target.resource_id()))
+        }
+    }
+
+    #[cfg(target_os = "linux")]
+    impl ResourceFetcher for BlockingResourceFetcher {
+        fn fetch_resource(
+            &self,
+            target: &renderweave_renderer_resource::AdmittedFetchTarget<'_>,
+            _deadline_epoch_millis: i64,
+            state: &mut renderweave_renderer_resource::RequestResourceFetchState,
+        ) -> Result<FetchedResource, ResourceFetchProblem> {
+            if let Some(started_sender) = self.started_sender.lock().unwrap().take() {
+                started_sender.send(()).unwrap();
+                self.release_receiver
+                    .lock()
+                    .unwrap()
+                    .take()
+                    .expect("release receiver must exist for the first fetch")
+                    .recv_timeout(Duration::from_secs(15))
+                    .expect("test must release the blocked resource fetch");
+            }
+            state.verify_owned_body(
+                target,
+                self.bodies
+                    .get(target.resource_id())
+                    .expect("fixture body must exist")
+                    .clone()
+                    .into_boxed_slice(),
+            )
+        }
     }
 
     impl ResourceFetcher for RecordingResourceFetcher {
@@ -1446,6 +2886,57 @@ mod tests {
         command
             .replace(&original_document, document)
             .replace(&old_digest, &digest)
+    }
+
+    #[cfg(target_os = "linux")]
+    fn command_with_request_id(command: &str, request_id: &str) -> String {
+        let admitted = parse_command(command.as_bytes()).unwrap();
+        command.replace(&admitted.command.request_id, request_id)
+    }
+
+    #[cfg(target_os = "linux")]
+    fn command_with_deadline(command: &str, deadline_at: &str) -> String {
+        let admitted = parse_command(command.as_bytes()).unwrap();
+        command.replace(&admitted.command.deadline_at, deadline_at)
+    }
+
+    #[cfg(target_os = "linux")]
+    fn rfc3339_utc_millis(epoch_millis: i64) -> String {
+        let epoch_seconds = epoch_millis.div_euclid(1_000);
+        let millis = epoch_millis.rem_euclid(1_000);
+        let days = epoch_seconds.div_euclid(86_400);
+        let seconds_of_day = epoch_seconds.rem_euclid(86_400);
+        let shifted_days = days + 719_468;
+        let era = if shifted_days >= 0 {
+            shifted_days
+        } else {
+            shifted_days - 146_096
+        } / 146_097;
+        let day_of_era = shifted_days - era * 146_097;
+        let year_of_era =
+            (day_of_era - day_of_era / 1_460 + day_of_era / 36_524 - day_of_era / 146_096) / 365;
+        let mut year = year_of_era + era * 400;
+        let day_of_year = day_of_era - (365 * year_of_era + year_of_era / 4 - year_of_era / 100);
+        let month_prime = (5 * day_of_year + 2) / 153;
+        let day = day_of_year - (153 * month_prime + 2) / 5 + 1;
+        let month = month_prime + if month_prime < 10 { 3 } else { -9 };
+        year += i64::from(month <= 2);
+        let hour = seconds_of_day / 3_600;
+        let minute = seconds_of_day % 3_600 / 60;
+        let second = seconds_of_day % 60;
+        format!("{year:04}-{month:02}-{day:02}T{hour:02}:{minute:02}:{second:02}.{millis:03}Z")
+    }
+
+    #[cfg(target_os = "linux")]
+    fn cancel_for_command(command: &str) -> Vec<u8> {
+        let admitted = parse_command(command.as_bytes()).unwrap();
+        serde_json::to_vec(&renderweave_renderer_protocol::Cancel {
+            contract_version: "renderweave-render-cancel/1.0".to_owned(),
+            request_id: admitted.command.request_id,
+            renderer_command_digest: admitted.command_digest,
+            deadline_at: admitted.command.deadline_at,
+        })
+        .unwrap()
     }
 
     struct MemoryDuplex {
