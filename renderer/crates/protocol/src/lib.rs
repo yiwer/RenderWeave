@@ -326,6 +326,10 @@ impl SealedResult {
     pub fn content_sha256(&self) -> &str {
         &self.content_sha256
     }
+
+    pub fn into_payloads(self) -> (Vec<u8>, Vec<u8>) {
+        (self.metadata_payload, self.image_payload)
+    }
 }
 
 pub fn seal_result(input: ResultSealInput<'_>) -> Result<SealedResult, ProtocolError> {

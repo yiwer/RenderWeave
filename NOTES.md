@@ -1,6 +1,19 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-25 **Template v1 implementation TV1-T108 已由 Codex `/root` single-writer 完成，状态
+  `resolved/automated_verified`**：唯一 `seal_prepared_png_result` 已用 admitted typed tokens 串接 T105 prepared
+  manifest、T107 Engine PNG 与 T98 result seal，daemon immutable terminal/replay 可全有或全无表达 PROBLEM 或
+  ordered RESULT_METADATA+RESULT_IMAGE。真实 empty manifest 与真实 fetch/verify/decode IMAGE 两条成功路径及
+  document/Profile drift、JPEG、layoutTrace pre-result negatives 均绿；daemon 12 unit + 3 integration tests，process
+  independent 7 vectors/110 checks。canonical `render` `.sdlc/evidence/20260825-085407-render/`、affected `fast`
+  `.sdlc/evidence/20260825-085459-fast/`、sequential `server` `.sdlc/evidence/20260825-085621-server/` 与 17-step
+  Goal `full` `.sdlc/evidence/20260825-091345-full/` 全绿；状态回填后的 resolution `fast`
+  `.sdlc/evidence/20260825-094253-fast/` 亦通过。精确能力标签为
+  `PREPARED_PNG_RESULT_KERNEL_AUTOMATED_VERIFIED_PROFILE_GATED`；RequestRegistry 仍不调用 success kernel，Profile
+  `NOT_REGISTERED`、certification `NOT_CERTIFIED`、process raster `ABSENT`、正式产品 route `CLOSED`、native stack
+  `BUILD_NOT_AUTHORIZED`，不创建 partial/test-only Profile。provider attempts/API Key reads/费用/真实数据=0；未
+  push/tag/PR。最终目标仍是正式产品 Template-v1 页面与真实功能，`/prototype` 不计交付。
 - 2026-08-25 **Template v1 implementation TV1-T107 已由 Codex `/root` single-writer 完成，状态
   `resolved/automated_verified`**：最终目标仍是正式产品 Template-v1 页面与真实功能，`/prototype` 不计交付。
   本票保留旧 resource-free `render_png` bytes/error order，新增只消费 T105 完整 immutable prepared manifest 并

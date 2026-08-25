@@ -3,23 +3,29 @@
 //! The process intentionally has no registered raster profile. A structurally admitted command is
 //! passed through command-bound resource lease coverage, static Layout Profile preflight, and the
 //! complete manifest-order resource preparation pipeline, then recorded in the in-memory registry
-//! with one stable terminal problem; no image, scene, or partial result can be produced here.
+//! with one stable terminal problem. A separate typed kernel can compose already-admitted inputs
+//! into a sealed PNG result for a future registered Profile; the current registry never calls it.
 
+use renderweave_renderer_document::AdmittedRenderDocument;
 #[cfg(any(unix, test))]
 use renderweave_renderer_document::{validate_render_document, validate_resource_lease_coverage};
+use renderweave_renderer_engine::{EnginePngError, render_png_with_prepared_resources};
 #[cfg(any(unix, test))]
 use renderweave_renderer_layout::preflight_layout;
-use renderweave_renderer_protocol::ProtocolError;
+use renderweave_renderer_protocol::{
+    AdmittedCommand, Frame, FrameType, OutputSelection, ProtocolError, ResultOutputSelection,
+    ResultSealInput, SealedResult, seal_result,
+};
 #[cfg(any(unix, test))]
 use renderweave_renderer_protocol::{
-    EngineStage, Frame, FrameType, ManifestIdentity, parse_cancel, parse_client_hello,
-    parse_command, problem_bytes, read_frame, resource_limit_problem_bytes, resource_problem_bytes,
-    server_hello_bytes, validate_process_manifest, write_frame,
+    EngineStage, ManifestIdentity, parse_cancel, parse_client_hello, parse_command, problem_bytes,
+    read_frame, resource_limit_problem_bytes, resource_problem_bytes, server_hello_bytes,
+    validate_process_manifest, write_frame,
 };
 #[cfg(target_os = "linux")]
 use renderweave_renderer_resource::HttpsResourceFetcher;
 use renderweave_renderer_resource::{
-    ASSET_FETCH_PATH_PREFIX, FetchEgressPolicy, FetchTargetPolicy,
+    ASSET_FETCH_PATH_PREFIX, FetchEgressPolicy, FetchTargetPolicy, PreparedResourceManifest,
 };
 #[cfg(test)]
 use renderweave_renderer_resource::{FetchedResource, ResourceFetchProblem};
@@ -81,6 +87,114 @@ impl DaemonError {
             Self::Io(_) | Self::Protocol(_) => 70,
         }
     }
+}
+
+#[derive(Debug)]
+pub enum PreparedPngResultError {
+    Contract(&'static str),
+    Engine(EnginePngError),
+    Seal(ProtocolError),
+}
+
+impl Display for PreparedPngResultError {
+    fn fmt(&self, formatter: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Contract(message) => formatter.write_str(message),
+            Self::Engine(error) => write!(formatter, "prepared PNG execution failed: {error}"),
+            Self::Seal(error) => write!(formatter, "prepared PNG result seal failed: {error}"),
+        }
+    }
+}
+
+impl std::error::Error for PreparedPngResultError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            Self::Contract(_) => None,
+            Self::Engine(error) => Some(error),
+            Self::Seal(error) => Some(error),
+        }
+    }
+}
+
+impl From<EnginePngError> for PreparedPngResultError {
+    fn from(error: EnginePngError) -> Self {
+        Self::Engine(error)
+    }
+}
+
+impl From<ProtocolError> for PreparedPngResultError {
+    fn from(error: ProtocolError) -> Self {
+        Self::Seal(error)
+    }
+}
+
+/// Composes already-admitted and fully prepared inputs into one immutable PNG result.
+///
+/// This function does not establish Profile availability. The caller must first pass the process
+/// manifest/Profile gate; the currently shipped daemon manifest cannot do so and therefore the
+/// network request registry deliberately does not call this kernel.
+pub fn seal_prepared_png_result(
+    command: &AdmittedCommand,
+    document: &AdmittedRenderDocument,
+    prepared_resources: &PreparedResourceManifest,
+) -> Result<SealedResult, PreparedPngResultError> {
+    if command.command.renderer_profile != "renderweave-renderer/1.0" {
+        return Err(PreparedPngResultError::Contract(
+            "prepared PNG command renderer Profile is not exact",
+        ));
+    }
+    if command.command.document.get().as_bytes() != document.canonical_document().as_bytes() {
+        return Err(PreparedPngResultError::Contract(
+            "prepared PNG command and admitted document identities diverged",
+        ));
+    }
+    if command.command.diagnostics.layout_trace {
+        return Err(PreparedPngResultError::Contract(
+            "prepared PNG result kernel does not support layout trace",
+        ));
+    }
+    let dpi = match &command.command.output {
+        OutputSelection::Png(output) => output.dpi,
+        OutputSelection::Jpeg(_) => {
+            return Err(PreparedPngResultError::Contract(
+                "prepared PNG result kernel does not support JPEG",
+            ));
+        }
+    };
+
+    let output = render_png_with_prepared_resources(document, prepared_resources, dpi)?;
+    if output.dpi() != dpi
+        || output.output_profile() != "renderweave-output-png/1.0"
+        || output.media_type() != "image/png"
+    {
+        return Err(PreparedPngResultError::Contract(
+            "prepared PNG Engine output identity diverged",
+        ));
+    }
+    let width_px = output.width_px();
+    let height_px = output.height_px();
+    let byte_length = u64::try_from(output.byte_length()).map_err(|_| {
+        PreparedPngResultError::Contract("prepared PNG Engine byte length exceeds uint64")
+    })?;
+    let content_sha256 = output.content_sha256().to_owned();
+    let sealed = seal_result(ResultSealInput {
+        request_id: &command.command.request_id,
+        renderer_profile: &command.command.renderer_profile,
+        dsl_version: "renderweave-render/1.0",
+        layout_profile: "renderweave-layout/1.0",
+        width_px,
+        height_px,
+        output: ResultOutputSelection::Png { dpi },
+        image_bytes: output.into_bytes(),
+    })?;
+    if sealed.byte_length() != byte_length
+        || format!("sha256:{}", sealed.content_sha256()) != content_sha256
+    {
+        return Err(PreparedPngResultError::Contract(
+            "prepared PNG Engine and sealed result identities diverged",
+        ));
+    }
+    Ok(sealed)
 }
 
 #[derive(Clone, Debug)]
@@ -333,7 +447,52 @@ fn serve_connection<S: io::Read + io::Write>(
             Err(error) => return Err(error.into()),
         };
         let response = registry.handle(frame, now_epoch_millis())?;
-        write_frame(connection, response.frame_type, &response.payload)?;
+        response.write_to(connection)?;
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct TerminalResponse {
+    frames: Vec<Frame>,
+}
+
+impl TerminalResponse {
+    #[cfg(any(unix, test))]
+    fn problem(payload: Vec<u8>) -> Self {
+        Self {
+            frames: vec![Frame {
+                frame_type: FrameType::Problem,
+                payload,
+            }],
+        }
+    }
+
+    pub fn sealed_result(result: SealedResult) -> Self {
+        let (metadata_payload, image_payload) = result.into_payloads();
+        Self {
+            frames: vec![
+                Frame {
+                    frame_type: FrameType::ResultMetadata,
+                    payload: metadata_payload,
+                },
+                Frame {
+                    frame_type: FrameType::ResultImage,
+                    payload: image_payload,
+                },
+            ],
+        }
+    }
+
+    pub fn frames(&self) -> &[Frame] {
+        &self.frames
+    }
+
+    #[cfg(any(unix, test))]
+    fn write_to(&self, writer: &mut impl io::Write) -> Result<(), ProtocolError> {
+        for frame in &self.frames {
+            write_frame(writer, frame.frame_type, &frame.payload)?;
+        }
+        Ok(())
     }
 }
 
@@ -343,7 +502,7 @@ struct RegistryEntry {
     command_digest: String,
     deadline_epoch_millis: i64,
     retain_until_epoch_millis: i64,
-    problem_payload: Vec<u8>,
+    terminal_response: TerminalResponse,
 }
 
 #[cfg(any(unix, test))]
@@ -366,42 +525,40 @@ impl RequestRegistry {
         }
     }
 
-    fn handle(&mut self, frame: Frame, now_epoch_millis: i64) -> Result<Frame, ProtocolError> {
+    fn handle(
+        &mut self,
+        frame: Frame,
+        now_epoch_millis: i64,
+    ) -> Result<TerminalResponse, ProtocolError> {
         self.entries
             .retain(|_, entry| entry.retain_until_epoch_millis > now_epoch_millis);
-        let payload = match frame.frame_type {
-            FrameType::Command => self.handle_command(&frame.payload, now_epoch_millis)?,
-            FrameType::Cancel => self.handle_cancel(&frame.payload, now_epoch_millis)?,
-            _ => {
-                return Err(ProtocolError::Invalid(
-                    "post-handshake client frame must be COMMAND or CANCEL",
-                ));
-            }
-        };
-        Ok(Frame {
-            frame_type: FrameType::Problem,
-            payload,
-        })
+        match frame.frame_type {
+            FrameType::Command => self.handle_command(&frame.payload, now_epoch_millis),
+            FrameType::Cancel => self.handle_cancel(&frame.payload, now_epoch_millis),
+            _ => Err(ProtocolError::Invalid(
+                "post-handshake client frame must be COMMAND or CANCEL",
+            )),
+        }
     }
 
     fn handle_command(
         &mut self,
         payload: &[u8],
         now_epoch_millis: i64,
-    ) -> Result<Vec<u8>, ProtocolError> {
+    ) -> Result<TerminalResponse, ProtocolError> {
         let admitted = parse_command(payload)?;
         let request_id = admitted.command.request_id.clone();
         if let Some(existing) = self.entries.get(&request_id) {
             if existing.command_digest == admitted.command_digest
                 && existing.deadline_epoch_millis == admitted.deadline_epoch_millis
             {
-                return Ok(existing.problem_payload.clone());
+                return Ok(existing.terminal_response.clone());
             }
-            return problem_bytes(
+            return Ok(TerminalResponse::problem(problem_bytes(
                 &request_id,
                 "RENDER_REQUEST_CONFLICT",
                 EngineStage::RequestControl,
-            );
+            )?));
         }
 
         let problem_payload = if admitted.deadline_epoch_millis <= now_epoch_millis {
@@ -475,6 +632,7 @@ impl RequestRegistry {
                 }
             }
         };
+        let terminal_response = TerminalResponse::problem(problem_payload);
         self.entries.insert(
             request_id,
             RegistryEntry {
@@ -484,29 +642,29 @@ impl RequestRegistry {
                     .deadline_epoch_millis
                     .max(now_epoch_millis)
                     .saturating_add(TERMINAL_RETENTION_MILLIS),
-                problem_payload: problem_payload.clone(),
+                terminal_response: terminal_response.clone(),
             },
         );
-        Ok(problem_payload)
+        Ok(terminal_response)
     }
 
     fn handle_cancel(
         &mut self,
         payload: &[u8],
         now_epoch_millis: i64,
-    ) -> Result<Vec<u8>, ProtocolError> {
+    ) -> Result<TerminalResponse, ProtocolError> {
         let cancel = parse_cancel(payload)?;
         if let Some(existing) = self.entries.get(&cancel.cancel.request_id) {
             if existing.command_digest == cancel.cancel.renderer_command_digest
                 && existing.deadline_epoch_millis == cancel.deadline_epoch_millis
             {
-                return Ok(existing.problem_payload.clone());
+                return Ok(existing.terminal_response.clone());
             }
-            return problem_bytes(
+            return Ok(TerminalResponse::problem(problem_bytes(
                 &cancel.cancel.request_id,
                 "RENDER_REQUEST_CONFLICT",
                 EngineStage::RequestControl,
-            );
+            )?));
         }
         let deadline_epoch_millis = cancel.deadline_epoch_millis;
         let code = if deadline_epoch_millis <= now_epoch_millis {
@@ -516,6 +674,7 @@ impl RequestRegistry {
         };
         let problem_payload =
             problem_bytes(&cancel.cancel.request_id, code, EngineStage::RequestControl)?;
+        let terminal_response = TerminalResponse::problem(problem_payload);
         self.entries.insert(
             cancel.cancel.request_id,
             RegistryEntry {
@@ -523,10 +682,10 @@ impl RequestRegistry {
                 deadline_epoch_millis,
                 retain_until_epoch_millis: now_epoch_millis
                     .saturating_add(PRE_COMMAND_CANCEL_RETENTION_MILLIS),
-                problem_payload: problem_payload.clone(),
+                terminal_response: terminal_response.clone(),
             },
         );
-        Ok(problem_payload)
+        Ok(terminal_response)
     }
 }
 
@@ -598,6 +757,11 @@ mod tests {
     );
     const ASSET_FETCH_ORIGIN: &str = "https://render.internal.example";
     const ASSET_FETCH_ALLOWED_IPS: [&str; 1] = ["127.0.0.1"];
+
+    fn only_frame(response: &TerminalResponse) -> &Frame {
+        assert_eq!(response.frames().len(), 1);
+        &response.frames()[0]
+    }
 
     #[test]
     fn daemon_requires_an_explicit_socket_manifest_fetch_origin_and_frame_limit() {
@@ -677,8 +841,11 @@ mod tests {
                 1_800_000_000_000,
             )
             .unwrap();
-        assert_eq!(first.frame_type, FrameType::Problem);
-        assert_eq!(first.payload, vector_json("problem").as_bytes());
+        assert_eq!(only_frame(&first).frame_type, FrameType::Problem);
+        assert_eq!(
+            only_frame(&first).payload,
+            vector_json("problem").as_bytes()
+        );
 
         let replay = registry
             .handle(
@@ -689,7 +856,7 @@ mod tests {
                 1_800_000_000_001,
             )
             .unwrap();
-        assert_eq!(replay.payload, first.payload);
+        assert_eq!(only_frame(&replay).payload, only_frame(&first).payload);
 
         let drifted = command.replace("\"layoutTrace\":false", "\"layoutTrace\":true");
         let conflict = registry
@@ -701,7 +868,7 @@ mod tests {
                 1_800_000_000_002,
             )
             .unwrap();
-        let conflict: Value = serde_json::from_slice(&conflict.payload).unwrap();
+        let conflict: Value = serde_json::from_slice(&only_frame(&conflict).payload).unwrap();
         assert_eq!(conflict["code"], "RENDER_REQUEST_CONFLICT");
         assert_eq!(conflict["engineStage"], "REQUEST_CONTROL");
     }
@@ -730,7 +897,7 @@ mod tests {
                 1_800_000_000_000,
             )
             .unwrap();
-        let problem: Value = serde_json::from_slice(&response.payload).unwrap();
+        let problem: Value = serde_json::from_slice(&only_frame(&response).payload).unwrap();
         assert_eq!(problem["code"], "RENDER_INTERNAL_ERROR");
         assert_eq!(problem["engineStage"], "DOCUMENT_ADMISSION");
     }
@@ -752,7 +919,7 @@ mod tests {
                 1_800_000_000_000,
             )
             .unwrap();
-        let problem: Value = serde_json::from_slice(&response.payload).unwrap();
+        let problem: Value = serde_json::from_slice(&only_frame(&response).payload).unwrap();
         assert_eq!(problem["code"], "RENDER_INTERNAL_ERROR");
         assert_eq!(problem["engineStage"], "DOCUMENT_ADMISSION");
     }
@@ -771,7 +938,7 @@ mod tests {
                 1_800_000_000_000,
             )
             .unwrap();
-        let problem: Value = serde_json::from_slice(&first.payload).unwrap();
+        let problem: Value = serde_json::from_slice(&only_frame(&first).payload).unwrap();
         assert_eq!(problem["code"], "RESOURCE_LEASE_EXPIRED");
         assert_eq!(problem["engineStage"], "COMMAND_ADMISSION");
         assert_eq!(
@@ -790,7 +957,7 @@ mod tests {
                 1_800_000_000_001,
             )
             .unwrap();
-        assert_eq!(replay.payload, first.payload);
+        assert_eq!(only_frame(&replay).payload, only_frame(&first).payload);
     }
 
     #[test]
@@ -812,7 +979,7 @@ mod tests {
                 1_800_000_000_000,
             )
             .unwrap();
-        let problem: Value = serde_json::from_slice(&response.payload).unwrap();
+        let problem: Value = serde_json::from_slice(&only_frame(&response).payload).unwrap();
         assert_eq!(problem["code"], "RENDER_INTERNAL_ERROR");
         assert_eq!(problem["engineStage"], "RESOURCE_PREPARATION");
         assert!(problem.get("resourceId").is_none());
@@ -840,7 +1007,7 @@ mod tests {
                 1_800_000_000_000,
             )
             .unwrap();
-        let problem: Value = serde_json::from_slice(&response.payload).unwrap();
+        let problem: Value = serde_json::from_slice(&only_frame(&response).payload).unwrap();
         assert_eq!(problem["code"], "RENDER_INTERNAL_ERROR");
         assert_eq!(problem["engineStage"], "COMMAND_ADMISSION");
         assert_eq!(
@@ -873,7 +1040,7 @@ mod tests {
                 1_800_000_000_000,
             )
             .unwrap();
-        let problem: Value = serde_json::from_slice(&first.payload).unwrap();
+        let problem: Value = serde_json::from_slice(&only_frame(&first).payload).unwrap();
         assert_eq!(problem["code"], "FETCH_FAILED");
         assert_eq!(problem["engineStage"], "RESOURCE_PREPARATION");
         assert_eq!(
@@ -891,7 +1058,7 @@ mod tests {
                 1_800_000_000_001,
             )
             .unwrap();
-        assert_eq!(replay.payload, first.payload);
+        assert_eq!(only_frame(&replay).payload, only_frame(&first).payload);
         assert_eq!(observations.lock().unwrap().len(), 1);
     }
 
@@ -916,7 +1083,7 @@ mod tests {
                 1_800_000_000_000,
             )
             .unwrap();
-        let problem: Value = serde_json::from_slice(&first.payload).unwrap();
+        let problem: Value = serde_json::from_slice(&only_frame(&first).payload).unwrap();
         assert_eq!(problem["code"], "MEDIA_MISMATCH");
         assert_eq!(problem["engineStage"], "RESOURCE_PREPARATION");
         assert_eq!(
@@ -934,8 +1101,38 @@ mod tests {
                 1_800_000_000_001,
             )
             .unwrap();
-        assert_eq!(replay.payload, first.payload);
+        assert_eq!(only_frame(&replay).payload, only_frame(&first).payload);
         assert_eq!(observations.lock().unwrap().len(), 1);
+    }
+
+    #[test]
+    fn sealed_terminal_writes_exact_metadata_then_image_frames() {
+        let image_bytes = decode_base64(&vector_value("png-result-metadata", "imageBase64"));
+        let sealed = seal_result(ResultSealInput {
+            request_id: "123e4567-e89b-42d3-a456-426614174000",
+            renderer_profile: "renderweave-renderer/1.0",
+            dsl_version: "renderweave-render/1.0",
+            layout_profile: "renderweave-layout/1.0",
+            width_px: 1,
+            height_px: 1,
+            output: ResultOutputSelection::Png { dpi: 96 },
+            image_bytes,
+        })
+        .unwrap();
+        let response = TerminalResponse::sealed_result(sealed);
+        assert_eq!(response.frames().len(), 2);
+        assert_eq!(response.frames()[0].frame_type, FrameType::ResultMetadata);
+        assert_eq!(response.frames()[1].frame_type, FrameType::ResultImage);
+
+        let mut actual = Vec::new();
+        response.write_to(&mut actual).unwrap();
+        let mut expected =
+            decode_base64(&vector_value("png-result-metadata", "expectedFrameBase64"));
+        expected.extend_from_slice(&decode_base64(&vector_value(
+            "png-result-image",
+            "expectedFrameBase64",
+        )));
+        assert_eq!(actual, expected);
     }
 
     #[test]
@@ -951,8 +1148,8 @@ mod tests {
                 1_800_000_000_000,
             )
             .unwrap();
-        assert_eq!(response.frame_type, FrameType::Problem);
-        let problem: Value = serde_json::from_slice(&response.payload).unwrap();
+        assert_eq!(only_frame(&response).frame_type, FrameType::Problem);
+        let problem: Value = serde_json::from_slice(&only_frame(&response).payload).unwrap();
         assert_eq!(problem["code"], "RENDER_CANCELLED");
         assert_eq!(problem["engineStage"], "REQUEST_CONTROL");
     }

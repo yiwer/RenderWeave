@@ -8,6 +8,7 @@ publish = false
 
 [dependencies]
 renderweave-renderer-document = { path = "../document" }
+renderweave-renderer-engine = { path = "../engine" }
 renderweave-renderer-layout = { path = "../layout" }
 renderweave-renderer-protocol = { path = "../protocol" }
 renderweave-renderer-resource = { path = "../resource" }

@@ -3609,6 +3609,51 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
   sampling/blend/Text/RESULT/Profile/最终产品接线继续后续 DAG。provider attempts/API Key reads/费用/真实数据=0，
   未 push/tag/PR，`/prototype` 不计最终产品交付。
 
+## 107. TV1-T108 执行卡
+
+- 决策：T107 以 verified commit `a1ceb282` 收口且 worktree clean 后，T98 RESULT seal、T105 complete prepared
+  manifest 与 T107 real Engine PNG 已分别可执行，但 daemon 仍没有把它们组合成一个原子 success terminal。
+  Profile 完整实现与认证尚未满足，不能通过 fake registration 打开网络路径；因此登记 Profile-gated 的真实
+  Engine→RESULT composition kernel 为当前 single-writer frontier。
+- Interface/seam：daemon crate 新增唯一
+  `seal_prepared_png_result(&AdmittedCommand,&AdmittedRenderDocument,&PreparedResourceManifest)`；复核 exact
+  profile/document/output/diagnostics，调用 T107 并把 owned bytes 一次性交给 T98 seal。daemon terminal outcome
+  深化为 immutable one-PROBLEM 或 ordered RESULT_METADATA+RESULT_IMAGE，连接 writer 只写完整 outcome。
+- 不变量：width/height/dpi 取 Engine/Command，length/digest 只由 seal 派生并与 Engine identity 交叉核验；任一
+  mismatch、JPEG/layoutTrace 或 Engine error 都零 terminal result。当前 manifest 仍 empty/NOT_REGISTERED/
+  NOT_CERTIFIED/ABSENT，RequestRegistry 继续原 problem behavior；无 test-only Profile/bypass。
+- 允许影响：T108 tracker/map/plan/NOTES、daemon/engine/protocol Rust seam 与 tests、Cargo dependency/lock、必要的
+  render gate identity/evidence。
+- 禁止影响：general sampling/blend/Text/vector/QR/barcode/JPEG/layoutTrace、Profile registration、native
+  Skia/FreeType/HarfBuzz build、Java/OpenAPI/migration/Web/Product route、formal records、physical certification、
+  J1/A3/READY 与外部副作用。
+- TDD/gates：缺失 public Interface 先 RED；GREEN 后 focused/workspace/existing independent replay → canonical
+  `render` → affected `fast` → sequential `server` → Goal `full` → resolution `fast`。provider/API Key/费用/真实
+  数据=0，不 push/tag/PR，`/prototype` 不计交付。
+
+### TV1-T108 收口
+
+- 缺失 public Interface 的 daemon integration test 先得到 unresolved-import RED；GREEN 后唯一
+  `seal_prepared_png_result` 以 admitted typed tokens 串接 T107 Engine 与 T98 seal，并复核 renderer/document/
+  output/diagnostics 及 Engine↔sealed length/digest identity。`TerminalResponse` 只允许完整 PROBLEM 或 ordered
+  RESULT_METADATA+RESULT_IMAGE，registry replay 与 connection writer 复用同一 immutable frame sequence。
+- 真实 empty manifest 与真实 fetch/verify/decode IMAGE 均产生 exact Engine PNG/result payload；document/Profile
+  drift、JPEG 与 layoutTrace 在构造 result frames 前 fail closed。daemon 12 unit + 3 integration tests、Rust
+  workspace fmt/clippy `-D warnings`/tests、process independent 7 vectors/110 checks 均绿。
+- identities：Cargo lock SHA-256 `4d25500fb52cf97899d0bcc8fac75fb9a7e9ec9528595f2aff3e5dae88111d3a`，
+  process manifest SHA-256 `f814c98e415e1bee96af198bb36a2eefd91726f3264f26909217e4270afbdeeb`，protocol
+  vectors SHA-256 `ba7dc3bfd9fcb986ec8e93edf65402f8c956024cd9b29c1908777c67e24a4e62`；vendor 3067 files 未变。
+- 分级证据：canonical `render` `.sdlc/evidence/20260825-085407-render/`、affected `fast`
+  `.sdlc/evidence/20260825-085459-fast/`、sequential `server` `.sdlc/evidence/20260825-085621-server/` 与 Goal
+  `full` `.sdlc/evidence/20260825-091345-full/` 均绿；full 17/17 steps、1598.379 秒，覆盖 Node 24 Web
+  26 files/212 tests、runtime canary、Playwright 23 passed + 1 controlled skip、Draft 与 inference browser journeys；
+  状态回填后的 resolution `fast` `.sdlc/evidence/20260825-094253-fast/` 亦通过。
+- 状态为 `resolved / automated_verified`，精确能力标签为
+  `PREPARED_PNG_RESULT_KERNEL_AUTOMATED_VERIFIED_PROFILE_GATED`。RequestRegistry 仍不调用 success kernel；Profile
+  `NOT_REGISTERED`、certification `NOT_CERTIFIED`、process raster `ABSENT`、Product route `CLOSED`、native font
+  stack `BUILD_NOT_AUTHORIZED`。provider attempts/API Key reads/费用/真实数据=0，未 push/tag/PR，`/prototype`
+  不计最终产品交付。
+
 ## 66. TV1-T67 执行卡
 
 - 决策：T66 以 verified commit `a6fabe5` 收口且 worktree clean 后，复算原始 Ticket 10 §3/§7、

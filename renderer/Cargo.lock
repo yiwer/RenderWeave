@@ -297,6 +297,7 @@ name = "renderweave-renderer-daemon"
 version = "0.1.0"
 dependencies = [
  "renderweave-renderer-document",
+ "renderweave-renderer-engine",
  "renderweave-renderer-layout",
  "renderweave-renderer-protocol",
  "renderweave-renderer-resource",

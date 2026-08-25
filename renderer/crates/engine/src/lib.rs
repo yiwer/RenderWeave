@@ -265,6 +265,10 @@ impl EnginePngOutput {
     pub fn bytes(&self) -> &[u8] {
         &self.bytes
     }
+
+    pub fn into_bytes(self) -> Vec<u8> {
+        self.bytes
+    }
 }
 
 pub fn render_png(

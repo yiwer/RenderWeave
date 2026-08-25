@@ -545,6 +545,12 @@ Label: wayfinder:map
   transform，复用 authored order、ancestor/surface clip 与 exact PNG。Rust primary + Python A2 为 9 rendered +
   5 unsupported、14/14 cases、59 checks；canonical `render`、affected `fast`、sequential `server` 与 17-step
   `full` 均绿。general sampling/blend、daemon RESULT/Profile 和正式产品 route 继续关闭。
+- [接通 daemon prepared PNG Engine→RESULT 原子封存内核](issues/108-daemon-prepared-png-result-kernel.md) —
+  **resolved / automated_verified**；typed admitted Command/document、完整 prepared manifest、T107 Engine PNG 与
+  T98 result seal 已收敛为唯一 public deep Interface，daemon terminal/replay 可全有或全无表达 PROBLEM 或 ordered
+  RESULT_METADATA+RESULT_IMAGE。真实 empty/fetched IMAGE 路径与 pre-result negatives 共 3 项 integration tests、
+  daemon 12 项单测及 canonical `render`/`fast`/`server`/17-step `full` 均绿；RequestRegistry、Profile 与正式产品
+  route 继续关闭，不伪造 partial/test-only Profile。
 - [验证 Product Editor 状态、恢复与权威预览架构](issues/09-validate-product-editor-architecture.md) —
   throwaway 逻辑原型（`/prototype/editor-state-model`，不进产品 route）把冻结编辑器规则编码为确定性
   fixture 状态机：10 个引导走查场景 37/37 断言 + 自由操作冒烟 + 键盘焦点检查全部通过（Playwright A1，
