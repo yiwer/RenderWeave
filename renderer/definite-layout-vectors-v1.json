@@ -1,5 +1,5 @@
 {
-  "vectorVersion": "renderweave-definite-layout-vectors/55",
+  "vectorVersion": "renderweave-definite-layout-vectors/56",
   "authorityContext": {
     "layoutProfile": "renderweave-layout/1.0",
     "documentContract": "renderweave-render-node-contract-v1/2",
@@ -9,7 +9,7 @@
   "boundary": {
     "profileAvailability": "NOT_REGISTERED",
     "certificationStatus": "NOT_CERTIFIED",
-    "layoutImplementation": "RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_SINGLE_AND_INACTIVE_BOUND_OR_EXACT_TWO_FILL_SINGLE_ACTIVE_BOUND_WITHIN_REMAINING_OR_SINGLE_ACTIVE_MIN_OVERFLOW_OR_EXACT_TWO_FILL_TWO_MIN_SECOND_FREEZE_OVERFLOW_OR_EXACT_TWO_FILL_MIXED_ACTIVE_MIN_SECOND_MIN_FREEZE_OVERFLOW_OR_EXACT_TWO_FILL_MIXED_ACTIVE_MIN_SECOND_MIXED_MIN_FREEZE_OVERFLOW_OR_EXACT_TWO_FILL_TWO_MAX_SECOND_FREEZE_FREE_JUSTIFY_OR_EXACT_TWO_FILL_MIXED_ACTIVE_MAX_SECOND_MAX_FREEZE_FREE_JUSTIFY_OR_EXACT_THREE_FILL_SINGLE_ACTIVE_BOUND_ONE_REDISTRIBUTION_OR_EXACT_THREE_FILL_POST_REDISTRIBUTION_INACTIVE_BOUNDS_OR_EXACT_THREE_FILL_SECOND_MIN_FREEZE_LAST_REMAINDER_OR_EXACT_THREE_FILL_SECOND_MAX_FREEZE_LAST_REMAINDER_OR_EXACT_THREE_FILL_SECOND_MAX_FREEZE_TERMINAL_INACTIVE_MIN_OR_EXACT_THREE_FILL_SECOND_MAX_FREEZE_TERMINAL_INACTIVE_MAX_OR_EXACT_THREE_FILL_THIRD_MAX_FREEZE_FREE_JUSTIFY_OR_EXACT_THREE_FILL_SINGLE_ACTIVE_MIN_OVERFLOW_OR_EXACT_THREE_FILL_SECOND_MIN_FREEZE_OVERFLOW_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_INACTIVE_UNFROZEN_MAX_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_SECOND_MIN_FREEZE_OVERFLOW_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_SECOND_MIXED_MIN_FREEZE_OVERFLOW_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_SECOND_MIXED_MIN_FREEZE_OVERFLOW_TERMINAL_INACTIVE_MAX_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_TWO_MIXED_MIN_FREEZES_OVERFLOW_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_MIXED_AND_MIN_ONLY_FREEZES_OVERFLOW_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_TWO_MIN_ONLY_FREEZES_OVERFLOW_MULTI_MAIN_FILL_AND_FIXED_SINGLE_FRACTION_INDEPENDENT_MULTI_AUTO_GRID_MULTI_AUTO_SPAN_STABLE_DEFICIT_GRID_DEFINITE_MULTI_FRACTION_LAST_REMAINDER_GRID_EMPTY_CONTAINER_STACK_HUG_GRID_AUTO_HUG_CONTRIBUTION_GRID_HUG_EXACT_QUARTER_TURN_AFFINE_FRAME_GROUP_HUG_FIXED_OPPOSITE_AXIS_CROSS_FILL_DEFINITE_ABSOLUTE_PARENT_OFFER_DEFINITE_STACK_CROSS_OUTER_OFFER_STACK_MAIN_FILL_CROSS_HUG_REMEASURE_NESTED_STACK_MAIN_OFFER_PROPAGATION_COLUMNS_FIRST_GRID_CELL_OUTER_OFFER_STACK_MAIN_OFFER_COLUMNS_FIRST_GRID_CROSS_HUG_ABSOLUTE_PARENT_OFFER_COLUMNS_FIRST_GRID_CROSS_HUG_GRID_CELL_OFFER_COLUMNS_FIRST_NESTED_GRID_CROSS_HUG_GRID_CELL_OFFER_STACK_MAIN_FIRST_CROSS_HUG_DIRECTION_CHANGING_STACK_CROSS_OFFER_MAIN_HUG_NESTED_STACK_RESOLVED_OPPOSITE_OFFER_RECURSION_COLUMNS_FIRST_GRID_TERMINAL_NORMALIZATION_BOX_KERNEL",
+    "layoutImplementation": "RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_SINGLE_AND_INACTIVE_BOUND_OR_EXACT_TWO_FILL_SINGLE_ACTIVE_BOUND_WITHIN_REMAINING_OR_SINGLE_ACTIVE_MIN_OVERFLOW_OR_EXACT_TWO_FILL_TWO_MIN_SECOND_FREEZE_OVERFLOW_OR_EXACT_TWO_FILL_MIXED_ACTIVE_MIN_SECOND_MIN_FREEZE_OVERFLOW_OR_EXACT_TWO_FILL_MIXED_ACTIVE_MIN_SECOND_MIXED_MIN_FREEZE_OVERFLOW_OR_EXACT_TWO_FILL_MIXED_ACTIVE_MIN_SECOND_MIXED_TERMINAL_INACTIVE_OR_EXACT_TWO_FILL_TWO_MAX_SECOND_FREEZE_FREE_JUSTIFY_OR_EXACT_TWO_FILL_MIXED_ACTIVE_MAX_SECOND_MAX_FREEZE_FREE_JUSTIFY_OR_EXACT_THREE_FILL_SINGLE_ACTIVE_BOUND_ONE_REDISTRIBUTION_OR_EXACT_THREE_FILL_POST_REDISTRIBUTION_INACTIVE_BOUNDS_OR_EXACT_THREE_FILL_SECOND_MIN_FREEZE_LAST_REMAINDER_OR_EXACT_THREE_FILL_SECOND_MAX_FREEZE_LAST_REMAINDER_OR_EXACT_THREE_FILL_SECOND_MAX_FREEZE_TERMINAL_INACTIVE_MIN_OR_EXACT_THREE_FILL_SECOND_MAX_FREEZE_TERMINAL_INACTIVE_MAX_OR_EXACT_THREE_FILL_THIRD_MAX_FREEZE_FREE_JUSTIFY_OR_EXACT_THREE_FILL_SINGLE_ACTIVE_MIN_OVERFLOW_OR_EXACT_THREE_FILL_SECOND_MIN_FREEZE_OVERFLOW_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_INACTIVE_UNFROZEN_MAX_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_SECOND_MIN_FREEZE_OVERFLOW_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_SECOND_MIXED_MIN_FREEZE_OVERFLOW_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_SECOND_MIXED_MIN_FREEZE_OVERFLOW_TERMINAL_INACTIVE_MAX_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_TWO_MIXED_MIN_FREEZES_OVERFLOW_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_MIXED_AND_MIN_ONLY_FREEZES_OVERFLOW_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_TWO_MIN_ONLY_FREEZES_OVERFLOW_MULTI_MAIN_FILL_AND_FIXED_SINGLE_FRACTION_INDEPENDENT_MULTI_AUTO_GRID_MULTI_AUTO_SPAN_STABLE_DEFICIT_GRID_DEFINITE_MULTI_FRACTION_LAST_REMAINDER_GRID_EMPTY_CONTAINER_STACK_HUG_GRID_AUTO_HUG_CONTRIBUTION_GRID_HUG_EXACT_QUARTER_TURN_AFFINE_FRAME_GROUP_HUG_FIXED_OPPOSITE_AXIS_CROSS_FILL_DEFINITE_ABSOLUTE_PARENT_OFFER_DEFINITE_STACK_CROSS_OUTER_OFFER_STACK_MAIN_FILL_CROSS_HUG_REMEASURE_NESTED_STACK_MAIN_OFFER_PROPAGATION_COLUMNS_FIRST_GRID_CELL_OUTER_OFFER_STACK_MAIN_OFFER_COLUMNS_FIRST_GRID_CROSS_HUG_ABSOLUTE_PARENT_OFFER_COLUMNS_FIRST_GRID_CROSS_HUG_GRID_CELL_OFFER_COLUMNS_FIRST_NESTED_GRID_CROSS_HUG_GRID_CELL_OFFER_STACK_MAIN_FIRST_CROSS_HUG_DIRECTION_CHANGING_STACK_CROSS_OFFER_MAIN_HUG_NESTED_STACK_RESOLVED_OPPOSITE_OFFER_RECURSION_COLUMNS_FIRST_GRID_TERMINAL_NORMALIZATION_BOX_KERNEL",
     "worldTransformImplementation": "ABSENT",
     "sceneImplementation": "ABSENT",
     "rasterImplementation": "ABSENT",
@@ -6661,9 +6661,119 @@
         {"occurrenceId":"rwocc_0000000000000002","kind":"rect","layoutBox":{"xBits":"4034000000000000","yBits":"4042800000000000","widthBits":"4039000000000000","heightBits":"4024000000000000"},"contentBox":null},
         {"occurrenceId":"rwocc_0000000000000003","kind":"rect","layoutBox":{"xBits":"4049000000000000","yBits":"4024000000000000","widthBits":"404e000000000000","heightBits":"4043000000000000"},"contentBox":null}
       ]}
+    },
+    {
+      "id": "stack-two-main-fills-mixed-active-min-second-mixed-terminal-inactive-equality",
+      "baseSource": "fixtures",
+      "baseCase": "rowStack",
+      "mutations": [
+        {"operation":"replace","pointer":"/canvas/children/0/children/0/placement/widthMode","value":"FILL"},
+        {"operation":"remove","pointer":"/canvas/children/0/children/0/placement/widthPt"},
+        {"operation":"add","pointer":"/canvas/children/0/children/0/placement/fillWeight","value":1},
+        {"operation":"add","pointer":"/canvas/children/0/children/0/placement/minWidthPt","value":20},
+        {"operation":"add","pointer":"/canvas/children/0/children/0/placement/maxWidthPt","value":30},
+        {"operation":"add","pointer":"/canvas/children/0/children/1/placement/minWidthPt","value":60},
+        {"operation":"add","pointer":"/canvas/children/0/children/1/placement/maxWidthPt","value":70},
+        {"operation":"replace","pointer":"/canvas/children/0/children/1/placement/widthMode","value":"FILL"},
+        {"operation":"remove","pointer":"/canvas/children/0/children/1/placement/widthPt"},
+        {"operation":"add","pointer":"/canvas/children/0/children/1/placement/fillWeight","value":2}
+      ],
+      "expected":{"entries":[
+        {"occurrenceId":"rwocc_0000000000000000","kind":"canvas","layoutBox":{"xBits":"0000000000000000","yBits":"0000000000000000","widthBits":"405e000000000000","heightBits":"4054000000000000"},"contentBox":{"xBits":"0000000000000000","yBits":"0000000000000000","widthBits":"405e000000000000","heightBits":"4054000000000000"}},
+        {"occurrenceId":"rwocc_0000000000000001","kind":"stack","layoutBox":{"xBits":"4024000000000000","yBits":"4014000000000000","widthBits":"4059000000000000","heightBits":"4049000000000000"},"contentBox":{"xBits":"4030000000000000","yBits":"4020000000000000","widthBits":"4056800000000000","heightBits":"4045000000000000"}},
+        {"occurrenceId":"rwocc_0000000000000002","kind":"rect","layoutBox":{"xBits":"4034000000000000","yBits":"4042800000000000","widthBits":"4034000000000000","heightBits":"4024000000000000"},"contentBox":null},
+        {"occurrenceId":"rwocc_0000000000000003","kind":"rect","layoutBox":{"xBits":"4046800000000000","yBits":"4024000000000000","widthBits":"404e000000000000","heightBits":"4043000000000000"},"contentBox":null}
+      ]}
+    },
+    {
+      "id": "stack-two-main-fills-mixed-active-first-min-second-mixed-terminal-inactive",
+      "baseSource": "fixtures",
+      "baseCase": "rowStack",
+      "mutations": [
+        {"operation":"replace","pointer":"/canvas/children/0/children/0/placement/widthMode","value":"FILL"},
+        {"operation":"remove","pointer":"/canvas/children/0/children/0/placement/widthPt"},
+        {"operation":"add","pointer":"/canvas/children/0/children/0/placement/fillWeight","value":1},
+        {"operation":"add","pointer":"/canvas/children/0/children/0/placement/minWidthPt","value":30},
+        {"operation":"add","pointer":"/canvas/children/0/children/0/placement/maxWidthPt","value":40},
+        {"operation":"add","pointer":"/canvas/children/0/children/1/placement/minWidthPt","value":45},
+        {"operation":"add","pointer":"/canvas/children/0/children/1/placement/maxWidthPt","value":55},
+        {"operation":"replace","pointer":"/canvas/children/0/children/1/placement/widthMode","value":"FILL"},
+        {"operation":"remove","pointer":"/canvas/children/0/children/1/placement/widthPt"},
+        {"operation":"add","pointer":"/canvas/children/0/children/1/placement/fillWeight","value":2}
+      ],
+      "expected":{"entries":[
+        {"occurrenceId":"rwocc_0000000000000000","kind":"canvas","layoutBox":{"xBits":"0000000000000000","yBits":"0000000000000000","widthBits":"405e000000000000","heightBits":"4054000000000000"},"contentBox":{"xBits":"0000000000000000","yBits":"0000000000000000","widthBits":"405e000000000000","heightBits":"4054000000000000"}},
+        {"occurrenceId":"rwocc_0000000000000001","kind":"stack","layoutBox":{"xBits":"4024000000000000","yBits":"4014000000000000","widthBits":"4059000000000000","heightBits":"4049000000000000"},"contentBox":{"xBits":"4030000000000000","yBits":"4020000000000000","widthBits":"4056800000000000","heightBits":"4045000000000000"}},
+        {"occurrenceId":"rwocc_0000000000000002","kind":"rect","layoutBox":{"xBits":"4034000000000000","yBits":"4042800000000000","widthBits":"403e000000000000","heightBits":"4024000000000000"},"contentBox":null},
+        {"occurrenceId":"rwocc_0000000000000003","kind":"rect","layoutBox":{"xBits":"404b800000000000","yBits":"4024000000000000","widthBits":"4049000000000000","heightBits":"4043000000000000"},"contentBox":null}
+      ]}
+    },
+    {
+      "id": "stack-column-two-main-fills-mixed-active-first-min-second-mixed-terminal-inactive",
+      "baseSource": "fixtures",
+      "baseCase": "columnStack",
+      "mutations": [
+        {"operation":"add","pointer":"/canvas/children/0/children/0/placement/minHeightPt","value":40},
+        {"operation":"add","pointer":"/canvas/children/0/children/0/placement/maxHeightPt","value":50},
+        {"operation":"replace","pointer":"/canvas/children/0/children/0/placement/heightMode","value":"FILL"},
+        {"operation":"remove","pointer":"/canvas/children/0/children/0/placement/heightPt"},
+        {"operation":"add","pointer":"/canvas/children/0/children/0/placement/fillWeight","value":1},
+        {"operation":"add","pointer":"/canvas/children/0/children/1/placement/minHeightPt","value":45},
+        {"operation":"add","pointer":"/canvas/children/0/children/1/placement/maxHeightPt","value":70},
+        {"operation":"replace","pointer":"/canvas/children/0/children/1/placement/heightMode","value":"FILL"},
+        {"operation":"remove","pointer":"/canvas/children/0/children/1/placement/heightPt"},
+        {"operation":"add","pointer":"/canvas/children/0/children/1/placement/fillWeight","value":2}
+      ],
+      "expected":{"entries":[
+        {"occurrenceId":"rwocc_0000000000000000","kind":"canvas","layoutBox":{"xBits":"0000000000000000","yBits":"0000000000000000","widthBits":"4059000000000000","heightBits":"405e000000000000"},"contentBox":{"xBits":"0000000000000000","yBits":"0000000000000000","widthBits":"4059000000000000","heightBits":"405e000000000000"}},
+        {"occurrenceId":"rwocc_0000000000000001","kind":"stack","layoutBox":{"xBits":"4014000000000000","yBits":"4024000000000000","widthBits":"404e000000000000","heightBits":"4059000000000000"},"contentBox":{"xBits":"4014000000000000","yBits":"4024000000000000","widthBits":"404e000000000000","heightBits":"4059000000000000"}},
+        {"occurrenceId":"rwocc_0000000000000002","kind":"rect","layoutBox":{"xBits":"4038000000000000","yBits":"4028000000000000","widthBits":"4034000000000000","heightBits":"4044000000000000"},"contentBox":null},
+        {"occurrenceId":"rwocc_0000000000000003","kind":"rect","layoutBox":{"xBits":"4024000000000000","yBits":"404d000000000000","widthBits":"4049000000000000","heightBits":"4049800000000000"},"contentBox":null}
+      ]}
+    },
+    {
+      "id": "stack-two-main-fills-mixed-active-first-min-terminal-inactive-remeasures-cross-hug",
+      "baseSource": "fixtures",
+      "baseCase": "stackDfsUnsupported",
+      "mutations": [
+        {"operation":"add","pointer":"/canvas/children/0/children/0/placement/minWidthPt","value":45},
+        {"operation":"add","pointer":"/canvas/children/0/children/0/placement/maxWidthPt","value":55},
+        {"operation":"replace","pointer":"/canvas/children/0/children/0/placement/widthMode","value":"FILL"},
+        {"operation":"remove","pointer":"/canvas/children/0/children/0/placement/widthPt"},
+        {"operation":"add","pointer":"/canvas/children/0/children/0/placement/fillWeight","value":1},
+        {"operation":"replace","pointer":"/canvas/children/0/children/0/placement/heightMode","value":"HUG_CONTENT"},
+        {"operation":"remove","pointer":"/canvas/children/0/children/0/placement/heightPt"},
+        {"operation":"add","pointer":"/canvas/children/0/children/1/placement/minWidthPt","value":30},
+        {"operation":"add","pointer":"/canvas/children/0/children/1/placement/maxWidthPt","value":45}
+      ],
+      "expected":{"entries":[
+        {"occurrenceId":"rwocc_0000000000000000","kind":"canvas","layoutBox":{"xBits":"0000000000000000","yBits":"0000000000000000","widthBits":"4054000000000000","heightBits":"4044000000000000"},"contentBox":{"xBits":"0000000000000000","yBits":"0000000000000000","widthBits":"4054000000000000","heightBits":"4044000000000000"}},
+        {"occurrenceId":"rwocc_0000000000000001","kind":"stack","layoutBox":{"xBits":"0000000000000000","yBits":"0000000000000000","widthBits":"4054000000000000","heightBits":"4044000000000000"},"contentBox":{"xBits":"0000000000000000","yBits":"0000000000000000","widthBits":"4054000000000000","heightBits":"4044000000000000"}},
+        {"occurrenceId":"rwocc_0000000000000002","kind":"frame","layoutBox":{"xBits":"0000000000000000","yBits":"0000000000000000","widthBits":"4046800000000000","heightBits":"4024000000000000"},"contentBox":{"xBits":"0000000000000000","yBits":"0000000000000000","widthBits":"4046800000000000","heightBits":"4024000000000000"}},
+        {"occurrenceId":"rwocc_0000000000000003","kind":"frame","layoutBox":{"xBits":"0000000000000000","yBits":"0000000000000000","widthBits":"4024000000000000","heightBits":"4024000000000000"},"contentBox":{"xBits":"4018000000000000","yBits":"4018000000000000","widthBits":"0000000000000000","heightBits":"0000000000000000"}},
+        {"occurrenceId":"rwocc_0000000000000004","kind":"rect","layoutBox":{"xBits":"4046800000000000","yBits":"0000000000000000","widthBits":"4041800000000000","heightBits":"4034000000000000"},"contentBox":null}
+      ]}
     }
   ],
   "unsupportedCases": [
+    {
+      "id": "stack-two-main-fills-mixed-multiple-active-bounds-remain-unsupported",
+      "baseSource": "fixtures",
+      "baseCase": "rowStack",
+      "mutations": [
+        {"operation":"replace","pointer":"/canvas/children/0/children/0/placement/widthMode","value":"FILL"},
+        {"operation":"remove","pointer":"/canvas/children/0/children/0/placement/widthPt"},
+        {"operation":"add","pointer":"/canvas/children/0/children/0/placement/fillWeight","value":1},
+        {"operation":"add","pointer":"/canvas/children/0/children/0/placement/minWidthPt","value":30},
+        {"operation":"add","pointer":"/canvas/children/0/children/0/placement/maxWidthPt","value":40},
+        {"operation":"add","pointer":"/canvas/children/0/children/1/placement/minWidthPt","value":60},
+        {"operation":"add","pointer":"/canvas/children/0/children/1/placement/maxWidthPt","value":70},
+        {"operation":"replace","pointer":"/canvas/children/0/children/1/placement/widthMode","value":"FILL"},
+        {"operation":"remove","pointer":"/canvas/children/0/children/1/placement/widthPt"},
+        {"operation":"add","pointer":"/canvas/children/0/children/1/placement/fillWeight","value":2}
+      ],
+      "expected":{"feature":"STACK_MAIN_FILL","occurrenceId":"rwocc_0000000000000002"}
+    },
     {
       "id": "grid-column-auto-does-not-read-future-row-fill-offer",
       "baseSource": "layoutPreflight",
@@ -6910,24 +7020,6 @@
         {"operation":"replace","pointer":"/canvas/children/0/children/2/placement/widthMode","value":"FILL"},
         {"operation":"remove","pointer":"/canvas/children/0/children/2/placement/widthPt"},
         {"operation":"add","pointer":"/canvas/children/0/children/2/placement/fillWeight","value":1}
-      ],
-      "expected":{"feature":"STACK_MAIN_FILL","occurrenceId":"rwocc_0000000000000002"}
-    },
-    {
-      "id": "stack-two-main-fills-mixed-active-min-second-mixed-inactive-after-freeze-remains-unsupported",
-      "baseSource": "fixtures",
-      "baseCase": "rowStack",
-      "mutations": [
-        {"operation":"replace","pointer":"/canvas/children/0/children/0/placement/widthMode","value":"FILL"},
-        {"operation":"remove","pointer":"/canvas/children/0/children/0/placement/widthPt"},
-        {"operation":"add","pointer":"/canvas/children/0/children/0/placement/fillWeight","value":1},
-        {"operation":"add","pointer":"/canvas/children/0/children/0/placement/minWidthPt","value":20},
-        {"operation":"add","pointer":"/canvas/children/0/children/0/placement/maxWidthPt","value":30},
-        {"operation":"add","pointer":"/canvas/children/0/children/1/placement/minWidthPt","value":60},
-        {"operation":"add","pointer":"/canvas/children/0/children/1/placement/maxWidthPt","value":70},
-        {"operation":"replace","pointer":"/canvas/children/0/children/1/placement/widthMode","value":"FILL"},
-        {"operation":"remove","pointer":"/canvas/children/0/children/1/placement/widthPt"},
-        {"operation":"add","pointer":"/canvas/children/0/children/1/placement/fillWeight","value":2}
       ],
       "expected":{"feature":"STACK_MAIN_FILL","occurrenceId":"rwocc_0000000000000002"}
     },

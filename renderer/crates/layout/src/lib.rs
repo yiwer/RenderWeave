@@ -2567,6 +2567,19 @@ fn stack_main_fill_allocations(
             };
             return Ok(allocations);
         }
+        if unfrozen_offer <= unfrozen_maximum {
+            allocations[active_position].1 = if frozen_bound > 0.0 {
+                frozen_bound
+            } else {
+                0.0
+            };
+            allocations[unfrozen_position].1 = if unfrozen_offer > 0.0 {
+                unfrozen_offer
+            } else {
+                0.0
+            };
+            return Ok(allocations);
+        }
     }
     if !active_is_minimum
         && active_maximum.is_some()

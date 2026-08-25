@@ -2115,6 +2115,46 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
 - 状态为 `resolved / automated_verified`。完整 Profile `NOT_REGISTERED`、certification `NOT_CERTIFIED`、process
   raster `ABSENT`、public Rendering API 与正式产品 route `CLOSED`；未推进 J1/A3/READY，未 push/tag/PR。
 
+## 115. TV1-T115 执行卡
+
+- 决策：T114 以 verified commit `d05aeedf` 收口且 worktree clean 后，按最终产品门槛重新计算完整 Renderer
+  frontier。Profile 不能以 partial/test-only 注册，native build 仍未获授权；现有 16 个 Layout unsupported 中，
+  exactly-two mixed active-min 冻结后另一 mixed child 保持 inactive 的 case 不依赖 tolerance/native stack，因而是
+  当前最短安全纵切。
+- Interface/seam：只深化既有 `stack_main_fill_allocations`；public layout/Engine API、admission/preflight、
+  `StackChildMeasurement`、arrange、authored DFS first-error 与全有或全无 output 不变。Rust/Python 使用独立控制流
+  但共享冻结 vectors。
+- 精确语义：恰好两个 main FILL、首轮恰好一个合法 mixed active-min，另一 mixed child 首轮 inactive；冻结 active
+  min 后唯一 offer 仍在另一项 `[min,max]` 闭区间时直接分配并终止，不做第二轮 division、loop、epsilon 或
+  residual tolerance。equality 接受。
+- 允许影响：T115 tracker/map/plan/NOTES、layout Rust module/tests、shared definite-layout vector `/56`、Python
+  independent verifier、render gate identity/assertions/evidence。
+- 禁止影响：首轮多个 active、offer 再命中 bound、three-or-more/four-or-more 一般 water filling、rows→columns、
+  任意非直角 rotation、Text/compositionViewport、scene/JPEG、Profile registration、native build、Java/OpenAPI/Web/
+  正式产品 route、formal records、physical certification、J1/A3/READY 与外部副作用。
+- TDD/gates：既有 terminal-inactive negative 转 positive，新增 active-first、COLUMN、cross-HUG/equality positives与
+  exactly-two multiple-active negative；Rust/Python 共同 RED 后独立 GREEN。focused/local → `render` → affected
+  `fast` → sequential `server` → Goal `full` → resolution `fast`；Maven 不并发，精确 staging，不 push/tag/PR。
+
+### TV1-T115 收口
+
+- shared definite-layout vector `/56` 已完成 256 laid-out + 16 unsupported、272/272 cases、814 checks；Rust
+  focused 3/3 与 Python independent A2 精确一致，vector SHA-256 为
+  `59930774870ae972d0122d36cec779d64ebb62506a6732ce30fc4f1649c7f751`。
+- positive coverage 包含 inactive offer 区间内部与 equality、active-first、ROW/COLUMN、deferred cross-HUG；
+  exactly-two 首轮多个 active bound 继续以 negative 关闭。未引入第二轮 division、loop、epsilon/tolerance。
+- canonical `render` `.sdlc/evidence/20260825-172505-render/`、affected `fast`
+  `.sdlc/evidence/20260825-172558-fast/`、sequential `server`
+  `.sdlc/evidence/20260825-172621-server/` 与 17-step Goal `full`
+  `.sdlc/evidence/20260825-174449-full/` 均 exit 0；full 17/17 steps、1611.192 秒，Node 24 Web 217/217、
+  Playwright 23 passed + 1 controlled skip、runtime canary passed。
+- 状态与证据回填后的 resolution `fast` `.sdlc/evidence/20260825-181334-fast/` 也以 3/3 steps exit 0。
+- server/full 同时暴露测试上下文退出后 `TemplateAssetStaleConsumer` 继续访问已停止 Testcontainers PostgreSQL
+  的生命周期噪声；不改写 T115 语义，下一票独立修复并验证生产默认调度仍开启、测试默认关闭且接线可复核。
+- 状态为 `resolved / automated_verified`。Profile `NOT_REGISTERED`、certification `NOT_CERTIFIED`、process
+  raster `ABSENT`、native stack `BUILD_NOT_AUTHORIZED`、public Rendering API 与正式产品 route `CLOSED`；
+  provider attempts/API Key reads/reservations/cost/真实数据=0，未推进 J1/A3/READY，未 push/tag/PR。
+
 ## 111. TV1-T111 执行卡
 
 - 决策：T110 以 verified commit `4cbc3b68` 收口且 worktree clean 后，复核 Ticket 10 §6、Ticket 16 §8 与

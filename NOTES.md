@@ -1,6 +1,19 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-25 **Template v1 implementation TV1-T115 已由 Codex `/root` single-writer 完成，状态
+  `resolved/automated_verified`**：最终交付仍是正式产品 Template-v1 页面与真实功能，`/prototype` 不计交付。
+  exactly-two main FILL 现支持首轮唯一 mixed active-min 冻结后，另一 mixed child 的唯一 offer 仍在 authored
+  `[min,max]` 闭区间时直接终止；两端 equality、active-first、ROW/COLUMN 与 deferred cross-HUG 均已冻结。
+  shared `/56` 为 256 laid-out + 16 unsupported、272/272 cases、814 checks，vector SHA-256 为
+  `59930774870ae972d0122d36cec779d64ebb62506a6732ce30fc4f1649c7f751`。canonical `render`
+  `.sdlc/evidence/20260825-172505-render/`、`fast` `.sdlc/evidence/20260825-172558-fast/`、顺序 `server`
+  `.sdlc/evidence/20260825-172621-server/` 与 17-step `full` `.sdlc/evidence/20260825-174449-full/` 均绿。
+  状态与证据回填后的 resolution `fast` `.sdlc/evidence/20260825-181334-fast/` 也以 3/3 steps 通过。
+  full 暴露的 `TemplateAssetStaleConsumer` 测试上下文退出后继续访问已停止 PostgreSQL 的生命周期噪声将作为
+  下一独立质量纵切处理。Profile `NOT_REGISTERED`、certification `NOT_CERTIFIED`、process raster `ABSENT`、
+  native stack `BUILD_NOT_AUTHORIZED`、public Rendering API/正式产品 route `CLOSED`；provider/API Key/费用/
+  真实数据=0，不 push/tag/PR。
 - 2026-08-25 **Template v1 implementation TV1-T114 已由 Codex `/root` single-writer 完成，状态
   `resolved/automated_verified`**：用户要求的最终交付是正式产品 Template-v1 页面与真实功能，不是
   `/prototype`。本票已补 same-ownerScope、`template.read` 授权的 ACTIVE Template 稳定 cursor 目录、

@@ -591,6 +591,11 @@ Label: wayfinder:map
   状态回填后的 resolution `fast` `.sdlc/evidence/20260825-170428-fast/` 也以 3/3 steps 通过。
   E6 与完整 Renderer Profile 未完成前仍不接入 `App` route，不使用 fixture、disabled preview 或 `/prototype`
   冒充最终产品。
+- [实现 definite Stack 两 FILL mixed active-min 后 mixed inactive 终止子闭包](issues/115-definite-stack-two-fill-mixed-active-min-terminal-inactive.md) —
+  **resolved / automated_verified**；只深化 exactly-two main FILL：首轮唯一 mixed active-min 冻结后，另一
+  mixed child 的唯一 offer 仍位于 `[min,max]` 时直接终止。shared `/56` 为 256 laid-out + 16 unsupported、
+  272/272 cases、814 checks；`render`/`fast`/顺序 `server`/17-step `full` 与 resolution `fast` 均绿。一般 water
+  filling、Profile/native build/public Rendering API/正式产品 route 继续关闭，`/prototype` 不计最终交付。
 - [验证 Product Editor 状态、恢复与权威预览架构](issues/09-validate-product-editor-architecture.md) —
   throwaway 逻辑原型（`/prototype/editor-state-model`，不进产品 route）把冻结编辑器规则编码为确定性
   fixture 状态机：10 个引导走查场景 37/37 断言 + 自由操作冒烟 + 键盘焦点检查全部通过（Playwright A1，
