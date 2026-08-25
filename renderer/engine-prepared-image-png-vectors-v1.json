@@ -1,12 +1,15 @@
 {
-  "vectorVersion": "renderweave-engine-prepared-image-png-vectors/3",
+  "vectorVersion": "renderweave-engine-prepared-image-png-vectors/4",
   "authorityContext": {
     "layoutProfile": "renderweave-layout/1.0",
     "resourcePreparationProfile": "renderweave-renderer/1.0",
     "imagePixels": "EXACT_ORIENTATION_NORMALIZED_STRAIGHT_RGBA8",
     "degenerateMapping": "SOURCE_AND_INTEGER_DEVICE_BOX_EXACT_1_TO_1_CENTERED_UNIT_QUARTER_TURN_NO_RESAMPLE",
+    "samplingMapping": "INTEGER_DEVICE_BOX_HALF_INTEGER_CENTER_INVERSE_EDGE_COORDINATE_CONTAIN_COVER_FILL",
+    "nearestTieRule": "EXACT_EQUAL_DISTANCE_TO_LOWER_SOURCE_INDEX_EDGE_CLAMP",
+    "linearArithmetic": "SOURCE_PREMULTIPLY_RGBA8_EXACT_RATIONAL_BILINEAR_SINGLE_ROUND_HALF_UP_EDGE_CLAMP",
     "alphaArithmetic": "STRAIGHT_TO_PREMULTIPLIED_MUL255_SOURCE_OVER_AUTHORED_ORDER_SUBTREE_OPACITY_ROUND_HALF_UP_255_SINGLE_FINAL_UNPREMULTIPLY",
-    "enginePreparedImageKernel": "PREPARED_IMAGE_ALPHA_1_TO_1_CENTERED_UNIT_QUARTER_TURN_PREMULTIPLIED_SOURCE_OVER_SUBTREE_OPACITY_ROUND_HALF_UP_ISOLATION_EXACT_PNG_AUTOMATED_VERIFIED_PROFILE_GATED",
+    "enginePreparedImageKernel": "PREPARED_IMAGE_INTEGER_BOX_CONTAIN_COVER_FILL_NEAREST_LINEAR_EXACT_RATIONAL_PREMULTIPLIED_SOURCE_OVER_CENTERED_UNIT_QUARTER_TURN_SUBTREE_OPACITY_EXACT_PNG_AUTOMATED_VERIFIED_PROFILE_GATED",
     "profileAvailability": "NOT_REGISTERED",
     "certificationStatus": "NOT_CERTIFIED",
     "processRasterImplementation": "ABSENT",
@@ -308,10 +311,65 @@
       "mutations": [{"operation": "replace", "pointer": "/canvas/children/0/transform/rotationDeg", "value": 90}, {"operation": "replace", "pointer": "/canvas/children/0/opacity", "value": 0.5}, {"operation": "replace", "pointer": "/canvas/children/0/placement/xPt", "value": -0.75}],
       "dpi": 96,
       "expected": {"widthPx": 4, "heightPx": 3, "mediaType": "image/png", "outputProfile": "renderweave-output-png/1.0", "byteLength": 153, "contentSha256": "sha256:303498cb65f74ff29c737dcca75ff9ef57da6156153342a9dc0fce3dba6c0dab", "pixelSha256": "sha256:890343be31b480ab5fe7a8eec405d47477509e11885cb3ac28922822d56a3f89", "exactHex": "89504e470d0a1a0a0000000d4948445200000004000000030806000000b4f4aec6000000017352474200aece1ce9000000097048597300000ec400000ec401952b0e1b0000003e494441547801013300ccff00112233ff112233ff112233ff112233ff00881119ff112233ff112233ff112233ff00089119ff112233ff112233ff112233ffa87011551e153a380000000049454e44ae426082"}
+    },
+    {
+      "id": "fill-linear-width-resampling",
+      "resourceFixtureId": "opaque2x2",
+      "mutations": [{"operation": "replace", "pointer": "/canvas/children/0/fit", "value": "FILL"}, {"operation": "replace", "pointer": "/canvas/children/0/placement/widthPt", "value": 2.25}],
+      "dpi": 96,
+      "expected": {"widthPx": 4, "heightPx": 3, "mediaType": "image/png", "outputProfile": "renderweave-output-png/1.0", "byteLength": 153, "contentSha256": "sha256:e384cdf560f23929cc5aba4cd90d574e04434f39b149c500363cec7adb946392", "pixelSha256": "sha256:9fe07aa05e7840af8a2dc244b8521009f980e26fc93e7afd4dfdac155b2cf2ff", "exactHex": "89504e470d0a1a0a0000000d4948445200000004000000030806000000b4f4aec6000000017352474200aece1ce9000000097048597300000ec400000ec401952b0e1b0000003e494441547801013300ccff00112233ff112233ff112233ff112233ff00112233ffff0000ff808000ff00ff00ff00112233ff0000ffff808080ffffff00ffda5615d4c416914a0000000049454e44ae426082"}
+    },
+    {
+      "id": "fill-nearest-width-resampling-tie-lower",
+      "resourceFixtureId": "opaque2x2",
+      "mutations": [{"operation": "replace", "pointer": "/canvas/children/0/fit", "value": "FILL"}, {"operation": "replace", "pointer": "/canvas/children/0/sampling", "value": "NEAREST"}, {"operation": "replace", "pointer": "/canvas/children/0/placement/widthPt", "value": 2.25}],
+      "dpi": 96,
+      "expected": {"widthPx": 4, "heightPx": 3, "mediaType": "image/png", "outputProfile": "renderweave-output-png/1.0", "byteLength": 153, "contentSha256": "sha256:4633026c12e7f449a604100629c39d2afd5787e4d9b43b3428fd2ad4464f89d4", "pixelSha256": "sha256:7be94a106b3e836bca3b792c8b6d9a9974ff4756de16c5efefaf000b4700a866", "exactHex": "89504e470d0a1a0a0000000d4948445200000004000000030806000000b4f4aec6000000017352474200aece1ce9000000097048597300000ec400000ec401952b0e1b0000003e494441547801013300ccff00112233ff112233ff112233ff112233ff00112233ffff0000ffff0000ff00ff00ff00112233ff0000ffff0000ffffffff00ffd637155273b7c09c0000000049454e44ae426082"}
+    },
+    {
+      "id": "fill-linear-alpha-width-resampling",
+      "resourceFixtureId": "alpha2x2",
+      "mutations": [{"operation": "replace", "pointer": "/canvas/children/0/fit", "value": "FILL"}, {"operation": "replace", "pointer": "/canvas/children/0/placement/widthPt", "value": 2.25}],
+      "dpi": 96,
+      "expected": {"widthPx": 4, "heightPx": 3, "mediaType": "image/png", "outputProfile": "renderweave-output-png/1.0", "byteLength": 153, "contentSha256": "sha256:a25635f92ca01d301f75c6b114b367910848b6fc37222a2ece3c2ec9ab726901", "pixelSha256": "sha256:72734dd9ee963df0f909b408c8d7eef962d62ca0e09b8c5130345736773c802e", "exactHex": "89504e470d0a1a0a0000000d4948445200000004000000030806000000b4f4aec6000000017352474200aece1ce9000000097048597300000ec400000ec401952b0e1b0000003e494441547801013300ccff00112233ff112233ff112233ff112233ff00112233ff112233ff28253aff3f263fff00112233ff0d7f5aff11534cff14283cffa96e11f8c85235fb0000000049454e44ae426082"}
+    },
+    {
+      "id": "fill-linear-both-axes-downsample",
+      "resourceFixtureId": "opaque2x2",
+      "mutations": [{"operation": "replace", "pointer": "/canvas/children/0/fit", "value": "FILL"}, {"operation": "replace", "pointer": "/canvas/children/0/placement/widthPt", "value": 0.75}, {"operation": "replace", "pointer": "/canvas/children/0/placement/heightPt", "value": 0.75}],
+      "dpi": 96,
+      "expected": {"widthPx": 4, "heightPx": 3, "mediaType": "image/png", "outputProfile": "renderweave-output-png/1.0", "byteLength": 153, "contentSha256": "sha256:1c245257d249f149a19e06c5a4c5e17d964149f7fa9da5c3be0df3af4888ee86", "pixelSha256": "sha256:719986b0a88c17e372a23036c3236c2dadfa2fc1adf63d5e2269aa0929359b3d", "exactHex": "89504e470d0a1a0a0000000d4948445200000004000000030806000000b4f4aec6000000017352474200aece1ce9000000097048597300000ec400000ec401952b0e1b0000003e494441547801013300ccff00112233ff112233ff112233ff112233ff00112233ff808040ff112233ff112233ff00112233ff112233ff112233ff112233ffb2141197de53175e0000000049454e44ae426082"}
+    },
+    {
+      "id": "contain-linear-centered-transparent-bars",
+      "resourceFixtureId": "opaque2x2",
+      "mutations": [{"operation": "replace", "pointer": "/canvas/children/0/placement/xPt", "value": 0}, {"operation": "replace", "pointer": "/canvas/children/0/placement/widthPt", "value": 3}],
+      "dpi": 96,
+      "expected": {"widthPx": 4, "heightPx": 3, "mediaType": "image/png", "outputProfile": "renderweave-output-png/1.0", "byteLength": 153, "contentSha256": "sha256:b0016907d8ebd40c41e69bad693d13a859f4dc7e7efd70b0dbfdd41ee8ec4c47", "pixelSha256": "sha256:eef996d9612d4a5587bb5a007c11180da6fbc461ce613c5ff9a0a96988a72884", "exactHex": "89504e470d0a1a0a0000000d4948445200000004000000030806000000b4f4aec6000000017352474200aece1ce9000000097048597300000ec400000ec401952b0e1b0000003e494441547801013300ccff00112233ff112233ff112233ff112233ff00112233ffff0000ff00ff00ff112233ff00112233ff0000ffffffff00ff112233ffcc3014205fc158330000000049454e44ae426082"}
+    },
+    {
+      "id": "cover-nearest-centered-crop",
+      "resourceFixtureId": "opaque2x2",
+      "mutations": [{"operation": "replace", "pointer": "/canvas/children/0/fit", "value": "COVER"}, {"operation": "replace", "pointer": "/canvas/children/0/sampling", "value": "NEAREST"}, {"operation": "replace", "pointer": "/canvas/children/0/placement/widthPt", "value": 2.25}, {"operation": "replace", "pointer": "/canvas/children/0/placement/heightPt", "value": 0.75}],
+      "dpi": 96,
+      "expected": {"widthPx": 4, "heightPx": 3, "mediaType": "image/png", "outputProfile": "renderweave-output-png/1.0", "byteLength": 153, "contentSha256": "sha256:6dfea3f6f5aaf45053040affe466ea6207103815752b81183c74625470b126f8", "pixelSha256": "sha256:746a3b743f2cdc091443c59f24f33cfe4fa79d1cae305d726e7f7e132516da39", "exactHex": "89504e470d0a1a0a0000000d4948445200000004000000030806000000b4f4aec6000000017352474200aece1ce9000000097048597300000ec400000ec401952b0e1b0000003e494441547801013300ccff00112233ff112233ff112233ff112233ff00112233ffff0000ffff0000ff00ff00ff00112233ff112233ff112233ff112233ffc7461288923baf4d0000000049454e44ae426082"}
+    },
+    {
+      "id": "contain-linear-square-upsample",
+      "resourceFixtureId": "opaque2x2",
+      "mutations": [{"operation": "replace", "pointer": "/canvas/children/0/placement/yPt", "value": 0}, {"operation": "replace", "pointer": "/canvas/children/0/placement/widthPt", "value": 2.25}, {"operation": "replace", "pointer": "/canvas/children/0/placement/heightPt", "value": 2.25}],
+      "dpi": 96,
+      "expected": {"widthPx": 4, "heightPx": 3, "mediaType": "image/png", "outputProfile": "renderweave-output-png/1.0", "byteLength": 153, "contentSha256": "sha256:38c19fd031a6f53e480abfcb41548d1e6ae925f49fa6c842fc95a352ea17d3ca", "pixelSha256": "sha256:049f24a4d77998f013141c66fd9e79e3acad0880ee31fdcde18df413f630951f", "exactHex": "89504e470d0a1a0a0000000d4948445200000004000000030806000000b4f4aec6000000017352474200aece1ce9000000097048597300000ec400000ec401952b0e1b0000003e494441547801013300ccff00112233ffff0000ff808000ff00ff00ff00112233ff800080ff808040ff80ff00ff00112233ff0000ffff808080ffffff00ff3553186176db79200000000049454e44ae426082"}
+    },
+    {
+      "id": "fill-linear-clip-and-opacity-preserve-mapping",
+      "resourceFixtureId": "opaque2x2",
+      "mutations": [{"operation": "replace", "pointer": "/canvas/children/0/fit", "value": "FILL"}, {"operation": "replace", "pointer": "/canvas/children/0/placement/xPt", "value": -0.75}, {"operation": "replace", "pointer": "/canvas/children/0/placement/widthPt", "value": 2.25}, {"operation": "replace", "pointer": "/canvas/children/0/opacity", "value": 0.5}],
+      "dpi": 96,
+      "expected": {"widthPx": 4, "heightPx": 3, "mediaType": "image/png", "outputProfile": "renderweave-output-png/1.0", "byteLength": 153, "contentSha256": "sha256:6a00298ae7f322a4f7a1c0f9a73b996adf37fc3687cbe70d5baa0265653cb998", "pixelSha256": "sha256:13966b3d89dcf4a6b7adaddbb38bce6bae029ac0e1e365d90493ab48170af124", "exactHex": "89504e470d0a1a0a0000000d4948445200000004000000030806000000b4f4aec6000000017352474200aece1ce9000000097048597300000ec400000ec401952b0e1b0000003e494441547801013300ccff00112233ff112233ff112233ff112233ff00485119ff089119ff112233ff112233ff00485159ff889119ff112233ff112233ffbda612adf6a610220000000049454e44ae426082"}
     }
   ],
   "unsupportedCases": [
-    {"id": "width-resampling-fails-closed", "resourceFixtureId": "opaque2x2", "mutations": [{"operation": "replace", "pointer": "/canvas/children/0/placement/widthPt", "value": 2.25}], "dpi": 96, "expectedFeature": "IMAGE_RESAMPLING"},
     {"id": "subpixel-image-box-fails-closed", "resourceFixtureId": "opaque2x2", "mutations": [{"operation": "replace", "pointer": "/canvas/children/0/placement/xPt", "value": 0.1}], "dpi": 96, "expectedFeature": "NON_PIXEL_ALIGNED_IMAGE"},
     {"id": "non-quarter-turn-image-fails-closed", "resourceFixtureId": "opaque2x2", "mutations": [{"operation": "replace", "pointer": "/canvas/children/0/transform/rotationDeg", "value": 45}], "dpi": 96, "expectedFeature": "IMAGE_PAINT"}
   ]

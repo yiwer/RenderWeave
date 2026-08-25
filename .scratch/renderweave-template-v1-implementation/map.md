@@ -628,6 +628,13 @@ Label: wayfinder:map
   288/288 cases、868 checks，vector SHA-256 `21267a5713ddcc68aa49d6c479e11c8776d54e14c08de74e2bb80e64ecaf3633`；
   `render`/`fast`/sequential `server`/17-step Goal `full` 均绿。Profile、daemon success/public Rendering API、E6 与
   正式产品 route 继续关闭，`/prototype` 不计最终交付。
+- [实现 prepared IMAGE 整数 box 采样内核](issues/121-prepared-image-integer-box-resampling.md) —
+  **resolved / automated_verified**；在唯一 prepared-resource Engine Interface 内闭合零旋转整数 device box 的
+  `CONTAIN | COVER | FILL`、`LINEAR | NEAREST`，以 exact rational inverse mapping、lower-index tie、edge clamp 与
+  premultiplied RGBA8 single-HALF_UP bilinear 保持 byte-exact 输出。shared `/4` 为 31 rendered + 2 unsupported、
+  33/33 cases、195 checks，vector SHA-256 `0165159dba1ad90c75faaef7e1e5d7254c8adff6e1c0e388fbea44d715148295`；
+  `render`/`fast`/sequential `server`/17-step Goal `full` 均绿。Profile、daemon success/public Rendering API、E6、
+  正式 `/templates` route 与 native build 继续关闭，`/prototype` 不计最终交付。
 - [验证 Product Editor 状态、恢复与权威预览架构](issues/09-validate-product-editor-architecture.md) —
   throwaway 逻辑原型（`/prototype/editor-state-model`，不进产品 route）把冻结编辑器规则编码为确定性
   fixture 状态机：10 个引导走查场景 37/37 断言 + 自由操作冒烟 + 键盘焦点检查全部通过（Playwright A1，

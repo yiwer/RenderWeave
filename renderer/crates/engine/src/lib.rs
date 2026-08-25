@@ -149,6 +149,36 @@ enum PixelQuarterTurn {
     Clockwise270,
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum PixelImageFit {
+    Contain,
+    Cover,
+    Fill,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum PixelImageSampling {
+    Linear,
+    Nearest,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+struct PixelSampleAxis {
+    source_size: u32,
+    box_size: u32,
+    scale_numerator: u32,
+    scale_denominator: u32,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+struct PixelLinearAxis {
+    lower_index: u32,
+    upper_index: u32,
+    lower_weight: i128,
+    upper_weight: i128,
+    denominator: i128,
+}
+
 impl PixelQuarterTurn {
     fn source_coordinate(
         self,
@@ -175,6 +205,104 @@ impl PixelQuarterTurn {
     }
 }
 
+impl PixelSampleAxis {
+    fn source_edge_coordinate(self, destination: u32) -> Option<(i128, i128)> {
+        if destination >= self.box_size
+            || self.source_size == 0
+            || self.box_size == 0
+            || self.scale_numerator == 0
+            || self.scale_denominator == 0
+        {
+            return None;
+        }
+        let numerator = (i128::from(destination) * 2 + 1 - i128::from(self.box_size))
+            * i128::from(self.scale_denominator)
+            + i128::from(self.source_size) * i128::from(self.scale_numerator);
+        let denominator = i128::from(self.scale_numerator) * 2;
+        if numerator < 0 || numerator >= i128::from(self.source_size) * denominator {
+            None
+        } else {
+            Some((numerator, denominator))
+        }
+    }
+
+    fn nearest_index(self, destination: u32) -> Option<u32> {
+        let (edge_numerator, edge_denominator) = self.source_edge_coordinate(destination)?;
+        let center_numerator = edge_numerator * 2 - edge_denominator;
+        let center_denominator = edge_denominator * 2;
+        let lower = center_numerator.div_euclid(center_denominator);
+        let remainder = center_numerator.rem_euclid(center_denominator);
+        let nearest = if remainder * 2 > center_denominator {
+            lower + 1
+        } else {
+            lower
+        };
+        Some(clamp_source_index(nearest, self.source_size))
+    }
+
+    fn linear_axis(self, destination: u32) -> Option<PixelLinearAxis> {
+        let (edge_numerator, edge_denominator) = self.source_edge_coordinate(destination)?;
+        let center_numerator = edge_numerator * 2 - edge_denominator;
+        let center_denominator = edge_denominator * 2;
+        let lower = center_numerator.div_euclid(center_denominator);
+        let upper = lower + 1;
+        let upper_weight = center_numerator.rem_euclid(center_denominator);
+        Some(PixelLinearAxis {
+            lower_index: clamp_source_index(lower, self.source_size),
+            upper_index: clamp_source_index(upper, self.source_size),
+            lower_weight: center_denominator - upper_weight,
+            upper_weight,
+            denominator: center_denominator,
+        })
+    }
+}
+
+fn clamp_source_index(index: i128, source_size: u32) -> u32 {
+    index.clamp(0, i128::from(source_size - 1)) as u32
+}
+
+fn image_sample_axes(
+    fit: PixelImageFit,
+    device_width: u32,
+    device_height: u32,
+    source_width: u32,
+    source_height: u32,
+) -> (PixelSampleAxis, PixelSampleAxis) {
+    let (x_scale_numerator, x_scale_denominator, y_scale_numerator, y_scale_denominator) = match fit
+    {
+        PixelImageFit::Fill => (device_width, source_width, device_height, source_height),
+        PixelImageFit::Contain | PixelImageFit::Cover => {
+            let width_ratio_is_smaller_or_equal = u64::from(device_width)
+                * u64::from(source_height)
+                <= u64::from(device_height) * u64::from(source_width);
+            let choose_width = match fit {
+                PixelImageFit::Contain => width_ratio_is_smaller_or_equal,
+                PixelImageFit::Cover => !width_ratio_is_smaller_or_equal,
+                PixelImageFit::Fill => unreachable!(),
+            };
+            if choose_width {
+                (device_width, source_width, device_width, source_width)
+            } else {
+                (device_height, source_height, device_height, source_height)
+            }
+        }
+    };
+    (
+        PixelSampleAxis {
+            source_size: source_width,
+            box_size: device_width,
+            scale_numerator: x_scale_numerator,
+            scale_denominator: x_scale_denominator,
+        },
+        PixelSampleAxis {
+            source_size: source_height,
+            box_size: device_height,
+            scale_numerator: y_scale_numerator,
+            scale_denominator: y_scale_denominator,
+        },
+    )
+}
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 struct PixelImage<'resource> {
     left: u32,
@@ -183,8 +311,13 @@ struct PixelImage<'resource> {
     bottom: u32,
     destination_x_offset: u32,
     destination_y_offset: u32,
+    device_width: u32,
+    device_height: u32,
     source_width: u32,
     source_height: u32,
+    sample_x: PixelSampleAxis,
+    sample_y: PixelSampleAxis,
+    sampling: PixelImageSampling,
     quarter_turn: PixelQuarterTurn,
     straight_rgba8: &'resource [u8],
 }
@@ -803,13 +936,25 @@ fn prepare_image_paint<'resource>(
             EnginePngUnsupported::ImagePaint,
         ));
     };
-    if !matches!(text_member(node, "fit")?, "CONTAIN" | "COVER" | "FILL")
-        || !matches!(text_member(node, "sampling")?, "LINEAR" | "NEAREST")
-    {
-        return Err(EnginePngError::Contract(
-            "admitted Image fit or sampling token is invalid",
-        ));
-    }
+    let fit = match text_member(node, "fit")? {
+        "CONTAIN" => PixelImageFit::Contain,
+        "COVER" => PixelImageFit::Cover,
+        "FILL" => PixelImageFit::Fill,
+        _ => {
+            return Err(EnginePngError::Contract(
+                "admitted Image fit or sampling token is invalid",
+            ));
+        }
+    };
+    let sampling = match text_member(node, "sampling")? {
+        "LINEAR" => PixelImageSampling::Linear,
+        "NEAREST" => PixelImageSampling::Nearest,
+        _ => {
+            return Err(EnginePngError::Contract(
+                "admitted Image fit or sampling token is invalid",
+            ));
+        }
+    };
 
     let resource_id = text_member(node, "imageResourceId")?;
     let Some(PreparedRenderResource::Image { image, .. }) = prepared_resources.get(resource_id)
@@ -821,6 +966,11 @@ fn prepare_image_paint<'resource>(
     if image.resource_id() != resource_id {
         return Err(EnginePngError::Contract(
             "prepared IMAGE resource identity diverged from the admitted scene",
+        ));
+    }
+    if image.width_px() == 0 || image.height_px() == 0 {
+        return Err(EnginePngError::Contract(
+            "prepared IMAGE dimensions must be non-zero",
         ));
     }
     let source_length = u64::from(image.width_px())
@@ -878,18 +1028,32 @@ fn prepare_image_paint<'resource>(
             "Image device box is not monotonic",
         ));
     }
-    if device_right - device_left != i128::from(image.width_px())
-        || device_bottom - device_top != i128::from(image.height_px())
-    {
-        return Err(EnginePngError::Unsupported(
-            EnginePngUnsupported::ImageResampling,
-        ));
+    let device_width = u32::try_from(device_right - device_left)
+        .map_err(|_| EnginePngError::Contract("Image device width exceeds engine bounds"))?;
+    let device_height = u32::try_from(device_bottom - device_top)
+        .map_err(|_| EnginePngError::Contract("Image device height exceeds engine bounds"))?;
+    if device_width == 0 || device_height == 0 {
+        return Ok(None);
     }
-    if quarter_turn != PixelQuarterTurn::Zero && image.width_px() != image.height_px() {
-        return Err(EnginePngError::Unsupported(
-            EnginePngUnsupported::ImagePaint,
-        ));
+    if quarter_turn != PixelQuarterTurn::Zero {
+        if device_width != image.width_px() || device_height != image.height_px() {
+            return Err(EnginePngError::Unsupported(
+                EnginePngUnsupported::ImageResampling,
+            ));
+        }
+        if image.width_px() != image.height_px() {
+            return Err(EnginePngError::Unsupported(
+                EnginePngUnsupported::ImagePaint,
+            ));
+        }
     }
+    let (sample_x, sample_y) = image_sample_axes(
+        fit,
+        device_width,
+        device_height,
+        image.width_px(),
+        image.height_px(),
+    );
 
     let self_clip = PixelClip {
         left: clip_device_edge(device_left, surface_width),
@@ -909,10 +1073,10 @@ fn prepare_image_paint<'resource>(
     let copied_height = destination.bottom - destination.top;
     if destination_x_offset
         .checked_add(copied_width)
-        .is_none_or(|right| right > image.width_px())
+        .is_none_or(|right| right > device_width)
         || destination_y_offset
             .checked_add(copied_height)
-            .is_none_or(|bottom| bottom > image.height_px())
+            .is_none_or(|bottom| bottom > device_height)
     {
         return Err(EnginePngError::Contract(
             "Image destination clip exceeds prepared pixels",
@@ -925,8 +1089,13 @@ fn prepare_image_paint<'resource>(
         bottom: destination.bottom,
         destination_x_offset,
         destination_y_offset,
+        device_width,
+        device_height,
         source_width: image.width_px(),
         source_height: image.height_px(),
+        sample_x,
+        sample_y,
+        sampling,
         quarter_turn,
         straight_rgba8: source,
     }))
@@ -1570,23 +1739,48 @@ fn paint_image_row(
     let destination_local_y = image
         .destination_y_offset
         .checked_add(destination_y - image.top)
-        .filter(|destination_row| *destination_row < image.source_height)
+        .filter(|destination_row| *destination_row < image.device_height)
         .ok_or(EnginePngError::Contract(
-            "Image destination row exceeds prepared pixels",
+            "Image destination row exceeds its device box",
         ))?;
+    let mut dirty_range = None;
     for destination_x in image.left..image.right {
         let destination_local_x = image
             .destination_x_offset
             .checked_add(destination_x - image.left)
-            .filter(|destination_column| *destination_column < image.source_width)
+            .filter(|destination_column| *destination_column < image.device_width)
             .ok_or(EnginePngError::Contract(
-                "Image destination column exceeds prepared pixels",
+                "Image destination column exceeds its device box",
             ))?;
+        let Some(source) =
+            sample_image_premultiplied(image, destination_local_x, destination_local_y)?
+        else {
+            continue;
+        };
+        let destination_offset = usize::try_from(destination_x)
+            .ok()
+            .and_then(|value| value.checked_mul(4))
+            .ok_or(EnginePngError::RasterAllocation)?;
+        let destination = row
+            .get_mut(destination_offset..destination_offset + 4)
+            .ok_or(EnginePngError::RasterAllocation)?;
+        source_over_premultiplied_rgba8(destination, &source)?;
+        dirty_range = union_dirty_range(dirty_range, (destination_x, destination_x + 1));
+    }
+    Ok(dirty_range)
+}
+
+fn sample_image_premultiplied(
+    image: PixelImage<'_>,
+    destination_x: u32,
+    destination_y: u32,
+) -> Result<Option<[u8; 4]>, EnginePngError> {
+    if image.quarter_turn != PixelQuarterTurn::Zero {
         let (source_x, source_y) = image
             .quarter_turn
             .source_coordinate(
-                destination_local_x,
-                destination_local_y,
+                destination_x,
+                destination_y,
                 image.source_width,
                 image.source_height,
             )
@@ -1596,27 +1790,77 @@ fn paint_image_row(
             .ok_or(EnginePngError::Contract(
                 "Image quarter-turn source coordinate exceeds prepared pixels",
             ))?;
-        let source_offset = (u64::from(source_y) * u64::from(image.source_width)
-            + u64::from(source_x))
+        return source_premultiplied_pixel(image, source_x, source_y).map(Some);
+    }
+
+    match image.sampling {
+        PixelImageSampling::Nearest => {
+            let Some(source_x) = image.sample_x.nearest_index(destination_x) else {
+                return Ok(None);
+            };
+            let Some(source_y) = image.sample_y.nearest_index(destination_y) else {
+                return Ok(None);
+            };
+            source_premultiplied_pixel(image, source_x, source_y).map(Some)
+        }
+        PixelImageSampling::Linear => {
+            let Some(source_x) = image.sample_x.linear_axis(destination_x) else {
+                return Ok(None);
+            };
+            let Some(source_y) = image.sample_y.linear_axis(destination_y) else {
+                return Ok(None);
+            };
+            let total_weight = source_x.denominator * source_y.denominator;
+            let mut weighted_channels = [0_i128; 4];
+            for (source_column, horizontal_weight) in [
+                (source_x.lower_index, source_x.lower_weight),
+                (source_x.upper_index, source_x.upper_weight),
+            ] {
+                for (source_row, vertical_weight) in [
+                    (source_y.lower_index, source_y.lower_weight),
+                    (source_y.upper_index, source_y.upper_weight),
+                ] {
+                    let source = source_premultiplied_pixel(image, source_column, source_row)?;
+                    let weight = horizontal_weight * vertical_weight;
+                    for channel in 0..4 {
+                        weighted_channels[channel] += i128::from(source[channel]) * weight;
+                    }
+                }
+            }
+            let mut sampled = [0_u8; 4];
+            for channel in 0..4 {
+                let rounded = (weighted_channels[channel] * 2 + total_weight) / (total_weight * 2);
+                sampled[channel] = u8::try_from(rounded)
+                    .map_err(|_| EnginePngError::Contract("Image linear sample exceeded RGBA8"))?;
+            }
+            Ok(Some(sampled))
+        }
+    }
+}
+
+fn source_premultiplied_pixel(
+    image: PixelImage<'_>,
+    source_x: u32,
+    source_y: u32,
+) -> Result<[u8; 4], EnginePngError> {
+    if source_x >= image.source_width || source_y >= image.source_height {
+        return Err(EnginePngError::Contract(
+            "Image source coordinate exceeds prepared pixels",
+        ));
+    }
+    let source_offset = (u64::from(source_y) * u64::from(image.source_width) + u64::from(source_x))
         .checked_mul(4)
         .and_then(|value| usize::try_from(value).ok())
         .ok_or(EnginePngError::RasterAllocation)?;
-        let source = image
-            .straight_rgba8
-            .get(source_offset..source_offset + 4)
-            .ok_or(EnginePngError::Contract(
-                "Image source pixel exceeds prepared pixels",
-            ))?;
-        let destination_offset = usize::try_from(destination_x)
-            .ok()
-            .and_then(|value| value.checked_mul(4))
-            .ok_or(EnginePngError::RasterAllocation)?;
-        let destination = row
-            .get_mut(destination_offset..destination_offset + 4)
-            .ok_or(EnginePngError::RasterAllocation)?;
-        source_over_straight_rgba8(destination, source)?;
-    }
-    Ok(Some((image.left, image.right)))
+    let source = image
+        .straight_rgba8
+        .get(source_offset..source_offset + 4)
+        .ok_or(EnginePngError::Contract(
+            "Image source pixel exceeds prepared pixels",
+        ))?;
+    Ok(premultiply_straight_rgba8(source.try_into().map_err(
+        |_| EnginePngError::Contract("Image source pixel is not RGBA8"),
+    )?))
 }
 
 fn composite_opacity_row(

@@ -2348,6 +2348,44 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
   `ABSENT`、native stack `BUILD_NOT_AUTHORIZED`、daemon success/public Rendering API/E6/正式产品 route `CLOSED`；
   Text shaping、world scene、JPEG 与最终产品接线继续后续 DAG，`/prototype` 不计交付。
 
+## 121. TV1-T121 执行卡
+
+- 决策：T120 以 verified commit `f453101b` 收口且 worktree clean 后，复算 Ticket 10 §6、Ticket 16 §5/§8/§12
+  与 prepared IMAGE `/3` 的 3 个 negatives。Ticket 16 已冻结 half-integer pixel center、premultiplied RGBA8
+  bilinear、nearest Profile tie 与 edge clamp；整数 device box 的零旋转 resampling 可在现有 Engine deep Interface
+  内完整定义，不依赖未授权 native stack，因此登记为当前 single-writer frontier。
+- Interface/seam：只深化 `render_png_with_prepared_resources` 内部 `PixelImage` mapping/sample；prepared resource、
+  Layout、surface、alpha/source-over、PNG output 与 daemon seal public Interface 不变。Rust/Python 使用独立控制流，
+  共享 frozen input/output vectors。
+- 精确语义：`FILL` 两轴独立、`CONTAIN/COVER` exact ratio + centered mapping；目标 half-integer center 以有理数
+  inverse-map 到 source edge coordinate。NEAREST 同距取较小 source index；LINEAR 对 premultiplied RGBA8 四邻域
+  做一次 exact rational product-sum 与 HALF_UP；source edge clamp，CONTAIN bars 不绘制。
+- 允许影响：T121 tracker/map/plan/NOTES、Engine Rust private command/raster/tests、prepared IMAGE shared vectors `/4`、
+  Python independent verifier与 render-gate exact identity/count/hash/evidence。
+- 禁止影响：subpixel box/coverage/AA、任意角度或 resampled rotation、ancestor transform、Text/vector/QR/Barcode、
+  JPEG/LayoutTrace、native build、Profile registration/certification、RequestRegistry success、public Rendering API/E6、
+  Java/OpenAPI/Web/正式 route、formal records、physical certification、J1/A3/READY 与外部副作用。
+- TDD/gates：既有 width-resampling negative 先转 `FILL + LINEAR` positive，使 Rust/Python 在同一 case 共同 RED；
+  GREEN 后补 NEAREST tie、LINEAR alpha、downsample、CONTAIN bars、COVER crop、clip/opacity positives，并保留 subpixel/
+  45° negatives。focused/local → canonical `render` → affected `fast` → sequential `server` → Goal `full` →
+  resolution `fast`；Maven 不并发，精确 staging，不 push/tag/PR，`/prototype` 不计最终产品交付。
+- 结果：既有唯一 prepared-resource Engine Interface 已闭合零旋转整数 box 的 `CONTAIN | COVER | FILL` 与
+  `LINEAR | NEAREST`；half-integer center exact rational inverse mapping、lower-index tie、edge clamp、premultiplied
+  RGBA8 exact bilinear single HALF_UP、透明 bars/居中 crop、clip/opacity/source-over 均在同一 raster path 完成。
+  exact 1:1 quarter-turn 回归保持，subpixel 与 45° rotation 仍 fail closed。
+- shared `/4` 为 31 rendered + 2 unsupported、33/33 cases、195 independent checks，vector SHA-256
+  `0165159dba1ad90c75faaef7e1e5d7254c8adff6e1c0e388fbea44d715148295`；focused Rust/Python、fmt/check/clippy、
+  Windows/Linux workspace、JSON inventory/SHA/unique 与旧 Engine/daemon regression 均绿。
+- 分级 A1：canonical `render` `.sdlc/evidence/20260825-233831-render/`（59.681 秒）、affected `fast`
+  `.sdlc/evidence/20260825-233944-fast/`（11.123 秒）、sequential `server`
+  `.sdlc/evidence/20260825-234002-server/`（673.432 秒）与 17-step Goal `full`
+  `.sdlc/evidence/20260825-235123-full/`（1131.999 秒）均 passed；full 覆盖 Node 24 Web 217/217、runtime canary、
+  Playwright 23 passed + 1 controlled skip 与 Draft/inference browser journeys，provider/API Key/费用/真实数据=0；
+  状态回填后的 resolution `fast` `.sdlc/evidence/20260826-001253-fast/` 也以 3/3 steps、12.824 秒通过。
+- 状态为 `resolved / automated_verified`。Profile `NOT_REGISTERED`、certification `NOT_CERTIFIED`、process raster
+  `ABSENT`、native stack `BUILD_NOT_AUTHORIZED`、daemon success/public Rendering API/E6/正式 `/templates` route
+  `CLOSED`；Text shaping、world scene、JPEG 与最终产品接线继续后续 DAG，`/prototype` 不计交付。
+
 ## 111. TV1-T111 执行卡
 
 - 决策：T110 以 verified commit `4cbc3b68` 收口且 worktree clean 后，复核 Ticket 10 §6、Ticket 16 §8 与

@@ -705,22 +705,25 @@ try {
     $enginePreparedImagePngIndependent =
         Get-Content -Raw -Encoding UTF8 -LiteralPath $enginePreparedImagePngReport |
             ConvertFrom-Json
-    if ($enginePreparedImagePngIndependent.verifier -ne 'renderweave-engine-prepared-image-png-python-independent/3' `
+    if ($enginePreparedImagePngIndependent.verifier -ne 'renderweave-engine-prepared-image-png-python-independent/4' `
             -or $enginePreparedImagePngIndependent.result -ne 'PASS' `
             -or $enginePreparedImagePngIndependent.assurance -ne 'A2' `
-            -or $enginePreparedImagePngIndependent.renderedCases -ne 23 `
-            -or $enginePreparedImagePngIndependent.unsupportedCases -ne 3 `
-            -or $enginePreparedImagePngIndependent.passed -ne 26 `
-            -or $enginePreparedImagePngIndependent.total -ne 26 `
+            -or $enginePreparedImagePngIndependent.renderedCases -ne 31 `
+            -or $enginePreparedImagePngIndependent.unsupportedCases -ne 2 `
+            -or $enginePreparedImagePngIndependent.passed -ne 33 `
+            -or $enginePreparedImagePngIndependent.total -ne 33 `
             -or $enginePreparedImagePngIndependent.failed -ne 0 `
-            -or $enginePreparedImagePngIndependent.checks -ne 160 `
-            -or $enginePreparedImagePngIndependent.vectorSha256 -ne 'a9f849611f0075e413eda281e0b40c4cec8efbae9bf607122e4d8975c0c480ec' `
+            -or $enginePreparedImagePngIndependent.checks -ne 195 `
+            -or $enginePreparedImagePngIndependent.vectorSha256 -ne '0165159dba1ad90c75faaef7e1e5d7254c8adff6e1c0e388fbea44d715148295' `
             -or $enginePreparedImagePngIndependent.layoutProfile -ne 'renderweave-layout/1.0' `
             -or $enginePreparedImagePngIndependent.resourcePreparationProfile -ne 'renderweave-renderer/1.0' `
             -or $enginePreparedImagePngIndependent.imagePixels -ne 'EXACT_ORIENTATION_NORMALIZED_STRAIGHT_RGBA8' `
             -or $enginePreparedImagePngIndependent.degenerateMapping -ne 'SOURCE_AND_INTEGER_DEVICE_BOX_EXACT_1_TO_1_CENTERED_UNIT_QUARTER_TURN_NO_RESAMPLE' `
+            -or $enginePreparedImagePngIndependent.samplingMapping -ne 'INTEGER_DEVICE_BOX_HALF_INTEGER_CENTER_INVERSE_EDGE_COORDINATE_CONTAIN_COVER_FILL' `
+            -or $enginePreparedImagePngIndependent.nearestTieRule -ne 'EXACT_EQUAL_DISTANCE_TO_LOWER_SOURCE_INDEX_EDGE_CLAMP' `
+            -or $enginePreparedImagePngIndependent.linearArithmetic -ne 'SOURCE_PREMULTIPLY_RGBA8_EXACT_RATIONAL_BILINEAR_SINGLE_ROUND_HALF_UP_EDGE_CLAMP' `
             -or $enginePreparedImagePngIndependent.alphaArithmetic -ne 'STRAIGHT_TO_PREMULTIPLIED_MUL255_SOURCE_OVER_AUTHORED_ORDER_SUBTREE_OPACITY_ROUND_HALF_UP_255_SINGLE_FINAL_UNPREMULTIPLY' `
-            -or $enginePreparedImagePngIndependent.enginePreparedImageKernel -ne 'PREPARED_IMAGE_ALPHA_1_TO_1_CENTERED_UNIT_QUARTER_TURN_PREMULTIPLIED_SOURCE_OVER_SUBTREE_OPACITY_ROUND_HALF_UP_ISOLATION_EXACT_PNG_AUTOMATED_VERIFIED_PROFILE_GATED' `
+            -or $enginePreparedImagePngIndependent.enginePreparedImageKernel -ne 'PREPARED_IMAGE_INTEGER_BOX_CONTAIN_COVER_FILL_NEAREST_LINEAR_EXACT_RATIONAL_PREMULTIPLIED_SOURCE_OVER_CENTERED_UNIT_QUARTER_TURN_SUBTREE_OPACITY_EXACT_PNG_AUTOMATED_VERIFIED_PROFILE_GATED' `
             -or $enginePreparedImagePngIndependent.profileAvailability -ne 'NOT_REGISTERED' `
             -or $enginePreparedImagePngIndependent.certificationStatus -ne 'NOT_CERTIFIED' `
             -or $enginePreparedImagePngIndependent.processRasterImplementation -ne 'ABSENT' `
@@ -996,6 +999,9 @@ try {
             vectorSha256 = $enginePreparedImagePngIndependent.vectorSha256
             imagePixels = $enginePreparedImagePngIndependent.imagePixels
             degenerateMapping = $enginePreparedImagePngIndependent.degenerateMapping
+            samplingMapping = $enginePreparedImagePngIndependent.samplingMapping
+            nearestTieRule = $enginePreparedImagePngIndependent.nearestTieRule
+            linearArithmetic = $enginePreparedImagePngIndependent.linearArithmetic
             alphaArithmetic = $enginePreparedImagePngIndependent.alphaArithmetic
             enginePreparedImageKernel = $enginePreparedImagePngIndependent.enginePreparedImageKernel
         }
@@ -1024,7 +1030,7 @@ try {
             preparedImageLayout = 'PREPARED_IMAGE_FIXED_FILL_SINGLE_AXIS_HUG_LOGICAL_RATIO_ABSOLUTE_STACK_GRID_CONTAINER_AUTOMATED_VERIFIED_UNWIRED'
             outputPngKernel = 'AUTOMATED_VERIFIED_UNWIRED'
             enginePngKernel = 'PREORDER_DEFINITE_IDENTITY_GROUP_FRAME_STACK_GRID_COMPOSITION_VIEWPORT_SOURCE_CANVAS_BACKGROUND_CONTAIN_CENTER_HOST_SOURCE_HARD_CLIP_RECT_PIXEL_ALIGNED_SOLID_ALPHA_PREMULTIPLIED_SOURCE_OVER_SUBTREE_OPACITY_ROUND_HALF_UP_ISOLATION_RECTANGULAR_CLIP_VISIBILITY_ZERO_OPACITY_SUPPRESSION_PNG_KERNEL_PROFILE_GATED'
-            preparedImageEnginePngKernel = 'PREPARED_IMAGE_ALPHA_1_TO_1_CENTERED_UNIT_QUARTER_TURN_PREMULTIPLIED_SOURCE_OVER_SUBTREE_OPACITY_ROUND_HALF_UP_ISOLATION_EXACT_PNG_AUTOMATED_VERIFIED_PROFILE_GATED'
+            preparedImageEnginePngKernel = 'PREPARED_IMAGE_INTEGER_BOX_CONTAIN_COVER_FILL_NEAREST_LINEAR_EXACT_RATIONAL_PREMULTIPLIED_SOURCE_OVER_CENTERED_UNIT_QUARTER_TURN_SUBTREE_OPACITY_EXACT_PNG_AUTOMATED_VERIFIED_PROFILE_GATED'
             daemonOutputPath = 'UNWIRED'
             rendererReady = $false
             ticket19Closed = $false

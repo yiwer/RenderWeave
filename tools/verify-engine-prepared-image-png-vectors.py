@@ -370,9 +370,12 @@ def prepare_image(
     quarter_turn = centered_unit_quarter_turn(child)
     if quarter_turn is None:
         return {"feature": "IMAGE_PAINT"}
-    if child.get("fit") not in {"CONTAIN", "COVER", "FILL"} or child.get(
-        "sampling"
-    ) not in {"LINEAR", "NEAREST"}:
+    fit = child.get("fit")
+    sampling = child.get("sampling")
+    if fit not in {"CONTAIN", "COVER", "FILL"} or sampling not in {
+        "LINEAR",
+        "NEAREST",
+    }:
         raise VerificationFailure("admitted Image fit or sampling token is invalid")
     resource_id = child.get("imageResourceId")
     if resource_id not in prepared_images:
@@ -395,9 +398,13 @@ def prepare_image(
     if any(edge is None for edge in edges):
         return {"feature": "NON_PIXEL_ALIGNED_IMAGE"}
     left, top, device_right, device_bottom = (int(edge) for edge in edges)
-    if device_right - left != source_width or device_bottom - top != source_height:
-        return {"feature": "IMAGE_RESAMPLING"}
+    device_width = device_right - left
+    device_height = device_bottom - top
+    if device_width == 0 or device_height == 0:
+        return None
     if quarter_turn != 0:
+        if device_width != source_width or device_height != source_height:
+            return {"feature": "IMAGE_RESAMPLING"}
         if source_width != source_height:
             return {"feature": "IMAGE_PAINT"}
         source = rotate_square_rgba8(source, source_width, quarter_turn)
@@ -410,25 +417,29 @@ def prepare_image(
     destination = engine.intersect_clip(self_clip, active_clip)
     if destination[0] == destination[2] or destination[1] == destination[3]:
         return None
-    source_left = destination[0] - left
-    source_top = destination[1] - top
+    destination_left = destination[0] - left
+    destination_top = destination[1] - top
     copied_width = destination[2] - destination[0]
     copied_height = destination[3] - destination[1]
     if (
-        source_left < 0
-        or source_top < 0
-        or source_left + copied_width > source_width
-        or source_top + copied_height > source_height
+        destination_left < 0
+        or destination_top < 0
+        or destination_left + copied_width > device_width
+        or destination_top + copied_height > device_height
     ):
-        raise VerificationFailure("Image source clip exceeds prepared pixels")
+        raise VerificationFailure("Image clip exceeds its device box")
     return (
         "image",
         destination,
-        source_left,
-        source_top,
+        left,
+        top,
+        device_width,
+        device_height,
         source_width,
         source_height,
         source,
+        fit,
+        sampling,
     )
 
 
@@ -566,6 +577,16 @@ def source_over_straight_rgba8(
     if len(destination_premultiplied) != 4:
         raise VerificationFailure("destination pixel is not RGBA8")
     source = premultiply_straight_rgba8(source_straight)
+    return source_over_premultiplied_rgba8(destination_premultiplied, source)
+
+
+def source_over_premultiplied_rgba8(
+    destination_premultiplied: bytes | bytearray,
+    source_premultiplied: bytes | bytearray,
+) -> bytes:
+    if len(destination_premultiplied) != 4 or len(source_premultiplied) != 4:
+        raise VerificationFailure("premultiplied source-over pixel is not RGBA8")
+    source = bytes(source_premultiplied)
     inverse_source_alpha = 255 - source[3]
     return bytes(
         min(
@@ -594,23 +615,171 @@ def unpremultiply_rgba8_surface(pixels: bytearray) -> None:
             )
 
 
-def paint_image(pixels: bytearray, surface_width: int, command: tuple[Any, ...]) -> None:
-    _, destination, source_left, source_top, source_width, source_height, source = command
+def image_axis_scales(
+    fit: str,
+    device_width: int,
+    device_height: int,
+    source_width: int,
+    source_height: int,
+) -> tuple[tuple[int, int], tuple[int, int]]:
+    if fit == "FILL":
+        return (device_width, source_width), (device_height, source_height)
+    width_ratio_is_smaller_or_equal = (
+        device_width * source_height <= device_height * source_width
+    )
+    use_width = width_ratio_is_smaller_or_equal if fit == "CONTAIN" else not width_ratio_is_smaller_or_equal
+    uniform = (
+        (device_width, source_width)
+        if use_width
+        else (device_height, source_height)
+    )
+    return uniform, uniform
+
+
+def source_edge_fraction(
+    destination: int,
+    box_size: int,
+    source_size: int,
+    scale: tuple[int, int],
+) -> tuple[int, int] | None:
+    scale_numerator, scale_denominator = scale
+    numerator = (
+        (2 * destination + 1 - box_size) * scale_denominator
+        + source_size * scale_numerator
+    )
+    denominator = 2 * scale_numerator
+    if numerator < 0 or numerator >= source_size * denominator:
+        return None
+    return numerator, denominator
+
+
+def nearest_source_index(position: tuple[int, int], source_size: int) -> int:
+    edge_numerator, edge_denominator = position
+    center_numerator = 2 * edge_numerator - edge_denominator
+    center_denominator = 2 * edge_denominator
+    lower, remainder = divmod(center_numerator, center_denominator)
+    selected = lower + (1 if remainder * 2 > center_denominator else 0)
+    return min(max(selected, 0), source_size - 1)
+
+
+def linear_source_axis(
+    position: tuple[int, int], source_size: int
+) -> tuple[tuple[int, int], tuple[int, int], int]:
+    edge_numerator, edge_denominator = position
+    center_numerator = 2 * edge_numerator - edge_denominator
+    denominator = 2 * edge_denominator
+    lower, upper_weight = divmod(center_numerator, denominator)
+    upper = lower + 1
+    return (
+        (min(max(lower, 0), source_size - 1), denominator - upper_weight),
+        (min(max(upper, 0), source_size - 1), upper_weight),
+        denominator,
+    )
+
+
+def premultiplied_source_pixel(
+    source: bytes, source_width: int, source_height: int, x: int, y: int
+) -> bytes:
+    if x < 0 or x >= source_width or y < 0 or y >= source_height:
+        raise VerificationFailure("Image source coordinate exceeds prepared pixels")
+    offset = (y * source_width + x) * 4
+    return premultiply_straight_rgba8(source[offset : offset + 4])
+
+
+def sample_image_pixel(
+    source: bytes,
+    source_width: int,
+    source_height: int,
+    destination_x: int,
+    destination_y: int,
+    device_width: int,
+    device_height: int,
+    fit: str,
+    sampling: str,
+) -> bytes | None:
+    x_scale, y_scale = image_axis_scales(
+        fit, device_width, device_height, source_width, source_height
+    )
+    x_position = source_edge_fraction(
+        destination_x, device_width, source_width, x_scale
+    )
+    y_position = source_edge_fraction(
+        destination_y, device_height, source_height, y_scale
+    )
+    if x_position is None or y_position is None:
+        return None
+    if sampling == "NEAREST":
+        source_x = nearest_source_index(x_position, source_width)
+        source_y = nearest_source_index(y_position, source_height)
+        return premultiplied_source_pixel(
+            source, source_width, source_height, source_x, source_y
+        )
+
+    x_lower, x_upper, x_denominator = linear_source_axis(x_position, source_width)
+    y_lower, y_upper, y_denominator = linear_source_axis(y_position, source_height)
+    denominator = x_denominator * y_denominator
+    result = bytearray(4)
+    for channel in range(4):
+        weighted = 0
+        for source_x, horizontal_weight in (x_lower, x_upper):
+            for source_y, vertical_weight in (y_lower, y_upper):
+                texel = premultiplied_source_pixel(
+                    source, source_width, source_height, source_x, source_y
+                )
+                weighted += texel[channel] * horizontal_weight * vertical_weight
+        result[channel] = (2 * weighted + denominator) // (2 * denominator)
+    return bytes(result)
+
+
+def paint_image_row(
+    row: bytearray,
+    surface_width: int,
+    row_index: int,
+    command: tuple[Any, ...],
+) -> tuple[int, int] | None:
+    (
+        _,
+        destination,
+        device_left,
+        device_top,
+        device_width,
+        device_height,
+        source_width,
+        source_height,
+        source,
+        fit,
+        sampling,
+    ) = command
     left, top, right, bottom = destination
-    for destination_y in range(top, bottom):
-        source_y = source_top + destination_y - top
-        if source_y >= source_height:
-            raise VerificationFailure("Image source row exceeds prepared pixels")
-        for destination_x in range(left, right):
-            source_x = source_left + destination_x - left
-            if source_x >= source_width:
-                raise VerificationFailure("Image source column exceeds prepared pixels")
-            source_offset = (source_y * source_width + source_x) * 4
-            destination_offset = (destination_y * surface_width + destination_x) * 4
-            pixels[destination_offset : destination_offset + 4] = source_over_straight_rgba8(
-                pixels[destination_offset : destination_offset + 4],
-                source[source_offset : source_offset + 4],
-            )
+    if row_index < top or row_index >= bottom or left >= right:
+        return None
+    if len(row) != surface_width * 4:
+        raise VerificationFailure("Image target row diverged from surface width")
+    painted_left: int | None = None
+    painted_right: int | None = None
+    for destination_x in range(left, right):
+        source_pixel = sample_image_pixel(
+            source,
+            source_width,
+            source_height,
+            destination_x - device_left,
+            row_index - device_top,
+            device_width,
+            device_height,
+            fit,
+            sampling,
+        )
+        if source_pixel is None:
+            continue
+        destination_offset = destination_x * 4
+        row[destination_offset : destination_offset + 4] = source_over_premultiplied_rgba8(
+            row[destination_offset : destination_offset + 4], source_pixel
+        )
+        painted_left = destination_x if painted_left is None else painted_left
+        painted_right = destination_x + 1
+    if painted_left is None or painted_right is None:
+        return None
+    return painted_left, painted_right
 
 
 def execute(
@@ -675,7 +844,20 @@ def execute(
     if cursor[0] != len(entries):
         raise VerificationFailure("layout preorder diverged from scene")
     pixels = bytearray(background * (width * height))
-    engine.rasterize_commands(pixels, width, height, commands)
+    original_paint_command_row = engine.paint_command_row
+
+    def prepared_paint_command_row(
+        row: bytearray, surface_width: int, row_index: int, command: tuple[Any, ...]
+    ) -> tuple[int, int] | None:
+        if command[0] == "image":
+            return paint_image_row(row, surface_width, row_index, command)
+        return original_paint_command_row(row, surface_width, row_index, command)
+
+    engine.paint_command_row = prepared_paint_command_row
+    try:
+        engine.rasterize_commands(pixels, width, height, commands)
+    finally:
+        engine.paint_command_row = original_paint_command_row
     unpremultiply_rgba8_surface(pixels)
     raw_pixels = bytes(pixels)
     encoded = engine.encode_png(width, height, dpi, raw_pixels)
@@ -714,7 +896,7 @@ def verify(path: Path) -> dict[str, Any]:
     )
     verifier = Verifier()
     verifier.require(
-        vectors["vectorVersion"] == "renderweave-engine-prepared-image-png-vectors/3",
+        vectors["vectorVersion"] == "renderweave-engine-prepared-image-png-vectors/4",
         "vector identity drifted",
     )
     authority = exact_members(
@@ -724,6 +906,9 @@ def verify(path: Path) -> dict[str, Any]:
             "resourcePreparationProfile",
             "imagePixels",
             "degenerateMapping",
+            "samplingMapping",
+            "nearestTieRule",
+            "linearArithmetic",
             "alphaArithmetic",
             "enginePreparedImageKernel",
             "profileAvailability",
@@ -740,8 +925,11 @@ def verify(path: Path) -> dict[str, Any]:
         "resourcePreparationProfile": "renderweave-renderer/1.0",
         "imagePixels": "EXACT_ORIENTATION_NORMALIZED_STRAIGHT_RGBA8",
         "degenerateMapping": "SOURCE_AND_INTEGER_DEVICE_BOX_EXACT_1_TO_1_CENTERED_UNIT_QUARTER_TURN_NO_RESAMPLE",
+        "samplingMapping": "INTEGER_DEVICE_BOX_HALF_INTEGER_CENTER_INVERSE_EDGE_COORDINATE_CONTAIN_COVER_FILL",
+        "nearestTieRule": "EXACT_EQUAL_DISTANCE_TO_LOWER_SOURCE_INDEX_EDGE_CLAMP",
+        "linearArithmetic": "SOURCE_PREMULTIPLY_RGBA8_EXACT_RATIONAL_BILINEAR_SINGLE_ROUND_HALF_UP_EDGE_CLAMP",
         "alphaArithmetic": "STRAIGHT_TO_PREMULTIPLIED_MUL255_SOURCE_OVER_AUTHORED_ORDER_SUBTREE_OPACITY_ROUND_HALF_UP_255_SINGLE_FINAL_UNPREMULTIPLY",
-        "enginePreparedImageKernel": "PREPARED_IMAGE_ALPHA_1_TO_1_CENTERED_UNIT_QUARTER_TURN_PREMULTIPLIED_SOURCE_OVER_SUBTREE_OPACITY_ROUND_HALF_UP_ISOLATION_EXACT_PNG_AUTOMATED_VERIFIED_PROFILE_GATED",
+        "enginePreparedImageKernel": "PREPARED_IMAGE_INTEGER_BOX_CONTAIN_COVER_FILL_NEAREST_LINEAR_EXACT_RATIONAL_PREMULTIPLIED_SOURCE_OVER_CENTERED_UNIT_QUARTER_TURN_SUBTREE_OPACITY_EXACT_PNG_AUTOMATED_VERIFIED_PROFILE_GATED",
         "profileAvailability": "NOT_REGISTERED",
         "certificationStatus": "NOT_CERTIFIED",
         "processRasterImplementation": "ABSENT",
@@ -834,8 +1022,8 @@ def verify(path: Path) -> dict[str, Any]:
     )
     rendered_cases = vectors["renderedCases"]
     unsupported_cases = vectors["unsupportedCases"]
-    verifier.require(len(rendered_cases) == 23, "rendered case count drifted")
-    verifier.require(len(unsupported_cases) == 3, "unsupported case count drifted")
+    verifier.require(len(rendered_cases) == 31, "rendered case count drifted")
+    verifier.require(len(unsupported_cases) == 2, "unsupported case count drifted")
     seen: set[str] = set()
     for family, cases in (("rendered", rendered_cases), ("unsupported", unsupported_cases)):
         for case in cases:
@@ -892,7 +1080,7 @@ def verify(path: Path) -> dict[str, Any]:
             )
             verifier.require(actual == expected, f"{case_id} result drifted")
     return {
-        "verifier": "renderweave-engine-prepared-image-png-python-independent/3",
+        "verifier": "renderweave-engine-prepared-image-png-python-independent/4",
         "result": "PASS",
         "assurance": "A2",
         "renderedCases": len(rendered_cases),

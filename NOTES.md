@@ -1,6 +1,24 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-26 **Template v1 implementation TV1-T121 已由 Codex `/root` single-writer 完成，状态
+  `resolved/automated_verified`**：最终交付仍固定为正式 `/templates` 页面、真实后端、public Rendering API 与
+  Authoritative Preview，`/prototype` 不计交付。本票在唯一 prepared-resource Engine Interface 内实现零旋转整数
+  device box 的 `CONTAIN | COVER | FILL` 和 `LINEAR | NEAREST`：目标 half-integer center 以 exact rational
+  inverse-map 到 source edge coordinate，NEAREST 同距取较小 source index，LINEAR 对 premultiplied RGBA8 四邻域
+  做 single HALF_UP，保留 edge clamp、CONTAIN 透明 bars、COVER 居中裁切及既有 clip/subtree-opacity/source-over。
+  shared `/4` 为 31 rendered + 2 unsupported、33/33 cases、195 checks，vector SHA-256
+  `0165159dba1ad90c75faaef7e1e5d7254c8adff6e1c0e388fbea44d715148295`。canonical `render`
+  `.sdlc/evidence/20260825-233831-render/`（59.681 秒）、affected `fast`
+  `.sdlc/evidence/20260825-233944-fast/`（11.123 秒）、sequential `server`
+  `.sdlc/evidence/20260825-234002-server/`（673.432 秒）与 17-step Goal `full`
+  `.sdlc/evidence/20260825-235123-full/`（1131.999 秒）均 passed/A1；full 覆盖 Windows/Linux Renderer、Node 24 Web
+  28 files/217 tests、runtime canary、Playwright 23 passed + 1 controlled skip、Draft/inference browser journeys，且
+  provider attempts/API Key reads/reservations/cost/open authorization=0。状态回填后的 resolution `fast`
+  `.sdlc/evidence/20260826-001253-fast/` 也以 3/3 steps、passed/A1、12.824 秒通过。Profile `NOT_REGISTERED`、certification
+  `NOT_CERTIFIED`、process raster `ABSENT`、native stack `BUILD_NOT_AUTHORIZED`、daemon success/public Rendering
+  API/E6/正式 `/templates` route `CLOSED`；Text shaping、world scene、JPEG 与最终产品接线继续后续 DAG，未推进
+  J1/A3/READY，未 push/tag/PR。
 - 2026-08-25 **Template v1 implementation TV1-T120 已由 Codex `/root` single-writer 完成，状态
   `resolved/automated_verified`**：最终交付口径保持正式 `/templates` 页面、真实后端与 Authoritative Preview，
   `/prototype` 不计交付。本票把 Rust/Python 中逐形状的 `stack_main_fill_allocations` 特例收敛为独立控制流的

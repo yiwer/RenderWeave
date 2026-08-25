@@ -32,6 +32,9 @@ struct AuthorityContext {
     resource_preparation_profile: String,
     image_pixels: String,
     degenerate_mapping: String,
+    sampling_mapping: String,
+    nearest_tie_rule: String,
+    linear_arithmetic: String,
     alpha_arithmetic: String,
     engine_prepared_image_kernel: String,
     profile_availability: String,
@@ -82,7 +85,7 @@ struct Mutation {
     value: Value,
 }
 
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize, Eq, PartialEq)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct RenderedExpected {
     width_px: u32,
@@ -111,40 +114,18 @@ fn renders_prepared_image_vectors_through_the_public_engine_interface() {
 
         let output = render_png_with_prepared_resources(&document, &manifest, case.dpi)
             .unwrap_or_else(|error| panic!("{} unexpectedly rejected: {error}", case.id));
-        assert_eq!(case.expected.width_px, output.width_px(), "{}", case.id);
-        assert_eq!(case.expected.height_px, output.height_px(), "{}", case.id);
         assert_eq!(case.dpi, output.dpi(), "{}", case.id);
-        assert_eq!(case.expected.media_type, output.media_type(), "{}", case.id);
-        assert_eq!(
-            case.expected.output_profile,
-            output.output_profile(),
-            "{}",
-            case.id
-        );
-        assert_eq!(
-            case.expected.byte_length,
-            output.byte_length(),
-            "{}",
-            case.id
-        );
-        assert_eq!(
-            case.expected.content_sha256,
-            output.content_sha256(),
-            "{}",
-            case.id
-        );
-        assert_eq!(
-            case.expected.pixel_sha256,
-            output.pixel_sha256(),
-            "{}",
-            case.id
-        );
-        assert_eq!(
-            case.expected.exact_hex,
-            hex::encode(output.bytes()),
-            "{}",
-            case.id
-        );
+        let actual = RenderedExpected {
+            width_px: output.width_px(),
+            height_px: output.height_px(),
+            media_type: output.media_type().to_owned(),
+            output_profile: output.output_profile().to_owned(),
+            byte_length: output.byte_length(),
+            content_sha256: output.content_sha256().to_owned(),
+            pixel_sha256: output.pixel_sha256().to_owned(),
+            exact_hex: hex::encode(output.bytes()),
+        };
+        assert_eq!(case.expected, actual, "{}", case.id);
     }
 }
 
@@ -170,7 +151,7 @@ fn rejects_prepared_images_outside_the_frozen_quarter_turn_1_to_1_subset() {
 
 fn assert_contract(vectors: &Vectors) {
     assert_eq!(
-        "renderweave-engine-prepared-image-png-vectors/3",
+        "renderweave-engine-prepared-image-png-vectors/4",
         vectors.vector_version
     );
     let authority = &vectors.authority_context;
@@ -188,11 +169,23 @@ fn assert_contract(vectors: &Vectors) {
         authority.degenerate_mapping
     );
     assert_eq!(
+        "INTEGER_DEVICE_BOX_HALF_INTEGER_CENTER_INVERSE_EDGE_COORDINATE_CONTAIN_COVER_FILL",
+        authority.sampling_mapping
+    );
+    assert_eq!(
+        "EXACT_EQUAL_DISTANCE_TO_LOWER_SOURCE_INDEX_EDGE_CLAMP",
+        authority.nearest_tie_rule
+    );
+    assert_eq!(
+        "SOURCE_PREMULTIPLY_RGBA8_EXACT_RATIONAL_BILINEAR_SINGLE_ROUND_HALF_UP_EDGE_CLAMP",
+        authority.linear_arithmetic
+    );
+    assert_eq!(
         "STRAIGHT_TO_PREMULTIPLIED_MUL255_SOURCE_OVER_AUTHORED_ORDER_SUBTREE_OPACITY_ROUND_HALF_UP_255_SINGLE_FINAL_UNPREMULTIPLY",
         authority.alpha_arithmetic
     );
     assert_eq!(
-        "PREPARED_IMAGE_ALPHA_1_TO_1_CENTERED_UNIT_QUARTER_TURN_PREMULTIPLIED_SOURCE_OVER_SUBTREE_OPACITY_ROUND_HALF_UP_ISOLATION_EXACT_PNG_AUTOMATED_VERIFIED_PROFILE_GATED",
+        "PREPARED_IMAGE_INTEGER_BOX_CONTAIN_COVER_FILL_NEAREST_LINEAR_EXACT_RATIONAL_PREMULTIPLIED_SOURCE_OVER_CENTERED_UNIT_QUARTER_TURN_SUBTREE_OPACITY_EXACT_PNG_AUTOMATED_VERIFIED_PROFILE_GATED",
         authority.engine_prepared_image_kernel
     );
     assert_eq!("NOT_REGISTERED", authority.profile_availability);
@@ -201,8 +194,8 @@ fn assert_contract(vectors: &Vectors) {
     assert_eq!("UNWIRED", authority.daemon_output_path);
     assert_eq!("CLOSED", authority.product_route);
     assert_eq!(0, authority.provider_attempts);
-    assert_eq!(23, vectors.rendered_cases.len());
-    assert_eq!(3, vectors.unsupported_cases.len());
+    assert_eq!(31, vectors.rendered_cases.len());
+    assert_eq!(2, vectors.unsupported_cases.len());
 }
 
 fn vectors() -> Vectors {
