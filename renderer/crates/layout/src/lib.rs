@@ -4,7 +4,7 @@
 //! The crate consumes only a document already admitted by `renderweave-renderer-document`.
 //! Preflight returns bounded structural counts or one stable DFS problem. The resource-free
 //! definite entry point computes local LayoutBox/ContentBox entries for ABSOLUTE nodes, Stack
-//! children with singleton or inactive-bound multiple main-axis FILL,
+//! children with bounded authored-order iterative min/max main-axis FILL water filling,
 //! resource-independent Stack/Grid HUG
 //! measurement, exact-quarter-turn affine nonempty Frame/Group HUG measurement (including
 //! definite ABSOLUTE/Stack/FIXED opposite-axis Frame offers for odd-quarter-turn cross-axis
@@ -18,7 +18,7 @@
 //! single-axis HUG from the orientation-normalized logical dimensions in an immutable prepared
 //! manifest, including container offer propagation. It deliberately stops before non-quarter-turn
 //! child rotation, ABSOLUTE/Grid-in-Grid owning offers or row-to-column/general constraint propagation,
-//! active-bound multi-FILL Stack water filling, FRACTION tolerance recovery,
+//! tolerance recovery for negative Stack/FRACTION residuals,
 //! prepared Text shaping, world transforms, paint, rasterization, and encoding, and it
 //! never exposes a partial layout on failure.
 
@@ -2240,6 +2240,9 @@ fn stack_main_fill_allocations(
 ) -> Result<Vec<(usize, f64)>, DefiniteLayoutError> {
     let first_child = object(&children[fill_indices[0]], stack_occurrence, "children")?;
     let first_occurrence = occurrence_id(first_child)?;
+    let unsupported = || {
+        DefiniteLayoutError::unsupported(first_occurrence, DefiniteLayoutUnsupported::StackMainFill)
+    };
     let axis = match direction {
         StackDirection::Row => "Width",
         StackDirection::Column => "Height",
@@ -2247,7 +2250,7 @@ fn stack_main_fill_allocations(
     let minimum_member = format!("min{axis}Pt");
     let maximum_member = format!("max{axis}Pt");
     let mut weighted_indices = Vec::with_capacity(fill_indices.len());
-    let mut total_weight = 0.0;
+    let mut bounds = Vec::with_capacity(fill_indices.len());
 
     for &fill_index in fill_indices {
         let child = object(&children[fill_index], stack_occurrence, "children")?;
@@ -2259,57 +2262,9 @@ fn stack_main_fill_allocations(
             child_occurrence,
             "placement.fillWeight",
         )?;
-        total_weight += weight;
-        if !weight.is_finite() || weight <= 0.0 || !total_weight.is_finite() || total_weight <= 0.0
-        {
-            return Err(DefiniteLayoutError::unsupported(
-                first_occurrence,
-                DefiniteLayoutUnsupported::StackMainFill,
-            ));
+        if !weight.is_finite() || weight <= 0.0 {
+            return Err(unsupported());
         }
-        weighted_indices.push((fill_index, weight));
-    }
-
-    let residual = available - used_without_fill;
-    if !residual.is_finite() {
-        return Err(DefiniteLayoutError::unsupported(
-            first_occurrence,
-            DefiniteLayoutUnsupported::StackMainFill,
-        ));
-    }
-    let remaining = if residual > 0.0 { residual } else { 0.0 };
-    let mut allocated_before_last = 0.0;
-    let mut allocations = Vec::with_capacity(weighted_indices.len());
-    let last_position = weighted_indices.len() - 1;
-    for (position, &(fill_index, weight)) in weighted_indices.iter().enumerate() {
-        let share = if position == last_position {
-            remaining - allocated_before_last
-        } else {
-            remaining * weight / total_weight
-        };
-        if !share.is_finite() || share < 0.0 {
-            return Err(DefiniteLayoutError::unsupported(
-                first_occurrence,
-                DefiniteLayoutUnsupported::StackMainFill,
-            ));
-        }
-        allocations.push((fill_index, if share > 0.0 { share } else { 0.0 }));
-        if position != last_position {
-            allocated_before_last += share;
-            if !allocated_before_last.is_finite() {
-                return Err(DefiniteLayoutError::unsupported(
-                    first_occurrence,
-                    DefiniteLayoutUnsupported::StackMainFill,
-                ));
-            }
-        }
-    }
-    let mut bounds = Vec::with_capacity(allocations.len());
-    let mut active_bounds = Vec::with_capacity(2);
-    for (position, &(fill_index, share)) in allocations.iter().enumerate() {
-        let child = object(&children[fill_index], stack_occurrence, "children")?;
-        let child_occurrence = occurrence_id(child)?;
-        let placement = object_member(Some(child), "placement", child_occurrence)?;
         let minimum = optional_binary64_member(
             placement,
             &minimum_member,
@@ -2322,516 +2277,128 @@ fn stack_main_fill_allocations(
             child_occurrence,
             format!("placement.{maximum_member}"),
         )?;
-        let hit = if let Some(bound) = minimum.filter(|bound| share < *bound) {
-            Some((bound, true))
-        } else {
-            maximum
-                .filter(|bound| share > *bound)
-                .map(|bound| (bound, false))
-        };
-        if let Some((bound, is_minimum)) = hit {
-            active_bounds.push((position, bound, is_minimum));
+        if minimum.is_some_and(|bound| !bound.is_finite() || bound < 0.0)
+            || maximum.is_some_and(|bound| !bound.is_finite() || bound < 0.0)
+            || matches!((minimum, maximum), (Some(minimum), Some(maximum)) if maximum < minimum)
+        {
+            return Err(unsupported());
         }
+        weighted_indices.push((fill_index, weight));
         bounds.push((minimum, maximum));
     }
 
-    if active_bounds.is_empty() {
-        return Ok(allocations);
+    let residual = available - used_without_fill;
+    if !residual.is_finite() {
+        return Err(unsupported());
     }
-    if active_bounds.len() == 2 && allocations.len() == 2 {
+    let remaining = if residual > 0.0 { residual } else { 0.0 };
+    let mut allocations: Vec<(usize, f64)> = weighted_indices
+        .iter()
+        .map(|&(fill_index, _)| (fill_index, 0.0))
+        .collect();
+    let mut frozen = vec![false; weighted_indices.len()];
+    let mut has_frozen_minimum = false;
+
+    for _ in 0..=weighted_indices.len() {
+        let unfrozen_positions: Vec<usize> = frozen
+            .iter()
+            .enumerate()
+            .filter_map(|(position, is_frozen)| (!is_frozen).then_some(position))
+            .collect();
+        if unfrozen_positions.is_empty() {
+            return Ok(allocations);
+        }
+
         let mut frozen_sum = 0.0;
-        let mut minimum_count = 0;
-        let mut maximum_count = 0;
-        for &(position, frozen_bound, is_minimum) in &active_bounds {
-            let (Some(minimum), Some(maximum)) = bounds[position] else {
-                return Err(DefiniteLayoutError::unsupported(
-                    first_occurrence,
-                    DefiniteLayoutUnsupported::StackMainFill,
-                ));
-            };
-            if !minimum.is_finite() || minimum < 0.0 || !maximum.is_finite() || maximum < minimum {
-                return Err(DefiniteLayoutError::unsupported(
-                    first_occurrence,
-                    DefiniteLayoutUnsupported::StackMainFill,
-                ));
+        for (position, allocation) in allocations.iter().enumerate() {
+            if frozen[position] {
+                frozen_sum += allocation.1;
+                if !frozen_sum.is_finite() {
+                    return Err(unsupported());
+                }
             }
-            let expected_bound = if is_minimum {
-                minimum_count += 1;
-                minimum
-            } else {
-                maximum_count += 1;
-                maximum
-            };
-            if frozen_bound != expected_bound {
-                return Err(DefiniteLayoutError::unsupported(
-                    first_occurrence,
-                    DefiniteLayoutUnsupported::StackMainFill,
-                ));
-            }
-            frozen_sum += frozen_bound;
-            if !frozen_sum.is_finite() {
-                return Err(DefiniteLayoutError::unsupported(
-                    first_occurrence,
-                    DefiniteLayoutUnsupported::StackMainFill,
-                ));
-            }
-            allocations[position].1 = if frozen_bound > 0.0 {
-                frozen_bound
-            } else {
-                0.0
-            };
         }
-        if (minimum_count == 2 && frozen_sum > remaining)
-            || (minimum_count == 1 && maximum_count == 1 && frozen_sum == remaining)
-        {
-            return Ok(allocations);
+        let remaining_for_round = remaining - frozen_sum;
+        if !remaining_for_round.is_finite() || remaining_for_round < 0.0 {
+            return Err(unsupported());
         }
-        return Err(DefiniteLayoutError::unsupported(
-            first_occurrence,
-            DefiniteLayoutUnsupported::StackMainFill,
-        ));
-    }
-    if active_bounds.len() != 1 {
-        return Err(DefiniteLayoutError::unsupported(
-            first_occurrence,
-            DefiniteLayoutUnsupported::StackMainFill,
-        ));
-    }
-    let (active_position, frozen_bound, active_is_minimum) = active_bounds[0];
-    if !frozen_bound.is_finite() || frozen_bound < 0.0 {
-        return Err(DefiniteLayoutError::unsupported(
-            first_occurrence,
-            DefiniteLayoutUnsupported::StackMainFill,
-        ));
-    }
-    let (minimum, maximum) = bounds[active_position];
-    if minimum.is_some_and(|bound| frozen_bound < bound)
-        || maximum.is_some_and(|bound| frozen_bound > bound)
-    {
-        return Err(DefiniteLayoutError::unsupported(
-            first_occurrence,
-            DefiniteLayoutUnsupported::StackMainFill,
-        ));
-    }
 
-    if allocations.len() == 3 {
-        if frozen_bound > remaining {
-            let mut inactive_unfrozen_max_count = 0;
-            let mut additional_minimum_freezes = Vec::with_capacity(2);
-            let mut unfrozen_overflow_bound_shape_supported = true;
-            for (position, &(unfrozen_minimum, unfrozen_maximum)) in bounds.iter().enumerate() {
-                if position == active_position {
-                    continue;
-                }
-                match (unfrozen_minimum, unfrozen_maximum) {
-                    (None, None) => {}
-                    (None, Some(maximum))
-                        if maximum.is_finite()
-                            && maximum >= 0.0
-                            && allocations[position].1 <= maximum =>
-                    {
-                        inactive_unfrozen_max_count += 1;
-                    }
-                    (Some(minimum), None)
-                        if minimum.is_finite()
-                            && minimum > 0.0
-                            && allocations[position].1 >= minimum =>
-                    {
-                        additional_minimum_freezes.push((position, minimum, false));
-                    }
-                    (Some(minimum), Some(maximum))
-                        if minimum.is_finite()
-                            && maximum.is_finite()
-                            && minimum > 0.0
-                            && maximum >= minimum
-                            && allocations[position].1 >= minimum
-                            && allocations[position].1 <= maximum =>
-                    {
-                        additional_minimum_freezes.push((position, minimum, true));
-                    }
-                    _ => {
-                        unfrozen_overflow_bound_shape_supported = false;
-                        break;
-                    }
+        let mut unfrozen_weight = 0.0;
+        for &position in &unfrozen_positions {
+            unfrozen_weight += weighted_indices[position].1;
+            if !unfrozen_weight.is_finite() || unfrozen_weight <= 0.0 {
+                return Err(unsupported());
+            }
+        }
+
+        let mut provisional = Vec::with_capacity(unfrozen_positions.len());
+        let mut allocated_before_last = 0.0;
+        for (unfrozen_order, &position) in unfrozen_positions.iter().enumerate() {
+            let share = if unfrozen_order + 1 == unfrozen_positions.len() {
+                remaining_for_round - allocated_before_last
+            } else {
+                remaining_for_round * weighted_indices[position].1 / unfrozen_weight
+            };
+            if !share.is_finite() || share < 0.0 {
+                return Err(unsupported());
+            }
+            provisional.push((position, if share > 0.0 { share } else { 0.0 }));
+            if unfrozen_order + 1 != unfrozen_positions.len() {
+                allocated_before_last += share;
+                if !allocated_before_last.is_finite() {
+                    return Err(unsupported());
                 }
             }
-            let inactive_max_shape_supported =
-                additional_minimum_freezes.is_empty() && inactive_unfrozen_max_count <= 1;
-            let second_minimum_shape_supported = additional_minimum_freezes.len() == 1
-                && (inactive_unfrozen_max_count == 0
-                    || (additional_minimum_freezes[0].2 && inactive_unfrozen_max_count == 1))
-                && maximum.is_some();
-            let two_additional_minimum_shape_supported = additional_minimum_freezes.len() == 2
-                && inactive_unfrozen_max_count == 0
-                && maximum.is_some();
-            if !inactive_max_shape_supported
-                && !second_minimum_shape_supported
-                && !two_additional_minimum_shape_supported
-            {
-                unfrozen_overflow_bound_shape_supported = false;
-            }
-            let active_minimum_overflow_bound_shape_supported = active_is_minimum
-                && minimum.is_some()
-                && match maximum {
-                    None => true,
-                    Some(maximum) => {
-                        maximum.is_finite() && maximum >= 0.0 && frozen_bound <= maximum
-                    }
-                };
-            if !active_minimum_overflow_bound_shape_supported
-                || !unfrozen_overflow_bound_shape_supported
-            {
-                return Err(DefiniteLayoutError::unsupported(
-                    first_occurrence,
-                    DefiniteLayoutUnsupported::StackMainFill,
-                ));
-            }
-            allocations[0].1 = if active_position == 0 {
-                frozen_bound
-            } else {
-                0.0
-            };
-            allocations[1].1 = if active_position == 1 {
-                frozen_bound
-            } else {
-                0.0
-            };
-            allocations[2].1 = if active_position == 2 {
-                frozen_bound
-            } else {
-                0.0
-            };
-            for (position, minimum, _) in additional_minimum_freezes {
-                allocations[position].1 = minimum;
-            }
-            return Ok(allocations);
         }
-        let mut unfrozen_positions = Vec::with_capacity(2);
-        for position in 0..bounds.len() {
-            if position == active_position {
-                continue;
-            }
-            unfrozen_positions.push(position);
-        }
-        let redistributed_remaining = remaining - frozen_bound;
-        let redistributed_weight =
-            weighted_indices[unfrozen_positions[0]].1 + weighted_indices[unfrozen_positions[1]].1;
-        if !redistributed_remaining.is_finite()
-            || redistributed_remaining < 0.0
-            || !redistributed_weight.is_finite()
-            || redistributed_weight <= 0.0
-        {
-            return Err(DefiniteLayoutError::unsupported(
-                first_occurrence,
-                DefiniteLayoutUnsupported::StackMainFill,
-            ));
-        }
-        let first_share = redistributed_remaining * weighted_indices[unfrozen_positions[0]].1
-            / redistributed_weight;
-        let second_share = redistributed_remaining - first_share;
-        if !first_share.is_finite()
-            || first_share < 0.0
-            || !second_share.is_finite()
-            || second_share < 0.0
-        {
-            return Err(DefiniteLayoutError::unsupported(
-                first_occurrence,
-                DefiniteLayoutUnsupported::StackMainFill,
-            ));
-        }
-        let redistributed_shares = [
-            (unfrozen_positions[0], first_share),
-            (unfrozen_positions[1], second_share),
-        ];
-        let mut redistributed_active = None;
-        for (position, share) in redistributed_shares {
+
+        let mut active_bounds = Vec::new();
+        for &(position, share) in &provisional {
             let (minimum, maximum) = bounds[position];
-            if minimum.is_some_and(|bound| !bound.is_finite() || bound < 0.0)
-                || maximum.is_some_and(|bound| !bound.is_finite() || bound < 0.0)
-            {
-                return Err(DefiniteLayoutError::unsupported(
-                    first_occurrence,
-                    DefiniteLayoutUnsupported::StackMainFill,
-                ));
-            }
-            let hit = if let Some(bound) = minimum.filter(|bound| share < *bound) {
-                Some((bound, true))
-            } else {
-                maximum
-                    .filter(|bound| share > *bound)
-                    .map(|bound| (bound, false))
-            };
-            if let Some((bound, is_minimum)) = hit {
-                if redistributed_active.is_some() {
-                    return Err(DefiniteLayoutError::unsupported(
-                        first_occurrence,
-                        DefiniteLayoutUnsupported::StackMainFill,
-                    ));
-                }
-                redistributed_active = Some((position, bound, is_minimum));
+            if let Some(minimum) = minimum.filter(|minimum| share < *minimum) {
+                active_bounds.push((position, minimum, true));
+            } else if let Some(maximum) = maximum.filter(|maximum| share > *maximum) {
+                active_bounds.push((position, maximum, false));
             }
         }
-        allocations[active_position].1 = if frozen_bound > 0.0 {
-            frozen_bound
-        } else {
-            0.0
-        };
-        if let Some((second_active_position, second_frozen_bound, second_active_is_minimum)) =
-            redistributed_active
-        {
-            let (active_minimum, active_maximum) = bounds[active_position];
-            let (second_minimum, second_maximum) = bounds[second_active_position];
-            let last_position = if unfrozen_positions[0] == second_active_position {
-                unfrozen_positions[1]
-            } else {
-                unfrozen_positions[0]
-            };
-            let matching_minimum_freezes = active_is_minimum
-                && active_minimum.is_some()
-                && active_maximum.is_none()
-                && second_active_is_minimum
-                && second_minimum.is_some()
-                && second_maximum.is_none()
-                && allocations[second_active_position].1 >= second_frozen_bound;
-            let matching_maximum_freezes = !active_is_minimum
-                && active_minimum.is_none()
-                && active_maximum.is_some()
-                && !second_active_is_minimum
-                && second_minimum.is_none()
-                && second_maximum.is_some()
-                && allocations[second_active_position].1 <= second_frozen_bound;
-            let (last_minimum, last_maximum) = bounds[last_position];
-            let terminal_bound_shape_supported = match (last_minimum, last_maximum) {
-                (None, None) => true,
-                (Some(minimum), None) => {
-                    matching_maximum_freezes && minimum.is_finite() && minimum >= 0.0
-                }
-                (None, Some(maximum)) => {
-                    matching_maximum_freezes && maximum.is_finite() && maximum >= 0.0
-                }
-                (Some(_), Some(_)) => false,
-            };
-            let second_minimum_overflows_remaining = matching_minimum_freezes
-                && last_minimum.is_none()
-                && last_maximum.is_none()
-                && second_frozen_bound > redistributed_remaining;
-            if second_minimum_overflows_remaining {
-                allocations[second_active_position].1 = if second_frozen_bound > 0.0 {
-                    second_frozen_bound
-                } else {
-                    0.0
-                };
-                allocations[last_position].1 = 0.0;
-                return Ok(allocations);
+        if active_bounds.is_empty() {
+            for (position, share) in provisional {
+                allocations[position].1 = share;
             }
-            if (!matching_minimum_freezes && !matching_maximum_freezes)
-                || !terminal_bound_shape_supported
-                || second_frozen_bound > redistributed_remaining
-            {
-                return Err(DefiniteLayoutError::unsupported(
-                    first_occurrence,
-                    DefiniteLayoutUnsupported::StackMainFill,
-                ));
-            }
-            let last_share = redistributed_remaining - second_frozen_bound;
-            if !last_share.is_finite()
-                || last_share < 0.0
-                || last_minimum.is_some_and(|minimum| last_share < minimum)
-            {
-                return Err(DefiniteLayoutError::unsupported(
-                    first_occurrence,
-                    DefiniteLayoutUnsupported::StackMainFill,
-                ));
-            }
-            let last_allocation = if let Some(maximum) = last_maximum
-                && last_share > maximum
-            {
-                maximum
-            } else {
-                last_share
-            };
-            allocations[second_active_position].1 = if second_frozen_bound > 0.0 {
-                second_frozen_bound
-            } else {
-                0.0
-            };
-            allocations[last_position].1 = if last_allocation > 0.0 {
-                last_allocation
-            } else {
-                0.0
-            };
             return Ok(allocations);
         }
-        allocations[unfrozen_positions[0]].1 = if first_share > 0.0 { first_share } else { 0.0 };
-        allocations[unfrozen_positions[1]].1 = if second_share > 0.0 {
-            second_share
-        } else {
-            0.0
-        };
-        return Ok(allocations);
+
+        for (position, bound, is_minimum) in active_bounds {
+            if frozen[position] {
+                return Err(unsupported());
+            }
+            frozen[position] = true;
+            allocations[position].1 = if bound > 0.0 { bound } else { 0.0 };
+            has_frozen_minimum |= is_minimum;
+        }
+
+        let mut newly_frozen_sum = 0.0;
+        for (position, allocation) in allocations.iter().enumerate() {
+            if frozen[position] {
+                newly_frozen_sum += allocation.1;
+                if !newly_frozen_sum.is_finite() {
+                    return Err(unsupported());
+                }
+            }
+        }
+        if newly_frozen_sum > remaining {
+            if !has_frozen_minimum {
+                return Err(unsupported());
+            }
+            for position in 0..allocations.len() {
+                if !frozen[position] {
+                    allocations[position].1 = bounds[position].0.unwrap_or(0.0);
+                }
+            }
+            return Ok(allocations);
+        }
     }
 
-    if allocations.len() != 2 {
-        return Err(DefiniteLayoutError::unsupported(
-            first_occurrence,
-            DefiniteLayoutUnsupported::StackMainFill,
-        ));
-    }
-    let unfrozen_position = 1 - active_position;
-    let (active_minimum, active_maximum) = bounds[active_position];
-    let (unfrozen_minimum, unfrozen_maximum) = bounds[unfrozen_position];
-    let active_maximum_bound_shape_supported = match active_minimum {
-        None => true,
-        Some(minimum) => minimum.is_finite() && minimum >= 0.0 && minimum <= frozen_bound,
-    };
-    let active_minimum_bound_shape_supported = match active_maximum {
-        None => true,
-        Some(maximum) => maximum.is_finite() && maximum >= 0.0 && maximum >= frozen_bound,
-    };
-    if active_is_minimum
-        && active_minimum.is_some()
-        && active_maximum.is_some()
-        && active_minimum_bound_shape_supported
-        && frozen_bound <= remaining
-        && let Some(unfrozen_minimum) = unfrozen_minimum
-        && let Some(unfrozen_maximum) = unfrozen_maximum
-        && unfrozen_minimum.is_finite()
-        && unfrozen_minimum >= 0.0
-        && unfrozen_maximum.is_finite()
-        && unfrozen_maximum >= unfrozen_minimum
-        && allocations[unfrozen_position].1 >= unfrozen_minimum
-        && allocations[unfrozen_position].1 <= unfrozen_maximum
-    {
-        let unfrozen_offer = remaining - frozen_bound;
-        if !unfrozen_offer.is_finite() || unfrozen_offer < 0.0 {
-            return Err(DefiniteLayoutError::unsupported(
-                first_occurrence,
-                DefiniteLayoutUnsupported::StackMainFill,
-            ));
-        }
-        if unfrozen_offer < unfrozen_minimum {
-            allocations[active_position].1 = if frozen_bound > 0.0 {
-                frozen_bound
-            } else {
-                0.0
-            };
-            allocations[unfrozen_position].1 = if unfrozen_minimum > 0.0 {
-                unfrozen_minimum
-            } else {
-                0.0
-            };
-            return Ok(allocations);
-        }
-        if unfrozen_offer <= unfrozen_maximum {
-            allocations[active_position].1 = if frozen_bound > 0.0 {
-                frozen_bound
-            } else {
-                0.0
-            };
-            allocations[unfrozen_position].1 = if unfrozen_offer > 0.0 {
-                unfrozen_offer
-            } else {
-                0.0
-            };
-            return Ok(allocations);
-        }
-    }
-    if !active_is_minimum
-        && active_maximum.is_some()
-        && active_maximum_bound_shape_supported
-        && unfrozen_minimum.is_none()
-        && frozen_bound <= remaining
-        && let Some(unfrozen_maximum) = unfrozen_maximum
-        && unfrozen_maximum.is_finite()
-        && unfrozen_maximum >= 0.0
-        && allocations[unfrozen_position].1 <= unfrozen_maximum
-    {
-        let unfrozen_offer = remaining - frozen_bound;
-        if !unfrozen_offer.is_finite() || unfrozen_offer < 0.0 {
-            return Err(DefiniteLayoutError::unsupported(
-                first_occurrence,
-                DefiniteLayoutUnsupported::StackMainFill,
-            ));
-        }
-        if unfrozen_offer > unfrozen_maximum {
-            allocations[active_position].1 = if frozen_bound > 0.0 {
-                frozen_bound
-            } else {
-                0.0
-            };
-            allocations[unfrozen_position].1 = if unfrozen_maximum > 0.0 {
-                unfrozen_maximum
-            } else {
-                0.0
-            };
-            return Ok(allocations);
-        }
-    }
-    if active_is_minimum
-        && active_minimum.is_some()
-        && active_minimum_bound_shape_supported
-        && unfrozen_maximum.is_none()
-        && frozen_bound <= remaining
-        && let Some(unfrozen_minimum) = unfrozen_minimum
-        && unfrozen_minimum.is_finite()
-        && unfrozen_minimum >= 0.0
-        && allocations[unfrozen_position].1 >= unfrozen_minimum
-    {
-        let unfrozen_offer = remaining - frozen_bound;
-        if !unfrozen_offer.is_finite() || unfrozen_offer < 0.0 {
-            return Err(DefiniteLayoutError::unsupported(
-                first_occurrence,
-                DefiniteLayoutUnsupported::StackMainFill,
-            ));
-        }
-        if unfrozen_offer < unfrozen_minimum {
-            allocations[active_position].1 = if frozen_bound > 0.0 {
-                frozen_bound
-            } else {
-                0.0
-            };
-            allocations[unfrozen_position].1 = if unfrozen_minimum > 0.0 {
-                unfrozen_minimum
-            } else {
-                0.0
-            };
-            return Ok(allocations);
-        }
-    }
-    if bounds[unfrozen_position].0.is_some() || bounds[unfrozen_position].1.is_some() {
-        return Err(DefiniteLayoutError::unsupported(
-            first_occurrence,
-            DefiniteLayoutUnsupported::StackMainFill,
-        ));
-    }
-    let unfrozen_share = if frozen_bound > remaining {
-        if !active_is_minimum {
-            return Err(DefiniteLayoutError::unsupported(
-                first_occurrence,
-                DefiniteLayoutUnsupported::StackMainFill,
-            ));
-        }
-        0.0
-    } else {
-        remaining - frozen_bound
-    };
-    if !unfrozen_share.is_finite() || unfrozen_share < 0.0 {
-        return Err(DefiniteLayoutError::unsupported(
-            first_occurrence,
-            DefiniteLayoutUnsupported::StackMainFill,
-        ));
-    }
-    allocations[active_position].1 = if frozen_bound > 0.0 {
-        frozen_bound
-    } else {
-        0.0
-    };
-    allocations[unfrozen_position].1 = if unfrozen_share > 0.0 {
-        unfrozen_share
-    } else {
-        0.0
-    };
-    Ok(allocations)
+    Err(unsupported())
 }
 
 fn stack_axis_size(

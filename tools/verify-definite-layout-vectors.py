@@ -1515,7 +1515,8 @@ def stack_main_fill_allocations(
     axis = "Width" if direction == "ROW" else "Height"
     minimum_member = f"min{axis}Pt"
     maximum_member = f"max{axis}Pt"
-    weights: list[tuple[int, float]] = []
+    weights: list[float] = []
+    bounds: list[tuple[float | None, float | None]] = []
 
     for fill_index in fill_indices:
         child = object_value(children[fill_index], f"{stack_occurrence} child")
@@ -1524,503 +1525,107 @@ def stack_main_fill_allocations(
         weight = required_decimal(
             placement, "fillWeight", current, "placement.fillWeight"
         )
-        if not math.isfinite(weight) or weight <= 0.0:
-            raise Unsupported("STACK_MAIN_FILL", first_occurrence)
-        weights.append((fill_index, weight))
-
-    total_weight = 0.0
-    for _, weight in weights:
-        total_weight += weight
-        if not math.isfinite(total_weight) or total_weight <= 0.0:
-            raise Unsupported("STACK_MAIN_FILL", first_occurrence)
-
-    residual = available - used_without_fill
-    if not math.isfinite(residual):
-        raise Unsupported("STACK_MAIN_FILL", first_occurrence)
-    remaining = residual if residual > 0.0 else 0.0
-    allocations: list[tuple[int, float]] = []
-    allocated = 0.0
-    for position, (fill_index, weight) in enumerate(weights):
-        if position + 1 == len(weights):
-            share = remaining - allocated
-        else:
-            share = (remaining * weight) / total_weight
-            allocated += share
-        if (
-            not math.isfinite(share)
-            or share < 0.0
-            or not math.isfinite(allocated)
-        ):
-            raise Unsupported("STACK_MAIN_FILL", first_occurrence)
-        allocations.append((fill_index, share if share > 0.0 else 0.0))
-
-    bounds: list[tuple[float | None, float | None]] = []
-    active_bounds: list[tuple[int, str, float]] = []
-    for position, (fill_index, share) in enumerate(allocations):
-        child = object_value(children[fill_index], f"{stack_occurrence} child")
-        current = occurrence(child)
-        placement = object_value(child.get("placement"), f"{current} placement")
         minimum = optional_decimal(
             placement, minimum_member, current, f"placement.{minimum_member}"
         )
         maximum = optional_decimal(
             placement, maximum_member, current, f"placement.{maximum_member}"
         )
-        hit: tuple[str, float] | None = None
-        if minimum is not None and share < minimum:
-            hit = ("MIN", minimum)
-        elif maximum is not None and share > maximum:
-            hit = ("MAX", maximum)
-        if hit is not None:
-            active_bounds.append((position, hit[0], hit[1]))
+        if (
+            not math.isfinite(weight)
+            or weight <= 0.0
+            or (minimum is not None and (not math.isfinite(minimum) or minimum < 0.0))
+            or (maximum is not None and (not math.isfinite(maximum) or maximum < 0.0))
+            or (
+                minimum is not None
+                and maximum is not None
+                and maximum < minimum
+            )
+        ):
+            raise Unsupported("STACK_MAIN_FILL", first_occurrence)
+        weights.append(weight)
         bounds.append((minimum, maximum))
 
-    if not active_bounds:
-        return allocations
-    if len(active_bounds) == 2 and len(allocations) == 2:
+    residual = available - used_without_fill
+    if not math.isfinite(residual):
+        raise Unsupported("STACK_MAIN_FILL", first_occurrence)
+    remaining = residual if residual > 0.0 else 0.0
+    allocations = [0.0 for _ in fill_indices]
+    frozen = [False for _ in fill_indices]
+    frozen_as_minimum = [False for _ in fill_indices]
+
+    for _round in range(len(fill_indices) + 1):
+        unfrozen = [position for position, value in enumerate(frozen) if not value]
+        if not unfrozen:
+            return list(zip(fill_indices, allocations, strict=True))
+
         frozen_total = 0.0
-        active_kinds: list[str] = []
-        for position, active_kind, frozen_bound in active_bounds:
-            minimum, maximum = bounds[position]
-            if (
-                minimum is None
-                or maximum is None
-                or not math.isfinite(minimum)
-                or minimum < 0.0
-                or not math.isfinite(maximum)
-                or maximum < minimum
-            ):
-                raise Unsupported("STACK_MAIN_FILL", first_occurrence)
-            selected_bound = minimum if active_kind == "MIN" else maximum
-            if active_kind not in {"MIN", "MAX"} or frozen_bound != selected_bound:
-                raise Unsupported("STACK_MAIN_FILL", first_occurrence)
-            active_kinds.append(active_kind)
-            frozen_total += selected_bound
-            if not math.isfinite(frozen_total):
-                raise Unsupported("STACK_MAIN_FILL", first_occurrence)
-            allocations[position] = (
-                allocations[position][0],
-                selected_bound if selected_bound > 0.0 else 0.0,
-            )
-        if active_kinds == ["MIN", "MIN"] and frozen_total > remaining:
-            return allocations
-        if sorted(active_kinds) == ["MAX", "MIN"] and frozen_total == remaining:
-            return allocations
-        raise Unsupported("STACK_MAIN_FILL", first_occurrence)
-    if len(active_bounds) != 1:
-        raise Unsupported("STACK_MAIN_FILL", first_occurrence)
-    active_position, active_kind, frozen_bound = active_bounds[0]
-    if (
-        not math.isfinite(frozen_bound)
-        or frozen_bound < 0.0
-    ):
-        raise Unsupported("STACK_MAIN_FILL", first_occurrence)
-    minimum, maximum = bounds[active_position]
-    if (minimum is not None and frozen_bound < minimum) or (
-        maximum is not None and frozen_bound > maximum
-    ):
-        raise Unsupported("STACK_MAIN_FILL", first_occurrence)
+        for position, allocation in enumerate(allocations):
+            if frozen[position]:
+                frozen_total += allocation
+                if not math.isfinite(frozen_total):
+                    raise Unsupported("STACK_MAIN_FILL", first_occurrence)
+        round_remaining = remaining - frozen_total
+        if not math.isfinite(round_remaining) or round_remaining < 0.0:
+            raise Unsupported("STACK_MAIN_FILL", first_occurrence)
 
-    if len(allocations) == 3:
-        if frozen_bound > remaining:
-            absent_unfrozen_positions: list[int] = []
-            inactive_unfrozen_maxima: list[tuple[int, float]] = []
-            additional_minimum_candidates: list[tuple[int, float, bool]] = []
-            unfrozen_overflow_bound_shape_supported = True
-            for position, (unfrozen_minimum, unfrozen_maximum) in enumerate(
-                bounds
-            ):
-                if position == active_position:
-                    continue
-                if unfrozen_minimum is None and unfrozen_maximum is None:
-                    absent_unfrozen_positions.append(position)
-                    continue
-                if unfrozen_minimum is None and unfrozen_maximum is not None:
-                    if (
-                        not math.isfinite(unfrozen_maximum)
-                        or unfrozen_maximum < 0.0
-                        or allocations[position][1] > unfrozen_maximum
-                    ):
-                        unfrozen_overflow_bound_shape_supported = False
-                        break
-                    inactive_unfrozen_maxima.append((position, unfrozen_maximum))
-                    continue
-                if unfrozen_minimum is not None and unfrozen_maximum is None:
-                    if (
-                        not math.isfinite(unfrozen_minimum)
-                        or unfrozen_minimum <= 0.0
-                        or allocations[position][1] < unfrozen_minimum
-                    ):
-                        unfrozen_overflow_bound_shape_supported = False
-                        break
-                    additional_minimum_candidates.append(
-                        (position, unfrozen_minimum, False)
-                    )
-                    continue
-                if unfrozen_minimum is not None and unfrozen_maximum is not None:
-                    if (
-                        not math.isfinite(unfrozen_minimum)
-                        or not math.isfinite(unfrozen_maximum)
-                        or unfrozen_minimum <= 0.0
-                        or unfrozen_maximum < unfrozen_minimum
-                        or allocations[position][1] < unfrozen_minimum
-                        or allocations[position][1] > unfrozen_maximum
-                    ):
-                        unfrozen_overflow_bound_shape_supported = False
-                        break
-                    additional_minimum_candidates.append(
-                        (position, unfrozen_minimum, True)
-                    )
-                    continue
-                unfrozen_overflow_bound_shape_supported = False
-                break
-            inactive_max_shape_supported = (
-                not additional_minimum_candidates
-                and len(inactive_unfrozen_maxima) <= 1
-                and len(absent_unfrozen_positions) + len(inactive_unfrozen_maxima) == 2
-            )
-            second_minimum_shape_supported = (
-                len(additional_minimum_candidates) == 1
-                and maximum is not None
-                and (
-                    (
-                        not inactive_unfrozen_maxima
-                        and len(absent_unfrozen_positions) == 1
-                    )
-                    or (
-                        additional_minimum_candidates[0][2]
-                        and len(inactive_unfrozen_maxima) == 1
-                        and not absent_unfrozen_positions
-                    )
-                )
-            )
-            two_additional_minimum_shape_supported = (
-                len(additional_minimum_candidates) == 2
-                and maximum is not None
-                and not inactive_unfrozen_maxima
-                and not absent_unfrozen_positions
-            )
-            if (
-                not inactive_max_shape_supported
-                and not second_minimum_shape_supported
-                and not two_additional_minimum_shape_supported
-            ):
-                unfrozen_overflow_bound_shape_supported = False
-            active_minimum_overflow_bound_shape_supported = (
-                active_kind == "MIN"
-                and minimum is not None
-                and (
-                    maximum is None
-                    or (
-                        math.isfinite(maximum)
-                        and maximum >= 0.0
-                        and frozen_bound <= maximum
-                    )
-                )
-            )
-            if (
-                not active_minimum_overflow_bound_shape_supported
-                or not unfrozen_overflow_bound_shape_supported
-            ):
+        round_weight = 0.0
+        for position in unfrozen:
+            round_weight += weights[position]
+            if not math.isfinite(round_weight) or round_weight <= 0.0:
                 raise Unsupported("STACK_MAIN_FILL", first_occurrence)
-            additional_minimum_by_position = {
-                position: minimum
-                for position, minimum, _ in additional_minimum_candidates
-            }
-            return [
-                (
-                    fill_index,
-                    frozen_bound
-                    if position == active_position
-                    else additional_minimum_by_position.get(position, 0.0),
-                )
-                for position, (fill_index, _) in enumerate(allocations)
-            ]
-        unfrozen_positions = [
-            position for position in range(3) if position != active_position
-        ]
-        redistributed_remaining = remaining - frozen_bound
-        redistributed_weight = sum(
-            weights[position][1] for position in unfrozen_positions
-        )
-        if (
-            not math.isfinite(redistributed_remaining)
-            or redistributed_remaining < 0.0
-            or not math.isfinite(redistributed_weight)
-            or redistributed_weight <= 0.0
-        ):
-            raise Unsupported("STACK_MAIN_FILL", first_occurrence)
-        first_share = (
-            redistributed_remaining * weights[unfrozen_positions[0]][1]
-        ) / redistributed_weight
-        second_share = redistributed_remaining - first_share
-        if (
-            not math.isfinite(first_share)
-            or first_share < 0.0
-            or not math.isfinite(second_share)
-            or second_share < 0.0
-        ):
-            raise Unsupported("STACK_MAIN_FILL", first_occurrence)
-        redistributed_shares = (first_share, second_share)
-        post_redistribution_hits: list[tuple[int, float, bool]] = []
-        for position, share in zip(
-            unfrozen_positions, redistributed_shares, strict=True
-        ):
-            minimum, maximum = bounds[position]
-            invalid_minimum = minimum is not None and (
-                not math.isfinite(minimum) or minimum < 0.0
-            )
-            invalid_maximum = maximum is not None and (
-                not math.isfinite(maximum) or maximum < 0.0
-            )
-            if invalid_minimum or invalid_maximum:
-                raise Unsupported("STACK_MAIN_FILL", first_occurrence)
-            if minimum is not None and share < minimum:
-                post_redistribution_hits.append((position, minimum, True))
-            elif maximum is not None and share > maximum:
-                post_redistribution_hits.append((position, maximum, False))
-        if len(post_redistribution_hits) > 1:
-            raise Unsupported("STACK_MAIN_FILL", first_occurrence)
-        allocations[active_position] = (
-            allocations[active_position][0],
-            frozen_bound if frozen_bound > 0.0 else 0.0,
-        )
-        if post_redistribution_hits:
-            second_position, second_bound, second_is_minimum = (
-                post_redistribution_hits[0]
-            )
-            active_minimum, active_maximum = bounds[active_position]
-            second_minimum, second_maximum = bounds[second_position]
-            last_position = next(
-                position
-                for position in unfrozen_positions
-                if position != second_position
-            )
-            last_minimum, last_maximum = bounds[last_position]
-            first_is_min_only = (
-                active_kind == "MIN"
-                and active_minimum is not None
-                and active_maximum is None
-            )
-            second_was_inactive_min = (
-                second_is_minimum
-                and second_minimum is not None
-                and second_maximum is None
-                and allocations[second_position][1] >= second_bound
-            )
-            first_is_max_only = (
-                active_kind == "MAX"
-                and active_minimum is None
-                and active_maximum is not None
-            )
-            second_was_inactive_max = (
-                not second_is_minimum
-                and second_minimum is None
-                and second_maximum is not None
-                and allocations[second_position][1] <= second_bound
-            )
-            matching_minimum_freezes = first_is_min_only and second_was_inactive_min
-            matching_maximum_freezes = first_is_max_only and second_was_inactive_max
-            if last_minimum is None and last_maximum is None:
-                terminal_bound_shape_supported = True
-            elif last_minimum is not None and last_maximum is None:
-                terminal_bound_shape_supported = (
-                    matching_maximum_freezes
-                    and math.isfinite(last_minimum)
-                    and last_minimum >= 0.0
-                )
-            elif last_minimum is None and last_maximum is not None:
-                terminal_bound_shape_supported = (
-                    matching_maximum_freezes
-                    and math.isfinite(last_maximum)
-                    and last_maximum >= 0.0
-                )
+
+        shares: list[tuple[int, float]] = []
+        consumed = 0.0
+        for order, position in enumerate(unfrozen):
+            if order + 1 == len(unfrozen):
+                share = round_remaining - consumed
             else:
-                terminal_bound_shape_supported = False
+                share = round_remaining * weights[position] / round_weight
+                consumed += share
             if (
-                matching_minimum_freezes
-                and last_minimum is None
-                and last_maximum is None
-                and second_bound > redistributed_remaining
-            ):
-                allocations[second_position] = (
-                    allocations[second_position][0],
-                    second_bound if second_bound > 0.0 else 0.0,
-                )
-                allocations[last_position] = (
-                    allocations[last_position][0],
-                    0.0,
-                )
-                return allocations
-            if (
-                not (matching_minimum_freezes or matching_maximum_freezes)
-                or not terminal_bound_shape_supported
-                or second_bound > redistributed_remaining
+                not math.isfinite(share)
+                or share < 0.0
+                or not math.isfinite(consumed)
             ):
                 raise Unsupported("STACK_MAIN_FILL", first_occurrence)
-            last_share = redistributed_remaining - second_bound
-            if (
-                not math.isfinite(last_share)
-                or last_share < 0.0
-                or (last_minimum is not None and last_share < last_minimum)
-            ):
-                raise Unsupported("STACK_MAIN_FILL", first_occurrence)
-            last_allocation = last_share
-            if last_maximum is not None and last_share > last_maximum:
-                last_allocation = last_maximum
-            allocations[second_position] = (
-                allocations[second_position][0],
-                second_bound if second_bound > 0.0 else 0.0,
-            )
-            allocations[last_position] = (
-                allocations[last_position][0],
-                last_allocation if last_allocation > 0.0 else 0.0,
-            )
-            return allocations
-        allocations[unfrozen_positions[0]] = (
-            allocations[unfrozen_positions[0]][0],
-            first_share if first_share > 0.0 else 0.0,
-        )
-        allocations[unfrozen_positions[1]] = (
-            allocations[unfrozen_positions[1]][0],
-            second_share if second_share > 0.0 else 0.0,
-        )
-        return allocations
+            shares.append((position, share if share > 0.0 else 0.0))
 
-    if len(allocations) != 2:
-        raise Unsupported("STACK_MAIN_FILL", first_occurrence)
-    unfrozen_position = 1 - active_position
-    active_minimum, active_maximum = bounds[active_position]
-    unfrozen_minimum, unfrozen_maximum = bounds[unfrozen_position]
-    active_mixed_minimum_shape = (
-        active_kind == "MIN"
-        and active_minimum is not None
-        and active_maximum is not None
-        and math.isfinite(active_maximum)
-        and active_maximum >= 0.0
-        and active_maximum >= frozen_bound
-    )
-    unfrozen_mixed_shape = (
-        unfrozen_minimum is not None
-        and unfrozen_maximum is not None
-        and math.isfinite(unfrozen_minimum)
-        and unfrozen_minimum >= 0.0
-        and math.isfinite(unfrozen_maximum)
-        and unfrozen_maximum >= unfrozen_minimum
-        and allocations[unfrozen_position][1] >= unfrozen_minimum
-        and allocations[unfrozen_position][1] <= unfrozen_maximum
-    )
-    if active_mixed_minimum_shape and unfrozen_mixed_shape and frozen_bound <= remaining:
-        unfrozen_offer = remaining - frozen_bound
-        if not math.isfinite(unfrozen_offer) or unfrozen_offer < 0.0:
-            raise Unsupported("STACK_MAIN_FILL", first_occurrence)
-        if unfrozen_offer < unfrozen_minimum:
-            return [
-                (
-                    fill_index,
-                    frozen_bound
-                    if position == active_position
-                    else unfrozen_minimum,
-                )
-                for position, (fill_index, _) in enumerate(allocations)
-            ]
-        if unfrozen_offer <= unfrozen_maximum:
-            return [
-                (
-                    fill_index,
-                    frozen_bound
-                    if position == active_position
-                    else unfrozen_offer,
-                )
-                for position, (fill_index, _) in enumerate(allocations)
-            ]
-    if (
-        active_kind == "MAX"
-        and active_maximum is not None
-        and (
-            active_minimum is None
-            or (
-                math.isfinite(active_minimum)
-                and active_minimum >= 0.0
-                and active_minimum <= frozen_bound
-            )
-        )
-        and unfrozen_minimum is None
-        and unfrozen_maximum is not None
-        and frozen_bound <= remaining
-        and math.isfinite(unfrozen_maximum)
-        and unfrozen_maximum >= 0.0
-        and allocations[unfrozen_position][1] <= unfrozen_maximum
-    ):
-        unfrozen_offer = remaining - frozen_bound
-        if not math.isfinite(unfrozen_offer) or unfrozen_offer < 0.0:
-            raise Unsupported("STACK_MAIN_FILL", first_occurrence)
-        if unfrozen_offer > unfrozen_maximum:
-            active_index = allocations[active_position][0]
-            unfrozen_index = allocations[unfrozen_position][0]
-            allocations[active_position] = (
-                active_index,
-                frozen_bound if frozen_bound > 0.0 else 0.0,
-            )
-            allocations[unfrozen_position] = (
-                unfrozen_index,
-                unfrozen_maximum if unfrozen_maximum > 0.0 else 0.0,
-            )
-            return allocations
-    if (
-        active_kind == "MIN"
-        and active_minimum is not None
-        and (
-            active_maximum is None
-            or (
-                math.isfinite(active_maximum)
-                and active_maximum >= 0.0
-                and active_maximum >= frozen_bound
-            )
-        )
-        and unfrozen_minimum is not None
-        and unfrozen_maximum is None
-        and frozen_bound <= remaining
-        and math.isfinite(unfrozen_minimum)
-        and unfrozen_minimum >= 0.0
-        and allocations[unfrozen_position][1] >= unfrozen_minimum
-    ):
-        unfrozen_offer = remaining - frozen_bound
-        if not math.isfinite(unfrozen_offer) or unfrozen_offer < 0.0:
-            raise Unsupported("STACK_MAIN_FILL", first_occurrence)
-        if unfrozen_offer < unfrozen_minimum:
-            active_index = allocations[active_position][0]
-            unfrozen_index = allocations[unfrozen_position][0]
-            allocations[active_position] = (
-                active_index,
-                frozen_bound if frozen_bound > 0.0 else 0.0,
-            )
-            allocations[unfrozen_position] = (
-                unfrozen_index,
-                unfrozen_minimum if unfrozen_minimum > 0.0 else 0.0,
-            )
-            return allocations
-    if any(bound is not None for bound in bounds[unfrozen_position]):
-        raise Unsupported("STACK_MAIN_FILL", first_occurrence)
-    if frozen_bound > remaining:
-        if active_kind != "MIN":
-            raise Unsupported("STACK_MAIN_FILL", first_occurrence)
-        unfrozen_share = 0.0
-    else:
-        unfrozen_share = remaining - frozen_bound
-    if not math.isfinite(unfrozen_share) or unfrozen_share < 0.0:
-        raise Unsupported("STACK_MAIN_FILL", first_occurrence)
-    active_index = allocations[active_position][0]
-    unfrozen_index = allocations[unfrozen_position][0]
-    allocations[active_position] = (
-        active_index,
-        frozen_bound if frozen_bound > 0.0 else 0.0,
-    )
-    allocations[unfrozen_position] = (
-        unfrozen_index,
-        unfrozen_share if unfrozen_share > 0.0 else 0.0,
-    )
-    return allocations
+        hits: list[tuple[int, float, bool]] = []
+        for position, share in shares:
+            minimum, maximum = bounds[position]
+            if minimum is not None and share < minimum:
+                hits.append((position, minimum, True))
+            elif maximum is not None and share > maximum:
+                hits.append((position, maximum, False))
+        if not hits:
+            for position, share in shares:
+                allocations[position] = share
+            return list(zip(fill_indices, allocations, strict=True))
+
+        for position, bound, is_minimum in hits:
+            if frozen[position]:
+                raise Unsupported("STACK_MAIN_FILL", first_occurrence)
+            frozen[position] = True
+            frozen_as_minimum[position] = is_minimum
+            allocations[position] = bound if bound > 0.0 else 0.0
+
+        frozen_total = 0.0
+        for position, allocation in enumerate(allocations):
+            if frozen[position]:
+                frozen_total += allocation
+                if not math.isfinite(frozen_total):
+                    raise Unsupported("STACK_MAIN_FILL", first_occurrence)
+        if frozen_total > remaining:
+            if not any(frozen_as_minimum):
+                raise Unsupported("STACK_MAIN_FILL", first_occurrence)
+            for position, is_frozen in enumerate(frozen):
+                if not is_frozen:
+                    minimum = bounds[position][0]
+                    allocations[position] = minimum if minimum is not None else 0.0
+            return list(zip(fill_indices, allocations, strict=True))
+
+    raise Unsupported("STACK_MAIN_FILL", first_occurrence)
 
 
 def resource_free_hug_axis(
@@ -3214,7 +2819,7 @@ def verify(
         "vector manifest",
     )
     verifier.require(
-        vectors["vectorVersion"] == "renderweave-definite-layout-vectors/59",
+        vectors["vectorVersion"] == "renderweave-definite-layout-vectors/60",
         "vector identity drifted",
     )
     authority = exact_members(
@@ -3267,7 +2872,7 @@ def verify(
     expected_boundary = {
         "profileAvailability": "NOT_REGISTERED",
         "certificationStatus": "NOT_CERTIFIED",
-        "layoutImplementation": "RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_SINGLE_AND_INACTIVE_BOUND_OR_EXACT_TWO_FILL_SINGLE_ACTIVE_BOUND_WITHIN_REMAINING_OR_SINGLE_ACTIVE_MIN_OVERFLOW_OR_EXACT_TWO_FILL_TWO_MIN_SECOND_FREEZE_OVERFLOW_OR_EXACT_TWO_FILL_MIXED_ACTIVE_MIN_SECOND_MIN_FREEZE_OVERFLOW_OR_EXACT_TWO_FILL_MIXED_ACTIVE_MIN_SECOND_MIXED_MIN_FREEZE_OVERFLOW_OR_EXACT_TWO_FILL_MIXED_ACTIVE_MIN_SECOND_MIXED_TERMINAL_INACTIVE_OR_EXACT_TWO_FILL_SIMULTANEOUS_MIXED_MIN_FREEZE_OVERFLOW_OR_EXACT_TWO_FILL_SIMULTANEOUS_MIXED_MIN_MAX_EXACT_TERMINAL_OR_EXACT_TWO_FILL_TWO_MAX_SECOND_FREEZE_FREE_JUSTIFY_OR_EXACT_TWO_FILL_MIXED_ACTIVE_MAX_SECOND_MAX_FREEZE_FREE_JUSTIFY_OR_EXACT_THREE_FILL_SINGLE_ACTIVE_BOUND_ONE_REDISTRIBUTION_OR_EXACT_THREE_FILL_POST_REDISTRIBUTION_INACTIVE_BOUNDS_OR_EXACT_THREE_FILL_SECOND_MIN_FREEZE_LAST_REMAINDER_OR_EXACT_THREE_FILL_SECOND_MAX_FREEZE_LAST_REMAINDER_OR_EXACT_THREE_FILL_SECOND_MAX_FREEZE_TERMINAL_INACTIVE_MIN_OR_EXACT_THREE_FILL_SECOND_MAX_FREEZE_TERMINAL_INACTIVE_MAX_OR_EXACT_THREE_FILL_THIRD_MAX_FREEZE_FREE_JUSTIFY_OR_EXACT_THREE_FILL_SINGLE_ACTIVE_MIN_OVERFLOW_OR_EXACT_THREE_FILL_SECOND_MIN_FREEZE_OVERFLOW_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_INACTIVE_UNFROZEN_MAX_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_SECOND_MIN_FREEZE_OVERFLOW_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_SECOND_MIXED_MIN_FREEZE_OVERFLOW_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_SECOND_MIXED_MIN_FREEZE_OVERFLOW_TERMINAL_INACTIVE_MAX_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_TWO_MIXED_MIN_FREEZES_OVERFLOW_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_MIXED_AND_MIN_ONLY_FREEZES_OVERFLOW_OR_EXACT_THREE_FILL_MIXED_ACTIVE_MIN_OVERFLOW_TWO_MIN_ONLY_FREEZES_OVERFLOW_MULTI_MAIN_FILL_AND_FIXED_SINGLE_FRACTION_INDEPENDENT_MULTI_AUTO_GRID_MULTI_AUTO_SPAN_STABLE_DEFICIT_GRID_DEFINITE_MULTI_FRACTION_LAST_REMAINDER_GRID_EMPTY_CONTAINER_STACK_HUG_GRID_AUTO_HUG_CONTRIBUTION_GRID_HUG_EXACT_QUARTER_TURN_AFFINE_FRAME_GROUP_HUG_FIXED_OPPOSITE_AXIS_CROSS_FILL_DEFINITE_ABSOLUTE_PARENT_OFFER_DEFINITE_STACK_CROSS_OUTER_OFFER_STACK_MAIN_FILL_CROSS_HUG_REMEASURE_NESTED_STACK_MAIN_OFFER_PROPAGATION_COLUMNS_FIRST_GRID_CELL_OUTER_OFFER_STACK_MAIN_OFFER_COLUMNS_FIRST_GRID_CROSS_HUG_ABSOLUTE_PARENT_OFFER_COLUMNS_FIRST_GRID_CROSS_HUG_GRID_CELL_OFFER_COLUMNS_FIRST_NESTED_GRID_CROSS_HUG_GRID_CELL_OFFER_STACK_MAIN_FIRST_CROSS_HUG_DIRECTION_CHANGING_STACK_CROSS_OFFER_MAIN_HUG_NESTED_STACK_RESOLVED_OPPOSITE_OFFER_RECURSION_COLUMNS_FIRST_GRID_TERMINAL_NORMALIZATION_BOX_KERNEL_DEFINITE_COMPOSITION_VIEWPORT_SOURCE_TRIM_CONTAIN_CENTER_MAPPING_BOX_KERNEL",
+        "layoutImplementation": "RESOURCE_FREE_DEFINITE_ABSOLUTE_STACK_BOUNDED_ITERATIVE_MAIN_FILL_MIN_MAX_WATER_FILLING_AND_FIXED_SINGLE_FRACTION_INDEPENDENT_MULTI_AUTO_GRID_MULTI_AUTO_SPAN_STABLE_DEFICIT_GRID_DEFINITE_MULTI_FRACTION_LAST_REMAINDER_GRID_EMPTY_CONTAINER_STACK_HUG_GRID_AUTO_HUG_CONTRIBUTION_GRID_HUG_EXACT_QUARTER_TURN_AFFINE_FRAME_GROUP_HUG_FIXED_OPPOSITE_AXIS_CROSS_FILL_DEFINITE_ABSOLUTE_PARENT_OFFER_DEFINITE_STACK_CROSS_OUTER_OFFER_STACK_MAIN_FILL_CROSS_HUG_REMEASURE_NESTED_STACK_MAIN_OFFER_PROPAGATION_COLUMNS_FIRST_GRID_CELL_OUTER_OFFER_STACK_MAIN_OFFER_COLUMNS_FIRST_GRID_CROSS_HUG_ABSOLUTE_PARENT_OFFER_COLUMNS_FIRST_GRID_CROSS_HUG_GRID_CELL_OFFER_COLUMNS_FIRST_NESTED_GRID_CROSS_HUG_GRID_CELL_OFFER_STACK_MAIN_FIRST_CROSS_HUG_DIRECTION_CHANGING_STACK_CROSS_OFFER_MAIN_HUG_NESTED_STACK_RESOLVED_OPPOSITE_OFFER_RECURSION_COLUMNS_FIRST_GRID_TERMINAL_NORMALIZATION_BOX_KERNEL_DEFINITE_COMPOSITION_VIEWPORT_SOURCE_TRIM_CONTAIN_CENTER_MAPPING_BOX_KERNEL",
         "worldTransformImplementation": "ABSENT",
         "sceneImplementation": "ABSENT",
         "rasterImplementation": "ABSENT",
@@ -3305,9 +2910,9 @@ def verify(
         == "renderweave-layout-preflight-fixtures/1",
         "layout preflight fixture identity drifted",
     )
-    verifier.require(len(vectors["laidOutCases"]) == 271, "laid-out case count drifted")
+    verifier.require(len(vectors["laidOutCases"]) == 278, "laid-out case count drifted")
     verifier.require(
-        len(vectors["unsupportedCases"]) == 17,
+        len(vectors["unsupportedCases"]) == 10,
         "unsupported case count drifted",
     )
 
@@ -3355,7 +2960,7 @@ def verify(
             raise VerificationFailure(f"{case_id}: unsupported case produced a layout")
 
     return {
-        "verifier": "renderweave-definite-layout-python-independent/59",
+        "verifier": "renderweave-definite-layout-python-independent/60",
         "result": "PASS",
         "assurance": "A2",
         "laidOutCases": len(vectors["laidOutCases"]),

@@ -622,6 +622,12 @@ Label: wayfinder:map
   17 unsupported、288/288 cases、861 checks；Engine `/1` 为 27 rendered + 11 unsupported、38/38 cases、118 checks。
   `render`/`fast`/sequential `server`/17-step Goal `full` 均绿。Profile/public Rendering API/E6/正式产品 route 保持
   关闭，`/prototype` 不计最终交付。
+- [实现 bounded iterative Stack min/max water-filling 纵切](issues/120-bounded-iterative-stack-water-filling.md) —
+  **resolved / automated_verified**；逐票 Stack allocation 特例已收敛为 bounded authored-order weighted min/max
+  state machine，7 个 `STACK_MAIN_FILL` negatives 全部转正。shared `/60` 为 278 laid-out + 10 unsupported、
+  288/288 cases、868 checks，vector SHA-256 `21267a5713ddcc68aa49d6c479e11c8776d54e14c08de74e2bb80e64ecaf3633`；
+  `render`/`fast`/sequential `server`/17-step Goal `full` 均绿。Profile、daemon success/public Rendering API、E6 与
+  正式产品 route 继续关闭，`/prototype` 不计最终交付。
 - [验证 Product Editor 状态、恢复与权威预览架构](issues/09-validate-product-editor-architecture.md) —
   throwaway 逻辑原型（`/prototype/editor-state-model`，不进产品 route）把冻结编辑器规则编码为确定性
   fixture 状态机：10 个引导走查场景 37/37 断言 + 自由操作冒烟 + 键盘焦点检查全部通过（Playwright A1，

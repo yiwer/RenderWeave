@@ -2313,6 +2313,41 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
   `ABSENT`、native stack `BUILD_NOT_AUTHORIZED`、public Rendering API/E6/正式产品 route `CLOSED`；HUG host、任意
   rotation、subpixel/AA、IMAGE resampling、Text shaping 与最终产品接线继续后续 DAG，`/prototype` 不计交付。
 
+## 120. TV1-T120 执行卡
+
+- 决策：T119 以 verified commit `debef5db` 收口且 worktree clean 后，复算 Ticket 10 §3/§7 与 shared `/59`
+  的 17 个 negatives。7 个 `STACK_MAIN_FILL` 已覆盖 simultaneous mixed bounds、multi-round、min overflow、
+  four-FILL 与 all-max remainder；它们可由同一 bounded authored-order state machine一次闭合，不依赖 native
+  raster，也不需要为这些 literal cases选择尚未物化数值的 residual tolerance。
+- Interface/seam：只收敛 private `stack_main_fill_allocations`；public Layout/Engine/daemon API、admission、
+  authored DFS first-error、全有或全无 layout 与 deferred cross-HUG seam 不变。Rust/Python 保持独立控制流。
+- 精确语义：每轮按未冻结 positive weight 做 stable share/last remainder；严格 min/max hit 同轮按 authored order
+  freeze，至少一项进展且总轮数不超过 `fillChildCount+1`。min-sum overflow不缩小 min，all-max 正余量交给既有
+  justify；负 residual/tolerance-dependent 状态继续 fail closed，不引入 epsilon。
+- 允许影响：T120 tracker/map/plan/NOTES、Layout Rust module/tests、shared definite-layout `/60`、Python independent
+  verifier、render-gate exact identity/count/hash/evidence。
+- 禁止影响：arbitrary rotation、rows→columns、Text/scene/subpixel/AA/IMAGE resampling/JPEG/LayoutTrace、Profile
+  registration、RequestRegistry success、native build、Java/OpenAPI/Web/正式产品 route、public Rendering API/E6、
+  formal records、physical certification、J1/A3/READY 与外部副作用。
+- TDD/gates：7 个既有 negatives 逐项转 literal positives并补 bounded-round/cross-HUG regressions；Rust/Python共同
+  RED 后独立 GREEN。focused/local → canonical `render` → affected `fast` → sequential `server` → Goal `full` →
+  resolution `fast`；Maven不并发，精确 staging，不 push/tag/PR，`/prototype` 不计最终交付。
+- 结果：Rust primary 与 Python independent verifier 已分别实现同一冻结语义、不同控制流的 bounded state machine，
+  并删除逐形状特例；每轮 stable share/last remainder、同轮 strict bound freeze、`fillChildCount+1` 上限、
+  min-overflow terminal 与 all-max remainder→justify 已闭合，非法/非 finite/无进展/未解释负 residual 继续 fail closed。
+- shared `/60` 已把 7 个 `STACK_MAIN_FILL` negatives 全部转正，为 278 laid-out + 10 unsupported、288/288 cases、
+  868 checks，vector SHA-256 `21267a5713ddcc68aa49d6c479e11c8776d54e14c08de74e2bb80e64ecaf3633`；fixture
+  SHA-256 保持 `a11475bcebad7e1c35cb0acd7018419d94afcb4b37d7f1df7346a055ad1df669`。
+- focused/local 与 canonical `render` `.sdlc/evidence/20260825-223119-render/`、affected `fast`
+  `.sdlc/evidence/20260825-223241-fast/`、sequential `server` `.sdlc/evidence/20260825-223302-server/`、17-step Goal
+  `full` `.sdlc/evidence/20260825-224520-full/` 均绿；full 为 1189.599 秒并覆盖 Windows/Linux Renderer、8 个 Maven
+  modules、Node 24 Web 217/217、runtime canary、Playwright 23 passed + 1 controlled skip 与 Draft/inference journeys，
+  provider attempts/API Key reads/reservations/cost/open authorization=0；状态回填后的 resolution `fast`
+  `.sdlc/evidence/20260825-230732-fast/` 也以 3/3 steps、passed/A1、12.724 秒通过。
+- 状态为 `resolved / automated_verified`。Profile `NOT_REGISTERED`、certification `NOT_CERTIFIED`、process raster
+  `ABSENT`、native stack `BUILD_NOT_AUTHORIZED`、daemon success/public Rendering API/E6/正式产品 route `CLOSED`；
+  Text shaping、world scene、JPEG 与最终产品接线继续后续 DAG，`/prototype` 不计交付。
+
 ## 111. TV1-T111 执行卡
 
 - 决策：T110 以 verified commit `4cbc3b68` 收口且 worktree clean 后，复核 Ticket 10 §6、Ticket 16 §8 与
