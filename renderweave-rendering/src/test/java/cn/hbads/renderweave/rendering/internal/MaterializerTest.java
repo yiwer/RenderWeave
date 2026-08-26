@@ -102,8 +102,7 @@ class MaterializerTest {
 
     @Test
     void repeatGeneratedContainersCountTowardStaticNodeLimit() {
-        var items = String.join(",", java.util.Collections.nCopies(10_000, "\"x\""));
-        var document = repeatDocument(items);
+        var document = repeatDocument(4_000, 4_000, 2_000);
 
         var outcome = materialize(document, Map.of(), null);
 
@@ -114,22 +113,37 @@ class MaterializerTest {
                 failed.problem().limitId().orElseThrow().value());
     }
 
-    private static String repeatDocument(String items) {
+    private static String repeatDocument(int firstCount, int secondCount, int thirdCount) {
+        var firstItems = repeatedTextItems(firstCount);
+        var secondItems = repeatedTextItems(secondCount);
+        var thirdItems = repeatedTextItems(thirdCount);
         return "{\"dslVersion\":\"renderweave-design/1.0\","
                 + "\"expressionProfile\":\"renderweave-expression/1.0\","
                 + "\"displayName\":\"R\",\"definitions\":[],"
                 + "\"designRoot\":{\"nodeId\":\"00000000-0000-4000-8000-000000000001\","
                 + "\"kind\":\"canvas\",\"widthMm\":210,\"heightMm\":297,\"bindings\":[],"
-                + "\"children\":[{\"nodeId\":\"00000000-0000-4000-8000-000000000021\","
+                + "\"children\":["
+                + repeatNode(firstItems, "21", "b1", "31") + ","
+                + repeatNode(secondItems, "22", "b2", "32") + ","
+                + repeatNode(thirdItems, "23", "b3", "33")
+                + "]}}";
+    }
+
+    private static String repeatedTextItems(int count) {
+        return String.join(",", java.util.Collections.nCopies(count, "\"x\""));
+    }
+
+    private static String repeatNode(String items, String nodeSuffix, String loopSuffix, String childSuffix) {
+        return "{\"nodeId\":\"00000000-0000-4000-8000-0000000000" + nodeSuffix + "\","
                 + "\"kind\":\"repeat\",\"bindings\":[],\"placement\":" + absolute() + ","
-                + "\"loopId\":\"00000000-0000-4000-8000-0000000000b1\","
+                + "\"loopId\":\"00000000-0000-4000-8000-0000000000" + loopSuffix + "\","
                 + "\"absentPolicy\":\"ERROR\",\"items\":{\"kind\":\"literal\","
                 + "\"valueType\":{\"type\":\"list\",\"items\":\"text\"},"
                 + "\"value\":[" + items + "]},"
                 + "\"itemLayout\":{\"kind\":\"STACK\",\"direction\":\"ROW\",\"gapMm\":1},"
                 + "\"instanceLayout\":{\"kind\":\"STACK\",\"direction\":\"ROW\",\"gapMm\":2},"
-                + "\"children\":[" + packRect("00000000-0000-4000-8000-000000000031")
-                + "]}]}}";
+                + "\"children\":[" + packRect("00000000-0000-4000-8000-0000000000" + childSuffix)
+                + "]}";
     }
 
     private static String packRect(String nodeId) {
